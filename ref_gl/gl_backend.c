@@ -42,31 +42,9 @@ typedef struct
 	bufTexCoord_t	texCoord[0][MAX_VERTEXES];
 } vertexBuffer_t;
 
-static vertexBuffer_t	*vb, *agpBuffer;// pointers to current buffer and to all buffers
+static vertexBuffer_t	*vb;			// pointers to current buffer and to all buffers
 static int				currentBuffer;	// index of the current buffer
 static int				vbSize;			// size of 1 buffer (depends on multitexturing ability)
-
-static GLuint fences[NUM_VERTEX_BUFFERS];
-
-static void WaitVertexArray (void)
-{
-	if (qglVertexArrayRangeNV)
-	{
-		qglFinishFenceNV (fences[currentBuffer]);
-	}
-}
-
-static void SwitchVertexArray (void)
-{
-	if (qglVertexArrayRangeNV)
-	{
-		qglSetFenceNV (fences[currentBuffer], GL_ALL_COMPLETED_NV);
-		if (++currentBuffer == NUM_VERTEX_BUFFERS)
-			currentBuffer = 0;
-		vb = agpBuffer + currentBuffer;
-	}
-}
-
 
 int				gl_indexesArray[MAX_INDEXES];
 bufExtra_t		gl_extra[MAX_VERTEXES];
@@ -1093,9 +1071,6 @@ static void FlushArrays (void)
 	if (!gl_numIndexes) return;	// buffer is empty
 
 	StageIterator ();
-	SwitchVertexArray ();
-	WaitVertexArray ();
-
 	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
 }
 
@@ -2151,45 +2126,13 @@ void GL_InitBackend (void)
 	GL_ClearBuffers ();
 
 	vbSize = sizeof(vertexBuffer_t) + gl_config.maxActiveTextures * sizeof(bufTexCoord_t) * MAX_VERTEXES;
-	if (qglVertexArrayRangeNV)
-	{
-		agpBuffer = qglAllocateMemoryNV (NUM_VERTEX_BUFFERS * vbSize, 0, 0, 0.5);
-		if (!agpBuffer)
-			agpBuffer = qglAllocateMemoryNV (NUM_VERTEX_BUFFERS * vbSize, 0, 0, 1);
-
-		if (!agpBuffer)
-		{
-			Com_Printf ("^1Cannot allocate video memory for vertex buffers. Disabling GL_NV_vertex_array_range.\n");
-			qglVertexArrayRangeNV = NULL;
-		}
-		else
-		{
-			qglGenFencesNV (NUM_VERTEX_BUFFERS, fences);
-			qglVertexArrayRangeNV (NUM_VERTEX_BUFFERS * vbSize, agpBuffer);
-			qglEnableClientState (GL_VERTEX_ARRAY_RANGE_NV);
-			vb = agpBuffer;
-			currentBuffer = 0;
-		}
-	}
-
-	if (!agpBuffer)
-		vb = Z_Malloc (vbSize);
+	vb = Z_Malloc (vbSize);
 	Com_Printf("^1 **** buf: %08X (%d bytes) ****\n", vb, vbSize);//!!
 }
 
 
 void GL_ShutdownBackend (void)
 {
-	if (agpBuffer)
-	{
-		qglDeleteFencesNV (NUM_VERTEX_BUFFERS, fences);
-		qglDisableClientState (GL_VERTEX_ARRAY_RANGE_NV);
-		qglFreeMemoryNV (agpBuffer);
-		agpBuffer = NULL;
-	}
-	else if (vb)
-	{
-		Z_Free (vb);
-		vb = NULL;
-	}
+	Z_Free (vb);
+	vb = NULL;
 }
