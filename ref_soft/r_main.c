@@ -1229,6 +1229,7 @@ void Draw_BuildGammaTable (void)
 		tmp = pow (i / 255.0f, invGamma) * contr * 255;
 		tmp = tmp + (bright - 1) * 128 - (contr - 0.5) * 128 + 64;
 		v = Q_round (tmp);
+		v = bound(v, 0, 255);
 		sw_state.gammatable[i] = v;
 	}
 }

@@ -275,7 +275,7 @@ cvar_t *Cvar_Get (char *var_name, char *var_value, int flags)
 }
 
 
-void Cvar_GetVars (cvarInfo_t *vars, int count)
+void Cvar_GetVars (const cvarInfo_t *vars, int count)
 {
 	int		i;
 

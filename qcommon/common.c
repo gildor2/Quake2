@@ -268,7 +268,7 @@ void Com_Error (int code, char *fmt, ...)
 	else
 	{
 		SV_Shutdown (va("Server fatal crashed: %s\n", msg), false);
-		CL_Shutdown ();
+		CL_Shutdown (true);
 	}
 
 	// here -- only if code == ERR_FATAL
@@ -294,7 +294,7 @@ do the apropriate things.
 void Com_Quit (void)
 {
 	SV_Shutdown ("Server quit\n", false);
-	CL_Shutdown ();
+	CL_Shutdown (false);
 
 	if (logfile)
 	{
@@ -1381,6 +1381,8 @@ test error shutdown procedures
 */
 static void Com_Error_f (void)
 {
+	if (!stricmp (Cmd_Argv(1), "-gpf"))
+		*((int*)NULL) = 0;
 	Com_Error (ERR_FATAL, "%s", Cmd_Argv(1));
 }
 

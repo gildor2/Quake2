@@ -9,7 +9,7 @@ typedef struct {
 	char*	(*_Cmd_Argv) (int i);
 	char*	(*_Cmd_Args) (void);
 	cvar_t*	(*_Cvar_Get) (char *name, char *value, int flags);
-	void	(*_Cvar_GetVars) (cvarInfo_t *vars, int count);
+	void	(*_Cvar_GetVars) (const cvarInfo_t *vars, int count);
 	cvar_t*	(*_Cvar_Set) (char *name, char *value);
 	cvar_t*	(*_Cvar_SetValue) (char *name, float value);
 	cvar_t*	(*_Cvar_SetInteger) (char *name, int value);

@@ -20,14 +20,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // Main windowed and fullscreen graphics interface module. This module
 // is used for both the software and OpenGL rendering versions of the
 // Quake refresh engine.
-#include <assert.h>
-#include <float.h>
+
+#include "winquake.h"
+#include "resource.h"
 
 #include "../qcommon/qcommon.h"
-#include "winquake.h"
-
 #include "../client/client.h"
-#include "resource.h"
 
 // Structure containing functions exported from refresh DLL
 refExport_t	re;
@@ -80,8 +78,8 @@ static void WIN_DisableAltTab (void)
 	}
 	else
 	{
-		RegisterHotKey (0, 0, MOD_ALT, VK_TAB);
-		RegisterHotKey (0, 1, MOD_ALT, VK_RETURN);
+		RegisterHotKey (0, 0, 1/*MOD_ALT*/, VK_TAB);	// MOD_ALT is redefined, so use winuser.h const directly
+		RegisterHotKey (0, 1, 1/*MOD_ALT*/, VK_RETURN);
 	}
 	s_alttab_disabled = true;
 }
@@ -578,7 +576,7 @@ static void Vid_Restart_f (void)
 	vid_ref->modified = true;
 }
 
-static void Vid_Front_f( void )
+static void Vid_Front_f (void)
 {
 	SetWindowLong (cl_hwnd, GWL_EXSTYLE, WS_EX_TOPMOST);
 	SetForegroundWindow (cl_hwnd);

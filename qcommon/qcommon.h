@@ -463,7 +463,7 @@ typedef struct
 	int		flags;
 } cvarInfo_t;
 
-#define CVAR_BEGIN(name)			static cvarInfo_t name[] = {
+#define CVAR_BEGIN(name)			static const cvarInfo_t name[] = {
 #define CVAR_VAR(name,value,flags)		{&name, #name, #value, flags}
 #define CVAR_GET(name)					{&name, #name, "", CVAR_NODEFAULT}
 #define CVAR_NULL(name,value,flags)		{NULL, #name, #value, flags}
@@ -851,7 +851,7 @@ void	*Sys_GetGameAPI (void *parms);
 char	*Sys_ConsoleInput (void);
 void	Sys_ConsoleOutput (char *string);
 void	Sys_SendKeyEvents (void);
-void	Sys_Error (char *error, ...);
+void	Sys_Error (const char *error, ...);
 void	Sys_Quit (void);
 char	*Sys_GetClipboardData( void );
 void	Sys_CopyProtect (void);
@@ -862,7 +862,7 @@ void	Sys_CopyProtect (void);
 
 void	CL_Init (void);
 void	CL_Drop (void);
-void	CL_Shutdown (void);
+void	CL_Shutdown (bool error);
 void	CL_Frame (float msec, int realMsec);
 void	Con_Print (char *text);
 void	SCR_BeginLoadingPlaque (void);

@@ -89,7 +89,7 @@ void Sys_Printf (char *fmt, ...)
 
 void Sys_Quit (void)
 {
-	CL_Shutdown ();
+	CL_Shutdown (false);
 	Qcommon_Shutdown ();
     fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~FNDELAY);
 	_exit(0);
@@ -102,7 +102,7 @@ void Sys_Init(void)
 #endif
 }
 
-void Sys_Error (char *error, ...)
+void Sys_Error (const char *error, ...)
 {
     va_list     argptr;
     char        string[1024];
@@ -110,7 +110,7 @@ void Sys_Error (char *error, ...)
 // change stdin to non blocking
     fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~FNDELAY);
 
-	CL_Shutdown ();
+	CL_Shutdown (true);
 	Qcommon_Shutdown ();
 
     va_start (argptr,error);

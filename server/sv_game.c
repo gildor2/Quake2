@@ -493,8 +493,7 @@ void SV_InitGameProgs (void)
 	if (!ge)
 		Com_Error (ERR_DROP, "failed to load game DLL");
 	if (ge->apiversion != GAME_API_VERSION)
-		Com_Error (ERR_DROP, "game is version %i, not %i", ge->apiversion,
-		GAME_API_VERSION);
+		Com_Error (ERR_DROP, "game is version %d, not " STR(GAME_API_VERSION), ge->apiversion);
 
 	ge->Init ();
 }

@@ -151,7 +151,7 @@ print (DEFS "\n#endif\n\n");
 #	Creating code part
 #------------------------------------------------------------------------------
 
-print (CODE "$typename $strucname = {\n");
+print (CODE "static $typename $strucname = {\n");
 print (CODE "\tsizeof($typename),\n");
 print (CODE "\tAPI_VERSION,");
 Parse ("EmitImpl", "EmitCodePrep");

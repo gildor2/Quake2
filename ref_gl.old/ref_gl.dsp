@@ -40,10 +40,11 @@ RSC=rc.exe
 # PROP Use_Debug_Libraries 0
 # PROP Output_Dir ".\release"
 # PROP Intermediate_Dir ".\release"
-# PROP Ignore_Export_Lib 0
+# PROP Ignore_Export_Lib 1
 # PROP Target_Dir "."
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /c
-# ADD CPP /nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /YX /FD /c
+# ADD CPP /nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /FD /c
+# SUBTRACT CPP /YX /Yc /Yu
 # ADD BASE MTL /nologo /D "NDEBUG" /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -53,7 +54,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winmm.lib /nologo /subsystem:windows /dll /pdb:none /map:"..\release\ref_oldgl.map" /machine:I386 /def:".\ref_gl.def" /out:"..\release/ref_oldgl.dll" /filealign:512
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winmm.lib /nologo /subsystem:windows /dll /pdb:none /map:"..\release\ref_oldgl.map" /machine:I386 /out:"..\release/ref_oldgl.dll" /filealign:512
 
 !ELSEIF  "$(CFG)" == "ref_gl - Win32 Debug"
 
@@ -66,7 +67,7 @@ LINK32=link.exe
 # PROP Use_Debug_Libraries 1
 # PROP Output_Dir "..\debug"
 # PROP Intermediate_Dir ".\debug"
-# PROP Ignore_Export_Lib 0
+# PROP Ignore_Export_Lib 1
 # PROP Target_Dir "."
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /c
 # ADD CPP /nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /FR /YX /FD /c
@@ -315,23 +316,6 @@ SOURCE=.\ref_gl.h
 # Begin Source File
 
 SOURCE=..\win32\winquake.h
-# End Source File
-# End Group
-# Begin Group "Resource Files"
-
-# PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe"
-# Begin Source File
-
-SOURCE=.\ref_gl.def
-
-!IF  "$(CFG)" == "ref_gl - Win32 Release"
-
-# PROP Exclude_From_Build 1
-
-!ELSEIF  "$(CFG)" == "ref_gl - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # End Group
 # End Target

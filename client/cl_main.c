@@ -1810,18 +1810,19 @@ FIXME: this is a callback from Sys_Quit and Com_Error.  It would be better
 to run quit through here before the final handoff to the sys code.
 ===============
 */
-void CL_Shutdown(void)
+void CL_Shutdown (bool error)
 {
-	static qboolean isdown = false;
+	static bool isdown = false;
 
 	if (isdown)
 	{
-		printf ("recursive shutdown\n");
+//		printf ("recursive shutdown\n");
 		return;
 	}
 	isdown = true;
 
-	CL_WriteConfiguration (Cvar_VariableString ("cfgfile"));
+	if (!error)		// do not write configuration when error occured
+		CL_WriteConfiguration (Cvar_VariableString ("cfgfile"));
 
 	CDAudio_Shutdown ();
 	S_Shutdown();

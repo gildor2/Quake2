@@ -104,7 +104,7 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\ref_soft.bsc"
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winmm.lib /nologo /subsystem:windows /dll /incremental:no /pdb:"$(OUTDIR)\ref_soft.pdb" /map:"..\release\ref_soft.map" /machine:I386 /def:".\ref_soft.def" /out:"..\release/ref_soft.dll" /implib:"$(OUTDIR)\ref_soft.lib" /filealign:512 
+LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winmm.lib /nologo /subsystem:windows /dll /incremental:no /pdb:"$(OUTDIR)\ref_soft.pdb" /map:"..\release\ref_soft.map" /machine:I386 /out:"..\release/ref_soft.dll" /implib:"$(OUTDIR)\ref_soft.lib" /filealign:512 
 LINK32_OBJS= \
 	"$(INTDIR)\q_shared2.obj" \
 	"$(INTDIR)\r_aclip.obj" \
@@ -201,7 +201,6 @@ CLEAN :
 	-@erase "$(OUTDIR)\ref_soft.bsc"
 	-@erase "$(OUTDIR)\ref_soft.dll"
 	-@erase "$(OUTDIR)\ref_soft.exp"
-	-@erase "$(OUTDIR)\ref_soft.lib"
 	-@erase "$(OUTDIR)\ref_soft.map"
 	-@erase "$(OUTDIR)\ref_soft.pdb"
 
@@ -278,9 +277,7 @@ BSC32_SBRS= \
 <<
 
 LINK32=link.exe
-LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winmm.lib /nologo /subsystem:windows /dll /incremental:no /pdb:"$(OUTDIR)\ref_soft.pdb" /map:"..\debug/ref_soft.map" /debug /machine:I386 /nodefaultlib:"libc" /def:".\ref_soft.def" /out:"$(OUTDIR)\ref_soft.dll" /implib:"$(OUTDIR)\ref_soft.lib" 
-DEF_FILE= \
-	".\ref_soft.def"
+LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winmm.lib /nologo /subsystem:windows /dll /incremental:no /pdb:"$(OUTDIR)\ref_soft.pdb" /map:"..\debug/ref_soft.map" /debug /machine:I386 /nodefaultlib:"libc" /out:"$(OUTDIR)\ref_soft.dll" /implib:"$(OUTDIR)\ref_soft.lib" 
 LINK32_OBJS= \
 	"$(INTDIR)\q_shared2.obj" \
 	"$(INTDIR)\r_aclip.obj" \

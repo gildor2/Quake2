@@ -92,6 +92,7 @@ lighting bugs:
   - "beachassault": too dark inside ship (needs add surflights near pointlight -- or change pointlight equation -- 'linear+const/dist')
   - weapon model can get light from inside wall (should use vieworg instead of ent.origin for lighting
     -OR- perform trace to detect nearest non-inside-wall grid point)
+  - "bigspacegunup": (-305,183,14) (inside tower, upper floor, under ceil lamp) - too dark model lighting (double-side surf light ?)
 
 - lighting:
   !? try vertex light on water
@@ -290,7 +291,10 @@ FOR GAME:
 
 ? combine all tcMod's (all but wave) into a single matrix (TCMOD_TRANSFORM)
 !? for qgl: implement extension aliasing (EXT -> ARB) with aliases for extension/function names (constants are the same)
-  (texture_env_combine (slightly different!), texture_env_add etc.)
+  (texture_env_combine (slightly different!), texture_env_add etc. -- mark extension as aliased and auto-replace ARB<->EXT in
+  ext (GL_[ARB|EXT]_EXTENSION)/func (glFunction[ARB|EXT]) names)
+  ? may be, implement universal subst: for NV->ARB, SGI->EXT etc. (specify alternatives in decrease priority form + place where
+    to put prefix/suffix "GL_._MULTITEXTURE/EXT/ARB/SGI" + names for QGL_CONSTANT qgl.FuncName() !!)
 - optimize sky box drawing:
   ? can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs) (problems when surf can be placed on few box sides)
     ? find fast cases, when surface placed only on one plane (use surface bounds ?)
@@ -300,6 +304,7 @@ FOR GAME:
 - gl_logFile:
   ? remove "GL_" and "gl" prefixes (looks like OpenGL spec)
   ? add error checking after commands (qgl.in: ERROR)
+  - option to compile without logfile capabilities
 ?? make area_t, cluster_t, area.clusterList, cluster.leafList (faster MarkLeafs()/LightPoint())
 ? make skins for models with 1 frame to be sh.fast==true (and implement it in AGP memory);
   Problem: how to apply lighting (use hw lights)? (and: skins may be dynamically changed from "fast" to "slow")

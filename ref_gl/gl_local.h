@@ -3,7 +3,6 @@
 
 
 #include <stdio.h>
-#include <math.h>
 
 #ifdef _WIN32
 // need this include, because have wgl and GDI functions here
@@ -46,6 +45,8 @@ void	QGL_LogMessage (const char *text);
 
 #ifdef REF_HARD_LINKED
 #	define GetRefAPI			GL_GetRefAPI
+#else
+/*extern "C"*/ DLL_EXPORT refExport_t GetRefAPI (refImport_t);
 #endif
 
 

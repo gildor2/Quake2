@@ -19,14 +19,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // sys_win.h
 
-#include "winquake.h"
-#include <errno.h>
-#include <float.h>
-#include <fcntl.h>
-#include <stdio.h>
 #include <direct.h>
-#include <io.h>
-#include <conio.h>
+#include <excpt.h>
+#include "winquake.h"
 #include "conproc.h"
 
 #include "../qcommon/qcommon.h"
@@ -48,9 +43,6 @@ unsigned	sys_msg_time;
 unsigned	sys_frame_time;
 
 
-static HANDLE		qwclsemaphore;
-
-
 /*
 ===============================================================================
 
@@ -60,22 +52,19 @@ SYSTEM IO
 */
 
 
-void Sys_Error (char *error, ...)
+void Sys_Error (const char *error, ...)
 {
 	va_list		argptr;
 	char		text[1024];
 
-	CL_Shutdown ();
+	CL_Shutdown (true);
 	QCommon_Shutdown ();
 
 	va_start (argptr, error);
 	vsprintf (text, error, argptr);
 	va_end (argptr);
 
-	MessageBox(NULL, text, "Fatal error", MB_OK/*|MB_ICONSTOP|MB_TOPMOST*/|MB_SETFOREGROUND);
-
-	if (qwclsemaphore)
-		CloseHandle (qwclsemaphore);
+	MessageBox(NULL, text, APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
 
 	// shut down QHOST hooks if necessary
 	DeinitConProc ();
@@ -85,11 +74,10 @@ void Sys_Error (char *error, ...)
 
 void Sys_Quit (void)
 {
-	timeEndPeriod( 1 );
+	timeEndPeriod (1);
 
-	CL_Shutdown ();
+	CL_Shutdown (false);
 	QCommon_Shutdown ();
-	CloseHandle (qwclsemaphore);
 	if (dedicated && dedicated->integer)
 		FreeConsole ();
 
@@ -193,9 +181,152 @@ void	Sys_CopyProtect (void)
  * <not available> module (check this ??)
  */
 
-static void DumpReg4 (FILE *f, char *name, DWORD value)
+extern qboolean debugLogged;
+static const char *ExceptionName;
+
+typedef unsigned address_t;
+// from new Macro.h
+#define FIELD_OFS(struc, field)		((unsigned) &((struc *)NULL)->field)		// get offset of the field in struc
+#define OFS_FIELD(struc, ofs, type)	(*(type*) ((byte*)(struc) + ofs))			// get field of type by offset inside struc
+
+// from DbgSymbols[Win32].cpp (slightly modified)
+
+static char		module[256];
+static HMODULE	hModule;
+
+bool osAddressInfo (address_t address, char *pkgName, int bufSize, int *offset)
+{
+	MEMORY_BASIC_INFORMATION mbi;
+	char	*s;
+
+	hModule = NULL;
+	if (!VirtualQuery ((void*) address, &mbi, sizeof(mbi)))
+		return false;
+	if (!(hModule = (HMODULE)mbi.AllocationBase))
+		return false;
+	if (!GetModuleFileName (hModule, ARRAY_ARG(module)))
+		return false;
+
+	if (s = strrchr (module, '.')) *s = 0;
+	if (!(s = strrchr (module, '\\')))
+		s = module;
+	else
+		strcpy (module, s+1);	// remove "path\" part
+
+	*offset = address - (unsigned)hModule;
+	Q_strncpyz (pkgName, module, bufSize);
+
+	return true;
+}
+
+#define OffsetPointer(p, expr)  ((int)(p) + expr)
+
+bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset)
+{
+	char	func[256];
+
+	if (!hModule) return false;		// there was no osAddressInfo() call before this
+
+	__try
+	{
+		WORD	*tmp;
+		DWORD	*addrTbl, *nameTbl;
+		IMAGE_OPTIONAL_HEADER32 *hdr;
+		IMAGE_EXPORT_DIRECTORY* exp;
+		int		i;
+		unsigned bestRVA = 0;
+		int		bestIndex = -1;
+		unsigned RVA = address - (unsigned)hModule;
+
+		// we want to walk system memory -- not very safe action
+		if (*(WORD*)hModule != 'M'+('Z'<<8)) return false;		// bad MZ header
+		tmp = (WORD*) (*(DWORD*) OffsetPointer (hModule, 0x3C) + (char*)hModule);
+		if (*tmp != 'P'+('E'<<8)) return false;					// non-PE executable
+		hdr = (IMAGE_OPTIONAL_HEADER32*) OffsetPointer (tmp, 4 + sizeof(IMAGE_FILE_HEADER));
+		// check export directory
+		if (hdr->DataDirectory[0].VirtualAddress == 0 || hdr->DataDirectory[0].Size == 0)
+			return false;
+		exp = (IMAGE_EXPORT_DIRECTORY*) OffsetPointer (hModule, hdr->DataDirectory[0].VirtualAddress);
+
+		addrTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfFunctions);
+		nameTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfNames);
+		for (i = 0; i < exp->NumberOfFunctions; i++)
+		{
+			if (addrTbl[i] <= RVA && addrTbl[i] > bestRVA)
+			{
+				bestRVA = addrTbl[i];
+				bestIndex = i;
+			}
+		}
+		if (bestIndex >= 0)
+		{
+			if (nameTbl[bestIndex])
+				Q_strncpyz (func, (char*) OffsetPointer (hModule, nameTbl[bestIndex]), sizeof(func));
+			else
+				Com_sprintf (ARRAY_ARG(func), "#%d", exp->Base +		// ordinal base
+					((WORD*) OffsetPointer (hModule, exp->AddressOfNameOrdinals))[bestIndex]);
+			*offset = RVA - bestRVA;
+		}
+		else
+			return false;			// when 0 < RVA < firstFuncRVA (should not happens)
+	}
+	__except(EXCEPTION_EXECUTE_HANDLER)
+	{
+		return false;
+	}
+
+	Com_sprintf (exportName, bufSize, "%s!%s", module, func);
+
+	hModule = NULL;					// disallow second subsequentioal call
+	return true;
+}
+
+bool appSymbolName2 (address_t addr, char *buffer, int size)
+{
+	char	package[256], *name;
+	int		offset;
+
+	if (!osAddressInfo (addr, ARRAY_ARG(package), &offset))
+		return false;
+
+	if (osModuleInfo (addr, ARRAY_ARG(package), &offset))
+		name = package;
+
+	// package + offset
+	name = package;
+
+	if (offset)
+		Com_sprintf (buffer, size, "%s+%X", name, offset);
+	else
+		Q_strncpyz (buffer, name, size);
+
+	return true;
+}
+
+char *appSymbolName (address_t addr)
+{
+	static char	buf[256];
+
+	if (appSymbolName2 (addr, ARRAY_ARG(buf)))
+		return buf;
+	else
+		return va("%08X", addr);
+}
+
+// from ExceptFilterWin32.cpp (slightly modified)
+
+#define LOG_STRINGS
+#define STACK_UNWIND_DEPTH		80
+
+
+#define MIN_STRING_WIDTH		3
+#define MAX_STRING_WIDTH		32
+
+
+static void DumpReg4 (FILE *f, char *name, unsigned value)
 {
 	char	*data;
+	int		i;
 
 	data = (char*) value;
 	fprintf (f, "  %s: %08X  ", name, value);
@@ -203,8 +334,6 @@ static void DumpReg4 (FILE *f, char *name, DWORD value)
 		fprintf (f, " <N/A>");
 	else
 	{
-		int		i;
-
 		for (i = 0; i < 16; i++)
 			fprintf (f, " %02X", data[i] & 0xFF);
 
@@ -222,84 +351,209 @@ static void DumpReg4 (FILE *f, char *name, DWORD value)
 	fprintf (f, "\n");
 }
 
+
 static void DumpReg2 (FILE *f, char *name, DWORD value)
 {
 	fprintf (f, "  %s: %04X", name, value);
 }
 
-static int DumpMem (FILE *f, int *data)
+
+#ifdef LOG_STRINGS
+
+static bool IsString (char *str)
+{
+	int		i;
+	char	c;
+	for (i = 0; i < MAX_STRING_WIDTH; i++, str++)
+	{
+		if (IsBadReadPtr (str, 1)) return false;
+
+		c = *str;
+		if (c == 0) return i >= MIN_STRING_WIDTH;
+		if ((c < 32 || c > 127) && c != '\n') return false;
+	}
+	return true;
+}
+
+
+static bool DumpString (FILE *f, char *str)
 {
 	int		i;
 
-	if (IsBadReadPtr (data, 32)) return 0;
-	for (i = 0; i < 8; i++)
-		fprintf (f, "  %08X", data[i]);
-	fprintf (f, "\n");
-	return 1;
+	fprintf (f, " = \"");
+	for (i = 0; i < MAX_STRING_WIDTH && *str; i++, str++)
+	{
+		if (*str == '\n')
+			fprintf (f, "\\n");
+		else
+			fprintf (f, "%c", *str);
+	}
+	fprintf (f, "%s\"", *str ? "..." : "");
+	return true;
 }
 
-static int exception_count = 0;
-extern qboolean debugLogged;
+#endif
 
-static LONG WINAPI ExceptionFilter(struct _EXCEPTION_POINTERS *ExceptionInfo)
+
+static void DumpMem (FILE *f, unsigned *data, CONTEXT *ctx)
 {
-	FILE	*f;
-	CONTEXT *ctx;
-	EXCEPTION_RECORD *rec;
-	char	ctime[256], module[MAX_OSPATH];
-	time_t	itime;
-	MEMORY_BASIC_INFORMATION mbi;
-	int		i, *stack;
+	static struct {
+		unsigned ofs;
+		const char *name;
+	} regData[] = {
+#define F(r,n)	{ FIELD_OFS(CONTEXT,r), n }
+		F(Eip, "EIP"), F(Esp, "ESP"), F(Ebp, "EBP"),
+		F(Eax, "EAX"), F(Ebx, "EBX"), F(Ecx, "ECX"), F(Edx, "EDX"),
+		F(Esi, "ESI"), F(Edi, "EDI")
+#undef F
+	};
+#define STAT_SPACES		"     "
+	int		i, j, n;
 
-	if (exception_count++) return 0;	// nested (recursive) exception
-
-	// make a log in "crash.log"
-	if (f = fopen ("crash.log", "a+"))
+	//!! should try to use address as a symbol
+	n = 0;
+	for (i = 0; i < STACK_UNWIND_DEPTH; i++, data++)
 	{
-		time (&itime);
-		strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
-		fprintf (f, "----- "APPNAME" crash log on %s -----\n", ctime);
-		ctx = ExceptionInfo->ContextRecord;
-		rec = ExceptionInfo->ExceptionRecord;
-		strcpy (module, "<N/A>");
-		if (VirtualQuery ((void*)ctx->Eip, &mbi, sizeof(mbi)))
+		char	symbol[256], *spaces;
+
+		if (IsBadReadPtr (data, 4))
 		{
-			if (mbi.State != MEM_COMMIT || !GetModuleFileName (mbi.AllocationBase, ARRAY_ARG(module)));	//??
+			fprintf (f, "  <N/A>\n");
+			return;
 		}
-		fprintf (f, "Exception %08X at address %08X in module %s\n", rec->ExceptionCode, rec->ExceptionAddress, module);
-//		fprintf (f, "Base registers:\n");
-		DumpReg4 (f, "EAX", ctx->Eax);
-		DumpReg4 (f, "EBX", ctx->Ebx);
-		DumpReg4 (f, "ECX", ctx->Ecx);
-		DumpReg4 (f, "EDX", ctx->Edx);
-		DumpReg4 (f, "ESI", ctx->Esi);
-		DumpReg4 (f, "EDI", ctx->Edi);
-		DumpReg4 (f, "EBP", ctx->Ebp);
-		DumpReg4 (f, "ESP", ctx->Esp);
-		DumpReg4 (f, "EIP", ctx->Eip);
-//		fprintf (f, "Segment registers:\n");
-		DumpReg2 (f, "CS", ctx->SegCs); DumpReg2 (f, "SS", ctx->SegSs);
-		DumpReg2 (f, "DS", ctx->SegDs); DumpReg2 (f, "ES", ctx->SegEs);
-		DumpReg2 (f, "FS", ctx->SegFs); DumpReg2 (f, "GS", ctx->SegGs);
-		fprintf (f, "  EFLAGS: %08X\n", ctx->EFlags);
-		stack = (int*) ctx->Esp;
-		fprintf (f, "Stack frame (CS:%08X):\n", stack);
-		for (i = 0; i < 16; i++)
+
+		spaces = STAT_SPACES;
+		for (j = 0; j < ARRAY_COUNT(regData); j++)
+			if (OFS_FIELD(ctx, regData[j].ofs, unsigned*) == data)
+			{
+				if (n)
+				{
+					fprintf (f, "\n");
+					n = 0;
+				}
+				fprintf (f, "%s->", regData[j].name);
+				spaces = "";
+				break;
+			}
+
+		if (appSymbolName2 (*data, ARRAY_ARG(symbol)))
+#ifdef LOG_FUNCS_ONLY
+			if (strchr (symbol, '('))
+#endif
+				{
+					// log as symbol
+					fprintf (f, "%s%s%08X = %s",
+						n > 0 ? "\n" : "", spaces,
+						*data, symbol);
+#if !defined(LOG_FUNCS_ONLY) && defined(LOG_STRINGS)
+					if (!strchr (symbol, '(') && IsString ((char*)*data))	// do not test funcs()
+						DumpString (f, (char*)*data);
+#endif
+					fprintf (f, "\n");
+					n = 0;
+					continue;
+				}
+
+#ifdef LOG_STRINGS
+		// try to log as string
+		if (IsString ((char*)*data))
 		{
-			if (!DumpMem (f, stack)) break;
-			stack += 8;
+			fprintf (f, "%s%08X", n > 0 ? "\n" STAT_SPACES : spaces, *data);
+			DumpString (f, (char*)*data);
+			fprintf (f, "\n");
+			n = 0;
+			continue;
 		}
-		fprintf (f, "\n");
-		fclose (f);
+#endif
+
+		// log as simple number
+		fprintf (f, "%s%08X", n > 0 ? "  " : spaces, *data);
+		if (++n >= 8)
+		{
+			fprintf (f, "\n");
+			n = 0;
+		}
 	}
-	if (debugLogged)
-		DebugPrintf ("***** CRUSH *****\n");
-	// really, we can perform CL_Shutdown(), but this will save config - it is not safely ...
-	IN_Shutdown ();
-	Vid_Shutdown ();
-	S_Shutdown ();
-	// show exception message
-	return 0;
+	fprintf (f, "\n");
+	return;
+#undef STAT_SPACES
+}
+
+
+int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
+{
+	static bool disable = false;
+	FILE	*f;
+
+	if (disable) return EXCEPTION_EXECUTE_HANDLER;			// error will be handled only once
+	disable = true;
+
+	__try
+	{
+		char	*excName;
+
+		switch (info->ExceptionRecord->ExceptionCode)
+		{
+		case EXCEPTION_ACCESS_VIOLATION:
+			excName = "Access violation";
+			break;
+		case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+			excName = "Float zero divide";
+			break;
+		case EXCEPTION_INT_DIVIDE_BY_ZERO:
+			excName = "Integer zero divide";
+			break;
+		case EXCEPTION_PRIV_INSTRUCTION:
+			excName = "Priveleged instruction";
+			break;
+		case EXCEPTION_ILLEGAL_INSTRUCTION:
+			excName = "Illegal opcode";
+			break;
+		case EXCEPTION_STACK_OVERFLOW:
+			excName = "Stack overflow";
+			break;
+		default:
+			excName = "Exception";
+		}
+		ExceptionName = excName;
+
+		//?? should make logging a global class (implements opening/logging date/closing)
+		// make a log in "crash.log"
+		if (f = fopen ("crash.log", "a+"))
+		{
+			CONTEXT* ctx = info->ContextRecord;
+//			EXCEPTION_RECORD* rec = info->ExceptionRecord;
+			time_t	itime;
+			char	ctime[256];
+
+			time (&itime);
+			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
+			fprintf (f, "----- "APPNAME" crash at %s -----\n", ctime);		//!! should use main_package name instead of APPNAME
+			fprintf (f, "%s at \"%s\"\n", excName, appSymbolName (ctx->Eip));
+
+			DumpReg4 (f, "EAX", ctx->Eax); DumpReg4 (f, "EBX", ctx->Ebx); DumpReg4 (f, "ECX", ctx->Ecx); DumpReg4 (f, "EDX", ctx->Edx);
+			DumpReg4 (f, "ESI", ctx->Esi); DumpReg4 (f, "EDI", ctx->Edi); DumpReg4 (f, "EBP", ctx->Ebp); DumpReg4 (f, "ESP", ctx->Esp);
+			DumpReg4 (f, "EIP", ctx->Eip);
+			DumpReg2 (f, "CS", ctx->SegCs); DumpReg2 (f, "SS", ctx->SegSs);
+			DumpReg2 (f, "DS", ctx->SegDs); DumpReg2 (f, "ES", ctx->SegEs);
+			DumpReg2 (f, "FS", ctx->SegFs); DumpReg2 (f, "GS", ctx->SegGs);
+			fprintf (f, "  EFLAGS: %08X\n", ctx->EFlags);
+
+			fprintf (f, "\nStack frame:\n");
+			DumpMem (f, (unsigned*) ctx->Esp, ctx);
+			fprintf (f, "\n");
+			fclose (f);
+		}
+		if (debugLogged)
+			DebugPrintf ("***** CRUSH *****\n");
+
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER)
+	{
+		// do nothing
+	}
+
+	return EXCEPTION_EXECUTE_HANDLER;
 }
 
 
@@ -454,26 +708,6 @@ void Sys_Init (void)
 {
 	OSVERSIONINFO	vinfo;
 
-#if 0
-	// allocate a named semaphore on the client so the
-	// front end can tell if it is alive
-
-	// mutex will fail if semephore already exists
-	qwclsemaphore = CreateMutex(
-		NULL,		/* Security attributes */
-		0,			/* owner       */
-		"qwcl");	/* Semaphore name      */
-	if (!qwclsemaphore)
-		Sys_Error ("QWCL is already running on this system");
-	CloseHandle (qwclsemaphore);
-
-	qwclsemaphore = CreateSemaphore(
-		NULL,		/* Security attributes */
-		0,			/* Initial count       */
-		1,			/* Maximum count       */
-		"qwcl");	/* Semaphore name      */
-#endif
-
 	vinfo.dwOSVersionInfoSize = sizeof(vinfo);
 
 	if (!GetVersionEx (&vinfo))
@@ -500,7 +734,6 @@ void Sys_Init (void)
 		// let QHOST hook in
 //??		InitConProc (argc, argv);
 	}
-	SetUnhandledExceptionFilter (ExceptionFilter);
 	//??
 	timeBeginPeriod (1);
 }
@@ -817,53 +1050,59 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	char	*cddir, cmdline2[1024];
 #endif
 
-	global_hInstance = hInstance;
-
-	cmdline = lpCmdLine;
-#ifdef CD_PATH
-	// if we find the CD, add a "-cddir=xxx" command line
-	cddir = Sys_ScanForCD ();
-	if (cddir && cddir[0])
+	__try
 	{
-		// add to the end of cmdline, so, if already specified - will not override option
-		Com_sprintf (ARRAY_ARG(cmdline2), "%s -cddir=\"%s\"", lpCmdLine, cddir);
-		cmdline = cmdline2;
-	}
+		global_hInstance = hInstance;
+
+		cmdline = lpCmdLine;
+#ifdef CD_PATH
+		// if we find the CD, add a "-cddir=xxx" command line
+		cddir = Sys_ScanForCD ();
+		if (cddir && cddir[0])
+		{
+			// add to the end of cmdline, so, if already specified - will not override option
+			Com_sprintf (ARRAY_ARG(cmdline2), "%s -cddir=\"%s\"", lpCmdLine, cddir);
+			cmdline = cmdline2;
+		}
 #endif
 
-	QCommon_Init (cmdline);
-	oldtime = Sys_Milliseconds ();
+		QCommon_Init (cmdline);
+		oldtime = Sys_Milliseconds ();
 
-	/*--------- main window message loop ------------*/
-	while (1)
-	{
-		MSG		msg;
-
-		if (!ActiveApp || dedicated->integer)
-			Sleep (10);		//?? what about client and server in one place: will server become slower ?
-
-		while (PeekMessage (&msg, NULL, 0, 0, PM_NOREMOVE))
-		{
-			if (!GetMessage (&msg, NULL, 0, 0))
-				Com_Quit ();
-			sys_msg_time = msg.time;
-			TranslateMessage (&msg);
-   			DispatchMessage (&msg);
-		}
-
-		// do not allow Qcommon_Frame(0)
+		/*--------- main window message loop ------------*/
 		while (1)
 		{
-			newtime = Sys_Milliseconds ();
-			time = newtime - oldtime;
-			if (time >= 1) break;
-			Sleep (1);
+			MSG		msg;
+
+			if (!ActiveApp || dedicated->integer)
+				Sleep (10);		//?? what about client and server in one place: will server become slower ?
+
+			while (PeekMessage (&msg, NULL, 0, 0, PM_NOREMOVE))
+			{
+				if (!GetMessage (&msg, NULL, 0, 0))
+					Com_Quit ();
+				sys_msg_time = msg.time;
+				TranslateMessage (&msg);
+   				DispatchMessage (&msg);
+			}
+
+			// do not allow Qcommon_Frame(0)
+			while (1)
+			{
+				newtime = Sys_Milliseconds ();
+				time = newtime - oldtime;
+				if (time >= 1) break;
+				Sleep (1);
+			}
+			QCommon_Frame (time);
+
+			oldtime = newtime;
 		}
-		QCommon_Frame (time);
-
-		oldtime = newtime;
 	}
-
+	__except (win32ExceptFilter(GetExceptionInformation()))
+	{
+		Sys_Error (ExceptionName);
+	}
 	// never gets here
 	return TRUE;
 }

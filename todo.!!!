@@ -3,6 +3,8 @@ BUGS:
   *? 1st try to start demomap after start, when no d1 alias -- "killserver+menu_main"
   - jumpy demo "tower" (at home, all Q2 versions -- at least from p10) -- low fps on original server computer ?
 
+! QGL/make.pl: when platform is not WIN32 or Linux, NUM_GLFUNCS is undefined !
+
 ! new pmove.c errors:
   - "ground3" cafe, on the street: cannot jump onto a corner column (horiz. speed set to 0 due to position snap)
 - "paused": incorrect timing (at least, fx will be incorrect after paused=0)
@@ -45,13 +47,13 @@ BUGS:
 - if Win32 can't get keyboard focus, "set r_fullscreen 0" (as Unreal2)
 BINDS:
   - bind key "action1"|onrelease "action2" (Unreal-like)
-  ? bindtmp, aliastmp (not stered in config ?) ("bind [-temp] <key> <action>", "alias ...")
+  ? bindtmp, aliastmp (not stored in config ?) ("bind [-temp] <key> <action>", "alias ...")
 SAVEGAMES:
   - check compatibility with original Q2 savegames
   ? show game time (like Anachronox)
-  - quicksave: save to a few (4?) slots
+  - quicksave: save to a few (3-4?) slots
   - sort savegames by time, ignore slots; any number of savegames (?)
-  ? qcommon.h: NO_SAVEGAMES - remove save/load game code
+  ? qcommon.h (engine config): NO_SAVEGAMES - remove save/load game code
   ? gzip file
 KINGPIN:
   - fire/steam
@@ -214,6 +216,10 @@ BSP:
 
 ? remove non-transparent water vis bugfix from oldgl (or add to new gl ?! have some buggy maps)
   NEW_ENGINE: add q2bsp_t::GetVis(point) -- will combine 2 clusters when near to non-transparent water
+- .WAL mipmaps: used in ref_soft only (if recompute, can shrink wal files by 1st mipmap -- reduce size of texture.pak)
+  - to recompute: 1. convert 8->32 bit; 2. generate mipmaps (as for TGA/JPG); 3. downsample 32->8 bit
+  - may recompute mipmaps only when absent (when present, use from wal file)
+  - check: can wal-handling program (wally, qbsp3, qe4 etc) load shrinked images
 
 ? h/w gamma: check for valid gamma when read
 - video config menu: make "reset to defaults" works correctly (Cvar_Reset() ??)

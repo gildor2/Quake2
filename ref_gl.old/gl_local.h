@@ -19,7 +19,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <stdio.h>
-#include <math.h>
 
 #ifdef _WIN32
 // need this include, because have wgl and GDI functions here
@@ -137,7 +136,11 @@ void	QGL_LogMessage (const char *text);
 #define Draw_ConCharColor	GLDraw_ConCharColor
 #define GetRefAPI			GL_GetRefAPI
 
-#endif // REF_HARD_LINKED
+#else	// REF_HARD_LINKED
+
+/*extern "C"*/ DLL_EXPORT refExport_t GetRefAPI (refImport_t);
+
+#endif	// REF_HARD_LINKED
 
 // up / down
 #define	PITCH	0

@@ -71,7 +71,7 @@ int	Cmd_Argc (void);
 char*	Cmd_Argv (int i);
 char*	Cmd_Args (void);
 cvar_t*	Cvar_Get (char *name, char *value, int flags);
-void	Cvar_GetVars (cvarInfo_t *vars, int count);
+void	Cvar_GetVars (const cvarInfo_t *vars, int count);
 cvar_t*	Cvar_Set (char *name, char *value);
 cvar_t*	Cvar_SetValue (char *name, float value);
 cvar_t*	Cvar_SetInteger (char *name, int value);

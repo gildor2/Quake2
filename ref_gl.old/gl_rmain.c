@@ -1694,7 +1694,7 @@ GetRefAPI
 
 @@@@@@@@@@@@@@@@@@@@@
 */
-refExport_t GetRefAPI (refImport_t rimp )
+refExport_t GetRefAPI (refImport_t rimp)
 {
 	refExport_t	re;
 

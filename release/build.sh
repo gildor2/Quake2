@@ -8,7 +8,18 @@ log="build.log"
 
 PrepareVC
 rm -f *.pch $log
+
 cd ..
+
+if ! [ -f "lib/lib.lib" ]; then
+	echo "----- Building libraries -----"
+	cd lib
+	if ! Make "lib"; then
+		echo "cannot build libs ..."
+		exit 1
+	fi
+	cd ..
+fi
 
 echo "----- Building Quake2 -----"
 logfile="release/$log"

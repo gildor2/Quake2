@@ -32,7 +32,7 @@ Comments:
 - "gl_console_only" variable: when "1", no graphical information displayed and display forced to full console
   (needs "vid_restart" to activate)
 - support of loading 8(grayscale)/24/32-bit tga and 24-bit jpg textures instead of 8-bit wal or pcx files
-# support for semi-transparent (has alpha >0 and <1) HUD images (e.i. Quake3 crosshairs)
+# support for semi-transparent (has alpha >0 and <1) HUD images (e.g. Quake3 crosshairs)
 # improved speed in "r_lightmap=1" mode; side effect: r_fullbright and gl_showtris are now
   works with multitexturing enabled (gl_showtris requires either r_lightmap or r_fullbright enabled)
 # "r_showtris 2" will shows triangles with enabled Z-buffer
@@ -205,9 +205,14 @@ Configuration
 - surface footstep sounds depended on material (Kingpin, "materials.lst")
 - "screenshot [-silent] [-levelshot] [-no2d] [-nogamma] [-jpeg] [<filename>]"
   "-levelshot" will create screenshot 256x256 as "levelshots/<mapname>.???"
-  "-nogamma" will skips gamma correction for image
-- support for "//..." and "/*...*/" comments
+  "-nogamma" will skip applying gamma correction for image
+- support for "//..." and "/*...*/" (C-style) comments
 - support for quote doubling: 'echo "help ""me"""' will display 'help "me"'
+- main executable command line (completely different from original Quake2):
+  - to change cvar use "-var=value"
+  - to set cvar, known at the time of initialization, to "1", use "-var" (same as "-var=1")
+  - to execute commands, use "-command [arguments]"
+  - example: quake2 -nosound -deathmatch=1 -map q2dm1 -echo "hello world!"
 
 Server
 ------
@@ -229,10 +234,19 @@ Debugging
 - "cmd_debug" var: &1 - display ExecString, &2 - display AddText
 - "cl_showbboxes 1" will display object bounding boxes from client info
 
+GUI
+---
+- browsing levelshots in "start server" menu (accessible via menu or "menu_dmbrowse"); displaying it while map loading
+- screenshots in savegames: display in save/load game menu, display while map loading
+- "cl_draw2d 0" removes HUD
+- crosshairs:
+  - unlimited number of crosshairs; must be named "pics/ch%d.???"; when trying to set crosshair,
+    that does not exist, crosshair will be set to 0 (no crosshair)
+  - added cvar "crosshaircolor"; value = [0..7] (0 - black, 1 - red, 2 - green, 4 - blue, 7 - white)
+  - changing crosshair shape and color from the options menu
 
-?????????
----------
-- "r_saturation" variable: default 1 (all textures and lightmaps - as is), 0 - full grayscale
+Network
+-------
 - extended network protocol (fully compatible with old-version server/client). May be disabled on client
   side with "set cl_extprotocol 0" or on server side with "set sv_extprotocol 0". Extensions:
   - surface-dependent footstep sounds (server-side)
@@ -242,15 +256,12 @@ Debugging
   - customised rail trail
   * side effect: demos will crush server, when played with original Quake2; to record compatible demos, just
     use cl_extprotocol=0 or sv_extprotocol=0
+
+
+?????????
+---------
+- "r_saturation" variable: default 1 (all textures and lightmaps - as is), 0 - full grayscale
 ?(not finished) new particle/fx system; can be disabled with "cl_newfx 0"
-- crosshairs:
-  - unlimited number of crosshairs; must be named "pics/ch%d.???"; when trying to set crosshair,
-    that does not exist, crosshair will be set to 0 (no crosshair)
-  - added cvar "crosshaircolor"; value = [0..7] (0 - black, 1 - red, 2 - green, 4 - blue, 7 - white)
-  - changing crosshair shape and color from the options menu
-- browsing levelshots in "start server" menu (accessible via menu or "menu_dmbrowse"); displaying it while map loading
-- screenshots in savegames: display in save/load game menu, display while map loading
-- "cl_draw2d 0" removes HUD
 - timescale:
   - sound pitch affected by timescale (DirectSound only, restart required)
   - support for low timescale (was not able to perform frames with scaled time less than 1 ms)
@@ -258,15 +269,10 @@ Debugging
 - third-person view: activated with "cl_3rd_person 1"
 - intro playback:
   - removed from "toggleconsole" command
-  - on startup, will be displayed only cinematics
+  - on startup, will be displayed only cinematics (no demos)
   - to disable intro on startup, use "nointro 1" in commandline
 - dedicated server:
-  - to disable auto-startup "dedicated_start" alias, use "nointro 1"
-- main executable command line:
-  - to change cvar use "-var=value"
-  - to set cvar, known at the time of initialization, to "1", use "-var" (same as "-var=1")
-  - to execute commands, use "-command [arguments]"
-  - example: quake2 -nosound -deathmatch=1 -map q2dm1 -echo "hello world!"
+  - to disable auto-startup of "dedicated_start" alias, use "nointro 1"
 - commands "lookdown <angle>" and "lookup <angle>"
 
 6. MISFEATURES

@@ -867,3 +867,7 @@ void R_DrawTexts (void);
 void DrawText_Pos (int x, int y, char *text, unsigned rgba);
 void DrawText_Left (char *text, unsigned rgba);
 void DrawText_Right (char *text, unsigned rgba);
+
+#ifndef REF_HARD_LINKED
+/*extern "C"*/ DLL_EXPORT refExport_t GetRefAPI (refImport_t);
+#endif

@@ -33,11 +33,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  * GLimp_SetGamma
  *
  */
-#include <assert.h>
-#include <windows.h>
 #include "../ref_gl/gl_local.h"
 #include "glw_win.h"
-#include "winquake.h"
 
 static bool GLimp_SwitchFullscreen (int width, int height);
 bool GLimp_InitGL (void);

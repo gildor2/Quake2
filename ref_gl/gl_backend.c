@@ -1016,7 +1016,7 @@ static void StageIterator (void)
 		glPolygonOffset (-1, -2);
 	}
 
-	if (numRenderPasses > 1 && glLockArraysEXT)
+	if (/*numRenderPasses > 1 &&*/ glLockArraysEXT)	//?? GF FX5200 + det.56.72 have geometry bugs when mixing non-CVA/CVA rendering (disappear with gl_showtris=1)
 	{
 		// do not lock texcoords and colors
 		glDisableClientState (GL_COLOR_ARRAY);
@@ -1074,7 +1074,7 @@ static void StageIterator (void)
 
 	/*----------------- finalize ------------------*/
 
-	if (numRenderPasses > 1 && glUnlockArraysEXT)
+	if (/*numRenderPasses > 1 &&*/ glUnlockArraysEXT)	//?? ,,,
 		glUnlockArraysEXT ();
 
 	if (currentShader->usePolygonOffset)

@@ -647,7 +647,7 @@ void Con_DrawConsole (float frac)
 	int		row, rows, lines;
 	int		dx, dy, color;
 	char	*text, c, dlbar[1024];
-	const char version[] = APPNAME " v" STR(VERSION);
+	static const char version[] = APPNAME " v" STR(VERSION);
 
 	lines = Q_round (viddef.height * frac);
 	if (lines <= 0)
