@@ -76,7 +76,7 @@ CL_ClipMoveToEntities
 
 //#define NO_PREDICT_LERP
 
-void CL_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
+void CL_EntityTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents)
 {
 	int		i, j;
 	trace_t	trace;
@@ -138,11 +138,11 @@ void CL_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs,
 			cmodel = cl.model_clip[ent->modelindex];
 			if (!cmodel) continue;
 
-			CM_TransformedBoxTrace2 (&trace, start, end, mins, maxs, cmodel->headnode,  MASK_PLAYERSOLID, eOrigin, ent->axis);
+			CM_TransformedBoxTrace2 (&trace, start, end, mins, maxs, cmodel->headnode,  contents, eOrigin, ent->axis);
 		}
 		else
 			CM_TransformedBoxTrace (&trace, start, end, mins, maxs,
-				CM_HeadnodeForBox (ent->mins, ent->maxs), MASK_PLAYERSOLID, eOrigin, vec3_origin);
+				CM_HeadnodeForBox (ent->mins, ent->maxs), contents, eOrigin, vec3_origin);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
 		{
@@ -162,13 +162,20 @@ void CL_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs,
 }
 
 
+void CL_Trace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents)
+{
+	CM_BoxTrace (tr, start, end, mins, maxs, 0, contents);
+	CL_EntityTrace (tr, start, end, mins, maxs, contents);
+}
+
+
 /*
 ================
 CL_PMTrace
 ================
 */
 //?? same as void CL_PMTrace(&trace, start, ...) -- but called from PMove() ...
-trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
+static trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 {
 	trace_t	trace;
 
@@ -178,7 +185,7 @@ trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 		trace.ent = (struct edict_s *)1;	//??
 
 	// check all other solid models
-	CL_ClipMoveToEntities (&trace, start, mins, maxs, end);
+	CL_EntityTrace (&trace, start, end, mins, maxs, MASK_PLAYERSOLID);
 
 	return trace;
 }

@@ -1,22 +1,3 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
 #ifndef __REF_INCLUDED__
 #define __REF_INCLUDED__
 
@@ -69,7 +50,6 @@ typedef struct entity_s
 	int		flags;
 } entity_t;
 
-#define ENTITY_FLAGS  68	// offset to entity_t->flags (used by ref_soft .asm routines only)
 
 typedef struct
 {
@@ -150,7 +130,6 @@ typedef struct
 #define SHOT_JPEG			0x8000	// can be unsupported
 
 
-/*-------- These are the functions exported by the refresh module --------*/
 typedef struct
 {
 	// verification field, cb = sizeof(refExport_t)

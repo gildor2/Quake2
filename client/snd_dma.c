@@ -107,7 +107,7 @@ void S_SoundInfo_f(void)
 }
 
 
-#define		MAX_FEMALE_MODELS		32
+#define		MAX_FEMALE_MODELS		64
 #define		MAX_FEMALE_MODEL_BUF	(MAX_FEMALE_MODELS*16)
 char	*female_models[MAX_FEMALE_MODELS];
 char	female_model_buf[MAX_FEMALE_MODEL_BUF];
@@ -135,12 +135,7 @@ void S_ReadModelsSex (void)
 		int		n;
 
 		n = strlen (s);
-//		if (s[n-1] == '\r')	// CR -> DOS file? (treated as spaces in COM_Parse?)
-//		{
-//			n--;
-//			s[n] = 0;	// cut CR
-//		}
-		Com_DPrintf("Female model: %s (namelen: %d)\n",s,n);
+		Com_DPrintf("Female model: %s\n",s);
 		n++;
 		free -= n;
 		if (free < 0 || i >= MAX_FEMALE_MODELS - 1)
@@ -762,7 +757,7 @@ void S_StartSound(vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float f
 	if (!sc)
 		return;		// couldn't load the sound's data
 
-	vol = fvol*255;
+	vol = Q_round (fvol*255);
 
 	// make the playsound_t
 	ps = S_AllocPlaysound ();
@@ -784,16 +779,16 @@ void S_StartSound(vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float f
 	ps->sfx = sfx;
 
 	// drift s_beginofs
-	start = cl.frame.servertime * 0.001 * dma.speed + s_beginofs;
+	start = Q_round (cl.frame.servertime * 0.001 * dma.speed + s_beginofs);
 	if (start < paintedtime)
 	{
 		start = paintedtime;
-		s_beginofs = start - (cl.frame.servertime * 0.001 * dma.speed);
+		s_beginofs = start - Q_round (cl.frame.servertime * 0.001 * dma.speed);
 	}
 	else if (start > paintedtime + 0.3 * dma.speed)
 	{
-		start = paintedtime + 0.1 * dma.speed;
-		s_beginofs = start - (cl.frame.servertime * 0.001 * dma.speed);
+		start = Q_round (paintedtime + 0.1 * dma.speed);
+		s_beginofs = start - Q_round (cl.frame.servertime * 0.001 * dma.speed);
 	}
 	else
 	{
@@ -803,7 +798,7 @@ void S_StartSound(vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float f
 	if (!timeofs)
 		ps->begin = paintedtime;
 	else
-		ps->begin = start + timeofs * dma.speed;
+		ps->begin = Q_round (start + timeofs * dma.speed);
 
 	// sort into the pending sound list
 	for (sort = s_pendingplays.next ;
@@ -1026,7 +1021,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 		{
 			for (i=0 ; ; i++)
 			{
-				src = i*scale;
+				src = Q_round (i*scale);
 				if (src >= samples)
 					break;
 				dst = s_rawend&(MAX_RAW_SAMPLES-1);
@@ -1040,7 +1035,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 	{
 		for (i=0 ; ; i++)
 		{
-			src = i*scale;
+			src = Q_round (i*scale);
 			if (src >= samples)
 				break;
 			dst = s_rawend&(MAX_RAW_SAMPLES-1);
@@ -1053,7 +1048,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 	{
 		for (i=0 ; ; i++)
 		{
-			src = i*scale;
+			src = Q_round (i*scale);
 			if (src >= samples)
 				break;
 			dst = s_rawend&(MAX_RAW_SAMPLES-1);
@@ -1066,7 +1061,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 	{
 		for (i=0 ; ; i++)
 		{
-			src = i*scale;
+			src = Q_round (i*scale);
 			if (src >= samples)
 				break;
 			dst = s_rawend&(MAX_RAW_SAMPLES-1);

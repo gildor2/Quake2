@@ -108,7 +108,7 @@ typedef struct viewPortal_s
 	vec3_t	modelvieworg;		// coords of vieworg in modelaxis coord system (same as vieworg for world model) */
 	float	modelMatrix[4][4];
 	// projection params
-	float	x, y, w, h;			// viewport
+	int		x, y, w, h;			// viewport
 	float	fov_x, fov_y, t_fov_x, t_fov_y, fov_scale;
 	cplane_t frustum[NUM_FRUSTUM_PLANES];	// used for frustum culling
 	float	projectionMatrix[4][4];

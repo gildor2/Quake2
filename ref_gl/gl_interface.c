@@ -122,20 +122,20 @@ void GL_Unlock (void)
 		{
 			GL_SelectTexture (tmu);
 			gl_state.texCoordEnabled[tmu] = f;
-			if (f)	qglEnableClientState (GL_TEXTURE_COORD_ARRAY);
-			else	qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
+			if (f)	glEnableClientState (GL_TEXTURE_COORD_ARRAY);
+			else	glDisableClientState (GL_TEXTURE_COORD_ARRAY);
 		}
 		if ((f = gl_state.newTextureEnabled[tmu]) != gl_state.textureEnabled[tmu])
 		{
 			GL_SelectTexture (tmu);
 			gl_state.textureEnabled[tmu] = f;
-			if (f)	qglEnable (GL_TEXTURE_2D);
-			else	qglDisable (GL_TEXTURE_2D);
+			if (f)	glEnable (GL_TEXTURE_2D);
+			else	glDisable (GL_TEXTURE_2D);
 		}
 		if (gl_state.newTCPointer[tmu])
 		{
 			GL_SelectTexture (tmu);
-			qglTexCoordPointer (2, GL_FLOAT, 0, gl_state.newTCPointer[tmu]);
+			glTexCoordPointer (2, GL_FLOAT, 0, gl_state.newTCPointer[tmu]);
 		}
 		if (gl_state.newEnv[tmu] & TEXENV_ENVCOLOR && (c.rgba = gl_state.newEnvColor[tmu].rgba) != gl_state.texEnvColor[tmu].rgba)
 		{
@@ -175,7 +175,7 @@ void GL_Bind (image_t *tex)
 	{
 		if (gl_state.textureEnabled[tmu])
 		{
-			qglDisable (GL_TEXTURE_2D);
+			glDisable (GL_TEXTURE_2D);
 			gl_state.textureEnabled[tmu] = false;
 		}
 	}
@@ -183,7 +183,7 @@ void GL_Bind (image_t *tex)
 	{
 		if (!gl_state.textureEnabled[tmu])
 		{
-			qglEnable (GL_TEXTURE_2D);
+			glEnable (GL_TEXTURE_2D);
 			gl_state.textureEnabled[tmu] = true;
 		}
 
@@ -191,7 +191,7 @@ void GL_Bind (image_t *tex)
 
 		gl_state.currentBinds[tmu] = tex;
 		LOG_STRING(va("// GL_Bind(%s)\n", tex->name));
-		qglBindTexture (GL_TEXTURE_2D, tex->texnum);
+		glBindTexture (GL_TEXTURE_2D, tex->texnum);
 		gl_speeds.numBinds++;
 	}
 }
@@ -206,14 +206,14 @@ void GL_BindForce (image_t *tex)
 
 	if (!gl_state.textureEnabled[tmu])
 	{
-		qglEnable (GL_TEXTURE_2D);
+		glEnable (GL_TEXTURE_2D);
 		gl_state.textureEnabled[tmu] = true;
 	}
 
 	if (gl_state.currentBinds[tmu] == tex) return;
 
 	gl_state.currentBinds[tmu] = tex;
-	qglBindTexture (GL_TEXTURE_2D, tex->texnum);
+	glBindTexture (GL_TEXTURE_2D, tex->texnum);
 	gl_speeds.numBinds++;
 }
 
@@ -253,15 +253,15 @@ void GL_TexEnv (unsigned env)
 	if (diff & TEXENV_FUNC_MASK)
 	{
 		// func is changed
-		qglTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, info->mode1);
+		glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, info->mode1);
 		if (!info->mode2) return;
 
-		qglTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, info->mode2);
-		qglTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, info->mode2);
+		glTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, info->mode2);
+		glTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, info->mode2);
 	}
 
 	if (diff & TEXENV_MUL2)
-		qglTexEnvf (GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, (env & TEXENV_MUL2 ? 2 : 1));
+		glTexEnvf (GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, (env & TEXENV_MUL2 ? 2 : 1));
 
 	mask = TEXENV_SRC0_MASK;
 	shift = TEXENV_SRC0_SHIFT;
@@ -279,13 +279,13 @@ void GL_TexEnv (unsigned env)
 
 			if (src->src != prevSrc->src)
 			{
-				qglTexEnvi (GL_TEXTURE_ENV, sourceRgb[i], src->src);
-				qglTexEnvi (GL_TEXTURE_ENV, sourceAlpha[i], src->src);
+				glTexEnvi (GL_TEXTURE_ENV, sourceRgb[i], src->src);
+				glTexEnvi (GL_TEXTURE_ENV, sourceAlpha[i], src->src);
 			}
 			if (src->op_rgb != prevSrc->op_rgb)
-				qglTexEnvi (GL_TEXTURE_ENV, operandRgb[i], src->op_rgb);
+				glTexEnvi (GL_TEXTURE_ENV, operandRgb[i], src->op_rgb);
 			if (src->op_a != prevSrc->op_a)
-				qglTexEnvi (GL_TEXTURE_ENV, operandAlpha[i], src->op_a);
+				glTexEnvi (GL_TEXTURE_ENV, operandAlpha[i], src->op_a);
 		}
 		mask >>= TEXENV_SRC_BITS;
 		shift -= TEXENV_SRC_BITS;
@@ -316,7 +316,7 @@ void GL_TexEnvColor (color_t *c)
 	color[1] = c->c[1] / 255.0f;
 	color[2] = c->c[2] / 255.0f;
 	color[3] = c->c[3] / 255.0f;
-	qglTexEnvfv (GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, color);
+	glTexEnvfv (GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, color);
 }
 
 
@@ -337,15 +337,15 @@ void GL_SelectTexture (int tmu)
 	{
 		// ARB_multitexture
 		tex = GL_TEXTURE0_ARB + tmu;
-		qglActiveTextureARB (tex);
-		qglClientActiveTextureARB (tex);
+		glActiveTextureARB (tex);
+		glClientActiveTextureARB (tex);
 	}
 	else
 	{
 		// SGIS_multitexture
 		tex = GL_TEXTURE0_SGIS + tmu;
-		qglSelectTextureSGIS (tex);
-		qglSelectTextureCoordSetSGIS (tex);
+		glSelectTextureSGIS (tex);
+		glSelectTextureCoordSetSGIS (tex);
 	}
 
 	gl_state.currentTmu = tmu;
@@ -360,7 +360,7 @@ void GL_TexCoordPointer (void *ptr)
 		return;
 	}
 
-	qglTexCoordPointer (2, GL_FLOAT, 0, ptr);
+	glTexCoordPointer (2, GL_FLOAT, 0, ptr);
 }
 
 
@@ -393,7 +393,7 @@ void GL_SetMultitexture (int level)
 			GL_Bind (NULL);
 			if (gl_state.texCoordEnabled[i])
 			{
-				qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
+				glDisableClientState (GL_TEXTURE_COORD_ARRAY);
 				gl_state.texCoordEnabled[i] = false;
 			}
 		}
@@ -401,7 +401,7 @@ void GL_SetMultitexture (int level)
 		if (!gl_state.texCoordEnabled[i])
 		{
 			GL_SelectTexture (i);
-			qglEnableClientState (GL_TEXTURE_COORD_ARRAY);
+			glEnableClientState (GL_TEXTURE_COORD_ARRAY);
 			gl_state.texCoordEnabled[i] = true;
 		}
 	GL_SelectTexture (0);
@@ -422,7 +422,7 @@ void GL_DisableTexCoordArrays (void)
 		if (gl_state.texCoordEnabled[i])
 		{
 			GL_SelectTexture (i);
-			qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
+			glDisableClientState (GL_TEXTURE_COORD_ARRAY);
 			gl_state.texCoordEnabled[i] = false;
 		}
 }
@@ -440,11 +440,11 @@ void GL_CullFace (gl_cullMode_t mode)
 		return;
 
 	if (mode == CULL_NONE)
-		qglDisable (GL_CULL_FACE);
+		glDisable (GL_CULL_FACE);
 	else
 	{
-		qglEnable (GL_CULL_FACE);
-		qglCullFace (mode == CULL_FRONT ? GL_FRONT : GL_BACK);
+		glEnable (GL_CULL_FACE);
+		glCullFace (mode == CULL_FRONT ? GL_FRONT : GL_BACK);
 	}
 
 	gl_state.currentCullMode = mode;
@@ -459,7 +459,7 @@ void GL_DepthRange (gl_depthMode_t mode)
 	if (gl_state.currentDepthMode == mode)
 		return;
 
-	qglDepthRange (n[mode], f[mode]);
+	glDepthRange (n[mode], f[mode]);
 
 	gl_state.currentDepthMode = mode;
 }
@@ -495,11 +495,11 @@ void GL_State (int state)
 			dst = blends[dst];
 
 			if (!(gl_state.currentState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK)))
-				qglEnable (GL_BLEND);
-			qglBlendFunc (src, dst);
+				glEnable (GL_BLEND);
+			glBlendFunc (src, dst);
 		}
 		else
-			qglDisable (GL_BLEND);
+			glDisable (GL_BLEND);
 	}
 
 	if (diff & GLSTATE_ALPHAMASK)
@@ -508,36 +508,36 @@ void GL_State (int state)
 
 		m = state & GLSTATE_ALPHAMASK;
 		if (!m)
-			qglDisable (GL_ALPHA_TEST);
+			glDisable (GL_ALPHA_TEST);
 		else
 		{
 			if (!(gl_state.currentState & GLSTATE_ALPHAMASK))
-				qglEnable (GL_ALPHA_TEST);
+				glEnable (GL_ALPHA_TEST);
 			if (m == GLSTATE_ALPHA_GT0)
-				qglAlphaFunc (GL_GREATER, 0.05f);	//?? 0.0f
+				glAlphaFunc (GL_GREATER, 0.05f);	//?? 0.0f
 			else if (m == GLSTATE_ALPHA_LT05)
-				qglAlphaFunc (GL_LESS, 0.5f);
+				glAlphaFunc (GL_LESS, 0.5f);
 			else // if (m == GLSTATE_ALPHA_GE05)
-				qglAlphaFunc (GL_GEQUAL, 0.5f);
+				glAlphaFunc (GL_GEQUAL, 0.5f);
 		}
 	}
 
 	if (diff & GLSTATE_DEPTHWRITE)
-		qglDepthMask ((GLboolean)(state & GLSTATE_DEPTHWRITE ? GL_TRUE : GL_FALSE));
+		glDepthMask ((GLboolean)(state & GLSTATE_DEPTHWRITE ? GL_TRUE : GL_FALSE));
 
 	if (diff & GLSTATE_NODEPTHTEST)
 	{
 		if (state & GLSTATE_NODEPTHTEST)
-			qglDisable (GL_DEPTH_TEST);
+			glDisable (GL_DEPTH_TEST);
 		else
-			qglEnable (GL_DEPTH_TEST);
+			glEnable (GL_DEPTH_TEST);
 	}
 
 	if (diff & GLSTATE_DEPTHEQUALFUNC)
-		qglDepthFunc (state & GLSTATE_DEPTHEQUALFUNC ? GL_EQUAL : GL_LEQUAL);
+		glDepthFunc (state & GLSTATE_DEPTHEQUALFUNC ? GL_EQUAL : GL_LEQUAL);
 
 	if (diff & GLSTATE_POLYGON_LINE)
-		qglPolygonMode (GL_FRONT_AND_BACK, state & GLSTATE_POLYGON_LINE ? GL_LINE : GL_FILL);
+		glPolygonMode (GL_FRONT_AND_BACK, state & GLSTATE_POLYGON_LINE ? GL_LINE : GL_FILL);
 
 	gl_state.currentState = state;
 }
@@ -550,29 +550,29 @@ void GL_EnableFog (qboolean enable)
 
 	if (enable && gl_fogMode && gl_fog->integer)
 	{
-		qglEnable (GL_FOG);
-//		qglHint (GL_FOG_HINT, GL_NICEST);
-		qglFogf (GL_FOG_MODE, gl_fogMode);
-		qglFogfv (GL_FOG_COLOR, gl_fogColor);
+		glEnable (GL_FOG);
+//		glHint (GL_FOG_HINT, GL_NICEST);
+		glFogf (GL_FOG_MODE, gl_fogMode);
+		glFogfv (GL_FOG_COLOR, gl_fogColor);
 		switch (gl_fogMode)
 		{
 		case GL_EXP:
 		case GL_EXP2:
-			qglFogf (GL_FOG_DENSITY, gl_fogDensity);
+			glFogf (GL_FOG_DENSITY, gl_fogDensity);
 			break;
 		case GL_LINEAR:
-			qglFogf (GL_FOG_START, gl_fogStart);
-			qglFogf (GL_FOG_END, gl_fogEnd);
+			glFogf (GL_FOG_START, gl_fogStart);
+			glFogf (GL_FOG_END, gl_fogEnd);
 			break;
 		}
 
 		if (GL_SUPPORT(QGL_NV_FOG_DISTANCE))
-			qglFogf (GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
+			glFogf (GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
 		gl_state.fogEnabled = true;
 	}
 	else
 	{
-		qglDisable (GL_FOG);
+		glDisable (GL_FOG);
 		gl_state.fogEnabled = false;
 	}
 }
@@ -582,37 +582,37 @@ void GL_SetDefaultState (void)
 {
 	int		i;
 
-	qglDisable (GL_CULL_FACE);
-	qglDepthRange (0, 1);
+	glDisable (GL_CULL_FACE);
+	glDepthRange (0, 1);
 	gl_state.currentDepthMode = DEPTH_NORMAL;
-	qglColor4f (1, 1, 1, 1);
+	glColor4f (1, 1, 1, 1);
 
 	// setup texturing
 	for (i = 1; i < gl_config.maxActiveTextures; i++)
 	{
 		GL_SelectTexture (i);
-		qglDisable (GL_TEXTURE_2D);
+		glDisable (GL_TEXTURE_2D);
 		gl_state.currentEnv[i] = 0;
 		GL_TexEnv (TEXENV_REPLACE);
 	}
 	if (gl_config.maxActiveTextures > 1) GL_SelectTexture (0);
-	qglDisable (GL_TEXTURE_2D);
+	glDisable (GL_TEXTURE_2D);
 	gl_state.currentEnv[0] = 0;
 	GL_TexEnv (TEXENV_MODULATE);
 
 	GL_TextureMode (gl_texturemode->string);
 
 	// set GL_State to a corresponding zero values
-	qglDisable (GL_BLEND);
-	qglDisable (GL_ALPHA_TEST);
-	qglDepthMask (GL_TRUE);
-	qglEnable (GL_DEPTH_TEST);
-	qglDepthFunc (GL_LEQUAL);
-	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
+	glDisable (GL_BLEND);
+	glDisable (GL_ALPHA_TEST);
+	glDepthMask (GL_TRUE);
+	glEnable (GL_DEPTH_TEST);
+	glDepthFunc (GL_LEQUAL);
+	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 
-	qglEnable (GL_SCISSOR_TEST);
-	qglShadeModel (GL_SMOOTH);
-	qglEnableClientState (GL_VERTEX_ARRAY);
+	glEnable (GL_SCISSOR_TEST);
+	glShadeModel (GL_SMOOTH);
+	glEnableClientState (GL_VERTEX_ARRAY);
 }
 
 
@@ -625,13 +625,13 @@ void GL_Set2DMode (void)
 		GL_PerformScreenshot ();
 
 	LOG_STRING ("***** Set2DMode() *****\n");
-	qglViewport (0, 0, vid.width, vid.height);
-	qglScissor (0, 0, vid.width, vid.height);
-	qglMatrixMode (GL_PROJECTION);
-	qglLoadIdentity ();
-	qglOrtho (0, vid.width, vid.height, 0, 0, 1);
-	qglMatrixMode (GL_MODELVIEW);
-	qglLoadIdentity ();
+	glViewport (0, 0, vid.width, vid.height);
+	glScissor (0, 0, vid.width, vid.height);
+	glMatrixMode (GL_PROJECTION);
+	glLoadIdentity ();
+	glOrtho (0, vid.width, vid.height, 0, 0, 1);
+	glMatrixMode (GL_MODELVIEW);
+	glLoadIdentity ();
 	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_NODEPTHTEST);
 	GL_CullFace (CULL_NONE);
 	gl_state.is2dMode = true;
@@ -648,27 +648,27 @@ void GL_Setup (viewPortal_t *port)
 
 	LOG_STRING ("*** GL_Setup() ***\n");
 	gl_state.is2dMode = false;
-	qglMatrixMode (GL_PROJECTION);
-	qglLoadMatrixf (&port->projectionMatrix[0][0]);
-	qglMatrixMode (GL_MODELVIEW);
-	qglLoadMatrixf (&port->modelMatrix[0][0]);		// required for sky drawing (remove this comment ??)
+	glMatrixMode (GL_PROJECTION);
+	glLoadMatrixf (&port->projectionMatrix[0][0]);
+	glMatrixMode (GL_MODELVIEW);
+	glLoadMatrixf (&port->modelMatrix[0][0]);		// required for sky drawing (remove this comment ??)
 
-	qglViewport (port->x, port->y, port->w, port->h);
-	qglScissor (port->x, port->y, port->w, port->h);
+	glViewport (port->x, port->y, port->w, port->h);
+	glScissor (port->x, port->y, port->w, port->h);
 	GL_State(GLSTATE_DEPTHWRITE);					// affects glClear(DEPTH)
 
 	bits = GL_DEPTH_BUFFER_BIT;
 	if (gl_fastsky->integer && !(port->flags & RDF_NOWORLDMODEL))
 	{
 		bits |= GL_COLOR_BUFFER_BIT;
-		qglClearColor (0, 0, 0, 1);
+		glClearColor (0, 0, 0, 1);
 	}
 	else if (port->flags & RDF_NOWORLDMODEL)
 	{
 		bits |= GL_COLOR_BUFFER_BIT;
-		qglClearColor (0, 0.03, 0.03, 1);
+		glClearColor (0, 0.03, 0.03, 1);
 	}
-	qglClear (bits);
+	glClear (bits);
 
 	gl_state.inverseCull = false;
 	GL_CullFace (CULL_FRONT);

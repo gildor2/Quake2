@@ -1634,11 +1634,12 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 			byte	a, b;
 
 			dst = &normals[j][0];
-			VectorNormalize (dst);
 #if 1
+			VectorNormalizeFast (dst);
 			a = Q_round (ACOS_FUNC(dst[2]) / (M_PI * 2) * 255);
 			if (dst[0])		b = Q_round (ATAN2_FUNC (dst[1], dst[0]) / (M_PI * 2) * 255);
 #else
+			VectorNormalize (dst);
 			a = Q_round (acos (dst[2]) / (M_PI * 2) * 255);
 			if (dst[0])		b = Q_round (atan2 (dst[1], dst[0]) / (M_PI * 2) * 255);
 #endif

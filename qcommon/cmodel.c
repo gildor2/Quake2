@@ -2126,7 +2126,7 @@ static void RecursiveBrushTest (vec3_t start, vec3_t end, int nodeNum)
 	cnode_t	*node;
 	cplane_t *plane;
 	float	frac1, frac2, t1, t2;
-	int		i, side;
+	int		i, side, s1, s2;
 	vec3_t	mid, start1;
 
 	while (true)
@@ -2182,12 +2182,13 @@ static void RecursiveBrushTest (vec3_t start, vec3_t end, int nodeNum)
 			t2 = DotProduct (plane->normal, end) - plane->dist;
 		}
 
-		if (t1 >= 0 && t2 >= 0)
+		s1 = IsNegative (t1); s2 = IsNegative (t2);
+		if (!(s1 | s2))		// (t1 >= 0 && t2 >= 0)
 		{
 			nodeNum = node->children[0];
 			continue;
 		}
-		if (t1 < 0 && t2 < 0)
+		if (s1 & s2)		// (t1 < 0 && t2 < 0)
 		{
 			nodeNum = node->children[1];
 			continue;

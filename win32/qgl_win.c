@@ -88,15 +88,15 @@ void QGL_InitExtensions (void)
 
 	gl_config.extensionMask = 0;
 	notFoundExt = disabledExt = 0;
-	ext1 = qglGetString (GL_EXTENSIONS);
+	ext1 = glGetString (GL_EXTENSIONS);
 
-#if 1
+#if 1		//!! win32
 	{
-		const char * (APIENTRY *qwglGetExtensionsStringARB) (HDC hdc);
+		const char * (APIENTRY *wglGetExtensionsStringARB) (HDC hdc);
 
-		qwglGetExtensionsStringARB = (void*)qwglGetProcAddress ("wglGetExtensionsStringARB");	//?? better type conversion
-		if (qwglGetExtensionsStringARB)
-			ext2 = qwglGetExtensionsStringARB (glw_state.hDC);
+		wglGetExtensionsStringARB = (void*)wglGetProcAddress ("wglGetExtensionsStringARB");	//?? better type conversion
+		if (wglGetExtensionsStringARB)
+			ext2 = wglGetExtensionsStringARB (glw_state.hDC);
 	}
 #else
 	ext2 = NULL;
@@ -131,7 +131,7 @@ void QGL_InitExtensions (void)
 			gl_config.extensionMask |= 1 << i;
 			for (j = ext->first; j < ext->first + ext->count; j++)
 			{
-				func = qgl.funcs[j] = lib.funcs[j] = (dummyFunc_t) (qwglGetProcAddress (qglNames[j]));
+				func = qgl.funcs[j] = lib.funcs[j] = (dummyFunc_t) (wglGetProcAddress (qglNames[j]));
 				if (!func)
 				{
 					Com_WPrintf ("Inconsistent extension %s - function %s is not found\n", ext->name, qglNames[j]);

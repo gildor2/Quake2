@@ -363,7 +363,7 @@ void FloorDivMod (float numer, float denom, int *quotient,
 	int		q, r;
 //	float	x;
 
-	if (numer >= 0.0)
+	if (numer >= 0)
 	{
 
 		q = Q_floor(numer / denom);

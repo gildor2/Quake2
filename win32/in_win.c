@@ -443,19 +443,19 @@ static void IN_MouseMove (usercmd_t *cmd)
 	old_mouse_x = mx;
 	old_mouse_y = my;
 
-	mouse_x *= sensitivity->value * 1.5f;
-	mouse_y *= sensitivity->value * 1.5f;
+	mouse_x = Q_round (mouse_x * sensitivity->value * 1.5f);
+	mouse_y = Q_round (mouse_y * sensitivity->value * 1.5f);
 
 	// add mouse X/Y movement to cmd
 	if ((in_Strafe.state & 1) || (lookstrafe->integer && mlooking))
-		cmd->sidemove += m_side->value * mouse_x;
+		cmd->sidemove += Q_round (m_side->value * mouse_x);
 	else
 		cl.viewangles[YAW] -= m_yaw->value * mouse_x;
 
 	if ((mlooking || freelook->value) && !(in_Strafe.state & 1))
 		cl.viewangles[PITCH] += m_pitch->value * mouse_y;
 	else
-		cmd->forwardmove -= m_forward->value * mouse_y;
+		cmd->forwardmove -= Q_round (m_forward->value * mouse_y);
 
 	// force the mouse to the center, so there's room to move
 	if (mouseType != 2)
@@ -810,22 +810,22 @@ void Joy_AdvancedUpdate_f (void)
 
 		// advanced initialization here
 		// data supplied by user via joy_axisn cvars
-		dwTemp = (DWORD) joy_advaxisx->value;
+		dwTemp = (DWORD) joy_advaxisx->integer;
 		dwAxisMap[JOY_AXIS_X] = dwTemp & 0x0000000f;
 		dwControlMap[JOY_AXIS_X] = dwTemp & JOY_RELATIVE_AXIS;
-		dwTemp = (DWORD) joy_advaxisy->value;
+		dwTemp = (DWORD) joy_advaxisy->integer;
 		dwAxisMap[JOY_AXIS_Y] = dwTemp & 0x0000000f;
 		dwControlMap[JOY_AXIS_Y] = dwTemp & JOY_RELATIVE_AXIS;
-		dwTemp = (DWORD) joy_advaxisz->value;
+		dwTemp = (DWORD) joy_advaxisz->integer;
 		dwAxisMap[JOY_AXIS_Z] = dwTemp & 0x0000000f;
 		dwControlMap[JOY_AXIS_Z] = dwTemp & JOY_RELATIVE_AXIS;
-		dwTemp = (DWORD) joy_advaxisr->value;
+		dwTemp = (DWORD) joy_advaxisr->integer;
 		dwAxisMap[JOY_AXIS_R] = dwTemp & 0x0000000f;
 		dwControlMap[JOY_AXIS_R] = dwTemp & JOY_RELATIVE_AXIS;
-		dwTemp = (DWORD) joy_advaxisu->value;
+		dwTemp = (DWORD) joy_advaxisu->integer;
 		dwAxisMap[JOY_AXIS_U] = dwTemp & 0x0000000f;
 		dwControlMap[JOY_AXIS_U] = dwTemp & JOY_RELATIVE_AXIS;
-		dwTemp = (DWORD) joy_advaxisv->value;
+		dwTemp = (DWORD) joy_advaxisv->integer;
 		dwAxisMap[JOY_AXIS_V] = dwTemp & 0x0000000f;
 		dwControlMap[JOY_AXIS_V] = dwTemp & JOY_RELATIVE_AXIS;
 	}
@@ -995,18 +995,18 @@ void IN_JoyMove (usercmd_t *cmd)
 			{
 				// user wants forward control to be forward control
 				if (fabs(fAxisValue) > joy_forwardthreshold->value)
-					cmd->forwardmove += (fAxisValue * joy_forwardsensitivity->value) * speed * cl_forwardspeed->value;
+					cmd->forwardmove += Q_round ((fAxisValue * joy_forwardsensitivity->value) * speed * cl_forwardspeed->value);
 			}
 			break;
 
 		case AxisSide:
 			if (fabs(fAxisValue) > joy_sidethreshold->value)
-				cmd->sidemove += (fAxisValue * joy_sidesensitivity->value) * speed * cl_sidespeed->value;
+				cmd->sidemove += Q_round ((fAxisValue * joy_sidesensitivity->value) * speed * cl_sidespeed->value);
 			break;
 
 		case AxisUp:
 			if (fabs(fAxisValue) > joy_upthreshold->value)
-				cmd->upmove += (fAxisValue * joy_upsensitivity->value) * speed * cl_upspeed->value;
+				cmd->upmove += Q_round ((fAxisValue * joy_upsensitivity->value) * speed * cl_upspeed->value);
 			break;
 
 		case AxisTurn:
@@ -1014,7 +1014,7 @@ void IN_JoyMove (usercmd_t *cmd)
 			{
 				// user wants turn control to become side control
 				if (fabs(fAxisValue) > joy_sidethreshold->value)
-					cmd->sidemove -= (fAxisValue * joy_sidesensitivity->value) * speed * cl_sidespeed->value;
+					cmd->sidemove -= Q_round ((fAxisValue * joy_sidesensitivity->value) * speed * cl_sidespeed->value);
 			}
 			else
 			{

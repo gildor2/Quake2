@@ -143,8 +143,8 @@ void GL_TextureMode (char *name)
 				if (!img->name[0]) continue;	// free slot
 				if (!(img->flags & IMAGE_MIPMAP)) continue;
 				GL_Bind (img);
-				qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-				qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+				glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+				glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 			}
 			return;
 		}
@@ -293,8 +293,8 @@ static void LightScaleLightmap (unsigned *pic, int width, int height)
 	byte	*p;
 	int		i, c, shift;
 
-	shift = gl_config.overbrightBits;
-	if (gl_config.lightmapOverbright)
+	shift = gl_config.overbright;
+	if (!gl_config.doubleModulateLM)
 		shift--;
 
 	p = (byte *)pic;
@@ -556,12 +556,12 @@ END_PROFILE
 
 	/*------------------ Upload the image ---------------------------*/
 START_PROFILE(..up::1)
-	qglTexImage2D (GL_TEXTURE_2D, 0, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
+	glTexImage2D (GL_TEXTURE_2D, 0, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 END_PROFILE
 	if (!(flags & IMAGE_MIPMAP))
 	{
-		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 	else
 	{
@@ -597,10 +597,10 @@ START_PROFILE(..up::mip)
 					p[2] = (c.c[2] + p[2]) / 4;
 				}
 			}
-			qglTexImage2D (GL_TEXTURE_2D, miplevel, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
+			glTexImage2D (GL_TEXTURE_2D, miplevel, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 		}
-		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+		glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+		glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 END_PROFILE
 	}
 
@@ -665,8 +665,8 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 	Upload (pic, flags, image);
 
 	repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
-	qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repMode);
-	qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repMode);
+	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repMode);
+	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repMode);
 
 	if (!reuse)
 	{
@@ -759,19 +759,19 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 	image->internalFormat = 3;
 	if (image->internalWidth == scaledWidth && image->internalHeight == scaledHeight)
 	{	// TexSubImage()
-		qglTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, scaledWidth, scaledHeight, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
+		glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, scaledWidth, scaledHeight, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 	}
 	else
 	{	// TexImage()
 		image->internalWidth = scaledWidth;
 		image->internalHeight = scaledHeight;
-		qglTexImage2D (GL_TEXTURE_2D, 0, image->internalFormat, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
+		glTexImage2D (GL_TEXTURE_2D, 0, image->internalFormat, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 	}
 	// set texture parameters
-	qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	gl_speeds.numUploads++;
 
 	width = scaledWidth;	//!!!
@@ -779,17 +779,17 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 #endif
 	/*--------------------- draw ----------------------*/
 	GL_Set2DMode ();
-	qglColor3f (gl_config.identityLightValue_f, gl_config.identityLightValue_f, gl_config.identityLightValue_f);
-	qglBegin (GL_QUADS);
-	qglTexCoord2f (0.5f / width, 0.5f / height);
-	qglVertex2f (x, y);
-	qglTexCoord2f (1.0f - 0.5f / width, 0.5f / height);
-	qglVertex2f (x + w, y);
-	qglTexCoord2f (1.0f - 0.5f / width, 1.0f - 0.5f / height);
-	qglVertex2f (x + w, y + h);
-	qglTexCoord2f (0.5f / width, 1.0f - 0.5f / height);
-	qglVertex2f (x, y + h);
-	qglEnd ();
+	glColor3f (gl_config.identityLightValue_f, gl_config.identityLightValue_f, gl_config.identityLightValue_f);
+	glBegin (GL_QUADS);
+	glTexCoord2f (0.5f / width, 0.5f / height);
+	glVertex2f (x, y);
+	glTexCoord2f (1.0f - 0.5f / width, 0.5f / height);
+	glVertex2f (x + w, y);
+	glTexCoord2f (1.0f - 0.5f / width, 1.0f - 0.5f / height);
+	glVertex2f (x + w, y + h);
+	glTexCoord2f (0.5f / width, 1.0f - 0.5f / height);
+	glVertex2f (x, y + h);
+	glEnd ();
 }
 
 
@@ -804,7 +804,7 @@ static void GL_FreeImage (image_t *image)
 		return;		// system image - don't free it
 
 	// delete gl texture
-	qglDeleteTextures (1, &image->texnum);
+	glDeleteTextures (1, &image->texnum);
 
 	// remove from hash chain
 	hash = ComputeHash (image->name);
@@ -846,8 +846,16 @@ void GL_SetupGamma (void)
 	gl_config.vertexLight = gl_vertexLight->integer;
 	gl_config.deviceSupportsGamma = GLimp_HasGamma ();
 
-	overbright = gl_overBrightBits->integer;
+	overbright = gl_overbright->integer;
 	if (!gl_config.fullscreen || !gl_config.deviceSupportsGamma) overbright = 0;
+
+	if (overbright == 2)						// auto
+	{
+		if (gl_config.doubleModulateLM)
+			overbright = 0;
+	}
+	else
+		if (overbright) overbright = 1;			// 0 or 1 only!
 
 	if (gl_config.colorBits <= 16)
 	{
@@ -858,7 +866,10 @@ void GL_SetupGamma (void)
 		if (overbright > 2)
 			overbright = 2;
 
-	gl_config.overbrightBits = overbright;
+	if (overbright)
+		gl_config.doubleModulateLM = false;		// when gamma overbrighted, use 'src*dst' instead of 'src*dst*2 with lm /= 2'
+
+	gl_config.overbright = overbright;
 	gl_config.identityLightValue = 255 / (1 << overbright);
 	gl_config.identityLightValue_f = 1.0f / (float)(1 << overbright);
 
@@ -1087,7 +1098,7 @@ void GL_PerformScreenshot (void)
 		((gl_screenshotFlags & SHOT_WAIT_3D) && !gl_state.have3d))
 		return;		// already performed in current frame or wait another frame
 
-	qglFinish ();
+	glFinish ();
 
 	ext = (gl_screenshotFlags & SHOT_JPEG ? ".jpg" : ".tga");
 	if (gl_screenshotName[0])
@@ -1116,7 +1127,7 @@ void GL_PerformScreenshot (void)
 	// allocate buffer for 4 color components (required for ResampleTexture()
 	buffer = Z_Malloc (vid.width * vid.height * 4);
 	// read frame buffer data
-	qglReadPixels (0, 0, vid.width, vid.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	glReadPixels (0, 0, vid.width, vid.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
 /*
 	if (!buffer[2000] && !buffer[2001] && !buffer[2002] && !buffer[2004] && !buffer[2005] && !buffer[2006]) Com_WPrintf("BLACK!\n");
@@ -1156,9 +1167,9 @@ void GL_PerformScreenshot (void)
 			if (gl_screenshotFlags & SHOT_NOGAMMA)
 			{
 				// we need to correct overbright
-				r <<= gl_config.overbrightBits; r = bound(r, 0, 255);
-				g <<= gl_config.overbrightBits; g = bound(g, 0, 255);
-				b <<= gl_config.overbrightBits; b = bound(b, 0, 255);
+				r <<= gl_config.overbright; r = bound(r, 0, 255);
+				g <<= gl_config.overbright; g = bound(g, 0, 255);
+				b <<= gl_config.overbright; b = bound(b, 0, 255);
 			}
 			else
 			{
@@ -1341,7 +1352,7 @@ void GL_ShutdownImages (void)
 	for (i = 0, img = &imagesArray[0]; i < MAX_TEXTURES; i++, img++)
 	{
 		if (!img->name[0]) continue;	// free slot
-		qglDeleteTextures (1, &img->texnum);
+		glDeleteTextures (1, &img->texnum);
 	}
 	imageCount = 0;
 
@@ -1349,10 +1360,10 @@ void GL_ShutdownImages (void)
 	if (gl_config.maxActiveTextures > 1)
 	{
 		GL_SelectTexture (1);
-		qglBindTexture (GL_TEXTURE_2D, 0);
+		glBindTexture (GL_TEXTURE_2D, 0);
 		GL_SelectTexture (0);
 	}
-	qglBindTexture (GL_TEXTURE_2D, 0);
+	glBindTexture (GL_TEXTURE_2D, 0);
 	// don't clear other fields: after GL_ShutdownImages should not be called nothing
 	// but GL_InitImages, which will perform this work
 }
@@ -1383,8 +1394,8 @@ void GL_ShowImages (void)
 	GL_Set2DMode ();
 	GL_SetMultitexture (1);
 	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_NODEPTHTEST);
-	qglClear (GL_COLOR_BUFFER_BIT);
-	qglColor3f (1, 1, 1);
+	glClear (GL_COLOR_BUFFER_BIT);
+	glColor3f (1, 1, 1);
 
 	// compute best grid size
 	for (i = 1; i < 10; i++)
@@ -1418,16 +1429,16 @@ void GL_ShowImages (void)
 			x0 = x * dx;
 
 			GL_BindForce (img);
-			qglBegin (GL_QUADS);
-			qglTexCoord2f (0, 0);
-			qglVertex2f (x0, y0);
-			qglTexCoord2f (1, 0);
-			qglVertex2f (x0 + dx, y0);
-			qglTexCoord2f (1, 1);
-			qglVertex2f (x0 + dx, y0 + dy);
-			qglTexCoord2f (0, 1);
-			qglVertex2f (x0, y0 + dy);
-			qglEnd ();
+			glBegin (GL_QUADS);
+			glTexCoord2f (0, 0);
+			glVertex2f (x0, y0);
+			glTexCoord2f (1, 0);
+			glVertex2f (x0 + dx, y0);
+			glTexCoord2f (1, 1);
+			glVertex2f (x0 + dx, y0 + dy);
+			glTexCoord2f (0, 1);
+			glVertex2f (x0, y0 + dy);
+			glEnd ();
 
 			num--;
 			img++;

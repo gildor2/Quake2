@@ -14,7 +14,8 @@ typedef struct
 
 	// multitexturing
 	int		maxActiveTextures;		// == 1 if no multitexturing
-	qboolean lightmapOverbright;	// when true, lightmaps lightscaled by 2 (hardware unable to prform src*dst*2 blend)
+
+	qboolean doubleModulateLM;		// when false, lightmaps lightscaled by 2 (hardware unable to perform src*dst*2 blend)
 	qboolean multiPassLM;			// when false, upload dynamic lightmaps
 
 	// texture compression formats (0 if unavailable)
@@ -32,9 +33,9 @@ typedef struct
 
 	// gamma
 	qboolean deviceSupportsGamma;
-	int		overbrightBits;			// gl_overBrightBits->integer
-	int		identityLightValue;		// 255/(1<<overbrightBits)
-	float	identityLightValue_f;	// 1.0/(1<<overbrightBits)
+	int		overbright;				// 0 - normal, 1 - double gamma
+	int		identityLightValue;		// 255/(1<<overbright)
+	float	identityLightValue_f;	// 1.0/(1<<overbright)
 	qboolean vertexLight;
 
 	// tables

@@ -141,22 +141,12 @@ sub EmitStruc {
 }
 
 sub EmitDefine {
-	printf (HDR "#define q%s%s\t%s.%s\n", $platform ? "" : "gl", $func, $strucname, $func);
+	printf (HDR "#define %s\t%s.%s\n", $funcname, $strucname, $func);
 }
 
 sub EmitString {
-	my $str;
-
 	print (CODE ",") if $num > 0;
-	if ($end =~ /NAME/)
-	{
-		($str) = $end =~ / .* NAME \s+ (\w+)/x;
-	}
-	else
-	{
-		$str = $func;
-	}
-	printf (CODE "\n\t\"%s%s\"", $platform ? "" : "gl", $str);
+	printf (CODE "\n\t\"%s\"", $funcname);
 }
 
 sub EmitLogInit {
@@ -210,7 +200,7 @@ sub EmitLogDecl {
 				print (CODE $fmt);
 				$i++;
 			}
-			printf (CODE ")\\n\", \"%s%s\"", $platform ? "" : "gl", $func);
+			printf (CODE ")\\n\", \"%s\"", $funcname);
 			$i = 0;
 			for $s (@parm)
 			{
@@ -222,24 +212,17 @@ sub EmitLogDecl {
                 $i++;
 			}
 			print (CODE ");\n");
-		}
-		elsif ($end =~ /;/)
-		{
+		} elsif ($end =~ /;/) {
 			#................... log function name only ..........................
-			print (CODE "\t$log\"%s\\n\", \"", $platform ? "" : "gl", $func, "\");\n");	# make fprintf(..., "%s", "glFunction\n");
-		}
-		elsif ($end !~ /NAME/)
-		{
+			print (CODE "\t$log\"%s\\n\", \"", $funcname, "\");\n");	# make fprintf(..., "%s", "glFunction\n");
+		} elsif ($end !~ /NAME/) {
 			die "Invalid token: \"", $end, "\"";
 		}
 
 		# generate call to a library function
-		if ($type !~ /\w*void$/)		# may be GLvoid
-		{
+		if ($type !~ /\w*void$/) {		# may be GLvoid
 			print (CODE "\treturn ");
-		}
-		else
-		{
+		} else {
 			print (CODE "\t");
 		}
 		printf (CODE "lib.%s (", $func);
@@ -380,6 +363,17 @@ sub Parse {
 			#.......... function declaration .............
 			($type, $func, $args, $end) = $line =~ / \s* (\S+ .* [\*\s]) (\w+) \s+ \( (.*) \) \s* (\S*.*) /x;
 			($type) = $type =~ /\s*(\S.*\S)\s*/;	# truncate leading and trailing spaces
+			if ($end =~ /NAME/) {
+				($funcname) = $end =~ / .* NAME \s+ (\w+)/x;
+			}
+			else {
+				if ($platform == 0) {
+					$funcname = "gl".$func if $platform == 0;
+				} else {
+					$funcname = $func;
+					($func) = $func =~ / [a-z]* ([A-Z]\w+) /x;
+				}
+			}
 
 			&$subBegin () if defined $subBegin;
 			if ($isExt) {

@@ -171,10 +171,6 @@ typedef float vec3_t[3];
 
 extern vec3_t vec3_origin;
 
-#define	nanmask (255<<23)
-
-#define	IS_NAN(x) (((*(int *)&x)&nanmask)==nanmask)
-
 unsigned ColorBytes3 (float r, float g, float b);
 unsigned ColorBytes4 (float r, float g, float b, float a);
 float NormalizeColor (const vec3_t in, vec3_t out);
@@ -183,18 +179,19 @@ float NormalizeColor255 (const vec3_t in, vec3_t out);
 // rename to CLAMP_COLOR255 ??
 #define NORMALIZE_COLOR255(r,g,b)	\
 	if ((r|g|b) > 255)	\
-	{	\
-		int		max;	\
-		if (r > g) max = r; else max = g;	\
-		if (max < b) max = b;	\
-		r = r * 255 / max;	\
-		g = g * 255 / max;	\
-		b = b * 255 / max;	\
+	{					\
+		int		m;		\
+		m = max(r,g);	\
+		m = max(m,b);	\
+		m = 255 * 256 / m;	\
+		r = r * m >> 8;	\
+		g = g * m >> 8;	\
+		b = b * m >> 8;	\
 	}
 
 float ClampColor255 (const vec3_t in, vec3_t out);
 
-void VectorNormalizeFast (vec3_t v);
+float VectorNormalizeFast (vec3_t v);
 float Q_rsqrt (float number);
 #define SQRTFAST(x)		(x * Q_rsqrt(x))
 
@@ -237,24 +234,47 @@ __inline int Q_ceil (float f)
 	return i;
 }
 
+#define uint_cast(f)	(* (unsigned *) &(f))
+#define IsNegative(f)	(uint_cast(f) >> 31)
+#define FAbsSign(f,d,s)	\
+	{							\
+		unsigned mask = uint_cast(f) & 0x80000000;	\
+		uint_cast(d) = uint_cast(f) ^ mask;			\
+		s = mask >> 31;			\
+	}
+
 #else
 #define Q_ftol(f)	(long) (f)
 #define Q_round(f)	(int) (f >= 0 ? (int)(f+0.5f) : (int)(f-0.5f))
 #define Q_floor(f)	((int)floor(f))
 #define Q_ceil(f)	((int)ceil(f))
+
+#define IsNegative(f)	(f<0)
+#define FAbsSign(f,d,s)	\
+	{							\
+		s = IsNegative(f);		\
+		d = s ? -f : f;			\
+	}
+
 #endif
+
+typedef struct	// hack for VectorCopy
+{
+	float x, y, z;
+} vec3a_t;
 
 #define DotProduct(x,y)			(x[0]*y[0]+x[1]*y[1]+x[2]*y[2])
 #define VectorSubtract(a,b,c)	(c[0]=a[0]-b[0],c[1]=a[1]-b[1],c[2]=a[2]-b[2])
 #define VectorAdd(a,b,c)		(c[0]=a[0]+b[0],c[1]=a[1]+b[1],c[2]=a[2]+b[2])
 //#define VectorCopy(a,b)			(b[0]=a[0],b[1]=a[1],b[2]=a[2])
-#define VectorCopy(a,b)			memcpy(b, a, sizeof(vec3_t))		// should be faster when "memcpy" is intrinsic
-//#define VectorClear(a)			(a[0]=a[1]=a[2]=0)
-#define VectorClear(a)			memset(a, 0, sizeof(vec3_t))
+//#define VectorCopy(a,b)			memcpy(b, a, sizeof(vec3_t))		// should be faster when "memcpy" is intrinsic
+#define VectorCopy(a,b)			(*(vec3a_t*)(b)=*(vec3a_t*)(a))
+#define VectorClear(a)			(a[0]=a[1]=a[2]=0)
+//#define VectorClear(a)			memset(a, 0, sizeof(vec3_t))
 #define VectorNegate(a,b)		(b[0]=-a[0],b[1]=-a[1],b[2]=-a[2])
 #define VectorSet(v, x, y, z)	(v[0]=(x), v[1]=(y), v[2]=(z))
-//#define	VectorMA(v, s, b, o)	((o)[0]=(v)[0]+(b)[0]*(s),(o)[1]=(v)[1]+(b)[1]*(s),(o)[2]=(v)[2]+(b)[2]*(s))
-void VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc);
+#define	VectorMA(v, s, b, o)	((o)[0]=(v)[0]+(b)[0]*(s),(o)[1]=(v)[1]+(b)[1]*(s),(o)[2]=(v)[2]+(b)[2]*(s))
+//void VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc);
 
 // just in case you do't want to use the macros
 float _DotProduct (vec3_t v1, vec3_t v2);

@@ -1,3 +1,8 @@
+BUGS:
+~~~~~
+  *? 1st try to start demomap after start, when no d1 alias -- "killserver+menu_main"
+  - jumpy demo "tower" (at home, all Q2 versions -- at least from p10) -- low fps on original server computer ?
+
 ! new pmove.c errors:
   - "ground3" cafe, on the street: cannot jump onto a corner column (horiz. speed set to 0 due to position snap)
 - "paused": incorrect timing (at least, fx will be incorrect after paused=0)

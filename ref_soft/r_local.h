@@ -583,6 +583,8 @@ extern float	sw_lightlevel;
 
 extern cvar_t	*r_fullscreen;
 extern cvar_t	*r_gamma;
+extern cvar_t	*r_contrast;
+extern cvar_t	*r_brightness;
 
 
 extern clipplane_t  view_clipplanes[4];

@@ -163,10 +163,10 @@ typedef struct
 typedef struct
 {
 	// GL_State ...
-	int		glState;
+	unsigned glState;
 
-	byte	isLightmap;
-	byte	detail;					//?? true is stage is detail (unused ??)
+	int		isLightmap:1;
+	int		detail:1;				//?? true is stage is detail (unused ??)
 
 	/*---------------- RGBA params ----------------*/
 	color_t	rgbaConst;				// if RGBGEN_CONST or ALPHAGEN_CONST
@@ -215,24 +215,22 @@ typedef struct shader_s
 	int		sortIndex;
 	float	sortParam;		// values from sortParam_t, but in float representation
 	int		sortParam2;		// secondary sort values (main image, lightmap num etc.)
-	int		width, height;	// required due to Q2 architecture; if contains default image, both are zero
+	short	width, height;	// required due to Q2 architecture; if contains default image, both are zero
 
 	int		style;			// SHADER_XXX
-//	int		surfaceFlags;	// SURF_XXX			??
-//	int		contentsFlags;	// CONTENTS_XXX		??
 	float	tessSize;		// used for warp surface subdivision
 
 	gl_cullMode_t cullMode;
 
 	//!! make bitfield (bool)
-	byte	scripted;
-	byte	bad;			// errors in script or no map image found (for auto-generated shader)
-	byte	fast;			// have no deforms, tcGen/tcMod, rgb/alpha-gen (remove ??)
-	byte	dependOnEntity;	// when false, surface may be mixed with surfaces from different entities
+	int		scripted:1;
+	int		bad:1;			// errors in script or no map image found (for auto-generated shader)
+	int		fast:1;			// have no deforms, tcGen/tcMod, rgb/alpha-gen (remove ??)
+	int		dependOnEntity:1; // when false, surface may be mixed with surfaces from different entities
 
-	byte	usePolygonOffset;
+	int		usePolygonOffset:1;
 
-	int		numDeforms;
+	byte	numDeforms;
 	deformParms_t deforms[MAX_SHADER_DEFORMS];
 
 	shaderType_t type;

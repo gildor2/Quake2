@@ -30,7 +30,7 @@ cvar_t	*gl_drawbuffer;
 cvar_t	*gl_nobind;
 
 cvar_t	*r_ignorehwgamma;	// make "gl_" ??
-cvar_t	*gl_overBrightBits;
+cvar_t	*gl_overbright;
 cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
 cvar_t	*r_intensity;		//??
 
@@ -87,6 +87,8 @@ void DrawTexts (void);
 
 static void Gfxinfo_f (void)
 {
+	static char *boolNames[] = {"no", "yes"};
+
 	Com_Printf ("GL_VENDOR: %s\n", gl_config.vendorString);
 	Com_Printf ("GL_RENDERER: %s\n", gl_config.rendererString);
 	Com_Printf ("GL_VERSION: %s\n", gl_config.versionString);
@@ -97,6 +99,12 @@ static void Gfxinfo_f (void)
 	else
 		Com_Printf ("no\n");
 	Com_Printf ("Lighting: %s\n", gl_config.vertexLight ? "vertex" : "lightmap");
+	Com_Printf ("Gamma: ");
+	if (gl_config.deviceSupportsGamma)
+		Com_Printf ("hardware, overbright: %s, lightmap overbright: %s\n",
+			boolNames[gl_config.overbright], boolNames[!gl_config.doubleModulateLM]);
+	else
+		Com_Printf ("software\n");
 }
 
 
@@ -118,7 +126,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(r_saturation, 1, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(r_intensity, 1, CVAR_ARCHIVE),		//?? remove ?!
 	CVAR_VAR(r_ignorehwgamma, 0, CVAR_ARCHIVE),
-	CVAR_VAR(gl_overBrightBits, 1, CVAR_ARCHIVE),
+	CVAR_VAR(gl_overbright, 2, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gl_textureBits, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	//!! add gl_depthBits
@@ -297,24 +305,25 @@ static int GL_Init (void)
 #endif
 
 	/*----------------- Get various GL strings ----------------*/
-	Q_strncpyz (gl_config.vendorString, qglGetString (GL_VENDOR), sizeof(gl_config.vendorString));
-	Q_strncpyz (gl_config.rendererString, qglGetString (GL_RENDERER), sizeof(gl_config.rendererString));
-	Q_strncpyz (gl_config.versionString, qglGetString (GL_VERSION), sizeof(gl_config.versionString));
+	Q_strncpyz (gl_config.vendorString, glGetString (GL_VENDOR), sizeof(gl_config.vendorString));
+	Q_strncpyz (gl_config.rendererString, glGetString (GL_RENDERER), sizeof(gl_config.rendererString));
+	Q_strncpyz (gl_config.versionString, glGetString (GL_VERSION), sizeof(gl_config.versionString));
 
 	/*------------------ Grab extensions ----------------------*/
 	//?? move this part to gl_interface.c ??
 	QGL_InitExtensions ();
 
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
-		qglGetIntegerv (GL_MAX_TEXTURE_UNITS_ARB, &gl_config.maxActiveTextures);
+		glGetIntegerv (GL_MAX_TEXTURE_UNITS_ARB, &gl_config.maxActiveTextures);
 	else if (GL_SUPPORT(QGL_SGIS_MULTITEXTURE))
-		qglGetIntegerv (GL_MAX_TEXTURES_SGIS, &gl_config.maxActiveTextures);
+		glGetIntegerv (GL_MAX_TEXTURES_SGIS, &gl_config.maxActiveTextures);
 	else
 		gl_config.maxActiveTextures = 1;
 
+	gl_config.doubleModulateLM = true;			// no multitexture or env_combine
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE) &&
 		!GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|QGL_NV_TEXTURE_ENV_COMBINE4))
-		gl_config.lightmapOverbright = true;
+		gl_config.doubleModulateLM = false;
 
 
 	//?? place this decision to Upload() and remove formatSolid from gl_config?
@@ -323,7 +332,7 @@ static int GL_Init (void)
 		gl_config.formatSolid = GL_COMPRESSED_RGB_ARB;
 		gl_config.formatAlpha = GL_COMPRESSED_RGBA_ARB;
 		gl_config.formatAlpha1 = GL_COMPRESSED_RGBA_ARB;
-//		qglHint (GL_TEXTURE_COMPRESSION_HINT_ARB, GL_NICEST);
+//		glHint (GL_TEXTURE_COMPRESSION_HINT_ARB, GL_NICEST);
 	}
 	else if (GL_SUPPORT(QGL_S3_S3TC))
 	{
@@ -332,14 +341,14 @@ static int GL_Init (void)
 		gl_config.formatAlpha1 = 0;
 	}
 
-	qglGetIntegerv (GL_MAX_TEXTURE_SIZE, &gl_config.maxTextureSize);
+	glGetIntegerv (GL_MAX_TEXTURE_SIZE, &gl_config.maxTextureSize);
 
 	if (gl_dynamic->integer != 2)
 		gl_config.multiPassLM = true;
 
 	// set screen to particular color while initializing
-	qglClearColor (0.1, 0, 0, 1);
-	qglClear (GL_COLOR_BUFFER_BIT);
+	glClearColor (0.1, 0, 0, 1);
+	glClear (GL_COLOR_BUFFER_BIT);
 	GLimp_EndFrame ();
 
 	GL_SetDefaultState ();
@@ -426,7 +435,7 @@ static void GL_BeginFrame (float camera_separation)
 //	DrawTextRight ("---------BeginFrame---------\n", 1,0,0);
 	LOG_STRING ("\n---------- Begin Frame ----------\n\n");
 
-	if (gl_finish->integer == 2) qglFinish ();
+	if (gl_finish->integer == 2) glFinish ();
 	gl_speeds.beginFrame = Sys_Milliseconds ();
 	gl_speeds.numFrames = 0;
 
@@ -477,7 +486,7 @@ static void GL_EndFrame (void)
 	GL_ClearBuffers ();
 
 
-	if (gl_finish->integer == 2) qglFinish ();
+	if (gl_finish->integer == 2) glFinish ();
 	gl_speeds.endFrame = Sys_Milliseconds ();
 	if (r_speeds->integer && gl_speeds.beginFrame <= gl_speeds.begin3D)	// draw only when have 3D on screen
 	{
@@ -1018,9 +1027,9 @@ static void DrawTextPos (int x, int y, char *text, float r, float g, float b)
 	rec->x = x;
 	rec->y = y;
 	rec->text = textCopy;
-	rec->c.c[0] = r * 255;
-	rec->c.c[1] = g * 255;
-	rec->c.c[2] = b * 255;
+	rec->c.c[0] = Q_round (r * 255);
+	rec->c.c[1] = Q_round (g * 255);
+	rec->c.c[2] = Q_round (b * 255);
 	rec->c.c[3] = 255;
 	rec->next = NULL;
 

@@ -538,9 +538,9 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 			{
 				for (i=0 ; i<size ; i++, bl+=3)
 				{
-					bl[0] = lightmap[i*3+0] * scale;
-					bl[1] = lightmap[i*3+1] * scale;
-					bl[2] = lightmap[i*3+2] * scale;
+					bl[0] = Q_round (lightmap[i*3+0] * scale);
+					bl[1] = Q_round (lightmap[i*3+1] * scale);
+					bl[2] = Q_round (lightmap[i*3+2] * scale);
 				}
 			}
 			lightmap += size*3;		// skip to next lightmap
@@ -571,9 +571,9 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 			{
 				for (i=0 ; i<size ; i++, bl+=3)
 				{
-					bl[0] += lightmap[i*3+0] * scale;
-					bl[1] += lightmap[i*3+1] * scale;
-					bl[2] += lightmap[i*3+2] * scale;
+					bl[0] += Q_round (lightmap[i*3+0] * scale);
+					bl[1] += Q_round (lightmap[i*3+1] * scale);
+					bl[2] += Q_round (lightmap[i*3+2] * scale);
 				}
 			}
 			lightmap += size*3;		// skip to next lightmap
@@ -603,22 +603,15 @@ store:
 				b = Q_round( bl[2] );
 
 				// catch negative lights
-				if (r < 0)
-					r = 0;
-				if (g < 0)
-					g = 0;
-				if (b < 0)
-					b = 0;
+				if (r < 0)	r = 0;
+				if (g < 0)	g = 0;
+				if (b < 0)	b = 0;
 
 				/*
 				** determine the brightest of the three color components (Gildor: for monolightmap, unused here)
 				*/
-				if (r > g)
-					max = r;
-				else
-					max = g;
-				if (b > max)
-					max = b;
+				max = max(r,g);
+				max = max(max,b);
 
 				/*
 				** alpha is ONLY used for the mono lightmap case.  For this reason

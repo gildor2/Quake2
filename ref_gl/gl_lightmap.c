@@ -163,12 +163,9 @@ void LM_PutBlock (dynamicLightmap_t *dl)
 			int		r, g, b, m;
 
 			// copy lightmap
-			r = *src++;
-			*dst++ = r;
-			g = *src++;
-			*dst++ = g;
-			b = *src++;
-			*dst++ = b;
+			r = *dst++ = *src++;
+			g = *dst++ = *src++;
+			b = *dst++ = *src++;
 			// check minlight
 			m = max(r, g);
 			m = max(m, b);
@@ -202,7 +199,9 @@ void LM_PutBlock (dynamicLightmap_t *dl)
 				*dst++ = *src++;
 				*dst++ = *src++;
 				*dst++ = *src++;
-				*dst++ = 255;		// alpha (flag: modulate by 2)
+				// alpha (flag: modulate by 2)
+				// required, because backend will modulate texture by 0..1, which corresponds lightstyle=0..2
+				*dst++ = 255;
 			}
 			dst += stride;
 		}
@@ -260,13 +259,13 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 			if (IS_FAST_STYLE(dl->style[z])) continue;
 			src = dl->source[z];
 			dst = pic;
-			scale = dl->modulate[z] >> gl_config.overbrightBits;
-			if (gl_config.lightmapOverbright) scale <<= 1;
+			scale = dl->modulate[z] >> gl_config.overbright;
+			if (!gl_config.doubleModulateLM) scale <<= 1;
 
 			count = dl->w * dl->h;
 			for (x = 0; x < count; x++)
 			{
-				// modulate lightmap: scale==0 -> by 0, scale==128 - by 1; scale==255 - by 2 (or, to exact, 2.0-1/256)
+				// modulate lightmap: scale==0 -> by 0, scale==128 - by 1; scale==255 - by 2 (to be exact, 2.0-1/256)
 				int		r, g, b;
 
 				r = dst[0] + (scale * *src++ >> 7);
@@ -278,7 +277,7 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 			}
 		}
 		GL_Bind (dl->block->image);
-		qglTexSubImage2D (GL_TEXTURE_2D, 0, dl->s, dl->t, dl->w, dl->h, GL_RGBA, GL_UNSIGNED_BYTE, pic);
+		glTexSubImage2D (GL_TEXTURE_2D, 0, dl->s, dl->t, dl->w, dl->h, GL_RGBA, GL_UNSIGNED_BYTE, pic);
 		gl_speeds.numUploads++;
 	}
 //??	else
@@ -300,7 +299,7 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 				unsigned frac;			// point frac: 0 -- 0.0f, 16384*128 -- 1.0f (rang=14+7=21)
 
 				// calculate vertex color as weighted average of 4 points
-				scale = dl->modulate[z] * 2 >> gl_config.overbrightBits;
+				scale = dl->modulate[z] * 2 >> gl_config.overbright;
 //				point = dl->source[z] + ((int)v->lm2[1] * dl->w + (int)v->lm2[0]) * 3;
 				point = dl->source[z] + (Q_round (v->lm2[1]) * dl->w + Q_floor (v->lm2[0])) * 3;
 				// calculate s/t weights

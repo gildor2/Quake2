@@ -287,7 +287,7 @@ static void CL_AddParticleTraces (float timeDelta)
 		speed = VectorNormalize2 (p->vel, dir);
 		// update pos
 		VectorMA (p->pos, timeDelta, p->vel, p->pos);
-		trace = CL_PMTrace (oldpos, zero, zero, p->pos);
+		CL_Trace (&trace, oldpos, p->pos, zero, zero, CONTENTS_SOLID);
 		if (p->elasticity && trace.fraction < 1.0f)
 		{
 			int		i;

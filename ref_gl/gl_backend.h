@@ -115,7 +115,7 @@ typedef struct
 {
 	int		type;			// BACKEND_PIC
 	shader_t *shader;
-	float	x, y, w, h;
+	short	x, y, w, h;
 	float	s1, t1, s2, t2;
 	color_t	c;
 } bkDrawPic_t;
@@ -124,10 +124,10 @@ typedef struct
 typedef struct
 {
 	int		type;			// BACKEND_TEXT
-	float	x, y;			// position on screen
-	float	w, h;			// character output size
-	color_t	c;
 	byte	len;
+	short	x, y;			// position on screen
+	short	w, h;			// character output size
+	color_t	c;
 	char	text[0];		// [len]
 } bkDrawText_t;
 

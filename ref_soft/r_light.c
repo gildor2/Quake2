@@ -40,7 +40,7 @@ R_MarkLights
 void R_MarkLights (dlight_t *light, int bit, mnode_t *node)
 {
 	cplane_t	*splitplane;
-	float		dist;
+	float		dist, intens;
 	msurface_t	*surf;
 	int			i;
 
@@ -50,19 +50,13 @@ void R_MarkLights (dlight_t *light, int bit, mnode_t *node)
 	splitplane = node->plane;
 	dist = DotProduct (light->origin, splitplane->normal) - splitplane->dist;
 
-//=====
-//PGM
-	i=light->intensity;
-	if(i<0) i=-i;
-//PGM
-//=====
-
-	if (dist > i)	// PGM (dist > light->intensity)
+	intens = fabs(light->intensity);
+	if (dist > intens)
 	{
 		R_MarkLights (light, bit, node->children[0]);
 		return;
 	}
-	if (dist < -i)	// PGM (dist < -light->intensity)
+	if (dist < -intens)
 	{
 		R_MarkLights (light, bit, node->children[1]);
 		return;
@@ -117,7 +111,7 @@ static vec3_t	pointcolor;
 static cplane_t	*lightplane;		// used as shadow plane
 static vec3_t	lightspot;
 
-int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
+static int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 {
 	float		front, back, frac;
 	int			side;
@@ -170,8 +164,8 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 
 		tex = surf->texinfo;
 
-		s = DotProduct (mid, tex->vecs[0]) + tex->vecs[0][3];
-		t = DotProduct (mid, tex->vecs[1]) + tex->vecs[1][3];
+		s = Q_round (DotProduct (mid, tex->vecs[0]) + tex->vecs[0][3]);
+		t = Q_round (DotProduct (mid, tex->vecs[1]) + tex->vecs[1][3]);
 		if (s < surf->texturemins[0] ||
 		t < surf->texturemins[1])
 			continue;
@@ -330,12 +324,12 @@ void R_AddDynamicLights (void)
 
 		for (t = 0 ; t<tmax ; t++)
 		{
-			td = local[1] - t*16;
+			td = Q_round (local[1] - t*16);
 			if (td < 0)
 				td = -td;
 			for (s=0 ; s<smax ; s++)
 			{
-				sd = local[0] - s*16;
+				sd = Q_round (local[0] - s*16);
 				if (sd < 0)
 					sd = -sd;
 				if (sd > td)
@@ -347,14 +341,14 @@ void R_AddDynamicLights (void)
 				if(!negativeLight)
 				{
 					if (dist < minlight)
-						blocklights[t*smax + s] += (rad - dist)*256;
+						blocklights[t*smax + s] += Q_round ((rad - dist)*256);
 				}
 				else
 				{
 					if (dist < minlight)
-						blocklights[t*smax + s] -= (rad - dist)*256;
-					if(blocklights[t*smax + s] < minlight)
-						blocklights[t*smax + s] = minlight;
+						blocklights[t*smax + s] -= Q_round ((rad - dist)*256);
+					if (blocklights[t*smax + s] < minlight)
+						blocklights[t*smax + s] = Q_round (minlight);
 				}
 //PGM
 //====

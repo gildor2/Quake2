@@ -21,25 +21,30 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../client/qmenu.h"
 
 
-#define REF_SOFT	0
-#define REF_OPENGL	1
+#define REF_SOFT		0
+#define REF_OPENGL		1
 
-#define MIN_GAMMA	5		// 0.5
-#define MAX_GAMMA	20		// 2.0
+#define MIN_GAMMA		10		// 0.5
+#define MAX_GAMMA		30		// 2.0
+
+#define MIN_CONTRAST	10		// 0.5
+#define MAX_CONTRAST	30		// 1.5
 
 
-/*------- cvars -------*/
+/*--------------------- cvars ------------------------------*/
 
-//?? ADD r_ignorehwgamma, gl_ext_compressed_textures and gl_overbrightBits
+//?? ADD r_ignorehwgamma, gl_ext_compressed_textures and gl_overbright
 extern cvar_t *vid_ref;
 extern cvar_t *scr_viewsize;
 extern cvar_t *r_gamma;
 //static cvar_t *gl_driver;
+static cvar_t *r_contrast;
 static cvar_t *r_saturation;
 static cvar_t *gl_picmip;
 static cvar_t *gl_bitdepth;
 static cvar_t *gl_textureBits;
 static cvar_t *gl_vertexLight;
+static cvar_t *gl_overbright;
 
 extern void M_ForceMenuOff (void);
 
@@ -60,6 +65,7 @@ static menuList_t		s_ref_list[2];				// renderer
 static menuList_t		s_mode_list[2];				// video mode
 static menuSlider_t		s_screensize_slider[2];		// screen size
 static menuSlider_t		s_brightness_slider[2];		// gamma
+static menuSlider_t		s_contrast_slider[2];		// contrast
 static menuSlider_t		s_saturation[2];			// saturation
 static menuList_t  		s_fs_box[2];				// fullscreen
 static menuAction_t		s_cancel_action[2];
@@ -71,6 +77,7 @@ static menuList_t  		s_stipple_box;
 /*---- OpenGL renderer ----*/
 static menuList_t  		s_finish_box;				// gl_finish
 static menuList_t		s_colorDepth;				// gl_bitdepth
+static menuList_t		s_overbright;				// gl_overbright
 // quality/speed
 static menuList_t		s_lightStyle;				// gl_vertexLight
 static menuList_t		s_fastSky;					// gl_fastSky
@@ -96,7 +103,6 @@ static void DriverCallback (void *unused)
 		s_current_menu = &s_opengl_menu;
 		s_current_menu_index = 1;
 	}
-
 }
 
 static void ScreenSizeCallback (void *s)
@@ -109,18 +115,24 @@ static void ScreenSizeCallback (void *s)
 static void BrightnessCallback (void *s)
 {
 	menuSlider_t *slider = (menuSlider_t *) s;
-
 	if (s_current_menu_index == SOFTWARE_MENU)
 		s_brightness_slider[1].curvalue = s_brightness_slider[0].curvalue;
 	else
 		s_brightness_slider[0].curvalue = s_brightness_slider[1].curvalue;
 
-//	if (stricmp (vid_ref->string, "soft") == 0) -- can work with GL hardware gamma
-	{
-		float gamma = slider->curvalue / 10.0;
+	Cvar_SetValue ("r_gamma", slider->curvalue / (MAX_GAMMA - MIN_GAMMA));
+}
 
-		Cvar_SetValue ("r_gamma", gamma);
-	}
+
+static void ContrastCallback (void *s)
+{
+	menuSlider_t *slider = (menuSlider_t *) s;
+	if (s_current_menu_index == SOFTWARE_MENU)
+		s_contrast_slider[1].curvalue = s_contrast_slider[0].curvalue;
+	else
+		s_contrast_slider[0].curvalue = s_contrast_slider[1].curvalue;
+
+	Cvar_SetValue ("r_contrast", slider->curvalue / (MAX_CONTRAST - MIN_CONTRAST));
 }
 
 
@@ -149,6 +161,7 @@ static void ApplyChanges (void *unused)
 	if (Cvar_SetInteger ("gl_mode", s_mode_list[OPENGL_MENU].curvalue)->modified) quit |= 1;
 	Cvar_SetInteger ("gl_fastsky", s_fastSky.curvalue);
 	Cvar_SetInteger ("gl_bitdepth", s_colorDepth.curvalue * 16);
+	Cvar_SetInteger ("gl_overbright", s_overbright.curvalue);
 	Cvar_SetInteger ("gl_textureBits", s_textureBits.curvalue * 16);
 	Cvar_SetInteger ("gl_vertexLight", s_lightStyle.curvalue);
 	Cvar_Set ("gl_texturemode", s_textureFilter.curvalue ? "GL_LINEAR_MIPMAP_LINEAR" : "GL_LINEAR_MIPMAP_NEAREST");
@@ -181,9 +194,10 @@ static void ApplyChanges (void *unused)
 		CHECK_UPDATE(gl_picmip);
 		CHECK_UPDATE(gl_vertexLight);
 		CHECK_UPDATE(gl_textureBits);
-//		CHECK_UPDATE(gl_bitdepth);
-		if (gl_bitdepth->modified)
-			vid_ref->modified = true;		// do not reset "modified"
+		CHECK_UPDATE(gl_overbright);
+		CHECK_UPDATE(gl_bitdepth);
+//??		if (gl_bitdepth->modified)
+//??			vid_ref->modified = true;		// do not reset "modified"
 	}
 
 	if (vid_ref->modified || quit)
@@ -211,10 +225,13 @@ void Vid_MenuInit (void)
 		"[1280 960 ]",	"[1600 1200]",	"[2048 1536]",	NULL
 	};
 	static const char *refNames[] = {
-		"[software]",	"[OpenGL  ]",	NULL
+		"[Software ]",	"[OpenGL   ]",	NULL
 	};
 	static const char *yesnoNames[] = {
 		"no",			"yes",			NULL
+	};
+	static const char *overbrightNames[] = {
+		"no",			"yes",			"auto",			NULL
 	};
 	static const char *bits[] = {
 		"default",		"16 bit",		"32 bit",		NULL
@@ -230,11 +247,13 @@ void Vid_MenuInit (void)
 CVAR_BEGIN(vars)
 //	CVAR_GET(gl_driver, opengl32, CVAR_ARCHIVE),
 	{&scr_viewsize, "viewsize", "100", CVAR_ARCHIVE},
+	CVAR_VAR(r_contrast, 1, CVAR_ARCHIVE),
 	CVAR_VAR(r_saturation, 1, CVAR_ARCHIVE),
 	CVAR_VAR(gl_picmip, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_textureBits, 0, CVAR_ARCHIVE),
-	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE)
+	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_overbright, 2, CVAR_ARCHIVE)
 CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
@@ -270,14 +289,17 @@ CVAR_END
 		s_screensize_slider[i].curvalue = scr_viewsize->value / 10;
 		MENU_SLIDER(s_brightness_slider[i], y+=10, "brightness", BrightnessCallback, MIN_GAMMA, MAX_GAMMA);
 		Cvar_Clamp (r_gamma, 0.5, 3);
-		s_brightness_slider[i].curvalue = r_gamma->value * 10;
+		s_brightness_slider[i].curvalue = r_gamma->value * (MAX_GAMMA - MIN_GAMMA);
+		MENU_SLIDER(s_contrast_slider[i], y+=10, "contrast", ContrastCallback, MIN_CONTRAST, MAX_CONTRAST);
+		Cvar_Clamp (r_contrast, 0.5, 1.5);
+		s_contrast_slider[i].curvalue = r_contrast->value * (MAX_CONTRAST - MIN_CONTRAST);
 		MENU_SLIDER(s_saturation[i], y+=10, "saturation", NULL, 0, 20);
 		Cvar_Clamp (r_saturation, 0, 2);
 		s_saturation[i].curvalue = r_saturation->value * 10;
 		MENU_SPIN(s_fs_box[i], y+=10, "fullscreen", NULL, yesnoNames);
 		s_fs_box[i].curvalue = Cvar_Get ("r_fullscreen", "1", CVAR_ARCHIVE)->integer;
 
-		y = 160;
+		y = 170;
 		MENU_ACTION(s_defaults_action[i], y+=10, "reset to defaults", Vid_MenuInit);
 		MENU_ACTION(s_cancel_action[i], y+=10, "cancel", CancelChanges);
 	}
@@ -285,14 +307,16 @@ CVAR_END
 	vid_menu_old_gamma = r_gamma->value;
 
 	// software renderer menu
-	y = 70;
+	y = 80;
 	MENU_SPIN(s_stipple_box, y+=10, "stipple alpha", NULL, yesnoNames);
 	s_stipple_box.curvalue = Cvar_Get ("sw_stipplealpha", "0", CVAR_ARCHIVE)->integer;
 
 	// OpenGL renderer menu
-	y = 70;
+	y = 80;
 	MENU_SPIN(s_colorDepth, y+=10, "color depth", NULL, bits);
 	s_colorDepth.curvalue = gl_bitdepth->integer >> 4;
+	MENU_SPIN(s_overbright, y+=10, "gamma overbright", NULL, overbrightNames);
+	s_overbright.curvalue = gl_overbright->integer;
 	MENU_SPIN(s_lightStyle, y+=10, "lighting", NULL, lighting);
 	s_lightStyle.curvalue = gl_vertexLight->integer;
 	MENU_SPIN(s_fastSky, y+=10, "fast sky", NULL, yesnoNames);
@@ -311,6 +335,7 @@ CVAR_END
 	Menu_AddItem (&s_software_menu, (void *) &s_mode_list[SOFTWARE_MENU]);
 	Menu_AddItem (&s_software_menu, (void *) &s_screensize_slider[SOFTWARE_MENU]);
 	Menu_AddItem (&s_software_menu, (void *) &s_brightness_slider[SOFTWARE_MENU]);
+	Menu_AddItem (&s_software_menu, (void *) &s_contrast_slider[SOFTWARE_MENU]);
 	Menu_AddItem (&s_software_menu, (void *) &s_saturation[SOFTWARE_MENU]);
 	Menu_AddItem (&s_software_menu, (void *) &s_fs_box[SOFTWARE_MENU]);
 	Menu_AddItem (&s_software_menu, (void *) &s_stipple_box);
@@ -319,9 +344,11 @@ CVAR_END
 	Menu_AddItem (&s_opengl_menu, (void *) &s_mode_list[OPENGL_MENU]);
 	Menu_AddItem (&s_opengl_menu, (void *) &s_screensize_slider[OPENGL_MENU]);
 	Menu_AddItem (&s_opengl_menu, (void *) &s_brightness_slider[OPENGL_MENU]);
+	Menu_AddItem (&s_opengl_menu, (void *) &s_contrast_slider[OPENGL_MENU]);
 	Menu_AddItem (&s_opengl_menu, (void *) &s_saturation[OPENGL_MENU]);
 	Menu_AddItem (&s_opengl_menu, (void *) &s_fs_box[OPENGL_MENU]);
 	Menu_AddItem (&s_opengl_menu, (void *) &s_colorDepth);
+	Menu_AddItem (&s_opengl_menu, (void *) &s_overbright);
 	Menu_AddItem (&s_opengl_menu, (void *) &s_lightStyle);
 	Menu_AddItem (&s_opengl_menu, (void *) &s_fastSky);
 	Menu_AddItem (&s_opengl_menu, (void *) &s_tq_slider);

@@ -8,6 +8,7 @@ FAST TODO:
   -- check all places, when VERTEX->EXACT_VERTEX
 3) ? overbright for coronas (color *= 2) -- center will be white
   (at least, try it !)
+
 -----------------------
 
 - image/shader manager:
@@ -15,13 +16,11 @@ FAST TODO:
   ! images: add ALPHA(r=g=b=0,a)|LUMINANCE(r=g=b,a=255)==1|LUMINANCE_ALPHA(r=g=b,a)==2 format
     NOTE: ALPHA - rgb ignored in all TexEnv functions
   - dither 32->16 bit (when r_textureBits==16); dither mipmaps
-  ? dither mipmaps
   ? POSSIBLE BUG (feauture): Q3 uses alpha for specular lighting; check for problems with alpha-special Resample/MipMap
 
 - gl: HW lighting: do not require to rotate/remap grid lights to model axis
 !* check ATAN2/ACOS speed on normal building loading and remove #if/#else/#endif stuff from gl_model.c
-! add gl_depthBits: without it 32-bit mode works with 16-bit depth buffer; when depthbits = 0 - use 24-bit for 32-bit color
-  (as in Q3)
+! add gl_depthBits: without it 32-bit mode works with 16-bit depth buffer; when depthbits = 0 - use 24-bit for 32-bit color (as in Q3)
 
 !!! autoflares:
   - should combine bsp-divided surfaces onto a single flare
@@ -33,7 +32,7 @@ FAST TODO:
 lighting bugs:
   - map "ktdm1", {64,0,144} - teleporter model is too black (lightgrid bugs); same bug with "q2dm1"
   - "winter": too dark inside shadows (and: inside caverns should be "area lights" (check arghrad tutorial for understanding ...))
-  - "beachassault": too dark inside ship
+  - "beachassault": too dark inside ship (needs add surflights near pointlight -- or change pointlight equation -- 'linear+const/dist')
   - weapon model can get light from inside wall (should use vieworg instead of ent.origin for lighting)
 
 - lighting:
@@ -117,14 +116,6 @@ Colors:
   ! overbright particles (use identityLight) or particle color table
   ? overbright/saturate beams
   - saturate tbl_8to32 (and make separate color table for color >> overbright ??)
-
-- gl_overbright:
-  - 0-none (force off), 1-"1bit" (force on), 2-"auto" (ON when (vertexLight | (multitex. && !(combine|combine4))) && fullscreen (??))
-    auto-on for 32-bit modes (seems, prefer 2x ENV_COMBINE, overbright looks ugly with dark scenes - "beachassault") ?
-  - remove gl_overbrightBits
-  - menu selectable
-  ? lightscale lightmaps with rounding UP (avoid dark lightmaps become darker)
-    test map: "washing", opposite to fire barrell; "beachassault", near green "flare"
 
 PreprocessShader():
   - add GL_DECAL blend: src=SRC_ALPHA, dst=ONE_MINUS_SRC_ALPHA
@@ -211,7 +202,7 @@ VISIBLE:
     - IR-vision fx
     - check all RF_XXX flags from q_shared2.h
 - shadows
-? inlineModels: RF_TRANSLUCENT: qglColor4f (1,1,1,0.25) + blend + no lightmap (vertex light ?)
+? inlineModels: RF_TRANSLUCENT: glColor4f (1,1,1,0.25) + blend + no lightmap (vertex light ?)
 FOR GAME:
 - re.GetClientLight
 

@@ -349,7 +349,7 @@ static void SetupModelMatrix (refEntity_t *e)
 
 
 // Point trace to visible INLINE models; function based on CL_ClipMoveToEntities()
-// NOTE: can easily extend to any (invisible too) inline models (add flag "visibleOnly") ( can be useful for lighting ??)
+// NOTE: can easily extend to any (invisible too) inline models (add flag "visibleOnly")
 static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brushmask)
 {
 	int		i;
@@ -359,7 +359,7 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 	vec3_t	traceDir;
 
 	VectorSubtract (end, start, traceDir);
-	traceLen = VectorNormalize (traceDir);	//!! uses sqrt()
+	traceLen = VectorNormalizeFast (traceDir);
 
 	for (i = 0, e = gl_entities + vp.firstEntity; i < vp.numEntities; i++, e++)
 	{
@@ -902,7 +902,7 @@ static void AddCylinderSurfaces (refEntity_t *e)
 
 	// compute beam axis
 	VectorSubtract (e->beamEnd, e->beamStart, axis[0]);
-	len = VectorNormalize (axis[0]);
+	len = VectorNormalizeFast (axis[0]);
 	CrossProduct (axis[0], viewDir, axis[1]);
 	VectorNormalizeFast (axis[1]);
 	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
@@ -1034,7 +1034,7 @@ static void AddFlatBeam (refEntity_t *e)
 
 	// compute beam axis
 	VectorSubtract (e->beamEnd, e->beamStart, axis[0]);
-	len = VectorNormalize (axis[0]);
+	len = VectorNormalizeFast (axis[0]);
 	CrossProduct (axis[0], viewDir, axis[1]);
 	VectorNormalizeFast (axis[1]);
 	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
@@ -1973,7 +1973,7 @@ void GL_AddDlight (dlight_t *dl)
 		SATURATE(b,l,sat);
 	}
 	r1 = Q_round(r); g1 = Q_round(g); b1 = Q_round(b);
-	if (gl_config.lightmapOverbright)
+	if (!gl_config.doubleModulateLM)
 	{
 		r1 <<= 1;
 		g1 <<= 1;

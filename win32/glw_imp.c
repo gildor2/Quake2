@@ -51,7 +51,7 @@ static qboolean VerifyDriver (void)
 {
 	char buffer[1024];
 
-	strcpy (buffer, qglGetString (GL_RENDERER));
+	strcpy (buffer, glGetString (GL_RENDERER));
 	strlwr (buffer);
 	if (!strcmp (buffer, "gdi generic"))
 		if (!glw_state.mcd_accelerated)
@@ -295,33 +295,31 @@ void GLimp_SetGamma (float gamma, float intens)
 {
 	int		i, v;
 	float	invGamma, overbright;
+	float	contr, bright;
 
 	if (!gammaStored) return;
 
 	gamma = bound(gamma, 0.5, 3);
 	if (intens < 0.1f)	//?? remove
 		intens = 0.1f;
+	contr = bound(r_contrast->value, 0.3, 1.8);
+	bright = bound(r_brightness->value, 0.3, 1.8);
 
 //	DebugPrintf("set gamma %g, %g\n", gamma, intens);//!!
 
 	invGamma = 1.0f / gamma;
-	overbright = (float) (1 << gl_config.overbrightBits);
+	overbright = (float) (1 << gl_config.overbright);
 	for (i = 0; i < 256; i++)
 	{
 		float	tmp;
-		float	contr, bright;
 
-		contr = r_contrast->value;
-		bright = r_brightness->value;
-		contr = bound(contr, 0.3, 1.8);
-		bright = bound(bright, 0.3, 1.8);
 		tmp = (((i << 8) * overbright - 32768) * contr + 32768) * bright;
 		if (invGamma == 1.0)
-			v = tmp;
+			v = Q_round (tmp);
 		else
-			v = 65535.0f * pow (tmp / 65535.5f, invGamma);
+			v = Q_round (65535.0f * pow (tmp / 65535.5f, invGamma));
 
-		if (_winmajor >= 5)
+		if (_winmajor >= 5)						//?? may not work in DLL
 		{
 			int		m;
 
@@ -356,11 +354,11 @@ void GLimp_Shutdown (void)
 	RestoreGamma ();
 
 	Com_Printf ("...performing shutdown\n");
-	if (qwglMakeCurrent && !qwglMakeCurrent (NULL, NULL))
+	if (!wglMakeCurrent (NULL, NULL))
 		Com_WPrintf ("...wglMakeCurrent failed\n");
 	if (glw_state.hGLRC)
 	{
-		if (qwglDeleteContext && !qwglDeleteContext (glw_state.hGLRC))
+		if (!wglDeleteContext (glw_state.hGLRC))
 			Com_WPrintf ("...wglDeleteContext failed\n");
 		glw_state.hGLRC = NULL;
 	}
@@ -476,12 +474,12 @@ static qboolean GLimp_SetPixelFormat (void)
 
 	if (glw_state.minidriver)
 	{
-		if ((pixelformat = qwglChoosePixelFormat (glw_state.hDC, &pfd)) == 0)
+		if ((pixelformat = wglChoosePixelFormat (glw_state.hDC, &pfd)) == 0)
 		{
 			Com_WPrintf ("GLimp_Init() - qwglChoosePixelFormat failed\n");
 			return false;
 		}
-		if (qwglSetPixelFormat (glw_state.hDC, pixelformat, &pfd) == FALSE)
+		if (wglSetPixelFormat (glw_state.hDC, pixelformat, &pfd) == FALSE)
 		{
 			Com_WPrintf ("GLimp_Init() - qwglSetPixelFormat failed\n");
 			return false;
@@ -522,13 +520,13 @@ static qboolean GLimp_SetPixelFormat (void)
 	}
 */
 	// startup the OpenGL subsystem by creating a context and making it current
-	if ((glw_state.hGLRC = qwglCreateContext (glw_state.hDC)) == 0)
+	if ((glw_state.hGLRC = wglCreateContext (glw_state.hDC)) == 0)
 	{
 		Com_WPrintf ("...qwglCreateContext failed\n");
 		return false;
 	}
 
-	if (!qwglMakeCurrent (glw_state.hDC, glw_state.hGLRC))
+	if (!wglMakeCurrent (glw_state.hDC, glw_state.hGLRC))
 	{
 		Com_WPrintf ("...qwglMakeCurrent failed\n");
 		return false;
@@ -568,7 +566,7 @@ static qboolean GLimp_InitGL (void)
 	{
 		if (glw_state.hGLRC)
 		{
-			qwglDeleteContext (glw_state.hGLRC);
+			wglDeleteContext (glw_state.hGLRC);
 			glw_state.hGLRC = NULL;
 		}
 		if (glw_state.hDC)
@@ -605,15 +603,15 @@ void GLimp_BeginFrame (float camera_separation)
 /* ??
 	if (camera_separation < 0 && gl_state.stereo_enabled)
 	{
-		qglDrawBuffer (GL_BACK_LEFT);
+		glDrawBuffer (GL_BACK_LEFT);
 	}
 	else if (camera_separation > 0 && gl_state.stereo_enabled)
 	{
-		qglDrawBuffer (GL_BACK_RIGHT);
+		glDrawBuffer (GL_BACK_RIGHT);
 	}
 	else
 	{
-		qglDrawBuffer (GL_BACK);
+		glDrawBuffer (GL_BACK);
 	}*/
 }
 
@@ -632,8 +630,8 @@ void GLimp_EndFrame (void)
 	if (gl_swapinterval->modified)
 	{
 		gl_swapinterval->modified = false;
-		if (/*?? !gl_state.stereoEnabled &&*/ qwglSwapIntervalEXT)
-			qwglSwapIntervalEXT (gl_swapinterval->integer);
+		if (/*?? !gl_state.stereoEnabled &&*/ wglSwapIntervalEXT)
+			wglSwapIntervalEXT (gl_swapinterval->integer);
 	}
 
 	if (stricmp (gl_drawbuffer->string, "GL_FRONT"))
@@ -646,7 +644,7 @@ void GLimp_EndFrame (void)
 		else
 		{
 			// use wglSwapBuffers() for miniGL and Voodoo
-			if (!qwglSwapBuffers (glw_state.hDC))
+			if (!wglSwapBuffers (glw_state.hDC))
 				Com_Error (ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n");
 		}
 	}

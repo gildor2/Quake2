@@ -252,25 +252,25 @@ static void BaseMove (usercmd_t *cmd)
 	memset (cmd, 0, sizeof(*cmd));
 
 	// copy angles with float->short
-	cmd->angles[0] = cl.viewangles[0];
-	cmd->angles[1] = cl.viewangles[1];
-	cmd->angles[2] = cl.viewangles[2];
+	cmd->angles[0] = Q_round (cl.viewangles[0]);
+	cmd->angles[1] = Q_round (cl.viewangles[1]);
+	cmd->angles[2] = Q_round (cl.viewangles[2]);
 	if (in_Strafe.state & 1)
 	{
-		cmd->sidemove += cl_sidespeed->value * CL_KeyState (&in_Right);
-		cmd->sidemove -= cl_sidespeed->value * CL_KeyState (&in_Left);
+		cmd->sidemove += Q_round (cl_sidespeed->value * CL_KeyState (&in_Right));
+		cmd->sidemove -= Q_round (cl_sidespeed->value * CL_KeyState (&in_Left));
 	}
 
-	cmd->sidemove += cl_sidespeed->value * CL_KeyState (&in_Moveright);
-	cmd->sidemove -= cl_sidespeed->value * CL_KeyState (&in_Moveleft);
+	cmd->sidemove += Q_round (cl_sidespeed->value * CL_KeyState (&in_Moveright));
+	cmd->sidemove -= Q_round (cl_sidespeed->value * CL_KeyState (&in_Moveleft));
 
-	cmd->upmove += cl_upspeed->value * CL_KeyState (&in_Up);
-	cmd->upmove -= cl_upspeed->value * CL_KeyState (&in_Down);
+	cmd->upmove += Q_round (cl_upspeed->value * CL_KeyState (&in_Up));
+	cmd->upmove -= Q_round (cl_upspeed->value * CL_KeyState (&in_Down));
 
 	if (! (in_KLook.state & 1) )
 	{
-		cmd->forwardmove += cl_forwardspeed->value * CL_KeyState (&in_Forward);
-		cmd->forwardmove -= cl_forwardspeed->value * CL_KeyState (&in_Back);
+		cmd->forwardmove += Q_round (cl_forwardspeed->value * CL_KeyState (&in_Forward));
+		cmd->forwardmove -= Q_round (cl_forwardspeed->value * CL_KeyState (&in_Back));
 	}
 
 	// adjust for speed key / running

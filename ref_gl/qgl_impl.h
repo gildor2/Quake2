@@ -702,52 +702,52 @@ static void APIENTRY logViewport (GLint x, GLint y, GLsizei width, GLsizei heigh
 
 #ifdef _WIN32
 
-static int APIENTRY logwglChoosePixelFormat (HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd)
+static int APIENTRY logChoosePixelFormat (HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd)
 {
 	fprintf (glw_state.log_fp, "%s\n", "wglChoosePixelFormat");
-	return lib.wglChoosePixelFormat (hdc, ppfd);
+	return lib.ChoosePixelFormat (hdc, ppfd);
 }
 
-static int APIENTRY logwglDescribePixelFormat (HDC hdc, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd)
+static int APIENTRY logDescribePixelFormat (HDC hdc, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd)
 {
 	fprintf (glw_state.log_fp, "%s\n", "wglDescribePixelFormat");
-	return lib.wglDescribePixelFormat (hdc, iPixelFormat, nBytes, ppfd);
+	return lib.DescribePixelFormat (hdc, iPixelFormat, nBytes, ppfd);
 }
 
-static BOOL APIENTRY logwglSetPixelFormat (HDC hdc, int iPixelFormat, CONST PIXELFORMATDESCRIPTOR *ppfd)
+static BOOL APIENTRY logSetPixelFormat (HDC hdc, int iPixelFormat, CONST PIXELFORMATDESCRIPTOR *ppfd)
 {
 	fprintf (glw_state.log_fp, "%s\n", "wglSetPixelFormat");
-	return lib.wglSetPixelFormat (hdc, iPixelFormat, ppfd);
+	return lib.SetPixelFormat (hdc, iPixelFormat, ppfd);
 }
 
-static BOOL APIENTRY logwglSwapBuffers (HDC hdc)
+static BOOL APIENTRY logSwapBuffers (HDC hdc)
 {
 	fprintf (glw_state.log_fp, "%s\n", "wglSwapBuffers");
-	return lib.wglSwapBuffers (hdc);
+	return lib.SwapBuffers (hdc);
 }
 
-static HGLRC APIENTRY logwglCreateContext (HDC hdc)
+static HGLRC APIENTRY logCreateContext (HDC hdc)
 {
 	fprintf (glw_state.log_fp, "%s\n", "wglCreateContext");
-	return lib.wglCreateContext (hdc);
+	return lib.CreateContext (hdc);
 }
 
-static BOOL APIENTRY logwglDeleteContext (HGLRC hglrc)
+static BOOL APIENTRY logDeleteContext (HGLRC hglrc)
 {
 	fprintf (glw_state.log_fp, "%s\n", "wglDeleteContext");
-	return lib.wglDeleteContext (hglrc);
+	return lib.DeleteContext (hglrc);
 }
 
-static PROC APIENTRY logwglGetProcAddress (LPCSTR lpszProc)
+static PROC APIENTRY logGetProcAddress (LPCSTR lpszProc)
 {
 	fprintf (glw_state.log_fp, "%s\n", "wglGetProcAddress");
-	return lib.wglGetProcAddress (lpszProc);
+	return lib.GetProcAddress (lpszProc);
 }
 
-static BOOL APIENTRY logwglMakeCurrent (HDC hdc, HGLRC hglrc)
+static BOOL APIENTRY logMakeCurrent (HDC hdc, HGLRC hglrc)
 {
 	fprintf (glw_state.log_fp, "%s\n", "wglMakeCurrent");
-	return lib.wglMakeCurrent (hdc, hglrc);
+	return lib.MakeCurrent (hdc, hglrc);
 }
 
 
@@ -792,10 +792,10 @@ static void APIENTRY logUnlockArraysEXT (void)
 
 #ifdef _WIN32
 
-static BOOL APIENTRY logwglSwapIntervalEXT (int interval)
+static BOOL APIENTRY logSwapIntervalEXT (int interval)
 {
 	fprintf (glw_state.log_fp, "%s (%d)\n", "wglSwapIntervalEXT", interval);
-	return lib.wglSwapIntervalEXT (interval);
+	return lib.SwapIntervalEXT (interval);
 }
 
 
@@ -868,14 +868,14 @@ static qgl_t logFuncs = {
 	logViewport
 #ifdef _WIN32
 ,
-	logwglChoosePixelFormat,
-	logwglDescribePixelFormat,
-	logwglSetPixelFormat,
-	logwglSwapBuffers,
-	logwglCreateContext,
-	logwglDeleteContext,
-	logwglGetProcAddress,
-	logwglMakeCurrent
+	logChoosePixelFormat,
+	logDescribePixelFormat,
+	logSetPixelFormat,
+	logSwapBuffers,
+	logCreateContext,
+	logDeleteContext,
+	logGetProcAddress,
+	logMakeCurrent
 #endif
 ,
 	logSelectTextureSGIS,
@@ -886,7 +886,7 @@ static qgl_t logFuncs = {
 	logUnlockArraysEXT
 #ifdef _WIN32
 ,
-	logwglSwapIntervalEXT
+	logSwapIntervalEXT
 #endif
 
 #ifdef __linux__

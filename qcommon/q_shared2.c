@@ -837,13 +837,10 @@ float VectorNormalize (vec3_t v)
 	if (length)
 	{
 		ilength = 1.0f / length;
-		v[0] *= ilength;
-		v[1] *= ilength;
-		v[2] *= ilength;
+		VectorScale (v, ilength, v);
 	}
 
 	return length;
-
 }
 
 float VectorNormalize2 (vec3_t v, vec3_t out)
@@ -856,29 +853,24 @@ float VectorNormalize2 (vec3_t v, vec3_t out)
 	if (length)
 	{
 		ilength = 1.0f / length;
-		out[0] = v[0]*ilength;
-		out[1] = v[1]*ilength;
-		out[2] = v[2]*ilength;
+		VectorScale (v, ilength, out);
 	}
 
 	return length;
-
 }
 
-// fast vector normalize routine that does not check to make sure
-// that length != 0, nor does it return length, uses rsqrt approximation
-void VectorNormalizeFast( vec3_t v )
+float VectorNormalizeFast (vec3_t v)
 {
-	float ilength;
+	float len2, denom;
 
-	ilength = Q_rsqrt (DotProduct (v, v));
+	len2 = DotProduct (v, v);
+	denom = Q_rsqrt (len2);
+	VectorScale (v, denom, v);
 
-	v[0] *= ilength;
-	v[1] *= ilength;
-	v[2] *= ilength;
+	return len2 * denom;
 }
 
-void VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc)
+void _VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc)
 {
 	vecc[0] = veca[0] + scale * vecb[0];
 	vecc[1] = veca[1] + scale * vecb[1];

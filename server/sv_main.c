@@ -1368,4 +1368,5 @@ void SV_Shutdown (char *finalmsg, qboolean reconnect)
 	memset (&svs, 0, sizeof(svs));
 
 	Cvar_GetLatchedVars ();
+	Cvar_ForceSet ("nointro", "1");
 }

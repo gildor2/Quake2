@@ -3,6 +3,8 @@
 #include "../zip/zip.h"
 
 
+static qboolean initialized;
+
 /*------------ In memory -----------------*/
 
 typedef struct packFile_s
@@ -1229,7 +1231,7 @@ static pack_t *LoadPackFile (char *packfile)
 
 static void UnloadPackFile (pack_t *pak)
 {
-	Com_Printf ("Unloading pak %s (%d files)\n", pak->filename, pak->numFiles);
+	Com_DPrintf ("Unloading pak %s (%d files)\n", pak->filename, pak->numFiles);
 	FreeMemoryChain (pak->chain);
 	ClearFileCache(); // we must do it somewhere ... this is a good place.
 }
@@ -1370,7 +1372,7 @@ qboolean FS_SetGamedir (char *dir)
 	}
 
 	// flush all data, so it will be forced to reload
-	if (dedicated && !dedicated->integer)
+	if (dedicated && !dedicated->integer && initialized)
 		Cbuf_AddText ("vid_restart\nsnd_restart\n");
 
 	// setup gamedir vars
@@ -1834,7 +1836,7 @@ static void FS_Path_f (void)
 	if (fs_links)
 	{
 		Com_Printf ("\nLinks:\n");
-		for (l = fs_links; l; l=l->next)
+		for (l = fs_links; l; l = l->next)
 			Com_Printf ("%s : %s\n", l->from, l->to);
 	}
 }
@@ -1980,4 +1982,5 @@ CVAR_END
 	// check for game override
 	if (fs_gamedirvar->string[0])
 		FS_SetGamedir (fs_gamedirvar->string);
+	initialized = true;
 }

@@ -17,6 +17,7 @@
 #include <GL/glx.h>
 #endif
 
+#include "qgl_decl.h"
 
 #include "../client/ref.h"
 
@@ -61,7 +62,6 @@ typedef struct surfaceCommon_s surfaceCommon_t;
 typedef struct dynamicLightmap_s dynamicLightmap_t;
 
 
-#include "qgl_decl.h"
 #include "gl_interface.h"
 
 
@@ -169,7 +169,7 @@ extern cvar_t	*gl_picmip, *gl_textureBits, *gl_roundImagesDown, *gl_texturemode;
 extern cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
 extern cvar_t	*r_intensity;		//?? remove (or "r_brightness")
 
-extern cvar_t	*gl_overBrightBits;
+extern cvar_t	*gl_overbright;
 
 extern cvar_t	*gl_fastsky;
 extern cvar_t	*gl_fog;

@@ -137,7 +137,7 @@ cvar_t	*r_speeds;
 float	sw_lightlevel;
 
 cvar_t	*r_fullscreen;
-cvar_t	*r_gamma;
+cvar_t	*r_gamma, *r_contrast, *r_brightness;
 
 cvar_t	*r_saturation;
 
@@ -275,6 +275,8 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(r_fullscreen, 1, CVAR_ARCHIVE),
 	CVAR_VAR(r_gamma, 1, CVAR_ARCHIVE),
+	CVAR_VAR(r_contrast, 1, CVAR_ARCHIVE),
+	CVAR_VAR(r_brightness, 1, CVAR_ARCHIVE),
 
 	CVAR_VAR(r_saturation, 1, CVAR_ARCHIVE),
 CVAR_END
@@ -1109,12 +1111,12 @@ void R_BeginFrame( float camera_separation )
 	/*
 	** rebuild the gamma correction palette if necessary
 	*/
-	if ( r_gamma->modified )
+	if (r_gamma->modified || r_contrast->modified || r_brightness->modified)
 	{
 		Draw_BuildGammaTable();
 		R_GammaCorrectAndSetPalette( ( const unsigned char * ) d_8to24table );
 
-		r_gamma->modified = false;
+		r_gamma->modified = r_contrast->modified = r_brightness->modified = false;
 	}
 
 	while ( sw_mode->modified || r_fullscreen->modified )
@@ -1223,28 +1225,25 @@ Draw_BuildGammaTable
 */
 void Draw_BuildGammaTable (void)
 {
-	int		i, inf;
-	float	g;
+	int		i, v;
+	float	gamma, invGamma, contr, bright;
 
-	g = r_gamma->value;
+	gamma = r_gamma->value;
+	if (gamma < 0.1) gamma = 0.1;
+	contr = bound(r_contrast->value, 0.3, 1.8);
+	bright = bound(r_brightness->value, 0.3, 1.8);
 
-	if (g < 0.5) g = 0.5;	// avoid zero divide
-
-	if (g == 1.0)
+	invGamma = 1.0f / gamma;
+	for (i = 0; i < 256; i++)
 	{
-		for (i=0 ; i<256 ; i++)
-			sw_state.gammatable[i] = i;
-		return;
-	}
+		float	tmp;
 
-	for (i=0 ; i<256 ; i++)
-	{
-		inf = 255 * pow ( (i+0.5)/255.5 , 1.0 / g ) + 0.5;
-		if (inf < 0)
-			inf = 0;
-		if (inf > 255)
-			inf = 255;
-		sw_state.gammatable[i] = inf;
+		tmp = ((i - 128) * contr + 128) * bright;
+		if (invGamma == 1.0)
+			v = Q_round (tmp);
+		else
+			v = Q_round (255.0f * pow (tmp / 255.5f, invGamma));
+		sw_state.gammatable[i] = v;
 	}
 }
 

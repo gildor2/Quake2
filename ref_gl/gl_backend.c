@@ -129,9 +129,9 @@ static void GenerateColorArray (shaderStage_t *st)
 	case RGBGEN_VERTEX:
 		for (i = 0; i < gl_numVerts; i++, src++, dst++)
 		{
-			dst->c[0] = src->c[0] >> gl_config.overbrightBits;
-			dst->c[1] = src->c[1] >> gl_config.overbrightBits;
-			dst->c[2] = src->c[2] >> gl_config.overbrightBits;
+			dst->c[0] = src->c[0] >> gl_config.overbright;
+			dst->c[1] = src->c[1] >> gl_config.overbright;
+			dst->c[2] = src->c[2] >> gl_config.overbright;
 		}
 		break;
 	case RGBGEN_BOOST_VERTEX:
@@ -139,8 +139,8 @@ static void GenerateColorArray (shaderStage_t *st)
 			int		ka, kb;
 
 #define MIN_BOOST_BRIGHT		48
-			ka = (256 - MIN_BOOST_BRIGHT) >> gl_config.overbrightBits;
-			kb = (MIN_BOOST_BRIGHT * 256) >> gl_config.overbrightBits;
+			ka = (256 - MIN_BOOST_BRIGHT) >> gl_config.overbright;
+			kb = (MIN_BOOST_BRIGHT * 256) >> gl_config.overbright;
 			for (i = 0; i < gl_numVerts; i++, src++, dst++)
 			{
 				int		r, g, b, oldbr, newbr, scale;
@@ -168,9 +168,9 @@ static void GenerateColorArray (shaderStage_t *st)
 	case RGBGEN_ONE_MINUS_VERTEX:
 		for (i = 0; i < gl_numVerts; i++, src++, dst++)
 		{
-			dst->c[0] = (255 - src->c[0]) >> gl_config.overbrightBits;
-			dst->c[1] = (255 - src->c[1]) >> gl_config.overbrightBits;
-			dst->c[2] = (255 - src->c[2]) >> gl_config.overbrightBits;
+			dst->c[0] = (255 - src->c[0]) >> gl_config.overbright;
+			dst->c[1] = (255 - src->c[1]) >> gl_config.overbright;
+			dst->c[2] = (255 - src->c[2]) >> gl_config.overbright;
 		}
 		break;
 	case RGBGEN_LIGHTING_DIFFUSE:
@@ -630,17 +630,17 @@ static void PreprocessShader (shader_t *sh)
 		switch (st->st.rgbGenType)
 		{
 		// NONE, IDENTITY, IDENTITY_LIGHTING: already converted to CONST (on shader loading)
-		//?? check later for "entity >> overbrightBits" validness
+		//?? check later for "entity >> overbright" validness
 		case RGBGEN_ENTITY:
-			st->st.rgbaConst.c[0] = currentEntity->shaderColor.c[0] >> gl_config.overbrightBits;
-			st->st.rgbaConst.c[1] = currentEntity->shaderColor.c[1] >> gl_config.overbrightBits;
-			st->st.rgbaConst.c[2] = currentEntity->shaderColor.c[2] >> gl_config.overbrightBits;
+			st->st.rgbaConst.c[0] = currentEntity->shaderColor.c[0] >> gl_config.overbright;
+			st->st.rgbaConst.c[1] = currentEntity->shaderColor.c[1] >> gl_config.overbright;
+			st->st.rgbaConst.c[2] = currentEntity->shaderColor.c[2] >> gl_config.overbright;
 			st->st.rgbGenType = RGBGEN_CONST;
 			break;
 		case RGBGEN_ONE_MINUS_ENTITY:
-			st->st.rgbaConst.c[0] = (255 - currentEntity->shaderColor.c[0]) >> gl_config.overbrightBits;
-			st->st.rgbaConst.c[1] = (255 - currentEntity->shaderColor.c[1]) >> gl_config.overbrightBits;
-			st->st.rgbaConst.c[2] = (255 - currentEntity->shaderColor.c[2]) >> gl_config.overbrightBits;
+			st->st.rgbaConst.c[0] = (255 - currentEntity->shaderColor.c[0]) >> gl_config.overbright;
+			st->st.rgbaConst.c[1] = (255 - currentEntity->shaderColor.c[1]) >> gl_config.overbright;
+			st->st.rgbaConst.c[2] = (255 - currentEntity->shaderColor.c[2]) >> gl_config.overbright;
 			st->st.rgbGenType = RGBGEN_CONST;
 			break;
 		case RGBGEN_WAVE:
@@ -924,7 +924,7 @@ static void DrawArrays (int *indexes, int numIndexes)
 		}
 	}
 */
-	qglDrawElements (GL_TRIANGLES, numIndexes, GL_UNSIGNED_INT, indexes);
+	glDrawElements (GL_TRIANGLES, numIndexes, GL_UNSIGNED_INT, indexes);
 }
 
 
@@ -949,22 +949,22 @@ static void StageIterator (void)
 	/*------------- prepare renderer --------------*/
 
 	ProcessShaderDeforms (currentShader);
-	qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
+	glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
 
 	GL_CullFace (currentShader->cullMode);
 	if (currentShader->usePolygonOffset)
 	{
-		qglEnable (GL_POLYGON_OFFSET_FILL);
+		glEnable (GL_POLYGON_OFFSET_FILL);
 		//?? use cvars for units/factor
-		qglPolygonOffset (-1, -2);
+		glPolygonOffset (-1, -2);
 	}
 
-	if (numRenderPasses > 1 && qglLockArraysEXT)
+	if (numRenderPasses > 1 && glLockArraysEXT)
 	{
 		// do not lock texcoords and colors
-		qglDisableClientState (GL_COLOR_ARRAY);
+		glDisableClientState (GL_COLOR_ARRAY);
 		GL_DisableTexCoordArrays ();
-		qglLockArraysEXT (0, gl_numVerts);
+		glLockArraysEXT (0, gl_numVerts);
 	}
 
 	/*---------------- draw stages ----------------*/
@@ -995,13 +995,13 @@ static void StageIterator (void)
 		if (stage->rgbGenType != RGBGEN_CONST || stage->alphaGenType != ALPHAGEN_CONST)
 		{
 			GenerateColorArray (stage);
-			qglEnableClientState (GL_COLOR_ARRAY);
-			qglColorPointer (4, GL_UNSIGNED_BYTE, 0, vb->color);
+			glEnableClientState (GL_COLOR_ARRAY);
+			glColorPointer (4, GL_UNSIGNED_BYTE, 0, vb->color);
 		}
 		else
 		{
-			qglDisableClientState (GL_COLOR_ARRAY);
-			qglColor4ubv (stage->rgbaConst.c);
+			glDisableClientState (GL_COLOR_ARRAY);
+			glColor4ubv (stage->rgbaConst.c);
 		}
 
 		GL_State (pass->glState);
@@ -1019,11 +1019,11 @@ static void StageIterator (void)
 
 	/*----------------- finalize ------------------*/
 
-	if (numRenderPasses > 1 && qglUnlockArraysEXT)
-		qglUnlockArraysEXT ();
+	if (numRenderPasses > 1 && glUnlockArraysEXT)
+		glUnlockArraysEXT ();
 
 	if (currentShader->usePolygonOffset)
-		qglDisable (GL_POLYGON_OFFSET_FILL);
+		glDisable (GL_POLYGON_OFFSET_FILL);
 
 	// debug
 	if (!gl_state.is2dMode)
@@ -1093,32 +1093,32 @@ static void DrawSkyBox (void)
 
 	GL_DepthRange (gl_showsky->integer ? DEPTH_NEAR : DEPTH_FAR);
 
-	qglDisableClientState (GL_COLOR_ARRAY);
+	glDisableClientState (GL_COLOR_ARRAY);
 	if (currentShader != gl_defaultSkyShader)
-		qglColor3f (gl_config.identityLightValue_f,
+		glColor3f (gl_config.identityLightValue_f,
 					gl_config.identityLightValue_f,
 					gl_config.identityLightValue_f); // avoid overbright
 	else
-//		qglColor3f (0, 0, 0);	// bad sky -- make it black (almost as gl_fastsky)
-		qglColor3fv (gl_fogColor);
+//		glColor3f (0, 0, 0);	// bad sky -- make it black (almost as gl_fastsky)
+		glColor3fv (gl_fogColor);
 
-	qglPushMatrix ();
+	glPushMatrix ();
 	// if we will add "NODEPTHTEST" if gl_showsky mode -- DEPTHWITE will no effect
 	GL_State (gl_showsky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
 	GL_SetMultitexture (1);
 	// change modelview matrix
-	qglTranslatef (VECTOR_ARG(vp.vieworg));
+	glTranslatef (VECTOR_ARG(vp.vieworg));
 	if (currentShader->skyRotate)
 	{
-		qglRotatef (vp.time * currentShader->skyRotate,
+		glRotatef (vp.time * currentShader->skyRotate,
 			currentShader->skyAxis[0],
 			currentShader->skyAxis[1],
 			currentShader->skyAxis[2]);
 	}
 
 	GL_TexEnv (TEXENV_MODULATE);
-	qglTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord[0]);
-	qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
+	glTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord[0]);
+	glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
 
 	for (side = 0; side < 6; side++)
 	{
@@ -1139,18 +1139,18 @@ static void DrawSkyBox (void)
 			// need to perform some state restoration (do it with another way ??)
 			GL_State (gl_showsky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
 			if (currentShader != gl_defaultSkyShader)
-				qglColor3f (gl_config.identityLightValue_f,
+				glColor3f (gl_config.identityLightValue_f,
 							gl_config.identityLightValue_f,
 							gl_config.identityLightValue_f); // avoid overbright
 			else
-//				qglColor3f (0, 0, 0);
-				qglColor3fv (gl_fogColor);
+//				glColor3f (0, 0, 0);
+				glColor3fv (gl_fogColor);
 			GL_SetMultitexture (1);
 		}
 		gl_speeds.tris += gl_numIndexes * numTmpStages / 3;
 		gl_speeds.trisMT += gl_numIndexes * numRenderPasses / 3;
 	}
-	qglPopMatrix ();
+	glPopMatrix ();
 
 	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
 
@@ -1410,7 +1410,7 @@ static void FlashColor (void)
 	int		i;
 
 	i = Q_round (vp.time / 3 * TABLE_SIZE);
-	qglColor3f (sinTable[i & TABLE_MASK] / 2 + 0.5,
+	glColor3f (sinTable[i & TABLE_MASK] / 2 + 0.5,
 				sinTable[i + 100 & TABLE_MASK] / 2 + 0.5,
 				sinTable[600 - i & TABLE_MASK] / 2 + 0.5);
 }
@@ -1425,15 +1425,15 @@ static void DrawBBoxes (void)
 
 	// common GL setup
 #ifdef BBOX_WORLD
-	qglLoadMatrixf (&vp.modelMatrix[0][0]);		// world matrix
+	glLoadMatrixf (&vp.modelMatrix[0][0]);		// world matrix
 #endif
 	GL_SetMultitexture (0);		// disable texturing with all tmu's
-	qglDisableClientState (GL_COLOR_ARRAY);
+	glDisableClientState (GL_COLOR_ARRAY);
 
 	if (gl_showbboxes->integer == 2)
 		FlashColor ();
 	else
-		qglColor3f (0.6, 0.6, 0.2);
+		glColor3f (0.6, 0.6, 0.2);
 	GL_State (0);
 
 	/*-------- draw bounding boxes --------*/
@@ -1471,19 +1471,19 @@ static void DrawBBoxes (void)
 
 				GL_State (GLSTATE_POLYGON_LINE);
 				GL_DepthRange (DEPTH_NEAR);
-				qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
-				qglColor3f (0.5, 0.1, 0.1);
-				qglDrawElements (GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
+				glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
+				glColor3f (0.5, 0.1, 0.1);
+				glDrawElements (GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
 
 				GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA);
 				GL_DepthRange (DEPTH_NORMAL);
 				if (!ent->worldMatrix)
-					qglColor4f (0.1, 0.1, 0.3, 0.4);
+					glColor4f (0.1, 0.1, 0.3, 0.4);
 				else
-					qglColor4f (0.5, 0.1, 0.1, 0.4);
-				qglDrawElements (GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
+					glColor4f (0.5, 0.1, 0.1, 0.4);
+				glDrawElements (GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
 
-				qglColor3f (0.6, 0.6, 0.2);
+				glColor3f (0.6, 0.6, 0.2);
 			}
 		}
 #endif
@@ -1516,17 +1516,17 @@ static void DrawBBoxes (void)
 
 		// draw it
 #ifndef BBOX_WORLD
-		qglLoadMatrixf (&ent->modelMatrix[0][0]);
+		glLoadMatrixf (&ent->modelMatrix[0][0]);
 #endif
 		if (gl_showbboxes->integer == 3)
 		{
 			if (!ent->worldMatrix)
-				qglColor3f (0.6, 0.6, 0.2);
+				glColor3f (0.6, 0.6, 0.2);
 			else
-				qglColor3f (0.2, 0.8, 0.2);
+				glColor3f (0.2, 0.8, 0.2);
 		}
-		qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
-		qglDrawElements (GL_LINES, 24, GL_UNSIGNED_INT, inds);
+		glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
+		glDrawElements (GL_LINES, 24, GL_UNSIGNED_INT, inds);
 	}
 }
 
@@ -1548,8 +1548,8 @@ static void DrawTriangles (void)
 	if (gl_showtris->integer - 1 & 2)
 		FlashColor ();
 	else
-		qglColor3f (0, 0, 0);
-	qglDisableClientState (GL_COLOR_ARRAY);
+		glColor3f (0, 0, 0);
+	glDisableClientState (GL_COLOR_ARRAY);
 	// draw
 	DrawArrays (gl_indexesArray, gl_numIndexes);
 	// restore state
@@ -1578,10 +1578,10 @@ static void DrawNormals (void)
 	if (gl_shownormals->integer - 1 & 2)
 		FlashColor ();
 	else
-		qglColor3f (0, 0, 0);
-	qglDisableClientState (GL_COLOR_ARRAY);
+		glColor3f (0, 0, 0);
+	glDisableClientState (GL_COLOR_ARRAY);
 	// draw
-	qglBegin (GL_LINES);
+	glBegin (GL_LINES);
 	vec = vb->verts;
 	for (i = 0, ex = gl_extra; i < gl_numExtra; i++, ex++)
 	{
@@ -1590,12 +1590,12 @@ static void DrawNormals (void)
 		{
 			vec3_t	vec2;
 
-			qglVertex3fv (vec->xyz);
+			glVertex3fv (vec->xyz);
 			VectorAdd (vec->xyz, ex->normal, vec2);
-			qglVertex3fv (vec2);
+			glVertex3fv (vec2);
 		}
 	}
-	qglEnd ();
+	glEnd ();
 	// restore state
 	GL_DepthRange (prevDepth);
 }
@@ -1614,8 +1614,8 @@ static void TesselateEntitySurf (refEntity_t *e)
 		};
 
 		GL_SetMultitexture (0);		// disable texturing with all tmu's
-		qglDisableClientState (GL_COLOR_ARRAY);
-		qglColor4ubv (e->shaderColor.c);
+		glDisableClientState (GL_COLOR_ARRAY);
+		glColor4ubv (e->shaderColor.c);
 		GL_State (0);
 
 		// generate verts
@@ -1634,8 +1634,8 @@ static void TesselateEntitySurf (refEntity_t *e)
 			VectorMA (tmp,		 z, e->boxAxis[2], v[i].xyz);
 		}
 		// draw it
-		qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
-		qglDrawElements (GL_LINES, 24, GL_UNSIGNED_INT, inds);
+		glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
+		glDrawElements (GL_LINES, 24, GL_UNSIGNED_INT, inds);
 	}
 	else
 		DrawTextLeft (va("Unknown ent surf flags: %X", e->flags), 1, 0, 0);
@@ -1665,11 +1665,11 @@ static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 		// setup RGBA (if const)
 		if (stage->rgbGenType == RGBGEN_CONST)
 		{	// here: alphaGenFunc == ALPHAGEN_CONST (condition for shader.fast flag)
-			qglDisableClientState (GL_COLOR_ARRAY);
-			qglColor4ubv (stage->rgbaConst.c);
+			glDisableClientState (GL_COLOR_ARRAY);
+			glColor4ubv (stage->rgbaConst.c);
 		}
 		else
-			qglEnableClientState (GL_COLOR_ARRAY);
+			glEnableClientState (GL_COLOR_ARRAY);
 		//---- BindStageImage (stage); ----
 		if (stage->numAnimTextures == 1)
 			GL_Bind (stage->mapImage[0]);
@@ -1687,21 +1687,21 @@ static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 			case SURFACE_PLANAR:
 				pl = surf->pl;
 
-				qglVertexPointer (3, GL_FLOAT, sizeof(vertex_t), pl->verts);
+				glVertexPointer (3, GL_FLOAT, sizeof(vertex_t), pl->verts);
 				if (stage->tcGenType == TCGEN_TEXTURE)
-					qglTexCoordPointer (2, GL_FLOAT, sizeof(vertex_t), pl->verts[0].st);
+					glTexCoordPointer (2, GL_FLOAT, sizeof(vertex_t), pl->verts[0].st);
 				else
-					qglTexCoordPointer (2, GL_FLOAT, sizeof(vertex_t), pl->verts[0].lm);
+					glTexCoordPointer (2, GL_FLOAT, sizeof(vertex_t), pl->verts[0].lm);
 //				if (stage->rgbGenType == RGBGEN_EXACT_VERTEX) -- always for fast shaders
-					qglColorPointer (4, GL_UNSIGNED_BYTE, sizeof(vertex_t), pl->verts[0].c.c);
-				qglDrawElements (GL_TRIANGLES, pl->numIndexes, GL_UNSIGNED_INT, pl->indexes);
+					glColorPointer (4, GL_UNSIGNED_BYTE, sizeof(vertex_t), pl->verts[0].c.c);
+				glDrawElements (GL_TRIANGLES, pl->numIndexes, GL_UNSIGNED_INT, pl->indexes);
 				break;
 			}
 		}
 	}
 
 	if (gl_finish->integer == 2)
-		qglFinish ();
+		glFinish ();
 	gl_speeds.numIterators++;
 }
 
@@ -1722,7 +1722,7 @@ static void DrawParticles (particle_t *p)
 	VectorScale (vp.viewaxis[1], 1.5, up);
 	VectorScale (vp.viewaxis[2], 1.5, right);
 
-	qglBegin (GL_TRIANGLES);
+	glBegin (GL_TRIANGLES);
 	for ( ; p; p = p->drawNext)
 	{
 		float	scale;
@@ -1739,7 +1739,7 @@ static void DrawParticles (particle_t *p)
 		else
 			scale = scale / 500.0f + 1.0f;
 
-		alpha = p->alpha * 255;
+		alpha = Q_round (p->alpha * 255);
 		alpha = bound(alpha, 0, 255);
 
 		switch (p->type)
@@ -1761,18 +1761,18 @@ static void DrawParticles (particle_t *p)
 			*(int*)c = gl_config.tbl_8to32[p->color];
 		}
 		c[3] = alpha;
-		qglColor4ubv (c);
+		glColor4ubv (c);
 
-		qglTexCoord2f (0.0625, 0.0625);
-		qglVertex3fv (p->org);
+		glTexCoord2f (0.0625, 0.0625);
+		glVertex3fv (p->org);
 
-		qglTexCoord2f (1.0625, 0.0625);
-		qglVertex3f (p->org[0] + up[0] * scale, p->org[1] + up[1] * scale, p->org[2] + up[2] * scale);
+		glTexCoord2f (1.0625, 0.0625);
+		glVertex3f (p->org[0] + up[0] * scale, p->org[1] + up[1] * scale, p->org[2] + up[2] * scale);
 
-		qglTexCoord2f (0.0625, 1.0625);
-		qglVertex3f (p->org[0] + right[0] * scale, p->org[1] + right[1] * scale, p->org[2] + right[2] * scale);
+		glTexCoord2f (0.0625, 1.0625);
+		glVertex3f (p->org[0] + right[0] * scale, p->org[1] + right[1] * scale, p->org[2] + right[2] * scale);
 	}
-	qglEnd ();
+	glEnd ();
 }
 
 
@@ -1805,7 +1805,7 @@ static void DrawScene (void)
 	GL_Setup (&vp);
 
 	// sort surfaces
-	if (gl_finish->integer == 2) qglFinish ();
+	if (gl_finish->integer == 2) glFinish ();
 	gl_speeds.beginSort = Sys_Milliseconds ();
 	GL_SortSurfaces (&vp, sortedSurfaces);
 	gl_speeds.begin3D = Sys_Milliseconds ();
@@ -1899,7 +1899,7 @@ static void DrawScene (void)
 				{
 					//?? set shader.time to vp.time
 					LOG_STRING (va("******** Change entity to WORLD ********\n"));
-					qglLoadMatrixf (&vp.modelMatrix[0][0]);
+					glLoadMatrixf (&vp.modelMatrix[0][0]);
 				}
 				gl_state.inverseCull = false;
 				GL_DepthRange (DEPTH_NORMAL);
@@ -1908,7 +1908,7 @@ static void DrawScene (void)
 			{
 				//?? set shader.time to vp.time - entity.time
 				LOG_STRING (va("******** Change entity to %s ********\n", currentEntity->model->name));
-				qglLoadMatrixf (&currentEntity->modelMatrix[0][0]);
+				glLoadMatrixf (&currentEntity->modelMatrix[0][0]);
 				gl_state.inverseCull = currentEntity->mirror;
 				GL_DepthRange (currentEntity->flags & RF_DEPTHHACK ? DEPTH_HACK : DEPTH_NORMAL);
 			}
@@ -1953,7 +1953,7 @@ static void DrawScene (void)
 	if (gl_showLights->integer)
 		GL_ShowLights ();
 
-	if (gl_finish->integer == 2) qglFinish ();
+	if (gl_finish->integer == 2) glFinish ();
 	gl_speeds.begin2D = Sys_Milliseconds ();
 }
 
@@ -2128,19 +2128,19 @@ void GL_BackEnd (void)
 		case BACKEND_BEGIN_FRAME:
 #ifdef SWAP_ON_BEGIN
 			GLimp_EndFrame ();
-			if (gl_finish->integer) qglFinish ();
+			if (gl_finish->integer) glFinish ();
 #endif
 
-			qglDrawBuffer (stricmp (gl_drawbuffer->string, "GL_FRONT") ? GL_BACK : GL_FRONT);
+			glDrawBuffer (stricmp (gl_drawbuffer->string, "GL_FRONT") ? GL_BACK : GL_FRONT);
 			if (gl_config.consoleOnly)
 			{
-				qglClearColor (0, 0.2, 0, 1);
-				qglClear (GL_COLOR_BUFFER_BIT);
+				glClearColor (0, 0.2, 0, 1);
+				glClear (GL_COLOR_BUFFER_BIT);
 			}
 			else if (gl_clear->integer)
 			{
-				qglClearColor (0.1, 0.6, 0.3, 1);
-				qglClear (GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+				glClearColor (0.1, 0.6, 0.3, 1);
+				glClear (GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 			}
 			p++;
 			break;
@@ -2153,7 +2153,7 @@ void GL_BackEnd (void)
 				GL_ShowImages ();
 
 #ifndef SWAP_ON_BEGIN
-			if (gl_finish->integer) qglFinish ();
+			if (gl_finish->integer) glFinish ();
 			GLimp_EndFrame ();
 #endif
 			gl_state.is2dMode = false;	// invalidate 2D mode, because of buffer switching

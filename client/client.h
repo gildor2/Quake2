@@ -575,7 +575,6 @@ void CL_SmokeAndFlash(vec3_t origin);
 void CL_InitPrediction (void);
 void CL_PredictMove (void);
 void CL_CheckPredictionError (void);
-trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);
 
 //
 // cl_fx.c
@@ -611,7 +610,8 @@ void CL_DrawInventory (void);
 //
 // cl_pred.c
 //
-void CL_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);
+void CL_EntityTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents);
+void CL_Trace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents);
 void CL_PredictMovement (void);
 
 //-------------------------------------------

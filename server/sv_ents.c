@@ -241,9 +241,9 @@ void SV_WritePlayerstateToClient (client_frame_t *from, client_frame_t *to, size
 	// write the rest of the player_state_t
 	if (pflags & PS_VIEWOFFSET)
 	{
-		MSG_WriteChar (msg, ps->viewoffset[0]*4);
-		MSG_WriteChar (msg, ps->viewoffset[1]*4);
-		MSG_WriteChar (msg, ps->viewoffset[2]*4);
+		MSG_WriteChar (msg, Q_round (ps->viewoffset[0]*4));
+		MSG_WriteChar (msg, Q_round (ps->viewoffset[1]*4));
+		MSG_WriteChar (msg, Q_round (ps->viewoffset[2]*4));
 	}
 
 	if (pflags & PS_VIEWANGLES)
@@ -255,9 +255,9 @@ void SV_WritePlayerstateToClient (client_frame_t *from, client_frame_t *to, size
 
 	if (pflags & PS_KICKANGLES)
 	{
-		MSG_WriteChar (msg, ps->kick_angles[0]*4);
-		MSG_WriteChar (msg, ps->kick_angles[1]*4);
-		MSG_WriteChar (msg, ps->kick_angles[2]*4);
+		MSG_WriteChar (msg, Q_round (ps->kick_angles[0]*4));
+		MSG_WriteChar (msg, Q_round (ps->kick_angles[1]*4));
+		MSG_WriteChar (msg, Q_round (ps->kick_angles[2]*4));
 	}
 
 	if (pflags & PS_WEAPONINDEX)
@@ -268,23 +268,23 @@ void SV_WritePlayerstateToClient (client_frame_t *from, client_frame_t *to, size
 	if (pflags & PS_WEAPONFRAME)
 	{
 		MSG_WriteByte (msg, ps->gunframe);
-		MSG_WriteChar (msg, ps->gunoffset[0]*4);
-		MSG_WriteChar (msg, ps->gunoffset[1]*4);
-		MSG_WriteChar (msg, ps->gunoffset[2]*4);
-		MSG_WriteChar (msg, ps->gunangles[0]*4);
-		MSG_WriteChar (msg, ps->gunangles[1]*4);
-		MSG_WriteChar (msg, ps->gunangles[2]*4);
+		MSG_WriteChar (msg, Q_round (ps->gunoffset[0]*4));
+		MSG_WriteChar (msg, Q_round (ps->gunoffset[1]*4));
+		MSG_WriteChar (msg, Q_round (ps->gunoffset[2]*4));
+		MSG_WriteChar (msg, Q_round (ps->gunangles[0]*4));
+		MSG_WriteChar (msg, Q_round (ps->gunangles[1]*4));
+		MSG_WriteChar (msg, Q_round (ps->gunangles[2]*4));
 	}
 
 	if (pflags & PS_BLEND)
 	{
-		MSG_WriteByte (msg, ps->blend[0]*255);
-		MSG_WriteByte (msg, ps->blend[1]*255);
-		MSG_WriteByte (msg, ps->blend[2]*255);
-		MSG_WriteByte (msg, ps->blend[3]*255);
+		MSG_WriteByte (msg, Q_round (ps->blend[0]*255));
+		MSG_WriteByte (msg, Q_round (ps->blend[1]*255));
+		MSG_WriteByte (msg, Q_round (ps->blend[2]*255));
+		MSG_WriteByte (msg, Q_round (ps->blend[3]*255));
 	}
 	if (pflags & PS_FOV)
-		MSG_WriteByte (msg, ps->fov);
+		MSG_WriteByte (msg, Q_round (ps->fov));
 	if (pflags & PS_RDFLAGS)
 		MSG_WriteByte (msg, ps->rdflags);
 

@@ -1385,6 +1385,7 @@ static void ParseCmdline (char *cmdline)
 	static char buf[512];
 	int		i, quotes;
 
+	// parse command line; fill cmdlineParts[] array
 	buf[0] = 0;						// starts with 0 (needs for trimming trailing spaces)
 	dst = &buf[1];
 	while (true)
@@ -1532,15 +1533,16 @@ CVAR_BEGIN(vars)
 #endif
 CVAR_END
 
-	Z_Init ();
-
 	Swap_Init ();
-	Cbuf_Init ();
-
+	Z_Init ();
 	Cvar_Init ();
-	Cmd_Init ();
-	ParseCmdline (cmdline);			// should be executed before any cvar creation
 
+	ParseCmdline (cmdline);			// should be executed before any cvar creation
+	Cvar_GetVars (ARRAY_ARG(vars));
+	Cvar_Get ("version", va("%4.2f %s %s %s", VERSION, CPUSTRING, __DATE__, BUILDSTRING), CVAR_SERVERINFO|CVAR_NOSET);
+
+	Cbuf_Init ();
+	Cmd_Init ();
 	Key_Init ();
 
 	FS_InitFilesystem ();
@@ -1551,10 +1553,6 @@ CVAR_END
 
 	// init commands and vars
 	Cmd_AddCommand ("error", Com_Error_f);
-
-	Cvar_GetVars (ARRAY_ARG(vars));
-	Cvar_Get ("version", va("%4.2f %s %s %s", VERSION, CPUSTRING, __DATE__, BUILDSTRING), CVAR_SERVERINFO|CVAR_NOSET);
-
 
 	if (dedicated->integer)
 	{
@@ -1573,22 +1571,21 @@ CVAR_END
 	// initialize rand() functions
 	srand (Sys_Milliseconds ());
 
-	// add "+commands" from command line
-//!!	Cbuf_AddLateCommands ();
-
 	if (nointro->integer == 0)
 	{	// if the user didn't give any commands, run default action
 		if (!dedicated->integer)
 		{
-			Cvar_ForceSet ("nointro", "2");		// indicates intro playback
 			Cbuf_AddText ("d1\n");
+			Cbuf_Execute ();
+			if (!Com_ServerState ())		// this alias not exists or not starts demo
+				Cvar_ForceSet ("nointro", "1");
 		}
 		else
+		{
 			Cbuf_AddText ("dedicated_start\n");
-		Cbuf_Execute ();
+			Cbuf_Execute ();
+		}
 	}
-	else if (nointro->integer != 1)				// do not allow values other than 0 or 1
-		Cvar_ForceSet ("nointro", "1");
 
 	cvar_initialized = 2;
 	PushCmdline ();
@@ -1610,10 +1607,16 @@ __inline unsigned cycles (void)	  // taken from UT
 {
 	__asm
 	{
+#if 1
 		xor   eax,eax	          // Required so that VC++ realizes EAX is modified.
 		_emit 0x0F		          // RDTSC  -  Pentium+ time stamp register to EDX:EAX.
 		_emit 0x31		          // Use only 32 bits in EAX - even a Ghz cpu would have a 4+ sec period.
 		xor   edx,edx	          // Required so that VC++ realizes EDX is modified.
+#else
+//		xor		eax,eax
+		rdtsc
+//		xor		edx,edx
+#endif
 	}
 }
 #pragma warning (pop)

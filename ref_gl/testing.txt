@@ -9,6 +9,6 @@
 - gl_showImages <mask> | 1==* | 0
 - r_lightmap && r_fullbright -> wireframe drawing (within a lightmap and texture); hint: use gl_fastsky or gl_clear
 - gl_dynamic == 2 -> uploadable dynamic lightmaps (restart required)
-- img_reload <mask> -- reload all matched images (non-system images and which names are not started with '*')
+- img_reload <mask> -- reload all matched images (non-system images and images, which names are not started with '*', not reloaded)
 - gl_labels == 2 -> show occluded ent labels
 - gl_showLights == 2 -> display spotlight intensities

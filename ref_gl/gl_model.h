@@ -142,8 +142,8 @@ typedef struct surfaceCommon_s
 
 typedef struct node_s
 {
-	byte	isNode;				// true if this is a leaf
-	byte	haveAlpha;			// true if leaf have surface(s) with translucent shader
+	int		isNode:1;			// true if this is a leaf
+	int		haveAlpha:1;		// true if leaf have surface(s) with translucent shader
 	byte	frustumMask;
 	int		visFrame, frame;	// PVS-cull frame, frustum-cull frame
 	// leaf geometry

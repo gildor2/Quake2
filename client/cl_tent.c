@@ -955,8 +955,7 @@ void CL_ParseTEnt (void)
 
 				VectorAdd (pos, dir, start);
 				VectorMA (start, -2, dir, end);
-				CM_BoxTrace (&trace, start, end, zero, zero, 0, MASK_ALL);
-				CL_ClipMoveToEntities (&trace, start, zero, zero, end);
+				CL_Trace (&trace, start, end, zero, zero, MASK_ALL);
 				if (trace.fraction < 1.0)
 				{
 					csurface_t	*surf;

@@ -355,7 +355,7 @@ static shader_t *FinishShader (void)
 		{
 			if (blend2 == (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO))			// src*dst
 			{
-				if (!gl_config.lightmapOverbright)
+				if (gl_config.doubleModulateLM)
 					blend2 = GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR;		// src*dst*2
 			}
 			else

@@ -605,7 +605,7 @@ void R_PolygonDrawSpans(espan_t *pspan, int iswater )
 	zispanletstepu = d_zistepu * AFFINE_SPANLET_SIZE;
 
 // we count on FP exceptions being turned off to avoid range problems
-	s_spanletvars.izistep = (int)(d_zistepu * 0x8000 * 0x10000);
+	s_spanletvars.izistep = Q_floor (d_zistepu * 0x8000 * 0x10000);
 	s_spanletvars.izistep_times_2 = s_spanletvars.izistep * 2;
 
 	s_spanletvars.pz = 0;
@@ -1139,8 +1139,8 @@ void R_PolygonCalculateGradients (void)
 	d_zistepv =  -p_normal[1] * yscaleinv * distinv;
 	d_ziorigin =  p_normal[2] * distinv - xcenter * d_zistepu - ycenter * d_zistepv;
 
-	sadjust = (fixed16_t) ( ( DotProduct( r_polydesc.viewer_position, r_polydesc.vright) + r_polydesc.s_offset ) * 0x10000 );
-	tadjust = (fixed16_t) ( ( DotProduct( r_polydesc.viewer_position, r_polydesc.vup   ) + r_polydesc.t_offset ) * 0x10000 );
+	sadjust = (fixed16_t) Q_round ( ( DotProduct( r_polydesc.viewer_position, r_polydesc.vright) + r_polydesc.s_offset ) * 0x10000 );
+	tadjust = (fixed16_t) Q_round ( ( DotProduct( r_polydesc.viewer_position, r_polydesc.vup   ) + r_polydesc.t_offset ) * 0x10000 );
 
 // -1 (-epsilon) so we never wander off the edge of the texture
 	bbextents = (r_polydesc.pixel_width << 16) - 1;

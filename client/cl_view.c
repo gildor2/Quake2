@@ -483,6 +483,7 @@ static void DrawSurfInfo (void)
 	csurface_t	*surf;
 	vec3_t	norm;
 	char	*s;
+	int		cont;
 
 	static flagInfo_t surfNames[] = {
 #define T(name)		{SURF_##name, #name}
@@ -516,9 +517,10 @@ static void DrawSurfInfo (void)
 	VectorScale (end, 500, end);
 	VectorAdd (start, end, end);
 
-	CM_BoxTrace (&trace, start, end, zero, zero, 0, r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER);
+	cont = r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER;
+	CM_BoxTrace (&trace, start, end, zero, zero, 0, cont);
 	if (!(r_surfinfo->integer & 2))
-		CL_ClipMoveToEntities (&trace, start, zero, zero, end);
+		CL_EntityTrace (&trace, start, end, zero, zero, cont);
 
 	if (trace.fraction < 1.0)
 	{

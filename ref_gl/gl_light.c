@@ -23,6 +23,9 @@
  */
 
 
+//#define TEST 1				//!!!!! REMOVE THIS
+static cvar_t *test;		//!!!!!
+
 static vec3_t entityColorAxis[6];
 // array layout: back/front/right/left/bottom/top
 
@@ -39,8 +42,8 @@ static void LightLine (vec3_t *axis, vec3_t from, vec3_t to, float *color, float
 	prevDepth = gl_state.currentDepthMode;
 
 
-	qglPushMatrix ();
-	qglLoadMatrixf (&vp.modelMatrix[0][0]);
+	glPushMatrix ();
+	glLoadMatrixf (&vp.modelMatrix[0][0]);
 	GL_SetMultitexture (0);		// disable texturing
 	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 	GL_DepthRange (DEPTH_NEAR);
@@ -50,26 +53,26 @@ static void LightLine (vec3_t *axis, vec3_t from, vec3_t to, float *color, float
 	b = Q_round (color[2] * lightScale);
 	NORMALIZE_COLOR255(r, g, b);
 	c.c[0] = r; c.c[1] = g; c.c[2] = b; c.c[3] = 255;
-	qglColor4ubv (c.c);
-	qglDisableClientState (GL_COLOR_ARRAY);
+	glColor4ubv (c.c);
+	glDisableClientState (GL_COLOR_ARRAY);
 //	GL_DisableTexCoordArrays ();
 
-	qglBegin (GL_LINES);
-	qglVertex3fv (from);
-	qglVertex3fv (to);
+	glBegin (GL_LINES);
+	glVertex3fv (from);
+	glVertex3fv (to);
 	for (i = 0; i < 3; i++)
 	{
 		vec3_t	v;
 
 		VectorMA (from, 10, axis[i], v);
-		qglVertex3fv (v);
+		glVertex3fv (v);
 		VectorMA (from, -10, axis[i], v);
-		qglVertex3fv (v);
+		glVertex3fv (v);
 	}
-	qglEnd ();
+	glEnd ();
 
 	// restore state
-	qglPopMatrix ();
+	glPopMatrix ();
 	GL_DepthRange (prevDepth);
 }
 
@@ -85,15 +88,15 @@ void GL_ShowLights (void)
 
 	if (vp.flags & RDF_NOWORLDMODEL) return;
 
-	qglPushMatrix ();
-	qglLoadMatrixf (&vp.modelMatrix[0][0]);
+	glPushMatrix ();
+	glLoadMatrixf (&vp.modelMatrix[0][0]);
 	GL_SetMultitexture (0);		// disable texturing
 	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
-	qglDisableClientState (GL_COLOR_ARRAY);
+	glDisableClientState (GL_COLOR_ARRAY);
 
 	for (i = 0, sl = map.slights; i < map.numSlights; i++, sl++)
 	{
-		qglColor3fv (sl->color);
+		glColor3fv (sl->color);
 		if (sl->spot)
 		{
 			bufVertex_t	vecs[5];
@@ -116,23 +119,23 @@ void GL_ShowLights (void)
 			for (j = 0; j < 4; j++)
 				VectorMA (forward, j & 2 ? scale : -scale, j & 1 ? up : right, vecs[j + 1].xyz);
 			VectorCopy (sl->origin, vecs[0].xyz);
-			qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vecs);
-			qglDrawElements (GL_LINES, 16, GL_UNSIGNED_INT, indexes);
+			glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vecs);
+			glDrawElements (GL_LINES, 16, GL_UNSIGNED_INT, indexes);
 		}
 		else
 		{
 			vec3_t	v;
 
-			qglBegin (GL_LINES);
+			glBegin (GL_LINES);
 			for (j = 0; j < 3; j++)
 			{
 				VectorCopy (sl->origin, v);
 				v[j] -= DEBUG_POINT_SIZE/2;
-				qglVertex3fv (v);
+				glVertex3fv (v);
 				v[j] += DEBUG_POINT_SIZE;
-				qglVertex3fv (v);
+				glVertex3fv (v);
 			}
-			qglEnd ();
+			glEnd ();
 		}
 		if (gl_showLights->integer == 2)
 			DrawText3D (sl->origin, va("%g", sl->intens), VECTOR_ARG(sl->color));
@@ -144,7 +147,7 @@ void GL_ShowLights (void)
 		bufVertex_t	vecs[4];
 		static int	indexes[8] = {0, 1, 1, 3, 3, 2, 2, 0};
 
-		qglColor3fv (rl->color);
+		glColor3fv (rl->color);
 
 		for (j = 0; j < 4; j++)
 		{
@@ -158,13 +161,13 @@ void GL_ShowLights (void)
 			VectorMA (tmp, rl->pl->plane.dist + 1, rl->pl->plane.normal, vecs[j].xyz);
 		}
 
-		qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vecs);
-		qglDrawElements (GL_LINES, 8, GL_UNSIGNED_INT, indexes);
+		glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vecs);
+		glDrawElements (GL_LINES, 8, GL_UNSIGNED_INT, indexes);
 	}
 
 	//?? show dlights
 
-	qglPopMatrix ();
+	glPopMatrix ();
 }
 
 
@@ -172,6 +175,9 @@ static void AddLight (vec3_t *axis, vec3_t dir, float scale, vec3_t color)
 {
 	float	v;
 
+#ifdef TEST	//!! del
+	if (test->integer & 1) return;//!!
+#endif
 #if 0
 	// light for sphere (will not work for sunlight! need correct dist); NOT WORKS NOW AT ALL
 	{
@@ -223,7 +229,7 @@ static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *v
 	}
 
 	VectorSubtract (origin, sl->origin, dif);
-	dist = VectorNormalize (dif);
+	dist = VectorNormalizeFast (dif);
 
 	linearScale = LINEAR_SCALE;
 	invScale = INV_SCALE;
@@ -265,7 +271,12 @@ static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *v
 //if (sl->spot) DrawTextLeft(va("  scale=%g",scale),1,1,0);
 	if (scale < 1) return;							// "scale" will convert 0..1 range to 0..255
 
+#ifdef TEST //!! del
+	if (!(test->integer & 2))
+		CM_BrushTrace (sl->origin, origin, &br, 1);
+#else
 	if (CM_BrushTrace (sl->origin, origin, &br, 1)) return;
+#endif
 
 	AddLight (axis, dif, scale, sl->color);
 	if (gl_lightLines->value)
@@ -291,6 +302,9 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 			return;										// light is culled with PVS
 	}
 
+#ifdef TEST //!!!
+if (test->integer & 64) return;
+#endif
 	ambient = rl->sky && needSunAmbient;				// sun ambient requirement
 	if (!rl->intens && !ambient) return;				// ambient-only surface
 
@@ -323,12 +337,15 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 		dy = y - pl->maxs2[1];
 	}
 
+#ifdef TEST //!!!
+if (test->integer & 32) return;
+#endif
 	if (slope)
 	{
 		VectorScale (pl->axis[0], dx, dir);
 		VectorMA (dir, dy, pl->axis[1], dir);
 		VectorMA (dir, distN, pl->plane.normal, dir);
-		dist = VectorNormalize (dir);
+		dist = VectorNormalizeFast (dir);
 		intens = rl->intens * distN / (dist * dist * dist) * SURF_SCALE;
 	}
 	else
@@ -337,6 +354,9 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 		dist = distN;
 		intens = rl->intens / (distN * distN) * SURF_SCALE;
 	}
+#ifdef TEST //!!!
+if (test->integer & 16) return;
+#endif
 
 	intens *= vp.lightStyles[0].value / 255.0f;		// surface lights have style=0
 	if (intens < 1 && !ambient) return;
@@ -352,8 +372,13 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 	}
 
 	VectorMA (origin, -dist + 1, dir, dst);				// need to shift in light direction because of trace bugs with non-axial planes
+#ifdef TEST	//!!
+	if (!(test->integer & 2))
+		CM_BoxTrace (&tr, dst, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
+#else
 	CM_BoxTrace (&tr, dst, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
 	if (tr.fraction < 1) return;
+#endif
 
 	if (tr.startsolid)		//?? may be, light source is placed in niche -- check the center of surface
 	{
@@ -366,7 +391,12 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 		VectorScale (pl->axis[0], x, dst);
 		VectorMA (dst, y, pl->axis[1], dst);
 		VectorMA (dst, pl->plane.dist + 1, pl->plane.normal, dst);
+#ifdef TEST	//!!
+		if (!(test->integer & 2))
+			CM_BrushTrace (dst, origin, &br, 1);
+#else
 		if (CM_BrushTrace (dst, origin, &br, 1)) return;
+#endif
 	}
 
 	if (ambient)
@@ -543,6 +573,10 @@ void GL_LightForEntity (refEntity_t *ent)
 	float	scale;
 	gl_depthMode_t prevDepth;
 
+#ifdef TEST	//!!!
+	if (!test) test = Cvar_Get("test","0",0);
+	if (test->integer & 8) return;
+#endif
 	// NOTE: sl.color is [0..1], out color is [0..255]
 
 	memset (entityColorAxis, 0, sizeof(entityColorAxis));
@@ -573,11 +607,11 @@ void GL_LightForEntity (refEntity_t *ent)
 //				DrawTextLeft (va("pos: %g %g %g frac: %g %g %g", VECTOR_ARG(pos), VECTOR_ARG(frac)), 1, 1, 1);
 				prevDepth = gl_state.currentDepthMode;
 				GL_DepthRange (DEPTH_NEAR);
-				qglPushMatrix ();
-				qglLoadMatrixf (&vp.modelMatrix[0][0]);
+				glPushMatrix ();
+				glLoadMatrixf (&vp.modelMatrix[0][0]);
 				GL_SetMultitexture (0);		// disable texturing
 				GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
-				qglDisableClientState (GL_COLOR_ARRAY);
+				glDisableClientState (GL_COLOR_ARRAY);
 			}
 
 			memset (accum, 0, sizeof(accum));
@@ -611,18 +645,18 @@ void GL_LightForEntity (refEntity_t *ent)
 
 					if (gl_showgrid->integer)
 					{
-						qglBegin (GL_LINES);
+						glBegin (GL_LINES);
 						for (j = 0; j < 6; j++)
 						{
 							vec3_t	origin2;
 
-							qglColor3f (entityColorAxis[j][0]/255, entityColorAxis[j][1]/255, entityColorAxis[j][2]/255);
-							qglVertex3fv (origin);
+							glColor3f (entityColorAxis[j][0]/255, entityColorAxis[j][1]/255, entityColorAxis[j][2]/255);
+							glVertex3fv (origin);
 							VectorCopy (origin, origin2);
 							origin2[j >> 1] += (j & 1) ? 2 : -2;
-							qglVertex3fv (origin2);
+							glVertex3fv (origin2);
 						}
-						qglEnd ();
+						glEnd ();
 					}
 				}
 			}
@@ -633,7 +667,7 @@ void GL_LightForEntity (refEntity_t *ent)
 			}
 			if (gl_showgrid->integer)
 			{
-				qglPopMatrix ();
+				glPopMatrix ();
 				GL_DepthRange (prevDepth);
 			}
 
@@ -671,8 +705,8 @@ void GL_LightForEntity (refEntity_t *ent)
 		VectorSubtract (ent->center, dl->origin, dst);
 		dist = DotProduct (dst, dst);						// dist*dist
 		if (dist > dl->intensity * dl->intensity) continue;	// dlight is too far
-		dist = SQRTFAST(dist);
-		denom = 1.0f / dist;
+		denom = Q_rsqrt (dist);								// 1/sqrt(dist)
+		dist = 1.0f / denom;
 		VectorScale (dst, denom, dst);
 
 		scale = (dl->intensity - dist) * LINEAR_SCALE;
@@ -741,23 +775,32 @@ void GL_ApplyEntitySpherelights (color_t *dst)
 	bufExtra_t *ex;
 	float	light;
 
+#ifdef TEST	//!!!
+	if (test->integer & 4) return;
+#endif
 	light = gl_config.identityLightValue_f * 2;			// *2 -- because 1 == double light (similar to lightmaps)
-	//?? modulate by identityLight before light computation (this will allow
-	//?? storage of more than 2x overbright, but it is USELESS: clamped by 255 here anyway)
-	//?? useful when hw have 2x and overbright==1 ??
 	for (i = 0, ex = gl_extra; i < gl_numExtra; i++, ex++)
 	{
 		float	*norm, *axis, val;
 		vec3_t	color;
 		color_t	c;
-		int		c1;
+		int		tmp;
 
 		norm = ex->normal;
 
 		VectorClear (color);
+		// compute color
+#if 1
+#define STEP(n)		\
+		FAbsSign(norm[n],val,tmp);	\
+		val *= light;				\
+		axis = entityColorAxis[n*2+1-tmp];
+#else
 #define STEP(n)		\
 		axis = entityColorAxis[(norm[n] < 0 ? (n * 2) : (n * 2 + 1))];	\
 		val = fabs (norm[n]) * light;
+#endif
+
 		STEP(0);
 		VectorScale (axis, val, color);
 		STEP(1);
@@ -766,9 +809,10 @@ void GL_ApplyEntitySpherelights (color_t *dst)
 		VectorMA (color, val, axis, color);
 #undef STEP
 
+		// apply color
 #define STEP(n)		\
-		c1 = Q_round (color[n]);	\
-		c.c[n] = (c1 > 255) ? 255 : c1;
+		tmp = Q_round (color[n]);	\
+		c.c[n] = (tmp > 255) ? 255 : tmp;
 		STEP(0); STEP(1); STEP(2);
 #undef STEP
 		c.c[3] = 255;
