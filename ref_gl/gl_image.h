@@ -29,6 +29,7 @@ typedef struct image_s
 	int		internalFormat;				// statistics (for imagelist)
 	int		texnum;						// gl texture binding
 	int		flags;
+	byte	*pic;						// when non NULL, image was not uploaded
 	color_t	color;
 	struct image_s *hashNext;
 } image_t;
@@ -54,6 +55,7 @@ void	GL_PerformScreenshot (void);
 void	GL_SetupGamma (void);
 void	GL_InitImages (void);
 void	GL_ShutdownImages (void);
+void	GL_LoadDelayedImages (void);
 
 // creating images
 image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags);

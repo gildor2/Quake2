@@ -519,6 +519,7 @@ void R_DrawEntitiesOnList (void)
 {
 	int			i;
 	qboolean	translucent_entities = false;
+	beam_t	*b;
 
 	if (!r_drawentities->integer)
 		return;
@@ -534,39 +535,37 @@ void R_DrawEntitiesOnList (void)
 			continue;
 		}
 
-		if ( currententity->flags & RF_BEAM )
+		currentmodel = currententity->model;
+		if (!currentmodel)
 		{
-			modelorg[0] = -r_origin[0];
-			modelorg[1] = -r_origin[1];
-			modelorg[2] = -r_origin[2];
-			VectorCopy( vec3_origin, r_entorigin );
-			R_DrawBeam( currententity );
+			R_DrawNullModel();
+			continue;
 		}
-		else
+		VectorCopy (currententity->origin, r_entorigin);
+		VectorSubtract (r_origin, r_entorigin, modelorg);
+
+		switch (currentmodel->type)
 		{
-			currentmodel = currententity->model;
-			if (!currentmodel)
-			{
-				R_DrawNullModel();
-				continue;
-			}
-			VectorCopy (currententity->origin, r_entorigin);
-			VectorSubtract (r_origin, r_entorigin, modelorg);
+		case mod_sprite:
+			R_DrawSprite ();
+			break;
 
-			switch (currentmodel->type)
-			{
-			case mod_sprite:
-				R_DrawSprite ();
-				break;
+		case mod_alias:
+			R_AliasDrawModel ();
+			break;
 
-			case mod_alias:
-				R_AliasDrawModel ();
-				break;
-
-			default:
-				break;
-			}
+		default:
+			break;
 		}
+	}
+
+	for (b = r_newrefdef.beams; b; b = b->next)
+	{
+		modelorg[0] = -r_origin[0];
+		modelorg[1] = -r_origin[1];
+		modelorg[2] = -r_origin[2];
+		VectorCopy( vec3_origin, r_entorigin );
+		R_DrawBeam (b);
 	}
 
 	if ( !translucent_entities )
@@ -579,38 +578,27 @@ void R_DrawEntitiesOnList (void)
 		if ( !( currententity->flags & RF_TRANSLUCENT ) )
 			continue;
 
-		if ( currententity->flags & RF_BEAM )
+		currentmodel = currententity->model;
+		if (!currentmodel)
 		{
-			modelorg[0] = -r_origin[0];
-			modelorg[1] = -r_origin[1];
-			modelorg[2] = -r_origin[2];
-			VectorCopy( vec3_origin, r_entorigin );
-			R_DrawBeam( currententity );
+			R_DrawNullModel();
+			continue;
 		}
-		else
+		VectorCopy (currententity->origin, r_entorigin);
+		VectorSubtract (r_origin, r_entorigin, modelorg);
+
+		switch (currentmodel->type)
 		{
-			currentmodel = currententity->model;
-			if (!currentmodel)
-			{
-				R_DrawNullModel();
-				continue;
-			}
-			VectorCopy (currententity->origin, r_entorigin);
-			VectorSubtract (r_origin, r_entorigin, modelorg);
+		case mod_sprite:
+			R_DrawSprite ();
+			break;
 
-			switch (currentmodel->type)
-			{
-			case mod_sprite:
-				R_DrawSprite ();
-				break;
+		case mod_alias:
+			R_AliasDrawModel ();
+			break;
 
-			case mod_alias:
-				R_AliasDrawModel ();
-				break;
-
-			default:
-				break;
-			}
+		default:
+			break;
 		}
 	}
 }
@@ -1248,7 +1236,7 @@ void Draw_BuildGammaTable (void)
 /*
 ** R_DrawBeam
 */
-void R_DrawBeam( entity_t *e )
+void R_DrawBeam( beam_t *e )
 {
 #define NUM_BEAM_SEGS 6
 
@@ -1259,13 +1247,13 @@ void R_DrawBeam( entity_t *e )
 	vec3_t start_points[NUM_BEAM_SEGS], end_points[NUM_BEAM_SEGS];
 	vec3_t oldorigin, origin;
 
-	oldorigin[0] = e->oldorigin[0];
-	oldorigin[1] = e->oldorigin[1];
-	oldorigin[2] = e->oldorigin[2];
+	oldorigin[0] = e->start[0];
+	oldorigin[1] = e->start[1];
+	oldorigin[2] = e->start[2];
 
-	origin[0] = e->origin[0];
-	origin[1] = e->origin[1];
-	origin[2] = e->origin[2];
+	origin[0] = e->end[0];
+	origin[1] = e->end[1];
+	origin[2] = e->end[2];
 
 	normalized_direction[0] = direction[0] = oldorigin[0] - origin[0];
 	normalized_direction[1] = direction[1] = oldorigin[1] - origin[1];
@@ -1275,7 +1263,7 @@ void R_DrawBeam( entity_t *e )
 		return;
 
 	PerpendicularVector( perpvec, normalized_direction );
-	VectorScale( perpvec, e->frame / 2, perpvec );
+	VectorScale( perpvec, e->radius, perpvec );
 
 	for ( i = 0; i < NUM_BEAM_SEGS; i++ )
 	{
@@ -1290,7 +1278,7 @@ void R_DrawBeam( entity_t *e )
 		                    end_points[i],
 							end_points[(i+1)%NUM_BEAM_SEGS],
 							start_points[(i+1)%NUM_BEAM_SEGS],
-							e->skinnum & 0xFF,
+							e->color.c[0],
 							e->alpha );
 	}
 }

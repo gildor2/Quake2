@@ -40,8 +40,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 qboolean s_win95;
 
 int			starttime;
-qboolean	ActiveApp;
-qboolean	Minimized;
+bool		ActiveApp, Minimized;
 
 static HANDLE		hinput, houtput;
 
@@ -693,7 +692,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	{
 		MSG		msg;
 
-		if ((!ActiveApp && IsIconic (cl_hwnd)) || (dedicated && dedicated->integer))
+		if (!ActiveApp || dedicated->integer)
 			Sleep (10);		//?? what about client and server in one place: will server become slower ?
 
 		while (PeekMessage (&msg, NULL, 0, 0, PM_NOREMOVE))

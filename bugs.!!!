@@ -11,7 +11,7 @@
   ?* crouched forvard/backward movement will be combined with side-move
   ?* no ability to move when timescale=0.1
   - map "countdown"; entity - "light_mine" - collision errors (bad pmove.c::SnapPosition())
-
+- notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move crouched)
 - Sys_Error(ERR_FATAL): sometimes not restore mouse (crush in "special place" ?)
 
 - bugs with deathmatch mode

@@ -4,11 +4,6 @@
 
 typedef struct
 {
-	char	rendererString[256];
-	char	vendorString[256];
-	char	versionString[256];
-	char	*extensionsString;
-
 	int		maxTextureSize;
 	unsigned extensionMask;
 

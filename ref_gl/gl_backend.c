@@ -489,6 +489,7 @@ static int			numRenderPasses;
 //#define LOG_PP(x)	LOG_STRING(x)
 #define LOG_PP(x)
 
+//!! separate copy-stages and combine-with-multitexture to different funcs (make few mtex funcs for different extensions ?)
 static void PreprocessShader (shader_t *sh)
 {
 	int		firstStage, i, debugMode, glState;
@@ -711,12 +712,12 @@ static void PreprocessShader (shader_t *sh)
 		DrawTextLeft (va("R_PreprocessShader(%s): 0 stages", currentShader->name), RGB(1,0,0));
 
 	if (numTmpStages > MAX_TMP_STAGES)
-		Com_Error (ERR_FATAL, "R_PreprocessShader: numStages is too big (%d)", numTmpStages);
+		Com_Error (ERR_FATAL, "R_PreprocessShader: large numStages (%d)", numTmpStages);
 
 	pass = renderPasses;
 	st = tmpSt;
 
-	/*--------- if no multitexturing -- nothing to combine ---------------*/
+	/*--- if no multitexturing or only 1 stage -- nothing to combine -----*/
 
 	if (numTmpStages < 2 || gl_config.maxActiveTextures < 2)
 	{

@@ -208,8 +208,8 @@ PARTICLE MANAGEMENT
 ==============================================================
 */
 
-particle_t	*active_particles, *free_particles;
-particle_t	particles[MAX_PARTICLES];
+particle_t	*active_particles;
+static particle_t *free_particles, particles[MAX_PARTICLES];
 
 
 typedef struct
@@ -226,37 +226,32 @@ typedef struct
 } particleTrace_t;
 
 
-typedef struct
-{
-	qboolean allocated;
-	beamType_t type;
-	vec3_t	start;
-	vec3_t	end;
-	float	radius;
-	color_t	color;
-	float	alpha;						// color.c[3] is byte and not enough precision
-	float	fadeTime;					// in sec
-	float	growSpeed;					// radius_delta/sec
-} particleBeam_t;
-
-
 static particleTrace_t particleTraces[MAX_PARTICLE_TRACES];
-static particleBeam_t particleBeams[MAX_PARTICLE_BEAMS];
+
+beam_t	*active_beams;
+static beam_t *free_beams, particleBeams[MAX_PARTICLE_BEAMS];
 
 
 void CL_ClearParticles (void)
 {
 	int		i;
 
-	free_particles = &particles[0];
+	// clear particles
+	free_particles = particles;
 	active_particles = NULL;
-
 	for (i = 0; i < MAX_PARTICLES; i++)
 		particles[i].next = &particles[i+1];
 	particles[MAX_PARTICLES-1].next = NULL;
 
+	// clear beams
+	free_beams = particleBeams;
+	active_beams = NULL;
+	for (i = 0; i < MAX_PARTICLE_BEAMS; i++)
+		particleBeams[i].next = &particleBeams[i+1];
+	particleBeams[MAX_PARTICLE_BEAMS-1].next = NULL;
+
+	// other
 	memset (particleTraces, 0, sizeof(particleTraces));
-	memset (particleBeams, 0, sizeof(particleBeams));
 }
 
 
@@ -418,66 +413,74 @@ particleTrace_t *CL_AllocParticleTrace (vec3_t pos, vec3_t vel, float lifeTime, 
 }
 
 
-static void CL_AddParticleBeams (float timeDelta)
+static void CL_UpdateParticleBeams (float timeDelta)
 {
-	particleBeam_t *b;
-	int		i;
+	beam_t	*b, *prev, *next;
 
-	for (i = 0, b = particleBeams; i < MAX_PARTICLE_BEAMS; i++, b++)
-		if (b->allocated)
+	prev = NULL;
+	for (b = active_beams; b; b = next)
+	{
+		float	alphaDelta, radiusDelta;
+
+		next = b->next;
+		if (b->lifeTime > 0)
+			alphaDelta = (b->alpha - b->dstAlpha) * timeDelta / b->lifeTime;
+		else
+			alphaDelta = 0;
+		radiusDelta = timeDelta * b->growSpeed;
+
+		b->lifeTime -= timeDelta;
+		b->alpha -= alphaDelta;
+		b->color.c[3] = Q_round (b->alpha * 255);
+		b->radius += radiusDelta;
+
+		if ((b->fadeTime > 0 && b->lifeTime <= 0) || b->alpha <= 0 || b->radius <= 0)
+		// do not disappear when "fadeTime == 0" (lifetime is 1 frame)
 		{
-			float	alphaDelta, radiusDelta;
-			entity_t ent;
+			if (prev)
+				prev->next = b->next;
+			else
+				active_beams = b->next;
 
-			alphaDelta = b->fadeTime > 0 ? timeDelta / b->fadeTime : 0;
-			radiusDelta = timeDelta * b->growSpeed;
-			if (b->alpha <= alphaDelta || b->radius <= -radiusDelta)
-			{
-				b->allocated = false;
-				continue;
-			}
-			ent.model = NULL;
-			ent.flags = RF_BEAM_EXT;
-
-			b->alpha -= alphaDelta;
-			b->color.c[3] = Q_round (b->alpha * 255);
-			b->radius += radiusDelta;
-			VectorCopy (b->start, ent.origin);
-			VectorCopy (b->end, ent.oldorigin);
-			ent.skinnum = b->type;
-			ent.alpha = b->radius;
-			ent.color.rgba = b->color.rgba;
-
-			V_AddEntity (&ent);
-
-			if (b->fadeTime <= 0) b->allocated = false;
+			b->next = free_beams;
+			free_beams = b;
+			continue;
 		}
+		if (b->fadeTime == 0)
+			b->fadeTime = 1;		// beam will be removed next frame
+
+		prev = b;
+	}
 }
 
 
-particleBeam_t *CL_AllocParticleBeam (vec3_t start, vec3_t end, float radius, float fadeTime)
+beam_t *CL_AllocParticleBeam (vec3_t start, vec3_t end, float radius, float fadeTime)
 {
-	particleBeam_t *b;
-	int		i;
+	beam_t	*b;
 
-	for (i = 0, b = particleBeams; i < MAX_PARTICLE_BEAMS; i++, b++)
-		if (!b->allocated)
-		{
-			b->allocated = true;
+	if (r_sfx_pause->integer == 2)
+		return NULL;
 
-			VectorCopy (start, b->start);
-			VectorCopy (end, b->end);
-			b->radius = radius;
-			b->fadeTime = fadeTime;
+	b = free_beams;
 
-			b->color.rgba = RGBA(1,1,1,1);
-			b->alpha = 1;
-			b->type = BEAM_RAILBEAM;
-			b->growSpeed = 0;
+	if (b)
+	{
+		free_beams = b->next;
+		b->next = active_beams;
+		active_beams = b;
 
-			return b;
-		}
-	return NULL;
+		VectorCopy (start, b->start);
+		VectorCopy (end, b->end);
+		b->radius = radius;
+		b->fadeTime = b->lifeTime = fadeTime;
+		b->dstAlpha = 0;
+
+		b->color.rgba = RGBA(1,1,1,1);
+		b->alpha = 1;
+		b->type = BEAM_RAILBEAM;
+		b->growSpeed = 0;
+	}
+	return b;
 }
 
 
@@ -521,16 +524,11 @@ void CL_UpdateParticles (void)
 	oldTime = cl.ftime;
 	if (r_sfx_pause->integer) timeDelta = 0;
 
-	CL_AddParticleBeams (timeDelta);
-
-	if (timeDelta <= 0)
-		return;
-
-	time2 = timeDelta * timeDelta;
-
+	CL_UpdateParticleBeams (timeDelta);
 	CL_AddParticleTraces (timeDelta);
 
 	prev = NULL;
+	time2 = timeDelta * timeDelta;
 	for (p = active_particles; p; p = next)
 	{
 		next = p->next;
@@ -540,7 +538,7 @@ void CL_UpdateParticles (void)
 			p->_new = false;	// particle is just created -- timeDelta == 0, nothing to update
 			p->leafNum = CM_PointLeafnum (p->org);
 		}
-		else
+		else if (timeDelta > 0)
 		{
 			// update alpha
 			p->alpha += timeDelta * p->alphavel;
@@ -1461,45 +1459,6 @@ void CL_BlasterTrail (vec3_t start, vec3_t end)
 }
 
 
-void CL_QuadTrail (vec3_t start, vec3_t end)
-{
-	vec3_t		move;
-	vec3_t		vec;
-	float		len;
-	int			j;
-	particle_t	*p;
-	int			dec;
-
-	VectorCopy (start, move);
-	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
-
-	dec = 5;
-	VectorScale (vec, 5, vec);
-
-	// FIXME: this is a really silly way to have a loop
-	while (len > 0)
-	{
-		len -= dec;
-
-		if (!(p = CL_AllocParticle ()))
-			return;
-		p->accel[2] = 0;		// accel = 0
-
-		p->alpha = 1.0;
-		p->alphavel = -1.0 / (0.8+frand()*0.2);
-		p->color = 115;
-		for (j=0 ; j<3 ; j++)
-		{
-			p->org[j] = move[j] + crand()*16;
-			p->vel[j] = crand()*5;
-		}
-
-		VectorAdd (move, vec, move);
-	}
-}
-
-
 void CL_FlagTrail (vec3_t start, vec3_t end, float color)
 {
 	vec3_t		move;
@@ -1744,18 +1703,18 @@ void CL_RailTrail (vec3_t start, vec3_t end)
 
 void CL_RailTrailExt (vec3_t start, vec3_t end, byte rType, byte rColor)
 {
-	particleBeam_t *b;
-static unsigned colorTable[8] = {
-	RGB255(23, 83, 111), RGB(1,0,0), RGB(0,1,0), RGB(1,1,0),
-	RGB(0,0,1), RGB(1,0,1), RGB(0,1,1), RGB(1,1,1)
-};
+	beam_t	*b;
+	static unsigned colorTable[8] = {
+		RGB255(23, 83, 111), RGB(1,0,0), RGB(0,1,0), RGB(1,1,0),
+		RGB(0,0,1), RGB(1,0,1), RGB(0,1,1), RGB(1,1,1)
+	};
 
 #	define I 255
 #	define o 128
-static unsigned colorTable2[8] = {
-	RGB255(I, I, I), RGB255(I, o, o), RGB255(o, I, o), RGB255(I, I, o),
-	RGB255(o, o, I), RGB255(I, o, I), RGB255(o, I, I), RGB255(I, I, I)
-};
+	static unsigned colorTable2[8] = {
+		RGB255(I, I, I), RGB255(I, o, o), RGB255(o, I, o), RGB255(I, I, o),
+		RGB255(o, o, I), RGB255(I, o, I), RGB255(o, I, I), RGB255(I, I, I)
+	};
 #	undef I
 #	undef o
 
@@ -1765,27 +1724,27 @@ static unsigned colorTable2[8] = {
 		return;
 	}
 
-	b = CL_AllocParticleBeam (start, end, 10, 1.4);
+	b = CL_AllocParticleBeam (start, end, 5, 0.6);
 	if (!b) return;
 	b->type = BEAM_RAILBEAM;
 	b->color.rgba = colorTable2[rColor];
-	b->alpha = 0.25;
+	b->alpha = 0.8f;
 
 	switch (rType)
 	{
 	case 1:
-		b = CL_AllocParticleBeam (start, end, 8, 1.0);
+		b = CL_AllocParticleBeam (start, end, 5, 0.8);
 		if (!b) return;
 		b->type = BEAM_RAILSPIRAL;
 		b->color.rgba = colorTable[rColor];
-		b->alpha = 0.6;
+		b->alpha = 1;
 		break;
 	case 2:
-		b = CL_AllocParticleBeam (start, end, 8, 0.8);
+		b = CL_AllocParticleBeam (start, end, 5, 0.8);
 		if (!b) return;
 		b->type = BEAM_RAILRINGS;
 		b->color.rgba = colorTable[rColor];
-		b->alpha = 0.5;
+		b->alpha = 1;
 		break;
 	}
 }
@@ -1905,7 +1864,6 @@ void CL_FlyParticles (vec3_t origin, int count)
 	float		dist = 64;
 	float		ltime;
 
-
 	if (count > NUMVERTEXNORMALS)
 		count = NUMVERTEXNORMALS;
 
@@ -1914,7 +1872,6 @@ void CL_FlyParticles (vec3_t origin, int count)
 		for (i=0 ; i<NUMVERTEXNORMALS*3 ; i++)
 			avelocities[0][i] = (rand()&255) * 0.01;
 	}
-
 
 	ltime = cl.ftime;
 	for (i=0 ; i<count ; i+=2)

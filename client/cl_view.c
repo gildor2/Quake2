@@ -315,6 +315,7 @@ void CL_PrepRefresh (void)
 
 	// the renderer can now free unneeded stuff
 	re.EndRegistration ();
+	Com_Printf (" \r");			// clear console notification about loading process
 
 	// clear any lines of console text
 	Con_ClearNotify ();
@@ -611,11 +612,14 @@ static void DrawFpsInfo (void)
 	}
 
 	// update min/max stats
-	if (!fileFromPak)		// ignore frame if packfile was read
+	if (!fileFromPak)					// ignore frame if packfile was read
 	{
 		float	tmpFps;
 
-		tmpFps = 1000.0f / (time - lastFrameTime);
+		if (time == lastFrameTime)
+			tmpFps = 1000;	// avoid zero-divide
+		else
+			tmpFps = 1000.0f / (time - lastFrameTime);
 		if (tmpFps > maxFps) maxFps = tmpFps;
 		if (tmpFps < minFps) minFps = tmpFps;
 	}
@@ -874,6 +878,7 @@ void V_RenderView (float stereo_separation)
 		cl.refdef.num_entities = r_numentities;
 		cl.refdef.entities = r_entities;
 		cl.refdef.particles = cl_add_particles->integer ? active_particles : NULL;
+		cl.refdef.beams = active_beams;
 		cl.refdef.num_dlights = r_numdlights;
 		cl.refdef.dlights = r_dlights;
 		cl.refdef.lightstyles = cl_lightstyles;

@@ -73,6 +73,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define VECTOR_ARG(name)	name[0],name[1],name[2]
 #define ARRAY_ARG(array)	array, sizeof(array)/sizeof(array[0])
+#define ARRAY_COUNT(array)	(sizeof(array)/sizeof(array[0]))
 
 typedef unsigned char		byte;
 //typedef enum {false, true}	qboolean;
@@ -761,8 +762,7 @@ typedef struct
 #define RF_USE_DISGUISE		0x00040000
 
 // 4.00
-#define RF_BEAM_EXT			0x40000000
-#define RF_BBOX				0x80000000
+#define RF_BBOX				0x40000000
 
 
 // player_state_t->refdef flags

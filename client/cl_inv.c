@@ -110,7 +110,7 @@ void CL_DrawInventory (void)
 		// search for a binding
 		Com_sprintf (ARRAY_ARG(binding), "use %s", cl.configstrings[CS_ITEMS+item]);
 		bind = "";
-		for (j = 0; j < 256; j++)
+		for (j = 0; j < NUM_KEYS; j++)
 			if (keybindings[j] && !Q_stricmp (keybindings[j], binding))
 			{
 				bind = Key_KeynumToString (j);

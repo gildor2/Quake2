@@ -37,6 +37,8 @@ BUGS:
 
 ! map "trainstation": very slow (10-20ms) server (AMD K6-2+) (slow SV_AreaEdicts(), >800 times/sv_frame)
 ! unpack PVS in LoadBsp(); use unpacked version in renderer and CM_InPVS() etc.
+- option "Screen Flashes" (flash scale ? -- 0 - invisible, 1 - as is)
+? multibind (cycle few binds when bind activated) -- UT2003 after patch have this (or use 'bind xx "cycle ww w1 w2 w3;use $ww"' ?)
 
 - if Win32 can't get keyboard focus, "set r_fullscreen 0" (as Unreal2)
 BINDS:
@@ -99,7 +101,6 @@ MODEL SYSTEM:
   model system)
 
 DINPUT MOUSE BUGS/NOTES:
-- in_initmouse -- needed?
 - add MOUSE4 ?
 - check DirectInput8
 ! add mouse cursor hiding (not always disappear with DInput after deactivate+activate); now to hide cursor: "in_mouse 1;in_mouse 2"

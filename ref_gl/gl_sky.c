@@ -272,6 +272,7 @@ static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec
 {
 	vec3_t		b;
 	int			i;
+	float		fix;
 
 	static int stToVec[6][3] = {	// 1 = s, 2 = t, 3 = zFar
 		{ 3,-1, 2},
@@ -295,22 +296,13 @@ static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec
 	}
 	(*vec)++;
 
+	fix = 1.0f - 1.0f / gl_skyShader->width;		// fix sky side seams
 	// convert range [-1, 1] to [0, 1]
-	s = (s + 1) / 2;
+	s = (s * fix + 1) / 2;
 	s = bound(s, 0, 1);
-	t = (t + 1) / 2;
+	t = (t * fix + 1) / 2;
 	t = bound(t, 0, 1);
-#if 0
-	if (!currentShader->bad && Cvar_VariableInt("skyfix"))
-	{
-		float	fix, fix2;
 
-		fix = 0.5f / currentShader->width * Cvar_VariableInt("skyfix");
-		fix2 = 1 - 2 * fix;
-		s = fix + fix2 * s;
-		t = fix + fix2 * t;
-	}
-#endif
 	(*tex)->tex[0] = s;
 	(*tex)->tex[1] = 1.0f - t;
 	(*tex)++;

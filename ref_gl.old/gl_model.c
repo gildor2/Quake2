@@ -418,7 +418,7 @@ void Mod_LoadLighting (byte *data, int size)
 		return;
 	}
 
-	sat = saturation->value;
+	sat = r_saturation->value;
 
 	if (r_lightmap->integer == 3)	// make inversed saturation on lightmaps
 		sat = -sat;

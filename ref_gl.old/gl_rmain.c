@@ -317,97 +317,84 @@ R_DrawEntitiesOnList
 void R_DrawEntitiesOnList (void)
 {
 	int		i;
+	beam_t	*b;
 
 	if (!r_drawentities->integer)
 		return;
 
 	// draw non-transparent first
-	for (i=0 ; i<r_newrefdef.num_entities ; i++)
+	for (i = 0; i < r_newrefdef.num_entities; i++)
 	{
 		currententity = &r_newrefdef.entities[i];
 		currentmodel = currententity->model;
 
-		if (currententity->flags & RF_TRANSLUCENT || currentmodel->flags & CMODEL_ALPHA)
+		if (currententity->flags & RF_TRANSLUCENT || !currentmodel || currentmodel->flags & CMODEL_ALPHA)
 			continue;	// solid
 
-		if ( currententity->flags & RF_BEAM )
+		if (!currentmodel)
 		{
-//			DrawTextLeft("beam", RGB(1,1,1));//!!
-			R_DrawBeam( currententity );
+//			DrawTextLeft("NULL", RGB(1,1,1));//!!
+			R_DrawNullModel ();
+			continue;
 		}
-		else
+//		DrawTextLeft(va("\"%s\"",currentmodel->name), RGB(1,1,1));//!!
+		switch (currentmodel->type)
 		{
-			if (!currentmodel)
-			{
-//				DrawTextLeft("NULL", RGB(1,1,1));//!!
-				R_DrawNullModel ();
-				continue;
-			}
-//			DrawTextLeft(va("\"%s\"",currentmodel->name), RGB(1,1,1));//!!
-			switch (currentmodel->type)
-			{
-			case mod_alias:
-				R_DrawAliasModel (currententity);
-				break;
-			case mod_brush:
-			case mod_hl_brush:
-				R_DrawBrushModel (currententity);
-				break;
-			case mod_sprite:
-				R_DrawSpriteModel (currententity);
-				break;
-			default:
-				Com_Error (ERR_DROP, "Bad modeltype");
-				break;
-			}
+		case mod_alias:
+			R_DrawAliasModel (currententity);
+			break;
+		case mod_brush:
+		case mod_hl_brush:
+			R_DrawBrushModel (currententity);
+			break;
+		case mod_sprite:
+			R_DrawSpriteModel (currententity);
+			break;
+		default:
+			Com_Error (ERR_DROP, "Bad modeltype");
+			break;
 		}
 	}
 
 	// draw transparent entities
 	// we could sort these if it ever becomes a problem...
 	qglDepthMask (0);		// no z writes
-	for (i=0 ; i<r_newrefdef.num_entities ; i++)
+	for (i = 0; i < r_newrefdef.num_entities; i++)
 	{
 		currententity = &r_newrefdef.entities[i];
 		currentmodel = currententity->model;
 
-		if (!(currententity->flags & RF_TRANSLUCENT || currentmodel->flags & CMODEL_ALPHA))
+		if (!(currententity->flags & RF_TRANSLUCENT || !currentmodel || currentmodel->flags & CMODEL_ALPHA))
 			continue;	// solid
 
-		if ( currententity->flags & RF_BEAM )
+		if (!currentmodel)
 		{
-//			DrawTextLeft("beam2", RGB(1,1,1));//!!
-			R_DrawBeam( currententity );
+//			DrawTextLeft("NULL2", RGB(1,1,1));//!!
+			R_DrawNullModel ();
+			continue;
 		}
-		else
+//		DrawTextLeft(va("\"%s\"2",currentmodel->name), RGB(1,1,1));//!!
+		switch (currentmodel->type)
 		{
-			if (!currentmodel)
-			{
-//				DrawTextLeft("NULL2", RGB(1,1,1));//!!
-				R_DrawNullModel ();
-				continue;
-			}
-//			DrawTextLeft(va("\"%s\"2",currentmodel->name), RGB(1,1,1));//!!
-			switch (currentmodel->type)
-			{
-			case mod_alias:
-				R_DrawAliasModel (currententity);
-				break;
-			case mod_brush:
-			case mod_hl_brush:
-				R_DrawBrushModel (currententity);
-				break;
-			case mod_sprite:
-				R_DrawSpriteModel (currententity);
-				break;
-			default:
-				Com_Error (ERR_DROP, "Bad modeltype");
-				break;
-			}
+		case mod_alias:
+			R_DrawAliasModel (currententity);
+			break;
+		case mod_brush:
+		case mod_hl_brush:
+			R_DrawBrushModel (currententity);
+			break;
+		case mod_sprite:
+			R_DrawSpriteModel (currententity);
+			break;
+		default:
+			Com_Error (ERR_DROP, "Bad modeltype");
+			break;
 		}
 	}
-	qglDepthMask (1);		// back to writing
+	for (b = r_newrefdef.beams; b; b = b->next)
+		R_DrawBeam (b);
 
+	qglDepthMask (1);		// back to writing
 }
 
 /*
@@ -1079,7 +1066,7 @@ R_SetMode
 qboolean R_SetMode (void)
 {
 	rserr_t err;
-	qboolean fullscreen;
+	bool	fullscreen;
 
 	fullscreen = r_fullscreen->integer;
 
@@ -1594,7 +1581,7 @@ void R_SetPalette ( const unsigned char *palette)
 /*
 ** R_DrawBeam
 */
-void R_DrawBeam( entity_t *e )
+void R_DrawBeam (beam_t *e)
 {
 #define NUM_BEAM_SEGS 6
 
@@ -1606,13 +1593,13 @@ void R_DrawBeam( entity_t *e )
 	vec3_t	start_points[NUM_BEAM_SEGS], end_points[NUM_BEAM_SEGS];
 	vec3_t oldorigin, origin;
 
-	oldorigin[0] = e->oldorigin[0];
-	oldorigin[1] = e->oldorigin[1];
-	oldorigin[2] = e->oldorigin[2];
+	oldorigin[0] = e->start[0];
+	oldorigin[1] = e->start[1];
+	oldorigin[2] = e->start[2];
 
-	origin[0] = e->origin[0];
-	origin[1] = e->origin[1];
-	origin[2] = e->origin[2];
+	origin[0] = e->end[0];
+	origin[1] = e->end[1];
+	origin[2] = e->end[2];
 
 	normalized_direction[0] = direction[0] = oldorigin[0] - origin[0];
 	normalized_direction[1] = direction[1] = oldorigin[1] - origin[1];
@@ -1622,7 +1609,7 @@ void R_DrawBeam( entity_t *e )
 		return;
 
 	PerpendicularVector( perpvec, normalized_direction );
-	VectorScale( perpvec, e->frame / 2, perpvec );
+	VectorScale( perpvec, e->radius, perpvec );
 
 	for ( i = 0; i < 6; i++ )
 	{
@@ -1635,15 +1622,11 @@ void R_DrawBeam( entity_t *e )
 	qglEnable( GL_BLEND );
 	qglDepthMask( GL_FALSE );
 
-	r = ( d_8to24table[e->skinnum & 0xFF] ) & 0xFF;
-	g = ( d_8to24table[e->skinnum & 0xFF] >> 8 ) & 0xFF;
-	b = ( d_8to24table[e->skinnum & 0xFF] >> 16 ) & 0xFF;
+	r = d_8to24table[e->color.c[0] & 0xFF] & 0xFF;
+	g = (d_8to24table[e->color.c[0] & 0xFF] >> 8) & 0xFF;
+	b = (d_8to24table[e->color.c[0] & 0xFF] >> 16) & 0xFF;
 
-	r *= 1/255.0F;
-	g *= 1/255.0F;
-	b *= 1/255.0F;
-
-	qglColor4f( r, g, b, e->alpha );
+	qglColor4f( r / 255.0f, g / 255.0f, b / 255.0f, e->alpha );
 
 	qglBegin( GL_TRIANGLE_STRIP );
 	for ( i = 0; i < NUM_BEAM_SEGS; i++ )

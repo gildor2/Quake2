@@ -406,6 +406,41 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 }
 
 
+// returns false when cylinder is outside frustum; modifies v1 and v2
+static bool CutCylinder (vec3_t v1, vec3_t v2, float radius)
+{
+	int		i;
+	cplane_t *pl;
+
+	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
+	{	// loop by frustum planes
+		float	dist1, dist2, frac;
+		vec3_t	delta;
+
+		dist1 = DotProduct (v1, pl->normal) - pl->dist;
+		dist2 = DotProduct (v2, pl->normal) - pl->dist;
+		if (dist1 < -radius && dist2 < -radius) return false;		// cylinder is outside the view frustum
+
+		if (dist1 < -radius)
+		{	// modify v1 so dist1 == -radius
+			VectorSubtract (v1, v2, delta);			// v2 + delta = v1
+//			frac = (dist2 - radius) / (dist2 - dist1);	-- test
+			frac = (dist2 + radius) / (dist2 - dist1);
+			VectorMA (v2, frac, delta, v1);
+		}
+		else if (dist2 < -radius)
+		{	// modify v2 so dist2 == -radius
+			VectorSubtract (v2, v1, delta);			// v1 + delta = v2
+//			frac = (dist1 - radius) / (dist1 - dist2);	-- test
+			frac = (dist1 + radius) / (dist1 - dist2);
+			VectorMA (v1, frac, delta, v2);
+		}
+		// else - completely inside this plane
+	}
+	return true;
+}
+
+
 /*-------------- BSP object insertion ----------------*/
 
 /* NOTE:
@@ -785,43 +820,38 @@ static void AddSp2Surface (refEntity_t *e)
 }
 
 
-//?? needs ability to provide "detailLevel": some beams needs only 1 rect (flat)
-static void AddBeamSurfaces (refEntity_t *e)
+static void AddBeamSurfaces (beam_t *b)
 {
-	vec3_t	viewDir, viewDir2;
-	vec3_t	axis[3];	// length, width, depth
+	vec3_t	viewDir, tmp;
+	vec3_t	axis[3];		// length, width, depth
 	vec3_t	dir1, dir2;
 	float	z1, z2, size, angle, angleStep;
 	int		i, numParts;
+	color_t	color;
 
 	// compute level of detail
-	VectorSubtract (e->beamStart, vp.vieworg, viewDir);
+	VectorSubtract (b->drawStart, vp.vieworg, viewDir);
 	z1 = DotProduct (viewDir, vp.viewaxis[0]);		// beamStart.Z
-	VectorSubtract (e->beamEnd, vp.vieworg, viewDir2);
-	z2 = DotProduct (viewDir2, vp.viewaxis[0]);		// beamEnd.Z
-	if ((z1 < z2 && z1 > 0) || z2 <= 0)
-		size = z1;
-	else
-		size = z2;
-	if (size < 0)
-	{	// both Z-coords < 0
-		gl_speeds.cullEnts2++;
-		return;
-	}
-	size = e->beamRadius * 200 / (size * vp.fov_scale);
+	VectorSubtract (b->drawEnd, vp.vieworg, tmp);
+	z2 = DotProduct (tmp, vp.viewaxis[0]);			// beamEnd.Z
+	size = min(z1, z2);
+
+	size = b->radius * 200 / (size * vp.fov_scale);
 	numParts = Q_round(size);
 	numParts = bound(numParts, 1, 6);
 
 	// compute beam axis
-	VectorSubtract (e->beamEnd, e->beamStart, axis[0]);
+	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
 	VectorNormalizeFast (axis[0]);
 	CrossProduct (axis[0], viewDir, axis[1]);
 	VectorNormalizeFast (axis[1]);
 	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
 
-	VectorScale (axis[1], e->beamRadius, dir2);
+	VectorScale (axis[1], b->radius, dir2);
 	angle = 0;
 	angleStep = 0.5f / numParts;					// 0.5 -- PI/2
+	color.rgba = gl_config.tbl_8to32[b->color.c[0]];
+	color.c[3] = b->color.c[3];
 	for (i = 0; i < numParts; i++)
 	{
 		surfacePoly_t *p;
@@ -837,16 +867,16 @@ static void AddBeamSurfaces (refEntity_t *e)
 		// rotate dir1 & dir2 vectors
 		VectorCopy (dir2, dir1);
 		angle += angleStep;
-		sx = SIN_FUNC(angle) * e->beamRadius;
-		cx = COS_FUNC(angle) * e->beamRadius;
+		sx = SIN_FUNC(angle) * b->radius;
+		cx = COS_FUNC(angle) * b->radius;
 		VectorScale (axis[1], cx, dir2);
 		VectorMA (dir2, sx, axis[2], dir2);
 
 		// setup xyz
-		VectorAdd (e->beamStart, dir1, p->verts[0].xyz);
-		VectorAdd (e->beamEnd, dir1, p->verts[1].xyz);
-		VectorAdd (e->beamStart, dir2, p->verts[3].xyz);
-		VectorAdd (e->beamEnd, dir2, p->verts[2].xyz);
+		VectorAdd (b->drawStart, dir1, p->verts[0].xyz);
+		VectorAdd (b->drawEnd, dir1, p->verts[1].xyz);
+		VectorAdd (b->drawStart, dir2, p->verts[3].xyz);
+		VectorAdd (b->drawEnd, dir2, p->verts[2].xyz);
 
 		// setup st
 		p->verts[0].st[0] = p->verts[3].st[0] = 1;
@@ -854,7 +884,7 @@ static void AddBeamSurfaces (refEntity_t *e)
 		p->verts[0].st[1] = p->verts[1].st[1] = 1;
 		p->verts[2].st[1] = p->verts[3].st[1] = 0;
 
-		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = e->shaderColor.rgba;
+		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color.rgba;
 
 		//!! can be different shader to provide any types of lined particles
 		surf = GL_AddDynamicSurface (gl_identityLightShader2, ENTITYNUM_WORLD);
@@ -868,27 +898,22 @@ static void AddBeamSurfaces (refEntity_t *e)
 #define CYLINDER_PARTS	16		// should be even number
 #define CYLINDER_FIX_ALPHA
 
-static void AddCylinderSurfaces (refEntity_t *e)
+static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 {
-	vec3_t	viewDir, viewDir2;
-	vec3_t	axis[3];	// length, width, depth
-	float	z1, z2, len, angle, anglePrev, angleStep;
+	vec3_t	viewDir;
+	vec3_t	axis[3];		// length, width, depth
+	float	len, angle, anglePrev, angleStep;
 	int		i;
 #ifdef CYLINDER_FIX_ALPHA
 	vec3_t	v;
 	float	f, fixAngle;
 #endif
 
-	// cull beam (improve with frustum culling ??)
-	VectorSubtract (e->beamStart, vp.vieworg, viewDir);
-	z1 = DotProduct (viewDir, vp.viewaxis[0]);		// beamStart.Z
-	VectorSubtract (e->beamEnd, vp.vieworg, viewDir2);
-	z2 = DotProduct (viewDir2, vp.viewaxis[0]);		// beamEnd.Z
-	if (z1 < 0 && z2 < 0)
-		return;
+	//?? cumpute LOD
 
+	VectorSubtract (b->drawStart, vp.vieworg, viewDir);
 	// compute beam axis
-	VectorSubtract (e->beamEnd, e->beamStart, axis[0]);
+	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
 	len = VectorNormalizeFast (axis[0]);
 	CrossProduct (axis[0], viewDir, axis[1]);
 	VectorNormalizeFast (axis[1]);
@@ -897,16 +922,16 @@ static void AddCylinderSurfaces (refEntity_t *e)
 #ifdef CYLINDER_FIX_ALPHA
 	// compute minimal distance to beam
 	f = DotProduct (viewDir, axis[0]);
-	VectorMA (e->beamStart, -f, axis[0], v);		// v is a nearest point on beam line
+	VectorMA (b->drawStart, -f, axis[0], v);		// v is a nearest point on beam line
 	VectorSubtract (v, vp.vieworg, v);
 	f = DotProduct (v, v);
 	f = SQRTFAST(f);								// distance to line
-	if (f <= e->beamRadius)
+	if (f <= b->radius)
 		fixAngle = -1;
 	else
 	{
 		// here: f > beamRadius (should be > 0)
-		f = e->beamRadius / f;
+		f = b->radius / f;
 		fixAngle = ASIN_FUNC(f) / (2 * M_PI);
 	}
 
@@ -945,28 +970,28 @@ static void AddCylinderSurfaces (refEntity_t *e)
 		else
 			angle += angleStep;
 
-		sx = SIN_FUNC(anglePrev) * e->beamRadius;
-		cx = COS_FUNC(anglePrev) * e->beamRadius;
+		sx = SIN_FUNC(anglePrev) * b->radius;
+		cx = COS_FUNC(anglePrev) * b->radius;
 		VectorScale (axis[1], cx, dir1);
 		VectorMA (dir1, sx, axis[2], dir1);
 
-		sx = SIN_FUNC(angle) * e->beamRadius;
-		cx = COS_FUNC(angle) * e->beamRadius;
+		sx = SIN_FUNC(angle) * b->radius;
+		cx = COS_FUNC(angle) * b->radius;
 		VectorScale (axis[1], cx, dir2);
 		VectorMA (dir2, sx, axis[2], dir2);
 
 		// setup xyz
-		VectorAdd (e->beamStart, dir1, p->verts[0].xyz);
-		VectorAdd (e->beamEnd, dir1, p->verts[1].xyz);
-		VectorAdd (e->beamStart, dir2, p->verts[3].xyz);
-		VectorAdd (e->beamEnd, dir2, p->verts[2].xyz);
+		VectorAdd (b->drawStart, dir1, p->verts[0].xyz);
+		VectorAdd (b->drawEnd, dir1, p->verts[1].xyz);
+		VectorAdd (b->drawStart, dir2, p->verts[3].xyz);
+		VectorAdd (b->drawEnd, dir2, p->verts[2].xyz);
 
-		p->verts[0].st[1] = p->verts[3].st[1] = len / (e->beamRadius * 2 * M_PI);
+		p->verts[0].st[1] = p->verts[3].st[1] = len / (b->radius * 2 * M_PI);
 		p->verts[1].st[1] = p->verts[2].st[1] = 0;
 		p->verts[0].st[0] = p->verts[1].st[0] = anglePrev;
 		p->verts[2].st[0] = p->verts[3].st[0] = angle;
 
-		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = e->shaderColor.rgba;
+		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = b->color.rgba;
 #ifdef CYLINDER_FIX_ALPHA
 #define MIN_FIXED_ALPHA			0.1f
 		// fix alpha: make it depends on angle (better image quality)
@@ -989,12 +1014,12 @@ static void AddCylinderSurfaces (refEntity_t *e)
 			a1 = a1 * 4 * (1 - MIN_FIXED_ALPHA) + MIN_FIXED_ALPHA;
 			a2 = a2 * 4 * (1 - MIN_FIXED_ALPHA) + MIN_FIXED_ALPHA;
 
-			p->verts[0].c.c[3] = p->verts[1].c.c[3] = Q_round (e->shaderColor.c[3] * a1);
-			p->verts[2].c.c[3] = p->verts[3].c.c[3] = Q_round (e->shaderColor.c[3] * a2);
+			p->verts[0].c.c[3] = p->verts[1].c.c[3] = Q_round (b->color.c[3] * a1);
+			p->verts[2].c.c[3] = p->verts[3].c.c[3] = Q_round (b->color.c[3] * a2);
 		}
 #endif
 
-		surf = GL_AddDynamicSurface (e->customShader, ENTITYNUM_WORLD);
+		surf = GL_AddDynamicSurface (shader, ENTITYNUM_WORLD);
 		if (!surf) return;
 		surf->poly = p;
 		surf->type = SURFACE_POLY;
@@ -1004,23 +1029,16 @@ static void AddCylinderSurfaces (refEntity_t *e)
 
 #define BEAM_PARTS	3		// 1 - flat
 
-static void AddFlatBeam (refEntity_t *e)
+static void AddFlatBeam (beam_t *b, shader_t *shader)
 {
-	vec3_t	viewDir, viewDir2;
-	vec3_t	axis[3];	// length, width, depth
-	float	z1, z2, len, angle;
+	vec3_t	viewDir;
+	vec3_t	axis[3];		// length, width, depth
+	float	len, angle;
 	int		i;
 
-	// cull beam (improve with frustum culling ??)
-	VectorSubtract (e->beamStart, vp.vieworg, viewDir);
-	z1 = DotProduct (viewDir, vp.viewaxis[0]);		// beamStart.Z
-	VectorSubtract (e->beamEnd, vp.vieworg, viewDir2);
-	z2 = DotProduct (viewDir2, vp.viewaxis[0]);		// beamEnd.Z
-	if (z1 < 0 && z2 < 0)
-		return;
-
+	VectorSubtract (b->drawStart, vp.vieworg, viewDir);
 	// compute beam axis
-	VectorSubtract (e->beamEnd, e->beamStart, axis[0]);
+	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
 	len = VectorNormalizeFast (axis[0]);
 	CrossProduct (axis[0], viewDir, axis[1]);
 	VectorNormalizeFast (axis[1]);
@@ -1039,8 +1057,8 @@ static void AddFlatBeam (refEntity_t *e)
 			return;
 		p->numVerts = 4;
 
-		sx = SIN_FUNC(angle) * e->beamRadius;
-		cx = COS_FUNC(angle) * e->beamRadius;
+		sx = SIN_FUNC(angle) * b->radius;
+		cx = COS_FUNC(angle) * b->radius;
 		VectorScale (axis[1], cx, dir1);
 		VectorMA (dir1, sx, axis[2], dir1);
 		VectorNegate (dir1, dir2);
@@ -1048,19 +1066,19 @@ static void AddFlatBeam (refEntity_t *e)
 		angle += 0.5f / BEAM_PARTS;
 
 		// setup xyz
-		VectorAdd (e->beamStart, dir1, p->verts[0].xyz);
-		VectorAdd (e->beamEnd, dir1, p->verts[1].xyz);
-		VectorAdd (e->beamStart, dir2, p->verts[3].xyz);
-		VectorAdd (e->beamEnd, dir2, p->verts[2].xyz);
+		VectorAdd (b->drawStart, dir1, p->verts[0].xyz);
+		VectorAdd (b->drawEnd, dir1, p->verts[1].xyz);
+		VectorAdd (b->drawStart, dir2, p->verts[3].xyz);
+		VectorAdd (b->drawEnd, dir2, p->verts[2].xyz);
 
-		p->verts[0].st[1] = p->verts[3].st[1] = len / (e->beamRadius * 2 * M_PI);
+		p->verts[0].st[1] = p->verts[3].st[1] = len / (b->radius * 2 * M_PI);
 		p->verts[1].st[1] = p->verts[2].st[1] = 0;
 		p->verts[0].st[0] = p->verts[1].st[0] = 0;
 		p->verts[2].st[0] = p->verts[3].st[0] = 1;
 
-		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = e->shaderColor.rgba;
+		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = b->color.rgba;
 
-		surf = GL_AddDynamicSurface (e->customShader, ENTITYNUM_WORLD);
+		surf = GL_AddDynamicSurface (shader, ENTITYNUM_WORLD);
 		if (!surf) return;
 		surf->poly = p;
 		surf->type = SURFACE_POLY;
@@ -1254,6 +1272,7 @@ static node_t *WalkBspTree (void)
 		node->frustumMask = frustumMask;
 		node->drawEntity = NULL;
 		node->drawParticle = NULL;
+		node->drawBeam = NULL;
 		// mark dlights on leaf surfaces
 		if (dlightMask)
 		{
@@ -1290,7 +1309,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 	int		i, ret;
 	refEntity_t	*e;
 	node_t	*leaf;
-	vec3_t	delta, center;
+	vec3_t	delta;
 	float	dist2;
 
 	if (!numEntities || !r_drawentities->integer) return;
@@ -1340,12 +1359,6 @@ static void DrawEntities (int firstEntity, int numEntities)
 				DrawTextLeft (va("DrawEntities: bad model type %d", e->model->type), RGB(1, 0, 0));
 				continue;
 			}
-		}
-		else if (e->flags & (RF_BEAM|RF_BEAM_EXT))
-		{
-			VectorAdd (e->beamStart, e->beamEnd, center);
-			VectorScale (center, 0.5f, e->center);
-			leaf = AlphaSphereLeaf (e->center, VectorDistance (e->beamStart, e->center));
 		}
 		else if (e->flags & RF_BBOX)
 		{
@@ -1402,7 +1415,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 		e->visible = true;
 		// calc model distance
-		VectorSubtract (center, vp.vieworg, delta);
+		VectorSubtract (e->center, vp.vieworg, delta);
 		dist2 = e->dist2 = DotProduct (delta, vp.viewaxis[0]);
 		// add entity to leaf's entity list
 		if (leaf->drawEntity)
@@ -1436,12 +1449,14 @@ static void DrawEntities (int firstEntity, int numEntities)
 }
 
 
-static void DrawParticles (particle_t *p)
+static void DrawParticles (void)
 {
-	for ( ; p; p = p->next)
-	{
-		node_t	*leaf;
+	particle_t *p;
+	beam_t	*b;
+	node_t	*leaf;
 
+	for (p = vp.particles; p; p = p->next)
+	{
 		leaf = &map.nodes[p->leafNum + map.numNodes];
 		if (leaf->frame == drawFrame)
 		{
@@ -1451,6 +1466,34 @@ static void DrawParticles (particle_t *p)
 		else
 			gl_speeds.cullParts++;
 
+		gl_speeds.parts++;
+	}
+
+	for (b = vp.beams; b; b = b->next)
+	{
+		VectorCopy (b->start, b->drawStart);
+		VectorCopy (b->end, b->drawEnd);
+		if (!CutCylinder (b->drawStart, b->drawEnd, b->radius))
+		{
+			gl_speeds.cullParts++;
+			continue;
+		}
+		else
+		{
+			vec3_t	center;
+
+			VectorAdd (b->drawStart, b->drawEnd, center);
+			VectorScale (center, 0.5f, center);
+			leaf = AlphaSphereLeaf (center, VectorDistance (b->drawStart, center));
+		}
+
+		if (leaf && leaf->frame == drawFrame)
+		{
+			b->drawNext = leaf->drawBeam;
+			leaf->drawBeam = b;
+		}
+		else
+			gl_speeds.cullParts++;
 		gl_speeds.parts++;
 	}
 }
@@ -1653,6 +1696,7 @@ static void DrawFlares (void)
 static void DrawBspSequence (node_t *leaf)
 {
 	refEntity_t *e;
+	beam_t	*b;
 
 	for ( ; leaf; leaf = leaf->drawNext)
 	{
@@ -1694,16 +1738,6 @@ static void DrawBspSequence (node_t *leaf)
 					AddSp2Surface (e);
 					break;
 				}
-			else if (e->flags & RF_BEAM)
-				AddBeamSurfaces (e);
-			else if (e->flags & RF_BEAM_EXT)
-			{
-				//!! need another way to select function
-				if (e->customShader != gl_railBeamShader)
-					AddCylinderSurfaces (e);
-				else
-					AddFlatBeam (e);
-			}
 		}
 
 		/*------------ draw particles -------------*/
@@ -1717,6 +1751,25 @@ static void DrawBspSequence (node_t *leaf)
 			{
 				surf->type = SURFACE_PARTICLE;
 				surf->part = leaf->drawParticle;
+			}
+		}
+
+		for (b = leaf->drawBeam; b; b = b->drawNext)
+		{
+			switch (b->type)
+			{
+			case BEAM_STANDARD:
+				AddBeamSurfaces (b);
+				break;
+			case BEAM_RAILBEAM:
+				AddFlatBeam (b, gl_railBeamShader);
+				break;
+			case BEAM_RAILSPIRAL:
+				AddCylinderSurfaces (b, gl_railSpiralShader);
+				break;
+			case BEAM_RAILRINGS:
+				AddCylinderSurfaces (b, gl_railRingsShader);
+				break;
 			}
 		}
 	}
@@ -1897,35 +1950,6 @@ void GL_AddEntity (entity_t *ent)
 			break;
 		}
 	}
-	else if (ent->flags & RF_BEAM)
-	{
-		VectorCopy (ent->origin, out->beamStart);
-		VectorCopy (ent->oldorigin, out->beamEnd);
-		out->beamRadius = ent->frame / 2.0f;
-		out->shaderColor.rgba = gl_config.tbl_8to32[ent->skinnum];
-		out->shaderColor.c[3] = Q_round (ent->alpha * 255);
-	}
-	else if (ent->flags & RF_BEAM_EXT)
-	{
-		VectorCopy (ent->origin, out->beamStart);
-		VectorCopy (ent->oldorigin, out->beamEnd);
-		out->beamRadius = ent->alpha / 2.0f;
-		switch (ent->skinnum)
-		{
-		case BEAM_RAILBEAM:
-			out->customShader = gl_railBeamShader;
-			break;
-		case BEAM_RAILSPIRAL:
-			out->customShader = gl_railSpiralShader;
-			break;
-		case BEAM_RAILRINGS:
-			out->customShader = gl_railRingsShader;
-			break;
-		default:
-			out->customShader = gl_defaultShader;
-		}
-		out->shaderColor.rgba = ent->color.rgba;
-	}
 	else if (ent->flags & RF_BBOX)
 	{
 		VectorSubtract (ent->oldorigin, ent->origin, v);
@@ -2006,7 +2030,7 @@ void GL_DrawPortal (void)
 		ClearBounds (vp.mins, vp.maxs);
 		firstLeaf = WalkBspTree ();
 		DrawEntities (vp.firstEntity, vp.numEntities);
-		DrawParticles (vp.particles);
+		DrawParticles ();
 
 		DrawBspSequence (firstLeaf);
 		if (gl_flares->integer && gl_flareShader)

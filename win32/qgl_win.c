@@ -4,6 +4,7 @@
 qgl_t			qgl;
 static qgl_t	lib;
 
+static FILE *logFile;
 
 #include "../ref_gl/qgl_impl.h"
 
@@ -13,6 +14,12 @@ static qgl_t	lib;
 void QGL_Shutdown (void)
 {
 	int		i;
+
+	if (logFile)
+	{
+		fclose (logFile);
+		logFile = NULL;
+	}
 
 	if (glw_state.hinstOpenGL)
 	{
@@ -24,8 +31,6 @@ void QGL_Shutdown (void)
 
 	for (i = 0; i < NUM_GLFUNCS; i++)
 		qgl.funcs[i] = NULL;
-
-	Z_Free (gl_config.extensionsString);
 }
 
 
@@ -60,13 +65,15 @@ bool QGL_Init (const char *dllname)
 }
 
 
-static bool ExtensionSupported (const char *name)
+static bool ExtensionSupported (const char *name, const char *extString)
 {
 	int		len;
 	const char *s;
 
+	if (!extString) return false;
+
 	len = strlen (name);
-	s = gl_config.extensionsString;
+	s = extString;
 	while (true)
 	{
 		while (s[0] == ' ') s++;				// skip spaces
@@ -102,21 +109,13 @@ void QGL_InitExtensions (void)
 	ext2 = NULL;
 #endif
 
-	i = strlen (ext1) + 1;
-	if (ext2) i += strlen (ext2) + 1;
-	gl_config.extensionsString = Z_Malloc (i);
-	if (ext2)
-		Com_sprintf (gl_config.extensionsString, i, "%s %s", ext1, ext2);
-	else
-		strcpy (gl_config.extensionsString, ext1);
-
 	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 	{
 		bool	enable;
 		int		j;
 
 		enable = false;
-		if (ExtensionSupported (ext->name))
+		if (ExtensionSupported (ext->name, ext1) || ExtensionSupported (ext->name, ext2))
 		{
 			if (!ext->cvar || Cvar_VariableInt (ext->cvar))
 				enable = true;
@@ -254,33 +253,33 @@ void QGL_EnableLogging (qboolean enable)
 
 	if (enable)
 	{
-		if (!glw_state.log_fp)
+		if (!logFile)
 		{
 			struct tm	*newtime;
 			time_t		aclock;
 
-			glw_state.log_fp = fopen (va("%s/gl.log", FS_Gamedir ()), "a+");
+			logFile = fopen (va("%s/gl.log", FS_Gamedir ()), "a+");
 
 			time (&aclock);
 			newtime = localtime (&aclock);
-			fprintf (glw_state.log_fp, "%s\n", asctime (newtime));
+			fprintf (logFile, "%s\n", asctime (newtime));
 		}
 
-		for (i = 0; i < NUM_GLFUNCS; i++)
+		for (i = 0; i < NUM_GLFUNCS; i++)					//?? memcpy()
 			qgl.funcs[i] = logFuncs.funcs[i];
-		for ( ; i < NUM_GLFUNCS + NUM_EXTFUNCS; i++)
+		for ( ; i < NUM_GLFUNCS + NUM_EXTFUNCS; i++)		//?? ... ???
 			if (lib.funcs[i])		// enable logging only when extension is active
 				qgl.funcs[i] = logFuncs.funcs[i];
 	}
 	else
 	{
-		if (glw_state.log_fp)
+		if (logFile)
 		{
-			fclose (glw_state.log_fp);
-			glw_state.log_fp = NULL;
+			fclose (logFile);
+			logFile = NULL;
 		}
 
-		for (i = 0; i < NUM_GLFUNCS + NUM_EXTFUNCS; i++)
+		for (i = 0; i < NUM_GLFUNCS + NUM_EXTFUNCS; i++)	//?? ...
 			qgl.funcs[i] = lib.funcs[i];
 	}
 }
@@ -288,8 +287,6 @@ void QGL_EnableLogging (qboolean enable)
 
 void QGL_LogMessage (const char *text)
 {
-	if (!glw_state.log_fp)
-		return;
-
-	fprintf (glw_state.log_fp, text);
+	if (!logFile) return;
+	fprintf (logFile, text);
 }

@@ -39,32 +39,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../win32/glw_win.h"
 #include "../win32/winquake.h"
 
-
-extern cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
-
-
-static qboolean GLimp_SwitchFullscreen( int width, int height );
-qboolean GLimp_InitGL (void);
+static bool GLimp_SwitchFullscreen (int width, int height);
+bool GLimp_InitGL (void);
 
 glwstate_t glw_state;
 
 extern cvar_t *r_fullscreen;
 extern cvar_t *vid_ref;
 
-static qboolean VerifyDriver (void)
+static bool VerifyDriver (void)
 {
-	char buffer[1024];
-
-	strcpy (buffer, qglGetString (GL_RENDERER));
-	strlwr (buffer);
-	if (!strcmp (buffer, "gdi generic"))
-		if (!glw_state.mcd_accelerated)
+	if (!stricmp (qglGetString (GL_RENDERER), "gdi generic") &&
+		!glw_state.mcd_accelerated)
 			return false;
 	return true;
 }
 
 
-static qboolean GLimp_CreateWindow (int width, int height, qboolean fullscreen)
+static bool GLimp_CreateWindow (int width, int height, bool fullscreen)
 {
 	glw_state.hWnd = (HWND) Vid_CreateWindow (width, height, fullscreen);
 	if (!glw_state.hWnd)
@@ -83,7 +75,7 @@ static qboolean GLimp_CreateWindow (int width, int height, qboolean fullscreen)
 /*
  * GLimp_SetMode
  */
-int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
+int GLimp_SetMode (int *pwidth, int *pheight, int mode, bool fullscreen)
 {
 	int		width, height, colorBits;
 
@@ -179,7 +171,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 
 				Com_Printf ("...setting windowed mode\n");
 
-				ChangeDisplaySettings (0, 0);
+				ChangeDisplaySettings (NULL, 0);
 
 				*pwidth = width;
 				*pheight = height;
@@ -204,7 +196,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 	{
 		Com_Printf ("...setting windowed mode\n");
 
-		ChangeDisplaySettings (0, 0);
+		ChangeDisplaySettings (NULL, 0);
 
 		*pwidth = width;
 		*pheight = height;
@@ -216,19 +208,18 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 	return rserr_ok;
 }
 
-/*
-=============
-GLimp_Gamma
-=============
-*/
 
-static qboolean gammaStored, gammaValid;
-static unsigned short gammaRamp[3*256], newGamma[3*256];
+/*-----------------------------------------------------------------------------
+	Gamma ramp support
+-----------------------------------------------------------------------------*/
+
+static bool gammaStored, gammaValid;
+static WORD gammaRamp[3*256], newGamma[3*256];
 
 extern cvar_t *r_ignorehwgamma;
 
 
-qboolean GLimp_HasGamma (void)
+bool GLimp_HasGamma (void)
 {
 	if (r_ignorehwgamma->integer) return false;
 
@@ -295,21 +286,25 @@ static void UpdateGamma (void)
 }
 
 
+//#define FIND_GAMMA			// define for replace GAMMA_ANGLE and GAMMA_OFFSET with 'a' and 'b' cvars
+
 void GLimp_SetGamma (float gamma, float intens)
 {
 	int		i, v;
-	float	contr, bright;
 	float	invGamma;
+	float	contr, bright;
+#ifdef FIND_GAMMA
+	float	a, b;			// y = ax + b
+
+	a = Cvar_Get("a","1",0)->value;
+	b = Cvar_Get("b","0.5",0)->value;
+#endif
 
 	if (!gammaStored) return;
 
 	gamma = bound(gamma, 0.5, 3);
-	if (intens < 0.1f)	//?? remove
-		intens = 0.1f;
-	contr = r_contrast->value;
-	bright = r_brightness->value;
-	contr = bound(contr, 0.3, 1.8);
-	bright = bound(bright, 0.3, 1.8);
+	contr = bound(r_contrast->value, 0.5, 1.5);
+	bright = bound(r_brightness->value, 0.5, 1.5);
 
 //	DebugPrintf("set gamma %g, %g\n", gamma, intens);//!!
 
@@ -319,7 +314,7 @@ void GLimp_SetGamma (float gamma, float intens)
 		float	tmp;
 
 #if 0
-		tmp = (i / 255.0f * overbright - 0.5f) * contr + 0.5f;
+		tmp = (i / 255.0f - 0.5f) * contr + 0.5f;
 		if (tmp < 0) tmp = 0;					// without this, can get semi-negative picture when r_gamma=0.5 (invGamma=2)
 		v = Q_round (65535.0f * (pow (tmp, invGamma) + bright - 1));
 #else
@@ -330,18 +325,23 @@ void GLimp_SetGamma (float gamma, float intens)
 		v = Q_round (tmp);
 #endif
 
-		if (_winmajor >= 5)
+		if (_winmajor >= 5)						//?? may not work in DLL
 		{
 			int		m;
 
 			// Win2K/XP performs checking of gamma ramp and may reject it (clamp with (0,MAX_GAMMA)-(255,FFFF) line)
-#define MAX_GAMMA		0x8000					// don't works with higher values
-#define GAMMA_STEP		((0x10000 - MAX_GAMMA) / 256)
-			m = i * GAMMA_STEP + MAX_GAMMA;
-			v = bound(v, 0, m);
+#ifndef FIND_GAMMA
+			// clamp gamma curve with line 'y=x*GAMMA_ANGLE+GAMMA_OFFSET'
+#define GAMMA_ANGLE		1
+#define GAMMA_OFFSET	0.5
+			m = i * (GAMMA_ANGLE*256) + (int)(GAMMA_OFFSET*65536);
+			if (v > m) v = m;
+#else
+			m = Q_round (i * a * 256 + b * 65535);
+			if (v > m) v = m;
+#endif
 		}
-		else
-			v = bound(v, 0, 65535);
+		v = bound(v, 0, 65535);
 
 		newGamma[i] = newGamma[i+256] = newGamma[i+512] = v;
 	}
@@ -351,53 +351,70 @@ void GLimp_SetGamma (float gamma, float intens)
 }
 
 
-/*
- * GLimp_Shutdown
- *
- * This routine does all OS specific shutdown procedures for the OpenGL
- * subsystem.  Under OpenGL this means NULLing out the current DC and
- * HGLRC, deleting the rendering context, and releasing the DC acquired
- * for the window.  The state structure is also nulled out.
- *
- */
-void GLimp_Shutdown (void)
+/*-----------------------------------------------------------------------------
+	Win32 OpenGL context
+-----------------------------------------------------------------------------*/
+
+
+static HGLRC	contextHandle;
+static bool		contextActive;
+
+
+static bool CreateGLcontext (void)
 {
-	RestoreGamma ();
-
-	Com_Printf ("...performing shutdown\n");
-	if (qwglMakeCurrent && !qwglMakeCurrent (NULL, NULL))
-		Com_WPrintf ("...wglMakeCurrent failed\n");
-	if (glw_state.hGLRC)
+	contextActive = false;
+	if (!(contextHandle = qwglCreateContext (glw_state.hDC)))
 	{
-		if (qwglDeleteContext && !qwglDeleteContext (glw_state.hGLRC))
-			Com_WPrintf ("...wglDeleteContext failed\n");
-		glw_state.hGLRC = NULL;
+		Com_WPrintf ("...CreateGLcontext() failed\n");
+		return false;
 	}
-
-	if (glw_state.hDC)
-	{
-		if (!ReleaseDC (glw_state.hWnd, glw_state.hDC))
-			Com_WPrintf ("...ReleaseDC failed\n");
-		glw_state.hDC = NULL;
-	}
-
-	if (glw_state.log_fp)
-	{
-		fclose (glw_state.log_fp);
-		glw_state.log_fp = NULL;
-	}
-
-	Vid_DestroyWindow (gl_bitdepth->modified);
-	glw_state.hWnd = NULL;
-
-	if (gl_config.fullscreen)
-	{
-		if (!strlen (vid_ref->string))
-			ChangeDisplaySettings (0, 0);
-		gl_config.fullscreen = false;
-	}
+	return true;
 }
 
+
+static bool ActivateGLcontext (void)
+{
+	if (contextActive) return true;
+	if (!qwglMakeCurrent (glw_state.hDC, contextHandle))
+	{
+		Com_WPrintf ("...ActivateGLcontext() failed\n");
+		return false;
+	}
+	contextActive = true;
+	return true;
+}
+
+
+static bool DeactivateGLcontext (void)
+{
+	if (!contextActive) return true;
+	if (!qwglMakeCurrent (glw_state.hDC, NULL))
+	{
+		Com_WPrintf ("...DeactivateGLcontext() failed\n");
+		return false;
+	}
+	contextActive = false;
+	return true;
+}
+
+
+static bool DestoryGLcontext (void)
+{
+	if (!contextHandle) return true;
+	if (!DeactivateGLcontext ()) return false;
+	if (!qwglDeleteContext (contextHandle))
+	{
+		Com_WPrintf ("...DestoryGLcontext() failed...\n");
+		return false;
+	}
+	contextHandle = NULL;
+	return true;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Initialization/finalization
+-----------------------------------------------------------------------------*/
 
 /*
  * GLimp_Init
@@ -442,7 +459,7 @@ int GLimp_Init (void)
 	return true;
 }
 
-static qboolean GLimp_SetPixelFormat (void)
+static bool GLimp_SetPixelFormat (void)
 {
 	PIXELFORMATDESCRIPTOR pfd =			// non-static var
 	{
@@ -531,17 +548,8 @@ static qboolean GLimp_SetPixelFormat (void)
 	}
 */
 	// startup the OpenGL subsystem by creating a context and making it current
-	if ((glw_state.hGLRC = qwglCreateContext (glw_state.hDC)) == 0)
-	{
-		Com_WPrintf ("...qwglCreateContext failed\n");
-		return false;
-	}
-
-	if (!qwglMakeCurrent (glw_state.hDC, glw_state.hGLRC))
-	{
-		Com_WPrintf ("...qwglMakeCurrent failed\n");
-		return false;
-	}
+	if (!CreateGLcontext ()) return false;
+	if (!ActivateGLcontext ()) return false;
 
 	if (!VerifyDriver ())
 	{
@@ -556,7 +564,7 @@ static qboolean GLimp_SetPixelFormat (void)
 }
 
 
-static qboolean GLimp_InitGL (void)
+static bool GLimp_InitGL (void)
 {
 	// figure out if we're running on a minidriver or not
 	if (strstr (gl_driver->string, "opengl32"))
@@ -575,16 +583,9 @@ static qboolean GLimp_InitGL (void)
 
 	if (!GLimp_SetPixelFormat ())
 	{
-		if (glw_state.hGLRC)
-		{
-			qwglDeleteContext (glw_state.hGLRC);
-			glw_state.hGLRC = NULL;
-		}
-		if (glw_state.hDC)
-		{
-			ReleaseDC (glw_state.hWnd, glw_state.hDC);
-			glw_state.hDC = NULL;
-		}
+		DestoryGLcontext ();
+		ReleaseDC (glw_state.hWnd, glw_state.hDC);
+		glw_state.hDC = NULL;
 		return false;
 	}
 
@@ -596,35 +597,42 @@ static qboolean GLimp_InitGL (void)
 
 
 /*
- * GLimp_BeginFrame
+ * GLimp_Shutdown
+ *
+ * This routine does all OS specific shutdown procedures for the OpenGL
+ * subsystem.  Under OpenGL this means NULLing out the current DC and
+ * HGLRC, deleting the rendering context, and releasing the DC acquired
+ * for the window.  The state structure is also nulled out.
+ *
  */
-void GLimp_BeginFrame (float camera_separation)
+void GLimp_Shutdown (void)
 {
-	LOG_STRING("GLimp_BeginFrame()\n");
-	if (gl_bitdepth->modified)
+	RestoreGamma ();
+
+	Com_Printf ("...performing shutdown\n");
+	DestoryGLcontext ();
+	if (glw_state.hDC)
 	{
-		if (gl_bitdepth->integer && !glw_state.allowdisplaydepthchange)
-		{
-			Cvar_SetInteger ("gl_bitdepth", 0);
-			Com_WPrintf ("gl_bitdepth requires Win95 OSR2.x or WinNT 4.x\n" );
-		}
-		gl_bitdepth->modified = false;
+		if (!ReleaseDC (glw_state.hWnd, glw_state.hDC))
+			Com_WPrintf ("...ReleaseDC failed\n");
+		glw_state.hDC = NULL;
 	}
 
-/* ??
-	if (camera_separation < 0 && gl_state.stereo_enabled)
+	Vid_DestroyWindow (true); //?? (gl_bitdepth->modified);
+	glw_state.hWnd = NULL;
+
+	if (gl_config.fullscreen)
 	{
-		qglDrawBuffer (GL_BACK_LEFT);
+		if (!strlen (vid_ref->string))
+			ChangeDisplaySettings (0, 0);
+		gl_config.fullscreen = false;
 	}
-	else if (camera_separation > 0 && gl_state.stereo_enabled)
-	{
-		qglDrawBuffer (GL_BACK_RIGHT);
-	}
-	else
-	{
-		qglDrawBuffer (GL_BACK);
-	}*/
 }
+
+
+/*-----------------------------------------------------------------------------
+	Miscellaneous
+-----------------------------------------------------------------------------*/
 
 
 /*
@@ -659,17 +667,38 @@ void GLimp_EndFrame (void)
 				Com_Error (ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n");
 		}
 	}
-/*	if (gl_logFile->modified)
+}
+
+
+/*
+ * GLimp_BeginFrame
+ */
+void GLimp_BeginFrame (float camera_separation)
+{
+	LOG_STRING("GLimp_BeginFrame()\n");
+	if (gl_bitdepth->modified)
 	{
-		QGL_EnableLogging (gl_logFile->integer);
-		gl_logFile->modified = false;
+		if (gl_bitdepth->integer && !glw_state.allowdisplaydepthchange)
+		{
+			Cvar_SetInteger ("gl_bitdepth", 0);
+			Com_WPrintf ("gl_bitdepth requires Win95 OSR2.x or WinNT 4.x\n" );
+		}
+		gl_bitdepth->modified = false;
 	}
-	else if (gl_logFile->integer == 2)
+
+/* ??
+	if (camera_separation < 0 && gl_state.stereo_enabled)
 	{
-		QGL_EnableLogging (false);
-		Cvar_SetInteger ("gl_logFile", 0);
+		glDrawBuffer (GL_BACK_LEFT);
 	}
-*/
+	else if (camera_separation > 0 && gl_state.stereo_enabled)
+	{
+		glDrawBuffer (GL_BACK_RIGHT);
+	}
+	else
+	{
+		glDrawBuffer (GL_BACK);
+	}*/
 }
 
 
@@ -682,13 +711,20 @@ void GLimp_AppActivate (qboolean active)
 	{
 		SetForegroundWindow (glw_state.hWnd);
 		ShowWindow (glw_state.hWnd, SW_RESTORE);
-		if (r_fullscreen->integer) SetWindowPos (glw_state.hWnd, 0, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
+		if (r_fullscreen->integer)
+		{
+			ActivateGLcontext ();
+			SetWindowPos (glw_state.hWnd, 0, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
+		}
 		UpdateGamma ();
 	}
 	else
 	{
 		if (r_fullscreen->integer)
+		{
 			ShowWindow (glw_state.hWnd, SW_MINIMIZE);
+			DeactivateGLcontext ();
+		}
 		RestoreGamma ();
 	}
 }

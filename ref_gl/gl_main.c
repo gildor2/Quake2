@@ -13,6 +13,8 @@ drawSpeeds_t gl_speeds;
 static int ref_flags;
 refImport_t	ri;
 
+bool gl_renderingEnabled;
+
 
 //------------- Cvars -----------------
 
@@ -90,10 +92,10 @@ static void Gfxinfo_f (void)
 {
 	static char *boolNames[] = {"no", "yes"};
 
-	Com_Printf ("GL_VENDOR: %s\n", gl_config.vendorString);
-	Com_Printf ("GL_RENDERER: %s\n", gl_config.rendererString);
-	Com_Printf ("GL_VERSION: %s\n", gl_config.versionString);
-	Com_Printf ("GL_EXTENSIONS: %s\n", gl_config.extensionsString);
+	Com_Printf ("GL_VENDOR: %s\n", glGetString (GL_VENDOR));
+	Com_Printf ("GL_RENDERER: %s\n", glGetString (GL_RENDERER));
+	Com_Printf ("GL_VERSION: %s\n", glGetString (GL_VERSION));
+	Com_Printf ("GL_EXTENSIONS: %s\n", glGetString (GL_EXTENSIONS));		//?? colorize used/disabled extensions
 	Com_Printf ("Multitexturing: ");
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
 		Com_Printf ("yes, %d texture units\n", gl_config.maxActiveTextures);
@@ -306,11 +308,6 @@ static int GL_Init (void)
 	Cvar_SetInteger ("gl_finish", 1);	//??
 #endif
 
-	/*----------------- Get various GL strings ----------------*/
-	Q_strncpyz (gl_config.vendorString, glGetString (GL_VENDOR), sizeof(gl_config.vendorString));
-	Q_strncpyz (gl_config.rendererString, glGetString (GL_RENDERER), sizeof(gl_config.rendererString));
-	Q_strncpyz (gl_config.versionString, glGetString (GL_VERSION), sizeof(gl_config.versionString));
-
 	/*------------------ Grab extensions ----------------------*/
 	//?? move this part to gl_interface.c ??
 	QGL_InitExtensions ();
@@ -389,6 +386,17 @@ static void GL_Shutdown (void)
 }
 
 
+void GL_EnableRendering (bool enable)
+{
+	if (gl_renderingEnabled == enable) return;
+	gl_renderingEnabled = enable;
+	if (enable)
+	{
+		GL_LoadDelayedImages ();
+	}
+}
+
+
 /*---------------- Backend helpers ----------------------*/
 
 static void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color)
@@ -423,6 +431,12 @@ static void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, flo
 
 static void GL_BeginFrame (float camera_separation)
 {
+	if (!gl_renderingEnabled)
+	{
+		backendCmdSize = 0;				// avoid overflow
+		return;
+	}
+
 	if (gl_logFile->modified)
 	{
 		QGL_EnableLogging (gl_logFile->integer);
@@ -476,6 +490,8 @@ static void GL_BeginFrame (float camera_separation)
 
 static void GL_EndFrame (void)
 {
+	if (!gl_renderingEnabled) return;
+
 	if (!gl_speeds.numFrames) ClearTexts ();
 
 //	DrawTextRight ("---------EndFrame---------\n", RGB(1,0,0));
@@ -677,6 +693,8 @@ static void GL_RenderFrame (refdef_t *fd)
 	dlight_t *dl;
 	int		i;
 
+	if (!gl_renderingEnabled) return;
+
 	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !map.name)
 		Com_Error (ERR_FATAL, "R_RenderFrame: NULL worldModel");
 
@@ -740,6 +758,7 @@ static void GL_RenderFrame (refdef_t *fd)
 	gl_speeds.flares = gl_speeds.testFlares = gl_speeds.cullFlares = 0;
 	gl_speeds.parts = gl_speeds.cullParts = 0;
 	vp.particles = fd->particles;
+	vp.beams = fd->beams;
 
 	GL_ClearPortal ();
 	SetWorldModelview ();
@@ -1182,6 +1201,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	refExport_t	re;
 
 	ri = rimp;
+	gl_renderingEnabled = true;
 
 #ifndef REF_HARD_LINKED
 	if (ri.struc_size != sizeof(refImport_t) || ri.api_version != API_VERSION)

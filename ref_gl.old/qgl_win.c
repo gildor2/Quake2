@@ -4,6 +4,7 @@
 qgl_t			qgl;
 static qgl_t	lib;
 
+static FILE *logFile;
 
 #include "qgl_impl.h"
 
@@ -238,16 +239,16 @@ void QGL_EnableLogging (qboolean enable)
 
 	if (enable)
 	{
-		if (!glw_state.log_fp)
+		if (!logFile)
 		{
 			struct tm	*newtime;
 			time_t		aclock;
 
-			glw_state.log_fp = fopen (va("%s/gl.log", FS_Gamedir ()), "a+");
+			logFile = fopen (va("%s/gl.log", FS_Gamedir ()), "a+");
 
 			time (&aclock);
 			newtime = localtime (&aclock);
-			fprintf (glw_state.log_fp, "%s\n", asctime (newtime));
+			fprintf (logFile, "%s\n", asctime (newtime));
 		}
 
 		for (i = 0; i < NUM_GLFUNCS; i++)
@@ -258,10 +259,10 @@ void QGL_EnableLogging (qboolean enable)
 	}
 	else
 	{
-		if (glw_state.log_fp)
+		if (logFile)
 		{
-			fclose (glw_state.log_fp);
-			glw_state.log_fp = NULL;
+			fclose (logFile);
+			logFile = NULL;
 		}
 
 		for (i = 0; i < NUM_GLFUNCS + NUM_EXTFUNCS; i++)
@@ -272,8 +273,6 @@ void QGL_EnableLogging (qboolean enable)
 
 void QGL_LogMessage (const char *text)
 {
-	if (!glw_state.log_fp)
-		return;
-
-	fprintf (glw_state.log_fp, text);
+	if (!logFile) return;
+	fprintf (logFile, text);
 }

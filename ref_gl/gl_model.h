@@ -157,6 +157,7 @@ typedef struct node_s
 	struct node_s *drawNext;
 	refEntity_t *drawEntity;
 	particle_t *drawParticle;
+	beam_t	*drawBeam;
 	// visibility params
 	int		cluster, area;
 	// surfaces (only if isNode==false)

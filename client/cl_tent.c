@@ -32,19 +32,11 @@ typedef struct
 	int		endtime;
 	vec3_t	offset;
 	vec3_t	start, end;
-} beam_t;
-beam_t		cl_beams[MAX_BEAMS];
+} mBeam_t;		// beam with model
+
+static mBeam_t	cl_mBeams[MAX_BEAMS];
 //PMM - added this for player-linked beams.  Currently only used by the plasma beam
-beam_t		cl_playerbeams[MAX_BEAMS];
-
-
-#define	MAX_LASERS	32
-typedef struct
-{
-	entity_t	ent;
-	int			endtime;
-} laser_t;
-laser_t		cl_lasers[MAX_LASERS];
+static mBeam_t	cl_mPlayerbeams[MAX_BEAMS];
 
 //ROGUE
 cl_sustain_t	cl_sustains[MAX_SUSTAINS];
@@ -312,12 +304,11 @@ CL_ClearTEnts
 */
 void CL_ClearTEnts (void)
 {
-	memset (cl_beams, 0, sizeof(cl_beams));
+	memset (cl_mBeams, 0, sizeof(cl_mBeams));
 	memset (cl_explosions, 0, sizeof(cl_explosions));
-	memset (cl_lasers, 0, sizeof(cl_lasers));
 
 //ROGUE
-	memset (cl_playerbeams, 0, sizeof(cl_playerbeams));
+	memset (cl_mPlayerbeams, 0, sizeof(cl_mPlayerbeams));
 	memset (cl_sustains, 0, sizeof(cl_sustains));
 //ROGUE
 }
@@ -462,6 +453,8 @@ void CL_AddExplosions (void)
 //			re.DrawTextLeft(va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARG(ent->origin), ent->alpha, VECTOR_ARG(ex->lightcolor)),RGB(1,1,1));
 		}
 
+		if (!ent->model) continue;		// flash only
+
 		VectorCopy (ent->origin, ent->oldorigin);
 
 		ent->frame = ex->baseframe + frm + 1;
@@ -522,7 +515,7 @@ int CL_ParseBeam (struct model_s *model)
 {
 	int		ent;
 	vec3_t	start, end;
-	beam_t	*b;
+	mBeam_t	*b;
 	int		i;
 
 	ent = MSG_ReadShort (&net_message);
@@ -531,7 +524,7 @@ int CL_ParseBeam (struct model_s *model)
 	MSG_ReadPos (&net_message, end);
 
 	// override any beam with the same entity
-	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
+	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
 		if (b->entity == ent)
 		{
 			b->entity = ent;
@@ -544,7 +537,7 @@ int CL_ParseBeam (struct model_s *model)
 		}
 
 	// find a free beam
-	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
+	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
 		{
@@ -570,7 +563,7 @@ int CL_ParseBeam2 (struct model_s *model)
 {
 	int		ent;
 	vec3_t	start, end, offset;
-	beam_t	*b;
+	mBeam_t	*b;
 	int		i;
 
 	ent = MSG_ReadShort (&net_message);
@@ -583,7 +576,7 @@ int CL_ParseBeam2 (struct model_s *model)
 
 // override any beam with the same entity
 
-	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
+	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
 		if (b->entity == ent)
 		{
 			b->entity = ent;
@@ -596,7 +589,7 @@ int CL_ParseBeam2 (struct model_s *model)
 		}
 
 // find a free beam
-	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
+	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
 		{
@@ -617,14 +610,14 @@ int CL_ParseBeam2 (struct model_s *model)
 /*
 =================
 CL_ParsePlayerBeam
-  - adds to the cl_playerbeam array instead of the cl_beams array
+  - adds to the cl_mPlayerbeam array instead of the cl_mBeams array
 =================
 */
 int CL_ParsePlayerBeam (struct model_s *model)
 {
 	int		ent;
 	vec3_t	start, end, offset;
-	beam_t	*b;
+	mBeam_t	*b;
 	int		i;
 
 	ent = MSG_ReadShort (&net_message);
@@ -646,7 +639,7 @@ int CL_ParsePlayerBeam (struct model_s *model)
 
 // override any beam with the same entity
 // PMM - For player beams, we only want one per player (entity) so..
-	for (i=0, b=cl_playerbeams ; i< MAX_BEAMS ; i++, b++)
+	for (i=0, b=cl_mPlayerbeams ; i< MAX_BEAMS ; i++, b++)
 	{
 		if (b->entity == ent)
 		{
@@ -661,7 +654,7 @@ int CL_ParsePlayerBeam (struct model_s *model)
 	}
 
 // find a free beam
-	for (i=0, b=cl_playerbeams ; i< MAX_BEAMS ; i++, b++)
+	for (i=0, b=cl_mPlayerbeams ; i< MAX_BEAMS ; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
 		{
@@ -688,7 +681,7 @@ int CL_ParseLightning (struct model_s *model)
 {
 	int		srcEnt, destEnt;
 	vec3_t	start, end;
-	beam_t	*b;
+	mBeam_t	*b;
 	int		i;
 
 	srcEnt = MSG_ReadShort (&net_message);
@@ -698,7 +691,7 @@ int CL_ParseLightning (struct model_s *model)
 	MSG_ReadPos (&net_message, end);
 
 // override any beam with the same source AND destination entities
-	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
+	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
 		if (b->entity == srcEnt && b->dest_entity == destEnt)
 		{
 //			Com_Printf("%d: OVERRIDE  %d -> %d\n", cl.time, srcEnt, destEnt);
@@ -713,7 +706,7 @@ int CL_ParseLightning (struct model_s *model)
 		}
 
 // find a free beam
-	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
+	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
 		{
@@ -737,31 +730,23 @@ int CL_ParseLightning (struct model_s *model)
 CL_ParseLaser
 =================
 */
-void CL_ParseLaser (int colors)
+// Used for BFG laser only !
+void CL_ParseLaser (unsigned colors)
 {
-	vec3_t	start;
-	vec3_t	end;
-	laser_t	*l;
-	int		i;
+	vec3_t	start, end;
+	beam_t	*b;
 
 	MSG_ReadPos (&net_message, start);
 	MSG_ReadPos (&net_message, end);
 
-	for (i=0, l=cl_lasers ; i< MAX_LASERS ; i++, l++)
-	{
-		if (l->endtime < cl.time)
-		{
-			l->ent.flags = RF_TRANSLUCENT|RF_BEAM;
-			VectorCopy (start, l->ent.origin);
-			VectorCopy (end, l->ent.oldorigin);
-			l->ent.alpha = 0.30;
-			l->ent.skinnum = (colors >> ((rand() % 4)*8)) & 0xff;
-			l->ent.model = NULL;
-			l->ent.frame = 4;
-			l->endtime = cl.time + 100;
-			return;
-		}
-	}
+	b = CL_AllocParticleBeam (start, end, 2.0f, 0.1f);
+	if (!b) return;
+
+	b->type = BEAM_STANDARD;
+	b->color.rgba = 0;
+	// the four beam colors are encoded in 32 bits of skinnum (hack)
+	b->color.c[0] = (colors >> ((rand() % 4)*8)) & 0xFF;
+	b->alpha = b->dstAlpha = 0.3f;
 }
 
 //=============
@@ -1193,7 +1178,7 @@ void CL_ParseTEnt (void)
 		ent = CL_ParseBeam (cl_mod_parasite_segment);
 		break;
 
-	case TE_BOSSTPORT:			// boss teleporting to station
+	case TE_BOSSTPORT:					// boss teleporting to station
 		MSG_ReadPos (&net_message, pos);
 		CL_BigTeleportParticles (pos);
 		S_StartSound (pos, 0, 0, S_RegisterSound ("misc/bigtele.wav"), 1, ATTN_NONE, 0);
@@ -1212,14 +1197,11 @@ void CL_ParseTEnt (void)
 		CL_ParticleEffect2 (pos, dir, color, cnt);
 
 		ex = CL_AllocExplosion (pos, ex_flash);
-		// note to self
-		// we need a better no draw flag (????)
-		ex->ent.flags = RF_BEAM;
 		ex->light = 100 + (rand()%75);
-		ex->lightcolor[0] = 1.0;
-		ex->lightcolor[1] = 1.0;
-		ex->lightcolor[2] = 0.3;
-		ex->ent.model = cl_mod_flash;
+		ex->lightcolor[0] = 1.0f;
+		ex->lightcolor[1] = 1.0f;
+		ex->lightcolor[2] = 0.3f;
+		ex->ent.model = NULL;			// flash only
 		ex->frames = 2;
 		break;
 
@@ -1443,7 +1425,7 @@ CL_AddBeams
 void CL_AddBeams (void)
 {
 	int			i,j;
-	beam_t		*b;
+	mBeam_t		*b;
 	vec3_t		dist, org;
 	float		d;
 	entity_t	ent;
@@ -1453,7 +1435,7 @@ void CL_AddBeams (void)
 	float		model_length;
 
 // update beams
-	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
+	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
 			continue;
@@ -1583,7 +1565,7 @@ CL_AddPlayerBeams
 void CL_AddPlayerBeams (void)
 {
 	int			i,j;
-	beam_t		*b;
+	mBeam_t		*b;
 	vec3_t		dist, org;
 	float		d;
 	entity_t	ent;
@@ -1614,7 +1596,7 @@ void CL_AddPlayerBeams (void)
 //PMM
 
 // update beams
-	for (i = 0, b = cl_playerbeams; i < MAX_BEAMS; i++, b++)
+	for (i = 0, b = cl_mPlayerbeams; i < MAX_BEAMS; i++, b++)
 	{
 		vec3_t		f,r,u;
 		if (!b->model || b->endtime < cl.time)
@@ -1825,23 +1807,6 @@ void CL_AddPlayerBeams (void)
 }
 
 
-/*
-=================
-CL_AddLasers
-=================
-*/
-void CL_AddLasers (void)
-{
-	laser_t		*l;
-	int			i;
-
-	for (i=0, l=cl_lasers ; i< MAX_LASERS ; i++, l++)
-	{
-		if (l->endtime >= cl.time)
-			V_AddEntity (&l->ent);
-	}
-}
-
 /* PMM - CL_Sustains */
 void CL_ProcessSustain ()
 {
@@ -1872,7 +1837,6 @@ void CL_AddTEnts (void)
 	// PMM - draw plasma beams
 	CL_AddPlayerBeams ();
 	CL_AddExplosions ();
-	CL_AddLasers ();
 	// PMM - set up sustain
 	CL_ProcessSustain();
 }

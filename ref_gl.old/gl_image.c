@@ -28,7 +28,7 @@ static byte intensitytable[256];
 byte	gammatable[256];
 
 cvar_t		*intensity;
-cvar_t		*saturation;
+cvar_t		*r_saturation;
 
 unsigned	d_8to24table[256];
 
@@ -716,7 +716,7 @@ void GL_LightScaleTexture (unsigned *in, int inwidth, int inheight, qboolean onl
 	int i, c;
 	byte *p;
 
-	sat = saturation->value;
+	sat = r_saturation->value;
 	c = inwidth * inheight;
 
 	if (sat != 1.0)
@@ -1503,7 +1503,7 @@ void	GL_InitImages (void)
 
 	// init intensity conversions
 	intensity = Cvar_Get ("intensity", "1", CVAR_ARCHIVE); // old default: 2
-	saturation = Cvar_Get ("r_saturation", "1", CVAR_ARCHIVE);
+	r_saturation = Cvar_Get ("r_saturation", "1", CVAR_ARCHIVE);
 
 //	if (saturation->value < 0) saturation->value = 0;
 //	else if (saturation->value > 2) saturation->value = 2;

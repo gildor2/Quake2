@@ -41,12 +41,6 @@ typedef struct refEntity_s
 			//?? skin_t *customSkin;	// multiple shaders (1 per surface)
 			int		skinNum;			// number of default (inline) skin
 		};
-		struct {
-		/*------------- beam ----------------*/
-			beamType_t beamType;
-			vec3_t	beamStart, beamEnd;
-			float	beamRadius;
-		};
 		/*------------- bbox ----------------*/
 		struct {
 			vec3_t	boxAxis[3];
@@ -121,6 +115,7 @@ typedef struct viewPortal_s
 	int		firstEntity, numEntities;
 	// particles
 	particle_t *particles;
+	beam_t	*beams;
 } viewPortal_t;
 
 

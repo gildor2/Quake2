@@ -85,7 +85,7 @@ Comments:
   4) exec config.cfg
 - bug with menu spin control (crush when curvalue > maxvalue)
 - removed calling "-alias" EVERY time key depressed
-- fixed binding to "semicolon", added "comma"
+- fixed binding to "semicolon", added "comma", "kp_star"
 - disabled mouse acceleration
 - fixed collision detection code to prevent from "blocked inside the opening door" and some other bugs
 - fixed "WSAECONRESET" error for Win2K (server was crushed when one client exits game)

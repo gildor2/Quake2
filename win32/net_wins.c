@@ -629,7 +629,7 @@ void NET_OpenIPX (void)
 	if (!ipx_socket)
 	{
 		//!! try different sockets
-		Com_WPrintf ("OpenIPX: unable to allocate socket. IPX disabled\n");
+		Com_Printf ("OpenIPX: unable to allocate socket. IPX disabled\n");
 		Cvar_ForceSet ("noipx", "1");
 	}
 }

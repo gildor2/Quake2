@@ -68,6 +68,9 @@ typedef struct dynamicLightmap_s dynamicLightmap_t;
 
 /*------------- gl_main.c -------------------*/
 
+bool gl_renderingEnabled;
+void GL_EnableRendering (bool enable);
+
 
 //?? clean this structure: most fields used from viewPortal_t; or -- eliminate at all
 /* What we can do: (??)

@@ -17,14 +17,15 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-// in_win.c -- windows 95 mouse and joystick code
-// 02/21/97 JCB Added extended DirectInput code to support external controllers.
 
 #define INITGUID
 #include "winquake.h"
 #include <dinput.h>
 
 #include "../client/client.h"
+
+
+#define NUM_MOUSE_BUTTONS	3
 
 
 extern	unsigned	sys_msg_time;
@@ -66,12 +67,8 @@ cvar_t	*in_joystick;
 // works.
 static cvar_t	*joy_name;
 static cvar_t	*joy_advanced;
-static cvar_t	*joy_advaxisx;
-static cvar_t	*joy_advaxisy;
-static cvar_t	*joy_advaxisz;
-static cvar_t	*joy_advaxisr;
-static cvar_t	*joy_advaxisu;
-static cvar_t	*joy_advaxisv;
+static cvar_t	*joy_advaxisx, *joy_advaxisy, *joy_advaxisz;
+static cvar_t	*joy_advaxisr, *joy_advaxisu, *joy_advaxisv;
 static cvar_t	*joy_forwardthreshold;
 static cvar_t	*joy_sidethreshold;
 static cvar_t	*joy_pitchthreshold;
@@ -93,13 +90,7 @@ static DWORD	joy_numbuttons;
 static JOYINFOEX ji;
 
 static qboolean	in_appactive;
-static qboolean	mouseinitialized;
 
-
-// forward-referenced functions
-void IN_StartupJoystick (void);
-void Joy_AdvancedUpdate_f (void);
-void IN_JoyMove (usercmd_t *cmd);
 
 /*
 ============================================================
@@ -126,7 +117,6 @@ void IN_MLookUp (void)
 		IN_CenterView ();
 }
 
-static int	mouse_buttons;
 static int	mouse_oldbuttonstate;
 static POINT current_pos;
 static int	mouse_x, mouse_y, old_mouse_x, old_mouse_y, mx_accum, my_accum;
@@ -300,9 +290,6 @@ void IN_DeactivateMouse (void);
 
 static void IN_ActivateMouse (void)
 {
-	if (!mouseinitialized)
-		return;
-
 	if (mouseType)
 	{
 		if (!in_mouse->modified)
@@ -335,9 +322,6 @@ Called when the window loses focus
 */
 static void IN_DeactivateMouse (void)
 {
-	if (!mouseinitialized)
-		return;
-
 	if (mouseType == 2)
 		IN_FreeDirect ();
 	else if (mouseType == 1)
@@ -354,7 +338,7 @@ IN_StartupMouse
 ===========
 */
 
-void IN_StartupMouse (void)
+static void IN_StartupMouse (void)
 {
 	cvar_t		*cv;
 
@@ -364,8 +348,6 @@ void IN_StartupMouse (void)
 
 	haveSpiMouse = SystemParametersInfo (SPI_GETMOUSE, 0, originalMouseParms, 0);
 	haveSpiMouseSpeed = SystemParametersInfo (SPI_GETMOUSESPEED, 0, &originalMouseSpeed, 0);	// Win98+, Win2K+
-	mouse_buttons = 3;		//??
-	mouseinitialized = true;
 }
 
 /*
@@ -377,11 +359,8 @@ void IN_MouseEvent (int mstate)
 {
 	int		i;
 
-	if (!mouseinitialized)
-		return;
-
 	// perform button actions
-	for (i = 0; i < mouse_buttons; i++)
+	for (i = 0; i < NUM_MOUSE_BUTTONS; i++)
 	{
 		if ((mstate & (1<<i)) && !(mouse_oldbuttonstate & (1<<i)))
 			Key_Event (K_MOUSE1 + i, true, sys_msg_time);
@@ -465,200 +444,11 @@ static void IN_MouseMove (usercmd_t *cmd)
 
 
 /*
-=========================================================================
-
-VIEW CENTERING
-
-=========================================================================
-*/
-
-cvar_t	*v_centermove;
-cvar_t	*v_centerspeed;
-
-
-/*
-===========
-IN_Init
-===========
-*/
-void IN_Init (void)
-{
-CVAR_BEGIN(vars)
-	// mouse variables
-	CVAR_VAR(m_filter, 0, 0),
-    CVAR_VAR(in_mouse, 2, CVAR_ARCHIVE),
-
-	// joystick variables
-	CVAR_VAR(in_joystick, 0, CVAR_ARCHIVE),
-	CVAR_VAR(joy_name, joystick, 0),
-	CVAR_VAR(joy_advanced, 0, 0),
-	CVAR_VAR(joy_advaxisx, 0, 0),
-	CVAR_VAR(joy_advaxisy, 0, 0),
-	CVAR_VAR(joy_advaxisz, 0, 0),
-	CVAR_VAR(joy_advaxisr, 0, 0),
-	CVAR_VAR(joy_advaxisu, 0, 0),
-	CVAR_VAR(joy_advaxisv, 0, 0),
-	CVAR_VAR(joy_forwardthreshold, 0.15, 0),
-	CVAR_VAR(joy_sidethreshold, 0.15, 0),
-	CVAR_VAR(joy_upthreshold, 0.15, 0),
-	CVAR_VAR(joy_pitchthreshold, 0.15, 0),
-	CVAR_VAR(joy_yawthreshold, 0.15, 0),
-	CVAR_VAR(joy_forwardsensitivity, -1, 0),
-	CVAR_VAR(joy_sidesensitivity, -1, 0),
-	CVAR_VAR(joy_upsensitivity, -1, 0),
-	CVAR_VAR(joy_pitchsensitivity, 1, 0),
-	CVAR_VAR(joy_yawsensitivity, -1, 0),
-
-	// centering
-	CVAR_VAR(v_centermove, 0.15, 0),
-	CVAR_VAR(v_centerspeed, 500, 0)
-CVAR_END
-
-	Cvar_GetVars (ARRAY_ARG(vars));
-
-	Cmd_AddCommand ("+mlook", IN_MLookDown);
-	Cmd_AddCommand ("-mlook", IN_MLookUp);
-
-	Cmd_AddCommand ("joy_advancedupdate", Joy_AdvancedUpdate_f);
-
-	IN_StartupMouse ();
-	IN_StartupJoystick ();
-}
-
-/*
-===========
-IN_Shutdown
-===========
-*/
-void IN_Shutdown (void)
-{
-	IN_DeactivateMouse ();
-}
-
-
-/*
-===========
-IN_Activate
-
-Called when the main window gains or loses focus.
-The window may have been destroyed and recreated
-between a deactivate and an activate.
-===========
-*/
-void IN_Activate (qboolean active)
-{	//!! check this function
-	in_appactive = active;
-	mouseType = !active;		// force a new window check or turn off
-}
-
-
-/*
-==================
-IN_Frame
-
-Called every frame, even if not generating commands
-==================
-*/
-void IN_Frame (void)
-{
-	if (!mouseinitialized)
-		return;
-
-	if (!in_mouse || !in_appactive)	//??
-	{
-		IN_DeactivateMouse ();
-		return;
-	}
-
-	if (in_needRestart)
-	{
-		in_needRestart = false;
-		IN_DeactivateMouse ();
-		IN_ActivateMouse ();
-		return;
-	}
-
-	if (in_mouse->modified)
-		IN_ActivateMouse ();
-
-	if (mouseType == 2)
-	{
-		DIMOUSESTATE ms;
-		HRESULT hresult;
-		int		tmp;
-
-		// poll DirectInput mouse
-		hresult = IDirectInputDevice_GetDeviceState (pDID, sizeof(ms), &ms);
-		if (hresult == DIERR_INPUTLOST)
-		{
-			// try to acquire mouse
-			IDirectInputDevice_Acquire (pDID);
-			return;
-		}
-		if FAILED(hresult)
-		{
-			Com_WPrintf ("error on DI mouse GetState()\n");
-			return;
-		}
-		// process mouse wheel
-		if (ms.lZ)
-		{
-			int		msg;
-
-			if (ms.lZ > 0)
-				msg = K_MWHEELUP;
-			else
-				msg = K_MWHEELDOWN;
-			Key_Event (msg, true, sys_msg_time);	//!! check for correct sys_msg_time
-			Key_Event (msg, false, sys_msg_time);
-		}
-		// process X and Y axes
-		move_x = ms.lX;
-		move_y = ms.lY;
-		// process buttons
-		tmp = 0;
-		if (ms.rgbButtons[0]) tmp |= 1;
-		if (ms.rgbButtons[1]) tmp |= 2;
-		if (ms.rgbButtons[2]) tmp |= 4;
-		IN_MouseEvent (tmp);			// call this always - to detect button on/off
-		//?? can access 4 buttons
-		return;
-	}
-
-
-	if (!cl.refresh_prepped || cls.key_dest == key_console || cls.key_dest == key_menu)
-	{
-		// temporarily deactivate if in fullscreen
-		if (!Cvar_VariableInt ("r_fullscreen"))
-		{
-			IN_DeactivateMouse ();
-			return;
-		}
-	}
-
-	IN_ActivateMouse ();
-}
-
-/*
-===========
-IN_Move
-===========
-*/
-void IN_Move (usercmd_t *cmd)
-{
-	IN_MouseMove (cmd);
-
-	if (ActiveApp)
-		IN_JoyMove (cmd);
-}
-
-
-/*
 ===================
 IN_ClearStates
 ===================
 */
-void IN_ClearStates (void)
+static void IN_ClearStates (void)
 {
 	mx_accum = 0;
 	my_accum = 0;
@@ -679,7 +469,7 @@ JOYSTICK
 IN_StartupJoystick
 ===============
 */
-void IN_StartupJoystick (void)
+static void IN_StartupJoystick (void)
 {
 	int			numdevs;
 	JOYCAPS		jc;
@@ -750,7 +540,7 @@ void IN_StartupJoystick (void)
 RawValuePointer
 ===========
 */
-PDWORD RawValuePointer (int axis)
+static PDWORD RawValuePointer (int axis)
 {
 	switch (axis)
 	{
@@ -776,13 +566,12 @@ PDWORD RawValuePointer (int axis)
 Joy_AdvancedUpdate_f
 ===========
 */
-void Joy_AdvancedUpdate_f (void)
+static void Joy_AdvancedUpdate_f (void)
 {
 
 	// called once by IN_ReadJoystick and by user whenever an update is needed
 	// cvars are now available
-	int	i;
-	DWORD dwTemp;
+	int		i;
 
 	// initialize all the maps
 	for (i = 0; i < JOY_MAX_AXES; i++)
@@ -811,24 +600,18 @@ void Joy_AdvancedUpdate_f (void)
 
 		// advanced initialization here
 		// data supplied by user via joy_axisn cvars
-		dwTemp = (DWORD) joy_advaxisx->integer;
-		dwAxisMap[JOY_AXIS_X] = dwTemp & 0x0000000f;
-		dwControlMap[JOY_AXIS_X] = dwTemp & JOY_RELATIVE_AXIS;
-		dwTemp = (DWORD) joy_advaxisy->integer;
-		dwAxisMap[JOY_AXIS_Y] = dwTemp & 0x0000000f;
-		dwControlMap[JOY_AXIS_Y] = dwTemp & JOY_RELATIVE_AXIS;
-		dwTemp = (DWORD) joy_advaxisz->integer;
-		dwAxisMap[JOY_AXIS_Z] = dwTemp & 0x0000000f;
-		dwControlMap[JOY_AXIS_Z] = dwTemp & JOY_RELATIVE_AXIS;
-		dwTemp = (DWORD) joy_advaxisr->integer;
-		dwAxisMap[JOY_AXIS_R] = dwTemp & 0x0000000f;
-		dwControlMap[JOY_AXIS_R] = dwTemp & JOY_RELATIVE_AXIS;
-		dwTemp = (DWORD) joy_advaxisu->integer;
-		dwAxisMap[JOY_AXIS_U] = dwTemp & 0x0000000f;
-		dwControlMap[JOY_AXIS_U] = dwTemp & JOY_RELATIVE_AXIS;
-		dwTemp = (DWORD) joy_advaxisv->integer;
-		dwAxisMap[JOY_AXIS_V] = dwTemp & 0x0000000f;
-		dwControlMap[JOY_AXIS_V] = dwTemp & JOY_RELATIVE_AXIS;
+		dwAxisMap[JOY_AXIS_X] = joy_advaxisx->integer & 0x0000000f;
+		dwControlMap[JOY_AXIS_X] = joy_advaxisx->integer & JOY_RELATIVE_AXIS;
+		dwAxisMap[JOY_AXIS_Y] = joy_advaxisy->integer & 0x0000000f;
+		dwControlMap[JOY_AXIS_Y] = joy_advaxisy->integer & JOY_RELATIVE_AXIS;
+		dwAxisMap[JOY_AXIS_Z] = joy_advaxisz->integer & 0x0000000f;
+		dwControlMap[JOY_AXIS_Z] = joy_advaxisz->integer & JOY_RELATIVE_AXIS;
+		dwAxisMap[JOY_AXIS_R] = joy_advaxisr->integer & 0x0000000f;
+		dwControlMap[JOY_AXIS_R] = joy_advaxisr->integer & JOY_RELATIVE_AXIS;
+		dwAxisMap[JOY_AXIS_U] = joy_advaxisu->integer & 0x0000000f;
+		dwControlMap[JOY_AXIS_U] = joy_advaxisu->integer & JOY_RELATIVE_AXIS;
+		dwAxisMap[JOY_AXIS_V] = joy_advaxisv->integer & 0x0000000f;
+		dwControlMap[JOY_AXIS_V] = joy_advaxisv->integer & JOY_RELATIVE_AXIS;
 	}
 
 	// compute the axes to collect from DirectInput
@@ -907,7 +690,7 @@ void IN_Commands (void)
 IN_ReadJoystick
 ===============
 */
-qboolean IN_ReadJoystick (void)
+static qboolean IN_ReadJoystick (void)
 {
 
 	memset (&ji, 0, sizeof(ji));
@@ -933,7 +716,7 @@ qboolean IN_ReadJoystick (void)
 IN_JoyMove
 ===========
 */
-void IN_JoyMove (usercmd_t *cmd)
+static void IN_JoyMove (usercmd_t *cmd)
 {
 	float	speed, aspeed;
 	float	fAxisValue;
@@ -971,10 +754,9 @@ void IN_JoyMove (usercmd_t *cmd)
 		// get the floating point zero-centered, potentially-inverted data for the current axis
 		fAxisValue = (float) *pdwRawValue[i];
 		// move centerpoint to zero
-		fAxisValue -= 32768.0;
-
+		fAxisValue -= 32768.0f;
 		// convert range from -32768..32767 to -1..1
-		fAxisValue /= 32768.0;
+		fAxisValue /= 32768.0f;
 
 		switch (dwAxisMap[i])
 		{
@@ -986,7 +768,7 @@ void IN_JoyMove (usercmd_t *cmd)
 				{
 					// if mouse invert is on, invert the joystick pitch value
 					// only absolute control support here (joy_advanced is false)
-					if (m_pitch->value < 0.0)
+					if (m_pitch->value < 0.0f)
 						cl.viewangles[PITCH] -= (fAxisValue * joy_pitchsensitivity->value) * aspeed * cl_pitchspeed->value;
 					else
 						cl.viewangles[PITCH] += (fAxisValue * joy_pitchsensitivity->value) * aspeed * cl_pitchspeed->value;
@@ -1025,7 +807,7 @@ void IN_JoyMove (usercmd_t *cmd)
 					if(dwControlMap[i] == JOY_ABSOLUTE_AXIS)
 						cl.viewangles[YAW] += (fAxisValue * joy_yawsensitivity->value) * aspeed * cl_yawspeed->value;
 					else
-						cl.viewangles[YAW] += (fAxisValue * joy_yawsensitivity->value) * speed * 180.0;
+						cl.viewangles[YAW] += (fAxisValue * joy_yawsensitivity->value) * speed * 180.0f;
 
 				}
 			}
@@ -1040,7 +822,7 @@ void IN_JoyMove (usercmd_t *cmd)
 					if(dwControlMap[i] == JOY_ABSOLUTE_AXIS)
 						cl.viewangles[PITCH] += (fAxisValue * joy_pitchsensitivity->value) * aspeed * cl_pitchspeed->value;
 					else
-						cl.viewangles[PITCH] += (fAxisValue * joy_pitchsensitivity->value) * speed * 180.0;
+						cl.viewangles[PITCH] += (fAxisValue * joy_pitchsensitivity->value) * speed * 180.0f;
 				}
 			}
 			break;
@@ -1049,4 +831,165 @@ void IN_JoyMove (usercmd_t *cmd)
 			break;
 		}
 	}
+}
+
+
+/*-----------------------------------------------------------------------------
+	Initialization/finalization
+-----------------------------------------------------------------------------*/
+
+
+void IN_Init (void)
+{
+CVAR_BEGIN(vars)
+	// mouse variables
+	CVAR_VAR(m_filter, 0, 0),
+    CVAR_VAR(in_mouse, 2, CVAR_ARCHIVE),
+
+	// joystick variables
+	CVAR_VAR(in_joystick, 0, CVAR_ARCHIVE),
+	CVAR_VAR(joy_name, joystick, 0),
+	CVAR_VAR(joy_advanced, 0, 0),
+	CVAR_VAR(joy_advaxisx, 0, 0),
+	CVAR_VAR(joy_advaxisy, 0, 0),
+	CVAR_VAR(joy_advaxisz, 0, 0),
+	CVAR_VAR(joy_advaxisr, 0, 0),
+	CVAR_VAR(joy_advaxisu, 0, 0),
+	CVAR_VAR(joy_advaxisv, 0, 0),
+	CVAR_VAR(joy_forwardthreshold, 0.15, 0),
+	CVAR_VAR(joy_sidethreshold, 0.15, 0),
+	CVAR_VAR(joy_upthreshold, 0.15, 0),
+	CVAR_VAR(joy_pitchthreshold, 0.15, 0),
+	CVAR_VAR(joy_yawthreshold, 0.15, 0),
+	CVAR_VAR(joy_forwardsensitivity, -1, 0),
+	CVAR_VAR(joy_sidesensitivity, -1, 0),
+	CVAR_VAR(joy_upsensitivity, -1, 0),
+	CVAR_VAR(joy_pitchsensitivity, 1, 0),
+	CVAR_VAR(joy_yawsensitivity, -1, 0),
+CVAR_END
+
+	Cvar_GetVars (ARRAY_ARG(vars));
+
+	Cmd_AddCommand ("+mlook", IN_MLookDown);
+	Cmd_AddCommand ("-mlook", IN_MLookUp);
+
+	Cmd_AddCommand ("joy_advancedupdate", Joy_AdvancedUpdate_f);
+
+	IN_StartupMouse ();
+	IN_StartupJoystick ();
+}
+
+
+void IN_Shutdown (void)
+{
+	IN_DeactivateMouse ();
+}
+
+
+void IN_Move (usercmd_t *cmd)
+{
+	IN_MouseMove (cmd);
+
+	if (ActiveApp)
+		IN_JoyMove (cmd);
+}
+
+/*
+===========
+IN_Activate
+
+Called when the main window gains or loses focus.
+The window may have been destroyed and recreated
+between a deactivate and an activate.
+===========
+*/
+void IN_Activate (qboolean active)
+{	//!! check this function
+	in_appactive = active;
+	mouseType = !active;		// force a new window check or turn off
+}
+
+
+/*
+==================
+IN_Frame
+
+Called every frame, even if not generating commands
+==================
+*/
+void IN_Frame (void)
+{
+	if (!in_mouse || !in_appactive)	//??
+	{
+		IN_DeactivateMouse ();
+		return;
+	}
+
+	if (in_needRestart)
+	{
+		in_needRestart = false;
+		IN_DeactivateMouse ();
+		IN_ActivateMouse ();
+		return;
+	}
+
+	if (in_mouse->modified)
+		IN_ActivateMouse ();
+
+	if (mouseType == 2)
+	{
+		DIMOUSESTATE ms;
+		HRESULT hresult;
+		int		tmp;
+
+		// poll DirectInput mouse
+		hresult = IDirectInputDevice_GetDeviceState (pDID, sizeof(ms), &ms);
+		if (hresult == DIERR_INPUTLOST)
+		{
+			// try to acquire mouse
+			IDirectInputDevice_Acquire (pDID);
+			return;
+		}
+		if FAILED(hresult)
+		{
+			Com_WPrintf ("error on DI mouse GetState()\n");
+			return;
+		}
+		// process mouse wheel
+		if (ms.lZ)
+		{
+			int		msg;
+
+			if (ms.lZ > 0)
+				msg = K_MWHEELUP;
+			else
+				msg = K_MWHEELDOWN;
+			Key_Event (msg, true, sys_msg_time);	//!! check for correct sys_msg_time
+			Key_Event (msg, false, sys_msg_time);
+		}
+		// process X and Y axes
+		move_x = ms.lX;
+		move_y = ms.lY;
+		// process buttons
+		tmp = 0;
+		if (ms.rgbButtons[0]) tmp |= 1;
+		if (ms.rgbButtons[1]) tmp |= 2;
+		if (ms.rgbButtons[2]) tmp |= 4;
+		IN_MouseEvent (tmp);			// call this always - to detect button on/off
+		//?? can access 4 buttons
+		return;
+	}
+
+
+	if (!cl.refresh_prepped || cls.key_dest == key_console || cls.key_dest == key_menu)
+	{
+		// temporarily deactivate if in fullscreen
+		if (!Cvar_VariableInt ("r_fullscreen"))
+		{
+			IN_DeactivateMouse ();
+			return;
+		}
+	}
+
+	IN_ActivateMouse ();
 }

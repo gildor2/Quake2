@@ -49,12 +49,8 @@ extern cvar_t *vid_ref;
 
 static bool VerifyDriver (void)
 {
-	char buffer[1024];
-
-	strcpy (buffer, glGetString (GL_RENDERER));
-	strlwr (buffer);
-	if (!strcmp (buffer, "gdi generic"))
-		if (!glw_state.mcd_accelerated)
+	if (!stricmp (glGetString (GL_RENDERER), "gdi generic") &&
+		!glw_state.mcd_accelerated)
 			return false;
 	return true;
 }
@@ -175,7 +171,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, bool fullscreen)
 
 				Com_Printf ("...setting windowed mode\n");
 
-				ChangeDisplaySettings (0, 0);
+				ChangeDisplaySettings (NULL, 0);
 
 				*pwidth = width;
 				*pheight = height;
@@ -200,7 +196,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, bool fullscreen)
 	{
 		Com_Printf ("...setting windowed mode\n");
 
-		ChangeDisplaySettings (0, 0);
+		ChangeDisplaySettings (NULL, 0);
 
 		*pwidth = width;
 		*pheight = height;
@@ -212,11 +208,10 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, bool fullscreen)
 	return rserr_ok;
 }
 
-/*
-=============
-GLimp_Gamma
-=============
-*/
+
+/*-----------------------------------------------------------------------------
+	Gamma ramp support
+-----------------------------------------------------------------------------*/
 
 static bool gammaStored, gammaValid;
 static WORD gammaRamp[3*256], newGamma[3*256];
@@ -357,53 +352,72 @@ void GLimp_SetGamma (float gamma, float intens)
 }
 
 
-/*
- * GLimp_Shutdown
- *
- * This routine does all OS specific shutdown procedures for the OpenGL
- * subsystem.  Under OpenGL this means NULLing out the current DC and
- * HGLRC, deleting the rendering context, and releasing the DC acquired
- * for the window.  The state structure is also nulled out.
- *
- */
-void GLimp_Shutdown (void)
+/*-----------------------------------------------------------------------------
+	Win32 OpenGL context
+-----------------------------------------------------------------------------*/
+
+
+static HGLRC	contextHandle;
+static bool		contextActive;
+
+
+static bool CreateGLcontext (void)
 {
-	RestoreGamma ();
-
-	Com_Printf ("...performing shutdown\n");
-	if (!wglMakeCurrent (NULL, NULL))
-		Com_WPrintf ("...wglMakeCurrent failed\n");
-	if (glw_state.hGLRC)
+	contextActive = false;
+	if (!(contextHandle = wglCreateContext (glw_state.hDC)))
 	{
-		if (!wglDeleteContext (glw_state.hGLRC))
-			Com_WPrintf ("...wglDeleteContext failed\n");
-		glw_state.hGLRC = NULL;
+		Com_WPrintf ("...CreateGLcontext() failed\n");
+		return false;
 	}
-
-	if (glw_state.hDC)
-	{
-		if (!ReleaseDC (glw_state.hWnd, glw_state.hDC))
-			Com_WPrintf ("...ReleaseDC failed\n");
-		glw_state.hDC = NULL;
-	}
-
-	if (glw_state.log_fp)
-	{
-		fclose (glw_state.log_fp);
-		glw_state.log_fp = NULL;
-	}
-
-	Vid_DestroyWindow (gl_bitdepth->modified);
-	glw_state.hWnd = NULL;
-
-	if (gl_config.fullscreen)
-	{
-		if (!strlen (vid_ref->string))
-			ChangeDisplaySettings (0, 0);
-		gl_config.fullscreen = false;
-	}
+	return true;
 }
 
+
+static bool ActivateGLcontext (void)
+{
+	if (contextActive) return true;
+	if (!wglMakeCurrent (glw_state.hDC, contextHandle))
+	{
+		Com_WPrintf ("...ActivateGLcontext() failed\n");
+		return false;
+	}
+	contextActive = true;
+	GL_EnableRendering (true);
+	return true;
+}
+
+
+static bool DeactivateGLcontext (void)
+{
+	if (!contextActive) return true;
+	if (!wglMakeCurrent (glw_state.hDC, NULL))
+	{
+		Com_WPrintf ("...DeactivateGLcontext() failed\n");
+		return false;
+	}
+	GL_EnableRendering (false);
+	contextActive = false;
+	return true;
+}
+
+
+static bool DestoryGLcontext (void)
+{
+	if (!contextHandle) return true;
+	if (!DeactivateGLcontext ()) return false;
+	if (!wglDeleteContext (contextHandle))
+	{
+		Com_WPrintf ("...DestoryGLcontext() failed...\n");
+		return false;
+	}
+	contextHandle = NULL;
+	return true;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Initialization/finalization
+-----------------------------------------------------------------------------*/
 
 /*
  * GLimp_Init
@@ -437,20 +451,16 @@ int GLimp_Init (void)
 			}
 		}
 	}
-	else
-	{
-		Com_WPrintf ("GLimp_Init(): GetVersionEx failed\n");
-		return false;
-	}
 
 	ReadGamma ();
+	Com_Printf ("GAMMA: %s\n", gammaStored ? "hardware" : "software");
 
 	return true;
 }
 
 static bool GLimp_SetPixelFormat (void)
 {
-	PIXELFORMATDESCRIPTOR pfd =			// non-static var
+	static const PIXELFORMATDESCRIPTOR pfdBase =
 	{
 		sizeof(PIXELFORMATDESCRIPTOR),	// size of this pfd
 		1,								// version number
@@ -471,6 +481,7 @@ static bool GLimp_SetPixelFormat (void)
 		0,								// reserved
 		0, 0, 0							// layer masks ignored
 	};
+	PIXELFORMATDESCRIPTOR pfd;
 	int  pixelformat;
 /* ??	cvar_t *stereo;
 
@@ -489,16 +500,17 @@ static bool GLimp_SetPixelFormat (void)
 	}
 */
 
+	pfd = pfdBase;
 	if (glw_state.minidriver)
 	{
 		if ((pixelformat = wglChoosePixelFormat (glw_state.hDC, &pfd)) == 0)
 		{
-			Com_WPrintf ("GLimp_Init() - qwglChoosePixelFormat failed\n");
+			Com_WPrintf ("GLimp_Init() - wglChoosePixelFormat failed\n");
 			return false;
 		}
 		if (wglSetPixelFormat (glw_state.hDC, pixelformat, &pfd) == FALSE)
 		{
-			Com_WPrintf ("GLimp_Init() - qwglSetPixelFormat failed\n");
+			Com_WPrintf ("GLimp_Init() - wglSetPixelFormat failed\n");
 			return false;
 		}
 	}
@@ -537,17 +549,8 @@ static bool GLimp_SetPixelFormat (void)
 	}
 */
 	// startup the OpenGL subsystem by creating a context and making it current
-	if ((glw_state.hGLRC = wglCreateContext (glw_state.hDC)) == 0)
-	{
-		Com_WPrintf ("...qwglCreateContext failed\n");
-		return false;
-	}
-
-	if (!wglMakeCurrent (glw_state.hDC, glw_state.hGLRC))
-	{
-		Com_WPrintf ("...qwglMakeCurrent failed\n");
-		return false;
-	}
+	if (!CreateGLcontext ()) return false;
+	if (!ActivateGLcontext ()) return false;
 
 	if (!VerifyDriver ())
 	{
@@ -581,23 +584,87 @@ static bool GLimp_InitGL (void)
 
 	if (!GLimp_SetPixelFormat ())
 	{
-		if (glw_state.hGLRC)
-		{
-			wglDeleteContext (glw_state.hGLRC);
-			glw_state.hGLRC = NULL;
-		}
-		if (glw_state.hDC)
-		{
-			ReleaseDC (glw_state.hWnd, glw_state.hDC);
-			glw_state.hDC = NULL;
-		}
+		DestoryGLcontext ();
+		ReleaseDC (glw_state.hWnd, glw_state.hDC);
+		glw_state.hDC = NULL;
 		return false;
 	}
 
-	// gamma info
-	Com_Printf ("GAMMA: %s\n", gammaStored ? "hardware" : "software");	//!! move this
-
 	return true;
+}
+
+
+/*
+ * GLimp_Shutdown
+ *
+ * This routine does all OS specific shutdown procedures for the OpenGL
+ * subsystem.  Under OpenGL this means NULLing out the current DC and
+ * HGLRC, deleting the rendering context, and releasing the DC acquired
+ * for the window.  The state structure is also nulled out.
+ *
+ */
+void GLimp_Shutdown (void)
+{
+	RestoreGamma ();
+
+	Com_Printf ("...performing shutdown\n");
+	DestoryGLcontext ();
+	if (glw_state.hDC)
+	{
+		if (!ReleaseDC (glw_state.hWnd, glw_state.hDC))
+			Com_WPrintf ("...ReleaseDC failed\n");
+		glw_state.hDC = NULL;
+	}
+
+	Vid_DestroyWindow (true); //?? (gl_bitdepth->modified);
+	glw_state.hWnd = NULL;
+
+	if (gl_config.fullscreen)
+	{
+		if (!strlen (vid_ref->string))
+			ChangeDisplaySettings (0, 0);
+		gl_config.fullscreen = false;
+	}
+}
+
+
+/*-----------------------------------------------------------------------------
+	Miscellaneous
+-----------------------------------------------------------------------------*/
+
+
+/*
+ * GLimp_EndFrame
+ *
+ * Responsible for doing a swapbuffers and possibly for other stuff
+ * as yet to be determined.  Probably better not to make this a GLimp
+ * function and instead do a call to GLimp_SwapBuffers.
+ */
+void GLimp_EndFrame (void)
+{
+	LOG_STRING("GLimp_EndFrame()\n");
+	// swapinterval stuff
+	if (gl_swapinterval->modified)
+	{
+		gl_swapinterval->modified = false;
+		if (/*?? !gl_state.stereoEnabled &&*/ wglSwapIntervalEXT)
+			wglSwapIntervalEXT (gl_swapinterval->integer);
+	}
+
+	if (stricmp (gl_drawbuffer->string, "GL_FRONT"))
+	{	// draw buffer = GL_BACK
+		if (!glw_state.minidriver)
+		{
+			LOG_STRING("SwapBuffers()\n");
+			SwapBuffers (glw_state.hDC);
+		}
+		else
+		{
+			// use wglSwapBuffers() for miniGL and Voodoo
+			if (!wglSwapBuffers (glw_state.hDC))
+				Com_Error (ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n");
+		}
+	}
 }
 
 
@@ -634,52 +701,6 @@ void GLimp_BeginFrame (float camera_separation)
 
 
 /*
- * GLimp_EndFrame
- *
- * Responsible for doing a swapbuffers and possibly for other stuff
- * as yet to be determined.  Probably better not to make this a GLimp
- * function and instead do a call to GLimp_SwapBuffers.
- */
-void GLimp_EndFrame (void)
-{
-	LOG_STRING("GLimp_EndFrame()\n");
-	// swapinterval stuff
-	if (gl_swapinterval->modified)
-	{
-		gl_swapinterval->modified = false;
-		if (/*?? !gl_state.stereoEnabled &&*/ wglSwapIntervalEXT)
-			wglSwapIntervalEXT (gl_swapinterval->integer);
-	}
-
-	if (stricmp (gl_drawbuffer->string, "GL_FRONT"))
-	{	// draw buffer = GL_BACK
-		if (!glw_state.minidriver)
-		{
-			LOG_STRING("SwapBuffers()\n");
-			SwapBuffers (glw_state.hDC);
-		}
-		else
-		{
-			// use wglSwapBuffers() for miniGL and Voodoo
-			if (!wglSwapBuffers (glw_state.hDC))
-				Com_Error (ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n");
-		}
-	}
-/*	if (gl_logFile->modified)
-	{
-		QGL_EnableLogging (gl_logFile->integer);
-		gl_logFile->modified = false;
-	}
-	else if (gl_logFile->integer == 2)
-	{
-		QGL_EnableLogging (false);
-		Cvar_SetInteger ("gl_logFile", 0);
-	}
-*/
-}
-
-
-/*
  * GLimp_AppActivate
  */
 void GLimp_AppActivate (qboolean active)
@@ -688,13 +709,20 @@ void GLimp_AppActivate (qboolean active)
 	{
 		SetForegroundWindow (glw_state.hWnd);
 		ShowWindow (glw_state.hWnd, SW_RESTORE);
-		if (r_fullscreen->integer) SetWindowPos (glw_state.hWnd, 0, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
+		if (r_fullscreen->integer)
+		{
+			ActivateGLcontext ();
+			SetWindowPos (glw_state.hWnd, 0, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
+		}
 		UpdateGamma ();
 	}
 	else
 	{
 		if (r_fullscreen->integer)
+		{
 			ShowWindow (glw_state.hWnd, SW_MINIMIZE);
+			DeactivateGLcontext ();
+		}
 		RestoreGamma ();
 	}
 }

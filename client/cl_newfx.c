@@ -177,9 +177,6 @@ void CL_ForceWall (vec3_t start, vec3_t end, int color)
 	{
 		len -= 4;
 
-		if (!free_particles)
-			return;
-
 		if (frand() > 0.3)
 		{
 			if (!(p = CL_AllocParticle ()))

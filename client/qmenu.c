@@ -179,16 +179,6 @@ qboolean Field_Key (menuField_t *f, int key)
 		break;
 	}
 
-	if (key > 127)
-	{
-		switch (key)
-		{
-		case K_DEL:
-		default:
-			return false;
-		}
-	}
-
 	/*-------- support pasting from the clipboard ------------*/
 	if ( ( toupper (key) == 'V' && keydown[K_CTRL] ) ||
 		 ( ( ( key == K_INS ) || ( key == K_KP_INS ) ) && keydown[K_SHIFT] ) )
@@ -238,8 +228,9 @@ qboolean Field_Key (menuField_t *f, int key)
 	case K_TAB:
 		return false;
 
-	case K_SPACE:
 	default:
+		if (key >= 128) return
+			false;
 		if (!isdigit (key) && (f->generic.flags & QMF_NUMBERSONLY))
 			return false;
 

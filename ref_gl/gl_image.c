@@ -427,7 +427,7 @@ static void GetImageDimensions (int width, int height, int *scaledWidth, int *sc
 
 static void ComputeImageColor (void *pic, int width, int height, color_t *color)
 {
-	int		c[4], m[3], i, count;
+	int		c[4], i, count;
 	byte	*p;
 
 	count = width * height;
@@ -625,9 +625,8 @@ END_PROFILE
 image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags)
 {
 	char	name2[MAX_QPATH];
-	int		texnum, hash;
+	int		texnum;
 	image_t	*image;
-	GLenum	repMode;
 	bool	reuse;
 
 	if (!name[0]) Com_Error (ERR_FATAL, "R_CreateImage: null name");
@@ -674,16 +673,35 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 
 	ComputeImageColor (pic, width, height, &image->color);
 
-	// upload image
-	GL_BindForce (image);
-	Upload (pic, flags, image);
+	if (gl_renderingEnabled)
+	{
+		GLenum	repMode;
 
-	repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repMode);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repMode);
+		// upload image
+		GL_BindForce (image);
+		Upload (pic, flags, image);
+
+		repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repMode);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repMode);
+	}
+	else
+	{
+		int		size;
+
+		// save image for later upload
+		if (image->pic)
+			Z_Free (image->pic);
+		size = width * height * 4;
+		image->pic = Z_Malloc (size);
+		image->internalFormat = 0;
+		memcpy (image->pic, pic, size);
+	}
 
 	if (!reuse)
 	{
+		int		hash;
+
 		// insert image into a hash table
 		hash = ComputeHash (name2);
 		image->hashNext = hashTable[hash];
@@ -819,6 +837,11 @@ static void GL_FreeImage (image_t *image)
 
 	// delete gl texture
 	glDeleteTextures (1, &image->texnum);
+	if (image->pic)
+	{
+		Z_Free (image->pic);
+		image->pic = NULL;
+	}
 
 	// remove from hash chain
 	hash = ComputeHash (image->name);
@@ -1076,6 +1099,7 @@ static void ImageReload_f (void)
 {
 	char	*mask;
 	int		i, num, time;
+	image_t	*img;
 
 	if (Cmd_Argc () != 2)
 	{
@@ -1086,11 +1110,8 @@ static void ImageReload_f (void)
 	time = Sys_Milliseconds ();
 	mask = Cmd_Argv (1);
 	num = 0;
-	for (i = 0; i < MAX_TEXTURES; i++)
+	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
-		image_t	*img;
-
-		img = &imagesArray[i];
 		if (!img->name[0]) continue;	// free slot
 		if (!MatchWildcard2 (img->name, mask, true)) continue;
 
@@ -1375,10 +1396,15 @@ void GL_ShutdownImages (void)
 
 	if (!imageCount) return;
 
-	for (i = 0, img = &imagesArray[0]; i < MAX_TEXTURES; i++, img++)
+	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
 		if (!img->name[0]) continue;	// free slot
 		glDeleteTextures (1, &img->texnum);
+		if (img->pic)
+		{
+			Z_Free (img->pic);
+			img->pic = NULL;
+		}
 	}
 	imageCount = 0;
 
@@ -1392,6 +1418,28 @@ void GL_ShutdownImages (void)
 	glBindTexture (GL_TEXTURE_2D, 0);
 	// don't clear other fields: after GL_ShutdownImages should not be called nothing
 	// but GL_InitImages, which will perform this work
+}
+
+
+void GL_LoadDelayedImages (void)
+{
+	int		i, num, time;
+	image_t	*img;
+
+	time = Sys_Milliseconds ();
+	num = 0;
+	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
+	{
+		if (!img->name[0]) continue;	// free slot
+		if (!(img->pic)) continue;
+
+		Com_Printf ("up: %s\n", img->name);//!!
+		GL_CreateImage (img->name, img->pic, img->width, img->height, img->flags);
+		Z_Free (img->pic);
+		img->pic = NULL;
+		num++;
+	}
+	Com_DPrintf ("%d images uploaded in %g sec\n", num, (Sys_Milliseconds () - time) / 1000.0f);
 }
 
 

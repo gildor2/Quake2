@@ -35,15 +35,18 @@ void Z_Free (void *ptr)
 	int mark;
 #endif
 
-	z = ((zhead_t *)ptr) - 1;
-
 #ifdef Z_DEBUG
 	if (!ptr)
 	{
-		Com_WPrintf ("Z_Free(NULL) " RETADDR_STR "\n", GET_RETADDR(ptr));
+		Com_Error (ERR_FATAL, "Z_Free(NULL) " RETADDR_STR "\n", GET_RETADDR(ptr));
 		return;
 	}
+#else
+	if (!ptr) return;
+#endif
+	z = ((zhead_t *)ptr) - 1;
 
+#ifdef Z_DEBUG
 	if (z->magic == Z_FREE)
 		Com_Error (ERR_FATAL, "Z_Free: double freeing block");
 	mark = *(int*)((char*)z + z->size - 4);

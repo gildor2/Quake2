@@ -348,9 +348,7 @@ extern  cvar_t  *gl_winrefl;
 
 extern	cvar_t	*r_fullscreen;
 
-extern	cvar_t	*r_gamma;
-extern	cvar_t	*intensity;
-extern  cvar_t  *saturation;
+extern cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
 
 extern	int	gl_solid_format;
 extern	int	gl_alpha_format;
@@ -394,7 +392,7 @@ void R_RenderView (refdef_t *fd);
 void R_DrawAliasModel (entity_t *e);
 void R_DrawBrushModel (entity_t *e);
 void R_DrawSpriteModel (entity_t *e);
-void R_DrawBeam( entity_t *e );
+void R_DrawBeam( beam_t *b );
 void R_DrawWorld (void);
 void R_RenderDlights (void);
 void R_DrawAlphaSurfaces (void);
@@ -606,10 +604,10 @@ void		GLimp_BeginFrame( float camera_separation );
 void		GLimp_EndFrame( void );
 int 		GLimp_Init( void );
 void		GLimp_Shutdown(void);
-int     	GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen );
-void		GLimp_AppActivate( qboolean active );
+int     	GLimp_SetMode (int *pwidth, int *pheight, int mode, bool fullscreen);
+void		GLimp_AppActivate (qboolean active);
 
-qboolean	GLimp_HasGamma (void);
+bool		GLimp_HasGamma (void);
 void		GLimp_SetGamma (float gamma, float intens);
 
 

@@ -20,26 +20,25 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "qmenu.h"	// for completion menu only
 
-/*
-
-key up events are sent even if in console mode
-
-*/
-
 
 int		anykeydown;
 
-char	*keybindings[256];
-byte	keydown[256];				// really, it is qboolean, but "byte" is more compact
+char	*keybindings[NUM_KEYS];
+byte	keydown[NUM_KEYS];				// really, it is qboolean, but "byte" is more compact
 
 static int	shift_down = false;
 static int	key_waiting;
 
-static byte		consolekeys[256];	// if true, can't be rebound while in console
-static byte		menubound[256];		// if true, can't be rebound while in menu
-static int		keyshift[256];		// key to map to if shift held down in console
-static int		key_repeats[256];	// if > 1, it is autorepeating
+static byte		consolekeys[NUM_KEYS];	// if true, can't be rebound while in console
+static byte		menubound[NUM_KEYS];	// if true, can't be rebound while in menu
+static int		keyshift[NUM_KEYS];		// key to map to if shift held down in console
+static int		key_repeats[NUM_KEYS];	// if > 1, it is autorepeating
 
+
+/*-----------------------------------------------------------------------------
+	Support for kay names
+	?? should check for correct UNKxx keys: UNK30 is "correct", but will newer be pressed
+-----------------------------------------------------------------------------*/
 
 typedef struct
 {
@@ -63,18 +62,12 @@ static keyname_t keynames[] =
 	{"CTRL",		K_CTRL},
 	{"SHIFT",		K_SHIFT},
 
-	{"F1",			K_F1},
-	{"F2",			K_F2},
-	{"F3",			K_F3},
-	{"F4",			K_F4},
-	{"F5",			K_F5},
-	{"F6",			K_F6},
-	{"F7",			K_F7},
-	{"F8",			K_F8},
-	{"F9",			K_F9},
-	{"F10",			K_F10},
-	{"F11",			K_F11},
-	{"F12",			K_F12},
+	{"F1",		K_F1},	{"F2",		K_F2},	{"F3",		K_F3},	{"F4",		K_F4},
+	{"F5",		K_F5},	{"F6",		K_F6},	{"F7",		K_F7},	{"F8",		K_F8},
+	{"F9",		K_F9},	{"F10",		K_F10},	{"F11",		K_F11},	{"F12",		K_F12},
+	{"F13",		K_F13},	{"F14",		K_F14},	{"F15",		K_F15},	{"F16",		K_F16},
+	{"F17",		K_F17},	{"F18",		K_F18},	{"F19",		K_F19},	{"F20",		K_F20},
+	{"F21",		K_F21},	{"F22",		K_F22},	{"F23",		K_F23},	{"F24",		K_F24},
 
 	{"INS",			K_INS},
 	{"DEL",			K_DEL},
@@ -83,48 +76,7 @@ static keyname_t keynames[] =
 	{"HOME",		K_HOME},
 	{"END",			K_END},
 
-	{"MOUSE1",		K_MOUSE1},
-	{"MOUSE2",		K_MOUSE2},
-	{"MOUSE3",		K_MOUSE3},
-
-	{"JOY1",		K_JOY1},
-	{"JOY2",		K_JOY2},
-	{"JOY3",		K_JOY3},
-	{"JOY4",		K_JOY4},
-
-	{"AUX1",		K_AUX1},
-	{"AUX2",		K_AUX2},
-	{"AUX3",		K_AUX3},
-	{"AUX4",		K_AUX4},
-	{"AUX5",		K_AUX5},
-	{"AUX6",		K_AUX6},
-	{"AUX7",		K_AUX7},
-	{"AUX8",		K_AUX8},
-	{"AUX9",		K_AUX9},
-	{"AUX10",		K_AUX10},
-	{"AUX11",		K_AUX11},
-	{"AUX12",		K_AUX12},
-	{"AUX13",		K_AUX13},
-	{"AUX14",		K_AUX14},
-	{"AUX15",		K_AUX15},
-	{"AUX16",		K_AUX16},
-	{"AUX17",		K_AUX17},
-	{"AUX18",		K_AUX18},
-	{"AUX19",		K_AUX19},
-	{"AUX20",		K_AUX20},
-	{"AUX21",		K_AUX21},
-	{"AUX22",		K_AUX22},
-	{"AUX23",		K_AUX23},
-	{"AUX24",		K_AUX24},
-	{"AUX25",		K_AUX25},
-	{"AUX26",		K_AUX26},
-	{"AUX27",		K_AUX27},
-	{"AUX28",		K_AUX28},
-	{"AUX29",		K_AUX29},
-	{"AUX30",		K_AUX30},
-	{"AUX31",		K_AUX31},
-	{"AUX32",		K_AUX32},
-
+	// keypad
 	{"KP_HOME",		K_KP_HOME},
 	{"KP_UPARROW",	K_KP_UPARROW},
 	{"KP_PGUP",		K_KP_PGUP},
@@ -141,96 +93,117 @@ static keyname_t keynames[] =
 	{"KP_MINUS",	K_KP_MINUS},
 	{"KP_PLUS",		K_KP_PLUS},
 
-	{"UNK46",		K_UNK46},
-	{"UNK59",		K_UNK59},
-	{"UNK5A",		K_UNK5A},
-	{"UNK5B",		K_UNK5B},
-	{"UNK5C",		K_UNK5C},
-	{"UNK5D",		K_UNK5D},
-	{"UNK5E",		K_UNK5E},
-	{"UNK5F",		K_UNK5F},
+	// mouse
+	{"MOUSE1",	K_MOUSE1},	{"MOUSE2",	K_MOUSE2},	{"MOUSE3",	K_MOUSE3},
+	{"MWHEELUP",	K_MWHEELUP},	{"MWHEELDOWN",	K_MWHEELDOWN},
 
-	{"MWHEELUP",	K_MWHEELUP},
-	{"MWHEELDOWN",	K_MWHEELDOWN},
+	// joystick
+	{"JOY1",	K_JOY1},	{"JOY2",	K_JOY2},	{"JOY3",	K_JOY3},	{"JOY4",	K_JOY4},
+
+	{"AUX1",	K_AUX1},	{"AUX2",	K_AUX2},	{"AUX3",	K_AUX3},	{"AUX4",	K_AUX4},
+	{"AUX5",	K_AUX5},	{"AUX6",	K_AUX6},	{"AUX7",	K_AUX7},	{"AUX8",	K_AUX8},
+	{"AUX9",	K_AUX9},	{"AUX10",	K_AUX10},	{"AUX11",	K_AUX11},	{"AUX12",	K_AUX12},
+	{"AUX13",	K_AUX13},	{"AUX14",	K_AUX14},	{"AUX15",	K_AUX15},	{"AUX16",	K_AUX16},
+	{"AUX17",	K_AUX17},	{"AUX18",	K_AUX18},	{"AUX19",	K_AUX19},	{"AUX20",	K_AUX20},
+	{"AUX21",	K_AUX21},	{"AUX22",	K_AUX22},	{"AUX23",	K_AUX23},	{"AUX24",	K_AUX24},
+	{"AUX25",	K_AUX25},	{"AUX26",	K_AUX26},	{"AUX27",	K_AUX27},	{"AUX28",	K_AUX28},
+	{"AUX29",	K_AUX29},	{"AUX30",	K_AUX30},	{"AUX31",	K_AUX31},	{"AUX32",	K_AUX32},
 
 	{"PAUSE",		K_PAUSE},
+	{"CAPSLOCK",	K_CAPSLOCK},
+	{"NUMLOCK",		K_NUMLOCK},
+	{"SCRLOCK",		K_SCRLOCK},
+	{"PRINTSCRN",	K_PRINTSCRN},	//?? sent only when key is up
 
-	{"COMMA",		','},	// because comma used for separating multiple wildcards
-	{"SEMICOLON",	';'},	// because a raw semicolon separates commands
-
-	{NULL,			0}		// end marker
+	{"KP_STAR",		'*'},		// to resolve "unbind *" ambiguity
+	{"COMMA",		','},		// because comma used for separating multiple wildcards
+	{"SEMICOLON",	';'}		// because a raw semicolon separates commands
 };
 
 
-static qboolean IsSimpleKeyName (int keynum)
+static bool IsSimpleKeyName (int keynum)
 {
 	return keynum > 32 && keynum < 127 && keynum != ',' && keynum != ';';
 }
 
-/*
-===================
-Key_StringToKeynum
+// NOTE: 'c' is lowercase digit
+static int HexDigit (char c)
+{
+	if (c >= '0' && c <= '9') return c - '0';
+	else if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+	else return -1;			// bad digit
+}
 
-Returns a key number to be used to index keybindings[] by looking at
-the given string.  Single ascii characters return themselves, while
-the K_* names are matched up.
-===================
-*/
+
 int Key_StringToKeynum (char *str)
 {
-	keyname_t	*kn;
+	int		i;
+	keyname_t *kn;
+	char	name[32];
 
-	if (!str || !str[0])
-		return -1;
-	if (!str[1])
-		return str[0];
+	if (!str || !str[0]) return -1;		// bad string
+	if (!str[1]) return str[0];			// simple key
 
-	for (kn = keynames; kn->name ; kn++)
+	Q_strncpylower (name, str, sizeof(name)-1);
+	// check for 'UNKxx'
+	if (name[0] == 'u' && name[1] == 'n' && name[2] == 'k' && name[5] == 0)
 	{
-		if (!Q_strcasecmp (str,kn->name))
+		int		n1, n2;
+
+		n1 = HexDigit (name[3]);
+		if (n1 < 0) return -1;
+		n2 = HexDigit (name[4]);
+		if (n2 < 0) return -1;
+		return (n1 << 4) + n2 + 256;
+	}
+
+	for (i = 0, kn = keynames; i < ARRAY_COUNT(keynames); i++, kn++)
+	{
+		if (!strcmp (str,kn->name))
 			return kn->keynum;
 	}
 	return -1;
 }
 
-/*
-===================
-Key_KeynumToString
 
-Returns a string (either a single ascii char, or a K_* name) for the
-given keynum.
-FIXME: handle quote special (general escape sequence?)
-===================
-*/
 char *Key_KeynumToString (int keynum)
 {
-	keyname_t	*kn;
-	static char tinystr[2];
+	int		i;
+	keyname_t *kn;
 
 	if (keynum == -1)
 		return "^1<KEY NOT FOUND>";
+
 	if (IsSimpleKeyName (keynum))
-	{	// printable ascii
+	{
+		static char tinystr[2];
+
+		// printable ascii
 		tinystr[0] = keynum;
-//		tinystr[1] = 0;
 		return tinystr;
 	}
 
-	for (kn = keynames; kn->name; kn++)
+	if (keynum >= 256)
+	{
+		static char keyname[] = "UNK00";
+
+		Com_sprintf (ARRAY_ARG(keyname), "UNK%02X", keynum - 256);
+		return keyname;
+	}
+
+	for (i = 0, kn = keynames; i < ARRAY_COUNT(keynames); i++, kn++)
+	{
 		if (keynum == kn->keynum)
 			return kn->name;
+	}
 
 	return "^1<UNKNOWN KEYNUM>";
 }
 
 
-/*
-==============================================================================
-
-			LINE TYPING INTO THE CONSOLE
-
-==============================================================================
-*/
+/*-----------------------------------------------------------------------------
+	Command completion in console
+-----------------------------------------------------------------------------*/
 
 //!! check for overflow of this buffers
 static char complete_command[256], completed_name[512], *partial_name;
@@ -592,11 +565,10 @@ void CompleteCommand (void)
 }
 
 
-/*
-===================
-Key_SetBinding
-===================
-*/
+/*-----------------------------------------------------------------------------
+	Key bindings
+-----------------------------------------------------------------------------*/
+
 void Key_SetBinding (int keynum, char *binding)
 {
 	char	*new;
@@ -624,8 +596,6 @@ void Key_SetBinding (int keynum, char *binding)
 }
 
 
-/*-------------- Console commands ------------------*/
-
 static void Key_Unbind_f (void)
 {
 	int		i, n;
@@ -634,14 +604,15 @@ static void Key_Unbind_f (void)
 
 	if (Cmd_Argc() != 2)
 	{
-		Com_Printf ("unbind <key mask> : remove commands from a key(s)\n");
+		Com_Printf ("Usage: unbind <key mask>\n");
 		return;
 	}
 	mask = Cmd_Argv (1);
 
 	n = 0;
-	for (i = 0; i < 256; i++)
+	for (i = 0; i < NUM_KEYS; i++)
 	{
+		int		j;
 		char	*keyName;
 		static char buf[2];
 
@@ -658,7 +629,7 @@ static void Key_Unbind_f (void)
 		{
 			// find key name
 			keyName = NULL;
-			for (kn = keynames; kn->name; kn++)
+			for (j = 0, kn = keynames; j < ARRAY_COUNT(keynames); j++, kn++)
 				if (i == kn->keynum)
 				{
 					keyName = kn->name;
@@ -685,7 +656,7 @@ static void Key_Unbindall_f (void)
 {
 	int		i;
 
-	for (i=0 ; i<256 ; i++)
+	for (i = 0; i < NUM_KEYS; i++)
 		if (keybindings[i])
 			Key_SetBinding (i, "");
 }
@@ -700,7 +671,7 @@ static void Key_Bind_f (void)
 
 	if (c < 2)
 	{
-		Com_Printf ("bind <key> [command]\n");
+		Com_Printf ("Usage: bind <key> [command]\n");
 		return;
 	}
 	b = Key_StringToKeynum (Cmd_Argv(1));
@@ -749,7 +720,7 @@ void Key_Bindlist_f (void)
 		mask = NULL;
 
 	n = 0;
-	for (i = 0; i < 256; i++)
+	for (i = 0; i < NUM_KEYS; i++)
 		if (keybindings[i] && keybindings[i][0] && (!mask || MatchWildcard2 (keybindings[i], mask, true)))
 		{
 			n++;
@@ -771,17 +742,16 @@ void Key_WriteBindings (FILE *f)
 {
 	int		i;
 
-	for (i = 0; i < 256; i++)
+	for (i = 0; i < NUM_KEYS; i++)
 		if (keybindings[i] && keybindings[i][0])
 			fprintf (f, "bind %s \"%s\"\n", Key_KeynumToString(i), keybindings[i]);
 }
 
 
-/*
-===================
-Key_Init
-===================
-*/
+/*-----------------------------------------------------------------------------
+	Miscellaneous
+-----------------------------------------------------------------------------*/
+
 void Key_Init (void)
 {
 	int		i;
@@ -813,15 +783,15 @@ void Key_Init (void)
 	consolekeys['`'] = false;
 	consolekeys['~'] = false;
 
-	for (i = 0; i < 256; i++)
+	for (i = 0; i < NUM_KEYS; i++)
 		keyshift[i] = i;
 	for (i = 'a'; i <= 'z'; i++)
 		keyshift[i] = i - 'a' + 'A';
-	for (i = 0; i < sizeof(keyShifts)/sizeof(keyShifts[0]); i++)
+	for (i = 0; i < ARRAY_COUNT(keyShifts); i++)
 		keyshift[keyShifts[i].base] = keyShifts[i].shift;
 
 	menubound[K_ESCAPE] = true;
-	for (i = 0; i < 12; i++)
+	for (i = 0; i < 24; i++)
 		menubound[K_F1+i] = true;
 
 	Cmd_AddCommand ("bind", Key_Bind_f);
@@ -830,22 +800,12 @@ void Key_Init (void)
 	Cmd_AddCommand ("bindlist", Key_Bindlist_f);
 }
 
-/*
-===================
-Key_Event
 
-Called by the system between frames for both key up and key down events
-Should NOT be called during an interrupt!
-===================
-*/
 void Key_Event (int key, qboolean down, unsigned time)
 {
 	char	*kb;
 	int		rep;
-	static char plus_cmd_fired[256];
-
-	if (*re.flags & REF_CONSOLE_ONLY && key >= 200) // no mouse & joystick in console-only mode (??)
-		return;
+	static char plus_cmd_fired[NUM_KEYS];
 
 	// hack for modal presses
 	if (key_waiting == -1)
@@ -863,9 +823,6 @@ void Key_Event (int key, qboolean down, unsigned time)
 		if (rep > 1 && rep < 5 ||
 			(cls.key_dest == key_game && cls.state != ca_disconnected) && rep > 1 && kb && kb[0] == '+')
 			return;		// no autorepeats for "+cmd" and make a delay before autorepeat activation
-
-		if (key >= 190 && (!kb || !kb[0]))	// old: key >= 200
-			Com_Printf ("%s is unbound, hit F4 to set\n", Key_KeynumToString (key) );	//?? F4
 	}
 	else
 	{
@@ -885,7 +842,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 	}
 
 	// any key during the demoplay mode will bring up the menu
-	if (cl.attractloop && cls.key_dest == key_game && !(key >= K_F1 && key <= K_F12 || key == K_PAUSE))
+	if (cl.attractloop && cls.key_dest == key_game && !(key >= K_F1 && key <= K_F24 || key == K_PAUSE))
 		key = K_ESCAPE;
 
 	// menu key is hardcoded, so the user can never unbind it
@@ -1005,18 +962,14 @@ void Key_Event (int key, qboolean down, unsigned time)
 	}
 }
 
-/*
-===================
-Key_ClearStates
-===================
-*/
+
 void Key_ClearStates (void)
 {
 	int		i;
 
 	anykeydown = false;
 
-	for (i = 0; i < 256; i++)
+	for (i = 0; i < NUM_KEYS; i++)
 	{
 		if (keydown[i] || key_repeats[i])
 			Key_Event (i, false, 0);
@@ -1031,20 +984,4 @@ void Key_ClearTyping (void)
 	editLine[0] = ']';
 	editLine[1] = 0;
 	editPos = 1;
-}
-
-
-/*
-===================
-Key_GetKey
-===================
-*/
-int Key_GetKey (void)
-{
-	key_waiting = -1;
-
-	while (key_waiting == -1)
-		Sys_SendKeyEvents ();
-
-	return key_waiting;
 }

@@ -1100,7 +1100,6 @@ void Key_Console (int key)
 
 void Key_Message (int key)
 {
-
 	if (key == K_ENTER || key == K_KP_ENTER)
 	{
 		if (chat_team)
@@ -1124,9 +1123,6 @@ void Key_Message (int key)
 		return;
 	}
 
-	if (key < 32 || key > 127)
-		return;		// non printable
-
 	if (key == K_BACKSPACE)
 	{
 		if (chat_bufferlen)
@@ -1137,8 +1133,11 @@ void Key_Message (int key)
 		return;
 	}
 
+	if (key < 32 || key >= 128)
+		return;		// non printable
+
 	if (chat_bufferlen == sizeof(chat_buffer)-1)
-		return;		// all full
+		return;		// buffer full
 
 	chat_buffer[chat_bufferlen++] = key;
 	chat_buffer[chat_bufferlen] = 0;

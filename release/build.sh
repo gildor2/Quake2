@@ -18,7 +18,7 @@ function CheckVC()
 #------- Find VisualStudio on local drives and setup path variables -------
 # check vc6
 CheckVC "c:/progra~1/msvs/vc98"
-CheckVC "c:/progra~1/micros~2/vc98"
+CheckVC "c:/progra~1/microsoft visual studio/vc98"
 
 if [ ! "$workpath" ]; then
 	echo "ERROR: Visual C++ is not found."

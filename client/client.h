@@ -372,10 +372,11 @@ typedef struct cl_sustain_s
 void CL_ClearParticles (void);
 void CL_UpdateParticles (void);
 particle_t *CL_AllocParticle (void);
+beam_t *CL_AllocParticleBeam (vec3_t start, vec3_t end, float radius, float fadeTime);
 void CL_MetalSparks (vec3_t pos, vec3_t dir, int count);
 
-extern particle_t	*active_particles, *free_particles;
-extern particle_t	particles[MAX_PARTICLES];
+extern particle_t *active_particles;
+extern beam_t	*active_beams;
 
 #define	PARTICLE_GRAVITY			80
 #define BLASTER_PARTICLE_COLOR		0xE0
@@ -409,7 +410,6 @@ void CL_AddDLights (void);
 void CL_ClearEffects (void);
 void CL_ClearTEnts (void);
 void CL_BlasterTrail (vec3_t start, vec3_t end);
-void CL_QuadTrail (vec3_t start, vec3_t end);
 void CL_RailTrail (vec3_t start, vec3_t end);
 void CL_RailTrailExt (vec3_t start, vec3_t end, byte rType, byte rColor);
 void CL_BubbleTrail (vec3_t start, vec3_t end);

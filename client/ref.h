@@ -32,36 +32,58 @@ typedef union
 #define RGBS(r,g,b)			(Q_round((r)*255) | (Q_round((g)*255)<<8) | (Q_round((b)*255)<<16) | (255<<24))
 
 
-typedef enum
-{
-	BEAM_RAILBEAM = 256,
-	BEAM_RAILSPIRAL,
-	BEAM_RAILRINGS
-} beamType_t;
-
-
+//!!! clean beam comments
 typedef struct entity_s
 {
 	struct model_s *model;	// opaque type outside refresh
 	float	angles[3];
 	/*------- most recent data --------*/
-	float	origin[3];		// also used as RF_BEAM's "from"
-	int		frame;			// also used as RF_BEAM's diameter
+	float	origin[3];
+	int		frame;
 	/*------- data for lerping --------*/
-	float	oldorigin[3]; 	// also used as RF_BEAM's "to"
+	float	oldorigin[3];
 	int		oldframe;
 	float	backlerp;		// 0.0 = current, 1.0 = old
 	/*-------------- misc -------------*/
 	float	size[3];
-	int		skinnum;		// also used as RF_BEAM's palette index; if >= 256 - extended beam (beamType_t)
+	int		skinnum;
 	color_t	color;			// for extended beam
 	/*----------- color info ----------*/
-	int		lightstyle;		// for flashing entities (unused ??)
 	float	alpha;			// ignore if RF_TRANSLUCENT isn't set
 
 	struct image_s	*skin;	// NULL for inline skin
 	int		flags;
 } entity_t;
+
+
+typedef enum
+{
+	BEAM_STANDARD,
+	BEAM_RAILBEAM,
+	BEAM_RAILSPIRAL,
+	BEAM_RAILRINGS
+} beamType_t;
+
+
+typedef struct beam_s
+{
+	vec3_t	start;
+	vec3_t	end;
+	float	radius;
+	beamType_t type;
+	color_t	color;
+	// internal fields
+	float	alpha;					// color.c[3] is byte and have no enough precision
+	float	fadeTime;
+	float	lifeTime;
+	float	dstAlpha;				// alpha, which will be reached at end of life cycle (default==0)
+	float	growSpeed;				// radius_delta/sec
+	// temporary fields
+	vec3_t	drawStart, drawEnd;
+
+	struct beam_s *next;
+	struct beam_s *drawNext;
+} beam_t;
 
 
 typedef struct
@@ -83,12 +105,11 @@ typedef struct particle_s
 	// appearance
 	vec3_t	org;
 	byte	color;
-	qboolean _new;
-	float	alpha;
+	bool	_new;
 	particleType_t type;
+	float	alpha;
 	int		leafNum;				// -1 -- uninitialized
 	// some physics
-	int		startTime;
 	vec3_t	vel;					// org += vel * time
 	vec3_t	accel;					// vel += accel * time
 	float	alphavel;
@@ -124,6 +145,7 @@ typedef struct
 
 	lightstyle_t *lightstyles;		// [MAX_LIGHTSTYLES]
 	particle_t	*particles;
+	beam_t		*beams;
 } refdef_t;
 
 

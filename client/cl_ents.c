@@ -929,8 +929,7 @@ static void CL_AddPacketEntities (void)
 		ent.backlerp = 1.0 - cl.lerpfrac;
 
 		if (renderfx & (RF_FRAMELERP|RF_BEAM))
-		{	// step origin discretely, because the frames
-			// do the animation properly
+		{	// step origin discretely, because the frames do the animation properly
 			VectorCopy (cent->current.origin, ent.origin);
 			VectorCopy (cent->current.old_origin, ent.oldorigin);
 		}
@@ -947,55 +946,60 @@ static void CL_AddPacketEntities (void)
 
 		// tweak the color of beams
 		if (renderfx & RF_BEAM)
-		{	// the four beam colors are encoded in 32 bits of skinnum (hack)
-			ent.alpha = 0.30;
-			ent.skinnum = (s1->skinnum >> ((rand() % 4)*8)) & 0xff;
-			ent.model = NULL;
-		}
-		else
 		{
-			// set skin
-			if (s1->modelindex == 255)
-			{	// use custom player skin
-				ent.skinnum = 0;
-				ci = &cl.clientinfo[s1->skinnum & 0xff];
-				ent.skin = ci->skin;
-				ent.model = ci->model;
-				if (!ent.skin || !ent.model)
-				{
-					ent.skin = cl.baseclientinfo.skin;
-					ent.model = cl.baseclientinfo.model;
-				}
+			beam_t	*b;
+
+			b = CL_AllocParticleBeam (ent.origin, ent.oldorigin, ent.frame / 2.0f, 0);
+			if (!b) continue;
+			b->type = BEAM_STANDARD;
+			b->color.rgba = 0;
+			// the four beam colors are encoded in 32 bits of skinnum (hack)
+			b->color.c[0] = (s1->skinnum >> ((rand() % 4)*8)) & 0xFF;
+			b->alpha = 0.3f;
+			continue;
+		}
+
+		// set skin
+		if (s1->modelindex == 255)
+		{	// use custom player skin
+			ent.skinnum = 0;
+			ci = &cl.clientinfo[s1->skinnum & 0xff];
+			ent.skin = ci->skin;
+			ent.model = ci->model;
+			if (!ent.skin || !ent.model)
+			{
+				ent.skin = cl.baseclientinfo.skin;
+				ent.model = cl.baseclientinfo.model;
+			}
 
 //============
 //PGM
-				if (renderfx & RF_USE_DISGUISE)
+			if (renderfx & RF_USE_DISGUISE)
+			{
+				if(!strncmp((char *)ent.skin, "players/male", 12))
 				{
-					if(!strncmp((char *)ent.skin, "players/male", 12))
-					{
-						ent.skin = re.RegisterSkin ("players/male/disguise.pcx");
-						ent.model = re.RegisterModel ("players/male/tris.md2");
-					}
-					else if(!strncmp((char *)ent.skin, "players/female", 14))
-					{
-						ent.skin = re.RegisterSkin ("players/female/disguise.pcx");
-						ent.model = re.RegisterModel ("players/female/tris.md2");
-					}
-					else if(!strncmp((char *)ent.skin, "players/cyborg", 14))
-					{
-						ent.skin = re.RegisterSkin ("players/cyborg/disguise.pcx");
-						ent.model = re.RegisterModel ("players/cyborg/tris.md2");
-					}
+					ent.skin = re.RegisterSkin ("players/male/disguise.pcx");
+					ent.model = re.RegisterModel ("players/male/tris.md2");
 				}
+				else if(!strncmp((char *)ent.skin, "players/female", 14))
+				{
+					ent.skin = re.RegisterSkin ("players/female/disguise.pcx");
+					ent.model = re.RegisterModel ("players/female/tris.md2");
+				}
+				else if(!strncmp((char *)ent.skin, "players/cyborg", 14))
+				{
+					ent.skin = re.RegisterSkin ("players/cyborg/disguise.pcx");
+					ent.model = re.RegisterModel ("players/cyborg/tris.md2");
+				}
+			}
 //PGM
 //============
-			}
-			else
-			{
-				ent.skinnum = s1->skinnum;
-				ent.skin = NULL;
-				ent.model = cl.model_draw[s1->modelindex];
-			}
+		}
+		else
+		{
+			ent.skinnum = s1->skinnum;
+			ent.skin = NULL;
+			ent.model = cl.model_draw[s1->modelindex];
 		}
 
 		// only used for black hole model right now, FIXME: do better
