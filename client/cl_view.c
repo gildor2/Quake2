@@ -107,26 +107,6 @@ void V_AddLight (vec3_t org, float intensity, float r, float g, float b)
 
 
 /*
-=====================
-V_AddLightStyle
-
-=====================
-*/
-void V_AddLightStyle (int style, float r, float g, float b)
-{
-	lightstyle_t	*ls;
-
-	if (style < 0 || style > MAX_LIGHTSTYLES)
-		Com_Error (ERR_DROP, "Bad light style %i", style);
-	ls = &r_lightstyles[style];
-
-	ls->white = r+g+b;
-	ls->rgb[0] = r;
-	ls->rgb[1] = g;
-	ls->rgb[2] = b;
-}
-
-/*
 ================
 V_TestParticles
 
@@ -695,7 +675,7 @@ void V_RenderView( float stereo_separation )
 
 	// an invalid frame will just use the exact previous refdef
 	// we can't use the old frame if the video mode has changed, though...
-	if ( cl.frame.valid && (cl.force_refdef || !cl_paused->integer) )
+	if (cl.frame.valid && (cl.force_refdef || !cl_paused->integer))
 	{
 		cl.force_refdef = false;
 
@@ -710,10 +690,8 @@ void V_RenderView( float stereo_separation )
 			V_TestParticles ();
 		CL_UpdateParticles ();
 
-		if (cl_testentities->integer)
-			V_TestEntities ();
-		if (cl_testlights->integer)
-			V_TestLights ();
+		if (cl_testentities->integer)	V_TestEntities ();
+		if (cl_testlights->integer)		V_TestLights ();
 		if (cl_testblend->integer)
 		{
 			cl.refdef.blend[0] = 1;
@@ -734,34 +712,29 @@ void V_RenderView( float stereo_separation )
 		// never let it sit exactly on a node line, because a water plane can
 		// dissapear when viewed with the eye exactly on it.
 		// the server protocol only specifies to 1/8 pixel, so add 1/16 in each axis
-		cl.refdef.vieworg[0] += 1.0/16;
-		cl.refdef.vieworg[1] += 1.0/16;
-		cl.refdef.vieworg[2] += 1.0/16;
+		cl.refdef.vieworg[0] += 1.0f/16;
+		cl.refdef.vieworg[1] += 1.0f/16;
+		cl.refdef.vieworg[2] += 1.0f/16;
 
 		cl.refdef.x = scr_vrect.x;
 		cl.refdef.y = scr_vrect.y;
 		cl.refdef.width = scr_vrect.width;
 		cl.refdef.height = scr_vrect.height;
 		cl.refdef.fov_y = CalcFov (cl.refdef.fov_x, cl.refdef.width, cl.refdef.height);
-		cl.refdef.time = cl.time / 1000.0;
+		cl.refdef.time = cl.time / 1000.0f;
 
 		cl.refdef.areabits = cl.frame.areabits;
 
-		if (!cl_add_entities->integer)
-			r_numentities = 0;
-		if (!cl_add_lights->integer)
-			r_numdlights = 0;
-		if (!cl_add_blend->integer)
-		{
-			VectorClear (cl.refdef.blend);
-		}
+		if (!cl_add_entities->integer)	r_numentities = 0;
+		if (!cl_add_lights->integer)	r_numdlights = 0;
+		if (!cl_add_blend->integer)		VectorClear (cl.refdef.blend);
 
 		cl.refdef.num_entities = r_numentities;
 		cl.refdef.entities = r_entities;
 		cl.refdef.particles = cl_add_particles->integer ? active_particles : NULL;
 		cl.refdef.num_dlights = r_numdlights;
 		cl.refdef.dlights = r_dlights;
-		cl.refdef.lightstyles = r_lightstyles;
+		cl.refdef.lightstyles = cl_lightstyles;
 
 		cl.refdef.rdflags = cl.frame.playerstate.rdflags;
 
@@ -789,13 +762,13 @@ void V_RenderView( float stereo_separation )
 
 	if (cl_stats->integer)
 	{
-		re.DrawTextLeft (va("ent:%d  lt:%d",	//?? particle stats
+		re.DrawTextLeft (va("ent:%d  lt:%d",	//?? particle stats (remove)
 			r_numentities, r_numdlights),
 			1, 1, 1);
 	}
 
 	if (log_stats->integer && (log_stats_file != 0))
-		fprintf (log_stats_file, "%d,%d,", r_numentities, r_numdlights);	//?? particle stats
+		fprintf (log_stats_file, "%d,%d,", r_numentities, r_numdlights);	//?? particle stats (remove)
 
 
 	SCR_AddDirtyPoint (scr_vrect.x, scr_vrect.y);
@@ -811,7 +784,7 @@ void V_RenderView( float stereo_separation )
 V_Viewpos_f
 =============
 */
-void V_Viewpos_f (void)
+void V_Viewpos_f (void)	//?? remove
 {
 	Com_Printf ("(%d %d %d) : %d\n", (int)cl.refdef.vieworg[0],
 		(int)cl.refdef.vieworg[1], (int)cl.refdef.vieworg[2],

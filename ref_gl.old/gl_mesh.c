@@ -34,17 +34,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define NUMVERTEXNORMALS	162
 
-float	r_avertexnormals[NUMVERTEXNORMALS][3] = {
+static float	r_avertexnormals[NUMVERTEXNORMALS][3] = {
 #include "anorms.h"
 };
 
-typedef float vec4_t[4];
+static	float s_lerped[MAX_VERTS][4];		// padded for SIMD
 
-static	vec4_t	s_lerped[MAX_VERTS];
-//static	vec3_t	lerped[MAX_VERTS];
-
-vec3_t	shadevector;
-float	shadelight[3];
+static vec3_t	shadevector;
+static float	shadelight[3];
 
 #ifdef USE_SHADEDOTS
 
@@ -157,7 +154,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 		float colorArray[MAX_VERTS*4];
 
 		qglEnableClientState( GL_VERTEX_ARRAY );
-		qglVertexPointer( 3, GL_FLOAT, 16, s_lerped );	// padded for SIMD
+		qglVertexPointer( 3, GL_FLOAT, sizeof(s_lerped[0]), s_lerped);
 
 		if (currententity->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
 			qglColor4f (shadelight[0], shadelight[1], shadelight[2], alpha);
@@ -575,16 +572,16 @@ void R_DrawAliasModel (entity_t *e)
 			if (shadelight[0] > shadelight[1])
 			{
 				if (shadelight[0] > shadelight[2])
-					r_lightlevel->value = 150*shadelight[0];
+					gl_lightlevel = 150*shadelight[0];
 				else
-					r_lightlevel->value = 150*shadelight[2];
+					gl_lightlevel = 150*shadelight[2];
 			}
 			else
 			{
 				if (shadelight[1] > shadelight[2])
-					r_lightlevel->value = 150*shadelight[1];
+					gl_lightlevel = 150*shadelight[1];
 				else
-					r_lightlevel->value = 150*shadelight[2];
+					gl_lightlevel = 150*shadelight[2];
 			}
 
 		}

@@ -31,6 +31,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define APPNAME		"Quake2"
 #define	BASEDIRNAME	"baseq2"
 #define CONFIGNAME	"config.cfg"
+// if CD_PATH is not defined, CD checking and adding its paths will not be performed
+#define CD_PATH		"install/data"
+#define CD_CHECK	"install/data/quake2.exe"	// file used for CD validation
 
 #ifdef WIN32
 

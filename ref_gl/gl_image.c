@@ -2,12 +2,12 @@
 #include "gl_model.h"			// for accessing to some map info
 
 image_t		*gl_defaultImage;
-image_t		*gl_whiteImage;
+//image_t		*gl_whiteImage;		//?? unneeded: can use "image = NULL" for this
 image_t		*gl_identityLightImage;
 image_t		*gl_dlightImage;
 image_t		*gl_particleImage;
 image_t		*gl_fogImage;
-image_t		*gl_scratchImage;
+image_t		*gl_videoImage;
 
 int		gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
 int		gl_filter_max = GL_LINEAR;
@@ -62,7 +62,7 @@ static void GetPalette (void)
 		v = (p[0]<<0) + (p[1]<<8) + (p[2]<<16) + (255<<24);	// R G B A
 		gl_config.tbl_8to32[i] = LittleLong(v);
 	}
-	gl_config.tbl_8to32[255] &= LittleLong(0x00FFFFFF);	// 255 is transparent (alpha = 0)
+	gl_config.tbl_8to32[255] &= LittleLong(0x00FFFFFF);		// #255 is transparent (alpha = 0)
 
 	// free image
 	Z_Free (pic);
@@ -146,15 +146,29 @@ static void GL_BindForce (image_t *tex)
 }
 
 
+void GL_TexEnv (int env)
+{
+	int		tmu;
+
+	tmu = gl_state.currentTmu;
+	if (gl_state.currentEnv[tmu] == env)
+		return;
+
+	if (env == GL_REPLACE || env == GL_MODULATE || env == GL_ADD || env == GL_DECAL)
+		qglTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, env);
+	else
+		Com_Error (ERR_FATAL, "GL_TexEnv: env = %08X", env);
+
+	gl_state.currentEnv[tmu] = env;
+}
+
+
 void GL_SelectTexture (int tmu)
 {
 	int		tex;
 
 	if (tmu == gl_state.currentTmu)
 		return;
-
-//	if (tmu > 1) else
-//		Com_Error (ERR_FATAL, "GL_SelectTexture: unit = %08X", tmu);
 
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
 	{	// ARB_multitexture
@@ -173,6 +187,26 @@ void GL_SelectTexture (int tmu)
 }
 
 
+void GL_SetMultitexture (int level)
+{
+	int		i;
+
+	if (!gl_config.maxActiveTextures)
+	{
+		if (level > 1) Com_Error (ERR_FATAL, "R_SetMultitexture(%d) with no multitexturing", level);
+		if (!level) GL_Bind (NULL);
+		return;
+	}
+
+	for (i = level; i < gl_config.maxActiveTextures; i++)
+	{
+		GL_SelectTexture (i);
+		GL_Bind (NULL);
+	}
+	GL_SelectTexture (0);
+}
+
+
 void GL_CullFace (gl_cullMode_t mode)
 {
 	if (gl_state.currentCullMode == mode)
@@ -184,30 +218,10 @@ void GL_CullFace (gl_cullMode_t mode)
 	else
 	{
 		qglEnable (GL_CULL_FACE);
-		if (mode == CULL_FRONT)
-			qglCullFace (GL_FRONT);
-		else
-			qglCullFace (GL_BACK);
+		qglCullFace (mode == CULL_FRONT ? GL_FRONT : GL_BACK);
 	}
 
 	gl_state.currentCullMode = mode;
-}
-
-
-void GL_TexEnv (int env)
-{
-	int		tmu;
-
-	tmu = gl_state.currentTmu;
-	if (gl_state.currentEnv[tmu] == env)
-		return;
-
-	if (env == GL_REPLACE || env == GL_MODULATE || env == GL_ADD || env == GL_DECAL)
-		qglTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, env);
-	else
-		Com_Error (ERR_FATAL, "GL_TexEnv: env = %08X", env);
-
-	gl_state.currentEnv[tmu] = env;
 }
 
 
@@ -241,13 +255,13 @@ void GL_State (int state)
 			unsigned src, dst;
 
 			src = ((state & GLSTATE_SRCMASK) - GLSTATE_SRC_ZERO) >> GLSTATE_SRCSHIFT;
-			if (src >= sizeof(src_blends)/sizeof(int))
-				Com_Error (ERR_FATAL, "GL_State: invalid src blend %08X", state);
+//			if (src >= sizeof(src_blends)/sizeof(int))
+//				Com_Error (ERR_FATAL, "GL_State: invalid src blend %08X", state);
 			src = src_blends[src];
 
 			dst = ((state & GLSTATE_DSTMASK) - GLSTATE_DST_ZERO) >> GLSTATE_DSTSHIFT;
-			if (dst >= sizeof(dst_blends)/sizeof(int))
-				Com_Error (ERR_FATAL, "GL_State: invalid dst blend %08X", state);
+//			if (dst >= sizeof(dst_blends)/sizeof(int))
+//				Com_Error (ERR_FATAL, "GL_State: invalid dst blend %08X", state);
 			dst = dst_blends[dst];
 
 			qglEnable (GL_BLEND);
@@ -277,12 +291,7 @@ void GL_State (int state)
 	}
 
 	if (dif & GLSTATE_DEPTHWRITE)
-	{
-		GLboolean	m;
-
-		m = state & GLSTATE_DEPTHWRITE ? 1 : 0;
-		qglDepthMask (m);
-	}
+		qglDepthMask ((GLboolean)(state & GLSTATE_DEPTHWRITE ? GL_TRUE : GL_FALSE));
 
 	if (dif & GLSTATE_NODEPTHTEST)
 	{
@@ -293,20 +302,10 @@ void GL_State (int state)
 	}
 
 	if (dif & GLSTATE_DEPTHEQUALFUNC)
-	{
-		int		m;
-
-		m = state & GLSTATE_DEPTHEQUALFUNC ? GL_EQUAL : GL_LEQUAL;
-		qglDepthFunc (m);
-	}
+		qglDepthFunc (state & GLSTATE_DEPTHEQUALFUNC ? GL_EQUAL : GL_LEQUAL);
 
 	if (dif & GLSTATE_POLYGON_LINE)
-	{
-		int		m;
-
-		m = state & GLSTATE_POLYGON_LINE ? GL_LINE : GL_FILL;
-		qglPolygonMode (GL_FRONT_AND_BACK, m);
-	}
+		qglPolygonMode (GL_FRONT_AND_BACK, state & GLSTATE_POLYGON_LINE ? GL_LINE : GL_FILL);
 
 	gl_state.currentState = state;
 }
@@ -314,53 +313,44 @@ void GL_State (int state)
 
 //----------------------------------------------------------------------
 
-typedef struct
-{
-	char	*name;
-	float	minimize, maximize;
-} glmode_t;
-
-#define NUM_GL_MODES 6
-
-static glmode_t texModes[] = {
-	{"GL_NEAREST", GL_NEAREST, GL_NEAREST},
-	{"GL_LINEAR", GL_LINEAR, GL_LINEAR},
-	{"GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},
-	{"GL_LINEAR_MIPMAP_NEAREST", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR},
-	{"GL_NEAREST_MIPMAP_LINEAR", GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST},
-	{"GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR}
-};
-
-
 void GL_TextureMode (char *name)
 {
-	int		i;
+	int		i, j;
 	image_t *img;
 
-	for (i = 0; i < NUM_GL_MODES; i++)
+	static struct {
+		char	*name;
+		float	minimize, maximize;
+	} texModes[] = {
+		{"GL_NEAREST", GL_NEAREST, GL_NEAREST},
+		{"GL_LINEAR", GL_LINEAR, GL_LINEAR},
+		{"GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},
+		{"GL_LINEAR_MIPMAP_NEAREST", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR},
+		{"GL_NEAREST_MIPMAP_LINEAR", GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST},
+		{"GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR}
+	};
+
+	for (i = 0; i < sizeof(texModes)/sizeof(texModes[0]); i++)
 	{
 		if (!Q_stricmp (texModes[i].name, name))
-			break;
+		{
+			gl_filter_min = texModes[i].minimize;
+			gl_filter_max = texModes[i].maximize;
+
+			// change all the existing mipmap texture objects
+			for (j = 0, img = &imagesArray[0]; j < MAX_TEXTURES; j++, img++)
+			{
+				if (!img->name[0]) continue;	// free slot
+				if (!(img->flags & IMAGE_MIPMAP)) continue;
+				GL_Bind (img);
+				qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+				qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+			}
+			return;
+		}
 	}
 
-	if (i == NUM_GL_MODES)
-	{
-		Com_Printf ("bad filter name\n");
-		return;
-	}
-
-	gl_filter_min = texModes[i].minimize;
-	gl_filter_max = texModes[i].maximize;
-
-	// change all the existing mipmap texture objects
-	for (i = 0, img = &imagesArray[0]; i < MAX_TEXTURES; i++, img++)
-	{
-		if (!img->name[0]) continue;	// free slot
-		if (!(img->flags & IMAGE_MIPMAP)) continue;
-		GL_Bind (img);
-		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
-	}
+	Com_WPrintf ("R_TextureMode: bad filter name\n");
 }
 
 
@@ -372,7 +362,6 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 	unsigned	*inrow, *inrow2;
 	unsigned	frac, fracstep;
 	unsigned	p1[1024], p2[1024];
-	byte		*pix1, *pix2, *pix3, *pix4;
 
 	fracstep = (inwidth << 16) / outwidth;
 
@@ -397,22 +386,20 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 		for (j = 0; j < outwidth; j++)
 		{
 			int		n, r, g, b, a;
+			byte	*pix;
 
 			n = r = g = b = a = 0;
-#define PROCESS_PIXEL(arr)	\
-	if (arr[3])	\
-	{	\
+#define PROCESS_PIXEL(row,col)	\
+	pix = (byte *)row + col[j];		\
+	if (pix[3])	\
+	{			\
 		n++;	\
-		r += arr[0]; g += arr[1]; b += arr[2]; a += arr[3];	\
+		r += *pix++; g += *pix++; b += *pix++; a += *pix;	\
 	}
-			pix1 = (byte *)inrow + p1[j];
-			pix2 = (byte *)inrow + p2[j];
-			pix3 = (byte *)inrow2 + p1[j];
-			pix4 = (byte *)inrow2 + p2[j];
-			PROCESS_PIXEL(pix1);
-			PROCESS_PIXEL(pix2);
-			PROCESS_PIXEL(pix3);
-			PROCESS_PIXEL(pix4);
+			PROCESS_PIXEL(inrow, p1);
+			PROCESS_PIXEL(inrow, p2);
+			PROCESS_PIXEL(inrow2, p1);
+			PROCESS_PIXEL(inrow2, p2);
 			if (n)
 			{
 				r /= n; g /= n; b /= n; a /= 4;
@@ -485,39 +472,45 @@ static void LightScaleTexture (unsigned *pic, int width, int height, qboolean on
 }
 
 
-//!! UNFINISHED (needs multitexturing to finish)
 static void LightScaleLightmap (unsigned *pic, int width, int height)
 {
 	byte	*p;
 	int		i, c, shift;
 
 	shift = gl_config.overbrightBits;
-	/*!! should lightscale lightmap when:
-		1. multitex & !envCombine & !vertexLight -- * (mapOverbright-overbright)
-		2. can work without overbright, but overbright forced: / (mapOverbright-overbright)
-	 */
+	if (gl_config.lightmapOverbright)
+		shift--;
+
 	/*------- downscale lightmap -----------*/
 	if (!shift)
-		return;	// no overbright
+		return;		// no overbright
 
 	p = (byte *)pic;
 	c = width * height;
-	for (i = 0; i < c; i++, p += 4)
+	if (shift > 0)
+		for (i = 0; i < c; i++, p += 4)
+		{
+			p[0] >>= shift;
+			p[1] >>= shift;
+			p[2] >>= shift;
+		}
+	else
 	{
-		p[0] >>= shift;
-		p[1] >>= shift;
-		p[2] >>= shift;
+		shift = -shift;
+		for (i = 0; i < c; i++, p += 4)
+		{
+			int		b;
+#define T(i)	\
+	b = p[i] << shift;	\
+	p[i] = b > 255 ? 255 : b;
+			T(0);
+			T(1);
+			T(2);
+#undef T
+		}
 	}
 }
 
-
-/*
-================
-GL_MipMap
-
-Operates in place, quartering the size of the texture
-================
-*/
 
 #ifndef MAX
 #define MAX(a,b) ((a)>=(b)?(a):(b))
@@ -850,11 +843,11 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 #if 0
 	byte	*pic32;
 
-	GL_BindForce (gl_scratchImage);
+	GL_BindForce (gl_videoImage);
 	// convert 8 bit -> 32 bit
 	pic32 = Convert8to32bit (pic, width, height, rawPalette);
 	// upload
-	Upload (pic32, width, height, false, false, false, gl_scratchImage);
+	Upload (pic32, width, height, false, false, false, gl_videoImage);
 	Z_Free (pic32);
 #else
 	int		scaledWidth, scaledHeight, i;
@@ -862,8 +855,8 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 	image_t	*image;
 	float	hScale;
 
-	/*?? we can do uploading pic without scaling using TexSubImage onto a large texture and using
-	 * (0..width/large_width) - (0..height/large_height) coords when drawing
+	/* we can do uploading pic without scaling using TexSubImage onto a large texture and using
+	 * (0..width/large_width) - (0..height/large_height) coords when drawing ?? (but needs palette conversion anyway)
 	 */
 	GetImageDimensions (width, height, &scaledWidth, &scaledHeight, false);
 	if (scaledWidth > 256) scaledWidth = 256;
@@ -892,7 +885,8 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 	}
 
 	/*-------------------- upload ---------------------*/
-	image = gl_scratchImage;
+	image = gl_videoImage;
+	GL_SetMultitexture (1);
 	GL_BindForce (image);
 
 	image->internalFormat = 3;
@@ -968,7 +962,7 @@ static void GL_FreeImage (image_t *image)
 
 	// mark slot as free
 	image->name[0] = 0;
-	image->hashNext = 0;
+	image->hashNext = NULL;
 	imageCount--;
 }
 
@@ -986,9 +980,9 @@ void GL_SetupGamma (void)
 	gl_config.deviceSupportsGamma = GLimp_HasGamma ();
 
 	overbright = gl_overBrightBits->integer;
-	if (!gl_state.fullscreen || !gl_config.deviceSupportsGamma) overbright = 0;
+	if (!gl_config.fullscreen || !gl_config.deviceSupportsGamma) overbright = 0;
 
-	if (gl_state.colorBits <= 16)
+	if (gl_config.colorBits <= 16)
 	{
 		if (overbright > 1)
 			overbright = 1;
@@ -1042,30 +1036,6 @@ void GL_SetupGamma (void)
 /*----------------- Imagelist -----------------*/
 
 
-typedef struct
-{
-	int		fmt;
-	char	*name;
-} fmtInfo_t;
-
-#define _STR(s) {s, #s}
-
-static const fmtInfo_t fmtInfo[] =
-{
-	{3,	"RGB"},
-	{4,	"RGBA"},
-	_STR(GL_RGB5),
-	_STR(GL_RGB8),
-	_STR(GL_RGBA4),
-	_STR(GL_RGBA8),
-	_STR(GL_RGB5_A1),
-	{GL_RGB4_S3TC,	"S3TC"}, //"RGB4_S3TC"},
-	{GL_RGBA_S3TC,	"RGBA_S3TC"},
-	{GL_RGBA4_S3TC,	"RGBA4_S3TC"},
-	{GL_COMPRESSED_RGB_ARB, "RGB_ARB"},
-	{GL_COMPRESSED_RGBA_ARB, "RGBA_ARB"}
-};
-
 static void Imagelist_f (void)
 {
 #if 0
@@ -1112,9 +1082,29 @@ static void Imagelist_f (void)
 #else
 
 	int		texels, i, idx, n;
+	char	*mask;
+
+	static struct {
+		int		fmt;
+		char	*name;
+	} fmtInfo[] = {
+#define _STR(s) {s, #s}
+		{3,	"RGB"},
+		{4,	"RGBA"},
+		_STR(GL_RGB5),
+		_STR(GL_RGB8),
+		_STR(GL_RGBA4),
+		_STR(GL_RGBA8),
+		_STR(GL_RGB5_A1),
+		{GL_RGB4_S3TC,	"S3TC"}, //"RGB4_S3TC"},
+		{GL_RGBA_S3TC,	"RGBA_S3TC"},
+		{GL_RGBA4_S3TC,	"RGBA4_S3TC"},
+		{GL_COMPRESSED_RGB_ARB, "RGB_ARB"},
+		{GL_COMPRESSED_RGBA_ARB, "RGBA_ARB"}
+#undef _STR
+	};
 	static char alphaTypes[3] = {' ', '1', '8'};
 	static char boolTypes[2] = {' ', '+'};
-	char	*mask;
 
 	if (Cmd_Argc () > 2)
 	{
@@ -1146,8 +1136,8 @@ static void Imagelist_f (void)
 		texels += img->internalWidth * img->internalHeight;
 
 		f = img->internalFormat;
-		fmt = "???";
-		for (fi = 0; fi < sizeof(fmtInfo)/sizeof(fmtInfo_t); fi++)
+		fmt = "^1???^7";
+		for (fi = 0; fi < sizeof(fmtInfo)/sizeof(fmtInfo[0]); fi++)
 			if (fmtInfo[fi].fmt == f)
 			{
 				fmt = fmtInfo[fi].name;
@@ -1232,7 +1222,7 @@ static void PerformScreenshot (qboolean jpeg)
 			*tmp = 0;
 		else	// no ".bsp"
 		{
-			Com_WPrintf ("PerformScreenshot: cannot get mapname\n");
+			Com_WPrintf ("R_PerformScreenshot: cannot get mapname\n");
 			return;
 		}
 		// create name
@@ -1345,14 +1335,14 @@ void GL_InitImages (void)
 	gl_defaultImage->flags |= IMAGE_SYSTEM;
 
 	/*----------- create white image -------------*/
-	memset (tex, 255, 8*8*4);
+/*	memset (tex, 255, 8*8*4);
 	gl_whiteImage = GL_CreateImage ("*white", tex, 8, 8, 0);
-	gl_whiteImage->flags |= IMAGE_SYSTEM;
+	gl_whiteImage->flags |= IMAGE_SYSTEM; */
 
-	/*---------- create scratch image ------------*/
+	/*---------- create video image ------------*/
 	memset (tex, 255, 16*16*4);
-	gl_scratchImage = GL_CreateImage ("*scratch", tex, 16, 16, 0);
-	gl_scratchImage->flags |= IMAGE_SYSTEM;
+	gl_videoImage = GL_CreateImage ("*video", tex, 16, 16, 0);
+	gl_videoImage->flags |= IMAGE_SYSTEM;
 
 	/*------ create identity light image ---------*/
 	y = gl_config.identityLightValue;
@@ -1413,23 +1403,23 @@ void GL_InitImages (void)
 	gl_particleImage->flags |= IMAGE_SYSTEM;
 
 	/*------------ create fog image --------------*/
-	p = tex;
+/*	p = tex;
 	for (y = 0; y < 32; y++)
 	{
 		float	yf;
 
-		yf = ((float)y + 0.5) / 32;
+		yf = (y + 0.5f) / 32;
 		for (x = 0; x < 256; x++)
 		{
 			float	xf, v;
 
-			xf = ((float)x + 0.5) / 256.0 - 1.0/512.0;
-			if (xf < 0 || yf < 1.0/32.0)
+			xf = (x + 0.5f) / 256;		//?? - 1.0f/512;
+			if (xf < 0 || yf < 1.0f/32)
 				v = 0;
 			else
 			{
-				if (yf < 31.0/32.0)
-					v = (yf - 1.0/32.0) * xf * 16/15;
+				if (yf < 31.0f/32)
+					v = (yf - 1.0f/32) * xf * 16/15;
 				else
 					v = xf;
 
@@ -1444,7 +1434,7 @@ void GL_InitImages (void)
 		}
 	}
 	gl_fogImage = GL_CreateImage ("*fog", tex, 256, 32, IMAGE_CLAMP|IMAGE_TRUECOLOR);	//?? mipmap
-	gl_fogImage->flags |= IMAGE_SYSTEM;
+	gl_fogImage->flags |= IMAGE_SYSTEM; */
 }
 
 
@@ -1481,37 +1471,60 @@ void GL_ShutdownImages (void)
 
 void GL_ShowImages (void)
 {
-	int		i, nx, ny, x, y, num;
+	int		i, nx, ny, x, y, num, numImg;
 	image_t	*img;
-	float	x0, y0, dx, dy;
+	float	dx, dy;
+	char	*mask, *name;
 
+	// count matches
+	if (!stricmp (gl_showImages->string, "1"))
+		mask = "*";
+	else
+		mask = gl_showImages->string;
+	numImg = 0;
+	for (i = 0; i < MAX_TEXTURES; i++)
+	{
+		name = imagesArray[i].name;
+		if (!name[0]) continue;
+		if (MatchWildcard (name, mask)) numImg++;
+	}
+	if (!numImg) return;		// no matched images
+
+	// setup OpenGL
 	GL_Set2DMode ();
+	GL_SetMultitexture (1);
 	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_NODEPTHTEST);
 	qglClear (GL_COLOR_BUFFER_BIT);
 	qglColor3f (1, 1, 1);
-//	qglFinish ();
 
+	// compute best grid size
 	for (i = 1; i < 10; i++)
 	{
 		nx = i * 4;
 		ny = i * 3;
-		if (imageCount <= nx*ny) break;
+		if (numImg <= nx*ny) break;
 	}
 
+	// display images
 	dx = vid.width / nx;
 	dy = vid.height / ny;
-	num = imageCount;
+	num = numImg;
 	img = &imagesArray[0];
-	for (y = 0; y < ny; y++)
+	for (y = 0; y < ny && num; y++)
 	{
-		if (!num) break;
+		float	y0, x0;
 
 		y0 = y * dy;
 		for (x = 0; x < nx; x++)
 		{
 			if (!num) break;
 
-			while (!img->name[0]) img++;
+			while (1)
+			{
+				name = img->name;
+				if (name[0] && MatchWildcard (name, mask)) break;
+				img++;
+			}
 
 			x0 = x * dx;
 

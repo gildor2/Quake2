@@ -287,8 +287,6 @@ extern	cvar_t	*m_side;
 
 extern	cvar_t	*freelook;
 
-extern	cvar_t	*cl_lightlevel;	//!! FIXME HACK
-
 extern	cvar_t	*cl_paused;
 extern	cvar_t	*cl_timedemo;
 
@@ -300,19 +298,7 @@ extern	cvar_t	*cl_newfx;
 extern	cvar_t	*cl_draw2d;
 extern	cvar_t	*r_sfx_pause;
 
-typedef struct
-{
-	int		key;				// so entities can reuse same entry
-	vec3_t	color;
-	vec3_t	origin;
-	float	radius;
-	float	die;				// stop lighting after this time
-	float	decay;				// drop this each second
-	float	minlight;			// don't add when contributing less
-} cdlight_t;
-
 extern	centity_t	cl_entities[MAX_EDICTS];
-extern	cdlight_t	cl_dlights[MAX_DLIGHTS];
 
 // the cl_parse_entities must be large enough to hold UPDATE_BACKUP frames of
 // entities, so that when a delta compressed message arives from the server
@@ -333,6 +319,7 @@ qboolean CL_CheckOrDownloadFile (char *filename);
 
 void	CL_AddNetgraph (void);
 
+#define MAX_SUSTAINS		32
 //ROGUE
 typedef struct cl_sustain_s
 {
@@ -349,16 +336,8 @@ typedef struct cl_sustain_s
 	void		(*think)(struct cl_sustain_s *self);
 } cl_sustain_t;
 
-#define MAX_SUSTAINS		32
-void CL_ParticleSteamEffect2(cl_sustain_t *self);
 
-void CL_TeleporterParticles (entity_state_t *ent);
-void CL_ParticleEffect (vec3_t org, vec3_t dir, int color, int count);
-void CL_ParticleEffect2 (vec3_t org, vec3_t dir, int color, int count);
-
-// RAFAEL
-void CL_ParticleEffect3 (vec3_t org, vec3_t dir, int color, int count);
-
+//---------------- particles ---------------------
 
 
 typedef struct
@@ -384,11 +363,36 @@ extern particle_t	*active_particles, *free_particles;
 extern particle_t	particles[MAX_PARTICLES];
 
 #define	PARTICLE_GRAVITY			80
-#define BLASTER_PARTICLE_COLOR		0xe0
-// PMM
+#define BLASTER_PARTICLE_COLOR		0xE0
 #define INSTANT_PARTICLE			-10000.0	//??
-// PGM
-// ========
+
+//--------------- lightstyles --------------------
+
+void CL_SetLightstyle (int i, char *s);
+void CL_RunLightStyles (void);
+extern lightstyle_t cl_lightstyles[MAX_LIGHTSTYLES];
+
+
+//----------------- dlights ----------------------
+
+typedef struct
+{
+	int		key;				// so entities can reuse same entry
+	vec3_t	color;
+	vec3_t	origin;
+	float	radius;
+	float	die;				// stop lighting after this time
+	float	decay;				// drop this each second
+	float	minlight;			// don't add when contributing less
+} cdlight_t;
+
+cdlight_t *CL_AllocDlight (int key);
+void CL_RunDLights (void);
+void CL_AddDLights (void);
+
+
+//------------------------------------------------
+
 
 void CL_ClearEffects (void);
 void CL_ClearTEnts (void);
@@ -400,6 +404,13 @@ void CL_FlagTrail (vec3_t start, vec3_t end, float color);
 
 // RAFAEL
 void CL_IonripperTrail (vec3_t start, vec3_t end);
+
+
+void CL_ParticleSteamEffect2(cl_sustain_t *self);
+void CL_TeleporterParticles (entity_state_t *ent);
+void CL_ParticleEffect (vec3_t org, vec3_t dir, int color, int count);
+void CL_ParticleEffect2 (vec3_t org, vec3_t dir, int color, int count);
+void CL_ParticleEffect3 (vec3_t org, vec3_t dir, int color, int count);
 
 // ========
 // PGM
@@ -438,15 +449,8 @@ void CL_ParseMuzzleFlash (void);
 void CL_ParseMuzzleFlash2 (void);
 void SmokeAndFlash(vec3_t origin);
 
-void CL_SetLightstyle (int i);
-
-void CL_RunDLights (void);
-void CL_RunLightStyles (void);
-
 void CL_AddEntities (void);
-void CL_AddDLights (void);
 void CL_AddTEnts (void);
-void CL_AddLightStyles (void);
 
 //=================================================
 
@@ -540,7 +544,6 @@ void V_Init (void);
 void V_RenderView( float stereo_separation );
 void V_AddEntity (entity_t *ent);
 void V_AddLight (vec3_t org, float intensity, float r, float g, float b);
-void V_AddLightStyle (int style, float r, float g, float b);
 
 //
 // cl_tent.c
@@ -561,7 +564,6 @@ trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);
 //
 // cl_fx.c
 //
-cdlight_t *CL_AllocDlight (int key);
 void CL_BigTeleportParticles (vec3_t org);
 void CL_RocketTrail (vec3_t start, vec3_t end, centity_t *old);
 void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags);

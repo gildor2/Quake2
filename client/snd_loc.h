@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -84,7 +84,7 @@ typedef struct
 	int			entnum;			// to allow overriding a specific sound
 	int			entchannel;		//
 	vec3_t		origin;			// only use if fixed_origin is set
-	vec_t		dist_mult;		// distance multiplier (attenuation/clipK)
+	float		dist_mult;		// distance multiplier (attenuation/clipK)
 	int			master_vol;		// 0-255 master volume
 	qboolean	fixed_origin;	// use origin instead of fetching entnum's origin
 	qboolean	autosound;		// from an entity->sound, cleared each frame

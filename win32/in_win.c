@@ -167,8 +167,6 @@ static void IN_FreeDirect (void)
 }
 
 
-//--static const GUID GUID_SysMouseAA = {0x6F1D2B60,0xD5A0,0x11CF,{0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00}};
-
 static qboolean IN_InitDirect (void)
 {
 	Com_Printf ("Initializing DirectInput\n");
@@ -222,6 +220,7 @@ static qboolean IN_InitDirect (void)
 
 	old_x = old_y = 0;
 
+	SetCursor (NULL);		// DirectX manual says: "cursor will disappear"; but, in some circusmances it appears ...
 	return true;
 }
 
@@ -615,9 +614,7 @@ void IN_Frame (void)
 	}
 
 
-	if (!cl.refresh_prepped
-		|| cls.key_dest == key_console
-		|| cls.key_dest == key_menu)
+	if (!cl.refresh_prepped || cls.key_dest == key_console || cls.key_dest == key_menu)
 	{
 		// temporarily deactivate if in fullscreen
 		if (!Cvar_VariableInt ("r_fullscreen"))
@@ -874,14 +871,10 @@ void IN_Commands (void)
 		povstate = 0;
 		if(ji.dwPOV != JOY_POVCENTERED)
 		{
-			if (ji.dwPOV == JOY_POVFORWARD)
-				povstate |= 0x01;
-			if (ji.dwPOV == JOY_POVRIGHT)
-				povstate |= 0x02;
-			if (ji.dwPOV == JOY_POVBACKWARD)
-				povstate |= 0x04;
-			if (ji.dwPOV == JOY_POVLEFT)
-				povstate |= 0x08;
+			if (ji.dwPOV == JOY_POVFORWARD)		povstate |= 0x01;
+			if (ji.dwPOV == JOY_POVRIGHT)		povstate |= 0x02;
+			if (ji.dwPOV == JOY_POVBACKWARD)	povstate |= 0x04;
+			if (ji.dwPOV == JOY_POVLEFT)		povstate |= 0x08;
 		}
 		// determine which bits have changed and key an auxillary event for each change
 		for (i=0 ; i < 4 ; i++)

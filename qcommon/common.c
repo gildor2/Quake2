@@ -1331,12 +1331,12 @@ byte	COM_BlockSequenceCRCByte (byte *base, int length, int sequence)
 
 float	frand(void)
 {
-	return (rand()&32767)* (1.0/32767);
+	return (rand()&32767) * (1.0f/32767);
 }
 
 float	crand(void)
 {
-	return (rand()&32767)* (2.0/32767) - 1;
+	return (rand()&32767) * (2.0f/32767) - 1;
 }
 
 void Key_Init (void);
@@ -1350,7 +1350,7 @@ Just throw a fatal error to
 test error shutdown procedures
 =============
 */
-void Com_Error_f (void)
+static void Com_Error_f (void)
 {
 	Com_Error (ERR_FATAL, "%s", Cmd_Argv(1));
 }

@@ -70,7 +70,7 @@ dleaf_t		map_leafs[MAX_MAP_LEAFS];
 int			emptyleaf, solidleaf;
 
 int			numleafbrushes;
-unsigned short		map_leafbrushes[MAX_MAP_LEAFBRUSHES];
+unsigned short map_leafbrushes[MAX_MAP_LEAFBRUSHES];
 
 int			numcmodels;
 cmodel_t	map_cmodels[MAX_MAP_MODELS];
@@ -82,13 +82,13 @@ int			numvisibility;
 byte		*map_visibility;
 
 int			numentitychars;
-char			*map_entitystring;
+char		*map_entitystring;
 
 int			numareas = 1;
 carea_t		map_areas[MAX_MAP_AREAS];
 
 int			numareaportals;
-dareaportal_t		*map_areaportals;
+dareaportal_t *map_areaportals;
 
 int			numclusters = 1;
 
@@ -113,8 +113,8 @@ int		c_traces, c_brush_traces;
 ** Support for Half-Life maps
 */
 
-maptype_t maptype;
-int firstnode; // 0->firstclipnode, this->firstnode
+static maptype_t maptype;
+static int firstnode; // 0->firstclipnode, this->firstnode
 
 
 /*
@@ -373,10 +373,9 @@ CMod_LoadNodes
 */
 static void CMod_LoadNodes (dnode_t *data, int size)
 {
-	dnode_t		*in;
-	int			child;
-	cnode_t		*out;
-	int			i;
+	dnode_t *in;
+	cnode_t *out;
+	int		i;
 
 	in = data;
 
@@ -593,12 +592,7 @@ CMod_LoadVisibility
 */
 static void CMod_LoadVisibility (dvis_t *data, int size)
 {
-	int		i;
-
 	numvisibility = size;
-//	if (l->filelen > MAX_MAP_VISIBILITY)
-//		Com_Error (ERR_DROP, "Map has too large visibility lump");
-
 	map_visibility = (byte *) data;
 }
 
@@ -630,7 +624,7 @@ HALF-LIFE map support
 
 void CMod_LoadHLSurfaces (lump_t *l)
 {
-	hl_texinfo_t	*in;
+/*	hl_texinfo_t	*in;
 	csurface_t	*out;
 	int			i, count;
 
@@ -656,7 +650,7 @@ void CMod_LoadHLSurfaces (lump_t *l)
 //??		strncpy (out->rname, in->texture, sizeof(out->rname)-1);
 		out->flags = LittleLong (in->flags);
 		out->value = 0; // LittleLong (in->value); - no in HL
-	}
+	} */
 }
 
 
@@ -682,7 +676,7 @@ static int HLContents[HL_CONTENTS] =
 
 void CMod_LoadHLLeafs (lump_t *l)
 {
-	hl_dleaf_t 	*in;
+/*	hl_dleaf_t 	*in;
 	dleaf_t 	*out;
 	int		i, count, p;
 
@@ -732,7 +726,7 @@ void CMod_LoadHLLeafs (lump_t *l)
 		}
 	}
 	if (emptyleaf == -1)
-		Com_Error (ERR_DROP, "Map does not have an empty leaf");
+		Com_Error (ERR_DROP, "Map does not have an empty leaf"); */
 }
 
 
@@ -766,7 +760,7 @@ void CMod_LoadHLVisibility (lump_t *l)
 
 void CMod_LoadHLSubmodels (lump_t *l)
 {
-	hl_dmodel_t	*in;
+/*	hl_dmodel_t	*in;
 	cmodel_t	*out;
 	int		i, j, count;
 
@@ -794,13 +788,13 @@ void CMod_LoadHLSubmodels (lump_t *l)
 		out->headnode = LittleLong (in->headnode[0]); // use only headnode[0]
 	}
 	if (map_cmodels[0].headnode)
-		Com_Error (ERR_DROP, "HL map has invalid headnode = %i", map_cmodels[0].headnode);
+		Com_Error (ERR_DROP, "HL map has invalid headnode = %i", map_cmodels[0].headnode); */
 }
 
 
 void CMod_LoadHLClipnodes (lump_t *l)
 {
-	hl_dclipnode_t	*in;
+/*	hl_dclipnode_t	*in;
 	cnode_t		*out;
 	int		i, j, count, child;
 	dleaf_t		*leaf;
@@ -847,14 +841,13 @@ void CMod_LoadHLClipnodes (lump_t *l)
 				leaf->numleafbrushes = 0;
 			}
 		}
-	}
-
+	} */
 }
 
 
 void CMod_LoadHLNodes (lump_t *l)
 {
-	hl_dnode_t	*in;
+/*	hl_dnode_t	*in;
 	cnode_t		*out;
 	int		i, j, count, child;
 
@@ -885,24 +878,24 @@ void CMod_LoadHLNodes (lump_t *l)
 			else
 				out->children[j] = child + firstnode; // node (shift to clipnodes count)
 		}
-	}
+	} */
 }
 
 
 void CMod_LoadHLAreas ()
 {
-	numareas = 1;
+/*	numareas = 1;
 	map_areas[0].numareaportals = 0;
 	map_areas[0].firstareaportal = 0;
 	map_areas[0].floodvalid = 0;
-	map_areas[0].floodnum = 0;
+	map_areas[0].floodnum = 0; */
 }
 
 
 // Generate brushes
 void CMod_LoadHLBrushes ()
 {
-	dleaf_t		*in;
+/*	dleaf_t		*in;
 	cbrush_t	*out;
 	int			i, count;
 
@@ -922,14 +915,14 @@ void CMod_LoadHLBrushes ()
 		in->firstleafbrush = i; // points to current structure
 		in->numleafbrushes = 1;
 		out->contents = in->contents;
-	}
+	} */
 }
 
 
 // Generate brushsides from FACES, MARKSURFACES, VERTEXES, EDGES and SURFEDGES
 void CMod_LoadHLBrushSides (lump_t *lf, lump_t *lm, lump_t *lv, lump_t *le, lump_t *lse)
 {
-	int		i;
+/*	int		i;
 	cbrush_t	*in;
 	cbrushside_t	*out;
 	dface_t 	*faces;
@@ -981,7 +974,7 @@ void CMod_LoadHLBrushSides (lump_t *lf, lump_t *lm, lump_t *lv, lump_t *le, lump
 
 		in->numsides = 0; //??
 
-		for (k = 0; k < n; k++ /*?? , out++, count++ */)
+		for (k = 0; k < n; k++) // out++, count++
 		{
 			int	j, num, n1, m;
 			dface_t	*face;
@@ -1009,14 +1002,14 @@ void CMod_LoadHLBrushSides (lump_t *lf, lump_t *lm, lump_t *lv, lump_t *le, lump
 			in->numsides++; //??
 		}
 	}
-	numbrushsides = count;
+	numbrushsides = count; */
 }
 
 
 // generate leafbrushes
 void CMod_LoadHLLeafBrushes ()
 {
-	int	i, count;
+/*	int	i, count;
 
 	count = numleafs;
 
@@ -1026,7 +1019,7 @@ void CMod_LoadHLLeafBrushes ()
 	numleafbrushes = count;
 
 	for (i = 0; i < count; i++)
-		map_leafbrushes[i] = i;
+		map_leafbrushes[i] = i; */
 }
 
 /*
@@ -1052,9 +1045,9 @@ void CM_LoadHLMap (char *name, void *buf)
 	CMod_LoadHLBrushes (); // generate from LEAFS
 	CMod_LoadHLBrushSides (&header->lumps[HL_LUMP_FACES],
 		&header->lumps[HL_LUMP_MARKSURFACES],
-                &header->lumps[HL_LUMP_VERTEXES],
-                &header->lumps[HL_LUMP_EDGES],
-                &header->lumps[HL_LUMP_SURFEDGES]);
+		&header->lumps[HL_LUMP_VERTEXES],
+		&header->lumps[HL_LUMP_EDGES],
+		&header->lumps[HL_LUMP_SURFEDGES]);
 	CMod_LoadHLLeafBrushes ();
 
 	CMod_LoadHLSubmodels (&header->lumps[HL_LUMP_MODELS]);
@@ -1084,9 +1077,6 @@ Loads in the map and all submodels
 */
 cmodel_t *CM_LoadMap (char *name, qboolean clientload, unsigned *checksum)
 {
-	unsigned	*buf;
-	int		i;
-	int		length;
 	static unsigned	last_checksum;
 	bspfile_t	*bsp;
 
@@ -1155,52 +1145,48 @@ cmodel_t *CM_LoadMap (char *name, qboolean clientload, unsigned *checksum)
 CM_InlineModel
 ==================
 */
-cmodel_t	*CM_InlineModel (char *name)
+cmodel_t *CM_InlineModel (char *name)
 {
 	int		num;
 
-	if (!name || name[0] != '*')
-		Com_Error (ERR_DROP, "CM_InlineModel: bad name");
+	if (!name || name[0] != '*') Com_Error (ERR_DROP, "CM_InlineModel: bad name");
+
 	num = atoi (name+1);
-	if (num < 1 || num >= numcmodels)
-		Com_Error (ERR_DROP, "CM_InlineModel: bad number");
+	if (num < 1 || num >= numcmodels) Com_Error (ERR_DROP, "CM_InlineModel: bad number");
 
 	return &map_cmodels[num];
 }
 
-int		CM_NumClusters (void)
+int CM_NumClusters (void)
 {
 	return numclusters;
 }
 
-int		CM_NumInlineModels (void)
+int CM_NumInlineModels (void)
 {
 	return numcmodels;
 }
 
-char	*CM_EntityString (void)
+char *CM_EntityString (void)
 {
 	return map_entitystring;
 }
 
-int		CM_LeafContents (int leafnum)
+int CM_LeafContents (int leafnum)
 {
-	if (leafnum < 0 || leafnum >= numleafs)
-		Com_Error (ERR_DROP, "CM_LeafContents: bad number");
+	if (leafnum < 0 || leafnum >= numleafs) Com_Error (ERR_DROP, "CM_LeafContents: bad number");
 	return map_leafs[leafnum].contents;
 }
 
-int		CM_LeafCluster (int leafnum)
+int CM_LeafCluster (int leafnum)
 {
-	if (leafnum < 0 || leafnum >= numleafs)
-		Com_Error (ERR_DROP, "CM_LeafCluster: bad number");
+	if (leafnum < 0 || leafnum >= numleafs) Com_Error (ERR_DROP, "CM_LeafCluster: bad number");
 	return map_leafs[leafnum].cluster;
 }
 
-int		CM_LeafArea (int leafnum)
+int CM_LeafArea (int leafnum)
 {
-	if (leafnum < 0 || leafnum >= numleafs)
-		Com_Error (ERR_DROP, "CM_LeafArea: bad number");
+	if (leafnum < 0 || leafnum >= numleafs) Com_Error (ERR_DROP, "CM_LeafArea: bad number");
 	return map_leafs[leafnum].area;
 }
 
@@ -1485,16 +1471,15 @@ BOX TRACING
 ===============================================================================
 */
 
-// 1/32 epsilon to keep floating point happy
-#define	DIST_EPSILON	(0.03125)
+#define	DIST_EPSILON	(1.0f/32)
 
-vec3_t	trace_start, trace_end;
-vec3_t	trace_mins, trace_maxs;
-vec3_t	trace_extents;
+static vec3_t	trace_start, trace_end;
+static vec3_t	trace_mins, trace_maxs;
+static vec3_t	trace_extents;
 
-trace_t	trace_trace;
-int		trace_contents;
-qboolean	trace_ispoint;		// optimized case
+static trace_t	trace_trace;
+static int		trace_contents;
+static qboolean	trace_ispoint;		// optimized case
 
 
 /*
@@ -1515,9 +1500,9 @@ typedef struct
 	int	leaf; // leaf for p2f point
 } trace_part_t;
 
-trace_part_t trace_parts[MAX_HL_TRACE];
-float hl_max_frac;
-int trace_parts_start;
+static trace_part_t trace_parts[MAX_HL_TRACE];
+static float hl_max_frac;
+static int trace_parts_start;
 
 
 //!!! Remove TraceBuf_Dump()::
@@ -1895,10 +1880,7 @@ static void CM_TraceToHLLeaf (int leafnum, float p1f, float p2f)
 
 static void CM_TestInHLLeaf (int leafnum)
 {
-	int			k;
-	int			brushnum;
 	dleaf_t		*leaf;
-	cbrush_t	*b;
 
 	leaf = &map_leafs[leafnum];
 	if ( !(leaf->contents & trace_contents))
@@ -1916,9 +1898,9 @@ static void CM_TestInHLLeaf (int leafnum)
 static void CM_FinishHLTrace (void)
 {
 	trace_part_t	*p;
-	vec3_t	mid;//, end;
-	int	i;
-	float	frac;
+//	vec3_t	mid;//, end;
+//	int	i;
+//	float	frac;
 
 	p = TraceBuf_FindPart (trace_trace.fraction);
 	if (!p)
@@ -2492,7 +2474,7 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int he
 	if (!numnodes)	// map not loaded
 		return trace_trace;
 
-	if (maptype == map_hl)
+/*	if (maptype == map_hl)
 	//!!!!
 	{
 		char buf[256];
@@ -2540,7 +2522,7 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int he
 		vec3_t	c1, c2;
 		int		topnode;
 
-		if (maptype == map_hl) //!!!
+/*		if (maptype == map_hl) //!!!
 			re.DrawTextRight ("CM_TestInLeaf()",0.5,0.5,1);
 		//==*/
 
@@ -2553,16 +2535,16 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int he
 		numleafs = CM_BoxLeafnums_headnode (c1, c2, leafs, 1024, headnode, &topnode);
 		for (i=0 ; i<numleafs ; i++)
 		{
-			if (maptype == map_hl)
+/*			if (maptype == map_hl)
 				CM_TestInHLLeaf (leafs[i]);
-			else
+			else */
 				CM_TestInLeaf (leafs[i]);
 			if (trace_trace.allsolid) // always set when 1st intersection bt CM_TestBoxInBrush()
 				break;
 		}
 		VectorCopy (start, trace_trace.endpos);
 
-		if (maptype == map_hl)
+/*		if (maptype == map_hl)
 		{//!!!!
 			char buf[256];
 			Com_sprintf (buf,sizeof(buf),"  *** CM_BoxTrace_End: frac=%g  cont=%X",
@@ -2598,13 +2580,13 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int he
 	}
 
 	// general sweeping through world
-	if (maptype == map_hl)
+/*	if (maptype == map_hl)
 	{
 		TraceBuf_Init ();
 		CM_RecursiveHLHullCheck (headnode, 0, 1, start, end);
 		CM_FinishHLTrace ();
 	}
-	else
+	else */
 		CM_RecursiveHullCheck (headnode, 0, 1, start, end);
 
 	if (trace_trace.fraction == 1)
@@ -2617,7 +2599,7 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int he
 			trace_trace.endpos[i] = start[i] + trace_trace.fraction * (end[i] - start[i]);
 	}
 
-	if (maptype == map_hl)
+/*	if (maptype == map_hl)
 	{//!!
 		char buf[256];
 		Com_sprintf (buf,sizeof(buf),"  *** CM_BoxTrace_End: startsolid=%d  allsolid=%d  frac=%g  cont=%X  surf=%s",
@@ -2726,7 +2708,7 @@ void CM_DecompressVis (byte *in, byte *out)
 	byte	*out_p;
 	int		row;
 
-	row = (numclusters+7)>>3;
+	row = (numclusters + 7) >> 3;
 	out_p = out;
 
 	if (!in || !numvisibility)
@@ -2752,7 +2734,7 @@ void CM_DecompressVis (byte *in, byte *out)
 		if ((out_p - out) + c > row)
 		{
 			c = row - (out_p - out);
-			Com_DPrintf ("warning: Vis decompression overrun\n");
+			Com_DPrintf ("WARNING: Vis decompression overrun\n");
 		}
 		while (c)
 		{
@@ -2770,7 +2752,7 @@ byte *CM_ClusterPVS (int cluster)
 	int	i;
 
 	if (cluster <= -1)
-		memset (pvsrow, 0, (numclusters+7)>>3);
+		memset (pvsrow, 0, (numclusters + 7) >> 3);
 	else
 	{
 		i = ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PVS];
@@ -2787,7 +2769,7 @@ byte *CM_ClusterPHS (int cluster)
 	int	i;
 
 	if (cluster <= -1)
-		memset (phsrow, 0, (numclusters+7)>>3);
+		memset (phsrow, 0, (numclusters + 7) >> 3);
 	else
 	{
 		i = ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PHS];
@@ -2823,7 +2805,7 @@ static void FloodArea_r (carea_t *area, int floodnum)
 	area->floodnum = floodnum;
 	area->floodvalid = floodvalid;
 	p = &map_areaportals[area->firstareaportal];
-	for (i=0 ; i<area->numareaportals ; i++, p++)
+	for (i = 0; i < area->numareaportals; i++, p++)
 	{
 		if (portalopen[p->portalnum])
 			FloodArea_r (&map_areas[p->otherarea], floodnum);
@@ -2894,11 +2876,9 @@ This is used by the client refreshes to cull visibility
 */
 int CM_WriteAreaBits (byte *buffer, int area)
 {
-	int		i;
-	int		floodnum;
-	int		bytes;
+	int		i, floodnum, bytes;
 
-	bytes = (numareas+7)>>3;
+	bytes = (numareas + 7) >> 3;
 
 	if (map_noareas->integer)
 	{	// for debugging, send everything
@@ -2909,10 +2889,10 @@ int CM_WriteAreaBits (byte *buffer, int area)
 		memset (buffer, 0, bytes);
 
 		floodnum = map_areas[area].floodnum;
-		for (i=0 ; i<numareas ; i++)
+		for (i = 0; i < numareas; i++)
 		{
 			if (map_areas[i].floodnum == floodnum || !area)
-				buffer[i>>3] |= 1<<(i&7);
+				buffer[i >> 3] |= 1 << (i & 7);
 		}
 	}
 
@@ -2942,7 +2922,6 @@ and recalculates the area connections
 */
 void CM_ReadPortalState (FILE *f)
 {
-//--	FS_Read (portalopen, sizeof(portalopen), f);
 	fread (portalopen, sizeof(portalopen), 1, f);
 	FloodAreaConnections ();
 }
@@ -2955,6 +2934,7 @@ Returns true if any leaf under headnode has a cluster that
 is potentially visible
 =============
 */
+// This function used only from sv_ents.c :: SV_BuildClientFrame()
 qboolean CM_HeadnodeVisible (int nodenum, byte *visbits)
 {
 	int		leafnum;

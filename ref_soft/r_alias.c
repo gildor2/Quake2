@@ -900,7 +900,7 @@ void R_AliasSetupLighting (void)
 
 	// save off light value for server to look at (BIG HACK!)
 	if ( currententity->flags & RF_WEAPONMODEL )
-		r_lightlevel->value = 150.0 * light[0];
+		sw_lightlevel = 150.0 * light[0];
 
 
 	if ( currententity->flags & RF_MINLIGHT )

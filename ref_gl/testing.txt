@@ -1,8 +1,9 @@
 - gl_showsky == 2 -> show sky surfaces (restart required)
-- gl_showtris: 1 + (1 -- use depthtest) + (2 -- show polys) + (4 -- flash color)
+- gl_showtris: 1 + (1 -- use depthtest) + (2 -- show polys (not tris)) + (4 -- flash color)
 - gl_showbboxes (2 -- flash color)
-- imagelist <any_text> -- show image list AND its hash distribution
 - gl_finish == 2 -> glFinish() after all draw stages
 - "imagelist *" - show hash distribution (collisions)
 - gl_logFile == 2 -> log only 1 frame
 - r_surfinfo == 2 -> do not trace entities
+- gl_showImages <mask>|<1==*><0>
+- r_lightmap && r_fullbright -> wireframe drawing (within lightmap and texture)

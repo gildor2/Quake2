@@ -7,15 +7,8 @@
 
 /* LATER: replace (almost) all ap.time -> shader.time (or global "shaderTime") ??
  * (because time may be take (if engine will be extended) from entity)
- * and: all gl_refdef-> something (flags & RDF_NOWORLDMODEL !!)
  */
 
-
-typedef union
-{
-	byte	c[4];
-	int		rgba;
-} bufColor_t;
 
 typedef struct
 {
@@ -35,27 +28,44 @@ typedef struct
 } bufVertex_t;
 
 
-/*------------- Command buffer -------------*/
+/*------------- Command buffer ---------------*/
 
-byte		backendCommands[MAX_BACKEND_COMMANDS];
-int			backendCmdSize;
+byte	backendCommands[MAX_BACKEND_COMMANDS];
+int		backendCmdSize;
+byte	*lastBackendCommand;
 
-bufColor_t	currentColor;
-
-shader_t	*currentShader;
-refEntity_t *currentEntity;
+static shader_t		*currentShader;
+static refEntity_t	*currentEntity;
 
 
 /*---------- Dynamic surface buffer ----------*/
 
 #define MAX_DYNAMIC_BUFFER		(128 * 1024)
-byte	dynamicBuffer[MAX_DYNAMIC_BUFFER];
-int		dynamicBufferSize;
+static byte	dynamicBuffer[MAX_DYNAMIC_BUFFER];
+static int	dynamicBufferSize;
+
+
+void *GL_AllocDynamicMemory (int size)
+{
+	void	*ptr;
+
+	if (dynamicBufferSize + size > MAX_DYNAMIC_BUFFER)
+	{
+		Com_DPrintf ("R_AllocDynamicMemory(%d) failed\n", size);
+		return NULL;
+	}
+
+	ptr = &dynamicBuffer[dynamicBufferSize];
+	dynamicBufferSize += size;
+
+	return ptr;
+}
 
 
 /*-------------- Vertex arrays ---------------*/
 
 
+// per-shader limits
 #define MAX_VERTEXES	2048
 #define MAX_INDEXES		(MAX_VERTEXES*6)
 
@@ -63,13 +73,14 @@ int		dynamicBufferSize;
 
 typedef struct
 {
-	bufColor_t		color[MAX_VERTEXES];
-	bufTexCoord_t	texCoord0[MAX_VERTEXES], texCoord1[MAX_VERTEXES];
 	bufVertex_t		verts[MAX_VERTEXES];
+	color_t			color[MAX_VERTEXES];
+	bufTexCoord_t	texCoord[0][MAX_VERTEXES];
 } vertexBuffer_t;
 
 static vertexBuffer_t	*vb, *agpBuffer;// pointers to current buffer and to all buffers
 static int				currentBuffer;	// index of the current buffer
+static int				vbSize;			// size of 1 buffer (depends on multitexturing ability)
 
 static GLuint fences[NUM_VERTEX_BUFFERS];
 
@@ -94,20 +105,27 @@ static void SwitchVertexArray (void)
 
 
 static int				indexesArray[MAX_INDEXES];
-static bufColor_t		srcVertexColor[MAX_VERTEXES];
+static color_t			srcVertexColor[MAX_VERTEXES];
 static bufTexCoordSrc_t	srcTexCoord[MAX_VERTEXES];
 static bufVertex_t		normals[MAX_VERTEXES];
 
 static int numVerts, numIndexes;
 
 
-/*--- Tables for fast wave function computation ---*/
+/*--- Tables for fast periodic function computation ---*/
 
-static float sinTable[1024];
-static float squareTable[1024];
-static float triangleTable[1024];
-static float sawtoothTable[1024];
-static float inverseSwatoothTable[1024];
+#define TABLE_SIZE	1024
+#define TABLE_MASK	(TABLE_SIZE-1)
+
+static float sinTable[TABLE_SIZE], squareTable[TABLE_SIZE], triangleTable[TABLE_SIZE],
+			 sawtoothTable[TABLE_SIZE], inverseSwatoothTable[TABLE_SIZE];
+
+static float *mathFuncs[5] = {
+	sinTable, squareTable, triangleTable, sawtoothTable, inverseSwatoothTable
+};
+
+#define PERIODIC_FUNC(tbl,val)		tbl[Q_ftol((val)*TABLE_SIZE) & TABLE_MASK]
+
 
 static float sqrtTable[256];
 static int   noiseTablei[256];
@@ -118,23 +136,24 @@ static void InitFuncTables (void)
 {
 	int		i, n;
 
-	srand (1001);
-
-	for (i = 0; i < 1024; i++)
+	for (i = 0; i < TABLE_SIZE; i++)
 	{
-		if (i < 512)
+		float	j;
+
+		j = i;			// just to avoid "(float)i"
+		if (i < TABLE_SIZE/2)
 			squareTable[i] = -1;
 		else
 			squareTable[i] = 1;
 
-		sinTable[i] = sin (i / 512.0f * M_PI);		// 0 -- 0, 1024 -- 2*pi
-		sawtoothTable[i] = i / 1024.0f;
-		inverseSwatoothTable[i] = 1 - i / 1024.0f;
+		sinTable[i] = sin (j / (TABLE_SIZE/2) * M_PI);		// 0 -- 0, last -- 2*pi
+		sawtoothTable[i] = j / TABLE_SIZE;
+		inverseSwatoothTable[i] = 1 - j / TABLE_SIZE;
 
-		n = (i + 256) & 0x3FF;						// make range -1..1..-1
-		if (n >= 512)
-			n = 1024 - n;
-		triangleTable[i] = (n - 256) / 256.0f;
+		n = (i + TABLE_SIZE/4) & TABLE_MASK;				// make range -1..1..-1
+		if (n >= TABLE_SIZE/2)
+			n = TABLE_SIZE - n;
+		triangleTable[i] = (float)(n - TABLE_SIZE/4) / (TABLE_SIZE/4);
 	}
 
 	for (i = 0; i < 256; i++)
@@ -145,34 +164,6 @@ static void InitFuncTables (void)
 		n = rand ();
 		noiseTablef[i] = ((float)n / RAND_MAX) * 2.0f - 1.0f;	// range -1..1
 	}
-}
-
-
-static float *TableForFunc (waveFunc_t func)
-{
-#if 1
-	static float *funcs[5] = {
-		sinTable, squareTable, triangleTable, sawtoothTable, inverseSwatoothTable
-	};
-
-	return funcs[func];
-#else
-	switch (func)
-	{
-	case FUNC_SIN:
-		return sinTable;
-	case FUNC_SQUARE:
-		return squareTable;
-	case FUNC_TRIANGLE:
-		return triangleTable;
-	case FUNC_SAWTOOTH:
-		return sawtoothTable;
-	case FUNC_INVERSESAWTOOTH:
-		return inverseSwatoothTable;
-	}
-	Com_Error (ERR_FATAL, "R_TableForFunc: invalid function %d", func);
-	return NULL;			// never; return something (for compiler)
-#endif
 }
 
 
@@ -188,61 +179,6 @@ static int numSurfacesTotal;
 /*--------------- Draw portal --------------*/
 
 static viewPortal_t ap;	// active portal
-
-/*------------------------------------------*/
-
-
-// forward declaration for skybox
-static void AddSkySurfaces (void);
-
-
-static void SetCurrentShader (shader_t *shader)	//?? + int fogNum
-{
-	if (numVerts && numIndexes)
-		// we can get situation, when verts==2 and inds==0 due to geometry simplification -- this is OK (??)
-		// sample: map "actmet", inside building with rotating glass doors, floor 2: exotic lamp (nested cilinders with alpha)
-	{
-		DrawTextLeft ("SetCurrentShader() without flush!",1,0,0);
-		Com_WPrintf ("SetCurrentShader(%s) without flush (old: %s, %d verts, %d inds)\n",
-			shader->name, currentShader->name, numVerts, numIndexes);
-	}
-	currentShader = shader;
-	numVerts = numIndexes = 0;		// clear buffer
-	//?? setup shader time
-}
-
-
-static void GenericStageIterator (void);
-
-
-static void RB_EndSurface (void)
-{
-//	DrawTextLeft(va("EndSurface(%s,%d,%d)\n",currentShader->name,numVerts,numIndexes),1,1,1);//!!!
-	if (!numIndexes) return;	// buffer is empty
-
-//	if (numIndexes > MAX_INDEXES)
-//		Com_Error (ERR_FATAL, "RB_EndSurface: MAX_INDEXES hit");
-//	if (numVerts > MAX_VERTEXES)
-//		Com_Error (ERR_FATAL, "RB_EndSurface: MAX_VERTEXES hit");
-
-	GenericStageIterator ();
-	SwitchVertexArray ();
-	WaitVertexArray ();
-
-	numVerts = numIndexes = 0;
-}
-
-
-static void RB_CheckOverflow (int verts, int inds)
-{
-	if (numIndexes + inds > MAX_INDEXES || numVerts + verts > MAX_VERTEXES)
-		RB_EndSurface ();
-
-	if (verts > MAX_VERTEXES)
-		Com_Error (ERR_FATAL, "RB_CheckOverflow: verts > MAX_VERTEXES");
-	if (inds > MAX_INDEXES)
-		Com_Error (ERR_FATAL, "RB_CheckOverflow: inds > MAX_INDEXES");
-}
 
 
 /*----- Process deforms, ...gens etc. ------*/
@@ -264,11 +200,11 @@ static void ProcessShaderDeforms (shader_t *sh)
 		switch (deform->type)
 		{
 		case DEFORM_WAVE:
-			table = TableForFunc (deform->wave.type);
+			table = mathFuncs[deform->wave.type];
 			t = deform->wave.freq * ap.time + deform->wave.phase;
 			for (j = 0, vec = vb->verts, norm = normals; j < numVerts; j++, vec++, norm++)
 			{
-				f = table[Q_ftol((t + deform->waveDiv * (vec->xyz[0] + vec->xyz[1] + vec->xyz[2])) * 1024) & 0x3FF]
+				f = PERIODIC_FUNC(table, t + deform->waveDiv * (vec->xyz[0] + vec->xyz[1] + vec->xyz[2]))
 					* deform->wave.amp + deform->wave.base;
 				vec->xyz[0] += f * norm->xyz[0];
 				vec->xyz[1] += f * norm->xyz[1];
@@ -286,14 +222,11 @@ static void GenerateColorArray (shaderStage_t *st)
 	int		i, rgba;
 	byte	a;
 
-	//!! add support for RGBGEN_(CONST,ENTITY,ONEMINUSENTITY) + ALPHAGEN_(CONST,ENTITY,ONEMINUSENTITY) at one time
-
 	/*---------- rgbGen -----------*/
 	switch (st->rgbGenType)
 	{
 	case RGBGEN_CONST:
-		rgba = (Q_ftol(st->rgbGenConst[0]*255.0f) << 0) + (Q_ftol(st->rgbGenConst[1]*255.0f) << 8) +
-			   (Q_ftol(st->rgbGenConst[2]*255.0f) << 16) + (Q_ftol(st->alphaGenConst*255.0f) << 24);
+		rgba = st->rgbaConst.rgba;
 		for (i = 0; i < numVerts; i++)
 			vb->color[i].rgba = rgba;
 		break;
@@ -304,36 +237,30 @@ static void GenerateColorArray (shaderStage_t *st)
 	case RGBGEN_VERTEX:
 		for (i = 0; i < numVerts; i++)
 		{
-			vb->color[i].c[0] = srcVertexColor[i].c[0] * gl_config.identityLightValue >> 8;
-			vb->color[i].c[1] = srcVertexColor[i].c[1] * gl_config.identityLightValue >> 8;
-			vb->color[i].c[2] = srcVertexColor[i].c[2] * gl_config.identityLightValue >> 8;
+			vb->color[i].c[0] = srcVertexColor[i].c[0] >> gl_config.overbrightBits;
+			vb->color[i].c[1] = srcVertexColor[i].c[1] >> gl_config.overbrightBits;
+			vb->color[i].c[2] = srcVertexColor[i].c[2] >> gl_config.overbrightBits;
 		}
 		break;
 	case RGBGEN_ONE_MINUS_VERTEX:
 		for (i = 0; i < numVerts; i++)
 		{
-			vb->color[i].c[0] = 255 - (srcVertexColor[i].c[0] * gl_config.identityLightValue >> 8);
-			vb->color[i].c[1] = 255 - (srcVertexColor[i].c[1] * gl_config.identityLightValue >> 8);
-			vb->color[i].c[2] = 255 - (srcVertexColor[i].c[2] * gl_config.identityLightValue >> 8);
+			vb->color[i].c[0] = (255 - srcVertexColor[i].c[0]) >> gl_config.overbrightBits;
+			vb->color[i].c[1] = (255 - srcVertexColor[i].c[1]) >> gl_config.overbrightBits;
+			vb->color[i].c[2] = (255 - srcVertexColor[i].c[2]) >> gl_config.overbrightBits;
 		}
 		break;
-	//!! other types
+	// other types: LIGHTING_DIFFUSE, FOG
 	}
 
-	if ((st->rgbGenType == RGBGEN_CONST && st->alphaGenType == ALPHAGEN_CONST) ||
-		(st->rgbGenType == RGBGEN_EXACT_VERTEX && st->alphaGenType == ALPHAGEN_VERTEX))
+	if (st->rgbGenType == RGBGEN_EXACT_VERTEX && st->alphaGenType == ALPHAGEN_VERTEX)
 		return;	// alpha is already set
 
 	/*--------- alphaGen ----------*/
 	switch (st->alphaGenType)
 	{
 	case ALPHAGEN_CONST:
-		a = Q_ftol(255.0f * st->alphaGenConst);
-		for (i = 0; i < numVerts; i++)
-			vb->color[i].c[3] = a;
-		break;
-	case ALPHAGEN_ENTITY:
-		a = currentEntity->shaderRGBA[3];
+		a = st->rgbaConst.c[3];
 		for (i = 0; i < numVerts; i++)
 			vb->color[i].c[3] = a;
 		break;
@@ -341,24 +268,26 @@ static void GenerateColorArray (shaderStage_t *st)
 		for (i = 0; i < numVerts; i++)
 			vb->color[i].c[3] = srcVertexColor[i].c[3];
 		break;
-	//!! other types
+	case ALPHAGEN_ONE_MINUS_VERTEX:
+		for (i = 0; i < numVerts; i++)
+			vb->color[i].c[3] = 255 - srcVertexColor[i].c[3];
+		break;
+	// other types: LIGHTING_SPECULAR, PORTAL
 	}
 }
 
 
-static void GenerateTexCoordArray (shaderStage_t *st)
+static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 {
 	int				j;
 	tcModParms_t	*tcmod;
 	bufTexCoord_t	*dst, *dst2;
 	bufTexCoordSrc_t *src;
 
-	dst = vb->texCoord0;
-//	else	//?? multitexturing !
-//		dst = vb->texCoord1;
+	dst = vb->texCoord[tmu];
 
 	src = srcTexCoord;
-		dst2 = dst;		// save this for tcMod
+	dst2 = dst;		// save this for tcMod
 
 	// process tcGen
 	switch (st->tcGenType)
@@ -377,7 +306,7 @@ static void GenerateTexCoordArray (shaderStage_t *st)
 			dst->tex[1] = src->lm[1];
 		}
 		break;
-	//!! other types
+	// other types: ENVIRONMENT, VECTOR, ZERO (?), FOG (?)
 	}
 
 	// process tcMod
@@ -405,11 +334,14 @@ static void GenerateTexCoordArray (shaderStage_t *st)
 			f2 = tcmod->wave.amp;
 			for (k = 0; k < numVerts; k++, dst++)
 			{
-				float	*vec;
+				float	*vec, f;
 
 				vec = &vb->verts[k].xyz[0];
-				dst->tex[0] += sinTable[Q_ftol(((vec[0] + vec[2]) / 1024.0f + f1) * 1024) & 0x3FF] * f2;	// Q3: vec[0] + vec[2]
-				dst->tex[1] += sinTable[Q_ftol(((vec[1] + vec[2]) / 1024.0f + f1) * 1024) & 0x3FF] * f2;	// Q3: vec[1]
+				f = PERIODIC_FUNC(sinTable, (vec[0] + vec[1] + vec[2]) / TABLE_SIZE + f1) * f2;
+				dst->tex[0] += f;
+				dst->tex[1] += f;
+//				dst->tex[0] += PERIODIC_FUNC(sinTable, (vec[0] + vec[2]) / TABLE_SIZE + f1) * f2;	// Q3: vec[0] + vec[2]
+//				dst->tex[1] += PERIODIC_FUNC(sinTable, (vec[1] + vec[2]) / TABLE_SIZE + f1) * f2;	// Q3: vec[1]
 			}
 			break;
 		case TCMOD_WARP:
@@ -417,8 +349,8 @@ static void GenerateTexCoordArray (shaderStage_t *st)
 			{
 				f1 = dst->tex[0];
 				f2 = dst->tex[1];
-				dst->tex[0] = f1 / 64.0f + sinTable[Q_ftol((f2 / 16.0f + ap.time) / (2.0f * M_PI) * 1024) & 0x3FF] / 16.0f;
-				dst->tex[1] = f2 / 64.0f + sinTable[Q_ftol((f1 / 16.0f + ap.time) / (2.0f * M_PI) * 1024) & 0x3FF] / 16.0f;
+				dst->tex[0] = f1 / 64.0f + PERIODIC_FUNC(sinTable, (f2 / 16.0f + ap.time) / (2.0f * M_PI)) / 16.0f;
+				dst->tex[1] = f2 / 64.0f + PERIODIC_FUNC(sinTable, (f1 / 16.0f + ap.time) / (2.0f * M_PI)) / 16.0f;
 			}
 			break;
 		case TCMOD_SCALE:
@@ -430,40 +362,227 @@ static void GenerateTexCoordArray (shaderStage_t *st)
 				dst->tex[1] *= f2;
 			}
 			break;
-		//!! other types
+		// other types: TRANSFORM, ENTITYTRANSLATE, STRETCH, ROTATE
 		}
 	}
 }
 
 
-/*------------ Stage iterators -------------*/
+/*----------------- Shader visualization -------------------*/
 
 
-static void BindStageImage (shaderStage_t *st)
+// should rename "temp", "tmp" ??
+typedef struct
 {
-	if (st->numAnimTextures == 1)
-		GL_Bind (st->mapImage[0]);
-	else
-		GL_Bind (st->mapImage[Q_ftol(ap.time * st->animMapFreq) % st->numAnimTextures]);	//!! use shaderTime/entityTime ?
+	int		tmu;
+	int		texEnv;			// REPLACE/MODILATE/ADD or COMBINE/COMBINE_NV (uses st.glState.blend)
+	qboolean constRGBA;
+	qboolean identityRGBA;
+	shaderStage_t st;		// modified copy of original stage (or auto-generated stage)
+} tempStage_t;
+
+typedef struct
+{
+	int		glState;
+	int		numStages;
+	tempStage_t *stages;
+	shaderStage_t *colorStage;	//?? remove if it is always the same as "stages[0].st"
+} renderPass_t;
+
+static tempStage_t	tmpSt[MAX_SHADER_STAGES];
+static int			numTmpStages;
+static renderPass_t renderPasses[MAX_SHADER_STAGES];
+static int			numRenderPasses;
+//?? move "currentShader here
+
+
+#define DEBUG_FULLBRIGHT	1
+#define DEBUG_LIGHTMAP		2
+
+static void PreprocessShader (shader_t *sh)
+{
+	int		i, debugMode, glState, tmuUsed, tmuLeft;
+	shaderStage_t *stage, **pstage;
+	tempStage_t *st;
+	renderPass_t *pass;
+
+	glState = -1;
+	debugMode = 0;
+	if (r_fullbright->integer) debugMode |= DEBUG_FULLBRIGHT;
+	if (r_lightmap->integer) debugMode |= DEBUG_LIGHTMAP;
+
+	//?? dlight, dynamic lightmap (when gl_dynamic && !r_fullbright)
+	st = tmpSt;
+ 	numTmpStages = 0;
+	for (i = 0, pstage = sh->stages; i < sh->numStages; i++, pstage++)
+	{
+		stage = *pstage;
+
+		/*---------- fullbright/lightmap ---------------*/
+		if (debugMode == DEBUG_FULLBRIGHT && stage->isLightmap)
+		{
+			glState = stage->glState;
+			continue;
+		}
+		if (debugMode == DEBUG_LIGHTMAP && currentShader->lightmapNumber >= 0 && !stage->isLightmap)
+			break;
+
+		/*--------------- copy stage -------------------*/
+		memcpy (&st->st, stage, sizeof(shaderStage_t));
+		// select stage image from animation
+		if (stage->numAnimTextures > 1)
+			st->st.mapImage[0] = stage->mapImage[Q_ftol(ap.time * stage->animMapFreq) % stage->numAnimTextures];
+
+		/*---------- fullbright/lightmap ---------------*/
+		// fix glState if current stage is first after lightmap with r_fullbright!=0
+		if (debugMode == DEBUG_FULLBRIGHT && glState != -1)
+		{
+			st->st.glState = glState;
+			glState = -1;
+		}
+		if (debugMode == (DEBUG_LIGHTMAP|DEBUG_FULLBRIGHT) && currentShader->style & SHADER_WALL)
+			st->st.glState |= GLSTATE_POLYGON_LINE;
+		if (!i && currentShader->lightmapNumber == LIGHTMAP_VERTEX)
+		{
+			if (debugMode == DEBUG_LIGHTMAP) st->st.mapImage[0] = NULL;
+			if (debugMode == DEBUG_FULLBRIGHT)
+			{
+				st->st.rgbGenType = RGBGEN_CONST;
+				st->st.rgbaConst.rgba |= 0xFFFFFF;
+			}
+		}
+
+		/*------- convert some rgbaGen to CONST --------*/
+		switch (st->st.rgbGenType)
+		{
+		// NONE, IDENTITY, IDENTITY_LIGHTING: already converted to CONST (on shader loading)
+		//?? check later for "entity >> overbrightBits" validness
+		case RGBGEN_ENTITY:
+			st->st.rgbaConst.c[0] = currentEntity->shaderColor.c[0] >> gl_config.overbrightBits;
+			st->st.rgbaConst.c[1] = currentEntity->shaderColor.c[1] >> gl_config.overbrightBits;
+			st->st.rgbaConst.c[2] = currentEntity->shaderColor.c[2] >> gl_config.overbrightBits;
+			st->st.rgbGenType = RGBGEN_CONST;
+			break;
+		case RGBGEN_ONE_MINUS_ENTITY:
+			st->st.rgbaConst.c[0] = 255 - (currentEntity->shaderColor.c[0] >> gl_config.overbrightBits);
+			st->st.rgbaConst.c[1] = 255 - (currentEntity->shaderColor.c[1] >> gl_config.overbrightBits);
+			st->st.rgbaConst.c[2] = 255 - (currentEntity->shaderColor.c[2] >> gl_config.overbrightBits);
+			st->st.rgbGenType = RGBGEN_CONST;
+			break;
+		case RGBGEN_WAVE:
+			{
+				float	c1;
+				byte	c2;
+
+				//?? function may be NOISE
+#define P stage->rgbGenWave
+				c1 = Q_ftol(PERIODIC_FUNC(mathFuncs[stage->rgbGenWave.type], P.freq * ap.time + P.phase) * P.amp + P.base);
+#undef P
+				if (c1 <= 0)		c2 = 0;
+				else if (c1 >= 1)	c2 = 255;
+				else				c2 = Q_ftol(c1 * 255.0f);
+				st->st.rgbaConst.c[0] = st->st.rgbaConst.c[1] = st->st.rgbaConst.c[2] = c2;
+				st->st.rgbGenType = RGBGEN_CONST;
+			}
+			break;
+		}
+
+		switch (st->st.alphaGenType)
+		{
+		// IDENTITY already converted to CONST
+		case ALPHAGEN_ENTITY:
+			st->st.rgbaConst.c[3] = currentEntity->shaderColor.c[3];
+			st->st.alphaGenType = ALPHAGEN_CONST;
+			break;
+		case ALPHAGEN_ONE_MINUS_ENTITY:
+			st->st.rgbaConst.c[3] = 255 - currentEntity->shaderColor.c[3];
+			st->st.alphaGenType = ALPHAGEN_CONST;
+			break;
+		}
+
+		st->constRGBA = (st->st.rgbGenType == RGBGEN_CONST && st->st.alphaGenType == ALPHAGEN_CONST);
+		st->identityRGBA = (st->constRGBA && st->st.rgbaConst.rgba == 0xFFFFFFFF);
+
+		st++;
+		numTmpStages++;
+	}
+
+	if (!numTmpStages)
+		DrawTextLeft (va("R_PreprocessShader(%s): 0 stages", currentShader->name), 1, 0, 0);
+
+	//!! reorder stages, add fog (?)
+
+	pass = renderPasses;
+	st = tmpSt;
+
+	/*--------- if no multitexturing -- nothing to combine ---------------*/
+	if (numTmpStages < 2 || gl_config.maxActiveTextures < 2)
+	{
+		for (i = 0; i < numTmpStages; i++, st++, pass++)
+		{
+			pass->glState = st->st.glState;
+			pass->numStages = 1;
+			pass->stages = st;
+			pass->colorStage = &st->st;
+			st->tmu = 0;
+			st->texEnv = GL_MODULATE;
+		}
+		numRenderPasses = numTmpStages;
+		return;
+	}
+
+	/*-------------------- have multitexturing ---------------------------*/
+	//!! add ENV_COMBINE, ENV_COMBINE_NV
+	numRenderPasses = 0;
+	tmuLeft = tmuUsed = 0;
+	for (i = 0; i < numTmpStages; i++, st++)
+	{
+		int		blend1, blend2;
+
+		if (!tmuLeft)						// all tmu was distributed or just started
+		{
+			tmuLeft = gl_config.maxActiveTextures;
+			if (tmuUsed) pass++;
+			tmuUsed = 0;
+			// start new pass
+			numRenderPasses++;
+			pass->glState = st[0].st.glState;
+			pass->numStages = 1;
+			pass->stages = st;
+			pass->colorStage = &st->st;
+			st[0].texEnv = GL_MODULATE;
+		}
+
+		st[0].tmu = tmuUsed++;
+		tmuLeft--;
+		// if at least 2nd TMU, we may need to update some pass fields
+		if (tmuUsed > 1)
+			pass->glState |= st[0].st.glState & GLSTATE_DEPTHWRITE;	// pass.depthwrite = OR(stages.depthwrite)
+
+		if (i == numTmpStages - 1) break;	// no next stage to combine
+
+		// check for compatibility of current glState with the next glState
+		if ((st[0].st.glState ^ st[1].st.glState) & ~(GLSTATE_SRCMASK|GLSTATE_DSTMASK|GLSTATE_DEPTHWRITE))
+		{	// incompatible ... next stage will be 1st in the next rendering pass
+			tmuLeft = 0;
+			continue;
+		}
+
+		blend1 = st[0].st.glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK);
+		blend2 = st[1].st.glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK);
+
+		//!!!!!!! FAST HACK
+		st[1].texEnv = GL_MODULATE;
+		pass->numStages++;
+
+//!!		if (blend2 == GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO)
+//		tmuLeft = 0;//!!!!
+		//!! if can combine: pass->numStages++, set st[1].texEnv and continue
+	}
 }
 
 
-static void SetupColorArrays (shaderStage_t *stage)
-{
-	if (stage->rgbGenType != RGBGEN_CONST || stage->alphaGenType != ALPHAGEN_CONST)
-	{
-		GenerateColorArray (stage);
-		qglEnableClientState (GL_COLOR_ARRAY);
-		qglColorPointer (4, GL_UNSIGNED_BYTE, 0, vb->color);
-	}
-	else
-	{
-		qglDisableClientState (GL_COLOR_ARRAY);
-		qglColor4f (stage->rgbGenConst[0], stage->rgbGenConst[1], stage->rgbGenConst[2], stage->alphaGenConst);
-	}
-}
-
-
+//?? remove function
 static void DrawArrays (int *indexes, int numIndexes)
 {
 /*	if (!strcmp (currentShader->name, "*default"))	//!!
@@ -485,16 +604,14 @@ static void DrawArrays (int *indexes, int numIndexes)
 		}
 	}
 */
-	//?? perform gl_primitives variable
 	qglDrawElements (GL_TRIANGLES, numIndexes, GL_UNSIGNED_INT, indexes);
 }
 
 
-static void GenericStageIterator (void)
+static void StageIterator (void)
 {
-	int		numStages, i;
-	shaderStage_t *stage, **pstage;
-	qboolean multiPass;
+	int		i;
+	renderPass_t *pass;
 
 //	DrawTextLeft (va("StageIterator(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes),1,1,1);//!!!
 	LOG_STRING (va("*** StageIterator(%s, %d, %d) ***\n", currentShader->name, numVerts, numIndexes));
@@ -502,102 +619,122 @@ static void GenericStageIterator (void)
 	if (!currentShader->numStages)
 		return;
 
+	PreprocessShader (currentShader);
+
+	/*------------- prepare renderer --------------*/
+
 	ProcessShaderDeforms (currentShader);
+	qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
 
 	GL_CullFace (currentShader->cullMode);
 	if (currentShader->usePolygonOffset)
 	{
 		qglEnable (GL_POLYGON_OFFSET_FILL);
-		//?? use cvars r_offsetunits = -2; t_offsetfactor = -1;
-		qglPolygonOffset (-1, -2);	// offsetFactor, offsetUnits
+		//?? use cvars for units/factor
+		qglPolygonOffset (-1, -2);
 	}
 
-	numStages = currentShader->numStages;
-	pstage = currentShader->stages;
-
-	/*------------- prepare renderer --------------*/
-	if (numStages > 1)
-	{
-		multiPass = true;
-		qglDisableClientState (GL_COLOR_ARRAY);	//?? is it needed?
-		qglDisableClientState (GL_TEXTURE_COORD_ARRAY); // ...
-	}
-	else
-	{
-		// single-pass shader: only one set of colors and textures
-		multiPass = false;
-		stage = *pstage;
-		SetupColorArrays (stage);
-		GenerateTexCoordArray (stage);
-		qglEnableClientState (GL_TEXTURE_COORD_ARRAY);
-		qglTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord0);
-	}
-
-	qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
 	if (qglLockArraysEXT)
-		qglLockArraysEXT (0, numVerts);
-
-	if (multiPass)
 	{
-		qglEnableClientState (GL_TEXTURE_COORD_ARRAY);
+		// do not lock texcoords and colors
+		qglDisableClientState (GL_COLOR_ARRAY);
+		qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
+
+		qglLockArraysEXT (0, numVerts);
 	}
+	qglEnableClientState (GL_TEXTURE_COORD_ARRAY);
 
 	/*---------------- draw stages ----------------*/
-	for (i = 0; i < numStages; i++, pstage++)
+
+	for (i = 0, pass = renderPasses; i < numRenderPasses; i++, pass++)
 	{
-		stage = *pstage;
+		shaderStage_t *stage;
+		tempStage_t *st;
+		int		j;
 
-		if (multiPass)
+		GL_SetMultitexture (pass->numStages);
+
+		for (j = 0, st = pass->stages; j < pass->numStages; j++, st++)
 		{
-			SetupColorArrays (stage);
-			GenerateTexCoordArray (stage);
-//			qglEnableClientState (GL_COLOR_ARRAY);
+			stage = &st->st;
+			GL_SelectTexture (st->tmu);
+			GL_TexEnv (st->texEnv);
+			//!! need additional code if texEnv == ENV_COMBINE/ENV_COMBINE_NV
+			GL_Bind (stage->mapImage[0]);
+			GenerateTexCoordArray (stage, st->tmu);
+			qglTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord[st->tmu]);
 		}
-//??		if (!stage->tmu[1].numAnimTextures)
+
+		//------ setup color arrays / constant ------
+		stage = pass->colorStage;
+		if (stage->rgbGenType != RGBGEN_CONST || stage->alphaGenType != ALPHAGEN_CONST)
 		{
-			/*----- no multitexturing ------*/
-			if (multiPass)
-				qglTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord0);
-//			if (vertexLighting && gl_lightmap) -- unimplemented
-//				GL_Bind(gl_whiteImage) or GL_Bind(NULL) (disable texturing)
-//			else
-				BindStageImage (stage);
-			GL_State (stage->glState);
-			DrawArrays (indexesArray, numIndexes);
+			GenerateColorArray (stage);
+			qglEnableClientState (GL_COLOR_ARRAY);
+			qglColorPointer (4, GL_UNSIGNED_BYTE, 0, vb->color);
 		}
-/*		else ??
+		else
 		{
-			//----- use multitexturing -----
-			GL_State (stage->glState);
-			//?? process portals: qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-			// setup TMU 0
-			GL_SelectTexture (0);
-			qglTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord0);
-			BindStageImage (&stage->tmu[0]);
+			qglDisableClientState (GL_COLOR_ARRAY);
+			qglColor4ubv (stage->rgbaConst.c);
+		}
 
-			// setup TMU 1
-			GL_SelectTexture (1);
-			qglEnable (GL_TEXTURE_2D);		// enable multitexturing
-			qglEnableClientState (GL_TEXTURE_COORD_ARRAY);
-			GL_TexEnv (stage->texEnvMode);	// for gl_lightmap force GL_REPLACE
-			qglTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord1);
-			BindStageImage (&stage->tmu[1]);
-
-			DrawArrays (indexesArray, numIndexes);
-
-			qglDisable (GL_TEXTURE_2D);		// disable multitexturing
-			GL_SelectTexture (0);
-		} */
+		GL_State (pass->glState);
+		DrawArrays (indexesArray, numIndexes);
 	}
 
 	/*----------------- finalize ------------------*/
+
 	if (qglUnlockArraysEXT)
 		qglUnlockArraysEXT ();
 
 	if (currentShader->usePolygonOffset)
 		qglDisable (GL_POLYGON_OFFSET_FILL);
 
+	gl_speeds.tris += numIndexes * numTmpStages / 3;
+	gl_speeds.trisMT += numIndexes * numRenderPasses / 3;
 	gl_speeds.numIterators++;
+}
+
+
+static void SetCurrentShader (shader_t *shader)
+{
+	if (numVerts && numIndexes)
+		// we can get situation, when verts==2 and inds==0 due to geometry simplification -- this is OK (??)
+		// sample: map "actmet", inside building with rotating glass doors, floor 2: exotic lamp (nested cilinders with alpha)
+	{
+		DrawTextLeft ("SetCurrentShader() without flush!",1,0,0);
+		Com_WPrintf ("SetCurrentShader(%s) without flush (old: %s, %d verts, %d inds)\n",
+			shader->name, currentShader->name, numVerts, numIndexes);
+	}
+	currentShader = shader;
+	numVerts = numIndexes = 0;		// clear buffer
+	//?? setup shader time
+}
+
+
+static void FlushArrays (void)
+{
+//	DrawTextLeft(va("FlushArrays(%s,%d,%d)\n",currentShader->name,numVerts,numIndexes),1,1,1);
+	if (!numIndexes) return;	// buffer is empty
+
+	StageIterator ();
+	SwitchVertexArray ();
+	WaitVertexArray ();
+
+	numVerts = numIndexes = 0;
+}
+
+
+static void CheckOverflow (int verts, int inds)
+{
+	if (numIndexes + inds > MAX_INDEXES || numVerts + verts > MAX_VERTEXES)
+		FlushArrays ();
+
+	if (verts > MAX_VERTEXES)
+		Com_Error (ERR_FATAL, "R_CheckOverflow: verts > MAX_VERTEXES");
+	if (inds > MAX_INDEXES)
+		Com_Error (ERR_FATAL, "R_CheckOverflow: inds > MAX_INDEXES");
 }
 
 
@@ -781,10 +918,8 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 	}
 
 	// process new polys
-	if (newc[0])
-		ClipSkyPolygon (newc[0], newv[0][0], stage + 1);
-	if (newc[1])
-		ClipSkyPolygon (newc[1], newv[1][0], stage + 1);
+	if (newc[0]) ClipSkyPolygon (newc[0], newv[0][0], stage + 1);
+	if (newc[1]) ClipSkyPolygon (newc[1], newv[1][0], stage + 1);
 }
 
 
@@ -795,10 +930,8 @@ static void ClearSkyBox (void)
 	// clear bounds for all sky box planes
 	for (i = 0; i < 6; i++)
 	{
-		skyMins[0][i] = 9999;
-		skyMins[1][i] = 9999;
-		skyMaxs[0][i] = -9999;
-		skyMaxs[1][i] = -9999;
+		skyMins[0][i] = skyMins[1][i] = 9999;
+		skyMaxs[0][i] = skyMaxs[1][i] = -9999;
 	}
 }
 
@@ -845,7 +978,8 @@ static void MakeSkyVec (float s, float t, int axis, float *tex, vec3_t vec)
 
 	float		scale;
 
-	scale = vp.zFar * 4/7;			//?? 4/7 is almost 1/sqrt(3)
+	// sqrt(a^2 + (a^2 + (a/2)^2)) = sqrt(2*a^2 + 1/4*a^2) = a * sqrt(9/4) = a * 1.5
+	scale = vp.zFar / 3;	// any non-zero value not works no TNT2 (but works with GeForce2)
 	b[0] = s * scale;
 	b[1] = t * scale;
 	b[2] = scale;
@@ -941,7 +1075,7 @@ static void DrawSkyBox (void)
 
 	qglPushMatrix ();
 	if (gl_showsky->integer)
-		GL_State (GLSTATE_DEPTHWRITE/*|GLSTATE_NODEPTHTEST*/);
+		GL_State (GLSTATE_DEPTHWRITE|GLSTATE_NODEPTHTEST);
 	else
 		GL_State (GLSTATE_NODEPTHTEST);
 	// change modelview matrix
@@ -968,7 +1102,7 @@ static void DrawSkyBox (void)
 
 		// tesselate sky surface (up to 9 points per diminsion)
 		vec = &vb->verts[0];
-		tex = &vb->texCoord0[0];
+		tex = vb->texCoord[0];
 		numVerts = 0;
 		for (t = skyMins[1][i]; t <= skyMaxs[1][i]; t += 1.0f/SKY_TESS_SIZE)
 			for (s = skyMins[0][i]; s <= skyMaxs[0][i]; s += 1.0f/SKY_TESS_SIZE)
@@ -1004,12 +1138,13 @@ static void DrawSkyBox (void)
 			i2++;
 		}
 
+		GL_SetMultitexture (1);
 		if (currentShader != gl_defaultSkyShader)
 			GL_Bind (currentShader->skyFarBox[i]);
 		else
 			GL_Bind (NULL);		// disable texturing
 
-		qglTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord0);
+		qglTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord[0]);
 		qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
 
 		if (qglLockArraysEXT)
@@ -1036,36 +1171,28 @@ static void CheckDynamicLightmap (surfaceCommon_t *s)
 	int		i;
 	surfacePlanar_t *surf;
 	dynamicLightmap_t *dl;
-	lightstyle_t *ls;
 
-	// update dynamic lightmap (or vertex colors)
+	// check for lightstyle modification (or vertex colors)
 	surf = s->pl;
 	if (!surf->lightmap) return;
 
 	dl = surf->lightmap;
 	for (i = 0; i < dl->numStyles; i++)
 	{
-		ls = &ap.lightStyles[dl->style[i]];
-#define CHECK(n)	(dl->modulate[i][n] != ls->rgb[n])
-		if (CHECK(0) || CHECK(1) || CHECK(2))	//?? make it faster (cache results ?) (BUT: surface may be invisible and not updated)
+		if (dl->modulate[i] != ap.lightStyles[dl->style[i]].value)
 		{
-//			Com_Printf("dl%d: %g, %g, %g\n",dl->style[i], ls->rgb[0], ls->rgb[1], ls->rgb[2]);
 			i = -1;
 			break;
 		}
-#undef CHECK
 	}
 
 	if (i < 0)
-	{	// require to update lightmap
+	{
+		// require to update lightmap
 		for (i = 0; i < dl->numStyles; i++)
-		{
-			ls = &ap.lightStyles[dl->style[i]];
-			dl->modulate[i][0] = ls->rgb[0];
-			dl->modulate[i][1] = ls->rgb[1];
-			dl->modulate[i][2] = ls->rgb[2];
-		}
-		GL_UpdateDynamicLightmap (s->shader, surf, ap.lightStyles);
+			dl->modulate[i] = ap.lightStyles[dl->style[i]].value;
+
+		GL_UpdateDynamicLightmap (s->shader, surf);
 	}
 }
 
@@ -1078,7 +1205,7 @@ static void TesselatePlanarSurf (surfacePlanar_t *surf)
 	int			*c;
 	vertex_t	*vs;
 
-	RB_CheckOverflow (surf->numVerts, surf->numIndexes);
+	CheckOverflow (surf->numVerts, surf->numIndexes);
 
 	firstVert = numVerts;
 	numVerts += surf->numVerts;
@@ -1103,7 +1230,7 @@ static void TesselatePlanarSurf (surfacePlanar_t *surf)
 		t->tex[1] = vs->st[1];
 		t->lm[0] = vs->lm[0];		// copy lightmap coords
 		t->lm[1] = vs->lm[1];
-		*c = vs->rgba;				// copy vertex color (sometimes may be ignored??)
+		*c = vs->c.rgba;			// copy vertex color (sometimes may be ignored??)
 	}
 
 	// copy indexes
@@ -1124,7 +1251,7 @@ static void TesselatePolySurf (surfacePoly_t *surf)
 	vertexPoly_t *vs;
 
 	numIdx = (surf->numVerts - 2) * 3;
-	RB_CheckOverflow (surf->numVerts, numIdx);
+	CheckOverflow (surf->numVerts, numIdx);
 
 	firstVert = numVerts;
 	numVerts += surf->numVerts;
@@ -1146,7 +1273,7 @@ static void TesselatePolySurf (surfacePoly_t *surf)
 		t->tex[1] = vs->st[1];
 //	??	t->lm[0] = 0;				// copy lightmap coords
 //		t->lm[1] = 0;
-		*c = vs->rgba;				// copy vertex color (sometimes may be ignored??)
+		*c = vs->c.rgba;			// copy vertex color (sometimes may be ignored??)
 	}
 
 	// copy indexes
@@ -1172,7 +1299,7 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 	int		numIdx;
 
 	numIdx = surf->numTris * 3;
-	RB_CheckOverflow (surf->numVerts, numIdx);
+	CheckOverflow (surf->numVerts, numIdx);
 
 	firstVert = numVerts;
 	numVerts += surf->numVerts;
@@ -1231,7 +1358,7 @@ static void SetupGL (void)
 	int		bits;
 
 	if (numVerts)
-		RB_EndSurface ();
+		FlushArrays ();
 
 	LOG_STRING ("*** SetupGL() ***\n");
 	gl_state.is2dMode = false;
@@ -1245,21 +1372,21 @@ static void SetupGL (void)
 	GL_State (GLSTATE_DEPTHWRITE);
 
 	bits = GL_DEPTH_BUFFER_BIT;
-	if (gl_fastsky->integer && !(gl_refdef.flags & RDF_NOWORLDMODEL))
+	if (gl_fastsky->integer && !(ap.flags & RDF_NOWORLDMODEL))
 	{
 		bits |= GL_COLOR_BUFFER_BIT;
 		qglClearColor (0, 0, 0, 1);
 	}
-	else if (gl_refdef.flags & RDF_NOWORLDMODEL)
+	else if (ap.flags & RDF_NOWORLDMODEL)
 	{
 		bits |= GL_COLOR_BUFFER_BIT;
 		qglClearColor (0, 0.03, 0.03, 1);
-    }
+	}
 	qglClear (bits);
 }
 
 
-/*-------- radix sort surfaces ----------*/
+/*-------- Radix sort surfaces ----------*/
 
 #define SORT_BITS	8	// 11
 #define SORT_SIZE	(1<<SORT_BITS)
@@ -1369,8 +1496,10 @@ static void FlashColor (void)
 {
 	int		i;
 
-	i = (int)(ap.time / 3 * 1024);
-	qglColor3f (sinTable[i & 1023] / 2 + 0.5, sinTable[i + 100 & 1023] / 2 + 0.5, sinTable[600 - i & 1023] / 2 + 0.5);
+	i = (int)(ap.time / 3 * TABLE_SIZE);
+	qglColor3f (sinTable[i & TABLE_MASK] / 2 + 0.5,
+				sinTable[i + 100 & TABLE_MASK] / 2 + 0.5,
+				sinTable[600 - i & TABLE_MASK] / 2 + 0.5);
 }
 
 
@@ -1379,14 +1508,15 @@ static void FlashColor (void)
 static void DrawBBoxes (void)
 {
 	int		i;
-	byte	entsVisible[MAX_GLENTITIES];
+	qboolean entsVisible[MAX_GLENTITIES];
+	refEntity_t *ent;
 	surfaceInfo_t **si;
 
 	// common GL setup
 #ifdef BBOX_WORLD
-	qglLoadMatrixf (&ap.modelMatrix[0][0]);
+	qglLoadMatrixf (&ap.modelMatrix[0][0]);		// world matrix
 #endif
-	GL_Bind (NULL);		// disable texturing
+	GL_SetMultitexture (0);		// disable texturing with all tmu's
 	qglDisableClientState (GL_COLOR_ARRAY);
 	qglDisableClientState (GL_TEXTURE_COORD_ARRAY);
 	if (gl_showbboxes->integer == 2)
@@ -1407,9 +1537,8 @@ static void DrawBBoxes (void)
 	}
 
 	/*-------- draw bounding boxes --------*/
-	for (i = 0; i < gl_numEntities; i++)
+	for (i = 0, ent = gl_entities; i < gl_numEntities; i++, ent++)
 	{
-		refEntity_t *ent;
 		model_t		*m;
 		float		*mins, *maxs;
 		int		j;
@@ -1423,7 +1552,6 @@ static void DrawBBoxes (void)
 		if (!entsVisible[i])
 			continue;	// entity is culled or from different scene
 
-		ent = &gl_entities[i];
 		if (!(m = ent->model)) continue;	// no bbox info
 
 		// get bbox data
@@ -1484,7 +1612,7 @@ static void DrawTriangles (void)
 	surfaceCommon_t *surf;
 	int		inds[512];
 
-	GL_Bind (NULL);
+	GL_SetMultitexture (0);		// disable texturing
 	if (gl_showtris->integer - 1 & 1)
 	{	// use depth test
 		GL_State (0);
@@ -1555,37 +1683,12 @@ static void DrawTriangles (void)
 //?? fast drawing may use global vertex/color/texcoord array (filled when map loaded) and just operate with indexes
 //!! In this case, indexes in surfaces must be global
 
+//?? REMOVE THIS ??
+
 static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 {
 	int		i;
 	shaderStage_t *stage, **pstage;
-//	static int inds[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
-
-/* Feauture version (??):
-	// set global vertex array:
-	VertexPointer(globalVerts.xyz);
-	LockArrays();
-	loop(stage) {
-		TexCoordPointer(globalVerts.st) or (.lm)  (depends on)
-		if (rgba.type == CONST)
-		{
-			DisableClientState(COLOR_ARRAYS);
-			Color(const);
-		}
-		else
-		{
-			EnableClientState(COLOR_ARRAYS);
-			ColorPointer()
-		}
-		GL_State(stage.state);
-		loop(surf) {
-			DrawArrays(surf->indexes, surf->numIndexes);
-		}
-	}
-	UnlockArrays();
-
- * + multitexture version!
- */
 
 	LOG_STRING (va("*** FastIterator(%s, %d) ***\n", currentShader->name, numSurfs));
 	for (i = 0, pstage = currentShader->stages; i < currentShader->numStages; i++, pstage++)
@@ -1600,12 +1703,15 @@ static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 		if (stage->rgbGenType == RGBGEN_CONST)
 		{	// here: alphaGenFunc == ALPHAGEN_CONST (condition for shader.fast flag)
 			qglDisableClientState (GL_COLOR_ARRAY);
-			qglColor4f (stage->rgbGenConst[0], stage->rgbGenConst[1], stage->rgbGenConst[2], stage->alphaGenConst);
+			qglColor4ubv (stage->rgbaConst.c);
 		}
 		else
 			qglEnableClientState (GL_COLOR_ARRAY);
-		// bind texture(s)
-		BindStageImage (stage);	//!! add multitetxuring
+		//---- BindStageImage (stage); ----
+		if (stage->numAnimTextures == 1)
+			GL_Bind (stage->mapImage[0]);
+		else
+			GL_Bind (stage->mapImage[Q_ftol(ap.time * stage->animMapFreq) % stage->numAnimTextures]);
 
 		for (j = 0, psurf = surfs; j < numSurfs; j++, psurf++)
 		{
@@ -1619,12 +1725,12 @@ static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 				pl = surf->pl;
 
 				qglVertexPointer (3, GL_FLOAT, sizeof(vertex_t), pl->verts);
-				if (stage->tcGenType == TCGEN_TEXTURE)	//!! add multitexturing
+				if (stage->tcGenType == TCGEN_TEXTURE)
 					qglTexCoordPointer (2, GL_FLOAT, sizeof(vertex_t), pl->verts[0].st);
 				else
 					qglTexCoordPointer (2, GL_FLOAT, sizeof(vertex_t), pl->verts[0].lm);
-				if (stage->rgbGenType == RGBGEN_EXACT_VERTEX)
-					qglColorPointer (4, GL_UNSIGNED_BYTE, sizeof(vertex_t), pl->verts[0].c);
+//				if (stage->rgbGenType == RGBGEN_EXACT_VERTEX) -- always for fast shaders
+					qglColorPointer (4, GL_UNSIGNED_BYTE, sizeof(vertex_t), pl->verts[0].c.c);
 				qglDrawElements (GL_TRIANGLES, pl->numIndexes, GL_UNSIGNED_INT, pl->indexes);
 				break;
 			}
@@ -1646,7 +1752,9 @@ static void DrawParticles (particle_t *p)
 
 	//!! oprimize this (vertex arrays, etc.)
 
+	GL_SetMultitexture (1);
 	GL_Bind (gl_particleImage);
+
 	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|/*GLSTATE_DEPTHWRITE|*/GLSTATE_ALPHA_GT0);
 	VectorScale (ap.viewaxis[1], 1.5, up);
 	VectorScale (ap.viewaxis[2], 1.5, right);
@@ -1716,10 +1824,10 @@ static void DrawParticles (particle_t *p)
 		numFastSurfs = 0;	\
 	}						\
 	else					\
-		RB_EndSurface ();
+		FlushArrays ();
 
 // Draw scene, specified in "ap"
-static void RB_DrawScene (void)
+static void DrawScene (void)
 {
 	int				index, index2, numSkySurfs, numFastSurfs;
 	surfaceInfo_t	**si, **si2, **fastSurf;
@@ -1729,7 +1837,7 @@ static void RB_DrawScene (void)
 	int		currentShaderNum, currentEntityNum;
 	qboolean currentDepthHack, depthHack;
 
-	LOG_STRING (va("******** DrawScene: (%g, %g) - (%g, %g) ********\n", ap.x, ap.y, ap.x+ap.w, ap.y+ap.h));
+	LOG_STRING (va("******** R_DrawScene: (%g, %g) - (%g, %g) ********\n", ap.x, ap.y, ap.x+ap.w, ap.y+ap.h));
 
 	SetupGL ();
 
@@ -1902,23 +2010,6 @@ void GL_AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityN
 }
 
 
-void *GL_AllocDynamicMemory (int size)
-{
-	void	*ptr;
-
-	if (dynamicBufferSize + size > MAX_DYNAMIC_BUFFER)
-	{
-		Com_DPrintf ("R_AllocDynamicMemory(%d) failed\n", size);
-		return NULL;
-	}
-
-	ptr = &dynamicBuffer[dynamicBufferSize];
-	dynamicBufferSize += size;
-
-	return ptr;
-}
-
-
 surfaceCommon_t *GL_AddDynamicSurface (shader_t *shader, int entityNum)
 {
 	surfaceCommon_t *surf;
@@ -1966,18 +2057,18 @@ static void TesselateStretchPic (bkDrawPic_t *p)
 {
 	bufVertex_t	*v;
 	bufTexCoordSrc_t *t;
-	int			*idx, i;
+	int			*idx, idx0;
 	int			*c;
 
 	if (currentShader != p->shader)
 	{
-		RB_EndSurface ();
+		FlushArrays ();
 		SetCurrentShader (p->shader);
 	}
 
 	GL_Set2DMode ();
 
-	RB_CheckOverflow (4, 6);
+	CheckOverflow (4, 6);
 
 	/*   0 (0,0) -- 1 (1,0)
 	 *     |   \____   |
@@ -1987,7 +2078,7 @@ static void TesselateStretchPic (bkDrawPic_t *p)
 	v = &vb->verts[numVerts];
 	t = &srcTexCoord[numVerts];
 	c = &srcVertexColor[numVerts].rgba;
-	i = numVerts;
+	idx0 = numVerts;
 	numVerts += 4;
 
 	// set vert.z
@@ -2005,21 +2096,101 @@ static void TesselateStretchPic (bkDrawPic_t *p)
 	t[0].tex[1] = t[1].tex[1] = p->t1;
 	t[2].tex[1] = t[3].tex[1] = p->t2;
 	// store colors
-	c[0] = c[1] = c[2] = c[3] = currentColor.rgba;
+	c[0] = c[1] = c[2] = c[3] = p->c.rgba;
 
 	idx = &indexesArray[numIndexes];
 	numIndexes += 6;
-	*idx++ = i+0; *idx++ = i+1; *idx++ = i+2;
-	*idx++ = i+0; *idx++ = i+2; *idx++ = i+3;
+	*idx++ = idx0+0; *idx++ = idx0+1; *idx++ = idx0+2;
+	*idx++ = idx0+0; *idx++ = idx0+2; *idx++ = idx0+3;
+}
+
+
+// This is slightly optimized version of TesselateStretchPic() for drawing texts
+void TesselateText (bkDrawText_t *p)
+{
+	bufVertex_t	*v;
+	bufTexCoordSrc_t *t;
+	int		*c;
+	int		i, *idx, idx0;
+	float	x, xp, size;
+	char	*s, chr;
+
+	if (currentShader != gl_concharsShader)
+	{
+		FlushArrays ();
+		SetCurrentShader (gl_concharsShader);
+	}
+
+	GL_Set2DMode ();
+
+	CheckOverflow (p->len * 4, p->len * 6);
+
+	v = &vb->verts[numVerts];
+	t = &srcTexCoord[numVerts];
+	c = &srcVertexColor[numVerts].rgba;
+	idx = &indexesArray[numIndexes];
+	idx0 = numVerts;
+
+	s = p->text;
+	xp = p->x;
+	x = p->x + p->w;
+
+	size = 1.0f / 16.0f;
+	for (i = p->len; i > 0 && xp < vid.width; i--)
+	{
+		chr = *s++;
+		if (chr != ' ')		// space is hardcoded
+		{
+			float	s1, t1, s2, t2;
+
+			s1 = (chr & 15) * size;
+			t1 = (chr >> 4 & 15) * size;
+			s2 = s1 + size;
+			t2 = t1 + size;
+
+			// set vert.z
+			v[0].xyz[2] = v[1].xyz[2] = v[2].xyz[2] = v[3].xyz[2] = 0;
+			// set vert.x
+			v[0].xyz[0] = v[3].xyz[0] = xp;
+			v[1].xyz[0] = v[2].xyz[0] = x;
+			// set vert.y
+			v[0].xyz[1] = v[1].xyz[1] = p->y;
+			v[2].xyz[1] = v[3].xyz[1] = p->y + p->h;
+			// set s
+			t[0].tex[0] = t[3].tex[0] = s1;
+			t[1].tex[0] = t[2].tex[0] = s2;
+			// set t
+			t[0].tex[1] = t[1].tex[1] = t1;
+			t[2].tex[1] = t[3].tex[1] = t2;
+			// store colors
+			c[0] = c[1] = c[2] = c[3] = p->c.rgba;
+
+			*idx++ = idx0+0; *idx++ = idx0+1; *idx++ = idx0+2;
+			*idx++ = idx0+0; *idx++ = idx0+2; *idx++ = idx0+3;
+
+			idx0 += 4;
+			v += 4;
+			t += 4;
+			c += 4;
+			numVerts += 4;
+			numIndexes += 6;
+		}
+		xp = x;
+		x += p->w;
+	}
 }
 
 
 void GL_BackEnd (void)
 {
 	int		*p;
+//	static int max = 0;
 
+//	if (backendCmdSize > max) max = backendCmdSize;
+//	Cvar_SetInteger("backend", max);
 	* ((int*) &backendCommands[backendCmdSize]) = BACKEND_STOP;
 	backendCmdSize = 0;
+	lastBackendCommand = NULL;
 
 	p = (int*) &backendCommands[0];
 	while (*p != BACKEND_STOP)
@@ -2036,13 +2207,13 @@ void GL_BackEnd (void)
 			}
 			break;
 
-		case BACKEND_SET_COLOR:
+		case BACKEND_TEXT:
 			{
-				bkSetColor_t *p1;
+				bkDrawText_t *p1;
 
-				p1 = (bkSetColor_t *) p;
-				currentColor.rgba = p1->rgba;
-				p = (int *) ++p1;
+				p1 = (bkDrawText_t *) p;
+				TesselateText (p1);
+				p = (int *) ((byte *)p1 + sizeof(bkDrawText_t) + p1->len);
 			}
 			break;
 
@@ -2071,16 +2242,12 @@ void GL_BackEnd (void)
 			break;
 
 		case BACKEND_END_FRAME:
-			RB_EndSurface ();
-			if (gl_showImages->integer)
+			FlushArrays ();
+			if (strcmp (gl_showImages->string, "0"))
 				GL_ShowImages ();
 
 #ifndef SWAP_ON_BEGIN
-			if (!gl_state.finished && gl_finish->integer)	//?? if ".finished" needed?
-			{
-				qglFinish ();
-				gl_state.finished = true;
-			}
+			if (gl_finish->integer) qglFinish ();
 			GLimp_EndFrame ();
 #endif
 			gl_state.is2dMode = false;	// invalidate 2D mode, because of buffer switching
@@ -2093,7 +2260,7 @@ void GL_BackEnd (void)
 
 				p1 = (bkDrawFrame_t *) p;
 				memcpy (&ap, &p1->portal, sizeof(viewPortal_t));
-				RB_DrawScene ();
+				DrawScene ();
 				p = (int *) ++p1;
 			}
 			break;
@@ -2108,11 +2275,12 @@ void GL_InitBackend (void)
 {
 	GL_ClearBuffers ();
 
+	vbSize = sizeof(vertexBuffer_t) + gl_config.maxActiveTextures * sizeof(bufTexCoord_t) * MAX_VERTEXES;
 	if (qglVertexArrayRangeNV)
 	{
-		agpBuffer = qglAllocateMemoryNV (NUM_VERTEX_BUFFERS * sizeof(vertexBuffer_t), 0, 0, 0.5);
+		agpBuffer = qglAllocateMemoryNV (NUM_VERTEX_BUFFERS * vbSize, 0, 0, 0.5);
 		if (!agpBuffer)
-			agpBuffer = qglAllocateMemoryNV (NUM_VERTEX_BUFFERS * sizeof(vertexBuffer_t), 0, 0, 1);
+			agpBuffer = qglAllocateMemoryNV (NUM_VERTEX_BUFFERS * vbSize, 0, 0, 1);
 
 		if (!agpBuffer)
 		{
@@ -2122,7 +2290,7 @@ void GL_InitBackend (void)
 		else
 		{
 			qglGenFencesNV (NUM_VERTEX_BUFFERS, fences);
-			qglVertexArrayRangeNV (NUM_VERTEX_BUFFERS * sizeof(vertexBuffer_t), agpBuffer);
+			qglVertexArrayRangeNV (NUM_VERTEX_BUFFERS * vbSize, agpBuffer);
 			qglEnableClientState (GL_VERTEX_ARRAY_RANGE_NV);
 			vb = agpBuffer;
 			currentBuffer = 0;
@@ -2130,7 +2298,8 @@ void GL_InitBackend (void)
 	}
 
 	if (!agpBuffer)
-		vb = Z_Malloc (sizeof (vertexBuffer_t));
+		vb = Z_Malloc (vbSize);
+	Com_Printf("^1 **** buf: %08X (%d bytes) ****\n", vb, vbSize);//!!
 
 	InitFuncTables ();
 }

@@ -55,7 +55,7 @@ typedef enum
 {
 	TCMOD_TRANSFORM,			// uses transform matrix (2 x 2) + (2 x 1)
 	TCMOD_TURB,					// wave(sin), but without base (or: base is vertex coords)
-	TCMOD_WARP,					//??
+	TCMOD_WARP,					// standard fx for quake "SURF_WARP"
 	TCMOD_SCROLL,				// coord[i] += speed[i] * shader.time
 	TCMOD_ENTITYTRANSLATE,		// == SCROLL with speeds, taken from entity
 	TCMOD_SCALE,				// coord[i] *= scales[i]
@@ -76,14 +76,14 @@ typedef enum
 	RGBGEN_ONE_MINUS_ENTITY,
 	RGBGEN_WAVE,
 	RGBGEN_LIGHTING_DIFFUSE,
-	RGBGEN_FOG
+	RGBGEN_FOG					//??
 } rgbGenType_t;
 
 typedef enum
 {
 	ALPHAGEN_IDENTITY,	// => alphaGen const 1
 	ALPHAGEN_CONST,
-	ALPHAGEN_NONE,		//?? use const (is it needed?)
+//	ALPHAGEN_NONE,		//?? use const (is it needed?)
 	ALPHAGEN_ENTITY,
 	ALPHAGEN_ONE_MINUS_ENTITY,
 	ALPHAGEN_VERTEX,
@@ -157,34 +157,28 @@ typedef struct
 {
 	// GL_State ...
 	int		glState;
-	int		texEnvMode;	// parameter for GL_TexEnv() for 2nd TMU (1st is always GL_MODULATE) (unused ??)
 
 	qboolean isLightmap;
 	qboolean detail;				//?? true is stage is detail (unused ??)
 
 	/*---------------- RGBA params ----------------*/
+	color_t	rgbaConst;				// if RGBGEN_CONST or ALPHAGEN_CONST
 	// rgbGen params
 	rgbGenType_t rgbGenType;
-	union {
-		waveParams_t rgbGenWave;	// if RGBGEN_WAVE
-		float		rgbGenConst[3];	// if RGBGEN_CONST	(make byte[3] or [4] (combine with alphaGenConst) !!!)
-	};
+	waveParams_t rgbGenWave;		// if RGBGEN_WAVE
 	// alphaGen params
-	alphaGenType_t	alphaGenType;
-	union {
-		waveParams_t alphaGenWave;	// if ALPHAGEN_WAVE
-		float		alphaGenConst;	// if ALPHAGEN_CONST
-	};
+	alphaGenType_t alphaGenType;
+	waveParams_t alphaGenWave;		// if ALPHAGEN_WAVE
 	/*--------------- texture params --------------*/
 	// tcGen params
 	tcGenType_t tcGenType;
-	vec3_t	tcGenVec[2];		// for TCGEN_VECTOR
+	vec3_t	tcGenVec[2];			// for TCGEN_VECTOR
 	// tcMod params
 	int		numTcMods;
 	tcModParms_t *tcModParms;
 	// images: variable length
-	int		numAnimTextures;	// in range [1..MAX_STAGE_TEXTURES]; if 0 -- ignore stage (and treat previous as last)
-	float	animMapFreq;		// valid only when numAnimTextures > 1
+	int		numAnimTextures;		// in range [1..MAX_STAGE_TEXTURES]; if 0 -- ignore stage (and treat previous as last)
+	float	animMapFreq;			// valid only when numAnimTextures > 1
 	image_t	*mapImage[1];
 } shaderStage_t;
 
@@ -211,28 +205,29 @@ typedef struct shader_s
 	int		width, height;	// required due to Q2 architecture; if contains default image, both are zero
 
 	int		style;			// SHADER_XXX
-	qboolean scripted;
-	int		surfaceFlags;	// SURF_XXX			??
-	int		contentsFlags;	// CONTENTS_XXX		??
+//	int		surfaceFlags;	// SURF_XXX			??
+//	int		contentsFlags;	// CONTENTS_XXX		??
 	float	tessSize;		// used for warp surface subdivision
 
 	gl_cullMode_t cullMode;
 
+	qboolean scripted;
 	qboolean bad;			// errors in script or no map image found (for auto-generated shader)
 	qboolean fast;			// have no deforms, tcGen/tcMod, rgb/alpha-gen
+
 	qboolean usePolygonOffset;
 
 	int		numDeforms;
 	deformParms_t deforms[MAX_SHADER_DEFORMS];
 
 	shaderType_t type;
-	union
+/*	union
 	{
 		// fog params (SHADERTYPE_FOG)
 		struct {
 			float	fogDist;
 			float	fogColor[3];
-		};
+		}; */
 		// sky params SHADERTYPE_SKY)
 		struct {
 			float	skyCloudHeight;
@@ -242,10 +237,10 @@ typedef struct shader_s
 			vec3_t	skyAxis;
 		};
 		// portal params (SHADERTYPE_PORTAL)
-		struct {
+/*		struct {
 			float	portalRange;
 		};
-	};
+	}; */
 
 	// remap shader
 	struct shader_s *alphaShader;		// for skins: same shader as current, but translucent

@@ -249,6 +249,23 @@ void PerpendicularVector (vec3_t dst, const vec3_t src)
 }
 
 
+// Gives "forward" and makes 2 additional axes for it
+void MakeNormalVectors (vec3_t forward, vec3_t right, vec3_t up)
+{
+	float		d;
+
+	// this rotate and negate guarantees a vector
+	// not colinear with the original
+	right[1] = -forward[0];
+	right[2] = forward[1];
+	right[0] = forward[2];
+
+	d = DotProduct (right, forward);
+	VectorMA (right, -d, forward, right);
+	VectorNormalize (right);
+	CrossProduct (right, forward, up);
+}
+
 
 /*
 ================
@@ -329,6 +346,7 @@ float Q_fabs (float f)
 }
 
 
+/*
 #if defined _M_IX86 && !defined C_ONLY
 #pragma warning (disable:4035)
 __declspec (naked) long Q_ftol (float f)
@@ -344,7 +362,7 @@ __declspec (naked) long Q_ftol (float f)
 }
 #pragma warning (default:4035)
 #endif
-
+*/
 
 /*
 =================
@@ -756,7 +774,7 @@ void ClearBounds (vec3_t mins, vec3_t maxs)
 void AddPointToBounds (vec3_t v, vec3_t mins, vec3_t maxs)
 {
 	int		i;
-	vec_t	val;
+	float	val;
 
 	for (i = 0; i < 3; i++)
 	{
@@ -778,7 +796,7 @@ int VectorCompare (vec3_t v1, vec3_t v2)
 }
 
 
-vec_t VectorNormalize (vec3_t v)
+float VectorNormalize (vec3_t v)
 {
 	float	length, ilength;
 
@@ -797,7 +815,7 @@ vec_t VectorNormalize (vec3_t v)
 
 }
 
-vec_t VectorNormalize2 (vec3_t v, vec3_t out)
+float VectorNormalize2 (vec3_t v, vec3_t out)
 {
 	float	length, ilength;
 
@@ -837,7 +855,7 @@ void VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc)
 }
 
 
-vec_t _DotProduct (vec3_t v1, vec3_t v2)
+float _DotProduct (vec3_t v1, vec3_t v2)
 {
 	return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
 }
@@ -870,7 +888,7 @@ void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross)
 	cross[2] = v1[0]*v2[1] - v1[1]*v2[0];
 }
 
-vec_t VectorLength (vec3_t v)
+float VectorLength (vec3_t v)
 {
 	return sqrt (v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 }
@@ -890,7 +908,7 @@ void VectorInverse (vec3_t v)
 	v[2] = -v[2];
 }
 
-void VectorScale (vec3_t in, vec_t scale, vec3_t out)
+void VectorScale (vec3_t in, float scale, vec3_t out)
 {
 	out[0] = in[0]*scale;
 	out[1] = in[1]*scale;

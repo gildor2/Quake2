@@ -9,6 +9,7 @@
 ! do not render while window is minimized (less CPU usage)
 - r_nocull works only with frustum culling (extend cvar or add another ...)
 !! vertex arrays are not 16-byte aligned (see gl.log)
+- reimplement fast drawing (multitexturing etc.)
 
 - shaders:
   ? make shader_t.name dynamic allocated (~ basenamed_t)
@@ -19,6 +20,7 @@
 ! correct lightscaling (max_scale = 255/max(r,g,b)) for overbright
 ? gl_lastValidRenderer (reset all config params ("reset gl_*" ??) if changed; example of value -- "Riva TNT2/SSE")
 ! overbright of DYNAMIC lightmaps (NORMAL modulated in image.c::Upload()) and model skins
+? remove "SHADER_WALL" flag; add "SHADER_WORLD" -- depth test/write (other -- 2D) ? "SHADER_MIPMAP" ?
 
 --------- Mandatory ------------
 VISIBLE:
@@ -32,16 +34,14 @@ VISIBLE:
 - screen blending (underwater etc.)
 - shadows
 INVISIBLE:
-- multitexturing (with lightmap lightscale when have multitex. and no env_combine)
 ! freeing of old images (and "bool temp" or "int usage" flag)
 FOR GAME:
-- r_lightlevel (really, needs another way to provide lighting info for game ...)
-DEBUG:
-- r_fullbright, gl_lightmap
-- gl_stings (gfxinfo)
+- re.GetClientLight
 
 --------- Improvements -----------
 
+!? for qgl: implement extension aliasing (EXT -> ARB) with aliases for extension/function names (constants are the same)
+  (texture_env_combine (slightly different!), texture_env_add etc.)
 ? rail fx (change)
 - optimize sky box drawing:
   - make more than 6 rects (6 * skyTessSize^2)
@@ -67,7 +67,7 @@ DEBUG:
   1) upload all at once (??)
   2) make multi-pass shaders (no uploads, RGBGEN_LIGHTSTYLE)
      - lightstyle value is 0..2 (up to double brightness)
-     - maps with slow dynamic lightmaps: market, alley1 (look outside world), rc4 (at start point)
+     - maps with slow dynamic lightmaps: market, alley1, (look outside world), rc4 (at start point), punwar (not too slow?)
 ? make skins for models with 1 frame to be sh.fast==true (and implement it in AGP memory);
   Problem: how to apply lighting? (and: skins may be dynamically changed from "fast" to "slow")
 - triangle models: build lods

@@ -61,8 +61,6 @@ cvar_t	*m_yaw;
 cvar_t	*m_forward;
 cvar_t	*m_side;
 
-cvar_t	*cl_lightlevel;
-
 //
 // userinfo
 //
@@ -1522,8 +1520,6 @@ CVAR_BEGIN(vars)
 	{&rcon_client_password, "rcon_password", "", 0},
 	{&rcon_address, "rcon_address", "", 0},
 
-	{&cl_lightlevel, "r_lightlevel", "0", 0},		//?? this is a JC's hack; replace this with a new refresh func. and remove cvar
-
 	// userinfo
 	{&info_password, "password", "", CVAR_USERINFO},
 	{&info_spectator, "spectator", "0", CVAR_USERINFO},
@@ -1631,28 +1627,27 @@ typedef struct
 cheatvar_t	cheatvars[] = {
 	{"timescale", "1"},
 	{"timedemo", "0"},
-	{"r_drawworld", "1"},
-	{"cl_testlights", "0"},
-	{"r_fullbright", "0"},
 	{"paused", "0"},
 	{"fixedtime", "0"},
+	{"r_drawworld", "1"},
+	{"r_fullbright", "0"},
+	{"r_lightmap", "0"},
+	{"cl_testlights", "0"},
 	{"sw_draworder", "0"},
-	{"gl_lightmap", "0"},
-	{"gl_saturatelighting", "0"},
+//	{"gl_saturatelighting", "0"},
 	{NULL, NULL}
 };
 
-int		numcheatvars;
+static int	numcheatvars;
 
 void CL_FixCvarCheats (void)
 {
 	int			i;
 	cheatvar_t	*var;
 
-	if (Com_ServerState () == ss_demo) return;
+	if (Com_ServerState () == ss_demo) return;	// allow cheats for demos
 
-	if ( !strcmp(cl.configstrings[CS_MAXCLIENTS], "1")
-		|| !cl.configstrings[CS_MAXCLIENTS][0] )
+	if (!strcmp (cl.configstrings[CS_MAXCLIENTS], "1") || !cl.configstrings[CS_MAXCLIENTS][0])
 		return;		// single player can cheat
 
 	// find all the cvars if we haven't done it yet
@@ -1660,19 +1655,16 @@ void CL_FixCvarCheats (void)
 	{
 		while (cheatvars[numcheatvars].name)
 		{
-			cheatvars[numcheatvars].var = Cvar_Get (cheatvars[numcheatvars].name,
-					cheatvars[numcheatvars].value, 0);
+			cheatvars[numcheatvars].var = Cvar_Get (cheatvars[numcheatvars].name, cheatvars[numcheatvars].value, 0);
 			numcheatvars++;
 		}
 	}
 
 	// make sure they are all set to the proper values
-	for (i=0, var = cheatvars ; i<numcheatvars ; i++, var++)
+	for (i = 0, var = cheatvars ; i < numcheatvars; i++, var++)
 	{
-		if ( strcmp (var->var->string, var->value) )
-		{
+		if (strcmp (var->var->string, var->value))
 			Cvar_Set (var->name, var->value);
-		}
 	}
 }
 
@@ -1780,7 +1772,7 @@ void CL_Frame (int msec)
 
 	// advance local effects for next frame
 	CL_RunDLights ();
-	CL_RunLightStyles ();
+//	CL_RunLightStyles ();
 	SCR_RunCinematic ();
 	SCR_RunConsole ();
 
@@ -1840,7 +1832,7 @@ void CL_Init (void)
 	M_Init ();
 
 	SCR_Init ();
-	cls.disable_screen = true;	// don't draw yet
+//	cls.disable_screen = true;	// don't draw yet
 
 	CDAudio_Init ();
 	CL_InitLocal ();

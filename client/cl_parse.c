@@ -68,8 +68,8 @@ to start a download from the server.
 */
 qboolean	CL_CheckOrDownloadFile (char *filename)
 {
-	FILE *fp;
-	char	name[MAX_OSPATH], *ext;
+	FILE	*fp;
+	char	name[MAX_OSPATH], name2[MAX_OSPATH], *ext;
 
 	if (strstr (filename, ".."))
 	{
@@ -77,22 +77,23 @@ qboolean	CL_CheckOrDownloadFile (char *filename)
 		return true;
 	}
 
+	Q_CopyFilename (name, filename, sizeof(name));
 	// check all image format for .PCX and .WAL extension
-	strcpy (name, filename);
-	ext = strrchr (name, '.');
+	strcpy (name2, name);
+	ext = strrchr (name2, '.');
 	if (ext && (!strcmp (ext, ".pcx") || !strcmp (ext, ".wal")))
 	{
 		*ext = 0; // strip extension
-		if (ImageExists (name, IMAGE_ANY))
+		if (ImageExists (name2, IMAGE_ANY))
 			return true;
 	}
 
-	if (FS_FileExists (filename))
+	if (FS_FileExists (name))
 	{	// it exists, no need to download
 		return true;
 	}
 
-	strcpy (cls.downloadname, filename);
+	strcpy (cls.downloadname, name);
 
 	// download to a temp name, and only rename
 	// to the real name when done, so if interrupted
@@ -103,31 +104,29 @@ qboolean	CL_CheckOrDownloadFile (char *filename)
 //ZOID
 	// check to see if we already have a tmp for this file, if so, try to resume
 	// open the file if not opened yet
-	CL_DownloadFileName(name, sizeof(name), cls.downloadtempname);
+	CL_DownloadFileName (name, sizeof(name), cls.downloadtempname);
 
 //	FS_CreatePath (name);
 
 	fp = fopen (name, "r+b");
 	if (fp)
 	{ // it exists
-		int len;
-		fseek(fp, 0, SEEK_END);
-		len = ftell(fp);
+		int		len;
 
+		fseek (fp, 0, SEEK_END);
+		len = ftell (fp);
 		cls.download = fp;
 
 		// give the server an offset to start the download
 		Com_Printf ("Resuming %s\n", cls.downloadname);
 		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString (&cls.netchan.message,
-			va("download %s %i", cls.downloadname, len));
+		MSG_WriteString (&cls.netchan.message, va("download %s %i", cls.downloadname, len));
 	}
 	else
 	{
 		Com_Printf ("Downloading %s\n", cls.downloadname);
 		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString (&cls.netchan.message,
-			va("download %s", cls.downloadname));
+		MSG_WriteString (&cls.netchan.message, va("download %s", cls.downloadname));
 	}
 
 	cls.downloadnumber++;
@@ -152,7 +151,7 @@ void	CL_Download_f (void)
 		return;
 	}
 
-	Com_sprintf(filename, sizeof(filename), "%s", Cmd_Argv(1));
+	Q_CopyFilename (filename, Cmd_Argv(1), sizeof(filename));
 
 	if (strstr (filename, ".."))
 	{
@@ -176,8 +175,7 @@ void	CL_Download_f (void)
 	strcat (cls.downloadtempname, ".tmp");
 
 	MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-	MSG_WriteString (&cls.netchan.message,
-		va("download %s", cls.downloadname));
+	MSG_WriteString (&cls.netchan.message, va("download %s", cls.downloadname));
 
 	cls.downloadnumber++;
 }
@@ -194,7 +192,7 @@ void CL_RegisterSounds (void)
 	S_BeginRegistration ();
 	CL_RegisterTEntSounds ();
 
-	for (i=1 ; i<MAX_SOUNDS ; i++)
+	for (i = 1; i < MAX_SOUNDS; i++)
 	{
 		if (!cl.configstrings[CS_SOUNDS+i][0])
 			break;
@@ -538,7 +536,7 @@ void CL_ParseConfigString (void)
 	// do something apropriate
 
 	if (i >= CS_LIGHTS && i < CS_LIGHTS+MAX_LIGHTSTYLES)
-		CL_SetLightstyle (i - CS_LIGHTS);
+		CL_SetLightstyle (i - CS_LIGHTS, cl.configstrings[i]);
 	else if (i == CS_CDTRACK)
 	{
 		if (cl.refresh_prepped)

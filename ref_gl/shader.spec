@@ -119,6 +119,6 @@
   3) triangle
   4) sawtooth
   5) inversesawtooth
-  6)* noise     (only for "deformVertexes normal" ??)
+  6)* noise     (only for "deformVertexes normal" and "rgbGen wave noise" ?? Check this!!)
 
   Result = amp * (func(TIME * freq) + phase) + base

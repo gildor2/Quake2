@@ -543,6 +543,7 @@ static void	D_DrawTextPos (int x, int y, char *text, float r, float g, float b) 
 static void	D_DrawTextSide (char *text, float r, float g, float b) {}
 static void	D_Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data) {}
 static void	D_SetPalette (const unsigned char *palette) {}
+static float D_GetClientLight (void) { return 0; }		// normal value is 150
 
 
 #ifdef REF_HARD_LINKED
@@ -610,6 +611,8 @@ qboolean Vid_LoadRefresh (char *name)
 		re.DrawTextPos =	D_DrawTextPos;
 		re.DrawTextLeft =	D_DrawTextSide;
 		re.DrawTextRight =	D_DrawTextSide;
+
+		re.GetClientLight = D_GetClientLight;
 	}
 
 	if (re.Init (global_hInstance, MainWndProc) == -1)

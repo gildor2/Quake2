@@ -336,7 +336,7 @@ Bmodel crosses multiple leafs
 void R_DrawSolidClippedSubmodelPolygons (model_t *pmodel, mnode_t *topnode)
 {
 	int			i, j, lindex;
-	vec_t		dot;
+	float		dot;
 	msurface_t	*psurf;
 	int			numsurfaces;
 	cplane_t	*pplane;
@@ -415,7 +415,7 @@ All in one leaf
 void R_DrawSubmodelPolygons (model_t *pmodel, int clipflags, mnode_t *topnode)
 {
 	int			i;
-	vec_t		dot;
+	float		dot;
 	msurface_t	*psurf;
 	int			numsurfaces;
 	cplane_t	*pplane;

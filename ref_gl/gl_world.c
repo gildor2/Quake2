@@ -474,10 +474,10 @@ static void AddSp2Surface (refEntity_t *e)
 	p->verts[0].st[1] = p->verts[1].st[1] = 1;
 	p->verts[2].st[1] = p->verts[3].st[1] = 0;
 	// setup color
-	color = e->shaderColor;
+	color = e->shaderColor.rgba;
 	if (!(e->flags & RF_TRANSLUCENT))
 		color |= 0xFF000000;		// make it non-transparent
-	p->verts[0].rgba = p->verts[1].rgba = p->verts[2].rgba = p->verts[3].rgba = color;
+	p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color;
 
 	surf = GL_AddDynamicSurface (frame->shader, ENTITYNUM_WORLD);
 	surf->poly = p;
@@ -492,11 +492,6 @@ static void AddBeamSurfaces (refEntity_t *e)
 	vec3_t	dir1, dir2;
 	float	z1, z2, size, angle, angleStep;
 	int		i, numParts;
-
-	DrawTextLeft (va("beam {%g, %g, %g} - {%g, %g, %g} : %g",
-		e->beamStart[0],e->beamStart[1],e->beamStart[2],
-		e->beamEnd[0],e->beamEnd[1],e->beamEnd[2],e->beamRadius),
-		1,1,1);//!!
 
 	// compute detail level
 	VectorSubtract (e->beamStart, vp.vieworg, viewDir);
@@ -516,7 +511,6 @@ static void AddBeamSurfaces (refEntity_t *e)
 	numParts = size;
 	if (numParts < 1) numParts = 1;
 	else if (numParts > 6) numParts = 6;
-	DrawTextLeft (va("SIZE = %g (z1: %g, z2: %g)", size, z1, z2), 1,1,1);//!!
 
 	// compute beam axis
 	VectorSubtract (e->beamEnd, e->beamStart, axis[0]);
@@ -559,7 +553,7 @@ static void AddBeamSurfaces (refEntity_t *e)
 		p->verts[0].st[1] = p->verts[1].st[1] = 1;
 		p->verts[2].st[1] = p->verts[3].st[1] = 0;
 
-		p->verts[0].rgba = p->verts[1].rgba = p->verts[2].rgba = p->verts[3].rgba = e->shaderColor;
+		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = e->shaderColor.rgba;
 
 		surf = GL_AddDynamicSurface (gl_identityLightShader2, ENTITYNUM_WORLD);
 		surf->poly = p;
@@ -936,18 +930,11 @@ static void DrawBspSequence (node_t *leaf)
 					AddMd3Surfaces (e);
 					break;
 				case MODEL_SP2:
-/*				DrawTextLeft(va("sp: {%g, %g, %g : %g} leaf: %d",
-					e->origin[0],e->origin[1],e->origin[2],e->model->sp2->radius,
-					leaf - map.nodes - map.numNodes
-					),1,1,1);//!! */
 					AddSp2Surface (e);
 					break;
 				}
 			else if (e->flags & RF_BEAM)
-			{
-				DrawTextLeft (va("beam leaf = %d", leaf - map.nodes - map.numNodes), 1, 0, 0);//!!
 				AddBeamSurfaces (e);
-			}
 		}
 
 		/*------------ draw particles -------------*/
@@ -967,7 +954,7 @@ static void DrawBspSequence (node_t *leaf)
 }
 
 
-static void GL_MarkLeaves (void)
+static void MarkLeaves (void)
 {
 	int		cluster, i;
 	node_t	*n;
@@ -975,13 +962,13 @@ static void GL_MarkLeaves (void)
 	gl_speeds.leafs = map.numLeafNodes - map.numNodes;
 
 	// determine the vieworg cluster
-	cluster = GL_PointInLeaf (vp.modelvieworg)->cluster;
+	cluster = GL_PointInLeaf (vp.vieworg /* vp.modelvieworg (portals ??) */)->cluster;
 	// if cluster or areamask changed -- re-mark visible leaves
 	if (gl_refdef.viewCluster != cluster || gl_refdef.areaMaskChanged)
 	{
 		gl_refdef.viewCluster = cluster;
 		visFrame++;
-		if (r_novis->integer || cluster == -1 || map.numClusters <= 1)
+		if (r_novis->integer || cluster < 0 || cluster >= map.numClusters || map.numClusters <= 1)
 		{	// mark ALL nodes
 			for (i = 0, n = map.nodes; i < map.numLeafNodes; i++, n++)
 				n->visFrame = visFrame;
@@ -993,10 +980,7 @@ static void GL_MarkLeaves (void)
 
 			gl_speeds.visLeafs = 0;
 
-			if (cluster < 0 || cluster >= map.numClusters)
-				row = map.noVis;	// mark ALL nodes, but using area mask
-			else
-				row = map.visInfo + cluster * map.visRowSize;
+			row = map.visInfo + cluster * map.visRowSize;
 
 			for (i = map.numNodes, n = map.nodes + map.numNodes; i < map.numLeafNodes; i++, n++)
 			{
@@ -1044,8 +1028,8 @@ void GL_AddEntity (entity_t *ent)
 
 		out->customShader = (shader_t*) ent->skin;	//!! should use customSkin
 		out->skinNum = ent->skinnum;				//?? check skinnum in [0..model.numSkins]
-		out->shaderColor = 0xFFFFFF;				//?? white
-		out->shaderRGBA[3] = (int)(ent->alpha * 255);
+		out->shaderColor.rgba = 0xFFFFFF;			//?? white
+		out->shaderColor.c[3] = (int)(ent->alpha * 255);
 
 		// model-specific code and calculate model center
 		switch (ent->model->type)
@@ -1087,8 +1071,8 @@ void GL_AddEntity (entity_t *ent)
 		VectorCopy (ent->origin, out->beamStart);
 		VectorCopy (ent->oldorigin, out->beamEnd);
 		out->beamRadius = ent->frame / 2.0f;
-		out->shaderColor = gl_config.tbl_8to32[ent->skinnum];
-		out->shaderRGBA[3] = (int)(ent->alpha * 255);
+		out->shaderColor.rgba = gl_config.tbl_8to32[ent->skinnum];
+		out->shaderColor.c[3] = (int)(ent->alpha * 255);
 	}
 
 	gl_speeds.ents++;
@@ -1104,12 +1088,12 @@ void GL_DrawPortal (void)
 	int		i;
 	refEntity_t *e;
 
-	if (r_drawworld->integer && !(gl_refdef.flags & RDF_NOWORLDMODEL))
+	if (r_drawworld->integer && !(vp.flags & RDF_NOWORLDMODEL))
 	{
 		drawFrame++;
 		gl_speeds.frustLeafs = 0;
 
-		GL_MarkLeaves ();
+		MarkLeaves ();
 		ClearBounds (vp.mins, vp.maxs);
 		firstLeaf = WalkBspTree ();
 		DrawEntities (vp.firstEntity, vp.numEntities);

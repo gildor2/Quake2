@@ -26,6 +26,13 @@ typedef struct
 extern viddef_t vid;
 
 
+typedef union
+{
+	byte	c[4];
+	int		rgba;
+} color_t;
+
+
 /*-------------- gl_image.c -----------------*/
 
 // consts for image_t.flags
@@ -59,7 +66,7 @@ typedef enum
 	CULL_FRONT,
 	CULL_BACK,
 	CULL_NONE
-} gl_cullMode_t;
+} gl_cullMode_t;	//?? remove this? use GL_ constants?
 
 // GL_State constants
 // source blend modes
@@ -98,7 +105,7 @@ typedef enum
 #define GLSTATE_POLYGON_LINE			0x8000
 
 extern	image_t		*gl_defaultImage;
-extern	image_t		*gl_whiteImage;
+//??extern	image_t		*gl_whiteImage;
 extern	image_t		*gl_identityLightImage;
 extern	image_t		*gl_dlightImage;
 extern	image_t		*gl_particleImage;
@@ -107,8 +114,9 @@ extern	image_t		*gl_fogImage;
 // mode changing
 void	GL_Bind (image_t *tex);
 void	GL_SelectTexture (int tmu);
-void	GL_CullFace (gl_cullMode_t mode);
 void	GL_TexEnv (int env);
+void	GL_SetMultitexture (int level);
+void	GL_CullFace (gl_cullMode_t mode);
 void	GL_State (int state);
 void	GL_TextureMode (char *name);
 
@@ -191,7 +199,7 @@ model_t	*GL_FindModel (char *name);
 shader_t *GL_FindSkin (char *name);
 void	GL_LoadWorldMap (char *name);
 
-void	GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, lightstyle_t *styles);
+void	GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf);
 
 
 /*------------ gl_world.c -------------------*/
@@ -226,10 +234,7 @@ typedef struct refEntity_s
 		};
 	};
 
-	union {
-		byte	shaderRGBA[4];		// for "rgbGen/alphaGen entity"
-		int		shaderColor;
-	};
+	color_t		shaderColor;			// for "rgbGen/alphaGen entity"
 	// draw sequence
 	struct refEntity_s *drawNext;
 } refEntity_t;
@@ -276,6 +281,7 @@ void	GL_ShutdownBackend (void);
 
 typedef struct
 {
+	//?? NOTE: when changed, need to syncronize with OLD ref_gl
 	char	renderer_string[256];
 	char	vendor_string[256];
 	char	version_string[256];
@@ -286,13 +292,16 @@ typedef struct
 
 	// multitexturing
 	int		maxActiveTextures;		// == 1 if no multitexturing
+	qboolean lightmapOverbright;	// when true, lightmaps lightscaled by 2 (hardware unable to prform src*dst*2 blend)
 
 	// texture compression formats (0 if unavailable)
 	int		formatSolid;			// RGB (no alpha)
 	int		formatAlpha;			// RGBA (full alpha range)
 	int		formatAlpha1;			// RGB_A1 (1 bit for alpha)
 
-	int		colorBits, depthBits, stencilBits;
+	int		colorBits;
+	int		prevMode;				// last valid video mode
+	qboolean fullscreen;
 
 	qboolean consoleOnly;			// true if graphics disabled
 
@@ -312,31 +321,20 @@ typedef struct
 
 typedef struct
 {
-	//?? NOTE: when changed, need to syncronize with OLD ref_gl
-	int		currentBinds[32];	// up to 32 texture units supports by OpenGL 1.3
+	int		currentBinds[32];		// up to 32 texture units supports by OpenGL 1.3
 	int		currentEnv[32];
 	int		currentTmu;
 	int		currentState;
 	int		currentCullMode;
-	int		currentColor;
 
 	int		maxUsedShaderIndex;
-	qboolean finished;	//?? remove
 	qboolean is2dMode;
-
-	int		prevMode;			// last valid video mode
-	qboolean fullscreen;
-	int		colorBits;				//?? 0 == 16, 32
 } glstate_t;
 
 //?? clean this structure: most fields used from viewPortal_t; or -- eliminate at all
 typedef struct
 {
-	int		flags;
-	lightstyle_t *lightStyles;	// light styles for Q2/HL dynamic lightmaps
-	int		viewCluster;
-	// time in seconds for shader effects etc
-	float	time;
+	int		viewCluster;		//?? place to portal
 	// map areas
 	byte	areaMask[MAX_MAP_AREAS/8];
 	qboolean areaMaskChanged;
@@ -351,15 +349,17 @@ typedef struct surfaceInfo_s
 
 typedef struct
 {
+	int		flags;
+	float	time;				// time in seconds (for shader effects etc)
+	lightstyle_t *lightStyles;	// light styles for Q2/HL dynamic lightmaps
 	// view params
 	vec3_t	vieworg;
 	vec3_t	viewaxis[3];
-	lightstyle_t *lightStyles;
-	float	time;
 	// modelview params (unused now, required for portals (??))
+/* following fields may be useful when Q3 portals will be implemented (or useless ??)
 	vec3_t	modelorg;			// {0 0 0} for world model (for non-portal view)
 	vec3_t	modelaxis[3];		// {1 0 0}, {0 1 0}, {0 0 1} for world model
-	vec3_t	modelvieworg;		// coords of vieworg in modelaxis coord system (same as vieworg for world model)
+	vec3_t	modelvieworg;		// coords of vieworg in modelaxis coord system (same as vieworg for world model) */
 	float	modelMatrix[4][4];
 	// projection params
 	float	x, y, w, h;			// viewport
@@ -379,9 +379,11 @@ typedef struct
 
 typedef struct
 {
+	int		numFrames;
 	// geometry complexity
 	int		leafs, visLeafs, frustLeafs;	//?? frustLeafs -> ~cullLeafs
 	int		surfs, cullSurfs;
+	int		tris, trisMT;		// number of tris, which will be drawn without mtex and with mtex (same if no multitexture)
 	int		ents, cullEnts, cullEnts2;
 	int		parts, cullParts;	// particles
 	// OpenGL statistics
@@ -461,7 +463,8 @@ extern cvar_t	*r_nocull;			//?? ~gl_frustumCull ?
 extern cvar_t	*gl_facePlaneCull;	//?? gl_backfaceCull ?
 extern cvar_t	*gl_sortAlpha;
 extern cvar_t	*r_speeds;
-extern cvar_t	*gl_lightmap;
+extern cvar_t	*r_fullbright;
+extern cvar_t	*r_lightmap;
 extern cvar_t	*gl_showsky;
 extern cvar_t	*r_drawworld;
 extern cvar_t	*r_drawentities;

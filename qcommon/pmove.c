@@ -313,10 +313,9 @@ static void Friction (void)
 	// scale the velocity
 	newspeed = speed - drop;
 	if (newspeed < 0)
-	{
 		newspeed = 0;
-	}
-	newspeed /= speed;
+	else
+		newspeed /= speed;
 
 	vel[0] = vel[0] * newspeed;
 	vel[1] = vel[1] * newspeed;
@@ -775,7 +774,7 @@ static void CheckSpecialMovement (void)
 	VectorNormalize (flatforward);
 
 	if (pm->cmd.upmove < 0)
-		dist = 30; // when crouched - try to detect ladders on longer distances
+		dist = 30; // when crouched - try to detect ladders on a longer distances
 	else
 		dist = 1;
 	VectorMA (pml.origin, dist, flatforward, spot);
@@ -1147,7 +1146,7 @@ void Pmove (pmove_t *pmove)
 	pm->numtouch = 0;
 	VectorClear (pm->viewangles);
 	pm->viewheight = 0;
-	pm->groundentity = 0;
+	pm->groundentity = NULL;
 	pm->watertype = 0;
 	pm->waterlevel = 0;
 

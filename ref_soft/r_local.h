@@ -79,6 +79,8 @@ typedef struct image_s
 
 //===================================================================
 
+typedef float vec5_t[5];
+
 typedef unsigned char pixel_t;
 
 typedef struct vrect_s
@@ -573,7 +575,7 @@ extern cvar_t   *r_lerpmodels;
 
 extern cvar_t   *r_speeds;
 
-extern cvar_t   *r_lightlevel;  //FIXME HACK
+extern float	sw_lightlevel;
 
 extern cvar_t	*r_fullscreen;
 extern cvar_t	*r_gamma;

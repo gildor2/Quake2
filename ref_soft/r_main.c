@@ -133,7 +133,7 @@ cvar_t  *r_lerpmodels;
 cvar_t  *r_novis;
 
 cvar_t	*r_speeds;
-cvar_t	*r_lightlevel;	//FIXME HACK
+float	sw_lightlevel;
 
 cvar_t	*r_fullscreen;
 cvar_t	*r_gamma;
@@ -268,7 +268,6 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(r_drawentities, 1, 0),
 	CVAR_VAR(r_drawworld, 1, 0),
 	CVAR_VAR(r_dspeeds, 0, 0),
-	CVAR_VAR(r_lightlevel, 0, 0),
 	CVAR_VAR(r_lerpmodels, 1, 0),
 	CVAR_VAR(r_novis, 0, 0),
 	CVAR_VAR(sw_lockpvs, 0, 0),
@@ -978,13 +977,13 @@ void R_SetLightLevel (void)
 
 	if ((r_newrefdef.rdflags & RDF_NOWORLDMODEL) || (!r_drawentities->integer) || (!currententity))
 	{
-		r_lightlevel->value = 150.0;
+		sw_lightlevel = 150.0;
 		return;
 	}
 
 	// save off light value for server to look at (BIG HACK!)
 	R_LightPoint (r_newrefdef.vieworg, light);
-	r_lightlevel->value = 150.0 * light[0];
+	sw_lightlevel = 150.0 * light[0];
 }
 
 
@@ -1382,6 +1381,11 @@ void	Draw_ConCharColor (int x, int y, int c, int color)
 	Draw_CharColor (x * 8, y * 8, c, color);
 }
 
+static float GetClientLight (void)
+{
+	return sw_lightlevel;
+}
+
 
 /*
 @@@@@@@@@@@@@@@@@@@@@
@@ -1441,6 +1445,8 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.DrawTextPos = DrawText_Pos;
 	re.DrawTextLeft = DrawText_Left;
 	re.DrawTextRight = DrawText_Right;
+
+	re.GetClientLight = GetClientLight;
 
 	Swap_Init ();
 

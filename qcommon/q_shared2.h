@@ -142,9 +142,7 @@ MATHLIB
 ==============================================================
 */
 
-typedef float vec_t;
-typedef vec_t vec3_t[3];
-typedef vec_t vec5_t[5];
+typedef float vec3_t[3];
 
 typedef	int	fixed4_t;
 typedef	int	fixed8_t;
@@ -173,7 +171,14 @@ float Q_rsqrt (float number);
 //#define	fabs(f) Q_fabs(f)
 
 #if !defined C_ONLY && !defined __linux__ && !defined __sgi
-extern long Q_ftol (float f);
+//extern long Q_ftol (float f);
+
+__inline long Q_ftol (float val)
+{
+    double v = (double)val + (68719476736.0*1.5);
+    return ((long*)&v)[0] >> 16;
+}
+
 #else
 #define Q_ftol(f) (long) (f)
 #endif
@@ -191,7 +196,7 @@ extern long Q_ftol (float f);
 void VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc);
 
 // just in case you do't want to use the macros
-vec_t _DotProduct (vec3_t v1, vec3_t v2);
+float _DotProduct (vec3_t v1, vec3_t v2);
 void _VectorSubtract (vec3_t veca, vec3_t vecb, vec3_t out);
 void _VectorAdd (vec3_t veca, vec3_t vecb, vec3_t out);
 void _VectorCopy (vec3_t in, vec3_t out);
@@ -199,7 +204,7 @@ void _VectorCopy (vec3_t in, vec3_t out);
 void ClearBounds (vec3_t mins, vec3_t maxs);
 void AddPointToBounds (vec3_t v, vec3_t mins, vec3_t maxs);
 int VectorCompare (vec3_t v1, vec3_t v2);
-vec_t VectorLength (vec3_t v);
+float VectorLength (vec3_t v);
 float VectorDistance (vec3_t vec1, vec3_t vec2);
 void AnglesToAxis (const vec3_t angles, vec3_t axis[3]);
 #define AxisClear(a)			memset(a, 0, sizeof(vec3_t)*3)
@@ -207,10 +212,10 @@ void _AxisClear (vec3_t axis[3]);
 #define AxisCopy(i,o)			memcpy(o,i,sizeof(vec3_t)*3)
 void _AxisCopy (vec3_t in[3], vec3_t out[3]);
 void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross);
-vec_t VectorNormalize (vec3_t v);		// returns vector length
-vec_t VectorNormalize2 (vec3_t v, vec3_t out);
+float VectorNormalize (vec3_t v);		// returns vector length
+float VectorNormalize2 (vec3_t v, vec3_t out);
 void VectorInverse (vec3_t v);
-void VectorScale (vec3_t in, vec_t scale, vec3_t out);
+void VectorScale (vec3_t in, float scale, vec3_t out);
 int Q_log2(int val);
 
 void MatrixMultiply (float in1[3][3], float in2[3][3], float out[3][3]);
@@ -224,6 +229,7 @@ float LerpAngle (float a1, float a2, float frac);
 void ProjectPointOnPlane( vec3_t dst, const vec3_t p, const vec3_t normal );
 void PerpendicularVector( vec3_t dst, const vec3_t src );
 void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, float degrees );
+void MakeNormalVectors (vec3_t forward, vec3_t right, vec3_t up);
 
 
 //=============================================
@@ -364,6 +370,7 @@ CVARS (console variables)
 // not stored flags:
 #define CVAR_NODEFAULT		0x10000	// do not store "default" value from this Cvar_Get() call
 #define CVAR_UPDATE			0x20000	// set "modified" field after Cvar_Get() call
+#define CVAR_NOUPDATE		0x40000	// reset "modified" field ...
 
 #define CVAR_FLAG_MASK		0x0FFFF	// mask of stored cvar flags
 

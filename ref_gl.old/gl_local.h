@@ -265,7 +265,7 @@ extern	cvar_t	*r_novis;
 extern	cvar_t	*r_nocull;
 extern	cvar_t	*r_lerpmodels;
 
-extern	cvar_t	*r_lightlevel;	// FIXME: This is a HACK to get the client's light level
+extern	float	gl_lightlevel;
 
 extern	cvar_t	*gl_vertex_arrays;
 
@@ -280,7 +280,7 @@ extern	cvar_t	*gl_nosubimage;
 extern	cvar_t	*gl_bitdepth;
 extern	cvar_t	*gl_mode;
 extern	cvar_t	*gl_logFile;
-extern	cvar_t	*gl_lightmap;
+extern	cvar_t	*r_lightmap;
 extern	cvar_t	*gl_shadows;
 extern	cvar_t	*gl_dynamic;
 extern  cvar_t  *gl_monolightmap;
@@ -297,7 +297,6 @@ extern	cvar_t	*gl_poly;
 extern	cvar_t	*gl_texsort;
 extern	cvar_t	*gl_polyblend;
 extern	cvar_t	*gl_flashblend;
-extern	cvar_t	*gl_lightmaptype;
 extern	cvar_t	*gl_modulate;
 extern	cvar_t	*gl_playermip;
 extern	cvar_t	*gl_drawbuffer;
@@ -318,7 +317,6 @@ extern	cvar_t	*r_gamma;
 extern	cvar_t	*intensity;
 extern  cvar_t  *saturation;
 
-extern	int	gl_lightmap_format;
 extern	int	gl_solid_format;
 extern	int	gl_alpha_format;
 extern	int	gl_tex_solid_format;
@@ -482,6 +480,8 @@ void GL_DrawParticles (particle_t *particles, const unsigned colortable[768]);
 
 typedef struct
 {
+	//--- copy of glstate from NEW ref_gl ----
+	// (required for GLimp_... functions)
 	char	renderer_string[256];
 	char	vendor_string[256];
 	char	version_string[256];
@@ -492,13 +492,16 @@ typedef struct
 
 	// multitexturing
 	int		maxActiveTextures;		// == 1 if no multitexturing
+	qboolean lightmapOverbright;
 
 	// texture compression formats (0 if unavailable)
 	int		formatSolid;			// RGB (no alpha)
 	int		formatAlpha;			// RGBA (full alpha range)
 	int		formatAlpha1;			// RGB_A1 (1 bit for alpha)
 
-	int		colorBits, depthBits, stencilBits;
+	int		colorBits;
+	int		prevMode;				// last valid video mode
+	qboolean fullscreen;
 
 	qboolean consoleOnly;			// true if graphics disabled
 
@@ -522,23 +525,9 @@ typedef struct
 
 typedef struct
 {
-	//--- copy of glstate from NEW ref_gl ----
-	// (required for GLimp_... functions)
-	int		currentBinds[32];
-	int		currentEnv[32];
+	int		currentBinds[2];
 	int		currentTmu;
-	int		currentState;
-	int		currentCullMode;
-	int		currentColor;
 
-	int		maxUsedShaderIndex;
-	qboolean finished;	//?? remove
-	qboolean is2dMode;
-
-	int		prevMode;	// last valid video mode
-	qboolean fullscreen;
-	int		colorBits;	// 0 == 16, 32
-	//--------------- end --------------------
 	float inverse_intensity;
 
 	unsigned char *d_16to8table;

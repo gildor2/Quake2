@@ -12,27 +12,17 @@ DINPUT MOUSE BUGS/NOTES:
 - check behaviour when no DirectX installed (where ?)
 - add MOUSE4 ?
 - check DirectInput8
-! add mouse cursor hiding (not always disappear with DInput after deactivate+activate)
+*? add mouse cursor hiding (not always disappear with DInput after deactivate+activate)
 
-? make lower r_saturation limit -X (not 0) (limited by video menu init proc)
-
-Q3A:
-- added mousewheel support in the console:
-  wheel to scroll, ctrl+wheel to scroll faster, shift+wheel to scroll history
-- renderer fix:
-  MAX_SHADERS up to 2^12
-? renderer fix:
-  moved screenshot from frontend to backend, fixes broken r_smp 1 screenshots
-
-
-- stop animation with mouse click (and something another?)
+! improve memory management: allocate with alignment of 16 bytes (large blocks only ? Z_AllocAligned(size, align) func ?)
+- stop animation within a mouse click (and something another?)
 ? improve camper detection: track player position every ... 5 sec (??) for a 1+n minute period and set "camper" to true
   if current player position is near (tune this distance !) to history[now-1min .. now-2min]
 - menu option: priority (win_priorityBoost) -- for Win2K
 ? savegames: add screenshot, gzip file
 
 BSP:
-- KP map scaling (auto)
+? KP map scaling (auto)
 ? mirrored maps
 - commands spmap, devmap etc.
 - advanced "map" command syntax: add scaling and mirroring (separate scale each axis, mirror - X *= -1 ?)
@@ -40,6 +30,9 @@ BSP:
 ? Q1 map support (easier than HL)
 
 *** BUGS ***
+! (Win2K) when one client exits, server makes "Sys_Error(ERR_DROP,...)" (network error)
+- (Win2K, at home, where no IPX protocol) menu|join_server -- fatal error in user32.dll (should be ERR_DROP)
+  (no crush when launched with "noudp 1" -- R/O cvar)
 - map "temple2", "lavatube" -- waterfall: bullet sounds (change sound for water sparks, change place for water bullet sounds
   or something another ??)
 - command line: "+set cddir <dir>" (etc.) - will display error, when var will be parsed 2nd time
@@ -47,20 +40,13 @@ BSP:
 - Sys_Error(ERR_FATAL): will not restore mouse (not always ??!)
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
-- Win2K (at home, where no IPX protocol) - menu|join_server -- fatal error in user32.dll (should be ERR_DROP)
-  (no crush when launched with "noudp 1" -- R/O cvar)
 
 ? menu interface: appearing/disappearing fx (see itmastio etc.)
 
 - chasecam (see Q3 cgame)
-? improve collision detection for doors (do not open when player here or ability for player to leave
-  door whith moving (trying to move))
-? add support for moving ladders: when player on entity with ladder, move player within entity (example: map "mesto", helicopter)
 ? eliminate all qsort's
 
 - bindtmp, aliastmp, aliaslist (now it is "alias <no-args>")
-
-*? fix loading "sounds/[.]/path/name" (kill leading "/"?) in LoadBspFile (Q_CopyFilename())
 
 ! remove auto-demo start on quake loading (option? timeout? first run?)
 
@@ -76,7 +62,6 @@ BSP:
 
 ------------- API ----------------------------
 
-?(fixed?) convert all "sprintf" -> "Com_sprintf" etc. (need regexp search)
 - add Cmd_AddCommands(list,num), Cmd_RemoveCommands(list,num)
   - Cmd_AddCommands() may be implemented WITHOUT copying name, or just with using static cmdFunc_t for list
     (just insert into list, but add flags "do not free on remove")
@@ -88,7 +73,6 @@ BSP:
 
 ------------- MENUS --------------------------
 
-? MTYPE_BITMAP + ownerdraw (see q3_ui/...)
 - place "download options" to another place (not "player setup", or to upper level: where model selection performed);
   make download options to be a bitfield
 - when menu script will be implemented:
@@ -99,24 +83,23 @@ BSP:
 
 - record demos: make .dm2 file to be gzipped (produce with command other than "record"?)
   (may use old command too: who wants to send demo to other players, may just un-gzip it)
-? demos with full list of events (already: serverrecord),
-  player for this demos (total control over movement: move, chase, eye etc.)
+? demos with full list of events (already: serverrecord);
+  make player for this demos (total control over movement: move, chase, eye etc.)
 *? improve movement prediction (lots of bugs, such as "stand-on-grenage drizzle" (fixed?) and "hooked-in opening-door"):
   ? use acceleration (see Q3, HL ??)
+? add support for moving ladders: when player on entity with ladder, move player within entity (example: map "mesto", helicopter)
+  (seems, this is game code ...)
 ? improve speed of downloading: limited by qcommon.h::MAX_MSGLEN (used in )
   client: cl_parse.c :: CL_ParseDownload() - net_massege ;; SZ_Print(..,"nextdl")
   server: sv_user.c :: SV_NextDownload_f() - write_size=r (1024 max < MAX_MSGLEN)
 ? perform extended protocol checking by adding "[cl_]extprotocol" to userinfo
-? make pmove player bounds be taken from the actual player model
+? make pmove player bounds to be taken from the actual player model
 ? improve model precaching in cl_mail.c::CL_RequestNextDownload() (find FS_LoadFile) - make it with global
   LoadMd2() and global model list ??
 ? SV_FindIndex() -- use hash tables ?
 
 ------------ REF_GL (new) --------------
 
-?? zFar: round zFar/zNear to a power of 2 (??) for better depth precision
-
-* sort shaders with sortParam + textureNum + lightmapNum (in that order)
 - R_RecursiveWorldNode():
   1) surface visibility determination (already implemented in Q2/3)
   2) dlight-in-leaf (Q3)
@@ -131,15 +114,11 @@ BSP:
   ? corona lightstyles - find nearest surface with numLightStyles > 1) (implemented in KP)
   - auto-coronas for Q2 maps (scripted or with shader) - surfaces with certain shader will give corona in its center
     (often in Q2 DM maps)
-- add SURF_WATER (or just disable auto-envmap when shaders will be implemented)
+- disable auto-envmap when surface not from CONTENTS_WINDOW -- need Trace()/PointContents() to detect 
 ? place LoadMd2 outside ref_xxx and perform lovercase for a skin names
-- use GL_NV_fog_distance (?) / GL_EXT_fog_coord, GL_EXT_env_combiner (!), GL_EXT_texture_filter_anisotropic (?)
+- use GL_NV_fog_distance (?) / GL_EXT_fog_coord, GL_EXT_texture_filter_anisotropic (?)
 ! fog occlusion (for global fog) -- implement it like sky (occluded surface -> sky surface, sky -> fog color);
   may look at Alice ...
-
-BUGS:
-? GL: looking through window to a dark wall will make wall brighter (use other blend mode?)
-? vertexArrayRange not works (require (almost) complete rewritting)
 
 ------------ SOUND ---------------------
 
@@ -172,6 +151,8 @@ BUGS:
 ? change "gl_console_only" and "sw_console_only" to "r_consoleOnly"
 ! remove "vidref_val", REF_SOFT, REF_GL, REF_OTHER (q_shared2.h)
 
+- decompress visinfo for client (cmodel); share this with renderers (require to modify oldgl and soft)
+
 ------------ COMMON --------------
 
 ? meminfo (see Alice) - renderer (hunks), z, chains etc. ???
@@ -197,7 +178,7 @@ BUGS:
 
 !? add Python virtual machine (game library, inline map scripts)
 
-- separate "math.c"; make "MMX", "3D Now!", "SSE" and "common" versions for some functions
+- separate "math.c"; make "MMX", "3D Now!", "SSE" and "common" versions for some functions (all trace functions, ...)
 - make some functions #define -> inline (DotProduct etc.)
                                  
 ------------- CVARS --------------------
@@ -207,6 +188,7 @@ BUGS:
 ? cvar_unmon varname  - stop monitor for cvar
 ? completion cvarnames after "set", "toggle", "add" (etc.) and "...$varname"
   (add flags for Cmd_AddCommand() - complete type: cvar, map, demo ... ???)
+? make completion "dir"-like formatting + colorizing against char-marks (types)
 
 ------------- LINUX --------------------
 

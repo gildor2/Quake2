@@ -62,7 +62,6 @@ static qboolean VerifyDriver (void)
 /*
  * Vid_CreateWindow
  */
-#define	WINDOW_CLASS_NAME	"Quake 2"
 
 qboolean Vid_CreateWindow (int width, int height, qboolean fullscreen)
 {
@@ -80,9 +79,9 @@ qboolean Vid_CreateWindow (int width, int height, qboolean fullscreen)
 	wc.hInstance	= glw_state.hInstance;
 	wc.hIcon	= 0;
 	wc.hCursor	= 0; //LoadCursor (NULL,IDC_ARROW);
-	wc.hbrBackground	= (void *)COLOR_GRAYTEXT;
+	wc.hbrBackground	= (void *) COLOR_GRAYTEXT;
 	wc.lpszMenuName 	= 0;
-	wc.lpszClassName	= WINDOW_CLASS_NAME;
+	wc.lpszClassName	= APPNAME;
 
 	if (!RegisterClass (&wc))
 		Com_Error (ERR_FATAL, "Couldn't register window class");
@@ -121,8 +120,8 @@ qboolean Vid_CreateWindow (int width, int height, qboolean fullscreen)
 
 	glw_state.hWnd = CreateWindowEx (
 		 exstyle,
-		 WINDOW_CLASS_NAME,
-		 "Quake 2",
+		 APPNAME,
+		 APPNAME,
 		 stylebits,
 		 x, y, w, h,
 		 NULL,
@@ -139,7 +138,7 @@ qboolean Vid_CreateWindow (int width, int height, qboolean fullscreen)
 	// init all the gl stuff for the window
 	if (!GLimp_InitGL ())
 	{
-		Com_WPrintf("Vid_CreateWindow() - GLimp_InitGL failed\n");
+		Com_WPrintf ("Vid_CreateWindow() - GLimp_InitGL failed\n");
 		return false;
 	}
 
@@ -176,7 +175,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 	// destroy the existing window
 	if (glw_state.hWnd)
 	{
-		gl_state.fullscreen = false; // disable ChangeDisplaySettings(0,0) in Shutdown()
+		gl_config.fullscreen = false; // disable ChangeDisplaySettings(0,0) in Shutdown()
 		GLimp_Shutdown ();
 	}
 
@@ -210,13 +209,13 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 			Com_Printf ("...using desktop display depth of %d\n", bitspixel);
 		}
 
-		gl_state.colorBits = colorBits;
+		gl_config.colorBits = colorBits;
 		Com_Printf ("...calling CDS: ");
 		if (ChangeDisplaySettings (&dm, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL)
 		{
 			*pwidth = width;
 			*pheight = height;
-			gl_state.fullscreen = true;
+			gl_config.fullscreen = true;
 			Com_Printf ("ok\n");
 
 			if (!Vid_CreateWindow (width, height, true))
@@ -256,8 +255,8 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 
 				*pwidth = width;
 				*pheight = height;
-				gl_state.fullscreen = false;
-				gl_state.colorBits = 0;
+				gl_config.fullscreen = false;
+				gl_config.colorBits = 0;
 				if ( !Vid_CreateWindow (width, height, false) )
 					return rserr_invalid_mode;
 				return rserr_invalid_fullscreen;
@@ -268,7 +267,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 				if (!Vid_CreateWindow (width, height, true))
 					return rserr_invalid_mode;
 
-				gl_state.fullscreen = true;
+				gl_config.fullscreen = true;
 				return rserr_ok;
 			}
 		}
@@ -281,7 +280,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 
 		*pwidth = width;
 		*pheight = height;
-		gl_state.fullscreen = false;
+		gl_config.fullscreen = false;
 		if (!Vid_CreateWindow (width, height, false))
 			return rserr_invalid_mode;
 	}
@@ -457,13 +456,13 @@ void GLimp_Shutdown (void)
 		glw_state.log_fp = NULL;
 	}
 
-	UnregisterClass (WINDOW_CLASS_NAME, glw_state.hInstance);
+	UnregisterClass (APPNAME, glw_state.hInstance);
 
-	if (gl_state.fullscreen)
+	if (gl_config.fullscreen)
 	{
 		if (!strlen (vid_ref->string))
 			ChangeDisplaySettings (0, 0);
-		gl_state.fullscreen = false;
+		gl_config.fullscreen = false;
 	}
 }
 

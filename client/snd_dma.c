@@ -500,9 +500,7 @@ Used for spatializing channels and autosounds
 */
 void S_SpatializeOrigin (vec3_t origin, float master_vol, float dist_mult, int *left_vol, int *right_vol)
 {
-    vec_t		dot;
-    vec_t		dist;
-    vec_t		lscale, rscale, scale;
+    float		dot, dist, lscale, rscale, scale;
     vec3_t		source_vec;
 
 	if (cls.state != ca_active)
@@ -1090,10 +1088,9 @@ void S_Update(vec3_t origin, vec3_t forward, vec3_t right, vec3_t up)
 	if (re.flags & REF_CONSOLE_ONLY)
 		return;
 
-	if (!sound_started)
-		return;
+	if (!sound_started) return;
 
-	// if the laoding plaque is up, clear everything
+	// if the loading plaque is up, clear everything
 	// out to make sure we aren't looping a dirty
 	// dma buffer while loading
 	if (cls.disable_screen)

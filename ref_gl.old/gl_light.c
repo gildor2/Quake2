@@ -202,6 +202,7 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 	byte		*lightmap;
 	int			maps;
 	int			r;
+	float		modul;
 
 	if (node->contents != -1)
 		return -1;		// didn't hit anything
@@ -232,6 +233,9 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 	VectorCopy (mid, lightspot);
 	lightplane = plane;
 
+	modul = gl_modulate->value;
+	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
+		modul *= 2;
 	surf = r_worldmodel->surfaces + node->firstsurface;
 	for (i=0 ; i<node->numsurfaces ; i++, surf++)
 	{
@@ -265,21 +269,18 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 		VectorCopy (vec3_origin, pointcolor);
 		if (lightmap)
 		{
-			vec3_t scale;
+			float	scale;
 
 			lightmap += 3*(dt * ((surf->extents[0]>>4)+1) + ds);
 
-			for (maps = 0 ; maps < MAXLIGHTMAPS && surf->styles[maps] != 255 ;
-					maps++)
+			for (maps = 0 ; maps < MAXLIGHTMAPS && surf->styles[maps] != 255 ; maps++)
 			{
-				for (i=0 ; i<3 ; i++)
-					scale[i] = gl_modulate->value*r_newrefdef.lightstyles[surf->styles[maps]].rgb[i];
+				scale = modul * r_newrefdef.lightstyles[surf->styles[maps]].value / 128.0f;
 
-				pointcolor[0] += lightmap[0] * scale[0] * (1.0/255);
-				pointcolor[1] += lightmap[1] * scale[1] * (1.0/255);
-				pointcolor[2] += lightmap[2] * scale[2] * (1.0/255);
-				lightmap += 3*((surf->extents[0]>>4)+1) *
-						((surf->extents[1]>>4)+1);
+				pointcolor[0] += lightmap[0] * scale / 255.0f;
+				pointcolor[1] += lightmap[1] * scale / 255.0f;
+				pointcolor[2] += lightmap[2] * scale / 255.0f;
+				lightmap += 3 * ((surf->extents[0]>>4) + 1) * ((surf->extents[1]>>4) + 1);
 			}
 		}
 
@@ -303,7 +304,7 @@ void R_LightPoint (vec3_t p, vec3_t color)
 	dlight_t	*dl;
 	float		light;
 	vec3_t		dist;
-	float		add;
+	float		add, modul;
 
 	if (r_newrefdef.rdflags & RDF_NOWORLDMODEL || !r_worldmodel->lightdata || r_fullbright->integer == 2)
 	{
@@ -340,7 +341,10 @@ void R_LightPoint (vec3_t p, vec3_t color)
 		}
 	}
 
-	VectorScale (color, gl_modulate->value, color);
+	modul = gl_modulate->value;
+	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
+		modul *= 2;
+	VectorScale (color, modul, color);
 }
 
 
@@ -441,11 +445,8 @@ void R_SetCacheState( msurface_t *surf )
 {
 	int maps;
 
-	for (maps = 0 ; maps < MAXLIGHTMAPS && surf->styles[maps] != 255 ;
-		 maps++)
-	{
-		surf->cached_light[maps] = r_newrefdef.lightstyles[surf->styles[maps]].white;
-	}
+	for (maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
+		surf->cached_light[maps] = r_newrefdef.lightstyles[surf->styles[maps]].value;
 }
 
 /*
@@ -461,7 +462,7 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 	int			r, g, b, a, max;
 	int			i, j, size;
 	byte		*lightmap;
-	float		scale[4];
+	float		scale, modul;
 	int			nummaps;
 	float		*bl;
 	lightstyle_t	*style;
@@ -476,11 +477,15 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 	if (size > (sizeof(s_blocklights)>>4) )
 		Com_Error (ERR_DROP, "Bad s_blocklights size: %d x %d > %d", smax, tmax, sizeof(s_blocklights)>>4);
 
+	modul = gl_modulate->value;
+	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
+		modul *= 2;
+
 	/*---(comment added by Gildor): calculate lightmap texture: if surf->samples == 0 -- white, else
 	 * scale lightmap image by (gl_modulate*{refdef.lightstyles})
 	 */
 
-// set to full bright if no light data
+	// set to full bright if no light data
 	if (!surf->samples)
 	{
 		int maps;
@@ -512,12 +517,9 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 		{
 			bl = s_blocklights;
 
-			for (i=0 ; i<3 ; i++)	//?? i==3 unused ??
-				scale[i] = gl_modulate->value*r_newrefdef.lightstyles[surf->styles[maps]].rgb[i];	//?? only 1 style
+			scale = modul * r_newrefdef.lightstyles[surf->styles[maps]].value / 128.0f;	//?? only 1 style
 
-			if ( scale[0] == 1.0F &&
-				 scale[1] == 1.0F &&
-				 scale[2] == 1.0F )
+			if (scale == 1.0f)
 			{
 				for (i=0 ; i<size ; i++, bl+=3)
 				{
@@ -530,9 +532,9 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 			{
 				for (i=0 ; i<size ; i++, bl+=3)
 				{
-					bl[0] = lightmap[i*3+0] * scale[0];
-					bl[1] = lightmap[i*3+1] * scale[1];
-					bl[2] = lightmap[i*3+2] * scale[2];
+					bl[0] = lightmap[i*3+0] * scale;
+					bl[1] = lightmap[i*3+1] * scale;
+					bl[2] = lightmap[i*3+2] * scale;
 				}
 			}
 			lightmap += size*3;		// skip to next lightmap
@@ -544,17 +546,13 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 
 		memset( s_blocklights, 0, sizeof( s_blocklights[0] ) * size * 3 );
 
-		for (maps = 0 ; maps < MAXLIGHTMAPS && surf->styles[maps] != 255 ;
-			 maps++)
+		for (maps = 0 ; maps < MAXLIGHTMAPS && surf->styles[maps] != 255 ; maps++)
 		{
 			bl = s_blocklights;
 
-			for (i=0 ; i<3 ; i++)
-				scale[i] = gl_modulate->value*r_newrefdef.lightstyles[surf->styles[maps]].rgb[i];
+			scale = modul*r_newrefdef.lightstyles[surf->styles[maps]].value / 128.0f;
 
-			if ( scale[0] == 1.0F &&
-				 scale[1] == 1.0F &&
-				 scale[2] == 1.0F )
+			if (scale == 1.0f)
 			{
 				for (i=0 ; i<size ; i++, bl+=3 )
 				{
@@ -567,20 +565,20 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 			{
 				for (i=0 ; i<size ; i++, bl+=3)
 				{
-					bl[0] += lightmap[i*3+0] * scale[0];
-					bl[1] += lightmap[i*3+1] * scale[1];
-					bl[2] += lightmap[i*3+2] * scale[2];
+					bl[0] += lightmap[i*3+0] * scale;
+					bl[1] += lightmap[i*3+1] * scale;
+					bl[2] += lightmap[i*3+2] * scale;
 				}
 			}
 			lightmap += size*3;		// skip to next lightmap
 		}
 	}
 
-// add all the dynamic lights
+	// add all the dynamic lights
 	if (surf->dlightframe == r_framecount)
 		R_AddDynamicLights (surf);
 
-// put into texture format
+	// put into texture format
 store:
 	stride -= (smax<<2);
 	bl = s_blocklights;
@@ -711,9 +709,9 @@ store:
 				case 'C':
 					// try faking colored lighting
 					a = 255 - ((r+g+b)/3);
-					r *= a/255.0;
-					g *= a/255.0;
-					b *= a/255.0;
+					r *= a / 255.0;
+					g *= a / 255.0;
+					b *= a / 255.0;
 					break;
 				case 'A':
 				default:

@@ -200,7 +200,7 @@ static void CancelChanges (void *unused)
 /*
  * Vid_MenuInit
  */
-void Vid_MenuInit( void )
+void Vid_MenuInit (void)
 {
 	int i, y;
 

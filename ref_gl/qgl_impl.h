@@ -245,6 +245,10 @@ static char *EnumName (GLenum v)
 		return "TEXTURE0_ARB";
 	case GL_TEXTURE1_ARB:
 		return "TEXTURE1_ARB";
+	case GL_TEXTURE2_ARB:
+		return "TEXTURE2_ARB";
+	case GL_TEXTURE3_ARB:
+		return "TEXTURE3_ARB";
 	case GL_MAX_TEXTURES_SGIS:
 		return "MAX_TEXTURES_SGIS";
 	case GL_TEXTURE0_SGIS:

@@ -108,8 +108,9 @@ typedef struct particle_s
 
 typedef struct
 {
-	float		rgb[3];				// 0.0 - 2.0
-	float		white;				// highest of rgb
+	int		length;
+	byte	value;					// 0 .. 255 -> 0.0 .. 2.0
+	byte	map[MAX_QPATH];
 } lightstyle_t;
 
 typedef struct
@@ -124,14 +125,13 @@ typedef struct
 
 	byte		*areabits;			// if not NULL, only areas with set bits will be drawn
 
-	lightstyle_t	*lightstyles;	// [MAX_LIGHTSTYLES]
-
 	int			num_entities;
 	entity_t	*entities;
 
 	int			num_dlights;
 	dlight_t	*dlights;
 
+	lightstyle_t *lightstyles;		// [MAX_LIGHTSTYLES]
 	particle_t	*particles;
 } refdef_t;
 
@@ -205,6 +205,9 @@ typedef struct
 
 	/*---- draw char at (x,y) (char-related coordinates) ----*/
 	void	(*DrawConCharColor) (int x, int y, int c, int color);
+
+	/*----------------- lighting -------------------*/
+	float	(*GetClientLight) (void);		// used by server to determine client visibility (AI)
 } refExport_t;
 
 

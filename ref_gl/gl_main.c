@@ -13,7 +13,6 @@ drawSpeeds_t gl_speeds;
 
 refImport_t	ri;
 
-//??void GL_Strings_f (void); --> gfxInfo
 
 //------------- Cvars -----------------
 
@@ -60,13 +59,18 @@ cvar_t	*r_nocull;
 cvar_t	*gl_facePlaneCull;
 cvar_t	*gl_sortAlpha;
 cvar_t	*r_speeds;
-cvar_t	*gl_lightmap;
+cvar_t	*r_fullbright;
+cvar_t	*r_lightmap;
 cvar_t	*gl_showsky;
 cvar_t	*r_drawworld;
 cvar_t	*r_drawentities;
 cvar_t	*gl_showbboxes;
 cvar_t	*gl_showtris;
 cvar_t	*gl_singleShader;
+
+
+static void ClearTexts (void);
+void DrawTexts (void);
 
 
 static void Gfxinfo_f (void)
@@ -86,26 +90,28 @@ static void Gfxinfo_f (void)
 
 static void GL_Register (void)
 {
+/* NOTE: some cvars have "CVAR_NOUPDATE" flag -- for correct video-config-menu work (to detect changes)
+ * Every cvar here can have this flag (?) (but only few of them REQUIRE it)
+ * If cvar have "CVAR_UPDATE" flag, its value will be re-analyzed (settings, which are (potentially) inactive by defaults)
+ */
 CVAR_BEGIN(vars)
-//	CVAR_VAR(r_fullbright, 0, 0),
-
 	CVAR_VAR(gl_texturemode, GL_LINEAR_MIPMAP_NEAREST, CVAR_ARCHIVE),
-	CVAR_VAR(gl_picmip, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_picmip, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gl_roundImagesDown, 1, 0),
 
 //	CVAR_VAR(gl_shadows, 0, CVAR_ARCHIVE ),
 	CVAR_VAR(r_gamma, 1, CVAR_ARCHIVE),
-	CVAR_VAR(r_saturation, 1, CVAR_ARCHIVE),
+	CVAR_VAR(r_saturation, 1, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(r_intensity, 1, CVAR_ARCHIVE),		//?? remove ?!
 	CVAR_VAR(r_ignorehwgamma, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_overBrightBits, 1, CVAR_ARCHIVE),
-	CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE),
-	CVAR_VAR(gl_textureBits, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
+	CVAR_VAR(gl_textureBits, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	//!! add gl_depthBits
 
 	CVAR_VAR(gl_fastsky, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_dynamic, 1, 0),
-	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gl_ignoreFastPath, 1, 0),						//!! use with VertexArrayRange ONLY !!
 
 	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE),
@@ -131,7 +137,8 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_sortAlpha, 0, 0),
 	CVAR_VAR(r_speeds, 0, 0),
 //	CVAR_VAR(gl_lockpvs, 0, 0), ????
-	CVAR_VAR(gl_lightmap, 0, 0),
+	CVAR_VAR(r_fullbright, 0, 0),
+	CVAR_VAR(r_lightmap, 0, 0),
 	CVAR_VAR(gl_showsky, 0, 0),
 	CVAR_VAR(r_drawworld, 1, 0),
 	CVAR_VAR(r_drawentities, 1, 0),
@@ -151,11 +158,7 @@ CVAR_END
 	Cmd_AddCommand ("gfxinfo", Gfxinfo_f);
 }
 
-/*
-==================
-R_SetMode
-==================
-*/
+
 qboolean GL_SetMode (void)
 {
 	rserr_t err;
@@ -167,7 +170,7 @@ qboolean GL_SetMode (void)
 	gl_mode->modified = false;
 
 	if ((err = GLimp_SetMode (&vid.width, &vid.height, gl_mode->integer, fullscreen)) == rserr_ok)
-		gl_state.prevMode = gl_mode->integer;
+		gl_config.prevMode = gl_mode->integer;
 	else
 	{
 		if  (err == rserr_invalid_fullscreen)
@@ -180,13 +183,13 @@ qboolean GL_SetMode (void)
 		}
 		else if (err == rserr_invalid_mode)
 		{
-			Cvar_SetInteger ("gl_mode", gl_state.prevMode);
+			Cvar_SetInteger ("gl_mode", gl_config.prevMode);
 			gl_mode->modified = false;
 			Com_WPrintf ("R_SetMode() - invalid mode\n");
 		}
 
 		// try setting it back to something safe
-		if ((err = GLimp_SetMode (&vid.width, &vid.height, gl_state.prevMode, false)) != rserr_ok)
+		if ((err = GLimp_SetMode (&vid.width, &vid.height, gl_config.prevMode, false)) != rserr_ok)
 		{
 			Com_WPrintf ("R_SetMode() - could not revert to safe mode\n");
 			return false;
@@ -198,47 +201,42 @@ qboolean GL_SetMode (void)
 
 void GL_SetDefaultState (void)
 {
-	qglClearDepth (1.0);
-	qglCullFace (GL_FRONT);
+	int		i;
+
+	qglDisable (GL_CULL_FACE);
 	qglColor4f (1, 1, 1, 1);
 
-	if (gl_config.maxActiveTextures > 1)
+	// setup texturing
+	for (i = 1; i < gl_config.maxActiveTextures; i++)
 	{
-		GL_SelectTexture (1);
-		GL_TexEnv (GL_MODULATE);
-		GL_TextureMode (gl_texturemode->string);
-		GL_Bind (NULL);
-		GL_SelectTexture (0);
+		GL_SelectTexture (i);
+		qglDisable (GL_TEXTURE_2D);
+		gl_state.currentBinds[i] = -1;
+		GL_TexEnv (GL_REPLACE);
 	}
-	qglEnable (GL_TEXTURE_2D);
-	GL_TextureMode (gl_texturemode->string);
-	GL_TexEnv (GL_MODULATE);		// 1st TMU always have TexEnv == MODULATE
+	if (gl_config.maxActiveTextures > 1) GL_SelectTexture (0);
+	qglDisable (GL_TEXTURE_2D);
+	gl_state.currentBinds[0] = -1;
+	GL_TexEnv (GL_MODULATE);
 
-	// set GL_State
-	gl_state.currentState = GLSTATE_DEPTHWRITE|GLSTATE_NODEPTHTEST;
+	GL_TextureMode (gl_texturemode->string);
+
+	// set GL_State to a corresponding zero values
 	qglDisable (GL_BLEND);
 	qglDisable (GL_ALPHA_TEST);
-	qglDepthMask (1);
-	qglDisable (GL_DEPTH_TEST);
+	qglDepthMask (GL_TRUE);
+	qglEnable (GL_DEPTH_TEST);
 	qglDepthFunc (GL_LEQUAL);
 	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-
-	GL_CullFace (CULL_NONE);
 
 	qglEnable (GL_SCISSOR_TEST);
 	qglShadeModel (GL_SMOOTH);
 	qglEnableClientState (GL_VERTEX_ARRAY);
 }
 
-/*
-===============
-R_Init
-===============
-*/
+
 static int GL_Init (void *hinstance, void *hWnd)
 {
-	int		err;
-
 	Com_Printf ("------- R_Init -------\n");
 
 	Com_Printf ("ref_gl version: "REF_VERSION"\n");
@@ -279,7 +277,7 @@ static int GL_Init (void *hinstance, void *hWnd)
 	}
 
 	// set our "safe" mode
-	gl_state.prevMode = 3;
+	gl_config.prevMode = 3;
 
 	/*----- create the window and set up the context -----*/
 	if (!GL_SetMode ())
@@ -290,18 +288,10 @@ static int GL_Init (void *hinstance, void *hWnd)
 	}
 
 	/*----------- Initialize video config menu -----------*/
-	Vid_MenuInit ();
-	// reset "modified" field for some vars (for correct menu need-restart detecting)
-#define RESET(var) var->modified = false;
-	RESET(r_saturation);
-	RESET(gl_picmip);
-	RESET(gl_vertexLight);
-	RESET(gl_bitdepth);
-	RESET(gl_textureBits);
-#undef RESET
+//??	Vid_MenuInit ();
 
 #ifdef __linux__
-	Cvar_SetInteger ("gl_finish", 1);
+	Cvar_SetInteger ("gl_finish", 1);	//??
 #endif
 
 	/*----------------- Get various GL strings ----------------*/
@@ -312,7 +302,6 @@ static int GL_Init (void *hinstance, void *hWnd)
 	/*------------------ Grab extensions ----------------------*/
 	QGL_InitExtensions ();
 
-	//?? is maxActiveTextures needed?
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
 	{
 		qglGetIntegerv (GL_MAX_TEXTURE_UNITS_ARB, &gl_config.maxActiveTextures);
@@ -324,6 +313,9 @@ static int GL_Init (void *hinstance, void *hWnd)
 	}
 	else
 		gl_config.maxActiveTextures = 1;
+	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE)) //!! && !ENV_COMBINE
+		gl_config.lightmapOverbright = true;
+
 
 	//?? place this decision to Upload() and remove formatSolid from gl_config? (and update oldgl if needed)
 	if (GL_SUPPORT(QGL_ARB_TEXTURE_COMPRESSION))
@@ -341,6 +333,11 @@ static int GL_Init (void *hinstance, void *hWnd)
 
 	qglGetIntegerv (GL_MAX_TEXTURE_SIZE, &gl_config.maxTextureSize);
 
+	// set screen to particular color while initializing
+	qglClearColor (0.1, 0, 0, 1);
+	qglClear (GL_COLOR_BUFFER_BIT);
+	GLimp_EndFrame ();
+
 	GL_SetDefaultState();
 
 	GL_InitImages ();
@@ -349,29 +346,14 @@ static int GL_Init (void *hinstance, void *hWnd)
 	GL_InitBackend ();
 
 	gl_refdef.viewCluster = -2;		// force update visinfo for map:
-			// -1 is "no visinfo", >= 0 -- visinfo, so, -2 is unused (not reserved)
+				// -1 is "no visinfo", >= 0 -- visinfo, so, -2 is unused (not reserved)
 
-#if 0 //!!!
-	// from Q3
-	GL_BackEnd ();
-	GL_InitFlares (); //?
-//?	GL_DrawStretchPic (0, 0, 0, 0, 0, 0, 1, 1, NULL);
-#endif
-
-	if ((err = qglGetError ()) != GL_NO_ERROR)
-		Com_Printf ("^1glGetError() = 0x%8X\n", err);
-	else
-		Com_Printf ("------- finished R_Init -------\n");
+	Com_Printf ("------- finished R_Init -------\n");
 
 	return 0;	// all OK
 }
 
 
-/*
-===============
-R_Shutdown
-===============
-*/
 static void GL_Shutdown (void)
 {
 	Cmd_RemoveCommand ("gfxinfo");
@@ -381,7 +363,9 @@ static void GL_Shutdown (void)
 	GL_ShutdownShaders ();
 	GL_ShutdownImages ();
 
-	// shut down OS specific OpenGL stuff like contexts, etc.
+	GL_SetMultitexture (0);
+
+	// shut down OS-specific OpenGL stuff like contexts, etc.
 	GLimp_Shutdown();
 
 	// shutdown our QGL subsystem
@@ -412,30 +396,7 @@ void GL_Set2DMode (void)
 
 /*---------------- Backend helpers ----------------------*/
 
-void GL_SetColorB (byte color[4])
-{
-	if (*(int*)color != gl_state.currentColor)
-	{
-		PUT_BACKEND_COMMAND (bkSetColor_t, c);
-		c->type = BACKEND_SET_COLOR;
-		gl_state.currentColor = c->rgba = *(int*)color;
-	}
-}
-
-
-void GL_SetColor (float color[4])
-{
-	byte c[4];
-
-	c[0] = color[0] * 255;
-	c[1] = color[1] * 255;
-	c[2] = color[2] * 255;
-	c[3] = color[3] * 255;
-	GL_SetColorB (c);
-}
-
-
-void GL_DrawStretchPic (shader_t *shader, float x, float y, float w, float h, float s1, float t1, float s2, float t2)
+void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, int color)
 {
 	PUT_BACKEND_COMMAND (bkDrawPic_t, p);
 	p->type = BACKEND_PIC;
@@ -444,20 +405,21 @@ void GL_DrawStretchPic (shader_t *shader, float x, float y, float w, float h, fl
 	p->y = y;
 	p->w = w;
 	p->h = h;
-	if (/*s1 == 0 && s2 == 1 &&*/ w > shader->width * 2)
+	if (w > shader->width * 2)
 	{
-		s1 += 0.5 / shader->width;
-		s2 -= 0.5 / shader->width;
+		s1 += 0.5f / shader->width;
+		s2 -= 0.5f / shader->width;
 	}
-	if (/*t1 == 0 && t2 == 1 &&*/ h > shader->height * 2)
+	if (h > shader->height * 2)
 	{
-		t1 += 0.5 / shader->height;
-		t2 -= 0.5 / shader->height;
+		t1 += 0.5f / shader->height;
+		t2 -= 0.5f / shader->height;
 	}
 	p->s1 = s1;
 	p->t1 = t1;
 	p->s2 = s2;
 	p->t2 = t2;
+	p->c.rgba = color;
 }
 
 
@@ -466,8 +428,6 @@ void GL_DrawStretchPic (shader_t *shader, float x, float y, float w, float h, fl
 
 static void GL_BeginFrame (float camera_separation)
 {
-	static byte	initColor[4] = {255, 255, 255, 255};
-
 	if (gl_logFile->modified)
 	{
 		GLimp_EnableLogging (gl_logFile->integer);
@@ -479,15 +439,15 @@ static void GL_BeginFrame (float camera_separation)
 		Cvar_SetInteger ("gl_logFile", 0);
 	}
 
-//	DrawTextRight ("---------BeginFrame---------\n", 1,0,0);//!!!
+//	DrawTextRight ("---------BeginFrame---------\n", 1,0,0);
 	LOG_STRING ("\n---------- Begin Frame ----------\n\n");
 
 	if (gl_finish->integer == 2) qglFinish ();
 	gl_speeds.beginFrame = Sys_Milliseconds ();
+	gl_speeds.numFrames = 0;
 
 	//?? what to do with the camera_separation ?
 
-	gl_state.finished = false;
 	gl_state.maxUsedShaderIndex = -1;
 
 	if (gl_texturemode->modified)
@@ -508,30 +468,31 @@ static void GL_BeginFrame (float camera_separation)
 		vid_ref->modified = true;
 
 	{
-		PUT_BACKEND_COMMAND (int, tmp);
-		*tmp = BACKEND_BEGIN_FRAME;
+		PUT_BACKEND_COMMAND (int, p);
+		*p = BACKEND_BEGIN_FRAME;
 	}
 
-	gl_state.currentColor = 0;	// force to store current color
-	GL_SetColorB (initColor);
 //?	GLimp_BeginFrame (camera_separation); -- do (almost in Win32, totally in Linux) nothing
 }
 
 
 static void GL_EndFrame (void)
 {
-//	DrawTextRight ("---------EndFrame---------\n", 1,0,0);//!!!
+	if (!gl_speeds.numFrames) ClearTexts ();
+
+//	DrawTextRight ("---------EndFrame---------\n", 1,0,0);
 	{
-		PUT_BACKEND_COMMAND (int, tmp);
-		*tmp = BACKEND_END_FRAME;
+		PUT_BACKEND_COMMAND (int, p);
+		*p = BACKEND_END_FRAME;
 	}
 
 	GL_BackEnd ();
 	GL_ClearBuffers ();
 
+
 	if (gl_finish->integer == 2) qglFinish ();
 	gl_speeds.endFrame = Sys_Milliseconds ();
-	if (r_speeds->integer)
+	if (r_speeds->integer && gl_speeds.beginFrame <= gl_speeds.begin3D)	// draw only when have 3D on screen
 	{
 		DrawTextRight (va("fe: %2d bk: %2d (srt: %2d 3d: %2d 2d: %2d)",
 			gl_speeds.beginSort - gl_speeds.beginFrame,
@@ -558,8 +519,8 @@ static void PrepareWorldModel (void)
 	};
 
 	// all fields should be zeroed before call this function !
-	VectorCopy (vp.vieworg, vp.modelvieworg);
-	vp.modelaxis[0][0] = vp.modelaxis[1][1] = vp.modelaxis[2][2] = 1;	// orthogonal axis
+//	VectorCopy (vp.vieworg, vp.modelvieworg); // portals ??
+//	vp.modelaxis[0][0] = vp.modelaxis[1][1] = vp.modelaxis[2][2] = 1;	// orthogonal axis ( portals ??)
 	/* Matrix contents:
 	 *  a00   a01   a02    -x
 	 *  a10   a11   a12    -y
@@ -586,7 +547,7 @@ static void PrepareWorldModel (void)
 				s += baseMatrix[k][j] * matrix[i][k];
 			vp.modelMatrix[i][j] = s;
 		}
-#if 0	//!! debug:
+#if 0
 #define m vp.vieworg
 	DrawTextLeft (va("Org: %9.4g, %9.4g %9.4g", m[0], m[1], m[2]), 0.6, 1, 0.2);
 #undef m
@@ -609,7 +570,7 @@ static void SetFrustum (void)
 	int		i;
 
 #define SCALE	(M_PI/360.0f)
-//#define SCALE	(M_PI/360.0 * 0.7)	//!! debug: smaller fov
+//#define SCALE	(M_PI/360.0 * 0.7)	// debug: smaller fov
 	sx = sin (vp.fov_x * SCALE);	// fov/2 * pi/180
 	sy = sin (vp.fov_y * SCALE);
 	cx = cos (vp.fov_x * SCALE);
@@ -639,7 +600,7 @@ static void SetPerspective (void)
 #define m	vp.projectionMatrix
 	float	xmax, xmin, ymax, ymin, zmin, zmax, tfx, tfy;
 
-	if (gl_refdef.flags & RDF_NOWORLDMODEL)
+	if (vp.flags & RDF_NOWORLDMODEL)
 		vp.zFar = 1024;
 	else
 	{	// calculate zFar depends on visible bounding box size
@@ -693,7 +654,7 @@ static void SetPerspective (void)
 	m[2][3] = -1;
 	m[3][2] = -2.0f * zmin * zmax / (zmax - zmin);	// F
 #undef m
-#if 0	//!! debug
+#if 0
 #define dr DrawTextRight
 	dr (va("zFar: %g;  frustum: x[%g, %g] y[%g, %g]", vp.zFar, xmin, xmax, ymin, ymax), 1, 0.1, 0.2);
 #define m vp.projectionMatrix
@@ -708,56 +669,40 @@ static void SetPerspective (void)
 }
 
 
-void DrawTexts (void);
-
 
 // Can be called few RenderFrame() between BeginFrame() and EndFrame()
 static void GL_RenderFrame (refdef_t *fd)
 {
+	entity_t *ent;
 	int		i;
-	entity_t	*ent;
 
 	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !gl_worldModel.name)
 		Com_Error (ERR_FATAL, "R_RenderFrame: NULL worldModel");
 
-	gl_refdef.lightStyles = fd->lightstyles;
-
-//	DrawTextRight ("---------RenderFrame---------\n", 1,0,0);//!!!
+//	DrawTextRight ("---------RenderFrame---------\n", 1,0,0);
 
 	/*----------- prepare data ------------*/
 
-	gl_refdef.flags = fd->rdflags;
-	// setup time
-	gl_refdef.time = fd->time;
-
-	if (!(gl_refdef.flags & RDF_NOWORLDMODEL))
+	if (!(fd->rdflags & RDF_NOWORLDMODEL))
 	{
-		int		areaSum;
 		byte	*areas, floodArea[MAX_MAP_AREAS/8];
 
 		// check for areabits changes
-		areaSum = 0;
 		areas = fd->areabits;
 		if (!areas)
 		{
 			memset (floodArea, 0xFF, sizeof(floodArea));
 			areas = &floodArea[0];
 		}
-		for (i = 0; i < MAX_MAP_AREAS/8; i++)
-		{
-			byte	c;
-
-			c = *areas++;
-			areaSum |= c ^ gl_refdef.areaMask[i];
-			gl_refdef.areaMask[i] = c;
-		}
-		gl_refdef.areaMaskChanged = areaSum;
+		gl_refdef.areaMaskChanged = memcmp (gl_refdef.areaMask, fd->areabits, MAX_MAP_AREAS/8);
+		memcpy (gl_refdef.areaMask, fd->areabits, MAX_MAP_AREAS/8);
 	}
 
 	/*------------ rendering -------------*/
 
 	// setup viewPortal structure
 	memset (&vp, 0, sizeof(vp));
+	vp.flags = fd->rdflags;
 	vp.x = fd->x;
 	vp.y = vid.height - (fd->y + fd->height);
 	vp.w = fd->width;
@@ -767,8 +712,8 @@ static void GL_RenderFrame (refdef_t *fd)
 	vp.fov_scale = tan (fd->fov_x / 2.0f / 180.0f * M_PI);
 	if (vp.fov_scale < 0.01) vp.fov_scale = 0.01;
 
-	vp.lightStyles = gl_refdef.lightStyles;
-	vp.time = gl_refdef.time;
+	vp.lightStyles = fd->lightstyles;
+	vp.time = fd->time;
 
 	// add entities
 	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.cullEnts2 = 0;
@@ -790,19 +735,20 @@ static void GL_RenderFrame (refdef_t *fd)
 	GL_DrawPortal ();
 
 	SetPerspective ();
-	//?? draw portals here (if buffer has shader.sort == SORT_PORTAL)
 
 	GL_FinishPortal ();
-	DrawTexts ();
 
 	/*------------ debug info ------------*/
 
+	gl_speeds.numFrames++;
 	if (r_speeds->integer)
 	{
 		DrawTextRight (va("visLeafs: %d frLeafs: %d total: %d",
 			gl_speeds.visLeafs, gl_speeds.frustLeafs, gl_speeds.leafs), 1, 0.5, 0);
 		DrawTextRight (va("surfs: %d culled: %d",
 			gl_speeds.surfs, gl_speeds.cullSurfs), 1, 0.5, 0);
+		DrawTextRight (va("tris: %d mtex: %1.2f",
+			gl_speeds.trisMT, (float)gl_speeds.tris / gl_speeds.trisMT), 1, 0.5, 0);
 		DrawTextRight (va("ents: %d fcull: %d cull: %d",
 			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEnts2), 1, 0.5, 0);
 		DrawTextRight (va("particles: %d cull: %d",
@@ -813,12 +759,13 @@ static void GL_RenderFrame (refdef_t *fd)
 		/* perform clearing after displaying, so, we will see speeds of previous frame
 		 * (some data will be set up in EndFrame()->BackEnd())
 		 */
-		gl_speeds.surfs = 0;
-		gl_speeds.cullSurfs = 0;
-		gl_speeds.numBinds = 0;
-		gl_speeds.numUploads = 0;
+		gl_speeds.surfs = gl_speeds.cullSurfs = 0;
+		gl_speeds.tris = gl_speeds.trisMT = 0;
+		gl_speeds.numBinds = gl_speeds.numUploads = 0;
 		gl_speeds.numIterators = 0;
 	}
+
+	DrawTexts ();
 }
 
 
@@ -826,31 +773,53 @@ static void GL_RenderFrame (refdef_t *fd)
 
 #define I 255
 #define o 51
-static byte colorTable[8][4] = {
-	{0, 0, 0, 255},
-	{I, o, o, 255},
-	{o, I, o, 255},
-	{I, I, o, 255},
-	{o, o, I, 255},
-	{I, o, I, 255},
-	{o, I, I, 255},
-	{I, I, I, 255}
+#define c(r,g,b)	(r + (g<<8) + (b<<16) + (255<<24))
+static int colorTable[8] = {
+	c(0, 0, 0),
+	c(I, o, o),
+	c(o, I, o),
+	c(I, I, o),
+	c(o, o, I),
+	c(I, o, I),
+	c(o, I, I),
+	c(I, I, I)
 };
 #undef I
 #undef o
+#undef c
 
 static void DrawCharColor (int x, int y, int c, int color)
 {
-	float	s1, t1, size;
+	bkDrawText_t *p;
+	int		col;
 
 	if (c == ' ') return;
-	size = 1.0f / 16.0f;
 
-	s1 = size * (c & 15);
-	t1 = size * (c >> 4 & 15);
-	if (color < 0 || color > 7) color = 7;
-	GL_SetColorB (colorTable[color]);
-	GL_DrawStretchPic (gl_concharsShader, x, y, 8, 8, s1, t1, s1+size, t1+size);
+	col = colorTable[color];
+
+	p = (bkDrawText_t*)lastBackendCommand;
+	if (p && p->type == BACKEND_TEXT &&
+		p->c.rgba == col &&
+		p->w == 8 && p->h == 8 &&
+		p->y == y && (p->x + p->len * 8) == x)
+	{
+		if (GET_BACKEND_SPACE(1))
+		{
+			p->text[p->len++] = c;
+			return;
+		}
+	}
+
+	{
+		PUT_BACKEND_COMMAND2(bkDrawText_t, p1, 1);
+		p1->type = BACKEND_TEXT;
+		p1->len = 1;
+		p1->x = x;
+		p1->y = y;
+		p1->c.rgba = col;
+		p1->w = p1->h = 8;
+		p1->text[0] = c;
+	}
 }
 
 
@@ -882,31 +851,25 @@ static shader_t *FindPic (char *name, qboolean force)
 
 static void DrawFill (int x, int y, int w, int h, int c)
 {
-	GL_SetColorB ((byte *)&gl_config.tbl_8to32[c]);
-	GL_DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0);
+	GL_DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, gl_config.tbl_8to32[c]);
 }
 
 
 static void FadeScreen (void)
 {
-	static byte fadeColor[4] = {0, 0, 0, 224};
-
-	GL_SetColorB (fadeColor);
-	GL_DrawStretchPic (gl_identityLightShader, 0, 0, vid.width, vid.height, 0, 0, 0, 0);
+	GL_DrawStretchPic (gl_identityLightShader, 0, 0, vid.width, vid.height, 0, 0, 0, 0, (224<<24));
 }
 
 
 static void DrawTileClear (int x, int y, int w, int h, char *name)
 {
-	GL_SetColorB (colorTable[7]);	// white
-	GL_DrawStretchPic (FindPic (name, true), x, y, w, h, x/64.0, y/64.0, (x+w)/64.0, (y+h)/64.0);
+	GL_DrawStretchPic (FindPic (name, true), x, y, w, h, x/64.0f, y/64.0f, (x+w)/64.0f, (y+h)/64.0f, colorTable[7]);
 }
 
 
 static void DrawStretchPic (int x, int y, int w, int h, char *name)
 {
-	GL_SetColorB (colorTable[7]);	// white
-	GL_DrawStretchPic (FindPic (name, true), x, y, w, h, 0, 0, 1, 1);
+	GL_DrawStretchPic (FindPic (name, true), x, y, w, h, 0, 0, 1, 1, colorTable[7]);
 }
 
 
@@ -916,8 +879,7 @@ static void DrawPicColor (int x, int y, char *name, int color)
 
 	sh = FindPic (name, true);
 	if (color < 0 || color > 7) color = 7;
-	GL_SetColorB (colorTable[color]);
-	GL_DrawStretchPic (sh, x, y, sh->width, sh->height, 0, 0, 1, 1);
+	GL_DrawStretchPic (sh, x, y, sh->width, sh->height, 0, 0, 1, 1, colorTable[color]);
 }
 
 
@@ -951,10 +913,7 @@ static void GetPicSize (int *w, int *h, char *name)
 typedef struct textRec_s
 {
 	int		x, y;
-	union {
-		byte	c[4];
-		int		ci;
-	};
+	color_t	c;
 	char	*text;
 	struct textRec_s *next;
 } textRec_t;
@@ -969,29 +928,10 @@ static int nextLeft_y = TOP_TEXT_POS;
 static int nextRight_y = TOP_TEXT_POS;
 
 
-static void DrawColoredText (int x, int y, char *text, byte *color)
+static void ClearTexts (void)
 {
-	char	c;
-	float	size;
-
-	if (!text || !*text) return; // nothing to out
-
-	size = 1.0f / 16.0f;
-
-	while ((c = *text++) && x < vid.width)
-	{
-		if (c != ' ')
-		{
-			float	s1, t1;
-
-			s1 = size * (c & 15);
-			t1 = size * (c >> 4 & 15);
-
-			GL_SetColorB (color);
-			GL_DrawStretchPic (gl_concharsShader, x, y, CHARSIZE_X, CHARSIZE_Y, s1, t1, s1+size, t1+size);
-		}
-		x += CHARSIZE_X;
-	}
+	nextLeft_y = nextRight_y = TOP_TEXT_POS;
+	textbufCount = 0;
 }
 
 
@@ -1002,11 +942,24 @@ static void DrawTexts (void)
 	nextLeft_y = nextRight_y = TOP_TEXT_POS;
 	if (!textbufCount) return;
 
-	rec = (textRec_t*)textbuf;
-	while (rec)
+	for (rec = (textRec_t*)textbuf; rec; rec = rec->next)
 	{
-		DrawColoredText (rec->x, rec->y, rec->text, rec->c);
-		rec = rec->next;
+		int		len;
+
+		len = strlen (rec->text);
+		if (!len) continue;
+
+		{
+			PUT_BACKEND_COMMAND2(bkDrawText_t, p, len);
+			p->type = BACKEND_TEXT;
+			p->len = len;
+			p->x = rec->x;
+			p->y = rec->y;
+			p->c.rgba = rec->c.rgba;
+			p->w = CHARSIZE_X;
+			p->h = CHARSIZE_Y;
+			memcpy (p->text, rec->text, len);	// not ASCIIZ
+		}
 	}
 
 	textbufCount = 0;
@@ -1037,10 +990,10 @@ void DrawTextPos (int x, int y, char *text, float r, float g, float b)
 	rec->x = x;
 	rec->y = y;
 	rec->text = textCopy;
-	rec->c[0] = r * 255;
-	rec->c[1] = g * 255;
-	rec->c[2] = b * 255;
-	rec->c[3] = 255;
+	rec->c.c[0] = r * 255;
+	rec->c.c[1] = g * 255;
+	rec->c.c[2] = b * 255;
+	rec->c.c[3] = 255;
 	rec->next = NULL;
 
 	if (lastTextRec) lastTextRec->next = rec;
@@ -1122,6 +1075,12 @@ static void SetSky (char *name, float rotate, vec3_t axis)
 }
 
 
+static float GetClientLight (void)
+{
+	return 150;		//!! need to implement
+}
+
+
 /*--------------------- GetRefAPI ---------------------*/
 
 refExport_t GetRefAPI (refImport_t rimp)
@@ -1141,7 +1100,6 @@ refExport_t GetRefAPI (refImport_t rimp)
 
 	memset (&gl_config, 0, sizeof(gl_config));
 	memset (&gl_state, 0, sizeof(gl_state));
-	textbufCount = 0;		// clear texts (may appear during vid_restart)
 
 	gl_config.consoleOnly = Cvar_Get ("gl_console_only", "0", 0)->integer;
 
@@ -1180,6 +1138,8 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.DrawTextPos =	DrawTextPos;
 	re.DrawTextLeft =	DrawTextLeft;
 	re.DrawTextRight =	DrawTextRight;
+
+	re.GetClientLight = GetClientLight;
 
 	Swap_Init ();
 

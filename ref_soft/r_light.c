@@ -113,9 +113,9 @@ LIGHT SAMPLING
 =============================================================================
 */
 
-vec3_t	pointcolor;
-cplane_t		*lightplane;		// used as shadow plane
-vec3_t			lightspot;
+static vec3_t	pointcolor;
+static cplane_t	*lightplane;		// used as shadow plane
+static vec3_t	lightspot;
 
 int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 {
@@ -128,17 +128,15 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 	int			i;
 	mtexinfo_t	*tex;
 	byte		*lightmap;
-	float		*scales;
 	int			maps;
-	float		samp;
 	int			r;
 
 	if (node->contents != -1)
 		return -1;		// didn't hit anything
 
-// calculate mid point
+	// calculate mid point
 
-// FIXME: optimize for axial
+	// FIXME: optimize for axial
 	plane = node->plane;
 	front = DotProduct (start, plane->normal) - plane->dist;
 	back = DotProduct (end, plane->normal) - plane->dist;
@@ -154,7 +152,7 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 	if (plane->type < 3)	// axial planes
 		mid[plane->type] = plane->dist;
 
-// go down front side
+	// go down front side
 	r = RecursiveLightPoint (node->children[side], start, mid);
 	if (r >= 0)
 		return r;		// hit something
@@ -162,7 +160,7 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 	if ( (back < 0) == side )
 		return -1;		// didn't hit anuthing
 
-// check for impact on this node
+	// check for impact on this node
 	VectorCopy (mid, lightspot);
 	lightplane = plane;
 
@@ -198,21 +196,22 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 		{
 			lightmap += dt * ((surf->extents[0]>>4)+1) + ds;
 
-			for (maps = 0 ; maps < MAXLIGHTMAPS && surf->styles[maps] != 255 ;
-					maps++)
+			for (maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++)
 			{
-				samp = *lightmap * /* 0.5 * */ (1.0/255);	// adjust for gl scale
-				scales = r_newrefdef.lightstyles[surf->styles[maps]].rgb;
-				VectorMA (pointcolor, samp, scales, pointcolor);
-				lightmap += ((surf->extents[0]>>4)+1) *
-						((surf->extents[1]>>4)+1);
+				float	samp;
+
+				samp = (*lightmap * r_newrefdef.lightstyles[surf->styles[maps]].value) / (256.0f * 128.0f);
+				pointcolor[0] += samp;
+				pointcolor[1] += samp;
+				pointcolor[2] += samp;
+				lightmap += ((surf->extents[0]>>4)+1) * ((surf->extents[1]>>4)+1);
 			}
 		}
 
 		return 1;
 	}
 
-// go down back side
+	// go down back side
 	return RecursiveLightPoint (node->children[!side], mid, end);
 }
 

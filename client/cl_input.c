@@ -369,7 +369,7 @@ void CL_FinishMove (usercmd_t *cmd)
 	in_impulse = 0;
 
 	// send the ambient light level at the player's current position
-	cmd->lightlevel = (byte)cl_lightlevel->value;		//!! lightlevel is float (hack inside ref: lightlevel->value = xxx)
+	cmd->lightlevel = Q_ftol(re.GetClientLight ());
 }
 
 /*

@@ -37,88 +37,63 @@ LIGHT STYLE MANAGEMENT
 ==============================================================
 */
 
-typedef struct
-{
-	int		length;
-	float	value[3];
-	float	map[MAX_QPATH];
-} clightstyle_t;
 
-clightstyle_t	cl_lightstyle[MAX_LIGHTSTYLES];
-int			lastofs;
+lightstyle_t cl_lightstyles[MAX_LIGHTSTYLES];
 
-/*
-================
-CL_ClearLightStyles
-================
-*/
+
 void CL_ClearLightStyles (void)
 {
-	memset (cl_lightstyle, 0, sizeof(cl_lightstyle));
-	lastofs = -1;
+	memset (cl_lightstyles, 0, sizeof(cl_lightstyles));
 }
 
-/*
-================
-CL_RunLightStyles
-================
-*/
+
 void CL_RunLightStyles (void)
 {
-	int		ofs;
-	int		i;
-	clightstyle_t	*ls;
+	int		ofs, i;
+	lightstyle_t *ls;
+	static int lastofs = -1;
 
 	ofs = cl.time / 100;
-	if (ofs == lastofs)
-		return;
+	if (ofs == lastofs) return;
 	lastofs = ofs;
 
-	for (i=0,ls=cl_lightstyle ; i<MAX_LIGHTSTYLES ; i++, ls++)
+	for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++)
 	{
 		if (!ls->length)
 		{
-			ls->value[0] = ls->value[1] = ls->value[2] = 1.0;
+			ls->value = 128;	// 1.0f
 			continue;
 		}
 		if (ls->length == 1)
-			ls->value[0] = ls->value[1] = ls->value[2] = ls->map[0];
+			ls->value = ls->map[0];
 		else
-			ls->value[0] = ls->value[1] = ls->value[2] = ls->map[ofs%ls->length];
+			ls->value = ls->map[ofs % ls->length];
 	}
 }
 
 
-void CL_SetLightstyle (int i)
+void CL_SetLightstyle (int i, char *s)
 {
-	char	*s;
-	int		j, k;
+	char	*dst;
+	int		len, j;
 
-	s = cl.configstrings[i+CS_LIGHTS];
+	len = strlen (s);
+	if (len >= MAX_QPATH)
+		Com_Error (ERR_DROP, "Lightstyle length = %d", len);
 
-	j = strlen (s);
-	if (j >= MAX_QPATH)
-		Com_Error (ERR_DROP, "svc_lightstyle length=%i", j);
+	cl_lightstyles[i].length = len;
 
-	cl_lightstyle[i].length = j;
+	// 'a' -> 0; 'm' -> 128 (1.0f); 'z' -> 255 (2.0f)
+	dst = cl_lightstyles[i].map;
+	for (j = 0; j < len; j++)
+	{
+		int		c;
 
-	for (k=0 ; k<j ; k++)
-		cl_lightstyle[i].map[k] = (float)(s[k]-'a')/(float)('m'-'a');
+		c = (*s++ - 'a') * 128 / ('m' - 'a');
+		*dst++ = c > 255 ? 255 : c;
+	}
 }
 
-/*
-================
-CL_AddLightStyles
-================
-*/
-void CL_AddLightStyles (void)
-{
-	int		i;
-	clightstyle_t	*ls;
-
-	for (i=0,ls=cl_lightstyle ; i<MAX_LIGHTSTYLES ; i++, ls++)
-		V_AddLightStyle (i, ls->value[0], ls->value[1], ls->value[2]);
-}
 
 /*
 ==============================================================
@@ -128,34 +103,25 @@ DLIGHT MANAGEMENT
 ==============================================================
 */
 
-cdlight_t		cl_dlights[MAX_DLIGHTS];
+static cdlight_t cl_dlights[MAX_DLIGHTS];
 
-/*
-================
-CL_ClearDlights
-================
-*/
+
 void CL_ClearDlights (void)
 {
 	memset (cl_dlights, 0, sizeof(cl_dlights));
 }
 
-/*
-===============
-CL_AllocDlight
 
-===============
-*/
 cdlight_t *CL_AllocDlight (int key)
 {
 	int		i;
-	cdlight_t	*dl;
+	cdlight_t *dl;
 
-// first look for an exact key match
+	// first look for an exact key match
 	if (key)
 	{
 		dl = cl_dlights;
-		for (i=0 ; i<MAX_DLIGHTS ; i++, dl++)
+		for (i = 0; i < MAX_DLIGHTS; i++, dl++)
 		{
 			if (dl->key == key)
 			{
@@ -166,9 +132,9 @@ cdlight_t *CL_AllocDlight (int key)
 		}
 	}
 
-// then look for anything else
+	// then look for anything else
 	dl = cl_dlights;
-	for (i=0 ; i<MAX_DLIGHTS ; i++, dl++)
+	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
 	{
 		if (dl->die < cl.time)
 		{
@@ -178,17 +144,13 @@ cdlight_t *CL_AllocDlight (int key)
 		}
 	}
 
-	dl = &cl_dlights[0];
+	dl = cl_dlights;
 	memset (dl, 0, sizeof(*dl));
 	dl->key = key;
 	return dl;
 }
 
-/*
-===============
-CL_NewDlight
-===============
-*/
+
 void CL_NewDlight (int key, float x, float y, float z, float radius, float time)
 {
 	cdlight_t	*dl;
@@ -202,19 +164,13 @@ void CL_NewDlight (int key, float x, float y, float z, float radius, float time)
 }
 
 
-/*
-===============
-CL_RunDLights
-
-===============
-*/
 void CL_RunDLights (void)
 {
 	int			i;
 	cdlight_t	*dl;
 
 	dl = cl_dlights;
-	for (i=0 ; i<MAX_DLIGHTS ; i++, dl++)
+	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
 	{
 		if (!dl->radius)
 			continue;
@@ -224,11 +180,353 @@ void CL_RunDLights (void)
 			dl->radius = 0;
 			return;
 		}
-		dl->radius -= cls.frametime*dl->decay;
+		dl->radius -= cls.frametime * dl->decay;
 		if (dl->radius < 0)
 			dl->radius = 0;
 	}
 }
+
+
+void CL_AddDLights (void)
+{
+	int			i;
+	cdlight_t	*dl;
+
+	dl = cl_dlights;
+
+//=====
+//PGM
+	if(vidref_val == VIDREF_GL)		//???
+	{
+		for (i = 0; i < MAX_DLIGHTS; i++, dl++)
+		{
+			if (!dl->radius) continue;
+			V_AddLight (dl->origin, dl->radius, dl->color[0], dl->color[1], dl->color[2]);
+		}
+	}
+	else
+	{
+		for (i = 0; i < MAX_DLIGHTS; i++, dl++)
+		{
+			if (!dl->radius) continue;
+
+			// negative light in software. only black allowed
+			if ((dl->color[0] < 0) || (dl->color[1] < 0) || (dl->color[2] < 0))
+			{
+				dl->radius = -(dl->radius);
+				dl->color[0] = 1;
+				dl->color[1] = 1;
+				dl->color[2] = 1;
+			}
+			V_AddLight (dl->origin, dl->radius, dl->color[0], dl->color[1], dl->color[2]);
+		}
+	}
+//PGM
+//=====
+}
+
+
+/*
+==============================================================
+
+PARTICLE MANAGEMENT
+
+==============================================================
+*/
+
+particle_t	*active_particles, *free_particles;
+particle_t	particles[MAX_PARTICLES];
+
+particleTrace_t particleTraces[MAX_PARTICLE_TRACES];
+
+
+void CL_ClearParticles (void)
+{
+	int		i;
+
+	free_particles = &particles[0];
+	active_particles = NULL;
+
+	for (i = 0; i < MAX_PARTICLES; i++)
+		particles[i].next = &particles[i+1];
+	particles[MAX_PARTICLES-1].next = NULL;
+
+	memset (particleTraces, 0, sizeof(particleTraces));
+}
+
+
+static void CL_AddParticleTraces (float timeDelta)
+{
+	static int oldTime;
+	int		i;
+	particleTrace_t *p;
+
+	for (p = particleTraces, i = 0; i < MAX_PARTICLE_TRACES; p++, i++)
+	{
+		vec3_t	dir, pos, oldpos;
+		float	speed, dist, distDelta, pos1;
+		float	viewDist, t;
+		trace_t	trace;
+		static vec3_t zero = {0, 0, 0};
+
+		if (!p->allocated)
+			continue;
+
+		VectorCopy (p->pos, oldpos);
+		// apply gravity
+		if (p->gravity)
+			p->vel[2] -= timeDelta * p->gravity;
+		// get direction vector and speed
+		speed = VectorNormalize2 (p->vel, dir);
+		// update pos
+		VectorMA (p->pos, timeDelta, p->vel, p->pos);
+		trace = CL_PMTrace (oldpos, zero, zero, p->pos);
+		if (p->elasticity && trace.fraction < 1.0f)
+		{
+			int		i;
+
+			t = DotProduct (trace.plane.normal, p->vel) * p->elasticity;
+			for (i = 0; i < 3; i++)
+			{
+				p->vel[i] -= t * trace.plane.normal[i];
+				if (p->vel[i] > 0.1f && p->vel[i] < -0.1f) p->vel[i] = 0;
+			}
+			VectorAdd (trace.endpos, trace.plane.normal, p->pos);
+			speed = VectorNormalize2 (p->vel, dir);
+		}
+		else
+			if (trace.startsolid || trace.allsolid || trace.fraction < 1.0f)
+			{
+				p->allocated = false;
+				continue;
+			}
+
+		// calculate loop parameters
+		dist = VectorDistance (p->pos, oldpos);		// this is not timeDelta*speed (because pos may be changed)
+		viewDist = VectorDistance (p->pos, cl.refdef.vieworg) * tan (cl.refdef.fov_x / 2.0f / 180.0f * M_PI);
+		if (viewDist > 128)
+		{
+			if (viewDist > 1024)
+				t = 4.5;
+			else
+				t = (viewDist - 128) / (2048.0f - 128.0f) * 4.5f + 0.3f;
+		}
+		else
+			t = 0.3f;
+		distDelta = t * p->radius;
+		// at least 600 particles per second
+		t = viewDist / (600.0f * timeDelta);
+		if (distDelta > t)
+			distDelta = t;
+		// but no more than 20 particles per frame
+		t = dist / 20.0f;
+		if (distDelta < t)
+			distDelta = t;
+		// and no longer than whole distance
+		if (distDelta > dist)
+			distDelta = dist;
+		if (!distDelta)
+			distDelta = 1;
+
+		VectorCopy (oldpos, pos);
+		for (pos1 = distDelta; pos1 <= dist; pos1 += distDelta)
+		{
+			particle_t *cp;
+
+			VectorMA (pos, distDelta, dir, pos);
+			//?? move this inside "switch"
+
+			switch (p->type)
+			{
+			case PT_SPARKLE:
+				if (!(cp = CL_AllocParticle ()))
+				{
+					pos1 = dist;
+					break;
+				}
+
+				t = pos1 / dist * timeDelta;	// time offset
+
+				cp->type = p->type;
+				cp->color = 0;					// any -- ignored
+				cp->alphavel = -1.0f / p->fadeTime;
+				cp->alpha = (p->lifeTime - (p->time + t)) / p->lifeTime *
+					(p->maxAlpha - p->minAlpha) + p->minAlpha -
+					(timeDelta - t) / p->fadeTime;
+				cp->accel[2] = 0;
+				VectorClear (cp->vel);
+				VectorCopy (pos, cp->org);
+				break;
+			}
+		}
+
+		// update p->pos again (remove previous updates??)
+		VectorMA (oldpos, pos1 - distDelta, dir, p->pos);
+		p->time += timeDelta;
+		if (p->time > p->lifeTime)
+			p->allocated = false;
+	}
+}
+
+
+particleTrace_t *CL_AllocParticleTrace (vec3_t pos, vec3_t vel, float lifeTime, float fadeTime)
+{
+	int		i;
+	particleTrace_t *p;
+
+	if (r_sfx_pause->integer == 2)
+		return NULL;
+
+	for (p = particleTraces, i = 0; i < MAX_PARTICLE_TRACES; p++, i++)
+	{
+		if (!p->allocated)
+		{
+			vec3_t	dir;
+
+			p->allocated = true;
+			p->lifeTime = lifeTime;
+			p->fadeTime = fadeTime;
+
+			VectorNormalize2 (vel, dir);
+			MakeNormalVectors (dir, p->right, p->up);
+			VectorCopy (pos, p->pos);
+			VectorCopy (vel, p->vel);
+
+			p->time = 0;
+
+			p->minAlpha = 0;
+			p->maxAlpha = 1;
+
+			p->gravity = 400;
+			p->elasticity = 1.9;
+			p->radius = 1;
+
+			p->type = PT_SPARKLE;
+			return p;
+		}
+	}
+	return NULL;
+}
+
+
+particle_t *CL_AllocParticle (void)
+{
+	particle_t *p;
+
+	if (r_sfx_pause->integer == 2)
+		return NULL;
+
+	p = free_particles;
+	if (p)
+	{
+		free_particles = p->next;
+		p->next = active_particles;
+		active_particles = p;
+
+		p->accel[0] = p->accel[1] = 0;
+		p->accel[2] = -PARTICLE_GRAVITY;
+		p->type = PT_DEFAULT;
+		p->_new = true;
+		p->leafNum = -1;
+	}
+	return p;
+}
+
+/*
+===============
+CL_UpdateParticles
+===============
+*/
+void CL_UpdateParticles (void)
+{
+	particle_t *p, *prev, *next;
+	float	timeDelta, time2;		// time delta, ms
+	static int oldTime;
+
+	timeDelta = (cl.time - oldTime) / 1000.0f;
+	oldTime = cl.time;
+	if (timeDelta <= 0)
+		return;
+
+	if (r_sfx_pause->integer) timeDelta = 0;
+	time2 = timeDelta * timeDelta;
+
+	CL_AddParticleTraces (timeDelta);
+
+	prev = NULL;
+	for (p = active_particles; p; p = next)
+	{
+		next = p->next;
+
+		if (p->_new)
+		{
+			p->_new = false;	// particle is just created -- timeDelta == 0, nothing to update
+			p->leafNum = CM_PointLeafnum (p->org);
+		}
+		else
+		{
+			// update alpha
+			p->alpha += timeDelta * p->alphavel;
+
+			// update position
+			if (p->vel[2] || p->vel[1] || p->vel[0])
+			{
+				p->org[0] += p->vel[0] * timeDelta + p->accel[0] * time2;
+				p->org[1] += p->vel[1] * timeDelta + p->accel[1] * time2;
+				p->org[2] += p->vel[2] * timeDelta + p->accel[2] * time2;
+				p->leafNum = CM_PointLeafnum (p->org);
+			}
+			// update velocity
+			p->vel[0] += timeDelta * p->accel[0];
+			p->vel[1] += timeDelta * p->accel[1];
+			p->vel[2] += timeDelta * p->accel[2];
+		}
+
+		// remove particle if it is faded out or out of world
+		if (p->alpha <= 0 || CM_LeafContents (p->leafNum) & MASK_SOLID)
+		{
+			if (prev)
+				prev->next = p->next;
+			else
+				active_particles = p->next;
+
+			p->next = free_particles;
+			free_particles = p;
+			continue;
+		}
+
+		prev = p;
+	}
+}
+
+
+void CL_MetalSparks (vec3_t pos, vec3_t dir, int count)
+{
+	vec3_t	vel, pos2;
+	int		i, n;
+
+	for (n = 0; n < count; n++)
+	{
+		particleTrace_t *p;
+
+		for (i = 0; i < 3; i++)
+			vel[i] = (frand () * 150.0f + 100.0f) * dir[i] + crand () * 30.0f;
+		// do not start inside wall
+		VectorAdd (pos, dir, pos2);
+
+		p = CL_AllocParticleTrace (pos2, vel, frand () * 0.32f, 0.1f);	//?? lifeTime = rnd*0.64 ?
+		if (!p)
+			return;
+		//!! p->brightness = 32;
+		if (!CL_AllocParticleTrace (pos2, vel, 0.2f, 0.05f)) return;
+	}
+}
+
+
+//-----------------------------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------------------------
+
 
 /*
 ==============
@@ -799,97 +1097,6 @@ void CL_ParseMuzzleFlash2 (void)
 }
 
 
-/*
-===============
-CL_AddDLights
-
-===============
-*/
-void CL_AddDLights (void)
-{
-	int			i;
-	cdlight_t	*dl;
-
-	dl = cl_dlights;
-
-//=====
-//PGM
-	if(vidref_val == VIDREF_GL)		//???
-	{
-		for (i=0 ; i<MAX_DLIGHTS ; i++, dl++)
-		{
-			if (!dl->radius)
-				continue;
-			V_AddLight (dl->origin, dl->radius,
-				dl->color[0], dl->color[1], dl->color[2]);
-		}
-	}
-	else
-	{
-		for (i=0 ; i<MAX_DLIGHTS ; i++, dl++)
-		{
-			if (!dl->radius)
-				continue;
-
-			// negative light in software. only black allowed
-			if ((dl->color[0] < 0) || (dl->color[1] < 0) || (dl->color[2] < 0))
-			{
-				dl->radius = -(dl->radius);
-				dl->color[0] = 1;
-				dl->color[1] = 1;
-				dl->color[2] = 1;
-			}
-			V_AddLight (dl->origin, dl->radius,
-				dl->color[0], dl->color[1], dl->color[2]);
-		}
-	}
-//PGM
-//=====
-}
-
-
-
-/*
-==============================================================
-
-PARTICLE MANAGEMENT
-
-==============================================================
-*/
-
-particle_t	*active_particles, *free_particles;
-particle_t	particles[MAX_PARTICLES];
-
-particleTrace_t particleTraces[MAX_PARTICLE_TRACES];
-
-
-/*
-===============
-CL_ClearParticles
-===============
-*/
-void CL_ClearParticles (void)
-{
-	int		i;
-
-	free_particles = &particles[0];
-	active_particles = NULL;
-
-	for (i = 0; i < MAX_PARTICLES; i++)
-		particles[i].next = &particles[i+1];
-	particles[MAX_PARTICLES-1].next = NULL;
-
-	memset (particleTraces, 0, sizeof(particleTraces));
-}
-
-
-/*
-===============
-CL_ParticleEffect
-
-Wall impact puffs
-===============
-*/
 void CL_ParticleEffect (vec3_t org, vec3_t dir, int color, int count)
 {
 	int			i, j;
@@ -916,11 +1123,6 @@ void CL_ParticleEffect (vec3_t org, vec3_t dir, int color, int count)
 }
 
 
-/*
-===============
-CL_ParticleEffect2
-===============
-*/
 void CL_ParticleEffect2 (vec3_t org, vec3_t dir, int color, int count)
 {
 	int			i, j;
@@ -947,12 +1149,6 @@ void CL_ParticleEffect2 (vec3_t org, vec3_t dir, int color, int count)
 }
 
 
-// RAFAEL
-/*
-===============
-CL_ParticleEffect3
-===============
-*/
 void CL_ParticleEffect3 (vec3_t org, vec3_t dir, int color, int count)
 {
 	int			i, j;
@@ -980,11 +1176,7 @@ void CL_ParticleEffect3 (vec3_t org, vec3_t dir, int color, int count)
 	}
 }
 
-/*
-===============
-CL_TeleporterParticles
-===============
-*/
+
 void CL_TeleporterParticles (entity_state_t *ent)
 {
 	int			i, j;
@@ -1012,12 +1204,6 @@ void CL_TeleporterParticles (entity_state_t *ent)
 }
 
 
-/*
-===============
-CL_LogoutEffect
-
-===============
-*/
 void CL_LogoutEffect (vec3_t org, int type)
 {
 	int			i, j;
@@ -1048,12 +1234,6 @@ void CL_LogoutEffect (vec3_t org, int type)
 }
 
 
-/*
-===============
-CL_ItemRespawnParticles
-
-===============
-*/
 void CL_ItemRespawnParticles (vec3_t org)
 {
 	int			i, j;
@@ -1080,11 +1260,6 @@ void CL_ItemRespawnParticles (vec3_t org)
 }
 
 
-/*
-===============
-CL_ExplosionParticles
-===============
-*/
 void CL_ExplosionParticles (vec3_t org)
 {
 	int			i, j;
@@ -1109,11 +1284,6 @@ void CL_ExplosionParticles (vec3_t org)
 }
 
 
-/*
-===============
-CL_BigTeleportParticles
-===============
-*/
 void CL_BigTeleportParticles (vec3_t org)
 {
 	int			i;
@@ -1148,13 +1318,6 @@ void CL_BigTeleportParticles (vec3_t org)
 }
 
 
-/*
-===============
-CL_BlasterParticles
-
-Wall impact puffs
-===============
-*/
 void CL_BlasterParticles (vec3_t org, vec3_t dir)
 {
 	int			i, j;
@@ -1183,12 +1346,6 @@ void CL_BlasterParticles (vec3_t org, vec3_t dir)
 }
 
 
-/*
-===============
-CL_BlasterTrail
-
-===============
-*/
 void CL_BlasterTrail (vec3_t start, vec3_t end)
 {
 	vec3_t		move;
@@ -1227,12 +1384,7 @@ void CL_BlasterTrail (vec3_t start, vec3_t end)
 	}
 }
 
-/*
-===============
-CL_QuadTrail
 
-===============
-*/
 void CL_QuadTrail (vec3_t start, vec3_t end)
 {
 	vec3_t		move;
@@ -1270,12 +1422,7 @@ void CL_QuadTrail (vec3_t start, vec3_t end)
 	}
 }
 
-/*
-===============
-CL_FlagTrail
 
-===============
-*/
 void CL_FlagTrail (vec3_t start, vec3_t end, float color)
 {
 	vec3_t		move;
@@ -1313,12 +1460,7 @@ void CL_FlagTrail (vec3_t start, vec3_t end, float color)
 	}
 }
 
-/*
-===============
-CL_DiminishingTrail
 
-===============
-*/
 void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags)
 {
 	vec3_t		move;
@@ -1409,28 +1551,7 @@ void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags)
 	}
 }
 
-void MakeNormalVectors (vec3_t forward, vec3_t right, vec3_t up)
-{
-	float		d;
 
-	// this rotate and negate guarantees a vector
-	// not colinear with the original
-	right[1] = -forward[0];
-	right[2] = forward[1];
-	right[0] = forward[2];
-
-	d = DotProduct (right, forward);
-	VectorMA (right, -d, forward, right);
-	VectorNormalize (right);
-	CrossProduct (right, forward, up);
-}
-
-/*
-===============
-CL_RocketTrail
-
-===============
-*/
 void CL_RocketTrail (vec3_t start, vec3_t end, centity_t *old)
 {
 	vec3_t		move;
@@ -1474,12 +1595,7 @@ void CL_RocketTrail (vec3_t start, vec3_t end, centity_t *old)
 	}
 }
 
-/*
-===============
-CL_RailTrail
 
-===============
-*/
 void CL_RailTrail (vec3_t start, vec3_t end)
 {
 	vec3_t		move;
@@ -1964,274 +2080,6 @@ void CL_TeleportParticles (vec3_t org)
 				vel = 50 + (rand()&63);
 				VectorScale (dir, vel, p->vel);
 			}
-}
-
-
-static void CL_AddParticleTraces (float timeDelta)
-{
-	static int oldTime;
-	int		i;
-	particleTrace_t *p;
-
-	for (p = particleTraces, i = 0; i < MAX_PARTICLE_TRACES; p++, i++)
-	{
-		vec3_t	dir, pos, oldpos;
-		float	speed, dist, distDelta, pos1;
-		float	viewDist, t;
-		trace_t	trace;
-		static vec3_t zero = {0, 0, 0};
-
-		if (!p->allocated)
-			continue;
-
-		VectorCopy (p->pos, oldpos);
-		// apply gravity
-		if (p->gravity)
-			p->vel[2] -= timeDelta * p->gravity;
-		// get direction vector and speed
-		speed = VectorNormalize2 (p->vel, dir);
-		// update pos
-		VectorMA (p->pos, timeDelta, p->vel, p->pos);
-		trace = CL_PMTrace (oldpos, zero, zero, p->pos);
-		if (p->elasticity && trace.fraction < 1.0f)
-		{
-			int		i;
-
-			t = DotProduct (trace.plane.normal, p->vel) * p->elasticity;
-			for (i = 0; i < 3; i++)
-			{
-				p->vel[i] -= t * trace.plane.normal[i];
-				if (p->vel[i] > 0.1f && p->vel[i] < -0.1f) p->vel[i] = 0;
-			}
-			VectorAdd (trace.endpos, trace.plane.normal, p->pos);
-			speed = VectorNormalize2 (p->vel, dir);
-		}
-		else
-			if (trace.startsolid || trace.allsolid || trace.fraction < 1.0f)
-			{
-				p->allocated = false;
-				continue;
-			}
-
-		// calculate loop parameters
-		dist = VectorDistance (p->pos, oldpos);		// this is not timeDelta*speed (because pos may be changed)
-		viewDist = VectorDistance (p->pos, cl.refdef.vieworg) * tan (cl.refdef.fov_x / 2.0f / 180.0f * M_PI);
-		if (viewDist > 128)
-		{
-			if (viewDist > 1024)
-				t = 4.5;
-			else
-				t = (viewDist - 128) / (2048.0f - 128.0f) * 4.5f + 0.3f;
-		}
-		else
-			t = 0.3f;
-		distDelta = t * p->radius;
-		// at least 600 particles per second
-		t = viewDist / (600.0f * timeDelta);
-		if (distDelta > t)
-			distDelta = t;
-		// but no more than 20 particles per frame
-		t = dist / 20.0f;
-		if (distDelta < t)
-			distDelta = t;
-		// and no longer than whole distance
-		if (distDelta > dist)
-			distDelta = dist;
-		if (!distDelta)
-			distDelta = 1;
-
-		VectorCopy (oldpos, pos);
-		for (pos1 = distDelta; pos1 <= dist; pos1 += distDelta)
-		{
-			particle_t *cp;
-
-			VectorMA (pos, distDelta, dir, pos);
-			//?? move this inside "switch"
-
-			switch (p->type)
-			{
-			case PT_SPARKLE:
-				if (!(cp = CL_AllocParticle ()))
-				{
-					pos1 = dist;
-					break;
-				}
-
-				t = pos1 / dist * timeDelta;	// time offset
-
-				cp->type = p->type;
-				cp->color = 0;					// any -- ignored
-				cp->alphavel = -1.0f / p->fadeTime;
-				cp->alpha = (p->lifeTime - (p->time + t)) / p->lifeTime *
-					(p->maxAlpha - p->minAlpha) + p->minAlpha -
-					(timeDelta - t) / p->fadeTime;
-				cp->accel[2] = 0;
-				VectorClear (cp->vel);
-				VectorCopy (pos, cp->org);
-				break;
-			}
-		}
-
-		// update p->pos again (remove previous updates??)
-		VectorMA (oldpos, pos1 - distDelta, dir, p->pos);
-		p->time += timeDelta;
-		if (p->time > p->lifeTime)
-			p->allocated = false;
-	}
-}
-
-
-particleTrace_t *CL_AllocParticleTrace (vec3_t pos, vec3_t vel, float lifeTime, float fadeTime)
-{
-	int		i;
-	particleTrace_t *p;
-
-	if (r_sfx_pause->integer == 2)
-		return NULL;
-
-	for (p = particleTraces, i = 0; i < MAX_PARTICLE_TRACES; p++, i++)
-	{
-		if (!p->allocated)
-		{
-			vec3_t	dir;
-
-			p->allocated = true;
-			p->lifeTime = lifeTime;
-			p->fadeTime = fadeTime;
-
-			VectorNormalize2 (vel, dir);
-			MakeNormalVectors (dir, p->right, p->up);
-			VectorCopy (pos, p->pos);
-			VectorCopy (vel, p->vel);
-
-			p->time = 0;
-
-			p->minAlpha = 0;
-			p->maxAlpha = 1;
-
-			p->gravity = 400;
-			p->elasticity = 1.9;
-			p->radius = 1;
-
-			p->type = PT_SPARKLE;
-			return p;
-		}
-	}
-	return NULL;
-}
-
-
-void CL_MetalSparks (vec3_t pos, vec3_t dir, int count)
-{
-	vec3_t	vel, pos2;
-	int		i, n;
-
-	for (n = 0; n < count; n++)
-	{
-		particleTrace_t *p;
-
-		for (i = 0; i < 3; i++)
-			vel[i] = (frand () * 150.0f + 100.0f) * dir[i] + crand () * 30.0f;
-		// do not start inside wall
-		VectorAdd (pos, dir, pos2);
-
-		p = CL_AllocParticleTrace (pos2, vel, frand () * 0.32f, 0.1f);	//?? lifeTime = rnd*0.64 ?
-		if (!p)
-			return;
-		//!! p->brightness = 32;
-		if (!CL_AllocParticleTrace (pos2, vel, 0.2f, 0.05f)) return;
-	}
-}
-
-
-particle_t *CL_AllocParticle (void)
-{
-	particle_t *p;
-
-	if (r_sfx_pause->integer == 2)
-		return NULL;
-
-	p = free_particles;
-	if (p)
-	{
-		free_particles = p->next;
-		p->next = active_particles;
-		active_particles = p;
-
-		p->accel[0] = p->accel[1] = 0;
-		p->accel[2] = -PARTICLE_GRAVITY;
-		p->type = PT_DEFAULT;
-		p->_new = true;
-		p->leafNum = -1;
-	}
-	return p;
-}
-
-/*
-===============
-CL_UpdateParticles
-===============
-*/
-void CL_UpdateParticles (void)
-{
-	particle_t *p, *prev, *next;
-	float	timeDelta, time2;		// time delta, ms
-	static int oldTime;
-
-	timeDelta = (cl.time - oldTime) / 1000.0f;
-	oldTime = cl.time;
-	if (timeDelta <= 0)
-		return;
-
-	if (r_sfx_pause->integer) timeDelta = 0;
-	time2 = timeDelta * timeDelta;
-
-	CL_AddParticleTraces (timeDelta);
-
-	prev = NULL;
-	for (p = active_particles; p; p = next)
-	{
-		next = p->next;
-
-		if (p->_new)
-		{
-			p->_new = false;	// particle is just created -- timeDelta == 0, nothing to update
-			p->leafNum = CM_PointLeafnum (p->org);
-		}
-		else
-		{
-			// update alpha
-			p->alpha += timeDelta * p->alphavel;
-
-			// update position
-			if (p->vel[2] || p->vel[1] || p->vel[0])
-			{
-				p->org[0] += p->vel[0] * timeDelta + p->accel[0] * time2;
-				p->org[1] += p->vel[1] * timeDelta + p->accel[1] * time2;
-				p->org[2] += p->vel[2] * timeDelta + p->accel[2] * time2;
-				p->leafNum = CM_PointLeafnum (p->org);
-			}
-			// update velocity
-			p->vel[0] += timeDelta * p->accel[0];
-			p->vel[1] += timeDelta * p->accel[1];
-			p->vel[2] += timeDelta * p->accel[2];
-		}
-
-		// remove particle if it is faded out or out of world
-		if (p->alpha <= 0 || CM_LeafContents (p->leafNum) & MASK_SOLID)
-		{
-			if (prev)
-				prev->next = p->next;
-			else
-				active_particles = p->next;
-
-			p->next = free_particles;
-			free_particles = p;
-			continue;
-		}
-
-		prev = p;
-	}
 }
 
 

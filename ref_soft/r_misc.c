@@ -619,50 +619,34 @@ R_ScreenShot_f
 void R_ScreenShot_f (void)
 {
 	int			i;
-	char		pcxname[80];
-	char		checkname[MAX_OSPATH];
+	char		name[MAX_OSPATH];
 	FILE		*f;
 	byte		palette[768];
 
 	// create the screenshots directory if it doesn't exist
-	Com_sprintf (checkname, sizeof(checkname), "%s/screenshots", FS_Gamedir());
-	Sys_Mkdir (checkname);
+	Com_sprintf (name, sizeof(name), "%s/screenshots", FS_Gamedir());
+	Sys_Mkdir (name);
 
-	//
 	// find a file name to save it to
-	//
-	strcpy(pcxname,"quake00.pcx");
-
-	for (i=0 ; i<=99 ; i++)
-	{
-		pcxname[5] = i/10 + '0';
-		pcxname[6] = i%10 + '0';
-		Com_sprintf (checkname, sizeof(checkname), "%s/screenshots/%s", FS_Gamedir(), pcxname);
-		f = fopen (checkname, "r");
-		if (!f)
+	for (i = 0; i < 10000; i++)
+	{	// check for a free filename
+		Com_sprintf (name, sizeof(name), "%s/screenshots/shot%04d.pcx", FS_Gamedir(), i);
+		if (!(f = fopen (name, "rb")))
 			break;	// file doesn't exist
 		fclose (f);
 	}
-	if (i==100)
-	{
-		Com_Printf ("R_ScreenShot_f: Couldn't create a PCX");
-		return;
-	}
 
 	// turn the current 32 bit palette into a 24 bit palette
-	for (i=0 ; i<256 ; i++)
+	for (i = 0; i < 256; i++)
 	{
 		palette[i*3+0] = sw_state.currentpalette[i*4+0];
 		palette[i*3+1] = sw_state.currentpalette[i*4+1];
 		palette[i*3+2] = sw_state.currentpalette[i*4+2];
 	}
 
-	//
 	// save the pcx file
-	//
-
-	WritePCXfile (checkname, vid.buffer, vid.width, vid.height, vid.rowbytes,
+	WritePCXfile (name, vid.buffer, vid.width, vid.height, vid.rowbytes,
 				  palette);
 
-	Com_Printf ("Wrote %s\n", checkname);
+	Com_Printf ("Wrote %s\n", name);
 }

@@ -310,7 +310,6 @@ void SV_ReadLevelFile (void)
 		Com_WPrintf ("Failed to open %s\n", name);
 		return;
 	}
-//--	FS_Read (sv.configstrings, sizeof(sv.configstrings), f);
 	fread (sv.configstrings, sizeof(sv.configstrings), 1, f);
 	CM_ReadPortalState (f);
 	fclose (f);
@@ -415,11 +414,9 @@ void SV_ReadServerFile (void)
 		return;
 	}
 	// read the comment field
-//--	FS_Read (comment, sizeof(comment), f);
 	fread (comment, sizeof(comment), 1, f);
 
 	// read the mapcmd
-//--	FS_Read (mapcmd, sizeof(mapcmd), f);
 	fread (mapcmd, sizeof(mapcmd), 1, f);
 
 	// read all CVAR_LATCH cvars
@@ -428,7 +425,6 @@ void SV_ReadServerFile (void)
 	{
 		if (!fread (name, 1, sizeof(name), f))
 			break;
-//--		FS_Read (string, sizeof(string), f);
 		fread (string, sizeof(string), 1, f);
 		Com_DPrintf ("Set %s = %s\n", name, string);
 		Cvar_ForceSet (name, string);

@@ -40,7 +40,6 @@ swwstate_t sww_state;
 /*
 ** Vid_CreateWindow
 */
-#define	WINDOW_CLASS_NAME "Quake 2"
 
 void Vid_CreateWindow (int width, int height, qboolean fullscreen)
 {
@@ -60,7 +59,7 @@ void Vid_CreateWindow (int width, int height, qboolean fullscreen)
 	wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
 	wc.hbrBackground = (void *)COLOR_GRAYTEXT;
 	wc.lpszMenuName  = 0;
-	wc.lpszClassName = WINDOW_CLASS_NAME;
+	wc.lpszClassName = APPNAME;
 
     if (!RegisterClass (&wc))
 		Com_Error (ERR_FATAL, "Couldn't register window class");
@@ -90,8 +89,8 @@ void Vid_CreateWindow (int width, int height, qboolean fullscreen)
 
 	sww_state.hWnd = CreateWindowEx (
 		exstyle,
-		 WINDOW_CLASS_NAME,
-		 "Quake 2",
+		 APPNAME,
+		 APPNAME,
 		 stylebits,
 		 x, y, w, h,
 		 NULL,
@@ -370,7 +369,7 @@ void SWimp_Shutdown( void )
 		ShowWindow( sww_state.hWnd, SW_SHOWNORMAL );	// prevents leaving empty slots in the taskbar
 		DestroyWindow (sww_state.hWnd);
 		sww_state.hWnd = NULL;
-		UnregisterClass (WINDOW_CLASS_NAME, sww_state.hInstance);
+		UnregisterClass (APPNAME, sww_state.hInstance);
 	}
 }
 

@@ -93,7 +93,7 @@ cvar_t	*r_nocull;
 cvar_t	*r_lerpmodels;
 cvar_t	*r_lefthand;
 
-cvar_t	*r_lightlevel;	// FIXME: This is a HACK to get the client's light level
+float	gl_lightlevel;
 
 cvar_t	*gl_nosubimage;
 cvar_t	*gl_allow_software;
@@ -114,7 +114,7 @@ cvar_t	*gl_logFile;
 cvar_t	*gl_bitdepth;
 cvar_t	*gl_drawbuffer;
 cvar_t  *gl_driver;
-cvar_t	*gl_lightmap;
+cvar_t	*r_lightmap;
 cvar_t	*gl_shadows;
 cvar_t	*gl_mode;
 cvar_t	*gl_dynamic;
@@ -959,16 +959,16 @@ void R_SetLightLevel (void)
 	if (shadelight[0] > shadelight[1])
 	{
 		if (shadelight[0] > shadelight[2])
-			r_lightlevel->value = 150*shadelight[0];
+			gl_lightlevel = 150*shadelight[0];
 		else
-			r_lightlevel->value = 150*shadelight[2];
+			gl_lightlevel = 150*shadelight[2];
 	}
 	else
 	{
 		if (shadelight[1] > shadelight[2])
-			r_lightlevel->value = 150*shadelight[1];
+			gl_lightlevel = 150*shadelight[1];
 		else
-			r_lightlevel->value = 150*shadelight[2];
+			gl_lightlevel = 150*shadelight[2];
 	}
 
 }
@@ -1003,8 +1003,6 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(r_speeds, 0, 0),
 	CVAR_VAR(r_ignorehwgamma, 0, CVAR_ARCHIVE),
 
-	CVAR_VAR(r_lightlevel, 0, 0),
-
 	CVAR_VAR(gl_nosubimage, 0, 0),
 	CVAR_VAR(gl_allow_software, 0, 0),
 
@@ -1019,7 +1017,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_logFile, 0, 0),
 	CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_mode, 3, CVAR_ARCHIVE),
-	CVAR_VAR(gl_lightmap, 0, 0),
+	CVAR_VAR(r_lightmap, 0, 0),
 	CVAR_VAR(gl_shadows, 0, CVAR_ARCHIVE ),
 	CVAR_VAR(gl_dynamic, 1, 0),
 	CVAR_VAR(gl_nobind, 0, 0),
@@ -1088,7 +1086,7 @@ qboolean R_SetMode (void)
 
 	if ( ( err = GLimp_SetMode( &vid.width, &vid.height, gl_mode->integer, fullscreen ) ) == rserr_ok )
 	{
-		gl_state.prevMode = gl_mode->integer;
+		gl_config.prevMode = gl_mode->integer;
 	}
 	else
 	{
@@ -1102,13 +1100,13 @@ qboolean R_SetMode (void)
 		}
 		else if ( err == rserr_invalid_mode )
 		{
-			Cvar_SetInteger ("gl_mode", gl_state.prevMode);
+			Cvar_SetInteger ("gl_mode", gl_config.prevMode);
 			gl_mode->modified = false;
 			Com_Printf ("ref_gl::R_SetMode() - invalid mode\n");
 		}
 
 		// try setting it back to something safe
-		if ( ( err = GLimp_SetMode( &vid.width, &vid.height, gl_state.prevMode, false ) ) != rserr_ok )
+		if ( ( err = GLimp_SetMode( &vid.width, &vid.height, gl_config.prevMode, false ) ) != rserr_ok )
 		{
 			Com_Printf ("ref_gl::R_SetMode() - could not revert to safe mode\n");
 			return false;
@@ -1157,7 +1155,7 @@ int R_Init( void *hinstance, void *hWnd )
 	}
 
 	// set our "safe" modes
-	gl_state.prevMode = 3;
+	gl_config.prevMode = 3;
 
 	// create the window and set up the context
 	if ( !R_SetMode () )
@@ -1167,7 +1165,7 @@ int R_Init( void *hinstance, void *hWnd )
 		return -1;
 	}
 
-	Vid_MenuInit();
+//??	Vid_MenuInit();
 
 	/*
 	** get our various GL strings
@@ -1682,6 +1680,11 @@ void	Draw_ConCharColor (int x, int y, int c, int color)
 	Draw_CharColor (x * 8, y * 8, c, color);
 }
 
+static float GetClientLight (void)
+{
+	return gl_lightlevel;
+}
+
 
 /*
 @@@@@@@@@@@@@@@@@@@@@
@@ -1741,6 +1744,8 @@ refExport_t GetRefAPI (refImport_t rimp )
 	re.DrawTextPos = DrawTextPos;
 	re.DrawTextLeft = DrawTextLeft;
 	re.DrawTextRight = DrawTextRight;
+
+	re.GetClientLight = GetClientLight;
 
 	Swap_Init ();
 

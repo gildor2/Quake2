@@ -50,10 +50,10 @@ static int ComputeHash (char *name)
 static void Shaderlist_f (void)
 {
 	int		i, n;
+	char	*mask;
 	static char *shTypes[] = {"", "sky", "fog", "por"};
 	static char *boolNames[] = {" ", "+"};
 	static char *badNames[] = {"", " ^1(errors)^7"};
-	char	*mask;
 
 	if (Cmd_Argc () > 2)
 	{
@@ -86,7 +86,7 @@ static void Shaderlist_f (void)
 			lmInfo = "v";
 			break;
 		case LIGHTMAP_RESERVE:
-			lmInfo = "r";
+			lmInfo = "^1r^7";	// this situation is error, so - colorize output
 			break;
 		default:
 			lmInfo = va("%d", sh->lightmapNumber);
@@ -118,39 +118,6 @@ void GL_ShutdownShaders (void)
 	}
 	shaderCount = 0;
 	Cmd_RemoveCommand ("shaderlist");
-}
-
-
-void GL_ResetShaders (void)
-{
-	if (shaderChain)
-		FreeMemoryChain (shaderChain);
-	shaderChain = CreateMemoryChain ();
-
-	memset (hashTable, 0, sizeof(hashTable));
-	memset (shadersArray, 0, sizeof(shadersArray));
-	shaderCount = 0;
-
-	/*---------------- creating system shaders --------------------*/
-	// abstract shaders should be created in reverse (with relation to sortParam) order
-	gl_alphaShader2 = GL_FindShader ("*alpha2", SHADER_ABSTRACT);
-	gl_alphaShader2->sortParam = SORT_SEETHROUGH + 1;
-	gl_particleShader = GL_FindShader ("*particle", SHADER_ABSTRACT);
-	gl_particleShader->sortParam = SORT_SEETHROUGH;
-	gl_alphaShader1 = GL_FindShader ("*alpha1", SHADER_ABSTRACT);
-	gl_alphaShader1->sortParam = SORT_SEETHROUGH;
-
-	gl_defaultShader = GL_FindShader ("*default", SHADER_WALL);
-	gl_identityLightShader = GL_FindShader ("*identityLight", SHADER_FORCEALPHA|SHADER_WALL);
-	gl_identityLightShader->stages[0]->rgbGenType = RGBGEN_EXACT_VERTEX;	//!! hack (should provide different flags for "create()")
-	gl_identityLightShader->stages[0]->glState |= GLSTATE_NODEPTHTEST;
-	gl_identityLightShader->stages[0]->glState &= ~GLSTATE_DEPTHWRITE;
-	gl_identityLightShader2 = GL_FindShader ("*identityLight", SHADER_FORCEALPHA|SHADER_WALL|SHADER_TRYLIGHTMAP);
-			//!! make different ->name
-	gl_identityLightShader2->stages[0]->rgbGenType = RGBGEN_EXACT_VERTEX;
-	gl_skyShader = gl_defaultSkyShader = GL_FindShader ("*sky", SHADER_SKY|SHADER_ABSTRACT);
-
-	gl_concharsShader = GL_FindShader ("pics/conchars", SHADER_ALPHA);
 }
 
 
@@ -247,14 +214,14 @@ static tcModParms_t *NewTcModStage (shaderStage_t *stage)
 
 
 // Insert shader to shaders array
-static shader_t *CreatePermanentShader (void)
+static shader_t *AddPermanentShader (void)
 {
 	shader_t *nsh;			// new shader
 	int		i, hash;
 
 	if (shaderCount >= MAX_SHADERS)
 	{
-		Com_WPrintf ("CreatePermanentShader(%s): MAX_SHADERS hit\n", sh.name);
+		Com_WPrintf ("AddPermanentShader(%s): MAX_SHADERS hit\n", sh.name);
 		return gl_defaultShader;
 	}
 
@@ -324,6 +291,7 @@ static shader_t *FinishShader (void)
 	for (numStages = 0; numStages < MAX_SHADER_STAGES; numStages++)
 	{
 		shaderStage_t *s;
+		int		blend1, blend2;
 
 		s = &st[numStages];
 		if (!s->numAnimTextures) break;
@@ -347,11 +315,11 @@ static shader_t *FinishShader (void)
 		{
 		case RGBGEN_NONE:	// rgbGen is not set
 		case RGBGEN_IDENTITY:
-			s->rgbGenConst[0] = s->rgbGenConst[1] = s->rgbGenConst[2] = 1;
+			s->rgbaConst.rgba |= 0xFFFFFF;			// RGB = 255, alpha - unchanged
 			s->rgbGenType = RGBGEN_CONST;
 			break;
 		case RGBGEN_IDENTITY_LIGHTING:
-			s->rgbGenConst[0] = s->rgbGenConst[1] = s->rgbGenConst[2] = gl_config.identityLightValue_f;
+			s->rgbaConst.c[0] = s->rgbaConst.c[1] = s->rgbaConst.c[2] = gl_config.identityLightValue;
 			s->rgbGenType = RGBGEN_CONST;
 			break;
 		}
@@ -359,22 +327,41 @@ static shader_t *FinishShader (void)
 		// process alphaGen
 		if (s->alphaGenType == ALPHAGEN_IDENTITY)
 		{
-			s->alphaGenConst = 1;
+			s->rgbaConst.c[3] = 255;
 			s->alphaGenType = ALPHAGEN_CONST;
 		}
 
-		// process blend mode
-		if (s->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK) &&
-			st[0].glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
+		// replace blend mode aliases with main modes (for easier processing)
+		blend1 = s->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK);
+		switch (blend1)
+		{
+		case GLSTATE_SRC_ONE|GLSTATE_DST_ZERO:		// src
+			blend2 = 0;
+			break;
+		case GLSTATE_SRC_ZERO|GLSTATE_DST_SRCCOLOR:	// src*dst
+			blend2 = GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO;
+			break;
+		//?? can remove/signal stages with blend = (0,1=dst) (0,0=0) and no depthwrite (BUT: depth-sorted anyway ???)
+		default:
+			blend2 = blend1;
+		}
+		// replace lightmap blend src*dst -> src*dst*2 when needed
+		if (numStages > 0 && st[numStages-1].isLightmap)
+		{
+			if (blend2 == (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO))			// src*dst
+			{
+				if (!gl_config.lightmapOverbright)
+					blend2 = GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR;		// src*dst*2
+			}
+			else
+				Com_WPrintf ("R_FinishShader(%s): strange blend for lightmap in stage %d\n", sh.name, numStages);	//?? DPrintf
+		}
+		// store new blend mode
+		s->glState = s->glState & ~(GLSTATE_SRCMASK|GLSTATE_DSTMASK) | blend2;
+
+		// set sort param
+		if (blend2 && st[0].glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))	//?? check this condition
 		{	// have blending
-/*--- determine fog type depends on blend mode ---
- if (src == ZERO && DST= = ONE_MINUS_SRC_COLOR)
-     fogType = RGB;
- else if (src == SRC_ALPHA && dst == ONE_MINUS_SRC_ALPHA)
-     fogType = ALPHA;
- else if (dst == ONE || dst == ONE_MINUS_SRC_ALPHA)
-     fogType = RGBA;
- */
 			if (!sh.sortParam)
 			{
 				if (s->glState & GLSTATE_DEPTHWRITE)
@@ -409,7 +396,7 @@ static shader_t *FinishShader (void)
 
 	// optimize stages (vertex lighting (simplify ?), multitexturing ...)
 
-	return CreatePermanentShader ();
+	return AddPermanentShader ();
 }
 
 
@@ -451,7 +438,7 @@ shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber)
 		// shader not found -- duplicate source and change its lightmap
 		ExtractShader (shader);
 		sh.lightmapNumber = LIGHTMAP_RESERVE;	// temporarily mark as reserved (for CreatePermanentShader())
-		dest = CreatePermanentShader ();
+		dest = AddPermanentShader ();
 		// new shader's tcMod will point to the old shader's tcMod stages
 	}
 
@@ -669,8 +656,7 @@ shader_t *GL_FindShader (char *name, int style)
 			/*--------- processing style -------------*/
 			if (lightmapNumber >= 0)
 			{
-//				stage->glState = GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO;	// 2nd stage -- texture
-				stage->glState = GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR;	// 2nd stage -- texture
+				stage->glState = GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO;		// 2nd stage -- texture (src*dst)
 				stage->rgbGenType = RGBGEN_IDENTITY;
 				stage->alphaGenType = ALPHAGEN_IDENTITY;
 			}
@@ -700,12 +686,12 @@ shader_t *GL_FindShader (char *name, int style)
 				if (style & SHADER_TRANS33)
 				{
 					if (style & SHADER_TRANS66)
-						stage->alphaGenConst = 0.22;	// both flags -- make it more translucent
+						stage->rgbaConst.c[3] = 0.22 * 255;	// both flags -- make it more translucent
 					else
-						stage->alphaGenConst = 0.33;
+						stage->rgbaConst.c[3] = 0.33 * 255;
 				}
 				else if (style & SHADER_TRANS66)
-					stage->alphaGenConst = 0.66;
+					stage->rgbaConst.c[3] = 0.66 * 255;
 			}
 //??			if (!(stage->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK)) && lightmapNumber == LIGHTMAP_NONE)
 //				stage->glState |= GLSTATE_DEPTHWRITE;
@@ -721,7 +707,7 @@ shader_t *GL_FindShader (char *name, int style)
 				// turb
 				tcmod = NewTcModStage (stage);
 				tcmod->type = TCMOD_TURB;
-				tcmod->wave.amp = 1.0f / 64;
+				tcmod->wave.amp = 1.0f / 16;
 				tcmod->wave.phase = 0;
 				tcmod->wave.freq = 1.0f / (2.0f * M_PI);
 #else
@@ -824,4 +810,40 @@ shader_t *GL_GetShaderByNum (int num)
 	if (num >= 0 && num < shaderCount)
 		return shadersArray[num];
 	return gl_defaultShader;
+}
+
+
+void GL_ResetShaders (void)
+{
+	if (shaderChain)
+		FreeMemoryChain (shaderChain);
+	shaderChain = CreateMemoryChain ();
+
+	memset (hashTable, 0, sizeof(hashTable));
+	memset (shadersArray, 0, sizeof(shadersArray));
+	shaderCount = 0;
+
+	/*---------------- creating system shaders --------------------*/
+	// abstract shaders should be created in reverse (with relation to sortParam) order
+	gl_alphaShader2 = GL_FindShader ("*alpha2", SHADER_ABSTRACT);
+	gl_alphaShader2->sortParam = SORT_SEETHROUGH + 1;
+	gl_particleShader = GL_FindShader ("*particle", SHADER_ABSTRACT);
+	gl_particleShader->sortParam = SORT_SEETHROUGH;
+	gl_alphaShader1 = GL_FindShader ("*alpha1", SHADER_ABSTRACT);
+	gl_alphaShader1->sortParam = SORT_SEETHROUGH;
+
+	gl_defaultShader = GL_FindShader ("*default", SHADER_WALL);
+	gl_identityLightShader = GL_FindShader ("*identityLight", SHADER_FORCEALPHA|SHADER_WALL);
+	gl_identityLightShader->stages[0]->rgbGenType = RGBGEN_EXACT_VERTEX;	//!! hack (should provide different flags for "create()")
+	gl_identityLightShader->stages[0]->glState |= GLSTATE_NODEPTHTEST;		// remove depth test/write (this is 2D shader)
+	gl_identityLightShader->stages[0]->glState &= ~GLSTATE_DEPTHWRITE;
+	// create 2nd "identityLight" (with depth test/write and different name)
+	strcpy (sh.name, "*identitylight2");
+	gl_identityLightShader2 = AddPermanentShader ();
+//??	gl_identityLightShader2 = GL_FindShader ("*identityLight", SHADER_FORCEALPHA|SHADER_WALL|SHADER_TRYLIGHTMAP);
+			//!! make different ->name
+	gl_identityLightShader2->stages[0]->rgbGenType = RGBGEN_EXACT_VERTEX;
+	gl_skyShader = gl_defaultSkyShader = GL_FindShader ("*sky", SHADER_SKY|SHADER_ABSTRACT);
+
+	gl_concharsShader = GL_FindShader ("pics/conchars", SHADER_ALPHA);
 }

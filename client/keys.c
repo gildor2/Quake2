@@ -26,7 +26,6 @@ key up events are sent even if in console mode
 */
 
 
-#define		MAXCMDLINE	256
 char	key_lines[32][MAXCMDLINE];
 int		key_linepos;
 int		anykeydown;
@@ -1004,13 +1003,20 @@ void Key_ClearStates (void)
 
 	anykeydown = false;
 
-	for (i=0 ; i<256 ; i++)
+	for (i = 0; i < 256; i++)
 	{
-		if ( keydown[i] || key_repeats[i] )
-			Key_Event( i, false, 0 );
+		if (keydown[i] || key_repeats[i])
+			Key_Event (i, false, 0);
 		keydown[i] = 0;
 		key_repeats[i] = 0;
 	}
+}
+
+
+void Key_ClearTyping (void)
+{
+	key_lines[edit_line][1] = 0;	// clear any typing
+	key_linepos = 1;
 }
 
 

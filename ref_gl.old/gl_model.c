@@ -395,7 +395,7 @@ void Mod_LoadLighting (byte *data, int size)
 	c = size / 3;
 	p = loadmodel->lightdata;
 
-	if (gl_lightmap->integer == 2)	// make solarised lightmaps
+	if (r_lightmap->integer == 2)	// make solarised lightmaps
 	{
 		for (i = 0; i < c; i++, p+=3)
 		{
@@ -419,7 +419,7 @@ void Mod_LoadLighting (byte *data, int size)
 
 	sat = saturation->value;
 
-	if (gl_lightmap->integer == 3)	// make inversed saturation on lightmaps
+	if (r_lightmap->integer == 3)	// make inversed saturation on lightmaps
 		sat = -sat;
 	if (sat != 1.0)
 	{
@@ -985,7 +985,6 @@ Mod_LoadHLTextures
 //!! we should store info in special array
 void Mod_LoadHLTextures (lump_t *l)
 {
-	hl_dmiptexlump_t *lump;
 
 }
 
@@ -997,11 +996,11 @@ Mod_LoadHLTexinfo
 
 void Mod_LoadHLTexinfo (lump_t *l)
 {
-	hl_texinfo_t *in;
-	mtexinfo_t *out, *step;
+/*	hl_texinfo_t *in;
+	mtexinfo_t *out;// *step;
 	int 	i, j, count;
-	char	name[MAX_QPATH];
-	int		next;
+//	char	name[MAX_QPATH];
+//	int		next;
 
 //--	in = (void *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
@@ -1040,7 +1039,7 @@ void Mod_LoadHLTexinfo (lump_t *l)
 		out->numframes = 1;
 //		for (step = out->next ; step && step != out ; step=step->next)
 //			out->numframes++;
-	}
+	} */
 }
 
 
@@ -1051,7 +1050,7 @@ Mod_LoadHLNodes
 */
 void Mod_LoadHLNodes (lump_t *l)
 {
-	int			i, j, count, p;
+/*	int			i, j, count, p;
 	hl_dnode_t		*in;
 	mnode_t 	*out;
 
@@ -1089,7 +1088,7 @@ void Mod_LoadHLNodes (lump_t *l)
 		}
 	}
 
-	Mod_SetParent (loadmodel->nodes, NULL);	// sets nodes and leafs
+	Mod_SetParent (loadmodel->nodes, NULL);	// sets nodes and leafs */
 }
 
 
@@ -1100,7 +1099,7 @@ Mod_LoadHLSubmodels
 */
 void Mod_LoadHLSubmodels (lump_t *l)
 {
-	hl_dmodel_t	*in;
+/*	hl_dmodel_t	*in;
 	mmodel_t	*out;
 	int			i, j, count;
 
@@ -1125,7 +1124,7 @@ void Mod_LoadHLSubmodels (lump_t *l)
 		out->headnode = LittleLong (in->headnode[0]); // use only headnode[0]
 		out->firstface = LittleLong (in->firstface);
 		out->numfaces = LittleLong (in->numfaces);
-	}
+	} */
 }
 
 
@@ -1157,7 +1156,7 @@ static int HLContents[HL_CONTENTS] =
 
 void Mod_LoadHLLeafs (lump_t *l)
 {
-	hl_dleaf_t 	*in;
+/*	hl_dleaf_t 	*in;
 	mleaf_t 	*out;
 	int			i, j, count, p;
 
@@ -1191,7 +1190,7 @@ void Mod_LoadHLLeafs (lump_t *l)
 		out->firstmarksurface = loadmodel->marksurfaces +
 			LittleShort(in->firstmarksurface);
 		out->nummarksurfaces = LittleShort(in->nummarksurfaces);
-	}
+	} */
 }
 
 
@@ -1201,7 +1200,7 @@ void Mod_LoadHLLeafs (lump_t *l)
  */
 void Mod_LoadHLVisibility (lump_t *l)
 {
-	int		i, size, num, vis;
+/*	int		i, size, num, vis;
 
 	if (!l->filelen)
 	{
@@ -1222,7 +1221,7 @@ void Mod_LoadHLVisibility (lump_t *l)
 		loadmodel->vis->bitofs[i][DVIS_PVS] = vis;
 		loadmodel->vis->bitofs[i][DVIS_PHS] = -1; // no visinfo
 		loadmodel->leafs[i].cluster = i; //?? -1?
-	}
+	} */
 }
 
 

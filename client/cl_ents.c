@@ -1508,7 +1508,7 @@ void CL_AddEntities (void)
 #endif
 	CL_AddTEnts ();
 	CL_AddDLights ();
-	CL_AddLightStyles ();
+	CL_RunLightStyles ();	// migrated here from CL_Frame() because of clump time
 }
 
 

@@ -139,8 +139,9 @@ char *Sys_ScanForCD (void)
 {
 	static char	cddir[MAX_OSPATH];
 	static qboolean	done;
+#ifdef CD_PATH
 #ifndef DEMO
-	static char drive[4] = "c:\\";
+	static char drive[4] = "c:/";
 	FILE		*f;
 
 	if (done)		// don't re-check
@@ -154,21 +155,21 @@ char *Sys_ScanForCD (void)
 	// scan the drives
 	for (drive[0] = 'c'; drive[0] <= 'z'; drive[0]++)
 	{
-		// where activision put the stuff...
-		Q_CopyFilename (cddir, va("%sinstall\\data", drive), sizeof(cddir) - 1);
-		f = fopen (va("%sinstall\\data\\quake2.exe", drive), "r");
+		if (GetDriveType (drive) != DRIVE_CDROM) continue;
+
+		Q_CopyFilename (cddir, va("%s"CD_PATH, drive), sizeof(cddir) - 1);
+		f = fopen (va("%s"CD_CHECK, drive), "r");
 		if (f)
 		{
 			fclose (f);
-			if (GetDriveType (drive) == DRIVE_CDROM)
-				return cddir;
+			return cddir;
 		}
 	}
 #endif
+#endif
 
 	cddir[0] = 0;
-
-	return NULL;
+	return cddir;
 }
 
 /*
@@ -179,12 +180,14 @@ Sys_CopyProtect
 */
 void	Sys_CopyProtect (void)
 {
+#ifdef CD_PATH
 #ifndef DEMO
 	char	*cddir;
 
 	cddir = Sys_ScanForCD ();
 	if (!cddir[0])
-		Com_Error (ERR_FATAL, "You must have the Quake2 CD in the drive to play.");
+		Com_Error (ERR_FATAL, "You must have the "APPNAME" CD in the drive to play.");
+#endif
 #endif
 }
 
@@ -260,7 +263,7 @@ static LONG WINAPI ExceptionFilter(struct _EXCEPTION_POINTERS *ExceptionInfo)
 	{
 		time (&itime);
 		strftime (ctime, sizeof(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
-		fprintf (f, "----- Quake2 crush log on %s -----\n", ctime);
+		fprintf (f, "----- "APPNAME" crush log on %s -----\n", ctime);
 		ctx = ExceptionInfo->ContextRecord;
 		rec = ExceptionInfo->ExceptionRecord;
 		strcpy (module, "<N/A>");
@@ -341,9 +344,9 @@ void Sys_Init (void)
 		Sys_Error ("Couldn't get OS info");
 
 	if (vinfo.dwMajorVersion < 4)
-		Sys_Error ("Quake2 requires windows version 4 or greater");
+		Sys_Error (APPNAME" requires windows version 4 or greater");
 	if (vinfo.dwPlatformId == VER_PLATFORM_WIN32s)
-		Sys_Error ("Quake2 doesn't run on Win32s");
+		Sys_Error (APPNAME" doesn't run on Win32s");
 	else if ( vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS )
 		s_win95 = true;
 
@@ -710,7 +713,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 	// if we find the CD, add a "+set cddir xxx" command line
 	cddir = Sys_ScanForCD ();
-	if (cddir && argc < MAX_NUM_ARGVS - 3)
+	if (cddir && cddir[0] && argc < MAX_NUM_ARGVS - 3)
 	{
 		int		i;
 
@@ -735,7 +738,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 		// if at a full screen console, don't update unless needed
 		if (Minimized || (dedicated && dedicated->integer))
-			Sleep (1);
+			Sleep (10);
 
 		while (PeekMessage (&msg, NULL, 0, 0, PM_NOREMOVE))
 		{

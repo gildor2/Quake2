@@ -22,7 +22,7 @@ typedef struct dynamicLightmap_s
 	// style info
 	int		numStyles;		// 1..4
 	byte	style[4];		// style numbers
-	float	modulate[4][3];	// current (uploaded) state of styles
+	byte	modulate[4];	// current (uploaded) state of styles
 	// source
 	byte	*source;		// points to "byte rgb[w*h*numStyles][3]"
 	int		w, h;			// size of source
@@ -40,10 +40,7 @@ typedef struct
 	vec3_t	xyz;			// vertex itself
 	float	st[2], lm[2];	// texture coordinates (TCGEN_TEXTURE/TCGEN_LIGHTMAP)
 	float	lm2[2];			// for vertex color calculation: coords in surface lightmap rect (non-normalized)
-	union {
-		byte	c[4];		// vertex color
-		int		rgba;
-	};
+	color_t	c;				// vertex color
 } vertex_t;
 
 // Vertex with stored normal
@@ -51,10 +48,7 @@ typedef struct
 {
 	vec3_t	xyz;
 	float	st[2], lm[2];
-	union {
-		byte	c[4];
-		int		rgba;
-	};
+	color_t	c;
 	vec3_t	normal;
 } vertexNormal_t;
 
@@ -62,10 +56,7 @@ typedef struct
 {
 	vec3_t	xyz;
 	float	st[2];
-	union {
-		byte	c[4];
-		int		rgba;
-	};
+	color_t	c;
 } vertexPoly_t;
 
 typedef struct
@@ -137,8 +128,8 @@ typedef struct
 
 typedef struct surfaceCommon_s
 {
-	shader_t *shader;		// ignored for models
-	int		frame;			// ignored for models
+	shader_t *shader;			// ignored for models
+	int		frame;				// ignored for models
 	//int		fogNum;
 	int		type;
 	union {
@@ -155,16 +146,16 @@ typedef struct surfaceCommon_s
 typedef struct node_s
 {
 	qboolean isNode;
-	qboolean haveAlpha;				// true if leaf have surface(s) with translucent shader
+	qboolean haveAlpha;			// true if leaf have surface(s) with translucent shader
 	byte	frustumMask;
-	int		visFrame, frame;		// PVS-cull frame, frustum-cull frame
+	int		visFrame, frame;	// PVS-cull frame, frustum-cull frame
 	// leaf geometry
 	float	mins[3], maxs[3];
 	cplane_t *plane;
 	// tree structure
 	struct node_s *parent, *children[2];
 	// BSP draw sequence (dynamic)
-	int		drawOrder;				// 0 - first, 1 - next etc.
+	int		drawOrder;			// 0 - first, 1 - next etc.
 	struct node_s *drawNext;
 	refEntity_t *drawEntity;
 	particle_t *drawParticle;
@@ -196,7 +187,7 @@ typedef struct
 	cplane_t *planes;
 	int		numPlanes;
 	// bsp
-	node_t	*nodes;		// nodes[numNodes], leafs[numLeafsNodes-numNodes]
+	node_t	*nodes;				// nodes[numNodes], leafs[numLeafsNodes-numNodes]
 	int		numNodes;
 	int		numLeafNodes;
 	// inline models
@@ -212,7 +203,6 @@ typedef struct
 	int		numClusters;
 	int		visRowSize;
 	byte	*visInfo;
-	byte	*noVis;		// used for r_novis or (clusterNum < 0)
 } bspModel_t;
 
 
@@ -220,10 +210,10 @@ typedef struct
 
 typedef struct
 {
-	int		numSurfaces;	// for MD2 = 1
-	surfaceCommon_t *surf;	// [numSurfaces];  ->surfaceCommon_t->surfaceMd3_t
+	int		numSurfaces;		// for MD2 = 1
+	surfaceCommon_t *surf;		// [numSurfaces];  ->surfaceCommon_t->surfaceMd3_t
 	int		numFrames;
-	md3Frame_t *frames;		// for culling
+	md3Frame_t *frames;			// for culling
 } md3Model_t;
 
 
@@ -240,7 +230,7 @@ typedef struct
 {
 	int		numFrames;
 	float	radius;
-	sp2Frame_t frames[0];	// [numFrames]
+	sp2Frame_t frames[0];		// [numFrames]
 } sp2Model_t;
 
 /*---------------- Models ------------------*/

@@ -329,7 +329,7 @@ void R_BlendLightmaps (void)
 		c_visible_lightmaps = 0;
 
 	// don't bother if we're set to fullbright
-	if (r_fullbright->integer && !gl_lightmap->integer || !r_worldmodel->lightdata)
+	if (r_fullbright->integer && !r_lightmap->integer || !r_worldmodel->lightdata)
 		return;
 
 	// don't bother writing Z
@@ -339,7 +339,7 @@ void R_BlendLightmaps (void)
 	** set the appropriate blending mode unless we're only looking at the
 	** lightmaps.
 	*/
-	if (!gl_lightmap->integer)
+	if (!r_lightmap->integer)
 	{
 		qglEnable (GL_BLEND);
 
@@ -514,7 +514,7 @@ void R_RenderBrushPoly (msurface_t *fa)
 		return;
 	}
 
-	if (currentmodel != r_worldmodel || !gl_lightmap->integer) //??
+	if (currentmodel != r_worldmodel || !r_lightmap->integer) //??
 	{
 		GL_Bind (image->texnum);
 		GL_TexEnv (GL_REPLACE);
@@ -532,19 +532,19 @@ void R_RenderBrushPoly (msurface_t *fa)
 	/*
 	** check for lightmap modification
 	*/
-	for ( maps = 0; maps < MAXLIGHTMAPS && fa->styles[maps] != 255; maps++ )
+	for (maps = 0; maps < MAXLIGHTMAPS && fa->styles[maps] != 255; maps++)
 	{
-		if ( r_newrefdef.lightstyles[fa->styles[maps]].white != fa->cached_light[maps] )
+		if (r_newrefdef.lightstyles[fa->styles[maps]].value != fa->cached_light[maps])
 			goto dynamic;
 	}
 
 	// dynamic this frame or dynamic previously
-	if ( ( fa->dlightframe == r_framecount ) )
+	if ((fa->dlightframe == r_framecount))
 	{
 dynamic:
-		if ( gl_dynamic->integer )
+		if (gl_dynamic->integer)
 		{
-			if (!( fa->texinfo->flags & (SURF_SKY|SURF_TRANS33|SURF_TRANS66|SURF_ALPHA|SURF_WARP ) ) )
+			if (!(fa->texinfo->flags & (SURF_SKY|SURF_TRANS33|SURF_TRANS66|SURF_ALPHA|SURF_WARP)))
 			{
 				is_dynamic = true;
 			}
@@ -862,7 +862,7 @@ void DrawTextureChains (void)
 
 //	GL_TexEnv( GL_REPLACE );
 
-	if (!qglSelectTextureSGIS && !qglActiveTextureARB || gl_lightmap->integer)
+	if (!qglSelectTextureSGIS && !qglActiveTextureARB || r_lightmap->integer)
 	{
 		for (i = 0, image = gltextures; i < numgltextures; i++,image++)
 		{
@@ -938,7 +938,7 @@ static void GL_RenderLightmappedPoly( msurface_t *surf )
 
 	for ( map = 0; map < MAXLIGHTMAPS && surf->styles[map] != 255; map++ )
 	{
-		if ( r_newrefdef.lightstyles[surf->styles[map]].white != surf->cached_light[map] )
+		if ( r_newrefdef.lightstyles[surf->styles[map]].value != surf->cached_light[map] )
 			goto dynamic;
 	}
 
@@ -1347,7 +1347,7 @@ void R_RecursiveWorldNode (mnode_t *node)
 		else
 		{
 			if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE) && !(surf->flags & SURF_DRAWTURB)
-				&& !gl_lightmap->integer && !r_fullbright->integer)
+				&& !r_lightmap->integer && !r_fullbright->integer)
 			{
 				GL_RenderLightmappedPoly (surf);
 			}
@@ -1403,7 +1403,7 @@ void R_DrawWorld (void)
 
 	c_leafsinfrustum = 0;
 
-	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE) && !gl_lightmap->integer && !r_fullbright->integer)
+	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE) && !r_lightmap->integer && !r_fullbright->integer)
 	{
 		GL_EnableMultitexture (true);
 
@@ -1411,7 +1411,7 @@ void R_DrawWorld (void)
 		GL_TexEnv (GL_REPLACE);
 		GL_SelectTexture (1);
 
-//		if (gl_lightmap->integer)
+//		if (r_lightmap->integer)
 //			GL_TexEnv (GL_REPLACE);
 //		else
 			GL_TexEnv (GL_MODULATE);
@@ -1764,12 +1764,7 @@ void GL_BeginBuildingLightmaps (model_t *m)
 	** the first time they're seen
 	*/
 	for (i=0 ; i<MAX_LIGHTSTYLES ; i++)
-	{
-		lightstyles[i].rgb[0] = 1;
-		lightstyles[i].rgb[1] = 1;
-		lightstyles[i].rgb[2] = 1;
-		lightstyles[i].white = 3;
-	}
+		lightstyles[i].value = 128;
 	r_newrefdef.lightstyles = lightstyles;
 
 	if (!gl_state.lightmap_textures)

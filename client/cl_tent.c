@@ -940,6 +940,7 @@ void CL_ParseTEnt (void)
 
 		if (cls.newfx)
 		{	//!! check for metal surface (smoke for non-metals) + check for "type" (see below) (see KP)
+			// AND: should make sparks sometimes not appear (or very short lifetime ?)
 			CL_MetalSparks (pos, dir, rand() % 5 + 1);
 		}
 		else
@@ -1678,7 +1679,7 @@ void CL_AddPlayerBeams (void)
 //PMM
 		if(cl_mod_heatbeam && (b->model == cl_mod_heatbeam) && (b->entity == cl.playernum+1))
 		{
-			vec_t len;
+			float	len;
 
 			len = VectorLength (dist);
 			VectorScale (f, len, dist);

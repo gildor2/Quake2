@@ -30,11 +30,11 @@ Comments:
   (needs "vid_restart" to activate)
 - support of loading 8(grayscale)/24/32-bit tga and 24-bit jpg textures instead of 8-bit wal or pcx files
 # support for semi-transparent (has alpha >0 and <1) HUD images (e.i. Quake3 crosshairs)
-# improved speed in "gl_lightmap=1" mode; side effect: r_fullbright and gl_showtris are now
-  works with multitexturing enabled (gl_showtris requires either gl_lightmap or r_fullbright enabled)
-# "gl_showtris 2" will shows triangles with enabled Z-buffer
-- "gl_lightmap 2" solarizes lightmaps (as in Quake3)
-  "gl_lightmap 3" inverses saturation of lightmaps on map loading
+# improved speed in "r_lightmap=1" mode; side effect: r_fullbright and gl_showtris are now
+  works with multitexturing enabled (gl_showtris requires either r_lightmap or r_fullbright enabled)
+# "r_showtris 2" will shows triangles with enabled Z-buffer
+- "r_lightmap 2" solarizes lightmaps (as in Quake3)
+  "r_lightmap 3" inverses saturation of lightmaps on map loading
   (both requires "vid_restart" to activate)
 - "screenshot[JPEG] [silent|levelshot]"
   "screenshot silent" will create screenshot without echoing on console
@@ -62,7 +62,7 @@ Comments:
 - logging developer messages to "debug.log" when "developer" is set to 2
 - changed appearance of "cl_stats" output
 - "host_speeds" -> "com_speeds", better output
-- allowed cheatvars (timedemo, gl_lightmap ...) for demos, recorded from deathmatch
+- allowed cheatvars (timedemo, r_lightmap ...) for demos, recorded from deathmatch
 - ref_gl and ref_soft are now statically linked with quake2
 - no autosaves in deathmatch mode
 - if sound file not found, game doesn't try to load it every time it must appear

@@ -3,17 +3,12 @@
 
 console_t	con;
 
-cvar_t	*con_notifytime;
-cvar_t	*con_wordwrap;
-cvar_t	*con_colortext;
+static cvar_t	*con_notifytime;
+static cvar_t	*con_wordwrap;
+static cvar_t	*con_colortext;
 
 // WRAP_CHAR will be placed as "soft" line-feed instead of a space char
 #define		WRAP_CHAR	(' ' + 32)
-
-#define		MAXCMDLINE	256
-extern char key_lines[32][MAXCMDLINE];
-extern int edit_line;
-extern int key_linepos;
 
 
 // Functions DrawString/DrawAltString used for painting HUD
@@ -37,9 +32,7 @@ void DrawStringCommon (int x, int y, const char *s, int mask)
 			}
 		}
 		if (color != 7 && con_colortext->integer)
-		{
 			re.DrawCharColor (x, y, c, color);	// no mask if text colorized
-		}
 		else
 			re.DrawCharColor (x, y, c ^ mask, 7);
 		x += 8;
@@ -61,13 +54,6 @@ void DrawAltString (int x, int y, const char *s)
 	if (!cl_draw2d->integer)
 		return;
 	DrawStringCommon (x, y, s, 0x80);
-}
-
-
-void Key_ClearTyping (void)
-{
-	key_lines[edit_line][1] = 0;	// clear any typing
-	key_linepos = 1;
 }
 
 
@@ -136,12 +122,12 @@ Con_Clear_f
 */
 static void Con_Clear_f (void)
 {
-	con.totallines = 1;	// current line, even if empty, encounted
+	con.totallines = 1;		// current line, even if empty, encounted
 	con.current = con.display = 0;
 
 	con.startpos = con.endpos = 0;
 	con.wrapped = false;
-	con.text[0] = '\n';	// mark current line end (for correct display)
+	con.text[0] = '\n';		// mark current line end (for correct display)
 
 	if (!con.started)
 	{
@@ -197,11 +183,11 @@ static void Con_Dump_f (void)
 		size--;
 
 		if (c == WRAP_CHAR) c = ' ';	// unwrap words
-		c &= 0x7F;			// reset color bit
+		c &= 0x7F;						// reset color bit
 		buffer[out++] = c;
 		if (c == '\n' || out >= sizeof(buffer) - 1 || !size)
 		{
-			buffer[out] = 0;	// ASCIIZ
+			buffer[out] = 0;			// ASCIIZ
 			out = 0;
 			fprintf (f, "%s", buffer);
 		}
@@ -219,7 +205,7 @@ void Con_ClearNotify (void)
 {
 	int		i;
 
-	for (i=0 ; i<NUM_CON_TIMES ; i++)
+	for (i = 0; i < NUM_CON_TIMES ; i++)
 		con.times[i] = 0;
 }
 
@@ -262,12 +248,12 @@ void Con_CheckResize (void)
 	w = (con_wordwrap && con_wordwrap->integer);
 	if (w != con.wordwrap)
 	{
-		con.linewidth = -1; // force resize
+		con.linewidth = -1;				// force resize
 		con.wordwrap = w;
 	}
 
 	width = (viddef.width >> 3) - 2;
-	if (width < 1) width = 38;	// wideo hash't initialized
+	if (width < 1) width = 38;			// wideo hash't initialized
 
 	if (width == con.linewidth)
 		return;
@@ -275,9 +261,9 @@ void Con_CheckResize (void)
 	con.linewidth = width;
 
 	size = con.endpos - con.startpos;	// size of data in buffer
-	if (size < 0) size+= CON_TEXTSIZE; // wrap buffer: endpos < startpos
+	if (size < 0) size+= CON_TEXTSIZE;	// wrap buffer: endpos < startpos
 
-//	if (!size) return;		// no text in buffer
+//	if (!size) return;					// no text in buffer
 
 	i = con.startpos;
 	x = 0;
@@ -300,7 +286,7 @@ void Con_CheckResize (void)
 				char c1;
 				int i1, x1;
 
-				i1 = i;	// seek back to find space
+				i1 = i;					// seek back to find a space char
 				x1 = -1;
 				while (++x1 < width)
 				{
@@ -333,6 +319,12 @@ Con_Init
 */
 void Con_Init (void)
 {
+CVAR_BEGIN(vars)
+	CVAR_VAR(con_notifytime, 3, 0),
+	CVAR_VAR(con_wordwrap, 1, CVAR_ARCHIVE),
+	CVAR_VAR(con_colortext, 1, CVAR_ARCHIVE)
+CVAR_END
+
 	if (con.initialized) return;
 
 	con.linewidth = -1;		// force Con_CheckResize()
@@ -343,7 +335,7 @@ void Con_Init (void)
 
 	Com_Printf ("Console initialized.\n");
 
-	/*-------- register our commands/cvars ----------*/
+	//-------- register our commands/cvars ----------
 	con_notifytime = Cvar_Get ("con_notifytime", "3", 0);
 	con_wordwrap = Cvar_Get ("con_wordwrap", "1", CVAR_ARCHIVE);
 	con_colortext = Cvar_Get ("con_colortext", "1", CVAR_ARCHIVE);
@@ -378,12 +370,12 @@ static int FindLine (int lineno)
 
 	line = con.current - con.totallines + 1;	// number of 1st line in buffer
 	if (lineno < line || lineno > con.current) return -1; // this line is out of buffer
-	if (lineno == line) return con.startpos;		// first line in buffer
+	if (lineno == line) return con.startpos;	// first line in buffer
 
-	size = con.endpos - con.startpos;		// number of bytes in buffer
+	size = con.endpos - con.startpos;	// number of bytes in buffer
 	if (size < 0) size += CON_TEXTSIZE;	// wrap buffer: endpos < startpos
 
-	if (!size) return -1;			// no text in buffer
+	if (!size) return -1;				// no text in buffer
 
 	i = con.startpos;
 	x = 0;
@@ -405,22 +397,11 @@ static int FindLine (int lineno)
 }
 
 
-/*
-===============
-Con_Linefeed
-===============
-*/
-
-static void PlaceChar (int c, int color)
+static void PlaceChar (char c, int color)
 {
 	int		size, i, x;
 
-	// disable coloring if needed
-	if (con.initialized && !con_colortext->integer)
-		color = 7;
-
-	if (color != 7)
-		c &= 127;	// disable mask for colorized text
+	if (color != 7) c &= 127;			// disable mask for colorized text
 
 	// calculate free space in buffer
 	size = con.startpos - con.endpos;
@@ -450,11 +431,8 @@ static void PlaceChar (int c, int color)
 		return;
 	}
 
-//	if (!con.x)	//?? is it works?
-//	{
-		// mark time for transparent overlay
-		con.times[con.current % NUM_CON_TIMES] = cls.realtime;
-//	}
+	// mark time for transparent overlay
+	con.times[con.current % NUM_CON_TIMES] = cls.realtime;
 
 	con.text[con.endpos] = c;
 	con.text[con.endpos + CON_TEXTSIZE] = color;
@@ -497,18 +475,14 @@ static void PlaceChar (int c, int color)
 /*
 ================
 Con_Print
-
-Handles cursor positioning, line wrapping, etc
-All console printing must go through this in order to be logged to disk
-If no console is visible, the text will appear at the top of the game window
 ================
 */
 void Con_Print (char *txt)
 {
-	int		mask, c, color;
+	int		mask, color;
+	char	c;
 
-//	if (!con.initialized) return;
-	if (!con.started) Con_Clear_f (); // return
+	if (!con.started) Con_Clear_f ();
 
 	color = 7;
 
@@ -559,8 +533,8 @@ void Con_CenteredPrint (char *text)
 	int		l;
 	char	buffer[1024];
 
-	l = strlen(text);
-	l = (con.linewidth-l)/2;
+	l = strlen (text);
+	l = (con.linewidth - l) / 2;
 	if (l < 0)
 		l = 0;
 	memset (buffer, ' ', l);
@@ -587,12 +561,11 @@ The input line scrolls horizontally if typing goes beyond the right edge
 */
 static void Con_DrawInput (void)
 {
-	int		y, i;
+	int		y, i, shift;
 	char	*text, c;
 	qboolean eoln;
 
-	if (cls.key_dest == key_menu)
-		return;
+	if (cls.key_dest == key_menu) return;
 	if (cls.key_dest != key_console && cls.state == ca_active)
 		return;		// don't draw anything (always draw if not active)
 
@@ -600,7 +573,12 @@ static void Con_DrawInput (void)
 
 	// prestep if horizontally scrolling
 	if (key_linepos >= con.linewidth)
-		text += 1 + key_linepos - con.linewidth;
+	{
+		shift = 1 + key_linepos - con.linewidth;
+		text += shift;
+	}
+	else
+		shift = 0;
 
 	// draw it
 	if (!(re.flags & REF_CONSOLE_ONLY))
@@ -609,7 +587,7 @@ static void Con_DrawInput (void)
 		y = (viddef.height >> 3) - 2;
 
 	eoln = false;
-	for (i=0 ; i<con.linewidth ; i++)
+	for (i = 0; i < con.linewidth; i++)
 	{
 		if (!eoln)
 		{
@@ -617,7 +595,7 @@ static void Con_DrawInput (void)
 			if (!c) eoln = true;
 		}
 		if (eoln) c = ' ';
-		if (i == key_linepos && (cls.realtime >> 8) & 1)
+		if ((i == key_linepos  - shift) && (cls.realtime >> 8) & 1)
 			c = 11 + 128;		// cursor char
 
 		if (!(re.flags & REF_CONSOLE_ONLY))
@@ -686,37 +664,34 @@ void Con_DrawNotify (void)
 
 	if (cls.key_dest == key_message)	// edit current player message
 	{
-		int		skip;
-
 		if (chat_team)
 		{
 			DrawString (8, v, "say_team:");
-			skip = 11;
+			x = 11;
 		}
 		else
 		{
 			DrawString (8, v, "say:");
-			skip = 5;
+			x = 5;
 		}
 
 		s = chat_buffer;
-		if (chat_bufferlen > (viddef.width >> 3) - (skip + 1))
-			s += chat_bufferlen - ((viddef.width >> 3) - (skip + 1));
-		x = 0;
-		while(s[x])
+		if (chat_bufferlen > (viddef.width >> 3) - (x + 1))
+			s += chat_bufferlen - ((viddef.width >> 3) - (x + 1));
+		while(*s)
 		{
-			re_DrawCharColor ((x + skip) << 3, v, s[x], 7);
+			re_DrawCharColor (x << 3, v, *s++, 7);
 			x++;
 		}
 		// draw cursor
-		re_DrawCharColor ((x + skip) << 3, v, 10 + ((cls.realtime >> 8) & 1), 7);
+		re_DrawCharColor (x << 3, v, 10 + ((cls.realtime >> 8) & 1), 7);
 		v += 8;
 	}
 
 	if (v)
 	{
 		SCR_AddDirtyPoint (0, 0);
-		SCR_AddDirtyPoint (viddef.width-1, v);
+		SCR_AddDirtyPoint (viddef.width - 1, v);
 	}
 }
 
@@ -845,6 +820,7 @@ void Con_DrawConsole (float frac)
 
 				if (c == '\n' || c == WRAP_CHAR) break;
 
+				if (!con_colortext->integer) color = 7;
 				if (!(re.flags & REF_CONSOLE_ONLY))
 					re.DrawCharColor ((x + 1) * 8, y, c, color);
 				else

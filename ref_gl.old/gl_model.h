@@ -119,7 +119,7 @@ typedef struct msurface_s
 
 	byte		styles[MAXLIGHTMAPS];
 	byte		*samples;		// [numstyles*surfsize]
-	float		cached_light[MAXLIGHTMAPS];	// values currently used in lightmap
+	byte		cached_light[MAXLIGHTMAPS];	// values currently used in lightmap
 
 	int			lightmaptexturenum;
 } msurface_t;
