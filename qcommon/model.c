@@ -263,7 +263,7 @@ void LoadQ2BspFile (void)
 		((int *)header)[i] = LittleLong (((int *)header)[i]);
 
 	if (header->version != BSP2_VERSION)
-		Com_DropError ("%s is version %i, not %i\n", bspfile.name, header->version, BSP2_VERSION);
+		Com_DropError ("%s is version %d, not " STR(BSP2_VERSION) "\n", bspfile.name, header->version);
 
 	bspfile.type = map_q2;
 

@@ -268,22 +268,22 @@ qboolean Vid_LoadRefresh( char *name )
 
 	Com_Printf( "LoadLibrary(\"%s\")\n", fn );
 
+	//???
 	RI_INIT_COMMON(ri)
 //	ri.Con_Printf = Vid_Printf;
 	ri.Sys_Error = Vid_Error;
 	ri.Vid_GetModeInfo = Vid_GetModeInfo;
-	ri.Vid_MenuInit = Vid_MenuInit;
 	ri.Vid_NewWindow = Vid_NewWindow;
 
 	if ((GetRefAPI = (void*) dlsym (reflib_library, "GetRefAPI")) == 0)
 		Com_FatalError ("dlsym failed on %s", name);
 
-	re = GetRefAPI( ri );
+	re = GetRefAPI (&ri);
 
-	if (re.struc_size != sizeof(refExport_t) || re.api_version != API_VERSION)
+	if (re.struc_size != sizeof(refExport_t))
 	{
 		Vid_FreeReflib ();
-		Com_FatalError ("%s has incompatible api_version", name);
+		Com_FatalError ("%s has incompatible renderer", name);
 	}
 
 	/* Init IN (Mouse) */

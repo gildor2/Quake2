@@ -138,7 +138,8 @@ void	QGL_LogMessage (const char *text);
 
 #else	// REF_HARD_LINKED
 
-/*extern "C"*/ DLL_EXPORT refExport_t GetRefAPI (refImport_t);
+//?? make common declaration
+/*extern "C"*/ DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
 
 #endif	// REF_HARD_LINKED
 
@@ -580,7 +581,9 @@ IMPORTED FUNCTIONS
 ====================================================================
 */
 
+#ifdef DYNAMIC_REF
 extern	refImport_t	ri;
+#endif
 
 
 /*

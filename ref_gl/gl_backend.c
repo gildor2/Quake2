@@ -22,7 +22,7 @@
 -----------------------------------------------------------------------------*/
 
 static cvar_t	*gl_clear;
-static cvar_t	*gl_showbboxes, *gl_showtris, *gl_shownormals;
+static cvar_t	*gl_showbboxes, *gl_showTris, *gl_showNormals;
 #ifdef SPY_SHADER
 static cvar_t	*gl_spyShader;
 #endif
@@ -1040,7 +1040,7 @@ static void StageIterator (void)
 		glPolygonOffset (-1, -2);
 	}
 
-	if (/*numRenderPasses > 1 &&*/ glLockArraysEXT)	//?? GF FX5200 + det.56.72 have geometry bugs when mixing non-CVA/CVA rendering (disappear with gl_showtris=1)
+	if (/*numRenderPasses > 1 &&*/ glLockArraysEXT)	//?? GF FX5200 + det.56.72 have geometry bugs when mixing non-CVA/CVA rendering (disappear with gl_showTris=1)
 	{
 		// do not lock texcoords and colors
 		glDisableClientState (GL_COLOR_ARRAY);
@@ -1098,7 +1098,7 @@ static void StageIterator (void)
 
 	/*----------------- finalize ------------------*/
 
-	if (/*numRenderPasses > 1 &&*/ glUnlockArraysEXT)	//?? ,,,
+	if (/*numRenderPasses > 1 &&*/ glUnlockArraysEXT)	//?? ...
 		glUnlockArraysEXT ();
 
 	if (currentShader->usePolygonOffset)
@@ -1107,9 +1107,9 @@ static void StageIterator (void)
 	// debug
 	if (!gl_state.is2dMode)
 	{
-		if (gl_showtris->integer)
+		if (gl_showTris->integer)
 			DrawTriangles ();
-		if (gl_shownormals->integer)
+		if (gl_showNormals->integer)
 			DrawNormals ();
 
 		gl_speeds.tris += gl_numIndexes * numTmpStages / 3;
@@ -1175,7 +1175,7 @@ static void DrawSkyBox (void)
 	vec3_t	tmp, tmp1, up, right;
 
 	LOG_STRING ("*** DrawSkyBox() ***\n");
-	if (gl_fastsky->integer) return;
+	if (gl_fastSky->integer) return;
 
 	// build frustum cover
 	VectorMA (vp.vieworg, SKY_FRUST_DIST, vp.viewaxis[0], tmp);
@@ -1199,7 +1199,7 @@ static void DrawSkyBox (void)
 	if (!GL_SkyVisible ()) return;			// all sky surfaces are outside frustum
 
 	// draw sky
-	GL_DepthRange (gl_showsky->integer ? DEPTH_NEAR : DEPTH_FAR);
+	GL_DepthRange (gl_showSky->integer ? DEPTH_NEAR : DEPTH_FAR);
 	GL_EnableFog (false);
 
 	glDisableClientState (GL_COLOR_ARRAY);
@@ -1208,12 +1208,12 @@ static void DrawSkyBox (void)
 					gl_config.identityLightValue_f,
 					gl_config.identityLightValue_f); // avoid overbright
 	else
-//		glColor3f (0, 0, 0);			// bad sky -- make it black (almost as gl_fastsky)
+//		glColor3f (0, 0, 0);			// bad sky -- make it black (almost as gl_fastSky)
 		glColor3fv (gl_fogColor);
 
 	glPushMatrix ();
-	// if we will add "NODEPTHTEST" if gl_showsky mode -- DEPTHWITE will no effect
-	GL_State (gl_showsky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
+	// if we will add "NODEPTHTEST" if gl_showSky mode -- DEPTHWITE will no effect
+	GL_State (gl_showSky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
 	GL_SetMultitexture (1);
 	// change modelview matrix
 	glTranslatef (VECTOR_ARG(vp.vieworg));
@@ -1237,11 +1237,11 @@ static void DrawSkyBox (void)
 		glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 
 		//?? some debug stuff from StageIterator()
-		if (gl_showtris->integer)
+		if (gl_showTris->integer)
 		{
 			DrawTriangles ();
 			// need to perform some state restoration (do it with another way ??)
-			GL_State (gl_showsky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
+			GL_State (gl_showSky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
 			if (currentShader != gl_defaultSkyShader)
 				glColor3f (gl_config.identityLightValue_f,
 							gl_config.identityLightValue_f,
@@ -1266,7 +1266,7 @@ static void DrawSkyBox (void)
 	GL_DepthRange (DEPTH_NEAR);
 	glDisableClientState (GL_COLOR_ARRAY);
 	glColor3f (0, 0, 0);
-	GL_CullFace (CULL_NONE);	//??
+	GL_CullFace (CULL_NONE);
 	glBegin (GL_QUADS);
 	glVertex3fv (fv[0].xyz);
 	glVertex3fv (fv[1].xyz);
@@ -1670,7 +1670,7 @@ static void DrawTriangles (void)
 
 	prevDepth = gl_state.currentDepthMode;
 	GL_SetMultitexture (0);		// disable texturing
-	if (gl_showtris->integer - 1 & 1)
+	if (gl_showTris->integer - 1 & 1)
 		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);	// use depth test
 	else
 	{
@@ -1679,7 +1679,7 @@ static void DrawTriangles (void)
 		GL_DepthRange (DEPTH_NEAR);
 	}
 	// setup colors
-	if (gl_showtris->integer - 1 & 2)
+	if (gl_showTris->integer - 1 & 2)
 		FlashColor ();
 	else
 		glColor3f (0, 0, 0);
@@ -1701,7 +1701,7 @@ static void DrawNormals (void)
 
 	prevDepth = gl_state.currentDepthMode;
 	GL_SetMultitexture (0);		// disable texturing
-	if (gl_shownormals->integer - 1 & 1)
+	if (gl_showNormals->integer - 1 & 1)
 		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);	// use depth test
 	else
 	{
@@ -1710,7 +1710,7 @@ static void DrawNormals (void)
 		GL_DepthRange (DEPTH_NEAR);
 	}
 	// setup colors
-	if (gl_shownormals->integer - 1 & 2)
+	if (gl_showNormals->integer - 1 & 2)
 		FlashColor ();
 	else
 		glColor3f (0, 0, 0);
@@ -1775,73 +1775,6 @@ static void TesselateEntitySurf (refEntity_t *e)
 	}
 	else
 		DrawTextLeft (va("Unknown ent surf flags: %X", e->flags), RGB(1,0,0));
-}
-
-
-
-/*-----------------------------------------------------------------------------
-	Fast drawing (without filling arrays)
-	REMOVE THIS ??
------------------------------------------------------------------------------*/
-
-//?? fast drawing may use global vertex/color/texcoord array (filled when map loaded) and just operate with indexes
-//!! In this case, indexes in surfaces must be global
-
-static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
-{
-	int		i;
-	shaderStage_t *stage, **pstage;
-
-	LOG_STRING (va("*** FastIterator(%s, %d) ***\n", currentShader->name, numSurfs));
-	for (i = 0, pstage = currentShader->stages; i < currentShader->numStages; i++, pstage++)
-	{
-		surfaceInfo_t **psurf;
-		int		j;
-
-		stage = *pstage;
-		GL_State (stage->glState);
-		GL_CullFace (currentShader->cullMode);
-		// setup RGBA (if const)
-		if (stage->rgbGenType == RGBGEN_CONST)
-		{	// here: alphaGenFunc == ALPHAGEN_CONST (condition for shader.fast flag)
-			glDisableClientState (GL_COLOR_ARRAY);
-			glColor4ubv (stage->rgbaConst.c);
-		}
-		else
-			glEnableClientState (GL_COLOR_ARRAY);
-		//---- BindStageImage (stage); ----
-		if (stage->numAnimTextures == 1)
-			GL_Bind (stage->mapImage[0]);
-		else
-			GL_Bind (stage->mapImage[Q_round(vp.time * stage->animMapFreq) % stage->numAnimTextures]);
-
-		for (j = 0, psurf = surfs; j < numSurfs; j++, psurf++)
-		{
-			surfaceCommon_t *surf;
-			surfacePlanar_t *pl;
-
-			surf = (*psurf)->surf;
-			switch (surf->type)
-			{
-			case SURFACE_PLANAR:
-				pl = surf->pl;
-
-				glVertexPointer (3, GL_FLOAT, sizeof(vertex_t), pl->verts);
-				if (stage->tcGenType == TCGEN_TEXTURE)
-					glTexCoordPointer (2, GL_FLOAT, sizeof(vertex_t), pl->verts[0].st);
-				else
-					glTexCoordPointer (2, GL_FLOAT, sizeof(vertex_t), pl->verts[0].lm);
-//				if (stage->rgbGenType == RGBGEN_EXACT_VERTEX) -- always for fast shaders
-					glColorPointer (4, GL_UNSIGNED_BYTE, sizeof(vertex_t), pl->verts[0].c.c);
-				glDrawElements (GL_TRIANGLES, pl->numIndexes, GL_UNSIGNED_INT, pl->indexes);
-				break;
-			}
-		}
-	}
-
-	if (gl_finish->integer == 2)
-		glFinish ();
-	gl_speeds.numIterators++;
 }
 
 
@@ -1918,23 +1851,11 @@ static void DrawParticles (particle_t *p)
 }
 
 
-// Macro for determining fast-draw ability
-#define IS_FAST(shader,surf)	(shader->fast && surf->type == SURFACE_PLANAR)
-
-#define FLUSH()				\
-	if (numFastSurfs)		\
-	{						\
-		DrawFastSurfaces (fastSurf, numFastSurfs);	\
-		numFastSurfs = 0;	\
-	}						\
-	else					\
-		FlushArrays ();
-
 // Draw scene, specified in "ap"
 static void DrawScene (void)
 {
 	int				index, index2, numSkySurfs, numFastSurfs;
-	surfaceInfo_t	**si, **si2, **fastSurf;
+	surfaceInfo_t	**si, **si2;
 	shader_t		*shader;
 	surfaceCommon_t	*surf;
 	// current state
@@ -2012,7 +1933,7 @@ static void DrawScene (void)
 		if (shNum != currentShaderNum || entNum != currentEntityNum || currentDlightMask != dlightMask)
 		{
 			// flush data for the previous shader
-			FLUSH();
+			FlushArrays ();
 
 			// change shader
 			shader = GL_GetShaderByNum (shNum);
@@ -2020,12 +1941,6 @@ static void DrawScene (void)
 			currentDlightMask = dlightMask;
 			LOG_STRING (va("******** Change shader to %s ********\n", shader->name));
 			currentShaderNum = shNum;
-
-			if (IS_FAST(shader, surf))
-			{
-				numFastSurfs = 0;
-				fastSurf = si;
-			}
 		}
 
 		if (entNum != currentEntityNum)
@@ -2057,34 +1972,29 @@ static void DrawScene (void)
 			currentWorld = isWorld;
 		}
 
-		if (IS_FAST(shader, surf))
-			numFastSurfs++;
-		else
+		switch (surf->type)
 		{
-			switch (surf->type)
-			{
-			case SURFACE_PLANAR:
-				TesselatePlanarSurf (surf->pl);
-				break;
-			case SURFACE_MD3:
-				TesselateMd3Surf (surf->md3);
-				break;
-			case SURFACE_PARTICLE:
-				DrawParticles (surf->part);
-				break;
-			case SURFACE_POLY:
-				TesselatePolySurf (surf->poly);
-				break;
-			case SURFACE_ENTITY:
-				TesselateEntitySurf (surf->ent);
-				break;
-			//!! other types
-			}
+		case SURFACE_PLANAR:
+			TesselatePlanarSurf (surf->pl);
+			break;
+		case SURFACE_MD3:
+			TesselateMd3Surf (surf->md3);
+			break;
+		case SURFACE_PARTICLE:
+			DrawParticles (surf->part);
+			break;
+		case SURFACE_POLY:
+			TesselatePolySurf (surf->poly);
+			break;
+		case SURFACE_ENTITY:
+			TesselateEntitySurf (surf->ent);
+			break;
+		//!! other types
 		}
 	}
 
 	/*--------- finilize/debug -----------*/
-	FLUSH();
+	FlushArrays ();
 
 	GL_DepthRange (DEPTH_NORMAL);
 
@@ -2336,8 +2246,8 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_spyShader, 0, 0),
 #endif
 	CVAR_VAR(gl_showbboxes, 0, CVAR_CHEAT),
-	CVAR_VAR(gl_showtris, 0, CVAR_CHEAT),
-	CVAR_VAR(gl_shownormals, 0, CVAR_CHEAT)
+	CVAR_VAR(gl_showTris, 0, CVAR_CHEAT),
+	CVAR_VAR(gl_showNormals, 0, CVAR_CHEAT)
 CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
 	GL_ClearBuffers ();

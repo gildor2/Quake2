@@ -72,7 +72,7 @@ static void Shaderlist_f (void)
 		mask = NULL;
 
 	n = 0;
-	Com_Printf ("----ns-f-lm-s--type-name--------\n");
+	Com_Printf ("----ns-lm-s--type-name--------\n");
 	for (i = 0; i < shaderCount; i++)
 	{
 		shader_t *sh;
@@ -103,7 +103,7 @@ static void Shaderlist_f (void)
 		else
 			color = "";
 
-		Com_Printf ("%-3d %d  %s %2s %-2g %3s  %s%s%s\n", i, sh->numStages, boolNames[sh->fast], lmInfo,
+		Com_Printf ("%-3d %d  %2s %-2g %3s  %s%s%s\n", i, sh->numStages, lmInfo,
 			sh->sortParam, shTypes[sh->type], color, sh->name, badNames[sh->bad]);
 	}
 	Com_Printf ("Displayed %d/%d shaders\n", n, shaderCount);
@@ -296,9 +296,6 @@ static shader_t *FinishShader (void)
 	else if (!sh.sortParam && sh.usePolygonOffset)
 		sh.sortParam = SORT_DECAL;
 
-	if (!gl_ignoreFastPath->integer) sh.fast = true;
-	if (sh.numDeforms || sh.usePolygonOffset) sh.fast = false;
-
 	// enum and count stages
 	for (numStages = 0; numStages < MAX_SHADER_STAGES; numStages++)
 	{
@@ -382,12 +379,6 @@ static shader_t *FinishShader (void)
 			memcpy (tc, s->tcModParms, size);
 			s->tcModParms = tc;
 		}
-
-		// check for fast draw ability
-		if (!((s->rgbGenType == RGBGEN_CONST && s->alphaGenType == ALPHAGEN_CONST) ||			// rgba-gen const
-			  (s->rgbGenType == RGBGEN_EXACT_VERTEX && s->alphaGenType == ALPHAGEN_VERTEX)) ||	// rgba-gen exact vertex
-			s->numTcMods || (s->tcGenType != TCGEN_TEXTURE && s->tcGenType != TCGEN_LIGHTMAP))	// tcgen/tcmod
-			sh.fast = false;
 
 		// check entity dependence
 		if (s->rgbGenType == RGBGEN_ENTITY || s->rgbGenType == RGBGEN_ONE_MINUS_ENTITY || s->rgbGenType == RGBGEN_DIFFUSE ||

@@ -21,8 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "winquake.h"
 #include "../client/client.h"
 
-extern HWND cl_hwnd;
-
 static bool cdValid = false;
 static bool	playing = false;
 static bool	wasPlaying = false;

@@ -33,7 +33,9 @@ void R_Clear (void);
 
 viddef_t	vid;
 
+#ifdef DYNAMIC_REF
 refImport_t	ri;
+#endif
 static int ref_flags;
 
 model_t		*r_worldmodel;
@@ -1154,8 +1156,6 @@ int R_Init( void )
 		return -1;
 	}
 
-//??	Vid_MenuInit();
-
 	/*
 	** get our various GL strings
 	*/
@@ -1694,23 +1694,20 @@ GetRefAPI
 
 @@@@@@@@@@@@@@@@@@@@@
 */
-refExport_t GetRefAPI (refImport_t rimp)
+refExport_t GetRefAPI (const refImport_t *rimp)
 {
 	refExport_t	re;
 
-	ri = rimp;
-
-#ifndef REF_HARD_LINKED
-	if (ri.struc_size != sizeof(refImport_t) || ri.api_version != API_VERSION)
+#ifdef DYNAMIC_REF
+	ri = *rimp;
+	if (ri.struc_size != sizeof(refImport_t))
 	{
 		re.struc_size = 0;
-		re.api_version = 0;
 		return re;
 	}
 #endif
 
 	re.struc_size = sizeof(re);
-	re.api_version = API_VERSION;
 	re.flags = &ref_flags;
 	ref_flags = REF_USE_PALETTE;
 	if (Cvar_Get ("gl_console_only", "0", 0)->integer)
@@ -1756,7 +1753,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 }
 
 
-#ifndef REF_HARD_LINKED
+#ifdef DYNAMIC_REF
 char *CopyString (const char *in)
 {
 	char	*out;

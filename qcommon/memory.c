@@ -99,7 +99,7 @@ void *Z_TagMalloc (int size, int tag)
 
 	z = malloc(size);
 	if (!z)
-		Com_FatalError ("Z_Malloc: failed on allocation of %i bytes", size);
+		Com_FatalError ("Z_Malloc: failed on allocation of %d bytes", size);
 	memset (z, 0, size);
 #ifdef Z_DEBUG
 	*((int*)((char*)z + size - 4)) = Z_DEBUGMARK; // place mark in reserved space

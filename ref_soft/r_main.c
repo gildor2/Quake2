@@ -22,7 +22,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "r_local.h"
 
 viddef_t	vid;
+#ifdef DYNAMIC_REF
 refImport_t	ri;
+#endif
 static int ref_flags;
 
 unsigned	d_8to24table[256];
@@ -1442,17 +1444,15 @@ GetRefAPI
 
 @@@@@@@@@@@@@@@@@@@@@
 */
-refExport_t GetRefAPI (refImport_t rimp)
+refExport_t GetRefAPI (const refImport_t *rimp)
 {
 	refExport_t	re;
 
-	ri = rimp;
-
-#ifndef REF_HARD_LINKED
-	if (ri.struc_size != sizeof(refImport_t) || ri.api_version != API_VERSION)
+#ifdef DYNAMIC_REF
+	ri = *rimp;
+	if (ri.struc_size != sizeof(refImport_t))
 	{
 		re.struc_size = 0;
-		re.api_version = 0;
 		return re;
 	}
 #endif
@@ -1460,7 +1460,6 @@ refExport_t GetRefAPI (refImport_t rimp)
 	con_only = Cvar_Get ("sw_console_only", "0", 0)->integer;
 
 	re.struc_size = sizeof(re);
-	re.api_version = API_VERSION;
 	re.flags = &ref_flags;
 	ref_flags = REF_USE_PALETTE;
 	if (con_only)

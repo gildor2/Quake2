@@ -222,7 +222,7 @@ void GL_AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
 	int		i, side;
 	vertex_t *v;
 
-	if (gl_fastsky->integer) return;
+	if (gl_fastSky->integer) return;
 
 	// clear bounds for all sky box planes
 	for (side = 0; side < 6; side++)

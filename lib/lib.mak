@@ -764,7 +764,7 @@ SOURCE=.\zlib\adler32.c
 
 !IF  "$(CFG)" == "lib - Win32 Release"
 
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB.DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\adler32.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -788,7 +788,7 @@ SOURCE=.\zlib\crc32.c
 
 !IF  "$(CFG)" == "lib - Win32 Release"
 
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB.DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\crc32.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -812,7 +812,7 @@ SOURCE=.\zlib\inffast.c
 
 !IF  "$(CFG)" == "lib - Win32 Release"
 
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB.DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\inffast.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -836,7 +836,7 @@ SOURCE=.\zlib\inflate.c
 
 !IF  "$(CFG)" == "lib - Win32 Release"
 
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB.DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\inflate.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -860,7 +860,7 @@ SOURCE=.\zlib\inftrees.c
 
 !IF  "$(CFG)" == "lib - Win32 Release"
 
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB.DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\inftrees.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -884,7 +884,7 @@ SOURCE=.\zlib\zutil.c
 
 !IF  "$(CFG)" == "lib - Win32 Release"
 
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB.DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\zutil.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<

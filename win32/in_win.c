@@ -125,8 +125,8 @@ static int	mouse_x, mouse_y, old_mouse_x, old_mouse_y, mx_accum, my_accum;
 
 static int	old_x, old_y;
 
-int		window_center_x, window_center_y;
-RECT	window_rect;
+static int	window_center_x, window_center_y;
+static RECT	window_rect;
 
 
 //-------------------- DirectInput --------------------------

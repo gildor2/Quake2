@@ -118,7 +118,6 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, bool fullscreen)
 			Com_Printf ("...using desktop display depth of %d\n", bitspixel);
 		}
 
-		gl_config.colorBits = colorBits;
 		Com_Printf ("...calling CDS: ");
 		if (ChangeDisplaySettings (&dm, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL)
 		{
@@ -165,7 +164,6 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, bool fullscreen)
 				*pwidth = width;
 				*pheight = height;
 				gl_config.fullscreen = false;
-				gl_config.colorBits = 0;
 				if (!GLimp_CreateWindow (width, height, false))
 					return rserr_invalid_mode;
 				return rserr_invalid_fullscreen;
@@ -623,7 +621,7 @@ void GLimp_Shutdown (void)
 	if (gl_config.fullscreen)
 	{
 		if (!strlen (vid_ref->string))
-			ChangeDisplaySettings (0, 0);
+			ChangeDisplaySettings (NULL, 0);
 		gl_config.fullscreen = false;
 	}
 }

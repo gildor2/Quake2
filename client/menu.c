@@ -287,17 +287,8 @@ void M_Print (int cx, int cy, char *str)
 {
 	while (*str)
 	{
-		M_DrawCharacter (cx, cy, (*str)+128);
-		str++;
-		cx += 8;
-	}
-}
-
-void M_PrintWhite (int cx, int cy, char *str)
-{
-	while (*str)
-	{
-		M_DrawCharacter (cx, cy, *str);
+//		M_DrawCharacter (cx, cy, (*str)+128);
+		re.DrawCharColor (cx + ((viddef.width - 320)>>1), cy + ((viddef.height - 240)>>1), *str, 1);
 		str++;
 		cx += 8;
 	}
@@ -1168,7 +1159,6 @@ static const char *M_Credits_Key (int key)
 
 }
 
-extern int Developer_searchpath (int who);
 
 void M_Menu_Credits_f (void)
 {
@@ -1181,16 +1171,11 @@ void M_Menu_Credits_f (void)
 	filename = "credits";
 	if (!FS_FileExists (filename))
 	{
-		// mod not provided own credits file - display defaults
-		switch (Developer_searchpath (1))
-		{
-		case 1:		// xatrix
+		// official mission packe are not provided own credits file - display defaults
+		if (!stricmp (fs_gamedirvar->string, "xatrix"))
 			filename = "xcredits";
-			break;
-		case 2:		// ROGUE
+		else if (!stricmp (fs_gamedirvar->string, "rogue"))
 			filename = "rcredits";
-			break;
-		}
 	}
 
 	creditsBuffer = NULL;
@@ -1712,25 +1697,21 @@ static void DMOptionsFunc (void *self)
 	M_Menu_DMOptions_f ();
 }
 
-static void RulesChangeFunc ( void *self )
+static void RulesChangeFunc (void *self)
 {
-	// DM
-	if (s_rules_box.curvalue == 0)
+	if (s_rules_box.curvalue == 0)				// deathmatch
 	{
 		s_maxclients_field.generic.statusbar = NULL;
 		s_startserver_dmoptions_action.generic.statusbar = NULL;
 	}
-	else if(s_rules_box.curvalue == 1)		// coop				// PGM
+	else if (s_rules_box.curvalue == 1)			// coop
 	{
 		s_maxclients_field.generic.statusbar = "4 maximum for cooperative";
 		if (atoi(s_maxclients_field.buffer) > 4)
 			strcpy( s_maxclients_field.buffer, "4" );
 		s_startserver_dmoptions_action.generic.statusbar = "N/A for cooperative";
 	}
-//=====
-//PGM
-	// ROGUE GAMES
-	else if(Developer_searchpath(2) == 2)
+	else if (!stricmp (fs_gamedirvar->string, "rogue"))
 	{
 		if (s_rules_box.curvalue == 2)			// tag
 		{
@@ -1745,8 +1726,6 @@ static void RulesChangeFunc ( void *self )
 		}
 */
 	}
-//PGM
-//=====
 }
 
 static void StartServerFunc (char *map)
@@ -1770,20 +1749,18 @@ static void StartServerFunc (char *map)
 //	Cvar_SetValue ("deathmatch", !s_rules_box.curvalue );
 //	Cvar_SetValue ("coop", s_rules_box.curvalue );
 
-//PGM
-	if((s_rules_box.curvalue < 2) || (Developer_searchpath(2) != 2))
-	{
-		Cvar_SetInteger ("deathmatch", !s_rules_box.curvalue);
-		Cvar_SetInteger ("coop", s_rules_box.curvalue);
-		Cvar_SetInteger ("gamerules", 0);
-	}
-	else
+	if (!stricmp (fs_gamedirvar->string, "rogue") && s_rules_box.curvalue >= 2)
 	{
 		Cvar_SetInteger ("deathmatch", 1);		// deathmatch is always true for rogue games, right?
 		Cvar_SetInteger ("coop", 0);			// FIXME - this might need to depend on which game we're running
 		Cvar_SetInteger ("gamerules", s_rules_box.curvalue);
 	}
-//PGM
+	else
+	{
+		Cvar_SetInteger ("deathmatch", !s_rules_box.curvalue);
+		Cvar_SetInteger ("coop", s_rules_box.curvalue);
+		Cvar_SetInteger ("gamerules", 0);
+	}
 
 	spot = NULL;
 	if (s_rules_box.curvalue == 1)		// PGM
@@ -1836,7 +1813,7 @@ static void StartServer_MenuInit( void )
 	{
 		"deathmatch",
 		"cooperative",
-		0
+		NULL
 	};
 //=======
 //PGM
@@ -1846,7 +1823,7 @@ static void StartServer_MenuInit( void )
 		"cooperative",
 		"tag",
 //		"deathball",
-		0
+		NULL
 	};
 //PGM
 //=======
@@ -1914,20 +1891,18 @@ static void StartServer_MenuInit( void )
 	s_startmap_list.generic.type = MTYPE_SPINCONTROL2;
 	s_startmap_list.generic.x	= 0;
 	s_startmap_list.generic.y	= 0;
-	s_startmap_list.generic.name	= "initial map";
+	s_startmap_list.generic.name = "initial map";
 	s_startmap_list.itemnames = mapNames;
 
 	s_rules_box.generic.type = MTYPE_SPINCONTROL;
 	s_rules_box.generic.x	= 0;
 	s_rules_box.generic.y	= 20;
-	s_rules_box.generic.name	= "rules";
+	s_rules_box.generic.name = "rules";
 
-//PGM - rogue games only available with rogue DLL.
-	if (Developer_searchpath(2) == 2)
+	if (!stricmp (fs_gamedirvar->string, "rogue"))
 		s_rules_box.itemnames = dm_coop_names_rogue;
 	else
 		s_rules_box.itemnames = dm_coop_names;
-//PGM
 
 	if (Cvar_VariableInt ("coop"))
 		s_rules_box.curvalue = 1;
@@ -2128,10 +2103,7 @@ static void DMFlagCallback (void *self)
 		bit = DF_FIXED_FOV;
 	else if (f == &s_quad_drop_box)
 		bit = DF_QUAD_DROP;
-
-//=======
-//ROGUE
-	else if (Developer_searchpath(2) == 2)
+	else if (!stricmp (fs_gamedirvar->string, "rogue"))
 	{
 		if (f == &s_no_mines_box)
 			bit = DF_NO_MINES;
@@ -2142,8 +2114,6 @@ static void DMFlagCallback (void *self)
 		else if (f == &s_no_spheres_box)
 			bit = DF_NO_SPHERES;
 	}
-//ROGUE
-//=======
 
 	if (f)
 	{
@@ -2205,9 +2175,7 @@ static void DMOptions_MenuInit (void)
 	MENU_SPIN(s_friendlyfire_box,y+=10,"friendly fire",DMFlagCallback,yes_no_names)
 	s_friendlyfire_box.curvalue = ( dmflags & DF_NO_FRIENDLY_FIRE ) == 0;
 
-//============
-//ROGUE
-	if(Developer_searchpath(2) == 2)
+	if (!stricmp (fs_gamedirvar->string, "rogue"))
 	{
 		MENU_SPIN(s_no_mines_box,y+=10,"remove mines",DMFlagCallback,yes_no_names)
 		s_no_mines_box.curvalue = ( dmflags & DF_NO_MINES ) != 0;
@@ -2218,8 +2186,6 @@ static void DMOptions_MenuInit (void)
 		MENU_SPIN(s_no_spheres_box,y+=10,"remove spheres",DMFlagCallback,yes_no_names)
 		s_no_spheres_box.curvalue = ( dmflags & DF_NO_SPHERES ) != 0;
 	}
-//ROGUE
-//============
 
 	Menu_AddItem( &s_dmoptions_menu, &s_falls_box );
 	Menu_AddItem( &s_dmoptions_menu, &s_weapons_stay_box );
@@ -2237,17 +2203,13 @@ static void DMOptions_MenuInit (void)
 	Menu_AddItem( &s_dmoptions_menu, &s_quad_drop_box );
 	Menu_AddItem( &s_dmoptions_menu, &s_friendlyfire_box );
 
-//=======
-//ROGUE
-	if(Developer_searchpath(2) == 2)
+	if (!stricmp (fs_gamedirvar->string, "rogue"))
 	{
 		Menu_AddItem( &s_dmoptions_menu, &s_no_mines_box );
 		Menu_AddItem( &s_dmoptions_menu, &s_no_nukes_box );
 		Menu_AddItem( &s_dmoptions_menu, &s_stack_double_box );
 		Menu_AddItem( &s_dmoptions_menu, &s_no_spheres_box );
 	}
-//ROGUE
-//=======
 
 	Menu_Center( &s_dmoptions_menu );
 

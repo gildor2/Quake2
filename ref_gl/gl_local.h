@@ -34,6 +34,7 @@
 
 bool	QGL_Init (const char *libName);
 void	QGL_InitExtensions (void);
+void	QGL_PrintExtensionsString (const char *label, const char *str);
 void	QGL_Shutdown (void);
 // logging
 void	QGL_EnableLogging (qboolean enable);
@@ -41,12 +42,11 @@ void	QGL_LogMessage (const char *text);
 #define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
 
 
-#define	REF_VERSION	"GL 0.99"	//!! will be 1.00 when I'll finish ...
-
 #ifdef REF_HARD_LINKED
 #	define GetRefAPI			GL_GetRefAPI
 #else
-/*extern "C"*/ DLL_EXPORT refExport_t GetRefAPI (refImport_t);
+//?? make common declaration
+/*extern "C"*/ DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
 #endif
 
 
@@ -139,7 +139,9 @@ void	DrawText3D (vec3_t pos, char *text, unsigned rgba);
 
 /*----------- Imported functions ------------*/
 
+#ifdef DYNAMIC_REF
 extern	refImport_t	ri;
+#endif
 
 
 /*---- Implementation-specific functions ----*/
@@ -172,17 +174,15 @@ extern cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
 
 extern cvar_t	*gl_overbright;
 
-extern cvar_t	*gl_fastsky;
+extern cvar_t	*gl_fastSky;
 extern cvar_t	*gl_fog;
 
 extern cvar_t	*gl_flares;
 extern cvar_t	*gl_dynamic;
 extern cvar_t	*gl_dlightBacks;
 extern cvar_t	*gl_vertexLight;
-extern cvar_t	*gl_nogrid;
-extern cvar_t	*gl_showgrid;
-
-extern cvar_t	*gl_ignoreFastPath;	//??
+extern cvar_t	*gl_noGrid;
+extern cvar_t	*gl_showGrid;
 
 extern cvar_t	*gl_driver;
 extern cvar_t	*gl_bitdepth;
@@ -197,7 +197,7 @@ extern cvar_t	*gl_oCull;
 extern cvar_t	*gl_backfaceCull;
 extern cvar_t	*r_speeds;
 extern cvar_t	*r_fullbright, *r_lightmap;
-extern cvar_t	*gl_showsky;
+extern cvar_t	*gl_showSky;
 extern cvar_t	*r_drawworld, *r_drawentities;
 extern cvar_t	*gl_sortAlpha;
 extern cvar_t	*gl_finish;

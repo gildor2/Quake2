@@ -599,7 +599,7 @@ void GL_LightForEntity (refEntity_t *ent)
 
 	if (!(vp.flags & RDF_NOWORLDMODEL))
 	{
-		if (!gl_nogrid->integer)
+		if (!gl_noGrid->integer)
 		{
 			byte	*row;
 			vec3_t	accum[6];
@@ -618,7 +618,7 @@ void GL_LightForEntity (refEntity_t *ent)
 				coord[i] -= map.gridMins[i];
 			}
 
-			if (gl_showgrid->integer)
+			if (gl_showGrid->integer)
 			{
 //				DrawTextLeft (va("pos: %g %g %g frac: %g %g %g", VECTOR_ARG(pos), VECTOR_ARG(frac)), RGB(1,1,1));
 				prevDepth = gl_state.currentDepthMode;
@@ -659,7 +659,7 @@ void GL_LightForEntity (refEntity_t *ent)
 					for (j = 0; j < 6; j++)
 						VectorMA (accum[j], f, entityColorAxis[j], accum[j]);
 
-					if (gl_showgrid->integer)
+					if (gl_showGrid->integer)
 					{
 						glBegin (GL_LINES);
 						for (j = 0; j < 6; j++)
@@ -681,7 +681,7 @@ void GL_LightForEntity (refEntity_t *ent)
 				totalFrac = 1.0f / totalFrac;
 				for (i = 0; i < 6; i++) VectorScale (accum[i], totalFrac, accum[i]);
 			}
-			if (gl_showgrid->integer)
+			if (gl_showGrid->integer)
 			{
 				glPopMatrix ();
 				GL_DepthRange (prevDepth);

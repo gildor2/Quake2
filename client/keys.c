@@ -220,17 +220,18 @@ static char completeVariants[MAX_COMPLETE_ITEMS][256];
 
 
 // "display": 0 - complete+count, 1 - display
-static void TryComplete (char *full, int display, char mark)
+static void TryComplete (const char *full, int display, char mark)
 {
 	if (!Q_strncasecmp (partial_name, full, partial_len))
 	{
-		if (display) Com_Printf ("  %c  %s\n", mark + 128, full);
+		if (display) Com_Printf ("  ^2%c^7  %s\n", mark, full);
 
 		if (!completed_count)	// have not yet completed - just copy string
 			strcpy (completed_name, full);
 		else					// already completed - refine string
 		{
-			char *s, *d;
+			char *s;
+			const char *d;
 
 			s = completed_name;
 			d = full;
@@ -921,7 +922,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 		plus_cmd_fired[bindKey] = false;
 
 		if (kb && kb[0] == '+')
-			Cbuf_AddText (va("-%s %i %i\n", kb+1, bindKey, time));
+			Cbuf_AddText (va("-%s %d %d\n", kb+1, bindKey, time));
 		return;
 	}
 
@@ -939,7 +940,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 			if (kb[0] == '+')
 			{	// button commands add keynum and time as a parm
 				plus_cmd_fired[bindKey] = true;		// signal, that command "+cmd" started (for "-cmd" allowing)
-				Cbuf_AddText (va("%s %i %i\n", kb, bindKey, time));
+				Cbuf_AddText (va("%s %d %d\n", kb, bindKey, time));
 			}
 			else
 			{

@@ -219,7 +219,7 @@ static void CMod_ReadSurfMaterials (char *filename)
 			prev->next = sm;
 		prev = sm;
 
-//		Com_DPrintf ("Added surface material: %i for %s\n", m, s);
+//		Com_DPrintf ("Added surface material: %d for %s\n", m, s);
 	}
 
 	FS_FreeFile (file);
@@ -748,7 +748,7 @@ void CMod_LoadHLSubmodels (lump_t *l)
 		out->headnode = LittleLong (in->headnode[0]); // use only headnode[0]
 	}
 	if (map_cmodels[0].headnode)
-		Com_DropError ("HL map has invalid headnode = %i", map_cmodels[0].headnode); */
+		Com_DropError ("HL map has invalid headnode = %d", map_cmodels[0].headnode); */
 }
 
 

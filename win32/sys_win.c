@@ -22,7 +22,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <direct.h>
 #include <excpt.h>
 #include "winquake.h"
-#include "conproc.h"
 
 #include "../qcommon/qcommon.h"
 #include "../client/client.h"
@@ -60,9 +59,6 @@ void Sys_Quit (void)
 	if (DEDICATED)
 		FreeConsole ();
 #endif
-
-	// shut down QHOST hooks if necessary
-//??	DeinitConProc ();
 
 	exit (0);
 }
@@ -604,7 +600,7 @@ static void CheckCpuName (void)
 		t.name[i*4] = 0;
 		s = t.name;
 		while (*s == ' ') s++;
-		Com_Printf ("CPU: %s\n", s);
+		Com_Printf ("CPU name: %s\n", s);
 	}
 	else
 	{
@@ -613,7 +609,7 @@ static void CheckCpuName (void)
 		t.reg[1] = r[3];
 		t.reg[2] = r[2];
 		t.name[12] = 0;		// ASCIIZ
-		Com_Printf ("CPU: %s\n", t.name);
+		Com_Printf ("CPU name: %s\n", t.name);
 	}
 }
 
@@ -731,9 +727,6 @@ void Sys_Init (void)
 #endif
 		hinput = GetStdHandle (STD_INPUT_HANDLE);
 		houtput = GetStdHandle (STD_OUTPUT_HANDLE);
-
-		// let QHOST hook in
-//??		InitConProc (argc, argv);
 	}
 
 	CheckCpuName ();
@@ -953,25 +946,6 @@ char *Sys_GetClipboardData (void)
 		CloseClipboard ();
 	}
 	return data;
-}
-
-/*
-==============================================================================
-
- WINDOWS CRAP
-
-==============================================================================
-*/
-
-/*
-=================
-Sys_AppActivate
-=================
-*/
-void Sys_AppActivate (void)
-{
-	ShowWindow (cl_hwnd, SW_RESTORE);
-	SetForegroundWindow (cl_hwnd);
 }
 
 /*
@@ -1195,8 +1169,6 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 		Sys_ConsoleOutput ("\n\n^1--------------------\n" APPNAME " fatal error\n");
 		Sys_ConsoleOutput (GErr.history);
 #endif
-		// shut down QHOST hooks if necessary
-//??		DeinitConProc ();
 	}
 	// never gets here
 	return TRUE;

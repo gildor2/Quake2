@@ -653,10 +653,6 @@ struct model_s *S_RegisterSexedModel (entityState_t *ent, char *base)
 }
 
 
-// PMM - used in shell code
-extern int Developer_searchpath (int who);
-// pmm
-
 static void GetEntityInfo (int entityNum, entityState_t **st, int *eff, int *rfx)
 {
 	int		effects, renderfx;
@@ -670,28 +666,17 @@ static void GetEntityInfo (int entityNum, entityState_t **st, int *eff, int *rfx
 	if (effects & (EF_PENT|EF_QUAD|EF_DOUBLE|EF_HALF_DAMAGE))
 	{
 		if (effects & EF_PENT)
-		{
-			effects &= ~EF_PENT;
 			renderfx |= RF_SHELL_RED;
-		}
 		if (effects & EF_QUAD)
-		{
-			effects &= ~EF_QUAD;
 			renderfx |= RF_SHELL_BLUE;
-		}
 		if (effects & EF_DOUBLE)
-		{
-			effects &= ~EF_DOUBLE;
 			renderfx |= RF_SHELL_DOUBLE;
-		}
 		if (effects & EF_HALF_DAMAGE)
-		{
-			effects &= ~EF_HALF_DAMAGE;
 			renderfx |= RF_SHELL_HALF_DAM;
-		}
-		effects |= EF_COLOR_SHELL;
+		// clear processed effects and add color shell
+		effects = effects | EF_COLOR_SHELL & ~(EF_PENT|EF_QUAD|EF_DOUBLE|EF_HALF_DAMAGE);
 	}
-	if (effects & EF_COLOR_SHELL)
+	if ((effects & EF_COLOR_SHELL) && !stricmp (fs_gamedirvar->string, "rogue"))
 	{
 		// PMM - at this point, all of the shells have been handled
 		// if we're in the rogue pack, set up the custom mixing, otherwise just
@@ -700,32 +685,26 @@ static void GetEntityInfo (int entityNum, entityState_t **st, int *eff, int *rfx
 		// (double & half) and turn them into the appropriate color, and make double/quad something special
 		if (renderfx & RF_SHELL_HALF_DAM)
 		{
-			if (Developer_searchpath(2) == 2)
-			{
-				// ditch the half damage shell if any of red, blue, or double are on
-				if (renderfx & (RF_SHELL_RED|RF_SHELL_BLUE|RF_SHELL_DOUBLE))
-					renderfx &= ~RF_SHELL_HALF_DAM;
-			}
+			// ditch the half damage shell if any of red, blue, or double are on
+			if (renderfx & (RF_SHELL_RED|RF_SHELL_BLUE|RF_SHELL_DOUBLE))
+				renderfx &= ~RF_SHELL_HALF_DAM;
 		}
 
 		if (renderfx & RF_SHELL_DOUBLE)
 		{
-			if (Developer_searchpath(2) == 2)
-			{
 				// lose the yellow shell if we have a red, blue, or green shell
-				if (renderfx & (RF_SHELL_RED|RF_SHELL_BLUE|RF_SHELL_GREEN))
-					renderfx &= ~RF_SHELL_DOUBLE;
-				// if we have a red shell, turn it to purple by adding blue
-				if (renderfx & RF_SHELL_RED)
-					renderfx |= RF_SHELL_BLUE;
-				// if we have a blue shell (and not a red shell), turn it to cyan by adding green
-				else if (renderfx & RF_SHELL_BLUE)
-					// go to green if it's on already, otherwise do cyan (flash green)
-					if (renderfx & RF_SHELL_GREEN)
-						renderfx &= ~RF_SHELL_BLUE;
-					else
-						renderfx |= RF_SHELL_GREEN;
-			}
+			if (renderfx & (RF_SHELL_RED|RF_SHELL_BLUE|RF_SHELL_GREEN))
+				renderfx &= ~RF_SHELL_DOUBLE;
+			// if we have a red shell, turn it to purple by adding blue
+			if (renderfx & RF_SHELL_RED)
+				renderfx |= RF_SHELL_BLUE;
+			// if we have a blue shell (and not a red shell), turn it to cyan by adding green
+			else if (renderfx & RF_SHELL_BLUE)
+				// go to green if it's on already, otherwise do cyan (flash green)
+				if (renderfx & RF_SHELL_GREEN)
+					renderfx &= ~RF_SHELL_BLUE;
+				else
+					renderfx |= RF_SHELL_GREEN;
 		}
 	}
 
@@ -764,18 +743,18 @@ static void AddViewWeapon (int renderfx)
 	ops = &cl.oldFrame->playerstate;
 
 	// allow the gun to be completely removed
-	if (!cl_gun->integer)
-		return;
+	if (!cl_gun->integer) return;
 
 	// don't draw gun if in wide angle view
-	if (ps->fov > 90)
-		return;
+	if (ps->fov > 90) return;
 
 	memset (&gun, 0, sizeof(gun));
 
+#ifdef GUN_DEBUG
 	if (gun_model)
-		gun.model = gun_model;			// development tool
+		gun.model = gun_model;
 	else
+#endif
 		gun.model = cl.model_draw[ps->gunindex];
 	if (!gun.model)
 		return;
@@ -787,16 +766,18 @@ static void AddViewWeapon (int renderfx)
 		gun.angles[i] = cl.refdef.viewangles[i] + LerpAngle (ops->gunangles[i], ps->gunangles[i], cl.lerpfrac);
 	}
 
+#ifdef GUN_DEBUG
 	if (gun_frame)
 	{
-		gun.frame = gun_frame;			// development tool
-		gun.oldframe = gun_frame;		// development tool
+		gun.frame = gun_frame;
+		gun.oldframe = gun_frame;
 	}
 	else
+#endif
 	{
 		gun.frame = ps->gunframe;
 		if (gun.frame == 0)
-			gun.oldframe = 0;			// just changed weapons, don't lerp from old
+			gun.oldframe = 0;				// just changed weapons, don't lerp from old
 		else
 			gun.oldframe = ops->gunframe;
 	}

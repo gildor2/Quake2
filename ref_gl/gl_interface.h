@@ -6,7 +6,8 @@ typedef struct
 {
 	int		maxTextureSize;
 	int		maxRectTextureSize;
-	unsigned extensionMask;
+	unsigned extensionMask;			// for GL_SUPPORT() macro (used extensions)
+	unsigned disabledExt, ignoredExt; // extensions, disabled by user + covered by a different extension; for gfxinfo()
 	// fields for gfxinfo
 	const char	*extensions, *extensions2;
 
@@ -17,11 +18,10 @@ typedef struct
 	bool	multiPassLM;			// when false, upload dynamic lightmaps
 
 	// texture compression formats (0 if unavailable)
-	int		formatSolid;			// RGB (no alpha)
-	int		formatAlpha;			// RGBA (full alpha range)
-	int		formatAlpha1;			// RGB_A1 (1 bit for alpha)
+	GLenum	formatSolid;			// RGB (no alpha)
+	GLenum	formatAlpha;			// RGBA (full alpha range)
+	GLenum	formatAlpha1;			// RGB_A1 (1 bit for alpha)
 
-	int		colorBits;
 	bool	fullscreen;
 	byte	prevMode;				// last valid video mode
 	byte	prevBPP;

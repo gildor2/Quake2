@@ -491,7 +491,7 @@ print (CODE <<EOF
 EOF
 );
 
-printf (CODE "static char *%sNames[%s + %s] = {", $strucname, $constname, $constname2);
+printf (CODE "static const char *%sNames[%s + %s] = {", $strucname, $constname, $constname2);
 Parse ("EmitString", "EmitPlatformCODE2");
 print (CODE "\n};\n\n");
 
@@ -500,7 +500,7 @@ print (CODE "\n};\n\n");
 #------------------------------------------------------------------------------
 
 print (CODE <<EOF
-static char *EnumName (GLenum v)
+static const char *EnumName (GLenum v)
 {
 	switch (v)
 	{
@@ -530,7 +530,7 @@ EOF
 
 Parse ("EmitLogDecl", "EmitPlatformCODE");
 
-printf (CODE "static %s_t logFuncs = {", $strucname);
+printf (CODE "static const %s_t logFuncs = {", $strucname);
 Parse ("EmitLogInit", "EmitPlatformCODE2");
 print (CODE "\n};\n\n");
 
@@ -541,11 +541,11 @@ print (CODE "\n};\n\n");
 
 print (CODE <<EOF
 typedef struct {
-	const char *names;
-	const char *name;
-	const char *cvar;
-	short	first, count;
-	unsigned require, deprecate;
+	const char *names;				// "alias1\\0alias2\\0\\0" or "name\\0\\0"
+	const char *name;				// current name (points to alias1 or alias2)
+	const char *cvar;				// name of cvar to disable extension
+	short	first, count;			// positions of provided functions in name table
+	unsigned require, deprecate;	// dependent extensions
 }
 EOF
 );

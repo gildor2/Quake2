@@ -353,7 +353,6 @@ CL_ParseServerData
 */
 void CL_ParseServerData (void)
 {
-	extern cvar_t	*fs_gamedirvar;
 	char	*str;
 	int		i;
 

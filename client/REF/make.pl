@@ -128,7 +128,6 @@ printf ("Found %d functions ...\n", $numFuncs);
 print (HDR <<EOF
 typedef struct {
 	int		struc_size;
-	int		api_version;
 EOF
 );
 Parse ("EmitStruc", "EmitHdrPrep");
@@ -160,7 +159,6 @@ print (DEFS "\n#endif\n\n");
 print (CODE <<EOF
 static $typename $strucname = {
 	sizeof($typename),
-	API_VERSION,
 #ifndef DEDICATED_ONLY
 EOF
 );

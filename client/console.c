@@ -4,6 +4,10 @@
 
 #define	CON_TEXTSIZE 32768
 
+//?? move consts outside; may be, make a variable; should be synched with renderer char sizes
+#define CHAR_WIDTH	8
+#define CHAR_HEIGHT	8
+
 
 typedef struct
 {
@@ -89,7 +93,7 @@ void DrawStringCommon (int x, int y, const char *s)
 			re.DrawCharColor (x, y, c, color);
 		else
 			re.DrawCharColor (x, y, c, 7);
-		x += 8;
+		x += CHAR_WIDTH;
 	}
 }
 
@@ -226,7 +230,7 @@ void Con_CheckResize (void)
 		con.wordwrap = con_wordWrap->integer != 0;
 	}
 
-	width = (viddef.width >> 3) - 2;
+	width = (viddef.width / CHAR_WIDTH) - 2;
 	if (width < 1) width = 38;			// wideo hash't initialized
 
 	if (width == linewidth)
@@ -475,7 +479,7 @@ The input line scrolls horizontally if typing goes beyond the right edge
 static void Con_DrawInput (void)
 {
 	int		y, i, shift;
-	char	*text, c;
+	char	*text, c, color;
 	bool	eoln;
 
 //	if (cls.key_dest == key_menu) return;
@@ -495,36 +499,39 @@ static void Con_DrawInput (void)
 
 	// draw it
 	if (!(*re.flags & REF_CONSOLE_ONLY))
-		y = con.vislines - 22;
+		y = con.vislines - CHAR_HEIGHT - 14;
 	else
-		y = (viddef.height >> 3) - 2;
+		y = (viddef.height / CHAR_HEIGHT) - 2;
 
 	eoln = false;
 	for (i = 0; i < linewidth; i++, text++)
 	{
+		int x = (i+1) * CHAR_WIDTH;
 		if (!eoln)
 		{
 			c = *text;
 			if (!c) eoln = true;
 		}
 		if (eoln) c = ' ';
-		if ((i == editPos  - shift) && (curtime >> 8) & 1 &&
-//??			(cls.key_dest == key_console || cls.state != ca_active))
-			cls.key_dest != key_menu)
+		// draw blinking cursor
+		if ((i == editPos  - shift) && (curtime >> 8) & 1 && cls.key_dest != key_menu)
 		{
 			if (!(*re.flags & REF_CONSOLE_ONLY))
 			{
-				re.DrawCharColor ((i+1)<<3, y, c, 7);
-				re.DrawFill2 ((i+1)<<3, y+4, 8, 4, 0.2, 1, 0.3, 0.5);
+				re.DrawCharColor (x, y, c, 7);
+				re.DrawFill2 (x, y+CHAR_HEIGHT/2, CHAR_WIDTH, CHAR_HEIGHT/2, 0.2, 1, 0.3, 0.5);
 				continue;
 			}
-			c = 11 + 128;								// cursor char
+			c = 11;									// cursor char
+			color = 2;
 		}
-
-		if (!(*re.flags & REF_CONSOLE_ONLY))
-			re.DrawCharColor ((i+1)<<3, y, c, 7);		// do not colorize input
 		else
-			re.DrawConCharColor (i+1, y, c, 7);
+			color = 7;								// do not colorize input
+		// draw char
+		if (!(*re.flags & REF_CONSOLE_ONLY))
+			re.DrawCharColor (x, y, c, color);
+		else
+			re.DrawConCharColor (i+1, y, c, color);
 	}
 }
 
@@ -572,7 +579,7 @@ void Con_DrawNotify (qboolean drawBack)
 
 		if (!bgPaint)
 		{
-			re.DrawFill2 (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * 8 + 4, 1, 0, 0, 0.3);
+			re.DrawFill2 (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, 1, 0, 0, 0.3);
 			bgPaint = true;
 		}
 		for (x = 0; x < linewidth; x++)
@@ -585,10 +592,10 @@ void Con_DrawNotify (qboolean drawBack)
 			if (++pos >= CON_TEXTSIZE) pos -= CON_TEXTSIZE;
 
 			if (c == '\n' || c == WRAP_CHAR) break;
-			re_DrawCharColor ((x + 1) << 3, v, c, color);
+			re_DrawCharColor ((x + 1) * CHAR_WIDTH, v, c, color);
 		}
 
-		v += 8;
+		v += CHAR_HEIGHT;
 	}
 
 
@@ -606,16 +613,15 @@ void Con_DrawNotify (qboolean drawBack)
 		}
 
 		s = chat_buffer;
-		if (chat_bufferlen > (viddef.width >> 3) - (x + 1))
-			s += chat_bufferlen - ((viddef.width >> 3) - (x + 1));
+		if (chat_bufferlen > viddef.width/CHAR_WIDTH - (x + 1))
+			s += chat_bufferlen - (viddef.width/CHAR_WIDTH - (x + 1));
 		while(*s)
 		{
-			re_DrawCharColor (x << 3, v, *s++, 7);
+			re_DrawCharColor (x * CHAR_WIDTH, v, *s++, 7);
 			x++;
 		}
 		// draw cursor
-		re_DrawCharColor (x << 3, v, 10 + ((curtime >> 8) & 1), 7);
-		v += 8;
+		re_DrawCharColor (x * CHAR_WIDTH, v, 10 + ((curtime >> 8) & 1), 7);
 	}
 }
 
@@ -627,13 +633,24 @@ Con_DrawConsole
 Draws the console with the solid background
 ================
 */
+
+//#define DEBUG_CONSOLE
+
 void Con_DrawConsole (float frac)
 {
-	int		i, j, x, y, n, topline;
+	int		i, j, x, y, y0, n, topline;
 	int		row, rows, lines;
 	int		dx, dy, color;
 	char	*text, c, dlbar[1024];
 	static const char version[] = APPNAME " v" STR(VERSION);
+#ifdef DEBUG_CONSOLE
+	char	dbgBuf[256];
+	dbgBuf[0] = 0;
+#define CON_DBG(x)	strncat(dbgBuf,x,sizeof(dbgBuf))
+#else
+#define CON_DBG(x)
+#endif
+
 
 	lines = Q_round (viddef.height * frac);
 	con_height = lines;
@@ -651,23 +668,23 @@ void Con_DrawConsole (float frac)
 	}
 
 	// Variables for console-only mode
-	dx = viddef.width >> 3;
-	dy = viddef.height >> 3;
+	dx = viddef.width / CHAR_WIDTH;
+	dy = viddef.height / CHAR_HEIGHT;
 
 	// draw version info
 	i = sizeof(version) - 1;
 	for (x = 0; x < i; x++)
 		if (!(*re.flags & REF_CONSOLE_ONLY))
-			re.DrawCharColor (viddef.width - i * 8 - 4 + x * 8, lines - 12, 128 + version[x], 7);
+			re.DrawCharColor (viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, version[x], 2);
 		else
-			re.DrawConCharColor (dx - i - 1 + x, dy - 1, 128 + version[x], 7);
+			re.DrawConCharColor (dx - i - 1 + x, dy - 1, version[x], 2);
 
 	// draw the text
 	con.vislines = lines;
 
 	if (!(*re.flags & REF_CONSOLE_ONLY))
 	{
-		rows = (lines - 22) >> 3;		// rows of text to draw
+		rows = (lines - CHAR_HEIGHT/2) / CHAR_HEIGHT - 2;	// rows of text to draw
 		y = lines - 30;
 	}
 	else
@@ -681,46 +698,47 @@ void Con_DrawConsole (float frac)
 	// fix con.display if out of buffer
 	con.display = bound(con.display, topline, con.current);
 
-	if (con.totallines && con.display != con.current)
-	{
-		/*------ draw arrows to show the buffer is backscrolled -------*/
-		if (!(*re.flags & REF_CONSOLE_ONLY))
-		{
-			y = (rows - 1) * 8;
-			for (x = 0; x < linewidth; x += 4)
-				re.DrawCharColor ((x + 1) * 8, y, '^', 7);
-			y -= 8;
-		}
-		else
-		{
-			y = rows - 1;
-			for (x = 0; x < linewidth; x += 4)
-				re.DrawConCharColor (x + 1, y, '^', 7);
-			y--;
-		}
-		rows--;
-	}
-
 	row = con.display - rows + 1; // top line to display
 
+	CON_DBG(va(" top:%d row:%d",topline,row));
 	if (row < topline)
 	{
 		// row is out of (before) buffer
 		j = topline - row;
+		CON_DBG(va(" fix_top:%d",j));
 		row = topline;
 		rows -= j;
 	}
 
+	CON_DBG(va(" 1st:%d/count:%d/y1:%d",row,rows,y));
 	i = FindLine (row);
 
 	// cache info
 	con.disp.line = row;
 	con.disp.pos = i;
 
+	y0 = y;							// last console text line
 	if (!(*re.flags & REF_CONSOLE_ONLY))
-		y -= (rows - 1) * 8;
+		y -= (rows - 1) * CHAR_HEIGHT;
 	else
 		y -= rows - 1;
+	if (con.totallines && con.display != con.current)
+	{
+		/*------ draw arrows to show the buffer is backscrolled -------*/
+		if (!(*re.flags & REF_CONSOLE_ONLY))
+		{
+			for (x = 0; x < linewidth; x += 4)
+				re.DrawCharColor ((x + 1) * CHAR_WIDTH, y0, '^', 7);
+		}
+		else
+		{
+			for (x = 0; x < linewidth; x += 4)
+				re.DrawConCharColor (x + 1, y0, '^', 7);
+		}
+		rows--;
+	}
+
+	CON_DBG(va("/y2:%d",y));
 	if (rows > 0 && i != -1)
 	{
 		while (rows--)
@@ -735,16 +753,25 @@ void Con_DrawConsole (float frac)
 
 				if (!con_colorText->integer) color = 7;
 				if (!(*re.flags & REF_CONSOLE_ONLY))
-					re.DrawCharColor ((x + 1) * 8, y, c, color);
+					re.DrawCharColor ((x + 1) * CHAR_WIDTH, y, c, color);
 				else
 					re.DrawConCharColor (x + 1, y, c, color);
 			}
 			if (!(*re.flags & REF_CONSOLE_ONLY))
-				y += 8;
+				y += CHAR_HEIGHT;
 			else
 				y++;
 		}
 	}
+	CON_DBG(va(" disp:%d total:%d",con.display,con.totallines));
+#ifdef DEBUG_CONSOLE
+	i = strlen (dbgBuf);
+	for (x = 0; x < i; x++)
+		if (!(*re.flags & REF_CONSOLE_ONLY))
+			re.DrawCharColor (x*CHAR_WIDTH, lines - 12, dbgBuf[x], 4);
+		else
+			re.DrawConCharColor (i, dy - 1, version[x], 4);
+#endif
 
 	//ZOID
 	// draw the download bar
@@ -787,9 +814,9 @@ void Con_DrawConsole (float frac)
 		Com_sprintf (dlbar+i, sizeof(dlbar)-i, " %02d%%", cls.downloadpercent);
 
 		// draw it
-		y = con.vislines - 12;
+		y = con.vislines - CHAR_HEIGHT*3/2;
 		for (i = 0; i < strlen (dlbar); i++)
-			re.DrawCharColor ((i + 1) * 8, y, dlbar[i], 7);
+			re.DrawCharColor ((i + 1) * CHAR_WIDTH, y, dlbar[i], 7);
 	}
 	//ZOID
 

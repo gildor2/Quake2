@@ -69,7 +69,7 @@ static menuList_t  		s_stipple_box;
 static menuList_t  		s_paletted_texture_box;
 static menuList_t  		s_windowed_mouse;
 static menuAction_t		s_apply_action[2];
-static menuAction_t		s_defaults_action[2];
+static menuAction_t		s_undo_action[2];
 
 static void DriverCallback( void *unused )
 {
@@ -111,11 +111,6 @@ static void BrightnessCallback( void *s )
 
 		Cvar_SetValue( "r_gamma", gamma );
 	}
-}
-
-static void ResetDefaults( void *unused )
-{
-	Vid_MenuInit();
 }
 
 static void ApplyChanges( void *unused )
@@ -346,11 +341,11 @@ void Vid_MenuInit( void )
 		s_fs_box[i].itemnames = yesno_names;
 		s_fs_box[i].curvalue = r_fullscreen->integer;
 
-		s_defaults_action[i].generic.type = MTYPE_ACTION;
-		s_defaults_action[i].generic.name = "reset to default";
-		s_defaults_action[i].generic.x    = 0;
-		s_defaults_action[i].generic.y    = 90;
-		s_defaults_action[i].generic.callback = ResetDefaults;
+		s_undo_action[i].generic.type = MTYPE_ACTION;
+		s_undo_action[i].generic.name = "undo changes";
+		s_undo_action[i].generic.x    = 0;
+		s_undo_action[i].generic.y    = 90;
+		s_undo_action[i].generic.callback = Vid_MenuInit;	//?? convert type
 
 		s_apply_action[i].generic.type = MTYPE_ACTION;
 		s_apply_action[i].generic.name = "apply";
@@ -404,9 +399,9 @@ void Vid_MenuInit( void )
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_tq_slider );
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_paletted_texture_box );
 
-	Menu_AddItem( &s_software_menu, ( void * ) &s_defaults_action[SOFTWARE_MENU] );
+	Menu_AddItem( &s_software_menu, ( void * ) &s_undo_action[SOFTWARE_MENU] );
 	Menu_AddItem( &s_software_menu, ( void * ) &s_apply_action[SOFTWARE_MENU] );
-	Menu_AddItem( &s_opengl_menu, ( void * ) &s_defaults_action[OPENGL_MENU] );
+	Menu_AddItem( &s_opengl_menu, ( void * ) &s_undo_action[OPENGL_MENU] );
 	Menu_AddItem( &s_opengl_menu, ( void * ) &s_apply_action[OPENGL_MENU] );
 
 	Menu_Center( &s_software_menu );

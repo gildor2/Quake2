@@ -1294,7 +1294,7 @@ char *COM_ParseExt (char **data_p, qboolean allowLineBreaks)
 
 	if (len == sizeof(com_token))
 	{
-//		Com_WPrintf ("Token exceeded %i chars, discarded.\n", sizeof(com_token));
+//		Com_WPrintf ("Token exceeded %d chars, discarded.\n", sizeof(com_token));
 		len = 0;
 	}
 	com_token[len] = 0;

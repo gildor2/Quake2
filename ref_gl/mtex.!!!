@@ -1,3 +1,4 @@
+?? can't remember, but, seems, trying to get multitextured envmapped windows
 before:
 ~~~~~~~
 blend = dst*(1-a) + src*a  (src=T1)

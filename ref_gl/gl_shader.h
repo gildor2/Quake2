@@ -225,7 +225,6 @@ typedef struct shader_s
 
 	bool	scripted:1;
 	bool	bad:1;			// errors in script or no map image found (for auto-generated shader)
-	bool	fast:1;			// have no deforms, tcGen/tcMod, rgb/alpha-gen (remove ??)
 	bool	dependOnEntity:1; // when false, surface may be mixed with surfaces from different entities
 
 	bool	usePolygonOffset:1;

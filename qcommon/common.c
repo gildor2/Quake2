@@ -28,10 +28,7 @@ int		realtime;
 extern	refExport_t	re;		// interface to refresh .dll
 
 
-FILE	*log_stats_file;
-
 cvar_t	*com_speeds;
-cvar_t	*log_stats;
 cvar_t	*developer;
 cvar_t	*timescale;
 cvar_t	*timedemo;
@@ -1221,7 +1218,7 @@ void *SZ_GetSpace (sizebuf_t *buf, int length)
 			Com_FatalError ("SZ_GetSpace: overflow without allowoverflow set");
 
 		if (length > buf->maxsize)
-			Com_FatalError ("SZ_GetSpace: %i is > full buffer size", length);
+			Com_FatalError ("SZ_GetSpace: %d is > full buffer size", length);
 
 		Com_Printf ("SZ_GetSpace: overflow (max=%d, need=%d)\n", buf->maxsize, need);
 		SZ_Clear (buf);
@@ -1473,7 +1470,7 @@ static void Com_Error_f (void)
 static char *cmdlineParts[MAX_CMDLINE_PARTS];
 static int cmdlineNumParts;
 
-static void ParseCmdline (char *cmdline)
+static void ParseCmdline (const char *cmdline)
 {
 	char	c, *dst;
 	static char buf[512];
@@ -1613,7 +1610,6 @@ void QCommon_Init (char *cmdline)
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(com_speeds, 0, 0),
-	CVAR_VAR(log_stats, 0, 0),
 	CVAR_VAR(developer, 0, 0),
 	CVAR_VAR(timescale, 1, CVAR_CHEAT),
 	CVAR_VAR(timedemo, 0, CVAR_CHEAT),
@@ -1730,23 +1726,6 @@ void QCommon_Frame (int msec)
 	float	msecf;
 
 	guard(QCommon_Frame);
-
-	if (log_stats->modified)
-	{
-		log_stats->modified = false;
-		if (log_stats->integer)
-		{
-			if (log_stats_file) fclose (log_stats_file);
-			log_stats_file = fopen ("stats.log", "w");
-			if (log_stats_file)
-				fprintf (log_stats_file, "entities,dlights,parts,frame time\n");
-		}
-		else if (log_stats_file)
-		{
-			fclose (log_stats_file);
-			log_stats_file = NULL;
-		}
-	}
 
 	realMsec = msec;
 	//?? ignore timescale in multiplayer and timedemo in non-demo mode

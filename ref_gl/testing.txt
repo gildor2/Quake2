@@ -1,5 +1,5 @@
-- gl_showsky == 2 -> show sky surfaces/textures (restart required)
-- gl_showtris|gl_shownormals: 1 + (1 -- use depthtest) + (2 -- flash color)
+- gl_showSky == 2 -> show sky surfaces/textures (restart required)
+- gl_showTris|gl_showNormals: 1 + (1 -- use depthtest) + (2 -- flash color)
 - gl_showbboxes (2 -- flash color; 3 -- show boxes around "world" entities with different color)
 - gl_finish == 2 -> glFinish() after all draw stages
 - "imagelist *" - show hash distribution (collisions)
@@ -8,8 +8,8 @@
 - r_surfinfo = +2 -- do not trace entities, +4 -- clip to all brushes
 - gl_showImages <mask> | 1==* | 0
 - r_lightmap && r_fullbright -> wireframe drawing (within a lightmap and texture); hint: use gl_fastsky or gl_clear
-- gl_dynamic == 2 -> uploadable dynamic lightmaps (restart required)
+- gl_dynamic == 2 -> uploadable dynamic lightmaps (not dlights!; restart required)
 - img_reload <mask> -- reload all matched images (system images and images, which names are started with '*', not reloaded)
-- gl_labels == 2 -> show occluded ent labels
+- gl_labels == 2 -> show labels of occluded ents
 - gl_showLights == 2 -> display spotlight intensities
 - gl_singleShader == 1 -> default shader for world; == 2 -> for skins too

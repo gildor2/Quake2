@@ -423,30 +423,28 @@ static basenamed_t *ListPakDirectory (pack_t *pak, char *dir, char *mask, int fl
 
 /*------------- Debug stuff -------------------*/
 
-static int dump_pak_level;
-
 static void DumpPakDirectory (packDir_t *dir, FILE *log)
 {
 	int		i;
 	packFile_t *f;
 	packDir_t *d;
+	static int dumpPakLevel = 0;
 
-	for (i = 0; i < dump_pak_level * 2; i++) fputc (' ', log);
+	for (i = 0; i < dumpPakLevel * 2; i++) fputc (' ', log);
 	fprintf (log, "%s/\n", dir->name);
-	dump_pak_level++;
+	dumpPakLevel++;
 	for (f = dir->cFile; f; f = f->next)
 	{
-		for (i = 0; i < dump_pak_level * 2; i++) fputc (' ', log);
+		for (i = 0; i < dumpPakLevel * 2; i++) fputc (' ', log);
 		fprintf (log, "%s\n", f->name);
 	}
 	for (d = dir->cDir; d; d = d->next)
 		DumpPakDirectory (d, log);
-	dump_pak_level--;
+	dumpPakLevel--;
 }
 
 static void DumpPakContents (pack_t *pak, FILE *log)
 {
-	dump_pak_level = 0;
 	fprintf (log, "===== Dumping %s%s =====\n", pak->filename, is_zip_str[pak->isZip]);
 	DumpPakDirectory (pak->root, log);
 	fprintf (log, "***** total %d files\n\n", pak->numFiles);
@@ -573,45 +571,6 @@ void FS_RemoveFiles (char *mask)
 		remove (found);
 	}
 	Sys_FindClose ();
-}
-
-
-// RAFAEL
-/*
-	Developer_searchpath (change !!)
-*/
-int	Developer_searchpath (int who)
-{
-
-//	int		ch;
-//	char	*start;
-	searchPath_t	*search;
-
-/*
-	if (who == 1)		// xatrix
-		ch = 'x';
-	else if (who == 2)
-		ch = 'r';
-*/
-
-	for (search = fs_searchpaths; search; search = search->next)
-	{
-		if (strstr (search->filename, "xatrix"))
-			return 1;
-
-		if (strstr (search->filename, "rogue"))
-			return 2;
-/*
-		start = strchr (search->filename, ch);
-
-		if (start == NULL)
-			continue;
-
-		if (strcmp (start ,"xatrix") == 0)
-			return (1);
-*/
-	}
-	return 0;
 }
 
 
@@ -1830,7 +1789,7 @@ static void FS_Path_f (void)
 		if (s == fs_base_searchpaths)
 			Com_Printf ("----------\n");
 		if (s->pack)
-			Com_Printf ("%s%s (%i files)\n", s->pack->filename, is_zip_str[s->pack->isZip], s->pack->numFiles);
+			Com_Printf ("%s%s (%d files)\n", s->pack->filename, is_zip_str[s->pack->isZip], s->pack->numFiles);
 		else
 			Com_Printf ("%s\n", s->filename);
 	}

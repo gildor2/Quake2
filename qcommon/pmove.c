@@ -219,7 +219,7 @@ static qboolean SlideMove (void)
 		{	// go along the crease
 			if (numplanes != 2)
 			{
-//				Com_Printf ("clip velocity, numplanes == %i\n",numplanes);
+//				Com_Printf ("clip velocity, numplanes == %d\n",numplanes);
 				VectorCopy (vec3_origin, pml.velocity);
 				break;
 			}

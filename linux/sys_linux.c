@@ -262,10 +262,6 @@ void *Sys_GetGameAPI (void *parms)
 
 /*****************************************************************************/
 
-void Sys_AppActivate (void)
-{
-}
-
 void Sys_SendKeyEvents (void)
 {
 #ifndef DEDICATED_ONLY

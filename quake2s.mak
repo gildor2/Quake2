@@ -53,7 +53,6 @@ CLEAN :
 	-@erase "$(INTDIR)\cmd.obj"
 	-@erase "$(INTDIR)\cmodel.obj"
 	-@erase "$(INTDIR)\common.obj"
-	-@erase "$(INTDIR)\conproc.obj"
 	-@erase "$(INTDIR)\console.obj"
 	-@erase "$(INTDIR)\crc.obj"
 	-@erase "$(INTDIR)\cvar.obj"
@@ -191,7 +190,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\cmd.obj" \
 	"$(INTDIR)\cmodel.obj" \
 	"$(INTDIR)\common.obj" \
-	"$(INTDIR)\conproc.obj" \
 	"$(INTDIR)\console.obj" \
 	"$(INTDIR)\crc.obj" \
 	"$(INTDIR)\cvar.obj" \
@@ -313,8 +311,6 @@ CLEAN :
 	-@erase "$(INTDIR)\cmodel.sbr"
 	-@erase "$(INTDIR)\common.obj"
 	-@erase "$(INTDIR)\common.sbr"
-	-@erase "$(INTDIR)\conproc.obj"
-	-@erase "$(INTDIR)\conproc.sbr"
 	-@erase "$(INTDIR)\console.obj"
 	-@erase "$(INTDIR)\console.sbr"
 	-@erase "$(INTDIR)\crc.obj"
@@ -520,7 +516,6 @@ BSC32_SBRS= \
 	"$(INTDIR)\cmd.sbr" \
 	"$(INTDIR)\cmodel.sbr" \
 	"$(INTDIR)\common.sbr" \
-	"$(INTDIR)\conproc.sbr" \
 	"$(INTDIR)\console.sbr" \
 	"$(INTDIR)\crc.sbr" \
 	"$(INTDIR)\cvar.sbr" \
@@ -615,7 +610,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\cmd.obj" \
 	"$(INTDIR)\cmodel.obj" \
 	"$(INTDIR)\common.obj" \
-	"$(INTDIR)\conproc.obj" \
 	"$(INTDIR)\console.obj" \
 	"$(INTDIR)\crc.obj" \
 	"$(INTDIR)\cvar.obj" \
@@ -997,24 +991,6 @@ SOURCE=.\qcommon\common.c
 
 
 "$(INTDIR)\common.obj"	"$(INTDIR)\common.sbr" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ENDIF 
-
-SOURCE=.\win32\conproc.c
-
-!IF  "$(CFG)" == "quake2s - Win32 Release"
-
-
-"$(INTDIR)\conproc.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
-
-
-"$(INTDIR)\conproc.obj"	"$(INTDIR)\conproc.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 

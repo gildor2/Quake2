@@ -2,7 +2,6 @@
 
 static refImport_t ri = {
 	sizeof(refImport_t),
-	API_VERSION,
 #ifndef DEDICATED_ONLY
 
 	Cmd_AddCommand,
@@ -54,7 +53,6 @@ static refImport_t ri = {
 	MatchWildcard,
 	MatchWildcard2,
 	Vid_GetModeInfo,
-	Vid_MenuInit,
 	ImageExists,
 	LoadPCX,
 	LoadTGA,

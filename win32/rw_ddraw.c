@@ -26,9 +26,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  error You should not be compiling this file on this platform
 #endif
 
-#include "winquake.h"
-#include "rw_win.h"
+#include <windows.h>
+#include <ddraw.h>
+#include "../qcommon/qcommon.h"
 
+#include "rw_win.h"
 #include "../ref_soft/r_local.h"
 //-- (see in_win.c) #define INITGUID
 

@@ -845,7 +845,9 @@ IMPORTED FUNCTIONS
 ====================================================================
 */
 
+#ifdef DYNAMIC_REF
 extern  refImport_t     ri;
+#endif
 
 /*
 ====================================================================
@@ -868,6 +870,7 @@ void DrawText_Pos (int x, int y, char *text, unsigned rgba);
 void DrawText_Left (char *text, unsigned rgba);
 void DrawText_Right (char *text, unsigned rgba);
 
-#ifndef REF_HARD_LINKED
-/*extern "C"*/ DLL_EXPORT refExport_t GetRefAPI (refImport_t);
+//?? make common declaration
+#ifdef DYNAMIC_REF
+/*extern "C"*/ DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
 #endif

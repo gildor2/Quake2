@@ -374,8 +374,7 @@ SOURCE=.\zlib\adler32.c
 
 !IF  "$(CFG)" == "lib - Win32 Release"
 
-# ADD CPP /D "_LIB.DYNAMIC_CRC_TABLE" /D "BUILDFIXED"
-# SUBTRACT CPP /D "_LIB"
+# ADD CPP /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED"
 
 !ELSEIF  "$(CFG)" == "lib - Win32 Debug"
 
@@ -388,8 +387,7 @@ SOURCE=.\zlib\crc32.c
 
 !IF  "$(CFG)" == "lib - Win32 Release"
 
-# ADD CPP /D "_LIB.DYNAMIC_CRC_TABLE" /D "BUILDFIXED"
-# SUBTRACT CPP /D "_LIB"
+# ADD CPP /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED"
 
 !ELSEIF  "$(CFG)" == "lib - Win32 Debug"
 
@@ -406,8 +404,7 @@ SOURCE=.\zlib\inffast.c
 
 !IF  "$(CFG)" == "lib - Win32 Release"
 
-# ADD CPP /D "_LIB.DYNAMIC_CRC_TABLE" /D "BUILDFIXED"
-# SUBTRACT CPP /D "_LIB"
+# ADD CPP /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED"
 
 !ELSEIF  "$(CFG)" == "lib - Win32 Debug"
 
@@ -428,8 +425,7 @@ SOURCE=.\zlib\inflate.c
 
 !IF  "$(CFG)" == "lib - Win32 Release"
 
-# ADD CPP /D "_LIB.DYNAMIC_CRC_TABLE" /D "BUILDFIXED"
-# SUBTRACT CPP /D "_LIB"
+# ADD CPP /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED"
 
 !ELSEIF  "$(CFG)" == "lib - Win32 Debug"
 
@@ -446,8 +442,7 @@ SOURCE=.\zlib\inftrees.c
 
 !IF  "$(CFG)" == "lib - Win32 Release"
 
-# ADD CPP /D "_LIB.DYNAMIC_CRC_TABLE" /D "BUILDFIXED"
-# SUBTRACT CPP /D "_LIB"
+# ADD CPP /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED"
 
 !ELSEIF  "$(CFG)" == "lib - Win32 Debug"
 
@@ -468,8 +463,7 @@ SOURCE=.\zlib\zutil.c
 
 !IF  "$(CFG)" == "lib - Win32 Release"
 
-# ADD CPP /D "_LIB.DYNAMIC_CRC_TABLE" /D "BUILDFIXED"
-# SUBTRACT CPP /D "_LIB"
+# ADD CPP /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED"
 
 !ELSEIF  "$(CFG)" == "lib - Win32 Debug"
 

@@ -394,7 +394,8 @@ void	Cbuf_Execute (void);
 void	Cbuf_CopyToDefer (void);
 void	Cbuf_InsertFromDefer (void);
 // These two functions are used to defer any pending commands while a map
-// is being loaded
+// is being loaded (NOTE: cannot simply disable Cbuf_Execute(): while map is loading,
+// there can be executed different commands)
 
 //===========================================================================
 
@@ -417,7 +418,7 @@ cmdAlias_t	*cmdAlias;
 typedef struct cmdFunc_s
 {
 	struct cmdFunc_s *next;
-	char	*name;
+	const char	*name;
 	void	(*func) (void);
 } cmdFunc_t;
 
@@ -760,6 +761,7 @@ void	FreeNamedList (basenamed_t *list);
 
 /*----------------- File system ----------------*/
 
+extern cvar_t	*fs_gamedirvar;
 
 #define LIST_FILES	1
 #define LIST_DIRS	2
@@ -820,10 +822,7 @@ extern cvar_t	*dedicated;
 extern cvar_t	*com_speeds;
 extern cvar_t	*timedemo;
 extern cvar_t	*timescale;
-extern cvar_t	*log_stats;
 extern cvar_t	*sv_cheats;
-
-extern	FILE *log_stats_file;
 
 // com_speeds times
 extern int	time_before_game;
@@ -848,8 +847,6 @@ void	SCR_DebugGraph (float value, int color);
 
 
 void	Sys_Init (void);
-
-void	Sys_AppActivate (void);
 
 void	Sys_UnloadGame (void);
 void	*Sys_GetGameAPI (void *parms);

@@ -16,7 +16,7 @@ Comments:
   - "*" - any number (same as "0-255")
   All-IP mask is "*.*.*.*" or "0-255.0-255.0-255.0-255"
 
-1. REF_GL (old ??)
+1. REF_GL (old !!)
 ~~~~~~~~~~~~~~~~~~
 - extended view area for working with large maps (variable "gl_zmax" controls clipping of view range)
 - improved vid_restart performance (Win32)
@@ -27,7 +27,7 @@ Comments:
 - changed appearance of "r_speeds" output
 - support of the Kingpin SURF_ALPHA surface flag
 - hardware gamma control (can be disabled with "set r_ignorehwgamma 1"); changes applied without "vid_restart" (Win32)
-- support for GL_S3_s3tc and GL_ARB_texture_compression (can be disabled with "set gl_ext_compressed_textures 0")
+- support for texture compression (can be disabled with "set gl_ext_compressed_textures 0")
 # improved "imagelist" command: now it shows texture internal formats and info about scrap
 - "gl_console_only" variable: when "1", no graphical information displayed and display forced to full console
   (needs "vid_restart" to activate)
@@ -236,7 +236,7 @@ Debugging
 - "r_playerpos" variable: when it is set to "1", player (spectator) world coordinates are shown
 - "r_sfx_pause 1" stops particles/fx; "r_sfx_pause 2" also disables particle/fx creation
 - "fs_debug" variable: when non-zero, most file system activity will be displayed on console
-- "cmd_debug" var: &1 - display ExecString, &2 - display AddText
+- "cmd_debug" var: &1 - display ExecString, &2 - display AddText etc
 - "cl_showbboxes 1" will display object bounding boxes from client info
 
 GUI
@@ -271,12 +271,12 @@ Network
   - sound pitch affected by timescale (DirectSound only, restart required)
   - support for low timescale (was not able to perform frames with scaled time less than 1 ms)
     timescale=0 - stop everything
-- added mouse support via DirectInput (activated with "set in_mouse 2", default)
+- added mouse support via DirectInput (activated with "in_mouse 2", default)
 - third-person view: activated with "cl_3rd_person 1"
 - intro playback:
   - removed from "toggleconsole" command
   - on startup, will be displayed only cinematics (no demos)
-  - to disable intro on startup, use "nointro 1" in commandline
+  - to disable intro on startup, use "nointro 1" from commandline
   - old-style startup behaviour: add "-nointro -d1" to commandline
   - to play any demo from a command line, use "-nointro -demomap <demoname>"
 - dedicated server:

@@ -1,7 +1,7 @@
 #include "../ref_gl/gl_local.h"
 #include "glw_win.h"
 
-//!! make this file multi-platform (and move from /win32)
+//!! make this file multi-platform (and move from /win32 to renderer directory + rename file + header)
 
 qgl_t			qgl;
 static qgl_t	lib;
@@ -64,6 +64,8 @@ bool QGL_Init (const char *libName)
 }
 
 
+/*--------------- Extensions ---------------------*/
+
 static bool ExtensionNameSupported (const char *name, const char *extString)
 {
 	int		len;
@@ -92,8 +94,7 @@ static bool ExtensionSupported (extInfo_t *ext, const char *extStr1, const char 
 	ext->name = ext->names;		// 1st alias
 	if (ExtensionNameSupported (ext->name, extStr1) || ExtensionNameSupported (ext->name, extStr2))
 		return true;
-	s = strchr (ext->names, '\0');
-	s++;
+	s = strchr (ext->names, '\0') + 1;
 	if (!s[0]) return false;	// no another aliases
 	Com_DPrintf ("%s is not found - try alias %s\n", ext->names, s);
 	if (ExtensionNameSupported (s, extStr1) || ExtensionNameSupported (s, extStr2))
@@ -108,13 +109,14 @@ static bool ExtensionSupported (extInfo_t *ext, const char *extStr1, const char 
 void QGL_InitExtensions (void)
 {
 	int		i;
-	unsigned notFoundExt, disabledExt;
+	unsigned notFoundExt;
 	extInfo_t *ext;
 	dummyFunc_t func;
 	const char *ext1, *ext2;
 
 	gl_config.extensionMask = 0;
-	notFoundExt = disabledExt = 0;
+	notFoundExt = 0;
+	gl_config.disabledExt = gl_config.ignoredExt = 0;
 	gl_config.extensions = ext1 = glGetString (GL_EXTENSIONS);
 
 	ext2 = NULL;
@@ -140,7 +142,7 @@ void QGL_InitExtensions (void)
 			if (!ext->cvar || Cvar_VariableInt (ext->cvar))
 				enable = true;
 			else
-				disabledExt |= 1 << i;
+				gl_config.disabledExt |= 1 << i;
 		}
 		else
 			notFoundExt |= 1 << i;
@@ -172,24 +174,27 @@ void QGL_InitExtensions (void)
 	/*-------------- check requirements -------------*/
 	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 	{
-		int		tmp, tmp2;
-
 		if (!(gl_config.extensionMask & (1 << i)))
 			continue;
 
-		tmp = ext->require;
-		tmp2 = gl_config.extensionMask & tmp;
-		if (tmp2 != tmp)
+		if ((gl_config.extensionMask & ext->require) != ext->require)
 		{
 			int		j;
 
-			// display error
-			for (j = 0; j < NUM_EXTENSIONS; j++)
+			if (gl_config.disabledExt & ext->require)	// require disabled extension
+				gl_config.disabledExt |= 1 << i;		// mark this extension as disabled too
+			else
 			{
-				if ((1 << j) & tmp2)
-					Com_WPrintf ("%s required for %s\n", extInfo[j].name, ext->name);
+				unsigned tmp = (gl_config.extensionMask ^ ext->require) & ext->require;
+				// display error
+				for (j = 0; j < NUM_EXTENSIONS; j++)
+				{
+					if ((1 << j) & tmp)
+						Com_WPrintf ("%s required for %s\n", extInfo[j].names, ext->name);
+				}
+//				// disable extension
+//				gl_config.ignoredExt |= 1 << i;
 			}
-			// disable extension
 			gl_config.extensionMask &= ~(1 << i);
 		}
 	}
@@ -218,6 +223,7 @@ void QGL_InitExtensions (void)
 				}
 				// disable extension
 				gl_config.extensionMask &= ~(1 << i);
+				gl_config.ignoredExt |= 1 << i;
 			}
 			else
 				Com_Printf ("   %s\n", ext->name);
@@ -227,11 +233,11 @@ void QGL_InitExtensions (void)
 		Com_WPrintf ("...no extensions was found\n");
 
 	/*---------- notify disabled extensions ---------*/
-	if (disabledExt)
+	if (gl_config.disabledExt)
 	{
 		Com_Printf ("^6...disabled extensions:\n");
 		for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
-			if (disabledExt & (1 << i))
+			if (gl_config.disabledExt & (1 << i))
 				Com_Printf ("^6   %s\n", ext->name);
 	}
 
@@ -266,6 +272,70 @@ void QGL_InitExtensions (void)
 	}
 }
 
+
+void QGL_PrintExtensionsString (const char *label, const char *str)
+{
+	char	name[256];
+	int		i, j;
+	unsigned m;
+	extInfo_t *ext;
+	const char *color;
+
+	// display label
+	Com_Printf ("^1%s extensions: ", label);
+	// display extension names
+	i = 0;
+	while (true)
+	{
+		char c = *str++;
+		if (c == ' ' || c == 0)
+		{
+			if (i)
+			{
+				name[i] = 0;
+				// name[] now contains current extension name
+				color = NULL;
+				for (j = 0, m = 1, ext = extInfo; j < NUM_EXTENSIONS; j++, ext++, m <<= 1)
+				{
+					if (strcmp (ext->names, name))
+					{
+						const char *s = strchr (ext->names, '\0') + 1;
+						if (!s[0]) continue;	// no another aliases
+						if (strcmp (s, name)) continue;
+					}
+					// here: current name is one of aliases of extInfo[j]
+					if (gl_config.disabledExt & m)
+						color = "^6";			// disabled by cvar
+					else if (gl_config.ignoredExt & m)
+						color = "^4";			// ignored in a favor of different extension
+					else if (gl_config.extensionMask & m)
+						color = "^2";			// used
+					else
+						color = "^1";			// switched off by another reason
+					Com_Printf ("%s%s^7 ", color, name);
+					break;
+				}
+				if (!color) Com_Printf ("%s ", name);		// unsupported extension
+				i = 0;
+			}
+		}
+		else
+		{
+			if (i >= sizeof(name)-1)
+			{
+				Com_WPrintf ("Bad extension string\n");
+				return;
+			}
+			name[i++] = c;
+		}
+		if (!c) break;
+	}
+	// EOLN
+	Com_Printf ("\n");
+}
+
+
+/*---------------- Logging -----------------------*/
 
 void QGL_EnableLogging (qboolean enable)
 {

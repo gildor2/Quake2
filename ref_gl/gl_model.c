@@ -508,7 +508,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (stex->flags & SURF_ALPHA)	sflags |= SHADER_ALPHA;
 		if (stex->flags & SURF_TRANS33)	sflags |= SHADER_TRANS33;
 		if (stex->flags & SURF_TRANS66)	sflags |= SHADER_TRANS66;
-		if (stex->flags & SURF_SKY && gl_showsky->integer != 2) sflags |= SHADER_SKY;
+		if (stex->flags & SURF_SKY && gl_showSky->integer != 2) sflags |= SHADER_SKY;
 		if (stex->flags & SURF_FLOWING)	sflags |= SHADER_SCROLL;
 		if (stex->flags & SURF_WARP)	sflags |= SHADER_TURB;
 		if (stex->flags & SURF_SPECULAR) sflags |= SHADER_ENVMAP;

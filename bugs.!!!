@@ -52,6 +52,12 @@ UNRECOVARABLE:
   demo was recorded using this buggy game
 
 
+BUGGY MAPS:
+~~~~~~~~~~~
+- "reboot" (from KP, user-created) pos(-658,-242,-178) dir(-0.91,0.39,0) -- incorrect backface culling in gl (OK in oldgl); reason:
+  gl and oldgl have different backface culling (gl -- DotProduct(videdir,normal); oldgl -- using BSP only, w/o DotProduct()), this
+  map have incorrect normal info for this surface (if look at r_surfinfo, can see: incorrect brushes too - to simplify map navigation ?)
+
 HARDWARE:
 ~~~~~~~~~
 - ATI:

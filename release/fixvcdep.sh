@@ -12,7 +12,7 @@ function FixDep()
 # fix main dependencies
 cd ..
 FixDep quake2s.dep
-FixDep quake2.dep
+#??FixDep quake2.dep
 
 # fix ref_gl dependencies
 cd ref_gl.old

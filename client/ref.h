@@ -149,9 +149,6 @@ typedef struct
 } refdef_t;
 
 
-
-#define	API_VERSION			4
-
 // renderer flags (capabilities)
 #define REF_CONSOLE_ONLY	1		// if set -- no graphics output
 #define REF_NEW_FX			2		// if set, renderer supports sprite fx
@@ -170,9 +167,7 @@ typedef struct
 {
 	// verification field, cb = sizeof(refExport_t)
 	int		struc_size;
-	// if api_version is different, the dll cannot be used
-	int		api_version;
-	// if console_only is true, no graphical information will be displayed and no mouse input performed
+	// set of REF_XXX flags
 	int		*flags;
 
 	// called when the library is loaded
@@ -241,7 +236,7 @@ typedef struct
 
 
 // this is the only function actually exported at the linker level
-typedef	refExport_t	(*GetRefAPI_t) (refImport_t);
+typedef	refExport_t	(*GetRefAPI_t) (const refImport_t *);
 
 
 #endif

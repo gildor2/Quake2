@@ -3,6 +3,11 @@ BUGS:
   *? 1st try to start demomap after start, when no d1 alias -- "killserver+menu_main"
   - jumpy demo "tower" (at home, all Q2 versions -- at least from p10) -- low fps on original server computer ?
 
+- software gamma: should use identityLight corrected by gamma(but: 1**any==1 ?!)/brightness/contrast (not overbright only)
+  ? but: sometimes texture modulated by identityLight; separate identityLight and textureIdentityLight ??
+    ? may be, only replace 'glBind(NULL)+glColor(color*identityLight)+DrawRect()' (white texture) ->
+      'glBind()+glColor(gamma(color)*identityLight)+draw'
+    ? may be, bring back white texture support (glBind(NULL) -> glBind("*white"))
 ! add [auto-]detail for rail
 ? make InitialSnapPosition() work with Trace() to allow "teleporter grenade" in LOX mod
 - GL: separate gl_combiners.c
@@ -60,6 +65,9 @@ BUGS:
 - if Win32 can't get keyboard focus, "set r_fullscreen 0" (as Unreal2)
 BINDS:
   - bind key "action1"|onrelease "action2" (Unreal-like)
+  - "bind -ask <action>": will display "Press a key or button for this action" MsgBox and wait for user to press key
+    (ESC - cancel); when key pressed, <action> will be bound to this key; this may be useful for binding to keys, which names
+    are unknown, + for scripts, + general "controls menu" may be reimplemented with this command
   ? bindtmp, aliastmp (not stored in config ?) ("bind [-temp] <key> <action>", "alias ...")
 SAVEGAMES:
   - check compatibility with original Q2 savegames
@@ -162,18 +170,13 @@ BSP:
 ? ref_SOFT sprites: get sprite size not from md2, but from image dimensions (see new explosions ...); we can do it,
   because GL do this in this way
 
-------------- API ----------------
-
-? add "Cmd_AddHidden()" - for server commands (cannot be completed/listed, but accessible)
-  (or just implement with Cmd_AddCommand(), but use name prefix, which will be ignored for seaching, but disables completion)
-? Com_DWPrintf() -- same as Com_DPrintf(), but display only when "developer" != 0 (or "warnings" != 0 ??)
-
 ------------ MENUS ---------------
 
 - place "download options" to another place (not "player setup", or to upper level: where model selection performed);
   make download options to be a bitfield (and make additional options: download paks etc)
 - when menu script will be implemented:
   - add developer submenus
+- M_DrawTextBox()+M_Print() used only for "please wait" messages; replace with MessageBox-like function
 
 -------- CLIENT/SERVER -----------
 
@@ -242,7 +245,6 @@ BSP:
   - check: can wal-handling program (wally, qbsp3, qe4 etc) load shrinked images
 
 ? h/w gamma: check for valid gamma when read
-- video config menu: make "reset to defaults" works correctly (Cvar_Reset() ??)
 - CDS:
   - when mode cannot be changed, use current (with fullscreen available); try to enumerate video modes ?
   - add support for "1024x768@70"-like strings (see UT2003 for ideas)
@@ -296,11 +298,17 @@ BSP:
 ? cvarclear - clear all archive flags from cvars, which was not created with quake2 (created with "set <var> <value> a" command)
 ?? cvar_mon varname [message]  - monitor cvar on screen (default message = varname)
 ?? cvar_unmon varname  - stop monitor for cvar
+
+----------- COMPLETION -----------
+
 ? completion cvarnames after "set", "toggle", "add" (etc.) and "...$varname"
   (add flags for Cmd_AddCommand() - complete type: cvar, map, demo ... ???)
   ? add special arg (or value for argv[1]) for command - to get completion type ("maps/*.bsp", "demos/*.dm*", "cvars:*", "bindings:*" ...)
     ? check HL2 - how implemented there
+  ? complete savegames too (load/save command)
 ? make completion "dir"-like formatting + colorizing against char-marks (types)
+? add "Cmd_AddHidden()" - for server commands (cannot be completed/listed, but accessible)
+  (or just implement with Cmd_AddCommand(), but use name prefix, which will be ignored for seaching, but disables completion)
 
 ------------- LINUX --------------
 

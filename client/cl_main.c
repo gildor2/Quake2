@@ -947,7 +947,6 @@ void CL_ConnectionlessPacket (void)
 			Com_Printf ("Command packet from remote host.  Ignored.\n");
 			return;
 		}
-		Sys_AppActivate ();					//??
 		Cbuf_AddText (s1);
 		Cbuf_AddText ("\n");
 		return;
@@ -1734,26 +1733,6 @@ void CL_Frame (float msec, int realMsec)
 
 	// advance local effects for next frame
 	SCR_RunCinematic ();
-
-	if (log_stats->integer && cls.state == ca_active)
-	{
-		static int  lasttimecalled;
-
-		if (!lasttimecalled)
-		{
-			lasttimecalled = Sys_Milliseconds ();
-			if (log_stats_file)
-				fprintf (log_stats_file, "0\n");
-		}
-		else
-		{
-			int now = Sys_Milliseconds();
-
-			if (log_stats_file)
-				fprintf (log_stats_file, "%d\n", now - lasttimecalled);
-			lasttimecalled = now;
-		}
-	}
 
 	unguard;
 }

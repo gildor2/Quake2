@@ -699,8 +699,8 @@ static float D_GetClientLight (void) { return 0; }		// normal value is 150
 
 
 #ifdef REF_HARD_LINKED
-extern refExport_t GL_GetRefAPI (refImport_t rimp);		// ref_gl
-extern refExport_t GetRefAPI (refImport_t rimp);		// ref_soft
+extern refExport_t GL_GetRefAPI (const refImport_t *);		// ref_gl
+extern refExport_t GetRefAPI (const refImport_t *);			// ref_soft
 #endif
 
 static qboolean Vid_LoadRefresh (char *name)
@@ -717,7 +717,7 @@ static qboolean Vid_LoadRefresh (char *name)
 	}
 
 	Com_sprintf (ARRAY_ARG(dllName), "ref_%s.dll", name);
-	Com_Printf ("------- Loading %s -------\n", name);
+	Com_Printf ("Loading %s\n", name);
 
 #ifdef REF_HARD_LINKED
 	refLibrary = NULL;
@@ -742,11 +742,11 @@ static qboolean Vid_LoadRefresh (char *name)
 		}
 	}
 
-	re = LibGetRefAPI (ri);
+	re = LibGetRefAPI (&ri);
 
-	if (re.struc_size != sizeof(refExport_t) || re.api_version != API_VERSION)
+	if (re.struc_size != sizeof(refExport_t))
 	{
-		Com_WPrintf ("%s has incompatible API_VERSION\n", dllName);
+		Com_WPrintf ("%s has incompatible renderer\n", dllName);
 		Vid_FreeReflib ();
 		return false;
 	}

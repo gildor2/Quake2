@@ -561,8 +561,8 @@ qboolean WriteTGA (char *name, byte *pic, int width, int height)
 
 	// write header
 	memset (&header, 0, sizeof(header));
-	header.width = width;
-	header.height = height;
+	header.width = LittleShort (width);
+	header.height = LittleShort (height);
 	header.pixel_size = 24;
 	if (done)
 	{
@@ -619,7 +619,7 @@ qboolean WriteJPG (char *name, byte *pic, int width, int height, qboolean highQu
 	stride = 3 * width;
 	while (cinfo.next_scanline < height)
 	{
-		row[0] = pic + stride * (height  - 1 - cinfo.next_scanline);	// top-to-bottom?
+		row[0] = pic + stride * (height - 1 - cinfo.next_scanline);	// top-to-bottom?
 		jpeg_write_scanlines (&cinfo, row, 1);
 	}
 	jpeg_finish_compress (&cinfo);

@@ -14,7 +14,11 @@ FAST TODO:
   - when will be implemented, check all SaturateColor... in gl_lightmap.c (at least, remove from vertex lighting)
   - saturate lightmap textures with tables (see gl_image.c::LightScaleTexture()) - separate TableSaturate() (name?) function in
     gl_images.c (may be, move to gl_math.c)
-? alias for [NV|EXT]_texture_rectangle: ARB_texture_rectangle (OpenGL 2.0)
+? 3rd alias for [NV|EXT]_texture_rectangle: ARB_texture_rectangle (OpenGL 2.0)
+- rect textures & already_power_of_2 textures: should process alpha-channel (look at ResampleTexture() or MipMap()):
+  - when img !IMAGE_NOALPHA - when a==0 => r=g=b=0
+  - when IMAGE_NOALPHA - make a=255, keep r,g,b unchanged
+  * this is required for magnified textures (for example, when FSAA active, without this around all menu pics will appear pink border)
 
 -------------------------------------------------------------------------------
 	new lightgrid:
@@ -148,6 +152,7 @@ lighting bugs:
 ? remove gl_fog stuff
 
 - color shell: should use size=0.5 for weapons and =3 for main model (use "fromEntity" ?)
+  ? may be, depend on model size
 
 - reflections:
   - small bugs when one can see througs another (for example, lift on map "japan"; "ground3") - unstable draw order
@@ -214,7 +219,6 @@ PreprocessShader():
 ? disable REF_NEWFX when necessary image files absent
 
 ! vertex arrays are not 16-byte aligned
-? reimplement (remove?) fast drawing
 
 - dlights:
   - cut dlights (by angle: rad/intens = cos(angle)); backlights -- rad/intens can be greater (for culling)
@@ -302,8 +306,6 @@ FOR GAME:
   - surface simplification (?) + subdivision (!) for complex lightmaps (non-gradient color change) - as option
     (lighting = "lightmap", "vertex", "hq vertex")
 ?? make area_t, cluster_t, area.clusterList, cluster.leafList (faster MarkLeafs()/LightPoint())
-? make skins for models with 1 frame to be sh.fast==true (and implement it in AGP memory);
-  Problem: how to apply lighting (use hw lights)? (and: skins may be dynamically changed from "fast" to "slow")
 ! triangle models: build lods
 ? "gl_alphaLightmap" (arc, def: "1") -- can disable lighting of alpha/warp surfaces; add option to menu
   (easy implement, but naming problems ...)
@@ -319,5 +321,7 @@ FOR GAME:
 ? GL_Cull() --(insert)-> GL_State()
 ? RGBGEN_SPECULAR (rgb depends on viewer direction and light positions) -- for windows/water
 ? reflect flares from water/windows (see Raiman3)
-- shaders (load-time, Q3 shaders): when texture have no alpha-channel, but alpha-channel used as specular mask, remove specular mask
+- shaders (load-time, Q3 shaders): when texture have no alpha-channel, but alpha-channel used as specular mask by shader, remove
+  specular mask
 - support ARB_texture_non_power_of_two (GeForce6+)
+? text (Draw[Con]CharColor()) - ability to draw strings (smaller memory usage of BackendCommandBuffer)

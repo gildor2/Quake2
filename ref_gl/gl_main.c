@@ -11,7 +11,9 @@ glrefdef_t	gl_refdef;
 drawSpeeds_t gl_speeds;
 
 static int ref_flags;
+#ifdef DYNAMIC_REF
 refImport_t	ri;
+#endif
 
 bool gl_renderingEnabled;
 
@@ -37,17 +39,15 @@ cvar_t	*gl_texMipBias, *gl_skinMipBias;
 cvar_t	*gl_texturemode;
 
 // rendering speed/quality settings
-cvar_t	*gl_fastsky;		// do not draw skybox
+cvar_t	*gl_fastSky;		// do not draw skybox
 cvar_t	*gl_fog;			//??
 
 cvar_t	*gl_flares;
 cvar_t	*gl_dynamic;		// enable dynamic lightmaps for Q2/HL maps
 cvar_t	*gl_dlightBacks;	// when disabled, do not draw dlights on backfaces
 cvar_t	*gl_vertexLight;	// use glColor() against lightmaps
-cvar_t	*gl_nogrid;
-cvar_t	*gl_showgrid;
-
-cvar_t	*gl_ignoreFastPath;	// do not use GenericStageIterator() when possible (remove ???)
+cvar_t	*gl_noGrid;
+cvar_t	*gl_showGrid;
 
 // game settings
 cvar_t	*gl_hand;			// for weapon model
@@ -63,7 +63,7 @@ cvar_t	*gl_logFile;
 cvar_t	*r_novis, *gl_frustumCull, *gl_oCull, *gl_backfaceCull;
 cvar_t	*r_speeds;
 cvar_t	*r_fullbright, *r_lightmap;
-cvar_t	*gl_showsky;
+cvar_t	*gl_showSky;
 cvar_t	*r_drawworld, *r_drawentities;
 cvar_t	*gl_sortAlpha;
 
@@ -84,13 +84,12 @@ static void Gfxinfo_f (void)
 	static const char *overbrNames[2][2] = {"disabled", "forced", "unneeded", "required"};
 
 	Com_Printf ("^1---------- OpenGL info ----------\n");
-	Com_Printf ("^1Vendor:^7 %s\n", glGetString (GL_VENDOR));
+	Com_Printf ("^1Vendor:  ^7 %s\n", glGetString (GL_VENDOR));
 	Com_Printf ("^1Renderer:^7 %s\n", glGetString (GL_RENDERER));
-	Com_Printf ("^1Version:^7 %s\n", glGetString (GL_VERSION));
-	//?? colorize used/disabled extensions
-	Com_Printf ("^1Base extensions:^7 %s\n", gl_config.extensions);
+	Com_Printf ("^1Version: ^7 %s\n", glGetString (GL_VERSION));
+	QGL_PrintExtensionsString ("Base", gl_config.extensions);
 	if (gl_config.extensions2)
-		Com_Printf ("^1Platform extensions:^7 %s\n", gl_config.extensions2);
+		QGL_PrintExtensionsString ("Platform", gl_config.extensions2);
 	Com_Printf ("^1---------------------------------\n");
 	// multitexturing
 	Com_Printf ("Multitexturing: ");
@@ -122,7 +121,7 @@ static void Gfxinfo_f (void)
 	Com_Printf ("Gamma: ");
 	if (gl_config.deviceSupportsGamma)
 		Com_Printf ("hardware, overbright: %s (%s), lightmap overbright: %s\n",
-			//?? NOTE: here used gl_overbright->integer, which can be modified after vid_restart (can be incorrect note)
+			//?? NOTE: here used gl_overbright->integer, which can be modified after vid_restart
 			boolNames[gl_config.overbright], overbrNames[gl_overbright->integer == 2][gl_config.overbright],
 			boolNames[!gl_config.doubleModulateLM]);
 	else
@@ -149,17 +148,15 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	//!! add gl_depthBits
 
-	CVAR_VAR(gl_fastsky, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_fastSky, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_fog, 0, 0),	//?? ARCHIVE? CHEAT?
 
 	CVAR_VAR(gl_flares, 1, CVAR_ARCHIVE),
 	CVAR_VAR(gl_dynamic, 1, 0),
 	CVAR_VAR(gl_dlightBacks, 1, 0),
 	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
-	CVAR_VAR(gl_nogrid, 0, 0),
-	CVAR_VAR(gl_showgrid, 0, CVAR_CHEAT),
-
-	CVAR_VAR(gl_ignoreFastPath, 1, 0),						//!! use with VertexArrayRange ONLY !!
+	CVAR_VAR(gl_noGrid, 0, 0),
+	CVAR_VAR(gl_showGrid, 0, CVAR_CHEAT),
 
 	{&gl_hand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE},
 
@@ -177,7 +174,6 @@ CVAR_BEGIN(vars)
 	CVAR_NULL(gl_ext_compiled_vertex_array, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_texture_rectangle, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_fog_distance_nv, 1, CVAR_ARCHIVE),
-	CVAR_NULL(gl_ext_vertex_array_range, 0, CVAR_ARCHIVE),	//?? do not works now
 	CVAR_NULL(gl_ext_compressed_textures, 1, CVAR_ARCHIVE),
 
 	CVAR_VAR(gl_nobind, 0, 0),
@@ -189,7 +185,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(r_speeds, 0, 0),
 	CVAR_VAR(r_fullbright, 0, CVAR_CHEAT),
 	CVAR_VAR(r_lightmap, 0, CVAR_CHEAT),
-	CVAR_VAR(gl_showsky, 0, 0),
+	CVAR_VAR(gl_showSky, 0, 0),
 	CVAR_VAR(r_drawworld, 1, CVAR_CHEAT),
 	CVAR_VAR(r_drawentities, 1, 0),
 	CVAR_VAR(gl_sortAlpha, 0, 0),
@@ -264,8 +260,6 @@ static int GL_Init (void)
 
 	Com_Printf ("--- Initializing OpenGL renderer ---\n");
 
-	Com_Printf ("ref_gl version: "REF_VERSION"\n");		//?? remove
-
 	GL_Register ();
 
 	// initialize our QGL dynamic bindings
@@ -311,9 +305,6 @@ static int GL_Init (void)
 		QGL_Shutdown ();
 		return -1;
 	}
-
-	/*----------- Initialize video config menu -----------*/
-//??	Vid_MenuInit ();
 
 #ifdef __linux__
 	Cvar_SetInteger ("gl_finish", 1);	//??
@@ -852,6 +843,10 @@ static unsigned colorTable[8] = {
 #undef I
 #undef o
 
+//?? should be synched with console+menu char sizes
+#define CHAR_WIDTH	8
+#define CHAR_HEIGHT	8
+
 static void DrawCharColor (int x, int y, int c, int color)
 {
 	bkDrawText_t *p;
@@ -881,7 +876,8 @@ static void DrawCharColor (int x, int y, int c, int color)
 		p1->x = x;
 		p1->y = y;
 		p1->c.rgba = col;
-		p1->w = p1->h = 8;
+		p1->w = CHAR_WIDTH;
+		p1->h = CHAR_HEIGHT;
 		p1->text[0] = c;
 	}
 }
@@ -890,7 +886,7 @@ static void DrawCharColor (int x, int y, int c, int color)
 static void	DrawConCharColor (int x, int y, int c, int color)
 {
 	if (c == ' ') return;
-	DrawCharColor (x*8, y*8, c, color);
+	DrawCharColor (x * CHAR_WIDTH, y * CHAR_HEIGHT, c, color);
 }
 
 
@@ -1212,18 +1208,17 @@ static float GetClientLight (void)
 
 /*--------------------- GetRefAPI ---------------------*/
 
-refExport_t GetRefAPI (refImport_t rimp)
+refExport_t GetRefAPI (const refImport_t * rimp)
 {
 	refExport_t	re;
 
-	ri = rimp;
 	gl_renderingEnabled = true;
 
-#ifndef REF_HARD_LINKED
-	if (ri.struc_size != sizeof(refImport_t) || ri.api_version != API_VERSION)
+#ifdef DYNAMIC_REF
+	ri = *rimp;
+	if (ri.struc_size != sizeof(refImport_t))
 	{
 		re.struc_size = 0;
-		re.api_version = 0;
 		return re;
 	}
 #endif
@@ -1234,7 +1229,6 @@ refExport_t GetRefAPI (refImport_t rimp)
 	gl_config.consoleOnly = Cvar_Get ("gl_console_only", "0", 0)->integer;
 
 	re.struc_size = sizeof(re);
-	re.api_version = API_VERSION;
 	re.flags = &ref_flags;
 	ref_flags = REF_NEW_FX;
 	if (gl_config.consoleOnly)

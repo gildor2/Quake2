@@ -98,7 +98,6 @@ Cbuf_InsertText
 
 Adds command text immediately after the current command
 Adds a \n to the text
-FIXME: actually change the command buffer to do less copying
 ============
 */
 void Cbuf_InsertText (char *text)
@@ -130,9 +129,10 @@ Cbuf_CopyToDefer
 */
 void Cbuf_CopyToDefer (void)
 {
-	memcpy(defer_text_buf, cmd_text_buf, cmd_text.cursize);
+	memcpy (defer_text_buf, cmd_text_buf, cmd_text.cursize);
 	defer_text_buf[cmd_text.cursize] = 0;
 	cmd_text.cursize = 0;
+	if (cmd_debug->integer & 2) Com_Printf ("^4DeferCommands\n");
 }
 
 /*
@@ -142,6 +142,7 @@ Cbuf_InsertFromDefer
 */
 void Cbuf_InsertFromDefer (void)
 {
+	if (cmd_debug->integer & 2) Com_Printf ("^4UndeferCommands: ");	// line will be continued from Cbuf_InsertText()
 	Cbuf_InsertText (defer_text_buf);
 	defer_text_buf[0] = 0;
 }
@@ -579,16 +580,9 @@ void Cmd_TokenizeString (char *text, qboolean macroExpand)
 Cmd_AddCommand
 ============
 */
-void Cmd_AddCommand (char *cmd_name, void (*func) (void))
+void Cmd_AddCommand (const char *cmd_name, void (*func) (void))
 {
 	cmdFunc_t *cmd;
-
-	// fail if the command is a variable name
-	if (Cvar_VariableString (cmd_name)[0])		//?? need a different way
-	{
-		Com_WPrintf ("Cmd_AddCommand: %s already defined as a var\n", cmd_name);
-		return;
-	}
 
 	// fail if the command already exists
 	for (cmd = cmdFuncs; cmd; cmd = cmd->next)
@@ -601,7 +595,7 @@ void Cmd_AddCommand (char *cmd_name, void (*func) (void))
 	}
 
 	cmd = Z_Malloc (sizeof(cmdFunc_t));
-	cmd->name = cmd_name;
+	cmd->name = cmd_name;		// NOTE: copy pointer only, so cmd_name should points to const string
 	cmd->func = func;
 	cmd->next = cmdFuncs;
 	cmdFuncs = cmd;
@@ -612,7 +606,7 @@ void Cmd_AddCommand (char *cmd_name, void (*func) (void))
 Cmd_RemoveCommand
 ============
 */
-void Cmd_RemoveCommand (char *cmd_name)
+void Cmd_RemoveCommand (const char *cmd_name)
 {
 	cmdFunc_t *cmd, **back;
 

@@ -49,7 +49,6 @@
 #define MatchWildcard	ri._MatchWildcard
 #define MatchWildcard2	ri._MatchWildcard2
 #define Vid_GetModeInfo	ri._Vid_GetModeInfo
-#define Vid_MenuInit	ri._Vid_MenuInit
 #define ImageExists	ri._ImageExists
 #define LoadPCX	ri._LoadPCX
 #define LoadTGA	ri._LoadTGA
@@ -71,8 +70,8 @@
 
 #else
 
-void	Cmd_AddCommand (char *name, void(*func)(void));
-void	Cmd_RemoveCommand (char *name);
+void	Cmd_AddCommand (const char *name, void(*func)(void));
+void	Cmd_RemoveCommand (const char *name);
 int	Cmd_Argc (void);
 char*	Cmd_Argv (int i);
 char*	Cmd_Args (void);
@@ -118,7 +117,6 @@ void	FS_RemoveFiles (char *mask);
 bool	MatchWildcard (const char *name, const char *mask);
 bool	MatchWildcard2 (const char *name, const char *mask, qboolean ignoreCase);
 qboolean	Vid_GetModeInfo (int *width, int *height, int mode);
-void	Vid_MenuInit (void);
 int	ImageExists (char *name, int stop_mask);
 void	LoadPCX (char *name, byte **pic, byte **palette, int *width, int *height);
 void	LoadTGA (char *name, byte **pic, int *width, int *height);

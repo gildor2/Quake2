@@ -15,7 +15,7 @@
 #endif
 
 
-static char *qglNames[NUM_GLFUNCS + NUM_EXTFUNCS] = {
+static const char *qglNames[NUM_GLFUNCS + NUM_EXTFUNCS] = {
 	"glAlphaFunc",
 	"glBegin",
 	"glBindTexture",
@@ -102,7 +102,7 @@ static char *qglNames[NUM_GLFUNCS + NUM_EXTFUNCS] = {
 
 };
 
-static char *EnumName (GLenum v)
+static const char *EnumName (GLenum v)
 {
 	switch (v)
 	{
@@ -810,7 +810,7 @@ static BOOL APIENTRY logSwapIntervalEXT (int interval)
 
 #endif
 
-static qgl_t logFuncs = {
+static const qgl_t logFuncs = {
 	logAlphaFunc,
 	logBegin,
 	logBindTexture,
@@ -898,11 +898,11 @@ static qgl_t logFuncs = {
 };
 
 typedef struct {
-	const char *names;
-	const char *name;
-	const char *cvar;
-	short	first, count;
-	unsigned require, deprecate;
+	const char *names;				// "alias1\0alias2\0\0" or "name\0\0"
+	const char *name;				// current name (points to alias1 or alias2)
+	const char *cvar;				// name of cvar to disable extension
+	short	first, count;			// positions of provided functions in name table
+	unsigned require, deprecate;	// dependent extensions
 }
 extInfo_t;
 

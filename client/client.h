@@ -33,6 +33,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //=============================================================================
 
+//#define GUN_DEBUG				// uncomment to enable gun_xxx debugging commands
+
 typedef struct
 {
 	qboolean valid;				// cleared if delta parsing was invalid
@@ -547,8 +549,10 @@ void SCR_ShowConsole (bool show, bool noAnim);
 //
 // cl_view.c
 //
+#ifdef GUN_DEBUG
 extern	int			gun_frame;
 extern	struct model_s	*gun_model;
+#endif
 
 void V_Init (void);
 void V_RenderView( float stereo_separation );

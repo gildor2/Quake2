@@ -21,14 +21,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "client.h"
 
-//=============
-//
+#ifdef GUN_DEBUG
 // development tools for weapons
-//
 int			gun_frame;
 struct model_s	*gun_model;
-
-//=============
+#endif
 
 cvar_t		*crosshair;
 cvar_t		*crosshaircolor;
@@ -375,6 +372,8 @@ float CalcFov (float fov_x, float width, float height)
 
 //============================================================================
 
+#ifdef GUN_DEBUG
+
 // gun frame debugging functions
 void V_Gun_Next_f (void)
 {
@@ -399,6 +398,8 @@ void V_Gun_Model_f (void)
 	}
 	gun_model = re.RegisterModel (va("models/%s/tris.md2", Cmd_Argv(1)));
 }
+
+#endif
 
 //============================================================================
 
@@ -935,9 +936,6 @@ void V_RenderView (float stereo_separation)
 	if (r_drawfps->integer)
 		DrawFpsInfo ();
 
-	if (log_stats->integer && (log_stats_file != 0))
-		fprintf (log_stats_file, "%d,%d,", r_numentities, r_numdlights);	//?? particle stats (remove)
-
 	SCR_DrawCrosshair ();
 
 	unguard;
@@ -967,8 +965,10 @@ CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 
+#ifdef GUN_DEBUG
 	Cmd_AddCommand ("gun_next", V_Gun_Next_f);
 	Cmd_AddCommand ("gun_prev", V_Gun_Prev_f);
 	Cmd_AddCommand ("gun_model", V_Gun_Model_f);
+#endif
 	Cmd_AddCommand ("screenshot", Screenshot_f);
 }

@@ -2,9 +2,8 @@
 
 typedef struct {
 	int		struc_size;
-	int		api_version;
-	void	(*_Cmd_AddCommand) (char *name, void(*func)(void));
-	void	(*_Cmd_RemoveCommand) (char *name);
+	void	(*_Cmd_AddCommand) (const char *name, void(*func)(void));
+	void	(*_Cmd_RemoveCommand) (const char *name);
 	int	(*_Cmd_Argc) (void);
 	char*	(*_Cmd_Argv) (int i);
 	char*	(*_Cmd_Args) (void);
@@ -50,7 +49,6 @@ typedef struct {
 	bool	(*_MatchWildcard) (const char *name, const char *mask);
 	bool	(*_MatchWildcard2) (const char *name, const char *mask, qboolean ignoreCase);
 	qboolean	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
-	void	(*_Vid_MenuInit) (void);
 	int	(*_ImageExists) (char *name, int stop_mask);
 	void	(*_LoadPCX) (char *name, byte **pic, byte **palette, int *width, int *height);
 	void	(*_LoadTGA) (char *name, byte **pic, int *width, int *height);

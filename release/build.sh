@@ -29,10 +29,15 @@ else
 	prj="quake2"
 fi
 
+if ! [ -f $prj.mak ]; then
+	echo "FATAL: makefile is not found!"
+	exit 1
+fi
+
 echo "** building $prj" >> $logfile
 if ! Make $prj; then
 	echo "errors ..." >> $logfile
-	exit 1;
+	exit 1
 fi
 
 echo "----- Building old ref_gl -----"

@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 /*--------------------- cvars ------------------------------*/
 
-//?? ADD r_ignorehwgamma, gl_ext_compressed_textures and gl_overbright
+//?? ADD r_ignorehwgamma, gl_ext_compressed_textures
 extern cvar_t *vid_ref;
 extern cvar_t *scr_viewsize;
 extern cvar_t *r_gamma;
@@ -69,7 +69,7 @@ static menuSlider_t		s_contrast_slider[2];		// contrast
 static menuSlider_t		s_saturation[2];			// saturation
 static menuList_t  		s_fs_box[2];				// fullscreen
 static menuAction_t		s_cancel_action[2];
-static menuAction_t		s_defaults_action[2];
+static menuAction_t		s_undo_action[2];
 
 /*--- Software renderer ---*/
 static menuList_t  		s_stipple_box;
@@ -301,7 +301,7 @@ CVAR_END
 		s_fs_box[i].curvalue = Cvar_Get ("r_fullscreen", "1", CVAR_ARCHIVE)->integer;
 
 		y = 170;
-		MENU_ACTION(s_defaults_action[i], y+=10, "reset to defaults", Vid_MenuInit);
+		MENU_ACTION(s_undo_action[i], y+=10, "undo changes", Vid_MenuInit);
 		MENU_ACTION(s_cancel_action[i], y+=10, "cancel", CancelChanges);
 	}
 	// save current gamma (for cancel action)
@@ -357,9 +357,9 @@ CVAR_END
 	Menu_AddItem (&s_opengl_menu, (void *) &s_textureFilter);
 	Menu_AddItem (&s_opengl_menu, (void *) &s_finish_box);
 
-	Menu_AddItem (&s_software_menu, (void *) &s_defaults_action[SOFTWARE_MENU]);
+	Menu_AddItem (&s_software_menu, (void *) &s_undo_action[SOFTWARE_MENU]);
 	Menu_AddItem (&s_software_menu, (void *) &s_cancel_action[SOFTWARE_MENU]);
-	Menu_AddItem (&s_opengl_menu, (void *) &s_defaults_action[OPENGL_MENU]);
+	Menu_AddItem (&s_opengl_menu, (void *) &s_undo_action[OPENGL_MENU]);
 	Menu_AddItem (&s_opengl_menu, (void *) &s_cancel_action[OPENGL_MENU]);
 }
 
