@@ -312,6 +312,7 @@ qboolean R_Init( void *hInstance, void *wndProc )
 	R_InitTextures ();
 
 	R_InitTurb ();
+	R_InitAdivtab ();
 
 	view_clipplanes[0].leftedge = true;
 	view_clipplanes[1].rightedge = true;

@@ -913,7 +913,6 @@
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
-	".\ref_soft\adivtab.h"\
 	".\ref_soft\r_local.h"\
 	".\ref_soft\r_model.h"\
 	".\ref_soft\rand1k.h"\
@@ -964,7 +963,7 @@
 	
 
 .\win32\rw_ddraw.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\program files\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -977,7 +976,7 @@
 	
 
 .\win32\rw_dib.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\program files\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -990,7 +989,7 @@
 	
 
 .\win32\rw_imp.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\program files\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1695,3 +1694,10 @@
 	".\jpeg\jpegint.h"\
 	".\jpeg\jpeglib.h"\
 	
+
+!IF  "$(CFG)" == "quake2s - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
+
+!ENDIF 
+

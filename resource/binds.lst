@@ -1,0 +1,29 @@
++attack attack
+weapnext "next weapon"
+weapprev "prev weapon"
+
++forward "walk forward"
++back backpedal
++moveleft "step left"
++moveright "step right"
++left "turn left"
++right "turn right"
++speed run
++strafe sidestep
+
++moveup "up / jump"
++movedown "down / crouch"
+
++lookup "look up"
++lookdown "look down"
+centerview "center view"
++mlook "mouse look"
++klook "keyboard look"
+
+inven inventory
+invuse "use item"
+invdrop "drop item"
+invprev "prev item"
+invnext "next item"
+
+"cmd help" "help computer"

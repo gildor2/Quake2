@@ -34,6 +34,14 @@ typedef struct
 	void	*chain;			// chain of memory blocks (freed all at once)
 } pack_t;
 
+typedef struct resFile_s
+{
+	char	*name;			// descend on basenamed_t
+	struct resFile_s *next;
+	int		pos;
+	int		size;
+} resFile_t;
+
 
 /*..............................................................
 Internal representation of FILE
@@ -52,16 +60,33 @@ Details (filled fields):
  3) ia: name -> pak name, pfile
  4) io: +file -> pak
  5) za: name -> pak name, pfile, zipped=1
- 6) zo: +file -> pak, +zfile -> zip file
+ 6) zo: +file -> pak, +zfile -> zip file (?? update this comment for "zipped"->"type")
 ..............................................................*/
+
+typedef enum
+{
+	FT_NORMAL,			// regular OS file
+	FT_PAK,				// file from non-compressed PAK
+	FT_ZPAK,			// file from ZIP
+	FT_ZMEM				// inline file
+} fileType_t;
+
 
 typedef struct
 {
 	char	*name;		// just for info (layout the same as basenamed_t)
+	fileType_t type;
 	FILE	*file;		// handle of file (if non-zipped) or .PAK
-	ZFILE	*zFile;		// handle of zipped file (or 0 if non-zipped)
-	packFile_t *pFile;	// pointer to corresponding pak structure
-	qboolean zipped;	// TRUE if file in zipped pak
+	union {
+		struct {
+			ZFILE	*zFile;		// handle of zipped file (or 0 if non-zipped)
+			packFile_t *pFile;	// pointer to a corresponding pak structure
+		};
+		struct {
+			ZBUF	*zBuf;		// handle of in-memory zipped block
+			resFile_t *rFile;
+		};
+	};
 } FILE2;
 
 cvar_t	*fs_gamedirvar;
@@ -93,6 +118,66 @@ static searchPath_t *fs_base_searchpaths;	// without gamedirs
 
 
 static const char *is_zip_str[2] = {"", " [zip]"};
+
+
+/*------------------ Resources ----------------------------*/
+
+#define MAX_RES_FILES	64
+
+extern byte zresource_start[], zresource_end[];
+#define OpenZRes() 	ZipOpenBuf (zresource_start+10, zresource_end-zresource_start-18);	// +10 - skip gzip header, -18 - dhr+crc+size
+
+
+
+static void *resChain;
+static resFile_t *resFiles;
+static int resFileCount;
+
+
+static void InitResFiles (void)
+{
+	ZBUF	*z;
+	char	c, name[MAX_OSPATH], *s;
+	int		fsize, offs;
+	resFile_t *f, *last;
+
+	resChain = CreateMemoryChain ();
+	z = OpenZRes();
+
+	last = NULL;
+	while (ZipReadBuf (z, &fsize, sizeof(int))/* && fsize*/)
+	{
+		if (!fsize) break;
+		s = name;
+		// get filename
+		do
+		{
+			ZipReadBuf (z, &c, 1);
+			*s++ = c;
+		} while (c);
+		// create file struc
+		f = (resFile_t*)ChainAllocNamedStruc (sizeof(resFile_t), name, resChain);
+		f->size = fsize;
+		// add to chain
+		if (!last)
+			resFiles = f;
+		else
+			last->next = f;
+		resFileCount++;
+		last = f;
+	}
+	// now zstream points to begin of 1st file data - need to calculate file offsets
+	offs = z->readed;
+	for (f = resFiles; f; f = f->next)
+	{
+		f->pos = offs;
+		offs += f->size;
+//		Com_Printf ("res: %s (%d bytes) at %d\n", f->name, f->size, f->pos);
+	}
+
+	ZipCloseBuf (z);
+	Com_Printf ("Added %d inline files\n", resFileCount);
+}
 
 
 /*.............................................................................................................
@@ -466,10 +551,10 @@ static char cached_name[MAX_OSPATH];	// name of last opened file
 static FILE *cached_handle;				// handle file cached_name
 static FILE *cached_handle2;			// handle, available for opening (same as cached_handle or NULL)
 
-static void ClearFileCache(void)
+static void ClearFileCache (void)
 {
 	if (cached_handle2)
-		fclose (cached_handle2);  // close file only if it is not in use
+		fclose (cached_handle2);		// close file only if it is not in use
 	cached_handle = cached_handle2 = NULL; // but always clear cached info
 	cached_name[0] = 0;
 }
@@ -508,29 +593,26 @@ void FS_FCloseFile (FILE *f)
 	if (!f) return;
 	f2 = (FILE2*)f;
 
-	// simple validate FILE2 structure
+	// simple validation of FILE2 structure
 	if ((char *)f2->name - (char *)f2 != sizeof(FILE2))
 		Com_Error (ERR_FATAL, "FS_FCloseFile: invalid file handle" RETADDR_STR, GET_RETADDR(f));
 
-/*	// Debug stuff
-	DebugPrintf ("FS_FCloseFile(%s)", f2->name);
-	if (f2->pfile) DebugPrintf (" -- %s", f2->pfile->name);
-	DebugPrintf ("\n"); */
-
-	if (f2->zFile)
+	if (f2->type == FT_NORMAL || f2->type == FT_ZPAK || f2->type == FT_PAK)
 	{
-		rest = f2->zFile->rest_write;
-		if (!ZipCloseFile (f2->zFile) && !rest)
-		{	// file readed completely, but bad checksum
-//			DebugPrintf ("  ZipClose() BAD\n");
-			Com_Error (ERR_FATAL, "FS_FCloseFile: damaged zip file %s %s", f2->name, f2->pFile->name);
+		if (f2->zFile)
+		{
+			rest = f2->zFile->rest_write;
+			if (!ZipCloseFile (f2->zFile) && !rest)
+			{	// file readed completely, but bad checksum
+				Com_Error (ERR_FATAL, "FS_FCloseFile: damaged zip file %s %s", f2->name, f2->pFile->name);
+			}
 		}
-//		else
-//			DebugPrintf ("  ZipClose() OK\n");
-		if (f2->file) FCloseCached (f2->file);		// ZipClose (f2->file);
+		if (f2->file)
+			FCloseCached (f2->file);		// fclose (f2->file) or ZipClose (f2->file);
 	}
-	else if (f2->file)
-		FCloseCached (f2->file);					// fclose (f2->file);
+	else if (f2->type == FT_ZPAK)
+		ZipCloseBuf (f2->zBuf);
+//	else Com_Error (ERR_FATAL, "FS_FCloseFile: invalid handle type");
 
 	FreeNamedStruc (f);
 }
@@ -549,14 +631,13 @@ a seperate file.
 
 
 // Allocates FILE2 structure
-static FILE *AllocFileInternal (char *name, FILE *file, packFile_t *pfile, qboolean zipped)
+static FILE *AllocFileInternal (char *name, FILE *file, fileType_t type)
 {
 	FILE2* f2;
 
 	f2 = (FILE2*) AllocNamedStruc (sizeof(FILE2), name);
 	f2->file = file;
-	f2->pFile = pfile;
-	f2->zipped = zipped;
+	f2->type = type;
 	return (FILE*)f2;
 }
 
@@ -573,6 +654,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 	packFile_t		*pfile;
 	int				gamelen, gamePos;
 	fileLink_t		*link;
+	resFile_t		*rf;
 	FILE			*f;
 
 	fileFromPak = 0;
@@ -585,7 +667,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 			Com_sprintf (netpath, sizeof(netpath), "%s%s", link->to, filename + link->fromlength);
 			if (f = fopen (netpath, "rb"))
 			{
-				*file = AllocFileInternal (netpath, f, NULL, false);
+				*file = AllocFileInternal (netpath, f, FT_NORMAL);
 				Com_DPrintf ("link: %s\n", netpath);
 				return FileLength (f);
 			}
@@ -643,7 +725,8 @@ int FS_FOpenFile (char *filename, FILE **file)
 				fileFromPak = 1;
 				Com_DPrintf ("pfile: %s (%s)\n", pakname, pak->filename);
 				// open a new file on the pakfile
-				*file = AllocFileInternal (pak->filename, NULL, pfile, pak->isZip);
+				*file = AllocFileInternal (pak->filename, NULL, pak->isZip ? FT_ZPAK : FT_PAK);
+				(*(FILE2**)file)->pFile = pfile;
 				return pfile->ucSize;
 			}
 		}
@@ -655,7 +738,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 				Com_sprintf (netpath, sizeof(netpath), "%s/%s", search->filename, filename);
 
 				if (!(f = fopen (netpath, "rb"))) continue;
-				*file = AllocFileInternal (netpath, f, NULL, false);
+				*file = AllocFileInternal (netpath, f, FT_NORMAL);
 				Com_DPrintf ("file: %s\n", netpath);
 				return FileLength (f);
 			}
@@ -665,10 +748,20 @@ int FS_FOpenFile (char *filename, FILE **file)
 	// check a file in the directory tree for base-relative path
 	if (gamelen && (f = fopen (filename, "rb")))
 	{
-		*file = AllocFileInternal (filename, f, NULL, false);
+		*file = AllocFileInternal (filename, f, FT_NORMAL);
 		Com_DPrintf ("file: %s\n", filename);
 		return FileLength (f);
 	}
+
+	// check for a resource (inline) file
+	for (rf = resFiles; rf; rf = rf->next)
+		if (!strcmp (rf->name, filename))
+		{
+			*file = AllocFileInternal (filename, NULL, FT_ZMEM);
+			(*(FILE2**)file)->rFile = rf;
+			Com_DPrintf ("rfile: %s\n", filename);
+			return rf->size;
+		}
 
 	Com_DPrintf ("FindFile: can't find %s\n", filename);
 
@@ -682,6 +775,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 FS_FileExists
 
 This is a fast version of FS_FOpenFile()
+Do not check inline files (only filesystem or paks)
 =================
 */
 
@@ -795,7 +889,7 @@ Properly handles partial reads
 =================
 */
 void CDAudio_Stop (void);
-#define	MAX_READ	0x10000		// read in blocks of 64k
+#define	MAX_READ	0x10000		// read in blocks of 64k (??)
 
 void FS_Read (void *buffer, int len, FILE *f)
 {
@@ -813,9 +907,33 @@ void FS_Read (void *buffer, int len, FILE *f)
 	if ((char *)f2->name - (char *)f2 != sizeof(FILE2))
 		Com_Error (ERR_FATAL, "FS_Read: invalid file handle" RETADDR_STR, GET_RETADDR(buffer));
 
+	if (f2->type == FT_ZMEM)
+	{
+		if (!f2->zBuf)
+		{
+			int		rem;
+
+			// open and seek ZBUF
+			f2->zBuf = OpenZRes ();
+			rem = f2->rFile->pos;
+			while (rem)
+			{
+				char	tmpbuf[256];	// buffer for seeking
+				int		tmp;
+
+				tmp = rem;
+				if (tmp > sizeof(tmpbuf))
+					tmp = sizeof(tmpbuf);
+				ZipReadBuf (f2->zBuf, tmpbuf, tmp);
+				rem -= tmp;
+			}
+		}
+		ZipReadBuf (f2->zBuf, buffer, len);
+		return;
+	}
+
 	if (!f2->file)
 	{	// file is only allocated - open it
-//		DebugPrintf ("  OpenFile()\n");
 		if (!f2->pFile)
 		{	// regular file
 			f2->file = fopen (f2->name, "rb");
@@ -823,8 +941,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 		}
 		else
 		{	// pak file
-//			DebugPrintf ("Opening pak %s%s ...\n", f2->name, is_zip_str[f2->zipped]);
-			if (!f2->zipped)
+			if (f2->type == FT_PAK)
 			{	// id pak file
 				f2->file = FOpenCached (f2->name);		// fopen (f2->name, "rb");
 				if (!f2->file) Com_Error (ERR_FATAL, "Couldn't reopen %s", f2->name);
@@ -841,21 +958,19 @@ void FS_Read (void *buffer, int len, FILE *f)
 				zfs.crc32  = f2->pFile->crc;
 				f2->zFile = ZipOpenFile (f2->file, &zfs);
 				if (!f2->zFile)
-					Com_Error (ERR_FATAL, "Can't open file %s in zip %s", f2->pFile->name, f2->name);
+					Com_Error (ERR_FATAL, "Cannot open file %s in zip %s", f2->pFile->name, f2->name);
 			}
 		}
 	}
 
 	if (f2->zFile)
 	{
-//		DebugPrintf ("  ZipRead(%d)\n", len);
 		if (ZipReadFile (f2->zFile, buffer, len) != len)
 			Com_Error (ERR_FATAL, "Error reading zip file.\n");
 	}
 	else
 	{
-//		DebugPrintf ("  Read(%d)\n", len);
-		// read in chunks for progress bar
+		// read in chunks for progress bar (needed ??)
 		buf = (byte *)buffer;
 		remaining = len;
 		tries = 0;
@@ -922,7 +1037,6 @@ int FS_LoadFile (char *path, void **buffer)
 	buf = Z_BlockMalloc (len + 1); // adds 1 for trailing zero
 	*buffer = buf;
 
-//	DebugPrintf ("  FS_LoadFile(%s)\n", path);
 	FS_Read (buf, len, (FILE*)h);
 	FS_FCloseFile ((FILE*)h);
 // don't needed- Z_Malloc returns zero-filled block:	buffer[len] = 0; // trailing zero
@@ -939,7 +1053,6 @@ FS_FreeFile
 void FS_FreeFile (void *buffer)
 {
 	Z_Free (buffer);
-//	DebugPrintf ("FS_FreeFile\n");
 }
 
 
@@ -1666,6 +1779,47 @@ void FS_Path_f (void)
 	}
 }
 
+
+void FS_Cat_f (void)
+{
+	FILE	*f;
+	int		len;
+	char	buf[64+1];
+
+	if (Cmd_Argc() != 2)
+	{
+		Com_Printf ("Usage: cat <filename>\n");
+		return;
+	}
+	len = FS_FOpenFile (Cmd_Argv(1), &f);
+	if (!f)
+	{
+		Com_Printf ("File %s is not found\n", Cmd_Argv(1));
+		return;
+	}
+	Com_Printf ("\n--------\n");
+	while (len)
+	{
+		int		get;
+
+		get = len;
+		if (get >= sizeof(buf))
+			get = sizeof(buf) - 1;
+		FS_Read (buf, get, f);
+		buf[get] = 0;
+		Com_Printf ("%s", buf);
+		if (strlen (buf) < get)
+		{
+			Com_Printf ("\nbinary file ... stopped.\n");
+			break;
+		}
+		len -= get;
+	}
+	FS_FCloseFile (f);
+	Com_Printf ("\n--------\n");
+}
+
+
 /*
 ================
 FS_NextPath
@@ -1714,6 +1868,9 @@ CVAR_END
 	Cmd_AddCommand ("dir", FS_Dir_f);
 	Cmd_AddCommand ("loadpak", FS_LoadPak_f);
 	Cmd_AddCommand ("unloadpak", FS_UnloadPak_f);
+	Cmd_AddCommand ("cat", FS_Cat_f);
+
+	InitResFiles ();
 
 	if (fs_cddir->string[0])
 		FS_AddGameDirectory (va("%s/"BASEDIRNAME, fs_cddir->string));

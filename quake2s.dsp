@@ -753,10 +753,6 @@ SOURCE=.\win32\rw_imp.c
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\ref_soft\adivtab.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\ref_soft\anorms.h
 # End Source File
 # Begin Source File
@@ -1903,6 +1899,31 @@ SOURCE=.\jpeg\jutils.c
 # Begin Source File
 
 SOURCE=.\jpeg\jversion.h
+# End Source File
+# End Group
+# Begin Group "Misc Files"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\resource\MAKE\archive.gz
+
+!IF  "$(CFG)" == "quake2s - Win32 Release"
+
+# Begin Custom Build
+InputDir=.\resource\MAKE
+IntDir=.\release
+InputPath=.\resource\MAKE\archive.gz
+
+"$(IntDir)\resources.obj" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	nasmw -f win32 -o $(IntDir)\resources.obj -Darc=\"$(InputPath)\" $(InputDir)\make.asm
+
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
+
+!ENDIF 
+
 # End Source File
 # End Group
 # End Target

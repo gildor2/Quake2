@@ -21,14 +21,6 @@ Q3A:
 - menu option: priority (win_priorityBoost) -- for Win2K
 ? screenshots for savegames
 
-!! resource files: builtin (regular .obj files), gzip-compressed (tgz/zip ?) -- menu scripts, defbinds, credits etc.
-   Resource - 1 gzipped file with simple internal structure; this file will be inside EXE. API (files.c or similar ?)
-   LoadResource() -- LoadFile(); FreeResource() -- FreeFile(); WARNING: Win32 API name conflict with LoadResource. Change
-   terminology for resource (LoadData, GetResource, LoadFile() with special filename; LoadFile() looks for file in pak/FS, then
-   (if not found) looks for inline file -- inline PAK file with low priority) ? PERL script for creating resource files (source(s) ->
-   single file -> gzip -> cut hdr -> c-source ->(not necessary ?) obj-file)
-
-
 *** BUGS ***
 - map "temple2", "lavatube" -- waterfall: bullet sounds (change sound for water sparks, change place for water bullet sounds
   or something another ??)

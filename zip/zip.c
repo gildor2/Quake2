@@ -265,7 +265,6 @@ int ZipExtractFileMem (FILE *F, zip_file *file, void *buf)
 			// out of stream input buffer
 			ret = inflate (&s, Z_SYNC_FLUSH);
 			if ((ret == Z_STREAM_END && (s.avail_in + rest_read))	// end of stream, but unprocessed data
-				|| (ret == Z_OK && (s.avail_in + rest_read) == 0)	// end of data, but not end of stream
 				|| (ret != Z_OK && ret != Z_STREAM_END))			// error code
 			{
 				inflateEnd (&s);
@@ -301,10 +300,10 @@ ZFILE *ZipOpenFile (FILE *F, zip_file *file)
 
 #ifdef ZIP_USE_CENTRAL_DIRECTORY
 	// file->pos points to a local file header, we must skip it
-	if (fseek (F, file->pos, SEEK_SET)) return 0;
-	if (fread (&signature, 4, 1, F) != 1) return 0;
-	if (signature != 0x04034B50) return 0;
-	if (fread (&hdr, sizeof(hdr), 1, F) != 1) return 0;
+	if (fseek (F, file->pos, SEEK_SET)) return NULL;
+	if (fread (&signature, 4, 1, F) != 1) return NULL;
+	if (signature != 0x04034B50) return NULL;
+	if (fread (&hdr, sizeof(hdr), 1, F) != 1) return NULL;
 	z->zpos = file->pos + 4 + sizeof(hdr) + hdr.filename_length + hdr.extra_field_length;
 #else
 	z->zpos = file->pos;
@@ -367,7 +366,6 @@ int ZipReadFile (ZFILE *z, void *buf, int size)
 			// out of stream input buffer
 			ret = inflate (&z->s, Z_SYNC_FLUSH);
 			if ((ret == Z_STREAM_END && (z->s.avail_in + z->rest_read))		// end of stream, but unprocessed data
-				|| (ret == Z_OK && (z->s.avail_in + z->rest_read == 0) && z->s.avail_out) // end of data, but not end of stream
 				|| (ret != Z_OK && ret != Z_STREAM_END))					// error code
 			return 0;
 		}
@@ -406,4 +404,55 @@ int ZipCloseFile (ZFILE *z)
 	free (z);
 
 	return res;
+}
+
+
+ZBUF *ZipOpenBuf (void *data, int size)
+{
+	ZBUF	*z;
+
+	z = malloc (sizeof(ZBUF));
+	if (!z) return NULL;						// out of memory
+	z->s.zalloc = NULL;
+	z->s.zfree = NULL;
+	z->s.opaque = NULL;
+	if (inflateInit2 (&z->s, -MAX_WBITS) != Z_OK)
+	{
+		free (z);
+		return NULL;							// not initialized
+	}
+	z->s.avail_in = size;
+	z->s.next_in = data;
+	z->readed = 0;
+
+	return z;
+}
+
+
+int ZipReadBuf (ZBUF *z, void *buf, int size)
+{
+	int		ret;
+
+	z->s.avail_out = size;
+	z->s.next_out = buf;
+	while (z->s.avail_out > 0)
+	{
+		// decompress data; exit from inflate() by error or
+		// out of stream input buffer
+		ret = inflate (&z->s, Z_SYNC_FLUSH);
+		if ((ret == Z_STREAM_END && z->s.avail_in)		// end of stream, but unprocessed data
+			|| (ret != Z_OK && ret != Z_STREAM_END))	// error code
+		return 0;
+		//?? detect unexpected EOF ("readed" is less than "size")
+		z->readed += size;
+	}
+
+	return size;
+}
+
+
+void ZipCloseBuf (ZBUF *z)
+{
+	inflateEnd (&z->s);
+	free (z);
 }

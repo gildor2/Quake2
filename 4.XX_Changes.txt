@@ -161,6 +161,7 @@ Comments:
 - command "writeconfig filename[.cfg]" - write settings to file
 - "set[a|u|s] <variable> <vaule>", "set <variable> <value> [a|u|s]" (archive|userinfo|serverinfo)
 - "reset <mask>" - set value of all cvars which names are matched mask to default
+- "cat <filename>" - display contents of file
 
 6. API (internals)
 

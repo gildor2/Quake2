@@ -381,7 +381,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\jquant1.obj" \
 	"$(INTDIR)\jquant2.obj" \
 	"$(INTDIR)\jutils.obj" \
-	"$(INTDIR)\q2.res"
+	"$(INTDIR)\q2.res" \
+	"$(INTDIR)\resources.obj"
 
 "$(OUTDIR)\quake2.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -4355,6 +4356,25 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
   $(CPP_SWITCHES) $(SOURCE)
 <<
 
+
+!ENDIF 
+
+SOURCE=.\resource\MAKE\archive.gz
+
+!IF  "$(CFG)" == "quake2s - Win32 Release"
+
+InputDir=.\resource\MAKE
+IntDir=.\release
+InputPath=.\resource\MAKE\archive.gz
+
+"$(INTDIR)\resources.obj" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	<<tempfile.bat 
+	@echo off 
+	nasmw -f win32 -o $(IntDir)\resources.obj -Darc=\"$(InputPath)\" $(InputDir)\make.asm
+<< 
+	
+
+!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
 
 !ENDIF 
 

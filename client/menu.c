@@ -54,8 +54,8 @@ void M_Menu_Main_f (void);
 qboolean	m_entersound;		// play after drawing a frame, so caching
 								// won't disrupt the sound
 
-void	(*m_drawfunc) (void);
-const char *(*m_keyfunc) (int key);
+static void	(*m_drawfunc) (void);
+static const char *(*m_keyfunc) (int key);
 
 
 /*---------- Support Routines ------------*/
@@ -63,21 +63,20 @@ const char *(*m_keyfunc) (int key);
 #define	MAX_MENU_DEPTH	8
 
 
-typedef struct
+struct
 {
 	void	(*draw) (void);
 	const char *(*key) (int k);
-} menulayer_t;
+} m_layers[MAX_MENU_DEPTH];
 
-menulayer_t	m_layers[MAX_MENU_DEPTH];
 int		m_menudepth;
 
-static void M_Banner( char *name )
+static void M_Banner (char *name)
 {
 	int w, h;
 
-	re.DrawGetPicSize (&w, &h, name );
-	re.DrawPicColor( viddef.width / 2 - w / 2, viddef.height / 2 - 110, name, 7 );
+	re.DrawGetPicSize (&w, &h, name);
+	re.DrawPicColor ((viddef.width - w) / 2, viddef.height / 2 - 110, name, 7);
 }
 
 
@@ -144,10 +143,11 @@ void M_PopMenu (void)
 const char *Default_MenuKey (menuFramework_t *m, int key)
 {
 	const char *sound = NULL;
-	menuCommon_t *item;
 
 	if (m)
 	{
+		menuCommon_t *item;
+
 		if ((item = Menu_ItemAtCursor (m)) != 0)
 		{
 			if (item->type == MTYPE_FIELD)
@@ -444,19 +444,15 @@ const char *M_Main_Key (int key)
 		case 0:
 			M_Menu_Game_f ();
 			break;
-
 		case 1:
 			M_Menu_Multiplayer_f ();
 			break;
-
 		case 2:
 			M_Menu_Options_f ();
 			break;
-
 		case 3:
 			M_Menu_Video_f ();
 			break;
-
 		case 4:
 			M_Menu_Quit_f ();
 			break;
@@ -535,38 +531,6 @@ KEYS MENU
 
 =======================================================================
 */
-
-static char *def_bindnames =
-	"+attack attack\n"
-	"weapnext \"next weapon\"\n"
-	"weapprev \"prev weapon\"\n"
-	"\n"
-	"+forward \"walk forward\"\n"
-	"+back backpedal\n"
-	"+moveleft \"step left\"\n"
-	"+moveright \"step right\"\n"
-	"+left \"turn left\"\n"
-	"+right \"turn right\"\n"
-	"+speed run\n"
-	"+strafe sidestep\n"
-	"\n"
-	"+moveup \"up / jump\"\n"
-	"+movedown \"down / crouch\"\n"
-	"\n"
-	"+lookup \"look up\"\n"
-	"+lookdown \"look down\"\n"
-	"centerview \"center view\"\n"
-	"+mlook \"mouse look\"\n"
-	"+klook \"keyboard look\"\n"
-	"\n"
-	"inven inventory\n"
-	"invuse \"use item\"\n"
-	"invdrop \"drop item\"\n"
-	"invprev \"prev item\"\n"
-	"invnext \"next item\"\n"
-	"\n"
-	"\"cmd help\" \"help computer\"\n";
-
 
 static int	keys_cursor;
 static int	bind_grab;
@@ -702,12 +666,8 @@ static void Keys_MenuInit (void)
 	int		i, length, numbinds, y;
 	char	*buffer, *s, *d, c;
 
-	// load "binds.lst"
-	if ((length = FS_LoadFile ("binds.lst", (void*) &buffer)) == -1)
-	{
-		buffer = def_bindnames;
-		length = strlen (buffer);
-	}
+	// load "binds.lst" (always exists)
+	length = FS_LoadFile ("binds.lst", (void*) &buffer);
 	// parse this file
 	s = buffer;
 	numbinds = 0;
@@ -741,7 +701,7 @@ static void Keys_MenuInit (void)
 	}
 
 	// unload "binds.lst"
-	if (buffer != def_bindnames) FS_FreeFile (buffer);
+	FS_FreeFile (buffer);
 
 	// build menu
 	y = 0;
@@ -1155,354 +1115,8 @@ END GAME MENU
 =============================================================================
 */
 static int credits_start_time;
-static const char **credits;
-static char *creditsIndex[256];
+static char *credits[256];
 static char *creditsBuffer;
-static const char *idcredits[] =
-{
-	"+QUAKE II BY ID SOFTWARE",
-	"",
-	"+PROGRAMMING",
-	"John Carmack",
-	"John Cash",
-	"Brian Hook",
-	"",
-	"+ART",
-	"Adrian Carmack",
-	"Kevin Cloud",
-	"Paul Steed",
-	"",
-	"+LEVEL DESIGN",
-	"Tim Willits",
-	"American McGee",
-	"Christian Antkow",
-	"Paul Jaquays",
-	"Brandon James",
-	"",
-	"+BIZ",
-	"Todd Hollenshead",
-	"Barrett (Bear) Alexander",
-	"Donna Jackson",
-	"",
-	"",
-	"+SPECIAL THANKS",
-	"Ben Donges for beta testing",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"+ADDITIONAL SUPPORT",
-	"",
-	"+LINUX PORT AND CTF",
-	"Dave \"Zoid\" Kirsch",
-	"",
-	"+CINEMATIC SEQUENCES",
-	"Ending Cinematic by Blur Studio - ",
-	"Venice, CA",
-	"",
-	"Environment models for Introduction",
-	"Cinematic by Karl Dolgener",
-	"",
-	"Assistance with environment design",
-	"by Cliff Iwai",
-	"",
-	"+SOUND EFFECTS AND MUSIC",
-	"Sound Design by Soundelux Media Labs.",
-	"Music Composed and Produced by",
-	"Soundelux Media Labs.  Special thanks",
-	"to Bill Brown, Tom Ozanich, Brian",
-	"Celano, Jeff Eisner, and The Soundelux",
-	"Players.",
-	"",
-	"\"Level Music\" by Sonic Mayhem",
-	"www.sonicmayhem.com",
-	"",
-	"\"Quake II Theme Song\"",
-	"(C) 1997 Rob Zombie. All Rights",
-	"Reserved.",
-	"",
-	"Track 10 (\"Climb\") by Jer Sypult",
-	"",
-	"Voice of computers by",
-	"Carly Staehlin-Taylor",
-	"",
-	"+THANKS TO ACTIVISION",
-	"+IN PARTICULAR:",
-	"",
-	"John Tam",
-	"Steve Rosenthal",
-	"Marty Stratton",
-	"Henk Hartong",
-	"",
-	"Quake II(tm) (C)1997 Id Software, Inc.",
-	"All Rights Reserved.  Distributed by",
-	"Activision, Inc. under license.",
-	"Quake II(tm), the Id Software name,",
-	"the \"Q II\"(tm) logo and id(tm)",
-	"logo are trademarks of Id Software,",
-	"Inc. Activision(R) is a registered",
-	"trademark of Activision, Inc. All",
-	"other trademarks and trade names are",
-	"properties of their respective owners.",
-	0
-};
-
-static const char *xatcredits[] =
-{
-	"+QUAKE II MISSION PACK: THE RECKONING",
-	"+BY",
-	"+XATRIX ENTERTAINMENT, INC.",
-	"",
-	"+DESIGN AND DIRECTION",
-	"Drew Markham",
-	"",
-	"+PRODUCED BY",
-	"Greg Goodrich",
-	"",
-	"+PROGRAMMING",
-	"Rafael Paiz",
-	"",
-	"+LEVEL DESIGN / ADDITIONAL GAME DESIGN",
-	"Alex Mayberry",
-	"",
-	"+LEVEL DESIGN",
-	"Mal Blackwell",
-	"Dan Koppel",
-	"",
-	"+ART DIRECTION",
-	"Michael \"Maxx\" Kaufman",
-	"",
-	"+COMPUTER GRAPHICS SUPERVISOR AND",
-	"+CHARACTER ANIMATION DIRECTION",
-	"Barry Dempsey",
-	"",
-	"+SENIOR ANIMATOR AND MODELER",
-	"Jason Hoover",
-	"",
-	"+CHARACTER ANIMATION AND",
-	"+MOTION CAPTURE SPECIALIST",
-	"Amit Doron",
-	"",
-	"+ART",
-	"Claire Praderie-Markham",
-	"Viktor Antonov",
-	"Corky Lehmkuhl",
-	"",
-	"+INTRODUCTION ANIMATION",
-	"Dominique Drozdz",
-	"",
-	"+ADDITIONAL LEVEL DESIGN",
-	"Aaron Barber",
-	"Rhett Baldwin",
-	"",
-	"+3D CHARACTER ANIMATION TOOLS",
-	"Gerry Tyra, SA Technology",
-	"",
-	"+ADDITIONAL EDITOR TOOL PROGRAMMING",
-	"Robert Duffy",
-	"",
-	"+ADDITIONAL PROGRAMMING",
-	"Ryan Feltrin",
-	"",
-	"+PRODUCTION COORDINATOR",
-	"Victoria Sylvester",
-	"",
-	"+SOUND DESIGN",
-	"Gary Bradfield",
-	"",
-	"+MUSIC BY",
-	"Sonic Mayhem",
-	"",
-	"",
-	"",
-	"+SPECIAL THANKS",
-	"+TO",
-	"+OUR FRIENDS AT ID SOFTWARE",
-	"",
-	"John Carmack",
-	"John Cash",
-	"Brian Hook",
-	"Adrian Carmack",
-	"Kevin Cloud",
-	"Paul Steed",
-	"Tim Willits",
-	"Christian Antkow",
-	"Paul Jaquays",
-	"Brandon James",
-	"Todd Hollenshead",
-	"Barrett (Bear) Alexander",
-	"Dave \"Zoid\" Kirsch",
-	"Donna Jackson",
-	"",
-	"",
-	"",
-	"+THANKS TO ACTIVISION",
-	"+IN PARTICULAR:",
-	"",
-	"Marty Stratton",
-	"Henk \"The Original Ripper\" Hartong",
-	"Kevin Kraff",
-	"Jamey Gottlieb",
-	"Chris Hepburn",
-	"",
-	"+AND THE GAME TESTERS",
-	"",
-	"Tim Vanlaw",
-	"Doug Jacobs",
-	"Steven Rosenthal",
-	"David Baker",
-	"Chris Campbell",
-	"Aaron Casillas",
-	"Steve Elwell",
-	"Derek Johnstone",
-	"Igor Krinitskiy",
-	"Samantha Lee",
-	"Michael Spann",
-	"Chris Toft",
-	"Juan Valdes",
-	"",
-	"+THANKS TO INTERGRAPH COMPUTER SYTEMS",
-	"+IN PARTICULAR:",
-	"",
-	"Michael T. Nicolaou",
-	"",
-	"",
-	"Quake II Mission Pack: The Reckoning",
-	"(tm) (C)1998 Id Software, Inc. All",
-	"Rights Reserved. Developed by Xatrix",
-	"Entertainment, Inc. for Id Software,",
-	"Inc. Distributed by Activision Inc.",
-	"under license. Quake(R) is a",
-	"registered trademark of Id Software,",
-	"Inc. Quake II Mission Pack: The",
-	"Reckoning(tm), Quake II(tm), the Id",
-	"Software name, the \"Q II\"(tm) logo",
-	"and id(tm) logo are trademarks of Id",
-	"Software, Inc. Activision(R) is a",
-	"registered trademark of Activision,",
-	"Inc. Xatrix(R) is a registered",
-	"trademark of Xatrix Entertainment,",
-	"Inc. All other trademarks and trade",
-	"names are properties of their",
-	"respective owners.",
-	0
-};
-
-static const char *roguecredits[] =
-{
-	"+QUAKE II MISSION PACK 2: GROUND ZERO",
-	"+BY",
-	"+ROGUE ENTERTAINMENT, INC.",
-	"",
-	"+PRODUCED BY",
-	"Jim Molinets",
-	"",
-	"+PROGRAMMING",
-	"Peter Mack",
-	"Patrick Magruder",
-	"",
-	"+LEVEL DESIGN",
-	"Jim Molinets",
-	"Cameron Lamprecht",
-	"Berenger Fish",
-	"Robert Selitto",
-	"Steve Tietze",
-	"Steve Thoms",
-	"",
-	"+ART DIRECTION",
-	"Rich Fleider",
-	"",
-	"+ART",
-	"Rich Fleider",
-	"Steve Maines",
-	"Won Choi",
-	"",
-	"+ANIMATION SEQUENCES",
-	"Creat Studios",
-	"Steve Maines",
-	"",
-	"+ADDITIONAL LEVEL DESIGN",
-	"Rich Fleider",
-	"Steve Maines",
-	"Peter Mack",
-	"",
-	"+SOUND",
-	"James Grunke",
-	"",
-	"+GROUND ZERO THEME",
-	"+AND",
-	"+MUSIC BY",
-	"Sonic Mayhem",
-	"",
-	"+VWEP MODELS",
-	"Brent \"Hentai\" Dill",
-	"",
-	"",
-	"",
-	"+SPECIAL THANKS",
-	"+TO",
-	"+OUR FRIENDS AT ID SOFTWARE",
-	"",
-	"John Carmack",
-	"John Cash",
-	"Brian Hook",
-	"Adrian Carmack",
-	"Kevin Cloud",
-	"Paul Steed",
-	"Tim Willits",
-	"Christian Antkow",
-	"Paul Jaquays",
-	"Brandon James",
-	"Todd Hollenshead",
-	"Barrett (Bear) Alexander",
-	"Katherine Anna Kang",
-	"Donna Jackson",
-	"Dave \"Zoid\" Kirsch",
-	"",
-	"",
-	"",
-	"+THANKS TO ACTIVISION",
-	"+IN PARTICULAR:",
-	"",
-	"Marty Stratton",
-	"Henk Hartong",
-	"Mitch Lasky",
-	"Steve Rosenthal",
-	"Steve Elwell",
-	"",
-	"+AND THE GAME TESTERS",
-	"",
-	"The Ranger Clan",
-	"Dave \"Zoid\" Kirsch",
-	"Nihilistic Software",
-	"Robert Duffy",
-	"",
-	"And Countless Others",
-	"",
-	"",
-	"",
-	"Quake II Mission Pack 2: Ground Zero",
-	"(tm) (C)1998 Id Software, Inc. All",
-	"Rights Reserved. Developed by Rogue",
-	"Entertainment, Inc. for Id Software,",
-	"Inc. Distributed by Activision Inc.",
-	"under license. Quake(R) is a",
-	"registered trademark of Id Software,",
-	"Inc. Quake II Mission Pack 2: Ground",
-	"Zero(tm), Quake II(tm), the Id",
-	"Software name, the \"Q II\"(tm) logo",
-	"and id(tm) logo are trademarks of Id",
-	"Software, Inc. Activision(R) is a",
-	"registered trademark of Activision,",
-	"Inc. Rogue(R) is a registered",
-	"trademark of Rogue Entertainment,",
-	"Inc. All other trademarks and trade",
-	"names are properties of their",
-	"respective owners.",
-	0
-};
 
 
 static void M_Credits_MenuDraw (void)
@@ -1564,49 +1178,49 @@ void M_Menu_Credits_f (void)
 {
 	int		n;
 	int		count;
-	char	*p;
+	char	*p, *filename;
 
 	MENU_CHECK
-	creditsBuffer = NULL;
-	count = FS_LoadFile ("credits", &creditsBuffer);
-	if (count != -1)
+
+	filename = "credits";
+	if (!FS_FileExists (filename))
 	{
-		p = creditsBuffer;
-		for (n = 0; n < 255; n++)
+		// mod not provided own credits file - display defaults
+		switch (Developer_searchpath (1))
 		{
-			creditsIndex[n] = p;
-			while (*p != '\r' && *p != '\n')
-			{
-				p++;
-				if (--count == 0)
-					break;
-			}
-			if (*p == '\r')
-			{
-				*p++ = 0;
-				if (--count == 0)
-					break;
-			}
+		case 1:		// xatrix
+			filename = "xcredits";
+			break;
+		case 2:		// ROGUE
+			filename = "rcredits";
+			break;
+		}
+	}
+
+	creditsBuffer = NULL;
+	count = FS_LoadFile (filename, &creditsBuffer);
+	// file always present - have inline file
+	p = creditsBuffer;
+	for (n = 0; n < 255; n++)
+	{
+		credits[n] = p;
+		while (*p != '\r' && *p != '\n')
+		{
+			p++;
+			if (--count == 0)
+				break;
+		}
+		if (*p == '\r')
+		{
 			*p++ = 0;
 			if (--count == 0)
 				break;
 		}
-		creditsIndex[++n] = 0;
-		credits = creditsIndex;
+		*p++ = 0;
+		if (--count == 0)
+			break;
 	}
-	else
-	{
-		int		isdeveloper;
-
-		isdeveloper = Developer_searchpath (1);
-		if (isdeveloper == 1)			// xatrix
-			credits = xatcredits;
-		else if (isdeveloper == 2)		// ROGUE
-			credits = roguecredits;
-		else
-			credits = idcredits;
-
-	}
+	credits[++n] = NULL;
 
 	credits_start_time = cls.realtime;
 	M_PushMenu (M_Credits_MenuDraw, M_Credits_Key);
@@ -2894,7 +2508,6 @@ static menuSeparator_t	s_player_rate_title;
 static menuAction_t		s_player_download_action;
 
 #define MAX_DISPLAYNAME 16
-//?? unused: #define MAX_PLAYERMODELS 1024
 
 typedef struct playerModelInfo_s
 {	// descended from basenamed_t
@@ -2979,9 +2592,6 @@ static qboolean PlayerConfig_ScanDirectories (void)
 	if (!dirnames) return false;
 
 	/*--- go through the subdirectories ---*/
-//	if (numModelDirs > MAX_PLAYERMODELS)
-//		numModelDirs = MAX_PLAYERMODELS;
-
 	for (i = 0, diritem = dirnames; i < numModelDirs; i++, diritem = diritem->next)
 	{
 		basenamed_t *pcxnames, *pcxitem;
@@ -3242,10 +2852,6 @@ static void PlayerConfig_MenuDraw (void)
 
 	Menu_Draw (&s_player_config_menu);
 
-//	M_DrawTextBox ((refdef.x) * (320.0f / viddef.width) - 8,
-//		(viddef.height / 2) * (240.0f / viddef.height) - 77, refdef.width / 8, refdef.height / 8);
-//	refdef.height += 4;
-
 	re.RenderFrame (&refdef);
 
 	re.DrawStretchPic (s_player_config_menu.x - 40, refdef.y,
@@ -3297,14 +2903,14 @@ static const char *PlayerConfig_MenuKey (int key)
 }
 
 
-void M_Menu_PlayerConfig_f (void)
+static void M_Menu_PlayerConfig_f (void)
 {
 	MENU_CHECK
 	pmiChain = CreateMemoryChain ();
 	if (!PlayerConfig_MenuInit ())
 	{
 		FreeMemoryChain (pmiChain);
-		Menu_SetStatusBar (&s_multiplayer_menu, "No valid player models found");
+		Menu_SetStatusBar (&s_multiplayer_menu, "^1No valid player models found");
 		return;
 	}
 	Menu_SetStatusBar (&s_multiplayer_menu, NULL);
@@ -3320,7 +2926,7 @@ BROWSE FOR MAP
 =======================================================================
 */
 
-#define MAX_BROWSE_MAPS 512
+#define MAX_BROWSE_MAPS		512
 #define THUMBNAIL_BORDER	4
 #define THUMBNAIL_TEXT		10
 
@@ -3361,13 +2967,13 @@ static thumbLayout_t thumbLayout[] =
 /*
  * Read screenshots list and refine it with maps that doesn't exists. Do not bother
  * about freeing screenshots from imagelist - this will be done automatically when a
- * new level started (registration sequence is less than new level sequence by 1 ...)
+ * new level started (??) (registration sequence is less than new level sequence by 1 ...)
  */
 static qboolean DMBrowse_MenuInit ()
 {
 	basenamed_t *item;
-	char filename[256], *name, *ext;
-	int i, x, y, oldcount;
+	char	filename[256], *name, *ext;
+	int		i, x, y, oldcount;
 
 	char *path = NULL;
 
@@ -3432,6 +3038,7 @@ static qboolean DMBrowse_MenuInit ()
 
 	// no maps found - free list
 	FreeNamedList (browse_list);
+	browse_list = NULL;
 	return false;
 }
 
@@ -3537,7 +3144,7 @@ static void DrawThumbnail (int x, int y, int w, int h, char *name, qboolean sele
 	text_width = strlen (filename);
 	if (text_width > max_width)
 	{
-		strcpy (&filename[max_width - 3], "...");
+		strcpy (&filename[max_width - 3], "...");		// make long names ends with "..."
 		text_width = max_width;
 	}
 	Menu_DrawString (x + (w-8*text_width) / 2, y + h + (THUMBNAIL_TEXT + THUMBNAIL_BORDER - 8) / 2, filename);
@@ -3577,7 +3184,7 @@ static void DMBrowse_MenuDraw (void)
 		DMBrowse_DrawScroller (x, thumbs.y0 + thumbs.cy * thumbs.dy - THUMBNAIL_BORDER * 2, w);
 }
 
-void M_Menu_DMBrowse_f (void)
+static void M_Menu_DMBrowse_f (void)
 {
 	MENU_CHECK
 	if (!DMBrowse_MenuInit ())
@@ -3598,7 +3205,7 @@ QUIT MENU
 =======================================================================
 */
 
-const char *M_Quit_Key (int key)
+static const char *M_Quit_Key (int key)
 {
 	switch (key)
 	{
@@ -3624,7 +3231,7 @@ const char *M_Quit_Key (int key)
 }
 
 
-void M_Quit_Draw (void)
+static void M_Quit_Draw (void)
 {
 	int		w, h;
 
@@ -3633,7 +3240,7 @@ void M_Quit_Draw (void)
 }
 
 
-void M_Menu_Quit_f (void)
+static void M_Menu_Quit_f (void)
 {
 	MENU_CHECK
 	M_PushMenu (M_Quit_Draw, M_Quit_Key);
@@ -3714,6 +3321,6 @@ void M_Keydown (int key)
 	const char *s;
 
 	if (m_keyfunc)
-		if ((s = m_keyfunc (key)) != 0)
+		if ((s = m_keyfunc (key)) != NULL)
 			S_StartLocalSound ((char *) s);
 }

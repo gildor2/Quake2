@@ -40,6 +40,12 @@ typedef struct
 	FILE	*arc;		// archive handle
 } ZFILE;
 
+typedef struct
+{
+	z_stream s;
+	int		readed;
+} ZBUF;
+
 
 typedef int (*enum_zip_func) (zip_file *file);
 
@@ -58,6 +64,10 @@ int ZipExtractFileMem (FILE *F, zip_file *file, void *buf);
 ZFILE *ZipOpenFile (FILE *F, zip_file *file);
 int ZipReadFile (ZFILE *z, void *buf, int size);
 int ZipCloseFile (ZFILE *z);
+
+ZBUF *ZipOpenBuf (void *data, int size);
+int ZipReadBuf (ZBUF *z, void *buf, int size);
+void ZipCloseBuf (ZBUF *z);
 
 
 #endif // __ZIP__

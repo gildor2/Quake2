@@ -17,6 +17,7 @@ What needed:
   - list (enum): repeat { const -- string }
   - int/float: ranged (spin: need range and step) or any (text field: need text length)
   - bitfield (dmflags etc.): cvar,mask -- name; one declaration per one bit (many per dword)
+    use strtol with base=0 to get mask (this will allow to specify 0xHEX and decimal constants)
 - callback (named procedures, may be registered): -- owner-draw / owner-behaviour fields
   - draw
   - change

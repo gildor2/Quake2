@@ -681,6 +681,7 @@ extern int              r_currentkey;
 extern int              r_currentbkey;
 
 void    R_InitTurb (void);
+void	R_InitAdivtab (void);
 
 void R_DrawParticles (void);
 void R_SurfacePatch (void);

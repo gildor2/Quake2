@@ -6,69 +6,9 @@
 --------------------Configuration: quake2s - Win32 Release--------------------
 </h3>
 <h3>Command Lines</h3>
-Creating command line "rc.exe /l 0x409 /fo".\release/q2.res" /i "win32" /d "NDEBUG" "C:\7\win32\q2.rc"" 
-Creating temporary file "c:\windows\TEMP\RSPA0D6.TMP" with contents
+Creating temporary file "F:\DOCUME~1\Root\LOCALS~1\Temp\RSP24.tmp" with contents
 [
 /nologo /G5 /MD /W3 /GX /Zd /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "REF_HARD_LINKED" /Fp".\release/quake2s.pch" /YX /Fo".\release/" /Fd".\release/" /FD /c 
-"C:\7\win32\cd_win.c"
-"C:\7\client\cl_cin.c"
-"C:\7\client\cl_ents.c"
-"C:\7\client\cl_fx.c"
-"C:\7\client\cl_input.c"
-"C:\7\client\cl_inv.c"
-"C:\7\client\cl_main.c"
-"C:\7\client\cl_newfx.c"
-"C:\7\client\cl_parse.c"
-"C:\7\client\cl_pred.c"
-"C:\7\client\cl_scrn.c"
-"C:\7\client\cl_tent.c"
-"C:\7\client\cl_view.c"
-"C:\7\qcommon\cmd.c"
-"C:\7\qcommon\cmodel.c"
-"C:\7\qcommon\common.c"
-"C:\7\win32\conproc.c"
-"C:\7\client\console.c"
-"C:\7\qcommon\crc.c"
-"C:\7\qcommon\cvar.c"
-"C:\7\qcommon\files.c"
-"C:\7\qcommon\images.c"
-"C:\7\win32\in_win.c"
-"C:\7\client\keys.c"
-"C:\7\game\m_flash.c"
-"C:\7\qcommon\md4.c"
-"C:\7\qcommon\memory.c"
-"C:\7\client\menu.c"
-"C:\7\qcommon\model.c"
-"C:\7\qcommon\net_chan.c"
-"C:\7\win32\net_wins.c"
-"C:\7\qcommon\pmove.c"
-"C:\7\qcommon\q_shared2.c"
-"C:\7\client\qmenu.c"
-"C:\7\client\snd_dma.c"
-"C:\7\client\snd_mem.c"
-"C:\7\client\snd_mix.c"
-"C:\7\win32\snd_win.c"
-"C:\7\server\sv_ccmds.c"
-"C:\7\server\sv_ents.c"
-"C:\7\server\sv_game.c"
-"C:\7\server\sv_init.c"
-"C:\7\server\sv_main.c"
-"C:\7\server\sv_send.c"
-"C:\7\server\sv_user.c"
-"C:\7\server\sv_world.c"
-"C:\7\win32\sys_win.c"
-"C:\7\win32\vid_dll.c"
-"C:\7\win32\vid_menu.c"
-"C:\7\client\x86.c"
-"C:\7\ref_gl\gl_backend.c"
-"C:\7\ref_gl\gl_image.c"
-"C:\7\ref_gl\gl_main.c"
-"C:\7\ref_gl\gl_model.c"
-"C:\7\ref_gl\gl_shader.c"
-"C:\7\ref_gl\gl_world.c"
-"C:\7\win32\glw_imp.c"
-"C:\7\win32\qgl_win.c"
-"C:\7\win32\q_shwin.c"
 "C:\7\ref_soft\r_aclip.c"
 "C:\7\ref_soft\r_alias.c"
 "C:\7\ref_soft\r_bsp.c"
@@ -81,7 +21,6 @@ Creating temporary file "c:\windows\TEMP\RSPA0D6.TMP" with contents
 "C:\7\ref_soft\r_model.c"
 "C:\7\ref_soft\r_part.c"
 "C:\7\ref_soft\r_poly.c"
-"C:\7\ref_soft\r_polyse.c"
 "C:\7\ref_soft\r_rast.c"
 "C:\7\ref_soft\r_scan.c"
 "C:\7\ref_soft\r_sprite.c"
@@ -89,84 +28,11 @@ Creating temporary file "c:\windows\TEMP\RSPA0D6.TMP" with contents
 "C:\7\win32\rw_ddraw.c"
 "C:\7\win32\rw_dib.c"
 "C:\7\win32\rw_imp.c"
-"C:\7\zip\adler32.c"
-"C:\7\zip\crc32.c"
-"C:\7\zip\infblock.c"
-"C:\7\zip\infcodes.c"
-"C:\7\zip\inffast.c"
-"C:\7\zip\inflate.c"
-"C:\7\zip\inftrees.c"
-"C:\7\zip\infutil.c"
-"C:\7\zip\zip.c"
-"C:\7\zip\zutil.c"
 ]
-Creating command line "cl.exe @c:\windows\TEMP\RSPA0D6.TMP" 
-Creating temporary file "c:\windows\TEMP\RSPA0D7.TMP" with contents
+Creating command line "cl.exe @F:\DOCUME~1\Root\LOCALS~1\Temp\RSP24.tmp" 
+Creating temporary file "F:\DOCUME~1\Root\LOCALS~1\Temp\RSP25.tmp" with contents
 [
-/nologo /G5 /MD /W1 /GX /Zd /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "REF_HARD_LINKED" /Fp".\release/quake2s.pch" /YX /Fo".\release/" /Fd".\release/" /FD /c 
-"C:\7\jpeg\jcapimin.c"
-"C:\7\jpeg\jcapistd.c"
-"C:\7\jpeg\jccoefct.c"
-"C:\7\jpeg\jccolor.c"
-"C:\7\jpeg\jcdctmgr.c"
-"C:\7\jpeg\jcdiffct.c"
-"C:\7\jpeg\jchuff.c"
-"C:\7\jpeg\jcinit.c"
-"C:\7\jpeg\jclhuff.c"
-"C:\7\jpeg\jclossls.c"
-"C:\7\jpeg\jclossy.c"
-"C:\7\jpeg\jcmainct.c"
-"C:\7\jpeg\jcmarker.c"
-"C:\7\jpeg\jcmaster.c"
-"C:\7\jpeg\jcodec.c"
-"C:\7\jpeg\jcomapi.c"
-"C:\7\jpeg\jcparam.c"
-"C:\7\jpeg\jcphuff.c"
-"C:\7\jpeg\jcpred.c"
-"C:\7\jpeg\jcprepct.c"
-"C:\7\jpeg\jcsample.c"
-"C:\7\jpeg\jcscale.c"
-"C:\7\jpeg\jcshuff.c"
-"C:\7\jpeg\jdapimin.c"
-"C:\7\jpeg\jdapistd.c"
-"C:\7\jpeg\jdatadst.c"
-"C:\7\jpeg\jdcoefct.c"
-"C:\7\jpeg\jdcolor.c"
-"C:\7\jpeg\jddctmgr.c"
-"C:\7\jpeg\jddiffct.c"
-"C:\7\jpeg\jdhuff.c"
-"C:\7\jpeg\jdinput.c"
-"C:\7\jpeg\jdlhuff.c"
-"C:\7\jpeg\jdlossls.c"
-"C:\7\jpeg\jdlossy.c"
-"C:\7\jpeg\jdmainct.c"
-"C:\7\jpeg\jdmarker.c"
-"C:\7\jpeg\jdmaster.c"
-"C:\7\jpeg\jdmerge.c"
-"C:\7\jpeg\jdphuff.c"
-"C:\7\jpeg\jdpostct.c"
-"C:\7\jpeg\jdpred.c"
-"C:\7\jpeg\jdsample.c"
-"C:\7\jpeg\jdscale.c"
-"C:\7\jpeg\jdshuff.c"
-"C:\7\jpeg\jerror.c"
-"C:\7\jpeg\jfdctflt.c"
-"C:\7\jpeg\jfdctfst.c"
-"C:\7\jpeg\jfdctint.c"
-"C:\7\jpeg\jidctflt.c"
-"C:\7\jpeg\jidctfst.c"
-"C:\7\jpeg\jidctint.c"
-"C:\7\jpeg\jidctred.c"
-"C:\7\jpeg\jmemansi.c"
-"C:\7\jpeg\jmemmgr.c"
-"C:\7\jpeg\jquant1.c"
-"C:\7\jpeg\jquant2.c"
-"C:\7\jpeg\jutils.c"
-]
-Creating command line "cl.exe @c:\windows\TEMP\RSPA0D7.TMP" 
-Creating temporary file "c:\windows\TEMP\RSPA0D8.TMP" with contents
-[
-winmm.lib wsock32.lib kernel32.lib user32.lib gdi32.lib /nologo /subsystem:windows /pdb:none /map:".\release/quake2.map" /machine:I386 /out:".\release/quake2.exe" /heap:16740352,524288 
+winmm.lib wsock32.lib kernel32.lib user32.lib gdi32.lib /nologo /subsystem:windows /pdb:none /map:".\release/quake2.map" /machine:I386 /out:".\release/quake2.exe" /heap:16740352,524288 /filealign:512 
 .\release\cd_win.obj
 .\release\cl_cin.obj
 .\release\cl_ents.obj
@@ -301,7 +167,6 @@ winmm.lib wsock32.lib kernel32.lib user32.lib gdi32.lib /nologo /subsystem:windo
 .\release\jdsample.obj
 .\release\jdscale.obj
 .\release\jdshuff.obj
-.\release\jerror.obj
 .\release\jfdctflt.obj
 .\release\jfdctfst.obj
 .\release\jfdctint.obj
@@ -315,96 +180,11 @@ winmm.lib wsock32.lib kernel32.lib user32.lib gdi32.lib /nologo /subsystem:windo
 .\release\jquant2.obj
 .\release\jutils.obj
 .\release\q2.res
+.\release\resources.obj
 ]
-Creating command line "link.exe @c:\windows\TEMP\RSPA0D8.TMP"
+Creating command line "link.exe @F:\DOCUME~1\Root\LOCALS~1\Temp\RSP25.tmp"
 <h3>Output Window</h3>
-Compiling resources...
 Compiling...
-cd_win.c
-cl_cin.c
-cl_ents.c
-cl_fx.c
-cl_input.c
-cl_inv.c
-cl_main.c
-cl_newfx.c
-cl_parse.c
-cl_pred.c
-cl_scrn.c
-cl_tent.c
-cl_view.c
-cmd.c
-cmodel.c
-C:\7\qcommon\cmodel.c(380) : warning C4101: 'child' : unreferenced local variable
-C:\7\qcommon\cmodel.c(599) : warning C4101: 'i' : unreferenced local variable
-C:\7\qcommon\cmodel.c(942) : warning C4101: 'edges' : unreferenced local variable
-C:\7\qcommon\cmodel.c(941) : warning C4101: 'verts' : unreferenced local variable
-C:\7\qcommon\cmodel.c(943) : warning C4101: 'surfedges' : unreferenced local variable
-C:\7\qcommon\cmodel.c(990) : warning C4101: 'm' : unreferenced local variable
-C:\7\qcommon\cmodel.c(990) : warning C4101: 'n1' : unreferenced local variable
-C:\7\qcommon\cmodel.c(1091) : warning C4101: 'buf' : unreferenced local variable
-C:\7\qcommon\cmodel.c(1093) : warning C4101: 'length' : unreferenced local variable
-C:\7\qcommon\cmodel.c(1092) : warning C4101: 'i' : unreferenced local variable
-C:\7\qcommon\cmodel.c(1911) : warning C4101: 'b' : unreferenced local variable
-C:\7\qcommon\cmodel.c(1909) : warning C4101: 'brushnum' : unreferenced local variable
-C:\7\qcommon\cmodel.c(1908) : warning C4101: 'k' : unreferenced local variable
-C:\7\qcommon\cmodel.c(1929) : warning C4101: 'mid' : unreferenced local variable
-C:\7\qcommon\cmodel.c(1931) : warning C4101: 'frac' : unreferenced local variable
-C:\7\qcommon\cmodel.c(1930) : warning C4101: 'i' : unreferenced local variable
-common.c
-C:\7\qcommon\cmodel.c(660) : warning C4700: local variable 'in' used without having been initialized
-C:\7\qcommon\cmodel.c(709) : warning C4700: local variable 'in' used without having been initialized
-C:\7\qcommon\cmodel.c(798) : warning C4700: local variable 'in' used without having been initialized
-C:\7\qcommon\cmodel.c(828) : warning C4700: local variable 'in' used without having been initialized
-C:\7\qcommon\cmodel.c(883) : warning C4700: local variable 'in' used without having been initialized
-C:\7\qcommon\cmodel.c(996) : warning C4700: local variable 'marksurfs' used without having been initialized
-C:\7\qcommon\cmodel.c(999) : warning C4700: local variable 'faces' used without having been initialized
-conproc.c
-console.c
-crc.c
-cvar.c
-files.c
-images.c
-in_win.c
-keys.c
-m_flash.c
-md4.c
-memory.c
-menu.c
-model.c
-net_chan.c
-net_wins.c
-pmove.c
-q_shared2.c
-qmenu.c
-snd_dma.c
-snd_mem.c
-snd_mix.c
-snd_win.c
-sv_ccmds.c
-sv_ents.c
-sv_game.c
-sv_init.c
-sv_main.c
-sv_send.c
-sv_user.c
-sv_world.c
-sys_win.c
-vid_dll.c
-vid_menu.c
-x86.c
-gl_backend.c
-gl_image.c
-C:\7\ref_gl\../jpeg/jmorecfg.h(230) : warning C4142: benign redefinition of type
-C:\7\ref_gl\../jpeg/jmorecfg.h(285) : warning C4005: 'FAR' : macro redefinition
-        C:\Program Files\MSVS\VC98\INCLUDE\windef.h(135) : see previous definition of 'FAR'
-gl_main.c
-gl_model.c
-gl_shader.c
-gl_world.c
-glw_imp.c
-qgl_win.c
-q_shwin.c
 r_aclip.c
 r_alias.c
 r_bsp.c
@@ -417,7 +197,6 @@ r_misc.c
 r_model.c
 r_part.c
 r_poly.c
-r_polyse.c
 r_rast.c
 r_scan.c
 r_sprite.c
@@ -425,82 +204,12 @@ r_surf.c
 rw_ddraw.c
 rw_dib.c
 rw_imp.c
-adler32.c
-crc32.c
-infblock.c
-infcodes.c
-inffast.c
-inflate.c
-inftrees.c
-infutil.c
-zip.c
-zutil.c
-Compiling...
-jcapimin.c
-jcapistd.c
-jccoefct.c
-jccolor.c
-jcdctmgr.c
-jcdiffct.c
-jchuff.c
-jcinit.c
-jclhuff.c
-jclossls.c
-jclossy.c
-jcmainct.c
-jcmarker.c
-jcmaster.c
-jcodec.c
-jcomapi.c
-jcparam.c
-jcphuff.c
-jcpred.c
-jcprepct.c
-jcsample.c
-jcscale.c
-jcshuff.c
-jdapimin.c
-jdapistd.c
-jdatadst.c
-jdcoefct.c
-jdcolor.c
-jddctmgr.c
-jddiffct.c
-jdhuff.c
-jdinput.c
-jdlhuff.c
-jdlossls.c
-jdlossy.c
-jdmainct.c
-jdmarker.c
-jdmaster.c
-jdmerge.c
-jdphuff.c
-jdpostct.c
-jdpred.c
-jdsample.c
-jdscale.c
-jdshuff.c
-jerror.c
-jfdctflt.c
-jfdctfst.c
-jfdctint.c
-jidctflt.c
-jidctfst.c
-jidctint.c
-jidctred.c
-jmemansi.c
-jmemmgr.c
-jquant1.c
-jquant2.c
-jutils.c
 Linking...
-link: executing 'C:\PROGRA~1\MSVS\VC98\BIN\link.exe'
 
 
 
 <h3>Results</h3>
-quake2.exe - 0 error(s), 25 warning(s)
+quake2.exe - 0 error(s), 0 warning(s)
 </pre>
 </body>
 </html>
