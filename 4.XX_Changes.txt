@@ -63,6 +63,7 @@ Comments:
 - changed appearance of "cl_stats" output
 - "host_speeds" -> "com_speeds", better output
 - allowed cheatvars (timedemo, r_lightmap ...) for demos, recorded from deathmatch
+- added "timedemo" min_fps
 - ref_gl and ref_soft are now statically linked with quake2
 - no autosaves in deathmatch mode
 - if sound file not found, game doesn't try to load it every time it must appear
@@ -85,6 +86,7 @@ Comments:
 - removed calling "-alias" EVERY time key depressed
 - fixed binding to "semicolon", added "comma"
 - disabled mouse acceleration
+- fixed collision detection code to prevent from "blocked inside the opening door" and some other bugs
 
 5. ADDONS
 ~~~~~~~~~
@@ -146,6 +148,7 @@ Console/Menu
   - Backspace - delete char before cursor
   - Ctrl-Backspace - delete word before cursor
   - any char - insert text
+- changed command history code to prevent appearing of empty lines and duplicates
 - console text colorizing in Q3-manner: ^0-^7 will change color (black-white); colored output can be disabled
     with "set con_colortext 0"
 - reformatted console output; word-wrap may be controlled with "set con_wordwrap 0|1"
@@ -197,12 +200,17 @@ Debugging
     that does not exist, crosshair will be set to 0 (no crosshair)
   - added cvar "crosshaircolor"; value = [0..7] (0 - black, 1 - red, 2 - green, 4 - blue, 7 - white)
   - changing crosshair shape and color from the options menu
-- browsing levelshots in "start server" menu; displaying it while map loading (accessible via menu or "menu_dmbrowse")
+- browsing levelshots in "start server" menu (accessible via menu or "menu_dmbrowse"); displaying it while map loading
 - "cl_draw2d 0" removes HUD
 - sound pitch affected by timescale (DirectSound only)
 - added mouse support via DirectInput (activated with "set in_mouse 2", default)
 
-6. API (internals)
+6. MISFEATURES
+~~~~~~~~~~~~~~
+
+- no negative dlights in renderer (can be emulated with multiplicative dlights ?)
+
+7. API (internals)
 ~~~~~~~~~~~~~~~~~~
 
 Memory management
