@@ -107,7 +107,7 @@ float Q_rsqrt (float number)
 }
 
 
-void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, float degrees )
+void RotatePointAroundVector (vec3_t dst, const vec3_t dir, const vec3_t point, float degrees)
 {
 	float	m[3][3], im[3][3], zrot[3][3], tmpmat[3][3], rot[3][3];
 	int		i;
@@ -154,9 +154,7 @@ void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, 
 	MatrixMultiply (tmpmat, im, rot);
 
 	for (i = 0; i < 3; i++)
-	{
 		dst[i] = rot[i][0] * point[0] + rot[i][1] * point[1] + rot[i][2] * point[2];
-	}
 }
 
 
@@ -196,15 +194,15 @@ void AngleVectors (const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
 }
 
 
-void ProjectPointOnPlane( vec3_t dst, const vec3_t p, const vec3_t normal )
+void ProjectPointOnPlane (vec3_t dst, const vec3_t p, const vec3_t normal)
 {
 	float d;
 	vec3_t n;
 	float inv_denom;
 
-	inv_denom = 1.0F / DotProduct( normal, normal );
+	inv_denom = 1.0f / DotProduct (normal, normal);
 
-	d = DotProduct( normal, p ) * inv_denom;
+	d = DotProduct (normal, p) * inv_denom;
 
 	n[0] = normal[0] * inv_denom;
 	n[1] = normal[1] * inv_denom;
@@ -218,7 +216,7 @@ void ProjectPointOnPlane( vec3_t dst, const vec3_t p, const vec3_t normal )
 /*
 ** assumes "src" is normalized
 */
-void PerpendicularVector( vec3_t dst, const vec3_t src )
+void PerpendicularVector (vec3_t dst, const vec3_t src)
 {
 	int	pos;
 	int i;
@@ -351,18 +349,16 @@ __declspec (naked) long Q_ftol (float f)
 /*
 =================
 SetPlaneSignbits
+
+for fast BoxOnPlaneSide() test
 =================
 */
 void SetPlaneSignbits (cplane_t *out)
 {
 	int	bits;
-//	int i, j;
 
-	// for fast box on planeside test
 	bits = 0;
-//	for (i = 0, j = 1; i < 3; i++, j <<= 1)
-//		if (out->normal[i] < 0) bits |= j;
-	if (out->normal[0] < 0) bits = 1; else bits = 0;
+	if (out->normal[0] < 0) bits = 1;
 	if (out->normal[1] < 0) bits |= 2;
 	if (out->normal[2] < 0) bits |= 4;
 	out->signbits = bits;
@@ -372,7 +368,6 @@ void SetPlaneSignbits (cplane_t *out)
 /*
 ===============
 LerpAngle
-
 ===============
 */
 float LerpAngle (float a2, float a1, float frac)
@@ -385,7 +380,7 @@ float LerpAngle (float a2, float a1, float frac)
 }
 
 
-float	anglemod(float a)
+float anglemod (float a)
 {
 #if 0
 	if (a >= 0)
@@ -393,7 +388,7 @@ float	anglemod(float a)
 	else
 		a += 360*( 1 + (int)(-a/360) );
 #endif
-	a = (360.0/65536) * ((int)(a*(65536/360.0)) & 65535);
+	a = (360.0f/65536) * ((int)(a*(65536.0f/360)) & 65535);
 	return a;
 }
 
@@ -401,6 +396,7 @@ float	anglemod(float a)
 //	vec3_t	corners[2];
 
 
+/*
 // this is the slow, general version
 int BoxOnPlaneSide2 (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
 {
@@ -432,6 +428,7 @@ int BoxOnPlaneSide2 (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
 
 	return sides;
 }
+*/
 
 /*
 ==================
@@ -775,7 +772,7 @@ void AddPointToBounds (vec3_t v, vec3_t mins, vec3_t maxs)
 int VectorCompare (vec3_t v1, vec3_t v2)
 {
 	if (v1[0] != v2[0] || v1[1] != v2[1] || v1[2] != v2[2])
-			return 0;
+		return 0;
 
 	return 1;
 }
@@ -786,7 +783,7 @@ vec_t VectorNormalize (vec3_t v)
 	float	length, ilength;
 
 	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
-	length = sqrt (length);		// FIXME
+	length = sqrt (length);
 
 	if (length)
 	{
@@ -805,7 +802,7 @@ vec_t VectorNormalize2 (vec3_t v, vec3_t out)
 	float	length, ilength;
 
 	length = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
-	length = sqrt (length);		// FIXME
+	length = sqrt (length);
 
 	if (length)
 	{
@@ -873,17 +870,9 @@ void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross)
 	cross[2] = v1[0]*v2[1] - v1[1]*v2[0];
 }
 
-vec_t VectorLength(vec3_t v)
+vec_t VectorLength (vec3_t v)
 {
-	int		i;
-	float	length;
-
-	length = 0;
-	for (i = 0; i < 3; i++)
-		length += v[i]*v[i];
-	length = sqrt (length);		// FIXME
-
-	return length;
+	return sqrt (v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 }
 
 float VectorDistance (vec3_t vec1, vec3_t vec2)
@@ -917,7 +906,7 @@ void AnglesToAxis (const vec3_t angles, vec3_t axis[3])
 	VectorSubtract (vec3_origin, right, axis[1]);
 }
 
-void AxisClear (vec3_t axis[3])
+void _AxisClear (vec3_t axis[3])
 {
 	axis[0][0] = 1;
 	axis[0][1] = 0;
@@ -930,7 +919,7 @@ void AxisClear (vec3_t axis[3])
 	axis[2][2] = 1;
 }
 
-void AxisCopy (vec3_t in[3], vec3_t out[3])
+void _AxisCopy (vec3_t in[3], vec3_t out[3])
 {
 	VectorCopy (in[0], out[0]);
 	VectorCopy (in[1], out[1]);
@@ -1515,19 +1504,52 @@ void Q_strncpylower (char *dest, char *src, int len)
 
 void Q_CopyFilename (char *dest, char *src, int len)
 {
-	char	c;
+	char	c, *s, *d;
 
+	// copy name with replacing '\' -> '/' and lowercasing
+	s = src;
+	d = dest;
 	while (len--)
 	{
-		c = *src++;
+		c = *s++;
 		if (c == '\\')
 			c = '/';
 		else if (c >= 'A' && c <= 'Z')
 			c += 32;
-		*dest++ = c;
-		if (!c) return;	// copied
+		*d++ = c;
+		if (!c) break;
 	}
-	*dest = 0;
+	*d = 0;
+
+	s = d = dest;
+	len = 0;
+	do
+	{
+		c = *s++;
+		if (c == '/')
+		{
+			while (*s == '/') s++;			// replace '//' -> '/' (may be when "path/" + "/name")
+			if (s[0] == '.' && s[1] == '.' && s[2] == '/'&& len)	// cut "dir/../"
+			{
+				do
+				{
+					d--;
+					len--;
+				} while (len && *d != '/');
+				if (*d == '/')
+				{
+					d++;
+					len++;
+				}
+				c = s[3];
+				s += 4;
+			}
+			else if (s[0] == '.' && s[1] == '/')	// cut "/./"
+				s += 2;
+		}
+		*d++ = c;
+		len++;
+	} while (c);
 }
 
 
@@ -1541,7 +1563,7 @@ int Com_sprintf (char *dest, int size, char *fmt, ...)
 	len = vsnprintf (dest, size, fmt, argptr);
 	va_end (argptr);
 	if (len < 0 || len >= size - 1)
-		Com_WPrintf ("Com_sprintf: overflow of %d\n", size);
+		Com_WPrintf ("Com_sprintf: overflow of %d" RETADDR_STR "\n", size, GET_RETADDR(dest));
 #else
 	char	bigbuffer[0x10000];
 

@@ -279,7 +279,10 @@ void CL_BaseMove (usercmd_t *cmd)
 
 	memset (cmd, 0, sizeof(*cmd));
 
-	VectorCopy (cl.viewangles, cmd->angles);
+	// copy angles with float->short
+	cmd->angles[0] = cl.viewangles[0];
+	cmd->angles[1] = cl.viewangles[1];
+	cmd->angles[2] = cl.viewangles[2];
 	if (in_strafe.state & 1)
 	{
 		cmd->sidemove += cl_sidespeed->value * CL_KeyState (&in_right);

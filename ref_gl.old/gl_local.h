@@ -524,8 +524,8 @@ typedef struct
 {
 	//--- copy of glstate from NEW ref_gl ----
 	// (required for GLimp_... functions)
-	int		currentBinds[2];
-	int		currentEnv[2];
+	int		currentBinds[32];
+	int		currentEnv[32];
 	int		currentTmu;
 	int		currentState;
 	int		currentCullMode;

@@ -198,14 +198,16 @@ static void AddSkySurfaces (void);
 
 static void SetCurrentShader (shader_t *shader)	//?? + int fogNum
 {
-	if (numVerts > 0)
+	if (numVerts && numIndexes)
+		// we can get situation, when verts==2 and inds==0 due to geometry simplification -- this is OK (??)
+		// sample: map "actmet", inside building with rotating glass doors, floor 2: exotic lamp (nested cilinders with alpha)
 	{
 		DrawTextLeft ("SetCurrentShader() without flush!",1,0,0);
 		Com_WPrintf ("SetCurrentShader(%s) without flush (old: %s, %d verts, %d inds)\n",
 			shader->name, currentShader->name, numVerts, numIndexes);
 	}
 	currentShader = shader;
-	numVerts = numIndexes = 0;	// clear buffer
+	numVerts = numIndexes = 0;		// clear buffer
 	//?? setup shader time
 }
 
@@ -266,7 +268,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 			t = deform->wave.freq * ap.time + deform->wave.phase;
 			for (j = 0, vec = vb->verts, norm = normals; j < numVerts; j++, vec++, norm++)
 			{
-				f = table[(int)((t + deform->waveDiv * (vec->xyz[0] + vec->xyz[1] + vec->xyz[2])) * 1024) & 0x3FF]
+				f = table[Q_ftol((t + deform->waveDiv * (vec->xyz[0] + vec->xyz[1] + vec->xyz[2])) * 1024) & 0x3FF]
 					* deform->wave.amp + deform->wave.base;
 				vec->xyz[0] += f * norm->xyz[0];
 				vec->xyz[1] += f * norm->xyz[1];
@@ -284,12 +286,14 @@ static void GenerateColorArray (shaderStage_t *st)
 	int		i, rgba;
 	byte	a;
 
+	//!! add support for RGBGEN_(CONST,ENTITY,ONEMINUSENTITY) + ALPHAGEN_(CONST,ENTITY,ONEMINUSENTITY) at one time
+
 	/*---------- rgbGen -----------*/
 	switch (st->rgbGenType)
 	{
 	case RGBGEN_CONST:
-		rgba = ((int)(st->rgbGenConst[0]*255) << 0) + ((int)(st->rgbGenConst[1]*255) << 8) +
-			   ((int)(st->rgbGenConst[2]*255) << 16) + ((int)(st->alphaGenConst*255) << 24);
+		rgba = (Q_ftol(st->rgbGenConst[0]*255.0f) << 0) + (Q_ftol(st->rgbGenConst[1]*255.0f) << 8) +
+			   (Q_ftol(st->rgbGenConst[2]*255.0f) << 16) + (Q_ftol(st->alphaGenConst*255.0f) << 24);
 		for (i = 0; i < numVerts; i++)
 			vb->color[i].rgba = rgba;
 		break;
@@ -300,17 +304,17 @@ static void GenerateColorArray (shaderStage_t *st)
 	case RGBGEN_VERTEX:
 		for (i = 0; i < numVerts; i++)
 		{
-			vb->color[i].c[0] = srcVertexColor[i].c[0] * gl_config.identityLightValue_f;
-			vb->color[i].c[1] = srcVertexColor[i].c[1] * gl_config.identityLightValue_f;
-			vb->color[i].c[2] = srcVertexColor[i].c[2] * gl_config.identityLightValue_f;
+			vb->color[i].c[0] = srcVertexColor[i].c[0] * gl_config.identityLightValue >> 8;
+			vb->color[i].c[1] = srcVertexColor[i].c[1] * gl_config.identityLightValue >> 8;
+			vb->color[i].c[2] = srcVertexColor[i].c[2] * gl_config.identityLightValue >> 8;
 		}
 		break;
 	case RGBGEN_ONE_MINUS_VERTEX:
 		for (i = 0; i < numVerts; i++)
 		{
-			vb->color[i].c[0] = 255 - srcVertexColor[i].c[0] * gl_config.identityLightValue_f;
-			vb->color[i].c[1] = 255 - srcVertexColor[i].c[1] * gl_config.identityLightValue_f;
-			vb->color[i].c[2] = 255 - srcVertexColor[i].c[2] * gl_config.identityLightValue_f;
+			vb->color[i].c[0] = 255 - (srcVertexColor[i].c[0] * gl_config.identityLightValue >> 8);
+			vb->color[i].c[1] = 255 - (srcVertexColor[i].c[1] * gl_config.identityLightValue >> 8);
+			vb->color[i].c[2] = 255 - (srcVertexColor[i].c[2] * gl_config.identityLightValue >> 8);
 		}
 		break;
 	//!! other types
@@ -324,7 +328,7 @@ static void GenerateColorArray (shaderStage_t *st)
 	switch (st->alphaGenType)
 	{
 	case ALPHAGEN_CONST:
-		a = (int) (255 * st->alphaGenConst);
+		a = Q_ftol(255.0f * st->alphaGenConst);
 		for (i = 0; i < numVerts; i++)
 			vb->color[i].c[3] = a;
 		break;
@@ -332,8 +336,11 @@ static void GenerateColorArray (shaderStage_t *st)
 		a = currentEntity->shaderRGBA[3];
 		for (i = 0; i < numVerts; i++)
 			vb->color[i].c[3] = a;
+		break;
 	case ALPHAGEN_VERTEX:
-		break;	//?? now: filled (because rgbGen above is dummy)
+		for (i = 0; i < numVerts; i++)
+			vb->color[i].c[3] = srcVertexColor[i].c[3];
+		break;
 	//!! other types
 	}
 }
@@ -341,95 +348,89 @@ static void GenerateColorArray (shaderStage_t *st)
 
 static void GenerateTexCoordArray (shaderStage_t *st)
 {
-	int				i, j;
-	stageTMU_t		*tmu;
+	int				j;
 	tcModParms_t	*tcmod;
 	bufTexCoord_t	*dst, *dst2;
 	bufTexCoordSrc_t *src;
 
-	for (i = 0, tmu = st->tmu; i < 2, tmu->numAnimTextures > 0; i++, tmu++)
-	{
-		// choose destination array
-		if (i == 0)
-			dst = vb->texCoord0;
-		else
-			dst = vb->texCoord1;
+	dst = vb->texCoord0;
+//	else	//?? multitexturing !
+//		dst = vb->texCoord1;
 
-		src = srcTexCoord;
+	src = srcTexCoord;
 		dst2 = dst;		// save this for tcMod
 
-		// process tcGen
-		switch (tmu->tcGenType)
+	// process tcGen
+	switch (st->tcGenType)
+	{
+	case TCGEN_TEXTURE:
+		for (j = 0; j < numVerts; j++, src++, dst++)
 		{
-		case TCGEN_TEXTURE:
-			for (j = 0; j < numVerts; j++, src++, dst++)
+			dst->tex[0] = src->tex[0];
+			dst->tex[1] = src->tex[1];
+		}
+		break;
+	case TCGEN_LIGHTMAP:
+		for (j = 0; j < numVerts; j++, src++, dst++)
+		{
+			dst->tex[0] = src->lm[0];
+			dst->tex[1] = src->lm[1];
+		}
+		break;
+	//!! other types
+	}
+
+	// process tcMod
+	for (j = 0, tcmod = st->tcModParms; j < st->numTcMods; j++, tcmod++)
+	{
+		int		k;
+		float	f1, f2;
+
+		dst = dst2;
+		switch (tcmod->type)
+		{
+		case TCMOD_SCROLL:
+			f1 = tcmod->sSpeed * ap.time;
+			f1 = f1 - (int)f1;
+			f2 = tcmod->tSpeed * ap.time;
+			f2 = f2 - (int)f2;
+			for (k = 0; k < numVerts; k++, dst++)
 			{
-				dst->tex[0] = src->tex[0];
-				dst->tex[1] = src->tex[1];
+				dst->tex[0] += f1;
+				dst->tex[1] += f2;
 			}
 			break;
-		case TCGEN_LIGHTMAP:
-			for (j = 0; j < numVerts; j++, src++, dst++)
+		case TCMOD_TURB:
+			f1 = tcmod->wave.freq * ap.time + tcmod->wave.phase;
+			f2 = tcmod->wave.amp;
+			for (k = 0; k < numVerts; k++, dst++)
 			{
-				dst->tex[0] = src->lm[0];
-				dst->tex[1] = src->lm[1];
+				float	*vec;
+
+				vec = &vb->verts[k].xyz[0];
+				dst->tex[0] += sinTable[Q_ftol(((vec[0] + vec[2]) / 1024.0f + f1) * 1024) & 0x3FF] * f2;	// Q3: vec[0] + vec[2]
+				dst->tex[1] += sinTable[Q_ftol(((vec[1] + vec[2]) / 1024.0f + f1) * 1024) & 0x3FF] * f2;	// Q3: vec[1]
+			}
+			break;
+		case TCMOD_WARP:
+			for (k = 0; k < numVerts; k++, dst++)
+			{
+				f1 = dst->tex[0];
+				f2 = dst->tex[1];
+				dst->tex[0] = f1 / 64.0f + sinTable[Q_ftol((f2 / 16.0f + ap.time) / (2.0f * M_PI) * 1024) & 0x3FF] / 16.0f;
+				dst->tex[1] = f2 / 64.0f + sinTable[Q_ftol((f1 / 16.0f + ap.time) / (2.0f * M_PI) * 1024) & 0x3FF] / 16.0f;
+			}
+			break;
+		case TCMOD_SCALE:
+			f1 = tcmod->sScale;
+			f2 = tcmod->tScale;
+			for (k = 0; k < numVerts; k++, dst++)
+			{
+				dst->tex[0] *= f1;
+				dst->tex[1] *= f2;
 			}
 			break;
 		//!! other types
-		}
-
-		// process tcMod
-		for (j = 0, tcmod = tmu->tcModParms; j < tmu->numTcMods; j++, tcmod++)
-		{
-			int		k;
-			float	f1, f2;
-
-			dst = dst2;
-			switch (tcmod->type)
-			{
-			case TCMOD_SCROLL:
-				f1 = tcmod->sSpeed * ap.time;
-				f1 = f1 - (int)f1;
-				f2 = tcmod->tSpeed * ap.time;
-				f2 = f2 - (int)f2;
-				for (k = 0; k < numVerts; k++, dst++)
-				{
-					dst->tex[0] += f1;
-					dst->tex[1] += f2;
-				}
-				break;
-			case TCMOD_TURB:
-				f1 = tcmod->wave.freq * ap.time + tcmod->wave.phase;
-				f2 = tcmod->wave.amp;
-				for (k = 0; k < numVerts; k++, dst++)
-				{
-					float	*vec;
-
-					vec = &vb->verts[k].xyz[0];
-					dst->tex[0] += sinTable[(int)(((vec[0] + vec[2]) / 1024.0f + f1) * 1024) & 0x3FF] * f2;	// Q3: vec[0] + vec[2]
-					dst->tex[1] += sinTable[(int)(((vec[1] + vec[2]) / 1024.0f + f1) * 1024) & 0x3FF] * f2;	// Q3: vec[1]
-				}
-				break;
-			case TCMOD_WARP:
-				for (k = 0; k < numVerts; k++, dst++)
-				{
-					f1 = dst->tex[0];
-					f2 = dst->tex[1];
-					dst->tex[0] = f1 / 64.0f + sinTable[(int)((f2 / 16.0f + ap.time) / (2.0f * M_PI) * 1024) & 0x3FF] / 16.0f;
-					dst->tex[1] = f2 / 64.0f + sinTable[(int)((f1 / 16.0f + ap.time) / (2.0f * M_PI) * 1024) & 0x3FF] / 16.0f;
-				}
-				break;
-			case TCMOD_SCALE:
-				f1 = tcmod->sScale;
-				f2 = tcmod->tScale;
-				for (k = 0; k < numVerts; k++, dst++)
-				{
-					dst->tex[0] *= f1;
-					dst->tex[1] *= f2;
-				}
-				break;
-			//!! other types
-			}
 		}
 	}
 }
@@ -438,12 +439,12 @@ static void GenerateTexCoordArray (shaderStage_t *st)
 /*------------ Stage iterators -------------*/
 
 
-static void BindStageImage (stageTMU_t *tmu)
+static void BindStageImage (shaderStage_t *st)
 {
-	if (tmu->numAnimTextures == 1)
-		GL_Bind (tmu->mapImage[0]);
+	if (st->numAnimTextures == 1)
+		GL_Bind (st->mapImage[0]);
 	else
-		GL_Bind (tmu->mapImage[(int)(ap.time * tmu->animMapFreq) % tmu->numAnimTextures]);
+		GL_Bind (st->mapImage[Q_ftol(ap.time * st->animMapFreq) % st->numAnimTextures]);	//!! use shaderTime/entityTime ?
 }
 
 
@@ -489,12 +490,10 @@ static void DrawArrays (int *indexes, int numIndexes)
 }
 
 
-#define RELAX_COLOR_ARRAYS
-
 static void GenericStageIterator (void)
 {
 	int		numStages, i;
-	shaderStage_t *stage;
+	shaderStage_t *stage, **pstage;
 	qboolean multiPass;
 
 //	DrawTextLeft (va("StageIterator(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes),1,1,1);//!!!
@@ -514,10 +513,10 @@ static void GenericStageIterator (void)
 	}
 
 	numStages = currentShader->numStages;
-	stage = currentShader->stages;
+	pstage = currentShader->stages;
 
 	/*------------- prepare renderer --------------*/
-	if (numStages > 1 || stage->texEnvMode)
+	if (numStages > 1)
 	{
 		multiPass = true;
 		qglDisableClientState (GL_COLOR_ARRAY);	//?? is it needed?
@@ -527,13 +526,8 @@ static void GenericStageIterator (void)
 	{
 		// single-pass shader: only one set of colors and textures
 		multiPass = false;
-#ifdef RELAX_COLOR_ARRAYS
+		stage = *pstage;
 		SetupColorArrays (stage);
-#else
-		GenerateColorArray (stage);
-		qglEnableClientState (GL_COLOR_ARRAY);
-		qglColorPointer (4, GL_UNSIGNED_BYTE, 0, vb->color);
-#endif
 		GenerateTexCoordArray (stage);
 		qglEnableClientState (GL_TEXTURE_COORD_ARRAY);
 		qglTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord0);
@@ -545,27 +539,21 @@ static void GenericStageIterator (void)
 
 	if (multiPass)
 	{
-#ifndef RELAX_COLOR_ARRAYS
-		qglEnableClientState (GL_COLOR_ARRAY);	// keep it always on?
-#endif
 		qglEnableClientState (GL_TEXTURE_COORD_ARRAY);
 	}
 
 	/*---------------- draw stages ----------------*/
-	for (i = 0; i < numStages; i++, stage++)
+	for (i = 0; i < numStages; i++, pstage++)
 	{
+		stage = *pstage;
+
 		if (multiPass)
 		{
-#ifdef RELAX_COLOR_ARRAYS
 			SetupColorArrays (stage);
-#else
-			GenerateColorArray (stage);
-			qglColorPointer (4, GL_UNSIGNED_BYTE, 0, vb->color);
-#endif
 			GenerateTexCoordArray (stage);
 //			qglEnableClientState (GL_COLOR_ARRAY);
 		}
-		if (!stage->tmu[1].numAnimTextures)
+//??		if (!stage->tmu[1].numAnimTextures)
 		{
 			/*----- no multitexturing ------*/
 			if (multiPass)
@@ -573,13 +561,13 @@ static void GenericStageIterator (void)
 //			if (vertexLighting && gl_lightmap) -- unimplemented
 //				GL_Bind(gl_whiteImage) or GL_Bind(NULL) (disable texturing)
 //			else
-				BindStageImage (&stage->tmu[0]);
+				BindStageImage (stage);
 			GL_State (stage->glState);
 			DrawArrays (indexesArray, numIndexes);
 		}
-		else
+/*		else ??
 		{
-			/*----- use multitexturing -----*/
+			//----- use multitexturing -----
 			GL_State (stage->glState);
 			//?? process portals: qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 			// setup TMU 0
@@ -599,7 +587,7 @@ static void GenericStageIterator (void)
 
 			qglDisable (GL_TEXTURE_2D);		// disable multitexturing
 			GL_SelectTexture (0);
-		}
+		} */
 	}
 
 	/*----------------- finalize ------------------*/
@@ -700,7 +688,7 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 			if (j < 0)	dv = -verts[-j - 1];
 			else		dv = verts[j - 1];
 
-			if (dv < 0.001) continue;	// don't divide by zero
+			if (dv < 0.001f) continue;	// don't divide by zero
 
 			j = vecToSt[axis][0];
 			if (j < 0)	s = -verts[-j - 1] / dv;
@@ -711,8 +699,8 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 			else		t = verts[j - 1] / dv;
 
 			if (s < skyMins[0][axis]) skyMins[0][axis] = s;
-			if (t < skyMins[1][axis]) skyMins[1][axis] = t;
 			if (s > skyMaxs[0][axis]) skyMaxs[0][axis] = s;
+			if (t < skyMins[1][axis]) skyMins[1][axis] = t;
 			if (t > skyMaxs[1][axis]) skyMaxs[1][axis] = t;
 		}
 		return;
@@ -976,7 +964,7 @@ static void DrawSkyBox (void)
 
 		if (skyMins[0][i] > skyMaxs[0][i] ||
 			skyMins[1][i] > skyMaxs[1][i])
-			continue;		// no sky surfaces on this plane
+			continue;		// no visible sky surfaces on this plane
 
 		// tesselate sky surface (up to 9 points per diminsion)
 		vec = &vb->verts[0];
@@ -1059,7 +1047,7 @@ static void CheckDynamicLightmap (surfaceCommon_t *s)
 	{
 		ls = &ap.lightStyles[dl->style[i]];
 #define CHECK(n)	(dl->modulate[i][n] != ls->rgb[n])
-		if (CHECK(0) || CHECK(1) || CHECK(2))	//?? make it faster (cache results in bool[256] ?)
+		if (CHECK(0) || CHECK(1) || CHECK(2))	//?? make it faster (cache results ?) (BUT: surface may be invisible and not updated)
 		{
 //			Com_Printf("dl%d: %g, %g, %g\n",dl->style[i], ls->rgb[0], ls->rgb[1], ls->rgb[2]);
 			i = -1;
@@ -1123,6 +1111,53 @@ static void TesselatePlanarSurf (surfacePlanar_t *surf)
 	idxSrc = surf->indexes;
 	for (i = 0; i < surf->numIndexes; i++)
 		*idx++ = *idxSrc++ + firstVert;
+}
+
+
+static void TesselatePolySurf (surfacePoly_t *surf)
+{
+	bufVertex_t	*v;
+	bufTexCoordSrc_t *t;
+	int			*idx, i, firstVert, firstIndex;
+	int			*c;
+	int			numIdx;
+	vertexPoly_t *vs;
+
+	numIdx = (surf->numVerts - 2) * 3;
+	RB_CheckOverflow (surf->numVerts, numIdx);
+
+	firstVert = numVerts;
+	numVerts += surf->numVerts;
+	firstIndex = numIndexes;
+	numIndexes += numIdx;
+
+	// setup normal ??
+
+	v = &vb->verts[firstVert];
+	t = &srcTexCoord[firstVert];
+	c = &srcVertexColor[firstVert].rgba;
+
+	// copy vertexes
+	vs = surf->verts;
+	for (i = 0; i < surf->numVerts; i++, vs++, v++, t++, c++)
+	{
+		VectorCopy (vs->xyz, v->xyz);		// copy vertex
+		t->tex[0] = vs->st[0];		// copy texture coords
+		t->tex[1] = vs->st[1];
+//	??	t->lm[0] = 0;				// copy lightmap coords
+//		t->lm[1] = 0;
+		*c = vs->rgba;				// copy vertex color (sometimes may be ignored??)
+	}
+
+	// copy indexes
+	idx = &indexesArray[firstIndex];
+
+	for (i = 1; i < numVerts-1; i++)
+	{
+		*idx++ = firstVert;
+		*idx++ = firstVert + i;
+		*idx++ = firstVert + i + 1;
+	}
 }
 
 
@@ -1523,7 +1558,7 @@ static void DrawTriangles (void)
 static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 {
 	int		i;
-	shaderStage_t *stage;
+	shaderStage_t *stage, **pstage;
 //	static int inds[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 /* Feauture version (??):
@@ -1553,11 +1588,12 @@ static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
  */
 
 	LOG_STRING (va("*** FastIterator(%s, %d) ***\n", currentShader->name, numSurfs));
-	for (i = 0, stage = currentShader->stages; i < currentShader->numStages; i++, stage++)
+	for (i = 0, pstage = currentShader->stages; i < currentShader->numStages; i++, pstage++)
 	{
 		surfaceInfo_t **psurf;
 		int		j;
 
+		stage = *pstage;
 		GL_State (stage->glState);
 		GL_CullFace (currentShader->cullMode);
 		// setup RGBA (if const)
@@ -1569,7 +1605,7 @@ static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 		else
 			qglEnableClientState (GL_COLOR_ARRAY);
 		// bind texture(s)
-		BindStageImage (&stage->tmu[0]);	//!! add multitetxuring
+		BindStageImage (stage);	//!! add multitetxuring
 
 		for (j = 0, psurf = surfs; j < numSurfs; j++, psurf++)
 		{
@@ -1583,7 +1619,7 @@ static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 				pl = surf->pl;
 
 				qglVertexPointer (3, GL_FLOAT, sizeof(vertex_t), pl->verts);
-				if (stage->tmu[0].tcGenType == TCGEN_TEXTURE)	//!! add multitexturing
+				if (stage->tcGenType == TCGEN_TEXTURE)	//!! add multitexturing
 					qglTexCoordPointer (2, GL_FLOAT, sizeof(vertex_t), pl->verts[0].st);
 				else
 					qglTexCoordPointer (2, GL_FLOAT, sizeof(vertex_t), pl->verts[0].lm);
@@ -1623,7 +1659,8 @@ static void DrawParticles (particle_t *p)
 
 		scale = (p->org[0] - ap.vieworg[0]) * ap.viewaxis[0][0] +
 				(p->org[1] - ap.vieworg[1]) * ap.viewaxis[0][1] +
-				(p->org[2] - ap.vieworg[2]) * ap.viewaxis[0][2];
+				(p->org[2] - ap.vieworg[2]) * ap.viewaxis[0][2];		// get Z-coordinate
+		scale *= ap.fov_scale;
 		if (scale < 20.0f)
 			scale = 1;
 		else
@@ -1809,6 +1846,9 @@ static void RB_DrawScene (void)
 			case SURFACE_PARTICLE:
 				DrawParticles (surf->part);
 				break;
+			case SURFACE_POLY:
+				TesselatePolySurf (surf->poly);
+				break;
 			//!! other types
 			}
 		}
@@ -1862,15 +1902,28 @@ void GL_AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityN
 }
 
 
+void *GL_AllocDynamicMemory (int size)
+{
+	void	*ptr;
+
+	if (dynamicBufferSize + size > MAX_DYNAMIC_BUFFER)
+	{
+		Com_DPrintf ("R_AllocDynamicMemory(%d) failed\n", size);
+		return NULL;
+	}
+
+	ptr = &dynamicBuffer[dynamicBufferSize];
+	dynamicBufferSize += size;
+
+	return ptr;
+}
+
+
 surfaceCommon_t *GL_AddDynamicSurface (shader_t *shader, int entityNum)
 {
 	surfaceCommon_t *surf;
 
-	if (dynamicBufferSize + sizeof(surfaceCommon_t) > MAX_DYNAMIC_BUFFER)
-		return NULL;
-
-	surf = (surfaceCommon_t*) &dynamicBuffer[dynamicBufferSize];
-	dynamicBufferSize += sizeof(surfaceCommon_t);
+	surf = (surfaceCommon_t*) GL_AllocDynamicMemory (sizeof(surfaceCommon_t));
 
 	GL_AddSurfaceToPortal (surf, shader, entityNum);
 	return surf;

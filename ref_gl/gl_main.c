@@ -69,6 +69,21 @@ cvar_t	*gl_showtris;
 cvar_t	*gl_singleShader;
 
 
+static void Gfxinfo_f (void)
+{
+	Com_Printf ("GL_VENDOR: %s\n", gl_config.vendor_string);
+	Com_Printf ("GL_RENDERER: %s\n", gl_config.renderer_string);
+	Com_Printf ("GL_VERSION: %s\n", gl_config.version_string);
+	Com_Printf ("GL_EXTENSIONS: %s\n", gl_config.extensions_string);
+	Com_Printf ("Multitexturing: ");
+	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
+		Com_Printf ("yes, %d texture units\n", gl_config.maxActiveTextures);
+	else
+		Com_Printf ("no\n");
+	Com_Printf ("Lighting: %s\n", gl_config.vertexLight ? "vertex" : "lightmap");
+}
+
+
 static void GL_Register (void)
 {
 CVAR_BEGIN(vars)
@@ -133,7 +148,7 @@ CVAR_END
 
 	CVAR_GET_VARS(vars);
 
-//	Cmd_AddCommand ("gl_strings", GL_Strings_f);
+	Cmd_AddCommand ("gfxinfo", Gfxinfo_f);
 }
 
 /*
@@ -285,22 +300,16 @@ static int GL_Init (void *hinstance, void *hWnd)
 	RESET(gl_textureBits);
 #undef RESET
 
-	/*----------------- Get various GL strings ----------------*/
-	Q_strncpyz (gl_config.vendor_string, qglGetString (GL_VENDOR), sizeof(gl_config.vendor_string));
-	Q_strncpyz (gl_config.renderer_string, qglGetString (GL_RENDERER), sizeof(gl_config.renderer_string));
-	Q_strncpyz (gl_config.version_string, qglGetString (GL_VERSION), sizeof(gl_config.version_string));
-//??	Q_strncpyz (gl_config.extensions_string, qglGetString (GL_EXTENSIONS), sizeof(gl_config.extensions_string));
-	Com_Printf ("GL_VENDOR: %s\n", gl_config.vendor_string);
-	Com_Printf ("GL_RENDERER: %s\n", gl_config.renderer_string);
-	Com_Printf ("GL_VERSION: %s\n", gl_config.version_string);
-//??	Com_Printf ("GL_EXTENSIONS: %s\n", gl_config.extensions_string);
-
 #ifdef __linux__
 	Cvar_SetInteger ("gl_finish", 1);
 #endif
 
-	/*------------------ Grab extensions ----------------------*/
+	/*----------------- Get various GL strings ----------------*/
+	Q_strncpyz (gl_config.vendor_string, qglGetString (GL_VENDOR), sizeof(gl_config.vendor_string));
+	Q_strncpyz (gl_config.renderer_string, qglGetString (GL_RENDERER), sizeof(gl_config.renderer_string));
+	Q_strncpyz (gl_config.version_string, qglGetString (GL_VERSION), sizeof(gl_config.version_string));
 
+	/*------------------ Grab extensions ----------------------*/
 	QGL_InitExtensions ();
 
 	//?? is maxActiveTextures needed?
@@ -336,7 +345,6 @@ static int GL_Init (void *hinstance, void *hWnd)
 
 	GL_InitImages ();
 	GL_InitShaders ();
-//	GL_InitSkins ();
 	GL_InitModels ();
 	GL_InitBackend ();
 
@@ -366,6 +374,8 @@ R_Shutdown
 */
 static void GL_Shutdown (void)
 {
+	Cmd_RemoveCommand ("gfxinfo");
+
 	GL_ShutdownBackend ();
 	GL_ShutdownModels ();
 	GL_ShutdownShaders ();
@@ -630,7 +640,7 @@ static void SetPerspective (void)
 	float	xmax, xmin, ymax, ymin, zmin, zmax, tfx, tfy;
 
 	if (gl_refdef.flags & RDF_NOWORLDMODEL)
-		vp.zFar = 2048;
+		vp.zFar = 1024;
 	else
 	{	// calculate zFar depends on visible bounding box size
 		int		i;
@@ -717,16 +727,6 @@ static void GL_RenderFrame (refdef_t *fd)
 	/*----------- prepare data ------------*/
 
 	gl_refdef.flags = fd->rdflags;
-	// copy screen params
-	gl_refdef.x = fd->x;
-	gl_refdef.y = fd->y;
-	gl_refdef.width = fd->width;
-	gl_refdef.height = fd->height;
-	gl_refdef.fov_x = fd->fov_x;
-	gl_refdef.fov_y = fd->fov_y;
-	// setup vieworg
-	VectorCopy (fd->vieworg, gl_refdef.vieworg);
-	AnglesToAxis (fd->viewangles, gl_refdef.viewaxis);
 	// setup time
 	gl_refdef.time = fd->time;
 
@@ -758,12 +758,14 @@ static void GL_RenderFrame (refdef_t *fd)
 
 	// setup viewPortal structure
 	memset (&vp, 0, sizeof(vp));
-	vp.x = gl_refdef.x;
-	vp.y = vid.height - (gl_refdef.y + gl_refdef.height);
-	vp.w = gl_refdef.width;
-	vp.h = gl_refdef.height;
-	vp.fov_x = gl_refdef.fov_x;
-	vp.fov_y = gl_refdef.fov_y;
+	vp.x = fd->x;
+	vp.y = vid.height - (fd->y + fd->height);
+	vp.w = fd->width;
+	vp.h = fd->height;
+	vp.fov_x = fd->fov_x;
+	vp.fov_y = fd->fov_y;
+	vp.fov_scale = tan (fd->fov_x / 2.0f / 180.0f * M_PI);
+	if (vp.fov_scale < 0.01) vp.fov_scale = 0.01;
 
 	vp.lightStyles = gl_refdef.lightStyles;
 	vp.time = gl_refdef.time;
@@ -778,11 +780,8 @@ static void GL_RenderFrame (refdef_t *fd)
 	gl_speeds.parts = gl_speeds.cullParts = 0;
 	vp.particles = fd->particles;
 
-	VectorCopy (gl_refdef.vieworg, vp.vieworg);
-	vp.vieworg[0] = gl_refdef.vieworg[0];
-	vp.vieworg[1] = gl_refdef.vieworg[1];
-	vp.vieworg[2] = gl_refdef.vieworg[2];
-	AxisCopy (gl_refdef.viewaxis, vp.viewaxis);
+	VectorCopy (fd->vieworg, vp.vieworg);
+	AnglesToAxis (fd->viewangles, vp.viewaxis);
 
 	GL_ClearPortal ();
 	PrepareWorldModel ();
@@ -1142,6 +1141,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 
 	memset (&gl_config, 0, sizeof(gl_config));
 	memset (&gl_state, 0, sizeof(gl_state));
+	textbufCount = 0;		// clear texts (may appear during vid_restart)
 
 	gl_config.consoleOnly = Cvar_Get ("gl_console_only", "0", 0)->integer;
 

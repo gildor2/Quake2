@@ -107,10 +107,10 @@ typedef enum
 
 /*---------------- Shader stage ----------------*/
 
-#define MAX_SHADER_STAGES	8
 #define MAX_SHADER_DEFORMS	3
-#define MAX_STAGE_TEXTURES	16
 #define MAX_STAGE_TCMODS	4
+#define MAX_SHADER_STAGES	32
+#define MAX_STAGE_TEXTURES	128
 
 typedef struct
 {
@@ -152,48 +152,40 @@ typedef struct
 	};
 } deformParms_t;
 
-typedef struct
-{
-	int		numAnimTextures;	// in range [1..MAX_STAGE_TEXTURES]; if 0 -- ignore stage (and treat previous as last)
-	float	animMapFreq;		// valid only when numAnimTextures > 1
-	image_t	*mapImage[MAX_STAGE_TEXTURES];
-	qboolean isLightmap;
 
-	// tcGen params
-	tcGenType_t tcGenType;
-	vec3_t	tcGenVec[2];		// for TCGEN_VECTOR
-
-	// tcMod params
-	int		numTcMods;
-	tcModParms_t *tcModParms;
-} stageTMU_t;
-
-
-//!! make shaderStage_t variable length (depends on multitexture usage)
 typedef struct
 {
 	// GL_State ...
 	int		glState;
-	int		texEnvMode;	// parameter for GL_TexEnv() for 2nd TMU (1st is always GL_MODULATE)
+	int		texEnvMode;	// parameter for GL_TexEnv() for 2nd TMU (1st is always GL_MODULATE) (unused ??)
 
+	qboolean isLightmap;
+	qboolean detail;				//?? true is stage is detail (unused ??)
+
+	/*---------------- RGBA params ----------------*/
 	// rgbGen params
 	rgbGenType_t rgbGenType;
 	union {
 		waveParams_t rgbGenWave;	// if RGBGEN_WAVE
-		float		rgbGenConst[3];	// if RGBGEN_CONST
+		float		rgbGenConst[3];	// if RGBGEN_CONST	(make byte[3] or [4] (combine with alphaGenConst) !!!)
 	};
-
 	// alphaGen params
 	alphaGenType_t	alphaGenType;
 	union {
 		waveParams_t alphaGenWave;	// if ALPHAGEN_WAVE
 		float		alphaGenConst;	// if ALPHAGEN_CONST
 	};
-
-	qboolean detail;				//?? true is stage is detail
-
-	//?? int numTmu;
-	stageTMU_t tmu[2];	//?? -> tmu[numTmu]
+	/*--------------- texture params --------------*/
+	// tcGen params
+	tcGenType_t tcGenType;
+	vec3_t	tcGenVec[2];		// for TCGEN_VECTOR
+	// tcMod params
+	int		numTcMods;
+	tcModParms_t *tcModParms;
+	// images: variable length
+	int		numAnimTextures;	// in range [1..MAX_STAGE_TEXTURES]; if 0 -- ignore stage (and treat previous as last)
+	float	animMapFreq;		// valid only when numAnimTextures > 1
+	image_t	*mapImage[1];
 } shaderStage_t;
 
 
@@ -212,8 +204,6 @@ typedef struct shader_s
 {
 	char	name[MAX_QPATH];
 
-	int		numStages;
-	shaderStage_t *stages;
 	int		lightmapNumber;
 	int		sortIndex;
 	float	sortParam;		// values from sortParam_t, but in float representation
@@ -258,9 +248,13 @@ typedef struct shader_s
 	};
 
 	// remap shader
-	struct shader_s *alphaShader;		// for skins: same shader as current, but translucent (for skins)
+	struct shader_s *alphaShader;		// for skins: same shader as current, but translucent
 
 	struct shader_s *hashNext;
+
+	// stages: variable length
+	int		numStages;
+	shaderStage_t *stages[1];
 } shader_t;
 
 

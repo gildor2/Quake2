@@ -27,7 +27,7 @@ typedef struct
 
 typedef struct
 {
-	qboolean restart_sound;
+	qboolean restart_sound;		//?? is it really needed to restart sound for cinematics ?
 	int		s_rate;
 	int		s_width;
 	int		s_channels;
@@ -224,94 +224,26 @@ static cblock_t Huff1Decompress (cblock_t in)
 	while (count)
 	{
 		inbyte = *input++;
-		//-----------
-		if (nodenum < 256)
-		{
-			hnodes = hnodesbase + (nodenum<<9);
-			*out_p++ = nodenum;
-			if (!--count)
-				break;
-			nodenum = cin.numhnodes1[nodenum];
-		}
-		nodenum = hnodes[nodenum*2 + (inbyte&1)];
+#define PROCESS_BIT	\
+		if (nodenum < 256)	\
+		{					\
+			hnodes = hnodesbase + (nodenum<<9);	\
+			*out_p++ = nodenum;					\
+			if (!--count)	\
+				break;		\
+			nodenum = cin.numhnodes1[nodenum];	\
+		}					\
+		nodenum = hnodes[nodenum*2 + (inbyte&1)];	\
 		inbyte >>=1;
-		//-----------
-		if (nodenum < 256)
-		{
-			hnodes = hnodesbase + (nodenum<<9);
-			*out_p++ = nodenum;
-			if (!--count)
-				break;
-			nodenum = cin.numhnodes1[nodenum];
-		}
-		nodenum = hnodes[nodenum*2 + (inbyte&1)];
-		inbyte >>=1;
-		//-----------
-		if (nodenum < 256)
-		{
-			hnodes = hnodesbase + (nodenum<<9);
-			*out_p++ = nodenum;
-			if (!--count)
-				break;
-			nodenum = cin.numhnodes1[nodenum];
-		}
-		nodenum = hnodes[nodenum*2 + (inbyte&1)];
-		inbyte >>=1;
-		//-----------
-		if (nodenum < 256)
-		{
-			hnodes = hnodesbase + (nodenum<<9);
-			*out_p++ = nodenum;
-			if (!--count)
-				break;
-			nodenum = cin.numhnodes1[nodenum];
-		}
-		nodenum = hnodes[nodenum*2 + (inbyte&1)];
-		inbyte >>=1;
-		//-----------
-		if (nodenum < 256)
-		{
-			hnodes = hnodesbase + (nodenum<<9);
-			*out_p++ = nodenum;
-			if (!--count)
-				break;
-			nodenum = cin.numhnodes1[nodenum];
-		}
-		nodenum = hnodes[nodenum*2 + (inbyte&1)];
-		inbyte >>=1;
-		//-----------
-		if (nodenum < 256)
-		{
-			hnodes = hnodesbase + (nodenum<<9);
-			*out_p++ = nodenum;
-			if (!--count)
-				break;
-			nodenum = cin.numhnodes1[nodenum];
-		}
-		nodenum = hnodes[nodenum*2 + (inbyte&1)];
-		inbyte >>=1;
-		//-----------
-		if (nodenum < 256)
-		{
-			hnodes = hnodesbase + (nodenum<<9);
-			*out_p++ = nodenum;
-			if (!--count)
-				break;
-			nodenum = cin.numhnodes1[nodenum];
-		}
-		nodenum = hnodes[nodenum*2 + (inbyte&1)];
-		inbyte >>=1;
-		//-----------
-		if (nodenum < 256)
-		{
-			hnodes = hnodesbase + (nodenum<<9);
-			*out_p++ = nodenum;
-			if (!--count)
-				break;
-			nodenum = cin.numhnodes1[nodenum];
-		}
-		nodenum = hnodes[nodenum*2 + (inbyte&1)];
-		inbyte >>=1;
+		PROCESS_BIT;
+		PROCESS_BIT;
+		PROCESS_BIT;
+		PROCESS_BIT;
+		PROCESS_BIT;
+		PROCESS_BIT;
+		PROCESS_BIT;
+		PROCESS_BIT;
+#undef PROCESS_BIT
 	}
 
 	if (input - in.data != in.count && input - in.data != in.count+1)
@@ -494,7 +426,7 @@ void SCR_PlayCinematic (char *arg)
 	cl.cinematicframe = 0;
 	ext = strchr (arg, '.');
 
-	if (ext && !strcmp (ext, ".pcx"))
+	if (ext && (!strcmp (ext, ".pcx") || !strcmp (ext, ".jpg") || !strcmp (ext, ".tga")))
 	{	// static image
 		Q_CopyFilename (cin.imageName, arg, sizeof(cin.imageName)-1);
 		cin.imageName[ext - arg] = 0;		// cut extension

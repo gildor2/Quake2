@@ -1,0 +1,4 @@
+BEAMS:
+- remove error with gl_identityLight2 shader; fix this shader (currently have name "*identityLight"; add "2" ??)
+  ?? remove "SHADER_WALL" flag? add "SHADER_WORLD" -- depth test/write (other -- 2D) ? "SHADER_MIPMAP"
+  ?? is "IMAGE_MIPMAP" needed? Ignore "want mipmap==false" when "mipmap==true"?

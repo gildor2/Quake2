@@ -35,7 +35,7 @@ typedef struct
 	int			frames;
 	float		light;
 	vec3_t		lightcolor;
-	float		start;
+	float		time;
 	int			baseframe;
 } explosion_t;
 
@@ -330,30 +330,152 @@ CL_AllocExplosion
 explosion_t *CL_AllocExplosion (void)
 {
 	int		i;
-	int		time;
-	int		index;
+	float	time;
+	explosion_t *ex, *ex1;
 
-	for (i=0 ; i<MAX_EXPLOSIONS ; i++)
+	for (i = 0, ex = cl_explosions; i < MAX_EXPLOSIONS; i++, ex++)
 	{
-		if (cl_explosions[i].type == ex_free)
+		if (ex->type == ex_free)
 		{
-			memset (&cl_explosions[i], 0, sizeof (cl_explosions[i]));
-			return &cl_explosions[i];
+			memset (ex, 0, sizeof(explosion_t));
+			ex->time = -100;	//?? just a negative number
+			return ex;
 		}
 	}
-// find the oldest explosion
-	time = cl.time;
-	index = 0;
 
-	for (i=0 ; i<MAX_EXPLOSIONS ; i++)
-		if (cl_explosions[i].start < time)
+	// find the oldest explosion (add priority for smoke/explode ??)
+	time = 0;
+	ex1 = cl_explosions;
+
+	for (i = 1, ex = &cl_explosions[1]; i < MAX_EXPLOSIONS; i++, ex++)
+		if (ex->time > time)
 		{
-			time = cl_explosions[i].start;
-			index = i;
+			time = ex->time;
+			ex1 = ex;
 		}
-	memset (&cl_explosions[index], 0, sizeof (cl_explosions[index]));
-	return &cl_explosions[index];
+	memset (ex1, 0, sizeof(explosion_t));
+	ex1->time = -100;
+	return ex1;
 }
+
+
+/*
+=================
+CL_AddExplosions
+=================
+*/
+void CL_AddExplosions (void)
+{
+	entity_t	*ent;
+	int			i, f, timeDelta;
+	explosion_t	*ex;
+	float		frac;
+	static int oldTime;
+
+	timeDelta = cl.time - oldTime;
+	oldTime = cl.time;
+	if (timeDelta <= 0)
+		return;
+
+	if (r_sfx_pause->integer) timeDelta = 0;
+
+	memset (&ent, 0, sizeof(ent));
+
+	for (i = 0, ex = cl_explosions; i < MAX_EXPLOSIONS; i++, ex++)
+	{
+		if (ex->type == ex_free)
+			continue;
+
+		if (ex->time < 0)
+			ex->time = 0;	// just started
+		else
+			ex->time += timeDelta;
+		frac = ex->time / 100.0f;
+		if (frac < 0) frac = 0;
+		f = floor (frac);
+
+		ent = &ex->ent;
+
+		switch (ex->type)
+		{
+		case ex_mflash:
+			if (f >= ex->frames-1)
+				ex->type = ex_free;
+			break;
+		case ex_misc:
+			if (f >= ex->frames-1)
+			{
+				ex->type = ex_free;
+				break;
+			}
+			ent->alpha = 1.0 - frac / (ex->frames - 1);
+			break;
+		case ex_flash:
+			if (f >= 1)
+			{
+				ex->type = ex_free;
+				break;
+			}
+			ent->alpha = 1.0;
+			break;
+		case ex_poly:
+			if (f >= ex->frames-1)
+			{
+				ex->type = ex_free;
+				break;
+			}
+
+			ent->alpha = (16 - f) / 16.0f;
+
+			if (f < 10)
+			{
+				ent->skinnum = (f>>1);
+				if (ent->skinnum < 0)
+					ent->skinnum = 0;
+			}
+			else
+			{
+				ent->flags |= RF_TRANSLUCENT;
+				if (f < 13)
+					ent->skinnum = 5;
+				else
+					ent->skinnum = 6;
+			}
+			break;
+		case ex_poly2:
+			if (f >= ex->frames-1)
+			{
+				ex->type = ex_free;
+				break;
+			}
+
+			ent->alpha = (5 - f) / 5.0f;
+			ent->skinnum = 0;
+			ent->flags |= RF_TRANSLUCENT;
+			break;
+		}
+
+		if (ex->type == ex_free)
+			continue;
+		if (ex->light)
+		{
+			V_AddLight (ent->origin, ex->light*ent->alpha,
+				ex->lightcolor[0], ex->lightcolor[1], ex->lightcolor[2]);
+		}
+
+		VectorCopy (ent->origin, ent->oldorigin);
+
+		if (f < 0)
+			f = 0;
+		ent->frame = ex->baseframe + f + 1;
+		ent->oldframe = ex->baseframe + f;
+//		ent->backlerp = r_sfx_pause->integer ? 0 : 1.0f - cl.lerpfrac;
+		ent->backlerp = r_sfx_pause->integer ? 0 : 1.0f - (frac - f);
+
+		V_AddEntity (ent);
+	}
+}
+
 
 /*
 =================
@@ -369,7 +491,6 @@ void CL_SmokeAndFlash(vec3_t origin)
 	ex->type = ex_misc;
 	ex->frames = 4;
 	ex->ent.flags = RF_TRANSLUCENT;
-	ex->start = cl.frame.servertime - 100;
 	ex->ent.model = cl_mod_smoke;
 
 	ex = CL_AllocExplosion ();
@@ -377,7 +498,6 @@ void CL_SmokeAndFlash(vec3_t origin)
 	ex->type = ex_flash;
 	ex->ent.flags = RF_FULLBRIGHT;
 	ex->frames = 2;
-	ex->start = cl.frame.servertime - 100;
 	ex->ent.model = cl_mod_flash;
 }
 
@@ -818,12 +938,17 @@ void CL_ParseTEnt (void)
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
 
-//		CL_AllocParticleTrace (pos, dir, 2, 0.2);
-		CL_MetalSparks (pos, dir, rand() % 5 + 1); //!! random count
-//!!		if (type == TE_GUNSHOT)
-//			CL_ParticleEffect (pos, dir, 0, 40);
-//		else
-//			CL_ParticleEffect (pos, dir, 0xE0, 6);
+		if (cls.newfx)
+		{	//!! check for metal surface (smoke for non-metals) + check for "type" (see below) (see KP)
+			CL_MetalSparks (pos, dir, rand() % 5 + 1);
+		}
+		else
+		{
+			if (type == TE_GUNSHOT)
+				CL_ParticleEffect (pos, dir, 0, 40);
+			else
+				CL_ParticleEffect (pos, dir, 0xE0, 6);
+		}
 
 		if (type != TE_SPARKS)
 		{
@@ -942,7 +1067,6 @@ void CL_ParseTEnt (void)
 
 		ex->type = ex_misc;
 		ex->ent.flags = RF_FULLBRIGHT|RF_TRANSLUCENT;
-		ex->start = cl.frame.servertime - 100;
 		ex->light = 150;
 		ex->lightcolor[0] = 1;
 		ex->lightcolor[1] = 1;
@@ -967,7 +1091,6 @@ void CL_ParseTEnt (void)
 		VectorCopy (pos, ex->ent.origin);
 		ex->type = ex_poly;
 		ex->ent.flags = RF_FULLBRIGHT;
-		ex->start = cl.frame.servertime - 100;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
 		ex->lightcolor[1] = 0.5;
@@ -990,7 +1113,6 @@ void CL_ParseTEnt (void)
 		VectorCopy (pos, ex->ent.origin);
 		ex->type = ex_poly;
 		ex->ent.flags = RF_FULLBRIGHT;
-		ex->start = cl.frame.servertime - 100;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
 		ex->lightcolor[1] = 0.5;
@@ -1015,7 +1137,6 @@ void CL_ParseTEnt (void)
 		VectorCopy (pos, ex->ent.origin);
 		ex->type = ex_poly;
 		ex->ent.flags = RF_FULLBRIGHT;
-		ex->start = cl.frame.servertime - 100;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
 		ex->lightcolor[1] = 0.5;
@@ -1042,7 +1163,6 @@ void CL_ParseTEnt (void)
 		VectorCopy (pos, ex->ent.origin);
 		ex->type = ex_poly;
 		ex->ent.flags = RF_FULLBRIGHT;
-		ex->start = cl.frame.servertime - 100;
 		ex->light = 350;
 		ex->lightcolor[0] = 0.0;
 		ex->lightcolor[1] = 1.0;
@@ -1095,9 +1215,8 @@ void CL_ParseTEnt (void)
 		VectorCopy (pos, ex->ent.origin);
 		ex->type = ex_flash;
 		// note to self
-		// we need a better no draw flag
+		// we need a better no draw flag (????)
 		ex->ent.flags = RF_BEAM;
-		ex->start = cl.frame.servertime - 0.1;
 		ex->light = 100 + (rand()%75);
 		ex->lightcolor[0] = 1.0;
 		ex->lightcolor[1] = 1.0;
@@ -1157,7 +1276,6 @@ void CL_ParseTEnt (void)
 		else // flechette
 			ex->ent.skinnum = 2;
 
-		ex->start = cl.frame.servertime - 100;
 		ex->light = 150;
 		// PMM
 		if (type == TE_BLASTER2)
@@ -1192,7 +1310,6 @@ void CL_ParseTEnt (void)
 		VectorCopy (pos, ex->ent.origin);
 		ex->type = ex_poly;
 		ex->ent.flags = RF_FULLBRIGHT;
-		ex->start = cl.frame.servertime - 100;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
 		ex->lightcolor[1] = 0.5;
@@ -1712,109 +1829,6 @@ void CL_AddPlayerBeams (void)
 				org[j] += dist[j]*len;
 			d -= model_length;
 		}
-	}
-}
-
-/*
-=================
-CL_AddExplosions
-=================
-*/
-void CL_AddExplosions (void)
-{
-	entity_t	*ent;
-	int			i;
-	explosion_t	*ex;
-	float		frac;
-	int			f;
-
-	memset (&ent, 0, sizeof(ent));
-
-	for (i=0, ex=cl_explosions ; i< MAX_EXPLOSIONS ; i++, ex++)
-	{
-		if (ex->type == ex_free)
-			continue;
-		frac = (cl.time - ex->start)/100.0;
-		f = floor(frac);
-
-		ent = &ex->ent;
-
-		switch (ex->type)
-		{
-		case ex_mflash:
-			if (f >= ex->frames-1)
-				ex->type = ex_free;
-			break;
-		case ex_misc:
-			if (f >= ex->frames-1)
-			{
-				ex->type = ex_free;
-				break;
-			}
-			ent->alpha = 1.0 - frac/(ex->frames-1);
-			break;
-		case ex_flash:
-			if (f >= 1)
-			{
-				ex->type = ex_free;
-				break;
-			}
-			ent->alpha = 1.0;
-			break;
-		case ex_poly:
-			if (f >= ex->frames-1)
-			{
-				ex->type = ex_free;
-				break;
-			}
-
-			ent->alpha = (16.0 - (float)f)/16.0;
-
-			if (f < 10)
-			{
-				ent->skinnum = (f>>1);
-				if (ent->skinnum < 0)
-					ent->skinnum = 0;
-			}
-			else
-			{
-				ent->flags |= RF_TRANSLUCENT;
-				if (f < 13)
-					ent->skinnum = 5;
-				else
-					ent->skinnum = 6;
-			}
-			break;
-		case ex_poly2:
-			if (f >= ex->frames-1)
-			{
-				ex->type = ex_free;
-				break;
-			}
-
-			ent->alpha = (5.0 - (float)f)/5.0;
-			ent->skinnum = 0;
-			ent->flags |= RF_TRANSLUCENT;
-			break;
-		}
-
-		if (ex->type == ex_free)
-			continue;
-		if (ex->light)
-		{
-			V_AddLight (ent->origin, ex->light*ent->alpha,
-				ex->lightcolor[0], ex->lightcolor[1], ex->lightcolor[2]);
-		}
-
-		VectorCopy (ent->origin, ent->oldorigin);
-
-		if (f < 0)
-			f = 0;
-		ent->frame = ex->baseframe + f + 1;
-		ent->oldframe = ex->baseframe + f;
-		ent->backlerp = 1.0 - cl.lerpfrac;
-
-		V_AddEntity (ent);
 	}
 }
 

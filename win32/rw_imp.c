@@ -42,32 +42,39 @@ swwstate_t sww_state;
 */
 #define	WINDOW_CLASS_NAME "Quake 2"
 
-void Vid_CreateWindow( int width, int height, int stylebits )
+void Vid_CreateWindow (int width, int height, qboolean fullscreen)
 {
-	WNDCLASS		wc;
-	RECT			r;
-	int				x, y, w, h;
-	int				exstyle;
-
-	if (r_fullscreen->integer)
-		exstyle = WS_EX_TOPMOST;
-	else
-		exstyle = 0;
+	WNDCLASS	wc;
+	RECT		r;
+	int			stylebits;
+	int			x, y, w, h;
+	int			exstyle;
 
 	/* Register the frame class */
-    wc.style         = 0;
-    wc.lpfnWndProc   = (WNDPROC)sww_state.wndproc;
-    wc.cbClsExtra    = 0;
-    wc.cbWndExtra    = 0;
-    wc.hInstance     = sww_state.hInstance;
-    wc.hIcon         = 0;
-    wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
+	wc.style         = 0;
+	wc.lpfnWndProc   = (WNDPROC)sww_state.wndproc;
+	wc.cbClsExtra    = 0;
+	wc.cbWndExtra    = 0;
+	wc.hInstance     = sww_state.hInstance;
+	wc.hIcon         = 0;
+	wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
 	wc.hbrBackground = (void *)COLOR_GRAYTEXT;
-    wc.lpszMenuName  = 0;
-    wc.lpszClassName = WINDOW_CLASS_NAME;
+	wc.lpszMenuName  = 0;
+	wc.lpszClassName = WINDOW_CLASS_NAME;
 
     if (!RegisterClass (&wc))
 		Com_Error (ERR_FATAL, "Couldn't register window class");
+
+	if (fullscreen)
+	{
+		exstyle = WS_EX_TOPMOST;
+		stylebits = WS_POPUP|WS_VISIBLE;
+	}
+	else
+	{
+		exstyle = 0;
+		stylebits = WINDOW_STYLE;
+	}
 
 	r.left = 0;
 	r.top = 0;
@@ -95,10 +102,10 @@ void Vid_CreateWindow( int width, int height, int stylebits )
 	if (!sww_state.hWnd)
 		Com_Error (ERR_FATAL, "Couldn't create window");
 
-	ShowWindow( sww_state.hWnd, SW_SHOWNORMAL );
-	UpdateWindow( sww_state.hWnd );
-	SetForegroundWindow( sww_state.hWnd );
-	SetFocus( sww_state.hWnd );
+	ShowWindow (sww_state.hWnd, SW_SHOWNORMAL);
+	UpdateWindow (sww_state.hWnd);
+	SetForegroundWindow (sww_state.hWnd);
+	SetFocus (sww_state.hWnd);
 
 	// let the sound and input subsystems know about the new window
 	Vid_NewWindow (width, height);
@@ -128,18 +135,18 @@ int SWimp_Init( void *hInstance, void *wndProc )
 ** The necessary width and height parameters are grabbed from
 ** vid.width and vid.height.
 */
-static qboolean SWimp_InitGraphics( qboolean fullscreen )
+static qboolean SWimp_InitGraphics (qboolean fullscreen)
 {
 	// free resources in use
 	SWimp_Shutdown ();
 
 	// create a new window
-	Vid_CreateWindow (vid.width, vid.height, WINDOW_STYLE);
+	Vid_CreateWindow (vid.width, vid.height, fullscreen);
 
 	// initialize the appropriate subsystem
-	if ( !fullscreen )
+	if (!fullscreen)
 	{
-		if ( !DIB_Init( &vid.buffer, &vid.rowbytes ) )
+		if (!DIB_Init (&vid.buffer, &vid.rowbytes))
 		{
 			vid.buffer = 0;
 			vid.rowbytes = 0;
@@ -149,7 +156,7 @@ static qboolean SWimp_InitGraphics( qboolean fullscreen )
 	}
 	else
 	{
-		if ( !DDRAW_Init( &vid.buffer, &vid.rowbytes ) )
+		if (!DDRAW_Init (&vid.buffer, &vid.rowbytes))
 		{
 			vid.buffer = 0;
 			vid.rowbytes = 0;
@@ -170,24 +177,24 @@ static qboolean SWimp_InitGraphics( qboolean fullscreen )
 */
 void SWimp_EndFrame (void)
 {
-	if ( !sw_state.fullscreen )
+	if (!sw_state.fullscreen)
 	{
-		if ( sww_state.palettized )
+		if (sww_state.palettized)
 		{
 //			holdpal = SelectPalette(hdcScreen, hpalDIB, FALSE);
 //			RealizePalette(hdcScreen);
 		}
 
 
-		BitBlt( sww_state.hDC,
+		BitBlt (sww_state.hDC,
 			    0, 0,
 				vid.width,
 				vid.height,
 				sww_state.hdcDIBSection,
 				0, 0,
-				SRCCOPY );
+				SRCCOPY);
 
-		if ( sww_state.palettized )
+		if (sww_state.palettized)
 		{
 //			SelectPalette(hdcScreen, holdpal, FALSE);
 		}
@@ -370,25 +377,21 @@ void SWimp_Shutdown( void )
 /*
 ** SWimp_AppActivate
 */
-void SWimp_AppActivate( qboolean active )
+void SWimp_AppActivate (qboolean active)
 {
-	if ( active )
+//	if (!sww_state.hWnd) return;
+
+	if (active)
 	{
-		if ( sww_state.hWnd )
-		{
-			SetForegroundWindow( sww_state.hWnd );
-			ShowWindow( sww_state.hWnd, SW_RESTORE );
-		}
+		SetForegroundWindow (sww_state.hWnd);
+		ShowWindow (sww_state.hWnd, SW_RESTORE);
 	}
 	else
 	{
-		if ( sww_state.hWnd )
-		{
-			if ( sww_state.initializing )
-				return;
-			if ( r_fullscreen->integer )
-				ShowWindow( sww_state.hWnd, SW_MINIMIZE );
-		}
+		if (sww_state.initializing)
+			return;
+		if (r_fullscreen->integer)
+			ShowWindow (sww_state.hWnd, SW_MINIMIZE);
 	}
 }
 

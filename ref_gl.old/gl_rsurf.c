@@ -818,6 +818,7 @@ void R_DrawAlphaSurfaces (void)
 	{
 		// draw reflections on all surfaces
 //		qglColor3f (0.4, 0.4, 0.5);
+		intens /= 2;
 		qglColor3f (intens,intens,intens);
 		qglBlendFunc (GL_SRC_COLOR, GL_ONE);	// dst + src^2
 //		qglBlendFunc (GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);

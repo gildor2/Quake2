@@ -1071,7 +1071,7 @@ void Master_Shutdown (void)
 		return;		// a private dedicated game
 
 	// send to group master
-	for (i=0 ; i<MAX_MASTERS ; i++)
+	for (i = 0; i < MAX_MASTERS; i++)
 		if (master_adr[i].port)
 		{
 			if (i > 0)

@@ -54,11 +54,13 @@ void CL_CheckPredictionError (void)
 			Com_WPrintf ("prediction miss on %d: %d\n", cl.frame.serverframe,
 				delta[0] + delta[1] + delta[2]);
 
-		VectorCopy (cl.frame.playerstate.pmove.origin, cl.predicted_origins[frame]);
+		cl.predicted_origins[frame][0] = cl.frame.playerstate.pmove.origin[0];
+		cl.predicted_origins[frame][1] = cl.frame.playerstate.pmove.origin[1];
+		cl.predicted_origins[frame][2] = cl.frame.playerstate.pmove.origin[2];
 
 		// save for error itnerpolation
 		for (i = 0; i < 3; i++)
-			cl.prediction_error[i] = delta[i]*0.125;
+			cl.prediction_error[i] = delta[i] * 0.125f;
 	}
 }
 
@@ -69,19 +71,25 @@ CL_ClipMoveToEntities
 
 ====================
 */
-void CL_ClipMoveToEntities ( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, trace_t *tr )
+void CL_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, trace_t *tr)
 {
-	int			i, x, zd, zu;
-	trace_t		trace;
-	int			headnode;
-	float		*angles;
+	int		i;
 	entity_state_t *ent;
-	int			num;
-	cmodel_t	*cmodel;
-	vec3_t		bmins, bmaxs;
+	trace_t	trace;
+	float	traceLen, traceWidth, b1, b2;
+	vec3_t	traceDir;
+
+	b1 = DotProduct (mins, mins);
+	b2 = DotProduct (maxs, maxs);
+	traceWidth = sqrt (b1 > b2 ? b1 : b2);
+	VectorSubtract (end, start, traceDir);
+	traceLen = VectorNormalize (traceDir) + traceWidth;
 
 	for (i = 0; i < cl.frame.num_entities; i++)
 	{
+		int		headnode, num;
+		float	*angles;
+
 		num = (cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES - 1);
 		ent = &cl_parse_entities[num];
 
@@ -93,14 +101,48 @@ void CL_ClipMoveToEntities ( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
 
 		if (ent->solid == 31)
 		{	// special value for bmodel
+			cmodel_t *cmodel;
+			vec3_t	center, tmp;
+			vec3_t	center2;//!! remove
+			float	entPos, dist2, dist0;
+
 			cmodel = cl.model_clip[ent->modelindex];
-			if (!cmodel)
-				continue;
+			if (!cmodel) continue;
+
+if (Cvar_VariableInt("test")) {//!!
+
+			// get model center
+			VectorAdd (cmodel->mins, cmodel->maxs, center);
+			VectorMA (ent->origin, 0.5f, center, center);
+			VectorCopy (center, center2);//!! remove
+			VectorSubtract (center, start, center);
+
+			// collision detection: line vs sphere
+			entPos = DotProduct (center, traceDir);
+			if (entPos < -traceWidth - cmodel->radius || entPos > traceLen + cmodel->radius)
+				continue; // too near / too far
+
+			VectorMA (center, -entPos, traceDir, tmp);
+			dist2 = DotProduct (tmp, tmp);
+			dist0 = cmodel->radius + traceWidth;
+			if (dist2 >= dist0 * dist0) continue;
+/*			re.DrawTextLeft(va("ent%d {%g,%g,%g:%g}  tr{%g,%g,%g}-{%g,%g,%g}:%g  pos:%g",
+				i, center2[0], center2[1], center2[2], cmodel->radius,
+				start[0],start[1],start[2],end[0],end[1],end[2],traceWidth,
+				entPos
+				),
+				1,1,0.5);//!!
+*/
+};//!!
+
 			headnode = cmodel->headnode;
 			angles = ent->angles;
 		}
 		else
 		{	// encoded bbox
+			int		x, zd, zu;
+			vec3_t	bmins, bmaxs;
+
 			x = 8 * (ent->solid & 31);
 			zd = 8 * ((ent->solid>>5) & 31);
 			zu = 8 * ((ent->solid>>10) & 63) - 32;
@@ -110,16 +152,13 @@ void CL_ClipMoveToEntities ( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
 			bmins[2] = -zd;
 			bmaxs[2] = zu;
 
+			if (VectorDistance (start, ent->origin) >= traceLen + VectorLength (zu > zd ? bmaxs : bmins))
+				continue;			// cannot collide with this entity: too far
 			headnode = CM_HeadnodeForBox (bmins, bmaxs);
 			angles = vec3_origin;	// boxes don't rotate
 		}
 
-		if (tr->allsolid)
-			return;
-
-		trace = CM_TransformedBoxTrace (start, end,
-			mins, maxs, headnode,  MASK_PLAYERSOLID,
-			ent->origin, angles);
+		trace = CM_TransformedBoxTrace (start, end, mins, maxs, headnode,  MASK_PLAYERSOLID, ent->origin, angles);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
 		{
@@ -134,6 +173,7 @@ void CL_ClipMoveToEntities ( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
 		}
 		else if (trace.startsolid)
 			tr->startsolid = true;
+		if (tr->allsolid) return;
 	}
 }
 
@@ -155,15 +195,6 @@ trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 	// check all other solid models
 	CL_ClipMoveToEntities (start, mins, maxs, end, &t);
 
-/*
-#define	GET_RETADDR2(firstarg)	(* ( ((int*)&firstarg) -2 ) )//!!!
-re.DrawTextLeft(va("PMTrace(%g,%g,%g)-(%g,%g,%g) f=%g s=%d ne=%d" RETADDR_STR,
-	start[0],start[1],start[2],
-	t.endpos[0],t.endpos[1],t.endpos[2],
-	t.fraction,t.startsolid,cl.frame.num_entities,
-	GET_RETADDR2(start)),
-	1,1,0);
-*/
 	return t;
 }
 
@@ -258,7 +289,9 @@ void CL_PredictMovement (void)
 		Pmove (&pm);
 
 		// save for debug checking
-		VectorCopy (pm.s.origin, cl.predicted_origins[frame]);
+		cl.predicted_origins[frame][0] = pm.s.origin[0];
+		cl.predicted_origins[frame][1] = pm.s.origin[1];
+		cl.predicted_origins[frame][2] = pm.s.origin[2];
 	}
 
 	oldframe = (ack - 2) & (CMD_BACKUP - 1);

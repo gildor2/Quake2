@@ -1490,12 +1490,12 @@ void CL_AddEntities (void)
 	else if (cl.time < cl.frame.servertime - 100)
 	{
 		if (cl_showclamp->integer)
-			Com_Printf ("low clamp %i\n", cl.frame.servertime-100 - cl.time);
+			Com_Printf ("low clamp %i\n", cl.frame.servertime - 100 - cl.time);
 		cl.time = cl.frame.servertime - 100;
 		cl.lerpfrac = 0;
 	}
 	else
-		cl.lerpfrac = 1.0 - (cl.frame.servertime - cl.time) * 0.01;
+		cl.lerpfrac = 1.0f - (cl.frame.servertime - cl.time) / 100.0f;
 
 	if (cl_timedemo->integer)
 		cl.lerpfrac = 1.0;

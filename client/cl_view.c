@@ -245,6 +245,8 @@ void CL_PrepRefresh (void)
 	if (!cl.configstrings[CS_MODELS+1][0])
 		return;		// no map loaded
 
+	CL_ClearTEnts ();		// temp entities linked to models, which are invalid after vid_restart
+
 	SCR_AddDirtyPoint (0, 0);
 	SCR_AddDirtyPoint (viddef.width-1, viddef.height-1);
 

@@ -16,6 +16,7 @@ static int	modelCount;
 /*---------------- Loading models: common ----------------*/
 
 static qboolean LoadMd2 (model_t *m, byte *buf, int len);
+static qboolean LoadSp2 (model_t *m, byte *buf, int len);
 
 
 model_t	*GL_FindModel (char *name)
@@ -61,8 +62,7 @@ model_t	*GL_FindModel (char *name)
 		if (!LoadMd2 (m, (byte*)file, len)) m = NULL;
 		break;
 	case IDSPRITEHEADER:
-		//!!
-		m = NULL;
+		if (!LoadSp2 (m, (byte*)file, len)) m = NULL;
 		break;
 	default:
 		// do not Com_Error() here: simply ignore unknown model formats
@@ -203,6 +203,25 @@ static void CopyLightmap (byte *dst, byte *src, int samples)
 			}
 		}
 	}
+}
+
+
+static void SetNodesAlpha (void)
+{
+	node_t	*node, *p;
+	surfaceCommon_t **psurf;
+	int		i, j;
+
+	// enumerate leafs
+	for (node = map.nodes + map.numNodes, i = 0; i < map.numLeafNodes - map.numNodes; node++, i++)
+		// check for alpha surfaces
+		for (psurf = node->leafFaces, j = 0; j < node->numLeafFaces; psurf++, j++)
+			if ((*psurf)->shader->style & (SHADER_ALPHA|SHADER_TRANS33|SHADER_TRANS66))
+			{
+				// set "haveAlpha" for leaf and all parent nodes
+				for (p = node; p; p = p->parent) p->haveAlpha = true;
+				break;
+			}
 }
 
 
@@ -1278,7 +1297,7 @@ static void GenerateLightmaps2 (void)
 			frac = frac_s * frac_t;
 			ADD(r, 3);	ADD(g, 4);	ADD(b, 5);
 #undef ADD
-			if (s->shader->style & (SHADER_TRANS33|SHADER_TRANS66/*??|SHADER_ALPHA*/))
+			if (s->shader->style & (SHADER_TRANS33|SHADER_TRANS66/*|SHADER_ALPHA*/))
 			{
 				float	scale, oldbr, newbr;
 
@@ -1528,6 +1547,8 @@ void GL_LoadWorldMap (char *name)
 		Com_Error (ERR_DROP, "R_FindModel: unknown BSP type");
 	}
 	Hunk_End ();
+
+	SetNodesAlpha ();
 }
 
 
@@ -1728,10 +1749,10 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 
 static qboolean LoadMd2 (model_t *m, byte *buf, int len)
 {
-	dmdl_t		*hdr;
-	md3Model_t	*md3;
+	dmdl_t	*hdr;
+	md3Model_t *md3;
 	surfaceCommon_t *cs;
-	surfaceMd3_t	*surf;
+	surfaceMd3_t *surf;
 	int		i, numVerts;
 	int		xyzIndexes[MAX_XYZ_INDEXES];
 	char	*skin;
@@ -1756,7 +1777,7 @@ static qboolean LoadMd2 (model_t *m, byte *buf, int len)
 	surf->numVerts = MAX_XYZ_INDEXES;
 	surf->numTris = MAX_XYZ_INDEXES - 2;
 	numVerts = ParseGlCmds (m->name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes);
-	Z_Free(surf);
+	Z_Free (surf);
 	Com_DPrintf ("LoadMD2(%s): %d xyz  %d st  %d verts\n", m->name, hdr->numXyz, hdr->numSt, numVerts);
 
 	/* Allocate memory:
@@ -1773,6 +1794,7 @@ static qboolean LoadMd2 (model_t *m, byte *buf, int len)
 		sizeof(surfaceCommon_t) + sizeof(surfaceMd3_t) +
 		numVerts*2*sizeof(float) + 3*hdr->numTris*sizeof(int)
 		+ numVerts*hdr->numFrames*sizeof(vertexMd3_t) + hdr->numSkins*sizeof(shader_t*));
+
 	/*-------- fill md3 structure --------*/
 	md3->numSurfaces = 1;
 	md3->numFrames = hdr->numFrames;
@@ -1828,6 +1850,65 @@ shader_t *GL_FindSkin (char *name)
 }
 
 
+/*-------------- Sprite models  ----------------*/
+
+
+static qboolean LoadSp2 (model_t *m, byte *buf, int len)
+{
+	dsprite_t *hdr;
+	dsprframe_t *in;
+	sp2Model_t *sp2;
+	sp2Frame_t *out;
+	int		i;
+
+	hdr = (dsprite_t*)buf;
+	if (hdr->version != SPRITE_VERSION)
+	{
+		Com_WPrintf ("R_LoadSp2: %s has wrong version %d\n", m->name, hdr->version);
+		return false;
+	}
+	if (hdr->numframes < 0)
+	{
+		Com_WPrintf ("R_LoadSp2: %s has incorrect frame count %d\n", m->name, hdr->numframes);
+		return false;
+	}
+
+	sp2 = Z_Malloc (sizeof(sp2Model_t) + hdr->numframes * sizeof(sp2Frame_t));
+	sp2->numFrames = hdr->numframes;
+	sp2->radius = 0;
+	for (i = 0, in = hdr->frames, out = sp2->frames; i < hdr->numframes; i++, in++, out++)
+	{
+		float	s, t, radius;
+
+		out->width = in->width;
+		out->height = in->height;
+		out->localOrigin[0] = in->origin_x;
+		out->localOrigin[1] = in->origin_y;
+
+		s = out->width - out->localOrigin[0];
+		if (s < out->localOrigin[0])
+			s = out->localOrigin[0];
+		t = out->height - out->localOrigin[1];
+		if (t < out->localOrigin[1])
+			t = out->localOrigin[1];
+		radius = sqrt (s * s + t * t);
+		if (radius > sp2->radius)
+			sp2->radius = radius;
+
+		out->shader = GL_FindShader (in->name, SHADER_CHECK|SHADER_WALL|SHADER_FORCEALPHA);
+		if (!out->shader)
+		{
+			Com_DPrintf ("R_LoadSp2(%s): %s is not found\n", m->name, in->name);
+			out->shader = gl_defaultShader;
+		}
+	}
+
+	m->type = MODEL_SP2;
+	m->sp2 = sp2;
+	return true;
+}
+
+
 /*----------------------------------------------*/
 
 
@@ -1853,6 +1934,9 @@ static void FreeModel (model_t *m)
 		break;		// nothing to free
 	case MODEL_MD3:
 		Z_Free (m->md3);
+		break;
+	case MODEL_SP2:
+		Z_Free (m->sp2);
 		break;
 	default:
 		Com_Error (ERR_FATAL, "R_FreeModel: unknown model type %d", m->type);

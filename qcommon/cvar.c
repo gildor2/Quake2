@@ -661,17 +661,24 @@ static void Cvar_List_f (void)
 	i = 0;
 	for (var = cvar_vars; var; var = var->next)
 	{
-		char	s[5];
+		char	s[5], *color;
 		int		flags;
 
 		if (mask && !MatchWildcard (var->name, mask)) continue;
 		i++;
 		flags = var->flags;
 		strcpy (s, "     ");
+		color = "";
 		if (flags & CVAR_USER_CREATED)
+		{
 			s[0] = '*';
+			color = "^6";
+		}
 		else if (flags & CVAR_GAME_CREATED)
+		{
 			s[0] = 'G';
+			color = "^5";
+		}
 		if (flags & CVAR_ARCHIVE)
 			s[1] = 'A';
 		if (flags & CVAR_USERINFO)
@@ -679,10 +686,13 @@ static void Cvar_List_f (void)
 		if (flags & CVAR_SERVERINFO)
 			s[3] = 'S';
 		if (flags & CVAR_NOSET)
+		{
 			s[4] = '-';
+			color = "^1";
+		}
 		else if (flags & CVAR_LATCH)
 			s[4] = 'L';
-		Com_Printf ("%s %s \"%s\"\n", s, var->name, var->string);
+		Com_Printf ("%s %s%s \"%s\"\n", s, color, var->name, var->string);
 	}
 	Com_Printf ("    %d cvars\n", i);
 }

@@ -134,7 +134,8 @@ void GL_ShowImages (void);
 typedef struct shader_s shader_t;
 
 extern	shader_t	*gl_defaultShader;
-extern	shader_t	*gl_identityLightShader;
+extern	shader_t	*gl_identityLightShader;	// no depth test/write
+extern	shader_t	*gl_identityLightShader2;	// with depth test/write
 extern	shader_t	*gl_concharsShader;
 extern	shader_t	*gl_defaultSkyShader;
 extern	shader_t	*gl_particleShader;
@@ -155,7 +156,7 @@ void	GL_ResetShaders (void);	// should be called every time before loading a new
 #define SHADER_TURB			2			// SURF_WARP (tcMod turb ...?)
 #define SHADER_TRANS33		4			// SURF_TRANS33 (alphaGen const 0.33, blend)
 #define SHADER_TRANS66		8			// SURF_TRANS66 (alphaGen const 0.66, blend)
-#define SHADER_FORCEALPHA	0x10		// for rgbGen vertex (image itself may be without alpha-channel)
+#define SHADER_FORCEALPHA	0x10		// for alphaGen vertex (image itself may be without alpha-channel)
 #define SHADER_ALPHA		0x20		// use texture's alpha channel (depends on itage.alphaType: 0->none, 1->alphaTest or blend, 2->blend)
 #define SHADER_WALL			0x40		// shader used as a wall texture (not GUI 2D image), also do mipmap
 #define SHADER_SKY			0x80		// SURF_SKY (use stage iterator for sky)
@@ -198,22 +199,37 @@ void	GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, lightsty
 typedef struct refEntity_s
 {
 	int		flags;
-	// position info
-	vec3_t	origin;
-	vec3_t	axis[3];
-	int		frustumMask;		//?? remove
-	vec3_t	modelvieworg;		// vieworg in model coordinate system
-	float	modelMatrix[4][4];	// modelview matrix
-	// info for frame lerping
-	int		frame, oldFrame;
-	float	backLerp;
-	// model info
 	model_t	*model;
-	// shading
-	shader_t *customShader;		// one shader for all surfaces
-	//?? skin_t *customSkin;	// multiple shaders (1 per surface)
-	int		skinNum;			// number of default (inline) skin
-	byte	shaderRGBA[4];		// for "rgbGen/alphaGen entity"
+	float	dist2;						// Z-coordinate of model
+
+	union {
+		struct {
+		/*-------- entity with model --------*/
+			// position info
+			vec3_t	origin;
+			vec3_t	axis[3];
+			int		frustumMask;		//?? remove
+			vec3_t	modelvieworg;		// vieworg in model coordinate system
+			float	modelMatrix[4][4];	// modelview matrix
+			// info for frame lerping
+			int		frame, oldFrame;
+			float	backLerp;
+			// shading
+			shader_t *customShader;		// one shader for all surfaces
+			//?? skin_t *customSkin;	// multiple shaders (1 per surface)
+			int		skinNum;			// number of default (inline) skin
+		};
+		struct {
+		/*------------- beam ----------------*/
+			vec3_t	beamStart, beamEnd;
+			float	beamRadius;
+		};
+	};
+
+	union {
+		byte	shaderRGBA[4];		// for "rgbGen/alphaGen entity"
+		int		shaderColor;
+	};
 	// draw sequence
 	struct refEntity_s *drawNext;
 } refEntity_t;
@@ -245,6 +261,7 @@ void	GL_ClearBuffers (void);
 void	GL_ClearPortal (void);
 void	GL_AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityNum);
 surfaceCommon_t *GL_AddDynamicSurface (shader_t *shader, int entityNum);
+void	*GL_AllocDynamicMemory (int size);
 void	GL_InsertShaderIndex (int index);
 void	GL_FinishPortal (void);
 
@@ -262,7 +279,7 @@ typedef struct
 	char	renderer_string[256];
 	char	vendor_string[256];
 	char	version_string[256];
-	char	extensions_string[8192];
+	char	extensions_string[8192];	//?? make dynamic
 
 	int		maxTextureSize;
 	int		extensionMask;
@@ -296,8 +313,8 @@ typedef struct
 typedef struct
 {
 	//?? NOTE: when changed, need to syncronize with OLD ref_gl
-	int		currentBinds[2];
-	int		currentEnv[2];
+	int		currentBinds[32];	// up to 32 texture units supports by OpenGL 1.3
+	int		currentEnv[32];
 	int		currentTmu;
 	int		currentState;
 	int		currentCullMode;
@@ -312,17 +329,11 @@ typedef struct
 	int		colorBits;				//?? 0 == 16, 32
 } glstate_t;
 
-//!! clean this structure: most fields used from viewPortal_t; or -- eliminate at all
+//?? clean this structure: most fields used from viewPortal_t; or -- eliminate at all
 typedef struct
 {
 	int		flags;
 	lightstyle_t *lightStyles;	// light styles for Q2/HL dynamic lightmaps
-	// screen params
-	int		x, y, width, height;
-	float	fov_x, fov_y;
-	// vieworg orientation
-	vec3_t	vieworg;
-	vec3_t	viewaxis[3];
 	int		viewCluster;
 	// time in seconds for shader effects etc
 	float	time;
@@ -352,7 +363,7 @@ typedef struct
 	float	modelMatrix[4][4];
 	// projection params
 	float	x, y, w, h;			// viewport
-	float	fov_x, fov_y;
+	float	fov_x, fov_y, fov_scale;
 	cplane_t frustum[4];		// used for frustum culling
 	float	projectionMatrix[4][4];
 	vec3_t	mins, maxs;			// bounding box of all visible leafs

@@ -194,11 +194,10 @@ R_DrawSpriteModel
 */
 void R_DrawSpriteModel (entity_t *e)
 {
-	float alpha = 1.0F;
-	vec3_t	point;
+	float	alpha;
+	vec3_t	point, up, down;
 	dsprframe_t	*frame;
-	float		*up, *right;
-	dsprite_t		*psprite;
+	dsprite_t *psprite;
 
 	// don't even bother culling, because it's just a single
 	// polygon without a surface cache
@@ -209,12 +208,12 @@ void R_DrawSpriteModel (entity_t *e)
 
 	frame = &psprite->frames[e->frame];
 
-	up = vup;
-	right = vright;
 	if (!currentmodel->skins[e->frame]) return; // no skin (bad model?)
 
 	if (e->flags & RF_TRANSLUCENT)
 		alpha = e->alpha;
+	else
+		alpha = 1;
 
 	qglColor4f( 1, 1, 1, alpha );
 
@@ -227,47 +226,45 @@ void R_DrawSpriteModel (entity_t *e)
 		// following 2 lines required to draw 2 sprites
 		qglEnable (GL_ALPHA_TEST);
 		qglAlphaFunc (GL_GEQUAL, 0.05);
-		qglEnable (GL_BLEND); //?? required for sprites with transparency
-		qglBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);	//??
 	}
 	else
 	{
-		qglEnable (GL_BLEND);
-		qglBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);	//??
 		qglDisable (GL_ALPHA_TEST);
 	}
+
+	qglEnable (GL_BLEND); //?? required for sprites with transparency
+	qglBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);	//??
+
+	VectorMA (e->origin, frame->height - frame->origin_y, vup, up);
+	VectorMA (e->origin, -frame->origin_y, vup, down);
 
 	qglBegin (GL_QUADS);
 
 	qglTexCoord2f (0, 1);
-	VectorMA (e->origin, -frame->origin_y, up, point);
-	VectorMA (point, -frame->origin_x, right, point);
+	VectorMA (down, -frame->origin_x, vright, point);
 	qglVertex3fv (point);
 
 	qglTexCoord2f (0, 0);
-	VectorMA (e->origin, frame->height - frame->origin_y, up, point);
-	VectorMA (point, -frame->origin_x, right, point);
+	VectorMA (up, -frame->origin_x, vright, point);
 	qglVertex3fv (point);
 
 	qglTexCoord2f (1, 0);
-	VectorMA (e->origin, frame->height - frame->origin_y, up, point);
-	VectorMA (point, frame->width - frame->origin_x, right, point);
+	VectorMA (up, frame->width - frame->origin_x, vright, point);
 	qglVertex3fv (point);
 
 	qglTexCoord2f (1, 1);
-	VectorMA (e->origin, -frame->origin_y, up, point);
-	VectorMA (point, frame->width - frame->origin_x, right, point);
+	VectorMA (down, frame->width - frame->origin_x, vright, point);
 	qglVertex3fv (point);
 
 	qglEnd ();
 
+	// restore default state
 	qglDisable (GL_ALPHA_TEST);
 	qglAlphaFunc (GL_GEQUAL, 0.666);
-	GL_TexEnv( GL_REPLACE );
-
 	qglDisable (GL_BLEND);
-
 	qglColor4f (1, 1, 1, 1);
+
+	GL_TexEnv( GL_REPLACE );
 }
 
 //==================================================================================
@@ -331,6 +328,7 @@ void R_DrawEntitiesOnList (void)
 
 		if ( currententity->flags & RF_BEAM )
 		{
+//			DrawTextLeft("beam",1,1,1);//!!
 			R_DrawBeam( currententity );
 		}
 		else
@@ -338,9 +336,11 @@ void R_DrawEntitiesOnList (void)
 			currentmodel = currententity->model;
 			if (!currentmodel)
 			{
+//				DrawTextLeft("NULL",1,1,1);//!!
 				R_DrawNullModel ();
 				continue;
 			}
+//			DrawTextLeft(va("\"%s\"",currentmodel->name),1,1,1);//!!
 			switch (currentmodel->type)
 			{
 			case mod_alias:
@@ -371,6 +371,7 @@ void R_DrawEntitiesOnList (void)
 
 		if ( currententity->flags & RF_BEAM )
 		{
+//			DrawTextLeft("beam2",1,1,1);//!!
 			R_DrawBeam( currententity );
 		}
 		else
@@ -379,9 +380,11 @@ void R_DrawEntitiesOnList (void)
 
 			if (!currentmodel)
 			{
+//				DrawTextLeft("NULL2",1,1,1);//!!
 				R_DrawNullModel ();
 				continue;
 			}
+//			DrawTextLeft(va("\"%s\"2",currentmodel->name),1,1,1);//!!
 			switch (currentmodel->type)
 			{
 			case mod_alias:

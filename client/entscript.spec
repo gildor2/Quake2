@@ -1,4 +1,4 @@
-- if (): cvar, maptype (q2, KP, q3, HL, any text (??)), platform (??), game
+- if (): cvar, maptype (q2, KP, q3, HL, any text (??)), platform (cvar ??), game (cvar)
 - entities:
   - rename class
   - delete

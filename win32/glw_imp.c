@@ -89,7 +89,7 @@ qboolean Vid_CreateWindow (int width, int height, qboolean fullscreen)
 
 	if (fullscreen)
 	{
-		exstyle = 0; //?? WS_EX_TOPMOST;
+		exstyle = WS_EX_TOPMOST;
 		stylebits = WS_POPUP|WS_VISIBLE;
 	}
 	else
@@ -396,7 +396,7 @@ void GLimp_SetGamma (float gamma, float intens)
 			v = tmp;
 		else
 			v = 65535.0f * pow (tmp / 65535.5f, invGamma);
-#else	// pow->overbright
+#else	// pow->overbright (as Q3 does)
 		tmp = gammaRamp[i] * intens + 128.0f;
 		if (invGamma == 1.0)
 			v = tmp * overbright;
@@ -424,7 +424,7 @@ void GLimp_SetGamma (float gamma, float intens)
  * for the window.  The state structure is also nulled out.
  *
  */
-void GLimp_Shutdown( void )
+void GLimp_Shutdown (void)
 {
 	RestoreGamma ();
 
@@ -454,7 +454,7 @@ void GLimp_Shutdown( void )
 	if (glw_state.log_fp)
 	{
 		fclose (glw_state.log_fp);
-		glw_state.log_fp = 0;
+		glw_state.log_fp = NULL;
 	}
 
 	UnregisterClass (WINDOW_CLASS_NAME, glw_state.hInstance);
@@ -475,7 +475,7 @@ void GLimp_Shutdown( void )
  * of OpenGL.  Under Win32 this means dealing with the pixelformats and
  * doing the wgl interface stuff.
  */
-int GLimp_Init( void *hinstance, void *wndproc )
+int GLimp_Init (void *hinstance, void *wndproc)
 {
 #define OSR2_BUILD_NUMBER 1111
 

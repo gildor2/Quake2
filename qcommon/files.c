@@ -1193,7 +1193,8 @@ void FS_AddGameDirectory (char *dir)
 	strcpy (fs_gamedir, dir);
 
 	/*-------- check for valid game directory -----------------*/
-	if (Sys_FindFirst (va("%s/%s/*", fs_basedir->string, dir), 0, 0))
+//??	if (Sys_FindFirst (va("%s/%s/*.*", fs_basedir->string, dir), 0, 0))  -- not works with CD
+	if (Sys_FindFirst (va("%s/*", dir), 0, 0))
 		Sys_FindClose ();
 	else
 	{
@@ -1784,7 +1785,7 @@ static void FS_Cat_f (void)
 {
 	FILE	*f;
 	int		len;
-	char	buf[64+1];
+	char	buf[64];
 
 	if (Cmd_Argc() != 2)
 	{
@@ -1800,15 +1801,18 @@ static void FS_Cat_f (void)
 	Com_Printf ("\n--------\n");
 	while (len)
 	{
-		int		get;
+		int		get, i;
+		char	*p;
 
 		get = len;
-		if (get >= sizeof(buf))
-			get = sizeof(buf) - 1;
+		if (get > sizeof(buf))
+			get = sizeof(buf);
 		FS_Read (buf, get, f);
-		buf[get] = 0;
-		Com_Printf ("%s", buf);
-		if (strlen (buf) < get)
+
+		for (i = 0, p = buf; i < get && *p; i++, p++)
+			if (*p != '\r') Com_Printf ("%c", *p);
+
+		if (i < get)
 		{
 			Com_Printf ("\nbinary file ... stopped.\n");
 			break;

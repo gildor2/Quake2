@@ -1429,6 +1429,9 @@ CVAR_END
 	SV_Init ();
 	CL_Init ();
 
+	// initialize rand() functions
+	srand (Sys_Milliseconds ());
+
 	// add "+commands" from command line
 	if (!Cbuf_AddLateCommands ())
 	{	// if the user didn't give any commands, run default action

@@ -52,8 +52,8 @@ typedef struct
 	unsigned	time;				// always sv.framenum * 100 msec
 	int			framenum;
 
-	char		name[MAX_QPATH];			// map name, or cinematic name
-	struct cmodel_s		*models[MAX_MODELS];
+	char		name[MAX_QPATH];	// map name, or cinematic name
+	cmodel_t	*models[MAX_MODELS];
 
 	char		configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
 	entity_state_t	baselines[MAX_EDICTS];

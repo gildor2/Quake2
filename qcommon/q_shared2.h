@@ -69,6 +69,20 @@ typedef enum {false, true}	qboolean;
 #define NULL ((void *)0)
 #endif
 
+#if defined(_M_IX86) || defined(__i386__)
+
+#define RETADDR_STR " (call from %08x)"
+#define	GET_RETADDR(firstarg)	(* ( ((int*)&firstarg) -1 ) )
+
+#else
+
+#define RETADDR_STR
+#define	GET_RETADDR()
+
+#endif
+
+//============================================================================
+
 
 // angle indexes
 #define	PITCH				0		// up / down
@@ -159,16 +173,18 @@ float Q_rsqrt (float number);
 //#define	fabs(f) Q_fabs(f)
 
 #if !defined C_ONLY && !defined __linux__ && !defined __sgi
-extern long Q_ftol( float f );
+extern long Q_ftol (float f);
 #else
-#define Q_ftol( f ) ( long ) (f)
+#define Q_ftol(f) (long) (f)
 #endif
 
 #define DotProduct(x,y)			(x[0]*y[0]+x[1]*y[1]+x[2]*y[2])
 #define VectorSubtract(a,b,c)	(c[0]=a[0]-b[0],c[1]=a[1]-b[1],c[2]=a[2]-b[2])
 #define VectorAdd(a,b,c)		(c[0]=a[0]+b[0],c[1]=a[1]+b[1],c[2]=a[2]+b[2])
-#define VectorCopy(a,b)			(b[0]=a[0],b[1]=a[1],b[2]=a[2])
-#define VectorClear(a)			(a[0]=a[1]=a[2]=0)
+//#define VectorCopy(a,b)			(b[0]=a[0],b[1]=a[1],b[2]=a[2])
+#define VectorCopy(a,b)			memcpy(b, a, sizeof(vec3_t))		// should be faster when "memcpy" is intrinsic
+//#define VectorClear(a)			(a[0]=a[1]=a[2]=0)
+#define VectorClear(a)			memset(a, 0, sizeof(vec3_t))
 #define VectorNegate(a,b)		(b[0]=-a[0],b[1]=-a[1],b[2]=-a[2])
 #define VectorSet(v, x, y, z)	(v[0]=(x), v[1]=(y), v[2]=(z))
 //#define	VectorMA(v, s, b, o)	((o)[0]=(v)[0]+(b)[0]*(s),(o)[1]=(v)[1]+(b)[1]*(s),(o)[2]=(v)[2]+(b)[2]*(s))
@@ -186,8 +202,10 @@ int VectorCompare (vec3_t v1, vec3_t v2);
 vec_t VectorLength (vec3_t v);
 float VectorDistance (vec3_t vec1, vec3_t vec2);
 void AnglesToAxis (const vec3_t angles, vec3_t axis[3]);
-void AxisClear (vec3_t axis[3]);
-void AxisCopy (vec3_t in[3], vec3_t out[3]);
+#define AxisClear(a)			memset(a, 0, sizeof(vec3_t)*3)
+void _AxisClear (vec3_t axis[3]);
+#define AxisCopy(i,o)			memcpy(o,i,sizeof(vec3_t)*3)
+void _AxisCopy (vec3_t in[3], vec3_t out[3]);
 void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross);
 vec_t VectorNormalize (vec3_t v);		// returns vector length
 vec_t VectorNormalize2 (vec3_t v, vec3_t out);
@@ -500,13 +518,6 @@ void SetPlaneSignbits (cplane_t *out);
 #define CPLANE_SIGNBITS			17
 #define CPLANE_PAD0				18
 #define CPLANE_PAD1				19
-
-typedef struct cmodel_s
-{
-	vec3_t	mins, maxs;
-	vec3_t	origin;			// for sounds or lights
-	int		headnode;
-} cmodel_t;
 
 typedef struct csurface_s
 {

@@ -277,32 +277,29 @@ material_t CMod_GetSurfMaterial (char *name)
 CMod_LoadSubmodels
 =================
 */
-static void CMod_LoadSubmodels (dmodel_t *data, int size)
+static void CMod_LoadSubmodels (dmodel_t *data, int count)
 {
-	dmodel_t	*in;
 	cmodel_t	*out;
-	int			i, j;
+	int			i;
 
-	in = data;
-
-	if (size < 1)
+	if (count < 1)
 		Com_Error (ERR_DROP, "Map with no models");
-	if (size > MAX_MAP_MODELS)
+	if (count > MAX_MAP_MODELS)
 		Com_Error (ERR_DROP, "Map has too many models");
 
-	numcmodels = size;
+	out = map_cmodels;
+	numcmodels = count;
 
-	for (i = 0; i < size; i++, in++, out++)
+	for (i = 0; i < count; i++, data++, out++)
 	{
-		out = &map_cmodels[i];
+		vec3_t	tmp;
 
-		for (j=0 ; j<3 ; j++)
-		{	// spread the mins / maxs by a pixel
-			out->mins[j] = in->mins[j]; // -1 -- migrated to LoadBspFile()
-			out->maxs[j] = in->maxs[j];
-			out->origin[j] = in->origin[j];
-		}
-		out->headnode = in->headnode;
+		VectorCopy (data->mins, out->mins);
+		VectorCopy (data->maxs, out->maxs);
+		VectorSubtract (out->maxs, out->mins, tmp);
+		out->radius = VectorLength (tmp) / 2;
+//??		VectorCopy (data->origin, out->origin);
+		out->headnode = data->headnode;
 	}
 }
 
@@ -793,7 +790,6 @@ void CMod_LoadHLSubmodels (lump_t *l)
 		{	// spread the mins / maxs by a pixel
 			out->mins[j] = LittleFloat (in->mins[j]) - 1;
 			out->maxs[j] = LittleFloat (in->maxs[j]) + 1;
-			out->origin[j] = LittleFloat (in->origin[j]);
 		}
 		out->headnode = LittleLong (in->headnode[0]); // use only headnode[0]
 	}
@@ -2394,9 +2390,9 @@ static void CM_RecursiveHullCheck (int num, float p1f, float p2f, vec3_t p1, vec
 		if (trace_ispoint)
 			offset = 0;
 		else
-			offset = fabs(trace_extents[0]*plane->normal[0]) +
-				fabs(trace_extents[1]*plane->normal[1]) +
-				fabs(trace_extents[2]*plane->normal[2]);
+			offset = fabs (trace_extents[0]*plane->normal[0]) +
+					 fabs (trace_extents[1]*plane->normal[1]) +
+					 fabs (trace_extents[2]*plane->normal[2]);
 	}
 
 	// see which sides we need to consider
@@ -2416,15 +2412,15 @@ static void CM_RecursiveHullCheck (int num, float p1f, float p2f, vec3_t p1, vec
 	{
 		idist = 1.0f / (t1 - t2);
 		side = 1;
-		frac2 = (t1 + offset + DIST_EPSILON)*idist;
-		frac = (t1 - offset + DIST_EPSILON)*idist;
+		frac2 = (t1 + offset + DIST_EPSILON) * idist;
+		frac = (t1 - offset + DIST_EPSILON) * idist;
 	}
 	else if (t1 > t2)
 	{
 		idist = 1.0f / (t1 - t2);
 		side = 0;
-		frac2 = (t1 - offset - DIST_EPSILON)*idist;
-		frac = (t1 + offset + DIST_EPSILON)*idist;
+		frac2 = (t1 - offset - DIST_EPSILON) * idist;
+		frac = (t1 + offset + DIST_EPSILON) * idist;
 	}
 	else
 	{
@@ -2449,17 +2445,17 @@ static void CM_RecursiveHullCheck (int num, float p1f, float p2f, vec3_t p1, vec
 	}//===*/
 
 	// move up to the node
-	midf = p1f + (p2f - p1f) * frac;
+	midf = p1f + frac * (p2f - p1f);
 	for (i = 0; i < 3; i++)
-		mid[i] = p1[i] + frac*(p2[i] - p1[i]);
+		mid[i] = p1[i] + frac * (p2[i] - p1[i]);
 
 	CM_RecursiveHullCheck (node->children[side], p1f, midf, p1, mid);
 
 
 	// go past the node
-	midf = p1f + (p2f - p1f)*frac2;
+	midf = p1f + frac2 * (p2f - p1f);
 	for (i = 0; i < 3; i++)
-		mid[i] = p1[i] + frac2*(p2[i] - p1[i]);
+		mid[i] = p1[i] + frac2 * (p2[i] - p1[i]);
 
 	CM_RecursiveHullCheck (node->children[side^1], midf, p2f, mid, p2);
 }
@@ -2766,10 +2762,10 @@ void CM_DecompressVis (byte *in, byte *out)
 	} while (out_p - out < row);
 }
 
-byte	pvsrow[MAX_MAP_LEAFS/8];
-byte	phsrow[MAX_MAP_LEAFS/8];
+static byte	pvsrow[MAX_MAP_LEAFS/8];
+static byte	phsrow[MAX_MAP_LEAFS/8];
 
-byte	*CM_ClusterPVS (int cluster)
+byte *CM_ClusterPVS (int cluster)
 {
 	int	i;
 
@@ -2786,7 +2782,7 @@ byte	*CM_ClusterPVS (int cluster)
 	return pvsrow;
 }
 
-byte	*CM_ClusterPHS (int cluster)
+byte *CM_ClusterPHS (int cluster)
 {
 	int	i;
 

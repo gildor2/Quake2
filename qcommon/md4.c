@@ -1,34 +1,34 @@
-/* GLOBAL.H - RSAREF types and constants */
+// GLOBAL.H - RSAREF types and constants
 
 #include <string.h>
 
-/* POINTER defines a generic pointer type */
+// POINTER defines a generic pointer type
 typedef unsigned char *POINTER;
 
-/* UINT2 defines a two byte word */
+// UINT2 defines a two byte word
 typedef unsigned short int UINT2;
 
-/* UINT4 defines a four byte word */
+// UINT4 defines a four byte word
 #ifdef __alpha__
 typedef unsigned int UINT4;
 #else
 typedef unsigned long int UINT4;
 #endif
 
-  
-/* MD4.H - header file for MD4C.C */
 
-/* Copyright (C) 1991-2, RSA Data Security, Inc. Created 1991. 
+// MD4.H - header file for MD4C.C
+
+/* Copyright (C) 1991-2, RSA Data Security, Inc. Created 1991.
 
 All rights reserved.
-  
+
 License to copy and use this software is granted provided that it is identified as the RSA Data Security, Inc. MD4 Message-Digest Algorithm in all material mentioning or referencing this software or this function.
 License is also granted to make and use derivative works provided that such works are identified as derived from the RSA Data Security, Inc. MD4 Message-Digest Algorithm in all material mentioning or referencing the derived work.
 RSA Data Security, Inc. makes no representations concerning either the merchantability of this software or the suitability of this software for any particular purpose. It is provided as is without express or implied warranty of any kind.
-  
+
 These notices must be retained in any copies of any part of this documentation and/or software. */
 
-/* MD4 context. */
+// MD4 context.
 typedef struct {
 	UINT4 state[4];				/* state (ABCD) */
 	UINT4 count[2];				/* number of bits, modulo 2^64 (lsb first) */
@@ -38,24 +38,24 @@ typedef struct {
 void MD4Init (MD4_CTX *);
 void MD4Update (MD4_CTX *, unsigned char *, unsigned int);
 void MD4Final (unsigned char [16], MD4_CTX *);
-  
 
-  
-/* MD4C.C - RSA Data Security, Inc., MD4 message-digest algorithm */
+
+
+// MD4C.C - RSA Data Security, Inc., MD4 message-digest algorithm
 /* Copyright (C) 1990-2, RSA Data Security, Inc. All rights reserved.
-  
+
 License to copy and use this software is granted provided that it is identified as the
 RSA Data Security, Inc. MD4 Message-Digest Algorithm
  in all material mentioning or referencing this software or this function.
-License is also granted to make and use derivative works provided that such works are identified as 
+License is also granted to make and use derivative works provided that such works are identified as
 derived from the RSA Data Security, Inc. MD4 Message-Digest Algorithm
 in all material mentioning or referencing the derived work.
 RSA Data Security, Inc. makes no representations concerning either the merchantability of this software or the suitability of this software for any particular purpose. It is provided
 as is without express or implied warranty of any kind.
-  
+
 These notices must be retained in any copies of any part of this documentation and/or software. */
 
-/* Constants for MD4Transform routine.  */
+// Constants for MD4Transform routine.
 #define S11 3
 #define S12 7
 #define S13 11
@@ -74,19 +74,22 @@ static void Encode (unsigned char *, UINT4 *, unsigned int);
 static void Decode (UINT4 *, unsigned char *, unsigned int);
 
 static unsigned char PADDING[64] = {
-0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+ 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-/* F, G and H are basic MD4 functions. */
+// F, G and H are basic MD4 functions.
 #define F(x, y, z) (((x) & (y)) | ((~x) & (z)))
 #define G(x, y, z) (((x) & (y)) | ((x) & (z)) | ((y) & (z)))
 #define H(x, y, z) ((x) ^ (y) ^ (z))
 
-/* ROTATE_LEFT rotates x left n bits. */
+// ROTATE_LEFT rotates x left n bits.
 #define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32-(n))))
 
-/* FF, GG and HH are transformations for rounds 1, 2 and 3 */
-/* Rotation is separate from addition to prevent recomputation */
+// FF, GG and HH are transformations for rounds 1, 2 and 3
+// Rotation is separate from addition to prevent recomputation
 #define FF(a, b, c, d, x, s) {(a) += F ((b), (c), (d)) + (x); (a) = ROTATE_LEFT ((a), (s));}
 
 #define GG(a, b, c, d, x, s) {(a) += G ((b), (c), (d)) + (x) + (UINT4)0x5a827999; (a) = ROTATE_LEFT ((a), (s));}
@@ -94,27 +97,27 @@ static unsigned char PADDING[64] = {
 #define HH(a, b, c, d, x, s) {(a) += H ((b), (c), (d)) + (x) + (UINT4)0x6ed9eba1; (a) = ROTATE_LEFT ((a), (s));}
 
 
-/* MD4 initialization. Begins an MD4 operation, writing a new context. */
+// MD4 initialization. Begins an MD4 operation, writing a new context.
 void MD4Init (MD4_CTX *context)
 {
 	context->count[0] = context->count[1] = 0;
 
-/* Load magic initialization constants.*/
-context->state[0] = 0x67452301;
-context->state[1] = 0xefcdab89;
-context->state[2] = 0x98badcfe;
-context->state[3] = 0x10325476;
+	// Load magic initialization constants.
+	context->state[0] = 0x67452301;
+	context->state[1] = 0xefcdab89;
+	context->state[2] = 0x98badcfe;
+	context->state[3] = 0x10325476;
 }
 
-/* MD4 block update operation. Continues an MD4 message-digest operation, processing another message block, and updating the context. */
+// MD4 block update operation. Continues an MD4 message-digest operation, processing another message block, and updating the context.
 void MD4Update (MD4_CTX *context, unsigned char *input, unsigned int inputLen)
 {
 	unsigned int i, index, partLen;
 
-	/* Compute number of bytes mod 64 */
+	// Compute number of bytes mod 64
 	index = (unsigned int)((context->count[0] >> 3) & 0x3F);
 
-	/* Update number of bits */
+	// Update number of bits
 	if ((context->count[0] += ((UINT4)inputLen << 3))< ((UINT4)inputLen << 3))
 		context->count[1]++;
 
@@ -122,7 +125,7 @@ void MD4Update (MD4_CTX *context, unsigned char *input, unsigned int inputLen)
 
 	partLen = 64 - index;
 
-	/* Transform as many times as possible.*/
+	// Transform as many times as possible.
 	if (inputLen >= partLen)
 	{
  		memcpy((POINTER)&context->buffer[index], (POINTER)input, partLen);
@@ -136,44 +139,44 @@ void MD4Update (MD4_CTX *context, unsigned char *input, unsigned int inputLen)
 	else
  		i = 0;
 
-	/* Buffer remaining input */
+	// Buffer remaining input
 	memcpy ((POINTER)&context->buffer[index], (POINTER)&input[i], inputLen-i);
 }
 
 
-/* MD4 finalization. Ends an MD4 message-digest operation, writing the the message digest and zeroizing the context. */
+// MD4 finalization. Ends an MD4 message-digest operation, writing the the message digest and zeroizing the context.
 void MD4Final (unsigned char digest[16], MD4_CTX *context)
 {
 	unsigned char bits[8];
 	unsigned int index, padLen;
 
-	/* Save number of bits */
+	// Save number of bits
 	Encode (bits, context->count, 8);
 
-	/* Pad out to 56 mod 64.*/
+	// Pad out to 56 mod 64.
 	index = (unsigned int)((context->count[0] >> 3) & 0x3f);
 	padLen = (index < 56) ? (56 - index) : (120 - index);
 	MD4Update (context, PADDING, padLen);
 
-	/* Append length (before padding) */
+	// Append length (before padding)
 	MD4Update (context, bits, 8);
-	
-	/* Store state in digest */
+
+	// Store state in digest
 	Encode (digest, context->state, 16);
 
-	/* Zeroize sensitive information.*/
+	// Zeroize sensitive information.
 	memset ((POINTER)context, 0, sizeof (*context));
 }
 
 
-/* MD4 basic transformation. Transforms state based on block. */
+// MD4 basic transformation. Transforms state based on block.
 static void MD4Transform (UINT4 state[4], unsigned char block[64])
 {
 	UINT4 a = state[0], b = state[1], c = state[2], d = state[3], x[16];
 
 	Decode (x, block, 64);
 
-/* Round 1 */
+// Round 1
 FF (a, b, c, d, x[ 0], S11); 				/* 1 */
 FF (d, a, b, c, x[ 1], S12); 				/* 2 */
 FF (c, d, a, b, x[ 2], S13); 				/* 3 */
@@ -191,7 +194,7 @@ FF (d, a, b, c, x[13], S12); 			/* 14 */
 FF (c, d, a, b, x[14], S13); 			/* 15 */
 FF (b, c, d, a, x[15], S14); 			/* 16 */
 
-/* Round 2 */
+// Round 2
 GG (a, b, c, d, x[ 0], S21); 			/* 17 */
 GG (d, a, b, c, x[ 4], S22); 			/* 18 */
 GG (c, d, a, b, x[ 8], S23); 			/* 19 */
@@ -209,7 +212,7 @@ GG (d, a, b, c, x[ 7], S22); 			/* 30 */
 GG (c, d, a, b, x[11], S23); 			/* 31 */
 GG (b, c, d, a, x[15], S24); 			/* 32 */
 
-/* Round 3 */
+// Round 3
 HH (a, b, c, d, x[ 0], S31);				/* 33 */
 HH (d, a, b, c, x[ 8], S32); 			/* 34 */
 HH (c, d, a, b, x[ 4], S33); 			/* 35 */
@@ -232,12 +235,12 @@ state[1] += b;
 state[2] += c;
 state[3] += d;
 
-	/* Zeroize sensitive information.*/
+	// Zeroize sensitive information.
 	memset ((POINTER)x, 0, sizeof (x));
 }
 
 
-/* Encodes input (UINT4) into output (unsigned char). Assumes len is a multiple of 4. */
+// Encodes input (UINT4) into output (unsigned char). Assumes len is a multiple of 4.
 static void Encode (unsigned char *output, UINT4 *input, unsigned int len)
 {
 	unsigned int i, j;
@@ -251,7 +254,7 @@ static void Encode (unsigned char *output, UINT4 *input, unsigned int len)
 }
 
 
-/* Decodes input (unsigned char) into output (UINT4). Assumes len is a multiple of 4. */
+// Decodes input (unsigned char) into output (UINT4). Assumes len is a multiple of 4.
 static void Decode (UINT4 *output, unsigned char *input, unsigned int len)
 {
 unsigned int i, j;
@@ -271,7 +274,7 @@ unsigned Com_BlockChecksum (void *buffer, int length)
 	MD4Init (&ctx);
 	MD4Update (&ctx, (unsigned char *)buffer, length);
 	MD4Final ( (unsigned char *)digest, &ctx);
-	
+
 	val = digest[0] ^ digest[1] ^ digest[2] ^ digest[3];
 
 	return val;

@@ -4,6 +4,7 @@
 
 shader_t *gl_defaultShader;
 shader_t *gl_identityLightShader;
+shader_t *gl_identityLightShader2;
 shader_t *gl_concharsShader;
 shader_t *gl_defaultSkyShader;		// default sky shader (black image)
 shader_t *gl_particleShader;
@@ -130,7 +131,7 @@ void GL_ResetShaders (void)
 	memset (shadersArray, 0, sizeof(shadersArray));
 	shaderCount = 0;
 
-	/*--- creating system shaders ----*/
+	/*---------------- creating system shaders --------------------*/
 	// abstract shaders should be created in reverse (with relation to sortParam) order
 	gl_alphaShader2 = GL_FindShader ("*alpha2", SHADER_ABSTRACT);
 	gl_alphaShader2->sortParam = SORT_SEETHROUGH + 1;
@@ -140,7 +141,13 @@ void GL_ResetShaders (void)
 	gl_alphaShader1->sortParam = SORT_SEETHROUGH;
 
 	gl_defaultShader = GL_FindShader ("*default", SHADER_WALL);
-	gl_identityLightShader = GL_FindShader ("*identityLight", SHADER_FORCEALPHA);
+	gl_identityLightShader = GL_FindShader ("*identityLight", SHADER_FORCEALPHA|SHADER_WALL);
+	gl_identityLightShader->stages[0]->rgbGenType = RGBGEN_EXACT_VERTEX;	//!! hack (should provide different flags for "create()")
+	gl_identityLightShader->stages[0]->glState |= GLSTATE_NODEPTHTEST;
+	gl_identityLightShader->stages[0]->glState &= ~GLSTATE_DEPTHWRITE;
+	gl_identityLightShader2 = GL_FindShader ("*identityLight", SHADER_FORCEALPHA|SHADER_WALL|SHADER_TRYLIGHTMAP);
+			//!! make different ->name
+	gl_identityLightShader2->stages[0]->rgbGenType = RGBGEN_EXACT_VERTEX;
 	gl_skyShader = gl_defaultSkyShader = GL_FindShader ("*sky", SHADER_SKY|SHADER_ABSTRACT);
 
 	gl_concharsShader = GL_FindShader ("pics/conchars", SHADER_ALPHA);
@@ -152,38 +159,37 @@ void GL_ResetShaders (void)
 
 static shader_t sh;
 static shaderStage_t st[MAX_SHADER_STAGES];
-static tcModParms_t tcMods[MAX_STAGE_TCMODS * MAX_SHADER_STAGES];
+static image_t *shaderImages[MAX_SHADER_STAGES * MAX_STAGE_TEXTURES];
+static int numTcModStages;
+static tcModParms_t tcMods[MAX_SHADER_STAGES * MAX_STAGE_TCMODS];
 
 
 static void ResortShader (shader_t *shader, int startIndex)
 {
 	float	sort;
-	int		i, j, numTextures, sort2;
+	int		i, numTextures, sort2;
+	shaderStage_t **pstages;
 
 	// compute secondary sort key
 	numTextures = 0;
 	sort2 = 0;
-	for (i = 0; i < shader->numStages; i++)		// iterate stages
+	for (i = 0, pstages = shader->stages; i < shader->numStages; i++, pstages++)		// iterate stages
 	{
-		stageTMU_t *tmu;
+		shaderStage_t *st;
+		image_t *image;
+		int		texnum;
 
-		for (j = 0, tmu = shader->stages[i].tmu; j < 2; j++, tmu++)		// iterate tmu's
-			if (shader->stages[i].tmu[j].numAnimTextures)
-			{
-				image_t *image;
-				int		texnum;
+		st = *pstages;
+		image = st->mapImage[0];
 
-				image = tmu->mapImage[0];
+		if (image && !(shader->lightmapNumber == LIGHTMAP_RESERVE && st->isLightmap))
+			texnum = image->texnum;
+		else	// ignore image if this is reserved lightmap
+			texnum = 1023;		// large positive number (put it to the end of sortParam2, so ResortShader() will work later)
+		sort2 = (sort2 << 10) | texnum;
 
-				if (image && !(shader->lightmapNumber == LIGHTMAP_RESERVE && tmu->isLightmap))
-					texnum = image->texnum;
-				else	// ignore image if this is reserved lightmap
-					texnum = 1023;		// large positive number (put it to the end of sortParam2, so ResortShader() will work later)
-				sort2 = (sort2 << 10) | texnum;
-
-				if (++numTextures == 3)	// not enough place in sortParam2
-					break;
-			}
+		if (++numTextures == 3)	// not enough place in sortParam2
+			break;
 	}
 	shader->sortParam2 = sort2;
 
@@ -215,12 +221,36 @@ static void ResortShader (shader_t *shader, int startIndex)
 }
 
 
+static void ClearTempShader (void)
+{
+	memset (&sh, 0, sizeof(sh));
+	memset (&st, 0, sizeof(st));
+	memset (&shaderImages, 0, sizeof(shaderImages));
+	memset (&tcMods, 0, sizeof(tcMods));
+	numTcModStages = 0;
+}
+
+
+static tcModParms_t *NewTcModStage (shaderStage_t *stage)
+{
+	tcModParms_t *par;
+
+	if (stage->numTcMods > MAX_STAGE_TCMODS)
+		Com_Error (ERR_DROP, "Too many tcMod stages in shader \"%s\"\n", sh.name);
+	//?? check index overflow (no MAX_STAGE_TCMODS but MAX_SHADER_TCMODS ??)
+	par = &tcMods[numTcModStages++];	// alloc
+	if (!stage->numTcMods)
+		stage->tcModParms = par;		// if 1st tcMod in stage -- setup pointer
+	stage->numTcMods++;
+	return par;
+}
+
+
 // Insert shader to shaders array
 static shader_t *CreatePermanentShader (void)
 {
-	shader_t 		*nsh;	// new shader
-	shaderStage_t	*nst;	// new stages
-	int				size, hash;
+	shader_t *nsh;			// new shader
+	int		i, hash;
 
 	if (shaderCount >= MAX_SHADERS)
 	{
@@ -229,12 +259,22 @@ static shader_t *CreatePermanentShader (void)
 	}
 
 	// allocate and copy new shader
-	nsh = AllocChainBlock (shaderChain, sizeof(shader_t));
-	size = sh.numStages * sizeof(shaderStage_t);
-	nst = AllocChainBlock (shaderChain, size);
-	sh.stages = nst;
-	memcpy (nsh, &sh, sizeof(sh));
-	memcpy (nst, &st[0], size);
+	nsh = AllocChainBlock (shaderChain, sizeof(shader_t) + (sh.numStages-1) * sizeof(shaderStage_t*));
+	memcpy (nsh, &sh, sizeof(shader_t));
+
+	// allocate and copy stages
+	for (i = 0; i < sh.numStages; i++)
+	{
+		shaderStage_t *nst;	// new stage
+		int		size;
+
+		size = sh.numStages * sizeof(shaderStage_t) + (st[i].numAnimTextures-1) * sizeof(image_t*);
+		nst = AllocChainBlock (shaderChain, size);
+		nsh->stages[i] = nst;
+		memcpy (nst, &st[i], size);
+		// copy texture info
+		memcpy (&nst->mapImage, &shaderImages[i * MAX_STAGE_TEXTURES], st[i].numAnimTextures * sizeof(image_t*));
+	}
 
 	// insert into a hash table
 	hash = ComputeHash (sh.name);
@@ -245,6 +285,26 @@ static shader_t *CreatePermanentShader (void)
 	shaderCount++;
 
 	return nsh;
+}
+
+
+// Expand shader from valid shader_t structure to our temporary vars (sh, st ...)
+// (reverse to CreatePermanentShader())
+// WARNING: this function will not extract tcMods
+static void ExtractShader (shader_t *shader)
+{
+	int		i;
+	shaderStage_t *stage, **pstages;
+
+	ClearTempShader ();
+	memcpy (&sh, shader, sizeof(shader_t));
+	for (i = 0, pstages = shader->stages; i < shader->numStages; i++, pstages++)
+	{
+		stage = *pstages;
+
+		memcpy (&st[i], stage, sizeof(shaderStage_t));
+		memcpy (&shaderImages[i * MAX_STAGE_TEXTURES], stage->mapImage, stage->numAnimTextures * sizeof(image_t*));
+	}
 }
 
 
@@ -266,18 +326,18 @@ static shader_t *FinishShader (void)
 		shaderStage_t *s;
 
 		s = &st[numStages];
-		if (!s->tmu[0].numAnimTextures) break;
+		if (!s->numAnimTextures) break;
 
 		// determine tcGenType
-		if (s->tmu[0].isLightmap)
+		if (s->isLightmap)
 		{	// lightmap stage
-			if (!s->tmu[0].tcGenType)
-				s->tmu[0].tcGenType = TCGEN_LIGHTMAP;
+			if (!s->tcGenType)
+				s->tcGenType = TCGEN_LIGHTMAP;
 		}
 		else
 		{	// texture stage
-			if (!s->tmu[0].tcGenType)
-				s->tmu[0].tcGenType = TCGEN_TEXTURE;
+			if (!s->tcGenType)
+				s->tcGenType = TCGEN_TEXTURE;
 		}
 
 		// process rgbGen
@@ -325,21 +385,21 @@ static shader_t *FinishShader (void)
 		}
 
 		// process tcMod
-		if (s->tmu[0].numTcMods)
+		if (s->numTcMods)
 		{
 			tcModParms_t *tc;
 			int		size;
 
-			size = s->tmu[0].numTcMods * sizeof(tcModParms_t);
+			size = s->numTcMods * sizeof(tcModParms_t);
 			tc = AllocChainBlock (shaderChain, size);
-			memcpy (tc, s->tmu[0].tcModParms, size);
-			s->tmu[0].tcModParms = tc;
+			memcpy (tc, s->tcModParms, size);
+			s->tcModParms = tc;
 		}
 
 		// check for fast draw ability
 		if (!((s->rgbGenType == RGBGEN_CONST && s->alphaGenType == ALPHAGEN_CONST) ||			// rgba-gen const
 			  (s->rgbGenType == RGBGEN_EXACT_VERTEX && s->alphaGenType == ALPHAGEN_VERTEX)) ||	// rgba-gen exact vertex
-			s->tmu[0].numTcMods || (s->tmu[0].tcGenType != TCGEN_TEXTURE && s->tmu[0].tcGenType != TCGEN_LIGHTMAP))	// tcgen/tcmod
+			s->numTcMods || (s->tcGenType != TCGEN_TEXTURE && s->tcGenType != TCGEN_LIGHTMAP))	// tcgen/tcmod
 			sh.fast = false;
 	}
 	sh.numStages = numStages;
@@ -366,6 +426,7 @@ shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber)
 {
 	int			hash, i;
 	shader_t	*s, *dest;
+	shaderStage_t *stage, **pstages;
 
 	if (shader->lightmapNumber == LIGHTMAP_VERTEX)
 		return shader;
@@ -388,27 +449,24 @@ shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber)
 	if (!dest)
 	{
 		// shader not found -- duplicate source and change its lightmap
-		memcpy (&sh, shader, sizeof(shader_t));
-		memcpy (&st[0], shader->stages, shader->numStages * sizeof(shaderStage_t));
-		sh.lightmapNumber = LIGHTMAP_RESERVE;	// temporarily mark as reserved
+		ExtractShader (shader);
+		sh.lightmapNumber = LIGHTMAP_RESERVE;	// temporarily mark as reserved (for CreatePermanentShader())
 		dest = CreatePermanentShader ();
 		// new shader's tcMod will point to the old shader's tcMod stages
 	}
+
 	dest->lightmapNumber = lightmapNumber;
-
-	// find lightmap stage / TMU
-	for (i = 0; i < dest->numStages; i++)
+	// find lightmap stage
+	for (i = 0, pstages = dest->stages; i < dest->numStages; i++, pstages++)
 	{
-		int		j;
-		stageTMU_t *tmu;
+		stage = *pstages;
 
-		for (j = 0, tmu = dest->stages[i].tmu; j < 2 && tmu->numAnimTextures; j++, tmu++)
-			if (tmu->isLightmap)
-			{
-				tmu->mapImage[0] = GetLightmapImage (lightmapNumber);
-				ResortShader (dest, dest->sortIndex);
-				return dest;
-			}
+		if (stage->isLightmap)
+		{
+			stage->mapImage[0] = GetLightmapImage (lightmapNumber);
+			ResortShader (dest, dest->sortIndex);
+			return dest;
+		}
 	}
 
 	Com_Error (ERR_DROP, "R_SetShaderLightmap(%s, %d): lightmap stage is not found", shader->name, lightmapNumber);
@@ -419,9 +477,9 @@ shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber)
 shader_t *GL_GetAlphaShader (shader_t *shader)
 {
 	if (shader->alphaShader)
-		return shader->alphaShader;		// already done
+		return shader->alphaShader;			// already done
 
-	if (shader->stages[0].glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
+	if (shader->stages[0]->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
 	{	// already have blend mode
 		shader->alphaShader = shader;
 		Com_DPrintf ("R_GetAlphaShader(%s): already have blend\n", shader->name);
@@ -429,34 +487,16 @@ shader_t *GL_GetAlphaShader (shader_t *shader)
 	}
 
 	// clone shader
-	memcpy (&sh, shader, sizeof(shader_t));
-	memcpy (&st[0], shader->stages, shader->numStages * sizeof(shaderStage_t));
-	strcat (sh.name, "#a");				// just make different name
+	ExtractShader (shader);
+	strcat (sh.name, "#a");					// just make different name
 	// setup alpha/blend
-	sh.sortParam = SORT_SEETHROUGH;		//?? SORT_SPRITE? check SHADER_WALL ??
+	sh.sortParam = SORT_SEETHROUGH;			//?? SORT_SPRITE? check SHADER_WALL ??
 	st[0].alphaGenType = ALPHAGEN_ENTITY;
 	st[0].glState |= GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA;
-	st[0].glState &= ~GLSTATE_DEPTHWRITE;
+	st[0].glState &= ~GLSTATE_DEPTHWRITE;	// allow to see inside alpha-model
 
 	shader->alphaShader = FinishShader ();
 	return shader->alphaShader;
-}
-
-
-static int numTcModStages;
-
-static tcModParms_t *NewTcModStage (shaderStage_t *stage)
-{
-	tcModParms_t *par;
-
-	if (stage->tmu[0].numTcMods > MAX_STAGE_TCMODS)
-		Com_Error (ERR_DROP, "Too many tcMod stages in shader \"%s\"\n", sh.name);
-	//?? check index overflow (no MAX_STAGE_TCMODS but MAX_SHADER_TCMODS ??)
-	par = &tcMods[numTcModStages++];	// alloc
-	if (!stage->tmu[0].numTcMods)
-		stage->tmu[0].tcModParms = par;		// if 1st tcMod in stage -- setup pointer
-	stage->tmu[0].numTcMods++;
-	return par;
 }
 
 
@@ -513,10 +553,7 @@ shader_t *GL_FindShader (char *name, int style)
 		}
 
 	// prepate common shader fields
-	memset (&sh, 0, sizeof(sh));
-	memset (&st, 0, sizeof(st));
-	memset (&tcMods, 0, sizeof(tcMods));
-	numTcModStages = 0;
+	ClearTempShader ();
 	strcpy (sh.name, name2);
 	sh.lightmapNumber = lightmapNumber;
 
@@ -559,7 +596,7 @@ shader_t *GL_FindShader (char *name, int style)
 		}
 
 		// regular shader
-		st[0].tmu[0].numAnimTextures = 1;
+		st[0].numAnimTextures = 1;
 
 		if (style & SHADER_ABSTRACT)
 			img = gl_defaultImage;					// just any image (will be removed later anyway)
@@ -575,14 +612,16 @@ shader_t *GL_FindShader (char *name, int style)
 			sh.bad = true;
 			img = gl_defaultImage;
 		}
-//		else -- if we enable this, map will not be loaded when wall texture absent (no lightmap stage will be created)
+//	??	else -- if we enable this, map will not be loaded when wall texture absent (no lightmap stage will be created)
 		{
 			shaderStage_t *stage;
+			int		stageIdx;
 
 			sh.width = img->width;
 			sh.height = img->height;
 
 			stage = &st[0];
+			stageIdx = 0;
 
 			if (style & SHADER_TRYLIGHTMAP)
 			{
@@ -594,35 +633,36 @@ shader_t *GL_FindShader (char *name, int style)
 
 			if (lightmapNumber >= 0)
 			{
-				stage->tmu[0].mapImage[0] = GetLightmapImage (lightmapNumber);
-				stage->tmu[0].isLightmap = true;
+				shaderImages[0] = GetLightmapImage (lightmapNumber);
+				stage->isLightmap = true;
 				stage->glState = GLSTATE_DEPTHWRITE;
 				stage->rgbGenType = RGBGEN_IDENTITY;
 				stage->alphaGenType = ALPHAGEN_IDENTITY;
 				stage++;	// add next stage
-				stage->tmu[0].numAnimTextures = 1;
+				stageIdx++;
+				stage->numAnimTextures = 1;
 			}
 
-			stage->tmu[0].mapImage[0] = img;
+			shaderImages[stageIdx * MAX_STAGE_TEXTURES] = img;
 			if (style & SHADER_ANIM)
 			{
 				int		i;
 				char	*pname;
 
 				pname = strchr (name, 0) + 1;
-				stage->tmu[0].animMapFreq = 2;		// standard Quake2 animation frequency
+				stage->animMapFreq = 2;			// standard Quake2 animation frequency
 				for (i = 1; *pname && i < MAX_STAGE_TEXTURES; i++, pname = strchr(pname, 0)+1)
 				{
 					img = GL_FindImage (pname, imgFlags);
 					if (!img)
 					{
 						Com_WPrintf ("R_FindShader: couldn't find image \"%s\"\n", pname);
-						stage->tmu[0].numAnimTextures = 1;
+						stage->numAnimTextures = 1;
 						sh.bad = true;
 						break;
 					}
-					stage->tmu[0].mapImage[i] = img;
-					stage->tmu[0].numAnimTextures++;
+					shaderImages[stageIdx * MAX_STAGE_TEXTURES + i] = img;
+					stage->numAnimTextures++;
 				}
 			}
 
@@ -642,7 +682,7 @@ shader_t *GL_FindShader (char *name, int style)
 			}
 			else if (style & SHADER_FORCEALPHA)
 			{
-				stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA;
+				stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_ALPHA_GT0;
 						// image has no alpha, but use glColor(x,x,x,<1)
 				stage->alphaGenType = ALPHAGEN_VERTEX;
 			}
@@ -651,8 +691,7 @@ shader_t *GL_FindShader (char *name, int style)
 				if (img->alphaType == 1)
 					stage->glState = GLSTATE_ALPHA_GE05;
 				else
-					stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_DEPTHWRITE
-						| GLSTATE_ALPHA_GT0;	//?? need this for ability to look through alpha-models to alpha-world
+					stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_DEPTHWRITE|GLSTATE_ALPHA_GT0;
 			}
 			else if (style & (SHADER_TRANS33|SHADER_TRANS66))
 			{
@@ -668,8 +707,8 @@ shader_t *GL_FindShader (char *name, int style)
 				else if (style & SHADER_TRANS66)
 					stage->alphaGenConst = 0.66;
 			}
-			if (!(stage->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK)) && lightmapNumber == LIGHTMAP_NONE)
-				stage->glState |= GLSTATE_DEPTHWRITE;
+//??			if (!(stage->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK)) && lightmapNumber == LIGHTMAP_NONE)
+//				stage->glState |= GLSTATE_DEPTHWRITE;
 
 			if (style & SHADER_TURB)
 			{
@@ -732,9 +771,11 @@ shader_t *GL_FindShader (char *name, int style)
 			}
 			if (!(style & SHADER_WALL))
 				stage->glState = stage->glState & ~GLSTATE_DEPTHWRITE | GLSTATE_NODEPTHTEST;
+			else
+				stage->glState = stage->glState & ~GLSTATE_NODEPTHTEST | GLSTATE_DEPTHWRITE;
 
 			if (style & SHADER_ABSTRACT)
-				st[0].tmu[0].numAnimTextures = 0;		// remove all stages
+				st[0].numAnimTextures = 0;			// remove all stages
 
 			/* CHECK:
 				no lightmap: (skin)

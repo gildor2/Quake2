@@ -2015,7 +2015,7 @@ static void CL_AddParticleTraces (float timeDelta)
 
 		// calculate loop parameters
 		dist = VectorDistance (p->pos, oldpos);		// this is not timeDelta*speed (because pos may be changed)
-		viewDist = VectorDistance (p->pos, cl.refdef.vieworg) * tan (cl.refdef.fov_x / 2.0f * M_PI / 180.0f);
+		viewDist = VectorDistance (p->pos, cl.refdef.vieworg) * tan (cl.refdef.fov_x / 2.0f / 180.0f * M_PI);
 		if (viewDist > 128)
 		{
 			if (viewDist > 1024)
@@ -2086,6 +2086,9 @@ particleTrace_t *CL_AllocParticleTrace (vec3_t pos, vec3_t vel, float lifeTime, 
 	int		i;
 	particleTrace_t *p;
 
+	if (r_sfx_pause->integer == 2)
+		return NULL;
+
 	for (p = particleTraces, i = 0; i < MAX_PARTICLE_TRACES; p++, i++)
 	{
 		if (!p->allocated)
@@ -2132,7 +2135,7 @@ void CL_MetalSparks (vec3_t pos, vec3_t dir, int count)
 		// do not start inside wall
 		VectorAdd (pos, dir, pos2);
 
-		p = CL_AllocParticleTrace (pos2, vel, frand () * 0.64f, 0.1f);
+		p = CL_AllocParticleTrace (pos2, vel, frand () * 0.32f, 0.1f);	//?? lifeTime = rnd*0.64 ?
 		if (!p)
 			return;
 		//!! p->brightness = 32;
@@ -2144,6 +2147,9 @@ void CL_MetalSparks (vec3_t pos, vec3_t dir, int count)
 particle_t *CL_AllocParticle (void)
 {
 	particle_t *p;
+
+	if (r_sfx_pause->integer == 2)
+		return NULL;
 
 	p = free_particles;
 	if (p)

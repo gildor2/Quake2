@@ -77,20 +77,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //============================================================================
 
-#if defined(_M_IX86) || defined(__i386__)
-
-#define RETADDR_STR " (call from %08x)"
-#define	GET_RETADDR(firstarg)	(* ( ((int*)&firstarg) -1 ) )
-
-#else
-
-#define RETADDR_STR
-#define	GET_RETADDR()
-
-#endif
-
-//============================================================================
-
 typedef struct sizebuf_s
 {
 	qboolean allowoverflow;		// if false, do a Com_Error
@@ -663,6 +649,13 @@ CMODEL
 
 
 #include "../qcommon/qfiles.h"
+
+typedef struct
+{
+	vec3_t	mins, maxs;
+	float	radius;
+	int		headnode;
+} cmodel_t;
 
 cmodel_t *CM_LoadMap (char *name, qboolean clientload, unsigned *checksum);
 cmodel_t *CM_InlineModel (char *name);	// *1, *2, etc

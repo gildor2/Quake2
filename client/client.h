@@ -160,7 +160,7 @@ typedef struct
 	// locally derived information from server state
 	//
 	struct model_s	*model_draw[MAX_MODELS];
-	struct cmodel_s	*model_clip[MAX_MODELS];
+	cmodel_t	*model_clip[MAX_MODELS];
 
 	struct sfx_s	*sound_precache[MAX_SOUNDS];
 	struct image_s	*image_precache[MAX_IMAGES];
@@ -237,6 +237,7 @@ typedef struct
 	qboolean	demowaiting;		// don't record until a non-delta message is received
 	FILE		*demofile;
 
+	qboolean	newfx;				// true when client enables new fx (and when renderer supports it)
 	qboolean	newprotocol;
 } client_static_t;
 
@@ -295,6 +296,7 @@ extern	cvar_t	*cl_vwep;
 
 extern  cvar_t  *cl_extProtocol;
 
+extern	cvar_t	*cl_newfx;
 extern	cvar_t	*cl_draw2d;
 extern	cvar_t	*r_sfx_pause;
 

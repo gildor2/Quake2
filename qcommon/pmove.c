@@ -79,7 +79,7 @@ static void ClipVelocity (vec3_t in, vec3_t normal, vec3_t out, float overbounce
 
 	backoff = DotProduct (in, normal) * overbounce;
 
-	for (i=0 ; i<3 ; i++)
+	for (i = 0; i < 3; i++)
 	{
 		change = normal[i]*backoff;
 		out[i] = in[i] - change;
@@ -1027,27 +1027,32 @@ static void SnapPosition (void)
 			sign[i] = 1;
 		else
 			sign[i] = -1;
-		pm->s.origin[i] = (int)(pml.origin[i]*8);
-		if (pm->s.origin[i] * 0.125 == pml.origin[i])
+		pm->s.origin[i] = (int)(pml.origin[i] * 8);
+		if (pm->s.origin[i] / 8.0f == pml.origin[i])
 			sign[i] = 0;
 	}
-	VectorCopy (pm->s.origin, base);
+	base[0] = pm->s.origin[0];
+	base[1] = pm->s.origin[1];
+	base[2] = pm->s.origin[2];
 
 	// try all combinations
 	for (j = 0; j < 8; j++)
 	{
 		bits = jitterbits[j];
-		VectorCopy (base, pm->s.origin);
 		for (i = 0; i < 3; i++)
-			if (bits & (1<<i) )
-				pm->s.origin[i] += sign[i];
+			if (bits & (1<<i))
+				pm->s.origin[i] = base[i] + sign[i];
+			else
+				pm->s.origin[i] = base[i];
 
 		if (GoodPosition ())
 			return;
 	}
 
 	// go back to the last position
-	VectorCopy (pml.previous_origin, pm->s.origin);
+	pm->s.origin[0] = pml.previous_origin[0];
+	pm->s.origin[1] = pml.previous_origin[1];
+	pm->s.origin[2] = pml.previous_origin[2];
 //	Com_DPrintf ("using previous_origin\n");
 }
 
@@ -1062,7 +1067,9 @@ static void InitialSnapPosition(void)
 	short      base[3];
 	static int offset[3] = {0, -1, 1};
 
-	VectorCopy (pm->s.origin, base);
+	base[0] = pm->s.origin[0];
+	base[1] = pm->s.origin[1];
+	base[2] = pm->s.origin[2];
 
 	for (z = 0; z < 3; z++)
 	{
@@ -1075,10 +1082,12 @@ static void InitialSnapPosition(void)
 				pm->s.origin[0] = base[0] + offset[x];
 				if (GoodPosition ())
 				{
-					pml.origin[0] = pm->s.origin[0] * 0.125;
-					pml.origin[1] = pm->s.origin[1] * 0.125;
-					pml.origin[2] = pm->s.origin[2] * 0.125;
-					VectorCopy (pm->s.origin, pml.previous_origin);
+					pml.origin[0] = pm->s.origin[0] / 8.0f;
+					pml.origin[1] = pm->s.origin[1] / 8.0f;
+					pml.origin[2] = pm->s.origin[2] / 8.0f;
+					pml.previous_origin[0] = pm->s.origin[0];
+					pml.previous_origin[1] = pm->s.origin[1];
+					pml.previous_origin[2] = pm->s.origin[2];
 					return;
 				}
 			}
@@ -1108,7 +1117,7 @@ static void ClampAngles (void)
 	else
 	{
 		// circularly clamp the angles with deltas
-		for (i=0 ; i<3 ; i++)
+		for (i = 0; i < 3; i++)
 		{
 			temp = pm->cmd.angles[i] + pm->s.delta_angles[i];
 			pm->viewangles[i] = SHORT2ANGLE(temp);
@@ -1146,18 +1155,20 @@ void Pmove (pmove_t *pmove)
 	memset (&pml, 0, sizeof(pml));
 
 	// convert origin and velocity to float values
-	pml.origin[0] = pm->s.origin[0]*0.125;
-	pml.origin[1] = pm->s.origin[1]*0.125;
-	pml.origin[2] = pm->s.origin[2]*0.125;
+	pml.origin[0] = pm->s.origin[0]*0.125f;
+	pml.origin[1] = pm->s.origin[1]*0.125f;
+	pml.origin[2] = pm->s.origin[2]*0.125f;
 
-	pml.velocity[0] = pm->s.velocity[0]*0.125;
-	pml.velocity[1] = pm->s.velocity[1]*0.125;
-	pml.velocity[2] = pm->s.velocity[2]*0.125;
+	pml.velocity[0] = pm->s.velocity[0]*0.125f;
+	pml.velocity[1] = pm->s.velocity[1]*0.125f;
+	pml.velocity[2] = pm->s.velocity[2]*0.125f;
 
 	// save old org in case we get stuck
-	VectorCopy (pm->s.origin, pml.previous_origin);
+	pml.previous_origin[0] = pm->s.origin[0];
+	pml.previous_origin[1] = pm->s.origin[1];
+	pml.previous_origin[2] = pm->s.origin[2];
 
-	pml.frametime = pm->cmd.msec * 0.001;
+	pml.frametime = pm->cmd.msec * 0.001f;
 
 	ClampAngles ();
 

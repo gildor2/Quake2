@@ -81,6 +81,7 @@ cvar_t	*cl_vwep;
 
 cvar_t  *cl_extProtocol;
 
+cvar_t	*cl_newfx;
 cvar_t	*cl_draw2d;
 cvar_t	*r_sfx_pause;
 
@@ -1539,6 +1540,7 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(cl_extProtocol, 1, CVAR_ARCHIVE),
 
+	CVAR_VAR(cl_newfx, 1, CVAR_ARCHIVE),
 	CVAR_VAR(cl_draw2d, 1, 0),
 	CVAR_VAR(r_sfx_pause, 0, 0)
 CVAR_END
@@ -1734,6 +1736,8 @@ void CL_Frame (int msec)
 	cls.frametime = extratime/1000.0;
 	cl.time += extratime;
 	cls.realtime = curtime;
+
+	cls.newfx = cl_newfx->integer && (re.flags & REF_NEW_FX);
 
 	extratime = 0;
 #if 0

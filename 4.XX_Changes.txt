@@ -17,23 +17,25 @@ Comments:
 - improved vid_restart performance (Win32)
 - fixed cursor appearance when in fullscreen mode (Win32)
 - fixed crash of using sprite models when one frame is not found
-- implemented environment mapping simulation on transparent objects (can be disabled with "set gl_winrefl 0";
-    reflection taken from /* "env/<skyname>winrefl.???" or */ "env/defrefl.???")
+- implemented environment mapping simulation on transparent objects (can be disabled with "gl_winrefl 0";
+  reflection taken from /* "env/<skyname>winrefl.???" or */ "env/defrefl.???")
 - changed appearance of "r_speeds" output
-- support of the Kingpin SURF_ALPHA surface flag (ADD USAGE OF flags "CONTENTS_ALPHA" and
+- support of the Kingpin SURF_ALPHA surface flag (SHOULD IMPLEMENT USAGE OF flags "CONTENTS_ALPHA" and
   "RF...ALPHA" and more !!)
 - hardware gamma control (can be disabled with "set r_ignorehwgamma 1"); uses "vid_gamma" and "intensity"
   to calculate gamma; changes applied without "vid_restart" (Win32)
 - support for GL_S3_s3tc and GL_ARB_texture_compression (can be disabled with "set gl_ext_compressed_textures 0")
 # improved "imagelist" command: now it shows texture internal formats and info about scrap
 - "gl_console_only" variable: when "1", no graphical information displayed and display forced to full console
+  (needs "vid_restart" to activate)
 - support of loading 8(grayscale)/24/32-bit tga and 24-bit jpg textures instead of 8-bit wal or pcx files
 # support for semi-transparent (has alpha >0 and <1) HUD images (e.i. Quake3 crosshairs)
 # improved speed in "gl_lightmap=1" mode; side effect: r_fullbright and gl_showtris are now
-    work with multitexturing enabled (gl_showtris requires either gl_lightmap or r_fullbright enabled)
-# "set gl_showtris 2" will shows triangles with enabled Z-buffer
+  works with multitexturing enabled (gl_showtris requires either gl_lightmap or r_fullbright enabled)
+# "gl_showtris 2" will shows triangles with enabled Z-buffer
 - "gl_lightmap 2" solarizes lightmaps (as in Quake3)
   "gl_lightmap 3" inverses saturation of lightmaps on map loading
+  (both requires "vid_restart" to activate)
 - "screenshot[JPEG] [silent|levelshot]"
   "screenshot silent" will create screenshot without echoing on console
   "screenshot levelshot" will create screenshot 256x256 as "levelshots/<mapname>.tga"
@@ -87,8 +89,8 @@ Comments:
 5. ADDONS
 ~~~~~~~~~
 
-Cvars
------
+Cvar system
+-----------
 - command "add":
   add <var_name> <inc> [<min> <max> [r][f]]
     - var_name must exists and be writeable
@@ -121,7 +123,8 @@ File system
 - "cat <filename>" - display contents of file
 - "type <filename>" - display info about file
 - improved "dir" console command (reformatted, listing paks)
-- added support of zip (pk3) pak files
+- added support of zip (pk3) pak files (should also have ".pak" extension; to load ".pk3" files add to "autoexec.cfg"
+  following line: "loadpak *.pk3")
 - loading unlimited number of paks with any names (all internally lowercased)
 
 Console/Menu
@@ -172,9 +175,14 @@ Configuration
 - added "players/model.lst": this file contains names of models, which gender should be female
 - added "sound/materials.lst" - contains sound description depended of texture name (almost HalfLife style)
 - surface footstep sounds depended on material (Kingpin, "materials.lst")
+
+Debugging
+---------
 - "r_surfinfo" variable: when value is non-zero, displaying info about maps surface under crosshair
 - "r_drawfps" variable: display FPS when it is set
 - "r_playerpos" variable: when it is set to "1", player (spectator) world coordinates are shown
+- "r_sfx_pause 1" stops particles/fx; "r_sfx_pause 2" also disables particle/fx creation
+
 
 - "r_saturation" variable: default 1 (all textures and lightmaps - as is), 0 - full grayscale
 - extended network protocol (fully comparible with old-version server/client). May be disabled on client
@@ -183,12 +191,13 @@ Configuration
   - surface-dependent bullet hit sounds (client-side)
   - camper sounds (server-side)
   - falling sounds (server-side)
+?(not finished) new particle/fx system; can be disabled with "cl_newfx 0"
 - crosshairs:
   - unlimited number of crosshairs; must be named "pics/ch%d.???"; when trying to set crosshair,
-      that does not exist, crosshair will be set to 0 (no crosshair)
+    that does not exist, crosshair will be set to 0 (no crosshair)
   - added cvar "crosshaircolor"; value = [0..7] (0 - black, 1 - red, 2 - green, 4 - blue, 7 - white)
   - changing crosshair shape and color from the options menu
-- browsing levelshots in "start server" menu; displaying it while map loading
+- browsing levelshots in "start server" menu; displaying it while map loading (accessible via menu or "menu_dmbrowse")
 - "cl_draw2d 0" removes HUD
 - sound pitch affected by timescale (DirectSound only)
 - added mouse support via DirectInput (activated with "set in_mouse 2", default)

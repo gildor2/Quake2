@@ -291,7 +291,7 @@ typedef struct
 typedef struct
 {
 	float	mins[3], maxs[3];
-	float	origin[3];				// for sounds or lights
+	float	origin[3];				// unused! (for sounds or lights ?)
 	int		headnode;
 	int		firstface, numfaces;	// submodels just draw faces
 									// without walking the bsp tree
@@ -365,6 +365,9 @@ typedef struct
 #define	SURF_TRANS66	0x20
 #define	SURF_FLOWING	0x40	// scroll towards angle
 #define	SURF_NODRAW		0x80	// don't bother referencing the texture
+
+
+#define MAX_TREE_DEPTH	512
 
 
 typedef struct

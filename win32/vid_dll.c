@@ -625,7 +625,7 @@ qboolean Vid_LoadRefresh (char *name)
 	vidref_val = VIDREF_OTHER;
 	if (vid_ref)
 	{
-		if(!strcmp (vid_ref->string, "gl"))
+		if(!strcmp (vid_ref->string, "gl") || !(strcmp (vid_ref->string, "oldgl")))
 			vidref_val = VIDREF_GL;
 		else if(!strcmp (vid_ref->string, "soft"))
 			vidref_val = VIDREF_SOFT;
@@ -751,7 +751,7 @@ void Vid_Shutdown (void)
 {
 	if (refActive)
 	{
-		/* signal for ref_xx.dll to full shutdown (Vid_Shutdown(); it is called after
+		/* signal for ref_xx.dll to completely shutdown (Vid_Shutdown(); it is called after
 		 * CL_WriteConfiguration(), so we can safely change vid_ref value
 		 */
 		Cvar_Set ("vid_ref", "");

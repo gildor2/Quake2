@@ -3,7 +3,6 @@
 ! REF_SOFT: crush
 
 ? game crush in msvcrt.dll (pak loading/unloading/download breaking/map not found)
-? hang while DirectSound initialization (on loading; when "developer 1" - not hang -- very unstable)
 
 - CapsLock will be displayed as unknown key!
 
@@ -14,7 +13,7 @@
 - ref_soft hangs on map "japan" (from Kingpin)
 - ref_gl: SURF_ALPHA is buggy in 1 or 2 places in map "rc3"
 
-- name conflict REF_HARD_LINKED Win32/irix (???)
+? name conflict REF_HARD_LINKED Win32/irix
 
 ? once game was crushed (after singleplayer) with Z_FreeTags(TAG_LEVEL): zero in chain
 - bug: "game baseq2;unloadpak q2maps;game bad_dir(?);demomap demo1;game baseq2(?);demomap demo1"

@@ -124,6 +124,7 @@ void *Z_Malloc (int size)
 }
 
 
+// WARNING: cannot add block align here - we should use result pointer for Z_Free() call
 void *Z_BlockMalloc (int size)
 {
 	int blocksize;
@@ -148,16 +149,18 @@ typedef struct chainBlock_s
 } chainBlock_t;
 
 
+#define BLOCK_ALIGN	16
+
 static chainBlock_t *AllocChain(int size)
 {
 	chainBlock_t *chain;
 
-	chain = malloc (size);
+	chain = malloc (size + BLOCK_ALIGN-1);
 	if (!chain)
 		Com_Error (ERR_FATAL, "AllocChunk: failed on allocation of %d bytes", size);
 	chain->free = size - sizeof(chainBlock_t);
 	chain->next = NULL;
-	chain->data = (void*) (chain + 1);
+	chain->data = (void*) (((int) (chain + 1) + BLOCK_ALIGN-1) & ~(BLOCK_ALIGN-1));
 	chain->size = size;
 
 	memset (&chain[1], 0, size - sizeof(chainBlock_t));

@@ -5,11 +5,14 @@
 - walking/running: step sound length = 400/300; water = 600; ladder = 350
 - stop when |velocity| less than STOP_EPSILON==0.1 (friction)
 
+!!? improve SV_ClipMoveToEntities() like CL_ClipMoveToEntities(); don't need SV_AreaEdicts in this function ?
+
 DINPUT MOUSE BUGS/NOTES:
 - in_initmouse -- needed?
 - check behaviour when no DirectX installed (where ?)
 - add MOUSE4 ?
 - check DirectInput8
+! add mouse cursor hiding (not always disappear with DInput after deactivate+activate)
 
 ? make lower r_saturation limit -X (not 0) (limited by video menu init proc)
 
@@ -34,6 +37,7 @@ BSP:
 - commands spmap, devmap etc.
 - advanced "map" command syntax: add scaling and mirroring (separate scale each axis, mirror - X *= -1 ?)
   "map [--dev] [--sp] [--mirror] [--scale] <name>" (?!)
+? Q1 map support (easier than HL)
 
 *** BUGS ***
 - map "temple2", "lavatube" -- waterfall: bullet sounds (change sound for water sparks, change place for water bullet sounds
@@ -51,13 +55,14 @@ BSP:
 - chasecam (see Q3 cgame)
 ? improve collision detection for doors (do not open when player here or ability for player to leave
   door whith moving (trying to move))
+? add support for moving ladders: when player on entity with ladder, move player within entity (example: map "mesto", helicopter)
 ? eliminate all qsort's
 
 - bindtmp, aliastmp, aliaslist (now it is "alias <no-args>")
 
-- fix loading "sounds/[.]/path/name" (kill leading "/"?) in LoadBspFile
+*? fix loading "sounds/[.]/path/name" (kill leading "/"?) in LoadBspFile (Q_CopyFilename())
 
-! remove auto-demo start on quake loading (option?)
+! remove auto-demo start on quake loading (option? timeout? first run?)
 
 ! add materials: glass, grass, sand
 *? SURF_ALPHA, RF2_SURF_ALPHA: must be transparent for bullets (CONTENTS_WINDOW+SURF_ALPHA, mins=maxs={0,0,0})
@@ -96,13 +101,8 @@ BSP:
   (may use old command too: who wants to send demo to other players, may just un-gzip it)
 ? demos with full list of events (already: serverrecord),
   player for this demos (total control over movement: move, chase, eye etc.)
-- improve movement prediction:
-  ? collide with entities
+*? improve movement prediction (lots of bugs, such as "stand-on-grenage drizzle" (fixed?) and "hooked-in opening-door"):
   ? use acceleration (see Q3, HL ??)
-- cl_fx: compute (?) and send (!) particles/other fx to renderer only when whole effect in view frustum / max distance
-  (mostly for particles)
-- cl_newfx: allow to switch to new particle system / entity fx (powersuit etc.) WHEN new ref_gl used
-  (flag for renderer: "qboolean newFx")
 ? improve speed of downloading: limited by qcommon.h::MAX_MSGLEN (used in )
   client: cl_parse.c :: CL_ParseDownload() - net_massege ;; SZ_Print(..,"nextdl")
   server: sv_user.c :: SV_NextDownload_f() - write_size=r (1024 max < MAX_MSGLEN)
@@ -170,16 +170,13 @@ BUGS:
 - ref_console (Win32 console-mode application, no GDI/OpenGL) -- auto-use in dedicated server (should attach
   dedicated server to ref)
 ? change "gl_console_only" and "sw_console_only" to "r_consoleOnly"
+! remove "vidref_val", REF_SOFT, REF_GL, REF_OTHER (q_shared2.h)
 
 ------------ COMMON --------------
 
 ? meminfo (see Alice) - renderer (hunks), z, chains etc. ???
 
-- change particles (as in Kingpin)
-  client/cl_fx.c :: CL_AddParticles()
-  ref_gl/gl_rmain.c :: R_DrawParticles()
-
-??(fixed?) Z_DEBUG: make following (#ifdef Z_DEBUG)
+*? Z_DEBUG: make following (#ifdef Z_DEBUG)
   - #define Z_BlockMalloc(size) Z_TagMalloc(size,0)
   - #define Z_Malloc(size) Z_TagMalloc(size,0)
   - add "void *caller_addr" to zblock_t and fill it in Z_TagMalloc with a return address
@@ -196,7 +193,13 @@ BUGS:
   value of "2" - log 1 frame and disable
 
 - make zip/* big-endian compatible; update to "zlib1.1.4"
+? update JPEG code
 
+!? add Python virtual machine (game library, inline map scripts)
+
+- separate "math.c"; make "MMX", "3D Now!", "SSE" and "common" versions for some functions
+- make some functions #define -> inline (DotProduct etc.)
+                                 
 ------------- CVARS --------------------
 
 ? cvarclear - clear all archive flags from cvars, which was not created with quake2 (created with "set <var> <value> a" command)

@@ -6,8 +6,6 @@
 
 #define map		gl_worldModel
 
-#define MAX_TREE_DEPTH	512
-
 
 static int visFrame, drawFrame;
 static int currentEntity;
@@ -222,12 +220,12 @@ static void SetupModelMatrix (refEntity_t *e)
 /*-------------- BSP object insertion ----------------*/
 
 /* NOTE:
-  - required for ents with shader->sort > OPAQUE (sort alpha-ents)
+  ?? required for ents with shader->sort > OPAQUE (sort alpha-ents)
   - useful for other entity types when occlusion culling will be imlemented
     (insert ents AFTER world culling)
 */
 
-// Find nearest visible leaf, occupied by entity sphere
+// Find nearest to sphere center visible leaf, occupied by entity bounding sphere
 static node_t *SphereLeaf (vec3_t origin, float radius)
 {
 	int		sptr;
@@ -242,27 +240,96 @@ static node_t *SphereLeaf (vec3_t origin, float radius)
 
 		if (!node->isNode)
 		{	// leaf found
-			if (node->frame == visFrame)
+			if (node->frame == drawFrame)
 				return node;			// visible => mision complete
 
 			if (!sptr)
-				return NULL;	// while tree visited, but not leaf found (may happens when r_nocull & ent outside frustum)
+				return NULL;	// whole tree visited, but not leaf found (may happens when r_nocull & ent outside frustum)
 
+			node = stack[--sptr];
+			continue;
+		}
+
+		if (node->visFrame != visFrame)
+		{
+			if (!sptr) return NULL;
 			node = stack[--sptr];
 			continue;
 		}
 
 		dist = DISTANCE_TO_PLANE(origin, node->plane);
 		if (dist > radius)
+			node = node->children[0];	// side 1
+		else if (dist < -radius)		// use mradius = -radius for speedup ??
+			node = node->children[1];	// side 2
+		else
 		{
-			// side 1
-			node = node->children[0];
+			// both sides -- go origin's side first
+			// (what this will do: if localOrigin point is visible, return PointLeaf(org))
+			if (dist > 0)
+			{
+				stack[sptr++] = node->children[1];
+				node = node->children[0];
+			}
+			else
+			{
+				stack[sptr++] = node->children[0];
+				node = node->children[1];
+			}
 		}
-		else if (dist < -radius)		// can use mradius = -radius for speedup ??
+	}
+}
+
+
+// Find nearest visible by draw order leaf, occupied by entity sphere,
+// or nearest to a sphere center leaf with alpha surfaces (if one)
+static node_t *AlphaSphereLeaf (vec3_t origin, float radius)
+{
+	int		sptr, drawOrder;
+	node_t	*node, *drawNode;
+	node_t	*stack[MAX_TREE_DEPTH];
+
+	sptr = 0;
+	node = map.nodes;
+	drawOrder = 0;
+	drawNode = NULL;
+	while (1)
+	{
+		float	dist;
+
+		if (!node->isNode)
+		{	// leaf found
+			if (node->frame == drawFrame)
+			{
+				if (node->haveAlpha)
+					return node;		// visible & alpha => mision complete
+				else if (node->drawOrder > drawOrder)
+				{
+					drawOrder = node->drawOrder;
+					drawNode = node;
+				}
+			}
+
+			if (!sptr)
+				return drawNode;		// whole tree visited, but no leafs with alpha found
+
+			node = stack[--sptr];
+			continue;
+		}
+
+		// process node
+		if (node->visFrame != visFrame || (!node->haveAlpha && node->drawOrder < drawOrder))
 		{
-			// side 2
-			node = node->children[1];
+			if (!sptr) return drawNode;
+			node = stack[--sptr];
+			continue;
 		}
+
+		dist = DISTANCE_TO_PLANE(origin, node->plane);
+		if (dist > radius)
+			node = node->children[0];	// side 1
+		else if (dist < -radius)		// use mradius = -radius for speedup ??
+			node = node->children[1];	// side 2
 		else
 		{
 			// both sides -- go origin's side first
@@ -376,12 +443,137 @@ static void AddMd3Surfaces (refEntity_t *e)
 }
 
 
+static void AddSp2Surface (refEntity_t *e)
+{
+	sp2Model_t		*sp2;
+	sp2Frame_t		*frame;
+	surfacePoly_t	*p;
+	surfaceCommon_t *surf;
+	vec3_t			down, up2;
+	int		color;
+
+	sp2 = e->model->sp2;
+	p = GL_AllocDynamicMemory (sizeof(surfacePoly_t) + 4 * sizeof(vertexPoly_t));
+	if (!p)		// out of dynamic memory
+		return;
+
+	frame = &sp2->frames[e->frame % sp2->numFrames];
+	p->numVerts = 4;
+
+	// setup xyz
+	VectorMA (e->origin, -frame->localOrigin[1], vp.viewaxis[2], down);
+	VectorMA (down, -frame->localOrigin[0], vp.viewaxis[1], p->verts[0].xyz);	// 0
+	VectorMA (down, frame->width - frame->localOrigin[0], vp.viewaxis[1], p->verts[1].xyz);	// 1
+	VectorScale (vp.viewaxis[2], frame->height, up2);
+	VectorAdd (p->verts[0].xyz, up2, p->verts[3].xyz);	// 3
+	VectorAdd (p->verts[1].xyz, up2, p->verts[2].xyz);	// 2
+
+	// setup st
+	p->verts[0].st[0] = p->verts[3].st[0] = 1;
+	p->verts[1].st[0] = p->verts[2].st[0] = 0;
+	p->verts[0].st[1] = p->verts[1].st[1] = 1;
+	p->verts[2].st[1] = p->verts[3].st[1] = 0;
+	// setup color
+	color = e->shaderColor;
+	if (!(e->flags & RF_TRANSLUCENT))
+		color |= 0xFF000000;		// make it non-transparent
+	p->verts[0].rgba = p->verts[1].rgba = p->verts[2].rgba = p->verts[3].rgba = color;
+
+	surf = GL_AddDynamicSurface (frame->shader, ENTITYNUM_WORLD);
+	surf->poly = p;
+	surf->type = SURFACE_POLY;
+}
+
+
+static void AddBeamSurfaces (refEntity_t *e)
+{
+	vec3_t	viewDir, viewDir2;
+	vec3_t	axis[3];	// length, width, depth
+	vec3_t	dir1, dir2;
+	float	z1, z2, size, angle, angleStep;
+	int		i, numParts;
+
+	DrawTextLeft (va("beam {%g, %g, %g} - {%g, %g, %g} : %g",
+		e->beamStart[0],e->beamStart[1],e->beamStart[2],
+		e->beamEnd[0],e->beamEnd[1],e->beamEnd[2],e->beamRadius),
+		1,1,1);//!!
+
+	// compute detail level
+	VectorSubtract (e->beamStart, vp.vieworg, viewDir);
+	z1 = DotProduct (viewDir, vp.viewaxis[0]);		// beamStart.Z
+	VectorSubtract (e->beamEnd, vp.vieworg, viewDir2);
+	z2 = DotProduct (viewDir2, vp.viewaxis[0]);		// beamEnd.Z
+	if ((z1 < z2 && z1 > 0) || z2 <= 0)
+		size = z1;
+	else
+		size = z2;
+	if (size < 0)
+	{	// both Z-coords < 0
+		gl_speeds.cullEnts2++;
+		return;
+	}
+	size = e->beamRadius * 200 / size / vp.fov_scale;
+	numParts = size;
+	if (numParts < 1) numParts = 1;
+	else if (numParts > 6) numParts = 6;
+	DrawTextLeft (va("SIZE = %g (z1: %g, z2: %g)", size, z1, z2), 1,1,1);//!!
+
+	// compute beam axis
+	VectorSubtract (e->beamEnd, e->beamStart, axis[0]);
+	VectorNormalizeFast (axis[0]);
+	CrossProduct (axis[0], viewDir, axis[1]);
+	VectorNormalizeFast (axis[1]);
+	CrossProduct (axis[0], axis[1], axis[2]);	// already normalized
+
+	VectorScale (axis[1], e->beamRadius, dir2);
+	angle = 0;
+	angleStep = M_PI / numParts;
+	for (i = 0; i < numParts; i++)
+	{
+		surfacePoly_t *p;
+		surfaceCommon_t *surf;
+		float	sx, cx;
+
+		p = GL_AllocDynamicMemory (sizeof(surfacePoly_t) + 4 * sizeof(vertexPoly_t));
+		if (!p)		// out of dynamic memory
+			return;
+		p->numVerts = 4;
+
+		// rotate dir1 & dir2 vectors
+		VectorCopy (dir2, dir1);
+		angle += angleStep;
+		sx = sin (angle) * e->beamRadius;		//?? do it with tables
+		cx = cos (angle) * e->beamRadius;
+		VectorScale (axis[1], cx, dir2);
+		VectorMA (dir2, sx, axis[2], dir2);
+
+		// setup xyz
+		VectorAdd (e->beamStart, dir1, p->verts[0].xyz);
+		VectorAdd (e->beamEnd, dir1, p->verts[1].xyz);
+		VectorAdd (e->beamStart, dir2, p->verts[3].xyz);
+		VectorAdd (e->beamEnd, dir2, p->verts[2].xyz);
+
+		// setup st
+		p->verts[0].st[0] = p->verts[3].st[0] = 1;
+		p->verts[1].st[0] = p->verts[2].st[0] = 0;
+		p->verts[0].st[1] = p->verts[1].st[1] = 1;
+		p->verts[2].st[1] = p->verts[3].st[1] = 0;
+
+		p->verts[0].rgba = p->verts[1].rgba = p->verts[2].rgba = p->verts[3].rgba = e->shaderColor;
+
+		surf = GL_AddDynamicSurface (gl_identityLightShader2, ENTITYNUM_WORLD);
+		surf->poly = p;
+		surf->type = SURFACE_POLY;
+	}
+}
+
+
 /*------------------ Drawing world -------------------*/
 
 
 static node_t *WalkBspTree (void)
 {
-	int		sptr, frustumMask;
+	int		sptr, frustumMask, drawOrder;
 	node_t	*node, *firstLeaf, *lastLeaf;
 
 	struct {
@@ -393,6 +585,7 @@ static node_t *WalkBspTree (void)
 	node = map.nodes;
 	frustumMask = 0xF;		// check all frustum planes
 	firstLeaf = NULL;
+	drawOrder = 0;
 	lastLeaf = node;		// just in case
 
 #define PUSH_NODE(n)		\
@@ -413,7 +606,7 @@ static node_t *WalkBspTree (void)
 
 	while (node)			// when whole tree visited - node = NULL
 	{
-		if (node->frame != visFrame)
+		if (node->visFrame != visFrame)
 		{	// discard node/leaf using visinfo
 			POP_NODE();
 			continue;
@@ -442,7 +635,8 @@ static node_t *WalkBspTree (void)
 #undef CULL_NODE
 		}
 
-		//!! check dlights (may require addons to "stack")
+		node->drawOrder = drawOrder++;
+		//!! check dlights (may require extensions to "stack")
 
 		if (node->isNode)
 		{	// Q3: child0, than child1; Q1/2: child depends on clipPlane (standard BSP usage)
@@ -470,6 +664,7 @@ static node_t *WalkBspTree (void)
 		lastLeaf = node;
 		gl_speeds.frustLeafs++;
 
+		node->frame = drawFrame;
 		node->frustumMask = frustumMask;
 		node->drawEntity = NULL;
 		node->drawParticle = NULL;
@@ -490,6 +685,8 @@ static void DrawEntities (int firstEntity, int numEntities)
 	int		i;
 	refEntity_t	*e;
 	node_t	*leaf;
+	vec3_t	delta, center;
+	float	dist2;
 
 	if (!numEntities || !r_drawentities->integer) return;
 
@@ -513,6 +710,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 					}
 
 					leaf = SphereLeaf (im->center, im->radius);
+					VectorCopy (im->center, center);
 				}
 				break;
 			case MODEL_MD3:
@@ -520,15 +718,15 @@ static void DrawEntities (int firstEntity, int numEntities)
 					md3Model_t	*md3;
 					md3Frame_t	*frame1, *frame2;
 					int		cull1, cull2;
-					vec3_t	center1, center2;
+					vec3_t	center2;
 
 					md3 = e->model->md3;
 
 					// frustum culling
 					frame1 = md3->frames + e->frame;
 					frame2 = md3->frames + e->oldFrame;
-					ModelToWorldCoord (frame1->localOrigin, e, center1);
-					cull1 = SphereCull (center1, frame1->radius);
+					ModelToWorldCoord (frame1->localOrigin, e, center);
+					cull1 = SphereCull (center, frame1->radius);
 					if (frame1 == frame2 && cull1 == FRUSTUM_OUTSIDE)
 					{
 						gl_speeds.cullEnts++;
@@ -544,31 +742,70 @@ static void DrawEntities (int firstEntity, int numEntities)
 							continue;
 						}
 					}
-					leaf = SphereLeaf (center1, frame1->radius);
+					leaf = SphereLeaf (center, frame1->radius);
 				}
+				break;
+			case MODEL_SP2:
+				leaf = AlphaSphereLeaf (e->origin, e->model->sp2->radius);
+				VectorCopy (e->origin, center);
 				break;
 			default:
 				DrawTextLeft ("Bad model type", 1, 0, 0);
-				leaf = NULL;
-			}
-
-			if (!leaf)
-			{	// entity do not occupy any visible leafs
-				gl_speeds.cullEnts2++;
 				continue;
 			}
+		}
+		else if (e->flags & RF_BEAM)
+		{
+			float	radius;
 
-			// add entity to leaf's entity list
-			e->drawNext = leaf->drawEntity;
-			leaf->drawEntity = e;
-
-			SetupModelMatrix (e);
+			VectorAdd (e->beamStart, e->beamEnd, center);
+			VectorScale (center, 0.5f, center);
+			radius = VectorDistance (e->beamStart, center);
+			leaf = AlphaSphereLeaf (center, radius);
 		}
 		else
 		{
-			//?? draw null model or special entities (rail beam etc)
 			DrawTextLeft (va("NULL entity %d", i), 1, 0, 0);
+			continue;
 		}
+
+		if (!leaf)
+		{	// entity do not occupy any visible leafs
+			gl_speeds.cullEnts2++;
+			continue;
+		}
+
+		// calc model distance
+		VectorSubtract (center, vp.vieworg, delta);
+		dist2 = e->dist2 = DotProduct (delta, vp.viewaxis[0]);
+		// add entity to leaf's entity list
+		if (leaf->drawEntity)
+		{
+			refEntity_t *prev, *e1;
+
+			for (e1 = leaf->drawEntity, prev = NULL; e1; prev = e1, e1 = e1->drawNext)
+				if (dist2 > e1->dist2)
+				{
+					e->drawNext = e1;
+					if (prev)
+						prev->drawNext = e;
+					else
+						leaf->drawEntity = e;	// insert first
+					break;
+				}
+			if (!e1)	// insert last
+			{
+				prev->drawNext = e;
+				e->drawNext = NULL;
+			}
+		}
+		else
+		{	// first entity for this leaf
+			leaf->drawEntity = e;
+			e->drawNext = NULL;
+		}
+
+		if (e->model) SetupModelMatrix (e);
 	}
 }
 
@@ -580,7 +817,7 @@ static void DrawParticles (particle_t *p)
 		node_t	*leaf;
 
 		leaf = &map.nodes[p->leafNum + map.numNodes];
-		if (leaf->frame == visFrame)
+		if (leaf->frame == drawFrame)
 		{
 			p->drawNext = leaf->drawParticle;
 			leaf->drawParticle = p;
@@ -698,7 +935,19 @@ static void DrawBspSequence (node_t *leaf)
 				case MODEL_MD3:
 					AddMd3Surfaces (e);
 					break;
+				case MODEL_SP2:
+/*				DrawTextLeft(va("sp: {%g, %g, %g : %g} leaf: %d",
+					e->origin[0],e->origin[1],e->origin[2],e->model->sp2->radius,
+					leaf - map.nodes - map.numNodes
+					),1,1,1);//!! */
+					AddSp2Surface (e);
+					break;
 				}
+			else if (e->flags & RF_BEAM)
+			{
+				DrawTextLeft (va("beam leaf = %d", leaf - map.nodes - map.numNodes), 1, 0, 0);//!!
+				AddBeamSurfaces (e);
+			}
 		}
 
 		/*------------ draw particles -------------*/
@@ -735,7 +984,7 @@ static void GL_MarkLeaves (void)
 		if (r_novis->integer || cluster == -1 || map.numClusters <= 1)
 		{	// mark ALL nodes
 			for (i = 0, n = map.nodes; i < map.numLeafNodes; i++, n++)
-				n->frame = visFrame;
+				n->visFrame = visFrame;
 			gl_speeds.visLeafs = gl_speeds.leafs;
 		}
 		else
@@ -758,8 +1007,8 @@ static void GL_MarkLeaves (void)
 				ar = n->area;
 				if (row[cl>>3] & (1<<(cl&7)) && gl_refdef.areaMask[ar>>3] & (1<<(ar&7)))	// NOTE: Q3 has inverted areaBits (areaMask)
 				{
-					for (p = n; p && p->frame != visFrame; p = p->parent)
-						p->frame = visFrame;
+					for (p = n; p && p->visFrame != visFrame; p = p->parent)
+						p->visFrame = visFrame;
 					gl_speeds.visLeafs++;
 				}
 			}
@@ -780,23 +1029,25 @@ void GL_AddEntity (entity_t *ent)
 	}
 	out = &gl_entities[gl_numEntities++];
 
-	out->model = ent->model;
-	out->customShader = (shader_t*) ent->skin;	//!! should use customSkin
-	out->skinNum = ent->skinnum;	//?? check skinnum in [0..model.numSkins]
-
-	VectorCopy (ent->origin, out->origin);
-	AnglesToAxis (ent->angles, out->axis);
+	// common fields
 	out->flags = ent->flags;
+	out->model = ent->model;
 
-	out->frame = ent->frame;
-	out->oldFrame = ent->oldframe;
-	out->backLerp = ent->backlerp;
-
-	out->shaderRGBA[3] = (int)(ent->alpha * 255);	//!! should fill RGB too
-
-	// model-specific code and calculate distance to object (to "v")
 	if (ent->model)
 	{
+		VectorCopy (ent->origin, out->origin);
+		AnglesToAxis (ent->angles, out->axis);
+
+		out->frame = ent->frame;
+		out->oldFrame = ent->oldframe;
+		out->backLerp = ent->backlerp;
+
+		out->customShader = (shader_t*) ent->skin;	//!! should use customSkin
+		out->skinNum = ent->skinnum;				//?? check skinnum in [0..model.numSkins]
+		out->shaderColor = 0xFFFFFF;				//?? white
+		out->shaderRGBA[3] = (int)(ent->alpha * 255);
+
+		// model-specific code and calculate model center
 		switch (ent->model->type)
 		{
 		case MODEL_INLINE:
@@ -805,7 +1056,7 @@ void GL_AddEntity (entity_t *ent)
 
 				im = ent->model->inlineModel;
 				VectorAdd (im->mins, im->maxs, v);
-				VectorMA (ent->origin, 0.5, v, im->center);		// middle point in world coordinates
+				VectorMA (ent->origin, 0.5f, v, im->center);	// middle point in world coordinates
 			}
 			break;
 		case MODEL_MD3:
@@ -830,6 +1081,14 @@ void GL_AddEntity (entity_t *ent)
 			}
 			break;
 		}
+	}
+	else if (ent->flags & RF_BEAM)
+	{
+		VectorCopy (ent->origin, out->beamStart);
+		VectorCopy (ent->oldorigin, out->beamEnd);
+		out->beamRadius = ent->frame / 2.0f;
+		out->shaderColor = gl_config.tbl_8to32[ent->skinnum];
+		out->shaderRGBA[3] = (int)(ent->alpha * 255);
 	}
 
 	gl_speeds.ents++;
@@ -875,6 +1134,9 @@ void GL_DrawPortal (void)
 					break;
 				case MODEL_MD3:
 					AddMd3Surfaces (e);
+					break;
+				case MODEL_SP2:
+					AddSp2Surface (e);
 					break;
 				}
 		}

@@ -29,7 +29,6 @@ static int		imageCount;
  */
 static byte		gammaTable[256], intensGammaTable[256];
 
-//!! Create test function to check hash distrubution
 // name should be in a lower case
 static int ComputeHash (char *name)
 {
@@ -269,7 +268,7 @@ void GL_State (int state)
 		{
 			qglEnable (GL_ALPHA_TEST);
 			if (m == GLSTATE_ALPHA_GT0)
-				qglAlphaFunc (GL_GREATER, 0.0f);
+				qglAlphaFunc (GL_GREATER, 0.05f);	//?? 0.0f
 			else if (m == GLSTATE_ALPHA_LT05)
 				qglAlphaFunc (GL_LESS, 0.5f);
 			else // if (m == GLSTATE_ALPHA_GE05)
@@ -556,7 +555,7 @@ static void MipMap (byte *in, int width, int height)
 				r /= n; g /= n; b /= n; a /= 4;
 			}
 			else
-			{	// don't allow transparent textures be black (in a case of non-transparent its usage)
+			{	// don't allow transparent textures to be black (in a case of its usage without blending)
 #define PROCESS_PIXEL(idx)	\
 		r += in[idx]; g += in[idx+1]; b += in[idx+2];
 				PROCESS_PIXEL(0);
@@ -843,8 +842,6 @@ void GL_SetRawPalette (const unsigned char *palette)
 			*dst++ = 255;
 		}
 	}
-//	else	//?? try to remove
-//		memcpy (rawPalette, gl_config.tbl_8to32, sizeof(rawPalette));
 }
 
 
@@ -1364,7 +1361,7 @@ void GL_InitImages (void)
 		p[0] = p[1] = p[2] = y;
 		p[3] = 255;
 	}
-	gl_identityLightImage = GL_CreateImage ("*identityLight", tex, 8, 8, 0);
+	gl_identityLightImage = GL_CreateImage ("*identityLight", tex, 8, 8, IMAGE_MIPMAP);
 	gl_identityLightImage->flags |= IMAGE_SYSTEM;
 
 	/*----------- create dlight image ------------*/
@@ -1539,7 +1536,7 @@ void GL_ShowImages (void)
 //------------- Loading images --------------------------
 
 // GL_FindImage -- main image creating/loading function
-image_t *GL_FindImage (char *name,int flags)
+image_t *GL_FindImage (char *name, int flags)
 {
 	char	name2[MAX_QPATH], *s;
 	int		hash, flags2, fmt, prefFmt, width, height, len;

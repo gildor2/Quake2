@@ -1,46 +1,54 @@
+! rename "gl_local.h" to something another (and change "#ifndef __GL_LOCAL_...")
+- SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
+- add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
+? don't need shader->sortParam other than sky/opaque/seethrough (may be, +coronas +hud)
+! implement hWnd caching (move CreateWindow()/DeleteWindow() from ref to main, create wnd on startup and delete on exit or
+  when renderer does not require it; this will (I hope) prevent app from loosing focus while vid_restart etc.)
+
 ?? add mean filter for DrawFPS() (ignore dropped frames and long (with FS access) frames)
 ! do not render while window is minimized (less CPU usage)
 - r_nocull works only with frustum culling (extend cvar or add another ...)
+!! vertex arrays are not 16-byte aligned (see gl.log)
 
 - shaders:
-  ! any number of animated textures (see Q2 SP map "lab") -- dynamic allocation, boost MAX_STAGE_TEXTURES
   ? make shader_t.name dynamic allocated (~ basenamed_t)
-  ? add shader_t.size -- size of whole structure (with stages)
   ? sky shader: specify color for "gl_fastSky"
-  - dynamic tmu count in stage (stage.tmu -> tmu, tmu allocated separately)
-  ? size of shader (for clonning by SetShaderLightmap() and for reusing it from deleted shader (temp shaders))
-? "gl_fastSky 2" - use "*sky" shader; add color to "*sky" shader
-! gl_maxVerts [1..2048] -- used by RB_CheckOverflow()
+  ? field: size of shader (for reusing it from deleted shader (temp shaders)) (Is "delete/reuse shader" needed ??)
+? "gl_fastSky 2" - use "*sky" shader; add color to "*sky" shader (color-filled skies)
+? gl_maxVerts cvar [1..2048] -- used by RB_CheckOverflow()
 ! correct lightscaling (max_scale = 255/max(r,g,b)) for overbright
 ? gl_lastValidRenderer (reset all config params ("reset gl_*" ??) if changed; example of value -- "Riva TNT2/SSE")
-! overbright of DYNAMIC lightmaps (normal modulated in image.c::Upload()) and model skins
+! overbright of DYNAMIC lightmaps (NORMAL modulated in image.c::Upload()) and model skins
 
 --------- Mandatory ------------
 VISIBLE:
 - dlights
 - models (entities)
-  - sprite (.sp2 (Q2) & .spr (HL))
   - md2
     - "outline" effect (quad damage etc.)
     - flashing fx (sometimes rgbGen entity, or 2 shaders: with/without flashing ?)
     - lefthand (weapon model)
     - dynamic lighting (RecursiveLightPoint)
-? rail fx (change)
 - screen blending (underwater etc.)
 - shadows
 INVISIBLE:
 - multitexturing (with lightmap lightscale when have multitex. and no env_combine)
 ! freeing of old images (and "bool temp" or "int usage" flag)
+FOR GAME:
+- r_lightlevel (really, needs another way to provide lighting info for game ...)
 DEBUG:
 - r_fullbright, gl_lightmap
 - gl_stings (gfxinfo)
 
 --------- Improvements -----------
 
+? rail fx (change)
 - optimize sky box drawing:
   - make more than 6 rects (6 * skyTessSize^2)
-  - perform fast surface tessalation (need only verts)
-- gl_showbboxes, gl_singleShader -> cheat
+  - perform fast surface tessalation (need only verts.xyz)
+  - can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs)
+  - find fast cases, when surface placed only on one plane (can use surface normal to determine IMPOSSIBLE planes)
+- gl_showbboxes, gl_singleShader, gl_showtris -> cheat
 - vertex lighting:
   - surface simplification + subdivision (!) for complex lightmaps (non-gradient color change) - as option
     (lighting = "lightmap", "vertex", "hq vertex")
@@ -70,7 +78,9 @@ DEBUG:
 - water lightmaps:
   ? try to GENERATE vertex light for water/windows ??
 - improve SURF_ALPHA quality on near distances (determine const for checking this requirement?):
-  scale (enlarge) texture with keeping alpha = 0 or 255
+  - scale (enlarge) texture with keeping alpha = 0 or 255
+  ? make 2 copies of image (when necessary): with and without alpha-channel (have some KP maps with same texture used
+    as window and as wall) -- IMAGE_ALPHA flag (use different resampling techniques)
 
 ---------------------------
 - inlineModels: RF_TRANSLUCENT/RF2_ALPHA: qglColor4f (1,1,1,0.25)/qglColor4f(1,1,1,1) + blend + no lightmap

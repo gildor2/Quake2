@@ -60,6 +60,16 @@ typedef struct
 
 typedef struct
 {
+	vec3_t	xyz;
+	float	st[2];
+	union {
+		byte	c[4];
+		int		rgba;
+	};
+} vertexPoly_t;
+
+typedef struct
+{
 	short	xyz[3];
 	short	normal;			//?? unused now; byte[2] -- angles
 } vertexMd3_t;	//?? == md3XyzNormal_t
@@ -69,7 +79,8 @@ typedef enum
 	SURFACE_PLANAR,			// surfacePlanar_t
 	SURFACE_TRISURF,		// surfaceTrisurf_t
 	SURFACE_MD3,			// surfaceMd3_t
-	SURFACE_PARTICLE
+	SURFACE_POLY,			// surfacePoly_t
+	SURFACE_PARTICLE		// particle_t
 } surfaceType_t;
 
 // Planar surface: same normal for all vertexes
@@ -118,6 +129,12 @@ typedef struct
 	vertexMd3_t *verts;		// numVerts*numFrames
 } surfaceMd3_t;
 
+typedef struct
+{
+	int		numVerts;
+	vertexPoly_t verts[0];	// [numVerts]
+} surfacePoly_t;
+
 typedef struct surfaceCommon_s
 {
 	shader_t *shader;		// ignored for models
@@ -128,6 +145,7 @@ typedef struct surfaceCommon_s
 		surfaceTrisurf_t *tri;	// type = SURFACE_PLANAR
 		surfacePlanar_t *pl;	// type = SURFACE_TRISURF
 		surfaceMd3_t	*md3;	// type = SURFACE_MD3
+		surfacePoly_t	*poly;	// type = SURFACE_POLY
 		particle_t		*part;	// type = SURFACE_PARTICLE
 	};
 } surfaceCommon_t;
@@ -137,14 +155,16 @@ typedef struct surfaceCommon_s
 typedef struct node_s
 {
 	qboolean isNode;
+	qboolean haveAlpha;				// true if leaf have surface(s) with translucent shader
 	byte	frustumMask;
-	int		frame;
+	int		visFrame, frame;		// PVS-cull frame, frustum-cull frame
 	// leaf geometry
 	float	mins[3], maxs[3];
 	cplane_t *plane;
 	// tree structure
 	struct node_s *parent, *children[2];
 	// BSP draw sequence (dynamic)
+	int		drawOrder;				// 0 - first, 1 - next etc.
 	struct node_s *drawNext;
 	refEntity_t *drawEntity;
 	particle_t *drawParticle;
@@ -207,11 +227,27 @@ typedef struct
 } md3Model_t;
 
 
+/*------------ Sprite models ---------------*/
+
+typedef struct
+{
+	float	width, height;
+	float	localOrigin[2];
+	shader_t *shader;
+} sp2Frame_t;
+
+typedef struct
+{
+	int		numFrames;
+	float	radius;
+	sp2Frame_t frames[0];	// [numFrames]
+} sp2Model_t;
+
 /*---------------- Models ------------------*/
 
 typedef enum {
 	MODEL_INLINE,
-	MODEL_SP2,		//!! not implemented
+	MODEL_SP2,
 	MODEL_MD3
 } modelType_t;
 
@@ -224,6 +260,7 @@ typedef struct model_s
 	modelType_t	type;
 	union {
 		inlineModel_t	*inlineModel;	// MODEL_INLINE
+		sp2Model_t		*sp2;			// MODEL_SP2
 		md3Model_t		*md3;			// MODEL_MD3
 	};
 } model_t;
