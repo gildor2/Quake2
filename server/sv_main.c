@@ -169,7 +169,7 @@ SVC_Ack
 */
 void SVC_Ack (void)
 {
-	Com_Printf ("Ping acknowledge from %s\n", NET_AdrToString(net_from));
+	Com_Printf ("Ping acknowledge from %s\n", NET_AdrToString (&net_from));
 }
 
 /*
@@ -240,9 +240,9 @@ void SVC_GetChallenge (void)
 	oldestTime = 0x7FFFFFFF;
 
 	// see if we already have a challenge for this ip
-	for (i = 0 ; i < MAX_CHALLENGES ; i++)
+	for (i = 0; i < MAX_CHALLENGES; i++)
 	{
-		if (NET_CompareBaseAdr (net_from, svs.challenges[i].adr))
+		if (NET_CompareBaseAdr (&net_from, &svs.challenges[i].adr))
 			break;
 		if (svs.challenges[i].time < oldestTime)
 		{
@@ -286,7 +286,7 @@ void SVC_DirectConnect (void)
 
 	adr = net_from;
 
-	Com_DPrintf ("SVC_DirectConnect ()\n");
+	Com_DPrintf ("SVC_DirectConnect()\n");
 
 	version = atoi(Cmd_Argv(1));
 	if (version != PROTOCOL_VERSION)
@@ -304,12 +304,12 @@ void SVC_DirectConnect (void)
 	userinfo[sizeof(userinfo) - 1] = 0;
 
 	// force the IP key/value pair so the game can filter based on ip
-	Info_SetValueForKey (userinfo, "ip", NET_AdrToString(net_from));
+	Info_SetValueForKey (userinfo, "ip", NET_AdrToString(&net_from));
 
 	// attractloop servers are ONLY for local clients
 	if (sv.attractloop)
 	{
-		if (!NET_IsLocalAddress (adr))
+		if (!NET_IsLocalAddress (&adr))
 		{
 			Com_Printf ("Remote connect in attract loop.  Ignored.\n");
 			Netchan_OutOfBandPrint (NS_SERVER, adr, "print\nConnection refused.\n");
@@ -318,11 +318,11 @@ void SVC_DirectConnect (void)
 	}
 
 	// see if the challenge is valid
-	if (!NET_IsLocalAddress (adr))
+	if (!NET_IsLocalAddress (&adr))
 	{
 		for (i = 0; i < MAX_CHALLENGES; i++)
 		{
-			if (NET_CompareBaseAdr (net_from, svs.challenges[i].adr))
+			if (NET_CompareBaseAdr (&net_from, &svs.challenges[i].adr))
 			{
 				if (challenge == svs.challenges[i].challenge)
 					break;		// good
@@ -345,16 +345,16 @@ void SVC_DirectConnect (void)
 	{
 		if (cl->state == cs_free)
 			continue;
-		if (NET_CompareBaseAdr (adr, cl->netchan.remote_address)
+		if (NET_CompareBaseAdr (&adr, &cl->netchan.remote_address)
 			&& ( cl->netchan.qport == qport
 			|| adr.port == cl->netchan.remote_address.port ) )
 		{
-			if (!NET_IsLocalAddress (adr) && (svs.realtime - cl->lastconnect) < ((int)sv_reconnect_limit->value * 1000))
+			if (!NET_IsLocalAddress (&adr) && (svs.realtime - cl->lastconnect) < ((int)sv_reconnect_limit->value * 1000))
 			{
-				Com_DPrintf ("%s:reconnect rejected : too soon\n", NET_AdrToString (adr));
+				Com_DPrintf ("%s:reconnect rejected : too soon\n", NET_AdrToString (&adr));
 				return;
 			}
-			Com_Printf ("%s:reconnect\n", NET_AdrToString (adr));
+			Com_Printf ("%s:reconnect\n", NET_AdrToString (&adr));
 			newcl = cl;
 			goto gotnewcl;
 		}
@@ -453,9 +453,9 @@ void SVC_RemoteCommand (void)
 	i = Rcon_Validate ();
 
 	if (i == 0)
-		Com_Printf ("Bad rcon from %s:\n%s\n", NET_AdrToString (net_from), net_message.data+4);
+		Com_Printf ("Bad rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
 	else
-		Com_Printf ("Rcon from %s:\n%s\n", NET_AdrToString (net_from), net_message.data+4);
+		Com_Printf ("Rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
 
 	Com_BeginRedirect (RD_PACKET, sv_outputbuf, SV_OUTPUTBUF_LENGTH, SV_FlushRedirect);
 
@@ -467,9 +467,9 @@ void SVC_RemoteCommand (void)
 	{
 		remaining[0] = 0;
 
-		for (i=2 ; i<Cmd_Argc() ; i++)
+		for (i = 2; i < Cmd_Argc(); i++)
 		{
-			strcat (remaining, Cmd_Argv(i) );
+			strcat (remaining, Cmd_Argv(i));
 			strcat (remaining, " ");
 		}
 
@@ -491,8 +491,7 @@ connectionless packets.
 */
 void SV_ConnectionlessPacket (void)
 {
-	char	*s;
-	char	*c;
+	char	*s, *c;
 
 	MSG_BeginReading (&net_message);
 	MSG_ReadLong (&net_message);		// skip the -1 marker
@@ -502,7 +501,12 @@ void SV_ConnectionlessPacket (void)
 	Cmd_TokenizeString (s, false);
 
 	c = Cmd_Argv(0);
-	Com_DPrintf ("Packet %s : %s\n", NET_AdrToString(net_from), c);
+	Com_DPrintf ("Packet %s : %s\n", NET_AdrToString (&net_from), c);
+	if (SV_AddressBanned (&net_from))
+	{
+		Com_DPrintf ("... banned\n");
+		return;
+	}
 
 	if (!strcmp (c, "ping"))
 		SVC_Ping ();
@@ -519,7 +523,7 @@ void SV_ConnectionlessPacket (void)
 	else if (!strcmp (c, "rcon"))
 		SVC_RemoteCommand ();
 	else
-		Com_WPrintf ("Bad connectionless packet from %s:\n%s\n", NET_AdrToString (net_from), s);
+		Com_WPrintf ("Bad connectionless packet from %s: \"%s\"\n", NET_AdrToString (&net_from), s);
 }
 
 
@@ -635,7 +639,7 @@ void SV_ReadPackets (void)
 		{
 			if (cl->state == cs_free)
 				continue;
-			if (!NET_CompareBaseAdr (net_from, cl->netchan.remote_address))
+			if (!NET_CompareBaseAdr (&net_from, &cl->netchan.remote_address))
 				continue;
 			if (cl->netchan.qport != qport)
 				continue;
@@ -712,18 +716,17 @@ This has to be done before the world logic, because
 player processing happens outside RunWorldFrame
 ================
 */
-void SV_PrepWorldFrame (void)
+static void SV_PrepWorldFrame (void)
 {
 	edict_t	*ent;
 	int		i;
 
-	for (i=0 ; i<ge->num_edicts ; i++, ent++)
+	for (i = 0; i < ge->num_edicts; i++, ent++)
 	{
 		ent = EDICT_NUM(i);
 		// events only last for a single message
 		ent->s.event = 0;
 	}
-
 }
 
 
@@ -754,7 +757,7 @@ void SV_PostprocessFrame (void)
 
 			point[0] = ent->s.origin[0];
 			point[1] = ent->s.origin[1];
-			point[2] = ent->s.origin[2] - 64;		// - 0.25; ?
+			point[2] = ent->s.origin[2] - 64;
 			trace = SV_Trace (ent->s.origin, ent->mins, ent->maxs, point, ent, MASK_PLAYERSOLID|MASK_MONSTERSOLID|MASK_WATER);
 			if (trace.fraction < 1)
 			{
@@ -1036,10 +1039,10 @@ void Master_Heartbeat (void)
 	string = SV_StatusString();
 
 	// send to group master
-	for (i=0 ; i<MAX_MASTERS ; i++)
+	for (i = 0; i < MAX_MASTERS; i++)
 		if (master_adr[i].port)
 		{
-			Com_Printf ("Sending heartbeat to %s\n", NET_AdrToString (master_adr[i]));
+			Com_Printf ("Sending heartbeat to %s\n", NET_AdrToString (&master_adr[i]));
 			Netchan_OutOfBandPrint (NS_SERVER, master_adr[i], "heartbeat\n%s", string);
 		}
 }
@@ -1068,7 +1071,7 @@ void Master_Shutdown (void)
 		if (master_adr[i].port)
 		{
 			if (i > 0)
-				Com_Printf ("Sending heartbeat to %s\n", NET_AdrToString (master_adr[i]));
+				Com_Printf ("Sending heartbeat to %s\n", NET_AdrToString (&master_adr[i]));
 			Netchan_OutOfBandPrint (NS_SERVER, master_adr[i], "shutdown");
 		}
 }
@@ -1103,11 +1106,7 @@ void SV_UserinfoChanged (client_t *cl)
 	if (strlen(val))
 	{
 		i = atoi(val);
-		cl->rate = i;
-		if (cl->rate < 100)
-			cl->rate = 100;
-		if (cl->rate > 15000)
-			cl->rate = 15000;
+		cl->rate = bound(i, 100, 15000);
 	}
 	else
 		cl->rate = 5000;

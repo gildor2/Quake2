@@ -766,11 +766,14 @@ void CL_Reconnect_f (void)
 		return;
 	}
 
-	if (*cls.servername) {
-		if (cls.state >= ca_connected) {
+	if (*cls.servername)
+	{
+		if (cls.state >= ca_connected)
+		{
 			CL_Disconnect();
 			cls.connect_time = cls.realtime - 1500;
-		} else
+		}
+		else
 			cls.connect_time = -99999; // fire immediately
 
 		cls.state = ca_connecting;
@@ -819,7 +822,7 @@ void CL_PingServers_f (void)
 	{
 		adr.type = NA_BROADCAST;
 		adr.port = BigShort(PORT_SERVER);
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %i", PROTOCOL_VERSION));
+		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d", PROTOCOL_VERSION));
 	}
 
 	noipx = Cvar_Get ("noipx", "0", CVAR_NOSET);
@@ -827,7 +830,7 @@ void CL_PingServers_f (void)
 	{
 		adr.type = NA_BROADCAST_IPX;
 		adr.port = BigShort(PORT_SERVER);
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %i", PROTOCOL_VERSION));
+		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d", PROTOCOL_VERSION));
 	}
 
 	// send a packet to each address book entry
@@ -845,7 +848,7 @@ void CL_PingServers_f (void)
 		}
 		if (!adr.port)
 			adr.port = BigShort(PORT_SERVER);
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %i", PROTOCOL_VERSION));
+		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d", PROTOCOL_VERSION));
 	}
 }
 
@@ -861,7 +864,7 @@ void CL_Skins_f (void)
 {
 	int		i;
 
-	for (i=0 ; i<MAX_CLIENTS ; i++)
+	for (i = 0; i < MAX_CLIENTS; i++)
 	{
 		if (!cl.configstrings[CS_PLAYERSKINS+i][0])
 			continue;
@@ -894,7 +897,7 @@ void CL_ConnectionlessPacket (void)
 
 	c = Cmd_Argv(0);
 
-	Com_Printf ("%s: %s\n", NET_AdrToString (net_from), c);
+	Com_Printf ("%s: %s\n", NET_AdrToString (&net_from), c);
 
 	// server connection
 	if (!strcmp(c, "client_connect"))
@@ -924,9 +927,9 @@ void CL_ConnectionlessPacket (void)
 	}
 
 	// remote command from gui front end
-	if (!strcmp(c, "cmd"))
+	if (!strcmp (c, "cmd"))
 	{
-		if (!NET_IsLocalAddress(net_from))
+		if (!NET_IsLocalAddress (&net_from))
 		{
 			Com_Printf ("Command packet from remote host.  Ignored.\n");
 			return;
@@ -1011,20 +1014,19 @@ void CL_ReadPackets (void)
 
 		if (net_message.cursize < 8)
 		{
-			Com_Printf ("%s: Runt packet\n",NET_AdrToString(net_from));
+			Com_Printf ("%s: Runt packet\n",NET_AdrToString (&net_from));
 			continue;
 		}
 
 		//
 		// packet from server
 		//
-		if (!NET_CompareAdr (net_from, cls.netchan.remote_address))
+		if (!NET_CompareAdr (&net_from, &cls.netchan.remote_address))
 		{
-			Com_DPrintf ("%s:sequenced packet without connection\n"
-				,NET_AdrToString(net_from));
+			Com_DPrintf ("%s:sequenced packet without connection\n", NET_AdrToString (&net_from));
 			continue;
 		}
-		if (!Netchan_Process(&cls.netchan, &net_message))
+		if (!Netchan_Process (&cls.netchan, &net_message))
 			continue;		// wasn't accepted for some reason
 		CL_ParseServerMessage ();
 	}
@@ -1661,10 +1663,12 @@ static int	numcheatvars;
 
 void CL_FixCvarCheats (void)
 {
-	int			i;
-	cheatvar_t	*var;
+	int		i;
+	cheatvar_t *var;
 
-	if (Com_ServerState () == ss_demo) return;	// allow cheats for demos
+	//!! chould also check something like "sv_cheats" (devmap)
+	if (cl.attractloop) return;
+	if (cls.state != ca_connected && cls.state != ca_active) return;
 
 	if (!strcmp (cl.configstrings[CS_MAXCLIENTS], "1") || !cl.configstrings[CS_MAXCLIENTS][0])
 		return;		// single player can cheat

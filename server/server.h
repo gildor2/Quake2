@@ -17,42 +17,28 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-// server.h
 
-
-//define	PARANOID			// speed sapping error checking
+//define	PARANOID				// speed sapping error checking
 
 #include "../qcommon/qcommon.h"
-#include "../game/game.h"
+#include "../game/game.h"			//??
 
 //=============================================================================
 
 #define	MAX_MASTERS	8				// max recipients for heartbeat packets
 
-/* -- migrated to qcommon.h
-typedef enum {
-	ss_dead,			// no map loaded
-	ss_loading,			// spawning level edicts
-	ss_game,			// actively running
-	ss_cinematic,
-	ss_demo,
-	ss_pic
-} server_state_t;
-*/
-// some qc commands are only valid before the server has finished
-// initializing (precache commands, static sounds / objects, etc)
 
 typedef struct
 {
-	server_state_t	state;			// precache commands are only valid during load
+	server_state_t	state;				// precache commands are only valid during load
 
-	qboolean	attractloop;		// running cinematics and demos for the local system only
-	qboolean	loadgame;			// client begins should reuse existing entity
+	qboolean	attractloop;			// running cinematics and demos for the local system only
+	qboolean	loadgame;				// client begins should reuse existing entity
 
-	unsigned	time;				// always sv.framenum * 100 msec
+	unsigned	time;					// always sv.framenum * 100 msec
 	int			framenum;
 
-	char		name[MAX_QPATH];	// map name, or cinematic name
+	char		name[MAX_QPATH];		// map name, or cinematic name
 	cmodel_t	*models[MAX_MODELS];
 
 	char		configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
@@ -65,7 +51,7 @@ typedef struct
 
 	// demo server information
 	FILE		*demofile;
-	qboolean	timedemo;		// don't time sync
+	qboolean	timedemo;				// don't sync time
 } server_t;
 
 #define EDICT_NUM(n) ((edict_t *)((byte *)ge->edicts + ge->edict_size*(n)))
@@ -74,21 +60,21 @@ typedef struct
 
 typedef enum
 {
-	cs_free,		// can be reused for a new connection
-	cs_zombie,		// client has been disconnected, but don't reuse
-					// connection for a couple seconds
-	cs_connected,	// has been assigned to a client_t, but not in game yet
-	cs_spawned		// client is fully in game
+	cs_free,							// can be reused for a new connection
+	cs_zombie,							// client has been disconnected, but don't reuse
+										// connection for a couple seconds
+	cs_connected,						// has been assigned to a client_t, but not in game yet
+	cs_spawned							// client is fully in game
 } client_state_t;
 
 typedef struct
 {
-	int					areabytes;
-	byte				areabits[MAX_MAP_AREAS/8];		// portalarea visibility bits
-	player_state_t		ps;
-	int					num_entities;
-	int					first_entity;		// into the circular sv_packet_entities[]
-	int					senttime;			// for ping calculations
+	int			areabytes;
+	byte		areabits[MAX_MAP_AREAS/8]; // portalarea visibility bits
+	player_state_t ps;
+	int			num_entities;
+	int			first_entity;			// into the circular sv_packet_entities[]
+	int			senttime;				// for ping calculations
 } client_frame_t;
 
 #define	LATENCY_COUNTS	16
@@ -96,54 +82,54 @@ typedef struct
 
 typedef struct client_s
 {
-	client_state_t	state;
+	client_state_t state;
 
-	char			userinfo[MAX_INFO_STRING];		// name, etc
+	char		userinfo[MAX_INFO_STRING]; // name, etc
 
-	int				lastframe;			// for delta compression
-	usercmd_t		lastcmd;			// for filling in big drops
+	int			lastframe;				// for delta compression
+	usercmd_t	lastcmd;				// for filling in big drops
 
-	int				commandMsec;		// every seconds this is reset, if user
+	int			commandMsec;			// every seconds this is reset, if user
 										// commands exhaust it, assume time cheating
 
-	int				frame_latency[LATENCY_COUNTS];
-	int				ping;
+	int			frame_latency[LATENCY_COUNTS];
+	int			ping;
 
-	int				message_size[RATE_MESSAGES];	// used to rate drop packets
-	int				rate;
-	int				surpressCount;		// number of messages rate supressed
+	int			message_size[RATE_MESSAGES]; // used to rate drop packets
+	int			rate;
+	int			surpressCount;			// number of messages rate supressed
 
-	edict_t			*edict;				// EDICT_NUM(clientnum+1)
-	char			name[32];			// extracted from userinfo, high bits masked
-	int				messagelevel;		// for filtering printed messages
+	edict_t		*edict;					// EDICT_NUM(clientnum+1)
+	char		name[32];				// extracted from userinfo, high bits masked
+	int			messagelevel;			// for filtering printed messages
 
 	// The datagram is written to by sound calls, prints, temp ents, etc.
 	// It can be harmlessly overflowed.
-	sizebuf_t		datagram;
-	byte			datagram_buf[MAX_MSGLEN];
+	sizebuf_t	datagram;
+	byte		datagram_buf[MAX_MSGLEN];
 
-	client_frame_t	frames[UPDATE_BACKUP];	// updates can be delta'd from here
+	client_frame_t frames[UPDATE_BACKUP]; // updates can be delta'd from here
 
-	byte			*download;			// file being downloaded
-	int				downloadsize;		// total bytes (can't use EOF because of paks)
-	int				downloadcount;		// bytes sent
+	byte		*download;				// file being downloaded
+	int			downloadsize;			// total bytes (can't use EOF because of paks)
+	int			downloadcount;			// bytes sent
 
-	int				lastmessage;		// sv.framenum when packet was last received
-	int				lastconnect;
+	int			lastmessage;			// sv.framenum when packet was last received
+	int			lastconnect;
 
-	int				challenge;			// challenge of this user, randomly generated
+	int			challenge;				// challenge of this user, randomly generated
 
-	netchan_t		netchan;
+	netchan_t	netchan;
 
 	//------ extended protocol fields --------
-	qboolean		newprotocol;			// true if client uses a new communication protocol
+	qboolean	newprotocol;			// true if client uses a new communication protocol
 	// stuff for anti-camper sounds
-	int				lastcluster;
-	int				nextsfxtime;
-	int				sfxstate;		// 0-none, 1-spectator (don't works now!!), 2-normal (may be, camper)
+	int			lastcluster;
+	int			nextsfxtime;
+	int			sfxstate;				// 0-none, 1-spectator (don't works now!!), 2-normal (may be, camper)
 	// falling sounds
-	int				last_velocity2;
-	qboolean		screaming;
+	int			last_velocity2;
+	qboolean	screaming;
 } client_t;
 
 // a client can leave the server in one of four ways:
@@ -243,11 +229,6 @@ void SV_Map (qboolean attractloop, char *levelstring, qboolean loadgame);
 
 
 //
-// sv_phys.c
-//
-void SV_PrepWorldFrame (void);
-
-//
 // sv_send.c
 //
 typedef enum {RD_NONE, RD_CLIENT, RD_PACKET} redirect_t;
@@ -264,10 +245,8 @@ void SV_SendClientMessages (void);
 void SV_MulticastOld (vec3_t origin, multicast_t to);
 // send message only to clients with a new protocol
 void SV_MulticastNew (vec3_t origin, multicast_t to);
-void SV_StartSoundOld (vec3_t origin, edict_t *entity, int channel,
-		int soundindex, float volume, float attenuation, float timeofs);
-void SV_StartSoundNew (vec3_t origin, edict_t *entity, int channel,
-		int soundindex, float volume, float attenuation, float timeofs);
+void SV_StartSoundOld (vec3_t origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs);
+void SV_StartSoundNew (vec3_t origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs);
 void SV_ClientPrintf (client_t *cl, int level, char *fmt, ...);
 void SV_BroadcastPrintf (int level, char *fmt, ...);
 void SV_BroadcastCommand (char *fmt, ...);
@@ -281,8 +260,8 @@ void SV_ExecuteClientMessage (client_t *cl);
 //
 // sv_ccmds.c
 //
+qboolean SV_AddressBanned (netadr_t *a);
 void SV_ReadLevelFile (void);
-void SV_Status_f (void);
 
 //
 // sv_ents.c
@@ -306,6 +285,10 @@ void SV_InitEdict (edict_t *e);
 
 
 //============================================================
+
+//
+// sv_world.c
+//
 
 //
 // high level object sorting to reduce interaction tests

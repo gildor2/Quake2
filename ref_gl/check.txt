@@ -20,5 +20,6 @@
 - "cucu40a": have 1 dark place (originally lighted with reflected light)
 - "ckcomp1": have minlight, specified from command line (can be taken from map's readme)
 - "darkalley": have too dark places (but walls are lighted)
+- "kumanru": very bright sky (SURF_LIGHT), secondary light sources (too dark shadows)
 ------------------------------
 - "tchurch-beta3": too many dynamic lightmaps (slower than oldgl; oldgl is slow)

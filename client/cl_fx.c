@@ -1382,7 +1382,7 @@ void CL_BlasterTrail (vec3_t start, vec3_t end)
 
 		p->alpha = 1.0;
 		p->alphavel = -1.0 / (0.3+frand()*0.2);
-		p->color = 0xe0;
+		p->color = 0xE0;
 		for (j=0 ; j<3 ; j++)
 		{
 			p->org[j] = move[j] + crand();
@@ -1410,6 +1410,7 @@ void CL_QuadTrail (vec3_t start, vec3_t end)
 	dec = 5;
 	VectorScale (vec, 5, vec);
 
+	// FIXME: this is a really silly way to have a loop
 	while (len > 0)
 	{
 		len -= dec;
@@ -1448,6 +1449,7 @@ void CL_FlagTrail (vec3_t start, vec3_t end, float color)
 	dec = 5;
 	VectorScale (vec, 5, vec);
 
+	// FIXME: this is a really silly way to have a loop
 	while (len > 0)
 	{
 		len -= dec;
@@ -1625,15 +1627,15 @@ void CL_RailTrail (vec3_t start, vec3_t end)
 
 	MakeNormalVectors (vec, right, up);
 
-	for (i=0 ; i<len ; i++)
+	for (i = 0; i < len; i++)
 	{
 		if (!(p = CL_AllocParticle ()))
 			return;
 		p->accel[2] = 0;
 
 		d = i * 0.1;
-		c = cos(d);
-		s = sin(d);
+		c = cos(d);		//!!
+		s = sin(d);		//!!
 
 		VectorScale (right, c, dir);
 		VectorMA (dir, s, up, dir);
@@ -1641,7 +1643,7 @@ void CL_RailTrail (vec3_t start, vec3_t end)
 		p->alpha = 1.0;
 		p->alphavel = -1.0 / (1+frand()*0.2);
 		p->color = clr + (rand()&7);
-		for (j=0 ; j<3 ; j++)
+		for (j = 0; j < 3; j++)
 		{
 			p->org[j] = move[j] + dir[j]*3;
 			p->vel[j] = dir[j]*6;
@@ -1666,7 +1668,7 @@ void CL_RailTrail (vec3_t start, vec3_t end)
 		p->alphavel = -1.0 / (0.6+frand()*0.2);
 		p->color = 0x0 + rand()&15;
 
-		for (j=0 ; j<3 ; j++)
+		for (j = 0; j < 3; j++)
 		{
 			p->org[j] = move[j] + crand()*3;
 			p->vel[j] = crand()*3;
@@ -1708,7 +1710,7 @@ void CL_IonripperTrail (vec3_t start, vec3_t ent)
 
 		p->alpha = 0.5;
 		p->alphavel = -1.0 / (0.3 + frand() * 0.2);
-		p->color = 0xe4 + (rand()&3);
+		p->color = 0xE4 + (rand()&3);
 
 		VectorCopy (move, p->org);
 		if (left)

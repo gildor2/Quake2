@@ -1,3 +1,5 @@
+- when demo server started, other players can see it in server list (but cannot join: "Remote connect in attract loop. Ignored"
+  (should not send serverinfo)
 ! sometimes key_up skipped (or key_down spontaneously pressed) (hardware bug ?)
 - map "temple2", "lavatube" -- waterfall: bullet sounds (change sound for water sparks, change place for water bullet sounds
   or something another ??)

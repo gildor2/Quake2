@@ -34,6 +34,9 @@ TRACE:
        end=max_dist
     2) loop: if (dist(ent)>end) break; Trace(ent); if (collide) end=dist(ent);
     NOTE: cannot TRACE to (start - trace.endpos) - will produce different trace.frac
+    +) add something like ent.worldMatrix in client/server prediction, call BoxTrace() instead of TransformedBoxTrace() when true;
+       for alias models: make origin=0,angles=0,box=mins+origin,maxs+origin (make separate "trace" function for this (clip line
+       with AABB) ?)
   - TransformedBoxTrace: replace (headnode,origin,angles) with entity; make HeadnodeForBox() -> tempEntity;
     cache/update ent.angles->ent.axis ! (in renderer: ClipToEntities() -- use TransformedBoxTrace; send to renderer axis, not angles
     (check how this will affects left-hand weapon model))
@@ -84,8 +87,6 @@ BSP:
   - map "japan", lift (really, within all lifts), 3rd_person, going up with looking up -- camera drizzle (bad collision with lift entity)
 - 3rd person view: ground3_beta3, dist=300, enter dark place (near ladder) between street lamp and garage: garage
   door will disappear (server sends entity list depends on model origin, not vieworg)
-- demo "tower", when run with "timedemo 1" will not display stats at the end (seems, it modify cvar inside demo; OR: demo will
-  set "deathmatch" to 1 (before this modification will be disabled), and - FixCvarCheats())
 ? unable (sometimes?) for client to download map from server
 - memory leak 4096 bytes (map rexro/discon/vid_res/STATS/beachassault/rexro/discon/vid_res/STATS)
 
@@ -141,6 +142,7 @@ BSP:
   LoadMd2() and global model list ??
 ? SV_FindIndex() -- use hash tables ?
 ? server: if game_time is comparable with ref_time, need to Sleep(game_time) every frame between game frames
+? check sv_user.c :: SV_ExecuteUserCmd() ("false")
 
 --------- REF_GL (new) -----------
 
@@ -240,3 +242,4 @@ BSP:
 ? loading Win32 mods (Wine)
 - hardware gamma (see /usr/X11R6/bin/xgamma as example ...)
 - LoadRefresh: "vid_ref->modified = false" when OK
+- net.c: some funcs changed args netadr_t -> *netadr_t

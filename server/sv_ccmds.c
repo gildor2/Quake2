@@ -73,7 +73,7 @@ void SV_SetMaster_f (void)
 		if (master_adr[slot].port == 0)
 			master_adr[slot].port = BigShort (PORT_MASTER);
 
-		Com_Printf ("Master server at %s\n", NET_AdrToString (master_adr[slot]));
+		Com_Printf ("Master server at %s\n", NET_AdrToString (&master_adr[slot]));
 
 		Com_Printf ("Sending a ping.\n");
 
@@ -742,7 +742,7 @@ SV_Kick_f
 Kick a user off of the server
 ==================
 */
-void SV_Kick_f (void)
+static void SV_Kick_f (void)
 {
 	if (!svs.initialized)
 	{
@@ -773,6 +773,180 @@ void SV_Kick_f (void)
 }
 
 
+#define MAX_BAN_LIST	256
+
+static int banCount;
+static char banlist[40][MAX_BAN_LIST];				// longest ban string is "NNN-NNN" * 4 + '.' * 3 + #0 -> 32 bytes
+
+
+static int FindBanString (char *str)
+{
+	int		i;
+
+	for (i = 0; i < banCount; i++)
+		if (!strcmp (banlist[i], str))
+			return i;
+	return -1;
+}
+
+
+static void AddBanString (char *str)
+{
+	if (FindBanString (str) >= 0)
+	{
+		Com_WPrintf ("%s already banned\n", str);
+		return;
+	}
+	if (banCount >= MAX_BAN_LIST)
+	{
+		Com_WPrintf ("Cannot ban %s: ban list full\n", str);
+		return;
+	}
+	Com_DPrintf ("Add %s to banlist\n", str);
+	strcpy (banlist[banCount++], str);
+}
+
+
+qboolean SV_AddressBanned (netadr_t *a)
+{
+	int		i;
+
+	if (a->type != NA_IP) return false;				// non-IP address
+	for (i = 0; i < banCount; i++)
+		if (IPWildcard (a, banlist[i]))
+			return true;							// banned
+	return false;
+}
+
+
+static void SV_Ban_f (void)
+{
+	char	ban[40];
+	byte	*ip;
+
+	if (!svs.initialized)		// ban by userid requires user to be connected, so -- server must be launched
+	{
+		Com_WPrintf ("No server running.\n");
+		return;
+	}
+
+	if (Cmd_Argc() != 2)
+	{
+		Com_Printf ("Usage: ban <userid>\n");
+		return;
+	}
+
+	if (!SV_SetPlayer ())
+		return;
+
+	if (sv_client->netchan.remote_address.type == NA_LOOPBACK)
+	{
+		Com_WPrintf ("Cannot ban host player\n");
+		return;
+	}
+
+	if (sv_client->netchan.remote_address.type != NA_IP)
+	{
+		Com_WPrintf ("Cannot ban non-IP client\n");
+		return;
+	}
+
+	// add to ban list
+	ip = sv_client->netchan.remote_address.ip;
+	Com_sprintf (ban, sizeof(ban), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+	AddBanString (ban);
+
+	SV_DropClient (sv_client, "was banned");
+	sv_client->lastmessage = svs.realtime;		// min case there is a funny zombie
+}
+
+
+static void SV_BanIP_f (void)
+{
+	char	*str;
+	client_t *cl;
+	int		i;
+
+	// can modify banlist before server launched
+	if (Cmd_Argc() != 2)
+	{
+		Com_Printf ("Usage: banip <ip-mask>\n");
+		return;
+	}
+
+	str = Cmd_Argv(1);
+	if (strlen (str) > 32)
+	{
+		Com_WPrintf ("IP-mask is too long\n");
+		return;
+	}
+	AddBanString (str);
+
+	if (!svs.initialized) return;				// server is not running -- just remember IP for future
+
+	// find client with banned IP
+	sv_client = NULL;
+	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+	{
+		if (!cl->state) continue;
+		if (!IPWildcard (&cl->netchan.remote_address, str)) continue;
+
+		SV_DropClient (cl, "was banned");
+		cl->lastmessage = svs.realtime;			// min case there is a funny zombie
+	}
+}
+
+
+static void SV_BanList_f (void)
+{
+	int		i;
+
+	Com_Printf ("Banned IP's:\n");
+	for (i = 0; i < banCount; i++)
+		Com_Printf ("%-2d: %s\n", i, banlist[i]);
+}
+
+
+static void SV_BanRemove_f (void)
+{
+	char	*str;
+	int		n;
+
+	if (Cmd_Argc() != 2)
+	{
+		Com_Printf ("Usage: banremove <list-index or ip-mask>\n");
+		return;
+	}
+	str = Cmd_Argv(1);
+	if (strchr (str, '.'))
+	{
+		n = FindBanString (str);
+		if (n < 0)
+		{
+			Com_WPrintf ("Mask %s is not in ban list\n", str);
+			return;
+		}
+	}
+	else
+	{
+		if (str[0] < '0' || str[0] > '9')
+		{
+			Com_WPrintf ("Bad list index %d\n", str);
+			return;
+		}
+		n = atoi(str);
+		if (n >= banCount)
+		{
+			Com_WPrintf ("Index %d is out of list bounds\n", n);
+			return;
+        }
+	}
+	if (n < banCount - 1)
+		memcpy (banlist[n], banlist[n+1], sizeof(banlist[0]) * (banCount - n - 1));
+	banCount--;
+}
+
+
 /*
 ===========
 SV_DumpUser_f
@@ -780,7 +954,7 @@ SV_DumpUser_f
 Examine all a users info strings
 ===========
 */
-void SV_DumpUser_f (void)
+static void SV_DumpUser_f (void)
 {
 	if (Cmd_Argc() != 2)
 	{
@@ -802,7 +976,7 @@ void SV_DumpUser_f (void)
 SV_Status_f
 ================
 */
-void SV_Status_f (void)
+static void SV_Status_f (void)
 {
 	int			i, j, l;
 	client_t	*cl;
@@ -837,7 +1011,7 @@ void SV_Status_f (void)
 		l = 16 - strlen (cl->name);
 		for (j = 0; j < l; j++) Com_Printf (" ");
 
-		s = NET_AdrToString ( cl->netchan.remote_address);
+		s = NET_AdrToString (&cl->netchan.remote_address);
 		Com_Printf ("%7d %s", svs.realtime - cl->lastmessage, s);
 		l = 22 - strlen (s);
 		for (j = 0; j < l; j++) Com_Printf (" ");
@@ -852,7 +1026,7 @@ void SV_Status_f (void)
 SV_ConSay_f
 ==================
 */
-void SV_ConSay_f (void)
+static void SV_ConSay_f (void)
 {
 	client_t *client;
 	int		j;
@@ -887,7 +1061,7 @@ void SV_ConSay_f (void)
 SV_Heartbeat_f
 ==================
 */
-void SV_Heartbeat_f (void)
+static void SV_Heartbeat_f (void)
 {
 	svs.last_heartbeat = -9999999;
 }
@@ -900,7 +1074,7 @@ SV_Serverinfo_f
   Examine or change the serverinfo string
 ===========
 */
-void SV_Serverinfo_f (void)
+static void SV_Serverinfo_f (void)
 {
 	Com_Printf ("Server info settings:\n");
 	Info_Print (Cvar_Serverinfo());
@@ -915,7 +1089,7 @@ Begins server demo recording.  Every entity and every message will be
 recorded, but no playerinfo will be stored.  Primarily for demo merging.
 ==============
 */
-void SV_ServerRecord_f (void)
+static void SV_ServerRecord_f (void)
 {
 	char	name[MAX_OSPATH], buf_data[32768];
 	int		len, i;
@@ -996,7 +1170,7 @@ SV_ServerStop_f
 Ends server demo recording
 ==============
 */
-void SV_ServerStop_f (void)
+static void SV_ServerStop_f (void)
 {
 	if (!svs.demofile)
 	{
@@ -1017,7 +1191,7 @@ Kick everyone off, possibly in preparation for a new game
 
 ===============
 */
-void SV_KillServer_f (void)
+static void SV_KillServer_f (void)
 {
 	if (!svs.initialized)
 		return;
@@ -1032,7 +1206,7 @@ SV_ServerCommand_f
 Let the game dll handle a command
 ===============
 */
-void SV_ServerCommand_f (void)
+static void SV_ServerCommand_f (void)
 {
 	if (!ge)
 	{
@@ -1053,7 +1227,13 @@ SV_InitOperatorCommands
 void SV_InitOperatorCommands (void)
 {
 	Cmd_AddCommand ("heartbeat", SV_Heartbeat_f);
+
 	Cmd_AddCommand ("kick", SV_Kick_f);
+	Cmd_AddCommand ("ban", SV_Ban_f);
+	Cmd_AddCommand ("banip", SV_BanIP_f);
+	Cmd_AddCommand ("banlist", SV_BanList_f);
+	Cmd_AddCommand ("banremove", SV_BanRemove_f);
+
 	Cmd_AddCommand ("status", SV_Status_f);
 	Cmd_AddCommand ("serverinfo", SV_Serverinfo_f);
 	Cmd_AddCommand ("dumpuser", SV_DumpUser_f);

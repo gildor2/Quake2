@@ -1,5 +1,3 @@
-//!! this version is slower, than original: seems, AreaEdicts() is useful
-
 /*
 Copyright (C) 1997-2001 Id Software, Inc.
 
@@ -106,8 +104,9 @@ Builds a uniformly subdivided tree for the given world size
 */
 static areanode_t *SV_CreateAreaNode (int depth, vec3_t mins, vec3_t maxs)
 {
-	areanode_t	*anode;
-	vec3_t		mins1, maxs1, mins2, maxs2;
+	areanode_t *anode;
+	vec3_t	mins1, maxs1, mins2, maxs2;
+	float	f0, f1, f2;
 
 	anode = &sv_areanodes[sv_numareanodes++];
 
@@ -121,10 +120,17 @@ static areanode_t *SV_CreateAreaNode (int depth, vec3_t mins, vec3_t maxs)
 		return anode;
 	}
 
-	if (maxs[0] - mins[0] > maxs[1] - mins[1])
-		anode->axis = 0;
+	f0 = maxs[0] - mins[0];
+	f1 = maxs[1] - mins[1];
+	f2 = maxs[2] - mins[2];
+	if (f0 > f1)
+	{
+		anode->axis = f0 > f2 ? 0 : 2;
+	}
 	else
-		anode->axis = 1;
+	{
+		anode->axis = f1 > f2 ? 1 : 2;
+	}
 
 	anode->dist = (maxs[anode->axis] + mins[anode->axis]) / 2.0f;
 	VectorCopy (mins, mins1);
@@ -223,7 +229,6 @@ void SV_LinkEdict (edict_t *ent)
 		k = bound(k, 1, 63);
 
 		ent->s.solid = (k<<10) | (j<<5) | i;
-//		if (ent->s.number >= 2) Com_Printf("^1ADD(%d): %d %d %d (%X)\n", ent->s.number, i, j, k, ent->s.solid);
 
 		i *= 8;
 		j *= 8;
@@ -501,7 +506,6 @@ void SV_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, 
 	trace_t	trace;
 	float	t, traceLen, traceWidth, b1, b2;
 	vec3_t	amins, amaxs, traceDir;
-	qboolean test = Cvar_VariableInt("test");//!!
 
 	for (i = 0; i < 3; i++)
 	{
@@ -519,14 +523,12 @@ void SV_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, 
 	num = SV_AreaEdicts (amins, amaxs, list, MAX_EDICTS, AREA_SOLID);
 	if (!num) return;
 
-if (test) {//!!
 	b1 = DotProduct (mins, mins);
 	b2 = DotProduct (maxs, maxs);
 	t = b1 > b2 ? b1 : b2;
 	traceWidth = SQRTFAST(t);
 	VectorSubtract (end, start, traceDir);
 	traceLen = VectorNormalize (traceDir) + traceWidth;
-}//!!
 
 	for (i = 0; i < num; i++)
 	{
@@ -548,7 +550,6 @@ if (test) {//!!
 		if (!(contentmask & CONTENTS_DEADMONSTER) && (edict->svflags & SVF_DEADMONSTER))
 			continue;
 
-if (test) { //!!
 		VectorSubtract (ent->center, start, center);
 		// check position of point projection on line
 		entPos = DotProduct (center, traceDir);
@@ -560,7 +561,6 @@ if (test) { //!!
 		dist2 = DotProduct (tmp, tmp);
 		dist0 = ent->radius + traceWidth;
 		if (dist2 >= dist0 * dist0) continue;
-}//!!
 
 		if (ent->model)
 			trace = CM_TransformedBoxTrace2 (start, end, mins, maxs, ent->model->headnode, contentmask, edict->s.origin, ent->axis);

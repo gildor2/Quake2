@@ -410,6 +410,72 @@ qboolean MatchWildcard2 (char *name, char *mask, qboolean ignoreCase)
 }
 
 
+static unsigned GetInt (char **str)
+{
+	unsigned r;
+	char	c, *s;
+
+	r = 0;
+	s = *str;
+	while (1)
+	{
+		c = *s;
+		if (c < '0' || c > '9') break;
+		r = r * 10 + c - '0';
+		s++;
+	}
+	*str = s;
+	return r;
+}
+
+qboolean IPWildcard (netadr_t *a, char *mask)
+{
+	int		i, n;
+	char	*m;
+
+	if (a->type != NA_IP) return false;
+	m = mask;
+
+	for (i = 0; i < 4; i++)
+	{
+		if (m[0] == '*')
+			m++;			// skip '*'
+		else if (m[0] >= '0' && m[0] <= '9')
+		{
+			n = GetInt (&m);
+			if (m[0] == '.' || m[0] == 0)
+			{
+				if (a->ip[i] != n) return false;
+			}
+			else if (m[0] == '-')
+			{
+				if (a->ip[i] < n) return false;
+				m++;
+				n = GetInt (&m);
+				if (a->ip[i] > n) return false;
+			}
+			else
+			{
+				Com_DPrintf ("IPWildcard: bad char in \"%s\"\n", mask);
+				return false;
+			}
+		}
+		else
+		{
+			Com_DPrintf ("IPWildcard: bad char in \"%s\"\n", mask);
+			return false;
+		}
+		if (m[0] == 0 && i < 3)
+		{
+			Com_DPrintf ("IPWildcard: short mask \"%s\"\n", mask);
+			return true;
+		}
+		m++;
+	}
+	return true;
+}
+
+
 /*
 ==================
 Com_ServerState

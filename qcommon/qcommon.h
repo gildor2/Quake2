@@ -576,6 +576,8 @@ typedef struct
 	unsigned short port;
 } netadr_t;
 
+qboolean IPWildcard (netadr_t *a, char *mask);
+
 void	NET_Init (void);
 void	NET_Shutdown (void);
 
@@ -584,10 +586,10 @@ void	NET_Config (qboolean multiplayer);
 qboolean NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message);
 void	NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to);
 
-qboolean NET_CompareAdr (netadr_t a, netadr_t b);
-qboolean NET_CompareBaseAdr (netadr_t a, netadr_t b);
-qboolean NET_IsLocalAddress (netadr_t adr);
-char	*NET_AdrToString (netadr_t a);
+qboolean NET_CompareAdr (netadr_t *a, netadr_t *b);
+qboolean NET_CompareBaseAdr (netadr_t *a, netadr_t *b);
+qboolean NET_IsLocalAddress (netadr_t *adr);
+char	*NET_AdrToString (netadr_t *a);
 qboolean NET_StringToAdr (char *s, netadr_t *a);
 void	NET_Sleep(int msec);
 

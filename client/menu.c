@@ -1545,12 +1545,12 @@ void M_AddToServerList (netadr_t adr, char *info)
 
 	if (m_num_servers == MAX_LOCAL_SERVERS)
 		return;
-	while ( *info == ' ' )
+	while (*info == ' ')
 		info++;
 
 	// ignore if duplicated
 	for (i = 0; i < m_num_servers; i++)
-		if (!strcmp(info, local_server_names[i]))
+		if (!strcmp (info, local_server_names[i]))
 			return;
 
 	local_server_netadr[m_num_servers] = adr;
@@ -1571,7 +1571,7 @@ static void JoinServerFunc( void *self )
 	if (index >= m_num_servers)
 		return;
 
-	Cbuf_AddText (va("connect %s\n", NET_AdrToString (local_server_netadr[index])));
+	Cbuf_AddText (va("connect %s\n", NET_AdrToString (&local_server_netadr[index])));
 	M_ForceMenuOff ();
 }
 

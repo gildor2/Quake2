@@ -443,7 +443,6 @@ void SV_InitGameProgs (void)
 	if (ge)
 		SV_ShutdownGameProgs ();
 
-
 	// load a new game dll
 	import.multicast = SV_MulticastOld;	//?? we can hook some messages in this function
 	import.unicast = PF_Unicast;

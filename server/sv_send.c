@@ -420,12 +420,17 @@ SV_SendClientDatagram
 */
 qboolean SV_SendClientDatagram (client_t *client)
 {
+	int			maxSize;
 	byte		msg_buf[MAX_MSGLEN];
 	sizebuf_t	msg;
 
 	SV_BuildClientFrame (client);
 
-	SZ_Init (&msg, msg_buf, client->newprotocol ? MAX_MSGLEN : MAX_MSGLEN_OLD);
+	if (!client->newprotocol || client->netchan.remote_address.type != NA_IP)
+		maxSize = MAX_MSGLEN_OLD;
+	else
+		maxSize = MAX_MSGLEN;
+	SZ_Init (&msg, msg_buf, maxSize);
 	msg.allowoverflow = true;
 
 	// send over all the relevant entity_state_t

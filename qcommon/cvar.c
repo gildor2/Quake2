@@ -34,7 +34,6 @@ static void Cvar_SetString (cvar_t *var, char *str)
 		return;		// not changed
 
 //	Com_WPrintf("set(%s) \"%s\" -> \"%s\"\n", var->name, var->string, str);
-
 	// update non-string fields
 	var->value = atof (str);
 	var->integer = atoi (str);

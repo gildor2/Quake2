@@ -144,7 +144,10 @@ void SV_Configstrings_f (void)
 	start = atoi(Cmd_Argv(2));
 
 	// write a packet full of data
-	mid = sv_client->newprotocol ? MAX_MSGLEN / 2 : MAX_MSGLEN_OLD / 2;
+	if (sv_client->newprotocol && sv_client->netchan.remote_address.type == NA_IP)
+		mid = MAX_MSGLEN / 2;
+	else
+		mid = MAX_MSGLEN_OLD / 2;
 	while ( sv_client->netchan.message.cursize < mid && start < MAX_CONFIGSTRINGS)
 	{
 		if (sv.configstrings[start][0])
