@@ -771,7 +771,7 @@ static void PreprocessShader (shader_t *sh)
 		DrawTextLeft (va("R_PreprocessShader(%s): 0 stages", currentShader->name), RGB(1,0,0));
 
 	if (numTmpStages > MAX_TMP_STAGES)
-		Com_Error (ERR_FATAL, "R_PreprocessShader: large numStages (%d)", numTmpStages);
+		Com_FatalError ("R_PreprocessShader: large numStages (%d)", numTmpStages);
 
 	pass = renderPasses;
 	st = tmpSt;
@@ -1129,8 +1129,8 @@ static void ReserveVerts (int verts, int inds)
 	if (gl_numIndexes + inds > MAX_INDEXES || gl_numVerts + verts > MAX_VERTEXES)
 		FlushArrays ();
 
-	if (verts > MAX_VERTEXES)	Com_Error (ERR_DROP, "ReserveVerts: %d > MAX_VERTEXES", verts);
-	if (inds > MAX_INDEXES)		Com_Error (ERR_DROP, "ReserveVerts: %d > MAX_INDEXES", inds);
+	if (verts > MAX_VERTEXES)	Com_DropError ("ReserveVerts: %d > MAX_VERTEXES", verts);
+	if (inds > MAX_INDEXES)		Com_DropError ("ReserveVerts: %d > MAX_INDEXES", inds);
 }
 
 

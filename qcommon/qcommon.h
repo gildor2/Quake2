@@ -95,7 +95,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef struct sizebuf_s
 {
-	bool	allowoverflow;		// if false, do a Com_Error when overflowed
+	bool	allowoverflow;		// if false, do a error when overflowed
 	bool	overflowed;			// set to true if the buffer size failed
 	byte	*data;
 	int		maxsize;
@@ -642,8 +642,9 @@ typedef struct
 } cmodel_t;
 
 extern char map_name[];
+extern bool map_clientLoaded;
 
-cmodel_t *CM_LoadMap (char *name, qboolean clientload, unsigned *checksum);
+cmodel_t *CM_LoadMap (char *name, bool clientload, unsigned *checksum);
 cmodel_t *CM_InlineModel (char *name);	// *1, *2, etc
 
 int		CM_NumClusters (void);
@@ -702,7 +703,7 @@ void	Pmove (pmove_t *pmove);
 /*----------------- Debugging ------------------*/
 
 
-void	DebugPrintf (char *fmt, ...);
+void	DebugPrintf (const char *fmt, ...);
 
 
 /*-------------- Memory management -------------*/
@@ -790,9 +791,6 @@ void	Sys_FindClose (void);
 extern	int	curtime;		// time returned by last Sys_Milliseconds
 extern	int linewidth;		// for functions, which wants to perform advanced output formatting
 
-#define	ERR_FATAL	0		// exit the entire game with a popup window
-#define	ERR_DROP	1		// print to console and disconnect from game
-#define	ERR_QUIT	2		// not an error, just a normal exit
 
 void	Com_BeginRedirect (int target, char *buffer, int buffersize, void (*flush));
 void	Com_EndRedirect (void);
@@ -1046,7 +1044,7 @@ typedef struct
 extern bspfile_t *map_bspfile;
 
 
-//--bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum);
+//--bspfile_t *LoadBspFile (char *filename, bool clientload, unsigned *checksum);
 char *ProcessEntstring (char *entString);
 
 
@@ -1057,11 +1055,27 @@ char *ProcessEntstring (char *entString);
 	guard macros
 -----------------------------------------------------------------------------*/
 
+typedef struct
+{
+	bool	isSoftError;			// do not dump CPU context when true
+	bool	isFatalError;			// if "false" - display message and continue execution (with dropping server etc)
+	bool	wasError;				// used by appUnwind() for correct history formatting
+	bool	contextDumped;
+	char	history[4096];
+} errorState_t;
+
+extern errorState_t GErr;
+
+void Com_ResetErrorState (void);	//?? Sys_ResetErrorState()
+
+
 #ifdef WIN32
 
 int win32ExceptFilter2 (void);
-void appUnwind (const char *fmt, ...);
+void appUnwindPrefix (const char *fmt);		//!!! rename
 void __declspec(noreturn) appUnwindThrow (const char *fmt, ...);
+#define throw	*((int*)NULL) = 0
+
 
 #define EXCEPT_FILTER	win32ExceptFilter2()
 
@@ -1078,13 +1092,13 @@ void __declspec(noreturn) appUnwindThrow (const char *fmt, ...);
 
 #define unguardf(msg)				\
 		} __except (EXCEPT_FILTER) { \
-			appUnwind (__FUNC__);	\
+			appUnwindPrefix (__FUNC__);	\
 			appUnwindThrow msg;		\
 		}							\
 	}
 
-#define MAINLOOP_BEGIN	__try
-#define MAINLOOP_CATCH	__except (EXCEPT_FILTER)
+#define GUARD_BEGIN		__try
+#define GUARD_CATCH		__except (EXCEPT_FILTER)
 
 #else
 #	if DO_GUARD
@@ -1096,13 +1110,9 @@ void __declspec(noreturn) appUnwindThrow (const char *fmt, ...);
 #	undef guard
 #	undef unguard
 #	undef unguardf
-#	undef MAINLOOP_BEGIN
-#	undef MAINLOOP_CATCH
 #	define guard(func)
 #	define unguard
 #	define unguardf(msg)
-#	define MAINLOOP_BEGIN
-#	define MAINLOOP_CATCH		if (0)
 #endif
 
 #if DO_GUARD_SLOW

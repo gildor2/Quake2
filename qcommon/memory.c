@@ -39,7 +39,7 @@ void Z_Free (void *ptr)
 #ifdef Z_DEBUG
 	if (!ptr)
 	{
-		Com_Error (ERR_FATAL, "Z_Free(NULL) " RETADDR_STR "\n", GET_RETADDR(ptr));
+		Com_FatalError ("Z_Free(NULL) " RETADDR_STR "\n", GET_RETADDR(ptr));
 		return;
 	}
 #else
@@ -48,14 +48,14 @@ void Z_Free (void *ptr)
 	z = ((zhead_t *)ptr) - 1;
 #ifdef Z_DEBUG
 	if (z->magic == Z_FREE)
-		Com_Error (ERR_FATAL, "Z_Free: double freeing block");
+		Com_FatalError ("Z_Free: double freeing block");
 	mark = *(int*)((char*)z + z->size - 4);
 	if (mark != Z_DEBUGMARK)
-		Com_Error (ERR_FATAL, "Z_Free: memory overrun detected (block size=%d, diff=%X)",
+		Com_FatalError ("Z_Free: memory overrun detected (block size=%d, diff=%X)",
 			z->size - sizeof(zhead_t) - 4, mark ^ Z_DEBUGMARK);
 #endif
 	if (z->magic != Z_MAGIC)
-		Com_Error (ERR_FATAL, "Z_Free: bad magic %X" RETADDR_STR, z->magic, GET_RETADDR(ptr));
+		Com_FatalError ("Z_Free: bad magic %X" RETADDR_STR, z->magic, GET_RETADDR(ptr));
 
 #ifdef Z_DEBUG
 	z->magic = Z_FREE;
@@ -99,7 +99,7 @@ void *Z_TagMalloc (int size, int tag)
 
 	z = malloc(size);
 	if (!z)
-		Com_Error (ERR_FATAL, "Z_Malloc: failed on allocation of %i bytes", size);
+		Com_FatalError ("Z_Malloc: failed on allocation of %i bytes", size);
 	memset (z, 0, size);
 #ifdef Z_DEBUG
 	*((int*)((char*)z + size - 4)) = Z_DEBUGMARK; // place mark in reserved space
@@ -181,7 +181,7 @@ static chainBlock_t *AllocChain(int size)
 	alloc = size + BLOCK_ALIGN - 1;
 	chain = malloc (alloc);
 	if (!chain)
-		Com_Error (ERR_FATAL, "AllocChunk: failed on allocation of %d bytes", size);
+		Com_FatalError ("AllocChunk: failed on allocation of %d bytes", size);
 	chain->size = size;
 	chain->next = NULL;
 	chain->data = (void*) (((int) (chain + 1) + BLOCK_ALIGN-1) & ~(BLOCK_ALIGN-1));

@@ -667,9 +667,9 @@ void Cmd_ExecuteString (char *text)
 			}
 			else
 			{
-				guard(func);
+				guard(cmd);
 				cmd->func ();
-				unguardf(("(fn=%s)", cmd->name));
+				unguardf(("%s", cmd->name));
 			}
 			return;
 		}

@@ -69,7 +69,7 @@ void Sys_Printf (char *fmt, ...)
 	unsigned char		*p;
 
 	va_start (argptr,fmt);
-	vsprintf (text,fmt,argptr);
+	vsnprintf (text,sizeof(text),fmt,argptr);
 	va_end (argptr);
 
 	if (strlen(text) > sizeof(text))
@@ -114,7 +114,7 @@ void Sys_Error (const char *error, ...)
 	Qcommon_Shutdown ();
 
     va_start (argptr,error);
-    vsprintf (string,error,argptr);
+    vsnprintf (string,sizeof(string),error,argptr);
     va_end (argptr);
 	fprintf(stderr, "Error: %s\n", string);
 
@@ -128,7 +128,7 @@ void Sys_Warn (char *warning, ...)
     char        string[1024];
 
     va_start (argptr,warning);
-    vsprintf (string,warning,argptr);
+    vsnprintf (string,sizeof(string),warning,argptr);
     va_end (argptr);
 	fprintf(stderr, "Warning: %s", string);
 }
@@ -231,7 +231,7 @@ void *Sys_GetGameAPI (void *parms)
 	setegid(getgid());
 
 	if (game_library)
-		Com_Error (ERR_FATAL, "Sys_GetGameAPI without Sys_UnloadingGame");
+		Com_FatalError ("Sys_GetGameAPI without Sys_UnloadingGame");
 
 	getcwd(curpath, sizeof(curpath));
 
@@ -333,7 +333,7 @@ void Sys_CopyProtect(void)
 		return;
 
 	if ((mnt = setmntent("/etc/mtab", "r")) == NULL)
-		Com_Error(ERR_FATAL, "Can't read mount table to determine mounted cd location.");
+		Com_FatalError("Can't read mount table to determine mounted cd location.");
 
 	while ((ent = getmntent(mnt)) != NULL) {
 		if (strcmp(ent->mnt_type, "iso9660") == 0) {
@@ -365,8 +365,8 @@ void Sys_CopyProtect(void)
 	endmntent(mnt);
 
 	if (found_cd)
-		Com_Error (ERR_FATAL, "Could not find a Quake2 CD in your CD drive.");
-	Com_Error (ERR_FATAL, "Unable to find a mounted iso9660 file system.\n"
+		Com_FatalError ("Could not find a Quake2 CD in your CD drive.");
+	Com_FatalError ("Unable to find a mounted iso9660 file system.\n"
 		"You must mount the Quake2 CD in a cdrom drive in order to play.");
 }
 

@@ -44,7 +44,7 @@ void SV_BeginDemoserver (void)
 	Com_sprintf (ARRAY_ARG(name), "demos/%s", sv.name);
 	FS_FOpenFile (name, &sv.demofile);
 	if (!sv.demofile)
-		Com_Error (ERR_DROP, "Couldn't open %s\n", name);
+		Com_DropError ("Couldn't open %s\n", name);
 }
 
 /*

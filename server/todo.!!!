@@ -15,5 +15,5 @@ sc_world.c:
     edict_t *entity           -- back link to edict
     edict_t *sectorNext, *sectorPrev -- double-linked list for enumerating sector edicts
     ... can be extended more
-  Need to specify MAX_ENTITIES and static array of this structures (LinkEdict: make Com_Error(DROP) when edict.s.number >= MAX_ENTITIES)
+  Need to specify MAX_ENTITIES and static array of this structures (LinkEdict: make Com_DropError() when edict.s.number >= MAX_ENTITIES)
 ? can remove GPL comment - this is our unit

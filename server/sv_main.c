@@ -1042,7 +1042,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 }
 
 
-extern qboolean trace_skipAlpha;	//!! hack
+extern bool trace_skipAlpha;	//!! hack
 
 trace_t SV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
 {

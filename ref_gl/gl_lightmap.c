@@ -66,7 +66,7 @@ lightmapBlock_t *LM_NewBlock (void)
 
 	// find free slot
 	if (++lightmapsNum == MAX_LIGHTMAPS)
-		Com_Error (ERR_FATAL, "LM_NewBlock: MAX_LIGHTMAPS hit");
+		Com_FatalError ("LM_NewBlock: MAX_LIGHTMAPS hit");
 	lm = &lmBlocks[lightmapsNum - 1];
 	// init fields
 	lm->index = lightmapsNum;

@@ -8,6 +8,8 @@
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
 - notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move crouched)
+- when gl_clear=1, cinematics is not displayed (requires GL_BeginFrame before DrawStretchRaw(); currently BeginFrame code executed
+  immediately after GL_EndFrame from backend command buffer)
 
 - bugs with deathmatch mode
   - map "dm_dukecity_beta":

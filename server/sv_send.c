@@ -71,7 +71,7 @@ void SV_ClientPrintf (client_t *cl, int level, char *fmt, ...)
 		return;
 
 	va_start (argptr,fmt);
-	vsprintf (string, fmt,argptr);
+	vsnprintf (ARRAY_ARG(string), fmt,argptr);
 	va_end (argptr);
 
 	MSG_WriteByte (&cl->netchan.message, svc_print);
@@ -94,7 +94,7 @@ void SV_BroadcastPrintf (int level, char *fmt, ...)
 	int			i;
 
 	va_start (argptr,fmt);
-	vsprintf (string, fmt,argptr);
+	vsnprintf (ARRAY_ARG(string), fmt,argptr);
 	va_end (argptr);
 
 	// echo to console
@@ -137,7 +137,7 @@ void SV_BroadcastCommand (char *fmt, ...)
 	if (!sv.state)
 		return;
 	va_start (argptr,fmt);
-	vsprintf (string, fmt,argptr);
+	vsnprintf (ARRAY_ARG(string), fmt,argptr);
 	va_end (argptr);
 
 	MSG_WriteByte (&sv.multicast, svc_stufftext);
@@ -214,7 +214,7 @@ void SV_Multicast (vec3_t origin, multicast_t to, qboolean oldclients)
 
 	default:
 		mask = NULL;
-		Com_Error (ERR_FATAL, "SV_Multicast: bad to:%i", to);
+		Com_FatalError ("SV_Multicast: bad to:%i", to);
 	}
 
 	// process transferring message and create a copy for new clients
@@ -303,16 +303,16 @@ void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
 	guard(SV_StartSound);
 
 	if (volume < 0 || volume > 1.0)
-		Com_Error (ERR_FATAL, "SV_StartSound: volume = %f", volume);
+		Com_FatalError ("SV_StartSound: volume = %f", volume);
 
 	if (attenuation < 0 || attenuation > 4)
-		Com_Error (ERR_FATAL, "SV_StartSound: attenuation = %f", attenuation);
+		Com_FatalError ("SV_StartSound: attenuation = %f", attenuation);
 
 //	if (channel < 0 || channel > 15)
-//		Com_Error (ERR_FATAL, "SV_StartSound: channel = %i", channel);
+//		Com_FatalError ("SV_StartSound: channel = %i", channel);
 
 	if (timeofs < 0 || timeofs > 0.255)
-		Com_Error (ERR_FATAL, "SV_StartSound: timeofs = %f", timeofs);
+		Com_FatalError ("SV_StartSound: timeofs = %f", timeofs);
 
 	ent = NUM_FOR_EDICT(entity);
 
@@ -553,7 +553,7 @@ void SV_SendClientMessages (void)
 				return;
 			}
 			if (msglen > MAX_MSGLEN)
-				Com_Error (ERR_DROP, "SV_SendClientMessages: msglen > MAX_MSGLEN");
+				Com_DropError ("SV_SendClientMessages: msglen > MAX_MSGLEN");
 			FS_Read (msgbuf, msglen, sv.demofile);
 		}
 	}

@@ -842,11 +842,14 @@ void Key_Event (int key, qboolean down, unsigned time)
 			M_Keydown (key);
 			break;
 		case key_game:
-		case key_console:
 			M_Menu_Main_f ();
 			break;
+		case key_console:
+			M_Menu_Main_f ();
+			cls.key_dest = key_menu;
+			break;
 		default:
-			Com_Error (ERR_FATAL, "Bad cls.key_dest %d", cls.key_dest);
+			Com_FatalError ("Bad cls.key_dest %d", cls.key_dest);
 		}
 		return;
 	}
@@ -963,7 +966,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 		Key_Console (key, modKey);
 		break;
 	default:
-		Com_Error (ERR_FATAL, "Bad cls.key_dest %d", cls.key_dest);
+		Com_FatalError ("Bad cls.key_dest %d", cls.key_dest);
 	}
 }
 

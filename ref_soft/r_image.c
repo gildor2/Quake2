@@ -99,7 +99,7 @@ image_t *R_FindFreeImage (void)
 	if (i == numr_images)
 	{
 		if (numr_images == MAX_RIMAGES)
-			Com_Error (ERR_DROP, "MAX_RIMAGES");
+			Com_DropError ("MAX_RIMAGES");
 		numr_images++;
 	}
 	image = &r_images[i];
@@ -120,7 +120,7 @@ image_t *R_LoadPic (char *name, byte *pic, int width, int height, imagetype_t ty
 
 	image = R_FindFreeImage ();
 	if (strlen(name) >= sizeof(image->name))
-		Com_Error (ERR_DROP, "Draw_LoadPic: \"%s\" is too long", name);
+		Com_DropError ("Draw_LoadPic: \"%s\" is too long", name);
 	strcpy (image->name, name);
 	image->registration_sequence = registration_sequence;
 
@@ -304,7 +304,7 @@ image_t	*R_FindImage (char *name, imagetype_t type)
 	char	c, *s, *d, buf[256];
 
 	if (!name)
-		return NULL;	//	Com_Error (ERR_DROP, "GL_FindImage: NULL name");
+		return NULL;	//	Com_DropError ("GL_FindImage: NULL name");
 
 	// make a local copy of image name with a lower case conversion
 	s = name;
@@ -319,7 +319,7 @@ image_t	*R_FindImage (char *name, imagetype_t type)
 
 	len = strlen (name);
 	if (len < 5)
-		return NULL;	//	Com_Error (ERR_DROP, "GL_FindImage: bad name: %s", name);
+		return NULL;	//	Com_DropError ("GL_FindImage: bad name: %s", name);
 
 	len -= 4;	// &name[len] -> ".ext"
 	s = &name[len];		// points to extension
@@ -507,7 +507,7 @@ void	R_InitImages (void)
 
 	len = FS_LoadFile ("pics/16to8.dat", &buf);
 	if (len != 65536 || !buf)
-		Com_Error (ERR_FATAL, "Couldn't load pics/16to8.dat");
+		Com_FatalError ("Couldn't load pics/16to8.dat");
 	memcpy (d_16to8table, buf, 65536);
 
 	sw_prefer8bittex = Cvar_Get ("sw_prefer8bittex", "0", CVAR_ARCHIVE);

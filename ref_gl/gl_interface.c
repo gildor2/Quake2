@@ -406,7 +406,7 @@ void GL_SetMultitexture (int level)
 	int		i;
 
 	if (level > gl_config.maxActiveTextures)
-		Com_Error (ERR_FATAL, "R_SetMultitexture(%d > %d)", level, gl_config.maxActiveTextures);
+		Com_FatalError ("R_SetMultitexture(%d > %d)", level, gl_config.maxActiveTextures);
 
 	if (gl_state.locked)
 	{

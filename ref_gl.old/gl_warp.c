@@ -68,7 +68,7 @@ void SubdividePolygon (int numverts, float *verts)
 	float	total_s, total_t;
 
 	if (numverts > 60)
-		Com_Error (ERR_DROP, "numverts = %i", numverts);
+		Com_DropError ("numverts = %i", numverts);
 
 	BoundPoly (numverts, verts, mins, maxs);
 
@@ -385,7 +385,7 @@ void ClipSkyPolygon (int nump, vec3_t vecs, int stage)
 	int		i, j;
 
 	if (nump > MAX_CLIP_VERTS-2)
-		Com_Error (ERR_DROP, "ClipSkyPolygon: MAX_CLIP_VERTS");
+		Com_DropError ("ClipSkyPolygon: MAX_CLIP_VERTS");
 	if (stage == 6)
 	{	// fully clipped, so draw it
 		DrawSkyPolygon (nump, vecs);

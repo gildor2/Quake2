@@ -27,7 +27,7 @@ void	SCR_SizeUp (void);
 void	SCR_SizeDown (void);
 void	SCR_CenterPrint (char *str);
 void	SCR_BeginLoadingPlaque (void);
-void	SCR_EndLoadingPlaque (void);
+void	SCR_EndLoadingPlaque (bool force);
 
 void	SCR_DebugGraph (float value, int color);
 
@@ -36,7 +36,6 @@ void	SCR_TouchPics (void);
 void	SCR_RunConsole (void);
 
 extern	float		scr_con_current;
-extern	float		scr_conlines;		// lines of console to display
 
 extern	int			sb_lines;
 

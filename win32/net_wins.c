@@ -450,7 +450,7 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
 		net_socket = ipx_socket;
 		break;
 	default:
-		Com_Error (ERR_FATAL, "NET_SendPacket: bad address type %d", to.type);
+		Com_FatalError ("NET_SendPacket: bad address type %d", to.type);
 	}
 	if (!net_socket) return;
 
@@ -711,7 +711,7 @@ CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
 
 	r = WSAStartup (MAKEWORD(1, 1), &winsockdata);
-	if (r) Com_Error (ERR_FATAL, "Winsock initialization failed.");
+	if (r) Com_FatalError ("Winsock initialization failed.");
 
 	Com_Printf("Winsock Initialized\n");
 }

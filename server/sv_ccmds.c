@@ -335,7 +335,7 @@ void SV_DemoMap_f (void)
 	{
 		// allow .CIN files while playing intro (stop intro when trying to play demofile)
 		Cvar_ForceSet ("nointro", "1");
-		Cbuf_AddText ("nextserver=\"\";disconnect;menu_main\n");
+		Cbuf_AddText ("nextserver=\"\";disconnect\n");
 		return;
 	}
 

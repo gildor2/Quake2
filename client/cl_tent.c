@@ -1419,7 +1419,7 @@ void CL_ParseTEnt (void)
 //==============
 
 	default:
-		Com_Error (ERR_DROP, "CL_ParseTEnt: bad type");
+		Com_DropError ("CL_ParseTEnt: bad type");
 	}
 }
 

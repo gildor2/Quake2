@@ -43,7 +43,7 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 	if (!numVerts) return;				// empty polygon
 
 	if (numVerts > MAX_CLIP_VERTS - 2)
-		Com_Error (ERR_DROP, "ClipSkyPolygon: MAX_CLIP_VERTS hit");
+		Com_DropError ("ClipSkyPolygon: MAX_CLIP_VERTS hit");
 
 	if (stage == 6)
 	{	// fully clipped -- update skymins/skymaxs
@@ -270,7 +270,7 @@ void GL_AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
 #else
 		if (x < 0 || w < 0 || y < 0 || h < 0 ||
 			x > SKY_CELLS || y > SKY_CELLS || w > SKY_CELLS || h > SKY_CELLS)
-			Com_Error (ERR_FATAL, "x/y/w/h: %d %d %d %d\n"
+			Com_FatalError ("x/y/w/h: %d %d %d %d\n"
 			"mins[%g %g] maxs[%g %g]", x, y, w, h,
 			skyMins[0][side], skyMins[1][side], skyMaxs[0][side], skyMaxs[1][side]);
 #endif

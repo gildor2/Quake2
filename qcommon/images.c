@@ -57,7 +57,7 @@ void LoadPCX (char *name, byte **pic, byte **palette, int *width, int *height)
 	if (errMsg)
 	{
 		FS_FreeFile (hdr);
-		Com_Error (ERR_DROP, errMsg, name);
+		Com_DropError (errMsg, name);
 	}
 
 	if (palette)
@@ -171,7 +171,7 @@ void LoadTGA (char *name, byte **pic, int *width, int *height)
 	else if (bpp != 32 && bpp != 24 && !(type == 3 && bpp == 8))
 	{
 		FS_FreeFile (file);
-		Com_Error (ERR_DROP, "LoadTGA(%s): invalid color depth %d for format %d\n", name, bpp, type);
+		Com_DropError ("LoadTGA(%s): invalid color depth %d for format %d\n", name, bpp, type);
 	}
 	else if (numColumns > MAX_IMG_SIZE || numRows > MAX_IMG_SIZE)
 		errMsg = "LoadTGA(%s): image is too large\n";
@@ -179,7 +179,7 @@ void LoadTGA (char *name, byte **pic, int *width, int *height)
 	if (errMsg)
 	{
 		FS_FreeFile (file);
-		Com_Error (ERR_DROP, errMsg, name);
+		Com_DropError (errMsg, name);
 	}
 
 	numPixels = numColumns * numRows;
@@ -268,7 +268,7 @@ static void JpegError ()
 {
 	if (jpegerror) return;
 	Com_WPrintf ("LoadJPG(%s): damaged file\n", jpegname);
-//	Com_Error (ERR_DROP, "Bad JPEG");
+//	Com_DropError ("Bad JPEG");
 	jpegerror = true;
 }
 
@@ -296,7 +296,7 @@ METHODDEF(void) J_TermSource (j_decompress_ptr cinfo)
 
 METHODDEF(void) J_ErrorExit (j_common_ptr cinfo)
 {
-	Com_Error (ERR_DROP, "JPEG error");
+	Com_DropError ("JPEG error");
 }
 
 METHODDEF(void) J_EmitMessage (j_common_ptr cinfo, int msg_level)
@@ -389,7 +389,7 @@ void LoadJPG (char *name, byte **pic, int *width, int *height)
 	{
 		jpeg_destroy_decompress (&cinfo);
 		FS_FreeFile (buffer);
-		Com_Error (ERR_DROP, errMsg, name);
+		Com_DropError (errMsg, name);
 	}
 
 	decompr = Z_Malloc (columns * rows * 4);

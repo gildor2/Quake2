@@ -990,7 +990,7 @@ void R_ClipAndDrawPoly ( float alpha, int isturbulent, qboolean textured )
 		if (nump < 3)
 			return;
 		if (nump > MAXWORKINGVERTS)
-			Com_Error (ERR_DROP, "R_ClipAndDrawPoly: too many points: %d", nump );
+			Com_DropError ("R_ClipAndDrawPoly: too many points: %d", nump );
 	}
 
 // transform vertices into viewspace and project

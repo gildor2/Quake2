@@ -29,7 +29,6 @@ vec3_t vec3_origin = {0, 0, 0};
 void 	Com_Printf (char *fmt, ...);
 void 	Com_DPrintf (char *fmt, ...);
 void	Com_WPrintf (char *fmt, ...);
-void 	Com_Error (int code, char *fmt, ...);
 
 #else
 
@@ -40,7 +39,6 @@ refImport_t ri;
 #  define Com_Printf		ri._Com_Printf
 #  define Com_DPrintf		ri._Com_DPrintf
 #  define Com_WPrintf		ri._Com_WPrintf
-#  define Com_Error			ri._Com_Error
 
 #endif
 

@@ -69,7 +69,7 @@ void	QGL_LogMessage (const char *text);
 #define R_DrawTexts			GLR_DrawTexts
 #define Draw_GetPicSize		GLDraw_GetPicSize
 #define Draw_StretchPic		GLDraw_StretchPic
-#define Draw_StretchRaw		GLDraw_StretchRaw
+#define Draw_StretchRaw8	GLDraw_StretchRaw8
 #define Draw_Pic			GLDraw_Pic
 #define Draw_PicColor		GLDraw_PicColor
 #define Draw_TileClear		GLDraw_TileClear
@@ -423,7 +423,7 @@ void	Draw_CharColor (int x, int y, int num, int color);
 void	Draw_TileClear (int x, int y, int w, int h, char *name);
 void	Draw_Fill (int x, int y, int w, int h, int c);
 void	Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, float a);
-void	Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data);
+void	Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data);
 
 void	R_BeginFrame( float camera_separation );
 void	R_SwapBuffers( int );

@@ -53,7 +53,7 @@ static menuCommon_t *GetItem (menuFramework_t *menu, int index)
 	for (i = 0, item = menu->itemList; i < index && item; i++, item = item->next) ;
 
 	if (!item)
-		Com_Error (ERR_FATAL, "GetMenuItem: item index %d is out of bounds %d\n", index, menu->nitems);
+		Com_FatalError ("GetMenuItem: item index %d is out of bounds %d\n", index, menu->nitems);
 
 	return item;
 }
@@ -277,11 +277,11 @@ void Menu_AddItem (menuFramework_t *menu, void *item)
 	for (i = 0, p = menu->itemList; i < menu->nitems; i++, p = p->next)
 	{
 		if (p == c)					// item already present in list -- fatal (circular linked list)
-			Com_Error (ERR_FATAL, "Menu_AddItem: double item \"%s\" in menu, index=%d, count=%d", c->name, i, menu->nitems);
+			Com_FatalError ("Menu_AddItem: double item \"%s\" in menu, index=%d, count=%d", c->name, i, menu->nitems);
 		last = p;
 	}
 	if (last && last->next)			// last item (with index == menu->nitem) have next != NULL
-		Com_Error (ERR_FATAL, "Menu_AddItem: invalid item list");
+		Com_FatalError ("Menu_AddItem: invalid item list");
 	// add to list
 	if (i > 0)	last->next = c;		// append to list tail
 	else		menu->itemList = c;	// first in list

@@ -382,7 +382,7 @@ void CL_ParseServerData (void)
 		// here: if serverProtocol != PROTOCOL_VERSION -- allow demo to play
 	}
 	else if (i != PROTOCOL_VERSION)
-		Com_Error (ERR_DROP,"Server returned version %d <> %d", i, PROTOCOL_VERSION);
+		Com_DropError ("Server returned version %d <> %d", i, PROTOCOL_VERSION);
 
 	cl.servercount = MSG_ReadLong (&net_message);
 	cl.attractloop = MSG_ReadByte (&net_message);
@@ -564,7 +564,7 @@ void CL_ParseConfigString (void)
 
 	i = MSG_ReadShort (&net_message);
 	if (i < 0 || i >= MAX_CONFIGSTRINGS)
-		Com_Error (ERR_DROP, "configstring > MAX_CONFIGSTRINGS");
+		Com_DropError ("configstring > MAX_CONFIGSTRINGS");
 	s = MSG_ReadString(&net_message);
 
 	Q_strncpyz (olds, cl.configstrings[i], sizeof(olds));
@@ -659,7 +659,7 @@ void CL_ParseStartSoundPacket(void)
 		channel = MSG_ReadShort(&net_message);
 		ent = channel>>3;
 		if (ent > MAX_EDICTS)
-			Com_Error (ERR_DROP,"CL_ParseStartSoundPacket: ent = %i", ent);
+			Com_DropError ("CL_ParseStartSoundPacket: ent = %i", ent);
 
 		channel &= 7;
 	}
@@ -695,19 +695,20 @@ void CL_ParseServerMessage (void)
 	int		cmd;
 	char	*s;
 
+	guard(CL_ParseServerMessage);
+
 	// if recording demos, copy the message out
 	if (cl_shownet->integer == 1)
 		Com_Printf ("%i ",net_message.cursize);
 	else if (cl_shownet->integer >= 2)
 		Com_Printf ("------------------\n");
 
-
 	// parse the message
 	while (1)
 	{
 		if (net_message.readcount > net_message.cursize)
 		{
-			Com_Error (ERR_DROP,"CL_ParseServerMessage: Bad server message");
+			Com_DropError ("CL_ParseServerMessage: Bad server message");
 			break;
 		}
 
@@ -731,7 +732,7 @@ void CL_ParseServerMessage (void)
 		switch (cmd)
 		{
 		default:
-			Com_Error (ERR_DROP,"CL_ParseServerMessage: Illegible server message\n");
+			Com_DropError ("CL_ParseServerMessage: Illegible server message\n");
 			break;
 
 		case svc_nop:
@@ -739,7 +740,8 @@ void CL_ParseServerMessage (void)
 			break;
 
 		case svc_disconnect:
-			Com_Error (ERR_DISCONNECT, "Server disconnected\n");	// this message will not appear
+			// either client kicked/banned (dropped from server), or server was quit
+			Com_DropError (NULL);	// no message
 			break;
 
 		case svc_reconnect:
@@ -830,7 +832,7 @@ void CL_ParseServerMessage (void)
 		case svc_playerinfo:
 		case svc_packetentities:
 		case svc_deltapacketentities:
-			Com_Error (ERR_DROP, "Out of place frame data");
+			Com_DropError ("Out of place frame data");
 			break;
 		}
 	}
@@ -842,4 +844,5 @@ void CL_ParseServerMessage (void)
 	if (cls.demorecording && !cls.demowaiting)
 		CL_WriteDemoMessage ();
 
+	unguardf(("cmd=%s", svc_strings[cmd]));
 }

@@ -132,7 +132,7 @@ void M_PushMenu (void (*draw) (void), const char *(*key) (int k))
 	if (i == m_menudepth)
 	{	// menu was not pushed
 		if (m_menudepth >= MAX_MENU_DEPTH)
-			Com_Error (ERR_FATAL, "M_PushMenu: MAX_MENU_DEPTH");
+			Com_FatalError ("M_PushMenu: MAX_MENU_DEPTH");
 		m_layers[m_menudepth].draw = m_drawfunc;
 		m_layers[m_menudepth].key = m_keyfunc;
 		m_menudepth++;
@@ -156,11 +156,18 @@ void M_ForceMenuOff (void)
 	Cvar_Set ("paused", "0");
 }
 
+void M_ForceMenuOn (void)
+{
+	MENU_CHECK
+	if (!m_menudepth) M_Menu_Main_f ();
+}
+
+
 void M_PopMenu (void)
 {
 	S_StartLocalSound (menu_out_sound);
 	if (m_menudepth < 1)
-		Com_Error (ERR_FATAL, "M_PopMenu: depth < 1");
+		Com_FatalError ("M_PopMenu: depth < 1");
 	m_menudepth--;
 
 	m_drawfunc = m_layers[m_menudepth].draw;
@@ -497,6 +504,7 @@ const char *M_Main_Key (int key)
 void M_Menu_Main_f (void)
 {
 	MENU_CHECK
+	M_ForceMenuOff ();
 	M_PushMenu (M_Main_Draw, M_Main_Key);
 }
 
@@ -511,6 +519,7 @@ static menuFramework_t	s_multiplayer_menu;
 static menuAction_t		s_join_network_server_action;
 static menuAction_t		s_start_network_server_action;
 static menuAction_t		s_player_setup_action;
+static menuAction_t		s_multiplayer_disconnect_action;
 
 static void Multiplayer_MenuDraw (void)
 {
@@ -520,22 +529,33 @@ static void Multiplayer_MenuDraw (void)
 	Menu_Draw (&s_multiplayer_menu);
 }
 
-static void Multiplayer_MenuInit( void )
+static void Multiplayer_Disconnect (void)
+{
+	if (Com_ServerState())
+		Cbuf_AddText ("disconnect\n");
+	M_ForceMenuOff ();
+}
+
+static void Multiplayer_MenuInit (void)
 {
 	s_multiplayer_menu.x = viddef.width * 0.50 - 64;
 	s_multiplayer_menu.nitems = 0;
 
-	MENU_ACTION(s_join_network_server_action,0," join network server",M_Menu_JoinServer_f)
+	MENU_ACTION(s_join_network_server_action,0,"join network server",M_Menu_JoinServer_f)
 	s_join_network_server_action.generic.flags  = QMF_LEFT_JUSTIFY;
 
-	MENU_ACTION(s_start_network_server_action,10," start network server",M_Menu_StartServer_f)
+	MENU_ACTION(s_start_network_server_action,10,"start network server",M_Menu_StartServer_f)
 	s_start_network_server_action.generic.flags  = QMF_LEFT_JUSTIFY;
 
-	MENU_ACTION(s_player_setup_action,20," player setup",M_Menu_PlayerConfig_f)
+	MENU_ACTION(s_multiplayer_disconnect_action,20,"disconnect",Multiplayer_Disconnect)
+	s_multiplayer_disconnect_action.generic.flags  = QMF_LEFT_JUSTIFY;
+
+	MENU_ACTION(s_player_setup_action,30,"player setup",M_Menu_PlayerConfig_f)
 	s_player_setup_action.generic.flags  = QMF_LEFT_JUSTIFY;
 
 	Menu_AddItem (&s_multiplayer_menu, (void *) &s_join_network_server_action);
 	Menu_AddItem (&s_multiplayer_menu, (void *) &s_start_network_server_action);
+	Menu_AddItem (&s_multiplayer_menu, (void *) &s_multiplayer_disconnect_action);
 	Menu_AddItem (&s_multiplayer_menu, (void *) &s_player_setup_action);
 
 	Menu_SetStatusBar (&s_multiplayer_menu, NULL);
@@ -2489,7 +2509,7 @@ static void ModelCallback (void *unused)
 	if (info)
 		s_player_skin_box.itemnames = info->skins;
 	else
-		Com_Error (ERR_FATAL, "ModelCallback: bad index");	//?? debug
+		Com_FatalError ("ModelCallback: bad index");	//?? debug
 	s_player_skin_box.curvalue = 0;
 	modelChangeTime = Sys_Milliseconds ();
 }
@@ -3235,7 +3255,10 @@ static void M_Quit_Draw (void)
 	int		w, h;
 
 	re.DrawGetPicSize (&w, &h, "quit");
-	re.DrawPicColor ((viddef.width-w)/2, (viddef.height-h)/2, "quit", 7);
+	if (w >= 320 && w * 3 / 4 == h)		// this pic is for fullscreen in mode 320x240
+		re.DrawStretchPic (0, 0, viddef.width, viddef.height, "quit");
+	else
+		re.DrawPicColor ((viddef.width-w)/2, (viddef.height-h)/2, "quit", 7);
 }
 
 
@@ -3285,8 +3308,7 @@ M_Draw
 */
 void M_Draw (void)
 {
-	if (cls.key_dest != key_menu && cls.key_dest != key_bindingMenu)
-		return;
+	if (!m_menudepth) return;
 
 	if (!cls.keep_console)	// do not blend whole screen when small menu painted
 	{
@@ -3294,7 +3316,7 @@ void M_Draw (void)
 		if (cl.cinematictime > 0)
 			re.DrawFill (0, 0, viddef.width, viddef.height, 0);
 		else
-			re.DrawFill2 (0, 0, viddef.width, viddef.height, 0, 0, 0, 0.8);
+			re.DrawFill2 (0, 0, viddef.width, viddef.height, 0, 0, 0, 0.5);
 	}
 
 	m_drawfunc ();

@@ -97,7 +97,7 @@ void GL_SelectTexture (int tmu)
 		return;
 
 //	if (tmu > 1) else
-//		Com_Error (ERR_FATAL, "GL_SelectTexture: unit = %08X", tmu);
+//		Com_FatalError ("GL_SelectTexture: unit = %08X", tmu);
 
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
 	{	// ARB_multitexture
@@ -120,7 +120,7 @@ void qglMTexCoord2f (int tmu, float s, float t)
 	GLenum tex;
 
 	if (!GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
-		Com_Error (ERR_FATAL, "MTexCoord call without multitexturing");
+		Com_FatalError ("MTexCoord call without multitexturing");
 
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
 	{	// ARB_multitexture
@@ -472,7 +472,6 @@ int Scrap_AllocBlock (int w, int h, int *x, int *y)
 	}
 
 	return -1;
-//	Com_Error ("Scrap_AllocBlock: full");
 }
 
 int	scrap_uploads;
@@ -872,7 +871,7 @@ qboolean GL_Upload32 (unsigned *data, int width, int height, qboolean mipmap)
 	upload_height = scaled_height;
 
 	if (scaled_width * scaled_height > sizeof(scaled)/4)
-		Com_Error (ERR_DROP, "GL_Upload32: too big");
+		Com_DropError ("GL_Upload32: too big");
 
 	// scan the texture for any non-255 alpha
 	c = width*height;
@@ -1078,7 +1077,7 @@ qboolean GL_Upload8 (byte *data, int width, int height, qboolean mipmap, qboolea
 	s = width*height;
 
 	if (s > sizeof(trans)/4)
-		Com_Error (ERR_DROP, "GL_Upload8: too large");
+		Com_DropError ("GL_Upload8: too large");
 
 /*	if ( qglColorTableEXT &&
 		 gl_ext_palettedtexture->integer &&
@@ -1152,13 +1151,13 @@ image_t *GL_LoadPic (char *name, byte *pic, int width, int height, imagetype_t t
 	if (i == numgltextures)
 	{
 		if (numgltextures == MAX_GLTEXTURES)
-			Com_Error (ERR_DROP, "MAX_GLTEXTURES");
+			Com_DropError ("MAX_GLTEXTURES");
 		numgltextures++;
 	}
 	image = &gltextures[i];
 
 	if (strlen(name) >= sizeof(image->name))
-		Com_Error (ERR_DROP, "Draw_LoadPic: \"%s\" is too long", name);
+		Com_DropError ("Draw_LoadPic: \"%s\" is too long", name);
 	strcpy (image->name, name);
 	image->registration_sequence = registration_sequence;
 
@@ -1267,7 +1266,7 @@ image_t	*GL_FindImage (char *name, imagetype_t type)
 	char	c, *s, *d, buf[256];
 
 	if (!name)
-		return NULL;	//	Com_Error (ERR_DROP, "GL_FindImage: NULL name");
+		return NULL;	//	Com_DropError ("GL_FindImage: NULL name");
 
 	// make a local copy of image name with a lower case conversion
 	s = name;
@@ -1282,7 +1281,7 @@ image_t	*GL_FindImage (char *name, imagetype_t type)
 
 	len = strlen(name);
 	if (len<5)
-		return NULL;	//	Com_Error (ERR_DROP, "GL_FindImage: bad name: %s", name);
+		return NULL;	//	Com_DropError ("GL_FindImage: bad name: %s", name);
 
 	len -= 4;	// &name[len] -> ".ext"
 	s = &name[len];		// points to extension
@@ -1463,7 +1462,7 @@ int Draw_GetPalette (void)
 
 	LoadPCX ("pics/colormap.pcx", &pic, &pal, &width, &height);
 	if (!pal)
-		Com_Error (ERR_FATAL, "Couldn't load pics/colormap.pcx");
+		Com_FatalError ("Couldn't load pics/colormap.pcx");
 
 	for (i=0 ; i<256 ; i++)
 	{
@@ -1514,7 +1513,7 @@ void	GL_InitImages (void)
 	{
 		FS_LoadFile( "pics/16to8.dat", &gl_state.d_16to8table );
 		if ( !gl_state.d_16to8table )
-			Com_Error( ERR_FATAL, "Couldn't load pics/16to8.dat");
+			Com_FatalError ("Couldn't load pics/16to8.dat");
 	}
 
 	if ( gl_config.renderer & ( GL_RENDERER_VOODOO | GL_RENDERER_VOODOO2 ) )

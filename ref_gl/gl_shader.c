@@ -208,7 +208,7 @@ static tcModParms_t *NewTcModStage (shaderStage_t *stage)
 	tcModParms_t *par;
 
 	if (stage->numTcMods > MAX_STAGE_TCMODS)
-		Com_Error (ERR_DROP, "Too many tcMod stages in shader \"%s\"\n", sh.name);
+		Com_DropError ("Too many tcMod stages in shader \"%s\"\n", sh.name);
 	//?? check index overflow (no MAX_STAGE_TCMODS but MAX_SHADER_TCMODS ??)
 	par = &tcMods[numTcModStages++];	// alloc
 	if (!stage->numTcMods)
@@ -470,7 +470,7 @@ shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber)
 		}
 	}
 
-	Com_Error (ERR_DROP, "R_SetShaderLightmap(%s, %d): lightmap stage is not found", shader->name, lightmapNumber);
+	Com_DropError ("R_SetShaderLightmap(%s, %d): lightmap stage is not found", shader->name, lightmapNumber);
 	return NULL;	// make compiler happy (will not go here)
 }
 

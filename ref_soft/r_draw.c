@@ -94,9 +94,9 @@ void Draw_Char (int x, int y, int num)
 
 #ifdef PARANOID
 	if (y > vid.height - 8 || x < 0 || x > vid.width - 8)
-		Com_Error (ERR_FATAL,"Con_DrawCharacter: (%i, %i)", x, y);
+		Com_FatalError ("Con_DrawCharacter: (%i, %i)", x, y);
 	if (num < 0 || num > 255)
-		Com_Error (ERR_FATAL,"Con_DrawCharacter: char %i", num);
+		Com_FatalError ("Con_DrawCharacter: char %i", num);
 #endif
 
 	row = num>>4;
@@ -338,7 +338,7 @@ void Draw_StretchPicImplementation (int x, int y, int w, int h, image_t	*pic)
 		(x + w > vid.width) ||
 		(y + h > vid.height))
 	{
-		Com_Error (ERR_FATAL,"Draw_Pic: bad coordinates");
+		Com_FatalError ("Draw_Pic: bad coordinates");
 	}
 
 	height = h;
@@ -398,10 +398,10 @@ void Draw_StretchPic (int x, int y, int w, int h, char *name)
 
 /*
 =============
-Draw_StretchRaw
+Draw_StretchRaw8
 =============
 */
-void Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data)
+void Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data)
 {
 	image_t	pic;
 
@@ -434,7 +434,7 @@ void Draw_Pic (int x, int y, char *name)
 	if ((x < 0) ||
 		(x + pic->width > vid.width) ||
 		(y + pic->height > vid.height))
-		return;	//	Com_Error (ERR_FATAL,"Draw_Pic: bad coordinates");
+		return;	//	Com_FatalError ("Draw_Pic: bad coordinates");
 
 	height = pic->height;
 	source = pic->pixels[0];
@@ -519,7 +519,7 @@ void Draw_PicColor (int x, int y, char *name, int color)
 	if ((x < 0) ||
 		(x + pic->width > vid.width) ||
 		(y + pic->height > vid.height))
-		return;	//	Com_Error (ERR_FATAL,"Draw_Pic: bad coordinates");
+		return;	//	Com_FatalError ("Draw_Pic: bad coordinates");
 
 	height = pic->height;
 	source = pic->pixels[0];

@@ -126,7 +126,7 @@ void R_InitSkyBox (void)
 	if (loadmodel->numsurfaces > MAX_MAP_FACES
 		|| loadmodel->numvertexes > MAX_MAP_VERTS
 		|| loadmodel->numedges > MAX_MAP_EDGES)
-		Com_Error (ERR_DROP, "InitSkyBox: map overflow");
+		Com_DropError ("InitSkyBox: map overflow");
 
 	memset (r_skyfaces, 0, 6*sizeof(*r_skyfaces));
 	for (i=0 ; i<6 ; i++)

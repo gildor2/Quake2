@@ -155,6 +155,7 @@ typedef struct
 // renderer flasg
 #define REF_CONSOLE_ONLY	1		// if set -- no graphics output
 #define REF_NEW_FX			2		// if set, renderer supports sprite fx
+#define REF_USE_PALETTE		4		// if set, renderer cannot display DrawStretchRaw8 simultaneously with other objects
 
 // screenshot flags
 #define SHOT_SMALL			1		// stretch screenshot to reduce its dimensions (levelshots, savegames etc.)
@@ -213,8 +214,8 @@ typedef struct
 	void	(*DrawFill2) (int x, int y, int w, int h, float r, float g, float b, float a);
 
 	// Draw images for cinematic rendering (which can have a different palette)
-	void	(*DrawStretchRaw) (int x, int y, int w, int h, int cols, int rows, byte *data);
 	void	(*SetRawPalette) (const unsigned char *palette);	// NULL = game palette
+	void	(*DrawStretchRaw8) (int x, int y, int w, int h, int cols, int rows, byte *data);
 
 	/*---- video mode and refresh state management entry points ----*/
 	void	(*BeginFrame) (float camera_separation);

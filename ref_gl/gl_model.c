@@ -51,7 +51,7 @@ model_t	*GL_FindModel (char *name)
 	unsigned *file;
 
 	if (!name[0])
-		Com_Error (ERR_FATAL, "R_FindModel: NULL name");
+		Com_FatalError ("R_FindModel: NULL name");
 
 	Q_CopyFilename (name2, name, sizeof(name2));
 
@@ -92,7 +92,7 @@ START_PROFILE(FindModel::Process)
 		if (!LoadSp2 (m, (byte*)file, len)) m = NULL;
 		break;
 	default:
-		// do not Com_Error() here: simply ignore unknown model formats
+		// no error here: simply ignore unknown model formats
 		Com_WPrintf ("R_FindModel: unknown ID 0x%X in %s", LittleLong (*file), name);
 		m = NULL;
 	}
@@ -1002,7 +1002,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 				while (!LM_AllocBlock (bl, dl))
 				{
 					if (bl->empty)
-						Com_Error (ERR_DROP, "LM_AllocBlock: unable to allocate lightmap %d x %d\n", dl->w, dl->h);
+						Com_DropError ("LM_AllocBlock: unable to allocate lightmap %d x %d\n", dl->w, dl->h);
 					LM_Flush (bl);				// finilize block
 					bl = LM_NextBlock ();
 				}
@@ -1169,7 +1169,7 @@ void GL_LoadWorldMap (char *name)
 	char	name2[MAX_QPATH];
 
 	if (!name[0])
-		Com_Error (ERR_FATAL, "R_LoadWorldMap: NULL name");
+		Com_FatalError ("R_LoadWorldMap: NULL name");
 
 	Q_CopyFilename (name2, name, sizeof(name2));
 
@@ -1212,7 +1212,7 @@ void GL_LoadWorldMap (char *name)
 		break;
 	default:
 		Hunk_End ();
-		Com_Error (ERR_DROP, "R_LoadWorldMap: unknown BSP type");
+		Com_DropError ("R_LoadWorldMap: unknown BSP type");
 	}
 	LoadFlares (bspfile->flares, bspfile->numFlares);
 	LoadSlights (bspfile->slights, bspfile->numSlights);
@@ -1233,7 +1233,7 @@ node_t *GL_PointInLeaf (vec3_t p)
 	cplane_t	*plane;
 
 	if (!map.name[0] || !map.numNodes)
-		Com_Error (ERR_DROP, "R_PointInLeaf: bad model");
+		Com_DropError ("R_PointInLeaf: bad model");
 
 	node = map.nodes;
 	while (1)
@@ -1680,7 +1680,7 @@ static void FreeModel (model_t *m)
 		Z_Free (m->sp2);
 		break;
 	default:
-		Com_Error (ERR_FATAL, "R_FreeModel: unknown model type %d", m->type);
+		Com_FatalError ("R_FreeModel: unknown model type %d", m->type);
 	}
 }
 

@@ -987,7 +987,7 @@ void R_RenderFrame (refdef_t *fd)
 	r_newrefdef = *fd;
 
 	if (!r_worldmodel && !( r_newrefdef.rdflags & RDF_NOWORLDMODEL ) )
-		Com_Error (ERR_FATAL,"R_RenderView: NULL worldmodel");
+		Com_FatalError ("R_RenderView: NULL worldmodel");
 
 	VectorCopy (fd->vieworg, r_refdef.vieworg);
 	VectorCopy (fd->viewangles, r_refdef.viewangles);
@@ -1142,7 +1142,7 @@ void R_BeginFrame( float camera_separation )
 			}
 			else
 			{
-				Com_Error( ERR_FATAL, "ref_soft::R_BeginFrame() - catastrophic mode change failure\n" );
+				Com_FatalError ("ref_soft::R_BeginFrame() - catastrophic mode change failure\n" );
 			}
 		}
 	}
@@ -1329,7 +1329,7 @@ void Draw_GetPalette (void)
 	// get the palette and colormap
 	LoadPCX ("pics/colormap.pcx", &vid.colormap, &pal, NULL, NULL);
 	if (!vid.colormap)
-		Com_Error (ERR_FATAL, "Couldn't load pics/colormap.pcx");
+		Com_FatalError ("Couldn't load pics/colormap.pcx");
 	vid.alphamap = vid.colormap + 64*256;
 
 	out = (byte *)d_8to24table;
@@ -1443,7 +1443,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.struc_size = sizeof(re);
 	re.api_version = API_VERSION;
 	re.flags = &ref_flags;
-	ref_flags = 0;
+	ref_flags = REF_USE_PALETTE;
 	if (con_only)
 		ref_flags |= REF_CONSOLE_ONLY;
 
@@ -1472,7 +1472,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.DrawFill = Draw_Fill;
 	re.DrawFill2 = Draw_Fill2;
 
-	re.DrawStretchRaw = Draw_StretchRaw;
+	re.DrawStretchRaw8 = Draw_StretchRaw8;
 	re.SetRawPalette = R_CinematicSetPalette;
 
 	re.DrawTextPos = DrawText_Pos;

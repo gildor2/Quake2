@@ -256,9 +256,9 @@ void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 
 		newnum = CL_ParseEntityBits (&bits);
 		if (net_message.readcount > net_message.cursize)
-			Com_Error (ERR_DROP,"CL_ParsePacketEntities: end of message");
+			Com_DropError ("CL_ParsePacketEntities: end of message");
 		if (newnum >= MAX_EDICTS)
-			Com_Error (ERR_DROP,"CL_ParsePacketEntities: bad number: %d", newnum);
+			Com_DropError ("CL_ParsePacketEntities: bad number: %d", newnum);
 
 		if (!newnum) break;				// received end of packet entities (bits=0, entNum=0)
 
@@ -558,14 +558,14 @@ void CL_ParseFrame (void)
 	cmd = MSG_ReadByte (&net_message);
 	SHOWNET(svc_strings[cmd]);
 	if (cmd != svc_playerinfo)
-		Com_Error (ERR_DROP, "CL_ParseFrame: not playerinfo");
+		Com_DropError ("CL_ParseFrame: not playerinfo");
 	CL_ParsePlayerstate (old, &cl.frame);
 
 	// read packet entities
 	cmd = MSG_ReadByte (&net_message);
 	SHOWNET(svc_strings[cmd]);
 	if (cmd != svc_packetentities)
-		Com_Error (ERR_DROP, "CL_ParseFrame: not packetentities");
+		Com_DropError ("CL_ParseFrame: not packetentities");
 	CL_ParsePacketEntities (old, &cl.frame);
 
 	// save the frame off in the backup array for later delta comparisons
@@ -578,13 +578,13 @@ void CL_ParseFrame (void)
 		{
 			cls.state = ca_active;
 			cls.key_dest = key_game;		// hide console
+			M_ForceMenuOff ();				// hide menu
 			cl.force_refdef = true;
 			cl.predicted_origin[0] = cl.frame.playerstate.pmove.origin[0] * 0.125f;
 			cl.predicted_origin[1] = cl.frame.playerstate.pmove.origin[1] * 0.125f;
 			cl.predicted_origin[2] = cl.frame.playerstate.pmove.origin[2] * 0.125f;
 			VectorCopy (cl.frame.playerstate.viewangles, cl.predicted_angles);
-			if (cls.disable_servercount != cl.servercount && cl.refresh_prepped)
-				SCR_EndLoadingPlaque ();	// get rid of loading plaque
+			SCR_EndLoadingPlaque (false);	// get rid of loading plaque
 			Cvar_Set ("paused", "0");
 		}
 		cl.sound_prepped = true;			// can start mixing ambient sounds
@@ -1448,6 +1448,8 @@ Emits all entities, particles, and lights to the refresh
 */
 void CL_AddEntities (void)
 {
+	guard(CL_AddEntities);
+
 	if (cls.state != ca_active)
 		return;
 
@@ -1482,6 +1484,8 @@ void CL_AddEntities (void)
 	CL_AddDLights ();
 	CL_RunLightStyles ();	// migrated here from CL_Frame() because of clump time
 	CL_AddDebugLines ();
+
+	unguard;
 }
 
 
@@ -1498,7 +1502,7 @@ void CL_GetEntitySoundOrigin (int ent, vec3_t org)
 	centity_t	*old;
 
 	if (ent < 0 || ent >= MAX_EDICTS)
-		Com_Error (ERR_DROP, "CL_GetEntitySoundOrigin: bad ent");
+		Com_DropError ("CL_GetEntitySoundOrigin: bad ent");
 	old = &cl_entities[ent];
 	VectorCopy (old->lerp_origin, org);
 

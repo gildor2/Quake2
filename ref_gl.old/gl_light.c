@@ -475,13 +475,13 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 	int monolightmap;
 
 	if ( surf->texinfo->flags & (SURF_SKY|SURF_TRANS33|SURF_TRANS66|SURF_WARP) )
-		Com_Error (ERR_DROP, "R_BuildLightMap called for non-lit surface");
+		Com_DropError ("R_BuildLightMap called for non-lit surface");
 
 	smax = (surf->extents[0]>>4)+1;
 	tmax = (surf->extents[1]>>4)+1;
 	size = smax*tmax;
 	if (size > (sizeof(s_blocklights)>>4) )
-		Com_Error (ERR_DROP, "Bad s_blocklights size: %d x %d > %d", smax, tmax, sizeof(s_blocklights)>>4);
+		Com_DropError ("Bad s_blocklights size: %d x %d > %d", smax, tmax, sizeof(s_blocklights)>>4);
 
 	modul = gl_modulate->value;
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))

@@ -19,15 +19,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // common.c -- misc functions used in client and server
 #include "qcommon.h"
-#include <setjmp.h>
 #include "../client/ref.h"
 
 #define	MAXPRINTMSG	4096
 
 int		realtime;
-
-static jmp_buf abortframe;			// an ERR_DROP occured, exit the entire frame
-static qboolean insideFrame;
 
 extern	refExport_t	re;		// interface to refresh .dll
 
@@ -101,13 +97,13 @@ to the apropriate place.
 static qboolean console_logged = false;
 static char log_name[MAX_OSPATH];
 
-void Com_Printf (char *fmt, ...)
+void Com_Printf (const char *fmt, ...)
 {
 	va_list	argptr;
 	char	msg[MAXPRINTMSG];
 
 	va_start (argptr,fmt);
-	vsprintf (msg,fmt,argptr);
+	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
 
 	if (rd_target)
@@ -164,7 +160,7 @@ When developer is set to 2, logging the message.
 When developer is set to 256, do not colorize message.
 ================
 */
-void Com_DPrintf (char *fmt, ...)
+void Com_DPrintf (const char *fmt, ...)
 {
 	va_list	argptr;
 	char	msg[MAXPRINTMSG];
@@ -173,7 +169,7 @@ void Com_DPrintf (char *fmt, ...)
 		return;			// don't confuse non-developers with techie stuff...
 
 	va_start (argptr,fmt);
-	vsprintf (msg,fmt,argptr);
+	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
 	Com_Printf ("^4%s", msg);
 	if (developer->integer == 2) DebugPrintf ("%s", msg);
@@ -182,7 +178,7 @@ void Com_DPrintf (char *fmt, ...)
 
 qboolean debugLogged = false;
 
-void DebugPrintf (char *fmt, ...)
+void DebugPrintf (const char *fmt, ...)
 {
 	va_list	argptr;
 	char	msg[1024], ctime[256];
@@ -190,7 +186,7 @@ void DebugPrintf (char *fmt, ...)
 	time_t	itime;
 
 	va_start (argptr,fmt);
-	vsprintf (msg,fmt,argptr);
+	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
 
 	log = fopen ("debug.log", "a+");
@@ -215,13 +211,13 @@ When developer is set to 2, logging the message
 ================
 */
 
-void Com_WPrintf (char *fmt, ...)
+void Com_WPrintf (const char *fmt, ...)
 {
 	va_list		argptr;
 	char		msg[MAXPRINTMSG];
 
 	va_start (argptr,fmt);
-	vsprintf (msg,fmt,argptr);
+	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
 
 	Com_Printf ("^3%s", msg);
@@ -229,57 +225,108 @@ void Com_WPrintf (char *fmt, ...)
 }
 
 
-/*
-=============
-Com_Error
+/*-----------------------------------------------------------------------------
+	Error handling
+-----------------------------------------------------------------------------*/
 
-Both client and server can use this, and it will
-do the apropriate things.
-=============
-*/
-void Com_Error (int code, char *fmt, ...)
+static char errMsg[MAXPRINTMSG];
+static bool errRecurse = false;
+
+
+void Com_FatalError (const char *fmt, ...)
 {
-	va_list		argptr;
-	static char msg[MAXPRINTMSG];
-	static qboolean recursive;
+	va_list argptr;
 
-	if (recursive)
-		Sys_Error ("recursive error after: %s", msg);
-	recursive = true;
+	GErr.isFatalError = true;
+	GErr.isSoftError = true;
+
+	if (errRecurse)
+		Sys_Error ("recursive error after: %s", errMsg);
 
 	va_start (argptr, fmt);
-	vsprintf (msg, fmt, argptr);
+	vsnprintf (ARRAY_ARG(errMsg), fmt, argptr);
 	va_end (argptr);
 
-	if (code == ERR_DISCONNECT)
-	{
-		CL_Drop ();
-		recursive = false;
-		longjmp (abortframe, -1);
-	}
-	else if (code == ERR_DROP && insideFrame)	// ERR_DROP->ERR_FATAL until not initialized
-	{
-		Com_Printf ("^1ERROR: %s\n", msg);
-		SV_Shutdown (va("Server crashed: %s\n", msg), false);
-		CL_Drop ();
-		recursive = false;
-		longjmp (abortframe, -1);
-	}
-	else
-	{
-		SV_Shutdown (va("Server fatal crashed: %s\n", msg), false);
-		CL_Shutdown (true);
-	}
+	errRecurse = true;
+	SV_Shutdown (va("Server fatal crashed: %s\n", errMsg), false);
+	CL_Shutdown (true);
 
-	// here -- only if code == ERR_FATAL
 	if (logfile)
 	{
 		fclose (logfile);
 		logfile = NULL;
 	}
 
-	if (debugLogged) DebugPrintf ("FATAL ERROR: %s\n", msg);
-	Sys_Error ("%s", msg);
+	if (debugLogged) DebugPrintf ("FATAL ERROR: %s\n", errMsg);
+	Sys_Error ("%s", errMsg);
+}
+
+
+void Com_DropError (const char *fmt, ...)
+{
+	va_list argptr;
+
+	GErr.isSoftError = true;
+
+	if (errRecurse)
+		Sys_Error ("recursive error after: %s", errMsg);
+
+	if (fmt)
+	{
+		va_start (argptr, fmt);
+		vsnprintf (ARRAY_ARG(errMsg), fmt, argptr);
+		va_end (argptr);
+		Com_Printf ("^1ERROR: %s\n", errMsg);
+		SV_Shutdown (va("Server crashed: %s\n", errMsg), false);
+	}
+	else
+		SV_Shutdown ("", false);
+	CL_Drop ();
+	throw;
+}
+
+
+errorState_t GErr;
+
+void appUnwindPrefix (const char *fmt)
+{
+	char	buf[512];
+
+	if (GErr.wasError)
+		Com_sprintf (buf, sizeof(buf), " <- %s:", fmt);
+	else
+		Com_sprintf (buf, sizeof(buf), "%s:", fmt);
+
+	GErr.wasError = false;		// will not insert "<-" next appUnwindThrow()
+	strncat (GErr.history, buf, sizeof(GErr.history));
+}
+
+
+void appUnwindThrow (const char *fmt, ...)
+{
+	char	buf[512];
+	va_list	argptr;
+
+	va_start (argptr, fmt);
+	if (GErr.wasError)
+	{
+		buf[0] = ' '; buf[1] = '<'; buf[2] = '-'; buf[3] = ' ';
+		vsnprintf (buf+4, sizeof(buf)-4, fmt, argptr);
+	}
+	else
+		vsnprintf (buf, sizeof(buf), fmt, argptr);
+	va_end (argptr);
+	GErr.wasError = true;
+
+	strncat (GErr.history, buf, sizeof(GErr.history));
+
+	throw;
+}
+
+
+void Com_ResetErrorState (void)
+{
+	memset (&GErr, 0, sizeof(GErr));
 }
 
 
@@ -519,7 +566,7 @@ void MSG_WriteChar (sizebuf_t *sb, int c)
 
 #ifdef PARANOID
 	if (c < -128 || c > 127)
-		Com_Error (ERR_FATAL, "MSG_WriteChar: range error");
+		Com_FatalError ("MSG_WriteChar: range error");
 #endif
 
 	buf = SZ_GetSpace (sb, 1);
@@ -532,7 +579,7 @@ void MSG_WriteByte (sizebuf_t *sb, int c)
 
 #ifdef PARANOID
 	if (c < 0 || c > 255)
-		Com_Error (ERR_FATAL, "MSG_WriteByte: range error");
+		Com_FatalError ("MSG_WriteByte: range error");
 #endif
 
 	buf = SZ_GetSpace (sb, 1);
@@ -545,7 +592,7 @@ void MSG_WriteShort (sizebuf_t *sb, int c)
 
 #ifdef PARANOID
 	if (c < ((short)0x8000) || c > (short)0x7fff)
-		Com_Error (ERR_FATAL, "MSG_WriteShort: range error");
+		Com_FatalError ("MSG_WriteShort: range error");
 #endif
 
 	buf = SZ_GetSpace (sb, 2);
@@ -764,7 +811,7 @@ void MSG_ReadDir (sizebuf_t *sb, vec3_t dir)
 
 	b = MSG_ReadByte (sb);
 	if (b >= NUMVERTEXNORMALS)
-		Com_Error (ERR_DROP, "MSG_ReadDir: out of range");
+		Com_DropError ("MSG_ReadDir: out of range");
 	VectorCopy (bytedirs[b], dir);
 }
 
@@ -782,9 +829,9 @@ void MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *
 	int		bits;
 
 	if (!to->number)
-		Com_Error (ERR_FATAL, "Unset entity number");
+		Com_FatalError ("Unset entity number");
 	if (to->number >= MAX_EDICTS)
-		Com_Error (ERR_FATAL, "Entity number >= MAX_EDICTS");
+		Com_FatalError ("Entity number >= MAX_EDICTS");
 
 	// send an update
 	bits = 0;
@@ -1144,10 +1191,10 @@ void *SZ_GetSpace (sizebuf_t *buf, int length)
 	if (need > buf->maxsize)
 	{
 		if (!buf->allowoverflow)
-			Com_Error (ERR_FATAL, "SZ_GetSpace: overflow without allowoverflow set");
+			Com_FatalError ("SZ_GetSpace: overflow without allowoverflow set");
 
 		if (length > buf->maxsize)
-			Com_Error (ERR_FATAL, "SZ_GetSpace: %i is > full buffer size", length);
+			Com_FatalError ("SZ_GetSpace: %i is > full buffer size", length);
 
 		Com_Printf ("SZ_GetSpace: overflow (max=%d, need=%d)\n", buf->maxsize, need);
 		SZ_Clear (buf);
@@ -1382,8 +1429,10 @@ test error shutdown procedures
 static void Com_Error_f (void)
 {
 	if (!stricmp (Cmd_Argv(1), "-gpf"))
-		*((int*)NULL) = 0;
-	Com_Error (ERR_FATAL, "%s", Cmd_Argv(1));
+		*((int*)NULL) = 0;		// this is not "throw" command, this is GPF
+	else if (!stricmp (Cmd_Argv(1), "-drop"))
+		Com_DropError ("testing drop error");
+	Com_FatalError ("%s", Cmd_Argv(1));
 }
 
 
@@ -1553,6 +1602,7 @@ CVAR_END
 
 	guard(QCommon_Init);
 
+	Com_ResetErrorState ();
 	Swap_Init ();
 	Z_Init ();
 	Cvar_Init ();
@@ -1651,12 +1701,8 @@ void QCommon_Frame (int msec)
 	int		realMsec;
 	float	msecf;
 
-	if (setjmp (abortframe))
-		return;			// an ERR_DROP was thrown
-
 	guard(QCommon_Frame);
 
-	insideFrame = true;
 	if (log_stats->modified)
 	{
 		log_stats->modified = false;
@@ -1731,7 +1777,7 @@ void QCommon_Frame (int msec)
 				c_traces, old_tr, c_pointcontents, old_pc), RGB(1, 0.8, 0.3));
 
 #ifdef SV_PROFILE
-		if (1)	//??
+		if (1)	//?? cvar
 		{
 			extern int prof_times[256];
 			extern int prof_counts[256];
@@ -1763,8 +1809,6 @@ void QCommon_Frame (int msec)
 		}
 #endif
 	}
-
-	insideFrame = false;
 
 	unguard;
 }

@@ -365,7 +365,7 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
 			return;
 	}
 	else
-		Com_Error (ERR_FATAL, "NET_SendPacket: bad address type");
+		Com_FatalError ("NET_SendPacket: bad address type");
 
 	NetadrToSockadr (&to, &addr);
 

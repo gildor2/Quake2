@@ -693,7 +693,7 @@ static void GL_RenderFrame (refdef_t *fd)
 	if (!gl_renderingEnabled) return;
 
 	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !map.name)
-		Com_Error (ERR_FATAL, "R_RenderFrame: NULL worldModel");
+		Com_FatalError ("R_RenderFrame: NULL worldModel");
 
 //	DrawTextRight ("---------RenderFrame---------\n", RGB(1,0,0));
 
@@ -1232,7 +1232,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.DrawFill =		DrawFill;
 	re.DrawFill2 =		DrawFill2;
 
-	re.DrawStretchRaw =	GL_DrawStretchRaw;
+	re.DrawStretchRaw8 = GL_DrawStretchRaw8;
 	re.SetRawPalette = GL_SetRawPalette;
 
 	re.DrawTextPos =	DrawTextPos;

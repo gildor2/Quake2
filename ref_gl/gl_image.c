@@ -83,7 +83,7 @@ static void GetPalette (void)
 	// get the palette
 	LoadPCX ("pics/colormap.pcx", &pic, &pal, &width, &height);
 	if (!pal)
-		Com_Error (ERR_FATAL, "Couldn't load pics/colormap.pcx");
+		Com_FatalError ("Couldn't load pics/colormap.pcx");
 
 	p = pal;
 	for (i = 0; i < 256; i++, p += 3)
@@ -663,12 +663,12 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 	image_t	*image;
 	bool	reuse;
 
-	if (!name[0]) Com_Error (ERR_FATAL, "R_CreateImage: null name");
+	if (!name[0]) Com_FatalError ("R_CreateImage: null name");
 
 //	Com_Printf ("CreateImage(%s)\n", name);//!!!!
 
 //	if (strlen (name) >= MAX_QPATH)
-//		Com_Error (ERR_FATAL, "R_CreateImage: name \"%s\" is too long", name);
+//		Com_FatalError ("R_CreateImage: name \"%s\" is too long", name);
 	Q_CopyFilename (name2, name, sizeof(name2));
 
 	// find image with the same name
@@ -771,7 +771,7 @@ void GL_SetRawPalette (const unsigned char *palette)
 }
 
 
-void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte *pic)
+void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic)
 {
 #if 0
 	byte	*pic32;
@@ -818,7 +818,7 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 	}
 
 	/*-------------------- upload ---------------------*/
-	image = gl_videoImage;
+	image = gl_videoImage;		//?? to allow multiple videos in a screen, should use gl_videoImage[some_number]
 	GL_SetMultitexture (1);
 	GL_BindForce (image);
 
@@ -844,6 +844,7 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 	height = scaledHeight;
 #endif
 	/*--------------------- draw ----------------------*/
+//	GL_BackEnd ();		// need to perform begin_frame in a case of gl_clear!=0; or - enqueue draw command into backend command list
 	GL_Set2DMode ();
 	glColor3f (gl_config.identityLightValue_f, gl_config.identityLightValue_f, gl_config.identityLightValue_f);
 	glBegin (GL_QUADS);

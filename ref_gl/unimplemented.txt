@@ -262,7 +262,7 @@ HW occlusion:
   ? for details and other ideas, see GL_NV_occlusion_query spec
 
 BUGS:
-- Com_Error(ERR_DROP, ...) can cause "halt" renderer (will in loop display "red" message without screen update,
+- Com_DropError (...) can cause "halt" renderer (will in loop display "red" message without screen update,
   can switch to "oldgl" (to see this messages), but will crush when switch back to "gl" (if StageIterator() ?))
 ? map "terrain", light cone from helicopter: too opaque when overbright is 1 (invalid lightmap on alpha-surf ?)
 ? check demo "massive1": have error "frame #46 not found"

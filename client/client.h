@@ -231,11 +231,10 @@ typedef struct
 	qboolean	netFrameDropped;
 
 	/*----- screen rendering information -----*/
-	float		disable_screen;	// showing loading plaque between levels
-								// or changing rendering dlls
-								// if time gets > 30 seconds ahead, break it
 	int			disable_servercount; // when we receive a frame and cl.servercount
-								// > cls.disable_servercount, clear disable_screen
+								// > cls.disable_servercount, end loading plaque
+								//????? check requirement of this var
+	bool		loading;
 
 	/*-------- connection information --------*/
 	char		servername[MAX_OSPATH];	// name of server from original connect
@@ -540,7 +539,8 @@ void CL_Download_f (void);
 //
 // cl_scrn.c
 //
-void SCR_SetLevelshot (char *name);
+void SCR_SetLevelshot (char *name);		// give exact levelshot name
+void SCR_SetLevelshot2 (void);			// compute name from map name
 
 //
 // cl_view.c
@@ -590,6 +590,7 @@ void M_Keydown (int key);
 void M_Draw (void);
 void M_Menu_Main_f (void);
 void M_ForceMenuOff (void);
+void M_ForceMenuOn (void);
 void M_AddToServerList (netadr_t adr, char *info);
 
 //

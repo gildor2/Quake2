@@ -348,7 +348,7 @@ void Draw_Fill (int x, int y, int w, int h, int c)
 	} color;
 
 	if ( (unsigned)c > 255)
-		Com_Error (ERR_FATAL, "Draw_Fill: bad color");
+		Com_FatalError ("Draw_Fill: bad color");
 
 	qglDisable (GL_TEXTURE_2D);
 
@@ -395,12 +395,12 @@ void Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, float a)
 
 /*
 =============
-Draw_StretchRaw
+Draw_StretchRaw8
 =============
 */
 extern unsigned	r_rawpalette[256];
 
-void Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data)
+void Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data)
 {
 	unsigned	image32[256*256];
 	int			i, j, trows;

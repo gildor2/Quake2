@@ -87,7 +87,7 @@ void Vid_Printf (int print_level, char *fmt, ...)
 	static qboolean	inupdate;
 
 	va_start (argptr,fmt);
-	vsprintf (msg,fmt,argptr);
+	vsnprintf (msg,sizeof(msg),fmt,argptr);
 	va_end (argptr);
 
 	if (print_level == PRINT_ALL)
@@ -103,7 +103,7 @@ void Vid_Error (int err_level, const char *fmt, ...)
 	static qboolean	inupdate;
 
 	va_start (argptr,fmt);
-	vsprintf (msg,fmt,argptr);
+	vsnprintf (msg,sizeof(msg),fmt,argptr);
 	va_end (argptr);
 
 	Com_Error (err_level,"%s", msg);
@@ -276,14 +276,14 @@ qboolean Vid_LoadRefresh( char *name )
 	ri.Vid_NewWindow = Vid_NewWindow;
 
 	if ((GetRefAPI = (void*) dlsym (reflib_library, "GetRefAPI")) == 0)
-		Com_Error (ERR_FATAL, "dlsym failed on %s", name);
+		Com_FatalError ("dlsym failed on %s", name);
 
 	re = GetRefAPI( ri );
 
 	if (re.struc_size != sizeof(refExport_t) || re.api_version != API_VERSION)
 	{
 		Vid_FreeReflib ();
-		Com_Error (ERR_FATAL, "%s has incompatible api_version", name);
+		Com_FatalError ("%s has incompatible api_version", name);
 	}
 
 	/* Init IN (Mouse) */
@@ -364,7 +364,6 @@ void Vid_CheckChanges (void)
 		vid_ref->modified = false;
 		r_fullscreen->modified = true;
 		cl.refresh_prepped = false;
-		cls.disable_screen = true;
 
 		sprintf( name, "ref_%s.so", vid_ref->string );
 		if ( !Vid_LoadRefresh( name ) )
@@ -378,9 +377,9 @@ void Vid_CheckChanges (void)
 					Com_Printf("Trying mode 0\n");
 					Cvar_SetInteger ("sw_mode", 0);
 					if ( !Vid_LoadRefresh( name ) )
-						Com_Error (ERR_FATAL, "Couldn't fall back to software refresh!");
+						Com_FatalError ("Couldn't fall back to software refresh!");
 				} else
-					Com_Error (ERR_FATAL, "Couldn't fall back to software refresh!");
+					Com_FatalError ("Couldn't fall back to software refresh!");
 			}
 
 			Cvar_Set( "vid_ref", "soft" );
@@ -393,7 +392,6 @@ void Vid_CheckChanges (void)
 				Con_ToggleConsole_f();
 			}
 		}
-		cls.disable_screen = false;
 	}
 
 }

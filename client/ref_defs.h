@@ -30,7 +30,8 @@
 #define Com_Printf	ri._Com_Printf
 #define Com_DPrintf	ri._Com_DPrintf
 #define Com_WPrintf	ri._Com_WPrintf
-#define Com_Error	ri._Com_Error
+#define Com_FatalError	ri._Com_FatalError
+#define Com_DropError	ri._Com_DropError
 #define FS_FileExists	ri._FS_FileExists
 #define FS_ListFiles	ri._FS_ListFiles
 #define FS_LoadFile	ri._FS_LoadFile
@@ -90,10 +91,11 @@ void*	Hunk_Alloc (int size);
 int	Hunk_End (void);
 void	Hunk_Free (void *buf);
 int	Sys_Milliseconds (void);
-void	Com_Printf (char *str, ...);
-void	Com_DPrintf (char *str, ...);
-void	Com_WPrintf (char *str, ...);
-void	Com_Error (int err_level, char *str, ...);
+void	Com_Printf (const char *str, ...);
+void	Com_DPrintf (const char *str, ...);
+void	Com_WPrintf (const char *str, ...);
+void	Com_FatalError (const char *fmt, ...);
+void	Com_DropError (const char *fmt, ...);
 bool	FS_FileExists (char *filename);
 basenamed_t*	FS_ListFiles (char *name, int *numfiles, int flags);
 int	FS_LoadFile (char *name, void **buf);
@@ -113,7 +115,7 @@ void	LoadTGA (char *name, byte **pic, int *width, int *height);
 void	LoadJPG (char *name, byte **pic, int *width, int *height);
 qboolean	WriteTGA (char *name, byte *pic, int width, int height);
 qboolean	WriteJPG (char *name, byte *pic, int width, int height, qboolean highQuality);
-bspfile_t*	LoadBspFile (char *filename, qboolean clientload, unsigned *checksum);
+bspfile_t*	LoadBspFile (char *filename, bool clientload, unsigned *checksum);
 void	CM_BoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
 void	CM_TransformedBoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
 void	CM_TransformedBoxTrace2 (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t *axis);

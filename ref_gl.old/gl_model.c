@@ -53,7 +53,7 @@ mleaf_t *Mod_PointInLeaf (vec3_t p, model_t *model)
 	cplane_t	*plane;
 
 	if (!model || !model->nodes)
-		Com_Error (ERR_DROP, "GL_PointInLeaf: bad model");
+		Com_DropError ("GL_PointInLeaf: bad model");
 
 	node = model->nodes;
 	while (1)
@@ -224,7 +224,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 	char	*ext;
 
 	if (!name[0])
-		Com_Error (ERR_DROP, "Mod_ForName: NULL name");
+		Com_DropError ("Mod_ForName: NULL name");
 
 	//
 	// inline models are grabbed only from worldmodel
@@ -233,7 +233,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 	{
 		i = atoi(name+1);
 		if (i < 1 || !r_worldmodel || i >= r_worldmodel->numsubmodels)
-			Com_Error (ERR_DROP, "bad inline model number");
+			Com_DropError ("bad inline model number");
 		return &mod_inline[i];
 	}
 
@@ -259,7 +259,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 	if (i == gl_mod_numknown)
 	{
 		if (gl_mod_numknown == MAX_MOD_KNOWN)
-			Com_Error (ERR_DROP, "mod_numknown == MAX_MOD_KNOWN");
+			Com_DropError ("mod_numknown == MAX_MOD_KNOWN");
 		gl_mod_numknown++;
 	}
 	strcpy (mod->name, name);
@@ -283,7 +283,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 //			Mod_LoadHLBrushModel (mod, bsp);
 //			break;
 		default:	// should not happen! (map MUST be loaded by client)
-			Com_Error (ERR_DROP, "Internal error while loading BSP file");
+			Com_DropError ("Internal error while loading BSP file");
 		}
 		loadmodel->extradatasize = Hunk_End ();
 	}
@@ -294,7 +294,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 		if (!buf)
 		{
 			if (crash)
-				Com_Error (ERR_DROP, "Mod_ModForName: %s not found", mod->name);
+				Com_DropError ("Mod_ModForName: %s not found", mod->name);
 			memset (mod->name, 0, sizeof(mod->name));
 			return NULL;
 		}
@@ -318,7 +318,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 			break;
 
 		default:
-			Com_Error (ERR_DROP,"Mod_NumForName: unknown fileid for %s", mod->name);
+			Com_DropError ("Mod_NumForName: unknown fileid for %s", mod->name);
 			break;
 		}
 
@@ -644,7 +644,7 @@ void CalcSurfaceExtents (msurface_t *s)
 		s->extents[i] = (bmaxs[i] - bmins[i]) * 16;
 
 //		if ( !(tex->flags & TEX_SPECIAL) && s->extents[i] > 512 /* 256 */ )
-//			Com_Error (ERR_DROP, "Bad surface extents");
+//			Com_DropError ("Bad surface extents");
 	}
 }
 
@@ -690,7 +690,7 @@ void Mod_LoadFaces (dface_t *data, int size)
 
 		ti = in->texinfo;
 		if (ti < 0 || ti >= loadmodel->numtexinfo)
-			Com_Error (ERR_DROP, "MOD_LoadBmodel: bad texinfo number");
+			Com_DropError ("MOD_LoadBmodel: bad texinfo number");
 		out->texinfo = loadmodel->texinfo + ti;
 
 		CalcSurfaceExtents (out);
@@ -856,7 +856,7 @@ void Mod_LoadMarksurfaces (unsigned short *data, int size)
 	{
 		j = in[i];
 		if (j < 0 || j >= loadmodel->numsurfaces)
-			Com_Error (ERR_DROP, "Mod_ParseMarksurfaces: bad surface number");
+			Com_DropError ("Mod_ParseMarksurfaces: bad surface number");
 		out[i] = loadmodel->surfaces + j;
 	}
 }
@@ -869,7 +869,7 @@ Mod_LoadSurfedges
 void Mod_LoadSurfedges (int *data, int size)
 {
 //	if (size < 1 || size >= MAX_MAP_SURFEDGES)
-//		Com_Error (ERR_DROP, "MOD_LoadBmodel: bad surfedges count in %s: %i",
+//		Com_DropError ("MOD_LoadBmodel: bad surfedges count in %s: %i",
 //		loadmodel->name, size);
 
 	loadmodel->surfedges = data;
@@ -924,7 +924,7 @@ void Mod_LoadBrushModel (model_t *mod, bspfile_t *bsp)
 
 	loadmodel->type = mod_brush;
 	if (loadmodel != gl_mod_known)
-		Com_Error (ERR_DROP, "Loaded a brush model after the world");
+		Com_DropError ("Loaded a brush model after the world");
 
 	// load into heap
 	Mod_LoadVertexes (bsp->vertexes, bsp->numVertexes);
@@ -957,7 +957,7 @@ void Mod_LoadBrushModel (model_t *mod, bspfile_t *bsp)
 		starmod->nummodelsurfaces = bm->numfaces;
 		starmod->firstnode = bm->headnode;		//?? used for dlights markup
 		if (starmod->firstnode >= loadmodel->numnodes)
-			Com_Error (ERR_DROP, "Inline model %i has bad firstnode", i);
+			Com_DropError ("Inline model %i has bad firstnode", i);
 
 		VectorCopy (bm->maxs, starmod->maxs);
 		VectorCopy (bm->mins, starmod->mins);
@@ -1007,7 +1007,7 @@ void Mod_LoadHLTexinfo (lump_t *l)
 
 //--	in = (void *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size in %s",loadmodel->name);
+		Com_DropError ("MOD_LoadBmodel: funny lump size in %s",loadmodel->name);
 	count = l->filelen / sizeof(*in);
 	out = Hunk_Alloc ( count*sizeof(*out));
 
@@ -1059,7 +1059,7 @@ void Mod_LoadHLNodes (lump_t *l)
 
 //--	in = (void *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Com_Error (ERR_DROP, "MOD_LoadHLBmodel: funny lump size in %s",loadmodel->name);
+		Com_DropError ("MOD_LoadHLBmodel: funny lump size in %s",loadmodel->name);
 	count = l->filelen / sizeof(*in);
 	out = Hunk_Alloc ( count*sizeof(*out));
 
@@ -1108,7 +1108,7 @@ void Mod_LoadHLSubmodels (lump_t *l)
 
 //--	in = (void *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size in %s",loadmodel->name);
+		Com_DropError ("MOD_LoadBmodel: funny lump size in %s",loadmodel->name);
 	count = l->filelen / sizeof(*in);
 	out = Hunk_Alloc (count*sizeof(*out));
 
@@ -1165,7 +1165,7 @@ void Mod_LoadHLLeafs (lump_t *l)
 
 //--	in = (void *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size in %s",loadmodel->name);
+		Com_DropError ("MOD_LoadBmodel: funny lump size in %s",loadmodel->name);
 	count = l->filelen / sizeof(*in);
 	out = Hunk_Alloc ( count*sizeof(*out));
 
@@ -1242,14 +1242,14 @@ void Mod_LoadHLBrushModel (model_t *mod, void *buffer)
 
 	loadmodel->type = mod_hl_brush;
 	if (loadmodel != gl_mod_known)
-		Com_Error (ERR_DROP, "Loaded a brush model after the world");
+		Com_DropError ("Loaded a brush model after the world");
 
 	header = (hl_dheader_t *)buffer;
 
 	// This check is not required: Mod_LoadHLBrushModel() called after detecting HL_BSPVERSION
 //	i = LittleLong (header->version);
 //	if (i != HL_BSPVERSION)
-//		Com_Error (ERR_DROP, "Mod_LoadBrushModel: %s has wrong version number (%i should be %i)", mod->name, i, BSPVERSION);
+//		Com_DropError ("Mod_LoadBrushModel: %s has wrong version number (%i should be %i)", mod->name, i, BSPVERSION);
 
 	// swap all the lumps
 	mod_base = (byte *)header;
@@ -1297,7 +1297,7 @@ void Mod_LoadHLBrushModel (model_t *mod, void *buffer)
 		starmod->nummodelsurfaces = bm->numfaces;
 		starmod->firstnode = bm->headnode;
 		if (starmod->firstnode >= loadmodel->numnodes)
-			Com_Error (ERR_DROP, "Inline model %i has bad firstnode", i);
+			Com_DropError ("Inline model %i has bad firstnode", i);
 
 		VectorCopy (bm->maxs, starmod->maxs);
 		VectorCopy (bm->mins, starmod->mins);
@@ -1339,7 +1339,7 @@ void Mod_LoadAliasModel (model_t *mod, void *buffer)
 
 	version = LittleLong (pinmodel->version);
 	if (version != MD2_VERSION)
-		Com_Error (ERR_DROP, "%s has wrong version number (%i should be %i)", mod->name, version, MD2_VERSION);
+		Com_DropError ("%s has wrong version number (%i should be %i)", mod->name, version, MD2_VERSION);
 
 	pheader = Hunk_Alloc (LittleLong(pinmodel->ofsEnd));
 
@@ -1348,22 +1348,22 @@ void Mod_LoadAliasModel (model_t *mod, void *buffer)
 		((int *)pheader)[i] = LittleLong (((int *)buffer)[i]);
 
 	if (pheader->skinHeight > MAX_LBM_HEIGHT)	//?? unneeded
-		Com_Error (ERR_DROP, "model %s has a skin taller than %d", mod->name, MAX_LBM_HEIGHT);
+		Com_DropError ("model %s has a skin taller than %d", mod->name, MAX_LBM_HEIGHT);
 
 	if (pheader->numXyz <= 0)
-		Com_Error (ERR_DROP, "model %s has no vertices", mod->name);
+		Com_DropError ("model %s has no vertices", mod->name);
 
 	if (pheader->numXyz > 2048)//MAX_VERTS)
-		Com_Error (ERR_DROP, "model %s has too many vertices", mod->name);
+		Com_DropError ("model %s has too many vertices", mod->name);
 
 	if (pheader->numSt <= 0)
-		Com_Error (ERR_DROP, "model %s has no st vertices", mod->name);
+		Com_DropError ("model %s has no st vertices", mod->name);
 
 	if (pheader->numTris <= 0)
-		Com_Error (ERR_DROP, "model %s has no triangles", mod->name);
+		Com_DropError ("model %s has no triangles", mod->name);
 
 	if (pheader->numFrames <= 0)
-		Com_Error (ERR_DROP, "model %s has no frames", mod->name);
+		Com_DropError ("model %s has no frames", mod->name);
 
 	/*---- load base s and t vertices (not used in gl version) ----*/
 	pinst = (dStVert_t *) ((byte *)pinmodel + pheader->ofsSt);
@@ -1458,10 +1458,10 @@ void Mod_LoadSpriteModel (model_t *mod, void *buffer)
 	sprout->numframes = LittleLong (sprin->numframes);
 
 	if (sprout->version != SP2_VERSION)
-		Com_Error (ERR_DROP, "%s has wrong version number (%i should be %i)", mod->name, sprout->version, SP2_VERSION);
+		Com_DropError ("%s has wrong version number (%i should be %i)", mod->name, sprout->version, SP2_VERSION);
 
 	if (sprout->numframes > MD2_MAX_SKINS)
-		Com_Error (ERR_DROP, "%s has too many frames (%i > %i)",
+		Com_DropError ("%s has too many frames (%i > %i)",
 				mod->name, sprout->numframes, MD2_MAX_SKINS);
 
 	// byte swap everything

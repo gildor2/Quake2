@@ -670,7 +670,7 @@ void GLimp_EndFrame (void)
 		{
 			// use wglSwapBuffers() for miniGL and Voodoo
 			if (!wglSwapBuffers (glw_state.hDC))
-				Com_Error (ERR_FATAL, "GLimp_EndFrame() - SwapBuffers() failed!\n");
+				Com_FatalError ("GLimp_EndFrame() - SwapBuffers() failed!\n");
 		}
 	}
 }

@@ -33,10 +33,11 @@ void	Hunk_Free (void *buf);
 int	Sys_Milliseconds (void);
 
 //--------- console ---------
-void	Com_Printf (char *str, ...);
-void	Com_DPrintf (char *str, ...);
-void	Com_WPrintf (char *str, ...);
-void	Com_Error (int err_level, char *str, ...);
+void	Com_Printf (const char *str, ...);
+void	Com_DPrintf (const char *str, ...);
+void	Com_WPrintf (const char *str, ...);
+void	Com_FatalError (const char *fmt, ...);
+void	Com_DropError (const char *fmt, ...);
 
 //?? unused now:	void	KeyEvent (int key, qboolean down, unsigned time);
 
@@ -67,7 +68,7 @@ qboolean WriteTGA (char *name, byte *pic, int width, int height);
 qboolean WriteJPG (char *name, byte *pic, int width, int height, qboolean highQuality);
 
 //--------- models ----------
-bspfile_t* LoadBspFile (char *filename, qboolean clientload, unsigned *checksum);
+bspfile_t* LoadBspFile (char *filename, bool clientload, unsigned *checksum);
 void CM_BoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
 void CM_TransformedBoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
 void CM_TransformedBoxTrace2 (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t *axis);

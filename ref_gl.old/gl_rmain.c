@@ -351,7 +351,7 @@ void R_DrawEntitiesOnList (void)
 			R_DrawSpriteModel (currententity);
 			break;
 		default:
-			Com_Error (ERR_DROP, "Bad modeltype");
+			Com_DropError ("Bad modeltype");
 			break;
 		}
 	}
@@ -387,7 +387,7 @@ void R_DrawEntitiesOnList (void)
 			R_DrawSpriteModel (currententity);
 			break;
 		default:
-			Com_Error (ERR_DROP, "Bad modeltype");
+			Com_DropError ("Bad modeltype");
 			break;
 		}
 	}
@@ -820,7 +820,7 @@ void R_RenderView (refdef_t *fd)
 	r_newrefdef = *fd;
 
 	if (!r_worldmodel && !( r_newrefdef.rdflags & RDF_NOWORLDMODEL ) )
-		Com_Error (ERR_DROP, "R_RenderView: NULL worldmodel");
+		Com_DropError ("R_RenderView: NULL worldmodel");
 
 	if (r_speeds->integer)
 	{
@@ -1712,7 +1712,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.struc_size = sizeof(re);
 	re.api_version = API_VERSION;
 	re.flags = &ref_flags;
-	ref_flags = 0;
+	ref_flags = REF_USE_PALETTE;
 	if (Cvar_Get ("gl_console_only", "0", 0)->integer)
 		ref_flags |= REF_CONSOLE_ONLY;
 
@@ -1741,7 +1741,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.DrawFill = Draw_Fill;
 	re.DrawFill2 = Draw_Fill2;
 
-	re.DrawStretchRaw = Draw_StretchRaw;
+	re.DrawStretchRaw8 = Draw_StretchRaw8;
 	re.SetRawPalette = R_SetPalette;
 
 	re.DrawTextPos = DrawTextPos;

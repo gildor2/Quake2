@@ -104,13 +104,12 @@ extern	cvar_t *allow_download_maps;
 //======================================================================
 
 
-static qboolean statusRequest;
+static bool statusRequest;
+static bool cl_cheats;
+static char	cl_mapname[MAX_QPATH];
+static char	cl_gamename[MAX_QPATH];
 
-char	cl_mapname[MAX_QPATH];
-char	cl_gamename[MAX_QPATH];
-qboolean cl_cheats;
-
-static qboolean TryParseStatus (char *str)
+static bool TryParseStatus (char *str)
 {
 	char	buf[MAX_MSGLEN], *s;
 
@@ -423,7 +422,7 @@ void CL_Quit_f (void)
 ================
 CL_Drop
 
-Called after an ERR_DROP was thrown
+Called after an Com_DropError() was thrown
 ================
 */
 void CL_Drop (void)
@@ -432,10 +431,7 @@ void CL_Drop (void)
 		return;
 
 	CL_Disconnect ();
-
-	// drop loading plaque unless this is the initial game start
-	if (cls.disable_servercount != -1)
-		SCR_EndLoadingPlaque ();	// get rid of loading plaque
+	SCR_EndLoadingPlaque (true);	// get rid of loading plaque
 }
 
 
@@ -629,12 +625,13 @@ CL_Disconnect
 
 Goes from a connected state to full screen console state
 Sends a disconnect message to the server
-This is also called on Com_Error, so it shouldn't cause any errors
 =====================
 */
 void CL_Disconnect (void)
 {
 	byte	final[32];
+
+	guard(CL_Disconnect);
 
 	if (cls.state == ca_disconnected)
 		return;
@@ -678,11 +675,13 @@ void CL_Disconnect (void)
 	}
 
 	cls.state = ca_disconnected;
+
+	unguard;
 }
 
 void CL_Disconnect_f (void)
 {
-	Com_Error (ERR_DROP, "Disconnected from server");
+	Com_DropError ("Disconnected from server");
 }
 
 
@@ -786,7 +785,7 @@ void CL_Reconnect_f (void)
 	{
 		if (cls.state >= ca_connected)
 		{
-			CL_Disconnect();
+			CL_Disconnect ();
 			cls.connect_time = cls.realtime - 1500;
 		}
 		else
@@ -1003,6 +1002,8 @@ CL_ReadPackets
 */
 void CL_ReadPackets (void)
 {
+	guard(CL_ReadPackets);
+
 	while (NET_GetPacket (NS_CLIENT, &net_from, &net_message))
 	{
 		// remote command packet
@@ -1046,6 +1047,8 @@ void CL_ReadPackets (void)
 	}
 	else
 		cl.timeoutcount = 0;
+
+	unguard;
 }
 
 
@@ -1330,7 +1333,7 @@ void CL_RequestNextDownload (void)
 
 		if (map_checksum != atoi(cl.configstrings[CS_MAPCHECKSUM]))
 		{
-			Com_Error (ERR_DROP, "Local map version differs from server: %i != '%s'\n",
+			Com_DropError ("Local map version differs from server: %i != '%s'\n",
 				map_checksum, cl.configstrings[CS_MAPCHECKSUM]);
 			return;
 		}
@@ -1394,25 +1397,12 @@ before allowing the client into the server
 */
 void CL_Precache_f (void)
 {
-	char	mapname[MAX_QPATH], levelshot[MAX_QPATH], *tmp;
-
-	// set levelshot
-	Q_CopyFilename (mapname, cl.configstrings[CS_MODELS+1], sizeof(levelshot));
-	tmp = strchr (mapname, '.');
-	if (tmp) tmp[0] = 0;
-	tmp = strrchr (mapname, '/');
-	if (!tmp)
-		tmp = mapname;
-	else
-		tmp++;				// skip '/'
-	Com_sprintf (ARRAY_ARG(levelshot), "/levelshots/%s.pcx", tmp);
-	SCR_SetLevelshot (levelshot);
-
+	SCR_SetLevelshot2 ();
 	//Yet another hack to let old demos work
 	//the old precache sequence
 	if (Cmd_Argc() < 2)
 	{
-		unsigned	map_checksum;		// for detecting cheater maps
+		unsigned map_checksum;		// for detecting cheater maps
 
 		CM_LoadMap (cl.configstrings[CS_MODELS+1], true, &map_checksum);
 		CL_RegisterSounds ();
@@ -1800,7 +1790,6 @@ void CL_Init (void)
 	M_Init ();
 
 	SCR_Init ();
-//	cls.disable_screen = true;	// don't draw yet
 
 	CDAudio_Init ();
 	CL_InitLocal ();
@@ -1813,9 +1802,6 @@ void CL_Init (void)
 /*
 ===============
 CL_Shutdown
-
-FIXME: this is a callback from Sys_Quit and Com_Error.  It would be better
-to run quit through here before the final handoff to the sys code.
 ===============
 */
 void CL_Shutdown (bool error)

@@ -512,7 +512,7 @@ void *Vid_CreateWindow (int width, int height, qboolean fullscreen)
 	wc.lpszClassName	= APPNAME;
 
 	if (!RegisterClass (&wc))
-		Com_Error (ERR_FATAL, "Vid_CreateWindow: couldn't register window class");
+		Com_FatalError ("Vid_CreateWindow: couldn't register window class");
 
 	mainHwnd = CreateWindowEx (
 		exstyle,
@@ -522,7 +522,7 @@ void *Vid_CreateWindow (int width, int height, qboolean fullscreen)
 		NULL, NULL,
 		global_hInstance, NULL);
 
-	if (!mainHwnd) Com_Error (ERR_FATAL, "Vid_CreateWindow: couldn't create window");
+	if (!mainHwnd) Com_FatalError ("Vid_CreateWindow: couldn't create window");
 
 	if (width || height)
 		ShowWindow (mainHwnd, SW_SHOW);
@@ -647,7 +647,7 @@ void Vid_FreeReflib (void)
 	if (!refLibrary) return;	// statically linked?
 
 	if (!FreeLibrary (refLibrary))
-		Com_Error (ERR_FATAL, "Reflib FreeLibrary() failed");
+		Com_FatalError ("Reflib FreeLibrary() failed");
 	memset (&re, 0, sizeof(re));
 	refLibrary = NULL;
 }
@@ -688,7 +688,7 @@ static void	D_Draw_Fill (int x, int y, int w, int h, int c) {}
 static void D_Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, float a) {}
 static void	D_DrawTextPos (int x, int y, char *text, unsigned rgba) {}
 static void	D_DrawTextSide (char *text, unsigned rgba) {}
-static void	D_Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data) {}
+static void	D_Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data) {}
 static void	D_SetPalette (const unsigned char *palette) {}
 static float D_GetClientLight (void) { return 0; }		// normal value is 150
 
@@ -764,7 +764,7 @@ static qboolean Vid_LoadRefresh (char *name)
 		re.DrawFill =		D_Draw_Fill;
 		re.DrawFill2 =		D_Draw_Fill2;
 
-		re.DrawStretchRaw =	D_Draw_StretchRaw;
+		re.DrawStretchRaw8 = D_Draw_StretchRaw8;
 		re.SetRawPalette = D_SetPalette;
 
 		re.DrawTextPos =	D_DrawTextPos;
@@ -827,7 +827,6 @@ void Vid_CheckChanges (void)
 
 		r_fullscreen->modified = true;
 		cl.refresh_prepped = false;
-		cls.disable_screen = true;
 
 		loaded = false;
 		if (Vid_LoadRefresh (vid_ref->string))
@@ -848,12 +847,11 @@ void Vid_CheckChanges (void)
 		if (!loaded)
 		{
 			if (!strcmp (vid_ref->string, "soft") || !Vid_LoadRefresh ("soft"))
-				Com_Error (ERR_FATAL, "Couldn't fall back to software refresh");
+				Com_FatalError ("Couldn't fall back to software refresh");
 			Cvar_Set ("vid_ref", "soft");
 		}
 		strcpy (lastRenderer, vid_ref->string);
 		vid_ref->modified = false;
-		cls.disable_screen = false;
 	}
 
 	// update our window position

@@ -263,7 +263,7 @@ void DIB_SetPalette( const unsigned char *_pal )
 
 		if ( SetSystemPaletteUse( hDC, SYSPAL_NOSTATIC ) == SYSPAL_ERROR )
 		{
-			Com_Error( ERR_FATAL, "DIB_SetPalette() - SetSystemPaletteUse() failed\n" );
+			Com_FatalError ("DIB_SetPalette() - SetSystemPaletteUse() failed\n" );
 		}
 
 		/*
@@ -300,12 +300,12 @@ void DIB_SetPalette( const unsigned char *_pal )
 
 		if ( ( sww_state.hPal = CreatePalette( pLogPal ) ) == NULL )
 		{
-			Com_Error( ERR_FATAL, "DIB_SetPalette() - CreatePalette failed(%x)\n", GetLastError() );
+			Com_FatalError ("DIB_SetPalette() - CreatePalette failed(%x)\n", GetLastError() );
 		}
 
 		if ( ( hpalOld = SelectPalette( hDC, sww_state.hPal, FALSE ) ) == NULL )
 		{
-			Com_Error( ERR_FATAL, "DIB_SetPalette() - SelectPalette failed(%x)\n",GetLastError() );
+			Com_FatalError ("DIB_SetPalette() - SelectPalette failed(%x)\n",GetLastError() );
 		}
 
 		if ( sww_state.hpalOld == NULL )
@@ -313,7 +313,7 @@ void DIB_SetPalette( const unsigned char *_pal )
 
 		if ( ( ret = RealizePalette( hDC ) ) != pLogPal->palNumEntries )
 		{
-			Com_Error (ERR_FATAL, "DIB_SetPalette() - RealizePalette set %d entries\n", ret);
+			Com_FatalError ("DIB_SetPalette() - RealizePalette set %d entries\n", ret);
 		}
 	}
 }

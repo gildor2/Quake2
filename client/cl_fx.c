@@ -107,7 +107,7 @@ void CL_SetLightstyle (int i, char *s)
 
 	len = strlen (s);
 	if (len >= MAX_QPATH)
-		Com_Error (ERR_DROP, "Lightstyle length = %d", len);
+		Com_DropError ("Lightstyle length = %d", len);
 
 	cl_lightstyles[i].length = len;
 
@@ -520,6 +520,8 @@ void CL_UpdateParticles (void)
 	float	timeDelta, time2;		// time delta, ms
 	static float oldTime;
 
+	guard(CL_UpdateParticles);
+
 	timeDelta = cl.ftime - oldTime;
 	oldTime = cl.ftime;
 	if (r_sfx_pause->integer) timeDelta = 0;
@@ -572,6 +574,8 @@ void CL_UpdateParticles (void)
 
 		prev = p;
 	}
+
+	unguard;
 }
 
 
@@ -618,7 +622,7 @@ void CL_ParseMuzzleFlash (void)
 
 	i = MSG_ReadShort (&net_message);
 	if (i < 1 || i >= MAX_EDICTS)
-		Com_Error (ERR_DROP, "CL_ParseMuzzleFlash: bad entity");
+		Com_DropError ("CL_ParseMuzzleFlash: bad entity");
 
 	weapon = MSG_ReadByte (&net_message);
 	silenced = weapon & MZ_SILENCED;
@@ -803,7 +807,7 @@ void CL_ParseMuzzleFlash2 (void)
 
 	ent = MSG_ReadShort (&net_message);
 	if (ent < 1 || ent >= MAX_EDICTS)
-		Com_Error (ERR_DROP, "CL_ParseMuzzleFlash2: bad entity");
+		Com_DropError ("CL_ParseMuzzleFlash2: bad entity");
 
 	flash_number = MSG_ReadByte (&net_message);
 

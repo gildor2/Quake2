@@ -31,7 +31,7 @@ static int NewVert (float x, float y, float z)
 		}
 	}
 	if (subdivNumVerts >= MAX_POLYVERTS)
-		Com_Error (ERR_DROP, "SubdividePlane: MAX_POLYVERTS hit");
+		Com_DropError ("SubdividePlane: MAX_POLYVERTS hit");
 
 	// alloc vertex
 	v = &subdivVerts[subdivNumVerts2++];
@@ -68,7 +68,7 @@ static void AddPointToPoly (poly_t *poly, int index)
 {
 #ifdef POLY_DEBUG
 	if (poly->numIndexes >= poly->maxIndexes)
-		Com_Error (ERR_DROP, "AddPointToPoly: index error");
+		Com_DropError ("AddPointToPoly: index error");
 #endif
 	poly->indexes[poly->numIndexes] = index;
 	poly->numIndexes++;

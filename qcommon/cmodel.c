@@ -108,9 +108,9 @@ int		c_traces, c_pointcontents;
 
 bspfile_t *map_bspfile;
 
-/*
-** Support for Half-Life maps ??
-*/
+bool	map_clientLoaded;
+
+/* Support for Half-Life maps ?? */
 
 static mapType_t maptype;
 static int firstnode; // 0->firstclipnode, this->firstnode ??
@@ -298,9 +298,9 @@ static void CMod_LoadSurfaces (texinfo_t *data, int size)
 	in = data;
 
 	if (size < 1)
-		Com_Error (ERR_DROP, "Map with no surfaces");
+		Com_DropError ("Map with no surfaces");
 	if (size > MAX_MAP_TEXINFO)
-		Com_Error (ERR_DROP, "Map has too many surfaces");
+		Com_DropError ("Map has too many surfaces");
 
 	CMod_ReadSurfMaterials ("sound/materials.lst");
 
@@ -347,9 +347,9 @@ static void CMod_LoadNodes (dnode_t *data, int size)
 	in = data;
 
 	if (size < 1)
-		Com_Error (ERR_DROP, "Map has no nodes");
+		Com_DropError ("Map has no nodes");
 	else if (size > MAX_MAP_NODES)
-		Com_Error (ERR_DROP, "Map has too many nodes");
+		Com_DropError ("Map has too many nodes");
 
 	out = map_nodes;
 
@@ -378,7 +378,7 @@ static void CMod_LoadBrushes (dbrush_t *data, int size)
 	in = data;
 
 	if (size > MAX_MAP_BRUSHES)
-		Com_Error (ERR_DROP, "Map has too many brushes");
+		Com_DropError ("Map has too many brushes");
 
 	out = map_brushes;
 
@@ -403,9 +403,9 @@ static void CMod_LoadLeafs (dleaf_t *data, int size)
 	dleaf_t 	*in;
 
 	if (size < 1)
-		Com_Error (ERR_DROP, "Map with no leafs");
+		Com_DropError ("Map with no leafs");
 	if (size > MAX_MAP_LEAFS)
-		Com_Error (ERR_DROP, "Map has too many leafs");
+		Com_DropError ("Map has too many leafs");
 
 	memcpy (map_leafs, data, sizeof(dleaf_t)*size); // must perform this, because needs 1 more leaf for InitBoxHull()
 //--	map_leafs = data;
@@ -419,7 +419,7 @@ static void CMod_LoadLeafs (dleaf_t *data, int size)
 			numclusters = in->cluster + 1;
 
 	if (map_leafs[0].contents != CONTENTS_SOLID)
-		Com_Error (ERR_DROP, "Map leaf 0 is not CONTENTS_SOLID");
+		Com_DropError ("Map leaf 0 is not CONTENTS_SOLID");
 	solidleaf = 0;
 	emptyleaf = -1;
 	for (i = 1; i < numleafs; i++)
@@ -431,7 +431,7 @@ static void CMod_LoadLeafs (dleaf_t *data, int size)
 		}
 	}
 	if (emptyleaf == -1)
-		Com_Error (ERR_DROP, "Map does not have an empty leaf");
+		Com_DropError ("Map does not have an empty leaf");
 }
 
 /*
@@ -448,9 +448,9 @@ static void CMod_LoadPlanes (dplane_t *data, int size)
 	in = data;
 
 	if (size < 1)
-		Com_Error (ERR_DROP, "Map with no planes");
+		Com_DropError ("Map with no planes");
 	if (size > MAX_MAP_PLANES)
-		Com_Error (ERR_DROP, "Map has too many planes");
+		Com_DropError ("Map has too many planes");
 
 	out = map_planes;
 	numplanes = size;
@@ -472,9 +472,9 @@ CMod_LoadLeafBrushes
 static void CMod_LoadLeafBrushes (unsigned short *data, int size)
 {
 	if (size < 1)
-		Com_Error (ERR_DROP, "Map with no leafbrushes");
+		Com_DropError ("Map with no leafbrushes");
 	if (size > MAX_MAP_LEAFBRUSHES)
-		Com_Error (ERR_DROP, "Map has too many leafbrushes");
+		Com_DropError ("Map has too many leafbrushes");
 
 //	map_leafbrushes = data; -- can't do this, because we need 1 more for InitBoxHull()
 	numleafbrushes = size;
@@ -495,7 +495,7 @@ static void CMod_LoadBrushSides (dbrushside_t *data, int size)
 	in = data;
 
 	if (size > MAX_MAP_BRUSHSIDES)
-		Com_Error (ERR_DROP, "Map has too many brushsides");
+		Com_DropError ("Map has too many brushsides");
 
 	out = map_brushsides;
 	numbrushsides = size;
@@ -505,7 +505,7 @@ static void CMod_LoadBrushSides (dbrushside_t *data, int size)
 		out->plane = &map_planes[in->planenum];
 		j = in->texinfo;
 		if (j >= numtexinfo)
-			Com_Error (ERR_DROP, "Bad brushside texinfo");
+			Com_DropError ("Bad brushside texinfo");
 		out->surface = &map_surfaces[j];
 	}
 }
@@ -522,7 +522,7 @@ static void CMod_LoadAreas (darea_t *data, int size)
 	darea_t 	*in;
 
 	if (size > MAX_MAP_AREAS)
-		Com_Error (ERR_DROP, "Map has too many areas");
+		Com_DropError ("Map has too many areas");
 
 	in = data;
 	out = map_areas;
@@ -590,12 +590,12 @@ void CMod_LoadHLSurfaces (lump_t *l)
 
 //--	in = (void *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size");
+		Com_DropError ("MOD_LoadBmodel: funny lump size");
 	count = l->filelen / sizeof(*in);
 	if (count < 1)
-		Com_Error (ERR_DROP, "Map with no surfaces");
+		Com_DropError ("Map with no surfaces");
 	if (count > MAX_MAP_TEXINFO)
-		Com_Error (ERR_DROP, "Map has too many surfaces");
+		Com_DropError ("Map has too many surfaces");
 
 	numtexinfo = count;
 	out = map_surfaces;
@@ -642,14 +642,14 @@ void CMod_LoadHLLeafs (lump_t *l)
 
 //--	in = (void *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size");
+		Com_DropError ("MOD_LoadBmodel: funny lump size");
 	count = l->filelen / sizeof(*in);
 
 	if (count < 1)
-		Com_Error (ERR_DROP, "Map with no leafs");
+		Com_DropError ("Map with no leafs");
 	// need to save space for box planes
 	if (count > MAX_MAP_LEAFS)
-		Com_Error (ERR_DROP, "Map has too many leafs");
+		Com_DropError ("Map has too many leafs");
 
 	out = map_leafs;
 	numleafs = count;
@@ -662,7 +662,7 @@ void CMod_LoadHLLeafs (lump_t *l)
 			p = HLContents[-p - 1];
 		else
 		{
-			Com_Error (ERR_DROP, "Unknown leaf contents: %d", p);
+			Com_DropError ("Unknown leaf contents: %d", p);
 		}
 
 		out->contents = p;
@@ -674,7 +674,7 @@ void CMod_LoadHLLeafs (lump_t *l)
 	}
 
 	if (map_leafs[0].contents != CONTENTS_SOLID)
-		Com_Error (ERR_DROP, "Map leaf 0 is not CONTENTS_SOLID");
+		Com_DropError ("Map leaf 0 is not CONTENTS_SOLID");
 	solidleaf = 0;
 	emptyleaf = -1;
 	for (i=1 ; i<numleafs ; i++)
@@ -686,7 +686,7 @@ void CMod_LoadHLLeafs (lump_t *l)
 		}
 	}
 	if (emptyleaf == -1)
-		Com_Error (ERR_DROP, "Map does not have an empty leaf"); */
+		Com_DropError ("Map does not have an empty leaf"); */
 }
 
 
@@ -700,7 +700,7 @@ void CMod_LoadHLVisibility (lump_t *l)
 
 	numvisibility = l->filelen;
 	if (l->filelen > MAX_MAP_VISIBILITY)
-		Com_Error (ERR_DROP, "Map has too large visibility lump");
+		Com_DropError ("Map has too large visibility lump");
 
 	if (!numvisibility) return;
 
@@ -726,13 +726,13 @@ void CMod_LoadHLSubmodels (lump_t *l)
 
 //--	in = (void *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size");
+		Com_DropError ("MOD_LoadBmodel: funny lump size");
 	count = l->filelen / sizeof(*in);
 
 	if (count < 1)
-		Com_Error (ERR_DROP, "Map with no models");
+		Com_DropError ("Map with no models");
 	if (count > MAX_MAP_MODELS)
-		Com_Error (ERR_DROP, "Map has too many models");
+		Com_DropError ("Map has too many models");
 
 	numcmodels = count;
 
@@ -748,7 +748,7 @@ void CMod_LoadHLSubmodels (lump_t *l)
 		out->headnode = LittleLong (in->headnode[0]); // use only headnode[0]
 	}
 	if (map_cmodels[0].headnode)
-		Com_Error (ERR_DROP, "HL map has invalid headnode = %i", map_cmodels[0].headnode); */
+		Com_DropError ("HL map has invalid headnode = %i", map_cmodels[0].headnode); */
 }
 
 
@@ -761,13 +761,13 @@ void CMod_LoadHLClipnodes (lump_t *l)
 
 //--	in = (void *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size");
+		Com_DropError ("MOD_LoadBmodel: funny lump size");
 	count = l->filelen / sizeof(*in);
 
 	if (count < 1)
-		Com_Error (ERR_DROP, "Map has no nodes");
+		Com_DropError ("Map has no nodes");
 	if (count > MAX_MAP_NODES)
-		Com_Error (ERR_DROP, "Map has too many nodes");
+		Com_DropError ("Map has too many nodes");
 
 	out = map_nodes;
 
@@ -784,7 +784,7 @@ void CMod_LoadHLClipnodes (lump_t *l)
 			else
 			{	// child = HL_CONTENTS - create leaf for it ...
 				if (numleafs + 1 >= MAX_MAP_LEAFS)
-					Com_Error (ERR_DROP, "Mod_LoadHLClipnodes: not enough space to generate leafs");
+					Com_DropError ("Mod_LoadHLClipnodes: not enough space to generate leafs");
 
 				out->children[j] = -1 - numleafs; // points to leaf, that will be created below
 
@@ -793,7 +793,7 @@ void CMod_LoadHLClipnodes (lump_t *l)
 				if (child < 0 && child >= -HL_CONTENTS)
 					child = HLContents[-child - 1];
 				else
-					Com_Error (ERR_DROP, "Unknown node contents: %d", child);
+					Com_DropError ("Unknown node contents: %d", child);
 				leaf->contents = child;
 				leaf->cluster = i;//!! -2; // -1 - no cluster, -2 - calculate with nodes/leafs
 				leaf->area = j;//!! 0; // HL map has no areas
@@ -813,13 +813,13 @@ void CMod_LoadHLNodes (lump_t *l)
 
 //--	in = (void *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size");
+		Com_DropError ("MOD_LoadBmodel: funny lump size");
 	count = l->filelen / sizeof(*in);
 
 	if (count < 1)
-		Com_Error (ERR_DROP, "Map has no nodes");
+		Com_DropError ("Map has no nodes");
 	if (count + numnodes > MAX_MAP_NODES)
-		Com_Error (ERR_DROP, "Map has too many nodes");
+		Com_DropError ("Map has too many nodes");
 
 	firstnode = 0; //?? numnodes; // place nodes after clipnodes
 	//?? if all OK, remove "firstnode"
@@ -865,7 +865,7 @@ void CMod_LoadHLBrushes ()
 	numbrushes = count;
 
 	if (count > MAX_MAP_BRUSHES)
-		Com_Error (ERR_DROP, "Map has too many brushes");
+		Com_DropError ("Map has too many brushes");
 
 	for (i = 0; i < count; i++, out++, in++)
 	{
@@ -896,7 +896,7 @@ void CMod_LoadHLBrushSides (lump_t *lf, lump_t *lm, lump_t *lv, lump_t *le, lump
 	if (lf->filelen % sizeof(*faces) || lm->filelen % sizeof(*marksurfs) ||
 	    lv->filelen % sizeof(*verts) || le->filelen % sizeof(*edges) ||
 	    lse->filelen % sizeof(*surfedges))
-		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size");
+		Com_DropError ("MOD_LoadBmodel: funny lump size");
 
 //--	faces = (void *)(cmod_base + lf->fileofs);
 	numfaces = lf->filelen / sizeof(*faces);
@@ -927,7 +927,7 @@ void CMod_LoadHLBrushSides (lump_t *lf, lump_t *lm, lump_t *lv, lump_t *le, lump
 		in->firstbrushside = count;
 
 		if (brushside + n > nummarksurfs)
-			Com_Error (ERR_DROP, "Bad marksurface");
+			Com_DropError ("Bad marksurface");
 
 		VectorClear (avg);
 		vert_ct = 0;
@@ -940,11 +940,11 @@ void CMod_LoadHLBrushSides (lump_t *lf, lump_t *lm, lump_t *lv, lump_t *le, lump
 			dface_t	*face;
 
 			if (count >= MAX_MAP_BRUSHSIDES)
-				Com_Error (ERR_DROP, "Map has too many brushsides");
+				Com_DropError ("Map has too many brushsides");
 
 			num = LittleShort (marksurfs[brushside + k]); // number of face
 			if (num > numfaces)
-				Com_Error (ERR_DROP, "Bad brushside face");
+				Com_DropError ("Bad brushside face");
 			face = &faces[num];
 
 			//?? skip planebacks
@@ -954,7 +954,7 @@ void CMod_LoadHLBrushSides (lump_t *lf, lump_t *lm, lump_t *lv, lump_t *le, lump
 			out->plane = &map_planes[num];
 			j = LittleShort (face->texinfo);
 			if (j >= numtexinfo)
-				Com_Error (ERR_DROP, "Bad brushside texinfo");
+				Com_DropError ("Bad brushside texinfo");
 			out->surface = &map_surfaces[j];
 
 			out++;
@@ -974,7 +974,7 @@ void CMod_LoadHLLeafBrushes ()
 	count = numleafs;
 
 	if (count > MAX_MAP_LEAFBRUSHES)
-		Com_Error (ERR_DROP, "Map has too many leafbrushes");
+		Com_DropError ("Map has too many leafbrushes");
 
 	numleafbrushes = count;
 
@@ -1035,7 +1035,7 @@ CM_LoadMap
 Loads in the map and all submodels
 ==================
 */
-cmodel_t *CM_LoadMap (char *name, qboolean clientload, unsigned *checksum)
+cmodel_t *CM_LoadMap (char *name, bool clientload, unsigned *checksum)
 {
 	static unsigned	last_checksum;
 	bspfile_t	*bsp;
@@ -1070,6 +1070,7 @@ cmodel_t *CM_LoadMap (char *name, qboolean clientload, unsigned *checksum)
 		numclusters = 1;
 		numareas = 1;
 		*checksum = 0;
+		map_clientLoaded = false;
 		return &map_cmodels[0];			// cinematic servers won't have anything at all
 	}
 
@@ -1110,10 +1111,10 @@ cmodel_t *CM_InlineModel (char *name)
 {
 	int		num;
 
-	if (!name || name[0] != '*') Com_Error (ERR_DROP, "CM_InlineModel: bad name");
+	if (!name || name[0] != '*') Com_DropError ("CM_InlineModel: bad name");
 
 	num = atoi (name+1);
-	if (num < 1 || num >= numcmodels) Com_Error (ERR_DROP, "CM_InlineModel: bad number");
+	if (num < 1 || num >= numcmodels) Com_DropError ("CM_InlineModel: bad number");
 
 	return &map_cmodels[num];
 }
@@ -1135,13 +1136,13 @@ char *CM_EntityString (void)
 
 int CM_LeafContents (int leafnum)
 {
-	if (leafnum < 0 || leafnum >= numleafs) Com_Error (ERR_DROP, "CM_LeafContents: bad number");
+	if (leafnum < 0 || leafnum >= numleafs) Com_DropError ("CM_LeafContents: bad number");
 	return map_leafs[leafnum].contents;
 }
 
 int CM_LeafCluster (int leafnum)
 {
-	if (leafnum < 0 || leafnum >= numleafs) Com_Error (ERR_DROP, "CM_LeafCluster: bad number");
+	if (leafnum < 0 || leafnum >= numleafs) Com_DropError ("CM_LeafCluster: bad number");
 	guard(CM_LeadCluster);
 	return map_leafs[leafnum].cluster;
 	unguard;
@@ -1149,7 +1150,7 @@ int CM_LeafCluster (int leafnum)
 
 int CM_LeafArea (int leafnum)
 {
-	if (leafnum < 0 || leafnum >= numleafs) Com_Error (ERR_DROP, "CM_LeafArea: bad number");
+	if (leafnum < 0 || leafnum >= numleafs) Com_DropError ("CM_LeafArea: bad number");
 	return map_leafs[leafnum].area;
 }
 
@@ -2354,7 +2355,7 @@ static void FloodArea_r (carea_t *area, int floodnum)
 	{
 		if (area->floodnum == floodnum)
 			return;
-		Com_Error (ERR_DROP, "FloodArea_r: reflooded");
+		Com_DropError ("FloodArea_r: reflooded");
 	}
 
 	area->floodnum = floodnum;
@@ -2397,7 +2398,7 @@ void FloodAreaConnections (void)
 void CM_SetAreaPortalState (int portalnum, qboolean open)
 {
 	if (portalnum > numareaportals)
-		Com_Error (ERR_DROP, "areaportal > numareaportals");
+		Com_DropError ("areaportal > numareaportals");
 
 	portalopen[portalnum] = open;
 	FloodAreaConnections ();
@@ -2410,7 +2411,7 @@ qboolean CM_AreasConnected (int area1, int area2)
 		return true;
 
 	if (area1 > numareas || area2 > numareas)
-		Com_Error (ERR_DROP, "area > numareas");
+		Com_DropError ("area > numareas");
 
 	if (map_areas[area1].floodnum == map_areas[area2].floodnum)
 		return true;

@@ -95,7 +95,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 	char	*ext;
 
 	if (!name[0])
-		Com_Error (ERR_DROP,"Mod_ForName: NULL name");
+		Com_DropError ("Mod_ForName: NULL name");
 
 	//
 	// inline models are grabbed only from worldmodel
@@ -104,7 +104,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 	{
 		i = atoi(name+1);
 		if (i < 1 || !r_worldmodel || i >= r_worldmodel->numsubmodels)
-			Com_Error (ERR_DROP, "bad inline model number");
+			Com_DropError ("bad inline model number");
 		return &mod_inline[i];
 	}
 
@@ -130,7 +130,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 	if (i == mod_numknown)
 	{
 		if (mod_numknown == MAX_MOD_KNOWN)
-			Com_Error (ERR_DROP, "mod_numknown == MAX_MOD_KNOWN");
+			Com_DropError ("mod_numknown == MAX_MOD_KNOWN");
 		mod_numknown++;
 	}
 	strcpy (mod->name, name);
@@ -154,7 +154,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 //			Mod_LoadHLBrushModel (mod, bsp);
 //			break;
 		default:	// should not happen! (map MUST be loaded by client)
-			Com_Error (ERR_DROP, "Internal error while loadinf BSP file");
+			Com_DropError ("Internal error while loadinf BSP file");
 		}
 		loadmodel->extradatasize = Hunk_End ();
 	}
@@ -165,7 +165,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 		if (!buf)
 		{
 			if (crash)
-				Com_Error (ERR_DROP, "Mod_NumForName: %s not found", mod->name);
+				Com_DropError ("Mod_NumForName: %s not found", mod->name);
 			memset (mod->name, 0, sizeof(mod->name));
 			return NULL;
 		}
@@ -189,7 +189,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 			break;
 
 		default:
-			Com_Error (ERR_DROP,"Mod_NumForName: unknown fileid for %s", mod->name);
+			Com_DropError ("Mod_NumForName: unknown fileid for %s", mod->name);
 			break;
 		}
 
@@ -213,7 +213,7 @@ mleaf_t *Mod_PointInLeaf (vec3_t p, model_t *model)
 	cplane_t	*plane;
 
 	if (!model || !model->nodes)
-		Com_Error (ERR_DROP, "Mod_PointInLeaf: bad model");
+		Com_DropError ("Mod_PointInLeaf: bad model");
 
 	node = model->nodes;
 	while (1)
@@ -552,7 +552,7 @@ void CalcSurfaceExtents (msurface_t *s)
 			s->extents[i] = 16;	// take at least one cache block
 	}
 	if ( !(tex->flags & (SURF_WARP|SURF_SKY)) && (s->extents[0] > 256 || s->extents[1] > 256))
-		Com_Error (ERR_DROP,"Bad surface extents: %d x %d", s->extents[0], s->extents[1]);
+		Com_DropError ("Bad surface extents: %d x %d", s->extents[0], s->extents[1]);
 }
 
 
@@ -579,7 +579,7 @@ void Mod_LoadFaces (dface_t *data, int size)
 		out->firstedge = in->firstedge;
 		out->numedges = in->numedges;
 		if (out->numedges < 3)
-			Com_Error (ERR_DROP,"Surface with %s edges", out->numedges);
+			Com_DropError ("Surface with %s edges", out->numedges);
 		out->flags = 0;
 
 		if (in->side)
@@ -589,7 +589,7 @@ void Mod_LoadFaces (dface_t *data, int size)
 
 		ti = in->texinfo;
 		if (ti < 0 || ti >= loadmodel->numtexinfo)
-			Com_Error (ERR_DROP, "MOD_LoadBmodel: bad texinfo number");
+			Com_DropError ("MOD_LoadBmodel: bad texinfo number");
 		out->texinfo = loadmodel->texinfo + ti;
 
 		CalcSurfaceExtents (out);
@@ -758,7 +758,7 @@ void Mod_LoadMarksurfaces (unsigned short *data, int size)
 	{
 		j = in[i];
 		if (j < 0 || j >= loadmodel->numsurfaces)
-			Com_Error (ERR_DROP, "Mod_ParseMarksurfaces: bad surface number");
+			Com_DropError ("Mod_ParseMarksurfaces: bad surface number");
 		out[i] = loadmodel->surfaces + j;
 	}
 }
@@ -819,7 +819,7 @@ void Mod_LoadBrushModel (model_t *mod, bspfile_t *bsp)
 
 	loadmodel->type = mod_brush;
 	if (loadmodel != mod_known)
-		Com_Error (ERR_DROP, "Loaded a brush model after the world");
+		Com_DropError ("Loaded a brush model after the world");
 
 	// load into heap
 	Mod_LoadVertexes (bsp->vertexes, bsp->numVertexes);
@@ -854,7 +854,7 @@ void Mod_LoadBrushModel (model_t *mod, bspfile_t *bsp)
 		starmod->nummodelsurfaces = bm->numfaces;
 		starmod->firstnode = bm->headnode;
 		if (starmod->firstnode >= loadmodel->numnodes)
-			Com_Error (ERR_DROP, "Inline model %i has bad firstnode", i);
+			Com_DropError ("Inline model %i has bad firstnode", i);
 
 		VectorCopy (bm->maxs, starmod->maxs);
 		VectorCopy (bm->mins, starmod->mins);
@@ -893,7 +893,7 @@ void Mod_LoadAliasModel (model_t *mod, void *buffer)
 
 	version = LittleLong (pinmodel->version);
 	if (version != MD2_VERSION)
-		Com_Error (ERR_DROP, "%s has wrong version number (%i should be %i)", mod->name, version, MD2_VERSION);
+		Com_DropError ("%s has wrong version number (%i should be %i)", mod->name, version, MD2_VERSION);
 
 	pheader = Hunk_Alloc (LittleLong(pinmodel->ofsEnd));
 
@@ -902,22 +902,22 @@ void Mod_LoadAliasModel (model_t *mod, void *buffer)
 		((int *)pheader)[i] = LittleLong (((int *)buffer)[i]);
 
 	if (pheader->skinHeight > MAX_LBM_HEIGHT)
-		Com_Error (ERR_DROP, "model %s has a skin taller than %d", mod->name, MAX_LBM_HEIGHT);
+		Com_DropError ("model %s has a skin taller than %d", mod->name, MAX_LBM_HEIGHT);
 
 	if (pheader->numXyz <= 0)
-		Com_Error (ERR_DROP, "model %s has no vertices", mod->name);
+		Com_DropError ("model %s has no vertices", mod->name);
 
 	if (pheader->numXyz > 2048)//MAX_VERTS)
-		Com_Error (ERR_DROP, "model %s has too many vertices", mod->name);
+		Com_DropError ("model %s has too many vertices", mod->name);
 
 	if (pheader->numSt <= 0)
-		Com_Error (ERR_DROP, "model %s has no st vertices", mod->name);
+		Com_DropError ("model %s has no st vertices", mod->name);
 
 	if (pheader->numTris <= 0)
-		Com_Error (ERR_DROP, "model %s has no triangles", mod->name);
+		Com_DropError ("model %s has no triangles", mod->name);
 
 	if (pheader->numFrames <= 0)
-		Com_Error (ERR_DROP, "model %s has no frames", mod->name);
+		Com_DropError ("model %s has no frames", mod->name);
 
 //
 // load base s and t vertices (not used in gl version)
@@ -1011,11 +1011,11 @@ void Mod_LoadSpriteModel (model_t *mod, void *buffer)
 	sprout->numframes = LittleLong (sprin->numframes);
 
 	if (sprout->version != SP2_VERSION)
-		Com_Error (ERR_DROP, "%s has wrong version number (%i should be %i)",
+		Com_DropError ("%s has wrong version number (%i should be %i)",
 				 mod->name, sprout->version, SP2_VERSION);
 
 	if (sprout->numframes > MD2_MAX_SKINS)
-		Com_Error (ERR_DROP, "%s has too many frames (%i > %i)",
+		Com_DropError ("%s has too many frames (%i > %i)",
 				 mod->name, sprout->numframes, MD2_MAX_SKINS);
 
 	// byte swap everything

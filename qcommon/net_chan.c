@@ -131,11 +131,11 @@ Sends a text message in an out-of-band datagram
 */
 void Netchan_OutOfBandPrint (int net_socket, netadr_t adr, char *format, ...)
 {
-	va_list		argptr;
-	static char		string[MAX_MSGLEN - 4];
+	va_list argptr;
+	static char string[MAX_MSGLEN - 4];
 
 	va_start (argptr, format);
-	vsprintf (string, format,argptr);
+	vsnprintf (ARRAY_ARG(string), format,argptr);
 	va_end (argptr);
 
 	Netchan_OutOfBand (net_socket, adr, strlen (string), (byte *)string);

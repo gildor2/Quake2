@@ -273,7 +273,7 @@ void SV_LinkEdict (edict_t *ent)
 	else if (ent->solid == SOLID_BSP)
 	{
 		ex->model = sv.models[ent->s.modelindex];
-		if (!ex->model) Com_Error (ERR_FATAL, "MOVETYPE_PUSH with a non bsp model");
+		if (!ex->model) Com_FatalError ("MOVETYPE_PUSH with a non bsp model");
 		VectorAdd (ex->model->mins, ex->model->maxs, v);
 		VectorScale (v, 0.5f, v);
 		VectorMA (ent->s.origin, v[0], ex->axis[0], tmp);

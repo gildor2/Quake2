@@ -304,7 +304,7 @@ static byte *ReadNextFrame (void)
 	FS_Read (&size, 4, cl.cinematic_file);		//?? add error checking
 	size = LittleLong(size);
 	if (size > sizeof(compressed) || size < 1)
-		Com_Error (ERR_DROP, "Bad compressed frame size: %d\n", size);
+		Com_DropError ("Bad compressed frame size: %d\n", size);
 	FS_Read (compressed, size, cl.cinematic_file);		//?? add error checking (bytes_read != size) -- bad cinematic
 
 	// read sound
@@ -345,12 +345,13 @@ void SCR_RunCinematic (void)
 		return;		// static image
 
 	if (cls.key_dest != key_game)
-	{	// pause if menu or console is up
+	{
+		// pause if menu or console is up
 		cl.cinematictime = cls.realtime - cl.cinematicframe * 1000 / CIN_SPEED;
 		return;
 	}
 
-	frame = Q_round ((cls.realtime - cl.cinematictime) * CIN_SPEED / 1000.0f);
+	frame = Q_round ((cls.realtime - cl.cinematictime) * CIN_SPEED / 1000.0f);	//?? use timescale too
 	if (frame <= cl.cinematicframe)
 		return;
 	if (frame > cl.cinematicframe+1)
@@ -389,14 +390,6 @@ qboolean SCR_DrawCinematic (void)
 		return false;
 	}
 
-	if (cls.key_dest == key_menu)
-	{	// blank screen and pause if menu is up
-		re.SetRawPalette (NULL);
-		cl.cinematicpalette_active = false;
-		S_StopAllSounds ();
-		return true;
-	}
-
 	if (cl.cinematicframe == CIN_PIC)
 	{	// static image
 		re.DrawStretchPic (0, 0, viddef.width, viddef.height, cin.imageName);
@@ -412,7 +405,7 @@ qboolean SCR_DrawCinematic (void)
 	if (!cin.pic)
 		return true;
 
-	re.DrawStretchRaw (0, 0, viddef.width, viddef.height, cin.width, cin.height, cin.pic);
+	re.DrawStretchRaw8 (0, 0, viddef.width, viddef.height, cin.width, cin.height, cin.pic);
 
 	return true;
 }
@@ -450,7 +443,7 @@ void SCR_PlayCinematic (char *arg)
 		re.DrawGetPicSize (&cin.width, &cin.height, cin.imageName);
 		cl.cinematicframe = CIN_PIC;		// flag signalling "draw pic"
 		cl.cinematictime = 1;
-		SCR_EndLoadingPlaque ();
+		SCR_EndLoadingPlaque (true);
 		cls.state = ca_active;
 		if (!cin.width)
 		{
@@ -463,13 +456,13 @@ void SCR_PlayCinematic (char *arg)
 	FS_FOpenFile (va("video/%s", arg), &cl.cinematic_file);
 	if (!cl.cinematic_file)
 	{
-//		Com_Error (ERR_DROP, "Cinematic %s not found.\n", name);
+//		Com_DropError ("Cinematic %s not found.\n", name);
 		SCR_FinishCinematic ();
 		cl.cinematictime = 0;	// done
 		return;
 	}
 
-	SCR_EndLoadingPlaque ();
+	SCR_EndLoadingPlaque (true);
 
 	cls.state = ca_active;
 

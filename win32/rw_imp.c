@@ -308,7 +308,7 @@ void Sys_MakeCodeWriteable (unsigned long startaddr, unsigned long length)
 	DWORD  flOldProtect;
 
 	if (!VirtualProtect((LPVOID)startaddr, length, PAGE_READWRITE, &flOldProtect))
- 		Com_Error (ERR_FATAL, "Protection change failed\n");
+ 		Com_FatalError ("Protection change failed\n");
 }
 
 /*

@@ -670,7 +670,7 @@ void FS_FCloseFile (FILE *f)
 
 	// simple validation of FILE2 structure
 	if ((char *)f2->name - (char *)f2 != sizeof(FILE2))
-		Com_Error (ERR_FATAL, "FS_FCloseFile: invalid file handle" RETADDR_STR, GET_RETADDR(f));
+		Com_FatalError ("FS_FCloseFile: invalid file handle" RETADDR_STR, GET_RETADDR(f));
 
 	if (f2->type == FT_NORMAL || f2->type == FT_ZPAK || f2->type == FT_PAK)
 	{
@@ -679,7 +679,7 @@ void FS_FCloseFile (FILE *f)
 			rest = f2->zFile->rest_write;
 			if (!Zip_CloseFile (f2->zFile) && !rest)
 			{	// file readed completely, but bad checksum
-				Com_Error (ERR_FATAL, "FS_FCloseFile: damaged zip file %s %s", f2->name, f2->pFile->name);
+				Com_FatalError ("FS_FCloseFile: damaged zip file %s %s", f2->name, f2->pFile->name);
 			}
 		}
 		if (f2->file)
@@ -687,7 +687,7 @@ void FS_FCloseFile (FILE *f)
 	}
 	else if (f2->type == FT_ZPAK)
 		Zip_CloseBuf (f2->zBuf);
-//	else Com_Error (ERR_FATAL, "FS_FCloseFile: invalid handle type");
+//	else Com_FatalError ("FS_FCloseFile: invalid handle type");
 
 	FreeNamedStruc (f);
 }
@@ -988,7 +988,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 
 	// simple validation of FILE2 structure (don't let to pass FILE structure, allocated without FS_FOpenFile())
 	if ((char *)f2->name - (char *)f2 != sizeof(FILE2))
-		Com_Error (ERR_FATAL, "FS_Read: invalid file handle" RETADDR_STR, GET_RETADDR(buffer));
+		Com_FatalError ("FS_Read: invalid file handle" RETADDR_STR, GET_RETADDR(buffer));
 
 	if (f2->type == FT_ZMEM)
 	{
@@ -1020,20 +1020,20 @@ void FS_Read (void *buffer, int len, FILE *f)
 		if (!f2->pFile)
 		{	// regular file
 			f2->file = fopen (f2->name, "rb");
-			if (!f2->file) Com_Error (ERR_FATAL, "Cannot open file %s", f2->name);
+			if (!f2->file) Com_FatalError ("Cannot open file %s", f2->name);
 		}
 		else
 		{	// pak file
 			if (f2->type == FT_PAK)
 			{	// id pak file
 				f2->file = FOpenCached (f2->name);		// fopen (f2->name, "rb");
-				if (!f2->file) Com_Error (ERR_FATAL, "Couldn't reopen %s", f2->name);
-				if (fseek (f2->file, f2->pFile->pos, SEEK_SET)) Com_Error (ERR_FATAL, "Cannot seek %s", f2->name);
+				if (!f2->file) Com_FatalError ("Couldn't reopen %s", f2->name);
+				if (fseek (f2->file, f2->pFile->pos, SEEK_SET)) Com_FatalError ("Cannot seek %s", f2->name);
 			}
 			else
 			{	// zipped pak file
 				f2->file = FOpenCached (f2->name);		// ZipOpen (f2->name);
-				if (!f2->file) Com_Error (ERR_FATAL, "Couldn't reopen zip %s", f2->name);
+				if (!f2->file) Com_FatalError ("Couldn't reopen zip %s", f2->name);
 				zfs.csize  = f2->pFile->cSize;
 				zfs.ucsize = f2->pFile->ucSize;
 				zfs.pos    = f2->pFile->pos;
@@ -1041,7 +1041,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 				zfs.crc32  = f2->pFile->crc;
 				f2->zFile = Zip_OpenFile (f2->file, &zfs);
 				if (!f2->zFile)
-					Com_Error (ERR_FATAL, "Cannot open file %s in zip %s", f2->pFile->name, f2->name);
+					Com_FatalError ("Cannot open file %s in zip %s", f2->pFile->name, f2->name);
 			}
 		}
 	}
@@ -1049,7 +1049,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 	if (f2->zFile)
 	{
 		if (Zip_ReadFile (f2->zFile, buffer, len) != len)
-			Com_Error (ERR_FATAL, "Error reading zip file");
+			Com_FatalError ("Error reading zip file");
 	}
 	else
 	{
@@ -1059,7 +1059,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 		buf = (byte *)buffer;
 		read = fread (buf, len, 1, f2->file);
 		if (read != 1)
-			Com_Error (ERR_FATAL, "FS_Read: cannot read file");
+			Com_FatalError ("FS_Read: cannot read file");
 	}
 }
 
@@ -1200,7 +1200,7 @@ static pack_t *LoadPackFile (char *packfile)
 		header.dirlen = LittleLong (header.dirlen);
 		numpackfiles = header.dirlen / sizeof(dPackFile_t);
 		if (fseek (packHandle, header.dirofs, SEEK_SET))
-			Com_Error (ERR_FATAL, "Cannot seek pakfile %s", packfile);
+			Com_FatalError ("Cannot seek pakfile %s", packfile);
 		// parse the directory
 		for (i = 0; i < numpackfiles; i++)
 		{

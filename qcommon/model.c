@@ -215,7 +215,7 @@ static void LoadQ2Submodels (bspfile_t *f, dmodel_t *data)
 	int		i;
 
 	if (f->numModels < 1)
-		Com_Error (ERR_DROP, "Map with no models");
+		Com_DropError ("Map with no models");
 
 	out = f->models = AllocChainBlock (f->extraChain, sizeof(cmodel_t) * f->numModels);
 	for (i = 0; i < f->numModels; i++, data++, out++)
@@ -243,7 +243,7 @@ static int CheckLump (int lump, void **ptr, int size)
 	ofs = header->lumps[lump].fileofs;
 
 	if (length % size)
-		Com_Error (ERR_DROP, "LoadBSPFile: funny lump size\n");
+		Com_DropError ("LoadBSPFile: funny lump size\n");
 
 	*ptr = (byte *)header + ofs;
 
@@ -263,7 +263,7 @@ void LoadQ2BspFile (void)
 		((int *)header)[i] = LittleLong (((int *)header)[i]);
 
 	if (header->version != BSP2_VERSION)
-		Com_Error (ERR_DROP, "%s is version %i, not %i\n", bspfile.name, header->version, BSP2_VERSION);
+		Com_DropError ("%s is version %i, not %i\n", bspfile.name, header->version, BSP2_VERSION);
 
 	bspfile.type = map_q2;
 
@@ -301,19 +301,22 @@ void LoadQ2BspFile (void)
 }
 
 
-bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum)
+bspfile_t *LoadBspFile (char *filename, bool clientload, unsigned *checksum)
 {
+	server_state_t ss;
 	guard(LoadBspFile);
 
 	if (!stricmp (filename, bspfile.name) && (clientload || !Cvar_VariableInt ("flushmap")))
 	{
 		if (checksum)
 			*checksum = bspfile.checksum;
+		map_clientLoaded |= clientload;
 		return &bspfile;
 	}
 
-	if (clientload && Com_ServerState() && stricmp (filename, bspfile.name))
-		Com_Error (ERR_DROP, "client trying to load map \"%s\" while server running \"%s\"", filename, bspfile.name);
+	ss = Com_ServerState ();
+	if (clientload && (ss == ss_loading || ss == ss_game) && stricmp (filename, bspfile.name) && bspfile.name[0])
+		Com_DropError ("client trying to load map \"%s\" while server running \"%s\"", filename, bspfile.name);
 
 	if (bspfile.name[0] && bspfile.file)
 		FS_FreeFile (bspfile.file);
@@ -326,12 +329,13 @@ bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum)
 	if (!bspfile.file)
 	{
 		bspfile.name[0] = 0;
-		Com_Error (ERR_DROP, "Couldn't load %s", filename);
+		Com_DropError ("Couldn't load %s", filename);
 	}
 	bspfile.checksum = LittleLong (Com_BlockChecksum (bspfile.file, bspfile.length));
 		if (checksum) *checksum = bspfile.checksum;
 	bspfile.extraChain = CreateMemoryChain ();
 
+	map_clientLoaded = clientload;
 	switch (LittleLong(*(unsigned *)bspfile.file))
 	{
 		case BSP2_IDENT:
@@ -345,7 +349,8 @@ bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum)
 	FS_FreeFile (bspfile.file);
 	bspfile.name[0] = 0;
 	bspfile.file = NULL;
-	Com_Error (ERR_DROP, "LoadBrushModel: %s has a wrong BSP header\n", filename);
+	map_clientLoaded = false;
+	Com_DropError ("LoadBrushModel: %s has a wrong BSP header\n", filename);
 	return NULL;		// make compiler happy
 
 	unguard;

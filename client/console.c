@@ -106,21 +106,24 @@ void Con_ToggleConsole_f (void)
 {
 	if (cls.keep_console) return;
 
-	SCR_EndLoadingPlaque ();	// get rid of loading plaque
-
 	Key_ClearTyping ();
 	Con_ClearNotify ();
 
 	if (cls.key_dest == key_console)
 	{
-		M_ForceMenuOff ();
-		Cvar_Set ("paused", "0");
+		// hide console
+		if (m_menudepth)
+			cls.key_dest = key_menu;		// switch back to menu
+		else
+		{
+			Cvar_Set ("paused", "0");		// switch to game
+			cls.key_dest = key_game;
+		}
 	}
 	else
 	{
-		M_ForceMenuOff ();
+		// show console
 		cls.key_dest = key_console;
-
 		if ((Cvar_VariableInt ("maxclients") == 1 && Com_ServerState ()) || cl.attractloop)
 			Cvar_Set ("paused", "1");
 	}
@@ -656,21 +659,14 @@ void Con_DrawConsole (float frac)
 	if (lines > viddef.height)
 		lines = viddef.height;
 
-	/*---------- draw the background ---------------*/
-#if 0
-//	re.DrawStretchPic (0, -viddef.height+lines, viddef.width, viddef.height, "conback");
-	re.DrawStretchPic (0, 0, viddef.width, lines, "conback");
-#else
-	if (frac == 1)
-		re.DrawStretchPic (0, 0, viddef.width, lines, "conback");
-	else
-		re.DrawFill2 (0, 0, viddef.width, lines, 0, 0, 0, 0.5);
-#endif
+	// draw the background
+	re.DrawFill2 (0, 0, viddef.width, lines, 0, 0, 0, 0.5);
+
 	// Variables for console-only mode
 	dx = viddef.width >> 3;
 	dy = viddef.height >> 3;
 
-	/*------------ draw version info ---------------*/
+	// draw version info
 	i = sizeof(version) - 1;
 	for (x = 0; x < i; x++)
 		if (!(*re.flags & REF_CONSOLE_ONLY))

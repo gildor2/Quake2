@@ -28,10 +28,11 @@ typedef struct {
 	int	(*_Hunk_End) (void);
 	void	(*_Hunk_Free) (void *buf);
 	int	(*_Sys_Milliseconds) (void);
-	void	(*_Com_Printf) (char *str, ...);
-	void	(*_Com_DPrintf) (char *str, ...);
-	void	(*_Com_WPrintf) (char *str, ...);
-	void	(*_Com_Error) (int err_level, char *str, ...);
+	void	(*_Com_Printf) (const char *str, ...);
+	void	(*_Com_DPrintf) (const char *str, ...);
+	void	(*_Com_WPrintf) (const char *str, ...);
+	void	(*_Com_FatalError) (const char *fmt, ...);
+	void	(*_Com_DropError) (const char *fmt, ...);
 	bool	(*_FS_FileExists) (char *filename);
 	basenamed_t*	(*_FS_ListFiles) (char *name, int *numfiles, int flags);
 	int	(*_FS_LoadFile) (char *name, void **buf);
@@ -51,7 +52,7 @@ typedef struct {
 	void	(*_LoadJPG) (char *name, byte **pic, int *width, int *height);
 	qboolean	(*_WriteTGA) (char *name, byte *pic, int width, int height);
 	qboolean	(*_WriteJPG) (char *name, byte *pic, int width, int height, qboolean highQuality);
-	bspfile_t*	(*_LoadBspFile) (char *filename, qboolean clientload, unsigned *checksum);
+	bspfile_t*	(*_LoadBspFile) (char *filename, bool clientload, unsigned *checksum);
 	void	(*_CM_BoxTrace) (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
 	void	(*_CM_TransformedBoxTrace) (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
 	void	(*_CM_TransformedBoxTrace2) (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t *axis);

@@ -27,10 +27,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../qcommon/qcommon.h"
 #include "../client/client.h"
 
-#define MINIMUM_WIN_MEMORY	0x0a00000
-#define MAXIMUM_WIN_MEMORY	0x1000000
-
-//#define DEMO
 
 qboolean s_win95;
 
@@ -103,7 +99,6 @@ static char *Sys_ScanForCD (void)
 	static char	cddir[MAX_OSPATH];
 	static qboolean	done;
 #ifdef CD_PATH
-#ifndef DEMO
 	static char drive[4] = "c:/";
 	FILE		*f;
 
@@ -129,7 +124,6 @@ static char *Sys_ScanForCD (void)
 		}
 	}
 #endif
-#endif
 
 	cddir[0] = 0;
 	return cddir;
@@ -141,16 +135,14 @@ Sys_CopyProtect
 
 ================
 */
-void	Sys_CopyProtect (void)
+void Sys_CopyProtect (void)
 {
 #ifdef CD_PATH
-#ifndef DEMO
 	char	*cddir;
 
 	cddir = Sys_ScanForCD ();
 	if (!cddir[0])
-		Com_Error (ERR_FATAL, "You must have the "APPNAME" CD in the drive to play.");
-#endif
+		Com_FatalError ("You must have the "APPNAME" CD in the drive to play.");
 #endif
 }
 
@@ -162,8 +154,6 @@ void	Sys_CopyProtect (void)
  */
 
 extern qboolean debugLogged;
-char GErrorHistory[4096];
-static bool swError;
 
 typedef unsigned address_t;
 
@@ -171,16 +161,16 @@ typedef unsigned address_t;
 void Sys_Error (const char *error, ...)
 {
 	va_list		argptr;
-	char		text[1024];
+	char		text[8192];
 
 	va_start (argptr, error);
-	vsprintf (text, error, argptr);
+	vsnprintf (ARRAY_ARG(text), error, argptr);
 	va_end (argptr);
 
-	swError = true;
-	Com_sprintf (ARRAY_ARG(GErrorHistory), "Error: %s\n\nHistory: ", text);
+	GErr.isSoftError = true;
+	Com_sprintf (ARRAY_ARG(GErr.history), "Error: %s\n\nHistory: ", text);
 
-	*((int*)NULL) = 0; // throw 1;
+	throw;	// 1;
 }
 
 
@@ -481,12 +471,13 @@ static void DumpMem (FILE *f, unsigned *data, CONTEXT *ctx)
 
 int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 {
-	static bool disable = false;
 	FILE	*f;
 
-	if (disable) return EXCEPTION_EXECUTE_HANDLER;			// error will be handled only once
-	disable = true;
-	if (swError) return EXCEPTION_EXECUTE_HANDLER;			// no interest to thread context when software-generated errors
+	if (GErr.isSoftError) return EXCEPTION_EXECUTE_HANDLER;		// no interest to thread context when software-generated errors
+
+	if (GErr.contextDumped) return EXCEPTION_EXECUTE_HANDLER;	// context will be dumped only once
+	GErr.contextDumped = true;
+	GErr.isFatalError = true;
 
 	__try
 	{
@@ -525,13 +516,13 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			time_t	itime;
 			char	ctime[256];
 
-			Com_sprintf (ARRAY_ARG(GErrorHistory), "%s at \"%s\"\n", excName, appSymbolName (ctx->Eip));
+			Com_sprintf (ARRAY_ARG(GErr.history), "%s at \"%s\"\n", excName, appSymbolName (ctx->Eip));
 
 			time (&itime);
 			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
 			fprintf (f, "----- "APPNAME" crash at %s -----\n", ctime);		//!! should use main_package name instead of APPNAME
-			fprintf (f, "%s\n", GErrorHistory);
-			strcat (GErrorHistory, "\nHistory: ");
+			fprintf (f, "%s\n", GErr.history);
+			strcat (GErr.history, "\nHistory: ");
 
 			DumpReg4 (f, "EAX", ctx->Eax); DumpReg4 (f, "EBX", ctx->Ebx); DumpReg4 (f, "ECX", ctx->Ecx); DumpReg4 (f, "EDX", ctx->Edx);
 			DumpReg4 (f, "ESI", ctx->Esi); DumpReg4 (f, "EDI", ctx->Edi); DumpReg4 (f, "EBP", ctx->Ebp); DumpReg4 (f, "ESP", ctx->Esp);
@@ -566,50 +557,6 @@ __declspec(naked) int win32ExceptFilter2 (void)
 		add		esp,4
 		retn			// return value from win32ExceptFilter()
 	}
-}
-
-
-void appUnwind (const char *fmt, ...)
-{
-	char	buf[512];
-	va_list	argptr;
-	static bool wasError = false;
-
-	va_start (argptr, fmt);
-	if (wasError)
-	{
-		buf[0] = ' '; buf[1] = '<'; buf[2] = '-'; buf[3] = ' ';
-		vsnprintf (buf+4, sizeof(buf)-4, fmt, argptr);
-	}
-	else
-		vsnprintf (buf, sizeof(buf), fmt, argptr);
-	wasError = true;
-	va_end (argptr);
-
-	strncat (GErrorHistory, buf, sizeof(GErrorHistory));
-}
-
-
-void appUnwindThrow (const char *fmt, ...)
-{
-	char	buf[512];
-	va_list	argptr;
-	static bool wasError = false;
-
-	va_start (argptr, fmt);
-	if (wasError)
-	{
-		buf[0] = ' '; buf[1] = '<'; buf[2] = '-'; buf[3] = ' ';
-		vsnprintf (buf+4, sizeof(buf)-4, fmt, argptr);
-	}
-	else
-		vsnprintf (buf, sizeof(buf), fmt, argptr);
-	wasError = true;
-	va_end (argptr);
-
-	strncat (GErrorHistory, buf, sizeof(GErrorHistory));
-
-	*((int*)NULL) = 0;
 }
 
 
@@ -770,7 +717,7 @@ void Sys_Init (void)
 		Sys_Error ("Couldn't get OS info");
 
 	if (vinfo.dwMajorVersion < 4)
-		Sys_Error (APPNAME" requires windows version 4 or greater");
+		Sys_Error (APPNAME" requires Windows version 4 or greater");
 	if (vinfo.dwPlatformId == VER_PLATFORM_WIN32s)
 		Sys_Error (APPNAME" doesn't run on Win32s");
 	else if (vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
@@ -998,7 +945,7 @@ Sys_UnloadGame
 void Sys_UnloadGame (void)
 {
 	if (!FreeLibrary (game_library))
-		Com_Error (ERR_FATAL, "FreeLibrary failed for game library");
+		Com_FatalError ("FreeLibrary failed for game library");
 	game_library = NULL;
 }
 
@@ -1036,7 +983,7 @@ void *Sys_GetGameAPI (void *parms)
 #endif
 
 	if (game_library)
-		Com_Error (ERR_FATAL, "Sys_GetGameAPI() without Sys_UnloadGame()");
+		Com_FatalError ("Sys_GetGameAPI() without Sys_UnloadGame()");
 
 	// check the current debug directory first for development purposes
 	_getcwd (cwd, sizeof(cwd));
@@ -1106,7 +1053,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	char	*cddir, cmdline2[1024];
 #endif
 
-	MAINLOOP_BEGIN
+	GUARD_BEGIN
 	{
 		global_hInstance = hInstance;
 
@@ -1127,7 +1074,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 		/*--------- main window message loop ------------*/
 		guard(MainLoop);
-		while (1)
+		while (true)
 		{
 			MSG		msg;
 
@@ -1144,24 +1091,37 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 			}
 
 			// do not allow Qcommon_Frame(0)
-			while (1)
+			while (true)
 			{
 				newtime = Sys_Milliseconds ();
 				time = newtime - oldtime;
 				if (time >= 1) break;
 				Sleep (1);
 			}
-			QCommon_Frame (time);
-
+			GUARD_BEGIN
+			{
+				QCommon_Frame (time);
+			}
+			GUARD_CATCH
+			{
+				if (GErr.isFatalError)
+					throw;
+				else
+				{
+					Com_DPrintf ("History: %s\n", GErr.history);
+					Com_ResetErrorState ();
+				}
+			}
 			oldtime = newtime;
 		}
 		unguard;
 	}
-	MAINLOOP_CATCH
+	GUARD_CATCH
 	{
+		//?? SV_Shutdown()
 		CL_Shutdown (true);
 		QCommon_Shutdown ();
-		MessageBox(NULL, GErrorHistory, APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
+		MessageBox(NULL, GErr.history, APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
 		// shut down QHOST hooks if necessary
 //??		DeinitConProc ();
 	}

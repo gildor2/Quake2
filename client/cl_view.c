@@ -229,6 +229,8 @@ void CL_PrepRefresh (void)
 	if (!cl.configstrings[CS_MODELS+1][0])
 		return;				// no map loaded
 
+	SCR_SetLevelshot2 ();
+
 	// wait a small time to let server complete initialization
 	// allow map to be changed before initializing renderer, when loading savegames,
 	// saved at point of changing map; this situation is possible because:
@@ -340,6 +342,7 @@ void CL_PrepRefresh (void)
 	Con_ClearNotify ();
 
 	SCR_UpdateScreen ();
+	SCR_EndLoadingPlaque (true);
 	cl.refresh_prepped = true;
 	cl.force_refdef = true;	// make sure we have a valid refdef
 
@@ -358,7 +361,7 @@ float CalcFov (float fov_x, float width, float height)
 	float	x;
 
 	if (fov_x < 1 || fov_x > 179)
-		Com_Error (ERR_DROP, "Bad fov: %f", fov_x);
+		Com_DropError ("Bad fov: %f", fov_x);
 
 	x = width/tan(fov_x/360*M_PI);
 
@@ -806,6 +809,8 @@ static int entitycmpfnc (const entity_t *a, const entity_t *b)
 
 void V_RenderView (float stereo_separation)
 {
+	guard(V_RenderView);
+
 	if (cls.state != ca_active)
 		return;
 
@@ -921,7 +926,9 @@ void V_RenderView (float stereo_separation)
 			(int (*)(const void *, const void *))entitycmpfnc);
 	}
 
+	guard(re_RenderFrame);
 	re.RenderFrame (&cl.refdef);
+	unguard;
 
 	// stats
 	if (r_drawfps->integer)
@@ -931,6 +938,8 @@ void V_RenderView (float stereo_separation)
 		fprintf (log_stats_file, "%d,%d,", r_numentities, r_numdlights);	//?? particle stats (remove)
 
 	SCR_DrawCrosshair ();
+
+	unguard;
 }
 
 

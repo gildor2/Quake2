@@ -22,7 +22,7 @@ void *GL_AllocDynamicMemory (int size)
 	{
 		//?? make this message developer-only
 		DrawTextLeft (va("R_AllocDynamicMemory(%d) failed\n", size), RGB(1, 0, 0));
-//		Com_Error (ERR_FATAL, "R_AllocDynamicMemory(%d) failed\n", size);
+//		Com_FatalError ("R_AllocDynamicMemory(%d) failed\n", size);
 		lastDynamicPtr = NULL;
 		return NULL;
 	}
@@ -42,10 +42,10 @@ void GL_ResizeDynamicMemory (void *ptr, int newSize)
 	int		n;
 
 	if (!ptr || ptr != lastDynamicPtr)
-		Com_Error (ERR_FATAL, "R_ResizeDynamicMemory: bad pointer");
+		Com_FatalError ("R_ResizeDynamicMemory: bad pointer");
 	n = lastDynamicSize + newSize;
 	if (n > MAX_DYNAMIC_BUFFER)
-		Com_Error (ERR_FATAL, "R_ResizeDynamicMemory: out of memory in %d bytes", n - MAX_DYNAMIC_BUFFER);
+		Com_FatalError ("R_ResizeDynamicMemory: out of memory in %d bytes", n - MAX_DYNAMIC_BUFFER);
 	dynamicBufferSize = n;
 }
 
