@@ -298,10 +298,6 @@ SOURCE=..\qcommon\qfiles.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ref_gl\qgl.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\ref_gl\qgl_decl.h
 # End Source File
 # Begin Source File

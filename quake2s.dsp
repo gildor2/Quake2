@@ -409,6 +409,10 @@ SOURCE=.\ref_gl\gl_image.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\ref_gl\gl_interface.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\ref_gl\gl_main.c
 # End Source File
 # Begin Source File
@@ -457,10 +461,6 @@ SOURCE=.\win32\glw_win.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\qgl.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\ref_gl\qgl_decl.h
 # End Source File
 # Begin Source File
@@ -468,6 +468,10 @@ SOURCE=.\ref_gl\qgl_decl.h
 SOURCE=.\ref_gl\qgl_impl.h
 # End Source File
 # End Group
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_buffers.c
+# End Source File
 # End Group
 # Begin Group "ref_soft"
 

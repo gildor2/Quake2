@@ -1,3 +1,5 @@
+? "dir" -> "ls"
+
 *** Ideas from HL (may be unimplementable) ***
 // from pm_shader.c
 - step sound: volume = 0.2/0.5 (walk/run) (+ add slowwalk -- crouched)
@@ -5,7 +7,9 @@
 - walking/running: step sound length = 400/300; water = 600; ladder = 350
 - stop when |velocity| less than STOP_EPSILON==0.1 (friction)
 
-!!? improve SV_ClipMoveToEntities() like CL_ClipMoveToEntities(); don't need SV_AreaEdicts in this function ?
+!? improve SV_ClipMoveToEntities() like CL_ClipMoveToEntities(); don't need SV_AreaEdicts in this function ?
+? (when sprite-fx will be implemented) disable REF_NEWFX when necessary image files absent
+
 
 DINPUT MOUSE BUGS/NOTES:
 - in_initmouse -- needed?
@@ -15,6 +19,8 @@ DINPUT MOUSE BUGS/NOTES:
 *? add mouse cursor hiding (not always disappear with DInput after deactivate+activate)
 
 ! improve memory management: allocate with alignment of 16 bytes (large blocks only ? Z_AllocAligned(size, align) func ?)
+- command for hiding files from pak: "pakhide <pakname> <filemask>" - non-reversive command, changes (be sure non-destructive
+  for alpha-sort names) files info so it will not found on next requests
 - stop animation within a mouse click (and something another?)
 ? improve camper detection: track player position every ... 5 sec (??) for a 1+n minute period and set "camper" to true
   if current player position is near (tune this distance !) to history[now-1min .. now-2min]
@@ -30,6 +36,7 @@ BSP:
 ? Q1 map support (easier than HL)
 
 *** BUGS ***
+! sometimes key_up skipped (or key_down spontaneously pressed)
 ! (Win2K) when one client exits, server makes "Sys_Error(ERR_DROP,...)" (network error)
 - (Win2K, at home, where no IPX protocol) menu|join_server -- fatal error in user32.dll (should be ERR_DROP)
   (no crush when launched with "noudp 1" -- R/O cvar)
@@ -40,6 +47,7 @@ BSP:
 - Sys_Error(ERR_FATAL): will not restore mouse (not always ??!)
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
+- map "ground3_beta3": have (server, "MAX_ENTS=128"- related ?) bug "SZ_Overflow" (??) when spectating and flying from inside wall
 
 ? menu interface: appearing/disappearing fx (see itmastio etc.)
 
@@ -57,7 +65,7 @@ BSP:
 ? make atmospheric effects (some maps in kingpin and halflife does, Q3F too ...)
   (make surface-dependent raindrop sounds? (KP:main/sound/world/rain*.wav))
 
-? SOFT sprites: get sprite size not from md2, but from image dimansions (see new explosions ...); we can do it,
+? SOFT sprites: get sprite size not from md2, but from image dimensions (see new explosions ...); we can do it,
   because GL do this in this way
 
 ------------- API ----------------------------
@@ -97,6 +105,7 @@ BSP:
 ? improve model precaching in cl_mail.c::CL_RequestNextDownload() (find FS_LoadFile) - make it with global
   LoadMd2() and global model list ??
 ? SV_FindIndex() -- use hash tables ?
+! try to remove "MAX_ENTS=128" limit (see "BUGS" section, "ground3_beta3")
 
 ------------ REF_GL (new) --------------
 
@@ -149,13 +158,14 @@ BSP:
 - ref_console (Win32 console-mode application, no GDI/OpenGL) -- auto-use in dedicated server (should attach
   dedicated server to ref)
 ? change "gl_console_only" and "sw_console_only" to "r_consoleOnly"
-! remove "vidref_val", REF_SOFT, REF_GL, REF_OTHER (q_shared2.h)
 
 - decompress visinfo for client (cmodel); share this with renderers (require to modify oldgl and soft)
 
 ------------ COMMON --------------
 
 ? meminfo (see Alice) - renderer (hunks), z, chains etc. ???
+? hunks -> chains; align blocks by 16 bytes (currently: 8)
+? own memory manager (without malloc; use OS functions at low-lewel)
 
 *? Z_DEBUG: make following (#ifdef Z_DEBUG)
   - #define Z_BlockMalloc(size) Z_TagMalloc(size,0)
@@ -189,6 +199,8 @@ BSP:
 ? completion cvarnames after "set", "toggle", "add" (etc.) and "...$varname"
   (add flags for Cmd_AddCommand() - complete type: cvar, map, demo ... ???)
 ? make completion "dir"-like formatting + colorizing against char-marks (types)
+? make pressing TAB twice (complete same thing twice) to appear popup (if have not too much
+  variants) with selections
 
 ------------- LINUX --------------------
 

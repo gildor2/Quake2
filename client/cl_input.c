@@ -139,6 +139,7 @@ void KeyUp (kbutton_t *b)
 	b->state |= 4; 		// impulse up
 }
 
+
 void IN_KLookDown (void) {KeyDown(&in_klook);}
 void IN_KLookUp (void) {KeyUp(&in_klook);}
 void IN_UpDown(void) {KeyDown(&in_up);}
@@ -174,6 +175,7 @@ void IN_UseDown (void) {KeyDown(&in_use);}
 void IN_UseUp (void) {KeyUp(&in_use);}
 
 void IN_Impulse (void) {in_impulse=atoi(Cmd_Argv(1));}
+
 
 /*
 ===============

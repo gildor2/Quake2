@@ -59,95 +59,19 @@ static qboolean VerifyDriver (void)
 	return true;
 }
 
-/*
- * Vid_CreateWindow
- */
 
-qboolean Vid_CreateWindow (int width, int height, qboolean fullscreen)
+static qboolean GLimp_CreateWindow (int width, int height, qboolean fullscreen)
 {
-	WNDCLASS	wc;
-	RECT		r;
-	int			stylebits;
-	int			x, y, w, h;
-	int			exstyle;
-
-	/* Register the frame class */
-	wc.style	= 0;
-	wc.lpfnWndProc	= (WNDPROC)glw_state.wndproc;
-	wc.cbClsExtra	= 0;
-	wc.cbWndExtra	= 0;
-	wc.hInstance	= glw_state.hInstance;
-	wc.hIcon	= 0;
-	wc.hCursor	= 0; //LoadCursor (NULL,IDC_ARROW);
-	wc.hbrBackground	= (void *) COLOR_GRAYTEXT;
-	wc.lpszMenuName 	= 0;
-	wc.lpszClassName	= APPNAME;
-
-	if (!RegisterClass (&wc))
-		Com_Error (ERR_FATAL, "Couldn't register window class");
-
-	if (fullscreen)
-	{
-		exstyle = WS_EX_TOPMOST;
-		stylebits = WS_POPUP|WS_VISIBLE;
-	}
-	else
-	{
-		exstyle = 0;
-		stylebits = WINDOW_STYLE;
-	}
-
-	r.left = 0;
-	r.top = 0;
-	r.right  = width;
-	r.bottom = height;
-
-	AdjustWindowRect (&r, stylebits, FALSE);
-
-	w = r.right - r.left;
-	h = r.bottom - r.top;
-
-	if (fullscreen)
-	{
-		x = 0;
-		y = 0;
-	}
-	else
-	{
-		x = Cvar_VariableInt ("vid_xpos");
-		y = Cvar_VariableInt ("vid_ypos");
-	}
-
-	glw_state.hWnd = CreateWindowEx (
-		 exstyle,
-		 APPNAME,
-		 APPNAME,
-		 stylebits,
-		 x, y, w, h,
-		 NULL,
-		 NULL,
-		 glw_state.hInstance,
-		 NULL);
-
+	glw_state.hWnd = (HWND) Vid_CreateWindow (width, height, fullscreen);
 	if (!glw_state.hWnd)
-		Com_Error (ERR_FATAL, "Couldn't create window");
-
-	ShowWindow (glw_state.hWnd, SW_SHOW);
-	UpdateWindow (glw_state.hWnd);
+		return false;
 
 	// init all the gl stuff for the window
 	if (!GLimp_InitGL ())
 	{
-		Com_WPrintf ("Vid_CreateWindow() - GLimp_InitGL failed\n");
+		Com_WPrintf ("GLimp_CreateWindow: InitGL() failed\n");
 		return false;
 	}
-
-	SetForegroundWindow (glw_state.hWnd);
-//	SetFocus (glw_state.hWnd);
-
-	// let the sound and input subsystems know about the new window
-	Vid_NewWindow (width, height);
-
 	return true;
 }
 
@@ -193,7 +117,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 		dm.dmSize = sizeof(dm);
 		dm.dmPelsWidth  = width;
 		dm.dmPelsHeight = height;
-		dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
+		dm.dmFields     = DM_PELSWIDTH|DM_PELSHEIGHT;
 
 		if (colorBits)
 		{
@@ -218,7 +142,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 			gl_config.fullscreen = true;
 			Com_Printf ("ok\n");
 
-			if (!Vid_CreateWindow (width, height, true))
+			if (!GLimp_CreateWindow (width, height, true))
 				return rserr_invalid_mode;
 
 			return rserr_ok;
@@ -257,14 +181,14 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 				*pheight = height;
 				gl_config.fullscreen = false;
 				gl_config.colorBits = 0;
-				if ( !Vid_CreateWindow (width, height, false) )
+				if (!GLimp_CreateWindow (width, height, false))
 					return rserr_invalid_mode;
 				return rserr_invalid_fullscreen;
 			}
 			else
 			{
 				Com_Printf (" ok\n");
-				if (!Vid_CreateWindow (width, height, true))
+				if (!GLimp_CreateWindow (width, height, true))
 					return rserr_invalid_mode;
 
 				gl_config.fullscreen = true;
@@ -281,7 +205,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 		*pwidth = width;
 		*pheight = height;
 		gl_config.fullscreen = false;
-		if (!Vid_CreateWindow (width, height, false))
+		if (!GLimp_CreateWindow (width, height, false))
 			return rserr_invalid_mode;
 	}
 
@@ -311,8 +235,8 @@ qboolean GLimp_HasGamma (void)
 // Called from GLimp_Init()
 static void ReadGamma (void)
 {
-	HWND hwnd;
-	HDC hdc;
+	HWND	hwnd;
+	HDC		hdc;
 
 	if (r_ignorehwgamma->integer)
 	{
@@ -329,8 +253,8 @@ static void ReadGamma (void)
 // Called from GLimp_Shutdown() and GLimp_AppActivate()
 static void RestoreGamma (void)
 {
-	HWND hwnd;
-	HDC hdc;
+	HWND	hwnd;
+	HDC		hdc;
 
 	if (!gammaStored) return;
 	hwnd = GetDesktopWindow ();
@@ -347,8 +271,8 @@ static void RestoreGamma (void)
 static void UpdateGamma (void)
 {
 #if 0
-	HWND hwnd;
-	HDC hdc;
+	HWND	hwnd;
+	HDC		hdc;
 
 	if (!gammaValid) return;
 	hwnd = GetDesktopWindow ();
@@ -443,20 +367,14 @@ void GLimp_Shutdown (void)
 		glw_state.hDC = NULL;
 	}
 
-	if (glw_state.hWnd)
-	{
-		ShowWindow (glw_state.hWnd, SW_HIDE);		// as Q3 does...
-		DestroyWindow (glw_state.hWnd);
-		glw_state.hWnd = NULL;
-	}
-
 	if (glw_state.log_fp)
 	{
 		fclose (glw_state.log_fp);
 		glw_state.log_fp = NULL;
 	}
 
-	UnregisterClass (APPNAME, glw_state.hInstance);
+	Vid_DestroyWindow (false);
+	glw_state.hWnd = NULL;
 
 	if (gl_config.fullscreen)
 	{
@@ -474,7 +392,7 @@ void GLimp_Shutdown (void)
  * of OpenGL.  Under Win32 this means dealing with the pixelformats and
  * doing the wgl interface stuff.
  */
-int GLimp_Init (void *hinstance, void *wndproc)
+int GLimp_Init (void)
 {
 #define OSR2_BUILD_NUMBER 1111
 
@@ -504,9 +422,6 @@ int GLimp_Init (void *hinstance, void *wndproc)
 		Com_WPrintf ("GLimp_Init() - GetVersionEx failed\n");
 		return false;
 	}
-
-	glw_state.hInstance = hinstance;
-	glw_state.wndproc = wndproc;
 
 	ReadGamma ();
 
@@ -726,12 +641,12 @@ void GLimp_EndFrame (void)
 	}
 /*	if (gl_logFile->modified)
 	{
-		GLimp_EnableLogging (gl_logFile->integer);
+		QGL_EnableLogging (gl_logFile->integer);
 		gl_logFile->modified = false;
 	}
 	else if (gl_logFile->integer == 2)
 	{
-		GLimp_EnableLogging (false);
+		QGL_EnableLogging (false);
 		Cvar_SetInteger ("gl_logFile", 0);
 	}
 */

@@ -301,7 +301,7 @@ void R_UnRegister (void)
 R_Init
 ===============
 */
-qboolean R_Init( void *hInstance, void *wndProc )
+qboolean R_Init (void)
 {
 	R_InitImages ();
 	Mod_Init ();
@@ -332,7 +332,7 @@ qboolean R_Init( void *hInstance, void *wndProc )
 
 	R_Register ();
 	Draw_GetPalette ();
-	SWimp_Init( hInstance, wndProc );
+	SWimp_Init ();
 
 	// create the window
 	R_BeginFrame( 0 );

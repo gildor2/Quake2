@@ -9,8 +9,10 @@
 - surface sounds (local materials.lst)
 - C-style preprocessor (#include, at least) -- may be, inside COM_Parse?
 - entity editor (not convert, just "add"/"remove")
+- shader manipulations (FAKK2)
 
 ------------------------ Shader extensions ---------------------------
 
 - shader texplates: specify name mask instead of exact shader name before {script}
-- map $texture   -- map image with the same name as shader name (useful for shader templates)
+- map $texture     -- map image with the same name as shader name (useful for shader templates)
+- mapsize <w> <h>  -- change image sizes (for Q2 maps: allows to replace texture without resampling)

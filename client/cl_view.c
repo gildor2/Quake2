@@ -185,22 +185,27 @@ void V_TestLights (void)
 	float		f, r;
 	dlight_t	*dl;
 
-	r_numdlights = 32;
+	r_numdlights = MAX_DLIGHTS;
 	memset (r_dlights, 0, sizeof(r_dlights));
 
-	for (i=0 ; i<r_numdlights ; i++)
+	for (i = 0, dl = r_dlights; i < MAX_DLIGHTS; i++, dl++)
 	{
-		dl = &r_dlights[i];
+#if 0
+		if (!(cl_testlights->integer & (1<<i)))
+		{
+			dl--;
+			r_numdlights--;
+			continue;
+		}
+#endif
+		r = 64 * ((i % 4) - 1.5);
+		f = 64 * (i / 4) + 128;
 
-		r = 64 * ( (i%4) - 1.5 );
-		f = 64 * (i/4) + 128;
-
-		for (j=0 ; j<3 ; j++)
-			dl->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j]*f +
-			cl.v_right[j]*r;
-		dl->color[0] = ((i%6)+1) & 1;
-		dl->color[1] = (((i%6)+1) & 2)>>1;
-		dl->color[2] = (((i%6)+1) & 4)>>2;
+		for (j = 0; j < 3; j++)
+			dl->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * f + cl.v_right[j] * r;
+		dl->color[0] = ((i % 6) + 1) & 1;
+		dl->color[1] = (((i % 6) + 1) & 2) >> 1;
+		dl->color[2] = (((i % 6) + 1) & 4) >> 2;
 		dl->intensity = 200;
 	}
 }
@@ -668,9 +673,24 @@ void V_RenderView( float stereo_separation )
 
 	if (cl_timedemo->integer)
 	{
-		if (!cl.timedemo_start)
-			cl.timedemo_start = Sys_Milliseconds ();
-		cl.timedemo_frames++;
+		int		time, timeDelta;
+		static int lastTime;
+
+		time = Sys_Milliseconds ();
+		if (!cl.timedemoStart)
+		{
+			cl.timedemoStart = time;
+//			cl.timedemoLongestFrame = 0;	-- cleared anyway within a new server map
+//			cl.timedemoFrames = 0;
+		}
+		else
+		{
+			timeDelta = time - lastTime;
+			if (timeDelta > cl.timedemoLongestFrame && !fileFromPak)
+				cl.timedemoLongestFrame = timeDelta;
+		}
+		lastTime = time;
+		cl.timedemoFrames++;
 	}
 
 	// an invalid frame will just use the exact previous refdef

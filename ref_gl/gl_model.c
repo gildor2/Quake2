@@ -225,6 +225,71 @@ static void SetNodesAlpha (void)
 }
 
 
+static void PostprocessSurfaces (void)
+{
+	surfaceCommon_t *surf;
+	int		i;
+
+	for (i = 0, surf = map.faces; i < map.numFaces; i++, surf++)
+		switch (surf->type)
+		{
+		case SURFACE_PLANAR:
+			{
+				surfacePlanar_t *pl;
+				int		k;
+				float	min1, max1, min2, max2;
+				vertex_t *v;
+
+				// generate axis
+				pl = surf->pl;
+				if (pl->plane.normal[2] == 1 || pl->plane.normal[2] == -1)
+				{
+					pl->axis[0][0] = pl->axis[0][2] = 0;
+					pl->axis[1][1] = pl->axis[1][2] = 0;
+					pl->axis[0][1] = pl->axis[1][0] = 1;
+				}
+				else
+				{
+					static vec3_t up = {0, 0, 1};
+
+					CrossProduct (pl->plane.normal, up, pl->axis[0]);
+					VectorNormalize (pl->axis[0]);
+					CrossProduct (pl->plane.normal, pl->axis[0], pl->axis[1]);
+				}
+				// compute 2D bounds
+				min1 = min2 = 999999;
+				max1 = max2 = -999999;
+				for (k = 0, v = pl->verts; k < pl->numVerts; k++, v++)
+				{
+					float	p1, p2;
+
+					p1 = DotProduct (v->xyz, pl->axis[0]);
+					p2 = DotProduct (v->xyz, pl->axis[1]);
+					v->pos[0] = p1;
+					v->pos[1] = p2;
+					if (p1 < min1) min1 = p1;
+					if (p1 > max1) max1 = p1;
+					if (p2 < min2) min2 = p2;
+					if (p2 > max2) max2 = p2;
+				}
+				pl->mins2[0] = min1;
+				pl->mins2[1] = min2;
+				pl->maxs2[0] = max1;
+				pl->maxs2[1] = max2;
+/*				if (i < 20) //??? remove
+				{
+					Com_Printf ("***** surf %d *****\n", i);
+					Com_Printf ("norm: %g, %g, %g\n", pl->plane.normal[0], pl->plane.normal[1], pl->plane.normal[2]);
+					Com_Printf ("axis[0]: %g, %g, %g\n", pl->axis[0][0], pl->axis[0][1], pl->axis[0][2]);
+					Com_Printf ("axis[1]: %g, %g, %g\n", pl->axis[1][0], pl->axis[1][1], pl->axis[1][2]);
+					Com_Printf ("bounds: (%g, %g) - (%g, %g)\n", pl->mins2[0], pl->mins2[1], pl->maxs2[0], pl->maxs2[1]);
+				} */
+			}
+			break;
+		}
+}
+
+
 /*---------------- Dynamic lightmaps  --------------------*/
 
 static int lightmapsNum, currentLightmapNum;
@@ -329,7 +394,7 @@ static qboolean LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl)
 	int		i, j, w, h;
 	int		best, best2;
 
-	w = dl->w + 1;	// make a border around lightmap
+	w = dl->w2 + 1;					// make a border around lightmap
 	h = dl->h + 1;
 
 	best = LIGHTMAP_SIZE;
@@ -367,12 +432,15 @@ static qboolean LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl)
 static void LM_PutBlock (dynamicLightmap_t *dl)
 {
 	byte	*dst, *src;
-	int		x, y, stride;
+	int		x, y, stride, i, numFast;
 
-	dst = dl->block->pic + (dl->t * LIGHTMAP_SIZE + dl->s) * 4;
 	stride = (LIGHTMAP_SIZE - dl->w) * 4;
 
-	src = dl->source;
+	/*------------- put main lightmap -------------*/
+
+	dst = dl->block->pic + (dl->t * LIGHTMAP_SIZE + dl->s) * 4;
+	src = dl->source[0];
+
 	for (y = 0; y < dl->h; y++)
 	{
 		for (x = 0; x < dl->w; x++)
@@ -380,34 +448,91 @@ static void LM_PutBlock (dynamicLightmap_t *dl)
 			*dst++ = *src++;
 			*dst++ = *src++;
 			*dst++ = *src++;
-			*dst++ = 255;		// alpha (unused, but required for GL_CreateImage())
+			*dst++ = 0;				// alpha (no additional scale)
 		}
 		dst += stride;
 	}
+
+	/*----------- put dynamic lightmaps -----------*/
+
+	numFast = 0;
+	for (i = 0; i < dl->numStyles; i++)
+	{
+		if (!IS_FAST_STYLE(dl->style[i])) continue;
+
+		numFast++;
+		dst = dl->block->pic + (dl->t * LIGHTMAP_SIZE + dl->s + dl->w * numFast) * 4;
+		src = dl->source[i];
+
+		for (y = 0; y < dl->h; y++)
+		{
+			for (x = 0; x < dl->w; x++)
+			{
+				//!! do not "*2" if have texenv_combine (can modulate at run-time)
+				*dst++ = *src++;
+				*dst++ = *src++;
+				*dst++ = *src++;
+				*dst++ = 255;		// alpha (modulate by 2)
+			}
+			dst += stride;
+		}
+	}
+
+//	if (dl->w * (numFast + 1) != dl->w2) Com_Printf("^1%d * 1+%d <> %d\n", dl->w, numFast, dl->w2);//!! DEBUG
+
+	// mark lightmap block as used
 	dl->block->empty = false;
 }
 
 
-void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf)
+// perform selection sort on lightstyles (mostly not needed, just in case)
+static void SortLightStyles (dynamicLightmap_t *dl)
 {
-	byte	*dst, *src, pic[LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4];
+	int		i, j;
+
+	if (dl->numStyles < 2) return;	// nothing to sort
+
+	for (i = 0; i < dl->numStyles - 1; i++)	// at iteration "i == dl->numStyles-1" all already will be sorted
+	{
+		int		min;
+		byte	*source, style;
+
+		min = i;
+		for (j = i + 1; j < dl->numStyles; j++)
+			if (dl->style[j] < dl->style[i]) min = j;
+		if (min == i) continue;		// in place
+		// exchange styles [i] and [j]
+		source = dl->source[i];
+		dl->source[i] = dl->source[j];
+		dl->source[j] = source;
+		style = dl->style[i];
+		dl->style[i] = dl->style[j];
+		dl->style[j] = style;
+	}
+}
+
+
+#define MIN_ALPHA_BRIGHT		48
+
+void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean vertexOnly, unsigned dlightMask)
+{
+	byte	pic[LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4];
 	int		x, z;
 	dynamicLightmap_t *dl;
 
-	if (!gl_dynamic->integer)
-		return;
-
 	dl = surf->lightmap;
-	src = dl->source;
 
-	if (dl->block)
+	if (dl->block && !vertexOnly)
 	{
 		/*------------- update regular lightmap ---------------*/
 		memset (pic, 0, dl->w * dl->h * 4);	// set initial state to zero (add up to 4 lightmaps)
 		for (z = 0; z < dl->numStyles; z++)
 		{
-			int		scale, count, v;
+			int		scale, count;
+			byte	*src, *dst;
 
+			if (IS_FAST_STYLE(dl->style[z])) continue;
+			src = dl->source[z];
 			dst = pic;
 			scale = dl->modulate[z] >> gl_config.overbrightBits;
 			if (gl_config.lightmapOverbright) scale <<= 1;
@@ -416,12 +541,14 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf)
 			for (x = 0; x < count; x++)
 			{
 				// modulate lightmap: scale==0 -> by 0, scale==128 - by 1; scale==255 - by 2 (or, to exact, 2.0-1/256)
-#define STEP	\
-	v = *dst + (scale * *src++ >> 7); \
-	*dst++ = v > 255 ? 255 : v;
-				STEP; STEP; STEP;
-				dst++;	// skip alpha
-#undef STEP
+				int		r, g, b;
+
+				r = dst[0] + (scale * *src++ >> 7);
+				g = dst[1] + (scale * *src++ >> 7);
+				b = dst[2] + (scale * *src++ >> 7);
+				NORMALIZE_COLOR255(r, g, b);
+				*dst++ = r; *dst++ = g; *dst++ = b;
+				dst++;
 			}
 		}
 		GL_Bind (dl->block->image);
@@ -448,8 +575,7 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf)
 
 				// calculate vertex color as weighted average of 4 points
 				scale = dl->modulate[z];
-				point = dl->source + (dl->w * dl->h * 3) * z +
-					((int)v->lm2[1] * dl->w + (int)v->lm2[0]) * 3;
+				point = dl->source[z] + ((int)v->lm2[1] * dl->w + (int)v->lm2[0]) * 3;
 				// calculate s/t weights
 				frac_s = Q_ftol (v->lm2[0] * 128) & 127;
 				frac_t = Q_ftol (v->lm2[1] * 128) & 127;
@@ -457,40 +583,84 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf)
 				frac = (128 - frac_s) * (128 - frac_t) * scale;
 				STEP(r, 0); STEP(g, 1); STEP(b, 2);
 				frac = frac_s * (128 - frac_t) * scale;
-				STEP(r, 0); STEP(g, 1); STEP(b, 2);
+				STEP(r, 3); STEP(g, 4); STEP(b, 5);
+				point += dl->w * 3;		// next line
 				frac = (128 - frac_s) * frac_t * scale;
 				STEP(r, 0); STEP(g, 1); STEP(b, 2);
 				frac = frac_s * frac_t * scale;
-				STEP(r, 0); STEP(g, 1); STEP(b, 2);
+				STEP(r, 3); STEP(g, 4); STEP(b, 5);
 #undef STEP
 			}
 			// "float" -> int
 			r >>= 21;
 			g >>= 21;
 			b >>= 21;
-			// scale color for alpha-surfaces
-			if (shader->style & (SHADER_TRANS33|SHADER_TRANS66/*|SHADER_ALPHA*/ ))
+			// scale (boost) color for alpha-surfaces
+			if (shader->style & (SHADER_TRANS33|SHADER_TRANS66))
 			{
-				float	scale, oldbr, newbr;
+				int		oldbr, newbr, scale;
 
-				oldbr = sqrt(r*r + g*g + b*b);		//!! use tables
-//				if (shader->style & SHADER_ALPHA)
-//					newbr = oldbr * 4 / 3;
-//				else
-					newbr = oldbr / 2 + 128;
-				scale = newbr / oldbr;
-				r = Q_ftol(r * scale);
-				g = Q_ftol(g * scale);
-				b = Q_ftol(b * scale);
+				oldbr = r;
+				if (r < g) oldbr = g;
+				if (oldbr < b) oldbr = b;
+				newbr = oldbr * (256 - MIN_ALPHA_BRIGHT) + MIN_ALPHA_BRIGHT * 256;
+				if (oldbr)
+				{
+					scale = newbr / oldbr;
+					r = (r * scale) / 256;
+					g = (g * scale) / 256;
+					b = (b * scale) / 256;
+				}
 			}
-		// x*2>>overbrightBits -- make src*color*2 (analogue of src*dst*2 when blend lightmaps)
-#define PROCESS_COLOR(x,n)	\
-		x = x * 2 >> gl_config.overbrightBits;	\
-		v->c.c[n] = x > 255 ? 255 : x;
-			PROCESS_COLOR(r, 0);
-			PROCESS_COLOR(g, 1);
-			PROCESS_COLOR(b, 2);
-#undef PROCESS_COLOR
+
+			/* NOTE: cannot integrate following lines to "scale" above (scale = scale * 2 >> gl_config.overbrightBits)
+			 *   because block for SURF_ALPHA (BOOST_COLOR) uses normal (not overbrighten) rgb
+			 */
+			r = r * 2 >> gl_config.overbrightBits;
+			g = g * 2 >> gl_config.overbrightBits;
+			b = b * 2 >> gl_config.overbrightBits;
+
+			NORMALIZE_COLOR255(r, g, b);
+			v->c.c[0] = r;
+			v->c.c[1] = g;
+			v->c.c[2] = b;
+		}
+		// apply vertex dlights
+		if (dlightMask)
+		{
+			surfDlight_t *sdl;
+			refDlight_t *dlight;
+
+			sdl = surf->dlights;
+			for ( ; dlightMask; dlightMask >>= 1)
+			{
+				float	intens2;
+
+				if (!(dlightMask & 1)) continue;
+				dlight = sdl->dlight;
+				intens2 = sdl->radius * sdl->radius;
+
+				for (i = 0, v = surf->verts; i < surf->numVerts; i++, v++)
+				{
+					float	f1, f2, dist2;
+					int		intens, r, g, b;
+
+					f1 = sdl->pos[0] - v->pos[0];
+					f2 = sdl->pos[1] - v->pos[1];
+					dist2 = f1 * f1 + f2 * f2;
+					if (dist2 >= intens2) continue;			// vertex is too far from dlight
+
+					intens = Q_ftol ((1 - dist2 / intens2) * 256);
+					r = v->c.c[0] + (dlight->c.c[0] * intens >> 8);
+					g = v->c.c[1] + (dlight->c.c[1] * intens >> 8);
+					b = v->c.c[2] + (dlight->c.c[2] * intens >> 8);
+					NORMALIZE_COLOR255(r, g, b);
+					v->c.c[0] = r;
+					v->c.c[1] = g;
+					v->c.c[2] = b;
+				}
+				sdl++;
+			}
 		}
 	}
 }
@@ -862,6 +1032,7 @@ static void LoadLeafsNodes2 (dnode_t *nodes, int numNodes, dleaf_t *leafs, int n
 
 	// Setup node/leaf parents
 	SetNodeParent (map.nodes, NULL);
+	SetNodesAlpha ();
 }
 
 
@@ -876,13 +1047,17 @@ static void LoadInlineModels2 (dmodel_t *data, int count)
 	for (i = 0; i < count; i++, data++, out++)
 	{
 		vec3_t	tmp;
+		int		j;
 
 		VectorCopy (data->mins, out->mins);
 		VectorCopy (data->maxs, out->maxs);
 		VectorSubtract (out->maxs, out->mins, tmp);
 		out->radius = VectorLength (tmp) / 2;
-		out->faces = &map.faces[data->firstface];
+		// create surface list
 		out->numFaces = data->numfaces;
+		out->faces = Hunk_Alloc (out->numFaces * sizeof(surfaceCommon_t*));
+		for (j = 0; j < out->numFaces; j++)
+			out->faces[j] = &map.faces[data->firstface + j];
 	}
 }
 
@@ -948,7 +1123,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			ptex = tex + n;
 			if (ptex == stex) break;	// loop
 		}
-		*pname = 0;		// make zero (NULL string) after ASCIIZ string
+		*pname = 0;						// make zero (NULL string) after ASCIIZ string
 
 		if (numTextures > MAX_STAGE_TEXTURES)
 			Com_WPrintf ("%s: animation chain is too long (%d)\n", stex->texture, numTextures);
@@ -957,8 +1132,6 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 
 		if (needLightmap)
 			sflags |= SHADER_LIGHTMAP;
-
-//		if (stex->flags & SURF_NODRAW) textures[0] = '#';
 
 		if (sflags & SHADER_SKY)
 			shader = gl_skyShader;
@@ -1036,7 +1209,9 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (!surfs->side)
 		{	// backface (needed for backface culling)
 			VectorNegate (s->plane.normal, s->plane.normal);
-			s->plane.dist = - s->plane.dist;
+			s->plane.dist = -s->plane.dist;
+			//?? set signbits
+			s->plane.type = PLANE_NON_AXIAL;	//?? extend plane.type for xyz[i] == -1
 		}
 		s->numVerts = numVerts;
 		s->verts = (vertex_t *) (s+1);	//!!! allocate verts separately (for fast draw - in AGP memory)
@@ -1121,6 +1296,8 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			{
 				v->lm[0] = (v->lm[0] - mins[0]) / 16 + 0.5;		// divide to lightmap unit size and shift
 				v->lm[1] = (v->lm[1] - mins[1]) / 16 + 0.5;
+				v->lm2[0] = v->lm[0] - 0.5;
+				v->lm2[1] = v->lm[1] - 0.5;
 			}
 			// create dynamic lightmap
 			s->lightmap = lm = Hunk_Alloc (sizeof (*lm));
@@ -1131,9 +1308,9 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 				st = surfs->styles[j];
 				if (st == 255) break;
 				lm->style[j] = st;
-				lm->modulate[j] = (j == 0 ? 128 : 0);	// initial state
+				lm->modulate[j] = (j == 0 ? 128 : 0);			// initial state
+				lm->source[j] = lightData + surfs->lightofs + j * size[0] * size[1] * 3;
 			}
-			lm->source = lightData + surfs->lightofs;
 			lm->numStyles = j;
 			lm->w = size[0];
 			lm->h = size[1];
@@ -1141,6 +1318,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		else
 			s->lightmap = NULL;
 	}
+	PostprocessSurfaces ();
 }
 
 
@@ -1153,12 +1331,12 @@ static int LightmapCompare (const void *s1, const void *s2)
 	surf2 = *(surfaceCommon_t **)s2;
 
 	if (surf1->pl->lightmap)
-		v1 = surf1->pl->lightmap->source;
+		v1 = surf1->pl->lightmap->source[0];
 	else
 		v1 = NULL;
 
 	if (surf2->pl->lightmap)
-		v2 = surf2->pl->lightmap->source;
+		v2 = surf2->pl->lightmap->source[0];
 	else
 		v2 = NULL;
 
@@ -1199,22 +1377,21 @@ static void GenerateLightmaps2 (void)
 	qsort (sortedSurfaces, map.numFaces, sizeof(surfaceCommon_t*), LightmapCompare);
 
 	// check for lightmap intersection
+	// NOTE: nere we compare lm->source[0], which should always correspond to a lightstyle=0 (global lighting)
 	ptr = NULL;
 	for (i = 0; i < map.numFaces; i++)
 	{
-		dynamicLightmap_t *lm;
 		qboolean	bad;
-		int			lmSize;
+		int			lmSize, k;
 
 		s = sortedSurfaces[i];
-		lm = s->pl->lightmap;
-		if (!lm)
-			continue;
+		dl = s->pl->lightmap;
+		if (!dl) continue;
 
-		lmSize = lm->w * lm->h * lm->numStyles * 3;
-		if (lm->source + lmSize > lightData + lightDataSize)
+		lmSize = dl->w * dl->h * dl->numStyles * 3;
+		if (dl->source[0] + lmSize > lightData + lightDataSize)
 			bad = true;		// out of bsp file
-		else if (ptr && ptr > lm->source && (s->shader->style & SHADER_TRYLIGHTMAP))
+		else if (ptr && ptr > dl->source[0] && (s->shader->style & SHADER_TRYLIGHTMAP))
 			bad = true;		// erased by previous block
 		else
 			bad = false;
@@ -1223,10 +1400,12 @@ static void GenerateLightmaps2 (void)
 
 		if (bad)
 		{
-			// remove lightmap info from shader
+			// remove lightmap info from the shader
 			if (s->shader->lightmapNumber != LIGHTMAP_NONE)
 			{
 				s->shader->lightmapNumber = LIGHTMAP_NONE;
+				// later (in this function), just don't create vertex colors for this surface
+				//?? or compute light from scene ?
 				Com_DPrintf ("Disable lm for %s\n", s->shader->name);
 //				Com_Printf ("  diff: %d\n", ptr - lm->source);
 //				Com_Printf ("  w: %d  h: %d  st: %d\n", lm->w, lm->h, lm->numStyles);
@@ -1234,21 +1413,41 @@ static void GenerateLightmaps2 (void)
 		}
 		else
 		{	// advance pointer
-			ptr = lm->source + lmSize;
+			ptr = dl->source[0] + lmSize;
+		}
+
+		// after this examination. we can resort lightstyles (cannot do this earlier because used source[0])
+		SortLightStyles (dl);
+		// set shader lightstyles
+		if (s->shader->lightmapNumber >= 0)
+		{
+			int		styles;
+
+			styles = 0;
+			dl->w2 = dl->w;
+			dl->numFastStyles = 0;
+			for (k = dl->numStyles - 1; k >= 0; k--)
+			{
+				byte	t;
+
+				t = dl->style[k];
+				if (IS_FAST_STYLE(t))
+				{
+					styles = (styles << 8) + t;
+					dl->w2 += dl->w;
+					dl->numFastStyles++;
+				}
+			}
+			if (styles) s->shader = GL_SetShaderLightstyles (s->shader, styles);
 		}
 	}
 
 	/*-------------- vertex lighting ------------------*/
+	// we should genetate lightmaps after validating of ALL lightmaps
 	for (i = 0; i < map.numFaces; i++)
 	{
-		int		j;
-		vertex_t *v;
-		surfacePlanar_t *pl;
-
 		s = &map.faces[i];
-		pl = s->pl;
-		dl = pl->lightmap;
-		if (!dl) continue;
+		if (!s->pl->lightmap) continue;
 
 		if (s->shader->lightmapNumber == LIGHTMAP_NONE)
 		{	// lightmap was removed from shader - remove it from surface too
@@ -1256,57 +1455,7 @@ static void GenerateLightmaps2 (void)
 			continue;
 		}
 
-		for (j = 0, v = pl->verts; j < pl->numVerts; j++, v++)
-		{
-			byte	*point;
-			float	r, g, b;
-			float	frac_s, frac_t, frac;
-
-			v->lm2[0] = v->lm[0] - 0.5;
-			v->lm2[1] = v->lm[1] - 0.5;
-			point = dl->source + ((int)v->lm2[1] * dl->w + (int)v->lm2[0]) * 3;
-
-			r = g = b = 0;
-#define ADD(c,n)	c += frac * point[n];
-			// use 4 adjancent points for computing vertex color (these points are from defferent surfaces)
-			frac_s = v->lm2[0] - (int)v->lm2[0];
-			frac_t = v->lm2[1] - (int)v->lm2[1];
-			// line1
-			frac = (1.0f - frac_s) * (1.0f - frac_t);
-			ADD(r, 0);	ADD(g, 1);	ADD(b, 2);
-			frac = frac_s * (1.0f - frac_t);
-			ADD(r, 3);	ADD(g, 4);	ADD(b, 5);
-			// line2
-			point += dl->w * 3;
-			frac = (1.0f - frac_s) * frac_t;
-			ADD(r, 0);	ADD(g, 1);	ADD(b, 2);
-			frac = frac_s * frac_t;
-			ADD(r, 3);	ADD(g, 4);	ADD(b, 5);
-#undef ADD
-			if (s->shader->style & (SHADER_TRANS33|SHADER_TRANS66/*|SHADER_ALPHA*/))
-			{
-				float	scale, oldbr, newbr;
-
-				oldbr = sqrt(r*r + g*g + b*b);
-//				if (s->shader->style & SHADER_ALPHA)
-//					newbr = oldbr * 4 / 3;
-//				else
-					newbr = oldbr * 2 / 4 + 128;
-				scale = newbr / oldbr;
-				r *= scale;
-				g *= scale;
-				b *= scale;
-			}
-
-#define PROCESS_COLOR(x,n)	\
-		x = x * 2 * gl_config.identityLightValue_f;	\
-		if (x > 255) x = 255;	\
-		v->c.c[n] = x;
-			PROCESS_COLOR(r, 0);
-			PROCESS_COLOR(g, 1);
-			PROCESS_COLOR(b, 2);
-#undef PROCESS_COLOR
-		}
+		GL_UpdateDynamicLightmap (s->shader, s->pl, true, 0);
 	}
 
 
@@ -1357,7 +1506,7 @@ static void GenerateLightmaps2 (void)
 						{	// not fit to EMPTY block -- allocate multiple blocks
 							LM_Restore (bl);	// restore layout
 							LM_Rewind ();
-							bl = NULL;			// do not repeat restore
+							bl = NULL;			// do not repeat "Restore()"
 							fit = true;
 							break;
 						}
@@ -1531,8 +1680,6 @@ void GL_LoadWorldMap (char *name)
 		Com_Error (ERR_DROP, "R_FindModel: unknown BSP type");
 	}
 	Hunk_End ();
-
-	SetNodesAlpha ();
 }
 
 

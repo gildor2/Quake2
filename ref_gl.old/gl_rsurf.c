@@ -628,11 +628,19 @@ void DrawReflectPoly (msurface_t *surf, image_t *tex)
 }
 */
 
+//#define CALC_REFL
+
 static void DrawReflectPoly (msurface_t *surf, image_t *tex)
 {
-	int			i, x1_found, x2_found;
-	float		*v, *p, scale, angle1, angle2, s, t;
-	vec3_t		x1, x2, x;
+	int			i;
+	float		*v, scale, angle1, angle2, s, t;
+#ifdef CALC_REFL
+	float		*p;
+	vec3_t		x1, x2;
+	qboolean	x1_found, x2_found;
+#else
+	float		*x1, *x2;
+#endif
 	glpoly_t	*poly;
 
 	vec3_t	oc = {0, 0, 0};
@@ -653,10 +661,11 @@ static void DrawReflectPoly (msurface_t *surf, image_t *tex)
 	sc *= scale;
 	tc *= scale;
 
+#ifdef CALC_REFL
 	// Find basis vectors of poly, that are in poly plane (assumed, that
 	// poly have at least 3 vertexes and that 2 adjacent vertexes are not in one
 	// straight line with poly center!) AND: this should be calculated when map loaded!!!!
-	x1_found = x2_found = 0;
+	x1_found = x2_found = false;
 	p = poly->verts[0];
 	v = poly->verts[1]; // start from 2nd vertex (compare all with 1st)
 	for (i = 1; i < poly->numverts; i++, v += VERTEXSIZE)
@@ -703,6 +712,10 @@ static void DrawReflectPoly (msurface_t *surf, image_t *tex)
 		p = v; // always use 2 adjacent vertexes
 	}
 	if (!x1_found || !x2_found) return;
+#else
+	x1 = surf->texinfo->vecs[0];
+	x2 = surf->texinfo->vecs[1];
+#endif
 
 	GL_Bind (tex->texnum);
 	qglBegin (GL_POLYGON);
@@ -710,6 +723,8 @@ static void DrawReflectPoly (msurface_t *surf, image_t *tex)
 	// draw mirror
 	for (v = poly->verts[0], i = 0; i < poly->numverts; i++, v += VERTEXSIZE)
 	{
+		vec3_t	x;
+
 		VectorSubtract (v, r_origin, x);
 		VectorNormalizeFast (x);
 		// Calculate angles from view direction to basis (x1,x2)
@@ -729,12 +744,11 @@ static void DrawReflectPoly (msurface_t *surf, image_t *tex)
 void DrawReflectPoly3 (msurface_t *surf, image_t *tex)
 {	// Quake3 version
 	int			i;
-	float		s, t, *v;
+	float		s, t, *v, *norm;
 	glpoly_t	*poly;
-	vec3_t		*norm;
 
 	poly = surf->polys;
-	norm = &surf->plane->normal;
+	norm = surf->plane->normal;
 
 	GL_Bind (tex->texnum);
 	qglBegin (GL_POLYGON);
@@ -746,9 +760,9 @@ void DrawReflectPoly3 (msurface_t *surf, image_t *tex)
 
 		VectorSubtract (r_origin, v, pt);
 		VectorNormalizeFast (pt);
-		d = DotProduct (pt, (*norm));
-		s = (d * (*norm)[1] * 2 - pt[1] + 1) / 2.0f;
-		t = 0.5f - (pt[2] - d * (*norm)[2] * 2) / 2.0f;
+		d = DotProduct (pt, norm);
+		s = (d * norm[1] * 2 - pt[1] + 1) / 2.0f;
+		t = 0.5f - (pt[2] - d * norm[2] * 2) / 2.0f;
 		qglTexCoord2f (s, t);
 		qglVertex3fv (v);
 	}

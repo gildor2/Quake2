@@ -7,7 +7,6 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
@@ -20,7 +19,6 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
@@ -33,7 +31,6 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
@@ -46,10 +43,8 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	".\anorms.h"\
-	".\anormtab.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
 	
@@ -61,7 +56,6 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
@@ -74,7 +68,6 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
@@ -87,7 +80,6 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
@@ -100,7 +92,6 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
@@ -113,7 +104,6 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
@@ -126,7 +116,6 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
@@ -140,7 +129,6 @@
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
 	"..\ref_gl\gl_local.h"\
-	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	"..\win32\glw_win.h"\
 	"..\win32\winquake.h"\
@@ -163,7 +151,6 @@
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
 	"..\ref_gl\gl_local.h"\
-	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	"..\ref_gl\qgl_impl.h"\
 	"..\win32\glw_win.h"\

@@ -96,7 +96,7 @@ csurface_t	nullsurface;
 
 int			floodvalid;
 
-qboolean	portalopen[MAX_MAP_AREAPORTALS];
+static qboolean portalopen[MAX_MAP_AREAPORTALS];
 
 
 cvar_t		*map_noareas;

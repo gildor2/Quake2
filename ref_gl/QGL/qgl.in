@@ -288,9 +288,9 @@ void TexCoord2f (GLfloat s, GLfloat t) ARGS
 //void TexCoord4s (GLshort s, GLshort t, GLshort r, GLshort q);
 //void TexCoord4sv (const GLshort *v);
 void TexCoordPointer (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) ARGS
-//void TexEnvf (GLenum target, GLenum pname, GLfloat param) ARGS
-//void TexEnvfv (GLenum target, GLenum pname, const GLfloat *params);
-void TexEnvi (GLenum target, GLenum pname, GLint param) ARGS
+void TexEnvf (GLenum target, GLenum pname, GLfloat param) ARGS
+void TexEnvfv (GLenum target, GLenum pname, const GLfloat *params);
+void TexEnvi (GLenum target, GLenum pname, GLenum param) ARGS	// really, param is GLint, but ...
 //void TexEnviv (GLenum target, GLenum pname, const GLint *params);
 //void TexGend (GLenum coord, GLenum pname, GLdouble param);
 //void TexGendv (GLenum coord, GLenum pname, const GLdouble *params);
@@ -363,12 +363,11 @@ BOOL wglMakeCurrent (HDC hdc, HGLRC hglrc);
 
 #extensions
 
-//-- void  (APIENTRY * qglMTexCoord2f) (GLenum, GLfloat, GLfloat);	// both SGIS and ARB
-
 #name GL_SGIS_multitexture
 #cvar gl_ext_multitexture
 #prefer GL_ARB_multitexture
 void SelectTextureSGIS (GLenum target) ARGS
+void SelectTextureCoordSetSGIS (GLenum target) ARGS
 void MultiTexCoord2fSGIS (GLenum target, GLfloat s, GLfloat t) ARGS	//!! for old ref_gl
 
 #name GL_ARB_multitexture
@@ -376,6 +375,22 @@ void MultiTexCoord2fSGIS (GLenum target, GLfloat s, GLfloat t) ARGS	//!! for old
 void ActiveTextureARB (GLenum texture) ARGS
 void ClientActiveTextureARB (GLenum texture) ARGS
 void MultiTexCoord2fARB (GLenum target, GLfloat s, GLfloat t) ARGS	//!! for old ref_gl
+
+// ?? alias ARB
+#name GL_EXT_texture_env_add
+#cvar gl_ext_texture_env_add
+#prefer GL_ARB_texture_env_add
+
+#name GL_ARB_texture_env_add
+#cvar gl_ext_texture_env_add
+
+// Cannot use this extension: it limits SOURCE2/OPERAND2 to GL_SRC_ALPHA (we need GL_CONSTANT/GL_SRC_COLOR)
+//#name GL_EXT_texture_env_combine
+//#cvar gl_ext_texture_env_combine
+//#prefer GL_ARB_texture_env_combine
+
+#name GL_ARB_texture_env_combine
+#cvar gl_ext_texture_env_combine
 
 #name GL_S3_s3tc
 #cvar gl_ext_compressed_textures
@@ -385,7 +400,7 @@ void MultiTexCoord2fARB (GLenum target, GLfloat s, GLfloat t) ARGS	//!! for old 
 #cvar gl_ext_compressed_textures
 
 #name GL_EXT_compiled_vertex_array
-//alias: GL_SGI_compiled_vertex_array ??
+//alias: GL_SGI_compiled_vertex_array (with slightly different func names) ??
 #cvar gl_ext_compiled_vertex_array
 #prefer GL_NV_vertex_array_range
 void LockArraysEXT (GLint first, GLint count) ARGS

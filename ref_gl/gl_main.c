@@ -3,8 +3,6 @@
 #include "gl_backend.h"
 #include "gl_model.h"
 
-glconfig_t	gl_config;
-glstate_t	gl_state;
 glrefdef_t	gl_refdef;
 
 viewPortal_t	vp;
@@ -41,6 +39,7 @@ cvar_t	*gl_textureBits;
 // rendering speed/quality settings
 cvar_t	*gl_fastsky;		// do not draw skybox
 cvar_t	*gl_dynamic;		// enable dynamic lightmaps for Q2/HL maps
+cvar_t	*gl_dlightBacks;	// when disabled, do not draw dlights on backfaces
 cvar_t	*gl_vertexLight;	// use glColor() against lightmaps
 cvar_t	*gl_ignoreFastPath;	// do not use GenericStageIterator() when possible
 
@@ -111,6 +110,7 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(gl_fastsky, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_dynamic, 1, 0),
+	CVAR_VAR(gl_dlightBacks, 1, 0),
 	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gl_ignoreFastPath, 1, 0),						//!! use with VertexArrayRange ONLY !!
 
@@ -123,6 +123,8 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_mode, 3, CVAR_ARCHIVE),
 
 	CVAR_NULL(gl_ext_multitexture, 1, CVAR_ARCHIVE),
+	CVAR_NULL(gl_ext_texture_env_add, 1, CVAR_ARCHIVE),
+	CVAR_NULL(gl_ext_texture_env_combine, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_compiled_vertex_array, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_vertex_array_range, 0, CVAR_ARCHIVE),	//?? do not works now
 	CVAR_NULL(gl_ext_compressed_textures, 1, CVAR_ARCHIVE),
@@ -199,43 +201,7 @@ qboolean GL_SetMode (void)
 }
 
 
-void GL_SetDefaultState (void)
-{
-	int		i;
-
-	qglDisable (GL_CULL_FACE);
-	qglColor4f (1, 1, 1, 1);
-
-	// setup texturing
-	for (i = 1; i < gl_config.maxActiveTextures; i++)
-	{
-		GL_SelectTexture (i);
-		qglDisable (GL_TEXTURE_2D);
-		gl_state.currentBinds[i] = -1;
-		GL_TexEnv (GL_REPLACE);
-	}
-	if (gl_config.maxActiveTextures > 1) GL_SelectTexture (0);
-	qglDisable (GL_TEXTURE_2D);
-	gl_state.currentBinds[0] = -1;
-	GL_TexEnv (GL_MODULATE);
-
-	GL_TextureMode (gl_texturemode->string);
-
-	// set GL_State to a corresponding zero values
-	qglDisable (GL_BLEND);
-	qglDisable (GL_ALPHA_TEST);
-	qglDepthMask (GL_TRUE);
-	qglEnable (GL_DEPTH_TEST);
-	qglDepthFunc (GL_LEQUAL);
-	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-
-	qglEnable (GL_SCISSOR_TEST);
-	qglShadeModel (GL_SMOOTH);
-	qglEnableClientState (GL_VERTEX_ARRAY);
-}
-
-
-static int GL_Init (void *hinstance, void *hWnd)
+static int GL_Init (void)
 {
 	Com_Printf ("------- R_Init -------\n");
 
@@ -270,7 +236,7 @@ static int GL_Init (void *hinstance, void *hWnd)
 	}
 
 	// initialize OS-specific parts of OpenGL
-	if (!GLimp_Init (hinstance, hWnd))
+	if (!GLimp_Init ())
 	{
 		QGL_Shutdown ();
 		return -1;
@@ -313,7 +279,7 @@ static int GL_Init (void *hinstance, void *hWnd)
 	}
 	else
 		gl_config.maxActiveTextures = 1;
-	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE)) //!! && !ENV_COMBINE
+	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE) && !GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE))	//!! COMBINE4 too
 		gl_config.lightmapOverbright = true;
 
 
@@ -323,6 +289,7 @@ static int GL_Init (void *hinstance, void *hWnd)
 		gl_config.formatSolid = GL_COMPRESSED_RGB_ARB;
 		gl_config.formatAlpha = GL_COMPRESSED_RGBA_ARB;
 		gl_config.formatAlpha1 = GL_COMPRESSED_RGBA_ARB;
+//		qglHint (GL_TEXTURE_COMPRESSION_HINT_ARB, GL_NICEST);
 	}
 	else if (GL_SUPPORT(QGL_S3_S3TC))
 	{
@@ -332,6 +299,9 @@ static int GL_Init (void *hinstance, void *hWnd)
 	}
 
 	qglGetIntegerv (GL_MAX_TEXTURE_SIZE, &gl_config.maxTextureSize);
+
+	if (gl_dynamic->integer != 2)
+		gl_config.multiPassLM = true;
 
 	// set screen to particular color while initializing
 	qglClearColor (0.1, 0, 0, 1);
@@ -373,27 +343,6 @@ static void GL_Shutdown (void)
 }
 
 
-void GL_Set2DMode (void)
-{
-	if (gl_state.is2dMode)
-		return;
-
-	LOG_STRING ("***** Set2DMode() *****\n");
-	qglViewport (0, 0, vid.width, vid.height);
-	qglScissor (0, 0, vid.width, vid.height);
-	qglMatrixMode (GL_PROJECTION);
-	qglLoadIdentity ();
-	qglOrtho (0, vid.width, vid.height, 0, 0, 1);
-	qglMatrixMode (GL_MODELVIEW);
-	qglLoadIdentity ();
-//	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_NODEPTHTEST);
-	GL_CullFace (CULL_NONE);
-	// qglDisable (GL_CLIP_PLANE0);
-	gl_state.is2dMode = true;
-	//?? remember time?
-}
-
-
 /*---------------- Backend helpers ----------------------*/
 
 void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, int color)
@@ -430,12 +379,12 @@ static void GL_BeginFrame (float camera_separation)
 {
 	if (gl_logFile->modified)
 	{
-		GLimp_EnableLogging (gl_logFile->integer);
+		QGL_EnableLogging (gl_logFile->integer);
 		gl_logFile->modified = false;
 	}
 	else if (gl_logFile->integer == 2)
 	{
-		GLimp_EnableLogging (false);
+		QGL_EnableLogging (false);
 		Cvar_SetInteger ("gl_logFile", 0);
 	}
 
@@ -674,6 +623,7 @@ static void SetPerspective (void)
 static void GL_RenderFrame (refdef_t *fd)
 {
 	entity_t *ent;
+	dlight_t *dl;
 	int		i;
 
 	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !gl_worldModel.name)
@@ -722,6 +672,12 @@ static void GL_RenderFrame (refdef_t *fd)
 	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
 		GL_AddEntity (ent);
 
+	// add dlights
+	vp.dlights = &gl_dlights[gl_numDlights];
+	vp.numDlights = fd->num_dlights;
+	for (i = 0, dl = fd->dlights; i < fd->num_dlights; i++, dl++)
+		GL_AddDlight (dl);
+
 	gl_speeds.parts = gl_speeds.cullParts = 0;
 	vp.particles = fd->particles;
 
@@ -748,7 +704,7 @@ static void GL_RenderFrame (refdef_t *fd)
 		DrawTextRight (va("surfs: %d culled: %d",
 			gl_speeds.surfs, gl_speeds.cullSurfs), 1, 0.5, 0);
 		DrawTextRight (va("tris: %d mtex: %1.2f",
-			gl_speeds.trisMT, (float)gl_speeds.tris / gl_speeds.trisMT), 1, 0.5, 0);
+			gl_speeds.trisMT, gl_speeds.trisMT ? (float)gl_speeds.tris / gl_speeds.trisMT : 0), 1, 0.5, 0);
 		DrawTextRight (va("ents: %d fcull: %d cull: %d",
 			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEnts2), 1, 0.5, 0);
 		DrawTextRight (va("particles: %d cull: %d",
@@ -843,8 +799,7 @@ static shader_t *FindPic (char *name, qboolean force)
 		s = name+1;
 
 	flags = SHADER_ALPHA;
-	if (!force)
-		flags |= SHADER_CHECK;
+	if (!force) flags |= SHADER_CHECK;
 	return GL_FindShader (s, flags);
 }
 
@@ -966,7 +921,7 @@ static void DrawTexts (void)
 }
 
 
-void DrawTextPos (int x, int y, char *text, float r, float g, float b)
+static void DrawTextPos (int x, int y, char *text, float r, float g, float b)
 {
 	int size;
 	char *textCopy;

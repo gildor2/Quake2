@@ -86,7 +86,7 @@ static void Shaderlist_f (void)
 			lmInfo = "v";
 			break;
 		case LIGHTMAP_RESERVE:
-			lmInfo = "^1r^7";	// this situation is error, so - colorize output
+			lmInfo = "^1--^7";	// this situation is error, but it can happens when shader have lightstyles (no static version)
 			break;
 		default:
 			lmInfo = va("%d", sh->lightmapNumber);
@@ -461,6 +461,43 @@ shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber)
 }
 
 
+shader_t *GL_SetShaderLightstyles (shader_t *shader, int styles)
+{
+	char	newname[MAX_QPATH], *s;
+	shader_t *newshader;
+	int		m;
+
+	if (!styles || gl_config.vertexLight) return shader;
+
+	strcpy (newname, shader->name);
+	s = strchr (newname, 0);		// find string end
+	*s++ = '$';
+
+	m = styles;
+	while (m)
+	{
+		byte	c;
+
+		// style -> char
+		c = m & 0xFF;
+		m >>= 8;
+
+		if (c < 10) c += '0';
+		else c += 'a' - 10;
+		*s++ = c;
+	}
+	*s = 0;
+
+	newshader = GL_FindShader (newname, shader->style | SHADER_CHECKLOADED);
+	if (newshader) return newshader;
+
+	ExtractShader (shader);
+	strcpy (sh.name, newname);
+	sh.lightStyles_i = styles;
+	return AddPermanentShader ();
+}
+
+
 shader_t *GL_GetAlphaShader (shader_t *shader)
 {
 	if (shader->alphaShader)
@@ -538,6 +575,7 @@ shader_t *GL_FindShader (char *name, int style)
 					return GL_SetShaderLightmap (shader, lightmapNumber);	// reserved -> used
 			}
 		}
+	if (style & SHADER_CHECKLOADED) return NULL;
 
 	// prepate common shader fields
 	ClearTempShader ();
@@ -573,6 +611,11 @@ shader_t *GL_FindShader (char *name, int style)
 				{
 					sh.bad = true;
 					break;
+				}
+				if (!i)
+				{
+					sh.width = img->width;
+					sh.height = img->height;
 				}
 				sh.skyFarBox[i] = img;
 			}
@@ -672,7 +715,10 @@ shader_t *GL_FindShader (char *name, int style)
 						// image has no alpha, but use glColor(x,x,x,<1)
 				stage->alphaGenType = ALPHAGEN_VERTEX;
 			}
-			else if (style & SHADER_ALPHA && img->alphaType)
+			else if ((style & SHADER_ALPHA && img->alphaType) /* ?? || (style & (SHADER_TRANS33|SHADER_TRANS66) && img->alphaType) */)
+			/* NOTE about commented part: need to complex check texture; cannot make this as SHADER_ALPHA only by checking
+			 * alpha-channel (map ground3, rhcity4 (fences): need, but vertigo (glass1b ?) - don't); make this with script ? (best way)
+			 */
 			{
 				if (img->alphaType == 1)
 					stage->glState = GLSTATE_ALPHA_GE05;
@@ -759,46 +805,11 @@ shader_t *GL_FindShader (char *name, int style)
 				stage->glState = stage->glState & ~GLSTATE_DEPTHWRITE | GLSTATE_NODEPTHTEST;
 			else
 				stage->glState = stage->glState & ~GLSTATE_NODEPTHTEST | GLSTATE_DEPTHWRITE;
+			if (lightmapNumber >= 0)
+				stage->glState &= ~GLSTATE_DEPTHWRITE;				// depthwrite performed on lightmap stage
 
 			if (style & SHADER_ABSTRACT)
 				st[0].numAnimTextures = 0;			// remove all stages
-
-			/* CHECK:
-				no lightmap: (skin)
-					rgbGenFunc = LIGHTING_DIFFUSE
-					alphaGenFunc = IDENTITY
-					glState = DEPTHWRITE
-				vertex lighting: (world)
-					rgbGenFunc = EXACT_VERTEX
-					alphaGenFunc = NONE
-					glState = DEPTHWRITE
-				game:
-					rgbGenFunc = VERTEX
-					alphaGenFunc = VERTEX
-					glState = (SRC_ALPHA,ONE_MINUS_SRC_ALPHA)+NODEPTHTEST
-				fullbright: (world)
-				  st[0]:
-					mapImage = *white
-					rgbGenFunc = IDENTITY_LIGHTING
-					alphaGenFunc = IDENTITY
-					glState = DEPTHWRITE
-				  st[1]:
-					mapImage = texture
-					rgbGenFunc = IDENTITY
-					alphaGenFunc = IDENTITY
-					glState = (DST_COLOR,ZERO)
-				normal: (world)
-				  st[0]:
-					mapImage = lightmap
-					rgbGenFunc = IDENTITY
-					alphaGenFunc = IDENTITY
-					glState = DEPTHWRITE
-				  st[1]:
-					mapImage = texture
-					rgbGenFunc = IDENTITY
-					alphaGenFunc = IDENTITY
-					glState = (DST_COLOR,ZERO)
-			*/
 		}
 	}
 	return FinishShader ();

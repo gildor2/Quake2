@@ -22,7 +22,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../qcommon/qcommon.h"
 #include "../client/client.h"
 #include "winquake.h"
-#include "resource.h"
 #include <errno.h>
 #include <float.h>
 #include <fcntl.h>
@@ -77,7 +76,7 @@ void Sys_Error (char *error, ...)
 	vsprintf (text, error, argptr);
 	va_end (argptr);
 
-	MessageBox(NULL, text, "Error", 0 /* MB_OK */ );
+	MessageBox(NULL, text, "Fatal error", MB_OK/*|MB_ICONSTOP|MB_TOPMOST*/|MB_SETFOREGROUND);
 
 	if (qwclsemaphore)
 		CloseHandle (qwclsemaphore);

@@ -2,7 +2,7 @@
 #include "gl_model.h"			// for accessing to some map info
 
 image_t		*gl_defaultImage;
-//image_t		*gl_whiteImage;		//?? unneeded: can use "image = NULL" for this
+//image_t		*gl_whiteImage;		//?? unneeded: can use "image = NULL" for this (CHECK THIS WITH MTEX!)
 image_t		*gl_identityLightImage;
 image_t		*gl_dlightImage;
 image_t		*gl_particleImage;
@@ -87,227 +87,6 @@ static byte *Convert8to32bit (byte *in, int width, int height, unsigned *palette
 		*p++ = palette[*in++];
 
 	return out;
-}
-
-
-//----------------------------------------------------------------------
-
-void GL_Bind (image_t *tex)
-{
-	int		tmu, old, h, h1;
-
-	tmu = gl_state.currentTmu;
-
-	if (!tex)
-	{
-		qglDisable (GL_TEXTURE_2D);
-		h = -1;
-	}
-	else
-	{
-		old = gl_state.currentBinds[tmu];
-		h = tex->texnum;
-
-		if (old == -1)
-			qglEnable (GL_TEXTURE_2D);
-
-		if (gl_nobind->integer && (h1 = gl_dlightImage->texnum))
-		{
-			if (gl_nobind->integer != 2 || strcmp (tex->name, "pics/conchars.pcx"))	//?? need better way to detect force-bind images
-				h = h1;
-		}
-
-		if (h == old) return;
-
-		qglBindTexture (GL_TEXTURE_2D, h);
-		gl_speeds.numBinds++;
-	}
-
-	gl_state.currentBinds[tmu] = h;
-}
-
-
-// Bind image even if nobind active (i.e. for uploading image)
-static void GL_BindForce (image_t *tex)
-{
-	int		tmu, old, h;
-
-	tmu = gl_state.currentTmu;
-	old = gl_state.currentBinds[tmu];
-	h = tex->texnum;
-	if (old == h) return;
-
-	if (old == -1)
-		qglEnable (GL_TEXTURE_2D);
-
-	qglBindTexture (GL_TEXTURE_2D, h);
-	gl_speeds.numBinds++;
-	gl_state.currentBinds[tmu] = h;
-}
-
-
-void GL_TexEnv (int env)
-{
-	int		tmu;
-
-	tmu = gl_state.currentTmu;
-	if (gl_state.currentEnv[tmu] == env)
-		return;
-
-	if (env == GL_REPLACE || env == GL_MODULATE || env == GL_ADD || env == GL_DECAL)
-		qglTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, env);
-	else
-		Com_Error (ERR_FATAL, "GL_TexEnv: env = %08X", env);
-
-	gl_state.currentEnv[tmu] = env;
-}
-
-
-void GL_SelectTexture (int tmu)
-{
-	int		tex;
-
-	if (tmu == gl_state.currentTmu)
-		return;
-
-	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
-	{	// ARB_multitexture
-		tex = tmu ? GL_TEXTURE1_ARB : GL_TEXTURE0_ARB;
-		qglActiveTextureARB (tex);
-		qglClientActiveTextureARB (tex);
-	}
-	else
-	{
-		// SGIS_multitexture
-		tex = tmu ? GL_TEXTURE1_SGIS : GL_TEXTURE0_SGIS;
-		qglSelectTextureSGIS (tex);
-	}
-
-	gl_state.currentTmu = tmu;
-}
-
-
-void GL_SetMultitexture (int level)
-{
-	int		i;
-
-	if (!gl_config.maxActiveTextures)
-	{
-		if (level > 1) Com_Error (ERR_FATAL, "R_SetMultitexture(%d) with no multitexturing", level);
-		if (!level) GL_Bind (NULL);
-		return;
-	}
-
-	for (i = level; i < gl_config.maxActiveTextures; i++)
-	{
-		GL_SelectTexture (i);
-		GL_Bind (NULL);
-	}
-	GL_SelectTexture (0);
-}
-
-
-void GL_CullFace (gl_cullMode_t mode)
-{
-	if (gl_state.currentCullMode == mode)
-		return;
-
-	//?? add inverseCullMode for portals (mirrors)
-	if (mode == CULL_NONE)
-		qglDisable (GL_CULL_FACE);
-	else
-	{
-		qglEnable (GL_CULL_FACE);
-		qglCullFace (mode == CULL_FRONT ? GL_FRONT : GL_BACK);
-	}
-
-	gl_state.currentCullMode = mode;
-}
-
-
-void GL_State (int state)
-{
-	int		dif;
-
-	static int src_blends[] = {
-		GL_ZERO, GL_ONE, GL_DST_COLOR,
-		GL_ONE_MINUS_DST_COLOR,
-		GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
-		GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA,
-		GL_SRC_ALPHA_SATURATE
-	};
-
-	static int dst_blends[] = {
-		GL_ZERO, GL_ONE,
-		GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR,
-		GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
-		GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA
-	};
-
-	dif = state ^ gl_state.currentState;
-	if (!dif)
-		return;
-
-	if (dif & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
-	{
-		if (state & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
-		{
-			unsigned src, dst;
-
-			src = ((state & GLSTATE_SRCMASK) - GLSTATE_SRC_ZERO) >> GLSTATE_SRCSHIFT;
-//			if (src >= sizeof(src_blends)/sizeof(int))
-//				Com_Error (ERR_FATAL, "GL_State: invalid src blend %08X", state);
-			src = src_blends[src];
-
-			dst = ((state & GLSTATE_DSTMASK) - GLSTATE_DST_ZERO) >> GLSTATE_DSTSHIFT;
-//			if (dst >= sizeof(dst_blends)/sizeof(int))
-//				Com_Error (ERR_FATAL, "GL_State: invalid dst blend %08X", state);
-			dst = dst_blends[dst];
-
-			qglEnable (GL_BLEND);
-			qglBlendFunc (src, dst);
-		}
-		else
-			qglDisable (GL_BLEND);
-	}
-
-	if (dif & GLSTATE_ALPHAMASK)
-	{
-		int		m;
-
-		m = state & GLSTATE_ALPHAMASK;
-		if (!m)
-			qglDisable (GL_ALPHA_TEST);
-		else
-		{
-			qglEnable (GL_ALPHA_TEST);
-			if (m == GLSTATE_ALPHA_GT0)
-				qglAlphaFunc (GL_GREATER, 0.05f);	//?? 0.0f
-			else if (m == GLSTATE_ALPHA_LT05)
-				qglAlphaFunc (GL_LESS, 0.5f);
-			else // if (m == GLSTATE_ALPHA_GE05)
-				qglAlphaFunc (GL_GEQUAL, 0.5f);
-		}
-	}
-
-	if (dif & GLSTATE_DEPTHWRITE)
-		qglDepthMask ((GLboolean)(state & GLSTATE_DEPTHWRITE ? GL_TRUE : GL_FALSE));
-
-	if (dif & GLSTATE_NODEPTHTEST)
-	{
-		if (state & GLSTATE_NODEPTHTEST)
-			qglDisable (GL_DEPTH_TEST);
-		else
-			qglEnable (GL_DEPTH_TEST);
-	}
-
-	if (dif & GLSTATE_DEPTHEQUALFUNC)
-		qglDepthFunc (state & GLSTATE_DEPTHEQUALFUNC ? GL_EQUAL : GL_LEQUAL);
-
-	if (dif & GLSTATE_POLYGON_LINE)
-		qglPolygonMode (GL_FRONT_AND_BACK, state & GLSTATE_POLYGON_LINE ? GL_LINE : GL_FILL);
-
-	gl_state.currentState = state;
 }
 
 
@@ -472,6 +251,7 @@ static void LightScaleTexture (unsigned *pic, int width, int height, qboolean on
 }
 
 
+// Scale lightmap; additional scaling data encoded in alpha-channel (0 - don't scale; 1 - /=2; -1==255 - *=2)
 static void LightScaleLightmap (unsigned *pic, int width, int height)
 {
 	byte	*p;
@@ -481,33 +261,32 @@ static void LightScaleLightmap (unsigned *pic, int width, int height)
 	if (gl_config.lightmapOverbright)
 		shift--;
 
-	/*------- downscale lightmap -----------*/
-	if (!shift)
-		return;		// no overbright
-
 	p = (byte *)pic;
 	c = width * height;
-	if (shift > 0)
-		for (i = 0; i < c; i++, p += 4)
-		{
-			p[0] >>= shift;
-			p[1] >>= shift;
-			p[2] >>= shift;
-		}
-	else
+	for (i = 0; i < c; i++, p += 4)
 	{
-		shift = -shift;
-		for (i = 0; i < c; i++, p += 4)
+		int		r, g, b, sh;
+
+		sh = shift + (signed char)p[3];		// usa alpha as additional shift info
+		if (sh > 0)
 		{
-			int		b;
-#define T(i)	\
-	b = p[i] << shift;	\
-	p[i] = b > 255 ? 255 : b;
-			T(0);
-			T(1);
-			T(2);
-#undef T
+			p[0] >>= sh;
+			p[1] >>= sh;
+			p[2] >>= sh;
 		}
+		else
+		{
+			sh = -sh;
+
+			r = p[0] << sh;
+			g = p[1] << sh;
+			b = p[2] << sh;
+			NORMALIZE_COLOR255(r, g, b);
+			p[0] = r;
+			p[1] = g;
+			p[2] = b;
+		}
+		p[3] = 255;		// alpha
 	}
 }
 
@@ -1261,7 +1040,7 @@ static void PerformScreenshot (qboolean jpeg)
 	}
 	size = width * height;
 
-	// remove 4th coor component and correct gamma
+	// remove 4th color component and correct gamma
 	src = dst = buffer;
 	for (i = 0; i < size; i++)
 	{
@@ -1308,6 +1087,8 @@ static ScreenshotJPEG_f (void)
 
 /*------------------ Init/shutdown --------------------*/
 
+
+#define DLIGHT_SIZE		16
 
 void GL_InitImages (void)
 {
@@ -1356,26 +1137,33 @@ void GL_InitImages (void)
 
 	/*----------- create dlight image ------------*/
 	p = tex;
-	for (y = 0; y < 16; y++)
+	for (y = 0; y < DLIGHT_SIZE; y++)
 	{
 		float	yv;
 
-		yv = (y - 7.5); yv *= yv;
-		for (x = 0; x < 16; x++)
+		yv = (y - DLIGHT_SIZE/2 + 0.5f); yv *= yv;
+		for (x = 0; x < DLIGHT_SIZE; x++)
 		{
 			float	xv;
 			int		v;
 
-			xv = (x - 7.5); xv *= xv;
+			xv = (x - DLIGHT_SIZE/2 + 0.5f); xv *= xv;
+#if 1
+			v = 255 * (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2));
+			if (v < 0) v = 0;
+			else if (v > 255) v = 255;
+#else
 			v = (int) (4000.0f / (xv + yv));
 			if (v < 75) v = 0;
 			if (v > 255) v = 255;
+#endif
 			p[0] = p[1] = p[2] = v;
 			p[3] = 255;
 			p += 4;
 		}
 	}
-	gl_dlightImage = GL_CreateImage ("*dlight", tex, 16, 16, IMAGE_CLAMP|IMAGE_TRUECOLOR|IMAGE_MIPMAP);
+	// NOTE: be sure image border is black and do not create mipmaps (this will change border)
+	gl_dlightImage = GL_CreateImage ("*dlight", tex, 16, 16, IMAGE_CLAMP|IMAGE_TRUECOLOR);
 	gl_dlightImage->flags |= IMAGE_SYSTEM;
 
 	/*----------- create particle image ----------*/

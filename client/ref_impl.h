@@ -42,7 +42,6 @@ refImport_t ri = {
 	MatchWildcard,
 	Vid_GetModeInfo,
 	Vid_MenuInit,
-	Vid_NewWindow,
 	ImageExists,
 	LoadPCX,
 	LoadTGA,
@@ -50,5 +49,14 @@ refImport_t ri = {
 	WriteTGA,
 	WriteJPG,
 	LoadBspFile
+#ifdef _WIN32
+,
+	Vid_CreateWindow,
+	Vid_DestroyWindow
+#else
+,
+	Vid_NewWindow
+#endif
+
 };
 

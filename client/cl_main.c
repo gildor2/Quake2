@@ -625,10 +625,10 @@ void CL_Disconnect (void)
 	{
 		int	time;
 
-		time = Sys_Milliseconds () - cl.timedemo_start;
+		time = Sys_Milliseconds () - cl.timedemoStart;
 		if (time > 0)
-			Com_Printf ("%i frames, %3.1f seconds: %3.1f fps\n", cl.timedemo_frames,
-			time/1000.0, cl.timedemo_frames*1000.0 / time);
+			Com_Printf ("^2Total %d frames, %3.1f seconds: %3.1f avg fps %3.1f min fps\n", cl.timedemoFrames, time / 1000.0f,
+				1000.0f * cl.timedemoFrames / time, 1000.0f / cl.timedemoLongestFrame);
 	}
 
 	VectorClear (cl.refdef.blend);

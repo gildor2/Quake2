@@ -2,45 +2,59 @@
 #define __GL_MODEL_INCLUDED__
 
 
-/*-------------------- Lightmaps --------------------------*/
+/*--------------------- Lighting --------------------------*/
 
-#define MAX_LIGHTMAPS	64	// max lightmap textures
-#define LIGHTMAP_SIZE	256	// width and height of lightmap texture (square)
+#define MAX_LIGHTMAPS	64		// max lightmap textures
+#define LIGHTMAP_SIZE	256		// width and height of the lightmap texture (square)
 
 typedef struct
 {
-	int		index;			// "*lightmap%d"
-	image_t	*image;			// required for uploading (updating) lightmap
-	int		*allocated;		// [LIGHTMAP_SIZE]
-	byte	*pic;			// [LIGHTMAP_SIZE*LIGHTMAP_SIZE*4]
+	int		index;				// "*lightmap%d"
+	image_t	*image;				// required for uploading (updating) lightmap
+	int		*allocated;			// [LIGHTMAP_SIZE]
+	byte	*pic;				// [LIGHTMAP_SIZE*LIGHTMAP_SIZE*4]
 	qboolean empty;
 	qboolean filled;
 } lightmapBlock_t;
 
+
+#define IS_FAST_STYLE(s)	(s >= 1 && s <= 31 && gl_config.multiPassLM)
+
 typedef struct dynamicLightmap_s
 {
 	// style info
-	int		numStyles;		// 1..4
-	byte	style[4];		// style numbers
-	byte	modulate[4];	// current (uploaded) state of styles
+	int		numStyles;			// 1..4
+	int		numFastStyles;		// number of IS_FAST_STYLE styles
+	byte	style[4];			// style numbers
+	byte	modulate[4];		// current (uploaded) state of styles
 	// source
-	byte	*source;		// points to "byte rgb[w*h*numStyles][3]"
-	int		w, h;			// size of source
+	byte	*source[4];			// points to "byte rgb[w*h][3]"
+	int		w, h;				// size of source
+	int		w2;					// width of whole lightmap block (including fast dynamic lightmaps)
 	// info for uploading lightmap
-	int		s, t;			// glTexSubimage to (s,t)-(s+w,t+h)
+	int		s, t;				// glTexSubimage to (s,t)-(s+w,t+h)
 	lightmapBlock_t *block;
 } dynamicLightmap_t;
+
+typedef struct
+{
+	float	pos[2];
+	float	radius;
+	refDlight_t *dlight;
+	vec3_t	*axis;
+} surfDlight_t;
 
 
 /*------------------- Surface types -----------------------*/
 
-// Vertex without normal
+// Vertex without normal (for planar surface)
 typedef struct
 {
-	vec3_t	xyz;			// vertex itself
-	float	st[2], lm[2];	// texture coordinates (TCGEN_TEXTURE/TCGEN_LIGHTMAP)
-	float	lm2[2];			// for vertex color calculation: coords in surface lightmap rect (non-normalized)
-	color_t	c;				// vertex color
+	vec3_t	xyz;				// vertex itself
+	float	st[2], lm[2];		// texture coordinates (TCGEN_TEXTURE/TCGEN_LIGHTMAP)
+	float	lm2[2];				// for vertex color calculation: coords in surface lightmap rect (non-normalized)
+	float	pos[2];				// 2D position in plane axis
+	color_t	c;					// vertex color
 } vertex_t;
 
 // Vertex with stored normal
@@ -67,11 +81,11 @@ typedef struct
 
 typedef enum
 {
-	SURFACE_PLANAR,			// surfacePlanar_t
-	SURFACE_TRISURF,		// surfaceTrisurf_t
-	SURFACE_MD3,			// surfaceMd3_t
-	SURFACE_POLY,			// surfacePoly_t
-	SURFACE_PARTICLE		// particle_t
+	SURFACE_PLANAR,				// surfacePlanar_t
+	SURFACE_TRISURF,			// surfaceTrisurf_t
+	SURFACE_MD3,				// surfaceMd3_t
+	SURFACE_POLY,				// surfacePoly_t
+	SURFACE_PARTICLE			// particle_t
 } surfaceType_t;
 
 // Planar surface: same normal for all vertexes
@@ -79,14 +93,17 @@ typedef struct surfacePlanar_s
 {
 	vec3_t	mins, maxs;
 	cplane_t plane;
+	vec3_t	axis[2];			// 2 orthogonal identity vectors from surface
+	float	mins2[2], maxs2[2];	// 2D-bounds (in "axis" coordinate system)
 	int		numVerts, numIndexes;
 	vertex_t *verts;
 	int		*indexes;
-	// Q2/HL dynamic lightmap (NULL for Q3)
+	// Q2/HL dynamic lightmap (NULL for Q3 ??)
 	dynamicLightmap_t *lightmap;
+	surfDlight_t *dlights;
 } surfacePlanar_t;
 
-//!! warning: if shader.fast -- use vertex_t instead of vertexNormal_t (anyway, normals are not required)
+//!! warning: if shader.fast -- use vertex_t instead of vertexNormal_t (normals are not required for fast shader)
 // Triangular surface: non-planar, every vertex have its own normal vector
 typedef struct
 {
@@ -100,8 +117,8 @@ typedef struct
 typedef struct
 {
 	vec3_t	mins, maxs;
-	vec3_t	localOrigin;	// origin for bounding sphere in model coords
-	float	radius;			// radius of the bounding sphere
+	vec3_t	localOrigin;		// origin for bounding sphere in model coords
+	float	radius;				// radius of the bounding sphere
 } md3Frame_t;
 
 typedef struct
@@ -109,28 +126,29 @@ typedef struct
 	int		numFrames;
 
 	int		numVerts;
-	float	*texCoords;		// numVerts*2
+	float	*texCoords;			// numVerts*2
 
 	int		numTris;
-	int		*indexes;		// numTris*3
+	int		*indexes;			// numTris*3
 
 	int		numShaders;
-	shader_t **shaders;		// [numShaders]
+	shader_t **shaders;			// [numShaders]
 
-	vertexMd3_t *verts;		// numVerts*numFrames
+	vertexMd3_t *verts;			// numVerts*numFrames
 } surfaceMd3_t;
 
 typedef struct
 {
 	int		numVerts;
-	vertexPoly_t verts[0];	// [numVerts]
+	vertexPoly_t verts[0];		// [numVerts]
 } surfacePoly_t;
 
 typedef struct surfaceCommon_s
 {
 	shader_t *shader;			// ignored for models
 	int		frame;				// ignored for models
-	//int		fogNum;
+	int		dlightFrame;
+	unsigned dlightMask;
 	int		type;
 	union {
 		surfaceTrisurf_t *tri;	// type = SURFACE_PLANAR
@@ -145,8 +163,8 @@ typedef struct surfaceCommon_s
 
 typedef struct node_s
 {
-	qboolean isNode;
-	qboolean haveAlpha;			// true if leaf have surface(s) with translucent shader
+	byte	isNode;				// true if this is a leaf
+	byte	haveAlpha;			// true if leaf have surface(s) with translucent shader
 	byte	frustumMask;
 	int		visFrame, frame;	// PVS-cull frame, frustum-cull frame
 	// leaf geometry
@@ -172,7 +190,7 @@ typedef struct
 	float	mins[3], maxs[3];
 	vec3_t	center;
 	float	radius;
-	surfaceCommon_t *faces;
+	surfaceCommon_t **faces;
 	int		numFaces;
 } inlineModel_t;
 

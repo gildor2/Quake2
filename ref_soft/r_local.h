@@ -80,6 +80,10 @@ typedef struct image_s
 //===================================================================
 
 typedef float vec5_t[5];
+typedef	int	fixed4_t;
+typedef	int	fixed8_t;
+typedef	int	fixed16_t;
+
 
 typedef unsigned char pixel_t;
 
@@ -766,7 +770,7 @@ void R_NewMap (void);
 void R_Register (void);
 void R_UnRegister (void);
 void Draw_InitLocal (void);
-qboolean R_Init( void *hInstance, void *wndProc );
+qboolean R_Init (void);
 void R_Shutdown (void);
 void R_InitCaches (void);
 void D_FlushCaches (void);
@@ -849,7 +853,7 @@ IMPLEMENTATION FUNCTIONS
 
 void		SWimp_BeginFrame( float camera_separation );
 void		SWimp_EndFrame (void);
-int			SWimp_Init( void *hInstance, void *wndProc );
+int			SWimp_Init( void );
 void		SWimp_SetPalette( const unsigned char *palette);
 void		SWimp_Shutdown( void );
 rserr_t		SWimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen );

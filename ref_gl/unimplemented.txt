@@ -1,33 +1,84 @@
+? SetMultitexture(N): should enable texturing (WAS required in a case env_crossbar work ??)
+- add async commands to gl:
+  - screenshot (before SwapBuffers() and can perform it before 2D part, may be as option for "screenshot" command)
+    (add var - screenshot type: 3D | 3D+2D, levelshot, silent)
+  - gl_drawtexts: dump all DrawText[Left|Right]() to console (for a single frame ? params as for gl_logFile ?)
+    (can simply add flag to gl_state or any var, whith will be checked and processed by DrawTexts())
+? qgl: don't draw "ext1 not found" when if ext1 is found it will be deprecated by currently found/enabled extension
+  (or (?!): use DPrintf for this situation) (example: have ARB_multitex and no SGIS_multitex)
+- add dependency of ARB_texenv_combine from ARB_multitexture
+- remove FadeScreen() and add FadeRect(); can add param "alpha"; can simply extend FillRect() by adding alpha to it (it's better)
+- gl_shader.h: separate scriptable tcGen's from internal-use-only (e.g. TEXTURE,LIGHTMAP -- LIGHTMAP1..4,DLIGHT0..31)
+  (be sure to reserve 32 dlights !)
+
+COLORS:
+! need to save dlight color before overbright for entity lighting
+? need to modulate dlight color/alpha (check Q3)
+! overbright particles (use identityLight) or particle color table
+? overbright beams
+- saturate tbl_8to32 (and make separate color table for color >> overbright ??)
+- move SATURATE(c,l,v) to q_shared2.h ?
+- gl_overbright:
+  - 0-none (force off), 1-"1bit" (force on), 2-"auto" (ON when (vertexLight | (multitex. && !(combine|combine4))) && fullscreen (??))
+  - remove gl_overbrightBits
+  - menu selectable
+
+! gl_nobind don't works (bacause of GL_Lock/GL_Unlock)
+
+? add GL_DECAL blend: src=SRC_ALPHA, dst=ONE_MINUS_SRC_ALPHA
+? add GL_ADD via EXT_COMBINE (if no GL_EXT_texture_env_add)
+? add GLSTATE_MODULATE2 (to blend modes, valid only with GL_EXT_texenv_combine or GL_NV_blend_square (only for 1st tmu ??))
+
+- dynamic lightmaps:
+  ? option (menu): dynamic lightmap type - uploadable/multipass/auto
+  ? when no multitexture - use "multiPassLM = false" (if "auto")
+  - many dynamic lightmaps in: market, alley1 (look outside world), rc4 (at start point), punwar (not too slow?), vertigo
+    lpbheaven (strong lighting, lots of SURF_TRANS + dl), beachassault (inside ship: shader with 3 lightstyles)
 ! rename "gl_local.h" to something another (and change "#ifndef __GL_LOCAL_...")
 - SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
 - add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
 ? don't need shader->sortParam other than sky/opaque/seethrough (may be, +coronas +hud)
-! implement hWnd caching (move CreateWindow()/DeleteWindow() from ref to main, create wnd on startup and delete on exit or
-  when renderer does not require it; this will (I hope) prevent app from loosing focus while vid_restart etc.)
+* implement hWnd caching (move CreateWindow()/DeleteWindow() from ref to main
+  ? add cvar "win_singleWnd"
+  ? add flag to renderer: REF_NO_WND to disable common window holding-alive
 
 ?? add mean filter for DrawFPS() (ignore dropped frames and long (with FS access) frames)
 ! do not render while window is minimized (less CPU usage)
 - r_nocull works only with frustum culling (extend cvar or add another ...)
 !! vertex arrays are not 16-byte aligned (see gl.log)
-- reimplement fast drawing (multitexturing etc.)
+? reimplement fast drawing (multitexturing etc.)
 
+- dlights:
+  - when model lighting will be implemented, do not use (compensate?) dlighted vertex lightmaps, use dlight info itself
+  - cut dlights (by angle: rad/intens = cos(angle))
+  - speedup of markup process (?):
+    1) share planes between surfs
+    2) add "dlightMask" for plane
+    3) WalkBspTree(): mark plane dlights (no surface dlights)
+    4) DrawBspSeq(): give dlight info from planes
+    !) need a way to provide dlight info for inline models (static (WORLD) and dynamic models)
 - shaders:
-  ? make shader_t.name dynamic allocated (~ basenamed_t)
+  ? make shader_t.name dynamically allocated (~ basenamed_t)
   ? sky shader: specify color for "gl_fastSky"
-  ? field: size of shader (for reusing it from deleted shader (temp shaders)) (Is "delete/reuse shader" needed ??)
 ? "gl_fastSky 2" - use "*sky" shader; add color to "*sky" shader (color-filled skies)
 ? gl_maxVerts cvar [1..2048] -- used by RB_CheckOverflow()
-! correct lightscaling (max_scale = 255/max(r,g,b)) for overbright
-? gl_lastValidRenderer (reset all config params ("reset gl_*" ??) if changed; example of value -- "Riva TNT2/SSE")
-! overbright of DYNAMIC lightmaps (NORMAL modulated in image.c::Upload()) and model skins
+? gl_lastValidRenderer (reset all config params ("reset gl_*" if changed ??); example of value -- "Riva TNT2/SSE")
 ? remove "SHADER_WALL" flag; add "SHADER_WORLD" -- depth test/write (other -- 2D) ? "SHADER_MIPMAP" ?
+- gfxinfo:
+  ? gamma info (on startup: remove or extend ?), overbright info, extended mtex info -> gfxinfo
+  ? "UberEngine": cvar "r_gfxinfo" (display when modified only ??)
+
+BUGS:
+! gl_singleShader don't works with dynamic lightmaps
+- "gl_showsky 1" don't works (399p10->399p11: multitexturing, PreprocessShader() etc.)
+? map "terrain", light cone from helicopter: too opaque when overbright is 1 (invalid lightmap on alpha-surf ?)
+? check demo "massive1": have error "frame #46 not found"
 
 --------- Mandatory ------------
 VISIBLE:
-- dlights
 - models (entities)
   - md2
-    - "outline" effect (quad damage etc.)
+    - "outline" effect (quad damage etc.), cheaters fx (whole player is white), IR-vision fx
     - flashing fx (sometimes rgbGen entity, or 2 shaders: with/without flashing ?)
     - lefthand (weapon model)
     - dynamic lighting (RecursiveLightPoint)
@@ -46,41 +97,33 @@ FOR GAME:
 - optimize sky box drawing:
   - make more than 6 rects (6 * skyTessSize^2)
   - perform fast surface tessalation (need only verts.xyz)
-  - can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs)
-  - find fast cases, when surface placed only on one plane (can use surface normal to determine IMPOSSIBLE planes)
+  ? can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs) (problems when surf can be placed on some
+    box sides)
+  - can use surface normal to determine IMPOSSIBLE planes
+  - find fast cases, when surface placed only on one plane
 - gl_showbboxes, gl_singleShader, gl_showtris -> cheat
 - vertex lighting:
-  - surface simplification + subdivision (!) for complex lightmaps (non-gradient color change) - as option
+  - surface simplification (?) + subdivision (!) for complex lightmaps (non-gradient color change) - as option
     (lighting = "lightmap", "vertex", "hq vertex")
 - gl_logFile:
   ? remove "GL_" and "gl" prefixes (looks like OpenGL spec)
   ? add error checking after commands (qgl.in: ERROR)
   ?? add profiling (qgl.in: PROFILE)
-? make area_t, cluster_t, area.clusterList, cluster.leafList (faster MarkLeafs()/LightPoint())
-- gl_overbright:
-  - 0-none (force off), 1-"1bit" (force on), 2-"auto" (ON when (vertexLight || multitext. && !env_combine) && fullscreen (??))
-  - remove gl_overbrightBits
-  - menu selectable
+?? make area_t, cluster_t, area.clusterList, cluster.leafList (faster MarkLeafs()/LightPoint())
 - gl_model:
   - add surfaceFast_t (for use with FastIterator())
-- dynamic lightmaps:
-  1) upload all at once (??)
-  2) make multi-pass shaders (no uploads, RGBGEN_LIGHTSTYLE)
-     - lightstyle value is 0..2 (up to double brightness)
-     - maps with slow dynamic lightmaps: market, alley1, (look outside world), rc4 (at start point), punwar (not too slow?)
 ? make skins for models with 1 frame to be sh.fast==true (and implement it in AGP memory);
   Problem: how to apply lighting? (and: skins may be dynamically changed from "fast" to "slow")
-- triangle models: build lods
-? profile uploading (r_speeds, gl_finish 2)
+! triangle models: build lods
 ? "screenshort levelshot" -> "levelshot"
 ? "gl_alphaLightmap" (arc, def: "1") -- can disable lighting of alpha/warp surfaces; add option to menu
   (easy implement, but naming problems ...)
-- water lightmaps:
-  ? try to GENERATE vertex light for water/windows ??
+! water lightmaps: try to GENERATE vertex light for water
 - improve SURF_ALPHA quality on near distances (determine const for checking this requirement?):
   - scale (enlarge) texture with keeping alpha = 0 or 255
   ? make 2 copies of image (when necessary): with and without alpha-channel (have some KP maps with same texture used
     as window and as wall) -- IMAGE_ALPHA flag (use different resampling techniques)
+? cvar "gl_spyShader <name (mask?)>" - show info about shader rendering (how combined, etc)
 
 ---------------------------
 - inlineModels: RF_TRANSLUCENT/RF2_ALPHA: qglColor4f (1,1,1,0.25)/qglColor4f(1,1,1,1) + blend + no lightmap

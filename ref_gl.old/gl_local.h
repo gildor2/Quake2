@@ -39,7 +39,36 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "../client/ref.h"
 
-#include "../ref_gl/qgl.h"
+#ifdef _WIN32
+// need this include, because have wgl and GDI functions here
+#  include <windows.h>
+#endif
+
+#include "../ref_gl/gl.h"
+
+#ifdef __linux__
+//#include <GL/fxmesa.h>
+#include <GL/glx.h>
+#endif
+
+
+#include "../client/ref.h"
+
+
+qboolean QGL_Init (const char *dllname);
+void	QGL_InitExtensions (void);
+void	QGL_Shutdown (void);
+// logging
+void	QGL_EnableLogging (qboolean enable);
+void	QGL_LogMessage (char *text);
+#define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
+
+#ifndef APIENTRY
+#  define APIENTRY
+#endif
+
+#include "../ref_gl/qgl_decl.h"
+
 
 #define	REF_VERSION	"GL 0.01"
 
@@ -283,6 +312,7 @@ extern	cvar_t	*gl_logFile;
 extern	cvar_t	*r_lightmap;
 extern	cvar_t	*gl_shadows;
 extern	cvar_t	*gl_dynamic;
+extern	cvar_t	*gl_dlightBacks;
 extern  cvar_t  *gl_monolightmap;
 extern	cvar_t	*gl_nobind;
 extern	cvar_t	*gl_round_down;
@@ -352,7 +382,7 @@ extern	int		registration_sequence;
 
 void V_AddBlend (float r, float g, float b, float a, float *v_blend);
 
-int 	R_Init( void *hinstance, void *hWnd );
+int 	R_Init( void );
 void	R_Shutdown( void );
 
 void R_RenderView (refdef_t *fd);
@@ -493,6 +523,7 @@ typedef struct
 	// multitexturing
 	int		maxActiveTextures;		// == 1 if no multitexturing
 	qboolean lightmapOverbright;
+	qboolean multiPassLM;
 
 	// texture compression formats (0 if unavailable)
 	int		formatSolid;			// RGB (no alpha)
@@ -581,13 +612,10 @@ IMPLEMENTATION SPECIFIC FUNCTIONS
 
 void		GLimp_BeginFrame( float camera_separation );
 void		GLimp_EndFrame( void );
-int 		GLimp_Init( void *hinstance, void *hWnd );
+int 		GLimp_Init( void );
 void		GLimp_Shutdown( void );
 int     	GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen );
 void		GLimp_AppActivate( qboolean active );
-// logging
-void		GLimp_LogMessage (char *text);
-#define LOG_STRING(str)		if (gl_logFile->integer) GLimp_LogMessage (str);
 
 qboolean	GLimp_HasGamma (void);
 void		GLimp_SetGamma (float gamma, float intens);

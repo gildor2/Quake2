@@ -15,6 +15,13 @@ static int currentEntity;
 refEntity_t gl_entities[MAX_GLENTITIES];
 int			gl_numEntities;
 
+// dlights
+#define MAX_GLDLIGHTS		(MAX_DLIGHTS * 4)		// reserve more for frames with different dlight sets
+refDlight_t	gl_dlights[MAX_GLDLIGHTS];
+int			gl_numDlights;
+
+#define SATURATE(c,l,v) c = (l+0.5+(c-l)*v); if (c < 0) c = 0; else if (c > 255) c = 255;
+
 
 /* Culling on BSP:
  *   1. PVS
@@ -37,6 +44,28 @@ int			gl_numEntities;
 #define FRUSTUM_INSIDE	1
 #define FRUSTUM_OUTSIDE	2
 #define FRUSTUM_ON		(FRUSTUM_INSIDE|FRUSTUM_OUTSIDE)
+
+
+static int BoxCull (vec3_t mins, vec3_t maxs, int frustumMask)
+{
+	int		i, res;
+	cplane_t *pl;
+
+	if (r_nocull->integer)
+		return FRUSTUM_ON;
+
+	res = FRUSTUM_INSIDE;
+	for (i = 0, pl = vp.frustum; i < 4; i++, pl++)
+		if (frustumMask & (1 << i))
+		{
+			int		tmp;
+
+			tmp = BoxOnPlaneSide (mins, maxs, pl);
+			if (tmp == 2) return FRUSTUM_OUTSIDE;
+			if (tmp == 3) res = FRUSTUM_ON;
+		}
+	return res;
+}
 
 
 // Uses entity to determine transformations. We cannot use BoxOnPlaneSide, because
@@ -178,12 +207,23 @@ static void ModelToWorldCoord (vec3_t localOrigin, refEntity_t *e, vec3_t center
 }
 
 
+static void WorldToModelCoord (vec3_t world, refEntity_t *e, vec3_t local)
+{
+	vec3_t	v;
+	int		i;
+
+	VectorSubtract (world, e->origin, v);
+	for (i = 0; i < 3; i++)
+		local[i] = DotProduct (v, e->axis[i]);
+}
+
+
 static void SetupModelMatrix (refEntity_t *e)
 {
 	float	matrix[4][4];
 	int		i, j, k;
-	vec3_t	v;
 
+	//?? skip if ent->worldModel == true
 	/* Matrix contents:
 	 *  a00   a10   a20     x
 	 *  a01   a11   a21     y
@@ -211,9 +251,7 @@ static void SetupModelMatrix (refEntity_t *e)
 		}
 	// set e.modelvieworg
 	// NOTE: in Q3 axis may be non-normalized, so, there result is divided by length(axis[i])
-	VectorSubtract (vp.vieworg, e->origin, v);
-	for (i = 0; i < 3; i++)
-		e->modelvieworg[i] = DotProduct (v, e->axis[i]);
+	WorldToModelCoord (vp.vieworg, e, e->modelvieworg);
 }
 
 
@@ -352,64 +390,181 @@ static node_t *AlphaSphereLeaf (vec3_t origin, float radius)
 /*------------------ Drawing entities --------------------*/
 
 
-static void AddInlineModelSurfaces (refEntity_t *e)
+static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMask, refEntity_t *e)
 {
-	inlineModel_t	*im;
-	surfaceCommon_t	*surf;
-	surfacePlanar_t	*pl;
-	int		i;
+	int		i, numDlights, j;
+	refDlight_t *dl;
+	float	*vieworg;
 
-	im = e->model->inlineModel;
+	if (!e || (e->worldMatrix && gl_showbboxes->integer != 3))
+		currentEntity = ENTITYNUM_WORLD;
 
-	for (i = 0, surf = im->faces; i < im->numFaces; i++, surf++)
+	if (currentEntity == ENTITYNUM_WORLD)
+		vieworg = vp.vieworg;
+	else
+		vieworg = e->modelvieworg;
+
+	for (i = 0; i < numFaces; i++)
 	{
-		// This loop similar to RecursiveWorldNode()
+		surfaceCommon_t *surf;
+		surfacePlanar_t *pl;
+
+		surf = *psurf++;
+		if (surf->frame == drawFrame) continue;
+		surf->frame = drawFrame;
+		if (surf->dlightFrame != drawFrame) surf->dlightMask = 0;
+
 		switch (surf->type)
 		{
 		case SURFACE_PLANAR:
 			pl = surf->pl;
+
 			// backface culling
 			if (gl_facePlaneCull->integer)
 			{
-				cplane_t *plane;
 				float	dist;
-				gl_cullMode_t glcull;
+				gl_cullMode_t cull;
 
-				glcull = surf->shader->cullMode;
-				if (glcull != CULL_NONE)
+				cull = surf->shader->cullMode;
+#define CULL_SURF	\
+	{				\
+		gl_speeds.cullSurfs++;	\
+		continue;	\
+	}
+
+				if (cull != CULL_NONE)
 				{
-					plane = &pl->plane;
-					dist = DotProduct (plane->normal, e->modelvieworg);
-					if (glcull == CULL_FRONT)
+					dist = DISTANCE_TO_PLANE(vieworg, &pl->plane);
+					if (cull == CULL_FRONT)
 					{
-						if (plane->dist + 8 < dist)
-						{
-							gl_speeds.cullSurfs++;
-							continue;
-						}
+						if (dist > 8) CULL_SURF;
 					}
 					else
 					{
-						if (plane->dist - 8 > dist)
-						{
-							gl_speeds.cullSurfs++;
-							continue;
-						}
+						if (dist < -8) CULL_SURF;
 					}
 				}
 			}
+
 			// frustum culling
-			if (!r_nocull->integer && e->frustumMask &&
-				TransformedBoxCull (pl->mins, pl->maxs, e) == FRUSTUM_OUTSIDE)
+			if (frustumMask)
 			{
-				gl_speeds.cullSurfs++;
-				continue;
+				if (currentEntity == ENTITYNUM_WORLD)
+				{
+					if (BoxCull (pl->mins, pl->maxs, frustumMask) == FRUSTUM_OUTSIDE) CULL_SURF;
+				}
+				else
+				{
+					if (TransformedBoxCull (pl->mins, pl->maxs, e) == FRUSTUM_OUTSIDE) CULL_SURF;
+				}
 			}
-			break;
-		}
-		//!! apply dlights, fog
-		GL_AddSurfaceToPortal (surf, surf->shader, currentEntity);
+#undef CULL_SURF
+
+			// dlights
+			numDlights = 0;
+			pl->dlights = NULL;
+			if (surf->dlightMask && surf->shader->lightmapNumber != LIGHTMAP_NONE)
+			{
+				surfDlight_t *sdl;
+				unsigned mask;
+
+				sdl = pl->dlights = GL_AllocDynamicMemory (sizeof(surfDlight_t) * MAX_DLIGHTS);
+				if (!sdl) surf->dlightMask = 0;		// easiest way to break the loop below
+				for (j = 0, mask = 1, dl = vp.dlights; j < vp.numDlights; j++, dl++, mask <<= 1)
+					if (surf->dlightMask & mask)
+					{
+						float	org0, org1, dist, rad;
+						float	*dl_org;
+
+#define CULL_DLIGHT	\
+	{				\
+		surf->dlightMask &= ~mask;	\
+		continue;	\
 	}
+						if (currentEntity == ENTITYNUM_WORLD)
+							dl_org = dl->origin, &pl->plane;
+						else
+							dl_org = dl->modelOrg;
+						dist = DISTANCE_TO_PLANE(dl_org, &pl->plane);
+//if (currentEntity != ENTITYNUM_WORLD)//!!
+//	DrawTextLeft(va("dl: dist=%g :: surf=(%g,%g)-(%g,%g)",dist,pl->mins2[0],pl->maxs2[0],pl->mins2[1],pl->maxs2[1]),1,0,1);
+						if (dist < 0) dist = -dist;
+						else if (!gl_dlightBacks->integer && dist > 8) CULL_DLIGHT;
+
+						if (dist >= dl->intensity) CULL_DLIGHT;
+						rad = sqrt (dl->intensity * dl->intensity - dist * dist);	//!! use tables
+						org0 = DotProduct (dl_org, pl->axis[0]);
+//if (currentEntity != ENTITYNUM_WORLD)//!!
+//	DrawTextLeft(va("    rad=%g :: org0=%g",rad,org0),1,0,1);
+						if (org0 < pl->mins2[0] - rad || org0 > pl->maxs2[0] + rad) CULL_DLIGHT;
+						org1 = DotProduct (dl_org, pl->axis[1]);
+//if (currentEntity != ENTITYNUM_WORLD)//!!
+//	DrawTextLeft(va("    org1=%g",org1),1,0,1);
+						if (org1 < pl->mins2[1] - rad || org1 > pl->maxs2[1] + rad) CULL_DLIGHT;
+//if (currentEntity != ENTITYNUM_WORLD)//!!
+//	DrawTextLeft(va("    org=(%g,%g)",org0,org1),1,0,1);
+						// save dlight info
+						sdl->pos[0] = org0;
+						sdl->pos[1] = org1;
+						sdl->radius = rad;
+						sdl->dlight = dl;
+						sdl->axis = pl->axis;
+						// next dlight
+						numDlights++;
+						sdl++;
+					}
+#undef CULL_DLIGHT
+				GL_ResizeDynamicMemory (pl->dlights, sizeof(surfDlight_t) * numDlights);
+			}
+			else
+				surf->dlightMask = 0;
+			break;
+		default:
+			DrawTextLeft ("unknows surface type", 1, 0, 0);
+			continue;
+		}
+		//!! apply fog
+		if (surf->shader->lightmapNumber == LIGHTMAP_VERTEX) numDlights = 0;	// sort all together
+		GL_AddSurfaceToPortal (surf, surf->shader, currentEntity, numDlights);
+	}
+}
+
+static void AddInlineModelSurfaces (refEntity_t *e)
+{
+	inlineModel_t	*im;
+	surfaceCommon_t	*surf, **psurf;
+	int		i;
+	refDlight_t *dl;
+	unsigned dlightMask, mask;
+
+	im = e->model->inlineModel;
+	// check dlights
+	dlightMask = 0;
+	for (i = 0, dl = vp.dlights, mask = 1; i < vp.numDlights; i++, dl++, mask <<= 1)
+	{
+		vec3_t	tmp;
+		float	dist2, dist2min;
+
+		VectorSubtract (im->center, dl->origin, tmp);
+		dist2 = DotProduct (tmp, tmp);
+		dist2min = im->radius + dl->intensity;
+		dist2min = dist2min * dist2min;
+		if (dist2 >= dist2min) continue;	// too far
+
+		WorldToModelCoord (dl->origin, e, dl->modelOrg);
+		dlightMask |= mask;
+	}
+	// mark surfaces
+	if (dlightMask)
+		for (i = 0, psurf = im->faces; i < im->numFaces; i++, psurf++)
+		{
+			surf = *psurf;
+			surf->dlightFrame = drawFrame;
+			surf->dlightMask = dlightMask;
+		}
+//	if (dlightMask) DrawTextLeft(va("dl_ent %d(%g,%g,%g) %08X", currentEntity,
+//		im->center[0],im->center[1],im->center[2],dlightMask),1,1,0);//!!!! REMOVE
+	AddBspSurfaces (im->faces, im->numFaces, e->frustumMask, e);
 }
 
 
@@ -438,7 +593,7 @@ static void AddMd3Surfaces (refEntity_t *e)
 		if (e->flags & RF_TRANSLUCENT)
 			shader = GL_GetAlphaShader (shader);
 		// draw surface
-		GL_AddSurfaceToPortal (surf, shader, currentEntity);
+		GL_AddSurfaceToPortal (surf, shader, currentEntity, 0);
 	}
 }
 
@@ -507,7 +662,7 @@ static void AddBeamSurfaces (refEntity_t *e)
 		gl_speeds.cullEnts2++;
 		return;
 	}
-	size = e->beamRadius * 200 / size / vp.fov_scale;
+	size = e->beamRadius * 200 / (size * vp.fov_scale);
 	numParts = size;
 	if (numParts < 1) numParts = 1;
 	else if (numParts > 6) numParts = 6;
@@ -517,7 +672,7 @@ static void AddBeamSurfaces (refEntity_t *e)
 	VectorNormalizeFast (axis[0]);
 	CrossProduct (axis[0], viewDir, axis[1]);
 	VectorNormalizeFast (axis[1]);
-	CrossProduct (axis[0], axis[1], axis[2]);	// already normalized
+	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
 
 	VectorScale (axis[1], e->beamRadius, dir2);
 	angle = 0;
@@ -568,24 +723,28 @@ static void AddBeamSurfaces (refEntity_t *e)
 static node_t *WalkBspTree (void)
 {
 	int		sptr, frustumMask, drawOrder;
+	unsigned dlightMask;
 	node_t	*node, *firstLeaf, *lastLeaf;
 
 	struct {
 		node_t	*node;
 		int		frustumMask;
+		unsigned dlightMask;
 	} stack[MAX_TREE_DEPTH], *st;
 
 	sptr = 0;
 	node = map.nodes;
 	frustumMask = 0xF;		// check all frustum planes
+	dlightMask = vp.numDlights >= 32 ? 0xFFFFFFFF : (1 << vp.numDlights) - 1;
 	firstLeaf = NULL;
 	drawOrder = 0;
 	lastLeaf = node;		// just in case
 
-#define PUSH_NODE(n)		\
+#define PUSH_NODE(n,dl)		\
 	st = &stack[sptr++];	\
 	st->node = n;			\
-	st->frustumMask = frustumMask;
+	st->frustumMask = frustumMask;	\
+	st->dlightMask = dl;
 
 	// if sptr == 0 -- whole tree visited
 #define POP_NODE()			\
@@ -596,6 +755,7 @@ static node_t *WalkBspTree (void)
 		st = &stack[--sptr];			\
 		node = st->node;				\
 		frustumMask = st->frustumMask;	\
+		dlightMask = st->dlightMask;	\
 	}
 
 	while (node)			// when whole tree visited - node = NULL
@@ -630,22 +790,41 @@ static node_t *WalkBspTree (void)
 		}
 
 		node->drawOrder = drawOrder++;
-		//!! check dlights (may require extensions to "stack")
-
 		if (node->isNode)
-		{	// Q3: child0, than child1; Q1/2: child depends on clipPlane (standard BSP usage)
+		{
+			unsigned dlight0, dlight1;
+
+			// check dlights
+			dlight0 = dlight1 = 0;
+			if (dlightMask)
+			{
+				unsigned i, mask;
+				refDlight_t *dl;
+				float	d;
+
+				for (i = 0, dl = vp.dlights, mask = 1; i < MAX_DLIGHTS; i++, dl++, mask <<= 1)
+				{
+					if (!(dlightMask & mask)) continue;
+					d = DISTANCE_TO_PLANE(dl->origin, node->plane);
+					if (d > -dl->intensity) dlight0 |= mask;
+					if (d < dl->intensity) dlight1 |= mask;
+				}
+			}
+
 			if (DISTANCE_TO_PLANE(vp.vieworg, node->plane) < 0)
 			{
-				// ch[0] than ch[1]
-				PUSH_NODE(node->children[1]);
+				// ch[0], then ch[1]
+				PUSH_NODE(node->children[1], dlight1);
 				node = node->children[0];
+				dlightMask = dlight0;
 				continue;
 			}
 			else
 			{
-				// ch[1] than ch[0]
-				PUSH_NODE(node->children[0]);
+				// ch[1], then ch[0]
+				PUSH_NODE(node->children[0], dlight0);
 				node = node->children[1];
+				dlightMask = dlight1;
 				continue;
 			}
 		}
@@ -662,6 +841,25 @@ static node_t *WalkBspTree (void)
 		node->frustumMask = frustumMask;
 		node->drawEntity = NULL;
 		node->drawParticle = NULL;
+		// mark dlights on leaf surfaces
+		if (dlightMask)
+		{
+			int		i;
+			surfaceCommon_t **psurf, *surf;
+
+			for (i = 0, psurf = node->leafFaces; i < node->numLeafFaces; i++, psurf++)
+			{
+				surf = *psurf;
+				if (surf->dlightFrame == drawFrame)
+					surf->dlightMask |= dlightMask;
+				else
+				{
+					surf->dlightMask = dlightMask;
+					surf->dlightFrame = drawFrame;
+				}
+			}
+		}
+
 		POP_NODE();
 	}
 
@@ -686,6 +884,11 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 	for (i = 0, e = gl_entities + firstEntity; i < numEntities; i++, e++)
 	{
+#define CULL_ENT	\
+	{				\
+		gl_speeds.cullEnts++;	\
+		continue;	\
+	}
 		if (e->model)
 		{
 			switch (e->model->type)
@@ -697,11 +900,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 					im = e->model->inlineModel;
 					e->frustumMask = -1;		// for updating
 					// frustum culling (entire model)
-					if (TransformedBoxCull (im->mins, im->maxs, e) == FRUSTUM_OUTSIDE)
-					{
-						gl_speeds.cullEnts++;
-						continue;
-					}
+					if (TransformedBoxCull (im->mins, im->maxs, e) == FRUSTUM_OUTSIDE) CULL_ENT;
 
 					leaf = SphereLeaf (im->center, im->radius);
 					VectorCopy (im->center, center);
@@ -722,19 +921,12 @@ static void DrawEntities (int firstEntity, int numEntities)
 					ModelToWorldCoord (frame1->localOrigin, e, center);
 					cull1 = SphereCull (center, frame1->radius);
 					if (frame1 == frame2 && cull1 == FRUSTUM_OUTSIDE)
-					{
-						gl_speeds.cullEnts++;
-						continue;
-					}
+						CULL_ENT
 					else
 					{
 						ModelToWorldCoord (frame2->localOrigin, e, center2);
 						cull2 = SphereCull (center2, frame2->radius);
-						if (cull1 == cull2 && cull1 == FRUSTUM_OUTSIDE)
-						{	// culled
-							gl_speeds.cullEnts++;
-							continue;
-						}
+						if (cull1 == cull2 && cull1 == FRUSTUM_OUTSIDE) CULL_ENT;
 					}
 					leaf = SphereLeaf (center, frame1->radius);
 				}
@@ -763,11 +955,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 			continue;
 		}
 
-		if (!leaf)
-		{	// entity do not occupy any visible leafs
-			gl_speeds.cullEnts2++;
-			continue;
-		}
+		if (!leaf) CULL_ENT;			// entity do not occupy any visible leafs
 
 		// calc model distance
 		VectorSubtract (center, vp.vieworg, delta);
@@ -801,6 +989,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 		if (e->model) SetupModelMatrix (e);
 	}
+#undef CULL_ENT
 }
 
 
@@ -826,8 +1015,6 @@ static void DrawParticles (particle_t *p)
 
 static void DrawBspSequence (node_t *leaf)
 {
-	int		i;
-	surfaceCommon_t **psurf;
 	refEntity_t *e;
 
 	for ( ; leaf; leaf = leaf->drawNext)
@@ -849,71 +1036,7 @@ static void DrawBspSequence (node_t *leaf)
 
 		/*------ add leafFaces to draw list -------*/
 
-		for (i = 0, psurf = leaf->leafFaces; i < leaf->numLeafFaces; i++, psurf++)
-		{
-			surfaceCommon_t *surf;
-			surfacePlanar_t *pl;
-
-			surf = *psurf;
-			if (surf->frame == drawFrame) continue;
-			surf->frame = drawFrame;
-
-			//!! frustum culling non-planar surfaces
-			switch (surf->type)
-			{
-			case SURFACE_PLANAR:
-				pl = surf->pl;
-				// backface culling
-				if (gl_facePlaneCull->integer)
-				{
-					cplane_t *plane;
-					float	dist;
-					gl_cullMode_t cull;
-
-					cull = surf->shader->cullMode;
-					if (cull != CULL_NONE)
-					{
-						plane = &pl->plane;
-						dist = DotProduct (plane->normal, vp.vieworg);
-						if (cull == CULL_FRONT)
-						{
-							if (plane->dist + 8 < dist)
-							{
-								gl_speeds.cullSurfs++;
-								continue;
-							}
-						}
-						else
-						{
-							if (plane->dist - 8 > dist)
-							{
-								gl_speeds.cullSurfs++;
-								continue;
-							}
-						}
-					}
-				}
-				// frustum culling
-				if (!r_nocull->integer && leaf->frustumMask)
-				{
-#define CULL_PLANE(bit)	\
-					if (leaf->frustumMask & (1<<bit) &&	\
-						BoxOnPlaneSide(pl->mins, pl->maxs, &vp.frustum[bit]) == 2)	\
-						{							\
-							gl_speeds.cullSurfs++;	\
-							continue;				\
-						}
-					CULL_PLANE(0);
-					CULL_PLANE(1);
-					CULL_PLANE(2);
-					CULL_PLANE(3);
-#undef CULL_PLANE
-				}
-				break;
-			}
-			//!! apply dlights, fog
-			GL_AddSurfaceToPortal (surf, surf->shader, ENTITYNUM_WORLD);
-		}
+		AddBspSurfaces (leaf->leafFaces, leaf->numLeafFaces, leaf->frustumMask, NULL);
 
 		/*---------- draw leaf entities -----------*/
 
@@ -962,7 +1085,7 @@ static void MarkLeaves (void)
 	gl_speeds.leafs = map.numLeafNodes - map.numNodes;
 
 	// determine the vieworg cluster
-	cluster = GL_PointInLeaf (vp.vieworg /* vp.modelvieworg (portals ??) */)->cluster;
+	cluster = GL_PointInLeaf (vp.vieworg)->cluster;
 	// if cluster or areamask changed -- re-mark visible leaves
 	if (gl_refdef.viewCluster != cluster || gl_refdef.areaMaskChanged)
 	{
@@ -989,7 +1112,7 @@ static void MarkLeaves (void)
 
 				cl = n->cluster;
 				ar = n->area;
-				if (row[cl>>3] & (1<<(cl&7)) && gl_refdef.areaMask[ar>>3] & (1<<(ar&7)))	// NOTE: Q3 has inverted areaBits (areaMask)
+				if (row[cl>>3] & (1<<(cl&7)) && gl_refdef.areaMask[ar>>3] & (1<<(ar&7)))
 				{
 					for (p = n; p && p->visFrame != visFrame; p = p->parent)
 						p->visFrame = visFrame;
@@ -1022,6 +1145,11 @@ void GL_AddEntity (entity_t *ent)
 		VectorCopy (ent->origin, out->origin);
 		AnglesToAxis (ent->angles, out->axis);
 
+		if (!ent->origin[0] && !ent->origin[1] && !ent->origin[2] &&
+			!ent->angles[0] && !ent->angles[1] && !ent->angles[2])
+			out->worldMatrix = true;
+		else
+			out->worldMatrix = false;
 		out->frame = ent->frame;
 		out->oldFrame = ent->oldframe;
 		out->backLerp = ent->backlerp;
@@ -1077,6 +1205,49 @@ void GL_AddEntity (entity_t *ent)
 
 	gl_speeds.ents++;
 }
+
+
+void GL_AddDlight (dlight_t *dl)
+{
+	refDlight_t	*out;
+	float	r, g, b, l, sat;
+	int		r1, g1, b1;
+
+	if (gl_numDlights >= MAX_GLDLIGHTS)
+	{
+		Com_WPrintf ("R_AddDlight: MAX_GLDLIGHTS hit\n");
+		return;
+	}
+	out = &gl_dlights[gl_numDlights++];
+	VectorCopy (dl->origin, out->origin);
+	out->intensity = dl->intensity;
+	r = dl->color[0] * gl_config.identityLightValue;
+	g = dl->color[1] * gl_config.identityLightValue;
+	b = dl->color[2] * gl_config.identityLightValue;
+	sat = r_saturation->value;
+	if (sat != 1.0f)
+	{
+		l = (r + g + b) / 3.0f;
+		SATURATE(r,l,sat);
+		SATURATE(g,l,sat);
+		SATURATE(b,l,sat);
+	}
+	r1 = Q_ftol(r);
+	g1 = Q_ftol(g);
+	b1 = Q_ftol(b);
+	if (gl_config.lightmapOverbright)
+	{
+		r1 <<= 1;
+		g1 <<= 1;
+		b1 <<= 1;
+		NORMALIZE_COLOR255(r1, g1, b1);
+	}
+	out->c.c[0] = r1;
+	out->c.c[1] = g1;
+	out->c.c[2] = b1;
+	out->c.c[3] = 255;		// alpha
+}
+
 
 
 /*--------------------------------------------------------------*/

@@ -144,10 +144,6 @@ MATHLIB
 
 typedef float vec3_t[3];
 
-typedef	int	fixed4_t;
-typedef	int	fixed8_t;
-typedef	int	fixed16_t;
-
 #ifndef M_PI
 #define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
 #endif
@@ -163,6 +159,17 @@ extern vec3_t vec3_origin;
 unsigned ColorBytes3 (float r, float g, float b);
 unsigned ColorBytes4 (float r, float g, float b, float a);
 float NormalizeColor (const vec3_t in, vec3_t out);
+#define NORMALIZE_COLOR255(r,g,b)	\
+	if ((r|g|b) > 255)	\
+	{	\
+		int		max;	\
+		if (r > g) max = r; else max = g;	\
+		if (max < b) max = b;	\
+		r = r * 255 / max;	\
+		g = g * 255 / max;	\
+		b = b * 255 / max;	\
+	}
+
 void VectorNormalizeFast (vec3_t v);
 float Q_rsqrt (float number);
 
@@ -1337,17 +1344,6 @@ typedef struct
 
 	short		stats[MAX_STATS];		// fast status bar updates
 } player_state_t;
-
-
-// ==================
-// PGM
-#define VIDREF_GL		1
-#define VIDREF_SOFT		2
-#define VIDREF_OTHER	3
-
-extern int vidref_val;
-// PGM
-// ==================
 
 
 /*

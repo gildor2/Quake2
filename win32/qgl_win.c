@@ -85,6 +85,7 @@ void QGL_InitExtensions (void)
 
 		if (enable)
 		{
+			gl_config.extensionMask |= 1 << i;
 			for (j = ext->first; j < ext->first + ext->count; j++)
 			{
 				func = qgl.funcs[j] = lib.funcs[j] = (dummyFunc_t) (qwglGetProcAddress (qglNames[j]));
@@ -95,10 +96,12 @@ void QGL_InitExtensions (void)
 					break;
 				}
 			}
-			gl_config.extensionMask |= 1 << i;
 		}
-		else
+
+		// can get "enable == false" in previous block
+		if (!enable)
 		{
+			gl_config.extensionMask &= ~(1 << i);
 			for (j = ext->first; j < ext->first + ext->count; j++)
 				qgl.funcs[j] = NULL;
 		}
@@ -146,18 +149,18 @@ void QGL_InitExtensions (void)
 			for (j = 0; j < NUM_EXTENSIONS; j++)
 			{
 				if ((1 << j) & tmp)
-					Com_Printf ("...%s deprecated in favor of %s\n", ext->name, extInfo[j].name);
+					Com_DPrintf ("...%s deprecated in favor of %s\n", ext->name, extInfo[j].name);
 			}
 			// disable extension
 			gl_config.extensionMask &= ~(1 << i);
 		}
 		else
-			Com_Printf ("...enabling %s\n", ext->name);
+			Com_Printf ("...using %s\n", ext->name);
 	}
 }
 
 
-void GLimp_EnableLogging (qboolean enable)
+void QGL_EnableLogging (qboolean enable)
 {
 	int		i;
 
@@ -195,7 +198,7 @@ void GLimp_EnableLogging (qboolean enable)
 }
 
 
-void GLimp_LogMessage (char *text)
+void QGL_LogMessage (char *text)
 {
 	if (!glw_state.log_fp)
 		return;

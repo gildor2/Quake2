@@ -26,22 +26,27 @@ key up events are sent even if in console mode
 */
 
 
-char	key_lines[32][MAXCMDLINE];
-int		key_linepos;
+#define MAX_HISTORY	32
+
+static char history[MAX_HISTORY][MAXCMDLINE];
+static int	historyLine, historyCount;
+
+// current line
+char	editLine[MAXCMDLINE];
+int		editPos;
+
 int		anykeydown;
 
+char	*keybindings[256];
+byte	keydown[256];				// really, it is qboolean, but "byte" is more compact
+
 static int	shift_down = false;
-static int	history_line = 0;
 static int	key_waiting;
 
-static qboolean	consolekeys[256];	// if true, can't be rebound while in console
-static qboolean	menubound[256];		// if true, can't be rebound while in menu
+static byte		consolekeys[256];	// if true, can't be rebound while in console
+static byte		menubound[256];		// if true, can't be rebound while in menu
 static int		keyshift[256];		// key to map to if shift held down in console
 static int		key_repeats[256];	// if > 1, it is autorepeating
-
-int		edit_line = 0;
-char	*keybindings[256];
-qboolean keydown[256];
 
 
 typedef struct
@@ -159,7 +164,7 @@ static keyname_t keynames[] =
 	{"PAUSE",		K_PAUSE},
 
 	{"COMMA",		','},	// because comma used for separating multiple wildcards
-	{"SEMICOLON",	';'},	// because a raw semicolon seperates commands
+	{"SEMICOLON",	';'},	// because a raw semicolon separates commands
 
 	{NULL,			0}		// end marker
 };
@@ -182,20 +187,17 @@ void CompleteCommand (void)
 {
 	char	*cmd, *s;
 
-	s = key_lines[edit_line]+1;
+	s = &editLine[1];
 	if (*s == '\\' || *s == '/')
 		s++;
 
 	cmd = Cmd_CompleteCommand (s);
 	if (cmd)
 	{
-		key_lines[edit_line][1] = '/';
-		strcpy (key_lines[edit_line]+2, cmd);
-		key_linepos = strlen(cmd)+2;
-//		key_lines[edit_line][key_linepos] = ' ';
-//		key_linepos++;
-		key_lines[edit_line][key_linepos] = 0;
-		return;
+		editLine[1] = '/';
+		strcpy (editLine + 2, cmd);
+		editPos = strlen (cmd) + 2;
+		editLine[editPos] = 0;
 	}
 }
 
@@ -215,7 +217,6 @@ static qboolean iswordsym(char n)
 void Key_Console (int key)
 {
 	int		i, KEY;
-	char	*s;
 
 	switch (key)
 	{
@@ -264,25 +265,22 @@ void Key_Console (int key)
 	}
 
 	KEY = toupper (key);
-	if (KEY == 'V' && keydown[K_CTRL] || (key == K_INS || key == K_KP_INS) && keydown[K_SHIFT])	// Ctrl-V or Shift-Ins
+	if (KEY == 'V' && keydown[K_CTRL] || key == K_INS && keydown[K_SHIFT])	// Ctrl-V or Shift-Ins
 	{
 		char	*cbd;
 
 		if (cbd = Sys_GetClipboardData ())
 		{
-			int		i;
-
-			strtok (cbd, "\n\r\b");
-
+//			strtok (cbd, "\n\r\b");
 			i = strlen (cbd);
-			if (i + key_linepos > MAXCMDLINE - 1)
-				i = MAXCMDLINE - key_linepos - 1;
+			if (i + editPos > MAXCMDLINE - 1)
+				i = MAXCMDLINE - editPos - 1;
 
 			if (i > 0)
 			{
 				cbd[i] = 0;
-				strcat (key_lines[edit_line], cbd);
-				key_linepos += i;
+				strcat (editLine, cbd);
+				editPos += i;
 			}
 			free (cbd);
 		}
@@ -298,19 +296,44 @@ void Key_Console (int key)
 
 	if (key == K_ENTER || key == K_KP_ENTER)
 	{
+		// trim spaces at line end
+		for (i = strlen (editLine) - 1; i >= 0; i--)
+			if (editLine[i] == ' ')
+				editLine[i] = 0;
+			else
+				break;
 		// backslash text are commands, else chat
-		if (key_lines[edit_line][1] == '\\' || key_lines[edit_line][1] == '/')
-			Cbuf_AddText (key_lines[edit_line]+2);	// skip the >
+		if (editLine[1] == '\\' || editLine[1] == '/')
+			Cbuf_AddText (editLine + 2);			// skip the prompt
 		else
-			Cbuf_AddText (key_lines[edit_line]+1);	// valid command
-
+			Cbuf_AddText (editLine + 1);			// valid command
 		Cbuf_AddText ("\n");
-		Com_Printf ("%s\n",key_lines[edit_line]);
-		edit_line = (edit_line + 1) & 31;
-		history_line = edit_line;
-		key_lines[edit_line][0] = ']';
-		key_lines[edit_line][1] = 0;
-		key_linepos = 1;
+
+		Com_Printf ("%s\n", editLine);
+		if (!editLine[1])							// do not add empty line to history
+		{
+			Key_ClearTyping ();
+			return;
+		}
+
+		// find the same line in history and remove it
+		for (i = 0; i < historyCount; i++)
+			if (!strcmp (history[i], editLine))
+			{
+				if (i != historyCount - 1) memcpy (history[i], history[i+1], sizeof(history[0]) * (historyCount - 1 - i));
+				historyCount--;
+				break;
+			}
+
+		// add current line to history
+		if (historyCount < MAX_HISTORY)
+			historyCount++;
+		else
+			memcpy (history[0], history[1], sizeof(history[0]) * (MAX_HISTORY - 1));
+		memcpy (history[historyCount-1], editLine, sizeof(editLine));
+		historyLine = historyCount;
+		// prepare new line
+		Key_ClearTyping ();
 		if (cls.state == ca_disconnected)
 			SCR_UpdateScreen ();					// force an update, because the command may take some time
 		return;
@@ -322,42 +345,41 @@ void Key_Console (int key)
 		return;
 	}
 
-	if (key == K_LEFTARROW || key == K_KP_LEFTARROW || key == K_BACKSPACE)
+	if (key == K_LEFTARROW || key == K_BACKSPACE)
 	{
-		if (key_linepos <= 1) return;
-		s = key_lines[edit_line];
-		i = key_linepos;
+		if (editPos <= 1) return;
+		i = editPos;
 		if (keydown[K_CTRL])
 		{
-			while (key_linepos > 1 && !iswordsym(s[--key_linepos]));
-			while (key_linepos > 0 && iswordsym(s[--key_linepos]));
-			key_linepos++;
+			while (editPos > 1 && !iswordsym (editLine[--editPos]));
+			while (editPos > 0 && iswordsym (editLine[--editPos]));
+			editPos++;
 		}
 		else
-			key_linepos--;
+			editPos--;
 
 		if (key == K_BACKSPACE)
-			strcpy (&s[key_linepos], &s[i]);
+			strcpy (&editLine[editPos], &editLine[i]);
 		return;
 	}
 
-	if (key == K_RIGHTARROW || key == K_KP_RIGHTARROW)
+	if (key == K_RIGHTARROW)
 	{
-		s = key_lines[edit_line];
 		if (keydown[K_CTRL])
 		{
-			while (s[key_linepos] && iswordsym(s[key_linepos])) key_linepos++;
-			while (s[key_linepos] && !iswordsym(s[key_linepos])) key_linepos++;
+			while (editLine[editPos] && iswordsym (editLine[editPos])) editPos++;
+			while (editLine[editPos] && !iswordsym (editLine[editPos])) editPos++;
 		}
 		else
-			if (s[key_linepos]) key_linepos++;
+			if (editLine[editPos]) editPos++;
 		return;
 	}
 
-	if (key == K_DEL || key == K_KP_DEL)
+	if (key == K_DEL)
 	{
-		s = &key_lines[edit_line][key_linepos];
-		if (!s) return; // nothing to delete
+		char	*s;
+
+		s = &editLine[editPos];
 		if (keydown[K_CTRL])
 			*s = 0;
 		else
@@ -365,39 +387,26 @@ void Key_Console (int key)
 		return;
 	}
 
-	if (key == K_UPARROW || key == K_KP_UPARROW || (KEY == 'P' && keydown[K_CTRL]))
+	if (key == K_UPARROW || (KEY == 'P' && keydown[K_CTRL]))
 	{
-		do
-		{
-			history_line = (history_line - 1) & 31;
-		} while (history_line != edit_line
-				&& !key_lines[history_line][1]);
-		if (history_line == edit_line)
-			history_line = (edit_line+1)&31;
-		strcpy(key_lines[edit_line], key_lines[history_line]);
-		key_linepos = strlen(key_lines[edit_line]);
+		if (!historyLine) return;					// empty or top of history
+
+		strcpy (editLine, history[--historyLine]);
+		editPos = strlen (editLine);
 		return;
 	}
 
-	if (key == K_DOWNARROW || key == K_KP_DOWNARROW || (KEY == 'N' && keydown[K_CTRL]))
+	if (key == K_DOWNARROW || (KEY == 'N' && keydown[K_CTRL]))
 	{
-		if (history_line == edit_line) return;
-		do
-		{
-			history_line = (history_line + 1) & 31;
-		}
-		while (history_line != edit_line
-			&& !key_lines[history_line][1]);
-		if (history_line == edit_line)
-		{
-			key_lines[edit_line][0] = ']';
-			key_lines[edit_line][1] = 0;
-			key_linepos = 1;
-		}
+		if (historyLine >= historyCount) return;	// bottom of history
+
+		historyLine++;
+		if (historyLine == historyCount)
+			Key_ClearTyping ();
 		else
 		{
-			strcpy(key_lines[edit_line], key_lines[history_line]);
-			key_linepos = strlen(key_lines[edit_line]);
+			strcpy (editLine, history[historyLine]);
+			editPos = strlen (editLine);
 		}
 		return;
 	}
@@ -414,7 +423,7 @@ void Key_Console (int key)
 		return;
 	}
 
-	if (key == K_PGUP || key == K_KP_PGUP )
+	if (key == K_PGUP)
 	{
 		con.display -= 2;
 		if (con.display < con.current - con.totallines + 10)
@@ -422,42 +431,39 @@ void Key_Console (int key)
 		return;
 	}
 
-	if (key == K_PGDN || key == K_KP_PGDN )
+	if (key == K_PGDN)
 	{
 		con.display += 2;
 		return;
 	}
 
-	if (key == K_HOME || key == K_KP_HOME)
+	if (key == K_HOME)
 	{
 		if (keydown[K_CTRL])
 			con.display = con.current - con.totallines + 10;
 		else
-			key_linepos = 1;
+			editPos = 1;
 		return;
 
 	}
 
-	if (key == K_END || key == K_KP_END)
+	if (key == K_END)
 	{
 		if (keydown[K_CTRL])
 			con.display = con.current;
 		else
-			key_linepos = strlen (key_lines[edit_line]);
+			editPos = strlen (editLine);
 		return;
 	}
 
 	if (key < 32 || key > 127)
 		return;	// non printable
 
-	if (key_linepos < MAXCMDLINE - 2)
+	if (editPos < MAXCMDLINE - 2)
 	{
-		s = key_lines[edit_line];
-		for (i = MAXCMDLINE - 1; i > key_linepos; i--) s[i] = s[i - 1];
-		key_lines[edit_line][key_linepos] = key;
-		key_linepos++;
+		for (i = MAXCMDLINE - 1; i > editPos; i--) editLine[i] = editLine[i - 1];
+		editLine[editPos++] = key;
 	}
-
 }
 
 
@@ -784,12 +790,7 @@ void Key_Init (void)
 		{'\\', '|'}
 	};
 
-	for (i = 0; i < 32; i++)
-	{
-		key_lines[i][0] = ']';
-		key_lines[i][1] = 0;
-	}
-	key_linepos = 1;
+	Key_ClearTyping ();
 
 	// init ascii characters in console mode
 	for (i = 32; i < 128; i++)
@@ -1015,8 +1016,9 @@ void Key_ClearStates (void)
 
 void Key_ClearTyping (void)
 {
-	key_lines[edit_line][1] = 0;	// clear any typing
-	key_linepos = 1;
+	editLine[0] = ']';
+	editLine[1] = 0;
+	editPos = 1;
 }
 
 

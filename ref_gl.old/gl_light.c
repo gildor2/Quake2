@@ -139,7 +139,7 @@ void R_MarkLights (dlight_t *light, int bit, mnode_t *node)
 		return;
 	}
 
-// mark the polygons
+	// mark the polygons
 	surf = r_worldmodel->surfaces + node->firstsurface;
 	for (i=0 ; i<node->numsurfaces ; i++, surf++)
 	{
@@ -381,8 +381,17 @@ void R_AddDynamicLights (msurface_t *surf)
 
 		dl = &r_newrefdef.dlights[lnum];
 		frad = dl->intensity * 8.0f;
-		fdist = DotProduct (dl->origin, surf->plane->normal) -
-				surf->plane->dist;
+		fdist = DotProduct (dl->origin, surf->plane->normal) - surf->plane->dist;
+
+		if (!gl_dlightBacks->integer)
+		{
+			qboolean back;
+
+			back = (fdist < 0);
+			if (surf->flags & SURF_PLANEBACK) back = !back;
+			if (back) continue;
+		}
+
 		frad -= fabs(fdist);
 		// rad is now the highest intensity on the plane
 
@@ -392,10 +401,7 @@ void R_AddDynamicLights (msurface_t *surf)
 		fminlight = frad - fminlight;
 
 		for (i=0 ; i<3 ; i++)
-		{
-			impact[i] = dl->origin[i] -
-					surf->plane->normal[i]*fdist;
-		}
+			impact[i] = dl->origin[i] - surf->plane->normal[i]*fdist;
 
 		local[0] = DotProduct (impact, tex->vecs[0]) + tex->vecs[0][3] - surf->texturemins[0];
 		local[1] = DotProduct (impact, tex->vecs[1]) + tex->vecs[1][3] - surf->texturemins[1];

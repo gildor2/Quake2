@@ -7,6 +7,8 @@ extern byte backendCommands[MAX_BACKEND_COMMANDS];
 extern int	backendCmdSize;
 extern byte *lastBackendCommand;
 
+#define MAX_SCENE_SURFACES	(64*1024)
+
 /*-------- Macro for easy generating backend commands ----------*/
 
 /* should be placed in {}
@@ -101,6 +103,9 @@ typedef struct
 #define SHADERNUM_BITS		10
 #define SHADERNUM_MASK		((1<<SHADERNUM_BITS) - 1)
 
+#define DLIGHTNUM_BITS		2
+#define DLIGHTNUM_MASK		((1<<DLIGHTNUM_BITS) - 1)
+
 
 #define MAX_ENTITYNUM		(1<<ENTITYNUM_BITS)
 #define ENTITYNUM_WORLD		(MAX_ENTITYNUM-2)
@@ -108,8 +113,9 @@ typedef struct
 
 #define MAX_GLENTITIES		(MAX_ENTITYNUM-1)	// MAX_ENTITIES defined in ref.h
 
-// Bits layout: shaderNum, entityNum
-#define ENTITYNUM_SHIFT		0
+// Bits layout: shaderNum, entityNum, dlightNum
+#define DLIGHTNUM_SHIFT		0
+#define ENTITYNUM_SHIFT		(DLIGHTNUM_SHIFT+DLIGHTNUM_BITS)
 #define SHADERNUM_SHIFT		(ENTITYNUM_SHIFT+ENTITYNUM_BITS)
 
 

@@ -24,10 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern	struct model_s	*cl_mod_powerscreen;
 
-//PGM
-int	vidref_val;
-//PGM
-
 /*
 =========================================================================
 
@@ -1270,25 +1266,19 @@ void CL_AddPacketEntities (frame_t *frame)
 
 					intensity = 50 + (500 * (sin(cl.time/500.0) + 1.0));
 					// FIXME - check out this effect in rendition
-					if(vidref_val == VIDREF_GL)
-						V_AddLight (ent.origin, intensity, -1.0, -1.0, -1.0);
-					else
-						V_AddLight (ent.origin, -1.0 * intensity, 1.0, 1.0, 1.0);
-					}
+					V_AddLight (ent.origin, intensity, -1.0, -1.0, -1.0);	//?? neg light
+				}
 				else
 				{
 					CL_Tracker_Shell (cent->lerp_origin);
-					V_AddLight (ent.origin, 155, -1.0, -1.0, -1.0);
+					V_AddLight (ent.origin, 155, -1.0, -1.0, -1.0);	//?? neg light
 				}
 			}
 			else if (effects & EF_TRACKER)
 			{
 				CL_TrackerTrail (cent->lerp_origin, ent.origin, 0);
 				// FIXME - check out this effect in rendition
-				if(vidref_val == VIDREF_GL)
-					V_AddLight (ent.origin, 200, -1, -1, -1);
-				else
-					V_AddLight (ent.origin, -200, 1, 1, 1);
+				V_AddLight (ent.origin, 200, -1, -1, -1);	//?? neg light
 			}
 //ROGUE
 //======

@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define QCOMMON_H
 
 #include "q_shared2.h"
+#include "qfiles.h"
 
 
 #define	VERSION		4.00	// 3.21
@@ -481,18 +482,6 @@ typedef struct
 
 #define CVAR_GET_VARS(array)	Cvar_GetVars(array, sizeof(array)/sizeof(cvarInfo_t))
 
-/*
-
-cvar_t variables are used to hold scalar or string variables that can be changed or displayed at the console or prog code as well as accessed directly
-in C code.
-
-The user can access cvars from the console in three ways:
-r_draworder			prints the current value
-r_draworder 0		sets the current value to 0
-set r_draworder 0	as above, but creates the cvar if not present
-Cvars are restricted from having the same names as commands to keep this
-interface from being ambiguous.
-*/
 
 extern cvar_t *cvar_vars;
 
@@ -556,7 +545,6 @@ NET
 #define	PORT_ANY	-1
 
 #define	MAX_MSGLEN		1400		// max length of a message
-#define	PACKET_HEADER	10			// two ints and a short
 
 typedef enum {NA_LOOPBACK, NA_BROADCAST, NA_IP, NA_IPX, NA_BROADCAST_IPX} netadrtype_t;
 
@@ -586,10 +574,6 @@ qboolean NET_StringToAdr (char *s, netadr_t *a);
 void	NET_Sleep(int msec);
 
 //============================================================================
-
-#define	OLD_AVG		0.99		// total = oldtotal*OLD_AVG + new*(1-OLD_AVG)
-
-#define	MAX_LATENT	32
 
 typedef struct
 {
@@ -651,8 +635,6 @@ CMODEL
 */
 
 
-#include "../qcommon/qfiles.h"
-
 typedef struct
 {
 	vec3_t	mins, maxs;
@@ -675,13 +657,9 @@ int		CM_HeadnodeForBox (vec3_t mins, vec3_t maxs);
 int		CM_PointContents (vec3_t p, int headnode);
 int		CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t angles);
 
-trace_t		CM_BoxTrace (vec3_t start, vec3_t end,
-					  vec3_t mins, vec3_t maxs,
-					  int headnode, int brushmask);
-trace_t		CM_TransformedBoxTrace (vec3_t start, vec3_t end,
-					  vec3_t mins, vec3_t maxs,
-					  int headnode, int brushmask,
-					  vec3_t origin, vec3_t angles);
+trace_t	CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
+trace_t	CM_TransformedBoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,	int headnode,
+			int brushmask, vec3_t origin, vec3_t angles);
 
 byte	*CM_ClusterPVS (int cluster);
 byte	*CM_ClusterPHS (int cluster);
@@ -804,10 +782,6 @@ void	FS_CreatePath (char *path);
 #define	ERR_DROP	1		// print to console and disconnect from game
 #define	ERR_QUIT	2		// not an error, just a normal exit
 
-#define	EXEC_NOW	0		// don't return until completed
-#define	EXEC_INSERT	1		// insert at current position, but don't run yet
-#define	EXEC_APPEND	2		// add to end of the command buffer
-
 void	Com_BeginRedirect (int target, char *buffer, int buffersize, void (*flush));
 void	Com_EndRedirect (void);
 
@@ -910,13 +884,12 @@ typedef enum {map_q2, map_hl} maptype_t;
 
 typedef struct
 {
-	char		name[256];	// mapname
-	void		*file;		// buffer, returned by FS_LoadFile()
+	char		name[MAX_QPATH];	// mapname
+	void		*file;				// buffer, returned by FS_LoadFile()
 	maptype_t	type;
 	unsigned	checksum;
 	int		length;
 
-	// lumps
 	int			entDataSize;
 	byte		*entities;
 
@@ -964,8 +937,6 @@ typedef struct
 
 	int			numBrushsides;
 	dbrushside_t *brushsides;
-
-	// LUMP_POP
 
 	int			numAreas;
 	darea_t		*areas;

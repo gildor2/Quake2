@@ -23,13 +23,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //#define WINVER 0x0500				// to allow some additional stuff in windows headers
 #include <windows.h>
+
 // stuff from Win98+ and Win2000+
 #define SPI_GETMOUSESPEED         112
 #define SPI_SETMOUSESPEED         113
 
 #include <dsound.h>
-
-#define	WINDOW_STYLE	(WS_OVERLAPPED|WS_BORDER|WS_CAPTION|WS_VISIBLE)
 
 extern	HINSTANCE	global_hInstance;
 

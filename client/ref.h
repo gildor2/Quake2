@@ -153,7 +153,7 @@ typedef struct
 	int		flags;
 
 	// called when the library is loaded
-	qboolean (*Init) (void *hinstance, void *wndproc);
+	qboolean (*Init) (void);
 
 	// called before the library is unloaded
 	void	(*Shutdown) (void);

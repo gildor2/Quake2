@@ -91,8 +91,9 @@ typedef struct
 {
 	int			timeoutcount;
 
-	int			timedemo_frames;
-	int			timedemo_start;
+	int			timedemoFrames;
+	int			timedemoStart;
+	int			timedemoLongestFrame;
 
 	qboolean	refresh_prepped;	// false if on new level or new ref dll
 	qboolean	sound_prepped;		// ambient sounds can start

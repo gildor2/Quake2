@@ -48,8 +48,6 @@ qboolean FS_FileExists (char *filename);
 basenamed_t* FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigned canthave);
 int	FS_LoadFile (char *name, void **buf);
 void	FS_FreeFile (void *buf);
-// gamedir will be the current directory that generated
-// files should be stored to, ie: "f:\quake\id1"
 char*	FS_Gamedir (void);
 
 qboolean MatchWildcard (char *name, char *mask);
@@ -57,7 +55,6 @@ qboolean MatchWildcard (char *name, char *mask);
 //----- video mode/menu -----
 qboolean Vid_GetModeInfo (int *width, int *height, int mode);
 void	Vid_MenuInit (void);
-void	Vid_NewWindow (int width, int height);
 
 //--------- images ----------
 int	ImageExists (char *name, int stop_mask);
@@ -69,3 +66,11 @@ qboolean WriteJPG (char *name, byte *pic, int width, int height, qboolean highQu
 
 //--------- models ----------
 bspfile_t* LoadBspFile (char *filename, qboolean clientload, unsigned *checksum);
+
+//-- system-dependent code --
+#ifdef _WIN32
+void*	Vid_CreateWindow (int width, int height, qboolean fullscreen);
+void	Vid_DestroyWindow (qboolean force);
+#else
+void	Vid_NewWindow (int width, int height);
+#endif

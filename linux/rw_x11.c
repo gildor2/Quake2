@@ -856,7 +856,7 @@ void HandleEvents(void)
 ** This routine is responsible for initializing the implementation
 ** specific stuff in a software rendering subsystem.
 */
-int SWimp_Init( void *hInstance, void *wndProc )
+int SWimp_Init (void)
 {
 
 	vid_xpos = ri.Cvar_Get ("vid_xpos", "3", CVAR_ARCHIVE);

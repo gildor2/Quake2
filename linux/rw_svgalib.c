@@ -104,7 +104,7 @@ int i;
 ** This routine is responsible for initializing the implementation
 ** specific stuff in a software rendering subsystem.
 */
-int SWimp_Init( void *hInstance, void *wndProc )
+int SWimp_Init (void)
 {
 	vga_init();
 

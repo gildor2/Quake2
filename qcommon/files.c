@@ -180,24 +180,6 @@ static void InitResFiles (void)
 }
 
 
-/*.............................................................................................................
-
-All of Quake's data access is through a hierchal file system, but the contents of the file system can be
-transparently merged from several sources.
-
-The "base directory" is the path to the directory holding the quake.exe and all game directories.
-The sys_* files pass this to host_init in quakeparms_t->basedir.  This can be overridden with the "-basedir"
-command line parm to allow code debugging in a different directory.  The base directory is only used during
-filesystem initialization.
-
-The "game directory" is the first tree on the search path and directory that all generated files (savegames,
-screenshots, demos, config files) will be saved to.  This can be overridden with the "-game" command line parameter.
-The game directory can never be changed while quake is executing.  This is a precacution against having a malicious
-server instruct clients to write files over areas they shouldn't.
-
-.............................................................................................................*/
-
-
 /*
 =====================================================
 Functions to work with in-memory directory/file trees
@@ -209,7 +191,7 @@ static basenamed_t *AddDirFilesToList (char *findname, basenamed_t *list, unsign
 {
 	char	*s, *mask, pattern[MAX_OSPATH], wildcard[MAX_OSPATH];
 
-	Q_CopyFilename (pattern, findname, sizeof(pattern) - 1);
+	strncpy (pattern, findname, sizeof(pattern)-1);
 	mask = strrchr (pattern, '/');
 	if (mask)
 	{
@@ -258,7 +240,7 @@ static packDir_t *FindPakDirectory (pack_t *pak, char *name)
 		rest = strchr (s, '/');
 		if (!rest)	len = strlen (s);
 		else		len = rest - s;
-		Q_strncpylower (dirname, s, len);
+		Q_strncpyz (dirname, s, len+1);
 
 		if (!dir->cDir)
 			return NULL;				// current directory have no childs
@@ -292,7 +274,7 @@ static packFile_t *FindPakFile (pack_t *pak, char *name)
 	{
 		char	dirname[MAX_OSPATH], *dirname2;
 
-		Q_strncpylower (dirname, name, filename - name);
+		Q_strncpyz (dirname, name, filename - name + 1);
 		// process "./directory/file" names
 		dirname2 = dirname;
 		if (dirname[0] == '.' && dirname[1] == '/') dirname2 += 2;
@@ -649,7 +631,7 @@ int fileFromPak;		// used for precaching
 int FS_FOpenFile (char *filename, FILE **file)
 {
 	searchPath_t	*search;
-	char			netpath[MAX_OSPATH], *pakname, game[MAX_OSPATH];
+	char			netpath[MAX_OSPATH], *pakname, game[MAX_OSPATH], buf[MAX_OSPATH];
 	pack_t			*pak;
 	packFile_t		*pfile;
 	int				gamelen, gamePos;
@@ -658,6 +640,8 @@ int FS_FOpenFile (char *filename, FILE **file)
 	FILE			*f;
 
 	fileFromPak = 0;
+	Q_CopyFilename (buf, filename, sizeof(buf)-1);
+	filename = buf;
 
 	/*-------------- check for links first ---------------------*/
 	for (link = fs_links; link; link = link->next)
@@ -700,7 +684,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 		{
 			pakname++;		// skip '/'
 			gamelen = pakname - filename;
-			Q_strncpylower (game, filename, strrchr (filename, '/') - filename + 1);
+			Q_strncpyz (game, filename, strrchr (filename, '/') - filename + 2);	// include "/" and space for zero
 		}
 		else
 			pakname = filename;
@@ -782,7 +766,7 @@ Do not check inline files (only filesystem or paks)
 qboolean FS_FileExists (char *filename)
 {
 	searchPath_t	*search;
-	char			*pakname, game[MAX_OSPATH];
+	char			*pakname, game[MAX_OSPATH], buf[MAX_OSPATH];
 	pack_t			*pak;
 	packFile_t		*pfile;
 	int				gamelen, gamePos;
@@ -790,6 +774,8 @@ qboolean FS_FileExists (char *filename)
 	FILE			*f;
 
 	fileFromPak = 0;
+	Q_CopyFilename (buf, filename, sizeof(buf)-1);
+	filename = buf;
 	Com_DPrintf ("check: %s\n", filename);
 
 	/*------------- check for links first ----------------------*/
@@ -829,7 +815,7 @@ qboolean FS_FileExists (char *filename)
 		{
 			pakname++;		// skip '/'
 			gamelen = pakname - filename;
-			Q_strncpylower (game, filename, strrchr (filename, '/') - filename + 1);
+			Q_strncpyz (game, filename, strrchr (filename, '/') - filename + 2);
 		}
 		else
 			pakname = filename;
@@ -1559,11 +1545,14 @@ FS_ListFiles
 
 basenamed_t *FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigned canthave)
 {
-	char	game[MAX_OSPATH], *pakname, *mask, path[MAX_OSPATH];
+	char	buf[MAX_OSPATH], game[MAX_OSPATH], *pakname, *mask, path[MAX_OSPATH];
 	int		gamelen, attr;
 	searchPath_t *search;
 	basenamed_t *list;
 	int		gamePos;
+
+	Q_CopyFilename (buf, name, sizeof(buf)-1);
+	name = buf;
 
 	/*	Make gamePos = index of first char in game directory part of source filename (after '/').
 	 *  After all calculations, gamelen = position of 1st char of game-relative path in the source filename.
@@ -1592,7 +1581,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigne
 		{
 			pakname++;
 			gamelen = pakname - name;
-			Q_strncpylower (game, name, strrchr (name, '/') - name + 1);
+			Q_strncpyz (game, name, strrchr (name, '/') - name + 2);
 		}
 		else
 			pakname = name;		// shouldn't happens
@@ -1611,7 +1600,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigne
 	}
 	else
 	{	// extract path
-		Q_strncpylower (path, pakname, mask - pakname);
+		Q_strncpyz (path, pakname, mask - pakname + 1);
 		mask++; // skip '/'
 	}
 

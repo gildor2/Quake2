@@ -53,8 +53,7 @@ void R_MarkLights (dlight_t *light, int bit, mnode_t *node)
 //=====
 //PGM
 	i=light->intensity;
-	if(i<0)
-		i=-i;
+	if(i<0) i=-i;
 //PGM
 //=====
 
@@ -69,7 +68,7 @@ void R_MarkLights (dlight_t *light, int bit, mnode_t *node)
 		return;
 	}
 
-// mark the polygons
+	// mark the polygons
 	surf = r_worldmodel->surfaces + node->firstsurface;
 	for (i=0 ; i<node->numsurfaces ; i++, surf++)
 	{
@@ -99,8 +98,7 @@ void R_PushDlights (model_t *model)
 	r_dlightframecount = r_framecount;
 	for (i=0, l = r_newrefdef.dlights ; i<r_newrefdef.num_dlights ; i++, l++)
 	{
-		R_MarkLights ( l, 1<<i,
-			model->nodes + model->firstnode);
+		R_MarkLights ( l, 1<<i, model->nodes + model->firstnode);
 	}
 }
 
@@ -292,7 +290,7 @@ void R_AddDynamicLights (void)
 	int			smax, tmax;
 	mtexinfo_t	*tex;
 	dlight_t	*dl;
-	int			negativeLight;	//PGM
+	qboolean	negativeLight;	//PGM
 
 	surf = r_drawsurf.surf;
 	smax = (surf->extents[0]>>4)+1;
@@ -309,17 +307,13 @@ void R_AddDynamicLights (void)
 
 //=====
 //PGM
-		negativeLight = 0;
-		if(rad < 0)
-		{
-			negativeLight = 1;
-			rad = -rad;
-		}
+		negativeLight = false;
+		if (dl->color[0] < 0 || dl->color[1] < 0 || dl->color[2] < 0)
+			negativeLight = true;
 //PGM
 //=====
 
-		dist = DotProduct (dl->origin, surf->plane->normal) -
-				surf->plane->dist;
+		dist = DotProduct (dl->origin, surf->plane->normal) - surf->plane->dist;
 		rad -= fabs(dist);
 		minlight = 32;		// dl->minlight;
 		if (rad < minlight)
@@ -328,15 +322,11 @@ void R_AddDynamicLights (void)
 
 		for (i=0 ; i<3 ; i++)
 		{
-			impact[i] = dl->origin[i] -
-					surf->plane->normal[i]*dist;
+			impact[i] = dl->origin[i] - surf->plane->normal[i]*dist;
 		}
 
-		local[0] = DotProduct (impact, tex->vecs[0]) + tex->vecs[0][3];
-		local[1] = DotProduct (impact, tex->vecs[1]) + tex->vecs[1][3];
-
-		local[0] -= surf->texturemins[0];
-		local[1] -= surf->texturemins[1];
+		local[0] = DotProduct (impact, tex->vecs[0]) + tex->vecs[0][3] - surf->texturemins[0];
+		local[1] = DotProduct (impact, tex->vecs[1]) + tex->vecs[1][3] - surf->texturemins[1];
 
 		for (t = 0 ; t<tmax ; t++)
 		{

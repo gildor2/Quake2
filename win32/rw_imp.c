@@ -33,82 +33,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rw_win.h"
 #include "winquake.h"
 
-// Console variables that we need to access from this module
 
 swwstate_t sww_state;
 
-/*
-** Vid_CreateWindow
-*/
-
-void Vid_CreateWindow (int width, int height, qboolean fullscreen)
-{
-	WNDCLASS	wc;
-	RECT		r;
-	int			stylebits;
-	int			x, y, w, h;
-	int			exstyle;
-
-	/* Register the frame class */
-	wc.style         = 0;
-	wc.lpfnWndProc   = (WNDPROC)sww_state.wndproc;
-	wc.cbClsExtra    = 0;
-	wc.cbWndExtra    = 0;
-	wc.hInstance     = sww_state.hInstance;
-	wc.hIcon         = 0;
-	wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
-	wc.hbrBackground = (void *)COLOR_GRAYTEXT;
-	wc.lpszMenuName  = 0;
-	wc.lpszClassName = APPNAME;
-
-    if (!RegisterClass (&wc))
-		Com_Error (ERR_FATAL, "Couldn't register window class");
-
-	if (fullscreen)
-	{
-		exstyle = WS_EX_TOPMOST;
-		stylebits = WS_POPUP|WS_VISIBLE;
-	}
-	else
-	{
-		exstyle = 0;
-		stylebits = WINDOW_STYLE;
-	}
-
-	r.left = 0;
-	r.top = 0;
-	r.right  = width;
-	r.bottom = height;
-
-	AdjustWindowRect (&r, stylebits, FALSE);
-
-	w = r.right - r.left;
-	h = r.bottom - r.top;
-	x = Cvar_VariableInt ("vid_xpos");
-	y = Cvar_VariableInt ("vid_ypos");
-
-	sww_state.hWnd = CreateWindowEx (
-		exstyle,
-		 APPNAME,
-		 APPNAME,
-		 stylebits,
-		 x, y, w, h,
-		 NULL,
-		 NULL,
-		 sww_state.hInstance,
-		 NULL);
-
-	if (!sww_state.hWnd)
-		Com_Error (ERR_FATAL, "Couldn't create window");
-
-	ShowWindow (sww_state.hWnd, SW_SHOWNORMAL);
-	UpdateWindow (sww_state.hWnd);
-	SetForegroundWindow (sww_state.hWnd);
-	SetFocus (sww_state.hWnd);
-
-	// let the sound and input subsystems know about the new window
-	Vid_NewWindow (width, height);
-}
 
 /*
 ** SWimp_Init
@@ -116,12 +43,9 @@ void Vid_CreateWindow (int width, int height, qboolean fullscreen)
 ** This routine is responsible for initializing the implementation
 ** specific stuff in a software rendering subsystem.
 */
-int SWimp_Init( void *hInstance, void *wndProc )
+int SWimp_Init( void )
 {
-	sww_state.hInstance = ( HINSTANCE ) hInstance;
-	sww_state.wndproc = wndProc;
-
-	return true;
+	return true;	//?? empty
 }
 
 /*
@@ -140,7 +64,7 @@ static qboolean SWimp_InitGraphics (qboolean fullscreen)
 	SWimp_Shutdown ();
 
 	// create a new window
-	Vid_CreateWindow (vid.width, vid.height, fullscreen);
+	sww_state.hWnd = Vid_CreateWindow (vid.width, vid.height, fullscreen);
 
 	// initialize the appropriate subsystem
 	if (!fullscreen)
@@ -211,50 +135,37 @@ void SWimp_EndFrame (void)
 
 		sww_state.lpddsOffScreenBuffer->lpVtbl->Unlock( sww_state.lpddsOffScreenBuffer, vid.buffer );
 
-		if ( sww_state.modex )
+		if (sww_state.modex)
 		{
-			if ( ( rval = sww_state.lpddsBackBuffer->lpVtbl->BltFast( sww_state.lpddsBackBuffer,
-																	0, 0,
-																	sww_state.lpddsOffScreenBuffer,
-																	&r,
-																	DDBLTFAST_WAIT ) ) == DDERR_SURFACELOST )
+			if ((rval = sww_state.lpddsBackBuffer->lpVtbl->BltFast (sww_state.lpddsBackBuffer,
+				0, 0, sww_state.lpddsOffScreenBuffer, &r, DDBLTFAST_WAIT)) == DDERR_SURFACELOST)
 			{
-				sww_state.lpddsBackBuffer->lpVtbl->Restore( sww_state.lpddsBackBuffer );
-				sww_state.lpddsBackBuffer->lpVtbl->BltFast( sww_state.lpddsBackBuffer,
-															0, 0,
-															sww_state.lpddsOffScreenBuffer,
-															&r,
-															DDBLTFAST_WAIT );
+				sww_state.lpddsBackBuffer->lpVtbl->Restore (sww_state.lpddsBackBuffer);
+				sww_state.lpddsBackBuffer->lpVtbl->BltFast (sww_state.lpddsBackBuffer,
+					0, 0, sww_state.lpddsOffScreenBuffer, &r, DDBLTFAST_WAIT);
 			}
 
-			if ( ( rval = sww_state.lpddsFrontBuffer->lpVtbl->Flip( sww_state.lpddsFrontBuffer,
-															 NULL, DDFLIP_WAIT ) ) == DDERR_SURFACELOST )
+			if ((rval = sww_state.lpddsFrontBuffer->lpVtbl->Flip (sww_state.lpddsFrontBuffer, NULL, DDFLIP_WAIT)) == DDERR_SURFACELOST)
 			{
-				sww_state.lpddsFrontBuffer->lpVtbl->Restore( sww_state.lpddsFrontBuffer );
-				sww_state.lpddsFrontBuffer->lpVtbl->Flip( sww_state.lpddsFrontBuffer, NULL, DDFLIP_WAIT );
+				sww_state.lpddsFrontBuffer->lpVtbl->Restore (sww_state.lpddsFrontBuffer);
+				sww_state.lpddsFrontBuffer->lpVtbl->Flip (sww_state.lpddsFrontBuffer, NULL, DDFLIP_WAIT);
 			}
 		}
 		else
 		{
-			if ( ( rval = sww_state.lpddsBackBuffer->lpVtbl->BltFast( sww_state.lpddsFrontBuffer,
-																	0, 0,
-																	sww_state.lpddsOffScreenBuffer,
-																	&r,
-																	DDBLTFAST_WAIT ) ) == DDERR_SURFACELOST )
+			if ((rval = sww_state.lpddsBackBuffer->lpVtbl->BltFast (sww_state.lpddsFrontBuffer,
+				0, 0, sww_state.lpddsOffScreenBuffer, &r, DDBLTFAST_WAIT)) == DDERR_SURFACELOST)
 			{
-				sww_state.lpddsBackBuffer->lpVtbl->Restore( sww_state.lpddsFrontBuffer );
-				sww_state.lpddsBackBuffer->lpVtbl->BltFast( sww_state.lpddsFrontBuffer,
-															0, 0,
-															sww_state.lpddsOffScreenBuffer,
-															&r,
-															DDBLTFAST_WAIT );
+				sww_state.lpddsBackBuffer->lpVtbl->Restore (sww_state.lpddsFrontBuffer);
+				sww_state.lpddsBackBuffer->lpVtbl->BltFast (sww_state.lpddsFrontBuffer,
+					0, 0, sww_state.lpddsOffScreenBuffer, &r, DDBLTFAST_WAIT);
 			}
 		}
 
-		memset( &ddsd, 0, sizeof( ddsd ) );
-		ddsd.dwSize = sizeof( ddsd );
+		memset (&ddsd, 0, sizeof(ddsd));
+		ddsd.dwSize = sizeof(ddsd);
 
-		sww_state.lpddsOffScreenBuffer->lpVtbl->Lock( sww_state.lpddsOffScreenBuffer, NULL, &ddsd, DDLOCK_WAIT, NULL );
+		sww_state.lpddsOffScreenBuffer->lpVtbl->Lock (sww_state.lpddsOffScreenBuffer, NULL, &ddsd, DDLOCK_WAIT, NULL);
 
 		vid.buffer = ddsd.lpSurface;
 		vid.rowbytes = ddsd.lPitch;
@@ -308,16 +219,6 @@ rserr_t SWimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen 
 	}
 
 	sw_state.fullscreen = fullscreen;
-#if 0
-	if ( retval != rserr_unknown )
-	{
-		if ( retval == rserr_invalid_fullscreen ||
-			 ( retval == rserr_ok && !fullscreen ) )
-		{
-			SetWindowLong( sww_state.hWnd, GWL_STYLE, WINDOW_STYLE );
-		}
-	}
-#endif
 	R_GammaCorrectAndSetPalette( ( const unsigned char * ) d_8to24table );
 	sww_state.initializing = true;
 
@@ -363,13 +264,12 @@ void SWimp_Shutdown( void )
 	DIB_Shutdown();
 	DDRAW_Shutdown();
 
-	if ( sww_state.hWnd )
+	if (sww_state.hWnd)
 	{
 		Com_Printf ("...destroying window\n");
-		ShowWindow( sww_state.hWnd, SW_SHOWNORMAL );	// prevents leaving empty slots in the taskbar
-		DestroyWindow (sww_state.hWnd);
+		ShowWindow( sww_state.hWnd, SW_SHOWNORMAL );	// prevents leaving empty slots in the taskbar (??)
+		Vid_DestroyWindow (false);
 		sww_state.hWnd = NULL;
-		UnregisterClass (APPNAME, sww_state.hInstance);
 	}
 }
 

@@ -188,7 +188,7 @@ void GLimp_Shutdown( void )
 ** This routine is responsible for initializing the OS specific portions
 ** of OpenGL.
 */
-int GLimp_Init( void *hinstance, void *wndproc )
+int GLimp_Init (void)
 {
 	InitSig();
 

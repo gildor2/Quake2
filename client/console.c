@@ -569,12 +569,12 @@ static void Con_DrawInput (void)
 	if (cls.key_dest != key_console && cls.state == ca_active)
 		return;		// don't draw anything (always draw if not active)
 
-	text = key_lines[edit_line];
+	text = editLine;
 
 	// prestep if horizontally scrolling
-	if (key_linepos >= con.linewidth)
+	if (editPos >= con.linewidth)
 	{
-		shift = 1 + key_linepos - con.linewidth;
+		shift = 1 + editPos - con.linewidth;
 		text += shift;
 	}
 	else
@@ -587,15 +587,15 @@ static void Con_DrawInput (void)
 		y = (viddef.height >> 3) - 2;
 
 	eoln = false;
-	for (i = 0; i < con.linewidth; i++)
+	for (i = 0; i < con.linewidth; i++, text++)
 	{
 		if (!eoln)
 		{
-			c = text[i];
+			c = *text;
 			if (!c) eoln = true;
 		}
 		if (eoln) c = ' ';
-		if ((i == key_linepos  - shift) && (cls.realtime >> 8) & 1)
+		if ((i == editPos  - shift) && (cls.realtime >> 8) & 1)
 			c = 11 + 128;		// cursor char
 
 		if (!(re.flags & REF_CONSOLE_ONLY))

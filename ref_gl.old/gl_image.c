@@ -103,7 +103,7 @@ void GL_SelectTexture (int tmu)
 	{	// ARB_multitexture
 		tex = tmu ? GL_TEXTURE1_ARB : GL_TEXTURE0_ARB;
 		qglActiveTextureARB (tex);
-		qglClientActiveTextureARB (tex);
+//		qglClientActiveTextureARB (tex);
 	}
 	else
 	{

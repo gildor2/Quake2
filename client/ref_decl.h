@@ -42,7 +42,6 @@ typedef struct {
 	qboolean	(*_MatchWildcard) (char *name, char *mask);
 	qboolean	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
 	void	(*_Vid_MenuInit) (void);
-	void	(*_Vid_NewWindow) (int width, int height);
 	int	(*_ImageExists) (char *name, int stop_mask);
 	void	(*_LoadPCX) (char *filename, byte **pic, byte **palette, int *width, int *height);
 	void	(*_LoadTGA) (char *name, byte **pic, int *width, int *height);
@@ -50,6 +49,12 @@ typedef struct {
 	qboolean	(*_WriteTGA) (char *name, byte *pic, int width, int height);
 	qboolean	(*_WriteJPG) (char *name, byte *pic, int width, int height, qboolean highQuality);
 	bspfile_t*	(*_LoadBspFile) (char *filename, qboolean clientload, unsigned *checksum);
+#ifdef _WIN32
+	void*	(*_Vid_CreateWindow) (int width, int height, qboolean fullscreen);
+	void	(*_Vid_DestroyWindow) (qboolean force);
+#else
+	void	(*_Vid_NewWindow) (int width, int height);
+#endif
 } refImport_t;
 
 extern refImport_t ri;

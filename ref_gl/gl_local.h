@@ -5,19 +5,48 @@
 #include <stdio.h>
 #include <math.h>
 
+#ifdef _WIN32
+// need this include, because have wgl and GDI functions here
+#  include <windows.h>
+#endif
+
+#include "gl.h"
+
+#ifdef __linux__
+//#include <GL/fxmesa.h>
+#include <GL/glx.h>
+#endif
+
+
 #include "../client/ref.h"
-#include "qgl.h"
+
+
+qboolean QGL_Init (const char *dllname);
+void	QGL_InitExtensions (void);
+void	QGL_Shutdown (void);
+// logging
+void	QGL_EnableLogging (qboolean enable);
+void	QGL_LogMessage (char *text);
+#define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
+
+#ifndef APIENTRY
+#  define APIENTRY
+#endif
+
+
+#include "qgl_decl.h"
+
 
 #define	REF_VERSION	"GL 0.99"	//!! will be 1.00 when I'll finish ...
 
 #ifdef REF_HARD_LINKED
 
 #define GetRefAPI			GL_GetRefAPI
-#define Vid_CreateWindow	GL_CreateWindow
 
 #endif
 
 
+//?? find a way to remove this struc (use vid_width and vid_height or vid_size[2] ??)
 typedef struct
 {
 	unsigned	width, height;		// coordinates from main game
@@ -33,7 +62,12 @@ typedef union
 } color_t;
 
 
+// forwards
+typedef struct viewPortal_s viewPortal_t;
+
+
 /*-------------- gl_image.c -----------------*/
+
 
 // consts for image_t.flags
 #define IMAGE_CLAMP			1			// 0 -- repeat
@@ -61,49 +95,6 @@ typedef struct image_s
 } image_t;
 
 
-typedef enum
-{
-	CULL_FRONT,
-	CULL_BACK,
-	CULL_NONE
-} gl_cullMode_t;	//?? remove this? use GL_ constants?
-
-// GL_State constants
-// source blend modes
-#define GLSTATE_SRCMASK		0xF
-#define GLSTATE_SRCSHIFT	0
-#define GLSTATE_SRC_ZERO				1
-#define GLSTATE_SRC_ONE					2
-#define GLSTATE_SRC_DSTCOLOR			3
-#define GLSTATE_SRC_ONEMINUSDSTCOLOR	4
-#define GLSTATE_SRC_SRCALPHA			5
-#define GLSTATE_SCR_ONEMINUSSRCALPHA	6
-#define GLSTATE_SRC_DSTALPHA			7
-#define GLSTATE_SRC_ONEMINUSDSTALPHA	8
-#define GLSTATE_SRC_SRCALPHASATURATE	9
-// destination blend modes
-#define GLSTATE_DSTMASK		0xF0
-#define GLSTATE_DSTSHIFT	4
-#define GLSTATE_DST_ZERO				0x10
-#define GLSTATE_DST_ONE					0x20
-#define GLSTATE_DST_SRCCOLOR			0x30
-#define GLSTATE_DST_ONEMINUSSRCCOLOR	0x40
-#define GLSTATE_DST_SRCALPHA			0x50
-#define GLSTATE_DST_ONEMINUSSRCALPHA	0x60
-#define GLSTATE_DST_DSTALPHA			0x70
-#define GLSTATE_DST_ONEMINUSDSTALPHA	0x80
-// alpha function (0 - disabled)
-#define GLSTATE_ALPHAMASK	0xF00
-#define GLSTATE_ALPHA_GT0				0x100
-#define GLSTATE_ALPHA_LT05				0x200
-#define GLSTATE_ALPHA_GE05				0x300
-// depth buffer
-#define GLSTATE_DEPTHWRITE				0x1000
-#define GLSTATE_NODEPTHTEST				0x2000
-#define GLSTATE_DEPTHEQUALFUNC			0x4000	// 0 - GL_LEQUAL, 1 - GL_EQUAL
-// polygon mode (fill/line) (needed ??)
-#define GLSTATE_POLYGON_LINE			0x8000
-
 extern	image_t		*gl_defaultImage;
 //??extern	image_t		*gl_whiteImage;
 extern	image_t		*gl_identityLightImage;
@@ -111,13 +102,6 @@ extern	image_t		*gl_dlightImage;
 extern	image_t		*gl_particleImage;
 extern	image_t		*gl_fogImage;
 
-// mode changing
-void	GL_Bind (image_t *tex);
-void	GL_SelectTexture (int tmu);
-void	GL_TexEnv (int env);
-void	GL_SetMultitexture (int level);
-void	GL_CullFace (gl_cullMode_t mode);
-void	GL_State (int state);
 void	GL_TextureMode (char *name);
 
 // setup
@@ -134,6 +118,165 @@ void	GL_SetRawPalette (const unsigned char *palette);
 void	GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte *pic);
 
 void GL_ShowImages (void);
+
+
+/*------------ gl_interface.c ---------------*/
+
+
+typedef struct
+{
+	//?? NOTE: when changed, need to syncronize with OLD ref_gl
+	char	renderer_string[256];
+	char	vendor_string[256];
+	char	version_string[256];
+	char	extensions_string[8192];	//?? make dynamic
+
+	int		maxTextureSize;
+	int		extensionMask;
+
+	// multitexturing
+	int		maxActiveTextures;		// == 1 if no multitexturing
+	qboolean lightmapOverbright;	// when true, lightmaps lightscaled by 2 (hardware unable to prform src*dst*2 blend)
+	qboolean multiPassLM;			// when false, upload dynamic lightmaps
+
+	// texture compression formats (0 if unavailable)
+	int		formatSolid;			// RGB (no alpha)
+	int		formatAlpha;			// RGBA (full alpha range)
+	int		formatAlpha1;			// RGB_A1 (1 bit for alpha)
+
+	int		colorBits;
+	int		prevMode;				// last valid video mode
+	qboolean fullscreen;
+
+	qboolean consoleOnly;			// true if graphics disabled
+
+	// gamma
+	qboolean deviceSupportsGamma;
+	int		overbrightBits;			// gl_overBrightBits->integer
+	int		identityLightValue;		// 255/(1<<overbrightBits)
+	float	identityLightValue_f;	// 1.0/(1<<overbrightBits)
+	qboolean vertexLight;
+
+	// tables
+	unsigned tbl_8to32[256];		// palette->RGBA
+} glconfig_t;
+
+// macro for checking extension support
+#define GL_SUPPORT(ext)		(gl_config.extensionMask & (ext))
+
+
+typedef struct
+{
+	qboolean locked;
+	// up to 32 texture units supports by OpenGL 1.3
+	int		currentTmu;
+	int		currentBinds[32];
+	int		currentEnv[32];
+	byte	texCoordEnabled[32];
+	byte	textureEnabled[32];
+	color_t	texEnvColor[32];
+	// fields for locked state
+	int		newTmu;
+	int		newBinds[32];
+	int		newEnv[32];
+	byte	newTexCoordEnabled[32];
+	byte	newTextureEnabled[32];
+	void	*newTCPointer[32];
+	color_t	newEnvColor[32];
+
+	int		currentState;
+	int		currentCullMode;
+
+	int		maxUsedShaderIndex;
+	qboolean is2dMode;
+} glstate_t;
+
+extern glconfig_t  gl_config;
+extern glstate_t   gl_state;
+
+
+typedef enum
+{
+	CULL_FRONT,
+	CULL_BACK,
+	CULL_NONE
+} gl_cullMode_t;	//?? remove this? use GL_ constants?
+
+
+// GL_State constants
+
+// source blend modes
+#define GLSTATE_SRCMASK		0xF
+#define GLSTATE_SRCSHIFT	0
+#define GLSTATE_SRC_ZERO				1
+#define GLSTATE_SRC_ONE					2
+#define GLSTATE_SRC_SRCCOLOR			3		// inaccessible in OpenGL 1.1
+#define GLSTATE_SRC_ONEMINUSSRCCOLOR	4		// ---
+#define GLSTATE_SRC_SRCALPHA			5
+#define GLSTATE_SRC_ONEMINUSSRCALPHA	6
+#define GLSTATE_SRC_DSTCOLOR			7
+#define GLSTATE_SRC_ONEMINUSDSTCOLOR	8
+#define GLSTATE_SRC_DSTALPHA			9
+#define GLSTATE_SRC_ONEMINUSDSTALPHA	0xA
+#define GLSTATE_SRC_SRCALPHASATURATE	0xB
+// destination blend modes (same set as source blend, const_src = const_dst>>4)
+#define GLSTATE_DSTMASK		0xF0
+#define GLSTATE_DSTSHIFT	4
+#define GLSTATE_DST_ZERO				0x10
+#define GLSTATE_DST_ONE					0x20
+#define GLSTATE_DST_SRCCOLOR			0x30
+#define GLSTATE_DST_ONEMINUSSRCCOLOR	0x40
+#define GLSTATE_DST_SRCALPHA			0x50
+#define GLSTATE_DST_ONEMINUSSRCALPHA	0x60
+#define GLSTATE_DST_DSTCOLOR			0x70	// ---
+#define GLSTATE_DST_ONEMINUSDSTCOLOR	0x80	// ---
+#define GLSTATE_DST_DSTALPHA			0x90
+#define GLSTATE_DST_ONEMINUSDSTALPHA	0xA0
+// alpha function (0 - disabled)
+#define GLSTATE_ALPHAMASK	0xF00
+#define GLSTATE_ALPHA_GT0				0x100
+#define GLSTATE_ALPHA_LT05				0x200
+#define GLSTATE_ALPHA_GE05				0x300
+// depth buffer
+#define GLSTATE_DEPTHWRITE				0x1000
+#define GLSTATE_NODEPTHTEST				0x2000
+#define GLSTATE_DEPTHEQUALFUNC			0x4000	// 0 - GL_LEQUAL, 1 - GL_EQUAL
+// polygon mode (fill/line)
+#define GLSTATE_POLYGON_LINE			0x8000
+
+
+// GL_TexEnv constants
+
+// function
+#define TEXENV_REPLACE		0
+#define TEXENV_MODULATE		1
+#define TEXENV_ADD			2
+#define TEXENV_INTERP		3
+#define TEXENV_FUNC_MASK	15
+// additional flags
+#define TEXENV_MUL2			0x80000000
+#define TEXENV_COLOR		0x40000000
+
+
+void	GL_Lock (void);
+void	GL_Unlock (void);
+
+void	GL_Bind (image_t *tex);
+void	GL_BindForce (image_t *tex);
+
+void	GL_SelectTexture (int tmu);
+void	GL_TexCoordPointer (void *ptr);
+void	GL_TexEnv (int env);
+void	GL_TexEnvColor (color_t *c);
+void	GL_SetMultitexture (int level);
+void	GL_DisableTexCoordArrays (void);
+
+void	GL_CullFace (gl_cullMode_t mode);
+void	GL_State (int state);
+
+void	GL_SetDefaultState (void);
+void	GL_Set2DMode (void);
+void	GL_Setup (viewPortal_t *port);
 
 
 /*------------ gl_shader.c ------------------*/
@@ -172,20 +315,22 @@ void	GL_ResetShaders (void);	// should be called every time before loading a new
 #define SHADER_LIGHTMAP		0x200		// reserve lightmap stage (need GL_SetShaderLightmap() later)
 #define SHADER_TRYLIGHTMAP	0x400		// usualy not containing lightmap, but if present - generate it
 // styles (hints) valid for FindShader(), buf not stored in shader_t
-#define SHADER_ABSTRACT		0x40000000	// create shader without stages
-#define SHADER_CHECK		0x80000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error
+#define SHADER_ABSTRACT		0x20000000	// create shader without stages
+#define SHADER_CHECK		0x40000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error
+#define SHADER_CHECKLOADED	0x80000000	// if shader loaded, return it, else - NULL
 // mask of styles, stored to shader (exclude hints)
 #define SHADER_STYLEMASK	0x0000FFFF
 
 shader_t *GL_FindShader (char *name, int style);
 shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber);
+shader_t *GL_SetShaderLightstyles (shader_t *shader, int styles);
 shader_t *GL_GetAlphaShader (shader_t *shader);
 shader_t *GL_GetShaderByNum (int num);
 
 
 /*------------ gl_model.c -------------------*/
 
-// empty declaration
+// empty declarations
 typedef struct model_s model_t;
 typedef struct surfaceCommon_s surfaceCommon_t;
 typedef struct surfacePlanar_s surfacePlanar_t;
@@ -199,10 +344,11 @@ model_t	*GL_FindModel (char *name);
 shader_t *GL_FindSkin (char *name);
 void	GL_LoadWorldMap (char *name);
 
-void	GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf);
+void	GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean vertexOnly, unsigned dlightMask);
 
 
 /*------------ gl_world.c -------------------*/
+
 
 typedef struct refEntity_s
 {
@@ -216,7 +362,8 @@ typedef struct refEntity_s
 			// position info
 			vec3_t	origin;
 			vec3_t	axis[3];
-			int		frustumMask;		//?? remove
+			qboolean worldMatrix;
+			byte	frustumMask;		//?? remove
 			vec3_t	modelvieworg;		// vieworg in model coordinate system
 			float	modelMatrix[4][4];	// modelview matrix
 			// info for frame lerping
@@ -243,102 +390,25 @@ extern refEntity_t	gl_entities[];
 extern int			gl_numEntities;
 
 
+typedef struct
+{
+	vec3_t	origin;
+	float	intensity;
+	vec3_t	modelOrg;					// temporaty: origin in model coordinates
+	color_t	c;
+} refDlight_t;
+
+extern refDlight_t	gl_dlights[];
+extern int			gl_numDlights;
+
+
 void	GL_DrawPortal (void);
 void	GL_AddEntity (entity_t *ent);
+void	GL_AddDlight (dlight_t *dl);
 
 
-/*------------- gl_main.c -------------------*/
+/*------------ gl_buffers.c -----------------*/
 
-
-void	GL_Set2DMode (void);
-
-void	DrawTextPos (int x, int y, char *text, float r, float g, float b);
-void	DrawTextLeft (char *text, float r, float g, float b);
-void	DrawTextRight (char *text, float r, float g, float b);
-
-
-/*----------- gl_backend.c ------------------*/
-
-
-void	GL_ClearBuffers (void);
-
-// works with "vp" (current view portal)
-void	GL_ClearPortal (void);
-void	GL_AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityNum);
-surfaceCommon_t *GL_AddDynamicSurface (shader_t *shader, int entityNum);
-void	*GL_AllocDynamicMemory (int size);
-void	GL_InsertShaderIndex (int index);
-void	GL_FinishPortal (void);
-
-void	GL_BackEnd (void);
-
-void	GL_InitBackend (void);
-void	GL_ShutdownBackend (void);
-
-
-/*-------------------------------------------*/
-
-
-typedef struct
-{
-	//?? NOTE: when changed, need to syncronize with OLD ref_gl
-	char	renderer_string[256];
-	char	vendor_string[256];
-	char	version_string[256];
-	char	extensions_string[8192];	//?? make dynamic
-
-	int		maxTextureSize;
-	int		extensionMask;
-
-	// multitexturing
-	int		maxActiveTextures;		// == 1 if no multitexturing
-	qboolean lightmapOverbright;	// when true, lightmaps lightscaled by 2 (hardware unable to prform src*dst*2 blend)
-
-	// texture compression formats (0 if unavailable)
-	int		formatSolid;			// RGB (no alpha)
-	int		formatAlpha;			// RGBA (full alpha range)
-	int		formatAlpha1;			// RGB_A1 (1 bit for alpha)
-
-	int		colorBits;
-	int		prevMode;				// last valid video mode
-	qboolean fullscreen;
-
-	qboolean consoleOnly;			// true if graphics disabled
-
-	// gamma
-	qboolean deviceSupportsGamma;
-	int		overbrightBits;			// gl_overBrightBits->integer
-	int		identityLightValue;		// 255/(1<<overbrightBits)
-	float	identityLightValue_f;	// 1.0/(1<<overbrightBits)
-	qboolean vertexLight;
-
-	// tables
-	unsigned tbl_8to32[256];		// palette->RGBA
-} glconfig_t;
-
-// macro for checking extension support
-#define GL_SUPPORT(ext)		(gl_config.extensionMask & (ext))
-
-typedef struct
-{
-	int		currentBinds[32];		// up to 32 texture units supports by OpenGL 1.3
-	int		currentEnv[32];
-	int		currentTmu;
-	int		currentState;
-	int		currentCullMode;
-
-	int		maxUsedShaderIndex;
-	qboolean is2dMode;
-} glstate_t;
-
-//?? clean this structure: most fields used from viewPortal_t; or -- eliminate at all
-typedef struct
-{
-	int		viewCluster;		//?? place to portal
-	// map areas
-	byte	areaMask[MAX_MAP_AREAS/8];
-	qboolean areaMaskChanged;
-} glrefdef_t;
 
 typedef struct surfaceInfo_s
 {
@@ -347,11 +417,14 @@ typedef struct surfaceInfo_s
 	struct surfaceInfo_s	*sortNext;
 } surfaceInfo_t;
 
-typedef struct
+
+typedef struct viewPortal_s
 {
 	int		flags;
 	float	time;				// time in seconds (for shader effects etc)
 	lightstyle_t *lightStyles;	// light styles for Q2/HL dynamic lightmaps
+	refDlight_t *dlights;
+	int		numDlights;
 	// view params
 	vec3_t	vieworg;
 	vec3_t	viewaxis[3];
@@ -377,6 +450,31 @@ typedef struct
 	particle_t *particles;
 } viewPortal_t;
 
+
+void	*GL_AllocDynamicMemory (int size);
+void	GL_ResizeDynamicMemory (void *ptr, int newSize);
+void	GL_ClearBuffers (void);
+void	GL_ClearPortal (void);
+void	GL_AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityNum, int numDlights);
+surfaceCommon_t *GL_AddDynamicSurface (shader_t *shader, int entityNum);
+void	GL_InsertShaderIndex (int index);
+void	GL_FinishPortal (void);
+void	GL_SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination);
+
+
+/*------------- gl_main.c -------------------*/
+
+
+//?? clean this structure: most fields used from viewPortal_t; or -- eliminate at all
+typedef struct
+{
+	int		viewCluster;		//?? place to portal
+	// map areas
+	byte	areaMask[MAX_MAP_AREAS/8];
+	qboolean areaMaskChanged;
+} glrefdef_t;
+
+
 typedef struct
 {
 	int		numFrames;
@@ -397,13 +495,23 @@ typedef struct
 } drawSpeeds_t;
 
 
-extern glconfig_t  gl_config;
-extern glstate_t   gl_state;
 extern glrefdef_t  gl_refdef;
-
 extern viewPortal_t	vp;
-
 extern drawSpeeds_t gl_speeds;
+
+
+void	DrawTextPos (int x, int y, char *text, float r, float g, float b);
+void	DrawTextLeft (char *text, float r, float g, float b);
+void	DrawTextRight (char *text, float r, float g, float b);
+
+
+/*----------- gl_backend.c ------------------*/
+
+
+void	GL_BackEnd (void);
+
+void	GL_InitBackend (void);
+void	GL_ShutdownBackend (void);
 
 
 /*----------- Imported functions ------------*/
@@ -423,14 +531,10 @@ typedef enum
 
 void	GLimp_BeginFrame (float camera_separation);
 void	GLimp_EndFrame (void);
-int 	GLimp_Init (void *hinstance, void *hWnd);
+int 	GLimp_Init (void);
 void	GLimp_Shutdown (void);
 int     GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen);
 void	GLimp_AppActivate (qboolean active);
-
-// logging
-void	GLimp_LogMessage (char *text);
-#define LOG_STRING(str)		if (gl_logFile->integer) GLimp_LogMessage (str);
 
 qboolean GLimp_HasGamma (void);
 void	GLimp_SetGamma (float gamma, float intens);
@@ -444,10 +548,12 @@ extern cvar_t	*gl_roundImagesDown;
 extern cvar_t	*r_gamma;
 extern cvar_t	*r_saturation;
 extern cvar_t	*r_intensity;
+extern cvar_t	*gl_texturemode;
 extern cvar_t	*gl_overBrightBits;
 
 extern cvar_t	*gl_fastsky;
 extern cvar_t	*gl_dynamic;
+extern cvar_t	*gl_dlightBacks;
 extern cvar_t	*gl_vertexLight;
 extern cvar_t	*gl_ignoreFastPath;
 

@@ -118,6 +118,7 @@ cvar_t	*r_lightmap;
 cvar_t	*gl_shadows;
 cvar_t	*gl_mode;
 cvar_t	*gl_dynamic;
+cvar_t	*gl_dlightBacks;
 cvar_t  *gl_monolightmap;
 cvar_t	*gl_modulate;
 cvar_t	*gl_nobind;
@@ -1020,6 +1021,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(r_lightmap, 0, 0),
 	CVAR_VAR(gl_shadows, 0, CVAR_ARCHIVE ),
 	CVAR_VAR(gl_dynamic, 1, 0),
+	CVAR_VAR(gl_dlightBacks, 1, 0),
 	CVAR_VAR(gl_nobind, 0, 0),
 	CVAR_VAR(gl_round_down, 1, 0),
 	CVAR_VAR(gl_picmip, 0, 0),
@@ -1120,7 +1122,7 @@ qboolean R_SetMode (void)
 R_Init
 ===============
 */
-int R_Init( void *hinstance, void *hWnd )
+int R_Init( void )
 {
 	char renderer_buffer[1000];
 	char vendor_buffer[1000];
@@ -1148,7 +1150,7 @@ int R_Init( void *hinstance, void *hWnd )
 	}
 
 	// initialize OS-specific parts of OpenGL
-	if ( !GLimp_Init( hinstance, hWnd ) )
+	if ( !GLimp_Init() )
 	{
 		QGL_Shutdown();
 		return -1;
@@ -1400,12 +1402,12 @@ void R_BeginFrame( float camera_separation )
 {
 	if (gl_logFile->modified)
 	{
-		GLimp_EnableLogging (gl_logFile->integer);
+		QGL_EnableLogging (gl_logFile->integer);
 		gl_logFile->modified = false;
 	}
 	else if (gl_logFile->integer == 2)
 	{
-		GLimp_EnableLogging (false);
+		QGL_EnableLogging (false);
 		Cvar_SetInteger ("gl_logFile", 0);
 	}
 

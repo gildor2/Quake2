@@ -53,7 +53,9 @@ typedef union
 		void	(APIENTRY * ShadeModel) (GLenum mode);
 		void	(APIENTRY * TexCoord2f) (GLfloat s, GLfloat t);
 		void	(APIENTRY * TexCoordPointer) (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
-		void	(APIENTRY * TexEnvi) (GLenum target, GLenum pname, GLint param);
+		void	(APIENTRY * TexEnvf) (GLenum target, GLenum pname, GLfloat param);
+		void	(APIENTRY * TexEnvfv) (GLenum target, GLenum pname, const GLfloat *params);
+		void	(APIENTRY * TexEnvi) (GLenum target, GLenum pname, GLenum param);
 		void	(APIENTRY * TexImage2D) (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
 		void	(APIENTRY * TexParameterf) (GLenum target, GLenum pname, GLfloat param);
 		void	(APIENTRY * TexSubImage2D) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
@@ -75,6 +77,7 @@ typedef union
 		BOOL	(APIENTRY * wglMakeCurrent) (HDC hdc, HGLRC hglrc);
 #endif
 		void	(APIENTRY * SelectTextureSGIS) (GLenum target);
+		void	(APIENTRY * SelectTextureCoordSetSGIS) (GLenum target);
 		void	(APIENTRY * MultiTexCoord2fSGIS) (GLenum target, GLfloat s, GLfloat t);
 		void	(APIENTRY * ActiveTextureARB) (GLenum texture);
 		void	(APIENTRY * ClientActiveTextureARB) (GLenum texture);
@@ -154,6 +157,8 @@ extern qgl_t qgl;
 #define qglShadeModel	qgl.ShadeModel
 #define qglTexCoord2f	qgl.TexCoord2f
 #define qglTexCoordPointer	qgl.TexCoordPointer
+#define qglTexEnvf	qgl.TexEnvf
+#define qglTexEnvfv	qgl.TexEnvfv
 #define qglTexEnvi	qgl.TexEnvi
 #define qglTexImage2D	qgl.TexImage2D
 #define qglTexParameterf	qgl.TexParameterf
@@ -176,6 +181,7 @@ extern qgl_t qgl;
 #define qwglMakeCurrent	qgl.wglMakeCurrent
 #endif
 #define qglSelectTextureSGIS	qgl.SelectTextureSGIS
+#define qglSelectTextureCoordSetSGIS	qgl.SelectTextureCoordSetSGIS
 #define qglMultiTexCoord2fSGIS	qgl.MultiTexCoord2fSGIS
 #define qglActiveTextureARB	qgl.ActiveTextureARB
 #define qglClientActiveTextureARB	qgl.ClientActiveTextureARB
@@ -205,17 +211,20 @@ extern qgl_t qgl;
 
 #define QGL_SGIS_MULTITEXTURE	(1 << 0)
 #define QGL_ARB_MULTITEXTURE	(1 << 1)
-#define QGL_S3_S3TC	(1 << 2)
-#define QGL_ARB_TEXTURE_COMPRESSION	(1 << 3)
-#define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 4)
-#define QGL_NV_FENCE	(1 << 5)
+#define QGL_EXT_TEXTURE_ENV_ADD	(1 << 2)
+#define QGL_ARB_TEXTURE_ENV_ADD	(1 << 3)
+#define QGL_ARB_TEXTURE_ENV_COMBINE	(1 << 4)
+#define QGL_S3_S3TC	(1 << 5)
+#define QGL_ARB_TEXTURE_COMPRESSION	(1 << 6)
+#define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 7)
+#define QGL_NV_FENCE	(1 << 8)
 
 #ifdef _WIN32
-#define QWGL_EXT_SWAP_CONTROL	(1 << 6)
-#define QGL_NV_VERTEX_ARRAY_RANGE	(1 << 7)
+#define QWGL_EXT_SWAP_CONTROL	(1 << 9)
+#define QGL_NV_VERTEX_ARRAY_RANGE	(1 << 10)
 #endif
 
 #ifdef __linux__
-#define QGL_NV_VERTEX_ARRAY_RANGE	(1 << 6)
+#define QGL_NV_VERTEX_ARRAY_RANGE	(1 << 9)
 #endif
 

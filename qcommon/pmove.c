@@ -832,7 +832,7 @@ static void FlyMove (qboolean doclip)
 	{
 		drop = 0;
 
-		friction = pm_friction * 1.5;	// extra friction
+		friction = pm_friction * 1.5f;	// extra friction
 		control = speed < pm_stopspeed ? pm_stopspeed : speed;
 		drop += control * friction * pml.frametime;
 
@@ -993,8 +993,8 @@ static qboolean GoodPosition (void)
 	if (pm->s.pm_type == PM_SPECTATOR)
 		return true;
 
-	for (i=0 ; i<3 ; i++)
-		origin[i] = end[i] = pm->s.origin[i]*0.125;
+	for (i = 0; i < 3; i++)
+		origin[i] = end[i] = pm->s.origin[i] / 8.0f;
 	trace = pm->trace (origin, pm->mins, pm->maxs, end);
 
 	return !trace.allsolid;

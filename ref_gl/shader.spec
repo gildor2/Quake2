@@ -45,6 +45,14 @@
      - additive		== 10
      - nearest		== 16
      - <float value>
+  -------------------- FAKK2: --------------------
+   18) if <0|1|mtex|no_mtex> / endif
+   19) fogonly  (required for fog ??)
+   20) light <value>    -- lightflare for surface
+   21) force32bit
+   22) portalsky
+   23) spriteGen <parallel|parallel_oriented|parallel_upright|oriented>
+   24) spriteScale <value>
 
 
 2. Stage keywords
@@ -69,13 +77,13 @@
   7) detail
   8) blendfunc
      - add     (== GL_ONE, GL_ONE == src+dst)
-     - filter  (== GL_DST_COLOR, GL_DST_ZERO == src*dst)
+     - filter  (== GL_DST_COLOR, GL_ZERO == src*dst)
      - blend   (== GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
      - GL_XXX GL_XXX
      if blendfunc specified, default for depthwrite == off (use "depthwrite" keyword to override)
   9) rgbGen
      - wave <func> <base> <amp> <phase> <freq>
-     - const ( <r> <g> <b> )      (all - float, 0..1)
+     - const|constant ( <r> <g> <b> )      (all - float, 0..1)
      - identity
      - identityLighting
      - entity
@@ -109,6 +117,21 @@
      - rotate <deg_per_sec>
      - entityTranslate
   13) depthwrite
+  -------------------- FAKK2: --------------------
+  9)  rgbGen: when applied to entity, use "vertex" for lightgrid or "lightingDiffuse" for compute
+     - colorwave <r> <g> <b> <func> <base> <amp> <phase> <freq>
+  10) alphaGen
+     - dot [min] [max]            (DotProduct(viewDir, surfNormal); a=0 when parallel, 1 when perpendicular)
+       (water, reflections)
+     - oneMinusDot
+     - lightingSpecular <x y z>   ???
+     - skyalpha
+     - oneMinusSkyAlpha
+  12) tcMod
+     - offset <sOffset> <tOffset> (may be treated as initial values for "scroll")
+     - parallax <sRate> <tRate>   (coords depends on vieworg ???)
+     - macro <sScale> <tScale>    ???
+  14) nextbundle                  (for multitexturing)
 
 
 3. Wave functions
@@ -119,6 +142,28 @@
   3) triangle
   4) sawtooth
   5) inversesawtooth
-  6)* noise     (only for "deformVertexes normal" and "rgbGen wave noise" ?? Check this!!)
+  6)* noise     (only for "deformVertexes normal" and "rgbGen [color]wave noise")
 
   Result = amp * (func(TIME * freq) + phase) + base
+
+4. FAKK2 shader script manipulation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- tcMod scroll <fromEntity> <fromEntity>
+- tcMod rotate <fromEntity>
+- tcMod offset <fromEntity> <fromEntity>
+- deformVertexes wave <div> <waveform> <wave> <fromEntity> <fromEntity> <fromEntity> <fromEntity>
+- alphaGen wave <waveform> <fromEntity> <fromEntity> <fromEntity> <fromEntity>
+- rgbGen wave <waveform> <fromEntity> <fromEntity> <fromEntity> <fromEntity>
+- frameFromEntity                 (for animmap)
+
+Script commands:
+
+- shader offset [x] [y]
+- shader rotation [degrees]
+- shader translation [x] [y]
+- shader frame [framenum]
+- shader wavebase [base offset of wave function]
+- shader waveamp [amplitude of wave function]
+- shader wavephase [phase of wave function]
+- shader wavefreq [frequency of wave function]

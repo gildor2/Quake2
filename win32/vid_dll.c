@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "../client/client.h"
 #include "winquake.h"
+#include "resource.h"
 
 // Structure containing functions exported from refresh DLL
 refExport_t	re;
@@ -246,7 +247,7 @@ MainWndProc
 main window procedure
 ====================
 */
-LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	LONG	lRet = 0;
 
@@ -409,6 +410,144 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc (hWnd, uMsg, wParam, lParam);
 }
 
+
+/*
+ * Vid_NewWindow
+ */
+static void Vid_NewWindow (int width, int height)
+{
+	viddef.width  = width;
+	viddef.height = height;
+
+	cl.force_refdef = true;		// can't use a paused refdef
+}
+
+/*
+ * Vid_CreateWindow
+ */
+
+static HWND mainHwnd;
+
+void *Vid_CreateWindow (int width, int height, qboolean fullscreen)
+{
+	WNDCLASS wc;
+	RECT	r;
+	int		stylebits;
+	int		x, y, w, h;
+	int		exstyle;
+
+	if (fullscreen)
+	{
+		exstyle = WS_EX_TOPMOST;
+		stylebits = WS_POPUP|WS_SYSMENU;
+	}
+	else
+	{
+		exstyle = 0;
+		stylebits = WS_SYSMENU|WS_CAPTION;
+	}
+
+	// if size=0 -- invisible (fake) window
+	if (width || height)
+		stylebits |= WS_VISIBLE;
+
+	r.left = 0;
+	r.top = 0;
+	r.right  = width;
+	r.bottom = height;
+
+	AdjustWindowRect (&r, stylebits, FALSE);
+
+	w = r.right - r.left;
+	h = r.bottom - r.top;
+
+	if (fullscreen)
+	{
+		x = 0;
+		y = 0;
+	}
+	else
+	{
+		x = Cvar_VariableInt ("vid_xpos");
+		y = Cvar_VariableInt ("vid_ypos");
+	}
+
+	if (mainHwnd)
+	{
+		SetWindowLong (mainHwnd, GWL_STYLE, stylebits);
+		SetWindowLong (mainHwnd, GWL_EXSTYLE, exstyle);
+		ShowWindow (mainHwnd, SW_SHOW);
+		SetWindowPos (mainHwnd, 0, x, y, w, h, SWP_NOZORDER);
+
+		SetForegroundWindow (mainHwnd);
+		SetFocus (mainHwnd);
+		UpdateWindow (mainHwnd);
+
+		Vid_NewWindow (width, height);
+		return mainHwnd;
+	}
+
+	// Register the frame class
+	wc.style			= 0;
+	wc.lpfnWndProc		= MainWndProc;
+	wc.cbClsExtra		= 0;
+	wc.cbWndExtra		= 0;
+	wc.hInstance		= global_hInstance;
+	wc.hIcon			= LoadIcon (global_hInstance, MAKEINTRESOURCE(IDI_ICON1));
+	wc.hCursor			= 0; //LoadCursor (NULL,IDC_ARROW);
+	wc.hbrBackground	= (void *) COLOR_GRAYTEXT;
+	wc.lpszMenuName 	= 0;
+	wc.lpszClassName	= APPNAME;
+
+	if (!RegisterClass (&wc))
+		Com_Error (ERR_FATAL, "Vid_CreateWindow: couldn't register window class");
+
+	mainHwnd = CreateWindowEx (
+		 exstyle,
+		 APPNAME, APPNAME,
+		 stylebits,
+		 x, y, w, h,
+		 NULL, NULL,
+		 global_hInstance, NULL);
+
+	if (!mainHwnd) Com_Error (ERR_FATAL, "Vid_CreateWindow: couldn't create window");
+
+	if (width || height)
+		ShowWindow (mainHwnd, SW_SHOW);
+	UpdateWindow (mainHwnd);
+
+	SetForegroundWindow (mainHwnd);
+	SetFocus (mainHwnd);
+
+	// let the sound and input subsystems know about the new window
+	Vid_NewWindow (width, height);
+
+	return mainHwnd;
+}
+
+/*
+ * Vid_DestroyWindow
+ */
+
+void Vid_DestroyWindow (qboolean force)
+{
+	if (!force)	//?? add cvar "win_singleWindow"
+	{
+//		ShowWindow (mainHwnd, SW_HIDE);
+		return;
+	}
+
+	if (mainHwnd)
+	{
+		ShowWindow (mainHwnd, SW_HIDE);		// as Q3 does...
+		DestroyWindow (mainHwnd);
+		mainHwnd = 0;
+	}
+
+	UnregisterClass (APPNAME, global_hInstance);
+}
+
+
 /*
 ============
 Vid_Restart_f
@@ -489,24 +628,13 @@ void Vid_UpdateWindowPosAndSize (int x, int y)
 	MoveWindow (cl_hwnd, vid_xpos->integer, vid_ypos->integer, w, h, TRUE);
 }
 
-/*
-** Vid_NewWindow
-*/
-void Vid_NewWindow (int width, int height)
-{
-	viddef.width  = width;
-	viddef.height = height;
-
-	cl.force_refdef = true;		// can't use a paused refdef
-}
-
 void Vid_FreeReflib (void)
 {
 	refActive  = false;
 	if (!refLibrary) return;	// statically linked?
 
 	if (!FreeLibrary (refLibrary))
-		Com_Error (ERR_FATAL, "Reflib FreeLibrary failed");
+		Com_Error (ERR_FATAL, "Reflib FreeLibrary() failed");
 	memset (&re, 0, sizeof(re));
 	refLibrary = NULL;
 }
@@ -551,9 +679,10 @@ extern refExport_t GL_GetRefAPI (refImport_t rimp);		// ref_gl
 extern refExport_t GetRefAPI (refImport_t rimp);		// ref_soft
 #endif
 
-qboolean Vid_LoadRefresh (char *name)
+static qboolean Vid_LoadRefresh (char *name)
 {
 	GetRefAPI_t	LibGetRefAPI;
+	char	dllName[MAX_OSPATH];
 
 	if (refActive)
 	{
@@ -561,30 +690,39 @@ qboolean Vid_LoadRefresh (char *name)
 		Vid_FreeReflib ();
 	}
 
+	Com_sprintf (dllName, sizeof(dllName), "ref_%s.dll", name);
 	Com_Printf ("------- Loading %s -------\n", name);
 
 #ifdef REF_HARD_LINKED
-	refLibrary = 0;
-	if (!stricmp (vid_ref->string, "gl")) LibGetRefAPI = GL_GetRefAPI;
-	else if (!stricmp (vid_ref->string, "soft")) LibGetRefAPI = GetRefAPI;
+	refLibrary = NULL;
+
+	if (!strcmp (name, "gl"))
+		LibGetRefAPI = GL_GetRefAPI;
+	else if (!strcmp (name, "soft"))
+		LibGetRefAPI = GetRefAPI;
 	else
 #endif
 	{
-		if (!(refLibrary = LoadLibrary (name)))
+		if (!(refLibrary = LoadLibrary (dllName)))
 		{
-			Com_WPrintf ("LoadLibrary(\"%s\") failed\n", name);
+			Com_WPrintf ("LoadLibrary(\"%s\") failed\n", dllName);
 			return false;
 		}
 		if (!(LibGetRefAPI = (void *) GetProcAddress (refLibrary, "GetRefAPI")))
-			Com_Error (ERR_FATAL, "GetProcAddress failed on %s", name);
+		{
+			Com_WPrintf ("GetProcAddress() failed on %s\n", dllName);
+			Vid_FreeReflib ();
+			return false;
+		}
 	}
 
 	re = LibGetRefAPI (ri);
 
 	if (re.struc_size != sizeof(refExport_t) || re.api_version != API_VERSION)
 	{
+		Com_WPrintf ("%s has incompatible API_VERSION\n", dllName);
 		Vid_FreeReflib ();
-		Com_Error (ERR_FATAL, "%s has incompatible api_version", name);
+		return false;
 	}
 
 	if (re.flags & REF_CONSOLE_ONLY)
@@ -615,24 +753,15 @@ qboolean Vid_LoadRefresh (char *name)
 		re.GetClientLight = D_GetClientLight;
 	}
 
-	if (re.Init (global_hInstance, MainWndProc) == -1)
+	if (re.Init () == -1)
 	{
-		re.Shutdown();
+		re.Shutdown ();
 		Vid_FreeReflib ();
 		return false;
 	}
 
 	Com_Printf ("------------------------------------\n");
 	refActive = true;
-
-	vidref_val = VIDREF_OTHER;
-	if (vid_ref)
-	{
-		if(!strcmp (vid_ref->string, "gl") || !(strcmp (vid_ref->string, "oldgl")))
-			vidref_val = VIDREF_GL;
-		else if(!strcmp (vid_ref->string, "soft"))
-			vidref_val = VIDREF_SOFT;
-	}
 
 	return true;
 }
@@ -646,6 +775,9 @@ is to check to see if any of the video mode parameters have changed, and if they
 update the rendering DLL and/or video mode to match.
 ============
 */
+
+static char lastRenderer[MAX_QPATH];
+
 void Vid_CheckChanges (void)
 {
 	if (win_noalttab->modified)
@@ -666,27 +798,40 @@ void Vid_CheckChanges (void)
 
 	if (vid_ref->modified)
 	{
+		qboolean loaded;
+
+		// refresh has changed
 		cl.force_refdef = true;		// can't use a paused refdef
 		S_StopAllSounds ();
-	}
-	while (vid_ref->modified)
-	{
-		// refresh has changed
-		vid_ref->modified = false;
+
 		r_fullscreen->modified = true;
 		cl.refresh_prepped = false;
 		cls.disable_screen = true;
 
-		if (!Vid_LoadRefresh (va("ref_%s.dll", vid_ref->string)))
+		loaded = false;
+		if (Vid_LoadRefresh (vid_ref->string))
+			loaded = true;
+/*		else
 		{
-			if (strcmp (vid_ref->string, "soft") == 0)
-				Com_Error (ERR_FATAL, "Couldn't fall back to software refresh!");
-			Cvar_Set ("vid_ref", "soft");
-
 			// drop the console if we fail to load a refresh
-			if (cls.key_dest != key_console)
-				Con_ToggleConsole_f();
+			if (cls.key_dest != key_console) Con_ToggleConsole_f ();
+		} */
+		if (!loaded && lastRenderer)
+		{
+			if (Vid_LoadRefresh (lastRenderer))
+			{
+				Cvar_Set ("vid_ref", lastRenderer);
+				loaded = true;
+			}
 		}
+		if (!loaded)
+		{
+			if (!strcmp (vid_ref->string, "soft") || !Vid_LoadRefresh ("soft"))
+				Com_Error (ERR_FATAL, "Couldn't fall back to software refresh");
+			Cvar_Set ("vid_ref", "soft");
+		}
+		strcpy (lastRenderer, vid_ref->string);
+		vid_ref->modified = false;
 		cls.disable_screen = false;
 	}
 
@@ -738,8 +883,11 @@ CVAR_END
 		}
 	}
 #endif
-	/* Disable the 3Dfx splash screen */
+	// Disable the 3Dfx splash screen
 	putenv ("FX_GLIDE_NO_SPLASH=0");
+
+	// Create invisible (fake) window to capture Win32 focus
+	Vid_CreateWindow (0, 0, false);
 
 	/* Start the graphics mode and load refresh DLL */
 	Vid_CheckChanges ();
@@ -759,6 +907,7 @@ void Vid_Shutdown (void)
 		 */
 		Cvar_Set ("vid_ref", "");
 		re.Shutdown ();
+		Vid_DestroyWindow (true);
 		Vid_FreeReflib ();
 	}
 }

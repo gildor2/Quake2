@@ -213,46 +213,38 @@ void ProjectPointOnPlane (vec3_t dst, const vec3_t p, const vec3_t normal)
 	dst[2] = p[2] - d * n[2];
 }
 
-/*
-** assumes "src" is normalized
-*/
+// assumes "src" is normalized
 void PerpendicularVector (vec3_t dst, const vec3_t src)
 {
-	int	pos;
-	int i;
-	float minelem = 1.0F;
-	vec3_t tempvec;
+	int		pos, i;
+	float	minelem;
+	vec3_t	tempvec;
 
-	/*
-	** find the smallest magnitude axially aligned vector
-	*/
-	for ( pos = 0, i = 0; i < 3; i++ )
+	// find the smallest magnitude axially aligned vector
+	minelem = 1;
+	for (i = 0, pos = 0; i < 3; i++)
 	{
-		if ( fabs( src[i] ) < minelem )
+		if (fabs (src[i]) < minelem)
 		{
 			pos = i;
-			minelem = fabs( src[i] );
+			minelem = fabs (src[i]);
 		}
 	}
-	tempvec[0] = tempvec[1] = tempvec[2] = 0.0F;
-	tempvec[pos] = 1.0F;
+	tempvec[0] = tempvec[1] = tempvec[2] = 0;
+	tempvec[pos] = 1.0f;
 
-	/*
-	** project the point onto the plane defined by src
-	*/
-	ProjectPointOnPlane( dst, tempvec, src );
+	// project the point onto the plane defined by src
+	ProjectPointOnPlane (dst, tempvec, src);
 
-	/*
-	** normalize the result
-	*/
-	VectorNormalize( dst );
+	// normalize the result
+	VectorNormalize (dst);
 }
 
 
-// Gives "forward" and makes 2 additional axes for it
+// Gives "forward" (normalized!) and makes 2 additional axes for it
 void MakeNormalVectors (vec3_t forward, vec3_t right, vec3_t up)
 {
-	float		d;
+	float	d;
 
 	// this rotate and negate guarantees a vector
 	// not colinear with the original
@@ -883,9 +875,9 @@ void _VectorCopy (vec3_t in, vec3_t out)
 
 void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross)
 {
-	cross[0] = v1[1]*v2[2] - v1[2]*v2[1];
-	cross[1] = v1[2]*v2[0] - v1[0]*v2[2];
-	cross[2] = v1[0]*v2[1] - v1[1]*v2[0];
+	cross[0] = v1[1] * v2[2] - v1[2] * v2[1];
+	cross[1] = v1[2] * v2[0] - v1[0] * v2[2];
+	cross[2] = v1[0] * v2[1] - v1[1] * v2[0];
 }
 
 float VectorLength (vec3_t v)
@@ -1489,15 +1481,6 @@ int Q_strcasecmp (char *s1, char *s2)
 
 void Q_strncpyz (char *dest, const char *src, int destsize)
 {
-	if (!dest)
-		Com_Error (ERR_FATAL, "Q_strncpyz: NULL dest");
-
-	if (!src)
-		Com_Error (ERR_FATAL, "Q_strncpyz: NULL src");
-
-	if (destsize < 1)
-		Com_Error (ERR_FATAL, "Q_strncpyz: destsize < 1");
-
 	strncpy (dest, src, destsize-1);
 	dest[destsize-1] = 0;
 }
@@ -1547,7 +1530,7 @@ void Q_CopyFilename (char *dest, char *src, int len)
 		if (c == '/')
 		{
 			while (*s == '/') s++;			// replace '//' -> '/' (may be when "path/" + "/name")
-			if (s[0] == '.' && s[1] == '.' && s[2] == '/'&& len)	// cut "dir/../"
+			if (s[0] == '.' && s[1] == '.' && s[2] == '/'&& len && *(s-2) != '.')	// cut "dir/../", but leave "../.."
 			{
 				do
 				{

@@ -44,9 +44,10 @@ typedef enum
 	TCGEN_NONE,
 	TCGEN_TEXTURE,
 	TCGEN_LIGHTMAP,
-	TCGEN_ENVIRONMENT,
+	TCGEN_LIGHTMAP1, TCGEN_LIGHTMAP2, TCGEN_LIGHTMAP3, TCGEN_LIGHTMAP4,	// for fast lightstyles; should go exactly after TCGEN_LIGHTMAP (??)
+	TCGEN_DLIGHT0,	// 32 values
+	TCGEN_ENVIRONMENT = TCGEN_DLIGHT0 + MAX_DLIGHTS,
 	TCGEN_VECTOR,
-	// special (inaccessible from script)
 	TCGEN_ZERO,		//?? s = t = 0
 	TCGEN_FOG		//?? used for fog image
 } tcGenType_t;
@@ -158,8 +159,8 @@ typedef struct
 	// GL_State ...
 	int		glState;
 
-	qboolean isLightmap;
-	qboolean detail;				//?? true is stage is detail (unused ??)
+	byte	isLightmap;
+	byte	detail;					//?? true is stage is detail (unused ??)
 
 	/*---------------- RGBA params ----------------*/
 	color_t	rgbaConst;				// if RGBGEN_CONST or ALPHAGEN_CONST
@@ -199,6 +200,10 @@ typedef struct shader_s
 	char	name[MAX_QPATH];
 
 	int		lightmapNumber;
+	union {
+		byte	lightStyles[4];	// 0 - unused; can be 1..31
+		int		lightStyles_i;	//?? is it used
+	};
 	int		sortIndex;
 	float	sortParam;		// values from sortParam_t, but in float representation
 	int		sortParam2;		// secondary sort values (main image, lightmap num etc.)
@@ -211,11 +216,11 @@ typedef struct shader_s
 
 	gl_cullMode_t cullMode;
 
-	qboolean scripted;
-	qboolean bad;			// errors in script or no map image found (for auto-generated shader)
-	qboolean fast;			// have no deforms, tcGen/tcMod, rgb/alpha-gen
+	byte	scripted;
+	byte	bad;			// errors in script or no map image found (for auto-generated shader)
+	byte	fast;			// have no deforms, tcGen/tcMod, rgb/alpha-gen
 
-	qboolean usePolygonOffset;
+	byte	usePolygonOffset;
 
 	int		numDeforms;
 	deformParms_t deforms[MAX_SHADER_DEFORMS];

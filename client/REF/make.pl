@@ -63,20 +63,36 @@ sub EmitImpl {
 	printf (CODE "\n\t%s", $func);
 }
 
+sub EmitHdrPrep {
+	printf (HDR "%s\n", $line);
+}
+
+sub EmitDefsPrep {
+	printf (DEFS "%s\n", $line);
+}
+
+sub EmitCodePrep {
+	printf (CODE "\n%s\n", $line);
+}
+
 # Usage: Parse (<per-header func>)
 sub Parse {
 	my $sub;
-	my $subBegin = @_[0];
+	my ($subBegin, $subPreproc) = @_;
 
 	open (IN, $infile) || die "Input file ", $infile, " not found";
 	$num = 0;
 	while (getline())
 	{
-		($type, $func, $args, $end) = $line =~ / \s* (\S+ .* [\*\s]) (\w+) \s+ \( (.*) \) \s* (\S*) /x;
-		($type) = $type =~ /\s*(\S.*\S)\s*/;	# truncate leading and trailing spaces
+		if ($line =~ /\# .+/x) {
+			&$subPreproc () if defined $subPreproc;
+		} else {
+			($type, $func, $args, $end) = $line =~ / \s* (\S+ .* [\*\s]) (\w+) \s+ \( (.*) \) \s* (\S*) /x;
+			($type) = $type =~ /\s*(\S.*\S)\s*/;	# truncate leading and trailing spaces
 
-		&$subBegin () if defined $subBegin;
-		$num++;
+			&$subBegin () if defined $subBegin;
+			$num++;
+		}
 	}
 	close (IN);
 }
@@ -104,18 +120,18 @@ print (HDR "typedef struct {\n");
 print (HDR "\tint\t\tstruc_size;\n");
 print (HDR "\tint\t\tapi_version;\n");
 
-Parse ("EmitStruc");
+Parse ("EmitStruc", "EmitHdrPrep");
 print (HDR "} $typename;\n\n");
 print (HDR "extern $typename $strucname;\n\n");
 
 #------------------- Creating defines --------------------------------
 
 print (DEFS "#ifdef DYNAMIC_REF\n\n");
-Parse ("EmitDefine1");
+Parse ("EmitDefine1", "EmitDefsPrep");
 print (DEFS "\n#else\n\n");
 #Parse ("EmitDefine2");
 #print (DEFS "\n\n");
-Parse ("EmitDecl");
+Parse ("EmitDecl", "EmitDefsPrep");
 print (DEFS "\n#endif\n\n");
 
 
@@ -124,7 +140,7 @@ print (DEFS "\n#endif\n\n");
 print (CODE "$typename $strucname = {\n");
 print (CODE "\tsizeof($typename),\n");
 print (CODE "\tAPI_VERSION,");
-Parse ("EmitImpl");
+Parse ("EmitImpl", "EmitCodePrep");
 print (CODE "\n};\n\n");
 
 # close files

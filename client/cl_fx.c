@@ -51,11 +51,11 @@ void CL_RunLightStyles (void)
 {
 	int		ofs, i;
 	lightstyle_t *ls;
-	static int lastofs = -1;
+	float	frac, frac1;
 
 	ofs = cl.time / 100;
-	if (ofs == lastofs) return;
-	lastofs = ofs;
+	frac1 = (cl.time % 100) / 100.0f;
+	frac = 1 - frac1;
 
 	for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++)
 	{
@@ -67,7 +67,15 @@ void CL_RunLightStyles (void)
 		if (ls->length == 1)
 			ls->value = ls->map[0];
 		else
-			ls->value = ls->map[ofs % ls->length];
+		{
+			int		pos, pos1;
+
+			pos = ofs % ls->length;
+			pos1 = pos + 1;
+			if (pos1 >= ls->length) pos1 = 0;
+
+			ls->value = Q_ftol (ls->map[pos] * frac + ls->map[pos1] * frac1);
+		}
 	}
 }
 
@@ -194,35 +202,11 @@ void CL_AddDLights (void)
 
 	dl = cl_dlights;
 
-//=====
-//PGM
-	if(vidref_val == VIDREF_GL)		//???
+	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
 	{
-		for (i = 0; i < MAX_DLIGHTS; i++, dl++)
-		{
-			if (!dl->radius) continue;
-			V_AddLight (dl->origin, dl->radius, dl->color[0], dl->color[1], dl->color[2]);
-		}
+		if (!dl->radius) continue;
+		V_AddLight (dl->origin, dl->radius, dl->color[0], dl->color[1], dl->color[2]);
 	}
-	else
-	{
-		for (i = 0; i < MAX_DLIGHTS; i++, dl++)
-		{
-			if (!dl->radius) continue;
-
-			// negative light in software. only black allowed
-			if ((dl->color[0] < 0) || (dl->color[1] < 0) || (dl->color[2] < 0))
-			{
-				dl->radius = -(dl->radius);
-				dl->color[0] = 1;
-				dl->color[1] = 1;
-				dl->color[2] = 1;
-			}
-			V_AddLight (dl->origin, dl->radius, dl->color[0], dl->color[1], dl->color[2]);
-		}
-	}
-//PGM
-//=====
 }
 
 

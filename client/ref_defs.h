@@ -41,7 +41,6 @@
 #define MatchWildcard	ri._MatchWildcard
 #define Vid_GetModeInfo	ri._Vid_GetModeInfo
 #define Vid_MenuInit	ri._Vid_MenuInit
-#define Vid_NewWindow	ri._Vid_NewWindow
 #define ImageExists	ri._ImageExists
 #define LoadPCX	ri._LoadPCX
 #define LoadTGA	ri._LoadTGA
@@ -49,6 +48,12 @@
 #define WriteTGA	ri._WriteTGA
 #define WriteJPG	ri._WriteJPG
 #define LoadBspFile	ri._LoadBspFile
+#ifdef _WIN32
+#define Vid_CreateWindow	ri._Vid_CreateWindow
+#define Vid_DestroyWindow	ri._Vid_DestroyWindow
+#else
+#define Vid_NewWindow	ri._Vid_NewWindow
+#endif
 
 #else
 
@@ -91,7 +96,6 @@ char*	FS_Gamedir (void);
 qboolean	MatchWildcard (char *name, char *mask);
 qboolean	Vid_GetModeInfo (int *width, int *height, int mode);
 void	Vid_MenuInit (void);
-void	Vid_NewWindow (int width, int height);
 int	ImageExists (char *name, int stop_mask);
 void	LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *height);
 void	LoadTGA (char *name, byte **pic, int *width, int *height);
@@ -99,6 +103,12 @@ void	LoadJPG (char *name, byte **pic, int *width, int *height);
 qboolean	WriteTGA (char *name, byte *pic, int width, int height);
 qboolean	WriteJPG (char *name, byte *pic, int width, int height, qboolean highQuality);
 bspfile_t*	LoadBspFile (char *filename, qboolean clientload, unsigned *checksum);
+#ifdef _WIN32
+void*	Vid_CreateWindow (int width, int height, qboolean fullscreen);
+void	Vid_DestroyWindow (qboolean force);
+#else
+void	Vid_NewWindow (int width, int height);
+#endif
 
 #endif
 

@@ -25,10 +25,6 @@ NULL=
 NULL=nul
 !ENDIF 
 
-CPP=cl.exe
-MTL=midl.exe
-RSC=rc.exe
-
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
 OUTDIR=.\release
@@ -65,7 +61,9 @@ CLEAN :
 	-@erase "$(INTDIR)\cvar.obj"
 	-@erase "$(INTDIR)\files.obj"
 	-@erase "$(INTDIR)\gl_backend.obj"
+	-@erase "$(INTDIR)\gl_buffers.obj"
 	-@erase "$(INTDIR)\gl_image.obj"
+	-@erase "$(INTDIR)\gl_interface.obj"
 	-@erase "$(INTDIR)\gl_main.obj"
 	-@erase "$(INTDIR)\gl_model.obj"
 	-@erase "$(INTDIR)\gl_shader.obj"
@@ -195,8 +193,42 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
+CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MD /W3 /GX /Zd /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "REF_HARD_LINKED" /Fp"$(INTDIR)\quake2s.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+.c{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.c{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+MTL=midl.exe
 MTL_PROJ=/nologo /D "NDEBUG" /mktyplib203 /win32 
+RSC=rc.exe
 RSC_PROJ=/l 0x409 /fo"$(INTDIR)\q2.res" /d "NDEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\quake2s.bsc" 
@@ -257,6 +289,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\x86.obj" \
 	"$(INTDIR)\gl_backend.obj" \
 	"$(INTDIR)\gl_image.obj" \
+	"$(INTDIR)\gl_interface.obj" \
 	"$(INTDIR)\gl_main.obj" \
 	"$(INTDIR)\gl_model.obj" \
 	"$(INTDIR)\gl_shader.obj" \
@@ -352,7 +385,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\jquant2.obj" \
 	"$(INTDIR)\jutils.obj" \
 	"$(INTDIR)\q2.res" \
-	"$(INTDIR)\resources.obj"
+	"$(INTDIR)\resources.obj" \
+	"$(INTDIR)\gl_buffers.obj"
 
 "$(OUTDIR)\quake2.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -419,8 +453,12 @@ CLEAN :
 	-@erase "$(INTDIR)\files.sbr"
 	-@erase "$(INTDIR)\gl_backend.obj"
 	-@erase "$(INTDIR)\gl_backend.sbr"
+	-@erase "$(INTDIR)\gl_buffers.obj"
+	-@erase "$(INTDIR)\gl_buffers.sbr"
 	-@erase "$(INTDIR)\gl_image.obj"
 	-@erase "$(INTDIR)\gl_image.sbr"
+	-@erase "$(INTDIR)\gl_interface.obj"
+	-@erase "$(INTDIR)\gl_interface.sbr"
 	-@erase "$(INTDIR)\gl_main.obj"
 	-@erase "$(INTDIR)\gl_main.sbr"
 	-@erase "$(INTDIR)\gl_model.obj"
@@ -674,8 +712,42 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
+CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\quake2s.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+.c{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.c{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+MTL=midl.exe
 MTL_PROJ=/nologo /D "_DEBUG" /mktyplib203 /win32 
+RSC=rc.exe
 RSC_PROJ=/l 0x409 /fo"$(INTDIR)\q2.res" /d "_DEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\quake2s.bsc" 
@@ -732,6 +804,7 @@ BSC32_SBRS= \
 	"$(INTDIR)\x86.sbr" \
 	"$(INTDIR)\gl_backend.sbr" \
 	"$(INTDIR)\gl_image.sbr" \
+	"$(INTDIR)\gl_interface.sbr" \
 	"$(INTDIR)\gl_main.sbr" \
 	"$(INTDIR)\gl_model.sbr" \
 	"$(INTDIR)\gl_shader.sbr" \
@@ -825,7 +898,8 @@ BSC32_SBRS= \
 	"$(INTDIR)\jmemmgr.sbr" \
 	"$(INTDIR)\jquant1.sbr" \
 	"$(INTDIR)\jquant2.sbr" \
-	"$(INTDIR)\jutils.sbr"
+	"$(INTDIR)\jutils.sbr" \
+	"$(INTDIR)\gl_buffers.sbr"
 
 "$(OUTDIR)\quake2s.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
     $(BSC32) @<<
@@ -887,6 +961,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\x86.obj" \
 	"$(INTDIR)\gl_backend.obj" \
 	"$(INTDIR)\gl_image.obj" \
+	"$(INTDIR)\gl_interface.obj" \
 	"$(INTDIR)\gl_main.obj" \
 	"$(INTDIR)\gl_model.obj" \
 	"$(INTDIR)\gl_shader.obj" \
@@ -990,7 +1065,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\r_scana.obj" \
 	"$(INTDIR)\r_spr8.obj" \
 	"$(INTDIR)\r_surf8.obj" \
-	"$(INTDIR)\r_varsa.obj"
+	"$(INTDIR)\r_varsa.obj" \
+	"$(INTDIR)\gl_buffers.obj"
 
 "$(OUTDIR)\quake2.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -998,36 +1074,6 @@ LINK32_OBJS= \
 <<
 
 !ENDIF 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
 
 
 !IF "$(NO_EXTERNAL_DEPS)" != "1"
@@ -1994,6 +2040,24 @@ SOURCE=.\ref_gl\gl_image.c
 
 !ENDIF 
 
+SOURCE=.\ref_gl\gl_interface.c
+
+!IF  "$(CFG)" == "quake2s - Win32 Release"
+
+
+"$(INTDIR)\gl_interface.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
+
+
+"$(INTDIR)\gl_interface.obj"	"$(INTDIR)\gl_interface.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
 SOURCE=.\ref_gl\gl_main.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
@@ -2097,6 +2161,24 @@ SOURCE=.\win32\qgl_win.c
 
 
 "$(INTDIR)\qgl_win.obj"	"$(INTDIR)\qgl_win.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
+SOURCE=.\ref_gl\gl_buffers.c
+
+!IF  "$(CFG)" == "quake2s - Win32 Release"
+
+
+"$(INTDIR)\gl_buffers.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
+
+
+"$(INTDIR)\gl_buffers.obj"	"$(INTDIR)\gl_buffers.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 

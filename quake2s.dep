@@ -297,9 +297,7 @@
 .\qcommon\images.c : \
 	".\client\ref_defs.h"\
 	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
 	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
 	".\jpeg\jpeglib.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -399,12 +397,7 @@
 	
 
 .\qcommon\q_shared2.c : \
-	".\client\ref.h"\
-	".\client\ref_decl.h"\
-	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
-	".\qcommon\qcommon.h"\
-	".\qcommon\qfiles.h"\
 	
 
 .\client\qmenu.c : \
@@ -654,7 +647,6 @@
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
-	".\ref_gl\qgl.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -667,7 +659,17 @@
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_model.h"\
-	".\ref_gl\qgl.h"\
+	".\ref_gl\qgl_decl.h"\
+	
+
+.\ref_gl\gl_interface.c : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
+	".\client\ref_defs.h"\
+	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
+	".\ref_gl\gl_local.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -682,7 +684,6 @@
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
-	".\ref_gl\qgl.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -696,7 +697,6 @@
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
-	".\ref_gl\qgl.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -709,7 +709,6 @@
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_shader.h"\
-	".\ref_gl\qgl.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -724,7 +723,6 @@
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
-	".\ref_gl\qgl.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -736,7 +734,6 @@
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_local.h"\
-	".\ref_gl\qgl.h"\
 	".\ref_gl\qgl_decl.h"\
 	".\win32\glw_win.h"\
 	".\win32\winquake.h"\
@@ -750,15 +747,24 @@
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_local.h"\
-	".\ref_gl\qgl.h"\
 	".\ref_gl\qgl_decl.h"\
 	".\ref_gl\qgl_impl.h"\
 	".\win32\glw_win.h"\
 	
 
-.\win32\q_shwin.c : \
+.\ref_gl\gl_buffers.c : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
+	".\client\ref_defs.h"\
+	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
+	".\ref_gl\gl_backend.h"\
+	".\ref_gl\gl_local.h"\
+	".\ref_gl\qgl_decl.h"\
+	
+
+.\win32\q_shwin.c : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -1377,7 +1383,6 @@
 	".\jpeg\jerror.h"\
 	".\jpeg\jinclude.h"\
 	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
 	".\jpeg\jpeglib.h"\
 	
 
