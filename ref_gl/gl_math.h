@@ -13,7 +13,7 @@ extern float asinTable[], acosTable[];
 extern float atanTable[], atanTable2[];
 
 // for float 0..1 == 0..2*pi
-#define PERIODIC_FUNC(tbl,val)			tbl[Q_round((val)*TABLE_SIZE) & TABLE_MASK]
+#define PERIODIC_FUNC(tbl,val)			tbl[appRound((val)*TABLE_SIZE) & TABLE_MASK]
 // for integer 0..range == 0..2*pi
 #define PERIODIC_FUNC2(tbl,val,range)	tbl[((val) * (int)(TABLE_SIZE / (range))) & TABLE_MASK]
 
@@ -25,11 +25,11 @@ extern float atanTable[], atanTable2[];
 
 // WARNING: these functions are not periodic and not clamped; input value should be exactly in [-1..1] range
 // Used (TABLE_SIZE-0.1f) to avoid [TABLE_SIZE*2] index for 1.0f value, should be [TABLE_SIZE*2-1] (OR: use index clamping ??)
-#define ASIN_FUNC(val)					asinTable[Q_floor ((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE]
-#define ACOS_FUNC(val)					acosTable[Q_floor ((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE]
+#define ASIN_FUNC(val)					asinTable[appFloor ((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE]
+#define ACOS_FUNC(val)					acosTable[appFloor ((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE]
 
 
-__inline float ATAN2_FUNC(float y, float x)
+inline float ATAN2_FUNC(float y, float x)
 {
 	float	val, m;
 
@@ -44,9 +44,9 @@ __inline float ATAN2_FUNC(float y, float x)
 	else
 		m = 1;
 	if (val <= 1.0f)
-		val = atanTable[Q_floor (val * (TABLE_SIZE - 0.1f))];
+		val = atanTable[appFloor (val * (TABLE_SIZE - 0.1f))];
 	else
-		val = atanTable2[Q_floor (1.0f / val * (TABLE_SIZE - 0.1f))];
+		val = atanTable2[appFloor (1.0f / val * (TABLE_SIZE - 0.1f))];
 	val *= m;
 	if (x < 0)
 	{

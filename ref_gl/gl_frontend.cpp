@@ -932,7 +932,7 @@ static void AddBeamSurfaces (beam_t *b)
 	size = min(z1, z2);
 
 	size = b->radius * 200 / (size * vp.fov_scale);
-	numParts = Q_round(size);
+	numParts = appRound(size);
 	numParts = bound(numParts, 1, 6);
 
 	// compute beam axis
@@ -1111,8 +1111,8 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 			a1 = a1 * 4 * (1 - MIN_FIXED_ALPHA) + MIN_FIXED_ALPHA;
 			a2 = a2 * 4 * (1 - MIN_FIXED_ALPHA) + MIN_FIXED_ALPHA;
 
-			p->verts[0].c.c[3] = p->verts[1].c.c[3] = Q_round (b->color.c[3] * a1);
-			p->verts[2].c.c[3] = p->verts[3].c.c[3] = Q_round (b->color.c[3] * a2);
+			p->verts[0].c.c[3] = p->verts[1].c.c[3] = appRound (b->color.c[3] * a1);
+			p->verts[2].c.c[3] = p->verts[3].c.c[3] = appRound (b->color.c[3] * a2);
 		}
 #endif
 
@@ -1703,7 +1703,7 @@ static void DrawFlares (void)
 				continue;
 			}
 			if (dist < FLARE_DIST1)
-				style = Q_round (style * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0));
+				style = appRound (style * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0));
 //				scale = scale * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0);
 			else if (dist > FLARE_DIST2)
 				scale = scale * dist / FLARE_DIST2;
@@ -1749,7 +1749,7 @@ static void DrawFlares (void)
 				gl_speeds.cullFlares++;
 				continue;
 			}
-			style = Q_round((1 - timeDelta) * style);
+			style = appRound((1 - timeDelta) * style);
 		}
 
 		// alloc surface
@@ -1979,7 +1979,7 @@ void GL_AddEntity (entity_t *ent)
 		out->customShader = (shader_t*) ent->skin;	//!! should use customSkin
 		out->skinNum = ent->skinnum;				//?? check skinnum in [0..model.numSkins]
 		out->shaderColor.rgba = RGB(1,1,1);
-		out->shaderColor.c[3] = Q_round (ent->alpha * 255);
+		out->shaderColor.c[3] = appRound (ent->alpha * 255);
 
 		// model-specific code and calculate model center
 		switch (ent->model->type)
@@ -2099,7 +2099,7 @@ void GL_AddDlight (dlight_t *dl)
 		SATURATE(g,l,sat);
 		SATURATE(b,l,sat);
 	}
-	r1 = Q_round(r); g1 = Q_round(g); b1 = Q_round(b);
+	r1 = appRound(r); g1 = appRound(g); b1 = appRound(b);
 	if (!gl_config.doubleModulateLM)
 	{
 		r1 <<= 1;

@@ -106,7 +106,7 @@ static void M_Banner (char *name)
 	int w, h;
 
 	re.DrawGetPicSize (&w, &h, name);
-	re.DrawPicColor ((viddef.width - w) / 2, viddef.height / 2 - 110, name, 7);
+	re.DrawPic ((viddef.width - w) / 2, viddef.height / 2 - 110, name);
 }
 
 
@@ -279,23 +279,21 @@ higher res screens.
 */
 void M_DrawCharacter (int cx, int cy, int num)
 {
-	re.DrawCharColor (cx + ((viddef.width - 320)>>1), cy + ((viddef.height - 240)>>1), num, 7);
+	re.DrawChar (cx + ((viddef.width - 320)>>1), cy + ((viddef.height - 240)>>1), num);
 }
 
 void M_Print (int cx, int cy, char *str)
 {
 	while (*str)
 	{
-//		M_DrawCharacter (cx, cy, (*str)+128);
-		re.DrawCharColor (cx + ((viddef.width - 320)>>1), cy + ((viddef.height - 240)>>1), *str, 1);
-		str++;
+		re.DrawChar (cx + ((viddef.width - 320)>>1), cy + ((viddef.height - 240)>>1), *str++, C_RED);
 		cx += 8;
 	}
 }
 
 void M_DrawPic (int x, int y, char *pic)
 {
-	re.DrawPicColor (x + ((viddef.width - 320)>>1), y + ((viddef.height - 240)>>1), pic, 7);
+	re.DrawPic (x + ((viddef.width - 320)>>1), y + ((viddef.height - 240)>>1), pic);
 }
 
 
@@ -322,7 +320,7 @@ void M_DrawCursor (int x, int y, int f)
 		cached = true;
 	}
 */
-	re.DrawPicColor (x, y, va("m_cursor%d", f), 7);
+	re.DrawPic (x, y, va("m_cursor%d", f));
 }
 
 void M_DrawTextBox (int x, int y, int width, int lines)
@@ -413,19 +411,19 @@ void M_Main_Draw (void)
 	for (i = 0; names[i]; i++)
 	{
 		if (i != m_main_cursor)
-			re.DrawPicColor (xoffset, ystart + i * 40 + 13, names[i], 7);
+			re.DrawPic (xoffset, ystart + i * 40 + 13, names[i]);
 	}
 	// draw current item
 	strcpy (litname, names[m_main_cursor]);
 	strcat (litname, "_sel");
-	re.DrawPicColor (xoffset, ystart + m_main_cursor * 40 + 13, litname, 7);
+	re.DrawPic (xoffset, ystart + m_main_cursor * 40 + 13, litname);
 
-	M_DrawCursor (xoffset - 25, ystart + m_main_cursor * 40 + 11, (unsigned)Q_round (cls.realtime / 100) % NUM_CURSOR_FRAMES);
+	M_DrawCursor (xoffset - 25, ystart + m_main_cursor * 40 + 11, (unsigned)appRound (cls.realtime / 100) % NUM_CURSOR_FRAMES);
 
 	re.DrawGetPicSize (&w, &h, "m_main_plaque");
-	re.DrawPicColor (xoffset - 30 - w, ystart, "m_main_plaque", 7);
+	re.DrawPic (xoffset - 30 - w, ystart, "m_main_plaque");
 
-	re.DrawPicColor (xoffset - 30 - w, ystart + h + 5, "m_main_logo", 7);
+	re.DrawPic (xoffset - 30 - w, ystart + h + 5, "m_main_logo");
 }
 
 
@@ -601,8 +599,8 @@ static void M_UnbindCommand (char *command)
 
 static void KeyCursorDrawFunc (menuFramework_t *menu)
 {
-	re.DrawCharColor (menu->x, menu->y + menu->cursor * BIND_LINE_HEIGHT,
-		cls.key_dest == key_bindingMenu ? '=' : 12 + (Sys_Milliseconds() / 250 & 1), 7);
+	re.DrawChar (menu->x, menu->y + menu->cursor * BIND_LINE_HEIGHT,
+		cls.key_dest == key_bindingMenu ? '=' : 12 + (Sys_Milliseconds() / 250 & 1));
 }
 
 static void DrawKeyBindingFunc (void *self)
@@ -615,7 +613,7 @@ static void DrawKeyBindingFunc (void *self)
 	numKeys = Key_FindBinding (bindnames[a->generic.localdata[0]][0], ARRAY_ARG(keys));
 
 	if (!numKeys)
-		strcpy (text, "^1(not bound)");
+		strcpy (text, S_RED"(not bound)");
 	else
 	{
 		if (numKeys == 1)
@@ -650,11 +648,13 @@ static void AppendToken (char **dest, char **src)
 
 static void Keys_MenuInit (void)
 {
-	int		i, length, numbinds, y;
+	int		i, numbinds, y;
+	unsigned length;
 	char	*buffer, *s, *d, c;
 
-	// load "binds.lst" (always exists)
-	length = FS_LoadFile ("binds.lst", (void**) &buffer);
+	//?? change parser
+	// load "binds.lst" (file always present - have inline file)
+	buffer = (char*) FS_LoadFile ("binds.lst", &length);
 	// parse this file
 	s = buffer;
 	numbinds = 0;
@@ -945,7 +945,7 @@ static void UpdateSoundFunc (void *unused)
 
 
 #define MAX_CROSSHAIRS 256
-static const char *crosshair_names[MAX_CROSSHAIRS + 1] = {"^1(none)"};	// reserve last item for NULL
+static const char *crosshair_names[MAX_CROSSHAIRS + 1] = {S_RED"(none)"};	// reserve last item for NULL
 static const char *crosshair_color_names[9] = {"", "", "", "", "", "", "", "", NULL};
 
 static void Options_ScanCrosshairs (void)
@@ -1016,7 +1016,7 @@ static void Options_MenuInit( void )
 	MENU_SPIN(s_options_joystick_box,y+=10,"use joystick",JoystickFunc,yesno_names)
 	y += 10;
 	MENU_ACTION(s_options_customize_options_action,y+=10,"customize controls",CustomizeControlsFunc)
-	MENU_ACTION(s_options_defaults_action,y+=10,"^1reset defaults",ControlsResetDefaultsFunc)
+	MENU_ACTION(s_options_defaults_action,y+=10,S_RED"reset defaults",ControlsResetDefaultsFunc)
 
 	Options_ScanCrosshairs ();
 	ControlsSetMenuItemValues ();
@@ -1050,7 +1050,7 @@ static void Options_CrosshairDraw (void)
 
 	Com_sprintf (ARRAY_ARG(name), "ch%d", crosshair->integer);
 	re.DrawGetPicSize (&w, &h, name);
-	re.DrawPicColor ((viddef.width - w) / 2 + 32, s_options_crosshair_box.generic.y + s_options_menu.y + 10 - h / 2,
+	re.DrawPic ((viddef.width - w) / 2 + 32, s_options_crosshair_box.generic.y + s_options_menu.y + 10 - h / 2,
 		name, crosshaircolor->integer);
 }
 
@@ -1130,8 +1130,7 @@ static void M_Credits_MenuDraw (void)
 			int		x;
 
 			x = (viddef.width - strlen (credits[i]) * 8 - stringoffset * 8) / 2 + (j + stringoffset) * 8;
-//			re.DrawCharColor (x, y, credits[i][j+stringoffset] + (bold ? 128 : 0), 7);
-			re.DrawCharColor (x, y, credits[i][j+stringoffset], bold ? 1 : 7);
+			re.DrawChar (x, y, credits[i][j+stringoffset], bold ? C_GREEN : C_WHITE);
 		}
 	}
 
@@ -1160,7 +1159,7 @@ static const char *M_Credits_Key (int key)
 void M_Menu_Credits_f (void)
 {
 	int		n;
-	int		count;
+	unsigned count;
 	char	*p, *filename;
 
 	MENU_CHECK
@@ -1175,7 +1174,7 @@ void M_Menu_Credits_f (void)
 			filename = "rcredits";
 	}
 
-	count = FS_LoadFile (filename, (void**)&creditsBuffer);
+	creditsBuffer = (char*) FS_LoadFile (filename, &count);
 	// file always present - have inline file
 	p = creditsBuffer;
 	for (n = 0; n < 255; n++)
@@ -1829,7 +1828,7 @@ static void StartServer_MenuInit( void )
 	// load the list of map names
 	if (!(fp = fopen (va("%s/maps.lst", FS_Gamedir()), "rb")))
 	{	// if file not present in OS filesystem - try pak file
-		if (FS_LoadFile ("maps.lst", (void **) &buffer) == -1)
+		if (!(buffer = (char*) FS_LoadFile ("maps.lst")))
 		{
 			Com_WPrintf ("Couldn't find maps.lst\n");
 			buffer = NULL;
@@ -1843,7 +1842,7 @@ static void StartServer_MenuInit( void )
 		length = ftell (fp);
 		fseek (fp, 0, SEEK_SET);
 
-		buffer = (char*)Z_Malloc (length + 1);
+		buffer = (char*)appMalloc (length + 1);
 		fread (buffer, length, 1, fp);
 		fclose (fp);
 	}
@@ -1875,7 +1874,7 @@ static void StartServer_MenuInit( void )
 		}
 
 		if (fp)
-			Z_Free (buffer);
+			appFree (buffer);
 		else
 			FS_FreeFile (buffer);
 	}
@@ -2849,13 +2848,13 @@ static const char *PlayerConfig_MenuKey (int key)
 		basenamed_t *skin;
 
 		// check colorizing of player name
-		color = 7;
+		color = C_WHITE;
 		s = s_player_name_field.buffer;
 		while (c = *s++)
 		{
 			int		col;
 
-			if (c == '^')
+			if (c == COLOR_ESCAPE)
 			{
 				col = *s - '0';
 				if (col >= 0 && col <= 7)
@@ -2866,8 +2865,8 @@ static const char *PlayerConfig_MenuKey (int key)
 			}
 		}
 		// final color must be white; "i" points to string end
-		if (color != 7)
-			Cvar_Set ("name", va("%s^7", s_player_name_field.buffer));
+		if (color != C_WHITE)
+			Cvar_Set ("name", va("%s"S_WHITE, s_player_name_field.buffer));
 		else
 			Cvar_Set ("name", s_player_name_field.buffer);
 
@@ -2890,7 +2889,7 @@ static void M_Menu_PlayerConfig_f (void)
 	if (!PlayerConfig_MenuInit ())
 	{
 		FreeMemoryChain (pmiChain);
-		Menu_SetStatusBar (&s_multiplayer_menu, "^1No valid player models found");
+		Menu_SetStatusBar (&s_multiplayer_menu, S_RED"No valid player models found");
 		return;
 	}
 	Menu_SetStatusBar (&s_multiplayer_menu, NULL);
@@ -3129,7 +3128,7 @@ static void DMBrowse_DrawScroller (int x0, int y0, int w)
 	int x;
 
 	for (x = x0; x < x0 + w; x += 8)
-		re.DrawCharColor (x, y0, 0, 2);
+		re.DrawChar (x, y0, 0, C_GREEN);
 }
 
 static void DMBrowse_MenuDraw (void)
@@ -3213,7 +3212,7 @@ static void M_Quit_Draw (void)
 	if (w >= 320 && w * 3 / 4 == h)		// this pic is for fullscreen in mode 320x240
 		re.DrawStretchPic (0, 0, viddef.width, viddef.height, "quit");
 	else
-		re.DrawPicColor ((viddef.width-w)/2, (viddef.height-h)/2, "quit", 7);
+		re.DrawPic ((viddef.width-w)/2, (viddef.height-h)/2, "quit");
 }
 
 

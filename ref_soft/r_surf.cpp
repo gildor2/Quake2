@@ -401,7 +401,7 @@ void R_InitCaches (void)
 	Com_Printf ("%ik surface cache\n", size/1024);
 
 	sc_size = size;
-	sc_base = (surfcache_t *) Z_Malloc (size);
+	sc_base = (surfcache_t *) appMalloc (size);
 	sc_rover = sc_base;
 
 	sc_base->next = NULL;
@@ -535,34 +535,6 @@ void D_SCDump (void)
 			Com_Printf ("ROVER:\n");
 		Com_Printf ("%p : %i bytes     %i width\n",test, test->size, test->width);
 	}
-}
-
-//=============================================================================
-
-// if the num is not a power of 2, assume it will not repeat
-
-int     MaskForNum (int num)
-{
-	if (num==128)
-		return 127;
-	if (num==64)
-		return 63;
-	if (num==32)
-		return 31;
-	if (num==16)
-		return 15;
-	return 255;
-}
-
-int D_log2 (int num)
-{
-	int     c;
-
-	c = 0;
-
-	while (num>>=1)
-		c++;
-	return c;
 }
 
 //=============================================================================

@@ -245,7 +245,7 @@ static bool DS_CreateBuffers (void)
 		unsigned long freq;
 
 		pDSBuf->GetFrequency (&freq);
-		pDSBuf->SetFrequency (Q_round (freq * timescale->value));
+		pDSBuf->SetFrequency (appRound (freq * timescale->value));
 	}
 
 	pDSBuf->Stop ();

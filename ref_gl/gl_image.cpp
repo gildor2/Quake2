@@ -5,7 +5,7 @@
 		int	_time = Sys_Milliseconds();
 #define END_PROFILE	\
 		_time = Sys_Milliseconds() - _time;	\
-		if (Cvar_VariableInt("r_profile2")) Com_Printf("^5%s: %d ms\n", _name, _time);	\
+		if (Cvar_VariableInt("r_profile2")) Com_Printf(S_MAGENTA"%s: %d ms\n", _name, _time);	\
 	}
 
 
@@ -96,8 +96,8 @@ static void GetPalette (void)
 	gl_config.tbl_8to32[255] &= LittleLong(0x00FFFFFF);		// #255 is transparent (alpha = 0)
 
 	// free image
-	Z_Free (pic);
-	Z_Free (pal);
+	appFree (pic);
+	appFree (pal);
 }
 
 
@@ -112,7 +112,7 @@ static byte *Convert8to32bit (byte *in, int width, int height, unsigned *palette
 		palette = gl_config.tbl_8to32;
 
 	size = width * height;
-	out = (byte*)Z_Malloc (size * 4);
+	out = (byte*)appMalloc (size * 4);
 
 	p = (unsigned*)out;
 	for (i = 0; i < size; i++)
@@ -195,8 +195,8 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 	f = (float)inheight / outheight;
 	for (i = 0, f1 = 0.25f * f, f2 = 0.75f * f; i < outheight; i++, out += outwidth, f1 += f, f2 += f)
 	{
-		inrow = in + inwidth * Q_floor (f1);
-		inrow2 = in + inwidth * Q_floor (f2);
+		inrow = in + inwidth * appFloor (f1);
+		inrow2 = in + inwidth * appFloor (f2);
 		for (j = 0; j < outwidth; j++)
 		{
 			int		n, r, g, b, a;
@@ -251,7 +251,7 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 	int		i, c;
 	byte	*p;
 #ifdef INT_SATURATE
-	int		isat = Q_round (r_saturation->value * 255);
+	int		isat = appRound (r_saturation->value * 255);
 #endif
 #ifdef TBL_SATURATE
 	static float lastSat = 1.0f;		// when sat. == 1 -- pic will not be changed
@@ -271,9 +271,9 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 		Com_DPrintf ("rebuilding saturation table for %g\n", lastSat);
 		tmp = (1.0f - lastSat) * 2 / 3;				// modulated by 2
 		for (i = 0; i < ARRAY_COUNT(sat1); i++)
-			sat1[i] = Q_round (i * tmp);
+			sat1[i] = appRound (i * tmp);
 		for (i = 0; i < ARRAY_COUNT(sat2); i++)
-			sat2[i] = Q_round (i * lastSat * 2);	// modulated by 2
+			sat2[i] = appRound (i * lastSat * 2);	// modulated by 2
 	}
 #endif
 
@@ -309,7 +309,7 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 			SATURATE(g,light,sat);
 			SATURATE(b,light,sat);
 			// put color
-			p[0] = Q_round (r);  p[1] = Q_round (g);  p[2] = Q_round (b);
+			p[0] = appRound (r);  p[1] = appRound (g);  p[2] = appRound (b);
 #	else
 			int		r, g, b, light;
 
@@ -530,7 +530,7 @@ static void Upload (void *pic, int flags, image_t *image)
 START_PROFILE(..up::scale)
 	/*---------------- Resample/lightscale texture ------------------*/
 	size = scaledWidth * scaledHeight * 4;
-	scaledPic = (unsigned*)Z_Malloc (size);
+	scaledPic = (unsigned*)appMalloc (size);
 	if (image->width != scaledWidth || image->height != scaledHeight)
 		ResampleTexture ((unsigned*)pic, image->width, image->height, scaledPic, scaledWidth, scaledHeight);
 	else
@@ -663,7 +663,7 @@ START_PROFILE(..up::mip)
 END_PROFILE
 	}
 
-	Z_Free (scaledPic);
+	appFree (scaledPic);
 }
 
 
@@ -747,9 +747,9 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 
 		// save image for later upload
 		if (image->pic)
-			Z_Free (image->pic);
+			appFree (image->pic);
 		size = width * height * 4;
-		image->pic = (byte*)Z_Malloc (size);
+		image->pic = (byte*)appMalloc (size);
 		image->internalFormat = 0;
 		memcpy (image->pic, pic, size);
 	}
@@ -841,7 +841,7 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 		glVertex2f (x, y + h);
 		glEnd ();
 		// free converted pic
-		Z_Free (pic32);
+		appFree (pic32);
 		return;
 	}
 
@@ -860,7 +860,7 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 		byte	*src;
 		unsigned *dst;
 
-		row = Q_floor (hScale * i);
+		row = appFloor (hScale * i);
 		if (row > height) break;
 
 		src = &pic[width * row];
@@ -931,7 +931,7 @@ static void GL_FreeImage (image_t *image)	//?? unused function
 	glDeleteTextures (1, &image->texnum);
 	if (image->pic)
 	{
-		Z_Free (image->pic);
+		appFree (image->pic);
 		image->pic = NULL;
 	}
 
@@ -1003,7 +1003,7 @@ void GL_SetupGamma (void)
 		if (invGamma == 1.0)
 			v = i;
 		else
-			v = Q_round (pow (i / 255.0f, invGamma) * 255.0f);
+			v = appRound (pow (i / 255.0f, invGamma) * 255.0f);
 
 		v <<= overbright;
 		gammaTable[i] = bound(v, 0, 255);
@@ -1118,7 +1118,7 @@ static void Imagelist_f (void)
 		texels += img->internalWidth * img->internalHeight;
 
 		f = img->internalFormat;
-		fmt = "^1???^7";
+		fmt = S_RED"???"S_WHITE;
 		for (fi = 0; fi < ARRAY_COUNT(fmtInfo); fi++)
 			if (fmtInfo[fi].fmt == f)
 			{
@@ -1126,9 +1126,9 @@ static void Imagelist_f (void)
 				break;
 			}
 		if (img->flags & IMAGE_WORLD)
-			color = "^2";
+			color = S_GREEN;
 		else if (img->flags & IMAGE_SKIN)
-			color = "^6";
+			color = S_CYAN;
 		else
 			color = "";
 
@@ -1243,7 +1243,7 @@ void GL_PerformScreenshot (void)
 	FS_CreatePath (name);
 
 	// allocate buffer for 4 color components (required for ResampleTexture()
-	buffer = (byte*)Z_Malloc (vid.width * vid.height * 4);
+	buffer = (byte*)appMalloc (vid.width * vid.height * 4);
 	// read frame buffer data
 	glReadPixels (0, 0, vid.width, vid.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
@@ -1257,9 +1257,9 @@ void GL_PerformScreenshot (void)
 	{
 		byte *buffer2;
 
-		buffer2 = (byte*)Z_Malloc (LEVELSHOT_W * LEVELSHOT_H * 4);
+		buffer2 = (byte*)appMalloc (LEVELSHOT_W * LEVELSHOT_H * 4);
 		ResampleTexture ((unsigned *)buffer, vid.width, vid.height, (unsigned *)buffer2, LEVELSHOT_W, LEVELSHOT_H);
-		Z_Free (buffer);
+		appFree (buffer);
 		buffer = buffer2;
 		width = LEVELSHOT_W;
 		height = LEVELSHOT_H;
@@ -1307,7 +1307,7 @@ void GL_PerformScreenshot (void)
 	else
 		result = WriteTGA (name, buffer, width, height);
 
-	Z_Free (buffer);
+	appFree (buffer);
 
 	if (result && !(gl_screenshotFlags & SHOT_SILENT))
 		Com_Printf ("Wrote %s\n", strrchr (name, '/') + 1);
@@ -1397,7 +1397,7 @@ CVAR_END
 //			xv = (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2)); xv = bound(xv, 0, 1); v = xv * xv * 255;	// square
 			v = bound(v, 0, 255);
 #else
-			v = Q_ceil (4000.0f / (xv + yv));
+			v = appCeil (4000.0f / (xv + yv));
 			if (v < 75) v = 0;
 			if (v > 255) v = 255;
 #endif
@@ -1461,7 +1461,7 @@ CVAR_END
 			}
 
 			p[0] = p[1] = p[2] = 255;
-			p[3] = Q_round (v * 255);
+			p[3] = appRound (v * 255);
 			p += 4;
 		}
 	}
@@ -1494,7 +1494,7 @@ void GL_ShutdownImages (void)
 		img->name[0] = 0;				// required for statically linked renderer
 		if (img->pic)
 		{
-			Z_Free (img->pic);
+			appFree (img->pic);
 			img->pic = NULL;
 		}
 	}
@@ -1519,7 +1519,7 @@ void GL_LoadDelayedImages (void)
 
 //		Com_Printf ("up: %s\n", img->name);
 		GL_CreateImage (img->name, img->pic, img->width, img->height, img->flags);
-		Z_Free (img->pic);
+		appFree (img->pic);
 		img->pic = NULL;
 		num++;
 	}
@@ -1742,8 +1742,8 @@ START_PROFILE(..img::pcx)
 #else
 			pic = Convert8to32bit (pic8, width, height, NULL);
 #endif
-			Z_Free (pic8);
-			Z_Free (palette);
+			appFree (pic8);
+			appFree (palette);
 		}
 		else
 			pic = NULL;
@@ -1755,13 +1755,12 @@ END_PROFILE
 
 		strcpy (s, ".wal");
 START_PROFILE(..img::wal)
-		FS_LoadFile (name2, (void **)&mt);
-		if (mt)
+		if (mt = (miptex_t*) FS_LoadFile (name2))
 		{
 			width = LittleLong(mt->width);
 			height = LittleLong(mt->height);
 			pic = Convert8to32bit ((byte*)mt + LittleLong(mt->offsets[0]), width, height, NULL);
-			FS_FreeFile ((void*)mt);
+			FS_FreeFile (mt);
 		}
 		else
 			pic = NULL;
@@ -1778,7 +1777,7 @@ END_PROFILE
 	{
 START_PROFILE(..img::up)
 		img = GL_CreateImage (name2, pic, width, height, flags);
-		Z_Free (pic);
+		appFree (pic);
 END_PROFILE
 		return img;
 	}

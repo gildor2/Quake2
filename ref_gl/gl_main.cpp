@@ -80,14 +80,14 @@ static void Gfxinfo_f (void)
 	static const char *boolNames[] = {"no", "yes"};
 	static const char *overbrNames[2][2] = {"disabled", "forced", "unneeded", "required"};
 
-	Com_Printf ("^1---------- OpenGL info ----------\n");
-	Com_Printf ("^1Vendor:  ^7 %s\n", glGetString (GL_VENDOR));
-	Com_Printf ("^1Renderer:^7 %s\n", glGetString (GL_RENDERER));
-	Com_Printf ("^1Version: ^7 %s\n", glGetString (GL_VERSION));
+	Com_Printf (S_RED"---------- OpenGL info ----------\n");
+	Com_Printf (S_RED"Vendor:  "S_WHITE" %s\n", glGetString (GL_VENDOR));
+	Com_Printf (S_RED"Renderer:"S_WHITE" %s\n", glGetString (GL_RENDERER));
+	Com_Printf (S_RED"Version: "S_WHITE" %s\n", glGetString (GL_VERSION));
 	QGL_PrintExtensionsString ("Base", gl_config.extensions);
 	if (gl_config.extensions2)
 		QGL_PrintExtensionsString ("Platform", gl_config.extensions2);
-	Com_Printf ("^1---------------------------------\n");
+	Com_Printf (S_RED"---------------------------------\n");
 	// multitexturing
 	Com_Printf ("Multitexturing: ");
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
@@ -266,7 +266,7 @@ static int GL_Init (void)
 			}
 			else
 			{
-        		Com_Printf ("^1failed\n");
+        		Com_Printf (S_RED"failed\n");
 				QGL_Shutdown ();
 				return -1;
 			}
@@ -318,7 +318,7 @@ static int GL_Init (void)
 	}
 	if (gl_maxTextureUnits->integer > 0 && gl_config.maxActiveTextures > gl_maxTextureUnits->integer)
 	{
-		Com_Printf ("^6...multitexture limited by %d units\n", gl_maxTextureUnits->integer);
+		Com_Printf (S_CYAN"...multitexture limited by %d units\n", gl_maxTextureUnits->integer);
 		gl_config.maxActiveTextures = gl_maxTextureUnits->integer;
 	}
 
@@ -783,10 +783,10 @@ static void GL_RenderFrame (refdef_t *fd)
 
 //		DrawTextLeft(va("blend: %f %f %f %f",VECTOR_ARG(fd->blend),fd->blend[3]), RGB(1,1,1));
 		// standard Quake2 blending
-		c.c[0] = Q_round (fd->blend[0] * 255);
-		c.c[1] = Q_round (fd->blend[1] * 255);
-		c.c[2] = Q_round (fd->blend[2] * 255);
-		c.c[3] = Q_round (fd->blend[3] * 255);
+		c.c[0] = appRound (fd->blend[0] * 255);
+		c.c[1] = appRound (fd->blend[1] * 255);
+		c.c[2] = appRound (fd->blend[2] * 255);
+		c.c[3] = appRound (fd->blend[3] * 255);
 		GL_DrawStretchPic (gl_identityLightShader, 0, 0, vid.width, vid.height, 0, 0, 0, 0, c.rgba);
 	}
 
@@ -847,7 +847,7 @@ static unsigned colorTable[8] = {
 #define CHAR_WIDTH	8
 #define CHAR_HEIGHT	8
 
-static void DrawCharColor (int x, int y, int c, int color)
+static void DrawChar (int x, int y, int c, int color)
 {
 	bkDrawText_t *p;
 	unsigned col;
@@ -883,10 +883,10 @@ static void DrawCharColor (int x, int y, int c, int color)
 }
 
 
-static void	DrawConCharColor (int x, int y, int c, int color)
+static void	DrawConChar (int x, int y, int c, int color)
 {
 	if (c == ' ') return;
-	DrawCharColor (x * CHAR_WIDTH, y * CHAR_HEIGHT, c, color);
+	DrawChar (x * CHAR_WIDTH, y * CHAR_HEIGHT, c, color);
 }
 
 
@@ -944,7 +944,7 @@ static void DrawStretchPic (int x, int y, int w, int h, char *name)
 }
 
 
-static void DrawPicColor (int x, int y, char *name, int color)
+static void DrawPic (int x, int y, char *name, int color)
 {
 	shader_t *sh;
 
@@ -1021,7 +1021,7 @@ static void DrawTexts (void)
 		if (!len) continue;
 
 		if (gl_logTexts->integer)
-			Com_Printf ("^5%s\n", rec->text);
+			Com_Printf (S_MAGENTA"%s\n", rec->text);
 
 		{
 			PUT_BACKEND_COMMAND2(bkDrawText_t, p, len-1);	// 1 char reserved in bkDrawText_t
@@ -1239,7 +1239,7 @@ refExport_t GetRefAPI (const refImport_t * rimp)
 	re.BeginFrame =		GL_BeginFrame;
 	re.EndFrame =		GL_EndFrame;
 	re.AppActivate =	GLimp_AppActivate;
-	re.DrawConCharColor = DrawConCharColor;
+	re.DrawConChar =	DrawConChar;
 	re.Screenshot =		Screenshot;
 
 	re.RenderFrame =	GL_RenderFrame;
@@ -1252,9 +1252,9 @@ refExport_t GetRefAPI (const refImport_t * rimp)
 
 	re.ReloadImage =    ReloadImage;
 	re.DrawGetPicSize =	GetPicSize;
-	re.DrawPicColor =	DrawPicColor;
+	re.DrawPic =		DrawPic;
 	re.DrawStretchPic =	DrawStretchPic;
-	re.DrawCharColor =	DrawCharColor;
+	re.DrawChar =		DrawChar;
 	re.DrawTileClear =	DrawTileClear;
 	re.DrawFill =		DrawFill;
 	re.DrawFill2 =		DrawFill2;

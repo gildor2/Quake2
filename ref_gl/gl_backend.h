@@ -85,7 +85,7 @@ void	GL_ShutdownBackend (void);
 	lastBackendCommand = (byte*) varname;	\
 	backendCmdSize += sizeof(type) + size;
 
-__inline bool GET_BACKEND_SPACE (int size)
+inline bool GET_BACKEND_SPACE (int size)
 {
 	if (backendCmdSize+size+4 > MAX_BACKEND_COMMANDS)
 	{

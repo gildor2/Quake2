@@ -123,6 +123,7 @@ lighting bugs:
      ? compute lighting not for point but for box (or for each surface separately ??); may be, with special (not generic)
        function -- without dlights etc (if for each surface -- only 1 vector)
      ? cache lighting when entity in a stopped state (cache will require separate holding of fast lightstyles)
+     ? limit max model size for lighting (small only?); prevent from lighting outside of map (completely black model)
      info: "rc1" escalator looking good
      each_surface: check "teehc2" with crane enabled
   - zaero, demo4, kamikaze: too dark explosion (should get lighting for LARGE objects in a different way)

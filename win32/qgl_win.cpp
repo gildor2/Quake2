@@ -238,10 +238,10 @@ void QGL_InitExtensions (void)
 	/*---------- notify disabled extensions ---------*/
 	if (gl_config.disabledExt)
 	{
-		Com_Printf ("^6...disabled extensions:\n");
+		Com_Printf (S_CYAN"...disabled extensions:\n");
 		for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 			if (gl_config.disabledExt & (1 << i))
-				Com_Printf ("^6   %s\n", ext->name);
+				Com_Printf (S_CYAN"   %s\n", ext->name);
 	}
 
 	/*----------- notify extension absence ----------*/
@@ -285,7 +285,7 @@ void QGL_PrintExtensionsString (const char *label, const char *str)
 	const char *color;
 
 	// display label
-	Com_Printf ("^1%s extensions: ", label);
+	Com_Printf (S_RED"%s extensions: ", label);
 	// display extension names
 	i = 0;
 	while (true)
@@ -309,14 +309,14 @@ void QGL_PrintExtensionsString (const char *label, const char *str)
 					if (!s[0]) continue;
 					// here: current name is one of aliases of extInfo[j]
 					if (gl_config.disabledExt & m)
-						color = "^6";			// disabled by cvar
+						color = S_CYAN;			// disabled by cvar
 					else if (gl_config.ignoredExt & m)
-						color = "^4";			// ignored in a favor of different extension
+						color = S_BLUE;			// ignored in a favor of different extension
 					else if (gl_config.extensionMask & m)
-						color = "^2";			// used
+						color = S_GREEN;		// used
 					else
-						color = "^1";			// switched off by another reason
-					Com_Printf ("%s%s^7 ", color, name);
+						color = S_RED;			// switched off by another reason
+					Com_Printf ("%s%s "S_WHITE, color, name);
 					break;
 				}
 				if (!color) Com_Printf ("%s ", name);		// unsupported extension

@@ -829,20 +829,20 @@ void D_CalcGradients (msurface_t *pface)
 	VectorScale (transformed_modelorg, mipscale, p_temp1);
 
 	t = 0x10000*mipscale;
-	sadjust = ((fixed16_t) Q_round (DotProduct (p_temp1, p_saxis) * 0x10000)) -
+	sadjust = ((fixed16_t) appRound (DotProduct (p_temp1, p_saxis) * 0x10000)) -
 			((pface->texturemins[0] << 16) >> miplevel)
-			+ Q_round (pface->texinfo->vecs[0][3]*t);
-	tadjust = ((fixed16_t) Q_round (DotProduct (p_temp1, p_taxis) * 0x10000)) -
+			+ appRound (pface->texinfo->vecs[0][3]*t);
+	tadjust = ((fixed16_t) appRound (DotProduct (p_temp1, p_taxis) * 0x10000)) -
 			((pface->texturemins[1] << 16) >> miplevel)
-			+ Q_round (pface->texinfo->vecs[1][3]*t);
+			+ appRound (pface->texinfo->vecs[1][3]*t);
 
 	// PGM - changing flow speed for non-warping textures.
 	if (pface->texinfo->flags & SURF_FLOWING)
 	{
 		if(pface->texinfo->flags & SURF_WARP)
-			sadjust += Q_round (0x10000 * (-128 * ((r_newrefdef.time * 0.25) - Q_floor(r_newrefdef.time * 0.25))));
+			sadjust += appRound (0x10000 * (-128 * ((r_newrefdef.time * 0.25) - appFloor(r_newrefdef.time * 0.25))));
 		else
-			sadjust += Q_round (0x10000 * (-128 * ((r_newrefdef.time * 0.77) - Q_floor(r_newrefdef.time * 0.77))));
+			sadjust += appRound (0x10000 * (-128 * ((r_newrefdef.time * 0.77) - appFloor(r_newrefdef.time * 0.77))));
 	}
 	// PGM
 

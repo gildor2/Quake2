@@ -46,10 +46,10 @@ void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 
 	stepscale = (float)inrate / dma.speed;	// this is usually 0.5, 1, or 2
 
-	outcount = Q_round (sc->length / stepscale);
+	outcount = appRound (sc->length / stepscale);
 	sc->length = outcount;
 	if (sc->loopstart != -1)
-		sc->loopstart = Q_round (sc->loopstart / stepscale);
+		sc->loopstart = appRound (sc->loopstart / stepscale);
 
 	sc->speed = dma.speed;
 	if (s_loadas8bit->integer)
@@ -71,7 +71,7 @@ void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 	{
 		// general case
 		samplefrac = 0;
-		fracstep = Q_round (stepscale*256);
+		fracstep = appRound (stepscale*256);
 		for (i=0 ; i<outcount ; i++)
 		{
 			srcsample = samplefrac >> 8;
@@ -100,7 +100,8 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	char		namebuffer[MAX_QPATH], *name;
 	byte		*data;
 	wavinfo_t	info;
-	int			len, size;
+	int			len;
+	unsigned	size;
 	float		stepscale;
 	sfxcache_t	*sc;
 
@@ -125,9 +126,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 
 //	Com_Printf ("loading %s\n",namebuffer);
 
-	size = FS_LoadFile (namebuffer, (void **)&data);
-
-	if (!data)
+	if (!(data = (byte*) FS_LoadFile (namebuffer, &size)))
 	{
 		Com_DPrintf ("Couldn't load %s\n", namebuffer);
 		s->absent = true;
@@ -143,11 +142,11 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	}
 
 	stepscale = (float)info.rate / dma.speed;
-	len = Q_round (info.samples / stepscale);
+	len = appRound (info.samples / stepscale);
 
 	len = len * info.width * info.channels;
 
-	sc = s->cache = (sfxcache_t*)Z_Malloc (len + sizeof(sfxcache_t));
+	sc = s->cache = (sfxcache_t*)appMalloc (len + sizeof(sfxcache_t));
 	if (!sc)
 	{
 		FS_FreeFile (data);

@@ -100,7 +100,7 @@ static void appUncolorizeString (char *dst, const char *src)
 	do
 	{
 		c = *src++;
-		if (c == '^')
+		if (c == COLOR_ESCAPE)
 		{
 			c1 = *src;
 			if (c1 < '0' || c1 > '7')
@@ -188,7 +188,7 @@ void Com_DPrintf (const char *fmt, ...)
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
-	Com_Printf ("^4%s", msg);
+	Com_Printf (S_BLUE"%s", msg);
 	if (developer->integer == 2)
 	{
 		appUncolorizeString (msg, msg);
@@ -241,7 +241,7 @@ void Com_WPrintf (const char *fmt, ...)
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
 
-	Com_Printf ("^3%s", msg);
+	Com_Printf (S_YELLOW"%s", msg);
 	if (developer && developer->integer == 2) DebugPrintf ("%s", msg);
 }
 
@@ -297,7 +297,7 @@ void Com_DropError (const char *fmt, ...)
 		va_start (argptr, fmt);
 		vsnprintf (ARRAY_ARG(errMsg), fmt, argptr);
 		va_end (argptr);
-		Com_Printf ("^1ERROR: %s\n", errMsg);
+		Com_Printf (S_RED"ERROR: %s\n", errMsg);
 		SV_Shutdown (va("Server crashed: %s\n", errMsg), false);
 	}
 	else
@@ -646,19 +646,19 @@ void MSG_WriteString (sizebuf_t *sb, char *s)
 
 void MSG_WriteCoord (sizebuf_t *sb, float f)
 {
-	MSG_WriteShort (sb, Q_round (f*8));	//??
+	MSG_WriteShort (sb, appRound (f*8));	//??
 }
 
 void MSG_WritePos (sizebuf_t *sb, vec3_t pos)
 {
-	MSG_WriteShort (sb, Q_round (pos[0]*8));	//??
-	MSG_WriteShort (sb, Q_round (pos[1]*8));	//??
-	MSG_WriteShort (sb, Q_round (pos[2]*8));	//??
+	MSG_WriteShort (sb, appRound (pos[0]*8));	//??
+	MSG_WriteShort (sb, appRound (pos[1]*8));	//??
+	MSG_WriteShort (sb, appRound (pos[2]*8));	//??
 }
 
 void MSG_WriteAngle (sizebuf_t *sb, float f)
 {
-	MSG_WriteByte (sb, Q_round (f*256.0f/360) & 255);	//??
+	MSG_WriteByte (sb, appRound (f*256.0f/360) & 255);	//??
 }
 
 void MSG_WriteAngle16 (sizebuf_t *sb, float f)
@@ -740,13 +740,13 @@ static int GetDirCell (vec3_t dir)
 	switch (base)
 	{
 	case 0:
-		base2 = (Q_floor (adir[1] * m) << 3) + Q_floor (adir[2] * m);
+		base2 = (appFloor (adir[1] * m) << 3) + appFloor (adir[2] * m);
 		break;
 	case 1:
-		base2 = (Q_floor (adir[0] * m) << 3) + Q_floor (adir[2] * m);
+		base2 = (appFloor (adir[0] * m) << 3) + appFloor (adir[2] * m);
 		break;
 	case 2:
-		base2 = (Q_floor (adir[0] * m) << 3) + Q_floor (adir[1] * m);
+		base2 = (appFloor (adir[0] * m) << 3) + appFloor (adir[1] * m);
 		break;
 	}
 	return (base << 9) + (sign << 6) + base2;
@@ -1687,7 +1687,7 @@ extern	int	c_traces, c_pointcontents;
 #pragma warning (push)
 #pragma warning (disable : 4035)
 #pragma warning (disable : 4715)
-__inline unsigned cycles (void)	  // taken from UT
+inline unsigned cycles (void)	  // taken from UT
 {
 	__asm
 	{

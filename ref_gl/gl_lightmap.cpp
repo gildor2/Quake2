@@ -32,8 +32,8 @@ void LM_Flush (lightmapBlock_t *lm)
 	if (lm->pic)
 	{
 		// free memory blocks
-		Z_Free (lm->pic);
-		Z_Free (lm->allocated);
+		appFree (lm->pic);
+		appFree (lm->allocated);
 		lm->pic = NULL;
 	}
 }
@@ -74,8 +74,8 @@ lightmapBlock_t *LM_NewBlock (void)
 	lm->empty = true;
 	lm->filled = false;
 	// alloc data blocks
-	lm->pic = (byte*)Z_Malloc (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4);
-	lm->allocated = (int*)Z_Malloc (LIGHTMAP_SIZE * sizeof(lm->allocated[0]));
+	lm->pic = (byte*)appMalloc (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4);
+	lm->allocated = (int*)appMalloc (LIGHTMAP_SIZE * sizeof(lm->allocated[0]));
 	// clear data blocks
 	memset (&lm->allocated[0], 0, sizeof(lm->allocated));
 	memset (lm->pic, 0, LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4);
@@ -174,7 +174,7 @@ static void CreateSolarColor (float light, float x, float y, float *vec)
 	int		i;
 
 	f = light * 5;
-	i = Q_ceil (f);
+	i = appCeil (f);
 	f = f - i;				// frac part
 
 	s = (1.0f - x) * y;
@@ -226,9 +226,9 @@ static void CopyLightmap (byte *dst, byte *src, int w, int h, int stride, byte a
 					light = 1.0f / light;
 
 				CreateSolarColor (light, 1, 0.5, vec);
-				*dst++ = Q_floor (vec[0] * 255);
-				*dst++ = Q_floor (vec[1] * 255);
-				*dst++ = Q_floor (vec[2] * 255);
+				*dst++ = appFloor (vec[0] * 255);
+				*dst++ = appFloor (vec[1] * 255);
+				*dst++ = appFloor (vec[2] * 255);
 				*dst++ = a;
 			}
 			dst += stride;
@@ -258,7 +258,7 @@ static void CopyLightmap (byte *dst, byte *src, int w, int h, int stride, byte a
 					SATURATE(g,light,sat);
 					SATURATE(b,light,sat);
 					// put color
-					*dst++ = Q_round (r);  *dst++ = Q_round (g);  *dst++ = Q_round (b);
+					*dst++ = appRound (r);  *dst++ = appRound (g);  *dst++ = appRound (b);
 				}
 				else
 				{
@@ -390,10 +390,10 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, bool ver
 
 				// calculate vertex color as weighted average of 4 points
 				scale = dl->modulate[z] * 2 >> gl_config.overbright;
-				point = dl->source[z] + (Q_floor (v->lm2[1]) * dl->w + Q_floor (v->lm2[0])) * 3;
+				point = dl->source[z] + (appFloor (v->lm2[1]) * dl->w + appFloor (v->lm2[0])) * 3;
 				// calculate s/t weights
-				frac_s = Q_round (v->lm2[0] * 128) & 127;
-				frac_t = Q_round (v->lm2[1] * 128) & 127;
+				frac_s = appRound (v->lm2[0] * 128) & 127;
+				frac_t = appRound (v->lm2[1] * 128) & 127;
 #define STEP(n)	\
 		r += point[n] * frac;	\
 		g += point[n+1] * frac;	\
@@ -445,7 +445,7 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, bool ver
 					dist2 = f1 * f1 + f2 * f2;
 					if (dist2 >= intens2) continue;			// vertex is too far from dlight
 
-					intens = Q_round ((1 - dist2 / intens2) * 256);
+					intens = appRound ((1 - dist2 / intens2) * 256);
 					r = v->c.c[0] + (dlight->c.c[0] * intens >> 8);
 					g = v->c.c[1] + (dlight->c.c[1] * intens >> 8);
 					b = v->c.c[2] + (dlight->c.c[2] * intens >> 8);

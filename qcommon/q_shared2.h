@@ -58,12 +58,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define id386	0
 #endif
 
-#if defined _M_ALPHA && !defined C_ONLY
-#define idaxp	1
-#else
-#define idaxp	0
-#endif
-
 #ifndef min
 #define min(a,b)  (((a) < (b)) ? (a) : (b))
 #endif
@@ -94,7 +88,7 @@ typedef unsigned char		byte;
 #else
 
 // empty string
-#define RETADDR_STR	"%s"
+#define RETADDR_STR	""
 #define	GET_RETADDR(firstarg)	""
 
 #endif
@@ -106,6 +100,30 @@ typedef unsigned char		byte;
 
 
 #define BIG_NUMBER			0x1000000
+
+/*-----------------------------------------------------------------------------
+	Color codes
+-----------------------------------------------------------------------------*/
+
+#define C_BLACK		0
+#define C_RED		1
+#define C_GREEN		2
+#define C_YELLOW	3
+#define C_BLUE		4
+#define C_MAGENTA	5
+#define C_CYAN		6
+#define C_WHITE		7
+
+#define COLOR_ESCAPE	'^'			// may be used for quick location of color-processing code
+
+#define S_BLACK		"^0"
+#define S_RED		"^1"
+#define S_GREEN		"^2"
+#define S_YELLOW	"^3"
+#define S_BLUE		"^4"
+#define S_MAGENTA	"^5"
+#define S_CYAN		"^6"
+#define S_WHITE		"^7"
 
 //============================================================================
 
@@ -196,7 +214,7 @@ float Q_rsqrt (float number);
 
 #if !defined C_ONLY && !defined __linux__ && !defined __sgi
 
-__inline int Q_round (float f)
+inline int appRound (float f)
 {
 	int		i;
 
@@ -207,7 +225,7 @@ __inline int Q_round (float f)
 	return i;
 }
 
-__inline int Q_floor (float f)
+inline int appFloor (float f)
 {
 	int		i;
 	static const float h = 0.4999999;	// 0.5
@@ -220,7 +238,7 @@ __inline int Q_floor (float f)
 	return i;
 }
 
-__inline int Q_ceil (float f)
+inline int appCeil (float f)
 {
 	int		i;
 	static const float h = 0.4999999;	// 0.5
@@ -247,10 +265,9 @@ __inline int Q_ceil (float f)
 	}
 
 #else
-#define Q_ftol(f)	(long) (f)
-#define Q_round(f)	(int) (f >= 0 ? (int)(f+0.5f) : (int)(f-0.5f))
-#define Q_floor(f)	((int)floor(f))
-#define Q_ceil(f)	((int)ceil(f))
+#define appRound(f)	(int) (f >= 0 ? (int)(f+0.5f) : (int)(f-0.5f))
+#define appFloor(f)	((int)floor(f))
+#define appCeil(f)	((int)ceil(f))
 
 #define IsNegative(f)	(f<0)
 #define FAbsSign(f,d,s)			\
@@ -353,8 +370,6 @@ int		LongSwap (int l);
 float	FloatSwap (float f);
 
 #define BigShort(n)		ShortSwap(n)
-#define BigLong(n)		LongSwap(n)
-#define BigFloat(n)		FloatSwap(n)
 #define LittleShort(n)	((short)n)
 #define LittleLong(n)	((long)n)
 #define LittleFloat(n)	((float)n)
@@ -365,9 +380,7 @@ float	FloatSwap (float f);
 
 short	BigShort(short l);
 short	LittleShort(short l);
-int		BigLong (int l);
 int		LittleLong (int l);
-float	BigFloat (float l);
 float	LittleFloat (float l);
 
 void	Swap_Init (void);
@@ -479,7 +492,7 @@ int BoxOnPlaneSide (const vec3_t emins, const vec3_t emaxs, const cplane_t *plan
 
 #if 1
 
-__inline int PlaneTypeForNormal (const vec3_t p)
+inline int PlaneTypeForNormal (const vec3_t p)
 {
 	if (p[0] == 1.0f) return PLANE_X;
 	else if (p[0] == -1.0f) return PLANE_MX;
@@ -490,7 +503,7 @@ __inline int PlaneTypeForNormal (const vec3_t p)
 	else return PLANE_NON_AXIAL;
 }
 
-__inline int BOX_ON_PLANE_SIDE (const vec3_t mins, const vec3_t maxs, const cplane_t *plane)
+inline int BOX_ON_PLANE_SIDE (const vec3_t mins, const vec3_t maxs, const cplane_t *plane)
 {
 	if (plane->type <= PLANE_MZ)
 	{
@@ -516,7 +529,7 @@ __inline int BOX_ON_PLANE_SIDE (const vec3_t mins, const vec3_t maxs, const cpla
 	return BoxOnPlaneSide (mins, maxs, plane);
 }
 
-__inline float DISTANCE_TO_PLANE (const vec3_t vec, const cplane_t *plane)
+inline float DISTANCE_TO_PLANE (const vec3_t vec, const cplane_t *plane)
 {
 	if (plane->type <= PLANE_Z)
 		return vec[plane->type] - plane->dist;
@@ -1088,7 +1101,7 @@ ROGUE - VERSIONS
 ==========================================================
 */
 
-#define	ANGLE2SHORT(x)	(Q_round ((x)*65535.0f/360) & 65535)
+#define	ANGLE2SHORT(x)	(appRound ((x)*65535.0f/360) & 65535)
 #define	SHORT2ANGLE(x)	((x)*(360.0f/65536))
 
 

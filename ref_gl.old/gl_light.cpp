@@ -415,7 +415,7 @@ void R_AddDynamicLights (msurface_t *surf)
 
 			for ( s=0, fsacc = 0 ; s<smax ; s++, fsacc += 16, pfBL += 3)
 			{
-				sd = Q_round ( local[0] - fsacc );
+				sd = appRound ( local[0] - fsacc );
 
 				if ( sd < 0 )
 					sd = -sd;
@@ -538,9 +538,9 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 			{
 				for (i=0 ; i<size ; i++, bl+=3)
 				{
-					bl[0] = Q_round (lightmap[i*3+0] * scale);
-					bl[1] = Q_round (lightmap[i*3+1] * scale);
-					bl[2] = Q_round (lightmap[i*3+2] * scale);
+					bl[0] = appRound (lightmap[i*3+0] * scale);
+					bl[1] = appRound (lightmap[i*3+1] * scale);
+					bl[2] = appRound (lightmap[i*3+2] * scale);
 				}
 			}
 			lightmap += size*3;		// skip to next lightmap
@@ -571,9 +571,9 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 			{
 				for (i=0 ; i<size ; i++, bl+=3)
 				{
-					bl[0] += Q_round (lightmap[i*3+0] * scale);
-					bl[1] += Q_round (lightmap[i*3+1] * scale);
-					bl[2] += Q_round (lightmap[i*3+2] * scale);
+					bl[0] += appRound (lightmap[i*3+0] * scale);
+					bl[1] += appRound (lightmap[i*3+1] * scale);
+					bl[2] += appRound (lightmap[i*3+2] * scale);
 				}
 			}
 			lightmap += size*3;		// skip to next lightmap
@@ -598,9 +598,9 @@ store:
 			for (j=0 ; j<smax ; j++)
 			{
 
-				r = Q_round( bl[0] );
-				g = Q_round( bl[1] );
-				b = Q_round( bl[2] );
+				r = appRound( bl[0] );
+				g = appRound( bl[1] );
+				b = appRound( bl[2] );
 
 				// catch negative lights
 				if (r < 0)	r = 0;
@@ -651,9 +651,9 @@ store:
 			for (j=0 ; j<smax ; j++)
 			{
 
-				r = Q_round( bl[0] );
-				g = Q_round( bl[1] );
-				b = Q_round( bl[2] );
+				r = appRound( bl[0] );
+				g = appRound( bl[1] );
+				b = appRound( bl[2] );
 
 				// catch negative lights
 				if (r < 0)

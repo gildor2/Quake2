@@ -615,8 +615,6 @@ void CL_PredictMovement (void);
 
 //-------------------------------------------
 
-// Macros for drawing HUD elements (console and menu should call DrawCharColor() and DrawPicColor() immediately)
-#define re_DrawChar(x,y,c) {if (cl_draw2d->integer) re.DrawCharColor(x,y,c,7);}
-#define re_DrawCharColor(x,y,c,color) {if (cl_draw2d->integer) re.DrawCharColor(x,y,c,color);}
-#define re_DrawPic(x,y,name) {if (cl_draw2d->integer) re.DrawPicColor(x,y,name,7);}
-#define re_DrawPicColor(x,y,name,color) {if (cl_draw2d->integer) re.DrawPicColor(x,y,name,color);}
+// Macros for drawing HUD elements (console and menu should call re.DrawPic() immediately)
+#define re_DrawPic(x,y,name) {if (cl_draw2d->integer) re.DrawPic(x,y,name);}
+#define re_DrawPicColor(x,y,name,color) {if (cl_draw2d->integer) re.DrawPic(x,y,name,color);}

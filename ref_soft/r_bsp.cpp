@@ -606,7 +606,7 @@ void R_RenderWorld (void)
 	c_drawnode=0;
 
 	// auto cycle the world frame for texture animation
-	r_worldentity.frame = Q_round (r_newrefdef.time*2);
+	r_worldentity.frame = appRound (r_newrefdef.time*2);
 	currententity = &r_worldentity;
 
 	VectorCopy (r_origin, modelorg);

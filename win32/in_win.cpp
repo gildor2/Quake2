@@ -420,19 +420,19 @@ static void IN_MouseMove (usercmd_t *cmd)
 	old_mouse_x = mx;
 	old_mouse_y = my;
 
-	mouse_x = Q_round (mouse_x * sensitivity->value * 1.5f);
-	mouse_y = Q_round (mouse_y * sensitivity->value * 1.5f);
+	mouse_x = appRound (mouse_x * sensitivity->value * 1.5f);
+	mouse_y = appRound (mouse_y * sensitivity->value * 1.5f);
 
 	// add mouse X/Y movement to cmd
 	if ((in_Strafe.state & 1) || (lookstrafe->integer && mlooking))
-		cmd->sidemove += Q_round (m_side->value * mouse_x);
+		cmd->sidemove += appRound (m_side->value * mouse_x);
 	else
 		cl.viewangles[YAW] -= m_yaw->value * mouse_x;
 
 	if ((mlooking || freelook->value) && !(in_Strafe.state & 1))
 		cl.viewangles[PITCH] += m_pitch->value * mouse_y;
 	else
-		cmd->forwardmove -= Q_round (m_forward->value * mouse_y);
+		cmd->forwardmove -= appRound (m_forward->value * mouse_y);
 
 	// force the mouse to the center, so there's room to move
 	if (mouseType != 2)
@@ -769,18 +769,18 @@ static void IN_JoyMove (usercmd_t *cmd)
 			{
 				// user wants forward control to be forward control
 				if (fabs(fAxisValue) > joy_forwardthreshold->value)
-					cmd->forwardmove += Q_round ((fAxisValue * joy_forwardsensitivity->value) * speed * cl_forwardspeed->value);
+					cmd->forwardmove += appRound ((fAxisValue * joy_forwardsensitivity->value) * speed * cl_forwardspeed->value);
 			}
 			break;
 
 		case AxisSide:
 			if (fabs(fAxisValue) > joy_sidethreshold->value)
-				cmd->sidemove += Q_round ((fAxisValue * joy_sidesensitivity->value) * speed * cl_sidespeed->value);
+				cmd->sidemove += appRound ((fAxisValue * joy_sidesensitivity->value) * speed * cl_sidespeed->value);
 			break;
 
 		case AxisUp:
 			if (fabs(fAxisValue) > joy_upthreshold->value)
-				cmd->upmove += Q_round ((fAxisValue * joy_upsensitivity->value) * speed * cl_upspeed->value);
+				cmd->upmove += appRound ((fAxisValue * joy_upsensitivity->value) * speed * cl_upspeed->value);
 			break;
 
 		case AxisTurn:
@@ -788,7 +788,7 @@ static void IN_JoyMove (usercmd_t *cmd)
 			{
 				// user wants turn control to become side control
 				if (fabs(fAxisValue) > joy_sidethreshold->value)
-					cmd->sidemove -= Q_round ((fAxisValue * joy_sidesensitivity->value) * speed * cl_sidespeed->value);
+					cmd->sidemove -= appRound ((fAxisValue * joy_sidesensitivity->value) * speed * cl_sidespeed->value);
 			}
 			else
 			{

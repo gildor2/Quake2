@@ -296,7 +296,7 @@ static void StepSlideMove (void)
 	VectorCopy (start_v, pml.velocity);
 #endif
 
-//Com_Printf("^2 up ");//!!
+//Com_Printf(S_GREEN" up ");//!!
 	SlideMove ();
 
 	// push down the final amount
@@ -1080,8 +1080,8 @@ static void SnapPosition (void)
 
 	for (i = 0; i < 3; i++)
 	{
-		pm->s.origin[i] = Q_round (pml.origin[i] * 8);
-		pm->s.velocity[i] = Q_round (pml.velocity[i] * 8);
+		pm->s.origin[i] = appRound (pml.origin[i] * 8);
+		pm->s.velocity[i] = appRound (pml.velocity[i] * 8);
 	}
 	if (pm->s.pm_type == PM_SPECTATOR) return;
 
@@ -1119,7 +1119,7 @@ static void SnapPosition (void)
 		STEP(0); STEP(1); STEP(2);
 //		Com_Printf("#%d(%g %g %g)->(%d %d %d)\n",i,VECTOR_ARG(tr.plane.normal),VECTOR_ARG(pm->s.origin));//!!
 	}
-//	Com_Printf("^1***\n");//!!
+//	Com_Printf(S_RED"***\n");//!!
 
 #else
 	//!! OLD

@@ -5,8 +5,6 @@
 extern int con_height;
 
 
-void Con_DrawCharacter (int cx, int line, int num);
-
 void Con_CheckResize (void);
 void Con_Init (void);
 void Con_DrawConsole (float frac);

@@ -75,7 +75,7 @@ void SubdividePolygon (int numverts, float *verts)
 	for (i=0 ; i<3 ; i++)
 	{
 		m = (mins[i] + maxs[i]) / 2;	// center
-		m = SUBDIVIDE_SIZE * Q_round (m/SUBDIVIDE_SIZE);	// aligned center
+		m = SUBDIVIDE_SIZE * appRound (m/SUBDIVIDE_SIZE);	// aligned center
 		if (maxs[i] - m < 8)
 			continue;
 		if (m - mins[i] < 8)

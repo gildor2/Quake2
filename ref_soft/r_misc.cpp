@@ -93,8 +93,8 @@ void D_ViewChanged (void)
 	if (d_pix_min < 1)
 		d_pix_min = 1;
 
-	d_pix_max = Q_round ((float)r_refdef.vrect.width / (320.0 / 4.0));
-	d_pix_shift = 8 - Q_round ((float)r_refdef.vrect.width / 320.0);
+	d_pix_max = appRound ((float)r_refdef.vrect.width / (320.0 / 4.0));
+	d_pix_shift = 8 - appRound ((float)r_refdef.vrect.width / 320.0);
 	if (d_pix_max < 1)
 		d_pix_max = 1;
 
@@ -359,10 +359,10 @@ void R_ViewChanged (vrect_t *vr)
 	r_refdef.fvrectbottom = (float)r_refdef.vrectbottom;
 	r_refdef.fvrectbottom_adj = (float)r_refdef.vrectbottom - 0.5;
 
-	r_refdef.aliasvrect.x = Q_round(r_refdef.vrect.x * r_aliasuvscale);
-	r_refdef.aliasvrect.y = Q_round(r_refdef.vrect.y * r_aliasuvscale);
-	r_refdef.aliasvrect.width = Q_round(r_refdef.vrect.width * r_aliasuvscale);
-	r_refdef.aliasvrect.height = Q_round(r_refdef.vrect.height * r_aliasuvscale);
+	r_refdef.aliasvrect.x = appRound(r_refdef.vrect.x * r_aliasuvscale);
+	r_refdef.aliasvrect.y = appRound(r_refdef.vrect.y * r_aliasuvscale);
+	r_refdef.aliasvrect.width = appRound(r_refdef.vrect.width * r_aliasuvscale);
+	r_refdef.aliasvrect.height = appRound(r_refdef.vrect.height * r_aliasuvscale);
 	r_refdef.aliasvrectright = r_refdef.aliasvrect.x + r_refdef.aliasvrect.width;
 	r_refdef.aliasvrectbottom = r_refdef.aliasvrect.y + r_refdef.aliasvrect.height;
 
@@ -572,7 +572,7 @@ void WritePCXfile (char *filename, byte *data, int width, int height,
 	byte		*pack;
 	FILE		*f;
 
-	pcx = (pcx_t *) Z_Malloc (width*height*2+1000);
+	pcx = (pcx_t *) appMalloc (width*height*2+1000);
 	if (!pcx)
 		return;
 
@@ -627,7 +627,7 @@ void WritePCXfile (char *filename, byte *data, int width, int height,
 		fclose (f);
 	}
 
-	Z_Free (pcx);
+	appFree (pcx);
 }
 
 

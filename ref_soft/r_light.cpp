@@ -164,8 +164,8 @@ static int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 
 		tex = surf->texinfo;
 
-		s = Q_round (DotProduct (mid, tex->vecs[0]) + tex->vecs[0][3]);
-		t = Q_round (DotProduct (mid, tex->vecs[1]) + tex->vecs[1][3]);
+		s = appRound (DotProduct (mid, tex->vecs[0]) + tex->vecs[0][3]);
+		t = appRound (DotProduct (mid, tex->vecs[1]) + tex->vecs[1][3]);
 		if (s < surf->texturemins[0] ||
 		t < surf->texturemins[1])
 			continue;
@@ -324,12 +324,12 @@ void R_AddDynamicLights (void)
 
 		for (t = 0 ; t<tmax ; t++)
 		{
-			td = Q_round (local[1] - t*16);
+			td = appRound (local[1] - t*16);
 			if (td < 0)
 				td = -td;
 			for (s=0 ; s<smax ; s++)
 			{
-				sd = Q_round (local[0] - s*16);
+				sd = appRound (local[0] - s*16);
 				if (sd < 0)
 					sd = -sd;
 				if (sd > td)
@@ -341,14 +341,14 @@ void R_AddDynamicLights (void)
 				if(!negativeLight)
 				{
 					if (dist < minlight)
-						blocklights[t*smax + s] += Q_round ((rad - dist)*256);
+						blocklights[t*smax + s] += appRound ((rad - dist)*256);
 				}
 				else
 				{
 					if (dist < minlight)
-						blocklights[t*smax + s] -= Q_round ((rad - dist)*256);
+						blocklights[t*smax + s] -= appRound ((rad - dist)*256);
 					if (blocklights[t*smax + s] < minlight)
-						blocklights[t*smax + s] = Q_round (minlight);
+						blocklights[t*smax + s] = appRound (minlight);
 				}
 //PGM
 //====

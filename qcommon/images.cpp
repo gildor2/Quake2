@@ -32,14 +32,14 @@ void LoadPCX (char *name, byte **pic, byte **palette, int *width, int *height)
 {
 	byte	*src, *dst;
 	pcx_t	*hdr;
-	int		filelen, x, y, w, h;
+	unsigned filelen;
+	int		x, y, w, h;
 	char	*errMsg;
 
 	*pic = NULL;
 	*palette = NULL;
 
-	filelen = FS_LoadFile (name, (void**)&hdr);
-	if (!hdr) return;
+	if (!(hdr = (pcx_t*) FS_LoadFile (name, &filelen))) return;
 
 	src = (byte *)(hdr + 1);
 
@@ -66,14 +66,14 @@ void LoadPCX (char *name, byte **pic, byte **palette, int *width, int *height)
 
 	if (palette)
 	{
-		*palette = (byte*)Z_Malloc (768);
+		*palette = (byte*)appMalloc (768);
 		memcpy (*palette, (byte *)hdr + filelen - 768, 768);
 	}
 
 	if (width)	*width = w;
 	if (height)	*height = h;
 
-	dst = (byte*)Z_Malloc (w * h);
+	dst = (byte*)appMalloc (w * h);
 	*pic = dst;
 
 	for (y = 0; y < h; y++)
@@ -144,8 +144,7 @@ void LoadTGA (char *name, byte **pic, int *width, int *height)
 
 	*pic = NULL;
 
-	FS_LoadFile (name, (void**)&file);
-	if (!file) return;		// not found
+	if (!(file = (byte*) FS_LoadFile (name))) return;
 
 	src = file;
 
@@ -191,7 +190,7 @@ void LoadTGA (char *name, byte **pic, int *width, int *height)
 	if (width)	*width = numColumns;
 	if (height)	*height = numRows;
 
-	dst = (byte*)Z_Malloc (numPixels * 4);
+	dst = (byte*)appMalloc (numPixels * 4);
 	*pic = dst;
 
 	if (header.id_length != 0)
@@ -347,7 +346,8 @@ static struct jpeg_error_mgr *InitJpegError (struct jpeg_error_mgr *err)
 
 void LoadJPG (char *name, byte **pic, int *width, int *height)
 {
-	int		i, columns, rows, length;
+	int		i, columns, rows;
+	unsigned length;
 	byte	*buffer, *decompr, *scanline, *in, *out;
 	struct jpeg_decompress_struct cinfo;
 	struct jpeg_error_mgr jerr;
@@ -358,8 +358,7 @@ void LoadJPG (char *name, byte **pic, int *width, int *height)
 
 	jpegerror = false;
 
-	length = FS_LoadFile (name, (void **)&buffer);
-	if (!buffer) return;
+	if (!(buffer = (byte*) FS_LoadFile (name, &length))) return;
 
 	jpegname = name;
 	errMsg = NULL;
@@ -396,7 +395,7 @@ void LoadJPG (char *name, byte **pic, int *width, int *height)
 		Com_DropError (errMsg, name);
 	}
 
-	decompr = (byte*)Z_Malloc (columns * rows * 4);
+	decompr = (byte*)appMalloc (columns * rows * 4);
 
 	scanline = line;
 	out = decompr;
@@ -498,7 +497,7 @@ bool WriteTGA (char *name, byte *pic, int width, int height)
 		src[0] = tmp;
 	}
 
-	packed = (byte*)Z_Malloc (width * height * 3);
+	packed = (byte*)appMalloc (width * height * 3);
 	threshold = packed + width * height * 3 - 16;			// threshold for "dst"
 
 	src = pic;
@@ -586,7 +585,7 @@ bool WriteTGA (char *name, byte *pic, int width, int height)
 	}
 
 	fclose (f);
-	Z_Free (packed);
+	appFree (packed);
 	return true;
 }
 

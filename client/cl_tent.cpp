@@ -400,7 +400,7 @@ void CL_AddExplosions (void)
 
 		frac = ex->time / 100.0f;
 		if (frac < 0) frac = 0;
-		frm = Q_floor (frac);
+		frm = appFloor (frac);
 
 		if (frm >= ex->frames-1)
 		{
@@ -1491,7 +1491,7 @@ void CL_AddBeams (void)
 		{
 			model_length = 30.0;
 		}
-		steps = Q_ceil (d/model_length);
+		steps = appCeil (d/model_length);
 		len = (d-model_length)/(steps-1);
 
 		// PMM - special case for lightning model .. if the real length is shorter than the model,
@@ -1716,7 +1716,7 @@ void CL_AddPlayerBeams (void)
 		{
 			model_length = 30.0;
 		}
-		steps = Q_ceil(d/model_length);
+		steps = appCeil(d/model_length);
 		len = (d-model_length) / (steps-1);
 
 		// PMM - special case for lightning model .. if the real length is shorter than the model,

@@ -304,13 +304,13 @@ void GLimp_SetGamma (float gamma)
 #if 0
 		tmp = (i / 255.0f * overbright - 0.5f) * contr + 0.5f;
 		if (tmp < 0) tmp = 0;					// without this, can get semi-negative picture when r_gamma=0.5 (invGamma=2, sqr func)
-		v = Q_round (65535.0f * (pow (tmp, invGamma) + bright - 1));
+		v = appRound (65535.0f * (pow (tmp, invGamma) + bright - 1));
 #else
 		// taken from UT2003
 		// note: ut_br = br-0.5, ut_contr = contr-0.5 (replace later: norm. bright=0.5, contr=0.5) !!
 		tmp = pow (i * overbright / 255.0f, invGamma) * contr * 65535;
 		tmp = tmp + (bright - 1) * 32768 - (contr - 0.5) * 32768 + 16384;
-		v = Q_round (tmp);
+		v = appRound (tmp);
 #endif
 
 		if (_winmajor >= 5)						//?? may not work in DLL
@@ -330,10 +330,10 @@ void GLimp_SetGamma (float gamma)
 			if (v < m) v = m;
 #else
 #	ifndef FIND_GAMMA2
-			m = Q_round (i * a * 256 + b * 65535);
+			m = appRound (i * a * 256 + b * 65535);
 			if (v > m) v = m;
 #	else
-			m = Q_round (i * a * 256 + b * 65535);
+			m = appRound (i * a * 256 + b * 65535);
 			if (v < m) v = m;
 #	endif
 #endif

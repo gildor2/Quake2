@@ -71,7 +71,6 @@ typedef struct menuCommon_s
 	char	*statusbar;
 
 	void (*callback) (void *self);
-	void (*statusbarfunc) (void *self);
 	void (*ownerdraw) (void *self);
 	void (*cursordraw) (void *self);
 } menuCommon_t;

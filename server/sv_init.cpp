@@ -347,9 +347,9 @@ void SV_InitGame (void)
 	}
 
 	svs.spawncount = rand();
-	svs.clients = (client_t*)Z_Malloc (sizeof(client_t)*maxclients->integer);
+	svs.clients = (client_t*)appMalloc (sizeof(client_t)*maxclients->integer);
 	svs.num_client_entities = maxclients->integer*UPDATE_BACKUP*64;		//?? what is "64" (MAX_PACKET_ENTITIES, undefined const?)
-	svs.client_entities = (entity_state_t*)Z_Malloc (sizeof(entity_state_t)*svs.num_client_entities);
+	svs.client_entities = (entity_state_t*)appMalloc (sizeof(entity_state_t)*svs.num_client_entities);
 
 	// init network stuff
 	NET_Config (maxclients->integer > 1);
@@ -361,7 +361,7 @@ void SV_InitGame (void)
 	// init game
 	if (!sv.attractloop)
 	{
-		SV_InitGameProgs (false);
+		SV_InitGameLibrary (false);
 		for (i = 0; i < maxclients->integer; i++)
 		{
 			edict_t	*ent = EDICT_NUM(i+1);
@@ -371,7 +371,7 @@ void SV_InitGame (void)
 		}
 	}
 	else
-		SV_InitGameProgs (true);
+		SV_InitGameLibrary (true);
 
 	unguard;
 }

@@ -116,8 +116,8 @@ typedef struct client_s
 	client_frame_t frames[UPDATE_BACKUP]; // updates can be delta'd from here
 
 	byte		*download;				// file being downloaded
-	int			downloadsize;			// total bytes (can't use EOF because of paks)
-	int			downloadcount;			// bytes sent
+	unsigned	downloadsize;			// total bytes (can't use EOF because of paks)
+	unsigned	downloadcount;			// bytes sent
 
 	int			lastmessage;			// sv.framenum when packet was last received
 	int			lastconnect;
@@ -281,8 +281,8 @@ void SV_Error (char *error, ...);
 //
 extern	game_export_t	*ge;
 
-void SV_InitGameProgs (bool dummy);
-void SV_ShutdownGameProgs (void);
+void SV_InitGameLibrary (bool dummy);
+void SV_ShutdownGameLibrary (void);
 void SV_InitEdict (edict_t *e);
 
 

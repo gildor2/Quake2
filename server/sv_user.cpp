@@ -340,7 +340,7 @@ void SV_BeginDownload_f(void)
 	if (sv_client->download)
 		FS_FreeFile (sv_client->download);
 
-	sv_client->downloadsize = FS_LoadFile (name, (void **)&sv_client->download);
+	sv_client->download = (byte*) FS_LoadFile (name, &sv_client->downloadsize);
 	sv_client->downloadcount = offset;
 
 	if (offset > sv_client->downloadsize)

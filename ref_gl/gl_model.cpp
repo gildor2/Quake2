@@ -21,7 +21,7 @@
 		int	_time = Sys_Milliseconds();
 #define END_PROFILE	\
 		_time = Sys_Milliseconds() - _time;	\
-		if (Cvar_VariableInt("r_profile")) Com_Printf("^5%s ^2%s^5: %d ms\n", _name, _arg, _time);	\
+		if (Cvar_VariableInt("r_profile")) Com_Printf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %d ms\n", _name, _arg, _time);	\
 	}
 #else
 #define START_PROFILE(name)
@@ -39,14 +39,15 @@ static int	modelCount;
 
 /*---------------- Loading models: common ----------------*/
 
-static bool LoadMd2 (model_t *m, byte *buf, int len);
-static bool LoadSp2 (model_t *m, byte *buf, int len);
+static bool LoadMd2 (model_t *m, byte *buf, unsigned len);
+static bool LoadSp2 (model_t *m, byte *buf, unsigned len);
 
 
 model_t	*GL_FindModel (char *name)
 {
 	char	name2[MAX_QPATH];
-	int		i, len;
+	int		i;
+	unsigned len;
 	model_t	*m;
 	unsigned *file;
 
@@ -73,8 +74,7 @@ model_t	*GL_FindModel (char *name)
 
 START_PROFILE2(FindModel::Load, name)
 	/*----- not found -- load model ------*/
-	len = FS_LoadFile (name2, (void**)&file);
-	if (!file)
+	if (!(file = (unsigned*) FS_LoadFile (name2, &len)))
 	{
 //		modelCount--;	// free slot
 		m->type = MODEL_UNKNOWN;
@@ -197,9 +197,9 @@ static void BuildSurfFlare (surfaceCommon_t *surf, color_t *color, float intens)
 	c[1] = color->c[1];
 	c[2] = color->c[2];
 	NormalizeColor255 (c, c);
-	f->color.c[0] = Q_round (c[0]);
-	f->color.c[1] = Q_round (c[1]);
-	f->color.c[2] = Q_round (c[2]);
+	f->color.c[0] = appRound (c[0]);
+	f->color.c[1] = appRound (c[1]);
+	f->color.c[2] = appRound (c[2]);
 	f->color.c[3] = 255;				// A
 	SaturateColor4b (&f->color);
 
@@ -720,10 +720,10 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			dynamicLightmap_t *lm;
 
 			// round mins/maxs to a lightmap cell size
-			imins[0] = Q_floor(mins[0] / 16.0f) * 16;
-			imins[1] = Q_floor(mins[1] / 16.0f) * 16;
-			imaxs[0] = Q_ceil(maxs[0] / 16.0f) * 16;
-			imaxs[1] = Q_ceil(maxs[1] / 16.0f) * 16;
+			imins[0] = appFloor(mins[0] / 16.0f) * 16;
+			imins[1] = appFloor(mins[1] / 16.0f) * 16;
+			imaxs[0] = appCeil(maxs[0] / 16.0f) * 16;
+			imaxs[1] = appCeil(maxs[1] / 16.0f) * 16;
 			// calculate lightmap size
 			size[0] = (imaxs[0] - imins[0]) / 16 + 1;
 			size[1] = (imaxs[1] - imins[1]) / 16 + 1;
@@ -1369,9 +1369,9 @@ static void ProcessMd2Frame (vertexMd3_t *verts, dAliasFrame_t *srcFrame, md3Fra
 		// update bounding box
 		AddPointToBounds (p, dstFrame->mins, dstFrame->maxs);
 		// put vertex in a "short" form
-		dstVerts->xyz[0] = Q_round (p[0] / MD3_XYZ_SCALE);
-		dstVerts->xyz[1] = Q_round (p[1] / MD3_XYZ_SCALE);
-		dstVerts->xyz[2] = Q_round (p[2] / MD3_XYZ_SCALE);
+		dstVerts->xyz[0] = appRound (p[0] / MD3_XYZ_SCALE);
+		dstVerts->xyz[1] = appRound (p[1] / MD3_XYZ_SCALE);
+		dstVerts->xyz[2] = appRound (p[2] / MD3_XYZ_SCALE);
 	}
 
 	// compute bounding sphere
@@ -1442,12 +1442,12 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 			dst = &normals[j][0];
 #if 1
 			VectorNormalizeFast (dst);
-			a = Q_round (ACOS_FUNC(dst[2]) / (M_PI * 2) * 255);
-			if (dst[0])		b = Q_round (ATAN2_FUNC (dst[1], dst[0]) / (M_PI * 2) * 255);
+			a = appRound (ACOS_FUNC(dst[2]) / (M_PI * 2) * 255);
+			if (dst[0])		b = appRound (ATAN2_FUNC (dst[1], dst[0]) / (M_PI * 2) * 255);
 #else
 			VectorNormalize (dst);
-			a = Q_round (acos (dst[2]) / (M_PI * 2) * 255);
-			if (dst[0])		b = Q_round (atan2 (dst[1], dst[0]) / (M_PI * 2) * 255);
+			a = appRound (acos (dst[2]) / (M_PI * 2) * 255);
+			if (dst[0])		b = appRound (atan2 (dst[1], dst[0]) / (M_PI * 2) * 255);
 #endif
 			else			b = dst[1] > 0 ? 127 : -127;
 			norm_i[j] = a | (b << 8);
@@ -1496,7 +1496,7 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 
 #define MAX_XYZ_INDEXES		4096
 
-static bool LoadMd2 (model_t *m, byte *buf, int len)
+static bool LoadMd2 (model_t *m, byte *buf, unsigned len)
 {
 	dmdl_t	*hdr;
 	md3Model_t *md3;
@@ -1523,13 +1523,13 @@ static bool LoadMd2 (model_t *m, byte *buf, int len)
 	}
 
 	/*--- determine number of vertexes ---*/
-	surf = (surfaceMd3_t*)Z_Malloc (sizeof(surfaceMd3_t) + MAX_XYZ_INDEXES * sizeof(int));
+	surf = (surfaceMd3_t*)appMalloc (sizeof(surfaceMd3_t) + MAX_XYZ_INDEXES * sizeof(int));
 	surf->texCoords = (float*)(surf+1);
 	surf->numVerts = MAX_XYZ_INDEXES;
 	surf->numTris = MAX_XYZ_INDEXES - 2;
 	numVerts = ParseGlCmds (m->name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes);
 	numTris = surf->numTris;		// just computed
-	Z_Free (surf);
+	appFree (surf);
 	Com_DPrintf ("LoadMD2(%s): %d xyz  %d st  %d verts\n", m->name, hdr->numXyz, hdr->numSt, numVerts);
 
 	/* Allocate memory:
@@ -1546,7 +1546,7 @@ static bool LoadMd2 (model_t *m, byte *buf, int len)
 		sizeof(surfaceCommon_t) + sizeof(surfaceMd3_t) +
 		numVerts*2*sizeof(float) + 3*hdr->numTris*sizeof(int)
 		+ numVerts*hdr->numFrames*sizeof(vertexMd3_t) + hdr->numSkins*sizeof(shader_t*);
-	md3 = (md3Model_t*)Z_Malloc (m->size);
+	md3 = (md3Model_t*)appMalloc (m->size);
 
 	/*-------- fill md3 structure --------*/
 	md3->numSurfaces = 1;
@@ -1574,7 +1574,7 @@ START_PROFILE(..Md2::Parse)
 	/*--- build texcoords and indexes ----*/
 	if (!ParseGlCmds (m->name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes))
 	{
-		Z_Free (md3);
+		appFree (md3);
 		return false;
 	}
 END_PROFILE
@@ -1615,7 +1615,7 @@ shader_t *GL_FindSkin (char *name)
 /*-------------- Sprite models  ----------------*/
 
 
-static bool LoadSp2 (model_t *m, byte *buf, int len)
+static bool LoadSp2 (model_t *m, byte *buf, unsigned len)
 {
 	dsprite_t *hdr;
 	dsprframe_t *in;
@@ -1636,7 +1636,7 @@ static bool LoadSp2 (model_t *m, byte *buf, int len)
 	}
 
 	m->size = sizeof(sp2Model_t) + (hdr->numframes-1) * sizeof(sp2Frame_t);
-	sp2 = (sp2Model_t*)Z_Malloc (m->size);
+	sp2 = (sp2Model_t*)appMalloc (m->size);
 	sp2->numFrames = hdr->numframes;
 	sp2->radius = 0;
 	for (i = 0, in = hdr->frames, out = sp2->frames; i < hdr->numframes; i++, in++, out++)
@@ -1674,8 +1674,8 @@ static void Modellist_f (void)
 {
 	int		i, totalSize;
 	model_t	*m;
-	static char *types[] = {"unk", "inl", "sp2", "md3"};	// see modelType_t
-	static char *colors[] = {"^1", "", "^5", "^2"};			// ...
+	static char *types[] = {"unk",	"inl",	"sp2",		"md3"};	// see modelType_t
+	static char *colors[] = {S_RED,	"",		S_MAGENTA, S_GREEN};			// ...
 
 	totalSize = 0;
 	Com_Printf ("-----type-size----name---------\n");
@@ -1696,10 +1696,10 @@ static void FreeModel (model_t *m)
 	case MODEL_INLINE:
 		break;		// nothing to free
 	case MODEL_MD3:
-		Z_Free (m->md3);
+		appFree (m->md3);
 		break;
 	case MODEL_SP2:
-		Z_Free (m->sp2);
+		appFree (m->sp2);
 		break;
 	default:
 		Com_FatalError ("R_FreeModel: unknown model type %d", m->type);

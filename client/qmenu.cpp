@@ -42,8 +42,6 @@ static void	 SpinControl2_DoSlide (menuList2_t *s, int dir);
 #define VID_WIDTH		viddef.width
 #define VID_HEIGHT		viddef.height
 
-#define Draw_Char(x,y,c) re.DrawCharColor(x,y,c,7)
-#define Draw_Fill		re.DrawFill
 
 static menuCommon_t *GetItem (menuFramework_t *menu, int index)
 {
@@ -75,10 +73,10 @@ static void Action_Draw (menuAction_t *a)
 {
 	if (a->generic.flags & QMF_LEFT_JUSTIFY)
 		Menu_DrawString (a->generic.x + a->generic.parent->x + LCOLUMN_OFFSET, a->generic.y + a->generic.parent->y,
-			va("%s%s", a->generic.flags & QMF_GRAYED ? "^2" : "", a->generic.name));
+			va("%s%s", a->generic.flags & QMF_GRAYED ? S_GREEN : "", a->generic.name));
 	else
 		Menu_DrawStringR2L (a->generic.x + a->generic.parent->x + LCOLUMN_OFFSET, a->generic.y + a->generic.parent->y,
-			va("%s%s", a->generic.flags & QMF_GRAYED ? "^2" : "", a->generic.name));
+			va("%s%s", a->generic.flags & QMF_GRAYED ? S_GREEN : "", a->generic.name));
 	if (a->generic.ownerdraw)
 		a->generic.ownerdraw (a);
 }
@@ -104,17 +102,17 @@ static void Field_Draw (menuField_t *f)
 	// draw caption
 	if (f->generic.name)
 		Menu_DrawStringR2L (f->generic.x + f->generic.parent->x + LCOLUMN_OFFSET, f->generic.y + f->generic.parent->y,
-			va("^2%s", f->generic.name));
+			va(S_GREEN"%s", f->generic.name));
 
 	// draw border
-	Draw_Char (f->generic.x + f->generic.parent->x + 16, f->generic.y + f->generic.parent->y - 4, 18);
-	Draw_Char (f->generic.x + f->generic.parent->x + 16, f->generic.y + f->generic.parent->y + 4, 24);
-	Draw_Char (f->generic.x + f->generic.parent->x + 24 + f->visible_length * 8, f->generic.y + f->generic.parent->y - 4, 20);
-	Draw_Char (f->generic.x + f->generic.parent->x + 24 + f->visible_length * 8, f->generic.y + f->generic.parent->y + 4, 26);
+	re.DrawChar (f->generic.x + f->generic.parent->x + 16, f->generic.y + f->generic.parent->y - 4, 18);
+	re.DrawChar (f->generic.x + f->generic.parent->x + 16, f->generic.y + f->generic.parent->y + 4, 24);
+	re.DrawChar (f->generic.x + f->generic.parent->x + 24 + f->visible_length * 8, f->generic.y + f->generic.parent->y - 4, 20);
+	re.DrawChar (f->generic.x + f->generic.parent->x + 24 + f->visible_length * 8, f->generic.y + f->generic.parent->y + 4, 26);
 	for (i = 0; i < f->visible_length; i++)
 	{
-		Draw_Char (f->generic.x + f->generic.parent->x + 24 + i * 8, f->generic.y + f->generic.parent->y - 4, 19);
-		Draw_Char (f->generic.x + f->generic.parent->x + 24 + i * 8, f->generic.y + f->generic.parent->y + 4, 25);
+		re.DrawChar (f->generic.x + f->generic.parent->x + 24 + i * 8, f->generic.y + f->generic.parent->y - 4, 19);
+		re.DrawChar (f->generic.x + f->generic.parent->x + 24 + i * 8, f->generic.y + f->generic.parent->y + 4, 25);
 	}
 
 	// perform string drawing with Menu_DrawStringConmmon() to disable text coloring
@@ -133,13 +131,13 @@ static void Field_Draw (menuField_t *f)
 		// show cursor
 		if ((Sys_Milliseconds() / 250) & 1)
 		{
-			Draw_Char (f->generic.x + f->generic.parent->x + ( offset + 2) * 8 + 8,
+			re.DrawChar (f->generic.x + f->generic.parent->x + ( offset + 2) * 8 + 8,
 					   f->generic.y + f->generic.parent->y,
 					   11);
 		}
 		else
 		{
-			Draw_Char (f->generic.x + f->generic.parent->x + ( offset + 2) * 8 + 8,
+			re.DrawChar (f->generic.x + f->generic.parent->x + ( offset + 2) * 8 + 8,
 					   f->generic.y + f->generic.parent->y,
 					   ' ');
 		}
@@ -405,14 +403,14 @@ void Menu_Center (menuFramework_t *menu)
 }
 
 
-void Menu_DrawDotsItem (menuCommon_t *item)
+static void Menu_DrawDotsItem (menuCommon_t *item)
 {
 	int		x, y, center;
 
 	center = VID_WIDTH / 2;
 	y = item->y + item->parent->y;
 	for (x = center - 128; x < center + 128; x += 8)
-		re.DrawCharColor (x, y, 0, 1);
+		re.DrawChar (x, y, 0, C_RED);
 }
 
 
@@ -423,7 +421,7 @@ static int strlen_color (const char *s)
 	i = 0;
 	while (c = *s++)
 	{
-		if (c == '^')
+		if (c == COLOR_ESCAPE)
 		{
 			if (*s >= '0' && *s <= '7')
 			{
@@ -507,19 +505,17 @@ void Menu_Draw (menuFramework_t *menu)
 	{
 		if (item->flags & QMF_LEFT_JUSTIFY)
 		{
-			Draw_Char (menu->x + item->x - 24 + item->cursor_offset, menu->y + item->y, 12 + (Sys_Milliseconds()/250 & 1));
+			re.DrawChar (menu->x + item->x - 24 + item->cursor_offset, menu->y + item->y, 12 + (Sys_Milliseconds()/250 & 1));
 		}
 		else
 		{
-			Draw_Char (menu->x + item->cursor_offset, menu->y + item->y, 12 + (Sys_Milliseconds()/250 & 1));
+			re.DrawChar (menu->x + item->cursor_offset, menu->y + item->y, 12 + (Sys_Milliseconds()/250 & 1));
 		}
 	}
 
 	if (item)
 	{
-		if (item->statusbarfunc)
-			item->statusbarfunc((void*)item);
-		else if (item->statusbar)
+		if (item->statusbar)
 			Menu_DrawStatusBar (item->statusbar);
 		else
 			Menu_DrawStatusBar (menu->statusbar);
@@ -540,11 +536,11 @@ void Menu_DrawStatusBar (const char *string)
 		maxcol = VID_WIDTH / 8;
 		col = maxcol / 2 - l / 2;
 
-		Draw_Fill (0, VID_HEIGHT-8, VID_WIDTH, 8, 4);
+		re.DrawFill (0, VID_HEIGHT-8, VID_WIDTH, 8, 4);
 		Menu_DrawString (col*8, VID_HEIGHT - 8, string);
 	}
 //	else
-//		Draw_Fill (0, VID_HEIGHT-8, VID_WIDTH, 8, 0);
+//		re.DrawFill (0, VID_HEIGHT-8, VID_WIDTH, 8, 0);
 }
 
 void Menu_DrawStringCommon (int x, int y, const char *string, int shift)
@@ -555,7 +551,7 @@ void Menu_DrawStringCommon (int x, int y, const char *string, int shift)
 	s = string;
 	while (c = *s++)
 	{
-		Draw_Char (x, y, c + shift);
+		re.DrawChar (x, y, c + shift);
 		x += 8;
 	}
 }
@@ -614,7 +610,7 @@ void Menu_SlideItem (menuFramework_t *s, int dir)
 static void DrawCaption (menuCommon_t *m)
 {
 	if (m->name)
-		Menu_DrawStringR2L (m->x + m->parent->x + LCOLUMN_OFFSET, m->y + m->parent->y, va("^2%s", m->name));
+		Menu_DrawStringR2L (m->x + m->parent->x + LCOLUMN_OFFSET, m->y + m->parent->y, va(S_GREEN"%s", m->name));
 }
 
 static void MenuList_Draw (menuList_t *l)
@@ -626,11 +622,11 @@ static void MenuList_Draw (menuList_t *l)
 
 	n = l->itemnames;
 
-  	Draw_Fill (l->generic.x - 112 + l->generic.parent->x, l->generic.parent->y + l->generic.y + l->curvalue*10 + 10, 128, 10, 16);
+  	re.DrawFill (l->generic.x - 112 + l->generic.parent->x, l->generic.parent->y + l->generic.y + l->curvalue*10 + 10, 128, 10, 16);
 	while (*n)
 	{
 		Menu_DrawStringR2L (l->generic.x + l->generic.parent->x + LCOLUMN_OFFSET, l->generic.y + l->generic.parent->y + y + 10,
-			va("^2%s", *n));
+			va(S_GREEN"%s", *n));
 
 		n++;
 		y += 10;
@@ -647,9 +643,9 @@ static void Separator_Draw (menuSeparator_t *s)
 	name = s->generic.name;
 	if ( !name ) return;
 	if (s->generic.flags & QMF_CENTER)
-		Menu_DrawStringCenter (x, y, va("^2%s", name));
+		Menu_DrawStringCenter (x, y, va(S_GREEN"%s", name));
 	else
-		Menu_DrawStringR2L (x, y, va("^2%s", name));
+		Menu_DrawStringR2L (x, y, va(S_GREEN"%s", name));
 }
 
 static void Slider_DoSlide (menuSlider_t *s, int dir)
@@ -676,11 +672,11 @@ static void Slider_Draw (menuSlider_t *s)
 	s->range = (s->curvalue - s->minvalue) / (float)(s->maxvalue - s->minvalue);
 	s->range = bound(s->range, 0, 1);
 
-	Draw_Char (s->generic.x + s->generic.parent->x + RCOLUMN_OFFSET, s->generic.y + s->generic.parent->y, 128);
+	re.DrawChar (s->generic.x + s->generic.parent->x + RCOLUMN_OFFSET, s->generic.y + s->generic.parent->y, 128);
 	for (i = 0; i < SLIDER_RANGE; i++)
-		Draw_Char (RCOLUMN_OFFSET + s->generic.x + i*8 + s->generic.parent->x + 8, s->generic.y + s->generic.parent->y, 129);
-	Draw_Char (RCOLUMN_OFFSET + s->generic.x + i*8 + s->generic.parent->x + 8, s->generic.y + s->generic.parent->y, 130);
-	Draw_Char (Q_round (8 + RCOLUMN_OFFSET + s->generic.parent->x + s->generic.x + (SLIDER_RANGE-1)*8 * s->range),
+		re.DrawChar (RCOLUMN_OFFSET + s->generic.x + i*8 + s->generic.parent->x + 8, s->generic.y + s->generic.parent->y, 129);
+	re.DrawChar (RCOLUMN_OFFSET + s->generic.x + i*8 + s->generic.parent->x + 8, s->generic.y + s->generic.parent->y, 130);
+	re.DrawChar (appRound (8 + RCOLUMN_OFFSET + s->generic.parent->x + s->generic.x + (SLIDER_RANGE-1)*8 * s->range),
 		s->generic.y + s->generic.parent->y, 131);
 }
 

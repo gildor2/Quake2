@@ -246,11 +246,11 @@ void SV_LinkEdict (edict_t *ent)
 	if (ent->solid == SOLID_BBOX)
 	{
 		// assume that x/y are equal and symetric
-		i = Q_round (ent->maxs[0] / 8);
+		i = appRound (ent->maxs[0] / 8);
 		// z is not symetric
-		j = Q_round (-ent->mins[2] / 8);
+		j = appRound (-ent->mins[2] / 8);
 		// and z maxs can be negative...
-		k = Q_round ((ent->maxs[2] + 32) / 8);
+		k = appRound ((ent->maxs[2] + 32) / 8);
 		// original Q2 have bounded i/j/k/ with lower margin==1 (for client prediction only); this will
 		// produce incorrect collision test when bbox mins/maxs is (0,0,0)
 		i = bound(i, 0, 31);		// mins/maxs[0,1] range is -248..0/0..248

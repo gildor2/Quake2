@@ -17,8 +17,8 @@
 #define Cvar_VariableInt	ri._Cvar_VariableInt
 #define Cvar_Clamp	ri._Cvar_Clamp
 #define Cvar_ClampName	ri._Cvar_ClampName
-#define Z_Malloc	ri._Z_Malloc
-#define Z_Free	ri._Z_Free
+#define appMalloc	ri._appMalloc
+#define appFree	ri._appFree
 #define CreateMemoryChain	ri._CreateMemoryChain
 #define AllocChainBlock	ri._AllocChainBlock
 #define FreeMemoryChain	ri._FreeMemoryChain
@@ -84,8 +84,8 @@ float	Cvar_VariableValue (const char *name);
 int	Cvar_VariableInt (const char *name);
 float	Cvar_Clamp (cvar_t *cvar, float low, float high);
 float	Cvar_ClampName (const char *name, float low, float high);
-void*	Z_Malloc (int size);
-void	Z_Free (void *ptr);
+void*	appMalloc (int size);
+void	appFree (void *ptr);
 void*	CreateMemoryChain (void);
 void*	AllocChainBlock (void *chain, int size);
 void	FreeMemoryChain (void *chain);
@@ -106,7 +106,7 @@ void	appUnwindPrefix (const char *fmt);
 void	__declspec(noreturn)	appUnwindThrow (const char *fmt, ...);
 bool	FS_FileExists (char *filename);
 basenamed_t*	FS_ListFiles (char *name, int *numfiles, int flags);
-int	FS_LoadFile (char *name, void **buf);
+void*	FS_LoadFile (const char *name, unsigned *size = NULL);
 void	FS_FreeFile (void *buf);
 char*	FS_Gamedir (void);
 void	FS_CreatePath (char *path);

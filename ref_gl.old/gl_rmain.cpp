@@ -694,10 +694,10 @@ void R_SetupGL (void)
 	//
 	// set up viewport
 	//
-	x = Q_floor(r_newrefdef.x * vid.width / vid.width);
-	x2 = Q_ceil((r_newrefdef.x + r_newrefdef.width) * vid.width / vid.width);
-	y = Q_floor(vid.height - r_newrefdef.y * vid.height / vid.height);
-	y2 = Q_ceil(vid.height - (r_newrefdef.y + r_newrefdef.height) * vid.height / vid.height);
+	x = appFloor(r_newrefdef.x * vid.width / vid.width);
+	x2 = appCeil((r_newrefdef.x + r_newrefdef.width) * vid.width / vid.width);
+	y = appFloor(vid.height - r_newrefdef.y * vid.height / vid.height);
+	y2 = appCeil(vid.height - (r_newrefdef.y + r_newrefdef.height) * vid.height / vid.height);
 
 	w = x2 - x;
 	h = y - y2;
@@ -1699,8 +1699,8 @@ refExport_t GetRefAPI (const refImport_t *rimp)
 	re.BeginFrame = R_BeginFrame;
 	re.EndFrame = R_EndFrame;
 	re.AppActivate = GLimp_AppActivate;
-	re.DrawConCharColor = Draw_ConCharColor;
-	re.Screenshot =		Screenshot;
+	re.DrawConChar = Draw_ConCharColor;
+	re.Screenshot = Screenshot;
 
 	re.RenderFrame = R_RenderFrame;
 	re.BeginRegistration = R_BeginRegistration;
@@ -1712,9 +1712,9 @@ refExport_t GetRefAPI (const refImport_t *rimp)
 
 	re.ReloadImage = ReloadImage;
 	re.DrawGetPicSize = Draw_GetPicSize;
-	re.DrawPicColor = Draw_PicColor;
+	re.DrawPic = Draw_PicColor;
 	re.DrawStretchPic = Draw_StretchPic;
-	re.DrawCharColor = Draw_CharColor;
+	re.DrawChar = Draw_CharColor;
 	re.DrawTileClear = Draw_TileClear;
 	re.DrawFill = Draw_Fill;
 	re.DrawFill2 = Draw_Fill2;

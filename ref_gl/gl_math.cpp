@@ -54,7 +54,7 @@ void GL_InitFuncTables (void)
 	for (i = 0; i < 256; i++)
 	{
 		sqrtTable[i] = pow (i / 255.0f, 0.5f);
-		noiseTablei[i] = Q_round (rand() * 255.0f / RAND_MAX) & 0xFF;
+		noiseTablei[i] = appRound (rand() * 255.0f / RAND_MAX) & 0xFF;
 		noiseTablef[i] = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;	// range -1..1
 	}
 }
@@ -226,8 +226,8 @@ bool ProjectToScreen (vec3_t pos, int *scr)
 	y = DotProduct (vec, vp.viewaxis[2]) / z / vp.t_fov_y;
 	if (y < -1 || y > 1) return false;
 
-	scr[0] = Q_round (vp.x + vp.w * (0.5 - x / 2));
-	scr[1] = Q_round (vp.y + vp.h * (0.5 - y / 2));
+	scr[0] = appRound (vp.x + vp.w * (0.5 - x / 2));
+	scr[1] = appRound (vp.y + vp.h * (0.5 - y / 2));
 
 	return true;
 }
@@ -268,8 +268,8 @@ void SaturateColor4b (color_t *c)
 		SATURATE(r,light,sat);
 		SATURATE(g,light,sat);
 		SATURATE(b,light,sat);
-		c->c[0] = Q_round (r);
-		c->c[1] = Q_round (g);
-		c->c[2] = Q_round (b);
+		c->c[0] = appRound (r);
+		c->c[1] = appRound (g);
+		c->c[2] = appRound (b);
 	}
 }

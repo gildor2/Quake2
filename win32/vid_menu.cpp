@@ -153,7 +153,7 @@ static void ApplyChanges (void *unused)
 	Cvar_SetInteger ("sw_stipplealpha", s_stipple_box.curvalue);
 	if (Cvar_SetInteger ("sw_mode", s_mode_list[SOFTWARE_MENU].curvalue)->modified) quit |= 2;
 	// OpenGL
-	Cvar_SetInteger ("gl_picmip", 3 - Q_round (s_tq_slider.curvalue));
+	Cvar_SetInteger ("gl_picmip", 3 - appRound (s_tq_slider.curvalue));
 	Cvar_SetInteger ("gl_finish", s_finish_box.curvalue);
 	if (Cvar_SetInteger ("gl_mode", s_mode_list[OPENGL_MENU].curvalue)->modified) quit |= 1;
 	Cvar_SetInteger ("gl_fastsky", s_fastSky.curvalue);

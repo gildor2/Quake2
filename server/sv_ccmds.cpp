@@ -871,12 +871,12 @@ static void SV_Status_f (void)
 		if (!sv.attractloop)
 			Com_Printf ("%3d %5d ", i, cl->edict->client->ps.stats[STAT_FRAGS]);
 		else	// cannot access edict for demo client
-			Com_Printf ("%3d ^1-----^7 ", i);
+			Com_Printf ("%3d "S_RED"----- "S_WHITE, i);
 
 		if (cl->state == cs_connected)
 			Com_Printf ("CNCT ");
 		else if (cl->state == cs_zombie)
-			Com_Printf ("^1ZMBI^7 ");
+			Com_Printf (S_RED"ZMBI "S_WHITE);
 		else
 			Com_Printf ("%4d ", min (cl->ping, 9999));
 

@@ -28,8 +28,8 @@ typedef union
 #define RGBA255(r,g,b,a)	((r) | ((g)<<8) | ((b)<<16) | ((a)<<24))
 
 // computed colors
-#define RGBAS(r,g,b,a)		(Q_round((r)*255) | (Q_round((g)*255)<<8) | (Q_round((b)*255)<<16) | (Q_round((a)*255)<<24))
-#define RGBS(r,g,b)			(Q_round((r)*255) | (Q_round((g)*255)<<8) | (Q_round((b)*255)<<16) | (255<<24))
+#define RGBAS(r,g,b,a)		(appRound((r)*255) | (appRound((g)*255)<<8) | (appRound((b)*255)<<16) | (appRound((a)*255)<<24))
+#define RGBS(r,g,b)			(appRound((r)*255) | (appRound((g)*255)<<8) | (appRound((b)*255)<<16) | (255<<24))
 
 
 //!!! clean beam comments
@@ -201,9 +201,9 @@ typedef struct
 
 	void	(*ReloadImage) (char *name);
 	void	(*DrawGetPicSize) (int *w, int *h, char *name);	// will return (0, 0) if not found
-	void	(*DrawPicColor) (int x, int y, char *pic, int color);
+	void	(*DrawPic) (int x, int y, char *pic, int color = C_WHITE);
 	void	(*DrawStretchPic) (int x, int y, int w, int h, char *name);
-	void	(*DrawCharColor) (int x, int y, int c, int color);
+	void	(*DrawChar) (int x, int y, int c, int color = C_WHITE);
 	void	(*DrawTileClear) (int x, int y, int w, int h, char *name);
 	void	(*DrawFill) (int x, int y, int w, int h, int c);
 	void	(*DrawFill2) (int x, int y, int w, int h, unsigned rgba);
@@ -224,7 +224,7 @@ typedef struct
 	void	(*DrawTextRight) (char *text, unsigned rgba);
 
 	/*---- draw char at (x,y) (char-related coordinates) ----*/
-	void	(*DrawConCharColor) (int x, int y, int c, int color);
+	void	(*DrawConChar) (int x, int y, int c, int color = C_WHITE);
 
 	/*----------------- lighting -------------------*/
 	float	(*GetClientLight) (void);		// used by server to determine client visibility (AI)
@@ -232,7 +232,7 @@ typedef struct
 
 
 /*-------- These are the functions imported by the refresh module --------*/
-#include "ref_decl.h"
+//?? #include "ref_decl.h" -- included in "qcommon.h"
 
 
 // this is the only function actually exported at the linker level

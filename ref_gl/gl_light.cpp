@@ -63,9 +63,9 @@ static void LightLine (const vec3_t *axis, const vec3_t from, const vec3_t to, c
 	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 	GL_DepthRange (DEPTH_NEAR);
 
-	r = Q_round (color[0] * lightScale);
-	g = Q_round (color[1] * lightScale);
-	b = Q_round (color[2] * lightScale);
+	r = appRound (color[0] * lightScale);
+	g = appRound (color[1] * lightScale);
+	b = appRound (color[2] * lightScale);
 	NORMALIZE_COLOR255(r, g, b);
 	c.c[0] = r; c.c[1] = g; c.c[2] = b; c.c[3] = 255;
 	glColor4ubv (c.c);
@@ -558,15 +558,15 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 		else
 			m = 1.0f / CACHE_LIGHT_SCALE;
 		for (i = 0, out = entityColorAxis[0], dst = cell->c[0]; i < 6*3; i++, out++, dst++)
-			*dst = Q_round (*out * m);
+			*dst = appRound (*out * m);
 #else
 		for (i = 0, out = entityColorAxis[0], dst = cell->c[0]; i < 6; i++)
 		{
 			int		r, g, b;
 
-			r = Q_round (*out++ / CACHE_LIGHT_SCALE);
-			g = Q_round (*out++ / CACHE_LIGHT_SCALE);
-			b = Q_round (*out++ / CACHE_LIGHT_SCALE);
+			r = appRound (*out++ / CACHE_LIGHT_SCALE);
+			g = appRound (*out++ / CACHE_LIGHT_SCALE);
+			b = appRound (*out++ / CACHE_LIGHT_SCALE);
 			NORMALIZE_COLOR255(r, g, b);
 			*dst++ = r;
 			*dst++ = g;
@@ -612,7 +612,7 @@ void GL_LightForEntity (refEntity_t *ent)
 
 			for (i = 0; i < 3; i++)
 			{
-				coord[i] = Q_floor (ent->center[i] / LIGHTGRID_STEP);
+				coord[i] = appFloor (ent->center[i] / LIGHTGRID_STEP);
 				pos[i] = coord[i] * LIGHTGRID_STEP;
 				frac[i] = (ent->center[i] - pos[i]) / LIGHTGRID_STEP;
 				coord[i] -= map.gridMins[i];
@@ -836,7 +836,7 @@ void GL_DiffuseLight (color_t *dst, float lightScale)
 
 		// apply color
 #define STEP(n)		\
-		tmp = Q_round (color[n]);	\
+		tmp = appRound (color[n]);	\
 		c.c[n] = (tmp > 255) ? 255 : tmp;
 		STEP(0); STEP(1); STEP(2);
 #undef STEP
@@ -858,8 +858,8 @@ void GL_InitLightGrid (void)
 
 	for (i = 0; i < 3; i++)
 	{
-		map.gridMins[i] = Q_floor (map.nodes[0].mins[i] / LIGHTGRID_STEP);
-		map.mapGrid[i] = Q_ceil (map.nodes[0].maxs[i] / LIGHTGRID_STEP) - map.gridMins[i];
+		map.gridMins[i] = appFloor (map.nodes[0].mins[i] / LIGHTGRID_STEP);
+		map.mapGrid[i] = appCeil (map.nodes[0].maxs[i] / LIGHTGRID_STEP) - map.gridMins[i];
 	}
 	map.numLightCells = 0;
 	map.lightGridChain = CreateMemoryChain ();

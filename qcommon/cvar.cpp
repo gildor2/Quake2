@@ -38,7 +38,7 @@ static void Cvar_SetString (cvar_t *var, const char *str)
 	if (var->string && !strcmp (var->string, str))
 		return;		// not changed
 
-//	Com_Printf ("^5set %s = %s\n", var->name, str);//!!
+//	Com_Printf (S_MAGENTA"set %s = %s\n", var->name, str);//!!
 
 	// update non-string fields
 	var->value = atof (str);
@@ -59,9 +59,9 @@ static void Cvar_SetString (cvar_t *var, const char *str)
 	if (len > var->string_length)
 	{	// buffer is too small - reallocate it
 		if (var->string_length)
-			Z_Free (var->string);	// free old buffer
+			appFree (var->string);	// free old buffer
 		len = (len + 15) & ~15;		// align buffer size to 16 bytes
-		var->string = (char*)Z_Malloc (len);
+		var->string = (char*)appMalloc (len);
 		var->string_length = len;
 	}
 	strcpy (var->string, str);
@@ -354,24 +354,18 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 		{
 			if (var->latched_string)
 			{
-				if (!strcmp (value, var->latched_string))
+				if (!strcmp (value, var->latched_string))	// not modified
 					return var;
-				Z_Free (var->latched_string);
+				// free old latched string
+				appFree (var->latched_string);
 				var->latched_string = NULL;
-
-				if (!strcmp (value, var->string))
-				{	// latched var have switched back to its value
-					var->modified = false;
-					return var;
-				}
 			}
-			else
-			{
-				if (!strcmp (value, var->string))
-					return var;
+			if (!strcmp (value, var->string))
+			{	// latched var have switched back to its value
+				var->modified = false;
+				return var;
 			}
-
-			// here: var->latched string is unset (pointer released)
+			// here: var->latched_string is unset (pointer released)
 			if (Com_ServerState ())
 			{
 				if (Com_ServerState () == ss_demo)
@@ -390,7 +384,7 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 	{
 		if (var->latched_string)
 		{
-			Z_Free (var->latched_string);
+			appFree (var->latched_string);
 			var->latched_string = NULL;
 		}
 	}
@@ -504,7 +498,7 @@ void Cvar_GetLatchedVars (void)
 
 		Cvar_SetHardcoded (var, var->latched_string);
 
-		Z_Free (var->latched_string);
+		appFree (var->latched_string);
 		var->latched_string = NULL;
 	}
 }
@@ -528,13 +522,10 @@ bool Cvar_Command (void)
 	// perform a variable print or set
 	if (Cmd_Argc() == 1)
 	{
-		char	*def, *latch;
+		const char *def;
 
 		// get string for latched value
-		if (var->latched_string)
-			latch = va("-> \"%s\" ", var->latched_string);
-		else
-			latch = "";
+		const char *latch = var->latched_string ? va("-> \"%s\" ", var->latched_string) : "";
 		// get string for default value
 		if (var->reset_string)
 		{
@@ -752,12 +743,12 @@ static void Cvar_List_f (void)
 		if (flags & CVAR_USER_CREATED)
 		{
 			s[0] = '*';
-			color = "^6";
+			color = S_CYAN;
 		}
 		else if (flags & CVAR_GAME_CREATED)
 		{
 			s[0] = 'G';
-			color = "^5";
+			color = S_MAGENTA;
 		}
 		if (flags & CVAR_ARCHIVE)		s[1] = 'A';
 		if (flags & CVAR_USERINFO)		s[2] = 'U';
@@ -765,7 +756,7 @@ static void Cvar_List_f (void)
 		if (flags & CVAR_NOSET)
 		{
 			s[4] = '-';
-			color = "^1";
+			color = S_RED;
 		}
 		else if (flags & CVAR_LATCH)
 			s[4] = 'L';

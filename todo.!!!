@@ -64,7 +64,7 @@ BUGS:
 
 - if Win32 can't get keyboard focus, "set r_fullscreen 0" (as Unreal2)
 BINDS:
-  - bind key "action1"|onrelease "action2" (Unreal-like)
+  - "bind key action1|onrelease action2" (Unreal-like); current: "bind key +action" == "bind key +action|onrelease -action" only
   - "bind -ask <action>": will display "Press a key or button for this action" MsgBox and wait for user to press key
     (ESC - cancel); when key pressed, <action> will be bound to this key; this may be useful for binding to keys, which names
     are unknown, + for scripts, + general "controls menu" may be reimplemented with this command
@@ -75,7 +75,8 @@ SAVEGAMES:
   - quicksave: save to a few (3-4?) slots
   - sort savegames by time, ignore slots; any number of savegames (?)
   ? qcommon.h (engine config): NO_SAVEGAMES - remove save/load game code
-  ? gzip file
+  ? gzip file (or pkzip file -- can keep uncompressed only "current" save dir; will require to load/unload savegames.zip for
+    displaying savegame menu)
 KINGPIN:
   - fire/steam
 HALFLIFE:
@@ -272,7 +273,6 @@ BSP:
 
 -------------- FS ----------------
 
-- "fs_debug 2": profile FS_LoadFile(), monitor cvar change and when set to 0 -> "loaded %d files %d bytes in %.2f seconds"
 - add FS_FOpenFileEx(name, mode), where mode is READ/WRITE/OSREAD (no PAK support)/ZWRITE (gzip compression)
 ? FILE2 -> STREAM, isZipped -> funcRead / funcWrite / funcClose / funcOpen (??)
 - inline files: add support for #game/path/filename -- use this file as "path/filename" when "game" loaded
@@ -282,14 +282,8 @@ BSP:
 ? meminfo (see Alice) - renderer (hunks), z, chains etc. ???
 ? hunks -> chains; align blocks by 16 bytes (currently: msvcrt, 8)
 ? own memory manager (without malloc; use OS functions at low-lewel)
+? make AllocChainBlock() will try to use free space of PREVIOUS blocks when current (last) is full
 
-*? Z_DEBUG: make following (#ifdef Z_DEBUG)
-  - #define Z_BlockMalloc(size) Z_TagMalloc(size,0)
-  - #define Z_Malloc(size) Z_TagMalloc(size,0)
-  * add "void *caller_addr" to zblock_t and fill it in Z_TagMalloc with a return address
-    == "*((int*)first_param - 1)"
-  - make checking memory in "z_stats" (show damaged block info's - size, caller address ...)
-    anbd Z_Free()
 
 ? console command line parsing: add special chars (C-like '\"' etc.)
 ? console: change "]/command" -> "]command" (after completion, may be, other places), but keep
@@ -297,13 +291,17 @@ BSP:
   or #define'd string; draw prompt separately -- remove it from input line, i.e. empty line will be
   "" (in memory), not "]")
 
-? make AllocChainBlock() will try to use free space of PREVIOUS blocks when current (last) is full
-
 - make zip.c big-endian compatible
 ? update JPEG code (new version)
 - md4.c::Encode()/Decode() -- works exactly as memcpy() with little-endian platforms, memcpy()+LongSwapBuffer() with big-endian
 
+----------- GAME LIB -------------
+
 !? add Python virtual machine (game library, inline map scripts)
+? loading Win32 mods in Linux (Wine)
+? add support for loading ELF (other format?) object files -- cross-platform (any x86 platform), can place object files into paks;
+  can implement renderer or gui or anything other as ELF package and place it into pak (ideal: small platform-depending exe with
+  support of loading ELF modules)
 
 ------------- CVARS --------------
 
@@ -334,7 +332,6 @@ BSP:
 
 ? check all "#pragma pack" places (gcc have ability to compile this)
 - update video config menu
-? loading Win32 mods (Wine)
 - hardware gamma (see /usr/X11R6/bin/xgamma as example ...)
 - LoadRefresh: "vid_ref->modified = false" when OK
 - net.c: some funcs changed args netadr_t -> *netadr_t

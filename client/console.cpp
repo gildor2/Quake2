@@ -1,6 +1,6 @@
 #include "client.h"
 
-#define	NUM_CON_TIMES 4
+#define	NUM_CON_TIMES 6
 
 #define	CON_TEXTSIZE 32768
 
@@ -381,11 +381,11 @@ void Con_Print (char *txt)
 
 	if (!con.started) Con_Clear_f ();
 
-	color = 7;
+	color = C_WHITE;
 
 	while (c = *txt++)
 	{
-		if (c == '^')
+		if (c == COLOR_ESCAPE)
 		{
 			int		col;
 
@@ -453,20 +453,20 @@ static void DrawInput (void)
 		{
 			if (!(*re.flags & REF_CONSOLE_ONLY))
 			{
-				re.DrawCharColor (x, y, c, 7);
+				re.DrawChar (x, y, c);
 				re.DrawFill2 (x, y+CHAR_HEIGHT/2, CHAR_WIDTH, CHAR_HEIGHT/2, RGBA(0.2,1,0.3,0.5));
 				continue;
 			}
 			c = 11;									// cursor char
-			color = 2;
+			color = C_GREEN;
 		}
 		else
-			color = 7;								// do not colorize input
+			color = C_WHITE;						// do not colorize input
 		// draw char
 		if (!(*re.flags & REF_CONSOLE_ONLY))
-			re.DrawCharColor (x, y, c, color);
+			re.DrawChar (x, y, c, color);
 		else
-			re.DrawConCharColor (i+1, y, c, color);
+			re.DrawConChar (i+1, y, c, color);
 	}
 }
 
@@ -517,15 +517,12 @@ void Con_DrawNotify (bool drawBack)
 		}
 		for (x = 0; x < linewidth; x++)
 		{
-			int		color;
-			char	c;
-
-			c = con.text[pos];
-			color = con.text[pos + CON_TEXTSIZE];
+			char c = con.text[pos];
+			int color = con.text[pos + CON_TEXTSIZE];
 			if (++pos >= CON_TEXTSIZE) pos -= CON_TEXTSIZE;
 
 			if (c == '\n' || c == WRAP_CHAR) break;
-			re.DrawCharColor ((x + 1) * CHAR_WIDTH, v, c, color);
+			re.DrawChar ((x + 1) * CHAR_WIDTH, v, c, color);
 		}
 
 		v += CHAR_HEIGHT;
@@ -550,11 +547,11 @@ void Con_DrawNotify (bool drawBack)
 			s += chat_bufferlen - (viddef.width/CHAR_WIDTH - (x + 1));
 		while(*s)
 		{
-			re.DrawCharColor (x * CHAR_WIDTH, v, *s++, 7);
+			re.DrawChar (x * CHAR_WIDTH, v, *s++);
 			x++;
 		}
 		// draw cursor
-		re.DrawCharColor (x * CHAR_WIDTH, v, 10 + ((curtime >> 8) & 1), 7);
+		re.DrawChar (x * CHAR_WIDTH, v, 10 + ((curtime >> 8) & 1));
 	}
 }
 
@@ -585,7 +582,7 @@ void Con_DrawConsole (float frac)
 #endif
 
 
-	lines = Q_round (viddef.height * frac);
+	lines = appRound (viddef.height * frac);
 	con_height = lines;
 	if (lines <= 0) return;
 
@@ -608,9 +605,9 @@ void Con_DrawConsole (float frac)
 	i = sizeof(version) - 1;
 	for (x = 0; x < i; x++)
 		if (!(*re.flags & REF_CONSOLE_ONLY))
-			re.DrawCharColor (viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, version[x], 2);
+			re.DrawChar (viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, version[x], C_GREEN);
 		else
-			re.DrawConCharColor (dx - i - 1 + x, dy - 1, version[x], 2);
+			re.DrawConChar (dx - i - 1 + x, dy - 1, version[x], C_GREEN);
 
 	// draw the text
 	con.vislines = lines;
@@ -661,12 +658,12 @@ void Con_DrawConsole (float frac)
 		if (!(*re.flags & REF_CONSOLE_ONLY))
 		{
 			for (x = 0; x < linewidth; x += 4)
-				re.DrawCharColor ((x + 1) * CHAR_WIDTH, y0, '^', 7);
+				re.DrawChar ((x + 1) * CHAR_WIDTH, y0, '^');
 		}
 		else
 		{
 			for (x = 0; x < linewidth; x += 4)
-				re.DrawConCharColor (x + 1, y0, '^', 7);
+				re.DrawConChar (x + 1, y0, '^');
 		}
 		rows--;
 	}
@@ -684,11 +681,11 @@ void Con_DrawConsole (float frac)
 
 				if (c == '\n' || c == WRAP_CHAR) break;
 
-				if (!con_colorText->integer) color = 7;
+				if (!con_colorText->integer) color = C_WHITE;
 				if (!(*re.flags & REF_CONSOLE_ONLY))
-					re.DrawCharColor ((x + 1) * CHAR_WIDTH, y, c, color);
+					re.DrawChar ((x + 1) * CHAR_WIDTH, y, c, color);
 				else
-					re.DrawConCharColor (x + 1, y, c, color);
+					re.DrawConChar (x + 1, y, c, color);
 			}
 			if (!(*re.flags & REF_CONSOLE_ONLY))
 				y += CHAR_HEIGHT;
@@ -701,9 +698,9 @@ void Con_DrawConsole (float frac)
 	i = strlen (dbgBuf);
 	for (x = 0; x < i; x++)
 		if (!(*re.flags & REF_CONSOLE_ONLY))
-			re.DrawCharColor (x*CHAR_WIDTH, lines - 12, dbgBuf[x], 4);
+			re.DrawChar (x*CHAR_WIDTH, lines - 12, dbgBuf[x], C_BLUE);
 		else
-			re.DrawConCharColor (i, dy - 1, version[x], 4);
+			re.DrawConChar (i, dy - 1, version[x], C_BLUE);
 #endif
 	// draw the input prompt, user text, and cursor
 	DrawInput ();

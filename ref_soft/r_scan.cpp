@@ -63,18 +63,18 @@ void D_WarpScreen (void)
 		cached_height = h;
 		for (v=0 ; v<h+AMP2*2 ; v++)
 		{
-			v2 = Q_floor((float)v/(h + AMP2 * 2) * r_refdef.vrect.height);
+			v2 = appFloor((float)v/(h + AMP2 * 2) * r_refdef.vrect.height);
 			rowptr[v] = r_warpbuffer + (WARP_WIDTH * v2);
 		}
 
 		for (u=0 ; u<w+AMP2*2 ; u++)
 		{
-			u2 = Q_floor((float)u/(w + AMP2 * 2) * r_refdef.vrect.width);
+			u2 = appFloor((float)u/(w + AMP2 * 2) * r_refdef.vrect.width);
 			column[u] = u2;
 		}
 	}
 
-	turb = intsintable + (Q_floor(r_newrefdef.time*SPEED)&(CYCLE-1));
+	turb = intsintable + (appFloor(r_newrefdef.time*SPEED)&(CYCLE-1));
 	dest = vid.buffer + r_newrefdef.y * vid.rowbytes + r_newrefdef.x;
 
 	for (v=0 ; v<h ; v++, dest += vid.rowbytes)
@@ -128,7 +128,7 @@ void Turbulent8 (espan_t *pspan)
 	float			sdivz, tdivz, zi, z, du, dv, spancountminus1;
 	float			sdivz16stepu, tdivz16stepu, zi16stepu;
 
-	r_turb_turb = sintable + (Q_floor(r_newrefdef.time*SPEED)&(CYCLE-1));
+	r_turb_turb = sintable + (appFloor(r_newrefdef.time*SPEED)&(CYCLE-1));
 
 	r_turb_sstep = 0;	// keep compiler happy
 	r_turb_tstep = 0;	// ditto
@@ -155,13 +155,13 @@ void Turbulent8 (espan_t *pspan)
 		zi = d_ziorigin + dv*d_zistepv + du*d_zistepu;
 		z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
 
-		r_turb_s = Q_floor(sdivz * z) + sadjust;
+		r_turb_s = appFloor(sdivz * z) + sadjust;
 		if (r_turb_s > bbextents)
 			r_turb_s = bbextents;
 		else if (r_turb_s < 0)
 			r_turb_s = 0;
 
-		r_turb_t = Q_floor(tdivz * z) + tadjust;
+		r_turb_t = appFloor(tdivz * z) + tadjust;
 		if (r_turb_t > bbextentt)
 			r_turb_t = bbextentt;
 		else if (r_turb_t < 0)
@@ -186,7 +186,7 @@ void Turbulent8 (espan_t *pspan)
 				zi += zi16stepu;
 				z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
 
-				snext = Q_floor(sdivz * z) + sadjust;
+				snext = appFloor(sdivz * z) + sadjust;
 				if (snext > bbextents)
 					snext = bbextents;
 				else if (snext < 16)
@@ -194,7 +194,7 @@ void Turbulent8 (espan_t *pspan)
 								//  from causing overstepping & running off the
 								//  edge of the texture
 
-				tnext = Q_floor(tdivz * z) + tadjust;
+				tnext = appFloor(tdivz * z) + tadjust;
 				if (tnext > bbextentt)
 					tnext = bbextentt;
 				else if (tnext < 16)
@@ -214,7 +214,7 @@ void Turbulent8 (espan_t *pspan)
 				tdivz += d_tdivzstepu * spancountminus1;
 				zi += d_zistepu * spancountminus1;
 				z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
-				snext = Q_floor(sdivz * z) + sadjust;
+				snext = appFloor(sdivz * z) + sadjust;
 				if (snext > bbextents)
 					snext = bbextents;
 				else if (snext < 16)
@@ -222,7 +222,7 @@ void Turbulent8 (espan_t *pspan)
 								//  from causing overstepping & running off the
 								//  edge of the texture
 
-				tnext = Q_floor(tdivz * z) + tadjust;
+				tnext = appFloor(tdivz * z) + tadjust;
 				if (tnext > bbextentt)
 					tnext = bbextentt;
 				else if (tnext < 16)
@@ -291,13 +291,13 @@ void NonTurbulent8 (espan_t *pspan)
 		zi = d_ziorigin + dv*d_zistepv + du*d_zistepu;
 		z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
 
-		r_turb_s = Q_floor(sdivz * z) + sadjust;
+		r_turb_s = appFloor(sdivz * z) + sadjust;
 		if (r_turb_s > bbextents)
 			r_turb_s = bbextents;
 		else if (r_turb_s < 0)
 			r_turb_s = 0;
 
-		r_turb_t = Q_floor(tdivz * z) + tadjust;
+		r_turb_t = appFloor(tdivz * z) + tadjust;
 		if (r_turb_t > bbextentt)
 			r_turb_t = bbextentt;
 		else if (r_turb_t < 0)
@@ -322,7 +322,7 @@ void NonTurbulent8 (espan_t *pspan)
 				zi += zi16stepu;
 				z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
 
-				snext = Q_floor(sdivz * z) + sadjust;
+				snext = appFloor(sdivz * z) + sadjust;
 				if (snext > bbextents)
 					snext = bbextents;
 				else if (snext < 16)
@@ -330,7 +330,7 @@ void NonTurbulent8 (espan_t *pspan)
 								//  from causing overstepping & running off the
 								//  edge of the texture
 
-				tnext = Q_floor(tdivz * z) + tadjust;
+				tnext = appFloor(tdivz * z) + tadjust;
 				if (tnext > bbextentt)
 					tnext = bbextentt;
 				else if (tnext < 16)
@@ -350,7 +350,7 @@ void NonTurbulent8 (espan_t *pspan)
 				tdivz += d_tdivzstepu * spancountminus1;
 				zi += d_zistepu * spancountminus1;
 				z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
-				snext = Q_floor(sdivz * z) + sadjust;
+				snext = appFloor(sdivz * z) + sadjust;
 				if (snext > bbextents)
 					snext = bbextents;
 				else if (snext < 16)
@@ -358,7 +358,7 @@ void NonTurbulent8 (espan_t *pspan)
 								//  from causing overstepping & running off the
 								//  edge of the texture
 
-				tnext = Q_floor(tdivz * z) + tadjust;
+				tnext = appFloor(tdivz * z) + tadjust;
 				if (tnext > bbextentt)
 					tnext = bbextentt;
 				else if (tnext < 16)
@@ -429,13 +429,13 @@ void D_DrawSpans16 (espan_t *pspan)
 		zi = d_ziorigin + dv*d_zistepv + du*d_zistepu;
 		z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
 
-		s = Q_floor(sdivz * z) + sadjust;
+		s = appFloor(sdivz * z) + sadjust;
 		if (s > bbextents)
 			s = bbextents;
 		else if (s < 0)
 			s = 0;
 
-		t = Q_floor(tdivz * z) + tadjust;
+		t = appFloor(tdivz * z) + tadjust;
 		if (t > bbextentt)
 			t = bbextentt;
 		else if (t < 0)
@@ -460,7 +460,7 @@ void D_DrawSpans16 (espan_t *pspan)
 				zi += zi8stepu;
 				z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
 
-				snext = Q_floor(sdivz * z) + sadjust;
+				snext = appFloor(sdivz * z) + sadjust;
 				if (snext > bbextents)
 					snext = bbextents;
 				else if (snext < 8)
@@ -468,7 +468,7 @@ void D_DrawSpans16 (espan_t *pspan)
 								//  from causing overstepping & running off the
 								//  edge of the texture
 
-				tnext = Q_floor(tdivz * z) + tadjust;
+				tnext = appFloor(tdivz * z) + tadjust;
 				if (tnext > bbextentt)
 					tnext = bbextentt;
 				else if (tnext < 8)
@@ -488,7 +488,7 @@ void D_DrawSpans16 (espan_t *pspan)
 				tdivz += d_tdivzstepu * spancountminus1;
 				zi += d_zistepu * spancountminus1;
 				z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
-				snext = Q_floor(sdivz * z) + sadjust;
+				snext = appFloor(sdivz * z) + sadjust;
 				if (snext > bbextents)
 					snext = bbextents;
 				else if (snext < 8)
@@ -496,7 +496,7 @@ void D_DrawSpans16 (espan_t *pspan)
 								//  from causing overstepping & running off the
 								//  edge of the texture
 
-				tnext = Q_floor(tdivz * z) + tadjust;
+				tnext = appFloor(tdivz * z) + tadjust;
 				if (tnext > bbextentt)
 					tnext = bbextentt;
 				else if (tnext < 8)
@@ -545,7 +545,7 @@ void D_DrawZSpans (espan_t *pspan)
 
 // FIXME: check for clamping/range problems
 // we count on FP exceptions being turned off to avoid range problems
-	izistep = Q_floor(d_zistepu * 0x8000 * 0x10000);
+	izistep = appFloor(d_zistepu * 0x8000 * 0x10000);
 
 	do
 	{
@@ -559,7 +559,7 @@ void D_DrawZSpans (espan_t *pspan)
 
 		zi = d_ziorigin + dv*d_zistepv + du*d_zistepu;
 	// we count on FP exceptions being turned off to avoid range problems
-		izi = Q_floor(zi * 0x8000 * 0x10000);
+		izi = appFloor(zi * 0x8000 * 0x10000);
 
 		if ((long)pdest & 0x02)
 		{

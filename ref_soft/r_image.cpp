@@ -129,7 +129,7 @@ image_t *R_LoadPic (char *name, byte *pic, int width, int height, imagetype_t ty
 	image->type = type;
 
 	c = width*height;
-	image->pixels[0] = (byte*)Z_Malloc (c);
+	image->pixels[0] = (byte*)appMalloc (c);
 	image->transparent = false;
 	for (i=0 ; i<c ; i++)
 	{
@@ -160,7 +160,7 @@ image_t *R_LoadTex (char *name, byte *pic, int width, int height)
 	image->registration_sequence = registration_sequence;
 
 	size = width*height * (256+64+16+4)/256;
-	image->pixels[0] = (byte*)Z_Malloc (size);
+	image->pixels[0] = (byte*)appMalloc (size);
 	image->pixels[1] = image->pixels[0] + width*height;
 	image->pixels[2] = image->pixels[1] + width*height/4;
 	image->pixels[3] = image->pixels[2] + width*height/16;
@@ -183,8 +183,7 @@ image_t *R_LoadWal (char *name)
 	image_t		*image;
 //	int			size;
 
-	FS_LoadFile (name, (void **)&mt);
-	if (!mt)
+	if (!(mt = (miptex_t*) FS_LoadFile (name)))
 	{
 		Com_Printf ("R_LoadWal: can't load %s\n", name);
 		return r_notexture_mip;
@@ -193,7 +192,7 @@ image_t *R_LoadWal (char *name)
 	ofs = LittleLong (mt->offsets[0]);
 	image = R_LoadTex (name, (byte *)mt + ofs, mt->width, mt->height);
 
-	FS_FreeFile ((void *)mt);
+	FS_FreeFile (mt);
 
 	return image;
 }
@@ -242,7 +241,7 @@ void R_DownsampleImage (byte **pic, int width, int height, bool mipmap)
 	else
 		size = width * height * (256+64+16+4)/256;
 
-	buf = (byte*)Z_Malloc (size * 4); // temporary buffer
+	buf = (byte*)appMalloc (size * 4); // temporary buffer
 	memcpy (buf, *pic, width * height * 4);
 
 	if (mipmap)
@@ -264,7 +263,7 @@ void R_DownsampleImage (byte **pic, int width, int height, bool mipmap)
 	}
 
 	in = buf;
-	pic2 = out = (byte*)Z_Malloc (size);
+	pic2 = out = (byte*)appMalloc (size);
 	for (i = 0; i < size; i++)
 	{
 		r = *in++;
@@ -281,8 +280,8 @@ void R_DownsampleImage (byte **pic, int width, int height, bool mipmap)
 		else
 		*out++ = 255; // alpha = 0
 	}
-	Z_Free (buf);
-	Z_Free (*pic);
+	appFree (buf);
+	appFree (*pic);
 	*pic = pic2;
 }
 
@@ -442,9 +441,9 @@ image_t	*R_FindImage (char *name, imagetype_t type)
 		Com_WPrintf ("Cannot load texture %s\n", name);
 
 	if (pic)
-		Z_Free(pic);
+		appFree(pic);
 	if (palette)
-		Z_Free(palette);
+		appFree(palette);
 
 	return image;
 }
@@ -486,7 +485,7 @@ void R_FreeUnusedImages (void)
 		if (image->type == it_pic)
 			continue;		// don't free pics
 		// free it
-		Z_Free (image->pixels[0]);	// the other mip levels just follow
+		appFree (image->pixels[0]);	// the other mip levels just follow
 		memset (image, 0, sizeof(*image));
 	}
 }
@@ -501,11 +500,11 @@ R_InitImages
 void	R_InitImages (void)
 {
 	void *buf;
-	int len;
+	unsigned len;
 
 	registration_sequence = 1;
 
-	len = FS_LoadFile ("pics/16to8.dat", &buf);
+	buf = FS_LoadFile ("pics/16to8.dat", &len);
 	if (len != 65536 || !buf)
 		Com_FatalError ("Couldn't load pics/16to8.dat");
 	memcpy (d_16to8table, buf, 65536);
@@ -528,7 +527,7 @@ void	R_ShutdownImages (void)
 		if (!image->registration_sequence)
 			continue;		// free texture
 		// free it
-		Z_Free (image->pixels[0]);	// the other mip levels just follow
+		appFree (image->pixels[0]);	// the other mip levels just follow
 		memset (image, 0, sizeof(*image));
 	}
 }

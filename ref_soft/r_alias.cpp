@@ -837,7 +837,7 @@ void R_AliasTransformFinalVerts( int numpoints, finalvert_t *fv, dTriVertx_t *ol
 
 		if (lightcos < 0)
 		{
-			temp += Q_round (r_shadelight * lightcos);
+			temp += appRound (r_shadelight * lightcos);
 
 			// clamp; because we limited the minimum ambient and shading light, we
 			// don't have to clamp low light, just bright
@@ -876,9 +876,9 @@ void R_AliasProjectAndClipTestFinalVert( finalvert_t *fv )
 	z = fv->xyz[2];
 	zi = 1.0 / z;
 
-	fv->zi = Q_round (zi * s_ziscale);
-	fv->u = Q_round ((x * aliasxscale * zi) + aliasxcenter);
-	fv->v = Q_round ((y * aliasyscale * zi) + aliasycenter);
+	fv->zi = appRound (zi * s_ziscale);
+	fv->u = appRound ((x * aliasxscale * zi) + aliasxcenter);
+	fv->v = appRound ((y * aliasyscale * zi) + aliasycenter);
 
 	if (fv->u < r_refdef.aliasvrect.x)
 		fv->flags |= ALIAS_LEFT_CLIP;

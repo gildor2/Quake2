@@ -595,7 +595,7 @@ void R_PolygonDrawSpans(espan_t *pspan, int iswater )
 
 //PGM
 	if ( iswater & SURF_WARP)
-		r_turb_turb = sintable + (Q_round(r_newrefdef.time*SPEED)&(CYCLE-1));
+		r_turb_turb = sintable + (appRound(r_newrefdef.time*SPEED)&(CYCLE-1));
 	else if (iswater & SURF_FLOWING)
 		r_turb_turb = blanktable;
 //PGM
@@ -605,7 +605,7 @@ void R_PolygonDrawSpans(espan_t *pspan, int iswater )
 	zispanletstepu = d_zistepu * AFFINE_SPANLET_SIZE;
 
 // we count on FP exceptions being turned off to avoid range problems
-	s_spanletvars.izistep = Q_floor (d_zistepu * 0x8000 * 0x10000);
+	s_spanletvars.izistep = appFloor (d_zistepu * 0x8000 * 0x10000);
 	s_spanletvars.izistep_times_2 = s_spanletvars.izistep * 2;
 
 	s_spanletvars.pz = 0;
@@ -631,10 +631,10 @@ void R_PolygonDrawSpans(espan_t *pspan, int iswater )
 		zi = d_ziorigin + dv*d_zistepv + du*d_zistepu;
 		z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
 	// we count on FP exceptions being turned off to avoid range problems
-		s_spanletvars.izi = Q_floor(zi * 0x8000 * 0x10000);
+		s_spanletvars.izi = appFloor(zi * 0x8000 * 0x10000);
 
-		s_spanletvars.s = Q_floor(sdivz * z) + sadjust;
-		s_spanletvars.t = Q_floor(tdivz * z) + tadjust;
+		s_spanletvars.s = appFloor(sdivz * z) + sadjust;
+		s_spanletvars.t = appFloor(tdivz * z) + tadjust;
 
 		if ( !iswater )
 		{
@@ -668,8 +668,8 @@ void R_PolygonDrawSpans(espan_t *pspan, int iswater )
 				zi += zispanletstepu;
 				z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
 
-				snext = Q_floor(sdivz * z) + sadjust;
-				tnext = Q_floor(tdivz * z) + tadjust;
+				snext = appFloor(sdivz * z) + sadjust;
+				tnext = appFloor(tdivz * z) + tadjust;
 
 				if ( !iswater )
 				{
@@ -700,8 +700,8 @@ void R_PolygonDrawSpans(espan_t *pspan, int iswater )
 				tdivz += d_tdivzstepu * spancountminus1;
 				zi += d_zistepu * spancountminus1;
 				z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
-				snext = Q_floor(sdivz * z) + sadjust;
-				tnext = Q_floor(tdivz * z) + tadjust;
+				snext = appFloor(sdivz * z) + sadjust;
+				tnext = appFloor(tdivz * z) + tadjust;
 
 				if ( !iswater )
 				{
@@ -768,14 +768,14 @@ void R_PolygonScanLeftEdge (void)
 	if (lmaxindex == 0)
 		lmaxindex = r_polydesc.nump;
 
-	vtop = Q_ceil (r_polydesc.pverts[i].v);
+	vtop = appCeil (r_polydesc.pverts[i].v);
 
 	do
 	{
 		pvert = &r_polydesc.pverts[i];
 		pnext = pvert - 1;
 
-		vbottom = Q_ceil (pnext->v);
+		vbottom = appCeil (pnext->v);
 
 		if (vtop < vbottom)
 		{
@@ -783,11 +783,11 @@ void R_PolygonScanLeftEdge (void)
 			dv = pnext->v - pvert->v;
 
 			slope = du / dv;
-			u_step = Q_floor(slope * 0x10000);
+			u_step = appFloor(slope * 0x10000);
 		// adjust u to ceil the integer portion
-			u = Q_floor((pvert->u + (slope * (vtop - pvert->v))) * 0x10000) + (0x10000 - 1);
-			itop = Q_floor(vtop);
-			ibottom = Q_floor(vbottom);
+			u = appFloor((pvert->u + (slope * (vtop - pvert->v))) * 0x10000) + (0x10000 - 1);
+			itop = appFloor(vtop);
+			ibottom = appFloor(vbottom);
 
 			for (v=itop ; v<ibottom ; v++)
 			{
@@ -838,7 +838,7 @@ void R_PolygonScanRightEdge (void)
 	if (vvert > r_refdef.fvrectbottom_adj)
 		vvert = r_refdef.fvrectbottom_adj;
 
-	vtop = Q_ceil (vvert);
+	vtop = appCeil (vvert);
 
 	do
 	{
@@ -851,7 +851,7 @@ void R_PolygonScanRightEdge (void)
 		if (vnext > r_refdef.fvrectbottom_adj)
 			vnext = r_refdef.fvrectbottom_adj;
 
-		vbottom = Q_ceil (vnext);
+		vbottom = appCeil (vnext);
 
 		if (vtop < vbottom)
 		{
@@ -870,11 +870,11 @@ void R_PolygonScanRightEdge (void)
 			du = unext - uvert;
 			dv = vnext - vvert;
 			slope = du / dv;
-			u_step = Q_floor(slope * 0x10000);
+			u_step = appFloor(slope * 0x10000);
 		// adjust u to ceil the integer portion
-			u = Q_floor((uvert + (slope * (vtop - vvert))) * 0x10000) + (0x10000 - 1);
-			itop = Q_floor(vtop);
-			ibottom = Q_floor(vbottom);
+			u = appFloor((uvert + (slope * (vtop - vvert))) * 0x10000) + (0x10000 - 1);
+			itop = appFloor(vtop);
+			ibottom = appFloor(vbottom);
 
 			for (v=itop ; v<ibottom ; v++)
 			{
@@ -1108,7 +1108,7 @@ void R_BuildPolygonFromSurface(msurface_t *fa)
 	// scrolling texture addition
 	if (fa->texinfo->flags & SURF_FLOWING)
 	{
-		r_polydesc.s_offset += -128 * ( (r_newrefdef.time*0.25) - Q_round(r_newrefdef.time*0.25) );
+		r_polydesc.s_offset += -128 * ( (r_newrefdef.time*0.25) - appRound(r_newrefdef.time*0.25) );
 	}
 
 	r_polydesc.nump = lnumverts;
@@ -1140,8 +1140,8 @@ void R_PolygonCalculateGradients (void)
 	d_zistepv =  -p_normal[1] * yscaleinv * distinv;
 	d_ziorigin =  p_normal[2] * distinv - xcenter * d_zistepu - ycenter * d_zistepv;
 
-	sadjust = (fixed16_t) Q_round ( ( DotProduct( r_polydesc.viewer_position, r_polydesc.vright) + r_polydesc.s_offset ) * 0x10000 );
-	tadjust = (fixed16_t) Q_round ( ( DotProduct( r_polydesc.viewer_position, r_polydesc.vup   ) + r_polydesc.t_offset ) * 0x10000 );
+	sadjust = (fixed16_t) appRound ( ( DotProduct( r_polydesc.viewer_position, r_polydesc.vright) + r_polydesc.s_offset ) * 0x10000 );
+	tadjust = (fixed16_t) appRound ( ( DotProduct( r_polydesc.viewer_position, r_polydesc.vup   ) + r_polydesc.t_offset ) * 0x10000 );
 
 // -1 (-epsilon) so we never wander off the edge of the texture
 	bbextents = (r_polydesc.pixel_width << 16) - 1;
@@ -1190,8 +1190,8 @@ static void R_DrawPoly( int iswater )
 		pverts++;
 	}
 
-	ymin = Q_ceil (ymin);
-	ymax = Q_ceil (ymax);
+	ymin = appCeil (ymin);
+	ymax = appCeil (ymax);
 
 	if (ymin >= ymax)
 		return;		// doesn't cross any scans at all

@@ -252,25 +252,25 @@ static void BaseMove (usercmd_t *cmd)
 	memset (cmd, 0, sizeof(*cmd));
 
 	// copy angles with float->short
-	cmd->angles[0] = Q_round (cl.viewangles[0]);
-	cmd->angles[1] = Q_round (cl.viewangles[1]);
-	cmd->angles[2] = Q_round (cl.viewangles[2]);
+	cmd->angles[0] = appRound (cl.viewangles[0]);
+	cmd->angles[1] = appRound (cl.viewangles[1]);
+	cmd->angles[2] = appRound (cl.viewangles[2]);
 	if (in_Strafe.state & 1)
 	{
-		cmd->sidemove += Q_round (cl_sidespeed->value * KeyState (&in_Right));
-		cmd->sidemove -= Q_round (cl_sidespeed->value * KeyState (&in_Left));
+		cmd->sidemove += appRound (cl_sidespeed->value * KeyState (&in_Right));
+		cmd->sidemove -= appRound (cl_sidespeed->value * KeyState (&in_Left));
 	}
 
-	cmd->sidemove += Q_round (cl_sidespeed->value * KeyState (&in_Moveright));
-	cmd->sidemove -= Q_round (cl_sidespeed->value * KeyState (&in_Moveleft));
+	cmd->sidemove += appRound (cl_sidespeed->value * KeyState (&in_Moveright));
+	cmd->sidemove -= appRound (cl_sidespeed->value * KeyState (&in_Moveleft));
 
-	cmd->upmove += Q_round (cl_upspeed->value * KeyState (&in_Up));
-	cmd->upmove -= Q_round (cl_upspeed->value * KeyState (&in_Down));
+	cmd->upmove += appRound (cl_upspeed->value * KeyState (&in_Up));
+	cmd->upmove -= appRound (cl_upspeed->value * KeyState (&in_Down));
 
 	if (! (in_KLook.state & 1) )
 	{
-		cmd->forwardmove += Q_round (cl_forwardspeed->value * KeyState (&in_Forward));
-		cmd->forwardmove -= Q_round (cl_forwardspeed->value * KeyState (&in_Back));
+		cmd->forwardmove += appRound (cl_forwardspeed->value * KeyState (&in_Forward));
+		cmd->forwardmove -= appRound (cl_forwardspeed->value * KeyState (&in_Back));
 	}
 
 	// adjust for speed key / running
@@ -318,7 +318,7 @@ static void FinishMove (usercmd_t *cmd)
 		cmd->buttons |= BUTTON_ANY;
 
 	// send milliseconds of time to apply the move
-	ms = Q_round (accum_frame_time * 1000);
+	ms = appRound (accum_frame_time * 1000);
 	if (ms > 250) ms = 250;
 
 	cmd->msec = ms;
@@ -330,7 +330,7 @@ static void FinishMove (usercmd_t *cmd)
 	cmd->impulse = 0;		//!! unused
 
 	// send the ambient light level at the player's current position
-	cmd->lightlevel = Q_round (re.GetClientLight ());
+	cmd->lightlevel = appRound (re.GetClientLight ());
 }
 
 /*

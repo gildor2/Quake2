@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gl_local.h"
 
 model_t	*loadmodel;
-int		modfilelen;
+static unsigned modfilelen;
 
 void Mod_LoadSpriteModel (model_t *mod, void *buffer);
 void Mod_LoadBrushModel (model_t *mod, bspfile_t *bsp);
@@ -293,8 +293,7 @@ model_t *Mod_ForName (char *name, bool crash)
 	else
 	{
 		// load the file
-		modfilelen = FS_LoadFile (mod->name, (void **)&buf);
-		if (!buf)
+		if (!(buf = (unsigned*) FS_LoadFile (mod->name, &modfilelen)))
 		{
 			if (crash)
 				Com_DropError ("Mod_ModForName: %s not found", mod->name);
@@ -640,8 +639,8 @@ void CalcSurfaceExtents (msurface_t *s)
 
 	for (i = 0; i < 2; i++)
 	{
-		bmins[i] = Q_floor(mins[i]/16);
-		bmaxs[i] = Q_ceil(maxs[i]/16);
+		bmins[i] = appFloor(mins[i]/16);
+		bmaxs[i] = appCeil(maxs[i]/16);
 
 		s->texturemins[i] = bmins[i] * 16;
 		s->extents[i] = (bmaxs[i] - bmins[i]) * 16;
@@ -1425,7 +1424,7 @@ void Mod_LoadAliasModel (model_t *mod, void *buffer)
 		pheader->numSkins*MD2_MAX_SKINNAME);
 	for (i = 0; i < pheader->numSkins; i++)
 	{
-//		Com_Printf ("^1skin #%d  %s\n", i, (char *)pheader + pheader->ofsSkins + i*MAX_SKINNAME);
+//		Com_Printf (S_RED"skin #%d  %s\n", i, (char *)pheader + pheader->ofsSkins + i*MAX_SKINNAME);
 		mod->skins[i] = GL_FindImage ((char *)pheader + pheader->ofsSkins + i*MD2_MAX_SKINNAME, it_skin);
 	}
 //	mod->numframes = pheader->num_frames;

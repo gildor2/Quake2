@@ -257,11 +257,11 @@ void GL_AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
 
 		skySideVisible[side] |= flag;
 		// get cell's "x" and "w"
-		x = Q_floor ((skyMins[0][side] + 1) * SKY_TESS_SIZE);	// left
-		w = Q_ceil ((skyMaxs[0][side] + 1) * SKY_TESS_SIZE);	// right
+		x = appFloor ((skyMins[0][side] + 1) * SKY_TESS_SIZE);	// left
+		w = appCeil ((skyMaxs[0][side] + 1) * SKY_TESS_SIZE);	// right
 		// get cell's "y" and "h"
-		y = Q_floor ((skyMins[1][side] + 1) * SKY_TESS_SIZE);	// bottom (or top ?)
-		h = Q_ceil ((skyMaxs[1][side] + 1) * SKY_TESS_SIZE);	// top (or bottom)
+		y = appFloor ((skyMins[1][side] + 1) * SKY_TESS_SIZE);	// bottom (or top ?)
+		h = appCeil ((skyMaxs[1][side] + 1) * SKY_TESS_SIZE);	// top (or bottom)
 #if 1
 		x = bound(x, 0, SKY_CELLS);		// avoid precision errors: when we can get floor((mins==-1 + 1)*SIZE) -> -1 (should be 0)
 		w = bound(w, 0, SKY_CELLS);

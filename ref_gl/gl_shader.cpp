@@ -58,7 +58,7 @@ static void Shaderlist_f (void)
 	char	*mask;
 	static char *shTypes[] = {"", "sky", "fog", "por"};
 	static char *boolNames[] = {" ", "+"};
-	static char *badNames[] = {"", " ^1(errors)^7"};
+	static char *badNames[] = {"", S_RED" (errors)"S_WHITE};
 
 	if (Cmd_Argc () > 2)
 	{
@@ -91,15 +91,15 @@ static void Shaderlist_f (void)
 			lmInfo = "v";
 			break;
 		case LIGHTMAP_RESERVE:
-			lmInfo = "^1--^7";	// this situation is error, but it can happens when shader have lightstyles (no static version)
+			lmInfo = S_RED"--"S_WHITE;	// this situation is error, but it can happens when shader have lightstyles (no static version)
 			break;
 		default:
 			lmInfo = va("%d", sh->lightmapNumber);
 		}
 		if (sh->style & SHADER_WALL)
-			color = "^2";
+			color = S_GREEN;
 		else if (sh->style & SHADER_SKIN)
-			color = "^6";
+			color = S_CYAN;
 		else
 			color = "";
 
@@ -781,7 +781,7 @@ shader_t *GL_FindShader (char *name, int style)
 
 #if 0
 				stage->alphaGenType = ALPHAGEN_CONST;
-				stage->rgbaConst.c[3] = Q_round (alpha * 255);
+				stage->rgbaConst.c[3] = appRound (alpha * 255);
 #else
 				stage->alphaGenType = ALPHAGEN_ONE_MINUS_DOT;
 				stage->alphaMin = alpha * 2 / 3;

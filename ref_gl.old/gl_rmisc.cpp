@@ -138,7 +138,7 @@ void GL_PerformScreenshot (void)
 	FS_CreatePath (name);
 
 	// allocate buffer for 4 color components (required for ResampleTexture()
-	buffer = (byte*)Z_Malloc (vid.width * vid.height * 4);
+	buffer = (byte*)appMalloc (vid.width * vid.height * 4);
 	// read frame buffer data
 	glReadPixels (0, 0, vid.width, vid.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
@@ -147,9 +147,9 @@ void GL_PerformScreenshot (void)
 		byte *buffer2;
 
 		//?? check: is there map rendered?
-		buffer2 = (byte*)Z_Malloc (LEVELSHOT_W * LEVELSHOT_H * 4);
+		buffer2 = (byte*)appMalloc (LEVELSHOT_W * LEVELSHOT_H * 4);
 		GL_ResampleTexture ((unsigned *)buffer, vid.width, vid.height, (unsigned *)buffer2, LEVELSHOT_W, LEVELSHOT_H);
-		Z_Free (buffer);
+		appFree (buffer);
 		buffer = buffer2;
 		width = LEVELSHOT_W;
 		height = LEVELSHOT_H;
@@ -187,7 +187,7 @@ void GL_PerformScreenshot (void)
 	else
 		result = WriteTGA (name, buffer, width, height);
 
-	Z_Free (buffer);
+	appFree (buffer);
 
 	if (result && !(gl_screenshotFlags & SHOT_SILENT))
 		Com_Printf ("Wrote %s\n", strrchr (name, '/') + 1);
@@ -199,9 +199,9 @@ void GL_PerformScreenshot (void)
 */
 void GL_Strings_f( void )
 {
-	Com_Printf ("^1GL_VENDOR:^7 %s\n", gl_config.vendorString);
-	Com_Printf ("^1GL_RENDERER:^7 %s\n", gl_config.rendererString);
-	Com_Printf ("^1GL_VERSION:^7 %s\n", gl_config.versionString);
+	Com_Printf (S_RED"GL_VENDOR:"S_WHITE" %s\n", gl_config.vendorString);
+	Com_Printf (S_RED"GL_RENDERER:"S_WHITE" %s\n", gl_config.rendererString);
+	Com_Printf (S_RED"GL_VERSION:"S_WHITE" %s\n", gl_config.versionString);
 //	Com_Printf ("GL_EXTENSIONS: %s\n", gl_config.extensionsString );
 	QGL_PrintExtensionsString ("GL", gl_config.extensions);
 #ifdef _WIN32

@@ -18,8 +18,8 @@ float	Cvar_Clamp (cvar_t *cvar, float low, float high);
 float	Cvar_ClampName (const char *name, float low, float high);
 
 //--- memory management -----
-void*	Z_Malloc (int size);
-void	Z_Free (void *ptr);
+void*	appMalloc (int size);
+void	appFree (void *ptr);
 
 void*	CreateMemoryChain (void);
 void*	AllocChainBlock (void *chain, int size);
@@ -52,7 +52,7 @@ void	__declspec(noreturn) appUnwindThrow (const char *fmt, ...);	//?? make noret
 //---------- files ----------
 bool	FS_FileExists (char *filename);
 basenamed_t* FS_ListFiles (char *name, int *numfiles, int flags);
-int	FS_LoadFile (char *name, void **buf);
+void*	FS_LoadFile (const char *name, unsigned *size = NULL);
 void	FS_FreeFile (void *buf);
 char*	FS_Gamedir (void);
 void	FS_CreatePath (char *path);

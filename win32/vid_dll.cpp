@@ -685,9 +685,9 @@ static void D_Screenshot (int flags, char *name)
 	Com_WPrintf ("Screenshots are unsupported by this renderer\n");
 }
 
-static void	D_Draw_PicColor (int x, int y, char *name, int color) {}
+static void	D_Draw_Pic (int x, int y, char *name, int color) {}
 static void	D_Draw_StretchPic (int x, int y, int w, int h, char *pic) {}
-static void	D_Draw_CharColor (int x, int y, int c, int color) {}
+static void	D_Draw_Char (int x, int y, int c, int color) {}
 static void	D_Draw_TileClear (int x, int y, int w, int h, char *name) {}
 static void	D_Draw_Fill (int x, int y, int w, int h, int c) {}
 static void D_Draw_Fill2 (int x, int y, int w, int h, unsigned rgba) {}
@@ -764,9 +764,9 @@ static bool Vid_LoadRefresh (char *name)
 
 		re.ReloadImage =    D_ReloadImage;
 		re.DrawGetPicSize =	D_Draw_GetPicSize;
-		re.DrawPicColor =	D_Draw_PicColor;
+		re.DrawPic =		D_Draw_Pic;
 		re.DrawStretchPic =	D_Draw_StretchPic;
-		re.DrawCharColor =	D_Draw_CharColor;
+		re.DrawChar =		D_Draw_Char;
 		re.DrawTileClear =	D_Draw_TileClear;
 		re.DrawFill =		D_Draw_Fill;
 		re.DrawFill2 =		D_Draw_Fill2;

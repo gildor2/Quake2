@@ -1230,8 +1230,7 @@ image_t *GL_LoadWal (char *name)
 	int			width, height, ofs;
 	image_t		*image;
 
-	FS_LoadFile (name, (void **)&mt);
-	if (!mt)
+	if (!(mt = (miptex_t*) FS_LoadFile (name)))
 	{
 		Com_Printf ("GL_FindImage: can't load %s\n", name);
 		return r_notexture;
@@ -1243,7 +1242,7 @@ image_t *GL_LoadWal (char *name)
 
 	image = GL_LoadPic (name, (byte *)mt + ofs, width, height, it_wall, 8);
 
-	FS_FreeFile ((void *)mt);
+	FS_FreeFile (mt);
 
 	return image;
 }
@@ -1388,9 +1387,9 @@ image_t	*GL_FindImage (char *name, imagetype_t type)
 		Com_WPrintf ("Cannot load texture %s\n", name);
 
 	if (pic)
-		Z_Free (pic);
+		appFree (pic);
 	if (palette)
-		Z_Free (palette);
+		appFree (palette);
 
 	return image;
 }
@@ -1475,8 +1474,8 @@ int Draw_GetPalette (void)
 
 	d_8to24table[255] &= LittleLong(0xffffff);	// 255 is transparent
 
-	Z_Free (pic);
-	Z_Free (pal);
+	appFree (pic);
+	appFree (pal);
 
 	return 0;
 }
@@ -1509,7 +1508,7 @@ void GL_InitImages (void)
 
 /*	if ( glColorTableEXT )
 	{
-		FS_LoadFile( "pics/16to8.dat", &gl_state.d_16to8table );
+		gl_state.d_16to8table = (byte*)FS_LoadFile ("pics/16to8.dat");
 		if ( !gl_state.d_16to8table )
 			Com_FatalError ("Couldn't load pics/16to8.dat");
 	}

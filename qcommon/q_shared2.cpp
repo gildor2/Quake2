@@ -356,11 +356,11 @@ float anglemod (float a)
 {
 #if 0
 	if (a >= 0)
-		a -= 360 * Q_floor (a/360);
+		a -= 360 * appFloor (a/360);
 	else
-		a += 360 * (1 + Q_floor (-a/360));
+		a += 360 * (1 + appFloor (-a/360));
 #endif
-	a = (360.0f/65536) * (Q_round (a*(65536.0f/360)) & 65535);
+	a = (360.0f/65536) * (appRound (a*(65536.0f/360)) & 65535);
 	return a;
 }
 
@@ -1081,16 +1081,12 @@ static bool bigendian;
 // mess up when qcommon is included in multiple places
 short	(*_BigShort) (short l);
 short	(*_LittleShort) (short l);
-int		(*_BigLong) (int l);
 int		(*_LittleLong) (int l);
-float	(*_BigFloat) (float l);
 float	(*_LittleFloat) (float l);
 
 short	BigShort(short l){return _BigShort(l);}
 short	LittleShort(short l) {return _LittleShort(l);}
-int		BigLong (int l) {return _BigLong(l);}
 int		LittleLong (int l) {return _LittleLong(l);}
-float	BigFloat (float l) {return _BigFloat(l);}
 float	LittleFloat (float l) {return _LittleFloat(l);}
 
 /*
@@ -1100,17 +1096,15 @@ Swap_Init
 */
 void Swap_Init (void)
 {
-	byte	swaptest[2] = {1,0};
+	static const byte swaptest[2] = {1,0};
 
-// set the byte swapping variables in a portable manner
+	// set the byte swapping variables in a portable manner
 	if ( *(short *)swaptest == 1)
 	{
 		bigendian = false;
 		_BigShort = ShortSwap;
 		_LittleShort = ShortNoSwap;
-		_BigLong = LongSwap;
 		_LittleLong = LongNoSwap;
-		_BigFloat = FloatSwap;
 		_LittleFloat = FloatNoSwap;
 	}
 	else
@@ -1118,9 +1112,7 @@ void Swap_Init (void)
 		bigendian = true;
 		_BigShort = ShortNoSwap;
 		_LittleShort = ShortSwap;
-		_BigLong = LongNoSwap;
 		_LittleLong = LongSwap;
-		_BigFloat = FloatNoSwap;
 		_LittleFloat = FloatSwap;
 	}
 

@@ -230,7 +230,7 @@ void S_PaintChannels(int endtime)
 	int		ltime, count;
 	playsound_t	*ps;
 
-	snd_vol = Q_round (s_volume->value * 255);
+	snd_vol = appRound (s_volume->value * 255);
 
 //	Com_Printf ("%i to %i\n", paintedtime, endtime);
 	while (paintedtime < endtime)
@@ -355,7 +355,7 @@ void S_InitScaletable (void)
 	s_volume->modified = false;
 	for (i = 0; i < 32; i++)
 	{
-		scale = Q_round (i * 8 * 256 * s_volume->value);
+		scale = appRound (i * 8 * 256 * s_volume->value);
 		for (j = 0; j < 256; j++)
 			snd_scaletable[i][j] = ((signed char)j) * scale;
 	}

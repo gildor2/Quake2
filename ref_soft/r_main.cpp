@@ -347,21 +347,21 @@ void R_Shutdown (void)
 	// free z buffer
 	if (d_pzbuffer)
 	{
-		Z_Free (d_pzbuffer);
+		appFree (d_pzbuffer);
 		d_pzbuffer = NULL;
 	}
 	// free surface cache
 	if (sc_base)
 	{
 		D_FlushCaches ();
-		Z_Free (sc_base);
+		appFree (sc_base);
 		sc_base = NULL;
 	}
 
 	// free colormap
 	if (vid.colormap)
 	{
-		Z_Free (vid.colormap);
+		appFree (vid.colormap);
 		vid.colormap = NULL;
 	}
 	R_UnRegister ();
@@ -389,7 +389,7 @@ void R_NewMap (void)
 
 	if (r_cnumsurfs > NUMSTACKSURFACES)
 	{
-		surfaces = (surf_t*)Z_Malloc (r_cnumsurfs * sizeof(surf_t));
+		surfaces = (surf_t*)appMalloc (r_cnumsurfs * sizeof(surf_t));
 		surface_p = surfaces;
 		surf_max = &surfaces[r_cnumsurfs];
 		r_surfsonstack = false;
@@ -417,7 +417,7 @@ void R_NewMap (void)
 	}
 	else
 	{
-		auxedges = (edge_t*)Z_Malloc (r_numallocatededges * sizeof(edge_t));
+		auxedges = (edge_t*)appMalloc (r_numallocatededges * sizeof(edge_t));
 	}
 }
 
@@ -1069,7 +1069,7 @@ void R_InitGraphics( int width, int height )
 	// free z buffer
 	if ( d_pzbuffer )
 	{
-		Z_Free( d_pzbuffer );
+		appFree( d_pzbuffer );
 		d_pzbuffer = NULL;
 	}
 
@@ -1077,11 +1077,11 @@ void R_InitGraphics( int width, int height )
 	if ( sc_base )
 	{
 		D_FlushCaches ();
-		Z_Free( sc_base );
+		appFree( sc_base );
 		sc_base = NULL;
 	}
 
-	d_pzbuffer = (short*)Z_Malloc(vid.width*vid.height*2);
+	d_pzbuffer = (short*)appMalloc(vid.width*vid.height*2);
 
 	R_InitCaches ();
 
@@ -1231,7 +1231,7 @@ void Draw_BuildGammaTable (void)
 
 		tmp = pow (i / 255.0f, invGamma) * contr * 255;
 		tmp = tmp + (bright - 1) * 128 - (contr - 0.5) * 128 + 64;
-		v = Q_round (tmp);
+		v = appRound (tmp);
 		v = bound(v, 0, 255);
 		sw_state.gammatable[i] = v;
 	}
@@ -1362,7 +1362,7 @@ void Draw_GetPalette (void)
 		out[2] = b;
 	}
 
-	Z_Free (pal);
+	appFree (pal);
 }
 
 struct image_s *R_RegisterSkin (char *name);
@@ -1406,9 +1406,9 @@ static void Draw_Fill2 (int x, int y, int w, int h, unsigned rgba)
 	color_t c;
 
 	c.rgba = rgba;
-	ri = Q_floor(c.c[0] / 255.0f * 31.9f);
-	gi = Q_floor(c.c[1] / 255.0f * 63.9f);
-	bi = Q_floor(c.c[2] / 255.0f * 31.9f);
+	ri = appFloor(c.c[0] / 255.0f * 31.9f);
+	gi = appFloor(c.c[1] / 255.0f * 63.9f);
+	bi = appFloor(c.c[2] / 255.0f * 31.9f);
 	color = d_16to8table[ri | (gi << 5) | (bi << 11)];
 
 	if (c.c[3] == 255)
@@ -1459,8 +1459,8 @@ refExport_t GetRefAPI (const refImport_t *rimp)
 	re.BeginFrame = R_BeginFrame;
 	re.EndFrame = R_EndFrame;
 	re.AppActivate = SWimp_AppActivate;
-	re.DrawConCharColor = Draw_ConCharColor;
-	re.Screenshot =		Screenshot;
+	re.DrawConChar = Draw_ConCharColor;
+	re.Screenshot = Screenshot;
 
 	re.RenderFrame = R_RenderFrame;
 	re.BeginRegistration = R_BeginRegistration;
@@ -1472,9 +1472,9 @@ refExport_t GetRefAPI (const refImport_t *rimp)
 
 	re.ReloadImage = ReloadImage;
 	re.DrawGetPicSize = Draw_GetPicSize;
-	re.DrawPicColor = Draw_PicColor;
+	re.DrawPic = Draw_PicColor;
 	re.DrawStretchPic = Draw_StretchPic;
-	re.DrawCharColor = Draw_CharColor;
+	re.DrawChar = Draw_CharColor;
 	re.DrawTileClear = Draw_TileClear;
 	re.DrawFill = Draw_Fill;
 	re.DrawFill2 = Draw_Fill2;

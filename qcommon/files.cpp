@@ -96,7 +96,7 @@ cvar_t	*fs_gamedirvar;
 
 // debugging
 static cvar_t	*fs_debug;
-#define DEBUG_LOG(msg)	if (fs_debug->integer) Com_Printf("^2%s", msg);
+#define DEBUG_LOG(msg)	if (fs_debug->integer) Com_Printf(S_GREEN"%s", msg);
 
 
 static cvar_t	*fs_basedir;
@@ -680,10 +680,10 @@ int fileFromPak;		// used for precaching
 
 // WARNING: FS_FOpenFile, FS_Read and FS_FCloseFile works with FILE2* (not with FILE*) structure.
 
-int FS_FOpenFile (char *filename, FILE **file)
+int FS_FOpenFile (const char *filename2, FILE **file)
 {
 	searchPath_t	*search;
-	char			netpath[MAX_OSPATH], *pakname, game[MAX_OSPATH], buf[MAX_OSPATH];
+	char			netpath[MAX_OSPATH], *pakname, game[MAX_OSPATH], filename[MAX_OSPATH];
 	pack_t			*pak;
 	packFile_t		*pfile;
 	int				gamelen, gamePos;
@@ -692,8 +692,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 	FILE			*f;
 
 	fileFromPak = 0;
-	Q_CopyFilename (buf, filename, sizeof(buf));
-	filename = buf;
+	Q_CopyFilename (filename, filename2, sizeof(filename));
 
 	/*-------------- check for links first ---------------------*/
 	for (link = fs_links; link; link = link->next)
@@ -886,7 +885,7 @@ bool FS_FileExists (char *filename)
 	else
 		pakname = filename;
 
-//	Com_Printf("^1check %s in %s; l = %d\n", pakname, game, gamelen);
+//	Com_Printf(S_RED"check %s in %s; l = %d\n", pakname, game, gamelen);
 	// pakname = game relative path, game = subtracted game path, gamelen = strlen(game).
 	// We should refine .pak files with a game path (if specified, gamelen > 0)
 	for (search = fs_searchpaths; search; search = search->next)
@@ -1031,37 +1030,26 @@ a null buffer will just return the file length without loading
 When file is loaded, it contained in buffer with added trailing zero
 ============
 */
-int FS_LoadFile (char *path, void **buffer)
+void* FS_LoadFile (const char *path, unsigned *len)
 {
 	FILE2	*h;
-	byte	*buf;
-	int		len;
-
-	buf = NULL;	// quiet compiler warning
 
 	// look for it in the filesystem or pack files
-	len = FS_FOpenFile (path, (FILE **)&h);
+	unsigned len2 = FS_FOpenFile (path, (FILE **)&h);
 	if (!h)
 	{
-		if (buffer)
-			*buffer = NULL;
-		return -1;
+		if (len) *len = 0;
+		return NULL;
 	}
 
-	if (!buffer)
-	{
-		FS_FCloseFile ((FILE*)h);
-		return len;
-	}
+	if (len) *len = len2;
 
-	buf = (byte*)Z_BlockMalloc (len + 1); // adds 1 for trailing zero
-	*buffer = buf;
-
-	FS_Read (buf, len, (FILE*)h);
+	byte *buf = (byte*)appMalloc (len2 + 1); // adds 1 for trailing zero
+	FS_Read (buf, len2, (FILE*)h);
 	FS_FCloseFile ((FILE*)h);
-	// not needed: Z_Malloc returns zero-filled block:	buffer[len] = 0; // trailing zero
+	// not needed: appMalloc returns zero-filled block:	buffer[len] = 0; // trailing zero
 
-	return len;
+	return buf;
 }
 
 
@@ -1072,7 +1060,7 @@ FS_FreeFile
 */
 void FS_FreeFile (void *buffer)
 {
-	Z_Free (buffer);
+	appFree (buffer);
 }
 
 
@@ -1546,12 +1534,12 @@ static void FS_Link_f (void)
 	{
 		if (!strcmp (l->from, Cmd_Argv(1)))
 		{
-			Z_Free (l->to);
+			appFree (l->to);
 			if (!Cmd_Argv(2)[0])	// <to> is ""
 			{	// delete it
 				*prev = l->next;
-				Z_Free (l->from);
-				Z_Free (l);
+				appFree (l->from);
+				appFree (l);
 				return;
 			}
 			l->to = CopyString (Cmd_Argv(2));
@@ -1561,7 +1549,7 @@ static void FS_Link_f (void)
 	}
 
 	// create a new link
-	l = (fileLink_t*)Z_Malloc(sizeof(*l));
+	l = (fileLink_t*)appMalloc(sizeof(*l));
 	l->next = fs_links;
 	fs_links = l;
 	l->from = CopyString(Cmd_Argv(1));
@@ -1628,7 +1616,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 	else
 		pakname = name;
 
-//	Com_Printf ("^1list: %s in %s (l = %d); fullname = \"%s\"\n", pakname, game, gamelen, name);
+//	Com_Printf (S_RED"list: %s in %s (l = %d); fullname = \"%s\"\n", pakname, game, gamelen, name);
 
 	// extract wildcard
 	mask = strrchr (pakname, '/');
@@ -1656,17 +1644,19 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 			// validate .pak game directory
 			if (gamelen && memcmp(pak->filename, game, gamelen))
 			{
-//				Com_Printf ("^1  ignore pak %s\n", pak->filename);
+//				Com_Printf (S_RED"  ignore pak %s\n", pak->filename);
 				continue;		// .pak placed in other game directory - skip it
 			}
-//			Com_Printf ("^1  use pak %s\n", pak->filename);
+//			Com_Printf (S_RED"  use pak %s\n", pak->filename);
 			list = ListPakDirectory (pak, path, mask, flags, list, game);
 		}
 	}
 
 	/*------------ check directory tree ----------------*/
-	if (name[0] == '.' && name[1] == '/')	// root-relative listing
+	if (name[0] == '.' && name[1] == '/')		// root-relative listing
 		list = AddDirFilesToList (name, list, flags);
+	else if (name[0] == '.' && name[1] == '.' && name[2] == '/')	// "../dir" (game-relative) -> "./dir" (root-relative) path
+		list = AddDirFilesToList (name+1, list, flags);
 	else
 	{	// game is not specified - list all searchpaths
 		char	*path2;
@@ -1703,11 +1693,10 @@ static void FS_Dir_f (void)
 	basenamed_t	*dirnames, *item;
 	int		len, maxlen, col, colwidth, colcount;
 	char	*name;
-	char	spacer[64];
 
 	if (Cmd_Argc() > 2)
 	{
-		Com_Printf ("Usage: dir [<wildcard>]\n");
+		Com_Printf ("Usage: dir [<mask>]\n");
 		return;
 	}
 
@@ -1724,16 +1713,9 @@ static void FS_Dir_f (void)
 
 	while (path = FS_NextPath (path))
 	{
-		char *tmp = findname;
-
 		Com_sprintf (ARRAY_ARG(findname), "%s/%s", path, wildcard);
-
-		while (*tmp)
-		{
-			if (*tmp == '\\')  *tmp = '/';
-			tmp++;
-		}
-		Com_Printf ("Directory of %s\n--------\n", findname);
+		Q_CopyFilename (findname, findname, sizeof(findname));	// in-place compact filename
+		Com_Printf (S_GREEN"Directory of %s\n-------------------\n", findname);
 
 		if (dirnames = FS_ListFiles (findname, NULL, LIST_FILES|LIST_DIRS))
 		{
@@ -1750,25 +1732,25 @@ static void FS_Dir_f (void)
 			if (!colcount) colcount = 1;
 
 			colwidth = maxlen + SPACING;
-			memset (spacer, ' ', sizeof(spacer) - 1);
-			spacer[sizeof(spacer) - 1] = 0;
 			for (col = 0, item = dirnames; item; item = item->next)
 			{
 				Com_Printf ("%s", item->name);
-				col++;
-				if (col >= colcount)
+				if (++col >= colcount)
 				{
 					col = 0;
 					Com_Printf ("\n");
 					continue;
 				}
-				Com_Printf ("%s", &spacer[sizeof(spacer) - 1 - colwidth + strlen (item->name)]);
+				len = strlen (item->name);
+				for (int i = 0; i < colwidth - len; i++) Com_Printf (" ");
 			}
 			if (col) Com_Printf ("\n");
 			FreeNamedList (dirnames);
 		}
 		Com_Printf ("\n");
-	};
+		// if wildcard starts from "../" - dir is root-based, ignore other paths
+		if (wildcard[0] == '.' && wildcard[1] == '.' && wildcard[2] == '/') break;
+	}
 }
 
 

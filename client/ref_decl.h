@@ -17,8 +17,8 @@ typedef struct {
 	int	(*_Cvar_VariableInt) (const char *name);
 	float	(*_Cvar_Clamp) (cvar_t *cvar, float low, float high);
 	float	(*_Cvar_ClampName) (const char *name, float low, float high);
-	void*	(*_Z_Malloc) (int size);
-	void	(*_Z_Free) (void *ptr);
+	void*	(*_appMalloc) (int size);
+	void	(*_appFree) (void *ptr);
 	void*	(*_CreateMemoryChain) (void);
 	void*	(*_AllocChainBlock) (void *chain, int size);
 	void	(*_FreeMemoryChain) (void *chain);
@@ -39,7 +39,7 @@ typedef struct {
 	void	__declspec(noreturn)	(*_appUnwindThrow) (const char *fmt, ...);
 	bool	(*_FS_FileExists) (char *filename);
 	basenamed_t*	(*_FS_ListFiles) (char *name, int *numfiles, int flags);
-	int	(*_FS_LoadFile) (char *name, void **buf);
+	void*	(*_FS_LoadFile) (const char *name, unsigned *size = NULL);
 	void	(*_FS_FreeFile) (void *buf);
 	char*	(*_FS_Gamedir) (void);
 	void	(*_FS_CreatePath) (char *path);

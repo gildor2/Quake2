@@ -95,7 +95,7 @@ static void Huff1TableInit (void)
 	int		*node, *nodebase;
 	byte	counts[256];
 
-	cin.hnodes1 = (int*)Z_Malloc (256*256*2*sizeof(int));
+	cin.hnodes1 = (int*)appMalloc (256*256*2*sizeof(int));
 	memset (cin.hnodes1, 0, 256*256*2*sizeof(int));
 
 	for (prev = 0; prev < 256; prev++)
@@ -151,7 +151,7 @@ static cblock_t Huff1Decompress (cblock_t in)
 	// get decompressed count
 	count = in.data[0] + (in.data[1]<<8) + (in.data[2]<<16) + (in.data[3]<<24);
 	input = in.data + 4;
-	out_p = out.data = (byte*)Z_Malloc (count);
+	out_p = out.data = (byte*)appMalloc (count);
 
 	// read bits
 
@@ -209,12 +209,12 @@ static void FreeCinematic (void)
 {
 	if (cin.pic)
 	{
-		Z_Free (cin.pic);
+		appFree (cin.pic);
 		cin.pic = NULL;
 	}
 	if (cin.pic_pending)
 	{
-		Z_Free (cin.pic_pending);
+		appFree (cin.pic_pending);
 		cin.pic_pending = NULL;
 	}
 	if (cl.cinematic_file)
@@ -224,7 +224,7 @@ static void FreeCinematic (void)
 	}
 	if (cin.hnodes1)
 	{
-		Z_Free (cin.hnodes1);
+		appFree (cin.hnodes1);
 		cin.hnodes1 = NULL;
 	}
 	if (cl.cinematicpalette_active)
@@ -351,7 +351,7 @@ void SCR_RunCinematic (void)
 		return;
 	}
 
-	frame = Q_round ((cls.realtime - cl.cinematictime) * CIN_SPEED / 1000.0f);	//?? use timescale too
+	frame = appRound ((cls.realtime - cl.cinematictime) * CIN_SPEED / 1000.0f);	//?? use timescale too
 	if (frame <= cl.cinematicframe)
 		return;
 	if (frame > cl.cinematicframe+1)
@@ -360,7 +360,7 @@ void SCR_RunCinematic (void)
 		cl.cinematictime = cls.realtime - cl.cinematicframe * 1000 / CIN_SPEED;
 	}
 
-	if (cin.pic) Z_Free (cin.pic);
+	if (cin.pic) appFree (cin.pic);
 	cin.pic = cin.pic_pending;					// current frame to draw
 	cin.pic_pending = ReadNextFrame ();			// next frame
 	cl.cinematicframe++;

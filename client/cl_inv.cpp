@@ -30,25 +30,17 @@ void CL_ParseInventory (void)
 {
 	int		i;
 
-	for (i=0 ; i<MAX_ITEMS ; i++)
+	for (i = 0; i < MAX_ITEMS; i++)
 		cl.inventory[i] = MSG_ReadShort (&net_message);
 }
 
 
-/*
-================
-Inv_DrawString
-================
-*/
-void Inv_DrawString (int x, int y, char *string, bool hgl)
+static void DrawString (int x, int y, char *string, bool hgl)
 {
-	char	c;
-	int		color;
-
-	while (c = *string++)
+	int color = hgl ? C_GREEN : C_WHITE;
+	while (char c = *string++)
 	{
-		color = hgl ? 2 : 7;
-		re_DrawCharColor (x, y, c, color);
+		re.DrawChar (x, y, c, color);
 		x += 8;
 	}
 }
@@ -68,6 +60,7 @@ void CL_DrawInventory (void)
 	int		x, y;
 	int		selected, top;
 
+	if (!cl_draw2d->integer) return;
 	selected = cl.frame.playerstate.stats[STAT_SELECTED_ITEM];
 
 	num = 0;
@@ -93,14 +86,14 @@ void CL_DrawInventory (void)
 	x = (viddef.width-256)/2;
 	y = (viddef.height-240)/2;
 
-	re_DrawPic (x, y+8, "inventory");
+	re.DrawPic (x, y+8, "inventory");
 
 	y += 24;
 	x += 24;
-	Inv_DrawString (x, y, "hotkey ### item", true);
-	Inv_DrawString (x, y+8, "------ --- ----", true);
+	DrawString (x, y,   "hotkey ### item", true);
+	DrawString (x, y+8, "------ --- ----", true);
 	y += 16;
-	for (i=top ; i<num && i < top+DISPLAY_ITEMS ; i++)
+	for (i = top; i < num && i < top+DISPLAY_ITEMS; i++)
 	{
 		int		key;
 		char	binding[256];
@@ -115,9 +108,9 @@ void CL_DrawInventory (void)
 
 		Com_sprintf (ARRAY_ARG(string), "%6s %3i %s", keyName, cl.inventory[item], cl.configstrings[CS_ITEMS+item]);
 		if (item == selected)
-			re_DrawChar (x-8, y, 13);	//?? original: 15 (but not displayed) anyway
+			re.DrawChar (x-8, y, 13);	//?? original: 15 (but not displayed) anyway
 
-		Inv_DrawString (x, y, string, item == selected);
+		DrawString (x, y, string, item == selected);
 		y += 8;
 	}
 }

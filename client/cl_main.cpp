@@ -133,7 +133,7 @@ static bool TryParseStatus (char *str)
 	if (!s) return false;
 	cl_cheats = atoi (s) != 0;
 
-//	Com_Printf ("^1map: %s  game: %s  cheats: %d\n", cl_mapname, cl_gamename, cl_cheats);
+//	Com_Printf (S_RED"map: %s  game: %s  cheats: %d\n", cl_mapname, cl_gamename, cl_cheats);
 
 	statusRequest = false;
 	return true;
@@ -612,7 +612,7 @@ void CL_Disconnect (void)
 
 		time = Sys_Milliseconds () - cl.timedemoStart;
 		if (time > 0)
-			Com_Printf ("^2Total %d frames, %3.1f seconds: %3.1f avg fps %3.1f min fps\n", cl.timedemoFrames, time / 1000.0f,
+			Com_Printf (S_GREEN"Total %d frames, %3.1f seconds: %3.1f avg fps %3.1f min fps\n", cl.timedemoFrames, time / 1000.0f,
 				1000.0f * cl.timedemoFrames / time, 1000.0f / cl.timedemoLongestFrame);
 	}
 
@@ -1137,15 +1137,14 @@ void CL_RequestNextDownload (void)
 				// checking for skins in the model
 				if (!precache_model) {
 
-					FS_LoadFile (cl.configstrings[precache_check], (void **)&precache_model);
-					if (!precache_model) {
+					if (!(precache_model = (byte*) FS_LoadFile (cl.configstrings[precache_check]))) {
 						precache_model_skin = 0;
 						precache_check++;
 						continue; // couldn't load it
 					}
 					if (LittleLong(*(unsigned *)precache_model) != MD2_IDENT) {
 						// not an alias model
-						FS_FreeFile(precache_model);
+						FS_FreeFile (precache_model);
 						precache_model = 0;
 						precache_model_skin = 0;
 						precache_check++;
@@ -1560,29 +1559,6 @@ CVAR_END
 	Cmd_AddCommand ("download", CL_Download_f);
 
 	Cmd_AddCommand ("writeconfig", CL_WriteConfig_f);
-
-	// the only thing this does is allow command completion
-	// to work -- all unknown commands are automatically
-	// forwarded to the server
-	Cmd_AddCommand ("wave", NULL);
-	Cmd_AddCommand ("inven", NULL);
-	Cmd_AddCommand ("kill", NULL);
-	Cmd_AddCommand ("use", NULL);
-	Cmd_AddCommand ("drop", NULL);
-	Cmd_AddCommand ("say", NULL);
-	Cmd_AddCommand ("say_team", NULL);
-	Cmd_AddCommand ("info", NULL);
-	Cmd_AddCommand ("prog", NULL);
-	Cmd_AddCommand ("give", NULL);
-	Cmd_AddCommand ("god", NULL);
-	Cmd_AddCommand ("notarget", NULL);
-	Cmd_AddCommand ("noclip", NULL);
-	Cmd_AddCommand ("invuse", NULL);
-	Cmd_AddCommand ("invprev", NULL);
-	Cmd_AddCommand ("invnext", NULL);
-	Cmd_AddCommand ("invdrop", NULL);
-	Cmd_AddCommand ("weapnext", NULL);
-	Cmd_AddCommand ("weapprev", NULL);
 }
 
 
@@ -1650,7 +1626,7 @@ void CL_Frame (float msec, int realMsec)
 	// decide the simulation time
 	cls.frametime = extratime;
 	cl.ftime += extratime;
-	cl.time = Q_floor (cl.ftime * 1000.0f);
+	cl.time = appFloor (cl.ftime * 1000.0f);
 	extratime = 0;
 	extratime_real = 0;
 

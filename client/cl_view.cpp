@@ -423,8 +423,8 @@ void SCR_DrawCrosshair (void)
 	if (!crosshair_pic[0])
 		return;
 
-	re_DrawPicColor (scr_vrect.x + ((scr_vrect.width - crosshair_width)>>1),
-	  scr_vrect.y + ((scr_vrect.height - crosshair_height)>>1), crosshair_pic, crosshaircolor->integer);
+	re_DrawPicColor (scr_vrect.x + ((scr_vrect.width - crosshair_width)>>1), scr_vrect.y + ((scr_vrect.height - crosshair_height)>>1),
+		crosshair_pic, crosshaircolor->integer);
 }
 
 

@@ -172,7 +172,7 @@ const char *Key_KeynumToString (int keynum)
 	char	*pref;
 
 	if (keynum == -1)
-		return "^1<KEY NOT FOUND>";
+		return S_RED"<KEY NOT FOUND>";
 
 	if (keynum >= MOD_ALT)
 	{
@@ -203,7 +203,7 @@ const char *Key_KeynumToString (int keynum)
 			return va("%s%s", pref, kn->name);
 	}
 
-	return "^1<UNKNOWN KEYNUM>";
+	return S_RED"<UNKNOWN KEYNUM>";
 }
 
 
@@ -224,7 +224,7 @@ static void TryComplete (const char *full, int display, char mark)
 {
 	if (!strnicmp (partial_name, full, partial_len))
 	{
-		if (display) Com_Printf ("  ^2%c^7  %s\n", mark, full);
+		if (display) Com_Printf ("  "S_GREEN"%c"S_WHITE"  %s\n", mark, full);
 
 		if (!completed_count)	// have not yet completed - just copy string
 			strcpy (completed_name, full);
@@ -252,6 +252,7 @@ static char *Do_CompleteCommand (char *partial)
 	char	*path, *ext;
 	char	*arg1s, arg1[256], *arg2s;	// arg1s -> "arg1 arg2 ..."; arg2s -> "arg2 arg3 ..."
 	char	*name, comp_type;
+	int		file_type;
 	cvar_t	*cvar;
 
 	complete_command[0] = 0;
@@ -352,12 +353,21 @@ static char *Do_CompleteCommand (char *partial)
 			path = "maps";
 			ext = ".bsp";
 			comp_type = 'm';
+			file_type = LIST_FILES;
 		}
 		else if (!stricmp (complete_command, "demomap"))
 		{
 			path = "demos";
 			ext = ".dm2";
 			comp_type = 'd';
+			file_type = LIST_FILES;
+		}
+		else if (!stricmp (complete_command, "game"))
+		{
+			path = "..";
+			ext = "";
+			comp_type = 'g';
+			file_type = LIST_DIRS;
 		}
 		else // try to complete varname with its value
 		{
@@ -378,7 +388,7 @@ static char *Do_CompleteCommand (char *partial)
 		}
 
 		// complete "map" or "demomap" with mask/arg*
-		filelist = FS_ListFiles (va("%s/*%s", path, ext), NULL, LIST_FILES);
+		filelist = FS_ListFiles (va("%s/*%s", path, ext), NULL, file_type);
 		if (filelist)
 		{
 			for (fileitem = filelist; fileitem; fileitem = fileitem->next)
@@ -389,8 +399,6 @@ static char *Do_CompleteCommand (char *partial)
 				// refine/remove file extension
 				if ((name = strrchr (fileitem->name, '.')) && !stricmp (name, ext))
 					*name = 0;				// cut extension
-				else
-					*fileitem->name = 0;	// cut whole filename - refined by ext
 			}
 			partial_name = arg1;
 			partial_len = strlen (arg1);
@@ -585,7 +593,7 @@ void Key_SetBinding (int keynum, const char *binding)
 	// free old bindings
 	if (keybindings[keynum])
 	{
-		Z_Free (keybindings[keynum]);
+		appFree (keybindings[keynum]);
 		keybindings[keynum] = NULL;
 	}
 

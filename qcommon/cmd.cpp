@@ -85,9 +85,9 @@ void Cbuf_AddText (char *text)
 	if (cmd_debug->integer & 2)
 	{
 		if (len > 256)
-			Com_Printf ("^4AddText: %d chars\n", len);
+			Com_Printf (S_BLUE"AddText: %d chars\n", len);
 		else
-			Com_Printf ("^4AddText: \"%s\"\n", text);
+			Com_Printf (S_BLUE"AddText: \"%s\"\n", text);
 	}
 	SZ_Write (&cmd_text, text, len);
 }
@@ -115,9 +115,9 @@ void Cbuf_InsertText (char *text)
 	if (cmd_debug->integer & 2)
 	{
 		if (len > 256)
-			Com_Printf ("^4InsText: %d chars\n", len);
+			Com_Printf (S_BLUE"InsText: %d chars\n", len);
 		else
-			Com_Printf ("^4InsText: \"%s\"\n", text);
+			Com_Printf (S_BLUE"InsText: \"%s\"\n", text);
 	}
 	SZ_Insert (&cmd_text, text, len, 0);
 }
@@ -133,7 +133,7 @@ void Cbuf_CopyToDefer (void)
 	memcpy (defer_text_buf, cmd_text_buf, cmd_text.cursize);
 	defer_text_buf[cmd_text.cursize] = 0;
 	cmd_text.cursize = 0;
-	if (cmd_debug->integer & 2) Com_Printf ("^4DeferCommands\n");
+	if (cmd_debug->integer & 2) Com_Printf (S_BLUE"DeferCommands\n");
 }
 
 /*
@@ -143,7 +143,7 @@ Cbuf_InsertFromDefer
 */
 void Cbuf_InsertFromDefer (void)
 {
-	if (cmd_debug->integer & 2) Com_Printf ("^4UndeferCommands: ");	// line will be continued from Cbuf_InsertText()
+	if (cmd_debug->integer & 2) Com_Printf (S_BLUE"UndeferCommands: ");	// line will be continued from Cbuf_InsertText()
 	Cbuf_InsertText (defer_text_buf);
 	defer_text_buf[0] = 0;
 }
@@ -242,7 +242,6 @@ Cmd_Exec_f
 void Cmd_Exec_f (void)
 {
 	char	*f;
-	int		len;
 
 	if (Cmd_Argc () != 2)
 	{
@@ -250,8 +249,7 @@ void Cmd_Exec_f (void)
 		return;
 	}
 
-	len = FS_LoadFile (Cmd_Argv(1), (void **)&f);
-	if (!f)
+	if (!(f = (char*) FS_LoadFile (Cmd_Argv(1))))
 	{
 		Com_WPrintf ("Couldn't exec %s\n", Cmd_Argv(1));
 		return;
@@ -315,7 +313,7 @@ void Cmd_Alias_f (void)
 	{
 		if (!strcmp (name, a->name))
 		{
-			Z_Free (a->value);
+			appFree (a->value);
 			break;
 		}
 	}
@@ -363,7 +361,7 @@ void Cmd_Unalias_f (void)
 				prev->next = alias->next;
 			else
 				cmdAlias = alias->next;
-			Z_Free (alias->value);
+			appFree (alias->value);
 			FreeNamedStruc (alias);
 			n++;
 		}
@@ -518,7 +516,7 @@ void Cmd_TokenizeString (char *text, bool macroExpand)
 
 	// clear the args from the last string
 	for (i = 0; i < cmd_argc; i++)
-		Z_Free (cmd_argv[i]);
+		appFree (cmd_argv[i]);
 
 	cmd_argc = 0;
 	cmd_args[0] = 0;
@@ -570,7 +568,7 @@ void Cmd_TokenizeString (char *text, bool macroExpand)
 
 		if (cmd_argc < MAX_STRING_TOKENS)
 		{
-			cmd_argv[cmd_argc] = (char*)Z_Malloc (strlen(com_token)+1);
+			cmd_argv[cmd_argc] = (char*)appMalloc (strlen(com_token)+1);
 			strcpy (cmd_argv[cmd_argc], com_token);
 			cmd_argc++;
 		}
@@ -597,7 +595,7 @@ void Cmd_AddCommand (const char *cmd_name, void (*func) (void))
 		}
 	}
 
-	cmd = (cmdFunc_t*)Z_Malloc (sizeof(cmdFunc_t));
+	cmd = (cmdFunc_t*)appMalloc (sizeof(cmdFunc_t));
 	cmd->name = cmd_name;		// NOTE: copy pointer only, so cmd_name should points to const string
 	cmd->func = func;
 	cmd->next = cmdFuncs;
@@ -625,7 +623,7 @@ void Cmd_RemoveCommand (const char *cmd_name)
 		if (!strcmp (cmd_name, cmd->name))
 		{
 			*back = cmd->next;
-			Z_Free (cmd);
+			appFree (cmd);
 			return;
 		}
 		back = &cmd->next;
@@ -651,7 +649,7 @@ bool Cmd_ExecuteString (char *text)
 		return true;		// no tokens
 
 	if (cmd_debug->integer & 1)
-		Com_Printf ("^6cmd: %s\n", text);
+		Com_Printf (S_CYAN"cmd: %s\n", text);
 
 	// check functions
 	for (cmd = cmdFuncs; cmd; cmd = cmd->next)

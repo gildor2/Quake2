@@ -375,11 +375,11 @@ void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
 	MSG_WriteByte (&sv.multicast, soundindex);
 
 	if (flags & SND_VOLUME)
-		MSG_WriteByte (&sv.multicast, Q_round (volume*255));
+		MSG_WriteByte (&sv.multicast, appRound (volume*255));
 	if (flags & SND_ATTENUATION)
-		MSG_WriteByte (&sv.multicast, Q_round (attenuation*64));
+		MSG_WriteByte (&sv.multicast, appRound (attenuation*64));
 	if (flags & SND_OFFSET)
-		MSG_WriteByte (&sv.multicast, Q_round (timeofs*1000));
+		MSG_WriteByte (&sv.multicast, appRound (timeofs*1000));
 
 	if (flags & SND_ENT)
 		MSG_WriteShort (&sv.multicast, sendchan);

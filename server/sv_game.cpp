@@ -1,31 +1,10 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-// sv_game.c -- interface to the game dll
-
 #include "server.h"
 
 game_export_t	*ge;
 static bool dummyGame;		// when demomap or cinematic loaded
 
 
-#define SV_Pmove Pmove
+#define SV_Pmove Pmove		// for profiling
 
 /*
 ===============
@@ -36,25 +15,19 @@ Sends the contents of the mutlicast buffer to a single client
 */
 static void PF_Unicast (edict_t *ent, qboolean reliable)
 {
-	int		p;
-	client_t	*client;
-
-	if (!ent)
-		return;
-
 	guard(PF_Unicast);
 
-	p = NUM_FOR_EDICT(ent);
+	if (!ent) return;
+	int p = NUM_FOR_EDICT(ent);
 	if (p < 1 || p > maxclients->integer)
 		return;
 
-	client = svs.clients + (p-1);
+	client_t *client = svs.clients + (p-1);
 
 	if (reliable)
 		SZ_Write (&client->netchan.message, sv.multicast.data, sv.multicast.cursize);
 	else
 		SZ_Write (&client->datagram, sv.multicast.data, sv.multicast.cursize);
-
 	SZ_Clear (&sv.multicast);
 
 	unguard;
@@ -70,8 +43,8 @@ Debug print to server console
 */
 static void PF_dprintf (char *fmt, ...)
 {
-	char		msg[1024];
-	va_list		argptr;
+	char	msg[1024];
+	va_list	argptr;
 
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg), fmt, argptr);
@@ -90,16 +63,8 @@ Print to a single client
 */
 static void PF_cprintf (edict_t *ent, int level, char *fmt, ...)
 {
-	char		msg[1024];
-	va_list		argptr;
-	int			n;
-
-	if (ent)
-	{
-		n = NUM_FOR_EDICT(ent);
-		if (n < 1 || n > maxclients->integer)
-			Com_DropError ("cprintf to a non-client");		// game library error
-	}
+	char	msg[1024];
+	va_list	argptr;
 
 	guard(PF_cprintf);
 	va_start (argptr,fmt);
@@ -107,7 +72,12 @@ static void PF_cprintf (edict_t *ent, int level, char *fmt, ...)
 	va_end (argptr);
 
 	if (ent)
+	{
+		int n = NUM_FOR_EDICT(ent);
+		if (n < 1 || n > maxclients->integer)
+			Com_DropError ("cprintf to a non-client");
 		SV_ClientPrintf (svs.clients+(n-1), level, "%s", msg);
+	}
 	else
 		Com_Printf ("%s", msg);
 	unguard;
@@ -123,11 +93,10 @@ centerprint to a single client
 */
 static void PF_centerprintf (edict_t *ent, char *fmt, ...)
 {
-	char		msg[1024];
-	va_list		argptr;
-	int			n;
+	char	msg[1024];
+	va_list	argptr;
 
-	n = NUM_FOR_EDICT(ent);
+	int n = NUM_FOR_EDICT(ent);
 	if (n < 1 || n > maxclients->integer)
 		return;	// Com_DropError ("centerprintf to a non-client");
 
@@ -152,8 +121,8 @@ Abort the server with a game error
 */
 static void PF_error (char *fmt, ...)
 {
-	char		msg[1024];
-	va_list		argptr;
+	char	msg[1024];
+	va_list	argptr;
 
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg), fmt, argptr);
@@ -172,22 +141,17 @@ Also sets mins and maxs for inline bmodels
 */
 static void PF_setmodel (edict_t *ent, char *name)
 {
-	int		i;
-	cmodel_t	*mod;
-
-	if (!name)
-		Com_DropError ("PF_setmodel: NULL name");
-
 	guard(PF_setmodel);
-	i = SV_ModelIndex (name);
+
+	if (!name) Com_DropError ("PF_setmodel: NULL name");
 
 	//	ent->model = name;
-	ent->s.modelindex = i;
+	ent->s.modelindex = SV_ModelIndex (name);
 
 	// if it is an inline model, get the size information for it
 	if (name[0] == '*')
 	{
-		mod = CM_InlineModel (name);
+		cmodel_t *mod = CM_InlineModel (name);
 		VectorCopy (mod->mins, ent->mins);
 		VectorCopy (mod->maxs, ent->maxs);
 		SV_LinkEdict (ent);
@@ -203,10 +167,10 @@ PF_Configstring
 */
 static void PF_Configstring (int index, char *val)
 {
+	guard(PF_Configstring);
 	if (index < 0 || index >= MAX_CONFIGSTRINGS)
 		Com_DropError ("configstring: bad index %i\n", index);
 
-	guard(PF_Configstring);
 	if (!val)
 		val = "";
 
@@ -214,7 +178,8 @@ static void PF_Configstring (int index, char *val)
 	strcpy (sv.configstrings[index], val);
 
 	if (sv.state != ss_loading)
-	{	// send the update to everyone
+	{
+		// send the update to everyone
 		SZ_Clear (&sv.multicast);
 		MSG_WriteChar (&sv.multicast, svc_configstring);
 		MSG_WriteShort (&sv.multicast, index);
@@ -224,7 +189,6 @@ static void PF_Configstring (int index, char *val)
 	}
 	unguard;
 }
-
 
 
 static void PF_WriteChar (int c) {MSG_WriteChar (&sv.multicast, c);}
@@ -247,20 +211,21 @@ Also checks portalareas so that doors block sight
 */
 static qboolean PF_inPVS (vec3_t p1, vec3_t p2)
 {
-	int		leafnum;
-	int		cluster;
+	int		leafnum, cluster;
 	int		area1, area2;
 	byte	*mask;
 
 	leafnum = CM_PointLeafnum (p1);
 	cluster = CM_LeafCluster (leafnum);
 	area1 = CM_LeafArea (leafnum);
+
 	mask = CM_ClusterPVS (cluster);
 
 	leafnum = CM_PointLeafnum (p2);
 	cluster = CM_LeafCluster (leafnum);
 	area2 = CM_LeafArea (leafnum);
-	if ( mask && (!(mask[cluster>>3] & (1<<(cluster&7)) ) ) )
+
+	if (mask && (!(mask[cluster>>3] & (1<<(cluster&7)))))
 		return false;
 	if (!CM_AreasConnected (area1, area2))
 		return false;		// a door blocks sight
@@ -285,12 +250,14 @@ static qboolean PF_inPHS (vec3_t p1, vec3_t p2)
 	leafnum = CM_PointLeafnum (p1);
 	cluster = CM_LeafCluster (leafnum);
 	area1 = CM_LeafArea (leafnum);
+
 	mask = CM_ClusterPHS (cluster);
 
 	leafnum = CM_PointLeafnum (p2);
 	cluster = CM_LeafCluster (leafnum);
 	area2 = CM_LeafArea (leafnum);
-	if ( mask && (!(mask[cluster>>3] & (1<<(cluster&7)) ) ) )
+
+	if (mask && (!(mask[cluster>>3] & (1<<(cluster&7)))))
 		return false;		// more than one bounce away
 	if (!CM_AreasConnected (area1, area2))
 		return false;		// a door blocks hearing
@@ -315,14 +282,102 @@ static qboolean PF_AreasConnected (int area1, int area2)
 }
 
 
-//==============================================
+/*-----------------------------------------------------------------------------
+	Support for tagged memory
+-----------------------------------------------------------------------------*/
+
+typedef struct zhead_s
+{
+	struct zhead_s *prev, *next;
+	short	tag;
+	int		size;		// for stats only
+} zhead_t;
+
+static zhead_t	z_chain = {&z_chain, &z_chain};
+static int		z_count, z_bytes;
+
+
+static void Z_Free (void *ptr)
+{
+	zhead_t	*z;
+
+	guard(Z_Free);
+	if (!ptr) return;
+	z = ((zhead_t*)ptr)-1;
+
+	z->prev->next = z->next;
+	z->next->prev = z->prev;
+
+	z_count--;
+	z_bytes -= z->size;
+	guard(appFree);	//??
+	appFree (z);
+	unguard;		//??
+	unguard;
+}
+
+
+static void Z_FreeTags (int tag)
+{
+	zhead_t	*z, *next;
+
+	guard(Z_FreeTags);
+	for (z = z_chain.next; z != &z_chain; z = next)
+	{
+		next = z->next;
+		if (z->tag == tag) Z_Free (z+1);
+	}
+	unguard;
+}
+
+
+static void *Z_TagMalloc (int size, int tag)
+{
+	zhead_t	*z;
+
+	guard(Z_TagMalloc);
+	size += sizeof(zhead_t) + 1;	// reserve 1 byte for buggy mods
+
+	z = (zhead_t*) appMalloc (size);
+	z_count++;
+	z_bytes += size;
+	z->tag = tag;
+	z->size = size;
+
+	z->next = z_chain.next;
+	z->prev = &z_chain;
+	z_chain.next->prev = z;
+	z_chain.next = z;
+
+	return z+1;
+	unguard;
+}
+
+
+static void ShutdownGameMemory (void)
+{
+	guard(ShutdownGameMemory);
+	if (z_count || z_bytes)
+	{
+		zhead_t	*z, *next;
+
+		Com_DPrintf ("Game library have memory leak of %d bytes in %d blocks\n", z_bytes, z_count);
+		for (z = z_chain.next; z != &z_chain; z = next)
+		{
+			next = z->next;
+			Z_Free (z+1);
+		}
+	}
+	unguard;
+}
+
+// Memory status console command
+static void GZ_Stats_f (void)
+{
+	Com_Printf ("Game memory:\n%d bytes in %d blocks\n", z_bytes, z_count);
+}
 
 /*-------- Wrappers for some system functions ----------------*/
-
-static void *PF_TagMalloc (int size, int tag)
-{
-	return Z_TagMalloc (size + 1, tag); // reserve 1 byte for buggy mods
-}
 
 
 static cvar_t *PF_Cvar_Get (char *name, char *value, int flags)
@@ -331,11 +386,7 @@ static cvar_t *PF_Cvar_Get (char *name, char *value, int flags)
 }
 
 
-
-void SCR_DebugGraph (float value, int color);
-
-
-//----------------------------------------------------------------------------------
+//--------------------------------------------------------------
 
 #define SV_PROFILE
 
@@ -348,7 +399,7 @@ int prof_counts[256];
 #pragma warning (push)
 #pragma warning (disable : 4035)
 #pragma warning (disable : 4715)
-__inline unsigned cycles (void)	  // taken from UT
+inline unsigned cycles (void)	  // taken from UT
 {
 	__asm
 	{
@@ -415,9 +466,9 @@ static int PSV_SoundIndex (char *name)
 {	PROF2(int)	SV_SoundIndex(name); EPROF2(8);	}
 #define SV_SoundIndex PSV_SoundIndex
 
-static void* PPF_TagMalloc (int size, int tag)
-{	PROF2(void*)	PF_TagMalloc (size, tag); EPROF2(9);	}
-#define PF_TagMalloc PPF_TagMalloc
+static void* PZ_TagMalloc (int size, int tag)
+{	PROF2(void*)	Z_TagMalloc (size, tag); EPROF2(9);	}
+#define Z_TagMalloc PZ_TagMalloc
 
 static void PZ_Free (void *ptr)
 {	PROF;	Z_Free (ptr); EPROF(10);	}
@@ -440,7 +491,12 @@ static void D_Func2B (edict_t *a, char *b) {}
 static void D_Func2C (edict_t *a, usercmd_t *b) {}
 static void D_Func3 (char *a, char *b, char *c) {}
 
-void SV_InitGameProgs (bool dummy)
+
+static const char *gameCommands[] = {"wave", "inven", "kill", "use",
+	"drop", "say", "say_team", "give", "god", "notarget", "noclip",
+	"invuse", "invprev", "invnext", "invdrop", "weapnext", "weapprev"};
+
+void SV_InitGameLibrary (bool dummy)
 {
 	game_import_t import;
 	static const game_import_t import2 = {
@@ -457,7 +513,7 @@ void SV_InitGameProgs (bool dummy)
 		SV_MulticastOld, PF_Unicast,
 		PF_WriteChar, PF_WriteByte, PF_WriteShort, PF_WriteLong, PF_WriteFloat,
 		PF_WriteString, PF_WritePos, PF_WriteDir, PF_WriteAngle,
-		PF_TagMalloc, Z_Free, Z_FreeTags,
+		Z_TagMalloc, Z_Free, Z_FreeTags,
 		PF_Cvar_Get, Cvar_Set, Cvar_ForceSet,
 		Cmd_Argc, Cmd_Argv, Cmd_Args,
 		Cbuf_AddText,
@@ -480,7 +536,7 @@ void SV_InitGameProgs (bool dummy)
 		0, 0
 	};
 
-	guard(SV_InitGameProgs);
+	guard(SV_InitGameLibrary);
 
 	dummyGame = dummy;
 	if (dummyGame)
@@ -490,41 +546,53 @@ void SV_InitGameProgs (bool dummy)
 	}
 
 	// unload anything we have now
-	if (ge) SV_ShutdownGameProgs ();
+	if (ge) SV_ShutdownGameLibrary ();
 
-	// load a new game dll
+	// load game library
 	import = import2;
-	ge = (game_export_t *)Sys_GetGameAPI (&import);
+	ge = (game_export_t*) Sys_GetGameAPI (&import);
 
 	if (!ge)
 		Com_DropError ("failed to load game library");
 	if (ge->apiversion != GAME_API_VERSION)
 		Com_DropError ("game is version %d, not " STR(GAME_API_VERSION), ge->apiversion);
 
+	guard(ge.Init);
 	ge->Init ();
+	unguard;
+
+	Cmd_AddCommand ("gz_stats", GZ_Stats_f);
+	// register NULL commands for ability to complete them from console (will be forwarded to server)
+	for (int i = 0; i < ARRAY_COUNT(gameCommands); i++)
+		Cmd_AddCommand (gameCommands[i], NULL);
 
 	unguard;
 }
 
-/*
-===============
-SV_ShutdownGameProgs
 
-Called when either the entire server is being killed, or
-it is changing to a different game directory.
-===============
-*/
-void SV_ShutdownGameProgs (void)
+void SV_ShutdownGameLibrary (void)
 {
-	guard(SV_ShutdownGameProgs);
+	guard(SV_ShutdownGameLibrary);
 	if (dummyGame)
 	{
 		ge = NULL;
 		return;
 	}
 	if (!ge) return;
+
+	// unload game library
+	guard(ge.Shutdown);
 	ge->Shutdown ();
+	unguard;
 	Sys_UnloadGame ();
 	ge = NULL;
+
+	// free tagged memory (in a case of memory leaks)
+	ShutdownGameMemory ();
+
+	Cmd_RemoveCommand ("gz_stats");
+	// unregister game commands
+	for (int i = 0; i < ARRAY_COUNT(gameCommands); i++)
+		Cmd_RemoveCommand (gameCommands[i]);
 	unguard;
 }

@@ -10,26 +10,22 @@
 //#define 	Z_DEBUG
 #define		Z_FREE		0x1234
 #define		Z_DEBUGMARK	0xABCDEF12
-/*!! Additional debug:
-  - store "Z_Malloc called from" field
-*/
 
 typedef struct zhead_s
 {
 	struct zhead_s *prev, *next;
 	short	magic;			// Z_MAGIC or Z_FREE
-	short	tag;			// for group free
 	int		size;
 #ifdef Z_DEBUG
 	unsigned owner;
 #endif
 } zhead_t;
 
-static zhead_t	z_chain;
+static zhead_t	z_chain = {&z_chain, &z_chain};
 static int		z_count, z_bytes;
 
 
-void Z_Free (void *ptr)
+void appFree (void *ptr)
 {
 	zhead_t	*z;
 #ifdef Z_DEBUG
@@ -39,7 +35,7 @@ void Z_Free (void *ptr)
 #ifdef Z_DEBUG
 	if (!ptr)
 	{
-		Com_FatalError ("Z_Free(NULL) " RETADDR_STR "\n", GET_RETADDR(ptr));
+		Com_FatalError ("appFree(NULL) " RETADDR_STR "\n", GET_RETADDR(ptr));
 		return;
 	}
 #else
@@ -48,14 +44,14 @@ void Z_Free (void *ptr)
 	z = ((zhead_t *)ptr) - 1;
 #ifdef Z_DEBUG
 	if (z->magic == Z_FREE)
-		Com_FatalError ("Z_Free: double freeing block");
+		Com_FatalError ("appFree: double freeing block");
 	mark = *(int*)((char*)z + z->size - 4);
 	if (mark != Z_DEBUGMARK)
-		Com_FatalError ("Z_Free: memory overrun detected (block size=%d, diff=%X)",
+		Com_FatalError ("appFree: memory overrun detected (block size=%d, diff=%X)",
 			z->size - sizeof(zhead_t) - 4, mark ^ Z_DEBUGMARK);
 #endif
 	if (z->magic != Z_MAGIC)
-		Com_FatalError ("Z_Free: bad magic %X" RETADDR_STR, z->magic, GET_RETADDR(ptr));
+		Com_FatalError ("appFree: bad magic %X" RETADDR_STR, z->magic, GET_RETADDR(ptr));
 
 #ifdef Z_DEBUG
 	z->magic = Z_FREE;
@@ -71,24 +67,11 @@ void Z_Free (void *ptr)
 }
 
 
-void Z_FreeTags (int tag)
-{
-	zhead_t	*z, *next;
-
-	for (z = z_chain.next; z != &z_chain; z = next)
-	{
-		next = z->next;
-		if (z->tag == tag)
-			Z_Free ((void *)(z+1));
-	}
-}
-
-
 #ifdef Z_DEBUG
 static unsigned allocator;
 #endif
 
-void *Z_TagMalloc (int size, int tag)
+void *appMalloc (int size)
 {
 	zhead_t	*z;
 
@@ -99,7 +82,7 @@ void *Z_TagMalloc (int size, int tag)
 
 	z = (zhead_t*)malloc(size);
 	if (!z)
-		Com_FatalError ("Z_Malloc: failed on allocation of %d bytes", size);
+		Com_FatalError ("appMalloc: failed on allocation of %d bytes", size);
 	memset (z, 0, size);
 #ifdef Z_DEBUG
 	*((int*)((char*)z + size - 4)) = Z_DEBUGMARK; // place mark in reserved space
@@ -114,7 +97,6 @@ void *Z_TagMalloc (int size, int tag)
 	z_count++;
 	z_bytes += size;
 	z->magic = Z_MAGIC;
-	z->tag = tag;
 	z->size = size;
 
 	z->next = z_chain.next;
@@ -126,33 +108,6 @@ void *Z_TagMalloc (int size, int tag)
 //	if ((int)z <= CATCH && (int)z+size >= CATCH) DebugPrintf("+%08X/%X << %08X *************\n", z+1,size,z->owner);//!!
 
 	return (void *)(z+1);
-}
-
-
-void *Z_Malloc (int size)
-{
-#ifdef Z_DEBUG
-	allocator = GET_RETADDR(size);
-	return Z_TagMalloc (size, 0);
-#else
-	if (size <= Z_BLOCKSIZE * 2)
-		return Z_TagMalloc (size, 0);
-	else
-		return Z_BlockMalloc (size);
-#endif
-}
-
-
-// WARNING: cannot add block align here - we should use result pointer for Z_Free() call
-void *Z_BlockMalloc (int size)
-{
-	int blocksize;
-
-#ifdef Z_DEBUG
-	allocator = GET_RETADDR(size);
-#endif
-	blocksize = ((size + sizeof(zhead_t) + Z_BLOCKSIZE - 1) & ~(Z_BLOCKSIZE - 1)) - sizeof(zhead_t);
-	return Z_TagMalloc (blocksize, 0);
 }
 
 
@@ -262,7 +217,7 @@ char *CopyString (const char *in)
 	allocator = GET_RETADDR(in);
 #endif
 	int len = strlen (in) + 1;
-	out = (char*)Z_TagMalloc (len, 0);
+	out = (char*)appMalloc (len);
 	memcpy (out, in, len);
 	return out;
 }
@@ -293,7 +248,7 @@ basenamed_t *AllocNamedStruc (int size, char *name)
 #ifdef Z_DEBUG
 	allocator = GET_RETADDR(size);
 #endif
-	s = (basenamed_t*)Z_TagMalloc (size + strlen (name) + 1, 0);
+	s = (basenamed_t*)appMalloc (size + strlen (name) + 1);
 	n = (char*)s + size; // place of a new name
         // set namefield of allocated structure
 	*(char**)s = n;
@@ -441,12 +396,11 @@ void FreeNamedList (basenamed_t *list)
 // Memory status console command
 static void Z_Stats_f (void)
 {
-	Com_Printf ("%d bytes in %d blocks\n", z_bytes, z_count);
+	Com_Printf ("System memory:\n%d bytes in %d blocks\n", z_bytes, z_count);
 }
 
 
 void Z_Init (void)
 {
-	z_chain.next = z_chain.prev = &z_chain;
 	Cmd_AddCommand ("z_stats", Z_Stats_f);
 }

@@ -119,8 +119,7 @@ void S_ReadModelsSex (void)
 	int		free, i;
 
 	female_models[0] = NULL;
-	FS_LoadFile ("players/model.lst", (void**)&buf);
-	if (!buf)
+	if (!(buf = (char*) FS_LoadFile ("players/model.lst")))
 	{
 		Com_DPrintf ("players/model.lst is not found\n");
 		return;
@@ -263,7 +262,7 @@ void S_Shutdown (void)
 		if (!sfx->name[0])
 			continue;
 		if (sfx->cache)
-			Z_Free (sfx->cache);
+			appFree (sfx->cache);
 		memset (sfx, 0, sizeof(*sfx));
 	}
 
@@ -422,7 +421,7 @@ void S_EndRegistration (void)
 		{
 			// don't need this sound
 			if (sfx->cache)	// it is possible to have a leftover
-				Z_Free (sfx->cache);	// from a server that didn't finish loading
+				appFree (sfx->cache);	// from a server that didn't finish loading
 			memset (sfx, 0, sizeof(*sfx));
 		}
 		else
@@ -548,12 +547,12 @@ void S_SpatializeOrigin (vec3_t origin, float master_vol, float dist_mult, int *
 
 	// add in distance effect
 	scale = (1.0f - dist) * rscale;
-	*right_vol = Q_round (master_vol * scale);
+	*right_vol = appRound (master_vol * scale);
 	if (*right_vol < 0)
 		*right_vol = 0;
 
 	scale = (1.0f - dist) * lscale;
-	*left_vol = Q_round (master_vol * scale);
+	*left_vol = appRound (master_vol * scale);
 	if (*left_vol < 0)
 		*left_vol = 0;
 }
@@ -757,7 +756,7 @@ void S_StartSound (vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float 
 	if (!sc)
 		return;		// couldn't load the sound's data
 
-	vol = Q_round (fvol*255);
+	vol = appRound (fvol*255);
 
 	// make the playsound_t
 	ps = S_AllocPlaysound ();
@@ -779,16 +778,16 @@ void S_StartSound (vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float 
 	ps->sfx = sfx;
 
 	// drift s_beginofs
-	start = Q_round (cl.frame.servertime * 0.001 * dma.speed + s_beginofs);
+	start = appRound (cl.frame.servertime * 0.001 * dma.speed + s_beginofs);
 	if (start < paintedtime)
 	{
 		start = paintedtime;
-		s_beginofs = start - Q_round (cl.frame.servertime * 0.001 * dma.speed);
+		s_beginofs = start - appRound (cl.frame.servertime * 0.001 * dma.speed);
 	}
 	else if (start > paintedtime + 0.3 * dma.speed)
 	{
-		start = Q_round (paintedtime + 0.1 * dma.speed);
-		s_beginofs = start - Q_round (cl.frame.servertime * 0.001 * dma.speed);
+		start = appRound (paintedtime + 0.1 * dma.speed);
+		s_beginofs = start - appRound (cl.frame.servertime * 0.001 * dma.speed);
 	}
 	else
 	{
@@ -798,7 +797,7 @@ void S_StartSound (vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float 
 	if (!timeofs)
 		ps->begin = paintedtime;
 	else
-		ps->begin = Q_round (start + timeofs * dma.speed);
+		ps->begin = appRound (start + timeofs * dma.speed);
 
 	// sort into the pending sound list
 	for (sort = s_pendingplays.next ;
@@ -1021,7 +1020,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 		{
 			for (i=0 ; ; i++)
 			{
-				src = Q_round (i*scale);
+				src = appRound (i*scale);
 				if (src >= samples)
 					break;
 				dst = s_rawend&(MAX_RAW_SAMPLES-1);
@@ -1035,7 +1034,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 	{
 		for (i=0 ; ; i++)
 		{
-			src = Q_round (i*scale);
+			src = appRound (i*scale);
 			if (src >= samples)
 				break;
 			dst = s_rawend&(MAX_RAW_SAMPLES-1);
@@ -1048,7 +1047,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 	{
 		for (i=0 ; ; i++)
 		{
-			src = Q_round (i*scale);
+			src = appRound (i*scale);
 			if (src >= samples)
 				break;
 			dst = s_rawend&(MAX_RAW_SAMPLES-1);
@@ -1061,7 +1060,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 	{
 		for (i=0 ; ; i++)
 		{
-			src = Q_round (i*scale);
+			src = appRound (i*scale);
 			if (src >= samples)
 				break;
 			dst = s_rawend&(MAX_RAW_SAMPLES-1);
@@ -1201,7 +1200,7 @@ void S_Update_(void)
 	}
 
 	// mix ahead of current position
-	endtime = soundtime + Q_round (s_mixahead->value * dma.speed);
+	endtime = soundtime + appRound (s_mixahead->value * dma.speed);
 
 	// mix to an even submission block size
 	endtime = (endtime + dma.submission_chunk-1) & ~(dma.submission_chunk-1);
@@ -1288,7 +1287,7 @@ static void S_SoundList (void)
 			if (sfx->name[0] == '*')
 				status = "placeholder  ";
 			else if (sfx->absent)
-				status = "^1not found    ^7";
+				status = S_RED"not found    "S_WHITE;
 			else
 				status = "not loaded   ";
 			Com_Printf ("%-3d %s %s\n", i, status, sfx->name);

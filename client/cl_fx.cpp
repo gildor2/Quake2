@@ -94,7 +94,7 @@ void CL_RunLightStyles (void)
 			pos1 = pos + 1;
 			if (pos1 >= ls->length) pos1 = 0;
 
-			ls->value = Q_round (ls->map[pos] * frac + ls->map[pos1] * frac1);
+			ls->value = appRound (ls->map[pos] * frac + ls->map[pos1] * frac1);
 		}
 	}
 }
@@ -431,7 +431,7 @@ static void CL_UpdateParticleBeams (float timeDelta)
 
 		b->lifeTime -= timeDelta;
 		b->alpha -= alphaDelta;
-		b->color.c[3] = Q_round (b->alpha * 255);
+		b->color.c[3] = appRound (b->alpha * 255);
 		b->radius += radiusDelta;
 
 		if ((b->fadeTime > 0 && b->lifeTime <= 0) || b->alpha <= 0 || b->radius <= 0)
@@ -2001,7 +2001,7 @@ void CL_BfgParticles (entity_t *ent)
 
 		VectorSubtract (p->org, ent->origin, v);
 		dist = VectorLength(v) / 90.0;
-		p->color = Q_floor (0xd0 + dist * 7);
+		p->color = appFloor (0xd0 + dist * 7);
 
 		p->alpha = 1.0 - dist;
 		p->alphavel = -100;

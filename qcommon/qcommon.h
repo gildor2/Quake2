@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "qfiles.h"
 
 
-#define	VERSION		4.00	// 3.21
+#define	VERSION		4.10
 
 #define APPNAME		"Quake2"
 #define	BASEDIRNAME	"baseq2"
@@ -155,11 +155,6 @@ void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
 
 //============================================================================
 
-
-void	COM_Init (void);
-void	COM_InitArgv (int argc, char **argv);
-
-//============================================================================
 
 void	Info_Print (char *s);
 
@@ -306,8 +301,8 @@ enum clc_ops_e
 #define	SND_ENT				(1<<3)		// a short 0-2: channel, 3-12: entity
 #define	SND_OFFSET			(1<<4)		// a byte, msec offset from frame start
 
-#define DEFAULT_SOUND_PACKET_VOLUME	1.0
-#define DEFAULT_SOUND_PACKET_ATTENUATION 1.0
+#define DEFAULT_SOUND_PACKET_VOLUME			1.0
+#define DEFAULT_SOUND_PACKET_ATTENUATION	1.0
 
 //==============================================
 
@@ -731,11 +726,8 @@ typedef struct basenamed_s
 
 
 // Memory blocks
-//--void	Z_Free (void *ptr);
-//--void	*Z_Malloc (int size);			// returns 0-filled memory
-void	*Z_TagMalloc (int size, int tag);
-void	*Z_BlockMalloc (int size);
-void	Z_FreeTags (int tag);
+//--void	appFree (void *ptr);
+//--void	*appMalloc (int size);			// returns 0-filled memory
 
 // Memory chains
 //--void	*CreateMemoryChain (void);
@@ -748,7 +740,7 @@ char	*ChainCopyString (const char *in, void *chain);
 
 // Named structure lists
 basenamed_t *AllocNamedStruc (int size, char *name);
-#define FreeNamedStruc(s)   Z_Free(s)
+#define FreeNamedStruc(s)   appFree(s)
 basenamed_t *ChainAllocNamedStruc (int size, char *name, void *chain);
 
 basenamed_t *FindNamedStruc (char *name, basenamed_t *first, basenamed_t **where);
@@ -775,13 +767,13 @@ bool	FS_SetGamedir (const char *dir);
 char	*FS_NextPath (char *prevpath);
 void	FS_LoadGameConfig (void);
 
-int		FS_FOpenFile (char *filename, FILE **file);
+int		FS_FOpenFile (const char *filename, FILE **file);
 //--bool FS_FileExists (char *filename);
 void	FS_FCloseFile (FILE *f);
 void	FS_Read (void *buffer, int len, FILE *f);
 // properly handles partial reads
 
-//--int		FS_LoadFile (char *path, void **buffer);
+//--void*	FS_LoadFile (const char *path, unsigned *len = NULL);
 // a null buffer will just return the file length without loading
 // a -1 length is not present
 //--void	FS_FreeFile (void *buffer);
@@ -950,7 +942,7 @@ typedef struct
 	void		*file;				// buffer, returned by FS_LoadFile()
 	mapType_t	type;
 	unsigned	checksum;
-	int			length;
+	unsigned	length;
 	void		*extraChain;
 
 	// entstring
@@ -1051,7 +1043,18 @@ extern bspfile_t *map_bspfile;
 char *ProcessEntstring (char *entString);
 
 
+
+#include "../client/ref_decl.h"
 #include "../client/ref_defs.h"
+
+inline void *operator new (size_t size)
+{
+	return appMalloc (size);
+}
+inline void operator delete (void *ptr)
+{
+	appFree (ptr);
+}
 
 
 /*-----------------------------------------------------------------------------

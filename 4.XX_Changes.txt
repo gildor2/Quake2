@@ -144,6 +144,7 @@ Console/Menu
 - improved console command complementation:
   - command/variable/alias list when partial match
   - complete "map " / "demomap " with a list of available maps/demos
+  - complete "game" with a list of available mods
   - complete "variable_name " with its value
   - complete "alias" with its name / value
   - complete "bind key" with its binding

@@ -66,10 +66,10 @@ void DrawString (int x, int y, const char *s)
 {
 	int color, c;
 
-	color = 7;
+	color = C_WHITE;
 	while (c = *s++)
 	{
-		if (c == '^')
+		if (c == COLOR_ESCAPE)
 		{
 			int col;
 
@@ -81,10 +81,7 @@ void DrawString (int x, int y, const char *s)
 				continue;
 			}
 		}
-//		if (color != 7 && con_colorText->integer)
-			re.DrawCharColor (x, y, c, color);
-//		else
-//			re.DrawCharColor (x, y, c, 7);
+		re.DrawChar (x, y, c, color);
 		x += CHAR_WIDTH;
 	}
 }
@@ -175,8 +172,8 @@ static void DrawDebugGraph (void)
 		v = v * graphscale->value + graphshift->value;
 
 		if (v < 0)
-			v += graphheight->integer * (1 + Q_round (-v / graphheight->value));
-		h = Q_round(v) % graphheight->integer;
+			v += graphheight->integer * (1 + appRound (-v / graphheight->value));
+		h = appRound(v) % graphheight->integer;
 		re.DrawFill (x+w-1-a, y - h, 1,	h, color);
 	}
 }
@@ -259,6 +256,8 @@ void SCR_DrawCenterString (void)
 	int		l, j, x, y;
 	int		remaining;
 
+	if (!cl_draw2d->integer) return;
+
 	// the finale prints the characters one at a time
 	remaining = BIG_NUMBER;
 
@@ -266,7 +265,7 @@ void SCR_DrawCenterString (void)
 	start = scr_centerstring;
 
 	if (scr_center_lines <= 4)
-		y = Q_round (viddef.height * 0.35f);
+		y = appRound (viddef.height * 0.35f);
 	else
 		y = 48;
 
@@ -279,7 +278,7 @@ void SCR_DrawCenterString (void)
 		x = (viddef.width - l*8)/2;
 		for (j = 0; j < l; j++, x+=8)
 		{
-			re_DrawChar (x, y, start[j]);
+			re.DrawChar (x, y, start[j]);
 			if (!remaining--)
 				return;
 		}
@@ -320,8 +319,8 @@ static void SCR_CalcVrect (void)
 
 	frac = Cvar_Clamp (scr_viewsize, 40, 100) / 100.0f;
 
-	scr_vrect.width = Q_round (viddef.width * frac);
-	scr_vrect.height = Q_round (viddef.height * frac);
+	scr_vrect.width = appRound (viddef.width * frac);
+	scr_vrect.height = appRound (viddef.height * frac);
 
 	scr_vrect.width &= ~7;		// align(8)
 	scr_vrect.height &= ~1;		// align(2)
@@ -532,7 +531,7 @@ static void DrawLoadingAndConsole (bool allowNotifyArea)
 
 				re.DrawStretchPic (0, 0, viddef.width, viddef.height, "conback");
 				re.DrawGetPicSize (&w, &h, "loading");
-				re.DrawPicColor ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading", 7);
+				re.DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading");
 			}
 			Con_DrawNotify (false);
 			allowNotifyArea = false;
@@ -775,7 +774,7 @@ static void DrawHUDString (char *string, int x0, int y, int centerwidth, int col
 		x = centerwidth ? x0 + (centerwidth - width * CHAR_WIDTH) / 2 : x0;
 		for (i = 0; i < width; i++)
 		{
-			re.DrawCharColor (x, y, *string++, color);
+			re.DrawChar (x, y, *string++, color);
 			x += CHAR_WIDTH;
 		}
 		if (*string)
@@ -813,7 +812,7 @@ static void DrawField (int x, int y, int color, int width, int value)
 		else
 			frame = *ptr -'0';
 
-		re.DrawPicColor (x, y, sb_nums[color][frame], 7);
+		re.DrawPic (x, y, sb_nums[color][frame]);
 		x += HUDCHAR_WIDTH;
 		ptr++;
 		l--;
@@ -903,7 +902,7 @@ void SCR_ExecuteLayoutString (char *s)
 			if (value >= MAX_IMAGES)
 				Com_DropError ("Pic >= MAX_IMAGES");
 			if (cl.configstrings[CS_IMAGES+value])
-				re.DrawPicColor (x, y, cl.configstrings[CS_IMAGES+value], 7);
+				re.DrawPic (x, y, cl.configstrings[CS_IMAGES+value]);
 		}
 		else if (!strcmp (token, "client"))
 		{	// draw a deathmatch client block
@@ -921,15 +920,15 @@ void SCR_ExecuteLayoutString (char *s)
 			ping = atoi (COM_Parse (&s));
 			time = atoi (COM_Parse (&s));
 
-			DrawString (x+32, y, va("^2%s", ci->name));
+			DrawString (x+32, y, va(S_GREEN"%s", ci->name));
 			DrawString (x+32, y+8,  "Score: ");
-			DrawString (x+32+7*8, y+8,  va("^2%i", score));
+			DrawString (x+32+7*8, y+8,  va(S_GREEN"%i", score));
 			DrawString (x+32, y+16, va("Ping:  %i", ping));
 			DrawString (x+32, y+24, va("Time:  %i", time));
 
 			if (!ci->icon)
 				ci = &cl.baseclientinfo;
-			re.DrawPicColor (x, y, ci->iconname, 7);
+			re.DrawPic (x, y, ci->iconname);
 		}
 		else if (!strcmp (token, "ctf"))
 		{	// draw a ctf client block
@@ -951,13 +950,13 @@ void SCR_ExecuteLayoutString (char *s)
 			Com_sprintf (ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, ci->name);
 
 			if (value == cl.playernum)
-				DrawString (x, y, va("^1%s", block));
+				DrawString (x, y, va(S_RED"%s", block));
 			else
 				DrawString (x, y, block);
 		}
 		else if (!strcmp (token, "picn"))
 		{	// draw a pic from a name
-			re.DrawPicColor (x, y, COM_Parse (&s), 7);
+			re.DrawPic (x, y, COM_Parse (&s));
 		}
 		else if (!strcmp (token, "num"))
 		{	// draw a number
@@ -979,7 +978,7 @@ void SCR_ExecuteLayoutString (char *s)
 				color = 1;
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 1)
-				re.DrawPicColor (x, y, "field_3", 7);
+				re.DrawPic (x, y, "field_3");
 
 			DrawField (x, y, color, width, value);
 		}
@@ -997,7 +996,7 @@ void SCR_ExecuteLayoutString (char *s)
 				continue;	// negative number = don't show
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 4)
-				re.DrawPicColor (x, y, "field_3", 7);
+				re.DrawPic (x, y, "field_3");
 
 			DrawField (x, y, color, width, value);
 		}
@@ -1012,7 +1011,7 @@ void SCR_ExecuteLayoutString (char *s)
 			color = 0;	// green
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 2)
-				re.DrawPicColor (x, y, "field_3", 7);
+				re.DrawPic (x, y, "field_3");
 
 			DrawField (x, y, color, width, value);
 		}
@@ -1027,13 +1026,13 @@ void SCR_ExecuteLayoutString (char *s)
 			DrawString (x, y, cl.configstrings[index]);
 		}
 		else if (!strcmp (token, "cstring"))
-			DrawHUDString (COM_Parse (&s), x, y, 320, 7);
+			DrawHUDString (COM_Parse (&s), x, y, 320, C_WHITE);
 		else if (!strcmp (token, "cstring2"))
-			DrawHUDString (COM_Parse (&s), x, y, 320, 2);
+			DrawHUDString (COM_Parse (&s), x, y, 320, C_GREEN);
 		else if (!strcmp (token, "string"))
 			DrawString (x, y, COM_Parse (&s));
 		else if (!strcmp (token, "string2"))
-			DrawString (x, y, va("^2%s", COM_Parse (&s)));
+			DrawString (x, y, va(S_GREEN"%s", COM_Parse (&s)));
 		else if (!strcmp (token, "if"))
 		{	// draw a number
 			value = cl.frame.playerstate.stats[atoi (COM_Parse (&s))];

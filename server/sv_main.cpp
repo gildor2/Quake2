@@ -646,8 +646,8 @@ void SV_CheckTimeouts (void)
 	int			zombiepoint;
 
 	guard(SV_CheckTimeouts);
-	droppoint = svs.realtime - Q_round (timeout->value * 1000);
-	zombiepoint = svs.realtime - Q_round (zombietime->value * 1000);
+	droppoint = svs.realtime - appRound (timeout->value * 1000);
+	zombiepoint = svs.realtime - appRound (zombietime->value * 1000);
 
 	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 	{
@@ -734,7 +734,7 @@ void SV_PostprocessFrame (void)
 /*				else if (footsteptype > MATERIAL_WATER)
 				{	//!! DEBUG !! (and hack) - should not happen
 					developer->integer = 2;
-					Com_DPrintf ("^1Bad material sound: idx=%d", footsteptype);
+					Com_DPrintf (S_RED"Bad material sound: idx=%d", footsteptype);
 					ent->s.event = 0;
 				}
 */				else if (ent->s.event == EV_FOOTSTEP)
@@ -1105,7 +1105,7 @@ void SV_Frame (float msec)
 
 //	DrawTextLeft(va("time: %10d rf: %10.5f d: %10.4f ri:%10d", sv.time, svs.realtimef, msec, svs.realtime),1,1,1);//!!
 	svs.realtimef += msec;
-	svs.realtime = Q_floor (svs.realtimef);
+	svs.realtime = appFloor (svs.realtimef);
 
 	// keep the random time dependent (??)
 	rand ();
@@ -1389,7 +1389,7 @@ void SV_Shutdown (char *finalmsg, bool reconnect)
 			MSG_WriteByte (&net_message, svc_print);
 			MSG_WriteByte (&net_message, PRINT_HIGH);
 			if (cl->newprotocol && !reconnect)	// colorize exit message
-				MSG_WriteString (&net_message, va("^1%s", finalmsg));
+				MSG_WriteString (&net_message, va(S_RED"%s", finalmsg));
 			else
 				MSG_WriteString (&net_message, finalmsg);
 			MSG_WriteByte (&net_message, reconnect ? svc_reconnect : svc_disconnect);
@@ -1399,7 +1399,7 @@ void SV_Shutdown (char *finalmsg, bool reconnect)
 	}
 
 	Master_Shutdown ();
-	SV_ShutdownGameProgs ();
+	SV_ShutdownGameLibrary ();
 
 	// free current level
 	if (sv.demofile)
@@ -1409,9 +1409,9 @@ void SV_Shutdown (char *finalmsg, bool reconnect)
 
 	// free server static data
 	if (svs.clients)
-		Z_Free (svs.clients);
+		appFree (svs.clients);
 	if (svs.client_entities)
-		Z_Free (svs.client_entities);
+		appFree (svs.client_entities);
 	if (svs.demofile)
 		fclose (svs.demofile);
 	memset (&svs, 0, sizeof(svs));

@@ -96,7 +96,7 @@ bool CL_CheckOrDownloadFile (char *filename)
 	for (i = 0; i < numCheckedNames; i++)
 		if (!strcmp (name, checkedNames[i]))
 		{
-//			Com_Printf("^1chk: %s\n", name);//!!
+//			Com_Printf(S_RED"chk: %s\n", name);//!!
 			return true;	// already checked, return "found" even if not found
 		}
 	// register new name
@@ -109,7 +109,7 @@ bool CL_CheckOrDownloadFile (char *filename)
 		{
 			char	*s;
 
-//			Com_Printf("^2new: %s\n", name);//!!
+//			Com_Printf(S_GREEN"new: %s\n", name);//!!
 			s = checkedNames[numCheckedNames++] = &checkNameCache[nextCheckCachePos];
 			strcpy (s, name);
 			nextCheckCachePos += len + 1;
@@ -405,7 +405,7 @@ void CL_ParseServerData (void)
 	{
 		// seperate the printfs so the server message can have a color
 		Com_Printf("\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
-		Com_Printf ("^1%s\n", str);				// display map message
+		Com_Printf (S_RED"%s\n", str);				// display map message
 
 		// need to prep refresh at next oportunity
 		cl.refresh_prepped = false;
@@ -759,7 +759,7 @@ void CL_ParseServerMessage (void)
 			if (MSG_ReadByte (&net_message) == PRINT_CHAT)
 			{
 				S_StartLocalSound ("misc/talk.wav");
-				s = "^2";
+				s = S_GREEN;
 			}
 			else
 				s = "";

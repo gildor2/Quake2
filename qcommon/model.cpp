@@ -328,8 +328,7 @@ bspfile_t *LoadBspFile (char *filename, bool clientload, unsigned *checksum)
 
 	memset (&bspfile, 0, sizeof(bspfile));
 	strcpy (bspfile.name, filename);
-	bspfile.length = FS_LoadFile (filename, &bspfile.file);
-	if (!bspfile.file)
+	if (!(bspfile.file = (byte*) FS_LoadFile (filename, &bspfile.length)))
 	{
 		bspfile.name[0] = 0;
 		Com_DropError ("Couldn't load %s", filename);
@@ -513,7 +512,7 @@ static void WriteEntity (char **dst)
 			(*dst) += Com_sprintf (*dst, 1024, "\"%s\" \"%s\"\n", entity[i].name, entity[i].value);
 	strcpy (*dst, "}\n"); (*dst) += 2;
 #ifdef SHOW_WRITE
-	Com_Printf ("^6%s", txt);
+	Com_Printf (S_CYAN"%s", txt);
 #endif
 }
 
@@ -738,7 +737,7 @@ static bool ProcessEntity ()
 				// remove from list
 				bspfile.slights = slight->next;
 				bspfile.numSlights--;
-//Com_Printf("^1sun: %g %g %g (dst: %g %g %g, org: %g %g %g)\n",VECTOR_ARG(bspfile.sunVec),VECTOR_ARG(dst),VECTOR_ARG(slight->spotDir));
+//Com_Printf(S_RED"sun: %g %g %g (dst: %g %g %g, org: %g %g %g)\n",VECTOR_ARG(bspfile.sunVec),VECTOR_ARG(dst),VECTOR_ARG(slight->spotDir));
 			}
 		}
 		if (!strcmp (classname + 5, "_spot") || FindField ("_spotvector,_spotpoint,_mangle,_spotangle"))
@@ -969,10 +968,11 @@ char *ProcessEntstring (char *entString)
 {
 	char	*dst, *dst2, *src;
 	// patch (temporary !!)
-	int		plen;
+	unsigned plen;
 	char	*patch;
 
-	plen = FS_LoadFile (va("%s.add", bspfile.name), (void**)&patch) + 1;
+	patch = (char*) FS_LoadFile (va("%s.add", bspfile.name), &plen);
+	plen++;	// add 1 byte for trailing zero
 
 	dst = dst2 = (char*)AllocChainBlock (bspfile.extraChain, strlen (entString) + 1 + plen);
 

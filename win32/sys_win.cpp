@@ -659,7 +659,7 @@ static void CheckCpuCaps (void)
 #pragma warning (push)
 #pragma warning (disable : 4035)
 #pragma warning (disable : 4715)
-__inline __int64 cycles ()
+inline __int64 cycles ()
 {
 	__asm
 	{
@@ -881,7 +881,7 @@ void Sys_ConsoleOutput (char *string)
 	while (c = string[0])
 	{
 		// parse color info
-		if (c == '^' && string[1] >= '0' && string[1] <= '7')
+		if (c == COLOR_ESCAPE && string[1] >= '0' && string[1] <= '7')
 		{
 			static const byte colorTable[8] = {0, 4, 2, 6, 1, 5, 3, 7};
 			SetConsoleTextAttribute (houtput, colorTable[string[1] - '0']);
@@ -981,6 +981,7 @@ void Sys_UnloadGame (void)
 	guard(Sys_UnloadGame);
 	if (!FreeLibrary (game_library))
 		Com_FatalError ("Cannot unload game library");
+	Com_DPrintf ("FreeLibrary(game.dll)\n");
 	game_library = NULL;
 	unguard;
 }
@@ -1029,7 +1030,9 @@ void *Sys_GetGameAPI (void *parms)
 		return NULL;
 	}
 
+	guard(GetGameAPI);
 	return pGetGameAPI (parms);
+	unguard;
 
 	unguard;
 }
@@ -1151,7 +1154,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 #ifndef DEDICATED_ONLY
 		MessageBox (NULL, GErr.history, APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
 #else
-		Sys_ConsoleOutput ("\n\n^1--------------------\n" APPNAME " fatal error\n");
+		Sys_ConsoleOutput ("\n\n"S_RED"--------------------\n" APPNAME " fatal error\n");
 		Sys_ConsoleOutput (GErr.history);
 #endif
 	}

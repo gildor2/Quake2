@@ -149,8 +149,7 @@ static void CMod_ReadSurfMaterials (char *filename)
 		surfMaterialList = NULL;
 	}
 
-	FS_LoadFile (filename, (void**)&file);
-	if (!file)
+	if (!(file = (char*) FS_LoadFile (filename)))
 	{
 		Com_DPrintf ("ReadSurfMaterials: %s is not found\n", filename);
 		return;

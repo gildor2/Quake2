@@ -42,7 +42,7 @@ int		mod_numknown;
 model_t	mod_inline[MAX_MOD_KNOWN];
 
 int		registration_sequence;
-int		modfilelen;
+static unsigned modfilelen;
 
 //===============================================================================
 
@@ -161,8 +161,7 @@ model_t *Mod_ForName (char *name, bool crash)
 	else
 	{
 		// load the file
-		modfilelen = FS_LoadFile (mod->name, (void **)&buf);
-		if (!buf)
+		if (!(buf = (unsigned*) FS_LoadFile (mod->name, &modfilelen)))
 		{
 			if (crash)
 				Com_DropError ("Mod_NumForName: %s not found", mod->name);
@@ -543,8 +542,8 @@ void CalcSurfaceExtents (msurface_t *s)
 
 	for (i=0 ; i<2 ; i++)
 	{
-		bmins[i] = Q_floor(mins[i]/16);
-		bmaxs[i] = Q_ceil(maxs[i]/16);
+		bmins[i] = appFloor(mins[i]/16);
+		bmaxs[i] = appCeil(maxs[i]/16);
 
 		s->texturemins[i] = bmins[i] * 16;
 		s->extents[i] = (bmaxs[i] - bmins[i]) * 16;

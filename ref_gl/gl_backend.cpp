@@ -236,12 +236,12 @@ static void GenerateColorArray (shaderStage_t *st)
 
 			if (st->alphaGenType == ALPHAGEN_DOT)
 			{
-				min = Q_round (st->alphaMin * 255);
+				min = appRound (st->alphaMin * 255);
 				scale = (st->alphaMax - st->alphaMin) * 255;
 			}
 			else
 			{
-				min = Q_round (st->alphaMax * 255);
+				min = appRound (st->alphaMax * 255);
 				scale = (st->alphaMin - st->alphaMax) * 255;
 			}
 			vec = vb->verts;
@@ -258,10 +258,10 @@ static void GenerateColorArray (shaderStage_t *st)
 					d = DotProduct (v, norm);
 #if 0
 					d = d * d;
-					dst->c[3] = Q_round (d * scale) + min;
+					dst->c[3] = appRound (d * scale) + min;
 #else
 					if (d < 0)	dst->c[3] = 0;
-					else		dst->c[3] = Q_round (d * scale) + min;
+					else		dst->c[3] = appRound (d * scale) + min;
 #endif
 				}
 			}
@@ -672,7 +672,7 @@ static void PreprocessShader (shader_t *sh)
 			image_t	*img;
 
 			if (currentEntity == &gl_entities[ENTITYNUM_WORLD] || !stage->frameFromEntity)
-				n = Q_round (vp.time * stage->animMapFreq);
+				n = appRound (vp.time * stage->animMapFreq);
 			else
 				n = currentEntity->frame;
 			img = st->st.mapImage[0] = stage->mapImage[n % stage->numAnimTextures];
@@ -743,7 +743,7 @@ static void PreprocessShader (shader_t *sh)
 #define P stage->rgbGenWave
 				c1 = PERIODIC_FUNC(mathFuncs[stage->rgbGenWave.type], P.freq * vp.time + P.phase) * P.amp + P.base;
 #undef P
-				c2 = Q_round (c1 * 255);
+				c2 = appRound (c1 * 255);
 				c2 = bound(c2, 0, 255);
 				st->st.rgbaConst.c[0] = st->st.rgbaConst.c[1] = st->st.rgbaConst.c[2] = c2;
 				st->st.rgbGenType = RGBGEN_CONST;
@@ -1584,7 +1584,7 @@ static void FlashColor (void)
 {
 	int		i;
 
-	i = Q_round (vp.time / 3 * TABLE_SIZE);
+	i = appRound (vp.time / 3 * TABLE_SIZE);
 	glColor3f (sinTable[i & TABLE_MASK] / 2 + 0.5,
 				sinTable[i + 100 & TABLE_MASK] / 2 + 0.5,
 				sinTable[600 - i & TABLE_MASK] / 2 + 0.5);
@@ -1856,7 +1856,7 @@ static void DrawParticles (particle_t *p)
 		else
 			scale = scale / 500.0f + 1.0f;
 
-		alpha = Q_round (p->alpha * 255);
+		alpha = appRound (p->alpha * 255);
 		alpha = bound(alpha, 0, 255);
 
 		switch (p->type)
@@ -2295,13 +2295,13 @@ CVAR_END
 	GL_ClearBuffers ();
 
 	vbSize = sizeof(vertexBuffer_t) + (gl_config.maxActiveTextures-1) * sizeof(bufTexCoord_t) * MAX_VERTEXES;	// space for 1 texcoord already reserved
-	vb = (vertexBuffer_t*)Z_Malloc (vbSize);
-	Com_Printf("^1**** buf: %08X (%d bytes) ****\n", vb, vbSize);//?? should be 16-byte aligned
+	vb = (vertexBuffer_t*)appMalloc (vbSize);
+	Com_Printf(S_RED"**** buf: %08X (%d bytes) ****\n", vb, vbSize);//?? should be 16-byte aligned
 }
 
 
 void GL_ShutdownBackend (void)
 {
-	Z_Free (vb);
+	appFree (vb);
 	vb = NULL;
 }
