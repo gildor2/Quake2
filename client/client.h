@@ -51,11 +51,35 @@ typedef struct
 	int				parse_entities;	// non-masked index into cl_parse_entities array
 } frame_t;
 
+typedef struct	//?? : entity_state_t
+{
+	// these fields are copied from entity_state_t
+	int		number;				// edict index
+	vec3_t	origin;
+	vec3_t	angles;
+	vec3_t	old_origin;			// for lerping
+	int		modelindex, modelindex2, modelindex3, modelindex4;
+	int		frame;
+	int		skinnum;
+	unsigned int effects;
+	int		renderfx;
+	int		solid;				// encoded bbox
+	int		sound;
+	int		event;
+	// additional fields
+	qboolean valid;				// when "false", additional fields are not initialized
+	vec3_t	center;
+	vec3_t	axis[3];
+	vec3_t	mins, maxs;			// decoded bbox
+	float	radius;
+} entityState_t;
+
+
 typedef struct
 {
-	entity_state_t	baseline;		// delta from this if not from a previous frame
-	entity_state_t	current;
-	entity_state_t	prev;			// will always be valid, but might just be a copy of current
+	entityState_t	baseline;		// delta from this if not from a previous frame
+	entityState_t	current;
+	entityState_t	prev;			// will always be valid, but might just be a copy of current
 
 	int			serverframe;		// if not current, this ent isn't in the frame
 
@@ -309,7 +333,7 @@ extern	centity_t	cl_entities[MAX_EDICTS];
 // entities, so that when a delta compressed message arives from the server
 // it can be un-deltad from the original
 #define	MAX_PARSE_ENTITIES	1024
-extern	entity_state_t	cl_parse_entities[MAX_PARSE_ENTITIES];
+extern	entityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 
 //=============================================================================
 
@@ -412,7 +436,7 @@ void CL_IonripperTrail (vec3_t start, vec3_t end);
 
 
 void CL_ParticleSteamEffect2(cl_sustain_t *self);
-void CL_TeleporterParticles (entity_state_t *ent);
+void CL_TeleporterParticles (entityState_t *ent);
 void CL_ParticleEffect (vec3_t org, vec3_t dir, int color, int count);
 void CL_ParticleEffect2 (vec3_t org, vec3_t dir, int color, int count);
 void CL_ParticleEffect3 (vec3_t org, vec3_t dir, int color, int count);
@@ -445,7 +469,7 @@ void CL_WidowSplash (vec3_t org);
 // ========
 
 int CL_ParseEntityBits (unsigned *bits);
-void CL_ParseDelta (entity_state_t *from, entity_state_t *to, int number, int bits);
+void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, int bits, qboolean baseline);
 void CL_ParseFrame (void);
 
 void CL_ParseTEnt (void);
@@ -577,7 +601,7 @@ void CL_RocketTrail (vec3_t start, vec3_t end, centity_t *old);
 void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags);
 void CL_FlyEffect (centity_t *ent, vec3_t origin);
 void CL_BfgParticles (entity_t *ent);
-void CL_EntityEvent (entity_state_t *ent);
+void CL_EntityEvent (entityState_t *ent);
 // RAFAEL
 void CL_TrapParticles (entity_t *ent);
 

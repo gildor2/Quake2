@@ -145,6 +145,8 @@ cvar_t	*gl_3dlabs_broken;
 
 cvar_t	*r_fullscreen;
 cvar_t	*r_gamma;
+cvar_t	*r_brightness;
+cvar_t	*r_contrast;
 cvar_t	*vid_ref;
 
 /*
@@ -825,8 +827,6 @@ r_newrefdef must be set before the first call
 
 void R_RenderView (refdef_t *fd)
 {
-	char buf[1024];
-
 	if (r_norefresh->integer)
 		return;
 
@@ -865,17 +865,13 @@ void R_RenderView (refdef_t *fd)
 
 	if (r_speeds->integer)
 	{
-		Com_sprintf (buf, sizeof(buf), "%4i wpoly %4i epoly %i tex %i lmaps",
-			c_brush_polys,
-			c_alias_polys,
-			c_visible_textures,
-			c_visible_lightmaps);
-		DrawTextRight (buf, 1, 0.5, 0);
-		Com_sprintf (buf, sizeof(buf), "%4i visleafs %4i frustleafs of %4i total",
-			c_visibleleafs,
-			c_leafsinfrustum,
-			r_worldmodel->numleafs);
-		DrawTextRight (buf, 1, 0.5, 0);
+		DrawTextRight (va("%4i wpoly %4i epoly %i tex %i lmaps",
+			c_brush_polys, c_alias_polys, c_visible_textures, c_visible_lightmaps),
+			1, 0.5, 0);
+		if (!(r_newrefdef.rdflags & RDF_NOWORLDMODEL))
+			DrawTextRight (va("%4i visleafs %4i frustleafs of %4i total",
+				c_visibleleafs, c_leafsinfrustum, r_worldmodel->numleafs),
+				1, 0.5, 0);
 	}
 }
 
@@ -1063,6 +1059,8 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(r_fullscreen, 1, CVAR_ARCHIVE),
 	CVAR_VAR(r_gamma, 1, CVAR_ARCHIVE),
+	CVAR_VAR(r_brightness, 1, CVAR_ARCHIVE),
+	CVAR_VAR(r_contrast, 1, CVAR_ARCHIVE),
 	CVAR_VAR(vid_ref, soft, CVAR_ARCHIVE)
 CVAR_END
 
@@ -1432,11 +1430,14 @@ void R_BeginFrame( float camera_separation )
 	/*
 	** update hardware gamma (if present)
 	*/
-	if ((r_gamma->modified || intensity->modified) && GLimp_HasGamma ())
+//	if ((r_gamma->modified || intensity->modified) && GLimp_HasGamma ())
+	if ((r_gamma->modified || r_contrast->modified || r_brightness->modified) && GLimp_HasGamma ())
 	{
+//		intensity->modified = false;
+		GLimp_SetGamma (r_gamma->value, 0 /* intensity->value */);
 		r_gamma->modified = false;
-		intensity->modified = false;
-		GLimp_SetGamma (r_gamma->value, intensity->value);
+		r_contrast->modified = false;
+		r_brightness->modified = false;
 	}
 
 	/*
@@ -1687,8 +1688,11 @@ void	Draw_ConCharColor (int x, int y, int c, int color)
 
 static void Screenshot (int flags, char *name)
 {
+	static char shotName[MAX_QPATH];
+
+	strcpy (shotName, name);
 	gl_screenshotFlags = flags;
-	gl_screenshotName = name;
+	gl_screenshotName = shotName;
 }
 
 static float GetClientLight (void)

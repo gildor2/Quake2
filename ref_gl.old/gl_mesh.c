@@ -22,7 +22,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "gl_local.h"
 
 
-//#define USE_SHADEDOTS
+#define USE_SHADEDOTS
+
+#define POWERSUIT_SCALE		4.0f
 
 /*
 =============================================================
@@ -129,7 +131,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 
 	// move should be the delta back to the previous frame * backlerp
 	VectorSubtract (currententity->oldorigin, currententity->origin, delta);
-	AngleVectors (currententity->angles, vectors[0], vectors[1], vectors[2]);
+	AngleVectors (currententity->angles, VECTOR_ARGS(vectors));
 
 	move[0] = DotProduct (delta, vectors[0]);	// forward
 	move[1] = -DotProduct (delta, vectors[1]);	// left
@@ -158,7 +160,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 		qglVertexPointer( 3, GL_FLOAT, sizeof(s_lerped[0]), s_lerped);
 
 		if (currententity->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
-			qglColor4f (shadelight[0], shadelight[1], shadelight[2], alpha);
+			qglColor4f (VECTOR_ARGS(shadelight), alpha);
 		else
 		{
 			qglEnableClientState( GL_COLOR_ARRAY );
@@ -260,7 +262,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 					index_xyz = order[2];
 					order += 3;
 
-					qglColor4f( shadelight[0], shadelight[1], shadelight[2], alpha);
+					qglColor4f( VECTOR_ARGS(shadelight), alpha);
 					qglVertex3fv (s_lerped[index_xyz]);
 
 				} while (--count);
@@ -284,7 +286,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 
 					qglColor4f (l*shadelight[0], l*shadelight[1], l*shadelight[2], alpha);
 #else
-					qglColor4f (shadelight[0], shadelight[1], shadelight[2], alpha);
+					qglColor4f (VECTOR_ARGS(shadelight), alpha);
 #endif
 					qglVertex3fv (s_lerped[index_xyz]);
 				} while (--count);
@@ -455,7 +457,7 @@ static qboolean R_CullAliasModel( vec3_t bbox[8], entity_t *e )
 	*/
 	VectorCopy( e->angles, angles );
 	angles[YAW] = -angles[YAW];
-	AngleVectors( angles, vectors[0], vectors[1], vectors[2] );
+	AngleVectors( angles, VECTOR_ARGS(vectors) );
 
 	for ( i = 0; i < 8; i++ )
 	{
@@ -697,7 +699,10 @@ void R_DrawAliasModel (entity_t *e)
 	}
 	if (!skin)
 		skin = r_notexture;	// fallback...
-	GL_Bind(skin->texnum);
+	if (!r_lightmap->integer)
+		GL_Bind(skin->texnum);
+	else
+		qglDisable (GL_TEXTURE_2D);
 
 	// draw it
 
@@ -764,4 +769,6 @@ void R_DrawAliasModel (entity_t *e)
 		qglPopMatrix ();
 	}
 	qglColor4f (1,1,1,1);
+	if (r_lightmap->integer)
+		qglEnable (GL_TEXTURE_2D);
 }

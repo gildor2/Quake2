@@ -1,3 +1,0 @@
-- mipmap generation (cubic filters):
-  D. Mitchell, A. Netravali, "Reconstruction Filters in Computer Graphics", Computer Graphics,
-    Volume 22, pp. 221-228, 1988.

@@ -99,8 +99,6 @@ void	SZ_Print (sizebuf_t *buf, char *data);	// strcats onto the sizebuf
 
 //============================================================================
 
-struct usercmd_s;
-struct entity_state_s;
 
 void	MSG_WriteChar (sizebuf_t *sb, int c);
 void	MSG_WriteByte (sizebuf_t *sb, int c);
@@ -112,8 +110,8 @@ void	MSG_WriteCoord (sizebuf_t *sb, float f);
 void	MSG_WritePos (sizebuf_t *sb, vec3_t pos);
 void	MSG_WriteAngle (sizebuf_t *sb, float f);
 void	MSG_WriteAngle16 (sizebuf_t *sb, float f);
-void	MSG_WriteDeltaUsercmd (sizebuf_t *sb, struct usercmd_s *from, struct usercmd_s *cmd);
-void	MSG_WriteDeltaEntity (struct entity_state_s *from, struct entity_state_s *to, sizebuf_t *msg, qboolean force, qboolean newentity);
+void	MSG_WriteDeltaUsercmd (sizebuf_t *sb, usercmd_t *from, usercmd_t *cmd);
+void	MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *msg, qboolean force, qboolean newentity);
 void	MSG_WriteDir (sizebuf_t *sb, vec3_t vector);
 
 
@@ -131,7 +129,7 @@ float	MSG_ReadCoord (sizebuf_t *sb);
 void	MSG_ReadPos (sizebuf_t *sb, vec3_t pos);
 float	MSG_ReadAngle (sizebuf_t *sb);
 float	MSG_ReadAngle16 (sizebuf_t *sb);
-void	MSG_ReadDeltaUsercmd (sizebuf_t *sb, struct usercmd_s *from, struct usercmd_s *cmd);
+void	MSG_ReadDeltaUsercmd (sizebuf_t *sb, usercmd_t *from, usercmd_t *cmd);
 
 void	MSG_ReadDir (sizebuf_t *sb, vec3_t vector);
 
@@ -315,6 +313,10 @@ enum clc_ops_e
 //==============================================
 
 // entity_state_t communication
+
+#define U_MODEL_N	(U_MODEL|U_MODEL2|U_MODEL3|U_MODEL4)
+#define U_ORIGIN_N	(U_ORIGIN1|U_ORIGIN2|U_ORIGIN3)
+#define U_ANGLE_N	(U_ANGLE1|U_ANGLE2|U_ANGLE3)
 
 // try to pack the common update flags into the first byte
 #define	U_ORIGIN1	(1<<0)
@@ -679,6 +681,7 @@ int		CM_HeadnodeForBox (vec3_t mins, vec3_t maxs);
 // returns an ORed contents mask
 int		CM_PointContents (vec3_t p, int headnode);
 int		CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t angles);
+int		CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t *axis);
 
 //--trace_t	CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
 trace_t	CM_TransformedBoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,	int headnode, int brushmask, vec3_t origin, vec3_t angles);
@@ -810,6 +813,7 @@ void	Com_EndRedirect (void);
 void 	Com_Quit (void);
 
 //--qboolean MatchWildcard (char *name, char *mask);
+//--qboolean MatchWildcard2 (char *name, char *mask, qboolean ignoreCase);
 
 int		Com_ServerState (void);		// this should have just been a cvar...
 void	Com_SetServerState (int state);
@@ -906,11 +910,34 @@ typedef struct lightFlare_s
 {
 	vec3_t	origin;
 	float	size;
-	float	radius;
+	float	radius;					// -1 for sunflare
 	byte	color[4];
 	byte	style;
+	int		model;
 	struct lightFlare_s *next;
 } lightFlare_t;
+
+
+// static map light
+
+typedef enum {sl_linear, sl_inverse, sl_inverse2} slightType_t;
+
+typedef struct slight_s
+{
+	slightType_t type;
+	byte	spot;					// bool
+	vec3_t	origin;
+	vec3_t	color;
+	byte	style;
+	float	intens;
+	// arghrad fields
+	float	focus;
+	float	fade;					// for linear lights only: scale the distance
+	// for spotlights
+	float	spotDot;
+	vec3_t	spotDir;
+	struct slight_s *next;
+} slight_t;
 
 
 typedef enum {map_q2, map_kp, map_hl} mapType_t;
@@ -983,6 +1010,10 @@ typedef struct
 	int			numFlares;
 	lightFlare_t *flares;
 
+	int			numSlights;
+	slight_t	*slights;
+
+	//?? remove
 	fogMode_t	fogMode;
 	float		fogColor[3];
 	union {
@@ -994,6 +1025,13 @@ typedef struct
 			float	fogEnd;
 		};
 	};
+
+	float	sunLight;		// 0 if no sun
+	vec3_t	sunColor;
+	vec3_t	sunVec;
+	vec3_t	sunAmbient;		// ambient light from sky surfaces
+	vec3_t	sunSurface;
+	vec3_t	ambientLight;	// global ambient light
 } bspfile_t;
 
 

@@ -2,9 +2,7 @@
 #include "gl_model.h"
 #include "gl_backend.h"
 #include "gl_shader.h"
-
-
-#define map		gl_worldModel
+#include "gl_math.h"
 
 
 static int visFrame, drawFrame;
@@ -27,9 +25,6 @@ float		gl_fogDensity;
 float		gl_fogStart, gl_fogEnd;
 
 
-#define SATURATE(c,l,v) c = (l+0.5+(c-l)*v); c = bound(c, 0, 255);
-
-
 /* Culling on BSP:
  *   1. PVS
  *   2. frustum cull leafs
@@ -40,7 +35,7 @@ float		gl_fogStart, gl_fogEnd;
  * Culling triangle models:
  *   1. frustum cull entire model
  *
- * TODO:
+ * TODO: ??
  *   - oclusion culling (leafs, models, surfaces)
  *   - trisurfs backface culling
  *   ? weapon model tris frustum culling (with lower plane)
@@ -66,7 +61,7 @@ static int BoxCull (vec3_t mins, vec3_t maxs, int frustumMask)
 		return FRUSTUM_INSIDE;
 
 	res = FRUSTUM_INSIDE;
-	for (i = 0, pl = vp.frustum; i < 4; i++, pl++)
+	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 		if (frustumMask & (1 << i))
 		{
 			int		tmp;
@@ -98,7 +93,7 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 #if 1	// this version FASTER
 	res = 0;
 
-	for (i = 0, mask = 1, fr = vp.frustum; i < 4; i++, mask<<=1, fr++)
+	for (i = 0, mask = 1, fr = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, mask<<=1, fr++)
 	{
 		cplane_t pl;
 
@@ -152,7 +147,7 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 
 	// perform frustum culling
 	res = 0;
-	for (i = 0, mask = 1, fr = vp.frustum; i < 4; i++, mask<<=1, fr++)
+	for (i = 0, mask = 1, fr = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, mask<<=1, fr++)
 	{	// loop by frustum planes
 		int		j, side;
 
@@ -179,8 +174,8 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 	}
 #endif
 
-	if (frustumMask & ~15)			// update frustum mask for entity
-		e->frustumMask = frustumMask & 15;
+	if (frustumMask & ~MAX_FRUSTUM_MASK)	// update frustum mask for entity
+		e->frustumMask = frustumMask & MAX_FRUSTUM_MASK;
 
 	return res;
 }
@@ -194,14 +189,14 @@ static int SphereCull (vec3_t origin, float radius, byte *frustumMask)
 	if (r_nocull->integer)
 	{
 		if (frustumMask)
-			*frustumMask = 15;
+			*frustumMask = MAX_FRUSTUM_MASK;
 		return FRUSTUM_ON;
 	}
 
 	// perform frustum culling
 	ret = 0;
-	mask = frustumMask ? *frustumMask : 15;
-	for (i = 0, pl = vp.frustum, m = 1; i < 4; i++, pl++, m <<= 1)
+	mask = frustumMask ? *frustumMask : MAX_FRUSTUM_MASK;
+	for (i = 0, pl = vp.frustum, m = 1; i < NUM_FRUSTUM_PLANES; i++, pl++, m <<= 1)
 	{	// loop by frustum planes
 		float	dist;
 
@@ -236,33 +231,13 @@ static int PointCull (vec3_t point, int frustumMask)
 	if (!frustumMask)
 		return FRUSTUM_INSIDE;
 
-	for (i = 0, pl = vp.frustum; i < 4; i++, pl++)
+	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 		if (frustumMask & (1 << i))
 		{
 			if (DotProduct (point, pl->normal) - pl->dist < 0)
 				return FRUSTUM_OUTSIDE;
 		}
 	return FRUSTUM_INSIDE;
-}
-
-
-// Project localOrigin to a world coordinate system
-static void ModelToWorldCoord (vec3_t localOrigin, refEntity_t *e, vec3_t center)
-{
-	VectorMA (e->origin, localOrigin[0], e->axis[0], center);
-	VectorMA (center,	 localOrigin[1], e->axis[1], center);
-	VectorMA (center,	 localOrigin[2], e->axis[2], center);
-}
-
-
-static void WorldToModelCoord (vec3_t world, refEntity_t *e, vec3_t local)
-{
-	vec3_t	v;
-	int		i;
-
-	VectorSubtract (world, e->origin, v);
-	for (i = 0; i < 3; i++)
-		local[i] = DotProduct (v, e->axis[i]);
 }
 
 
@@ -346,14 +321,7 @@ static void ClipTraceToEntities (vec3_t start, vec3_t end, int brushmask, trace_
 //DrawTextLeft(va("clip: %s (dist2: %g)", e->model->name, dist2),1,1,1);//!!
 		// trace
 		if (!e->worldMatrix)
-		{
-			// transform start/end to entity coordinate system
-			vec3_t	start2, end2;
-
-			WorldToModelCoord (start, e, start2);
-			WorldToModelCoord (end, e, end2);
-			trace = CM_BoxTrace (start2, end2, zero, zero, im->headnode, brushmask);
-		}
+			trace = CM_TransformedBoxTrace2 (start, end, zero, zero, im->headnode, brushmask, e->origin, e->axis);
 		else
 			trace = CM_BoxTrace (start, end, zero, zero, im->headnode, brushmask);
 
@@ -512,12 +480,9 @@ static node_t *AlphaSphereLeaf (vec3_t origin, float radius)
 
 static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMask, refEntity_t *e)
 {
-	int		i, numDlights, j;
+	int		i, numDlights, j, entNum;
 	refDlight_t *dl;
 	float	*vieworg;
-
-	if (e->worldMatrix)
-		currentEntity = ENTITYNUM_WORLD;
 
 	vieworg = e->modelvieworg;
 
@@ -566,7 +531,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 			// frustum culling
 			if (frustumMask)
 			{
-				if (currentEntity == ENTITYNUM_WORLD)
+				if (e->worldMatrix)
 				{
 					if (BoxCull (pl->mins, pl->maxs, frustumMask) == FRUSTUM_OUTSIDE) CULL_SURF;
 				}
@@ -598,7 +563,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 		surf->dlightMask &= ~mask;	\
 		continue;	\
 	}
-						if (currentEntity == ENTITYNUM_WORLD)
+						if (e->worldMatrix)
 							dl_org = dl->origin;
 						else
 							dl_org = dl->modelOrg;
@@ -647,7 +612,10 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 		}
 		//!! apply fog
 		if (surf->shader->lightmapNumber == LIGHTMAP_VERTEX) numDlights = 0;	// sort all together
-		GL_AddSurfaceToPortal (surf, surf->shader, currentEntity, numDlights);
+		entNum = currentEntity;
+		if (entNum != ENTITYNUM_WORLD && e->worldMatrix && !surf->shader->dependOnEntity)
+			entNum = ENTITYNUM_WORLD;
+		GL_AddSurfaceToPortal (surf, surf->shader, entNum, numDlights);
 	}
 }
 
@@ -674,7 +642,7 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 		dist2min = dist2min * dist2min;
 		if (dist2 >= dist2min) continue;	// too far
 
-		WorldToModelCoord (dl->origin, e, dl->modelOrg);
+		if (!e->worldMatrix) WorldToModelCoord (dl->origin, e, dl->modelOrg);
 		dlightMask |= mask;
 	}
 	// mark surfaces
@@ -702,7 +670,7 @@ static void AddMd3Surfaces (refEntity_t *e)
 	for (i = 0, surf = md3->surf; i < md3->numSurfaces; i++, surf++)
 	{
 		shader_t *shader;
-		//!! dlights, fog
+		//!! fog
 		// choose skin to draw
 		if (e->customShader)
 			shader = e->customShader;
@@ -798,7 +766,7 @@ static void AddBeamSurfaces (refEntity_t *e)
 
 	VectorScale (axis[1], e->beamRadius, dir2);
 	angle = 0;
-	angleStep = M_PI / numParts;
+	angleStep = 0.5f / numParts;					// 0.5 -- PI/2
 	for (i = 0; i < numParts; i++)
 	{
 		surfacePoly_t *p;
@@ -813,8 +781,8 @@ static void AddBeamSurfaces (refEntity_t *e)
 		// rotate dir1 & dir2 vectors
 		VectorCopy (dir2, dir1);
 		angle += angleStep;
-		sx = sin (angle) * e->beamRadius;		//?? do it with tables
-		cx = cos (angle) * e->beamRadius;
+		sx = SIN_FUNC(angle) * e->beamRadius;
+		cx = COS_FUNC(angle) * e->beamRadius;
 		VectorScale (axis[1], cx, dir2);
 		VectorMA (dir2, sx, axis[2], dir2);
 
@@ -857,7 +825,7 @@ static node_t *WalkBspTree (void)
 
 	sptr = 0;
 	node = map.nodes;
-	frustumMask = 0xF;		// check all frustum planes
+	frustumMask = MAX_FRUSTUM_MASK;		// check all frustum planes
 	dlightMask = vp.numDlights >= 32 ? 0xFFFFFFFF : (1 << vp.numDlights) - 1;
 	firstLeaf = NULL;
 	drawOrder = 0;
@@ -909,6 +877,7 @@ static node_t *WalkBspTree (void)
 			CULL_NODE(1);
 			CULL_NODE(2);
 			CULL_NODE(3);
+			CULL_NODE(4);
 #undef CULL_NODE
 		}
 
@@ -1027,60 +996,35 @@ static void DrawEntities (int firstEntity, int numEntities)
 					inlineModel_t *im;
 
 					im = e->model->inlineModel;
-					e->frustumMask = -1;		// for updating
-					ret = SphereCull (im->center, im->radius, &e->frustumMask);
+					e->frustumMask = 0xFF;		// for updating
+					ret = SphereCull (e->center, e->radius, &e->frustumMask);
 					// try to cull bounding sphere (faster than box cull)
 					if (ret == FRUSTUM_OUTSIDE) CULL_ENT;
 					// frustum culling (entire model)
 					if (ret & FRUSTUM_CENTER_OUTSIDE)
 						if (TransformedBoxCull (im->mins, im->maxs, e) == FRUSTUM_OUTSIDE) CULL_ENT2;
 
-					leaf = SphereLeaf (im->center, im->radius);
-					VectorCopy (im->center, center);
+					leaf = SphereLeaf (e->center, e->radius);
 				}
 				break;
 			case MODEL_MD3:
-				{
-					md3Model_t	*md3;
-					md3Frame_t	*frame1, *frame2;
-					int		cull1, cull2;
-					vec3_t	center2;
-
-					md3 = e->model->md3;
-
-					// frustum culling
-					frame1 = md3->frames + e->frame;
-					frame2 = md3->frames + e->oldFrame;
-					ModelToWorldCoord (frame1->localOrigin, e, center);
-					cull1 = SphereCull (center, frame1->radius, NULL);
-					if (frame1 == frame2 && cull1 == FRUSTUM_OUTSIDE)
-						CULL_ENT
-					else
-					{
-						ModelToWorldCoord (frame2->localOrigin, e, center2);
-						cull2 = SphereCull (center2, frame2->radius, NULL);
-						if (cull1 == cull2 && cull1 == FRUSTUM_OUTSIDE) CULL_ENT;
-					}
-					leaf = SphereLeaf (center, frame1->radius);
-				}
+				// frustum culling
+				if (SphereCull (e->center, e->radius, NULL) == FRUSTUM_OUTSIDE) CULL_ENT;
+				leaf = SphereLeaf (e->center, e->radius);
 				break;
 			case MODEL_SP2:
-				leaf = AlphaSphereLeaf (e->origin, e->model->sp2->radius);
-				VectorCopy (e->origin, center);
+				leaf = AlphaSphereLeaf (e->origin, e->radius);
 				break;
 			default:
-				DrawTextLeft ("Bad model type", 1, 0, 0);
+				DrawTextLeft (va("DrawEntities: bad model type %d", e->model->type), 1, 0, 0);
 				continue;
 			}
 		}
 		else if (e->flags & RF_BEAM)
 		{
-			float	radius;
-
 			VectorAdd (e->beamStart, e->beamEnd, center);
-			VectorScale (center, 0.5f, center);
-			radius = VectorDistance (e->beamStart, center);
-			leaf = AlphaSphereLeaf (center, radius);
+			VectorScale (center, 0.5f, e->center);
+			leaf = AlphaSphereLeaf (e->center, VectorDistance (e->beamStart, e->center));
 		}
 		else
 		{
@@ -1103,10 +1047,8 @@ static void DrawEntities (int firstEntity, int numEntities)
 				if (dist2 > e1->dist2)
 				{
 					e->drawNext = e1;
-					if (prev)
-						prev->drawNext = e;
-					else
-						leaf->drawEntity = e;	// insert first
+					if (prev)	prev->drawNext = e;
+					else     	leaf->drawEntity = e;	// insert first
 					break;
 				}
 			if (!e1)	// insert last
@@ -1156,10 +1098,9 @@ static void DrawParticles (particle_t *p)
 
 static void DrawFlares (void)
 {
-	int		i;
 	gl_flare_t	*f;
 
-	for (i = 0, f = map.flares; i < map.numFlares; i++, f++)
+	for (f = map.flares; f ; f = f->next)
 	{
 		qboolean cull;
 		surfaceCommon_t *surf;
@@ -1173,17 +1114,32 @@ static void DrawFlares (void)
 
 		if (f->radius >= 0)
 		{
+			inlineModel_t *im;
+
+			if (f->surf && f->surf->frame != drawFrame) cull = true;
 			VectorCopy (f->origin, flarePos);
+			if (im = f->owner)
+			{	// flare linked to entity - shift it with entity origin
+				vec3_t	tmp;
+
+				// check entity visibility (can add entity origin only when it is valid for current frame)
+				if (!f->surf || cull)
+				{
+					surfaceCommon_t **s;
+					int		i;
+
+					for (i = 0, s = im->faces; i < im->numFaces; i++, s++)
+						if ((*s)->frame == drawFrame) break;
+					if (i == im->numFaces) continue;		// no visible faces - skip flare
+				}
+				VectorAdd (im->mins, im->maxs, tmp);
+				VectorMA (im->center, -0.5f, tmp, tmp);
+				VectorAdd (flarePos, tmp, flarePos);
+//				DrawTextLeft (va("flare shift: %g %g %g -> flarePos: %g %g %g", VECTOR_ARGS(tmp), VECTOR_ARGS(flarePos)),1,1,1);
+			}
 			// perform PVS cull for flares with radius 0 (if flare have radius > 0
 			// it (mostly) will be placed inside invisible (solid) leaf)
-			if (f->radius == 0)
-			{
-				if (f->leaf->frame != drawFrame) cull = true;
-			}
-			else
-			{
-				if (!SphereLeaf (f->origin, f->radius)) cull = true;
-			}
+			if (f->radius == 0 && !im && f->leaf->frame != drawFrame) cull = true;
 		}
 		else
 		{
@@ -1196,10 +1152,14 @@ static void DrawFlares (void)
 
 		// should perform frustum culling even if flare not in PVS:
 		// can be occluded / outside frustum -- fade / hide
-		if (PointCull (flarePos, cull || f->radius < 0 ? 15 : f->leaf->frustumMask) == FRUSTUM_OUTSIDE)
+		if (PointCull (flarePos, (f->owner || cull || f->radius < 0) ? MAX_FRUSTUM_MASK : f->leaf->frustumMask) == FRUSTUM_OUTSIDE)
 		{
 			gl_speeds.cullFlares++;		// outside frustum - do not fade
 			continue;
+		}
+		if (f->radius > 0)
+		{
+			if (!SphereLeaf (flarePos, f->radius)) cull = true;
 		}
 
 		color.rgba = f->color.rgba;
@@ -1337,6 +1297,7 @@ static void DrawBspSequence (node_t *leaf)
 
 		/*------ add leafFaces to draw list -------*/
 
+		currentEntity = ENTITYNUM_WORLD;
 		AddBspSurfaces (leaf->leafFaces, leaf->numLeafFaces, leaf->frustumMask, &gl_entities[ENTITYNUM_WORLD]);
 
 		/*---------- draw leaf entities -----------*/
@@ -1489,12 +1450,17 @@ void GL_AddEntity (entity_t *ent)
 
 				im = ent->model->inlineModel;
 				VectorAdd (im->mins, im->maxs, v);
-				VectorMA (ent->origin, 0.5f, v, im->center);	// middle point in world coordinates
+				VectorScale (v, 0.5f, v);
+				ModelToWorldCoord (v, out, im->center);
+				VectorCopy (im->center, out->center);
+				out->radius = im->radius;
 			}
 			break;
 		case MODEL_MD3:
 			{
 				md3Model_t	*md3;
+				md3Frame_t	*frame1, *frame2;
+				vec3_t	center1, center2;
 
 				md3 = ent->model->md3;
 				// sanity check
@@ -1508,9 +1474,18 @@ void GL_AddEntity (entity_t *ent)
 					Com_WPrintf ("R_AddEntity: no frame %d in %s\n", out->oldFrame, out->model->name);
 					out->frame = out->oldFrame = 0;
 				}
+				frame1 = md3->frames + out->frame;
+				frame2 = md3->frames + out->oldFrame;
 				// lerp origin
 				VectorSubtract (ent->oldorigin, ent->origin, v);
 				VectorMA (ent->origin, out->backLerp, v, out->origin);
+				// lerp center
+				ModelToWorldCoord (frame1->localOrigin, out, center1);
+				ModelToWorldCoord (frame2->localOrigin, out, center2);
+				VectorSubtract (center2, center1, center2);				// delta
+				VectorMA (center1, out->backLerp, center2, out->center);
+				// lerp radius
+				out->radius = (frame2->radius - frame1->radius) * out->backLerp + frame1->radius;
 				// check for COLOR_SHELL
 				if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_HALF_DAM|RF_SHELL_DOUBLE))
 				{
@@ -1529,6 +1504,10 @@ void GL_AddEntity (entity_t *ent)
 					out->shaderColor.c[3] = 255;
 				}
 			}
+			break;
+		case MODEL_SP2:
+			VectorCopy (out->origin, out->center);
+			out->radius = out->model->sp2->radius;
 			break;
 		}
 	}
@@ -1570,9 +1549,7 @@ void GL_AddDlight (dlight_t *dl)
 		SATURATE(g,l,sat);
 		SATURATE(b,l,sat);
 	}
-	r1 = Q_ftol(r);
-	g1 = Q_ftol(g);
-	b1 = Q_ftol(b);
+	r1 = Q_ftol(r); g1 = Q_ftol(g); b1 = Q_ftol(b);
 	if (gl_config.lightmapOverbright)
 	{
 		r1 <<= 1;
@@ -1626,6 +1603,8 @@ void GL_DrawPortal (void)
 
 			currentEntity = e - gl_entities;
 			if (e->model)
+			{
+				e->visible = true;
 				switch (e->model->type)
 				{
 				case MODEL_INLINE:
@@ -1638,5 +1617,6 @@ void GL_DrawPortal (void)
 					AddSp2Surface (e);
 					break;
 				}
+			}
 		}
 }

@@ -2,39 +2,9 @@
 #define __GL_MODEL_INCLUDED__
 
 
+#define map gl_worldModel		// short alias
+
 /*--------------------- Lighting --------------------------*/
-
-#define MAX_LIGHTMAPS	64		// max lightmap textures
-#define LIGHTMAP_SIZE	256		// width and height of the lightmap texture (square)
-
-typedef struct
-{
-	int		index;				// "*lightmap%d"
-	image_t	*image;				// required for uploading (updating) lightmap
-	int		*allocated;			// [LIGHTMAP_SIZE]
-	byte	*pic;				// [LIGHTMAP_SIZE*LIGHTMAP_SIZE*4]
-	qboolean empty;
-	qboolean filled;
-} lightmapBlock_t;
-
-
-#define IS_FAST_STYLE(s)	(s >= 1 && s <= 31 && gl_config.multiPassLM)
-
-typedef struct dynamicLightmap_s
-{
-	// style info
-	int		numStyles;			// 1..4
-	int		numFastStyles;		// number of IS_FAST_STYLE styles
-	byte	style[4];			// style numbers
-	byte	modulate[4];		// current (uploaded) state of styles
-	// source
-	byte	*source[4];			// points to "byte rgb[w*h][3]"
-	int		w, h;				// size of source
-	int		w2;					// width of whole lightmap block (including fast dynamic lightmaps)
-	// info for uploading lightmap
-	int		s, t;				// glTexSubimage to (s,t)-(s+w,t+h)
-	lightmapBlock_t *block;
-} dynamicLightmap_t;
 
 typedef struct
 {
@@ -89,6 +59,9 @@ typedef enum
 } surfaceType_t;
 
 // Planar surface: same normal for all vertexes
+struct surfLight_s;				// forward declaration
+struct inlineModel_s;
+
 typedef struct surfacePlanar_s
 {
 	vec3_t	mins, maxs;
@@ -100,6 +73,7 @@ typedef struct surfacePlanar_s
 	int		*indexes;
 	// Q2/HL dynamic lightmap (NULL for Q3 ??)
 	dynamicLightmap_t *lightmap;
+	struct surfLight_s *light;
 	surfDlight_t *dlights;
 } surfacePlanar_t;
 
@@ -145,11 +119,12 @@ typedef struct
 
 typedef struct surfaceCommon_s
 {
-	shader_t *shader;			// ignored for models
-	int		frame;				// ignored for models
+	shader_t *shader;			// ignored for frame models
+	int		frame;				// ignored for frame models
 	int		dlightFrame;
 	unsigned dlightMask;
 	int		type;
+	struct inlineModel_s *owner;
 	union {
 		surfaceTrisurf_t *tri;	// type = SURFACE_PLANAR
 		surfacePlanar_t *pl;	// type = SURFACE_TRISURF
@@ -185,7 +160,7 @@ typedef struct node_s
 } node_t;
 
 
-typedef struct	//?? replace this structure with extended cmodel_t
+typedef struct inlineModel_s	//?? replace this structure with extended cmodel_t
 {
 	vec3_t	mins, maxs;
 	vec3_t	center;				// model center (in world coordinate system)
@@ -196,24 +171,65 @@ typedef struct	//?? replace this structure with extended cmodel_t
 } inlineModel_t;
 
 
-typedef struct
+typedef struct gl_flare_s
 {
+	// position
 	vec3_t	origin;
+	surfaceCommon_t *surf;
+	inlineModel_t *owner;
+	node_t	*leaf;
+	// size
 	float	size;
 	float	radius;
+	// lighting
 	color_t	color;
 	byte	style;				//!! unused now (is it needed ?)
-	node_t	*leaf;
 	float	lastTime;
+	struct gl_flare_s *next;
 } gl_flare_t;
+
+
+// point light / spot light
+typedef struct
+{
+	slightType_t type;
+	byte	spot;				// bool
+	byte	style;
+	vec3_t	origin;
+	vec3_t	color;
+	float	intens;
+	int		cluster;
+	vec3_t	spotDir;
+	float	spotDot;
+	float	focus;
+	float	fade;
+} gl_slight_t;
+
+
+typedef struct surfLight_s
+{
+	qboolean sky;
+	vec3_t	color;
+	float	intens;
+	int		cluster;
+	surfacePlanar_t *pl;		// used for normal/axis/bounds
+	struct surfLight_s *next;
+} surfLight_t;
+
+
+#define LIGHTGRID_STEP	32
+
+typedef struct
+{
+	byte	c[6][3];
+} lightCell_t;
 
 
 typedef struct
 {
 	char	name[MAX_QPATH];
 	void	*hunk;
-	//?? shaders, inline models, fog, lightGrid (Q3)
-	//!! entity string
+	//?? shaders, fog, lightGrid (Q3)
 	// planes
 	cplane_t *planes;
 	int		numPlanes;
@@ -234,9 +250,24 @@ typedef struct
 	int		numClusters;
 	int		visRowSize;
 	byte	*visInfo;
-	// flares
-	int		numFlares;
+	// lights
+	void	*lightGridChain;
+	lightCell_t **lightGrid;
+	int		numLightCells;
+	int		gridMins[3], mapGrid[3];	// start/size of world in lightgrid units
 	gl_flare_t *flares;
+	int		numSlights;			//?? rename slight -> plight (or light)
+	gl_slight_t *slights;
+	int		numSurfLights;
+	surfLight_t *surfLights;
+	int		numFlares;
+	// sun
+	float	sunLight;			// intensity; 0 if no sun
+	vec3_t	sunColor;
+	vec3_t	sunVec;
+	qboolean haveSunAmbient;
+	vec3_t	sunAmbient;
+	vec3_t	ambientLight;
 } bspModel_t;
 
 

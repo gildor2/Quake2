@@ -386,14 +386,23 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		}
 		// fall through
 	case WM_KEYDOWN:
-		if (!MapKey (lParam)) Com_Printf ("Unknown key: 0x%X\n", (lParam >> 16) & 255);
-		Key_Event (MapKey (lParam), true, sys_msg_time);
+		{
+			int		k;
+
+			k = MapKey (lParam);
+			if (!k) Com_Printf ("Unknown key: 0x%X\n", (lParam >> 16) & 255);
+			Key_Event (k, true, sys_msg_time);
+		}
 		break;
 
 	case WM_SYSKEYUP:
 	case WM_KEYUP:
 		Key_Event (MapKey (lParam), false, sys_msg_time);
 		break;
+
+	case WM_CLOSE:
+		Com_Quit ();
+		break;		// should not happens (?)
 
 	case MM_MCINOTIFY:
 		{
@@ -404,6 +413,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		break;
 
 	default:
+//		DebugPrintf("msg: %X wParam: %X lParam: %X\n", uMsg, wParam, lParam);
 		// pass all unhandled messages to DefWindowProc
 		return DefWindowProc (hWnd, uMsg, wParam, lParam);
 	}

@@ -604,7 +604,7 @@ static void Cvar_Reset_f (void)
 	mask = Cmd_Argv(1);
 	for (var = cvar_vars; var; var = var->next)
 	{
-		if (MatchWildcard (var->name, mask) && !(var->flags & (CVAR_NOSET|CVAR_LATCH|CVAR_GAME_CREATED|CVAR_USER_CREATED))
+		if (MatchWildcard2 (var->name, mask, true) && !(var->flags & (CVAR_NOSET|CVAR_LATCH|CVAR_GAME_CREATED|CVAR_USER_CREATED))
 			&& (var->flags & CVAR_ARCHIVE) && var->reset_string)
 			Cvar_Set2 (var->name, var->reset_string, 0, false);
 	}
@@ -670,7 +670,7 @@ static void Cvar_List_f (void)
 		char	s[5], *color;
 		int		flags;
 
-		if (mask && !MatchWildcard (var->name, mask)) continue;
+		if (mask && !MatchWildcard2 (var->name, mask, true)) continue;
 		i++;
 		flags = var->flags;
 		strcpy (s, "     ");

@@ -1,5 +1,18 @@
+//??
+#define START_PROFILE(name)	\
+	{	\
+		static char _name[] = #name;	\
+		int	_time = Sys_Milliseconds();
+#define END_PROFILE	\
+		_time = Sys_Milliseconds() - _time;	\
+		if (Cvar_VariableInt("r_profile2")) Com_Printf("^5%s: %d ms\n", _name, _time);	\
+	}
+
+
+
 #include "gl_local.h"
 #include "gl_model.h"			// for accessing to some map info
+#include "gl_math.h"
 
 image_t	*gl_defaultImage;
 //image_t	*gl_whiteImage;		//?? unneeded: can use "image = NULL" for this (CHECK THIS WITH MTEX!)
@@ -146,7 +159,8 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 	int			i, j;
 	unsigned	*inrow, *inrow2;
 	unsigned	frac, fracstep;
-	unsigned	p1[1024], p2[1024];
+	unsigned	p1[2048], p2[2048];
+	float		f, f1, f2;
 
 	fracstep = (inwidth << 16) / outwidth;
 
@@ -163,11 +177,11 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 		frac += fracstep;
 	}
 
-	for (i = 0; i < outheight; i++, out += outwidth)
+	f = (float)inheight / outheight;
+	for (i = 0, f1 = 0.25f * f, f2 = 0.75f * f; i < outheight; i++, out += outwidth, f1 += f, f2 += f)
 	{
-		inrow = in + inwidth * Q_ftol((0.25f + i) * inheight / outheight);
-		inrow2 = in + inwidth * Q_ftol((0.75f + i) * inheight / outheight);
-		frac = fracstep >> 1;
+		inrow = in + inwidth * Q_ftol(f1);
+		inrow2 = in + inwidth * Q_ftol(f2);
 		for (j = 0; j < outwidth; j++)
 		{
 			int		n, r, g, b, a;
@@ -186,22 +200,32 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 			PROCESS_PIXEL(inrow2, p1);
 			PROCESS_PIXEL(inrow2, p2);
 #undef PROCESS_PIXEL
-			if (n)
+
+			switch (n)		// if use generic version, with "x /= n", will be 50% slower ...
 			{
-				r /= n; g /= n; b /= n; a /= 4;
-			}
-			else
-			{	// don't allow transparent textures become black
+			// case 1 - divide by 1 - do nothing
+			case 2:
+				r >>= 1; g >>= 1; b >>= 1; a >>= 1;
+				break;
+			case 3:
+				r /= 3; g /= 3; b /= 3; a /= 3;
+				break;
+			case 4:
+				r >>= 2; g >>= 2; b >>= 2; a >>= 2;
+				break;
+			case 0:
+				// don't allow transparent textures become black
 #define PROCESS_PIXEL(row,col)	\
 	pix = (byte *)row + col[j];		\
 	r += *pix++; g += *pix++; b += *pix++; pix++;
-			PROCESS_PIXEL(inrow, p1);
-			PROCESS_PIXEL(inrow, p2);
-			PROCESS_PIXEL(inrow2, p1);
-			PROCESS_PIXEL(inrow2, p2);
+				PROCESS_PIXEL(inrow, p1);
+				PROCESS_PIXEL(inrow, p2);
+				PROCESS_PIXEL(inrow2, p1);
+				PROCESS_PIXEL(inrow2, p2);
 #undef PROCESS_PIXEL
-				r /= 4; g /= 4; b /= 4;
+				r >>= 2; g >>= 2; b >>= 2;
 			}
+
 			((byte *)(out+j))[0] = r;
 			((byte *)(out+j))[1] = g;
 			((byte *)(out+j))[2] = b;
@@ -228,16 +252,15 @@ static void LightScaleTexture (unsigned *pic, int width, int height, qboolean on
 		p = (byte *)pic;
 		for (i = 0; i < c; i++, p+=4)
 		{
-#define SATURATE(c,l,v) c = (l+0.5+(c-l)*v); c = bound(c, 0, 255);
 			// get color
 			r = p[0];  g = p[1];  b = p[2];
 			// change saturation
-			light = (r + g + b) / 3.0;
+			light = (r + g + b) / 3.0f;
 			SATURATE(r,light,sat);
 			SATURATE(g,light,sat);
 			SATURATE(b,light,sat);
 			// put color
-			p[0] = r;  p[1] = g;  p[2] = b;
+			p[0] = Q_ftol (r);  p[1] = Q_ftol (g);  p[2] = Q_ftol (b);
 		}
 	}
 
@@ -309,10 +332,6 @@ static void LightScaleLightmap (unsigned *pic, int width, int height)
 }
 
 
-#ifndef MAX
-#define MAX(a,b) ((a)>=(b)?(a):(b))
-#endif
-
 static void MipMap (byte *in, int width, int height)
 {
 	int		i, j;
@@ -340,12 +359,20 @@ static void MipMap (byte *in, int width, int height)
 			PROCESS_PIXEL(width);
 			PROCESS_PIXEL(width+4);
 #undef PROCESS_PIXEL
-			if (n)
+			switch (n)
 			{
-				r /= n; g /= n; b /= n; a /= 4;
-			}
-			else
-			{	// don't allow transparent textures become black (in a case of its usage without blending)
+			// case 1 - divide by 1 - do nothing
+			case 2:
+				r >>= 1; g >>= 1; b >>= 1; a >>= 1;
+				break;
+			case 3:
+				r /= 3; g /= 3; b /= 3; a /= 3;
+				break;
+			case 4:
+				r >>= 2; g >>= 2; b >>= 2; a >>= 2;
+				break;
+			case 0:
+				// don't allow transparent textures become black (in a case of its usage without blending)
 #define PROCESS_PIXEL(idx)	\
 		r += in[idx]; g += in[idx+1]; b += in[idx+2];
 				PROCESS_PIXEL(0);
@@ -373,7 +400,7 @@ static void GetImageDimensions (int width, int height, int *scaledWidth, int *sc
 	for (sh = 1; sh < height; sh <<= 1) ;
 
 	if (gl_roundImagesDown->integer)
-	{	// scale down only if image dimension is larger than 64 and
+	{	// scale down only when new image dimension is larger than 64 and
 		// larger than 4/3 of original image dimension
 		if (sw > 64 && sw > (width * 4 / 3)) sw >>= 1;
 		if (sh > 64 && sh > (height * 4 / 3)) sh >>= 1;
@@ -395,6 +422,27 @@ static void GetImageDimensions (int width, int height, int *scaledWidth, int *sc
 }
 
 
+static void ComputeImageColor (void *pic, int width, int height, color_t *color)
+{
+	int		c[4], i, count;
+	byte	*p;
+
+	count = width * height;
+	c[0] = c[1] = c[2] = c[3] = 0;
+	for (i = 0, p = pic; i < count; i++, p += 4)
+	{
+		c[0] += p[0];
+		c[1] += p[1];
+		c[2] += p[2];
+		c[3] += p[3];
+	}
+	color->c[0] = c[0] / count;
+	color->c[1] = c[1] / count;
+	color->c[2] = c[2] / count;
+	color->c[3] = c[3] / count;
+}
+
+
 // We need to pass "flags" because image->flags is masked with IMAGE_FLAGMASK
 static void Upload (void *pic, int flags, image_t *image)
 {
@@ -408,6 +456,7 @@ static void Upload (void *pic, int flags, image_t *image)
 	image->internalWidth = scaledWidth;
 	image->internalHeight = scaledHeight;
 
+START_PROFILE(..up::scale)
 	/*---------------- Resample/lightscale texture ------------------*/
 	size = scaledWidth * scaledHeight * 4;
 	scaledPic = Z_Malloc (size);
@@ -415,12 +464,15 @@ static void Upload (void *pic, int flags, image_t *image)
 		ResampleTexture (pic, image->width, image->height, scaledPic, scaledWidth, scaledHeight);
 	else
 		memcpy (scaledPic, pic, size);
+END_PROFILE
 
+START_PROFILE(..up::lscale)
 	if (!(flags & IMAGE_LIGHTMAP))
 		// scale gamma only for non-wall textures
 		LightScaleTexture (scaledPic, scaledWidth, scaledHeight, !(flags & IMAGE_MIPMAP));
 	else
 		LightScaleLightmap (scaledPic, scaledWidth, scaledHeight);			// lightmap overbright
+END_PROFILE
 
 	/*------------- Determine texture format to upload --------------*/
 	if (flags & IMAGE_LIGHTMAP)
@@ -431,6 +483,7 @@ static void Upload (void *pic, int flags, image_t *image)
 	{
 		int		alpha, numAlpha0, i, n;
 		byte	*scan, a;
+
 		// Check for alpha channel in image
 		alpha = numAlpha0 = 0;
 		n = scaledWidth * scaledHeight;
@@ -448,28 +501,7 @@ static void Upload (void *pic, int flags, image_t *image)
 			alpha = 2;		// have alpha == [1..254] (8 bit alpha)
 			break;
 		}
-/*		if (numAlpha0 == n)
-		{
-			int		*scan2, c0;
 
-Com_Printf("alpha=%d; ", alpha);
-			// here: evety texel in image have alpha == 0; try to decide: keep alpha or treat image as "buggy alpha"
-			scan2 = scaledPic;
-			c0 = *scan2++;
-			if (c0 == gl_config.tbl_8to32[255] || c0 == 0)	// standard "null pic" color
-			{
-				for (i = 1; i < n; i++, scan2++)
-					if (*scan2 != c0) break;
-				if (i != n)
-					alpha = 0;	// have texels with different color
-			}
-			else
-				alpha = 0;
-			if (!alpha)
-				Com_WPrintf ("GL_Upload(%s): removed alpha-channel\n", image->name);
-Com_Printf("i=%d,n=%d; c0=%08X\n",i,n,c0);//!!
-		}
-*/
 		// select texture format
 		format = 0;
 		if (alpha && (flags & IMAGE_MIPMAP))
@@ -512,7 +544,9 @@ Com_Printf("i=%d,n=%d; c0=%08X\n",i,n,c0);//!!
 	image->internalFormat = format;
 
 	/*------------------ Upload the image ---------------------------*/
+START_PROFILE(..up::1)
 	qglTexImage2D (GL_TEXTURE_2D, 0, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
+END_PROFILE
 	if (!(flags & IMAGE_MIPMAP))
 	{
 		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -522,6 +556,7 @@ Com_Printf("i=%d,n=%d; c0=%08X\n",i,n,c0);//!!
 	{
 		int		miplevel;
 
+START_PROFILE(..up::mip)
 		miplevel = 0;
 		while (scaledWidth > 1 || scaledHeight > 1)
 		{
@@ -555,6 +590,7 @@ Com_Printf("i=%d,n=%d; c0=%08X\n",i,n,c0);//!!
 		}
 		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
 		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+END_PROFILE
 	}
 
 	Z_Free (scaledPic);
@@ -593,6 +629,8 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 	image->width = width;
 	image->height = height;
 	image->flags = flags & IMAGE_FLAGMASK;
+
+	ComputeImageColor (pic, width, height, &image->color);
 
 	// upload image
 	GL_BindForce (image);
@@ -930,7 +968,7 @@ static void Imagelist_f (void)
 		if (!img->name[0]) continue;	// free slot
 
 		idx++;
-		if (mask && !MatchWildcard (img->name, mask)) continue;
+		if (mask && !MatchWildcard2 (img->name, mask, true)) continue;
 		n++;
 
 		texels += img->internalWidth * img->internalHeight;
@@ -980,8 +1018,8 @@ static void Imagelist_f (void)
 /*-------------------- Screenshots ---------------------*/
 
 
-#define		LEVELSHOT_W		256
-#define		LEVELSHOT_H		256
+#define LEVELSHOT_W		256
+#define LEVELSHOT_H		256
 
 
 void GL_PerformScreenshot (void)
@@ -1271,7 +1309,7 @@ void GL_ShowImages (void)
 	{
 		name = imagesArray[i].name;
 		if (!name[0]) continue;
-		if (MatchWildcard (name, mask)) numImg++;
+		if (MatchWildcard2 (name, mask, true)) numImg++;
 	}
 	if (!numImg) return;		// no matched images
 
@@ -1307,7 +1345,7 @@ void GL_ShowImages (void)
 			while (1)
 			{
 				name = img->name;
-				if (name[0] && MatchWildcard (name, mask)) break;
+				if (name[0] && MatchWildcard2 (name, mask, true)) break;
 				img++;
 			}
 
@@ -1392,27 +1430,34 @@ image_t *GL_FindImage (char *name, int flags)
 	else
 		prefFmt = 0;
 
+START_PROFILE(img::check)
 	*s = 0; // cut extension
 	fmt = ImageExists (name2, IMAGE_32BIT);
 	if (fmt & prefFmt)
 		fmt = prefFmt;				// restrict loading to this image type
+END_PROFILE
 
 	// load image within a preferred (or priorized) format
 	if (fmt & IMAGE_TGA)
 	{
 		strcpy (s, ".tga");
+START_PROFILE(..img::tga)
 		LoadTGA (name2, &pic, &width, &height);
+END_PROFILE
 	}
 	else if (fmt & IMAGE_JPG)
 	{
 		strcpy (s, ".jpg");
+START_PROFILE(..img::jpg)
 		LoadJPG (name2, &pic, &width, &height);
+END_PROFILE
 	}
 	else if (fmt & IMAGE_PCX)
 	{
 		byte	*pic8, *palette;
 
 		strcpy (s, ".pcx");
+START_PROFILE(..img::pcx)
 		LoadPCX (name2, &pic8, &palette, &width, &height);
 		if (pic8)
 		{
@@ -1422,12 +1467,14 @@ image_t *GL_FindImage (char *name, int flags)
 		}
 		else
 			pic = NULL;
+END_PROFILE
 	}
 	else if (fmt & IMAGE_WAL)
 	{
 		miptex_t	*mt;
 
 		strcpy (s, ".wal");
+START_PROFILE(..img::wal)
 		FS_LoadFile (name2, (void **)&mt);
 		if (mt)
 		{
@@ -1438,6 +1485,7 @@ image_t *GL_FindImage (char *name, int flags)
 		}
 		else
 			pic = NULL;
+END_PROFILE
 	}
 	else
 	{
@@ -1448,8 +1496,10 @@ image_t *GL_FindImage (char *name, int flags)
 	// upload image
 	if (pic)
 	{
+START_PROFILE(..img::up)
 		img = GL_CreateImage (name2, pic, width, height, flags);
 		Z_Free (pic);
+END_PROFILE
 		return img;
 	}
 	else

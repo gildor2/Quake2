@@ -70,6 +70,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define bound(a,minval,maxval)  ( ((a) > (minval)) ? ( ((a) < (maxval)) ? (a) : (maxval) ) : (minval) )
 
+#define VECTOR_ARGS(name)	name[0],name[1],name[2]
 
 typedef unsigned char 		byte;
 typedef enum {false, true}	qboolean;
@@ -164,8 +165,6 @@ typedef float vec3_t[3];
 #define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
 #endif
 
-struct cplane_s;
-
 extern vec3_t vec3_origin;
 
 #define	nanmask (255<<23)
@@ -175,6 +174,9 @@ extern vec3_t vec3_origin;
 unsigned ColorBytes3 (float r, float g, float b);
 unsigned ColorBytes4 (float r, float g, float b, float a);
 float NormalizeColor (const vec3_t in, vec3_t out);
+float NormalizeColor255 (const vec3_t in, vec3_t out);
+
+// rename to CLAMP_COLOR255 ??
 #define NORMALIZE_COLOR255(r,g,b)	\
 	if ((r|g|b) > 255)	\
 	{	\
@@ -186,8 +188,11 @@ float NormalizeColor (const vec3_t in, vec3_t out);
 		b = b * 255 / max;	\
 	}
 
+float ClampColor255 (const vec3_t in, vec3_t out);
+
 void VectorNormalizeFast (vec3_t v);
 float Q_rsqrt (float number);
+#define SQRTFAST(x)		(x * Q_rsqrt(x))
 
 // microsoft's fabs seems to be ungodly slow...
 //float Q_fabs (float f);
@@ -245,7 +250,6 @@ void MatrixMultiply (float in1[3][3], float in2[3][3], float out[3][3]);
 void R_ConcatTransforms (float in1[3][4], float in2[3][4], float out[3][4]);
 
 void AngleVectors (const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
-int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s *plane);
 float	anglemod(float a);
 float LerpAngle (float a1, float a2, float frac);
 
@@ -337,7 +341,7 @@ qboolean Info_Validate (char *s);
 ==============================================================
 
 SYSTEM SPECIFIC
-place to qcommon.h ??
+place to qcommon.h or ref.h ??
 
 ==============================================================
 */
@@ -363,12 +367,6 @@ void	Sys_Mkdir (char *path);
 char	*Sys_FindFirst (char *path, unsigned musthave, unsigned canthave);
 char	*Sys_FindNext (unsigned musthave, unsigned canthave);
 void	Sys_FindClose (void);
-
-
-// this is only here so the functions in q_shared.c and q_shwin.c can link
-//??void	Sys_Error (char *error, ...);
-//??void	Com_Printf (char *msg, ...);
-//??void	Com_WPrintf (char *fmt, ...);
 
 
 /*
@@ -476,8 +474,10 @@ COLLISION DETECTION
 
 // added since 4.00
 #define SURF_ALPHA		0x1000	// Kingpin
-#define	SURF_SPECULAR	0x4000	// have a bug in KP q_shared.h: SPECULAR and DIFFUSE consts are 0x400 and 0x800
+#define	SURF_SPECULAR	0x4000	// have a bug in KP's q_shared.h: SPECULAR and DIFFUSE consts are 0x400 and 0x800
 #define	SURF_DIFFUSE	0x8000
+
+#define SURF_AUTOFLARE	0x2000	// just free flag (should use extra struc for dtexinfo_t !!)
 
 
 // content masks
@@ -505,7 +505,7 @@ COLLISION DETECTION
 #define	PLANE_NON_AXIAL	3
 
 // plane_t structure (the same as Q2 dplane_t, but "int type" -> "byte type,signbits,pad[2]")
-typedef struct cplane_s
+typedef struct
 {
 	vec3_t	normal;
 	float	dist;
@@ -517,6 +517,7 @@ typedef struct cplane_s
 void SetPlaneSignbits (cplane_t *out);
 #define PlaneTypeForNormal(x) (x[0] == 1.0 ? PLANE_X : (x[1] == 1.0 ? PLANE_Y : (x[2] == 1.0 ? PLANE_Z : PLANE_NON_AXIAL) ) )
 
+int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, cplane_t *plane);
 #define BOX_ON_PLANE_SIDE(emins, emaxs, p)	\
 	(((p)->type < 3)?						\
 	(										\
@@ -550,7 +551,7 @@ void SetPlaneSignbits (cplane_t *out);
 #define CPLANE_PAD0				18
 #define CPLANE_PAD1				19
 
-typedef struct csurface_s
+typedef struct
 {
 	// standard csurface_t fields (do not change this!)
 	char	name[16];
@@ -634,7 +635,7 @@ typedef struct
 
 
 // usercmd_t is sent to the server each client frame
-typedef struct usercmd_s
+typedef struct
 {
 	byte	msec;
 	byte	buttons;
@@ -1246,7 +1247,7 @@ ROGUE - VERSIONS
 
 typedef enum
 {
-	MATERIAL_SILENT,	// no footstep sounds (and no bullethit sounds??)
+	MATERIAL_SILENT,	// no footstep sounds (and no bullethit sounds)
 	MATERIAL_CONCRETE,	// standard sounds
 	MATERIAL_FABRIC,	// rug
 	MATERIAL_GRAVEL,	// gravel
@@ -1254,7 +1255,7 @@ typedef enum
 	MATERIAL_METAL_L,	// metall
 	MATERIAL_SNOW,		// tin (replace with pure snow from AHL??)
 	MATERIAL_TIN,
-	MATERIAL_TILE,		// marble (== concrete??)
+	MATERIAL_TILE,		// marble (similar to concrete, but slightly muffled sound)
 	MATERIAL_WOOD,		// wood
 	MATERIAL_WATER,
 	MATERIAL_GLASS,
@@ -1310,7 +1311,7 @@ typedef enum
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will
 // need to render in some way
-typedef struct entity_state_s
+typedef struct
 {
 	int		number;			// edict index
 

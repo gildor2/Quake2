@@ -2781,6 +2781,15 @@ static void PlayerConfig_MenuDraw (void)
 	entity_t	e[2];
 	playerModelInfo_t *model;
 	basenamed_t	*skin;
+	static dlight_t	dl[] = {
+		{{50, 100, -150}, {0.5, 0, 0}, 250},
+		{{-50, 50, 150}, {0.8, 0.8, 0.8}, 300},
+		{{-50, -100, -150}, {0, 0.5, 0}, 250}
+	};
+
+//	sscanf(Cvar_VariableString("dl0"), "%g %g %g %g", VECTOR_ARGS(&dl[0].origin), &dl[0].intensity);
+//	sscanf(Cvar_VariableString("dl1"), "%g %g %g %g", VECTOR_ARGS(&dl[1].origin), &dl[1].intensity);
+//	sscanf(Cvar_VariableString("dl2"), "%g %g %g %g", VECTOR_ARGS(&dl[2].origin), &dl[2].intensity);
 
 	model = (playerModelInfo_t*)FindNamedStrucByIndex ((basenamed_t*)pmi, s_player_model_box.curvalue);
 	if (!model) return;
@@ -2802,7 +2811,7 @@ static void PlayerConfig_MenuDraw (void)
 	// add player model
 	e[0].model = re.RegisterModel (va("players/%s/tris.md2", model->name));
 	e[0].skin = re.RegisterSkin (va("players/%s/%s.pcx", model->name, skin->name));
-	e[0].flags = 0;		//?? RF_FULLBRIGHT;
+	e[0].flags = 0;
 	e[0].origin[0] = 90;
 	e[0].origin[1] = 0;
 	e[0].origin[2] = 0;
@@ -2825,7 +2834,9 @@ static void PlayerConfig_MenuDraw (void)
 	refdef.areabits = NULL;
 	refdef.num_entities = 2;
 	refdef.entities = e;
-	refdef.lightstyles = 0;
+	refdef.lightstyles = NULL;
+	refdef.dlights = dl;
+	refdef.num_dlights = 3;
 	refdef.rdflags = RDF_NOWORLDMODEL;
 
 	Menu_Draw (&s_player_config_menu);
@@ -3108,14 +3119,10 @@ static const char *DMBrowse_MenuKey (int key)
 static void DrawThumbnail (int x, int y, int w, int h, char *name, qboolean selected)
 {
 	char	name2[256];
-	int		color, max_width, text_width;
+	int		max_width, text_width;
 
-	if (selected)
-		color = 0x78;	// blue
-	else
-		color = 0x00;
 	re.DrawFill (x - THUMBNAIL_BORDER, y - THUMBNAIL_BORDER, w + THUMBNAIL_BORDER * 2,
-				h + THUMBNAIL_BORDER * 2 + THUMBNAIL_TEXT, color);
+				h + THUMBNAIL_BORDER * 2 + THUMBNAIL_TEXT, selected ? 0x78 : 0 /* blue/black */);
 
 	re.DrawStretchPic (x, y, w, h, va("/levelshots/%s.pcx", name));
 	max_width = w / 8;

@@ -73,7 +73,7 @@ static char *checkedNames[MAX_CHECK_NAMES], checkNameCache[MAX_CHECK_CACHE];
 static int numCheckedNames, nextCheckCachePos;
 
 
-qboolean	CL_CheckOrDownloadFile (char *filename)
+qboolean CL_CheckOrDownloadFile (char *filename)
 {
 	FILE	*fp;
 	char	name[MAX_OSPATH], name2[MAX_OSPATH], *ext;
@@ -177,7 +177,7 @@ CL_Download_f
 Request a download from the server
 ===============
 */
-void	CL_Download_f (void)
+void CL_Download_f (void)
 {
 	char filename[MAX_OSPATH];
 
@@ -406,16 +406,16 @@ CL_ParseBaseline
 */
 void CL_ParseBaseline (void)
 {
-	entity_state_t	*es;
+	entityState_t	*es;
 	int				bits;
 	int				newnum;
-	entity_state_t	nullstate;
+	entityState_t	nullstate;
 
 	memset (&nullstate, 0, sizeof(nullstate));
 
 	newnum = CL_ParseEntityBits (&bits);
 	es = &cl_entities[newnum].baseline;
-	CL_ParseDelta (&nullstate, es, newnum, bits);
+	CL_ParseDelta (&nullstate, es, newnum, bits, true);
 }
 
 
@@ -770,6 +770,11 @@ void CL_ParseServerMessage (void)
 
 		case svc_stufftext:
 			s = MSG_ReadString (&net_message);
+			if (Com_ServerState () == ss_demo && !Q_strncasecmp (s, "set ", 4))
+			{
+				Com_DPrintf ("stuff (disabled): %s\n", s);
+				break;
+			}
 			Com_DPrintf ("stufftext: %s\n", s);
 			Cbuf_AddText (s);
 			break;

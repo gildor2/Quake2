@@ -814,12 +814,10 @@ void SCR_TileClear (void)
 
 
 #define STAT_MINUS		10	// num frame for '-' stats digit
-char		*sb_nums[2][11] =
+static char *sb_nums[2][11] =
 {
-	{"num_0", "num_1", "num_2", "num_3", "num_4", "num_5",
-	 "num_6", "num_7", "num_8", "num_9", "num_minus"},
-	{"anum_0", "anum_1", "anum_2", "anum_3", "anum_4", "anum_5",
-	 "anum_6", "anum_7", "anum_8", "anum_9", "anum_minus"}
+	{"num_0", "num_1", "num_2", "num_3", "num_4", "num_5", "num_6", "num_7", "num_8", "num_9", "num_minus"},
+	{"anum_0", "anum_1", "anum_2", "anum_3", "anum_4", "anum_5", "anum_6", "anum_7", "anum_8", "anum_9", "anum_minus"}
 };
 
 #define	ICON_WIDTH	24
@@ -935,7 +933,7 @@ void SCR_DrawField (int x, int y, int color, int width, int value)
 		else
 			frame = *ptr -'0';
 
-		re_DrawPic (x,y,sb_nums[color][frame]);
+		re_DrawPic (x, y, sb_nums[color][frame]);
 		x += CHAR_WIDTH;
 		ptr++;
 		l--;
@@ -959,7 +957,7 @@ void SCR_TouchPics (void)
 
 	for (i=0 ; i<2 ; i++)
 		for (j=0 ; j<11 ; j++)
-			re.RegisterPic (sb_nums[i][j]);
+			re.RegisterPic (sb_nums[i][j]);		// can remember image handles and use later (faster drawing, but need API extension ??)
 
 	ch_num = crosshair->integer;
 	if (ch_num)
@@ -997,11 +995,9 @@ void SCR_ExecuteLayoutString (char *s)
 	if (cls.state != ca_active || !cl.refresh_prepped)
 		return;
 
-	if (!s[0])
-		return;
+	if (!s[0]) return;
 
-	x = 0;
-	y = 0;
+	x = y = 0;
 	width = 3;
 
 	while (s)
@@ -1263,11 +1259,8 @@ void SCR_ExecuteLayoutString (char *s)
 					token = COM_Parse (&s);
 				}
 			}
-
 			continue;
 		}
-
-
 	}
 }
 
@@ -1292,8 +1285,6 @@ SCR_DrawLayout
 
 ================
 */
-#define	STAT_LAYOUTS		13
-
 void SCR_DrawLayout (void)
 {
 	if (!cl.frame.playerstate.stats[STAT_LAYOUTS])

@@ -464,7 +464,9 @@ static void DrawSurfInfo (void)
 		T(LIGHT), T(SLICK), T(SKY), T(WARP),
 		T(TRANS33), T(TRANS66), T(FLOWING), T(NODRAW),
 		// Kingpin flags
-		T(ALPHA), T(DIFFUSE), T(SPECULAR)
+		T(ALPHA), T(DIFFUSE), T(SPECULAR),
+		// new flags (temp ??)
+		T(AUTOFLARE)
 #undef T
 	};
 
@@ -497,19 +499,18 @@ static void DrawSurfInfo (void)
 	{
 		re.DrawTextLeft ("Surface info:", 0.4, 0.4, 0.6);
 		re.DrawTextLeft ("-------------", 0.4, 0.4, 0.6);
-		re.DrawTextLeft (va("Point: %g  %g  %g",
-			trace.endpos[0], trace.endpos[1], trace.endpos[2]),
+		re.DrawTextLeft (va("Point: %g  %g  %g", VECTOR_ARGS(trace.endpos)),
 			0.2, 0.4, 1);
 		surf = trace.surface;
 		if (surf->rname[0])		// non-null surface
 		{
 			re.DrawTextLeft (va("Surface name: %s", surf->rname), 0.2, 0.4, 1);
 			VectorCopy (trace.plane.normal, norm);
-			re.DrawTextLeft (va("Normal: %g  %g  %g", norm[0], norm[1], norm[2]), 0.2, 0.4, 1);
+			re.DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARGS(norm)), 0.2, 0.4, 1);
 			if (surf->value)
 				re.DrawTextLeft (va("Value: %i (0x%X)", surf->value, surf->value), 0.2, 0.4, 1);
 			DrawFlag (surf->flags, surfNames, sizeof(surfNames)/sizeof(flagInfo_t), "SURF_");
-#define SURF_KNOWN	(0xFF|SURF_ALPHA|SURF_DIFFUSE|SURF_SPECULAR)
+#define SURF_KNOWN	(0xFF|SURF_ALPHA|SURF_DIFFUSE|SURF_SPECULAR|SURF_AUTOFLARE)
 			if (surf->flags & ~SURF_KNOWN) // unknown flags
 				re.DrawTextLeft (va("SURF_UNK_%X", surf->flags & ~SURF_KNOWN), 0.6, 0.3, 0.4);
 			// material
@@ -533,12 +534,10 @@ static void DrawOriginInfo (void)
 
 	re.DrawTextLeft ("Player position:", 0.4, 0.4, 0.6);
 	re.DrawTextLeft ("----------------", 0.4, 0.4, 0.6);
-	re.DrawTextLeft (va("Point: %.0f  %.0f  %.0f",
-		cl.refdef.vieworg[0], cl.refdef.vieworg[1], cl.refdef.vieworg[2]),
-		0.2, 0.4, 0.1);
+	re.DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARGS(cl.refdef.vieworg)), 0.2, 0.4, 0.1);
 
 	AngleVectors (cl.refdef.viewangles, view, NULL, NULL);
-	re.DrawTextLeft (va("View direction: %g  %g  %g", view[0], view[1], view[2]), 0.2, 0.4, 0.1);
+	re.DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARGS(view)), 0.2, 0.4, 0.1);
 
 	i = CM_PointLeafnum (cl.refdef.vieworg);
 	re.DrawTextLeft (va("Leaf number: %d, cluster: %i, area: %i",
@@ -734,7 +733,7 @@ static int entitycmpfnc (const entity_t *a, const entity_t *b)
 }
 
 
-void V_RenderView( float stereo_separation )
+void V_RenderView (float stereo_separation)
 {
 	if (cls.state != ca_active)
 		return;

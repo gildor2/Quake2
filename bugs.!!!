@@ -1,3 +1,10 @@
+! sometimes key_up skipped (or key_down spontaneously pressed) (hardware bug ?)
+- map "temple2", "lavatube" -- waterfall: bullet sounds (change sound for water sparks, change place for water bullet sounds
+  or something another ??)
+- command line: "+set cddir <dir>" (etc.) - will display error, when var will be parsed 2nd time
+- dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
+  (and add support for colors, scrolling etc.)
+
 - bugs with deathmatch mode
   - map "dm_dukecity_beta":
     - disco: neon lamp text should not disappear
@@ -5,11 +12,13 @@
 - dir "../dirty/maps" will display list same twice
 - when sound is busy, error about "command already registered" appears for sound commands
 
-! cannot load map "dog..." in soft: "bad surface extents" (but GL can ...)
+! cannot load map "dog..." in soft: "bad surface extents 272 x XXX" (but GL can ...; seems, ref_soft
+  can't render texture with larger than 256 size ...)
 ! map "toomuchbloodv2": sound "dmg/TISM.wav" loaded twice (upper- and lowercase)
 ! REF_SOFT: crush
 
 ? game crush in msvcrt.dll (pak loading/unloading/download breaking/map not found)
+? crush on map change/game load (cl_predict, CM_TransformedPointContents2())
 
 - CapsLock will be displayed as unknown key!
 

@@ -516,7 +516,7 @@ void CalcSurfaceExtents (msurface_t *s)
 	int		bmins[2], bmaxs[2];
 
 	mins[0] = mins[1] = 999999;
-	maxs[0] = maxs[1] = -99999;
+	maxs[0] = maxs[1] = -999999;
 
 	tex = s->texinfo;
 
@@ -550,9 +550,9 @@ void CalcSurfaceExtents (msurface_t *s)
 		s->extents[i] = (bmaxs[i] - bmins[i]) * 16;
 		if (s->extents[i] < 16)
 			s->extents[i] = 16;	// take at least one cache block
-		if ( !(tex->flags & (SURF_WARP|SURF_SKY)) && s->extents[i] > 256)
-			Com_Error (ERR_DROP,"Bad surface extents");
 	}
+	if ( !(tex->flags & (SURF_WARP|SURF_SKY)) && (s->extents[0] > 256 || s->extents[1] > 256))
+		Com_Error (ERR_DROP,"Bad surface extents: %d x %d", s->extents[0], s->extents[1]);
 }
 
 

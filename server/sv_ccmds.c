@@ -368,7 +368,7 @@ void SV_WriteServerFile (qboolean autosave, char *dir)
 	// perform screenshot
 	if (re.Screenshot)	// can be uninitialized when dedicated server
 	{
-		re.Screenshot (SHOT_SMALL|SHOT_SILENT|SHOT_NO_2D|SHOT_JPEG, va("%s/save/%s/shot", FS_Gamedir(), dir));//!!
+		re.Screenshot (SHOT_SMALL|SHOT_SILENT|SHOT_NO_2D|SHOT_WAIT_3D|SHOT_JPEG, va("%s/save/%s/shot", FS_Gamedir(), dir));//!!
 		SCR_UpdateScreen ();	// required for screenshot performing
 	}
 }

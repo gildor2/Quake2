@@ -298,11 +298,8 @@ void GLimp_SetGamma (float gamma, float intens)
 
 	if (!gammaStored) return;
 
-	if (gamma < 0.5f)
-		gamma = 0.5f;
-	else if (gamma > 3.0f)
-		gamma = 3.0f;
-	if (intens < 0.1f)
+	gamma = bound(gamma, 0.5, 3);
+	if (intens < 0.1f)	//?? remove
 		intens = 0.1f;
 
 //	DebugPrintf("set gamma %g, %g\n", gamma, intens);//!!
@@ -312,6 +309,21 @@ void GLimp_SetGamma (float gamma, float intens)
 	for (i = 0; i < 256*3; i++)
 	{
 		float	tmp;
+
+#if 1
+		float	contr, bright;
+
+		contr = r_contrast->value;
+		bright = r_brightness->value;
+		contr = bound(contr, 0.3, 1.8);
+		bright = bound(bright, 0.3, 1.8);
+		tmp = ((((i & 255) << 8) * overbright - 32768) * contr + 32768) * bright;
+		if (invGamma == 1.0)
+			v = tmp;
+		else
+			v = 65535.0f * pow (tmp / 65535.5f, invGamma);
+
+#else
 
 #if 1	// overbright->pow
 		tmp = gammaRamp[i] * overbright + 128.0f;
@@ -327,8 +339,20 @@ void GLimp_SetGamma (float gamma, float intens)
 			v = 65535.0f * pow (tmp / 65535.5f, invGamma) * overbright;
 #endif
 
-		if (v > 65535) v = 65535;
-		else if (v < 0) v = 0;
+#endif
+
+		if (_winmajor >= 5)
+		{
+			int		m;
+
+			// Win2K/XP performs checking of gamma ramp and may reject it (clamp with (0,MAX_GAMMA)-(255,FFFF) line)
+#define MAX_GAMMA		0x8000					// don't works with higher values
+#define GAMMA_STEP		((0x10000 - MAX_GAMMA) / 256)
+			m = (i & 255) * GAMMA_STEP + MAX_GAMMA;
+			v = bound(v, 0, m);
+		}
+		else
+			v = bound(v, 0, 65535);
 
 		newGamma[i] = v;
 	}

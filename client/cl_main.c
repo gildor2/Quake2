@@ -91,7 +91,7 @@ client_state_t	cl;
 
 centity_t		cl_entities[MAX_EDICTS];
 
-entity_state_t	cl_parse_entities[MAX_PARSE_ENTITIES];
+entityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 
 extern	cvar_t *allow_download;
 extern	cvar_t *allow_download_players;
@@ -163,7 +163,7 @@ void CL_Record_f (void)
 	sizebuf_t	buf;
 	int		i;
 	int		len;
-	entity_state_t	*ent;
+	entityState_t	*ent;
 	entity_state_t	nullstate;
 
 	if (Cmd_Argc() != 2)
@@ -254,7 +254,7 @@ void CL_Record_f (void)
 		}
 
 		MSG_WriteByte (&buf, svc_spawnbaseline);
-		MSG_WriteDeltaEntity (&nullstate, &cl_entities[i].baseline, &buf, true, true);
+		MSG_WriteDeltaEntity (&nullstate, (entity_state_t*)&cl_entities[i].baseline, &buf, true, true);
 	}
 
 	MSG_WriteByte (&buf, svc_stufftext);

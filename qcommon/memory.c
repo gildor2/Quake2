@@ -163,7 +163,7 @@ static chainBlock_t *AllocChain(int size)
 	chain->data = (void*) (((int) (chain + 1) + BLOCK_ALIGN-1) & ~(BLOCK_ALIGN-1));
 	chain->size = size;
 
-	memset (&chain[1], 0, size - sizeof(chainBlock_t));
+	memset (chain->data, 0, size - sizeof(chainBlock_t));
 
 	// update z_stats info
 	z_bytes += size;
@@ -221,6 +221,7 @@ void *AllocChainBlock (void *chain, int size)
 	data = b->data;
 	(char *)(b->data) += size;
 	b->free -= size;
+
 	return data;
 }
 

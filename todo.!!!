@@ -1,12 +1,15 @@
+! speedup: 
+  1) FS: cache FS_ListFiles() for file system: list all files in all nested dirs and save as PAK file (in memory)
+  2) ref_gl: ?? speedup BuildMd2Normals()
+
 ! map "trainstation": very slow (10-20ms) server (AMD K6-2+)
 ! unpack PVS in LoadBsp(); use unpacked version in renderer and CM_InPVS() etc.
-! check "OPCODE" collision detection library (is it suitable for BSP ?)
 
-!!! check PCX/WAL palette: alpha == 0 for index != 255 ??
+- if Win32 can't get keyboard focus, "set r_fullscreen 0"
+? check PCX/WAL palette: alpha == 0 for index != 255 ??
 KINGPIN:
   ! map "teehc2":
     - have entity "{ *3 }" ("noclass") (KP have error with it too)
-  - "worldspawn": "sounds"="2" -- what is it?
   - fire/steam
 FAKK:
   ? FS_FileInInPAK(const char *name)
@@ -23,41 +26,46 @@ HALFLIFE:
   - stop when |velocity| less than STOP_EPSILON==0.1 (friction)
 
 TRACE:
-  ? speedup ClipToEntities() (client/server/ref_gl): COMPARE only with entities in range
-    (start - trace.endpos)   (trace.endpos frequently updated); can sort ents by distance
-    (find a list of potentially collided ents, sort by coord and collide + update collision
-    limits with additional refining following traces)
+  ? speedup ClipToEntities() (client/server/ref_gl): COMPARE only with entities in range (start - trace.endpos)
+    (trace.endpos frequently updated); can sort ents by distance (find a list of potentially collided ents, sort
+    by coord and collide + update collision limits with additional refining following traces)
+    SUMMARY:
+    1) sort potentially touchable entities with MIN distance (dist(ent,start)-ent.rad (rad??)): 1st -- nearest
+       end=max_dist
+    2) loop: if (dist(ent)>end) break; Trace(ent); if (collide) end=dist(ent);
     NOTE: cannot TRACE to (start - trace.endpos) - will produce different trace.frac
+  - TransformedBoxTrace: replace (headnode,origin,angles) with entity; make HeadnodeForBox() -> tempEntity;
+    cache/update ent.angles->ent.axis ! (in renderer: ClipToEntities() -- use TransformedBoxTrace; send to renderer axis, not angles
+    (check how this will affects left-hand weapon model))
+  ? try something like AreaEdicts() for client trace code
 
+- console: "nochat" - disable messages from game (engine/developer messages only); may be, display game messages
+  in notify area ? (this will require console extensions, 2nd console etc.)
 - improve (speedup) MSG_WriteDir() with tables
-! improve server and client communication (server should be able to set map loading screenshot)
 ? "dir" -> "ls"
-! reimplement Cbuf_Execute(): need comment ('//') parsing (should go to another place)
-! make screnshots for savegames + display screenshot instead of levelshot on savegame loading
+! reimplement Cbuf_Execute(): need comment ('//') parsing (should go to another place) (or: "exec <file>" - parse before Cbuf_Execute())
 - cvar commands: "push", "pop"; 2 variants:
   a) push <var> , pop <var>     -- each cvar have its ovn stack; "push $a;push $b;pop a;pop b" will not change vars
   b) push <value> , pop <var>   -- global cvar stack; "push a;push b;pop a;pop b" will exchange "a" and "b" values
 
-!? improve SV_ClipMoveToEntities() like CL_ClipMoveToEntities(); don't need SV_AreaEdicts in this function ?
+!? improve SV_ClipMoveToEntities()/SV_PointContents() like cl_pred.c: don't need SV_AreaEdicts in this function(s) ?
 ? (when sprite-fx will be implemented) disable REF_NEWFX when necessary image files absent
 
 
 DINPUT MOUSE BUGS/NOTES:
 - in_initmouse -- needed?
-- check behaviour when no DirectX installed (where ?)
 - add MOUSE4 ?
 - check DirectInput8
-! add mouse cursor hiding (not always disappear with DInput after deactivate+activate)
-  to hide cursor: "in_mouse 1;in_mouse 2"
+! add mouse cursor hiding (not always disappear with DInput after deactivate+activate); now to hide cursor: "in_mouse 1;in_mouse 2"
 
 ! improve memory management: allocate with alignment of 16 bytes (large blocks only ? Z_AllocAligned(size, align) func ?)
-- command for hiding files from pak: "pakhide <pakname> <filemask>" - non-reversive command, changes (be sure non-destructive
+? command for hiding files from pak: "pakhide <pakname> <filemask>" - non-reversive command, changes (be sure non-destructive
   for alpha-sort names) files info so it will not found on next requests
-- stop animation within a mouse click (and something another?)
+- stop cin playback within a mouse click (already?) (and something another?)
 ? improve camper detection: track player position every ... 5 sec (??) for a 1+n minute period and set "camper" to true
   if current player position is near (tune this distance !) to history[now-1min .. now-2min]
 - menu option: priority (win_priorityBoost) -- for Win2K
-? savegames: add screenshot, gzip file
+? savegames: add screenshot (*?), gzip file
 
 BSP:
 ? KP map scaling (auto)
@@ -68,34 +76,34 @@ BSP:
 ? Q1 map support (easier than HL)
 
 *** BUGS ***
-! sometimes key_up skipped (or key_down spontaneously pressed)
-- map "temple2", "lavatube" -- waterfall: bullet sounds (change sound for water sparks, change place for water bullet sounds
-  or something another ??)
-- command line: "+set cddir <dir>" (etc.) - will display error, when var will be parsed 2nd time
-- baseq2: "newgame" -- cannot break video and start game
 - Sys_Error(ERR_FATAL): will not restore mouse (not always ??!)
-- dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
-  (and add support for colors, scrolling etc.)
 *? map "ground3_beta3": have (server, "MAX_ENTS=128"- related ?) bug "SZ_Overflow" (??) when spectating and flying from inside wall
   (see cl_ents.c MAX_PARSE_ENTITIES: seems, no more than 128 entities delta between frames)
-- prediction:
+? prediction:
   - map "beachassault": ship's entry, when in "down" state -- drizzle
-  - map "japan", lift, 3rd_person, going up with looking up -- camera drizzle (bad collision with lift entity)
+  - map "japan", lift (really, within all lifts), 3rd_person, going up with looking up -- camera drizzle (bad collision with lift entity)
+- 3rd person view: ground3_beta3, dist=300, enter dark place (near ladder) between street lamp and garage: garage
+  door will disappear (server sends entity list depends on model origin, not vieworg)
+- demo "tower", when run with "timedemo 1" will not display stats at the end (seems, it modify cvar inside demo; OR: demo will
+  set "deathmatch" to 1 (before this modification will be disabled), and - FixCvarCheats())
+? unable (sometimes?) for client to download map from server
+- memory leak 4096 bytes (map rexro/discon/vid_res/STATS/beachassault/rexro/discon/vid_res/STATS)
 
 ? menu interface: appearing/disappearing fx (see itmastio etc.)
 
 - bindtmp, aliastmp, aliaslist (now it is "alias <no-args>")
 
-! remove auto-demo start on quake loading (option? timeout? first run?)
+! remove auto-demo start on quake loading (option? timeout? first run?); remove "~"=="d1" (make demo playback like a normal game
+  (non-controllable movement), but: find a way to stop demo (see as Q3 does ?))
 
 ! add materials: glass, grass, sand
 ? make atmospheric effects (some maps in kingpin and halflife does, Q3F too ...)
   (make surface-dependent raindrop sounds? (KP:main/sound/world/rain*.wav))
 
-? SOFT sprites: get sprite size not from md2, but from image dimensions (see new explosions ...); we can do it,
+? ref_SOFT sprites: get sprite size not from md2, but from image dimensions (see new explosions ...); we can do it,
   because GL do this in this way
 
-------------- API ----------------------------
+------------- API ----------------
 
 - add Cmd_AddCommands(list,num), Cmd_RemoveCommands(list,num)
   - Cmd_AddCommands() may be implemented WITHOUT copying name, or just with using static cmdFunc_t for list
@@ -106,7 +114,7 @@ BSP:
   but disables completion)
 ? Com_DWPrintf() -- same as Com_DPrintf(), but display only when "developer" != 0 (or "warnings" != 0 ??)
 
-------------- MENUS --------------------------
+------------ MENUS ---------------
 
 - place "download options" to another place (not "player setup", or to upper level: where model selection performed);
   make download options to be a bitfield
@@ -114,7 +122,7 @@ BSP:
   - add developer submenus
   - add Half-Life-like screen action menus (semi-transparent rects with text; accessible with keyboard and mouse)
 
--------------- CLIENT/SERVER -----------------
+-------- CLIENT/SERVER -----------
 
 - record demos: make .dm2 file to be gzipped (produce with command other than "record"?)
   (may use old command too: who wants to send demo to other players, may just un-gzip it)
@@ -132,10 +140,9 @@ BSP:
 ? improve model precaching in cl_mail.c::CL_RequestNextDownload() (find FS_LoadFile) - make it with global
   LoadMd2() and global model list ??
 ? SV_FindIndex() -- use hash tables ?
-! try to remove "MAX_ENTS=128" limit (see "BUGS" section, "ground3_beta3")
 ? server: if game_time is comparable with ref_time, need to Sleep(game_time) every frame between game frames
 
------------- REF_GL (new) --------------
+--------- REF_GL (new) -----------
 
 - R_RecursiveWorldNode():
   3) fog-in-leaf
@@ -150,7 +157,7 @@ BSP:
 ! fog occlusion (for global fog) -- implement it like sky (occluded surface -> sky surface, sky -> fog color);
   may look at Alice ...
 
------------- SOUND ---------------------
+------------ SOUND ---------------
 
 ? make ladder sounds (if it is possible) - depends on ladder surface type (wood creak etc.)
 
@@ -164,7 +171,7 @@ BSP:
 ? spectator sounds (windy)
 ? try to move surface bullet sounds from client to server
 
------------ VIDEO --------------
+------------ VIDEO ---------------
 
 ? remove non-transparent water vis bugfix from oldgl
 
@@ -173,7 +180,7 @@ BSP:
 ? h/w gamma: check for valid gamma when read
 - video config menu: make "reset to defaults" works correctly (Cvar_Reset() ??)
 
-- add marks: bulletholes, explosion marks, blood, "cheesy shadow", water ripple
+- add marks: bulletholes (?), explosion marks, blood, "cheesy shadow", water ripple
 
 - ref_console (Win32 console-mode application, no GDI/OpenGL) -- auto-use in dedicated server (should attach
   dedicated server to ref)
@@ -181,10 +188,18 @@ BSP:
 
 - decompress visinfo for client (cmodel); share this with renderers (require to modify oldgl and soft)
 
+-------------- FS ----------------
+
+- "fs_debug 2": profile FS_LoadFile(), monitor cvar change and when set to 0 -> "loaded %d files %d bytes in %.2f seconds"
+??!! zipped (??) file cache (controlled with cvar "fs_cacheSize" [Mb]) (can attach buffer to packFile_t struc)
+? implement FS_ListFiles() / FreeNamedList() within a memory chains (not just linked list)
+- add FS_FOpenFileEx(name, mode), where mode is READ/WRITE/OSREAD (no PAK support)/ZWRITE (gzip compression)
+? FILE2 -> STREAM, isZipped -> funcRead / funcWrite / funcClose / funcOpen (??)
+
 ------------ COMMON --------------
 
 ? meminfo (see Alice) - renderer (hunks), z, chains etc. ???
-? hunks -> chains; align blocks by 16 bytes (currently: 8)
+? hunks -> chains; align blocks by 16 bytes (currently: msvcrt, 8)
 ? own memory manager (without malloc; use OS functions at low-lewel)
 
 *? Z_DEBUG: make following (#ifdef Z_DEBUG)
@@ -195,23 +210,19 @@ BSP:
   - make checking memory in "z_stats" (show damaged block info's - size, caller address ...)
     anbd Z_Free()
 
-? console command line parsing: add special chars ('\"' etc.)
+? console command line parsing: add special chars (C-like '\"' etc.)
 
-? implement FS_ListFiles() / FreeNamedList() within a memory chains (not just linked list)
 ? make AllocChainBlock() will try to use free space of PREVIOUS blocks when current (last) is full
 
-- add cvar "log_texts" -- log text, which was output with DrawText[Left|Right|Pos]();
-  value of "2" - log 1 frame and disable
-
 - make zip/* big-endian compatible; update to "zlib1.1.4"
-? update JPEG code
+? update JPEG code (new version)
 
 !? add Python virtual machine (game library, inline map scripts)
 
-- separate "math.c"; make "MMX", "3D Now!", "SSE" and "common" versions for some functions (all trace functions, ...)
+? separate "math.c"; make "MMX", "3D Now!", "SSE" and "common" versions for some functions (all trace functions, ...)
 - make some functions #define -> inline (DotProduct etc.)
                                  
-------------- CVARS --------------------
+------------- CVARS --------------
 
 ? cvarclear - clear all archive flags from cvars, which was not created with quake2 (created with "set <var> <value> a" command)
 ? cvar_mon varname [message]  - monitor cvar on screen (default message = varname)
@@ -220,7 +231,7 @@ BSP:
   (add flags for Cmd_AddCommand() - complete type: cvar, map, demo ... ???)
 ? make completion "dir"-like formatting + colorizing against char-marks (types)
 
-------------- LINUX --------------------
+------------- LINUX --------------
 
 - check all "#pragma pack" places
 - check Sys_FindFirst/FindNext/FindClose to work correctly (on Win32 was a bug: when canthave=DIR and 1st match

@@ -264,7 +264,9 @@ static void CL_AddParticleTraces (float timeDelta)
 	static int oldTime;
 	int		i;
 	particleTrace_t *p;
+	float	fovScale;
 
+	fovScale = tan (cl.refdef.fov_x / 2.0f / 180.0f * M_PI);
 	for (p = particleTraces, i = 0; i < MAX_PARTICLE_TRACES; p++, i++)
 	{
 		vec3_t	dir, pos, oldpos;
@@ -307,7 +309,7 @@ static void CL_AddParticleTraces (float timeDelta)
 
 		// calculate loop parameters
 		dist = VectorDistance (p->pos, oldpos);		// this is not timeDelta*speed (because pos may be changed)
-		viewDist = VectorDistance (p->pos, cl.refdef.vieworg) * tan (cl.refdef.fov_x / 2.0f / 180.0f * M_PI);
+		viewDist = VectorDistance (p->pos, cl.refdef.vieworg) * fovScale;
 		if (viewDist > 128)
 		{
 			if (viewDist > 1024)
@@ -519,8 +521,7 @@ void CL_MetalSparks (vec3_t pos, vec3_t dir, int count)
 		VectorAdd (pos, dir, pos2);
 
 		p = CL_AllocParticleTrace (pos2, vel, frand () * 0.32f, 0.1f);	//?? lifeTime = rnd*0.64 ?
-		if (!p)
-			return;
+		if (!p) return;
 		//!! p->brightness = 32;
 		if (!CL_AllocParticleTrace (pos2, vel, 0.2f, 0.05f)) return;
 	}
@@ -729,7 +730,9 @@ void CL_ParseMuzzleFlash2 (void)
 	vec3_t		origin;
 	int			flash_number;
 	cdlight_t	*dl;
-	vec3_t		forward, right;
+//	vec3_t		forward, right;
+	float		*forward, *left;
+	entityState_t *s;
 
 	ent = MSG_ReadShort (&net_message);
 	if (ent < 1 || ent >= MAX_EDICTS)
@@ -738,10 +741,12 @@ void CL_ParseMuzzleFlash2 (void)
 	flash_number = MSG_ReadByte (&net_message);
 
 	// locate the origin
-	AngleVectors (cl_entities[ent].current.angles, forward, right, NULL);
-	origin[0] = cl_entities[ent].current.origin[0] + forward[0] * monster_flash_offset[flash_number][0] + right[0] * monster_flash_offset[flash_number][1];
-	origin[1] = cl_entities[ent].current.origin[1] + forward[1] * monster_flash_offset[flash_number][0] + right[1] * monster_flash_offset[flash_number][1];
-	origin[2] = cl_entities[ent].current.origin[2] + forward[2] * monster_flash_offset[flash_number][0] + right[2] * monster_flash_offset[flash_number][1] + monster_flash_offset[flash_number][2];
+	s = &cl_entities[ent].current;
+	forward = s->axis[0];
+	left = s->axis[1];
+	VectorMA (s->origin, monster_flash_offset[flash_number][0], forward, origin);
+	VectorMA (origin, -monster_flash_offset[flash_number][1], left, origin);
+	origin[2] += monster_flash_offset[flash_number][2];
 
 	dl = CL_AllocDlight (ent);
 	VectorCopy (origin,  dl->origin);
@@ -1181,7 +1186,7 @@ void CL_ParticleEffect3 (vec3_t org, vec3_t dir, int color, int count)
 }
 
 
-void CL_TeleporterParticles (entity_state_t *ent)
+void CL_TeleporterParticles (entityState_t *ent)
 {
 	int			i, j;
 	particle_t	*p;
@@ -2103,7 +2108,7 @@ extern struct sfx_s	*cl_sfx_spectator[4];
 extern struct sfx_s	*cl_sfx_camper[9];
 
 
-void CL_EntityEvent (entity_state_t *ent)
+void CL_EntityEvent (entityState_t *ent)
 {
 	if (*re.flags & REF_CONSOLE_ONLY)
 		return;

@@ -76,7 +76,7 @@ static void Shaderlist_f (void)
 		char	*lmInfo;
 
 		sh = shadersArray[i];
-		if (mask && !MatchWildcard (sh->name, mask)) continue;
+		if (mask && !MatchWildcard2 (sh->name, mask, true)) continue;
 		n++;
 
 		switch (sh->lightmapNumber)
@@ -390,6 +390,12 @@ static shader_t *FinishShader (void)
 			  (s->rgbGenType == RGBGEN_EXACT_VERTEX && s->alphaGenType == ALPHAGEN_VERTEX)) ||	// rgba-gen exact vertex
 			s->numTcMods || (s->tcGenType != TCGEN_TEXTURE && s->tcGenType != TCGEN_LIGHTMAP))	// tcgen/tcmod
 			sh.fast = false;
+
+		// check entity dependence
+		if (s->rgbGenType == RGBGEN_ENTITY || s->rgbGenType == RGBGEN_ONE_MINUS_ENTITY ||
+			s->alphaGenType == ALPHAGEN_ENTITY || s->alphaGenType == ALPHAGEN_ONE_MINUS_ENTITY ||
+			s->frameFromEntity)
+			sh.dependOnEntity = true;
 	}
 	sh.numStages = numStages;
 
@@ -533,10 +539,8 @@ shader_t *GL_FindShader (char *name, int style)
 	int		hash, lightmapNumber, imgFlags;
 	shader_t *shader;
 
-	if (style & SHADER_WALL)
-		imgFlags = IMAGE_PICMIP|IMAGE_MIPMAP;
-	else
-		imgFlags = 0;
+	imgFlags = (style & (SHADER_WALL|SHADER_SKIN)) ? (IMAGE_PICMIP|IMAGE_MIPMAP) : 0;
+
 	if (style & SHADER_ENVMAP && !gl_reflImage)	// remove reflection if nothing to apply
 		style &= ~SHADER_ENVMAP;
 
@@ -684,6 +688,7 @@ shader_t *GL_FindShader (char *name, int style)
 
 				pname = strchr (name, 0) + 1;
 				stage->animMapFreq = 2;			// standard Quake2 animation frequency
+				stage->frameFromEntity = true;	// entities can animate with a different frames than world
 				for (i = 1; *pname && i < MAX_STAGE_TEXTURES; i++, pname = strchr(pname, 0)+1)
 				{
 					img = GL_FindImage (pname, imgFlags);
@@ -804,16 +809,18 @@ shader_t *GL_FindShader (char *name, int style)
 			if (!stage->rgbGenType)
 			{
 				if (style & SHADER_WALL)
-					stage->rgbGenType = RGBGEN_IDENTITY_LIGHTING;	// world surface, not lightmapped (skins too ?? should use lighting)
+					stage->rgbGenType = RGBGEN_IDENTITY_LIGHTING;	// world surface, not lightmapped
+				else if (style & SHADER_SKIN)
+					stage->rgbGenType = RGBGEN_LIGHTING_DIFFUSE;
 				else
 					stage->rgbGenType = RGBGEN_VERTEX;				// HUD image
 			}
-			if (!(style & SHADER_WALL))
-				stage->glState = stage->glState & ~GLSTATE_DEPTHWRITE | GLSTATE_NODEPTHTEST;
-			else
+			if (style & (SHADER_WALL|SHADER_SKIN))					// 3D shader
 				stage->glState = stage->glState & ~GLSTATE_NODEPTHTEST | GLSTATE_DEPTHWRITE;
+			else													// 2D shader
+				stage->glState = stage->glState & ~GLSTATE_DEPTHWRITE | GLSTATE_NODEPTHTEST;
 			if (lightmapNumber >= 0)
-				stage->glState &= ~GLSTATE_DEPTHWRITE;				// depthwrite performed on lightmap stage
+				stage->glState &= ~GLSTATE_DEPTHWRITE;				// depthwrite performed on lightmap stage (only) - for small speedup
 
 			if (style & SHADER_ABSTRACT)
 				st[0].numAnimTextures = 0;			// remove all stages
@@ -886,7 +893,7 @@ void GL_ResetShaders (void)
 	sh.sortParam = SORT_SPRITE;
 	sh.cullMode = CULL_NONE;
 	st[0].rgbGenType = RGBGEN_VERTEX;
-#if 0
+#if 1
 //	st[0].alphaGenType = ALPHAGEN_VERTEX;
 	st[0].glState = GLSTATE_NODEPTHTEST|GLSTATE_SRC_SRCCOLOR|GLSTATE_DST_ONE;
 #else

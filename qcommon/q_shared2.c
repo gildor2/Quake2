@@ -72,22 +72,64 @@ unsigned ColorBytes4 (float r, float g, float b, float a)
 
 float NormalizeColor (const vec3_t in, vec3_t out)
 {
-	float	max, denom;
+	float	m, denom;
 
-	max = in[0];
-	if (in[1] > max) max = in[1];
-	if (in[2] > max) max = in[2];
+	m = max(in[0], in[1]);
+	m = max(m, in[2]);
 
-	if (!max)
+	if (!m)
 		VectorClear (out);
 	else
 	{
-		denom = 1.0f / max;
+		denom = 1.0f / m;
 		out[0] = in[0] * denom;
 		out[1] = in[1] * denom;
 		out[2] = in[2] * denom;
 	}
-	return max;
+	return m;
+}
+
+float NormalizeColor255 (const vec3_t in, vec3_t out)
+{
+	float	m, denom;
+
+	m = max(in[0], in[1]);
+	m = max(m, in[2]);
+
+	if (!m)
+		VectorClear (out);
+	else
+	{
+		denom = 255.0f / m;
+		out[0] = in[0] * denom;
+		out[1] = in[1] * denom;
+		out[2] = in[2] * denom;
+	}
+	return m;
+}
+
+float ClampColor255 (const vec3_t in, vec3_t out)
+{
+	float	m;
+
+	m = max(in[0], in[1]);
+	m = max(m, in[2]);
+
+	if (m < 255)
+	{
+		if (in != out)
+			VectorCopy (in, out);
+	}
+	else
+	{
+		float	denom;
+
+		denom = 255.0f / m;
+		out[0] = in[0] * denom;
+		out[1] = in[1] * denom;
+		out[2] = in[2] * denom;
+	}
+	return m;
 }
 
 float Q_rsqrt (float number)
@@ -163,15 +205,44 @@ void AngleVectors (const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
 	float	angle;
 	float	sr, sp, sy, cr, cp, cy;
 
-	angle = angles[YAW] * (M_PI*2 / 360);
-	sy = sin (angle);
-	cy = cos (angle);
-	angle = angles[PITCH] * (M_PI*2 / 360);
-	sp = sin (angle);
-	cp = cos (angle);
-	angle = angles[ROLL] * (M_PI*2 / 360);
-	sr = sin (angle);
-	cr = cos (angle);
+	if (angles[YAW])
+	{
+		angle = angles[YAW] * (M_PI*2 / 360);
+		sy = sin (angle);
+		cy = cos (angle);
+	}
+	else
+	{
+		sy = 0;
+		cy = 1;
+	}
+
+	if (angles[PITCH])
+	{
+		angle = angles[PITCH] * (M_PI*2 / 360);
+		sp = sin (angle);
+		cp = cos (angle);
+	}
+	else
+	{
+		sp = 0;
+		cp = 1;
+	}
+
+	if (right || up)
+	{
+		if (angles[ROLL])
+		{
+			angle = angles[ROLL] * (M_PI*2 / 360);
+			sr = sin (angle);
+			cr = cos (angle);
+		}
+		else
+		{
+			sr = 0;
+			cr = 1;
+		}
+	}
 
 	if (forward)
 	{
@@ -408,7 +479,7 @@ float anglemod (float a)
 
 /*
 // this is the slow, general version
-int BoxOnPlaneSide2 (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
+int BoxOnPlaneSide2 (vec3_t emins, vec3_t emaxs, cplane_t *p)
 {
 	int		i;
 	float	dist1, dist2;
@@ -449,7 +520,7 @@ Returns 1, 2, or 1 + 2
 */
 #if	1	//let compiler optimize this // !id386 || defined __linux__
 
-int BoxOnPlaneSide (vec3_t mins, vec3_t maxs, struct cplane_s *p)
+int BoxOnPlaneSide (vec3_t mins, vec3_t maxs, cplane_t *p)
 {
 	float	dist1, dist2;
 	int		sides;
@@ -525,7 +596,7 @@ int BoxOnPlaneSide (vec3_t mins, vec3_t maxs, struct cplane_s *p)
 #else
 #pragma warning( disable: 4035 )
 
-__declspec (naked) int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
+__declspec (naked) int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, cplane_t *p)
 {
 	static int bops_initialized;
 	static int Ljmptab[8];
@@ -759,8 +830,8 @@ Lerror:
 
 void ClearBounds (vec3_t mins, vec3_t maxs)
 {
-	mins[0] = mins[1] = mins[2] = 99999;
-	maxs[0] = maxs[1] = maxs[2] = -99999;
+	mins[0] = mins[1] = mins[2] = 999999;
+	maxs[0] = maxs[1] = maxs[2] = -999999;
 }
 
 void AddPointToBounds (vec3_t v, vec3_t mins, vec3_t maxs)

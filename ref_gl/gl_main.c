@@ -2,6 +2,7 @@
 #include "gl_shader.h"
 #include "gl_backend.h"
 #include "gl_model.h"
+#include "gl_math.h"
 
 glrefdef_t	gl_refdef;
 
@@ -27,11 +28,15 @@ cvar_t	*gl_drawbuffer;
 
 // image-specific
 cvar_t	*gl_nobind;
+
 cvar_t	*r_ignorehwgamma;	// make "gl_" ??
 cvar_t	*gl_overBrightBits;
 cvar_t	*r_gamma;			// ...
+cvar_t	*r_brightness;
+cvar_t	*r_contrast;
 cvar_t	*r_saturation;
-cvar_t	*r_intensity;
+cvar_t	*r_intensity;		//??
+
 cvar_t	*gl_texturemode;
 cvar_t	*gl_picmip;
 cvar_t	*gl_roundImagesDown;
@@ -40,10 +45,14 @@ cvar_t	*gl_textureBits;
 // rendering speed/quality settings
 cvar_t	*gl_fastsky;		// do not draw skybox
 cvar_t	*gl_fog;
+
 cvar_t	*gl_flares;
 cvar_t	*gl_dynamic;		// enable dynamic lightmaps for Q2/HL maps
 cvar_t	*gl_dlightBacks;	// when disabled, do not draw dlights on backfaces
 cvar_t	*gl_vertexLight;	// use glColor() against lightmaps
+cvar_t	*gl_nogrid;
+cvar_t	*gl_showgrid;
+
 cvar_t	*gl_ignoreFastPath;	// do not use GenericStageIterator() when possible
 
 // game settings
@@ -72,6 +81,8 @@ cvar_t	*r_drawentities;
 cvar_t	*gl_showbboxes;
 cvar_t	*gl_showtris;
 cvar_t	*gl_shownormals;
+cvar_t	*gl_lightLines;
+cvar_t	*gl_showLights;
 cvar_t	*gl_singleShader;
 cvar_t	*gl_logTexts;
 
@@ -108,6 +119,8 @@ CVAR_BEGIN(vars)
 
 //	CVAR_VAR(gl_shadows, 0, CVAR_ARCHIVE ),
 	CVAR_VAR(r_gamma, 1, CVAR_ARCHIVE),
+	CVAR_VAR(r_brightness, 1, CVAR_ARCHIVE),
+	CVAR_VAR(r_contrast, 1, CVAR_ARCHIVE),
 	CVAR_VAR(r_saturation, 1, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(r_intensity, 1, CVAR_ARCHIVE),		//?? remove ?!
 	CVAR_VAR(r_ignorehwgamma, 0, CVAR_ARCHIVE),
@@ -118,10 +131,14 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(gl_fastsky, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_fog, 0, 0),	//?? ARCHIVE? CHEAT?
+
 	CVAR_VAR(gl_flares, 1, CVAR_ARCHIVE),
 	CVAR_VAR(gl_dynamic, 1, 0),
 	CVAR_VAR(gl_dlightBacks, 1, 0),
 	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
+	CVAR_VAR(gl_nogrid, 0, 0),
+	CVAR_VAR(gl_showgrid, 0, 0),
+
 	CVAR_VAR(gl_ignoreFastPath, 1, 0),						//!! use with VertexArrayRange ONLY !!
 
 	{&gl_hand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE},
@@ -161,6 +178,8 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_showbboxes, 0, 0),
 	CVAR_VAR(gl_showtris, 0, 0),
 	CVAR_VAR(gl_shownormals, 0, 0),
+	CVAR_VAR(gl_lightLines, 0, 0),
+	CVAR_VAR(gl_showLights, 0, 0),
 	CVAR_VAR(gl_singleShader, 0, 0),
 	CVAR_VAR(gl_logTexts, 0, 0),
 
@@ -226,7 +245,7 @@ static int GL_Init (void)
 {
 	Com_Printf ("------- R_Init -------\n");
 
-	Com_Printf ("ref_gl version: "REF_VERSION"\n");
+	Com_Printf ("ref_gl version: "REF_VERSION"\n");		//?? remove
 
 	GL_Register ();
 
@@ -332,6 +351,7 @@ static int GL_Init (void)
 
 	GL_SetDefaultState();
 
+	GL_InitFuncTables ();
 	GL_InitImages ();
 	GL_InitShaders ();
 	GL_InitModels ();
@@ -429,10 +449,12 @@ static void GL_BeginFrame (float camera_separation)
 	}
 
 	/*----- update hardware gamma (if present) ------*/
-	if (r_gamma->modified && gl_config.deviceSupportsGamma)
+	if ((r_gamma->modified || r_contrast->modified || r_brightness->modified) && gl_config.deviceSupportsGamma)
 	{
-		r_gamma->modified = false;
 		GL_SetupGamma ();
+		r_gamma->modified = false;
+		r_contrast->modified = false;
+		r_brightness->modified = false;
 	}
 
 	/*------ change modes if necessary ---------*/
@@ -521,11 +543,11 @@ static void PrepareWorldModel (void)
 		}
 #if 0
 #define m vp.vieworg
-	DrawTextLeft (va("Org: %9.4g, %9.4g %9.4g", m[0], m[1], m[2]), 0.6, 1, 0.2);
+	DrawTextLeft (va("Org: %9.4g, %9.4g %9.4g", VECTOR_ARGS(m)), 0.6, 1, 0.2);
 #undef m
 #define m vp.viewaxis
 	for (i = 0; i < 3; i++)
-		DrawTextLeft (va("ax[%d] = {%9.4g, %9.4g %9.4g}", i, m[i][0], m[i][1], m[i][2]), 0.4, 0.8, 1);
+		DrawTextLeft (va("ax[%d] = {%9.4g, %9.4g %9.4g}", i, VECTOR_ARGS(m[i])), 0.4, 0.8, 1);
 #undef m
 #define m vp.modelMatrix
 	DrawTextLeft (va("----- modelview matrix -----"), 1, 0.2, 0.2);
@@ -541,28 +563,31 @@ static void SetFrustum (void)
 	float	sx, sy, cx, cy;
 	int		i;
 
-#define SCALE	(M_PI/360.0f)
-//#define SCALE	(M_PI/360.0 * 0.7)	// debug: smaller fov
-	sx = sin (vp.fov_x * SCALE);	// fov/2 * pi/180
-	sy = sin (vp.fov_y * SCALE);
-	cx = cos (vp.fov_x * SCALE);
-	cy = cos (vp.fov_y * SCALE);
+	// setup plane [0]: view direction + znear
+	VectorCopy (vp.viewaxis[0], &vp.frustum[0]);
+
+#define SCALE	(0.5/360.0f)
+	sx = SIN_FUNC(vp.fov_x * SCALE);	// fov/2 * pi/180
+	sy = SIN_FUNC(vp.fov_y * SCALE);
+	cx = COS_FUNC(vp.fov_x * SCALE);
+	cy = COS_FUNC(vp.fov_y * SCALE);
 #undef SCALE
 	// calculate normals
 	for (i = 0; i < 3; i++)
 	{
-		vp.frustum[0].normal[i] = vp.viewaxis[0][i] * sx + vp.viewaxis[1][i] * cx;
-		vp.frustum[1].normal[i] = vp.viewaxis[0][i] * sx - vp.viewaxis[1][i] * cx;
-		vp.frustum[2].normal[i] = vp.viewaxis[0][i] * sy + vp.viewaxis[2][i] * cy;
-		vp.frustum[3].normal[i] = vp.viewaxis[0][i] * sy - vp.viewaxis[2][i] * cy;
+		vp.frustum[1].normal[i] = vp.viewaxis[0][i] * sx + vp.viewaxis[1][i] * cx;
+		vp.frustum[2].normal[i] = vp.viewaxis[0][i] * sx - vp.viewaxis[1][i] * cx;
+		vp.frustum[3].normal[i] = vp.viewaxis[0][i] * sy + vp.viewaxis[2][i] * cy;
+		vp.frustum[4].normal[i] = vp.viewaxis[0][i] * sy - vp.viewaxis[2][i] * cy;
 	}
 	// complete planes
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < NUM_FRUSTUM_PLANES; i++)
 	{
 		vp.frustum[i].type = PLANE_NON_AXIAL;
 		vp.frustum[i].dist = DotProduct (vp.vieworg, vp.frustum[i].normal);
 		SetPlaneSignbits (&vp.frustum[i]);
 	}
+	vp.frustum[0].dist += gl_znear->value;
 }
 
 
@@ -649,7 +674,7 @@ static void GL_RenderFrame (refdef_t *fd)
 	dlight_t *dl;
 	int		i;
 
-	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !gl_worldModel.name)
+	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !map.name)
 		Com_Error (ERR_FATAL, "R_RenderFrame: NULL worldModel");
 
 //	DrawTextRight ("---------RenderFrame---------\n", 1,0,0);
@@ -689,6 +714,7 @@ static void GL_RenderFrame (refdef_t *fd)
 	vp.lightStyles = fd->lightstyles;
 	vp.time = fd->time;
 
+//DrawTextLeft(va("begin scene: %d ents (%d+) %d dlights (%d+)",fd->num_entities,gl_numEntities,fd->num_dlights,gl_numDlights),1,0,0);
 	// add entities
 	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.cullEntsBox = gl_speeds.cullEnts2 = 0;
 	vp.firstEntity = gl_numEntities;
@@ -719,6 +745,19 @@ static void GL_RenderFrame (refdef_t *fd)
 
 	GL_FinishPortal ();
 
+	if (fd->blend[3])
+	{
+		color_t		c;
+
+//		DrawTextLeft(va("blend: %f %f %f %f",VECTOR_ARGS(fd->blend),fd->blend[3]),1,1,1);
+		// standard Quake2 blending
+		c.c[0] = Q_ftol (fd->blend[0] * 255);
+		c.c[1] = Q_ftol (fd->blend[1] * 255);
+		c.c[2] = Q_ftol (fd->blend[2] * 255);
+		c.c[3] = Q_ftol (fd->blend[3] * 255);
+		GL_DrawStretchPic (gl_identityLightShader, 0, 0, vid.width, vid.height, 0, 0, 0, 0, c.rgba);
+	}
+
 	/*------------ debug info ------------*/
 
 	gl_speeds.numFrames++;
@@ -728,16 +767,17 @@ static void GL_RenderFrame (refdef_t *fd)
 			gl_speeds.visLeafs, gl_speeds.frustLeafs, gl_speeds.leafs), 1, 0.5, 0);
 		DrawTextRight (va("surfs: %d culled: %d",
 			gl_speeds.surfs, gl_speeds.cullSurfs), 1, 0.5, 0);
-		DrawTextRight (va("tris: %d mtex: %1.2f",
-			gl_speeds.trisMT, gl_speeds.trisMT ? (float)gl_speeds.tris / gl_speeds.trisMT : 0), 1, 0.5, 0);
+		DrawTextRight (va("tris: %d (+%d) mtex: %1.2f",
+			gl_speeds.trisMT, gl_speeds.tris2D, gl_speeds.trisMT ? (float)gl_speeds.tris / gl_speeds.trisMT : 0), 1, 0.5, 0);
 		DrawTextRight (va("ents: %d fcull: %d+%d cull: %d",
 			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEntsBox, gl_speeds.cullEnts2), 1, 0.5, 0);
 		DrawTextRight (va("particles: %d cull: %d",
 			gl_speeds.parts, gl_speeds.cullParts), 1, 0.5, 0);
 		DrawTextRight (va("dlights: %d surfs: %d verts: %d",
 			gl_numDlights, gl_speeds.dlightSurfs, gl_speeds.dlightVerts), 1, 0.5, 0);
-		DrawTextRight (va("flares: %d test: %d cull: %d",
-			gl_speeds.flares, gl_speeds.testFlares, gl_speeds.cullFlares), 1, 0.5, 0);
+		DrawTextRight (va("flares: %d test: %d cull: %d lgrid: %d/%d",
+			gl_speeds.flares, gl_speeds.testFlares, gl_speeds.cullFlares,
+			map.numLightCells, map.mapGrid[0]*map.mapGrid[1]*map.mapGrid[2]), 1, 0.5, 0);
 		DrawTextRight (va("binds: %d uploads: %2d draws: %d",
 			gl_speeds.numBinds, gl_speeds.numUploads, gl_speeds.numIterators), 1, 0.5, 0);
 
@@ -745,7 +785,7 @@ static void GL_RenderFrame (refdef_t *fd)
 		 * (some data will be set up in EndFrame()->BackEnd())
 		 */
 		gl_speeds.surfs = gl_speeds.cullSurfs = 0;
-		gl_speeds.tris = gl_speeds.trisMT = 0;
+		gl_speeds.tris = gl_speeds.trisMT = gl_speeds.tris2D = 0;
 		gl_speeds.numBinds = gl_speeds.numUploads = 0;
 		gl_speeds.numIterators = 0;
 	}
@@ -1063,14 +1103,17 @@ static void SetSky (char *name, float rotate, vec3_t axis)
 
 	gl_skyShader = shader;
 	// change all sky surfaces
-	for (i = 0, surf = gl_worldModel.faces; i < gl_worldModel.numFaces; i++, surf++)
+	for (i = 0, surf = map.faces; i < map.numFaces; i++, surf++)
 		if (surf->shader == old) surf->shader = shader;
 }
 
 static void Screenshot (int flags, char *name)
 {
+	static char shotName[MAX_QPATH];
+
+	strcpy (shotName, name);
 	gl_screenshotFlags = flags;
-	gl_screenshotName = name;
+	gl_screenshotName = shotName;
 }
 
 

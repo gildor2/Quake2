@@ -316,7 +316,7 @@ void Com_Quit (void)
 // 3) *rest  - name ends with "rest" (for example, ".ext")
 // 4) start* - name starts with "start"
 // 4) text   - name equals "text"
-// Comparision is case-insensitive.
+// Comparision is case-sensitive.
 qboolean MatchWildcard (char *name, char *mask)
 {
 	int		masklen, namelen;
@@ -360,7 +360,7 @@ qboolean MatchWildcard (char *name, char *mask)
 			mask++;
 			masklen -= 2;
 			for (i = 0; i <= namelen - masklen; i++)
-				if (!Q_strncasecmp (&name[i], mask, masklen)) return true;
+				if (!strncmp (&name[i], mask, masklen)) return true;
 		}
 		else
 		{
@@ -377,20 +377,36 @@ qboolean MatchWildcard (char *name, char *mask)
 
 				if (namelen < preflen + sufflen)
 					continue;			// name is not long enough
-				if (preflen && Q_strncasecmp (name, mask, preflen))
+				if (preflen && strncmp (name, mask, preflen))
 					continue;			// different prefix
-				if (sufflen && Q_strncasecmp (name + namelen - sufflen, suff, sufflen))
+				if (sufflen && strncmp (name + namelen - sufflen, suff, sufflen))
 					continue;			// different suffix
 
 				return true;
 			}
 			// exact match ("text")
-			if (namelen == masklen && !Q_strncasecmp (name, mask, namelen))
+			if (namelen == masklen && !strncmp (name, mask, namelen))
 				return true;
 		}
 	}
 
 	return false;
+}
+
+
+// Variant of MatchWildcard(), when we can choose, whether it will be case-sensitive, or case-insensitive
+qboolean MatchWildcard2 (char *name, char *mask, qboolean ignoreCase)
+{
+	if (!ignoreCase)
+		return MatchWildcard (name, mask);
+	else
+	{
+		char	_name[MAX_QPATH], _mask[MAX_QPATH];
+
+		Q_strncpylower (_name, name, sizeof(_name));
+		Q_strncpylower (_mask, mask, sizeof(_mask));
+		return MatchWildcard (_name, _mask);
+	}
 }
 
 
@@ -478,10 +494,10 @@ void MSG_WriteLong (sizebuf_t *sb, int c)
 	byte	*buf;
 
 	buf = SZ_GetSpace (sb, 4);
-	buf[0] = c&0xff;
-	buf[1] = (c>>8)&0xff;
-	buf[2] = (c>>16)&0xff;
-	buf[3] = c>>24;
+	*buf++ = c & 0xff;
+	*buf++ = (c>>8) & 0xff;
+	*buf++ = (c>>16) & 0xff;
+	*buf = c>>24;
 }
 
 void MSG_WriteFloat (sizebuf_t *sb, float f)
@@ -499,10 +515,8 @@ void MSG_WriteFloat (sizebuf_t *sb, float f)
 
 void MSG_WriteString (sizebuf_t *sb, char *s)
 {
-	if (!s)
-		SZ_Write (sb, "", 1);
-	else
-		SZ_Write (sb, s, strlen(s)+1);
+	if (!s)	SZ_Write (sb, "", 1);
+	else	SZ_Write (sb, s, strlen(s)+1);
 }
 
 void MSG_WriteCoord (sizebuf_t *sb, float f)
@@ -561,6 +575,95 @@ void MSG_WriteDeltaUsercmd (sizebuf_t *buf, usercmd_t *from, usercmd_t *cmd)
 }
 
 
+#if 0
+
+static byte dirTable[3*8*8*8];		// value=0 -- uninitialized, else idx+1
+	// 3*8 - cube: 6 planes, each subdivided to 4 squares (x<0,x>0,y<0,y>0)
+	// 8*8 - coordinates inside square
+
+static int GetDirCell (vec3_t dir)
+{
+	vec3_t	adir;
+	float	m;
+	int		sign, base, base2;
+
+	adir[0] = fabs (dir[0]);
+	adir[1] = fabs (dir[1]);
+	adir[2] = fabs (dir[2]);
+	sign = 0;
+	if (dir[0] < 0) sign |= 1;
+	if (dir[1] < 0) sign |= 2;
+	if (dir[2] < 0) sign |= 4;
+
+	if (adir[0] < adir[1])
+	{
+		base = 1;
+		m = adir[1];
+	}
+	else
+	{
+		base = 0;
+		m = adir[0];
+	}
+	if (m < adir[2])
+	{
+		base = 2;
+		m = adir[2];
+	}
+
+	m = 8.0f / m;
+	switch (base)
+	{
+	case 0:
+		base2 = (Q_ftol (adir[1] * m) << 3) + Q_ftol (adir[2] * m);
+		break;
+	case 1:
+		base2 = (Q_ftol (adir[0] * m) << 3) + Q_ftol (adir[2] * m);
+		break;
+	case 2:
+		base2 = (Q_ftol (adir[0] * m) << 3) + Q_ftol (adir[1] * m);
+		break;
+	}
+	return (base << 9) + (sign << 6) + base2;
+}
+
+void MSG_WriteDir (sizebuf_t *sb, vec3_t dir)
+{
+	int		cell, i, best;
+	float	d, bestd;
+
+	if (!dir)
+	{
+		MSG_WriteByte (sb, 0);
+		return;
+	}
+	// find cache cell
+	cell = GetDirCell (dir);
+	if (dirTable[cell])	// already computed
+	{
+		MSG_WriteByte (sb, dirTable[cell] - 1);
+		Com_Printf("*");
+		return;
+	}
+	// compute index
+	bestd = best = 0;
+	for (i = 0; i < NUMVERTEXNORMALS; i++)
+	{
+		d = DotProduct (dir, bytedirs[i]);
+		if (d > bestd)
+		{
+			bestd = d;
+			best = i;
+		}
+	}
+	// cache index
+	dirTable[cell] = best+1;
+	// write
+	MSG_WriteByte (sb, best);
+}
+
+#else
+
 void MSG_WriteDir (sizebuf_t *sb, vec3_t dir)
 {
 	int		i, best;
@@ -586,6 +689,8 @@ void MSG_WriteDir (sizebuf_t *sb, vec3_t dir)
 	MSG_WriteByte (sb, best);
 }
 
+#endif
+
 
 void MSG_ReadDir (sizebuf_t *sb, vec3_t dir)
 {
@@ -593,7 +698,7 @@ void MSG_ReadDir (sizebuf_t *sb, vec3_t dir)
 
 	b = MSG_ReadByte (sb);
 	if (b >= NUMVERTEXNORMALS)
-		Com_Error (ERR_DROP, "MSF_ReadDir: out of range");
+		Com_Error (ERR_DROP, "MSG_ReadDir: out of range");
 	VectorCopy (bytedirs[b], dir);
 }
 

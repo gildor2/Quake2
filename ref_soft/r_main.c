@@ -1386,8 +1386,11 @@ void	Draw_ConCharColor (int x, int y, int c, int color)
 
 static void Screenshot (int flags, char *name)
 {
+	static char shotName[MAX_QPATH];
+
+	strcpy (shotName, name);
 	r_screenshotFlags = flags;
-	r_screenshotName = name;
+	r_screenshotName = shotName;
 }
 
 static float GetClientLight (void)

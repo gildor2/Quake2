@@ -997,7 +997,7 @@ static void Key_Unbind_f (void)
 				}
 		}
 
-		if (keyName && MatchWildcard (keyName, mask))
+		if (keyName && MatchWildcard2 (keyName, mask, true))
 		{
 			Com_DPrintf ("unbind %s\n", keyName);
 			Key_SetBinding (i, "");
@@ -1081,7 +1081,7 @@ void Key_Bindlist_f (void)
 
 	n = 0;
 	for (i = 0; i < 256; i++)
-		if (keybindings[i] && keybindings[i][0] && (!mask || MatchWildcard (keybindings[i], mask)))
+		if (keybindings[i] && keybindings[i][0] && (!mask || MatchWildcard2 (keybindings[i], mask, true)))
 		{
 			n++;
 			Com_Printf ("%s \"%s\"\n", Key_KeynumToString(i), keybindings[i]);

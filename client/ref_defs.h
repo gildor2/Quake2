@@ -39,6 +39,7 @@
 #define FS_Gamedir	ri._FS_Gamedir
 #define FS_CreatePath	ri._FS_CreatePath
 #define MatchWildcard	ri._MatchWildcard
+#define MatchWildcard2	ri._MatchWildcard2
 #define Vid_GetModeInfo	ri._Vid_GetModeInfo
 #define Vid_MenuInit	ri._Vid_MenuInit
 #define ImageExists	ri._ImageExists
@@ -50,6 +51,7 @@
 #define LoadBspFile	ri._LoadBspFile
 #define CM_BoxTrace	ri._CM_BoxTrace
 #define CM_TransformedBoxTrace	ri._CM_TransformedBoxTrace
+#define CM_TransformedBoxTrace2	ri._CM_TransformedBoxTrace2
 #ifdef _WIN32
 #define Vid_CreateWindow	ri._Vid_CreateWindow
 #define Vid_DestroyWindow	ri._Vid_DestroyWindow
@@ -96,6 +98,7 @@ void	FS_FreeFile (void *buf);
 char*	FS_Gamedir (void);
 void	FS_CreatePath (char *path);
 qboolean	MatchWildcard (char *name, char *mask);
+qboolean	MatchWildcard2 (char *name, char *mask, qboolean ignoreCase);
 qboolean	Vid_GetModeInfo (int *width, int *height, int mode);
 void	Vid_MenuInit (void);
 int	ImageExists (char *name, int stop_mask);
@@ -107,6 +110,7 @@ qboolean	WriteJPG (char *name, byte *pic, int width, int height, qboolean highQu
 bspfile_t*	LoadBspFile (char *filename, qboolean clientload, unsigned *checksum);
 trace_t	CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
 trace_t	CM_TransformedBoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
+trace_t	CM_TransformedBoxTrace2 (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t *axis);
 #ifdef _WIN32
 void*	Vid_CreateWindow (int width, int height, qboolean fullscreen);
 void	Vid_DestroyWindow (qboolean force);

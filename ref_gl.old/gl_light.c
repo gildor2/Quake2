@@ -166,7 +166,7 @@ void R_PushDlights (void)
 	int		i;
 	dlight_t	*l;
 
-	if (gl_flashblend->integer)
+	if (gl_flashblend->integer || r_newrefdef.rdflags & RDF_NOWORLDMODEL)
 		return;
 
 	r_dlightframecount = r_framecount + 1;	// because the count hasn't

@@ -1,13 +1,31 @@
 #include "gl_local.h"
 #include "gl_model.h"
+#include "gl_lightmap.h"
 #include "gl_shader.h"
+#include "gl_math.h"
+#include "gl_poly.h"
 
+
+#define PROFILE_LOADING
+
+#ifdef PROFILE_LOADING
+#define START_PROFILE(name)	\
+	{	\
+		static char _name[] = #name;	\
+		int	_time = Sys_Milliseconds();
+#define END_PROFILE	\
+		_time = Sys_Milliseconds() - _time;	\
+		if (Cvar_VariableInt("r_profile")) Com_Printf("^5%s: %d ms\n", _name, _time);	\
+	}
+#else
+#define START_PROFILE(name)
+#define END_PROFILE
+#endif
 
 bspModel_t gl_worldModel;
-#define map		gl_worldModel	// short alias
+static bspfile_t	*bspfile;
 
 #define MAX_GLMODELS	1024
-#define MAX_POLYVERTS	1024
 
 static model_t modelsArray[MAX_GLMODELS];
 static int	modelCount;
@@ -47,6 +65,7 @@ model_t	*GL_FindModel (char *name)
 	modelCount++;		// reserve slot
 	strcpy (m->name, name2);
 
+START_PROFILE(FindModel::Load)
 	/*----- not found -- load model ------*/
 	len = FS_LoadFile (name2, (void**)&file);
 	if (!file)
@@ -55,6 +74,8 @@ model_t	*GL_FindModel (char *name)
 		Com_DPrintf ("R_FindModel: %s not found\n", name2);
 		return NULL;	// file not found
 	}
+END_PROFILE
+START_PROFILE(FindModel::Process)
 
 	switch (LittleLong(*file))
 	{
@@ -72,6 +93,7 @@ model_t	*GL_FindModel (char *name)
 	if (!m)
 		modelCount--;	// model was not loaded - free slot back
 
+END_PROFILE
 	FS_FreeFile (file);
 	return m;
 }
@@ -106,8 +128,15 @@ static void LoadFlares (lightFlare_t *data, int count)
 	int		i;
 	gl_flare_t *out;
 
-	map.numFlares = count;
-	map.flares = out = Hunk_Alloc (count * sizeof(gl_flare_t));
+	// get leafs/owner for already built flares (from SURF_AUTOFLARE)
+	for (out = map.flares; out; out = out->next)
+	{
+		out->leaf = GL_PointInLeaf (out->origin);
+		if (out->surf) out->owner = out->surf->owner;
+	}
+
+	map.numFlares += count;
+	out = Hunk_Alloc (count * sizeof(gl_flare_t));
 	for (i = 0; i < count; i++, data = data->next, out++)
 	{
 		VectorCopy (data->origin, out->origin);
@@ -116,7 +145,180 @@ static void LoadFlares (lightFlare_t *data, int count)
 		out->color.rgba = *((int*)data->color) | 0xFF000000;
 		out->style = data->style;
 		out->leaf = GL_PointInLeaf (data->origin);
+		if (data->model)
+			out->owner = map.models + data->model;
+
+		out->next = map.flares;
+		map.flares = out;
 	}
+}
+
+
+//??#define MAX_ASPECT	(5.0f / 8)
+
+static void BuildSurfFlare (surfaceCommon_t *surf, color_t *color, float intens)
+{
+	gl_flare_t	*f;
+	surfacePlanar_t *pl;
+	vec3_t	origin, c;
+	float	/* aspect,*/ x, y;
+
+	if (surf->type != SURFACE_PLANAR) return;
+	pl = surf->pl;
+
+//	aspect = (pl->maxs2[0] - pl->mins2[0]) / (pl->maxs2[1] - pl->mins2[1]);
+//	if (aspect < MAX_ASPECT || aspect > 1/MAX_ASPECT) return;	// not square
+
+	x = (pl->maxs2[0] + pl->mins2[0]) / 2;
+	y = (pl->maxs2[1] + pl->mins2[1]) / 2;
+	VectorScale (pl->axis[0], x, origin);
+	VectorMA (origin, y, pl->axis[1], origin);
+	VectorMA (origin, pl->plane.dist + 1, pl->plane.normal, origin);
+
+	f = Hunk_Alloc (sizeof(gl_flare_t));
+
+	VectorCopy (origin, f->origin);
+	f->surf = surf;
+//	f->owner = surf->owner;				// cannot do it: models not yet loaded
+	f->leaf = NULL;
+	f->size = sqrt (intens) * 6;
+	f->radius = 0;
+	f->color.rgba = color->rgba | 0xFF000000;
+	f->style = 0;
+
+	c[0] = color->c[0];
+	c[1] = color->c[1];
+	c[2] = color->c[2];
+	NormalizeColor255 (c, c);
+	f->color.c[0] = Q_ftol (c[0]);
+	f->color.c[1] = Q_ftol (c[1]);
+	f->color.c[2] = Q_ftol (c[2]);
+
+	f->next = map.flares;
+	map.flares = f;
+	map.numFlares++;
+}
+
+
+static void LoadSlights (slight_t *data, int count)
+{
+	int		i;
+	gl_slight_t *out;
+
+	map.numSlights = count;
+	map.slights = out = Hunk_Alloc (count * sizeof(gl_slight_t));
+	// copy slights from map
+	for (i = 0; i < count; i++, data = data->next)
+	{
+		VectorCopy (data->origin, out->origin);
+		VectorCopy (data->color, out->color);
+		out->intens = data->intens;
+		out->style = data->style;
+		out->type = data->type;
+		out->spot = data->spot;
+		VectorCopy (data->spotDir, out->spotDir);
+		out->spotDot = data->spotDot;
+		out->focus = data->focus;
+		out->fade = data->fade;
+		out->cluster = GL_PointInLeaf (data->origin)->cluster;
+		if (out->cluster < 0) continue;
+
+		out++;
+	}
+}
+
+
+static void BuildSurfLight (surfacePlanar_t *pl, color_t *color, float area, float intens, qboolean sky)
+{
+	surfLight_t *sl;
+	vec3_t	c;
+	float	m;
+
+	c[0] = color->c[0] / 255.0f;
+	c[1] = color->c[1] / 255.0f;
+	c[2] = color->c[2] / 255.0f;
+
+	if (bspfile->sunLight && sky)
+	{	// have sun -- params may be changed
+		m = max(bspfile->sunSurface[0], bspfile->sunSurface[1]);
+		m = max(m, bspfile->sunSurface[2]);
+		if (m == 0 && !map.haveSunAmbient)
+			return;									// no light from sky surfaces
+		if (m > 0 && m <= 1)
+			VectorCopy (bspfile->sunSurface, c);	// sun_surface specified a color
+		else if (m > 1)
+		{
+			// sun_surface specified an intensity, color -- from surface
+			c[0] *= bspfile->sunSurface[0];
+			c[1] *= bspfile->sunSurface[1];
+			c[2] *= bspfile->sunSurface[2];
+			intens = 1;
+		}
+		else if (m == 0)
+			intens = 0;								// this surface will produce ambient light only
+	}
+	intens *= NormalizeColor (c, c);
+
+	sl = Hunk_Alloc (sizeof(surfLight_t));
+	sl->next = map.surfLights;
+	map.surfLights = sl;
+	map.numSurfLights++;
+	VectorCopy (c, sl->color);
+	sl->sky = sky;
+	sl->intens = intens * area;
+	sl->pl = pl;
+
+	// qrad3 does this ...
+	sl->color[0] *= sl->color[0];
+	sl->color[1] *= sl->color[1];
+	sl->color[2] *= sl->color[2];
+
+	pl->light = sl;
+}
+
+
+static void GetSurfLightCluster (void)
+{
+	node_t	*n;
+	surfLight_t *sl;
+	surfaceCommon_t **s;
+	surfacePlanar_t *pl;
+	int		i, j, cl;
+
+	for (i = 0, sl = map.surfLights; i < map.numSurfLights; i++, sl = sl->next)
+		sl->cluster = -2;							// uninitialized
+
+	for (i = 0, n = map.nodes + map.numNodes; i < map.numLeafNodes - map.numNodes; i++, n++)
+	{
+		cl = n->cluster;
+		for (j = 0, s = n->leafFaces; j < n->numLeafFaces; j++, s++)
+			if ((*s)->type == SURFACE_PLANAR && !(*s)->owner)		//?? other types
+			{
+				pl = (*s)->pl;
+				if (pl->light)
+				{
+					if (pl->light->cluster == -2)	// uninitialized
+						pl->light->cluster = cl;
+					else if (pl->light->cluster != cl)
+						pl->light->cluster = -1;	// single surface in few clusters
+				}
+			}
+	}
+}
+
+
+static void InitLightGrid (void)
+{
+	int		i;
+
+	for (i = 0; i < 3; i++)
+	{
+		map.gridMins[i] = Q_ftol (floor(map.nodes[0].mins[i] / LIGHTGRID_STEP));
+		map.mapGrid[i] = Q_ftol (ceil(map.nodes[0].maxs[i] / LIGHTGRID_STEP)) - map.gridMins[i];
+	}
+	map.numLightCells = 0;
+	map.lightGridChain = CreateMemoryChain ();
+	map.lightGrid = AllocChainBlock (map.lightGridChain, sizeof(lightCell_t*) * map.mapGrid[0] * map.mapGrid[1] * map.mapGrid[2]);
 }
 
 
@@ -142,9 +344,9 @@ static void CreateSolarColor (float a, float x, float y, float *vec)
 	a0 = a * 5;
 	i = (int) a0;
 	a0 = a0 - i;	// frac part
-	s = (1.0 - x) * y;
-	t = (1.0 - a0 * x) * y;
-	a0 = y * (1.0 - x * (1.0 - a0));
+	s = (1.0f - x) * y;
+	t = (1.0f - a0 * x) * y;
+	a0 = y * (1.0f - x * (1.0f - a0));
 	switch (i)
 	{
 		case 0:
@@ -182,7 +384,7 @@ static void CopyLightmap (byte *dst, byte *src, int samples)
 
 			r = *src++; g = *src++; b = *src++;
 
-			light = r * 0.33 + g * 0.685 * b * 0.063;
+			light = r * 0.33f + g * 0.685f * b * 0.063f;
 			if (light > 255)
 				light = 1;
 			else
@@ -210,7 +412,6 @@ static void CopyLightmap (byte *dst, byte *src, int samples)
 			{
 				float	r, g, b, light;
 
-#define SATURATE(c,l,v) c = (l+0.5+(c-l)*v); if (c < 0) c = 0; else if (c > 255) c = 255;
 				// get color
 				r = *src++;  g = *src++;  b = *src++;
 				// change saturation
@@ -219,7 +420,7 @@ static void CopyLightmap (byte *dst, byte *src, int samples)
 				SATURATE(g,light,sat);
 				SATURATE(b,light,sat);
 				// put color
-				*dst++ = r;  *dst++ = g;  *dst++ = b;
+				*dst++ = Q_ftol (r);  *dst++ = Q_ftol (g);  *dst++ = Q_ftol (b);
 			}
 		}
 	}
@@ -245,693 +446,47 @@ static void SetNodesAlpha (void)
 }
 
 
-static void PostprocessSurfaces (void)
-{
-	surfaceCommon_t *surf;
-	int		i;
-
-	for (i = 0, surf = map.faces; i < map.numFaces; i++, surf++)
-		switch (surf->type)
-		{
-		case SURFACE_PLANAR:
-			{
-				surfacePlanar_t *pl;
-				int		k;
-				float	min1, max1, min2, max2;
-				vertex_t *v;
-
-				// generate axis
-				pl = surf->pl;
-				if (pl->plane.normal[2] == 1 || pl->plane.normal[2] == -1)
-				{
-					pl->axis[0][0] = pl->axis[0][2] = 0;
-					pl->axis[1][1] = pl->axis[1][2] = 0;
-					pl->axis[0][1] = pl->axis[1][0] = 1;
-				}
-				else
-				{
-					static vec3_t up = {0, 0, 1};
-
-					CrossProduct (pl->plane.normal, up, pl->axis[0]);
-					VectorNormalize (pl->axis[0]);
-					CrossProduct (pl->plane.normal, pl->axis[0], pl->axis[1]);
-				}
-				// compute 2D bounds
-				min1 = min2 = 999999;
-				max1 = max2 = -999999;
-				for (k = 0, v = pl->verts; k < pl->numVerts; k++, v++)
-				{
-					float	p1, p2;
-
-					p1 = DotProduct (v->xyz, pl->axis[0]);
-					p2 = DotProduct (v->xyz, pl->axis[1]);
-					v->pos[0] = p1;
-					v->pos[1] = p2;
-					if (p1 < min1) min1 = p1;
-					if (p1 > max1) max1 = p1;
-					if (p2 < min2) min2 = p2;
-					if (p2 > max2) max2 = p2;
-				}
-				pl->mins2[0] = min1;
-				pl->mins2[1] = min2;
-				pl->maxs2[0] = max1;
-				pl->maxs2[1] = max2;
-			}
-			break;
-		}
-}
-
-
-/*---------------- Dynamic lightmaps  --------------------*/
-
-static int lightmapsNum, currentLightmapNum;
-static lightmapBlock_t lmBlocks[MAX_LIGHTMAPS];
-
-static int lmAllocSaved[LIGHTMAP_SIZE];
-
-
-static void LM_Init (void)
-{
-	lightmapsNum = currentLightmapNum = 0;
-}
-
-
-static void LM_Flush (lightmapBlock_t *lm)
-{
-	if (!lm->empty && !lm->filled)
-	{
-		// have valid not stored lightmap -- upload it
-		lm->image = GL_CreateImage (va("*lightmap%d", lm->index), lm->pic, LIGHTMAP_SIZE, LIGHTMAP_SIZE,
-			IMAGE_CLAMP|IMAGE_LIGHTMAP);
-		lm->filled = true;
-	}
-	if (lm->pic)
-	{
-		// free memory blocks
-		Z_Free (lm->pic);
-		Z_Free (lm->allocated);
-		lm->pic = NULL;
-	}
-}
-
-
-static void LM_Done (void)
+static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 {
 	int		i;
+	float	min1, max1, min2, max2;
+	vertex_t *v;
 
-	for (i = 0; i < lightmapsNum; i++)
-		LM_Flush (&lmBlocks[i]);
-}
-
-
-static void LM_Save (lightmapBlock_t *lm)
-{
-	memcpy (lmAllocSaved, lm->allocated, sizeof(lmAllocSaved));
-}
-
-
-static void LM_Restore (lightmapBlock_t *lm)
-{
-	memcpy (lm->allocated, lmAllocSaved, sizeof(lmAllocSaved));
-}
-
-
-static lightmapBlock_t *LM_NewBlock (void)
-{
-	lightmapBlock_t *lm;
-
-	// find free slot
-	if (++lightmapsNum == MAX_LIGHTMAPS)
-		Com_Error (ERR_FATAL, "LM_NewBlock: MAX_LIGHTMAPS hit");
-	lm = &lmBlocks[lightmapsNum - 1];
-	// init fields
-	lm->index = lightmapsNum;
-	lm->image = NULL;
-	lm->empty = true;
-	lm->filled = false;
-	// alloc data blocks
-	lm->pic = Z_Malloc (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4);
-	lm->allocated = Z_Malloc (LIGHTMAP_SIZE * sizeof(lm->allocated[0]));
-	// clear data blocks
-	memset (&lm->allocated[0], 0, sizeof(lm->allocated));
-	memset (lm->pic, 0, LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4);
-
-	return lm;
-}
-
-
-static void LM_Rewind (void)
-{
-	currentLightmapNum = 0;
-}
-
-
-static lightmapBlock_t *LM_NextBlock (void)
-{
-	lightmapBlock_t *lm;
-
-	while (currentLightmapNum < lightmapsNum)
+	// generate axis
+	if (pl->plane.normal[2] == 1 || pl->plane.normal[2] == -1)
 	{
-		lm = &lmBlocks[currentLightmapNum++];
-		if (!lm->filled)
-			return lm;
+		pl->axis[0][0] = pl->axis[0][2] = 0;
+		pl->axis[1][1] = pl->axis[1][2] = 0;
+		pl->axis[0][1] = pl->axis[1][0] = 1;
 	}
-
-	return LM_NewBlock ();
-}
-
-
-static qboolean LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl)
-{
-	int		i, j, w, h;
-	int		best, best2;
-
-	w = dl->w2 + 1;					// make a border around lightmap
-	h = dl->h + 1;
-
-	best = LIGHTMAP_SIZE;
-
-	for (i = 0; i < LIGHTMAP_SIZE - w; i++)
+	else
 	{
-		best2 = 0;
+		static vec3_t up = {0, 0, 1};
 
-		for (j = 0; j < w; j++)
-		{
-			if (lm->allocated[i+j] >= best)
-				break;
-			if (lm->allocated[i+j] > best2)
-				best2 = lm->allocated[i+j];
-		}
-		if (j == w)
-		{	// this is a valid spot
-			dl->s = i;
-			dl->t = best = best2;
-		}
+		CrossProduct (pl->plane.normal, up, pl->axis[0]);
+		VectorNormalize (pl->axis[0]);
+		CrossProduct (pl->plane.normal, pl->axis[0], pl->axis[1]);
 	}
-
-	if (best + h > LIGHTMAP_SIZE)
-		return false;
-
-	j = best + h;
-	for (i = 0; i < w; i++)
-		lm->allocated[dl->s + i] = j;
-	dl->block = lm;
-
-	return true;
-}
-
-
-static void LM_PutBlock (dynamicLightmap_t *dl)
-{
-	byte	*dst, *src;
-	int		x, y, stride, i, numFast;
-
-	stride = (LIGHTMAP_SIZE - dl->w) * 4;
-
-	/*------------- put main lightmap -------------*/
-
-	dst = dl->block->pic + (dl->t * LIGHTMAP_SIZE + dl->s) * 4;
-	src = dl->source[0];
-
-	for (y = 0; y < dl->h; y++)
+	// compute 2D bounds
+	min1 = min2 = 999999;
+	max1 = max2 = -999999;
+	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
 	{
-		for (x = 0; x < dl->w; x++)
-		{
-			*dst++ = *src++;
-			*dst++ = *src++;
-			*dst++ = *src++;
-			*dst++ = 0;				// alpha (no additional scale)
-		}
-		dst += stride;
+		float	p1, p2;
+
+		p1 = DotProduct (v->xyz, pl->axis[0]);
+		p2 = DotProduct (v->xyz, pl->axis[1]);
+		v->pos[0] = p1;
+		v->pos[1] = p2;
+		if (p1 < min1) min1 = p1;
+		if (p1 > max1) max1 = p1;
+		if (p2 < min2) min2 = p2;
+		if (p2 > max2) max2 = p2;
 	}
-
-	/*----------- put dynamic lightmaps -----------*/
-
-	numFast = 0;
-	for (i = 0; i < dl->numStyles; i++)
-	{
-		if (!IS_FAST_STYLE(dl->style[i])) continue;
-
-		numFast++;
-		dst = dl->block->pic + (dl->t * LIGHTMAP_SIZE + dl->s + dl->w * numFast) * 4;
-		src = dl->source[i];
-
-		for (y = 0; y < dl->h; y++)
-		{
-			for (x = 0; x < dl->w; x++)
-			{
-				*dst++ = *src++;
-				*dst++ = *src++;
-				*dst++ = *src++;
-				*dst++ = 255;		// alpha (modulate by 2)
-			}
-			dst += stride;
-		}
-	}
-
-	// mark lightmap block as used
-	dl->block->empty = false;
-}
-
-
-// perform selection sort on lightstyles (mostly not needed, just in case)
-static void SortLightStyles (dynamicLightmap_t *dl)
-{
-	int		i, j;
-
-	if (dl->numStyles < 2) return;	// nothing to sort
-
-	for (i = 0; i < dl->numStyles - 1; i++)	// at iteration "i == dl->numStyles-1" all already will be sorted
-	{
-		int		min;
-		byte	*source, style;
-
-		min = i;
-		for (j = i + 1; j < dl->numStyles; j++)
-			if (dl->style[j] < dl->style[i]) min = j;
-		if (min == i) continue;		// in place
-		// exchange styles [i] and [j]
-		source = dl->source[i];
-		dl->source[i] = dl->source[j];
-		dl->source[j] = source;
-		style = dl->style[i];
-		dl->style[i] = dl->style[j];
-		dl->style[j] = style;
-	}
-}
-
-
-void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean vertexOnly, unsigned dlightMask)
-{
-	byte	pic[LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4];
-	int		x, z;
-	dynamicLightmap_t *dl;
-
-	dl = surf->lightmap;
-
-	if (dl->block && !vertexOnly)
-	{
-		/*------------- update regular lightmap ---------------*/
-		memset (pic, 0, dl->w * dl->h * 4);	// set initial state to zero (add up to 4 lightmaps)
-		for (z = 0; z < dl->numStyles; z++)
-		{
-			int		scale, count;
-			byte	*src, *dst;
-
-			if (IS_FAST_STYLE(dl->style[z])) continue;
-			src = dl->source[z];
-			dst = pic;
-			scale = dl->modulate[z] >> gl_config.overbrightBits;
-			if (gl_config.lightmapOverbright) scale <<= 1;
-
-			count = dl->w * dl->h;
-			for (x = 0; x < count; x++)
-			{
-				// modulate lightmap: scale==0 -> by 0, scale==128 - by 1; scale==255 - by 2 (or, to exact, 2.0-1/256)
-				int		r, g, b;
-
-				r = dst[0] + (scale * *src++ >> 7);
-				g = dst[1] + (scale * *src++ >> 7);
-				b = dst[2] + (scale * *src++ >> 7);
-				NORMALIZE_COLOR255(r, g, b);
-				*dst++ = r; *dst++ = g; *dst++ = b;
-				dst++;
-			}
-		}
-		GL_Bind (dl->block->image);
-		qglTexSubImage2D (GL_TEXTURE_2D, 0, dl->s, dl->t, dl->w, dl->h, GL_RGBA, GL_UNSIGNED_BYTE, pic);
-		gl_speeds.numUploads++;
-	}
-//??	else
-	{
-		/*-------------- update vertex colors --------------*/
-		vertex_t *v;
-		int		i;
-
-		for (i = 0, v = surf->verts; i < surf->numVerts; i++, v++)
-		{
-			unsigned r, g, b;			// 0 -- 0.0f, 256*16384*128 -- 256 (rang=21+8)
-
-			r = g = b = 0;
-			for (z = 0; z < dl->numStyles; z++)
-			{
-				byte	*point;
-				unsigned scale;			// 0 -- 0.0f, 128 -- 1.0f, 255 ~ 2.0 (rang=7)
-				unsigned frac_s, frac_t;// 0 -- 0.0f, 128 -- 1.0f (rang=7)
-				unsigned frac;			// point frac: 0 -- 0.0f, 16384*128 -- 1.0f (rang=14+7=21)
-
-				// calculate vertex color as weighted average of 4 points
-				scale = dl->modulate[z] * 2 >> gl_config.overbrightBits;
-				point = dl->source[z] + ((int)v->lm2[1] * dl->w + (int)v->lm2[0]) * 3;
-				// calculate s/t weights
-				frac_s = Q_ftol (v->lm2[0] * 128) & 127;
-				frac_t = Q_ftol (v->lm2[1] * 128) & 127;
-#define STEP(c,n)	c += point[n] * frac;
-				frac = (128 - frac_s) * (128 - frac_t) * scale;
-				STEP(r, 0); STEP(g, 1); STEP(b, 2);
-				frac = frac_s * (128 - frac_t) * scale;
-				STEP(r, 3); STEP(g, 4); STEP(b, 5);
-				point += dl->w * 3;		// next line
-				frac = (128 - frac_s) * frac_t * scale;
-				STEP(r, 0); STEP(g, 1); STEP(b, 2);
-				frac = frac_s * frac_t * scale;
-				STEP(r, 3); STEP(g, 4); STEP(b, 5);
-#undef STEP
-			}
-			// "fixed" -> int
-			r >>= 21;
-			g >>= 21;
-			b >>= 21;
-
-			NORMALIZE_COLOR255(r, g, b);
-			v->c.c[0] = r;
-			v->c.c[1] = g;
-			v->c.c[2] = b;
-		}
-		// apply vertex dlights
-		if (dlightMask)
-		{
-			surfDlight_t *sdl;
-			refDlight_t *dlight;
-
-			sdl = surf->dlights;
-			for ( ; dlightMask; dlightMask >>= 1)
-			{
-				float	intens2;
-
-				if (!(dlightMask & 1)) continue;
-				dlight = sdl->dlight;
-				intens2 = sdl->radius * sdl->radius;
-
-				for (i = 0, v = surf->verts; i < surf->numVerts; i++, v++)
-				{
-					float	f1, f2, dist2;
-					int		intens, r, g, b;
-
-					f1 = sdl->pos[0] - v->pos[0];
-					f2 = sdl->pos[1] - v->pos[1];
-					dist2 = f1 * f1 + f2 * f2;
-					if (dist2 >= intens2) continue;			// vertex is too far from dlight
-
-					intens = Q_ftol ((1 - dist2 / intens2) * 256);
-					r = v->c.c[0] + (dlight->c.c[0] * intens >> 8);
-					g = v->c.c[1] + (dlight->c.c[1] * intens >> 8);
-					b = v->c.c[2] + (dlight->c.c[2] * intens >> 8);
-					NORMALIZE_COLOR255(r, g, b);
-					v->c.c[0] = r;
-					v->c.c[1] = g;
-					v->c.c[2] = b;
-				}
-				sdl++;
-			}
-		}
-	}
-}
-
-
-/*---------------- Planar surface subdivision ----------------*/
-
-
-//#define POLY_DEBUG
-#define SUBDIV_ERROR	0.2		// max deviation from splitting plane
-
-typedef struct poly_s
-{
-	int		numIndexes;
-	int		*indexes;
-#ifdef POLY_DEBUG
-	int		maxIndexes;
-#endif
-	struct poly_s *next;
-} poly_t;
-
-
-// verts
-static int subdivNumVerts;					// number of vertexes in a new surface
-static vec3_t **psubdivVerts;				// pointer to a destination "vector pointer" array
-static int subdivNumVerts2;					// number of NEW vertexes
-static vec3_t subdivVerts[MAX_POLYVERTS];	// place for a NEW vertexes
-// polys
-static void *subdivPolyChain;
-static poly_t *subdivPolys;
-
-
-static int Subdivide_NewVert (float x, float y, float z)
-{
-	int		i;
-	vec3_t	*v;
-
-//	DebugPrintf ("  NewVert(%g, %g, %g)", x, y, z);
-	for (i = 0; i < subdivNumVerts; i++)
-	{
-		v = psubdivVerts[i];
-		if ((*v)[0] == x && (*v)[1] == y && (*v)[2] == z)
-		{
-//			DebugPrintf ("  -- already, %d\n", i);
-			return i;	// already have this vertex
-		}
-	}
-	if (subdivNumVerts >= MAX_POLYVERTS)
-		Com_Error (ERR_DROP, "SubdividePlane: MAX_POLYVERTS hit");
-
-	// alloc vertex
-	v = &subdivVerts[subdivNumVerts2++];
-	// "i" and "v" points to a place for new vertex
-	(*v)[0] = x;
-	(*v)[1] = y;
-	(*v)[2] = z;
-	psubdivVerts[i] = v;
-	subdivNumVerts++;	// == i-1
-//	DebugPrintf (" -- new, %d\n", i);
-	return i;
-}
-
-
-static poly_t *Subdivide_NewPoly (int numVerts)
-{
-	poly_t	*p;
-
-//	DebugPrintf ("NewPoly(%d)\n", numVerts);
-	// alloc poly
-	p = AllocChainBlock (subdivPolyChain, sizeof(poly_t) + 4 * numVerts);
-	p->indexes = (int*)(p+1);
-	p->numIndexes = 0;
-#ifdef POLY_DEBUG
-	p->maxIndexes = numVerts;
-#endif
-	p->next = NULL;
-
-	return p;
-}
-
-
-static void Subdivide_AddPointToPoly (poly_t *poly, int index)
-{
-#ifdef POLY_DEBUG
-	if (poly->numIndexes >= poly->maxIndexes)
-		Com_Error (ERR_DROP, "Subdivide_AddPointToPoly: index error");
-#endif
-	poly->indexes[poly->numIndexes] = index;
-	poly->numIndexes++;
-}
-
-
-static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis, float value, float delta)
-{
-	int		i, lastIndex, idx1, idx2;
-	vec3_t	*v1, *v2;
-	float	value1, value2;
-
-//	DebugPrintf ("SubdividePoly: %d inds, axis = %d, value = %g, delta = %g\n", poly->numIndexes, axis, value, delta);
-	lastIndex = poly->numIndexes - 1;
-	if (lastIndex < 0)
-	{
-//		DebugPrintf ("...empty!\n");
-		return;		// empty poly
-	}
-
-	value1 = value - delta;
-	value2 = value + delta;
-
-	idx2 = poly->indexes[0];
-	v2 = psubdivVerts[idx2];
-	for (i = 0; i <= lastIndex; i++)
-	{
-		int		side1, side2;
-
-		// process next point
-		v1 = v2;
-		idx1 = idx2;
-		idx2 = poly->indexes[i == lastIndex ? 0 : i + 1];
-		v2 = psubdivVerts[idx2];
-
-		// check point side
-		if ((*v1)[axis] <= value1)			side1 = 1;
-		else if ((*v1)[axis] >= value2)		side1 = 2;
-		else								side1 = 3;
-		// check next point side
-		if ((*v2)[axis] <= value1)			side2 = 1;
-		else if ((*v2)[axis] >= value2)		side2 = 2;
-		else								side2 = 3;
-		// add point to the corresponding poly
-		if (side1 == 3 && side2 == 3)
-		{
-			// both points are on divider -- add point only to the one poly
-			Subdivide_AddPointToPoly ((*v1)[axis] < (*v2)[axis] ? poly1 : poly2, idx1);
-			// NOTE: can be error here (non-convex polygon)
-		}
-		else
-		{
-			// at least one of points not on divider
-			if (side1 & 1)	Subdivide_AddPointToPoly (poly1, idx1);
-			if (side1 & 2)	Subdivide_AddPointToPoly (poly2, idx1);
-			// if points are on the different sides -- split line
-			if (!(side1 & side2))
-			{
-				float	frac;
-				vec3_t	mid;
-
-				// calculate midpoint
-				frac = (value - (*v1)[axis]) / ((*v2)[axis] - (*v1)[axis]);
-				VectorSubtract ((*v2), (*v1), mid);
-				VectorScale (mid, frac, mid);
-				VectorAdd (mid, (*v1), mid);
-				idx1 = Subdivide_NewVert (mid[0], mid[1], mid[2]);
-				// add it to both polys
-				Subdivide_AddPointToPoly (poly1, idx1);
-				Subdivide_AddPointToPoly (poly2, idx1);
-			}
-		}
-//		DebugPrintf ("  point #%d: (%g, %g, %g), side: %d\n",
-//			poly->indexes[i], (*v1)[0], (*v1)[1], (*v1)[2], side1);
-	}
-/*	DebugPrintf ("...OK: %d and %d inds (", poly1->numIndexes, poly2->numIndexes);
-	for (i = 0; i < poly1->numIndexes; i++)
-		DebugPrintf (" %d ", poly1->indexes[i]);
-	DebugPrintf (") and (");
-	for (i = 0; i < poly2->numIndexes; i++)
-		DebugPrintf (" %d ", poly2->indexes[i]);
-	DebugPrintf (")\n");
-*/
-}
-
-
-// In: *verts[numVerts]
-// Out: updated numVerts and filled verts[old_numVerts+1..new_numVerts]
-// Returns number of triangles in new surface
-static int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
-{
-	int		axis, i, numTris;
-	poly_t	*poly, *firstPoly, *lastPoly;
-	float	tessError;		// deviation from splitting plane
-
-//	DebugPrintf ("SubdividePlane: %d verts, %g tessSize\n", numVerts, tessSize);
-	/*------ initialization ---------*/
-	psubdivVerts = verts;
-	subdivNumVerts = numVerts;
-	subdivNumVerts2 = 0;
-	subdivPolyChain = CreateMemoryChain ();
-	tessError = tessSize * SUBDIV_ERROR;
-
-	/*---- generate initial poly ----*/
-	firstPoly = poly = Subdivide_NewPoly (numVerts);
-	for (i = 0; i < numVerts; i++)
-		poly->indexes[i] = i;
-	poly->numIndexes = numVerts;
-
-	/*------- subdivide polys -------*/
-	for (axis = 0; axis < 3; axis++)
-	{
-		poly = firstPoly;
-		firstPoly = NULL;
-		while (poly)
-		{
-			vec3_t	mins, maxs;
-			int		numIndexes;
-			float	value, min, max;
-			poly_t	*workPoly, *poly1, *poly2;
-
-//			DebugPrintf ("processing axis %d: %d indexes ...\n", axis, poly->numIndexes);
-			numIndexes = poly->numIndexes;
-			if (!numIndexes) continue;	// skip empty poly
-
-			// calculate poly bounds
-			ClearBounds (mins, maxs);
-			for (i = 0; i < numIndexes; i++)
-				AddPointToBounds (*psubdivVerts[poly->indexes[i]], mins, maxs);
-//			DebugPrintf ("bounds: (%g, %g, %g) - (%g, %g, %g)\n", mins[0], mins[1], mins[2], maxs[0], maxs[1], maxs[2]);
-
-			// mins/maxs, aligned to tessSize grid and shifted to the poly center by tessSize
-			min = floor((mins[axis] + tessSize + tessError) / tessSize) * tessSize;
-			max = ceil((maxs[axis] - tessSize - tessError) / tessSize) * tessSize;
-//			DebugPrintf ("... stepping from %g to %g with step %g\n", min, max, tessSize);
-
-			// shred workPoly
-			workPoly = poly;
-			for (value = min; value <= max; value += tessSize)
-			{
-				numIndexes = workPoly->numIndexes;
-				// alloc new polys
-				poly1 = Subdivide_NewPoly (numIndexes+1);	// subdivision of convex polygon can produce up to numVerts+1 verts
-				poly2 = Subdivide_NewPoly (numIndexes+1);
-				// add poly1 to chain
-				if (!firstPoly)
-					firstPoly = poly1;
-				else
-					lastPoly->next = poly1;
-				lastPoly = poly1;
-				// subdivide: split workPoly to poly1 and poly2
-				SubdividePoly (workPoly, poly1, poly2, axis, value, tessError);
-				// switch to poly2
-				workPoly = poly2;
-			}
-			// add workPoly to chain (rest of the splitting poly)
-			if (!firstPoly)
-				firstPoly = workPoly;
-			else
-				lastPoly->next = workPoly;
-			lastPoly = workPoly;
-
-			poly = poly->next;
-			workPoly->next = NULL;	// in a case when no subdivide loop (with workPoly) performed -- keep original poly
-		}
-	}
-	subdivPolys = firstPoly;
-	// calculate number of triangles in a resulting surface
-	numTris = 0;
-	for (poly = firstPoly; poly; poly = poly->next)
-		numTris += poly->numIndexes - 2;	// numTris = numVerts - 2
-//	DebugPrintf ("SubdividePlane: OK\n--------------------------\n");
-
-	return numTris;
-}
-
-
-static void FreeSubdividedPlane (void)
-{
-	if (subdivPolyChain)
-	{
-		FreeMemoryChain (subdivPolyChain);
-		subdivPolyChain = NULL;
-	}
-}
-
-
-static void GetSubdivideIndexes (int *pindex)
-{
-	poly_t	*poly;
-
-	for (poly = subdivPolys; poly; poly = poly->next)
-	{
-		int		i;
-
-		for (i = 0; i < poly->numIndexes - 2; i++)	// numTris; this will also reject polys with 2 vertexes
-		{
-			*pindex++ = poly->indexes[0];
-			*pindex++ = poly->indexes[i+1];
-			*pindex++ = poly->indexes[i+2];
-		}
-	}
+	pl->mins2[0] = min1;
+	pl->mins2[1] = min2;
+	pl->maxs2[0] = max1;
+	pl->maxs2[1] = max2;
 }
 
 
@@ -1024,6 +579,7 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 	for (i = 0; i < count; i++, data++, out++)
 	{
 		int		j;
+		surfaceCommon_t *s;
 
 		VectorCopy (data->mins, out->mins);
 		VectorCopy (data->maxs, out->maxs);
@@ -1032,8 +588,11 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 		// create surface list
 		out->numFaces = data->numfaces;
 		out->faces = Hunk_Alloc (out->numFaces * sizeof(surfaceCommon_t*));
-		for (j = 0; j < out->numFaces; j++)
-			out->faces[j] = &map.faces[data->firstface + j];
+		for (j = 0, s = &map.faces[data->firstface]; j < out->numFaces; j++, s++)
+		{
+			out->faces[j] = s;
+			s->owner = i == 0 ? NULL : out;		// model 0 is world
+		}
 	}
 }
 
@@ -1058,7 +617,6 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		float		mins[2], maxs[2];	// surface extents
 		qboolean	needLightmap;
 		vec3_t		*pverts[MAX_POLYVERTS];
-		int			prevVert, validVerts;
 		char		textures[MAX_QPATH * MAX_STAGE_TEXTURES], *pname;
 
 		numVerts = surfs->numedges;
@@ -1131,7 +689,25 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (surfs->lightofs >= 0)
 		{
 			if (sflags & SHADER_SKY)
+			{
+				image_t	*img;
+
+				//!! change this code (or update comment above)
 				needLightmap = false;
+				if (map.sunColor[0] + map.sunColor[1] + map.sunColor[2] == 0)
+				{
+					img = GL_FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP);	// find sky image only for taking its color
+					if (img)
+					{
+						map.sunColor[0] = img->color.c[0];		// do not require to divide by 255: will be normalized anyway
+						map.sunColor[1] = img->color.c[1];
+						map.sunColor[2] = img->color.c[2];
+						NormalizeColor (map.sunColor, map.sunColor);
+					}
+					else
+						VectorSet (map.sunColor, 1, 1, 1);
+				}
+			}
 			else
 			{
 				if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA|SHADER_TURB))
@@ -1168,46 +744,11 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (needLightmap)
 			sflags |= SHADER_LIGHTMAP;
 
-		if (sflags & SHADER_SKY)
-			shader = gl_skyShader;
-		else
-			shader = GL_FindShader (textures, sflags);
-		out->shader = shader;
+		out->shader = shader = (sflags & SHADER_SKY) ? gl_skyShader : GL_FindShader (textures, sflags);
 		//!! update sflags from this (created) shader -- it may be scripted (with different flags)
 
 		if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA|SHADER_TURB|SHADER_SKY))
-		{
-			/*--------- remove collinear points ----------*/
-			pverts[numVerts] = pverts[0];			// make a loop
-			prevVert = 0;
-			for (j = 1; j < numVerts; j++)
-			{
-				vec3_t	v1, v2;
-
-				VectorSubtract ((*pverts[prevVert]), (*pverts[j]), v1);
-				VectorSubtract ((*pverts[j]), (*pverts[j+1]), v2);
-				VectorNormalize (v1);
-				VectorNormalize (v2);
-#define CHECK_AXIS(i)	(fabs(v1[i]-v2[i]) < 0.001f)
-				if (CHECK_AXIS(0) && CHECK_AXIS(1) && CHECK_AXIS(2))
-				{	// remove point
-					pverts[j] = NULL;
-				}
-				else
-				{	// hold point
-					prevVert = j;
-				}
-#undef CHECK_AXIS
-			}
-			/*----- compress pverts and update numVerts ------*/
-			validVerts = 0;
-			for (j = 0; j < numVerts; j++)
-			{
-				if (pverts[j])
-					pverts[validVerts++] = pverts[j];
-			}
-			numVerts = validVerts;
-		}
+			numVerts = RemoveCollinearPoints (pverts, numVerts);
 
 		/* numTriangles = numVerts - 2 (3 verts = 1 tri, 4 verts = 2 tri etc.)
 		 * numIndexes = numTriangles * 3
@@ -1260,8 +801,8 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		/*----------- Create surface vertexes ------------------*/
 		v = s->verts;
 		// ClearBounds2D (mins, maxs)
-		mins[0] = mins[1] = 99999;
-		maxs[0] = maxs[1] = -99999;
+		mins[0] = mins[1] = 999999;
+		maxs[0] = maxs[1] = -999999;
 		ClearBounds (s->mins, s->maxs);
 		// Enumerate vertexes
 		for (j = 0; j < numVerts; j++, pedge++, v++)
@@ -1339,8 +880,21 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		}
 		else
 			s->lightmap = NULL;
+
+		BuildPlanarSurfAxis (s);
+		if (stex->flags & SURF_LIGHT)		//!! + sky when ambient <> 0
+		{
+			image_t	*img;
+			float	area;
+			static color_t	defColor = {128, 96, 64, 255};// {255, 255, 255, 255};
+
+			area = GetPolyArea (pverts, numVerts);
+			img = GL_FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP);
+			BuildSurfLight (s, img ? &img->color : &defColor, area, stex->value, stex->flags & SURF_SKY);
+			if (stex->flags & SURF_AUTOFLARE && !(stex->flags & SURF_SKY))
+				BuildSurfFlare (out, img ? &img->color : &defColor, area);
+		}
 	}
-	PostprocessSurfaces ();
 }
 
 
@@ -1352,23 +906,11 @@ static int LightmapCompare (const void *s1, const void *s2)
 	surf1 = *(surfaceCommon_t **)s1;
 	surf2 = *(surfaceCommon_t **)s2;
 
-	if (surf1->pl->lightmap)
-		v1 = surf1->pl->lightmap->source[0];
-	else
-		v1 = NULL;
-
-	if (surf2->pl->lightmap)
-		v2 = surf2->pl->lightmap->source[0];
-	else
-		v2 = NULL;
+	v1 = (surf1->pl->lightmap) ? surf1->pl->lightmap->source[0] : NULL;
+	v2 = (surf2->pl->lightmap) ? surf2->pl->lightmap->source[0] : NULL;
 
 	if (v1 == v2 && v1)
-	{
-		if (surf1->shader->style & SHADER_TRYLIGHTMAP)
-			return 1;		// should go after normal lightmaps
-		else
-			return -1;
-	}
+		return (surf1->shader->style & SHADER_TRYLIGHTMAP) ? 1 : -1;	// TRYLIGHTMAP should go after normal lightmaps
 
 	return v1 - v2;
 }
@@ -1439,7 +981,7 @@ static void GenerateLightmaps2 (void)
 		}
 
 		// after this examination. we can resort lightstyles (cannot do this earlier because used source[0])
-		SortLightStyles (dl);
+		LM_SortLightStyles (dl);
 		// set shader lightstyles
 		if (s->shader->lightmapNumber >= 0)
 		{
@@ -1653,17 +1195,33 @@ static void LoadVisinfo2 (dvis_t *data, int size)
 
 static void LoadBsp2 (bspfile_t *bsp)
 {
+START_PROFILE(LoadLighting2)
 	LoadLighting2 (bsp->lighting, bsp->lightDataSize);
+END_PROFILE
+START_PROFILE(LoadPlanes)
 	// Load planes
 	LoadPlanes (bsp->planes, bsp->numPlanes, sizeof(dplane_t));
+END_PROFILE
 	// Load surfaces
+START_PROFILE(LoadSurfaces2)
 	LoadSurfaces2 (bsp->faces, bsp->numFaces, bsp->surfedges, bsp->edges, bsp->vertexes, bsp->texinfo, bsp->models, bsp->numModels);
+END_PROFILE
+START_PROFILE(LoadLeafSurfaces2)
 	LoadLeafSurfaces2 (bsp->leaffaces, bsp->numLeaffaces);
+END_PROFILE
+START_PROFILE(GenerateLightmaps2)
 	GenerateLightmaps2 ();
+END_PROFILE
 	// Load bsp (leafs and nodes)
+START_PROFILE(LoadLeafsNodes2)
 	LoadLeafsNodes2 (bsp->nodes, bsp->numNodes, bsp->leafs, bsp->numLeafs);
+END_PROFILE
+START_PROFILE(LoadVisinfo2)
 	LoadVisinfo2 (bsp->visibility, bsp->visDataSize);
+END_PROFILE
+START_PROFILE(LoadInlineModels2)
 	LoadInlineModels2 (bsp->models, bsp->numModels);
+END_PROFILE
 
 	switch (bsp->fogMode)
 	{
@@ -1693,9 +1251,14 @@ static void LoadBsp2 (bspfile_t *bsp)
 
 /*--------------- GL_LoadWorldMap --------------------*/
 
+static void FreeMapData (void)
+{
+	if (map.hunk) Hunk_Free (map.hunk);
+	if (map.lightGridChain) FreeMemoryChain (map.lightGridChain);
+}
+
 void GL_LoadWorldMap (char *name)
 {
-	bspfile_t	*bsp;
 	char	name2[MAX_QPATH];
 
 	if (!name[0])
@@ -1707,40 +1270,53 @@ void GL_LoadWorldMap (char *name)
 //	if (!strcmp (name2, map.name))
 //		return;		// map is not changed
 
-	if (gl_worldModel.hunk)
-		Hunk_Free (map.hunk);
-
+	FreeMapData ();
 	memset (&map, 0, sizeof(map));
 	strcpy (map.name, name2);
 	map.hunk = Hunk_Begin (32 * 1024*1024);
 
 	// map should be already loaded by client
-	bsp = LoadBspFile (name2, true, NULL);
-	switch (bsp->type)
+	bspfile = LoadBspFile (name2, true, NULL);
+
+	// load sun
+	map.sunLight = bspfile->sunLight;
+	if (bspfile->sunColor[0] + bspfile->sunColor[1] + bspfile->sunColor[2])		// sun color was overrided
+		VectorCopy (bspfile->sunColor, map.sunColor);
+	NormalizeColor (map.sunColor, map.sunColor);
+	VectorCopy (bspfile->sunVec, map.sunVec);
+	VectorCopy (bspfile->sunAmbient, map.sunAmbient);
+	if (bspfile->sunAmbient[0] + bspfile->sunAmbient[1] + bspfile->sunAmbient[2] > 0)
+		map.haveSunAmbient = true;
+	VectorCopy (bspfile->ambientLight, map.ambientLight);
+
+	switch (bspfile->type)
 	{
 	case map_q2:
 	case map_kp:
-		LoadBsp2 (bsp);
+		LoadBsp2 (bspfile);
 		break;
 	default:
 		Hunk_End ();
 		Com_Error (ERR_DROP, "R_LoadWorldMap: unknown BSP type");
 	}
-	if (bsp->numFlares)
-		LoadFlares (bsp->flares, bsp->numFlares);
+	LoadFlares (bspfile->flares, bspfile->numFlares);
+	LoadSlights (bspfile->slights, bspfile->numSlights);
+	GetSurfLightCluster ();
+	InitLightGrid ();
+
 	Hunk_End ();
 }
 
 
-node_t *GL_PointInLeaf (vec3_t p)	//?? move to gl_world.c
+node_t *GL_PointInLeaf (vec3_t p)
 {
 	node_t		*node;
 	cplane_t	*plane;
 
-	if (!gl_worldModel.name[0] || !gl_worldModel.numNodes)
+	if (!map.name[0] || !map.numNodes)
 		Com_Error (ERR_DROP, "R_PointInLeaf: bad model");
 
-	node = gl_worldModel.nodes;
+	node = map.nodes;
 	while (1)
 	{
 		if (!node->isNode)
@@ -1905,11 +1481,11 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 			vec3_t	vecs[3], n;
 
 			// compute triangle normal
-			VectorSubtract (verts[idx[0]].xyz, verts[idx[1]].xyz, vecs[0]);
-			VectorSubtract (verts[idx[1]].xyz, verts[idx[2]].xyz, vecs[1]);
-			VectorSubtract (verts[idx[2]].xyz, verts[idx[0]].xyz, vecs[2]);
 			for (k = 0; k < 3; k++)
+			{
+				VectorSubtract (verts[idx[k]].xyz, verts[idx[k == 2 ? 0 : k + 1]].xyz, vecs[k]);
 				VectorNormalizeFast (vecs[k]);
+			}
 			CrossProduct (vecs[1], vecs[0], n);
 			VectorNormalizeFast (n);
 			// add normal to verts
@@ -1917,7 +1493,12 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 			{
 				float	ang;
 
+#if 1
+				ang = -DotProduct (vecs[k], vecs[k == 0 ? 2 : k - 1]);
+				ang = ACOS_FUNC(ang);
+#else
 				ang = acos (-DotProduct (vecs[k], vecs[k == 0 ? 2 : k - 1]));
+#endif
 				dst = &normals[xyzIndexes[idx[k]]][0];
 				VectorMA (dst, ang, n, dst);		// weighted normal: weight ~ angle
 			}
@@ -1929,8 +1510,13 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 
 			dst = &normals[j][0];
 			VectorNormalize (dst);
+#if 1
+			a = Q_ftol (ACOS_FUNC(dst[2]) / (M_PI * 2) * 255);
+			if (dst[0])		b = Q_ftol (ATAN2_FUNC (dst[1], dst[0]) / (M_PI * 2) * 255);
+#else
 			a = Q_ftol (acos (dst[2]) / (M_PI * 2) * 255);
 			if (dst[0])		b = Q_ftol (atan2 (dst[1], dst[0]) / (M_PI * 2) * 255);
+#endif
 			else			b = dst[1] > 0 ? 127.5 : -127.5;
 			norm_i[j] = a | (b << 8);
 		}
@@ -1947,7 +1533,7 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 	shader_t *shader;
 
 	// try specified shader
-	shader = GL_FindShader (skin, SHADER_CHECK|SHADER_WALL);	//?? another flags (no WALL)
+	shader = GL_FindShader (skin, SHADER_CHECK|SHADER_SKIN);
 	if (!shader)
 	{	// try to find skin forcing model directory
 		Q_CopyFilename (mName, m->name, sizeof(mName) - 1);
@@ -1961,7 +1547,7 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 		else		sPtr = sName;
 
 		strcpy (mPtr, sPtr);		// make "modelpath/skinname"
-		shader = GL_FindShader (mName, SHADER_CHECK|SHADER_WALL);	//?? other flags
+		shader = GL_FindShader (mName, SHADER_CHECK|SHADER_SKIN);
 		if (!shader)
 		{	// not found
 			Com_DPrintf ("LoadMD2(%s): %s or %s is not found\n", m->name, skin, mName);
@@ -2049,24 +1635,32 @@ static qboolean LoadMd2 (model_t *m, byte *buf, int len)
 	surf->verts = (vertexMd3_t*)(surf->indexes + 3*surf->numTris);
 	surf->shaders = (shader_t**)(surf->verts + surf->numVerts*surf->numFrames);
 
+START_PROFILE(..Md2::Parse)
 	/*--- build texcoords and indexes ----*/
 	if (!ParseGlCmds (m->name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes))
 	{
 		Z_Free (md3);
 		return false;
 	}
+END_PROFILE
 
+START_PROFILE(..Md2::Frame)
 	/*---- generate vertexes/normals -----*/
 	for (i = 0; i < surf->numFrames; i++)
 		ProcessMd2Frame (surf->verts + i * numVerts,
 				(dAliasFrame_t*)(buf + hdr->ofsFrames + i * hdr->frameSize),
 				md3->frames + i, numVerts, xyzIndexes);
+END_PROFILE
+START_PROFILE(..Md2::Normals)
 	BuildMd2Normals (surf, xyzIndexes, hdr->numXyz);
+END_PROFILE
 
+START_PROFILE(..Md2::Skin)
 	/*---------- load skins --------------*/
 	surf->numShaders = hdr->numSkins;
 	for (i = 0, skin = (char*)(buf + hdr->ofsSkins); i < surf->numShaders; i++, skin += MD2_MAX_SKINNAME)
 		SetMd3Skin (m, surf, i, skin);
+END_PROFILE
 
 	m->type = MODEL_MD3;
 	m->md3 = md3;
@@ -2076,7 +1670,7 @@ static qboolean LoadMd2 (model_t *m, byte *buf, int len)
 
 shader_t *GL_FindSkin (char *name)
 {
-	return GL_FindShader (name, SHADER_CHECK|SHADER_WALL);	//!! should use better flags and: better function (almost empty now)
+	return GL_FindShader (name, SHADER_CHECK|SHADER_SKIN);
 	//?? do we need to disable mipmapping for skins ?
 }
 
@@ -2170,7 +1764,7 @@ static void FreeModel (model_t *m)
 }
 
 
-void GL_ResetModels (void)
+static void FreeModels (void)
 {
 	int		i;
 
@@ -2180,9 +1774,15 @@ void GL_ResetModels (void)
 
 	memset (modelsArray, 0, sizeof(modelsArray));
 	modelCount = 0;
+}
+
+
+void GL_ResetModels (void)
+{
+	FreeModels ();
 
 	// create inline models
-	if (gl_worldModel.name[0])
+	if (map.name[0])
 	{	// init inline models
 		int		i;
 		model_t	*m;
@@ -2203,7 +1803,7 @@ void GL_ResetModels (void)
 
 void GL_InitModels (void)
 {
-	memset (&gl_worldModel, 0, sizeof(gl_worldModel));
+	memset (&map, 0, sizeof(map));
 	GL_ResetModels ();
 
 	Cmd_AddCommand ("modellist", Modellist_f);
@@ -2212,8 +1812,8 @@ void GL_InitModels (void)
 
 void GL_ShutdownModels (void)
 {
-	//?? free models and world model
+	FreeModels ();
+	FreeMapData ();
 
-	if (map.hunk) Hunk_Free (map.hunk);
 	Cmd_RemoveCommand ("modellist");
 }

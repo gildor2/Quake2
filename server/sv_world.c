@@ -1,3 +1,5 @@
+//!! this version is slower, than original: seems, AreaEdicts() is useful
+
 /*
 Copyright (C) 1997-2001 Id Software, Inc.
 
@@ -20,6 +22,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // world.c -- world query functions
 
 #include "server.h"
+
+
+typedef struct
+{
+	qboolean linked;
+	edict_t	*owner;
+	cmodel_t *model;
+	vec3_t	center;
+	float	radius;
+	vec3_t	axis[3];
+	vec3_t	mins, maxs;				// for alias models it is equal to client prediction code bbox
+} entityHull_t;
+
+static entityHull_t ents[MAX_EDICTS];
+
 
 /*
 ===============================================================================
@@ -132,6 +149,7 @@ SV_ClearWorld
 void SV_ClearWorld (void)
 {
 	memset (sv_areanodes, 0, sizeof(sv_areanodes));
+	memset (ents, 0, sizeof(ents));
 	sv_numareanodes = 0;
 	if (!sv.models[1])
 		return;			// map is not yet loaded (check [1], not [0] ...)
@@ -151,6 +169,7 @@ void SV_UnlinkEdict (edict_t *ent)
 		return;		// not linked in anywhere
 	RemoveLink (&ent->area);
 	ent->area.prev = ent->area.next = NULL;
+	ents[NUM_FOR_EDICT(ent)].linked = false;
 }
 
 
@@ -171,6 +190,8 @@ void SV_LinkEdict (edict_t *ent)
 	int		i, j, k;
 	int		area;
 	int		topnode;
+	entityHull_t *ex;
+	vec3_t	v, tmp;
 
 	if (ent->area.prev)
 		SV_UnlinkEdict (ent);	// unlink from old position (i.e. relink edict)
@@ -181,56 +202,65 @@ void SV_LinkEdict (edict_t *ent)
 	if (!ent->inuse)
 		return;
 
+	ex = &ents[NUM_FOR_EDICT(ent)];
+	ex->owner = ent;
+	AnglesToAxis (ent->s.angles, ex->axis);
+
 	// set the size
 	VectorSubtract (ent->maxs, ent->mins, ent->size);
 
 	// encode the size into the entity_state for client prediction
 	if (ent->solid == SOLID_BBOX && !(ent->svflags & SVF_DEADMONSTER))
-	{	// assume that x/y are equal and symetric
-#if 1
+	{
+		// assume that x/y are equal and symetric
 		i = Q_ftol ((ent->maxs[0] + 4) / 8);
+		i = bound(i, 1, 31);
 		// z is not symetric
 		j = Q_ftol ((-ent->mins[2] + 4) / 8);
+		j = bound(j, 1, 31);
 		// and z maxs can be negative...
 		k = Q_ftol ((ent->maxs[2] + 32 + 4) / 8);
-#else
-		i = floor((ent->maxs[0] + 4) / 8);
-		// z is not symetric
-		j = floor((-ent->mins[2] + 4) / 8);
-		// and z maxs can be negative...
-		k = floor((ent->maxs[2] + 32 + 4) / 8);
-#endif
-		i = bound(i, 1, 31);
-		j = bound(j, 1, 31);
 		k = bound(k, 1, 63);
 
 		ent->s.solid = (k<<10) | (j<<5) | i;
 //		if (ent->s.number >= 2) Com_Printf("^1ADD(%d): %d %d %d (%X)\n", ent->s.number, i, j, k, ent->s.solid);
+
+		i *= 8;
+		j *= 8;
+		k *= 8;
+		VectorSet (ex->mins, -i, -i, -j);
+		VectorSet (ex->maxs, i, i, k - 32);
+		VectorAdd (ex->maxs, ex->mins, v);
+		VectorMA (ent->s.origin, 0.5f, v, ex->center);
+		ex->model = NULL;
+		ex->radius = VectorDistance (ex->maxs, ex->center);
 	}
 	else if (ent->solid == SOLID_BSP)
+	{
+		ex->model = sv.models[ent->s.modelindex];
+		if (!ex->model) Com_Error (ERR_FATAL, "MOVETYPE_PUSH with a non bsp model");
+		VectorAdd (ex->model->mins, ex->model->maxs, v);
+		VectorScale (v, 0.5f, v);
+		VectorMA (ent->s.origin, v[0], ex->axis[0], tmp);
+		VectorMA (tmp, v[1], ex->axis[1], tmp);
+		VectorMA (tmp, v[2], ex->axis[2], ex->center);
+		ex->radius = ex->model->radius;
+
 		ent->s.solid = 31;		// a solid_bbox will never create this value
+	}
 	else
 		ent->s.solid = 0;
+
+	ex->linked = true;
 
 	// set the abs box
 	if (ent->solid == SOLID_BSP && (ent->s.angles[0] || ent->s.angles[1] || ent->s.angles[2]))
 	{
 		// expand for rotation
-		float	max, v;
-		int		i;
-
-		max = 0;
-		for (i = 0; i < 3; i++)
-		{
-			v = fabs (ent->mins[i]);
-			if (v > max) max = v;
-			v = fabs (ent->maxs[i]);
-			if (v > max) max = v;
-		}
 		for (i = 0; i < 3 ; i++)
 		{
-			ent->absmin[i] = ent->s.origin[i] - max;
-			ent->absmax[i] = ent->s.origin[i] + max;
+			ent->absmin[i] = ex->center[i] - ex->radius;
+			ent->absmax[i] = ex->center[i] + ex->radius;
 		}
 	}
 	else
@@ -360,12 +390,9 @@ static void SV_AreaEdicts_r (areanode_t *node)
 
 		if (check->solid == SOLID_NOT)
 			continue;		// deactivated
-		if (check->absmin[0] > area_maxs[0] ||
-			check->absmin[1] > area_maxs[1] ||
-			check->absmin[2] > area_maxs[2] ||
-			check->absmax[0] < area_mins[0] ||
-			check->absmax[1] < area_mins[1] ||
-			check->absmax[2] < area_mins[2])
+		if (check->absmin[2] > area_maxs[2] || check->absmax[2] < area_mins[2] ||
+			check->absmin[0] > area_maxs[0] || check->absmax[0] < area_mins[0] ||
+			check->absmin[1] > area_maxs[1] || check->absmax[1] < area_mins[1])
 			continue;		// not touching
 
 		if (area_count == area_maxcount)
@@ -413,40 +440,44 @@ SV_PointContents
 */
 int SV_PointContents (vec3_t p)
 {
-	edict_t		*touch[MAX_EDICTS], *ent;
-	int			i, num;
-	int			contents, c2;
-	int			headnode;
-	float		*angles;
+	edict_t	*list[MAX_EDICTS], *edict;
+	int		i, num, contents, c2;
+	entityHull_t *ent;
+//	vec3_t	delta;
+//	float	dist2;
 
 	// get base contents from world
 	contents = CM_PointContents (p, sv.models[1]->headnode);
 
-	// or in contents from all the other entities
-	num = SV_AreaEdicts (p, p, touch, MAX_EDICTS, AREA_SOLID);
+	num = SV_AreaEdicts (p, p, list, MAX_EDICTS, AREA_SOLID);
 
 	for (i = 0; i < num; i++)
 	{
-		ent = touch[i];
+//		float	*mins, *maxs;
 
-		if (ent->solid != SOLID_BSP)
-		{
-			headnode = CM_HeadnodeForBox (ent->mins, ent->maxs);
-			angles = vec3_origin;		// boxes don't rotate
-		}
+		edict = list[i];
+		ent = &ents[NUM_FOR_EDICT(edict)];
+
+/*		if (!ent->linked) continue;
+		if (ent->owner->solid == SOLID_NOT) continue;		// deactivated blocker
+
+		mins = ent->owner->absmin;
+		maxs = ent->owner->absmax;
+		// check box
+		if (maxs[2] < p[2] || mins[2] > p[2] ||
+			maxs[0] < p[0] || mins[0] > p[0] ||
+			maxs[1] < p[1] || mins[1] > p[1])
+		continue; */
+
+		// check bounding sphere (not needed, because bbox checked before ?)
+//		VectorSubtract (ent->center, p, delta);
+//		dist2 = DotProduct (delta, delta);
+//		if (dist2 > ent->radius * ent->radius) continue;	// too far
+
+		if (ent->model)
+			c2 = CM_TransformedPointContents2 (p, ent->model->headnode, edict->s.origin, ent->axis);
 		else
-		{
-			cmodel_t	*model;
-
-			model = sv.models[ent->s.modelindex];
-			if (!model) Com_Error (ERR_FATAL, "MOVETYPE_PUSH with a non bsp model");
-
-			headnode = model->headnode;
-			angles = ent->s.angles;
-		}
-
-		c2 = CM_TransformedPointContents (p, headnode, ent->s.origin, angles);
-
+			c2 = CM_TransformedPointContents (p, CM_HeadnodeForBox (ent->mins, ent->maxs), edict->s.origin, vec3_origin);
 		contents |= c2;
 	}
 
@@ -465,97 +496,81 @@ SV_ClipMoveToEntities
 void SV_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask, trace_t *tr)
 {
 	int		i, num;
-	edict_t	*touchlist[MAX_EDICTS], *ent;
+	edict_t	*list[MAX_EDICTS], *edict;
+	entityHull_t *ent;
 	trace_t	trace;
-	vec3_t	boxmins, boxmaxs;		// enclose the test object along entire move
+	float	t, traceLen, traceWidth, b1, b2;
+	vec3_t	amins, amaxs, traceDir;
+	qboolean test = Cvar_VariableInt("test");//!!
 
-	// create the bounding box of the entire move
 	for (i = 0; i < 3; i++)
 	{
-		if (end[i] > start[i])
+		if (start[i] < end[i])
 		{
-			boxmins[i] = start[i] + mins[i] - 1;
-			boxmaxs[i] = end[i] + maxs[i] + 1;
+			amins[i] = start[i] + mins[i];
+			amaxs[i] = end[i] + maxs[i];
 		}
 		else
 		{
-			boxmins[i] = end[i] + mins[i] - 1;
-			boxmaxs[i] = start[i] + maxs[i] + 1;
+			amins[i] = end[i] + mins[i];
+			amaxs[i] = start[i] + maxs[i];
 		}
 	}
+	num = SV_AreaEdicts (amins, amaxs, list, MAX_EDICTS, AREA_SOLID);
+	if (!num) return;
 
-	num = SV_AreaEdicts (boxmins, boxmaxs, touchlist, MAX_EDICTS, AREA_SOLID);
+if (test) {//!!
+	b1 = DotProduct (mins, mins);
+	b2 = DotProduct (maxs, maxs);
+	t = b1 > b2 ? b1 : b2;
+	traceWidth = SQRTFAST(t);
+	VectorSubtract (end, start, traceDir);
+	traceLen = VectorNormalize (traceDir) + traceWidth;
+}//!!
 
-	// be careful, it is possible to have an entity in this
-	// list removed before we get to it (killtriggered)
 	for (i = 0; i < num; i++)
 	{
-		float	*angles;
-		int		headnode;
+		vec3_t	center, tmp;
+		float	entPos, dist2, dist0;
 
-		ent = touchlist[i];
-		if (ent->solid == SOLID_NOT)
-			continue;
-		if (ent == passedict)
-			continue;
-		if (tr->allsolid)
-			return;
+		edict = list[i];
+		ent = &ents[NUM_FOR_EDICT(edict)];
+//		if (!ent->linked) continue;
 
+		if (edict->solid == SOLID_NOT || edict == passedict) continue;
 		if (passedict)
 		{
-		 	if (ent->owner == passedict)
+		 	if (edict->owner == passedict)
 				continue;	// don't clip against own missiles
-			if (passedict->owner == ent)
+			if (passedict->owner == edict)
 				continue;	// don't clip against owner
 		}
-
-		if (!(contentmask & CONTENTS_DEADMONSTER) && (ent->svflags & SVF_DEADMONSTER))
+		if (!(contentmask & CONTENTS_DEADMONSTER) && (edict->svflags & SVF_DEADMONSTER))
 			continue;
 
-		if (ent->solid != SOLID_BSP)
-		{
-			int		x, zd, zu;
-			vec3_t	bmins, bmaxs;
+if (test) { //!!
+		VectorSubtract (ent->center, start, center);
+		// check position of point projection on line
+		entPos = DotProduct (center, traceDir);
+		if (entPos < -traceWidth - ent->radius || entPos > traceLen + ent->radius)
+			continue;		// too near / too far
 
-			if (ent->s.solid)
-			{
-				// make trace to be equal with client movement prediction code -- see "encoded bbox"
-				x = 8 * (ent->s.solid & 31);
-				zd = 8 * ((ent->s.solid>>5) & 31);
-				zu = 8 * ((ent->s.solid>>10) & 63) - 32;
-			}
-			else
-			{
-				// ent->s.solid will be 0 when entity is a SVF_DEADMONSTER
-				x = ent->maxs[0];
-				zd = -ent->mins[2];
-				zu = ent->maxs[2];
-			}
+		// check distance between point and line
+		VectorMA (center, -entPos, traceDir, tmp);
+		dist2 = DotProduct (tmp, tmp);
+		dist0 = ent->radius + traceWidth;
+		if (dist2 >= dist0 * dist0) continue;
+}//!!
 
-			bmins[0] = bmins[1] = -x;
-			bmaxs[0] = bmaxs[1] = x;
-			bmins[2] = -zd;
-			bmaxs[2] = zu;
-
-			headnode = CM_HeadnodeForBox (bmins, bmaxs);
-			angles = vec3_origin;		// boxes don't rotate
-		}
+		if (ent->model)
+			trace = CM_TransformedBoxTrace2 (start, end, mins, maxs, ent->model->headnode, contentmask, edict->s.origin, ent->axis);
 		else
-		{
-			cmodel_t	*model;
-
-			model = sv.models[ent->s.modelindex];
-			if (!model) Com_Error (ERR_FATAL, "MOVETYPE_PUSH with a non bsp model");
-
-			headnode = model->headnode;
-			angles = ent->s.angles;
-		}
-
-		trace = CM_TransformedBoxTrace (start, end,	mins, maxs, headnode, contentmask, ent->s.origin, angles);
+			trace = CM_TransformedBoxTrace (start, end, mins, maxs,
+				CM_HeadnodeForBox (ent->mins, ent->maxs), contentmask, edict->s.origin, vec3_origin);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
 		{
-			trace.ent = ent;
+			trace.ent = edict;
 		 	if (tr->startsolid)
 			{
 				*tr = trace;
@@ -566,6 +581,7 @@ void SV_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, 
 		}
 		else if (trace.startsolid)
 			tr->startsolid = true;
+		if (tr->allsolid) return;
 	}
 }
 

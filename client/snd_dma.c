@@ -666,7 +666,7 @@ void S_IssuePlaysound (playsound_t *ps)
 	S_FreePlaysound (ps);
 }
 
-struct sfx_s *S_RegisterSexedSound (entity_state_t *ent, char *base)
+struct sfx_s *S_RegisterSexedSound (entityState_t *ent, char *base)
 {
 	int		n;
 	struct sfx_s *sfx;
@@ -906,7 +906,7 @@ void S_AddLoopSounds (void)
 	sfx_t		*sfx;
 	sfxcache_t	*sc;
 	int			num;
-	entity_state_t	*ent;
+	entityState_t	*ent;
 
 	if (cl_paused->integer)
 		return;

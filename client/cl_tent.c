@@ -587,7 +587,7 @@ int CL_ParseBeam2 (struct model_s *model)
 	MSG_ReadPos (&net_message, end);
 	MSG_ReadPos (&net_message, offset);
 
-//	Com_Printf ("end- %f %f %f\n", end[0], end[1], end[2]);
+//	Com_Printf ("end- %f %f %f\n", VECTOR_ARGS(end));
 
 // override any beam with the same entity
 
@@ -650,7 +650,7 @@ int CL_ParsePlayerBeam (struct model_s *model)
 	else
 		MSG_ReadPos (&net_message, offset);
 
-//	Com_Printf ("end- %f %f %f\n", end[0], end[1], end[2]);
+//	Com_Printf ("end- %f %f %f\n", VECTOR_ARGS(end));
 
 // override any beam with the same entity
 // PMM - For player beams, we only want one per player (entity) so..
@@ -1571,8 +1571,8 @@ void CL_AddBeams (void)
 
 /*
 //				Com_Printf ("Endpoint:  %f %f %f\n", b->end[0], b->end[1], b->end[2]);
-//				Com_Printf ("Pred View Angles:  %f %f %f\n", cl.predicted_angles[0], cl.predicted_angles[1], cl.predicted_angles[2]);
-//				Com_Printf ("Act View Angles: %f %f %f\n", cl.refdef.viewangles[0], cl.refdef.viewangles[1], cl.refdef.viewangles[2]);
+//				Com_Printf ("Pred View Angles:  %f %f %f\n", VECTOR_ARGS(cl.predicted_angles));
+//				Com_Printf ("Act View Angles: %f %f %f\n", VECTOR_ARGS(cl.refdef.viewangles));
 //				VectorCopy (cl.predicted_origin, b->start);
 //				b->start[2] += 22;	// adjust for view height
 //				if (fabs(cl.refdef.vieworg[2] - b->start[2]) >= 10) {

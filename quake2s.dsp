@@ -413,11 +413,39 @@ SOURCE=.\ref_gl\gl_interface.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\ref_gl\gl_light.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_lightmap.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_lightmap.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ref_gl\gl_main.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\ref_gl\gl_math.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_math.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ref_gl\gl_model.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_poly.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_poly.h
 # End Source File
 # Begin Source File
 

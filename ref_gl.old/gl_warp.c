@@ -560,8 +560,8 @@ void R_DrawSkyBox (void)
 	}
 
 	qglPushMatrix ();
-	qglTranslatef (r_origin[0], r_origin[1], r_origin[2]);
-	qglRotatef (r_newrefdef.time * skyrotate, skyaxis[0], skyaxis[1], skyaxis[2]);
+	qglTranslatef (VECTOR_ARGS(r_origin));
+	qglRotatef (r_newrefdef.time * skyrotate, VECTOR_ARGS(skyaxis));
 
 	for (i=0 ; i<6 ; i++)
 	{

@@ -95,6 +95,8 @@ void R_PushDlights (model_t *model)
 	int		i;
 	dlight_t	*l;
 
+	if (r_newrefdef.rdflags & RDF_NOWORLDMODEL) return;
+
 	r_dlightframecount = r_framecount;
 	for (i=0, l = r_newrefdef.dlights ; i<r_newrefdef.num_dlights ; i++, l++)
 	{

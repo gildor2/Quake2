@@ -246,12 +246,12 @@ material_t CMod_GetSurfMaterial (char *name)
 		s = sm->name;
 		if (strchr (s, '/'))
 		{	// mask have a path separator - compare full names
-			if (!MatchWildcard (name, sm->name))
+			if (!MatchWildcard2 (name, sm->name, true))
 				continue;
 		}
 		else
 		{	// compare without path
-			if (!MatchWildcard (checkname, sm->name))
+			if (!MatchWildcard2 (checkname, sm->name, true))
 				continue;
 		}
 
@@ -1418,26 +1418,40 @@ rotating entities
 */
 int	CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t angles)
 {
-	vec3_t		p_l;
-	vec3_t		temp;
-	vec3_t		forward, right, up;
-	int			l;
+	vec3_t	p1, tmp, axis[3];
+	int		l;
 
-	// subtract origin offset
-	VectorSubtract (p, origin, p_l);
-
-	// rotate start and end into the models frame of reference
 	if (headnode != box_headnode && (angles[0] || angles[1] || angles[2]))
 	{
-		AngleVectors (angles, forward, right, up);
-
-		VectorCopy (p_l, temp);
-		p_l[0] = DotProduct (temp, forward);
-		p_l[1] = -DotProduct (temp, right);
-		p_l[2] = DotProduct (temp, up);
+		AnglesToAxis (angles, axis);
+		VectorSubtract (p, origin, tmp);
+		p1[0] = DotProduct (tmp, axis[0]);
+		p1[1] = DotProduct (tmp, axis[1]);
+		p1[2] = DotProduct (tmp, axis[2]);
 	}
+	else
+		VectorSubtract (p, origin, p1);
 
-	l = CM_PointLeafnum_r (p_l, headnode);
+	l = CM_PointLeafnum_r (p1, headnode);
+	return map_leafs[l].contents;
+}
+
+int	CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t *axis)
+{
+	vec3_t	p1, tmp;
+	int		l;
+
+	if (headnode != box_headnode)
+	{
+		VectorSubtract (p, origin, tmp);
+		p1[0] = DotProduct (tmp, axis[0]);
+		p1[1] = DotProduct (tmp, axis[1]);
+		p1[2] = DotProduct (tmp, axis[2]);
+	}
+	else
+		VectorSubtract (p, origin, p1);
+
+	l = CM_PointLeafnum_r (p1, headnode);
 
 	return map_leafs[l].contents;
 }
@@ -1512,12 +1526,8 @@ static void TraceBuf_Dump (char *name)
 static void TraceBuf_Init ()
 {
 	int i;
-	{
-		char buf[256];
-                Com_sprintf(buf,sizeof(buf),"TB_Init: {%g,%g,%g}-{%g,%g,%g}",trace_start[0],trace_start[1],trace_start[2],
-                	trace_end[0],trace_end[1],trace_end[2]);
-		re.DrawTextRight (buf,1,1,1); //!!
-	}
+
+	re.DrawTextRight (va("TB_Init: {%g,%g,%g}-{%g,%g,%g}",VECTOR_ARGS(trace_start), VECTOR_ARGS(trace_end)),1,1,1); //!!
 	hl_max_frac = 1.0;
 	trace_parts_start = -1;
 	for (i = 0; i < MAX_HL_TRACE; i++)
@@ -1749,12 +1759,11 @@ static void CM_ClipBoxToHLLeaf (vec3_t mins, vec3_t maxs, vec3_t p1, vec3_t p2, 
 			char buf[256];
 			Com_sprintf(buf,sizeof(buf),"-- d1=%g  d2=%g  plane:(d=%g  %g,%g,%g) dist=%g (surf=%s) ofs={%g,%g,%g} fr=%g",d1,d2,
 				plane->dist,plane->normal[0],plane->normal[1],plane->normal[2],
-				dist,side->surface->rname, ofs[0],ofs[1],ofs[2],
+				dist,side->surface->rname, VECTOR_ARGS(ofs)],
 				d1 / (d1 - d2));
 			re.DrawTextRight(buf,0,1,0);
 			Com_sprintf(buf,sizeof(buf),"** p1=(%g,%g,%g)  p2=(%g,%g,%g)  d1=%g  d2=%g  dist=%g",
-				p1[0],p1[1],p1[2],
-				p2[0],p2[1],p2[2],
+				VECTOR_ARGS(p1), VECTOR_ARGS(p2),
 				DotProduct(p1, plane->normal),
 				DotProduct(p2, plane->normal),
 				plane->dist);
@@ -1809,11 +1818,8 @@ static void CM_ClipBoxToHLLeaf (vec3_t mins, vec3_t maxs, vec3_t p1, vec3_t p2, 
 		else
 		{
 			i = CM_PointLeafnum (p1);
-			{ //!!!
-				char buf[256];
-				Com_sprintf (buf,sizeof(buf),"Leaf %d [%d={%g,%g,%g}] -- %d br: no plane", leafnum,i,p1[0],p1[1],p1[2],brush->numsides);//!!
-				re.DrawTextRight (buf, 0.5,1,0.2);
-			}//====
+			//!!!
+			re.DrawTextRight (va("Leaf %d [%d={%g,%g,%g}] -- %d br: no plane", leafnum,i,VECTOR_ARGS(p1),brush->numsides), 0.5,1,0.2);
 		}
 	}
 	else
@@ -2133,12 +2139,12 @@ static void CM_ClipBoxToBrush (vec3_t mins, vec3_t maxs, vec3_t p1, vec3_t p2, t
 			char buf[256];
 			Com_sprintf(buf,sizeof(buf),"-- d1=%g  d2=%g  plane:(d=%g  %g,%g,%g) dist=%g (surf=%s) ofs={%g,%g,%g} fr=%g",d1,d2,
 				plane->dist,plane->normal[0],plane->normal[1],plane->normal[2],
-				dist,side->surface->rname, ofs[0],ofs[1],ofs[2],
+				dist,side->surface->rname, VECTOR_ARGS(ofs),
 				d1 / (d1 - d2));
 			re.DrawTextRight(buf,0,1,0);
 			Com_sprintf(buf,sizeof(buf),"** p1=(%g,%g,%g)  p2=(%g,%g,%g)  d1=%g  d2=%g  dist=%g",
-				p1[0],p1[1],p1[2],
-				p2[0],p2[1],p2[2],
+				VECTOR_ARGS(p1),
+				VECTOR_ARGS(p2),
 				DotProduct(p1, plane->normal),
 				DotProduct(p2, plane->normal),
 				plane->dist);
@@ -2439,6 +2445,7 @@ When start==end:
   6) trace.ent & trace.plane are unchanged
 ==================
 */
+//?? check: can this be faster if trace with sphere
 trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask)
 {
 	int		i;
@@ -2480,9 +2487,9 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int he
 			}
 			return trace_trace; //!!
 		}
-//		Com_sprintf(buf,sizeof(buf),"start=(%g,%g,%g) end=(%g,%g,%g)",start[0],start[1],start[2],end[0],end[1],end[2]);
+//		Com_sprintf(buf,sizeof(buf),"start=(%g,%g,%g) end=(%g,%g,%g)",VECTOR_ARGS(start),VECTOR_ARGS(end));
 //		re.DrawTextRight(buf,0.6,1,1);
-//		Com_sprintf(buf,sizeof(buf),"mins=(%g,%g,%g) maxs=(%g,%g,%g)",mins[0],mins[1],mins[2],maxs[0],maxs[1],maxs[2]);
+//		Com_sprintf(buf,sizeof(buf),"mins=(%g,%g,%g) maxs=(%g,%g,%g)",VECTOR_ARGS(mins),VECTOR_ARGS(maxs));
 //		re.DrawTextRight(buf,0.6,1,1);
 //	Com_Printf("<");
 	}
@@ -2594,7 +2601,7 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int he
 	if (trace_trace.fraction < 1 && trace_trace.surface && trace_trace.surface->flags & SURF_ALPHA)
 	{
 		Com_Printf ("%s  min={%g %g %g} max={%g %g %g}\n", trace_trace.surface->name,
-			mins[0], mins[1], mins[2], maxs[0], maxs[1], maxs[2]);
+			VECTOR_ARGS(mins), VECTOR_ARGS(maxs));
 	}
 */
 	return trace_trace;
@@ -2615,14 +2622,9 @@ trace_t CM_TransformedBoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t ma
 	int headnode, int brushmask, vec3_t origin, vec3_t angles)
 {
 	trace_t		trace;
-	vec3_t		start_l, end_l;
-	vec3_t		a, temp;
-	vec3_t		forward, right, up;
+	vec3_t		start1, end1, tmp;
+	vec3_t		axis[3];
 	qboolean	rotated;
-
-	// subtract origin offset
-	VectorSubtract (start, origin, start_l);
-	VectorSubtract (end, origin, end_l);
 
 	// rotate start and end into the models frame of reference
 	if (headnode != box_headnode && (angles[0] || angles[1] || angles[2]))
@@ -2632,41 +2634,83 @@ trace_t CM_TransformedBoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t ma
 
 	if (rotated)
 	{
-		AngleVectors (angles, forward, right, up);
+		AnglesToAxis (angles, axis);
 
-		VectorCopy (start_l, temp);
-		start_l[0] = DotProduct (temp, forward);
-		start_l[1] = -DotProduct (temp, right);
-		start_l[2] = DotProduct (temp, up);
+		// transform start/end to axis (model coordinate system)
+		VectorSubtract (start, origin, tmp);
+		start1[0] = DotProduct (tmp, axis[0]);
+		start1[1] = DotProduct (tmp, axis[1]);
+		start1[2] = DotProduct (tmp, axis[2]);
 
-		VectorCopy (end_l, temp);
-		end_l[0] = DotProduct (temp, forward);
-		end_l[1] = -DotProduct (temp, right);
-		end_l[2] = DotProduct (temp, up);
+		VectorSubtract (end, origin, tmp);
+		end1[0] = DotProduct (tmp, axis[0]);
+		end1[1] = DotProduct (tmp, axis[1]);
+		end1[2] = DotProduct (tmp, axis[2]);
+	}
+	else
+	{
+		VectorSubtract (start, origin, start1);
+		VectorSubtract (end, origin, end1);
 	}
 
 	// sweep the box through the model
-	trace = CM_BoxTrace (start_l, end_l, mins, maxs, headnode, brushmask);
+	trace = CM_BoxTrace (start1, end1, mins, maxs, headnode, brushmask);
 
-	if (rotated && trace.fraction != 1.0)
+	// transform normal/endpos to world coordinate system
+	if (trace.fraction != 1.0f && rotated)
 	{
-		// FIXME: figure out how to do this with existing angles
-		VectorNegate (angles, a);
-		AngleVectors (a, forward, right, up);
-
-		VectorCopy (trace.plane.normal, temp);
-		trace.plane.normal[0] = DotProduct (temp, forward);
-		trace.plane.normal[1] = -DotProduct (temp, right);
-		trace.plane.normal[2] = DotProduct (temp, up);
+		VectorScale (axis[0], trace.plane.normal[0], tmp);
+		VectorMA (tmp, trace.plane.normal[1], axis[1], tmp);
+		VectorMA (tmp, trace.plane.normal[2], axis[2], trace.plane.normal);
 	}
 
-	trace.endpos[0] = start[0] + trace.fraction * (end[0] - start[0]);
-	trace.endpos[1] = start[1] + trace.fraction * (end[1] - start[1]);
-	trace.endpos[2] = start[2] + trace.fraction * (end[2] - start[2]);
+	if (rotated)
+	{
+		VectorMA (origin, trace.endpos[0], axis[0], tmp);
+		VectorMA (tmp, trace.endpos[1], axis[1], tmp);
+		VectorMA (tmp, trace.endpos[2], axis[2], trace.endpos);
+	}
+	else
+		VectorAdd (trace.endpos, origin, trace.endpos);
 
 	return trace;
 }
 
+
+trace_t CM_TransformedBoxTrace2 (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,
+	int headnode, int brushmask, vec3_t origin, vec3_t *axis)
+{
+	trace_t		trace;
+	vec3_t		start1, end1, tmp;
+
+	// transform start/end to axis (model coordinate system)
+	VectorSubtract (start, origin, tmp);
+	start1[0] = DotProduct (tmp, axis[0]);
+	start1[1] = DotProduct (tmp, axis[1]);
+	start1[2] = DotProduct (tmp, axis[2]);
+
+	VectorSubtract (end, origin, tmp);
+	end1[0] = DotProduct (tmp, axis[0]);
+	end1[1] = DotProduct (tmp, axis[1]);
+	end1[2] = DotProduct (tmp, axis[2]);
+
+	// sweep the box through the model
+	trace = CM_BoxTrace (start1, end1, mins, maxs, headnode, brushmask);
+
+	// transform normal/endpos to world coordinate system
+	if (trace.fraction != 1.0f)
+	{
+		VectorScale (axis[0], trace.plane.normal[0], tmp);
+		VectorMA (tmp, trace.plane.normal[1], axis[1], tmp);
+		VectorMA (tmp, trace.plane.normal[2], axis[2], trace.plane.normal);
+	}
+
+	VectorMA (origin, trace.endpos[0], axis[0], tmp);
+	VectorMA (tmp, trace.endpos[1], axis[1], tmp);
+	VectorMA (tmp, trace.endpos[2], axis[2], trace.endpos);
+
+	return trace;
+}
 
 
 /*

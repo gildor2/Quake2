@@ -91,6 +91,7 @@ typedef struct image_s
 	int		registrationSequence;		// for detecting unused images
 	int		texnum;						// gl texture binding
 	int		flags;
+	color_t	color;
 	struct image_s *hashNext;
 } image_t;
 
@@ -174,6 +175,23 @@ typedef struct
 #define GL_SUPPORT(ext)		(gl_config.extensionMask & (ext))
 
 
+typedef enum
+{
+	CULL_FRONT,
+	CULL_BACK,
+	CULL_NONE
+} gl_cullMode_t;	//?? remove this? use GL_ constants?
+
+
+typedef enum
+{
+	DEPTH_NEAR,		// Z -> 0          (0, 0)
+	DEPTH_HACK,		// Z /= 3          (0, 0.333)
+	DEPTH_NORMAL,	// keep original Z (0, 1)
+	DEPTH_FAR		// Z -> 1          (1, 1)
+} gl_depthMode_t;
+
+
 typedef struct
 {
 	qboolean locked;
@@ -194,7 +212,8 @@ typedef struct
 	color_t	newEnvColor[32];
 
 	int		currentState;
-	int		currentCullMode;
+	gl_cullMode_t currentCullMode;
+	gl_depthMode_t currentDepthMode;
 	qboolean inverseCull;
 	qboolean fogEnabled;
 
@@ -205,14 +224,6 @@ typedef struct
 
 extern glconfig_t  gl_config;
 extern glstate_t   gl_state;
-
-
-typedef enum
-{
-	CULL_FRONT,
-	CULL_BACK,
-	CULL_NONE
-} gl_cullMode_t;	//?? remove this? use GL_ constants?
 
 
 // GL_State constants
@@ -325,6 +336,7 @@ void	GL_SetMultitexture (int level);
 void	GL_DisableTexCoordArrays (void);
 
 void	GL_CullFace (gl_cullMode_t mode);
+void	GL_DepthRange (gl_depthMode_t mode);
 void	GL_State (int state);
 void	GL_EnableFog (qboolean enable);
 
@@ -359,19 +371,20 @@ void	GL_ResetShaders (void);	// should be called every time before loading a new
 #define LIGHTMAP_RESERVE	(1024-1)	// lightmap will be set when valid number specified in subsequent FindShader() call
 
 // shader styles for auto-generation (if script is not found)
-#define SHADER_SCROLL		1			// SURF_FLOWING (tcMod scroll -1.4 0 ?)
-#define SHADER_TURB			2			// SURF_WARP (tcMod turb ...?)
-#define SHADER_TRANS33		4			// SURF_TRANS33 (alphaGen const 0.33, blend)
-#define SHADER_TRANS66		8			// SURF_TRANS66 (alphaGen const 0.66, blend)
+#define SHADER_SCROLL		0x0001		// SURF_FLOWING (tcMod scroll -1.4 0 ?)
+#define SHADER_TURB			0x0002		// SURF_WARP (tcMod turb ...?)
+#define SHADER_TRANS33		0x0004		// SURF_TRANS33 (alphaGen const 0.33, blend)
+#define SHADER_TRANS66		0x0008		// SURF_TRANS66 (alphaGen const 0.66, blend)
 #define SHADER_FORCEALPHA	0x0010		// for alphaGen vertex (image itself may be without alpha-channel)
 #define SHADER_ALPHA		0x0020		// use texture's alpha channel (depends on itage.alphaType: 0->none, 1->alphaTest or blend, 2->blend)
 #define SHADER_WALL			0x0040		// shader used as a wall texture (not GUI 2D image), also do mipmap
-#define SHADER_SKY			0x0080		// SURF_SKY (use stage iterator for sky)
-#define SHADER_ANIM			0x0100		// main stage will contain more than 1 texture (names passed as name1<0>name2<0>...nameN<0><0>)
-#define SHADER_LIGHTMAP		0x0200		// reserve lightmap stage (need GL_SetShaderLightmap() later)
-#define SHADER_TRYLIGHTMAP	0x0400		// usualy not containing lightmap, but if present - generate it
-#define SHADER_ENVMAP		0x0800		// make additional rendering pass with specular environment map
-#define SHADER_ENVMAP2		0x1000		// add diffuse environment map
+#define SHADER_SKIN			0x0080		// shader used as skin for alias models
+#define SHADER_SKY			0x0100		// SURF_SKY (use stage iterator for sky)
+#define SHADER_ANIM			0x0200		// main stage will contain more than 1 texture (names passed as name1<0>name2<0>...nameN<0><0>)
+#define SHADER_LIGHTMAP		0x0400		// reserve lightmap stage (need GL_SetShaderLightmap() later)
+#define SHADER_TRYLIGHTMAP	0x0800		// usualy not containing lightmap, but if present - generate it
+#define SHADER_ENVMAP		0x1000		// make additional rendering pass with specular environment map
+#define SHADER_ENVMAP2		0x2000		// add diffuse environment map
 // styles (hints) valid for FindShader(), buf not stored in shader_t
 #define SHADER_ABSTRACT		0x20000000	// create shader without stages
 #define SHADER_CHECK		0x40000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error
@@ -423,6 +436,8 @@ typedef struct refEntity_s
 	float	dist2;						// Z-coordinate of model
 	qboolean visible;					// valid for current frame
 
+	vec3_t	center;
+	float	radius;
 	union {
 		struct {
 		/*-------- entity with model --------*/
@@ -486,6 +501,9 @@ typedef struct surfaceInfo_s
 } surfaceInfo_t;
 
 
+#define NUM_FRUSTUM_PLANES	5
+#define MAX_FRUSTUM_MASK	((1<<NUM_FRUSTUM_PLANES)-1)
+
 typedef struct viewPortal_s
 {
 	int		flags;
@@ -505,7 +523,7 @@ typedef struct viewPortal_s
 	// projection params
 	float	x, y, w, h;			// viewport
 	float	fov_x, fov_y, fov_scale;
-	cplane_t frustum[4];		// used for frustum culling
+	cplane_t frustum[NUM_FRUSTUM_PLANES];	// used for frustum culling
 	float	projectionMatrix[4][4];
 	vec3_t	mins, maxs;			// bounding box of all visible leafs
 	float	zFar;				// maximim distance from vieworg to mins/maxs vertexes
@@ -530,6 +548,15 @@ void	GL_FinishPortal (void);
 void	GL_SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination);
 
 
+/*------------- gl_light.c ------------------*/
+
+
+void GL_ShowLights (void);
+
+void GL_LightForEntity (refEntity_t *ent);
+void GL_ApplyEntitySpherelights (color_t *dst);
+
+
 /*------------- gl_main.c -------------------*/
 
 
@@ -551,6 +578,7 @@ typedef struct
 	int		leafs, visLeafs, frustLeafs;	//?? frustLeafs -> ~cullLeafs
 	int		surfs, cullSurfs;
 	int		tris, trisMT;		// number of tris, which will be drawn without mtex and with mtex (same if no multitexture)
+	int		tris2D;				// number of triangles for HUD/console
 	int		ents, cullEnts, cullEntsBox, cullEnts2;
 	int		parts, cullParts;	// particles
 	int		dlightSurfs, dlightVerts;
@@ -616,18 +644,26 @@ void	GLimp_SetGamma (float gamma, float intens);
 extern cvar_t	*gl_picmip;
 extern cvar_t	*gl_textureBits;
 extern cvar_t	*gl_roundImagesDown;
-extern cvar_t	*r_gamma;
-extern cvar_t	*r_saturation;
-extern cvar_t	*r_intensity;
 extern cvar_t	*gl_texturemode;
+
+extern cvar_t	*r_gamma;
+extern cvar_t	*r_brightness;
+extern cvar_t	*r_contrast;
+extern cvar_t	*r_saturation;
+extern cvar_t	*r_intensity;		//?? remove (or "r_brightness")
+
 extern cvar_t	*gl_overBrightBits;
 
 extern cvar_t	*gl_fastsky;
 extern cvar_t	*gl_fog;
+
 extern cvar_t	*gl_flares;
 extern cvar_t	*gl_dynamic;
 extern cvar_t	*gl_dlightBacks;
 extern cvar_t	*gl_vertexLight;
+extern cvar_t	*gl_nogrid;
+extern cvar_t	*gl_showgrid;
+
 extern cvar_t	*gl_ignoreFastPath;
 
 extern cvar_t	*gl_driver;
@@ -652,6 +688,8 @@ extern cvar_t	*r_drawentities;
 extern cvar_t	*gl_showbboxes;
 extern cvar_t	*gl_showtris;
 extern cvar_t	*gl_shownormals;
+extern cvar_t	*gl_lightLines;
+extern cvar_t	*gl_showLights;
 extern cvar_t	*gl_singleShader;
 
 extern cvar_t	*gl_clear;

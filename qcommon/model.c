@@ -348,6 +348,7 @@ bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum)
 /*--------------------------------------------------------------------*/
 
 #define MAX_ENT_FIELDS	32
+#define MAX_TARGETS		256
 
 typedef struct
 {
@@ -355,10 +356,22 @@ typedef struct
 	char	value[192];
 } entField_t;
 
+typedef struct
+{
+	char	name[64];
+	vec3_t	origin;
+} target_t;
+
 
 static qboolean haveErrors;
+static qboolean isPatch;
 static entField_t entity[MAX_ENT_FIELDS];
 static int numEntFields;
+
+static target_t targets[MAX_TARGETS];
+static int numTargets;
+
+static char sunTarget[64];
 
 
 static entField_t *FindField (char *name)
@@ -367,7 +380,7 @@ static entField_t *FindField (char *name)
 	entField_t *f;
 
 	for (i = 0, f = entity; i < numEntFields; i++, f++)
-		if (!stricmp (f->name, name))
+		if (MatchWildcard (f->name, name))		// case-sensitive
 			return f;
 	return NULL;
 }
@@ -467,6 +480,57 @@ static void WriteEntity (char **dst)
 #endif
 }
 
+// debug helper
+#define DUMP_ENTITY	\
+			{		\
+				int i;	\
+				for (i = 0; i < numEntFields; i++)	\
+					Com_Printf("-- %s : %s\n", entity[i].name, entity[i].value);	\
+			}
+
+
+// gets "%f %f %f" or "%f"
+static void GetVector (char *str, vec3_t vec)
+{
+	if (sscanf (str, "%f %f %f", &vec[0], &vec[1], &vec[2]) != 3)
+		vec[1] = vec[2] = vec[0];
+}
+
+
+static void ProcessEntityTarget ()
+{
+	entField_t *f;
+
+	if (f = FindField ("targetname"))
+	{
+		if (numTargets == MAX_TARGETS)
+		{
+			haveErrors = true;
+			Com_DPrintf ("MAX_TARGETS reached\n");
+			return;
+		}
+		strcpy (targets[numTargets].name, f->value);
+		if (f = FindField ("origin"))	// target can be without origin, but we are not interested with it
+		{
+			GetVector (f->value, targets[numTargets].origin);
+			numTargets++;
+		}
+	}
+}
+
+
+static float *FindEntityTarget (char *name)
+{
+	int		i;
+
+	for (i = 0; i < numTargets; i++)
+		if (!strcmp (targets[i].name, name))
+			return targets[i].origin;
+
+	Com_DPrintf ("target \"%s\" is not found\n", name);
+	return vec3_origin;		// not found
+}
+
 
 // Returns "true" if entity should be passed to game
 static qboolean ProcessEntity ()
@@ -502,7 +566,7 @@ static qboolean ProcessEntity ()
 	if (f = FindField ("origin"))
 	{
 		haveOrigin = true;
-		sscanf (f->value, "%f %f %f", &origin[0], &origin[1], &origin[2]);
+		GetVector (f->value, origin);
 	}
 	else
 		haveOrigin = false;
@@ -511,55 +575,43 @@ static qboolean ProcessEntity ()
 	{
 		haveModel = true;
 		sscanf (f->value, "*%d", &modelIdx);
+		if (modelIdx >= bspfile.numModels)
+		{
+			haveModel = false;
+			Com_DPrintf ("invalid model index %d\n", modelIdx);
+		}
 	}
 	else
 		haveModel = false;
 
 	/*---------------- get lighting info ----------------*/
 
-//#define SHOW_LIGHTS
 	if (!strncmp (class, "light", 5))
 	{
-#ifndef SHOW_LIGHTS
-		if (!class[5] || !strcmp (class + 5, "flare"))	// "light" or "lightflare"
-#endif
+		int		style;
+		slight_t *slight;
+
+		// "style": if >= 32 ... (def: 0)
+		// "spawnflags": &2 -> flare, &4 -> resize, {&8 -> dynamic ?}
+		// get common lighting fields
+		if (f = FindField ("style,_style"))
+			style = atoi (f->value);
+		else
+			style = 0;							// default
+
+		/*--------------- lightflares -----------------*/
+
+		if ((!class[5] || !strcmp (class + 5, "flare")) && (spawnflags & 2))	// "light" or "lightflare"
 		{
 			lightFlare_t *flare;
-			int		style;
 
-			/* !!
-			- "style": if >= 32 ... (def: 0)
-			- "spawnflags": &2 -> flare, &4 -> resize, {&8 -> dynamic??}
-			- if flare -> add flare
-			  {
-			  	"health" -> size (def: 24)
-			  	"dmg": normal (0, def), sun, amber, red, blue, green
-			  	if "dmg" == SUN -> VectorNormalize(origin)
-			  }
-			  else -> lightsource for dir lighting
-			  {
-			  	def "light" = 300 (light_level)
-			  	AddLightSource if "light" > 100
-			  }
-			*/
-
-			if (f = FindField ("style"))
-				style = atoi (f->value);			// default is 0
-			else
-				style = 0;
-#ifndef SHOW_LIGHTS
-			if (!(spawnflags & 2))					// need 2 -> FLARE
-				return (style >= 32);
-#endif
+			// "health" -> size (def: 24)
+			// "dmg": normal (0, def), sun, amber, red, blue, green
+			// if "dmg" == SUN -> VectorNormalize(origin)
 
 			flare = AllocChainBlock (bspfile.extraChain, sizeof(lightFlare_t));
-			if (bspfile.flares)
-			{
-				flare->next = bspfile.flares;
-				bspfile.flares = flare;
-			}
-			else
-				bspfile.flares = flare;
+			flare->next = bspfile.flares;
+			bspfile.flares = flare;
 			bspfile.numFlares++;
 
 			if (f = FindField ("health"))
@@ -568,7 +620,8 @@ static qboolean ProcessEntity ()
 				flare->size = 24;							// default size
 			flare->style = style;
 
-			flare->color[0] = flare->color[1] = flare->color[2] = flare->color[3] = 255;
+			VectorSet (flare->color, 255, 255, 255);
+			flare->color[3] = 255;
 			if (f = FindField ("dmg"))
 			{
 				switch (atoi (f->value))
@@ -579,44 +632,140 @@ static qboolean ProcessEntity ()
 					flare->color[2] = 192;
 					VectorNormalize (origin);				// just a sun direction
 					break;
-				case 2:
-//					flare->color[2] = 128;					// amber (198,130,90)
-//					VectorSet (flare->color, 255, 167, 115);
-					VectorSet (flare->color, 255, 180, 132);
+				case 2:		// amber
+					VectorSet (flare->color, 255, 192, 0);
 					break;
-				case 3:
-//					flare->color[1] = flare->color[2] = 64;	// red (231,40,31)
-					VectorSet (flare->color, 255, 44, 34);
+				case 3:		// red
+					VectorSet (flare->color, 255, 0, 64);
 					break;
-				case 4:
-//					flare->color[0] = flare->color[1] = 64;	// blue (123,113,165)
-					VectorSet (flare->color, 190, 174, 255);
+				case 4:		// blue
+					VectorSet (flare->color, 0, 192, 255);
 					break;
-				case 5:
-//					flare->color[0] = flare->color[2] = 64;	// green (115,138,99)
-					VectorSet (flare->color, 212, 255, 183);
+				case 5:		// green
+					VectorSet (flare->color, 0, 255, 128);
 					break;
 				}
 			}
-#ifdef SHOW_LIGHTS
-			if (!(spawnflags & 2))
-			{
-				flare->color[0] = 64;
-				flare->color[1] = 128;
-				flare->color[2] = 255;
-				flare->size = 48;
-//				flare->style = 4;
-			}
-#endif
 			VectorCopy(origin, flare->origin);
 			if (f = FindField ("radius"))
 				flare->radius = atof (f->value);
 			if (f = FindField ("color"))					// can override sun color ...
 				sscanf (f->value, "%d %d %d", &flare->color[0], &flare->color[1], &flare->color[2]);
+			if (haveModel)
+				flare->model = modelIdx;
 
-			return (style >= 32);
+			return false;			// flares passed to renderer only
 		}
-		// can be "light_mine ..."
+
+		/*-------------- light, light_mine -------------*/
+
+		slight = AllocChainBlock (bspfile.extraChain, sizeof(slight_t));
+		slight->next = bspfile.slights;
+		bspfile.slights = slight;
+		bspfile.numSlights++;
+
+		slight->style = style;
+
+		if (f = FindField ("light,_light"))
+			slight->intens = atof (f->value);
+		else
+			slight->intens = 300;						// default
+
+		if (f = FindField ("color,_color"))
+		{
+			GetVector (f->value, slight->color);
+			NormalizeColor (slight->color, slight->color);
+		}
+		else
+			VectorSet (slight->color, 1, 1, 1);			// default
+
+		if (f = FindField ("_falloff"))					// 0 - linear (default), 1 - 1/dist. 2 - 1/(dist*dist)
+			slight->type = atoi (f->value);
+		if (f = FindField ("_wait,_fade"))
+			slight->fade = atof (f->value);
+		if (!slight->fade) slight->fade = 1;			// default value + disallow "fade==0"
+
+		VectorCopy (origin, slight->origin);
+
+		if (f = FindField ("target"))
+		{
+			float	*dst;
+			vec3_t	vec;
+
+			slight->spot = true;
+			dst = FindEntityTarget (f->value);
+			VectorSubtract (dst, slight->origin, vec);
+			VectorNormalize2 (vec, slight->spotDir);
+
+			if (!strcmp (f->value, sunTarget))
+			{
+				// this spotlight used as sun target
+				VectorCopy (slight->spotDir, bspfile.sunVec);
+				// remove from list
+				bspfile.slights = slight->next;
+				bspfile.numSlights--;
+//Com_Printf("^1sun: %g %g %g (dst: %g %g %g, org: %g %g %g)\n",VECTOR_ARGS(bspfile.sunVec),VECTOR_ARGS(dst),VECTOR_ARGS(slight->spotDir));
+			}
+		}
+		if (!strcmp (class + 5, "_spot") || FindField ("_spotvector,_spotpoint,_mangle,_spotangle"))
+		{
+			vec3_t	vec;
+
+			slight->spot = true;
+			if (f = FindField ("_spotvector"))
+				GetVector (f->value, slight->spotDir);
+			else if (f = FindField ("_spotpoint"))
+			{
+				GetVector (f->value, vec);
+				VectorSubtract (vec, slight->origin, vec);
+				VectorNormalize2 (vec, slight->spotDir);
+			}
+			else if (f = FindField ("_mangle,_spotangle"))
+			{
+				float	ang[3];
+
+				sscanf (f->value, "%f %f", &ang[YAW], &ang[PITCH]);
+				ang[PITCH] *= -1;
+				AngleVectors (ang, slight->spotDir, NULL, NULL);
+			}
+			else if (f = FindField ("angle"))
+			{
+				float	angle;
+
+				angle = atof (f->value);
+				if (angle == -1)
+					VectorSet (slight->spotDir, 0, 0, 1);
+				else if (angle == -2)
+					VectorSet (slight->spotDir, 0, 0, -1);
+				else
+				{
+					angle *= M_PI / 180.0f;
+					slight->spotDir[0] = cos(angle);
+					slight->spotDir[1] = sin(angle);
+					slight->spotDir[2] = 0;
+				}
+			}
+			else
+				Com_DPrintf ("spotlight without direction\n");
+		}
+		if (slight->spot)
+		{
+			float	cone;
+
+			if (f = FindField ("_cone"))
+				cone = atof (f->value);
+			else
+				cone = 10;		// default
+			slight->spotDot = cos(cone * M_PI / 180.0f);
+			if (f = FindField ("_focus"))
+				slight->focus = atof (f->value);
+			else
+				slight->focus = 1;
+		}
+
+		if ((!class[5] && style < 32) || !strcmp (class + 5, "flare"))
+			return false;		// remove: "lightflare" or non-switchable "light"
+
 		return true;
 	}
 
@@ -672,12 +821,18 @@ static qboolean ProcessEntity ()
 			chk = 128;
 		else if (!stricmp (class, "func_door_rotating"))
 			chk = 4;
-		else if (!stricmp (class, "func_explosive") ||
-				 !stricmp (class, "func_train") || !stricmp (class, "func_train_rotating"))
+		else if (!stricmp (class, "func_explosive") || !stricmp (class, "func_train") || !stricmp (class, "func_train_rotating"))
 			chk = 8;
 
 		if ((chk & spawnflags) && haveModel && modelIdx > 0)
 			bspfile.models[modelIdx].flags |= CMODEL_ALPHA;
+
+		// convert func_lift to func_train
+		if (!strcmp (class, "func_lift"))
+		{
+			f = FindField ("classname");
+			strcpy (f->value, "func_train");
+		}
 	}
 
 	/*---------------------------------------------*/
@@ -688,7 +843,7 @@ static qboolean ProcessEntity ()
 			AddField ("sky", "sr");		// set default Kingpin sky
 		if (f = FindField ("fogval"))
 		{
-			sscanf (f->value, "%f %f %f", &bspfile.fogColor[0], &bspfile.fogColor[1], &bspfile.fogColor[2]);
+			GetVector (f->value, bspfile.fogColor);
 			f->name[0] = 0;				// remove field
 			if (f = FindField ("fogdensity"))
 			{
@@ -696,6 +851,51 @@ static qboolean ProcessEntity ()
 				f->name[0] = 0;			// remove field
 				bspfile.fogMode = fog_exp;
 			}
+		}
+		if (f = FindField ("_ambient,light,_minlight"))
+			GetVector (f->value, bspfile.ambientLight);
+		if (f = FindField ("_sun*"))
+		{
+			// have ArghRad sun
+			VectorSet (bspfile.sunVec, 0, 0, -1);		// will be default even if incorrect sun with spotlight
+			if (f = FindField ("_sun_vector"))
+			{
+				GetVector (f->value, bspfile.sunVec);
+				VectorNormalize (bspfile.sunVec);
+			}
+			else if (f = FindField ("_sun"))
+				strcpy (sunTarget, f->value);	// worldspawn always 1st in entstring, so - just remember suntarget
+			else if (f = FindField ("_sun_angle,_sun_mangle"))
+			{
+				float	ang[3];
+
+				sscanf (f->value, "%f %f", &ang[YAW], &ang[PITCH]);
+				ang[PITCH] *= -1;
+				AngleVectors (ang, bspfile.sunVec, NULL, NULL);
+			}
+			if (f = FindField ("_sun_color"))
+			{
+				GetVector (f->value, bspfile.sunColor);
+				NormalizeColor (bspfile.sunColor, bspfile.sunColor);
+			}
+			if (f = FindField ("_sun_light"))
+			{
+				int		i;
+
+				bspfile.sunLight = atof (f->value);
+				// can be up to 4 suns; just add its values
+				for (i = 2; i <= 4; i++)
+					if (f = FindField (va("_sun%d_light", i)))
+						bspfile.sunLight += atof (f->value);
+					else
+						break;
+			}
+			else
+				bspfile.sunLight = 200;			// default
+			if (f = FindField ("_sun_ambient"))
+				GetVector (f->value, bspfile.sunAmbient);
+			if (f = FindField ("_sun_surface"))
+				GetVector (f->value, bspfile.sunSurface);
 		}
 		// Voodoo fog params
 		RemoveField ("fogdensity2");
@@ -723,7 +923,6 @@ char *ProcessEntstring (char *entString)
 
 	plen = FS_LoadFile (va("%s.add", bspfile.name), &patch) + 1;
 
-	src = entString;
 	dst = dst2 = AllocChainBlock (bspfile.extraChain, strlen (entString) + 1 + plen);
 
 	// detect Kingpin map
@@ -735,20 +934,31 @@ char *ProcessEntstring (char *entString)
 		Com_DPrintf ("Kingpin map detected\n");
 	}
 
-	haveErrors = false;
+	// find target entities
+	src = entString;
+	numTargets = 0;
+	while (!haveErrors && ReadEntity (&src))
+		ProcessEntityTarget ();
+
+	// parse main entstring
+	src = entString;
+	haveErrors = isPatch = false;
+	sunTarget[0] = 0;
 	while (!haveErrors && ReadEntity (&src))
 	{
-		if (ProcessEntity (&src))
+		if (ProcessEntity ())
 			WriteEntity (&dst);
 	}
 
+	// parse patch
 	if (plen)
 	{
 		Com_DPrintf ("Adding entity patch ...\n");
+		isPatch = true;
 		src = patch;
 		while (!haveErrors && ReadEntity (&src))
 		{
-			if (ProcessEntity (&src))
+			if (ProcessEntity ())
 				WriteEntity (&dst);
 		}
 	}

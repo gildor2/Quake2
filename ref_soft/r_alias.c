@@ -27,6 +27,28 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define LIGHT_MIN	5		// lowest light value we'll allow, to avoid the
 							//  need for inner-loop light clamping
 
+
+#define POWERSUIT_SCALE		4.0f
+
+// Color constants (for 8-bit paletted colors)
+#define SHELL_RED_COLOR		0xF2
+#define SHELL_GREEN_COLOR	0xD0
+#define SHELL_BLUE_COLOR	0xF3
+
+#define SHELL_RG_COLOR		0xDC
+//#define SHELL_RB_COLOR		0x86
+#define SHELL_RB_COLOR		0x68
+#define SHELL_BG_COLOR		0x78
+
+//ROGUE
+#define SHELL_DOUBLE_COLOR	0xDF // 223
+#define	SHELL_HALF_DAM_COLOR 0x90
+#define SHELL_CYAN_COLOR	0x72
+//ROGUE
+
+#define SHELL_WHITE_COLOR	0xD7
+
+
 //PGM
 extern byte iractive;
 //PGM
@@ -1009,7 +1031,7 @@ void R_AliasSetUpLerpData( dmdl_t *pmdl, float backlerp )
 	/*
 	** convert entity's angles into discrete vectors for R, U, and F
 	*/
-	AngleVectors (currententity->angles, vectors[0], vectors[1], vectors[2]);
+	AngleVectors (currententity->angles, VECTOR_ARGS(vectors));
 
 	/*
 	** translation is the vector from last position to this position

@@ -40,6 +40,7 @@ refImport_t ri = {
 	FS_Gamedir,
 	FS_CreatePath,
 	MatchWildcard,
+	MatchWildcard2,
 	Vid_GetModeInfo,
 	Vid_MenuInit,
 	ImageExists,
@@ -50,7 +51,8 @@ refImport_t ri = {
 	WriteJPG,
 	LoadBspFile,
 	CM_BoxTrace,
-	CM_TransformedBoxTrace
+	CM_TransformedBoxTrace,
+	CM_TransformedBoxTrace2
 #ifdef _WIN32
 ,
 	Vid_CreateWindow,

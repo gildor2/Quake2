@@ -40,6 +40,7 @@ typedef struct {
 	char*	(*_FS_Gamedir) (void);
 	void	(*_FS_CreatePath) (char *path);
 	qboolean	(*_MatchWildcard) (char *name, char *mask);
+	qboolean	(*_MatchWildcard2) (char *name, char *mask, qboolean ignoreCase);
 	qboolean	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
 	void	(*_Vid_MenuInit) (void);
 	int	(*_ImageExists) (char *name, int stop_mask);
@@ -51,6 +52,7 @@ typedef struct {
 	bspfile_t*	(*_LoadBspFile) (char *filename, qboolean clientload, unsigned *checksum);
 	trace_t	(*_CM_BoxTrace) (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
 	trace_t	(*_CM_TransformedBoxTrace) (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
+	trace_t	(*_CM_TransformedBoxTrace2) (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t *axis);
 #ifdef _WIN32
 	void*	(*_Vid_CreateWindow) (int width, int height, qboolean fullscreen);
 	void	(*_Vid_DestroyWindow) (qboolean force);

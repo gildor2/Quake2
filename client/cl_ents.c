@@ -32,161 +32,6 @@ FRAME PARSING
 =========================================================================
 */
 
-#if 0
-
-typedef struct
-{
-	int		modelindex;
-	int		num; // entity number
-	int		effects;
-	vec3_t	origin;
-	vec3_t	oldorigin;
-	vec3_t	angles;
-	qboolean present;
-} projectile_t;
-
-#define	MAX_PROJECTILES	64
-projectile_t	cl_projectiles[MAX_PROJECTILES];
-
-void CL_ClearProjectiles (void)
-{
-	int i;
-
-	for (i = 0; i < MAX_PROJECTILES; i++) {
-//		if (cl_projectiles[i].present)
-//			Com_DPrintf("PROJ: %d CLEARED\n", cl_projectiles[i].num);
-		cl_projectiles[i].present = false;
-	}
-}
-
-/*
-=====================
-CL_ParseProjectiles
-
-Flechettes are passed as efficient temporary entities
-=====================
-*/
-void CL_ParseProjectiles (void)
-{
-	int		i, c, j;
-	byte	bits[8];
-	byte	b;
-	projectile_t	pr;
-	int lastempty = -1;
-	qboolean old = false;
-
-	c = MSG_ReadByte (&net_message);
-	for (i=0 ; i<c ; i++)
-	{
-		bits[0] = MSG_ReadByte (&net_message);
-		bits[1] = MSG_ReadByte (&net_message);
-		bits[2] = MSG_ReadByte (&net_message);
-		bits[3] = MSG_ReadByte (&net_message);
-		bits[4] = MSG_ReadByte (&net_message);
-		pr.origin[0] = ( ( bits[0] + ((bits[1]&15)<<8) ) <<1) - 4096;
-		pr.origin[1] = ( ( (bits[1]>>4) + (bits[2]<<4) ) <<1) - 4096;
-		pr.origin[2] = ( ( bits[3] + ((bits[4]&15)<<8) ) <<1) - 4096;
-		VectorCopy(pr.origin, pr.oldorigin);
-
-		if (bits[4] & 64)
-			pr.effects = EF_BLASTER;
-		else
-			pr.effects = 0;
-
-		if (bits[4] & 128) {
-			old = true;
-			bits[0] = MSG_ReadByte (&net_message);
-			bits[1] = MSG_ReadByte (&net_message);
-			bits[2] = MSG_ReadByte (&net_message);
-			bits[3] = MSG_ReadByte (&net_message);
-			bits[4] = MSG_ReadByte (&net_message);
-			pr.oldorigin[0] = ( ( bits[0] + ((bits[1]&15)<<8) ) <<1) - 4096;
-			pr.oldorigin[1] = ( ( (bits[1]>>4) + (bits[2]<<4) ) <<1) - 4096;
-			pr.oldorigin[2] = ( ( bits[3] + ((bits[4]&15)<<8) ) <<1) - 4096;
-		}
-
-		bits[0] = MSG_ReadByte (&net_message);
-		bits[1] = MSG_ReadByte (&net_message);
-		bits[2] = MSG_ReadByte (&net_message);
-
-		pr.angles[0] = 360*bits[0]/256;
-		pr.angles[1] = 360*bits[1]/256;
-		pr.modelindex = bits[2];
-
-		b = MSG_ReadByte (&net_message);
-		pr.num = (b & 0x7f);
-		if (b & 128) // extra entity number byte
-			pr.num |= (MSG_ReadByte (&net_message) << 7);
-
-		pr.present = true;
-
-		// find if this projectile already exists from previous frame
-		for (j = 0; j < MAX_PROJECTILES; j++) {
-			if (cl_projectiles[j].modelindex) {
-				if (cl_projectiles[j].num == pr.num) {
-					// already present, set up oldorigin for interpolation
-					if (!old)
-						VectorCopy(cl_projectiles[j].origin, pr.oldorigin);
-					cl_projectiles[j] = pr;
-					break;
-				}
-			} else
-				lastempty = j;
-		}
-
-		// not present previous frame, add it
-		if (j == MAX_PROJECTILES) {
-			if (lastempty != -1) {
-				cl_projectiles[lastempty] = pr;
-			}
-		}
-	}
-}
-
-/*
-=============
-CL_LinkProjectiles
-
-=============
-*/
-void CL_AddProjectiles (void)
-{
-	int		i, j;
-	projectile_t	*pr;
-	entity_t		ent;
-
-	memset (&ent, 0, sizeof(ent));
-
-	for (i=0, pr=cl_projectiles ; i < MAX_PROJECTILES ; i++, pr++)
-	{
-		// grab an entity to fill in
-		if (pr->modelindex < 1)
-			continue;
-		if (!pr->present) {
-			pr->modelindex = 0;
-			continue; // not present this frame (it was in the previous frame)
-		}
-
-		ent.model = cl.model_draw[pr->modelindex];
-
-		// interpolate origin
-		for (j=0 ; j<3 ; j++)
-		{
-			ent.origin[j] = ent.oldorigin[j] = pr->oldorigin[j] + cl.lerpfrac *
-				(pr->origin[j] - pr->oldorigin[j]);
-
-		}
-
-		if (pr->effects & EF_BLASTER)
-			CL_BlasterTrail (pr->oldorigin, ent.origin);
-		V_AddLight (pr->origin, 200, 1, 1, 0);
-
-		VectorCopy (pr->angles, ent.angles);
-		V_AddEntity (&ent);
-	}
-}
-#endif
-
 /*
 =================
 CL_ParseEntityBits
@@ -194,11 +39,9 @@ CL_ParseEntityBits
 Returns the entity number and the header bits
 =================
 */
-int	bitcounts[32];	/// just for protocol profiling
 int CL_ParseEntityBits (unsigned *bits)
 {
 	unsigned	b, total;
-	int			i;
 	int			number;
 
 	total = MSG_ReadByte (&net_message);
@@ -218,11 +61,6 @@ int CL_ParseEntityBits (unsigned *bits)
 		total |= b<<24;
 	}
 
-	// count the bits for net profiling
-	for (i = 0; i < 32; i++)
-		if (total & (1<<i))
-			bitcounts[i]++;
-
 	if (total & U_NUMBER16)
 		number = MSG_ReadShort (&net_message);
 	else
@@ -240,7 +78,7 @@ CL_ParseDelta
 Can go from either a baseline or a previous packet_entity
 ==================
 */
-void CL_ParseDelta (entity_state_t *from, entity_state_t *to, int number, int bits)
+void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, int bits, qboolean baseline)
 {
 	// set everything to the state we are delta'ing from
 	*to = *from;
@@ -248,19 +86,13 @@ void CL_ParseDelta (entity_state_t *from, entity_state_t *to, int number, int bi
 	VectorCopy (from->origin, to->old_origin);
 	to->number = number;
 
-	if (bits & U_MODEL)
-		to->modelindex = MSG_ReadByte (&net_message);
-	if (bits & U_MODEL2)
-		to->modelindex2 = MSG_ReadByte (&net_message);
-	if (bits & U_MODEL3)
-		to->modelindex3 = MSG_ReadByte (&net_message);
-	if (bits & U_MODEL4)
-		to->modelindex4 = MSG_ReadByte (&net_message);
+	if (bits & U_MODEL)		to->modelindex = MSG_ReadByte (&net_message);
+	if (bits & U_MODEL2)	to->modelindex2 = MSG_ReadByte (&net_message);
+	if (bits & U_MODEL3)	to->modelindex3 = MSG_ReadByte (&net_message);
+	if (bits & U_MODEL4)	to->modelindex4 = MSG_ReadByte (&net_message);
 
-	if (bits & U_FRAME8)
-		to->frame = MSG_ReadByte (&net_message);
-	if (bits & U_FRAME16)
-		to->frame = MSG_ReadShort (&net_message);
+	if (bits & U_FRAME8)	to->frame = MSG_ReadByte (&net_message);
+	if (bits & U_FRAME16)	to->frame = MSG_ReadShort (&net_message);
 
 	if ((bits & U_SKIN8) && (bits & U_SKIN16))		//used for laser colors
 		to->skinnum = MSG_ReadLong(&net_message);
@@ -269,47 +101,72 @@ void CL_ParseDelta (entity_state_t *from, entity_state_t *to, int number, int bi
 	else if (bits & U_SKIN16)
 		to->skinnum = MSG_ReadShort(&net_message);
 
-	if ( (bits & (U_EFFECTS8|U_EFFECTS16)) == (U_EFFECTS8|U_EFFECTS16) )
+	if ((bits & (U_EFFECTS8|U_EFFECTS16)) == (U_EFFECTS8|U_EFFECTS16))
 		to->effects = MSG_ReadLong(&net_message);
 	else if (bits & U_EFFECTS8)
 		to->effects = MSG_ReadByte(&net_message);
 	else if (bits & U_EFFECTS16)
 		to->effects = MSG_ReadShort(&net_message);
 
-	if ( (bits & (U_RENDERFX8|U_RENDERFX16)) == (U_RENDERFX8|U_RENDERFX16) )
+	if ((bits & (U_RENDERFX8|U_RENDERFX16)) == (U_RENDERFX8|U_RENDERFX16))
 		to->renderfx = MSG_ReadLong(&net_message);
 	else if (bits & U_RENDERFX8)
 		to->renderfx = MSG_ReadByte(&net_message);
 	else if (bits & U_RENDERFX16)
 		to->renderfx = MSG_ReadShort(&net_message);
 
-	if (bits & U_ORIGIN1)
-		to->origin[0] = MSG_ReadCoord (&net_message);
-	if (bits & U_ORIGIN2)
-		to->origin[1] = MSG_ReadCoord (&net_message);
-	if (bits & U_ORIGIN3)
-		to->origin[2] = MSG_ReadCoord (&net_message);
+	if (bits & U_ORIGIN1)	to->origin[0] = MSG_ReadCoord (&net_message);
+	if (bits & U_ORIGIN2)	to->origin[1] = MSG_ReadCoord (&net_message);
+	if (bits & U_ORIGIN3)	to->origin[2] = MSG_ReadCoord (&net_message);
 
-	if (bits & U_ANGLE1)
-		to->angles[0] = MSG_ReadAngle(&net_message);
-	if (bits & U_ANGLE2)
-		to->angles[1] = MSG_ReadAngle(&net_message);
-	if (bits & U_ANGLE3)
-		to->angles[2] = MSG_ReadAngle(&net_message);
+	if (bits & U_ANGLE1)	to->angles[0] = MSG_ReadAngle(&net_message);
+	if (bits & U_ANGLE2)	to->angles[1] = MSG_ReadAngle(&net_message);
+	if (bits & U_ANGLE3)	to->angles[2] = MSG_ReadAngle(&net_message);
 
-	if (bits & U_OLDORIGIN)
-		MSG_ReadPos (&net_message, to->old_origin);
+	if (bits & U_OLDORIGIN)	MSG_ReadPos (&net_message, to->old_origin);
+	if (bits & U_SOUND)		to->sound = MSG_ReadByte (&net_message);
+	to->event = bits & U_EVENT ? MSG_ReadByte (&net_message) : 0;
+	if (bits & U_SOLID)		to->solid = MSG_ReadShort (&net_message);
 
-	if (bits & U_SOUND)
-		to->sound = MSG_ReadByte (&net_message);
+	if (bits & (U_ANGLE_N|U_MODEL_N) || baseline)
+		AnglesToAxis (to->angles, to->axis);
 
-	if (bits & U_EVENT)
-		to->event = MSG_ReadByte (&net_message);
-	else
-		to->event = 0;
+	if (bits & (U_SOLID|U_ANGLE_N|U_ORIGIN_N|U_MODEL_N) || baseline || !to->valid)
+	{
+		if (to->solid && to->solid != 31)
+		{
+			int		x, zd, zu;
+			vec3_t	d;
 
-	if (bits & U_SOLID)
-		to->solid = MSG_ReadShort (&net_message);
+			x = 8 * (to->solid & 31);
+			zd = 8 * ((to->solid>>5) & 31);
+			zu = 8 * ((to->solid>>10) & 63) - 32;
+
+			VectorSet (to->mins, -x, -x, -zd);
+			VectorSet (to->maxs, x, x, zu);
+			VectorAdd (to->maxs, to->mins, d);
+			VectorMA (to->origin, 0.5f, d, to->center);
+			to->radius = VectorDistance (to->maxs, to->center);
+			to->valid = true;
+		}
+		else
+		{
+			cmodel_t *m;
+			vec3_t	v, tmp;
+
+			m = cl.model_clip[to->modelindex];
+			if (m)
+			{
+				VectorAdd (m->mins, m->maxs, v);
+				VectorScale (v, 0.5f, v);
+				VectorMA (to->origin, v[0], to->axis[0], tmp);
+				VectorMA (tmp, v[1], to->axis[1], tmp);
+				VectorMA (tmp, v[2], to->axis[2], to->center);
+				to->radius = m->radius;
+				to->valid = true;
+			}
+		}
+	}
 }
 
 /*
@@ -320,10 +177,10 @@ Parses deltas from the given base and adds the resulting entity
 to the current frame
 ==================
 */
-void CL_DeltaEntity (frame_t *frame, int newnum, entity_state_t *old, int bits)
+void CL_DeltaEntity (frame_t *frame, int newnum, entityState_t *old, int bits)
 {
 	centity_t	*ent;
-	entity_state_t	*state;
+	entityState_t	*state;
 
 	ent = &cl_entities[newnum];
 
@@ -331,18 +188,18 @@ void CL_DeltaEntity (frame_t *frame, int newnum, entity_state_t *old, int bits)
 	cl.parse_entities++;
 	frame->num_entities++;
 
-	CL_ParseDelta (old, state, newnum, bits);
+	CL_ParseDelta (old, state, newnum, bits, false);
 
 	// some data changes will force no lerping
-	if (state->modelindex != ent->current.modelindex
-		|| state->modelindex2 != ent->current.modelindex2
-		|| state->modelindex3 != ent->current.modelindex3
-		|| state->modelindex4 != ent->current.modelindex4
-		|| abs(state->origin[0] - ent->current.origin[0]) > 512
-		|| abs(state->origin[1] - ent->current.origin[1]) > 512
-		|| abs(state->origin[2] - ent->current.origin[2]) > 512
-		|| state->event == EV_PLAYER_TELEPORT
-		|| state->event == EV_OTHER_TELEPORT
+	if (state->modelindex != ent->current.modelindex ||
+		state->modelindex2 != ent->current.modelindex2 ||
+		state->modelindex3 != ent->current.modelindex3 ||
+		state->modelindex4 != ent->current.modelindex4 ||
+		abs(state->origin[0] - ent->current.origin[0]) > 512 ||
+		abs(state->origin[1] - ent->current.origin[1]) > 512 ||
+		abs(state->origin[2] - ent->current.origin[2]) > 512 ||
+		state->event == EV_PLAYER_TELEPORT ||
+		state->event == EV_OTHER_TELEPORT
 		)
 	{
 		ent->serverframe = -99;
@@ -385,7 +242,7 @@ void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 {
 	int			newnum;
 	int			bits;
-	entity_state_t	*oldstate;
+	entityState_t	*oldstate;
 	int			oldindex, oldnum;
 
 	newframe->parse_entities = cl.parse_entities;
@@ -630,7 +487,7 @@ CL_FireEntityEvents
 */
 void CL_FireEntityEvents (frame_t *frame)
 {
-	entity_state_t		*s1;
+	entityState_t		*s1;
 	int					pnum, num;
 
 	for (pnum = 0 ; pnum<frame->num_entities ; pnum++)
@@ -659,10 +516,6 @@ void CL_ParseFrame (void)
 	frame_t		*old;
 
 	memset (&cl.frame, 0, sizeof(cl.frame));
-
-#if 0
-	CL_ClearProjectiles(); // clear projectiles for new frame
-#endif
 
 	cl.frame.serverframe = MSG_ReadLong (&net_message);
 	cl.frame.deltaframe = MSG_ReadLong (&net_message);
@@ -730,11 +583,6 @@ void CL_ParseFrame (void)
 		Com_Error (ERR_DROP, "CL_ParseFrame: not packetentities");
 	CL_ParsePacketEntities (old, &cl.frame);
 
-#if 0
-	if (cmd == svc_packetentities2)
-		CL_ParseProjectiles();
-#endif
-
 	// save the frame off in the backup array for later delta comparisons
 	cl.frames[cl.frame.serverframe & UPDATE_MASK] = cl.frame;
 
@@ -769,7 +617,7 @@ INTERPOLATE BETWEEN FRAMES TO GET RENDERING PARMS
 ==========================================================================
 */
 
-struct model_s *S_RegisterSexedModel (entity_state_t *ent, char *base)
+struct model_s *S_RegisterSexedModel (entityState_t *ent, char *base)
 {
 	int		n;
 	char	*p, model[MAX_QPATH];
@@ -819,10 +667,10 @@ struct model_s *S_RegisterSexedModel (entity_state_t *ent, char *base)
 extern int Developer_searchpath (int who);
 // pmm
 
-static void GetEntityInfo (int entityNum, entity_state_t **st, int *eff, int *rfx)
+static void GetEntityInfo (int entityNum, entityState_t **st, int *eff, int *rfx)
 {
 	int		effects, renderfx;
-	entity_state_t *state;
+	entityState_t *state;
 
 	state = &cl_parse_entities[(cl.frame.parse_entities + entityNum) & (MAX_PARSE_ENTITIES-1)];
 	effects = state->effects;
@@ -982,7 +830,7 @@ CL_AddPacketEntities
 static void CL_AddPacketEntities (void)
 {
 	entity_t			ent;
-	entity_state_t		*s1;
+	entityState_t		*s1;
 	float				autorotate;
 	int					i;
 	int					pnum;
@@ -1016,7 +864,6 @@ static void CL_AddPacketEntities (void)
 			ent.frame = cl.time / 100;
 		else
 			ent.frame = s1->frame;
-
 
 		ent.oldframe = cent->prev.frame;
 		ent.backlerp = 1.0 - cl.lerpfrac;
@@ -1401,6 +1248,8 @@ static void CL_AddPacketEntities (void)
 
 #define CAMERA_MINIMUM_DISTANCE	40
 
+//#define FIXED_VIEW		// for debug purposes
+
 void CL_OffsetThirdPersonView (void)
 {
 	vec3_t	forward, pos;
@@ -1410,6 +1259,9 @@ void CL_OffsetThirdPersonView (void)
 
 	// algorithm was taken from FAKK2
 	camDist = max(cl_cameradist->value, CAMERA_MINIMUM_DISTANCE);
+#ifdef FIXED_VIEW
+	sscanf (Cvar_VariableString("3rd"), "%g %g %g", VECTOR_ARGS(&cl.refdef.viewangles));
+#endif
 	AngleVectors (cl.refdef.viewangles, forward, NULL, NULL);
 	VectorMA(cl.refdef.vieworg, -camDist, forward, pos);
 	pos[2] += cl_cameraheight->value;
@@ -1573,9 +1425,6 @@ void CL_AddEntities (void)
 	CL_CalcViewValues ();
 	// PMM - moved this here so the heat beam has the right values for the vieworg, and can lock the beam to the gun
 	CL_AddPacketEntities ();
-#if 0
-	CL_AddProjectiles ();
-#endif
 	CL_AddTEnts ();
 	CL_AddDLights ();
 	CL_RunLightStyles ();	// migrated here from CL_Frame() because of clump time

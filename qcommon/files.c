@@ -214,7 +214,7 @@ static basenamed_t *AddDirFilesToList (char *findname, basenamed_t *list, unsign
 			char	*name;
 
 			name = strrchr (s, '/');	// should always be not NULL
-			if (name && MatchWildcard (name+1, wildcard))
+			if (name && MatchWildcard2 (name+1, wildcard, true))
 				list = AddToNamedList (s, list);
 		}
 		s = Sys_FindNext (musthave, canthave);
@@ -402,14 +402,14 @@ static basenamed_t *ListPakDirectory (pack_t *pak, char *dir, char *mask, int at
 	{
 		if (attr & LISTPAK_DIRS)
 			for (dirlist = d->cDir; dirlist; dirlist = dirlist->next)
-				if (MatchWildcard (dirlist->name, mask))
+				if (MatchWildcard2 (dirlist->name, mask, true))
 				{
 					strcpy (addbufptr, dirlist->name);
 					list = AddToNamedList (addbuf, list);
 				}
 		if (attr & LISTPAK_FILES)
 			for (filelist = d->cFile; filelist; filelist = filelist->next)
-				if (MatchWildcard (filelist->name, mask))
+				if (MatchWildcard2 (filelist->name, mask, true))
 				{
 					strcpy (addbufptr, filelist->name);
 					list = AddToNamedList (addbuf, list);
@@ -491,7 +491,7 @@ void FS_CreatePath (char *path)
 
 // RAFAEL
 /*
-	Developer_searchpath
+	Developer_searchpath (change !!)
 */
 int	Developer_searchpath (int who)
 {
@@ -753,7 +753,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 			return rf->size;
 		}
 
-	DEBUG_LOG(va("can't find file %s\n", filename));
+	DEBUG_LOG(va("no file %s\n", filename));
 
 	*file = NULL;
 	return -1;
@@ -765,7 +765,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 FS_FileExists
 
 This is a fast version of FS_FOpenFile()
-Do not check inline files (only filesystem or paks)
+Will not check inline files (only filesystem or paks)
 =================
 */
 
@@ -883,8 +883,6 @@ void CDAudio_Stop (void);
 
 void FS_Read (void *buffer, int len, FILE *f)
 {
-	int		read;
-	byte	*buf;
 	FILE2	*f2;
 	zip_file zfs;
 
@@ -958,7 +956,9 @@ void FS_Read (void *buffer, int len, FILE *f)
 	}
 	else
 	{
-		// read in chunks for progress bar (needed ??)
+		byte	*buf;
+		int		read;
+
 		buf = (byte *)buffer;
 		read = fread (buf, 1, len, f2->file);
 		if (read == -1)
@@ -1003,7 +1003,7 @@ int FS_LoadFile (char *path, void **buffer)
 
 	FS_Read (buf, len, (FILE*)h);
 	FS_FCloseFile ((FILE*)h);
-// don't needed- Z_Malloc returns zero-filled block:	buffer[len] = 0; // trailing zero
+	// not needed: Z_Malloc returns zero-filled block:	buffer[len] = 0; // trailing zero
 
 	return len;
 }
@@ -1122,7 +1122,7 @@ pack_t *FS_LoadPackFile (char *packfile)
 		ZipClose (packhandle);
 	}
 
-	Com_Printf ("Added packfile%s %s (%d files)\n", is_zip_str[pack->isZip], packfile, pack->numFiles);
+	Com_Printf ("Added packfile%s %s (%d files)\n", is_zip_str[pack->isZip], packfile, pack->numFiles);	//?? DPrintf
 
 	/* debug:
 	packhandle = fopen("pakfiles.log", "a+");
@@ -1198,10 +1198,7 @@ Called to find where to write a file (demos, savegames, etc)
 */
 char *FS_Gamedir (void)
 {
-	if (*fs_gamedir)
-		return fs_gamedir;
-	else
-		return BASEDIRNAME;
+	return (fs_gamedir[0]) ? fs_gamedir : BASEDIRNAME;
 }
 
 /*
@@ -1417,7 +1414,7 @@ static void FS_UnloadPak_f (void)
 			next = item->next;
 
 			pak = item->pack;
-			if (pak && MatchWildcard (pak->filename, pakname))
+			if (pak && MatchWildcard2 (pak->filename, pakname, true))
 			{
 				if (prev)
 					prev->next = item->next;

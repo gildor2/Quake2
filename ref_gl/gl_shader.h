@@ -48,7 +48,7 @@ typedef enum
 	TCGEN_VECTOR,
 	// internal-use modes
 	TCGEN_LIGHTMAP1, TCGEN_LIGHTMAP2, TCGEN_LIGHTMAP3, TCGEN_LIGHTMAP4,	// for fast lightstyles
-	TCGEN_DLIGHT0,				// 32 values
+	TCGEN_DLIGHT0,				// 32 values, index is for surfDlights[], not for portal.dlights[]
 	TCGEN_ZERO = TCGEN_DLIGHT0 + MAX_DLIGHTS,	//?? s = t = 0 (unused/unimplemented)
 	TCGEN_FOG									//?? used for fog image
 } tcGenType_t;
@@ -95,7 +95,7 @@ typedef enum
 	ALPHAGEN_ONE_MINUS_DOT,
 	ALPHAGEN_LIGHTING_SPECULAR,
 	ALPHAGEN_WAVE,
-	ALPHAGEN_PORTAL
+	ALPHAGEN_PORTAL,
 } alphaGenType_t;
 
 typedef enum
@@ -184,7 +184,8 @@ typedef struct
 	tcModParms_t *tcModParms;
 	// images: variable length
 	int		numAnimTextures;		// in range [1..MAX_STAGE_TEXTURES]; if 0 -- ignore stage (and treat previous as last)
-	float	animMapFreq;			// valid only when numAnimTextures > 1
+	float	animMapFreq;			// valid only when numAnimTextures > 1 && (frameFromEntity == false || model = WORLD)
+	byte	frameFromEntity;		// bool
 	image_t	*mapImage[1];
 } shaderStage_t;
 
@@ -223,7 +224,8 @@ typedef struct shader_s
 
 	byte	scripted;
 	byte	bad;			// errors in script or no map image found (for auto-generated shader)
-	byte	fast;			// have no deforms, tcGen/tcMod, rgb/alpha-gen
+	byte	fast;			// have no deforms, tcGen/tcMod, rgb/alpha-gen (remove ??)
+	byte	dependOnEntity;	// when false, surface may be mixed with surfaces from different entities
 
 	byte	usePolygonOffset;
 

@@ -74,79 +74,51 @@ CL_ClipMoveToEntities
 void CL_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, trace_t *tr)
 {
 	int		i;
-	entity_state_t *ent;
+	entityState_t *ent;
 	trace_t	trace;
-	float	traceLen, traceWidth, b1, b2;
+	float	t, traceLen, traceWidth, b1, b2;
 	vec3_t	traceDir;
 
 	b1 = DotProduct (mins, mins);
 	b2 = DotProduct (maxs, maxs);
-	traceWidth = sqrt (b1 > b2 ? b1 : b2);
+	t = b1 > b2 ? b1 : b2;
+	traceWidth = SQRTFAST(t);
 	VectorSubtract (end, start, traceDir);
 	traceLen = VectorNormalize (traceDir) + traceWidth;
 
 	for (i = 0; i < cl.frame.num_entities; i++)
 	{
-		int		headnode, num;
-		float	*angles;
+		cmodel_t *cmodel;
+		vec3_t	center, tmp;
+		float	entPos, dist2, dist0;
 
-		num = (cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES - 1);
-		ent = &cl_parse_entities[num];
+		ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
+		if (!ent->solid) continue;
+		if (ent->number == cl.playernum+1) continue;	// no clip with player entity
 
-		if (!ent->solid)
-			continue;
+		VectorSubtract (ent->center, start, center);
+		// collision detection: line vs sphere
+		// check position of point projection on line
+		entPos = DotProduct (center, traceDir);
+		if (entPos < -traceWidth - ent->radius || entPos > traceLen + ent->radius)
+			continue; // too near / too far
 
-		if (ent->number == cl.playernum+1)
-			continue;
+		// check distance between point and line
+		VectorMA (center, -entPos, traceDir, tmp);
+		dist2 = DotProduct (tmp, tmp);
+		dist0 = ent->radius + traceWidth;
+		if (dist2 >= dist0 * dist0) continue;
 
 		if (ent->solid == 31)
-		{	// special value for bmodel
-			cmodel_t *cmodel;
-			vec3_t	center, tmp;
-			float	entPos, dist2, dist0;
-
+		{
 			cmodel = cl.model_clip[ent->modelindex];
 			if (!cmodel) continue;
 
-			// get model center
-			VectorAdd (cmodel->mins, cmodel->maxs, center);
-			VectorMA (ent->origin, 0.5f, center, center);
-			VectorSubtract (center, start, center);
-
-			// collision detection: line vs sphere
-			entPos = DotProduct (center, traceDir);
-			if (entPos < -traceWidth - cmodel->radius || entPos > traceLen + cmodel->radius)
-				continue; // too near / too far
-
-			VectorMA (center, -entPos, traceDir, tmp);
-			dist2 = DotProduct (tmp, tmp);
-			dist0 = cmodel->radius + traceWidth;
-			if (dist2 >= dist0 * dist0) continue;
-
-			headnode = cmodel->headnode;
-			angles = ent->angles;
+			trace = CM_TransformedBoxTrace2 (start, end, mins, maxs, cmodel->headnode,  MASK_PLAYERSOLID, ent->origin, ent->axis);
 		}
 		else
-		{	// encoded bbox
-			int		x, zd, zu;
-			vec3_t	bmins, bmaxs;
-
-			x = 8 * (ent->solid & 31);
-			zd = 8 * ((ent->solid>>5) & 31);
-			zu = 8 * ((ent->solid>>10) & 63) - 32;
-
-			bmins[0] = bmins[1] = -x;
-			bmaxs[0] = bmaxs[1] = x;
-			bmins[2] = -zd;
-			bmaxs[2] = zu;
-
-			if (VectorDistance (start, ent->origin) >= traceLen + VectorLength (zu > zd ? bmaxs : bmins))
-				continue;			// cannot collide with this entity: too far
-			headnode = CM_HeadnodeForBox (bmins, bmaxs);
-			angles = vec3_origin;	// boxes don't rotate
-		}
-
-		trace = CM_TransformedBoxTrace (start, end, mins, maxs, headnode,  MASK_PLAYERSOLID, ent->origin, angles);
+			trace = CM_TransformedBoxTrace (start, end, mins, maxs,
+				CM_HeadnodeForBox (ent->mins, ent->maxs), MASK_PLAYERSOLID, ent->origin, vec3_origin);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
 		{
@@ -189,26 +161,30 @@ trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 int CL_PMpointcontents (vec3_t point)
 {
 	int		i;
-	entity_state_t *ent;
-	int		num;
+	entityState_t *ent;
 	cmodel_t *cmodel;
 	int		contents;
+	vec3_t	delta;
+	float	dist2;
 
 	contents = CM_PointContents (point, 0);
 
 	for (i = 0; i < cl.frame.num_entities; i++)
 	{
-		num = (cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES - 1);
-		ent = &cl_parse_entities[num];
+		ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
 
-		if (ent->solid != 31) // special value for bmodel
+		if (ent->solid != 31)	// use pointcontents only for inline models
 			continue;
 
 		cmodel = cl.model_clip[ent->modelindex];
-		if (!cmodel)
-			continue;
+		if (!cmodel) continue;
 
-		contents |= CM_TransformedPointContents (point, cmodel->headnode, ent->origin, ent->angles);
+		// check entity bounding sphere
+		VectorSubtract (ent->center, point, delta);
+		dist2 = DotProduct (delta, delta);
+		if (dist2 > ent->radius * ent->radius) continue;
+		// accurate check with trace
+		contents |= CM_TransformedPointContents2 (point, cmodel->headnode, ent->origin, ent->axis);
 	}
 
 	return contents;
@@ -290,7 +266,6 @@ void CL_PredictMovement (void)
 		cl.predicted_step = step * 0.125;
 		cl.predicted_step_time = cls.realtime - cls.frametime * 500;
 	}
-
 
 	// copy results out for rendering
 	cl.predicted_origin[0] = pm.s.origin[0]*0.125;

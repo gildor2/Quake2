@@ -648,8 +648,10 @@
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_backend.h"\
 	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\gl_sky.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -661,6 +663,7 @@
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\qgl_decl.h"\
 	
@@ -676,6 +679,20 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
+.\ref_gl\gl_light.c : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
+	".\client\ref_defs.h"\
+	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
+	".\ref_gl\gl_backend.h"\
+	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_math.h"\
+	".\ref_gl\gl_model.h"\
+	".\ref_gl\qgl_decl.h"\
+	
+
 .\ref_gl\gl_main.c : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
@@ -685,8 +702,21 @@
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_backend.h"\
 	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\qgl_decl.h"\
+	
+
+.\ref_gl\gl_math.c : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
+	".\client\ref_defs.h"\
+	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
+	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_math.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -698,8 +728,21 @@
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\qgl_decl.h"\
+	
+
+.\ref_gl\gl_poly.c : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
+	".\client\ref_defs.h"\
+	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
+	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_poly.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -738,6 +781,7 @@
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_backend.h"\
 	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
 	".\ref_gl\qgl_decl.h"\

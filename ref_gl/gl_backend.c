@@ -1,7 +1,9 @@
 #include "gl_local.h"
 #include "gl_shader.h"
 #include "gl_backend.h"
+#include "gl_lightmap.h"
 #include "gl_sky.h"
+#include "gl_math.h"
 
 //#define SWAP_ON_BEGIN		// call GLimp_EndFrame() with SwapBuffers() on frame begin (or frame end if not defined)
 
@@ -75,68 +77,12 @@ static bufTexCoordSrc_t	srcTexCoord[MAX_VERTEXES];
 int gl_numVerts, gl_numIndexes, gl_numExtra;
 
 
-/*--- Tables for fast periodic function computation ---*/
-
-#define TABLE_SIZE	1024
-#define TABLE_MASK	(TABLE_SIZE-1)
-
-static float sinTable[TABLE_SIZE], squareTable[TABLE_SIZE], triangleTable[TABLE_SIZE],
-			 sawtoothTable[TABLE_SIZE], inverseSwatoothTable[TABLE_SIZE];
-
-static float *mathFuncs[5] = {
-	sinTable, squareTable, triangleTable, sawtoothTable, inverseSwatoothTable
-};
-
-#define PERIODIC_FUNC(tbl,val)		tbl[Q_ftol((val)*TABLE_SIZE) & TABLE_MASK]
-
-
-static float sqrtTable[256];
-static int   noiseTablei[256];
-static float noiseTablef[256];
-
-
-static void InitFuncTables (void)
-{
-	int		i, n;
-
-	for (i = 0; i < TABLE_SIZE; i++)
-	{
-		float	j;
-
-		j = i;			// just to avoid "(float)i"
-		if (i < TABLE_SIZE/2)
-			squareTable[i] = -1;
-		else
-			squareTable[i] = 1;
-
-		sinTable[i] = sin (j / (TABLE_SIZE/2) * M_PI);		// 0 -- 0, last -- 2*pi
-		sawtoothTable[i] = j / TABLE_SIZE;
-		inverseSwatoothTable[i] = 1 - j / TABLE_SIZE;
-
-		n = (i + TABLE_SIZE/4) & TABLE_MASK;				// make range -1..1..-1
-		if (n >= TABLE_SIZE/2)
-			n = TABLE_SIZE - n;
-		triangleTable[i] = (float)(n - TABLE_SIZE/4) / (TABLE_SIZE/4);
-	}
-
-	for (i = 0; i < 256; i++)
-	{
-		sqrtTable[i] = pow (i / 255.0f, 0.5f);
-		noiseTablei[i] = (int)(rand() * 255.0f / RAND_MAX) & 0xFF;
-		noiseTablef[i] = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;	// range -1..1
-	}
-}
-
-
 /*------------------ Scene -----------------*/
 
 // surfaces
 static surfaceInfo_t *sortedSurfaces[MAX_SCENE_SURFACES];
 
-
-/*--------------- Draw portal --------------*/
-
-static viewPortal_t ap;		// active portal
+viewPortal_t ap;		// active portal
 
 
 /*----- Process deforms, ...gens etc. ------*/
@@ -250,7 +196,10 @@ static void GenerateColorArray (shaderStage_t *st)
 			dst->c[2] = (255 - src->c[2]) >> gl_config.overbrightBits;
 		}
 		break;
-	// other types: LIGHTING_DIFFUSE, FOG
+	case RGBGEN_LIGHTING_DIFFUSE:
+		GL_ApplyEntitySpherelights (dst);
+		break;
+	// other types: FOG
 	}
 
 	if (st->rgbGenType == RGBGEN_EXACT_VERTEX && st->alphaGenType == ALPHAGEN_VERTEX)
@@ -463,7 +412,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 				float	*vec, f;
 
 				vec = &vb->verts[k].xyz[0];	//?? optimize (vec++, but with different type)
-				f = PERIODIC_FUNC(sinTable, (vec[0] + vec[1] + vec[2]) / TABLE_SIZE + f1) * f2;
+				f = SIN_FUNC((vec[0] + vec[1] + vec[2]) / TABLE_SIZE + f1) * f2;
 				dst->tex[0] += f;
 				dst->tex[1] += f;
 //				dst->tex[0] += PERIODIC_FUNC(sinTable, (vec[0] + vec[2]) / TABLE_SIZE + f1) * f2;	// Q3: vec[0] + vec[2]
@@ -475,8 +424,8 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 			{
 				f1 = dst->tex[0];
 				f2 = dst->tex[1];
-				dst->tex[0] = f1 / 64.0f + PERIODIC_FUNC(sinTable, (f2 / 16.0f + ap.time) / (2.0f * M_PI)) / 16.0f;
-				dst->tex[1] = f2 / 64.0f + PERIODIC_FUNC(sinTable, (f1 / 16.0f + ap.time) / (2.0f * M_PI)) / 16.0f;
+				dst->tex[0] = f1 / 64.0f + SIN_FUNC((f2 / 16.0f + ap.time) / (2.0f * M_PI)) / 16.0f;
+				dst->tex[1] = f2 / 64.0f + SIN_FUNC((f1 / 16.0f + ap.time) / (2.0f * M_PI)) / 16.0f;
 			}
 			break;
 		case TCMOD_SCALE:
@@ -493,8 +442,8 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 				float	f, c1, c2;
 
 				f = - tcmod->rotateSpeed * ap.time / 180 * M_PI;	// angle
-				f1 = PERIODIC_FUNC(sinTable, f);					// sin(angle)
-				f2 = PERIODIC_FUNC(sinTable, f + 0.25);				// cos(angle)
+				f1 = SIN_FUNC(f);
+				f2 = COS_FUNC(f);
 				c1 = 0.5f * (1 - f1 - f2);
 				c2 = 0.5f * (1 + f1 - f2);
 				for (k = 0; k < gl_numVerts; k++, dst++)
@@ -514,7 +463,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 /*----------------- Shader visualization -------------------*/
 
 
-// should rename "temp", "tmp" ??
+// should rename "temp", "tmp" ?? (rendererStage_t ?)
 typedef struct
 {
 	unsigned texEnv;		// REPLACE/MODILATE/ADD or COMBINE/COMBINE_NV (uses st.glState.blend ??)
@@ -561,6 +510,7 @@ static void PreprocessShader (shader_t *sh)
 	tempStage_t *st;
 	renderPass_t *pass;
 	int		tmuUsed, tmuLeft, passStyle;
+	qboolean entityLightingDone;
 
 	debugMode = 0;
 	if (r_fullbright->integer) debugMode |= DEBUG_FULLBRIGHT;
@@ -661,7 +611,15 @@ static void PreprocessShader (shader_t *sh)
 		memcpy (&st->st, stage, sizeof(shaderStage_t));
 		// select stage image from animation
 		if (stage->numAnimTextures > 1)
-			st->st.mapImage[0] = stage->mapImage[Q_ftol(ap.time * stage->animMapFreq) % stage->numAnimTextures];
+		{
+			int		n;
+
+			if (currentEntity == &gl_entities[ENTITYNUM_WORLD] || !stage->frameFromEntity)
+				n = Q_ftol (ap.time * stage->animMapFreq);
+			else
+				n = currentEntity->frame;
+			st->st.mapImage[0] = stage->mapImage[n % stage->numAnimTextures];
+		}
 
 		/*---------- fullbright/lightmap ---------------*/
 		// fix glState if current stage is first after lightmap with r_fullbright!=0
@@ -672,10 +630,11 @@ static void PreprocessShader (shader_t *sh)
 		}
 		if (debugMode == (DEBUG_LIGHTMAP|DEBUG_FULLBRIGHT) && !gl_state.is2dMode)
 			st->st.glState |= GLSTATE_POLYGON_LINE;
-		if (!i && currentShader->lightmapNumber == LIGHTMAP_VERTEX)
+		if (!i && (currentShader->lightmapNumber == LIGHTMAP_VERTEX || stage->rgbGenType == RGBGEN_LIGHTING_DIFFUSE))
 		{
-			if (debugMode == DEBUG_LIGHTMAP) st->st.mapImage[0] = NULL;
-			if (debugMode == DEBUG_FULLBRIGHT)
+			if (debugMode == DEBUG_LIGHTMAP)
+				st->st.mapImage[0] = NULL;
+			else if (debugMode == DEBUG_FULLBRIGHT)
 			{
 				st->st.rgbGenType = RGBGEN_CONST;
 				st->st.rgbaConst.rgba |= 0xFFFFFF;
@@ -686,6 +645,7 @@ static void PreprocessShader (shader_t *sh)
 		numTmpStages++;
 	}
 
+	entityLightingDone = false;
 	for (i = 0, st = tmpSt; i < numTmpStages; i++, st++)
 	{
 		/*------- convert some rgbaGen to CONST --------*/
@@ -718,6 +678,25 @@ static void PreprocessShader (shader_t *sh)
 				c2 = bound(c2, 0, 255);
 				st->st.rgbaConst.c[0] = st->st.rgbaConst.c[1] = st->st.rgbaConst.c[2] = c2;
 				st->st.rgbGenType = RGBGEN_CONST;
+			}
+			break;
+		case RGBGEN_LIGHTING_DIFFUSE:
+		/*	if (Cvar_VariableInt("nolight")) // DEBUG
+			{
+				st->st.rgbaConst.c[0] = st->st.rgbaConst.c[1] = st->st.rgbaConst.c[2] = gl_config.identityLightValue;
+				st->st.rgbGenType = RGBGEN_CONST;
+				break;
+			} */
+			if (!entityLightingDone)
+			{
+				if (currentEntity->flags & RF_FULLBRIGHT)
+				{
+					st->st.rgbaConst.c[0] = st->st.rgbaConst.c[1] = st->st.rgbaConst.c[2] = gl_config.identityLightValue;
+					st->st.rgbGenType = RGBGEN_CONST;
+				}
+				else
+					GL_LightForEntity (currentEntity);
+				entityLightingDone = true;
 			}
 			break;
 		}
@@ -918,7 +897,7 @@ static void PreprocessShader (shader_t *sh)
 			}
 		}
 
-		// QGL_EXT_TEXTURE_ENV_COMBINE unsupported here
+		// QGL_EXT_TEXTURE_ENV_COMBINE is unsupported here
 		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE) && blend2 == (GLSTATE_SRC_ONE|GLSTATE_DST_ONE)
 			&& passStyle & BLEND_ADDITIVE && st[0].constRGBA && st[1].constRGBA && tmuUsed == 1)
 		{
@@ -1079,11 +1058,13 @@ static void StageIterator (void)
 			DrawTriangles ();
 		if (gl_shownormals->integer)
 			DrawNormals ();
-	}
 
-	// stats
-	gl_speeds.tris += gl_numIndexes * numTmpStages / 3;
-	gl_speeds.trisMT += gl_numIndexes * numRenderPasses / 3;
+		gl_speeds.tris += gl_numIndexes * numTmpStages / 3;
+		gl_speeds.trisMT += gl_numIndexes * numRenderPasses / 3;
+	}
+	else
+		gl_speeds.tris2D += gl_numIndexes * numTmpStages / 3;
+
 	gl_speeds.numIterators++;
 }
 
@@ -1139,10 +1120,7 @@ static void DrawSkyBox (void)
 
 	if (currentShader->skyRotate) GL_ShowWholeSky ();
 
-	if (gl_showsky->integer)
-		qglDepthRange (0, 0);	// hack to see sky (for debugging)
-	else
-		qglDepthRange (1, 1);	// put sky to the back of scene (i.e. ignore Z-axis)
+	GL_DepthRange (gl_showsky->integer ? DEPTH_NEAR : DEPTH_FAR);
 
 	qglDisableClientState (GL_COLOR_ARRAY);
 	if (currentShader != gl_defaultSkyShader)
@@ -1154,12 +1132,11 @@ static void DrawSkyBox (void)
 		qglColor3fv (gl_fogColor);
 
 	qglPushMatrix ();
-	if (gl_showsky->integer)
-		GL_State (GLSTATE_DEPTHWRITE);	// if we will add "NODEPTHTEST" - DEPTHWITE will no effect
-	else
-		GL_State (GLSTATE_NODEPTHTEST);
+	// if we will add "NODEPTHTEST" if gl_showsky mode -- DEPTHWITE will no effect
+	GL_State (gl_showsky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
+	GL_SetMultitexture (1);
 	// change modelview matrix
-	qglTranslatef (ap.vieworg[0], ap.vieworg[1], ap.vieworg[2]);
+	qglTranslatef (VECTOR_ARGS(ap.vieworg));
 	if (currentShader->skyRotate)
 	{
 		qglRotatef (ap.time * currentShader->skyRotate,
@@ -1168,7 +1145,6 @@ static void DrawSkyBox (void)
 			currentShader->skyAxis[2]);
 	}
 
-	GL_SetMultitexture (1);
 	GL_TexEnv (TEXENV_MODULATE);
 	qglTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord[0]);
 	qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
@@ -1184,12 +1160,30 @@ static void DrawSkyBox (void)
 			GL_Bind (NULL);			// disable texturing
 
 		DrawArrays (gl_indexesArray, gl_numIndexes);
+
+		//?? some debug stuff from StageIterator()
+		if (gl_showtris->integer)
+		{
+			DrawTriangles ();
+			// need to perform some state restoration (do it with another way ??)
+			GL_State (gl_showsky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
+			if (currentShader != gl_defaultSkyShader)
+				qglColor3f (gl_config.identityLightValue_f,
+							gl_config.identityLightValue_f,
+							gl_config.identityLightValue_f); // avoid overbright
+			else
+//				qglColor3f (0, 0, 0);
+				qglColor3fv (gl_fogColor);
+			GL_SetMultitexture (1);
+		}
+		gl_speeds.tris += gl_numIndexes * numTmpStages / 3;
+		gl_speeds.trisMT += gl_numIndexes * numRenderPasses / 3;
 	}
 	qglPopMatrix ();
 
 	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
 
-	qglDepthRange (0, 1);			// restore depth range (to default values)
+	GL_DepthRange (DEPTH_NORMAL);
 }
 
 
@@ -1384,13 +1378,13 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 			// lerp normal
 			a1 = (vs1->normal & 255) / 255.0f;
 			b1 = ((vs1->normal >> 8) & 255) / 255.0f;
-			sa1 = PERIODIC_FUNC(sinTable, a1) * frontLerp;
+			sa1 = SIN_FUNC(a1) * frontLerp;
 			a2 = (vs2->normal & 255) / 255.0f;
 			b2 = ((vs2->normal >> 8) & 255) / 255.0f;
-			sa2 = PERIODIC_FUNC(sinTable, a2) * currentEntity->backLerp;
-			norm[0] = sa1 * PERIODIC_FUNC(sinTable, b1 + 0.25f) + sa2 * PERIODIC_FUNC(sinTable, b2 + 0.25f);
-			norm[1] = sa1 * PERIODIC_FUNC(sinTable, b1) + sa2 * PERIODIC_FUNC(sinTable, b2);
-			norm[2] = PERIODIC_FUNC(sinTable, a1 + 0.25f) * frontLerp + PERIODIC_FUNC(sinTable, a2 + 0.25f) * currentEntity->backLerp;
+			sa2 = SIN_FUNC(a2) * currentEntity->backLerp;
+			norm[0] = sa1 * COS_FUNC(b1) + sa2 * COS_FUNC(b2);
+			norm[1] = sa1 * SIN_FUNC(b1) + sa2 * SIN_FUNC(b2);
+			norm[2] = COS_FUNC(a1) * frontLerp + COS_FUNC(a2) * currentEntity->backLerp;
 			ex->numVerts = 1;
 			ex->axis = NULL;
 			ex->dlight = NULL;
@@ -1407,10 +1401,10 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 			norm = ex->normal;
 			a = (vs1->normal & 255) / 255.0f;
 			b = ((vs1->normal >> 8) & 255) / 255.0f;
-			sa = PERIODIC_FUNC(sinTable, a);
-			norm[0] = sa * PERIODIC_FUNC(sinTable, b + 0.25f);	// sin(a)*cos(b)
-			norm[1] = sa * PERIODIC_FUNC(sinTable, b);			// sin(a)*sin(b)
-			norm[2] = PERIODIC_FUNC(sinTable, a + 0.25f);		// cos(a)
+			sa = SIN_FUNC(a);
+			norm[0] = sa * COS_FUNC(b);			// sin(a)*cos(b)
+			norm[1] = sa * SIN_FUNC(b);			// sin(a)*sin(b)
+			norm[2] = COS_FUNC(a);				// cos(a)
 			ex->numVerts = 1;
 			ex->axis = NULL;
 			ex->dlight = NULL;
@@ -1472,7 +1466,7 @@ static void DrawBBoxes (void)
 	GL_State (0);
 
 	/*-------- draw bounding boxes --------*/
-	for (i = 0, ent = gl_entities; i < gl_numEntities; i++, ent++)
+	for (i = 0, ent = gl_entities + ap.firstEntity; i < ap.numEntities; i++, ent++)
 	{
 		model_t		*m;
 		float		*mins, *maxs;
@@ -1555,13 +1549,16 @@ static void DrawBBoxes (void)
 
 static void DrawTriangles (void)
 {
+	gl_depthMode_t prevDepth;
+
+	prevDepth = gl_state.currentDepthMode;
 	GL_SetMultitexture (0);		// disable texturing
 	if (gl_showtris->integer - 1 & 1)
 		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);	// use depth test
 	else	// no depth test
 	{
 		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
-		qglDepthRange (0, 0);
+		GL_DepthRange (DEPTH_NEAR);
 	}
 	// setup colors
 	if (gl_showtris->integer - 1 & 2)
@@ -1569,11 +1566,11 @@ static void DrawTriangles (void)
 	else
 		qglColor3f (0, 0, 0);
 	qglDisableClientState (GL_COLOR_ARRAY);
-	GL_DisableTexCoordArrays ();
+//	GL_DisableTexCoordArrays ();
 	// draw
 	DrawArrays (gl_indexesArray, gl_numIndexes);
 	// restore state
-	qglDepthRange (0, 1);
+	GL_DepthRange (prevDepth);
 }
 
 
@@ -1583,14 +1580,16 @@ static void DrawNormals (void)
 	bufVertex_t *vec;
 	float	*norm;
 	int		i, j;
+	gl_depthMode_t prevDepth;
 
+	prevDepth = gl_state.currentDepthMode;
 	GL_SetMultitexture (0);		// disable texturing
 	if (gl_shownormals->integer - 1 & 1)
 		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);	// use depth test
 	else	// no depth test
 	{
 		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
-		qglDepthRange (0, 0);
+		GL_DepthRange (DEPTH_NEAR);
 	}
 	// setup colors
 	if (gl_shownormals->integer - 1 & 2)
@@ -1598,7 +1597,7 @@ static void DrawNormals (void)
 	else
 		qglColor3f (0, 0, 0);
 	qglDisableClientState (GL_COLOR_ARRAY);
-	GL_DisableTexCoordArrays ();
+//	GL_DisableTexCoordArrays ();
 	// draw
 	qglBegin (GL_LINES);
 	vec = vb->verts;
@@ -1616,7 +1615,7 @@ static void DrawNormals (void)
 	}
 	qglEnd ();
 	// restore state
-	qglDepthRange (0, 1);
+	GL_DepthRange (prevDepth);
 }
 
 
@@ -1775,7 +1774,7 @@ static void DrawScene (void)
 	surfaceCommon_t	*surf;
 	// current state
 	int		currentShaderNum, currentEntityNum;
-	qboolean currentDepthHack, depthHack;
+	qboolean currentWorld, isWorld;
 
 	LOG_STRING (va("******** R_DrawScene: (%g, %g) - (%g, %g) ********\n", ap.x, ap.y, ap.x+ap.w, ap.y+ap.h));
 
@@ -1829,7 +1828,7 @@ static void DrawScene (void)
 
 	numFastSurfs = 0;
 	currentShaderNum = currentEntityNum = -1;
-	currentDepthHack = false;
+	currentWorld = false;
 	for (/* continue */; index < ap.numSurfaces; index++, si++)
 	{
 		int		shNum, entNum;
@@ -1863,17 +1862,24 @@ static void DrawScene (void)
 				fastSurf = si;
 			}
 		}
+
 		if (entNum != currentEntityNum)
 		{
-			currentEntityNum = entNum;
 			currentEntity = &gl_entities[entNum];
-			if (entNum == ENTITYNUM_WORLD)
+			currentEntityNum = entNum;
+
+			isWorld = (entNum == ENTITYNUM_WORLD) || currentEntity->worldMatrix;
+
+			if (isWorld)
 			{
-				//?? set shader.time to ap.time
-				LOG_STRING (va("******** Change entity to WORLD ********\n"));
-				qglLoadMatrixf (&ap.modelMatrix[0][0]);
+				if (!currentWorld)		// previous entity was not world
+				{
+					//?? set shader.time to ap.time
+					LOG_STRING (va("******** Change entity to WORLD ********\n"));
+					qglLoadMatrixf (&ap.modelMatrix[0][0]);
+				}
 				gl_state.inverseCull = false;
-				depthHack = false;
+				GL_DepthRange (DEPTH_NORMAL);
 			}
 			else
 			{
@@ -1881,14 +1887,9 @@ static void DrawScene (void)
 				LOG_STRING (va("******** Change entity to %s ********\n", currentEntity->model->name));
 				qglLoadMatrixf (&currentEntity->modelMatrix[0][0]);
 				gl_state.inverseCull = currentEntity->mirror;
-				depthHack = ((currentEntity->flags & RF_DEPTHHACK) != 0);
+				GL_DepthRange (currentEntity->flags & RF_DEPTHHACK ? DEPTH_HACK : DEPTH_NORMAL);
 			}
-
-			if (depthHack != currentDepthHack)
-			{
-				qglDepthRange (0, depthHack ? 0.3333 : 1);
-				currentDepthHack = depthHack;
-			}
+			currentWorld = isWorld;
 		}
 
 		if (IS_FAST(shader, surf))
@@ -1918,12 +1919,13 @@ static void DrawScene (void)
 	FLUSH();
 
 	GL_EnableFog (false);	//??
-
-	if (currentDepthHack)
-		qglDepthRange (0, 1);
+	GL_DepthRange (DEPTH_NORMAL);
 
 	if (gl_showbboxes->integer)
 		DrawBBoxes ();
+
+	if (gl_showLights->integer)
+		GL_ShowLights ();
 
 	if (gl_finish->integer == 2) qglFinish ();
 	gl_speeds.begin2D = Sys_Milliseconds ();
@@ -2175,8 +2177,6 @@ void GL_InitBackend (void)
 	if (!agpBuffer)
 		vb = Z_Malloc (vbSize);
 	Com_Printf("^1 **** buf: %08X (%d bytes) ****\n", vb, vbSize);//!!
-
-	InitFuncTables ();
 }
 
 

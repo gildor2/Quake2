@@ -502,7 +502,7 @@ void Cmd_Unalias_f (void)
 	for (alias = cmdAlias; alias; alias = next)
 	{
 		next = alias->next;
-		if (MatchWildcard (alias->name, Cmd_Argv(1)))
+		if (MatchWildcard2 (alias->name, Cmd_Argv(1), true))
 		{
 			if (prev)
 				prev->next = alias->next;
@@ -878,7 +878,7 @@ static void Cmd_List_f (void)
 	i = 0;
 	for (cmd = cmdFuncs; cmd; cmd = cmd->next)
 	{
-		if (mask && !MatchWildcard (cmd->name, mask)) continue;
+		if (mask && !MatchWildcard2 (cmd->name, mask, true)) continue;
 		i++;
 		Com_Printf ("%s\n", cmd->name);
 	}

@@ -1,8 +1,50 @@
+!* check ATAN2/ACOS speed on normal building loading and remove #if/#else/#endif stuff from gl_model.c
+?* demo "tower": too slow loading >32 clients (in comparision with oldgl)
+
+!!! autoflares:
+  - should combine bsp-divided surfaces onto a single flare
+? try vertex light on water
+? try for surf lights: if occluded nearest and center point, trace to far point ( == (center-near)*2+near ) (at least, when
+  no light from other light sources - i.e., with 2nd pass)
+
+! sun:
+  * "_sun_surface nn" -- use light from sky surfaces as bright=="nn" (color==sun_color); if "nn" == 1 -- use surf.value
+  * use "nn nn nn": if each nn <=1 -- light color + bright from surf.value; if >1 - bright per color + color from sun
+  - "_sun_ambient nn": only from SURF_LIGHT sky surfs; nn - bright (color from sun); if "nn nn nn" - 3 separate brights
+  - sunlight: only from SURF_LIGHT+SURF_SKY+surf->value surfaces (but: when sun specified, but no SKY+LIGHT surfs (bad map), make
+    light from any SKY surf)
+! no sun:
+  * "_ambient/light/_minlight nn (nn nn nn)" -- set minimal light (ADD to all surfaces)
+- BUG: weapon model can get light from inside wall (should use vieworg instead of ent.origin for lighting)
+
+lighting bugs:
+  - "winter": too dark inside shadows (and: inside caverns should be "area lights" (check arghrad tutorial for understanding ...))
+  - "resort": too dark (need ambient)
+  - "beachassault": too dark inside ship
+
+!! lighting:
+  - ambient light from sun (from sky surfaces, not depends on distance)
+  - weapon model: use vieworg for lighting (can get light through near-placed wall)
+  ? minlight
+  - R_LightPoint
+  - grid cached only style == 0, but cannot process its modification: surf+sun/sky light is mixed (but, normally, style 0 is const)
+  - check lighting with saturation == 0, == -1; with overbright
+  - saturate lights
+
+- replace "sqrt" -> SQRTFAST
+- app icon/button is lazy to appear on taskbar
+
+- gamma:
+  - correct screenshots with contrast/intens (fill gammaTable in GLimp or send this table to SetGamma())
+  ? what to do with "intens" param in GLimp_SetGamma() ? remove ??
+  ? remove "r_intensity"
+  - document this cvars
+  - move gamma computations to renderer, send computed table to SetGamma() (but with more precition ? WHO WILL COMPUTE TABLE ??)
+  - update software gamma code
+
 !!! game_loading screenshots:
   - update when written new file (force to update inside renderer after screenshot performing: find loaded images and reload, pics only)
   - display from menu
-?* bug: when "hand 2" - "NULL model"
-?* bug: game="", noclip, player model selection menu: player model appear on world scene too
 
 ? cmodel_t:
   - add "void *faces"   - filled/used by renderer (and clean R_LoadSubmodels)
@@ -21,10 +63,12 @@
   - cvar for disabling envmaps
   - cvar for disabling HQ windows with envmaps
   - needs to remove extra.plane.axis when shader have deformVertexes
+
 - flares:
   ? correct fov
-  ? try (with map script) "autoflare" for SURF_LIGHT (auto: color, position, size (depends on s->value and s->size ?))
-  ? (auto-)link to surface, cull with surface backface culling
+  - flare image have visible square (when its color is saturated)
+  - saturate flares
+
 - fog:
   !!! BUGS !!! works incorrect with multi-pass rendering
   ? reading parms from file (model.c)
@@ -33,13 +77,18 @@
   ? should not be affected by fog (check it!)
   ! if fogDens > LIMIT -> sky = defaultSky, its color = fogColor
 
-COLORS:
-! need to save dlight color before overbright for entity lighting
-? need to modulate dlight color/alpha (check Q3)
-! overbright particles (use identityLight) or particle color table
-? overbright beams
-- saturate tbl_8to32 (and make separate color table for color >> overbright ??)
-- move SATURATE(c,l,v) to q_shared2.h ?
+? gl_state:
+  - add GL_Color() (do not compare, but save to struc ...)
+  - add GL_SaveState() / GL_RestoreState(): copy struc / enum saved + call funcs for saved fields
+    (or GL_SaveState(savePtr) / GL_SetState(glState))
+
+Colors:
+  ! need to save dlight color before overbright for entity lighting
+  ? need to modulate dlight color/alpha (check Q3)
+  ! overbright particles (use identityLight) or particle color table
+  ? overbright beams
+  - saturate tbl_8to32 (and make separate color table for color >> overbright ??)
+
 - gl_overbright:
   - 0-none (force off), 1-"1bit" (force on), 2-"auto" (ON when (vertexLight | (multitex. && !(combine|combine4))) && fullscreen (??))
   - remove gl_overbrightBits
@@ -56,6 +105,7 @@ PreprocessShader:
   ? when no multitexture - use "multiPassLM = false" (if "auto")
   - many dynamic lightmaps in: market, alley1 (look outside world), rc4 (at start point), punwar (not too slow?), vertigo
     lpbheaven (strong lighting, lots of SURF_TRANS + dl), beachassault (inside ship: shader with 3 lightstyles)
+
 ! rename "gl_local.h" to something another (and change "#ifndef __GL_LOCAL_...")
 - SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
 - add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
@@ -64,10 +114,10 @@ PreprocessShader:
 ? do not render while window is minimized (less CPU usage)
 - r_nocull works only with frustum culling (extend cvar or add another ...)
 !! vertex arrays are not 16-byte aligned (see gl.log)
-? reimplement fast drawing (multitexturing etc.)
+? reimplement (remove?) fast drawing
 
 - dlights:
-  - when model lighting will be implemented, do not use (compensate?) dlighted vertex lightmaps, use dlight info itself
+  ? cdlight_t.minlight
   - cut dlights (by angle: rad/intens = cos(angle))
   - speedup of markup process (?):
     1) share planes between surfs
@@ -75,12 +125,20 @@ PreprocessShader:
     3) WalkBspTree(): mark plane dlights (no surface dlights)
     4) DrawBspSeq(): give dlight info from planes
     !) need a way to provide dlight info for inline models (static (WORLD) and dynamic models)
+  - increase DLIGHT_BITS, store dlightMask instead of numDlights in surface array when ap.numDlights <= DLIGHT_BITS
+
 - shaders:
   ? make shader_t.name dynamically allocated (~ basenamed_t)
   ? sky shader: specify color for "gl_fastSky"
+  - backend GeterateColors (and other?): for multipass rendering can save "current
+    type of data in buffer" and use it later (example: 1st pass - rgbGen_vertex, 2nd -
+    same -- do not update)
+
+Screenshots:
+  - on auto-save, when entering "base2", flares appeared (but should be occluded by lift door)
+
 ? "gl_fastSky 2" - use "*sky" shader; add color to "*sky" shader (color-filled skies)
 ? gl_lastValidRenderer (reset all config params ("reset gl_*" if changed ??); example of value -- "Riva TNT2/SSE")
-? remove "SHADER_WALL" flag; add "SHADER_WORLD" -- depth test/write (other -- 2D) ? "SHADER_MIPMAP" ?
 - gfxinfo:
   ? gamma info (on startup: remove or extend ?), overbright info, extended mtex info -> gfxinfo
   ? "UberEngine": cvar "r_gfxinfo" (display when modified only ??)
@@ -93,9 +151,9 @@ PreprocessShader:
   	else				side1 = 3;
      to detect side[1|2] (no error when used "<=" and ">=" instead of "<" and ">")
 
-- map "ha5" (dirty/test/): cannot build lightmap
-
 BUGS:
+- Com_Error(ERR_DROP, ...) can cause "halt" renderer (will in loop display "red" message without screen update,
+  can switch to "oldgl" (to see this messages), but will crush when switch back to "gl" (if SrtageIterator() ?))
 ! gl_singleShader don't works with dynamic lightmaps
 ? map "terrain", light cone from helicopter: too opaque when overbright is 1 (invalid lightmap on alpha-surf ?)
 ? check demo "massive1": have error "frame #46 not found"
@@ -109,15 +167,9 @@ VISIBLE:
 - models (entities)
   - md2
     - IR-vision fx
-    - flashing fx (sometimes rgbGen entity, or 2 shaders: with/without flashing ?)
-    - lefthand (weapon model):
-      - for directional lighting: inverse axis[1] for normals (use different normals array ?)
-    - dynamic lighting (RecursiveLightPoint)
     - check all RF_XXX flags from q_shared2.h
-- screen blending (underwater etc.): move this outside renderer, make with DrawFill2 (check ref_soft !)
 - shadows
-- inlineModels: RF_TRANSLUCENT/RF2_ALPHA: qglColor4f (1,1,1,0.25)/qglColor4f(1,1,1,1) + blend + no lightmap (vertex light ?)
-  (require entstring preprocessing ? may be implemented on map-load-time ?)
+- inlineModels: RF_TRANSLUCENT: qglColor4f (1,1,1,0.25) + blend + no lightmap (vertex light ?)
 INVISIBLE:
 ! freeing of old images (and "bool temp" or "int usage" flag)
 FOR GAME:
@@ -131,7 +183,7 @@ FOR GAME:
 - optimize sky box drawing:
   ? can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs) (problems when surf can be placed on some
     box sides)
-  ? can use surface normal to determine IMPOSSIBLE planes
+  ?? can use surface normal to determine IMPOSSIBLE planes (is it backface culling ??)
   - find fast cases, when surface placed only on one plane (use surface bounds ?)
 - gl_showbboxes, gl_singleShader, gl_showtris, gl_shownormals -> cheat
 - vertex lighting:
@@ -152,14 +204,5 @@ FOR GAME:
   - scale (enlarge) texture with keeping alpha = 0 or 255
   ? make 2 copies of image (when necessary): with and without alpha-channel (have some KP maps with same texture used
     as window and as wall) -- IMAGE_ALPHA flag (use different resampling techniques)
-? what to do with "intens" param in GLimp_SetGamma() ? remove ??
-- backend GeterateColors (and other?): for multipass rendering can save "current
-  type of data in buffer" and use it later (example: 1st pass - rgbGen_vertex, 2nd -
-  same -- do not update)
-
--------------------------------------
-
-NOTES:
-
-- for directional lighting: can use quantization of normals with 256 values,
-  use glut/progs/advanced[97 ?? same ??]/sphere.c for generate required number of vertexes
+  ? adjust alpha-test const for surface in accordance to its average alpha (but: what to do with mipmaps code (it modifies avg alpha))
+- screen blending: move this outside renderer, make with DrawFill2 (ref_soft: cannot do this, because of paletted implementation)

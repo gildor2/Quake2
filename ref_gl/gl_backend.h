@@ -36,6 +36,8 @@ extern int gl_numVerts, gl_numIndexes, gl_numExtra;
 extern int			gl_indexesArray[MAX_INDEXES];
 extern bufExtra_t	gl_extra[MAX_VERTEXES];
 
+extern viewPortal_t ap;		// active portal
+
 
 #define MAX_BACKEND_COMMANDS	(64 * 1024)		// test results: 33K usage for 1600x1200 with a full console
 extern byte backendCommands[MAX_BACKEND_COMMANDS];

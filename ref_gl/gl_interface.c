@@ -431,13 +431,8 @@ void GL_DisableTexCoordArrays (void)
 
 void GL_CullFace (gl_cullMode_t mode)
 {
-	if (gl_state.inverseCull)
-	{
-		if (mode == CULL_FRONT)
-			mode = CULL_BACK;
-		else if (mode == CULL_BACK)
-			mode = CULL_FRONT;
-	}
+	if (gl_state.inverseCull && mode != CULL_NONE)
+		mode ^= (CULL_FRONT ^ CULL_BACK);
 
 	if (gl_state.currentCullMode == mode)
 		return;
@@ -451,6 +446,20 @@ void GL_CullFace (gl_cullMode_t mode)
 	}
 
 	gl_state.currentCullMode = mode;
+}
+
+
+void GL_DepthRange (gl_depthMode_t mode)
+{
+	static float n[] = {0, 0, 0, 1};
+	static float f[] = {0, 1.0f/3, 1, 1};
+
+	if (gl_state.currentDepthMode == mode)
+		return;
+
+	qglDepthRange (n[mode], f[mode]);
+
+	gl_state.currentDepthMode = mode;
 }
 
 
@@ -572,6 +581,8 @@ void GL_SetDefaultState (void)
 	int		i;
 
 	qglDisable (GL_CULL_FACE);
+	qglDepthRange (0, 1);
+	gl_state.currentDepthMode = DEPTH_NORMAL;
 	qglColor4f (1, 1, 1, 1);
 
 	// setup texturing

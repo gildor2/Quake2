@@ -1,4 +1,4 @@
-- gl_showsky == 2 -> show sky surfaces (restart required)
+- gl_showsky == 2 -> show sky surfaces/textures (restart required)
 - gl_showtris|gl_shownormals: 1 + (1 -- use depthtest) + (2 -- flash color)
 - gl_showbboxes (2 -- flash color; 3 -- show boxes around "world" entities with different color)
 - gl_finish == 2 -> glFinish() after all draw stages
