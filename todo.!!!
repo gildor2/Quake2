@@ -37,6 +37,7 @@ BUGS:
   ! lerp entity angles (may remove bug with locking inside opening door)
 ? make "r_consoleOnly" work without "vid_restart"
 - r_speeds -> r_times + r_stats
+- Com_Error(ERR_DROP,... -> DropServer(...; Com_Error(ERR_FATAL,... -> appError(...
 
 ----------------------------------------
 

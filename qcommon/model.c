@@ -303,12 +303,17 @@ void LoadQ2BspFile (void)
 
 bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum)
 {
+	guard(LoadBspFile);
+
 	if (!stricmp (filename, bspfile.name) && (clientload || !Cvar_VariableInt ("flushmap")))
 	{
 		if (checksum)
 			*checksum = bspfile.checksum;
 		return &bspfile;
 	}
+
+	if (clientload && Com_ServerState() && stricmp (filename, bspfile.name))
+		Com_Error (ERR_DROP, "client trying to load map \"%s\" while server running \"%s\"", filename, bspfile.name);
 
 	if (bspfile.name[0] && bspfile.file)
 		FS_FreeFile (bspfile.file);
@@ -342,6 +347,8 @@ bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum)
 	bspfile.file = NULL;
 	Com_Error (ERR_DROP, "LoadBrushModel: %s has a wrong BSP header\n", filename);
 	return NULL;		// make compiler happy
+
+	unguard;
 }
 
 

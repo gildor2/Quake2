@@ -425,6 +425,8 @@ void SV_BuildClientFrame (client_t *client)
 	int		c_fullsend;
 	byte	*clientphs, *bitvector;
 
+	guard(SV_BuildClientFrame);
+
 	cl_ent = client->edict;
 	if (!cl_ent->client)
 		return;		// not in game yet
@@ -564,6 +566,8 @@ void SV_BuildClientFrame (client_t *client)
 		svs.next_client_entities++;
 		frame->num_entities++;
 	}
+
+	unguard;
 }
 
 

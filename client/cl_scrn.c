@@ -39,9 +39,6 @@ float		scr_conlines;		// 0.0 to 1.0 lines of console to display
 
 qboolean	scr_initialized;	// ready to draw
 
-int			scr_draw_loading;
-char		*scr_map_levelshot;
-
 vrect_t		scr_vrect;			// position of render window on screen
 
 
@@ -480,13 +477,16 @@ void SCR_DrawConsole (void)
 //=============================================================================
 
 static int loadingScrEnabled;
+static int draw_loading;
+static char *map_levelshot;
+
 
 void SCR_SetLevelshot (char *name)
 {
 	static char levelshot[MAX_OSPATH];
 	int		width;
 
-	if (scr_map_levelshot)
+	if (map_levelshot)
 		return;			// already set
 
 	strcpy (levelshot, name);
@@ -494,13 +494,13 @@ void SCR_SetLevelshot (char *name)
 	re.DrawGetPicSize (&width, NULL, levelshot);
 	if (width > 0)
 	{
-		scr_map_levelshot = levelshot;
-		scr_draw_loading = 1;
+		map_levelshot = levelshot;
+		draw_loading = 1;
 		Com_DPrintf ("SetLevelshot: %s\n", levelshot);
 		loadingScrEnabled = 20;		// allow only 20 frames with "ca_disconnected" state
 	}
 	else
-		scr_map_levelshot = NULL;
+		map_levelshot = NULL;
 }
 
 
@@ -515,29 +515,29 @@ void SCR_DrawLoading (void)
 {
 	int		w, h;
 
-	if (!scr_draw_loading)
+	if (!draw_loading)
 		return;
 
 	if (cls.state == ca_disconnected || cls.state == ca_active || cls.key_dest == key_menu)
 	{
-//Com_Printf("draw(disc): %d, %d\n", scr_draw_loading, loadingScrEnabled);//!!
+//Com_Printf("draw(disc): %d, %d\n", draw_loading, loadingScrEnabled);//!!
 		if (!loadingScrEnabled)
 		{
-			scr_draw_loading = 0;
+			draw_loading = 0;
 			return;
 		}
-		else
+		else if (cl.refresh_prepped)
 			loadingScrEnabled--;
 	}
 //Com_Printf("draw(conn): %d %d %d\n", cls.state == ca_disconnected, cls.state == ca_active, cls.key_dest == key_menu);//!!
 
-	if (scr_map_levelshot)
+	if (map_levelshot)
 	{
-		re.DrawStretchPic (0, 0, viddef.width, viddef.height, scr_map_levelshot);
+		re.DrawStretchPic (0, 0, viddef.width, viddef.height, map_levelshot);
 		//!! DrawLevelshotDetail for GL
 		Con_DrawNotify (false);
 	}
-	else //if (scr_draw_loading == 2)
+	else //if (draw_loading == 2)
 	{
 		re.DrawGetPicSize (&w, &h, "loading");
 		re_DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading");
@@ -563,9 +563,9 @@ void SCR_BeginLoadingPlaque (void)
 //	if (cls.key_dest == key_console)
 //		return;
 	if (cl.cinematictime > 0)
-		scr_draw_loading = 2;	// clear to black first
+		draw_loading = 2;		// clear to black first
 	else
-		scr_draw_loading = 1;
+		draw_loading = 1;
 	SCR_UpdateScreen ();
 	cls.disable_screen = 0;//Sys_Milliseconds ();
 	cls.disable_servercount = cl.servercount;
@@ -579,9 +579,9 @@ SCR_EndLoadingPlaque
 */
 void SCR_EndLoadingPlaque (void)
 {
-	scr_draw_loading = 0;
+	draw_loading = 0;
 	loadingScrEnabled = 0;
-	scr_map_levelshot = NULL;
+	map_levelshot = NULL;
 	cls.disable_screen = 0;
 	Con_ClearNotify ();
 }
@@ -1152,6 +1152,8 @@ void SCR_UpdateScreen (void)
 	int i;
 	float separation[2] = { 0, 0 };
 
+	guard(SCR_UpdateScreen);
+
 	// if the screen is disabled (loading plaque is up, or vid mode changing)
 	// do nothing at all
 	if (cls.disable_screen)
@@ -1167,10 +1169,8 @@ void SCR_UpdateScreen (void)
 	if (!scr_initialized || !con_initialized)
 		return;				// not initialized yet
 
-	/*
-	** range check cl_camera_separation so we don't inadvertently fry someone's
-	** brain
-	*/
+	// range check cl_camera_separation so we don't inadvertently fry someone's
+	// brain
 	Cvar_Clamp (cl_stereo_separation, 0, 1);
 
 	if ( cl_stereo->integer )
@@ -1190,7 +1190,7 @@ void SCR_UpdateScreen (void)
 	{
 		re.BeginFrame( separation[i] );
 
-		if (scr_draw_loading == 2)
+		if (draw_loading == 2)
 		{	//  loading plaque over black screen
 			re.SetRawPalette (NULL);
 			SCR_DrawLoading ();
@@ -1262,4 +1262,6 @@ void SCR_UpdateScreen (void)
 		}
 	}
 	re.EndFrame();
+
+	unguard;
 }

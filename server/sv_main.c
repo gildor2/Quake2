@@ -588,6 +588,8 @@ void SV_ReadPackets (void)
 	client_t	*cl;
 	int			qport;
 
+	guard(SV_ReadPackets);
+
 	while (NET_GetPacket (NS_SERVER, &net_from, &net_message))
 	{
 		// check for connectionless packet (0xffffffff) first
@@ -632,6 +634,8 @@ void SV_ReadPackets (void)
 
 //		if (i != maxclients->integer) continue;
 	}
+
+	unguard;
 }
 
 /*
@@ -712,6 +716,8 @@ void SV_PostprocessFrame (void)
 	edict_t *ent;
 	int e, i, t;
 	client_t *cl;
+
+	guard(SV_PostprocessFrame);
 
 	for (e = 0; e < ge->num_edicts; e++)
 	{
@@ -877,6 +883,8 @@ void SV_PostprocessFrame (void)
 			}
 		}
 	}
+
+	unguard;
 }
 
 
@@ -921,6 +929,8 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 	byte	cmd;
 	vec3_t	v1, v2;
 	char	*s;
+
+	guard(SV_MulticastHook);
 
 	MSG_BeginReading (original);
 
@@ -1028,6 +1038,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 	}
 
 	return original;
+	unguard;
 }
 
 
@@ -1037,6 +1048,8 @@ trace_t SV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_
 {
 	trace_t	tr;
 	static edict_t *ent;
+
+	guard(SV_TraceHook);
 
 #define RESET  { shotLevel = 0; return tr; }
 	trace_skipAlpha = true;	//!!
@@ -1073,6 +1086,8 @@ trace_t SV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_
 
 #undef RESET
 	return tr;
+
+	unguard;
 }
 
 
@@ -1091,6 +1106,8 @@ SV_Frame
 void SV_Frame (float msec)
 {
 	int		frameTime;
+
+	guard(SV_Frame);
 
 	time_before_game = time_after_game = 0;
 
@@ -1148,7 +1165,9 @@ void SV_Frame (float msec)
 		if (com_speeds->integer)
 			time_before_game = Sys_Milliseconds ();
 
+		guard(ge.RunFrame);
 		ge->RunFrame ();
+		unguard;
 
 		// never get more than one tic behind
 		if (sv.time < svs.realtime)
@@ -1177,6 +1196,8 @@ void SV_Frame (float msec)
 
 	// clear teleport flags, etc for next frame
 	SV_PrepWorldFrame ();
+
+	unguard;
 }
 
 //============================================================================
@@ -1341,9 +1362,11 @@ CVAR_BEGIN(vars)
 //	CVAR_VAR(sv_fps, 20, 0)	// archive/serverinfo ??
 CVAR_END
 
+	guard(SV_Init);
 	Cvar_GetVars (ARRAY_ARG(vars));
 	SV_InitOperatorCommands	();
 	SZ_Init (&net_message, net_message_buffer, sizeof(net_message_buffer));
+	unguard;
 }
 
 /*
@@ -1356,6 +1379,8 @@ before Sys_Quit or Sys_Error
 */
 void SV_Shutdown (char *finalmsg, qboolean reconnect)
 {
+	guard(SV_Shutdown);
+
 	if (svs.clients)
 	{
 		int			i;
@@ -1402,4 +1427,6 @@ void SV_Shutdown (char *finalmsg, qboolean reconnect)
 
 	Cvar_GetLatchedVars ();
 	Cvar_ForceSet ("nointro", "1");
+
+	unguard;
 }

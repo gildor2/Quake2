@@ -1255,6 +1255,8 @@ Can be called by either the server or the client
 */
 void Pmove (pmove_t *pmove)
 {
+	guard(Pmove);
+
 	pm = pmove;
 
 	// clear results
@@ -1375,4 +1377,6 @@ void Pmove (pmove_t *pmove)
 	CatagorizePosition ();
 
 	SnapPosition ();
+
+	unguard;
 }

@@ -36,6 +36,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define CD_PATH		"install/data"
 #define CD_CHECK	"install/data/quake2.exe"	// file used for CD validation
 
+#define DO_GUARD		1
+#define DO_GUARD_SLOW	0
+
 #define NEW_PROTOCOL_ID "gildor"
 
 #ifdef WIN32
@@ -74,10 +77,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define CPUSTRING "sparc"
 #endif
 
-#else	// !WIN32
+#else	// unknown platform
 
-#define BUILDSTRING "NON-WIN32"
-#define	CPUSTRING	"NON-WIN32"
+#define BUILDSTRING "Unknown"
+#define	CPUSTRING	"Unknown"
 
 #endif
 
@@ -1049,5 +1052,67 @@ char *ProcessEntstring (char *entString);
 
 #include "../client/ref_defs.h"
 
+
+/*-----------------------------------------------------------------------------
+	guard macros
+-----------------------------------------------------------------------------*/
+
+#ifdef WIN32
+
+int win32ExceptFilter2 (void);
+void appUnwind (const char *fmt, ...);
+void __declspec(noreturn) appUnwindThrow (const char *fmt, ...);
+
+#define EXCEPT_FILTER	win32ExceptFilter2()
+
+#define guard(func)					\
+	{								\
+		static const char __FUNC__[] = #func; \
+		__try {
+
+#define unguard						\
+		} __except (EXCEPT_FILTER) { \
+			appUnwindThrow (__FUNC__);	\
+		}							\
+	}
+
+#define unguardf(msg)				\
+		} __except (EXCEPT_FILTER) { \
+			appUnwind (__FUNC__);	\
+			appUnwindThrow msg;		\
+		}							\
+	}
+
+#define MAINLOOP_BEGIN	__try
+#define MAINLOOP_CATCH	__except (EXCEPT_FILTER)
+
+#else
+#	if DO_GUARD
+#		error gurads unsupported for current platform (requires C++)
+#	endif
+#endif
+
+#if !DO_GUARD
+#	undef guard
+#	undef unguard
+#	undef unguardf
+#	undef MAINLOOP_BEGIN
+#	undef MAINLOOP_CATCH
+#	define guard(func)
+#	define unguard
+#	define unguardf(msg)
+#	define MAINLOOP_BEGIN
+#	define MAINLOOP_CATCH		if (0)
+#endif
+
+#if DO_GUARD_SLOW
+#	define guardSlow(func)		guard(func)
+#	define unguardSlow			unguard
+#	define unguardfSlow(msg)	unguardf(msg)
+#else
+#	define guardSlow(func)		{
+#	define unguardSlow			}
+#	define unguardfSlow(msg)	}
+#endif
 
 #endif // QCOMMON_H

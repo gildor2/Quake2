@@ -645,6 +645,8 @@ void Cmd_ExecuteString (char *text)
 	cmdFunc_t	*cmd;
 	cmdAlias_t	*a;
 
+	guard(Cmd_ExecuteString);
+
 	Cmd_TokenizeString (text, true);
 
 	// execute the command line
@@ -664,7 +666,11 @@ void Cmd_ExecuteString (char *text)
 				Cmd_ExecuteString (va("cmd %s", text));
 			}
 			else
+			{
+				guard(func);
 				cmd->func ();
+				unguardf(("(fn=%s)", cmd->name));
+			}
 			return;
 		}
 	}
@@ -690,6 +696,8 @@ void Cmd_ExecuteString (char *text)
 
 	// send it as a server command if we are connected
 	Cmd_ForwardToServer ();
+
+	unguard;
 }
 
 /*

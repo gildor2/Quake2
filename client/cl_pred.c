@@ -30,6 +30,8 @@ void CL_CheckPredictionError (void)
 	int		delta[3];
 	int		i, len;
 
+	guard(CL_CheckPredictionError);
+
 	if (!cl_predict->integer || (cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION) || cl.attractloop)
 		return;
 
@@ -59,6 +61,8 @@ void CL_CheckPredictionError (void)
 		cl.predicted_origins[frame][1] = cl.frame.playerstate.pmove.origin[1];
 		cl.predicted_origins[frame][2] = cl.frame.playerstate.pmove.origin[2];
 	}
+
+	unguard;
 }
 
 
@@ -70,6 +74,8 @@ void CL_EntityTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t 
 	trace_t	trace;
 	float	t, traceLen, traceWidth, b1, b2, frac;
 	vec3_t	traceDir;
+
+	guard(CL_EntityTrace);
 
 	b1 = DotProduct (mins, mins);
 	b2 = DotProduct (maxs, maxs);
@@ -125,12 +131,12 @@ void CL_EntityTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t 
 		{
 			cmodel = cl.model_clip[ent->modelindex];
 			if (!cmodel) continue;
-
 			CM_TransformedBoxTrace2 (&trace, start, end, mins, maxs, cmodel->headnode,  contents, eOrigin, ent->axis);
 		}
 		else
 			CM_TransformedBoxTrace (&trace, start, end, mins, maxs,
 				CM_HeadnodeForBox (ent->mins, ent->maxs), contents, eOrigin, vec3_origin);
+
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
 		{
@@ -147,13 +153,16 @@ void CL_EntityTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t 
 			tr->startsolid = true;
 		if (tr->allsolid) return;
 	}
+	unguard;
 }
 
 
 void CL_Trace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents)
 {
+	guard(CL_Trace);
 	CM_BoxTrace (tr, start, end, mins, maxs, 0, contents);
 	CL_EntityTrace (tr, start, end, mins, maxs, contents);
+	unguard;
 }
 
 
@@ -162,6 +171,7 @@ static trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 {
 	trace_t	trace;
 
+	guard(CL_PMTrace);
 	// check against world
 	CM_BoxTrace (&trace, start, end, mins, maxs, 0, MASK_PLAYERSOLID);
 	if (trace.fraction < 1.0)
@@ -171,6 +181,7 @@ static trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 	CL_EntityTrace (&trace, start, end, mins, maxs, MASK_PLAYERSOLID);
 
 	return trace;
+	unguard;
 }
 
 
@@ -183,6 +194,8 @@ int CL_PMpointcontents (vec3_t point)
 #ifndef NO_PREDICT_LERP
 	float	backlerp;
 #endif
+
+	guard(CL_PMpointcontents);
 
 	contents = CM_PointContents (point, 0);
 	backlerp = 1.0f - cl.lerpfrac;
@@ -224,6 +237,7 @@ int CL_PMpointcontents (vec3_t point)
 	}
 
 	return contents;
+	unguard;
 }
 
 
@@ -237,6 +251,8 @@ void CL_PredictMovement (void)
 	pmove_t	pm;
 	int		i, step, oldz;
 	qboolean predicted;
+
+	guard(CL_PredictMovement);
 
 	if (cls.state != ca_active || cl.attractloop)
 		return;
@@ -311,4 +327,6 @@ void CL_PredictMovement (void)
 
 	if (predicted)				// there can be a situation (when very fast fps or small timescale), when ack+1==current
 		VectorCopy (pm.viewangles, cl.predicted_angles);
+
+	unguard;
 }

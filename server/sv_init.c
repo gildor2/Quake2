@@ -33,6 +33,8 @@ int SV_FindIndex (char *name, int start, int max, qboolean create)
 {
 	int		i;
 
+	guard(SV_FindIndex);
+
 	if (!name || !name[0])
 		return 0;
 
@@ -58,6 +60,7 @@ int SV_FindIndex (char *name, int start, int max, qboolean create)
 	}
 
 	return i;
+	unguard;
 }
 
 
@@ -144,7 +147,7 @@ void SV_CheckForSavegame (void)
 
 		previousState = sv.state;				// PGM
 		sv.state = ss_loading;					// PGM
-		for (i=0 ; i<100 ; i++)
+		for (i = 0; i < 100; i++)
 			ge->RunFrame ();
 
 		sv.state = previousState;				// PGM
@@ -165,6 +168,8 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 {
 	int			i;
 	unsigned	checksum;
+
+	guard(SV_SpawnServer);
 
 	if (attractloop)
 		Cvar_Set ("paused", "0");
@@ -267,6 +272,8 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	Cvar_FullSet ("mapname", sv.name, CVAR_SERVERINFO|CVAR_NOSET);
 
 	Com_Printf ("-------------------------------------\n");
+
+	unguard;
 }
 
 /*
@@ -280,6 +287,8 @@ void SV_InitGame (void)
 {
 	int		i;
 	edict_t	*ent;
+
+	guard(SV_InitGame);
 
 	if (svs.initialized)
 	{
@@ -359,6 +368,8 @@ void SV_InitGame (void)
 		svs.clients[i].edict = ent;
 		memset (&svs.clients[i].lastcmd, 0, sizeof(svs.clients[i].lastcmd));
 	}
+
+	unguard;
 }
 
 

@@ -12,8 +12,6 @@
 #define		Z_DEBUGMARK	0xABCDEF12
 /*!! Additional debug:
   - store "Z_Malloc called from" field
-  - command "z_mark" - mark all allocated blocks (newly created are unmarked)
-  - command "z_show" (?) - display info about all unmarked blocks (createdFrom, size etc.)
 */
 
 typedef struct zhead_s
@@ -22,6 +20,9 @@ typedef struct zhead_s
 	short	magic;			// Z_MAGIC or Z_FREE
 	short	tag;			// for group free
 	int		size;
+#ifdef Z_DEBUG
+	unsigned owner;
+#endif
 } zhead_t;
 
 static zhead_t	z_chain;
@@ -45,7 +46,6 @@ void Z_Free (void *ptr)
 	if (!ptr) return;
 #endif
 	z = ((zhead_t *)ptr) - 1;
-
 #ifdef Z_DEBUG
 	if (z->magic == Z_FREE)
 		Com_Error (ERR_FATAL, "Z_Free: double freeing block");
@@ -66,6 +66,7 @@ void Z_Free (void *ptr)
 
 	z_count--;
 	z_bytes -= z->size;
+//	DebugPrintf("%08X/%X :"RETADDR_STR" <- %08X\n", ptr, z->size, GET_RETADDR(ptr), z->owner);//!!!!!!
 	free (z);
 }
 
@@ -83,6 +84,10 @@ void Z_FreeTags (int tag)
 }
 
 
+#ifdef Z_DEBUG
+static unsigned allocator;
+#endif
+
 void *Z_TagMalloc (int size, int tag)
 {
 	zhead_t	*z;
@@ -98,6 +103,13 @@ void *Z_TagMalloc (int size, int tag)
 	memset (z, 0, size);
 #ifdef Z_DEBUG
 	*((int*)((char*)z + size - 4)) = Z_DEBUGMARK; // place mark in reserved space
+	if (allocator)
+	{
+		z->owner = allocator;
+		allocator = 0;
+	}
+	else
+		z->owner = GET_RETADDR(size);
 #endif
 	z_count++;
 	z_bytes += size;
@@ -110,6 +122,9 @@ void *Z_TagMalloc (int size, int tag)
 	z_chain.next->prev = z;
 	z_chain.next = z;
 
+//#define CATCH 0x0F370000
+//	if ((int)z <= CATCH && (int)z+size >= CATCH) DebugPrintf("+%08X/%X << %08X *************\n", z+1,size,z->owner);//!!
+
 	return (void *)(z+1);
 }
 
@@ -117,6 +132,7 @@ void *Z_TagMalloc (int size, int tag)
 void *Z_Malloc (int size)
 {
 #ifdef Z_DEBUG
+	allocator = GET_RETADDR(size);
 	return Z_TagMalloc (size, 0);
 #else
 	if (size <= Z_BLOCKSIZE * 2)
@@ -132,6 +148,9 @@ void *Z_BlockMalloc (int size)
 {
 	int blocksize;
 
+#ifdef Z_DEBUG
+	allocator = GET_RETADDR(size);
+#endif
 	blocksize = ((size + sizeof(zhead_t) + Z_BLOCKSIZE - 1) & ~(Z_BLOCKSIZE - 1)) - sizeof(zhead_t);
 	return Z_TagMalloc (blocksize, 0);
 }
@@ -195,6 +214,7 @@ void FreeMemoryChain (void *chain)
 		z_count--;
 		// free memory block
 		next = curr->next;
+//		DebugPrintf("%08X/%X :"RETADDR_STR"\n", curr, curr->size, GET_RETADDR(chain));//!!!!!!
 		free (curr);
 	}
 }
@@ -238,7 +258,10 @@ char *CopyString (const char *in)
 {
 	char	*out;
 
-	out = Z_Malloc (strlen (in) + 1);
+#ifdef Z_DEBUG
+	allocator = GET_RETADDR(in);
+#endif
+	out = Z_TagMalloc (strlen (in) + 1, 0);
 	strcpy (out, in);
 	return out;
 }
@@ -265,7 +288,10 @@ basenamed_t *AllocNamedStruc (int size, char *name)
 	basenamed_t *s;
 	char *n, c;
 
-	s = Z_Malloc (size + strlen (name) + 1);
+#ifdef Z_DEBUG
+	allocator = GET_RETADDR(size);
+#endif
+	s = Z_TagMalloc (size + strlen (name) + 1, 0);
 	n = (char*)s + size; // place of a new name
         // set namefield of allocated structure
 	*(char**)s = n;

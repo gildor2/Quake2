@@ -1551,6 +1551,8 @@ CVAR_BEGIN(vars)
 #endif
 CVAR_END
 
+	guard(QCommon_Init);
+
 	Swap_Init ();
 	Z_Init ();
 	Cvar_Init ();
@@ -1608,6 +1610,8 @@ CVAR_END
 	cvar_initialized = 2;
 	PushCmdline ();
 	Com_Printf ("====== " APPNAME " Initialized ======\n\n");
+
+	unguard;
 }
 
 
@@ -1649,6 +1653,8 @@ void QCommon_Frame (int msec)
 
 	if (setjmp (abortframe))
 		return;			// an ERR_DROP was thrown
+
+	guard(QCommon_Frame);
 
 	insideFrame = true;
 	if (log_stats->modified)
@@ -1759,6 +1765,8 @@ void QCommon_Frame (int msec)
 	}
 
 	insideFrame = false;
+
+	unguard;
 }
 
 

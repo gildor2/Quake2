@@ -177,6 +177,8 @@ void SV_UnlinkEdict (edict_t *ent)
 	entityHull_t *ex;
 	areanode_t *node;
 
+	guard(SV_UnlinkEdict);
+
 	if (!ent->area.prev) return;			// not linked
 	RemoveLink (&ent->area);
 	ent->area.prev = ent->area.next = NULL;
@@ -197,6 +199,8 @@ void SV_UnlinkEdict (edict_t *ent)
 			node = node->parent;
 		}
 	ex->area = NULL;
+
+	unguard;
 }
 
 
@@ -219,6 +223,8 @@ void SV_LinkEdict (edict_t *ent)
 	int		topnode;
 	entityHull_t *ex;
 	vec3_t	v, tmp;
+
+	guard(SV_LinkEdict);
 
 	if (ent->area.prev)
 		SV_UnlinkEdict (ent);	// unlink from old position (i.e. relink edict)
@@ -403,6 +409,8 @@ void SV_LinkEdict (edict_t *ent)
 		}
 	}
 	ex->area = node;
+
+	unguard;
 }
 
 
@@ -461,6 +469,7 @@ static void SV_AreaEdicts_r (areanode_t *node)
 
 int SV_AreaEdicts (vec3_t mins, vec3_t maxs, edict_t **list, int maxcount, int areatype)
 {
+	guard(SV_AreaEdicts);
 	VectorCopy (mins, area_mins);
 	VectorCopy (maxs, area_maxs);
 	area_list = list;
@@ -471,6 +480,7 @@ int SV_AreaEdicts (vec3_t mins, vec3_t maxs, edict_t **list, int maxcount, int a
 	SV_AreaEdicts_r (areaNodes);
 
 	return area_count;
+	unguard;
 }
 
 
@@ -488,6 +498,8 @@ int SV_PointContents (vec3_t p)
 	entityHull_t *ent;
 //	vec3_t	delta;
 //	float	dist2;
+
+	guard(SV_PointContents);
 
 	// get base contents from world
 	contents = CM_PointContents (p, sv.models[1]->headnode);
@@ -525,6 +537,7 @@ int SV_PointContents (vec3_t p)
 	}
 
 	return contents;
+	unguard;
 }
 
 
@@ -544,6 +557,8 @@ void SV_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs,
 	trace_t	trace;
 	float	t, traceLen, traceWidth, b1, b2;
 	vec3_t	amins, amaxs, traceDir;
+
+	guard(SV_ClipMoveToEntities);
 
 	if (tr->allsolid) return;
 
@@ -623,6 +638,8 @@ void SV_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs,
 			tr->startsolid = true;
 		if (tr->allsolid) return;
 	}
+
+	unguard;
 }
 
 
@@ -638,6 +655,8 @@ Passedict and edicts owned by passedict are explicitly not checked.
 */
 void SV_Trace (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
 {
+	guard(SV_Trace);
+
 	if (!mins)	mins = vec3_origin;
 	if (!maxs)	maxs = vec3_origin;
 
@@ -649,4 +668,6 @@ void SV_Trace (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, 
 
 	// clip to other solid entities
 	SV_ClipMoveToEntities (tr, start, mins, maxs, end, passedict, contentmask);
+
+	unguard;
 }

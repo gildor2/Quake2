@@ -223,9 +223,31 @@ void CL_PrepRefresh (void)
 	char		name[MAX_QPATH];
 	float		rotate;
 	vec3_t		axis;
+	static int start_time = 0;
+	static int servercount = 0;
 
 	if (!cl.configstrings[CS_MODELS+1][0])
-		return;		// no map loaded
+		return;				// no map loaded
+
+	// wait a small time to let server complete initialization
+	// allow map to be changed before initializing renderer, when loading savegames,
+	// saved at point of changing map; this situation is possible because:
+	//   - server frame#1:
+	//      - loading savegame, will create configstrings + may be insert command string "gamemap <newmap>"
+	//      - send configstrings#1
+	//   - server frame#2:
+	//      - exec "gamemap" command from previous frame, change map etc.
+	//      - send configstrings#2
+	// in some circumstances, client will receive configstrings#1 after server frame#2 - this will load
+	// client map#1 after loading server map#2 (out-of-sync client/server maps -- fatal error)
+	if (servercount != cl.servercount)
+	{
+		servercount = cl.servercount;
+		start_time = cls.realtime;
+		return;
+	}
+	if (cls.realtime < start_time + 300)
+		return;
 
 	CL_ClearTEnts ();		// temp entities linked to models, which are invalid after vid_restart
 

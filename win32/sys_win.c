@@ -52,26 +52,6 @@ SYSTEM IO
 */
 
 
-void Sys_Error (const char *error, ...)
-{
-	va_list		argptr;
-	char		text[1024];
-
-	CL_Shutdown (true);
-	QCommon_Shutdown ();
-
-	va_start (argptr, error);
-	vsprintf (text, error, argptr);
-	va_end (argptr);
-
-	MessageBox(NULL, text, APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
-
-	// shut down QHOST hooks if necessary
-	DeinitConProc ();
-
-	exit (1);
-}
-
 void Sys_Quit (void)
 {
 	timeEndPeriod (1);
@@ -92,7 +72,7 @@ void WinError (void)
 {
 	LPVOID lpMsgBuf;
 
-	FormatMessage(
+	FormatMessage (
 		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
 		NULL,
 		GetLastError (),
@@ -103,10 +83,10 @@ void WinError (void)
 	);
 
 	// Display the string.
-	MessageBox( NULL, lpMsgBuf, "GetLastError", MB_OK|MB_ICONINFORMATION );
+	MessageBox (NULL, lpMsgBuf, "GetLastError", MB_OK|MB_ICONINFORMATION);
 
 	// Free the buffer.
-	LocalFree( lpMsgBuf );
+	LocalFree (lpMsgBuf);
 }
 
 //================================================================
@@ -182,9 +162,28 @@ void	Sys_CopyProtect (void)
  */
 
 extern qboolean debugLogged;
-static const char *ExceptionName;
+char GErrorHistory[4096];
+static bool swError;
 
 typedef unsigned address_t;
+
+
+void Sys_Error (const char *error, ...)
+{
+	va_list		argptr;
+	char		text[1024];
+
+	va_start (argptr, error);
+	vsprintf (text, error, argptr);
+	va_end (argptr);
+
+	swError = true;
+	Com_sprintf (ARRAY_ARG(GErrorHistory), "Error: %s\n\nHistory: ", text);
+
+	*((int*)NULL) = 0; // throw 1;
+}
+
+
 // from new Macro.h
 #define FIELD_OFS(struc, field)		((unsigned) &((struc *)NULL)->field)		// get offset of the field in struc
 #define OFS_FIELD(struc, ofs, type)	(*(type*) ((byte*)(struc) + ofs))			// get field of type by offset inside struc
@@ -487,6 +486,7 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 
 	if (disable) return EXCEPTION_EXECUTE_HANDLER;			// error will be handled only once
 	disable = true;
+	if (swError) return EXCEPTION_EXECUTE_HANDLER;			// no interest to thread context when software-generated errors
 
 	__try
 	{
@@ -515,7 +515,6 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 		default:
 			excName = "Exception";
 		}
-		ExceptionName = excName;
 
 		//?? should make logging a global class (implements opening/logging date/closing)
 		// make a log in "crash.log"
@@ -526,10 +525,13 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			time_t	itime;
 			char	ctime[256];
 
+			Com_sprintf (ARRAY_ARG(GErrorHistory), "%s at \"%s\"\n", excName, appSymbolName (ctx->Eip));
+
 			time (&itime);
 			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
 			fprintf (f, "----- "APPNAME" crash at %s -----\n", ctime);		//!! should use main_package name instead of APPNAME
-			fprintf (f, "%s at \"%s\"\n", excName, appSymbolName (ctx->Eip));
+			fprintf (f, "%s\n", GErrorHistory);
+			strcat (GErrorHistory, "\nHistory: ");
 
 			DumpReg4 (f, "EAX", ctx->Eax); DumpReg4 (f, "EBX", ctx->Ebx); DumpReg4 (f, "ECX", ctx->Ecx); DumpReg4 (f, "EDX", ctx->Edx);
 			DumpReg4 (f, "ESI", ctx->Esi); DumpReg4 (f, "EDI", ctx->Edi); DumpReg4 (f, "EBP", ctx->Ebp); DumpReg4 (f, "ESP", ctx->Esp);
@@ -554,6 +556,60 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 	}
 
 	return EXCEPTION_EXECUTE_HANDLER;
+}
+
+__declspec(naked) int win32ExceptFilter2 (void)
+{
+	__asm {
+		push	[ebp-0x14]
+		call	win32ExceptFilter
+		add		esp,4
+		retn			// return value from win32ExceptFilter()
+	}
+}
+
+
+void appUnwind (const char *fmt, ...)
+{
+	char	buf[512];
+	va_list	argptr;
+	static bool wasError = false;
+
+	va_start (argptr, fmt);
+	if (wasError)
+	{
+		buf[0] = ' '; buf[1] = '<'; buf[2] = '-'; buf[3] = ' ';
+		vsnprintf (buf+4, sizeof(buf)-4, fmt, argptr);
+	}
+	else
+		vsnprintf (buf, sizeof(buf), fmt, argptr);
+	wasError = true;
+	va_end (argptr);
+
+	strncat (GErrorHistory, buf, sizeof(GErrorHistory));
+}
+
+
+void appUnwindThrow (const char *fmt, ...)
+{
+	char	buf[512];
+	va_list	argptr;
+	static bool wasError = false;
+
+	va_start (argptr, fmt);
+	if (wasError)
+	{
+		buf[0] = ' '; buf[1] = '<'; buf[2] = '-'; buf[3] = ' ';
+		vsnprintf (buf+4, sizeof(buf)-4, fmt, argptr);
+	}
+	else
+		vsnprintf (buf, sizeof(buf), fmt, argptr);
+	wasError = true;
+	va_end (argptr);
+
+	strncat (GErrorHistory, buf, sizeof(GErrorHistory));
+
+	*((int*)NULL) = 0;
 }
 
 
@@ -1050,7 +1106,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	char	*cddir, cmdline2[1024];
 #endif
 
-	__try
+	MAINLOOP_BEGIN
 	{
 		global_hInstance = hInstance;
 
@@ -1070,6 +1126,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 		oldtime = Sys_Milliseconds ();
 
 		/*--------- main window message loop ------------*/
+		guard(MainLoop);
 		while (1)
 		{
 			MSG		msg;
@@ -1083,7 +1140,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 					Com_Quit ();
 				sys_msg_time = msg.time;
 				TranslateMessage (&msg);
-   				DispatchMessage (&msg);
+				DispatchMessage (&msg);
 			}
 
 			// do not allow Qcommon_Frame(0)
@@ -1098,10 +1155,15 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 			oldtime = newtime;
 		}
+		unguard;
 	}
-	__except (win32ExceptFilter(GetExceptionInformation()))
+	MAINLOOP_CATCH
 	{
-		Sys_Error (ExceptionName);
+		CL_Shutdown (true);
+		QCommon_Shutdown ();
+		MessageBox(NULL, GErrorHistory, APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
+		// shut down QHOST hooks if necessary
+//??		DeinitConProc ();
 	}
 	// never gets here
 	return TRUE;

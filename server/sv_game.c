@@ -41,6 +41,8 @@ static void PF_Unicast (edict_t *ent, qboolean reliable)
 	if (!ent)
 		return;
 
+	guard(PF_Unicast);
+
 	p = NUM_FOR_EDICT(ent);
 	if (p < 1 || p > maxclients->integer)
 		return;
@@ -53,6 +55,8 @@ static void PF_Unicast (edict_t *ent, qboolean reliable)
 		SZ_Write (&client->datagram, sv.multicast.data, sv.multicast.cursize);
 
 	SZ_Clear (&sv.multicast);
+
+	unguard;
 }
 
 
@@ -96,6 +100,7 @@ static void PF_cprintf (edict_t *ent, int level, char *fmt, ...)
 			Com_Error (ERR_DROP, "cprintf to a non-client");		// game library error
 	}
 
+	guard(PF_cprintf);
 	va_start (argptr,fmt);
 	vsprintf (msg, fmt, argptr);
 	va_end (argptr);
@@ -104,6 +109,7 @@ static void PF_cprintf (edict_t *ent, int level, char *fmt, ...)
 		SV_ClientPrintf (svs.clients+(n-1), level, "%s", msg);
 	else
 		Com_Printf ("%s", msg);
+	unguard;
 }
 
 
@@ -124,6 +130,7 @@ static void PF_centerprintf (edict_t *ent, char *fmt, ...)
 	if (n < 1 || n > maxclients->integer)
 		return;	// Com_Error (ERR_DROP, "centerprintf to a non-client");
 
+	guard(PF_centerprintf);
 	va_start (argptr,fmt);
 	vsprintf (msg, fmt, argptr);
 	va_end (argptr);
@@ -131,6 +138,7 @@ static void PF_centerprintf (edict_t *ent, char *fmt, ...)
 	MSG_WriteByte (&sv.multicast,svc_centerprint);
 	MSG_WriteString (&sv.multicast,msg);
 	PF_Unicast (ent, true);
+	unguard;
 }
 
 
@@ -169,6 +177,7 @@ static void PF_setmodel (edict_t *ent, char *name)
 	if (!name)
 		Com_Error (ERR_DROP, "PF_setmodel: NULL name");
 
+	guard(PF_setmodel);
 	i = SV_ModelIndex (name);
 
 //	ent->model = name;
@@ -182,7 +191,7 @@ static void PF_setmodel (edict_t *ent, char *name)
 		VectorCopy (mod->maxs, ent->maxs);
 		SV_LinkEdict (ent);
 	}
-
+	unguard;
 }
 
 /*
@@ -196,12 +205,12 @@ static void PF_Configstring (int index, char *val)
 	if (index < 0 || index >= MAX_CONFIGSTRINGS)
 		Com_Error (ERR_DROP, "configstring: bad index %i\n", index);
 
+	guard(PF_Configstring);
 	if (!val)
 		val = "";
 
 	// change the string in sv
 	strcpy (sv.configstrings[index], val);
-
 
 	if (sv.state != ss_loading)
 	{	// send the update to everyone
@@ -212,6 +221,7 @@ static void PF_Configstring (int index, char *val)
 
 		SV_MulticastOld (vec3_origin, MULTICAST_ALL_R);
 	}
+	unguard;
 }
 
 
@@ -289,29 +299,11 @@ static qboolean PF_inPHS (vec3_t p1, vec3_t p2)
 
 static void PF_StartSound (edict_t *entity, int channel, int sound_num, float volume, float attenuation, float timeofs)
 {
-	if (!entity)
-		return;
+	if (!entity) return;
 	SV_StartSoundOld (NULL, entity, channel, sound_num, volume, attenuation, timeofs);
 }
 
 //==============================================
-
-/*
-===============
-SV_ShutdownGameProgs
-
-Called when either the entire server is being killed, or
-it is changing to a different game directory.
-===============
-*/
-void SV_ShutdownGameProgs (void)
-{
-	if (!ge)
-		return;
-	ge->Shutdown ();
-	Sys_UnloadGame ();
-	ge = NULL;
-}
 
 /*-------- Wrappers for some system functions ----------------*/
 
@@ -430,9 +422,10 @@ void SV_InitGameProgs (void)
 {
 	game_import_t	import;
 
+	guard(SV_InitGameProgs);
+
 	// unload anything we have now
-	if (ge)
-		SV_ShutdownGameProgs ();
+	if (ge) SV_ShutdownGameProgs ();
 
 	// load a new game dll
 	import.multicast = SV_MulticastOld;	//?? we can hook some messages in this function
@@ -496,4 +489,24 @@ void SV_InitGameProgs (void)
 		Com_Error (ERR_DROP, "game is version %d, not " STR(GAME_API_VERSION), ge->apiversion);
 
 	ge->Init ();
+
+	unguard;
+}
+
+/*
+===============
+SV_ShutdownGameProgs
+
+Called when either the entire server is being killed, or
+it is changing to a different game directory.
+===============
+*/
+void SV_ShutdownGameProgs (void)
+{
+	guard(SV_ShutdownGameProgs);
+	if (!ge) return;
+	ge->Shutdown ();
+	Sys_UnloadGame ();
+	ge = NULL;
+	unguard;
 }

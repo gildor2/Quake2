@@ -1142,7 +1142,9 @@ int CM_LeafContents (int leafnum)
 int CM_LeafCluster (int leafnum)
 {
 	if (leafnum < 0 || leafnum >= numleafs) Com_Error (ERR_DROP, "CM_LeafCluster: bad number");
+	guard(CM_LeadCluster);
 	return map_leafs[leafnum].cluster;
+	unguard;
 }
 
 int CM_LeafArea (int leafnum)
@@ -1274,9 +1276,11 @@ static int PointLeafnum (vec3_t p, int num)
 
 int CM_PointLeafnum (vec3_t p)
 {
+	guard(CM_PointLeafnum);
 	if (!numplanes) return 0;			// map is not yet loaded
 	//?? (need another way -- what will be, when loading DIFFERENT map, and trying to trace OLD map ?)
 	return PointLeafnum (p, 0);
+	unguard;
 }
 
 
@@ -1286,8 +1290,10 @@ int CM_PointContents (vec3_t p, int headnode)
 
 	if (!numnodes) return 0;	// map not loaded
 
+	guard(CM_PointContents);
 	l = PointLeafnum (p, headnode);
 	return map_leafs[l].contents;
+	unguard;
 }
 
 
@@ -1296,6 +1302,7 @@ int	CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t a
 	vec3_t	p1, tmp, axis[3];
 	int		l;
 
+	guard(CM_TransformedPointContents);
 	if (headnode != box_headnode && (angles[0] || angles[1] || angles[2]))
 	{
 		AnglesToAxis (angles, axis);
@@ -1309,6 +1316,7 @@ int	CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t a
 
 	l = PointLeafnum (p1, headnode);
 	return map_leafs[l].contents;
+	unguard;
 }
 
 int	CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t *axis)
@@ -1316,6 +1324,7 @@ int	CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t 
 	vec3_t	p1, tmp;
 	int		l;
 
+	guard(CM_TransformedPointContents2);
 	if (headnode != box_headnode)
 	{
 		VectorSubtract (p, origin, tmp);
@@ -1329,6 +1338,7 @@ int	CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t 
 	l = PointLeafnum (p1, headnode);
 
 	return map_leafs[l].contents;
+	unguard;
 }
 
 
@@ -1389,7 +1399,9 @@ static int BoxLeafnums_headnode (vec3_t mins, vec3_t maxs, int *list, int listsi
 
 int	CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topnode)
 {
+	guard(CM_BoxLeafnums);
 	return BoxLeafnums_headnode (mins, maxs, list, listsize, map_cmodels[0].headnode, topnode);
+	unguard;
 }
 
 
@@ -1832,6 +1844,8 @@ void CM_BoxTrace (trace_t *trace, vec3_t start, vec3_t end, vec3_t mins, vec3_t 
 {
 	int		i;
 
+	guard(CM_BoxTrace);
+
 	traceFrame++;						// for multi-check avoidance
 	c_traces++;
 
@@ -1907,6 +1921,7 @@ void CM_BoxTrace (trace_t *trace, vec3_t start, vec3_t end, vec3_t mins, vec3_t 
 
 	*trace = trace_trace;
 	return;
+	unguard;
 }
 
 
@@ -1926,6 +1941,8 @@ void CM_TransformedBoxTrace (trace_t *trace, vec3_t start, vec3_t end, vec3_t mi
 	vec3_t		start1, end1, tmp;
 	vec3_t		axis[3];
 	qboolean	rotated;
+
+	guard(CM_TransformedBoxTrace);
 
 	// rotate start and end into the models frame of reference
 	if (headnode != box_headnode && (angles[0] || angles[1] || angles[2]))
@@ -1973,6 +1990,8 @@ void CM_TransformedBoxTrace (trace_t *trace, vec3_t start, vec3_t end, vec3_t mi
 	}
 	else
 		VectorAdd (trace->endpos, origin, trace->endpos);
+
+	unguard;
 }
 
 
@@ -1980,6 +1999,8 @@ void CM_TransformedBoxTrace2 (trace_t *trace, vec3_t start, vec3_t end, vec3_t m
 	int headnode, int brushmask, vec3_t origin, vec3_t *axis)
 {
 	vec3_t		start1, end1, tmp;
+
+	guard(CM_TransformedBoxTrace2);
 
 	// transform start/end to axis (model coordinate system)
 	VectorSubtract (start, origin, tmp);
@@ -2006,6 +2027,8 @@ void CM_TransformedBoxTrace2 (trace_t *trace, vec3_t start, vec3_t end, vec3_t m
 	VectorMA (origin, trace->endpos[0], axis[0], tmp);
 	VectorMA (tmp, trace->endpos[1], axis[1], tmp);
 	VectorMA (tmp, trace->endpos[2], axis[2], trace->endpos);
+
+	unguard;
 }
 
 
@@ -2182,14 +2205,17 @@ static void RecursiveBrushTest (vec3_t start, vec3_t end, int nodeNum)
 // returns number of brushes, intersected with line
 int CM_BrushTrace (vec3_t start, vec3_t end, int *brushes, int maxBrushes)
 {
+	guard(CM_BrushTrace);
+
 	trace_numBrushes = 0;
 	trace_brushes = brushes;
 	trace_maxBrushes = maxBrushes;
 	traceFrame++;
 
 	RecursiveBrushTest (start, end, 0);
-
 	return trace_numBrushes;
+
+	unguard;
 }
 
 
@@ -2198,6 +2224,8 @@ int CM_BrushTrace (vec3_t start, vec3_t end, int *brushes, int maxBrushes)
 int CM_RefineBrushTrace (vec3_t start, vec3_t end, int *brushes, int numBrushes)
 {
 	int		i, b, newNum, *src, *dst;
+
+	guard(CM_RefineBrushTrace);
 
 	src = dst = brushes;
 	newNum = 0;
@@ -2212,6 +2240,7 @@ int CM_RefineBrushTrace (vec3_t start, vec3_t end, int *brushes, int numBrushes)
 	}
 
 	return newNum;
+	unguard;
 }
 
 
@@ -2271,6 +2300,8 @@ byte *CM_ClusterPVS (int cluster)
 {
 	int	i;
 
+	guard(CM_ClusterPVS);
+
 	if (cluster <= -1)
 		memset (pvsrow, 0, (numclusters + 7) >> 3);
 	else
@@ -2282,11 +2313,14 @@ byte *CM_ClusterPVS (int cluster)
 			CM_DecompressVis (NULL, pvsrow);
 	}
 	return pvsrow;
+	unguard;
 }
 
 byte *CM_ClusterPHS (int cluster)
 {
 	int	i;
+
+	guard(CM_ClusterPHS);
 
 	if (cluster <= -1)
 		memset (phsrow, 0, (numclusters + 7) >> 3);
@@ -2299,6 +2333,7 @@ byte *CM_ClusterPHS (int cluster)
 			CM_DecompressVis (NULL, phsrow);
 	}
 	return phsrow;
+	unguard;
 }
 
 
@@ -2459,6 +2494,8 @@ bool CM_HeadnodeVisible (int nodenum, byte *visbits)
 	cnode_t	*node;
 	int		stack[MAX_TREE_DEPTH], sptr;
 
+	guard(CM_HeadnodeVisible);
+
 	sptr = 0;
 	while (true)
 	{
@@ -2480,4 +2517,6 @@ bool CM_HeadnodeVisible (int nodenum, byte *visbits)
 		stack[sptr++] = node->children[0];
 		nodenum = node->children[1];
 	}
+
+	unguard;
 }

@@ -168,6 +168,8 @@ void SV_Multicast (vec3_t origin, multicast_t to, qboolean oldclients)
 	int			area1, area2;
 	sizebuf_t	*buf, *newBuf;
 
+	guard(SV_Multicast);
+
 	reliable = false;
 
 	if (to != MULTICAST_ALL_R && to != MULTICAST_ALL)
@@ -249,6 +251,8 @@ void SV_Multicast (vec3_t origin, multicast_t to, qboolean oldclients)
 
 	SZ_Clear (&sv.multicast);
 	SZ_Clear (&sv.multicastNew);
+
+	unguard;
 }
 
 void SV_MulticastOld (vec3_t origin, multicast_t to)
@@ -295,6 +299,8 @@ void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
 	int			sendchan, flags, i, ent, to;
 	vec3_t		origin_v;
 	qboolean	use_phs;
+
+	guard(SV_StartSound);
 
 	if (volume < 0 || volume > 1.0)
 		Com_Error (ERR_FATAL, "SV_StartSound: volume = %f", volume);
@@ -395,6 +401,8 @@ void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
 		SV_MulticastOld (origin, to);
 	else
 		SV_MulticastNew (origin, to);
+
+	unguard;
 }
 
 

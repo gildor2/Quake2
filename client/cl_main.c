@@ -1673,6 +1673,8 @@ void CL_Frame (float msec, int realMsec)
 	if (dedicated->integer)
 		return;
 
+	guard(CL_Frame);
+
 	extratime += msec / 1000.0f;
 	extratime_real += realMsec;
 
@@ -1760,6 +1762,8 @@ void CL_Frame (float msec, int realMsec)
 			lasttimecalled = now;
 		}
 	}
+
+	unguard;
 }
 
 
@@ -1772,6 +1776,8 @@ CL_Init
 */
 void CL_Init (void)
 {
+	guard(CL_Init);
+
 	if (dedicated->integer)
 		return;		// nothing running on the client
 
@@ -1799,6 +1805,8 @@ void CL_Init (void)
 	CDAudio_Init ();
 	CL_InitLocal ();
 	IN_Init ();
+
+	unguard;
 }
 
 
