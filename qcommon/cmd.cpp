@@ -2,7 +2,7 @@
 
 
 cmdFunc_t *cmdFuncs;
-cmdAlias_t *cmdAlias;
+TList<cmdAlias_t> cmdAlias;
 
 static int cmdWait;
 
@@ -296,7 +296,7 @@ static void Cmd_Alias_f (bool usage, int argc, char **argv)
 	if (argc == 1)
 	{
 		Com_Printf ("Current alias commands:\n");
-		for (a = cmdAlias; a; a = a->next)
+		for (a = cmdAlias.First(); a; a = cmdAlias.Next(a))
 			Com_Printf ("%s \"%s\"\n", a->name, a->value);
 		return;
 	}
@@ -304,20 +304,14 @@ static void Cmd_Alias_f (bool usage, int argc, char **argv)
 	name = argv[1];
 
 	// if the alias already exists, reuse it
-	for (a = cmdAlias; a; a = a->next)
+	cmdAlias_t *pos;
+	a = cmdAlias.Find (name, &pos);
+	if (a)
+		appFree (a->value);
+	else
 	{
-		if (!strcmp (name, a->name))
-		{
-			appFree (a->value);
-			break;
-		}
-	}
-
-	if (!a)
-	{
-		a = (cmdAlias_t*) AllocNamedStruc (sizeof(cmdAlias_t), name);
-		a->next = cmdAlias;
-		cmdAlias = a;
+		a = new (name) cmdAlias_t;
+		cmdAlias.InsertAfter (a, pos);
 	}
 
 	// copy the rest of the command line
@@ -335,7 +329,7 @@ static void Cmd_Alias_f (bool usage, int argc, char **argv)
 
 void Cmd_Unalias_f (bool usage, int argc, char **argv)
 {
-	cmdAlias_t *alias, *prev, *next;
+	cmdAlias_t *alias, *next;
 	int		n;
 
 	if (argc != 2 || usage)
@@ -344,23 +338,16 @@ void Cmd_Unalias_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	prev = NULL;
 	n = 0;
-	for (alias = cmdAlias; alias; alias = next)
+	for (alias = cmdAlias.First(); alias; alias = next)
 	{
-		next = alias->next;
-		if (MatchWildcard (alias->name, argv[1], true))
+		next = cmdAlias.Next(alias);
+		if (appMatchWildcard (alias->name, argv[1], true))
 		{
-			if (prev)
-				prev->next = alias->next;
-			else
-				cmdAlias = alias->next;
-			appFree (alias->value);
-			FreeNamedStruc (alias);
+			cmdAlias.Remove(alias);		// will scan list again
+			delete alias;
 			n++;
 		}
-		else
-			prev = alias;
 	}
 	Com_Printf ("%d aliases removed\n", n);
 }
@@ -368,9 +355,7 @@ void Cmd_Unalias_f (bool usage, int argc, char **argv)
 
 void Cmd_WriteAliases (FILE *f)
 {
-	cmdAlias_t *alias;
-
-	for (alias = cmdAlias; alias; alias = alias->next)
+	for (cmdAlias_t *alias = cmdAlias.First(); alias; alias = cmdAlias.Next(alias))
 		fprintf (f, "alias %s %s\n", alias->name, COM_QuoteString (alias->value, true));
 }
 
@@ -541,7 +526,7 @@ bool RegisterCommand (const char *cmd_name, void (*func) (void), int flags)
 UnregisterCommand
 ============
 */
-void UnregisterCommand (const char *cmd_name)
+bool UnregisterCommand (const char *cmd_name)
 {
 	cmdFunc_t *cmd, **back;
 
@@ -552,16 +537,17 @@ void UnregisterCommand (const char *cmd_name)
 		if (!cmd)
 		{
 			Com_DPrintf ("UnregisterCommand: %s not found\n", cmd_name);
-			return;
+			return false;
 		}
 		if (!strcmp (cmd_name, cmd->name))
 		{
 			*back = cmd->next;
 			appFree (cmd);
-			return;
+			return true;
 		}
 		back = &cmd->next;
 	}
+	return false;
 }
 
 /*
@@ -618,10 +604,9 @@ bool Cmd_ExecuteString (const char *text)
 	}
 
 	// check alias
-	for (cmdAlias_t *a = cmdAlias; a; a = a->next)
+	cmdAlias_t *a = cmdAlias.Find (_argv[0]);
+	if (a)
 	{
-		if (stricmp (_argv[0], a->name)) continue;
-
 		if (++aliasCount == ALIAS_LOOP_COUNT)
 		{
 			Com_WPrintf ("ALIAS_LOOP_COUNT\n");
@@ -685,7 +670,7 @@ static void Cmd_List_f (bool usage, int argc, char **argv)
 	for (cmd = cmdFuncs; cmd; cmd = cmd->next)
 	{
 		total++;
-		if (mask && !MatchWildcard (cmd->name, mask, true)) continue;
+		if (mask && !appMatchWildcard (cmd->name, mask, true)) continue;
 		Com_Printf ("%-3d %c %c %s\n", total,
 			cmd->flags & COMMAND_USAGE ? 'I' : ' ',
 			cmd->flags & COMMAND_ARGS ? 'A' : ' ',

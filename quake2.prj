@@ -14,6 +14,22 @@ MAPFILES = 1
 
 #------------------------------------------------------------------------------
 
+D = Core/Src
+CORE = \
+	$D/CoreMain.cpp \
+	$D/DbgSymbols.cpp \
+	$D/Memory.cpp \
+	$D/OutputDevice.cpp \
+	$D/ErrorMgr.cpp \
+	$D/Strings.cpp
+#	$D/FileSystem.cpp
+#	$D/Commands.cpp
+#	$D/Core.cpp
+CORE_WIN32 = \
+	$D/DbgSymbolsWin32.cpp \
+	$D/ExceptFilterWin32.cpp
+#	$D/FileSystemWin32.cpp
+
 D = client
 CLIENT = \
 	$D/cl_cin.cpp \
@@ -61,12 +77,12 @@ COMMON = \
 	$D/files.cpp \
 	$D/images.cpp \
 	$D/md4.cpp \
-	$D/memory.cpp \
 	$D/model.cpp \
 	$D/net_chan.cpp \
 	$D/pmove.cpp \
 	$D/q_shared2.cpp \
-	$D/zip.cpp
+	$D/zip.cpp \
+	$D/memory2.cpp		#!!! remove
 
 D = ref_gl
 GL_RENDERER = \
@@ -110,23 +126,26 @@ WIN32_FILES += $D/q2.rc
 RES_FILES = \
 	resource/makeres.asm
 
+
+INCLUDES = Core/Inc
+
 #------------------------------------------------------------------------------
 # static build
 
-DEFINES = STATIC_BUILD
+DEFINES = STATIC_BUILD CORE_API=
 OBJDIR  = $OUTDIR/obj
 
-sources(STATIC) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER
+sources(STATIC) = $CORE $CORE_WIN32 $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER
 LIBS = winmm wsock32 dinput lib/lib
 target(executable, $OUTDIR/quake2, STATIC, STATIC)
 
 #------------------------------------------------------------------------------
 # dynamic build
 
-DEFINES =
+DEFINES = CORE_API=
 OBJDIR  = $OUTDIR/obj/dyn_exe
 
-sources(DYN_EXE) = $CLIENT $SERVER $COMMON $RES_FILES $WIN32_FILES
+sources(DYN_EXE) = $CORE $CORE_WIN32 $CLIENT $SERVER $COMMON $RES_FILES $WIN32_FILES
 LIBS = winmm wsock32 dinput lib/lib
 target(executable, $OUTDIR/quake2_dyn, DYN_EXE, DYNAMIC)
 

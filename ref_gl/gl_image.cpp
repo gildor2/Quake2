@@ -646,7 +646,7 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int
 
 //	if (strlen (name) >= MAX_QPATH)
 //		Com_FatalError ("R_CreateImage: name \"%s\" is too long", name);
-	Q_CopyFilename (name2, name, sizeof(name2));
+	appCopyFilename (name2, name, sizeof(name2));
 
 	// find image with the same name
 	bool reuse = false;
@@ -1012,7 +1012,7 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 		if (!img->name[0]) continue;	// free slot
 
 		idx++;
-		if (mask && !MatchWildcard (img->name, mask, true)) continue;
+		if (mask && !appMatchWildcard (img->name, mask, true)) continue;
 		n++;
 
 		texels += img->internalWidth * img->internalHeight;
@@ -1079,7 +1079,7 @@ static void ImageReload_f (bool usage, int argc, char **argv)
 	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
 		if (!img->name[0]) continue;	// free slot
-		if (!MatchWildcard (img->name, mask, true)) continue;
+		if (!appMatchWildcard (img->name, mask, true)) continue;
 
 		if (img->name[0] == '*' || img->flags & IMAGE_SYSTEM) continue;
 		if (GL_FindImage (img->name, img->flags | IMAGE_RELOAD))
@@ -1468,7 +1468,7 @@ void GL_ShowImages (void)
 	{
 		name = imagesArray[i].name;
 		if (!name[0]) continue;
-		if (MatchWildcard (name, mask, true)) numImg++;
+		if (appMatchWildcard (name, mask, true)) numImg++;
 	}
 	if (!numImg) return;		// no matched images
 
@@ -1505,7 +1505,7 @@ void GL_ShowImages (void)
 			while (1)
 			{
 				name = img->name;
-				if (name[0] && MatchWildcard (name, mask, true)) break;
+				if (name[0] && appMatchWildcard (name, mask, true)) break;
 				img++;
 			}
 
@@ -1552,7 +1552,7 @@ image_t *GL_FindImage (const char *name, int flags)
 	if (!name[0])
 		return gl_defaultImage;		// NULL name -- NULL image
 
-	Q_CopyFilename (name2, name, sizeof(name2));
+	appCopyFilename (name2, name, sizeof(name2));
 
 	/*------- find image using hash table --------*/
 	hash = ComputeHash (name2);

@@ -19,14 +19,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // sys_win.h
 
-#include <direct.h>
-#include <excpt.h>
 #include "winquake.h"
+#include "Core.h"
+
+#include <direct.h>
 
 #include "../client/client.h"		//!! for editLine[] and CompleteCommand() only
 
-
-#define CRASH_LOG	"crash.log"
+#define CRASH_LOG	"crash.log"		//!! required for history logging (should move to Core ??!)
 
 int			starttime;
 bool		ActiveApp, Minimized;
@@ -85,7 +85,7 @@ static char *Sys_ScanForCD (void)
 		if (FILE *f = fopen (va("%s"CD_CHECK, drive), "r"))
 		{
 			fclose (f);
-			Q_CopyFilename (cddir2, va("%s"CD_PATH, drive), sizeof(cddir));
+			appCopyFilename (cddir2, va("%s"CD_PATH, drive), sizeof(cddir));
 			cddir = cddir2;
 			return cddir;
 		}
@@ -111,402 +111,6 @@ void Sys_CopyProtect (void)
 
 
 //================================================================
-
-typedef unsigned address_t;
-
-
-void Sys_Error (const char *error, ...)
-{
-	va_list		argptr;
-	char		text[8192];
-
-	va_start (argptr, error);
-	vsnprintf (ARRAY_ARG(text), error, argptr);
-	va_end (argptr);
-
-	GErr.isSoftError = true;
-	appSprintf (ARRAY_ARG(GErr.history), "Error: %s\n\nHistory: ", text);
-
-	throw 1;
-}
-
-
-// from DbgSymbolsWin32.cpp
-
-static char		module[256];
-static HMODULE	hModule;
-
-bool osAddressInfo (address_t address, char *pkgName, int bufSize, int *offset)
-{
-	MEMORY_BASIC_INFORMATION mbi;
-	char	*s;
-
-	hModule = NULL;
-	if (!VirtualQuery ((void*) address, &mbi, sizeof(mbi)))
-		return false;
-	if (!(hModule = (HMODULE)mbi.AllocationBase))
-		return false;
-	if (!GetModuleFileName (hModule, ARRAY_ARG(module)))
-		return false;
-
-	if (s = strrchr (module, '.')) *s = 0;
-	if (!(s = strrchr (module, '\\')))
-		s = module;
-	else
-		strcpy (module, s+1);	// remove "path\" part
-
-	*offset = address - (unsigned)hModule;
-	appStrncpyz (pkgName, module, bufSize);
-
-	return true;
-}
-
-
-bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset)
-{
-	char	func[256];
-
-	if (!hModule) return false;		// there was no osAddressInfo() call before this
-
-	__try
-	{
-		// we want to walk system memory -- not very safe action
-		if (*(WORD*)hModule != 'M'+('Z'<<8)) return false;		// bad MZ header
-		WORD* tmp = (WORD*) (*(DWORD*) OffsetPointer (hModule, 0x3C) + (char*)hModule);
-		if (*tmp != 'P'+('E'<<8)) return false;					// non-PE executable
-		IMAGE_OPTIONAL_HEADER32 *hdr = (IMAGE_OPTIONAL_HEADER32*) OffsetPointer (tmp, 4 + sizeof(IMAGE_FILE_HEADER));
-		// check export directory
-		if (hdr->DataDirectory[0].VirtualAddress == 0 || hdr->DataDirectory[0].Size == 0)
-			return false;
-		IMAGE_EXPORT_DIRECTORY* exp = (IMAGE_EXPORT_DIRECTORY*) OffsetPointer (hModule, hdr->DataDirectory[0].VirtualAddress);
-
-		DWORD* addrTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfFunctions);
-		DWORD* nameTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfNames);
-		unsigned bestRVA = 0;
-		int		bestIndex = -1;
-		unsigned RVA = address - (unsigned)hModule;
-		for (int i = 0; i < exp->NumberOfFunctions; i++)
-		{
-			if (addrTbl[i] <= RVA && addrTbl[i] > bestRVA)
-			{
-				bestRVA = addrTbl[i];
-				bestIndex = i;
-			}
-		}
-		if (bestIndex >= 0)
-		{
-			if (nameTbl[bestIndex])
-				appStrncpyz (func, (char*) OffsetPointer (hModule, nameTbl[bestIndex]), sizeof(func));
-			else
-				appSprintf (ARRAY_ARG(func), "#%d", exp->Base +		// ordinal base
-					((WORD*) OffsetPointer (hModule, exp->AddressOfNameOrdinals))[bestIndex]);
-			*offset = RVA - bestRVA;
-		}
-		else
-			return false;			// when 0 < RVA < firstFuncRVA (should not happens)
-	}
-	__except(EXCEPTION_EXECUTE_HANDLER)
-	{
-		return false;
-	}
-
-	appSprintf (exportName, bufSize, "%s!%s", module, func);
-
-	hModule = NULL;					// disallow second subsequentional call
-	return true;
-}
-
-// from DbgSymbols.cpp
-
-// removed package symbols
-bool appSymbolName (address_t addr, char *buffer, int size)
-{
-	char	package[256], *name;
-	int		offset;
-
-	if (!osAddressInfo (addr, ARRAY_ARG(package), &offset))
-		return false;
-
-	if (osModuleInfo (addr, ARRAY_ARG(package), &offset))
-		name = package;
-
-	// package + offset
-	name = package;
-
-	if (offset)
-		appSprintf (buffer, size, "%s+%X", name, offset);
-	else
-		appStrncpyz (buffer, name, size);
-
-	return true;
-}
-
-// exact version
-char *appSymbolName (address_t addr)
-{
-	static char	buf[256];
-
-	if (appSymbolName (addr, ARRAY_ARG(buf)))
-		return buf;
-	else
-		return va("%08X", addr);
-}
-
-// from ExceptFilterWin32.cpp (slightly modified)
-
-#define LOG_STRINGS
-#define STACK_UNWIND_DEPTH		80
-
-
-#define MIN_STRING_WIDTH		3
-#define MAX_STRING_WIDTH		32
-
-
-static void DumpReg4 (FILE *f, char *name, unsigned value)
-{
-	char	*data;
-	int		i;
-
-	data = (char*) value;
-	fprintf (f, "  %s: %08X  ", name, value);
-	if (IsBadReadPtr (data, 16))
-		fprintf (f, " <N/A>");
-	else
-	{
-		for (i = 0; i < 16; i++)
-			fprintf (f, " %02X", data[i] & 0xFF);
-
-		fprintf (f, "  ");
-
-		for (i = 0; i < 16; i++)
-		{
-			char c;
-
-			c = data[i];
-			if (c < ' ' || c > 0x7F) c = '.';
-			fprintf (f, "%c", c);
-		}
-	}
-	fprintf (f, "\n");
-}
-
-
-static void DumpReg2 (FILE *f, char *name, DWORD value)
-{
-	fprintf (f, "  %s: %04X", name, value);
-}
-
-
-#ifdef LOG_STRINGS
-
-static bool IsString (char *str)
-{
-	int		i;
-	char	c;
-	for (i = 0; i < MAX_STRING_WIDTH; i++, str++)
-	{
-		if (IsBadReadPtr (str, 1)) return false;
-
-		c = *str;
-		if (c == 0) return i >= MIN_STRING_WIDTH;
-		if ((c < 32 || c > 127) && c != '\n') return false;
-	}
-	return true;
-}
-
-
-static bool DumpString (FILE *f, char *str)
-{
-	int		i;
-
-	fprintf (f, " = \"");
-	for (i = 0; i < MAX_STRING_WIDTH && *str; i++, str++)
-	{
-		if (*str == '\n')
-			fprintf (f, "\\n");
-		else
-			fprintf (f, "%c", *str);
-	}
-	fprintf (f, "%s\"", *str ? "..." : "");
-	return true;
-}
-
-#endif
-
-
-static void DumpMem (FILE *f, unsigned *data, CONTEXT *ctx)
-{
-	static struct {
-		unsigned ofs;
-		const char *name;
-	} regData[] = {
-#define F(r,n)	{ FIELD2OFS(CONTEXT,r), n }
-		F(Eip, "EIP"), F(Esp, "ESP"), F(Ebp, "EBP"),
-		F(Eax, "EAX"), F(Ebx, "EBX"), F(Ecx, "ECX"), F(Edx, "EDX"),
-		F(Esi, "ESI"), F(Edi, "EDI")
-#undef F
-	};
-#define STAT_SPACES		"     "
-	int		i, j, n;
-
-	//!! should try to use address as a symbol
-	n = 0;
-	for (i = 0; i < STACK_UNWIND_DEPTH; i++, data++)
-	{
-		char	symbol[256], *spaces;
-
-		if (IsBadReadPtr (data, 4))
-		{
-			fprintf (f, "  <N/A>\n");
-			return;
-		}
-
-		spaces = STAT_SPACES;
-		for (j = 0; j < ARRAY_COUNT(regData); j++)
-			if (OFS2FIELD(ctx, regData[j].ofs, unsigned*) == data)
-			{
-				if (n)
-				{
-					fprintf (f, "\n");
-					n = 0;
-				}
-				fprintf (f, "%s->", regData[j].name);
-				spaces = "";
-				break;
-			}
-
-		if (appSymbolName (*data, ARRAY_ARG(symbol)))
-#ifdef LOG_FUNCS_ONLY
-			if (strchr (symbol, '('))
-#endif
-				{
-					// log as symbol
-					fprintf (f, "%s%s%08X = %s",
-						n > 0 ? "\n" : "", spaces,
-						*data, symbol);
-#if !defined(LOG_FUNCS_ONLY) && defined(LOG_STRINGS)
-					if (!strchr (symbol, '(') && IsString ((char*)*data))	// do not test funcs()
-						DumpString (f, (char*)*data);
-#endif
-					fprintf (f, "\n");
-					n = 0;
-					continue;
-				}
-
-#ifdef LOG_STRINGS
-		// try to log as string
-		if (IsString ((char*)*data))
-		{
-			fprintf (f, "%s%08X", n > 0 ? "\n" STAT_SPACES : spaces, *data);
-			DumpString (f, (char*)*data);
-			fprintf (f, "\n");
-			n = 0;
-			continue;
-		}
-#endif
-
-		// log as simple number
-		fprintf (f, "%s%08X", n > 0 ? "  " : spaces, *data);
-		if (++n >= 8)
-		{
-			fprintf (f, "\n");
-			n = 0;
-		}
-	}
-	fprintf (f, "\n");
-	return;
-#undef STAT_SPACES
-}
-
-
-int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
-{
-	FILE	*f;
-
-	if (GErr.isSoftError) return EXCEPTION_EXECUTE_HANDLER;		// no interest to thread context when software-generated errors
-
-	if (GErr.contextDumped) return EXCEPTION_EXECUTE_HANDLER;	// context will be dumped only once
-	GErr.contextDumped = true;
-	GErr.isFatalError = true;
-
-	__try
-	{
-		char	*excName;
-
-		switch (info->ExceptionRecord->ExceptionCode)
-		{
-		case EXCEPTION_ACCESS_VIOLATION:
-			excName = "Access violation";
-			break;
-		case EXCEPTION_FLT_DIVIDE_BY_ZERO:
-			excName = "Float zero divide";
-			break;
-		case EXCEPTION_INT_DIVIDE_BY_ZERO:
-			excName = "Integer zero divide";
-			break;
-		case EXCEPTION_PRIV_INSTRUCTION:
-			excName = "Priveleged instruction";
-			break;
-		case EXCEPTION_ILLEGAL_INSTRUCTION:
-			excName = "Illegal opcode";
-			break;
-		case EXCEPTION_STACK_OVERFLOW:
-			excName = "Stack overflow";
-			break;
-		default:
-			excName = "Exception";
-		}
-
-		//?? should make logging a global class (implements opening/logging date/closing)
-		// make a log in "crash.log"
-		if (f = fopen (CRASH_LOG, "a+"))
-		{
-			CONTEXT* ctx = info->ContextRecord;
-//			EXCEPTION_RECORD* rec = info->ExceptionRecord;
-			time_t	itime;
-			char	ctime[256];
-
-			appSprintf (ARRAY_ARG(GErr.history), "%s at \"%s\"\n", excName, appSymbolName (ctx->Eip));
-
-			time (&itime);
-			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
-			fprintf (f, "----- "APPNAME" crash at %s -----\n", ctime);		//!! should use main_package name instead of APPNAME
-			fprintf (f, "%s\n", GErr.history);
-			strcat (GErr.history, "\nHistory: ");
-
-			DumpReg4 (f, "EAX", ctx->Eax); DumpReg4 (f, "EBX", ctx->Ebx); DumpReg4 (f, "ECX", ctx->Ecx); DumpReg4 (f, "EDX", ctx->Edx);
-			DumpReg4 (f, "ESI", ctx->Esi); DumpReg4 (f, "EDI", ctx->Edi); DumpReg4 (f, "EBP", ctx->Ebp); DumpReg4 (f, "ESP", ctx->Esp);
-			DumpReg4 (f, "EIP", ctx->Eip);
-			DumpReg2 (f, "CS", ctx->SegCs); DumpReg2 (f, "SS", ctx->SegSs);
-			DumpReg2 (f, "DS", ctx->SegDs); DumpReg2 (f, "ES", ctx->SegEs);
-			DumpReg2 (f, "FS", ctx->SegFs); DumpReg2 (f, "GS", ctx->SegGs);
-			fprintf (f, "  EFLAGS: %08X\n", ctx->EFlags);
-
-			fprintf (f, "\nStack frame:\n");
-			DumpMem (f, (unsigned*) ctx->Esp, ctx);
-			fprintf (f, "\n");
-
-			fclose (f);
-		}
-	}
-	__except (EXCEPTION_EXECUTE_HANDLER)
-	{
-		// do nothing
-	}
-
-	return EXCEPTION_EXECUTE_HANDLER;
-}
-
-__declspec(naked) int win32ExceptFilter2 (void)
-{
-	__asm {
-		push	[ebp-0x14]
-		call	win32ExceptFilter
-		add		esp,4
-		retn			// return value from win32ExceptFilter()
-	}
-}
-
 
 /*
 ================
@@ -1025,6 +629,7 @@ int main (int argc, const char **argv)
 		}
 #endif
 
+		appInit ();		//!!!!
 		QCommon_Init (cmdline);
 		oldtime = Sys_Milliseconds ();
 
@@ -1070,12 +675,17 @@ int main (int argc, const char **argv)
 			}
 			GUARD_CATCH
 			{
-				if (GErr.isFatalError)
+				if (GErr.fatalError)
 					throw;
 				else
 				{
-					Com_DPrintf ("History: %s\n", GErr.history);
-					Com_ResetErrorState ();
+					SV_Shutdown (va("Server crashed: %s\n", GErr.history), false);		//!!!!! message only
+					//?? may be, pass NULL to SV_Shutdown(), and SV_Shutdown will get error message from GErr
+					//?? top line (if so, remove "message" field from GErr)
+					//!! TEST: dedicated: error -drop, error -gpf, error "msg"
+					Com_DPrintf ("History: %s\n", GErr.history);			//!!!!! history only
+					if (!DEDICATED) CL_Drop (true);
+					GErr.Reset ();
 				}
 			}
 			oldtime = newtime;
@@ -1084,11 +694,11 @@ int main (int argc, const char **argv)
 	}
 	GUARD_CATCH
 	{
-		FILE *f;
+		//?? should move softError and history logging to Core
 		// log error
-		if (f = fopen (CRASH_LOG, "a+"))
+		if (FILE *f = fopen (CRASH_LOG, "a+"))
 		{
-			if (!GErr.contextDumped)
+			if (GErr.swError)
 				fprintf (f, "----- " APPNAME " software exception -----\n%s\n\n", GErr.history);
 			else
 				fprintf (f, "%s\n\n", strrchr (GErr.history, '\n') + 1);
@@ -1099,7 +709,7 @@ int main (int argc, const char **argv)
 
 		GUARD_BEGIN {
 			// shutdown all subsystems
-			//?? SV_Shutdown()
+			SV_Shutdown (va("Server fatal crashed: %s\n", GErr.history), false);	//!!!!! message only
 			CL_Shutdown (true);
 			QCommon_Shutdown ();
 		} GUARD_CATCH {

@@ -1,116 +1,6 @@
 #include "qcommon.h"
 
 
-/*-------------- Zone memory allocation -----------------*/
-
-#define		Z_MAGIC		0x5678
-#define		Z_BLOCKSIZE	4096
-
-// debug stuff:
-//#define 	Z_DEBUG
-#define		Z_FREE		0x1234
-#define		Z_DEBUGMARK	0xABCDEF12
-
-typedef struct zhead_s
-{
-	struct zhead_s *prev, *next;
-	short	magic;			// Z_MAGIC or Z_FREE
-	int		size;
-#ifdef Z_DEBUG
-	unsigned owner;
-#endif
-} zhead_t;
-
-static zhead_t	z_chain = {&z_chain, &z_chain};
-static int		z_count, z_bytes;
-
-
-void appFree (void *ptr)
-{
-	zhead_t	*z;
-#ifdef Z_DEBUG
-	int mark;
-#endif
-
-#ifdef Z_DEBUG
-	if (!ptr)
-	{
-		Com_FatalError ("appFree(NULL) " RETADDR_STR "\n", GET_RETADDR(ptr));
-		return;
-	}
-#else
-	if (!ptr) return;
-#endif
-	z = ((zhead_t *)ptr) - 1;
-#ifdef Z_DEBUG
-	if (z->magic == Z_FREE)
-		Com_FatalError ("appFree: double freeing block");
-	mark = *(int*)((char*)z + z->size - 4);
-	if (mark != Z_DEBUGMARK)
-		Com_FatalError ("appFree: memory overrun detected (block size=%d, diff=%X)",
-			z->size - sizeof(zhead_t) - 4, mark ^ Z_DEBUGMARK);
-#endif
-	if (z->magic != Z_MAGIC)
-		Com_FatalError ("appFree: bad magic %X" RETADDR_STR, z->magic, GET_RETADDR(ptr));
-
-#ifdef Z_DEBUG
-	z->magic = Z_FREE;
-#endif
-
-	z->prev->next = z->next;
-	z->next->prev = z->prev;
-
-	z_count--;
-	z_bytes -= z->size;
-//	DebugPrintf("%08X/%X :"RETADDR_STR" <- %08X\n", ptr, z->size, GET_RETADDR(ptr), z->owner);//!!!!!!
-	free (z);
-}
-
-
-#ifdef Z_DEBUG
-static unsigned allocator;
-#endif
-
-void *appMalloc (int size)
-{
-	zhead_t	*z;
-
-	size += sizeof(zhead_t);
-#ifdef Z_DEBUG
-	size += 4;	// reserve space for our mark
-#endif
-
-	z = (zhead_t*)malloc(size);
-	if (!z)
-		Com_FatalError ("appMalloc: failed on allocation of %d bytes", size);
-	memset (z, 0, size);
-#ifdef Z_DEBUG
-	*((int*)((char*)z + size - 4)) = Z_DEBUGMARK; // place mark in reserved space
-	if (allocator)
-	{
-		z->owner = allocator;
-		allocator = 0;
-	}
-	else
-		z->owner = GET_RETADDR(size);
-#endif
-	z_count++;
-	z_bytes += size;
-	z->magic = Z_MAGIC;
-	z->size = size;
-
-	z->next = z_chain.next;
-	z->prev = &z_chain;
-	z_chain.next->prev = z;
-	z_chain.next = z;
-
-//#define CATCH 0x0F370000
-//	if ((int)z <= CATCH && (int)z+size >= CATCH) DebugPrintf("+%08X/%X << %08X *************\n", z+1,size,z->owner);//!!
-
-	return (void *)(z+1);
-}
-
-
 /*------- Memory chain allocation (by chunks) -----------*/
 
 
@@ -144,10 +34,6 @@ static chainBlock_t *AllocChain(int size)
 
 	memset (chain->data, 0, chain->free);
 
-	// update z_stats info
-	z_bytes += alloc;
-	z_count++;
-
 	return chain;
 }
 
@@ -164,9 +50,6 @@ void FreeMemoryChain (void *chain)
 
 	for (curr = (chainBlock_t*)chain; curr; curr = next)
 	{
-		// update z_stats info
-		z_bytes -= curr->size;
-		z_count--;
 		// free memory block
 		next = curr->next;
 //		DebugPrintf("%08X/%X :"RETADDR_STR"\n", curr, curr->size, GET_RETADDR(chain));//!!!!!!
@@ -207,21 +90,6 @@ void *AllocChainBlock (void *chain, int size)
 
 
 /*---------------------- Strings ------------------------*/
-
-
-char *CopyString (const char *in)
-{
-	char	*out;
-
-#ifdef Z_DEBUG
-	allocator = GET_RETADDR(in);
-#endif
-	int len = strlen (in) + 1;
-	out = (char*)appMalloc (len);
-	memcpy (out, in, len);
-	return out;
-}
-
 
 char *ChainCopyString (const char *in, void *chain)
 {
@@ -390,17 +258,4 @@ void FreeNamedList (basenamed_t *list)
 		FreeNamedStruc (list);
 		list = s;
 	}
-}
-
-
-// Memory status console command
-static void Mem_Stats_f (void)
-{
-	Com_Printf ("System memory:\n%d bytes in %d blocks\n", z_bytes, z_count);
-}
-
-
-void Mem_Init (void)
-{
-	RegisterCommand ("MemStats", Mem_Stats_f);
 }

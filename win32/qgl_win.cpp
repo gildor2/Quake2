@@ -310,7 +310,7 @@ void QGL_PrintExtensionsString (const char *label, const char *str, const char *
 				i = 0;
 				// name[] now contains current extension name
 				// check display mask
-				if (mask && !MatchWildcard (name, mask, true)) continue;
+				if (mask && !appMatchWildcard (name, mask, true)) continue;
 				// determine color for name display
 				color = NULL;
 				for (j = 0, m = 1, ext = extInfo; j < NUM_EXTENSIONS; j++, ext++, m <<= 1)

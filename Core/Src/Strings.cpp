@@ -1,0 +1,528 @@
+#include "Core.h"
+
+
+/*-----------------------------------------------------------------------------
+	String comparision
+-----------------------------------------------------------------------------*/
+
+int appStrcmp (const char *s1, const char *s2)
+{
+	char	c1, c2;
+
+	do
+	{
+		c1 = *s1++;
+		c2 = *s2++;
+	} while (c1 && c1 == c2);
+
+	return c1 - c2;
+}
+
+
+int appStrncmp (const char *s1, const char *s2, int count)
+{
+	char	c1, c2;
+
+	do
+	{
+		if (!count--) return 0;
+		c1 = *s1++;
+		c2 = *s2++;
+	} while (c1 && c1 == c2);
+
+	return c1 - c2;
+}
+
+
+int appStricmp (const char *s1, const char *s2)
+{
+	char	c1, c2;
+
+	do
+	{
+		c1 = toLower (*s1++);
+		c2 = toLower (*s2++);
+	} while (c1 && c1 == c2);
+
+	return c1 - c2;
+}
+
+
+int appStrnicmp (const char *s1, const char *s2, int count)
+{
+	char	c1, c2;
+
+	do
+	{
+		if (!count--) return 0;
+		c1 = toLower (*s1++);
+		c2 = toLower (*s2++);
+	} while (c1 && c1 == c2);
+
+	return c1 - c2;
+}
+
+
+/*-----------------------------------------------------------------------------
+	String copying
+-----------------------------------------------------------------------------*/
+
+void appStrcpy (char *dst, const char *src)
+{
+	char	c;
+
+	do
+	{
+		c = *src++;
+		*dst++ = c;
+	} while (c);
+}
+
+
+void appStrncpy (char *dst, const char *src, int count)
+{
+	char	c;
+
+	do
+	{
+		if (!count--) return;
+		c = *src++;
+		*dst++ = c;
+	} while (c);
+}
+
+
+void appStrncpylwr (char *dst, const char *src, int count)
+{
+	char	c;
+
+	do
+	{
+		if (!count--) return;
+		c = toLower (*src++);
+		*dst++ = c;
+	} while (c);
+}
+
+
+void appStrncpyz (char *dst, const char *src, int count)
+{
+	char	c;
+
+	if (count <= 0) return;	// zero-length string
+
+	do
+	{
+		if (!count--) break;
+		c = *src++;
+		*dst++ = c;
+	} while (c);
+
+	if (count < 0)			// out of dst space -- add zero to the string end
+		*(--dst) = 0;
+}
+
+
+void appStrncat (char *dst, const char *src, int count)
+{
+	char	*p;
+	int		maxLen;
+
+	p = strchr (dst, 0);
+	maxLen = count - (p - dst);
+	appStrncpyz (p, src, maxLen);
+}
+
+
+void appCopyFilename (char *dest, const char *src, int len)
+{
+	char	c, *d;
+	const char *s;
+
+	guardSlow(appCopyFilename);
+
+	// copy name with replacing '\' -> '/' and lowercasing
+	s = src;
+	d = dest;
+	while (len--)
+	{
+		c = *s++;
+		if (c == '\\')
+			c = '/';
+		else if (c >= 'A' && c <= 'Z')
+			c += 32;
+		*d++ = c;
+		if (!c) break;
+	}
+	if (len < 0) *(--d) = 0;
+
+	s = d = dest;
+	len = 0;
+	do
+	{
+		c = *s++;
+		if (c == '/')
+		{
+			while (*s == '/') s++;			// replace '//' -> '/' (may be when "path/" + "/name")
+			if (s[0] == '.' && s[1] == '.' && s[2] == '/'&& len && *(s-2) != '.')	// cut "dir/../", but leave "../.."
+			{
+				do
+				{
+					d--;
+					len--;
+				} while (len && *d != '/');
+				if (*d == '/')
+				{
+					d++;
+					len++;
+				}
+				c = s[3];
+				s += 4;
+			}
+			else if (s[0] == '.' && s[1] == '/')	// cut "/./"
+				s += 2;
+		}
+		*d++ = c;
+		len++;
+	} while (c);
+
+	unguardSlow;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Colorized strings support
+-----------------------------------------------------------------------------*/
+
+
+int appCStrlen (const char *str)
+{
+	int		len;
+	char	c, c1;
+
+	len = 0;
+	while (c = *str++)
+	{
+		if (c == '^')
+		{
+			c1 = *str;
+			if (c1 < '0' || c1 > '7')
+				len++;
+			else
+				str++;
+		}
+		else
+			len++;
+	}
+
+	return len;
+}
+
+
+void appUncolorizeString (char *dst, const char *src)
+{
+	char	c, c1;
+
+	if (!src) src = dst;
+	do
+	{
+		c = *src++;
+		if (c == '^')
+		{
+			c1 = *src;
+			if (c1 < '0' || c1 > '7')
+				*dst++ = c;
+			else
+				src++;
+		}
+		else
+			*dst++ = c;
+	} while (c);
+}
+
+
+/*-----------------------------------------------------------------------------
+	String formatting
+-----------------------------------------------------------------------------*/
+
+
+#define VA_GOODSIZE		512
+#define VA_BUFSIZE		2048
+
+char *va (const char *format, ...)
+{
+	va_list argptr;
+	static char buf[VA_BUFSIZE];
+	static int bufPos = 0;
+	int		len;
+	char	*str;
+
+	guardSlow(va);
+	str = &buf[bufPos];
+	va_start (argptr, format);
+	len = vsnprintf (str, VA_GOODSIZE, format, argptr);
+	va_end (argptr);
+
+	if (len < 0)
+		return NULL;	// error (may be, overflow)
+
+	bufPos += len + 1;
+	if (bufPos > VA_BUFSIZE - VA_GOODSIZE)
+		bufPos = 0;		// cycle buffer
+
+	return str;
+	unguardSlow;
+}
+
+
+int appSprintf (char *dest, int size, const char *fmt, ...)
+{
+	int		len;
+	va_list	argptr;
+
+	guardSlow(appSprintf);
+	va_start (argptr, fmt);
+	len = vsnprintf (dest, size, fmt, argptr);
+	va_end (argptr);
+	if (len < 0 || len >= size - 1)
+		appWPrintf ("appSprintf: overflow of %d (called by \"%s\")\n", size, appSymbolName (GET_RETADDR(dest)));
+
+	return len;
+	unguardSlow;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Simple wildcard matching
+-----------------------------------------------------------------------------*/
+
+// Mask variants:
+// 1) *      - any file
+// 2) *.*    - any file
+// 3) *rest  - name ends with "rest" (for example, ".ext")
+// 4) start* - name starts with "start"
+// 4) text   - name equals "text"
+// Comparision is case-sensitive.
+bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
+{
+	int		masklen, namelen;
+	char	maskCopy[MAX_OSPATH], nameCopy[MAX_OSPATH], *next;
+
+	guardSlow(appMatchWildcard);
+	if (ignoreCase)
+	{
+		appStrncpylwr (nameCopy, name, sizeof(nameCopy));
+		name = nameCopy;
+		appStrncpylwr (maskCopy, mask, sizeof(maskCopy));
+	}
+	else
+		appStrncpyz (maskCopy, mask, sizeof(maskCopy));
+	namelen = strlen (name);
+
+	for (mask = maskCopy; mask; mask = next)
+	{
+		// find next wildcard (comma-separated)
+		next = strchr (mask, ',');
+		if (next)
+		{
+			masklen = next - mask;
+			next++;		// skip ','
+		}
+		else
+			masklen = strlen (mask);
+
+		if (!masklen)
+		{
+			// used something like "mask1,,mask3" (2nd mask is empty)
+//??			Com_DPrintf ("appMatchWildcard: skip empty mask in \"%s\"\n", mask);
+			continue;
+		}
+
+		// check for a trivial wildcard
+		if (mask[0] == '*')
+		{
+			if (masklen == 1 || (masklen == 3 && mask[1] == '.' && mask[2] == '*'))
+				return true;			// "*" or "*.*" -- any name valid
+		}
+
+		// "*text*" mask
+		if (masklen >= 3 && mask[0] == '*' && mask[masklen-1] == '*')
+		{
+			int		i;
+
+			mask++;
+			masklen -= 2;
+			for (i = 0; i <= namelen - masklen; i++)
+				if (!memcmp (&name[i], mask, masklen)) return true;
+		}
+		else
+		{
+			char	*suff;
+
+			// "*text" or "text*" mask
+			suff = strchr (mask, '*');
+			if (next && suff >= next) suff = NULL;		// suff can be in next wildcard
+			if (suff)
+			{
+				int		preflen, sufflen;
+
+				preflen = suff - mask;
+				sufflen = masklen - preflen - 1;
+				suff++;
+
+				if (namelen < preflen + sufflen)
+					continue;			// name is not long enough
+				if (preflen && memcmp (name, mask, preflen))
+					continue;			// different prefix
+				if (sufflen && memcmp (name + namelen - sufflen, suff, sufflen))
+					continue;			// different suffix
+
+				return true;
+			}
+			// exact match ("text")
+			if (namelen == masklen && !memcmp (name, mask, namelen))
+				return true;
+		}
+	}
+
+	return false;
+	unguardSlow;
+}
+
+
+/*-----------------------------------------------------------------------------
+	String allocation
+-----------------------------------------------------------------------------*/
+
+//?? make strdup()-like name
+char *CopyString (const char *str)
+{
+	MEM_ALLOCATOR(str);
+	int len = strlen (str) + 1;
+	char *out = (char*)appMalloc (len);
+	memcpy (out, str, len);
+	return out;
+}
+
+
+/*-----------------------------------------------------------------------------
+	String lists
+-----------------------------------------------------------------------------*/
+
+
+void* CStringItem::operator new (size_t size, const char *str)
+{
+	int		len;
+	CStringItem *item;
+
+	guardSlow(CStringItem::new);
+	MEM_ALLOCATOR(size);
+	len = strlen (str) + 1;
+	item = (CStringItem*) appMalloc (size + len);
+	item->name = (char*) OffsetPointer (item, size);
+	memcpy (item->name, str, len);			// may be faster than strcpy()
+
+	return item;
+	unguardSlow;
+}
+
+
+void* CStringItem::operator new (size_t size, const char *str, CMemoryChain *chain)
+{
+	int		len;
+	CStringItem *item;
+
+	guardSlow(CStringItem::new(chain));
+	MEM_ALLOCATOR(size);
+	len = strlen (str) + 1;
+	item = (CStringItem*) chain->Alloc (size + len);
+	item->name = (char*) OffsetPointer (item, size);
+	memcpy (item->name, str, len);			// may be faster than strcpy()
+
+	return item;
+	unguardSlow;
+}
+
+
+CStringItem *CStringList::Find (const char *name, CStringItem **after)
+{
+	guardSlow(CStringItem::Find(str));
+	if (after) *after = NULL;
+	for (CStringItem *item = first; item; item = item->next)
+	{
+		int cmp = appStricmp (name, item->name);	//?? case-insensitive
+		if (!cmp)
+		{
+			// found exact item
+			if (after) *after = NULL;	// do not need to insert ...
+			return item;
+		}
+		if (cmp < 0)
+			return NULL;				// list is alpha-sorted, and item should be before this place
+		if (after) *after = item;
+	}
+
+	return NULL;
+	unguardSlow;
+}
+
+
+CStringItem* CStringList::Find (int index)
+{
+	guardSlow(CStringItem::Find(idx));
+	for (CStringItem *item = first; item && index > 0; item = item->next, index--) ;
+	return item;
+	unguardSlow;
+}
+
+
+int CStringList::IndexOf (const char *str)
+{
+	int		index;
+	CStringItem *item;
+
+	guardSlow(CStringList::IndexOf);
+	for (item = first, index = 0; item; item = item->next, index++)
+		if (!appStricmp (str, item->name))			//?? case-insensitive; NOTE: when list is alpha-sorted, can return NULL if cmp<0
+			return index;
+	return -1;
+	unguardSlow;
+}
+
+
+bool CStringList::Remove (CStringItem *item)
+{
+	CStringItem *curr, *prev;
+
+	guardSlow(CStringList::Remove);
+	prev = NULL;
+	for (curr = first; curr; curr = curr->next)
+	{
+		if (curr == item)
+		{
+			// unlink item
+			if (prev)
+				prev->next = curr->next;
+			else
+				first = curr->next;
+			return true;
+		}
+		prev = curr;
+	}
+	return false;		// not found
+	unguardSlow;
+}
+
+
+void CStringList::Free (void)
+{
+	CStringItem *item, *next;
+
+	guardSlow(CStringList::Free);
+	for (item = first; item; item = next)
+	{
+		next = item->next;
+		appFree (item);
+	}
+	unguardSlow;
+}

@@ -243,12 +243,12 @@ material_t CMod_GetSurfMaterial (char *name)
 		s = sm->name;
 		if (strchr (s, '/'))
 		{	// mask have a path separator - compare full names
-			if (!MatchWildcard (name, sm->name, true))
+			if (!appMatchWildcard (name, sm->name, true))
 				continue;
 		}
 		else
 		{	// compare without path
-			if (!MatchWildcard (checkname, sm->name, true))
+			if (!appMatchWildcard (checkname, sm->name, true))
 				continue;
 		}
 

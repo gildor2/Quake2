@@ -354,7 +354,7 @@ void SCR_PlayCinematic (char *filename)
 	if (ext && strcmp (ext, ".cin"))
 	{
 		// not ".cin" extension - try static image
-		Q_CopyFilename (cin.imageName, filename, sizeof(cin.imageName));
+		appCopyFilename (cin.imageName, filename, sizeof(cin.imageName));
 		cin.imageName[ext - filename] = 0;	// cut extension
 		re.DrawGetPicSize (&cin.width, &cin.height, cin.imageName);
 		if (!cin.width)

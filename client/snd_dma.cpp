@@ -293,7 +293,7 @@ static sfx_t *S_FindName (const char *name, bool create)
 
 	if (strlen (name) >= MAX_QPATH)
 		Com_FatalError ("Sound name too long: %s", name);
-	Q_CopyFilename (filename, name, sizeof(filename));
+	appCopyFilename (filename, name, sizeof(filename));
 
 	// see if already loaded
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
@@ -352,7 +352,7 @@ sfx_t *S_AliasName (char *aliasname, char *truename)
 	}
 
 	memset (sfx, 0, sizeof(*sfx));
-	Q_CopyFilename (sfx->name, aliasname, sizeof(*sfx->name));
+	appCopyFilename (sfx->name, aliasname, sizeof(*sfx->name));
 	appStrncpyz (sfx->truename, truename, sizeof(sfx->truename));
 	sfx->registration_sequence = s_registration_sequence;
 
@@ -1265,7 +1265,7 @@ static void S_SoundList_f (bool usage, int argc, char **argv)
 		if (!sfx->name[0])
 			continue;
 
-		if (mask && !MatchWildcard (sfx->name, mask, true)) continue;
+		if (mask && !appMatchWildcard (sfx->name, mask, true)) continue;
 		n++;
 
 		sc = sfx->cache;

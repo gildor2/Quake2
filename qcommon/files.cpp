@@ -219,7 +219,7 @@ static basenamed_t *AddDirFilesToList (char *findname, basenamed_t *list, int fl
 			char	*name;
 
 			name = strrchr (s, '/');	// should always be not NULL
-			if (name && MatchWildcard (name+1, wildcard, true))
+			if (name && appMatchWildcard (name+1, wildcard, true))
 				list = AddToNamedList (s, list);
 		}
 		s = Sys_FindNext ();
@@ -404,14 +404,14 @@ static basenamed_t *ListPakDirectory (pack_t *pak, char *dir, char *mask, int fl
 	{
 		if (flags & LIST_DIRS)
 			for (dirlist = d->cDir; dirlist; dirlist = dirlist->next)
-				if (MatchWildcard (dirlist->name, mask, true))
+				if (appMatchWildcard (dirlist->name, mask, true))
 				{
 					strcpy (addbufptr, dirlist->name);
 					list = AddToNamedList (addbuf, list);
 				}
 		if (flags & LIST_FILES)
 			for (filelist = d->cFile; filelist; filelist = filelist->next)
-				if (MatchWildcard (filelist->name, mask, true))
+				if (appMatchWildcard (filelist->name, mask, true))
 				{
 					strcpy (addbufptr, filelist->name);
 					list = AddToNamedList (addbuf, list);
@@ -540,7 +540,7 @@ void FS_CopyFiles (char *srcMask, char *dstDir)
 	pos1 = found - srcMask + 1;
 
 	// prepare dst string
-	Q_CopyFilename (pattern, dstDir, sizeof(pattern));
+	appCopyFilename (pattern, dstDir, sizeof(pattern));
 	pos2 = strlen (pattern);
 	if (!pos2 || pattern[pos2 - 1] != '/')
 	{
@@ -629,7 +629,7 @@ void FS_FCloseFile (FILE *f)
 
 	// simple validation of FILE2 structure
 	if ((char *)f2->name - (char *)f2 != sizeof(FILE2))
-		Com_FatalError ("FS_FCloseFile: invalid file handle" RETADDR_STR, GET_RETADDR(f));
+		Com_FatalError ("FS_FCloseFile: invalid file handle (called by %s)", appSymbolName (GET_RETADDR(f)));
 
 	if (f2->type == FT_NORMAL || f2->type == FT_ZPAK || f2->type == FT_PAK)
 	{
@@ -692,7 +692,7 @@ int FS_FOpenFile (const char *filename2, FILE **file)
 	FILE			*f;
 
 	fileFromPak = 0;
-	Q_CopyFilename (filename, filename2, sizeof(filename));
+	appCopyFilename (filename, filename2, sizeof(filename));
 
 	/*-------------- check for links first ---------------------*/
 	for (link = fs_links; link; link = link->next)
@@ -831,7 +831,7 @@ bool FS_FileExists (char *filename)
 	FILE			*f;
 
 	fileFromPak = 0;
-	Q_CopyFilename (buf, filename, sizeof(buf));
+	appCopyFilename (buf, filename, sizeof(buf));
 	filename = buf;
 	DEBUG_LOG(va("check: %s\n", filename));
 
@@ -948,7 +948,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 
 	// simple validation of FILE2 structure (don't let to pass FILE structure, allocated without FS_FOpenFile())
 	if (f2->name - (char *)f2 != sizeof(FILE2))
-		Com_FatalError ("FS_Read: invalid file handle" RETADDR_STR, GET_RETADDR(buffer));
+		Com_FatalError ("FS_Read: invalid file handle (called by %s)", appSymbolName (GET_RETADDR(buffer)));
 
 	if (f2->type == FT_ZMEM)
 	{
@@ -1464,7 +1464,7 @@ static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 			next = item->next;
 
 			pak = item->pack;
-			if (pak && MatchWildcard (pak->filename, pakname, true))
+			if (pak && appMatchWildcard (pak->filename, pakname, true))
 			{
 				if (prev)
 					prev->next = item->next;
@@ -1575,7 +1575,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 	basenamed_t *list;
 	int		gamePos;
 
-	Q_CopyFilename (buf, name, sizeof(buf));
+	appCopyFilename (buf, name, sizeof(buf));
 	DEBUG_LOG(va("list: %s\n", name));
 	name = buf;
 
@@ -1717,7 +1717,7 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 	while (path = FS_NextPath (path))
 	{
 		appSprintf (ARRAY_ARG(findname), "%s/%s", path, wildcard);
-		Q_CopyFilename (findname, findname, sizeof(findname));	// in-place compact filename
+		appCopyFilename (findname, findname, sizeof(findname));	// in-place compact filename
 		Com_Printf (S_GREEN"Directory of %s\n-------------------\n", findname);
 
 		if (dirnames = FS_ListFiles (findname, NULL, LIST_FILES|LIST_DIRS))

@@ -23,6 +23,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef QCOMMON_H
 #define QCOMMON_H
 
+#include "Core.h"
+
+//!!!! temp:
+#define Com_FatalError	appFatalError
+#define Com_DropError	appNonFatalError
+#define Sys_Error		appFatalError
+
 #include "q_shared2.h"
 #include "qfiles.h"
 
@@ -414,14 +421,12 @@ then searches for a command or variable that matches the first token.
 
 */
 
-typedef struct cmdAlias_s
-{	// derived from basenamed_t
-	char	*name;
-	struct cmdAlias_s *next;
+class cmdAlias_t : public CStringItem
+{
+public:
 	char	*value;
-} cmdAlias_t;
-
-extern cmdAlias_t *cmdAlias;
+};
+extern TList<cmdAlias_t> cmdAlias;
 
 typedef struct cmdFunc_s
 {
@@ -739,17 +744,7 @@ typedef struct basenamed_s
 } basenamed_t;
 
 
-// Memory blocks
-//--void	appFree (void *ptr);
-//--void	*appMalloc (int size);			// returns 0-filled memory
-
-// Memory chains
-//--void	*CreateMemoryChain (void);
-//--void	FreeMemoryChain (void *chain);
-//--void	*AllocChainBlock (void *chain, int size);
-
 // Strings
-char	*CopyString (const char *in);
 char	*ChainCopyString (const char *in, void *chain);
 
 // Named structure lists
@@ -812,8 +807,6 @@ void	Com_BeginRedirect (char *buffer, int buffersize, void (*flush)(char*));
 void	Com_EndRedirect (void);
 
 void	NORETURN Com_Quit (void);
-
-//--bool MatchWildcard (char *name, char *mask, bool ignoreCase = false);
 
 server_state_t Com_ServerState (void);		// this should have just been a cvar...
 void	Com_SetServerState (server_state_t state);
@@ -1080,157 +1073,5 @@ char *ProcessEntstring (char *entString);
 
 #include "../client/ref_decl.h"
 #include "../client/ref_defs.h"
-
-inline void *operator new (size_t size)
-{
-	return appMalloc (size);
-}
-inline void operator delete (void *ptr)
-{
-	appFree (ptr);
-}
-
-// from new Macro.h
-template <class T> inline T OffsetPointer (const T ptr, int offset)
-{
-	return (T) ((unsigned)ptr + offset);
-}
-
-#define FIELD2OFS(struc, field)		((unsigned) &((struc *)NULL)->field)		// get offset of the field in struc
-#define OFS2FIELD(struc, ofs, type)	(*(type*) ((byte*)(struc) + ofs))			// get field of type by offset inside struc
-
-#undef min
-#undef max
-
-#define min(a,b)  (((a) < (b)) ? (a) : (b))
-#define max(a,b)  (((a) > (b)) ? (a) : (b))
-#define bound(a,minval,maxval)  ( ((a) > (minval)) ? ( ((a) < (maxval)) ? (a) : (maxval) ) : (minval) )
-
-#define COMMAND_USAGE	1
-#define COMMAND_ARGS	2
-
-inline bool RegisterCommand (const char *name, void(*func)(void))
-{
-	return RegisterCommand (name, func, 0);
-}
-
-inline bool RegisterCommand (const char *name, void(*func)(bool))
-{
-	return RegisterCommand (name, (void(*)())func, COMMAND_USAGE);
-}
-
-inline bool RegisterCommand (const char *name, void(*func)(int,char**))
-{
-	return RegisterCommand (name, (void(*)())func, COMMAND_ARGS);
-}
-
-inline bool RegisterCommand (const char *name, void(*func)(bool,int,char**))
-{
-	return RegisterCommand (name, (void(*)())func, COMMAND_USAGE|COMMAND_ARGS);
-}
-
-struct CSimpleCommand
-{
-	const char	*name;
-	void (*func)(int argc, char **argv);
-};
-
-bool ExecuteCommand (const char *str, const CSimpleCommand *CmdList, int numCommands);
-
-/*-----------------------------------------------------------------------------
-	guard macros
------------------------------------------------------------------------------*/
-
-typedef struct
-{
-	bool	isSoftError;			// do not dump CPU context when true
-	bool	isFatalError;			// if "false" - display message and continue execution (with dropping server etc)
-	bool	wasError;				// used by appUnwind() for correct history formatting
-	bool	contextDumped;
-	char	history[4096];
-} errorState_t;
-
-extern errorState_t GErr;
-
-void Com_ResetErrorState (void);	//?? Sys_ResetErrorState()
-
-
-#ifdef WIN32
-
-//int win32ExceptFilter2 (void);
-//void appUnwindPrefix (const char *fmt);		//!!! rename
-//void NORETURN appUnwindThrow (const char *fmt, ...);
-
-
-#define EXCEPT_FILTER	win32ExceptFilter2()
-
-#define guard(func)					\
-	{								\
-		static const char __FUNC__[] = #func; \
-		__try {
-
-#define unguard						\
-		} __except (EXCEPT_FILTER) { \
-			appUnwindThrow (__FUNC__);	\
-		}							\
-	}
-
-#define unguardf(msg)				\
-		} __except (EXCEPT_FILTER) { \
-			appUnwindPrefix (__FUNC__);	\
-			appUnwindThrow msg;		\
-		}							\
-	}
-
-#define GUARD_BEGIN		__try
-#define GUARD_CATCH		__except (EXCEPT_FILTER)
-
-#else
-//#	if DO_GUARD
-//#		error gurads unsupported for current platform (requires C++)
-//#	endif
-//?? when execing "error -gpf" from console, error will be logged with "developer=1", but
-//?? execution will continue ?!
-#define guard(func)					\
-	{								\
-		static const char __FUNC__[] = #func; \
-		try {
-
-#define unguard						\
-		} catch (...) {				\
-			appUnwindThrow (__FUNC__); \
-		}							\
-	}
-
-#define unguardf(msg)				\
-		} catch (...) {				\
-			appUnwindPrefix (__FUNC__);	\
-			appUnwindThrow msg;		\
-		}							\
-	}
-
-#define GUARD_BEGIN	try
-#define GUARD_CATCH	catch (...)
-
-#endif
-
-#if !DO_GUARD
-#	undef guard
-#	undef unguard
-#	undef unguardf
-#	define guard(func)
-#	define unguard
-#	define unguardf(msg)
-#endif
-
-#if DO_GUARD_SLOW
-#	define guardSlow(func)		guard(func)
-#	define unguardSlow			unguard
-#	define unguardfSlow(msg)	unguardf(msg)
-#else
-#	define guardSlow(func)		{
-#	define unguardSlow			}
-#	define unguardfSlow(msg)	}
-#endif
 
 #endif // QCOMMON_H

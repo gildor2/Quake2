@@ -2,14 +2,6 @@
 
 #ifdef DYNAMIC_REF
 
-inline bool RegisterCommand (const char *name, void(*func)(), int flags)
-{
-	return ri._RegisterCommand (name, func, flags);
-}
-inline void UnregisterCommand (const char *name)
-{
-	ri._UnregisterCommand (name);
-}
 inline cvar_t* Cvar_Get (const char *name, const char *value, int flags)
 {
 	return ri._Cvar_Get (name, value, flags);
@@ -49,14 +41,6 @@ inline float Cvar_Clamp (cvar_t *cvar, float low, float high)
 inline float Cvar_ClampName (const char *name, float low, float high)
 {
 	return ri._Cvar_ClampName (name, low, high);
-}
-inline void* appMalloc (int size)
-{
-	return ri._appMalloc (size);
-}
-inline void appFree (void *ptr)
-{
-	ri._appFree (ptr);
 }
 inline void* CreateMemoryChain (void)
 {
@@ -142,12 +126,6 @@ inline void FS_RemoveFiles (char *mask)
 {
 	ri._FS_RemoveFiles (mask);
 }
-inline bool MatchWildcard (const char *name, const char *mask, bool ignoreCase = false)
-{
-	return ri._MatchWildcard (name, mask, false);
-}
-#define va	ri._va
-#define appSprintf	ri._appSprintf
 inline bool Vid_GetModeInfo (int *width, int *height, int mode)
 {
 	return ri._Vid_GetModeInfo (width, height, mode);
@@ -218,8 +196,6 @@ inline void Vid_NewWindow (int width, int height)
 
 #else
 
-bool	RegisterCommand (const char *name, void(*func)(), int flags);
-void	UnregisterCommand (const char *name);
 cvar_t*	Cvar_Get (const char *name, const char *value, int flags);
 void	Cvar_GetVars (const cvarInfo_t *vars, int count);
 cvar_t*	Cvar_Set (const char *name, const char *value);
@@ -230,8 +206,6 @@ float	Cvar_VariableValue (const char *name);
 int	Cvar_VariableInt (const char *name);
 float	Cvar_Clamp (cvar_t *cvar, float low, float high);
 float	Cvar_ClampName (const char *name, float low, float high);
-void*	appMalloc (int size);
-void	appFree (void *ptr);
 void*	CreateMemoryChain (void);
 void*	AllocChainBlock (void *chain, int size);
 void	FreeMemoryChain (void *chain);
@@ -259,9 +233,6 @@ void	FS_CreatePath (char *path);
 void	FS_CopyFile (char *src, char *dst);
 void	FS_CopyFiles (char *srcMask, char *dstDir);
 void	FS_RemoveFiles (char *mask);
-bool	MatchWildcard (const char *name, const char *mask, bool ignoreCase = false);
-char*	va (const char *format, ...);
-int	appSprintf (char *dest, int size, const char *fmt, ...);
 bool	Vid_GetModeInfo (int *width, int *height, int mode);
 int	ImageExists (const char *name, int stop_mask = IMAGE_ANY);
 void	LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *height);

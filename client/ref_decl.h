@@ -2,8 +2,6 @@
 
 typedef struct {
 	int		struc_size;
-	bool	(*_RegisterCommand) (const char *name, void(*func)(), int flags);
-	void	(*_UnregisterCommand) (const char *name);
 	cvar_t*	(*_Cvar_Get) (const char *name, const char *value, int flags);
 	void	(*_Cvar_GetVars) (const cvarInfo_t *vars, int count);
 	cvar_t*	(*_Cvar_Set) (const char *name, const char *value);
@@ -14,8 +12,6 @@ typedef struct {
 	int	(*_Cvar_VariableInt) (const char *name);
 	float	(*_Cvar_Clamp) (cvar_t *cvar, float low, float high);
 	float	(*_Cvar_ClampName) (const char *name, float low, float high);
-	void*	(*_appMalloc) (int size);
-	void	(*_appFree) (void *ptr);
 	void*	(*_CreateMemoryChain) (void);
 	void*	(*_AllocChainBlock) (void *chain, int size);
 	void	(*_FreeMemoryChain) (void *chain);
@@ -43,9 +39,6 @@ typedef struct {
 	void	(*_FS_CopyFile) (char *src, char *dst);
 	void	(*_FS_CopyFiles) (char *srcMask, char *dstDir);
 	void	(*_FS_RemoveFiles) (char *mask);
-	bool	(*_MatchWildcard) (const char *name, const char *mask, bool ignoreCase = false);
-	char*	(*_va) (const char *format, ...);
-	int	(*_appSprintf) (char *dest, int size, const char *fmt, ...);
 	bool	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
 	int	(*_ImageExists) (const char *name, int stop_mask = IMAGE_ANY);
 	void	(*_LoadPCX) (const char *name, byte **pic, byte **palette, int *width, int *height);

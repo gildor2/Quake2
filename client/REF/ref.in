@@ -1,7 +1,3 @@
-//------- commands ----------
-bool	RegisterCommand (const char *name, void(*func)(), int flags);
-void	UnregisterCommand (const char *name);
-
 //--------- cvars -----------
 cvar_t*	Cvar_Get (const char *name, const char *value, int flags);
 void	Cvar_GetVars (const cvarInfo_t *vars, int count);
@@ -15,9 +11,6 @@ float	Cvar_Clamp (cvar_t *cvar, float low, float high);
 float	Cvar_ClampName (const char *name, float low, float high);
 
 //--- memory management -----
-void*	appMalloc (int size);
-void	appFree (void *ptr);
-
 void*	CreateMemoryChain (void);
 void*	AllocChainBlock (void *chain, int size);
 void	FreeMemoryChain (void *chain);
@@ -56,11 +49,6 @@ void	FS_CreatePath (char *path);
 void	FS_CopyFile (char *src, char *dst);
 void	FS_CopyFiles (char *srcMask, char *dstDir);
 void	FS_RemoveFiles (char *mask);
-
-//--------- strings ---------
-bool	MatchWildcard (const char *name, const char *mask, bool ignoreCase = false);
-char*	va (const char *format, ...);
-int	appSprintf (char *dest, int size, const char *fmt, ...);
 
 //------- video mode --------
 bool	Vid_GetModeInfo (int *width, int *height, int mode);

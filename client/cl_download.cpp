@@ -44,7 +44,7 @@ static bool CheckOrDownloadFile (const char *fmt, ...)
 	vsnprintf (ARRAY_ARG(name), fmt, argptr);
 	va_end (argptr);
 
-	Q_CopyFilename (name, name, sizeof(name));		// in-place
+	appCopyFilename (name, name, sizeof(name));		// in-place
 	if (!memcmp (name, "../", 3))					// if trying to leave quake root dir, "../" will be at start
 	{
 		Com_Printf ("Refusing to download a path with ..\n");
@@ -143,7 +143,7 @@ void CL_Download_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	Q_CopyFilename (filename, argv[1], sizeof(filename));
+	appCopyFilename (filename, argv[1], sizeof(filename));
 
 	if (FS_FileExists (filename))
 	{	// it exists, no need to download

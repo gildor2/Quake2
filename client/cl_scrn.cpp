@@ -313,7 +313,7 @@ void SCR_SetLevelshot (char *name)
 		char mapname[MAX_QPATH], *tmp;
 
 		// get levelshot name from map name
-		Q_CopyFilename (mapname, cl.configstrings[CS_MODELS+1], sizeof(mapname));
+		appCopyFilename (mapname, cl.configstrings[CS_MODELS+1], sizeof(mapname));
 		tmp = strchr (mapname, '.');
 		if (tmp) tmp[0] = 0;
 		tmp = strrchr (mapname, '/');
@@ -595,7 +595,7 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 			if (filename[0])
 				Com_WPrintf ("WARNING: name already specified (%s). Changed.\n", filename);
 			appSprintf (ARRAY_ARG(tmpName), "%s/screenshots/%s", FS_Gamedir (), opt);
-			Q_CopyFilename (filename, tmpName, sizeof(filename));
+			appCopyFilename (filename, tmpName, sizeof(filename));
 		}
 	}
 

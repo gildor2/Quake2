@@ -38,11 +38,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #pragma warning(disable : 4244)			// conversion from 'int'/'double' to 'float'
 #pragma warning(disable : 4305)			// truncation from 'const double' to 'const float'
 
-#define DLL_EXPORT	__declspec(dllexport)
-#define NORETURN	__declspec(noreturn)
-#define LITTLE_ENDIAN
-
 #ifdef _MSC_VER
+//!! move to Core/Inc/VcWin32.h
 #pragma intrinsic(memcpy, memset, memcmp, abs, fabs)
 #endif
 
@@ -71,25 +68,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define VECTOR_ARG(name)	name[0],name[1],name[2]
 #define ARRAY_ARG(array)	array, sizeof(array)/sizeof(array[0])
-#define ARRAY_COUNT(array)	(sizeof(array)/sizeof(array[0]))
 
 typedef unsigned char		byte;
 
 #ifndef NULL
 #define NULL ((void *)0)
-#endif
-
-#if defined(_M_IX86) || defined(__i386__)
-
-#define RETADDR_STR " (call from %08x)"
-#define	GET_RETADDR(firstarg)	(* ( ((int*)&firstarg) -1 ) )
-
-#else
-
-// empty string
-#define RETADDR_STR	""
-#define	GET_RETADDR(firstarg)	""
-
 #endif
 
 
@@ -213,43 +196,6 @@ float Q_rsqrt (float number);
 
 #if !defined C_ONLY && !defined __linux__ && !defined __sgi
 
-inline int appRound (float f)
-{
-	int		i;
-
-	__asm {
-		fld		[f]
-		fistp	[i]
-	}
-	return i;
-}
-
-inline int appFloor (float f)
-{
-	int		i;
-	static const float h = 0.4999999;	// 0.5
-
-	__asm {
-		fld		[f]
-		fsub	[h]
-		fistp	[i]
-	}
-	return i;
-}
-
-inline int appCeil (float f)
-{
-	int		i;
-	static const float h = 0.4999999;	// 0.5
-
-	__asm {
-		fld		[f]
-		fadd	[h]
-		fistp	[i]
-	}
-	return i;
-}
-
 #define uint_cast(f)	(* (unsigned *) &(f))
 #define IsNegative(f)	(uint_cast(f) >> 31)
 #define FAbsSign(f,d,s)	\
@@ -349,9 +295,7 @@ void Com_PageInMemory (void *buffer, int size);
 
 //=============================================
 
-void	appStrncpyz (char *dest, const char *src, int destsize);
 void	Q_strncpylower (char *dest, const char *src, int len);
-void	Q_CopyFilename (char *dest, const char *src, int len);
 
 //=============================================
 

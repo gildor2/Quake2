@@ -573,7 +573,7 @@ static void PreprocessShader (shader_t *sh)
 		spy = false;
 		mask = gl_spyShader->string;
 		if ((mask[0] && mask[1]) || mask[0] == '*')		// string >= 2 chars or "*"
-			spy = MatchWildcard (sh->name, mask, false);
+			spy = appMatchWildcard (sh->name, mask, false);
 	}
 #endif
 

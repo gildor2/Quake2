@@ -401,7 +401,7 @@ static entField_t *FindField (char *name)
 	entField_t *f;
 
 	for (i = 0, f = entity; i < numEntFields; i++, f++)
-		if (MatchWildcard (f->name, name))		// case-sensitive
+		if (appMatchWildcard (f->name, name))		// case-sensitive
 			return f;
 	return NULL;
 }
@@ -620,7 +620,7 @@ static bool ProcessEntity ()
 
 	/*----------- check movable inline models -----------*/
 
-	if (haveModel && modelIdx > 0 && MatchWildcard (classname,
+	if (haveModel && modelIdx > 0 && appMatchWildcard (classname,
 		"func_plat,func_*rotating,func_door,func_train"))
 		bspfile.models[modelIdx].flags |= CMODEL_MOVABLE;
 
@@ -831,7 +831,7 @@ static bool ProcessEntity ()
 					testflags = testmask = 0;
 				found = false;
 				for (i = 0, d = bspfile.texinfo; i < bspfile.numTexinfo; i++, d++)
-					if (MatchWildcard (d->texture, name, true) && ((d->flags & testmask) == testflags))
+					if (appMatchWildcard (d->texture, name, true) && ((d->flags & testmask) == testflags))
 					{
 						d->flags = d->flags & ~testmask | flags;
 						found = true;

@@ -81,7 +81,7 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 		char	*lmInfo, *color;
 
 		sh = shadersArray[i];
-		if (mask && !MatchWildcard (sh->name, mask, true)) continue;
+		if (mask && !appMatchWildcard (sh->name, mask, true)) continue;
 		n++;
 
 		switch (sh->lightmapNumber)
@@ -584,7 +584,7 @@ shader_t *GL_FindShader (const char *name, int style)
 			name = "*default";
 	}
 
-	Q_CopyFilename (name2, name, sizeof(name2));
+	appCopyFilename (name2, name, sizeof(name2));
 	if (s = strrchr (name2, '.')) *s = 0;		// cut extension
 
 	if (style & SHADER_LIGHTMAP)

@@ -255,115 +255,6 @@ void Com_WPrintf (const char *fmt, ...)
 }
 
 
-/*-----------------------------------------------------------------------------
-	Error handling
------------------------------------------------------------------------------*/
-
-static char errMsg[MAXPRINTMSG];
-static bool errRecurse = false;
-
-
-void Com_FatalError (const char *fmt, ...)
-{
-	va_list argptr;
-
-	GErr.isFatalError = true;
-	GErr.isSoftError = true;
-
-	if (errRecurse)
-		Sys_Error ("recursive error after: %s", errMsg);
-
-	va_start (argptr, fmt);
-	vsnprintf (ARRAY_ARG(errMsg), fmt, argptr);
-	va_end (argptr);
-
-	errRecurse = true;
-	SV_Shutdown (va("Server fatal crashed: %s\n", errMsg), false);
-	CL_Shutdown (true);
-
-	if (logfile)
-	{
-		fclose (logfile);
-		logfile = NULL;
-	}
-
-	if (debugLogged) DebugPrintf ("FATAL ERROR: %s\n", errMsg);
-	Sys_Error ("%s", errMsg);
-}
-
-
-void Com_DropError (const char *fmt, ...)
-{
-	va_list argptr;
-
-	GErr.isSoftError = true;
-
-	if (errRecurse)
-		Sys_Error ("recursive error after: %s", errMsg);
-
-	if (fmt)
-	{
-		va_start (argptr, fmt);
-		vsnprintf (ARRAY_ARG(errMsg), fmt, argptr);
-		va_end (argptr);
-		Com_Printf (S_RED"ERROR: %s\n", errMsg);
-		SV_Shutdown (va("Server crashed: %s\n", errMsg), false);
-	}
-	else
-		SV_Shutdown ("", false);
-	if (!DEDICATED) CL_Drop (true);
-	throw 1;
-}
-
-
-errorState_t GErr;
-
-void appUnwindPrefix (const char *fmt)
-{
-	char	buf[512];
-
-	if (GErr.wasError)
-		appSprintf (buf, sizeof(buf), " <- %s:", fmt);
-	else
-		appSprintf (buf, sizeof(buf), "%s:", fmt);
-
-	GErr.wasError = false;		// will not insert "<-" next appUnwindThrow()
-	strncat (GErr.history, buf, sizeof(GErr.history));
-}
-
-
-void appUnwindThrow (const char *fmt, ...)
-{
-	char	buf[512];
-	va_list	argptr;
-
-	va_start (argptr, fmt);
-	if (GErr.wasError)
-	{
-		buf[0] = ' '; buf[1] = '<'; buf[2] = '-'; buf[3] = ' ';
-		vsnprintf (buf+4, sizeof(buf)-4, fmt, argptr);
-	}
-	else
-		vsnprintf (buf, sizeof(buf), fmt, argptr);
-	va_end (argptr);
-	GErr.wasError = true;
-
-	strncat (GErr.history, buf, sizeof(GErr.history));
-
-#if 1
-	throw;
-#else
-	*((int*)NULL) &= 123;
-#endif
-}
-
-
-void Com_ResetErrorState (void)
-{
-	memset (&GErr, 0, sizeof(GErr));
-}
-
-
 /*
 =============
 Com_Quit
@@ -378,161 +269,6 @@ void Com_Quit (void)
 	CL_Shutdown (false);
 	QCommon_Shutdown ();
 	Sys_Quit ();
-}
-
-
-// Mask variants:
-// 1) *      - any file
-// 2) *.*    - any file
-// 3) *rest  - name ends with "rest" (for example, ".ext")
-// 4) start* - name starts with "start"
-// 4) text   - name equals "text"
-// Comparision is case-sensitive.
-bool MatchWildcard (const char *name, const char *mask, bool ignoreCase)
-{
-	int		masklen, namelen;
-//	char	maskCopy[MAX_QPATH], *next;
-	char	maskCopy[MAX_OSPATH], nameCopy[MAX_OSPATH], *next;
-
-	if (ignoreCase)
-	{
-		Q_strncpylower (nameCopy, name, sizeof(nameCopy));
-		name = nameCopy;
-		Q_strncpylower (maskCopy, mask, sizeof(maskCopy));
-	}
-	else
-		appStrncpyz (maskCopy, mask, sizeof(maskCopy));
-	namelen = strlen (name);
-
-	for (mask = maskCopy; mask; mask = next)
-	{
-		// find next wildcard (comma-separated)
-		next = strchr (mask, ',');
-		if (next)
-		{
-			masklen = next - mask;
-			next++;		// skip ','
-		}
-		else
-			masklen = strlen (mask);
-
-		if (!masklen)
-		{
-			// used something like "mask1,,mask2" (2nd mask is empty)
-			Com_DPrintf ("CheckMask(): skip empty mask in \"%s\"\n", mask);
-			continue;
-		}
-
-		// check for a trivial wildcard
-		if (mask[0] == '*')
-		{
-			if (masklen == 1 || (masklen == 3 && mask[1] == '.' && mask[2] == '*'))
-				return true;			// "*" or "*.*" -- any name valid
-		}
-
-		// "*text*" mask
-		if (masklen >= 3 && mask[0] == '*' && mask[masklen-1] == '*')
-		{
-			int		i;
-
-			mask++;
-			masklen -= 2;
-			for (i = 0; i <= namelen - masklen; i++)
-				if (!memcmp (&name[i], mask, masklen)) return true;
-		}
-		else
-		{
-			char	*suff;
-
-			// "*text" or "text*" mask
-			suff = strchr (mask, '*');
-			if (next && suff >= next) suff = NULL;		// suff can be in next wildcard
-			if (suff)
-			{
-				int		preflen, sufflen;
-
-				preflen = suff - mask;
-				sufflen = masklen - preflen - 1;
-				suff++;
-
-				if (namelen < preflen + sufflen)
-					continue;			// name is not long enough
-				if (preflen && memcmp (name, mask, preflen))
-					continue;			// different prefix
-				if (sufflen && memcmp (name + namelen - sufflen, suff, sufflen))
-					continue;			// different suffix
-
-				return true;
-			}
-			// exact match ("text")
-			if (namelen == masklen && !memcmp (name, mask, namelen))
-				return true;
-		}
-	}
-
-	return false;
-}
-
-
-/*
-============
-va
-
-does a varargs printf into a temp buffer, so I don't need to have
-varargs versions of all text functions.
-============
-*/
-
-#define VA_GOODSIZE		1024
-#define VA_BUFSIZE		2048
-
-char *va (const char *format, ...)
-{
-	va_list argptr;
-	static char buf[VA_BUFSIZE];
-	static int bufPos = 0;
-	int		len;
-	char	*str;
-
-	str = &buf[bufPos];
-	va_start (argptr, format);
-	len = vsnprintf (str, VA_GOODSIZE, format, argptr);
-	va_end (argptr);
-
-	if (len < 0)
-		return NULL;	// error (may be, overflow)
-
-	bufPos += len + 1;
-	if (bufPos > VA_BUFSIZE - VA_GOODSIZE)
-		bufPos = 0;		// cycle buffer
-
-	return str;
-}
-
-
-int appSprintf (char *dest, int size, const char *fmt, ...)
-{
-	int		len;
-	va_list	argptr;
-#if 1
-
-	va_start (argptr, fmt);
-	len = vsnprintf (dest, size, fmt, argptr);
-	va_end (argptr);
-	if (len < 0 || len > size - 1)
-		Com_WPrintf ("appSprintf: overflow %d > %d" RETADDR_STR "\n", len, size, GET_RETADDR(dest));
-#else
-	char	bigbuffer[0x10000];
-
-	va_start (argptr, fmt);
-	len = vsprintf (bigbuffer, fmt, argptr);
-	va_end (argptr);
-	if (len >= size)
-		Com_WPrintf ("appSprintf: overflow %d > %d\n", len, size);
-	strncpy (dest, bigbuffer, size-1);
-#endif
-
-	return len;
 }
 
 
@@ -1663,23 +1399,6 @@ byte COM_BlockSequenceCRCByte (byte *base, int length, int sequence)
 
 void Key_Init (void);
 
-/*
-=============
-Com_Error_f
-
-Just throw a fatal error to
-test error shutdown procedures
-=============
-*/
-static void Com_Error_f (int argc, char **argv)
-{
-	if (!stricmp (argv[1], "-gpf"))
-		*((int*)NULL) = 0;		// this is not "throw" command, this is GPF
-	else if (!stricmp (argv[1], "-drop"))
-		Com_DropError ("testing drop error");
-	Com_FatalError ("%s", argv[1]);
-}
-
 
 /*-----------------------------------------------------------------------------
 	Commandline parsing
@@ -1847,9 +1566,8 @@ CVAR_END
 
 	guard(QCommon_Init);
 
-	Com_ResetErrorState ();
 	Swap_Init ();
-	Mem_Init ();
+//!!	Mem_Init ();
 	Cvar_Init ();
 
 	ParseCmdline (cmdline);			// should be executed before any cvar creation
@@ -1868,9 +1586,6 @@ CVAR_END
 	FS_LoadGameConfig ();
 	Cbuf_Execute ();
 	cvar_initialized = 1;			// config executed -- allow cmdline cvars to be modified
-
-	// init commands and vars
-	RegisterCommand ("error", Com_Error_f);
 
 	if (DEDICATED)
 	{

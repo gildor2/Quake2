@@ -1304,14 +1304,8 @@ void Com_PageInMemory (void *buffer, int size)
 
 //============================================================================
 
-void appStrncpyz (char *dest, const char *src, int destsize)
-{
-	strncpy (dest, src, destsize-1);
-	dest[destsize-1] = 0;
-}
-
-
 // if "len" limit will be reached, dest[len]=0 (total length = len+1 !)
+//!! not same as appStrncpylwr()
 void Q_strncpylower (char *dest, const char *src, int len)
 {
 	char c;
@@ -1325,56 +1319,4 @@ void Q_strncpylower (char *dest, const char *src, int len)
 	}
 	// length limit - make string ASCIIZ
 	*dest = 0;
-}
-
-
-void Q_CopyFilename (char *dest, const char *src, int len)
-{
-	char	c, *d;
-	const char *s;
-
-	// copy name with replacing '\' -> '/' and lowercasing
-	s = src;
-	d = dest;
-	while (len--)
-	{
-		c = *s++;
-		if (c == '\\')
-			c = '/';
-		else if (c >= 'A' && c <= 'Z')
-			c += 32;
-		*d++ = c;
-		if (!c) break;
-	}
-	if (len < 0) *(--d) = 0;
-
-	s = d = dest;
-	len = 0;
-	do
-	{
-		c = *s++;
-		if (c == '/')
-		{
-			while (*s == '/') s++;			// replace '//' -> '/' (may be when "path/" + "/name")
-			if (s[0] == '.' && s[1] == '.' && s[2] == '/'&& len && *(s-2) != '.')	// cut "dir/../", but leave "../.."
-			{
-				do
-				{
-					d--;
-					len--;
-				} while (len && *d != '/');
-				if (*d == '/')
-				{
-					d++;
-					len++;
-				}
-				c = s[3];
-				s += 4;
-			}
-			else if (s[0] == '.' && s[1] == '/')	// cut "/./"
-				s += 2;
-		}
-		*d++ = c;
-		len++;
-	} while (c);
 }

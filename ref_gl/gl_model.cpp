@@ -55,7 +55,7 @@ model_t	*GL_FindModel (const char *name)
 	if (!name[0])
 		Com_FatalError ("R_FindModel: NULL name");
 
-	Q_CopyFilename (name2, name, sizeof(name2));
+	appCopyFilename (name2, name, sizeof(name2));
 
 	// search already loaded models
 	for (i = 0, m = modelsArray; i < modelCount; i++, m++)
@@ -1181,7 +1181,7 @@ void GL_LoadWorldMap (const char *name)
 
 	guard(GL_LoadWorldMap);
 
-	Q_CopyFilename (name2, name, sizeof(name2));
+	appCopyFilename (name2, name, sizeof(name2));
 
 	// map must be reloaded to update shaders (which are restarted every BeginRegistration())
 //	if (!strcmp (name2, map.name))
@@ -1482,12 +1482,12 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 	shader = GL_FindShader (skin, SHADER_CHECK|SHADER_SKIN);
 	if (!shader)
 	{	// try to find skin forcing model directory
-		Q_CopyFilename (mName, m->name, sizeof(mName));
+		appCopyFilename (mName, m->name, sizeof(mName));
 		mPtr = strrchr (mName, '/');
 		if (mPtr)	mPtr++;			// skip '/'
 		else		mPtr = mName;
 
-		Q_CopyFilename (sName, skin, sizeof(sName));
+		appCopyFilename (sName, skin, sizeof(sName));
 		sPtr = strrchr (sName, '/');
 		if (sPtr)	sPtr++;			// skip '/'
 		else		sPtr = sName;
@@ -1816,7 +1816,7 @@ static void Modellist_f (bool usage, int argc, char **argv)
 	Com_Printf ("-----type-size----name---------\n");
 	for (i = 0, m = modelsArray; i < modelCount; i++, m++)
 	{
-		if (mask && !MatchWildcard (m->name, mask, true)) continue;
+		if (mask && !appMatchWildcard (m->name, mask, true)) continue;
 		Com_Printf ("%-3d  %3s  %-7d %s%s\n", i, types[m->type], m->size, colors[m->type], m->name);
 		totalSize += m->size;
 	}

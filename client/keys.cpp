@@ -296,9 +296,7 @@ static char *Do_CompleteCommand (char *partial)
 			// complete "alias name "
 			if (!stricmp (complete_command, "alias"))
 			{
-				cmdAlias_t *alias;
-
-				for (alias = cmdAlias; alias; alias = alias->next)
+				for (cmdAlias_t *alias = cmdAlias.First(); alias; alias = cmdAlias.Next(alias))
 					if (!stricmp (alias->name, arg1))
 					{
 						strcpy (completed_name, va("alias %s %s", arg1, COM_QuoteString (alias->value, false)));
@@ -326,12 +324,10 @@ static char *Do_CompleteCommand (char *partial)
 			strcpy (complete_command, "alias");
 			for (display = 0; display < 2; display++)
 			{
-				cmdAlias_t *alias;
-
 				partial_name = arg1s;
 				partial_len = strlen (arg1s);
 				completed_count = 0;
-				for (alias = cmdAlias; alias; alias = alias->next)
+				for (cmdAlias_t *alias = cmdAlias.First(); alias; alias = cmdAlias.Next(alias))
 					TryComplete (alias->name, display, 'a');
 				if (!completed_count)
 					return NULL;
@@ -441,7 +437,7 @@ static char *Do_CompleteCommand (char *partial)
 		// check for partial match
 		for (cmdFunc_t *cmd = cmdFuncs; cmd; cmd = cmd->next)
 			TryComplete (cmd->name, display, 'c');
-		for (cmdAlias_t *a = cmdAlias; a; a = a->next)
+		for (cmdAlias_t *a = cmdAlias.First(); a; a = cmdAlias.Next(a))
 			TryComplete (a->name, display, 'a');
 		for (cvar_t *var = cvar_vars; var; var = var->next)
 			TryComplete (var->name, display, 'v');
@@ -634,7 +630,7 @@ static void Key_Unbind_f (bool usage, int argc, char **argv)
 	for (i = 0; i < NUM_BINDINGS; i++)
 	{
 		const char *keyName = Key_KeynumToString (i);
-		if (MatchWildcard (keyName, mask, true))
+		if (appMatchWildcard (keyName, mask, true))
 		{
 			found = true;
 			if (keybindings[i])
@@ -717,7 +713,7 @@ static void Key_Bindlist_f (bool usage, int argc, char **argv)
 	n = 0;
 	Com_Printf ("---key----action---------\n");
 	for (i = 0; i < NUM_BINDINGS; i++)
-		if (keybindings[i] && (!mask || MatchWildcard (keybindings[i], mask, true)))
+		if (keybindings[i] && (!mask || appMatchWildcard (keybindings[i], mask, true)))
 		{
 			n++;
 			Com_Printf (S_YELLOW"%-9s "S_WHITE"%s\n", Key_KeynumToString(i), keybindings[i]);

@@ -4,8 +4,6 @@ static refImport_t ri = {
 	sizeof(refImport_t),
 #ifndef DEDICATED_ONLY
 
-	RegisterCommand,
-	UnregisterCommand,
 	Cvar_Get,
 	Cvar_GetVars,
 	Cvar_Set,
@@ -16,8 +14,6 @@ static refImport_t ri = {
 	Cvar_VariableInt,
 	Cvar_Clamp,
 	Cvar_ClampName,
-	appMalloc,
-	appFree,
 	CreateMemoryChain,
 	AllocChainBlock,
 	FreeMemoryChain,
@@ -47,9 +43,6 @@ static refImport_t ri = {
 	FS_CopyFile,
 	FS_CopyFiles,
 	FS_RemoveFiles,
-	MatchWildcard,
-	va,
-	appSprintf,
 	Vid_GetModeInfo,
 	ImageExists,
 	LoadPCX,
