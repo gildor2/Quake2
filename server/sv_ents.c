@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -42,7 +42,7 @@ qboolean SV_AddProjectileUpdate (edict_t *ent)
 	if (!sv_projectiles)
 		sv_projectiles = Cvar_Get("sv_projectiles", "1", 0);
 
-	if (!sv_projectiles->value)
+	if (!sv_projectiles->integer)
 		return false;
 
 	if (!(ent->svflags & SVF_PROJECTILE))
@@ -168,7 +168,7 @@ void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t 
 			// in any bytes being emited if the entity has not changed at all
 			// note that players are always 'newentities', this updates their oldorigin always
 			// and prevents warping
-			MSG_WriteDeltaEntity (oldent, newent, msg, false, newent->number <= maxclients->value);
+			MSG_WriteDeltaEntity (oldent, newent, msg, false, newent->number <= maxclients->integer);
 			oldindex++;
 			newindex++;
 			continue;
@@ -659,6 +659,24 @@ void SV_BuildClientFrame (client_t *client)
 		}
 		*state = ent->s;
 
+//		if (state->event) Com_Printf("Ent #%i -- sfx #%i\n",e,state->event);//!!!
+		// disable new features for clients using old protocol
+		if (!client->newprotocol)
+		{
+			int evt;
+
+			evt = state->event;
+
+			if (evt >= EV_FOOTSTEP0 && evt < EV_FOOTSTEP0 + MATERIAL_COUNT)
+				evt = EV_FOOTSTEP;
+			else if (evt >= EV_FALLSHORT0 && evt < EV_FALLSHORT0 + MATERIAL_COUNT)
+				evt = EV_FALLSHORT;
+			else if (evt >= EV_SPECTATOR0 && evt <= EV_CAMPER8)
+				evt = EV_NONE;
+
+			state->event = evt;
+		}
+
 		// don't mark players missiles as solid
 		if (ent->owner == client->edict)
 			state->solid = 0;
@@ -700,12 +718,12 @@ void SV_RecordDemoMessage (void)
 
 	e = 1;
 	ent = EDICT_NUM(e);
-	while (e < ge->num_edicts) 
+	while (e < ge->num_edicts)
 	{
 		// ignore ents without visible models unless they have an effect
 		if (ent->inuse &&
-			ent->s.number && 
-			(ent->s.modelindex || ent->s.effects || ent->s.sound || ent->s.event) && 
+			ent->s.number &&
+			(ent->s.modelindex || ent->s.effects || ent->s.sound || ent->s.event) &&
 			!(ent->svflags & SVF_NOCLIENT))
 			MSG_WriteDeltaEntity (&nostate, &ent->s, &buf, false, true);
 
@@ -724,4 +742,3 @@ void SV_RecordDemoMessage (void)
 	fwrite (&len, 4, 1, svs.demofile);
 	fwrite (buf.data, buf.cursize, 1, svs.demofile);
 }
-

@@ -1,0 +1,72 @@
+Spawn entities:
+game\g_spawn.c   SpawnEntities() -> ED_CallSpawn (edict_t *ent)
+     g_target.c  SP_target_spawner (...) -> use_target_spawner (...) -> ED_CallSpawn (...)
+     m_medic.c   medic_cable_arrack (...) -> ED_CallSpawn (...)
+
+SpawnEntities() exported from game
+
+server\sv_init.c  SV_SpawnServer () -> ge->SpawnEntities (...)
+
+
+-------------------------------
+
+New server:
+~~~~~~~~~~~
+  we can detect new server by parsing response on "info" command. Response have following format:
+    Com_sprintf (string, sizeof(string), "%16s %8s %2i/%2i\n", hostname->string, sv.name, count, (int)maxclients->value);
+    (server/sv_main.c :: SVC_Info())
+  Command is send in menu system and only when connecting within menu; when "connect <addr>" used, "info" is not sending!
+    (we can do it manually)
+  Response received in (cl_main.c :: CL_ConnectlessPacket() -> CL_ParseStatusMessage()) and analyzed in
+    (client/menu.c :: M_AddToServerList())
+
+--OR-- (may be, this is better...)
+  we can add extra bytes to any packet
+
+        =================
+
+cl_main::CL_SendConnectPacket():
+	Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect %i %i %i \"%s\"\n",
+		PROTOCOL_VERSION, port, cls.challenge, Cvar_Userinfo() );
+   (!! add any text (NEW_PROTOCOL_ID) before "\n" as Cmd_Argv(5))
+
+sv_main::SVC_DirectConnect(): (on "connect")
+   get Cmd_Argc(1-4)
+	Netchan_OutOfBandPrint (NS_SERVER, adr, "client_connect");
+   (!! add any text (NEW_PROTOCOL_ID) as Cmd_Argc(1) if Cmd_Argc==5+1 && Cmd_Argc(5)==NEW_PROTOCOL_ID
+    and mark this address as connected with a new protocol)
+
+cl_main::CL_ConnectionlessPacket(): (on "client_connect")
+   (ignores Cmd_Argc/Cmd_Argv -- make parsing our text )
+	Netchan_Setup (NS_CLIENT, &cls.netchan, net_from, cls.quakePort);
+	MSG_WriteChar (&cls.netchan.message, clc_stringcmd);
+	MSG_WriteString (&cls.netchan.message, "new");
+	cls.state = ca_connected;
+   (!! if Cmd_Argc==1+1 && Cmd_Argv(1)==NEW_PROTOCOL_ID - we are connected with a new protocol)
+
+??WARNING?? disable changing protocol by client during a game (i.e. "cl_newprotocol 0;reconnect")
+  (seems, "reconnect" make "disconnect;connect <last_addr>", so we don't need to check this...)
+
+!!!! DISABLE using Kingpin/HalfLife (if one) models for clients, who set "cl_newprotocol 0" !!!!
+  (this models' frame numbers are different from Quake2 md2 frames!)
+May be, new protocol must be disabled for some mods, which have different animations in player
+  models.
+
+----------------------------------------
+
+?? game/g_main.c sets "ge" ("globals") variable. It containg "edict_size" field!
+
+ALL common (visible to server) game structures are declared in game/game.h;
+  game-specific fields for this strucs are in g_local.h;
+  common (game and server) strucs/declares - in q_shared.h
+
+edict_t (edict_s) declared in game/game.h; this file is used by server.h, so we can assume, that
+  this structure have some fixed fields but game may adds additional fields and change ge.edict_size)
+entity_state_t declared in game/q_shared.h (static format)
+
+entity_state_t filled in server/sv_ents.c::SV_BuildClientFrame(client)
+  it is COPIED from game edicts onto svs.client_entities - each client record on server have its own copy!
+  (we can change s.frame, s.event etc. for concrete client (i.e. with NEW_PROTOCOL_ID))
+
+Basic animations and frame inc/dec are set in game/p_view.c::Q_SetClientFrame()
+  Note: anim_end is inaccessible!

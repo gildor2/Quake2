@@ -1,0 +1,27 @@
+! cannot load map "dog..." in soft: "bad surface extents" (but GL can ...)
+! map "toomuchbloodv2": sound "dmg/TISM.wav" loaded twice (upper- and lowercase)
+! REF_SOFT: crush
+
+? game crush in msvcrt.dll (pak loading/unloading/download breaking/map not found)
+
+- CapsLock will be displayed as unknown key!
+
+- z-buffer bugs with glass floor on omd_map1
+
+- ref_soft/r_poly.c "R_PolygonScanLeft(Right)Edge ()" should be rewritten
+  ("ground3": early - crash, now - lost polygons ...)
+- ref_soft hangs on map "japan" (from Kingpin)
+- ref_gl: SURF_ALPHA is buggy in 1 or 2 places in map "rc3"
+
+- name conflict REF_HARD_LINKED Win32/irix (???)
+
+? once game was crushed (after singleplayer) with Z_FreeTags(TAG_LEVEL): zero in chain
+- bug: "game baseq2;unloadpak q2maps;game bad_dir(?);demomap demo1;game baseq2(?);demomap demo1"
+  (1st demomap - "cannot load map (q2maps not loaded)", 2nd - "bad map contents (pak loaded, but name cached??)"
+
+ref_soft:
+  r_main.c: STRINGER macro doesn't works (iD's bug)
+
+ref_gl:
+  DrawTile(): when viewport is small and gl_clear=1 - bugs on a left screen part
+  map rc3: window (V-type) bug (see window through window) -- translucent entities

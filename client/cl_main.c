@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -23,15 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 cvar_t	*freelook;
 
-cvar_t	*adr0;
-cvar_t	*adr1;
-cvar_t	*adr2;
-cvar_t	*adr3;
-cvar_t	*adr4;
-cvar_t	*adr5;
-cvar_t	*adr6;
-cvar_t	*adr7;
-cvar_t	*adr8;
+cvar_t	*adr0, *adr1, *adr2, *adr3, *adr4, *adr5, *adr6, *adr7, *adr8;
 
 cvar_t	*cl_stereo_separation;
 cvar_t	*cl_stereo;
@@ -86,6 +78,10 @@ cvar_t	*gender;
 cvar_t	*gender_auto;
 
 cvar_t	*cl_vwep;
+
+cvar_t  *cl_extProtocol;
+
+cvar_t	*cl_draw2d;
 
 client_static_t	cls;
 client_state_t	cl;
@@ -254,7 +250,7 @@ void CL_Record_f (void)
 			buf.cursize = 0;
 		}
 
-		MSG_WriteByte (&buf, svc_spawnbaseline);		
+		MSG_WriteByte (&buf, svc_spawnbaseline);
 		MSG_WriteDeltaEntity (&nullstate, &cl_entities[i].baseline, &buf, true, true);
 	}
 
@@ -349,7 +345,7 @@ void CL_ForwardToServer_f (void)
 		Com_Printf ("Can't \"%s\", not connected\n", Cmd_Argv(0));
 		return;
 	}
-	
+
 	// don't forward the first argument
 	if (Cmd_Argc() > 1)
 	{
@@ -367,13 +363,13 @@ CL_Pause_f
 void CL_Pause_f (void)
 {
 	// never pause in multiplayer
-	if (Cvar_VariableValue ("maxclients") > 1 || !Com_ServerState ())
+	if (Cvar_VariableInt ("maxclients") > 1 || !Com_ServerState ())
 	{
-		Cvar_SetValue ("paused", 0);
+		Cvar_SetInteger ("paused", 0);
 		return;
 	}
 
-	Cvar_SetValue ("paused", !cl_paused->value);
+	Cvar_SetInteger ("paused", !cl_paused->integer);
 }
 
 /*
@@ -431,11 +427,18 @@ void CL_SendConnectPacket (void)
 	if (adr.port == 0)
 		adr.port = BigShort (PORT_SERVER);
 
-	port = Cvar_VariableValue ("qport");
+	port = Cvar_VariableInt ("qport");
 	userinfo_modified = false;
 
-	Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect %i %i %i \"%s\"\n",
-		PROTOCOL_VERSION, port, cls.challenge, Cvar_Userinfo() );
+	if (cl_extProtocol->integer)
+		Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect %i %i %i \"%s\" %s\n",
+			PROTOCOL_VERSION, port, cls.challenge, Cvar_Userinfo(), NEW_PROTOCOL_ID );
+	else
+	{
+		Com_DPrintf ("Extended protocol disabled\n");
+		Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect %i %i %i \"%s\"\n",
+			PROTOCOL_VERSION, port, cls.challenge, Cvar_Userinfo() );
+	}
 }
 
 /*
@@ -498,9 +501,9 @@ void CL_Connect_f (void)
 	if (Cmd_Argc() != 2)
 	{
 		Com_Printf ("usage: connect <server>\n");
-		return;	
+		return;
 	}
-	
+
 	if (Com_ServerState ())
 	{	// if running a local server, kill it and reissue
 		SV_Shutdown (va("Server quit\n", msg), false);
@@ -512,7 +515,7 @@ void CL_Connect_f (void)
 
 	server = Cmd_Argv (1);
 
-	NET_Config (true);		// allow remote
+	NET_Config (true);			// allow remote
 
 	CL_Disconnect ();
 
@@ -543,10 +546,10 @@ void CL_Rcon_f (void)
 		return;
 	}
 
-	message[0] = (char)255;
-	message[1] = (char)255;
-	message[2] = (char)255;
-	message[3] = (char)255;
+	message[0] = 255;
+	message[1] = 255;
+	message[2] = 255;
+	message[3] = 255;
 	message[4] = 0;
 
 	NET_Config (true);		// allow remote
@@ -571,14 +574,13 @@ void CL_Rcon_f (void)
 			Com_Printf ("You must either be connected,\n"
 						"or set the 'rcon_address' cvar\n"
 						"to issue rcon commands\n");
-
 			return;
 		}
 		NET_StringToAdr (rcon_address->string, &to);
 		if (to.port == 0)
 			to.port = BigShort (PORT_SERVER);
 	}
-	
+
 	NET_SendPacket (NS_CLIENT, strlen(message)+1, message, to);
 }
 
@@ -619,10 +621,10 @@ void CL_Disconnect (void)
 	if (cls.state == ca_disconnected)
 		return;
 
-	if (cl_timedemo && cl_timedemo->value)
+	if (cl_timedemo && cl_timedemo->integer)
 	{
 		int	time;
-		
+
 		time = Sys_Milliseconds () - cl.timedemo_start;
 		if (time > 0)
 			Com_Printf ("%i frames, %3.1f seconds: %3.1f fps\n", cl.timedemo_frames,
@@ -757,7 +759,7 @@ void CL_Reconnect_f (void)
 		Com_Printf ("reconnecting...\n");
 		cls.state = ca_connected;
 		MSG_WriteChar (&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString (&cls.netchan.message, "new");		
+		MSG_WriteString (&cls.netchan.message, "new");
 		return;
 	}
 
@@ -800,7 +802,6 @@ void CL_PingServers_f (void)
 {
 	int			i;
 	netadr_t	adr;
-	char		name[32];
 	char		*adrstring;
 	cvar_t		*noudp;
 	cvar_t		*noipx;
@@ -811,7 +812,7 @@ void CL_PingServers_f (void)
 	Com_Printf ("pinging broadcast...\n");
 
 	noudp = Cvar_Get ("noudp", "0", CVAR_NOSET);
-	if (!noudp->value)
+	if (!noudp->integer)
 	{
 		adr.type = NA_BROADCAST;
 		adr.port = BigShort(PORT_SERVER);
@@ -819,7 +820,7 @@ void CL_PingServers_f (void)
 	}
 
 	noipx = Cvar_Get ("noipx", "0", CVAR_NOSET);
-	if (!noipx->value)
+	if (!noipx->integer)
 	{
 		adr.type = NA_BROADCAST_IPX;
 		adr.port = BigShort(PORT_SERVER);
@@ -829,8 +830,7 @@ void CL_PingServers_f (void)
 	// send a packet to each address book entry
 	for (i=0 ; i<16 ; i++)
 	{
-		Com_sprintf (name, sizeof(name), "adr%i", i);
-		adrstring = Cvar_VariableString (name);
+		adrstring = Cvar_VariableString (va("adr%d", i));
 		if (!adrstring || !adrstring[0])
 			continue;
 
@@ -862,7 +862,7 @@ void CL_Skins_f (void)
 	{
 		if (!cl.configstrings[CS_PLAYERSKINS+i][0])
 			continue;
-		Com_Printf ("client %i: %s\n", i, cl.configstrings[CS_PLAYERSKINS+i]); 
+		Com_Printf ("client %d: %s\n", i, cl.configstrings[CS_PLAYERSKINS+i]);
 		SCR_UpdateScreen ();
 		Sys_SendKeyEvents ();	// pump message loop
 		CL_ParseClientinfo (i);
@@ -881,7 +881,7 @@ void CL_ConnectionlessPacket (void)
 {
 	char	*s;
 	char	*c;
-	
+
 	MSG_BeginReading (&net_message);
 	MSG_ReadLong (&net_message);	// skip the -1
 
@@ -903,13 +903,18 @@ void CL_ConnectionlessPacket (void)
 		}
 		Netchan_Setup (NS_CLIENT, &cls.netchan, net_from, cls.quakePort);
 		MSG_WriteChar (&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString (&cls.netchan.message, "new");	
+		MSG_WriteString (&cls.netchan.message, "new");
 		cls.state = ca_connected;
+		cls.newprotocol = !strcmp (Cmd_Argv (1), NEW_PROTOCOL_ID);
+		if (cls.newprotocol)
+			Com_DPrintf ("Connected using extended protocol\n");
+		else if (cl_extProtocol->integer)
+			Com_DPrintf ("Server does not support extended protocol\n");
 		return;
 	}
 
 	// server responding to a status broadcast
-	if (!strcmp(c, "info"))
+	if (!strcmp (c, "info"))
 	{
 		CL_ParseStatusMessage ();
 		return;
@@ -988,7 +993,7 @@ void CL_ReadPackets (void)
 {
 	while (NET_GetPacket (NS_CLIENT, &net_from, &net_message))
 	{
-//	Com_Printf ("packet\n");
+//		Com_Printf ("packet\n");
 		//
 		// remote command packet
 		//
@@ -1036,7 +1041,7 @@ void CL_ReadPackets (void)
 	}
 	else
 		cl.timeoutcount = 0;
-	
+
 }
 
 
@@ -1052,9 +1057,11 @@ void CL_FixUpGender(void)
 	char *p;
 	char sk[80];
 
-	if (gender_auto->value) {
+	if (gender_auto->integer)
+	{
 
-		if (gender->modified) {
+		if (gender->modified)
+		{
 			// was set directly, don't override the user
 			gender->modified = false;
 			return;
@@ -1065,7 +1072,7 @@ void CL_FixUpGender(void)
 			*p = 0;
 		if (Q_stricmp(sk, "male") == 0 || Q_stricmp(sk, "cyborg") == 0)
 			Cvar_Set ("gender", "male");
-		else if (Q_stricmp(sk, "female") == 0 || Q_stricmp(sk, "crackhor") == 0)
+		else if (Q_stricmp(sk, "female") == 0 || Q_stricmp(sk, "crackhor") == 0 || S_IsFemale (sk))
 			Cvar_Set ("gender", "female");
 		else
 			Cvar_Set ("gender", "none");
@@ -1123,18 +1130,18 @@ void CL_RequestNextDownload (void)
 	if (cls.state != ca_connected)
 		return;
 
-	if (!allow_download->value && precache_check < ENV_CNT)
+	if (!allow_download->integer && precache_check < ENV_CNT)
 		precache_check = ENV_CNT;
 
 //ZOID
 	if (precache_check == CS_MODELS) { // confirm map
 		precache_check = CS_MODELS+2; // 0 isn't used
-		if (allow_download_maps->value)
+		if (allow_download_maps->integer)
 			if (!CL_CheckOrDownloadFile(cl.configstrings[CS_MODELS+1]))
 				return; // started a download
 	}
 	if (precache_check >= CS_MODELS && precache_check < CS_MODELS+MAX_MODELS) {
-		if (allow_download_models->value) {
+		if (allow_download_models->integer) {
 			while (precache_check < CS_MODELS+MAX_MODELS &&
 				cl.configstrings[precache_check][0]) {
 				if (cl.configstrings[precache_check][0] == '*' ||
@@ -1177,16 +1184,17 @@ void CL_RequestNextDownload (void)
 
 				pheader = (dmdl_t *)precache_model;
 
-				while (precache_model_skin - 1 < LittleLong(pheader->num_skins)) {
-					if (!CL_CheckOrDownloadFile((char *)precache_model +
-						LittleLong(pheader->ofs_skins) + 
-						(precache_model_skin - 1)*MAX_SKINNAME)) {
+				while (precache_model_skin - 1 < LittleLong(pheader->numSkins)) {
+					if (!CL_CheckOrDownloadFile((char *)precache_model + LittleLong(pheader->ofsSkins) +
+						(precache_model_skin - 1)*MAX_SKINNAME))
+					{
 						precache_model_skin++;
 						return; // started a download
 					}
 					precache_model_skin++;
 				}
-				if (precache_model) { 
+				if (precache_model)
+				{
 					FS_FreeFile(precache_model);
 					precache_model = 0;
 				}
@@ -1196,13 +1204,16 @@ void CL_RequestNextDownload (void)
 		}
 		precache_check = CS_SOUNDS;
 	}
-	if (precache_check >= CS_SOUNDS && precache_check < CS_SOUNDS+MAX_SOUNDS) { 
-		if (allow_download_sounds->value) {
+	if (precache_check >= CS_SOUNDS && precache_check < CS_SOUNDS+MAX_SOUNDS)
+	{
+		if (allow_download_sounds->integer)
+		{
 			if (precache_check == CS_SOUNDS)
 				precache_check++; // zero is blank
-			while (precache_check < CS_SOUNDS+MAX_SOUNDS &&
-				cl.configstrings[precache_check][0]) {
-				if (cl.configstrings[precache_check][0] == '*') {
+			while (precache_check < CS_SOUNDS+MAX_SOUNDS && cl.configstrings[precache_check][0])
+			{
+				if (cl.configstrings[precache_check][0] == '*')
+				{
 					precache_check++;
 					continue;
 				}
@@ -1213,13 +1224,13 @@ void CL_RequestNextDownload (void)
 		}
 		precache_check = CS_IMAGES;
 	}
-	if (precache_check >= CS_IMAGES && precache_check < CS_IMAGES+MAX_IMAGES) {
+	if (precache_check >= CS_IMAGES && precache_check < CS_IMAGES+MAX_IMAGES)
+	{
 		if (precache_check == CS_IMAGES)
 			precache_check++; // zero is blank
-		while (precache_check < CS_IMAGES+MAX_IMAGES &&
-			cl.configstrings[precache_check][0]) {
-			Com_sprintf(fn, sizeof(fn), "pics/%s.pcx", cl.configstrings[precache_check++]);
-			if (!CL_CheckOrDownloadFile(fn))
+		while (precache_check < CS_IMAGES+MAX_IMAGES && cl.configstrings[precache_check][0])
+		{
+			if (!CL_CheckOrDownloadFile(va("pics/%s.pcx", cl.configstrings[precache_check++])))
 				return; // started a download
 		}
 		precache_check = CS_PLAYERSKINS;
@@ -1228,7 +1239,7 @@ void CL_RequestNextDownload (void)
 	// model, weapon model and skin
 	// so precache_check is now *3
 	if (precache_check >= CS_PLAYERSKINS && precache_check < CS_PLAYERSKINS + MAX_CLIENTS * PLAYER_MULT) {
-		if (allow_download_players->value) {
+		if (allow_download_players->integer) {
 			while (precache_check < CS_PLAYERSKINS + MAX_CLIENTS * PLAYER_MULT) {
 				int i, n;
 				char model[MAX_QPATH], skin[MAX_QPATH], *p;
@@ -1249,16 +1260,18 @@ void CL_RequestNextDownload (void)
 				p = strchr(model, '/');
 				if (!p)
 					p = strchr(model, '\\');
-				if (p) {
+				if (p)
+				{
 					*p++ = 0;
 					strcpy(skin, p);
-				} else
+				}
+				else
 					*skin = 0;
 
 				switch (n) {
 				case 0: // model
-					Com_sprintf(fn, sizeof(fn), "players/%s/tris.md2", model);
-					if (!CL_CheckOrDownloadFile(fn)) {
+					if (!CL_CheckOrDownloadFile(va("players/%s/tris.md2", model)))
+					{
 						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 1;
 						return; // started a download
 					}
@@ -1266,8 +1279,8 @@ void CL_RequestNextDownload (void)
 					/*FALL THROUGH*/
 
 				case 1: // weapon model
-					Com_sprintf(fn, sizeof(fn), "players/%s/weapon.md2", model);
-					if (!CL_CheckOrDownloadFile(fn)) {
+					if (!CL_CheckOrDownloadFile(va("players/%s/weapon.md2", model)))
+					{
 						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 2;
 						return; // started a download
 					}
@@ -1275,8 +1288,8 @@ void CL_RequestNextDownload (void)
 					/*FALL THROUGH*/
 
 				case 2: // weapon skin
-					Com_sprintf(fn, sizeof(fn), "players/%s/weapon.pcx", model);
-					if (!CL_CheckOrDownloadFile(fn)) {
+					if (!CL_CheckOrDownloadFile(va("players/%s/weapon.pcx", model)))
+					{
 						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 3;
 						return; // started a download
 					}
@@ -1284,8 +1297,8 @@ void CL_RequestNextDownload (void)
 					/*FALL THROUGH*/
 
 				case 3: // skin
-					Com_sprintf(fn, sizeof(fn), "players/%s/%s.pcx", model, skin);
-					if (!CL_CheckOrDownloadFile(fn)) {
+					if (!CL_CheckOrDownloadFile(va("players/%s/%s.pcx", model, skin)))
+					{
 						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 4;
 						return; // started a download
 					}
@@ -1293,8 +1306,8 @@ void CL_RequestNextDownload (void)
 					/*FALL THROUGH*/
 
 				case 4: // skin_i
-					Com_sprintf(fn, sizeof(fn), "players/%s/%s_i.pcx", model, skin);
-					if (!CL_CheckOrDownloadFile(fn)) {
+					if (!CL_CheckOrDownloadFile(va("players/%s/%s_i.pcx", model, skin)))
+					{
 						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 5;
 						return; // started a download
 					}
@@ -1307,65 +1320,65 @@ void CL_RequestNextDownload (void)
 		precache_check = ENV_CNT;
 	}
 
-	if (precache_check == ENV_CNT) {
+	if (precache_check == ENV_CNT)
+	{
 		precache_check = ENV_CNT + 1;
 
 		CM_LoadMap (cl.configstrings[CS_MODELS+1], true, &map_checksum);
 
-		if (map_checksum != atoi(cl.configstrings[CS_MAPCHECKSUM])) {
+		if (map_checksum != atoi(cl.configstrings[CS_MAPCHECKSUM]))
+		{
 			Com_Error (ERR_DROP, "Local map version differs from server: %i != '%s'\n",
 				map_checksum, cl.configstrings[CS_MAPCHECKSUM]);
 			return;
 		}
 	}
 
-	if (precache_check > ENV_CNT && precache_check < TEXTURE_CNT) {
-		if (allow_download->value && allow_download_maps->value) {
-			while (precache_check < TEXTURE_CNT) {
+	if (precache_check > ENV_CNT && precache_check < TEXTURE_CNT)
+	{
+		if (allow_download->integer && allow_download_maps->integer)
+		{
+			while (precache_check < TEXTURE_CNT)
+			{
 				int n = precache_check++ - ENV_CNT - 1;
 
-				if (n & 1)
-					Com_sprintf(fn, sizeof(fn), "env/%s%s.pcx", 
-						cl.configstrings[CS_SKY], env_suf[n/2]);
-				else
-					Com_sprintf(fn, sizeof(fn), "env/%s%s.tga", 
-						cl.configstrings[CS_SKY], env_suf[n/2]);
-				if (!CL_CheckOrDownloadFile(fn))
+				if (!CL_CheckOrDownloadFile(va("env/%s%s.pcx", cl.configstrings[CS_SKY], env_suf[n/2])))
 					return; // started a download
 			}
 		}
 		precache_check = TEXTURE_CNT;
 	}
 
-	if (precache_check == TEXTURE_CNT) {
+	if (precache_check == TEXTURE_CNT)
+	{
 		precache_check = TEXTURE_CNT+1;
 		precache_tex = 0;
 	}
 
 	// confirm existance of textures, download any that don't exist
-	if (precache_check == TEXTURE_CNT+1) {
+	if (precache_check == TEXTURE_CNT+1)
+	{
 		// from qcommon/cmodel.c
 		extern int			numtexinfo;
-		extern mapsurface_t	map_surfaces[];
+		extern csurface_t	map_surfaces[];
 
-		if (allow_download->value && allow_download_maps->value) {
-			while (precache_tex < numtexinfo) {
-				char fn[MAX_OSPATH];
-
-				sprintf(fn, "textures/%s.wal", map_surfaces[precache_tex++].rname);
-				if (!CL_CheckOrDownloadFile(fn))
+		if (allow_download->integer && allow_download_maps->integer)
+		{
+			while (precache_tex < numtexinfo)
+			{
+				if (!CL_CheckOrDownloadFile(va("textures/%s.wal", map_surfaces[precache_tex++].rname)))
 					return; // started a download
 			}
 		}
 		precache_check = TEXTURE_CNT+999;
 	}
 
-//ZOID
+	//ZOID
 	CL_RegisterSounds ();
 	CL_PrepRefresh ();
 
 	MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-	MSG_WriteString (&cls.netchan.message, va("begin %i\n", precache_spawncount) );
+	MSG_WriteString (&cls.netchan.message, va("begin %d\n", precache_spawncount));
 }
 
 /*
@@ -1378,6 +1391,8 @@ before allowing the client into the server
 */
 void CL_Precache_f (void)
 {
+	SCR_SetLevelshot (cl.configstrings[CS_MODELS+1]);
+
 	//Yet another hack to let old demos work
 	//the old precache sequence
 	if (Cmd_Argc() < 2) {
@@ -1399,92 +1414,142 @@ void CL_Precache_f (void)
 
 
 /*
+===============
+CL_WriteConfiguration
+
+Writes key bindings and archived cvars to config.cfg
+===============
+*/
+void CL_WriteConfiguration (char *filename)
+{
+	FILE	*f;
+	char	path[MAX_QPATH];
+
+	if (cls.state == ca_uninitialized)
+		return;
+
+	Com_sprintf (path, sizeof(path), "%s/%s", FS_Gamedir(), filename);
+	f = fopen (path, "w");
+	if (!f)
+	{
+		Com_Printf ("Couldn't write %s.\n", filename);
+		return;
+	}
+
+	fprintf (f, "// generated by quake, do not modify\n");
+	fprintf (f, "//\n// Key bindings\n//\n");
+	Key_WriteBindings (f);
+	fprintf (f, "//\n// Cvars\n//\n");
+	Cvar_WriteVariables (f);
+	fclose (f);
+}
+
+
+void CL_WriteConfig_f (void)
+{
+	char	name[MAX_OSPATH];
+
+	if (Cmd_Argc () != 2)
+	{
+		Com_Printf ("Usage: writeconfig <filename>\n");
+		return;
+	}
+	strcpy (name, Cmd_Argv(1));
+	if (!strchr (name, '.'))
+		strcat (name, ".cfg");
+	CL_WriteConfiguration (name);
+}
+
+
+/*
 =================
 CL_InitLocal
 =================
 */
 void CL_InitLocal (void)
 {
+CVAR_BEGIN(vars)
+	{&adr0, "adr0", "", CVAR_ARCHIVE},
+	{&adr1, "adr1", "", CVAR_ARCHIVE},
+	{&adr2, "adr2", "", CVAR_ARCHIVE},
+	{&adr3, "adr3", "", CVAR_ARCHIVE},
+	{&adr4, "adr4", "", CVAR_ARCHIVE},
+	{&adr5, "adr5", "", CVAR_ARCHIVE},
+	{&adr6, "adr6", "", CVAR_ARCHIVE},
+	{&adr7, "adr7", "", CVAR_ARCHIVE},
+	{&adr8, "adr8", "", CVAR_ARCHIVE},
+
+	CVAR_VAR(cl_stereo_separation, 0.4, CVAR_ARCHIVE),
+	CVAR_VAR(cl_stereo, 0, 0),
+
+	{&cl_add_blend, "cl_blend", "1", 0},
+	{&cl_add_lights, "cl_lights", "1", 0},
+	{&cl_add_particles, "cl_particles", "1", 0},
+	{&cl_add_entities, "cl_entities", "1", 0},
+	CVAR_VAR(cl_gun, 1, 0),
+	CVAR_VAR(cl_footsteps, 1, 0),
+	CVAR_VAR(cl_noskins, 0, 0),
+	CVAR_VAR(cl_autoskins, 0, 0),
+	CVAR_VAR(cl_predict, 1, 0),
+//	CVAR_VAR(cl_minfps, 5, 0),
+	CVAR_VAR(cl_maxfps, 90, CVAR_ARCHIVE),
+
+	CVAR_VAR(cl_upspeed, 200, 0),
+	CVAR_VAR(cl_forwardspeed, 200, 0),
+	CVAR_VAR(cl_sidespeed, 200, 0),
+	CVAR_VAR(cl_yawspeed, 140, 0),
+	CVAR_VAR(cl_pitchspeed, 150, 0),
+	CVAR_VAR(cl_anglespeedkey, 1.5, 0),
+
+	CVAR_VAR(cl_run, 0, CVAR_ARCHIVE),
+	CVAR_VAR(freelook, 1, CVAR_ARCHIVE),
+	CVAR_VAR(lookspring, 0, CVAR_ARCHIVE),
+	CVAR_VAR(lookstrafe, 0, CVAR_ARCHIVE),
+	CVAR_VAR(sensitivity, 3, CVAR_ARCHIVE),
+
+	CVAR_VAR(m_pitch, 0.022, CVAR_ARCHIVE),
+	CVAR_VAR(m_yaw, 0.022, 0),
+	CVAR_VAR(m_forward, 1, 0),
+	CVAR_VAR(m_side, 1, 0),
+
+	CVAR_VAR(cl_shownet, 0, 0),
+	CVAR_VAR(cl_showmiss, 0, 0),
+	{&cl_showclamp, "showclamp", "0", 0},
+	CVAR_VAR(cl_timeout, 120, 0),
+	{&cl_paused, "paused", "0", 0},
+	{&cl_timedemo, "timedemo", "0", 0},
+
+	{&rcon_client_password, "rcon_password", "", 0},
+	{&rcon_address, "rcon_address", "", 0},
+
+	{&cl_lightlevel, "r_lightlevel", "0", 0},		//?? this is a JC's hack; replace this with a new refresh func.
+
+	// userinfo
+	{&info_password, "password", "", CVAR_USERINFO},
+	{&info_spectator, "spectator", "0", CVAR_USERINFO},
+	CVAR_VAR(name, unnamed, CVAR_USERINFO|CVAR_ARCHIVE),
+	CVAR_VAR(skin, male/grunt, CVAR_USERINFO|CVAR_ARCHIVE),
+	CVAR_VAR(rate, 25000, CVAR_USERINFO|CVAR_ARCHIVE),				// FIXME
+	CVAR_VAR(msg, 1, CVAR_USERINFO|CVAR_ARCHIVE),
+	CVAR_VAR(hand, 0, CVAR_USERINFO|CVAR_ARCHIVE),
+	CVAR_VAR(fov, 90, CVAR_USERINFO|CVAR_ARCHIVE),
+	CVAR_VAR(gender, male, CVAR_USERINFO|CVAR_ARCHIVE),
+	CVAR_VAR(gender_auto, 1, CVAR_ARCHIVE),
+
+	CVAR_VAR(cl_vwep, 1, CVAR_ARCHIVE),
+
+	CVAR_VAR(cl_extProtocol, 1, CVAR_ARCHIVE),
+
+	CVAR_VAR(cl_draw2d, 1, 0)
+CVAR_END
+
+	CVAR_GET_VARS(vars);
 	cls.state = ca_disconnected;
 	cls.realtime = Sys_Milliseconds ();
 
 	CL_InitInput ();
 
-	adr0 = Cvar_Get( "adr0", "", CVAR_ARCHIVE );
-	adr1 = Cvar_Get( "adr1", "", CVAR_ARCHIVE );
-	adr2 = Cvar_Get( "adr2", "", CVAR_ARCHIVE );
-	adr3 = Cvar_Get( "adr3", "", CVAR_ARCHIVE );
-	adr4 = Cvar_Get( "adr4", "", CVAR_ARCHIVE );
-	adr5 = Cvar_Get( "adr5", "", CVAR_ARCHIVE );
-	adr6 = Cvar_Get( "adr6", "", CVAR_ARCHIVE );
-	adr7 = Cvar_Get( "adr7", "", CVAR_ARCHIVE );
-	adr8 = Cvar_Get( "adr8", "", CVAR_ARCHIVE );
-
-//
-// register our variables
-//
-	cl_stereo_separation = Cvar_Get( "cl_stereo_separation", "0.4", CVAR_ARCHIVE );
-	cl_stereo = Cvar_Get( "cl_stereo", "0", 0 );
-
-	cl_add_blend = Cvar_Get ("cl_blend", "1", 0);
-	cl_add_lights = Cvar_Get ("cl_lights", "1", 0);
-	cl_add_particles = Cvar_Get ("cl_particles", "1", 0);
-	cl_add_entities = Cvar_Get ("cl_entities", "1", 0);
-	cl_gun = Cvar_Get ("cl_gun", "1", 0);
-	cl_footsteps = Cvar_Get ("cl_footsteps", "1", 0);
-	cl_noskins = Cvar_Get ("cl_noskins", "0", 0);
-	cl_autoskins = Cvar_Get ("cl_autoskins", "0", 0);
-	cl_predict = Cvar_Get ("cl_predict", "1", 0);
-//	cl_minfps = Cvar_Get ("cl_minfps", "5", 0);
-	cl_maxfps = Cvar_Get ("cl_maxfps", "90", 0);
-
-	cl_upspeed = Cvar_Get ("cl_upspeed", "200", 0);
-	cl_forwardspeed = Cvar_Get ("cl_forwardspeed", "200", 0);
-	cl_sidespeed = Cvar_Get ("cl_sidespeed", "200", 0);
-	cl_yawspeed = Cvar_Get ("cl_yawspeed", "140", 0);
-	cl_pitchspeed = Cvar_Get ("cl_pitchspeed", "150", 0);
-	cl_anglespeedkey = Cvar_Get ("cl_anglespeedkey", "1.5", 0);
-
-	cl_run = Cvar_Get ("cl_run", "0", CVAR_ARCHIVE);
-	freelook = Cvar_Get( "freelook", "0", CVAR_ARCHIVE );
-	lookspring = Cvar_Get ("lookspring", "0", CVAR_ARCHIVE);
-	lookstrafe = Cvar_Get ("lookstrafe", "0", CVAR_ARCHIVE);
-	sensitivity = Cvar_Get ("sensitivity", "3", CVAR_ARCHIVE);
-
-	m_pitch = Cvar_Get ("m_pitch", "0.022", CVAR_ARCHIVE);
-	m_yaw = Cvar_Get ("m_yaw", "0.022", 0);
-	m_forward = Cvar_Get ("m_forward", "1", 0);
-	m_side = Cvar_Get ("m_side", "1", 0);
-
-	cl_shownet = Cvar_Get ("cl_shownet", "0", 0);
-	cl_showmiss = Cvar_Get ("cl_showmiss", "0", 0);
-	cl_showclamp = Cvar_Get ("showclamp", "0", 0);
-	cl_timeout = Cvar_Get ("cl_timeout", "120", 0);
-	cl_paused = Cvar_Get ("paused", "0", 0);
-	cl_timedemo = Cvar_Get ("timedemo", "0", 0);
-
-	rcon_client_password = Cvar_Get ("rcon_password", "", 0);
-	rcon_address = Cvar_Get ("rcon_address", "", 0);
-
-	cl_lightlevel = Cvar_Get ("r_lightlevel", "0", 0);
-
-	//
-	// userinfo
-	//
-	info_password = Cvar_Get ("password", "", CVAR_USERINFO);
-	info_spectator = Cvar_Get ("spectator", "0", CVAR_USERINFO);
-	name = Cvar_Get ("name", "unnamed", CVAR_USERINFO | CVAR_ARCHIVE);
-	skin = Cvar_Get ("skin", "male/grunt", CVAR_USERINFO | CVAR_ARCHIVE);
-	rate = Cvar_Get ("rate", "25000", CVAR_USERINFO | CVAR_ARCHIVE);	// FIXME
-	msg = Cvar_Get ("msg", "1", CVAR_USERINFO | CVAR_ARCHIVE);
-	hand = Cvar_Get ("hand", "0", CVAR_USERINFO | CVAR_ARCHIVE);
-	fov = Cvar_Get ("fov", "90", CVAR_USERINFO | CVAR_ARCHIVE);
-	gender = Cvar_Get ("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
-	gender_auto = Cvar_Get ("gender_auto", "1", CVAR_ARCHIVE);
-	gender->modified = false; // clear this so we know when user sets it manually
-
-	cl_vwep = Cvar_Get ("cl_vwep", "1", CVAR_ARCHIVE);
-
+	gender->modified = false; // clear this so we know when user sets it manually (??)
 
 	//
 	// register our commands
@@ -1517,6 +1582,8 @@ void CL_InitLocal (void)
 
 	Cmd_AddCommand ("download", CL_Download_f);
 
+	Cmd_AddCommand ("writeconfig", CL_WriteConfig_f);
+
 	//
 	// forward to server commands
 	//
@@ -1542,38 +1609,6 @@ void CL_InitLocal (void)
 	Cmd_AddCommand ("invdrop", NULL);
 	Cmd_AddCommand ("weapnext", NULL);
 	Cmd_AddCommand ("weapprev", NULL);
-}
-
-
-
-/*
-===============
-CL_WriteConfiguration
-
-Writes key bindings and archived cvars to config.cfg
-===============
-*/
-void CL_WriteConfiguration (void)
-{
-	FILE	*f;
-	char	path[MAX_QPATH];
-
-	if (cls.state == ca_uninitialized)
-		return;
-
-	Com_sprintf (path, sizeof(path),"%s/config.cfg",FS_Gamedir());
-	f = fopen (path, "w");
-	if (!f)
-	{
-		Com_Printf ("Couldn't write config.cfg.\n");
-		return;
-	}
-
-	fprintf (f, "// generated by quake, do not modify\n");
-	Key_WriteBindings (f);
-	fclose (f);
-
-	Cvar_WriteVariables (path);
 }
 
 
@@ -1613,7 +1648,9 @@ void CL_FixCvarCheats (void)
 	int			i;
 	cheatvar_t	*var;
 
-	if ( !strcmp(cl.configstrings[CS_MAXCLIENTS], "1") 
+	if (Com_ServerState () == ss_demo) return;
+
+	if ( !strcmp(cl.configstrings[CS_MAXCLIENTS], "1")
 		|| !cl.configstrings[CS_MAXCLIENTS][0] )
 		return;		// single player can cheat
 
@@ -1679,12 +1716,12 @@ void CL_Frame (int msec)
 	static int	extratime;
 	static int  lasttimecalled;
 
-	if (dedicated->value)
+	if (dedicated->integer)
 		return;
 
 	extratime += msec;
 
-	if (!cl_timedemo->value)
+	if (!cl_timedemo->integer)
 	{
 		if (cls.state == ca_connected && extratime < 100)
 			return;			// don't flood packets out while connecting
@@ -1723,20 +1760,20 @@ void CL_Frame (int msec)
 	CL_PredictMovement ();
 
 	// allow rendering DLL change
-	VID_CheckChanges ();
+	Vid_CheckChanges ();
 	if (!cl.refresh_prepped && cls.state == ca_active)
 		CL_PrepRefresh ();
 
 	// update the screen
-	if (host_speeds->value)
+	if (com_speeds->integer)
 		time_before_ref = Sys_Milliseconds ();
 	SCR_UpdateScreen ();
-	if (host_speeds->value)
+	if (com_speeds->integer)
 		time_after_ref = Sys_Milliseconds ();
 
 	// update audio
 	S_Update (cl.refdef.vieworg, cl.v_forward, cl.v_right, cl.v_up);
-	
+
 	CDAudio_Update();
 
 	// advance local effects for next frame
@@ -1747,7 +1784,7 @@ void CL_Frame (int msec)
 
 	cls.framecount++;
 
-	if ( log_stats->value )
+	if ( log_stats->integer )
 	{
 		if ( cls.state == ca_active )
 		{
@@ -1779,38 +1816,33 @@ CL_Init
 */
 void CL_Init (void)
 {
-	if (dedicated->value)
+	if (dedicated->integer)
 		return;		// nothing running on the client
 
 	// all archived variables will now be loaded
 
-	Con_Init ();	
+	Con_Init ();
 #if defined __linux__ || defined __sgi
-	S_Init ();	
-	VID_Init ();
+	S_Init ();
+	Vid_Init ();
 #else
-	VID_Init ();
+	Vid_Init ();
 	S_Init ();	// sound must be initialized after window is created
 #endif
-	
+
 	V_Init ();
-	
+
 	net_message.data = net_message_buffer;
 	net_message.maxsize = sizeof(net_message_buffer);
 
-	M_Init ();	
-	
+	M_Init ();
+
 	SCR_Init ();
 	cls.disable_screen = true;	// don't draw yet
 
 	CDAudio_Init ();
 	CL_InitLocal ();
 	IN_Init ();
-
-//	Cbuf_AddText ("exec autoexec.cfg\n");
-	FS_ExecAutoexec ();
-	Cbuf_Execute ();
-
 }
 
 
@@ -1825,7 +1857,7 @@ to run quit through here before the final handoff to the sys code.
 void CL_Shutdown(void)
 {
 	static qboolean isdown = false;
-	
+
 	if (isdown)
 	{
 		printf ("recursive shutdown\n");
@@ -1833,12 +1865,10 @@ void CL_Shutdown(void)
 	}
 	isdown = true;
 
-	CL_WriteConfiguration (); 
+	CL_WriteConfiguration (Cvar_VariableString ("cfgfile"));
 
 	CDAudio_Shutdown ();
 	S_Shutdown();
 	IN_Shutdown ();
-	VID_Shutdown();
+	Vid_Shutdown();
 }
-
-

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -27,6 +27,7 @@ char	skyname[MAX_QPATH];
 float	skyrotate;
 vec3_t	skyaxis;
 image_t	*sky_images[6];
+image_t *reflect_img;
 
 msurface_t	*warpface;
 
@@ -67,14 +68,14 @@ void SubdividePolygon (int numverts, float *verts)
 	float	total_s, total_t;
 
 	if (numverts > 60)
-		ri.Sys_Error (ERR_DROP, "numverts = %i", numverts);
+		Com_Error (ERR_DROP, "numverts = %i", numverts);
 
 	BoundPoly (numverts, verts, mins, maxs);
 
 	for (i=0 ; i<3 ; i++)
 	{
-		m = (mins[i] + maxs[i]) * 0.5;
-		m = SUBDIVIDE_SIZE * floor (m/SUBDIVIDE_SIZE + 0.5);
+		m = (mins[i] + maxs[i]) / 2;	// center
+		m = SUBDIVIDE_SIZE * floor (m/SUBDIVIDE_SIZE + 0.5);	// aligned center
 		if (maxs[i] - m < 8)
 			continue;
 		if (m - mins[i] < 8)
@@ -194,11 +195,8 @@ void GL_SubdivideSurface (msurface_t *fa)
 
 
 
-// speed up sin calculations - Ed
-float	r_turbsin[] =
-{
-	#include "warpsin.h"
-};
+float r_turbsin[256];
+
 #define TURBSCALE (256.0 / (2 * M_PI))
 
 /*
@@ -215,7 +213,6 @@ void EmitWaterPolys (msurface_t *fa)
 	int			i;
 	float		s, t, os, ot;
 	float		scroll;
-	float		rdt = r_newrefdef.time;
 
 	if (fa->texinfo->flags & SURF_FLOWING)
 		scroll = -64 * ( (r_newrefdef.time*0.5) - (int)(r_newrefdef.time*0.5) );
@@ -228,23 +225,22 @@ void EmitWaterPolys (msurface_t *fa)
 		qglBegin (GL_TRIANGLE_FAN);
 		for (i=0,v=p->verts[0] ; i<p->numverts ; i++, v+=VERTEXSIZE)
 		{
-			os = v[3];
+			os = v[3];	// original texture coords
 			ot = v[4];
 
-#if !id386
-			s = os + r_turbsin[(int)((ot*0.125+r_newrefdef.time) * TURBSCALE) & 255];
-#else
-			s = os + r_turbsin[Q_ftol( ((ot*0.125+rdt) * TURBSCALE) ) & 255];
-#endif
-			s += scroll;
-			s *= (1.0/64);
+			/*
+			 * s = (s + 4*sin(t/8 + time) + scroll)/64 = (s + 4*sin(t/8+time))/64 + scroll/64 = s_turb + s_scroll
+			 * s_turb = s/64 + sin(t/8+time)/16
+			 * s' = s/64; t' = t/64
+			 * s_turb = s' + sin(t'*8+time)/16		-- freq=1, amp=1/16, phase=0
+			 * t_turb = t' + sin(s'*8+time)/16
+			 * s_scroll = -32/64*time = -0.5*time	-- sSpeed=-0.5
+			 */
+			s = os + r_turbsin[(int)((ot/8.0+r_newrefdef.time) * TURBSCALE) & 255];
+			s = (s + scroll) / 64.0f;
 
-#if !id386
-			t = ot + r_turbsin[(int)((os*0.125+rdt) * TURBSCALE) & 255];
-#else
-			t = ot + r_turbsin[Q_ftol( ((os*0.125+rdt) * TURBSCALE) ) & 255];
-#endif
-			t *= (1.0/64);
+			t = ot + r_turbsin[(int)((os/8.0+r_newrefdef.time) * TURBSCALE) & 255];
+			t = t / 64.0f;
 
 			qglTexCoord2f (s, t);
 			qglVertex3fv (v);
@@ -263,7 +259,7 @@ vec3_t	skyclip[6] = {
 	{0,-1,1},
 	{0,1,1},
 	{1,0,1},
-	{-1,0,1} 
+	{-1,0,1}
 };
 int	c_sky;
 
@@ -310,17 +306,7 @@ void DrawSkyPolygon (int nump, vec3_t vecs)
 	int		axis;
 	float	*vp;
 
-	c_sky++;
-#if 0
-glBegin (GL_POLYGON);
-for (i=0 ; i<nump ; i++, vecs+=3)
-{
-	VectorAdd(vecs, r_origin, v);
-	qglVertex3fv (v);
-}
-glEnd();
-return;
-#endif
+	c_sky++;		//?? unused
 	// decide which face it maps to
 	VectorCopy (vec3_origin, v);
 	for (i=0, vp=vecs ; i<nump ; i++, vp+=3)
@@ -399,7 +385,7 @@ void ClipSkyPolygon (int nump, vec3_t vecs, int stage)
 	int		i, j;
 
 	if (nump > MAX_CLIP_VERTS-2)
-		ri.Sys_Error (ERR_DROP, "ClipSkyPolygon: MAX_CLIP_VERTS");
+		Com_Error (ERR_DROP, "ClipSkyPolygon: MAX_CLIP_VERTS");
 	if (stage == 6)
 	{	// fully clipped, so draw it
 		DrawSkyPolygon (nump, vecs);
@@ -521,12 +507,12 @@ void MakeSkyVec (float s, float t, int axis)
 {
 	vec3_t		v, b;
 	int			j, k;
-
-	b[0] = s*2300;
-	b[1] = t*2300;
-	b[2] = 2300;
-
-	for (j=0 ; j<3 ; j++)
+#define U gl_zmax->value	// old value = 2300
+	b[0] = s*U;
+	b[1] = t*U;
+	b[2] = U;
+#undef U
+	for (j = 0; j < 3; j++)
 	{
 		k = st_to_vec[axis][j];
 		if (k < 0)
@@ -563,12 +549,6 @@ void R_DrawSkyBox (void)
 {
 	int		i;
 
-#if 0
-qglEnable (GL_BLEND);
-GL_TexEnv( GL_MODULATE );
-qglColor4f (1,1,1,0.5);
-qglDisable (GL_DEPTH_TEST);
-#endif
 	if (skyrotate)
 	{	// check for no sky at all
 		for (i=0 ; i<6 ; i++)
@@ -579,9 +559,9 @@ qglDisable (GL_DEPTH_TEST);
 			return;		// nothing visible
 	}
 
-qglPushMatrix ();
-qglTranslatef (r_origin[0], r_origin[1], r_origin[2]);
-qglRotatef (r_newrefdef.time * skyrotate, skyaxis[0], skyaxis[1], skyaxis[2]);
+	qglPushMatrix ();
+	qglTranslatef (r_origin[0], r_origin[1], r_origin[2]);
+	qglRotatef (r_newrefdef.time * skyrotate, skyaxis[0], skyaxis[1], skyaxis[2]);
 
 	for (i=0 ; i<6 ; i++)
 	{
@@ -606,13 +586,7 @@ qglRotatef (r_newrefdef.time * skyrotate, skyaxis[0], skyaxis[1], skyaxis[2]);
 		MakeSkyVec (skymaxs[0][i], skymins[1][i], i);
 		qglEnd ();
 	}
-qglPopMatrix ();
-#if 0
-glDisable (GL_BLEND);
-glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-glColor4f (1,1,1,0.5);
-glEnable (GL_DEPTH_TEST);
-#endif
+	qglPopMatrix ();
 }
 
 
@@ -635,28 +609,32 @@ void R_SetSky (char *name, float rotate, vec3_t axis)
 	for (i=0 ; i<6 ; i++)
 	{
 		// chop down rotating skies for less memory
-		if (gl_skymip->value || skyrotate)
-			gl_picmip->value++;
+		if (gl_skymip->integer || skyrotate)
+			gl_picmip->integer++;	// hack (stage1)
 
-		if ( qglColorTableEXT && gl_ext_palettedtexture->value )
+//		if ( qglColorTableEXT && gl_ext_palettedtexture->value )
 			Com_sprintf (pathname, sizeof(pathname), "env/%s%s.pcx", skyname, suf[i]);
-		else
-			Com_sprintf (pathname, sizeof(pathname), "env/%s%s.tga", skyname, suf[i]);
+//		else
+//??			Com_sprintf (pathname, sizeof(pathname), "env/%s%s.???", skyname, suf[i]);
 
 		sky_images[i] = GL_FindImage (pathname, it_sky);
 		if (!sky_images[i])
 			sky_images[i] = r_notexture;
 
-		if (gl_skymip->value || skyrotate)
+		if (gl_skymip->integer || skyrotate)
 		{	// take less memory
-			gl_picmip->value--;
+			gl_picmip->integer--;	// hack (stage2)
 			sky_min = 1.0/256;
 			sky_max = 255.0/256;
 		}
-		else	
+		else
 		{
 			sky_min = 1.0/512;
 			sky_max = 511.0/512;
 		}
 	}
+//	Com_sprintf (pathname, sizeof(pathname), "env/%swinrefl.tga", skyname);
+//	reflect_img = GL_FindImage (pathname, it_sky);
+	/*if (!reflect_img)*/ reflect_img = GL_FindImage ("env/defrefl.???", it_sky);
+	if (!reflect_img) reflect_img = sky_images[4]; // "...up.tga"
 }

@@ -1,0 +1,89 @@
+OnMapLoad()
+{
+	build for each surface its average color
+	???
+}
+
+LightPoint(point)
+{
+	p = AlignPointToLightGrid(point);
+	leaf = PointInLeaf(p);
+	if (leaf == NONE or SOLID)
+	{	// center of grid cell is out of world
+		p = point;
+		leaf = PointInLeaf(p);
+		if (leaf == NONE)
+		{	// outside world -- lighting don't matter
+			light = {1,1,1};
+			return light;
+		}
+	}
+	pvs = LeafPVS(leaf);
+	list = BuildListOfLeafsInSphere(p, SOME_RADIUS)
+		with reduction {
+			1) leaf in pvs
+			2) leaf have surfaces (passive light sources)
+		}
+	AddLightsToList(list)
+		with reduction {
+			1) light in pvs
+			2) f(intensity) > f(distance)
+		}
+	for each light in list {
+		if (!trace (p, light)) continue;
+		if (light is dlight) {
+			???
+		} else if (light is passive lightmap) {
+			// ignore distance ?
+			???
+		} else /* light is active lkightmap */ {
+			if (! check distance and intensity) continue;
+			???
+		}
+	}
+	???
+}
+
+------------------------------------------------------------------------------------------------------
+
+- surfaces:
+  - reflectivity: avg texture color; if (max(reflectivity:r,g,b) < 0.5) ColorScale(reflectivity,2)
+  - emit light when SURF_LIGHT: reflectivity *= texInfo->value
+  - dl.color = Normalize(reflectivity)
+    dl.intens = reflectivity/dl.color
+    dl.type = surf
+
+- entities:
+  - "classname" = "light*" (begins with "light")
+  - vec3_t "origin"
+  - int "_style" || "style" || 0
+  - float "light" || "_light" || 300 (intensity)
+  - vec3_t "_color" + normalize || {1, 1, 1}
+  - entity "target" || NULL
+  - dl.type = point
+  - if target != NULL || classname == "light_spot"
+    - dl.type = spot
+    - float tmp = "_cone" || 10 (degrees)
+      dl.stopdot = cos(tmp)         // max dot product
+    - if "target"
+        normal = direction to target
+      else
+      {
+        float "angle" (degrees)
+        if angle == -1 (ANGLE_UP)
+          normal = (0, 0, 1)
+        else if angle == -2 (ANGLE_DOWN)
+          normal = (0, 0, -1)
+        else
+          normal = (cos(angle), size(angle), 0)
+      }
+  - dl.color = "_color"
+    dl.intens = "light"
+
+- light falloff:
+  - point: scale = dl->intens - dist(origin, dl->origin)               // depends on distance only
+  - surf:  scale = dl->intens / (dist*dist) * dot(viewdir, dl.normal)  // compensate surface area
+  - spot:  if -dot(viewdir, dl.normal) < dl.stopdot -- ignore
+           scale = dl->intens - dist(origin, dl->origin)               // same as point, but with cone limits
+  (also scale *= dot(viewdir, dst.normal)) // depends on destination normal angle
+  - trace line (may be occluded)

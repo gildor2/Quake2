@@ -41,6 +41,7 @@ typedef struct sfx_s
 	char 		name[MAX_QPATH];
 	int			registration_sequence;
 	sfxcache_t	*cache;
+	qboolean	absent;
 	char 		*truename;
 } sfx_t;
 

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -28,6 +28,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ** GLimp_Init
 ** GLimp_Shutdown
 ** GLimp_SwitchFullscreen
+** GLimp_HasGamma
+** GLimp_SetGamma
 **
 */
 
@@ -113,7 +115,7 @@ static cvar_t *freelook;
 int config_notify=0;
 int config_notify_width;
 int config_notify_height;
-						      
+
 typedef unsigned short PIXEL;
 
 // Console variables that we need to access from this module
@@ -170,17 +172,17 @@ int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
 
 	fprintf(stderr, "GLimp_SetMode\n");
 
-	ri.Con_Printf( PRINT_ALL, "Initializing OpenGL display\n");
+	ri.Com_Printf ("Initializing OpenGL display\n");
 
-	ri.Con_Printf (PRINT_ALL, "...setting mode %d:", mode );
+	ri.Com_Printf ("...setting mode %d:", mode);
 
 	if ( !ri.Vid_GetModeInfo( &width, &height, mode ) )
 	{
-		ri.Con_Printf( PRINT_ALL, " invalid mode\n" );
+		ri.Com_Printf (" invalid mode\n");
 		return rserr_invalid_mode;
 	}
 
-	ri.Con_Printf( PRINT_ALL, " %d %d\n", width, height );
+	ri.Com_Printf (" %d %d\n", width, height);
 
 	// destroy the existing window
 	GLimp_Shutdown ();
@@ -226,7 +228,7 @@ void GLimp_Shutdown( void )
 ** GLimp_Init
 **
 ** This routine is responsible for initializing the OS specific portions
-** of OpenGL.  
+** of OpenGL.
 */
 int GLimp_Init( void *hinstance, void *wndproc )
 {
@@ -245,7 +247,7 @@ void GLimp_BeginFrame( float camera_seperation )
 
 /*
 ** GLimp_EndFrame
-** 
+**
 ** Responsible for doing a swapbuffers and possibly for other stuff
 ** as yet to be determined.  Probably better not to make this a GLimp
 ** function and instead do a call to GLimp_SwapBuffers.
@@ -263,13 +265,29 @@ void GLimp_AppActivate( qboolean active )
 {
 }
 
+/*
+=============
+GLimp_Gamma
+=============
+*/
+
+qboolean GLimp_HasGamma (void)
+{
+	return false;
+}
+
+void GLimp_SetGamma (float gamma, float intens)
+{
+}
+
+
 // ========================================================================
 // makes a null cursor
 // ========================================================================
 
 static Cursor CreateNullCursor(Display *display, Window root)
 {
-    Pixmap cursormask; 
+    Pixmap cursormask;
     XGCValues xgc;
     GC gc;
     XColor dummycolour;
@@ -366,8 +384,7 @@ qboolean GLimp_InitGraphics( qboolean fullscreen )
 		if (!x_visinfo) Sys_Error( "No matching visual available!\n" );
 	}
 
-	ri.Con_Printf(PRINT_ALL, "Using visualid 0x%x:\n",
-		   (int)(x_visinfo->visualid));
+	ri.Com_Printf ("Using visualid 0x%x:\n", (int)(x_visinfo->visualid));
 #if 0
 	if (verbose)
 	{
@@ -388,19 +405,19 @@ qboolean GLimp_InitGraphics( qboolean fullscreen )
 	   int attribmask = CWEventMask  | CWColormap | CWBorderPixel;
 	   XSetWindowAttributes attribs;
 	   Colormap tmpcmap;
-	   
+
 	   Window root_win = XRootWindow(x_disp, x_visinfo->screen);
 
 	   tmpcmap = XCreateColormap(x_disp, root_win, x_vis, AllocNone);
-				     
-	   
+
+
 	   attribs.event_mask = STD_EVENT_MASK;
 	   attribs.border_pixel = 0;
 	   attribs.colormap = tmpcmap;
 
 // create the main window
 		x_win = XCreateWindow(	x_disp,
-			root_win,		
+			root_win,
 			0, 0,	// x, y
 			vid.width, vid.height,
 			0, // borderwidth
@@ -447,7 +464,7 @@ qboolean GLimp_InitGraphics( qboolean fullscreen )
 	    aHints = XInternAtom( x_disp, "_MOTIF_WM_HINTS", 0 );
 	    if (aHints == None)
 	    {
-                ri.Con_Printf( PRINT_ALL, "Could not intern X atom for _MOTIF_WM_HINTS." );
+                ri.Com_Printf ("Could not intern X atom for _MOTIF_WM_HINTS.");
 /*                 return( false ); */
 	    }
 	    else {
@@ -615,13 +632,13 @@ int XLateKey(XKeyEvent *ev)
 		case XK_Shift_L:
 		case XK_Shift_R:	key = K_SHIFT;		break;
 
-		case XK_Execute: 
-		case XK_Control_L: 
+		case XK_Execute:
+		case XK_Control_L:
 		case XK_Control_R:	key = K_CTRL;		 break;
 
-		case XK_Alt_L:	
-		case XK_Meta_L: 
-		case XK_Alt_R:	
+		case XK_Alt_L:
+		case XK_Meta_L:
+		case XK_Alt_R:
 		case XK_Meta_R: key = K_ALT;			break;
 
 		case XK_KP_Begin: key = K_KP_5;	break;
@@ -662,7 +679,7 @@ int XLateKey(XKeyEvent *ev)
 			if (key >= 'A' && key <= 'Z')
 				key = key - 'A' + 'a';
 			break;
-	} 
+	}
 
 	return key;
 }
@@ -671,7 +688,7 @@ void GetEvent(void)
 {
 	XEvent x_event;
 	int b;
-   
+
 	XNextEvent(x_disp, &x_event);
 	switch(x_event.type) {
 	case KeyPress:
@@ -686,13 +703,13 @@ void GetEvent(void)
 		break;
 
 	case MotionNotify:
-		if (_windowed_mouse->value) {
+		if (_windowed_mouse->integer) {
 			mx += ((int)x_event.xmotion.x - (int)(vid.width/2));
 			my += ((int)x_event.xmotion.y - (int)(vid.height/2));
 
 			/* move the mouse to the window center again */
 			XSelectInput(x_disp,x_win, STD_EVENT_MASK & ~PointerMotionMask);
-			XWarpPointer(x_disp,None,x_win,0,0,0,0, 
+			XWarpPointer(x_disp,None,x_win,0,0,0,0,
 				(vid.width/2),(vid.height/2));
 			XSelectInput(x_disp,x_win, STD_EVENT_MASK);
 		} else {
@@ -726,7 +743,7 @@ void GetEvent(void)
 		if (b>=0)
 			mouse_buttonstate &= ~(1<<b);
 		break;
-	
+
 	case ConfigureNotify:
 		config_notify_width = x_event.xconfigure.width;
 		config_notify_height = x_event.xconfigure.height;
@@ -737,11 +754,11 @@ void GetEvent(void)
 		if (doShm && x_event.type == x_shmeventtype)
 			oktodraw = true;
 	}
-   
-	if (old_windowed_mouse != _windowed_mouse->value) {
-		old_windowed_mouse = _windowed_mouse->value;
 
-		if (!_windowed_mouse->value) {
+	if (old_windowed_mouse != _windowed_mouse->integer) {
+		old_windowed_mouse = _windowed_mouse->integer;
+
+		if (!_windowed_mouse->integer) {
 			/* ungrab the pointer */
 			XUngrabPointer(x_disp,CurrentTime);
 		} else {
@@ -771,7 +788,7 @@ void KBD_Update(void)
 // get events from x server
 	if (x_disp)
 	{
-		while (XPending(x_disp)) 
+		while (XPending(x_disp))
 			GetEvent();
 		while (keyq_head != keyq_tail)
 		{
@@ -791,12 +808,12 @@ static void Force_CenterView_f (void)
 	in_state->viewangles[PITCH] = 0;
 }
 
-static void RW_IN_MLookDown (void) 
-{ 
-	mlooking = true; 
+static void RW_IN_MLookDown (void)
+{
+	mlooking = true;
 }
 
-static void RW_IN_MLookUp (void) 
+static void RW_IN_MLookUp (void)
 {
 	mlooking = false;
 	in_state->IN_CenterView_fp ();
@@ -849,10 +866,10 @@ IN_Commands
 void RW_IN_Commands (void)
 {
 	int i;
-   
-	if (!mouse_avail) 
+
+	if (!mouse_avail)
 		return;
-   
+
 	for (i=0 ; i<3 ; i++) {
 		if ( (mouse_buttonstate & (1<<i)) && !(mouse_oldbuttonstate & (1<<i)) )
 			in_state->Key_Event_fp (K_MOUSE1 + i, true);
@@ -872,8 +889,8 @@ void RW_IN_Move (usercmd_t *cmd)
 {
 	if (!mouse_avail)
 		return;
-   
-	if (m_filter->value)
+
+	if (m_filter->integer)
 	{
 		mouse_x = (mx + old_mouse_x) * 0.5;
 		mouse_y = (my + old_mouse_y) * 0.5;
@@ -892,13 +909,13 @@ void RW_IN_Move (usercmd_t *cmd)
 	mouse_y *= sensitivity->value;
 
 // add mouse X/Y movement to cmd
-	if ( (*in_state->in_strafe_state & 1) || 
-		(lookstrafe->value && mlooking ))
+	if ( (*in_state->in_strafe_state & 1) ||
+		(lookstrafe->integer && mlooking ))
 		cmd->sidemove += m_side->value * mouse_x;
 	else
 		in_state->viewangles[YAW] -= m_yaw->value * mouse_x;
 
-	if ( (mlooking || freelook->value) && 
+	if ( (mlooking || freelook->integer) &&
 		!(*in_state->in_strafe_state & 1))
 	{
 		in_state->viewangles[PITCH] += m_pitch->value * mouse_y;

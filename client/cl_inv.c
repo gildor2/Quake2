@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -44,7 +44,7 @@ void Inv_DrawString (int x, int y, char *string)
 {
 	while (*string)
 	{
-		re.DrawChar (x, y, *string);
+		re_DrawChar (x, y, *string);
 		x+=8;
 		string++;
 	}
@@ -103,7 +103,7 @@ void CL_DrawInventory (void)
 	// repaint everything next frame
 	SCR_DirtyScreen ();
 
-	re.DrawPic (x, y+8, "inventory");
+	re_DrawPic (x, y+8, "inventory");
 
 	y += 24;
 	x += 24;
@@ -130,7 +130,7 @@ void CL_DrawInventory (void)
 		else	// draw a blinky cursor by the selected item
 		{
 			if ( (int)(cls.realtime*10) & 1)
-				re.DrawChar (x-8, y, 15);
+				re_DrawChar (x-8, y, 15);
 		}
 		Inv_DrawString (x, y, string);
 		y += 8;
@@ -138,5 +138,3 @@ void CL_DrawInventory (void)
 
 
 }
-
-

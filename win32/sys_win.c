@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // sys_win.h
 
 #include "../qcommon/qcommon.h"
+#include "../client/client.h"
 #include "winquake.h"
 #include "resource.h"
 #include <errno.h>
@@ -39,7 +40,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 qboolean s_win95;
 
 int			starttime;
-int			ActiveApp;
+qboolean	ActiveApp;
 qboolean	Minimized;
 
 static HANDLE		hinput, houtput;
@@ -81,7 +82,7 @@ void Sys_Error (char *error, ...)
 	if (qwclsemaphore)
 		CloseHandle (qwclsemaphore);
 
-// shut down QHOST hooks if necessary
+	// shut down QHOST hooks if necessary
 	DeinitConProc ();
 
 	exit (1);
@@ -94,10 +95,10 @@ void Sys_Quit (void)
 	CL_Shutdown();
 	Qcommon_Shutdown ();
 	CloseHandle (qwclsemaphore);
-	if (dedicated && dedicated->value)
+	if (dedicated && dedicated->integer)
 		FreeConsole ();
 
-// shut down QHOST hooks if necessary
+	// shut down QHOST hooks if necessary
 	DeinitConProc ();
 
 	exit (0);
@@ -108,14 +109,14 @@ void WinError (void)
 {
 	LPVOID lpMsgBuf;
 
-	FormatMessage( 
+	FormatMessage(
 		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
 		NULL,
 		GetLastError(),
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
 		(LPTSTR) &lpMsgBuf,
 		0,
-		NULL 
+		NULL
 	);
 
 	// Display the string.
@@ -157,12 +158,13 @@ char *Sys_ScanForCD (void)
 	done = true;
 
 	// scan the drives
-	for (drive[0] = 'c' ; drive[0] <= 'z' ; drive[0]++)
+	for (drive[0] = 'c'; drive[0] <= 'z'; drive[0]++)
 	{
 		// where activision put the stuff...
-		sprintf (cddir, "%sinstall\\data", drive);
-		sprintf (test, "%sinstall\\data\\quake2.exe", drive);
-		f = fopen(test, "r");
+		Com_sprintf (cddir, sizeof(cddir), "%sinstall\\data", drive);
+		Q_CopyFilename (cddir, cddir, sizeof(cddir) - 1);
+		Com_sprintf (test, sizeof(test), "%sinstall\\data\\quake2.exe", drive);
+		f = fopen (test, "r");
 		if (f)
 		{
 			fclose (f);
@@ -173,7 +175,7 @@ char *Sys_ScanForCD (void)
 #endif
 
 	cddir[0] = 0;
-	
+
 	return NULL;
 }
 
@@ -197,6 +199,119 @@ void	Sys_CopyProtect (void)
 
 //================================================================
 
+/* If error happens in ref_xxx.dll, error message will contain reference to
+ * <not available> module
+ */
+
+static void DumpReg4 (FILE *f, char *name, DWORD value)
+{
+	int i;
+	char *data;
+
+	data = (char*) value;
+	fprintf (f, "  %s: %08X  ", name, value);
+	if (IsBadReadPtr (data, 16))
+		fprintf (f, " <N/A>");
+	else
+	{
+		for (i = 0; i < 16; i++)
+			fprintf (f, " %02X", data[i] & 0xFF);
+
+		fprintf (f, "  ");
+
+		for (i = 0; i < 16; i++)
+		{
+			char c;
+
+			c = data[i];
+			if (c < ' ' || c > 0x7F) c = '.';
+			fprintf (f, "%c", c);
+		}
+	}
+	fprintf (f, "\n");
+}
+
+static void DumpReg2 (FILE *f, char *name, DWORD value)
+{
+	fprintf (f, "  %s: %04X", name, value);
+}
+
+static int DumpMem (FILE *f, int *data)
+{
+	int i;
+
+	if (IsBadReadPtr (data, 32)) return 0;
+	for (i = 0; i < 8; i++)
+		fprintf (f, "  %08X", data[i]);
+	fprintf (f, "\n");
+	return 1;
+}
+
+static int exception_count = 0;
+extern qboolean debugLogged;
+
+static LONG WINAPI ExceptionFilter(struct _EXCEPTION_POINTERS *ExceptionInfo)
+{
+	FILE *f;
+	CONTEXT *ctx;
+	EXCEPTION_RECORD *rec;
+	char ctime[256];
+	char module[MAX_OSPATH];
+	time_t itime;
+	MEMORY_BASIC_INFORMATION mbi;
+	int i;
+	int *stack;
+
+	if (exception_count++ > 0) return 0; // nested exception
+
+	// make a log in "crush.log"
+	if (f = fopen ("crush.log", "a+"))
+	{
+		time (&itime);
+		strftime (ctime, sizeof(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
+		fprintf (f, "----- Quake2 crush log on %s -----\n", ctime);
+		ctx = ExceptionInfo->ContextRecord;
+		rec = ExceptionInfo->ExceptionRecord;
+		strcpy (module, "<N/A>");
+		if (VirtualQuery ((void*)ctx->Eip, &mbi, sizeof(mbi)))
+		{
+			if (mbi.State != MEM_COMMIT || !GetModuleFileName (mbi.AllocationBase, module, sizeof(module)));	//??
+		}
+		fprintf (f, "Exception %08X at address %08X in module %s\n", rec->ExceptionCode, rec->ExceptionAddress, module);
+//		fprintf (f, "Base registers:\n");
+		DumpReg4 (f, "EAX", ctx->Eax);
+		DumpReg4 (f, "EBX", ctx->Ebx);
+		DumpReg4 (f, "ECX", ctx->Ecx);
+		DumpReg4 (f, "EDX", ctx->Edx);
+		DumpReg4 (f, "ESI", ctx->Esi);
+		DumpReg4 (f, "EDI", ctx->Edi);
+		DumpReg4 (f, "EBP", ctx->Ebp);
+		DumpReg4 (f, "ESP", ctx->Esp);
+		DumpReg4 (f, "EIP", ctx->Eip);
+//		fprintf (f, "Segment registers:\n");
+		DumpReg2 (f, "CS", ctx->SegCs); DumpReg2 (f, "SS", ctx->SegSs);
+		DumpReg2 (f, "DS", ctx->SegDs); DumpReg2 (f, "ES", ctx->SegEs);
+		DumpReg2 (f, "FS", ctx->SegFs); DumpReg2 (f, "GS", ctx->SegGs);
+		fprintf (f, "  EFLAGS: %08X\n", ctx->EFlags);
+		stack = (int*) ctx->Esp;
+		fprintf (f, "Stack frame (CS:%08X):\n", stack);
+		for (i = 0; i < 16; i++)
+		{
+			if (!DumpMem (f, stack)) break;
+			stack += 8;
+		}
+		fprintf (f, "\n");
+		fclose (f);
+	}
+	if (debugLogged)
+		DebugPrintf ("***** CRUSH *****\n");
+	// really, we can perform CL_Shutdown(), but this will save config - it is not safely ...
+	IN_Shutdown ();
+	Vid_Shutdown ();
+	S_Shutdown ();
+	// show exception message
+	return 0;
+}
 
 /*
 ================
@@ -241,16 +356,17 @@ void Sys_Init (void)
 	else if ( vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS )
 		s_win95 = true;
 
-	if (dedicated->value)
+	if (dedicated->integer)
 	{
 		if (!AllocConsole ())
 			Sys_Error ("Couldn't create dedicated server console");
 		hinput = GetStdHandle (STD_INPUT_HANDLE);
 		houtput = GetStdHandle (STD_OUTPUT_HANDLE);
-	
+
 		// let QHOST hook in
 		InitConProc (argc, argv);
 	}
+	SetUnhandledExceptionFilter (ExceptionFilter);
 }
 
 
@@ -268,7 +384,7 @@ char *Sys_ConsoleInput (void)
 	int		dummy;
 	int		ch, numread, numevents;
 
-	if (!dedicated || !dedicated->value)
+	if (!dedicated || !dedicated->integer)
 		return NULL;
 
 
@@ -295,7 +411,7 @@ char *Sys_ConsoleInput (void)
 				switch (ch)
 				{
 					case '\r':
-						WriteFile(houtput, "\r\n", 2, &dummy, NULL);	
+						WriteFile(houtput, "\r\n", 2, &dummy, NULL);
 
 						if (console_textlen)
 						{
@@ -309,7 +425,7 @@ char *Sys_ConsoleInput (void)
 						if (console_textlen)
 						{
 							console_textlen--;
-							WriteFile(houtput, "\b \b", 3, &dummy, NULL);	
+							WriteFile(houtput, "\b \b", 3, &dummy, NULL);
 						}
 						break;
 
@@ -318,7 +434,7 @@ char *Sys_ConsoleInput (void)
 						{
 							if (console_textlen < sizeof(console_text)-2)
 							{
-								WriteFile(houtput, &ch, 1, &dummy, NULL);	
+								WriteFile(houtput, &ch, 1, &dummy, NULL);
 								console_text[console_textlen] = ch;
 								console_textlen++;
 							}
@@ -347,7 +463,7 @@ void Sys_ConsoleOutput (char *string)
 	int		dummy;
 	char	text[256];
 
-	if (!dedicated || !dedicated->value)
+	if (!dedicated || !dedicated->integer)
 		return;
 
 	if (console_textlen)
@@ -386,7 +502,7 @@ void Sys_SendKeyEvents (void)
       	DispatchMessage (&msg);
 	}
 
-	// grab frame time 
+	// grab frame time
 	sys_frame_time = timeGetTime();	// FIXME: should this be at start?
 }
 
@@ -403,20 +519,20 @@ char *Sys_GetClipboardData( void )
 	char *data = NULL;
 	char *cliptext;
 
-	if ( OpenClipboard( NULL ) != 0 )
+	if (OpenClipboard (NULL))
 	{
-		HANDLE hClipboardData;
+		HANDLE	hClipboardData;
 
-		if ( ( hClipboardData = GetClipboardData( CF_TEXT ) ) != 0 )
+		if (hClipboardData = GetClipboardData (CF_TEXT))
 		{
-			if ( ( cliptext = GlobalLock( hClipboardData ) ) != 0 ) 
+			if (cliptext = GlobalLock (hClipboardData))
 			{
-				data = malloc( GlobalSize( hClipboardData ) + 1 );
-				strcpy( data, cliptext );
-				GlobalUnlock( hClipboardData );
+				data = malloc (GlobalSize (hClipboardData) + 1);
+				strcpy (data, cliptext);
+				GlobalUnlock (hClipboardData);
 			}
 		}
-		CloseClipboard();
+		CloseClipboard ();
 	}
 	return data;
 }
@@ -436,8 +552,8 @@ Sys_AppActivate
 */
 void Sys_AppActivate (void)
 {
-	ShowWindow ( cl_hwnd, SW_RESTORE);
-	SetForegroundWindow ( cl_hwnd );
+	ShowWindow (cl_hwnd, SW_RESTORE);
+	SetForegroundWindow (cl_hwnd);
 }
 
 /*
@@ -496,12 +612,12 @@ void *Sys_GetGameAPI (void *parms)
 #endif
 
 	if (game_library)
-		Com_Error (ERR_FATAL, "Sys_GetGameAPI without Sys_UnloadingGame");
+		Com_Error (ERR_FATAL, "Sys_GetGameAPI() without Sys_UnloadGame()");
 
 	// check the current debug directory first for development purposes
 	_getcwd (cwd, sizeof(cwd));
 	Com_sprintf (name, sizeof(name), "%s/%s/%s", cwd, debugdir, gamename);
-	game_library = LoadLibrary ( name );
+	game_library = LoadLibrary (name);
 	if (game_library)
 	{
 		Com_DPrintf ("LoadLibrary (%s)\n", name);
@@ -511,7 +627,7 @@ void *Sys_GetGameAPI (void *parms)
 #ifdef DEBUG
 		// check the current directory for other development purposes
 		Com_sprintf (name, sizeof(name), "%s/%s", cwd, gamename);
-		game_library = LoadLibrary ( name );
+		game_library = LoadLibrary (name);
 		if (game_library)
 		{
 			Com_DPrintf ("LoadLibrary (%s)\n", name);
@@ -540,7 +656,7 @@ void *Sys_GetGameAPI (void *parms)
 	GetGameAPI = (void *)GetProcAddress (game_library, "GetGameAPI");
 	if (!GetGameAPI)
 	{
-		Sys_UnloadGame ();		
+		Sys_UnloadGame ();
 		return NULL;
 	}
 
@@ -579,10 +695,9 @@ void ParseCommandLine (LPSTR lpCmdLine)
 				*lpCmdLine = 0;
 				lpCmdLine++;
 			}
-			
+
 		}
 	}
-
 }
 
 /*
@@ -595,29 +710,24 @@ HINSTANCE	global_hInstance;
 
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    MSG				msg;
-	int				time, oldtime, newtime;
-	char			*cddir;
-
-    /* previous instances do not exist in Win32 */
-    if (hPrevInstance)
-        return 0;
+	MSG		msg;
+	int		time, oldtime, newtime;
+	char	*cddir;
 
 	global_hInstance = hInstance;
 
 	ParseCommandLine (lpCmdLine);
 
-	// if we find the CD, add a +set cddir xxx command line
+	// if we find the CD, add a "+set cddir xxx" command line
 	cddir = Sys_ScanForCD ();
 	if (cddir && argc < MAX_NUM_ARGVS - 3)
 	{
 		int		i;
 
 		// don't override a cddir on the command line
-		for (i=0 ; i<argc ; i++)
-			if (!strcmp(argv[i], "cddir"))
-				break;
-		if (i == argc)
+		for (i = 0; i < argc; i++)
+			if (!stricmp (argv[i], "cddir")) break;
+		if (i == argc)	// not found
 		{
 			argv[argc++] = "+set";
 			argv[argc++] = "cddir";
@@ -628,11 +738,11 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	Qcommon_Init (argc, argv);
 	oldtime = Sys_Milliseconds ();
 
-    /* main window message loop */
+	/*--------- main window message loop ------------*/
 	while (1)
 	{
 		// if at a full screen console, don't update unless needed
-		if (Minimized || (dedicated && dedicated->value) )
+		if (Minimized || (dedicated && dedicated->integer))
 		{
 			Sleep (1);
 		}
@@ -651,15 +761,15 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 			newtime = Sys_Milliseconds ();
 			time = newtime - oldtime;
 		} while (time < 1);
-//			Con_Printf ("time:%5.2f - %5.2f = %5.2f\n", newtime, oldtime, time);
+//		Com_Printf ("time:%5.2f - %5.2f = %5.2f\n", newtime, oldtime, time);
 
 		//	_controlfp( ~( _EM_ZERODIVIDE /*| _EM_INVALID*/ ), _MCW_EM );
-		_controlfp( _PC_24, _MCW_PC );
+//		_controlfp (_PC_24, _MCW_PC);
 		Qcommon_Frame (time);
 
 		oldtime = newtime;
 	}
 
 	// never gets here
-    return TRUE;
+	return TRUE;
 }

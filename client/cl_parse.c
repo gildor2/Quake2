@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -39,7 +39,7 @@ char *svc_strings[256] =
 	"svc_stufftext",
 	"svc_serverdata",
 	"svc_configstring",
-	"svc_spawnbaseline",	
+	"svc_spawnbaseline",
 	"svc_centerprint",
 	"svc_download",
 	"svc_playerinfo",
@@ -69,7 +69,7 @@ to start a download from the server.
 qboolean	CL_CheckOrDownloadFile (char *filename)
 {
 	FILE *fp;
-	char	name[MAX_OSPATH];
+	char	name[MAX_OSPATH], *ext;
 
 	if (strstr (filename, ".."))
 	{
@@ -77,7 +77,17 @@ qboolean	CL_CheckOrDownloadFile (char *filename)
 		return true;
 	}
 
-	if (FS_LoadFile (filename, NULL) != -1)
+	// check all image format for .PCX and .WAL extension
+	strcpy (name, filename);
+	ext = strrchr (name, '.');
+	if (ext && (!strcmp (ext, ".pcx") || !strcmp (ext, ".wal")))
+	{
+		*ext = 0; // strip extension
+		if (ImageExists (name, IMAGE_ANY))
+			return true;
+	}
+
+	if (FS_FileExists (filename))
 	{	// it exists, no need to download
 		return true;
 	}
@@ -98,7 +108,8 @@ qboolean	CL_CheckOrDownloadFile (char *filename)
 //	FS_CreatePath (name);
 
 	fp = fopen (name, "r+b");
-	if (fp) { // it exists
+	if (fp)
+	{ // it exists
 		int len;
 		fseek(fp, 0, SEEK_END);
 		len = ftell(fp);
@@ -110,7 +121,9 @@ qboolean	CL_CheckOrDownloadFile (char *filename)
 		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
 		MSG_WriteString (&cls.netchan.message,
 			va("download %s %i", cls.downloadname, len));
-	} else {
+	}
+	else
+	{
 		Com_Printf ("Downloading %s\n", cls.downloadname);
 		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
 		MSG_WriteString (&cls.netchan.message,
@@ -133,7 +146,8 @@ void	CL_Download_f (void)
 {
 	char filename[MAX_OSPATH];
 
-	if (Cmd_Argc() != 2) {
+	if (Cmd_Argc() != 2)
+	{
 		Com_Printf("Usage: download <filename>\n");
 		return;
 	}
@@ -146,7 +160,7 @@ void	CL_Download_f (void)
 		return;
 	}
 
-	if (FS_LoadFile (filename, NULL) != -1)
+	if (FS_FileExists (filename))
 	{	// it exists, no need to download
 		Com_Printf("File already exists.\n");
 		return;
@@ -179,6 +193,7 @@ void CL_RegisterSounds (void)
 
 	S_BeginRegistration ();
 	CL_RegisterTEntSounds ();
+
 	for (i=1 ; i<MAX_SOUNDS ; i++)
 	{
 		if (!cl.configstrings[CS_SOUNDS+i][0])
@@ -208,7 +223,7 @@ void CL_ParseDownload (void)
 	percent = MSG_ReadByte (&net_message);
 	if (size == -1)
 	{
-		Com_Printf ("Server does not have this file.\n");
+		Com_WPrintf ("Server does not have this file.\n");
 		if (cls.download)
 		{
 			// if here, we tried to resume a file but the server said no
@@ -230,7 +245,7 @@ void CL_ParseDownload (void)
 		if (!cls.download)
 		{
 			net_message.readcount += size;
-			Com_Printf ("Failed to open %s\n", cls.downloadtempname);
+			Com_WPrintf ("Failed to open %s\n", cls.downloadtempname);
 			CL_RequestNextDownload ();
 			return;
 		}
@@ -270,13 +285,12 @@ void CL_ParseDownload (void)
 		CL_DownloadFileName(newn, sizeof(newn), cls.downloadname);
 		r = rename (oldn, newn);
 		if (r)
-			Com_Printf ("failed to rename.\n");
+			Com_WPrintf ("failed to rename.\n");
 
 		cls.download = NULL;
 		cls.downloadpercent = 0;
 
 		// get another file if needed
-
 		CL_RequestNextDownload ();
 	}
 }
@@ -300,7 +314,7 @@ void CL_ParseServerData (void)
 	extern cvar_t	*fs_gamedirvar;
 	char	*str;
 	int		i;
-	
+
 	Com_DPrintf ("Serverdata packet received.\n");
 //
 // wipe the client_state_t struct
@@ -391,16 +405,16 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 	ci->cinfo[sizeof(ci->cinfo)-1] = 0;
 
 	// isolate the player's name
-	strncpy(ci->name, s, sizeof(ci->name));
+	strncpy (ci->name, s, sizeof(ci->name));
 	ci->name[sizeof(ci->name)-1] = 0;
-	t = strstr (s, "\\");
+	t = strchr (s, '\\');
 	if (t)
 	{
 		ci->name[t-s] = 0;
 		s = t+1;
 	}
 
-	if (cl_noskins->value || *s == 0)
+	if (cl_noskins->integer || *s == 0)
 	{
 		Com_sprintf (model_filename, sizeof(model_filename), "players/male/tris.md2");
 		Com_sprintf (weapon_filename, sizeof(weapon_filename), "players/male/weapon.md2");
@@ -416,22 +430,22 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 	{
 		// isolate the model name
 		strcpy (model_name, s);
-		t = strstr(model_name, "/");
+		t = strchr (model_name, '/');
 		if (!t)
-			t = strstr(model_name, "\\");
+			t = strchr (model_name, '\\');
 		if (!t)
 			t = model_name;
 		*t = 0;
 
 		// isolate the skin name
-		strcpy (skin_name, s + strlen(model_name) + 1);
+		strcpy (skin_name, s + strlen (model_name) + 1);
 
 		// model file
 		Com_sprintf (model_filename, sizeof(model_filename), "players/%s/tris.md2", model_name);
 		ci->model = re.RegisterModel (model_filename);
 		if (!ci->model)
 		{
-			strcpy(model_name, "male");
+			strcpy (model_name, "male");
 			Com_sprintf (model_filename, sizeof(model_filename), "players/male/tris.md2");
 			ci->model = re.RegisterModel (model_filename);
 		}
@@ -456,22 +470,25 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 
 		// if we still don't have a skin, it means that the male model didn't have
 		// it, so default to grunt
-		if (!ci->skin) {
+		if (!ci->skin)
+		{
 			// see if the skin exists for the male model
-			Com_sprintf (skin_filename, sizeof(skin_filename), "players/%s/grunt.pcx", model_name, skin_name);
+			Com_sprintf (skin_filename, sizeof(skin_filename), "players/%s/grunt.pcx", model_name);
 			ci->skin = re.RegisterSkin (skin_filename);
 		}
 
 		// weapon file
-		for (i = 0; i < num_cl_weaponmodels; i++) {
+		for (i = 0; i < num_cl_weaponmodels; i++)
+		{
 			Com_sprintf (weapon_filename, sizeof(weapon_filename), "players/%s/%s", model_name, cl_weaponmodels[i]);
 			ci->weaponmodel[i] = re.RegisterModel(weapon_filename);
-			if (!ci->weaponmodel[i] && strcmp(model_name, "cyborg") == 0) {
+			if (!ci->weaponmodel[i] && strcmp(model_name, "cyborg") == 0)
+			{
 				// try male
 				Com_sprintf (weapon_filename, sizeof(weapon_filename), "players/male/%s", cl_weaponmodels[i]);
 				ci->weaponmodel[i] = re.RegisterModel(weapon_filename);
 			}
-			if (!cl_vwep->value)
+			if (!cl_vwep->integer)
 				break; // only one when vwep is off
 		}
 
@@ -532,7 +549,7 @@ void CL_ParseConfigString (void)
 
 	strcpy (cl.configstrings[i], s);
 
-	// do something apropriate 
+	// do something apropriate
 
 	if (i >= CS_LIGHTS && i < CS_LIGHTS+MAX_LIGHTSTYLES)
 		CL_SetLightstyle (i - CS_LIGHTS);
@@ -554,6 +571,8 @@ void CL_ParseConfigString (void)
 	}
 	else if (i >= CS_SOUNDS && i < CS_SOUNDS+MAX_MODELS)
 	{
+		if (re.console_only) return;
+
 		if (cl.refresh_prepped)
 			cl.sound_precache[i-CS_SOUNDS] = S_RegisterSound (cl.configstrings[i]);
 	}
@@ -585,36 +604,36 @@ CL_ParseStartSoundPacket
 */
 void CL_ParseStartSoundPacket(void)
 {
-    vec3_t  pos_v;
+	vec3_t  pos_v;
 	float	*pos;
-    int 	channel, ent;
-    int 	sound_num;
-    float 	volume;
-    float 	attenuation;  
+	int 	channel, ent;
+	int 	sound_num;
+	float 	volume;
+	float 	attenuation;
 	int		flags;
 	float	ofs;
 
 	flags = MSG_ReadByte (&net_message);
 	sound_num = MSG_ReadByte (&net_message);
 
-    if (flags & SND_VOLUME)
+	if (flags & SND_VOLUME)
 		volume = MSG_ReadByte (&net_message) / 255.0;
 	else
 		volume = DEFAULT_SOUND_PACKET_VOLUME;
-	
-    if (flags & SND_ATTENUATION)
+
+	if (flags & SND_ATTENUATION)
 		attenuation = MSG_ReadByte (&net_message) / 64.0;
 	else
-		attenuation = DEFAULT_SOUND_PACKET_ATTENUATION;	
+		attenuation = DEFAULT_SOUND_PACKET_ATTENUATION;
 
-    if (flags & SND_OFFSET)
+	if (flags & SND_OFFSET)
 		ofs = MSG_ReadByte (&net_message) / 1000.0;
 	else
 		ofs = 0;
 
 	if (flags & SND_ENT)
 	{	// entity reletive
-		channel = MSG_ReadShort(&net_message); 
+		channel = MSG_ReadShort(&net_message);
 		ent = channel>>3;
 		if (ent > MAX_EDICTS)
 			Com_Error (ERR_DROP,"CL_ParseStartSoundPacket: ent = %i", ent);
@@ -630,7 +649,7 @@ void CL_ParseStartSoundPacket(void)
 	if (flags & SND_POS)
 	{	// positioned in space
 		MSG_ReadPos (&net_message, pos_v);
- 
+
 		pos = pos_v;
 	}
 	else	// use entity number
@@ -640,12 +659,12 @@ void CL_ParseStartSoundPacket(void)
 		return;
 
 	S_StartSound (pos, ent, channel, cl.sound_precache[sound_num], volume, attenuation, ofs);
-}       
+}
 
 
 void SHOWNET(char *s)
 {
-	if (cl_shownet->value>=2)
+	if (cl_shownet->integer >= 2)
 		Com_Printf ("%3i:%s\n", net_message.readcount-1, s);
 }
 
@@ -663,9 +682,9 @@ void CL_ParseServerMessage (void)
 //
 // if recording demos, copy the message out
 //
-	if (cl_shownet->value == 1)
+	if (cl_shownet->integer == 1)
 		Com_Printf ("%i ",net_message.cursize);
-	else if (cl_shownet->value >= 2)
+	else if (cl_shownet->integer >= 2)
 		Com_Printf ("------------------\n");
 
 
@@ -688,32 +707,33 @@ void CL_ParseServerMessage (void)
 			break;
 		}
 
-		if (cl_shownet->value>=2)
+		if (cl_shownet->integer >= 2)
 		{
 			if (!svc_strings[cmd])
 				Com_Printf ("%3i:BAD CMD %i\n", net_message.readcount-1,cmd);
 			else
 				SHOWNET(svc_strings[cmd]);
 		}
-	
+
 	// other commands
 		switch (cmd)
 		{
 		default:
 			Com_Error (ERR_DROP,"CL_ParseServerMessage: Illegible server message\n");
 			break;
-			
+
 		case svc_nop:
 //			Com_Printf ("svc_nop\n");
 			break;
-			
+
 		case svc_disconnect:
 			Com_Error (ERR_DISCONNECT,"Server disconnected\n");
 			break;
 
 		case svc_reconnect:
 			Com_Printf ("Server disconnected, reconnecting\n");
-			if (cls.download) {
+			if (cls.download)
+			{
 				//ZOID, close download
 				fclose (cls.download);
 				cls.download = NULL;
@@ -732,30 +752,30 @@ void CL_ParseServerMessage (void)
 			Com_Printf ("%s", MSG_ReadString (&net_message));
 			con.ormask = 0;
 			break;
-			
+
 		case svc_centerprint:
 			SCR_CenterPrint (MSG_ReadString (&net_message));
 			break;
-			
+
 		case svc_stufftext:
 			s = MSG_ReadString (&net_message);
 			Com_DPrintf ("stufftext: %s\n", s);
 			Cbuf_AddText (s);
 			break;
-			
+
 		case svc_serverdata:
 			Cbuf_Execute ();		// make sure any stuffed commands are done
 			CL_ParseServerData ();
 			break;
-			
+
 		case svc_configstring:
 			CL_ParseConfigString ();
 			break;
-			
+
 		case svc_sound:
 			CL_ParseStartSoundPacket();
 			break;
-			
+
 		case svc_spawnbaseline:
 			CL_ParseBaseline ();
 			break;
@@ -807,5 +827,3 @@ void CL_ParseServerMessage (void)
 		CL_WriteDemoMessage ();
 
 }
-
-

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -37,11 +37,10 @@ BRUSH MODELS
 //
 // in memory representation
 //
-// !!! if this is changed, it must be changed in asm_draw.h too !!!
 typedef struct
 {
 	vec3_t		position;
-} mvertex_t;
+} mvertex_t; // same layout as dvertex_t
 
 typedef struct
 {
@@ -101,9 +100,11 @@ typedef struct msurface_s
 
 	int			firstedge;	// look up in model->surfedges[], negative numbers
 	int			numedges;	// are backwards edges
-	
+
 	short		texturemins[2];
 	short		extents[2];
+
+	mtexinfo_t	*texinfo;
 
 	int			light_s, light_t;	// gl lightmap coordinates
 	int			dlight_s, dlight_t; // gl lightmap coordinates for dynamic lightmaps
@@ -112,31 +113,30 @@ typedef struct msurface_s
 	struct	msurface_s	*texturechain;
 	struct  msurface_s	*lightmapchain;
 
-	mtexinfo_t	*texinfo;
-	
-// lighting info
+	// lighting info
 	int			dlightframe;
 	int			dlightbits;
 
-	int			lightmaptexturenum;
 	byte		styles[MAXLIGHTMAPS];
-	float		cached_light[MAXLIGHTMAPS];	// values currently used in lightmap
 	byte		*samples;		// [numstyles*surfsize]
+	float		cached_light[MAXLIGHTMAPS];	// values currently used in lightmap
+
+	int			lightmaptexturenum;
 } msurface_t;
 
 typedef struct mnode_s
 {
-// common with leaf
+	// common with leaf
 	int			contents;		// -1, to differentiate from leafs
 	int			visframe;		// node needs to be traversed if current
-	
+
 	float		minmaxs[6];		// for bounding box culling
 
 	struct mnode_s	*parent;
 
-// node specific
+	// node specific
 	cplane_t	*plane;
-	struct mnode_s	*children[2];	
+	struct mnode_s	*children[2];
 
 	unsigned short		firstsurface;
 	unsigned short		numsurfaces;
@@ -146,15 +146,15 @@ typedef struct mnode_s
 
 typedef struct mleaf_s
 {
-// common with node
-	int			contents;		// wil be a negative contents number
+	// common with node
+	int			contents;		// will be a negative contents number
 	int			visframe;		// node needs to be traversed if current
 
 	float		minmaxs[6];		// for bounding box culling
 
 	struct mnode_s	*parent;
 
-// leaf specific
+	// leaf specific
 	int			cluster;
 	int			area;
 
@@ -169,7 +169,7 @@ typedef struct mleaf_s
 // Whole model
 //
 
-typedef enum {mod_bad, mod_brush, mod_sprite, mod_alias } modtype_t;
+typedef enum {mod_bad, mod_brush, mod_hl_brush, mod_sprite, mod_alias} modtype_t;
 
 typedef struct model_s
 {
@@ -179,17 +179,17 @@ typedef struct model_s
 
 	modtype_t	type;
 	int			numframes;
-	
+
 	int			flags;
 
 //
 // volume occupied by the model graphics
-//		
+//
 	vec3_t		mins, maxs;
 	float		radius;
 
 //
-// solid volume for clipping 
+// solid volume for clipping
 //
 	qboolean	clipbox;
 	vec3_t		clipmins, clipmaxs;
@@ -251,11 +251,6 @@ mleaf_t *Mod_PointInLeaf (float *p, model_t *model);
 byte	*Mod_ClusterPVS (int cluster, model_t *model);
 
 void	Mod_Modellist_f (void);
-
-void	*Hunk_Begin (int maxsize);
-void	*Hunk_Alloc (int size);
-int		Hunk_End (void);
-void	Hunk_Free (void *base);
 
 void	Mod_FreeAll (void);
 void	Mod_Free (model_t *mod);

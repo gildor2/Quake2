@@ -36,19 +36,16 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name ctf
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name game
-    End Project Dependency
-    Begin Project Dependency
     Project_Dep_Name ref_gl
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ref_soft
     End Project Dependency
 }}}
 
 ###############################################################################
 
-Project: "ref_gl"=.\ref_gl\ref_gl.dsp - Package Owner=<4>
+Project: "quake2s"=.\quake2s.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -56,6 +53,21 @@ Package=<5>
 
 Package=<4>
 {{{
+}}}
+
+###############################################################################
+
+Project: "ref_gl"=.\ref_gl.old\ref_gl.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name quake2s
+    End Project Dependency
 }}}
 
 ###############################################################################

@@ -1,0 +1,51 @@
+// just make C highlight
+void Test1 (int a);	// comment
+
+	// comment again
+
+void Test2 (void);
+int ArrFunc (int num, float a[3]) NAME ArrFuncA
+void Color3f (float c1, float c2, float c3) ARGS
+void Test3 (void); 	// and again
+void *Ptr3 (void) NAME Ptr3A;
+const GLubyte * GetString (GLenum name);
+GLboolean AreTexturesResident (GLsizei n, const GLuint *textures, GLboolean *residences);
+
+#platform win32
+void wglTestFunc (float tst) ARGS
+char *wglGetString (void);
+
+#platform linux
+int glxTestFunc (int tst) ARGS
+
+#extensions
+
+#name GL_ARB_TEXTURE_COMPRESSION
+#cvar gl_ext_compressed_textures
+
+#name GL_EXT_TEXTURE_COMPRESSION
+#cvar gl_ext_compressed_textures
+#prefer GL_ARB_TEXTURE_COMPRESSION
+
+#name GL_TEST_EXTENSION
+#cvar gl_test_extension
+void TestExtensionLaunchEXT (int tmp, GLenum werr) ARGS
+void TestExtensionStopEXT (void);
+
+#platform win32
+
+#name WGL_ANOTHER_TEST
+void wglAnother (void);
+
+#name WGL_SECOND_EXT
+#require WGL_ANOTHER_TEST GL_ARB_TEXTURE_COMPRESSION
+void wglSecondFunc (int num);
+void wglSecondFunc2 (int num1, int num2);
+
+#platform linux
+
+#name GLX_CREATE_WINDOW
+GLint glxCreateWindow (int x, int y, int w, int h);
+void glxCloseWindow (int h);
+void glxShowWindow (int h);
+void glxHideWindow (int h);

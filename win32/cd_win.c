@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -114,7 +114,7 @@ void CDAudio_Play2(int track, qboolean looping)
 
 	if (!enabled)
 		return;
-	
+
 	if (!cdValid)
 	{
 		CDAudio_GetAudioDiskInfo();
@@ -176,8 +176,7 @@ void CDAudio_Play2(int track, qboolean looping)
 	playTrack = track;
 	playing = true;
 
-	if ( Cvar_VariableValue( "cd_nocd" ) )
-		CDAudio_Pause ();
+	if (cd_nocd->integer) CDAudio_Pause ();
 }
 
 
@@ -195,7 +194,7 @@ void CDAudio_Stop(void)
 
 	if (!enabled)
 		return;
-	
+
 	if (!playing)
 		return;
 
@@ -234,13 +233,13 @@ void CDAudio_Resume(void)
 
 	if (!enabled)
 		return;
-	
+
 	if (!cdValid)
 		return;
 
 	if (!wasPlaying)
 		return;
-	
+
     mciPlayParms.dwFrom = MCI_MAKE_TMSF(playTrack, 0, 0, 0);
     mciPlayParms.dwTo = MCI_MAKE_TMSF(playTrack + 1, 0, 0, 0);
     mciPlayParms.dwCallback = (DWORD)cl_hwnd;
@@ -387,8 +386,8 @@ LONG CDAudio_MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				{
 					// if the track has played the given number of times,
 					// go to the ambient track
-					if (++loopcounter >= cd_loopcount->value)
-						CDAudio_Play2(cd_looptrack->value, true);
+					if (++loopcounter >= cd_loopcount->integer)
+						CDAudio_Play2(cd_looptrack->integer, true);
 					else
 						CDAudio_Play2(playTrack, true);
 				}
@@ -416,11 +415,11 @@ LONG CDAudio_MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void CDAudio_Update(void)
 {
-	if ( cd_nocd->value != !enabled )
+	if (cd_nocd->integer != !enabled)
 	{
-		if ( cd_nocd->value )
+		if (cd_nocd->integer)
 		{
-			CDAudio_Stop();
+			CDAudio_Stop ();
 			enabled = false;
 		}
 		else
@@ -436,13 +435,17 @@ int CDAudio_Init(void)
 {
 	DWORD	dwReturn;
 	MCI_OPEN_PARMS	mciOpenParms;
-    MCI_SET_PARMS	mciSetParms;
-	int				n;
+	MCI_SET_PARMS	mciSetParms;
+	int		n;
 
-	cd_nocd = Cvar_Get ("cd_nocd", "0", CVAR_ARCHIVE );
-	cd_loopcount = Cvar_Get ("cd_loopcount", "4", 0);
-	cd_looptrack = Cvar_Get ("cd_looptrack", "11", 0);
-	if ( cd_nocd->value)
+CVAR_BEGIN(vars)
+	CVAR_VAR(cd_nocd, 0, CVAR_ARCHIVE),
+	CVAR_VAR(cd_loopcount, 4, 0),
+	CVAR_VAR(cd_looptrack, 11, 0),
+CVAR_END
+
+	CVAR_GET_VARS(vars);
+	if (cd_nocd->integer)
 		return -1;
 
 	mciOpenParms.lpstrDeviceType = "cdaudio";

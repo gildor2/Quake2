@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -44,7 +44,7 @@ int				r_aliasblendcolor;
 float			r_shadelight;
 
 
-daliasframe_t	*r_thisframe, *r_lastframe;
+dAliasFrame_t	*r_thisframe, *r_lastframe;
 dmdl_t			*s_pmdl;
 
 float	aliastransform[3][4];
@@ -67,7 +67,7 @@ void R_AliasSetUpTransform (void);
 void R_AliasTransformVector (vec3_t in, vec3_t out, float m[3][4] );
 void R_AliasProjectAndClipTestFinalVert (finalvert_t *fv);
 
-void R_AliasTransformFinalVerts( int numpoints, finalvert_t *fv, dtrivertx_t *oldv, dtrivertx_t *newv );
+void R_AliasTransformFinalVerts (int numpoints, finalvert_t *fv, dTriVertx_t *oldv, dTriVertx_t *newv);
 
 void R_AliasLerpFrames( dmdl_t *paliashdr, float backlerp );
 
@@ -97,9 +97,9 @@ static aedge_t	aedges[12] = {
 **
 ** Checks a specific alias frame bounding box
 */
-unsigned long R_AliasCheckFrameBBox( daliasframe_t *frame, float worldxf[3][4] )
+unsigned long R_AliasCheckFrameBBox (dAliasFrame_t *frame, float worldxf[3][4])
 {
-	unsigned long aggregate_and_clipcode = ~0U, 
+	unsigned long aggregate_and_clipcode = ~0U,
 		          aggregate_or_clipcode = 0;
 	int           i;
 	vec3_t        mins, maxs;
@@ -239,8 +239,8 @@ General clipped case
 typedef struct
 {
 	int          num_points;
-	dtrivertx_t *last_verts;   // verts from the last frame
-	dtrivertx_t *this_verts;   // verts from this frame
+	dTriVertx_t *last_verts;   // verts from the last frame
+	dTriVertx_t *this_verts;   // verts from this frame
 	finalvert_t *dest_verts;   // destination for transformed verts
 } aliasbatchedtransformdata_t;
 
@@ -249,11 +249,10 @@ aliasbatchedtransformdata_t aliasbatchedtransformdata;
 void R_AliasPreparePoints (void)
 {
 	int			i;
-	dstvert_t	*pstverts;
-	dtriangle_t	*ptri;
+	dStVert_t	*pstverts;
+	dTriangle_t	*ptri;
 	finalvert_t	*pfv[3];
-	finalvert_t	finalverts[MAXALIASVERTS +
-						((CACHE_SIZE - 1) / sizeof(finalvert_t)) + 3];
+	finalvert_t	finalverts[MAXALIASVERTS + ((CACHE_SIZE - 1) / sizeof(finalvert_t)) + 3];
 	finalvert_t	*pfinalverts;
 
 //PGM
@@ -264,10 +263,9 @@ void R_AliasPreparePoints (void)
 //PGM
 
 	// put work vertexes on stack, cache aligned
-	pfinalverts = (finalvert_t *)
-			(((long)&finalverts[0] + CACHE_SIZE - 1) & ~(CACHE_SIZE - 1));
+	pfinalverts = (finalvert_t *) (((long)&finalverts[0] + CACHE_SIZE - 1) & ~(CACHE_SIZE - 1));
 
-	aliasbatchedtransformdata.num_points = s_pmdl->num_xyz;
+	aliasbatchedtransformdata.num_points = s_pmdl->numXyz;
 	aliasbatchedtransformdata.last_verts = r_lastframe->verts;
 	aliasbatchedtransformdata.this_verts = r_thisframe->verts;
 	aliasbatchedtransformdata.dest_verts = pfinalverts;
@@ -279,29 +277,29 @@ void R_AliasPreparePoints (void)
 
 // clip and draw all triangles
 //
-	pstverts = (dstvert_t *)((byte *)s_pmdl + s_pmdl->ofs_st);
-	ptri = (dtriangle_t *)((byte *)s_pmdl + s_pmdl->ofs_tris);
+	pstverts = (dStVert_t *)((byte *)s_pmdl + s_pmdl->ofsSt);
+	ptri = (dTriangle_t *)((byte *)s_pmdl + s_pmdl->ofsTris);
 
-	if ( ( currententity->flags & RF_WEAPONMODEL ) && ( r_lefthand->value == 1.0F ) )
+	if ( ( currententity->flags & RF_WEAPONMODEL ) && ( r_lefthand->integer == 1 ) )
 	{
-		for (i=0 ; i<s_pmdl->num_tris ; i++, ptri++)
+		for (i=0 ; i<s_pmdl->numTris ; i++, ptri++)
 		{
-			pfv[0] = &pfinalverts[ptri->index_xyz[0]];
-			pfv[1] = &pfinalverts[ptri->index_xyz[1]];
-			pfv[2] = &pfinalverts[ptri->index_xyz[2]];
+			pfv[0] = &pfinalverts[ptri->indexXyz[0]];
+			pfv[1] = &pfinalverts[ptri->indexXyz[1]];
+			pfv[2] = &pfinalverts[ptri->indexXyz[2]];
 
 			if ( pfv[0]->flags & pfv[1]->flags & pfv[2]->flags )
 				continue;		// completely clipped
 
 			// insert s/t coordinates
-			pfv[0]->s = pstverts[ptri->index_st[0]].s << 16;
-			pfv[0]->t = pstverts[ptri->index_st[0]].t << 16;
+			pfv[0]->s = pstverts[ptri->indexSt[0]].s << 16;
+			pfv[0]->t = pstverts[ptri->indexSt[0]].t << 16;
 
-			pfv[1]->s = pstverts[ptri->index_st[1]].s << 16;
-			pfv[1]->t = pstverts[ptri->index_st[1]].t << 16;
+			pfv[1]->s = pstverts[ptri->indexSt[1]].s << 16;
+			pfv[1]->t = pstverts[ptri->indexSt[1]].t << 16;
 
-			pfv[2]->s = pstverts[ptri->index_st[2]].s << 16;
-			pfv[2]->t = pstverts[ptri->index_st[2]].t << 16;
+			pfv[2]->s = pstverts[ptri->indexSt[2]].s << 16;
+			pfv[2]->t = pstverts[ptri->indexSt[2]].t << 16;
 
 			if ( ! (pfv[0]->flags | pfv[1]->flags | pfv[2]->flags) )
 			{	// totally unclipped
@@ -319,24 +317,24 @@ void R_AliasPreparePoints (void)
 	}
 	else
 	{
-		for (i=0 ; i<s_pmdl->num_tris ; i++, ptri++)
+		for (i=0 ; i<s_pmdl->numTris ; i++, ptri++)
 		{
-			pfv[0] = &pfinalverts[ptri->index_xyz[0]];
-			pfv[1] = &pfinalverts[ptri->index_xyz[1]];
-			pfv[2] = &pfinalverts[ptri->index_xyz[2]];
+			pfv[0] = &pfinalverts[ptri->indexXyz[0]];
+			pfv[1] = &pfinalverts[ptri->indexXyz[1]];
+			pfv[2] = &pfinalverts[ptri->indexXyz[2]];
 
 			if ( pfv[0]->flags & pfv[1]->flags & pfv[2]->flags )
 				continue;		// completely clipped
 
 			// insert s/t coordinates
-			pfv[0]->s = pstverts[ptri->index_st[0]].s << 16;
-			pfv[0]->t = pstverts[ptri->index_st[0]].t << 16;
+			pfv[0]->s = pstverts[ptri->indexSt[0]].s << 16;
+			pfv[0]->t = pstverts[ptri->indexSt[0]].t << 16;
 
-			pfv[1]->s = pstverts[ptri->index_st[1]].s << 16;
-			pfv[1]->t = pstverts[ptri->index_st[1]].t << 16;
+			pfv[1]->s = pstverts[ptri->indexSt[1]].s << 16;
+			pfv[1]->t = pstverts[ptri->indexSt[1]].t << 16;
 
-			pfv[2]->s = pstverts[ptri->index_st[2]].s << 16;
-			pfv[2]->t = pstverts[ptri->index_st[2]].t << 16;
+			pfv[2]->s = pstverts[ptri->indexSt[2]].s << 16;
+			pfv[2]->t = pstverts[ptri->indexSt[2]].t << 16;
 
 			if ( ! (pfv[0]->flags | pfv[1]->flags | pfv[2]->flags) )
 			{	// totally unclipped
@@ -346,7 +344,7 @@ void R_AliasPreparePoints (void)
 
 				R_DrawTriangle();
 			}
-			else		
+			else
 			{	// partially clipped
 				R_AliasClipTriangle (pfv[0], pfv[1], pfv[2]);
 			}
@@ -369,7 +367,7 @@ void R_AliasSetUpTransform (void)
 // TODO: should really be stored with the entity instead of being reconstructed
 // TODO: should use a look-up table
 // TODO: could cache lazily, stored in the entity
-// 
+//
 	angles[ROLL] = currententity->angles[ROLL];
 	angles[PITCH] = currententity->angles[PITCH];
 	angles[YAW] = currententity->angles[YAW];
@@ -430,7 +428,7 @@ R_AliasTransformFinalVerts
 ================
 */
 #if id386 && !defined __linux__
-void R_AliasTransformFinalVerts( int numpoints, finalvert_t *fv, dtrivertx_t *oldv, dtrivertx_t *newv )
+void R_AliasTransformFinalVerts( int numpoints, finalvert_t *fv, dTriVertx_t *oldv, dTriVertx_t *newv )
 {
 	float  lightcos;
 	float	lerped_vert[3];
@@ -459,7 +457,7 @@ top_of_loop:
 
 	__asm mov bl, byte ptr [esi+DTRIVERTX_V0]
 	__asm mov byte_to_dword_ptr_var, ebx
-	__asm fild dword ptr byte_to_dword_ptr_var      
+	__asm fild dword ptr byte_to_dword_ptr_var
 	__asm fmul dword ptr [r_lerp_backv+0]                  ; oldv[0]*rlb[0]
 
 	__asm mov bl, byte ptr [esi+DTRIVERTX_V1]
@@ -474,7 +472,7 @@ top_of_loop:
 
 	__asm mov bl, byte ptr [edi+DTRIVERTX_V0]
 	__asm mov byte_to_dword_ptr_var, ebx
-	__asm fild dword ptr byte_to_dword_ptr_var      
+	__asm fild dword ptr byte_to_dword_ptr_var
 	__asm fmul dword ptr [r_lerp_frontv+0]                 ; newv[0]*rlf[0] | oldv[2]*rlb[2] | oldv[1]*rlb[1] | oldv[0]*rlb[0]
 
 	__asm mov bl, byte ptr [edi+DTRIVERTX_V1]
@@ -571,7 +569,7 @@ not_powersuit:
 	__asm fadd dword ptr [aliastransform+28]       ; FV.Y | FV.X
 	__asm fxch st(1)                               ; FV.X | FV.Y
 	__asm fstp  dword ptr [eax+FINALVERT_X]        ; FV.Y
-	
+
 	__asm fld  dword ptr [lerped_vert+0]           ; lv0
 	__asm fmul dword ptr [aliastransform+32]       ; lv0*at[2][0]
 	__asm fld  dword ptr [lerped_vert+4]           ; lv1 | lv0*at[2][0]
@@ -747,7 +745,7 @@ end_of_loop:
 	__asm jnz top_of_loop
 }
 #else
-void R_AliasTransformFinalVerts( int numpoints, finalvert_t *fv, dtrivertx_t *oldv, dtrivertx_t *newv )
+void R_AliasTransformFinalVerts( int numpoints, finalvert_t *fv, dTriVertx_t *oldv, dTriVertx_t *newv )
 {
 	int i;
 
@@ -834,7 +832,7 @@ void R_AliasProjectAndClipTestFinalVert( finalvert_t *fv )
 	if (fv->u > r_refdef.aliasvrectright)
 		fv->flags |= ALIAS_RIGHT_CLIP;
 	if (fv->v > r_refdef.aliasvrectbottom)
-		fv->flags |= ALIAS_BOTTOM_CLIP;	
+		fv->flags |= ALIAS_BOTTOM_CLIP;
 }
 
 /*
@@ -852,9 +850,9 @@ static qboolean R_AliasSetupSkin (void)
 	else
 	{
 		skinnum = currententity->skinnum;
-		if ((skinnum >= s_pmdl->num_skins) || (skinnum < 0))
+		if ((skinnum >= s_pmdl->numSkins) || (skinnum < 0))
 		{
-			ri.Con_Printf (PRINT_ALL, "R_AliasSetupSkin %s: no such skin # %d\n", 
+			Com_Printf ("R_AliasSetupSkin %s: no such skin # %d\n",
 				currentmodel->name, skinnum);
 			skinnum = 0;
 		}
@@ -977,24 +975,22 @@ void R_AliasSetupFrames( dmdl_t *pmdl )
 	int thisframe = currententity->frame;
 	int lastframe = currententity->oldframe;
 
-	if ( ( thisframe >= pmdl->num_frames ) || ( thisframe < 0 ) )
+	if ( ( thisframe >= pmdl->numFrames ) || ( thisframe < 0 ) )
 	{
-		ri.Con_Printf (PRINT_ALL, "R_AliasSetupFrames %s: no such thisframe %d\n", 
+		Com_Printf ("R_AliasSetupFrames %s: no such thisframe %d\n",
 			currentmodel->name, thisframe);
 		thisframe = 0;
 	}
-	if ( ( lastframe >= pmdl->num_frames ) || ( lastframe < 0 ) )
+	if ( ( lastframe >= pmdl->numFrames ) || ( lastframe < 0 ) )
 	{
-		ri.Con_Printf (PRINT_ALL, "R_AliasSetupFrames %s: no such lastframe %d\n", 
+		Com_Printf ("R_AliasSetupFrames %s: no such lastframe %d\n",
 			currentmodel->name, lastframe);
 		lastframe = 0;
 	}
 
-	r_thisframe = (daliasframe_t *)((byte *)pmdl + pmdl->ofs_frames 
-		+ thisframe * pmdl->framesize);
+	r_thisframe = (dAliasFrame_t *)((byte *)pmdl + pmdl->ofsFrames + thisframe * pmdl->frameSize);
 
-	r_lastframe = (daliasframe_t *)((byte *)pmdl + pmdl->ofs_frames 
-		+ lastframe * pmdl->framesize);
+	r_lastframe = (dAliasFrame_t *)((byte *)pmdl + pmdl->ofsFrames + lastframe * pmdl->frameSize);
 }
 
 /*
@@ -1057,14 +1053,14 @@ void R_AliasDrawModel (void)
 
 	s_pmdl = (dmdl_t *)currentmodel->extradata;
 
-	if ( r_lerpmodels->value == 0 )
+	if (!r_lerpmodels->integer)
 		currententity->backlerp = 0;
 
 	if ( currententity->flags & RF_WEAPONMODEL )
 	{
-		if ( r_lefthand->value == 1.0F )
+		if ( r_lefthand->integer == 1 )
 			aliasxscale = -aliasxscale;
-		else if ( r_lefthand->value == 2.0F )
+		else if ( r_lefthand->integer == 2 )
 			return;
 	}
 
@@ -1079,7 +1075,7 @@ void R_AliasDrawModel (void)
 	// trivial accept status
 	if ( R_AliasCheckBBox() == BBOX_TRIVIAL_REJECT )
 	{
-		if ( ( currententity->flags & RF_WEAPONMODEL ) && ( r_lefthand->value == 1.0F ) )
+		if ( ( currententity->flags & RF_WEAPONMODEL ) && ( r_lefthand->integer == 1 ) )
 		{
 			aliasxscale = -aliasxscale;
 		}
@@ -1089,8 +1085,7 @@ void R_AliasDrawModel (void)
 	// set up the skin and verify it exists
 	if ( !R_AliasSetupSkin () )
 	{
-		ri.Con_Printf( PRINT_ALL, "R_AliasDrawModel %s: NULL skin found\n",
-			currentmodel->name);
+		Com_Printf ("R_AliasDrawModel %s: NULL skin found\n", currentmodel->name);
 		return;
 	}
 
@@ -1187,11 +1182,8 @@ void R_AliasDrawModel (void)
 
 	R_AliasPreparePoints ();
 
-	if ( ( currententity->flags & RF_WEAPONMODEL ) && ( r_lefthand->value == 1.0F ) )
+	if ( ( currententity->flags & RF_WEAPONMODEL ) && ( r_lefthand->integer == 1 ) )
 	{
 		aliasxscale = -aliasxscale;
 	}
 }
-
-
-

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -29,12 +29,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //===============================================================================
 
-int		hunkcount;
+#ifdef DYNAMIC_REF
+
+#include "../client/ref.h"
+
+refImport_t ri;
+
+#define Sys_Error(str)	Com_Error(ERR_FATAL, str)
+
+#endif
 
 
-byte	*membase;
-int		hunkmaxsize;
-int		cursize;
+static byte	*membase;
+static int	hunkmaxsize;
+static int	cursize;
 
 #define	VIRTUAL_ALLOC
 
@@ -68,7 +76,7 @@ void *Hunk_Alloc (int size)
 	if (!buf)
 	{
 		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &buf, 0, NULL);
-		Sys_Error ("VirtualAlloc commit failed.\n%s", buf);
+		Sys_Error ("VirtualAlloc commit failed.");
 	}
 #endif
 	cursize += size;
@@ -80,7 +88,6 @@ void *Hunk_Alloc (int size)
 
 int Hunk_End (void)
 {
-
 	// free the remaining unused virtual memory
 #if 0
 	void	*buf;
@@ -91,8 +98,6 @@ int Hunk_End (void)
 		Sys_Error ("VirtualAlloc commit failed");
 #endif
 
-	hunkcount++;
-//Com_Printf ("hunkcount: %i\n", hunkcount);
 	return cursize;
 }
 
@@ -104,8 +109,6 @@ void Hunk_Free (void *base)
 #else
 		free (base);
 #endif
-
-	hunkcount--;
 }
 
 //===============================================================================
@@ -139,9 +142,9 @@ void Sys_Mkdir (char *path)
 
 //============================================
 
-char	findbase[MAX_OSPATH];
-char	findpath[MAX_OSPATH];
-int		findhandle;
+static char	findbase[MAX_OSPATH];
+static char	findpath[MAX_OSPATH];
+static int	findhandle;
 
 static qboolean CompareAttributes( unsigned found, unsigned musthave, unsigned canthave )
 {
@@ -182,25 +185,30 @@ char *Sys_FindFirst (char *path, unsigned musthave, unsigned canthave )
 	findhandle = _findfirst (path, &findinfo);
 	if (findhandle == -1)
 		return NULL;
-	if ( !CompareAttributes( findinfo.attrib, musthave, canthave ) )
-		return NULL;
+
+	if (!CompareAttributes (findinfo.attrib, musthave, canthave))
+		return Sys_FindNext (musthave, canthave);
+
 	Com_sprintf (findpath, sizeof(findpath), "%s/%s", findbase, findinfo.name);
 	return findpath;
 }
 
-char *Sys_FindNext ( unsigned musthave, unsigned canthave )
+char *Sys_FindNext (unsigned musthave, unsigned canthave)
 {
 	struct _finddata_t findinfo;
 
-	if (findhandle == -1)
-		return NULL;
-	if (_findnext (findhandle, &findinfo) == -1)
-		return NULL;
-	if ( !CompareAttributes( findinfo.attrib, musthave, canthave ) )
-		return NULL;
+	while (findhandle != -1)
+	{
+		if (_findnext (findhandle, &findinfo) == -1)
+			return NULL;
 
-	Com_sprintf (findpath, sizeof(findpath), "%s/%s", findbase, findinfo.name);
-	return findpath;
+		if (!CompareAttributes (findinfo.attrib, musthave, canthave))
+			continue;
+
+		Com_sprintf (findpath, sizeof(findpath), "%s/%s", findbase, findinfo.name);
+		return findpath;
+	}
+	return NULL;
 }
 
 void Sys_FindClose (void)
@@ -212,4 +220,3 @@ void Sys_FindClose (void)
 
 
 //============================================
-

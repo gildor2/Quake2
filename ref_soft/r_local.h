@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-  
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +25,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdarg.h>
 
 #include "../client/ref.h"
+
+#ifdef id386
+#undef id386
+#define id386 0
+#endif
 
 #define REF_VERSION     "SOFT 0.01"
 
@@ -51,13 +56,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-typedef enum 
+typedef enum
 {
 	it_skin,
 	it_sprite,
 	it_wall,
 	it_pic,
-	it_sky
+	it_sky,
+	it_temp
 } imagetype_t;
 
 typedef struct image_s
@@ -88,7 +94,7 @@ typedef struct
 	pixel_t                 *alphamap;              // 256 * 256 translucency map
 	int                             rowbytes;               // may be > width if displayed in a window
 									// can be negative for stupid dibs
-	int						width;          
+	int						width;
 	int						height;
 } viddef_t;
 
@@ -122,14 +128,14 @@ typedef struct
 										// right and bottom edges, for clamping
 	float           fvrectright;                    // rightmost edge, for Alias clamping
 	float           fvrectbottom;                   // bottommost edge, for Alias clamping
-	float           horizontalFieldOfView;  // at Z = 1.0, this many X is visible 
+	float           horizontalFieldOfView;  // at Z = 1.0, this many X is visible
 										// 2.0 = 90 degrees
 	float           xOrigin;                        // should probably always be 0.5
 	float           yOrigin;                        // between be around 0.3 to 0.5
 
 	vec3_t          vieworg;
 	vec3_t          viewangles;
-	
+
 	int                     ambientlight;
 } oldrefdef_t;
 
@@ -155,14 +161,14 @@ extern oldrefdef_t      r_refdef;
 // driver
 
 
-#define MAXVERTS        64              // max points in a surface polygon
-#define MAXWORKINGVERTS (MAXVERTS+4)    // max points in an intermediate
+#define MAXVERTS        64				// max points in a surface polygon
+#define MAXWORKINGVERTS (MAXVERTS+4)	// max points in an intermediate
 										//  polygon (while processing)
 // !!! if this is changed, it must be changed in d_ifacea.h too !!!
 #define MAXHEIGHT       1200
 #define MAXWIDTH        1600
 
-#define INFINITE_DISTANCE       0x10000         // distance that's always guaranteed to
+#define INFINITE_DISTANCE       0x10000	// distance that's always guaranteed to
 										//  be farther away than anything in
 										//  the scene
 
@@ -182,53 +188,51 @@ extern oldrefdef_t      r_refdef;
 
 
 // !!! if this is changed, it must be changed in d_ifacea.h too !!!
-#define TURB_TEX_SIZE   64              // base turbulent texture size
-
-// !!! if this is changed, it must be changed in d_ifacea.h too !!!
-#define CYCLE                   128             // turbulent cycle size
+#define CYCLE                   128		// turbulent cycle size
 
 #define SCANBUFFERPAD           0x1000
 
 #define DS_SPAN_LIST_END        -128
 
-#define NUMSTACKEDGES           2000
-#define MINEDGES                        NUMSTACKEDGES
-#define NUMSTACKSURFACES        1000
-#define MINSURFACES                     NUMSTACKSURFACES
-#define MAXSPANS                        3000
+#define NUMSTACKEDGES			2000
+#define MINEDGES				NUMSTACKEDGES
+#define NUMSTACKSURFACES		1000
+#define MINSURFACES				NUMSTACKSURFACES
+#define MAXSPANS				3000
 
 // flags in finalvert_t.flags
-#define ALIAS_LEFT_CLIP                         0x0001
-#define ALIAS_TOP_CLIP                          0x0002
-#define ALIAS_RIGHT_CLIP                        0x0004
-#define ALIAS_BOTTOM_CLIP                       0x0008
-#define ALIAS_Z_CLIP                            0x0010
-#define ALIAS_XY_CLIP_MASK                      0x000F
+#define ALIAS_LEFT_CLIP			0x0001
+#define ALIAS_TOP_CLIP			0x0002
+#define ALIAS_RIGHT_CLIP		0x0004
+#define ALIAS_BOTTOM_CLIP		0x0008
+#define ALIAS_Z_CLIP			0x0010
+#define ALIAS_XY_CLIP_MASK		0x000F
 
 #define SURFCACHE_SIZE_AT_320X240    1024*768
 
-#define BMODEL_FULLY_CLIPPED    0x10 // value returned by R_BmodelCheckBBox ()
-									 //  if bbox is trivially rejected
+#define BMODEL_FULLY_CLIPPED	0x10	// value returned by R_BmodelCheckBBox ()
+										//  if bbox is trivially rejected
 
-#define XCENTERING      (1.0 / 2.0)
-#define YCENTERING      (1.0 / 2.0)
+#define XCENTERING				(1.0 / 2.0)
+#define YCENTERING				(1.0 / 2.0)
 
-#define CLIP_EPSILON            0.001
+#define CLIP_EPSILON			0.001
 
-#define BACKFACE_EPSILON        0.01
+#define BACKFACE_EPSILON		0.01
 
 // !!! if this is changed, it must be changed in asm_draw.h too !!!
-#define NEAR_CLIP       0.01
+#define NEAR_CLIP				0.01
 
 
-#define MAXALIASVERTS           2000    // TODO: tune this
-#define ALIAS_Z_CLIP_PLANE      4
+#define MAXALIASVERTS			2000	// TODO: tune this
+#define ALIAS_Z_CLIP_PLANE		4
 
 // turbulence stuff
-
-#define AMP             8*0x10000
-#define AMP2    3
-#define SPEED   20
+#define AMP						8*0x10000
+#define AMP2					3
+#define SPEED					20
+// !!! if this is changed, it must be changed in d_ifacea.h too !!!
+#define TURB_TEX_SIZE			64		// base turbulent texture size
 
 
 /*
@@ -300,131 +304,132 @@ typedef struct finalvert_s {
 
 typedef struct
 {
-	void                            *pskin;
-	int                                     pskindesc;
-	int                                     skinwidth;
-	int                                     skinheight;
-	dtriangle_t                     *ptriangles;
-	finalvert_t                     *pfinalverts;
-	int                                     numtriangles;
-	int                                     drawtype;
-	int                                     seamfixupX16;
-	qboolean                        do_vis_thresh;
-	int                                     vis_thresh;
+	void	*pskin;
+	int		pskindesc;
+	int		skinwidth;
+	int		skinheight;
+	dTriangle_t *ptriangles;
+	finalvert_t *pfinalverts;
+	int		numtriangles;
+	int		drawtype;
+	int		seamfixupX16;
+	qboolean do_vis_thresh;
+	int		vis_thresh;
 } affinetridesc_t;
 
 typedef struct
 {
-	byte            *surfdat;       // destination for generated surface
-	int                     rowbytes;       // destination logical width in bytes
-	msurface_t      *surf;          // description for surface to generate
-	fixed8_t        lightadj[MAXLIGHTMAPS];
+	byte	*surfdat;		// destination for generated surface
+	int		rowbytes;		// destination logical width in bytes
+	msurface_t *surf;		// description for surface to generate
+	fixed8_t lightadj[MAXLIGHTMAPS];
 							// adjust for lightmap levels for dynamic lighting
-	image_t			*image;
-	int                     surfmip;        // mipmapped ratio of surface texels / world pixels
-	int                     surfwidth;      // in mipmapped texels
-	int                     surfheight;     // in mipmapped texels
+	image_t	*image;
+	int		surfmip;		// mipmapped ratio of surface texels / world pixels
+	int		surfwidth;		// in mipmapped texels
+	int		surfheight;		// in mipmapped texels
 } drawsurf_t;
 
 
 
-typedef struct {
-	int                     ambientlight;
-	int                     shadelight;
-	float           *plightvec;
+typedef struct
+{
+	int		ambientlight;
+	int		shadelight;
+	float	*plightvec;
 } alight_t;
 
 // clipped bmodel edges
 
 typedef struct bedge_s
 {
-	mvertex_t               *v[2];
-	struct bedge_s  *pnext;
+	mvertex_t *v[2];
+	struct bedge_s *pnext;
 } bedge_t;
 
 
 // !!! if this is changed, it must be changed in asm_draw.h too !!!
 typedef struct clipplane_s
 {
-	vec3_t          normal;
-	float           dist;
-	struct          clipplane_s     *next;
-	byte            leftedge;
-	byte            rightedge;
-	byte            reserved[2];
+	vec3_t	normal;
+	float	dist;
+	struct clipplane_s *next;
+	byte	leftedge;
+	byte	rightedge;
+	byte	reserved[2];
 } clipplane_t;
 
 
 typedef struct surfcache_s
 {
-	struct surfcache_s      *next;
-	struct surfcache_s      **owner;                // NULL is an empty chunk of memory
-	int                                     lightadj[MAXLIGHTMAPS]; // checked for strobe flush
-	int                                     dlight;
-	int                                     size;           // including header
-	unsigned                        width;
-	unsigned                        height;         // DEBUG only needed for debug
-	float                           mipscale;
-	image_t							*image;
-	byte                            data[4];        // width*height elements
+	struct surfcache_s *next;
+	struct surfcache_s **owner;	// NULL is an empty chunk of memory
+	int		lightadj[MAXLIGHTMAPS]; // checked for strobe flush
+	int		dlight;
+	int		size;				// including header
+	unsigned width;
+	unsigned height;			// DEBUG only needed for debug
+	float	mipscale;
+	image_t	*image;
+	byte	data[4];			// width*height elements
 } surfcache_t;
 
 // !!! if this is changed, it must be changed in asm_draw.h too !!!
 typedef struct espan_s
 {
-	int                             u, v, count;
-	struct espan_s  *pnext;
+	int		u, v, count;
+	struct espan_s *pnext;
 } espan_t;
 
 // used by the polygon drawer (R_POLY.C) and sprite setup code (R_SPRITE.C)
 typedef struct
 {
-	int                     nump;
-	emitpoint_t     *pverts;
-	byte            *pixels;                        // image
-	int                     pixel_width;            // image width
-	int         pixel_height;       // image height
-	vec3_t          vup, vright, vpn;       // in worldspace, for plane eq
-	float       dist;
-	float       s_offset, t_offset;
-	float       viewer_position[3];
-	void       (*drawspanlet)( void );
-	int         stipple_parity;
+	int		nump;
+	emitpoint_t *pverts;
+	byte	*pixels;			// image
+	int		pixel_width;		// image width
+	int		pixel_height;		// image height
+	vec3_t	vup, vright, vpn;	// in worldspace, for plane eq
+	float	dist;
+	float	s_offset, t_offset;
+	float	viewer_position[3];
+	void	(*drawspanlet)( void );
+	int		stipple_parity;
 } polydesc_t;
 
 // FIXME: compress, make a union if that will help
 // insubmodel is only 1, flags is fewer than 32, spanstate could be a byte
 typedef struct surf_s
 {
-	struct surf_s   *next;                  // active surface stack in r_edge.c
-	struct surf_s   *prev;                  // used in r_edge.c for active surf stack
-	struct espan_s  *spans;                 // pointer to linked list of spans to draw
-	int                     key;                            // sorting key (BSP order)
-	int                     last_u;                         // set during tracing
-	int                     spanstate;                      // 0 = not in span
-									// 1 = in span
-									// -1 = in inverted span (end before
-									//  start)
-	int                     flags;                          // currentface flags
-	msurface_t      *msurf;
-	entity_t        *entity;
-	float           nearzi;                         // nearest 1/z on surface, for mipmapping
-	qboolean        insubmodel;
-	float           d_ziorigin, d_zistepu, d_zistepv;
+	struct surf_s *next;		// active surface stack in r_edge.c
+	struct surf_s *prev;		// used in r_edge.c for active surf stack
+	struct espan_s *spans;		// pointer to linked list of spans to draw
+	int		key;				// sorting key (BSP order)
+	int		last_u;				// set during tracing
+	int		spanstate;			// 0 = not in span
+								// 1 = in span
+								// -1 = in inverted span (end before
+								//  start)
+	int		flags;				// currentface flags
+	msurface_t *msurf;
+	entity_t *entity;
+	float	nearzi;				// nearest 1/z on surface, for mipmapping
+	qboolean insubmodel;
+	float	d_ziorigin, d_zistepu, d_zistepv;
 
-	int                     pad[2];                         // to 64 bytes
+	int		pad[2];				// to 64 bytes
 } surf_t;
 
 // !!! if this is changed, it must be changed in asm_draw.h too !!!
 typedef struct edge_s
 {
-	fixed16_t               u;
-	fixed16_t               u_step;
-	struct edge_s   *prev, *next;
-	unsigned short  surfs[2];
-	struct edge_s   *nextremove;
-	float                   nearzi;
-	medge_t                 *owner;
+	fixed16_t u;
+	fixed16_t u_step;
+	struct edge_s *prev, *next;
+	unsigned short surfs[2];
+	struct edge_s *nextremove;
+	float	nearzi;
+	medge_t	*owner;
 } edge_t;
 
 
@@ -436,16 +441,14 @@ VARS
 ====================================================
 */
 
-extern int              d_spanpixcount;
-extern int              r_framecount;           // sequence # of current frame since Quake
-									//  started
-extern float    r_aliasuvscale;         // scale-up factor for screen u and v
-									//  on Alias vertices passed to driver
+extern int d_spanpixcount;
+extern int r_framecount;		// sequence # of current frame since Quake started
+extern float r_aliasuvscale;	// scale-up factor for screen u and v on Alias vertices passed to driver
 extern qboolean r_dowarp;
 
-extern affinetridesc_t  r_affinetridesc;
+extern affinetridesc_t r_affinetridesc;
 
-extern vec3_t   r_pright, r_pup, r_ppn;
+extern vec3_t r_pright, r_pup, r_ppn;
 
 void D_DrawSurfaces (void);
 void R_DrawParticle( void );
@@ -453,35 +456,35 @@ void D_ViewChanged (void);
 void D_WarpScreen (void);
 void R_PolysetUpdateTables (void);
 
-extern void *acolormap; // FIXME: should go away
+extern void *acolormap;			// FIXME: should go away
 
 //=======================================================================//
 
 // callbacks to Quake
 
-extern drawsurf_t       r_drawsurf;
+extern drawsurf_t	r_drawsurf;
 
 void R_DrawSurface (void);
 
-extern int              c_surf;
+extern int			c_surf;
 
-extern byte             r_warpbuffer[WARP_WIDTH * WARP_HEIGHT];
+extern byte			r_warpbuffer[WARP_WIDTH * WARP_HEIGHT];
 
 
 
 
 extern float    scale_for_mip;
 
-extern qboolean         d_roverwrapped;
-extern surfcache_t      *sc_rover;
-extern surfcache_t      *d_initial_rover;
+extern qboolean		d_roverwrapped;
+extern surfcache_t	*sc_rover;
+extern surfcache_t	*d_initial_rover;
 
-extern float    d_sdivzstepu, d_tdivzstepu, d_zistepu;
-extern float    d_sdivzstepv, d_tdivzstepv, d_zistepv;
-extern float    d_sdivzorigin, d_tdivzorigin, d_ziorigin;
+extern float	d_sdivzstepu, d_tdivzstepu, d_zistepu;
+extern float	d_sdivzstepv, d_tdivzstepv, d_zistepv;
+extern float	d_sdivzorigin, d_tdivzorigin, d_ziorigin;
 
-extern  fixed16_t       sadjust, tadjust;
-extern  fixed16_t       bbextents, bbextentt;
+extern fixed16_t	sadjust, tadjust;
+extern fixed16_t	bbextents, bbextentt;
 
 
 void D_DrawSpans16 (espan_t *pspans);
@@ -506,11 +509,11 @@ extern float    d_scalemip[3];
 
 //===================================================================
 
-extern int              cachewidth;
+extern int      cachewidth;
 extern pixel_t  *cacheblock;
-extern int              r_screenwidth;
+extern int      r_screenwidth;
 
-extern int              r_drawnpolycount;
+extern int      r_drawnpolycount;
 
 extern int      sintable[1280];
 extern int      intsintable[1280];
@@ -572,12 +575,12 @@ extern cvar_t   *r_speeds;
 
 extern cvar_t   *r_lightlevel;  //FIXME HACK
 
-extern cvar_t	*vid_fullscreen;
-extern	cvar_t	*vid_gamma;
+extern cvar_t	*r_fullscreen;
+extern cvar_t	*r_gamma;
 
 
-extern  clipplane_t     view_clipplanes[4];
-extern int              *pfrustum_indexes[4];
+extern clipplane_t  view_clipplanes[4];
+extern int          *pfrustum_indexes[4];
 
 
 //=============================================================================
@@ -586,7 +589,7 @@ void R_RenderWorld (void);
 
 //=============================================================================
 
-extern  mplane_t        screenedge[4];
+extern  cplane_t        screenedge[4];
 
 extern  vec3_t  r_origin;
 
@@ -620,7 +623,7 @@ void R_DrawBeam( entity_t *e );
 
 void R_RenderFace (msurface_t *fa, int clipflags);
 void R_RenderBmodelFace (bedge_t *pedges, msurface_t *psurf);
-void R_TransformPlane (mplane_t *p, float *normal, float *dist);
+void R_TransformPlane (cplane_t *p, float *normal, float *dist);
 void R_TransformFrustum (void);
 void R_DrawSurfaceBlock16 (void);
 void R_DrawSurfaceBlock8 (void);
@@ -776,9 +779,11 @@ struct image_s  *Draw_FindPic (char *name);
 
 void    Draw_GetPicSize (int *w, int *h, char *name);
 void    Draw_Pic (int x, int y, char *name);
+void	Draw_PicColor (int x, int y, char *name, int color);
 void    Draw_StretchPic (int x, int y, int w, int h, char *name);
 void    Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data);
 void    Draw_Char (int x, int y, int c);
+void    Draw_CharColor (int x, int y, int c, int color);
 void    Draw_TileClear (int x, int y, int w, int h, char *name);
 void    Draw_Fill (int x, int y, int w, int h, int c);
 void    Draw_FadeScreen (void);
@@ -794,7 +799,7 @@ extern unsigned d_8to24table[256]; // base
 void    Sys_MakeCodeWriteable (unsigned long startaddr, unsigned long length);
 void    Sys_SetFPCW (void);
 
-void LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *height);
+//void LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *height);
 
 void    R_InitImages (void);
 void	R_ShutdownImages (void);
@@ -829,7 +834,7 @@ IMPORTED FUNCTIONS
 ====================================================================
 */
 
-extern  refimport_t     ri;
+extern  refImport_t     ri;
 
 /*
 ====================================================================
@@ -847,3 +852,7 @@ void		SWimp_Shutdown( void );
 rserr_t		SWimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen );
 void		SWimp_AppActivate( qboolean active );
 
+void R_DrawTexts (void);
+void DrawText_Pos (int x, int y, char *text, float r, float g, float b);
+void DrawText_Left (char *text, float r, float g, float b);
+void DrawText_Right (char *text, float r, float g, float b);

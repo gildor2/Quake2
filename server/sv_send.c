@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -66,14 +66,14 @@ void SV_ClientPrintf (client_t *cl, int level, char *fmt, ...)
 {
 	va_list		argptr;
 	char		string[1024];
-	
+
 	if (level < cl->messagelevel)
 		return;
-	
+
 	va_start (argptr,fmt);
 	vsprintf (string, fmt,argptr);
 	va_end (argptr);
-	
+
 	MSG_WriteByte (&cl->netchan.message, svc_print);
 	MSG_WriteByte (&cl->netchan.message, level);
 	MSG_WriteString (&cl->netchan.message, string);
@@ -96,13 +96,13 @@ void SV_BroadcastPrintf (int level, char *fmt, ...)
 	va_start (argptr,fmt);
 	vsprintf (string, fmt,argptr);
 	va_end (argptr);
-	
+
 	// echo to console
-	if (dedicated->value)
+	if (dedicated->integer)
 	{
 		char	copy[1024];
 		int		i;
-		
+
 		// mask off high bits
 		for (i=0 ; i<1023 && string[i] ; i++)
 			copy[i] = string[i]&127;
@@ -110,7 +110,7 @@ void SV_BroadcastPrintf (int level, char *fmt, ...)
 		Com_Printf ("%s", copy);
 	}
 
-	for (i=0, cl = svs.clients ; i<maxclients->value; i++, cl++)
+	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 	{
 		if (level < cl->messagelevel)
 			continue;
@@ -133,7 +133,7 @@ void SV_BroadcastCommand (char *fmt, ...)
 {
 	va_list		argptr;
 	char		string[1024];
-	
+
 	if (!sv.state)
 		return;
 	va_start (argptr,fmt);
@@ -142,7 +142,7 @@ void SV_BroadcastCommand (char *fmt, ...)
 
 	MSG_WriteByte (&sv.multicast, svc_stufftext);
 	MSG_WriteString (&sv.multicast, string);
-	SV_Multicast (NULL, MULTICAST_ALL_R);
+	SV_MulticastOld (NULL, MULTICAST_ALL_R);
 }
 
 
@@ -158,7 +158,7 @@ MULTICAST_PVS	send to clients potentially visible from org
 MULTICAST_PHS	send to clients potentially hearable from org
 =================
 */
-void SV_Multicast (vec3_t origin, multicast_t to)
+void SV_Multicast (vec3_t origin, multicast_t to, qboolean oldclients)
 {
 	client_t	*client;
 	byte		*mask;
@@ -183,7 +183,7 @@ void SV_Multicast (vec3_t origin, multicast_t to)
 	// if doing a serverrecord, store everything
 	if (svs.demofile)
 		SZ_Write (&svs.demo_multicast, sv.multicast.data, sv.multicast.cursize);
-	
+
 	switch (to)
 	{
 	case MULTICAST_ALL_R:
@@ -215,11 +215,13 @@ void SV_Multicast (vec3_t origin, multicast_t to)
 	}
 
 	// send the data to all relevent clients
-	for (j = 0, client = svs.clients; j < maxclients->value; j++, client++)
+	for (j = 0, client = svs.clients; j < maxclients->integer; j++, client++)
 	{
 		if (client->state == cs_free || client->state == cs_zombie)
 			continue;
 		if (client->state != cs_spawned && !reliable)
+			continue;
+		if (!oldclients && !client->newprotocol)
 			continue;
 
 		if (mask)
@@ -242,8 +244,19 @@ void SV_Multicast (vec3_t origin, multicast_t to)
 	SZ_Clear (&sv.multicast);
 }
 
+void SV_MulticastOld (vec3_t origin, multicast_t to)
+{
+	SV_Multicast (origin, to, true);	// send to old and new clients
+}
 
-/*  
+void SV_MulticastNew (vec3_t origin, multicast_t to)
+{
+	SV_Multicast (origin, to, false);	// send to new clients only
+}
+
+
+
+/*
 ==================
 SV_StartSound
 
@@ -268,15 +281,11 @@ later in the frame than they normally would.
 If origin is NULL, the origin is determined from the entity origin
 or the midpoint of the entity box for bmodels.
 ==================
-*/  
+*/
 void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
-					int soundindex, float volume,
-					float attenuation, float timeofs)
-{       
-	int			sendchan;
-    int			flags;
-    int			i;
-	int			ent;
+		int soundindex, float volume, float attenuation, float timeofs, qboolean oldclients)
+{
+	int			sendchan, flags, i, ent, to;
 	vec3_t		origin_v;
 	qboolean	use_phs;
 
@@ -313,7 +322,7 @@ void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
 	// the client doesn't know that bmodels have weird origins
 	// the origin can also be explicitly set
 	if ( (entity->svflags & SVF_NOCLIENT)
-		|| (entity->solid == SOLID_BSP) 
+		|| (entity->solid == SOLID_BSP)
 		|| origin )
 		flags |= SND_POS;
 
@@ -363,19 +372,36 @@ void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
 	if (channel & CHAN_RELIABLE)
 	{
 		if (use_phs)
-			SV_Multicast (origin, MULTICAST_PHS_R);
+			to = MULTICAST_PHS_R;
 		else
-			SV_Multicast (origin, MULTICAST_ALL_R);
+			to = MULTICAST_ALL_R;
 	}
 	else
 	{
 		if (use_phs)
-			SV_Multicast (origin, MULTICAST_PHS);
+			to = MULTICAST_PHS;
 		else
-			SV_Multicast (origin, MULTICAST_ALL);
+			to = MULTICAST_ALL;
 	}
-}           
 
+	if (oldclients)
+		SV_MulticastOld (origin, to);
+	else
+		SV_MulticastNew (origin, to);
+}
+
+
+void SV_StartSoundOld (vec3_t origin, edict_t *entity, int channel,
+		int soundindex, float volume, float attenuation, float timeofs)
+{
+	SV_StartSound (origin, entity, channel, soundindex, volume, attenuation, timeofs, true);
+}
+
+void SV_StartSoundNew (vec3_t origin, edict_t *entity, int channel,
+		int soundindex, float volume, float attenuation, float timeofs)
+{
+	SV_StartSound (origin, entity, channel, soundindex, volume, attenuation, timeofs, false);
+}
 
 /*
 ===============================================================================
@@ -441,7 +467,7 @@ void SV_DemoCompleted (void)
 {
 	if (sv.demofile)
 	{
-		fclose (sv.demofile);
+		FS_FCloseFile (sv.demofile);
 		sv.demofile = NULL;
 	}
 	SV_Nextserver ();
@@ -493,24 +519,18 @@ void SV_SendClientMessages (void)
 	client_t	*c;
 	int			msglen;
 	byte		msgbuf[MAX_MSGLEN];
-	int			r;
 
 	msglen = 0;
 
 	// read the next demo message if needed
 	if (sv.state == ss_demo && sv.demofile)
 	{
-		if (sv_paused->value)
+		if (sv_paused->integer)
 			msglen = 0;
 		else
 		{
 			// get the next message
-			r = fread (&msglen, 4, 1, sv.demofile);
-			if (r != 1)
-			{
-				SV_DemoCompleted ();
-				return;
-			}
+			FS_Read (&msglen, 4, sv.demofile);
 			msglen = LittleLong (msglen);
 			if (msglen == -1)
 			{
@@ -519,17 +539,12 @@ void SV_SendClientMessages (void)
 			}
 			if (msglen > MAX_MSGLEN)
 				Com_Error (ERR_DROP, "SV_SendClientMessages: msglen > MAX_MSGLEN");
-			r = fread (msgbuf, msglen, 1, sv.demofile);
-			if (r != 1)
-			{
-				SV_DemoCompleted ();
-				return;
-			}
+			FS_Read (msgbuf, msglen, sv.demofile);
 		}
 	}
 
 	// send a message to each connected client
-	for (i=0, c = svs.clients ; i<maxclients->value; i++, c++)
+	for (i = 0, c = svs.clients ; i < maxclients->integer; i++, c++)
 	{
 		if (!c->state)
 			continue;
@@ -543,8 +558,8 @@ void SV_SendClientMessages (void)
 			SV_DropClient (c);
 		}
 
-		if (sv.state == ss_cinematic 
-			|| sv.state == ss_demo 
+		if (sv.state == ss_cinematic
+			|| sv.state == ss_demo
 			|| sv.state == ss_pic
 			)
 			Netchan_Transmit (&c->netchan, msglen, msgbuf);
@@ -564,4 +579,3 @@ void SV_SendClientMessages (void)
 		}
 	}
 }
-

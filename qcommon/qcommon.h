@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -20,12 +20,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // qcommon.h -- definitions common between client and server, but not game.dll
 
-#include "../game/q_shared.h"
+#ifndef QCOMMON_H
+#define QCOMMON_H
+
+#include "q_shared2.h"
 
 
-#define	VERSION		3.21
+#define	VERSION		4.00	// 3.21
 
 #define	BASEDIRNAME	"baseq2"
+#define CONFIGNAME	"config.cfg"
 
 #ifdef WIN32
 
@@ -67,6 +71,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define BUILDSTRING "NON-WIN32"
 #define	CPUSTRING	"NON-WIN32"
+
+#endif
+
+//============================================================================
+
+#if defined(_M_IX86) || defined(__i386__)
+
+#define RETADDR_STR " (call from %08x)"
+#define	GET_RETADDR(firstarg)	(* ( ((int*)&firstarg) -1 ) )
+
+#else
+
+#define RETADDR_STR
+#define	GET_RETADDR()
 
 #endif
 
@@ -130,7 +148,8 @@ void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
 
 //============================================================================
 
-extern	qboolean		bigendien;
+/* -- declared in q_shared.h
+extern	qboolean		bigendian;
 
 extern	short	BigShort (short l);
 extern	short	LittleShort (short l);
@@ -138,6 +157,7 @@ extern	int		BigLong (int l);
 extern	int		LittleLong (int l);
 extern	float	BigFloat (float l);
 extern	float	LittleFloat (float l);
+*/
 
 //============================================================================
 
@@ -150,8 +170,6 @@ void COM_AddParm (char *parm);
 
 void COM_Init (void);
 void COM_InitArgv (int argc, char **argv);
-
-char *CopyString (char *in);
 
 //============================================================================
 
@@ -174,6 +192,19 @@ PROTOCOL
 
 ==============================================================
 */
+
+// declaration from server.h
+typedef enum {
+	ss_dead,
+	ss_loading,
+	ss_game,
+	ss_cinematic,
+	ss_demo,
+	ss_pic
+} server_state_t;
+// some qc commands are only valid before the server has finished
+// initializing (precache commands, static sounds / objects, etc)
+
 
 // protocol.h -- communications protocols
 
@@ -220,7 +251,7 @@ enum svc_ops_e
 	svc_stufftext,				// [string] stuffed into client's console buffer, should be \n terminated
 	svc_serverdata,				// [long] protocol ...
 	svc_configstring,			// [short] [string]
-	svc_spawnbaseline,		
+	svc_spawnbaseline,
 	svc_centerprint,			// [string] to put in center of the screen
 	svc_download,				// [short] size [size bytes]
 	svc_playerinfo,				// variable
@@ -237,7 +268,7 @@ enum svc_ops_e
 enum clc_ops_e
 {
 	clc_bad,
-	clc_nop, 		
+	clc_nop,
 	clc_move,				// [[usercmd_t]
 	clc_userinfo,			// [[userinfo string]
 	clc_stringcmd			// [string] message
@@ -368,7 +399,7 @@ void Cbuf_InsertText (char *text);
 // inserted at the beginning of the buffer, before any remaining unexecuted
 // commands.
 
-void Cbuf_ExecuteText (int exec_when, char *text);
+//--void Cbuf_ExecuteText (int exec_when, char *text);
 // this can be used in place of either Cbuf_AddText or Cbuf_InsertText
 
 void Cbuf_AddEarlyCommands (qboolean clear);
@@ -399,17 +430,15 @@ then searches for a command or variable that matches the first token.
 
 */
 
-typedef void (*xcommand_t) (void);
-
 void	Cmd_Init (void);
 
-void	Cmd_AddCommand (char *cmd_name, xcommand_t function);
+//--void	Cmd_AddCommand (char *cmd_name, void (*func)(void));
 // called by the init functions of other parts of the program to
 // register commands and functions to call for them.
 // The cmd_name is referenced later, so it should not be in temp memory
 // if function is NULL, the command will be forwarded to the server
 // as a clc_stringcmd instead of executed locally
-void	Cmd_RemoveCommand (char *cmd_name);
+//--void	Cmd_RemoveCommand (char *cmd_name);
 
 qboolean Cmd_Exists (char *cmd_name);
 // used by the cvar code to check for cvar / command name overlap
@@ -418,9 +447,9 @@ char 	*Cmd_CompleteCommand (char *partial);
 // attempts to match a partial command for automatic command line completion
 // returns NULL if nothing fits
 
-int		Cmd_Argc (void);
-char	*Cmd_Argv (int arg);
-char	*Cmd_Args (void);
+//--int		Cmd_Argc (void);
+//--char	*Cmd_Argv (int arg);
+//--char	*Cmd_Args (void);
 // The functions that execute commands get their parameters with these
 // functions. Cmd_Argv () will return an empty string, not a NULL
 // if arg > argc, so string operations are always safe.
@@ -447,6 +476,22 @@ CVAR
 ==============================================================
 */
 
+typedef struct
+{
+	cvar_t	**var;	// destination, may be NULL
+	char	*name;
+	char	*value;
+	int		flags;
+} cvarInfo_t;
+
+#define CVAR_BEGIN(name)			static cvarInfo_t name[] = {
+#define CVAR_VAR(name,value,flags)		{&name, #name, #value, flags}
+#define CVAR_GET(name)					{&name, #name, "", CVAR_NODEFAULT}
+#define CVAR_NULL(name,value,flags)		{NULL, #name, #value, flags}
+#define CVAR_END					};
+
+#define CVAR_GET_VARS(array)	Cvar_GetVars(array, sizeof(array)/sizeof(cvarInfo_t))
+
 /*
 
 cvar_t variables are used to hold scalar or string variables that can be changed or displayed at the console or prog code as well as accessed directly
@@ -462,31 +507,28 @@ interface from being ambiguous.
 
 extern	cvar_t	*cvar_vars;
 
-cvar_t *Cvar_Get (char *var_name, char *value, int flags);
+//--cvar_t *Cvar_Get (char *var_name, char *value, int flags);
 // creates the variable if it doesn't exist, or returns the existing one
 // if it exists, the value will not be changed, but flags will be ORed in
 // that allows variables to be unarchived without needing bitflags
 
-cvar_t 	*Cvar_Set (char *var_name, char *value);
-// will create the variable if it doesn't exist
-
-cvar_t *Cvar_ForceSet (char *var_name, char *value);
-// will set the variable even if NOSET or LATCH
-
 cvar_t 	*Cvar_FullSet (char *var_name, char *value, int flags);
 
-void	Cvar_SetValue (char *var_name, float value);
-// expands value to a string and calls Cvar_Set
+//--cvar_t	*Cvar_SetValue (char *var_name, float value);
+//--cvar_t	*Cvar_SetInteger (char *var_name, int value);
+//--cvar_t 	*Cvar_Set (char *var_name, char *value);		// will create the variable if it doesn't exist
+cvar_t	*Cvar_ForceSet (char *var_name, char *value);	// will set the variable even if NOSET or LATCH
 
-float	Cvar_VariableValue (char *var_name);
+// expands value to a string and calls Cvar_Set
+//--float	Cvar_Clamp (cvar_t *cvar, float low, float high);
+//--float	Cvar_ClampName (char *name, float low, float high);
+
+//--float	Cvar_VariableValue (char *var_name);
+//--int		Cvar_VariableInt (char *var_name);
 // returns 0 if not defined or non numeric
 
-char	*Cvar_VariableString (char *var_name);
+//--char	*Cvar_VariableString (char *var_name);
 // returns an empty string if not defined
-
-char 	*Cvar_CompleteVariable (char *partial);
-// attempts to match a partial variable name for command line completion
-// returns NULL if nothing fits
 
 void	Cvar_GetLatchedVars (void);
 // any CVAR_LATCHED variables that have been set will now take effect
@@ -496,7 +538,7 @@ qboolean Cvar_Command (void);
 // command.  Returns true if the command was a variable reference that
 // was handled. (print or change)
 
-void 	Cvar_WriteVariables (char *path);
+void 	Cvar_WriteVariables (FILE *f);
 // appends lines containing "set variable value" for all variables
 // with the archive flag set to true.
 
@@ -576,7 +618,7 @@ typedef struct
 	netadr_t	remote_address;
 	int			qport;				// qport value to write when transmitting
 
-// sequencing variables
+	// sequencing variables
 	int			incoming_sequence;
 	int			incoming_acknowledged;
 	int			incoming_reliable_acknowledged;	// single bit
@@ -587,11 +629,11 @@ typedef struct
 	int			reliable_sequence;			// single bit
 	int			last_reliable_sequence;		// sequence number of last send
 
-// reliable staging and holding areas
+	// reliable staging and holding areas
 	sizebuf_t	message;		// writing buffer to send to server
 	byte		message_buf[MAX_MSGLEN-16];		// leave space for header
 
-// message is copied to this buffer when it is first transfered
+	// message is copied to this buffer when it is first transfered
 	int			reliable_length;
 	byte		reliable_buf[MAX_MSGLEN-16];	// unacked reliable message
 } netchan_t;
@@ -684,43 +726,85 @@ extern float pm_airaccelerate;
 
 void Pmove (pmove_t *pmove);
 
-/*
-==============================================================
 
-FILESYSTEM
+/*----------------- Debugging ------------------*/
 
-==============================================================
+
+void DebugPrintf (char *fmt, ...);
+
+
+/*-------------- Memory management -------------*/
+
+/* Layout of fields:
+	1. char *name
+	2. self_t *next
+	3. all othen fields
+	4. char name[] (pointed by field #1)
 */
+typedef struct basenamed_s
+{
+	char *name;
+	struct basenamed_s *next;
+	// place for other fields
+} basenamed_t;
+
+
+// Memory blocks
+//--void	Z_Free (void *ptr);
+//--void	*Z_Malloc (int size);			// returns 0-filled memory
+void	*Z_TagMalloc (int size, int tag);
+void	*Z_BlockMalloc (int size);
+void	Z_FreeTags (int tag);
+
+// Memory chains
+//--void	*CreateMemoryChain (void);
+//--void	FreeMemoryChain (void *chain);
+//--void	*AllocChainBlock (void *chain, int size);
+
+// Strings
+char	*CopyString (char *in);
+char	*ChainCopyString (char *in, void *chain);
+
+// Named structure lists
+basenamed_t *AllocNamedStruc (int size, char *name);
+#define FreeNamedStruc(s)   Z_Free(s)
+basenamed_t *ChainAllocNamedStruc (int size, char *name, void *chain);
+
+basenamed_t *FindNamedStruc (char *name, basenamed_t *first, basenamed_t **where);
+basenamed_t *FindNamedStrucByIndex (basenamed_t *first, int index);
+int IndexOfNamedStruc (char *name, basenamed_t *first);
+
+basenamed_t *AddToNamedList (char *name, basenamed_t *list);
+basenamed_t *ChainAddToNamedList (char *name, basenamed_t *list, void *chain);
+void	FreeNamedList (basenamed_t *list);
+
+
+/*----------------- File system ----------------*/
+
+
+//--basenamed_t *FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigned canthave);
 
 void	FS_InitFilesystem (void);
-void	FS_SetGamedir (char *dir);
-char	*FS_Gamedir (void);
+qboolean FS_SetGamedir (char *dir);
+//--char	*FS_Gamedir (void);
 char	*FS_NextPath (char *prevpath);
-void	FS_ExecAutoexec (void);
+void	FS_LoadGameConfig (void);
 
 int		FS_FOpenFile (char *filename, FILE **file);
+//--qboolean FS_FileExists (char *filename);
 void	FS_FCloseFile (FILE *f);
-// note: this can't be called from another DLL, due to MS libc issues
-
-int		FS_LoadFile (char *path, void **buffer);
-// a null buffer will just return the file length without loading
-// a -1 length is not present
-
 void	FS_Read (void *buffer, int len, FILE *f);
 // properly handles partial reads
 
-void	FS_FreeFile (void *buffer);
+//--int		FS_LoadFile (char *path, void **buffer);
+// a null buffer will just return the file length without loading
+// a -1 length is not present
+//--void	FS_FreeFile (void *buffer);
 
 void	FS_CreatePath (char *path);
 
 
-/*
-==============================================================
-
-MISC
-
-==============================================================
-*/
+/*------------- Miscellaneous -----------------*/
 
 
 #define	ERR_FATAL	0		// exit the entire game with a popup window
@@ -731,42 +815,35 @@ MISC
 #define	EXEC_INSERT	1		// insert at current position, but don't run yet
 #define	EXEC_APPEND	2		// add to end of the command buffer
 
-#define	PRINT_ALL		0
-#define PRINT_DEVELOPER	1	// only print when "developer 1"
+void	Com_BeginRedirect (int target, char *buffer, int buffersize, void (*flush));
+void	Com_EndRedirect (void);
 
-void		Com_BeginRedirect (int target, char *buffer, int buffersize, void (*flush));
-void		Com_EndRedirect (void);
-void 		Com_Printf (char *fmt, ...);
-void 		Com_DPrintf (char *fmt, ...);
-void 		Com_Error (int code, char *fmt, ...);
-void 		Com_Quit (void);
+void 	Com_Quit (void);
 
-int			Com_ServerState (void);		// this should have just been a cvar...
-void		Com_SetServerState (int state);
+//--qboolean MatchWildcard (char *name, char *mask);
 
-unsigned	Com_BlockChecksum (void *buffer, int length);
-byte		COM_BlockSequenceCRCByte (byte *base, int length, int sequence);
+int		Com_ServerState (void);		// this should have just been a cvar...
+void	Com_SetServerState (int state);
 
-float	frand(void);	// 0 ti 1
+unsigned Com_BlockChecksum (void *buffer, int length);
+byte	COM_BlockSequenceCRCByte (byte *base, int length, int sequence);
+
+float	frand(void);	// 0 to 1
 float	crand(void);	// -1 to 1
 
 extern	cvar_t	*developer;
 extern	cvar_t	*dedicated;
-extern	cvar_t	*host_speeds;
+extern	cvar_t	*com_speeds;
 extern	cvar_t	*log_stats;
 
 extern	FILE *log_stats_file;
 
-// host_speeds times
+// com_speeds times
 extern	int		time_before_game;
 extern	int		time_after_game;
 extern	int		time_before_ref;
 extern	int		time_after_ref;
 
-void Z_Free (void *ptr);
-void *Z_Malloc (int size);			// returns 0 filled memory
-void *Z_TagMalloc (int size, int tag);
-void Z_FreeTags (int tag);
 
 void Qcommon_Init (int argc, char **argv);
 void Qcommon_Frame (int msec);
@@ -779,13 +856,8 @@ extern	vec3_t	bytedirs[NUMVERTEXNORMALS];
 void SCR_DebugGraph (float value, int color);
 
 
-/*
-==============================================================
+/*-------- Non-portable system services --------*/
 
-NON-PORTABLE SYSTEM SERVICES
-
-==============================================================
-*/
 
 void	Sys_Init (void);
 
@@ -803,13 +875,9 @@ void	Sys_Quit (void);
 char	*Sys_GetClipboardData( void );
 void	Sys_CopyProtect (void);
 
-/*
-==============================================================
 
-CLIENT / SERVER SYSTEMS
+/*------- Client / server systems ---------*/
 
-==============================================================
-*/
 
 void CL_Init (void);
 void CL_Drop (void);
@@ -823,4 +891,103 @@ void SV_Shutdown (char *finalmsg, qboolean reconnect);
 void SV_Frame (int msec);
 
 
+void DebugPrintf (char *fmt, ...);
 
+
+/*------------- Image loading -------------*/
+
+
+//--void LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *height);
+//--void LoadTGA (char *name, byte **pic, int *width, int *height);
+//--void LoadJPG (char *name, byte **pic, int *width, int *height);
+
+#define IMAGE_PCX 1
+#define IMAGE_WAL 2
+#define IMAGE_TGA 4
+#define IMAGE_JPG 8
+
+#define IMAGE_8BIT  (IMAGE_PCX|IMAGE_WAL)
+#define IMAGE_32BIT (IMAGE_TGA|IMAGE_JPG)
+#define IMAGE_ANY   (IMAGE_8BIT|IMAGE_32BIT)
+
+//--int ImageExists (char *name, int stop_mask);
+
+
+/*---------- Map and model stuff ----------*/
+
+
+typedef enum {map_q2, map_hl} maptype_t;
+
+typedef struct
+{
+	char		name[256];	// mapname
+	void		*file;		// buffer, returned by FS_LoadFile()
+	maptype_t	type;
+	unsigned	checksum;
+	int		length;
+
+	// lumps
+	int			entDataSize;
+	byte		*entities;
+
+	int			numPlanes;
+	dplane_t	*planes;
+
+	int			numVertexes;
+	dvertex_t	*vertexes;
+
+	int			visDataSize;
+	dvis_t		*visibility;
+
+	int			numNodes;
+	dnode_t		*nodes;
+
+	int			numTexinfo;
+	texinfo_t	*texinfo;
+
+	int			numFaces;
+	dface_t		*faces;
+
+	int			lightDataSize;
+	byte		*lighting;
+
+	int			numLeafs;
+	dleaf_t		*leafs;
+
+	int			numLeaffaces;
+	unsigned short *leaffaces;
+
+	int			numLeafbrushes;
+	unsigned short *leafbrushes;
+
+	int			numEdges;
+	dedge_t		*edges;
+
+	int			numSurfedges;
+	int			*surfedges;
+
+	int			numModels;
+	dmodel_t	*models;
+
+	int			numBrushes;
+	dbrush_t	*brushes;
+
+	int			numBrushsides;
+	dbrushside_t *brushsides;
+
+	// LUMP_POP
+
+	int			numAreas;
+	darea_t		*areas;
+
+	int			numAreaportals;
+	dareaportal_t *areaportals;
+} bspfile_t;
+
+
+//--bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum);
+
+#include "../client/ref_defs.h"
+
+
+#endif // QCOMMON_H

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -28,6 +28,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ** GLimp_Init
 ** GLimp_Shutdown
 ** GLimp_SwitchFullscreen
+** GLimp_HasGamma
+** GLimp_SetGamma
 **
 */
 
@@ -54,14 +56,14 @@ glwstate_t glw_state;
 static qboolean GLimp_SwitchFullscreen( int width, int height );
 qboolean GLimp_InitGL (void);
 
-extern cvar_t *vid_fullscreen;
+extern cvar_t *r_fullscreen;
 extern cvar_t *vid_ref;
 
 static fxMesaContext fc = NULL;
 
 #define NUM_RESOLUTIONS 16
 
-static resolutions[NUM_RESOLUTIONS][3]={ 
+static resolutions[NUM_RESOLUTIONS][3]={
 	{ 320,200,  GR_RESOLUTION_320x200 },
 	{ 320,240,  GR_RESOLUTION_320x240 },
 	{ 400,256,  GR_RESOLUTION_400x256 },
@@ -90,7 +92,7 @@ static int findres(int *width, int *height)
 			*height = resolutions[i][1];
 			return resolutions[i][2];
 		}
-        
+
 	*width = 640;
 	*height = 480;
 	return GR_RESOLUTION_640x480;
@@ -124,17 +126,17 @@ int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
 	int width, height;
 	GLint attribs[32];
 
-	ri.Con_Printf( PRINT_ALL, "Initializing OpenGL display\n");
+	ri.Com_Printf ("Initializing OpenGL display\n");
 
-	ri.Con_Printf (PRINT_ALL, "...setting mode %d:", mode );
+	ri.Com_Printf ("...setting mode %d:", mode);
 
 	if ( !ri.Vid_GetModeInfo( &width, &height, mode ) )
 	{
-		ri.Con_Printf( PRINT_ALL, " invalid mode\n" );
+		ri.Com_Printf (" invalid mode\n");
 		return rserr_invalid_mode;
 	}
 
-	ri.Con_Printf( PRINT_ALL, " %d %d\n", width, height );
+	ri.Com_Printf (" %d %d\n", width, height);
 
 	// destroy the existing window
 	GLimp_Shutdown ();
@@ -147,7 +149,7 @@ int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
 	attribs[4] = 1;
 	attribs[5] = FXMESA_NONE;
 
-	fc = qfxMesaCreateContext(0, findres(&width, &height), GR_REFRESH_75Hz, 
+	fc = qfxMesaCreateContext(0, findres(&width, &height), GR_REFRESH_75Hz,
 		attribs);
 	if (!fc)
 		return rserr_invalid_mode;
@@ -184,7 +186,7 @@ void GLimp_Shutdown( void )
 ** GLimp_Init
 **
 ** This routine is responsible for initializing the OS specific portions
-** of OpenGL.  
+** of OpenGL.
 */
 int GLimp_Init( void *hinstance, void *wndproc )
 {
@@ -202,7 +204,7 @@ void GLimp_BeginFrame( float camera_seperation )
 
 /*
 ** GLimp_EndFrame
-** 
+**
 ** Responsible for doing a swapbuffers and possibly for other stuff
 ** as yet to be determined.  Probably better not to make this a GLimp
 ** function and instead do a call to GLimp_SwapBuffers.
@@ -238,3 +240,18 @@ void Fake_glColorTableEXT( GLenum target, GLenum internalformat,
 	qgl3DfxSetPaletteEXT((GLuint *)temptable);
 }
 
+
+/*
+=============
+GLimp_Gamma
+=============
+*/
+
+qboolean GLimp_HasGamma (void)
+{
+	return false;
+}
+
+void GLimp_SetGamma (float gamma, float intens)
+{
+}

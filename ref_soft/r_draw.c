@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -24,6 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 image_t		*draw_chars;				// 8*8 graphic characters
+
+static int colortable[8] = {0x00, 0xF2, 0xD0, 0xDD, 0xF3, 0xB0, 0x6F, 0xD7};
 
 //=============================================================================
 
@@ -75,7 +77,7 @@ void Draw_Char (int x, int y, int num)
 {
 	byte			*dest;
 	byte			*source;
-	int				drawline;	
+	int				drawline;
 	int				row, col;
 
 	num &= 255;
@@ -83,18 +85,18 @@ void Draw_Char (int x, int y, int num)
 	if (num == 32 || num == 32+128)
 		return;
 
-	if (y <= -8)
+	if (y <= -8 || y >= vid.height)
 		return;			// totally off screen
 
-//	if ( ( y + 8 ) >= vid.height )
-	if ( ( y + 8 ) > vid.height )		// PGM - status text was missing in sw...
-		return;
+//--	if ( ( y + 8 ) >= vid.height )
+//	if ( ( y + 8 ) > vid.height )		// PGM - status text was missing in sw...
+//		return;
 
 #ifdef PARANOID
 	if (y > vid.height - 8 || x < 0 || x > vid.width - 8)
-		ri.Sys_Error (ERR_FATAL,"Con_DrawCharacter: (%i, %i)", x, y);
+		Com_Error (ERR_FATAL,"Con_DrawCharacter: (%i, %i)", x, y);
 	if (num < 0 || num > 255)
-		ri.Sys_Error (ERR_FATAL,"Con_DrawCharacter: char %i", num);
+		Com_Error (ERR_FATAL,"Con_DrawCharacter: char %i", num);
 #endif
 
 	row = num>>4;
@@ -115,25 +117,186 @@ void Draw_Char (int x, int y, int num)
 
 	while (drawline--)
 	{
-		if (source[0] != TRANSPARENT_COLOR)
-			dest[0] = source[0];
-		if (source[1] != TRANSPARENT_COLOR)
-			dest[1] = source[1];
-		if (source[2] != TRANSPARENT_COLOR)
-			dest[2] = source[2];
-		if (source[3] != TRANSPARENT_COLOR)
-			dest[3] = source[3];
-		if (source[4] != TRANSPARENT_COLOR)
-			dest[4] = source[4];
-		if (source[5] != TRANSPARENT_COLOR)
-			dest[5] = source[5];
-		if (source[6] != TRANSPARENT_COLOR)
-			dest[6] = source[6];
-		if (source[7] != TRANSPARENT_COLOR)
-			dest[7] = source[7];
+#define _PUT(i)	if (source[i] != TRANSPARENT_COLOR) dest[i] = source[i]
+		_PUT(0); _PUT(1); _PUT(2); _PUT(3);
+		_PUT(4); _PUT(5); _PUT(6); _PUT(7);
+#undef _PUT
 		source += 128;
 		dest += vid.rowbytes;
 	}
+}
+
+/*
+================
+Draw_CharColor
+================
+*/
+#define MARK_COLOR_8BIT 0xEF0000
+
+void Draw_CharColor (int x, int y, int num, int color)
+{
+	byte			*dest;
+	byte			*source;
+	int				drawline;
+	int				row, col, c;
+
+	num &= 255;
+
+	if (num == 32 || num == 32+128)
+		return;
+
+	if (y <= -8 || y >= vid.height)
+		return;			// totally off screen
+
+	if ((color & 0xFFFFFF00) == MARK_COLOR_8BIT)
+		c = color & 0xFF;
+	else
+	{
+		if (color < 0 || color >= 7)
+		{
+			Draw_Char (x, y, num);
+			return;
+		}
+		c = colortable[color];
+	}
+
+	row = num>>4;
+	col = num&15;
+	source = draw_chars->pixels[0] + (row<<10) + (col<<3);
+
+	if (y < 0)
+	{	// clipped
+		drawline = 8 + y;
+		source -= 128*y;
+		y = 0;
+	}
+	else
+		drawline = 8;
+
+	dest = vid.buffer + y*vid.rowbytes + x;
+
+	while (drawline--)
+	{
+#define _PUT(i)	if (source[i] != TRANSPARENT_COLOR) dest[i] = c
+		_PUT(0); _PUT(1); _PUT(2); _PUT(3);
+		_PUT(4); _PUT(5); _PUT(6); _PUT(7);
+#undef _PUT
+		source += 128;
+		dest += vid.rowbytes;
+	}
+}
+
+
+#define TEXTBUF_SIZE 65536
+
+#define TOP_TEXT_POS 64
+
+typedef struct textrec_s
+{
+	// screen position
+	int	x;
+	int	y;
+	int color;
+	// text
+	char	*text;
+	// other
+	struct textrec_s *next;
+} textrec_t;
+
+char textbuf[TEXTBUF_SIZE];
+int textbuf_pos;	// position for next record
+int textbuf_count;	// count of records in buffer (0 or greater)
+textrec_t *last_rec;
+
+int next_left_y = TOP_TEXT_POS;
+int next_right_y = TOP_TEXT_POS;
+
+extern	image_t	*draw_chars;
+
+
+void DrawText (int x, int y, char *text, int color)
+{
+	char	c;
+
+	if (!text || !*text) return; // nothing to out
+	while (c = *text++)
+	{
+		Draw_CharColor (x, y, c, color);
+		x += 8;
+	}
+}
+
+
+void R_DrawTexts (void)
+{
+	textrec_t *rec;
+
+	next_left_y = next_right_y = TOP_TEXT_POS;
+	if (!textbuf_count) return;
+
+	rec = (textrec_t*)textbuf;
+	while (rec)
+	{
+		DrawText (rec->x, rec->y, rec->text, rec->color);
+		rec = rec->next;
+	}
+
+	textbuf_count = 0;
+}
+
+extern unsigned char d_16to8table[65536];
+
+void DrawText_Pos (int x, int y, char *text, float r, float g, float b)
+{
+	int size;
+	char *text_copy;
+	textrec_t *rec;
+	int ri, gi, bi, color;
+
+	ri = floor(r * 31.9);
+	gi = floor(g * 63.9);
+	bi = floor(b * 31.9);
+	color = d_16to8table[ri | (gi << 5) | (bi << 11)] | MARK_COLOR_8BIT;
+
+	if (!text || !*text) return; // empty text
+	if (!textbuf_count)
+	{	// 1st record - perform initialization
+		last_rec = NULL;
+		textbuf_pos = 0;
+		rec = (textrec_t*) textbuf;
+	}
+	else
+		rec = (textrec_t*) &textbuf[textbuf_pos];
+
+	size = sizeof(textrec_t) + strlen (text) + 1;
+	if (size + textbuf_pos > TEXTBUF_SIZE) return; // out of buffer space
+
+	text_copy = (char*)rec + sizeof(textrec_t);
+	strcpy (text_copy, text);
+	rec->x = x;
+	rec->y = y;
+	rec->color = color;
+	rec->text = text_copy;
+	rec->next = NULL;
+
+	if (last_rec) last_rec->next = rec;
+	last_rec = rec;
+	textbuf_pos += size;
+	textbuf_count++;
+}
+
+void DrawText_Left (char *text, float r, float g, float b)
+{
+	if (next_left_y >= vid.height) return; // out of screen
+	DrawText_Pos (0, next_left_y, text, r, g, b);
+	next_left_y += 8;
+}
+
+void DrawText_Right (char *text, float r, float g, float b)
+{
+	if (next_right_y >= vid.height) return; // out of screen
+	DrawText_Pos (vid.width - strlen(text) * 8, next_right_y, text, r, g, b);
+	next_right_y += 8;
 }
 
 /*
@@ -148,11 +311,14 @@ void Draw_GetPicSize (int *w, int *h, char *pic)
 	gl = Draw_FindPic (pic);
 	if (!gl)
 	{
-		*w = *h = -1;
-		return;
+		if (w) *w = 0;
+		if (h) *h = 0;
 	}
-	*w = gl->width;
-	*h = gl->height;
+	else
+	{
+		if (w) *w = gl->width;
+		if (h) *h = gl->height;
+	}
 }
 
 /*
@@ -172,7 +338,7 @@ void Draw_StretchPicImplementation (int x, int y, int w, int h, image_t	*pic)
 		(x + w > vid.width) ||
 		(y + h > vid.height))
 	{
-		ri.Sys_Error (ERR_FATAL,"Draw_Pic: bad coordinates");
+		Com_Error (ERR_FATAL,"Draw_Pic: bad coordinates");
 	}
 
 	height = h;
@@ -224,7 +390,7 @@ void Draw_StretchPic (int x, int y, int w, int h, char *name)
 	pic = Draw_FindPic (name);
 	if (!pic)
 	{
-		ri.Con_Printf (PRINT_ALL, "Can't find pic: %s\n", name);
+		Com_Printf ("Can't find pic: %s\n", name);
 		return;
 	}
 	Draw_StretchPicImplementation (x, y, w, h, pic);
@@ -261,14 +427,14 @@ void Draw_Pic (int x, int y, char *name)
 	pic = Draw_FindPic (name);
 	if (!pic)
 	{
-		ri.Con_Printf (PRINT_ALL, "Can't find pic: %s\n", name);
+		Com_Printf ("Can't find pic: %s\n", name);
 		return;
 	}
 
 	if ((x < 0) ||
 		(x + pic->width > vid.width) ||
 		(y + pic->height > vid.height))
-		return;	//	ri.Sys_Error (ERR_FATAL,"Draw_Pic: bad coordinates");
+		return;	//	Com_Error (ERR_FATAL,"Draw_Pic: bad coordinates");
 
 	height = pic->height;
 	source = pic->pixels[0];
@@ -296,9 +462,9 @@ void Draw_Pic (int x, int y, char *name)
 		{	// general
 			for (v=0 ; v<height ; v++)
 			{
+#define _PUT(i) if ((tbyte=source[u+i]) != TRANSPARENT_COLOR) dest[u+i] = tbyte
 				for (u=0 ; u<pic->width ; u++)
-					if ( (tbyte=source[u]) != TRANSPARENT_COLOR)
-						dest[u] = tbyte;
+					_PUT(0);
 
 				dest += vid.rowbytes;
 				source += pic->width;
@@ -310,22 +476,94 @@ void Draw_Pic (int x, int y, char *name)
 			{
 				for (u=0 ; u<pic->width ; u+=8)
 				{
-					if ( (tbyte=source[u]) != TRANSPARENT_COLOR)
-						dest[u] = tbyte;
-					if ( (tbyte=source[u+1]) != TRANSPARENT_COLOR)
-						dest[u+1] = tbyte;
-					if ( (tbyte=source[u+2]) != TRANSPARENT_COLOR)
-						dest[u+2] = tbyte;
-					if ( (tbyte=source[u+3]) != TRANSPARENT_COLOR)
-						dest[u+3] = tbyte;
-					if ( (tbyte=source[u+4]) != TRANSPARENT_COLOR)
-						dest[u+4] = tbyte;
-					if ( (tbyte=source[u+5]) != TRANSPARENT_COLOR)
-						dest[u+5] = tbyte;
-					if ( (tbyte=source[u+6]) != TRANSPARENT_COLOR)
-						dest[u+6] = tbyte;
-					if ( (tbyte=source[u+7]) != TRANSPARENT_COLOR)
-						dest[u+7] = tbyte;
+					_PUT(0); _PUT(1); _PUT(2); _PUT(3);
+					_PUT(4); _PUT(5); _PUT(6); _PUT(7);
+#undef _PUT
+				}
+				dest += vid.rowbytes;
+				source += pic->width;
+			}
+		}
+	}
+}
+
+/*
+=============
+Draw_PicColor
+=============
+*/
+
+void Draw_PicColor (int x, int y, char *name, int color)
+{
+	image_t			*pic;
+	byte			*dest, *source;
+	int				v, u;
+	int				c;
+	int				height;
+
+	if (color < 0 || color >= 7)
+	{
+		Draw_Pic (x, y, name);
+		return;
+	}
+
+	c = colortable[color];
+
+	pic = Draw_FindPic (name);
+	if (!pic)
+	{
+		Com_Printf ("Can't find pic: %s\n", name);
+		return;
+	}
+
+	if ((x < 0) ||
+		(x + pic->width > vid.width) ||
+		(y + pic->height > vid.height))
+		return;	//	Com_Error (ERR_FATAL,"Draw_Pic: bad coordinates");
+
+	height = pic->height;
+	source = pic->pixels[0];
+	if (y < 0)
+	{
+		height += y;
+		source += pic->width*-y;
+		y = 0;
+	}
+
+	dest = vid.buffer + y * vid.rowbytes + x;
+
+	if (!pic->transparent)
+	{
+		for (v=0 ; v<height ; v++)
+		{
+			memcpy (dest, source, pic->width);
+			dest += vid.rowbytes;
+			source += pic->width;
+		}
+	}
+	else
+	{
+		if (pic->width & 7)
+		{	// general
+			for (v=0 ; v<height ; v++)
+			{
+#define _PUT(i) if (source[u+i] != TRANSPARENT_COLOR) dest[u+i] = c
+				for (u=0 ; u<pic->width ; u++)
+					_PUT(0);
+
+				dest += vid.rowbytes;
+				source += pic->width;
+			}
+		}
+		else
+		{	// unwound
+			for (v=0 ; v<height ; v++)
+			{
+				for (u=0 ; u<pic->width ; u+=8)
+				{
+					_PUT(0); _PUT(1); _PUT(2); _PUT(3);
+					_PUT(4); _PUT(5); _PUT(6); _PUT(7);
+#undef _PUT
 				}
 				dest += vid.rowbytes;
 				source += pic->width;
@@ -370,7 +608,7 @@ void Draw_TileClear (int x, int y, int w, int h, char *name)
 	pic = Draw_FindPic (name);
 	if (!pic)
 	{
-		ri.Con_Printf (PRINT_ALL, "Can't find pic: %s\n", name);
+		Com_Printf ("Can't find pic: %s\n", name);
 		return;
 	}
 	x2 = x + w;

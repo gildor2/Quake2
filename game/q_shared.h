@@ -20,6 +20,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	
 // q_shared.h -- included first by ALL program modules
 
+#ifndef QSHARED_H
+#define QSHARED_H
+
 #ifdef _WIN32
 // unknown pragmas are SUPPOSED to be ignored, but....
 #pragma warning(disable : 4244)     // MIPS
@@ -1198,3 +1201,5 @@ typedef struct
 extern int vidref_val;
 // PGM
 // ==================
+
+#endif // QSHARED_H

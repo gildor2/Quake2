@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -24,7 +24,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	MAX_RIMAGES	1024
 image_t		r_images[MAX_RIMAGES];
 int			numr_images;
+unsigned char d_16to8table[65536];
 
+cvar_t  *sw_prefer8bittex;
 
 /*
 ===============
@@ -35,349 +37,49 @@ void	R_ImageList_f (void)
 {
 	int		i;
 	image_t	*image;
-	int		texels;
+	int		texels, imgs;
+	char	*t;
 
-	ri.Con_Printf (PRINT_ALL, "------------------\n");
+	Com_Printf ("----t---w---h---name------------\n");
 	texels = 0;
+	imgs = 0;
 
-	for (i=0, image=r_images ; i<numr_images ; i++, image++)
+	for (i = 0, image=r_images; i < numr_images; i++, image++)
 	{
 		if (image->registration_sequence <= 0)
 			continue;
 		texels += image->width*image->height;
+		imgs++;
+
 		switch (image->type)
 		{
 		case it_skin:
-			ri.Con_Printf (PRINT_ALL, "M");
+			t = "skn";//'M';
 			break;
 		case it_sprite:
-			ri.Con_Printf (PRINT_ALL, "S");
+			t = "spr";//'S';
 			break;
 		case it_wall:
-			ri.Con_Printf (PRINT_ALL, "W");
+			t = "wal";//'W';
 			break;
 		case it_pic:
-			ri.Con_Printf (PRINT_ALL, "P");
+			t = "pic";//'P';
+			break;
+		case it_sky:
+			t = "sky";
+			break;
+		case it_temp:
+			t = "tmp";
 			break;
 		default:
-			ri.Con_Printf (PRINT_ALL, " ");
+			t = " ? ";//' ';
 			break;
 		}
 
-		ri.Con_Printf (PRINT_ALL,  " %3i %3i : %s\n",
-			image->width, image->height, image->name);
+		Com_Printf ( "%-3i %s %-3i %-3i %s\n", i,
+			t, image->width, image->height, image->name);
 	}
-	ri.Con_Printf (PRINT_ALL, "Total texel count: %i\n", texels);
-}
-
-
-/*
-=================================================================
-
-PCX LOADING
-
-=================================================================
-*/
-
-/*
-==============
-LoadPCX
-==============
-*/
-void LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *height)
-{
-	byte	*raw;
-	pcx_t	*pcx;
-	int		x, y;
-	int		len;
-	int		dataByte, runLength;
-	byte	*out, *pix;
-
-	*pic = NULL;
-
-	//
-	// load the file
-	//
-	len = ri.FS_LoadFile (filename, (void **)&raw);
-	if (!raw)
-	{
-		ri.Con_Printf (PRINT_DEVELOPER, "Bad pcx file %s\n", filename);
-		return;
-	}
-
-	//
-	// parse the PCX file
-	//
-	pcx = (pcx_t *)raw;
-
-    pcx->xmin = LittleShort(pcx->xmin);
-    pcx->ymin = LittleShort(pcx->ymin);
-    pcx->xmax = LittleShort(pcx->xmax);
-    pcx->ymax = LittleShort(pcx->ymax);
-    pcx->hres = LittleShort(pcx->hres);
-    pcx->vres = LittleShort(pcx->vres);
-    pcx->bytes_per_line = LittleShort(pcx->bytes_per_line);
-    pcx->palette_type = LittleShort(pcx->palette_type);
-
-	raw = &pcx->data;
-
-	if (pcx->manufacturer != 0x0a
-		|| pcx->version != 5
-		|| pcx->encoding != 1
-		|| pcx->bits_per_pixel != 8
-		|| pcx->xmax >= 640
-		|| pcx->ymax >= 480)
-	{
-		ri.Con_Printf (PRINT_ALL, "Bad pcx file %s\n", filename);
-		return;
-	}
-
-	out = malloc ( (pcx->ymax+1) * (pcx->xmax+1) );
-
-	*pic = out;
-
-	pix = out;
-
-	if (palette)
-	{
-		*palette = malloc(768);
-		memcpy (*palette, (byte *)pcx + len - 768, 768);
-	}
-
-	if (width)
-		*width = pcx->xmax+1;
-	if (height)
-		*height = pcx->ymax+1;
-
-	for (y=0 ; y<=pcx->ymax ; y++, pix += pcx->xmax+1)
-	{
-		for (x=0 ; x<=pcx->xmax ; )
-		{
-			dataByte = *raw++;
-
-			if((dataByte & 0xC0) == 0xC0)
-			{
-				runLength = dataByte & 0x3F;
-				dataByte = *raw++;
-			}
-			else
-				runLength = 1;
-
-			while(runLength-- > 0)
-				pix[x++] = dataByte;
-		}
-
-	}
-
-	if ( raw - (byte *)pcx > len)
-	{
-		ri.Con_Printf (PRINT_DEVELOPER, "PCX file %s was malformed", filename);
-		free (*pic);
-		*pic = NULL;
-	}
-
-	ri.FS_FreeFile (pcx);
-}
-
-/*
-=========================================================
-
-TARGA LOADING
-
-=========================================================
-*/
-
-typedef struct _TargaHeader {
-	unsigned char 	id_length, colormap_type, image_type;
-	unsigned short	colormap_index, colormap_length;
-	unsigned char	colormap_size;
-	unsigned short	x_origin, y_origin, width, height;
-	unsigned char	pixel_size, attributes;
-} TargaHeader;
-
-
-/*
-=============
-LoadTGA
-=============
-*/
-void LoadTGA (char *name, byte **pic, int *width, int *height)
-{
-	int		columns, rows, numPixels;
-	byte	*pixbuf;
-	int		row, column;
-	byte	*buf_p;
-	byte	*buffer;
-	int		length;
-	TargaHeader		targa_header;
-	byte			*targa_rgba;
-
-	*pic = NULL;
-
-	//
-	// load the file
-	//
-	length = ri.FS_LoadFile (name, (void **)&buffer);
-	if (!buffer)
-	{
-		ri.Con_Printf (PRINT_DEVELOPER, "Bad tga file %s\n", name);
-		return;
-	}
-
-	buf_p = buffer;
-
-	targa_header.id_length = *buf_p++;
-	targa_header.colormap_type = *buf_p++;
-	targa_header.image_type = *buf_p++;
-	
-	targa_header.colormap_index = LittleShort ( *((short *)buf_p) );
-	buf_p+=2;
-	targa_header.colormap_length = LittleShort ( *((short *)buf_p) );
-	buf_p+=2;
-	targa_header.colormap_size = *buf_p++;
-	targa_header.x_origin = LittleShort ( *((short *)buf_p) );
-	buf_p+=2;
-	targa_header.y_origin = LittleShort ( *((short *)buf_p) );
-	buf_p+=2;
-	targa_header.width = LittleShort ( *((short *)buf_p) );
-	buf_p+=2;
-	targa_header.height = LittleShort ( *((short *)buf_p) );
-	buf_p+=2;
-	targa_header.pixel_size = *buf_p++;
-	targa_header.attributes = *buf_p++;
-
-	if (targa_header.image_type!=2 
-		&& targa_header.image_type!=10) 
-		ri.Sys_Error (ERR_DROP, "LoadTGA: Only type 2 and 10 targa RGB images supported\n");
-
-	if (targa_header.colormap_type !=0 
-		|| (targa_header.pixel_size!=32 && targa_header.pixel_size!=24))
-		ri.Sys_Error (ERR_DROP, "LoadTGA: Only 32 or 24 bit images supported (no colormaps)\n");
-
-	columns = targa_header.width;
-	rows = targa_header.height;
-	numPixels = columns * rows;
-
-	if (width)
-		*width = columns;
-	if (height)
-		*height = rows;
-
-	targa_rgba = malloc (numPixels*4);
-	*pic = targa_rgba;
-
-	if (targa_header.id_length != 0)
-		buf_p += targa_header.id_length;  // skip TARGA image comment
-	
-	if (targa_header.image_type==2) {  // Uncompressed, RGB images
-		for(row=rows-1; row>=0; row--) {
-			pixbuf = targa_rgba + row*columns*4;
-			for(column=0; column<columns; column++) {
-				unsigned char red,green,blue,alphabyte;
-				switch (targa_header.pixel_size) {
-					case 24:
-							
-							blue = *buf_p++;
-							green = *buf_p++;
-							red = *buf_p++;
-							*pixbuf++ = red;
-							*pixbuf++ = green;
-							*pixbuf++ = blue;
-							*pixbuf++ = 255;
-							break;
-					case 32:
-							blue = *buf_p++;
-							green = *buf_p++;
-							red = *buf_p++;
-							alphabyte = *buf_p++;
-							*pixbuf++ = red;
-							*pixbuf++ = green;
-							*pixbuf++ = blue;
-							*pixbuf++ = alphabyte;
-							break;
-				}
-			}
-		}
-	}
-	else if (targa_header.image_type==10) {   // Runlength encoded RGB images
-		unsigned char red,green,blue,alphabyte,packetHeader,packetSize,j;
-		for(row=rows-1; row>=0; row--) {
-			pixbuf = targa_rgba + row*columns*4;
-			for(column=0; column<columns; ) {
-				packetHeader= *buf_p++;
-				packetSize = 1 + (packetHeader & 0x7f);
-				if (packetHeader & 0x80) {        // run-length packet
-					switch (targa_header.pixel_size) {
-						case 24:
-								blue = *buf_p++;
-								green = *buf_p++;
-								red = *buf_p++;
-								alphabyte = 255;
-								break;
-						case 32:
-								blue = *buf_p++;
-								green = *buf_p++;
-								red = *buf_p++;
-								alphabyte = *buf_p++;
-								break;
-					}
-	
-					for(j=0;j<packetSize;j++) {
-						*pixbuf++=red;
-						*pixbuf++=green;
-						*pixbuf++=blue;
-						*pixbuf++=alphabyte;
-						column++;
-						if (column==columns) { // run spans across rows
-							column=0;
-							if (row>0)
-								row--;
-							else
-								goto breakOut;
-							pixbuf = targa_rgba + row*columns*4;
-						}
-					}
-				}
-				else {                            // non run-length packet
-					for(j=0;j<packetSize;j++) {
-						switch (targa_header.pixel_size) {
-							case 24:
-									blue = *buf_p++;
-									green = *buf_p++;
-									red = *buf_p++;
-									*pixbuf++ = red;
-									*pixbuf++ = green;
-									*pixbuf++ = blue;
-									*pixbuf++ = 255;
-									break;
-							case 32:
-									blue = *buf_p++;
-									green = *buf_p++;
-									red = *buf_p++;
-									alphabyte = *buf_p++;
-									*pixbuf++ = red;
-									*pixbuf++ = green;
-									*pixbuf++ = blue;
-									*pixbuf++ = alphabyte;
-									break;
-						}
-						column++;
-						if (column==columns) { // pixel packet run spans across rows
-							column=0;
-							if (row>0)
-								row--;
-							else
-								goto breakOut;
-							pixbuf = targa_rgba + row*columns*4;
-						}						
-					}
-				}
-			}
-			breakOut:;
-		}
-	}
-
-	ri.FS_FreeFile (buffer);
+	Com_Printf ("Total %i images with texel count %i\n", imgs, texels);
 }
 
 
@@ -397,7 +99,7 @@ image_t *R_FindFreeImage (void)
 	if (i == numr_images)
 	{
 		if (numr_images == MAX_RIMAGES)
-			ri.Sys_Error (ERR_DROP, "MAX_RIMAGES");
+			Com_Error (ERR_DROP, "MAX_RIMAGES");
 		numr_images++;
 	}
 	image = &r_images[i];
@@ -407,18 +109,18 @@ image_t *R_FindFreeImage (void)
 
 /*
 ================
-GL_LoadPic
+R_LoadPic
 
 ================
 */
-image_t *GL_LoadPic (char *name, byte *pic, int width, int height, imagetype_t type)
+image_t *R_LoadPic (char *name, byte *pic, int width, int height, imagetype_t type)
 {
 	image_t		*image;
 	int			i, c, b;
 
 	image = R_FindFreeImage ();
 	if (strlen(name) >= sizeof(image->name))
-		ri.Sys_Error (ERR_DROP, "Draw_LoadPic: \"%s\" is too long", name);
+		Com_Error (ERR_DROP, "Draw_LoadPic: \"%s\" is too long", name);
 	strcpy (image->name, name);
 	image->registration_sequence = registration_sequence;
 
@@ -427,7 +129,7 @@ image_t *GL_LoadPic (char *name, byte *pic, int width, int height, imagetype_t t
 	image->type = type;
 
 	c = width*height;
-	image->pixels[0] = malloc (c);
+	image->pixels[0] = Z_Malloc (c);
 	image->transparent = false;
 	for (i=0 ; i<c ; i++)
 	{
@@ -442,6 +144,35 @@ image_t *GL_LoadPic (char *name, byte *pic, int width, int height, imagetype_t t
 
 /*
 ================
+R_LoadTex
+================
+*/
+image_t *R_LoadTex (char *name, byte *pic, int width, int height)
+{
+	image_t		*image;
+	int			size;
+
+	image = R_FindFreeImage ();
+	strcpy (image->name, name);
+	image->width = width;
+	image->height = height;
+	image->type = it_wall;
+	image->registration_sequence = registration_sequence;
+
+	size = width*height * (256+64+16+4)/256;
+	image->pixels[0] = Z_Malloc (size);
+	image->pixels[1] = image->pixels[0] + width*height;
+	image->pixels[2] = image->pixels[1] + width*height/4;
+	image->pixels[3] = image->pixels[2] + width*height/16;
+
+	memcpy ( image->pixels[0], pic, size);
+
+	return image;
+}
+
+
+/*
+================
 R_LoadWal
 ================
 */
@@ -450,34 +181,109 @@ image_t *R_LoadWal (char *name)
 	miptex_t	*mt;
 	int			ofs;
 	image_t		*image;
-	int			size;
+//	int			size;
 
-	ri.FS_LoadFile (name, (void **)&mt);
+	FS_LoadFile (name, (void **)&mt);
 	if (!mt)
 	{
-		ri.Con_Printf (PRINT_ALL, "R_LoadWal: can't load %s\n", name);
+		Com_Printf ("R_LoadWal: can't load %s\n", name);
 		return r_notexture_mip;
 	}
 
-	image = R_FindFreeImage ();
-	strcpy (image->name, name);
-	image->width = LittleLong (mt->width);
-	image->height = LittleLong (mt->height);
-	image->type = it_wall;
-	image->registration_sequence = registration_sequence;
-
-	size = image->width*image->height * (256+64+16+4)/256;
-	image->pixels[0] = malloc (size);
-	image->pixels[1] = image->pixels[0] + image->width*image->height;
-	image->pixels[2] = image->pixels[1] + image->width*image->height/4;
-	image->pixels[3] = image->pixels[2] + image->width*image->height/16;
-
 	ofs = LittleLong (mt->offsets[0]);
-	memcpy ( image->pixels[0], (byte *)mt + ofs, size);
+	image = R_LoadTex (name, (byte *)mt + ofs, mt->width, mt->height);
 
-	ri.FS_FreeFile ((void *)mt);
+	FS_FreeFile ((void *)mt);
 
 	return image;
+}
+
+
+/*
+================
+R_MipMap
+
+Operates in place, quartering the size of the texture
+================
+*/
+void R_MipMap (byte *in, byte *out, int width, int height)
+{
+	int	i, j, size;
+
+	width <<=2;
+	height >>= 1;
+	size = 0;
+	for (i=0 ; i<height ; i++, in+=width)
+	{
+		for (j = 0; j < width; j+=8, out+=4, in+=8, size+=4*4)
+		{
+			out[0] = (in[0] + in[4] + in[width+0] + in[width+4])>>2;
+			out[1] = (in[1] + in[5] + in[width+1] + in[width+5])>>2;
+			out[2] = (in[2] + in[6] + in[width+2] + in[width+6])>>2;
+			out[3] = (in[3] + in[7] + in[width+3] + in[width+7])>>2;
+		}
+	}
+}
+
+
+/*
+=============
+R_DownsampleImage()
+converts 24(32)-bit image to 8-bit paletted
+=============
+*/
+void R_DownsampleImage (byte **pic, int width, int height, qboolean mipmap)
+{
+	byte *buf, *in, *out, *pic2;
+	int size, i, r, g, b, a;
+
+	if (!mipmap)
+		size = width * height;
+	else
+		size = width * height * (256+64+16+4)/256;
+
+	buf = Z_Malloc (size * 4); // temporary buffer
+	memcpy (buf, *pic, width * height * 4);
+
+	if (mipmap)
+	{
+		int w,h;
+		byte *in2, *out2;
+
+		w = width;
+		h = height;
+		in2 = buf;
+		for (i = 0; i < 3; i++) // generate additional 3 mipmaps
+		{
+			out2 = in2 + w * h * 4;
+			R_MipMap (in2, out2, w, h);
+			in2 = out2;
+			w >>= 1;
+			h >>= 1;
+		}
+	}
+
+	in = buf;
+	pic2 = out = Z_Malloc (size);
+	for (i = 0; i < size; i++)
+	{
+		r = *in++;
+		g = *in++;
+		b = *in++;
+		a = *in++;
+		if (a != 0) //?? (a == 255) -- any non-full transparent will be non-transparent
+		{
+			r = (r >> 3) & 31;
+			g = (g << 3) & (63 << 5);
+			b = (b << 8) & (31 << 11);
+			*out++ = d_16to8table[r | g | b];
+		}
+		else
+		*out++ = 255; // alpha = 0
+	}
+	Z_Free (buf);
+	Z_Free (*pic);
+	*pic = pic2;
 }
 
 
@@ -488,58 +294,160 @@ R_FindImage
 Finds or loads the given image
 ===============
 */
+
 image_t	*R_FindImage (char *name, imagetype_t type)
 {
 	image_t	*image;
-	int		i, len;
+	int	i, len, check_other;
 	byte	*pic, *palette;
-	int		width, height;
+	int	width, height, bits, fmt;
+	char	c, *s, *d, buf[256];
 
 	if (!name)
-		return NULL;	// ri.Sys_Error (ERR_DROP, "R_FindImage: NULL name");
-	len = strlen(name);
-	if (len<5)
-		return NULL;	// ri.Sys_Error (ERR_DROP, "R_FindImage: bad name: %s", name);
+		return NULL;	//	Com_Error (ERR_DROP, "GL_FindImage: NULL name");
 
-	// look for it
-	for (i=0, image=r_images ; i<numr_images ; i++,image++)
+	// make a local copy of image name with a lower case conversion
+	s = name;
+	d = buf;
+	while (c = *s++)
 	{
-		if (!strcmp(name, image->name))
+		if (c >= 'A' && c <= 'Z') c += 32;
+		*d++ = c;
+	}
+	*d = 0; // ASCIIZ
+	name = buf;
+
+	len = strlen (name);
+	if (len < 5)
+		return NULL;	//	Com_Error (ERR_DROP, "GL_FindImage: bad name: %s", name);
+
+	len -= 4;	// &name[len] -> ".ext"
+	s = &name[len];		// points to extension
+
+	// Check if texture already loaded
+
+	// if extension is .??? (originally, .PCX or .WAL), check TGA and JPG first, then PCX/WAL
+	check_other = !strcmp (s, ".???") || !strcmp (s, ".pcx") || !strcmp (s, ".wal");
+	// look for it
+	for (i = 0, image = r_images; i < numr_images; i++,image++)
+	{
+		char *s1;
+
+		if (strncmp (name, image->name, len)) continue; // different name
+
+		s1 = &image->name[len];
+		if (check_other)
 		{
-			image->registration_sequence = registration_sequence;
-			return image;
+			if (!strcmp (s1, ".tga") || !strcmp (s1, ".jpg")
+			 || !strcmp (s1, ".wal") || !strcmp (s1, ".pcx"))
+			{
+				image->registration_sequence = registration_sequence;
+				return image;
+			}
+		}
+		else
+		{	// full image name specified - check rest of filename
+			if (!strcmp (s1, s))
+			{
+				image->registration_sequence = registration_sequence;
+				return image;
+			}
 		}
 	}
+
+	if (type == it_pic && strncmp (name, "pics/", 4))	// mark pics from other directories as temporary
+		type = it_temp;
 
 	//
 	// load the pic from disk
 	//
 	pic = NULL;
 	palette = NULL;
-	if (!strcmp(name+len-4, ".pcx"))
+	image = NULL;
+	bits = 0;
+	if (check_other)
+	{
+		*s = 0; // cut extension
+		if (sw_prefer8bittex->integer)
+		{
+			fmt = ImageExists (name, IMAGE_8BIT);
+			if (fmt & IMAGE_8BIT) fmt &= IMAGE_8BIT;	// disable loading TGA and JPG when PCX or WAL exists
+		}
+		else
+			fmt = ImageExists (name, IMAGE_32BIT);
+		if (fmt & IMAGE_TGA)
+			strcpy (s, ".tga");
+		else if (fmt & IMAGE_JPG)
+			strcpy (s, ".jpg");
+		else if (fmt & IMAGE_PCX)
+			strcpy (s, ".pcx");
+		else if (fmt & IMAGE_WAL)
+			strcpy (s, ".wal");
+		else
+		{
+			Com_DPrintf ("Cannot find image %s.*\n", name);
+			return NULL;
+		}
+
+	}
+	else
+	{
+		if (!strcmp (s, ".tga"))
+			fmt = IMAGE_TGA;
+		else if (!strcmp (s, ".jpg"))
+			fmt = IMAGE_JPG;
+		else if (!strcmp (s, ".pcx"))
+			fmt = IMAGE_PCX;
+		else if (!strcmp (s, ".wal"))
+			fmt = IMAGE_WAL;
+		else
+		{
+			Com_WPrintf ("Unrecognized image extension: %s\n", name);
+			return NULL;
+		}
+	}
+
+	if (fmt & IMAGE_TGA)
+	{
+		LoadTGA (name, &pic, &width, &height);
+		bits = 32;
+	}
+	else if (fmt & IMAGE_JPG)
+	{
+		LoadJPG (name, &pic, &width, &height);
+		bits = 32;
+	}
+	else if (fmt & IMAGE_PCX)
 	{
 		LoadPCX (name, &pic, &palette, &width, &height);
-		if (!pic)
-			return NULL;	// ri.Sys_Error (ERR_DROP, "R_FindImage: can't load %s", name);
-		image = GL_LoadPic (name, pic, width, height, type);
+		bits = 8;
 	}
-	else if (!strcmp(name+len-4, ".wal"))
-	{
+	else if (fmt & IMAGE_WAL)
 		image = R_LoadWal (name);
-	}
-	else if (!strcmp(name+len-4, ".tga"))
-		return NULL;	// ri.Sys_Error (ERR_DROP, "R_FindImage: can't load %s in software renderer", name);
-	else
-		return NULL;	// ri.Sys_Error (ERR_DROP, "R_FindImage: bad extension on: %s", name);
 
 	if (pic)
-		free(pic);
+	{
+		qboolean iswall;
+
+		iswall = (type == it_wall);
+		if (bits == 32)
+			R_DownsampleImage (&pic, width, height, iswall);
+		if (iswall)
+			image = R_LoadTex (name, pic, width, height);
+		else
+			image = R_LoadPic (name, pic, width, height, type);
+	}
+
+	if (!image)
+		Com_WPrintf ("Cannot load texture %s\n", name);
+
+	if (pic)
+		Z_Free(pic);
 	if (palette)
-		free(palette);
+		Z_Free(palette);
 
 	return image;
 }
-
 
 
 /*
@@ -578,7 +486,7 @@ void R_FreeUnusedImages (void)
 		if (image->type == it_pic)
 			continue;		// don't free pics
 		// free it
-		free (image->pixels[0]);	// the other mip levels just follow
+		Z_Free (image->pixels[0]);	// the other mip levels just follow
 		memset (image, 0, sizeof(*image));
 	}
 }
@@ -592,7 +500,17 @@ R_InitImages
 */
 void	R_InitImages (void)
 {
+	void *buf;
+	int len;
+
 	registration_sequence = 1;
+
+	len = FS_LoadFile ("pics/16to8.dat", &buf);
+	if (len != 65536 || !buf)
+		Com_Error (ERR_FATAL, "Couldn't load pics/16to8.dat");
+	memcpy (d_16to8table, buf, 65536);
+
+	sw_prefer8bittex = Cvar_Get ("sw_prefer8bittex", "0", CVAR_ARCHIVE);
 }
 
 /*
@@ -610,8 +528,7 @@ void	R_ShutdownImages (void)
 		if (!image->registration_sequence)
 			continue;		// free texture
 		// free it
-		free (image->pixels[0]);	// the other mip levels just follow
+		Z_Free (image->pixels[0]);	// the other mip levels just follow
 		memset (image, 0, sizeof(*image));
 	}
 }
-

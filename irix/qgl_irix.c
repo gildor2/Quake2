@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -373,7 +373,7 @@ void ( APIENTRY * qglPointParameterfEXT)( GLenum param, GLfloat value );
 void ( APIENTRY * qglPointParameterfvEXT)( GLenum param, const GLfloat *value );
 void ( APIENTRY * qglColorTableEXT)( int, int, int, int, int, const void * );
 void ( APIENTRY * qglSelectTextureSGIS)( GLenum );
-void ( APIENTRY * qglMTexCoord2fSGIS)( GLenum, GLfloat, GLfloat );
+void ( APIENTRY * qglMTexCoord2f)( GLenum, GLfloat, GLfloat );	// both SGIS and ARB
 
 static void ( APIENTRY * dllAccum )(GLenum op, GLfloat value);
 static void ( APIENTRY * dllAlphaFunc )(GLenum func, GLclampf ref);
@@ -2950,12 +2950,12 @@ void QGL_Shutdown( void )
 /*
 ** QGL_Init
 **
-** This is responsible for binding our qgl function pointers to 
-** the appropriate GL stuff.  In Windows this means doing a 
+** This is responsible for binding our qgl function pointers to
+** the appropriate GL stuff.  In Windows this means doing a
 ** LoadLibrary and a bunch of calls to GetProcAddress.  On other
 ** operating systems we need to do the right thing, whatever that
 ** might be.
-** 
+**
 */
 qboolean QGL_Init( const char *dllname )
 {
@@ -3303,7 +3303,7 @@ qboolean QGL_Init( const char *dllname )
 	qglColorTableEXT = glColorTableSGI;
 	qglColorTableEXT = 0;
 	qglSelectTextureSGIS = 0;
-	qglMTexCoord2fSGIS = 0;
+	qglMTexCoord2f = 0;
 
 	return true;
 }
@@ -3323,7 +3323,7 @@ void GLimp_EnableLogging( qboolean enable )
 
 			asctime( newtime );
 
-			sprintf( buffer, "%s/gl.log", ri.FS_Gamedir() ); 
+			sprintf( buffer, "%s/gl.log", ri.FS_Gamedir() );
 			log_fp = fopen( buffer, "wt");
 
 			fprintf( log_fp, "%s\n", asctime( newtime ) );
@@ -4012,5 +4012,3 @@ void GLimp_LogNewFrame( void )
 {
 	fprintf( log_fp, "*** R_BeginFrame ***\n");
 }
-
-

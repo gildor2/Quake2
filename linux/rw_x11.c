@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -88,7 +88,7 @@ static XShmSegmentInfo	x_shminfo[2];
 int config_notify=0;
 int config_notify_width;
 int config_notify_height;
-						      
+
 typedef unsigned short PIXEL16;
 typedef unsigned long PIXEL24;
 static PIXEL16 st2d_8to16table[256];
@@ -280,12 +280,12 @@ static void Force_CenterView_f (void)
 	in_state->viewangles[PITCH] = 0;
 }
 
-static void RW_IN_MLookDown (void) 
-{ 
-	mlooking = true; 
+static void RW_IN_MLookDown (void)
+{
+	mlooking = true;
 }
 
-static void RW_IN_MLookUp (void) 
+static void RW_IN_MLookUp (void)
 {
 	mlooking = false;
 	in_state->IN_CenterView_fp ();
@@ -331,10 +331,10 @@ IN_Commands
 void RW_IN_Commands (void)
 {
 	int i;
-   
-	if (!mouse_avail) 
+
+	if (!mouse_avail)
 		return;
-   
+
 	for (i=0 ; i<3 ; i++) {
 		if ( (mouse_buttonstate & (1<<i)) && !(mouse_oldbuttonstate & (1<<i)) )
 			in_state->Key_Event_fp (K_MOUSE1 + i, true);
@@ -354,8 +354,8 @@ void RW_IN_Move (usercmd_t *cmd)
 {
 	if (!mouse_avail)
 		return;
-   
-	if (m_filter->value)
+
+	if (m_filter->integer)
 	{
 		mx = (mx + old_mouse_x) * 0.5;
 		my = (my + old_mouse_y) * 0.5;
@@ -368,13 +368,13 @@ void RW_IN_Move (usercmd_t *cmd)
 	my *= sensitivity->value;
 
 // add mouse X/Y movement to cmd
-	if ( (*in_state->in_strafe_state & 1) || 
-		(lookstrafe->value && mlooking ))
+	if ( (*in_state->in_strafe_state & 1) ||
+		(lookstrafe->integer && mlooking ))
 		cmd->sidemove += m_side->value * mx;
 	else
 		in_state->viewangles[YAW] -= m_yaw->value * mx;
 
-	if ( (mlooking || freelook->value) && 
+	if ( (mlooking || freelook->integer) &&
 		!(*in_state->in_strafe_state & 1))
 	{
 		in_state->viewangles[PITCH] += m_pitch->value * my;
@@ -392,7 +392,7 @@ void RW_IN_Move (usercmd_t *cmd)
 
 static Cursor CreateNullCursor(Display *display, Window root)
 {
-    Pixmap cursormask; 
+    Pixmap cursormask;
     XGCValues xgc;
     GC gc;
     XColor dummycolour;
@@ -426,12 +426,12 @@ static void install_grabs(void)
 				 None,
 				 CurrentTime);
 
-	if (in_dgamouse->value) {
+	if (in_dgamouse->integer) {
 		int MajorVersion, MinorVersion;
 
-		if (!XF86DGAQueryVersion(dpy, &MajorVersion, &MinorVersion)) { 
+		if (!XF86DGAQueryVersion(dpy, &MajorVersion, &MinorVersion)) {
 			// unable to query, probalby not supported
-			ri.Con_Printf( PRINT_ALL, "Failed to detect XF86DGA Mouse\n" );
+			ri.Com_Printf ("Failed to detect XF86DGA Mouse\n" );
 			ri.Cvar_Set( "in_dgamouse", "0" );
 		} else {
 			dgamouse = true;
@@ -472,7 +472,7 @@ static void uninstall_grabs(void)
 	mouse_active = false;
 }
 
-static void IN_DeactivateMouse( void ) 
+static void IN_DeactivateMouse( void )
 {
 	if (!mouse_avail || !dpy || !win)
 		return;
@@ -483,7 +483,7 @@ static void IN_DeactivateMouse( void )
 	}
 }
 
-static void IN_ActivateMouse( void ) 
+static void IN_ActivateMouse( void )
 {
 	if (!mouse_avail || !dpy || !win)
 		return;
@@ -584,7 +584,7 @@ void ResetSharedFrameBuffers(void)
 		x_shminfo[frm].shmaddr =
 			(void *) shmat(x_shminfo[frm].shmid, 0, 0);
 
-		ri.Con_Printf(PRINT_DEVELOPER, "MITSHM shared memory (id=%d, addr=0x%lx)\n", 
+		ri.Com_Printf ("MITSHM shared memory (id=%d, addr=0x%lx)\n",
 			x_shminfo[frm].shmid, (long) x_shminfo[frm].shmaddr);
 
 		x_framebuffer[frm]->data = x_shminfo[frm].shmaddr;
@@ -688,13 +688,13 @@ int XLateKey(XKeyEvent *ev)
 		case XK_Shift_L:
 		case XK_Shift_R:	key = K_SHIFT;		break;
 
-		case XK_Execute: 
-		case XK_Control_L: 
+		case XK_Execute:
+		case XK_Control_L:
 		case XK_Control_R:	key = K_CTRL;		 break;
 
-		case XK_Alt_L:	
-		case XK_Meta_L: 
-		case XK_Alt_R:	
+		case XK_Alt_L:
+		case XK_Meta_L:
+		case XK_Alt_R:
 		case XK_Meta_R: key = K_ALT;			break;
 
 		case XK_KP_Begin: key = K_KP_5;	break;
@@ -735,7 +735,7 @@ int XLateKey(XKeyEvent *ev)
 			if (key >= 'A' && key <= 'Z')
 				key = key - 'A' + 'a';
 			break;
-	} 
+	}
 
 	return key;
 }
@@ -747,7 +747,7 @@ void HandleEvents(void)
 	qboolean dowarp = false;
 	int mwx = vid.width/2;
 	int mwy = vid.height/2;
-   
+
 	while (XPending(dpy)) {
 
 		XNextEvent(dpy, &event);
@@ -769,8 +769,8 @@ void HandleEvents(void)
 				if (dgamouse) {
 					mx += (event.xmotion.x + win_x) * 2;
 					my += (event.xmotion.y + win_y) * 2;
-				} 
-				else 
+				}
+				else
 				{
 					mx += ((int)event.xmotion.x - mwx) * 2;
 					my += ((int)event.xmotion.y - mwy) * 2;
@@ -809,7 +809,7 @@ void HandleEvents(void)
 			if (b>=0)
 				mouse_buttonstate &= ~(1<<b);
 			break;
-		
+
 		case CreateNotify :
 			ri.Cvar_Set( "vid_xpos", va("%d", event.xcreatewindow.x));
 			ri.Cvar_Set( "vid_ypos", va("%d", event.xcreatewindow.y));
@@ -841,7 +841,7 @@ void HandleEvents(void)
 				exposureflag = true;
 		}
 	}
-	   
+
 	if (dowarp) {
 		/* move the mouse to the window center again */
 		XWarpPointer(dpy,None,win,0,0,0,0, vid.width/2,vid.height/2);
@@ -975,16 +975,16 @@ static qboolean SWimp_InitGraphics( qboolean fullscreen )
 	   int attribmask = CWEventMask  | CWColormap | CWBorderPixel;
 	   XSetWindowAttributes attribs;
 	   Colormap tmpcmap;
-	   
+
 	   tmpcmap = XCreateColormap(dpy, root, x_vis, AllocNone);
-	   
+
 	   attribs.event_mask = X_MASK;
 	   attribs.border_pixel = 0;
 	   attribs.colormap = tmpcmap;
 
 // create the main window
-		win = XCreateWindow(dpy, root, (int)vid_xpos->value, (int)vid_ypos->value, 
-			vid.width, vid.height, 0, x_visinfo->depth, InputOutput, x_vis, 
+		win = XCreateWindow(dpy, root, vid_xpos->integer, vid_ypos->integer,
+			vid.width, vid.height, 0, x_visinfo->depth, InputOutput, x_vis,
 			attribmask, &attribs );
 		XStoreName(dpy, win, "Quake II");
 
@@ -1012,7 +1012,7 @@ static qboolean SWimp_InitGraphics( qboolean fullscreen )
 	}
 
 	XMapWindow(dpy, win);
-	XMoveWindow(dpy, win, (int)vid_xpos->value, (int)vid_ypos->value);
+	XMoveWindow(dpy, win, vid_xpos->integer, vid_ypos->integer);
 
 // wait for first exposure event
 	{
@@ -1098,9 +1098,9 @@ void SWimp_EndFrame (void)
 			st3_fixup( x_framebuffer[current_framebuffer], 0, 0, vid.width, vid.height);
 		if (!XShmPutImage(dpy, win, x_gc,
 			x_framebuffer[current_framebuffer], 0, 0, 0, 0, vid.width, vid.height, True))
-			Sys_Error("VID_Update: XShmPutImage failed\n");
+			Sys_Error("Vid_Update: XShmPutImage failed\n");
 		oktodraw = false;
-		while (!oktodraw) 
+		while (!oktodraw)
 			HandleEvents();
 		current_framebuffer = !current_framebuffer;
 		vid.buffer = x_framebuffer[current_framebuffer]->data;
@@ -1124,15 +1124,15 @@ rserr_t SWimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen 
 {
 	rserr_t retval = rserr_ok;
 
-	ri.Con_Printf (PRINT_ALL, "setting mode %d:", mode );
+	ri.Com_Printf ("setting mode %d:", mode );
 
 	if ( !ri.Vid_GetModeInfo( pwidth, pheight, mode ) )
 	{
-		ri.Con_Printf( PRINT_ALL, " invalid mode\n" );
+		ri.Com_Printf (" invalid mode\n" );
 		return rserr_invalid_mode;
 	}
 
-	ri.Con_Printf( PRINT_ALL, " %d %d\n", *pwidth, *pheight);
+	ri.Com_Printf (" %d %d\n", *pwidth, *pheight);
 
 	if ( !SWimp_InitGraphics( false ) ) {
 		// failed to set a valid mode in windowed mode
@@ -1161,7 +1161,7 @@ void SWimp_SetPalette( const unsigned char *palette )
 
     if ( !palette )
         palette = ( const unsigned char * ) sw_state.currentpalette;
- 
+
 	for(i=0;i<256;i++) {
 		st2d_8to16table[i]= xlib_rgb16(palette[i*4], palette[i*4+1],palette[i*4+2]);
 		st2d_8to24table[i]= xlib_rgb24(palette[i*4], palette[i*4+1],palette[i*4+2]);
@@ -1269,5 +1269,3 @@ void KBD_Update(void)
 void KBD_Close(void)
 {
 }
-
-

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -30,10 +30,9 @@ void CL_CheckPredictionError (void)
 {
 	int		frame;
 	int		delta[3];
-	int		i;
-	int		len;
+	int		i, len;
 
-	if (!cl_predict->value || (cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION))
+	if (!cl_predict->integer || (cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION))
 		return;
 
 	// calculate the last usercmd_t we sent that the server has processed
@@ -51,14 +50,14 @@ void CL_CheckPredictionError (void)
 	}
 	else
 	{
-		if (cl_showmiss->value && (delta[0] || delta[1] || delta[2]) )
-			Com_Printf ("prediction miss on %i: %i\n", cl.frame.serverframe, 
-			delta[0] + delta[1] + delta[2]);
+		if (cl_showmiss->integer && (delta[0] || delta[1] || delta[2]))
+			Com_WPrintf ("prediction miss on %d: %d\n", cl.frame.serverframe,
+				delta[0] + delta[1] + delta[2]);
 
 		VectorCopy (cl.frame.playerstate.pmove.origin, cl.predicted_origins[frame]);
 
 		// save for error itnerpolation
-		for (i=0 ; i<3 ; i++)
+		for (i = 0; i < 3; i++)
 			cl.prediction_error[i] = delta[i]*0.125;
 	}
 }
@@ -76,14 +75,14 @@ void CL_ClipMoveToEntities ( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
 	trace_t		trace;
 	int			headnode;
 	float		*angles;
-	entity_state_t	*ent;
+	entity_state_t *ent;
 	int			num;
-	cmodel_t		*cmodel;
+	cmodel_t	*cmodel;
 	vec3_t		bmins, bmaxs;
 
-	for (i=0 ; i<cl.frame.num_entities ; i++)
+	for (i = 0; i < cl.frame.num_entities; i++)
 	{
-		num = (cl.frame.parse_entities + i)&(MAX_PARSE_ENTITIES-1);
+		num = (cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES - 1);
 		ent = &cl_parse_entities[num];
 
 		if (!ent->solid)
@@ -102,9 +101,9 @@ void CL_ClipMoveToEntities ( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
 		}
 		else
 		{	// encoded bbox
-			x = 8*(ent->solid & 31);
-			zd = 8*((ent->solid>>5) & 31);
-			zu = 8*((ent->solid>>10) & 63) - 32;
+			x = 8 * (ent->solid & 31);
+			zd = 8 * ((ent->solid>>5) & 31);
+			zu = 8 * ((ent->solid>>10) & 63) - 32;
 
 			bmins[0] = bmins[1] = -x;
 			bmaxs[0] = bmaxs[1] = x;
@@ -122,8 +121,7 @@ void CL_ClipMoveToEntities ( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
 			mins, maxs, headnode,  MASK_PLAYERSOLID,
 			ent->origin, angles);
 
-		if (trace.allsolid || trace.startsolid ||
-		trace.fraction < tr->fraction)
+		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
 		{
 			trace.ent = (struct edict_s *)ent;
 		 	if (tr->startsolid)
@@ -145,7 +143,7 @@ void CL_ClipMoveToEntities ( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
 CL_PMTrace
 ================
 */
-trace_t		CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
+trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 {
 	trace_t	t;
 
@@ -160,19 +158,19 @@ trace_t		CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 	return t;
 }
 
-int		CL_PMpointcontents (vec3_t point)
+int CL_PMpointcontents (vec3_t point)
 {
-	int			i;
-	entity_state_t	*ent;
-	int			num;
-	cmodel_t		*cmodel;
-	int			contents;
+	int		i;
+	entity_state_t *ent;
+	int		num;
+	cmodel_t *cmodel;
+	int		contents;
 
 	contents = CM_PointContents (point, 0);
 
-	for (i=0 ; i<cl.frame.num_entities ; i++)
+	for (i = 0; i < cl.frame.num_entities; i++)
 	{
-		num = (cl.frame.parse_entities + i)&(MAX_PARSE_ENTITIES-1);
+		num = (cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES - 1);
 		ent = &cl_parse_entities[num];
 
 		if (ent->solid != 31) // special value for bmodel
@@ -198,27 +196,22 @@ Sets cl.predicted_origin and cl.predicted_angles
 */
 void CL_PredictMovement (void)
 {
-	int			ack, current;
-	int			frame;
-	int			oldframe;
-	usercmd_t	*cmd;
-	pmove_t		pm;
-	int			i;
-	int			step;
-	int			oldz;
+	int		ack, current;
+	int		frame, oldframe;
+	usercmd_t *cmd;
+	pmove_t	pm;
+	int		i, step, oldz;
 
 	if (cls.state != ca_active)
 		return;
 
-	if (cl_paused->value)
+	if (cl_paused->integer)
 		return;
 
-	if (!cl_predict->value || (cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION))
+	if (!cl_predict->integer || (cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION))
 	{	// just set angles
-		for (i=0 ; i<3 ; i++)
-		{
+		for (i = 0; i < 3; i++)
 			cl.predicted_angles[i] = cl.viewangles[i] + SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[i]);
-		}
 		return;
 	}
 
@@ -228,9 +221,9 @@ void CL_PredictMovement (void)
 	// if we are too far out of date, just freeze
 	if (current - ack >= CMD_BACKUP)
 	{
-		if (cl_showmiss->value)
-			Com_Printf ("exceeded CMD_BACKUP\n");
-		return;	
+		if (cl_showmiss->integer)
+			Com_WPrintf ("CL_PredictMovement: exceeded CMD_BACKUP\n");
+		return;
 	}
 
 	// copy current state to pmove
@@ -259,10 +252,10 @@ void CL_PredictMovement (void)
 		VectorCopy (pm.s.origin, cl.predicted_origins[frame]);
 	}
 
-	oldframe = (ack-2) & (CMD_BACKUP-1);
+	oldframe = (ack - 2) & (CMD_BACKUP - 1);
 	oldz = cl.predicted_origins[oldframe][2];
 	step = pm.s.origin[2] - oldz;
-	if (step > 63 && step < 160 && (pm.s.pm_flags & PMF_ON_GROUND) )
+	if (step > 63 && step < 160 && (pm.s.pm_flags & PMF_ON_GROUND))
 	{
 		cl.predicted_step = step * 0.125;
 		cl.predicted_step_time = cls.realtime - cls.frametime * 500;

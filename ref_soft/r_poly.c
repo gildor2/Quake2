@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -95,7 +95,7 @@ void R_DrawSpanletTurbulentStipple33( void )
 	byte    *pdest = s_spanletvars.pdest;
 	short   *pz    = s_spanletvars.pz;
 	int      izi   = s_spanletvars.izi;
-	
+
 	if ( s_spanletvars.v & 1 )
 	{
 		s_spanletvars.pdest += s_spanletvars.spancount;
@@ -105,7 +105,7 @@ void R_DrawSpanletTurbulentStipple33( void )
 			s_spanletvars.izi += s_spanletvars.izistep << AFFINE_SPANLET_SIZE_BITS;
 		else
 			s_spanletvars.izi += s_spanletvars.izistep * s_spanletvars.izistep;
-		
+
 		if ( s_spanletvars.u & 1 )
 		{
 			izi += s_spanletvars.izistep;
@@ -124,19 +124,19 @@ void R_DrawSpanletTurbulentStipple33( void )
 		{
 			sturb = ((s_spanletvars.s + r_turb_turb[(s_spanletvars.t>>16)&(CYCLE-1)])>>16)&63;
 			tturb = ((s_spanletvars.t + r_turb_turb[(s_spanletvars.s>>16)&(CYCLE-1)])>>16)&63;
-			
+
 			btemp = *( s_spanletvars.pbase + ( sturb ) + ( tturb << 6 ) );
-			
+
 			if ( *pz <= ( izi >> 16 ) )
 				*pdest = btemp;
-			
+
 			izi               += s_spanletvars.izistep_times_2;
 			s_spanletvars.s   += s_spanletvars.sstep;
 			s_spanletvars.t   += s_spanletvars.tstep;
-			
+
 			pdest += 2;
 			pz    += 2;
-			
+
 			s_spanletvars.spancount -= 2;
 		}
 	}
@@ -152,7 +152,7 @@ void R_DrawSpanletTurbulentStipple66( void )
 	byte    *pdest = s_spanletvars.pdest;
 	short   *pz    = s_spanletvars.pz;
 	int      izi   = s_spanletvars.izi;
-	
+
 	if ( !( s_spanletvars.v & 1 ) )
 	{
 		s_spanletvars.pdest += s_spanletvars.spancount;
@@ -162,7 +162,7 @@ void R_DrawSpanletTurbulentStipple66( void )
 			s_spanletvars.izi += s_spanletvars.izistep << AFFINE_SPANLET_SIZE_BITS;
 		else
 			s_spanletvars.izi += s_spanletvars.izistep * s_spanletvars.izistep;
-		
+
 		if ( s_spanletvars.u & 1 )
 		{
 			izi += s_spanletvars.izistep;
@@ -181,19 +181,19 @@ void R_DrawSpanletTurbulentStipple66( void )
 		{
 			sturb = ((s_spanletvars.s + r_turb_turb[(s_spanletvars.t>>16)&(CYCLE-1)])>>16)&63;
 			tturb = ((s_spanletvars.t + r_turb_turb[(s_spanletvars.s>>16)&(CYCLE-1)])>>16)&63;
-			
+
 			btemp = *( s_spanletvars.pbase + ( sturb ) + ( tturb << 6 ) );
-			
+
 			if ( *pz <= ( izi >> 16 ) )
 				*pdest = btemp;
-			
+
 			izi               += s_spanletvars.izistep_times_2;
 			s_spanletvars.s   += s_spanletvars.sstep;
 			s_spanletvars.t   += s_spanletvars.tstep;
-			
+
 			pdest += 2;
 			pz    += 2;
-			
+
 			s_spanletvars.spancount -= 2;
 		}
 	}
@@ -206,24 +206,24 @@ void R_DrawSpanletTurbulentStipple66( void )
 			s_spanletvars.izi += s_spanletvars.izistep << AFFINE_SPANLET_SIZE_BITS;
 		else
 			s_spanletvars.izi += s_spanletvars.izistep * s_spanletvars.izistep;
-		
+
 		while ( s_spanletvars.spancount > 0 )
 		{
 			sturb = ((s_spanletvars.s + r_turb_turb[(s_spanletvars.t>>16)&(CYCLE-1)])>>16)&63;
 			tturb = ((s_spanletvars.t + r_turb_turb[(s_spanletvars.s>>16)&(CYCLE-1)])>>16)&63;
-			
+
 			btemp = *( s_spanletvars.pbase + ( sturb ) + ( tturb << 6 ) );
-			
+
 			if ( *pz <= ( izi >> 16 ) )
 				*pdest = btemp;
-			
+
 			izi               += s_spanletvars.izistep;
 			s_spanletvars.s   += s_spanletvars.sstep;
 			s_spanletvars.t   += s_spanletvars.tstep;
-			
+
 			pdest++;
 			pz++;
-			
+
 			s_spanletvars.spancount--;
 		}
 	}
@@ -368,7 +368,7 @@ void R_DrawSpanlet33Stipple( void )
 	byte    *pdest = s_spanletvars.pdest;
 	short   *pz    = s_spanletvars.pz;
 	int      izi   = s_spanletvars.izi;
-	
+
 	if ( r_polydesc.stipple_parity ^ ( s_spanletvars.v & 1 ) )
 	{
 		s_spanletvars.pdest += s_spanletvars.spancount;
@@ -378,7 +378,7 @@ void R_DrawSpanlet33Stipple( void )
 			s_spanletvars.izi += s_spanletvars.izistep << AFFINE_SPANLET_SIZE_BITS;
 		else
 			s_spanletvars.izi += s_spanletvars.izistep * s_spanletvars.izistep;
-		
+
 		if ( r_polydesc.stipple_parity ^ ( s_spanletvars.u & 1 ) )
 		{
 			izi += s_spanletvars.izistep;
@@ -399,20 +399,20 @@ void R_DrawSpanlet33Stipple( void )
 			unsigned t = s_spanletvars.t >> 16;
 
 			btemp = *( s_spanletvars.pbase + ( s ) + ( t * cachewidth ) );
-			
+
 			if ( btemp != 255 )
 			{
 				if ( *pz <= ( izi >> 16 ) )
 					*pdest = btemp;
 			}
-			
+
 			izi               += s_spanletvars.izistep_times_2;
 			s_spanletvars.s   += s_spanletvars.sstep;
 			s_spanletvars.t   += s_spanletvars.tstep;
-			
+
 			pdest += 2;
 			pz    += 2;
-			
+
 			s_spanletvars.spancount -= 2;
 		}
 	}
@@ -456,7 +456,7 @@ void R_DrawSpanlet66Stipple( void )
 		{
 			unsigned s = s_spanletvars.s >> 16;
 			unsigned t = s_spanletvars.t >> 16;
-			
+
 			btemp = *( s_spanletvars.pbase + ( s ) + ( t * cachewidth ) );
 
 			if ( btemp != 255 )
@@ -464,14 +464,14 @@ void R_DrawSpanlet66Stipple( void )
 				if ( *pz <= ( izi >> 16 ) )
 					*pdest = btemp;
 			}
-			
+
 			izi             += s_spanletvars.izistep_times_2;
 			s_spanletvars.s += s_spanletvars.sstep;
 			s_spanletvars.t += s_spanletvars.tstep;
-			
+
 			pdest += 2;
 			pz    += 2;
-			
+
 			s_spanletvars.spancount -= 2;
 		}
 	}
@@ -481,22 +481,22 @@ void R_DrawSpanlet66Stipple( void )
 		{
 			unsigned s = s_spanletvars.s >> 16;
 			unsigned t = s_spanletvars.t >> 16;
-			
+
 			btemp = *( s_spanletvars.pbase + ( s ) + ( t * cachewidth ) );
-			
+
 			if ( btemp != 255 )
 			{
 				if ( *pz <= ( izi >> 16 ) )
 					*pdest = btemp;
 			}
-			
+
 			izi             += s_spanletvars.izistep;
 			s_spanletvars.s += s_spanletvars.sstep;
 			s_spanletvars.t += s_spanletvars.tstep;
-			
+
 			pdest++;
 			pz++;
-			
+
 			s_spanletvars.spancount--;
 		}
 	}
@@ -517,7 +517,7 @@ int R_ClipPolyFace (int nump, clipplane_t *pclipplane)
 
 	clipdist = pclipplane->dist;
 	pclipnormal = pclipplane->normal;
-	
+
 // calc dists
 	if (clip_current)
 	{
@@ -531,13 +531,13 @@ int R_ClipPolyFace (int nump, clipplane_t *pclipplane)
 		outstep = r_clip_verts[1][0];
 		clip_current = 1;
 	}
-	
+
 	instep = in;
 	for (i=0 ; i<nump ; i++, instep += sizeof (vec5_t) / sizeof (float))
 	{
 		dists[i] = DotProduct (instep, pclipnormal) - clipdist;
 	}
-	
+
 // handle wraparound case
 	dists[nump] = dists[0];
 	memcpy (instep, in, sizeof (vec5_t));
@@ -561,12 +561,12 @@ int R_ClipPolyFace (int nump, clipplane_t *pclipplane)
 
 		if ( (dists[i] > 0) == (dists[i+1] > 0) )
 			continue;
-			
+
 	// split it into a new vertex
 		frac = dists[i] / (dists[i] - dists[i+1]);
-			
+
 		vert2 = instep + sizeof (vec5_t) / sizeof (float);
-		
+
 		outstep[0] = instep[0] + frac*(vert2[0] - instep[0]);
 		outstep[1] = instep[1] + frac*(vert2[1] - instep[1]);
 		outstep[2] = instep[2] + frac*(vert2[2] - instep[2]);
@@ -575,8 +575,8 @@ int R_ClipPolyFace (int nump, clipplane_t *pclipplane)
 
 		outstep += sizeof (vec5_t) / sizeof (float);
 		outcount++;
-	}	
-	
+	}
+
 	return outcount;
 }
 
@@ -612,15 +612,14 @@ void R_PolygonDrawSpans(espan_t *pspan, int iswater )
 
 	do
 	{
+		count = pspan->count;
+		if (count <= 0)
+			goto NextSpan;
+
 		s_spanletvars.pdest   = (byte *)d_viewbuffer + ( d_scantable[pspan->v] /*r_screenwidth * pspan->v*/) + pspan->u;
 		s_spanletvars.pz      = d_pzbuffer + (d_zwidth * pspan->v) + pspan->u;
 		s_spanletvars.u       = pspan->u;
 		s_spanletvars.v       = pspan->v;
-
-		count = pspan->count;
-
-		if (count <= 0)
-			goto NextSpan;
 
 	// calculate the initial s/z, t/z, 1/z, s, and t and clamp
 		du = (float)pspan->u;
@@ -749,7 +748,7 @@ NextSpan:
 **
 ** R_PolygonScanLeftEdge
 **
-** Goes through the polygon and scans the left edge, filling in 
+** Goes through the polygon and scans the left edge, filling in
 ** screen coordinate data for the spans
 */
 void R_PolygonScanLeftEdge (void)
@@ -793,8 +792,12 @@ void R_PolygonScanLeftEdge (void)
 
 			for (v=itop ; v<ibottom ; v++)
 			{
-				pspan->u = u >> 16;
+				if (u > 0)
+					pspan->u = u >> 16;
+				else
+					pspan->u = 0;
 				pspan->v = v;
+				(int)pspan->pnext = (int)pspan->pnext & 0xF000FFFF | (v << 16);//!!
 				u += u_step;
 				pspan++;
 			}
@@ -807,6 +810,9 @@ void R_PolygonScanLeftEdge (void)
 			i = r_polydesc.nump;
 
 	} while (i != lmaxindex);
+	(int)pspan->pnext &= 0xFFFF; //!!
+	(int)pspan->pnext |= (0x8000 + lmaxindex) << 16; //!!
+	pspan->count = DS_SPAN_LIST_END; //!!
 }
 
 /*
@@ -873,9 +879,25 @@ void R_PolygonScanRightEdge (void)
 
 			for (v=itop ; v<ibottom ; v++)
 			{
-				pspan->count = (u >> 16) - pspan->u;
+				int ct;
+
+				ct = (u >> 16) - pspan->u;
+				if (ct < 0)
+				{
+					pspan->u += ct;
+					ct = -ct;
+				}
+				pspan->count = ct;
+				(int)pspan->pnext = (int)pspan->pnext & 0xFFFFF000 | v; //!!
 				u += u_step;
-				pspan++;
+				if (pspan->v != v) //!!!
+				{
+					pspan += v - pspan->v + 1;
+					//pspan->count = DS_SPAN_LIST_END;
+					//i = s_maxindex - 1;
+					//break;
+				}
+				else pspan++;
 			}
 		}
 
@@ -888,7 +910,9 @@ void R_PolygonScanRightEdge (void)
 
 	} while (i != s_maxindex);
 
-	pspan->count = DS_SPAN_LIST_END;	// mark the end of the span list 
+	(int)pspan->pnext &= 0xFFFF0000; //!!
+	(int)pspan->pnext |= 0x8000 + s_maxindex; //!!
+	pspan->count = DS_SPAN_LIST_END;	// mark the end of the span list
 }
 
 /*
@@ -921,20 +945,20 @@ void R_ClipAndDrawPoly ( float alpha, int isturbulent, qboolean textured )
 		}
 		else
 		{
-			if ( sw_stipplealpha->value )
+			if ( sw_stipplealpha->integer )
 			{
 				if ( isturbulent )
 				{
 					if ( alpha > 0.33 )
 						r_polydesc.drawspanlet = R_DrawSpanletTurbulentStipple66;
-					else 
+					else
 						r_polydesc.drawspanlet = R_DrawSpanletTurbulentStipple33;
 				}
 				else
 				{
 					if ( alpha > 0.33 )
 						r_polydesc.drawspanlet = R_DrawSpanlet66Stipple;
-					else 
+					else
 						r_polydesc.drawspanlet = R_DrawSpanlet33Stipple;
 				}
 			}
@@ -951,7 +975,7 @@ void R_ClipAndDrawPoly ( float alpha, int isturbulent, qboolean textured )
 				{
 					if ( alpha > 0.33 )
 						r_polydesc.drawspanlet = R_DrawSpanlet66;
-					else 
+					else
 						r_polydesc.drawspanlet = R_DrawSpanlet33;
 				}
 			}
@@ -968,7 +992,7 @@ void R_ClipAndDrawPoly ( float alpha, int isturbulent, qboolean textured )
 		if (nump < 3)
 			return;
 		if (nump > MAXWORKINGVERTS)
-			ri.Sys_Error(ERR_DROP, "R_ClipAndDrawPoly: too many points: %d", nump );
+			Com_Error (ERR_DROP, "R_ClipAndDrawPoly: too many points: %d", nump );
 	}
 
 // transform vertices into viewspace and project
@@ -987,7 +1011,7 @@ void R_ClipAndDrawPoly ( float alpha, int isturbulent, qboolean textured )
 
 		pout->s = pv[3];
 		pout->t = pv[4];
-		
+
 		scale = xscale * pout->zi;
 		pout->u = (xcenter + scale * transformed[0]);
 
@@ -996,6 +1020,8 @@ void R_ClipAndDrawPoly ( float alpha, int isturbulent, qboolean textured )
 
 		pv += sizeof (vec5_t) / sizeof (pv);
 	}
+	//!! added - copy 0 item to end (needed for ...ScanLeftEdge())
+	memcpy (&outverts[nump], &outverts[0], sizeof(emitpoint_t));
 
 // draw it
 	r_polydesc.nump = nump;
@@ -1141,6 +1167,7 @@ static void R_DrawPoly( int iswater )
 
 	s_polygon_spans = spans;
 
+	memset (spans, 0xE0, MAXHEIGHT * sizeof(espan_t)); //!! debug
 // find the top and bottom vertices, and make sure there's at least one scan to
 // draw
 	ymin = 999999.9;
@@ -1183,6 +1210,7 @@ static void R_DrawPoly( int iswater )
 	R_PolygonScanLeftEdge ();
 	R_PolygonScanRightEdge ();
 
+	//!! HERE span->u,v may be uninitialized!!! (or out of screen range)
 	R_PolygonDrawSpans( s_polygon_spans, iswater );
 }
 
@@ -1213,14 +1241,17 @@ void R_DrawAlphaSurfaces( void )
 		// PGM - pass down all the texinfo flags, not just SURF_WARP.
 		if (s->texinfo->flags & SURF_TRANS66)
 			R_ClipAndDrawPoly( 0.60f, (s->texinfo->flags & SURF_WARP|SURF_FLOWING), true );
-		else
+		else if (s->texinfo->flags & SURF_TRANS33)
 			R_ClipAndDrawPoly( 0.30f, (s->texinfo->flags & SURF_WARP|SURF_FLOWING), true );
+		else //if (s->texinfo->flags & SURF_ALPHA)
+			R_ClipAndDrawPoly( 1.00f, (s->texinfo->flags & SURF_WARP|SURF_FLOWING), true );
+
 //PGM
 //=======
 
 		s = s->nextalphasurface;
 	}
-	
+
 	r_alpha_surfaces = NULL;
 }
 
@@ -1260,4 +1291,3 @@ void R_IMFlatShadedQuad( vec3_t a, vec3_t b, vec3_t c, vec3_t d, int color, floa
 
 	R_ClipAndDrawPoly( alpha, false, false );
 }
-

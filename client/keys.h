@@ -72,6 +72,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define K_KP_MINUS		173
 #define K_KP_PLUS		174
 
+#define K_UNK46			190
+#define K_UNK59			191
+#define K_UNK5A			192
+#define K_UNK5B			193
+#define K_UNK5C			194
+#define K_UNK5D			195
+#define K_UNK5E			196
+#define K_UNK5F			197
+
 #define K_PAUSE			255
 
 //

@@ -1,0 +1,5 @@
+// print
+void Com_Printf (char *fmt, ...);
+void Com_DPrintf (char *fmt, ...);
+void Com_WPrintf (char *fmt, ...);
+void Com_Error (int code, char *fmt, ...);

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -396,14 +396,22 @@ void ( APIENTRY * qglViewport )(GLint x, GLint y, GLsizei width, GLsizei height)
 void ( APIENTRY * qglLockArraysEXT)( int, int);
 void ( APIENTRY * qglUnlockArraysEXT) ( void );
 
-void ( APIENTRY * qglPointParameterfEXT)( GLenum param, GLfloat value );
-void ( APIENTRY * qglPointParameterfvEXT)( GLenum param, const GLfloat *value );
-void ( APIENTRY * qglColorTableEXT)( int, int, int, int, int, const void * );
 void ( APIENTRY * qgl3DfxSetPaletteEXT)( GLuint * );
+// multitexturing
 void ( APIENTRY * qglSelectTextureSGIS)( GLenum );
-void ( APIENTRY * qglMTexCoord2fSGIS)( GLenum, GLfloat, GLfloat );
+void ( APIENTRY * qglMTexCoord2f)( GLenum, GLfloat, GLfloat );	// both SGIS and ARB
 void ( APIENTRY * qglActiveTextureARB) ( GLenum );
 void ( APIENTRY * qglClientActiveTextureARB) ( GLenum );
+// GL_NV_vertex_array_range
+void ( APIENTRY * qglVertexArrayRangeNV) (GLint, GLvoid*);
+void ( APIENTRY * qglFlushVertexArrayRangeNV) (void);
+void* (*qwglAllocateMemoryNV) (int, float, float, float);	// use "wgl" against "glX"
+void  (*qwglFreeMemoryNV) (void*);
+// GL_NV_fence
+void ( APIENTRY * qglGenFencesNV) (GLint, GLuint*);
+void ( APIENTRY * qglDeleteFencesNV) (GLint, GLuint*);
+void ( APIENTRY * qglSetFenceNV) (GLuint, GLenum);
+void ( APIENTRY * qglFinishFenceNV) (GLuint);
 
 static void ( APIENTRY * dllAccum )(GLenum op, GLfloat value);
 static void ( APIENTRY * dllAlphaFunc )(GLenum func, GLclampf ref);
@@ -3008,12 +3016,12 @@ void *qwglGetProcAddress(char *symbol)
 /*
 ** QGL_Init
 **
-** This is responsible for binding our qgl function pointers to 
-** the appropriate GL stuff.  In Windows this means doing a 
+** This is responsible for binding our qgl function pointers to
+** the appropriate GL stuff.  In Windows this means doing a
 ** LoadLibrary and a bunch of calls to GetProcAddress.  On other
 ** operating systems we need to do the right thing, whatever that
 ** might be.
-** 
+**
 */
 
 qboolean QGL_Init( const char *dllname )
@@ -3023,7 +3031,7 @@ qboolean QGL_Init( const char *dllname )
 		char envbuffer[1024];
 		float g;
 
-		g = 2.00 * ( 0.8 - ( vid_gamma->value - 0.5 ) ) + 1.0F;
+		g = 2.00 * ( 0.8 - ( 1.0 / r_gamma->value - 0.5 ) ) + 1.0F;
 		Com_sprintf( envbuffer, sizeof(envbuffer), "SSTV2_GAMMA=%f", g );
 		putenv( envbuffer );
 		Com_sprintf( envbuffer, sizeof(envbuffer), "SST_GAMMA=%f", g );
@@ -3035,12 +3043,12 @@ qboolean QGL_Init( const char *dllname )
 		char	fn[MAX_OSPATH];
 		FILE *fp;
 
-//		ri.Con_Printf(PRINT_ALL, "QGL_Init: Can't load %s from /etc/ld.so.conf: %s\n", 
+//		ri.Com_Printf ("QGL_Init: Can't load %s from /etc/ld.so.conf: %s\n",
 //				dllname, dlerror());
 
 		// try path in /etc/quake2.conf
 		if ((fp = fopen(so_file, "r")) == NULL) {
-			ri.Con_Printf(PRINT_ALL,  "QGL_Init(\"%s\") failed: can't open %s\n", dllname, so_file);
+			ri.Com_Printf ("QGL_Init(\"%s\") failed: can't open %s\n", dllname, so_file);
 			return false;
 		}
 		fgets(fn, sizeof(fn), fp);
@@ -3052,7 +3060,7 @@ qboolean QGL_Init( const char *dllname )
 		strcat(fn, dllname);
 
 		if ( ( glw_state.OpenGLLib = dlopen( fn, RTLD_LAZY ) ) == 0 ) {
-			ri.Con_Printf( PRINT_ALL, "%s\n", dlerror() );
+			ri.Com_Printf ("%s\n", dlerror() );
 			return false;
 		}
 	}
@@ -3415,7 +3423,7 @@ qboolean QGL_Init( const char *dllname )
 	qglColorTableEXT = 0;
 	qgl3DfxSetPaletteEXT = 0;
 	qglSelectTextureSGIS = 0;
-	qglMTexCoord2fSGIS = 0;
+	qglMTexCoord2f = 0;
 	qglActiveTextureARB = 0;
 	qglClientActiveTextureARB = 0;
 
@@ -3437,7 +3445,7 @@ void GLimp_EnableLogging( qboolean enable )
 
 			asctime( newtime );
 
-			Com_sprintf( buffer, sizeof(buffer), "%s/gl.log", ri.FS_Gamedir() ); 
+			Com_sprintf( buffer, sizeof(buffer), "%s/gl.log", ri.FS_Gamedir() );
 			glw_state.log_fp = fopen( buffer, "wt" );
 
 			fprintf( glw_state.log_fp, "%s\n", asctime( newtime ) );
@@ -4126,5 +4134,3 @@ void GLimp_LogNewFrame( void )
 {
 	fprintf( glw_state.log_fp, "*** R_BeginFrame ***\n" );
 }
-
-

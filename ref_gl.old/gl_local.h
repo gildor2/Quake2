@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -24,21 +24,103 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdio.h>
 
-#include <GL/gl.h>
-#include <GL/glu.h>
+//#include <GL/gl.h>
+//#include <GL/glu.h>
+
 #include <math.h>
 
+/*
 #ifndef __linux__
 #ifndef GL_COLOR_INDEX8_EXT
 #define GL_COLOR_INDEX8_EXT GL_COLOR_INDEX
 #endif
 #endif
+*/
 
 #include "../client/ref.h"
 
-#include "qgl.h"
+#include "../ref_gl/qgl.h"
 
 #define	REF_VERSION	"GL 0.01"
+
+#ifdef REF_HARD_LINKED
+
+#define R_RecursiveWorldNode	GLR_RecursiveWorldNode
+#define Draw_FindPic		GLDraw_FindPic
+#define Draw_InitLocal		GLDraw_InitLocal
+#define Draw_Char			GLDraw_Char
+#define Draw_CharColor		GLDraw_CharColor
+#define R_DrawTexts			GLR_DrawTexts
+#define Draw_GetPicSize		GLDraw_GetPicSize
+#define Draw_StretchPic		GLDraw_StretchPic
+#define Draw_StretchRaw		GLDraw_StretchRaw
+#define Draw_Pic			GLDraw_Pic
+#define Draw_PicColor		GLDraw_PicColor
+#define Draw_TileClear		GLDraw_TileClear
+#define Draw_Fill			GLDraw_Fill
+#define Draw_FadeScreen		GLDraw_FadeScreen
+#define R_RegisterSkin		GLR_RegisterSkin
+#define R_MarkLights		GLR_MarkLights
+#define R_PushDlights		GLR_PushDlights
+#define RecursiveLightPoint	GLRecursiveLightPoint
+#define R_LightPoint		GLR_LightPoint
+#define R_AddDynamicLights	GLR_AddDynamicLights
+#define R_BuildLightMap		GLR_BuildLightMap
+#define R_Register			GLR_Register
+#define R_Init				GLR_Init
+#define R_Shutdown			GLR_Shutdown
+#define R_MarkLeaves		GLR_MarkLeaves
+#define R_DrawNullModel		GLR_DrawNullModel
+#define R_DrawEntitiesOnList	GLR_DrawEntitiesOnList
+#define R_SetLightLevel		GLR_SetLightLevel
+#define R_RenderFrame		GLR_RenderFrame
+#define R_BeginFrame		GLR_BeginFrame
+#define R_DrawBeam			GLR_DrawBeam
+#define R_SetSky			GLR_SetSky
+#define Draw_GetPalette		GLDraw_GetPalette
+#define R_SetupFrame		GLR_SetupFrame
+#define Mod_Modellist_f		GLMod_Modellist_f
+#define Mod_Init			GLMod_Init
+#define Mod_ForName			GLMod_ForName
+#define Mod_PointInLeaf		GLMod_PointInLeaf
+#define Mod_DecompressVis	GLMod_DecompressVis
+#define Mod_ClusterPVS		GLMod_ClusterPVS
+#define Mod_LoadLighting	GLMod_LoadLighting
+#define Mod_LoadVisibility	GLMod_LoadVisibility
+#define Mod_LoadVertexes	GLMod_LoadVertexes
+#define Mod_LoadSubmodels	GLMod_LoadSubmodels
+#define Mod_LoadEdges		GLMod_LoadEdges
+#define Mod_LoadTexinfo		GLMod_LoadTexinfo
+#define CalcSurfaceExtents	GLCalcSurfaceExtents
+#define Mod_LoadFaces		GLMod_LoadFaces
+#define Mod_SetParent		GLMod_SetParent
+#define Mod_LoadNodes		GLMod_LoadNodes
+#define Mod_LoadLeafs		GLMod_LoadLeafs
+#define Mod_LoadMarksurfaces	GLMod_LoadMarksurfaces
+#define Mod_LoadSurfedges	GLMod_LoadSurfedges
+#define Mod_LoadPlanes		GLMod_LoadPlanes
+#define Mod_LoadBrushModel	GLMod_LoadBrushModel
+#define Mod_LoadAliasModel	GLMod_LoadAliasModel
+#define Mod_LoadSpriteModel	GLMod_LoadSpriteModel
+#define R_BeginRegistration	GLR_BeginRegistration
+#define R_RegisterModel		GLR_RegisterModel
+#define R_EndRegistration	GLR_EndRegistration
+#define Mod_Free			GLMod_Free
+#define Mod_FreeAll			GLMod_FreeAll
+#define R_DrawParticles		GLR_DrawParticles
+#define R_DrawAlphaSurfaces	GLR_DrawAlphaSurfaces
+#define R_TextureAnimation	GLR_TextureAnimation
+#define Vid_CreateWindow	GLVid_CreateWindow
+
+#define r_worldmodel		glr_worldmodel
+#define r_avertexnormals	glr_avertexnormals
+#define suf	glsuf
+#define con_only			glcon_only
+
+#define Draw_ConCharColor	GLDraw_ConCharColor
+#define GetRefAPI			GL_GetRefAPI
+
+#endif // REF_HARD_LINKED
 
 // up / down
 #define	PITCH	0
@@ -74,29 +156,31 @@ extern	viddef_t	vid;
 
 */
 
-typedef enum 
+typedef enum
 {
 	it_skin,
 	it_sprite,
 	it_wall,
 	it_pic,
-	it_sky
+	it_sky,
+	it_temp
 } imagetype_t;
 
 typedef struct image_s
 {
 	char	name[MAX_QPATH];			// game path, including extension
 	imagetype_t	type;
-	int		width, height;				// source image
+	int		width, height;			// source image
 	int		upload_width, upload_height;	// after power of two and picmip
+	int		upload_format;			// type of image in video memory
 	int		registration_sequence;		// 0 = free
-	struct msurface_s	*texturechain;	// for sort-by-texture world drawing
-	int		texnum;						// gl texture binding
+	struct msurface_s	*texturechain;		// for sort-by-texture world drawing
+	int		texnum;				// gl texture binding
 	float	sl, tl, sh, th;				// 0,0 - 1,1 unless part of the scrap
 	qboolean	scrap;
 	qboolean	has_alpha;
 
-	qboolean paletted;
+//	qboolean paletted;
 } image_t;
 
 #define	TEXNUM_LIGHTMAPS	1024
@@ -118,9 +202,6 @@ typedef enum
 } rserr_t;
 
 #include "gl_model.h"
-
-void GL_BeginRendering (int *x, int *y, int *width, int *height);
-void GL_EndRendering (void);
 
 void GL_SetDefaultState( void );
 void GL_UpdateSwapInterval( void );
@@ -176,7 +257,9 @@ extern	cvar_t	*r_norefresh;
 extern	cvar_t	*r_lefthand;
 extern	cvar_t	*r_drawentities;
 extern	cvar_t	*r_drawworld;
+
 extern	cvar_t	*r_speeds;
+
 extern	cvar_t	*r_fullbright;
 extern	cvar_t	*r_novis;
 extern	cvar_t	*r_nocull;
@@ -184,25 +267,19 @@ extern	cvar_t	*r_lerpmodels;
 
 extern	cvar_t	*r_lightlevel;	// FIXME: This is a HACK to get the client's light level
 
-extern cvar_t	*gl_vertex_arrays;
+extern	cvar_t	*gl_vertex_arrays;
 
-extern cvar_t	*gl_ext_swapinterval;
-extern cvar_t	*gl_ext_palettedtexture;
-extern cvar_t	*gl_ext_multitexture;
-extern cvar_t	*gl_ext_pointparameters;
-extern cvar_t	*gl_ext_compiled_vertex_array;
-
-extern cvar_t	*gl_particle_min_size;
-extern cvar_t	*gl_particle_max_size;
-extern cvar_t	*gl_particle_size;
-extern cvar_t	*gl_particle_att_a;
-extern cvar_t	*gl_particle_att_b;
-extern cvar_t	*gl_particle_att_c;
+extern	cvar_t	*gl_particle_min_size;
+extern	cvar_t	*gl_particle_max_size;
+extern	cvar_t	*gl_particle_size;
+extern	cvar_t	*gl_particle_att_a;
+extern	cvar_t	*gl_particle_att_b;
+extern	cvar_t	*gl_particle_att_c;
 
 extern	cvar_t	*gl_nosubimage;
 extern	cvar_t	*gl_bitdepth;
 extern	cvar_t	*gl_mode;
-extern	cvar_t	*gl_log;
+extern	cvar_t	*gl_logFile;
 extern	cvar_t	*gl_lightmap;
 extern	cvar_t	*gl_shadows;
 extern	cvar_t	*gl_dynamic;
@@ -232,29 +309,36 @@ extern	cvar_t	*gl_texturealphamode;
 extern	cvar_t	*gl_texturesolidmode;
 extern  cvar_t  *gl_saturatelighting;
 extern  cvar_t  *gl_lockpvs;
+extern  cvar_t  *gl_zmax;
+extern  cvar_t  *gl_winrefl;
 
-extern	cvar_t	*vid_fullscreen;
-extern	cvar_t	*vid_gamma;
+extern	cvar_t	*r_fullscreen;
 
-extern	cvar_t		*intensity;
+extern	cvar_t	*r_gamma;
+extern	cvar_t	*intensity;
+extern  cvar_t  *saturation;
 
-extern	int		gl_lightmap_format;
-extern	int		gl_solid_format;
-extern	int		gl_alpha_format;
-extern	int		gl_tex_solid_format;
-extern	int		gl_tex_alpha_format;
+extern	int	gl_lightmap_format;
+extern	int	gl_solid_format;
+extern	int	gl_alpha_format;
+extern	int	gl_tex_solid_format;
+extern	int	gl_tex_alpha_format;
 
-extern	int		c_visible_lightmaps;
-extern	int		c_visible_textures;
+extern	int	c_visible_lightmaps;
+extern	int	c_visible_textures;
+extern	int	c_visibleleafs;
+extern	int	c_leafsinfrustum;
 
 extern	float	r_world_matrix[16];
 
 void R_TranslatePlayerSkin (int playernum);
+
 void GL_Bind (int texnum);
-void GL_MBind( GLenum target, int texnum );
+void GL_MBind (int tmu, int texnum);
 void GL_TexEnv( GLenum value );
 void GL_EnableMultitexture( qboolean enable );
-void GL_SelectTexture( GLenum );
+void GL_SelectTexture (int tmu);
+void qglMTexCoord2f (int tmu, float s, float t);	// will choose ARB or SGIS function
 
 void R_LightPoint (vec3_t p, vec3_t color);
 void R_PushDlights (void);
@@ -311,8 +395,10 @@ void COM_StripExtension (char *in, char *out);
 
 void	Draw_GetPicSize (int *w, int *h, char *name);
 void	Draw_Pic (int x, int y, char *name);
+void	Draw_PicColor (int x, int y, char *pic, int color);
 void	Draw_StretchPic (int x, int y, int w, int h, char *name);
 void	Draw_Char (int x, int y, int c);
+void	Draw_CharColor (int x, int y, int num, int color);
 void	Draw_TileClear (int x, int y, int w, int h, char *name);
 void	Draw_Fill (int x, int y, int w, int h, int c);
 void	Draw_FadeScreen (void);
@@ -324,11 +410,12 @@ void	R_SetPalette ( const unsigned char *palette);
 
 int		Draw_GetPalette (void);
 
+void GL_BufCorrectGamma (byte *pic, int size);
 void GL_ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *out,  int outwidth, int outheight);
 
 struct image_s *R_RegisterSkin (char *name);
 
-void LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *height);
+//void LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *height);
 image_t *GL_LoadPic (char *name, byte *pic, int width, int height, imagetype_t type, int bits);
 image_t	*GL_FindImage (char *name, imagetype_t type);
 void	GL_TextureMode( char *string );
@@ -356,22 +443,22 @@ void GL_DrawParticles( int n, const particle_t particles[], const unsigned color
 #define GL_RENDERER_VOODOO2   	0x00000002
 #define GL_RENDERER_VOODOO_RUSH	0x00000004
 #define GL_RENDERER_BANSHEE		0x00000008
-#define		GL_RENDERER_3DFX		0x0000000F
+#define	GL_RENDERER_3DFX		0x0000000F
 
 #define GL_RENDERER_PCX1		0x00000010
 #define GL_RENDERER_PCX2		0x00000020
 #define GL_RENDERER_PMX			0x00000040
-#define		GL_RENDERER_POWERVR		0x00000070
+#define	GL_RENDERER_POWERVR		0x00000070
 
 #define GL_RENDERER_PERMEDIA2	0x00000100
 #define GL_RENDERER_GLINT_MX	0x00000200
 #define GL_RENDERER_GLINT_TX	0x00000400
 #define GL_RENDERER_3DLABS_MISC	0x00000800
-#define		GL_RENDERER_3DLABS	0x00000F00
+#define	GL_RENDERER_3DLABS	0x00000F00
 
 #define GL_RENDERER_REALIZM		0x00001000
 #define GL_RENDERER_REALIZM2	0x00002000
-#define		GL_RENDERER_INTERGRAPH	0x00003000
+#define	GL_RENDERER_INTERGRAPH	0x00003000
 
 #define GL_RENDERER_3DPRO		0x00004000
 #define GL_RENDERER_REAL3D		0x00008000
@@ -381,52 +468,105 @@ void GL_DrawParticles( int n, const particle_t particles[], const unsigned color
 #define GL_RENDERER_V1000		0x00040000
 #define GL_RENDERER_V2100		0x00080000
 #define GL_RENDERER_V2200		0x00100000
-#define		GL_RENDERER_RENDITION	0x001C0000
+#define	GL_RENDERER_RENDITION	0x001C0000
 
 #define GL_RENDERER_O2          0x00100000
 #define GL_RENDERER_IMPACT      0x00200000
 #define GL_RENDERER_RE			0x00400000
 #define GL_RENDERER_IR			0x00800000
-#define		GL_RENDERER_SGI			0x00F00000
+#define	GL_RENDERER_SGI			0x00F00000
 
 #define GL_RENDERER_MCD			0x01000000
 #define GL_RENDERER_OTHER		0x80000000
 
+
 typedef struct
 {
-	int         renderer;
-	const char *renderer_string;
-	const char *vendor_string;
-	const char *version_string;
-	const char *extensions_string;
+	char	renderer_string[256];
+	char	vendor_string[256];
+	char	version_string[256];
+	char	extensions_string[8192];
 
+	int		maxTextureSize;
+	int		extensionMask;
+
+	// multitexturing
+	int		maxActiveTextures;		// == 1 if no multitexturing
+
+	// texture compression formats (0 if unavailable)
+	int		formatSolid;			// RGB (no alpha)
+	int		formatAlpha;			// RGBA (full alpha range)
+	int		formatAlpha1;			// RGB_A1 (1 bit for alpha)
+
+	int		colorBits, depthBits, stencilBits;
+
+	qboolean consoleOnly;			// true if graphics disabled
+
+	// gamma
+	qboolean deviceSupportsGamma;
+	int		overbrightBits;			// gl_overBrightBits->integer
+	int		identityLightValue;		// 255/(1<<overbrightBits)
+	float	identityLightValue_f;	// 1.0/(1<<overbrightBits)
+	qboolean vertexLight;
+
+	// tables
+	unsigned tbl_8to32[256];		// palette->RGBA
+	//--------------------------
+	int         renderer;
 	qboolean	allow_cds;
 } glconfig_t;
 
+// macro for checking extension support
+#define GL_SUPPORT(ext)		(gl_config.extensionMask & (ext))
+
+
 typedef struct
 {
-	float inverse_intensity;
-	qboolean fullscreen;
+	int		currentBinds[2];
+	int		currentEnv[2];
+	int		currentTmu;
+	int		currentState;
+	int		currentCullMode;
+	int		currentColor;
 
-	int     prev_mode;
+	qboolean finished;	//?? remove
+	qboolean is2dMode;
+
+	int		prevMode;	// last valid video mode
+	qboolean fullscreen;
+	int		colorBits;	// 0 == 16, 32
+	//------------------------
+	float inverse_intensity;
 
 	unsigned char *d_16to8table;
 
 	int lightmap_textures;
 
-	int	currenttextures[2];
-	int currenttmu;
-
 	float camera_separation;
 	qboolean stereo_enabled;
 
-	unsigned char originalRedGammaTable[256];
-	unsigned char originalGreenGammaTable[256];
-	unsigned char originalBlueGammaTable[256];
+	int texture_format_solid;
+	int texture_format_alpha;
+	int texture_format_alpha1;
+
+//	unsigned char originalRedGammaTable[256];
+//	unsigned char originalGreenGammaTable[256];
+//	unsigned char originalBlueGammaTable[256];
 } glstate_t;
+
+typedef struct
+{
+	// statistics
+	int		numBinds, numUploads;
+	// timings
+	int		beginFrame;
+	int		beginWorld, beginBk, endBk;
+	int		endFrame;
+} gl_speeds_t;
 
 extern glconfig_t  gl_config;
 extern glstate_t   gl_state;
+extern gl_speeds_t gl_speeds;
 
 /*
 ====================================================================
@@ -436,7 +576,7 @@ IMPORTED FUNCTIONS
 ====================================================================
 */
 
-extern	refimport_t	ri;
+extern	refImport_t	ri;
 
 
 /*
@@ -453,6 +593,17 @@ int 		GLimp_Init( void *hinstance, void *hWnd );
 void		GLimp_Shutdown( void );
 int     	GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen );
 void		GLimp_AppActivate( qboolean active );
-void		GLimp_EnableLogging( qboolean enable );
-void		GLimp_LogNewFrame( void );
+// logging
+void		GLimp_LogMessage (char *text);
+#define LOG_STRING(str)		if (gl_logFile->integer) GLimp_LogMessage (str);
 
+qboolean	GLimp_HasGamma (void);
+void		GLimp_SetGamma (float gamma, float intens);
+
+
+void	R_DrawTexts (void);
+void	DrawTextPos (int x, int y, char *text, float r, float g, float b);
+void	DrawTextLeft (char *text, float r, float g, float b);
+void	DrawTextRight (char *text, float r, float g, float b);
+
+extern qboolean con_only;

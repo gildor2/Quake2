@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -119,7 +119,7 @@ void R_BeginEdgeFrame (void)
 	surfaces[1].flags = SURF_DRAWBACKGROUND;
 
 // put the background behind everything in the world
-	if (sw_draworder->value)
+	if (sw_draworder->integer)
 	{
 		pdrawfunc = R_GenerateSpansBackward;
 		surfaces[1].key = 0;
@@ -184,7 +184,7 @@ addedge:
 }
 
 #endif	// !id386
-	
+
 
 #if	!id386
 
@@ -224,29 +224,29 @@ nextedge:
 		if (pedge->u < pedge->prev->u)
 			goto pushback;
 		pedge = pedge->next;
-			
+
 		pedge->u += pedge->u_step;
 		if (pedge->u < pedge->prev->u)
 			goto pushback;
 		pedge = pedge->next;
-			
+
 		pedge->u += pedge->u_step;
 		if (pedge->u < pedge->prev->u)
 			goto pushback;
 		pedge = pedge->next;
-			
+
 		pedge->u += pedge->u_step;
 		if (pedge->u < pedge->prev->u)
 			goto pushback;
 		pedge = pedge->next;
-			
-		goto nextedge;		
-		
+
+		goto nextedge;
+
 pushback:
 		if (pedge == &edge_aftertail)
 			return;
-			
-	// push it back to keep it sorted		
+
+	// push it back to keep it sorted
 		pnext_edge = pedge->next;
 
 	// pull the edge out of the edge list
@@ -379,7 +379,7 @@ newtop:
 
 		// set last_u on the new span
 		surf->last_u = iu;
-				
+
 gotposition:
 	// insert before surf2
 		surf->next = surf2;
@@ -544,7 +544,7 @@ newtop:
 
 			// set last_u on the new span
 			surf->last_u = iu;
-				
+
 gotposition:
 		// insert before surf2
 			surf->next = surf2;
@@ -572,7 +572,7 @@ void R_GenerateSpans (void)
 
 // generate spans
 	for (edge=edge_head.next ; edge != &edge_tail; edge=edge->next)
-	{			
+	{
 		if (edge->surfs[0])
 		{
 		// it has a left surface, so a surface is going away for this span
@@ -608,7 +608,7 @@ void R_GenerateSpansBackward (void)
 
 // generate spans
 	for (edge=edge_head.next ; edge != &edge_tail; edge=edge->next)
-	{			
+	{
 		if (edge->surfs[0])
 			R_TrailingEdge (&surfaces[edge->surfs[0]], edge);
 
@@ -624,7 +624,7 @@ void R_GenerateSpansBackward (void)
 ==============
 R_ScanEdges
 
-Input: 
+Input:
 newedges[] array
 	this has links to edges, which have links to surfaces
 
@@ -654,7 +654,7 @@ void R_ScanEdges (void)
 	edge_head.next = &edge_tail;
 	edge_head.surfs[0] = 0;
 	edge_head.surfs[1] = 1;
-	
+
 	edge_tail.u = (r_refdef.vrectright << 20) + 0xFFFFF;
 	edge_tail_u_shift20 = edge_tail.u >> 20;
 	edge_tail.u_step = 0;
@@ -662,7 +662,7 @@ void R_ScanEdges (void)
 	edge_tail.next = &edge_aftertail;
 	edge_tail.surfs[0] = 1;
 	edge_tail.surfs[1] = 0;
-	
+
 	edge_aftertail.u = -1;		// force a move
 	edge_aftertail.u_step = 0;
 	edge_aftertail.next = &edge_sentinel;
@@ -672,7 +672,7 @@ void R_ScanEdges (void)
 	edge_sentinel.u = 2000 << 24;		// make sure nothing sorts past this
 	edge_sentinel.prev = &edge_aftertail;
 
-//	
+//
 // process all scan lines
 //
 	bottom = r_refdef.vrectbottom - 1;
@@ -781,7 +781,7 @@ void D_FlatFillSurface (surf_t *surf, int color)
 	espan_t	*span;
 	byte	*pdest;
 	int		u, u2;
-	
+
 	for (span=surf->spans ; span ; span=span->pnext)
 	{
 		pdest = (byte *)d_viewbuffer + r_screenwidth*span->v;
@@ -800,7 +800,7 @@ D_CalcGradients
 */
 void D_CalcGradients (msurface_t *pface)
 {
-	mplane_t	*pplane;
+	cplane_t	*pplane;
 	float		mipscale;
 	vec3_t		p_temp1;
 	vec3_t		p_saxis, p_taxis;
@@ -869,7 +869,7 @@ void D_BackgroundSurf (surf_t *s)
 	d_zistepv = 0;
 	d_ziorigin = -0.9;
 
-	D_FlatFillSurface (s, (int)sw_clearcolor->value & 0xFF);
+	D_FlatFillSurface (s, sw_clearcolor->integer & 0xFF);
 	D_DrawZSpans (s->spans);
 }
 
@@ -1096,7 +1096,7 @@ void D_DrawSurfaces (void)
 	TransformVector (modelorg, transformed_modelorg);
 	VectorCopy (transformed_modelorg, world_transformed_modelorg);
 
-	if (!sw_drawflat->value)
+	if (!sw_drawflat->integer)
 	{
 		for (s = &surfaces[1] ; s<surface_p ; s++)
 		{
@@ -1122,4 +1122,3 @@ void D_DrawSurfaces (void)
 	VectorSubtract (r_origin, vec3_origin, modelorg);
 	R_TransformFrustum ();
 }
-

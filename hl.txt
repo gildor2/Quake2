@@ -1,0 +1,45 @@
+Textures:
+
++[0-9,A-Z]name - animated
+-[0-9,A-Z]name - animated
+
+~ - corona?
+! - warp
+{ - transparent
+
+!lava*  - CONTENTS_LAVA
+!slime* - CONTENTS_SLIME
+!water*
+
+sky, clip, origin, aaatrigger - TEX_SPECIAL
+
+---------------------------
+
+?? mix: "+0~light3a1"
+
+sky name: "cl_skyname"
+
+---------------------------
+
+HL surface sounds:
+
+// from ps_shared/pm_shared.c:
+'C' Concrete
+'M' metal
+'D' dirt
+'V' ventilation
+'G' grate
+'T' tile
+'S' slosh liquid
+'W' wood
+'P' computer
+'Y' glass
+'F' flesh
+
+'B' Wooden Tiles
+'R' Carpet/Fabric
+'X' Generic (concrete sound, generic decal)
+'Z' None (no decals, only sound)
+'K' Rock
+'L' Gravel
+'N' Snow

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -105,16 +105,16 @@ qboolean SNDDMA_Init(void)
 	}
 
     if (ioctl(audio_fd, SNDCTL_DSP_GETOSPACE, &info)==-1)
-    {   
+    {
         perror("GETOSPACE");
 		Com_Printf("Um, can't do GETOSPACE?\n");
 		close(audio_fd);
 		return 0;
     }
-    
+
 // set sample bits & speed
 
-    dma.samplebits = (int)sndbits->value;
+    dma.samplebits = sndbits->integer;
 	if (dma.samplebits != 16 && dma.samplebits != 8)
     {
         ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &fmt);
@@ -122,17 +122,17 @@ qboolean SNDDMA_Init(void)
         else if (fmt & AFMT_U8) dma.samplebits = 8;
     }
 
-	dma.speed = (int)sndspeed->value;
+	dma.speed = sndspeed->integer;
 	if (!dma.speed) {
         for (i=0 ; i<sizeof(tryrates)/4 ; i++)
             if (!ioctl(audio_fd, SNDCTL_DSP_SPEED, &tryrates[i])) break;
         dma.speed = tryrates[i];
     }
 
-	dma.channels = (int)sndchannels->value;
+	dma.channels = sndchannels->integer;
 	if (dma.channels < 1 || dma.channels > 2)
 		dma.channels = 2;
-	
+
 	dma.samples = info.fragstotal * info.fragsize / (dma.samplebits/8);
 	dma.submission_chunk = 1;
 
@@ -282,4 +282,3 @@ void SNDDMA_Submit(void)
 void SNDDMA_BeginPainting (void)
 {
 }
-

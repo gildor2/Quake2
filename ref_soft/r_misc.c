@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -40,7 +40,7 @@ int	d_vrectx, d_vrecty, d_vrectright_particle, d_vrectbottom_particle;
 int	d_pix_min, d_pix_max, d_pix_shift;
 
 int		d_scantable[MAXHEIGHT];
-short	*zspantable[MAXHEIGHT]; 
+short	*zspantable[MAXHEIGHT];
 
 /*
 ================
@@ -113,7 +113,7 @@ void D_ViewChanged (void)
 	if ( r_newrefdef.rdflags & RDF_NOWORLDMODEL )
 	{
 		memset( d_pzbuffer, 0xff, vid.width * vid.height * sizeof( d_pzbuffer[0] ) );
-		Draw_Fill( r_newrefdef.x, r_newrefdef.y, r_newrefdef.width, r_newrefdef.height,( int ) sw_clearcolor->value & 0xff );
+		Draw_Fill( r_newrefdef.x, r_newrefdef.y, r_newrefdef.width, r_newrefdef.height, sw_clearcolor->integer & 0xff );
 	}
 
 	alias_colormap = vid.colormap;
@@ -132,13 +132,15 @@ void R_PrintTimes (void)
 {
 	int		r_time2;
 	int		ms;
+	char		buf[512];
 
 	r_time2 = Sys_Milliseconds ();
 
 	ms = r_time2 - r_time1;
-	
-	ri.Con_Printf (PRINT_ALL,"%5i ms %3i/%3i/%3i poly %3i surf\n",
+
+	Com_sprintf (buf, sizeof(buf), "%5i ms %3i/%3i/%3i poly %3i surf",
 				ms, c_faceclip, r_polycount, r_drawnpolycount, c_surf);
+	DrawText_Right (buf, 1, 1, 1);
 	c_surf = 0;
 }
 
@@ -151,6 +153,7 @@ R_PrintDSpeeds
 void R_PrintDSpeeds (void)
 {
 	int	ms, dp_time, r_time2, rw_time, db_time, se_time, de_time, da_time;
+	char		buf[512];
 
 	r_time2 = Sys_Milliseconds ();
 
@@ -162,8 +165,9 @@ void R_PrintDSpeeds (void)
 	de_time = (de_time2 - de_time1);
 	ms = (r_time2 - r_time1);
 
-	ri.Con_Printf (PRINT_ALL,"%3i %2ip %2iw %2ib %2is %2ie %2ia\n",
+	Com_sprintf (buf, sizeof(buf), "%3i %2ip %2iw %2ib %2is %2ie %2ia",
 				ms, dp_time, rw_time, db_time, se_time, de_time, da_time);
+	DrawText_Right (buf, 1, 1, 1);
 }
 
 
@@ -174,7 +178,7 @@ R_PrintAliasStats
 */
 void R_PrintAliasStats (void)
 {
-	ri.Con_Printf (PRINT_ALL,"%3i polygon model drawn\n", r_amodels_drawn);
+	Com_Printf ("%3i polygon model drawn\n", r_amodels_drawn);
 }
 
 
@@ -188,7 +192,7 @@ void R_TransformFrustum (void)
 {
 	int		i;
 	vec3_t	v, v2;
-	
+
 	for (i=0 ; i<4 ; i++)
 	{
 		v[0] = screenedge[i].normal[2];
@@ -218,7 +222,7 @@ void TransformVector (vec3_t in, vec3_t out)
 {
 	out[0] = DotProduct(in,vright);
 	out[1] = DotProduct(in,vup);
-	out[2] = DotProduct(in,vpn);		
+	out[2] = DotProduct(in,vpn);
 }
 
 #else
@@ -277,10 +281,10 @@ __declspec( naked ) void TransformVector( vec3_t vin, vec3_t vout )
 R_TransformPlane
 ================
 */
-void R_TransformPlane (mplane_t *p, float *normal, float *dist)
+void R_TransformPlane (cplane_t *p, float *normal, float *dist)
 {
 	float	d;
-	
+
 	d = DotProduct (r_origin, p->normal);
 	*dist = p->dist - d;
 // TODO: when we have rotating entities, this will need to use the view matrix
@@ -356,25 +360,21 @@ void R_ViewChanged (vrect_t *vr)
 	r_refdef.aliasvrect.y = (int)(r_refdef.vrect.y * r_aliasuvscale);
 	r_refdef.aliasvrect.width = (int)(r_refdef.vrect.width * r_aliasuvscale);
 	r_refdef.aliasvrect.height = (int)(r_refdef.vrect.height * r_aliasuvscale);
-	r_refdef.aliasvrectright = r_refdef.aliasvrect.x +
-			r_refdef.aliasvrect.width;
-	r_refdef.aliasvrectbottom = r_refdef.aliasvrect.y +
-			r_refdef.aliasvrect.height;
+	r_refdef.aliasvrectright = r_refdef.aliasvrect.x + r_refdef.aliasvrect.width;
+	r_refdef.aliasvrectbottom = r_refdef.aliasvrect.y + r_refdef.aliasvrect.height;
 
 	xOrigin = r_refdef.xOrigin;
 	yOrigin = r_refdef.yOrigin;
-	
-// values for perspective projection
-// if math were exact, the values would range from 0.5 to to range+0.5
-// hopefully they wll be in the 0.000001 to range+.999999 and truncate
-// the polygon rasterization will never render in the first row or column
-// but will definately render in the [range] row and column, so adjust the
-// buffer origin to get an exact edge to edge fill
-	xcenter = ((float)r_refdef.vrect.width * XCENTERING) +
-			r_refdef.vrect.x - 0.5;
+
+	// values for perspective projection
+	// if math were exact, the values would range from 0.5 to to range+0.5
+	// hopefully they wll be in the 0.000001 to range+.999999 and truncate
+	// the polygon rasterization will never render in the first row or column
+	// but will definately render in the [range] row and column, so adjust the
+	// buffer origin to get an exact edge to edge fill
+	xcenter = ((float)r_refdef.vrect.width * XCENTERING) + r_refdef.vrect.x - 0.5;
 	aliasxcenter = xcenter * r_aliasuvscale;
-	ycenter = ((float)r_refdef.vrect.height * YCENTERING) +
-			r_refdef.vrect.y - 0.5;
+	ycenter = ((float)r_refdef.vrect.height * YCENTERING) + r_refdef.vrect.y - 0.5;
 	aliasycenter = ycenter * r_aliasuvscale;
 
 	xscale = r_refdef.vrect.width / r_refdef.horizontalFieldOfView;
@@ -387,31 +387,30 @@ void R_ViewChanged (vrect_t *vr)
 	xscaleshrink = (r_refdef.vrect.width-6)/r_refdef.horizontalFieldOfView;
 	yscaleshrink = xscaleshrink;
 
-// left side clip
+	// left side clip
 	screenedge[0].normal[0] = -1.0 / (xOrigin*r_refdef.horizontalFieldOfView);
 	screenedge[0].normal[1] = 0;
 	screenedge[0].normal[2] = 1;
-	screenedge[0].type = PLANE_ANYZ;
-	
-// right side clip
-	screenedge[1].normal[0] =
-			1.0 / ((1.0-xOrigin)*r_refdef.horizontalFieldOfView);
+	screenedge[0].type = PLANE_NON_AXIAL;
+
+	// right side clip
+	screenedge[1].normal[0] = 1.0 / ((1.0-xOrigin)*r_refdef.horizontalFieldOfView);
 	screenedge[1].normal[1] = 0;
 	screenedge[1].normal[2] = 1;
-	screenedge[1].type = PLANE_ANYZ;
-	
-// top side clip
+	screenedge[1].type = PLANE_NON_AXIAL;
+
+	// top side clip
 	screenedge[2].normal[0] = 0;
 	screenedge[2].normal[1] = -1.0 / (yOrigin*verticalFieldOfView);
 	screenedge[2].normal[2] = 1;
-	screenedge[2].type = PLANE_ANYZ;
-	
-// bottom side clip
+	screenedge[2].type = PLANE_NON_AXIAL;
+
+	// bottom side clip
 	screenedge[3].normal[0] = 0;
 	screenedge[3].normal[1] = 1.0 / ((1.0-yOrigin)*verticalFieldOfView);
-	screenedge[3].normal[2] = 1;	
-	screenedge[3].type = PLANE_ANYZ;
-	
+	screenedge[3].normal[2] = 1;
+	screenedge[3].type = PLANE_NON_AXIAL;
+
 	for (i=0 ; i<4 ; i++)
 		VectorNormalize (screenedge[i].normal);
 
@@ -434,24 +433,24 @@ void R_SetupFrame (void)
 		r_fullbright->modified = false;
 		D_FlushCaches ();	// so all lighting changes
 	}
-	
+
 	r_framecount++;
 
 
-// build the transformation matrix for the given view angles
+	// build the transformation matrix for the given view angles
 	VectorCopy (r_refdef.vieworg, modelorg);
 	VectorCopy (r_refdef.vieworg, r_origin);
 
 	AngleVectors (r_refdef.viewangles, vpn, vright, vup);
 
-// current viewleaf
+	// current viewleaf
 	if ( !( r_newrefdef.rdflags & RDF_NOWORLDMODEL ) )
 	{
 		r_viewleaf = Mod_PointInLeaf (r_origin, r_worldmodel);
 		r_viewcluster = r_viewleaf->cluster;
 	}
 
-	if (sw_waterwarp->value && (r_newrefdef.rdflags & RDF_UNDERWATER) )
+	if (sw_waterwarp->integer && (r_newrefdef.rdflags & RDF_UNDERWATER) )
 		r_dowarp = true;
 	else
 		r_dowarp = false;
@@ -476,19 +475,19 @@ void R_SetupFrame (void)
 		d_viewbuffer = (void *)vid.buffer;
 		r_screenwidth = vid.rowbytes;
 	}
-	
+
 	R_ViewChanged (&vrect);
 
-// start off with just the four screen edge clip planes
+	// start off with just the four screen edge clip planes
 	R_TransformFrustum ();
 	R_SetUpFrustumIndexes ();
 
-// save base values
+	// save base values
 	VectorCopy (vpn, base_vpn);
 	VectorCopy (vright, base_vright);
 	VectorCopy (vup, base_vup);
 
-// clear frame counts
+	// clear frame counts
 	c_faceclip = 0;
 	d_spanpixcount = 0;
 	r_polycount = 0;
@@ -498,18 +497,18 @@ void R_SetupFrame (void)
 	r_outofsurfaces = 0;
 	r_outofedges = 0;
 
-// d_setup
+	// d_setup
 	d_roverwrapped = false;
 	d_initial_rover = sc_rover;
 
-	d_minmip = sw_mipcap->value;
+	d_minmip = sw_mipcap->integer;
 	if (d_minmip > 3)
 		d_minmip = 3;
 	else if (d_minmip < 0)
 		d_minmip = 0;
 
 	for (i=0 ; i<(NUM_MIPS-1) ; i++)
-		d_scalemip[i] = basemip[i] * sw_mipscale->value;
+		d_scalemip[i] = basemip[i] * sw_mipscale->integer;
 
 	d_aflatcolor = 0;
 }
@@ -530,29 +529,29 @@ void R_SurfacePatch (void)
 #endif	// !id386
 
 
-/* 
-============================================================================== 
- 
-						SCREEN SHOTS 
- 
-============================================================================== 
-*/ 
+/*
+==============================================================================
+
+						SCREEN SHOTS
+
+==============================================================================
+*/
 
 
-/* 
-============== 
-WritePCXfile 
-============== 
-*/ 
+/*
+==============
+WritePCXfile
+==============
+*/
 void WritePCXfile (char *filename, byte *data, int width, int height,
-	int rowbytes, byte *palette) 
+	int rowbytes, byte *palette)
 {
 	int			i, j, length;
 	pcx_t		*pcx;
 	byte		*pack;
 	FILE		*f;
 
-	pcx = (pcx_t *)malloc (width*height*2+1000);
+	pcx = (pcx_t *) Z_Malloc (width*height*2+1000);
 	if (!pcx)
 		return;
 
@@ -572,9 +571,9 @@ void WritePCXfile (char *filename, byte *data, int width, int height,
 	pcx->palette_type = LittleShort(2);		// not a grey scale
 	memset (pcx->filler,0,sizeof(pcx->filler));
 
-// pack the image
+	// pack the image
 	pack = &pcx->data;
-	
+
 	for (i=0 ; i<height ; i++)
 	{
 		for (j=0 ; j<width ; j++)
@@ -590,63 +589,63 @@ void WritePCXfile (char *filename, byte *data, int width, int height,
 
 		data += rowbytes - width;
 	}
-			
-// write the palette
+
+	// write the palette
 	*pack++ = 0x0c;	// palette ID byte
 	for (i=0 ; i<768 ; i++)
 		*pack++ = *palette++;
-		
-// write output file 
+
+	// write output file
 	length = pack - (byte *)pcx;
 	f = fopen (filename, "wb");
 	if (!f)
-		ri.Con_Printf (PRINT_ALL, "Failed to open to %s\n", filename);
+		Com_Printf ("Failed to open to %s\n", filename);
 	else
 	{
 		fwrite ((void *)pcx, 1, length, f);
 		fclose (f);
 	}
 
-	free (pcx);
-} 
- 
+	Z_Free (pcx);
+}
 
 
-/* 
-================== 
+
+/*
+==================
 R_ScreenShot_f
-================== 
-*/  
-void R_ScreenShot_f (void) 
-{ 
-	int			i; 
-	char		pcxname[80]; 
+==================
+*/
+void R_ScreenShot_f (void)
+{
+	int			i;
+	char		pcxname[80];
 	char		checkname[MAX_OSPATH];
 	FILE		*f;
 	byte		palette[768];
 
-	// create the scrnshots directory if it doesn't exist
-	Com_sprintf (checkname, sizeof(checkname), "%s/scrnshot", ri.FS_Gamedir());
+	// create the screenshots directory if it doesn't exist
+	Com_sprintf (checkname, sizeof(checkname), "%s/screenshots", FS_Gamedir());
 	Sys_Mkdir (checkname);
 
-// 
-// find a file name to save it to 
-// 
+	//
+	// find a file name to save it to
+	//
 	strcpy(pcxname,"quake00.pcx");
-		
-	for (i=0 ; i<=99 ; i++) 
-	{ 
-		pcxname[5] = i/10 + '0'; 
-		pcxname[6] = i%10 + '0'; 
-		Com_sprintf (checkname, sizeof(checkname), "%s/scrnshot/%s", ri.FS_Gamedir(), pcxname);
+
+	for (i=0 ; i<=99 ; i++)
+	{
+		pcxname[5] = i/10 + '0';
+		pcxname[6] = i%10 + '0';
+		Com_sprintf (checkname, sizeof(checkname), "%s/screenshots/%s", FS_Gamedir(), pcxname);
 		f = fopen (checkname, "r");
 		if (!f)
 			break;	// file doesn't exist
 		fclose (f);
-	} 
-	if (i==100) 
+	}
+	if (i==100)
 	{
-		ri.Con_Printf (PRINT_ALL, "R_ScreenShot_f: Couldn't create a PCX"); 
+		Com_Printf ("R_ScreenShot_f: Couldn't create a PCX");
 		return;
 	}
 
@@ -658,13 +657,12 @@ void R_ScreenShot_f (void)
 		palette[i*3+2] = sw_state.currentpalette[i*4+2];
 	}
 
-// 
-// save the pcx file 
-// 
+	//
+	// save the pcx file
+	//
 
 	WritePCXfile (checkname, vid.buffer, vid.width, vid.height, vid.rowbytes,
 				  palette);
 
-	ri.Con_Printf (PRINT_ALL, "Wrote %s\n", checkname);
-} 
-
+	Com_Printf ("Wrote %s\n", checkname);
+}

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -41,7 +41,7 @@ void SV_SetMaster_f (void)
 	int		i, slot;
 
 	// only dedicated servers send heartbeats
-	if (!dedicated->value)
+	if (!dedicated->integer)
 	{
 		Com_Printf ("Only dedicated servers use masters.\n");
 		return;
@@ -104,9 +104,9 @@ qboolean SV_SetPlayer (void)
 	if (s[0] >= '0' && s[0] <= '9')
 	{
 		idnum = atoi(Cmd_Argv(1));
-		if (idnum < 0 || idnum >= maxclients->value)
+		if (idnum < 0 || idnum >= maxclients->integer)
 		{
-			Com_Printf ("Bad client slot: %i\n", idnum);
+			Com_WPrintf ("Bad client slot: %i\n", idnum);
 			return false;
 		}
 
@@ -114,14 +114,14 @@ qboolean SV_SetPlayer (void)
 		sv_player = sv_client->edict;
 		if (!sv_client->state)
 		{
-			Com_Printf ("Client %i is not active\n", idnum);
+			Com_WPrintf ("Client %i is not active\n", idnum);
 			return false;
 		}
 		return true;
 	}
 
 	// check for a name match
-	for (i=0,cl=svs.clients ; i<maxclients->value; i++,cl++)
+	for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
 	{
 		if (!cl->state)
 			continue;
@@ -133,7 +133,7 @@ qboolean SV_SetPlayer (void)
 		}
 	}
 
-	Com_Printf ("Userid %s is not on the server\n", s);
+	Com_WPrintf ("Userid %s is not on the server\n", s);
 	return false;
 }
 
@@ -245,8 +245,7 @@ void SV_CopySaveGame (char *src, char *dst)
 	Com_sprintf (name2, sizeof(name2), "%s/save/%s/game.ssv", FS_Gamedir(), dst);
 	CopyFile (name, name2);
 
-	Com_sprintf (name, sizeof(name), "%s/save/%s/", FS_Gamedir(), src);
-	len = strlen(name);
+	len = strlen(va("%s/save/%s/", FS_Gamedir(), src));		// get length of path part
 	Com_sprintf (name, sizeof(name), "%s/save/%s/*.sav", FS_Gamedir(), src);
 	found = Sys_FindFirst(name, 0, 0 );
 	while (found)
@@ -314,10 +313,11 @@ void SV_ReadLevelFile (void)
 	f = fopen(name, "rb");
 	if (!f)
 	{
-		Com_Printf ("Failed to open %s\n", name);
+		Com_WPrintf ("Failed to open %s\n", name);
 		return;
 	}
-	FS_Read (sv.configstrings, sizeof(sv.configstrings), f);
+//--	FS_Read (sv.configstrings, sizeof(sv.configstrings), f);
+	fread (sv.configstrings, sizeof(sv.configstrings), 1, f);
 	CM_ReadPortalState (f);
 	fclose (f);
 
@@ -346,7 +346,7 @@ void SV_WriteServerFile (qboolean autosave)
 	f = fopen (name, "wb");
 	if (!f)
 	{
-		Com_Printf ("Couldn't write %s\n", name);
+		Com_WPrintf ("Couldn't write %s\n", name);
 		return;
 	}
 	// write the comment field
@@ -417,14 +417,16 @@ void SV_ReadServerFile (void)
 	f = fopen (name, "rb");
 	if (!f)
 	{
-		Com_Printf ("Couldn't read %s\n", name);
+		Com_WPrintf ("Couldn't read %s\n", name);
 		return;
 	}
 	// read the comment field
-	FS_Read (comment, sizeof(comment), f);
+//--	FS_Read (comment, sizeof(comment), f);
+	fread (comment, sizeof(comment), 1, f);
 
 	// read the mapcmd
-	FS_Read (mapcmd, sizeof(mapcmd), f);
+//--	FS_Read (mapcmd, sizeof(mapcmd), f);
+	fread (mapcmd, sizeof(mapcmd), 1, f);
 
 	// read all CVAR_LATCH cvars
 	// these will be things like coop, skill, deathmatch, etc
@@ -432,7 +434,8 @@ void SV_ReadServerFile (void)
 	{
 		if (!fread (name, 1, sizeof(name), f))
 			break;
-		FS_Read (string, sizeof(string), f);
+//--		FS_Read (string, sizeof(string), f);
+		fread (string, sizeof(string), 1, f);
 		Com_DPrintf ("Set %s = %s\n", name, string);
 		Cvar_ForceSet (name, string);
 	}
@@ -464,7 +467,16 @@ Puts the server in demo mode on a specific map/cinematic
 */
 void SV_DemoMap_f (void)
 {
-	SV_Map (true, Cmd_Argv(1), false );
+	char	*map;
+	char	expanded[MAX_QPATH];
+
+	map = Cmd_Argv(1);
+	if (!strchr (map, '.'))
+	{
+		Com_sprintf (expanded, sizeof(expanded), "%s.dm2", map);
+		map = expanded;
+	}
+	SV_Map (true, map, false );
 }
 
 /*
@@ -500,8 +512,6 @@ void SV_GameMap_f (void)
 
 	Com_DPrintf("SV_GameMap(%s)\n", Cmd_Argv(1));
 
-	FS_CreatePath (va("%s/save/current/", FS_Gamedir()));
-
 	// check for clearing the current savegame
 	map = Cmd_Argv(1);
 	if (map[0] == '*')
@@ -513,11 +523,12 @@ void SV_GameMap_f (void)
 	{	// save the map just exited
 		if (sv.state == ss_game)
 		{
+			FS_CreatePath (va("%s/save/current/", FS_Gamedir()));
 			// clear all the client inuse flags before saving so that
 			// when the level is re-entered, the clients will spawn
 			// at spawn points instead of occupying body shells
-			savedInuse = malloc(maxclients->value * sizeof(qboolean));
-			for (i=0,cl=svs.clients ; i<maxclients->value; i++,cl++)
+			savedInuse = Z_Malloc (maxclients->integer * sizeof(qboolean));
+			for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
 			{
 				savedInuse[i] = cl->edict->inuse;
 				cl->edict->inuse = false;
@@ -526,9 +537,9 @@ void SV_GameMap_f (void)
 			SV_WriteLevelFile ();
 
 			// we must restore these for clients to transfer over correctly
-			for (i=0,cl=svs.clients ; i<maxclients->value; i++,cl++)
+			for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
 				cl->edict->inuse = savedInuse[i];
-			free (savedInuse);
+			Z_Free (savedInuse);
 		}
 	}
 
@@ -539,8 +550,9 @@ void SV_GameMap_f (void)
 	strncpy (svs.mapcmd, Cmd_Argv(1), sizeof(svs.mapcmd)-1);
 
 	// copy off the level to the autosave slot
-	if (!dedicated->value)
+	if (!dedicated->integer && !Cvar_VariableInt ("deathmatch"))
 	{
+		FS_CreatePath (va("%s/save/current/", FS_Gamedir()));
 		SV_WriteServerFile (true);
 		SV_CopySaveGame ("current", "save0");
 	}
@@ -561,18 +573,18 @@ void SV_Map_f (void)
 
 	// if not a pcx, demo, or cinematic, check to make sure the level exists
 	map = Cmd_Argv(1);
-	if (!strstr (map, "."))
+	if (!strchr (map, '.'))
 	{
 		Com_sprintf (expanded, sizeof(expanded), "maps/%s.bsp", map);
-		if (FS_LoadFile (expanded, NULL) == -1)
+		if (!FS_FileExists (expanded))
 		{
-			Com_Printf ("Can't find %s\n", expanded);
+			Com_WPrintf ("Can't find %s\n", expanded);
 			return;
 		}
 	}
 
 	sv.state = ss_dead;		// don't save current level when changing
-	SV_WipeSavegame("current");
+	SV_WipeSavegame ("current");
 	SV_GameMap_f ();
 }
 
@@ -606,9 +618,9 @@ void SV_Loadgame_f (void)
 	Com_Printf ("Loading game...\n");
 
 	dir = Cmd_Argv(1);
-	if (strstr (dir, "..") || strstr (dir, "/") || strstr (dir, "\\") )
+	if (strstr (dir, "..") || strchr (dir, '/') || strchr (dir, '\\'))
 	{
-		Com_Printf ("Bad savedir.\n");
+		Com_WPrintf ("Bad savedir.\n");
 	}
 
 	// make sure the server.ssv file exists
@@ -616,7 +628,7 @@ void SV_Loadgame_f (void)
 	f = fopen (name, "rb");
 	if (!f)
 	{
-		Com_Printf ("No such savegame: %s\n", name);
+		Com_WPrintf ("No such savegame: %s\n", name);
 		return;
 	}
 	fclose (f);
@@ -654,28 +666,28 @@ void SV_Savegame_f (void)
 		return;
 	}
 
-	if (Cvar_VariableValue("deathmatch"))
+	if (Cvar_VariableInt ("deathmatch"))
 	{
-		Com_Printf ("Can't savegame in a deathmatch\n");
+		Com_WPrintf ("Can't savegame in a deathmatch\n");
 		return;
 	}
 
 	if (!strcmp (Cmd_Argv(1), "current"))
 	{
-		Com_Printf ("Can't save to 'current'\n");
+		Com_WPrintf ("Can't save to 'current'\n");
 		return;
 	}
 
-	if (maxclients->value == 1 && svs.clients[0].edict->client->ps.stats[STAT_HEALTH] <= 0)
+	if (maxclients->integer == 1 && svs.clients[0].edict->client->ps.stats[STAT_HEALTH] <= 0)
 	{
-		Com_Printf ("\nCan't savegame while dead!\n");
+		Com_WPrintf ("\nCan't savegame while dead!\n");
 		return;
 	}
 
 	dir = Cmd_Argv(1);
-	if (strstr (dir, "..") || strstr (dir, "/") || strstr (dir, "\\") )
+	if (strstr (dir, "..") || strchr (dir, '/') || strchr (dir, '\\'))
 	{
-		Com_Printf ("Bad savedir.\n");
+		Com_WPrintf ("Bad savedir.\n");
 	}
 
 	Com_Printf ("Saving game...\n");
@@ -707,7 +719,7 @@ void SV_Kick_f (void)
 {
 	if (!svs.initialized)
 	{
-		Com_Printf ("No server running.\n");
+		Com_WPrintf ("No server running.\n");
 		return;
 	}
 
@@ -742,14 +754,14 @@ void SV_Status_f (void)
 	int			ping;
 	if (!svs.clients)
 	{
-		Com_Printf ("No server running.\n");
+		Com_WPrintf ("No server running.\n");
 		return;
 	}
 	Com_Printf ("map              : %s\n", sv.name);
 
 	Com_Printf ("num score ping name            lastmsg address               qport \n");
 	Com_Printf ("--- ----- ---- --------------- ------- --------------------- ------\n");
-	for (i=0,cl=svs.clients ; i<maxclients->value; i++,cl++)
+	for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
 	{
 		if (!cl->state)
 			continue;
@@ -778,7 +790,7 @@ void SV_Status_f (void)
 		l = 22 - strlen(s);
 		for (j=0 ; j<l ; j++)
 			Com_Printf (" ");
-		
+
 		Com_Printf ("%5i", cl->netchan.qport);
 
 		Com_Printf ("\n");
@@ -812,7 +824,7 @@ void SV_ConSay_f(void)
 
 	strcat(text, p);
 
-	for (j = 0, client = svs.clients; j < maxclients->value; j++, client++)
+	for (j = 0, client = svs.clients; j < maxclients->integer; j++, client++)
 	{
 		if (client->state != cs_spawned)
 			continue;
@@ -895,13 +907,13 @@ void SV_ServerRecord_f (void)
 
 	if (svs.demofile)
 	{
-		Com_Printf ("Already recording.\n");
+		Com_WPrintf ("Already recording.\n");
 		return;
 	}
 
 	if (sv.state != ss_game)
 	{
-		Com_Printf ("You must be in a level to record.\n");
+		Com_WPrintf ("You must be in a level to record.\n");
 		return;
 	}
 
@@ -915,7 +927,7 @@ void SV_ServerRecord_f (void)
 	svs.demofile = fopen (name, "wb");
 	if (!svs.demofile)
 	{
-		Com_Printf ("ERROR: couldn't open.\n");
+		Com_WPrintf ("ERROR: couldn't open.\n");
 		return;
 	}
 
@@ -1034,7 +1046,7 @@ void SV_InitOperatorCommands (void)
 	Cmd_AddCommand ("gamemap", SV_GameMap_f);
 	Cmd_AddCommand ("setmaster", SV_SetMaster_f);
 
-	if ( dedicated->value )
+	if (dedicated->integer)
 		Cmd_AddCommand ("say", SV_ConSay_f);
 
 	Cmd_AddCommand ("serverrecord", SV_ServerRecord_f);
@@ -1047,4 +1059,3 @@ void SV_InitOperatorCommands (void)
 
 	Cmd_AddCommand ("sv", SV_ServerCommand_f);
 }
-

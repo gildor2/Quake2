@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -100,7 +100,7 @@ void SV_New_f (void)
 
 	//
 	// game server
-	// 
+	//
 	if (sv.state == ss_game)
 	{
 		// set up the entity for the client
@@ -140,12 +140,12 @@ void SV_Configstrings_f (void)
 		SV_New_f ();
 		return;
 	}
-	
+
 	start = atoi(Cmd_Argv(2));
 
 	// write a packet full of data
 
-	while ( sv_client->netchan.message.cursize < MAX_MSGLEN/2 
+	while ( sv_client->netchan.message.cursize < MAX_MSGLEN/2
 		&& start < MAX_CONFIGSTRINGS)
 	{
 		if (sv.configstrings[start][0])
@@ -189,7 +189,7 @@ void SV_Baselines_f (void)
 		Com_Printf ("baselines not valid -- already spawned\n");
 		return;
 	}
-	
+
 	// handle the case of a level changing while a client was connecting
 	if ( atoi(Cmd_Argv(1)) != svs.spawncount )
 	{
@@ -197,7 +197,7 @@ void SV_Baselines_f (void)
 		SV_New_f ();
 		return;
 	}
-	
+
 	start = atoi(Cmd_Argv(2));
 
 	memset (&nullstate, 0, sizeof(nullstate));
@@ -248,7 +248,7 @@ void SV_Begin_f (void)
 	}
 
 	sv_client->state = cs_spawned;
-	
+
 	// call the game begin function
 	ge->ClientBegin (sv_player);
 
@@ -307,7 +307,7 @@ void SV_BeginDownload_f(void)
 	extern	cvar_t *allow_download_models;
 	extern	cvar_t *allow_download_sounds;
 	extern	cvar_t *allow_download_maps;
-	extern	int		file_from_pak; // ZOID did file come from pak?
+	extern	int		fileFromPak; // ZOID did file come from pak?
 	int offset = 0;
 
 	name = Cmd_Argv(1);
@@ -317,21 +317,21 @@ void SV_BeginDownload_f(void)
 
 	// hacked by zoid to allow more conrol over download
 	// first off, no .. or global allow check
-	if (strstr (name, "..") || !allow_download->value
+	if (strstr (name, "..") || !allow_download->integer
 		// leading dot is no good
-		|| *name == '.' 
+		|| *name == '.'
 		// leading slash bad as well, must be in subdir
 		|| *name == '/'
 		// next up, skin check
-		|| (strncmp(name, "players/", 6) == 0 && !allow_download_players->value)
+		|| (strncmp (name, "players/", 6) == 0 && !allow_download_players->integer)
 		// now models
-		|| (strncmp(name, "models/", 6) == 0 && !allow_download_models->value)
+		|| (strncmp (name, "models/", 6) == 0 && !allow_download_models->integer)
 		// now sounds
-		|| (strncmp(name, "sound/", 6) == 0 && !allow_download_sounds->value)
+		|| (strncmp (name, "sound/", 6) == 0 && !allow_download_sounds->integer)
 		// now maps (note special case for maps, must not be in pak)
-		|| (strncmp(name, "maps/", 6) == 0 && !allow_download_maps->value)
-		// MUST be in a subdirectory	
-		|| !strstr (name, "/") )	
+		|| (strncmp (name, "maps/", 6) == 0 && !allow_download_maps->integer)
+		// MUST be in a subdirectory
+		|| !strchr (name, '/'))
 	{	// don't allow anything with .. path
 		MSG_WriteByte (&sv_client->netchan.message, svc_download);
 		MSG_WriteShort (&sv_client->netchan.message, -1);
@@ -352,7 +352,7 @@ void SV_BeginDownload_f(void)
 	if (!sv_client->download
 		// special check for maps, if it came from a pak file, don't allow
 		// download  ZOID
-		|| (strncmp(name, "maps/", 5) == 0 && file_from_pak))
+		|| (strncmp(name, "maps/", 5) == 0 && fileFromPak))
 	{
 		Com_DPrintf ("Couldn't download %s to %s\n", name, sv_client->name);
 		if (sv_client->download) {
@@ -385,7 +385,7 @@ The client is going to disconnect, so remove the connection immediately
 void SV_Disconnect_f (void)
 {
 //	SV_EndRedirect ();
-	SV_DropClient (sv_client);	
+	SV_DropClient (sv_client);
 }
 
 
@@ -407,7 +407,7 @@ void SV_Nextserver (void)
 	char	*v;
 
 	//ZOID, ss_pic can be nextserver'd in coop mode
-	if (sv.state == ss_game || (sv.state == ss_pic && !Cvar_VariableValue("coop")))
+	if (sv.state == ss_game || (sv.state == ss_pic && !Cvar_VariableInt ("coop")))
 		return;		// can't nextserver while playing a normal game
 
 	svs.spawncount++;	// make sure another doesn't sneak in
@@ -419,7 +419,7 @@ void SV_Nextserver (void)
 		Cbuf_AddText (v);
 		Cbuf_AddText ("\n");
 	}
-	Cvar_Set ("nextserver","");
+	Cvar_Set ("nextserver", "");
 }
 
 /*
@@ -432,7 +432,8 @@ to the next server,
 */
 void SV_Nextserver_f (void)
 {
-	if ( atoi(Cmd_Argv(1)) != svs.spawncount ) {
+	if (atoi (Cmd_Argv(1)) != svs.spawncount)
+	{
 		Com_DPrintf ("Nextserver() from wrong level, from %s\n", sv_client->name);
 		return;		// leftover from last server
 	}
@@ -460,7 +461,7 @@ ucmd_t ucmds[] =
 
 	{"disconnect", SV_Disconnect_f},
 
-	// issued by hand at client consoles	
+	// issued by hand at client consoles
 	{"info", SV_ShowServerinfo_f},
 
 	{"download", SV_BeginDownload_f},
@@ -477,14 +478,14 @@ SV_ExecuteUserCommand
 void SV_ExecuteUserCommand (char *s)
 {
 	ucmd_t	*u;
-	
-	Cmd_TokenizeString (s, true);
+
+	Cmd_TokenizeString (s, false);		//?? "false" -- disable macro expansion (anti-hack?)
 	sv_player = sv_client->edict;
 
 //	SV_BeginRedirect (RD_CLIENT);
 
-	for (u=ucmds ; u->name ; u++)
-		if (!strcmp (Cmd_Argv(0), u->name) )
+	for (u = ucmds; u->name ; u++)
+		if (!strcmp (Cmd_Argv(0), u->name))
 		{
 			u->func ();
 			break;
@@ -511,7 +512,7 @@ void SV_ClientThink (client_t *cl, usercmd_t *cmd)
 {
 	cl->commandMsec -= cmd->msec;
 
-	if (cl->commandMsec < 0 && sv_enforcetime->value )
+	if (cl->commandMsec < 0 && sv_enforcetime->integer )
 	{
 		Com_DPrintf ("commandMsec underflow from %s\n", cl->name);
 		return;
@@ -558,19 +559,19 @@ void SV_ExecuteClientMessage (client_t *cl)
 			Com_Printf ("SV_ReadClientMessage: badread\n");
 			SV_DropClient (cl);
 			return;
-		}	
+		}
 
 		c = MSG_ReadByte (&net_message);
 		if (c == -1)
 			break;
-				
+
 		switch (c)
 		{
 		default:
 			Com_Printf ("SV_ReadClientMessage: unknown command char\n");
 			SV_DropClient (cl);
 			return;
-						
+
 		case clc_nop:
 			break;
 
@@ -590,7 +591,7 @@ void SV_ExecuteClientMessage (client_t *cl)
 			if (lastframe != cl->lastframe) {
 				cl->lastframe = lastframe;
 				if (cl->lastframe > 0) {
-					cl->frame_latency[cl->lastframe&(LATENCY_COUNTS-1)] = 
+					cl->frame_latency[cl->lastframe&(LATENCY_COUNTS-1)] =
 						svs.realtime - cl->frames[cl->lastframe & UPDATE_MASK].senttime;
 				}
 			}
@@ -614,13 +615,13 @@ void SV_ExecuteClientMessage (client_t *cl)
 
 			if (calculatedChecksum != checksum)
 			{
-				Com_DPrintf ("Failed command checksum for %s (%d != %d)/%d\n", 
-					cl->name, calculatedChecksum, checksum, 
+				Com_DPrintf ("Failed command checksum for %s (%d != %d)/%d\n",
+					cl->name, calculatedChecksum, checksum,
 					cl->netchan.incoming_sequence);
 				return;
 			}
 
-			if (!sv_paused->value)
+			if (!sv_paused->integer)
 			{
 				net_drop = cl->netchan.dropped;
 				if (net_drop < 20)
@@ -648,7 +649,7 @@ void SV_ExecuteClientMessage (client_t *cl)
 			cl->lastcmd = newcmd;
 			break;
 
-		case clc_stringcmd:	
+		case clc_stringcmd:
 			s = MSG_ReadString (&net_message);
 
 			// malicious users may try using too many string commands
@@ -661,4 +662,3 @@ void SV_ExecuteClientMessage (client_t *cl)
 		}
 	}
 }
-

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -24,9 +24,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 viddef_t	viddef;				// global video state
 
-refexport_t	re;
+refExport_t	re;
 
-refexport_t GetRefAPI (refimport_t rimp);
+refExport_t GetRefAPI (refImport_t rimp);
 
 /*
 ==========================================================================
@@ -37,7 +37,7 @@ DIRECT LINK GLUE
 */
 
 #define	MAXPRINTMSG	4096
-void VID_Printf (int print_level, char *fmt, ...)
+void Vid_Printf (int print_level, char *fmt, ...)
 {
         va_list		argptr;
         char		msg[MAXPRINTMSG];
@@ -52,7 +52,7 @@ void VID_Printf (int print_level, char *fmt, ...)
                 Com_DPrintf ("%s", msg);
 }
 
-void VID_Error (int err_level, char *fmt, ...)
+void Vid_Error (int err_level, char *fmt, ...)
 {
         va_list		argptr;
         char		msg[MAXPRINTMSG];
@@ -64,14 +64,14 @@ void VID_Error (int err_level, char *fmt, ...)
 		Com_Error (err_level, "%s", msg);
 }
 
-void VID_NewWindow (int width, int height)
+void Vid_NewWindow (int width, int height)
 {
         viddef.width = width;
         viddef.height = height;
 }
 
 /*
-** VID_GetModeInfo
+** Vid_GetModeInfo
 */
 typedef struct vidmode_s
 {
@@ -96,7 +96,7 @@ vidmode_t vid_modes[] =
 };
 #define VID_NUM_MODES ( sizeof( vid_modes ) / sizeof( vid_modes[0] ) )
 
-qboolean VID_GetModeInfo( int *width, int *height, int mode )
+qboolean Vid_GetModeInfo( int *width, int *height, int mode )
 {
     if ( mode < 0 || mode >= VID_NUM_MODES )
         return false;
@@ -108,58 +108,49 @@ qboolean VID_GetModeInfo( int *width, int *height, int mode )
 }
 
 
-void	VID_Init (void)
+void	Vid_Init (void)
 {
-    refimport_t	ri;
+	refImport_t	ri;
 
-    viddef.width = 320;
-    viddef.height = 240;
+	viddef.width = 320;
+	viddef.height = 240;
 
-    ri.Cmd_AddCommand = Cmd_AddCommand;
-    ri.Cmd_RemoveCommand = Cmd_RemoveCommand;
-    ri.Cmd_Argc = Cmd_Argc;
-    ri.Cmd_Argv = Cmd_Argv;
-    ri.Cmd_ExecuteText = Cbuf_ExecuteText;
-    ri.Con_Printf = VID_Printf;
-    ri.Sys_Error = VID_Error;
-    ri.FS_LoadFile = FS_LoadFile;
-    ri.FS_FreeFile = FS_FreeFile;
-    ri.FS_Gamedir = FS_Gamedir;
-	ri.Vid_NewWindow = VID_NewWindow;
-    ri.Cvar_Get = Cvar_Get;
-    ri.Cvar_Set = Cvar_Set;
-    ri.Cvar_SetValue = Cvar_SetValue;
-    ri.Vid_GetModeInfo = VID_GetModeInfo;
+	RI_INIT_COMMON(ri)
+//	ri.Con_Printf = Vid_Printf;
+	ri.Sys_Error = Vid_Error;
+	ri.Vid_GetModeInfo = Vid_GetModeInfo;
+	ri.Vid_MenuInit = NULL;	//?? originally uninitialized
+	ri.Vid_NewWindow = Vid_NewWindow;
 
-    re = GetRefAPI(ri);
+	re = GetRefAPI (ri);
 
-    if (re.api_version != API_VERSION)
-        Com_Error (ERR_FATAL, "Re has incompatible api_version");
-    
-        // call the init function
-    if (re.Init (NULL, NULL) == -1)
+	if (re.struc_size != sizeof(refExport_t) || re.api_version != API_VERSION)
+		Com_Error (ERR_FATAL, "Re has incompatible api_version");
+
+	// call the init function
+	if (re.Init (NULL, NULL) == -1)
 		Com_Error (ERR_FATAL, "Couldn't start refresh");
 }
 
-void	VID_Shutdown (void)
+void	Vid_Shutdown (void)
 {
     if (re.Shutdown)
 	    re.Shutdown ();
 }
 
-void	VID_CheckChanges (void)
+void	Vid_CheckChanges (void)
 {
 }
 
-void	VID_MenuInit (void)
+void	Vid_MenuInit (void)
 {
 }
 
-void	VID_MenuDraw (void)
+void	Vid_MenuDraw (void)
 {
 }
 
-const char *VID_MenuKey( int k)
+const char *Vid_MenuKey( int k)
 {
 	return NULL;
 }

@@ -1,0 +1,182 @@
+4.00 Changes
+
+- intensity, saturation, vid_gamma, vid_fullscreen -> r_...
+- r_gamma = 1/vid_gamma
+
+Comments:
+? when filename.??? appeared in this log, this means "tga"/"jpg"/"pcx"/"wal"
+- wildcards are case-insensitive and can be in form: "*", "*.*" (same as "*"), "*text", "text*", "text*text"
+  or "*text*"; multiple wildcards can be separated with commas (','); if path specified, multi-wildcard syntax
+  should be in a following form:
+    "path/path.../wildcard1,wildcard2,...wildcard"
+
+1. REF_GL (old ??)
+
+- extended view area for working with large maps (variable "gl_zmax" controls clipping of view range)
+- improved vid_restart performance (Win32)
+- fixed cursor appearance when in fullscreen mode (Win32)
+- fixed crash of using sprite models when one frame is not found
+- implemented environment mapping simulation on transparent objects (can be disabled with "set gl_winrefl 0";
+    reflection taken from /* "env/<skyname>winrefl.???" or */ "env/defrefl.???")
+- changed appearance of "r_speeds" output
+- support of the Kingpin SURF_ALPHA surface flag (ADD USAGE OF flags "CONTENTS_ALPHA" and
+  "RF...ALPHA" and more !!)
+- hardware gamma control (can be disabled with "set r_ignorehwgamma 1"); uses "vid_gamma" and "intensity"
+  to calculate gamma; changes applied without "vid_restart" (Win32)
+- support for GL_S3_s3tc and GL_ARB_texture_compression (can be disabled with "set gl_ext_compressed_textures 0")
+# improved "imagelist" command: now it shows texture internal formats and info about scrap
+- "gl_console_only" variable: when "1", no graphical information displayed and display forced to full console
+- support of loading 8(grayscale)/24/32-bit tga and 24-bit jpg textures instead of 8-bit wal or pcx files
+# support for semi-transparent (has alpha >0 and <1) HUD images (e.i. Quake3 crosshairs)
+# improved speed in "gl_lightmap=1" mode; side effect: r_fullbright and gl_showtris are now
+    work with multitexturing enabled (gl_showtris requires either gl_lightmap or r_fullbright enabled)
+# "set gl_showtris 2" will shows triangles with enabled Z-buffer
+- "gl_lightmap 2" solarizes lightmaps (as in Quake3)
+  "gl_lightmap 3" inverses saturation of lightmaps on map loading
+- "screenshot[JPEG] [silent|levelshot]"
+  "screenshot silent" will create screenshot without echoing on console
+  "screenshot levelshot" will create screenshot 256x256 as "levelshots/<mapname>.tga"
+
+2. REF_SOFT
+
+- changed appearance of "r_speeds" and "r_dspeeds" output
+- fixed crash of using sprite models when one of frame images is not found
+- "sw_console_only" variable (see "gl_console_only" comments for details)
+- support of loading 24/32-bit tga and 24-bit jpg textures instead of 8-bit wal or pcx files (use
+    "set sw_prefer8bittex 1" if you want to load TGA/JPG only when 8-bit texture is not found; WARNING: when
+    playing Kingpin maps, you should set sw_prefer8bittex to 0 or erase Kingpin env/*.pcx files (different palette!))
+- support (visually buggy?) for Kingpin SURF_ALPHA surface flag
+
+3. IMPROVEMENTS
+
+- improved console command complementation:
+  - command/variable/alias list when partial match
+  - complete "map " / "demomap " with a list of available maps/demos
+  - complete "variable_name " with its value
+- demomap can be called without ".dm2" extension (added by default)
+- improved "dir" console command (reformatted, listing paks)
+- added support of zip (pk3) pak files
+- loading unlimited number of paks with any names (all internally lowercased)
+- added support of reading/listing player models from pak files
+- console edit:
+  - Home / End - move cursor to the line start/end
+  - Crtl-Home / Ctrl-End will rewind console to begin/end of buffer
+    (old behaviour - same, but without Ctrl)
+  - Left / Right - move cursor one char left/right
+  - Ctrl-Left / Ctrl-Right - move cursor one word left/right
+  - Del - delete char under cursor
+  - Ctrl-Del - clear text from cursor to the end of line
+  - Backspace - delete char before cursor
+  - Ctrl-Backspace - delete word before cursor
+  - any char - insert text
+- improved a ladder descending
+- added unhandled exception filter, which will restore screen/mouse/sound parameters if game crashes and logs error ("crush.log")
+- makes "crush.log" when game crushes (Win32)
+- logging developer messages to "debug.log" when "developer" is set to 2
+- added "r_drawfps" variable (display FPS when it is set)
+- added "r_playerpos" variable: when it is set to "1", player (spectator) world coordinates are shown
+- changed appearance of "cl_stats" output
+- "host_speeds" -> "com_speeds", better output
+- added keyboard autorepeat
+- added UNK46, UNK59-UNK5F keys for bindings
+- allowed cheatvars (timedemo, gl_lightmap ...) for demos, recorded from deathmatch
+- reformatted console output; word-wrap may be controlled with "set con_wordwrap 0|1"
+- ref_gl and ref_soft are now statically linked with quake2
+- no autosaves in deathmatch mode
+- if sound file not found, game doesn't try to load it every time it must appear
+- improved look of "player setup" menu
+- improved "set game directory"
+
+4. FIXES
+
+- on game change:
+  - saving current config
+  - reconfiguration from mod's config.cfg and autoexec.cfg
+- bug with menu spin control (crush when curvalue > maxvalue)
+- removed calling "-alias" EVERY time key depressed
+- fixed binding to "semicolon", added "comma"
+
+5. ADDONS
+
+- added "binds.lst" file fith the following line format:
+  1) "bind_cmd" "menu_text"
+  2) "bind_cmd"                (will be shown in menu with the same name)
+  3) "" "Delimiter text"       (delimiter, centered)
+  4) "" ""                     (empty line)
+  (Up to 64 lines of text, last line MUST be finished with CR/LF; almost HalfLife style)
+- added "players/model.lst": this file contains names of models, which gender should be female
+- added "sound/materials.lst" - contains sound description depended of texture name (almost HalfLife style)
+- command "add":
+  add <var_name> <inc> [<min> <max> [r][f]]
+    - var_name must exists and be writeable
+    - inc may be >0 or <0
+    - min<max
+    - if "r" is specified, when dest>max it will =min, if dest<min it =max (rotating)
+    - if "r" is NOT specified, when dest>max dest=max, when dest<min dest=min (limit)
+    - if "f" ("force") specified and variable is not found, it will be created (error message otherwise)
+- command "scale <varname> <scale>" will multiply variable value by scale
+- command "toggle <varname>" will set variable to 0 if var != 0 or set to 1 otherwise
+- command "cycle <varname> <v[1]> <v[2]> ..." - set variable to v[i+1] if it is matched to v[i];
+    if no matches found - set to v[1]; if matched with last value - set to 1st (i.e. cycle variable values
+    within value list)
+- command "cvarlist" - added parameter:
+  cvarlist [mask]          -- will display only variables, which names matched wildcard
+- command "bindlist" - added parameter:
+  bindlist [action mask]   -- will display only binds, which actions are matched wildcard
+- unbind <mask> ; "unbind *" == "unbindall"
+- commands "loadpak" and "unloadpak"
+  loadpak <pakname>[.pak]
+  loadpak <wildcard>
+    - pakname must be relative to a current game directory
+    - pakname will be automatically unloaded when gamedir changed
+    - to load pak from other game use "loadpak ../game/pakname.pak" syntax
+  unloadpak <pakname>[.pak]
+  unloadpak <wildcard>
+    - will be unloaded 1st pak in searchpaths (see "path" command), which name ends with "/pakname"
+    - if unloaded pak from baseq2 directory, it will not be loaded automatically when game changed
+- "r_surfinfo" variable: when value is non-zero, displaying info about maps surface under crosshair
+- menu navigations:
+  - added menu navigation and console scrolling with mouse
+  - added support of home/end keys; disabled menu auto-wrapping
+  - scrolling of long menus
+- "r_saturation" variable: default 1 (all textures and lightmaps - as is), 0 - full grayscale
+- surface footstep sounds depended on material (Kingpin, "materials.lst")
+- extended network protocol (fully comparible with old-version server/client). May be disabled on client
+  side with "set cl_extprotocol 0" or on server side with "set sv_extprotocol 0". Extensions:
+  - surface-dependent footstep sounds (server-side)
+  - surface-dependent bullet hit sounds (client-side)
+  - camper sounds (server-side)
+  - falling sounds (server-side)
+- crosshairs:
+  - unlimited number of crosshairs; must be named "pics/ch%d.???"; when trying to set crosshair,
+      that does not exist, crosshair will be set to 0 (no crosshair)
+  - added cvar "crosshaircolor"; value = [0..7] (0 - black, 1 - red, 2 - green, 4 - blue, 7 - white)
+  - changing crosshair shape and color from the options menu
+- console text colorizing in Q3-manner: ^0-^7 will change color (black-white); colored output can be disabled
+    with "set con_colortext 0"
+- browsing levelshots in "start server" menu; displaying it while map loading
+- sound pitch affected by timescale (DirectSound only)
+- "cl_draw2d 0" removes HUD
+- cvar "cfgfile" -- may be set from command line; default - "config.cfg"
+- command "writeconfig filename[.cfg]" - write settings to file
+- "set[a|u|s] <variable> <vaule>", "set <variable> <value> [a|u|s]" (archive|userinfo|serverinfo)
+- "reset <mask>" - set value of all cvars to default
+
+6. API (internals)
+
+Memory management
+-----------------
+  - void *Z_BlockMalloc(int size) - allocates memory block with a chunks of 4K (less memory fragmentation?)
+  - replaced Z_TagMalloc() in gameimport_t with NewTagMalloc(), with reserves (size+1) bytes.
+      We should make 1 more byte for Z_Malloc() & Z_TagMalloc() when it is called
+      from "gi->" (gamex86.dll) - we cannot control bugs in third-party mods, but
+      at least "dirty" reads entities in buffer = sizeof(ents) and adds 1 zero byte
+      after (ASCIIZ) - memory overrun! (so, we should reserve 1 byte for buggy mods).
+
+Miscellaneous
+-------------
+  - Menu separators can be created with QMF_CENTER flag (it will be centered, else - the same as QMF_LEFT_JUSTIFY)
+  - changed ALIAS_LOOP_COUNT from 16 to 64
+  - FS_LoadFile() will load file in buffer (filelength+1) with added zero byte
+  - Com_WPrintf() will print message with warning color and log when developer=2
+  - q_shared.h and q_shared.c are migrated from game/q_shared.* to common/q_shared2.*;

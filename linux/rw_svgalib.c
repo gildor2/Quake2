@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -67,7 +67,7 @@ int current_mode;
 
 /*****************************************************************************/
 
-void VID_InitModes(void)
+void Vid_InitModes(void)
 {
 
 int i;
@@ -88,13 +88,13 @@ int i;
 
 	for (i=0 ; i<num_modes ; i++)
 	{
-		if (modes[i].bytesperpixel != 1 && modes[i].colors != 256) 
+		if (modes[i].bytesperpixel != 1 && modes[i].colors != 256)
 			modes[i].width = 0;
 	}
 
 	for (i = 0; i < num_modes; i++)
 		if (modes[i].width)
-			ri.Con_Printf(PRINT_ALL, "mode %d: %d %d\n", modes[i].width, modes[i].height);
+			ri.Com_Printf ("mode %d: %d %d\n", modes[i].width, modes[i].height);
 
 }
 
@@ -108,7 +108,7 @@ int SWimp_Init( void *hInstance, void *wndProc )
 {
 	vga_init();
 
-	VID_InitModes();
+	Vid_InitModes();
 
 	return true;
 }
@@ -148,17 +148,17 @@ static qboolean SWimp_InitGraphics( qboolean fullscreen )
 	current_mode = get_mode(vid.width, vid.height);
 
 	if (current_mode < 0) {
-		ri.Con_Printf (PRINT_ALL, "Mode %d %d not found\n", vid.width, vid.height);
+		ri.Com_Printf ("Mode %d %d not found\n", vid.width, vid.height);
 		return false; // mode not found
 	}
 
 	// let the sound and input subsystems know about the new window
 	ri.Vid_NewWindow (vid.width, vid.height);
 
-	ri.Con_Printf (PRINT_ALL, "Setting VGAMode: %d\n", current_mode );
+	ri.Com_Printf ("Setting VGAMode: %d\n", current_mode );
 
 //	Cvar_SetValue ("vid_mode", (float)modenum);
-	
+
 	VGA_width = modes[current_mode].width;
 	VGA_height = modes[current_mode].height;
 	VGA_planar = modes[current_mode].bytesperpixel == 0;
@@ -218,7 +218,7 @@ void SWimp_EndFrame (void)
 					vid.buffer + offset,
 					((total-offset>0x10000)?0x10000:(total-offset)));
 		}
-	} 
+	}
 }
 
 /*
@@ -228,15 +228,15 @@ rserr_t SWimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen 
 {
 	rserr_t retval = rserr_ok;
 
-	ri.Con_Printf (PRINT_ALL, "setting mode %d:", mode );
+	ri.Com_Printf ("setting mode %d:", mode);
 
 	if ( !ri.Vid_GetModeInfo( pwidth, pheight, mode ) )
 	{
-		ri.Con_Printf( PRINT_ALL, " invalid mode\n" );
+		ri.Com_Printf (" invalid mode\n");
 		return rserr_invalid_mode;
 	}
 
-	ri.Con_Printf( PRINT_ALL, " %d %d\n", *pwidth, *pheight);
+	ri.Com_Printf (" %d %d\n", *pwidth, *pheight);
 
 	if ( !SWimp_InitGraphics( false ) ) {
 		// failed to set a valid mode in windowed mode
@@ -264,7 +264,7 @@ void SWimp_SetPalette( const unsigned char *palette )
 
     if ( !palette )
         palette = ( const unsigned char * ) sw_state.currentpalette;
- 
+
 	if (vga_getcolors() == 256)
 	{
 		tp = tmppal;
@@ -327,4 +327,3 @@ void Sys_MakeCodeWriteable (unsigned long startaddr, unsigned long length)
 	if (r < 0)
     		Sys_Error("Protection change failed\n");
 }
-

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // cl_tent.c -- client side temporary entities
 
 #include "client.h"
+#include "snd_loc.h"
 
 typedef enum
 {
@@ -81,9 +82,7 @@ void CL_BFGExplosionParticles (vec3_t org);
 // RAFAEL
 void CL_BlueBlasterParticles (vec3_t org, vec3_t dir);
 
-struct sfx_s	*cl_sfx_ric1;
-struct sfx_s	*cl_sfx_ric2;
-struct sfx_s	*cl_sfx_ric3;
+struct sfx_s	*cl_sfx_ric[3];
 struct sfx_s	*cl_sfx_lashit;
 struct sfx_s	*cl_sfx_spark5;
 struct sfx_s	*cl_sfx_spark6;
@@ -94,6 +93,8 @@ struct sfx_s	*cl_sfx_grenexp;
 struct sfx_s	*cl_sfx_watrexp;
 // RAFAEL
 struct sfx_s	*cl_sfx_plasexp;
+
+struct sfx_s	*cl_sfx_fallshort;
 struct sfx_s	*cl_sfx_footsteps[4];
 
 struct model_s	*cl_mod_explode;
@@ -117,23 +118,97 @@ struct model_s	*cl_mod_monster_heatbeam;
 struct model_s	*cl_mod_explo4_big;
 
 //ROGUE
+
+//--------------- Extended protocol -------------------
+
+#define NUM_STEP_MATERIALS	12
+
+typedef enum {
+	IMPACT_SILENT = -1,
+	IMPACT_DIRT,
+	IMPACT_METAL,
+	IMPACT_STONE,
+	IMPACT_TIN,
+	IMPACT_WATER,
+	IMPACT_WOOD,
+
+	IMPACT_COUNT
+} impactType_t;
+
+static impactType_t materialImpacts[NUM_STEP_MATERIALS + 1] = {
+	IMPACT_SILENT,		// silent
+	IMPACT_STONE,
+	IMPACT_WOOD,
+	IMPACT_DIRT,
+	IMPACT_METAL,
+	IMPACT_TIN,
+	IMPACT_SILENT,		// snow
+	IMPACT_TIN,
+	IMPACT_STONE,
+	IMPACT_WOOD,
+	IMPACT_SILENT,		// water
+	IMPACT_SILENT,		//!! glass
+	IMPACT_DIRT
+};
+
+struct sfx_s *cl_sfx_footsteps2[NUM_STEP_MATERIALS*4];
+struct sfx_s *cl_sfx_fallshort2[NUM_STEP_MATERIALS];
+static struct sfx_s *cl_sfx_bullethits[IMPACT_COUNT * 3];
+
+//?? static struct sfx_s *cl_sfx_spectator[4];
+struct sfx_s *cl_sfx_camper[9];
+
+static const char *footstepTypes[NUM_STEP_MATERIALS] = {
+	"pavement",
+	"rug",
+	"gravel",
+	"metal",
+	"metal_light",
+	"snow",
+	"tin",
+	"marble",
+	"wood",
+	"water",
+	"glass",
+	"dirt"
+};
+
+static const char *impactSounds[IMPACT_COUNT] = {
+	"dirt",
+	"metal",
+	"stone",
+	"tin",
+	"water",
+	"wood"
+};
+
+static const char *camperSounds[9] = {	//?? is it used ?
+	"tinyfart",
+	"cough1",
+	"cough2",
+	"sneeze1",
+	"sneeze2",
+	"yawn1",
+	"yawn2",
+	"burp1",
+	"spit1"
+};
+
+
 /*
 =================
 CL_RegisterTEntSounds
 =================
 */
+
 void CL_RegisterTEntSounds (void)
 {
-	int		i;
-	char	name[MAX_QPATH];
+	int		i, j;
 
-	// PMM - version stuff
-//	Com_Printf ("%s\n", ROGUE_VERSION_STRING);
-	// PMM
-	cl_sfx_ric1 = S_RegisterSound ("world/ric1.wav");
-	cl_sfx_ric2 = S_RegisterSound ("world/ric2.wav");
-	cl_sfx_ric3 = S_RegisterSound ("world/ric3.wav");
-	cl_sfx_lashit = S_RegisterSound("weapons/lashit.wav");
+	for (i = 0; i < 3; i++)
+		cl_sfx_ric[i] = S_RegisterSound (va("world/ric%d.wav", i + 1));
+
+	cl_sfx_lashit = S_RegisterSound ("weapons/lashit.wav");
 	cl_sfx_spark5 = S_RegisterSound ("world/spark5.wav");
 	cl_sfx_spark6 = S_RegisterSound ("world/spark6.wav");
 	cl_sfx_spark7 = S_RegisterSound ("world/spark7.wav");
@@ -143,26 +218,51 @@ void CL_RegisterTEntSounds (void)
 	cl_sfx_watrexp = S_RegisterSound ("weapons/xpld_wat.wav");
 	// RAFAEL
 	// cl_sfx_plasexp = S_RegisterSound ("weapons/plasexpl.wav");
-	S_RegisterSound ("player/land1.wav");
 
-	S_RegisterSound ("player/fall2.wav");
+	cl_sfx_fallshort = S_RegisterSound ("player/land1.wav");
 	S_RegisterSound ("player/fall1.wav");
+	S_RegisterSound ("player/fall2.wav");
 
-	for (i=0 ; i<4 ; i++)
+	// we need this sounds even if newprotocol is set in a case (see server/sv_main::SV_PostprocessFrame())
+	// when trace.fraction == 1.0
+	for (i = 0; i < 4; i++)
+		cl_sfx_footsteps[i] = S_RegisterSound (va("player/step%d.wav", i + 1));
+
+	if (cls.newprotocol)
 	{
-		Com_sprintf (name, sizeof(name), "player/step%i.wav", i+1);
-		cl_sfx_footsteps[i] = S_RegisterSound (name);
+		sfx_t	*sfx;
+
+		for (i = 0; i < NUM_STEP_MATERIALS; i++)
+		{
+			sfx = S_RegisterSound (va("player/footsteps/%s/land1.wav", footstepTypes[i]));
+			cl_sfx_fallshort2[i] = (sfx && sfx->absent) ? cl_sfx_fallshort : sfx;
+
+			for (j = 0; j < 4; j++)
+			{
+				sfx = S_RegisterSound (va("player/footsteps/%s/step%d.wav", footstepTypes[i], j + 1));
+				cl_sfx_footsteps2[i*4 + j] = (sfx && sfx->absent) ? cl_sfx_footsteps[i] : sfx;
+			}
+		}
+		for (i = 0; i < IMPACT_COUNT; i++)
+		{
+			for (j = 0; j < 3; j++)
+			{
+				sfx = S_RegisterSound (va("weapons/%s/impact%d.wav", impactSounds[i], j + 1));
+				cl_sfx_bullethits[i*3 + j] = (sfx && sfx->absent) ? cl_sfx_ric[j] : sfx;
+			}
+		}
+/*		for (i = 0; i < 3; i++)
+		{
+			cl_sfx_spectator[i] = S_RegisterSound (va("player/spectator/spect%i.wav", i + 1));
+		} */
+		for (i = 0; i < 9; i++)
+			cl_sfx_camper[i] = S_RegisterSound (va("player/reallife/%s.wav", camperSounds[i]));
 	}
 
-//PGM
+	//PGM
 	cl_sfx_lightning = S_RegisterSound ("weapons/tesla.wav");
 	cl_sfx_disrexp = S_RegisterSound ("weapons/disrupthit.wav");
-	// version stuff
-//	sprintf (name, "weapons/sound%d.wav", ROGUE_VERSION_ID);
-//	if (name[0] == 'w')
-//		name[0] = 'W';
-//PGM
-}	
+}
 
 /*
 =================
@@ -181,29 +281,29 @@ void CL_RegisterTEntModels (void)
 	cl_mod_bfg_explo = re.RegisterModel ("sprites/s_bfg2.sp2");
 	cl_mod_powerscreen = re.RegisterModel ("models/items/armor/effect/tris.md2");
 
-re.RegisterModel ("models/objects/laser/tris.md2");
-re.RegisterModel ("models/objects/grenade2/tris.md2");
-re.RegisterModel ("models/weapons/v_machn/tris.md2");
-re.RegisterModel ("models/weapons/v_handgr/tris.md2");
-re.RegisterModel ("models/weapons/v_shotg2/tris.md2");
-re.RegisterModel ("models/objects/gibs/bone/tris.md2");
-re.RegisterModel ("models/objects/gibs/sm_meat/tris.md2");
-re.RegisterModel ("models/objects/gibs/bone2/tris.md2");
-// RAFAEL
-// re.RegisterModel ("models/objects/blaser/tris.md2");
+	re.RegisterModel ("models/objects/laser/tris.md2");
+	re.RegisterModel ("models/objects/grenade2/tris.md2");
+	re.RegisterModel ("models/weapons/v_machn/tris.md2");
+	re.RegisterModel ("models/weapons/v_handgr/tris.md2");
+	re.RegisterModel ("models/weapons/v_shotg2/tris.md2");
+	re.RegisterModel ("models/objects/gibs/bone/tris.md2");
+	re.RegisterModel ("models/objects/gibs/sm_meat/tris.md2");
+	re.RegisterModel ("models/objects/gibs/bone2/tris.md2");
+	// RAFAEL
+	// re.RegisterModel ("models/objects/blaser/tris.md2");
 
-re.RegisterPic ("w_machinegun");
-re.RegisterPic ("a_bullets");
-re.RegisterPic ("i_health");
-re.RegisterPic ("a_grenades");
+	re.RegisterPic ("w_machinegun");
+	re.RegisterPic ("a_bullets");
+	re.RegisterPic ("i_health");
+	re.RegisterPic ("a_grenades");
 
-//ROGUE
+	//ROGUE
 	cl_mod_explo4_big = re.RegisterModel ("models/objects/r_explode2/tris.md2");
 	cl_mod_lightning = re.RegisterModel ("models/proj/lightning/tris.md2");
 	cl_mod_heatbeam = re.RegisterModel ("models/proj/beam/tris.md2");
 	cl_mod_monster_heatbeam = re.RegisterModel ("models/proj/widowbeam/tris.md2");
-//ROGUE
-}	
+	//ROGUE
+}
 
 /*
 =================
@@ -232,7 +332,7 @@ explosion_t *CL_AllocExplosion (void)
 	int		i;
 	int		time;
 	int		index;
-	
+
 	for (i=0 ; i<MAX_EXPLOSIONS ; i++)
 	{
 		if (cl_explosions[i].type == ex_free)
@@ -312,13 +412,13 @@ int CL_ParseBeam (struct model_s *model)
 	vec3_t	start, end;
 	beam_t	*b;
 	int		i;
-	
+
 	ent = MSG_ReadShort (&net_message);
-	
+
 	MSG_ReadPos (&net_message, start);
 	MSG_ReadPos (&net_message, end);
 
-// override any beam with the same entity
+	// override any beam with the same entity
 	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
 		if (b->entity == ent)
 		{
@@ -331,7 +431,7 @@ int CL_ParseBeam (struct model_s *model)
 			return ent;
 		}
 
-// find a free beam
+	// find a free beam
 	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
@@ -345,7 +445,7 @@ int CL_ParseBeam (struct model_s *model)
 			return ent;
 		}
 	}
-	Com_Printf ("beam list overflow!\n");	
+	Com_Printf ("beam list overflow!\n");
 	return ent;
 }
 
@@ -360,9 +460,9 @@ int CL_ParseBeam2 (struct model_s *model)
 	vec3_t	start, end, offset;
 	beam_t	*b;
 	int		i;
-	
+
 	ent = MSG_ReadShort (&net_message);
-	
+
 	MSG_ReadPos (&net_message, start);
 	MSG_ReadPos (&net_message, end);
 	MSG_ReadPos (&net_message, offset);
@@ -390,14 +490,14 @@ int CL_ParseBeam2 (struct model_s *model)
 		{
 			b->entity = ent;
 			b->model = model;
-			b->endtime = cl.time + 200;	
+			b->endtime = cl.time + 200;
 			VectorCopy (start, b->start);
 			VectorCopy (end, b->end);
 			VectorCopy (offset, b->offset);
 			return ent;
 		}
 	}
-	Com_Printf ("beam list overflow!\n");	
+	Com_Printf ("beam list overflow!\n");
 	return ent;
 }
 
@@ -414,9 +514,9 @@ int CL_ParsePlayerBeam (struct model_s *model)
 	vec3_t	start, end, offset;
 	beam_t	*b;
 	int		i;
-	
+
 	ent = MSG_ReadShort (&net_message);
-	
+
 	MSG_ReadPos (&net_message, start);
 	MSG_ReadPos (&net_message, end);
 	// PMM - network optimization
@@ -462,7 +562,7 @@ int CL_ParsePlayerBeam (struct model_s *model)
 			return ent;
 		}
 	}
-	Com_Printf ("beam list overflow!\n");	
+	Com_Printf ("beam list overflow!\n");
 	return ent;
 }
 //rogue
@@ -478,7 +578,7 @@ int CL_ParseLightning (struct model_s *model)
 	vec3_t	start, end;
 	beam_t	*b;
 	int		i;
-	
+
 	srcEnt = MSG_ReadShort (&net_message);
 	destEnt = MSG_ReadShort (&net_message);
 
@@ -516,7 +616,7 @@ int CL_ParseLightning (struct model_s *model)
 			return srcEnt;
 		}
 	}
-	Com_Printf ("beam list overflow!\n");	
+	Com_Printf ("beam list overflow!\n");
 	return srcEnt;
 }
 
@@ -539,7 +639,7 @@ void CL_ParseLaser (int colors)
 	{
 		if (l->endtime < cl.time)
 		{
-			l->ent.flags = RF_TRANSLUCENT | RF_BEAM;
+			l->ent.flags = RF_TRANSLUCENT|RF_BEAM;
 			VectorCopy (start, l->ent.origin);
 			VectorCopy (end, l->ent.oldorigin);
 			l->ent.alpha = 0.30;
@@ -724,20 +824,54 @@ void CL_ParseTEnt (void)
 
 		if (type != TE_SPARKS)
 		{
+			//!! Add stuff for bulletholes here
+			if (cls.newprotocol)
+			{
+				trace_t	trace;
+				vec3_t	zero = {0, 0, 0};
+				vec3_t	start, end;
+				csurface_t	*surf;
+				int		impactType;
+
+				VectorAdd (pos, dir, start);
+				VectorMA (start, -2, dir, end);
+				trace = CM_BoxTrace (start, end, zero, zero, 0, MASK_ALL);
+				if (trace.fraction < 1.0 && (surf = trace.surface))
+				{
+					impactType = materialImpacts[surf->material];
+					if (impactType < 0) break;		// silent
+
+					CL_SmokeAndFlash (pos);
+					S_StartSound (pos, 0, 0, cl_sfx_bullethits[impactType*3 + rand()%3], 1, ATTN_NORM, 0);
+					break;
+
+/*					if (surf->material == MATERIAL_WOOD)
+					{
+						CL_SmokeAndFlash (pos);
+						S_StartSound (pos, 0, 0, cl_sfx_bulletwood[rand()%3], 1, ATTN_NORM, 0);
+						break;
+					}
+					else if (surf->material == MATERIAL_METAL || surf->material == MATERIAL_METAL_L)
+					{
+						CL_SmokeAndFlash (pos);
+						S_StartSound (pos, 0, 0, cl_sfx_bullettin[rand()%3], 1, ATTN_NORM, 0);
+						break;
+					}
+					else if (surf->material == MATERIAL_SNOW)
+						break; // no bullet sounds and smoke/flash
+*/				}
+			}
+
 			CL_SmokeAndFlash(pos);
-			
+
 			// impact sound
-			cnt = rand()&15;
-			if (cnt == 1)
-				S_StartSound (pos, 0, 0, cl_sfx_ric1, 1, ATTN_NORM, 0);
-			else if (cnt == 2)
-				S_StartSound (pos, 0, 0, cl_sfx_ric2, 1, ATTN_NORM, 0);
-			else if (cnt == 3)
-				S_StartSound (pos, 0, 0, cl_sfx_ric3, 1, ATTN_NORM, 0);
+			cnt = rand()%10;//&15;
+			if (cnt >= 0 && cnt <= 2)
+				S_StartSound (pos, 0, 0, cl_sfx_ric[cnt], 1, ATTN_NORM, 0);
 		}
 
 		break;
-		
+
 	case TE_SCREEN_SPARKS:
 	case TE_SHIELD_SPARKS:
 		MSG_ReadPos (&net_message, pos);
@@ -749,7 +883,7 @@ void CL_ParseTEnt (void)
 		//FIXME : replace or remove this sound
 		S_StartSound (pos, 0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
-		
+
 	case TE_SHOTGUN:			// bullet hitting wall
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
@@ -757,7 +891,7 @@ void CL_ParseTEnt (void)
 		CL_SmokeAndFlash(pos);
 		break;
 
-	case TE_SPLASH:			// bullet hitting water
+	case TE_SPLASH:				// bullet hitting water
 		cnt = MSG_ReadByte (&net_message);
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
@@ -769,7 +903,7 @@ void CL_ParseTEnt (void)
 		CL_ParticleEffect (pos, dir, color, cnt);
 
 		if (r == SPLASH_SPARKS)
-		{
+		{	// just particles -- not water
 			r = rand() & 3;
 			if (r == 0)
 				S_StartSound (pos, 0, 0, cl_sfx_spark5, 1, ATTN_STATIC, 0);
@@ -777,6 +911,10 @@ void CL_ParseTEnt (void)
 				S_StartSound (pos, 0, 0, cl_sfx_spark6, 1, ATTN_STATIC, 0);
 			else
 				S_StartSound (pos, 0, 0, cl_sfx_spark7, 1, ATTN_STATIC, 0);
+		}
+		else if ((r == SPLASH_BLUE_WATER || r == SPLASH_BROWN_WATER) && cls.newprotocol)
+		{
+			S_StartSound (pos, 0, 0, cl_sfx_bullethits[IMPACT_WATER*3 + rand()%3], 1, ATTN_NORM, 0);
 		}
 		break;
 
@@ -823,7 +961,7 @@ void CL_ParseTEnt (void)
 		ex->frames = 4;
 		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
-		
+
 	case TE_RAILTRAIL:			// railgun effect
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadPos (&net_message, pos2);
@@ -865,7 +1003,7 @@ void CL_ParseTEnt (void)
 		ex->ent.flags = RF_FULLBRIGHT;
 		ex->start = cl.frame.servertime - 100;
 		ex->light = 350;
-		ex->lightcolor[0] = 1.0; 
+		ex->lightcolor[0] = 1.0;
 		ex->lightcolor[1] = 0.5;
 		ex->lightcolor[2] = 0.5;
 		ex->ent.angles[1] = rand() % 360;
@@ -876,7 +1014,7 @@ void CL_ParseTEnt (void)
 		CL_ExplosionParticles (pos);
 		S_StartSound (pos, 0, 0, cl_sfx_rockexp, 1, ATTN_NORM, 0);
 		break;
-	
+
 	case TE_EXPLOSION1:
 	case TE_EXPLOSION1_BIG:						// PMM
 	case TE_ROCKET_EXPLOSION:
@@ -1001,7 +1139,7 @@ void CL_ParseTEnt (void)
 	case TE_FLECHETTE:			// flechette
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
-		
+
 		// PMM
 		if (type == TE_BLASTER2)
 			CL_BlasterParticles2 (pos, dir, 0xd0);
@@ -1109,13 +1247,13 @@ void CL_ParseTEnt (void)
 		MSG_ReadDir (&net_message, dir);
 //		r = MSG_ReadByte (&net_message);
 //		magnitude = MSG_ReadShort (&net_message);
-		r = 8;
+//??		r = 8;
 		magnitude = 60;
-		color = r & 0xff;
+		color = 8;//?? r & 0xff;
 		CL_ParticleSteamEffect (pos, dir, color, cnt, magnitude);
 		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
-	
+
 	case TE_HEATBEAM_STEAM:
 //		cnt = MSG_ReadByte (&net_message);
 		cnt = 20;
@@ -1214,7 +1352,7 @@ void CL_AddBeams (void)
 	float		forward;
 	float		len, steps;
 	float		model_length;
-	
+
 // update beams
 	for (i=0, b=cl_beams ; i< MAX_BEAMS ; i++, b++)
 	{
@@ -1251,7 +1389,7 @@ void CL_AddBeams (void)
 				yaw = 270;
 			if (yaw < 0)
 				yaw += 360;
-	
+
 			forward = sqrt (dist[0]*dist[0] + dist[1]*dist[1]);
 			pitch = (atan2(dist[2], forward) * -180.0 / M_PI);
 			if (pitch < 0)
@@ -1290,7 +1428,7 @@ void CL_AddBeams (void)
 			ent.angles[0] = pitch;
 			ent.angles[1] = yaw;
 			ent.angles[2] = rand()%360;
-			V_AddEntity (&ent);			
+			V_AddEntity (&ent);
 			return;
 		}
 		while (d > 0)
@@ -1310,7 +1448,7 @@ void CL_AddBeams (void)
 				ent.angles[1] = yaw;
 				ent.angles[2] = rand()%360;
 			}
-			
+
 //			Com_Printf("B: %d -> %d\n", b->entity, b->dest_entity);
 			V_AddEntity (&ent);
 
@@ -1355,7 +1493,7 @@ void CL_AddPlayerBeams (void)
 	float		len, steps;
 	int			framenum;
 	float		model_length;
-	
+
 	float		hand_multiplier;
 	frame_t		*oldframe;
 	player_state_t	*ps, *ops;
@@ -1363,14 +1501,14 @@ void CL_AddPlayerBeams (void)
 //PMM
 	if (hand)
 	{
-		if (hand->value == 2)
+		if (hand->integer == 2)
 			hand_multiplier = 0;
-		else if (hand->value == 1)
+		else if (hand->integer == 1)
 			hand_multiplier = -1;
 		else
 			hand_multiplier = 1;
 	}
-	else 
+	else
 	{
 		hand_multiplier = 1;
 	}
@@ -1388,7 +1526,7 @@ void CL_AddPlayerBeams (void)
 
 			// if coming from the player, update the start position
 			if (b->entity == cl.playernum+1)	// entity 0 is the world
-			{	
+			{
 				// set up gun position
 				// code straight out of CL_AddViewWeapon
 				ps = &cl.frame.playerstate;
@@ -1405,7 +1543,7 @@ void CL_AddPlayerBeams (void)
 				VectorMA (b->start, (hand_multiplier * b->offset[0]), cl.v_right, org);
 				VectorMA (     org, b->offset[1], cl.v_forward, org);
 				VectorMA (     org, b->offset[2], cl.v_up, org);
-				if ((hand) && (hand->value == 2)) {
+				if ((hand) && (hand->integer == 2)) {
 					VectorMA (org, -1, cl.v_up, org);
 				}
 				// FIXME - take these out when final
@@ -1441,7 +1579,7 @@ void CL_AddPlayerBeams (void)
 			VectorMA (dist, (hand_multiplier * b->offset[0]), r, dist);
 			VectorMA (dist, b->offset[1], f, dist);
 			VectorMA (dist, b->offset[2], u, dist);
-			if ((hand) && (hand->value == 2)) {
+			if ((hand) && (hand->integer == 2)) {
 				VectorMA (org, -1, cl.v_up, org);
 			}
 		}
@@ -1466,13 +1604,13 @@ void CL_AddPlayerBeams (void)
 				yaw = 270;
 			if (yaw < 0)
 				yaw += 360;
-	
+
 			forward = sqrt (dist[0]*dist[0] + dist[1]*dist[1]);
 			pitch = (atan2(dist[2], forward) * -180.0 / M_PI);
 			if (pitch < 0)
 				pitch += 360.0;
 		}
-		
+
 		if (cl_mod_heatbeam && (b->model == cl_mod_heatbeam))
 		{
 			if (b->entity != cl.playernum+1)
@@ -1484,7 +1622,7 @@ void CL_AddPlayerBeams (void)
 				ent.angles[2] = 0;
 //				Com_Printf ("%f %f - %f %f %f\n", -pitch, yaw+180.0, b->offset[0], b->offset[1], b->offset[2]);
 				AngleVectors(ent.angles, f, r, u);
-					
+
 				// if it's a non-origin offset, it's a player, so use the hardcoded player offset
 				if (!VectorCompare (b->offset, vec3_origin))
 				{
@@ -1546,7 +1684,7 @@ void CL_AddPlayerBeams (void)
 			ent.angles[0] = pitch;
 			ent.angles[1] = yaw;
 			ent.angles[2] = rand()%360;
-			V_AddEntity (&ent);			
+			V_AddEntity (&ent);
 			return;
 		}
 		while (d > 0)
@@ -1577,7 +1715,7 @@ void CL_AddPlayerBeams (void)
 				ent.angles[1] = yaw;
 				ent.angles[2] = rand()%360;
 			}
-			
+
 //			Com_Printf("B: %d -> %d\n", b->entity, b->dest_entity);
 			V_AddEntity (&ent);
 

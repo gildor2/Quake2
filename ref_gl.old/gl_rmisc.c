@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -75,13 +75,13 @@ void R_InitParticleTexture (void)
 }
 
 
-/* 
-============================================================================== 
- 
-						SCREEN SHOTS 
- 
-============================================================================== 
-*/ 
+/*
+==============================================================================
+
+						SCREEN SHOTS
+
+==============================================================================
+*/
 
 typedef struct _TargaHeader {
 	unsigned char 	id_length, colormap_type, image_type;
@@ -92,46 +92,121 @@ typedef struct _TargaHeader {
 } TargaHeader;
 
 
-/* 
-================== 
+/*
+==================
 GL_ScreenShot_f
-================== 
-*/  
-void GL_ScreenShot_f (void) 
+==================
+*/
+
+#define		LEVELSHOT_W		256
+#define		LEVELSHOT_H		256
+
+void GL_Levelshot ()
 {
-	byte		*buffer;
-	char		picname[80]; 
-	char		checkname[MAX_OSPATH];
-	int			i, c, temp;
+	byte		*buffer, *buffer2, *in, *out;
+	char		filename[MAX_OSPATH], scratch[MAX_OSPATH], *mapname, *ext;
+	int			i;
 	FILE		*f;
 
-	// create the scrnshots directory if it doesn't exist
-	Com_sprintf (checkname, sizeof(checkname), "%s/scrnshot", ri.FS_Gamedir());
+	// create the levelshots directory if it doesn't exist
+	Com_sprintf (filename, sizeof(filename), "%s/levelshots", FS_Gamedir());
+	Sys_Mkdir (filename);
+
+	mapname = strrchr (r_worldmodel->name, '/');
+	if (!mapname)
+		mapname = r_worldmodel->name;	// normally, maps must be stored in "maps/*", but ...
+	else
+		mapname++;
+	Com_sprintf (scratch, sizeof(scratch), "/%s", mapname);
+	ext = strrchr (scratch, '.');
+	if (!ext)
+		ext = strrchr (scratch, 0);		// normally, ext must points to ".bsp"
+	strcpy (ext, ".tga");
+	strcat (filename, scratch);
+
+	buffer = Z_Malloc (LEVELSHOT_W*LEVELSHOT_H*4 + 18 + 4);
+
+	buffer2 = Z_Malloc (vid.width*vid.height*4);
+	qglReadPixels (0, 0, vid.width, vid.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer2);
+	//?? may be, GL_ResampleTexture crushes when vid.height > 1024
+	GL_ResampleTexture ((unsigned*)buffer2, vid.width, vid.height, (unsigned*)(buffer + 18 + 4), LEVELSHOT_W, LEVELSHOT_H);
+	Z_Free (buffer2);
+
+	memset (buffer, 0, 18);
+	buffer[2] = 2;		// uncompressed type
+	buffer[12] = LEVELSHOT_W&255;
+	buffer[13] = LEVELSHOT_W>>8;
+	buffer[14] = LEVELSHOT_H&255;
+	buffer[15] = LEVELSHOT_H>>8;
+	buffer[16] = 24;	// pixel size
+
+	// convert RGBA to BGR
+	in = buffer + 18 + 4;
+	out = buffer + 18;
+	for (i = 0; i < LEVELSHOT_W*LEVELSHOT_H; i++)
+	{
+		*out++ = in[2];	// B
+		*out++ = in[1];	// G
+		*out++ = in[0];	// R
+		in += 4;
+	}
+
+	GL_BufCorrectGamma (&buffer[18], LEVELSHOT_W*LEVELSHOT_H*3);
+
+	f = fopen (filename, "wb");
+	if (!f)
+	{
+		Com_Printf ("Cannot write file %s\n", filename);
+		return;
+	}
+	fwrite (buffer, 1, LEVELSHOT_W*LEVELSHOT_H*3 + 18, f);
+	fclose (f);
+
+	Z_Free (buffer);
+}
+
+
+void GL_ScreenShot_f (void)
+{
+	byte		*buffer;
+	char		picname[80];
+	char		checkname[MAX_OSPATH];
+	int			i, c;
+	FILE		*f;
+
+	if (!strcmp (Cmd_Argv(1), "levelshot"))
+	{
+		GL_Levelshot ();
+		return;
+	}
+
+	// create the screenshots directory if it doesn't exist
+	Com_sprintf (checkname, sizeof(checkname), "%s/screenshots", FS_Gamedir());
 	Sys_Mkdir (checkname);
 
-// 
-// find a file name to save it to 
-// 
+	//
+	// find a file name to save it to
+	//
 	strcpy(picname,"quake00.tga");
 
-	for (i=0 ; i<=99 ; i++) 
-	{ 
-		picname[5] = i/10 + '0'; 
-		picname[6] = i%10 + '0'; 
-		Com_sprintf (checkname, sizeof(checkname), "%s/scrnshot/%s", ri.FS_Gamedir(), picname);
+	for (i = 0; i < 100; i++)
+	{
+		picname[5] = i/10 + '0';
+		picname[6] = i%10 + '0';
+		Com_sprintf (checkname, sizeof(checkname), "%s/screenshots/%s", FS_Gamedir(), picname);
 		f = fopen (checkname, "rb");
 		if (!f)
 			break;	// file doesn't exist
 		fclose (f);
-	} 
-	if (i==100) 
+	}
+	if (i == 100)
 	{
-		ri.Con_Printf (PRINT_ALL, "SCR_ScreenShot_f: Couldn't create a file\n"); 
+		Com_Printf ("SCR_ScreenShot_f: Couldn't create a file\n");
 		return;
  	}
 
 
-	buffer = malloc(vid.width*vid.height*3 + 18);
+	buffer = Z_Malloc (vid.width*vid.height*3 + 18);
 	memset (buffer, 0, 18);
 	buffer[2] = 2;		// uncompressed type
 	buffer[12] = vid.width&255;
@@ -140,34 +215,39 @@ void GL_ScreenShot_f (void)
 	buffer[15] = vid.height>>8;
 	buffer[16] = 24;	// pixel size
 
-	qglReadPixels (0, 0, vid.width, vid.height, GL_RGB, GL_UNSIGNED_BYTE, buffer+18 ); 
+	qglReadPixels (0, 0, vid.width, vid.height, GL_RGB, GL_UNSIGNED_BYTE, buffer+18 );
 
 	// swap rgb to bgr
 	c = 18+vid.width*vid.height*3;
-	for (i=18 ; i<c ; i+=3)
+	for (i = 18; i < c; i+=3)
 	{
+		int temp;
+
 		temp = buffer[i];
 		buffer[i] = buffer[i+2];
 		buffer[i+2] = temp;
 	}
 
+	GL_BufCorrectGamma (&buffer[18], c - 18);
+
 	f = fopen (checkname, "wb");
 	fwrite (buffer, 1, c, f);
 	fclose (f);
 
-	free (buffer);
-	ri.Con_Printf (PRINT_ALL, "Wrote %s\n", picname);
-} 
+	Z_Free (buffer);
+	if (strcmp (Cmd_Argv(1), "silent"))
+		Com_Printf ("Wrote %s\n", picname);
+}
 
 /*
 ** GL_Strings_f
 */
 void GL_Strings_f( void )
 {
-	ri.Con_Printf (PRINT_ALL, "GL_VENDOR: %s\n", gl_config.vendor_string );
-	ri.Con_Printf (PRINT_ALL, "GL_RENDERER: %s\n", gl_config.renderer_string );
-	ri.Con_Printf (PRINT_ALL, "GL_VERSION: %s\n", gl_config.version_string );
-	ri.Con_Printf (PRINT_ALL, "GL_EXTENSIONS: %s\n", gl_config.extensions_string );
+	Com_Printf ("GL_VENDOR: %s\n", gl_config.vendor_string );
+	Com_Printf ("GL_RENDERER: %s\n", gl_config.renderer_string );
+	Com_Printf ("GL_VERSION: %s\n", gl_config.version_string );
+	Com_Printf ("GL_EXTENSIONS: %s\n", gl_config.extensions_string );
 }
 
 /*
@@ -189,7 +269,8 @@ void GL_SetDefaultState( void )
 	qglColor4f (1,1,1,1);
 
 	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-	qglShadeModel (GL_FLAT);
+	qglShadeModel (GL_SMOOTH);
+//	qglShadeModel (GL_FLAT);	--&&
 
 	GL_TextureMode( gl_texturemode->string );
 	GL_TextureAlphaMode( gl_texturealphamode->string );
@@ -205,7 +286,7 @@ void GL_SetDefaultState( void )
 
 	GL_TexEnv( GL_REPLACE );
 
-	if ( qglPointParameterfEXT )
+/*	if ( qglPointParameterfEXT )
 	{
 		float attenuations[3];
 
@@ -218,14 +299,14 @@ void GL_SetDefaultState( void )
 		qglPointParameterfEXT( GL_POINT_SIZE_MAX_EXT, gl_particle_max_size->value );
 		qglPointParameterfvEXT( GL_DISTANCE_ATTENUATION_EXT, attenuations );
 	}
-
-	if ( qglColorTableEXT && gl_ext_palettedtexture->value )
+*/
+/*	if ( qglColorTableEXT && gl_ext_palettedtexture->integer )
 	{
 		qglEnable( GL_SHARED_TEXTURE_PALETTE_EXT );
 
 		GL_SetTexturePalette( d_8to24table );
 	}
-
+*/
 	GL_UpdateSwapInterval();
 }
 
@@ -235,7 +316,7 @@ void GL_UpdateSwapInterval( void )
 	{
 		gl_swapinterval->modified = false;
 
-		if ( !gl_state.stereo_enabled ) 
+		if ( !gl_state.stereo_enabled )
 		{
 #ifdef _WIN32
 			if ( qwglSwapIntervalEXT )

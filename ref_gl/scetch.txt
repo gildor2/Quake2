@@ -1,0 +1,31 @@
+int GetNumLightmaps()
+{
+	static = false;
+	numLm = 0;
+	while (some condition)
+	{
+		lm = nextLM;
+		if (lm == 0 || lm >= 32)
+			static = true;
+		else
+			numLm++;
+	}
+	if (static) numLm++;
+
+	return numLm;
+}
+
+void SetShaderLightmaps(shader, *lmNumbers)
+{
+}
+
+#define SHADER_LIGHTMAPSHIFT	12
+#define SHADER_LIGHTMAPMASK	(7<<SHADER_LIGHTMAPSHIFT)
+#define SHADER_LIGHTMAP		(1<<SHADER_LIGHTMAPSHIFT)
+#define SHADER_LIGHTMAP2	(2<<SHADER_LIGHTMAPSHIFT)
+#define SHADER_LIGHTMAP3	(3<<SHADER_LIGHTMAPSHIFT)
+#define SHADER_LIGHTMAP4	(4<<SHADER_LIGHTMAPSHIFT)
+
+shader_t *GL_FindShader(name, style)
+{
+}

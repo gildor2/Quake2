@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <float.h>
 
-#include "..\ref_soft\r_local.h"
+#include "../ref_soft/r_local.h"
 #define INITGUID
 #include "rw_win.h"
 
@@ -50,7 +50,7 @@ qboolean DDRAW_Init( unsigned char **ppbuffer, int *ppitch )
 
 	HRESULT (WINAPI *QDirectDrawCreate)( GUID FAR *lpGUID, LPDIRECTDRAW FAR * lplpDDRAW, IUnknown FAR * pUnkOuter );
 
-ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
+	Com_Printf ("Initializing DirectDraw\n");
 
 
 	for ( i = 0; i < 256; i++ )
@@ -65,79 +65,79 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 	*/
 	if ( !sww_state.hinstDDRAW )
 	{
-		ri.Con_Printf( PRINT_ALL, "...loading DDRAW.DLL: ");
+		Com_Printf ("...loading DDRAW.DLL: ");
 		if ( ( sww_state.hinstDDRAW = LoadLibrary( "ddraw.dll" ) ) == NULL )
 		{
-			ri.Con_Printf( PRINT_ALL, "failed\n" );
+			Com_WPrintf ("failed\n");
 			goto fail;
 		}
-		ri.Con_Printf( PRINT_ALL, "ok\n" );
+		Com_Printf ("ok\n" );
 	}
 
 	if ( ( QDirectDrawCreate = ( HRESULT (WINAPI *)( GUID FAR *, LPDIRECTDRAW FAR *, IUnknown FAR * ) ) GetProcAddress( sww_state.hinstDDRAW, "DirectDrawCreate" ) ) == NULL )
 	{
-		ri.Con_Printf( PRINT_ALL, "*** DirectDrawCreate == NULL ***\n" );
+		Com_WPrintf ("*** DirectDrawCreate == NULL ***\n" );
 		goto fail;
 	}
 
 	/*
 	** create the direct draw object
 	*/
-	ri.Con_Printf( PRINT_ALL, "...creating DirectDraw object: ");
+	Com_Printf ("...creating DirectDraw object: ");
 	if ( ( ddrval = QDirectDrawCreate( NULL, &sww_state.lpDirectDraw, NULL ) ) != DD_OK )
 	{
-		ri.Con_Printf( PRINT_ALL, "failed - %s\n", DDrawError( ddrval ) );
+		Com_WPrintf ("failed - %s\n", DDrawError( ddrval ) );
 		goto fail;
 	}
-	ri.Con_Printf( PRINT_ALL, "ok\n" );
+	Com_Printf ("ok\n");
 
 	/*
 	** see if linear modes exist first
 	*/
 	sww_state.modex = false;
 
-	ri.Con_Printf( PRINT_ALL, "...setting exclusive mode: ");
-	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetCooperativeLevel( sww_state.lpDirectDraw, 
+	Com_Printf ("...setting exclusive mode: ");
+	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetCooperativeLevel( sww_state.lpDirectDraw,
 																		 sww_state.hWnd,
 																		 DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN ) ) != DD_OK )
 	{
-		ri.Con_Printf( PRINT_ALL, "failed - %s\n",DDrawError (ddrval) );
+		Com_WPrintf ("failed - %s\n",DDrawError (ddrval) );
 		goto fail;
 	}
-	ri.Con_Printf( PRINT_ALL, "ok\n" );
+	Com_Printf ("ok\n");
 
 	/*
 	** try changing the display mode normally
 	*/
-	ri.Con_Printf( PRINT_ALL, "...finding display mode\n" );
-	ri.Con_Printf( PRINT_ALL, "...setting linear mode: " );
+	Com_Printf ("...finding display mode\n" );
+	Com_Printf ("...setting linear mode: " );
 	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetDisplayMode( sww_state.lpDirectDraw, vid.width, vid.height, 8 ) ) == DD_OK )
 	{
-		ri.Con_Printf( PRINT_ALL, "ok\n" );
+		Com_Printf ("ok\n");
 	}
 	/*
 	** if no linear mode found, go for modex if we're trying 320x240
 	*/
-	else if ( ( sw_mode->value == 0 ) && sw_allow_modex->value )
+	else if ( (!sw_mode->integer) && sw_allow_modex->integer )
 	{
-		ri.Con_Printf( PRINT_ALL, "failed\n" );
-		ri.Con_Printf( PRINT_ALL, "...attempting ModeX 320x240: ");
+		Com_WPrintf ("failed\n" );
+		Com_Printf ("...attempting ModeX 320x240: ");
 
 		/*
 		** reset to normal cooperative level
 		*/
-		sww_state.lpDirectDraw->lpVtbl->SetCooperativeLevel( sww_state.lpDirectDraw, 
+		sww_state.lpDirectDraw->lpVtbl->SetCooperativeLevel( sww_state.lpDirectDraw,
 															 sww_state.hWnd,
 															 DDSCL_NORMAL );
 
-		/*															 
+		/*
 		** set exclusive mode
 		*/
-		if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetCooperativeLevel( sww_state.lpDirectDraw, 
+		if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetCooperativeLevel( sww_state.lpDirectDraw,
 																			 sww_state.hWnd,
 																			 DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN | DDSCL_NOWINDOWCHANGES | DDSCL_ALLOWMODEX ) ) != DD_OK )
 		{
-			ri.Con_Printf( PRINT_ALL, "failed SCL - %s\n",DDrawError (ddrval) );
+			Com_WPrintf ("failed SCL - %s\n",DDrawError (ddrval));
 			goto fail;
 		}
 
@@ -146,16 +146,16 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 		*/
 		if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->SetDisplayMode( sww_state.lpDirectDraw, vid.width, vid.height, 8 ) ) != DD_OK )
 		{
-			ri.Con_Printf( PRINT_ALL, "failed SDM - %s\n", DDrawError( ddrval ) );
+			Com_WPrintf ("failed SDM - %s\n", DDrawError( ddrval ));
 			goto fail;
 		}
-		ri.Con_Printf( PRINT_ALL, "ok\n" );
+		Com_Printf ("ok\n");
 
 		sww_state.modex = true;
 	}
 	else
 	{
-		ri.Con_Printf( PRINT_ALL, "failed\n" );
+		Com_WPrintf ("failed\n");
 		goto fail;
 	}
 
@@ -168,33 +168,33 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE | DDSCAPS_FLIP | DDSCAPS_COMPLEX;
 	ddsd.dwBackBufferCount = 1;
 
-	ri.Con_Printf( PRINT_ALL, "...creating front buffer: ");
+	Com_Printf ("...creating front buffer: ");
 	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->CreateSurface( sww_state.lpDirectDraw, &ddsd, &sww_state.lpddsFrontBuffer, NULL ) ) != DD_OK )
 	{
-		ri.Con_Printf( PRINT_ALL, "failed - %s\n", DDrawError( ddrval ) );
+		Com_WPrintf ("failed - %s\n", DDrawError( ddrval ));
 		goto fail;
 	}
-	ri.Con_Printf( PRINT_ALL, "ok\n" );
+	Com_Printf ("ok\n");
 
 	/*
 	** see if we're a ModeX mode
 	*/
 	sww_state.lpddsFrontBuffer->lpVtbl->GetCaps( sww_state.lpddsFrontBuffer, &ddscaps );
 	if ( ddscaps.dwCaps & DDSCAPS_MODEX )
-		ri.Con_Printf( PRINT_ALL, "...using ModeX\n" );
+		Com_Printf ("...using ModeX\n");
 
 	/*
 	** create our back buffer
 	*/
 	ddsd.ddsCaps.dwCaps = DDSCAPS_BACKBUFFER;
 
-	ri.Con_Printf( PRINT_ALL, "...creating back buffer: " );
+	Com_Printf ("...creating back buffer: ");
 	if ( ( ddrval = sww_state.lpddsFrontBuffer->lpVtbl->GetAttachedSurface( sww_state.lpddsFrontBuffer, &ddsd.ddsCaps, &sww_state.lpddsBackBuffer ) ) != DD_OK )
 	{
-		ri.Con_Printf( PRINT_ALL, "failed - %s\n", DDrawError( ddrval ) );
+		Com_WPrintf ("failed - %s\n", DDrawError( ddrval ));
 		goto fail;
 	}
-	ri.Con_Printf( PRINT_ALL, "ok\n" );
+	Com_Printf ("ok\n");
 
 	/*
 	** create our rendering buffer
@@ -206,37 +206,37 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 	ddsd.dwWidth = vid.width;
 	ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
 
-	ri.Con_Printf( PRINT_ALL, "...creating offscreen buffer: " );
+	Com_Printf ("...creating offscreen buffer: ");
 	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->CreateSurface( sww_state.lpDirectDraw, &ddsd, &sww_state.lpddsOffScreenBuffer, NULL ) ) != DD_OK )
 	{
-		ri.Con_Printf( PRINT_ALL, "failed - %s\n", DDrawError( ddrval ) );
+		Com_WPrintf ("failed - %s\n", DDrawError( ddrval ));
 		goto fail;
 	}
-	ri.Con_Printf( PRINT_ALL, "ok\n" );
+	Com_Printf ("ok\n");
 
 	/*
 	** create our DIRECTDRAWPALETTE
 	*/
-	ri.Con_Printf( PRINT_ALL, "...creating palette: " );
+	Com_Printf ("...creating palette: ");
 	if ( ( ddrval = sww_state.lpDirectDraw->lpVtbl->CreatePalette( sww_state.lpDirectDraw,
 														DDPCAPS_8BIT | DDPCAPS_ALLOW256,
 														palentries,
 														&sww_state.lpddpPalette,
 														NULL ) ) != DD_OK )
 	{
-		ri.Con_Printf( PRINT_ALL, "failed - %s\n", DDrawError( ddrval ) );
+		Com_WPrintf ("failed - %s\n", DDrawError( ddrval ));
 		goto fail;
 	}
-	ri.Con_Printf( PRINT_ALL, "ok\n" );
+	Com_Printf ("ok\n");
 
-	ri.Con_Printf( PRINT_ALL, "...setting palette: " );
+	Com_Printf ("...setting palette: ");
 	if ( ( ddrval = sww_state.lpddsFrontBuffer->lpVtbl->SetPalette( sww_state.lpddsFrontBuffer,
 														 sww_state.lpddpPalette ) ) != DD_OK )
 	{
-		ri.Con_Printf( PRINT_ALL, "failed - %s\n", DDrawError( ddrval ) );
+		Com_WPrintf ("failed - %s\n", DDrawError( ddrval ));
 		goto fail;
 	}
-	ri.Con_Printf( PRINT_ALL, "ok\n" );
+	Com_Printf ("ok\n");
 
 	DDRAW_SetPalette( ( const unsigned char * ) sw_state.currentpalette );
 
@@ -245,14 +245,14 @@ ri.Con_Printf( PRINT_ALL, "Initializing DirectDraw\n");
 	*/
 	memset( &ddsd, 0, sizeof( ddsd ) );
 	ddsd.dwSize = sizeof( ddsd );
-	
-ri.Con_Printf( PRINT_ALL, "...locking backbuffer: " );
+
+	Com_Printf ("...locking backbuffer: ");
 	if ( ( ddrval = sww_state.lpddsOffScreenBuffer->lpVtbl->Lock( sww_state.lpddsOffScreenBuffer, NULL, &ddsd, DDLOCK_WAIT, NULL ) ) != DD_OK )
 	{
-		ri.Con_Printf( PRINT_ALL, "failed - %s\n", DDrawError( ddrval ) );
+		Com_WPrintf ("failed - %s\n", DDrawError( ddrval ));
 		goto fail;
 	}
-ri.Con_Printf( PRINT_ALL, "ok\n" );
+	Com_Printf ("ok\n");
 
 	*ppbuffer = ddsd.lpSurface;
 	*ppitch   = ddsd.lPitch;
@@ -266,7 +266,7 @@ ri.Con_Printf( PRINT_ALL, "ok\n" );
 
 	return true;
 fail:
-	ri.Con_Printf( PRINT_ALL, "*** DDraw init failure ***\n" );
+	Com_WPrintf ("*** DDraw init failure ***\n");
 
 	DDRAW_Shutdown();
 	return false;
@@ -293,7 +293,7 @@ void DDRAW_SetPalette( const unsigned char *pal )
 	if (!sww_state.lpddpPalette)
 		return;
 
-	for ( i = 0; i < 256; i++, pal += 4 )
+	for (i = 0; i < 256; i++, pal += 4)
 	{
 		palentries[i].peRed   = pal[0];
 		palentries[i].peGreen = pal[1];
@@ -301,13 +301,13 @@ void DDRAW_SetPalette( const unsigned char *pal )
 		palentries[i].peFlags = PC_RESERVED | PC_NOCOLLAPSE;
 	}
 
-	if ( sww_state.lpddpPalette->lpVtbl->SetEntries( sww_state.lpddpPalette,
+	if (sww_state.lpddpPalette->lpVtbl->SetEntries( sww_state.lpddpPalette,
 		                                        0,
 												0,
 												256,
 												palentries ) != DD_OK )
 	{
-		ri.Con_Printf( PRINT_ALL, "DDRAW_SetPalette() - SetEntries failed\n" );
+		Com_WPrintf ("DDRAW_SetPalette() - SetEntries failed\n");
 	}
 }
 
@@ -316,49 +316,49 @@ void DDRAW_SetPalette( const unsigned char *pal )
 */
 void DDRAW_Shutdown( void )
 {
-	if ( sww_state.lpddsOffScreenBuffer )
+	if (sww_state.lpddsOffScreenBuffer)
 	{
-		ri.Con_Printf( PRINT_ALL, "...releasing offscreen buffer\n");
+		Com_Printf ("...releasing offscreen buffer\n");
 		sww_state.lpddsOffScreenBuffer->lpVtbl->Unlock( sww_state.lpddsOffScreenBuffer, vid.buffer );
 		sww_state.lpddsOffScreenBuffer->lpVtbl->Release( sww_state.lpddsOffScreenBuffer );
 		sww_state.lpddsOffScreenBuffer = NULL;
 	}
 
-	if ( sww_state.lpddsBackBuffer )
+	if (sww_state.lpddsBackBuffer)
 	{
-		ri.Con_Printf( PRINT_ALL, "...releasing back buffer\n");
+		Com_Printf ("...releasing back buffer\n");
 		sww_state.lpddsBackBuffer->lpVtbl->Release( sww_state.lpddsBackBuffer );
 		sww_state.lpddsBackBuffer = NULL;
 	}
 
-	if ( sww_state.lpddsFrontBuffer )
+	if (sww_state.lpddsFrontBuffer)
 	{
-		ri.Con_Printf( PRINT_ALL, "...releasing front buffer\n");
+		Com_Printf ("...releasing front buffer\n");
 		sww_state.lpddsFrontBuffer->lpVtbl->Release( sww_state.lpddsFrontBuffer );
 		sww_state.lpddsFrontBuffer = NULL;
 	}
 
 	if (sww_state.lpddpPalette)
 	{
-		ri.Con_Printf( PRINT_ALL, "...releasing palette\n");
+		Com_Printf ("...releasing palette\n");
 		sww_state.lpddpPalette->lpVtbl->Release ( sww_state.lpddpPalette );
 		sww_state.lpddpPalette = NULL;
 	}
 
 	if ( sww_state.lpDirectDraw )
 	{
-		ri.Con_Printf( PRINT_ALL, "...restoring display mode\n");
+		Com_Printf ("...restoring display mode\n");
 		sww_state.lpDirectDraw->lpVtbl->RestoreDisplayMode( sww_state.lpDirectDraw );
-		ri.Con_Printf( PRINT_ALL, "...restoring normal coop mode\n");
+		Com_Printf ("...restoring normal coop mode\n");
 	    sww_state.lpDirectDraw->lpVtbl->SetCooperativeLevel( sww_state.lpDirectDraw, sww_state.hWnd, DDSCL_NORMAL );
-		ri.Con_Printf( PRINT_ALL, "...releasing lpDirectDraw\n");
+		Com_Printf ("...releasing lpDirectDraw\n");
 		sww_state.lpDirectDraw->lpVtbl->Release( sww_state.lpDirectDraw );
 		sww_state.lpDirectDraw = NULL;
 	}
 
 	if ( sww_state.hinstDDRAW )
 	{
-		ri.Con_Printf( PRINT_ALL, "...freeing library\n");
+		Com_Printf ("...freeing library\n");
 		FreeLibrary( sww_state.hinstDDRAW );
 		sww_state.hinstDDRAW = NULL;
 	}
@@ -553,4 +553,3 @@ static const char *DDrawError (int code)
             return "UNKNOWN\0";
 	}
 }
-

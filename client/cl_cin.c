@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -27,7 +27,7 @@ typedef struct
 
 typedef struct
 {
-	qboolean	restart_sound;
+	qboolean restart_sound;
 	int		s_rate;
 	int		s_width;
 	int		s_channels;
@@ -36,112 +36,17 @@ typedef struct
 	int		height;
 	byte	*pic;
 	byte	*pic_pending;
+	char	imageName[MAX_OSPATH];		// used for "map image.pcx"
 
 	// order 1 huffman stuff
-	int		*hnodes1;	// [256][256][2];
+	int		*hnodes1;					// [256][256][2];
 	int		numhnodes1[256];
 
 	int		h_used[512];
 	int		h_count[512];
 } cinematics_t;
 
-cinematics_t	cin;
-
-/*
-=================================================================
-
-PCX LOADING
-
-=================================================================
-*/
-
-
-/*
-==============
-SCR_LoadPCX
-==============
-*/
-void SCR_LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *height)
-{
-	byte	*raw;
-	pcx_t	*pcx;
-	int		x, y;
-	int		len;
-	int		dataByte, runLength;
-	byte	*out, *pix;
-
-	*pic = NULL;
-
-	//
-	// load the file
-	//
-	len = FS_LoadFile (filename, (void **)&raw);
-	if (!raw)
-		return;	// Com_Printf ("Bad pcx file %s\n", filename);
-
-	//
-	// parse the PCX file
-	//
-	pcx = (pcx_t *)raw;
-	raw = &pcx->data;
-
-	if (pcx->manufacturer != 0x0a
-		|| pcx->version != 5
-		|| pcx->encoding != 1
-		|| pcx->bits_per_pixel != 8
-		|| pcx->xmax >= 640
-		|| pcx->ymax >= 480)
-	{
-		Com_Printf ("Bad pcx file %s\n", filename);
-		return;
-	}
-
-	out = Z_Malloc ( (pcx->ymax+1) * (pcx->xmax+1) );
-
-	*pic = out;
-
-	pix = out;
-
-	if (palette)
-	{
-		*palette = Z_Malloc(768);
-		memcpy (*palette, (byte *)pcx + len - 768, 768);
-	}
-
-	if (width)
-		*width = pcx->xmax+1;
-	if (height)
-		*height = pcx->ymax+1;
-
-	for (y=0 ; y<=pcx->ymax ; y++, pix += pcx->xmax+1)
-	{
-		for (x=0 ; x<=pcx->xmax ; )
-		{
-			dataByte = *raw++;
-
-			if((dataByte & 0xC0) == 0xC0)
-			{
-				runLength = dataByte & 0x3F;
-				dataByte = *raw++;
-			}
-			else
-				runLength = 1;
-
-			while(runLength-- > 0)
-				pix[x++] = dataByte;
-		}
-
-	}
-
-	if ( raw - (byte *)pcx > len)
-	{
-		Com_Printf ("PCX file %s was malformed", filename);
-		Z_Free (*pic);
-		*pic = NULL;
-	}
-
-	FS_FreeFile (pcx);
-}
+static cinematics_t cin;
 
 //=============================================================
 
@@ -170,7 +75,7 @@ void SCR_StopCinematic (void)
 	}
 	if (cl.cinematic_file)
 	{
-		fclose (cl.cinematic_file);
+		FS_FCloseFile (cl.cinematic_file);
 		cl.cinematic_file = NULL;
 	}
 	if (cin.hnodes1)
@@ -179,7 +84,7 @@ void SCR_StopCinematic (void)
 		cin.hnodes1 = NULL;
 	}
 
-	// switch back down to 11 khz sound if necessary
+	// restore sound rate if necessary
 	if (cin.restart_sound)
 	{
 		cin.restart_sound = false;
@@ -209,7 +114,7 @@ void SCR_FinishCinematic (void)
 SmallestNode1
 ==================
 */
-int	SmallestNode1 (int numhnodes)
+static int SmallestNode1 (int numhnodes)
 {
 	int		i;
 	int		best, bestnode;
@@ -244,7 +149,7 @@ Huff1TableInit
 Reads the 64k counts table and initializes the node trees
 ==================
 */
-void Huff1TableInit (void)
+static void Huff1TableInit (void)
 {
 	int		prev;
 	int		j;
@@ -295,16 +200,15 @@ void Huff1TableInit (void)
 Huff1Decompress
 ==================
 */
-cblock_t Huff1Decompress (cblock_t in)
+static cblock_t Huff1Decompress (cblock_t in)
 {
-	byte		*input;
-	byte		*out_p;
-	int			nodenum;
-	int			count;
-	cblock_t	out;
-	int			inbyte;
-	int			*hnodes, *hnodesbase;
-//int		i;
+	byte	*input;
+	byte	*out_p;
+	int		nodenum;
+	int		count;
+	cblock_t out;
+	int		inbyte;
+	int		*hnodes, *hnodesbase;
 
 	// get decompressed count
 	count = in.data[0] + (in.data[1]<<8) + (in.data[2]<<16) + (in.data[3]<<24);
@@ -426,7 +330,6 @@ SCR_ReadNextFrame
 */
 byte *SCR_ReadNextFrame (void)
 {
-	int		r;
 	int		command;
 	byte	samples[22050/14*4];
 	byte	compressed[0x20000];
@@ -436,12 +339,7 @@ byte *SCR_ReadNextFrame (void)
 	int		start, end, count;
 
 	// read the next frame
-	r = fread (&command, 4, 1, cl.cinematic_file);
-	if (r == 0)		// we'll give it one more chance
-		r = fread (&command, 4, 1, cl.cinematic_file);
-
-	if (r != 1)
-		return NULL;
+	FS_Read (&command, 4, cl.cinematic_file);
 	command = LittleLong(command);
 	if (command == 2)
 		return NULL;	// last frame marker
@@ -484,7 +382,6 @@ byte *SCR_ReadNextFrame (void)
 /*
 ==================
 SCR_RunCinematic
-
 ==================
 */
 void SCR_RunCinematic (void)
@@ -502,17 +399,17 @@ void SCR_RunCinematic (void)
 
 	if (cls.key_dest != key_game)
 	{	// pause if menu or console is up
-		cl.cinematictime = cls.realtime - cl.cinematicframe*1000/14;
+		cl.cinematictime = cls.realtime - cl.cinematicframe * 1000 / 14;
 		return;
 	}
 
-	frame = (cls.realtime - cl.cinematictime)*14.0/1000;
+	frame = (cls.realtime - cl.cinematictime) * 14.0 / 1000;
 	if (frame <= cl.cinematicframe)
 		return;
 	if (frame > cl.cinematicframe+1)
 	{
-		Com_Printf ("Dropped frame: %i > %i\n", frame, cl.cinematicframe+1);
-		cl.cinematictime = cls.realtime - cl.cinematicframe*1000/14;
+		Com_WPrintf ("Dropped frame: %i > %i\n", frame, cl.cinematicframe+1);
+		cl.cinematictime = cls.realtime - cl.cinematicframe * 1000 / 14;
 	}
 	if (cin.pic)
 		Z_Free (cin.pic);
@@ -552,6 +449,12 @@ qboolean SCR_DrawCinematic (void)
 		return true;
 	}
 
+	if (cl.cinematicframe == -1)
+	{	// static image
+		re.DrawStretchPic (0, 0, viddef.width, viddef.height, cin.imageName);
+		return true;
+	}
+
 	if (!cl.cinematicpalette_active)
 	{
 		re.CinematicSetPalette(cl.cinematicpalette);
@@ -561,8 +464,7 @@ qboolean SCR_DrawCinematic (void)
 	if (!cin.pic)
 		return true;
 
-	re.DrawStretchRaw (0, 0, viddef.width, viddef.height,
-		cin.width, cin.height, cin.pic);
+	re.DrawStretchRaw (0, 0, viddef.width, viddef.height, cin.width, cin.height, cin.pic);
 
 	return true;
 }
@@ -570,38 +472,41 @@ qboolean SCR_DrawCinematic (void)
 /*
 ==================
 SCR_PlayCinematic
-
 ==================
 */
 void SCR_PlayCinematic (char *arg)
 {
 	int		width, height;
-	byte	*palette;
-	char	name[MAX_OSPATH], *dot;
+	char	name[MAX_OSPATH], *ext;
 	int		old_khz;
 
 	// make sure CD isn't playing music
 	CDAudio_Stop();
 
+	if (re.console_only)
+	{	// no cinematic for text-only mode
+		SCR_FinishCinematic ();
+		cl.cinematictime = 0;
+		return;
+	}
+
+
 	cl.cinematicframe = 0;
-	dot = strstr (arg, ".");
-	if (dot && !strcmp (dot, ".pcx"))
-	{	// static pcx image
-		Com_sprintf (name, sizeof(name), "pics/%s", arg);
-		SCR_LoadPCX (name, &cin.pic, &palette, &cin.width, &cin.height);
-		cl.cinematicframe = -1;
+	ext = strchr (arg, '.');
+
+	if (ext && !strcmp (ext, ".pcx"))
+	{	// static image
+		Q_CopyFilename (cin.imageName, arg, sizeof(name)-1);
+		cin.imageName[ext - arg] = 0;		// cut extension
+		re.DrawGetPicSize (&cin.width, &cin.height, cin.imageName);
+		cl.cinematicframe = -1;			// flag signalling "draw pic"
 		cl.cinematictime = 1;
 		SCR_EndLoadingPlaque ();
 		cls.state = ca_active;
-		if (!cin.pic)
+		if (!cin.width)
 		{
-			Com_Printf ("%s not found.\n", name);
+			Com_WPrintf ("%s not found.\n", arg);
 			cl.cinematictime = 0;
-		}
-		else
-		{
-			memcpy (cl.cinematicpalette, palette, sizeof(cl.cinematicpalette));
-			Z_Free (palette);
 		}
 		return;
 	}
@@ -635,13 +540,13 @@ void SCR_PlayCinematic (char *arg)
 	Huff1TableInit ();
 
 	// switch up to 22 khz sound if necessary
-	old_khz = Cvar_VariableValue ("s_khz");
-	if (old_khz != cin.s_rate/1000)
+	old_khz = Cvar_VariableInt ("s_khz");
+	if (old_khz != cin.s_rate / 1000)
 	{
 		cin.restart_sound = true;
-		Cvar_SetValue ("s_khz", cin.s_rate/1000);
+		Cvar_SetInteger ("s_khz", cin.s_rate / 1000);
 		CL_Snd_Restart_f ();
-		Cvar_SetValue ("s_khz", old_khz);
+		Cvar_SetInteger ("s_khz", old_khz);
 	}
 
 	cl.cinematicframe = 0;

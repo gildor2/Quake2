@@ -1,0 +1,181 @@
+# Microsoft Developer Studio Generated Dependency File, included by ref_gl.mak
+
+.\gl_draw.c : \
+	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\ref_gl\qgl.h"\
+	"..\ref_gl\qgl_decl.h"\
+	".\gl_local.h"\
+	".\gl_model.h"\
+	
+
+.\gl_image.c : \
+	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\ref_gl\qgl.h"\
+	"..\ref_gl\qgl_decl.h"\
+	".\gl_local.h"\
+	".\gl_model.h"\
+	
+
+.\gl_light.c : \
+	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\ref_gl\qgl.h"\
+	"..\ref_gl\qgl_decl.h"\
+	".\gl_local.h"\
+	".\gl_model.h"\
+	
+
+.\gl_mesh.c : \
+	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\ref_gl\qgl.h"\
+	"..\ref_gl\qgl_decl.h"\
+	".\anorms.h"\
+	".\gl_local.h"\
+	".\gl_model.h"\
+	
+
+.\gl_model.c : \
+	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\ref_gl\qgl.h"\
+	"..\ref_gl\qgl_decl.h"\
+	".\gl_local.h"\
+	".\gl_model.h"\
+	
+
+.\gl_rmain.c : \
+	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\ref_gl\qgl.h"\
+	"..\ref_gl\qgl_decl.h"\
+	".\gl_local.h"\
+	".\gl_model.h"\
+	
+
+.\gl_rmisc.c : \
+	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\ref_gl\qgl.h"\
+	"..\ref_gl\qgl_decl.h"\
+	".\gl_local.h"\
+	".\gl_model.h"\
+	
+
+.\gl_rsurf.c : \
+	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\ref_gl\qgl.h"\
+	"..\ref_gl\qgl_decl.h"\
+	".\gl_local.h"\
+	".\gl_model.h"\
+	
+
+.\gl_textout.c : \
+	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\ref_gl\qgl.h"\
+	"..\ref_gl\qgl_decl.h"\
+	".\gl_local.h"\
+	".\gl_model.h"\
+	
+
+.\gl_warp.c : \
+	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\ref_gl\qgl.h"\
+	"..\ref_gl\qgl_decl.h"\
+	".\gl_local.h"\
+	".\gl_model.h"\
+	
+
+..\win32\glw_imp.c : \
+	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\ref_gl\gl_local.h"\
+	"..\ref_gl\qgl.h"\
+	"..\ref_gl\qgl_decl.h"\
+	"..\win32\glw_win.h"\
+	"..\win32\winquake.h"\
+	
+
+..\qcommon\q_shared2.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	
+
+..\win32\qgl_win.c : \
+	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\ref_gl\gl_local.h"\
+	"..\ref_gl\qgl.h"\
+	"..\ref_gl\qgl_decl.h"\
+	"..\ref_gl\qgl_impl.h"\
+	"..\win32\glw_win.h"\
+	

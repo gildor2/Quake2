@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -83,7 +83,6 @@ cvar_t		*s_primary;
 int		s_rawend;
 portable_samplepair_t	s_rawsamples[MAX_RAW_SAMPLES];
 
-
 // ====================================================================
 // User-setable variables
 // ====================================================================
@@ -96,7 +95,7 @@ void S_SoundInfo_f(void)
 		Com_Printf ("sound system not started\n");
 		return;
 	}
-	
+
     Com_Printf("%5d stereo\n", dma.channels - 1);
     Com_Printf("%5d samples\n", dma.samples);
     Com_Printf("%5d samplepos\n", dma.samplepos);
@@ -106,6 +105,75 @@ void S_SoundInfo_f(void)
     Com_Printf("0x%x dma buffer\n", dma.buffer);
 }
 
+
+#define		MAX_FEMALE_MODELS		32
+#define		MAX_FEMALE_MODEL_BUF	(MAX_FEMALE_MODELS*16)
+char	*female_models[MAX_FEMALE_MODELS];
+char	female_model_buf[MAX_FEMALE_MODEL_BUF];
+
+void S_ReadModelsSex (void)
+{
+	char	*buf, *in, *out, *s;
+	int		free, i;
+
+	female_models[0] = NULL;
+	FS_LoadFile ("players/model.lst", &buf);
+	if (!buf)
+	{
+		Com_DPrintf ("players/model.lst is not found\n");
+		return;
+	}
+
+	in = buf;
+	out = female_model_buf;
+	free = MAX_FEMALE_MODEL_BUF;
+	i = 0;
+
+	while (s = COM_Parse (&in), in)
+	{
+		int		n;
+
+		n = strlen (s);
+//		if (s[n-1] == '\r')	// CR -> DOS file? (treated as spaces in COM_Parse?)
+//		{
+//			n--;
+//			s[n] = 0;	// cut CR
+//		}
+		Com_DPrintf("Female model: %s (namelen: %d)\n",s,n);
+		n++;
+		free -= n;
+		if (free < 0 || i >= MAX_FEMALE_MODELS - 1)
+		{
+			Com_WPrintf ("model.lst is too large\n");
+			break;
+		}
+		strcpy (out, s);
+		female_models[i++] = out;
+		out += n;
+	}
+	female_models[i] = NULL;
+	Com_DPrintf ("Parsed %i model genders\n", i);
+
+	FS_FreeFile (buf);
+}
+
+qboolean S_IsFemale (char *model)
+{
+	int		i;
+	char	*s;
+
+	Com_DPrintf ("Checking %s gender...\n",model);
+
+	i = 0;
+	while (s = female_models[i++])
+	{
+		Com_DPrintf ("%s ...\n",s);
+		if (!Q_stricmp (s, model))
+			return true;
+	}
+	Com_DPrintf ("Male!\n");
+	return false;
+}
 
 
 /*
@@ -120,17 +188,21 @@ void S_Init (void)
 	Com_Printf("\n------- sound initialization -------\n");
 
 	cv = Cvar_Get ("s_initsound", "1", 0);
-	if (!cv->value)
+	if (!cv->integer)
 		Com_Printf ("not initializing.\n");
 	else
 	{
-		s_volume = Cvar_Get ("s_volume", "0.7", CVAR_ARCHIVE);
-		s_khz = Cvar_Get ("s_khz", "11", CVAR_ARCHIVE);
-		s_loadas8bit = Cvar_Get ("s_loadas8bit", "1", CVAR_ARCHIVE);
-		s_mixahead = Cvar_Get ("s_mixahead", "0.2", CVAR_ARCHIVE);
-		s_show = Cvar_Get ("s_show", "0", 0);
-		s_testsound = Cvar_Get ("s_testsound", "0", 0);
-		s_primary = Cvar_Get ("s_primary", "0", CVAR_ARCHIVE);	// win32 specific
+CVAR_BEGIN(vars)
+		CVAR_VAR(s_volume, 0.7, CVAR_ARCHIVE),
+		CVAR_VAR(s_khz, 22, CVAR_ARCHIVE),
+		CVAR_VAR(s_loadas8bit, 0, CVAR_ARCHIVE),
+		CVAR_VAR(s_mixahead, 0.2, CVAR_ARCHIVE),
+		CVAR_VAR(s_show, 0, 0),
+		CVAR_VAR(s_testsound, 0, 0),
+		CVAR_VAR(s_primary, 0, CVAR_ARCHIVE)		//?? win32 specific
+CVAR_END
+
+		CVAR_GET_VARS(vars);
 
 		Cmd_AddCommand("play", S_Play);
 		Cmd_AddCommand("stopsound", S_StopAllSounds);
@@ -152,6 +224,7 @@ void S_Init (void)
 
 		S_StopAllSounds ();
 	}
+	S_ReadModelsSex ();
 
 	Com_Printf("------------------------------------\n");
 }
@@ -237,12 +310,12 @@ sfx_t *S_FindName (char *name, qboolean create)
 			Com_Error (ERR_FATAL, "S_FindName: out of sfx_t");
 		num_sfx++;
 	}
-	
+
 	sfx = &known_sfx[i];
 	memset (sfx, 0, sizeof(*sfx));
 	strcpy (sfx->name, name);
 	sfx->registration_sequence = s_registration_sequence;
-	
+
 	return sfx;
 }
 
@@ -273,7 +346,7 @@ sfx_t *S_AliasName (char *aliasname, char *truename)
 			Com_Error (ERR_FATAL, "S_FindName: out of sfx_t");
 		num_sfx++;
 	}
-	
+
 	sfx = &known_sfx[i];
 	memset (sfx, 0, sizeof(*sfx));
 	strcpy (sfx->name, aliasname);
@@ -413,7 +486,7 @@ channel_t *S_PickChannel(int entnum, int entchannel)
 	memset (ch, 0, sizeof(*ch));
 
     return ch;
-}       
+}
 
 /*
 =================
@@ -443,7 +516,7 @@ void S_SpatializeOrigin (vec3_t origin, float master_vol, float dist_mult, int *
 	if (dist < 0)
 		dist = 0;			// close enough to be at full volume
 	dist *= dist_mult;		// different attenuation levels
-	
+
 	dot = DotProduct(listener_right, source_vec);
 
 	if (dma.channels == 1 || !dist_mult)
@@ -494,7 +567,7 @@ void S_Spatialize(channel_t *ch)
 		CL_GetEntitySoundOrigin (ch->entnum, origin);
 
 	S_SpatializeOrigin (origin, ch->master_vol, ch->dist_mult, &ch->leftvol, &ch->rightvol);
-}           
+}
 
 
 /*
@@ -513,7 +586,7 @@ playsound_t *S_AllocPlaysound (void)
 	// unlink from freelist
 	ps->prev->next = ps->next;
 	ps->next->prev = ps->prev;
-	
+
 	return ps;
 }
 
@@ -552,8 +625,8 @@ void S_IssuePlaysound (playsound_t *ps)
 	channel_t	*ch;
 	sfxcache_t	*sc;
 
-	if (s_show->value)
-		Com_Printf ("Issue %i\n", ps->begin);
+	if (s_show->integer)
+		Com_Printf ("Issue %i  for entity %i  at channel %i\n", ps->begin, ps->entnum, ps->entchannel);
 	// pick a channel to play on
 	ch = S_PickChannel(ps->entnum, ps->entchannel);
 	if (!ch)
@@ -578,7 +651,7 @@ void S_IssuePlaysound (playsound_t *ps)
 
 	ch->pos = 0;
 	sc = S_LoadSound (ch->sfx);
-    ch->end = paintedtime + sc->length;
+	ch->end = paintedtime + sc->length;
 
 	// free the playsound
 	S_FreePlaysound (ps);
@@ -589,7 +662,6 @@ struct sfx_s *S_RegisterSexedSound (entity_state_t *ent, char *base)
 	int				n;
 	char			*p;
 	struct sfx_s	*sfx;
-	FILE			*f;
 	char			model[MAX_QPATH];
 	char			sexedFilename[MAX_QPATH];
 	char			maleFilename[MAX_QPATH];
@@ -620,17 +692,20 @@ struct sfx_s *S_RegisterSexedSound (entity_state_t *ent, char *base)
 	if (!sfx)
 	{
 		// no, so see if it exists
-		FS_FOpenFile (&sexedFilename[1], &f);
-		if (f)
+		if (FS_FileExists (&sexedFilename[1]))
 		{
-			// yes, close the file and register it
-			FS_FCloseFile (f);
+			// yes, register it
 			sfx = S_RegisterSound (sexedFilename);
+		}
+		else if (S_IsFemale (model))
+		{
+			Com_sprintf (maleFilename, sizeof(maleFilename), "player/female/%s", base+1);
+			sfx = S_AliasName (sexedFilename, maleFilename);
 		}
 		else
 		{
 			// no, revert to the male sound in the pak0.pak
-			Com_sprintf (maleFilename, sizeof(maleFilename), "player/%s/%s", "male", base+1);
+			Com_sprintf (maleFilename, sizeof(maleFilename), "player/male/%s", base+1);
 			sfx = S_AliasName (sexedFilename, maleFilename);
 		}
 	}
@@ -658,6 +733,8 @@ void S_StartSound(vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float f
 	int			vol;
 	playsound_t	*ps, *sort;
 	int			start;
+
+	if (re.console_only) return;
 
 	if (!sound_started)
 		return;
@@ -717,7 +794,7 @@ void S_StartSound(vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float f
 		ps->begin = start + timeofs * dma.speed;
 
 	// sort into the pending sound list
-	for (sort = s_pendingplays.next ; 
+	for (sort = s_pendingplays.next ;
 		sort != &s_pendingplays && sort->begin < ps->begin ;
 		sort = sort->next)
 			;
@@ -741,7 +818,7 @@ void S_StartLocalSound (char *sound)
 
 	if (!sound_started)
 		return;
-		
+
 	sfx = S_RegisterSound (sound);
 	if (!sfx)
 	{
@@ -760,7 +837,7 @@ S_ClearBuffer
 void S_ClearBuffer (void)
 {
 	int		clear;
-		
+
 	if (!sound_started)
 		return;
 
@@ -828,7 +905,7 @@ void S_AddLoopSounds (void)
 	int			num;
 	entity_state_t	*ent;
 
-	if (cl_paused->value)
+	if (cl_paused->integer)
 		return;
 
 	if (cls.state != ca_active)
@@ -871,7 +948,7 @@ void S_AddLoopSounds (void)
 			num = (cl.frame.parse_entities + j)&(MAX_PARSE_ENTITIES-1);
 			ent = &cl_parse_entities[num];
 
-			S_SpatializeOrigin (ent->origin, 255.0, SOUND_LOOPATTENUATE, 
+			S_SpatializeOrigin (ent->origin, 255.0, SOUND_LOOPATTENUATE,
 				&left, &right);
 			left_total += left;
 			right_total += right;
@@ -1013,6 +1090,8 @@ void S_Update(vec3_t origin, vec3_t forward, vec3_t right, vec3_t up)
 	channel_t	*ch;
 	channel_t	*combine;
 
+	if (re.console_only) return;
+
 	if (!sound_started)
 		return;
 
@@ -1036,7 +1115,7 @@ void S_Update(vec3_t origin, vec3_t forward, vec3_t right, vec3_t up)
 
 	combine = NULL;
 
-	// update spatialization for dynamic sounds	
+	// update spatialization for dynamic sounds
 	ch = channels;
 	for (i=0 ; i<MAX_CHANNELS; i++, ch++)
 	{
@@ -1061,7 +1140,7 @@ void S_Update(vec3_t origin, vec3_t forward, vec3_t right, vec3_t up)
 	//
 	// debugging output
 	//
-	if (s_show->value)
+	if (s_show->integer == 2)
 	{
 		total = 0;
 		ch = channels;
@@ -1071,7 +1150,7 @@ void S_Update(vec3_t origin, vec3_t forward, vec3_t right, vec3_t up)
 				Com_Printf ("%3i %3i %s\n", ch->leftvol, ch->rightvol, ch->sfx->name);
 				total++;
 			}
-		
+
 		Com_Printf ("----(%i)---- painted: %i\n", total, paintedtime);
 	}
 
@@ -1085,7 +1164,7 @@ void GetSoundtime(void)
 	static	int		buffers;
 	static	int		oldsamplepos;
 	int		fullsamples;
-	
+
 	fullsamples = dma.samples / dma.channels;
 
 // it is possible to miscount buffers if it has wrapped twice between
@@ -1095,7 +1174,7 @@ void GetSoundtime(void)
 	if (samplepos < oldsamplepos)
 	{
 		buffers++;					// buffer wrapped
-		
+
 		if (paintedtime > 0x40000000)
 		{	// time to chop things off to avoid 32 bit limits
 			buffers = 0;
@@ -1161,7 +1240,7 @@ void S_Play(void)
 	int 	i;
 	char name[256];
 	sfx_t	*sfx;
-	
+
 	i = 1;
 	while (i<Cmd_Argc())
 	{
@@ -1203,12 +1282,16 @@ void S_SoundList(void)
 		}
 		else
 		{
+			char *status;
+
 			if (sfx->name[0] == '*')
-				Com_Printf("  placeholder : %s\n", sfx->name);
+				status = "  placeholder ";
+			else if (sfx->absent)
+				status = "^1  not found   ^7";
 			else
-				Com_Printf("  not loaded  : %s\n", sfx->name);
+				status = "  not loaded  ";
+			Com_Printf ("%s: %s\n", status, sfx->name);
 		}
 	}
 	Com_Printf ("Total resident: %i\n", total);
 }
-

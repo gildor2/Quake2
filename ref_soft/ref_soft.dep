@@ -1,0 +1,291 @@
+# Microsoft Developer Studio Generated Dependency File, included by ref_soft.mak
+
+..\qcommon\q_shared2.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	
+
+.\r_aclip.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
+
+!ENDIF 
+
+.\r_alias.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\anorms.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_bsp.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_draw.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
+
+!ENDIF 
+
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
+
+!ENDIF 
+
+.\r_edge.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
+
+!ENDIF 
+
+.\r_image.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_light.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_main.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_misc.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_model.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_part.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_poly.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
+
+!ENDIF 
+
+.\r_polyse.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\adivtab.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	".\rand1k.h"\
+	
+
+.\r_rast.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_scan.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
+
+!ENDIF 
+
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
+
+!ENDIF 
+
+.\r_sprite.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_surf.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
+
+!ENDIF 
+
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
+
+!ENDIF 
+
+..\win32\rw_ddraw.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\win32\rw_win.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+..\win32\rw_dib.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\win32\rw_win.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+..\win32\rw_imp.c : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	"..\win32\rw_win.h"\
+	"..\win32\winquake.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	

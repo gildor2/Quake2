@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -82,7 +82,7 @@ void R_RotateBmodel (void)
 // TODO: share work with R_SetUpAliasTransform
 
 // yaw
-	angle = currententity->angles[YAW];		
+	angle = currententity->angles[YAW];
 	angle = angle * M_PI*2 / 360;
 	s = sin(angle);
 	c = cos(angle);
@@ -99,7 +99,7 @@ void R_RotateBmodel (void)
 
 
 // pitch
-	angle = currententity->angles[PITCH];		
+	angle = currententity->angles[PITCH];
 	angle = angle * M_PI*2 / 360;
 	s = sin(angle);
 	c = cos(angle);
@@ -114,10 +114,10 @@ void R_RotateBmodel (void)
 	temp2[2][1] = 0;
 	temp2[2][2] = c;
 
-	R_ConcatRotations (temp2, temp1, temp3);
+	MatrixMultiply (temp2, temp1, temp3);
 
 // roll
-	angle = currententity->angles[ROLL];		
+	angle = currententity->angles[ROLL];
 	angle = angle * M_PI*2 / 360;
 	s = sin(angle);
 	c = cos(angle);
@@ -132,7 +132,7 @@ void R_RotateBmodel (void)
 	temp1[2][1] = -s;
 	temp1[2][2] = c;
 
-	R_ConcatRotations (temp1, temp3, entity_rotation);
+	MatrixMultiply (temp1, temp3, entity_rotation);
 
 //
 // rotate modelorg and the transformation matrix
@@ -158,7 +158,7 @@ void R_RecursiveClipBPoly (bedge_t *pedges, mnode_t *pnode, msurface_t *psurf)
 	bedge_t		*psideedges[2], *pnextedge, *ptedge;
 	int			i, side, lastside;
 	float		dist, frac, lastdist;
-	mplane_t	*splitplane, tplane;
+	cplane_t	*splitplane, tplane;
 	mvertex_t	*pvert, *plastvert, *ptvert;
 	mnode_t		*pn;
 	int			area;
@@ -225,7 +225,7 @@ void R_RecursiveClipBPoly (bedge_t *pedges, mnode_t *pnode, msurface_t *psurf)
 		// FIXME: share the clip edge by having a winding direction flag?
 			if (numbedges >= (MAX_BMODEL_EDGES - 1))
 			{
-				ri.Con_Printf (PRINT_ALL,"Out of edges for bmodel\n");
+				Com_Printf ("Out of edges for bmodel\n");
 				return;
 			}
 
@@ -269,7 +269,7 @@ void R_RecursiveClipBPoly (bedge_t *pedges, mnode_t *pnode, msurface_t *psurf)
 	{
 		if (numbedges >= (MAX_BMODEL_EDGES - 2))
 		{
-			ri.Con_Printf (PRINT_ALL,"Out of edges for bmodel\n");
+			Com_Printf ("Out of edges for bmodel\n");
 			return;
 		}
 
@@ -339,7 +339,7 @@ void R_DrawSolidClippedSubmodelPolygons (model_t *pmodel, mnode_t *topnode)
 	vec_t		dot;
 	msurface_t	*psurf;
 	int			numsurfaces;
-	mplane_t	*pplane;
+	cplane_t	*pplane;
 	mvertex_t	bverts[MAX_BMODEL_VERTS];
 	bedge_t		bedges[MAX_BMODEL_EDGES], *pbedge;
 	medge_t		*pedge, *pedges;
@@ -418,7 +418,7 @@ void R_DrawSubmodelPolygons (model_t *pmodel, int clipflags, mnode_t *topnode)
 	vec_t		dot;
 	msurface_t	*psurf;
 	int			numsurfaces;
-	mplane_t	*pplane;
+	cplane_t	*pplane;
 
 // FIXME: use bounding-box-based frustum clipping info?
 
@@ -456,7 +456,7 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 {
 	int			i, c, side, *pindex;
 	vec3_t		acceptpt, rejectpt;
-	mplane_t	*plane;
+	cplane_t	*plane;
 	msurface_t	*surf, **mark;
 	float		d, dot;
 	mleaf_t		*pleaf;
@@ -486,7 +486,7 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 			rejectpt[0] = (float)node->minmaxs[pindex[0]];
 			rejectpt[1] = (float)node->minmaxs[pindex[1]];
 			rejectpt[2] = (float)node->minmaxs[pindex[2]];
-			
+
 			d = DotProduct (rejectpt, view_clipplanes[i].normal);
 			d -= view_clipplanes[i].dist;
 			if (d <= 0)
@@ -539,7 +539,8 @@ c_drawnode++;
 	// find which side of the node we are on
 		plane = node->plane;
 
-		switch (plane->type)
+		dot = DISTANCE_TO_PLANE(modelorg,plane);
+/*		switch (plane->type)
 		{
 		case PLANE_X:
 			dot = modelorg[0] - plane->dist;
@@ -554,7 +555,7 @@ c_drawnode++;
 			dot = DotProduct (modelorg, plane->normal) - plane->dist;
 			break;
 		}
-	
+*/
 		if (dot >= 0)
 			side = 0;
 		else
@@ -616,7 +617,7 @@ R_RenderWorld
 void R_RenderWorld (void)
 {
 
-	if (!r_drawworld->value)
+	if (!r_drawworld->integer)
 		return;
 	if ( r_newrefdef.rdflags & RDF_NOWORLDMODEL )
 		return;
@@ -633,5 +634,3 @@ void R_RenderWorld (void)
 
 	R_RecursiveWorldNode (currentmodel->nodes, 15);
 }
-
-

@@ -1,0 +1,11 @@
+- KP ref disasm
+- shader scripts
+- entity parser
+
+Savage3d (check):
+- gl_maxVerts
+- gl_nobind
+- gl_singleShader
+- gl_ignoreFastPath
+- rename exe
+- different drivers

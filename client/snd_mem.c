@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -39,7 +39,7 @@ void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 	int		i;
 	int		sample, samplefrac, fracstep;
 	sfxcache_t	*sc;
-	
+
 	sc = sfx->cache;
 	if (!sc)
 		return;
@@ -52,24 +52,24 @@ void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 		sc->loopstart = sc->loopstart / stepscale;
 
 	sc->speed = dma.speed;
-	if (s_loadas8bit->value)
+	if (s_loadas8bit->integer)
 		sc->width = 1;
 	else
 		sc->width = inwidth;
 	sc->stereo = 0;
 
-// resample / decimate to the current source rate
+	// resample / decimate to the current source rate
 
 	if (stepscale == 1 && inwidth == 1 && sc->width == 1)
 	{
-// fast special case
+		// fast special case
 		for (i=0 ; i<outcount ; i++)
 			((signed char *)sc->data)[i]
 			= (int)( (unsigned char)(data[i]) - 128);
 	}
 	else
 	{
-// general case
+		// general case
 		samplefrac = 0;
 		fracstep = stepscale*256;
 		for (i=0 ; i<outcount ; i++)
@@ -97,25 +97,27 @@ S_LoadSound
 */
 sfxcache_t *S_LoadSound (sfx_t *s)
 {
-    char	namebuffer[MAX_QPATH];
-	byte	*data;
+	char		namebuffer[MAX_QPATH], *name;
+	byte		*data;
 	wavinfo_t	info;
-	int		len;
-	float	stepscale;
+	int			len, size;
+	float		stepscale;
 	sfxcache_t	*sc;
-	int		size;
-	char	*name;
 
 	if (s->name[0] == '*')
 		return NULL;
 
-// see if still in memory
+	// see if still in memory
 	sc = s->cache;
 	if (sc)
 		return sc;
 
-//Com_Printf ("S_LoadSound: %x\n", (int)stackbuf);
-// load it in
+	// see if already tryed to load, but file not found
+	if (s->absent)
+		return NULL;
+
+//	Com_Printf ("S_LoadSound: %x\n", (int)stackbuf);
+	// load it in
 	if (s->truename)
 		name = s->truename;
 	else
@@ -133,6 +135,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	if (!data)
 	{
 		Com_DPrintf ("Couldn't load %s\n", namebuffer);
+		s->absent = true;
 		return NULL;
 	}
 
@@ -144,7 +147,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 		return NULL;
 	}
 
-	stepscale = (float)info.rate / dma.speed;	
+	stepscale = (float)info.rate / dma.speed;
 	len = info.samples / stepscale;
 
 	len = len * info.width * info.channels;
@@ -155,7 +158,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 		FS_FreeFile (data);
 		return NULL;
 	}
-	
+
 	sc->length = info.samples;
 	sc->loopstart = info.loopstart;
 	sc->speed = info.rate;
@@ -218,7 +221,7 @@ void FindNextChunk(char *name)
 			data_p = NULL;
 			return;
 		}
-		
+
 		data_p += 4;
 		iff_chunk_len = GetLittleLong();
 		if (iff_chunk_len < 0)
@@ -245,7 +248,7 @@ void FindChunk(char *name)
 void DumpChunks(void)
 {
 	char	str[5];
-	
+
 	str[4] = 0;
 	data_p=iff_data;
 	do
@@ -274,7 +277,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 
 	if (!wav)
 		return info;
-		
+
 	iff_data = wav;
 	iff_end = wav + wavlength;
 
@@ -282,7 +285,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	FindChunk("RIFF");
 	if (!(data_p && !strncmp(data_p+8, "WAVE", 4)))
 	{
-		Com_Printf("Missing RIFF/WAVE chunks\n");
+		Com_WPrintf("Missing RIFF/WAVE chunks\n");
 		return info;
 	}
 
@@ -293,14 +296,14 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	FindChunk("fmt ");
 	if (!data_p)
 	{
-		Com_Printf("Missing fmt chunk\n");
+		Com_WPrintf("Missing fmt chunk\n");
 		return info;
 	}
 	data_p += 8;
 	format = GetLittleShort();
 	if (format != 1)
 	{
-		Com_Printf("Microsoft PCM format only\n");
+		Com_WPrintf("Microsoft PCM format only\n");
 		return info;
 	}
 
@@ -337,7 +340,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	FindChunk("data");
 	if (!data_p)
 	{
-		Com_Printf("Missing data chunk\n");
+		Com_WPrintf("Missing data chunk\n");
 		return info;
 	}
 
@@ -353,7 +356,6 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 		info.samples = samples;
 
 	info.dataofs = data_p - wav;
-	
+
 	return info;
 }
-

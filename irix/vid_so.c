@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -34,23 +34,23 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../linux/rw_linux.h"
 
 // Structure containing functions exported from refresh DLL
-refexport_t	re;
+refExport_t	re;
 
 #ifdef REF_HARD_LINKED
-refexport_t GetRefAPI (refimport_t rimp);
+refExport_t GetRefAPI (refImport_t rimp);
 #endif
 
 // Console variables that we need to access from this module
-cvar_t		*vid_gamma;
+cvar_t		*r_gamma;
 cvar_t		*vid_ref;			// Name of Refresh DLL loaded
 cvar_t		*vid_xpos;			// X coordinate of window position
 cvar_t		*vid_ypos;			// Y coordinate of window position
-cvar_t		*vid_fullscreen;
+cvar_t		*r_fullscreen;
 
 // Global variables used internally by this module
 viddef_t	viddef;				// global video state; used by other modules
-void		*reflib_library;		// Handle to refresh DLL 
-qboolean	reflib_active = 0;
+void		*reflib_library;		// Handle to refresh DLL
+static qboolean	reflib_active = 0;
 
 #define VID_NUM_MODES ( sizeof( vid_modes ) / sizeof( vid_modes[0] ) )
 
@@ -84,12 +84,12 @@ DLL GLUE
 */
 
 #define	MAXPRINTMSG	4096
-void VID_Printf (int print_level, char *fmt, ...)
+void Vid_Printf (int print_level, char *fmt, ...)
 {
 	va_list		argptr;
 	char		msg[MAXPRINTMSG];
 	static qboolean	inupdate;
-	
+
 	va_start (argptr,fmt);
 	vsprintf (msg,fmt,argptr);
 	va_end (argptr);
@@ -100,12 +100,12 @@ void VID_Printf (int print_level, char *fmt, ...)
 		Com_DPrintf ("%s", msg);
 }
 
-void VID_Error (int err_level, char *fmt, ...)
+void Vid_Error (int err_level, char *fmt, ...)
 {
 	va_list		argptr;
 	char		msg[MAXPRINTMSG];
 	static qboolean	inupdate;
-	
+
 	va_start (argptr,fmt);
 	vsprintf (msg,fmt,argptr);
 	va_end (argptr);
@@ -117,20 +117,20 @@ void VID_Error (int err_level, char *fmt, ...)
 
 /*
 ============
-VID_Restart_f
+Vid_Restart_f
 
 Console command to re-start the video mode and refresh DLL. We do this
 simply by setting the modified flag for the vid_ref variable, which will
 cause the entire video mode and refresh DLL to be reset on the next frame.
 ============
 */
-void VID_Restart_f (void)
+void Vid_Restart_f (void)
 {
 	vid_ref->modified = true;
 }
 
 /*
-** VID_GetModeInfo
+** Vid_GetModeInfo
 */
 typedef struct vidmode_s
 {
@@ -154,7 +154,7 @@ vidmode_t vid_modes[] =
 	{ "Mode 10: 2048x1536", 2048, 1536, 10 }
 };
 
-qboolean VID_GetModeInfo( int *width, int *height, int mode )
+qboolean Vid_GetModeInfo( int *width, int *height, int mode )
 {
 	if ( mode < 0 || mode >= VID_NUM_MODES )
 		return false;
@@ -166,15 +166,15 @@ qboolean VID_GetModeInfo( int *width, int *height, int mode )
 }
 
 /*
-** VID_NewWindow
+** Vid_NewWindow
 */
-void VID_NewWindow ( int width, int height)
+void Vid_NewWindow ( int width, int height)
 {
 	viddef.width  = width;
 	viddef.height = height;
 }
 
-void VID_FreeReflib (void)
+void Vid_FreeReflib (void)
 {
 	if (reflib_library) {
 		if (KBD_Close_fp)
@@ -203,12 +203,12 @@ void VID_FreeReflib (void)
 
 /*
 ==============
-VID_LoadRefresh
+Vid_LoadRefresh
 ==============
 */
-qboolean VID_LoadRefresh( char *name )
+qboolean Vid_LoadRefresh( char *name )
 {
-	refimport_t	ri;
+	refImport_t	ri;
 #ifndef REF_HARD_LINKED
 	GetRefAPI_t	GetRefAPI;
 #endif
@@ -228,12 +228,12 @@ qboolean VID_LoadRefresh( char *name )
 		KBD_Close_fp = NULL;
 		RW_IN_Shutdown_fp = NULL;
 		re.Shutdown();
-		VID_FreeReflib ();
+		Vid_FreeReflib ();
 	}
 
 #ifndef REF_HARD_LINKED
 	getcwd(curpath, sizeof(curpath));
-	
+
 	Com_Printf( "------- Loading %s -------\n", name );
 
 	// now run through the search paths
@@ -256,22 +256,13 @@ qboolean VID_LoadRefresh( char *name )
 
 #endif
 
-	ri.Cmd_AddCommand = Cmd_AddCommand;
-	ri.Cmd_RemoveCommand = Cmd_RemoveCommand;
-	ri.Cmd_Argc = Cmd_Argc;
-	ri.Cmd_Argv = Cmd_Argv;
-	ri.Cmd_ExecuteText = Cbuf_ExecuteText;
-	ri.Con_Printf = VID_Printf;
-	ri.Sys_Error = VID_Error;
-	ri.FS_LoadFile = FS_LoadFile;
-	ri.FS_FreeFile = FS_FreeFile;
-	ri.FS_Gamedir = FS_Gamedir;
-	ri.Cvar_Get = Cvar_Get;
-	ri.Cvar_Set = Cvar_Set;
-	ri.Cvar_SetValue = Cvar_SetValue;
-	ri.Vid_GetModeInfo = VID_GetModeInfo;
-	ri.Vid_MenuInit = VID_MenuInit;
-	ri.Vid_NewWindow = VID_NewWindow;
+	RI_INIT_COMMON(ri)
+//	ri.Con_Printf = Vid_Printf;
+	ri.Sys_Error = Vid_Error;
+	ri.Vid_GetModeInfo = Vid_GetModeInfo;
+	ri.Vid_MenuInit = Vid_MenuInit;
+	ri.Vid_NewWindow = Vid_NewWindow;
+
 
 #ifndef REF_HARD_LINKED
 	if ( ( GetRefAPI = (void *) dlsym( reflib_library, "GetRefAPI" ) ) == 0 )
@@ -279,9 +270,9 @@ qboolean VID_LoadRefresh( char *name )
 #endif
 	re = GetRefAPI( ri );
 
-	if (re.api_version != API_VERSION)
+	if (re.struc_size != sizeof(refExport_t) || re.api_version != API_VERSION)
 	{
-		VID_FreeReflib ();
+		Vid_FreeReflib ();
 		Com_Error (ERR_FATAL, "%s has incompatible api_version", name);
 	}
 
@@ -320,7 +311,7 @@ qboolean VID_LoadRefresh( char *name )
 	if ( re.Init( 0, 0 ) == -1 )
 	{
 		re.Shutdown();
-		VID_FreeReflib ();
+		Vid_FreeReflib ();
 		return false;
 	}
 
@@ -355,14 +346,14 @@ qboolean VID_LoadRefresh( char *name )
 
 /*
 ============
-VID_CheckChanges
+Vid_CheckChanges
 
 This function gets called once just before drawing each frame, and it's sole purpose in life
-is to check to see if any of the video mode parameters have changed, and if they have to 
+is to check to see if any of the video mode parameters have changed, and if they have to
 update the rendering DLL and/or video mode to match.
 ============
 */
-void VID_CheckChanges (void)
+void Vid_CheckChanges (void)
 {
 	char name[100];
 	cvar_t *sw_mode;
@@ -378,20 +369,20 @@ void VID_CheckChanges (void)
 		** refresh has changed
 		*/
 		vid_ref->modified = false;
-		vid_fullscreen->modified = true;
+		r_fullscreen->modified = true;
 		cl.refresh_prepped = false;
 		cls.disable_screen = true;
 
 		sprintf( name, "ref_%s.so", vid_ref->string );
-		if ( !VID_LoadRefresh( name ) )
+		if ( !Vid_LoadRefresh( name ) )
 		{
 		        if ( strcmp (vid_ref->string, "soft") == 0 ) {
 			        Com_Printf("Refresh failed\n");
 				sw_mode = Cvar_Get( "sw_mode", "0", 0 );
-				if (sw_mode->value != 0) {
+				if (sw_mode->integer) {
 				        Com_Printf("Trying mode 0\n");
-					Cvar_SetValue("sw_mode", 0);
-					if ( !VID_LoadRefresh( name ) )
+					Cvar_SetInteger("sw_mode", 0);
+					if ( !Vid_LoadRefresh( name ) )
 						Com_Error (ERR_FATAL, "Couldn't fall back to software refresh!");
 				} else
 					Com_Error (ERR_FATAL, "Couldn't fall back to software refresh!");
@@ -414,34 +405,34 @@ void VID_CheckChanges (void)
 
 /*
 ============
-VID_Init
+Vid_Init
 ============
 */
-void VID_Init (void)
+void Vid_Init (void)
 {
 	/* Create the video variables so we know how to start the graphics drivers */
         vid_ref = Cvar_Get ("vid_ref", "soft", CVAR_ARCHIVE);
 	vid_xpos = Cvar_Get ("vid_xpos", "3", CVAR_ARCHIVE);
 	vid_ypos = Cvar_Get ("vid_ypos", "22", CVAR_ARCHIVE);
-	vid_fullscreen = Cvar_Get ("vid_fullscreen", "0", CVAR_ARCHIVE);
-	vid_gamma = Cvar_Get( "vid_gamma", "1", CVAR_ARCHIVE );
+	r_fullscreen = Cvar_Get ("r_fullscreen", "1", CVAR_ARCHIVE);
+	r_gamma = Cvar_Get( "r_gamma", "1", CVAR_ARCHIVE );
 
 	/* Add some console commands that we want to handle */
-	Cmd_AddCommand ("vid_restart", VID_Restart_f);
+	Cmd_AddCommand ("vid_restart", Vid_Restart_f);
 
 	/* Disable the 3Dfx splash screen */
 	putenv("FX_GLIDE_NO_SPLASH=0");
-		
+
 	/* Start the graphics mode and load refresh DLL */
-	VID_CheckChanges();
+	Vid_CheckChanges();
 }
 
 /*
 ============
-VID_Shutdown
+Vid_Shutdown
 ============
 */
-void VID_Shutdown (void)
+void Vid_Shutdown (void)
 {
 	if ( reflib_active )
 	{
@@ -452,7 +443,7 @@ void VID_Shutdown (void)
 		KBD_Close_fp = NULL;
 		RW_IN_Shutdown_fp = NULL;
 		re.Shutdown ();
-		VID_FreeReflib ();
+		Vid_FreeReflib ();
 	}
 }
 
@@ -509,4 +500,3 @@ void Do_Key_Event(int key, qboolean down)
 {
 	Key_Event(key, down, Sys_Milliseconds());
 }
-

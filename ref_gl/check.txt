@@ -1,0 +1,5 @@
+! player models overbright (use rgb * identityLightValue ??)
+- rhcity3: bug with water (lightmap + underwater tex~tex) - present in original Q2 too
+- windows / wire (fence): depthwrite / depthtest (Z-clip against entities ??)
+? cvar userinfo/serverinfo/user/archive flags
+- skip surface generation for SURF_NODRAW (??)

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -40,6 +40,7 @@ float		scr_conlines;		// 0.0 to 1.0 lines of console to display
 qboolean	scr_initialized;		// ready to draw
 
 int			scr_draw_loading;
+char		*scr_map_levelshot;
 
 vrect_t		scr_vrect;		// position of render window on screen
 
@@ -96,7 +97,7 @@ void CL_AddNetgraph (void)
 
 	// if using the debuggraph for something else, don't
 	// add the net lines
-	if (scr_debuggraph->value || scr_timegraph->value)
+	if (scr_debuggraph->integer || scr_timegraph->integer)
 		return;
 
 	for (i=0 ; i<cls.netchan.dropped ; i++)
@@ -154,8 +155,8 @@ void SCR_DrawDebugGraph (void)
 
 	x = scr_vrect.x;
 	y = scr_vrect.y+scr_vrect.height;
-	re.DrawFill (x, y-scr_graphheight->value,
-		w, scr_graphheight->value, 8);
+	re.DrawFill (x, y-scr_graphheight->integer,
+		w, scr_graphheight->integer, 8);
 
 	for (a=0 ; a<w ; a++)
 	{
@@ -163,10 +164,10 @@ void SCR_DrawDebugGraph (void)
 		v = values[i].value;
 		color = values[i].color;
 		v = v*scr_graphscale->value + scr_graphshift->value;
-		
+
 		if (v < 0)
-			v += scr_graphheight->value * (1+(int)(-v/scr_graphheight->value));
-		h = (int)v % (int)scr_graphheight->value;
+			v += scr_graphheight->integer * (1+(int)(-v/scr_graphheight->value));
+		h = (int)v % scr_graphheight->integer;
 		re.DrawFill (x+w-1-a, y - h, 1,	h, color);
 	}
 }
@@ -217,7 +218,7 @@ void SCR_CenterPrint (char *str)
 	Com_Printf("\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
 
 	s = str;
-	do	
+	do
 	{
 	// scan the width of the line
 		for (l=0 ; l<40 ; l++)
@@ -267,7 +268,7 @@ void SCR_DrawCenterString (void)
 	else
 		y = 48;
 
-	do	
+	do
 	{
 	// scan the width of the line
 		for (l=0 ; l<40 ; l++)
@@ -277,12 +278,12 @@ void SCR_DrawCenterString (void)
 		SCR_AddDirtyPoint (x, y);
 		for (j=0 ; j<l ; j++, x+=8)
 		{
-			re.DrawChar (x, y, start[j]);	
+			re_DrawChar (x, y, start[j]);
 			if (!remaining--)
 				return;
 		}
 		SCR_AddDirtyPoint (x, y+8);
-			
+
 		y += 8;
 
 		while (*start && *start != '\n')
@@ -297,7 +298,7 @@ void SCR_DrawCenterString (void)
 void SCR_CheckDrawCenterString (void)
 {
 	scr_centertime_off -= cls.frametime;
-	
+
 	if (scr_centertime_off <= 0)
 		return;
 
@@ -317,22 +318,16 @@ static void SCR_CalcVrect (void)
 {
 	int		size;
 
-	// bound viewsize
-	if (scr_viewsize->value < 40)
-		Cvar_Set ("viewsize","40");
-	if (scr_viewsize->value > 100)
-		Cvar_Set ("viewsize","100");
+	size = Cvar_Clamp (scr_viewsize, 40, 100);
 
-	size = scr_viewsize->value;
-
-	scr_vrect.width = viddef.width*size/100;
+	scr_vrect.width = viddef.width * size/100;
 	scr_vrect.width &= ~7;
 
-	scr_vrect.height = viddef.height*size/100;
+	scr_vrect.height = viddef.height * size/100;
 	scr_vrect.height &= ~1;
 
-	scr_vrect.x = (viddef.width - scr_vrect.width)/2;
-	scr_vrect.y = (viddef.height - scr_vrect.height)/2;
+	scr_vrect.x = (viddef.width - scr_vrect.width) / 2;
+	scr_vrect.y = (viddef.height - scr_vrect.height) / 2;
 }
 
 
@@ -345,7 +340,7 @@ Keybinding command
 */
 void SCR_SizeUp_f (void)
 {
-	Cvar_SetValue ("viewsize",scr_viewsize->value+10);
+	Cvar_SetInteger ("viewsize", scr_viewsize->integer + 10);
 }
 
 
@@ -358,7 +353,7 @@ Keybinding command
 */
 void SCR_SizeDown_f (void)
 {
-	Cvar_SetValue ("viewsize",scr_viewsize->value-10);
+	Cvar_SetInteger ("viewsize",scr_viewsize->value-10);
 }
 
 /*
@@ -407,23 +402,24 @@ SCR_Init
 */
 void SCR_Init (void)
 {
-	scr_viewsize = Cvar_Get ("viewsize", "100", CVAR_ARCHIVE);
-	scr_conspeed = Cvar_Get ("scr_conspeed", "3", 0);
-	scr_showturtle = Cvar_Get ("scr_showturtle", "0", 0);
-	scr_showpause = Cvar_Get ("scr_showpause", "1", 0);
-	scr_centertime = Cvar_Get ("scr_centertime", "2.5", 0);
-	scr_printspeed = Cvar_Get ("scr_printspeed", "8", 0);
-	scr_netgraph = Cvar_Get ("netgraph", "0", 0);
-	scr_timegraph = Cvar_Get ("timegraph", "0", 0);
-	scr_debuggraph = Cvar_Get ("debuggraph", "0", 0);
-	scr_graphheight = Cvar_Get ("graphheight", "32", 0);
-	scr_graphscale = Cvar_Get ("graphscale", "1", 0);
-	scr_graphshift = Cvar_Get ("graphshift", "0", 0);
-	scr_drawall = Cvar_Get ("scr_drawall", "0", 0);
+CVAR_BEGIN(vars)
+	{&scr_viewsize, "viewsize", "100", CVAR_ARCHIVE},
+	{&scr_conspeed, "scr_conspeed", "3", 0},
+	{&scr_showturtle, "scr_showturtle", "0", 0},
+	{&scr_showpause, "scr_showpause", "1", 0},
+	{&scr_centertime, "scr_centertime", "2.5", 0},
+	{&scr_printspeed, "scr_printspeed", "8", 0},
+	{&scr_netgraph, "netgraph", "0", 0},
+	{&scr_timegraph, "timegraph", "0", 0},
+	{&scr_debuggraph, "debuggraph", "0", 0},
+	{&scr_graphheight, "graphheight", "32", 0},
+	{&scr_graphscale, "graphscale", "1", 0},
+	{&scr_graphshift, "graphshift", "0", 0},
+	{&scr_drawall, "scr_drawall", "0", 0}
+CVAR_END
 
-//
-// register our commands
-//
+	CVAR_GET_VARS(vars);
+
 	Cmd_AddCommand ("timerefresh",SCR_TimeRefresh_f);
 	Cmd_AddCommand ("loading",SCR_Loading_f);
 	Cmd_AddCommand ("sizeup",SCR_SizeUp_f);
@@ -441,11 +437,11 @@ SCR_DrawNet
 */
 void SCR_DrawNet (void)
 {
-	if (cls.netchan.outgoing_sequence - cls.netchan.incoming_acknowledged 
+	if (cls.netchan.outgoing_sequence - cls.netchan.incoming_acknowledged
 		< CMD_BACKUP-1)
 		return;
 
-	re.DrawPic (scr_vrect.x+64, scr_vrect.y, "net");
+	re_DrawPic (scr_vrect.x+64, scr_vrect.y, "net");
 }
 
 /*
@@ -457,31 +453,14 @@ void SCR_DrawPause (void)
 {
 	int		w, h;
 
-	if (!scr_showpause->value)		// turn off for screenshots
+	if (!scr_showpause->integer)		// turn off for screenshots
 		return;
 
-	if (!cl_paused->value)
+	if (!cl_paused->integer)
 		return;
 
 	re.DrawGetPicSize (&w, &h, "pause");
-	re.DrawPic ((viddef.width-w)/2, viddef.height/2 + 8, "pause");
-}
-
-/*
-==============
-SCR_DrawLoading
-==============
-*/
-void SCR_DrawLoading (void)
-{
-	int		w, h;
-		
-	if (!scr_draw_loading)
-		return;
-
-	scr_draw_loading = false;
-	re.DrawGetPicSize (&w, &h, "loading");
-	re.DrawPic ((viddef.width-w)/2, (viddef.height-h)/2, "loading");
+	re_DrawPic ((viddef.width-w)/2, viddef.height/2 + 8, "pause");
 }
 
 //=============================================================================
@@ -496,11 +475,18 @@ Scroll it up or down
 void SCR_RunConsole (void)
 {
 // decide on the height of the console
+	if (re.console_only)
+	{
+		cls.key_dest = key_console;
+		scr_conlines = 1.0;
+		return;
+	}
+
 	if (cls.key_dest == key_console)
 		scr_conlines = 0.5;		// half screen
 	else
 		scr_conlines = 0;				// none visible
-	
+
 	if (scr_conlines < scr_con_current)
 	{
 		scr_con_current -= scr_conspeed->value*cls.frametime;
@@ -525,8 +511,8 @@ SCR_DrawConsole
 void SCR_DrawConsole (void)
 {
 	Con_CheckResize ();
-	
-	if (cls.state == ca_disconnected || cls.state == ca_connecting)
+
+	if (re.console_only || cls.state == ca_disconnected || cls.state == ca_connecting)
 	{	// forced full screen console
 		Con_DrawConsole (1.0);
 		return;
@@ -552,6 +538,62 @@ void SCR_DrawConsole (void)
 
 //=============================================================================
 
+void SCR_SetLevelshot (char *name)
+{
+	char	mapname[MAX_OSPATH], *tmp;
+	static char levelshot[MAX_OSPATH];
+	int		width;
+
+	Q_CopyFilename (mapname, name, sizeof(levelshot) - 1);
+	tmp = strchr (mapname, '.');
+	if (tmp) tmp[0] = 0;
+	tmp = strrchr (mapname, '/');
+	if (!tmp)
+		tmp = mapname;
+	else
+		tmp++;	// skip '/'
+	Com_sprintf (levelshot, sizeof(levelshot), "/levelshots/%s.pcx", tmp);
+	re.DrawGetPicSize (&width, NULL, levelshot);
+	if (width > 0)
+	{
+		scr_map_levelshot = levelshot;
+		scr_draw_loading = 1;
+		Com_DPrintf ("SetLevelshot: %s\n", levelshot);
+	}
+}
+
+
+/*
+==============
+SCR_DrawLoading
+==============
+*/
+void SCR_DrawLoading (void)
+{
+	int		w, h;
+
+	if (!scr_draw_loading)
+		return;
+
+	if (cls.state == ca_active || cls.key_dest == key_menu)
+	{
+		scr_draw_loading = 0;
+		return;
+	}
+
+	if (scr_map_levelshot)
+	{
+		re.DrawStretchPic (0, 0, viddef.width, viddef.height, scr_map_levelshot);
+		//!! DrawLevelshotDetail for GL
+		Con_DrawNotify ();
+	}
+	else //if (scr_draw_loading == 2)
+	{
+		re.DrawGetPicSize (&w, &h, "loading");
+		re_DrawPic ((viddef.width-w)/2, (viddef.height-h)/2, "loading");
+	}
+}
+
 /*
 ================
 SCR_BeginLoadingPlaque
@@ -564,18 +606,18 @@ void SCR_BeginLoadingPlaque (void)
 	CDAudio_Stop ();
 	if (cls.disable_screen)
 		return;
-	if (developer->value)
+	if (developer->integer)
 		return;
-	if (cls.state == ca_disconnected)
-		return;	// if at console, don't bring up the plaque
-	if (cls.key_dest == key_console)
-		return;
+//	if (cls.state == ca_disconnected)
+//		return;	// if at console, don't bring up the plaque
+//	if (cls.key_dest == key_console)
+//		return;
 	if (cl.cinematictime > 0)
-		scr_draw_loading = 2;	// clear to balack first
+		scr_draw_loading = 2;	// clear to black first
 	else
 		scr_draw_loading = 1;
 	SCR_UpdateScreen ();
-	cls.disable_screen = Sys_Milliseconds ();
+	cls.disable_screen = 0;//Sys_Milliseconds ();
 	cls.disable_servercount = cl.servercount;
 }
 
@@ -586,6 +628,8 @@ SCR_EndLoadingPlaque
 */
 void SCR_EndLoadingPlaque (void)
 {
+	scr_draw_loading = 0;
+	scr_map_levelshot = NULL;
 	cls.disable_screen = 0;
 	Con_ClearNotify ();
 }
@@ -605,21 +649,6 @@ void SCR_Loading_f (void)
 SCR_TimeRefresh_f
 ================
 */
-int entitycmpfnc( const entity_t *a, const entity_t *b )
-{
-	/*
-	** all other models are sorted by model then skin
-	*/
-	if ( a->model == b->model )
-	{
-		return ( ( int ) a->skin - ( int ) b->skin );
-	}
-	else
-	{
-		return ( ( int ) a->model - ( int ) b->model );
-	}
-}
-
 void SCR_TimeRefresh_f (void)
 {
 	int		i;
@@ -694,12 +723,12 @@ void SCR_TileClear (void)
 	int		top, bottom, left, right;
 	dirty_t	clear;
 
-	if (scr_drawall->value)
+	if (scr_drawall->integer)
 		SCR_DirtyScreen ();	// for power vr or broken page flippers...
 
 	if (scr_con_current == 1.0)
 		return;		// full screen console
-	if (scr_viewsize->value == 100)
+	if (scr_viewsize->integer == 100)
 		return;		// full screen rendering
 	if (cl.cinematictime > 0)
 		return;		// full screen cinematic
@@ -776,12 +805,12 @@ void SCR_TileClear (void)
 
 
 #define STAT_MINUS		10	// num frame for '-' stats digit
-char		*sb_nums[2][11] = 
+char		*sb_nums[2][11] =
 {
 	{"num_0", "num_1", "num_2", "num_3", "num_4", "num_5",
-	"num_6", "num_7", "num_8", "num_9", "num_minus"},
+	 "num_6", "num_7", "num_8", "num_9", "num_minus"},
 	{"anum_0", "anum_1", "anum_2", "anum_3", "anum_4", "anum_5",
-	"anum_6", "anum_7", "anum_8", "anum_9", "anum_minus"}
+	 "anum_6", "anum_7", "anum_8", "anum_9", "anum_minus"}
 };
 
 #define	ICON_WIDTH	24
@@ -849,7 +878,7 @@ void DrawHUDString (char *string, int x, int y, int centerwidth, int xor)
 			x = margin;
 		for (i=0 ; i<width ; i++)
 		{
-			re.DrawChar (x, y, line[i]^xor);
+			re_DrawChar (x, y, line[i]^xor);
 			x += 8;
 		}
 		if (*string)
@@ -897,7 +926,7 @@ void SCR_DrawField (int x, int y, int color, int width, int value)
 		else
 			frame = *ptr -'0';
 
-		re.DrawPic (x,y,sb_nums[color][frame]);
+		re_DrawPic (x,y,sb_nums[color][frame]);
 		x += CHAR_WIDTH;
 		ptr++;
 		l--;
@@ -914,27 +943,35 @@ Allows rendering code to cache all needed sbar graphics
 */
 void SCR_TouchPics (void)
 {
-	int		i, j;
+	int		i, j, ch_num;
+
+	if (re.console_only) return;
 
 	for (i=0 ; i<2 ; i++)
 		for (j=0 ; j<11 ; j++)
 			re.RegisterPic (sb_nums[i][j]);
 
-	if (crosshair->value)
+	ch_num = crosshair->integer;
+	if (ch_num)
 	{
-		if (crosshair->value > 3 || crosshair->value < 0)
-			crosshair->value = 3;
-
-		Com_sprintf (crosshair_pic, sizeof(crosshair_pic), "ch%i", (int)(crosshair->value));
-		re.DrawGetPicSize (&crosshair_width, &crosshair_height, crosshair_pic);
-		if (!crosshair_width)
+		if (ch_num > 0)
+		{
+			Com_sprintf (crosshair_pic, sizeof(crosshair_pic), "ch%i", crosshair->integer);
+			re.DrawGetPicSize (&crosshair_width, &crosshair_height, crosshair_pic);
+			if (crosshair_width <= 0)
+				ch_num = -1;								// invalid value
+		}
+		if (ch_num <= 0)
+		{
 			crosshair_pic[0] = 0;
+			if (ch_num < 0) Cvar_Set ("crosshair", "0");	// invalid value becomes zero
+		}
 	}
 }
 
 /*
 ================
-SCR_ExecuteLayoutString 
+SCR_ExecuteLayoutString
 
 ================
 */
@@ -1008,7 +1045,7 @@ void SCR_ExecuteLayoutString (char *s)
 			{
 				SCR_AddDirtyPoint (x, y);
 				SCR_AddDirtyPoint (x+23, y+23);
-				re.DrawPic (x, y, cl.configstrings[CS_IMAGES+value]);
+				re_DrawPic (x, y, cl.configstrings[CS_IMAGES+value]);
 			}
 			continue;
 		}
@@ -1047,7 +1084,7 @@ void SCR_ExecuteLayoutString (char *s)
 
 			if (!ci->icon)
 				ci = &cl.baseclientinfo;
-			re.DrawPic (x, y, ci->iconname);
+			re_DrawPic (x, y, ci->iconname);
 			continue;
 		}
 
@@ -1077,7 +1114,7 @@ void SCR_ExecuteLayoutString (char *s)
 			if (ping > 999)
 				ping = 999;
 
-			sprintf(block, "%3d %3d %-12.12s", score, ping, ci->name);
+			Com_sprintf (block, sizeof(block), "%3d %3d %-12.12s", score, ping, ci->name);
 
 			if (value == cl.playernum)
 				DrawAltString (x, y, block);
@@ -1091,7 +1128,7 @@ void SCR_ExecuteLayoutString (char *s)
 			token = COM_Parse (&s);
 			SCR_AddDirtyPoint (x, y);
 			SCR_AddDirtyPoint (x+23, y+23);
-			re.DrawPic (x, y, token);
+			re_DrawPic (x, y, token);
 			continue;
 		}
 
@@ -1119,7 +1156,7 @@ void SCR_ExecuteLayoutString (char *s)
 				color = 1;
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 1)
-				re.DrawPic (x, y, "field_3");
+				re_DrawPic (x, y, "field_3");
 
 			SCR_DrawField (x, y, color, width, value);
 			continue;
@@ -1139,7 +1176,7 @@ void SCR_ExecuteLayoutString (char *s)
 				continue;	// negative number = don't show
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 4)
-				re.DrawPic (x, y, "field_3");
+				re_DrawPic (x, y, "field_3");
 
 			SCR_DrawField (x, y, color, width, value);
 			continue;
@@ -1157,7 +1194,7 @@ void SCR_ExecuteLayoutString (char *s)
 			color = 0;	// green
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 2)
-				re.DrawPic (x, y, "field_3");
+				re_DrawPic (x, y, "field_3");
 
 			SCR_DrawField (x, y, color, width, value);
 			continue;
@@ -1289,17 +1326,14 @@ void SCR_UpdateScreen (void)
 	** range check cl_camera_separation so we don't inadvertently fry someone's
 	** brain
 	*/
-	if ( cl_stereo_separation->value > 1.0 )
-		Cvar_SetValue( "cl_stereo_separation", 1.0 );
-	else if ( cl_stereo_separation->value < 0 )
-		Cvar_SetValue( "cl_stereo_separation", 0.0 );
+	Cvar_Clamp (cl_stereo_separation, 0, 1);
 
-	if ( cl_stereo->value )
+	if ( cl_stereo->integer )
 	{
 		numframes = 2;
 		separation[0] = -cl_stereo_separation->value / 2;
 		separation[1] =  cl_stereo_separation->value / 2;
-	}		
+	}
 	else
 	{
 		separation[0] = 0;
@@ -1313,15 +1347,9 @@ void SCR_UpdateScreen (void)
 
 		if (scr_draw_loading == 2)
 		{	//  loading plaque over black screen
-			int		w, h;
-
-			re.CinematicSetPalette(NULL);
-			scr_draw_loading = false;
-			re.DrawGetPicSize (&w, &h, "loading");
-			re.DrawPic ((viddef.width-w)/2, (viddef.height-h)/2, "loading");
-//			re.EndFrame();
-//			return;
-		} 
+			re.CinematicSetPalette (NULL);
+			SCR_DrawLoading ();
+		}
 		// if a cinematic is supposed to be running, handle menus
 		// and console specially
 		else if (cl.cinematictime > 0)
@@ -1330,12 +1358,10 @@ void SCR_UpdateScreen (void)
 			{
 				if (cl.cinematicpalette_active)
 				{
-					re.CinematicSetPalette(NULL);
+					re.CinematicSetPalette (NULL);
 					cl.cinematicpalette_active = false;
 				}
 				M_Draw ();
-//				re.EndFrame();
-//				return;
 			}
 			else if (cls.key_dest == key_console)
 			{
@@ -1345,17 +1371,11 @@ void SCR_UpdateScreen (void)
 					cl.cinematicpalette_active = false;
 				}
 				SCR_DrawConsole ();
-//				re.EndFrame();
-//				return;
 			}
 			else
-			{
-				SCR_DrawCinematic();
-//				re.EndFrame();
-//				return;
-			}
+				SCR_DrawCinematic ();
 		}
-		else 
+		else
 		{
 
 			// make sure the game palette is active
@@ -1382,10 +1402,10 @@ void SCR_UpdateScreen (void)
 			SCR_DrawNet ();
 			SCR_CheckDrawCenterString ();
 
-			if (scr_timegraph->value)
+			if (scr_timegraph->integer)
 				SCR_DebugGraph (cls.frametime*300, 0);
 
-			if (scr_debuggraph->value || scr_timegraph->value || scr_netgraph->value)
+			if (scr_debuggraph->integer || scr_timegraph->integer || scr_netgraph->integer)
 				SCR_DrawDebugGraph ();
 
 			SCR_DrawPause ();

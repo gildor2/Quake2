@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -52,18 +52,6 @@ typedef struct
 #define	SIDE_ON		2
 
 
-// plane_t structure
-// !!! if this is changed, it must be changed in asm_i386.h too !!!
-typedef struct mplane_s
-{
-	vec3_t	normal;
-	float	dist;
-	byte	type;			// for texture axis selection and fast side tests
-	byte	signbits;		// signx + signy<<1 + signz<<1
-	byte	pad[2];
-} mplane_t;
-
-
 // FIXME: differentiate from texinfo SURF_ flags
 #define	SURF_PLANEBACK		2
 #define	SURF_DRAWSKY		4			// sky brush face
@@ -94,24 +82,24 @@ typedef struct msurface_s
 {
 	int			visframe;		// should be drawn when node is crossed
 
-	int			dlightframe;
-	int			dlightbits;
-
-	mplane_t	*plane;
+	cplane_t	*plane;
 	int			flags;
 
 	int			firstedge;	// look up in model->surfedges[], negative numbers
 	int			numedges;	// are backwards edges
-	
-// surface generation data
-	struct surfcache_s	*cachespots[MIPLEVELS];
 
 	short		texturemins[2];
 	short		extents[2];
 
 	mtexinfo_t	*texinfo;
-	
-// lighting info
+
+	// surface generation data
+	struct surfcache_s	*cachespots[MIPLEVELS];
+
+	// lighting info
+	int			dlightframe;
+	int			dlightbits;
+
 	byte		styles[MAXLIGHTMAPS];
 	byte		*samples;		// [numstyles*surfsize]
 
@@ -125,14 +113,14 @@ typedef struct mnode_s
 // common with leaf
 	int			contents;		// CONTENTS_NODE, to differentiate from leafs
 	int			visframe;		// node needs to be traversed if current
-	
+
 	short		minmaxs[6];		// for bounding box culling
 
 	struct mnode_s	*parent;
 
 // node specific
-	mplane_t	*plane;
-	struct mnode_s	*children[2];	
+	cplane_t	*plane;
+	struct mnode_s	*children[2];
 
 	unsigned short		firstsurface;
 	unsigned short		numsurfaces;
@@ -176,12 +164,12 @@ typedef struct model_s
 
 	modtype_t	type;
 	int			numframes;
-	
+
 	int			flags;
 
 //
 // volume occupied by the model graphics
-//		
+//
 	vec3_t		mins, maxs;
 
 //
@@ -199,7 +187,7 @@ typedef struct model_s
 	dmodel_t	*submodels;
 
 	int			numplanes;
-	mplane_t	*planes;
+	cplane_t	*planes;
 
 	int			numleafs;		// number of visible leafs, not counting 0
 	mleaf_t		*leafs;

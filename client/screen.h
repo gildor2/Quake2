@@ -42,6 +42,7 @@ extern	int			sb_lines;
 
 extern	cvar_t		*scr_viewsize;
 extern	cvar_t		*crosshair;
+extern	cvar_t		*crosshaircolor;
 
 extern	vrect_t		scr_vrect;		// position of render window
 

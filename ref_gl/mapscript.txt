@@ -1,0 +1,14 @@
+- disableing lightmaps on some surfaces (trans, alpha - neon messages etc.) -- do it with spec. shader keyword,
+  don't specify LM stage in shader on another way
+? enable auto water bulge (may do with local shaders too)
+- map scale (mostly for KP)
+? sun/ambient light
+- change sky
+- coronas (size, color, lightstyle, position, radius (for placing inside objects, e.g. lamp))
+- inline shaders
+- surface sounds (local materials.lst)
+
+------------------------ Shader extensions ---------------------------
+
+- shader texplates: specify name mask instead of exact shader name before {script}
+- map $texture   -- map image with the same name as shader name (useful for shader templates)

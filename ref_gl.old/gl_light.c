@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -79,7 +79,7 @@ void R_RenderDlights (void)
 	int		i;
 	dlight_t	*l;
 
-	if (!gl_flashblend->value)
+	if (!gl_flashblend->integer)
 		return;
 
 	r_dlightframecount = r_framecount + 1;	// because the count hasn't
@@ -121,13 +121,13 @@ void R_MarkLights (dlight_t *light, int bit, mnode_t *node)
 	float		dist;
 	msurface_t	*surf;
 	int			i;
-	
+
 	if (node->contents != -1)
 		return;
 
 	splitplane = node->plane;
 	dist = DotProduct (light->origin, splitplane->normal) - splitplane->dist;
-	
+
 	if (dist > light->intensity-DLIGHT_CUTOFF)
 	{
 		R_MarkLights (light, bit, node->children[0]);
@@ -138,7 +138,7 @@ void R_MarkLights (dlight_t *light, int bit, mnode_t *node)
 		R_MarkLights (light, bit, node->children[1]);
 		return;
 	}
-		
+
 // mark the polygons
 	surf = r_worldmodel->surfaces + node->firstsurface;
 	for (i=0 ; i<node->numsurfaces ; i++, surf++)
@@ -166,7 +166,7 @@ void R_PushDlights (void)
 	int		i;
 	dlight_t	*l;
 
-	if (gl_flashblend->value)
+	if (gl_flashblend->integer)
 		return;
 
 	r_dlightframecount = r_framecount + 1;	// because the count hasn't
@@ -205,59 +205,59 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 
 	if (node->contents != -1)
 		return -1;		// didn't hit anything
-	
-// calculate mid point
 
-// FIXME: optimize for axial
 	plane = node->plane;
 	front = DotProduct (start, plane->normal) - plane->dist;
 	back = DotProduct (end, plane->normal) - plane->dist;
 	side = front < 0;
-	
-	if ( (back < 0) == side)
+
+	if ( (back < 0) == side)	// "start" and "end" are on the same side
 		return RecursiveLightPoint (node->children[side], start, end);
-	
+
+	// calculate mid point
 	frac = front / (front-back);
 	mid[0] = start[0] + (end[0] - start[0])*frac;
 	mid[1] = start[1] + (end[1] - start[1])*frac;
 	mid[2] = start[2] + (end[2] - start[2])*frac;
-	
-// go down front side	
+
+	// go down (recurse) front side
 	r = RecursiveLightPoint (node->children[side], start, mid);
 	if (r >= 0)
 		return r;		// hit something
-		
-	if ( (back < 0) == side )
-		return -1;		// didn't hit anuthing
-		
-// check for impact on this node
+
+//	if ( (back < 0) == side )	-- checked above (??)
+//		return -1;		// didn't hit anuthing
+
+	/*------------ check for impact on this node ------------------*/
 	VectorCopy (mid, lightspot);
 	lightplane = plane;
 
 	surf = r_worldmodel->surfaces + node->firstsurface;
 	for (i=0 ; i<node->numsurfaces ; i++, surf++)
 	{
-		if (surf->flags&(SURF_DRAWTURB|SURF_DRAWSKY)) 
+		if (surf->flags&(SURF_DRAWTURB|SURF_DRAWSKY))
 			continue;	// no lightmaps
 
 		tex = surf->texinfo;
-		
+
 		s = DotProduct (mid, tex->vecs[0]) + tex->vecs[0][3];
 		t = DotProduct (mid, tex->vecs[1]) + tex->vecs[1][3];;
 
+		/*---------- check: point is out of texinfo rect ----------*/
 		if (s < surf->texturemins[0] ||
 		t < surf->texturemins[1])
-			continue;
-		
+			continue;	// out
+
 		ds = s - surf->texturemins[0];
 		dt = t - surf->texturemins[1];
-		
+
 		if ( ds > surf->extents[0] || dt > surf->extents[1] )
-			continue;
+			continue;	// out
 
 		if (!surf->samples)
-			return 0;
+			return 0;	// no lightmap
 
+		/*-------------- find point and get its color from lightmap ---------------*/
 		ds >>= 4;
 		dt >>= 4;
 
@@ -282,11 +282,11 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 						((surf->extents[1]>>4)+1);
 			}
 		}
-		
+
 		return 1;
 	}
 
-// go down back side
+	// go down back side
 	return RecursiveLightPoint (node->children[!side], mid, end);
 }
 
@@ -304,27 +304,23 @@ void R_LightPoint (vec3_t p, vec3_t color)
 	float		light;
 	vec3_t		dist;
 	float		add;
-	
-	if (!r_worldmodel->lightdata)
+
+	if (r_newrefdef.rdflags & RDF_NOWORLDMODEL || !r_worldmodel->lightdata || r_fullbright->integer == 2)
 	{
 		color[0] = color[1] = color[2] = 1.0;
 		return;
 	}
-	
+
 	end[0] = p[0];
 	end[1] = p[1];
 	end[2] = p[2] - 2048;
-	
+
 	r = RecursiveLightPoint (r_worldmodel->nodes, p, end);
-	
+
 	if (r == -1)
-	{
-		VectorCopy (vec3_origin, color);
-	}
+		VectorCopy (vec3_origin, color);	// black
 	else
-	{
 		VectorCopy (pointcolor, color);
-	}
 
 	//
 	// add dynamic lights
@@ -350,7 +346,7 @@ void R_LightPoint (vec3_t p, vec3_t color)
 
 //===================================================================
 
-static float s_blocklights[34*34*3];
+static float s_blocklights[192*192*3]; // 34*34*3
 /*
 ===============
 R_AddDynamicLights
@@ -380,7 +376,7 @@ void R_AddDynamicLights (msurface_t *surf)
 			continue;		// not lit by this light
 
 		dl = &r_newrefdef.dlights[lnum];
-		frad = dl->intensity;
+		frad = dl->intensity * 8.0f;
 		fdist = DotProduct (dl->origin, surf->plane->normal) -
 				surf->plane->dist;
 		frad -= fabs(fdist);
@@ -419,11 +415,18 @@ void R_AddDynamicLights (msurface_t *surf)
 				else
 					fdist = td + (sd>>1);
 
-				if ( fdist < fminlight )
+				if (fdist < fminlight)//?? && (fdist = sqrt(sd * sd + td * td)) < fminlight)
 				{
+				/* //?? COPYRIGHT (c) 2002 by Nosov Michael
 					pfBL[0] += ( frad - fdist ) * dl->color[0];
 					pfBL[1] += ( frad - fdist ) * dl->color[1];
 					pfBL[2] += ( frad - fdist ) * dl->color[2];
+				*/
+//					fdist = 1536.0 * frad / (fdist + 12.0f) / (fdist + 12.0f);
+					fdist = 512.0 * frad / (fdist + 12.0f) / (fdist + 12.0f);
+					pfBL[0] += fdist * dl->color[0];
+					pfBL[1] += fdist * dl->color[1];
+					pfBL[2] += fdist * dl->color[2];
 				}
 			}
 		}
@@ -465,13 +468,17 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 	int monolightmap;
 
 	if ( surf->texinfo->flags & (SURF_SKY|SURF_TRANS33|SURF_TRANS66|SURF_WARP) )
-		ri.Sys_Error (ERR_DROP, "R_BuildLightMap called for non-lit surface");
+		Com_Error (ERR_DROP, "R_BuildLightMap called for non-lit surface");
 
 	smax = (surf->extents[0]>>4)+1;
 	tmax = (surf->extents[1]>>4)+1;
 	size = smax*tmax;
 	if (size > (sizeof(s_blocklights)>>4) )
-		ri.Sys_Error (ERR_DROP, "Bad s_blocklights size");
+		Com_Error (ERR_DROP, "Bad s_blocklights size: %d x %d > %d", smax, tmax, sizeof(s_blocklights)>>4);
+
+	/*---(comment added by Gildor): calculate lightmap texture: if surf->samples == 0 -- white, else
+	 * scale lightmap image by (gl_modulate*{refdef.lightstyles})
+	 */
 
 // set to full bright if no light data
 	if (!surf->samples)
@@ -480,8 +487,8 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 
 		for (i=0 ; i<size*3 ; i++)
 			s_blocklights[i] = 255;
-		for (maps = 0 ; maps < MAXLIGHTMAPS && surf->styles[maps] != 255 ;
-			 maps++)
+		for (maps = 0 ; maps < MAXLIGHTMAPS && surf->styles[maps] != 255 ;	//??
+			 maps++)	//?? unneeded loop (do nothing)
 		{
 			style = &r_newrefdef.lightstyles[surf->styles[maps]];
 		}
@@ -490,7 +497,7 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 
 	// count the # of maps
 	for ( nummaps = 0 ; nummaps < MAXLIGHTMAPS && surf->styles[nummaps] != 255 ;
-		 nummaps++)
+		 nummaps++)	//?? this loop is not needed ("if" below has identical brunches)
 		;
 
 	lightmap = surf->samples;
@@ -501,12 +508,12 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 		int maps;
 
 		for (maps = 0 ; maps < MAXLIGHTMAPS && surf->styles[maps] != 255 ;
-			 maps++)
+			 maps++)	//?? here: nummaps == 1, so -- "maps=0" loop only (no repeat)
 		{
 			bl = s_blocklights;
 
-			for (i=0 ; i<3 ; i++)
-				scale[i] = gl_modulate->value*r_newrefdef.lightstyles[surf->styles[maps]].rgb[i];
+			for (i=0 ; i<3 ; i++)	//?? i==3 unused ??
+				scale[i] = gl_modulate->value*r_newrefdef.lightstyles[surf->styles[maps]].rgb[i];	//?? only 1 style
 
 			if ( scale[0] == 1.0F &&
 				 scale[1] == 1.0F &&
@@ -531,7 +538,7 @@ void R_BuildLightMap (msurface_t *surf, byte *dest, int stride)
 			lightmap += size*3;		// skip to next lightmap
 		}
 	}
-	else
+	else	//!! ALMOST same as above (another "if" brunch), but: result is sum of lightstyle[i]*lightmap[i]
 	{
 		int maps;
 
@@ -581,12 +588,12 @@ store:
 	monolightmap = gl_monolightmap->string[0];
 
 	if ( monolightmap == '0' )
-	{
+	{	//------------- normal lighting ---------------------
 		for (i=0 ; i<tmax ; i++, dest += stride)
 		{
 			for (j=0 ; j<smax ; j++)
 			{
-				
+
 				r = Q_ftol( bl[0] );
 				g = Q_ftol( bl[1] );
 				b = Q_ftol( bl[2] );
@@ -600,7 +607,7 @@ store:
 					b = 0;
 
 				/*
-				** determine the brightest of the three color components
+				** determine the brightest of the three color components (Gildor: for monolightmap, unused here)
 				*/
 				if (r > g)
 					max = r;
@@ -611,7 +618,7 @@ store:
 
 				/*
 				** alpha is ONLY used for the mono lightmap case.  For this reason
-				** we set it to the brightest of the color components so that 
+				** we set it to the brightest of the color components so that
 				** things don't get too dim.
 				*/
 				a = max;
@@ -641,12 +648,12 @@ store:
 		}
 	}
 	else
-	{
+	{	//------------- monolightmap ------------------
 		for (i=0 ; i<tmax ; i++, dest += stride)
 		{
 			for (j=0 ; j<smax ; j++)
 			{
-				
+
 				r = Q_ftol( bl[0] );
 				g = Q_ftol( bl[1] );
 				b = Q_ftol( bl[2] );
@@ -671,7 +678,7 @@ store:
 
 				/*
 				** alpha is ONLY used for the mono lightmap case.  For this reason
-				** we set it to the brightest of the color components so that 
+				** we set it to the brightest of the color components so that
 				** things don't get too dim.
 				*/
 				a = max;
@@ -726,4 +733,3 @@ store:
 		}
 	}
 }
-

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	MAX_MASTERS	8				// max recipients for heartbeat packets
 
+/* -- migrated to qcommon.h
 typedef enum {
 	ss_dead,			// no map loaded
 	ss_loading,			// spawning level edicts
@@ -37,6 +38,7 @@ typedef enum {
 	ss_demo,
 	ss_pic
 } server_state_t;
+*/
 // some qc commands are only valid before the server has finished
 // initializing (precache commands, static sounds / objects, etc)
 
@@ -132,6 +134,16 @@ typedef struct client_s
 	int				challenge;			// challenge of this user, randomly generated
 
 	netchan_t		netchan;
+
+	//------ extended protocol fields --------
+	qboolean		newprotocol;			// true if client uses a new communication protocol
+	// stuff for anti-camper sounds
+	int				lastcluster;
+	int				nextsfxtime;
+	int				sfxstate;		// 0-none, 1-spectator (don't works now!!), 2-normal (may be, camper)
+	// falling sounds
+	int				last_velocity2;
+	qboolean		screaming;
 } client_t;
 
 // a client can leave the server in one of four ways:
@@ -160,13 +172,13 @@ typedef struct
 	qboolean	initialized;				// sv_init has completed
 	int			realtime;					// always increasing, no clamping, etc
 
-	char		mapcmd[MAX_TOKEN_CHARS];	// ie: *intro.cin+base 
+	char		mapcmd[MAX_TOKEN_CHARS];	// ie: *intro.cin+base
 
 	int			spawncount;					// incremented each server start
 											// used to check late spawns
 
-	client_t	*clients;					// [maxclients->value];
-	int			num_client_entities;		// maxclients->value*UPDATE_BACKUP*MAX_PACKET_ENTITIES
+	client_t	*clients;					// [maxclients->integer];
+	int			num_client_entities;		// maxclients->integer*UPDATE_BACKUP*MAX_PACKET_ENTITIES
 	int			next_client_entities;		// next client_entity to use
 	entity_state_t	*client_entities;		// [num_client_entities]
 
@@ -249,10 +261,14 @@ void SV_FlushRedirect (int sv_redirected, char *outputbuf);
 void SV_DemoCompleted (void);
 void SV_SendClientMessages (void);
 
-void SV_Multicast (vec3_t origin, multicast_t to);
-void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
-					int soundindex, float volume,
-					float attenuation, float timeofs);
+// send message to all clients
+void SV_MulticastOld (vec3_t origin, multicast_t to);
+// send message only to clients with a new protocol
+void SV_MulticastNew (vec3_t origin, multicast_t to);
+void SV_StartSoundOld (vec3_t origin, edict_t *entity, int channel,
+		int soundindex, float volume, float attenuation, float timeofs);
+void SV_StartSoundNew (vec3_t origin, edict_t *entity, int channel,
+		int soundindex, float volume, float attenuation, float timeofs);
 void SV_ClientPrintf (client_t *cl, int level, char *fmt, ...);
 void SV_BroadcastPrintf (int level, char *fmt, ...);
 void SV_BroadcastCommand (char *fmt, ...);
@@ -339,3 +355,15 @@ trace_t SV_Trace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *p
 
 // passedict is explicitly excluded from clipping checks (normally NULL)
 
+//------------- Constants for new protocol ---------------------
+
+// Camper sounds: value = [CAMPER_XXX, CAMPER_XXX+CAMPER_XXX_DELTA]
+#define CAMPER_TIMEOUT			30000
+#define CAMPER_TIMEOUT_DELTA	15000
+#define CAMPER_REPEAT			15000
+#define CAMPER_REPEAT_DELTA		15000
+
+#define FALLING_SCREAM_VELOCITY1		-4000
+#define FALLING_SCREAM_VELOCITY2		-6000
+#define FALLING_SCREAM_HEIGHT_SOLID		400
+#define FALLING_SCREAM_HEIGHT_WATER		600

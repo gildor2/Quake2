@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -24,8 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define REF_OPENGL	1
 
 extern cvar_t *vid_ref;
-extern cvar_t *vid_fullscreen;
-extern cvar_t *vid_gamma;
+extern cvar_t *r_fullscreen;
+extern cvar_t *r_gamma;
 extern cvar_t *scr_viewsize;
 
 static cvar_t *gl_mode;
@@ -50,22 +50,22 @@ MENU INTERACTION
 #define SOFTWARE_MENU 0
 #define OPENGL_MENU   1
 
-static menuframework_s  s_software_menu;
-static menuframework_s	s_opengl_menu;
-static menuframework_s *s_current_menu;
+static menuFramework_t  s_software_menu;
+static menuFramework_t	s_opengl_menu;
+static menuFramework_t *s_current_menu;
 static int				s_current_menu_index;
 
-static menulist_s		s_mode_list[2];
-static menulist_s		s_ref_list[2];
-static menuslider_s		s_tq_slider;
-static menuslider_s		s_screensize_slider[2];
-static menuslider_s		s_brightness_slider[2];
-static menulist_s  		s_fs_box[2];
-static menulist_s  		s_stipple_box;
-static menulist_s  		s_paletted_texture_box;
-static menulist_s  		s_windowed_mouse;
-static menuaction_s		s_apply_action[2];
-static menuaction_s		s_defaults_action[2];
+static menuList_t		s_mode_list[2];
+static menuList_t		s_ref_list[2];
+static menuSlider_t		s_tq_slider;
+static menuSlider_t		s_screensize_slider[2];
+static menuSlider_t		s_brightness_slider[2];
+static menuList_t  		s_fs_box[2];
+static menuList_t  		s_stipple_box;
+static menuList_t  		s_paletted_texture_box;
+static menuList_t  		s_windowed_mouse;
+static menuAction_t		s_apply_action[2];
+static menuAction_t		s_defaults_action[2];
 
 static void DriverCallback( void *unused )
 {
@@ -86,14 +86,14 @@ static void DriverCallback( void *unused )
 
 static void ScreenSizeCallback( void *s )
 {
-	menuslider_s *slider = ( menuslider_s * ) s;
+	menuSlider_t *slider = ( menuSlider_t * ) s;
 
-	Cvar_SetValue( "viewsize", slider->curvalue * 10 );
+	Cvar_SetInteger ("viewsize", slider->curvalue * 10);
 }
 
 static void BrightnessCallback( void *s )
 {
-	menuslider_s *slider = ( menuslider_s * ) s;
+	menuSlider_t *slider = ( menuSlider_t * ) s;
 
 	if ( s_current_menu_index == 0)
 		s_brightness_slider[1].curvalue = s_brightness_slider[0].curvalue;
@@ -102,15 +102,15 @@ static void BrightnessCallback( void *s )
 
 	if ( Q_stricmp( vid_ref->string, "soft" ) == 0 )
 	{
-		float gamma = ( 0.8 - ( slider->curvalue/10.0 - 0.5 ) ) + 0.5;
+		float gamma = (slider->curvalue-5)/10.0 + 0.5;
 
-		Cvar_SetValue( "vid_gamma", gamma );
+		Cvar_SetValue ("r_gamma", gamma);
 	}
 }
 
 static void ResetDefaults( void *unused )
 {
-	VID_MenuInit();
+	Vid_MenuInit();
 }
 
 static void ApplyChanges( void *unused )
@@ -125,18 +125,18 @@ static void ApplyChanges( void *unused )
 	s_ref_list[!s_current_menu_index].curvalue = s_ref_list[s_current_menu_index].curvalue;
 
 	/*
-	** invert sense so greater = brighter, and scale to a range of 0.5 to 1.3
+	** invert sense so greater = brighter, and scale to a range of 0.5 to 3
 	*/
-	gamma = ( 0.8 - ( s_brightness_slider[s_current_menu_index].curvalue/10.0 - 0.5 ) ) + 0.5;
+	gamma = (s_brightness_slider[s_current_menu_index].curvalue-5)/10.0 + 0.5;
 
-	Cvar_SetValue( "vid_gamma", gamma );
-	Cvar_SetValue( "sw_stipplealpha", s_stipple_box.curvalue );
-	Cvar_SetValue( "gl_picmip", 3 - s_tq_slider.curvalue );
-	Cvar_SetValue( "vid_fullscreen", s_fs_box[s_current_menu_index].curvalue );
-	Cvar_SetValue( "gl_ext_palettedtexture", s_paletted_texture_box.curvalue );
-	Cvar_SetValue( "sw_mode", s_mode_list[SOFTWARE_MENU].curvalue );
-	Cvar_SetValue( "gl_mode", s_mode_list[OPENGL_MENU].curvalue );
-	Cvar_SetValue( "_windowed_mouse", s_windowed_mouse.curvalue);
+	Cvar_SetValue ("r_gamma", gamma);
+	Cvar_SetInteger ("sw_stipplealpha", s_stipple_box.curvalue);
+	Cvar_SetInteger ("gl_picmip", 3 - s_tq_slider.curvalue);
+	Cvar_SetInteger ("r_fullscreen", s_fs_box[s_current_menu_index].curvalue);
+	Cvar_SetInteger ("gl_ext_palettedtexture", s_paletted_texture_box.curvalue);
+	Cvar_SetInteger ("sw_mode", s_mode_list[SOFTWARE_MENU].curvalue);
+	Cvar_SetInteger ("gl_mode", s_mode_list[OPENGL_MENU].curvalue);
+	Cvar_SetInteger ("_windowed_mouse", s_windowed_mouse.curvalue);
 
 	switch ( s_ref_list[s_current_menu_index].curvalue )
 	{
@@ -156,7 +156,7 @@ static void ApplyChanges( void *unused )
 	*/
 	if ( Q_stricmp( vid_ref->string, "gl" ) == 0 )
 	{
-		if ( vid_gamma->modified )
+		if ( r_gamma->modified )
 		{
 			vid_ref->modified = true;
 			if ( Q_stricmp( gl_driver->string, "3dfxgl" ) == 0 )
@@ -166,11 +166,11 @@ static void ApplyChanges( void *unused )
 
 				vid_ref->modified = true;
 
-				g = 2.00 * ( 0.8 - ( vid_gamma->value - 0.5 ) ) + 1.0F;
+				g = 2.00 * ( 0.8 - ( 1.0 / r_gamma->value - 0.5 ) ) + 1.0F;
 				Com_sprintf( envbuffer, sizeof(envbuffer), "SST_GAMMA=%f", g );
 				putenv( envbuffer );
 
-				vid_gamma->modified = false;
+				r_gamma->modified = false;
 			}
 		}
 	}
@@ -180,11 +180,11 @@ static void ApplyChanges( void *unused )
 }
 
 /*
-** VID_MenuInit
+** Vid_MenuInit
 */
-void VID_MenuInit( void )
+void Vid_MenuInit( void )
 {
-	static const char *resolutions[] = 
+	static const char *resolutions[] =
 	{
 		"[320 240  ]",
 		"[400 300  ]",
@@ -230,8 +230,8 @@ void VID_MenuInit( void )
 	if ( !_windowed_mouse)
         _windowed_mouse = Cvar_Get( "_windowed_mouse", "0", CVAR_ARCHIVE );
 
-	s_mode_list[SOFTWARE_MENU].curvalue = sw_mode->value;
-	s_mode_list[OPENGL_MENU].curvalue = gl_mode->value;
+	s_mode_list[SOFTWARE_MENU].curvalue = sw_mode->integer;
+	s_mode_list[OPENGL_MENU].curvalue = gl_mode->integer;
 
 	if ( !scr_viewsize )
 		scr_viewsize = Cvar_Get ("viewsize", "100", CVAR_ARCHIVE);
@@ -239,7 +239,7 @@ void VID_MenuInit( void )
 	s_screensize_slider[SOFTWARE_MENU].curvalue = scr_viewsize->value/10;
 	s_screensize_slider[OPENGL_MENU].curvalue = scr_viewsize->value/10;
 
-	if (strcmp( vid_ref->string, "soft" ) == 0 ) 
+	if (strcmp( vid_ref->string, "soft" ) == 0 )
 	{
 		s_current_menu_index = SOFTWARE_MENU;
 		s_ref_list[0].curvalue = s_ref_list[1].curvalue = REF_SOFT;
@@ -294,15 +294,16 @@ void VID_MenuInit( void )
 		s_brightness_slider[i].generic.name	= "brightness";
 		s_brightness_slider[i].generic.callback = BrightnessCallback;
 		s_brightness_slider[i].minvalue = 5;
-		s_brightness_slider[i].maxvalue = 13;
-		s_brightness_slider[i].curvalue = ( 1.3 - vid_gamma->value + 0.5 ) * 10;
+		s_brightness_slider[i].maxvalue = 30;
+		Cvar_Clamp (r_gamma, 0.5, 3);
+		s_brightness_slider[i].curvalue = (r_gamma->value - 0.5) * 10;
 
 		s_fs_box[i].generic.type = MTYPE_SPINCONTROL;
 		s_fs_box[i].generic.x	= 0;
 		s_fs_box[i].generic.y	= 40;
 		s_fs_box[i].generic.name	= "fullscreen";
 		s_fs_box[i].itemnames = yesno_names;
-		s_fs_box[i].curvalue = vid_fullscreen->value;
+		s_fs_box[i].curvalue = r_fullscreen->integer;
 
 		s_defaults_action[i].generic.type = MTYPE_ACTION;
 		s_defaults_action[i].generic.name = "reset to default";
@@ -321,14 +322,14 @@ void VID_MenuInit( void )
 	s_stipple_box.generic.x	= 0;
 	s_stipple_box.generic.y	= 60;
 	s_stipple_box.generic.name	= "stipple alpha";
-	s_stipple_box.curvalue = sw_stipplealpha->value;
+	s_stipple_box.curvalue = sw_stipplealpha->integer;
 	s_stipple_box.itemnames = yesno_names;
 
 	s_windowed_mouse.generic.type = MTYPE_SPINCONTROL;
 	s_windowed_mouse.generic.x  = 0;
 	s_windowed_mouse.generic.y  = 72;
 	s_windowed_mouse.generic.name   = "windowed mouse";
-	s_windowed_mouse.curvalue = _windowed_mouse->value;
+	s_windowed_mouse.curvalue = _windowed_mouse->integer;
 	s_windowed_mouse.itemnames = yesno_names;
 
 	s_tq_slider.generic.type	= MTYPE_SLIDER;
@@ -337,14 +338,14 @@ void VID_MenuInit( void )
 	s_tq_slider.generic.name	= "texture quality";
 	s_tq_slider.minvalue = 0;
 	s_tq_slider.maxvalue = 3;
-	s_tq_slider.curvalue = 3-gl_picmip->value;
+	s_tq_slider.curvalue = 3-gl_picmip->integer;
 
 	s_paletted_texture_box.generic.type = MTYPE_SPINCONTROL;
 	s_paletted_texture_box.generic.x	= 0;
 	s_paletted_texture_box.generic.y	= 70;
 	s_paletted_texture_box.generic.name	= "8-bit textures";
 	s_paletted_texture_box.itemnames = yesno_names;
-	s_paletted_texture_box.curvalue = gl_ext_palettedtexture->value;
+	s_paletted_texture_box.curvalue = gl_ext_palettedtexture->integer;
 
 	Menu_AddItem( &s_software_menu, ( void * ) &s_ref_list[SOFTWARE_MENU] );
 	Menu_AddItem( &s_software_menu, ( void * ) &s_mode_list[SOFTWARE_MENU] );
@@ -375,10 +376,10 @@ void VID_MenuInit( void )
 
 /*
 ================
-VID_MenuDraw
+Vid_MenuDraw
 ================
 */
-void VID_MenuDraw (void)
+void Vid_MenuDraw (void)
 {
 	int w, h;
 
@@ -391,7 +392,7 @@ void VID_MenuDraw (void)
 	** draw the banner
 	*/
 	re.DrawGetPicSize( &w, &h, "m_banner_video" );
-	re.DrawPic( viddef.width / 2 - w / 2, viddef.height /2 - 110, "m_banner_video" );
+	re_DrawPic( viddef.width / 2 - w / 2, viddef.height /2 - 110, "m_banner_video" );
 
 	/*
 	** move cursor to a reasonable starting position
@@ -406,26 +407,29 @@ void VID_MenuDraw (void)
 
 /*
 ================
-VID_MenuKey
+Vid_MenuKey
 ================
 */
-const char *VID_MenuKey( int key )
+const char *Vid_MenuKey( int key )
 {
 	extern void M_PopMenu( void );
 
-	menuframework_s *m = s_current_menu;
+	menuFramework_t *m = s_current_menu;
 	static const char *sound = "misc/menu1.wav";
 
 	switch ( key )
 	{
 	case K_ESCAPE:
+	case K_MOUSE2:
 		M_PopMenu();
 		return NULL;
 	case K_UPARROW:
+	case K_MWHEELUP:
 		m->cursor--;
 		Menu_AdjustCursor( m, -1 );
 		break;
 	case K_DOWNARROW:
+	case K_MWHEELDOWN:
 		m->cursor++;
 		Menu_AdjustCursor( m, 1 );
 		break;
@@ -436,11 +440,19 @@ const char *VID_MenuKey( int key )
 		Menu_SlideItem( m, 1 );
 		break;
 	case K_ENTER:
+	case K_MOUSE1:
 		Menu_SelectItem( m );
 		break;
+	case K_HOME:
+		m->cursor = 0;
+		Menu_AdjustCursor( m, 1 );
+		break;
+	case K_END:
+		m->cursor = m->nitems - 1;
+		Menu_AdjustCursor( m, -1 );
+		break;
+
 	}
 
 	return sound;
 }
-
-

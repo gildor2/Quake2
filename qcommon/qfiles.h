@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -31,22 +31,22 @@ The .pak files are just a linear collapse of a directory tree
 ========================================================================
 */
 
-#define IDPAKHEADER		(('K'<<24)+('C'<<16)+('A'<<8)+'P')
+#define IDPAKHEADER		('P'+('A'<<8)+('C'<<16)+('K'<<24))
 
 typedef struct
 {
 	char	name[56];
 	int		filepos, filelen;
-} dpackfile_t;
+} dPackFile_t;
 
 typedef struct
 {
 	int		ident;		// == IDPAKHEADER
 	int		dirofs;
 	int		dirlen;
-} dpackheader_t;
+} dPackHeader_t;
 
-#define	MAX_FILES_IN_PACK	4096
+//#define	MAX_FILES_IN_PACK	4096	// unlimited now
 
 
 /*
@@ -83,7 +83,7 @@ typedef struct
 ========================================================================
 */
 
-#define IDALIASHEADER		(('2'<<24)+('P'<<16)+('D'<<8)+'I')
+#define IDALIASHEADER		('I'+('D'<<8)+('P'<<16)+('2'<<24))
 #define ALIAS_VERSION	8
 
 #define	MAX_TRIANGLES	4096
@@ -96,19 +96,19 @@ typedef struct
 {
 	short	s;
 	short	t;
-} dstvert_t;
+} dStVert_t;
 
-typedef struct 
+typedef struct
 {
-	short	index_xyz[3];
-	short	index_st[3];
-} dtriangle_t;
+	short	indexXyz[3];
+	short	indexSt[3];
+} dTriangle_t;
 
 typedef struct
 {
 	byte	v[3];			// scaled byte to fit in frame mins/maxs
 	byte	lightnormalindex;
-} dtrivertx_t;
+} dTriVertx_t;
 
 #define DTRIVERTX_V0   0
 #define DTRIVERTX_V1   1
@@ -118,45 +118,44 @@ typedef struct
 
 typedef struct
 {
-	float		scale[3];	// multiply byte verts by this
-	float		translate[3];	// then add this
-	char		name[16];	// frame name from grabbing
-	dtrivertx_t	verts[1];	// variable sized
-} daliasframe_t;
+	float	scale[3];		// multiply byte verts by this
+	float	translate[3];	// then add this
+	char	name[16];		// frame name from grabbing
+	dTriVertx_t verts[1];	// variable sized
+} dAliasFrame_t;
 
 
-// the glcmd format:
-// a positive integer starts a tristrip command, followed by that many
-// vertex structures.
-// a negative integer starts a trifan command, followed by -x vertexes
-// a zero indicates the end of the command list.
-// a vertex consists of a floating point s, a floating point t,
-// and an integer vertex index.
-
+/* The glcmd format:
+ *   - a positive integer starts a tristrip command, followed by that many
+ *     vertex structures.
+ *   - a negative integer starts a trifan command, followed by -x vertexes
+ *   - a zero indicates the end of the command list.
+ * A vertex consists of a floating point s, a floating point t,
+ *   and an integer vertex index.
+ */
 
 typedef struct
 {
-	int			ident;
-	int			version;
+	int		ident;
+	int		version;
 
-	int			skinwidth;
-	int			skinheight;
-	int			framesize;		// byte size of each frame
+	int		skinWidth;
+	int		skinHeight;
+	int		frameSize;		// byte size of each frame
 
-	int			num_skins;
-	int			num_xyz;
-	int			num_st;			// greater than num_xyz for seams
-	int			num_tris;
-	int			num_glcmds;		// dwords in strip/fan command list
-	int			num_frames;
+	int		numSkins;
+	int		numXyz;
+	int		numSt;			// greater than num_xyz for seams
+	int		numTris;
+	int		numGlcmds;		// dwords in strip/fan command list
+	int		numFrames;
 
-	int			ofs_skins;		// each skin is a MAX_SKINNAME string
-	int			ofs_st;			// byte offset from start for stverts
-	int			ofs_tris;		// offset for dtriangles
-	int			ofs_frames;		// offset for first frame
-	int			ofs_glcmds;	
-	int			ofs_end;		// end of file
-
+	int		ofsSkins;		// each skin is a MAX_SKINNAME string
+	int		ofsSt;			// byte offset from start for stverts
+	int		ofsTris;		// offset for dtriangles
+	int		ofsFrames;		// offset for first frame
+	int		ofsGlcmds;
+	int		ofsEnd;			// end of file
 } dmdl_t;
 
 /*
@@ -167,8 +166,7 @@ typedef struct
 ========================================================================
 */
 
-#define IDSPRITEHEADER	(('2'<<24)+('S'<<16)+('D'<<8)+'I')
-		// little-endian "IDS2"
+#define IDSPRITEHEADER	('I'+('D'<<8)+('S'<<16)+('2'<<24))
 #define SPRITE_VERSION	2
 
 typedef struct
@@ -179,10 +177,10 @@ typedef struct
 } dsprframe_t;
 
 typedef struct {
-	int			ident;
-	int			version;
-	int			numframes;
-	dsprframe_t	frames[1];			// variable sized
+	int		ident;
+	int		version;
+	int		numframes;
+	dsprframe_t frames[1];			// variable sized
 } dsprite_t;
 
 /*
@@ -197,13 +195,13 @@ typedef struct {
 #define	MIPLEVELS	4
 typedef struct miptex_s
 {
-	char		name[32];
-	unsigned	width, height;
-	unsigned	offsets[MIPLEVELS];		// four mip maps stored
-	char		animname[32];			// next frame in animation chain
-	int			flags;
-	int			contents;
-	int			value;
+	char	name[32];
+	unsigned width, height;
+	unsigned offsets[MIPLEVELS];	// four mip maps stored
+	char	animname[32];			// next frame in animation chain
+	int		flags;
+	int		contents;
+	int		value;
 } miptex_t;
 
 
@@ -216,9 +214,7 @@ typedef struct miptex_s
 ==============================================================================
 */
 
-#define IDBSPHEADER	(('P'<<24)+('S'<<16)+('B'<<8)+'I')
-		// little-endian "IBSP"
-
+#define IDBSPHEADER	('I'+('B'<<8)+('S'<<16)+('P'<<24))
 #define BSPVERSION	38
 
 
@@ -259,41 +255,46 @@ typedef struct
 	int		fileofs, filelen;
 } lump_t;
 
-#define	LUMP_ENTITIES		0
-#define	LUMP_PLANES			1
-#define	LUMP_VERTEXES		2
-#define	LUMP_VISIBILITY		3
-#define	LUMP_NODES			4
-#define	LUMP_TEXINFO		5
-#define	LUMP_FACES			6
-#define	LUMP_LIGHTING		7
-#define	LUMP_LEAFS			8
-#define	LUMP_LEAFFACES		9
-#define	LUMP_LEAFBRUSHES	10
-#define	LUMP_EDGES			11
-#define	LUMP_SURFEDGES		12
-#define	LUMP_MODELS			13
-#define	LUMP_BRUSHES		14
-#define	LUMP_BRUSHSIDES		15
-#define	LUMP_POP			16
-#define	LUMP_AREAS			17
-#define	LUMP_AREAPORTALS	18
-#define	HEADER_LUMPS		19
+typedef enum
+{
+	LUMP_ENTITIES,
+	LUMP_PLANES,
+	LUMP_VERTEXES,
+	LUMP_VISIBILITY,
+	LUMP_NODES,
+	LUMP_TEXINFO,
+	LUMP_FACES,
+	LUMP_LIGHTING,
+	LUMP_LEAFS,
+	LUMP_LEAFFACES,
+	LUMP_LEAFBRUSHES,
+	LUMP_EDGES,
+	LUMP_SURFEDGES,
+	LUMP_MODELS,
+	LUMP_BRUSHES,
+	LUMP_BRUSHSIDES,
+	LUMP_POP,
+	LUMP_AREAS,
+	LUMP_AREAPORTALS,
+
+	LUMP_COUNT				// must be last
+} q2bsplumps_t;
+
 
 typedef struct
 {
-	int			ident;
-	int			version;	
-	lump_t		lumps[HEADER_LUMPS];
+	int		ident;
+	int		version;
+	lump_t	lumps[LUMP_COUNT];
 } dheader_t;
 
 typedef struct
 {
-	float		mins[3], maxs[3];
-	float		origin[3];		// for sounds or lights
-	int			headnode;
-	int			firstface, numfaces;	// submodels just draw faces
-										// without walking the bsp tree
+	float	mins[3], maxs[3];
+	float	origin[3];				// for sounds or lights
+	int		headnode;
+	int		firstface, numfaces;	// submodels just draw faces
+									// without walking the bsp tree
 } dmodel_t;
 
 
@@ -303,23 +304,13 @@ typedef struct
 } dvertex_t;
 
 
-// 0-2 are axial planes
-#define	PLANE_X			0
-#define	PLANE_Y			1
-#define	PLANE_Z			2
-
-// 3-5 are non-axial planes snapped to the nearest
-#define	PLANE_ANYX		3
-#define	PLANE_ANYY		4
-#define	PLANE_ANYZ		5
-
 // planes (x&~1) and (x&~1)+1 are always opposites
 
 typedef struct
 {
 	float	normal[3];
 	float	dist;
-	int		type;		// PLANE_X - PLANE_ANYZ ?remove? trivial to regenerate
+	int		type;					// PLANE_X - PLANE_ANYZ ?remove? trivial to regenerate
 } dplane_t;
 
 
@@ -376,26 +367,24 @@ typedef struct
 #define	SURF_NODRAW		0x80	// don't bother referencing the texture
 
 
-
-
 typedef struct
 {
-	int			planenum;
-	int			children[2];	// negative numbers are -(leafs+1), not nodes
-	short		mins[3];		// for frustom culling
-	short		maxs[3];
-	unsigned short	firstface;
-	unsigned short	numfaces;	// counting both sides
+	int		planenum;
+	int		children[2];		// negative numbers are -(leafs+1), not nodes
+	short	mins[3];			// for frustom culling
+	short	maxs[3];
+	unsigned short firstface;
+	unsigned short numfaces;	// counting both sides
 } dnode_t;
 
 
 typedef struct texinfo_s
 {
-	float		vecs[2][4];		// [s/t][xyz offset]
-	int			flags;			// miptex flags + overrides
-	int			value;			// light emission, etc
-	char		texture[32];	// texture name (textures/*.wal)
-	int			nexttexinfo;	// for animations, -1 = end of chain
+	float	vecs[2][4];			// [s/t][xyz offset]
+	int		flags;				// miptex flags + overrides
+	int		value;				// light emission, etc
+	char	texture[32];		// texture name (textures/*.wal)
+	int		nexttexinfo;		// for animations, -1 = end of chain
 } texinfo_t;
 
 
@@ -409,46 +398,46 @@ typedef struct
 #define	MAXLIGHTMAPS	4
 typedef struct
 {
-	unsigned short	planenum;
-	short		side;
+	unsigned short planenum;
+	short	side;
 
-	int			firstedge;		// we must support > 64k edges
-	short		numedges;	
-	short		texinfo;
+	int		firstedge;			// we must support > 64k edges
+	short	numedges;
+	short	texinfo;
 
-// lighting info
-	byte		styles[MAXLIGHTMAPS];
-	int			lightofs;		// start of [numstyles*surfsize] samples
+	// lighting info
+	byte	styles[MAXLIGHTMAPS];
+	int		lightofs;			// start of [numstyles*surfsize] samples
 } dface_t;
 
 typedef struct
 {
-	int				contents;			// OR of all brushes (not needed?)
+	int		contents;			// OR of all brushes (not needed?)
 
-	short			cluster;
-	short			area;
+	short	cluster;
+	short	area;
 
-	short			mins[3];			// for frustum culling
-	short			maxs[3];
+	short	mins[3];			// for frustum culling
+	short	maxs[3];
 
-	unsigned short	firstleafface;
-	unsigned short	numleaffaces;
+	unsigned short firstleafface;
+	unsigned short numleaffaces;
 
-	unsigned short	firstleafbrush;
-	unsigned short	numleafbrushes;
+	unsigned short firstleafbrush;
+	unsigned short numleafbrushes;
 } dleaf_t;
 
 typedef struct
 {
-	unsigned short	planenum;		// facing out of the leaf
+	unsigned short planenum;	// facing out of the leaf
 	short	texinfo;
 } dbrushside_t;
 
 typedef struct
 {
-	int			firstside;
-	int			numsides;
-	int			contents;
+	int		firstside;
+	int		numsides;
+	int		contents;
 } dbrush_t;
 
 #define	ANGLE_UP	-1
@@ -462,8 +451,8 @@ typedef struct
 #define	DVIS_PHS	1
 typedef struct
 {
-	int			numclusters;
-	int			bitofs[8][2];	// bitofs[numclusters][2]
+	int		numclusters;
+	int		bitofs[8][2];	// bitofs[numclusters][2]
 } dvis_t;
 
 // each area has a list of portals that lead into other areas
@@ -480,3 +469,152 @@ typedef struct
 	int		numareaportals;
 	int		firstareaportal;
 } darea_t;
+
+
+/*============================================================================
+
+	FOREIGN MAP SUPPORT STRUCTURES/FLAGS
+
+============================================================================*/
+
+//................ Kingpin stuff .......................
+// materials
+
+//#define SURF_ALPHA	0x00001000	-- migrated to q_shared2.h
+#define SURF_WATER		0x00080000
+#define SURF_CONCRETE	0x00100000
+#define SURF_FABRIC		0x00200000
+#define SURF_GRAVEL		0x00400000
+#define SURF_METAL		0x00800000
+#define SURF_METAL_L	0x01000000
+#define SURF_SNOW		0x02000000
+#define SURF_TILE		0x04000000
+#define SURF_WOOD		0x08000000
+
+#define SURF_KP_MATERIAL	0x0FF80000
+
+//............... Half-Life stuff ......................
+#define HL_BSPVERSION	30
+
+/* Marks:
+ * "*" - same as Quake2
+ * "?" - almost as in Quake2 (check if bugs)
+ * "!" - different
+ */
+typedef enum
+{
+	HL_LUMP_ENTITIES,
+	HL_LUMP_PLANES,		//*  dplane_t
+	HL_LUMP_TEXTURES,
+	HL_LUMP_VERTEXES,	//*  dvertex_t
+	HL_LUMP_VISIBILITY,	//??
+	HL_LUMP_NODES,		//?  dnode_t / hl_dnode_t (int/short children[2])
+	HL_LUMP_TEXINFO,
+	HL_LUMP_FACES,		//?  dface_t
+	HL_LUMP_LIGHTING,	//*  byte[3]
+	HL_LUMP_CLIPNODES,
+	HL_LUMP_LEAFS,		//!!  dleaf_t / hl_dleaf_t
+	HL_LUMP_MARKSURFACES,	//*  short
+	HL_LUMP_EDGES,		//*  dedge_t
+	HL_LUMP_SURFEDGES,	//*  int
+	HL_LUMP_MODELS,		//?  dmodel_t / hl_dmodel_t (HL has unused "visleafs" and headnode[1..3])
+
+	HL_LUMP_COUNT		// must be last
+} hlbsplumps_t;
+
+
+typedef struct
+{
+	int		version;
+	lump_t	lumps[HL_LUMP_COUNT];
+} hl_dheader_t;
+
+#define	HL_MAX_MAP_HULLS	4
+
+typedef struct
+{
+	float	mins[3], maxs[3];
+	float	origin[3];
+	int		headnode[HL_MAX_MAP_HULLS]; // used mostly headnode[0]; other - for entity clipping
+	int		visleafs;				// not including the solid leaf 0 (UNUSED field!)
+	int		firstface, numfaces;
+} hl_dmodel_t;
+
+
+#define	HL_NUM_AMBIENTS				4	// automatic ambient sounds
+
+#define	HL_CONTENTS_EMPTY			-1
+#define	HL_CONTENTS_SOLID			-2
+#define	HL_CONTENTS_WATER			-3
+#define	HL_CONTENTS_SLIME			-4
+#define	HL_CONTENTS_LAVA			-5
+#define	HL_CONTENTS_SKY				-6
+#define	HL_CONTENTS_ORIGIN			-7	// removed at csg time
+#define	HL_CONTENTS_CLIP			-8	// changed to contents_solid
+
+#define	HL_CONTENTS_CURRENT_0		-9
+#define	HL_CONTENTS_CURRENT_90		-10
+#define	HL_CONTENTS_CURRENT_180		-11
+#define	HL_CONTENTS_CURRENT_270		-12
+#define	HL_CONTENTS_CURRENT_UP		-13
+#define	HL_CONTENTS_CURRENT_DOWN	-14
+
+#define HL_CONTENTS_TRANSLUCENT		-15
+
+
+typedef struct
+{
+	int		nummiptex;
+	int		dataofs[4];			// dataofs[nummiptex]
+} hl_dmiptexlump_t;
+
+
+typedef struct
+{
+	char	name[16];
+	unsigned width, height;
+	unsigned offsets[MIPLEVELS]; // four mip maps stored (==0 if external WAD file)
+} hl_miptex_t;
+
+
+typedef struct
+{
+	float	vecs[2][4];		// [s/t][xyz offset]
+	int		miptex;
+	int		flags;
+} hl_texinfo_t;
+
+
+// leaf 0 is the generic CONTENTS_SOLID leaf, used for all solid areas
+// all other leafs need visibility info
+typedef struct
+{
+	int		contents;		//!! MUST be converted
+	int		visofs;			// -1 = no visibility info
+
+	short	mins[3];		// for frustum culling
+	short	maxs[3];
+
+	unsigned short firstmarksurface;
+	unsigned short nummarksurfaces;
+
+	byte	ambient_level[HL_NUM_AMBIENTS];	//?? unused now
+} hl_dleaf_t;
+
+
+typedef struct
+{
+	int		planenum;
+	short	children[2];	// negative numbers are -(leafs+1), not nodes
+	short	mins[3];		// for sphere culling
+	short	maxs[3];
+	unsigned short firstface;
+	unsigned short numfaces; // counting both sides
+} hl_dnode_t;
+
+
+typedef struct
+{
+	int		planenum;
+	short	children[2];	// negative numbers are contents
+} hl_dclipnode_t;

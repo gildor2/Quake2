@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -50,13 +50,14 @@ void R_DrawSprite (void)
 	if (currententity->frame >= s_psprite->numframes
 		|| currententity->frame < 0)
 	{
-		ri.Con_Printf (PRINT_ALL, "No such sprite frame %i\n", 
+		Com_Printf ("No such sprite frame %i\n",
 			currententity->frame);
 		currententity->frame = 0;
 	}
 #endif
 	currententity->frame %= s_psprite->numframes;
 
+	if (!currentmodel->skins[currententity->frame]) return; // no skin (bad model?)
 	s_psprframe = &s_psprite->frames[currententity->frame];
 
 	r_polydesc.pixels       = currentmodel->skins[currententity->frame]->pixels[0];
@@ -70,9 +71,9 @@ void R_DrawSprite (void)
 	VectorCopy (vpn, r_polydesc.vpn);
 
 // build the sprite poster in worldspace
-	VectorScale (r_polydesc.vright, 
+	VectorScale (r_polydesc.vright,
 		s_psprframe->width - s_psprframe->origin_x, right);
-	VectorScale (r_polydesc.vup, 
+	VectorScale (r_polydesc.vup,
 		s_psprframe->height - s_psprframe->origin_y, up);
 	VectorScale (r_polydesc.vright,
 		-s_psprframe->origin_x, left);
@@ -120,4 +121,3 @@ void R_DrawSprite (void)
 		R_ClipAndDrawPoly ( 1.0F, false, true );
 	r_polydesc.stipple_parity = 0;
 }
-

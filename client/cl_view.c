@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -31,12 +31,17 @@ struct model_s	*gun_model;
 //=============
 
 cvar_t		*crosshair;
+cvar_t		*crosshaircolor;
 cvar_t		*cl_testparticles;
 cvar_t		*cl_testentities;
 cvar_t		*cl_testlights;
 cvar_t		*cl_testblend;
 
 cvar_t		*cl_stats;
+
+cvar_t		*r_playerpos;
+cvar_t		*r_drawfps;
+cvar_t		*r_surfinfo;
 
 
 int			r_numdlights;
@@ -88,7 +93,7 @@ V_AddParticle
 
 =====================
 */
-void V_AddParticle (vec3_t org, int color, float alpha)
+void V_AddParticle (vec3_t org, vec3_t prev, int color, float alpha)
 {
 	particle_t	*p;
 
@@ -96,6 +101,7 @@ void V_AddParticle (vec3_t org, int color, float alpha)
 		return;
 	p = &r_particles[r_numparticles++];
 	VectorCopy (org, p->origin);
+	VectorCopy (prev, p->prev);
 	p->color = color;
 	p->alpha = alpha;
 }
@@ -155,14 +161,14 @@ void V_TestParticles (void)
 	float		d, r, u;
 
 	r_numparticles = MAX_PARTICLES;
-	for (i=0 ; i<r_numparticles ; i++)
+	for (i = 0; i < r_numparticles; i++)
 	{
-		d = i*0.25;
-		r = 4*((i&7)-3.5);
-		u = 4*(((i>>3)&7)-3.5);
+		d = i * 0.25;
+		r = 4 * ((i&7) - 3.5);
+		u = 4 * (((i>>3)&7) - 3.5);
 		p = &r_particles[i];
 
-		for (j=0 ; j<3 ; j++)
+		for (j = 0; j < 3; j++)
 			p->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j]*d +
 			cl.v_right[j]*r + cl.v_up[j]*u;
 
@@ -264,13 +270,13 @@ void CL_PrepRefresh (void)
 	mapname[strlen(mapname)-4] = 0;		// cut off ".bsp"
 
 	// register models, pics, and skins
-	Com_Printf ("Map: %s\r", mapname); 
+	Com_Printf ("Map: %s\r", mapname);
 	SCR_UpdateScreen ();
 	re.BeginRegistration (mapname);
 	Com_Printf ("                                     \r");
 
 	// precache status bar pics
-	Com_Printf ("pics\r"); 
+	Com_Printf ("pics\r");
 	SCR_UpdateScreen ();
 	SCR_TouchPics ();
 	Com_Printf ("                                     \r");
@@ -278,16 +284,16 @@ void CL_PrepRefresh (void)
 	CL_RegisterTEntModels ();
 
 	num_cl_weaponmodels = 1;
-	strcpy(cl_weaponmodels[0], "weapon.md2");
+	strcpy (cl_weaponmodels[0], "weapon.md2");
 
-	for (i=1 ; i<MAX_MODELS && cl.configstrings[CS_MODELS+i][0] ; i++)
+	for (i = 1; i < MAX_MODELS && cl.configstrings[CS_MODELS+i][0]; i++)
 	{
 		strcpy (name, cl.configstrings[CS_MODELS+i]);
-		name[37] = 0;	// never go beyond one line
+		name[37] = 0;				// never go beyond one line
 		if (name[0] != '*')
-			Com_Printf ("%s\r", name); 
+			Com_Printf ("%s\r", name);
 		SCR_UpdateScreen ();
-		Sys_SendKeyEvents ();	// pump message loop
+		Sys_SendKeyEvents ();		// pump message loop
 		if (name[0] == '#')
 		{
 			// special player weapon model
@@ -297,10 +303,17 @@ void CL_PrepRefresh (void)
 					sizeof(cl_weaponmodels[num_cl_weaponmodels]) - 1);
 				num_cl_weaponmodels++;
 			}
-		} 
+		}
 		else
 		{
-			cl.model_draw[i] = re.RegisterModel (cl.configstrings[CS_MODELS+i]);
+			char	*mdl, *ext;
+
+			mdl = cl.configstrings[CS_MODELS + i];
+			ext = strrchr (name, '.');
+			if (!ext || stricmp (ext, ".bsp"))
+				cl.model_draw[i] = re.RegisterModel (cl.configstrings[CS_MODELS+i]);
+			else
+				cl.model_draw[i] = NULL;	// do not reload BSP file
 			if (name[0] == '*')
 				cl.model_clip[i] = CM_InlineModel (cl.configstrings[CS_MODELS+i]);
 			else
@@ -310,20 +323,20 @@ void CL_PrepRefresh (void)
 			Com_Printf ("                                     \r");
 	}
 
-	Com_Printf ("images\r", i); 
+	Com_Printf ("images\r", i);
 	SCR_UpdateScreen ();
-	for (i=1 ; i<MAX_IMAGES && cl.configstrings[CS_IMAGES+i][0] ; i++)
+	for (i = 1; i < MAX_IMAGES && cl.configstrings[CS_IMAGES+i][0]; i++)
 	{
 		cl.image_precache[i] = re.RegisterPic (cl.configstrings[CS_IMAGES+i]);
 		Sys_SendKeyEvents ();	// pump message loop
 	}
-	
+
 	Com_Printf ("                                     \r");
-	for (i=0 ; i<MAX_CLIENTS ; i++)
+	for (i = 0; i < MAX_CLIENTS; i++)
 	{
 		if (!cl.configstrings[CS_PLAYERSKINS+i][0])
 			continue;
-		Com_Printf ("client %i\r", i); 
+		Com_Printf ("client %i\r", i);
 		SCR_UpdateScreen ();
 		Sys_SendKeyEvents ();	// pump message loop
 		CL_ParseClientinfo (i);
@@ -333,11 +346,10 @@ void CL_PrepRefresh (void)
 	CL_LoadClientinfo (&cl.baseclientinfo, "unnamed\\male/grunt");
 
 	// set sky textures and speed
-	Com_Printf ("sky\r", i); 
+	Com_Printf ("sky\r", i);
 	SCR_UpdateScreen ();
 	rotate = atof (cl.configstrings[CS_SKYROTATE]);
-	sscanf (cl.configstrings[CS_SKYAXIS], "%f %f %f", 
-		&axis[0], &axis[1], &axis[2]);
+	sscanf (cl.configstrings[CS_SKYAXIS], "%f %f %f", &axis[0], &axis[1], &axis[2]);
 	re.SetSky (cl.configstrings[CS_SKY], rotate, axis);
 	Com_Printf ("                                     \r");
 
@@ -417,7 +429,7 @@ SCR_DrawCrosshair
 */
 void SCR_DrawCrosshair (void)
 {
-	if (!crosshair->value)
+	if (!crosshair->integer)
 		return;
 
 	if (crosshair->modified)
@@ -429,9 +441,196 @@ void SCR_DrawCrosshair (void)
 	if (!crosshair_pic[0])
 		return;
 
-	re.DrawPic (scr_vrect.x + ((scr_vrect.width - crosshair_width)>>1)
-	, scr_vrect.y + ((scr_vrect.height - crosshair_height)>>1), crosshair_pic);
+	re_DrawPicColor (scr_vrect.x + ((scr_vrect.width - crosshair_width)>>1),
+	  scr_vrect.y + ((scr_vrect.height - crosshair_height)>>1), crosshair_pic, crosshaircolor->integer);
 }
+
+
+typedef struct
+{
+	int		code;
+	char	*name;
+} flagInfo_t;
+
+static void DrawFlag (int flag, flagInfo_t *info, int numFlags)
+{
+	int		i;
+
+	for (i = 0; i < numFlags; i++, info++)
+		if (flag & info->code)
+			re.DrawTextLeft (info->name, 0.3, 0.6, 0.4);
+}
+
+
+static void DecodeContents (int i)
+{
+	static flagInfo_t contentsNames[] = {
+#define T(name)		{name, #name}
+		T(CONTENTS_SOLID),			T(CONTENTS_WINDOW),		T(CONTENTS_AUX),
+		T(CONTENTS_LAVA),			T(CONTENTS_SLIME),		T(CONTENTS_WATER),
+		T(CONTENTS_MIST),			T(CONTENTS_AREAPORTAL),	T(CONTENTS_PLAYERCLIP),
+		T(CONTENTS_MONSTERCLIP),	T(CONTENTS_CURRENT_0),	T(CONTENTS_CURRENT_90),
+		T(CONTENTS_CURRENT_180),	T(CONTENTS_CURRENT_270),T(CONTENTS_CURRENT_UP),
+		T(CONTENTS_CURRENT_DOWN),	T(CONTENTS_ORIGIN),		T(CONTENTS_MONSTER),
+		T(CONTENTS_DEADMONSTER),	T(CONTENTS_DETAIL),		T(CONTENTS_TRANSLUCENT),
+		T(CONTENTS_LADDER)
+#undef T
+	};
+
+	re.DrawTextLeft ("Contents:", 0.4, 0.4, 0.6);
+	re.DrawTextLeft ("---------", 0.4, 0.4, 0.6);
+	if (!i)
+		re.DrawTextLeft ("CONTENTS_EMPTY", 0.3, 0.6, 0.4);
+	else
+		DrawFlag (i, contentsNames, sizeof(contentsNames)/sizeof(flagInfo_t));
+}
+
+
+static void DrawSurfInfo (void)
+{
+	vec3_t	start, end;
+	trace_t	trace;
+	vec3_t	zero = {0, 0, 0};
+	csurface_t	*surf;
+	vec3_t	norm;
+	char	*s;
+
+	static flagInfo_t surfNames[] = {
+#define T(name)		{name, #name}
+		T(SURF_LIGHT),	T(SURF_SLICK),	T(SURF_SKY),
+		T(SURF_WARP),	T(SURF_TRANS33),T(SURF_TRANS66),
+		T(SURF_FLOWING),T(SURF_NODRAW),
+		// extra flags
+		T(SURF_ALPHA)
+#undef T
+	};
+
+	static char *materialNames[MATERIAL_COUNT] = {
+		"silent",
+		"concrete",
+		"fabric",
+		"gravel",
+		"metal",
+		"metal_l",
+		"snow",
+		"tin",
+		"tile",
+		"wood",
+		"water",
+		"glass",
+		"dirt"
+	};
+
+	VectorCopy (cl.refdef.vieworg, start);
+	AngleVectors (cl.refdef.viewangles, end, NULL, NULL);
+	VectorScale (end, 500, end);
+	VectorAdd (start, end, end);
+
+	trace = CM_BoxTrace (start, end, zero, zero, 0, MASK_ALL);
+	if (r_surfinfo->integer != 2)
+		CL_ClipMoveToEntities (start, zero, zero, end, &trace);
+
+	if (trace.fraction < 1.0)
+	{
+		re.DrawTextLeft ("Surface info:", 0.4, 0.4, 0.6);
+		re.DrawTextLeft ("-------------", 0.4, 0.4, 0.6);
+		re.DrawTextLeft (va("Point: %g  %g  %g",
+			trace.endpos[0], trace.endpos[1], trace.endpos[2]),
+			0.2, 0.4, 1);
+		if (surf = trace.surface)
+		{
+			re.DrawTextLeft (va("Surface name: %s", surf->rname), 0.2, 0.4, 1);
+			VectorCopy (trace.plane.normal, norm);
+			re.DrawTextLeft (va("Normal: %g  %g  %g", norm[0], norm[1], norm[2]), 0.2, 0.4, 1);
+			if (surf->value)
+				re.DrawTextLeft (va("Value: %i (0x%X)", surf->value, surf->value), 0.2, 0.4, 1);
+			DrawFlag (surf->flags, surfNames, sizeof(surfNames)/sizeof(flagInfo_t));
+			if (surf->flags & (0xFFFFFF00 & ~SURF_ALPHA /*?? need another way to mask */)) // unknown flags
+				re.DrawTextLeft (va("SURF_UNK_%X", surf->flags & (0xFFFFFF00 & ~SURF_ALPHA)), 0.6, 0.3, 0.4);
+			// material
+			if (surf->material >= MATERIAL_FIRST && surf->material <= MATERIAL_LAST)
+				s = materialNames[surf->material];
+			else
+				s = "?? bad ??";
+			re.DrawTextLeft (va("Material: %s", s), 0.3, 0.6, 0.4);
+		}
+		DecodeContents (trace.contents);
+		re.DrawTextLeft ("", 0, 0, 0);
+	}
+}
+
+
+static void DrawOriginInfo (void)
+{
+	vec3_t view;
+	vec3_t zero = {0, 0, 0};
+	int i;
+
+	re.DrawTextLeft ("Player position:", 0.4, 0.4, 0.6);
+	re.DrawTextLeft ("----------------", 0.4, 0.4, 0.6);
+	re.DrawTextLeft (va("Point: %.0f  %.0f  %.0f",
+		cl.refdef.vieworg[0], cl.refdef.vieworg[1], cl.refdef.vieworg[2]),
+		0.2, 0.4, 0.1);
+
+	AngleVectors (cl.refdef.viewangles, view, NULL, NULL);
+	re.DrawTextLeft (va("View direction: %g  %g  %g", view[0], view[1], view[2]), 0.2, 0.4, 0.1);
+
+	i = CM_PointLeafnum (cl.refdef.vieworg);
+	re.DrawTextLeft (va("Leaf number: %d, cluster: %i, area: %i",
+		i, CM_LeafCluster (i), CM_LeafArea (i)),
+		0.1, 0.2, 1);
+	DecodeContents (CM_PointContents (cl.refdef.vieworg, 0));
+	re.DrawTextLeft ("", 0, 0, 0);	// empty line
+}
+
+
+extern int fileFromPak;
+
+static void DrawFpsInfo (void)
+{
+	static int startSecTime, lastFrameTime, frames;
+	static float avgFps, minFps, maxFps;
+	int		delta, time;
+
+	time = Sys_Milliseconds ();
+
+	if (cls.key_dest != key_game || (time - lastFrameTime > 2000))
+	{	// reinitialize counters
+		startSecTime = lastFrameTime = time;
+		frames = 0;
+		maxFps = avgFps = 0;
+		minFps = 9999;
+		return;
+	}
+
+	// update min/max stats
+	if (!fileFromPak)		// ignore frame if packfile was read
+	{
+		float	tmpFps;
+
+		tmpFps = 1000.0f / (time - lastFrameTime);
+		if (tmpFps > maxFps) maxFps = tmpFps;
+		if (tmpFps < minFps) minFps = tmpFps;
+	}
+	else
+		fileFromPak = false;
+
+	lastFrameTime = time;
+
+	// update avg stats
+	delta = time - startSecTime;
+	frames++;
+	if (delta >= 500)					// update 2 times per second
+	{
+		avgFps = frames * 1000.0f / delta;
+		startSecTime = time;
+		frames = 0;
+	}
+
+	// draw info
+	re.DrawTextRight (va("FPS: %.2f  min: %.2f  max: %.2f", avgFps, minFps, maxFps), 0.8, 1, 0);
+}
+
 
 /*
 ==================
@@ -439,17 +638,27 @@ V_RenderView
 
 ==================
 */
+static int entitycmpfnc (const entity_t *a, const entity_t *b)
+{
+	if ( a->model == b->model )
+	{
+		return ( ( int ) a->skin - ( int ) b->skin );
+	}
+	else
+	{
+		return ( ( int ) a->model - ( int ) b->model );
+	}
+}
+
 void V_RenderView( float stereo_separation )
 {
-	extern int entitycmpfnc( const entity_t *, const entity_t * );
-
 	if (cls.state != ca_active)
 		return;
 
 	if (!cl.refresh_prepped)
 		return;			// still loading
 
-	if (cl_timedemo->value)
+	if (cl_timedemo->integer)
 	{
 		if (!cl.timedemo_start)
 			cl.timedemo_start = Sys_Milliseconds ();
@@ -458,7 +667,7 @@ void V_RenderView( float stereo_separation )
 
 	// an invalid frame will just use the exact previous refdef
 	// we can't use the old frame if the video mode has changed, though...
-	if ( cl.frame.valid && (cl.force_refdef || !cl_paused->value) )
+	if ( cl.frame.valid && (cl.force_refdef || !cl_paused->integer) )
 	{
 		cl.force_refdef = false;
 
@@ -469,13 +678,13 @@ void V_RenderView( float stereo_separation )
 		// v_forward, etc.
 		CL_AddEntities ();
 
-		if (cl_testparticles->value)
+		if (cl_testparticles->integer)
 			V_TestParticles ();
-		if (cl_testentities->value)
+		if (cl_testentities->integer)
 			V_TestEntities ();
-		if (cl_testlights->value)
+		if (cl_testlights->integer)
 			V_TestLights ();
-		if (cl_testblend->value)
+		if (cl_testblend->integer)
 		{
 			cl.refdef.blend[0] = 1;
 			cl.refdef.blend[1] = 0.5;
@@ -504,17 +713,17 @@ void V_RenderView( float stereo_separation )
 		cl.refdef.width = scr_vrect.width;
 		cl.refdef.height = scr_vrect.height;
 		cl.refdef.fov_y = CalcFov (cl.refdef.fov_x, cl.refdef.width, cl.refdef.height);
-		cl.refdef.time = cl.time*0.001;
+		cl.refdef.time = cl.time / 1000.0;
 
 		cl.refdef.areabits = cl.frame.areabits;
 
-		if (!cl_add_entities->value)
+		if (!cl_add_entities->integer)
 			r_numentities = 0;
-		if (!cl_add_particles->value)
+		if (!cl_add_particles->integer)
 			r_numparticles = 0;
-		if (!cl_add_lights->value)
+		if (!cl_add_lights->integer)
 			r_numdlights = 0;
-		if (!cl_add_blend->value)
+		if (!cl_add_blend->integer)
 		{
 			VectorClear (cl.refdef.blend);
 		}
@@ -529,15 +738,35 @@ void V_RenderView( float stereo_separation )
 
 		cl.refdef.rdflags = cl.frame.playerstate.rdflags;
 
+		// underwater fov warp (taken from Q3 game source)
+		if (cl.refdef.rdflags & RDF_UNDERWATER)
+		{
+			float	v;
+
+			v = sin (cl.refdef.time * 0.4 * M_PI * 2);
+			cl.refdef.fov_x += v;
+			cl.refdef.fov_y -= v;
+		}
+
 		// sort entities for better cache locality
-        qsort( cl.refdef.entities, cl.refdef.num_entities, sizeof( cl.refdef.entities[0] ), (int (*)(const void *, const void *))entitycmpfnc );
+		qsort( cl.refdef.entities, cl.refdef.num_entities, sizeof( cl.refdef.entities[0] ), (int (*)(const void *, const void *))entitycmpfnc );
 	}
 
 	re.RenderFrame (&cl.refdef);
-	if (cl_stats->value)
-		Com_Printf ("ent:%i  lt:%i  part:%i\n", r_numentities, r_numdlights, r_numparticles);
-	if ( log_stats->value && ( log_stats_file != 0 ) )
-		fprintf( log_stats_file, "%i,%i,%i,",r_numentities, r_numdlights, r_numparticles);
+
+	if (r_playerpos->integer)	DrawOriginInfo ();
+	if (r_surfinfo->integer)	DrawSurfInfo ();
+	if (r_drawfps->integer)		DrawFpsInfo ();
+
+	if (cl_stats->integer)
+	{
+		re.DrawTextLeft (va("ent:%i  lt:%i  part:%i",
+			r_numentities, r_numdlights, r_numparticles),
+			1, 1, 1);
+	}
+
+	if (log_stats->integer && (log_stats_file != 0))
+		fprintf (log_stats_file, "%i,%i,%i,", r_numentities, r_numdlights, r_numparticles);
 
 
 	SCR_AddDirtyPoint (scr_vrect.x, scr_vrect.y);
@@ -556,7 +785,7 @@ V_Viewpos_f
 void V_Viewpos_f (void)
 {
 	Com_Printf ("(%i %i %i) : %i\n", (int)cl.refdef.vieworg[0],
-		(int)cl.refdef.vieworg[1], (int)cl.refdef.vieworg[2], 
+		(int)cl.refdef.vieworg[1], (int)cl.refdef.vieworg[2],
 		(int)cl.refdef.viewangles[YAW]);
 }
 
@@ -567,18 +796,26 @@ V_Init
 */
 void V_Init (void)
 {
+CVAR_BEGIN(vars)
+	CVAR_VAR(crosshair, 0, CVAR_ARCHIVE),
+	CVAR_VAR(crosshaircolor, 7, CVAR_ARCHIVE),
+
+	CVAR_VAR(cl_testblend, 0, 0),
+	CVAR_VAR(cl_testparticles, 0, 0),
+	CVAR_VAR(cl_testentities, 0, 0),
+	CVAR_VAR(cl_testlights, 0, 0),
+
+	CVAR_VAR(cl_stats, 0, 0),
+
+	CVAR_VAR(r_playerpos, 0, 0),
+	CVAR_VAR(r_drawfps, 0, 0),
+	CVAR_VAR(r_surfinfo, 0, 0)
+CVAR_END
+
+	CVAR_GET_VARS(vars);
+
 	Cmd_AddCommand ("gun_next", V_Gun_Next_f);
 	Cmd_AddCommand ("gun_prev", V_Gun_Prev_f);
 	Cmd_AddCommand ("gun_model", V_Gun_Model_f);
-
 	Cmd_AddCommand ("viewpos", V_Viewpos_f);
-
-	crosshair = Cvar_Get ("crosshair", "0", CVAR_ARCHIVE);
-
-	cl_testblend = Cvar_Get ("cl_testblend", "0", 0);
-	cl_testparticles = Cvar_Get ("cl_testparticles", "0", 0);
-	cl_testentities = Cvar_Get ("cl_testentities", "0", 0);
-	cl_testlights = Cvar_Get ("cl_testlights", "0", 0);
-
-	cl_stats = Cvar_Get ("cl_stats", "0", 0);
 }

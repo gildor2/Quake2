@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "r_local.h"
 
 viddef_t	vid;
-refimport_t	ri;
+refImport_t	ri;
 
 unsigned	d_8to24table[256];
 
@@ -55,6 +55,8 @@ qboolean	r_dowarp;
 
 mvertex_t	*r_pcurrentvertbase;
 
+qboolean	con_only;	// sw_con_only
+
 int			c_surf;
 int			r_maxsurfsseen, r_maxedgesseen, r_cnumsurfs;
 qboolean	r_surfsonstack;
@@ -83,7 +85,7 @@ int		r_screenwidth;
 float	verticalFieldOfView;
 float	xOrigin, yOrigin;
 
-mplane_t	screenedge[4];
+cplane_t	screenedge[4];
 
 //
 // refresh flags
@@ -107,6 +109,8 @@ float	da_time1, da_time2, dp_time1, dp_time2, db_time1, db_time2, rw_time1, rw_t
 float	se_time1, se_time2, de_time1, de_time2;
 
 void R_MarkLeaves (void);
+
+cvar_t  *sw_console_only;
 
 cvar_t	*r_lefthand;
 cvar_t	*sw_aliasstats;
@@ -133,14 +137,14 @@ cvar_t  *r_novis;
 cvar_t	*r_speeds;
 cvar_t	*r_lightlevel;	//FIXME HACK
 
-cvar_t	*vid_fullscreen;
-cvar_t	*vid_gamma;
+cvar_t	*r_fullscreen;
+cvar_t	*r_gamma;
+
+cvar_t	*r_saturation;
 
 //PGM
 cvar_t	*sw_lockpvs;
 //PGM
-
-#define	STRINGER(x) "x"
 
 
 #if	!id386
@@ -197,16 +201,16 @@ void	R_InitTextures (void)
 {
 	int		x,y, m;
 	byte	*dest;
-	
+
 // create a simple checkerboard texture for the default
 	r_notexture_mip = (image_t *)&r_notexture_buffer;
-	
+
 	r_notexture_mip->width = r_notexture_mip->height = 16;
 	r_notexture_mip->pixels[0] = &r_notexture_buffer[sizeof(image_t)];
 	r_notexture_mip->pixels[1] = r_notexture_mip->pixels[0] + 16*16;
 	r_notexture_mip->pixels[2] = r_notexture_mip->pixels[1] + 8*8;
 	r_notexture_mip->pixels[3] = r_notexture_mip->pixels[2] + 4*4;
-	
+
 	for (m=0 ; m<4 ; m++)
 	{
 		dest = r_notexture_mip->pixels[m];
@@ -219,7 +223,7 @@ void	R_InitTextures (void)
 				else
 					*dest++ = 0xff;
 			}
-	}	
+	}
 }
 
 
@@ -231,7 +235,7 @@ R_InitTurb
 void R_InitTurb (void)
 {
 	int		i;
-	
+
 	for (i=0 ; i<1280 ; i++)
 	{
 		sintable[i] = AMP + sin(i*3.14159*2/CYCLE)*AMP;
@@ -244,52 +248,55 @@ void R_ImageList_f( void );
 
 void R_Register (void)
 {
-	sw_aliasstats = ri.Cvar_Get ("sw_polymodelstats", "0", 0);
-	sw_allow_modex = ri.Cvar_Get( "sw_allow_modex", "1", CVAR_ARCHIVE );
-	sw_clearcolor = ri.Cvar_Get ("sw_clearcolor", "2", 0);
-	sw_drawflat = ri.Cvar_Get ("sw_drawflat", "0", 0);
-	sw_draworder = ri.Cvar_Get ("sw_draworder", "0", 0);
-	sw_maxedges = ri.Cvar_Get ("sw_maxedges", STRINGER(MAXSTACKSURFACES), 0);
-	sw_maxsurfs = ri.Cvar_Get ("sw_maxsurfs", "0", 0);
-	sw_mipcap = ri.Cvar_Get ("sw_mipcap", "0", 0);
-	sw_mipscale = ri.Cvar_Get ("sw_mipscale", "1", 0);
-	sw_reportedgeout = ri.Cvar_Get ("sw_reportedgeout", "0", 0);
-	sw_reportsurfout = ri.Cvar_Get ("sw_reportsurfout", "0", 0);
-	sw_stipplealpha = ri.Cvar_Get( "sw_stipplealpha", "0", CVAR_ARCHIVE );
-	sw_surfcacheoverride = ri.Cvar_Get ("sw_surfcacheoverride", "0", 0);
-	sw_waterwarp = ri.Cvar_Get ("sw_waterwarp", "1", 0);
-	sw_mode = ri.Cvar_Get( "sw_mode", "0", CVAR_ARCHIVE );
+CVAR_BEGIN(vars)
+	{&sw_aliasstats, "sw_polymodelstats", "0", 0},
+	CVAR_VAR(sw_allow_modex, 1, CVAR_ARCHIVE),
+	CVAR_VAR(sw_clearcolor, 2, 0),
+	CVAR_VAR(sw_drawflat, 0, 0),
+	CVAR_VAR(sw_draworder, 0, 0),
+	CVAR_VAR(sw_maxsurfs, 0, 0),
+	CVAR_VAR(sw_mipcap, 0, 0),
+	CVAR_VAR(sw_mipscale, 1, 0),
+	CVAR_VAR(sw_reportedgeout, 0, 0),
+	CVAR_VAR(sw_reportsurfout, 0, 0),
+	CVAR_VAR(sw_stipplealpha, 0, CVAR_ARCHIVE),
+	CVAR_VAR(sw_surfcacheoverride, 0, 0),
+	CVAR_VAR(sw_waterwarp, 1, 0),
+	CVAR_VAR(sw_mode, 0, CVAR_ARCHIVE),
 
-	r_lefthand = ri.Cvar_Get( "hand", "0", CVAR_USERINFO | CVAR_ARCHIVE );
-	r_speeds = ri.Cvar_Get ("r_speeds", "0", 0);
-	r_fullbright = ri.Cvar_Get ("r_fullbright", "0", 0);
-	r_drawentities = ri.Cvar_Get ("r_drawentities", "1", 0);
-	r_drawworld = ri.Cvar_Get ("r_drawworld", "1", 0);
-	r_dspeeds = ri.Cvar_Get ("r_dspeeds", "0", 0);
-	r_lightlevel = ri.Cvar_Get ("r_lightlevel", "0", 0);
-	r_lerpmodels = ri.Cvar_Get( "r_lerpmodels", "1", 0 );
-	r_novis = ri.Cvar_Get( "r_novis", "0", 0 );
+	{&r_lefthand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE},
+	CVAR_VAR(r_speeds, 0, 0),
+	CVAR_VAR(r_fullbright, 0, 0),
+	CVAR_VAR(r_drawentities, 1, 0),
+	CVAR_VAR(r_drawworld, 1, 0),
+	CVAR_VAR(r_dspeeds, 0, 0),
+	CVAR_VAR(r_lightlevel, 0, 0),
+	CVAR_VAR(r_lerpmodels, 1, 0),
+	CVAR_VAR(r_novis, 0, 0),
+	CVAR_VAR(sw_lockpvs, 0, 0),
 
-	vid_fullscreen = ri.Cvar_Get( "vid_fullscreen", "0", CVAR_ARCHIVE );
-	vid_gamma = ri.Cvar_Get( "vid_gamma", "1.0", CVAR_ARCHIVE );
+	CVAR_VAR(r_fullscreen, 1, CVAR_ARCHIVE),
+	CVAR_VAR(r_gamma, 1, CVAR_ARCHIVE),
 
-	ri.Cmd_AddCommand ("modellist", Mod_Modellist_f);
-	ri.Cmd_AddCommand( "screenshot", R_ScreenShot_f );
-	ri.Cmd_AddCommand( "imagelist", R_ImageList_f );
+	CVAR_VAR(r_saturation, 1, CVAR_ARCHIVE),
+CVAR_END
+
+	CVAR_GET_VARS(vars);
+	sw_maxedges = Cvar_Get ("sw_maxedges", va("%d", NUMSTACKEDGES), 0);	//?? MAXSTACKSURFACES
+
+	Cmd_AddCommand ("modellist", Mod_Modellist_f);
+	Cmd_AddCommand ("screenshot", R_ScreenShot_f);
+	Cmd_AddCommand ("imagelist", R_ImageList_f);
 
 	sw_mode->modified = true; // force us to do mode specific stuff later
-	vid_gamma->modified = true; // force us to rebuild the gamma table later
-
-//PGM
-	sw_lockpvs = ri.Cvar_Get ("sw_lockpvs", "0", 0);
-//PGM
+	r_gamma->modified = true; // force us to rebuild the gamma table later
 }
 
 void R_UnRegister (void)
 {
-	ri.Cmd_RemoveCommand( "screenshot" );
-	ri.Cmd_RemoveCommand ("modellist");
-	ri.Cmd_RemoveCommand( "imagelist" );
+	Cmd_RemoveCommand( "screenshot" );
+	Cmd_RemoveCommand ("modellist");
+	Cmd_RemoveCommand( "imagelist" );
 }
 
 /*
@@ -332,7 +339,7 @@ qboolean R_Init( void *hInstance, void *wndProc )
 	// create the window
 	R_BeginFrame( 0 );
 
-	ri.Con_Printf (PRINT_ALL, "ref_soft version: "REF_VERSION"\n");
+	Com_Printf ("ref_soft version: "REF_VERSION"\n");
 
 	return true;
 }
@@ -347,21 +354,21 @@ void R_Shutdown (void)
 	// free z buffer
 	if (d_pzbuffer)
 	{
-		free (d_pzbuffer);
+		Z_Free (d_pzbuffer);
 		d_pzbuffer = NULL;
 	}
 	// free surface cache
 	if (sc_base)
 	{
 		D_FlushCaches ();
-		free (sc_base);
+		Z_Free (sc_base);
 		sc_base = NULL;
 	}
 
 	// free colormap
 	if (vid.colormap)
 	{
-		free (vid.colormap);
+		Z_Free (vid.colormap);
 		vid.colormap = NULL;
 	}
 	R_UnRegister ();
@@ -380,14 +387,14 @@ void R_NewMap (void)
 {
 	r_viewcluster = -1;
 
-	r_cnumsurfs = sw_maxsurfs->value;
+	r_cnumsurfs = sw_maxsurfs->integer;
 
 	if (r_cnumsurfs <= MINSURFACES)
 		r_cnumsurfs = MINSURFACES;
 
 	if (r_cnumsurfs > NUMSTACKSURFACES)
 	{
-		surfaces = malloc (r_cnumsurfs * sizeof(surf_t));
+		surfaces = Z_Malloc (r_cnumsurfs * sizeof(surf_t));
 		surface_p = surfaces;
 		surf_max = &surfaces[r_cnumsurfs];
 		r_surfsonstack = false;
@@ -404,7 +411,7 @@ void R_NewMap (void)
 	r_maxedgesseen = 0;
 	r_maxsurfsseen = 0;
 
-	r_numallocatededges = sw_maxedges->value;
+	r_numallocatededges = sw_maxedges->integer;
 
 	if (r_numallocatededges < MINEDGES)
 		r_numallocatededges = MINEDGES;
@@ -415,7 +422,7 @@ void R_NewMap (void)
 	}
 	else
 	{
-		auxedges = malloc (r_numallocatededges * sizeof(edge_t));
+		auxedges = Z_Malloc (r_numallocatededges * sizeof(edge_t));
 	}
 }
 
@@ -436,18 +443,18 @@ void R_MarkLeaves (void)
 	mleaf_t	*leaf;
 	int		cluster;
 
-	if (r_oldviewcluster == r_viewcluster && !r_novis->value && r_viewcluster != -1)
+	if (r_oldviewcluster == r_viewcluster && !r_novis->integer && r_viewcluster != -1)
 		return;
-	
+
 	// development aid to let you run around and see exactly where
 	// the pvs ends
-	if (sw_lockpvs->value)
+	if (sw_lockpvs->integer)
 		return;
 
 	r_visframecount++;
 	r_oldviewcluster = r_viewcluster;
 
-	if (r_novis->value || r_viewcluster == -1 || !r_worldmodel->vis)
+	if (r_novis->integer || r_viewcluster == -1 || !r_worldmodel->vis)
 	{
 		// mark everything
 		for (i=0 ; i<r_worldmodel->numleafs ; i++)
@@ -458,7 +465,7 @@ void R_MarkLeaves (void)
 	}
 
 	vis = Mod_ClusterPVS (r_viewcluster, r_worldmodel);
-	
+
 	for (i=0,leaf=r_worldmodel->leafs ; i<r_worldmodel->numleafs ; i++, leaf++)
 	{
 		cluster = leaf->cluster;
@@ -514,7 +521,7 @@ void R_DrawEntitiesOnList (void)
 	int			i;
 	qboolean	translucent_entities = false;
 
-	if (!r_drawentities->value)
+	if (!r_drawentities->integer)
 		return;
 
 	// all bmodels have already been drawn by the edge list
@@ -634,7 +641,7 @@ int R_BmodelCheckBBox (float *minmaxs)
 		rejectpt[0] = minmaxs[pindex[0]];
 		rejectpt[1] = minmaxs[pindex[1]];
 		rejectpt[2] = minmaxs[pindex[2]];
-		
+
 		d = DotProduct (rejectpt, view_clipplanes[i].normal);
 		d -= view_clipplanes[i].dist;
 
@@ -665,7 +672,7 @@ Find the first node that splits the given box
 */
 mnode_t *R_FindTopnode (vec3_t mins, vec3_t maxs)
 {
-	mplane_t	*splitplane;
+	cplane_t	*splitplane;
 	int			sides;
 	mnode_t *node;
 
@@ -675,7 +682,7 @@ mnode_t *R_FindTopnode (vec3_t mins, vec3_t maxs)
 	{
 		if (node->visframe != r_visframecount)
 			return NULL;		// not visible at all
-		
+
 		if (node->contents != CONTENTS_NODE)
 		{
 			if (node->contents != CONTENTS_SOLID)
@@ -683,13 +690,13 @@ mnode_t *R_FindTopnode (vec3_t mins, vec3_t maxs)
 							//  visible and not BSP clipped
 			return NULL;	// in solid, so not visible
 		}
-		
+
 		splitplane = node->plane;
 		sides = BOX_ON_PLANE_SIDE(mins, maxs, (cplane_t *)splitplane);
-		
+
 		if (sides == 3)
 			return node;	// this is the splitter
-		
+
 	// not split yet; recurse down the contacted side
 		if (sides & 1)
 			node = node->children[0];
@@ -772,7 +779,7 @@ void R_DrawBEntitiesOnList (void)
 	float		minmaxs[6];
 	mnode_t		*topnode;
 
-	if (!r_drawentities->value)
+	if (!r_drawentities->integer)
 		return;
 
 	VectorCopy (modelorg, oldorigin);
@@ -831,7 +838,7 @@ void R_DrawBEntitiesOnList (void)
 			R_DrawSubmodelPolygons (currentmodel, clipflags, topnode);
 		}
 
-	// put back world rotation and frustum clipping		
+	// put back world rotation and frustum clipping
 	// FIXME: R_RotateBmodel should just work off base_vxx
 		VectorCopy (base_vpn, vpn);
 		VectorCopy (base_vup, vup);
@@ -882,14 +889,14 @@ void R_EdgeDrawing (void)
 
 	R_BeginEdgeFrame ();
 
-	if (r_dspeeds->value)
+	if (r_dspeeds->integer)
 	{
 		rw_time1 = Sys_Milliseconds ();
 	}
 
 	R_RenderWorld ();
 
-	if (r_dspeeds->value)
+	if (r_dspeeds->integer)
 	{
 		rw_time2 = Sys_Milliseconds ();
 		db_time1 = rw_time2;
@@ -897,7 +904,7 @@ void R_EdgeDrawing (void)
 
 	R_DrawBEntitiesOnList ();
 
-	if (r_dspeeds->value)
+	if (r_dspeeds->integer)
 	{
 		db_time2 = Sys_Milliseconds ();
 		se_time1 = db_time2;
@@ -970,7 +977,7 @@ void R_SetLightLevel (void)
 {
 	vec3_t		light;
 
-	if ((r_newrefdef.rdflags & RDF_NOWORLDMODEL) || (!r_drawentities->value) || (!currententity))
+	if ((r_newrefdef.rdflags & RDF_NOWORLDMODEL) || (!r_drawentities->integer) || (!currententity))
 	{
 		r_lightlevel->value = 150.0;
 		return;
@@ -993,12 +1000,12 @@ void R_RenderFrame (refdef_t *fd)
 	r_newrefdef = *fd;
 
 	if (!r_worldmodel && !( r_newrefdef.rdflags & RDF_NOWORLDMODEL ) )
-		ri.Sys_Error (ERR_FATAL,"R_RenderView: NULL worldmodel");
+		Com_Error (ERR_FATAL,"R_RenderView: NULL worldmodel");
 
 	VectorCopy (fd->vieworg, r_refdef.vieworg);
 	VectorCopy (fd->viewangles, r_refdef.viewangles);
 
-	if (r_speeds->value || r_dspeeds->value)
+	if (r_speeds->integer || r_dspeeds->integer)
 		r_time1 = Sys_Milliseconds ();
 
 	R_SetupFrame ();
@@ -1009,7 +1016,7 @@ void R_RenderFrame (refdef_t *fd)
 
 	R_EdgeDrawing ();
 
-	if (r_dspeeds->value)
+	if (r_dspeeds->integer)
 	{
 		se_time2 = Sys_Milliseconds ();
 		de_time1 = se_time2;
@@ -1017,7 +1024,7 @@ void R_RenderFrame (refdef_t *fd)
 
 	R_DrawEntitiesOnList ();
 
-	if (r_dspeeds->value)
+	if (r_dspeeds->integer)
 	{
 		de_time2 = Sys_Milliseconds ();
 		dp_time1 = Sys_Milliseconds ();
@@ -1025,7 +1032,7 @@ void R_RenderFrame (refdef_t *fd)
 
 	R_DrawParticles ();
 
-	if (r_dspeeds->value)
+	if (r_dspeeds->integer)
 		dp_time2 = Sys_Milliseconds ();
 
 	R_DrawAlphaSurfaces();
@@ -1035,28 +1042,30 @@ void R_RenderFrame (refdef_t *fd)
 	if (r_dowarp)
 		D_WarpScreen ();
 
-	if (r_dspeeds->value)
+	if (r_dspeeds->integer)
 		da_time1 = Sys_Milliseconds ();
 
-	if (r_dspeeds->value)
+	if (r_dspeeds->integer)
 		da_time2 = Sys_Milliseconds ();
 
 	R_CalcPalette ();
 
-	if (sw_aliasstats->value)
+	R_DrawTexts ();
+
+	if (sw_aliasstats->integer)
 		R_PrintAliasStats ();
-		
-	if (r_speeds->value)
+
+	if (r_speeds->integer)
 		R_PrintTimes ();
 
-	if (r_dspeeds->value)
+	if (r_dspeeds->integer)
 		R_PrintDSpeeds ();
 
-	if (sw_reportsurfout->value && r_outofsurfaces)
-		ri.Con_Printf (PRINT_ALL,"Short %d surfaces\n", r_outofsurfaces);
+	if (sw_reportsurfout->integer && r_outofsurfaces)
+		Com_Printf ("Short %d surfaces\n", r_outofsurfaces);
 
-	if (sw_reportedgeout->value && r_outofedges)
-		ri.Con_Printf (PRINT_ALL,"Short roughly %d edges\n", r_outofedges * 2 / 3);
+	if (sw_reportedgeout->integer && r_outofedges)
+		Com_Printf ("Short roughly %d edges\n", r_outofedges * 2 / 3);
 }
 
 /*
@@ -1070,7 +1079,7 @@ void R_InitGraphics( int width, int height )
 	// free z buffer
 	if ( d_pzbuffer )
 	{
-		free( d_pzbuffer );
+		Z_Free( d_pzbuffer );
 		d_pzbuffer = NULL;
 	}
 
@@ -1078,11 +1087,11 @@ void R_InitGraphics( int width, int height )
 	if ( sc_base )
 	{
 		D_FlushCaches ();
-		free( sc_base );
+		Z_Free( sc_base );
 		sc_base = NULL;
 	}
 
-	d_pzbuffer = malloc(vid.width*vid.height*2);
+	d_pzbuffer = Z_Malloc(vid.width*vid.height*2);
 
 	R_InitCaches ();
 
@@ -1099,15 +1108,15 @@ void R_BeginFrame( float camera_separation )
 	/*
 	** rebuild the gamma correction palette if necessary
 	*/
-	if ( vid_gamma->modified )
+	if ( r_gamma->modified )
 	{
 		Draw_BuildGammaTable();
 		R_GammaCorrectAndSetPalette( ( const unsigned char * ) d_8to24table );
 
-		vid_gamma->modified = false;
+		r_gamma->modified = false;
 	}
 
-	while ( sw_mode->modified || vid_fullscreen->modified )
+	while ( sw_mode->modified || r_fullscreen->modified )
 	{
 		rserr_t err;
 
@@ -1115,37 +1124,40 @@ void R_BeginFrame( float camera_separation )
 		** if this returns rserr_invalid_fullscreen then it set the mode but not as a
 		** fullscreen mode, e.g. 320x200 on a system that doesn't support that res
 		*/
-		if ( ( err = SWimp_SetMode( &vid.width, &vid.height, sw_mode->value, vid_fullscreen->value ) ) == rserr_ok )
+		if ( ( err = SWimp_SetMode( &vid.width, &vid.height, sw_mode->integer, r_fullscreen->integer ) ) == rserr_ok )
 		{
 			R_InitGraphics( vid.width, vid.height );
 
-			sw_state.prev_mode = sw_mode->value;
-			vid_fullscreen->modified = false;
+			sw_state.prev_mode = sw_mode->integer;
+			r_fullscreen->modified = false;
 			sw_mode->modified = false;
 		}
 		else
 		{
 			if ( err == rserr_invalid_mode )
 			{
-				ri.Cvar_SetValue( "sw_mode", sw_state.prev_mode );
-				ri.Con_Printf( PRINT_ALL, "ref_soft::R_BeginFrame() - could not set mode\n" );
+				Cvar_SetInteger ("sw_mode", sw_state.prev_mode);
+				Com_Printf ("ref_soft::R_BeginFrame() - could not set mode\n");
 			}
 			else if ( err == rserr_invalid_fullscreen )
 			{
 				R_InitGraphics( vid.width, vid.height );
 
-				ri.Cvar_SetValue( "vid_fullscreen", 0);
-				ri.Con_Printf( PRINT_ALL, "ref_soft::R_BeginFrame() - fullscreen unavailable in this mode\n" );
-				sw_state.prev_mode = sw_mode->value;
-//				vid_fullscreen->modified = false;
+				Cvar_SetInteger ("r_fullscreen", 0);
+				Com_Printf ("ref_soft::R_BeginFrame() - fullscreen unavailable in this mode\n");
+				sw_state.prev_mode = sw_mode->integer;
+//				r_fullscreen->modified = false;
 //				sw_mode->modified = false;
 			}
 			else
 			{
-				ri.Sys_Error( ERR_FATAL, "ref_soft::R_BeginFrame() - catastrophic mode change failure\n" );
+				Com_Error( ERR_FATAL, "ref_soft::R_BeginFrame() - catastrophic mode change failure\n" );
 			}
 		}
 	}
+
+	if (con_only)
+		Draw_Fill (0, 0, vid.width, vid.height, 0);
 }
 
 /*
@@ -1213,7 +1225,9 @@ void Draw_BuildGammaTable (void)
 	int		i, inf;
 	float	g;
 
-	g = vid_gamma->value;
+	g = r_gamma->value;
+
+	if (g < 0.5) g = 0.5;	// avoid zero divide
 
 	if (g == 1.0)
 	{
@@ -1221,10 +1235,10 @@ void Draw_BuildGammaTable (void)
 			sw_state.gammatable[i] = i;
 		return;
 	}
-	
+
 	for (i=0 ; i<256 ; i++)
 	{
-		inf = 255 * pow ( (i+0.5)/255.5 , g ) + 0.5;
+		inf = 255 * pow ( (i+0.5)/255.5 , 1.0 / g ) + 0.5;
 		if (inf < 0)
 			inf = 0;
 		if (inf > 255)
@@ -1321,30 +1335,136 @@ void Draw_GetPalette (void)
 {
 	byte	*pal, *out;
 	int		i;
-	int		r, g, b;
+	float	sat;
+
+	sat = r_saturation->value;
 
 	// get the palette and colormap
 	LoadPCX ("pics/colormap.pcx", &vid.colormap, &pal, NULL, NULL);
 	if (!vid.colormap)
-		ri.Sys_Error (ERR_FATAL, "Couldn't load pics/colormap.pcx");
+		Com_Error (ERR_FATAL, "Couldn't load pics/colormap.pcx");
 	vid.alphamap = vid.colormap + 64*256;
 
 	out = (byte *)d_8to24table;
 	for (i=0 ; i<256 ; i++, out+=4)
 	{
+		int r, g, b;
+
 		r = pal[i*3+0];
 		g = pal[i*3+1];
 		b = pal[i*3+2];
 
-        out[0] = r;
-        out[1] = g;
-        out[2] = b;
+//		Com_Printf ("#%2X -> (%2X / %2X / %2X\n)",i,r,g,b);
+
+		if (sat != 1.0)
+		{
+			float light;
+#define SATURATE(c,l,v) c = (l+0.5+(c-l)*v); if (c < 0) c = 0; else if (c > 255) c = 255;
+			// change saturation
+			light = (r + g + b) / 3.0;
+			SATURATE(r,light,sat);
+			SATURATE(g,light,sat);
+			SATURATE(b,light,sat);
+		}
+
+		out[0] = r;
+		out[1] = g;
+		out[2] = b;
 	}
 
-	free (pal);
+	Z_Free (pal);
 }
 
 struct image_s *R_RegisterSkin (char *name);
+
+/*
+=====================
+Dummy functions for console-only mode
+=====================
+*/
+
+void	D_R_RenderFrame (refdef_t *fd)
+{
+}
+
+void	D_R_BeginRegistration (char *map)
+{
+}
+
+struct model_s	*D_R_RegisterModel (char *name)
+{
+	return NULL;
+}
+
+struct image_s	*D_R_RegisterSkin (char *name)
+{
+	return NULL;
+}
+
+struct image_s	*D_Draw_FindPic (char *name)
+{
+	return NULL;
+}
+
+void D_R_SetSky (char *name, float rotate, vec3_t axis)
+{
+}
+
+void	D_R_EndRegistration (void)
+{
+}
+
+void	D_Draw_GetPicSize (int *w, int *h, char *pic)
+{
+	if (w) *w = 0;
+	if (h) *h = 0;
+}
+
+void	D_Draw_PicColor (int x, int y, char *name, int color)
+{
+}
+
+void	D_Draw_StretchPic (int x, int y, int w, int h, char *pic)
+{
+}
+
+void	D_Draw_CharColor (int x, int y, int c, int color)
+{
+}
+
+void	D_Draw_TileClear (int x, int y, int w, int h, char *name)
+{
+}
+
+void	D_Draw_Fill (int x, int y, int w, int h, int c)
+{
+}
+
+void	D_Draw_FadeScreen (void)
+{
+}
+
+void	D_DrawTextPos (int x, int y, char *text, float r, float g, float b)
+{
+}
+
+void	D_DrawTextSide (char *text, float r, float g, float b)
+{
+}
+
+void	D_Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data)
+{
+}
+
+void	D_R_SetPalette (const unsigned char *palette)
+{
+}
+
+void	Draw_ConCharColor (int x, int y, int c, int color)
+{
+	Draw_CharColor (x * 8, y * 8, c, color);
+}
+
 
 /*
 @@@@@@@@@@@@@@@@@@@@@
@@ -1352,71 +1472,87 @@ GetRefAPI
 
 @@@@@@@@@@@@@@@@@@@@@
 */
-refexport_t GetRefAPI (refimport_t rimp)
+refExport_t GetRefAPI (refImport_t rimp)
 {
-	refexport_t	re;
+	refExport_t	re;
 
 	ri = rimp;
 
+#ifndef REF_HARD_LINKED
+	if (ri.struc_size != sizeof(refImport_t) || ri.api_version != API_VERSION)
+	{
+		re.struc_size = 0;
+		re.api_version = 0;
+		return re;
+	}
+#endif
+
+	sw_console_only = Cvar_Get ("sw_console_only", "0", 0);
+	con_only = sw_console_only->integer;
+
+	re.struc_size = sizeof(re);
 	re.api_version = API_VERSION;
-
-	re.BeginRegistration = R_BeginRegistration;
-    re.RegisterModel = R_RegisterModel;
-    re.RegisterSkin = R_RegisterSkin;
-	re.RegisterPic = Draw_FindPic;
-	re.SetSky = R_SetSky;
-	re.EndRegistration = R_EndRegistration;
-
-	re.RenderFrame = R_RenderFrame;
-
-	re.DrawGetPicSize = Draw_GetPicSize;
-	re.DrawPic = Draw_Pic;
-	re.DrawStretchPic = Draw_StretchPic;
-	re.DrawChar = Draw_Char;
-	re.DrawTileClear = Draw_TileClear;
-	re.DrawFill = Draw_Fill;
-	re.DrawFadeScreen= Draw_FadeScreen;
-
-	re.DrawStretchRaw = Draw_StretchRaw;
+	re.console_only = con_only;
 
 	re.Init = R_Init;
 	re.Shutdown = R_Shutdown;
-
-	re.CinematicSetPalette = R_CinematicSetPalette;
 	re.BeginFrame = R_BeginFrame;
 	re.EndFrame = SWimp_EndFrame;
-
 	re.AppActivate = SWimp_AppActivate;
+	re.DrawConCharColor = Draw_ConCharColor;
+
+	if (!con_only)
+	{
+		re.RenderFrame = R_RenderFrame;
+		re.BeginRegistration = R_BeginRegistration;
+		re.RegisterModel = R_RegisterModel;
+		re.RegisterSkin = R_RegisterSkin;
+		re.RegisterPic = Draw_FindPic;
+		re.SetSky = R_SetSky;
+		re.EndRegistration = R_EndRegistration;
+
+		re.DrawGetPicSize = Draw_GetPicSize;
+		re.DrawPicColor = Draw_PicColor;
+		re.DrawStretchPic = Draw_StretchPic;
+		re.DrawCharColor = Draw_CharColor;
+		re.DrawTileClear = Draw_TileClear;
+		re.DrawFill = Draw_Fill;
+		re.DrawFadeScreen= Draw_FadeScreen;
+
+		re.DrawStretchRaw = Draw_StretchRaw;
+		re.CinematicSetPalette = R_CinematicSetPalette;
+
+		re.DrawTextPos = DrawText_Pos;
+		re.DrawTextLeft = DrawText_Left;
+		re.DrawTextRight = DrawText_Right;
+	}
+	else
+	{
+		re.RenderFrame = D_R_RenderFrame;
+		re.BeginRegistration = D_R_BeginRegistration;
+		re.RegisterModel = D_R_RegisterModel;
+		re.RegisterSkin = D_R_RegisterSkin;
+		re.RegisterPic = D_Draw_FindPic;
+		re.SetSky = D_R_SetSky;
+		re.EndRegistration = D_R_EndRegistration;
+
+		re.DrawGetPicSize = D_Draw_GetPicSize;
+		re.DrawPicColor = D_Draw_PicColor;
+		re.DrawStretchPic = D_Draw_StretchPic;
+		re.DrawCharColor = D_Draw_CharColor;
+		re.DrawTileClear = D_Draw_TileClear;
+		re.DrawFill = D_Draw_Fill;
+		re.DrawFadeScreen= D_Draw_FadeScreen;
+
+		re.DrawStretchRaw = D_Draw_StretchRaw;
+		re.CinematicSetPalette = D_R_SetPalette;
+
+		re.DrawTextPos = D_DrawTextPos;
+		re.DrawTextLeft = D_DrawTextSide;
+		re.DrawTextRight = D_DrawTextSide;
+	}
 
 	Swap_Init ();
 
 	return re;
 }
-
-#ifndef REF_HARD_LINKED
-// this is only here so the functions in q_shared.c and q_shwin.c can link
-void Sys_Error (char *error, ...)
-{
-	va_list		argptr;
-	char		text[1024];
-
-	va_start (argptr, error);
-	vsprintf (text, error, argptr);
-	va_end (argptr);
-
-	ri.Sys_Error (ERR_FATAL, "%s", text);
-}
-
-void Com_Printf (char *fmt, ...)
-{
-	va_list		argptr;
-	char		text[1024];
-
-	va_start (argptr, fmt);
-	vsprintf (text, fmt, argptr);
-	va_end (argptr);
-
-	ri.Con_Printf (PRINT_ALL, "%s", text);
-}
-
-#endif

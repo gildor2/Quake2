@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -31,7 +31,7 @@ PF_Unicast
 Sends the contents of the mutlicast buffer to a single client
 ===============
 */
-void PF_Unicast (edict_t *ent, qboolean reliable)
+static void PF_Unicast (edict_t *ent, qboolean reliable)
 {
 	int		p;
 	client_t	*client;
@@ -40,7 +40,7 @@ void PF_Unicast (edict_t *ent, qboolean reliable)
 		return;
 
 	p = NUM_FOR_EDICT(ent);
-	if (p < 1 || p > maxclients->value)
+	if (p < 1 || p > maxclients->integer)
 		return;
 
 	client = svs.clients + (p-1);
@@ -61,11 +61,11 @@ PF_dprintf
 Debug print to server console
 ===============
 */
-void PF_dprintf (char *fmt, ...)
+static void PF_dprintf (char *fmt, ...)
 {
 	char		msg[1024];
 	va_list		argptr;
-	
+
 	va_start (argptr,fmt);
 	vsprintf (msg, fmt, argptr);
 	va_end (argptr);
@@ -81,7 +81,7 @@ PF_cprintf
 Print to a single client
 ===============
 */
-void PF_cprintf (edict_t *ent, int level, char *fmt, ...)
+static void PF_cprintf (edict_t *ent, int level, char *fmt, ...)
 {
 	char		msg[1024];
 	va_list		argptr;
@@ -90,7 +90,7 @@ void PF_cprintf (edict_t *ent, int level, char *fmt, ...)
 	if (ent)
 	{
 		n = NUM_FOR_EDICT(ent);
-		if (n < 1 || n > maxclients->value)
+		if (n < 1 || n > maxclients->integer)
 			Com_Error (ERR_DROP, "cprintf to a non-client");
 	}
 
@@ -112,14 +112,14 @@ PF_centerprintf
 centerprint to a single client
 ===============
 */
-void PF_centerprintf (edict_t *ent, char *fmt, ...)
+static void PF_centerprintf (edict_t *ent, char *fmt, ...)
 {
 	char		msg[1024];
 	va_list		argptr;
 	int			n;
-	
+
 	n = NUM_FOR_EDICT(ent);
-	if (n < 1 || n > maxclients->value)
+	if (n < 1 || n > maxclients->integer)
 		return;	// Com_Error (ERR_DROP, "centerprintf to a non-client");
 
 	va_start (argptr,fmt);
@@ -139,11 +139,11 @@ PF_error
 Abort the server with a game error
 ===============
 */
-void PF_error (char *fmt, ...)
+static void PF_error (char *fmt, ...)
 {
 	char		msg[1024];
 	va_list		argptr;
-	
+
 	va_start (argptr,fmt);
 	vsprintf (msg, fmt, argptr);
 	va_end (argptr);
@@ -159,7 +159,7 @@ PF_setmodel
 Also sets mins and maxs for inline bmodels
 =================
 */
-void PF_setmodel (edict_t *ent, char *name)
+static void PF_setmodel (edict_t *ent, char *name)
 {
 	int		i;
 	cmodel_t	*mod;
@@ -168,7 +168,7 @@ void PF_setmodel (edict_t *ent, char *name)
 		Com_Error (ERR_DROP, "PF_setmodel: NULL");
 
 	i = SV_ModelIndex (name);
-		
+
 //	ent->model = name;
 	ent->s.modelindex = i;
 
@@ -189,7 +189,7 @@ PF_Configstring
 
 ===============
 */
-void PF_Configstring (int index, char *val)
+static void PF_Configstring (int index, char *val)
 {
 	if (index < 0 || index >= MAX_CONFIGSTRINGS)
 		Com_Error (ERR_DROP, "configstring: bad index %i\n", index);
@@ -200,7 +200,7 @@ void PF_Configstring (int index, char *val)
 	// change the string in sv
 	strcpy (sv.configstrings[index], val);
 
-	
+
 	if (sv.state != ss_loading)
 	{	// send the update to everyone
 		SZ_Clear (&sv.multicast);
@@ -208,21 +208,21 @@ void PF_Configstring (int index, char *val)
 		MSG_WriteShort (&sv.multicast, index);
 		MSG_WriteString (&sv.multicast, val);
 
-		SV_Multicast (vec3_origin, MULTICAST_ALL_R);
+		SV_MulticastOld (vec3_origin, MULTICAST_ALL_R);
 	}
 }
 
 
 
-void PF_WriteChar (int c) {MSG_WriteChar (&sv.multicast, c);}
-void PF_WriteByte (int c) {MSG_WriteByte (&sv.multicast, c);}
-void PF_WriteShort (int c) {MSG_WriteShort (&sv.multicast, c);}
-void PF_WriteLong (int c) {MSG_WriteLong (&sv.multicast, c);}
-void PF_WriteFloat (float f) {MSG_WriteFloat (&sv.multicast, f);}
-void PF_WriteString (char *s) {MSG_WriteString (&sv.multicast, s);}
-void PF_WritePos (vec3_t pos) {MSG_WritePos (&sv.multicast, pos);}
-void PF_WriteDir (vec3_t dir) {MSG_WriteDir (&sv.multicast, dir);}
-void PF_WriteAngle (float f) {MSG_WriteAngle (&sv.multicast, f);}
+static void PF_WriteChar (int c) {MSG_WriteChar (&sv.multicast, c);}
+static void PF_WriteByte (int c) {MSG_WriteByte (&sv.multicast, c);}
+static void PF_WriteShort (int c) {MSG_WriteShort (&sv.multicast, c);}
+static void PF_WriteLong (int c) {MSG_WriteLong (&sv.multicast, c);}
+static void PF_WriteFloat (float f) {MSG_WriteFloat (&sv.multicast, f);}
+static void PF_WriteString (char *s) {MSG_WriteString (&sv.multicast, s);}
+static void PF_WritePos (vec3_t pos) {MSG_WritePos (&sv.multicast, pos);}
+static void PF_WriteDir (vec3_t dir) {MSG_WriteDir (&sv.multicast, dir);}
+static void PF_WriteAngle (float f) {MSG_WriteAngle (&sv.multicast, f);}
 
 
 /*
@@ -232,7 +232,7 @@ PF_inPVS
 Also checks portalareas so that doors block sight
 =================
 */
-qboolean PF_inPVS (vec3_t p1, vec3_t p2)
+static qboolean PF_inPVS (vec3_t p1, vec3_t p2)
 {
 	int		leafnum;
 	int		cluster;
@@ -262,7 +262,7 @@ PF_inPHS
 Also checks portalareas so that doors block sound
 =================
 */
-qboolean PF_inPHS (vec3_t p1, vec3_t p2)
+static qboolean PF_inPHS (vec3_t p1, vec3_t p2)
 {
 	int		leafnum;
 	int		cluster;
@@ -285,12 +285,12 @@ qboolean PF_inPHS (vec3_t p1, vec3_t p2)
 	return true;
 }
 
-void PF_StartSound (edict_t *entity, int channel, int sound_num, float volume,
+static void PF_StartSound (edict_t *entity, int channel, int sound_num, float volume,
     float attenuation, float timeofs)
 {
 	if (!entity)
 		return;
-	SV_StartSound (NULL, entity, channel, sound_num, volume, attenuation, timeofs);
+	SV_StartSoundOld (NULL, entity, channel, sound_num, volume, attenuation, timeofs);
 }
 
 //==============================================
@@ -312,6 +312,7 @@ void SV_ShutdownGameProgs (void)
 	ge = NULL;
 }
 
+
 /*
 ===============
 SV_InitGameProgs
@@ -319,6 +320,22 @@ SV_InitGameProgs
 Init the game subsystem for a new map
 ===============
 */
+
+/*------- Wrappers for some system functions -------*/
+
+static void *PF_TagMalloc (int size, int tag)
+{
+	return Z_TagMalloc (size + 1, tag); // reserve 1 byte for buggy mods
+}
+
+
+static cvar_t *PF_Cvar_Get (char *name, char *value, int flags)
+{
+	return Cvar_Get (name, value, flags|CVAR_GAME_CREATED|CVAR_NODEFAULT);
+}
+
+
+
 void SCR_DebugGraph (float value, int color);
 
 void SV_InitGameProgs (void)
@@ -331,7 +348,7 @@ void SV_InitGameProgs (void)
 
 
 	// load a new game dll
-	import.multicast = SV_Multicast;
+	import.multicast = SV_MulticastOld;	//?? we can hook some messages in this function
 	import.unicast = PF_Unicast;
 	import.bprintf = SV_BroadcastPrintf;
 	import.dprintf = PF_dprintf;
@@ -355,7 +372,7 @@ void SV_InitGameProgs (void)
 
 	import.configstring = PF_Configstring;
 	import.sound = PF_StartSound;
-	import.positioned_sound = SV_StartSound;
+	import.positioned_sound = SV_StartSoundOld;
 
 	import.WriteChar = PF_WriteChar;
 	import.WriteByte = PF_WriteByte;
@@ -367,11 +384,11 @@ void SV_InitGameProgs (void)
 	import.WriteDir = PF_WriteDir;
 	import.WriteAngle = PF_WriteAngle;
 
-	import.TagMalloc = Z_TagMalloc;
+	import.TagMalloc = PF_TagMalloc;		// Z_TagMalloc
 	import.TagFree = Z_Free;
 	import.FreeTags = Z_FreeTags;
 
-	import.cvar = Cvar_Get;
+	import.cvar = PF_Cvar_Get;				// Cvar_Get
 	import.cvar_set = Cvar_Set;
 	import.cvar_forceset = Cvar_ForceSet;
 
@@ -394,4 +411,3 @@ void SV_InitGameProgs (void)
 
 	ge->Init ();
 }
-
