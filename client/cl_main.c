@@ -828,7 +828,7 @@ void CL_PingServers_f (void)
 	}
 
 	// send a packet to each address book entry
-	for (i=0 ; i<16 ; i++)
+	for (i = 0; i < 16; i++)
 	{
 		adrstring = Cvar_VariableString (va("adr%d", i));
 		if (!adrstring || !adrstring[0])

@@ -80,7 +80,7 @@ static menuList_t		s_textureBits;				// gl_textureBits
 static menuList_t		s_textureFilter;			// gl_texturemode
 
 
-float vid_menu_old_gamma;
+static float vid_menu_old_gamma;
 
 static void DriverCallback (void *unused)
 {
@@ -121,11 +121,6 @@ static void BrightnessCallback (void *s)
 
 		Cvar_SetValue ("r_gamma", gamma);
 	}
-}
-
-static void ResetDefaults (void *unused)
-{
-	Vid_MenuInit ();
 }
 
 
@@ -282,7 +277,7 @@ CVAR_END
 		s_fs_box[i].curvalue = Cvar_Get ("r_fullscreen", "1", CVAR_ARCHIVE)->integer;
 
 		y = 160;
-		MENU_ACTION(s_defaults_action[i], y+=10, "reset to defaults", ResetDefaults);
+		MENU_ACTION(s_defaults_action[i], y+=10, "reset to defaults", Vid_MenuInit);
 		MENU_ACTION(s_cancel_action[i], y+=10, "cancel", CancelChanges);
 	}
 	// save current gamma (for cancel action)

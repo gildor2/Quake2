@@ -205,11 +205,11 @@ static void ResortShader (shader_t *shader, int startIndex)
 			break;
 		}
 	}
-	if (i != startIndex && i < gl_state.minNewShaderIndex)
-		gl_state.minNewShaderIndex = i;
 	if (i < 0) i = 0;	// will be first (for example, when shaderCount == 0)
 	shadersArray[i] = shader;
 	shader->sortIndex = i;
+	if (i <= gl_state.maxUsedShaderIndex)
+		GL_InsertShaderIndex (i);
 }
 
 
@@ -225,9 +225,6 @@ static shader_t *CreatePermanentShader (void)
 		Com_WPrintf ("CreatePermanentShader(%s): MAX_SHADERS hit\n", sh.name);
 		return gl_defaultShader;
 	}
-
-	// we may change shader sort indexes, so - flush scene
-//	GL_BackEnd (); -- frame will be dropped??
 
 	// allocate and copy new shader
 	nsh = AllocChainBlock (shaderChain, sizeof(shader_t));

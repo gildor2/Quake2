@@ -1376,8 +1376,8 @@ CVAR_BEGIN(vars)
 #endif
 CVAR_END
 
-	if (setjmp (abortframe))
-		Sys_Error ("Cannot init Sys_Error(ERR_DROP,...)\n");
+	if (setjmp (abortframe))	// Sys_Error(ERR_DROP...) thrown before entering main loop
+		Sys_Error ("Error during initialization");
 
 	Z_Init ();
 

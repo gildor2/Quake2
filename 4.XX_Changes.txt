@@ -160,7 +160,7 @@ Comments:
 - cvar "cfgfile" -- may be set from command line; default - "config.cfg"
 - command "writeconfig filename[.cfg]" - write settings to file
 - "set[a|u|s] <variable> <vaule>", "set <variable> <value> [a|u|s]" (archive|userinfo|serverinfo)
-- "reset <mask>" - set value of all cvars to default
+- "reset <mask>" - set value of all cvars which names are matched mask to default
 
 6. API (internals)
 

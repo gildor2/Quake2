@@ -112,13 +112,13 @@ void Netchan_OutOfBand (int net_socket, netadr_t adr, int length, byte *data)
 	sizebuf_t	send;
 	byte		send_buf[MAX_MSGLEN];
 
-// write the packet header
+	// write the packet header
 	SZ_Init (&send, send_buf, sizeof(send_buf));
 
 	MSG_WriteLong (&send, -1);	// -1 sequence means out of band
 	SZ_Write (&send, data, length);
 
-// send the datagram
+	// send the datagram
 	NET_SendPacket (net_socket, send.cursize, send.data, adr);
 }
 
@@ -138,7 +138,7 @@ void Netchan_OutOfBandPrint (int net_socket, netadr_t adr, char *format, ...)
 	vsprintf (string, format,argptr);
 	va_end (argptr);
 
-	Netchan_OutOfBand (net_socket, adr, strlen(string), (byte *)string);
+	Netchan_OutOfBand (net_socket, adr, strlen (string), (byte *)string);
 }
 
 

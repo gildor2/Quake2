@@ -498,8 +498,8 @@ void Sys_SendKeyEvents (void)
 		if (!GetMessage (&msg, NULL, 0, 0))
 			Sys_Quit ();
 		sys_msg_time = msg.time;
-      	TranslateMessage (&msg);
-      	DispatchMessage (&msg);
+		TranslateMessage (&msg);
+		DispatchMessage (&msg);
 	}
 
 	// grab frame time
@@ -743,9 +743,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	{
 		// if at a full screen console, don't update unless needed
 		if (Minimized || (dedicated && dedicated->integer))
-		{
 			Sleep (1);
-		}
 
 		while (PeekMessage (&msg, NULL, 0, 0, PM_NOREMOVE))
 		{

@@ -1,4 +1,3 @@
-? improve dropFrame: change sorting for sprites (will not work when sprites used within a scene)
 ?? add mean filter for DrawFPS() (ignore dropped frames and long (with FS access) frames)
 ?! insert entities into BSP draw order (this will remove sorting by entity index and imprive quality of alpha-blended
    entity/world drawing; also: can improve culling -- when occlision will be implemented -- func InEntityVisible() -
@@ -74,6 +73,8 @@ DEBUG:
   (easy implement, but naming problems ...)
 - water lightmaps:
   ? try to GENERATE vertex light for water/windows ??
+- improve SURF_ALPHA quality on near distances (determine const for checking this requirement?):
+  scale (enlarge) texture with keeping alpha = 0 or 255
 
 ---------------------------
 - inlineModels: RF_TRANSLUCENT/RF2_ALPHA: qglColor4f (1,1,1,0.25)/qglColor4f(1,1,1,1) + blend + no lightmap

@@ -242,6 +242,7 @@ void	GL_ClearBuffers (void);
 // works with "vp" (current view portal)
 void	GL_ClearPortal (void);
 void	GL_AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityNum);
+void	GL_InsertShaderIndex (int index);
 void	GL_FinishPortal (void);
 
 void	GL_BackEnd (void);
@@ -300,7 +301,6 @@ typedef struct
 	int		currentColor;
 
 	int		maxUsedShaderIndex;
-	int		minNewShaderIndex;
 	qboolean finished;	//?? remove
 	qboolean is2dMode;
 

@@ -480,7 +480,6 @@ static void GL_BeginFrame (float camera_separation)
 
 	gl_state.finished = false;
 	gl_state.maxUsedShaderIndex = -1;
-	gl_state.minNewShaderIndex = 65536;	// MAX_SHADERS, to be exact
 
 	if (gl_texturemode->modified)
 	{
@@ -907,7 +906,7 @@ shader_t *FindPic (char *name, qboolean force)
 
 	flags = SHADER_ALPHA;
 	if (!force)
-		flags = SHADER_CHECK;
+		flags |= SHADER_CHECK;
 	return GL_FindShader (s, flags);
 }
 

@@ -88,30 +88,33 @@ void Menu_DrawStringCommon (int x, int y, const char *string, int shift);
 
 void Field_Draw (menuField_t *f)
 {
-	int i;
-	char tempbuffer[128]="";
+	int		i;
+	char	tempbuffer[128];
 
+	// draw caption
 	if (f->generic.name)
 		Menu_DrawStringR2LDark (f->generic.x + f->generic.parent->x + LCOLUMN_OFFSET, f->generic.y + f->generic.parent->y, f->generic.name);
 
-	strncpy (tempbuffer, f->buffer + f->visible_offset, f->visible_length);
-
+	// draw border
 	Draw_Char (f->generic.x + f->generic.parent->x + 16, f->generic.y + f->generic.parent->y - 4, 18);
 	Draw_Char (f->generic.x + f->generic.parent->x + 16, f->generic.y + f->generic.parent->y + 4, 24);
-
 	Draw_Char (f->generic.x + f->generic.parent->x + 24 + f->visible_length * 8, f->generic.y + f->generic.parent->y - 4, 20);
 	Draw_Char (f->generic.x + f->generic.parent->x + 24 + f->visible_length * 8, f->generic.y + f->generic.parent->y + 4, 26);
-
-	for ( i = 0; i < f->visible_length; i++ )
+	for (i = 0; i < f->visible_length; i++)
 	{
 		Draw_Char (f->generic.x + f->generic.parent->x + 24 + i * 8, f->generic.y + f->generic.parent->y - 4, 19);
 		Draw_Char (f->generic.x + f->generic.parent->x + 24 + i * 8, f->generic.y + f->generic.parent->y + 4, 25);
 	}
 
+//	re.DrawFill (f->generic.x + f->generic.parent->x + 24 - 8, f->generic.y + f->generic.parent->y - 3,
+//		f->visible_length * 8 + 16, 16, 0x78);
+
 	// perform string drawing with Menu_DrawStringConmmon() to disable text coloring
+	memset (tempbuffer, 0, sizeof(tempbuffer));
+	strncpy (tempbuffer, f->buffer + f->visible_offset, f->visible_length);
 	Menu_DrawStringCommon (f->generic.x + f->generic.parent->x + 24, f->generic.y + f->generic.parent->y, tempbuffer, 0);
 
-	if ( Menu_ItemAtCursor (f->generic.parent ) == f)
+	if (Menu_ItemAtCursor (f->generic.parent ) == f)
 	{
 		int offset;
 
@@ -120,17 +123,18 @@ void Field_Draw (menuField_t *f)
 		else
 			offset = f->cursor;
 
-		if ( ( ( int ) ( Sys_Milliseconds() / 250 ) ) & 1 )
+		// show cursor
+		if ((Sys_Milliseconds() / 250) & 1)
 		{
 			Draw_Char (f->generic.x + f->generic.parent->x + ( offset + 2) * 8 + 8,
 					   f->generic.y + f->generic.parent->y,
-					   11 );
+					   11);
 		}
 		else
 		{
 			Draw_Char (f->generic.x + f->generic.parent->x + ( offset + 2) * 8 + 8,
 					   f->generic.y + f->generic.parent->y,
-					   ' ' );
+					   ' ');
 		}
 	}
 }

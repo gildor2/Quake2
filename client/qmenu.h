@@ -20,7 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef __QMENU_H__
 #define __QMENU_H__
 
-#define MAXMENUITEMS	64
+#define MAXMENUITEMS		64
 
 #define MENU_SCROLL_BORDER	32
 #define MENU_SCROLL_AHEAD	3
@@ -51,7 +51,7 @@ typedef enum {
 #define QMF_LEFT_JUSTIFY	0x00000001
 #define QMF_GRAYED			0x00000002
 #define QMF_NUMBERSONLY		0x00000004
-#define QMF_CENTER		0x00000008
+#define QMF_CENTER			0x00000008
 
 typedef struct menuFramework_s
 {
@@ -156,33 +156,33 @@ int		strlen_color (const char *s);
 #define Menu_DrawStringCenterDark(x,y,s)	DrawStringCommon(x-(strlen_color(s)-1)*4,y,s,128)
 
 
-#define MENU_ACTION(var,ypos,text,call)			\
-	{						\
-		var.generic.type = MTYPE_ACTION;	\
-		var.generic.x = 0;			\
+#define MENU_ACTION(var,ypos,text,call)	\
+	{									\
+		var.generic.type = MTYPE_ACTION;\
+		var.generic.x = 0;				\
 		var.generic.y = ypos;			\
 		var.generic.name = text;		\
-		var.generic.callback = call;		\
+		var.generic.callback = (void(*)(void*))call;\
 	}
 
-#define MENU_SLIDER(var,ypos,text,call,min,max)		\
-	{						\
-		var.generic.type = MTYPE_SLIDER;	\
-		var.generic.x = 0;			\
+#define MENU_SLIDER(var,ypos,text,call,min,max)	\
+	{									\
+		var.generic.type = MTYPE_SLIDER;\
+		var.generic.x = 0;				\
 		var.generic.y = ypos;			\
 		var.generic.name = text;		\
-		var.generic.callback = call;		\
-		var.minvalue = min;			\
-		var.maxvalue = max;			\
+		var.generic.callback = call;	\
+		var.minvalue = min;				\
+		var.maxvalue = max;				\
 	}
 
-#define MENU_SPIN(var,ypos,text,call,items)		\
-	{						\
-		var.generic.type = MTYPE_SPINCONTROL;	\
-		var.generic.x = 0;			\
+#define MENU_SPIN(var,ypos,text,call,items)	\
+	{										\
+		var.generic.type = MTYPE_SPINCONTROL;\
+		var.generic.x = 0;				\
 		var.generic.y = ypos;			\
 		var.generic.name = text;		\
-		var.generic.callback = call;		\
+		var.generic.callback = call;	\
 		var.itemnames = items;			\
 	}
 

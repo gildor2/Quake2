@@ -6,11 +6,27 @@
 - stop when |velocity| less than STOP_EPSILON==0.1
 
 
+Q3A:
+- added mousewheel support in the console:
+  wheel to scroll, ctrl+wheel to scroll faster, shift+wheel to scroll history
+- renderer fix:
+  MAX_SHADERS up to 2^12
+? renderer fix:
+  moved screenshot from frontend to backend, fixes broken r_smp 1 screenshots
+
+
 - stop animation with mouse click (and something another?)
 ? improve camper detection: track player position every ... 5 sec (??) for a 1+n minute period and set "camper" to true
   if current player position is near (tune this distance !) to history[now-1min .. now-2min]
 - menu option: priority (win_priorityBoost) -- for Win2K
 ? screenshots for savegames
+
+!! resource files: builtin (regular .obj files), gzip-compressed (tgz/zip ?) -- menu scripts, defbinds, credits etc.
+   Resource - 1 gzipped file with simple internal structure; this file will be inside EXE. API (files.c or similar ?)
+   LoadResource() -- LoadFile(); FreeResource() -- FreeFile(); WARNING: Win32 API name conflict with LoadResource. Change
+   terminology for resource (LoadData, GetResource, LoadFile() with special filename; LoadFile() looks for file in pak/FS, then
+   (if not found) looks for inline file -- inline PAK file with low priority) ? PERL script for creating resource files (source(s) ->
+   single file -> gzip -> cut hdr -> c-source ->(not necessary ?) obj-file)
 
 
 *** BUGS ***
@@ -21,6 +37,8 @@
 - Sys_Error(ERR_FATAL): will not restore mouse (not always ??!)
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
+- Win2K (home, no IPX protocol) - menu|join_server -- fatal error in user32.dll (should be ERR_DROP)
+  (no crush when launched with "noudp 1" -- R/O cvar)
 
 ? menu interface: appearing/disappearing fx (see itmastio etc.)
 
@@ -59,6 +77,11 @@
 ------------- MENUS --------------------------
 
 - MTYPE_BITMAP + ownerdraw (see q3_ui/...)
+- place "download options" to another place (not "player setup", or to upper level: where model selection performed);
+  make download options to be a bitfield
+- when menu script will be implemented:
+  - add developer submenus
+  - add Half-Life-like screen action menus (semi-transparent rects with text; accessible with keyboard and mouse)
 
 -------------- CLIENT/SERVER -----------------
 

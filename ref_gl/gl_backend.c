@@ -1787,6 +1787,27 @@ void GL_AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityN
 }
 
 
+void GL_InsertShaderIndex (int index)
+{
+	int		i, n;
+	surfaceInfo_t *si;
+
+	n = 0;
+	for (i = 0, si = vp.surfaces; i < numSurfacesTotal; i++, si++)
+	{
+		int		s;
+
+		s = (si->sort >> SHADERNUM_SHIFT) & SHADERNUM_MASK;
+		if (s >= index)	// shader index incremented
+		{
+			si->sort += (1 << SHADERNUM_SHIFT);		// increment shader index field
+			n++;
+		}
+	}
+	Com_DPrintf ("R_InsertShaderIndex(%d): changed %d indexes\n", index, n);
+}
+
+
 void GL_FinishPortal (void)
 {
 	if (!vp.numSurfaces) return;
@@ -1856,12 +1877,6 @@ void GL_BackEnd (void)
 
 	* ((int*) &backendCommands[backendCmdSize]) = BACKEND_STOP;
 	backendCmdSize = 0;
-
-	if (gl_state.maxUsedShaderIndex >= gl_state.minNewShaderIndex)
-	{	// scene uses shader, which index was changed with ResortShader() -- drop frame
-		Com_DPrintf ("GL_BackEnd: drop frame (%d >= %d)\n", gl_state.maxUsedShaderIndex, gl_state.minNewShaderIndex);
-		return;
-	}
 
 	p = (int*) &backendCommands[0];
 	while (*p != BACKEND_STOP)

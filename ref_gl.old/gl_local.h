@@ -532,7 +532,6 @@ typedef struct
 	int		currentColor;
 
 	int		maxUsedShaderIndex;
-	int		minNewShaderIndex;
 	qboolean finished;	//?? remove
 	qboolean is2dMode;
 
