@@ -17,6 +17,8 @@ refImport_t	ri;
 
 bool gl_renderingEnabled;
 
+unsigned vid_width, vid_height;	//?? remove; move to gl_config
+
 
 //------------- Cvars -----------------
 
@@ -160,7 +162,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_noGrid, 0, 0),
 	CVAR_VAR(gl_showGrid, 0, CVAR_CHEAT),
 
-	{&gl_hand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE},
+	CVAR_FULL(&gl_hand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE),	//?? move handness to client (set special flag for ent: MIRROR)
 
 	CVAR_VAR(gl_znear, 4, 0),
 	CVAR_VAR(gl_swapinterval, 0, CVAR_ARCHIVE|CVAR_UPDATE),
@@ -207,7 +209,7 @@ static bool GL_SetMode (void)
 	r_fullscreen->modified = false;
 	gl_mode->modified = false;
 
-	switch (GLimp_SetMode (&vid.width, &vid.height, gl_mode->integer, fullscreen))
+	switch (GLimp_SetMode (&vid_width, &vid_height, gl_mode->integer, fullscreen))
 	{
 	case rserr_ok:
 		gl_config.prevMode = gl_mode->integer;
@@ -219,7 +221,7 @@ static bool GL_SetMode (void)
 		Cvar_SetInteger ("r_fullscreen", 0);
 		r_fullscreen->modified = false;
 		Com_WPrintf ("R_SetMode() - fullscreen unavailable in this mode\n");
-		if (GLimp_SetMode (&vid.width, &vid.height, gl_mode->integer, false) == rserr_ok)
+		if (GLimp_SetMode (&vid_width, &vid_height, gl_mode->integer, false) == rserr_ok)
 			return true;
 		break;
 
@@ -231,7 +233,7 @@ static bool GL_SetMode (void)
 	}
 
 	// try setting it back to something safe
-	if (GLimp_SetMode (&vid.width, &vid.height, gl_config.prevMode, gl_config.prevFS) != rserr_ok)
+	if (GLimp_SetMode (&vid_width, &vid_height, gl_config.prevMode, gl_config.prevFS) != rserr_ok)
 	{
 		Com_WPrintf ("R_SetMode() - could not revert to safe mode\n");	//?? "to previous mode" ? (but, here will be mode "3")
 		return false;
@@ -727,13 +729,13 @@ static void GL_RenderFrame (refdef_t *fd)
 
 	/*------------ rendering -------------*/
 
-	gl_state.haveFullScreen3d = (vp.x == 0) && (vp.y == 0) && (vp.w == vid.width) && (vp.h == vid.height);
+	gl_state.haveFullScreen3d = (vp.x == 0) && (vp.y == 0) && (vp.w == vid_width) && (vp.h == vid_height);
 
 	// setup viewPortal structure
 	memset (&vp, 0, sizeof(vp));
 	vp.flags = fd->rdflags;
 	vp.x = fd->x;
-	vp.y = vid.height - (fd->y + fd->height);
+	vp.y = vid_height - (fd->y + fd->height);
 	vp.w = fd->width;
 	vp.h = fd->height;
 	vp.fov_x = fd->fov_x;
@@ -788,7 +790,7 @@ static void GL_RenderFrame (refdef_t *fd)
 		c.c[1] = appRound (fd->blend[1] * 255);
 		c.c[2] = appRound (fd->blend[2] * 255);
 		c.c[3] = appRound (fd->blend[3] * 255);
-		GL_DrawStretchPic (gl_identityLightShader, 0, 0, vid.width, vid.height, 0, 0, 0, 0, c.rgba);
+		GL_DrawStretchPic (gl_identityLightShader, 0, 0, vid_width, vid_height, 0, 0, 0, 0, c.rgba);
 	}
 
 	/*------------ debug info ------------*/
@@ -1107,7 +1109,7 @@ static void DrawTextPos (int x, int y, const char *text, unsigned rgba)
 void DrawTextLeft (const char *text, unsigned rgba)
 {
 	int		w, h;
-	if (nextLeft_y >= vid.height) return;	// out of screen
+	if (nextLeft_y >= vid_height) return;	// out of screen
 	GetTextExtents (text, w, h);
 	DrawTextPos (0, nextLeft_y, text, rgba);
 	nextLeft_y += h;
@@ -1117,9 +1119,9 @@ void DrawTextLeft (const char *text, unsigned rgba)
 void DrawTextRight (const char *text, unsigned rgba)
 {
 	int		w, h;
-	if (nextRight_y >= vid.height) return;	// out of screen
+	if (nextRight_y >= vid_height) return;	// out of screen
 	GetTextExtents (text, w, h);
-	DrawTextPos (vid.width - w, nextRight_y, text, rgba);
+	DrawTextPos (vid_width - w, nextRight_y, text, rgba);
 	nextRight_y += h;
 }
 

@@ -373,9 +373,9 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 					{
 						VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
 						VectorNormalizeFast (v);
-						d = DotProduct (v, norm);
-						dst->tex[0] = (d * norm[1] * 2 - v[1] + 1) / 2.0f;
-						dst->tex[1] = (d * norm[2] * 2 - v[2] + 1) / 2.0f;
+						d = DotProduct (v, norm) * 2;
+						dst->tex[0] = (d * norm[1] - v[1] + 1) / 2;
+						dst->tex[1] = (d * norm[2] - v[2] + 1) / 2;
 					}
 				}
 			}
@@ -421,9 +421,9 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 			if (tcmod->type == TCMOD_SCROLL)
 			{
 				f1 = tcmod->sSpeed * vp.time;
-				f1 = f1 - floor (f1);		// frac(f1)
+				f1 = f1 - appFloor (f1);		// frac(f1)
 				f2 = tcmod->tSpeed * vp.time;
-				f2 = f2 - floor (f2);		// frac(f2)
+				f2 = f2 - appFloor (f2);		// frac(f2)
 			}
 			else
 			{
@@ -2184,7 +2184,7 @@ static void TesselateText (bkDrawText_t *p)
 	x = p->x + p->w;
 
 	size = 1.0f / 16;
-	for (i = p->len; i > 0 && xp < vid.width; i--)
+	for (i = p->len; i > 0 && xp < vid_width; i--)
 	{
 		chr = *s++;
 		if (chr != ' ')		// space is hardcoded

@@ -22,6 +22,7 @@ BUGS:
 - "conchars.pcx": create drop-shadow effect (in pic; may be, require to cut (as grid) + grow image + different drawing code)
   for better reading (require MemBitmap fx code ...)
 - CVAR_LOG -- add to crash.log on fatal exit (vid_ref,developer,dedicated, {deathmatch,cheats,maxclients}==CVAR_SERVERINFO)
+- DirectX (Draw,Input,Sound): use via OLE (but: dynamic bind to ole32.dll ? DirectX is always used - static bind ?)
   
 ! new pmove.c errors:
   - "ground3" cafe, on the street: cannot jump onto a corner column (horiz. speed set to 0 due to position snap)
@@ -55,6 +56,7 @@ BUGS:
 ? make "r_consoleOnly" work without "vid_restart"
 - "client" source dir: split game-related stuff (effects, particles, prediction etc) and sound/console/keyboard/menu into separate
   dirs (choose 2 names from: cgame, client, ui ... etc)
+- game/m_flash.c : convert float[][3] -> short[][3]  (2.5 Kb -> 2 times smaller ...)
 
 ----------------------------------------
 
@@ -299,6 +301,9 @@ BSP:
 - make zip.c big-endian compatible
 ? update JPEG code (new version)
 - md4.c::Encode()/Decode() -- works exactly as memcpy() with little-endian platforms, memcpy()+LongSwapBuffer() with big-endian
+
+- create tool for automated Little/Big-endian file format conversion (parse C-headers); can create table:
+  num_recs * { rec_offset , num_bytes }  (provide table as resource files for big-endian platforms ?)
 
 ----------- GAME LIB -------------
 

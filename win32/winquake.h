@@ -2,7 +2,10 @@
 #define __WINQUAKE_INCLUDED__
 
 //#define WINVER 0x0500				// to allow some additional stuff in windows headers
+#define WIN32_LEAN_AND_MEAN			// exclude rarely-used services from windown headers
 #include <windows.h>
+#include <mmsystem.h>				// time services, joystick
+
 #include "../qcommon/qcommon.h"
 
 // stuff from Win98+ and Win2000+

@@ -1,17 +1,10 @@
 #/bin/bash
 
-source vc32tools
+../genmake lib.prj COMPILER=VisualC > lib.mak
 
-# set "single" to "1" (builtin ref_xxx) or "0" (external ref_xxx)
-log="build.log"
+export logfile="build.log"
+rm -f $logfile
 
-PrepareVC
-rm -f *.pch $log
-
-logfile="release/$log"
-if ! Make lib; then
-	echo "errors ..." >> $logfile
-	exit 1;
-fi
+vc32tools --make lib
 
 echo "Build done."

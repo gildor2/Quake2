@@ -33,7 +33,7 @@ typedef struct {
 	int	(*_win32ExceptFilter2) (void);
 #endif
 	void	(*_appUnwindPrefix) (const char *fmt);
-	void	__declspec(noreturn)	(*_appUnwindThrow) (const char *fmt, ...);
+	void	NORETURN	(*_appUnwindThrow) (const char *fmt, ...);
 	bool	(*_FS_FileExists) (char *filename);
 	basenamed_t*	(*_FS_ListFiles) (char *name, int *numfiles, int flags);
 	void*	(*_FS_LoadFile) (const char *name, unsigned *size = NULL);

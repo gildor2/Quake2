@@ -21,6 +21,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef QSHARED_H
 #define QSHARED_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+
+#include <math.h>
+#include <time.h>
+
+
 #ifdef _WIN32
 //  disable some compiler warnings
 #pragma warning(disable : 4018)			// signed/unsigned mismatch
@@ -30,29 +39,27 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #pragma warning(disable : 4305)			// truncation from 'const double' to 'const float'
 
 #define DLL_EXPORT	__declspec(dllexport)
+#define NORETURN	__declspec(noreturn)
+#define LITTLE_ENDIAN
+
+#ifdef _MSC_VER
+#pragma intrinsic(memcpy, memset, memcmp, abs, fabs)
+#endif
 
 #ifndef vsnprintf
-#  define vsnprintf	_vsnprintf
+#	define vsnprintf	_vsnprintf
 #endif
 
 #else // _WIN32
 
 #define DLL_EXPORT
+#define NORETURN
 
 #endif
 
-#include <assert.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
-
-#define LITTLE_ENDIAN				//!! comment this string for big-endian platform (or make auto-detection)
 
 // this is the define for determining if we have an asm version of a C function
-#if (defined _M_IX86 || defined __i386__) && !defined C_ONLY && !defined __sun__
+#if (defined _M_IX86 || defined __i386__)
 #define id386	1
 #else
 #define id386	0
@@ -487,8 +494,6 @@ void SetPlaneSignbits (cplane_t *out);
 
 int BoxOnPlaneSide (const vec3_t emins, const vec3_t emaxs, const cplane_t *plane);
 
-#if 1
-
 inline int PlaneTypeForNormal (const vec3_t p)
 {
 	if (p[0] == 1.0f) return PLANE_X;
@@ -535,35 +540,6 @@ inline float DISTANCE_TO_PLANE (const vec3_t vec, const cplane_t *plane)
 	else
 		return DotProduct (plane->normal, vec) - plane->dist;
 }
-
-#else
-
-#define PlaneTypeForNormal(x) (x[0] == 1.0 ? PLANE_X : (x[1] == 1.0 ? PLANE_Y : (x[2] == 1.0 ? PLANE_Z : PLANE_NON_AXIAL) ) )
-#define BOX_ON_PLANE_SIDE(mins, maxs, p)	\
-	(((p)->type <= PLANE_Z) ?				\
-	(										\
-		((p)->dist <= (mins)[(p)->type]) ?	\
-			1								\
-		:									\
-		(									\
-			((p)->dist >= (maxs)[(p)->type]) ?\
-				2							\
-			:								\
-				3							\
-		)									\
-	)										\
-	:										\
-		BoxOnPlaneSide ((mins), (maxs), (p)))
-
-#define DISTANCE_TO_PLANE(vec,plane)		\
-	(										\
-		((plane)->type <= PLANE_Z) ?		\
-		(vec)[(plane)->type] - (plane)->dist\
-	:										\
-		DotProduct((plane)->normal,(vec)) - (plane)->dist\
-	)
-
-#endif
 
 
 typedef struct

@@ -21,8 +21,32 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 
 #ifdef _WIN32
-// need this include, because have wgl and GDI functions here
-#	include <windows.h>
+#if 0
+	// include "windows.h" headers
+#	define WIN32_LEAN_AND_MEAN		// exclude rarely-used services from windown headers
+#	include <windows.h>				// need this include, because have wgl and GDI functions in gl.h
+#else // 0
+	// try to preform some windows defines to avoid "windows.h" including
+#	ifndef APIENTRY
+#		define APIENTRY __stdcall
+#	endif
+#	ifndef WINGDIAPI
+#		define WINGDIAPI
+		typedef unsigned HDC;
+		typedef unsigned HGLRC;
+		typedef const char * LPCSTR;
+		typedef int BOOL;
+		typedef unsigned char BYTE;
+		typedef unsigned short WORD;
+		typedef unsigned int UINT;
+		typedef int (APIENTRY *PROC)();
+		typedef void PIXELFORMATDESCRIPTOR;	// structure
+		typedef PIXELFORMATDESCRIPTOR * LPPIXELFORMATDESCRIPTOR;
+#	endif // WINGDIAPI
+#	ifndef CONST
+#		define CONST const
+#	endif
+#endif // 0
 #endif
 
 #include <GL/gl.h>

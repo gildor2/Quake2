@@ -34,11 +34,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 =============================================================
 */
 
-#define NUMVERTEXNORMALS	162
-
-static float	r_avertexnormals[NUMVERTEXNORMALS][3] = {
-#include "anorms.h"
+#ifdef DYNAMIC_REF
+vec3_t bytedirs[NUMVERTEXNORMALS] = {
+#include "../qcommon/anorms.h"
 };
+#endif
 
 #define MAX_VERTS	2048	// from qfiles.h
 static	float s_lerped[MAX_VERTS][4];		// padded for SIMD
@@ -69,7 +69,7 @@ void GL_LerpVerts (int nverts, dTriVertx_t *v, dTriVertx_t *ov, dTriVertx_t *ver
 	{
 		for (i = 0; i < nverts; i++, v++, ov++, lerp+=4)
 		{
-			float *normal = r_avertexnormals[verts[i].lightnormalindex];
+			float *normal = bytedirs[verts[i].lightnormalindex];
 
 			lerp[0] = move[0] + ov->v[0]*backv[0] + v->v[0]*frontv[0] + normal[0] * POWERSUIT_SCALE;
 			lerp[1] = move[1] + ov->v[1]*backv[1] + v->v[1]*frontv[1] + normal[1] * POWERSUIT_SCALE;

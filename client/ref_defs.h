@@ -2,212 +2,268 @@
 
 #ifdef DYNAMIC_REF
 
+// [bool] [RegisterCommand] [const char *name, void(*func)(), int flags]
 inline bool RegisterCommand (const char *name, void(*func)(), int flags)
 {
 	return ri._RegisterCommand (name, func, flags);
 }
+// [void] [UnregisterCommand] [const char *name]
 inline void UnregisterCommand (const char *name)
 {
 	ri._UnregisterCommand (name);
 }
+// [cvar_t*] [Cvar_Get] [const char *name, const char *value, int flags]
 inline cvar_t* Cvar_Get (const char *name, const char *value, int flags)
 {
 	return ri._Cvar_Get (name, value, flags);
 }
+// [void] [Cvar_GetVars] [const cvarInfo_t *vars, int count]
 inline void Cvar_GetVars (const cvarInfo_t *vars, int count)
 {
 	ri._Cvar_GetVars (vars, count);
 }
+// [cvar_t*] [Cvar_Set] [const char *name, const char *value]
 inline cvar_t* Cvar_Set (const char *name, const char *value)
 {
 	return ri._Cvar_Set (name, value);
 }
+// [cvar_t*] [Cvar_SetValue] [const char *name, float value]
 inline cvar_t* Cvar_SetValue (const char *name, float value)
 {
 	return ri._Cvar_SetValue (name, value);
 }
+// [cvar_t*] [Cvar_SetInteger] [const char *name, int value]
 inline cvar_t* Cvar_SetInteger (const char *name, int value)
 {
 	return ri._Cvar_SetInteger (name, value);
 }
+// [char*] [Cvar_VariableString] [const char *name]
 inline char* Cvar_VariableString (const char *name)
 {
 	return ri._Cvar_VariableString (name);
 }
+// [float] [Cvar_VariableValue] [const char *name]
 inline float Cvar_VariableValue (const char *name)
 {
 	return ri._Cvar_VariableValue (name);
 }
+// [int] [Cvar_VariableInt] [const char *name]
 inline int Cvar_VariableInt (const char *name)
 {
 	return ri._Cvar_VariableInt (name);
 }
+// [float] [Cvar_Clamp] [cvar_t *cvar, float low, float high]
 inline float Cvar_Clamp (cvar_t *cvar, float low, float high)
 {
 	return ri._Cvar_Clamp (cvar, low, high);
 }
+// [float] [Cvar_ClampName] [const char *name, float low, float high]
 inline float Cvar_ClampName (const char *name, float low, float high)
 {
 	return ri._Cvar_ClampName (name, low, high);
 }
+// [void*] [appMalloc] [int size]
 inline void* appMalloc (int size)
 {
 	return ri._appMalloc (size);
 }
+// [void] [appFree] [void *ptr]
 inline void appFree (void *ptr)
 {
 	ri._appFree (ptr);
 }
+// [void*] [CreateMemoryChain] [void]
 inline void* CreateMemoryChain (void)
 {
 	return ri._CreateMemoryChain ();
 }
+// [void*] [AllocChainBlock] [void *chain, int size]
 inline void* AllocChainBlock (void *chain, int size)
 {
 	return ri._AllocChainBlock (chain, size);
 }
+// [void] [FreeMemoryChain] [void *chain]
 inline void FreeMemoryChain (void *chain)
 {
 	ri._FreeMemoryChain (chain);
 }
+// [void*] [Hunk_Begin] [int maxsize]
 inline void* Hunk_Begin (int maxsize)
 {
 	return ri._Hunk_Begin (maxsize);
 }
+// [void*] [Hunk_Alloc] [int size]
 inline void* Hunk_Alloc (int size)
 {
 	return ri._Hunk_Alloc (size);
 }
+// [int] [Hunk_End] [void]
 inline int Hunk_End (void)
 {
 	return ri._Hunk_End ();
 }
+// [void] [Hunk_Free] [void *buf]
 inline void Hunk_Free (void *buf)
 {
 	ri._Hunk_Free (buf);
 }
+// [int] [Sys_Milliseconds] [void]
 inline int Sys_Milliseconds (void)
 {
 	return ri._Sys_Milliseconds ();
 }
+// [void] [Com_Printf] [const char *str, ...]
 #define Com_Printf	ri._Com_Printf
+// [void] [Com_DPrintf] [const char *str, ...]
 #define Com_DPrintf	ri._Com_DPrintf
+// [void] [Com_WPrintf] [const char *str, ...]
 #define Com_WPrintf	ri._Com_WPrintf
+// [void] [Com_FatalError] [const char *fmt, ...]
 #define Com_FatalError	ri._Com_FatalError
+// [void] [Com_DropError] [const char *fmt, ...]
 #define Com_DropError	ri._Com_DropError
 #ifdef _WIN32
+// [int] [win32ExceptFilter2] [void]
 inline int win32ExceptFilter2 (void)
 {
 	return ri._win32ExceptFilter2 ();
 }
 #endif
+// [void] [appUnwindPrefix] [const char *fmt]
 inline void appUnwindPrefix (const char *fmt)
 {
 	ri._appUnwindPrefix (fmt);
 }
+// [void	NORETURN] [appUnwindThrow] [const char *fmt, ...]
 #define appUnwindThrow	ri._appUnwindThrow
+// [bool] [FS_FileExists] [char *filename]
 inline bool FS_FileExists (char *filename)
 {
 	return ri._FS_FileExists (filename);
 }
+// [basenamed_t*] [FS_ListFiles] [char *name, int *numfiles, int flags]
 inline basenamed_t* FS_ListFiles (char *name, int *numfiles, int flags)
 {
 	return ri._FS_ListFiles (name, numfiles, flags);
 }
+// [void*] [FS_LoadFile] [const char *name, unsigned *size = NULL]
 inline void* FS_LoadFile (const char *name, unsigned *size = NULL)
 {
 	return ri._FS_LoadFile (name, NULL);
 }
+// [void] [FS_FreeFile] [void *buf]
 inline void FS_FreeFile (void *buf)
 {
 	ri._FS_FreeFile (buf);
 }
+// [char*] [FS_Gamedir] [void]
 inline char* FS_Gamedir (void)
 {
 	return ri._FS_Gamedir ();
 }
+// [void] [FS_CreatePath] [char *path]
 inline void FS_CreatePath (char *path)
 {
 	ri._FS_CreatePath (path);
 }
+// [void] [FS_CopyFile] [char *src, char *dst]
 inline void FS_CopyFile (char *src, char *dst)
 {
 	ri._FS_CopyFile (src, dst);
 }
+// [void] [FS_CopyFiles] [char *srcMask, char *dstDir]
 inline void FS_CopyFiles (char *srcMask, char *dstDir)
 {
 	ri._FS_CopyFiles (srcMask, dstDir);
 }
+// [void] [FS_RemoveFiles] [char *mask]
 inline void FS_RemoveFiles (char *mask)
 {
 	ri._FS_RemoveFiles (mask);
 }
+// [bool] [MatchWildcard] [const char *name, const char *mask, bool ignoreCase = false]
 inline bool MatchWildcard (const char *name, const char *mask, bool ignoreCase = false)
 {
 	return ri._MatchWildcard (name, mask, false);
 }
+// [bool] [Vid_GetModeInfo] [int *width, int *height, int mode]
 inline bool Vid_GetModeInfo (int *width, int *height, int mode)
 {
 	return ri._Vid_GetModeInfo (width, height, mode);
 }
+// [int] [ImageExists] [const char *name, int stop_mask = IMAGE_ANY]
 inline int ImageExists (const char *name, int stop_mask = IMAGE_ANY)
 {
 	return ri._ImageExists (name, IMAGE_ANY);
 }
+// [void] [LoadPCX] [const char *name, byte **pic, byte **palette, int *width, int *height]
 inline void LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *height)
 {
 	ri._LoadPCX (name, pic, palette, width, height);
 }
+// [void] [LoadTGA] [const char *name, byte **pic, int *width, int *height]
 inline void LoadTGA (const char *name, byte **pic, int *width, int *height)
 {
 	ri._LoadTGA (name, pic, width, height);
 }
+// [void] [LoadJPG] [const char *name, byte **pic, int *width, int *height]
 inline void LoadJPG (const char *name, byte **pic, int *width, int *height)
 {
 	ri._LoadJPG (name, pic, width, height);
 }
+// [bool] [WriteTGA] [const char *name, byte *pic, int width, int height]
 inline bool WriteTGA (const char *name, byte *pic, int width, int height)
 {
 	return ri._WriteTGA (name, pic, width, height);
 }
+// [bool] [WriteJPG] [const char *name, byte *pic, int width, int height, bool highQuality]
 inline bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQuality)
 {
 	return ri._WriteJPG (name, pic, width, height, highQuality);
 }
+// [bspfile_t*] [LoadBspFile] [const char *filename, bool clientload, unsigned *checksum]
 inline bspfile_t* LoadBspFile (const char *filename, bool clientload, unsigned *checksum)
 {
 	return ri._LoadBspFile (filename, clientload, checksum);
 }
+// [void] [CM_BoxTrace] [trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask]
 inline void CM_BoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask)
 {
 	ri._CM_BoxTrace (tr, start, end, mins, maxs, headnode, brushmask);
 }
+// [void] [CM_TransformedBoxTrace] [trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles]
 inline void CM_TransformedBoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles)
 {
 	ri._CM_TransformedBoxTrace (tr, start, end, mins, maxs, headnode, brushmask, origin, angles);
 }
+// [void] [CM_TransformedBoxTrace2] [trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t *axis]
 inline void CM_TransformedBoxTrace2 (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t *axis)
 {
 	ri._CM_TransformedBoxTrace2 (tr, start, end, mins, maxs, headnode, brushmask, origin, axis);
 }
+// [int] [CM_BrushTrace] [const vec3_t start, const vec3_t end, int *brushes, int maxBrushes]
 inline int CM_BrushTrace (const vec3_t start, const vec3_t end, int *brushes, int maxBrushes)
 {
 	return ri._CM_BrushTrace (start, end, brushes, maxBrushes);
 }
+// [int] [CM_RefineBrushTrace] [const vec3_t start, const vec3_t end, int *brushes, int numBrushes]
 inline int CM_RefineBrushTrace (const vec3_t start, const vec3_t end, int *brushes, int numBrushes)
 {
 	return ri._CM_RefineBrushTrace (start, end, brushes, numBrushes);
 }
 #ifdef _WIN32
+// [void*] [Vid_CreateWindow] [int width, int height, bool fullscreen]
 inline void* Vid_CreateWindow (int width, int height, bool fullscreen)
 {
 	return ri._Vid_CreateWindow (width, height, fullscreen);
 }
+// [void] [Vid_DestroyWindow] [bool force]
 inline void Vid_DestroyWindow (bool force)
 {
 	ri._Vid_DestroyWindow (force);
 }
 #else
+// [void] [Vid_NewWindow] [int width, int height]
 inline void Vid_NewWindow (int width, int height)
 {
 	ri._Vid_NewWindow (width, height);
@@ -247,7 +303,7 @@ void	Com_DropError (const char *fmt, ...);
 int	win32ExceptFilter2 (void);
 #endif
 void	appUnwindPrefix (const char *fmt);
-void	__declspec(noreturn)	appUnwindThrow (const char *fmt, ...);
+void	NORETURN	appUnwindThrow (const char *fmt, ...);
 bool	FS_FileExists (char *filename);
 basenamed_t*	FS_ListFiles (char *name, int *numfiles, int flags);
 void*	FS_LoadFile (const char *name, unsigned *size = NULL);

@@ -26,10 +26,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "../client/ref.h"
 
-#ifdef id386
 #undef id386
 #define id386 0
-#endif
 
 #define REF_VERSION     "SOFT 0.01"
 

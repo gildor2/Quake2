@@ -244,7 +244,7 @@ void R_ImageList_f( void );
 void R_Register (void)
 {
 CVAR_BEGIN(vars)
-	{&sw_aliasstats, "sw_polymodelstats", "0", 0},
+	CVAR_FULL(&sw_aliasstats, "sw_polymodelstats", "0", 0),
 	CVAR_VAR(sw_allow_modex, 1, CVAR_ARCHIVE),
 	CVAR_VAR(sw_clearcolor, 2, 0),
 	CVAR_VAR(sw_drawflat, 0, 0),
@@ -259,7 +259,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(sw_waterwarp, 1, 0),
 	CVAR_VAR(sw_mode, 0, CVAR_ARCHIVE),
 
-	{&r_lefthand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE},
+	CVAR_FULL(&r_lefthand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE),
 	CVAR_VAR(r_speeds, 0, 0),
 	CVAR_VAR(r_drawentities, 1, 0),
 	CVAR_VAR(r_drawworld, 1, CVAR_CHEAT),

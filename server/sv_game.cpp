@@ -564,8 +564,9 @@ void SV_InitGameLibrary (bool dummy)
 
 	RegisterCommand ("gz_stats", GZ_Stats_f);
 	// register NULL commands for ability to complete them from console (will be forwarded to server)
-	for (int i = 0; i < ARRAY_COUNT(gameCommands); i++)
-		RegisterCommand (gameCommands[i], NULL, 0);
+	if (!DEDICATED)
+		for (int i = 0; i < ARRAY_COUNT(gameCommands); i++)
+			RegisterCommand (gameCommands[i], NULL, 0);
 
 	unguard;
 }
@@ -593,7 +594,8 @@ void SV_ShutdownGameLibrary (void)
 
 	UnregisterCommand ("gz_stats");
 	// unregister game commands
-	for (int i = 0; i < ARRAY_COUNT(gameCommands); i++)
-		UnregisterCommand (gameCommands[i]);
+	if (!DEDICATED)
+		for (int i = 0; i < ARRAY_COUNT(gameCommands); i++)
+			UnregisterCommand (gameCommands[i]);
 	unguard;
 }

@@ -1257,9 +1257,9 @@ void GL_PerformScreenshot (void)
 	FS_CreatePath (name);
 
 	// allocate buffer for 4 color components (required for ResampleTexture()
-	buffer = (byte*)appMalloc (vid.width * vid.height * 4);
+	buffer = (byte*)appMalloc (vid_width * vid_height * 4);
 	// read frame buffer data
-	glReadPixels (0, 0, vid.width, vid.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	glReadPixels (0, 0, vid_width, vid_height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
 /*
 	if (!buffer[2000] && !buffer[2001] && !buffer[2002] && !buffer[2004] && !buffer[2005] && !buffer[2006]) Com_WPrintf("BLACK!\n");
@@ -1272,7 +1272,7 @@ void GL_PerformScreenshot (void)
 		byte *buffer2;
 
 		buffer2 = (byte*)appMalloc (LEVELSHOT_W * LEVELSHOT_H * 4);
-		ResampleTexture ((unsigned *)buffer, vid.width, vid.height, (unsigned *)buffer2, LEVELSHOT_W, LEVELSHOT_H);
+		ResampleTexture ((unsigned *)buffer, vid_width, vid_height, (unsigned *)buffer2, LEVELSHOT_W, LEVELSHOT_H);
 		appFree (buffer);
 		buffer = buffer2;
 		width = LEVELSHOT_W;
@@ -1280,8 +1280,8 @@ void GL_PerformScreenshot (void)
 	}
 	else
 	{
-		width = vid.width;
-		height = vid.height;
+		width = vid_width;
+		height = vid_height;
 	}
 	size = width * height;
 
@@ -1583,8 +1583,8 @@ void GL_ShowImages (void)
 	}
 
 	// display images
-	dx = vid.width / nx;
-	dy = vid.height / ny;
+	dx = vid_width / nx;
+	dy = vid_height / ny;
 	num = numImg;
 	img = &imagesArray[0];
 	for (y = 0; y < ny && num; y++)

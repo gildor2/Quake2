@@ -1,54 +1,22 @@
-#/bin/bash
+#!/bin/bash
 
-source vc32tools
-
-# set "single" to "1" (builtin ref_xxx) or "0" (external ref_xxx)
-single=1
-log="build.log"
-
-PrepareVC
-rm -f *.pch $log
+if [ -z "$target" ]; then
+	# default target
+	target="static"
+fi
 
 cd ..
 
-if ! [ -f "lib/lib.lib" ]; then
-	echo "----- Building libraries -----"
+if ! [ -f "lib/lib.lib" ]; then	#?? integrate lib.prj into quake2.prj
 	cd lib
-	if ! Make "lib"; then
-		echo "cannot build libs ..."
-		exit 1
-	fi
+	vc32tools --make lib
 	cd ..
 fi
 
-echo "----- Building Quake2 -----"
-logfile="release/$log"
-if [ "$single" == "1" ]; then
-	prj="quake2s"
-else
-	prj="quake2"
-fi
+export logfile="Release/build.log"
+rm -f $logfile
 
-if ! [ -f $prj.mak ]; then
-	echo "FATAL: makefile is not found!"
-	exit 1
-fi
+TIMEFORMAT="Total time: %1R sec"
+time vc32tools --make quake2 $target
 
-echo "** building $prj" >> $logfile
-if ! Make $prj; then
-	echo "errors ..." >> $logfile
-	exit 1
-fi
-
-echo "----- Building old ref_gl -----"
-logfile="../release/$log"
-cd ref_gl.old
-
-echo "** building old ref_gl" >> $logfile
-if ! Make ref_gl; then
-	echo "errors ..." >> $logfile
-	exit 1
-fi
-
-cd ..
 echo "Build done."

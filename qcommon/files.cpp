@@ -939,7 +939,9 @@ Properly handles partial reads
 void FS_Read (void *buffer, int len, FILE *f)
 {
 	FILE2	*f2;
-	zip_file zfs;
+	zipFile_t zfs;
+
+	guard(FS_Read);
 
 	if (!f) return;
 	f2 = (FILE2*)f;
@@ -959,12 +961,9 @@ void FS_Read (void *buffer, int len, FILE *f)
 			rem = f2->rFile->pos;
 			while (rem)
 			{
-				char	tmpbuf[256];	// buffer for seeking
-				int		tmp;
+				char	tmpbuf[4096];	// buffer for seeking
 
-				tmp = rem;
-				if (tmp > sizeof(tmpbuf))
-					tmp = sizeof(tmpbuf);
+				int tmp = min(rem, sizeof(tmpbuf));
 				Zip_ReadBuf (f2->zBuf, tmpbuf, tmp);
 				rem -= tmp;
 			}
@@ -978,20 +977,23 @@ void FS_Read (void *buffer, int len, FILE *f)
 		if (!f2->pFile)
 		{	// regular file
 			f2->file = fopen (f2->name, "rb");
-			if (!f2->file) Com_FatalError ("Cannot open file %s", f2->name);
+			if (!f2->file) Com_FatalError ("cannot open file %s", f2->name);
 		}
 		else
 		{	// pak file
 			if (f2->type == FT_PAK)
 			{	// id pak file
 				f2->file = FOpenCached (f2->name);		// fopen (f2->name, "rb");
-				if (!f2->file) Com_FatalError ("Couldn't reopen %s", f2->name);
-				if (fseek (f2->file, f2->pFile->pos, SEEK_SET)) Com_FatalError ("Cannot seek %s", f2->name);
+				if (!f2->file)
+					Com_FatalError ("couldn't reopen %s", f2->name);
+				if (fseek (f2->file, f2->pFile->pos, SEEK_SET))
+					Com_FatalError ("Cannot seek %s", f2->name);
 			}
 			else
 			{	// zipped pak file
 				f2->file = FOpenCached (f2->name);		// ZipOpen (f2->name);
-				if (!f2->file) Com_FatalError ("Couldn't reopen zip %s", f2->name);
+				if (!f2->file)
+					Com_FatalError ("couldn't reopen zip %s", f2->name);
 				zfs.csize  = f2->pFile->cSize;
 				zfs.ucsize = f2->pFile->ucSize;
 				zfs.pos    = f2->pFile->pos;
@@ -999,7 +1001,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 				zfs.crc32  = f2->pFile->crc;
 				f2->zFile = Zip_OpenFile (f2->file, &zfs);
 				if (!f2->zFile)
-					Com_FatalError ("Cannot open file %s in zip %s", f2->pFile->name, f2->name);
+					Com_FatalError ("cannot open file %s in zip %s", f2->pFile->name, f2->name);
 			}
 		}
 	}
@@ -1007,18 +1009,19 @@ void FS_Read (void *buffer, int len, FILE *f)
 	if (f2->zFile)
 	{
 		if (Zip_ReadFile (f2->zFile, buffer, len) != len)
-			Com_FatalError ("Error reading zip file");
+			Com_FatalError ("error reading zip file");
 	}
 	else
 	{
 		byte	*buf;
-		int		read;
 
 		buf = (byte *)buffer;
-		read = fread (buf, len, 1, f2->file);
+		int read = fread (buf, len, 1, f2->file);
 		if (read != 1)
-			Com_FatalError ("FS_Read: cannot read file");
+			Com_FatalError ("cannot read file");
 	}
+
+	unguard;
 }
 
 /*
@@ -1077,7 +1080,7 @@ of the list so they override previous pack files.
 
 static pack_t *createdPak;
 
-static bool EnumZippedPak (zip_file *file)
+static bool EnumZippedPak (zipFile_t *file)
 {
 	int		len;
 	packFile_t *newfile;
@@ -1807,12 +1810,10 @@ static void FS_Cat_f (bool usage, int argc, char **argv)
 	Com_Printf ("\n--------\n");
 	while (len)
 	{
-		int		get, i;
+		int		i;
 		char	*p;
 
-		get = len;
-		if (get > sizeof(buf))
-			get = sizeof(buf);
+		int get = min(len, sizeof(buf));
 		FS_Read (buf, get, f);
 
 		for (i = 0, p = buf; i < get && *p; i++, p++)
@@ -1890,14 +1891,14 @@ void FS_InitFilesystem (void)
 {
 CVAR_BEGIN(vars)
 	// basedir <path>  -- allows the game to run from outside the data tree
-	{&fs_basedir, "basedir", ".", CVAR_NOSET},
-	{&fs_configfile, "cfgfile", CONFIGNAME, CVAR_NOSET},
+	CVAR_FULL(&fs_basedir, "basedir", ".", CVAR_NOSET),
+	CVAR_FULL(&fs_configfile, "cfgfile", CONFIGNAME, CVAR_NOSET),
 	// cddir <path>	   -- logically concatenates the cddir after the basedir for
 	// allows the game to run from outside the data tree
 #ifdef CD_PATH
-	{&fs_cddir, "cddir", "", CVAR_NOSET},
+	CVAR_FULL(&fs_cddir, "cddir", "", CVAR_NOSET),
 #endif
-	{&fs_gamedirvar, "game", "", CVAR_LATCH|CVAR_SERVERINFO},
+	CVAR_FULL(&fs_gamedirvar, "game", "", CVAR_LATCH|CVAR_SERVERINFO),
 	CVAR_VAR(fs_debug, 0, 0)
 CVAR_END
 

@@ -277,14 +277,26 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 
 void Cvar_GetVars (const cvarInfo_t *vars, int count)
 {
-	int		i;
-
-	for (i = 0; i < count; i++, vars++)
+	for (int i = 0; i < count; i++, vars++)
 	{
+		char	name[256];
 		cvar_t	*var;
 
-		var = Cvar_Get (vars->name, vars->value, vars->flags);
-		if (var)
+		char *value = strchr (vars->string, '=');
+		if (!value)	// should not happens
+		{
+			strcpy (name, vars->string);
+			value = "";
+		}
+		else
+		{
+			// copy var name till delimiter
+			Q_strncpyz (name, vars->string, value - vars->string + 1);
+			// skip delimiter
+			value++;
+		}
+
+		if (var = Cvar_Get (name, value, vars->flags))
 		{
 			if (vars->flags & CVAR_UPDATE)
 				var->modified = true;
@@ -305,9 +317,7 @@ Cvar_Set2
 */
 static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bool force)
 {
-	cvar_t	*var;
-
-	var = Cvar_FindVar (var_name);
+	cvar_t *var = Cvar_FindVar (var_name);
 	if (!var)
 	{	// create it
 		return Cvar_Get (var_name, value, flags|CVAR_NODEFAULT);

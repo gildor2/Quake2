@@ -5,14 +5,37 @@
 #include <stdio.h>
 
 #ifdef _WIN32
-// need this include, because have wgl and GDI functions in gl.h
-#	include <windows.h>
+#if 0
+	// include "windows.h" headers
+#	define WIN32_LEAN_AND_MEAN		// exclude rarely-used services from windown headers
+#	include <windows.h>				// need this include, because have wgl and GDI functions in gl.h
+#else // 0
+	// try to preform some windows defines to avoid "windows.h" including
+#	ifndef APIENTRY
+#		define APIENTRY __stdcall
+#	endif
+#	ifndef WINGDIAPI
+#		define WINGDIAPI
+		typedef unsigned HDC;
+		typedef unsigned HGLRC;
+		typedef const char * LPCSTR;
+		typedef int BOOL;
+		typedef unsigned char BYTE;
+		typedef unsigned short WORD;
+		typedef unsigned int UINT;
+		typedef int (APIENTRY *PROC)();
+		typedef void PIXELFORMATDESCRIPTOR;	// structure
+		typedef PIXELFORMATDESCRIPTOR * LPPIXELFORMATDESCRIPTOR;
+#	endif // WINGDIAPI
+#	ifndef CONST
+#		define CONST const
+#	endif
+#endif // 0
 #endif
 
 #include <GL/gl.h>
 #ifndef GL_GLEXT_VERSION
-// include glext.h only when its contents not in gl.h (warning: GL_GLEXT_VERSION may be too low)
-#include "glext.h"
+#	include "glext.h"				// include glext.h only when its contents not in gl.h (warning: GL_GLEXT_VERSION may be too low)
 #endif
 
 // Obsolete (missing in standard headers), but still supported extensions
@@ -48,15 +71,8 @@ extern "C" refExport_t GetRefAPI (const refImport_t *);
 extern "C" DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
 #endif
 
-
-//?? find a way to remove this struc (use vid_width and vid_height or vid_size[2] ??)
-typedef struct
-{
-	unsigned	width, height;		// coordinates from main game
-} viddef_t;
-
-extern viddef_t vid;
-
+//??
+extern unsigned vid_width, vid_height;
 
 // forwards
 typedef struct viewPortal_s	viewPortal_t;

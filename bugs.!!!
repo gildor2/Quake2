@@ -74,3 +74,11 @@ HARDWARE:
   video (exec alias "d1" -- video+demo) when level loading, displayed black rect instead of "loading" banner
 - notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move
   crouched)
+
+SOURCE FILES:
+~~~~~~~~~~~~~
+- (VisualC++ 6) when compiling renderer with DYNAMIC_REF:
+  - "unguard" will be linked to "NORETURN struc.appUnwindThrow()"; VC ignores NORETURN here,
+    and will display warning C4715 (not all control paths return value)
+  - FS_LoadFile(filename, &len) have arg "unsigned *len"; using this via structure will produce warning C4700
+    (local variable used without having been initialized)

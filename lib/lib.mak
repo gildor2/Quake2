@@ -1,1823 +1,431 @@
-# Microsoft Developer Studio Generated NMAKE File, Based on lib.dsp
-!IF "$(CFG)" == ""
-CFG=lib - Win32 Debug
-!MESSAGE No configuration specified. Defaulting to lib - Win32 Debug.
-!ENDIF 
-
-!IF "$(CFG)" != "lib - Win32 Release" && "$(CFG)" != "lib - Win32 Debug"
-!MESSAGE Invalid configuration "$(CFG)" specified.
-!MESSAGE You can specify a configuration when running NMAKE
-!MESSAGE by defining the macro CFG on the command line. For example:
-!MESSAGE 
-!MESSAGE NMAKE /f "lib.mak" CFG="lib - Win32 Debug"
-!MESSAGE 
-!MESSAGE Possible choices for configuration are:
-!MESSAGE 
-!MESSAGE "lib - Win32 Release" (based on "Win32 (x86) Static Library")
-!MESSAGE "lib - Win32 Debug" (based on "Win32 (x86) Static Library")
-!MESSAGE 
-!ERROR An invalid configuration is specified.
-!ENDIF 
-
-!IF "$(OS)" == "Windows_NT"
-NULL=
-!ELSE 
-NULL=nul
-!ENDIF 
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-OUTDIR=.\Release
-INTDIR=.\Release
-
-ALL : ".\lib.lib"
-
-
-CLEAN :
-	-@erase "$(INTDIR)\adler32.obj"
-	-@erase "$(INTDIR)\crc32.obj"
-	-@erase "$(INTDIR)\inffast.obj"
-	-@erase "$(INTDIR)\inflate.obj"
-	-@erase "$(INTDIR)\inftrees.obj"
-	-@erase "$(INTDIR)\jcapimin.obj"
-	-@erase "$(INTDIR)\jcapistd.obj"
-	-@erase "$(INTDIR)\jccoefct.obj"
-	-@erase "$(INTDIR)\jccolor.obj"
-	-@erase "$(INTDIR)\jcdctmgr.obj"
-	-@erase "$(INTDIR)\jcdiffct.obj"
-	-@erase "$(INTDIR)\jchuff.obj"
-	-@erase "$(INTDIR)\jcinit.obj"
-	-@erase "$(INTDIR)\jclhuff.obj"
-	-@erase "$(INTDIR)\jclossls.obj"
-	-@erase "$(INTDIR)\jclossy.obj"
-	-@erase "$(INTDIR)\jcmainct.obj"
-	-@erase "$(INTDIR)\jcmarker.obj"
-	-@erase "$(INTDIR)\jcmaster.obj"
-	-@erase "$(INTDIR)\jcodec.obj"
-	-@erase "$(INTDIR)\jcomapi.obj"
-	-@erase "$(INTDIR)\jcparam.obj"
-	-@erase "$(INTDIR)\jcphuff.obj"
-	-@erase "$(INTDIR)\jcpred.obj"
-	-@erase "$(INTDIR)\jcprepct.obj"
-	-@erase "$(INTDIR)\jcsample.obj"
-	-@erase "$(INTDIR)\jcscale.obj"
-	-@erase "$(INTDIR)\jcshuff.obj"
-	-@erase "$(INTDIR)\jdapimin.obj"
-	-@erase "$(INTDIR)\jdapistd.obj"
-	-@erase "$(INTDIR)\jdatadst.obj"
-	-@erase "$(INTDIR)\jdcoefct.obj"
-	-@erase "$(INTDIR)\jdcolor.obj"
-	-@erase "$(INTDIR)\jddctmgr.obj"
-	-@erase "$(INTDIR)\jddiffct.obj"
-	-@erase "$(INTDIR)\jdhuff.obj"
-	-@erase "$(INTDIR)\jdinput.obj"
-	-@erase "$(INTDIR)\jdlhuff.obj"
-	-@erase "$(INTDIR)\jdlossls.obj"
-	-@erase "$(INTDIR)\jdlossy.obj"
-	-@erase "$(INTDIR)\jdmainct.obj"
-	-@erase "$(INTDIR)\jdmarker.obj"
-	-@erase "$(INTDIR)\jdmaster.obj"
-	-@erase "$(INTDIR)\jdmerge.obj"
-	-@erase "$(INTDIR)\jdphuff.obj"
-	-@erase "$(INTDIR)\jdpostct.obj"
-	-@erase "$(INTDIR)\jdpred.obj"
-	-@erase "$(INTDIR)\jdsample.obj"
-	-@erase "$(INTDIR)\jdscale.obj"
-	-@erase "$(INTDIR)\jdshuff.obj"
-	-@erase "$(INTDIR)\jfdctflt.obj"
-	-@erase "$(INTDIR)\jidctflt.obj"
-	-@erase "$(INTDIR)\jidctred.obj"
-	-@erase "$(INTDIR)\jmemmgr.obj"
-	-@erase "$(INTDIR)\jmemnobs.obj"
-	-@erase "$(INTDIR)\jquant1.obj"
-	-@erase "$(INTDIR)\jquant2.obj"
-	-@erase "$(INTDIR)\jutils.obj"
-	-@erase "$(INTDIR)\vc60.idb"
-	-@erase "$(INTDIR)\zutil.obj"
-	-@erase ".\lib.lib"
-
-"$(OUTDIR)" :
-    if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
-
-CPP=cl.exe
-CPP_PROJ=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-RSC=rc.exe
-BSC32=bscmake.exe
-BSC32_FLAGS=/nologo /o"$(OUTDIR)\lib.bsc" 
-BSC32_SBRS= \
-	
-LIB32=link.exe -lib
-LIB32_FLAGS=/nologo /out:"lib.lib" 
-LIB32_OBJS= \
-	"$(INTDIR)\jcapimin.obj" \
-	"$(INTDIR)\jcapistd.obj" \
-	"$(INTDIR)\jccoefct.obj" \
-	"$(INTDIR)\jccolor.obj" \
-	"$(INTDIR)\jcdctmgr.obj" \
-	"$(INTDIR)\jcdiffct.obj" \
-	"$(INTDIR)\jchuff.obj" \
-	"$(INTDIR)\jcinit.obj" \
-	"$(INTDIR)\jclhuff.obj" \
-	"$(INTDIR)\jclossls.obj" \
-	"$(INTDIR)\jclossy.obj" \
-	"$(INTDIR)\jcmainct.obj" \
-	"$(INTDIR)\jcmarker.obj" \
-	"$(INTDIR)\jcmaster.obj" \
-	"$(INTDIR)\jcodec.obj" \
-	"$(INTDIR)\jcomapi.obj" \
-	"$(INTDIR)\jcparam.obj" \
-	"$(INTDIR)\jcphuff.obj" \
-	"$(INTDIR)\jcpred.obj" \
-	"$(INTDIR)\jcprepct.obj" \
-	"$(INTDIR)\jcsample.obj" \
-	"$(INTDIR)\jcscale.obj" \
-	"$(INTDIR)\jcshuff.obj" \
-	"$(INTDIR)\jdapimin.obj" \
-	"$(INTDIR)\jdapistd.obj" \
-	"$(INTDIR)\jdatadst.obj" \
-	"$(INTDIR)\jdcoefct.obj" \
-	"$(INTDIR)\jdcolor.obj" \
-	"$(INTDIR)\jddctmgr.obj" \
-	"$(INTDIR)\jddiffct.obj" \
-	"$(INTDIR)\jdhuff.obj" \
-	"$(INTDIR)\jdinput.obj" \
-	"$(INTDIR)\jdlhuff.obj" \
-	"$(INTDIR)\jdlossls.obj" \
-	"$(INTDIR)\jdlossy.obj" \
-	"$(INTDIR)\jdmainct.obj" \
-	"$(INTDIR)\jdmarker.obj" \
-	"$(INTDIR)\jdmaster.obj" \
-	"$(INTDIR)\jdmerge.obj" \
-	"$(INTDIR)\jdphuff.obj" \
-	"$(INTDIR)\jdpostct.obj" \
-	"$(INTDIR)\jdpred.obj" \
-	"$(INTDIR)\jdsample.obj" \
-	"$(INTDIR)\jdscale.obj" \
-	"$(INTDIR)\jdshuff.obj" \
-	"$(INTDIR)\jfdctflt.obj" \
-	"$(INTDIR)\jidctflt.obj" \
-	"$(INTDIR)\jidctred.obj" \
-	"$(INTDIR)\jmemmgr.obj" \
-	"$(INTDIR)\jmemnobs.obj" \
-	"$(INTDIR)\jquant1.obj" \
-	"$(INTDIR)\jquant2.obj" \
-	"$(INTDIR)\jutils.obj" \
-	"$(INTDIR)\adler32.obj" \
-	"$(INTDIR)\crc32.obj" \
-	"$(INTDIR)\inffast.obj" \
-	"$(INTDIR)\inflate.obj" \
-	"$(INTDIR)\inftrees.obj" \
-	"$(INTDIR)\zutil.obj"
-
-".\lib.lib" : "$(OUTDIR)" $(DEF_FILE) $(LIB32_OBJS)
-    $(LIB32) @<<
-  $(LIB32_FLAGS) $(DEF_FLAGS) $(LIB32_OBJS)
-<<
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-OUTDIR=.\Debug
-INTDIR=.\Debug
-# Begin Custom Macros
-OutDir=.\Debug
-# End Custom Macros
-
-ALL : "$(OUTDIR)\lib.lib"
-
-
-CLEAN :
-	-@erase "$(INTDIR)\adler32.obj"
-	-@erase "$(INTDIR)\crc32.obj"
-	-@erase "$(INTDIR)\inffast.obj"
-	-@erase "$(INTDIR)\inflate.obj"
-	-@erase "$(INTDIR)\inftrees.obj"
-	-@erase "$(INTDIR)\jcapimin.obj"
-	-@erase "$(INTDIR)\jcapistd.obj"
-	-@erase "$(INTDIR)\jccoefct.obj"
-	-@erase "$(INTDIR)\jccolor.obj"
-	-@erase "$(INTDIR)\jcdctmgr.obj"
-	-@erase "$(INTDIR)\jcdiffct.obj"
-	-@erase "$(INTDIR)\jchuff.obj"
-	-@erase "$(INTDIR)\jcinit.obj"
-	-@erase "$(INTDIR)\jclhuff.obj"
-	-@erase "$(INTDIR)\jclossls.obj"
-	-@erase "$(INTDIR)\jclossy.obj"
-	-@erase "$(INTDIR)\jcmainct.obj"
-	-@erase "$(INTDIR)\jcmarker.obj"
-	-@erase "$(INTDIR)\jcmaster.obj"
-	-@erase "$(INTDIR)\jcodec.obj"
-	-@erase "$(INTDIR)\jcomapi.obj"
-	-@erase "$(INTDIR)\jcparam.obj"
-	-@erase "$(INTDIR)\jcphuff.obj"
-	-@erase "$(INTDIR)\jcpred.obj"
-	-@erase "$(INTDIR)\jcprepct.obj"
-	-@erase "$(INTDIR)\jcsample.obj"
-	-@erase "$(INTDIR)\jcscale.obj"
-	-@erase "$(INTDIR)\jcshuff.obj"
-	-@erase "$(INTDIR)\jdapimin.obj"
-	-@erase "$(INTDIR)\jdapistd.obj"
-	-@erase "$(INTDIR)\jdatadst.obj"
-	-@erase "$(INTDIR)\jdcoefct.obj"
-	-@erase "$(INTDIR)\jdcolor.obj"
-	-@erase "$(INTDIR)\jddctmgr.obj"
-	-@erase "$(INTDIR)\jddiffct.obj"
-	-@erase "$(INTDIR)\jdhuff.obj"
-	-@erase "$(INTDIR)\jdinput.obj"
-	-@erase "$(INTDIR)\jdlhuff.obj"
-	-@erase "$(INTDIR)\jdlossls.obj"
-	-@erase "$(INTDIR)\jdlossy.obj"
-	-@erase "$(INTDIR)\jdmainct.obj"
-	-@erase "$(INTDIR)\jdmarker.obj"
-	-@erase "$(INTDIR)\jdmaster.obj"
-	-@erase "$(INTDIR)\jdmerge.obj"
-	-@erase "$(INTDIR)\jdphuff.obj"
-	-@erase "$(INTDIR)\jdpostct.obj"
-	-@erase "$(INTDIR)\jdpred.obj"
-	-@erase "$(INTDIR)\jdsample.obj"
-	-@erase "$(INTDIR)\jdscale.obj"
-	-@erase "$(INTDIR)\jdshuff.obj"
-	-@erase "$(INTDIR)\jfdctflt.obj"
-	-@erase "$(INTDIR)\jidctflt.obj"
-	-@erase "$(INTDIR)\jidctred.obj"
-	-@erase "$(INTDIR)\jmemmgr.obj"
-	-@erase "$(INTDIR)\jmemnobs.obj"
-	-@erase "$(INTDIR)\jquant1.obj"
-	-@erase "$(INTDIR)\jquant2.obj"
-	-@erase "$(INTDIR)\jutils.obj"
-	-@erase "$(INTDIR)\vc60.idb"
-	-@erase "$(INTDIR)\vc60.pdb"
-	-@erase "$(INTDIR)\zutil.obj"
-	-@erase "$(OUTDIR)\lib.lib"
-
-"$(OUTDIR)" :
-    if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
-
-CPP=cl.exe
-CPP_PROJ=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-RSC=rc.exe
-BSC32=bscmake.exe
-BSC32_FLAGS=/nologo /o"$(OUTDIR)\lib.bsc" 
-BSC32_SBRS= \
-	
-LIB32=link.exe -lib
-LIB32_FLAGS=/nologo /out:"$(OUTDIR)\lib.lib" 
-LIB32_OBJS= \
-	"$(INTDIR)\jcapimin.obj" \
-	"$(INTDIR)\jcapistd.obj" \
-	"$(INTDIR)\jccoefct.obj" \
-	"$(INTDIR)\jccolor.obj" \
-	"$(INTDIR)\jcdctmgr.obj" \
-	"$(INTDIR)\jcdiffct.obj" \
-	"$(INTDIR)\jchuff.obj" \
-	"$(INTDIR)\jcinit.obj" \
-	"$(INTDIR)\jclhuff.obj" \
-	"$(INTDIR)\jclossls.obj" \
-	"$(INTDIR)\jclossy.obj" \
-	"$(INTDIR)\jcmainct.obj" \
-	"$(INTDIR)\jcmarker.obj" \
-	"$(INTDIR)\jcmaster.obj" \
-	"$(INTDIR)\jcodec.obj" \
-	"$(INTDIR)\jcomapi.obj" \
-	"$(INTDIR)\jcparam.obj" \
-	"$(INTDIR)\jcphuff.obj" \
-	"$(INTDIR)\jcpred.obj" \
-	"$(INTDIR)\jcprepct.obj" \
-	"$(INTDIR)\jcsample.obj" \
-	"$(INTDIR)\jcscale.obj" \
-	"$(INTDIR)\jcshuff.obj" \
-	"$(INTDIR)\jdapimin.obj" \
-	"$(INTDIR)\jdapistd.obj" \
-	"$(INTDIR)\jdatadst.obj" \
-	"$(INTDIR)\jdcoefct.obj" \
-	"$(INTDIR)\jdcolor.obj" \
-	"$(INTDIR)\jddctmgr.obj" \
-	"$(INTDIR)\jddiffct.obj" \
-	"$(INTDIR)\jdhuff.obj" \
-	"$(INTDIR)\jdinput.obj" \
-	"$(INTDIR)\jdlhuff.obj" \
-	"$(INTDIR)\jdlossls.obj" \
-	"$(INTDIR)\jdlossy.obj" \
-	"$(INTDIR)\jdmainct.obj" \
-	"$(INTDIR)\jdmarker.obj" \
-	"$(INTDIR)\jdmaster.obj" \
-	"$(INTDIR)\jdmerge.obj" \
-	"$(INTDIR)\jdphuff.obj" \
-	"$(INTDIR)\jdpostct.obj" \
-	"$(INTDIR)\jdpred.obj" \
-	"$(INTDIR)\jdsample.obj" \
-	"$(INTDIR)\jdscale.obj" \
-	"$(INTDIR)\jdshuff.obj" \
-	"$(INTDIR)\jfdctflt.obj" \
-	"$(INTDIR)\jidctflt.obj" \
-	"$(INTDIR)\jidctred.obj" \
-	"$(INTDIR)\jmemmgr.obj" \
-	"$(INTDIR)\jmemnobs.obj" \
-	"$(INTDIR)\jquant1.obj" \
-	"$(INTDIR)\jquant2.obj" \
-	"$(INTDIR)\jutils.obj" \
-	"$(INTDIR)\adler32.obj" \
-	"$(INTDIR)\crc32.obj" \
-	"$(INTDIR)\inffast.obj" \
-	"$(INTDIR)\inflate.obj" \
-	"$(INTDIR)\inftrees.obj" \
-	"$(INTDIR)\zutil.obj"
-
-"$(OUTDIR)\lib.lib" : "$(OUTDIR)" $(DEF_FILE) $(LIB32_OBJS)
-    $(LIB32) @<<
-  $(LIB32_FLAGS) $(DEF_FLAGS) $(LIB32_OBJS)
-<<
-
-!ENDIF 
-
-
-!IF "$(NO_EXTERNAL_DEPS)" != "1"
-!IF EXISTS("lib.dep")
-!INCLUDE "lib.dep"
-!ELSE 
-!MESSAGE Warning: cannot find "lib.dep"
-!ENDIF 
-!ENDIF 
-
-
-!IF "$(CFG)" == "lib - Win32 Release" || "$(CFG)" == "lib - Win32 Debug"
-SOURCE=.\jpeglib\jcapimin.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcapimin.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcapimin.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcapistd.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcapistd.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcapistd.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jccoefct.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jccoefct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jccoefct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jccolor.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jccolor.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jccolor.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcdctmgr.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcdctmgr.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcdctmgr.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcdiffct.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcdiffct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcdiffct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jchuff.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jchuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jchuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcinit.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcinit.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcinit.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jclhuff.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jclhuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jclhuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jclossls.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jclossls.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jclossls.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jclossy.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jclossy.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jclossy.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcmainct.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcmainct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcmainct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcmarker.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcmarker.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcmarker.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcmaster.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcmaster.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcmaster.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcodec.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcodec.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcodec.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcomapi.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcomapi.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcomapi.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcparam.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcparam.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcparam.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcphuff.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcphuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcphuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcpred.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcpred.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcpred.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcprepct.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcprepct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcprepct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcsample.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcsample.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcsample.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcscale.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcscale.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcscale.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jcshuff.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jcshuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jcshuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdapimin.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdapimin.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdapimin.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdapistd.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdapistd.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdapistd.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdatadst.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdatadst.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdatadst.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdcoefct.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdcoefct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdcoefct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdcolor.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdcolor.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdcolor.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jddctmgr.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jddctmgr.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jddctmgr.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jddiffct.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jddiffct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jddiffct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdhuff.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdhuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdhuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdinput.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdinput.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdinput.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdlhuff.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdlhuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdlhuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdlossls.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdlossls.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdlossls.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdlossy.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdlossy.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdlossy.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdmainct.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdmainct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdmainct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdmarker.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdmarker.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdmarker.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdmaster.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdmaster.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdmaster.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdmerge.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdmerge.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdmerge.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdphuff.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdphuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdphuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdpostct.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdpostct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdpostct.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdpred.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdpred.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdpred.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdsample.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdsample.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdsample.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdscale.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdscale.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdscale.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jdshuff.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jdshuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jdshuff.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jfdctflt.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jfdctflt.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jfdctflt.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jidctflt.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jidctflt.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jidctflt.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jidctred.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jidctred.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jidctred.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jmemmgr.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jmemmgr.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jmemmgr.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jmemnobs.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jmemnobs.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jmemnobs.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jquant1.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jquant1.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jquant1.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jquant2.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jquant2.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jquant2.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\jpeglib\jutils.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D INLINE=__inline /D JDCT_DEFAULT=JDCT_FLOAT /D JDCT_FASTEST=JDCT_FLOAT /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\jutils.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\jutils.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\zlib\adler32.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\adler32.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\adler32.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\zlib\crc32.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\crc32.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\crc32.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\zlib\inffast.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\inffast.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\inffast.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\zlib\inflate.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\inflate.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\inflate.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\zlib\inftrees.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\inftrees.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\inftrees.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-SOURCE=.\zlib\zutil.c
-
-!IF  "$(CFG)" == "lib - Win32 Release"
-
-CPP_SWITCHES=/nologo /MD /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "DYNAMIC_CRC_TABLE" /D "BUILDFIXED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-"$(INTDIR)\zutil.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ELSEIF  "$(CFG)" == "lib - Win32 Debug"
-
-CPP_SWITCHES=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /Fp"$(INTDIR)\lib.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
-
-"$(INTDIR)\zutil.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) @<<
-  $(CPP_SWITCHES) $(SOURCE)
-<<
-
-
-!ENDIF 
-
-
-!ENDIF 
+# This file was automatically generated from "lib.prj": do not edit
+
+#------------------------------------------------------------------------------
+#	symbolic targets
+#------------------------------------------------------------------------------
+
+ALL : lib.lib
+
+#------------------------------------------------------------------------------
+#	"lib.lib" target
+#------------------------------------------------------------------------------
+
+LIB = \
+	obj/jcapimin.obj \
+	obj/jcapistd.obj \
+	obj/jccoefct.obj \
+	obj/jccolor.obj \
+	obj/jcdctmgr.obj \
+	obj/jcdiffct.obj \
+	obj/jchuff.obj \
+	obj/jcinit.obj \
+	obj/jclhuff.obj \
+	obj/jclossls.obj \
+	obj/jclossy.obj \
+	obj/jcmainct.obj \
+	obj/jcmarker.obj \
+	obj/jcmaster.obj \
+	obj/jcodec.obj \
+	obj/jcomapi.obj \
+	obj/jcparam.obj \
+	obj/jcphuff.obj \
+	obj/jcpred.obj \
+	obj/jcprepct.obj \
+	obj/jcsample.obj \
+	obj/jcscale.obj \
+	obj/jcshuff.obj \
+	obj/jdapimin.obj \
+	obj/jdapistd.obj \
+	obj/jdatadst.obj \
+	obj/jdcoefct.obj \
+	obj/jdcolor.obj \
+	obj/jddctmgr.obj \
+	obj/jddiffct.obj \
+	obj/jdhuff.obj \
+	obj/jdinput.obj \
+	obj/jdlhuff.obj \
+	obj/jdlossls.obj \
+	obj/jdlossy.obj \
+	obj/jdmainct.obj \
+	obj/jdmarker.obj \
+	obj/jdmaster.obj \
+	obj/jdmerge.obj \
+	obj/jdphuff.obj \
+	obj/jdpostct.obj \
+	obj/jdpred.obj \
+	obj/jdsample.obj \
+	obj/jdscale.obj \
+	obj/jdshuff.obj \
+	obj/jfdctflt.obj \
+	obj/jidctflt.obj \
+	obj/jidctred.obj \
+	obj/jmemmgr.obj \
+	obj/jmemnobs.obj \
+	obj/jquant1.obj \
+	obj/jquant2.obj \
+	obj/jutils.obj \
+	obj/adler32.obj \
+	obj/crc32.obj \
+	obj/inffast.obj \
+	obj/inflate.obj \
+	obj/inftrees.obj \
+	obj/zutil.obj
+
+lib.lib : DIRS $(LIB)
+	echo Creating static "lib.lib" ...
+	link.exe -lib -nologo -out:"lib.lib" $(LIB)
+
+#------------------------------------------------------------------------------
+#	compiling source files
+#------------------------------------------------------------------------------
+
+OPTIONS = -W2 -O1 -Ob2 -D INLINE=__inline -D JDCT_DEFAULT=JDCT_FLOAT -D JDCT_FASTEST=JDCT_FLOAT -D NO_GETENV
+
+DEPENDS = \
+	jpeglib/jchuff.h \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossls.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jclhuff.obj : jpeglib/jclhuff.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jclhuff.obj" jpeglib/jclhuff.c
+
+DEPENDS = \
+	jpeglib/jchuff.h \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossy.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jcphuff.obj : jpeglib/jcphuff.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcphuff.obj" jpeglib/jcphuff.c
+
+obj/jcshuff.obj : jpeglib/jcshuff.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcshuff.obj" jpeglib/jcshuff.c
+
+DEPENDS = \
+	jpeglib/jchuff.h \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jchuff.obj : jpeglib/jchuff.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jchuff.obj" jpeglib/jchuff.c
+
+DEPENDS = \
+	jpeglib/jconfig.h \
+	jpeglib/jdct.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossy.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jcdctmgr.obj : jpeglib/jcdctmgr.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcdctmgr.obj" jpeglib/jcdctmgr.c
+
+obj/jddctmgr.obj : jpeglib/jddctmgr.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jddctmgr.obj" jpeglib/jddctmgr.c
+
+DEPENDS = \
+	jpeglib/jconfig.h \
+	jpeglib/jdct.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jfdctflt.obj : jpeglib/jfdctflt.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jfdctflt.obj" jpeglib/jfdctflt.c
+
+obj/jidctflt.obj : jpeglib/jidctflt.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jidctflt.obj" jpeglib/jidctflt.c
+
+obj/jidctred.obj : jpeglib/jidctred.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jidctred.obj" jpeglib/jidctred.c
+
+DEPENDS = \
+	jpeglib/jconfig.h \
+	jpeglib/jdhuff.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossls.h \
+	jpeglib/jlossy.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jdhuff.obj : jpeglib/jdhuff.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdhuff.obj" jpeglib/jdhuff.c
+
+DEPENDS = \
+	jpeglib/jconfig.h \
+	jpeglib/jdhuff.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossls.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jdlhuff.obj : jpeglib/jdlhuff.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdlhuff.obj" jpeglib/jdlhuff.c
+
+DEPENDS = \
+	jpeglib/jconfig.h \
+	jpeglib/jdhuff.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossy.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jdphuff.obj : jpeglib/jdphuff.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdphuff.obj" jpeglib/jdphuff.c
+
+obj/jdshuff.obj : jpeglib/jdshuff.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdshuff.obj" jpeglib/jdshuff.c
+
+DEPENDS = \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossls.h \
+	jpeglib/jlossy.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jcodec.obj : jpeglib/jcodec.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcodec.obj" jpeglib/jcodec.c
+
+DEPENDS = \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossls.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jcdiffct.obj : jpeglib/jcdiffct.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcdiffct.obj" jpeglib/jcdiffct.c
+
+obj/jclossls.obj : jpeglib/jclossls.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jclossls.obj" jpeglib/jclossls.c
+
+obj/jcpred.obj : jpeglib/jcpred.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcpred.obj" jpeglib/jcpred.c
+
+obj/jcscale.obj : jpeglib/jcscale.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcscale.obj" jpeglib/jcscale.c
+
+obj/jddiffct.obj : jpeglib/jddiffct.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jddiffct.obj" jpeglib/jddiffct.c
+
+obj/jdlossls.obj : jpeglib/jdlossls.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdlossls.obj" jpeglib/jdlossls.c
+
+obj/jdpred.obj : jpeglib/jdpred.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdpred.obj" jpeglib/jdpred.c
+
+obj/jdscale.obj : jpeglib/jdscale.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdscale.obj" jpeglib/jdscale.c
+
+DEPENDS = \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jlossy.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jccoefct.obj : jpeglib/jccoefct.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jccoefct.obj" jpeglib/jccoefct.c
+
+obj/jclossy.obj : jpeglib/jclossy.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jclossy.obj" jpeglib/jclossy.c
+
+obj/jcmaster.obj : jpeglib/jcmaster.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcmaster.obj" jpeglib/jcmaster.c
+
+obj/jdcoefct.obj : jpeglib/jdcoefct.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdcoefct.obj" jpeglib/jdcoefct.c
+
+obj/jdlossy.obj : jpeglib/jdlossy.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdlossy.obj" jpeglib/jdlossy.c
+
+DEPENDS = \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jmemsys.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jmemmgr.obj : jpeglib/jmemmgr.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jmemmgr.obj" jpeglib/jmemmgr.c
+
+obj/jmemnobs.obj : jpeglib/jmemnobs.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jmemnobs.obj" jpeglib/jmemnobs.c
+
+DEPENDS = \
+	jpeglib/jconfig.h \
+	jpeglib/jerror.h \
+	jpeglib/jinclude.h \
+	jpeglib/jmorecfg.h \
+	jpeglib/jpegint.h \
+	jpeglib/jpeglib.h
+
+obj/jcapimin.obj : jpeglib/jcapimin.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcapimin.obj" jpeglib/jcapimin.c
+
+obj/jcapistd.obj : jpeglib/jcapistd.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcapistd.obj" jpeglib/jcapistd.c
+
+obj/jccolor.obj : jpeglib/jccolor.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jccolor.obj" jpeglib/jccolor.c
+
+obj/jcinit.obj : jpeglib/jcinit.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcinit.obj" jpeglib/jcinit.c
+
+obj/jcmainct.obj : jpeglib/jcmainct.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcmainct.obj" jpeglib/jcmainct.c
+
+obj/jcmarker.obj : jpeglib/jcmarker.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcmarker.obj" jpeglib/jcmarker.c
+
+obj/jcomapi.obj : jpeglib/jcomapi.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcomapi.obj" jpeglib/jcomapi.c
+
+obj/jcparam.obj : jpeglib/jcparam.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcparam.obj" jpeglib/jcparam.c
+
+obj/jcprepct.obj : jpeglib/jcprepct.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcprepct.obj" jpeglib/jcprepct.c
+
+obj/jcsample.obj : jpeglib/jcsample.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jcsample.obj" jpeglib/jcsample.c
+
+obj/jdapimin.obj : jpeglib/jdapimin.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdapimin.obj" jpeglib/jdapimin.c
+
+obj/jdapistd.obj : jpeglib/jdapistd.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdapistd.obj" jpeglib/jdapistd.c
+
+obj/jdatadst.obj : jpeglib/jdatadst.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdatadst.obj" jpeglib/jdatadst.c
+
+obj/jdcolor.obj : jpeglib/jdcolor.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdcolor.obj" jpeglib/jdcolor.c
+
+obj/jdinput.obj : jpeglib/jdinput.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdinput.obj" jpeglib/jdinput.c
+
+obj/jdmainct.obj : jpeglib/jdmainct.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdmainct.obj" jpeglib/jdmainct.c
+
+obj/jdmarker.obj : jpeglib/jdmarker.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdmarker.obj" jpeglib/jdmarker.c
+
+obj/jdmaster.obj : jpeglib/jdmaster.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdmaster.obj" jpeglib/jdmaster.c
+
+obj/jdmerge.obj : jpeglib/jdmerge.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdmerge.obj" jpeglib/jdmerge.c
+
+obj/jdpostct.obj : jpeglib/jdpostct.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdpostct.obj" jpeglib/jdpostct.c
+
+obj/jdsample.obj : jpeglib/jdsample.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jdsample.obj" jpeglib/jdsample.c
+
+obj/jquant1.obj : jpeglib/jquant1.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jquant1.obj" jpeglib/jquant1.c
+
+obj/jquant2.obj : jpeglib/jquant2.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jquant2.obj" jpeglib/jquant2.c
+
+obj/jutils.obj : jpeglib/jutils.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/jutils.obj" jpeglib/jutils.c
+
+OPTIONS = -W2 -O1 -Ob2 -D DYNAMIC_CRC_TABLE -D BUILDFIXED
+
+DEPENDS = \
+	zlib/crc32.h \
+	zlib/zconf.h \
+	zlib/zlib.h \
+	zlib/zutil.h
+
+obj/crc32.obj : zlib/crc32.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/crc32.obj" zlib/crc32.c
+
+DEPENDS = \
+	zlib/inffast.h \
+	zlib/inffixed.h \
+	zlib/inflate.h \
+	zlib/inftrees.h \
+	zlib/zconf.h \
+	zlib/zlib.h \
+	zlib/zutil.h
+
+obj/inflate.obj : zlib/inflate.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/inflate.obj" zlib/inflate.c
+
+DEPENDS = \
+	zlib/inffast.h \
+	zlib/inflate.h \
+	zlib/inftrees.h \
+	zlib/zconf.h \
+	zlib/zlib.h \
+	zlib/zutil.h
+
+obj/inffast.obj : zlib/inffast.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/inffast.obj" zlib/inffast.c
+
+DEPENDS = \
+	zlib/inftrees.h \
+	zlib/zconf.h \
+	zlib/zlib.h \
+	zlib/zutil.h
+
+obj/inftrees.obj : zlib/inftrees.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/inftrees.obj" zlib/inftrees.c
+
+DEPENDS = \
+	zlib/zconf.h \
+	zlib/zlib.h
+
+obj/adler32.obj : zlib/adler32.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/adler32.obj" zlib/adler32.c
+
+DEPENDS = \
+	zlib/zconf.h \
+	zlib/zlib.h \
+	zlib/zutil.h
+
+obj/zutil.obj : zlib/zutil.c $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/zutil.obj" zlib/zutil.c
+
+#------------------------------------------------------------------------------
+#	creating output directories
+#------------------------------------------------------------------------------
+
+DIRS :
+	if not exist "obj" mkdir "obj"
 

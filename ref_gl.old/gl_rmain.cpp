@@ -971,7 +971,7 @@ void R_RenderFrame (refdef_t *fd)
 void R_Register( void )
 {
 CVAR_BEGIN(vars)
-	{&r_lefthand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE},
+	CVAR_FULL(&r_lefthand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE),
 	CVAR_VAR(r_norefresh, 0, 0),
 	CVAR_VAR(r_drawentities, 1, 0),
 	CVAR_VAR(r_drawworld, 1, CVAR_CHEAT),
@@ -1000,7 +1000,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_dynamic, 1, 0),
 	CVAR_VAR(gl_dlightBacks, 1, 0),
 	CVAR_VAR(gl_nobind, 0, 0),
-	{&gl_round_down, "gl_roundImagesDown", "0", CVAR_ARCHIVE},
+	CVAR_FULL(&gl_round_down, "gl_roundImagesDown", "0", CVAR_ARCHIVE),
 	CVAR_VAR(gl_picmip, 0, 0),
 	CVAR_VAR(gl_skymip, 0, 0),
 	CVAR_VAR(gl_showtris, 0, CVAR_CHEAT),
@@ -1174,7 +1174,7 @@ int R_Init( void )
 	else
 		gl_config.renderer = GL_RENDERER_OTHER;
 
-	if ( toupper( gl_monolightmap->string[1] ) != 'F' )
+	if (gl_monolightmap->string[1] != 'F' && gl_monolightmap->string[1] != 'f')
 	{
 		if ( gl_config.renderer == GL_RENDERER_PERMEDIA2 )
 		{
@@ -1409,14 +1409,9 @@ void R_BeginFrame( float camera_separation )
 
 		if ( gl_config.renderer & ( GL_RENDERER_VOODOO ) )
 		{
-			char envbuffer[1024];
-			float g;
-
-			g = 2.00 * ( 0.8 - ( r_gamma->value - 0.5 ) ) + 1.0F;
-			Com_sprintf( envbuffer, sizeof(envbuffer), "SSTV2_GAMMA=%f", g );
-			putenv( envbuffer );
-			Com_sprintf( envbuffer, sizeof(envbuffer), "SST_GAMMA=%f", g );
-			putenv( envbuffer );
+			float g = 2.00 * ( 0.8 - ( r_gamma->value - 0.5 ) ) + 1.0F;
+			putenv(va("SSTV2_GAMMA=%f", g));
+			putenv(va("SST_GAMMA=%f", g));
 		}
 	}
 

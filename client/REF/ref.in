@@ -41,7 +41,7 @@ void	Com_DropError (const char *fmt, ...);
 int	win32ExceptFilter2 (void);
 #endif
 void	appUnwindPrefix (const char *fmt);		//!!! rename
-void	__declspec(noreturn) appUnwindThrow (const char *fmt, ...);	//?? make noreturn as #define
+void	NORETURN appUnwindThrow (const char *fmt, ...);
 
 
 //?? unused now:	void	KeyEvent (int key, bool down, unsigned time);

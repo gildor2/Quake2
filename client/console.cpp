@@ -592,7 +592,8 @@ void Con_DrawConsole (float frac)
 	// draw the background
 	if (!(*re.flags & REF_CONSOLE_ONLY))
 	{
-		re.DrawFill2 (0, 0, viddef.width, lines, RGBA(0,0,0.02,0.5));
+//		re.DrawFill2 (0, 0, viddef.width, lines, RGBA(0,0,0.02,Cvar_VariableValue("con_alpha")));
+		re.DrawFill2 (0, 0, viddef.width, lines, RGBA(0,0,0.02,0.75));
 		if (lines < viddef.height)
 			re.DrawFill2 (0, lines - 1, viddef.width, 1, RGBA(0.2,0.2,0.2,0.8));
 	}

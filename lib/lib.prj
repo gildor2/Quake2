@@ -1,0 +1,103 @@
+# libraries
+
+!if $COMPILER eq VisualC
+	WARNLEVEL = 2		# JPEGLIB will produce lots of warnings with level=3
+	OPTIMIZE  = size
+	INLINES   = all
+!endif
+
+OBJDIR = obj
+
+#------------------------------------------------------------------------------
+#	JPEG lib
+#------------------------------------------------------------------------------
+
+D = jpeglib
+
+DEFINES =			\
+	INLINE=__inline		\
+	JDCT_DEFAULT=JDCT_FLOAT \
+	JDCT_FASTEST=JDCT_FLOAT \
+	NO_GETENV
+
+sources(LIB) = \
+	$D/jcapimin.c \
+	$D/jcapistd.c \
+	$D/jccoefct.c \
+	$D/jccolor.c \
+	$D/jcdctmgr.c \
+	$D/jcdiffct.c \
+	$D/jchuff.c \
+	$D/jcinit.c \
+	$D/jclhuff.c \
+	$D/jclossls.c \
+	$D/jclossy.c \
+	$D/jcmainct.c \
+	$D/jcmarker.c \
+	$D/jcmaster.c \
+	$D/jcodec.c \
+	$D/jcomapi.c \
+	$D/jcparam.c \
+	$D/jcphuff.c \
+	$D/jcpred.c \
+	$D/jcprepct.c \
+	$D/jcsample.c \
+	$D/jcscale.c \
+	$D/jcshuff.c \
+	$D/jdapimin.c \
+	$D/jdapistd.c \
+	$D/jdatadst.c \
+	$D/jdcoefct.c \
+	$D/jdcolor.c \
+	$D/jddctmgr.c \
+	$D/jddiffct.c \
+	$D/jdhuff.c \
+	$D/jdinput.c \
+	$D/jdlhuff.c \
+	$D/jdlossls.c \
+	$D/jdlossy.c \
+	$D/jdmainct.c \
+	$D/jdmarker.c \
+	$D/jdmaster.c \
+	$D/jdmerge.c \
+	$D/jdphuff.c \
+	$D/jdpostct.c \
+	$D/jdpred.c \
+	$D/jdsample.c \
+	$D/jdscale.c \
+	$D/jdshuff.c \
+	$D/jfdctflt.c \
+	$D/jidctflt.c \
+	$D/jidctred.c \
+	$D/jmemmgr.c \
+	$D/jmemnobs.c \
+	$D/jquant1.c \
+	$D/jquant2.c \
+	$D/jutils.c
+
+
+#------------------------------------------------------------------------------
+#	ZLib
+#------------------------------------------------------------------------------
+
+D = zlib
+
+DEFINES =			\
+	DYNAMIC_CRC_TABLE	\
+	BUILDFIXED
+
+sources(LIB) = \
+	$D/adler32.c \
+	$D/crc32.c \
+	$D/inffast.c \
+	$D/inflate.c \
+	$D/inftrees.c \
+	$D/zutil.c
+
+
+#------------------------------------------------------------------------------
+
+target( \
+	static, \	# static library
+	lib, \		# filename
+	LIB)		# name of the list of object files

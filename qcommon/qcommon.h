@@ -43,11 +43,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef WIN32
 
-#ifdef NDEBUG
+//?????? DEBUG:
+//#ifdef NDEBUG
 #define BUILDSTRING "Win32 RELEASE"
-#else
-#define BUILDSTRING "Win32 DEBUG"
-#endif
+//#else
+//#define BUILDSTRING "Win32 DEBUG"
+//#endif
 
 #ifdef _M_IX86
 #define	CPUSTRING	"x86"
@@ -464,17 +465,24 @@ CVAR
 
 typedef struct
 {
-	cvar_t	**var;	// destination, may be NULL
-	char	*name;
-	char	*value;
+	cvar_t	**var;				// destination, may be NULL
+	const char *string;			// name[/value]
 	int		flags;
 } cvarInfo_t;
 
-#define CVAR_BEGIN(name)			static const cvarInfo_t name[] = {
-#define CVAR_VAR(name,value,flags)		{&name, #name, #value, flags}
-#define CVAR_GET(name)					{&name, #name, "", CVAR_NODEFAULT}
-#define CVAR_NULL(name,value,flags)		{NULL, #name, #value, flags}
-#define CVAR_END					};
+// NOTES:
+//	CVAR_FULL() useful for any case (especially for vars with value == "")
+//	CVAR_VAR() useful for vars, which C name is the same as cvar.name
+//	CVAR_VAR2() useful for vars, which C name differs from cvar.name
+//	CVAR_GET() useful for retreiving var pointer without setting var parameters
+//	CVAR_NULL() useful for setting var parameters without retreiving its pointer
+#define CVAR_BEGIN(name)				static const cvarInfo_t name[] = {
+#define CVAR_FULL(pvar,name,value,flags)	{pvar, name"="value, flags}	// any parameters, value not stringified
+#define CVAR_VAR(name,value,flags)			CVAR_FULL(&name, #name, #value, flags)	// var == name, non-empty value, flags
+#define CVAR_VAR2(var,name,value,flags)		CVAR_FULL(&var,  #name, #value, flags)	// var != name, non-empty value, flags
+#define CVAR_GET(name)						CVAR_FULL(&name, #name, "",		CVAR_NODEFAULT)	// just set var
+#define CVAR_NULL(name,value,flags)			CVAR_FULL(NULL,  #name, #value, flags)	// register cvar with
+#define CVAR_END						};
 
 
 extern cvar_t *cvar_vars;
@@ -790,7 +798,7 @@ void	Sys_FindClose (void);
 
 /*------------- Miscellaneous -----------------*/
 
-extern	int	curtime;		// time returned by last Sys_Milliseconds
+extern	int	curtime;		// time returned by last Sys_Milliseconds; remove ??
 extern	int linewidth;		// for functions, which wants to perform advanced output formatting
 
 void	Mem_Init (void);
@@ -1115,7 +1123,7 @@ void Com_ResetErrorState (void);	//?? Sys_ResetErrorState()
 
 //int win32ExceptFilter2 (void);
 //void appUnwindPrefix (const char *fmt);		//!!! rename
-//void __declspec(noreturn) appUnwindThrow (const char *fmt, ...);
+//void NORETURN appUnwindThrow (const char *fmt, ...);
 
 
 #define EXCEPT_FILTER	win32ExceptFilter2()

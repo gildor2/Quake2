@@ -26,8 +26,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  error You should not be compiling this file on this platform
 #endif
 
+#define WIN32_LEAN_AND_MEAN			// exclude rarely-used services from windown headers
 #include <windows.h>
 #include <ddraw.h>
+
 #include "../qcommon/qcommon.h"
 
 #include "rw_win.h"

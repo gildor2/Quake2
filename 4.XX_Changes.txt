@@ -188,7 +188,7 @@ Keyboard
       ,  | Comma               =  | Equals
       .  | Period              [  | LeftBracket
       /  | Slash               ]  | RightBracket
-      *  | KP_Star (extended keyboard)
+      \  | BackSlash           *  | KP_Star (extended keyboard)
 - implemented keyboard autorepeat
 - added binding to "Ctrl+Key" and "Alt+Key"
 

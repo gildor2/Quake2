@@ -1431,7 +1431,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 			switch (e->model->type)
 			{
 			case MODEL_UNKNOWN:
-				if (developer->integer)
+//??				if (developer->integer) -- cvar is not in renderer
 					DrawText3D (e->origin, va("no model: %s", e->model->name), RGB(1,0,0));
 				break;
 			case MODEL_INLINE:

@@ -1603,8 +1603,8 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(timescale, 1, CVAR_CHEAT),
 	CVAR_VAR(timedemo, 0, CVAR_CHEAT),
 	CVAR_VAR(nointro, 0, CVAR_NOSET),
-	{&logfile_active, "logfile", "0", 0},
-	{&sv_cheats, "cheats", "0", CVAR_SERVERINFO|CVAR_LATCH},
+	CVAR_FULL(&logfile_active, "logfile", "0", 0),
+	CVAR_FULL(&sv_cheats, "cheats", "0", CVAR_SERVERINFO|CVAR_LATCH),
 #ifdef DEDICATED_ONLY
 	CVAR_VAR(dedicated, 1, CVAR_NOSET)
 #else
@@ -1627,6 +1627,7 @@ CVAR_END
 	Cbuf_Init ();
 	Cmd_Init ();
 	Key_Init ();
+
 
 	Sys_Init ();
 

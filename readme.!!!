@@ -115,7 +115,7 @@ May be, new protocol must be disabled for some mods, which have different animat
 
 ----------------------------------------
 
-?? game/g_main.c sets "ge" ("globals") variable. It containg "edict_size" field!
+?? game/g_main.c sets "ge" ("globals") variable. It contains "edict_size" field!
 
 ALL common (visible to server) game structures are declared in game/game.h;
   game-specific fields for this strucs are in g_local.h;

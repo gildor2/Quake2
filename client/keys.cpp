@@ -105,7 +105,8 @@ static keyname_t keynames[] =
 	{"Equals",		'='},
 	{"LeftBracket",	'['},
 	{"RigntBracket",']'},
-	{"Slash",		'/'}
+	{"Slash",		'/'},
+	{"BackSlash",	'\\'}
 	//?? add:  ' (UT name: SingleQuote)
 };
 

@@ -1480,26 +1480,27 @@ void CL_WriteConfig_f (bool usage, int argc, char **argv)
 CL_InitLocal
 =================
 */
-void CL_InitLocal (void)
+static void CL_InitLocal (void)
 {
+#ifndef DEDICATED_ONLY
 CVAR_BEGIN(vars)
-	{&adr0, "adr0", "", CVAR_ARCHIVE},
-	{&adr1, "adr1", "", CVAR_ARCHIVE},
-	{&adr2, "adr2", "", CVAR_ARCHIVE},
-	{&adr3, "adr3", "", CVAR_ARCHIVE},
-	{&adr4, "adr4", "", CVAR_ARCHIVE},
-	{&adr5, "adr5", "", CVAR_ARCHIVE},
-	{&adr6, "adr6", "", CVAR_ARCHIVE},
-	{&adr7, "adr7", "", CVAR_ARCHIVE},
-	{&adr8, "adr8", "", CVAR_ARCHIVE},
+	CVAR_FULL(&adr0, "adr0", "", CVAR_ARCHIVE),
+	CVAR_FULL(&adr1, "adr1", "", CVAR_ARCHIVE),
+	CVAR_FULL(&adr2, "adr2", "", CVAR_ARCHIVE),
+	CVAR_FULL(&adr3, "adr3", "", CVAR_ARCHIVE),
+	CVAR_FULL(&adr4, "adr4", "", CVAR_ARCHIVE),
+	CVAR_FULL(&adr5, "adr5", "", CVAR_ARCHIVE),
+	CVAR_FULL(&adr6, "adr6", "", CVAR_ARCHIVE),
+	CVAR_FULL(&adr7, "adr7", "", CVAR_ARCHIVE),
+	CVAR_FULL(&adr8, "adr8", "", CVAR_ARCHIVE),
 
 	CVAR_VAR(cl_stereo_separation, 0.4, CVAR_ARCHIVE),
 	CVAR_VAR(cl_stereo, 0, 0),
 
-	{&cl_add_blend, "cl_blend", "1", 0},
-	{&cl_add_lights, "cl_lights", "1", 0},
-	{&cl_add_particles, "cl_particles", "1", 0},
-	{&cl_add_entities, "cl_entities", "1", 0},
+	CVAR_FULL(&cl_add_blend, "cl_blend", "1", 0),
+	CVAR_FULL(&cl_add_lights, "cl_lights", "1", 0),
+	CVAR_FULL(&cl_add_particles, "cl_particles", "1", 0),
+	CVAR_FULL(&cl_add_entities, "cl_entities", "1", 0),
 	CVAR_VAR(cl_gun, 1, 0),
 	CVAR_VAR(cl_footsteps, 1, 0),
 	CVAR_VAR(cl_noskins, 0, 0),
@@ -1527,16 +1528,16 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(cl_shownet, 0, 0),
 	CVAR_VAR(cl_showmiss, 0, 0),
-	{&cl_showclamp, "showclamp", "0", 0},
+	CVAR_FULL(&cl_showclamp, "showclamp", "0", 0),
 	CVAR_VAR(cl_timeout, 120, 0),
-	{&cl_paused, "paused", "0", CVAR_CHEAT},
+	CVAR_FULL(&cl_paused, "paused", "0", CVAR_CHEAT),
 
-	{&rcon_client_password, "rcon_password", "", 0},
-	{&rcon_address, "rcon_address", "", 0},
+	CVAR_FULL(&rcon_client_password, "rcon_password", "", 0),
+	CVAR_FULL(&rcon_address, "rcon_address", "", 0),
 
 	// userinfo
-	{&info_password, "password", "", CVAR_USERINFO},
-	{&info_spectator, "spectator", "0", CVAR_USERINFO},
+	CVAR_FULL(&info_password, "password", "", CVAR_USERINFO),
+	CVAR_FULL(&info_spectator, "spectator", "0", CVAR_USERINFO),
 	CVAR_VAR(name, unnamed, CVAR_USERINFO|CVAR_ARCHIVE),
 	CVAR_VAR(skin, male/grunt, CVAR_USERINFO|CVAR_ARCHIVE),
 	CVAR_VAR(railcolor, 0, CVAR_USERINFO|CVAR_ARCHIVE),
@@ -1596,6 +1597,7 @@ CVAR_END
 	RegisterCommand ("download", CL_Download_f);
 
 	RegisterCommand ("writeconfig", CL_WriteConfig_f);
+#endif // DEDICATED_ONLY
 }
 
 
@@ -1636,6 +1638,7 @@ CL_Frame
 ==================
 */
 
+#ifndef DEDICATED_ONLY
 void CL_Frame (float msec, int realMsec)
 {
 	static int extratime_real;
@@ -1715,7 +1718,7 @@ void CL_Frame (float msec, int realMsec)
 
 	unguard;
 }
-
+#endif // DEDICATED_ONLY
 
 //============================================================================
 
@@ -1737,18 +1740,18 @@ void CL_Init (void)
 	S_Init ();	// sound must be initialized after window is created
 #endif
 
-	V_Init ();
-
 	net_message.data = net_message_buffer;
 	net_message.maxsize = sizeof(net_message_buffer);
 
-	M_Init ();
-
-	SCR_Init ();
-
-	CDAudio_Init ();
-	CL_InitLocal ();
-	IN_Init ();
+	if (!DEDICATED)
+	{
+		V_Init ();
+		M_Init ();
+		SCR_Init ();
+		CDAudio_Init ();
+		CL_InitLocal ();
+		IN_Init ();
+	}
 
 	unguard;
 }

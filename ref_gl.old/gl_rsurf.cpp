@@ -18,7 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 // GL_RSURF.C: surface-related refresh code
-#include <assert.h>
+//#include <assert.h>
 
 #include "gl_local.h"
 
@@ -351,15 +351,17 @@ void R_BlendLightmaps (void)
 		{
 			if ( gl_monolightmap->string[0] != '0' )
 			{
-				switch ( toupper( gl_monolightmap->string[0] ) )
+				int c = gl_monolightmap->string[0];
+				if (c >= 'A' && c <= 'Z') c += 32;
+				switch (c)
 				{
-				case 'I':
+				case 'i':
 					glBlendFunc (GL_ZERO, GL_SRC_COLOR );
 					break;
-				case 'L':
+				case 'l':
 					glBlendFunc (GL_ZERO, GL_SRC_COLOR );
 					break;
-				case 'A':
+				case 'a':
 				default:
 					glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 					break;
@@ -1841,27 +1843,26 @@ void GL_BeginBuildingLightmaps (model_t *m)
 	** only alpha lightmaps but that can at least support the GL_ALPHA
 	** format then we should change this code to use real alpha maps.
 	*/
-	if ( toupper( gl_monolightmap->string[0] ) == 'A' )
+
+	int c = gl_monolightmap->string[0];
+	if (c >= 'A' && c <= 'Z') c += 32;
+
+	switch (c)
 	{
+	case 'a':
 		gl_lms.internal_format = gl_tex_alpha_format;
-	}
-	/*
-	** try to do hacked colored lighting with a blended texture
-	*/
-	else if ( toupper( gl_monolightmap->string[0] ) == 'C' )
-	{
+		break;
+	// try to do hacked colored lighting with a blended texture
+	case 'c':
 		gl_lms.internal_format = gl_tex_alpha_format;
-	}
-	else if ( toupper( gl_monolightmap->string[0] ) == 'I' )
-	{
+		break;
+	case 'i':
 		gl_lms.internal_format = GL_INTENSITY8;
-	}
-	else if ( toupper( gl_monolightmap->string[0] ) == 'L' )
-	{
+		break;
+	case 'l':
 		gl_lms.internal_format = GL_LUMINANCE8;
-	}
-	else
-	{
+		break;
+	default:
 		gl_lms.internal_format = gl_tex_solid_format;
 	}
 

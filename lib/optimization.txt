@@ -12,9 +12,10 @@ Remove decompression with integer types:
 	JDCT_FASTEST=JDCT_FLOAT
 3) Can remove files:
 	"jfdctfst.c", "jfdctint.c", "jidctfst.c", "jidctint.c"
+4) define "NO_GETENV" -- will disable env var "JPEGMEM" and slightly reduce code
 
 Use "jmemnobs.c" as a memory manager.
-Create own error manager.
+Or create own error manager.
 
 
 ZLib:

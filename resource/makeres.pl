@@ -27,7 +27,7 @@ sub walkdir {
 		}
 		$outname = "$prefix$f";
 
-		@list[$#list+1] = $outname;
+		push @list, $outname;
 #		print "$outname\n";
 	}
 }

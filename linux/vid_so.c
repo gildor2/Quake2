@@ -21,7 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // is used for both the software and OpenGL rendering versions of the
 // Quake refresh engine.
 
-#include <assert.h>
 #include <dlfcn.h> // ELF dl loader
 #include <sys/stat.h>
 #include <unistd.h>

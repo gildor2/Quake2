@@ -77,11 +77,11 @@ static float	s_ziscale;
 static vec3_t	s_alias_forward, s_alias_right, s_alias_up;
 
 
-#define NUMVERTEXNORMALS	162
-
-float	r_avertexnormals[NUMVERTEXNORMALS][3] = {
-#include "anorms.h"
+#ifdef DYNAMIC_REF
+vec3_t bytedirs[NUMVERTEXNORMALS] = {
+#include "../qcommon/anorms.h"
 };
+#endif
 
 
 void R_AliasSetUpLerpData( dmdl_t *pmdl, float backlerp );
@@ -572,7 +572,7 @@ top_of_loop:
 	__asm mov bl,  byte ptr [edi+DTRIVERTX_LNI]
 	__asm mov eax, 12
 	__asm mul ebx
-	__asm lea eax, [r_avertexnormals+eax]
+	__asm lea eax, [bytedirs+eax]
 
 	__asm fld  dword ptr [eax+0]				; n[0]
 	__asm fmul PS_SCALE							; n[0] * PS
@@ -643,7 +643,7 @@ not_powersuit:
 	/*
 	**  lighting
 	**
-	**  plightnormal = r_avertexnormals[newv->lightnormalindex];
+	**  plightnormal = bytedirs[newv->lightnormalindex];
 	**	lightcos = DotProduct (plightnormal, r_plightvec);
 	**	temp = r_ambientlight;
 	*/
@@ -651,7 +651,7 @@ not_powersuit:
 	__asm mov bl,  byte ptr [edi+DTRIVERTX_LNI]
 	__asm mov eax, 12
 	__asm mul ebx
-	__asm lea eax, [r_avertexnormals+eax]
+	__asm lea eax, [bytedirs+eax]
 	__asm lea ebx, r_plightvec
 
 	__asm fld  dword ptr [eax+0]
@@ -815,7 +815,7 @@ void R_AliasTransformFinalVerts( int numpoints, finalvert_t *fv, dTriVertx_t *ol
 		lerped_vert[1] = r_lerp_move[1] + oldv->v[1]*r_lerp_backv[1] + newv->v[1]*r_lerp_frontv[1];
 		lerped_vert[2] = r_lerp_move[2] + oldv->v[2]*r_lerp_backv[2] + newv->v[2]*r_lerp_frontv[2];
 
-		plightnormal = r_avertexnormals[newv->lightnormalindex];
+		plightnormal = bytedirs[newv->lightnormalindex];
 
 		// PMM - added double damage shell
 		if ( currententity->flags & ( RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM) )

@@ -908,6 +908,7 @@ Send Key_Event calls
 */
 void Sys_SendKeyEvents (void)
 {
+#ifndef DEDICATED_ONLY
 	MSG		msg;
 
 	guard(Sys_SendKeyEvents);
@@ -929,6 +930,7 @@ void Sys_SendKeyEvents (void)
 	// grab frame time
 	sys_frame_time = timeGetTime();	// FIXME: should this be at start?
 	unguard;
+#endif
 }
 
 
@@ -1015,11 +1017,19 @@ void *Sys_GetGameAPI (void *parms)
 	while (path = FS_NextPath (path))
 	{
 		Com_sprintf (ARRAY_ARG(name), "%s/%s", path, gamename);
-		if (game_library = LoadLibrary (name))
+		if (FILE *f = fopen (name, "rb"))	// check file presence
 		{
-			Com_DPrintf ("LoadLibrary (%s)\n",name);
-			break;
+			fclose (f);
+			if (game_library = LoadLibrary (name))
+			{
+				Com_DPrintf ("LoadLibrary (%s)\n",name);
+				break;
+			}
+			else
+				Com_WPrintf ("Sys_GetGameAPI(%s): failed to load library\n", name);
 		}
+		else
+			Com_DPrintf ("Sys_GetGameAPI(%s): file not found\n", name);
 	}
 	if (!game_library)
 		return NULL;		// couldn't find one anywhere
@@ -1050,7 +1060,11 @@ WinMain
 */
 HINSTANCE	global_hInstance;
 
+#ifndef DEDICATED_ONLY
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+#else
+int main (int argc, const char **argv)
+#endif
 {
 	int		time, oldtime, newtime;
 	char	*cmdline;
@@ -1060,16 +1074,21 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 	GUARD_BEGIN
 	{
+#ifndef DEDICATED_ONLY
 		global_hInstance = hInstance;
-
 		cmdline = lpCmdLine;
+#else
+		global_hInstance = GetModuleHandle (NULL);
+		cmdline = GetCommandLine ();
+#endif
+
 #ifdef CD_PATH
 		// if we find the CD, add a "-cddir=xxx" command line
 		cddir = Sys_ScanForCD ();
 		if (cddir && cddir[0])
 		{
 			// add to the end of cmdline, so, if already specified - will not override option
-			Com_sprintf (ARRAY_ARG(cmdline2), "%s -cddir=\"%s\"", lpCmdLine, cddir);
+			Com_sprintf (ARRAY_ARG(cmdline2), "%s -cddir=\"%s\"", cmdline, cddir);
 			cmdline = cmdline2;
 		}
 #endif

@@ -1,0 +1,190 @@
+# script file
+
+#!! should be specified with cmdline
+COMPILER = VisualC
+
+!if $COMPILER eq VisualC
+	WARNLEVEL = 3
+	OPTIMIZE  = size
+	STDLIBS   = kernel32 user32 gdi32
+!endif
+
+OUTDIR = Release
+MAPFILES = 1
+
+#------------------------------------------------------------------------------
+
+D = client
+CLIENT = \
+	$D/cl_cin.cpp \
+	$D/cl_ents.cpp \
+	$D/cl_fx.cpp \
+	$D/cl_input.cpp \
+	$D/cl_inv.cpp \
+	$D/cl_main.cpp \
+	$D/cl_newfx.cpp \
+	$D/cl_parse.cpp \
+	$D/cl_pred.cpp \
+	$D/cl_scrn.cpp \
+	$D/cl_tent.cpp \
+	$D/cl_view.cpp \
+	$D/console.cpp \
+	$D/keys.cpp \
+	$D/menu.cpp \
+	$D/qmenu.cpp \
+	$D/ref_vars.cpp \
+	$D/snd_dma.cpp \
+	$D/snd_mem.cpp \
+	$D/snd_mix.cpp
+# client fx system requires this:
+CLIENT += game/m_flash.c
+
+D = server
+SERVER = \
+	$D/sv_ccmds.cpp \
+	$D/sv_ents.cpp \
+	$D/sv_game.cpp \
+	$D/sv_init.cpp \
+	$D/sv_main.cpp \
+	$D/sv_send.cpp \
+	$D/sv_user.cpp \
+	$D/sv_world.cpp
+
+D = qcommon
+COMMON = \
+	$D/cmd.cpp \
+	$D/cmodel.cpp \
+	$D/common.cpp \
+	$D/crc.cpp \
+	$D/cvar.cpp \
+	$D/files.cpp \
+	$D/images.cpp \
+	$D/md4.cpp \
+	$D/memory.cpp \
+	$D/model.cpp \
+	$D/net_chan.cpp \
+	$D/pmove.cpp \
+	$D/q_shared2.cpp \
+	$D/zip.cpp
+
+D = ref_gl
+GL_RENDERER = \
+	$D/gl_backend.cpp \
+	$D/gl_buffers.cpp \
+	$D/gl_frontend.cpp \
+	$D/gl_image.cpp \
+	$D/gl_interface.cpp \
+	$D/gl_light.cpp \
+	$D/gl_lightmap.cpp \
+	$D/gl_main.cpp \
+	$D/gl_math.cpp \
+	$D/gl_model.cpp \
+	$D/gl_poly.cpp \
+	$D/gl_shader.cpp \
+	$D/gl_sky.cpp
+
+D = ref_soft
+SOFT_RENDERER = \
+	$D/r_aclip.cpp \
+	$D/r_alias.cpp \
+	$D/r_bsp.cpp \
+	$D/r_draw.cpp \
+	$D/r_edge.cpp \
+	$D/r_image.cpp \
+	$D/r_light.cpp \
+	$D/r_main.cpp \
+	$D/r_misc.cpp \
+	$D/r_model.cpp \
+	$D/r_part.cpp \
+	$D/r_poly.cpp \
+	$D/r_polyse.cpp \
+	$D/r_rast.cpp \
+	$D/r_scan.cpp \
+	$D/r_sprite.cpp \
+	$D/r_surf.cpp
+
+D = ref_gl.old
+OLDGL_RENDERER = \
+	$D/gl_draw.cpp \
+	$D/gl_image.cpp \
+	$D/gl_light.cpp \
+	$D/gl_mesh.cpp \
+	$D/gl_model.cpp \
+	$D/gl_rmain.cpp \
+	$D/gl_rmisc.cpp \
+	$D/gl_rsurf.cpp \
+	$D/gl_textout.cpp \
+	$D/gl_warp.cpp \
+	$D/glw_imp.cpp \
+	$D/qgl_win.cpp
+
+D = win32
+WIN32_FILES = \
+	$D/cd_win.cpp \
+	$D/in_win.cpp \
+	$D/net_wins.cpp \
+	$D/q_shwin.cpp \
+	$D/snd_win.cpp \
+	$D/sys_win.cpp \
+	$D/vid_dll.cpp \
+	$D/vid_menu.cpp
+
+# Win32 renderer files
+GL_RENDERER  +=  $D/qgl_win.cpp  $D/glw_imp.cpp
+SOFT_RENDERER += $D/rw_ddraw.cpp  $D/rw_dib.cpp  $D/rw_imp.cpp
+
+# Win32 resources
+WIN32_FILES += $D/q2.rc
+
+
+# internal files
+RES_FILES = \
+	resource/makeres.asm
+
+#------------------------------------------------------------------------------
+# static build
+
+DEFINES = REF_HARD_LINKED 
+OBJDIR  = $OUTDIR/obj
+
+sources(STATIC) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER $SOFT_RENDERER
+LIBS = winmm wsock32 dinput lib/lib
+target(executable, $OUTDIR/quake2, STATIC, STATIC)
+
+#------------------------------------------------------------------------------
+# dynamic build
+
+DEFINES =
+OBJDIR  = $OUTDIR/obj/dyn_exe
+
+sources(DYN_EXE) = $CLIENT $SERVER $COMMON $RES_FILES $WIN32_FILES
+LIBS = winmm wsock32 dinput lib/lib
+target(executable, $OUTDIR/quake2_dyn, DYN_EXE, DYNAMIC)
+
+DEFINES = DYNAMIC_REF
+OBJDIR  = $OUTDIR/obj/dyn_ref
+
+sources(DYN_GL) = $GL_RENDERER qcommon/q_shared2.cpp client/ref_vars.cpp
+target(shared, $OUTDIR/ref_gl, DYN_GL, DYNAMIC)
+
+sources(DYN_SOFT) = $SOFT_RENDERER qcommon/q_shared2.cpp client/ref_vars.cpp
+target(shared, $OUTDIR/ref_soft, DYN_SOFT, DYNAMIC)
+
+#------------------------------------------------------------------------------
+# oldgl driver
+
+DEFINES = DYNAMIC_REF
+OBJDIR  = $OUTDIR/obj/oldgl
+
+sources(DYN_OLDGL) = $OLDGL_RENDERER qcommon/q_shared2.cpp client/ref_vars.cpp
+target(shared, $OUTDIR/ref_oldgl, DYN_OLDGL, STATIC DYNAMIC)
+
+#------------------------------------------------------------------------------
+# dedicated server
+
+DEFINES = DEDICATED_ONLY
+OBJDIR  = $OUTDIR/obj/dedicated
+
+sources(DEDICATED) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES
+LIBS = winmm wsock32 dinput lib/lib
+target(executable, $OUTDIR/q2ded, DEDICATED, DEDICATED)

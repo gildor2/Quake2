@@ -1,7 +1,8 @@
-! create "makefile generator" tool first (easier to rename *.c to *.cpp)
-  - generic makefile (exe+gl+soft bundle)
-  - makefile for dedicated server (DEDICATED_ONLY + refine set of source files)
-  - makefile for splitted renderers (!REF_HARD_LINKED; rename define!)
+* create "makefile generator" tool first (easier to rename *.c to *.cpp)
+  * generic makefile (exe+gl+soft bundle)
+  * makefile for dedicated server (DEDICATED_ONLY + refine set of source files)
+  * makefile for splitted renderers
+    ! REF_HARD_LINKED: rename define
   - makefile for integrated gl-only executable (NO_SOFT_RENDERER, vid_dll.c only + remove ref_soft/* files from makefile)
     (when no soft renderer - single renderer only - can remove vid_ref cvar)
 - renderer:
@@ -11,3 +12,20 @@
   - WorldToModelCoord() etc.: make CWorldObject class with position+axis props + conversion funcs
 - network:
   - make channel_t (different name ??) as class, TcpChannel+LoopbackChannel as childs
+
+-------------------------------------------------------------------------------
+
+- WinMain():
+  appInit() -- pass NULL (==outputDevice) for GUI and OutputDeviceWin32Console for dedicated (cvar "dedicated" unknown here ?)
+- CL_Init: set (add) OutputDeviceConsole
+  ? func SetOutputDevice() - can add output devices
+- appPrintf() etc:
+  - should be able to use few output devices
+  - ability to hook output (for rcon etc)
+- COutputDevice:
+    bool useColors -- when "false" - UncolString before output
+- CErrorDevice:
+    bool fatalError
+    bool softError
+    char errorHistory[]
+    void Reset()

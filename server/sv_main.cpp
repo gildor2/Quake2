@@ -1322,7 +1322,7 @@ Only called at program startup, not for each game
 void SV_Init (void)
 {
 CVAR_BEGIN(vars)
-	{&rcon_password, "rcon_password", "", 0},
+	CVAR_FULL(&rcon_password, "rcon_password", "", 0),
 	CVAR_NULL(skill, 1, 0),
 	CVAR_NULL(deathmatch, 0, CVAR_LATCH),
 	CVAR_NULL(coop, 0, CVAR_LATCH),
@@ -1332,21 +1332,21 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(hostname, noname, CVAR_SERVERINFO|CVAR_ARCHIVE),
 	CVAR_VAR(timeout, 125, 0),
 	CVAR_VAR(zombietime, 2, 0),
-	{&sv_showclamp, "showclamp", "0", 0},
-	{&sv_paused, "paused", "0", CVAR_CHEAT},
+	CVAR_FULL(&sv_showclamp, "showclamp", "0", 0),
+	CVAR_FULL(&sv_paused, "paused", "0", CVAR_CHEAT),
 	CVAR_VAR(sv_enforcetime, 0, 0),
 	CVAR_VAR(allow_download, 1, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_players, 0, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_models, 1, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_sounds, 1, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_maps, 1, CVAR_ARCHIVE),
-	{NULL, "protocol", STR(PROTOCOL_VERSION), CVAR_SERVERINFO|CVAR_NOSET},
+	CVAR_FULL(NULL, "protocol", STR(PROTOCOL_VERSION), CVAR_SERVERINFO|CVAR_NOSET),
 
 	CVAR_VAR(sv_noreload, 0, 0),
 
 	CVAR_VAR(sv_airaccelerate, 0, CVAR_LATCH),
 
-	{&public_server, "public", "0", 0},
+	CVAR_FULL(&public_server, "public", "0", 0),
 
 	CVAR_VAR(sv_reconnect_limit, 3, CVAR_ARCHIVE),
 
