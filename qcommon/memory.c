@@ -229,7 +229,7 @@ void *AllocChainBlock (void *chain, int size)
 /*---------------------- Strings ------------------------*/
 
 
-char *CopyString (char *in)
+char *CopyString (const char *in)
 {
 	char	*out;
 
@@ -239,7 +239,7 @@ char *CopyString (char *in)
 }
 
 
-char *ChainCopyString (char *in, void *chain)
+char *ChainCopyString (const char *in, void *chain)
 {
 	char	*out;
 

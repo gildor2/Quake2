@@ -31,16 +31,10 @@ cvar_t	*gl_nobind;
 
 cvar_t	*r_ignorehwgamma;	// make "gl_" ??
 cvar_t	*gl_overBrightBits;
-cvar_t	*r_gamma;			// ...
-cvar_t	*r_brightness;
-cvar_t	*r_contrast;
-cvar_t	*r_saturation;
+cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
 cvar_t	*r_intensity;		//??
 
-cvar_t	*gl_texturemode;
-cvar_t	*gl_picmip;
-cvar_t	*gl_roundImagesDown;
-cvar_t	*gl_textureBits;
+cvar_t	*gl_picmip, *gl_textureBits, *gl_roundImagesDown, *gl_texturemode;
 
 // rendering speed/quality settings
 cvar_t	*gl_fastsky;		// do not draw skybox
@@ -78,9 +72,8 @@ cvar_t	*r_lightmap;
 cvar_t	*gl_showsky;
 cvar_t	*r_drawworld;
 cvar_t	*r_drawentities;
-cvar_t	*gl_showbboxes;
-cvar_t	*gl_showtris;
-cvar_t	*gl_shownormals;
+
+cvar_t	*gl_showbboxes, *gl_showtris, *gl_shownormals;
 cvar_t	*gl_lightLines;
 cvar_t	*gl_showLights;
 cvar_t	*gl_singleShader;
@@ -93,10 +86,10 @@ void DrawTexts (void);
 
 static void Gfxinfo_f (void)
 {
-	Com_Printf ("GL_VENDOR: %s\n", gl_config.vendor_string);
-	Com_Printf ("GL_RENDERER: %s\n", gl_config.renderer_string);
-	Com_Printf ("GL_VERSION: %s\n", gl_config.version_string);
-	Com_Printf ("GL_EXTENSIONS: %s\n", gl_config.extensions_string);
+	Com_Printf ("GL_VENDOR: %s\n", gl_config.vendorString);
+	Com_Printf ("GL_RENDERER: %s\n", gl_config.rendererString);
+	Com_Printf ("GL_VERSION: %s\n", gl_config.versionString);
+	Com_Printf ("GL_EXTENSIONS: %s\n", gl_config.extensionsString);
 	Com_Printf ("Multitexturing: ");
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
 		Com_Printf ("yes, %d texture units\n", gl_config.maxActiveTextures);
@@ -137,7 +130,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_dlightBacks, 1, 0),
 	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gl_nogrid, 0, 0),
-	CVAR_VAR(gl_showgrid, 0, 0),
+	CVAR_VAR(gl_showgrid, 0, CVAR_CHEAT),
 
 	CVAR_VAR(gl_ignoreFastPath, 1, 0),						//!! use with VertexArrayRange ONLY !!
 
@@ -170,17 +163,17 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_sortAlpha, 0, 0),
 	CVAR_VAR(r_speeds, 0, 0),
 //	CVAR_VAR(gl_lockpvs, 0, 0), ????
-	CVAR_VAR(r_fullbright, 0, 0),
-	CVAR_VAR(r_lightmap, 0, 0),
+	CVAR_VAR(r_fullbright, 0, CVAR_CHEAT),
+	CVAR_VAR(r_lightmap, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showsky, 0, 0),
-	CVAR_VAR(r_drawworld, 1, 0),
+	CVAR_VAR(r_drawworld, 1, CVAR_CHEAT),
 	CVAR_VAR(r_drawentities, 1, 0),
-	CVAR_VAR(gl_showbboxes, 0, 0),
-	CVAR_VAR(gl_showtris, 0, 0),
-	CVAR_VAR(gl_shownormals, 0, 0),
-	CVAR_VAR(gl_lightLines, 0, 0),
+	CVAR_VAR(gl_showbboxes, 0, CVAR_CHEAT),
+	CVAR_VAR(gl_showtris, 0, CVAR_CHEAT),
+	CVAR_VAR(gl_shownormals, 0, CVAR_CHEAT),
+	CVAR_VAR(gl_lightLines, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showLights, 0, 0),
-	CVAR_VAR(gl_singleShader, 0, 0),
+	CVAR_VAR(gl_singleShader, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_logTexts, 0, 0),
 
 	CVAR_VAR(r_fullscreen, 1, CVAR_ARCHIVE),
@@ -301,9 +294,9 @@ static int GL_Init (void)
 #endif
 
 	/*----------------- Get various GL strings ----------------*/
-	Q_strncpyz (gl_config.vendor_string, qglGetString (GL_VENDOR), sizeof(gl_config.vendor_string));
-	Q_strncpyz (gl_config.renderer_string, qglGetString (GL_RENDERER), sizeof(gl_config.renderer_string));
-	Q_strncpyz (gl_config.version_string, qglGetString (GL_VERSION), sizeof(gl_config.version_string));
+	Q_strncpyz (gl_config.vendorString, qglGetString (GL_VENDOR), sizeof(gl_config.vendorString));
+	Q_strncpyz (gl_config.rendererString, qglGetString (GL_RENDERER), sizeof(gl_config.rendererString));
+	Q_strncpyz (gl_config.versionString, qglGetString (GL_VERSION), sizeof(gl_config.versionString));
 
 	/*------------------ Grab extensions ----------------------*/
 	QGL_InitExtensions ();

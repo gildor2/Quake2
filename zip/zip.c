@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "zip.h"
 
 
@@ -63,7 +64,7 @@ typedef struct end_central_dir_record
 #endif
 
 
-FILE* ZipOpen (char *name)
+FILE* Zip_OpenArchive (char *name)
 {
 	FILE	*F;
 	local_file_hdr hdr;
@@ -84,7 +85,7 @@ FILE* ZipOpen (char *name)
 }
 
 
-void ZipClose (FILE *F)
+void Zip_CloseArchive (FILE *F)
 {
 	fclose (F);
 }
@@ -93,7 +94,7 @@ void ZipClose (FILE *F)
 #ifndef ZIP_USE_CENTRAL_DIRECTORY
 
 // Enumerate zip files
-int ZipEnum (FILE *F, enum_zip_func enum_func)
+int Zip_EnumArchive (FILE *F, enum_zip_func enum_func)
 {
 	ulg		signature, name_len;
 	local_file_hdr hdr;
@@ -137,7 +138,7 @@ int ZipEnum (FILE *F, enum_zip_func enum_func)
 
 
 // Enumerate zip central directory (faster)
-int ZipEnum (FILE *F, enum_zip_func enum_func)
+int Zip_EnumArchive (FILE *F, enum_zip_func enum_func)
 {
 	ulg		signature, name_len, pos, rs;
 	cdir_file_hdr hdr;							// central directory record
@@ -182,7 +183,7 @@ int ZipEnum (FILE *F, enum_zip_func enum_func)
 
 	while (!feof(F))
 	{
-		if (fread(&signature, 4, 1, F) != 1) return FALSE;	// cannot read signature
+		if (fread (&signature, 4, 1, F) != 1) return FALSE;	// cannot read signature
 		if (signature == 0x06054B50)
 			return TRUE;						// end of central directory structure - finish
 		if (signature != 0x02014B50) return FALSE;			// MUST be a central directory file header
@@ -211,7 +212,7 @@ int ZipEnum (FILE *F, enum_zip_func enum_func)
 #endif // ZIP_USE_CENTRAL_DIRECTORY
 
 
-int ZipExtractFileMem (FILE *F, zip_file *file, void *buf)
+int Zip_ExtractFileMem (FILE *F, zip_file *file, void *buf)
 {
 	z_stream s;
 	char	read_buf[READ_BUF_SIZE];
@@ -286,7 +287,7 @@ int ZipExtractFileMem (FILE *F, zip_file *file, void *buf)
 }
 
 
-ZFILE *ZipOpenFile (FILE *F, zip_file *file)
+ZFILE *Zip_OpenFile (FILE *F, zip_file *file)
 {
 	ZFILE	*z;
 #ifdef ZIP_USE_CENTRAL_DIRECTORY
@@ -337,7 +338,7 @@ ZFILE *ZipOpenFile (FILE *F, zip_file *file)
 }
 
 
-int ZipReadFile (ZFILE *z, void *buf, int size)
+int Zip_ReadFile (ZFILE *z, void *buf, int size)
 {
 	int		read_size, write_size, ret;
 
@@ -389,7 +390,7 @@ int ZipReadFile (ZFILE *z, void *buf, int size)
 
 
 // Check size & CRC32 and close file
-int ZipCloseFile (ZFILE *z)
+int Zip_CloseFile (ZFILE *z)
 {
 	int res;
 
@@ -407,7 +408,7 @@ int ZipCloseFile (ZFILE *z)
 }
 
 
-ZBUF *ZipOpenBuf (void *data, int size)
+ZBUF *Zip_OpenBuf (void *data, int size)
 {
 	ZBUF	*z;
 
@@ -429,7 +430,7 @@ ZBUF *ZipOpenBuf (void *data, int size)
 }
 
 
-int ZipReadBuf (ZBUF *z, void *buf, int size)
+int Zip_ReadBuf (ZBUF *z, void *buf, int size)
 {
 	int		ret;
 
@@ -451,7 +452,7 @@ int ZipReadBuf (ZBUF *z, void *buf, int size)
 }
 
 
-void ZipCloseBuf (ZBUF *z)
+void Zip_CloseBuf (ZBUF *z)
 {
 	inflateEnd (&z->s);
 	free (z);

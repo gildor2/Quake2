@@ -16,7 +16,7 @@ float asinTable[TABLE_SIZE*2], acosTable[TABLE_SIZE*2];
 float atanTable[TABLE_SIZE], atanTable2[TABLE_SIZE];
 
 
-//!! this tables unused now
+//!! these tables are unused now
 float sqrtTable[256];
 int   noiseTablei[256];
 float noiseTablef[256];

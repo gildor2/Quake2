@@ -322,7 +322,7 @@ SOURCE=.\client\console.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\game\game.h
+SOURCE=.\server\game.h
 # End Source File
 # Begin Source File
 

@@ -1,7 +1,6 @@
-#ifndef __ZIP__
-#define __ZIP__
+#ifndef __ZIP_INCLUDED__
+#define __ZIP_INCLUDED__
 
-#include <stdio.h>
 #include "../qcommon/qcommon.h"
 #include "zlib.h"
 
@@ -52,22 +51,22 @@ typedef int (*enum_zip_func) (zip_file *file);
 // Opens archive. Return NULL if file not found or bad archive.
 // Remark: we can use simple fopen(name) for this operation, but
 // this will skip some structure checks.
-FILE* ZipOpen (char *name);
-void ZipClose (FILE *F);
-int ZipEnum (FILE *F, enum_zip_func enum_func);
+FILE*	Zip_OpenArchive (char *name);
+void	Zip_CloseArchive (FILE *F);
+int		Zip_EnumArchive (FILE *F, enum_zip_func enum_func);
 
 // Extract file to memory from archive F
 // Fields in zip_file, that must be set: ucsize, csize, method, pos
 // Size of buf must be at least file->ucsize
-int ZipExtractFileMem (FILE *F, zip_file *file, void *buf);
+int		Zip_ExtractFileMem (FILE *F, zip_file *file, void *buf);
 
-ZFILE *ZipOpenFile (FILE *F, zip_file *file);
-int ZipReadFile (ZFILE *z, void *buf, int size);
-int ZipCloseFile (ZFILE *z);
+ZFILE	*Zip_OpenFile (FILE *F, zip_file *file);
+int		Zip_ReadFile (ZFILE *z, void *buf, int size);
+int		Zip_CloseFile (ZFILE *z);
 
-ZBUF *ZipOpenBuf (void *data, int size);
-int ZipReadBuf (ZBUF *z, void *buf, int size);
-void ZipCloseBuf (ZBUF *z);
+ZBUF	*Zip_OpenBuf (void *data, int size);
+int		Zip_ReadBuf (ZBUF *z, void *buf, int size);
+void	Zip_CloseBuf (ZBUF *z);
 
 
-#endif // __ZIP__
+#endif

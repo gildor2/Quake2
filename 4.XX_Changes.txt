@@ -68,6 +68,7 @@ Comments:
 - if sound file not found, game doesn't try to load it every time it must appear
 - improved look of "player setup" menu
 - improved "set game directory"
+- ability to reverse sound channels; controllable with "s_reverse_stereo"
 
 4. FIXES
 ~~~~~~~~
@@ -90,6 +91,8 @@ Comments:
 - demos:
   - allowed cheatvars (timedemo, r_lightmap ...) for demos, recorded from deathmatch
   - disabled "set var" commands from recorded demos
+- allowed cheatvars when server started with "cheats 1"
+- commandline: removed '-' parsing, added support for quotes
 
 5. ADDONS
 ~~~~~~~~~
@@ -198,6 +201,7 @@ Server
 Debugging
 ---------
 - "r_surfinfo" variable: when value is non-zero, displaying info about maps surface under crosshair
+  (&2 -> no entities, &4 -> any contents)
 - "r_drawfps" variable: display FPS when it is set
 - "r_playerpos" variable: when it is set to "1", player (spectator) world coordinates are shown
 - "r_sfx_pause 1" stops particles/fx; "r_sfx_pause 2" also disables particle/fx creation
@@ -243,6 +247,6 @@ Memory management
 Miscellaneous
 -------------
 - changed ALIAS_LOOP_COUNT from 16 to 64
-- FS_LoadFile() will load file in buffer (filelength+1) with added zero byte
+- FS_LoadFile() will load file into a buffer of size (filelength+1) with added zero byte
 - Com_WPrintf() will print message with warning color and log when developer=2
 - q_shared.h and q_shared.c are migrated from game/q_shared.* to common/q_shared2.*;

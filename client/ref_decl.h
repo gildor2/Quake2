@@ -39,6 +39,9 @@ typedef struct {
 	void	(*_FS_FreeFile) (void *buf);
 	char*	(*_FS_Gamedir) (void);
 	void	(*_FS_CreatePath) (char *path);
+	void	(*_FS_CopyFile) (char *src, char *dst);
+	void	(*_FS_CopyFiles) (char *srcMask, char *dstDir);
+	void	(*_FS_RemoveFiles) (char *mask);
 	qboolean	(*_MatchWildcard) (char *name, char *mask);
 	qboolean	(*_MatchWildcard2) (char *name, char *mask, qboolean ignoreCase);
 	qboolean	(*_Vid_GetModeInfo) (int *width, int *height, int mode);

@@ -49,4 +49,7 @@ void LM_SortLightStyles (dynamicLightmap_t *dl);
 void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean vertexOnly, unsigned dlightMask);
 
 
+extern color_t lmMinlight;
+
+
 #endif

@@ -680,7 +680,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 				trace = CM_BoxTrace (p1, p2, v1, v2, headnode, MASK_SOLID);
 			else
 				trace = CM_BoxTrace (p2, p1, v1, v2, headnode, MASK_SOLID);
-			if (trace.fraction < 1)	// && (trace.contents & (CONTENTS_WINDOW|CONTENTS_TRANSLUCENT)))
+			if (trace.fraction < 1 && !(trace.contents & CONTENTS_MIST))
 				sflags |= SHADER_ENVMAP;
 		}
 
@@ -1294,6 +1294,14 @@ void GL_LoadWorldMap (char *name)
 	case map_q2:
 	case map_kp:
 		LoadBsp2 (bspfile);
+		// get ambient light from lightmaps (place to all map types ??)
+		if (map.ambientLight[0] + map.ambientLight[1] + map.ambientLight[2] == 0)
+		{
+			map.ambientLight[0] = lmMinlight.c[0];
+			map.ambientLight[1] = lmMinlight.c[1];
+			map.ambientLight[2] = lmMinlight.c[2];
+			Com_DPrintf ("Used minlight from lightmap {%d, %d, %d}\n", VECTOR_ARGS(lmMinlight.c));
+		}
 		break;
 	default:
 		Hunk_End ();
@@ -1476,6 +1484,7 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 	{
 		// clear normals array
 		memset (normals, 0, sizeof(normals));
+
 		for (j = 0, idx = surf->indexes; j < surf->numTris; j++, idx += 3)
 		{
 			vec3_t	vecs[3], n;
@@ -1503,7 +1512,7 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 				VectorMA (dst, ang, n, dst);		// weighted normal: weight ~ angle
 			}
 		}
-		// transform computed xyz normals to compact form
+		// convert computed xyz normals to compact form
 		for (j = 0; j < numXyz; j++)
 		{
 			byte	a, b;
@@ -1517,7 +1526,7 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 			a = Q_ftol (acos (dst[2]) / (M_PI * 2) * 255);
 			if (dst[0])		b = Q_ftol (atan2 (dst[1], dst[0]) / (M_PI * 2) * 255);
 #endif
-			else			b = dst[1] > 0 ? 127.5 : -127.5;
+			else			b = dst[1] > 0 ? 127 : -127;
 			norm_i[j] = a | (b << 8);
 		}
 		// copy normals

@@ -79,6 +79,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #endif
 
+
+#define SAVEGAME_DIRECTORY			"save"
+#define SAVEGAME_SERVER_EXTENSION	"sv2"
+#define SAVEGAME_GAME_EXTENSION		"sav"
+#define SAVEGAME_VARS_EXTENSION		"ssv"
+
+
 //============================================================================
 
 typedef struct sizebuf_s
@@ -137,25 +144,10 @@ void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
 
 //============================================================================
 
-/* -- declared in q_shared.h
-extern	qboolean		bigendian;
-
-extern	short	BigShort (short l);
-extern	short	LittleShort (short l);
-extern	int		BigLong (int l);
-extern	int		LittleLong (int l);
-extern	float	BigFloat (float l);
-extern	float	LittleFloat (float l);
-*/
-
-//============================================================================
-
 
 int		COM_Argc (void);
 char	*COM_Argv (int arg);	// range and null checked
 void	COM_ClearArgv (int arg);
-int		COM_CheckParm (char *parm);
-void	COM_AddParm (char *parm);
 
 void	COM_Init (void);
 void	COM_InitArgv (int argc, char **argv);
@@ -258,9 +250,9 @@ enum clc_ops_e
 {
 	clc_bad,
 	clc_nop,
-	clc_move,				// [[usercmd_t]
-	clc_userinfo,			// [[userinfo string]
-	clc_stringcmd			// [string] message
+	clc_move,					// [[usercmd_t]
+	clc_userinfo,				// [[userinfo string]
+	clc_stringcmd				// [string] message
 };
 
 //==============================================
@@ -289,23 +281,23 @@ enum clc_ops_e
 // user_cmd_t communication
 
 // ms and light always sent, the others are optional
-#define	CM_ANGLE1 	(1<<0)
-#define	CM_ANGLE2 	(1<<1)
-#define	CM_ANGLE3 	(1<<2)
-#define	CM_FORWARD	(1<<3)
-#define	CM_SIDE		(1<<4)
-#define	CM_UP		(1<<5)
-#define	CM_BUTTONS	(1<<6)
-#define	CM_IMPULSE	(1<<7)
+#define	CM_ANGLE1 			(1<<0)
+#define	CM_ANGLE2		 	(1<<1)
+#define	CM_ANGLE3 			(1<<2)
+#define	CM_FORWARD			(1<<3)
+#define	CM_SIDE				(1<<4)
+#define	CM_UP				(1<<5)
+#define	CM_BUTTONS			(1<<6)
+#define	CM_IMPULSE			(1<<7)
 
 //==============================================
 
 // a sound without an ent or pos will be a local only sound
-#define	SND_VOLUME		(1<<0)		// a byte
-#define	SND_ATTENUATION	(1<<1)		// a byte
-#define	SND_POS			(1<<2)		// three coordinates
-#define	SND_ENT			(1<<3)		// a short 0-2: channel, 3-12: entity
-#define	SND_OFFSET		(1<<4)		// a byte, msec offset from frame start
+#define	SND_VOLUME			(1<<0)		// a byte
+#define	SND_ATTENUATION		(1<<1)		// a byte
+#define	SND_POS				(1<<2)		// three coordinates
+#define	SND_ENT				(1<<3)		// a short 0-2: channel, 3-12: entity
+#define	SND_OFFSET			(1<<4)		// a byte, msec offset from frame start
 
 #define DEFAULT_SOUND_PACKET_VOLUME	1.0
 #define DEFAULT_SOUND_PACKET_ATTENUATION 1.0
@@ -319,39 +311,39 @@ enum clc_ops_e
 #define U_ANGLE_N	(U_ANGLE1|U_ANGLE2|U_ANGLE3)
 
 // try to pack the common update flags into the first byte
-#define	U_ORIGIN1	(1<<0)
-#define	U_ORIGIN2	(1<<1)
-#define	U_ANGLE2	(1<<2)
-#define	U_ANGLE3	(1<<3)
-#define	U_FRAME8	(1<<4)		// frame is a byte
-#define	U_EVENT		(1<<5)
-#define	U_REMOVE	(1<<6)		// REMOVE this entity, don't add it
-#define	U_MOREBITS1	(1<<7)		// read one additional byte
+#define	U_ORIGIN1			(1<<0)
+#define	U_ORIGIN2			(1<<1)
+#define	U_ANGLE2			(1<<2)
+#define	U_ANGLE3			(1<<3)
+#define	U_FRAME8			(1<<4)		// frame is a byte
+#define	U_EVENT				(1<<5)
+#define	U_REMOVE			(1<<6)		// REMOVE this entity, don't add it
+#define	U_MOREBITS1			(1<<7)		// read one additional byte
 
 // second byte
-#define	U_NUMBER16	(1<<8)		// NUMBER8 is implicit if not set
-#define	U_ORIGIN3	(1<<9)
-#define	U_ANGLE1	(1<<10)
-#define	U_MODEL		(1<<11)
-#define U_RENDERFX8	(1<<12)		// fullbright, etc
-#define	U_EFFECTS8	(1<<14)		// autorotate, trails, etc
-#define	U_MOREBITS2	(1<<15)		// read one additional byte
+#define	U_NUMBER16			(1<<8)		// NUMBER8 is implicit if not set
+#define	U_ORIGIN3			(1<<9)
+#define	U_ANGLE1			(1<<10)
+#define	U_MODEL				(1<<11)
+#define U_RENDERFX8			(1<<12)		// fullbright, etc
+#define	U_EFFECTS8			(1<<14)		// autorotate, trails, etc
+#define	U_MOREBITS2			(1<<15)		// read one additional byte
 
 // third byte
-#define	U_SKIN8		(1<<16)
-#define	U_FRAME16	(1<<17)		// frame is a short
-#define	U_RENDERFX16 (1<<18)	// 8 + 16 = 32
-#define	U_EFFECTS16	(1<<19)		// 8 + 16 = 32
-#define	U_MODEL2	(1<<20)		// weapons, flags, etc
-#define	U_MODEL3	(1<<21)
-#define	U_MODEL4	(1<<22)
-#define	U_MOREBITS3	(1<<23)		// read one additional byte
+#define	U_SKIN8				(1<<16)
+#define	U_FRAME16			(1<<17)		// frame is a short
+#define	U_RENDERFX16		(1<<18)		// 8 + 16 = 32
+#define	U_EFFECTS16			(1<<19)		// 8 + 16 = 32
+#define	U_MODEL2			(1<<20)		// weapons, flags, etc
+#define	U_MODEL3			(1<<21)
+#define	U_MODEL4			(1<<22)
+#define	U_MOREBITS3			(1<<23)		// read one additional byte
 
 // fourth byte
-#define	U_OLDORIGIN	(1<<24)		// FIXME: get rid of this
-#define	U_SKIN16	(1<<25)
-#define	U_SOUND		(1<<26)
-#define	U_SOLID		(1<<27)
+#define	U_OLDORIGIN			(1<<24)		// FIXME: get rid of this ??
+#define	U_SKIN16			(1<<25)
+#define	U_SOUND				(1<<26)
+#define	U_SOLID				(1<<27)
 
 
 /*
@@ -450,9 +442,6 @@ void	Cmd_Init (void);
 // as a clc_stringcmd instead of executed locally
 //--void	Cmd_RemoveCommand (char *cmd_name);
 
-qboolean Cmd_Exists (char *cmd_name);
-// used by the cvar code to check for cvar / command name overlap
-
 //--int		Cmd_Argc (void);
 //--char	*Cmd_Argv (int arg);
 //--char	*Cmd_Args (void);
@@ -537,6 +526,7 @@ void 	Cvar_WriteVariables (FILE *f);
 // appends lines containing "set variable value" for all variables
 // with the archive flag set to true.
 
+void	Cvar_Cheats (qboolean enable);
 void	Cvar_Init (void);
 
 char	*Cvar_Userinfo (void);
@@ -559,10 +549,10 @@ NET
 
 // net.h -- quake's interface to the networking layer
 
-#define	PORT_ANY	-1
+#define	PORT_ANY		-1
 
 #define	MAX_MSGLEN		16384		// max length of a message
-#define MAX_MSGLEN_OLD	1400		// MAX_MSGLEN for old clients
+#define MAX_MSGLEN_OLD	1400		// MAX_MSGLEN for old clients and for IPX protocol
 
 typedef enum {NA_LOOPBACK, NA_BROADCAST, NA_IP, NA_IPX, NA_BROADCAST_IPX} netadrtype_t;
 
@@ -760,8 +750,8 @@ void	Z_FreeTags (int tag);
 //--void	*AllocChainBlock (void *chain, int size);
 
 // Strings
-char	*CopyString (char *in);
-char	*ChainCopyString (char *in, void *chain);
+char	*CopyString (const char *in);
+char	*ChainCopyString (const char *in, void *chain);
 
 // Named structure lists
 basenamed_t *AllocNamedStruc (int size, char *name);
@@ -830,6 +820,7 @@ extern cvar_t	*developer;
 extern cvar_t	*dedicated;
 extern cvar_t	*com_speeds;
 extern cvar_t	*log_stats;
+extern cvar_t	*sv_cheats;
 
 extern	FILE *log_stats_file;
 

@@ -24,6 +24,8 @@ void QGL_Shutdown (void)
 
 	for (i = 0; i < NUM_GLFUNCS; i++)
 		qgl.funcs[i] = NULL;
+
+	Z_Free (gl_config.extensionsString);
 }
 
 
@@ -58,6 +60,25 @@ qboolean QGL_Init (const char *dllname)
 }
 
 
+static qboolean ExtensionSupported (const char *name)
+{
+	char	*match, *next, *origin;
+	int		len;
+
+	len = strlen (name);
+	for (origin = gl_config.extensionsString; *origin; origin = next)
+	{
+		match = strstr (origin, name);
+		if (!match) return false;
+
+		next = match + len;
+		if ((match == origin || *(match - 1) == ' ') && (*next == ' ' || *next == 0))
+			return true;
+	}
+	return false;
+}
+
+
 void QGL_InitExtensions (void)
 {
 	int		i, notFoundExt, disabledExt;
@@ -66,15 +87,15 @@ void QGL_InitExtensions (void)
 
 	gl_config.extensionMask = 0;
 	notFoundExt = disabledExt = 0;
+	gl_config.extensionsString = CopyString (qglGetString (GL_EXTENSIONS));
 
-	Q_strncpyz (gl_config.extensions_string, qglGetString (GL_EXTENSIONS), sizeof(gl_config.extensions_string));
 	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 	{
 		qboolean enable;
 		int		j;
 
 		enable = false;
-		if (strstr (gl_config.extensions_string, ext->name))
+		if (ExtensionSupported (ext->name))
 		{
 			if (!ext->cvar || Cvar_VariableInt (ext->cvar))
 				enable = true;
@@ -244,7 +265,7 @@ void QGL_EnableLogging (qboolean enable)
 }
 
 
-void QGL_LogMessage (char *text)
+void QGL_LogMessage (const char *text)
 {
 	if (!glw_state.log_fp)
 		return;

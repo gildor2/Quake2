@@ -22,17 +22,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 netadr_t	master_adr[MAX_MASTERS];	// address of group servers
 
-client_t	*sv_client;			// current client
+client_t	*sv_client;					// current client
 
 cvar_t	*sv_paused;
 static cvar_t	*sv_timedemo;
 
 cvar_t	*sv_enforcetime;
 
-static cvar_t	*timeout;		// seconds without any message
-static cvar_t	*zombietime;	// seconds to sink messages after disconnect
+static cvar_t	*timeout;				// seconds without any message
+static cvar_t	*zombietime;			// seconds to sink messages after disconnect
 
-static cvar_t	*rcon_password;	// password for remote server commands
+static cvar_t	*rcon_password;			// password for remote server commands
 
 cvar_t *allow_download;
 cvar_t *allow_download_players;
@@ -42,9 +42,9 @@ cvar_t *allow_download_maps;
 
 cvar_t *sv_airaccelerate;
 
-cvar_t	*sv_noreload;			// don't reload level state when reentering
+cvar_t	*sv_noreload;					// don't reload level state when reentering
 
-cvar_t	*maxclients;			// FIXME: rename sv_maxclients
+cvar_t	*maxclients;					// FIXME: rename sv_maxclients
 static cvar_t	*sv_showclamp;
 
 static cvar_t	*hostname;
@@ -113,28 +113,23 @@ SV_StatusString
 Builds the string that is sent as heartbeats and status replies
 ===============
 */
-char	*SV_StatusString (void)
+char *SV_StatusString (void)
 {
-	char	player[1024];
+	char	player[256];
 	static char	status[MAX_MSGLEN - 16];
-	int		i;
-	client_t	*cl;
-	int		statusLength;
-	int		playerLength;
+	client_t *cl;
+	int		i, statusLength, playerLength;
 
-	strcpy (status, Cvar_Serverinfo());
-	strcat (status, "\n");
-	statusLength = strlen(status);
-
+	statusLength = Com_sprintf (status, sizeof(status), "%s\n", Cvar_Serverinfo ());
 	for (i = 0; i < maxclients->integer; i++)
 	{
 		cl = &svs.clients[i];
-		if (cl->state == cs_connected || cl->state == cs_spawned )
+		if (cl->state == cs_connected || cl->state == cs_spawned)
 		{
-			Com_sprintf (player, sizeof(player), "%i %i \"%s\"\n",
+			Com_sprintf (player, sizeof(player), "%d %d \"%s\"\n",
 				cl->edict->client->ps.stats[STAT_FRAGS], cl->ping, cl->name);
 			playerLength = strlen(player);
-			if (statusLength + playerLength >= sizeof(status) )
+			if (statusLength + playerLength >= sizeof(status))
 				break;		// can't hold any more
 			strcpy (status + statusLength, player);
 			statusLength += playerLength;
@@ -186,13 +181,13 @@ void SVC_Info (void)
 	int		i, count;
 	int		version;
 
-	if (maxclients->integer == 1)
-		return;		// ignore in single player
+	if (maxclients->integer == 1 || sv.state == ss_demo)
+		return;					// ignore in single player or demoplay
 
 	version = atoi (Cmd_Argv(1));
 
 	if (version != PROTOCOL_VERSION)
-		Com_sprintf (string, sizeof(string), "%s: wrong version\n", hostname->string, sizeof(string));
+		Com_sprintf (string, sizeof(string), "%s: wrong version\n", hostname->string);
 	else
 	{
 		count = 0;
@@ -200,7 +195,7 @@ void SVC_Info (void)
 			if (svs.clients[i].state >= cs_connected)
 				count++;
 
-		Com_sprintf (string, sizeof(string), "%16s %8s %2i/%2i\n", hostname->string, sv.name, count, maxclients->integer);
+		Com_sprintf (string, sizeof(string), "%16s %8s %2d/%2d\n", hostname->string, sv.name, count, maxclients->integer);
 	}
 
 	Netchan_OutOfBandPrint (NS_SERVER, net_from, "info\n%s", string);
@@ -232,9 +227,7 @@ challenge, they must give a valid IP address.
 */
 void SVC_GetChallenge (void)
 {
-	int		i;
-	int		oldest;
-	int		oldestTime;
+	int		i, oldest, oldestTime;
 
 	oldest = 0;
 	oldestTime = 0x7FFFFFFF;
@@ -261,7 +254,7 @@ void SVC_GetChallenge (void)
 	}
 
 	// send it back
-	Netchan_OutOfBandPrint (NS_SERVER, net_from, "challenge %i", svs.challenges[i].challenge);
+	Netchan_OutOfBandPrint (NS_SERVER, net_from, "challenge %d", svs.challenges[i].challenge);
 }
 
 /*
@@ -557,7 +550,7 @@ void SV_CalcPings (void)
 
 		total = 0;
 		count = 0;
-		for (j=0 ; j<LATENCY_COUNTS ; j++)
+		for (j = 0; j < LATENCY_COUNTS; j++)
 		{
 			if (cl->frame_latency[j] > 0)
 			{
@@ -632,10 +625,10 @@ void SV_ReadPackets (void)
 		MSG_BeginReading (&net_message);
 		MSG_ReadLong (&net_message);		// sequence number
 		MSG_ReadLong (&net_message);		// sequence number
-		qport = MSG_ReadShort (&net_message) & 0xffff;
+		qport = MSG_ReadShort (&net_message) & 0xFFFF;
 
 		// check for packets from connected clients
-		for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
+		for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 		{
 			if (cl->state == cs_free)
 				continue;
@@ -1139,14 +1132,13 @@ CVAR_BEGIN(vars)
 	CVAR_NULL(coop, 0, CVAR_LATCH),
 	CVAR_NULL(fraglimit, 0, CVAR_SERVERINFO),
 	CVAR_NULL(timelimit, 0, CVAR_SERVERINFO),
-	CVAR_NULL(cheats, 0, CVAR_SERVERINFO|CVAR_LATCH),
 	CVAR_VAR(maxclients, 1, CVAR_SERVERINFO|CVAR_LATCH),
 	CVAR_VAR(hostname, noname, CVAR_SERVERINFO|CVAR_ARCHIVE),
 	CVAR_VAR(timeout, 125, 0),
 	CVAR_VAR(zombietime, 2, 0),
 	{&sv_showclamp, "showclamp", "0", 0},
-	{&sv_paused, "paused", "0", 0},
-	{&sv_timedemo, "timedemo", "0", 0},
+	{&sv_paused, "paused", "0", CVAR_CHEAT},
+	{&sv_timedemo, "timedemo", "0", CVAR_CHEAT},
 	{&sv_enforcetime, "sv_enforcetime", "0", 0},
 	CVAR_VAR(allow_download, 1, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_players, 0, CVAR_ARCHIVE),
@@ -1242,4 +1234,6 @@ void SV_Shutdown (char *finalmsg, qboolean reconnect)
 	if (svs.demofile)
 		fclose (svs.demofile);
 	memset (&svs, 0, sizeof(svs));
+
+	Cvar_GetLatchedVars ();
 }

@@ -25,9 +25,9 @@ static void LightLine (vec3_t *axis, vec3_t from, vec3_t to, float *color, float
 	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 	GL_DepthRange (DEPTH_NEAR);
 
-	r = color[0] * lightScale;
-	g = color[1] * lightScale;
-	b = color[2] * lightScale;
+	r = Q_ftol(color[0] * lightScale);
+	g = Q_ftol(color[1] * lightScale);
+	b = Q_ftol(color[2] * lightScale);
 	NORMALIZE_COLOR255(r, g, b);
 	c.c[0] = r; c.c[1] = g; c.c[2] = b; c.c[3] = 255;
 	qglColor4ubv (c.c);
@@ -184,7 +184,6 @@ static void AddLight (vec3_t *axis, vec3_t dir, float scale, vec3_t color)
 #define LINEAR_SCALE	2.0f	// */ Cvar_VariableValue("lscale")
 #define INV_SCALE		4.0f	// */ Cvar_VariableValue("iscale")
 #define SURF_SCALE		2.0f	// */ Cvar_VariableValue("sscale")
-#define AMBIENT_SCALE	/* !! 1.0f	// */ Cvar_VariableValue("ascale")
 
 
 static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *vis)
@@ -417,7 +416,7 @@ static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 	for (i = 0; i < 6; i++)
 		VectorCopy(map.ambientLight, entityColorAxis[i]);
 
-	if (!row)
+	if (!row && map.visInfo)
 	{
 		if (pcell) *pcell = &outCell;
 		return false;		// point is outside the world
@@ -719,12 +718,16 @@ void GL_ApplyEntitySpherelights (color_t *dst)
 
 		norm = ex->normal;
 
-		VectorClear (color);	//?? use VectorScale() at 1st iteration instead of VectorMA()
+		VectorClear (color);
 #define STEP(n)		\
 		axis = &entityColorAxis[(norm[n] < 0 ? (n * 2) : (n * 2 + 1))][0];	\
-		val = fabs (norm[n]) * light;			\
+		val = fabs (norm[n]) * light;
+		STEP(0);
+		VectorScale (axis, val, color);
+		STEP(1);
 		VectorMA (color, val, axis, color);
-		STEP(0); STEP(1); STEP(2);
+		STEP(2);
+		VectorMA (color, val, axis, color);
 #undef STEP
 
 #define STEP(n)		\

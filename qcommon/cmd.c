@@ -27,6 +27,7 @@ void Cmd_ForwardToServer (void);
 static int cmdWait;
 
 #define	ALIAS_LOOP_COUNT	64
+#define MACRO_LOOP_COUNT	64
 static int	aliasCount;		// for detecting runaway loops
 
 
@@ -221,15 +222,16 @@ void Cbuf_Execute (void)
 		len = cmd_text.cursize;
 		for (i = 0; i < cmd_text.cursize; i++)
 		{
-			if (!(quotes & 1) && text[i] == '/' && i < cmd_text.cursize-1 && text[i+1] == '/')
+			if (text[i] == '"')
+				quotes ^= 1;
+
+			if (!quotes && text[i] == '/' && i < cmd_text.cursize-1 && text[i+1] == '/')
 			{	// remove "//" comments
 				len = i;
 				while (i < cmd_text.cursize && text[i] != '\n') i++;
 				break;
 			}
-			if (text[i] == '"')
-				quotes++;
-			if (!(quotes & 1) && text[i] == ';')
+			if (!quotes && text[i] == ';')
 			{
 				len = i;
 				break;	// don't break if inside a quoted string
@@ -302,8 +304,8 @@ void Cbuf_AddEarlyCommands (qboolean clear)
 Cbuf_AddLateCommands
 
 Adds command line parameters as script statements
-Commands lead with a + and continue until another + or -
-quake +vid_ref gl +map amlev1
+Commands lead with a '+' and continue until another '+'
+quake2 +vid_ref gl +map amlev1
 
 Returns true if any late commands were added, which
 will keep the demoloop from immediately starting
@@ -311,11 +313,9 @@ will keep the demoloop from immediately starting
 */
 qboolean Cbuf_AddLateCommands (void)
 {
-	int		i, j;
-	int		s;
-	char	*text, *build, c;
-	int		argc;
-	qboolean	ret;
+	int		i, s, argc;
+	char	*text, *build;
+	qboolean ret;
 
 	// build the combined string to parse from
 	s = 0;
@@ -328,7 +328,7 @@ qboolean Cbuf_AddLateCommands (void)
 		return false;
 
 	text = Z_Malloc (s+1);
-	text[0] = 0;
+//	text[0] = 0; -- zero initialized
 	for (i = 1; i < argc; i++)
 	{
 		strcat (text, COM_Argv(i));
@@ -344,10 +344,18 @@ qboolean Cbuf_AddLateCommands (void)
 	{
 		if (text[i] == '+')
 		{
-			i++;
+			char	c;
+			int		quote, j;
 
-			for (j = i; (text[j] != '+') && (text[j] != '-') && (text[j] != 0); j++)
-				;
+			i++;				// skip '+'
+			quote = 0;
+			for (j = i; (c = text[j]) != 0; j++)
+			{
+				if (c == '"')
+					quote ^= 1;
+				if (!quote && c == '+')
+					break;		// found unquoted '+' -- next command
+			}
 
 			c = text[j];
 			text[j] = 0;
@@ -583,13 +591,13 @@ Cmd_MacroExpandString
 static char *Cmd_MacroExpandString (char *text)
 {
 	int		i, j, count, len;
-	qboolean	inquote;
+	int		quotes;
 	char	*scan;
 	static	char	expanded[MAX_STRING_CHARS];
 	char	temporary[MAX_STRING_CHARS];
 	char	*token, *start;
 
-	inquote = false;
+	quotes = 0;
 	scan = text;
 
 	len = strlen (scan);
@@ -604,8 +612,8 @@ static char *Cmd_MacroExpandString (char *text)
 	for (i = 0; i < len; i++)
 	{
 		if (scan[i] == '"')
-			inquote ^= 1;
-		if (inquote)
+			quotes ^= 1;
+		if (quotes)
 			continue;	// don't expand inside quotes
 		if (scan[i] != '$')
 			continue;
@@ -633,14 +641,14 @@ static char *Cmd_MacroExpandString (char *text)
 		scan = expanded;
 		i--;
 
-		if (++count == 100)
+		if (++count == MACRO_LOOP_COUNT)
 		{
 			Com_WPrintf ("Macro expansion loop, discarded\n");
 			return NULL;
 		}
 	}
 
-	if (inquote)
+	if (quotes)
 	{
 		Com_WPrintf ("Line has unmatched quote, discarded.\n");
 		return NULL;
@@ -774,25 +782,6 @@ void Cmd_RemoveCommand (char *cmd_name)
 		back = &cmd->next;
 	}
 }
-
-/*
-============
-Cmd_Exists
-============
-*/
-qboolean Cmd_Exists (char *cmd_name)
-{
-	cmdFunc_t *cmd;
-
-	for (cmd = cmdFuncs; cmd; cmd = cmd->next)
-	{
-		if (!strcmp (cmd_name, cmd->name))
-			return true;
-	}
-
-	return false;
-}
-
 
 /*
 ============

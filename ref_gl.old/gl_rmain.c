@@ -993,9 +993,9 @@ void R_Register( void )
 CVAR_BEGIN(vars)
 	{&r_lefthand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE},
 	CVAR_VAR(r_norefresh, 0, 0),
-	CVAR_VAR(r_fullbright, 0, 0),
+	CVAR_VAR(r_fullbright, 0, CVAR_CHEAT),
 	CVAR_VAR(r_drawentities, 1, 0),
-	CVAR_VAR(r_drawworld, 1, 0),
+	CVAR_VAR(r_drawworld, 1, CVAR_CHEAT),
 	CVAR_VAR(r_novis, 0, 0),
 	CVAR_VAR(r_nocull, 0, 0),
 	CVAR_VAR(r_lerpmodels, 1, 0),
@@ -1017,15 +1017,15 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_logFile, 0, 0),
 	CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_mode, 3, CVAR_ARCHIVE),
-	CVAR_VAR(r_lightmap, 0, 0),
+	CVAR_VAR(r_lightmap, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_shadows, 0, CVAR_ARCHIVE ),
 	CVAR_VAR(gl_dynamic, 1, 0),
 	CVAR_VAR(gl_dlightBacks, 1, 0),
 	CVAR_VAR(gl_nobind, 0, 0),
-	CVAR_VAR(gl_round_down, 1, 0),
+	{&gl_round_down, "gl_roundImagesDown", "0", CVAR_ARCHIVE},
 	CVAR_VAR(gl_picmip, 0, 0),
 	CVAR_VAR(gl_skymip, 0, 0),
-	CVAR_VAR(gl_showtris, 0, 0),
+	CVAR_VAR(gl_showtris, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_ztrick, 0, 0),
 	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_clear, 0, 0),
@@ -1172,20 +1172,20 @@ int R_Init( void )
 	/*
 	** get our various GL strings
 	*/
-	strcpy (gl_config.vendor_string, qglGetString (GL_VENDOR));
-	Com_Printf ("GL_VENDOR: %s\n", gl_config.vendor_string );
-	strcpy (gl_config.renderer_string, qglGetString (GL_RENDERER));
-	Com_Printf ("GL_RENDERER: %s\n", gl_config.renderer_string );
-	strcpy (gl_config.version_string, qglGetString (GL_VERSION));
-	Com_Printf ("GL_VERSION: %s\n", gl_config.version_string );
+	strcpy (gl_config.vendorString, qglGetString (GL_VENDOR));
+	Com_Printf ("GL_VENDOR: %s\n", gl_config.vendorString );
+	strcpy (gl_config.rendererString, qglGetString (GL_RENDERER));
+	Com_Printf ("GL_RENDERER: %s\n", gl_config.rendererString );
+	strcpy (gl_config.versionString, qglGetString (GL_VERSION));
+	Com_Printf ("GL_VERSION: %s\n", gl_config.versionString );
 //??	strcpy (gl_config.extensions_string, qglGetString (GL_EXTENSIONS));
 //??	Com_Printf ("GL_EXTENSIONS: %s\n", gl_config.extensions_string );
 
-	strcpy( renderer_buffer, gl_config.renderer_string );
-	strlwr( renderer_buffer );
+	strcpy (renderer_buffer, gl_config.rendererString);
+	strlwr (renderer_buffer );
 
-	strcpy( vendor_buffer, gl_config.vendor_string );
-	strlwr( vendor_buffer );
+	strcpy (vendor_buffer, gl_config.vendorString);
+	strlwr (vendor_buffer );
 
 	if ( strstr( renderer_buffer, "voodoo" ) )
 	{
@@ -1765,3 +1765,15 @@ refExport_t GetRefAPI (refImport_t rimp )
 
 	return re;
 }
+
+
+#ifndef REF_HARD_LINKED
+char *CopyString (const char *in)
+{
+	char	*out;
+
+	out = Z_Malloc (strlen (in) + 1);
+	strcpy (out, in);
+	return out;
+}
+#endif

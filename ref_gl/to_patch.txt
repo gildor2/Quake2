@@ -1,4 +1,5 @@
-- riotx
-- riot2
-- slumcity2
-- slumtown20
+- subway2, subway99
+- lighthouse
+- citysiege
+- tequila
+- townv2

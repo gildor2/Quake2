@@ -805,7 +805,9 @@ static menuList_t		s_options_crosshair_color_box;
 static menuSlider_t		s_options_sfxvolume_slider;
 static menuList_t		s_options_joystick_box;
 static menuList_t		s_options_cdvolume_box;
-static menuList_t		s_options_quality_list;
+static menuList_t		s_options_s_khz;
+static menuList_t		s_options_s_8bit;
+static menuList_t		s_options_s_reverse;
 static menuList_t		s_options_compatibility_list;
 static menuList_t		s_options_console_action;
 
@@ -849,11 +851,17 @@ static void NoAltTabFunc( void *unused )
 }
 */
 
-static void ControlsSetMenuItemValues( void )
+static void ControlsSetMenuItemValues (void)
 {
+	int		i;
+
 	s_options_sfxvolume_slider.curvalue		= Cvar_VariableValue ("s_volume") * 10;
 	s_options_cdvolume_box.curvalue 		= !Cvar_VariableInt ("cd_nocd");
-	s_options_quality_list.curvalue			= !Cvar_VariableInt ("s_loadas8bit");
+	s_options_s_8bit.curvalue				= Cvar_VariableInt ("s_loadas8bit");
+	i = Cvar_VariableInt ("s_khz");
+	s_options_s_khz.curvalue				= i == 11 ? 0 : i == 22 ? 1 : 2;
+	s_options_s_reverse.curvalue			= Cvar_VariableInt ("s_reverse_stereo");
+
 	s_options_sensitivity_slider.curvalue	= sensitivity->value * 2;
 
 	Cvar_Clamp (cl_run, 0, 1);
@@ -890,27 +898,27 @@ static void ControlsResetDefaultsFunc( void *unused )
 	ControlsSetMenuItemValues();
 }
 
-static void InvertMouseFunc( void *unused )
+static void InvertMouseFunc (void *unused)
 {
 	Cvar_SetValue( "m_pitch", -m_pitch->value );
 }
 
-static void LookspringFunc( void *unused )
+static void LookspringFunc (void *unused)
 {
 	Cvar_SetInteger ("lookspring", !lookspring->integer);
 }
 
-static void LookstrafeFunc( void *unused )
+static void LookstrafeFunc (void *unused)
 {
 	Cvar_SetInteger ("lookstrafe", !lookstrafe->integer);
 }
 
-static void UpdateVolumeFunc( void *unused )
+static void UpdateVolumeFunc (void *unused)
 {
-	Cvar_SetValue( "s_volume", s_options_sfxvolume_slider.curvalue / 10);
+	Cvar_SetValue ("s_volume", s_options_sfxvolume_slider.curvalue / 10);
 }
 
-static void UpdateCDVolumeFunc( void *unused )
+static void UpdateCDVolumeFunc (void *unused)
 {
 	Cvar_SetInteger ("cd_nocd", !s_options_cdvolume_box.curvalue);
 }
@@ -931,18 +939,13 @@ static void ConsoleFunc (void *unused)
 	cls.key_dest = key_console;
 }
 
-static void UpdateSoundQualityFunc( void *unused )
+static void UpdateSoundFunc (void *unused)
 {
-	if ( s_options_quality_list.curvalue )
-	{
-		Cvar_SetInteger ( "s_khz", 22);
-		Cvar_SetInteger ( "s_loadas8bit", false);
-	}
-	else
-	{
-		Cvar_SetInteger ("s_khz", 11);
-		Cvar_SetInteger ("s_loadas8bit", true);
-	}
+	int		khz[] = {11, 22, 44};
+
+	Cvar_SetInteger ("s_loadas8bit", s_options_s_8bit.curvalue);
+	Cvar_SetInteger ("s_khz", khz[s_options_s_khz.curvalue]);
+	Cvar_SetInteger ("s_reverse_stereo", s_options_s_reverse.curvalue);
 
 	Cvar_SetInteger ("s_primary", s_options_compatibility_list.curvalue);
 
@@ -952,10 +955,11 @@ static void UpdateSoundQualityFunc( void *unused )
 	M_Print (16 + 16, 120 - 48 + 24, "please be patient.");
 
 	// the text box won't show up unless we do a buffer swap
-	re.EndFrame();
+	re.EndFrame ();
 
-	CL_Snd_Restart_f();
+	CL_Snd_Restart_f ();
 }
+
 
 #define MAX_CROSSHAIRS 256
 static char *crosshair_names[MAX_CROSSHAIRS + 1] = {"^1(none)"};	// reserve last item for NULL
@@ -980,25 +984,22 @@ static void Options_ScanCrosshairs (void)
 
 static void Options_MenuInit( void )
 {
-	int y;
+	int		y;
 
-	static const char *cd_music_items[] =
-	{
-		"disabled", "enabled", 0
-	};
-	static const char *quality_items[] =
-	{
-		"low", "high", 0
+	static const char *cd_music_items[] = {
+		"disabled", "enabled", NULL
 	};
 
-	static const char *compatibility_items[] =
-	{
-		"max compatibility", "max performance", 0
+	static const char *s_khz_items[] = {
+		"11 khz", "22 khz", "44 khz", NULL
 	};
 
-	static const char *yesno_names[] =
-	{
-		"no", "yes", 0
+	static const char *compatibility_items[] = {
+		"max compatibility", "max performance", NULL
+	};
+
+	static const char *yesno_names[] = {
+		"no", "yes", NULL
 	};
 
 //	win_noalttab = Cvar_Get( "win_noalttab", "0", CVAR_ARCHIVE );
@@ -1011,12 +1012,14 @@ static void Options_MenuInit( void )
 	y = 0;
 
 	MENU_SLIDER(s_options_sfxvolume_slider,y,"effects volume",UpdateVolumeFunc,0,10)
-	s_options_sfxvolume_slider.curvalue = Cvar_VariableValue ("s_volume") * 10;
+//	s_options_sfxvolume_slider.curvalue = Cvar_VariableValue ("s_volume") * 10;
 	MENU_SPIN(s_options_cdvolume_box,y+=10,"CD music",UpdateCDVolumeFunc,cd_music_items)
-	s_options_cdvolume_box.curvalue = !Cvar_VariableInt ("cd_nocd");
-	MENU_SPIN(s_options_quality_list,y+=10,"sound quality",UpdateSoundQualityFunc,quality_items)
-	s_options_quality_list.curvalue = !Cvar_VariableInt ("s_loadas8bit");
-	MENU_SPIN(s_options_compatibility_list,y+=10,"sound compatibility",UpdateSoundQualityFunc,compatibility_items)
+//	s_options_cdvolume_box.curvalue = !Cvar_VariableInt ("cd_nocd");
+	MENU_SPIN(s_options_s_khz,y+=10,"sound quality",UpdateSoundFunc,s_khz_items)
+	MENU_SPIN(s_options_s_8bit,y+=10,"8 bit sound",UpdateSoundFunc,yesno_names)
+	MENU_SPIN(s_options_s_reverse,y+=10,"reverse stereo",UpdateSoundFunc,yesno_names)
+//	s_options_quality_list.curvalue = !Cvar_VariableInt ("s_loadas8bit");
+	MENU_SPIN(s_options_compatibility_list,y+=10,"sound compatibility",UpdateSoundFunc,compatibility_items)
 	s_options_compatibility_list.curvalue = Cvar_VariableInt ("s_primary");
 	y += 10;
 	MENU_SLIDER(s_options_sensitivity_slider,y+=10,"mouse speed",MouseSpeedFunc,2,22)
@@ -1029,7 +1032,7 @@ static void Options_MenuInit( void )
 	MENU_SPIN(s_options_crosshair_box,y+=10,"crosshair shape",CrosshairFunc,crosshair_names)
 	MENU_SPIN(s_options_crosshair_color_box,y+=10,"crosshair color",CrosshairFunc,crosshair_color_names)
 	y += 10;
-//	MENU_SPIN(s_options_noalttab_box,110,"disable alt-tab",NoAltTabFun,yesno+names)
+//	MENU_SPIN(s_options_noalttab_box,y+=10,"disable alt-tab",NoAltTabFun,yesno+names)
 	MENU_SPIN(s_options_joystick_box,y+=10,"use joystick",JoystickFunc,yesno_names)
 	y += 10;
 	MENU_ACTION(s_options_customize_options_action,y+=10,"customize controls",CustomizeControlsFunc)
@@ -1041,7 +1044,9 @@ static void Options_MenuInit( void )
 
 	Menu_AddItem( &s_options_menu, ( void * ) &s_options_sfxvolume_slider );
 	Menu_AddItem( &s_options_menu, ( void * ) &s_options_cdvolume_box );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_quality_list );
+	Menu_AddItem( &s_options_menu, ( void * ) &s_options_s_khz );
+	Menu_AddItem( &s_options_menu, ( void * ) &s_options_s_8bit );
+	Menu_AddItem( &s_options_menu, ( void * ) &s_options_s_reverse );
 	Menu_AddItem( &s_options_menu, ( void * ) &s_options_compatibility_list );
 	Menu_AddItem( &s_options_menu, ( void * ) &s_options_sensitivity_slider );
 	Menu_AddItem( &s_options_menu, ( void * ) &s_options_alwaysrun_box );
@@ -1362,7 +1367,7 @@ static void Create_Savestrings (void)
 
 	for (i = 0; i < MAX_SAVEGAMES; i++)
 	{
-		f = fopen (va("%s/save/save%d/server.ssv", FS_Gamedir (), i), "rb");
+		f = fopen (va("%s/" SAVEGAME_DIRECTORY "/save%d/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir (), i), "rb");
 		if (!f)
 		{
 			strcpy (m_savestrings[i], "<EMPTY>");
@@ -1543,10 +1548,9 @@ void M_AddToServerList (netadr_t adr, char *info)
 {
 	int		i;
 
-	if (m_num_servers == MAX_LOCAL_SERVERS)
-		return;
-	while (*info == ' ')
-		info++;
+	if (m_num_servers == MAX_LOCAL_SERVERS) return;
+
+	while (*info == ' ') info++;
 
 	// ignore if duplicated
 	for (i = 0; i < m_num_servers; i++)
@@ -2531,7 +2535,8 @@ static void ModelCallback (void *unused)
 	s_player_skin_box.curvalue = 0;
 }
 
-static qboolean IconOfSkinExists (char *skin, basenamed_t *pcxfiles)
+//!! place skin functions to a separate unit
+static qboolean IsValidSkin (char *skin, basenamed_t *pcxfiles)
 {
 	char	scratch[MAX_OSPATH], *ext;
 	basenamed_t *item;
@@ -2581,7 +2586,7 @@ static qboolean PlayerConfig_ScanDirectories (void)
 		if (!FS_FileExists (va("%s/tris.md2", diritem->name))) continue;
 
 		// verify the existence of at least one pcx skin
-		// "/*.pcx" -> pcx,tga,jpg (see IconOfSkinExists())
+		// "/*.pcx" -> pcx,tga,jpg (see IsValidSkin())
 		pcxnames = FS_ListFiles (va("%s/*.*", diritem->name), NULL, 0, SFF_SUBDIR|SFF_HIDDEN|SFF_SYSTEM);
 		if (!pcxnames) continue;
 
@@ -2589,7 +2594,7 @@ static qboolean PlayerConfig_ScanDirectories (void)
 		numSkins = 0;
 		skins = NULL;
 		for (pcxitem = pcxnames; pcxitem; pcxitem = pcxitem->next)
-			if (/* !strstr (pcxitem->name, "_i.pcx" ) && */ IconOfSkinExists (pcxitem->name, pcxnames))
+			if (IsValidSkin (pcxitem->name, pcxnames))
 			{
 				char	*str, *ext;
 
@@ -2608,8 +2613,6 @@ static qboolean PlayerConfig_ScanDirectories (void)
 		info->skins = skins;
 
 		// add model info to pmi
-		//?? should place "male" or "female" to list start
-		//!! WARNING: if do that, searching of named strucs will not work (not alpha-sorted!)
 		FindNamedStruc (info->name, (basenamed_t*)pmi, (basenamed_t**)&infoIns);
 		if (infoIns)
 		{	// place after infoIns
@@ -2631,9 +2634,7 @@ static qboolean PlayerConfig_ScanDirectories (void)
 
 static qboolean PlayerConfig_MenuInit (void)
 {
-	extern cvar_t *name;
-	extern cvar_t *team;
-	extern cvar_t *skin;
+	extern cvar_t *name, *team, *skin;
 	char	currentModel[MAX_QPATH], currentSkin[MAX_QPATH], *path;
 	int		i, y, currentModelIndex, currentSkinIndex;
 	playerModelInfo_t *info;
@@ -2664,7 +2665,7 @@ static qboolean PlayerConfig_MenuInit (void)
 		if (!stricmp (info->name, currentModel))
 		{	// we have found model - find skin
 			currentSkinIndex = IndexOfNamedStruc (currentSkin, info->skins);
-			if (currentSkinIndex < 0)
+			if (currentSkinIndex < 0)	// not found
 				currentSkinIndex = 0;
 			break;
 		}
@@ -2811,10 +2812,10 @@ static void PlayerConfig_MenuDraw (void)
 	// add player model
 	e[0].model = re.RegisterModel (va("players/%s/tris.md2", model->name));
 	e[0].skin = re.RegisterSkin (va("players/%s/%s.pcx", model->name, skin->name));
-	e[0].flags = 0;
+//	e[0].flags = 0;
 	e[0].origin[0] = 90;
-	e[0].origin[1] = 0;
-	e[0].origin[2] = 0;
+//	e[0].origin[1] = 0;
+//	e[0].origin[2] = 0;
 	VectorCopy (e[0].origin, e[0].oldorigin);
 
 	e[0].frame = (cls.realtime + 99) / 100 % FRAME_COUNT + FIRST_FRAME;
@@ -2932,10 +2933,8 @@ typedef struct
 typedef struct
 {
 	int		width;			// max screen width
-	int		cx;
-	int		cy;
-	int		w;
-	int		h;
+	int		cx, cy;
+	int		w, h;
 } thumbLayout_t;
 
 

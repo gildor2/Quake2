@@ -36,6 +36,8 @@ static int	gl_filter_max = GL_LINEAR;
 #define HASH_MASK		(HASH_SIZE - 1)
 
 #define	MAX_TEXTURES	1024
+#define MAX_TEX_SIZE	2048				// max_size = min(MAX_TEX_SIZE,gl_config.maxTextureSize)
+#define MAX_VIDEO_SIZE	256
 
 static image_t	imagesArray[MAX_TEXTURES];	// no dynamic allocation (array size < 100K - small enough)
 static image_t	*hashTable[HASH_SIZE];
@@ -159,7 +161,7 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 	int			i, j;
 	unsigned	*inrow, *inrow2;
 	unsigned	frac, fracstep;
-	unsigned	p1[2048], p2[2048];
+	unsigned	p1[MAX_TEX_SIZE], p2[MAX_TEX_SIZE];
 	float		f, f1, f2;
 
 	fracstep = (inwidth << 16) / outwidth;
@@ -394,7 +396,7 @@ static void MipMap (byte *in, int width, int height)
 
 static void GetImageDimensions (int width, int height, int *scaledWidth, int *scaledHeight, qboolean picmip)
 {
-	int		sw, sh;
+	int		sw, sh, maxSize;
 
 	for (sw = 1; sw < width; sw <<= 1) ;
 	for (sh = 1; sh < height; sh <<= 1) ;
@@ -411,8 +413,9 @@ static void GetImageDimensions (int width, int height, int *scaledWidth, int *sc
 		if (sh > 64) sh >>= gl_picmip->integer;
 	}
 
-	while (sw > gl_config.maxTextureSize) sw >>= 1;
-	while (sh > gl_config.maxTextureSize) sh >>= 1;
+	maxSize = min(gl_config.maxTextureSize, MAX_TEX_SIZE);
+	while (sw > maxSize) sw >>= 1;
+	while (sh > maxSize) sh >>= 1;
 
 	if (sw < 1) sw = 1;
 	if (sh < 1) sh = 1;
@@ -693,7 +696,7 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 	Z_Free (pic32);
 #else
 	int		scaledWidth, scaledHeight, i;
-	unsigned scaledPic[256*256];
+	unsigned scaledPic[MAX_VIDEO_SIZE*MAX_VIDEO_SIZE];
 	image_t	*image;
 	float	hScale;
 
@@ -701,8 +704,8 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 	 * (0..width/large_width) - (0..height/large_height) coords when drawing ?? (but needs palette conversion anyway)
 	 */
 	GetImageDimensions (width, height, &scaledWidth, &scaledHeight, false);
-	if (scaledWidth > 256) scaledWidth = 256;
-	if (scaledHeight > 256) scaledHeight = 256;
+	if (scaledWidth > MAX_VIDEO_SIZE) scaledWidth = MAX_VIDEO_SIZE;
+	if (scaledHeight > MAX_VIDEO_SIZE) scaledHeight = MAX_VIDEO_SIZE;
 
 	/*--- fast resampling with conversion 8->32 bit ---*/
 	hScale = (float) height / scaledHeight;
@@ -1074,7 +1077,6 @@ void GL_PerformScreenshot (void)
 	{
 		byte *buffer2;
 
-		//?? check: is there map rendered?
 		buffer2 = Z_Malloc (LEVELSHOT_W * LEVELSHOT_H * 4);
 		ResampleTexture ((unsigned *)buffer, vid.width, vid.height, (unsigned *)buffer2, LEVELSHOT_W, LEVELSHOT_H);
 		Z_Free (buffer);

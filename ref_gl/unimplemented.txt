@@ -1,5 +1,14 @@
+?! detect monotone lightmaps (filled with a single color), replace it with a vertex lighting (rgbGen const ?)
+  (control with gl_optimizeLightmaps ?)
+
+??? check TCGEN_LIGHTMAP == TCGEN_LIGHTMAP1
+! image/shader manager:
+  - easily can reuse DEFAULT shader (2D - 1 stage, 3D - 2 stages, no gens/mods)
+- gl: HW lighting: do not require to rotate/remap grid lights to model axis
 !* check ATAN2/ACOS speed on normal building loading and remove #if/#else/#endif stuff from gl_model.c
 ?* demo "tower": too slow loading >32 clients (in comparision with oldgl)
+! add gl_depthBits: without it 32-bit mode works with 16-bit depth buffer; when depthbits = 0 - use 24-bit for 32-bit color
+  (as in Q3)
 
 !!! autoflares:
   - should combine bsp-divided surfaces onto a single flare
@@ -7,32 +16,23 @@
 ? try for surf lights: if occluded nearest and center point, trace to far point ( == (center-near)*2+near ) (at least, when
   no light from other light sources - i.e., with 2nd pass)
 
-! sun:
-  * "_sun_surface nn" -- use light from sky surfaces as bright=="nn" (color==sun_color); if "nn" == 1 -- use surf.value
-  * use "nn nn nn": if each nn <=1 -- light color + bright from surf.value; if >1 - bright per color + color from sun
-  - "_sun_ambient nn": only from SURF_LIGHT sky surfs; nn - bright (color from sun); if "nn nn nn" - 3 separate brights
-  - sunlight: only from SURF_LIGHT+SURF_SKY+surf->value surfaces (but: when sun specified, but no SKY+LIGHT surfs (bad map), make
-    light from any SKY surf)
-! no sun:
-  * "_ambient/light/_minlight nn (nn nn nn)" -- set minimal light (ADD to all surfaces)
 - BUG: weapon model can get light from inside wall (should use vieworg instead of ent.origin for lighting)
 
 lighting bugs:
   - "winter": too dark inside shadows (and: inside caverns should be "area lights" (check arghrad tutorial for understanding ...))
-  - "resort": too dark (need ambient)
   - "beachassault": too dark inside ship
 
 !! lighting:
-  - ambient light from sun (from sky surfaces, not depends on distance)
+  ? cache ALL styles (needs a different cell format); r_speeds: grid info - size in Kb (?)
+  * ambient light from sun (from sky surfaces, not depends on distance)
   - weapon model: use vieworg for lighting (can get light through near-placed wall)
   ? minlight
   - R_LightPoint
-  - grid cached only style == 0, but cannot process its modification: surf+sun/sky light is mixed (but, normally, style 0 is const)
-  - check lighting with saturation == 0, == -1; with overbright
-  - saturate lights
+  - saturate lights (when r_lightmap==3 - with "-1" ?)
+    + check lighting with saturation == 0, == -1; with overbright
 
 - replace "sqrt" -> SQRTFAST
-- app icon/button is lazy to appear on taskbar
+*? app icon/button is lazy to appear on taskbar
 
 - gamma:
   - correct screenshots with contrast/intens (fill gammaTable in GLimp or send this table to SetGamma())
@@ -66,8 +66,10 @@ lighting bugs:
 
 - flares:
   ? correct fov
-  - flare image have visible square (when its color is saturated)
+  ? flare image have visible square (when its color is saturated)
   - saturate flares
+  - implement with GL_NV_occlusion_query (and flare option: off, software, hardware);
+    test should be performed after whole 3D world is out from backend
 
 - fog:
   !!! BUGS !!! works incorrect with multi-pass rendering
@@ -99,6 +101,13 @@ PreprocessShader:
   - add GLSTATE_MODULATE2 (to blend modes, valid only with GL_EXT_texenv_combine or GL_NV_blend_square (only for 1st tmu ??))
   - can combine (src_a, 1-src_a)+(1,1)
   - constRgba/identRgba -> rgbType,alphaType = {compute,const,ident (const=1),vertex,vertexConst(vetrex*const)}
+- shaders:
+  ? make shader_t.name dynamically allocated (~ basenamed_t)
+  ? sky shader: specify color for "gl_fastSky"
+  - backend GeterateColors (and other?): for multipass rendering can save "current
+    type of data in buffer" and use it later (example: 1st pass - rgbGen_vertex, 2nd -
+    same -- do not update)
+
 
 - dynamic lightmaps:
   ? option (menu): dynamic lightmap type - uploadable/multipass/auto
@@ -118,7 +127,7 @@ PreprocessShader:
 
 - dlights:
   ? cdlight_t.minlight
-  - cut dlights (by angle: rad/intens = cos(angle))
+  - cut dlights (by angle: rad/intens = cos(angle)); backlights -- rad/intens can be greater (for culling)
   - speedup of markup process (?):
     1) share planes between surfs
     2) add "dlightMask" for plane
@@ -126,13 +135,6 @@ PreprocessShader:
     4) DrawBspSeq(): give dlight info from planes
     !) need a way to provide dlight info for inline models (static (WORLD) and dynamic models)
   - increase DLIGHT_BITS, store dlightMask instead of numDlights in surface array when ap.numDlights <= DLIGHT_BITS
-
-- shaders:
-  ? make shader_t.name dynamically allocated (~ basenamed_t)
-  ? sky shader: specify color for "gl_fastSky"
-  - backend GeterateColors (and other?): for multipass rendering can save "current
-    type of data in buffer" and use it later (example: 1st pass - rgbGen_vertex, 2nd -
-    same -- do not update)
 
 Screenshots:
   - on auto-save, when entering "base2", flares appeared (but should be occluded by lift door)
@@ -151,16 +153,28 @@ Screenshots:
   	else				side1 = 3;
      to detect side[1|2] (no error when used "<=" and ">=" instead of "<" and ">")
 
+HW occlusion:
+  - model culling: use hw occlusion test (HP or NV), if NV -- can use LOD when model partially visible
+  - correctly use with near/far (and side ?) clipplanes (do not try to cull when object is VERY near, it
+    can reduce fillrate too ...)
+  - sort surfaces (and models) back to front to utilize new hw culling technologies
+  - try to use frame-to-frame coherency to reduce number of occlusion queries
+  ? for details and other ideas, see GL_NV_occlusion_query spec
+
 BUGS:
+! map "underrain": have sky brushes (MYST) for cave lighting; when vieworg is inside such brush - only sky painted
+  (oldgl: same as non-transparent water, combines 2 clusters vis)
 - Com_Error(ERR_DROP, ...) can cause "halt" renderer (will in loop display "red" message without screen update,
   can switch to "oldgl" (to see this messages), but will crush when switch back to "gl" (if SrtageIterator() ?))
 ! gl_singleShader don't works with dynamic lightmaps
 ? map "terrain", light cone from helicopter: too opaque when overbright is 1 (invalid lightmap on alpha-surf ?)
 ? check demo "massive1": have error "frame #46 not found"
 - screenshot is black after changing color depth, but all OK when make one more vid_restart (TNT2, Win2K, 41.09)
+! zaero, demo4, kamikaze: too dark explosion (should get lighting for LARGE objects in a different way)
+  same: 1st map, beginning, give EMP grenade, throw (best viewed from 3rd person) -- can be bad lighting
 
 UNSTABLE BUGS:
-?* check: cannot change bitdepth (at home): may be, require to recreate window (check ol Q2 versions, check work)
+* check: cannot change bitdepth (at home): may be, require to recreate window (check all Q2 versions, check work)
 
 --------- Mandatory ------------
 VISIBLE:
@@ -169,9 +183,7 @@ VISIBLE:
     - IR-vision fx
     - check all RF_XXX flags from q_shared2.h
 - shadows
-- inlineModels: RF_TRANSLUCENT: qglColor4f (1,1,1,0.25) + blend + no lightmap (vertex light ?)
-INVISIBLE:
-! freeing of old images (and "bool temp" or "int usage" flag)
+? inlineModels: RF_TRANSLUCENT: qglColor4f (1,1,1,0.25) + blend + no lightmap (vertex light ?)
 FOR GAME:
 - re.GetClientLight
 
@@ -181,11 +193,8 @@ FOR GAME:
   (texture_env_combine (slightly different!), texture_env_add etc.)
 ? rail fx (change)
 - optimize sky box drawing:
-  ? can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs) (problems when surf can be placed on some
-    box sides)
-  ?? can use surface normal to determine IMPOSSIBLE planes (is it backface culling ??)
+  ? can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs) (problems when surf can be placed on few box sides)
   - find fast cases, when surface placed only on one plane (use surface bounds ?)
-- gl_showbboxes, gl_singleShader, gl_showtris, gl_shownormals -> cheat
 - vertex lighting:
   - surface simplification (?) + subdivision (!) for complex lightmaps (non-gradient color change) - as option
     (lighting = "lightmap", "vertex", "hq vertex")

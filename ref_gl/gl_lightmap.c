@@ -8,10 +8,13 @@ static lightmapBlock_t lmBlocks[MAX_LIGHTMAPS];
 
 static int lmAllocSaved[LIGHTMAP_SIZE];
 
+color_t lmMinlight;
+
 
 void LM_Init (void)
 {
 	lightmapsNum = currentLightmapNum = 0;
+	lmMinlight.rgba = 0xFFFFFFFF;
 }
 
 
@@ -156,10 +159,26 @@ void LM_PutBlock (dynamicLightmap_t *dl)
 	{
 		for (x = 0; x < dl->w; x++)
 		{
-			*dst++ = *src++;
-			*dst++ = *src++;
-			*dst++ = *src++;
-			*dst++ = 0;				// alpha (no additional scale)
+			int		r, g, b, m;
+
+			// copy lightmap
+			r = *src++;
+			*dst++ = r;
+			g = *src++;
+			*dst++ = g;
+			b = *src++;
+			*dst++ = b;
+			// check minlight
+			m = max(r, g);
+			m = max(m, b);
+			if (m < 192)	// can get ~(0,0,255) etc. after normalization of (min,min,10000) etc.; 192 is a default maxlight for qrad3
+			{
+				if (lmMinlight.c[0] > r) lmMinlight.c[0] = r;
+				if (lmMinlight.c[1] > g) lmMinlight.c[1] = g;
+				if (lmMinlight.c[2] > b) lmMinlight.c[2] = b;
+			}
+			// alpha (flag: no additional scale)
+			*dst++ = 0;
 		}
 		dst += stride;
 	}
@@ -182,7 +201,7 @@ void LM_PutBlock (dynamicLightmap_t *dl)
 				*dst++ = *src++;
 				*dst++ = *src++;
 				*dst++ = *src++;
-				*dst++ = 255;		// alpha (modulate by 2)
+				*dst++ = 255;		// alpha (flag: modulate by 2)
 			}
 			dst += stride;
 		}

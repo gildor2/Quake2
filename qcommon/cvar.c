@@ -5,6 +5,9 @@ static void *cvar_chain;
 
 qboolean userinfo_modified;
 
+static qboolean cheats = true;			// will be disabled on multiplayer game start
+	// NOTE: this is CVAR cheats, not server cheats
+
 
 #define HASH_BITS		8
 #define HASH_SIZE		(1 << HASH_BITS)
@@ -202,8 +205,11 @@ cvar_t *Cvar_Get (char *var_name, char *var_value, int flags)
 					Com_WPrintf ("Different default value for cvar %s: %s != %s\n", var_name, var_value, var->reset_string);
 			}
 
+			if (flags & CVAR_CHEAT && !cheats)					// reset cheatvar
+				Cvar_SetString (var, var_value);
+
 			var->flags &= ~CVAR_USER_CREATED;
-			strcpy (var->name, var_name);			// update name (may be different case)
+			strcpy (var->name, var_name);						// update name (may be different case)
 		}
 
 		// keep engine var
@@ -311,6 +317,15 @@ static cvar_t *Cvar_Set2 (char *var_name, char *value, int flags, qboolean force
 			return var;
 		}
 
+		if (var->flags & CVAR_CHEAT && !cheats)
+		{
+			if (flags & CVAR_USER_CREATED)
+				Com_WPrintf ("%s is cheat protected\n", var_name);
+			else
+				Com_DPrintf ("%s is cheat protected\n", var_name);		// trying to modify cheat cvar by engine without "force"
+			return var;
+		}
+
 		if (var->flags & CVAR_LATCH)
 		{
 			if (var->latched_string)
@@ -319,6 +334,12 @@ static cvar_t *Cvar_Set2 (char *var_name, char *value, int flags, qboolean force
 					return var;
 				Z_Free (var->latched_string);
 				var->latched_string = NULL;
+
+				if (!strcmp (value, var->string))
+				{	// latched var have switched back to its value
+					var->modified = false;
+					return var;
+				}
 			}
 			else
 			{
@@ -483,13 +504,20 @@ qboolean Cvar_Command (void)
 	// perform a variable print or set
 	if (Cmd_Argc() == 1)
 	{
-		char	*def;
+		char	*def, *latch;
 
+		// get string for latched value
+		if (var->latched_string)
+			latch = va("-> \"%s\" ", var->latched_string);
+		else
+			latch = "";
+		// get string for default value
 		if (var->reset_string)
 			def = va("default:\"%s\"", var->reset_string);
 		else
 			def = "(no default)";
-		Com_Printf ("\"%s\" is:\"%s\" %s\n", var->name, var->string, def);
+		// print info
+		Com_Printf ("\"%s\" is:\"%s\" %s%s\n", var->name, var->string, latch, def);
 		return true;
 	}
 
@@ -672,7 +700,7 @@ static void Cvar_List_f (void)
 		if (mask && !MatchWildcard2 (var->name, mask, true)) continue;
 		i++;
 		flags = var->flags;
-		strcpy (s, "     ");
+		strcpy (s, "      ");
 		color = "";
 		if (flags & CVAR_USER_CREATED)
 		{
@@ -697,6 +725,8 @@ static void Cvar_List_f (void)
 		}
 		else if (flags & CVAR_LATCH)
 			s[4] = 'L';
+		if (flags & CVAR_CHEAT)
+			s[5] = 'C';
 		Com_Printf ("%s %s%s \"%s\"\n", s, color, var->name, var->string);
 	}
 	Com_Printf ("    %d cvars\n", i);
@@ -878,6 +908,23 @@ static void Cvar_Cycle_f (void)
 
 	if (i >= numValues - 1) i = -1;
 	Cvar_Set2 (Cmd_Argv (1), Cmd_Argv (i+3), CVAR_USER_CREATED|CVAR_NODEFAULT, false);	// set to a next value
+}
+
+
+void Cvar_Cheats (qboolean enable)
+{
+	cvar_t	*var;
+
+	if (enable == cheats) return;
+	cheats = enable;
+	if (enable) return;
+
+	for (var = cvar_vars; var; var = var->next)
+		if (var->flags & CVAR_CHEAT && strcmp (var->string, var->reset_string))
+		{
+			Com_DPrintf ("fixing cheat cvar %s\n", var->name);
+			Cvar_SetString (var, var->reset_string);
+		}
 }
 
 

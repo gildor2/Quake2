@@ -491,8 +491,8 @@ static void DrawSurfInfo (void)
 	VectorScale (end, 500, end);
 	VectorAdd (start, end, end);
 
-	trace = CM_BoxTrace (start, end, v1, v2, 0, MASK_SHOT|MASK_WATER);
-	if (r_surfinfo->integer != 2)
+	trace = CM_BoxTrace (start, end, v1, v2, 0, r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER);
+	if (!(r_surfinfo->integer & 2))
 		CL_ClipMoveToEntities (start, v1, v2, end, &trace);
 
 	if (trace.fraction < 1.0)
@@ -894,7 +894,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(cl_testblend, 0, 0),
 	CVAR_VAR(cl_testparticles, 0, 0),
 	CVAR_VAR(cl_testentities, 0, 0),
-	CVAR_VAR(cl_testlights, 0, 0),
+	CVAR_VAR(cl_testlights, 0, CVAR_CHEAT),
 
 	CVAR_VAR(cl_stats, 0, 0),
 

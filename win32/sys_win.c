@@ -111,7 +111,7 @@ void WinError (void)
 	FormatMessage(
 		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
 		NULL,
-		GetLastError(),
+		GetLastError (),
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
 		(LPTSTR) &lpMsgBuf,
 		0,
@@ -672,7 +672,7 @@ void ParseCommandLine (LPSTR lpCmdLine)
 
 	while (*lpCmdLine && (argc < MAX_NUM_ARGVS))
 	{
-		while (*lpCmdLine && ((*lpCmdLine <= 32) || (*lpCmdLine > 126)))
+		while (*lpCmdLine && ((*lpCmdLine <= ' ') || (*lpCmdLine > 126)))
 			lpCmdLine++;
 
 		if (*lpCmdLine)
@@ -680,7 +680,7 @@ void ParseCommandLine (LPSTR lpCmdLine)
 			argv[argc] = lpCmdLine;
 			argc++;
 
-			while (*lpCmdLine && ((*lpCmdLine > 32) && (*lpCmdLine <= 126)))
+			while (*lpCmdLine && ((*lpCmdLine > ' ') && (*lpCmdLine <= 126)))
 				lpCmdLine++;
 
 			if (*lpCmdLine)
@@ -688,7 +688,6 @@ void ParseCommandLine (LPSTR lpCmdLine)
 				*lpCmdLine = 0;
 				lpCmdLine++;
 			}
-
 		}
 	}
 }

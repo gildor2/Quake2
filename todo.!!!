@@ -1,22 +1,40 @@
+- map script: "surfparam" can use MatchWildcard() instead of strcmp() for "name" field
+  (after it will speedup)
+! spec for map script
+- colorize server list (old/new-only/cheats/full) (make legend ? or make table with some attributes: server-name, map-name, players,
+  cheats, protocol (old,both,new))
+? add "devmap", "spmap" (?), "spdevmap" (?)
+- sv_extProtocol: "2" - force (no clients without this); if map.type != map_q2 -> force too; if cl_extProtocol=0, but server
+  requires it, connect with extProtocol (should add sv_extProtocol to serverinfo + check it on a client side + detect non-q2 maps)
+- scoreboard: add blendrect (?) (try to improve look anyway ...)
+? command system: register commands with help-string; automatically show it when "cmd /?" or "cmd -help" (?); add to API Cmd_Help()
+  to display help for current command (==Cmd_Argv(0)); add command "help cmd"
+- bind key "action1"|onrelease "action2" (Unreal-like)
+? bind key+Alt or altbind (?)
+- savegames:
+  ? show game time (a-la Anachronox)
+  - quicksave: save to a few (4?) slots
+  - sort savegames by time, ignore slots; any number of savegames (?)
+
+----------------------------------------
+
 ! speedup: 
   1) FS: cache FS_ListFiles() for file system: list all files in all nested dirs and save as PAK file (in memory)
   2) ref_gl: ?? speedup BuildMd2Normals()
 
-! map "trainstation": very slow (10-20ms) server (AMD K6-2+)
+! map "trainstation": very slow (10-20ms) server (AMD K6-2+) (slow SV_AreaEdicts(), >800 times/sv_frame)
 ! unpack PVS in LoadBsp(); use unpacked version in renderer and CM_InPVS() etc.
 
-- if Win32 can't get keyboard focus, "set r_fullscreen 0"
-? check PCX/WAL palette: alpha == 0 for index != 255 ??
+- if Win32 can't get keyboard focus, "set r_fullscreen 0" (as Unreal2)
 KINGPIN:
   ! map "teehc2":
     - have entity "{ *3 }" ("noclass") (KP have error with it too)
   - fire/steam
 FAKK:
   ? FS_FileInInPAK(const char *name)
-  - qcommon.h: SAVEGAME_DIRECTORY "save", SAVEGAME_EXTENSION "sav", etc.
+  (not FAKK)? qcommon.h: NO_SAVEGAMES - remove save/load game code
 CAMERA:
-  - make FAKK-like camera lift-up when collided with wall
-  ? interpolate camera
+  - interpolate camera
   ? interpolate duck (1st person)
 HALFLIFE:
   // from pm_shader.c
@@ -43,7 +61,7 @@ TRACE:
   ? try something like AreaEdicts() for client trace code
 
 - console: "nochat" - disable messages from game (engine/developer messages only); may be, display game messages
-  in notify area ? (this will require console extensions, 2nd console etc.)
+  in notify area only ? (this will require console extensions, 2nd console etc.)
 - improve (speedup) MSG_WriteDir() with tables
 ? "dir" -> "ls"
 ! reimplement Cbuf_Execute(): need comment ('//') parsing (should go to another place) (or: "exec <file>" - parse before Cbuf_Execute())
@@ -200,6 +218,7 @@ BSP:
 
 ------------ COMMON --------------
 
+- redo command line parser: remove COM_Argc/COM_Argv etc from common.c
 ? meminfo (see Alice) - renderer (hunks), z, chains etc. ???
 ? hunks -> chains; align blocks by 16 bytes (currently: msvcrt, 8)
 ? own memory manager (without malloc; use OS functions at low-lewel)

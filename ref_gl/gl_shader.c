@@ -893,7 +893,7 @@ void GL_ResetShaders (void)
 	sh.sortParam = SORT_SPRITE;
 	sh.cullMode = CULL_NONE;
 	st[0].rgbGenType = RGBGEN_VERTEX;
-#if 1
+#if 0
 //	st[0].alphaGenType = ALPHAGEN_VERTEX;
 	st[0].glState = GLSTATE_NODEPTHTEST|GLSTATE_SRC_SRCCOLOR|GLSTATE_DST_ONE;
 #else

@@ -1,12 +1,12 @@
-- map "resort": have too dark sun light (will be better with ambient ?)
+- map "resort": have too dark sun light (very dark map itself; lightmaps looks buggy)
 - map "mxcity": have "_sun_surface" (different from sky surf->value)
 - map "takoma": whole map lighted with spotlights (cone=2000, i.e. pointlight; style=32 - not cached; lightmaps saturated with blue color)
-- map "uatown", "village2": lighted only with point lights
+- map "uatown", "village2": lighted only with point lights; have minlight ??
 - map "washing": very dark map, most light - from sky (SURF_LIGHT)
 - map "civilwar": point lights only; most light from 1 light ("sun"), in shadows - emission from other surfaces
 - map "chasm", "dream": complex map with lots of different-color point lights ("dream": + many colorized windows)
 - "snakesmap": have "_sun_ambient"
-- "pc": have "_ambient", "_sun_light"==1
+* "pc": have "_ambient", "_sun_light"==1
 - "tokyo": have many sun shadows; hane "_sun_ambient"
 - "dock": have 2 suns (and, seems, sun1 is specified with bad angles) -- VERY BUGGY MAP
 - "paradise": 2 suns
@@ -18,8 +18,13 @@
 - "arcadia": sun+sun_ambient+ LOTS of SURF_LIGHT
 - "mosquito": too dark shadows; whole map lighted with 3 pointlights
 - "cucu40a": have 1 dark place (originally lighted with reflected light)
-- "ckcomp1": have minlight, specified from command line (can be taken from map's readme)
+* "ckcomp1": have minlight, specified from command line (can be taken from map's readme)
 - "darkalley": have too dark places (but walls are lighted)
 - "kumanru": very bright sky (SURF_LIGHT), secondary light sources (too dark shadows)
+- "underrain": have caves with SURF_SKY lighting (without drawing sky)
+* "stdm1": minlight (cmdline)
+- "bluskys": have "light" with "spawnflags"=2 (lightflare+light)
+* "pier2": minlight (cmdline)
+* "ruins3": minlight
 ------------------------------
 - "tchurch-beta3": too many dynamic lightmaps (slower than oldgl; oldgl is slow)

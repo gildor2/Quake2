@@ -49,6 +49,9 @@ int	FS_LoadFile (char *name, void **buf);
 void	FS_FreeFile (void *buf);
 char*	FS_Gamedir (void);
 void	FS_CreatePath (char *path);
+void	FS_CopyFile (char *src, char *dst);
+void	FS_CopyFiles (char *srcMask, char *dstDir);
+void	FS_RemoveFiles (char *mask);
 
 qboolean MatchWildcard (char *name, char *mask);
 qboolean MatchWildcard2 (char *name, char *mask, qboolean ignoreCase);

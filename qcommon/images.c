@@ -2,6 +2,8 @@
 #include "../jpeg/jpeglib.h"
 
 
+#define MAX_IMG_SIZE	2048
+
 /*-------------------------- PCX loading --------------------------*/
 
 
@@ -59,11 +61,11 @@ void LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *heigh
 	if (pcx->manufacturer != 10 ||
 		pcx->version != 5		||
 		pcx->encoding != 1		||
-		pcx->bits_per_pixel != 8||
-		pcx->xmax >= 640		||
-		pcx->ymax >= 480)
+		pcx->bits_per_pixel != 8 ||
+		pcx->xmax > MAX_IMG_SIZE ||
+		pcx->ymax > MAX_IMG_SIZE)
 	{
-		Com_Printf ("Bad pcx file %s\n", filename);
+		Com_Printf ("LoadPCX(%s): bad pcx file\n", filename);
 		return;
 	}
 
@@ -109,7 +111,7 @@ void LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *heigh
 
 	if ( raw - (byte *)pcx > len)
 	{
-		Com_DPrintf ("PCX file %s was malformed", filename);
+		Com_DPrintf ("LoadPCX(%s): file was malformed", filename);
 		Z_Free (*pic);
 		*pic = NULL;
 	}
@@ -184,13 +186,13 @@ void LoadTGA (char *name, byte **pic, int *width, int *height)
 	if (header.image_type != 2	&&
 		header.image_type != 10	&&
 		header.image_type != 3)
-		Com_Error (ERR_DROP, "LoadTGA: Only type 2 (RGB), 3 (grey) and 10 (RGB RLE) targa RGB images supported\n");
+		Com_Error (ERR_DROP, "LoadTGA(%s): Only type 2 (RGB), 3 (grey) and 10 (RGB RLE) targa RGB images supported\n", name);
 
 	if (header.colormap_type != 0)
-		Com_Error (ERR_DROP, "LoadTGA: colormaps not supported\n");
+		Com_Error (ERR_DROP, "LoadTGA(%s): colormaps not supported\n", name);
 
 	if ((header.pixel_size != 32 && header.pixel_size != 24) && header.image_type != 3)
-		Com_Error (ERR_DROP, "LoadTGA: Only 32 or 24 bit images supported\n");
+		Com_Error (ERR_DROP, "LoadTGA(%s): Only 32 or 24 bit images supported\n", name);
 
 	columns = header.width;
 	rows = header.height;
@@ -207,7 +209,7 @@ void LoadTGA (char *name, byte **pic, int *width, int *height)
 	if (header.id_length != 0)
 		buf_p += header.id_length;		// skip image comment
 
-	if (header.image_type == 2)
+	if (header.image_type == 2 || header.image_type == 3)
 	{	// Uncompressed RGB or grey scale image
 		for (row = rows - 1; row >= 0; row--)
 		{
@@ -244,7 +246,7 @@ void LoadTGA (char *name, byte **pic, int *width, int *height)
 			}
 		}
 	}
-	else if (header.image_type==10)
+	else if (header.image_type == 10)
 	{	// RLE RGB images
 		unsigned char r, g, b, a, packetHeader, packetSize, j;
 
@@ -254,7 +256,7 @@ void LoadTGA (char *name, byte **pic, int *width, int *height)
 			for (column = 0; column < columns; )
 			{
 				packetHeader = *buf_p++;
-				packetSize = 1 + (packetHeader & 0x7f);
+				packetSize = 1 + (packetHeader & 0x7F);
 				if (packetHeader & 0x80)
 				{	// run-length packet
 					switch (header.pixel_size)
@@ -272,7 +274,7 @@ void LoadTGA (char *name, byte **pic, int *width, int *height)
 						a = *buf_p++;
 						break;
 					default:
-						Com_Error (ERR_DROP, "LoadTGA: illegal pixel size %d in file %s\n", header.pixel_size, name);
+						Com_Error (ERR_DROP, "LoadTGA(%s): illegal pixel size %d\n", name, header.pixel_size);
 					}
 
 					for (j = 0; j < packetSize; j++)
@@ -312,7 +314,7 @@ void LoadTGA (char *name, byte **pic, int *width, int *height)
 							a = *buf_p++;
 							break;
 						default:
-							Com_Error (ERR_DROP, "LoadTGA: illegal pixel size %d in file %s\n", header.pixel_size, name);
+							Com_Error (ERR_DROP, "LoadTGA(%s): illegal pixel size %d in file %s\n", name, header.pixel_size);
 						}
 						*pixbuf++ = r;
 						*pixbuf++ = g;
@@ -399,22 +401,24 @@ METHODDEF(void) J_ResetErrorMgr (j_common_ptr cinfo)
 // Replacement for jpeg_std_error
 static struct jpeg_error_mgr *InitJpegError (struct jpeg_error_mgr *err)
 {
+	memset (err, 0, sizeof(*err));
+
 	err->error_exit = J_ErrorExit;
 	err->emit_message = J_EmitMessage;
 	err->output_message = J_ErrorExit;
-	err->format_message = NULL;			// used only from jerror.c
+//	err->format_message = NULL;			// used only from jerror.c
 	err->reset_error_mgr = J_ResetErrorMgr;
 
-	err->trace_level = 0;				// default = no tracing
-	err->num_warnings = 0;				// no warnings emitted yet
-	err->msg_code = 0;					// may be useful as a flag for "no error"
+//	err->trace_level = 0;				// default = no tracing
+//	err->num_warnings = 0;				// no warnings emitted yet
+//	err->msg_code = 0;					// may be useful as a flag for "no error"
 
-	err->jpeg_message_table = NULL;		// used only from jerror.c
-	err->last_jpeg_message = 0;			// ...
+//	err->jpeg_message_table = NULL;		// used only from jerror.c
+//	err->last_jpeg_message = 0;			// ...
 
-	err->addon_message_table = NULL;
-	err->first_addon_message = 0;		//for safety
-	err->last_addon_message = 0;
+//	err->addon_message_table = NULL;
+//	err->first_addon_message = 0;		//for safety
+//	err->last_addon_message = 0;
 
 	return err;
 }
@@ -428,7 +432,7 @@ void LoadJPG (char *name, byte **pic, int *width, int *height)
 	qboolean error;
 	struct jpeg_decompress_struct cinfo;
 	struct jpeg_error_mgr jerr;
-	byte	line[1024*3];
+	byte	line[MAX_IMG_SIZE*3];
 
 	*pic = NULL;
 
@@ -466,12 +470,12 @@ void LoadJPG (char *name, byte **pic, int *width, int *height)
 
 	if (cinfo.output_components != 3)
 	{
-		Com_Printf ("Unsupported JPEG with color components not equal 3\n");
+		Com_WPrintf ("LoadJPG(%s): color components not equal 3\n", name);
 		error = true;
 	}
-	else if (columns > 1024 || rows > 1024)
+	else if (columns > MAX_IMG_SIZE || rows > MAX_IMG_SIZE)
 	{
-		Com_Printf ("JPEG image is too large");
+		Com_WPrintf ("LoadJPG(%s): image is too large\n", name);
 		error = true;
 	}
 
@@ -568,7 +572,7 @@ qboolean WriteTGA (char *name, byte *pic, int width, int height)
 
 	if (!(f = fopen (name, "wb")))
 	{
-		Com_WPrintf ("WriteTGA: Cannot create file %s\n", name);
+		Com_WPrintf ("WriteTGA(%s): cannot create file\n", name);
 		return false;
 	}
 
@@ -609,7 +613,7 @@ qboolean WriteJPG (char *name, byte *pic, int width, int height, qboolean highQu
 
 	if (!(f = fopen (name, "wb")))
 	{
-		Com_WPrintf ("WriteJPG: Cannot create file %s\n", name);
+		Com_WPrintf ("WriteJPG(%s): cannot create file\n", name);
 		return false;
 	}
 

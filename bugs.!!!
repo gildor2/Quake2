@@ -17,12 +17,12 @@
 ! cannot load map "dog..." in soft: "bad surface extents 272 x XXX" (but GL can ...; seems, ref_soft
   can't render texture with larger than 256 size ...)
 ! map "toomuchbloodv2": sound "dmg/TISM.wav" loaded twice (upper- and lowercase)
-! REF_SOFT: crush
 
 ? game crush in msvcrt.dll (pak loading/unloading/download breaking/map not found)
-? crush on map change/game load (cl_predict, CM_TransformedPointContents2())
+? crush on map change/game load (cl_predict, CM_TransformedPointContents2(); bad leaf pointer ?)
+  (Anachronox: crush when door/elevator moving somewhere on level -- absolute pointers)
 
-- CapsLock will be displayed as unknown key!
+- CapsLock displayed as an unknown key
 
 - z-buffer bugs with glass floor on omd_map1
 
@@ -44,3 +44,5 @@ ref_gl:
 
 ref_oldgl:
   map passin;map passin (BUGS!!!); map rexro (CRUSH!!!)  (this bug found only for passin -- bad map? no bug when "flushmap 1")
+
+- map team_harbor: PF_SetModel() -- NULL name

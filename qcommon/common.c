@@ -27,12 +27,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_NUM_ARGVS	50
 
 
-int		com_argc;
-char	*com_argv[MAX_NUM_ARGVS+1];
+static int		com_argc;
+static char	*com_argv[MAX_NUM_ARGVS+1];
 
 int		realtime;
 
-jmp_buf abortframe;			// an ERR_DROP occured, exit the entire frame
+static jmp_buf abortframe;			// an ERR_DROP occured, exit the entire frame
 
 extern	refExport_t	re;		// interface to refresh .dll
 
@@ -45,17 +45,15 @@ cvar_t	*developer;
 cvar_t	*timescale;
 cvar_t	*fixedtime;
 cvar_t	*logfile_active;	// 1 = buffer log, 2 = flush after each print
+cvar_t	*sv_cheats;
 cvar_t	*dedicated;
 
-FILE	*logfile;
+static FILE	*logfile;
 
-int			server_state;
+static int	server_state;
 
 // com_speeds times
-int		time_before_game;
-int		time_after_game;
-int		time_before_ref;
-int		time_after_ref;
+int		time_before_game, time_after_game, time_before_ref, time_after_ref;
 
 /*
 ============================================================================
@@ -117,7 +115,7 @@ void Com_Printf (char *fmt, ...)
 
 	if (rd_target)
 	{
-		if ((strlen (msg) + strlen(rd_buffer)) > (rd_buffersize - 1))
+		if ((strlen (msg) + strlen(rd_buffer)) > rd_buffersize - 1)
 		{
 			rd_flush(rd_target, rd_buffer);
 			*rd_buffer = 0;
@@ -137,7 +135,7 @@ void Com_Printf (char *fmt, ...)
 		if (!logfile)
 		{
 			if (!console_logged)
-				Com_sprintf (log_name, sizeof(log_name), "%s/qconsole.log", FS_Gamedir ());
+				Com_sprintf (log_name, sizeof(log_name), "%s/console.log", FS_Gamedir ());
 
 			if (logfile_active->integer > 2 || console_logged)
 				logfile = fopen (log_name, "a");
@@ -245,15 +243,15 @@ do the apropriate things.
 void Com_Error (int code, char *fmt, ...)
 {
 	va_list		argptr;
-	static char		msg[MAXPRINTMSG];
-	static	qboolean	recursive;
+	static char msg[MAXPRINTMSG];
+	static qboolean recursive;
 
 	if (recursive)
 		Sys_Error ("recursive error after: %s", msg);
 	recursive = true;
 
-	va_start (argptr,fmt);
-	vsprintf (msg,fmt,argptr);
+	va_start (argptr, fmt);
+	vsprintf (msg, fmt, argptr);
 	va_end (argptr);
 
 	if (code == ERR_DISCONNECT)
@@ -365,12 +363,13 @@ qboolean MatchWildcard (char *name, char *mask)
 		else
 		{
 			char	*suff;
-			int		preflen, sufflen;
 
 			// "*text" or "text*" mask
 			suff = strchr (mask, '*');
 			if (suff)
 			{
+				int		preflen, sufflen;
+
 				preflen = suff - mask;
 				sufflen = masklen - preflen - 1;
 				suff++;
@@ -394,7 +393,7 @@ qboolean MatchWildcard (char *name, char *mask)
 }
 
 
-// Variant of MatchWildcard(), when we can choose, whether it will be case-sensitive, or case-insensitive
+// Variant of MatchWildcard(), where we can choose, whether it will be case-sensitive, or case-insensitive
 qboolean MatchWildcard2 (char *name, char *mask, qboolean ignoreCase)
 {
 	if (!ignoreCase)
@@ -1202,28 +1201,7 @@ void SZ_Print (sizebuf_t *buf, char *data)
 
 
 //============================================================================
-
-
-/*
-================
-COM_CheckParm
-
-Returns the position (1 to argc-1) in the program's argument list
-where the given parameter apears, or 0 if not present
-================
-*/
-int COM_CheckParm (char *parm)
-{
-	int		i;
-
-	for (i=1 ; i<com_argc ; i++)
-	{
-		if (!strcmp (parm,com_argv[i]))
-			return i;
-	}
-
-	return 0;
-}
+// This set of functions used only by Cbuf_AddEarlyCommands() and Cbuf_AddLateCommands()
 
 int COM_Argc (void)
 {
@@ -1237,6 +1215,7 @@ char *COM_Argv (int arg)
 	return com_argv[arg];
 }
 
+// used from cmd.c :: Cbuf_AddEarlyCommands() only
 void COM_ClearArgv (int arg)
 {
 	if (arg < 0 || arg >= com_argc || !com_argv[arg])
@@ -1257,29 +1236,17 @@ void COM_InitArgv (int argc, char **argv)
 	if (argc > MAX_NUM_ARGVS)
 		Com_Error (ERR_FATAL, "argc > MAX_NUM_ARGVS");
 	com_argc = argc;
-	for (i=0 ; i<argc ; i++)
+	for (i = 0; i < argc; i++)
 	{
-		if (!argv[i] || strlen(argv[i]) >= MAX_TOKEN_CHARS )
+		if (!argv[i] || strlen(argv[i]) >= MAX_TOKEN_CHARS)
 			com_argv[i] = "";
 		else
 			com_argv[i] = argv[i];
 	}
 }
 
-/*
-================
-COM_AddParm
 
-Adds the given string at the end of the current argument list
-================
-*/
-void COM_AddParm (char *parm)
-{
-	if (com_argc == MAX_NUM_ARGVS)
-		Com_Error (ERR_FATAL, "COM_AddParm: MAX_NUM)ARGS");
-	com_argv[com_argc++] = parm;
-}
-
+//============================================================================
 
 void Info_Print (char *s)
 {
@@ -1308,7 +1275,7 @@ void Info_Print (char *s)
 
 		if (!*s)
 		{
-			Com_Printf ("MISSING VALUE\n");
+			Com_WPrintf ("Info_Print(): missing value\n");
 			return;
 		}
 
@@ -1401,7 +1368,7 @@ COM_BlockSequenceCRCByte
 For proxy protecting
 ====================
 */
-byte	COM_BlockSequenceCRCByte (byte *base, int length, int sequence)
+byte COM_BlockSequenceCRCByte (byte *base, int length, int sequence)
 {
 	int		n;
 	byte	*p;
@@ -1411,7 +1378,7 @@ byte	COM_BlockSequenceCRCByte (byte *base, int length, int sequence)
 
 
 	if (sequence < 0)
-		Sys_Error("sequence < 0, this shouldn't happen\n");
+		Sys_Error ("BlockCRC: sequence < 0");
 
 	p = chktbl + (sequence % (sizeof(chktbl) - 4));
 
@@ -1426,9 +1393,9 @@ byte	COM_BlockSequenceCRCByte (byte *base, int length, int sequence)
 
 	length += 4;
 
-	crc = CRC_Block(chkb, length);
+	crc = CRC_Block (chkb, length);
 
-	for (x=0, n=0; n<length; n++)
+	for (x = 0, n = 0; n < length; n++)
 		x += chkb[n];
 
 	crc = (crc ^ x) & 0xff;
@@ -1478,9 +1445,10 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(com_speeds, 0, 0),
 	CVAR_VAR(log_stats, 0, 0),
 	CVAR_VAR(developer, 0, 0),
-	CVAR_VAR(timescale, 1, 0),
-	CVAR_VAR(fixedtime, 0, 0),
+	CVAR_VAR(timescale, 1, CVAR_CHEAT),
+	CVAR_VAR(fixedtime, 0, CVAR_CHEAT),
 	{&logfile_active, "logfile", "0", 0},
+	{&sv_cheats, "cheats", "0", CVAR_SERVERINFO|CVAR_LATCH},
 #ifdef DEDICATED_ONLY
 	CVAR_VAR(dedicated, 1, CVAR_NOSET)
 #else

@@ -100,9 +100,7 @@ void SV_CreateBaseline (void)
 			continue;
 		svent->s.number = entnum;
 
-		//
 		// take current state as baseline
-		//
 		VectorCopy (svent->s.origin, svent->s.old_origin);
 		sv.baselines[entnum] = svent->s;
 	}
@@ -125,9 +123,8 @@ void SV_CheckForSavegame (void)
 	if (Cvar_VariableInt ("deathmatch"))
 		return;
 
-	f = fopen (va("%s/save/current/%s.sav", FS_Gamedir(), sv.name), "rb");
-	if (!f)
-		return;		// no savegame
+	f = fopen (va("%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name), "rb");
+	if (!f) return;		// no savegame
 
 	fclose (f);
 

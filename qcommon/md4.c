@@ -91,9 +91,7 @@ static unsigned char PADDING[64] = {
 // FF, GG and HH are transformations for rounds 1, 2 and 3
 // Rotation is separate from addition to prevent recomputation
 #define FF(a, b, c, d, x, s) {(a) += F ((b), (c), (d)) + (x); (a) = ROTATE_LEFT ((a), (s));}
-
 #define GG(a, b, c, d, x, s) {(a) += G ((b), (c), (d)) + (x) + (UINT4)0x5a827999; (a) = ROTATE_LEFT ((a), (s));}
-
 #define HH(a, b, c, d, x, s) {(a) += H ((b), (c), (d)) + (x) + (UINT4)0x6ed9eba1; (a) = ROTATE_LEFT ((a), (s));}
 
 
@@ -172,21 +170,25 @@ void MD4Final (unsigned char digest[16], MD4_CTX *context)
 // MD4 basic transformation. Transforms state based on block.
 static void MD4Transform (UINT4 state[4], unsigned char block[64])
 {
-	UINT4 a = state[0], b = state[1], c = state[2], d = state[3], x[16];
+	UINT4	a, b, c, d, x[16];
 
+	a = state[0];
+	b = state[1];
+	c = state[2];
+	d = state[3];
 	Decode (x, block, 64);
 
 // Round 1
-FF (a, b, c, d, x[ 0], S11); 				/* 1 */
-FF (d, a, b, c, x[ 1], S12); 				/* 2 */
-FF (c, d, a, b, x[ 2], S13); 				/* 3 */
-FF (b, c, d, a, x[ 3], S14); 				/* 4 */
-FF (a, b, c, d, x[ 4], S11); 				/* 5 */
-FF (d, a, b, c, x[ 5], S12); 				/* 6 */
-FF (c, d, a, b, x[ 6], S13); 				/* 7 */
-FF (b, c, d, a, x[ 7], S14); 				/* 8 */
-FF (a, b, c, d, x[ 8], S11); 				/* 9 */
-FF (d, a, b, c, x[ 9], S12); 				/* 10 */
+FF (a, b, c, d, x[ 0], S11);			/* 1 */
+FF (d, a, b, c, x[ 1], S12);			/* 2 */
+FF (c, d, a, b, x[ 2], S13);			/* 3 */
+FF (b, c, d, a, x[ 3], S14);			/* 4 */
+FF (a, b, c, d, x[ 4], S11);			/* 5 */
+FF (d, a, b, c, x[ 5], S12);			/* 6 */
+FF (c, d, a, b, x[ 6], S13);			/* 7 */
+FF (b, c, d, a, x[ 7], S14);			/* 8 */
+FF (a, b, c, d, x[ 8], S11);			/* 9 */
+FF (d, a, b, c, x[ 9], S12);			/* 10 */
 FF (c, d, a, b, x[10], S13); 			/* 11 */
 FF (b, c, d, a, x[11], S14); 			/* 12 */
 FF (a, b, c, d, x[12], S11); 			/* 13 */
@@ -213,7 +215,7 @@ GG (c, d, a, b, x[11], S23); 			/* 31 */
 GG (b, c, d, a, x[15], S24); 			/* 32 */
 
 // Round 3
-HH (a, b, c, d, x[ 0], S31);				/* 33 */
+HH (a, b, c, d, x[ 0], S31);			/* 33 */
 HH (d, a, b, c, x[ 8], S32); 			/* 34 */
 HH (c, d, a, b, x[ 4], S33); 			/* 35 */
 HH (b, c, d, a, x[12], S34); 			/* 36 */
@@ -257,23 +259,26 @@ static void Encode (unsigned char *output, UINT4 *input, unsigned int len)
 // Decodes input (unsigned char) into output (UINT4). Assumes len is a multiple of 4.
 static void Decode (UINT4 *output, unsigned char *input, unsigned int len)
 {
-unsigned int i, j;
+	unsigned i, j;
 
-for (i = 0, j = 0; j < len; i++, j += 4)
- 	output[i] = ((UINT4)input[j]) | (((UINT4)input[j+1]) << 8) | (((UINT4)input[j+2]) << 16) | (((UINT4)input[j+3]) << 24);
+	for (i = 0, j = 0; j < len; i++, j += 4)
+		output[i] = ((UINT4)input[j]) |
+ 					(((UINT4)input[j+1]) << 8) |
+ 					(((UINT4)input[j+2]) << 16) |
+ 					(((UINT4)input[j+3]) << 24);
 }
 
 //===================================================================
 
 unsigned Com_BlockChecksum (void *buffer, int length)
 {
-	int			digest[4];
-	unsigned	val;
-	MD4_CTX		ctx;
+	int		digest[4];
+	unsigned val;
+	MD4_CTX	ctx;
 
 	MD4Init (&ctx);
 	MD4Update (&ctx, (unsigned char *)buffer, length);
-	MD4Final ( (unsigned char *)digest, &ctx);
+	MD4Final ((unsigned char *)digest, &ctx);
 
 	val = digest[0] ^ digest[1] ^ digest[2] ^ digest[3];
 

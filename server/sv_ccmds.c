@@ -56,11 +56,11 @@ void SV_SetMaster_f (void)
 	// make sure the server is listed public
 	Cvar_Set ("public", "1");
 
-	for (i=1 ; i<MAX_MASTERS ; i++)
+	for (i = 1; i < MAX_MASTERS; i++)
 		memset (&master_adr[i], 0, sizeof(master_adr[i]));
 
 	slot = 1;		// slot 0 will always contain the id master
-	for (i=1 ; i<Cmd_Argc() ; i++)
+	for (i = 1; i < Cmd_Argc(); i++)
 	{
 		if (slot == MAX_MASTERS)
 			break;
@@ -99,79 +99,13 @@ SAVEGAME FILES
 =====================
 SV_WipeSavegame
 
-Delete save/<XXX>/
+Delete save/<name>/*.*
 =====================
 */
 void SV_WipeSavegame (char *savename)
 {
-	char	*s;
-
-	Com_DPrintf("SV_WipeSaveGame(%s)\n", savename);
-
-#if 0
-	remove (va("%s/save/%s/server.ssv", FS_Gamedir (), savename));
-	remove (va("%s/save/%s/game.ssv", FS_Gamedir (), savename));
-
-	s = Sys_FindFirst (va("%s/save/%s/*.sav", FS_Gamedir (), savename), 0, 0);
-	while (s)
-	{
-		remove (s);
-		s = Sys_FindNext (0, 0);
-	}
-	Sys_FindClose ();
-
-	s = Sys_FindFirst (va("%s/save/%s/*.sv2", FS_Gamedir (), savename), 0, 0);
-	while (s)
-	{
-		remove (s);
-		s = Sys_FindNext (0, 0);
-	}
-	Sys_FindClose ();
-#else
-	s = Sys_FindFirst (va("%s/save/%s/*.*", FS_Gamedir (), savename), 0, 0);
-	while (s)
-	{
-		remove (s);
-		s = Sys_FindNext (0, 0);
-	}
-	Sys_FindClose ();
-#endif
-}
-
-
-/*
-================
-CopyFile
-================
-*/
-static void CopyFile (char *src, char *dst)
-{
-	FILE	*f1, *f2;
-	int		l;
-	byte	buffer[65536];
-
-	Com_DPrintf ("CopyFile (%s, %s)\n", src, dst);
-
-	f1 = fopen (src, "rb");
-	if (!f1)
-		return;
-	f2 = fopen (dst, "wb");
-	if (!f2)
-	{
-		fclose (f1);
-		return;
-	}
-
-	while (1)
-	{
-		l = fread (buffer, 1, sizeof(buffer), f1);
-		if (!l)
-			break;
-		fwrite (buffer, 1, l, f2);
-	}
-
-	fclose (f1);
-	fclose (f2);
+	Com_DPrintf ("SV_WipeSaveGame(%s)\n", savename);
+	FS_RemoveFiles (va("%s/" SAVEGAME_DIRECTORY "/%s/*.*", FS_Gamedir (), savename));
 }
 
 
@@ -182,59 +116,10 @@ SV_CopySaveGame
 */
 void SV_CopySaveGame (char *src, char *dst)
 {
-	char	name[MAX_OSPATH], name2[MAX_OSPATH];
-	int		len;
-	char	*found;
-//	int		l;
-
 	Com_DPrintf ("SV_CopySaveGame(%s, %s)\n", src, dst);
-
 	SV_WipeSavegame (dst);
-
-#if 0
-	// copy the savegame over
-	Com_sprintf (name2, sizeof(name2), "%s/save/%s/server.ssv", FS_Gamedir(), dst);
-	FS_CreatePath (name2);
-	CopyFile (va("%s/save/%s/server.ssv", FS_Gamedir(), src), name2);
-
-	Com_sprintf (name2, sizeof(name2), "%s/save/%s/game.ssv", FS_Gamedir(), dst);
-	CopyFile (va("%s/save/%s/game.ssv", FS_Gamedir(), src), name2);
-
-	len = strlen (va("%s/save/%s/", FS_Gamedir(), src));		// get length of path part
-	Com_sprintf (name, sizeof(name), "%s/save/%s/*.sav", FS_Gamedir(), src);
-	found = Sys_FindFirst(name, 0, 0 );
-	while (found)
-	{
-		strcpy (name+len, found+len);
-
-		Com_sprintf (name2, sizeof(name2), "%s/save/%s/%s", FS_Gamedir(), dst, found+len);
-		CopyFile (name, name2);
-
-		// change sav to sv2
-		l = strlen(name);
-		strcpy (name+l-3, "sv2");
-		l = strlen(name2);
-		strcpy (name2+l-3, "sv2");
-		CopyFile (name, name2);
-
-		found = Sys_FindNext( 0, 0 );
-	}
-	Sys_FindClose ();
-#else
-	// create destination directory
-	Com_sprintf (name2, sizeof(name2), "%s/save/%s/", FS_Gamedir(), dst);
-	FS_CreatePath (name2);
-
-	Com_sprintf (name, sizeof(name), "%s/save/%s/*.*", FS_Gamedir(), src);
-	len = strlen (name) - 3;	// length of path part
-	for (found = Sys_FindFirst (name, 0, SFF_SUBDIR); found; found = Sys_FindNext (0, SFF_SUBDIR))
-	{
-		strcpy (name+len, found+len);
-		Com_sprintf (name2, sizeof(name2), "%s/save/%s/%s", FS_Gamedir(), dst, found+len);
-		CopyFile (name, name2);
-	}
-	Sys_FindClose ();
-#endif
+	FS_CopyFiles (va("%s/" SAVEGAME_DIRECTORY "/%s/*.*", FS_Gamedir(), src),
+				  va("%s/" SAVEGAME_DIRECTORY "/%s/", FS_Gamedir(), dst));
 }
 
 
@@ -251,18 +136,18 @@ void SV_WriteLevelFile (void)
 
 	Com_DPrintf("SV_WriteLevelFile()\n");
 
-	Com_sprintf (name, sizeof(name), "%s/save/current/%s.sv2", FS_Gamedir(), sv.name);
+	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
 	f = fopen (name, "wb");
 	if (!f)
 	{
-		Com_Printf ("Failed to open %s\n", name);
+		Com_WPrintf ("Failed to open %s\n", name);
 		return;
 	}
 	fwrite (sv.configstrings, sizeof(sv.configstrings), 1, f);
 	CM_WritePortalState (f);
 	fclose (f);
 
-	Com_sprintf (name, sizeof(name), "%s/save/current/%s.sav", FS_Gamedir(), sv.name);
+	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
 	ge->WriteLevel (name);
 }
 
@@ -280,7 +165,7 @@ void SV_ReadLevelFile (void)
 
 	Com_DPrintf ("SV_ReadLevelFile()\n");
 
-	Com_sprintf (name, sizeof(name), "%s/save/current/%s.sv2", FS_Gamedir(), sv.name);
+	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
 	f = fopen(name, "rb");
 	if (!f)
 	{
@@ -291,7 +176,7 @@ void SV_ReadLevelFile (void)
 	CM_ReadPortalState (f);
 	fclose (f);
 
-	Com_sprintf (name, sizeof(name), "%s/save/current/%s.sav", FS_Gamedir(), sv.name);
+	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
 	ge->ReadLevel (name);
 }
 
@@ -312,7 +197,7 @@ void SV_WriteServerFile (qboolean autosave, char *dir)
 
 	Com_DPrintf("SV_WriteServerFile(%s, %s)\n", autosave ? "true" : "false", dir);
 
-	Com_sprintf (name, sizeof(name), "%s/save/%s/server.ssv", FS_Gamedir(), dir);
+	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
 	f = fopen (name, "wb");
 	if (!f)
 	{
@@ -326,7 +211,7 @@ void SV_WriteServerFile (qboolean autosave, char *dir)
 	{
 		time (&aclock);
 		newtime = localtime (&aclock);
-		Com_sprintf (comment,sizeof(comment), "%2i:%i%i %2i/%2i  ", newtime->tm_hour,
+		Com_sprintf (comment,sizeof(comment), "%2d:%d%d %2d/%2d  ", newtime->tm_hour,
 			newtime->tm_min/10, newtime->tm_min%10, newtime->tm_mon+1, newtime->tm_mday);
 		strncat (comment, sv.configstrings[CS_NAME], sizeof(comment)-1-strlen(comment));
 	}
@@ -342,13 +227,13 @@ void SV_WriteServerFile (qboolean autosave, char *dir)
 
 	// write all CVAR_LATCH cvars
 	// these will be things like coop, skill, deathmatch, etc
-	for (var = cvar_vars ; var ; var=var->next)
+	for (var = cvar_vars; var ; var=var->next)
 	{
 		if (!(var->flags & CVAR_LATCH))
 			continue;
 		if (strlen(var->name) >= sizeof(name)-1 || strlen(var->string) >= sizeof(string)-1)
 		{
-			Com_Printf ("Cvar too long: %s = %s\n", var->name, var->string);
+			Com_WPrintf ("Cvar too long: %s = %s\n", var->name, var->string);
 			continue;
 		}
 		memset (name, 0, sizeof(name));
@@ -362,14 +247,15 @@ void SV_WriteServerFile (qboolean autosave, char *dir)
 	fclose (f);
 
 	// write game state
-	Com_sprintf (name, sizeof(name), "%s/save/%s/game.ssv", FS_Gamedir(), dir);
+	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/%s/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
 	ge->WriteGame (name, autosave);
 
 	// perform screenshot
-	if (re.Screenshot)	// can be uninitialized when dedicated server
+	if (re.Screenshot)					// can be uninitialized when dedicated server
 	{
-		re.Screenshot (SHOT_SMALL|SHOT_SILENT|SHOT_NO_2D|SHOT_WAIT_3D|SHOT_JPEG, va("%s/save/%s/shot", FS_Gamedir(), dir));//!!
-		SCR_UpdateScreen ();	// required for screenshot performing
+		re.Screenshot (SHOT_SMALL|SHOT_SILENT|SHOT_NO_2D|SHOT_WAIT_3D|SHOT_JPEG,
+			va("%s/" SAVEGAME_DIRECTORY "/%s/shot", FS_Gamedir(), dir));
+		SCR_UpdateScreen ();			// required for screenshot performing
 	}
 }
 
@@ -387,9 +273,9 @@ void SV_ReadServerFile (void)
 	char	mapcmd[MAX_TOKEN_CHARS];
 
 	Com_DPrintf("SV_ReadServerFile()\n");
-	SCR_SetLevelshot ("/save/current/shot.pcx");
+	SCR_SetLevelshot ("/" SAVEGAME_DIRECTORY "/current/shot.pcx");
 
-	Com_sprintf (name, sizeof(name), "%s/save/current/server.ssv", FS_Gamedir());
+	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/current/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
 	f = fopen (name, "rb");
 	if (!f)
 	{
@@ -421,7 +307,7 @@ void SV_ReadServerFile (void)
 	strcpy (svs.mapcmd, mapcmd);
 
 	// read game state
-	Com_sprintf (name, sizeof(name), "%s/save/current/game.ssv", FS_Gamedir());
+	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/current/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
 	ge->ReadGame (name);
 }
 
@@ -494,7 +380,7 @@ void SV_GameMap_f (void)
 		{
 			qboolean	*savedInuse;
 
-			FS_CreatePath (va("%s/save/current/", FS_Gamedir()));
+			FS_CreatePath (va("%s/" SAVEGAME_DIRECTORY "/current/", FS_Gamedir()));
 			// clear all the client.inuse flags before saving so that
 			// when the level is re-entered, the clients will spawn
 			// at spawn points instead of occupying body shells
@@ -523,7 +409,7 @@ void SV_GameMap_f (void)
 	// copy off the level to the autosave slot
 	if (!dedicated->integer && !Cvar_VariableInt ("deathmatch"))
 	{
-		FS_CreatePath (va("%s/save/current/", FS_Gamedir()));
+		FS_CreatePath (va("%s/" SAVEGAME_DIRECTORY "/current/", FS_Gamedir()));
 		SV_CopySaveGame ("current", "save0");
 		SV_WriteServerFile (true, "save0");
 	}
@@ -592,11 +478,12 @@ void SV_Loadgame_f (void)
 	dir = Cmd_Argv(1);
 	if (strstr (dir, "..") || strchr (dir, '/') || strchr (dir, '\\'))
 	{
-		Com_WPrintf ("Bad savedir.\n");
+		Com_WPrintf ("Bad savedir\n");
+		return;
 	}
 
 	// make sure the server.ssv file exists
-	Com_sprintf (name, sizeof(name), "%s/save/%s/server.ssv", FS_Gamedir(), Cmd_Argv(1));
+	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), Cmd_Argv(1));
 	f = fopen (name, "rb");
 	if (!f)
 	{
@@ -659,7 +546,8 @@ void SV_Savegame_f (void)
 	dir = Cmd_Argv(1);
 	if (strstr (dir, "..") || strchr (dir, '/') || strchr (dir, '\\'))
 	{
-		Com_WPrintf ("Bad savedir.\n");
+		Com_WPrintf ("Bad savedir\n");
+		return;
 	}
 
 	Com_Printf ("Saving game...\n");
@@ -677,31 +565,19 @@ void SV_Savegame_f (void)
 	Com_Printf ("Done.\n");
 }
 
+
 //===============================================================
 
-/*
-==================
-SV_SetPlayer
-
-Sets sv_client and sv_player to the player with idnum Cmd_Argv(1)
-==================
-*/
-static qboolean SV_SetPlayer (void)
+static qboolean SetPlayer (char *s)
 {
 	client_t *cl;
 	int		i, idnum;
-	char	*s;
-
-	if (Cmd_Argc() < 2)
-		return false;
-
-	s = Cmd_Argv(1);
 
 	// numeric values are just slot numbers
-	if (!s[1] && s[0] >= '0' && s[0] <= '9')
+	if (s[0] >= '0' && s[0] <= '9')
 	{
 		idnum = atoi (Cmd_Argv(1));
-		if (idnum < 0 || idnum >= maxclients->integer)
+		if (idnum >= maxclients->integer)		// negative values are impossible here
 		{
 			Com_WPrintf ("Bad client slot: %d\n", idnum);
 			return false;
@@ -756,7 +632,7 @@ static void SV_Kick_f (void)
 		return;
 	}
 
-	if (!SV_SetPlayer ())
+	if (!SetPlayer (Cmd_Argv(1)))
 		return;
 
 	if (sv_client->netchan.remote_address.type == NA_LOOPBACK)
@@ -765,9 +641,6 @@ static void SV_Kick_f (void)
 		return;
 	}
 
-/*	// print directly, because the dropped client won't get the
-	// SV_BroadcastPrintf message
-	SV_ClientPrintf (sv_client, PRINT_HIGH, "You were kicked from the game\n"); */
 	SV_DropClient (sv_client, "was kicked");
 	sv_client->lastmessage = svs.realtime;			// min case there is a funny zombie
 }
@@ -836,14 +709,8 @@ static void SV_Ban_f (void)
 		return;
 	}
 
-	if (!SV_SetPlayer ())
+	if (!SetPlayer (Cmd_Argv(1)))
 		return;
-
-	if (sv_client->netchan.remote_address.type == NA_LOOPBACK)
-	{
-		Com_WPrintf ("Cannot ban host player\n");
-		return;
-	}
 
 	if (sv_client->netchan.remote_address.type != NA_IP)
 	{
@@ -935,7 +802,7 @@ static void SV_BanRemove_f (void)
 			return;
 		}
 		n = atoi(str);
-		if (n >= banCount)
+		if (n >= banCount)		// do not need "< 0" check: if number have "-" - will not get here
 		{
 			Com_WPrintf ("Index %d is out of list bounds\n", n);
 			return;
@@ -962,7 +829,7 @@ static void SV_DumpUser_f (void)
 		return;
 	}
 
-	if (!SV_SetPlayer ())
+	if (!SetPlayer (Cmd_Argv(1)))
 		return;
 
 	Com_Printf ("userinfo\n");
@@ -978,10 +845,10 @@ SV_Status_f
 */
 static void SV_Status_f (void)
 {
-	int			i, j, l;
-	client_t	*cl;
-	char		*s;
-	int			ping;
+	int		i;
+	client_t *cl;
+	int		ping;
+
 	if (!svs.clients)
 	{
 		Com_WPrintf ("No server running.\n");
@@ -1000,23 +867,15 @@ static void SV_Status_f (void)
 		if (cl->state == cs_connected)
 			Com_Printf ("CNCT ");
 		else if (cl->state == cs_zombie)
-			Com_Printf ("ZMBI ");
+			Com_Printf ("^1ZMBI ");
 		else
 		{
 			ping = cl->ping < 9999 ? cl->ping : 9999;
 			Com_Printf ("%4d ", ping);
 		}
 
-		Com_Printf ("%s", cl->name);
-		l = 16 - strlen (cl->name);
-		for (j = 0; j < l; j++) Com_Printf (" ");
-
-		s = NET_AdrToString (&cl->netchan.remote_address);
-		Com_Printf ("%7d %s", svs.realtime - cl->lastmessage, s);
-		l = 22 - strlen (s);
-		for (j = 0; j < l; j++) Com_Printf (" ");
-
-		Com_Printf ("%5d\n", cl->netchan.qport);
+		Com_Printf ("%-15s %7d %-21s %5d\n", cl->name, svs.realtime - cl->lastmessage,
+			NET_AdrToString (&cl->netchan.remote_address), cl->netchan.qport);
 	}
 	Com_Printf ("\n");
 }

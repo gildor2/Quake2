@@ -496,73 +496,73 @@
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
-	".\game\game.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
+	".\server\game.h"\
 	".\server\server.h"\
 	
 
 .\server\sv_ents.c : \
 	".\client\ref_defs.h"\
-	".\game\game.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
+	".\server\game.h"\
 	".\server\server.h"\
 	
 
 .\server\sv_game.c : \
 	".\client\ref_defs.h"\
-	".\game\game.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
+	".\server\game.h"\
 	".\server\server.h"\
 	
 
 .\server\sv_init.c : \
 	".\client\ref_defs.h"\
-	".\game\game.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
+	".\server\game.h"\
 	".\server\server.h"\
 	
 
 .\server\sv_main.c : \
 	".\client\ref_defs.h"\
-	".\game\game.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
+	".\server\game.h"\
 	".\server\server.h"\
 	
 
 .\server\sv_send.c : \
 	".\client\ref_defs.h"\
-	".\game\game.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
+	".\server\game.h"\
 	".\server\server.h"\
 	
 
 .\server\sv_user.c : \
 	".\client\ref_defs.h"\
-	".\game\game.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
+	".\server\game.h"\
 	".\server\server.h"\
 	
 
 .\server\sv_world.c : \
 	".\client\ref_defs.h"\
-	".\game\game.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
+	".\server\game.h"\
 	".\server\server.h"\
 	
 
@@ -647,6 +647,7 @@
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_backend.h"\
+	".\ref_gl\gl_lightmap.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
@@ -693,6 +694,19 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
+.\ref_gl\gl_lightmap.c : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
+	".\client\ref_defs.h"\
+	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
+	".\ref_gl\gl_lightmap.h"\
+	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_model.h"\
+	".\ref_gl\qgl_decl.h"\
+	
+
 .\ref_gl\gl_main.c : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
@@ -727,9 +741,11 @@
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
+	".\ref_gl\gl_lightmap.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
+	".\ref_gl\gl_poly.h"\
 	".\ref_gl\gl_shader.h"\
 	".\ref_gl\qgl_decl.h"\
 	

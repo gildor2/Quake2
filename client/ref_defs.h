@@ -38,6 +38,9 @@
 #define FS_FreeFile	ri._FS_FreeFile
 #define FS_Gamedir	ri._FS_Gamedir
 #define FS_CreatePath	ri._FS_CreatePath
+#define FS_CopyFile	ri._FS_CopyFile
+#define FS_CopyFiles	ri._FS_CopyFiles
+#define FS_RemoveFiles	ri._FS_RemoveFiles
 #define MatchWildcard	ri._MatchWildcard
 #define MatchWildcard2	ri._MatchWildcard2
 #define Vid_GetModeInfo	ri._Vid_GetModeInfo
@@ -97,6 +100,9 @@ int	FS_LoadFile (char *name, void **buf);
 void	FS_FreeFile (void *buf);
 char*	FS_Gamedir (void);
 void	FS_CreatePath (char *path);
+void	FS_CopyFile (char *src, char *dst);
+void	FS_CopyFiles (char *srcMask, char *dstDir);
+void	FS_RemoveFiles (char *mask);
 qboolean	MatchWildcard (char *name, char *mask);
 qboolean	MatchWildcard2 (char *name, char *mask, qboolean ignoreCase);
 qboolean	Vid_GetModeInfo (int *width, int *height, int mode);

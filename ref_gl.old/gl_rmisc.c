@@ -199,10 +199,10 @@ void GL_PerformScreenshot (void)
 */
 void GL_Strings_f( void )
 {
-	Com_Printf ("GL_VENDOR: %s\n", gl_config.vendor_string );
-	Com_Printf ("GL_RENDERER: %s\n", gl_config.renderer_string );
-	Com_Printf ("GL_VERSION: %s\n", gl_config.version_string );
-	Com_Printf ("GL_EXTENSIONS: %s\n", gl_config.extensions_string );
+	Com_Printf ("GL_VENDOR: %s\n", gl_config.vendorString );
+	Com_Printf ("GL_RENDERER: %s\n", gl_config.rendererString );
+	Com_Printf ("GL_VERSION: %s\n", gl_config.versionString );
+	Com_Printf ("GL_EXTENSIONS: %s\n", gl_config.extensionsString );
 }
 
 /*

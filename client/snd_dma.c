@@ -75,6 +75,7 @@ cvar_t		*s_volume;
 cvar_t		*s_testsound;
 cvar_t		*s_loadas8bit;
 cvar_t		*s_khz;
+cvar_t		*s_reverse_stereo;
 cvar_t		*s_show;
 cvar_t		*s_mixahead;
 cvar_t		*s_primary;
@@ -204,6 +205,7 @@ CVAR_BEGIN(vars)
 		CVAR_VAR(s_volume, 0.7, CVAR_ARCHIVE),
 		CVAR_VAR(s_khz, 22, CVAR_ARCHIVE),
 		CVAR_VAR(s_loadas8bit, 0, CVAR_ARCHIVE),
+		CVAR_VAR(s_reverse_stereo, 0, CVAR_ARCHIVE),
 		CVAR_VAR(s_mixahead, 0.2, CVAR_ARCHIVE),
 		CVAR_VAR(s_show, 0, 0),
 		CVAR_VAR(s_testsound, 0, 0),
@@ -212,10 +214,10 @@ CVAR_END
 
 		CVAR_GET_VARS(vars);
 
-		Cmd_AddCommand("play", S_Play);
-		Cmd_AddCommand("stopsound", S_StopAllSounds);
-		Cmd_AddCommand("soundlist", S_SoundList);
-		Cmd_AddCommand("soundinfo", S_SoundInfo_f);
+		Cmd_AddCommand ("play", S_Play);
+		Cmd_AddCommand ("stopsound", S_StopAllSounds);
+		Cmd_AddCommand ("soundlist", S_SoundList);
+		Cmd_AddCommand ("soundinfo", S_SoundInfo_f);
 
 		if (!SNDDMA_Init())
 			return;
@@ -517,7 +519,7 @@ void S_SpatializeOrigin (vec3_t origin, float master_vol, float dist_mult, int *
 		return;
 	}
 
-// calculate stereo seperation and distance attenuation
+	// calculate stereo seperation and distance attenuation
 	VectorSubtract(origin, listener_origin, source_vec);
 
 	dist = VectorNormalize(source_vec);
@@ -529,14 +531,21 @@ void S_SpatializeOrigin (vec3_t origin, float master_vol, float dist_mult, int *
 	dot = DotProduct(listener_right, source_vec);
 
 	if (dma.channels == 1 || !dist_mult)
-	{ // no attenuation = no spatialization
-		rscale = 1.0;
-		lscale = 1.0;
+	{	// no attenuation = no spatialization
+		rscale = 1.0f;
+		lscale = 1.0f;
 	}
 	else
 	{
-		rscale = 0.5 * (1.0 + dot);
-		lscale = 0.5*(1.0 - dot);
+		rscale = 0.5f * (1.0f + dot);
+		lscale = 0.5f * (1.0f - dot);
+	}
+
+	if (s_reverse_stereo->integer)
+	{	// swap left and right volumes
+		scale = rscale;
+		rscale = lscale;
+		lscale = scale;
 	}
 
 	// add in distance effect

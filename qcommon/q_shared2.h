@@ -18,8 +18,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-// q_shared.h -- included first by ALL program modules
-
 #ifndef QSHARED_H
 #define QSHARED_H
 
@@ -87,8 +85,9 @@ typedef enum {false, true}	qboolean;
 
 #else
 
-#define RETADDR_STR
-#define	GET_RETADDR()
+// empty string
+#define RETADDR_STR	"%s"
+#define	GET_RETADDR(firstarg)	""
 
 #endif
 
@@ -377,23 +376,23 @@ CVARS (console variables)
 ==========================================================
 */
 
-//#ifndef CVAR
-//#define	CVAR
 
-#define	CVAR_ARCHIVE		0x01	// set to cause it to be saved to config file (config.cfg)
-#define	CVAR_USERINFO		0x02	// added to userinfo when changed, then sent to senver
-#define	CVAR_SERVERINFO		0x04	// added to serverinfo when changed
-#define	CVAR_NOSET			0x08	// don't allow change from console at all, but can be set from the command line
-#define	CVAR_LATCH			0x10	// save changes until server restart
+#define	CVAR_ARCHIVE		0x00001	// set to cause it to be saved to config file (config.cfg)
+#define	CVAR_USERINFO		0x00002	// added to userinfo when changed, then sent to senver
+#define	CVAR_SERVERINFO		0x00004	// added to serverinfo when changed
+#define	CVAR_NOSET			0x00008	// don't allow change from console at all, but can be set from the command line
+#define	CVAR_LATCH			0x00010	// save changes until server restart
 // added since 4.00
-#define	CVAR_USER_CREATED	0x20	// created by a set command
-#define CVAR_GAME_CREATED	0x40	// created from game library
+#define	CVAR_USER_CREATED	0x00020	// created by a set command
+#define CVAR_GAME_CREATED	0x00040	// created from game library
+#define CVAR_CHEAT			0x00080	// will be reset to its default value when cheat protection active
+
+#define CVAR_FLAG_MASK		0x0FFFF	// mask of stored cvar flags
+
 // not stored flags:
 #define CVAR_NODEFAULT		0x10000	// do not store "default" value from this Cvar_Get() call
 #define CVAR_UPDATE			0x20000	// set "modified" field after Cvar_Get() call
 #define CVAR_NOUPDATE		0x40000	// reset "modified" field ...
-
-#define CVAR_FLAG_MASK		0x0FFFF	// mask of stored cvar flags
 
 #define	CVAR_BUFFER_SIZE	16		// size of buffer for var->string inside cvar_t
 
@@ -402,20 +401,19 @@ typedef struct cvar_s
 {
 	char	*name;
 	char	*string;
-	char	*latched_string;	// for CVAR_LATCH vars
+	char	*latched_string;		// for CVAR_LATCH vars
 	int		flags;
-	qboolean modified;			// set each time the cvar is changed
-	float	value;				// atof(string)
+	qboolean modified;				// set each time the cvar is changed
+	float	value;					// atof(string)
 	struct cvar_s *next;
 	// added since 4.00
-	char	*reset_string;		// default cvar value (unset for user-created vars)
-	int		integer;			// atoi(string)
-	int		string_length;		// size of buffer, allocated for holding var->string (or 0 if var->buf used)
+	char	*reset_string;			// default cvar value (unset for user-created vars)
+	int		integer;				// atoi(string)
+	int		string_length;			// size of buffer, allocated for holding var->string (or 0 if var->buf used)
 	char	buf[CVAR_BUFFER_SIZE];
 	struct cvar_s *hashNext;
 } cvar_t;
 
-//#endif		// CVAR
 
 
 /*
@@ -425,72 +423,6 @@ COLLISION DETECTION
 
 ==============================================================
 */
-
-// lower bits are stronger, and will eat weaker brushes completely
-#define	CONTENTS_SOLID			1		// an eye is never valid in a solid
-#define	CONTENTS_WINDOW			2		// translucent, but not watery
-#define	CONTENTS_AUX			4
-#define	CONTENTS_LAVA			8
-#define	CONTENTS_SLIME			16
-#define	CONTENTS_WATER			32
-#define	CONTENTS_MIST			64
-#define	LAST_VISIBLE_CONTENTS	64
-
-// remaining contents are non-visible, and don't eat brushes
-
-#define	CONTENTS_AREAPORTAL		0x8000
-
-#define	CONTENTS_PLAYERCLIP		0x10000
-#define	CONTENTS_MONSTERCLIP	0x20000
-
-// currents can be added to any other contents, and may be mixed
-#define	CONTENTS_CURRENT_0		0x40000
-#define	CONTENTS_CURRENT_90		0x80000
-#define	CONTENTS_CURRENT_180	0x100000
-#define	CONTENTS_CURRENT_270	0x200000
-#define	CONTENTS_CURRENT_UP		0x400000
-#define	CONTENTS_CURRENT_DOWN	0x800000
-
-#define	CONTENTS_ORIGIN			0x1000000	// removed before bsping an entity
-
-#define	CONTENTS_MONSTER		0x2000000	// should never be on a brush, only in game
-#define	CONTENTS_DEADMONSTER	0x4000000
-#define	CONTENTS_DETAIL			0x8000000	// brushes to be added after vis leafs
-#define	CONTENTS_TRANSLUCENT	0x10000000	// auto set if any surface has trans
-#define	CONTENTS_LADDER			0x20000000
-
-
-
-#define	SURF_LIGHT		0x1		// value will hold the light strength
-
-#define	SURF_SLICK		0x2		// effects game physics
-
-#define	SURF_SKY		0x4		// don't draw, but add to skybox
-#define	SURF_WARP		0x8		// turbulent water warp
-#define	SURF_TRANS33	0x10
-#define	SURF_TRANS66	0x20
-#define	SURF_FLOWING	0x40	// scroll towards angle
-#define	SURF_NODRAW		0x80	// don't bother referencing the texture
-
-// added since 4.00
-#define SURF_ALPHA		0x1000	// Kingpin
-#define	SURF_SPECULAR	0x4000	// have a bug in KP's q_shared.h: SPECULAR and DIFFUSE consts are 0x400 and 0x800
-#define	SURF_DIFFUSE	0x8000
-
-#define SURF_AUTOFLARE	0x2000	// just free flag (should use extra struc for dtexinfo_t !!)
-
-
-// content masks
-#define	MASK_ALL				(-1)
-#define	MASK_SOLID				(CONTENTS_SOLID|CONTENTS_WINDOW)
-#define	MASK_PLAYERSOLID		(CONTENTS_SOLID|CONTENTS_PLAYERCLIP|CONTENTS_WINDOW|CONTENTS_MONSTER)
-#define	MASK_DEADSOLID			(CONTENTS_SOLID|CONTENTS_PLAYERCLIP|CONTENTS_WINDOW)
-#define	MASK_MONSTERSOLID		(CONTENTS_SOLID|CONTENTS_MONSTERCLIP|CONTENTS_WINDOW|CONTENTS_MONSTER)
-#define	MASK_WATER				(CONTENTS_WATER|CONTENTS_LAVA|CONTENTS_SLIME)
-#define	MASK_OPAQUE				(CONTENTS_SOLID|CONTENTS_SLIME|CONTENTS_LAVA)
-#define	MASK_SHOT				(CONTENTS_SOLID|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEADMONSTER)
-#define MASK_CURRENT			(CONTENTS_CURRENT_0|CONTENTS_CURRENT_90|CONTENTS_CURRENT_180|CONTENTS_CURRENT_270|CONTENTS_CURRENT_UP|CONTENTS_CURRENT_DOWN)
-
 
 // gi.BoxEdicts() can return a list of either solid or trigger entities
 // FIXME: eliminate AREA_ distinction?
@@ -717,19 +649,19 @@ typedef struct
 //ROGUE
 
 // entity_state_t->renderfx flags
-#define	RF_MINLIGHT			1		// allways have some light (viewmodel)
-#define	RF_VIEWERMODEL		2		// don't draw through eyes, only mirrors
-#define	RF_WEAPONMODEL		4		// only draw through eyes
-#define	RF_FULLBRIGHT		8		// allways draw full intensity
-#define	RF_DEPTHHACK		16		// for view weapon Z crunching
-#define	RF_TRANSLUCENT		32
-#define	RF_FRAMELERP		64
-#define RF_BEAM				128
-#define	RF_CUSTOMSKIN		256		// skin is an index in image_precache
-#define	RF_GLOW				512		// pulse lighting for bonus items
-#define RF_SHELL_RED		1024
-#define	RF_SHELL_GREEN		2048
-#define RF_SHELL_BLUE		4096
+#define	RF_MINLIGHT			0x00000001		// allways have some light (viewmodel)
+#define	RF_VIEWERMODEL		0x00000002		// don't draw through eyes, only mirrors
+#define	RF_WEAPONMODEL		0x00000004		// only draw through eyes
+#define	RF_FULLBRIGHT		0x00000008		// allways draw full intensity
+#define	RF_DEPTHHACK		0x00000010		// for view weapon Z crunching
+#define	RF_TRANSLUCENT		0x00000020
+#define	RF_FRAMELERP		0x00000040
+#define RF_BEAM				0x00000080
+#define	RF_CUSTOMSKIN		0x00000100		// skin is an index in image_precache
+#define	RF_GLOW				0x00000200		// pulse lighting for bonus items
+#define RF_SHELL_RED		0x00000400
+#define	RF_SHELL_GREEN		0x00000800
+#define RF_SHELL_BLUE		0x00001000
 
 //ROGUE
 #define RF_IR_VISIBLE		0x00008000		// 32768
@@ -1029,7 +961,7 @@ extern	vec3_t monster_flash_offset [];
 // at a location seperate from any existing entity.
 // Temporary entity messages are explicitly constructed
 // and broadcast.
-typedef enum
+enum
 {
 	TE_GUNSHOT,
 	TE_BLOOD,
@@ -1089,7 +1021,7 @@ typedef enum
 	TE_EXPLOSION1_NP,
 	TE_FLECHETTE
 //ROGUE
-} temp_event_t;
+};
 
 #define SPLASH_UNKNOWN		0
 #define SPLASH_SPARKS		1
@@ -1221,26 +1153,29 @@ ROGUE - VERSIONS
 // the server to all connected clients.
 // Each config string can be at most MAX_QPATH characters.
 //
-#define	CS_NAME				0
-#define	CS_CDTRACK			1
-#define	CS_SKY				2
-#define	CS_SKYAXIS			3		// %f %f %f format
-#define	CS_SKYROTATE		4
-#define	CS_STATUSBAR		5		// display program string
+enum
+{
+	CS_NAME,
+	CS_CDTRACK,
+	CS_SKY,
+	CS_SKYAXIS,			// %f %f %f format
+	CS_SKYROTATE,
+	CS_STATUSBAR,		// display program string
 
-#define CS_AIRACCEL			29		// air acceleration control
-#define	CS_MAXCLIENTS		30
-#define	CS_MAPCHECKSUM		31		// for catching cheater maps
+	CS_AIRACCEL = 29,	// air acceleration control
+	CS_MAXCLIENTS,
+	CS_MAPCHECKSUM,		// for catching cheater maps
 
-#define	CS_MODELS			32
-#define	CS_SOUNDS			(CS_MODELS+MAX_MODELS)
-#define	CS_IMAGES			(CS_SOUNDS+MAX_SOUNDS)
-#define	CS_LIGHTS			(CS_IMAGES+MAX_IMAGES)
-#define	CS_ITEMS			(CS_LIGHTS+MAX_LIGHTSTYLES)
-#define	CS_PLAYERSKINS		(CS_ITEMS+MAX_ITEMS)
-#define CS_GENERAL			(CS_PLAYERSKINS+MAX_CLIENTS)
-#define	MAX_CONFIGSTRINGS	(CS_GENERAL+MAX_GENERAL)
+	CS_MODELS,
+	CS_SOUNDS = CS_MODELS+MAX_MODELS,
+	CS_IMAGES = CS_SOUNDS+MAX_SOUNDS,
+	CS_LIGHTS = CS_IMAGES+MAX_IMAGES,
+	CS_ITEMS = CS_LIGHTS+MAX_LIGHTSTYLES,
+	CS_PLAYERSKINS = CS_ITEMS+MAX_ITEMS,
+	CS_GENERAL = CS_PLAYERSKINS+MAX_CLIENTS,
 
+	MAX_CONFIGSTRINGS = CS_GENERAL+MAX_GENERAL
+};
 
 //==============================================
 

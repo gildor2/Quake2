@@ -157,17 +157,17 @@ static void Huff1TableInit (void)
 	byte	counts[256];
 	int		numhnodes;
 
-	cin.hnodes1 = Z_Malloc (256*256*2*4);
-	memset (cin.hnodes1, 0, 256*256*2*4);
+	cin.hnodes1 = Z_Malloc (256*256*2*sizeof(int));
+	memset (cin.hnodes1, 0, 256*256*2*sizeof(int));
 
-	for (prev=0 ; prev<256 ; prev++)
+	for (prev = 0; prev < 256; prev++)
 	{
-		memset (cin.h_count,0,sizeof(cin.h_count));
-		memset (cin.h_used,0,sizeof(cin.h_used));
+		memset (cin.h_count, 0, sizeof(cin.h_count));
+		memset (cin.h_used, 0, sizeof(cin.h_used));
 
 		// read a row of counts
 		FS_Read (counts, sizeof(counts), cl.cinematic_file);
-		for (j=0 ; j<256 ; j++)
+		for (j = 0; j < 256; j++)
 			cin.h_count[j] = counts[j];
 
 		// build the nodes
@@ -248,7 +248,7 @@ static cblock_t Huff1Decompress (cblock_t in)
 
 	if (input - in.data != in.count && input - in.data != in.count+1)
 	{
-		Com_Printf ("Decompression overread by %i", (input - in.data) - in.count);
+		Com_WPrintf ("Decompression overread by %d", (input - in.data) - in.count);
 	}
 	out.count = out_p - out.data;
 
@@ -340,7 +340,7 @@ void SCR_RunCinematic (void)
 		return;
 	if (frame > cl.cinematicframe+1)
 	{
-		Com_WPrintf ("Dropped frame: %i > %i\n", frame, cl.cinematicframe+1);
+		Com_DPrintf ("Dropped frame: %d > %d\n", frame, cl.cinematicframe+1);
 		cl.cinematictime = cls.realtime - cl.cinematicframe * 1000 / 14;
 	}
 	if (cin.pic)

@@ -290,16 +290,16 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		cl_hwnd = hWnd;
 
 		MSH_MOUSEWHEEL = RegisterWindowMessage ("MSWHEEL_ROLLMSG");
-		return DefWindowProc (hWnd, uMsg, wParam, lParam);
+		break;
 
 	case WM_PAINT:
 		SCR_DirtyScreen ();	// force entire screen to update next frame
-		return DefWindowProc (hWnd, uMsg, wParam, lParam);
+		break;
 
 	case WM_DESTROY:
 		// let sound and input know about this?
 		cl_hwnd = NULL;
-		return DefWindowProc (hWnd, uMsg, wParam, lParam);
+		break;
 
 	case WM_ACTIVATE:
 		{
@@ -314,7 +314,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			if (refActive)
 				re.AppActivate (!(fActive == WA_INACTIVE));
 		}
-		return DefWindowProc (hWnd, uMsg, wParam, lParam);
+		break;
 
 	case WM_MOVE:
 		{
@@ -343,7 +343,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 					IN_Activate (true);
 			}
 		}
-		return DefWindowProc (hWnd, uMsg, wParam, lParam);
+		break;
 
 	// this is complicated because Win32 seems to pack multiple mouse events into
 	// one update sometimes, so we always check all states and look for events
@@ -377,7 +377,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			return 0;
 		if (wParam == SC_KEYMENU)	// disable activating window menu with keyboard
 			return 0;
-		return DefWindowProc (hWnd, uMsg, wParam, lParam);
+		break;
 	case WM_SYSKEYDOWN:
 		if (wParam == 13) 			// Alt+Enter
 		{
@@ -411,14 +411,8 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			lRet = CDAudio_MessageHandler (hWnd, uMsg, wParam, lParam);
 		}
 		break;
-
-	default:
-//		DebugPrintf("msg: %X wParam: %X lParam: %X\n", uMsg, wParam, lParam);
-		// pass all unhandled messages to DefWindowProc
-		return DefWindowProc (hWnd, uMsg, wParam, lParam);
 	}
 
-	// return 0 if handled message, 1 if not
 	return DefWindowProc (hWnd, uMsg, wParam, lParam);
 }
 
@@ -460,8 +454,8 @@ void *Vid_CreateWindow (int width, int height, qboolean fullscreen)
 	}
 
 	// if size=0 -- invisible (fake) window
-	if (width || height)
-		stylebits |= WS_VISIBLE;
+//	if (width || height)		// if enable this, window will be created without taskbar button!
+//		stylebits |= WS_VISIBLE;
 
 	r.left = 0;
 	r.top = 0;
@@ -491,9 +485,9 @@ void *Vid_CreateWindow (int width, int height, qboolean fullscreen)
 		ShowWindow (mainHwnd, SW_SHOW);
 		SetWindowPos (mainHwnd, 0, x, y, w, h, SWP_NOZORDER);
 
+		UpdateWindow (mainHwnd);
 		SetForegroundWindow (mainHwnd);
 		SetFocus (mainHwnd);
-		UpdateWindow (mainHwnd);
 
 		Vid_NewWindow (width, height);
 		return mainHwnd;
@@ -506,21 +500,21 @@ void *Vid_CreateWindow (int width, int height, qboolean fullscreen)
 	wc.cbWndExtra		= 0;
 	wc.hInstance		= global_hInstance;
 	wc.hIcon			= LoadIcon (global_hInstance, MAKEINTRESOURCE(IDI_ICON1));
-	wc.hCursor			= 0; //LoadCursor (NULL,IDC_ARROW);
+	wc.hCursor			= LoadCursor (NULL,IDC_ARROW);
 	wc.hbrBackground	= (void *) COLOR_GRAYTEXT;
-	wc.lpszMenuName 	= 0;
+	wc.lpszMenuName 	= NULL;
 	wc.lpszClassName	= APPNAME;
 
 	if (!RegisterClass (&wc))
 		Com_Error (ERR_FATAL, "Vid_CreateWindow: couldn't register window class");
 
 	mainHwnd = CreateWindowEx (
-		 exstyle,
-		 APPNAME, APPNAME,
-		 stylebits,
-		 x, y, w, h,
-		 NULL, NULL,
-		 global_hInstance, NULL);
+		exstyle,
+		APPNAME, APPNAME,
+		stylebits,
+		x, y, w, h,
+		NULL, NULL,
+		global_hInstance, NULL);
 
 	if (!mainHwnd) Com_Error (ERR_FATAL, "Vid_CreateWindow: couldn't create window");
 

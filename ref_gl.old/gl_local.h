@@ -515,10 +515,10 @@ typedef struct
 {
 	//--- copy of glstate from NEW ref_gl ----
 	// (required for GLimp_... functions)
-	char	renderer_string[256];
-	char	vendor_string[256];
-	char	version_string[256];
-	char	extensions_string[8192];
+	char	rendererString[256];
+	char	vendorString[256];
+	char	versionString[256];
+	char	*extensionsString;
 
 	int		maxTextureSize;
 	int		extensionMask;

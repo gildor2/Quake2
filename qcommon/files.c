@@ -130,7 +130,7 @@ static const char *is_zip_str[2] = {"", " [zip]"};
 #define MAX_RES_FILES	64
 
 extern byte zresource_start[], zresource_end[];
-#define OpenZRes() 	ZipOpenBuf (zresource_start+10, zresource_end-zresource_start-18);	// +10 - skip gzip header, -18 - dhr+crc+size
+#define OpenZRes() 	Zip_OpenBuf (zresource_start+10, zresource_end-zresource_start-18);	// +10 - skip gzip header, -18 - dhr+crc+size
 
 
 
@@ -150,14 +150,14 @@ static void InitResFiles (void)
 	z = OpenZRes();
 
 	last = NULL;
-	while (ZipReadBuf (z, &fsize, sizeof(int))/* && fsize*/)
+	while (Zip_ReadBuf (z, &fsize, sizeof(int))/* && fsize*/)
 	{
 		if (!fsize) break;
 		s = name;
 		// get filename
 		do
 		{
-			ZipReadBuf (z, &c, 1);
+			Zip_ReadBuf (z, &c, 1);
 			*s++ = c;
 		} while (c);
 		// create file struc
@@ -180,7 +180,7 @@ static void InitResFiles (void)
 //		Com_Printf ("res: %s (%d bytes) at %d\n", f->name, f->size, f->pos);
 	}
 
-	ZipCloseBuf (z);
+	Zip_CloseBuf (z);
 	Com_Printf ("Added %d inline files\n", resFileCount);
 }
 
@@ -489,6 +489,91 @@ void FS_CreatePath (char *path)
 }
 
 
+void FS_CopyFile (char *src, char *dst)
+{
+	FILE	*f1, *f2;
+
+	DEBUG_LOG(va("copy(%s -> %s)", src, dst));
+
+	if (!(f1 = fopen (src, "rb")))
+	{
+		DEBUG_LOG(": no src\n");
+		return;
+	}
+	if (!(f2 = fopen (dst, "wb")))
+	{
+		DEBUG_LOG(": can't dst\n");
+		fclose (f1);
+		return;
+	}
+
+	DEBUG_LOG("\n");
+	while (1)
+	{
+		int		len;
+		byte	buffer[65536];
+
+		len = fread (buffer, 1, sizeof(buffer), f1);
+		if (!len) break;
+		fwrite (buffer, 1, len, f2);
+	}
+
+	fclose (f1);
+	fclose (f2);
+}
+
+
+void FS_CopyFiles (char *srcMask, char *dstDir)
+{
+	char	*found, pattern[MAX_OSPATH];
+	int		pos1, pos2;
+
+	DEBUG_LOG(va("CopyFiles(%s->%s)\n", srcMask, dstDir));
+
+	// prepare src string
+	found = strrchr (srcMask, '/');
+	if (!found)
+	{
+		Com_WPrintf ("CopyFiles: bad srcMask \"%s\"\n", srcMask);
+		return;
+	}
+	pos1 = found - srcMask + 1;
+
+	// prepare dst string
+	Q_CopyFilename (pattern, dstDir, sizeof(pattern)-1);
+	pos2 = strlen (pattern);
+	if (!pos2 || pattern[pos2 - 1] != '/')
+	{
+		pattern[pos2] = '/';
+		pos2++;
+	}
+
+	// create destination directory
+	FS_CreatePath (pattern);
+	// copy files
+	for (found = Sys_FindFirst (srcMask, 0, SFF_SUBDIR); found; found = Sys_FindNext (0, SFF_SUBDIR))
+	{
+		strcpy (pattern + pos2, found + pos1);
+		FS_CopyFile (found, pattern);
+	}
+	Sys_FindClose ();
+}
+
+
+void FS_RemoveFiles (char *mask)
+{
+	char	*found;
+
+	DEBUG_LOG(va("RemoveFiles(%s)\n", mask));
+	for (found = Sys_FindFirst (mask, 0, SFF_SUBDIR); found; found = Sys_FindNext (0, SFF_SUBDIR))
+	{
+		DEBUG_LOG(va("del(%s)\n", found));
+		remove (found);
+	}
+	Sys_FindClose ();
+}
+
+
 // RAFAEL
 /*
 	Developer_searchpath (change !!)
@@ -590,7 +675,7 @@ void FS_FCloseFile (FILE *f)
 		if (f2->zFile)
 		{
 			rest = f2->zFile->rest_write;
-			if (!ZipCloseFile (f2->zFile) && !rest)
+			if (!Zip_CloseFile (f2->zFile) && !rest)
 			{	// file readed completely, but bad checksum
 				Com_Error (ERR_FATAL, "FS_FCloseFile: damaged zip file %s %s", f2->name, f2->pFile->name);
 			}
@@ -599,7 +684,7 @@ void FS_FCloseFile (FILE *f)
 			FCloseCached (f2->file);		// fclose (f2->file) or ZipClose (f2->file);
 	}
 	else if (f2->type == FT_ZPAK)
-		ZipCloseBuf (f2->zBuf);
+		Zip_CloseBuf (f2->zBuf);
 //	else Com_Error (ERR_FATAL, "FS_FCloseFile: invalid handle type");
 
 	FreeNamedStruc (f);
@@ -879,7 +964,6 @@ FS_ReadFile
 Properly handles partial reads
 =================
 */
-void CDAudio_Stop (void);
 
 void FS_Read (void *buffer, int len, FILE *f)
 {
@@ -910,11 +994,11 @@ void FS_Read (void *buffer, int len, FILE *f)
 				tmp = rem;
 				if (tmp > sizeof(tmpbuf))
 					tmp = sizeof(tmpbuf);
-				ZipReadBuf (f2->zBuf, tmpbuf, tmp);
+				Zip_ReadBuf (f2->zBuf, tmpbuf, tmp);
 				rem -= tmp;
 			}
 		}
-		ZipReadBuf (f2->zBuf, buffer, len);
+		Zip_ReadBuf (f2->zBuf, buffer, len);
 		return;
 	}
 
@@ -942,7 +1026,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 				zfs.pos    = f2->pFile->pos;
 				zfs.method = f2->pFile->method;
 				zfs.crc32  = f2->pFile->crc;
-				f2->zFile = ZipOpenFile (f2->file, &zfs);
+				f2->zFile = Zip_OpenFile (f2->file, &zfs);
 				if (!f2->zFile)
 					Com_Error (ERR_FATAL, "Cannot open file %s in zip %s", f2->pFile->name, f2->name);
 			}
@@ -951,7 +1035,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 
 	if (f2->zFile)
 	{
-		if (ZipReadFile (f2->zFile, buffer, len) != len)
+		if (Zip_ReadFile (f2->zFile, buffer, len) != len)
 			Com_Error (ERR_FATAL, "Error reading zip file.\n");
 	}
 	else
@@ -1059,28 +1143,28 @@ pack_t *FS_LoadPackFile (char *packfile)
 	packFile_t		*newfile;
 	int				numpackfiles;
 	pack_t			*pack;
-	FILE			*packhandle;
+	FILE			*packHandle;
 	dPackFile_t		info;
 	void			*memchain;
 
-	packhandle = fopen(packfile, "rb");
-	if (!packhandle)
+	packHandle = fopen(packfile, "rb");
+	if (!packHandle)
 	{
 		Com_WPrintf ("Cannot open packfile %s\n", packfile);
 		return NULL;
 	}
 
-	if (fread (&header, sizeof(header), 1, packhandle) != 1)
+	if (fread (&header, sizeof(header), 1, packHandle) != 1)
 	{
 		Com_WPrintf ("Cannot read packfile %s\n", packfile);
-		fclose (packhandle);
+		fclose (packHandle);
 		return NULL;
 	}
 	if (LittleLong(header.ident) != IDPAKHEADER)
 	{
-		fclose (packhandle);
-		packhandle = ZipOpen (packfile);
-		if (!packhandle)
+		fclose (packHandle);
+		packHandle = Zip_OpenArchive (packfile);
+		if (!packHandle)
 		{
 			Com_WPrintf ("%s is not a packfile\n", packfile);
 			return NULL;
@@ -1102,24 +1186,24 @@ pack_t *FS_LoadPackFile (char *packfile)
 		header.dirofs = LittleLong (header.dirofs);
 		header.dirlen = LittleLong (header.dirlen);
 		numpackfiles = header.dirlen / sizeof(dPackFile_t);
-		if (fseek (packhandle, header.dirofs, SEEK_SET))
+		if (fseek (packHandle, header.dirofs, SEEK_SET))
 			Com_Error (ERR_FATAL, "Cannot seek pakfile %s", packfile);
 		// parse the directory
 		for (i = 0; i < numpackfiles; i++)
 		{
-			fread (&info, sizeof(dPackFile_t), 1, packhandle);
+			fread (&info, sizeof(dPackFile_t), 1, packHandle);
 			newfile = AddPakFile (pack, info.name);
 			newfile->pos = LittleLong(info.filepos);
 			newfile->ucSize = LittleLong(info.filelen);
 			newfile->cSize = newfile->ucSize; // unpacked file
 		}
-		fclose (packhandle);
+		fclose (packHandle);
 	}
 	else
 	{	// load zip file
 		createdPak = pack;
-		ZipEnum (packhandle, EnumZippedPak);
-		ZipClose (packhandle);
+		Zip_EnumArchive (packHandle, EnumZippedPak);
+		Zip_CloseArchive (packHandle);
 	}
 
 	Com_Printf ("Added packfile%s %s (%d files)\n", is_zip_str[pack->isZip], packfile, pack->numFiles);	//?? DPrintf

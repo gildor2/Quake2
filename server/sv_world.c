@@ -22,9 +22,39 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "server.h"
 
 
+/*
+===============================================================================
+
+ENTITY AREA CHECKING
+
+FIXME: this use of "area" is different from the bsp file use
+===============================================================================
+*/
+
+#define EDICT_FROM_AREA(a)		((edict_t*) ( (byte*)a - (int)&((edict_t*)NULL) ->area ) )
+
+typedef struct areanode_s
+{
+	int		axis;				// -1 = leaf node
+	float	dist;
+	struct areanode_s *children[2];
+	struct areanode_s *parent;
+	int		numTrigEdicts;
+	link_t	trigEdicts;
+	int		numSolidEdicts;
+	link_t	solidEdicts;
+} areanode_t;
+
+#define	AREA_DEPTH	6
+#define	AREA_NODES	(1 << (AREA_DEPTH + 1))		// (1<<AREA_DEPTH) for nodes and same count for leafs
+
+static areanode_t areaNodes[AREA_NODES];
+static int		numAreaNodes;					// used only for creation of area tree
+
+
 typedef struct
 {
-	qboolean linked;
+	areanode_t *area;
 	edict_t	*owner;
 	cmodel_t *model;
 	vec3_t	center;
@@ -36,38 +66,10 @@ typedef struct
 static entityHull_t ents[MAX_EDICTS];
 
 
-/*
-===============================================================================
+/*---------------------------------------------------------------*/
 
-ENTITY AREA CHECKING
 
-FIXME: this use of "area" is different from the bsp file use
-===============================================================================
-*/
-
-// (type *)STRUCT_FROM_LINK(link_t *link, type, member)
-// ent = STRUCT_FROM_LINK(link,entity_t,order)
-// FIXME: remove this mess!
-#define	STRUCT_FROM_LINK(l,t,m) ((t *)((byte *)l - (int)&(((t *)0)->m)))
-
-#define	EDICT_FROM_AREA(l) STRUCT_FROM_LINK(l,edict_t,area)
-
-typedef struct areanode_s
-{
-	int		axis;		// -1 = leaf node
-	float	dist;
-	struct areanode_s *children[2];
-	link_t	trigger_edicts;
-	link_t	solid_edicts;
-} areanode_t;
-
-#define	AREA_DEPTH	6
-#define	AREA_NODES	(1 << (AREA_DEPTH + 1))		// (1<<AREA_DEPTH) for nodes and same count for leafs
-
-static areanode_t sv_areanodes[AREA_NODES];
-static int		sv_numareanodes;
-
-static float	*area_mins, *area_maxs;
+static vec3_t	area_mins, area_maxs;
 static edict_t	**area_list;
 static int		area_count, area_maxcount;
 static int		area_type;
@@ -108,10 +110,10 @@ static areanode_t *SV_CreateAreaNode (int depth, vec3_t mins, vec3_t maxs)
 	vec3_t	mins1, maxs1, mins2, maxs2;
 	float	f0, f1, f2;
 
-	anode = &sv_areanodes[sv_numareanodes++];
+	anode = &areaNodes[numAreaNodes++];
 
-	ClearLink (&anode->trigger_edicts);
-	ClearLink (&anode->solid_edicts);
+	ClearLink (&anode->trigEdicts);
+	ClearLink (&anode->solidEdicts);
 
 	if (depth == AREA_DEPTH)
 	{
@@ -142,6 +144,7 @@ static areanode_t *SV_CreateAreaNode (int depth, vec3_t mins, vec3_t maxs)
 
 	anode->children[0] = SV_CreateAreaNode (depth+1, mins2, maxs2);
 	anode->children[1] = SV_CreateAreaNode (depth+1, mins1, maxs1);
+	anode->children[0]->parent = anode->children[1]->parent = anode;	// NULL for root, because of memset(..,0,..)
 
 	return anode;
 }
@@ -154,9 +157,9 @@ SV_ClearWorld
 */
 void SV_ClearWorld (void)
 {
-	memset (sv_areanodes, 0, sizeof(sv_areanodes));
+	memset (areaNodes, 0, sizeof(areaNodes));
 	memset (ents, 0, sizeof(ents));
-	sv_numareanodes = 0;
+	numAreaNodes = 0;
 	if (!sv.models[1])
 		return;			// map is not yet loaded (check [1], not [0] ...)
 	SV_CreateAreaNode (0, sv.models[1]->mins, sv.models[1]->maxs);
@@ -171,11 +174,29 @@ SV_UnlinkEdict
 */
 void SV_UnlinkEdict (edict_t *ent)
 {
-	if (!ent->area.prev)
-		return;		// not linked in anywhere
+	entityHull_t *ex;
+	areanode_t *node;
+
+	if (!ent->area.prev) return;			// not linked
 	RemoveLink (&ent->area);
 	ent->area.prev = ent->area.next = NULL;
-	ents[NUM_FOR_EDICT(ent)].linked = false;
+
+	ex = &ents[NUM_FOR_EDICT(ent)];
+
+	node = ex->area;
+	if (ent->solid == SOLID_TRIGGER)
+		while (node)
+		{
+			node->numTrigEdicts++;
+			node = node->parent;
+		}
+	else
+		while (node)
+		{
+			node->numSolidEdicts++;
+			node = node->parent;
+		}
+	ex->area = NULL;
 }
 
 
@@ -189,7 +210,7 @@ SV_LinkEdict
 
 void SV_LinkEdict (edict_t *ent)
 {
-	areanode_t	*node;
+	areanode_t	*node, *node2;
 	int		leafs[MAX_TOTAL_ENT_LEAFS];
 	int		clusters[MAX_TOTAL_ENT_LEAFS];
 	int		num_leafs;
@@ -216,7 +237,7 @@ void SV_LinkEdict (edict_t *ent)
 	VectorSubtract (ent->maxs, ent->mins, ent->size);
 
 	// encode the size into the entity_state for client prediction
-	if (ent->solid == SOLID_BBOX && !(ent->svflags & SVF_DEADMONSTER))
+	if (ent->solid == SOLID_BBOX)
 	{
 		// assume that x/y are equal and symetric
 		i = Q_ftol ((ent->maxs[0] + 4) / 8);
@@ -228,7 +249,8 @@ void SV_LinkEdict (edict_t *ent)
 		k = Q_ftol ((ent->maxs[2] + 32 + 4) / 8);
 		k = bound(k, 1, 63);
 
-		ent->s.solid = (k<<10) | (j<<5) | i;
+		// if SVF_DEADMONSTER, s.solid should be 0
+		ent->s.solid = (ent->svflags & SVF_DEADMONSTER) ? 0 : (k<<10) | (j<<5) | i;
 
 		i *= 8;
 		j *= 8;
@@ -255,8 +277,6 @@ void SV_LinkEdict (edict_t *ent)
 	}
 	else
 		ent->s.solid = 0;
-
-	ex->linked = true;
 
 	// set the abs box
 	if (ent->solid == SOLID_BSP && (ent->s.angles[0] || ent->s.angles[1] || ent->s.angles[2]))
@@ -349,11 +369,9 @@ void SV_LinkEdict (edict_t *ent)
 		return;
 
 	// find the first node that the ent's box crosses
-	node = sv_areanodes;
-	while (1)
+	node = areaNodes;
+	while (node->axis != -1)
 	{
-		if (node->axis == -1)
-			break;		// inside this node
 		if (ent->absmin[node->axis] > node->dist)
 			node = node->children[0];
 		else if (ent->absmax[node->axis] < node->dist)
@@ -363,10 +381,26 @@ void SV_LinkEdict (edict_t *ent)
 	}
 
 	// link it in
+	node2 = node;
 	if (ent->solid == SOLID_TRIGGER)
-		InsertLinkBefore (&ent->area, &node->trigger_edicts);
+	{
+		InsertLinkBefore (&ent->area, &node->trigEdicts);
+		while (node2)
+		{
+			node2->numTrigEdicts++;
+			node2 = node2->parent;
+		}
+	}
 	else
-		InsertLinkBefore (&ent->area, &node->solid_edicts);
+	{
+		InsertLinkBefore (&ent->area, &node->solidEdicts);
+		while (node2)
+		{
+			node2->numSolidEdicts++;
+			node2 = node2->parent;
+		}
+	}
+	ex->area = node;
 }
 
 
@@ -382,9 +416,15 @@ static void SV_AreaEdicts_r (areanode_t *node)
 
 	// touch linked edicts
 	if (area_type == AREA_SOLID)
-		start = &node->solid_edicts;
+	{
+		if (!node->numSolidEdicts) return;
+		start = &node->solidEdicts;
+	}
 	else
-		start = &node->trigger_edicts;
+	{
+		if (!node->numTrigEdicts) return;
+		start = &node->trigEdicts;
+	}
 
 	for (l = start->next; l != start; l = next)
 	{
@@ -406,31 +446,27 @@ static void SV_AreaEdicts_r (areanode_t *node)
 			return;
 		}
 
-		area_list[area_count] = check;
-		area_count++;
+		area_list[area_count++] = check;
 	}
 
 	if (node->axis == -1)
-		return;		// terminal node
+		return;				// terminal node
 
-	// recurse down both sides
-	if (area_maxs[node->axis] > node->dist)
-		SV_AreaEdicts_r (node->children[0]);
-	if (area_mins[node->axis] < node->dist)
-		SV_AreaEdicts_r (node->children[1]);
+	if (area_maxs[node->axis] > node->dist) SV_AreaEdicts_r (node->children[0]);
+	if (area_mins[node->axis] < node->dist) SV_AreaEdicts_r (node->children[1]);
 }
 
 
 int SV_AreaEdicts (vec3_t mins, vec3_t maxs, edict_t **list, int maxcount, int areatype)
 {
-	area_mins = mins;
-	area_maxs = maxs;
+	VectorCopy (mins, area_mins);
+	VectorCopy (maxs, area_maxs);
 	area_list = list;
 	area_count = 0;
 	area_maxcount = maxcount;
 	area_type = areatype;
 
-	SV_AreaEdicts_r (sv_areanodes);
+	SV_AreaEdicts_r (areaNodes);
 
 	return area_count;
 }

@@ -20,24 +20,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "../qcommon/qcommon.h"
 #include "winquake.h"
-#include <errno.h>
-#include <fcntl.h>
-#include <stdio.h>
 #include <direct.h>
 #include <io.h>
-#include <conio.h>
+
 
 //===============================================================================
-
-#ifdef DYNAMIC_REF
-
-#include "../client/ref.h"
-
-refImport_t ri;
-
-#define Sys_Error(str)	Com_Error(ERR_FATAL, str)
-
-#endif
 
 
 static byte	*membase;
@@ -75,7 +62,8 @@ void *Hunk_Alloc (int size)
 	buf = VirtualAlloc (membase, cursize+size, MEM_COMMIT, PAGE_READWRITE);
 	if (!buf)
 	{
-		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &buf, 0, NULL);
+		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &buf, 0, NULL);
 		Sys_Error ("VirtualAlloc commit failed.");
 	}
 #endif
@@ -103,13 +91,14 @@ int Hunk_End (void)
 
 void Hunk_Free (void *base)
 {
-	if ( base )
+	if (base)
 #ifdef VIRTUAL_ALLOC
 		VirtualFree (base, 0, MEM_RELEASE);
 #else
 		free (base);
 #endif
 }
+
 
 //===============================================================================
 
@@ -120,6 +109,7 @@ Sys_Milliseconds
 ================
 */
 int	curtime;
+
 int Sys_Milliseconds (void)
 {
 	static int		base;
@@ -127,7 +117,7 @@ int Sys_Milliseconds (void)
 
 	if (!initialized)
 	{	// let base retain 16 bits of effectively random data
-		base = timeGetTime() & 0xffff0000;
+		base = timeGetTime() & 0xFFFF0000;
 		initialized = true;
 	}
 	curtime = timeGetTime() - base;
@@ -140,40 +130,29 @@ void Sys_Mkdir (char *path)
 	_mkdir (path);
 }
 
+
 //============================================
 
 static char	findbase[MAX_OSPATH];
 static char	findpath[MAX_OSPATH];
 static int	findhandle;
 
-static qboolean CompareAttributes( unsigned found, unsigned musthave, unsigned canthave )
+static qboolean CompareAttributes (unsigned found, unsigned musthave, unsigned canthave)
 {
-	if ( ( found & _A_RDONLY ) && ( canthave & SFF_RDONLY ) )
-		return false;
-	if ( ( found & _A_HIDDEN ) && ( canthave & SFF_HIDDEN ) )
-		return false;
-	if ( ( found & _A_SYSTEM ) && ( canthave & SFF_SYSTEM ) )
-		return false;
-	if ( ( found & _A_SUBDIR ) && ( canthave & SFF_SUBDIR ) )
-		return false;
-	if ( ( found & _A_ARCH ) && ( canthave & SFF_ARCH ) )
-		return false;
-
-	if ( ( musthave & SFF_RDONLY ) && !( found & _A_RDONLY ) )
-		return false;
-	if ( ( musthave & SFF_HIDDEN ) && !( found & _A_HIDDEN ) )
-		return false;
-	if ( ( musthave & SFF_SYSTEM ) && !( found & _A_SYSTEM ) )
-		return false;
-	if ( ( musthave & SFF_SUBDIR ) && !( found & _A_SUBDIR ) )
-		return false;
-	if ( ( musthave & SFF_ARCH ) && !( found & _A_ARCH ) )
-		return false;
+#define COMP(a1,a2)	\
+	if ((found & a1) && (canthave & a2)) return false;	\
+	if (!(found & a1) && (musthave & a2)) return false;
+	COMP(_A_RDONLY, SFF_RDONLY);
+	COMP(_A_HIDDEN, SFF_HIDDEN);
+	COMP(_A_SYSTEM, SFF_SYSTEM);
+	COMP(_A_SUBDIR, SFF_SUBDIR);
+	COMP(_A_ARCH,   SFF_ARCH);
+#undef COMP
 
 	return true;
 }
 
-char *Sys_FindFirst (char *path, unsigned musthave, unsigned canthave )
+char *Sys_FindFirst (char *path, unsigned musthave, unsigned canthave)
 {
 	struct _finddata_t findinfo;
 
@@ -217,6 +196,3 @@ void Sys_FindClose (void)
 		_findclose (findhandle);
 	findhandle = 0;
 }
-
-
-//============================================

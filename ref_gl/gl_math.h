@@ -16,7 +16,7 @@ extern float atanTable[], atanTable2[];
 #define COS_FUNC(val)				PERIODIC_FUNC(sinTable,val+0.25f)
 
 // WARNING: these functions are not periodic and not clamped; input value should be exactly in [-1..1] range
-// Useg (TABLE_SIZE-0.6f) to avoid [TABLE_SIZE*2] index for 1.0f value, should be [TABLE_SIZE*2-1] (OR: use index clamping ??)
+// Used (TABLE_SIZE-0.51f) to avoid [TABLE_SIZE*2] index for 1.0f value, should be [TABLE_SIZE*2-1] (OR: use index clamping ??)
 #define ASIN_FUNC(val)				asinTable[Q_ftol ((val) * (TABLE_SIZE-0.6f)) + TABLE_SIZE]
 #define ACOS_FUNC(val)				acosTable[Q_ftol ((val) * (TABLE_SIZE-0.6f)) + TABLE_SIZE]
 
@@ -36,9 +36,9 @@ __inline float ATAN2_FUNC(float y, float x)
 	else
 		m = 1;
 	if (val <= 1.0f)
-		val = atanTable[Q_ftol (val * (TABLE_SIZE - 0.5f))];
+		val = atanTable[Q_ftol (val * (TABLE_SIZE - 0.51f))];
 	else
-		val = atanTable2[Q_ftol (1.0f / val * (TABLE_SIZE - 0.5f))];
+		val = atanTable2[Q_ftol (1.0f / val * (TABLE_SIZE - 0.51f))];
 	val *= m;
 	if (x < 0)
 	{
@@ -56,7 +56,7 @@ __inline float ATAN2_FUNC(float y, float x)
 extern float *mathFuncs[];
 
 
-//!! this tables unused now
+//!! these tables are unused now
 extern float sqrtTable[];
 extern int   noiseTablei[];
 extern float noiseTablef[];

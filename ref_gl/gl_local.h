@@ -26,7 +26,7 @@ void	QGL_InitExtensions (void);
 void	QGL_Shutdown (void);
 // logging
 void	QGL_EnableLogging (qboolean enable);
-void	QGL_LogMessage (char *text);
+void	QGL_LogMessage (const char *text);
 #define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
 
 #ifndef APIENTRY
@@ -134,10 +134,10 @@ void GL_ShowImages (void);
 typedef struct
 {
 	//?? NOTE: when changed, need to syncronize with OLD ref_gl
-	char	renderer_string[256];
-	char	vendor_string[256];
-	char	version_string[256];
-	char	extensions_string[8192];	//?? make dynamic
+	char	rendererString[256];
+	char	vendorString[256];
+	char	versionString[256];
+	char	*extensionsString;
 
 	int		maxTextureSize;
 	int		extensionMask;
@@ -641,15 +641,9 @@ void	GLimp_SetGamma (float gamma, float intens);
 
 /*----------------- Cvars -------------------*/
 
-extern cvar_t	*gl_picmip;
-extern cvar_t	*gl_textureBits;
-extern cvar_t	*gl_roundImagesDown;
-extern cvar_t	*gl_texturemode;
+extern cvar_t	*gl_picmip, *gl_textureBits, *gl_roundImagesDown, *gl_texturemode;
 
-extern cvar_t	*r_gamma;
-extern cvar_t	*r_brightness;
-extern cvar_t	*r_contrast;
-extern cvar_t	*r_saturation;
+extern cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
 extern cvar_t	*r_intensity;		//?? remove (or "r_brightness")
 
 extern cvar_t	*gl_overBrightBits;
@@ -685,9 +679,8 @@ extern cvar_t	*r_lightmap;
 extern cvar_t	*gl_showsky;
 extern cvar_t	*r_drawworld;
 extern cvar_t	*r_drawentities;
-extern cvar_t	*gl_showbboxes;
-extern cvar_t	*gl_showtris;
-extern cvar_t	*gl_shownormals;
+
+extern cvar_t	*gl_showbboxes, *gl_showtris, *gl_shownormals;
 extern cvar_t	*gl_lightLines;
 extern cvar_t	*gl_showLights;
 extern cvar_t	*gl_singleShader;

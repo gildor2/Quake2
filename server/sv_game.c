@@ -165,7 +165,7 @@ static void PF_setmodel (edict_t *ent, char *name)
 	cmodel_t	*mod;
 
 	if (!name)
-		Com_Error (ERR_DROP, "PF_setmodel: NULL");
+		Com_Error (ERR_DROP, "PF_setmodel: NULL name");
 
 	i = SV_ModelIndex (name);
 

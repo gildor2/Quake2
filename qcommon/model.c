@@ -654,7 +654,7 @@ static qboolean ProcessEntity ()
 			if (haveModel)
 				flare->model = modelIdx;
 
-			return false;			// flares passed to renderer only
+			if (class[5]) return false;						// flares passed to renderer only (if classname = "light" -> flare+light)
 		}
 
 		/*-------------- light, light_mine -------------*/
@@ -791,7 +791,8 @@ static qboolean ProcessEntity ()
 					testflags = testmask = 0;
 				found = false;
 				for (i = 0, d = bspfile.texinfo; i < bspfile.numTexinfo; i++, d++)
-					if (!strcmp (d->texture, name) && ((d->flags & testmask) == testflags))
+					if (MatchWildcard2 (d->texture, name, true) && ((d->flags & testmask) == testflags))
+//					if (!strcmp (d->texture, name) && ((d->flags & testmask) == testflags))
 					{
 						d->flags = d->flags & ~testmask | flags;
 						found = true;

@@ -296,9 +296,11 @@ LINK32_OBJS= \
 	"$(INTDIR)\gl_image.obj" \
 	"$(INTDIR)\gl_interface.obj" \
 	"$(INTDIR)\gl_light.obj" \
+	"$(INTDIR)\gl_lightmap.obj" \
 	"$(INTDIR)\gl_main.obj" \
 	"$(INTDIR)\gl_math.obj" \
 	"$(INTDIR)\gl_model.obj" \
+	"$(INTDIR)\gl_poly.obj" \
 	"$(INTDIR)\gl_shader.obj" \
 	"$(INTDIR)\gl_sky.obj" \
 	"$(INTDIR)\gl_world.obj" \
@@ -394,9 +396,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\jquant2.obj" \
 	"$(INTDIR)\jutils.obj" \
 	"$(INTDIR)\q2.res" \
-	"$(INTDIR)\resources.obj" \
-	"$(INTDIR)\gl_poly.obj" \
-	"$(INTDIR)\gl_lightmap.obj"
+	"$(INTDIR)\resources.obj"
 
 "$(OUTDIR)\quake2.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -826,9 +826,11 @@ BSC32_SBRS= \
 	"$(INTDIR)\gl_image.sbr" \
 	"$(INTDIR)\gl_interface.sbr" \
 	"$(INTDIR)\gl_light.sbr" \
+	"$(INTDIR)\gl_lightmap.sbr" \
 	"$(INTDIR)\gl_main.sbr" \
 	"$(INTDIR)\gl_math.sbr" \
 	"$(INTDIR)\gl_model.sbr" \
+	"$(INTDIR)\gl_poly.sbr" \
 	"$(INTDIR)\gl_shader.sbr" \
 	"$(INTDIR)\gl_sky.sbr" \
 	"$(INTDIR)\gl_world.sbr" \
@@ -922,9 +924,7 @@ BSC32_SBRS= \
 	"$(INTDIR)\jmemmgr.sbr" \
 	"$(INTDIR)\jquant1.sbr" \
 	"$(INTDIR)\jquant2.sbr" \
-	"$(INTDIR)\jutils.sbr" \
-	"$(INTDIR)\gl_poly.sbr" \
-	"$(INTDIR)\gl_lightmap.sbr"
+	"$(INTDIR)\jutils.sbr"
 
 "$(OUTDIR)\quake2s.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
     $(BSC32) @<<
@@ -988,9 +988,11 @@ LINK32_OBJS= \
 	"$(INTDIR)\gl_image.obj" \
 	"$(INTDIR)\gl_interface.obj" \
 	"$(INTDIR)\gl_light.obj" \
+	"$(INTDIR)\gl_lightmap.obj" \
 	"$(INTDIR)\gl_main.obj" \
 	"$(INTDIR)\gl_math.obj" \
 	"$(INTDIR)\gl_model.obj" \
+	"$(INTDIR)\gl_poly.obj" \
 	"$(INTDIR)\gl_shader.obj" \
 	"$(INTDIR)\gl_sky.obj" \
 	"$(INTDIR)\gl_world.obj" \
@@ -1094,9 +1096,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\r_scana.obj" \
 	"$(INTDIR)\r_spr8.obj" \
 	"$(INTDIR)\r_surf8.obj" \
-	"$(INTDIR)\r_varsa.obj" \
-	"$(INTDIR)\gl_poly.obj" \
-	"$(INTDIR)\gl_lightmap.obj"
+	"$(INTDIR)\r_varsa.obj"
 
 "$(OUTDIR)\quake2.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<

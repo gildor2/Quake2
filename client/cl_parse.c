@@ -50,7 +50,7 @@ char *svc_strings[256] =
 
 //=============================================================================
 
-void CL_DownloadFileName(char *dest, int destlen, char *fn)
+void CL_DownloadFileName(char *dest, int destlen, char *fn)	//??
 {
 	if (strncmp(fn, "players", 7) == 0)
 		Com_sprintf (dest, destlen, "%s/%s", BASEDIRNAME, fn);
@@ -350,13 +350,12 @@ void CL_ParseServerData (void)
 	int		i;
 
 	Com_DPrintf ("Serverdata packet received.\n");
-//
-// wipe the client_state_t struct
-//
+
+	// wipe the client_state_t struct
 	CL_ClearState ();
 	cls.state = ca_connected;
 
-// parse protocol version number
+	// parse protocol version number
 	i = MSG_ReadLong (&net_message);
 	cls.serverProtocol = i;
 
@@ -373,10 +372,7 @@ void CL_ParseServerData (void)
 	// game directory
 	str = MSG_ReadString (&net_message);
 	strncpy (cl.gamedir, str, sizeof(cl.gamedir)-1);
-
-	// set gamedir
-	if ((*str && (!fs_gamedirvar->string || !*fs_gamedirvar->string || strcmp(fs_gamedirvar->string, str))) || (!*str && (fs_gamedirvar->string || *fs_gamedirvar->string)))
-		Cvar_Set("game", str);
+	Cvar_Set ("game", str);
 
 	// parse player entity number
 	cl.playernum = MSG_ReadShort (&net_message);
@@ -406,10 +402,8 @@ CL_ParseBaseline
 */
 void CL_ParseBaseline (void)
 {
-	entityState_t	*es;
-	int				bits;
-	int				newnum;
-	entityState_t	nullstate;
+	int		bits, newnum;
+	entityState_t *es, nullstate;
 
 	memset (&nullstate, 0, sizeof(nullstate));
 
@@ -427,17 +421,14 @@ CL_LoadClientinfo
 */
 void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 {
-	int i;
-	char		*t;
-	char		model_name[MAX_QPATH];
-	char		skin_name[MAX_QPATH];
+	int		i;
+	char	*t, model_name[MAX_QPATH], skin_name[MAX_QPATH];
 
 	strncpy (ci->cinfo, s, sizeof(ci->cinfo));
 	ci->cinfo[sizeof(ci->cinfo)-1] = 0;
 
 	// isolate the player's name
-	strncpy (ci->name, s, sizeof(ci->name));
-	ci->name[sizeof(ci->name)-1] = 0;
+	Q_strncpyz (ci->name, s, sizeof(ci->name));
 	t = strchr (s, '\\');
 	if (t)
 	{
@@ -524,7 +515,6 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 		ci->icon = NULL;
 		ci->model = NULL;
 		ci->weaponmodel[0] = NULL;
-		return;
 	}
 }
 
@@ -537,14 +527,7 @@ Load the skin, icon, and model for a client
 */
 void CL_ParseClientinfo (int player)
 {
-	char			*s;
-	clientinfo_t	*ci;
-
-	s = cl.configstrings[player+CS_PLAYERSKINS];
-
-	ci = &cl.clientinfo[player];
-
-	CL_LoadClientinfo (ci, s);
+	CL_LoadClientinfo (&cl.clientinfo[player], cl.configstrings[player+CS_PLAYERSKINS]);
 }
 
 
