@@ -593,7 +593,7 @@ static void M_UnbindCommand (char *command)
 	numKeys = Key_FindBinding (command, ARRAY_ARG(keys));
 	for (i = 0; i < numKeys; i++)
 	{
-		Key_SetBinding (keys[i], "");
+		Key_SetBinding (keys[i], NULL);
 //		Com_DPrintf ("unbind %s\n",Key_KeynumToString(keys[i]));
 	}
 }
@@ -747,7 +747,8 @@ static const char *Keys_MenuKey (int key)
 	if (cls.key_dest == key_bindingMenu)
 	{
 		if (key != K_ESCAPE && key != '`')
-			Cbuf_InsertText (va("bind %s %s\n", Key_KeynumToString(key), COM_QuoteString (bindnames[item->generic.localdata[0]][0], true)));
+			Key_SetBinding (key, COM_QuoteString (bindnames[item->generic.localdata[0]][0], true));
+//			Cbuf_InsertText (va("bind %s %s\n", Key_KeynumToString(key), COM_QuoteString (bindnames[item->generic.localdata[0]][0], true)));
 
 		Menu_SetStatusBar (&s_keys_menu, "enter to change, backspace to clear");
 		cls.key_dest = key_menu;		// unhook keyboard
@@ -994,13 +995,10 @@ static void Options_MenuInit( void )
 	y = 0;
 
 	MENU_SLIDER(s_options_sfxvolume_slider,y,"effects volume",UpdateVolumeFunc,0,10)
-//	s_options_sfxvolume_slider.curvalue = Cvar_VariableValue ("s_volume") * 10;
 	MENU_SPIN(s_options_cdvolume_box,y+=10,"CD music",UpdateCDVolumeFunc,cd_music_items)
-//	s_options_cdvolume_box.curvalue = !Cvar_VariableInt ("cd_nocd");
 	MENU_SPIN(s_options_s_khz,y+=10,"sound quality",UpdateSoundFunc,s_khz_items)
 	MENU_SPIN(s_options_s_8bit,y+=10,"8 bit sound",UpdateSoundFunc,yesno_names)
 	MENU_SPIN(s_options_s_reverse,y+=10,"reverse stereo",UpdateSoundFunc,yesno_names)
-//	s_options_quality_list.curvalue = !Cvar_VariableInt ("s_loadas8bit");
 	MENU_SPIN(s_options_compatibility_list,y+=10,"sound compatibility",UpdateSoundFunc,compatibility_items)
 	s_options_compatibility_list.curvalue = Cvar_VariableInt ("s_primary");
 	y += 10;
@@ -1609,37 +1607,37 @@ static void SearchLocalGames (void)
 
 static void JoinServer_MenuInit( void )
 {
-	int i;
+	int		i, y;
 
 	s_joinserver_menu.x = viddef.width * 0.50 - 120;
 	s_joinserver_menu.nitems = 0;
 
-	MENU_ACTION(s_joinserver_address_book_action,0,"address book",M_Menu_AddressBook_f)
-	s_joinserver_address_book_action.generic.flags	= QMF_LEFT_JUSTIFY;
-
-	MENU_ACTION(s_joinserver_search_action,10,"search for servers",SearchLocalGames)
-	s_joinserver_search_action.generic.flags	= QMF_LEFT_JUSTIFY;
-	s_joinserver_search_action.generic.statusbar = "search for servers";
-
 	s_joinserver_server_title.generic.type = MTYPE_SEPARATOR;
 	s_joinserver_server_title.generic.name = "connect to...";
 	s_joinserver_server_title.generic.x    = 80;
-	s_joinserver_server_title.generic.y	   = 30;
+	s_joinserver_server_title.generic.y	   = 0;
 
+	y = 0;
 	for (i = 0; i < MAX_LOCAL_SERVERS; i++)
 	{
 		strcpy (local_server_names[i], NO_SERVER_STRING);
-		MENU_ACTION(s_joinserver_server_actions[i],40+i*10,local_server_names[i],JoinServerFunc)
+		MENU_ACTION(s_joinserver_server_actions[i],y+=10,local_server_names[i],JoinServerFunc)
 		s_joinserver_server_actions[i].generic.flags	= QMF_LEFT_JUSTIFY;
 		s_joinserver_server_actions[i].generic.statusbar = "press ENTER to connect";
 	}
+	MENU_ACTION(s_joinserver_address_book_action,y+=20,"address book",M_Menu_AddressBook_f)
+	s_joinserver_address_book_action.generic.flags	= QMF_LEFT_JUSTIFY;
 
-	Menu_AddItem (&s_joinserver_menu, &s_joinserver_address_book_action);
-	Menu_AddItem (&s_joinserver_menu, &s_joinserver_server_title);
-	Menu_AddItem (&s_joinserver_menu, &s_joinserver_search_action);
+	MENU_ACTION(s_joinserver_search_action,y+=10,"search for servers",SearchLocalGames)
+	s_joinserver_search_action.generic.flags	= QMF_LEFT_JUSTIFY;
+	s_joinserver_search_action.generic.statusbar = "search for servers";
+
 
 	for (i = 0; i < 8; i++)
 		Menu_AddItem( &s_joinserver_menu, &s_joinserver_server_actions[i] );
+	Menu_AddItem (&s_joinserver_menu, &s_joinserver_server_title);
+	Menu_AddItem (&s_joinserver_menu, &s_joinserver_address_book_action);
+	Menu_AddItem (&s_joinserver_menu, &s_joinserver_search_action);
 
 	Menu_Center( &s_joinserver_menu );
 

@@ -48,8 +48,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../client/ref.h"
 
 
-qboolean QGL_Init (const char *dllname);
+bool	QGL_Init (const char *libName);
 void	QGL_InitExtensions (void);
+void	QGL_PrintExtensionsString (const char *label, const char *str);
 void	QGL_Shutdown (void);
 // logging
 void	QGL_EnableLogging (qboolean enable);
@@ -508,10 +509,11 @@ typedef struct
 	char	rendererString[256];
 	char	vendorString[256];
 	char	versionString[256];
-	char	*extensionsString;
 
 	int		maxTextureSize;
 	int		extensionMask;
+	unsigned disabledExt, ignoredExt; // extensions, disabled by user + covered by a different extension; for gfxinfo()
+	const char	*extensions, *extensions2;
 
 	// multitexturing
 //	int		maxActiveTextures;		// == 1 if no multitexturing

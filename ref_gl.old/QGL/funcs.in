@@ -376,44 +376,11 @@ void ActiveTextureARB (GLenum texture) ARGS
 //void ClientActiveTextureARB (GLenum texture) ARGS
 void MultiTexCoord2fARB (GLenum target, GLfloat s, GLfloat t) ARGS
 
-// ?? alias ARB
-//#name GL_EXT_texture_env_add
-//#cvar gl_ext_texture_env_add
-//#prefer GL_ARB_texture_env_add
-
-//#name GL_ARB_texture_env_add
-//#cvar gl_ext_texture_env_add
-
-//#name GL_EXT_texture_env_combine
-//#cvar gl_ext_texture_env_combine
-//#require GL_ARB_multitexture
-//#prefer GL_ARB_texture_env_combine
-//#prefer GL_NV_texture_env_combine4
-
-//#name GL_ARB_texture_env_combine
-//#cvar gl_ext_texture_env_combine
-//#require GL_ARB_multitexture
-//#prefer GL_NV_texture_env_combine4
-
-//#name GL_NV_texture_env_combine4
-//#cvar gl_ext_texture_env_combine_nv
-//#require GL_ARB_multitexture
-
-//#name GL_S3_s3tc
-//#cvar gl_ext_compressed_textures
-//#prefer GL_ARB_texture_compression
-
-//#name GL_ARB_texture_compression
-//#cvar gl_ext_compressed_textures
-
 #name GL_EXT_compiled_vertex_array
 //alias: GL_SGI_compiled_vertex_array (with slightly different func names) ??
 #cvar gl_ext_compiled_vertex_array
 void LockArraysEXT (GLint first, GLint count) ARGS
 void UnlockArraysEXT (void);
-
-//#name GL_NV_fog_distance
-//#cvar gl_ext_fog_distance_nv
 
 #platform win32
 

@@ -261,6 +261,7 @@ Network
   - customised rail trail
   * side effect: demos will crush server, when played with original Quake2; to record compatible demos, just
     use cl_extprotocol=0 or sv_extprotocol=0
+  - faster downloading speed (10 times)
 
 
 ?????????

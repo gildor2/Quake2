@@ -41,6 +41,9 @@ model_t	mod_inline[MAX_MOD_KNOWN];
 
 int		registration_sequence;
 
+#define NUMVERTEXNORMALS	162
+
+
 /*
 ===============
 Mod_PointInLeaf
@@ -1403,6 +1406,9 @@ void Mod_LoadAliasModel (model_t *mod, void *buffer)
 		// verts are all 8 bit, so no swapping needed
 		memcpy (poutframe->verts, pinframe->verts,
 			pheader->numXyz*sizeof(dTriVertx_t));
+		// force lightnormalindex to be in a range 0..NUMVERTEXNORMALS-1
+		for (j = 0; j < pheader->numXyz; j++)
+			poutframe->verts[j].lightnormalindex = bound(poutframe->verts[j].lightnormalindex, 0, NUMVERTEXNORMALS-1);
 	}
 
 	mod->type = mod_alias;

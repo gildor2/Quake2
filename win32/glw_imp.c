@@ -620,7 +620,7 @@ void GLimp_Shutdown (void)
 
 	if (gl_config.fullscreen)
 	{
-		if (!strlen (vid_ref->string))
+		if (!vid_ref->string[0])
 			ChangeDisplaySettings (NULL, 0);
 		gl_config.fullscreen = false;
 	}

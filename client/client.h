@@ -339,8 +339,7 @@ extern	netadr_t	net_from;
 extern	sizebuf_t	net_message;
 
 // Draw colorized strings
-void	DrawStringCommon (int x, int y, const char *s);				// draw in any mode (used by menus/console)
-void	DrawString (int x, int y, const char *s);					// draw in 2d-enabled mode only (used for HUD)
+void	DrawString (int x, int y, const char *s);				// draw string; used by menus/console
 qboolean CL_CheckOrDownloadFile (char *filename);
 
 void	CL_AddNetgraph (void);

@@ -29,20 +29,29 @@ Com_Printf redirection
 =============================================================================
 */
 
-char sv_outputbuf[SV_OUTPUTBUF_LENGTH];
+#define	SV_OUTPUTBUF_LENGTH	(MAX_MSGLEN - 16)
+static char sv_outputbuf[SV_OUTPUTBUF_LENGTH];
 
-void SV_FlushRedirect (int sv_redirected, char *outputbuf)
+static void SV_FlushRedirect (char *outputbuf)
 {
-	if (sv_redirected == RD_PACKET)
-	{
-		Netchan_OutOfBandPrint (NS_SERVER, net_from, "print\n%s", outputbuf);
-	}
-	else if (sv_redirected == RD_CLIENT)
-	{
-		MSG_WriteByte (&sv_client->netchan.message, svc_print);
-		MSG_WriteByte (&sv_client->netchan.message, PRINT_HIGH);
-		MSG_WriteString (&sv_client->netchan.message, outputbuf);
-	}
+	guard(SV_FlushRedirect);
+
+	// if server will be restarted during active redirection, drop data
+	// (NOTE: we cannot call Com_EndRedirect(), because this will recurse flush())
+	if (!sv_client->netchan.message.maxsize)
+		return;
+	// send redirected text
+	MSG_WriteByte (&sv_client->netchan.message, svc_print);
+	MSG_WriteByte (&sv_client->netchan.message, PRINT_HIGH);
+	MSG_WriteString (&sv_client->netchan.message, outputbuf);
+
+	unguard;
+}
+
+
+void SV_BeginRedirect (void)
+{
+	Com_BeginRedirect (sv_outputbuf, SV_OUTPUTBUF_LENGTH, SV_FlushRedirect);
 }
 
 

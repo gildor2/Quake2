@@ -1527,8 +1527,6 @@ static void FS_UnloadPak_f (void)
 /*
 ================
 FS_Link_f
-
-Creates a fileLink_t
 ================
 */
 static void FS_Link_f (void)
@@ -1548,7 +1546,7 @@ static void FS_Link_f (void)
 		if (!strcmp (l->from, Cmd_Argv(1)))
 		{
 			Z_Free (l->to);
-			if (!strlen(Cmd_Argv(2)))
+			if (!Cmd_Argv(2)[0])	// <to> is ""
 			{	// delete it
 				*prev = l->next;
 				Z_Free (l->from);
@@ -1566,7 +1564,7 @@ static void FS_Link_f (void)
 	l->next = fs_links;
 	fs_links = l;
 	l->from = CopyString(Cmd_Argv(1));
-	l->fromlength = strlen(l->from);
+	l->fromlength = strlen (l->from);
 	l->to = CopyString(Cmd_Argv(2));
 }
 

@@ -103,7 +103,8 @@ void CL_DrawInventory (void)
 	for (i=top ; i<num && i < top+DISPLAY_ITEMS ; i++)
 	{
 		int		key;
-		char	binding[256], *keyName;
+		char	binding[256];
+		const char *keyName;
 
 		item = index[i];
 		Com_sprintf (ARRAY_ARG(binding), "use %s", cl.configstrings[CS_ITEMS+item]);

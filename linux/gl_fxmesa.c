@@ -57,8 +57,6 @@ static qboolean GLimp_SwitchFullscreen( int width, int height );
 qboolean GLimp_InitGL (void);
 
 extern cvar_t *r_fullscreen;
-extern cvar_t *vid_ref;
-
 static fxMesaContext fc = NULL;
 
 #define NUM_RESOLUTIONS 16

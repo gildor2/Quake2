@@ -95,7 +95,11 @@ sub const {
 	@consts = split (' ', $args);
 	for $str (@consts)
 	{
-		printf (CODE "\tcase GL_%s:\n\t\treturn \"%s\";\n", $str, $str);
+		print (CODE <<EOF
+	case GL_$str:
+		return "$str";
+EOF
+		);
 	}
 }
 
@@ -137,26 +141,22 @@ sub EmitPlatformCODE_EXT {
 }
 
 sub EmitStruc {
-	printf (HDR "\t\t%s\t(APIENTRY * %s) (%s);\n", $type, $func, $args);
+	print (HDR <<EOF
+		$type	(APIENTRY * $func) ($args);
+EOF
+	);
 }
 
 sub EmitDefine {
-	printf (HDR "#define q%s%s\t%s.%s\n", $platform ? "" : "gl", $func, $strucname, $func);
+	print (HDR <<EOF
+#define $funcname	$strucname.$func
+EOF
+	);
 }
 
 sub EmitString {
-	my $str;
-
 	print (CODE ",") if $num > 0;
-	if ($end =~ /NAME/)
-	{
-		($str) = $end =~ / .* NAME \s+ (\w+)/x;
-	}
-	else
-	{
-		$str = $func;
-	}
-	printf (CODE "\n\t\"%s%s\"", $platform ? "" : "gl", $str);
+	printf (CODE "\n\t\"%s\"", $funcname);
 }
 
 sub EmitLogInit {
@@ -168,7 +168,11 @@ sub EmitLogDecl {
 	my ($s, $i);
 	my (@atype, @parm, @arr);
 
-	printf (CODE "static %s APIENTRY log%s (%s)\n{\n", $type, $func, $args);
+	print (CODE <<EOF
+static $type APIENTRY log$func ($args)
+{
+EOF
+	);
 	if ($end ne "")
 	{
 		# separating arguments
@@ -210,39 +214,32 @@ sub EmitLogDecl {
 				print (CODE $fmt);
 				$i++;
 			}
-			printf (CODE ")\\n\", \"%s%s\"", $platform ? "" : "gl", $func);
+			print (CODE ")\\n\", \"$funcname\"");
 			$i = 0;
 			for $s (@parm)
 			{
 				if ($atype[$i] =~ /\w*(enum)/) {
-					printf (CODE ", EnumName(%s)", $s);
+					print (CODE ", EnumName($s)");
 				} else {
-	                printf (CODE ", %s", $s);
+	                print (CODE ", $s");
 				}
                 $i++;
 			}
 			print (CODE ");\n");
-		}
-		elsif ($end =~ /;/)
-		{
+		} elsif ($end =~ /;/) {
 			#................... log function name only ..........................
-			print (CODE "\t$log\"%s\\n\", \"", $platform ? "" : "gl", $func, "\");\n");	# make fprintf(..., "%s", "glFunction\n");
-		}
-		elsif ($end !~ /NAME/)
-		{
+			print (CODE "\t$log\"%s\\n\", \"", $funcname, "\");\n");	# make fprintf(..., "%s", "glFunction\n");
+		} elsif ($end !~ /NAME/) {
 			die "Invalid token: \"", $end, "\"";
 		}
 
 		# generate call to a library function
-		if ($type !~ /\w*void$/)		# may be GLvoid
-		{
+		if ($type !~ /\w*void$/) {		# may be GLvoid
 			print (CODE "\treturn ");
-		}
-		else
-		{
+		} else {
 			print (CODE "\t");
 		}
-		printf (CODE "lib.%s (", $func);
+		print (CODE "lib.$func (");
 		# make arguments for call
 		$i = 0;
 		for $s (@parm)
@@ -265,11 +262,15 @@ sub EmitExtensionHDR {
 }
 
 sub EmitExtensionCODE {
-	my $numFuncs;
+	my ($numFuncs, $alias);
 
 	print (CODE ",\n") if $numExtensions[0] > 1 || $platform > 0;
 	# name
-	printf (CODE "\t{\"%s\", ", $extName);
+	printf (CODE "\t{\"%s\\0\"", $extName);
+	foreach $alias (@aliases) {
+		printf (CODE " \"%s\\0\"", $alias);
+	}
+	print (CODE ", NULL, ");
 	# cvar
 	if ($extCvar ne "") {
 		printf (CODE "\"%s\", ", $extCvar);
@@ -361,10 +362,17 @@ sub Parse {
 			CloseExtension ();
 			$numExtensions[$platform]++;
 			$extName = $cmda;
+			@aliases = ();
 			$extCvar = "";			# undefine cvar
 			$firstExtFunc = $numExt[$platform];
 			$prefer = "0";
 			$require = "0";
+		} elsif ($cmd eq "alias") {
+			ExtNameRequired ($cmd);
+			# alternative ways to add $cmda to array @aliases:
+#			@aliases = (@aliases, $cmda);	#1
+#			$aliases[++$#aliases] = $cmda;	#2
+			push @aliases, $cmda;			#3
 		} elsif ($cmd eq "cvar") {
 			ExtNameRequired ($cmd);
 			$extCvar = $cmda;
@@ -380,6 +388,17 @@ sub Parse {
 			#.......... function declaration .............
 			($type, $func, $args, $end) = $line =~ / \s* (\S+ .* [\*\s]) (\w+) \s+ \( (.*) \) \s* (\S*.*) /x;
 			($type) = $type =~ /\s*(\S.*\S)\s*/;	# truncate leading and trailing spaces
+			if ($end =~ /NAME/) {
+				($funcname) = $end =~ / .* NAME \s+ (\w+)/x;
+			}
+			else {
+				if ($platform == 0) {
+					$funcname = "gl".$func if $platform == 0;
+				} else {
+					$funcname = $func;
+					($func) = $func =~ / [a-z]* ([A-Z]\w+) /x;
+				}
+			}
 
 			&$subBegin () if defined $subBegin;
 			if ($isExt) {
@@ -419,11 +438,25 @@ for $ct (@numBase)
 #	Creating header part
 #------------------------------------------------------------------------------
 
-print (HDR "typedef void (APIENTRY * dummyFunc_t) (void);\n\n");
-print (HDR "typedef union\n{\n\tstruct {\n");
+print (HDR <<EOF
+typedef void (APIENTRY * dummyFunc_t) (void);
+
+typedef union
+{
+	struct {
+EOF
+);
 Parse ("EmitStruc", "EmitPlatformHDR");
-printf (HDR "\t};\n\tdummyFunc_t funcs[1];\n} %s_t;\n\n", $strucname);
-printf (HDR "extern %s_t $strucname;\n\n", $strucname);
+printf (HDR <<EOF
+	};
+	dummyFunc_t funcs[1];
+} %s_t;
+
+extern %s_t %s;
+
+
+EOF
+, $strucname, $strucname, $strucname);
 
 Parse ("EmitDefine", "EmitPlatformHDR");
 
@@ -435,14 +468,32 @@ Parse ("EmitDefine", "EmitPlatformHDR");
 $i = 1;
 while ($i <= $#numBase)
 {
-	print (CODE "#ifdef ", PlatformDefine ($i), "\n");
-	printf (CODE "#  define %s\t%d\n", $constname, $numBase[0] + $numBase[$i]);
-	printf (CODE "#  define %s\t%d\n", $constname2, $numExt[0] + $numExt[$i]);
-	printf (CODE "#  define %s\t%d\n", $constname3, $numExtensions[0] + $numExtensions[$i]);
-	print (CODE "#endif\n\n");
+	if ($i == 1) {
+		print (CODE "#if defined(", PlatformDefine ($i), ")\n");
+	} else {
+		print (CODE "#elif defined(", PlatformDefine ($i), ")\n");
+	}
+	printf (CODE <<EOF
+#	define $constname	%d
+#	define $constname2	%d
+#	define $constname3	%d
+EOF
+	, $numBase[0] + $numBase[$i], $numExt[0] + $numExt[$i], $numExtensions[0] + $numExtensions[$i]);
 	$i++;
 }
-printf (CODE "static char *%sNames[%s + %s] = {", $strucname, $constname, $constname2);
+
+print (CODE <<EOF
+#else
+#	define $constname	$numBase[0]
+#	define $constname2	$numExt[0]
+#	define $constname3	$numExtensions[0]
+#endif
+
+
+EOF
+);
+
+printf (CODE "static const char *%sNames[%s + %s] = {", $strucname, $constname, $constname2);
 Parse ("EmitString", "EmitPlatformCODE2");
 print (CODE "\n};\n\n");
 
@@ -450,20 +501,30 @@ print (CODE "\n};\n\n");
 #	Create EnumName ()
 #------------------------------------------------------------------------------
 
-print (CODE "static char *EnumName (GLenum v)\n{\n\tswitch (v)\n\t{\n");
+print (CODE <<EOF
+static const char *EnumName (GLenum v)
+{
+	switch (v)
+	{
+EOF
+);
 
 open (IN, $constfile) || die "Input file ", $infile, " not found";
-
 while (getline ())
 {
 	const ($line);
 }
-
-
-
 close (IN);
 
-print (CODE "\tdefault:\n\t\treturn \"???\";\n\t}\n}\n\n");
+print (CODE <<EOF
+	default:
+		return "???";
+	}
+}
+
+
+EOF
+);
 
 #------------------------------------------------------------------------------
 #	Create log functions
@@ -471,7 +532,7 @@ print (CODE "\tdefault:\n\t\treturn \"???\";\n\t}\n}\n\n");
 
 Parse ("EmitLogDecl", "EmitPlatformCODE");
 
-printf (CODE "static %s_t logFuncs = {", $strucname);
+printf (CODE "static const %s_t logFuncs = {", $strucname);
 Parse ("EmitLogInit", "EmitPlatformCODE2");
 print (CODE "\n};\n\n");
 
@@ -480,7 +541,16 @@ print (CODE "\n};\n\n");
 #	Extensions suport
 #------------------------------------------------------------------------------
 
-print (CODE "typedef struct {\n\tchar\t*name;\n\tchar\t*cvar;\n\tshort\tfirst, count;\n\tunsigned require, deprecate;\n} ");
+print (CODE <<EOF
+typedef struct {
+	const char *names;				// "alias1\\0alias2\\0...\\0" or "name\\0\\0"
+	const char *name;				// current name (points to a primary name or to any alias)
+	const char *cvar;				// name of cvar to disable extension
+	short	first, count;			// positions of provided functions in name table
+	unsigned require, deprecate;	// dependent extensions
+}
+EOF
+);
 print (CODE $extArrName, "_t;\n\n");
 
 printf (CODE "static %s_t %s[%s] = {\n", $extArrName, $extArrName, $constname3);

@@ -39,9 +39,9 @@ void DrawColoredText (int x, int y, char *text, unsigned rgba)
 
 	if (!text || !*text) return;	// nothing to out
 	GL_Bind (draw_chars->texnum);
-	qglColor4ubv ((byte*)&rgba);	// make colored chars
+	glColor4ubv ((byte*)&rgba);	// make colored chars
 	GL_TexEnv(GL_MODULATE);
-	qglBegin (GL_QUADS);
+	glBegin (GL_QUADS);
 
 	size = 0.0625;
 
@@ -50,19 +50,19 @@ void DrawColoredText (int x, int y, char *text, unsigned rgba)
 		frow = (c >> 4) * 0.0625;
 		fcol = (c & 15) * 0.0625;
 
-		qglTexCoord2f (fcol, frow);
-		qglVertex2f (x, y);
-		qglTexCoord2f (fcol + size, frow);
-		qglVertex2f (x+CHARSIZE_X, y);
-		qglTexCoord2f (fcol + size, frow + size);
-		qglVertex2f (x+CHARSIZE_X, y+CHARSIZE_Y);
-		qglTexCoord2f (fcol, frow + size);
-		qglVertex2f (x, y+CHARSIZE_Y);
+		glTexCoord2f (fcol, frow);
+		glVertex2f (x, y);
+		glTexCoord2f (fcol + size, frow);
+		glVertex2f (x+CHARSIZE_X, y);
+		glTexCoord2f (fcol + size, frow + size);
+		glVertex2f (x+CHARSIZE_X, y+CHARSIZE_Y);
+		glTexCoord2f (fcol, frow + size);
+		glVertex2f (x, y+CHARSIZE_Y);
 		x += CHARSIZE_X;
 	}
-	qglEnd ();
+	glEnd ();
 	GL_TexEnv(GL_REPLACE);
-	qglColor3f (1, 1, 1);
+	glColor3f (1, 1, 1);
 }
 
 

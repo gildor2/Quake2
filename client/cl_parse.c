@@ -50,9 +50,9 @@ char *svc_strings[256] =
 
 //=============================================================================
 
-void CL_DownloadFileName(char *dest, int destlen, char *fn)	//??
+static void DownloadFileName (char *dest, int destlen, char *fn)	//?? players - from baseq2 only ??
 {
-	if (strncmp(fn, "players", 7) == 0)
+	if (strncmp (fn, "players", 7) == 0)
 		Com_sprintf (dest, destlen, "%s/%s", BASEDIRNAME, fn);
 	else
 		Com_sprintf (dest, destlen, "%s/%s", FS_Gamedir(), fn);
@@ -144,7 +144,7 @@ qboolean CL_CheckOrDownloadFile (char *filename)
 //ZOID
 	// check to see if we already have a tmp for this file, if so, try to resume
 	// open the file if not opened yet
-	CL_DownloadFileName (name, sizeof(name), cls.downloadtempname);
+	DownloadFileName (name, sizeof(name), cls.downloadtempname);
 
 //	FS_CreatePath (name);
 
@@ -279,7 +279,7 @@ void CL_ParseDownload (void)
 	// open the file if not opened yet
 	if (!cls.download)
 	{
-		CL_DownloadFileName(name, sizeof(name), cls.downloadtempname);
+		DownloadFileName (name, sizeof(name), cls.downloadtempname);
 
 		FS_CreatePath (name);
 
@@ -323,8 +323,8 @@ void CL_ParseDownload (void)
 		fclose (cls.download);
 
 		// rename the temp file to it's final name
-		CL_DownloadFileName(oldn, sizeof(oldn), cls.downloadtempname);
-		CL_DownloadFileName(newn, sizeof(newn), cls.downloadname);
+		DownloadFileName (oldn, sizeof(oldn), cls.downloadtempname);
+		DownloadFileName (newn, sizeof(newn), cls.downloadname);
 		r = rename (oldn, newn);
 		if (r)
 			Com_WPrintf ("failed to rename.\n");

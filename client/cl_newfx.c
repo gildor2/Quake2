@@ -21,8 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "client.h"
 
-extern cvar_t		*vid_ref;
-
 /*
 ======
 vectoangles2 - this is duplicated in the game DLL, but I need it here.

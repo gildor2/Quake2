@@ -53,17 +53,15 @@ CLIENT / SERVER interactions
 ============================================================================
 */
 
-static int	rd_target;
 static char	*rd_buffer;
 static int	rd_buffersize;
-static void	(*rd_flush)(int target, char *buffer);
+static void	(*rd_flush)(char *buffer);
 
 
-void Com_BeginRedirect (int target, char *buffer, int buffersize, void (*flush))
+void Com_BeginRedirect (char *buffer, int buffersize, void (*flush))
 {
-	if (!target || !buffer || !buffersize || !flush)
+	if (!buffer || !buffersize || !flush)
 		return;
-	rd_target = target;
 	rd_buffer = buffer;
 	rd_buffersize = buffersize;
 	rd_flush = flush;
@@ -73,9 +71,8 @@ void Com_BeginRedirect (int target, char *buffer, int buffersize, void (*flush))
 
 void Com_EndRedirect (void)
 {
-	rd_flush(rd_target, rd_buffer);
+	rd_flush (rd_buffer);
 
-	rd_target = 0;
 	rd_buffer = NULL;
 	rd_buffersize = 0;
 	rd_flush = NULL;
@@ -125,11 +122,11 @@ void Com_Printf (const char *fmt, ...)
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
 
-	if (rd_target)
+	if (rd_buffer)
 	{
 		if ((strlen (msg) + strlen(rd_buffer)) > rd_buffersize - 1)
 		{
-			rd_flush (rd_target, rd_buffer);
+			rd_flush (rd_buffer);
 			*rd_buffer = 0;
 		}
 		strcat (rd_buffer, msg);
@@ -1215,7 +1212,7 @@ void *SZ_GetSpace (sizebuf_t *buf, int length)
 	if (need > buf->maxsize)
 	{
 		if (!buf->allowoverflow)
-			Com_FatalError ("SZ_GetSpace: overflow without allowoverflow set");
+			Com_FatalError ("SZ_GetSpace: overflow without allowoverflow (size is %d)", buf->maxsize);
 
 		if (length > buf->maxsize)
 			Com_FatalError ("SZ_GetSpace: %d is > full buffer size", length);

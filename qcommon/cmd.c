@@ -1,7 +1,5 @@
 #include "qcommon.h"
 
-void Cmd_ForwardToServer (void);
-
 
 static int cmdWait;
 
@@ -217,7 +215,9 @@ void Cbuf_Execute (void)
 		}
 
 		// execute the command line
-		Cmd_ExecuteString (line);
+		if (!Cmd_ExecuteString (line))
+			// send it as a server command if we are connected
+			Cmd_ForwardToServer ();
 	}
 }
 
@@ -634,7 +634,7 @@ void Cmd_RemoveCommand (const char *cmd_name)
 Cmd_ExecuteString
 ============
 */
-void Cmd_ExecuteString (char *text)
+bool Cmd_ExecuteString (char *text)
 {
 	cmdFunc_t	*cmd;
 	cmdAlias_t	*a;
@@ -645,7 +645,7 @@ void Cmd_ExecuteString (char *text)
 
 	// execute the command line
 	if (!Cmd_Argc ())
-		return;		// no tokens
+		return true;		// no tokens
 
 	if (cmd_debug->integer & 1)
 		Com_Printf ("^6cmd: %s\n", text);
@@ -665,7 +665,7 @@ void Cmd_ExecuteString (char *text)
 				cmd->func ();
 				unguardf(("%s", cmd->name));
 			}
-			return;
+			return true;
 		}
 	}
 
@@ -677,21 +677,19 @@ void Cmd_ExecuteString (char *text)
 			if (++aliasCount == ALIAS_LOOP_COUNT)
 			{
 				Com_WPrintf ("ALIAS_LOOP_COUNT\n");
-				return;
+				return true;
 			}
 			Cbuf_InsertText (va("%s\n", a->value));
-			return;
+			return true;
 		}
 	}
 
 	// check cvars
 	if (Cvar_Command ())
-		return;
-
-	// send it as a server command if we are connected
-	Cmd_ForwardToServer ();
+		return true;
 
 	unguard;
+	return false;
 }
 
 /*

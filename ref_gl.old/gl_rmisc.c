@@ -112,7 +112,7 @@ void GL_PerformScreenshot (void)
 
 	if (!gl_screenshotName) return;		// already performed in current frame
 
-	qglFinish ();
+	glFinish ();
 
 	ext = (gl_screenshotFlags & SHOT_JPEG ? ".jpg" : ".tga");
 	if (gl_screenshotName[0])
@@ -140,7 +140,7 @@ void GL_PerformScreenshot (void)
 	// allocate buffer for 4 color components (required for ResampleTexture()
 	buffer = Z_Malloc (vid.width * vid.height * 4);
 	// read frame buffer data
-	qglReadPixels (0, 0, vid.width, vid.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	glReadPixels (0, 0, vid.width, vid.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
 	if (gl_screenshotFlags & SHOT_SMALL)
 	{
@@ -195,14 +195,18 @@ void GL_PerformScreenshot (void)
 
 
 /*
-** GL_Strings_f
+** GL_Strings_f (gfxinfo)
 */
 void GL_Strings_f( void )
 {
-	Com_Printf ("GL_VENDOR: %s\n", gl_config.vendorString );
-	Com_Printf ("GL_RENDERER: %s\n", gl_config.rendererString );
-	Com_Printf ("GL_VERSION: %s\n", gl_config.versionString );
-	Com_Printf ("GL_EXTENSIONS: %s\n", gl_config.extensionsString );
+	Com_Printf ("^1GL_VENDOR:^7 %s\n", gl_config.vendorString);
+	Com_Printf ("^1GL_RENDERER:^7 %s\n", gl_config.rendererString);
+	Com_Printf ("^1GL_VERSION:^7 %s\n", gl_config.versionString);
+//	Com_Printf ("GL_EXTENSIONS: %s\n", gl_config.extensionsString );
+	QGL_PrintExtensionsString ("GL", gl_config.extensions);
+#ifdef _WIN32
+	QGL_PrintExtensionsString ("WGL", gl_config.extensions2);
+#endif
 }
 
 /*
@@ -210,38 +214,38 @@ void GL_Strings_f( void )
 */
 void GL_SetDefaultState( void )
 {
-	qglClearColor (1,0, 0.5 , 0.5);
-	qglCullFace(GL_FRONT);
-	qglEnable(GL_TEXTURE_2D);
+	glClearColor (1,0, 0.5 , 0.5);
+	glCullFace(GL_FRONT);
+	glEnable(GL_TEXTURE_2D);
 
-	qglEnable(GL_ALPHA_TEST);
-	qglAlphaFunc(GL_GREATER, 0.666);
+	glEnable(GL_ALPHA_TEST);
+	glAlphaFunc(GL_GREATER, 0.666);
 
-	qglDisable (GL_DEPTH_TEST);
-	qglDisable (GL_CULL_FACE);
-	qglDisable (GL_BLEND);
+	glDisable (GL_DEPTH_TEST);
+	glDisable (GL_CULL_FACE);
+	glDisable (GL_BLEND);
 
-	qglColor4f (1,1,1,1);
+	glColor4f (1,1,1,1);
 
-	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-	qglShadeModel (GL_SMOOTH);
-//	qglShadeModel (GL_FLAT);	--&&
+	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
+	glShadeModel (GL_SMOOTH);
+//	glShadeModel (GL_FLAT);	--&&
 
 	GL_TextureMode( gl_texturemode->string );
 	GL_TextureAlphaMode( gl_texturealphamode->string );
 	GL_TextureSolidMode( gl_texturesolidmode->string );
 
-	qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-	qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 
-	qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	qglBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	GL_TexEnv( GL_REPLACE );
 
-/*	if ( qglPointParameterfEXT )
+/*	if ( glPointParameterfEXT )
 	{
 		float attenuations[3];
 
@@ -249,15 +253,15 @@ void GL_SetDefaultState( void )
 		attenuations[1] = gl_particle_att_b->value;
 		attenuations[2] = gl_particle_att_c->value;
 
-		qglEnable( GL_POINT_SMOOTH );
-		qglPointParameterfEXT( GL_POINT_SIZE_MIN_EXT, gl_particle_min_size->value );
-		qglPointParameterfEXT( GL_POINT_SIZE_MAX_EXT, gl_particle_max_size->value );
-		qglPointParameterfvEXT( GL_DISTANCE_ATTENUATION_EXT, attenuations );
+		glEnable( GL_POINT_SMOOTH );
+		glPointParameterfEXT( GL_POINT_SIZE_MIN_EXT, gl_particle_min_size->value );
+		glPointParameterfEXT( GL_POINT_SIZE_MAX_EXT, gl_particle_max_size->value );
+		glPointParameterfvEXT( GL_DISTANCE_ATTENUATION_EXT, attenuations );
 	}
 */
-/*	if ( qglColorTableEXT && gl_ext_palettedtexture->integer )
+/*	if ( glColorTableEXT && gl_ext_palettedtexture->integer )
 	{
-		qglEnable( GL_SHARED_TEXTURE_PALETTE_EXT );
+		glEnable( GL_SHARED_TEXTURE_PALETTE_EXT );
 
 		GL_SetTexturePalette( d_8to24table );
 	}
@@ -275,7 +279,7 @@ void GL_UpdateSwapInterval( void )
 		{
 #ifdef _WIN32
 			if (GL_SUPPORT(QWGL_EXT_SWAP_CONTROL))
-				qwglSwapIntervalEXT( gl_swapinterval->value );
+				wglSwapIntervalEXT( gl_swapinterval->value );
 #endif
 		}
 	}

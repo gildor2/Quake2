@@ -260,16 +260,17 @@ SV_NextDownload_f
 */
 void SV_NextDownload_f (void)
 {
-	int		r;
-	int		percent;
-	int		size;
+	int		r, max, percent, size;
 
 	if (!sv_client->download)
 		return;
 
 	r = sv_client->downloadsize - sv_client->downloadcount;
-	if (r > 1024)
-		r = 1024;
+	if (sv_client->newprotocol)	//!! and server is on LAN (not modem connection) or no active clients
+		max = 10240;			// up to MAX_MSGLEN
+	else
+		max = 1024;				// up to MAX_MSGLEN_OLD
+	if (r > max) r = max;
 
 	MSG_WriteByte (&sv_client->netchan.message, svc_download);
 	MSG_WriteShort (&sv_client->netchan.message, r);
@@ -278,7 +279,7 @@ void SV_NextDownload_f (void)
 	size = sv_client->downloadsize;
 	if (!size)
 		size = 1;
-	percent = sv_client->downloadcount*100/size;
+	percent = sv_client->downloadcount * 100 / size;
 	MSG_WriteByte (&sv_client->netchan.message, percent);
 	SZ_Write (&sv_client->netchan.message,
 		sv_client->download + sv_client->downloadcount - r, r);
@@ -477,8 +478,6 @@ void SV_ExecuteUserCommand (char *s)
 	Cmd_TokenizeString (s, false);		//?? "false" -- disable macro expansion (anti-hack?); can use different TokenizeString()
 	sv_player = sv_client->edict;
 
-//	SV_BeginRedirect (RD_CLIENT);
-
 	cmd = Cmd_Argv(0);
 	for (u = ucmds; u->name ; u++)
 		if (!strcmp (cmd, u->name))
@@ -495,8 +494,6 @@ void SV_ExecuteUserCommand (char *s)
 		ge->ClientCommand (sv_player);
 		unguardf(("cmd=%s", cmd));
 	}
-
-//	SV_EndRedirect ();
 }
 
 /*

@@ -34,6 +34,7 @@ void TestExtensionStopEXT (void);
 
 #name GL_EXT_EXTENSION
 #alias GL_ARB_EXTENSION
+#alias GL_NV_EXTENSION
 
 #platform win32
 

@@ -384,17 +384,6 @@ void SVC_DirectConnect (void)
 }
 
 
-int Rcon_Validate (void)
-{
-	if (!strlen (rcon_password->string))
-		return 0;
-
-	if (strcmp (Cmd_Argv(1), rcon_password->string) )
-		return 0;
-
-	return 1;
-}
-
 /*
 ===============
 SVC_RemoteCommand
@@ -409,33 +398,33 @@ void SVC_RemoteCommand (void)
 	int		i;
 	char	remaining[1024];
 
-	i = Rcon_Validate ();
+	guard(SVC_RemoteCommand);
 
-	if (i == 0)
-		Com_Printf ("Bad rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
-	else
-		Com_Printf ("Rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
-
-	Com_BeginRedirect (RD_PACKET, sv_outputbuf, SV_OUTPUTBUF_LENGTH, SV_FlushRedirect);
-
-	if (!Rcon_Validate ())
+	if (!rcon_password->string[0] || strcmp (Cmd_Argv(1), rcon_password->string))
 	{
-		Com_WPrintf ("Bad rcon_password.\n");
+		Com_Printf ("Bad rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
+		Netchan_OutOfBandPrint (NS_SERVER, net_from, "print\nBad rcon password\n");
 	}
 	else
 	{
-		remaining[0] = 0;
+		Com_Printf ("Rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
 
+		// fill line with a rest of command string (cut "rcon")
+		remaining[0] = 0;
 		for (i = 2; i < Cmd_Argc(); i++)
 		{
 			strcat (remaining, Cmd_Argv(i));
 			strcat (remaining, " ");
 		}
 
-		Cmd_ExecuteString (remaining);
+		// execute command with a redirected output
+		SV_BeginRedirect ();
+		if (!Cmd_ExecuteString (remaining))
+			Com_WPrintf ("Bad remote command \"%s\"\n", remaining);
+		Com_EndRedirect ();
 	}
 
-	Com_EndRedirect ();
+	unguard;
 }
 
 /*
@@ -478,11 +467,6 @@ void SV_ConnectionlessPacket (void)
 	{
 		// Responds with all the info that qplug or qspy can see
 		Netchan_OutOfBandPrint (NS_SERVER, net_from, "print\n%s", SV_StatusString());
-#if 0
-		Com_BeginRedirect (RD_PACKET, sv_outputbuf, SV_OUTPUTBUF_LENGTH, SV_FlushRedirect);
-		Com_Printf (SV_StatusString());
-		Com_EndRedirect ();
-#endif
 	}
 	else if (!strcmp (c, "info"))
 		SVC_Info ();

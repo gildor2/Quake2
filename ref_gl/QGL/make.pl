@@ -262,15 +262,15 @@ sub EmitExtensionHDR {
 }
 
 sub EmitExtensionCODE {
-	my $numFuncs;
+	my ($numFuncs, $alias);
 
 	print (CODE ",\n") if $numExtensions[0] > 1 || $platform > 0;
 	# name
-	if ($extAlias eq "") {
-		printf (CODE "\t{\"%s\\0\", NULL, ", $extName);
-	} else {
-		printf (CODE "\t{\"%s\\0\" \"%s\\0\", NULL, ", $extName, $extAlias);
+	printf (CODE "\t{\"%s\\0\"", $extName);
+	foreach $alias (@aliases) {
+		printf (CODE " \"%s\\0\"", $alias);
 	}
+	print (CODE ", NULL, ");
 	# cvar
 	if ($extCvar ne "") {
 		printf (CODE "\"%s\", ", $extCvar);
@@ -362,15 +362,17 @@ sub Parse {
 			CloseExtension ();
 			$numExtensions[$platform]++;
 			$extName = $cmda;
-			$extAlias = "";
+			@aliases = ();
 			$extCvar = "";			# undefine cvar
 			$firstExtFunc = $numExt[$platform];
 			$prefer = "0";
 			$require = "0";
 		} elsif ($cmd eq "alias") {
 			ExtNameRequired ($cmd);
-			die "no multiple aliases for $extName == $extAlias" if $extAlias ne "";
-			$extAlias = $cmda;
+			# alternative ways to add $cmda to array @aliases:
+#			@aliases = (@aliases, $cmda);	#1
+#			$aliases[++$#aliases] = $cmda;	#2
+			push @aliases, $cmda;			#3
 		} elsif ($cmd eq "cvar") {
 			ExtNameRequired ($cmd);
 			$extCvar = $cmda;
@@ -541,8 +543,8 @@ print (CODE "\n};\n\n");
 
 print (CODE <<EOF
 typedef struct {
-	const char *names;				// "alias1\\0alias2\\0\\0" or "name\\0\\0"
-	const char *name;				// current name (points to alias1 or alias2)
+	const char *names;				// "alias1\\0alias2\\0...\\0" or "name\\0\\0"
+	const char *name;				// current name (points to a primary name or to any alias)
 	const char *cvar;				// name of cvar to disable extension
 	short	first, count;			// positions of provided functions in name table
 	unsigned require, deprecate;	// dependent extensions

@@ -64,7 +64,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_PROJ=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /Fo"$(INTDIR)\\" /c 
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -332,7 +332,7 @@ SOURCE=..\qcommon\q_shared2.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\q_shared2.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -356,7 +356,7 @@ SOURCE=.\r_aclip.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_aclip.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -410,7 +410,7 @@ SOURCE=.\r_alias.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_alias.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -434,7 +434,7 @@ SOURCE=.\r_bsp.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_bsp.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -458,7 +458,7 @@ SOURCE=.\r_draw.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_draw.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -542,7 +542,7 @@ SOURCE=.\r_edge.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_edge.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -596,7 +596,7 @@ SOURCE=.\r_image.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_image.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -620,7 +620,7 @@ SOURCE=.\r_light.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_light.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -644,7 +644,7 @@ SOURCE=.\r_main.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_main.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -668,7 +668,7 @@ SOURCE=.\r_misc.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_misc.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -692,7 +692,7 @@ SOURCE=.\r_model.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_model.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -716,7 +716,7 @@ SOURCE=.\r_part.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_part.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -740,7 +740,7 @@ SOURCE=.\r_poly.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_poly.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -794,7 +794,7 @@ SOURCE=.\r_polyse.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_polyse.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -818,7 +818,7 @@ SOURCE=.\r_rast.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_rast.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -842,7 +842,7 @@ SOURCE=.\r_scan.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_scan.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -926,7 +926,7 @@ SOURCE=.\r_sprite.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_sprite.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -950,7 +950,7 @@ SOURCE=.\r_surf.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\r_surf.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1034,7 +1034,7 @@ SOURCE=..\win32\rw_ddraw.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\rw_ddraw.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1058,7 +1058,7 @@ SOURCE=..\win32\rw_dib.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\rw_dib.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -1082,7 +1082,7 @@ SOURCE=..\win32\rw_imp.c
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /c 
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /c 
 
 "$(INTDIR)\rw_imp.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<

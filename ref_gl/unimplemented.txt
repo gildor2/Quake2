@@ -14,7 +14,6 @@ FAST TODO:
   - when will be implemented, check all SaturateColor... in gl_lightmap.c (at least, remove from vertex lighting)
   - saturate lightmap textures with tables (see gl_image.c::LightScaleTexture()) - separate TableSaturate() (name?) function in
     gl_images.c (may be, move to gl_math.c)
-? 3rd alias for [NV|EXT]_texture_rectangle: ARB_texture_rectangle (OpenGL 2.0)
 - rect textures & already_power_of_2 textures: should process alpha-channel (look at ResampleTexture() or MipMap()):
   - when img !IMAGE_NOALPHA - when a==0 => r=g=b=0
   - when IMAGE_NOALPHA - make a=255, keep r,g,b unchanged

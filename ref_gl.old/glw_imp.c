@@ -359,7 +359,7 @@ static bool		contextActive;
 static bool CreateGLcontext (void)
 {
 	contextActive = false;
-	if (!(contextHandle = qwglCreateContext (glw_state.hDC)))
+	if (!(contextHandle = wglCreateContext (glw_state.hDC)))
 	{
 		Com_WPrintf ("...CreateGLcontext() failed\n");
 		return false;
@@ -371,7 +371,7 @@ static bool CreateGLcontext (void)
 static bool ActivateGLcontext (void)
 {
 	if (contextActive) return true;
-	if (!qwglMakeCurrent (glw_state.hDC, contextHandle))
+	if (!wglMakeCurrent (glw_state.hDC, contextHandle))
 	{
 		Com_WPrintf ("...ActivateGLcontext() failed\n");
 		return false;
@@ -384,7 +384,7 @@ static bool ActivateGLcontext (void)
 static bool DeactivateGLcontext (void)
 {
 	if (!contextActive) return true;
-	if (!qwglMakeCurrent (glw_state.hDC, NULL))
+	if (!wglMakeCurrent (glw_state.hDC, NULL))
 	{
 		Com_WPrintf ("...DeactivateGLcontext() failed\n");
 		return false;
@@ -398,7 +398,7 @@ static bool DestoryGLcontext (void)
 {
 	if (!contextHandle) return true;
 	if (!DeactivateGLcontext ()) return false;
-	if (!qwglDeleteContext (contextHandle))
+	if (!wglDeleteContext (contextHandle))
 	{
 		Com_WPrintf ("...DestoryGLcontext() failed...\n");
 		return false;
@@ -499,12 +499,12 @@ static bool GLimp_SetPixelFormat (void)
 
 	if (glw_state.minidriver)
 	{
-		if ((pixelformat = qwglChoosePixelFormat (glw_state.hDC, &pfd)) == 0)
+		if ((pixelformat = wglChoosePixelFormat (glw_state.hDC, &pfd)) == 0)
 		{
 			Com_WPrintf ("GLimp_Init() - qwglChoosePixelFormat failed\n");
 			return false;
 		}
-		if (qwglSetPixelFormat (glw_state.hDC, pixelformat, &pfd) == FALSE)
+		if (wglSetPixelFormat (glw_state.hDC, pixelformat, &pfd) == FALSE)
 		{
 			Com_WPrintf ("GLimp_Init() - qwglSetPixelFormat failed\n");
 			return false;
@@ -548,7 +548,7 @@ static bool GLimp_SetPixelFormat (void)
 	if (!CreateGLcontext ()) return false;
 	if (!ActivateGLcontext ()) return false;
 
-	if (!stricmp (qglGetString (GL_RENDERER), "gdi generic") && !mcd_accelerated)
+	if (!stricmp (glGetString (GL_RENDERER), "gdi generic") && !mcd_accelerated)
 	{
 		Com_WPrintf ("...no hardware acceleration detected\n");
 		return false;
@@ -620,7 +620,7 @@ void GLimp_Shutdown (void)
 
 	if (gl_config.fullscreen)
 	{
-		if (!strlen (vid_ref->string))
+		if (!vid_ref->string[0])
 			ChangeDisplaySettings (0, 0);
 		gl_config.fullscreen = false;
 	}
@@ -646,8 +646,8 @@ void GLimp_EndFrame (void)
 	if (gl_swapinterval->modified)
 	{
 		gl_swapinterval->modified = false;
-		if (/*?? !gl_state.stereoEnabled &&*/ qwglSwapIntervalEXT)
-			qwglSwapIntervalEXT (gl_swapinterval->integer);
+		if (/*?? !gl_state.stereoEnabled &&*/ wglSwapIntervalEXT)
+			wglSwapIntervalEXT (gl_swapinterval->integer);
 	}
 
 	if (stricmp (gl_drawbuffer->string, "GL_FRONT"))
@@ -660,7 +660,7 @@ void GLimp_EndFrame (void)
 		else
 		{
 			// use wglSwapBuffers() for miniGL and Voodoo
-			if (!qwglSwapBuffers (glw_state.hDC))
+			if (!wglSwapBuffers (glw_state.hDC))
 				Com_FatalError ("GLimp_EndFrame() - SwapBuffers() failed!\n");
 		}
 	}

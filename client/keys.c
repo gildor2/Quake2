@@ -165,7 +165,7 @@ static int Key_StringToKeynum (char *str)
 }
 
 
-char *Key_KeynumToString (int keynum)
+const char *Key_KeynumToString (int keynum)
 {
 	int		i;
 	keyname_t *kn;
@@ -577,7 +577,7 @@ void CompleteCommand (void)
 	Key bindings
 -----------------------------------------------------------------------------*/
 
-void Key_SetBinding (int keynum, char *binding)
+void Key_SetBinding (int keynum, const char *binding)
 {
 	if (keynum == -1)
 		return;
@@ -614,7 +614,7 @@ static void Key_Unbind_f (void)
 {
 	int		i, n;
 	char	*mask;
-	keyname_t *kn;
+	bool	found;
 
 	if (Cmd_Argc() != 2)
 	{
@@ -624,45 +624,26 @@ static void Key_Unbind_f (void)
 	mask = Cmd_Argv (1);
 
 	n = 0;
+	found = false;
 	for (i = 0; i < NUM_BINDINGS; i++)
 	{
-		int		j;
-		char	*keyName;
-		static char buf[2];
-
-		if (!keybindings[i])
-			continue;		// key is not bound
-
-		if (IsSimpleKeyName (i))
+		const char *keyName = Key_KeynumToString (i);
+		if (MatchWildcard2 (keyName, mask, true))
 		{
-			// key name is a single letter
-			buf[0] = i;
-			keyName = buf;
-		}
-		else
-		{
-			// find key name
-			keyName = NULL;
-			for (j = 0, kn = keynames; j < ARRAY_COUNT(keynames); j++, kn++)
-				if (i == kn->keynum)
-				{
-					keyName = kn->name;
-					break;
-				}
-		}
-
-		if (keyName && MatchWildcard2 (keyName, mask, true))
-		{
-			Com_DPrintf ("unbind %s\n", keyName);
-			Key_SetBinding (i, "");
-			n++;
+			found = true;
+			if (keybindings[i])
+			{
+				Com_DPrintf ("unbind %s\n", keyName);
+				Key_SetBinding (i, NULL);
+				n++;
+			}
 		}
 	}
 
-	if (n)
+	if (found)
 		Com_Printf ("%d key(s) unbound\n", n);
 	else
-		Com_Printf ("\"%s\" isn't a valid key\n", mask);
+		Com_WPrintf ("\"%s\" isn't a valid key\n", mask);
 }
 
 
@@ -672,7 +653,7 @@ static void Key_Unbindall_f (void)
 
 	for (i = 0; i < NUM_BINDINGS; i++)
 		if (keybindings[i])
-			Key_SetBinding (i, "");
+			Key_SetBinding (i, NULL);
 }
 
 
@@ -735,7 +716,7 @@ static void Key_Bindlist_f (void)
 
 	n = 0;
 	for (i = 0; i < NUM_BINDINGS; i++)
-		if (keybindings[i] && keybindings[i][0] && (!mask || MatchWildcard2 (keybindings[i], mask, true)))
+		if (keybindings[i] && (!mask || MatchWildcard2 (keybindings[i], mask, true)))
 		{
 			n++;
 			Com_Printf ("%s \"%s\"\n", Key_KeynumToString(i), keybindings[i]);

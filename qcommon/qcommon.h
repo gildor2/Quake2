@@ -446,14 +446,15 @@ void	Cmd_TokenizeString (char *text, qboolean macroExpand);
 // Takes a null terminated string.  Does not need to be /n terminated.
 // breaks the string up into arg tokens.
 
-void	Cmd_ExecuteString (char *text);
+bool	Cmd_ExecuteString (char *text);
 // Parses a single line of text into arguments and tries to execute it
-// as if it was typed at the console
+// as if it was typed at the console; if command is unknown, will return false
 
 void	Cmd_ForwardToServer (void);
 // adds the current command line as a clc_stringcmd to the client message.
 // things like godmode, noclip, etc, are commands directed to the server,
 // so when they are typed in at the console, they will need to be forwarded.
+// NOTE: implemented in client
 
 void	Cmd_WriteAliases (FILE *f);
 
@@ -800,7 +801,7 @@ extern	int	curtime;		// time returned by last Sys_Milliseconds
 extern	int linewidth;		// for functions, which wants to perform advanced output formatting
 
 
-void	Com_BeginRedirect (int target, char *buffer, int buffersize, void (*flush));
+void	Com_BeginRedirect (char *buffer, int buffersize, void (*flush));
 void	Com_EndRedirect (void);
 
 void 	Com_Quit (void);

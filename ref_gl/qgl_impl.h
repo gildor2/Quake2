@@ -3,15 +3,15 @@
 #if defined(_WIN32)
 #	define NUM_GLFUNCS	65
 #	define NUM_EXTFUNCS	7
-#	define NUM_EXTENSIONS	16
+#	define NUM_EXTENSIONS	15
 #elif defined(__linux__)
 #	define NUM_GLFUNCS	57
 #	define NUM_EXTFUNCS	6
-#	define NUM_EXTENSIONS	15
+#	define NUM_EXTENSIONS	14
 #else
 #	define NUM_GLFUNCS	57
 #	define NUM_EXTFUNCS	6
-#	define NUM_EXTENSIONS	15
+#	define NUM_EXTENSIONS	14
 #endif
 
 
@@ -922,14 +922,13 @@ static extInfo_t extInfo[NUM_EXTENSIONS] = {
 	{"GL_ARB_texture_env_add\0" "GL_EXT_texture_env_add\0", NULL, "gl_ext_texture_env_add", 0, 0, 0, 0},
 	{"GL_EXT_texture_env_combine\0", NULL, "gl_ext_texture_env_combine", 0, 0, QGL_ARB_MULTITEXTURE, QGL_ARB_TEXTURE_ENV_COMBINE},
 	{"GL_ARB_texture_env_combine\0", NULL, "gl_ext_texture_env_combine", 0, 0, QGL_ARB_MULTITEXTURE, 0},
-	{"GL_ARB_texture_env_crossbar\0", NULL, NULL, 0, 0, 0, QGL_NV_TEXTURE_ENV_COMBINE4},
 	{"GL_NV_texture_env_combine4\0", NULL, "gl_ext_texture_env_combine_nv", 0, 0, QGL_ARB_MULTITEXTURE, 0},
-	{"GL_ATI_texture_env_combine3\0" "GL_ATIX_texture_env_combine3\0", NULL, "gl_ext_texture_env_combine_ati", 0, 0, QGL_ARB_MULTITEXTURE, 0},
+	{"GL_ATI_texture_env_combine3\0" "GL_ATIX_texture_env_combine3\0", NULL, "gl_ext_texture_env_combine_ati", 0, 0, QGL_ARB_MULTITEXTURE, QGL_NV_TEXTURE_ENV_COMBINE4},
 	{"GL_S3_s3tc\0", NULL, "gl_ext_compressed_textures", 0, 0, 0, QGL_ARB_TEXTURE_COMPRESSION | QGL_EXT_TEXTURE_COMPRESSION_S3TC},
 	{"GL_ARB_texture_compression\0", NULL, "gl_ext_compressed_textures", 0, 0, 0, QGL_EXT_TEXTURE_COMPRESSION_S3TC},
 	{"GL_EXT_texture_compression_s3tc\0", NULL, "gl_ext_compressed_textures", 0, 0, 0, 0},
 	{"GL_EXT_compiled_vertex_array\0", NULL, "gl_ext_compiled_vertex_array", NUM_GLFUNCS+4, 2, 0, 0},
-	{"GL_NV_texture_rectangle\0" "GL_EXT_texture_rectangle\0", NULL, "gl_ext_texture_rectangle", 0, 0, 0, 0},
+	{"GL_NV_texture_rectangle\0" "GL_ARB_texture_rectangle\0" "GL_EXT_texture_rectangle\0", NULL, "gl_ext_texture_rectangle", 0, 0, 0, 0},
 	{"GL_NV_fog_distance\0", NULL, "gl_ext_fog_distance_nv", 0, 0, 0, 0},
 	{"GL_EXT_texture_lod_bias\0", NULL, NULL, 0, 0, 0, 0}
 #ifdef _WIN32

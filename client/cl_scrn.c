@@ -58,6 +58,38 @@ void SCR_TimeRefresh_f (void);
 void SCR_Loading_f (void);
 
 
+#define CHAR_WIDTH	8
+#define CHAR_HEIGHT	8
+
+// Function DrawString used for painting HUD
+void DrawString (int x, int y, const char *s)
+{
+	int color, c;
+
+	color = 7;
+	while (c = *s++)
+	{
+		if (c == '^')
+		{
+			int col;
+
+			col = *s - '0';
+			if (col >= 0 && col <= 7)
+			{
+				color = col;
+				s++;
+				continue;
+			}
+		}
+//		if (color != 7 && con_colorText->integer)
+			re.DrawCharColor (x, y, c, color);
+//		else
+//			re.DrawCharColor (x, y, c, 7);
+		x += CHAR_WIDTH;
+	}
+}
+
+
 /*
 ===============================================================================
 
@@ -493,7 +525,6 @@ static void DrawLoadingAndConsole (bool allowNotifyArea)
 			{
 				re.DrawStretchPic (0, 0, viddef.width, viddef.height, map_levelshot);
 				//!! DrawLevelshotDetail for GL
-				Con_DrawNotify (false);
 			}
 			else
 			{
@@ -501,8 +532,22 @@ static void DrawLoadingAndConsole (bool allowNotifyArea)
 
 				re.DrawStretchPic (0, 0, viddef.width, viddef.height, "conback");
 				re.DrawGetPicSize (&w, &h, "loading");
-				re_DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading");
-				Con_DrawNotify (false);
+				re.DrawPicColor ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading", 7);
+			}
+			Con_DrawNotify (false);
+			allowNotifyArea = false;
+
+			// draw downloading info
+			if (cls.download)
+			{
+				int w = viddef.width / 2;
+				int r = w * cls.downloadpercent / 100;
+				int top = viddef.height - 3 * CHAR_HEIGHT - 2;
+				int height = 2 * CHAR_HEIGHT + 4;
+				re.DrawFill2 (6, top, r, height, 0.5, 0, 0, 1);
+				re.DrawFill2 (6 + r, top, w - r, height, 0.1, 0.1, 0.1, 1);
+				DrawString (8, viddef.height - 3 * CHAR_HEIGHT, va("Downloading: %s", cls.downloadname));
+				DrawString (8, viddef.height - 2 * CHAR_HEIGHT, va("%d%% complete", cls.downloadpercent));
 			}
 		}
 	}
@@ -670,7 +715,6 @@ void SCR_TileClear (void)
 
 //===============================================================
 
-
 #define STAT_MINUS		10	// num frame for '-' stats digit
 static char *sb_nums[2][11] =
 {
@@ -678,31 +722,24 @@ static char *sb_nums[2][11] =
 	{"anum_0", "anum_1", "anum_2", "anum_3", "anum_4", "anum_5", "anum_6", "anum_7", "anum_8", "anum_9", "anum_minus"}
 };
 
-#define	ICON_WIDTH	24
-#define	ICON_HEIGHT	24
-#define	CHAR_WIDTH	16
-#define	ICON_SPACE	8
+#define	ICON_WIDTH		24
+#define	ICON_HEIGHT		24
+#define	HUDCHAR_WIDTH	16
+#define	ICON_SPACE		8
 
 
-
-/*
-================
-SizeHUDString
-
-Allow embedded \n in the string
-================
-*/
-void SizeHUDString (char *string, int *w, int *h)
+static void SizeHUDString (const char *string, int *w, int *h)
 {
 	int		lines, width, current;
+	char	c;
 
 	lines = 1;
 	width = 0;
 
 	current = 0;
-	while (*string)
+	while (c = *string++)
 	{
-		if (*string == '\n')
+		if (c == '\n')
 		{
 			lines++;
 			current = 0;
@@ -713,55 +750,44 @@ void SizeHUDString (char *string, int *w, int *h)
 			if (current > width)
 				width = current;
 		}
-		string++;
 	}
 
-	*w = width * 8;
-	*h = lines * 8;
+	*w = width * CHAR_WIDTH;
+	*h = lines * CHAR_HEIGHT;
 }
 
-void DrawHUDString (char *string, int x, int y, int centerwidth, int xor)
+static void DrawHUDString (char *string, int x0, int y, int centerwidth, int color)
 {
-	int		margin;
-	char	line[1024];
-	int		width;
-	int		i;
-
-	margin = x;
+	int		width, i, x;
+	char	c;
 
 	while (*string)
 	{
 		// scan out one line of text from the string
 		width = 0;
-		while (*string && *string != '\n')
-			line[width++] = *string++;
-		line[width] = 0;
-
-		if (centerwidth)
-			x = margin + (centerwidth - width*8)/2;
-		else
-			x = margin;
-		for (i=0 ; i<width ; i++)
+		while (true)
 		{
-			re_DrawChar (x, y, line[i]^xor);
-			x += 8;
+			c = string[width];
+			if (!c || c == '\n') break;
+			width++;
+		}
+
+		x = centerwidth ? x0 + (centerwidth - width * CHAR_WIDTH) / 2 : x0;
+		for (i = 0; i < width; i++)
+		{
+			re.DrawCharColor (x, y, *string++, color);
+			x += CHAR_WIDTH;
 		}
 		if (*string)
 		{
 			string++;	// skip the \n
-			x = margin;
-			y += 8;
+			y += CHAR_HEIGHT;
 		}
 	}
 }
 
 
-/*
-==============
-SCR_DrawField
-==============
-*/
-void SCR_DrawField (int x, int y, int color, int width, int value)
+static void DrawField (int x, int y, int color, int width, int value)
 {
 	char	num[16], *ptr;
 	int		l;
@@ -771,14 +797,13 @@ void SCR_DrawField (int x, int y, int color, int width, int value)
 		return;
 
 	// draw number string
-	if (width > 5)
-		width = 5;
+	if (width > 5) width = 5;
 
 	Com_sprintf (ARRAY_ARG(num), "%d", value);
-	l = strlen(num);
-	if (l > width)
-		l = width;
-	x += 2 + CHAR_WIDTH*(width - l);
+	l = strlen (num);
+	if (l > width) l = width;
+	// align number to right
+	x += 2 + HUDCHAR_WIDTH * (width - l);
 
 	ptr = num;
 	while (*ptr && l)
@@ -788,8 +813,8 @@ void SCR_DrawField (int x, int y, int color, int width, int value)
 		else
 			frame = *ptr -'0';
 
-		re_DrawPic (x, y, sb_nums[color][frame]);
-		x += CHAR_WIDTH;
+		re.DrawPicColor (x, y, sb_nums[color][frame], 7);
+		x += HUDCHAR_WIDTH;
 		ptr++;
 		l--;
 	}
@@ -850,6 +875,7 @@ void SCR_ExecuteLayoutString (char *s)
 		return;
 
 	if (!s[0]) return;
+	if (!cl_draw2d->integer) return;		// HUD is disabled
 
 	x = y = 0;
 	width = 3;
@@ -857,79 +883,68 @@ void SCR_ExecuteLayoutString (char *s)
 	while (s)
 	{
 		token = COM_Parse (&s);
-		if (!strcmp(token, "xl"))
+		if (!strcmp (token, "xl"))
 		{
 			token = COM_Parse (&s);
-			x = atoi(token);
-			continue;
+			x = atoi (token);
 		}
-		if (!strcmp(token, "xr"))
+		else if (!strcmp (token, "xr"))
 		{
 			token = COM_Parse (&s);
-			x = viddef.width + atoi(token);
-			continue;
+			x = viddef.width + atoi (token);
 		}
-		if (!strcmp(token, "xv"))
+		else if (!strcmp (token, "xv"))
 		{
 			token = COM_Parse (&s);
-			x = viddef.width/2 - 160 + atoi(token);
-			continue;
+			x = viddef.width/2 - 160 + atoi (token);
 		}
-
-		if (!strcmp(token, "yt"))
+		else if (!strcmp (token, "yt"))
 		{
 			token = COM_Parse (&s);
-			y = atoi(token);
-			continue;
+			y = atoi (token);
 		}
-		if (!strcmp(token, "yb"))
+		else if (!strcmp (token, "yb"))
 		{
 			token = COM_Parse (&s);
-			y = viddef.height + atoi(token);
-			continue;
+			y = viddef.height + atoi (token);
 		}
-		if (!strcmp(token, "yv"))
+		else if (!strcmp (token, "yv"))
 		{
 			token = COM_Parse (&s);
-			y = viddef.height/2 - 120 + atoi(token);
-			continue;
+			y = viddef.height/2 - 120 + atoi (token);
 		}
-
-		if (!strcmp(token, "pic"))
+		else if (!strcmp (token, "pic"))
 		{	// draw a pic from a stat number
 			token = COM_Parse (&s);
-			value = cl.frame.playerstate.stats[atoi(token)];
+			value = cl.frame.playerstate.stats[atoi (token)];
 			if (value >= MAX_IMAGES)
 				Com_DropError ("Pic >= MAX_IMAGES");
 			if (cl.configstrings[CS_IMAGES+value])
-				re_DrawPic (x, y, cl.configstrings[CS_IMAGES+value]);
-
-			continue;
+				re.DrawPicColor (x, y, cl.configstrings[CS_IMAGES+value], 7);
 		}
-
-		if (!strcmp(token, "client"))
+		else if (!strcmp (token, "client"))
 		{	// draw a deathmatch client block
 			int		score, ping, time;
 
 			token = COM_Parse (&s);
-			x = viddef.width/2 - 160 + atoi(token);
+			x = viddef.width/2 - 160 + atoi (token);
 			token = COM_Parse (&s);
-			y = viddef.height/2 - 120 + atoi(token);
+			y = viddef.height/2 - 120 + atoi (token);
 
 			token = COM_Parse (&s);
-			value = atoi(token);
+			value = atoi (token);
 			if (value >= MAX_CLIENTS || value < 0)
 				Com_DropError ("client >= MAX_CLIENTS");
 			ci = &cl.clientinfo[value];
 
 			token = COM_Parse (&s);
-			score = atoi(token);
+			score = atoi (token);
 
 			token = COM_Parse (&s);
-			ping = atoi(token);
+			ping = atoi (token);
 
 			token = COM_Parse (&s);
-			time = atoi(token);
+			time = atoi (token);
 
 			DrawString (x+32, y, va("^2%s", ci->name));
 			DrawString (x+32, y+8,  "Score: ");
@@ -939,11 +954,9 @@ void SCR_ExecuteLayoutString (char *s)
 
 			if (!ci->icon)
 				ci = &cl.baseclientinfo;
-			re_DrawPic (x, y, ci->iconname);
-			continue;
+			re.DrawPicColor (x, y, ci->iconname, 7);
 		}
-
-		if (!strcmp(token, "ctf"))
+		else if (!strcmp (token, "ctf"))
 		{	// draw a ctf client block
 			int		score, ping;
 			char	block[80];
@@ -954,16 +967,16 @@ void SCR_ExecuteLayoutString (char *s)
 			y = viddef.height/2 - 120 + atoi(token);
 
 			token = COM_Parse (&s);
-			value = atoi(token);
+			value = atoi (token);
 			if (value >= MAX_CLIENTS || value < 0)
 				Com_DropError ("client >= MAX_CLIENTS");
 			ci = &cl.clientinfo[value];
 
 			token = COM_Parse (&s);
-			score = atoi(token);
+			score = atoi (token);
 
 			token = COM_Parse (&s);
-			ping = atoi(token);
+			ping = atoi (token);
 			if (ping > 999)
 				ping = 999;
 
@@ -973,27 +986,21 @@ void SCR_ExecuteLayoutString (char *s)
 				DrawString (x, y, va("^1%s", block));
 			else
 				DrawString (x, y, block);
-			continue;
 		}
-
-		if (!strcmp(token, "picn"))
+		else if (!strcmp (token, "picn"))
 		{	// draw a pic from a name
 			token = COM_Parse (&s);
-			re_DrawPic (x, y, token);
-			continue;
+			re.DrawPicColor (x, y, token, 7);
 		}
-
-		if (!strcmp(token, "num"))
+		else if (!strcmp (token, "num"))
 		{	// draw a number
 			token = COM_Parse (&s);
-			width = atoi(token);
+			width = atoi (token);
 			token = COM_Parse (&s);
 			value = cl.frame.playerstate.stats[atoi(token)];
-			SCR_DrawField (x, y, 0, width, value);
-			continue;
+			DrawField (x, y, 0, width, value);
 		}
-
-		if (!strcmp(token, "hnum"))
+		else if (!strcmp (token, "hnum"))
 		{	// health number
 			int		color;
 
@@ -1007,13 +1014,11 @@ void SCR_ExecuteLayoutString (char *s)
 				color = 1;
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 1)
-				re_DrawPic (x, y, "field_3");
+				re.DrawPicColor (x, y, "field_3", 7);
 
-			SCR_DrawField (x, y, color, width, value);
-			continue;
+			DrawField (x, y, color, width, value);
 		}
-
-		if (!strcmp(token, "anum"))
+		else if (!strcmp (token, "anum"))
 		{	// ammo number
 			int		color;
 
@@ -1027,76 +1032,60 @@ void SCR_ExecuteLayoutString (char *s)
 				continue;	// negative number = don't show
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 4)
-				re_DrawPic (x, y, "field_3");
+				re.DrawPicColor (x, y, "field_3", 7);
 
-			SCR_DrawField (x, y, color, width, value);
-			continue;
+			DrawField (x, y, color, width, value);
 		}
-
-		if (!strcmp(token, "rnum"))
+		else if (!strcmp (token, "rnum"))
 		{	// armor number
 			int		color;
 
 			width = 3;
 			value = cl.frame.playerstate.stats[STAT_ARMOR];
-			if (value < 1)
-				continue;
+			if (value < 1) continue;
 
 			color = 0;	// green
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 2)
-				re_DrawPic (x, y, "field_3");
+				re.DrawPicColor (x, y, "field_3", 7);
 
-			SCR_DrawField (x, y, color, width, value);
-			continue;
+			DrawField (x, y, color, width, value);
 		}
-
-
-		if (!strcmp(token, "stat_string"))
+		else if (!strcmp (token, "stat_string"))
 		{
 			token = COM_Parse (&s);
-			index = atoi(token);
+			index = atoi (token);
 			if (index < 0 || index >= MAX_CONFIGSTRINGS)
 				Com_DropError ("Bad stat_string index");
 			index = cl.frame.playerstate.stats[index];
 			if (index < 0 || index >= MAX_CONFIGSTRINGS)
 				Com_DropError ("Bad stat_string index");
 			DrawString (x, y, cl.configstrings[index]);
-			continue;
 		}
-
-		if (!strcmp(token, "cstring"))
+		else if (!strcmp (token, "cstring"))
 		{
 			token = COM_Parse (&s);
-			DrawHUDString (token, x, y, 320, 0);
-			continue;
+			DrawHUDString (token, x, y, 320, 7);
 		}
-
-		if (!strcmp(token, "cstring2"))
+		else if (!strcmp (token, "cstring2"))
 		{
 			token = COM_Parse (&s);
-			DrawHUDString (token, x, y, 320,0x80);
-			continue;
+			DrawHUDString (token, x, y, 320, 2);
 		}
-
-		if (!strcmp(token, "string"))
+		else if (!strcmp (token, "string"))
 		{
 			token = COM_Parse (&s);
 			DrawString (x, y, token);
-			continue;
 		}
-
-		if (!strcmp(token, "string2"))
+		else if (!strcmp (token, "string2"))
 		{
 			token = COM_Parse (&s);
 			DrawString (x, y, va("^2%s", token));
-			continue;
 		}
-
-		if (!strcmp(token, "if"))
+		else if (!strcmp (token, "if"))
 		{	// draw a number
 			token = COM_Parse (&s);
-			value = cl.frame.playerstate.stats[atoi(token)];
+			value = cl.frame.playerstate.stats[atoi (token)];
 			if (!value)
 			{	// skip to endif
 				while (s && strcmp(token, "endif") )
@@ -1104,7 +1093,6 @@ void SCR_ExecuteLayoutString (char *s)
 					token = COM_Parse (&s);
 				}
 			}
-			continue;
 		}
 	}
 }
@@ -1180,7 +1168,7 @@ void SCR_UpdateScreen (void)
 		{
 			if (cls.loading)
 			{
-				//  loading plaque over black screen
+				// loading plaque over black screen
 				re.SetRawPalette (NULL);
 				re.DrawFill (0, 0, viddef.width, viddef.height, 0);
 				DrawLoadingAndConsole (false);

@@ -51,7 +51,7 @@ static float	shadelight[3];
 // precalculated dot products for quantized angles
 #define SHADEDOT_QUANT 16
 
-float	r_avertexnormal_dots[SHADEDOT_QUANT][256] =
+float	r_avertexnormal_dots[SHADEDOT_QUANT][NUMVERTEXNORMALS] =
 #include "anormtab.h"
 ;
 
@@ -125,7 +125,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 		alpha = 1.0;
 
 	if (currententity->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
-		qglDisable( GL_TEXTURE_2D );
+		glDisable( GL_TEXTURE_2D );
 
 	frontlerp = 1.0 - backlerp;
 
@@ -156,15 +156,15 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 	{
 		float colorArray[MAX_VERTS*4];
 
-		qglEnableClientState( GL_VERTEX_ARRAY );
-		qglVertexPointer( 3, GL_FLOAT, sizeof(s_lerped[0]), s_lerped);
+		glEnableClientState( GL_VERTEX_ARRAY );
+		glVertexPointer( 3, GL_FLOAT, sizeof(s_lerped[0]), s_lerped);
 
 		if (currententity->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
-			qglColor4f (VECTOR_ARG(shadelight), alpha);
+			glColor4f (VECTOR_ARG(shadelight), alpha);
 		else
 		{
-			qglEnableClientState( GL_COLOR_ARRAY );
-			qglColorPointer( 3, GL_FLOAT, 0, colorArray );
+			glEnableClientState( GL_COLOR_ARRAY );
+			glColorPointer( 3, GL_FLOAT, 0, colorArray );
 
 			//
 			// pre light everything
@@ -187,7 +187,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 		}
 
 		if (GL_SUPPORT(QGL_EXT_COMPILED_VERTEX_ARRAY))
-			qglLockArraysEXT( 0, paliashdr->numXyz );
+			glLockArraysEXT( 0, paliashdr->numXyz );
 
 		while (1)
 		{
@@ -198,10 +198,10 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 			if (count < 0)
 			{
 				count = -count;
-				qglBegin (GL_TRIANGLE_FAN);
+				glBegin (GL_TRIANGLE_FAN);
 			}
 			else
-				qglBegin (GL_TRIANGLE_STRIP);
+				glBegin (GL_TRIANGLE_STRIP);
 
 			if ( currententity->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM) )
 			{
@@ -211,7 +211,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 					index_xyz = order[2];
 					order += 3;
 
-					qglVertex3fv( s_lerped[index_xyz] );
+					glVertex3fv( s_lerped[index_xyz] );
 
 				} while (--count);
 			}
@@ -220,7 +220,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 				do
 				{
 					// texture coordinates come from the draw list
-					qglTexCoord2f (((float *)order)[0], ((float *)order)[1]);
+					glTexCoord2f (((float *)order)[0], ((float *)order)[1]);
 					index_xyz = order[2];
 
 					order += 3;
@@ -228,16 +228,16 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 					// normals and vertexes come from the frame list
 //					l = shadedots[verts[index_xyz].lightnormalindex];
 
-//					qglColor4f (l* shadelight[0], l*shadelight[1], l*shadelight[2], alpha);
-					qglArrayElement( index_xyz );
+//					glColor4f (l* shadelight[0], l*shadelight[1], l*shadelight[2], alpha);
+					glArrayElement( index_xyz );
 
 				} while (--count);
 			}
-			qglEnd ();
+			glEnd ();
 		}
 
 		if (GL_SUPPORT(QGL_EXT_COMPILED_VERTEX_ARRAY))
-			qglUnlockArraysEXT();
+			glUnlockArraysEXT();
 	}
 	else
 	{
@@ -250,10 +250,10 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 			if (count < 0)
 			{
 				count = -count;
-				qglBegin (GL_TRIANGLE_FAN);
+				glBegin (GL_TRIANGLE_FAN);
 			}
 			else
-				qglBegin (GL_TRIANGLE_STRIP);
+				glBegin (GL_TRIANGLE_STRIP);
 
 			if (currententity->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE))
 			{
@@ -262,8 +262,8 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 					index_xyz = order[2];
 					order += 3;
 
-					qglColor4f( VECTOR_ARG(shadelight), alpha);
-					qglVertex3fv (s_lerped[index_xyz]);
+					glColor4f( VECTOR_ARG(shadelight), alpha);
+					glVertex3fv (s_lerped[index_xyz]);
 
 				} while (--count);
 			}
@@ -276,7 +276,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 #endif
 
 					// texture coordinates come from the draw list
-					qglTexCoord2f (((float *)order)[0], ((float *)order)[1]);
+					glTexCoord2f (((float *)order)[0], ((float *)order)[1]);
 					index_xyz = order[2];
 					order += 3;
 
@@ -284,20 +284,20 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 					// normals and vertexes come from the frame list
 					l = shadedots[verts[index_xyz].lightnormalindex];
 
-					qglColor4f (l*shadelight[0], l*shadelight[1], l*shadelight[2], alpha);
+					glColor4f (l*shadelight[0], l*shadelight[1], l*shadelight[2], alpha);
 #else
-					qglColor4f (VECTOR_ARG(shadelight), alpha);
+					glColor4f (VECTOR_ARG(shadelight), alpha);
 #endif
-					qglVertex3fv (s_lerped[index_xyz]);
+					glVertex3fv (s_lerped[index_xyz]);
 				} while (--count);
 			}
 
-			qglEnd ();
+			glEnd ();
 		}
 	}
 
 	if (currententity->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
-		qglEnable( GL_TEXTURE_2D );
+		glEnable( GL_TEXTURE_2D );
 }
 
 
@@ -339,10 +339,10 @@ void GL_DrawAliasShadow (dmdl_t *paliashdr, int posenum)
 		if (count < 0)
 		{
 			count = -count;
-			qglBegin (GL_TRIANGLE_FAN);
+			glBegin (GL_TRIANGLE_FAN);
 		}
 		else
-			qglBegin (GL_TRIANGLE_STRIP);
+			glBegin (GL_TRIANGLE_STRIP);
 
 		do
 		{
@@ -354,7 +354,7 @@ void GL_DrawAliasShadow (dmdl_t *paliashdr, int posenum)
 			point[1] -= shadevector[1]*(point[2]+lheight);
 			point[2] = height;
 //			height -= 0.001;
-			qglVertex3fv (point);
+			glVertex3fv (point);
 
 			order += 3;
 
@@ -362,7 +362,7 @@ void GL_DrawAliasShadow (dmdl_t *paliashdr, int posenum)
 
 		} while (--count);
 
-		qglEnd ();
+		glEnd ();
 	}
 }
 
@@ -664,23 +664,23 @@ void R_DrawAliasModel (entity_t *e)
 	// draw all the triangles
 	//
 	if (currententity->flags & RF_DEPTHHACK) // hack the depth range to prevent view model from poking into walls
-		qglDepthRange (gldepthmin, gldepthmin + 0.3*(gldepthmax-gldepthmin));
+		glDepthRange (gldepthmin, gldepthmin + 0.3*(gldepthmax-gldepthmin));
 
 	if ( ( currententity->flags & RF_WEAPONMODEL ) && ( r_lefthand->integer == 1 ) )
 	{
 		extern void MYgluPerspective( GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar );
 
-		qglMatrixMode( GL_PROJECTION );
-		qglPushMatrix();
-		qglLoadIdentity();
-		qglScalef( -1, 1, 1 );
+		glMatrixMode( GL_PROJECTION );
+		glPushMatrix();
+		glLoadIdentity();
+		glScalef( -1, 1, 1 );
 		MYgluPerspective( r_newrefdef.fov_y, ( float ) r_newrefdef.width / r_newrefdef.height,  4,  4096);
-		qglMatrixMode( GL_MODELVIEW );
+		glMatrixMode( GL_MODELVIEW );
 
-		qglCullFace( GL_BACK );
+		glCullFace( GL_BACK );
 	}
 
-	qglPushMatrix ();
+	glPushMatrix ();
 	e->angles[PITCH] = -e->angles[PITCH];	// sigh.
 	R_RotateForEntity (e);
 	e->angles[PITCH] = -e->angles[PITCH];	// sigh.
@@ -704,16 +704,16 @@ void R_DrawAliasModel (entity_t *e)
 	if (!r_lightmap->integer)
 		GL_Bind(skin->texnum);
 	else
-		qglDisable (GL_TEXTURE_2D);
+		glDisable (GL_TEXTURE_2D);
 
 	// draw it
 
-	qglShadeModel (GL_SMOOTH);
+	glShadeModel (GL_SMOOTH);
 
 	GL_TexEnv( GL_MODULATE );
 	if ( currententity->flags & RF_TRANSLUCENT )
 	{
-		qglEnable (GL_BLEND);
+		glEnable (GL_BLEND);
 	}
 
 
@@ -738,39 +738,39 @@ void R_DrawAliasModel (entity_t *e)
 	GL_DrawAliasFrameLerp (paliashdr, currententity->backlerp);
 
 	GL_TexEnv (GL_REPLACE);
-	qglShadeModel (GL_FLAT);
+	glShadeModel (GL_FLAT);
 
-	qglPopMatrix ();
+	glPopMatrix ();
 
 	if ((currententity->flags & RF_WEAPONMODEL) && (r_lefthand->integer == 1))
 	{
-		qglMatrixMode (GL_PROJECTION);
-		qglPopMatrix ();
-		qglMatrixMode (GL_MODELVIEW);
-		qglCullFace (GL_FRONT);
+		glMatrixMode (GL_PROJECTION);
+		glPopMatrix ();
+		glMatrixMode (GL_MODELVIEW);
+		glCullFace (GL_FRONT);
 	}
 
 	if ( currententity->flags & RF_TRANSLUCENT )
 	{
-		qglDisable (GL_BLEND);
+		glDisable (GL_BLEND);
 	}
 
 	if (currententity->flags & RF_DEPTHHACK)
-		qglDepthRange (gldepthmin, gldepthmax);
+		glDepthRange (gldepthmin, gldepthmax);
 
 	if (gl_shadows->integer && !(currententity->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL)))
 	{
-		qglPushMatrix ();
+		glPushMatrix ();
 		R_RotateForEntity (e);
-		qglDisable (GL_TEXTURE_2D);
-		qglEnable (GL_BLEND);
-		qglColor4f (0,0,0,0.5);
+		glDisable (GL_TEXTURE_2D);
+		glEnable (GL_BLEND);
+		glColor4f (0,0,0,0.5);
 		GL_DrawAliasShadow (paliashdr, currententity->frame );
-		qglEnable (GL_TEXTURE_2D);
-		qglDisable (GL_BLEND);
-		qglPopMatrix ();
+		glEnable (GL_TEXTURE_2D);
+		glDisable (GL_BLEND);
+		glPopMatrix ();
 	}
-	qglColor4f (1,1,1,1);
+	glColor4f (1,1,1,1);
 	if (r_lightmap->integer)
-		qglEnable (GL_TEXTURE_2D);
+		glEnable (GL_TEXTURE_2D);
 }

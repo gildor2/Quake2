@@ -68,9 +68,9 @@ enum {
 extern bool		keydown[NUM_KEYS];			// exported for [CTRL|ALT|SHIFT]_PRESSED only
 extern int		keysDown;					// number of holded keys
 
-char *Key_KeynumToString (int keynum);
+const char *Key_KeynumToString (int keynum);
 
-void Key_SetBinding (int keynum, char *binding);
+void Key_SetBinding (int keynum, const char *binding);
 int Key_FindBinding (const char *str, int *keys, int maxKeys);
 void Key_WriteBindings (FILE *f);
 

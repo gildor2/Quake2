@@ -66,45 +66,7 @@ static bool con_initialized;
 int		con_height;
 
 // WRAP_CHAR will be placed as "soft" line-feed instead of a space char
-#define		WRAP_CHAR	(' ' + 32)
-
-
-// Functions DrawString used for painting HUD
-void DrawStringCommon (int x, int y, const char *s)
-{
-	int color, c;
-
-	color = 7;
-	while (c = *s++)
-	{
-		if (c == '^')
-		{
-			int col;
-
-			col = *s - '0';
-			if (col >= 0 && col <= 7)
-			{
-				color = col;
-				s++;
-				continue;
-			}
-		}
-		if (color != 7 && con_colorText->integer)
-			re.DrawCharColor (x, y, c, color);
-		else
-			re.DrawCharColor (x, y, c, 7);
-		x += CHAR_WIDTH;
-	}
-}
-
-
-// DrawString() used by HUD routines
-void DrawString (int x, int y, const char *s)
-{
-	if (!cl_draw2d->integer)
-		return;
-	DrawStringCommon (x, y, s);
-}
+#define		WRAP_CHAR	(' ' + 128)
 
 
 void Con_ToggleConsole_f (void)
@@ -449,42 +411,15 @@ void Con_Print (char *txt)
 
 
 /*
-==============
-Con_CenteredPrint
-==============
-*/
-void Con_CenteredPrint (char *text)
-{
-	int		l;
-	char	buffer[1024];
-
-	l = strlen (text);
-	l = (linewidth - l) / 2;
-	if (l < 0)
-		l = 0;
-	memset (buffer, ' ', l);
-	strcpy (buffer + l, text);
-	strcat (buffer, "\n");
-	Con_Print (buffer);
-}
-
-
-/*
 ================
-Con_DrawInput
-
-The input line scrolls horizontally if typing goes beyond the right edge
+DrawInput
 ================
 */
-static void Con_DrawInput (void)
+static void DrawInput (void)
 {
 	int		y, i, shift;
 	char	*text, c, color;
 	bool	eoln;
-
-//	if (cls.key_dest == key_menu) return;
-//	if (cls.key_dest != key_console && cls.state == ca_active)
-//		return;		// don't draw anything (always draw if not active)
 
 	text = editLine;
 
@@ -543,18 +478,16 @@ Con_DrawNotify
 Draws the last few lines of output transparently over the game top
 ================
 */
-void Con_DrawNotify (qboolean drawBack)
+void Con_DrawNotify (bool drawBack)
 {
 	int		x, v, i, pos;
 	char	*s;
-	bool	bgPaint;
 
 	if (*re.flags & REF_CONSOLE_ONLY || !cl_draw2d->integer)
 		return;
 
 	v = 0;
 	pos = -1;
-	bgPaint = !drawBack;
 	for (i = con.current - NUM_CON_TIMES + 1; i <= con.current; i++)
 	{
 		int		time;
@@ -577,10 +510,10 @@ void Con_DrawNotify (qboolean drawBack)
 
 		if (pos == -1) continue;	// should not happen
 
-		if (!bgPaint)
+		if (drawBack)
 		{
 			re.DrawFill2 (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, 1, 0, 0, 0.3);
-			bgPaint = true;
+			drawBack = false;
 		}
 		for (x = 0; x < linewidth; x++)
 		{
@@ -592,7 +525,7 @@ void Con_DrawNotify (qboolean drawBack)
 			if (++pos >= CON_TEXTSIZE) pos -= CON_TEXTSIZE;
 
 			if (c == '\n' || c == WRAP_CHAR) break;
-			re_DrawCharColor ((x + 1) * CHAR_WIDTH, v, c, color);
+			re.DrawCharColor ((x + 1) * CHAR_WIDTH, v, c, color);
 		}
 
 		v += CHAR_HEIGHT;
@@ -617,11 +550,11 @@ void Con_DrawNotify (qboolean drawBack)
 			s += chat_bufferlen - (viddef.width/CHAR_WIDTH - (x + 1));
 		while(*s)
 		{
-			re_DrawCharColor (x * CHAR_WIDTH, v, *s++, 7);
+			re.DrawCharColor (x * CHAR_WIDTH, v, *s++, 7);
 			x++;
 		}
 		// draw cursor
-		re_DrawCharColor (x * CHAR_WIDTH, v, 10 + ((curtime >> 8) & 1), 7);
+		re.DrawCharColor (x * CHAR_WIDTH, v, 10 + ((curtime >> 8) & 1), 7);
 	}
 }
 
@@ -638,10 +571,10 @@ Draws the console with the solid background
 
 void Con_DrawConsole (float frac)
 {
-	int		i, j, x, y, y0, n, topline;
+	int		i, j, x, y, y0, topline;
 	int		row, rows, lines;
 	int		dx, dy, color;
-	char	*text, c, dlbar[1024];
+	char	c;
 	static const char version[] = APPNAME " v" STR(VERSION);
 #ifdef DEBUG_CONSOLE
 	char	dbgBuf[256];
@@ -772,56 +705,8 @@ void Con_DrawConsole (float frac)
 		else
 			re.DrawConCharColor (i, dy - 1, version[x], 4);
 #endif
-
-	//ZOID
-	// draw the download bar
-	// figure out width
-	if (!(*re.flags & REF_CONSOLE_ONLY) && cls.download)
-	{
-		if ((text = strrchr (cls.downloadname, '/')) != NULL)
-			text++;
-		else
-			text = cls.downloadname;
-
-		x = linewidth - ((linewidth * 7) / 40);
-		y = x - strlen (text) - 8;
-		i = linewidth / 3;
-		if (strlen (text) > i)
-		{
-			y = x - i - 11;
-			strncpy (dlbar, text, i);
-			dlbar[i] = 0;
-			strcat (dlbar, "...");
-		} else
-			strcpy (dlbar, text);
-		strcat (dlbar, ": ");
-		i = strlen (dlbar);
-		dlbar[i++] = '\x80';
-		// where's the dot go?
-		if (cls.downloadpercent == 0)
-			n = 0;
-		else
-			n = y * cls.downloadpercent / 100;
-
-		for (j = 0; j < y; j++)
-			if (j == n)
-				dlbar[i++] = '\x83';
-			else
-				dlbar[i++] = '\x81';
-		dlbar[i++] = '\x82';
-		dlbar[i] = 0;
-
-		Com_sprintf (dlbar+i, sizeof(dlbar)-i, " %02d%%", cls.downloadpercent);
-
-		// draw it
-		y = con.vislines - CHAR_HEIGHT*3/2;
-		for (i = 0; i < strlen (dlbar); i++)
-			re.DrawCharColor ((i + 1) * CHAR_WIDTH, y, dlbar[i], 7);
-	}
-	//ZOID
-
-	// draw the input prompt, user text, and cursor if desired
-	Con_DrawInput ();
+	// draw the input prompt, user text, and cursor
+	DrawInput ();
 }
 
 
@@ -845,10 +730,9 @@ void Key_Console (int key, int modKey)
 
 	switch (modKey)
 	{
-	case MOD_CTRL+'v':
+	case MOD_CTRL+'v':		//?? is it really needed ?
 		if (s = Sys_GetClipboardData ())
 		{
-//			strtok (s, "\n\r\b");
 			i = strlen (s);
 			if (i + editPos > MAXCMDLINE - 1)
 				i = MAXCMDLINE - editPos - 1;

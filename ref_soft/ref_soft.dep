@@ -260,7 +260,6 @@
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
 	"..\win32\rw_win.h"\
-	"..\win32\winquake.h"\
 	".\r_local.h"\
 	".\r_model.h"\
 	
@@ -285,7 +284,6 @@
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
 	"..\win32\rw_win.h"\
-	"..\win32\winquake.h"\
 	".\r_local.h"\
 	".\r_model.h"\
 	

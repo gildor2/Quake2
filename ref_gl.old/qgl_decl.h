@@ -66,14 +66,14 @@ typedef union
 		void	(APIENTRY * Viewport) (GLint x, GLint y, GLsizei width, GLsizei height);
 
 #ifdef _WIN32
-		int	(APIENTRY * wglChoosePixelFormat) (HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd);
-		int	(APIENTRY * wglDescribePixelFormat) (HDC hdc, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
-		BOOL	(APIENTRY * wglSetPixelFormat) (HDC hdc, int iPixelFormat, CONST PIXELFORMATDESCRIPTOR *ppfd);
-		BOOL	(APIENTRY * wglSwapBuffers) (HDC hdc);
-		HGLRC	(APIENTRY * wglCreateContext) (HDC hdc);
-		BOOL	(APIENTRY * wglDeleteContext) (HGLRC hglrc);
-		PROC	(APIENTRY * wglGetProcAddress) (LPCSTR lpszProc);
-		BOOL	(APIENTRY * wglMakeCurrent) (HDC hdc, HGLRC hglrc);
+		int	(APIENTRY * ChoosePixelFormat) (HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd);
+		int	(APIENTRY * DescribePixelFormat) (HDC hdc, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd);
+		BOOL	(APIENTRY * SetPixelFormat) (HDC hdc, int iPixelFormat, CONST PIXELFORMATDESCRIPTOR *ppfd);
+		BOOL	(APIENTRY * SwapBuffers) (HDC hdc);
+		HGLRC	(APIENTRY * CreateContext) (HDC hdc);
+		BOOL	(APIENTRY * DeleteContext) (HGLRC hglrc);
+		PROC	(APIENTRY * GetProcAddress) (LPCSTR lpszProc);
+		BOOL	(APIENTRY * MakeCurrent) (HDC hdc, HGLRC hglrc);
 #endif
 		void	(APIENTRY * SelectTextureSGIS) (GLenum target);
 		void	(APIENTRY * MultiTexCoord2fSGIS) (GLenum target, GLfloat s, GLfloat t);
@@ -83,7 +83,7 @@ typedef union
 		void	(APIENTRY * UnlockArraysEXT) (void);
 
 #ifdef _WIN32
-		BOOL	(APIENTRY * wglSwapIntervalEXT) (int interval);
+		BOOL	(APIENTRY * SwapIntervalEXT) (int interval);
 #endif
 
 #ifdef __linux__
@@ -94,85 +94,86 @@ typedef union
 
 extern qgl_t qgl;
 
-#define qglAlphaFunc	qgl.AlphaFunc
-#define qglArrayElement	qgl.ArrayElement
-#define qglBegin	qgl.Begin
-#define qglBindTexture	qgl.BindTexture
-#define qglBlendFunc	qgl.BlendFunc
-#define qglClear	qgl.Clear
-#define qglClearColor	qgl.ClearColor
-#define qglClearDepth	qgl.ClearDepth
-#define qglColor3f	qgl.Color3f
-#define qglColor3fv	qgl.Color3fv
-#define qglColor4f	qgl.Color4f
-#define qglColor4fv	qgl.Color4fv
-#define qglColor4ub	qgl.Color4ub
-#define qglColor4ubv	qgl.Color4ubv
-#define qglColorPointer	qgl.ColorPointer
-#define qglCullFace	qgl.CullFace
-#define qglDeleteTextures	qgl.DeleteTextures
-#define qglDepthFunc	qgl.DepthFunc
-#define qglDepthMask	qgl.DepthMask
-#define qglDepthRange	qgl.DepthRange
-#define qglDisable	qgl.Disable
-#define qglDrawBuffer	qgl.DrawBuffer
-#define qglEnable	qgl.Enable
-#define qglEnableClientState	qgl.EnableClientState
-#define qglEnd	qgl.End
-#define qglFinish	qgl.Finish
-#define qglFogf	qgl.Fogf
-#define qglFogfv	qgl.Fogfv
-#define qglFrustum	qgl.Frustum
-#define qglGetError	qgl.GetError
-#define qglGetFloatv	qgl.GetFloatv
-#define qglGetIntegerv	qgl.GetIntegerv
-#define qglGetString	qgl.GetString
-#define qglLoadIdentity	qgl.LoadIdentity
-#define qglLoadMatrixf	qgl.LoadMatrixf
-#define qglMatrixMode	qgl.MatrixMode
-#define qglOrtho	qgl.Ortho
-#define qglPolygonMode	qgl.PolygonMode
-#define qglPopMatrix	qgl.PopMatrix
-#define qglPushMatrix	qgl.PushMatrix
-#define qglReadPixels	qgl.ReadPixels
-#define qglRotatef	qgl.Rotatef
-#define qglScalef	qgl.Scalef
-#define qglScissor	qgl.Scissor
-#define qglShadeModel	qgl.ShadeModel
-#define qglTexCoord2f	qgl.TexCoord2f
-#define qglTexCoordPointer	qgl.TexCoordPointer
-#define qglTexEnvf	qgl.TexEnvf
-#define qglTexEnvfv	qgl.TexEnvfv
-#define qglTexEnvi	qgl.TexEnvi
-#define qglTexImage2D	qgl.TexImage2D
-#define qglTexParameterf	qgl.TexParameterf
-#define qglTexSubImage2D	qgl.TexSubImage2D
-#define qglTranslatef	qgl.Translatef
-#define qglVertex2f	qgl.Vertex2f
-#define qglVertex3f	qgl.Vertex3f
-#define qglVertex3fv	qgl.Vertex3fv
-#define qglVertexPointer	qgl.VertexPointer
-#define qglViewport	qgl.Viewport
+
+#define glAlphaFunc	qgl.AlphaFunc
+#define glArrayElement	qgl.ArrayElement
+#define glBegin	qgl.Begin
+#define glBindTexture	qgl.BindTexture
+#define glBlendFunc	qgl.BlendFunc
+#define glClear	qgl.Clear
+#define glClearColor	qgl.ClearColor
+#define glClearDepth	qgl.ClearDepth
+#define glColor3f	qgl.Color3f
+#define glColor3fv	qgl.Color3fv
+#define glColor4f	qgl.Color4f
+#define glColor4fv	qgl.Color4fv
+#define glColor4ub	qgl.Color4ub
+#define glColor4ubv	qgl.Color4ubv
+#define glColorPointer	qgl.ColorPointer
+#define glCullFace	qgl.CullFace
+#define glDeleteTextures	qgl.DeleteTextures
+#define glDepthFunc	qgl.DepthFunc
+#define glDepthMask	qgl.DepthMask
+#define glDepthRange	qgl.DepthRange
+#define glDisable	qgl.Disable
+#define glDrawBuffer	qgl.DrawBuffer
+#define glEnable	qgl.Enable
+#define glEnableClientState	qgl.EnableClientState
+#define glEnd	qgl.End
+#define glFinish	qgl.Finish
+#define glFogf	qgl.Fogf
+#define glFogfv	qgl.Fogfv
+#define glFrustum	qgl.Frustum
+#define glGetError	qgl.GetError
+#define glGetFloatv	qgl.GetFloatv
+#define glGetIntegerv	qgl.GetIntegerv
+#define glGetString	qgl.GetString
+#define glLoadIdentity	qgl.LoadIdentity
+#define glLoadMatrixf	qgl.LoadMatrixf
+#define glMatrixMode	qgl.MatrixMode
+#define glOrtho	qgl.Ortho
+#define glPolygonMode	qgl.PolygonMode
+#define glPopMatrix	qgl.PopMatrix
+#define glPushMatrix	qgl.PushMatrix
+#define glReadPixels	qgl.ReadPixels
+#define glRotatef	qgl.Rotatef
+#define glScalef	qgl.Scalef
+#define glScissor	qgl.Scissor
+#define glShadeModel	qgl.ShadeModel
+#define glTexCoord2f	qgl.TexCoord2f
+#define glTexCoordPointer	qgl.TexCoordPointer
+#define glTexEnvf	qgl.TexEnvf
+#define glTexEnvfv	qgl.TexEnvfv
+#define glTexEnvi	qgl.TexEnvi
+#define glTexImage2D	qgl.TexImage2D
+#define glTexParameterf	qgl.TexParameterf
+#define glTexSubImage2D	qgl.TexSubImage2D
+#define glTranslatef	qgl.Translatef
+#define glVertex2f	qgl.Vertex2f
+#define glVertex3f	qgl.Vertex3f
+#define glVertex3fv	qgl.Vertex3fv
+#define glVertexPointer	qgl.VertexPointer
+#define glViewport	qgl.Viewport
 
 #ifdef _WIN32
-#define qwglChoosePixelFormat	qgl.wglChoosePixelFormat
-#define qwglDescribePixelFormat	qgl.wglDescribePixelFormat
-#define qwglSetPixelFormat	qgl.wglSetPixelFormat
-#define qwglSwapBuffers	qgl.wglSwapBuffers
-#define qwglCreateContext	qgl.wglCreateContext
-#define qwglDeleteContext	qgl.wglDeleteContext
-#define qwglGetProcAddress	qgl.wglGetProcAddress
-#define qwglMakeCurrent	qgl.wglMakeCurrent
+#define wglChoosePixelFormat	qgl.ChoosePixelFormat
+#define wglDescribePixelFormat	qgl.DescribePixelFormat
+#define wglSetPixelFormat	qgl.SetPixelFormat
+#define wglSwapBuffers	qgl.SwapBuffers
+#define wglCreateContext	qgl.CreateContext
+#define wglDeleteContext	qgl.DeleteContext
+#define wglGetProcAddress	qgl.GetProcAddress
+#define wglMakeCurrent	qgl.MakeCurrent
 #endif
-#define qglSelectTextureSGIS	qgl.SelectTextureSGIS
-#define qglMultiTexCoord2fSGIS	qgl.MultiTexCoord2fSGIS
-#define qglActiveTextureARB	qgl.ActiveTextureARB
-#define qglMultiTexCoord2fARB	qgl.MultiTexCoord2fARB
-#define qglLockArraysEXT	qgl.LockArraysEXT
-#define qglUnlockArraysEXT	qgl.UnlockArraysEXT
+#define glSelectTextureSGIS	qgl.SelectTextureSGIS
+#define glMultiTexCoord2fSGIS	qgl.MultiTexCoord2fSGIS
+#define glActiveTextureARB	qgl.ActiveTextureARB
+#define glMultiTexCoord2fARB	qgl.MultiTexCoord2fARB
+#define glLockArraysEXT	qgl.LockArraysEXT
+#define glUnlockArraysEXT	qgl.UnlockArraysEXT
 
 #ifdef _WIN32
-#define qwglSwapIntervalEXT	qgl.wglSwapIntervalEXT
+#define wglSwapIntervalEXT	qgl.SwapIntervalEXT
 #endif
 
 #ifdef __linux__

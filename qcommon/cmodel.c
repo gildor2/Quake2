@@ -581,10 +581,11 @@ HALF-LIFE map support
 ==================
 */
 
+#if 0
 
 void CMod_LoadHLSurfaces (lump_t *l)
 {
-/*	hl_texinfo_t	*in;
+	hl_texinfo_t	*in;
 	csurface_t	*out;
 	int			i, count;
 
@@ -610,7 +611,7 @@ void CMod_LoadHLSurfaces (lump_t *l)
 //??		strncpy (out->rname, in->texture, sizeof(out->rname)-1);
 		out->flags = LittleLong (in->flags);
 		out->value = 0; // LittleLong (in->value); - no in HL
-	} */
+	}
 }
 
 
@@ -636,7 +637,7 @@ static int HLContents[HL_CONTENTS] =
 
 void CMod_LoadHLLeafs (lump_t *l)
 {
-/*	hl_dleaf_t 	*in;
+	hl_dleaf_t 	*in;
 	dleaf_t 	*out;
 	int		i, count, p;
 
@@ -686,7 +687,7 @@ void CMod_LoadHLLeafs (lump_t *l)
 		}
 	}
 	if (emptyleaf == -1)
-		Com_DropError ("Map does not have an empty leaf"); */
+		Com_DropError ("Map does not have an empty leaf");
 }
 
 
@@ -696,7 +697,7 @@ void CMod_LoadHLLeafs (lump_t *l)
  */
 void CMod_LoadHLVisibility (lump_t *l)
 {
-/*	int		i, size, vis;
+	int		i, size, vis;
 
 	numvisibility = l->filelen;
 	if (l->filelen > MAX_MAP_VISIBILITY)
@@ -714,13 +715,13 @@ void CMod_LoadHLVisibility (lump_t *l)
 		map_vis->bitofs[i][DVIS_PVS] = vis;
 		map_vis->bitofs[i][DVIS_PHS] = -1; // no visinfo
 		map_leafs[i].cluster = i;
-	} */
+	}
 }
 
 
 void CMod_LoadHLSubmodels (lump_t *l)
 {
-/*	hl_dmodel_t	*in;
+	hl_dmodel_t	*in;
 	cmodel_t	*out;
 	int		i, j, count;
 
@@ -748,13 +749,13 @@ void CMod_LoadHLSubmodels (lump_t *l)
 		out->headnode = LittleLong (in->headnode[0]); // use only headnode[0]
 	}
 	if (map_cmodels[0].headnode)
-		Com_DropError ("HL map has invalid headnode = %d", map_cmodels[0].headnode); */
+		Com_DropError ("HL map has invalid headnode = %d", map_cmodels[0].headnode);
 }
 
 
 void CMod_LoadHLClipnodes (lump_t *l)
 {
-/*	hl_dclipnode_t	*in;
+	hl_dclipnode_t	*in;
 	cnode_t		*out;
 	int		i, j, count, child;
 	dleaf_t		*leaf;
@@ -801,13 +802,13 @@ void CMod_LoadHLClipnodes (lump_t *l)
 				leaf->numleafbrushes = 0;
 			}
 		}
-	} */
+	}
 }
 
 
 void CMod_LoadHLNodes (lump_t *l)
 {
-/*	hl_dnode_t	*in;
+	hl_dnode_t	*in;
 	cnode_t		*out;
 	int		i, j, count, child;
 
@@ -838,24 +839,24 @@ void CMod_LoadHLNodes (lump_t *l)
 			else
 				out->children[j] = child + firstnode; // node (shift to clipnodes count)
 		}
-	} */
+	}
 }
 
 
 void CMod_LoadHLAreas ()
 {
-/*	numareas = 1;
+	numareas = 1;
 	map_areas[0].numareaportals = 0;
 	map_areas[0].firstareaportal = 0;
 	map_areas[0].floodvalid = 0;
-	map_areas[0].floodnum = 0; */
+	map_areas[0].floodnum = 0;
 }
 
 
 // Generate brushes
 void CMod_LoadHLBrushes ()
 {
-/*	dleaf_t		*in;
+	dleaf_t		*in;
 	cbrush_t	*out;
 	int			i, count;
 
@@ -875,14 +876,14 @@ void CMod_LoadHLBrushes ()
 		in->firstleafbrush = i; // points to current structure
 		in->numleafbrushes = 1;
 		out->contents = in->contents;
-	} */
+	}
 }
 
 
 // Generate brushsides from FACES, MARKSURFACES, VERTEXES, EDGES and SURFEDGES
 void CMod_LoadHLBrushSides (lump_t *lf, lump_t *lm, lump_t *lv, lump_t *le, lump_t *lse)
 {
-/*	int		i;
+	int		i;
 	cbrush_t	*in;
 	cbrushside_t	*out;
 	dface_t 	*faces;
@@ -962,14 +963,14 @@ void CMod_LoadHLBrushSides (lump_t *lf, lump_t *lm, lump_t *lv, lump_t *le, lump
 			in->numsides++; //??
 		}
 	}
-	numbrushsides = count; */
+	numbrushsides = count;
 }
 
 
 // generate leafbrushes
 void CMod_LoadHLLeafBrushes ()
 {
-/*	int	i, count;
+	int	i, count;
 
 	count = numleafs;
 
@@ -979,10 +980,9 @@ void CMod_LoadHLLeafBrushes ()
 	numleafbrushes = count;
 
 	for (i = 0; i < count; i++)
-		map_leafbrushes[i] = i; */
+		map_leafbrushes[i] = i;
 }
 
-/*
 void CM_LoadHLMap (char *name, void *buf)
 {
 	int	i;
@@ -1026,7 +1026,8 @@ void CM_LoadHLMap (char *name, void *buf)
 	strcpy (map_name, name);
 	numtexinfo = 0; // disable texture precaching for half-life maps
 }
-*/
+
+#endif
 
 /*
 ==================
@@ -1398,6 +1399,7 @@ static int BoxLeafnums_headnode (vec3_t mins, vec3_t maxs, int *list, int listsi
 }
 
 
+//?? can this function return few leafnums with repeats of a single leaf ?
 int	CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topnode)
 {
 	guard(CM_BoxLeafnums);

@@ -20,8 +20,6 @@
 
 ! cannot load map "dog..." in soft: "bad surface extents 272 x XXX" (but GL can ...; seems, ref_soft
   can't render texture with larger than 256 size ...)
-! map "toomuchbloodv2": sound "dmg/TISM.wav" loaded twice (upper- and lowercase)
-  + add mask support for soundlist
 
 ? game crush in msvcrt.dll (pak loading/unloading/download breaking/map not found)
 ? crush on map change/game load with Anachronox map : crush when door/elevator moving somewhere on level -- absolute pointers ?
@@ -66,11 +64,15 @@ HARDWARE:
   - when game launched fullscreen, <Alt-Enter> will switch to windowed mode with incorrect viewport (visible region);
     vid_restart will not fix situation
   - (Omega 2.5.76) GL_SGIS_multitexture: GL_MAX_TEXTURES_SGIS == 0
+  - gamma: after app startup (screen resolution changing) drivers will set gamma==1; tech info: main window will get messages:
+    WM_SYNCPAINT, WM_NCPAINT, WM_ERASEBKGND, WM_PAINT; Q3 have no this problem, UT2004 (GL) have.
 - NV
   - (NV:bitdepth change, Blade3D:vid_restart): cannot restart GL with Vid_DestroyWindow(force=false) -- require to recreate window
   - screenshot is black after changing color depth, but all OK when make one more vid_restart (TNT2, Win2K, 41.09)
   - GF FX5200 + det.56.72, compiled_vertex_array: have geometry bugs when mixing non-CVA & CVA rendering (disappear with
     gl_showtris=1); workaround: CVA is ALWAYS used (i.e. for 1-pass rendering too); ATI have no this bug
+  - GF FX5200: GL_EXT_texture_compression_s3tc: font image, compressed into DXT1 (with 1-bit alpha) have visual bugs (pink color on
+    letters); no bug with DXT5
 ? texture rectangle (ATI; NV untested): when "*video" created as regular texture and uploaded as rect texture, after displaying
   video (exec alias "d1" -- video+demo) when level loading, displayed black rect instead of "loading" banner
 - notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move

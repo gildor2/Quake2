@@ -1,6 +1,6 @@
 #include "qcommon.h"
 
-int		cvar_initialized = 0;			// 0 - before config read, 1 - before system finished init, 2 - after init (2 is unused ??)
+int		cvar_initialized = 0;			// 0 - before config read, 1 - before system finished init, 2 - after init
 cvar_t	*cvar_vars;
 static void *cvar_chain;
 

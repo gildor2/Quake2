@@ -335,39 +335,6 @@ void Cmd_ForwardToServer (void)
 	}
 }
 
-void CL_Setenv_f (void)
-{
-	int		argc;
-
-	argc = Cmd_Argc();
-	if (argc > 2)
-	{
-		char	buffer[1024];
-		int		i;
-
-		strcpy (buffer, Cmd_Argv(1));
-		strcat (buffer, "=");
-
-		for (i = 2; i < argc; i++)
-		{
-			strcat (buffer, Cmd_Argv(i));
-			strcat (buffer, " ");
-		}
-
-		putenv (buffer);
-	}
-	else if (argc == 2)
-	{
-		char *env = getenv (Cmd_Argv(1));
-
-		if (env)
-			Com_Printf ("%s=%s\n", Cmd_Argv(1), env);
-		else
-			Com_Printf ("%s undefined\n", Cmd_Argv(1), env);
-	}
-}
-
-
 /*
 ==================
 CL_ForwardToServer_f
@@ -1587,8 +1554,6 @@ CVAR_END
 	Cmd_AddCommand ("rcon", CL_Rcon_f);
 
 //	Cmd_AddCommand ("packet", CL_Packet_f);		// this is dangerous to leave in
-
-	Cmd_AddCommand ("setenv", CL_Setenv_f );
 
 	Cmd_AddCommand ("precache", CL_Precache_f);
 	Cmd_AddCommand ("download", CL_Download_f);

@@ -8,8 +8,10 @@ alpha = const
   C1 -> C1' is VERTEX -> VERTEX_ALPHA
 + TexEnv() needs support for crossbar:
   in addition to TEXENV_TEXTURE, needs at least
-  TEXENV_NEXT_TEXTURE (cannot be implemented
-  with tables: needs code to make TEXTURE0+tmu)
+  TEXENV_NEXT_TEXTURE (cannot be implemented in gl_interface.c
+  with tables as other code: needs code to make TEXTURE0+tmu; BUT:
+  crossbar requires ARB_multitexture, no SGIS multitexture -- can use
+  TEXTURE0_ARB+tmu -- and implement with tables)
 
 after (ARB):
 ~~~~~~~~~~~~
@@ -51,3 +53,5 @@ check:
 can combine blend =
  dst: a, (1-a)
  src: 1, a, (1-a)
+
+====================================================================

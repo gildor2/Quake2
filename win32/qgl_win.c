@@ -91,18 +91,20 @@ static bool ExtensionSupported (extInfo_t *ext, const char *extStr1, const char 
 {
 	const char *s;
 
-	ext->name = ext->names;		// 1st alias
-	if (ExtensionNameSupported (ext->name, extStr1) || ExtensionNameSupported (ext->name, extStr2))
-		return true;
-	s = strchr (ext->names, '\0') + 1;
-	if (!s[0]) return false;	// no another aliases
-	Com_DPrintf ("%s is not found - try alias %s\n", ext->names, s);
+	s = ext->name = ext->names;		// 1st alias
 	if (ExtensionNameSupported (s, extStr1) || ExtensionNameSupported (s, extStr2))
-	{
-		ext->name = s;
 		return true;
+	while (true)
+	{
+		s = strchr (s, '\0') + 1;
+		if (!s[0]) return false;	// no another aliases
+		Com_DPrintf ("%s not found - try alias %s\n", ext->names, s);
+		if (ExtensionNameSupported (s, extStr1) || ExtensionNameSupported (s, extStr2))
+		{
+			ext->name = s;
+			return true;
+		}
 	}
-	return false;
 }
 
 
@@ -297,12 +299,13 @@ void QGL_PrintExtensionsString (const char *label, const char *str)
 				color = NULL;
 				for (j = 0, m = 1, ext = extInfo; j < NUM_EXTENSIONS; j++, ext++, m <<= 1)
 				{
-					if (strcmp (ext->names, name))
+					const char *s = ext->names;
+					while (s[0])	// while aliases present
 					{
-						const char *s = strchr (ext->names, '\0') + 1;
-						if (!s[0]) continue;	// no another aliases
-						if (strcmp (s, name)) continue;
+						if (!strcmp (s, name)) break;
+						s = strchr (s, '\0') + 1;
 					}
+					if (!s[0]) continue;
 					// here: current name is one of aliases of extInfo[j]
 					if (gl_config.disabledExt & m)
 						color = "^6";			// disabled by cvar

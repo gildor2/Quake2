@@ -30,21 +30,10 @@ NULL=nul
 OUTDIR=.\release
 INTDIR=.\release
 
-!IF "$(RECURSE)" == "0" 
-
 ALL : "..\release\ref_oldgl.dll"
 
-!ELSE 
 
-ALL : "quake2s - Win32 Release" "..\release\ref_oldgl.dll"
-
-!ENDIF 
-
-!IF "$(RECURSE)" == "1" 
-CLEAN :"quake2s - Win32 ReleaseCLEAN" 
-!ELSE 
 CLEAN :
-!ENDIF 
 	-@erase "$(INTDIR)\gl_draw.obj"
 	-@erase "$(INTDIR)\gl_image.obj"
 	-@erase "$(INTDIR)\gl_light.obj"
@@ -136,21 +125,10 @@ INTDIR=.\debug
 OutDir=.\..\debug
 # End Custom Macros
 
-!IF "$(RECURSE)" == "0" 
-
 ALL : "$(OUTDIR)\ref_gl.dll" "$(OUTDIR)\ref_gl.bsc"
 
-!ELSE 
 
-ALL : "quake2s - Win32 Debug" "$(OUTDIR)\ref_gl.dll" "$(OUTDIR)\ref_gl.bsc"
-
-!ENDIF 
-
-!IF "$(RECURSE)" == "1" 
-CLEAN :"quake2s - Win32 DebugCLEAN" 
-!ELSE 
 CLEAN :
-!ENDIF 
 	-@erase "$(INTDIR)\gl_draw.obj"
 	-@erase "$(INTDIR)\gl_draw.sbr"
 	-@erase "$(INTDIR)\gl_image.obj"
@@ -593,32 +571,6 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
   $(CPP_SWITCHES) $(SOURCE)
 <<
 
-
-!ENDIF 
-
-!IF  "$(CFG)" == "ref_gl - Win32 Release"
-
-"quake2s - Win32 Release" : 
-   cd "\7"
-   $(MAKE) /$(MAKEFLAGS) /F .\quake2s.mak CFG="quake2s - Win32 Release" 
-   cd ".\ref_gl.old"
-
-"quake2s - Win32 ReleaseCLEAN" : 
-   cd "\7"
-   $(MAKE) /$(MAKEFLAGS) /F .\quake2s.mak CFG="quake2s - Win32 Release" RECURSE=1 CLEAN 
-   cd ".\ref_gl.old"
-
-!ELSEIF  "$(CFG)" == "ref_gl - Win32 Debug"
-
-"quake2s - Win32 Debug" : 
-   cd "\7"
-   $(MAKE) /$(MAKEFLAGS) /F .\quake2s.mak CFG="quake2s - Win32 Debug" 
-   cd ".\ref_gl.old"
-
-"quake2s - Win32 DebugCLEAN" : 
-   cd "\7"
-   $(MAKE) /$(MAKEFLAGS) /F .\quake2s.mak CFG="quake2s - Win32 Debug" RECURSE=1 CLEAN 
-   cd ".\ref_gl.old"
 
 !ENDIF 
 

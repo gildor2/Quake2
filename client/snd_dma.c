@@ -28,6 +28,13 @@ void S_Update_();
 void S_StopAllSounds(void);
 
 
+/* NOTES:
+ *	1) sounds, which names started with '*' are placeholders - used by game, and engine will
+ *		automatically change name to a corresponding model- (or gender-) specific sound
+ *	2) sounds, which names started with '#' are searched from base game directory, others -
+ *		- from "sounds/..."
+ */
+
 // =======================================================================
 // Internal sound data & structures
 // =======================================================================
@@ -37,39 +44,33 @@ void S_StopAllSounds(void);
 
 #define		SOUND_LOOPATTENUATE	0.003
 
-int			s_registration_sequence;
+static int s_registration_sequence;
 
 channel_t   channels[MAX_CHANNELS];
 
-qboolean	snd_initialized = false;
-int			sound_started=0;
-
+static bool sound_started = false;
+static bool s_registering;
 dma_t		dma;
 
-vec3_t		listener_origin;
-vec3_t		listener_forward;
-vec3_t		listener_right;
-vec3_t		listener_up;
+static vec3_t listener_origin, listener_forward, listener_right, listener_up;
 
-qboolean	s_registering;
-
-int			soundtime;		// sample PAIRS
-int   		paintedtime; 	// sample PAIRS
+static int soundtime;		// sample PAIRS
+int paintedtime; 			// sample PAIRS; used in snd_mix.c
 
 // during registration it is possible to have more sounds
 // than could actually be referenced during gameplay,
 // because we don't want to free anything until we are
 // sure we won't need it.
 #define		MAX_SFX		(MAX_SOUNDS*2)
-sfx_t		known_sfx[MAX_SFX];
-int			num_sfx;
+static sfx_t known_sfx[MAX_SFX];
+static int	num_sfx;
 
 #define		MAX_PLAYSOUNDS	128
-playsound_t	s_playsounds[MAX_PLAYSOUNDS];
-playsound_t	s_freeplays;
+static playsound_t	s_playsounds[MAX_PLAYSOUNDS];
+static playsound_t	s_freeplays;
 playsound_t	s_pendingplays;
 
-int			s_beginofs;
+static int	s_beginofs;
 
 cvar_t		*s_volume;
 cvar_t		*s_testsound;
@@ -103,7 +104,7 @@ void S_SoundInfo_f(void)
     Com_Printf("%5d samplebits\n", dma.samplebits);
     Com_Printf("%5d submission_chunk\n", dma.submission_chunk);
     Com_Printf("%5d speed\n", dma.speed);
-    Com_Printf("0x%x dma buffer\n", dma.buffer);
+    Com_Printf("0x%X dma buffer\n", dma.buffer);
 }
 
 
@@ -219,7 +220,7 @@ CVAR_END
 
 		S_InitScaletable ();
 
-		sound_started = 1;
+		sound_started = true;
 		num_sfx = 0;
 
 		soundtime = 0;
@@ -239,7 +240,7 @@ CVAR_END
 // Shutdown sound engine
 // =======================================================================
 
-void S_Shutdown(void)
+void S_Shutdown (void)
 {
 	int		i;
 	sfx_t	*sfx;
@@ -249,7 +250,7 @@ void S_Shutdown(void)
 
 	SNDDMA_Shutdown();
 
-	sound_started = 0;
+	sound_started = false;
 
 	Cmd_RemoveCommand("play");
 	Cmd_RemoveCommand("stopsound");
@@ -257,7 +258,7 @@ void S_Shutdown(void)
 	Cmd_RemoveCommand("soundinfo");
 
 	// free all sounds
-	for (i=0, sfx=known_sfx ; i < num_sfx ; i++,sfx++)
+	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
 	{
 		if (!sfx->name[0])
 			continue;
@@ -284,43 +285,45 @@ sfx_t *S_FindName (char *name, qboolean create)
 {
 	int		i;
 	sfx_t	*sfx;
+	char	filename[MAX_QPATH];
 
+	guard(S_FindName);
 	if (!name)
-		Com_FatalError ("S_FindName: NULL\n");
+		Com_FatalError ("NULL name\n");
 	if (!name[0])
-		Com_FatalError ("S_FindName: empty name\n");
+		Com_FatalError ("empty name\n");
 
-	if (strlen(name) >= MAX_QPATH)
+	if (strlen (name) >= MAX_QPATH)
 		Com_FatalError ("Sound name too long: %s", name);
+	Q_CopyFilename (filename, name, sizeof(filename));
 
 	// see if already loaded
-	for (i=0 ; i < num_sfx ; i++)
-		if (!strcmp(known_sfx[i].name, name))
-		{
-			return &known_sfx[i];
-		}
+	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
+		if (!strcmp (sfx->name, filename))
+			return sfx;
 
 	if (!create)
 		return NULL;
 
 	// find a free sfx
-	for (i=0 ; i < num_sfx ; i++)
-		if (!known_sfx[i].name[0])
-//			registration_sequence < s_registration_sequence)
+	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
+		if (!sfx->name[0])
 			break;
 
 	if (i == num_sfx)
 	{
+		// not found
 		if (num_sfx == MAX_SFX)
-			Com_FatalError ("S_FindName: out of sfx_t");
+			Com_FatalError ("too much sfx records");
+		// alloc next free record
 		num_sfx++;
 	}
 
-	sfx = &known_sfx[i];
 	memset (sfx, 0, sizeof(*sfx));
-	strcpy (sfx->name, name);
+	strcpy (sfx->name, filename);
 	sfx->registration_sequence = s_registration_sequence;
 
+	unguard;
 	return sfx;
 }
 
@@ -337,27 +340,28 @@ sfx_t *S_AliasName (char *aliasname, char *truename)
 	char	*s;
 	int		i;
 
+	guard(S_AliasName);
 	s = Z_Malloc (MAX_QPATH);
 	strcpy (s, truename);
 
 	// find a free sfx
-	for (i=0 ; i < num_sfx ; i++)
-		if (!known_sfx[i].name[0])
+	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
+		if (!sfx->name[0])
 			break;
 
 	if (i == num_sfx)
 	{
 		if (num_sfx == MAX_SFX)
-			Com_FatalError ("S_FindName: out of sfx_t");
+			Com_FatalError ("too much sfx records");
 		num_sfx++;
 	}
 
-	sfx = &known_sfx[i];
 	memset (sfx, 0, sizeof(*sfx));
-	strcpy (sfx->name, aliasname);
+	Q_CopyFilename (sfx->name, aliasname, sizeof(*sfx->name));
 	sfx->registration_sequence = s_registration_sequence;
 	sfx->truename = s;
 
+	unguard;
 	return sfx;
 }
 
@@ -413,18 +417,20 @@ void S_EndRegistration (void)
 	int		size;
 
 	// free any sounds not from this registration sequence
-	for (i=0, sfx=known_sfx ; i < num_sfx ; i++,sfx++)
+	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
 	{
 		if (!sfx->name[0])
 			continue;
 		if (sfx->registration_sequence != s_registration_sequence)
-		{	// don't need this sound
+		{
+			// don't need this sound
 			if (sfx->cache)	// it is possible to have a leftover
 				Z_Free (sfx->cache);	// from a server that didn't finish loading
 			memset (sfx, 0, sizeof(*sfx));
 		}
 		else
-		{	// make sure it is paged in
+		{
+			// make sure it is paged in
 			if (sfx->cache)
 			{
 				size = sfx->cache->length*sfx->cache->width;
@@ -435,7 +441,7 @@ void S_EndRegistration (void)
 	}
 
 	// load everything in
-	for (i=0, sfx=known_sfx ; i < num_sfx ; i++,sfx++)
+	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
 	{
 		if (!sfx->name[0])
 			continue;
@@ -453,7 +459,7 @@ void S_EndRegistration (void)
 S_PickChannel
 =================
 */
-channel_t *S_PickChannel(int entnum, int entchannel)
+channel_t *S_PickChannel (int entnum, int entchannel)
 {
     int			ch_idx;
     int			first_to_die;
@@ -670,30 +676,27 @@ void S_IssuePlaysound (playsound_t *ps)
 	S_FreePlaysound (ps);
 }
 
-struct sfx_s *S_RegisterSexedSound (entityState_t *ent, char *base)
+static sfx_t *GetSexedSound (entityState_t *ent, char *base)
 {
-	int		n;
 	struct sfx_s *sfx;
-	char	*p, model[MAX_QPATH], sexedFilename[MAX_QPATH];
+	char	*s, *p, model[MAX_QPATH], sexedFilename[MAX_QPATH];
 
 	// determine what model the client is using
 	model[0] = 0;
-	n = CS_PLAYERSKINS + ent->number - 1;
-	if (cl.configstrings[n][0])
+	s = cl.configstrings[CS_PLAYERSKINS + ent->number - 1];
+	if (s[0])
 	{
-		p = strchr(cl.configstrings[n], '\\');
+		p = strchr (s, '\\');
 		if (p)
 		{
-			p += 1;
-			strcpy(model, p);
-			p = strchr(model, '/');
-			if (p)
-				*p = 0;
+			strcpy (model, p+1);
+			p = strchr (model, '/');
+			if (p) *p = 0;
 		}
 	}
 	// if we can't figure it out, they're male
 	if (!model[0])
-		strcpy(model, "male");
+		strcpy (model, "male");
 
 	// see if we already know of the model specific sound
 	Com_sprintf (ARRAY_ARG(sexedFilename), "#players/%s/%s", model, base+1);
@@ -733,7 +736,7 @@ if pos is NULL, the sound will be dynamically sourced from the entity
 Entchannel 0 will never override a playing sound
 ====================
 */
-void S_StartSound(vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float fvol, float attenuation, float timeofs)
+void S_StartSound (vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float fvol, float attenuation, float timeofs)
 {
 	sfxcache_t	*sc;
 	int			vol;
@@ -750,7 +753,7 @@ void S_StartSound(vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float f
 		return;
 
 	if (sfx->name[0] == '*')
-		sfx = S_RegisterSexedSound(&cl_entities[entnum].current, sfx->name);
+		sfx = GetSexedSound (&cl_entities[entnum].current, sfx->name);
 
 	// make sure the sound is loaded
 	sc = S_LoadSound (sfx);
@@ -1222,7 +1225,7 @@ console functions
 ===============================================================================
 */
 
-void S_Play(void)
+void S_Play (void)
 {
 	int 	i;
 	char name[256];
@@ -1244,41 +1247,55 @@ void S_Play(void)
 	}
 }
 
-static void S_SoundList(void)
+static void S_SoundList (void)
 {
-	int		i;
+	int		i, n;
 	sfx_t	*sfx;
 	sfxcache_t	*sc;
 	int		size, total;
+	char	*mask;
 
-	total = 0;
-	for (sfx=known_sfx, i=0 ; i<num_sfx ; i++, sfx++)
+	if (Cmd_Argc () > 2)
 	{
-		if (!sfx->registration_sequence)
+		Com_Printf ("Usage: soundlist [<mask>]\n");
+		return;
+	}
+
+	if (Cmd_Argc () == 2)
+		mask = Cmd_Argv (1);
+	else
+		mask = NULL;
+
+	Com_Printf ("---lp-bit-size----name----------\n");
+
+	n =	total = 0;
+	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
+	{
+		if (!sfx->name[0])
 			continue;
+
+		if (mask && !MatchWildcard2 (sfx->name, mask, true)) continue;
+		n++;
+
 		sc = sfx->cache;
 		if (sc)
 		{
 			size = sc->length*sc->width*(sc->stereo+1);
 			total += size;
-			if (sc->loopstart >= 0)
-				Com_Printf ("L");
-			else
-				Com_Printf (" ");
-			Com_Printf("(%2db) %6i : %s\n",sc->width*8,  size, sfx->name);
+			Com_Printf ("%-3d %c %-2d  %-7d %s\n", i, sc->loopstart >= 0 ? 'L' : ' ', sc->width*8,  size, sfx->name);
 		}
 		else
 		{
 			char *status;
 
 			if (sfx->name[0] == '*')
-				status = "  placeholder ";
+				status = "placeholder  ";
 			else if (sfx->absent)
-				status = "^1  not found   ^7";
+				status = "^1not found    ^7";
 			else
-				status = "  not loaded  ";
-			Com_Printf ("%s: %s\n", status, sfx->name);
+				status = "not loaded   ";
+			Com_Printf ("%-3d %s %s\n", i, status, sfx->name);
 		}
 	}
-	Com_Printf ("Total resident: %i\n", total);
+	Com_Printf ("Displayed %d/%d sounds; resident: %d bytes\n", n, num_sfx, total);
 }

@@ -1704,7 +1704,7 @@ void Info_SetValueForKey (char *s, char *key, char *value)
 		return;
 	}
 	Info_RemoveKey (s, key);
-	if (!value || !strlen (value))
+	if (!value || !value[0])
 		return;
 
 	Com_sprintf (ARRAY_ARG(newi), "\\%s\\%s", key, value);

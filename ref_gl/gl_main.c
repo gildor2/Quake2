@@ -355,7 +355,7 @@ static int GL_Init (void)
 	{
 		gl_config.formatSolid = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 		gl_config.formatAlpha = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;	// DXT5 - compressed alpha; DXT3 - uncompressed alpha
-		gl_config.formatAlpha1 = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+		gl_config.formatAlpha1 = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;	// RGBA DXT1 - 1bit alpha (bugs with GF FX5200), DXT5 - 8bit alpha
 	}
 
 	if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))
