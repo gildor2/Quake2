@@ -1087,8 +1087,7 @@ void Cmd_ExecuteString (char *text)
 				Com_WPrintf ("ALIAS_LOOP_COUNT\n");
 				return;
 			}
-			Cbuf_InsertText (a->value);
-			Cbuf_InsertText ("\n");
+			Cbuf_InsertText (va("%s\n", a->value));
 			return;
 		}
 	}

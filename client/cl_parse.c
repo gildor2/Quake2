@@ -397,11 +397,8 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 	char		*t;
 	char		model_name[MAX_QPATH];
 	char		skin_name[MAX_QPATH];
-	char		model_filename[MAX_QPATH];
-	char		skin_filename[MAX_QPATH];
-	char		weapon_filename[MAX_QPATH];
 
-	strncpy(ci->cinfo, s, sizeof(ci->cinfo));
+	strncpy (ci->cinfo, s, sizeof(ci->cinfo));
 	ci->cinfo[sizeof(ci->cinfo)-1] = 0;
 
 	// isolate the player's name
@@ -416,14 +413,11 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 
 	if (cl_noskins->integer || *s == 0)
 	{
-		Com_sprintf (model_filename, sizeof(model_filename), "players/male/tris.md2");
-		Com_sprintf (weapon_filename, sizeof(weapon_filename), "players/male/weapon.md2");
-		Com_sprintf (skin_filename, sizeof(skin_filename), "players/male/grunt.pcx");
-		Com_sprintf (ci->iconname, sizeof(ci->iconname), "/players/male/grunt_i.pcx");
-		ci->model = re.RegisterModel (model_filename);
-		memset(ci->weaponmodel, 0, sizeof(ci->weaponmodel));
-		ci->weaponmodel[0] = re.RegisterModel (weapon_filename);
-		ci->skin = re.RegisterSkin (skin_filename);
+		ci->model = re.RegisterModel ("players/male/tris.md2");
+		memset (ci->weaponmodel, 0, sizeof(ci->weaponmodel));
+		ci->weaponmodel[0] = re.RegisterModel ("players/male/weapon.md2");
+		ci->skin = re.RegisterSkin ("players/male/grunt.pcx");
+		strcpy (ci->iconname, "/players/male/grunt_i.pcx");
 		ci->icon = re.RegisterPic (ci->iconname);
 	}
 	else
@@ -441,18 +435,15 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 		strcpy (skin_name, s + strlen (model_name) + 1);
 
 		// model file
-		Com_sprintf (model_filename, sizeof(model_filename), "players/%s/tris.md2", model_name);
-		ci->model = re.RegisterModel (model_filename);
+		ci->model = re.RegisterModel (va("players/%s/tris.md2", model_name));
 		if (!ci->model)
 		{
 			strcpy (model_name, "male");
-			Com_sprintf (model_filename, sizeof(model_filename), "players/male/tris.md2");
-			ci->model = re.RegisterModel (model_filename);
+			ci->model = re.RegisterModel ("players/male/tris.md2");
 		}
 
 		// skin file
-		Com_sprintf (skin_filename, sizeof(skin_filename), "players/%s/%s.pcx", model_name, skin_name);
-		ci->skin = re.RegisterSkin (skin_filename);
+		ci->skin = re.RegisterSkin (va("players/%s/%s.pcx", model_name, skin_name));
 
 		// if we don't have the skin and the model wasn't male,
 		// see if the male has it (this is for CTF's skins)
@@ -460,12 +451,10 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 		{
 			// change model to male
 			strcpy(model_name, "male");
-			Com_sprintf (model_filename, sizeof(model_filename), "players/male/tris.md2");
-			ci->model = re.RegisterModel (model_filename);
+			ci->model = re.RegisterModel ("players/male/tris.md2");
 
 			// see if the skin exists for the male model
-			Com_sprintf (skin_filename, sizeof(skin_filename), "players/%s/%s.pcx", model_name, skin_name);
-			ci->skin = re.RegisterSkin (skin_filename);
+			ci->skin = re.RegisterSkin (va("players/%s/%s.pcx", model_name, skin_name));
 		}
 
 		// if we still don't have a skin, it means that the male model didn't have
@@ -473,20 +462,17 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 		if (!ci->skin)
 		{
 			// see if the skin exists for the male model
-			Com_sprintf (skin_filename, sizeof(skin_filename), "players/%s/grunt.pcx", model_name);
-			ci->skin = re.RegisterSkin (skin_filename);
+			ci->skin = re.RegisterSkin (va("players/%s/grunt.pcx", model_name));
 		}
 
 		// weapon file
 		for (i = 0; i < num_cl_weaponmodels; i++)
 		{
-			Com_sprintf (weapon_filename, sizeof(weapon_filename), "players/%s/%s", model_name, cl_weaponmodels[i]);
-			ci->weaponmodel[i] = re.RegisterModel(weapon_filename);
+			ci->weaponmodel[i] = re.RegisterModel(va("players/%s/%s", model_name, cl_weaponmodels[i]));
 			if (!ci->weaponmodel[i] && strcmp(model_name, "cyborg") == 0)
 			{
 				// try male
-				Com_sprintf (weapon_filename, sizeof(weapon_filename), "players/male/%s", cl_weaponmodels[i]);
-				ci->weaponmodel[i] = re.RegisterModel(weapon_filename);
+				ci->weaponmodel[i] = re.RegisterModel(va("players/male/%s", cl_weaponmodels[i]));
 			}
 			if (!cl_vwep->integer)
 				break; // only one when vwep is off

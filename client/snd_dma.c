@@ -388,14 +388,8 @@ sfx_t *S_RegisterSound (char *name)
 	if (!s_registering)
 		S_LoadSound (sfx);
 	else
-		if (name[0] != '#' && name[0] != '*')
-		{
-			char	buf[MAX_OSPATH];
-
-			Com_sprintf (buf, sizeof(buf), "sound/%s", name);
-			if (!FS_FileExists (buf))
-				sfx->absent = true;
-		}
+		if (name[0] != '#' && name[0] != '*' && !FS_FileExists (va("sound/%s", name)))
+			sfx->absent = true;
 
 	return sfx;
 }
@@ -668,12 +662,9 @@ void S_IssuePlaysound (playsound_t *ps)
 
 struct sfx_s *S_RegisterSexedSound (entity_state_t *ent, char *base)
 {
-	int				n;
-	char			*p;
-	struct sfx_s	*sfx;
-	char			model[MAX_QPATH];
-	char			sexedFilename[MAX_QPATH];
-	char			maleFilename[MAX_QPATH];
+	int		n;
+	struct sfx_s *sfx;
+	char	*p, model[MAX_QPATH], sexedFilename[MAX_QPATH];
 
 	// determine what model the client is using
 	model[0] = 0;
@@ -707,15 +698,11 @@ struct sfx_s *S_RegisterSexedSound (entity_state_t *ent, char *base)
 			sfx = S_RegisterSound (sexedFilename);
 		}
 		else if (S_IsFemale (model))
-		{
-			Com_sprintf (maleFilename, sizeof(maleFilename), "player/female/%s", base+1);
-			sfx = S_AliasName (sexedFilename, maleFilename);
-		}
+			sfx = S_AliasName (sexedFilename, va("player/female/%s", base+1));
 		else
 		{
 			// no, revert to the male sound in the pak0.pak
-			Com_sprintf (maleFilename, sizeof(maleFilename), "player/male/%s", base+1);
-			sfx = S_AliasName (sexedFilename, maleFilename);
+			sfx = S_AliasName (sexedFilename, va("player/male/%s", base+1));
 		}
 	}
 

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -98,28 +98,28 @@ areanode_t *SV_CreateAreaNode (int depth, vec3_t mins, vec3_t maxs)
 
 	ClearLink (&anode->trigger_edicts);
 	ClearLink (&anode->solid_edicts);
-	
+
 	if (depth == AREA_DEPTH)
 	{
 		anode->axis = -1;
 		anode->children[0] = anode->children[1] = NULL;
 		return anode;
 	}
-	
+
 	VectorSubtract (maxs, mins, size);
 	if (size[0] > size[1])
 		anode->axis = 0;
 	else
 		anode->axis = 1;
-	
+
 	anode->dist = 0.5 * (maxs[anode->axis] + mins[anode->axis]);
-	VectorCopy (mins, mins1);	
-	VectorCopy (mins, mins2);	
-	VectorCopy (maxs, maxs1);	
-	VectorCopy (maxs, maxs2);	
-	
+	VectorCopy (mins, mins1);
+	VectorCopy (mins, mins2);
+	VectorCopy (maxs, maxs1);
+	VectorCopy (maxs, maxs2);
+
 	maxs1[anode->axis] = mins2[anode->axis] = anode->dist;
-	
+
 	anode->children[0] = SV_CreateAreaNode (depth+1, mins2, maxs2);
 	anode->children[1] = SV_CreateAreaNode (depth+1, mins1, maxs1);
 
@@ -174,7 +174,7 @@ void SV_LinkEdict (edict_t *ent)
 
 	if (ent->area.prev)
 		SV_UnlinkEdict (ent);	// unlink from old position
-		
+
 	if (ent == ge->edicts)
 		return;		// don't add the world
 
@@ -183,7 +183,7 @@ void SV_LinkEdict (edict_t *ent)
 
 	// set the size
 	VectorSubtract (ent->maxs, ent->mins, ent->size);
-	
+
 	// encode the size into the entity_state for client prediction
 	if (ent->solid == SOLID_BBOX && !(ent->svflags & SVF_DEADMONSTER))
 	{	// assume that x/y are equal and symetric
@@ -217,7 +217,7 @@ void SV_LinkEdict (edict_t *ent)
 		ent->s.solid = 0;
 
 	// set the abs box
-	if (ent->solid == SOLID_BSP && 
+	if (ent->solid == SOLID_BSP &&
 	(ent->s.angles[0] || ent->s.angles[1] || ent->s.angles[2]) )
 	{	// expand for rotation
 		float		max, v;
@@ -241,7 +241,7 @@ void SV_LinkEdict (edict_t *ent)
 	}
 	else
 	{	// normal
-		VectorAdd (ent->s.origin, ent->mins, ent->absmin);	
+		VectorAdd (ent->s.origin, ent->mins, ent->absmin);
 		VectorAdd (ent->s.origin, ent->maxs, ent->absmax);
 	}
 
@@ -335,8 +335,8 @@ void SV_LinkEdict (edict_t *ent)
 		else
 			break;		// crosses the node
 	}
-	
-	// link it in	
+
+	// link it in
 	if (ent->solid == SOLID_TRIGGER)
 		InsertLinkBefore (&ent->area, &node->trigger_edicts);
 	else
@@ -389,7 +389,7 @@ void SV_AreaEdicts_r (areanode_t *node)
 		area_list[area_count] = check;
 		area_count++;
 	}
-	
+
 	if (node->axis == -1)
 		return;		// terminal node
 
@@ -522,12 +522,11 @@ void SV_ClipMoveToEntities ( moveclip_t *clip )
 	int			headnode;
 	float		*angles;
 
-	num = SV_AreaEdicts (clip->boxmins, clip->boxmaxs, touchlist
-		, MAX_EDICTS, AREA_SOLID);
+	num = SV_AreaEdicts (clip->boxmins, clip->boxmaxs, touchlist, MAX_EDICTS, AREA_SOLID);
 
 	// be careful, it is possible to have an entity in this
 	// list removed before we get to it (killtriggered)
-	for (i=0 ; i<num ; i++)
+	for (i = 0; i < num; i++)
 	{
 		touch = touchlist[i];
 		if (touch->solid == SOLID_NOT)
@@ -563,8 +562,7 @@ void SV_ClipMoveToEntities ( moveclip_t *clip )
 				clip->mins, clip->maxs, headnode,  clip->contentmask,
 				touch->s.origin, angles);
 
-		if (trace.allsolid || trace.startsolid ||
-		trace.fraction < clip->trace.fraction)
+		if (trace.allsolid || trace.startsolid || trace.fraction < clip->trace.fraction)
 		{
 			trace.ent = touch;
 		 	if (clip->trace.startsolid)
@@ -594,7 +592,7 @@ boxmins[0] = boxmins[1] = boxmins[2] = -9999;
 boxmaxs[0] = boxmaxs[1] = boxmaxs[2] = 9999;
 #else
 	int		i;
-	
+
 	for (i=0 ; i<3 ; i++)
 	{
 		if (end[i] > start[i])
@@ -647,7 +645,7 @@ trace_t SV_Trace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *p
 
 	VectorCopy (mins, clip.mins2);
 	VectorCopy (maxs, clip.maxs2);
-	
+
 	// create the bounding box of the entire move
 	SV_TraceBounds ( start, clip.mins2, clip.maxs2, end, clip.boxmins, clip.boxmaxs );
 
@@ -656,4 +654,3 @@ trace_t SV_Trace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *p
 
 	return clip.trace;
 }
-

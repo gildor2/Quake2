@@ -479,7 +479,7 @@ void R_DrawParticle( void )
 	/*
 	** transform the particle
 	*/
-	VectorSubtract (pparticle->origin, r_origin, local);
+	VectorSubtract (pparticle->org, r_origin, local);
 
 	transformed[0] = DotProduct(local, r_pright);
 	transformed[1] = DotProduct(local, r_pup);
@@ -596,7 +596,6 @@ void R_DrawParticle( void )
 void R_DrawParticles (void)
 {
 	particle_t *p;
-	int         i;
 	extern unsigned long fpu_sp24_cw, fpu_chop_cw;
 
 	VectorScale( vright, xscaleshrink, r_pright );
@@ -607,12 +606,12 @@ void R_DrawParticles (void)
 	__asm fldcw word ptr [fpu_sp24_cw]
 #endif
 
-	for (p=r_newrefdef.particles, i=0 ; i<r_newrefdef.num_particles ; i++,p++)
+	for (p = r_newrefdef.particles; p ; p = p->next)
 	{
 
-		if (p->alpha > 255 * 2 / 3)
+		if (p->alpha > 2 / 3)
 			partparms.level = PARTICLE_OPAQUE;
-		else if (p->alpha > 255 / 3)
+		else if (p->alpha > 1.0f / 3)
 			partparms.level = PARTICLE_66;
 		else
 			partparms.level = PARTICLE_33;

@@ -957,7 +957,7 @@ void SCR_TouchPics (void)
 	{
 		if (ch_num > 0)
 		{
-			Com_sprintf (crosshair_pic, sizeof(crosshair_pic), "ch%i", crosshair->integer);
+			Com_sprintf (crosshair_pic, sizeof(crosshair_pic), "ch%d", crosshair->integer);
 			re.DrawGetPicSize (&crosshair_width, &crosshair_height, crosshair_pic);
 			if (crosshair_width <= 0)
 				ch_num = -1;								// invalid value

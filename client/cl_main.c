@@ -82,6 +82,7 @@ cvar_t	*cl_vwep;
 cvar_t  *cl_extProtocol;
 
 cvar_t	*cl_draw2d;
+cvar_t	*r_sfx_pause;
 
 client_static_t	cls;
 client_state_t	cl;
@@ -1124,7 +1125,6 @@ static const char *env_suf[6] = {"rt", "bk", "lf", "ft", "up", "dn"};
 void CL_RequestNextDownload (void)
 {
 	unsigned	map_checksum;		// for detecting cheater maps
-	char fn[MAX_OSPATH];
 	dmdl_t *pheader;
 
 	if (cls.state != ca_connected)
@@ -1217,8 +1217,7 @@ void CL_RequestNextDownload (void)
 					precache_check++;
 					continue;
 				}
-				Com_sprintf(fn, sizeof(fn), "sound/%s", cl.configstrings[precache_check++]);
-				if (!CL_CheckOrDownloadFile(fn))
+				if (!CL_CheckOrDownloadFile(va("sound/%s", cl.configstrings[precache_check++])))
 					return; // started a download
 			}
 		}
@@ -1423,13 +1422,11 @@ Writes key bindings and archived cvars to config.cfg
 void CL_WriteConfiguration (char *filename)
 {
 	FILE	*f;
-	char	path[MAX_QPATH];
 
 	if (cls.state == ca_uninitialized)
 		return;
 
-	Com_sprintf (path, sizeof(path), "%s/%s", FS_Gamedir(), filename);
-	f = fopen (path, "w");
+	f = fopen (va("%s/%s", FS_Gamedir(), filename), "w");
 	if (!f)
 	{
 		Com_Printf ("Couldn't write %s.\n", filename);
@@ -1542,7 +1539,8 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(cl_extProtocol, 1, CVAR_ARCHIVE),
 
-	CVAR_VAR(cl_draw2d, 1, 0)
+	CVAR_VAR(cl_draw2d, 1, 0),
+	CVAR_VAR(r_sfx_pause, 0, 0)
 CVAR_END
 
 	CVAR_GET_VARS(vars);

@@ -753,12 +753,12 @@ void Con_DrawConsole (float frac)
 	dy = viddef.height >> 3;
 
 	/*------------ draw version info ---------------*/
-	Com_sprintf (version, sizeof(version), "v%4.2f", VERSION);
-	for (x = 0; x < 5; x++)
+	i = Com_sprintf (version, sizeof(version), APPNAME " v%4.2f", VERSION);
+	for (x = 0; x < i; x++)
 		if (!(re.flags & REF_CONSOLE_ONLY))
-			re.DrawCharColor (viddef.width - 44 + x * 8, lines - 12, 128 + version[x], 7);
+			re.DrawCharColor (viddef.width - i * 8 - 4 + x * 8, lines - 12, 128 + version[x], 7);
 		else
-			re.DrawConCharColor (dx - 6 + x, dy - 1, 128 + version[x], 7);
+			re.DrawConCharColor (dx - i - 1 + x, dy - 1, 128 + version[x], 7);
 
 	// draw the text
 	con.vislines = lines;

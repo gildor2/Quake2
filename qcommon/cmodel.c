@@ -1332,11 +1332,8 @@ int CM_PointLeafnum_r (vec3_t p, int num)
 		plane = node->plane;
 
 		d = DISTANCE_TO_PLANE(p,plane);
-/*		if (plane->type < 3)
-			d = p[plane->type] - plane->dist;
-		else
-			d = DotProduct (plane->normal, p) - plane->dist;
-*/		if (d < 0)
+
+		if (d < 0)
 			num = node->children[1];
 		else
 			num = node->children[0];
@@ -1389,7 +1386,6 @@ void CM_BoxLeafnums_r (int nodenum)
 
 		node = &map_nodes[nodenum];
 		plane = node->plane;
-//		s = BoxOnPlaneSide (leaf_mins, leaf_maxs, plane);
 		s = BOX_ON_PLANE_SIDE(leaf_mins, leaf_maxs, plane);
 		if (s == 1)
 			nodenum = node->children[0];
@@ -1469,8 +1465,7 @@ int	CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t a
 	VectorSubtract (p, origin, p_l);
 
 	// rotate start and end into the models frame of reference
-	if (headnode != box_headnode &&
-	(angles[0] || angles[1] || angles[2]) )
+	if (headnode != box_headnode && (angles[0] || angles[1] || angles[2]))
 	{
 		AngleVectors (angles, forward, right, up);
 
@@ -1533,9 +1528,9 @@ int trace_parts_start;
 #include "../client/ref.h"
 extern refExport_t re;
 
-void TraceBuf_Dump (char *name)
+static void TraceBuf_Dump (char *name)
 {
-	char buf[1024], buf2[256];
+	char buf[1024];
 	trace_part_t *p;
 	int i = trace_parts_start;
 
@@ -1545,8 +1540,7 @@ void TraceBuf_Dump (char *name)
 	while (i != -1)
 	{
 		p = &trace_parts[i];
-		Com_sprintf (buf2, sizeof(buf2)," {L:%d %g-%g}", p->leaf, p->p1f, p->p2f);
-		strcat (buf, buf2);
+		strcat (buf, va(" {L:%d %g-%g}", p->leaf, p->p1f, p->p2f));
 		if (!p->used) strcat (buf, " UN!!");
 		i = p->next;
 	}
@@ -2422,14 +2416,14 @@ void CM_RecursiveHullCheck (int num, float p1f, float p2f, vec3_t p1, vec3_t p2)
 	// put the crosspoint DIST_EPSILON pixels on the near side
 	if (t1 < t2)
 	{
-		idist = 1.0/(t1-t2);
+		idist = 1.0f / (t1 - t2);
 		side = 1;
 		frac2 = (t1 + offset + DIST_EPSILON)*idist;
 		frac = (t1 - offset + DIST_EPSILON)*idist;
 	}
 	else if (t1 > t2)
 	{
-		idist = 1.0/(t1-t2);
+		idist = 1.0f / (t1 - t2);
 		side = 0;
 		frac2 = (t1 - offset - DIST_EPSILON)*idist;
 		frac = (t1 + offset + DIST_EPSILON)*idist;
@@ -2441,15 +2435,11 @@ void CM_RecursiveHullCheck (int num, float p1f, float p2f, vec3_t p1, vec3_t p2)
 		frac2 = 0;
 	}
 
-	if (frac < 0)
-		frac = 0;
-	if (frac > 1)
-		frac = 1;
+	if (frac < 0)	frac = 0;
+	if (frac > 1)	frac = 1;
 
-	if (frac2 < 0)
-		frac2 = 0;
-	if (frac2 > 1)
-		frac2 = 1;
+	if (frac2 < 0)	frac2 = 0;
+	if (frac2 > 1)	frac2 = 1;
 
 /*	{//!!!!
 		char buf[256];
@@ -2461,7 +2451,7 @@ void CM_RecursiveHullCheck (int num, float p1f, float p2f, vec3_t p1, vec3_t p2)
 	}//===*/
 
 	// move up to the node
-	midf = p1f + (p2f - p1f)*frac;
+	midf = p1f + (p2f - p1f) * frac;
 	for (i = 0; i < 3; i++)
 		mid[i] = p1[i] + frac*(p2[i] - p1[i]);
 

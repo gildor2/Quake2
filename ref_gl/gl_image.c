@@ -1218,8 +1218,7 @@ static void PerformScreenshot (qboolean jpeg)
 		ext = "tga";
 
 	// create the screenshots directory if it doesn't exist
-	Com_sprintf (name, sizeof(name), "%s/%s", FS_Gamedir(), dir);
-	Sys_Mkdir (name);
+	Sys_Mkdir (va("%s/%s", FS_Gamedir(), dir));
 
 	// find a file name to save it to
 	if (levelshot)
@@ -1396,6 +1395,12 @@ void GL_InitImages (void)
 			if (y >= 1 && y <= 4 && x >= 1 && x <= 4)
 			{
 				p[0] = p[1] = p[2] = 255;
+
+				if (y == 1 || y == 4 || x == 1 || x == 4)
+				{
+					p[3] = 128;
+				}
+
 				if ((y == 1 || y == 4) && (x == 1 || x == 4))
 					p[3] = 64;
 				else

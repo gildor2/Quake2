@@ -51,9 +51,9 @@ unsigned ColorBytes3 (float r, float g, float b)
 {
 	unsigned	i;
 
-	( (byte *)&i )[0] = r * 255;
-	( (byte *)&i )[1] = g * 255;
-	( (byte *)&i )[2] = b * 255;
+	((byte *)&i)[0] = r * 255.0f;
+	((byte *)&i)[1] = g * 255.0f;
+	((byte *)&i)[2] = b * 255.0f;
 
 	return i;
 }
@@ -62,10 +62,10 @@ unsigned ColorBytes4 (float r, float g, float b, float a)
 {
 	unsigned	i;
 
-	( (byte *)&i )[0] = r * 255;
-	( (byte *)&i )[1] = g * 255;
-	( (byte *)&i )[2] = b * 255;
-	( (byte *)&i )[3] = a * 255;
+	((byte *)&i)[0] = r * 255.0f;
+	((byte *)&i)[1] = g * 255.0f;
+	((byte *)&i)[2] = b * 255.0f;
+	((byte *)&i)[3] = a * 255.0f;
 
 	return i;
 }
@@ -90,10 +90,10 @@ float NormalizeColor (const vec3_t in, vec3_t out)
 	return max;
 }
 
-float Q_rsqrt( float number )
+float Q_rsqrt (float number)
 {
-	long i;
-	float x2, y;
+	long	i;
+	float	x2, y;
 	const float threehalfs = 1.5f;
 
 	x2 = number * 0.5f;
@@ -333,13 +333,16 @@ float Q_fabs (float f)
 
 #if defined _M_IX86 && !defined C_ONLY
 #pragma warning (disable:4035)
-__declspec( naked ) long Q_ftol( float f )
+__declspec (naked) long Q_ftol (float f)
 {
 	static int tmp;
-	__asm fld dword ptr [esp+4]
-	__asm fistp tmp
-	__asm mov eax, tmp
-	__asm ret
+
+	__asm {
+		fld		dword ptr [esp+4]
+		fistp	tmp
+		mov		eax,tmp
+		ret
+	}
 }
 #pragma warning (default:4035)
 #endif
@@ -394,8 +397,8 @@ float	anglemod(float a)
 	return a;
 }
 
-	int		i;
-	vec3_t	corners[2];
+//	int		i;
+//	vec3_t	corners[2];
 
 
 // this is the slow, general version
@@ -437,61 +440,71 @@ BoxOnPlaneSide
 Returns 1, 2, or 1 + 2
 ==================
 */
-#if !id386 || defined __linux__
+#if	1	//let compiler optimize this // !id386 || defined __linux__
 
-int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
+int BoxOnPlaneSide (vec3_t mins, vec3_t maxs, struct cplane_s *p)
 {
 	float	dist1, dist2;
 	int		sides;
 
-// fast axial cases
-	if (p->type < 3)
+	// fast axial cases -- use BOX_ON_PLANE_SIDE for this
+/*	if (p->type < 3)
 	{
 		if (p->dist <= emins[p->type])
 			return 1;
 		if (p->dist >= emaxs[p->type])
 			return 2;
 		return 3;
-	}
+	} */
 
-// general case
+	float	i0, i1, i2, a0, a1, a2;
+
+	i0 = p->normal[0] * mins[0];
+	a0 = p->normal[0] * maxs[0];
+	i1 = p->normal[1] * mins[1];
+	a1 = p->normal[1] * maxs[1];
+	i2 = p->normal[2] * mins[2];
+	a2 = p->normal[2] * maxs[2];
+
+	// general case
 	switch (p->signbits)
 	{
 	case 0:
-		dist1 = p->normal[0]*emaxs[0] + p->normal[1]*emaxs[1] + p->normal[2]*emaxs[2];
-		dist2 = p->normal[0]*emins[0] + p->normal[1]*emins[1] + p->normal[2]*emins[2];
+		dist1 = a0 + a1 + a2;
+		dist2 = i0 + i1 + i2;
 		break;
 	case 1:
-		dist1 = p->normal[0]*emins[0] + p->normal[1]*emaxs[1] + p->normal[2]*emaxs[2];
-		dist2 = p->normal[0]*emaxs[0] + p->normal[1]*emins[1] + p->normal[2]*emins[2];
+		dist1 = i0 + a1 + a2;
+		dist2 = a0 + i1 + i2;
 		break;
 	case 2:
-		dist1 = p->normal[0]*emaxs[0] + p->normal[1]*emins[1] + p->normal[2]*emaxs[2];
-		dist2 = p->normal[0]*emins[0] + p->normal[1]*emaxs[1] + p->normal[2]*emins[2];
+		dist1 = a0 + i1 + a2;
+		dist2 = i0 + a1 + i2;
 		break;
 	case 3:
-		dist1 = p->normal[0]*emins[0] + p->normal[1]*emins[1] + p->normal[2]*emaxs[2];
-		dist2 = p->normal[0]*emaxs[0] + p->normal[1]*emaxs[1] + p->normal[2]*emins[2];
+		dist1 = i0 + i1 + a2;
+		dist2 = a0 + a1 + i2;
 		break;
 	case 4:
-		dist1 = p->normal[0]*emaxs[0] + p->normal[1]*emaxs[1] + p->normal[2]*emins[2];
-		dist2 = p->normal[0]*emins[0] + p->normal[1]*emins[1] + p->normal[2]*emaxs[2];
+		dist1 = a0 + a1 + i2;
+		dist2 = i0 + i1 + a2;
 		break;
 	case 5:
-		dist1 = p->normal[0]*emins[0] + p->normal[1]*emaxs[1] + p->normal[2]*emins[2];
-		dist2 = p->normal[0]*emaxs[0] + p->normal[1]*emins[1] + p->normal[2]*emaxs[2];
+		dist1 = i0 + a1 + i2;
+		dist2 = a0 + i1 + a2;
 		break;
 	case 6:
-		dist1 = p->normal[0]*emaxs[0] + p->normal[1]*emins[1] + p->normal[2]*emins[2];
-		dist2 = p->normal[0]*emins[0] + p->normal[1]*emaxs[1] + p->normal[2]*emaxs[2];
+		dist1 = a0 + i1 + i2;
+		dist2 = i0 + a1 + a2;
 		break;
 	case 7:
-		dist1 = p->normal[0]*emins[0] + p->normal[1]*emins[1] + p->normal[2]*emins[2];
-		dist2 = p->normal[0]*emaxs[0] + p->normal[1]*emaxs[1] + p->normal[2]*emaxs[2];
+//	default:	// shut up compiler
+		dist1 = i0 + i1 + i2;
+		dist2 = a0 + a1 + a2;
 		break;
-	default:
-		dist1 = dist2 = 0;		// shut up compiler
-		break;
+//	default:
+//		dist1 = dist2 = 0;		// shut up compiler
+//		break;
 	}
 
 	sides = 0;
@@ -505,233 +518,233 @@ int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
 #else
 #pragma warning( disable: 4035 )
 
-__declspec( naked ) int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
+__declspec (naked) int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
 {
 	static int bops_initialized;
 	static int Ljmptab[8];
 
 	__asm {
 
-		push ebx
+		push	ebx
 
-		cmp bops_initialized, 1
-		je  initialized
-		mov bops_initialized, 1
+		cmp		bops_initialized, 1
+		je		initialized
+		mov		bops_initialized, 1
 
-		mov Ljmptab[0*4], offset Lcase0
-		mov Ljmptab[1*4], offset Lcase1
-		mov Ljmptab[2*4], offset Lcase2
-		mov Ljmptab[3*4], offset Lcase3
-		mov Ljmptab[4*4], offset Lcase4
-		mov Ljmptab[5*4], offset Lcase5
-		mov Ljmptab[6*4], offset Lcase6
-		mov Ljmptab[7*4], offset Lcase7
+		mov		Ljmptab[0*4], offset Lcase0
+		mov		Ljmptab[1*4], offset Lcase1
+		mov		Ljmptab[2*4], offset Lcase2
+		mov		Ljmptab[3*4], offset Lcase3
+		mov		Ljmptab[4*4], offset Lcase4
+		mov		Ljmptab[5*4], offset Lcase5
+		mov		Ljmptab[6*4], offset Lcase6
+		mov		Ljmptab[7*4], offset Lcase7
 
 initialized:
 
-		mov edx,dword ptr[4+12+esp]
-		mov ecx,dword ptr[4+4+esp]
-		xor eax,eax
-		mov ebx,dword ptr[4+8+esp]
-		mov al,byte ptr[17+edx]
-		cmp al,8
-		jge Lerror
-		fld dword ptr[0+edx]
-		fld st(0)
-		jmp dword ptr[Ljmptab+eax*4]
+		mov		edx,dword ptr[4+12+esp]
+		mov		ecx,dword ptr[4+4+esp]
+		xor		eax,eax
+		mov		ebx,dword ptr[4+8+esp]
+		mov		al,byte ptr[17+edx]
+		cmp		al,8
+		jge		Lerror
+		fld		dword ptr[0+edx]
+		fld		st(0)
+		jmp		dword ptr[Ljmptab+eax*4]
 Lcase0:
-		fmul dword ptr[ebx]
-		fld dword ptr[0+4+edx]
-		fxch st(2)
-		fmul dword ptr[ecx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[4+ebx]
-		fld dword ptr[0+8+edx]
-		fxch st(2)
-		fmul dword ptr[4+ecx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[8+ebx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul dword ptr[8+ecx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp LSetSides
+		fmul	dword ptr[ebx]
+		fld		dword ptr[0+4+edx]
+		fxch	st(2)
+		fmul	dword ptr[ecx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[4+ebx]
+		fld		dword ptr[0+8+edx]
+		fxch	st(2)
+		fmul	dword ptr[4+ecx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[8+ebx]
+		fxch	st(5)
+		faddp	st(3),st(0)
+		fmul	dword ptr[8+ecx]
+		fxch	st(1)
+		faddp	st(3),st(0)
+		fxch	st(3)
+		faddp	st(2),st(0)
+		jmp		LSetSides
 Lcase1:
-		fmul dword ptr[ecx]
-		fld dword ptr[0+4+edx]
-		fxch st(2)
-		fmul dword ptr[ebx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[4+ebx]
-		fld dword ptr[0+8+edx]
-		fxch st(2)
-		fmul dword ptr[4+ecx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[8+ebx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul dword ptr[8+ecx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp LSetSides
+		fmul	dword ptr[ecx]
+		fld		dword ptr[0+4+edx]
+		fxch	st(2)
+		fmul	dword ptr[ebx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[4+ebx]
+		fld		dword ptr[0+8+edx]
+		fxch	st(2)
+		fmul	dword ptr[4+ecx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[8+ebx]
+		fxch	st(5)
+		faddp	st(3),st(0)
+		fmul	dword ptr[8+ecx]
+		fxch	st(1)
+		faddp	st(3),st(0)
+		fxch	st(3)
+		faddp	st(2),st(0)
+		jmp		LSetSides
 Lcase2:
-		fmul dword ptr[ebx]
-		fld dword ptr[0+4+edx]
-		fxch st(2)
-		fmul dword ptr[ecx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[4+ecx]
-		fld dword ptr[0+8+edx]
-		fxch st(2)
-		fmul dword ptr[4+ebx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[8+ebx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul dword ptr[8+ecx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp LSetSides
+		fmul	dword ptr[ebx]
+		fld		dword ptr[0+4+edx]
+		fxch	st(2)
+		fmul	dword ptr[ecx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[4+ecx]
+		fld		dword ptr[0+8+edx]
+		fxch	st(2)
+		fmul	dword ptr[4+ebx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[8+ebx]
+		fxch	st(5)
+		faddp	st(3),st(0)
+		fmul	dword ptr[8+ecx]
+		fxch	st(1)
+		faddp	st(3),st(0)
+		fxch	st(3)
+		faddp	st(2),st(0)
+		jmp		LSetSides
 Lcase3:
-		fmul dword ptr[ecx]
-		fld dword ptr[0+4+edx]
-		fxch st(2)
-		fmul dword ptr[ebx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[4+ecx]
-		fld dword ptr[0+8+edx]
-		fxch st(2)
-		fmul dword ptr[4+ebx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[8+ebx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul dword ptr[8+ecx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp LSetSides
+		fmul	dword ptr[ecx]
+		fld		dword ptr[0+4+edx]
+		fxch	st(2)
+		fmul	dword ptr[ebx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[4+ecx]
+		fld		dword ptr[0+8+edx]
+		fxch	st(2)
+		fmul	dword ptr[4+ebx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[8+ebx]
+		fxch	st(5)
+		faddp	st(3),st(0)
+		fmul	dword ptr[8+ecx]
+		fxch	st(1)
+		faddp	st(3),st(0)
+		fxch	st(3)
+		faddp	st(2),st(0)
+		jmp		LSetSides
 Lcase4:
-		fmul dword ptr[ebx]
-		fld dword ptr[0+4+edx]
-		fxch st(2)
-		fmul dword ptr[ecx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[4+ebx]
-		fld dword ptr[0+8+edx]
-		fxch st(2)
-		fmul dword ptr[4+ecx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[8+ecx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul dword ptr[8+ebx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp LSetSides
+		fmul	dword ptr[ebx]
+		fld		dword ptr[0+4+edx]
+		fxch	st(2)
+		fmul	dword ptr[ecx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[4+ebx]
+		fld		dword ptr[0+8+edx]
+		fxch	st(2)
+		fmul	dword ptr[4+ecx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[8+ecx]
+		fxch	st(5)
+		faddp	st(3),st(0)
+		fmul	dword ptr[8+ebx]
+		fxch	st(1)
+		faddp	st(3),st(0)
+		fxch	st(3)
+		faddp	st(2),st(0)
+		jmp		LSetSides
 Lcase5:
-		fmul dword ptr[ecx]
-		fld dword ptr[0+4+edx]
-		fxch st(2)
-		fmul dword ptr[ebx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[4+ebx]
-		fld dword ptr[0+8+edx]
-		fxch st(2)
-		fmul dword ptr[4+ecx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[8+ecx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul dword ptr[8+ebx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp LSetSides
+		fmul	dword ptr[ecx]
+		fld		dword ptr[0+4+edx]
+		fxch	st(2)
+		fmul	dword ptr[ebx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[4+ebx]
+		fld		dword ptr[0+8+edx]
+		fxch	st(2)
+		fmul	dword ptr[4+ecx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[8+ecx]
+		fxch	st(5)
+		faddp	st(3),st(0)
+		fmul	dword ptr[8+ebx]
+		fxch	st(1)
+		faddp	st(3),st(0)
+		fxch	st(3)
+		faddp	st(2),st(0)
+		jmp		LSetSides
 Lcase6:
-		fmul dword ptr[ebx]
-		fld dword ptr[0+4+edx]
-		fxch st(2)
-		fmul dword ptr[ecx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[4+ecx]
-		fld dword ptr[0+8+edx]
-		fxch st(2)
-		fmul dword ptr[4+ebx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[8+ecx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul dword ptr[8+ebx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp LSetSides
+		fmul	dword ptr[ebx]
+		fld		dword ptr[0+4+edx]
+		fxch	st(2)
+		fmul	dword ptr[ecx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[4+ecx]
+		fld		dword ptr[0+8+edx]
+		fxch	st(2)
+		fmul	dword ptr[4+ebx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[8+ecx]
+		fxch	st(5)
+		faddp	st(3),st(0)
+		fmul	dword ptr[8+ebx]
+		fxch	st(1)
+		faddp	st(3),st(0)
+		fxch	st(3)
+		faddp	st(2),st(0)
+		jmp		LSetSides
 Lcase7:
-		fmul dword ptr[ecx]
-		fld dword ptr[0+4+edx]
-		fxch st(2)
-		fmul dword ptr[ebx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[4+ecx]
-		fld dword ptr[0+8+edx]
-		fxch st(2)
-		fmul dword ptr[4+ebx]
-		fxch st(2)
-		fld st(0)
-		fmul dword ptr[8+ecx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul dword ptr[8+ebx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
+		fmul	dword ptr[ecx]
+		fld		dword ptr[0+4+edx]
+		fxch	st(2)
+		fmul	dword ptr[ebx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[4+ecx]
+		fld		dword ptr[0+8+edx]
+		fxch	st(2)
+		fmul	dword ptr[4+ebx]
+		fxch	st(2)
+		fld		st(0)
+		fmul	dword ptr[8+ecx]
+		fxch	st(5)
+		faddp	st(3),st(0)
+		fmul	dword ptr[8+ebx]
+		fxch	st(1)
+		faddp	st(3),st(0)
+		fxch	st(3)
+		faddp	st(2),st(0)
 LSetSides:
-		faddp st(2),st(0)
-		fcomp dword ptr[12+edx]
-		xor ecx,ecx
-		fnstsw ax
-		fcomp dword ptr[12+edx]
-		and ah,1
-		xor ah,1
-		add cl,ah
-		fnstsw ax
-		and ah,1
-		add ah,ah
-		add cl,ah
-		pop ebx
-		mov eax,ecx
+		faddp	st(2),st(0)
+		fcomp	dword ptr[12+edx]
+		xor		ecx,ecx
+		fnstsw	ax
+		fcomp	dword ptr[12+edx]
+		and		ah,1
+		xor		ah,1
+		add		cl,ah
+		fnstsw	ax
+		and		ah,1
+		add		ah,ah
+		add		cl,ah
+		pop		ebx
+		mov		eax,ecx
 		ret
 Lerror:
-		int 3
+		int		3
 	}
 }
 #pragma warning( default: 4035 )
@@ -748,7 +761,7 @@ void AddPointToBounds (vec3_t v, vec3_t mins, vec3_t maxs)
 	int		i;
 	vec_t	val;
 
-	for (i=0 ; i<3 ; i++)
+	for (i = 0; i < 3; i++)
 	{
 		val = v[i];
 		if (val < mins[i])
@@ -777,7 +790,7 @@ vec_t VectorNormalize (vec3_t v)
 
 	if (length)
 	{
-		ilength = 1/length;
+		ilength = 1.0f / length;
 		v[0] *= ilength;
 		v[1] *= ilength;
 		v[2] *= ilength;
@@ -796,7 +809,7 @@ vec_t VectorNormalize2 (vec3_t v, vec3_t out)
 
 	if (length)
 	{
-		ilength = 1/length;
+		ilength = 1.0f / length;
 		out[0] = v[0]*ilength;
 		out[1] = v[1]*ilength;
 		out[2] = v[2]*ilength;
@@ -812,7 +825,7 @@ void VectorNormalizeFast( vec3_t v )
 {
 	float ilength;
 
-	ilength = Q_rsqrt( DotProduct( v, v ) );
+	ilength = Q_rsqrt (DotProduct (v, v));
 
 	v[0] *= ilength;
 	v[1] *= ilength;
@@ -821,9 +834,9 @@ void VectorNormalizeFast( vec3_t v )
 
 void VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc)
 {
-	vecc[0] = veca[0] + scale*vecb[0];
-	vecc[1] = veca[1] + scale*vecb[1];
-	vecc[2] = veca[2] + scale*vecb[2];
+	vecc[0] = veca[0] + scale * vecb[0];
+	vecc[1] = veca[1] + scale * vecb[1];
+	vecc[2] = veca[2] + scale * vecb[2];
 }
 
 
@@ -925,7 +938,7 @@ void AxisCopy (vec3_t in[3], vec3_t out[3])
 }
 
 
-int Q_log2(int val)
+int Q_log2 (int val)
 {
 	int answer=0;
 	while (val>>=1)
@@ -1045,10 +1058,9 @@ COM_DefaultExtension
 void COM_DefaultExtension (char *path, char *extension)
 {
 	char    *src;
-//
-// if path doesn't have a .EXT, append extension
-// (extension should include the .)
-//
+
+	// if path doesn't have a .EXT, append extension
+	// (extension should include the .)
 	src = path + strlen(path) - 1;
 
 	while (*src != '/' && src != path)
@@ -1073,8 +1085,8 @@ short ShortSwap (short l)
 {
 	byte    b1,b2;
 
-	b1 = l&255;
-	b2 = (l>>8)&255;
+	b1 = l & 255;
+	b2 = (l>>8) & 255;
 
 	return (b1<<8) + b2;
 }
@@ -1088,10 +1100,10 @@ int LongSwap (int l)
 {
 	byte    b1,b2,b3,b4;
 
-	b1 = l&255;
-	b2 = (l>>8)&255;
-	b3 = (l>>16)&255;
-	b4 = (l>>24)&255;
+	b1 = l & 255;
+	b2 = (l>>8) & 255;
+	b3 = (l>>16) & 255;
+	b4 = (l>>24) & 255;
 
 	return ((int)b1<<24) + ((int)b2<<16) + ((int)b3<<8) + b4;
 }
@@ -1184,19 +1196,33 @@ va
 
 does a varargs printf into a temp buffer, so I don't need to have
 varargs versions of all text functions.
-FIXME: make this buffer size safe someday
 ============
 */
-char	*va(char *format, ...)
+
+#define VA_GOODSIZE		1024
+#define VA_BUFSIZE		2048
+
+char *va (char *format, ...)
 {
 	va_list argptr;
-	static char string[1024];
+	static char buf[VA_BUFSIZE];
+	static int bufPos = 0;
+	int		len;
+	char	*str;
 
+	str = &buf[bufPos];
 	va_start (argptr, format);
-	vsprintf (string, format,argptr);
+	len = vsnprintf (str, VA_GOODSIZE, format, argptr);
 	va_end (argptr);
 
-	return string;
+	if (len < 0)
+		return NULL;	// error (may be, overflow)
+
+	bufPos += len + 1;
+	if (bufPos > VA_BUFSIZE - VA_GOODSIZE)
+		bufPos = 0;		// cycle buffer
+
+	return str;
 }
 
 
@@ -1509,14 +1535,23 @@ int Com_sprintf (char *dest, int size, char *fmt, ...)
 {
 	int		len;
 	va_list		argptr;
+#if 1
+
+	va_start (argptr, fmt);
+	len = vsnprintf (dest, size, fmt, argptr);
+	va_end (argptr);
+	if (len < 0 || len >= size - 1)
+		Com_WPrintf ("Com_sprintf: overflow of %d\n", size);
+#else
 	char	bigbuffer[0x10000];
 
-	va_start (argptr,fmt);
-	len = vsprintf (bigbuffer,fmt,argptr);
+	va_start (argptr, fmt);
+	len = vsprintf (bigbuffer, fmt, argptr);
 	va_end (argptr);
 	if (len >= size)
-		Com_Printf ("Com_sprintf: overflow of %i in %i\n", len, size);
+		Com_WPrintf ("Com_sprintf: overflow of %i in %i\n", len, size);
 	strncpy (dest, bigbuffer, size-1);
+#endif
 
 	return len;
 }

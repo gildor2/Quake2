@@ -200,7 +200,7 @@ typedef struct
 	// position info
 	vec3_t	origin;
 	vec3_t	axis[3];
-	int		frustumMask;
+	int		frustumMask;		//?? remove
 	vec3_t	modelvieworg;		// vieworg in model coordinate system
 	float	modelMatrix[4][4];	// modelview matrix
 	int		dist2;				// used for depth sorting entities
@@ -362,7 +362,6 @@ typedef struct
 	int		numSurfaces;
 	// particles
 	particle_t *particles;
-	int		numParticles;
 } viewPortal_t;
 
 typedef struct
@@ -399,7 +398,7 @@ extern	refImport_t	ri;
 /*---- Implementation-specific functions ----*/
 
 typedef enum
-{
+{	//?? remove
 	rserr_ok,
 	rserr_invalid_fullscreen,
 	rserr_invalid_mode,

@@ -359,7 +359,7 @@ void	GL_ImageList_f (void)
 	int	i, j, f;
 	image_t	*image;
 	int	texels, imgs;
-	char	*fmt, buf[16], *t;
+	char	*fmt, *t;
 
 	Com_Printf ("----t---w---h---fmt------name------------\n");
 	texels = 0;
@@ -408,10 +408,7 @@ void	GL_ImageList_f (void)
 			}
 		}
 		if (!fmt)
-		{
-			Com_sprintf (buf, sizeof(buf), "0x%4X  ", f);
-			fmt = buf;
-		}
+			fmt = va("0x%4X  ", f);
 		if (image->scrap)
 			fmt = "(scrap) ";
 

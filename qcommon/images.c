@@ -505,21 +505,17 @@ void LoadJPG (char *name, byte **pic, int *width, int *height)
 int ImageExists (char *name, int stop_mask)
 {
 	basenamed_t *list, *item;
-	char findname[1024], *ext;
+	char	*ext;
 
 	char *path = NULL;
 	int out = 0;
 
-//	Com_DPrintf("FindImages(%s)...\n",name);
 	while (path = FS_NextPath (path))
 	{
-		Com_sprintf (findname, sizeof(findname), "%s/%s.*", path, name);
-//		Com_DPrintf("...using name %s\n",findname);
-		if (list = FS_ListFiles (findname, NULL, 0 , SFF_SUBDIR))
+		if (list = FS_ListFiles (va("%s/%s.*", path, name), NULL, 0 , SFF_SUBDIR))
 		{
 			for (item = list; item; item = item->next)
 			{
-//				Com_DPrintf("   %s\n",item->name);//!!
 				ext = strrchr (item->name, '/'); // find filename
 				if (!ext) continue;
 				ext = strchr (ext, '.'); // find FIRST dot in a filename
@@ -536,7 +532,6 @@ int ImageExists (char *name, int stop_mask)
 		if ((out & IMAGE_8BIT) && (out & IMAGE_32BIT))
 			break; // found both 8 and 32-bit images - stop search
 	}
-//	Com_DPrintf("...return %d\n",out);
 
 	return out;
 }

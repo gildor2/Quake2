@@ -829,8 +829,7 @@ Should NOT be called during an interrupt!
 void Key_Event (int key, qboolean down, unsigned time)
 {
 	char	*kb;
-	char	cmd[1024];
-	int	rep;
+	int		rep;
 	static char plus_cmd_fired[256];
 
 	if (re.flags & REF_CONSOLE_ONLY && key >= 200) // no mouse & joystick in console-only mode (??)
@@ -854,7 +853,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 			return;		// no autorepeats for "+cmd" and make a delay before autorepeat activation
 
 		if (key >= 190 && (!kb || !kb[0]))	// old: key >= 200
-			Com_Printf ("%s is unbound, hit F4 to set\n", Key_KeynumToString (key) );
+			Com_Printf ("%s is unbound, hit F4 to set\n", Key_KeynumToString (key) );	//?? F4
 	}
 	else
 	{
@@ -936,18 +935,13 @@ void Key_Event (int key, qboolean down, unsigned time)
 
 		kb = keybindings[key];
 		if (kb && kb[0] == '+')
-		{
-			Com_sprintf (cmd, sizeof(cmd), "-%s %i %i\n", kb+1, key, time);
-			Cbuf_AddText (cmd);
-		}
+			Cbuf_AddText (va("-%s %i %i\n", kb+1, key, time));
+
 		if (keyshift[key] != key)	// we can bind to "1" and "!"
 		{
 			kb = keybindings[keyshift[key]];
 			if (kb && kb[0] == '+')
-			{
-				Com_sprintf (cmd, sizeof(cmd), "-%s %i %i\n", kb+1, key, time);
-				Cbuf_AddText (cmd);
-			}
+				Cbuf_AddText (va("-%s %i %i\n", kb+1, key, time));
 		}
 		return;
 	}
@@ -957,18 +951,17 @@ void Key_Event (int key, qboolean down, unsigned time)
 	//
 	// if not a consolekey, send to the interpreter no matter what mode is
 	//
-	if ( (cls.key_dest == key_menu && menubound[key])
-	|| (cls.key_dest == key_console && !consolekeys[key])
-	|| (cls.key_dest == key_game && ( cls.state == ca_active || !consolekeys[key] ) ) )
+	if ((cls.key_dest == key_menu && menubound[key])
+		|| (cls.key_dest == key_console && !consolekeys[key])
+		|| (cls.key_dest == key_game && ( cls.state == ca_active || !consolekeys[key])))
 	{
 		kb = keybindings[key];
 		if (kb)
 		{
 			if (kb[0] == '+')
 			{	// button commands add keynum and time as a parm
-				Com_sprintf (cmd, sizeof(cmd), "%s %i %i\n", kb, key, time);
 				plus_cmd_fired[key] = 1;	// signal, that command "+cmd" started (for "-cmd" allowing)
-				Cbuf_AddText (cmd);
+				Cbuf_AddText (va("%s %i %i\n", kb, key, time));
 			}
 			else
 			{

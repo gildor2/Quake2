@@ -790,10 +790,9 @@ static void GL_RenderFrame (refdef_t *fd)
 	GL_DrawEntities (gl_refdef.firstEntity, gl_refdef.numEntities);
 	//?? draw portals here (if buffer has shader.sort == SORT_PORTAL)
 
-	// add particles
-	if (fd->num_particles)
+	// add particles (*** needs other way *** !!!!)
+	if (fd->particles)
 	{
-		vp.numParticles = fd->num_particles;
 		vp.particles = fd->particles;
 		// use "*alpha1" shader - this lets us to draw particles before 1st alpha surface drawn
 		GL_AddSurfaceToPortal (NULL, gl_alphaShader1, ENTITYNUM_WORLD);
@@ -868,16 +867,13 @@ static void	DrawConCharColor (int x, int y, int c, int color)
 
 /*--------------------- 2D picture output ---------------------*/
 
-shader_t *FindPic (char *name, qboolean force)
+static shader_t *FindPic (char *name, qboolean force)
 {
-	char	fullname[MAX_QPATH], *s;
+	char	*s;
 	int		flags;
 
 	if (name[0] != '/' && name[0] != '\\')
-	{
-		Com_sprintf (fullname, sizeof(fullname), "pics/%s.pcx", name);
-		s = fullname;
-	}
+		s = va("pics/%s.pcx", name);
 	else
 		s = name+1;
 
@@ -1078,11 +1074,8 @@ void DrawTextRight (char *text, float r, float g, float b)
 
 static void BeginRegistration (char *mapname)
 {
-	char name2[MAX_QPATH];
-
 	GL_ResetShaders ();				// delete all shaders and re-create auto-shaders
-	Com_sprintf (name2, sizeof(name2), "maps/%s.bsp", mapname);
-	GL_LoadWorldMap (name2);
+	GL_LoadWorldMap (va("maps/%s.bsp", mapname));
 	GL_ResetModels();				// delete all models and create inline models
 	gl_refdef.viewCluster = -2;
 }

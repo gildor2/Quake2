@@ -116,9 +116,8 @@ SV_CheckForSavegame
 */
 void SV_CheckForSavegame (void)
 {
-	char		name[MAX_OSPATH];
-	FILE		*f;
-	int			i;
+	FILE	*f;
+	int		i;
 
 	if (sv_noreload->integer)
 		return;
@@ -126,8 +125,7 @@ void SV_CheckForSavegame (void)
 	if (Cvar_VariableInt ("deathmatch"))
 		return;
 
-	Com_sprintf (name, sizeof(name), "%s/save/current/%s.sav", FS_Gamedir(), sv.name);
-	f = fopen (name, "rb");
+	f = fopen (va("%s/save/current/%s.sav", FS_Gamedir(), sv.name), "rb");
 	if (!f)
 		return;		// no savegame
 
@@ -287,7 +285,6 @@ void SV_InitGame (void)
 {
 	int		i;
 	edict_t	*ent;
-	char	idmaster[32];
 
 	if (svs.initialized)
 	{
@@ -356,8 +353,7 @@ void SV_InitGame (void)
 
 	// heartbeats will always be sent to the id master
 	svs.last_heartbeat = -99999;		// send immediately
-	Com_sprintf(idmaster, sizeof(idmaster), "192.246.40.37:%i", PORT_MASTER);
-	NET_StringToAdr (idmaster, &master_adr[0]);
+	NET_StringToAdr (va("192.246.40.37:%i", PORT_MASTER), &master_adr[0]);
 
 	// init game
 	SV_InitGameProgs ();

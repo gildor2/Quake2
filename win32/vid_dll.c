@@ -645,8 +645,6 @@ update the rendering DLL and/or video mode to match.
 */
 void Vid_CheckChanges (void)
 {
-	char name[100];
-
 	if (win_noalttab->modified)
 	{
 		if (win_noalttab->integer)
@@ -676,8 +674,7 @@ void Vid_CheckChanges (void)
 		cl.refresh_prepped = false;
 		cls.disable_screen = true;
 
-		Com_sprintf (name, sizeof(name), "ref_%s.dll", vid_ref->string);
-		if (!Vid_LoadRefresh (name))
+		if (!Vid_LoadRefresh (va("ref_%s.dll", vid_ref->string)))
 		{
 			if (strcmp (vid_ref->string, "soft") == 0)
 				Com_Error (ERR_FATAL, "Couldn't fall back to software refresh!");

@@ -386,18 +386,12 @@ Cvar_SetXXX
 */
 cvar_t *Cvar_SetValue (char *var_name, float value)
 {
-	char	val[32];
-
-	Com_sprintf (val, sizeof(val), "%g",value);	// old: %f (will add trailing zeros: 1.000000)
-	return Cvar_Set2 (var_name, val, 0, false);
+	return Cvar_Set2 (var_name, va("%g",value), 0, false);	// old: %f (will add trailing zeros: 1.000000)
 }
 
 cvar_t *Cvar_SetInteger (char *var_name, int value)
 {
-	char	val[32];
-
-	Com_sprintf (val, sizeof(val), "%i", value);
-	return Cvar_Set2 (var_name, val, 0, false);
+	return Cvar_Set2 (var_name, va("%d", value), 0, false);
 }
 
 cvar_t *Cvar_Set (char *var_name, char *value)
@@ -484,12 +478,12 @@ qboolean Cvar_Command (void)
 	// perform a variable print or set
 	if (Cmd_Argc() == 1)
 	{
-		char	def[256];
+		char	*def;
 
 		if (var->reset_string)
-			Com_sprintf (def, sizeof(def), "default:\"%s\"", var->reset_string);
+			def = va("default:\"%s\"", var->reset_string);
 		else
-			strcpy (def, "(no default)");
+			def = "(no default)";
 		Com_Printf ("\"%s\" is:\"%s\" %s\n", var->name, var->string, def);
 		return true;
 	}
@@ -622,7 +616,7 @@ with the archive flag set to true.
 void Cvar_WriteVariables (FILE *f)
 {
 	cvar_t	*var;
-	char	buffer[1024], type;
+	char	type;
 
 	for (var = cvar_vars; var; var = var->next)
 	{
@@ -637,8 +631,7 @@ void Cvar_WriteVariables (FILE *f)
 				type = 's';
 			else
 				type = 'u';
-			Com_sprintf (buffer, sizeof(buffer), "set%c %s \"%s\"\n", type, var->name, var->string);
-			fprintf (f, "%s", buffer);
+			fprintf (f, "set%c %s \"%s\"\n", type, var->name, var->string);
 		}
 	}
 }

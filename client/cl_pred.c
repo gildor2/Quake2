@@ -155,6 +155,15 @@ trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 	// check all other solid models
 	CL_ClipMoveToEntities (start, mins, maxs, end, &t);
 
+/*
+#define	GET_RETADDR2(firstarg)	(* ( ((int*)&firstarg) -2 ) )//!!!
+re.DrawTextLeft(va("PMTrace(%g,%g,%g)-(%g,%g,%g) f=%g s=%d ne=%d" RETADDR_STR,
+	start[0],start[1],start[2],
+	t.endpos[0],t.endpos[1],t.endpos[2],
+	t.fraction,t.startsolid,cl.frame.num_entities,
+	GET_RETADDR2(start)),
+	1,1,0);
+*/
 	return t;
 }
 

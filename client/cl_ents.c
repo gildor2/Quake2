@@ -779,11 +779,9 @@ INTERPOLATE BETWEEN FRAMES TO GET RENDERING PARMS
 
 struct model_s *S_RegisterSexedModel (entity_state_t *ent, char *base)
 {
-	int				n;
-	char			*p;
-	struct model_s	*mdl;
-	char			model[MAX_QPATH];
-	char			buffer[MAX_QPATH];
+	int		n;
+	char	*p, model[MAX_QPATH];
+	struct model_s *mdl;
 
 	// determine what model the client is using
 	model[0] = 0;
@@ -804,23 +802,19 @@ struct model_s *S_RegisterSexedModel (entity_state_t *ent, char *base)
 	if (!model[0])
 		strcpy(model, "male");
 
-	Com_sprintf (buffer, sizeof(buffer), "players/%s/%s", model, base+1);
-	mdl = re.RegisterModel(buffer);
+	mdl = re.RegisterModel (va("players/%s/%s", model, base+1));
 	if (!mdl)
 	{
 		// not found, try default weapon model
-		Com_sprintf (buffer, sizeof(buffer), "players/%s/weapon.md2", model);
-		mdl = re.RegisterModel(buffer);
+		mdl = re.RegisterModel (va("players/%s/weapon.md2", model));
 		if (!mdl)
 		{
 			// no, revert to the male model
-			Com_sprintf (buffer, sizeof(buffer), "players/%s/%s", "male", base+1);
-			mdl = re.RegisterModel(buffer);
+			mdl = re.RegisterModel (va("players/%s/%s", "male", base+1));
 			if (!mdl)
 			{
 				// last try, default male weapon.md2
-				Com_sprintf (buffer, sizeof(buffer), "players/male/weapon.md2");
-				mdl = re.RegisterModel(buffer);
+				mdl = re.RegisterModel ("players/male/weapon.md2");
 			}
 		}
 	}
@@ -1506,12 +1500,6 @@ void CL_AddEntities (void)
 	if (cl_timedemo->integer)
 		cl.lerpfrac = 1.0;
 
-//	CL_AddPacketEntities (&cl.frame);
-//	CL_AddTEnts ();
-//	CL_AddParticles ();
-//	CL_AddDLights ();
-//	CL_AddLightStyles ();
-
 	CL_CalcViewValues ();
 	// PMM - moved this here so the heat beam has the right values for the vieworg, and can lock the beam to the gun
 	CL_AddPacketEntities (&cl.frame);
@@ -1519,7 +1507,6 @@ void CL_AddEntities (void)
 	CL_AddProjectiles ();
 #endif
 	CL_AddTEnts ();
-	CL_AddParticles ();
 	CL_AddDLights ();
 	CL_AddLightStyles ();
 }

@@ -1,3 +1,5 @@
+!! particles should be drawn in BSP order (after opaque surfaces, but before SOME alpha-surfaces)
+   (current bug: particles, which are nearer to viewer than some SURF_ALPHA, will be overlapped bu this surface)
 ?? add mean filter for DrawFPS() (ignore dropped frames and long (with FS access) frames)
 ?! insert entities into BSP draw order (this will remove sorting by entity index and imprive quality of alpha-blended
    entity/world drawing; also: can improve culling -- when occlision will be implemented -- func InEntityVisible() -
@@ -27,11 +29,9 @@ VISIBLE:
     - flashing fx (sometimes rgbGen entity, or 2 shaders: with/without flashing ?)
     - lefthand (weapon model)
     - dynamic lighting (RecursiveLightPoint)
-- particles
-- rail fx
+? rail fx
 - screen blending (underwater etc.)
 - shadows
-* non-transparent water vis bug (merge clusters on map loading? if so, may be useful for water bulge)
 INVISIBLE:
 - multitexturing (with lightmap lightscale when have multitex. and no env_combine)
 ! freeing of old images (and "bool temp" or "int usage" flag)

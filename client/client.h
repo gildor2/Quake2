@@ -207,14 +207,14 @@ typedef struct
 	int			realtime;			// always increasing, no clamping, etc
 	float		frametime;			// seconds since last frame
 
-// screen rendering information
+	/*----- screen rendering information -----*/
 	float		disable_screen;		// showing loading plaque between levels
 									// or changing rendering dlls
 									// if time gets > 30 seconds ahead, break it
 	int			disable_servercount;	// when we receive a frame and cl.servercount
 									// > cls.disable_servercount, clear disable_screen
 
-// connection information
+	/*-------- connection information --------*/
 	char		servername[MAX_OSPATH];	// name of server from original connect
 	float		connect_time;		// for connection retransmits
 
@@ -232,7 +232,7 @@ typedef struct
 	dltype_t	downloadtype;
 	int			downloadpercent;
 
-// demo recording info must be here, so it isn't cleared on level change
+	// demo recording info must be here, so it isn't cleared on level change
 	qboolean	demorecording;
 	qboolean	demowaiting;		// don't record until a non-delta message is received
 	FILE		*demofile;
@@ -296,6 +296,7 @@ extern	cvar_t	*cl_vwep;
 extern  cvar_t  *cl_extProtocol;
 
 extern	cvar_t	*cl_draw2d;
+extern	cvar_t	*r_sfx_pause;
 
 typedef struct
 {
@@ -331,7 +332,7 @@ qboolean CL_CheckOrDownloadFile (char *filename);
 void	CL_AddNetgraph (void);
 
 //ROGUE
-typedef struct cl_sustain
+typedef struct cl_sustain_s
 {
 	int			id;
 	int			type;
@@ -343,7 +344,7 @@ typedef struct cl_sustain
 	int			color;
 	int			count;
 	int			magnitude;
-	void		(*think)(struct cl_sustain *self);
+	void		(*think)(struct cl_sustain_s *self);
 } cl_sustain_t;
 
 #define MAX_SUSTAINS		32
@@ -358,47 +359,32 @@ void CL_ParticleEffect3 (vec3_t org, vec3_t dir, int color, int count);
 
 
 
-//=================================================
-
-// ========
-// PGM
-typedef struct particle_s
-{
-	struct particle_s	*next;
-
-	float		time;
-
-	vec3_t		org;
-	vec3_t		vel;
-	vec3_t		accel;
-	byte		color;
-	float		alpha;
-	float		alphavel;
-	particleType_t type;
-} cparticle_t;
-
 typedef struct
 {
 	qboolean	allocated;
 	particleType_t type;
 	float		time;					// in sec
-	int			createTime;				// in ms
 	float		lifeTime, fadeTime;		// in sec
-	float		gravity, elasticy;
+	float		gravity, elasticity;
 	byte		minAlpha, maxAlpha;
-	vec3_t		vel, pos, oldpos;	//?? oldpos unneeded (?)
+	vec3_t		vel, pos;
 	vec3_t		up, right;	//??
 	float		radius;
 } particleTrace_t;
 
+void CL_ClearParticles (void);
+void CL_UpdateParticles (void);
+particle_t *CL_AllocParticle (void);
 particleTrace_t *CL_AllocParticleTrace (vec3_t pos, vec3_t vel, float lifeTime, float fadeTime);
 void CL_MetalSparks (vec3_t pos, vec3_t dir, int count);
 
+extern particle_t	*active_particles, *free_particles;
+extern particle_t	particles[MAX_PARTICLES];
 
-#define	PARTICLE_GRAVITY	40
+#define	PARTICLE_GRAVITY			80
 #define BLASTER_PARTICLE_COLOR		0xe0
 // PMM
-#define INSTANT_PARTICLE	-10000.0
+#define INSTANT_PARTICLE			-10000.0	//??
 // PGM
 // ========
 
@@ -551,7 +537,6 @@ extern	struct model_s	*gun_model;
 void V_Init (void);
 void V_RenderView( float stereo_separation );
 void V_AddEntity (entity_t *ent);
-void V_AddParticle (vec3_t org, byte color, float alpha, particleType_t type);
 void V_AddLight (vec3_t org, float intensity, float r, float g, float b);
 void V_AddLightStyle (int style, float r, float g, float b);
 
@@ -569,6 +554,7 @@ void CL_SmokeAndFlash(vec3_t origin);
 void CL_InitPrediction (void);
 void CL_PredictMove (void);
 void CL_CheckPredictionError (void);
+trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);
 
 //
 // cl_fx.c
@@ -579,7 +565,6 @@ void CL_RocketTrail (vec3_t start, vec3_t end, centity_t *old);
 void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags);
 void CL_FlyEffect (centity_t *ent, vec3_t origin);
 void CL_BfgParticles (entity_t *ent);
-void CL_AddParticles (void);
 void CL_EntityEvent (entity_state_t *ent);
 // RAFAEL
 void CL_TrapParticles (entity_t *ent);

@@ -155,30 +155,26 @@ Delete save/<XXX>/
 */
 void SV_WipeSavegame (char *savename)
 {
-	char	name[MAX_OSPATH];
 	char	*s;
 
 	Com_DPrintf("SV_WipeSaveGame(%s)\n", savename);
 
-	Com_sprintf (name, sizeof(name), "%s/save/%s/server.ssv", FS_Gamedir (), savename);
-	remove (name);
-	Com_sprintf (name, sizeof(name), "%s/save/%s/game.ssv", FS_Gamedir (), savename);
-	remove (name);
+	remove (va("%s/save/%s/server.ssv", FS_Gamedir (), savename));
+	remove (va("%s/save/%s/game.ssv", FS_Gamedir (), savename));
 
-	Com_sprintf (name, sizeof(name), "%s/save/%s/*.sav", FS_Gamedir (), savename);
-	s = Sys_FindFirst( name, 0, 0 );
+	s = Sys_FindFirst (va("%s/save/%s/*.sav", FS_Gamedir (), savename), 0, 0);
 	while (s)
 	{
 		remove (s);
-		s = Sys_FindNext( 0, 0 );
+		s = Sys_FindNext (0, 0);
 	}
 	Sys_FindClose ();
-	Com_sprintf (name, sizeof(name), "%s/save/%s/*.sv2", FS_Gamedir (), savename);
-	s = Sys_FindFirst(name, 0, 0 );
+
+	s = Sys_FindFirst (va("%s/save/%s/*.sv2", FS_Gamedir (), savename), 0, 0);
 	while (s)
 	{
 		remove (s);
-		s = Sys_FindNext( 0, 0 );
+		s = Sys_FindNext (0, 0);
 	}
 	Sys_FindClose ();
 }
@@ -236,16 +232,14 @@ void SV_CopySaveGame (char *src, char *dst)
 	SV_WipeSavegame (dst);
 
 	// copy the savegame over
-	Com_sprintf (name, sizeof(name), "%s/save/%s/server.ssv", FS_Gamedir(), src);
 	Com_sprintf (name2, sizeof(name2), "%s/save/%s/server.ssv", FS_Gamedir(), dst);
 	FS_CreatePath (name2);
-	CopyFile (name, name2);
+	CopyFile (va("%s/save/%s/server.ssv", FS_Gamedir(), src), name2);
 
-	Com_sprintf (name, sizeof(name), "%s/save/%s/game.ssv", FS_Gamedir(), src);
 	Com_sprintf (name2, sizeof(name2), "%s/save/%s/game.ssv", FS_Gamedir(), dst);
-	CopyFile (name, name2);
+	CopyFile (va("%s/save/%s/game.ssv", FS_Gamedir(), src), name2);
 
-	len = strlen(va("%s/save/%s/", FS_Gamedir(), src));		// get length of path part
+	len = strlen (va("%s/save/%s/", FS_Gamedir(), src));		// get length of path part
 	Com_sprintf (name, sizeof(name), "%s/save/%s/*.sav", FS_Gamedir(), src);
 	found = Sys_FindFirst(name, 0, 0 );
 	while (found)
@@ -282,7 +276,7 @@ void SV_WriteLevelFile (void)
 	Com_DPrintf("SV_WriteLevelFile()\n");
 
 	Com_sprintf (name, sizeof(name), "%s/save/current/%s.sv2", FS_Gamedir(), sv.name);
-	f = fopen(name, "wb");
+	f = fopen (name, "wb");
 	if (!f)
 	{
 		Com_Printf ("Failed to open %s\n", name);
@@ -468,14 +462,11 @@ Puts the server in demo mode on a specific map/cinematic
 void SV_DemoMap_f (void)
 {
 	char	*map;
-	char	expanded[MAX_QPATH];
 
 	map = Cmd_Argv(1);
 	if (!strchr (map, '.'))
-	{
-		Com_sprintf (expanded, sizeof(expanded), "%s.dm2", map);
-		map = expanded;
-	}
+		map = va("%s.dm2", map);
+
 	SV_Map (true, map, false );
 }
 

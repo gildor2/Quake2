@@ -87,12 +87,22 @@ typedef enum
 	PT_SPARKLE
 } particleType_t;
 
-typedef struct
+typedef struct particle_s
 {
-	vec3_t	origin;
-	byte	color;
-	byte	alpha;
+	// appearance
+	vec3_t		org;
+	byte		color;
+	qboolean	_new;
+	float		alpha;
 	particleType_t type;
+	int			leafNum;	// -1 -- uninitialized
+	// some physics
+	int			startTime;
+	vec3_t		vel;		// org += vel * time
+	vec3_t		accel;		// vel += accel * time
+	float		alphavel;
+
+	struct particle_s	*next;
 } particle_t;
 
 typedef struct
@@ -121,7 +131,6 @@ typedef struct
 	int			num_dlights;
 	dlight_t	*dlights;
 
-	int			num_particles;
 	particle_t	*particles;
 } refdef_t;
 

@@ -819,7 +819,7 @@ void CL_ParseTEnt (void)
 		MSG_ReadDir (&net_message, dir);
 
 //		CL_AllocParticleTrace (pos, dir, 2, 0.2);
-		CL_MetalSparks (pos, dir, 3); //!! random count
+		CL_MetalSparks (pos, dir, rand() % 5 + 1); //!! random count
 //!!		if (type == TE_GUNSHOT)
 //			CL_ParticleEffect (pos, dir, 0, 40);
 //		else

@@ -1062,10 +1062,11 @@ static void Options_MenuInit( void )
 static void Options_CrosshairDraw (void)
 {
 	int		w, h;
-	char	name[256];
+	char	name[32];
 
 	if (!crosshair->integer)
 		return;
+
 	Com_sprintf (name, sizeof(name), "ch%d", crosshair->integer);
 	re.DrawGetPicSize (&w, &h, name);
 	re.DrawPicColor ((viddef.width - w) / 2 + 32, s_options_crosshair_box.generic.y + s_options_menu.y + 10 - h / 2,
@@ -1562,7 +1563,6 @@ void M_AddToServerList (netadr_t adr, char *info)
 
 static void JoinServerFunc( void *self )
 {
-	char	buffer[128];
 	int		index;
 
 	index = ( menuAction_t * ) self - s_joinserver_server_actions;
@@ -1573,8 +1573,7 @@ static void JoinServerFunc( void *self )
 	if (index >= m_num_servers)
 		return;
 
-	Com_sprintf (buffer, sizeof(buffer), "connect %s\n", NET_AdrToString (local_server_netadr[index]));
-	Cbuf_AddText (buffer);
+	Cbuf_AddText (va("connect %s\n", NET_AdrToString (local_server_netadr[index])));
 	M_ForceMenuOff ();
 }
 
@@ -2434,14 +2433,11 @@ static void AddressBook_MenuInit( void )
 	s_addressbook_menu.y = viddef.height / 2 - 58;
 	s_addressbook_menu.nitems = 0;
 
-	for ( i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++ )
+	for (i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
 	{
 		cvar_t *adr;
-		char buffer[20];
 
-		Com_sprintf( buffer, sizeof( buffer ), "adr%d", i );
-
-		adr = Cvar_Get( buffer, "", CVAR_ARCHIVE );
+		adr = Cvar_Get (va("adr%d", i), "", CVAR_ARCHIVE);
 
 		s_addressbook_fields[i].generic.type = MTYPE_FIELD;
 		s_addressbook_fields[i].generic.name = 0;
@@ -2453,9 +2449,9 @@ static void AddressBook_MenuInit( void )
 		s_addressbook_fields[i].length		= 60;
 		s_addressbook_fields[i].visible_length = 30;
 
-		strcpy( s_addressbook_fields[i].buffer, adr->string );
+		strcpy (s_addressbook_fields[i].buffer, adr->string);
 
-		Menu_AddItem( &s_addressbook_menu, &s_addressbook_fields[i] );
+		Menu_AddItem (&s_addressbook_menu, &s_addressbook_fields[i]);
 	}
 }
 
@@ -2463,14 +2459,10 @@ static const char *AddressBook_MenuKey( int key )
 {
 	if ( key == K_ESCAPE || key == K_MOUSE2 )
 	{
-		int index;
-		char buffer[20];
+		int i;
 
-		for ( index = 0; index < NUM_ADDRESSBOOK_ENTRIES; index++ )
-		{
-			Com_sprintf( buffer, sizeof( buffer ), "adr%d", index );
-			Cvar_Set( buffer, s_addressbook_fields[index].buffer );
-		}
+		for (i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
+			Cvar_Set (va("adr%d", i), s_addressbook_fields[i].buffer );
 	}
 	return Default_MenuKey( &s_addressbook_menu, key );
 }
@@ -2972,7 +2964,7 @@ static thumbLayout_t thumbLayout[] =
 static qboolean DMBrowse_MenuInit ()
 {
 	basenamed_t *item;
-	char	filename[256], *name, *ext;
+	char	*name, *ext;
 	int		i, x, y, oldcount;
 
 	char *path = NULL;
@@ -3017,8 +3009,7 @@ static qboolean DMBrowse_MenuInit ()
 		if (ext && (!strcmp (ext, ".jpg") || !strcmp (ext, ".tga")))
 		{	// screenshot found - check map presence
 			*ext = 0;	// cut extension
-			Com_sprintf (filename, sizeof(filename), "maps/%s.bsp", name);
-			if (!FS_FileExists (filename))
+			if (!FS_FileExists (va("maps/%s.bsp", name)))
 				continue;
 
 			browse_map_names[thumbs.count++] = name;
@@ -3127,7 +3118,7 @@ static const char *DMBrowse_MenuKey (int key)
 
 static void DrawThumbnail (int x, int y, int w, int h, char *name, qboolean selected)
 {
-	char	filename[256];
+	char	name2[256];
 	int		color, max_width, text_width;
 
 	if (selected)
@@ -3137,17 +3128,16 @@ static void DrawThumbnail (int x, int y, int w, int h, char *name, qboolean sele
 	re.DrawFill (x - THUMBNAIL_BORDER, y - THUMBNAIL_BORDER, w + THUMBNAIL_BORDER * 2,
 				h + THUMBNAIL_BORDER * 2 + THUMBNAIL_TEXT, color);
 
-	Com_sprintf (filename, sizeof(filename), "/levelshots/%s.pcx", name);
-	re.DrawStretchPic (x, y, w, h, filename);
+	re.DrawStretchPic (x, y, w, h, va("/levelshots/%s.pcx", name));
 	max_width = w / 8;
-	strcpy (filename, name);
-	text_width = strlen (filename);
+	strcpy (name2, name);
+	text_width = strlen (name2);
 	if (text_width > max_width)
 	{
-		strcpy (&filename[max_width - 3], "...");		// make long names ends with "..."
+		strcpy (&name2[max_width - 3], "...");		// make long names ends with "..."
 		text_width = max_width;
 	}
-	Menu_DrawString (x + (w-8*text_width) / 2, y + h + (THUMBNAIL_TEXT + THUMBNAIL_BORDER - 8) / 2, filename);
+	Menu_DrawString (x + (w-8*text_width) / 2, y + h + (THUMBNAIL_TEXT + THUMBNAIL_BORDER - 8) / 2, name2);
 }
 
 static void DMBrowse_DrawScroller (int x0, int y0, int w)

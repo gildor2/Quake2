@@ -408,10 +408,9 @@ void R_DrawEntitiesOnList (void)
 ** GL_DrawParticles
 **
 */
-void GL_DrawParticles( int num_particles, const particle_t particles[], const unsigned colortable[768] )
+void GL_DrawParticles (particle_t *particles, const unsigned colortable[768])
 {
 	const particle_t *p;
-	int				i;
 	vec3_t			up, right;
 	float			scale;
 	byte			color[4];
@@ -425,32 +424,34 @@ void GL_DrawParticles( int num_particles, const particle_t particles[], const un
 	VectorScale (vup, 1.5, up);
 	VectorScale (vright, 1.5, right);
 
-	for ( p = particles, i=0 ; i < num_particles ; i++,p++)
+	for (p = particles; p; p = p->next)
 	{
 		// hack a scale up to keep particles from disapearing
-		scale = ( p->origin[0] - r_origin[0] ) * vpn[0] +
-			    ( p->origin[1] - r_origin[1] ) * vpn[1] +
-			    ( p->origin[2] - r_origin[2] ) * vpn[2];
+		scale = ( p->org[0] - r_origin[0] ) * vpn[0] +
+			    ( p->org[1] - r_origin[1] ) * vpn[1] +
+			    ( p->org[2] - r_origin[2] ) * vpn[2];
 
 		if (scale < 20)
 			scale = 1;
 		else
 			scale = 1 + scale * 0.004;
 
+		*(int *)color = colortable[p->color];
+		color[3] = p->alpha * 255;
 		qglColor4ubv (color);
 
 		qglTexCoord2f (0.0625, 0.0625);
-		qglVertex3fv (p->origin);
+		qglVertex3fv (p->org);
 
 		qglTexCoord2f (1.0625, 0.0625);
-		qglVertex3f (p->origin[0] + up[0] * scale,
-			         p->origin[1] + up[1] * scale,
-					 p->origin[2] + up[2] * scale);
+		qglVertex3f (p->org[0] + up[0] * scale,
+			         p->org[1] + up[1] * scale,
+					 p->org[2] + up[2] * scale);
 
 		qglTexCoord2f (0.0625, 1.0625);
-		qglVertex3f (p->origin[0] + right[0] * scale,
-			         p->origin[1] + right[1] * scale,
-					 p->origin[2] + right[2] * scale);
+		qglVertex3f (p->org[0] + right[0] * scale,
+			         p->org[1] + right[1] * scale,
+					 p->org[2] + right[2] * scale);
 	}
 
 	qglEnd ();
@@ -501,7 +502,7 @@ void R_DrawParticles (void)
 	}
 	else
 */	{
-		GL_DrawParticles (r_newrefdef.num_particles, r_newrefdef.particles, d_8to24table);
+		GL_DrawParticles (r_newrefdef.particles, d_8to24table);
 	}
 }
 

@@ -50,7 +50,6 @@ dlight_t	r_dlights[MAX_DLIGHTS];
 int			r_numentities;
 entity_t	r_entities[MAX_ENTITIES];
 
-int			r_numparticles;
 particle_t	r_particles[MAX_PARTICLES];
 
 lightstyle_t	r_lightstyles[MAX_LIGHTSTYLES];
@@ -69,7 +68,6 @@ void V_ClearScene (void)
 {
 	r_numdlights = 0;
 	r_numentities = 0;
-	r_numparticles = 0;
 }
 
 
@@ -86,25 +84,6 @@ void V_AddEntity (entity_t *ent)
 	r_entities[r_numentities++] = *ent;
 }
 
-
-/*
-=====================
-V_AddParticle
-
-=====================
-*/
-void V_AddParticle (vec3_t org, byte color, float alpha, particleType_t type)
-{
-	particle_t	*p;
-
-	if (r_numparticles >= MAX_PARTICLES)
-		return;
-	p = &r_particles[r_numparticles++];
-	VectorCopy (org, p->origin);
-	p->color = color;
-	p->alpha = alpha * 255;
-	p->type = type;
-}
 
 /*
 =====================
@@ -160,21 +139,24 @@ void V_TestParticles (void)
 	int			i, j;
 	float		d, r, u;
 
-	r_numparticles = MAX_PARTICLES;
-	for (i = 0; i < r_numparticles; i++)
+	CL_ClearParticles ();
+
+	for (i = 0; i < MAX_PARTICLES; i++)
 	{
-		d = i * 0.25;
-		r = 4 * ((i&7) - 3.5);
-		u = 4 * (((i>>3)&7) - 3.5);
-		p = &r_particles[i];
+		d = i / 4.0f;
+		r = 4 * ((i&7) - 3.5f);
+		u = 4 * (((i>>3)&7) - 3.5f);
+
+		if (!(p = CL_AllocParticle ()))
+			break;
+		p->accel[2] = 0;
 
 		for (j = 0; j < 3; j++)
-			p->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j]*d +
-			cl.v_right[j]*r + cl.v_up[j]*u;
+			p->org[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * d + cl.v_right[j] * r + cl.v_up[j] * u;
 
 		p->color = 8;
-		p->alpha = cl_testparticles->value * 255;
-		p->type = PT_DEFAULT;
+		p->alpha = cl_testparticles->value;
+		p->alphavel = -1;	// fade out with 1 second after "cl_testparticles" switched off
 	}
 }
 
@@ -409,15 +391,12 @@ void V_Gun_Prev_f (void)
 
 void V_Gun_Model_f (void)
 {
-	char	name[MAX_QPATH];
-
 	if (Cmd_Argc() != 2)
 	{
 		gun_model = NULL;
 		return;
 	}
-	Com_sprintf (name, sizeof(name), "models/%s/tris.md2", Cmd_Argv(1));
-	gun_model = re.RegisterModel (name);
+	gun_model = re.RegisterModel (va("models/%s/tris.md2", Cmd_Argv(1)));
 }
 
 //============================================================================
@@ -725,8 +704,10 @@ void V_RenderView( float stereo_separation )
 		// v_forward, etc.
 		CL_AddEntities ();
 
-		if (cl_testparticles->integer)
+		if (cl_testparticles->value)		// float value
 			V_TestParticles ();
+		CL_UpdateParticles ();
+
 		if (cl_testentities->integer)
 			V_TestEntities ();
 		if (cl_testlights->integer)
@@ -766,8 +747,6 @@ void V_RenderView( float stereo_separation )
 
 		if (!cl_add_entities->integer)
 			r_numentities = 0;
-		if (!cl_add_particles->integer)
-			r_numparticles = 0;
 		if (!cl_add_lights->integer)
 			r_numdlights = 0;
 		if (!cl_add_blend->integer)
@@ -777,8 +756,7 @@ void V_RenderView( float stereo_separation )
 
 		cl.refdef.num_entities = r_numentities;
 		cl.refdef.entities = r_entities;
-		cl.refdef.num_particles = r_numparticles;
-		cl.refdef.particles = r_particles;
+		cl.refdef.particles = cl_add_particles->integer ? active_particles : NULL;
 		cl.refdef.num_dlights = r_numdlights;
 		cl.refdef.dlights = r_dlights;
 		cl.refdef.lightstyles = r_lightstyles;
@@ -809,13 +787,13 @@ void V_RenderView( float stereo_separation )
 
 	if (cl_stats->integer)
 	{
-		re.DrawTextLeft (va("ent:%d  lt:%d  part:%d",
-			r_numentities, r_numdlights, r_numparticles),
+		re.DrawTextLeft (va("ent:%d  lt:%d",	//?? particle stats
+			r_numentities, r_numdlights),
 			1, 1, 1);
 	}
 
 	if (log_stats->integer && (log_stats_file != 0))
-		fprintf (log_stats_file, "%d,%d,%d,", r_numentities, r_numdlights, r_numparticles);
+		fprintf (log_stats_file, "%d,%d,", r_numentities, r_numdlights);	//?? particle stats
 
 
 	SCR_AddDirtyPoint (scr_vrect.x, scr_vrect.y);

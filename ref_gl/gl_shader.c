@@ -69,26 +69,25 @@ static void Shaderlist_f (void)
 	for (i = 0; i < shaderCount; i++)
 	{
 		shader_t *sh;
-		char	lmInfo[16];
+		char	*lmInfo;
 
 		sh = shadersArray[i];
 		if (mask && !MatchWildcard (sh->name, mask)) continue;
 		n++;
 
-		lmInfo[1] = 0;
 		switch (sh->lightmapNumber)
 		{
 		case LIGHTMAP_NONE:
-			lmInfo[0] = ' ';
+			lmInfo = " ";
 			break;
 		case LIGHTMAP_VERTEX:
-			lmInfo[0] = 'v';
+			lmInfo = "v";
 			break;
 		case LIGHTMAP_RESERVE:
-			lmInfo[0] = 'r';
+			lmInfo = "r";
 			break;
 		default:
-			Com_sprintf (lmInfo, sizeof(lmInfo), "%d", sh->lightmapNumber);
+			lmInfo = va("%d", sh->lightmapNumber);
 		}
 		Com_Printf ("%-3d %d  %s %2s %-2g %3s  %s%s\n", i, sh->numStages, boolNames[sh->fast], lmInfo,
 			sh->sortParam, shTypes[sh->type], sh->name, badNames[sh->bad]);

@@ -782,7 +782,7 @@ Do not check inline files (only filesystem or paks)
 qboolean FS_FileExists (char *filename)
 {
 	searchPath_t	*search;
-	char			netpath[MAX_OSPATH], *pakname, game[MAX_OSPATH];
+	char			*pakname, game[MAX_OSPATH];
 	pack_t			*pak;
 	packFile_t		*pfile;
 	int				gamelen, gamePos;
@@ -797,8 +797,7 @@ qboolean FS_FileExists (char *filename)
 	{
 		if (!strncmp (filename, link->from, link->fromlength))
 		{
-			Com_sprintf (netpath, sizeof(netpath), "%s%s", link->to, filename + link->fromlength);
-			if (f = fopen (netpath, "rb"))
+			if (f = fopen (va("%s%s", link->to, filename + link->fromlength), "rb"))
 			{
 				fclose (f);
 				return true;
@@ -861,9 +860,9 @@ qboolean FS_FileExists (char *filename)
 			if (!gamelen)
 			{
 				// check a file in the directory tree (only for game-relative path)
-				Com_sprintf (netpath, sizeof(netpath), "%s/%s",search->filename, filename);
+				if (!(f = fopen (va("%s/%s",search->filename, filename), "rb")))
+					continue;
 
-				if (!(f = fopen (netpath, "rb"))) continue;
 				fclose (f);
 				return true;
 			}
@@ -1189,19 +1188,17 @@ then loads and adds pak1.pak pak2.pak ...
 void FS_AddGameDirectory (char *dir)
 {
 	searchPath_t *search;
-	char	pakmask[MAX_OSPATH];
 	basenamed_t	*paklist, *pakname;
 
 	strcpy (fs_gamedir, dir);
 
 	/*-------- check for valid game directory -----------------*/
-	Com_sprintf (pakmask, sizeof(pakmask), "%s/*.*", dir);
-	if (Sys_FindFirst (pakmask, 0, 0))
+	if (Sys_FindFirst (va("%s/%s/*", fs_basedir->string, dir), 0, 0))
 		Sys_FindClose ();
 	else
 	{
 		Sys_FindClose ();
-		Com_WPrintf ("AddGameDirectory: path \"%s\" is not found\n", pakmask);
+		Com_WPrintf ("AddGameDirectory: path \"%s\" is not found\n", dir);
 		return;
 	}
 
@@ -1210,8 +1207,7 @@ void FS_AddGameDirectory (char *dir)
 	search->next = fs_searchpaths;
 	fs_searchpaths = search;
 
-	Com_sprintf (pakmask, sizeof(pakmask), "%s/*.pak", dir);
-	paklist = AddDirFilesToList (pakmask, NULL, 0, SFF_SUBDIR);
+	paklist = AddDirFilesToList (va("%s/*.pak", dir), NULL, 0, SFF_SUBDIR);
 	for (pakname = paklist; pakname; pakname = pakname->next)
 	{
 		pack_t			*pak;
@@ -1264,7 +1260,7 @@ void FS_LoadGameConfig (void)
 	else
 		Cbuf_AddText ("exec default.cfg\n");
 
-	if (f = fopen (va("%s/autoexec.cfg", gdir, dir), "r"))
+	if (f = fopen (va("%s/autoexec.cfg", dir), "r"))
 	{
 		fclose (f);
 		Cbuf_AddText ("exec autoexec.cfg\n");
@@ -1294,8 +1290,7 @@ qboolean FS_SetGamedir (char *dir)
 		dir = BASEDIRNAME;
 
 	// check for valid game directory
-	Com_sprintf (path, sizeof(path), "%s/%s/*", fs_basedir->string, dir);
-	if (Sys_FindFirst (path, 0, 0))
+	if (Sys_FindFirst (va("%s/%s/*", fs_basedir->string, dir), 0, 0))
 		Sys_FindClose ();
 	else
 	{
@@ -1656,10 +1651,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigne
 
 		path2 = NULL;
 		while (path2 = FS_NextPath (path2))
-		{
-			Com_sprintf (path, sizeof(path), "%s/%s", path2, name);
-			list = AddDirFilesToList (path, list, musthave, canthave);
-		}
+			list = AddDirFilesToList (va("%s/%s", path2, name), list, musthave, canthave);
 	}
 
 	/*----------- count number of files ----------------*/

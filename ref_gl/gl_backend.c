@@ -1092,7 +1092,7 @@ static void TesselatePlanarSurf (surfacePlanar_t *surf)
 
 	// copy normal
 	n = &normals[firstVert];
-	for (i = 0; i < surf->numVerts; i++, n++)	// sometimes may be ignored??
+	for (i = 0; i < surf->numVerts; i++, n++)	// mostly may be ignored??
 		VectorCopy (surf->plane.normal, n->xyz);
 
 	v = &vb->verts[firstVert];
@@ -1202,8 +1202,6 @@ static void SetupGL (void)
 	qglScissor (ap.x, ap.y, ap.w, ap.h);
 	GL_State (GLSTATE_DEPTHWRITE);
 
-	//?? perform setup for stencil shadows
-
 	bits = GL_DEPTH_BUFFER_BIT;
 	if (gl_fastsky->integer && !(gl_refdef.flags & RDF_NOWORLDMODEL))
 	{
@@ -1216,10 +1214,6 @@ static void SetupGL (void)
 		qglClearColor (0, 0.03, 0.03, 1);
     }
 	qglClear (bits);
-
-	//?? can process other RDF_... flags
-
-	//?? can set qglClipPlane() for portals
 }
 
 
@@ -1483,7 +1477,10 @@ static void DrawTriangles (void)
 				qglLoadMatrixf (&gl_entities[entityNum].modelMatrix[0][0]);
 			lastEntity = entityNum;
 		}
+
 		surf = (*si)->surf;
+		if (!surf) continue;	// dummy surface ??
+
 		switch (surf->type)
 		{
 		case SURFACE_PLANAR:
@@ -1603,59 +1600,64 @@ static void DrawParticles (void)
 {
 	vec3_t	up, right;
 	particle_t *p;
-	int		i;
 	byte	c[4];
 
 	//!! oprimize this (vertex arrays, etc.)
-	DrawTextLeft(va("particles: %d", ap.numParticles),1,1,1);//!!
 
 	GL_Bind (gl_particleImage);
-	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA);
+	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|/*GLSTATE_DEPTHWRITE|*/GLSTATE_ALPHA_GT0);
 	VectorScale (ap.viewaxis[1], 1.5, up);
 	VectorScale (ap.viewaxis[2], 1.5, right);
 
 	qglBegin (GL_TRIANGLES);
-	for (p = ap.particles, i = 0; i < ap.numParticles; i++, p++)
+	for (p = ap.particles; p; p = p->next)
 	{
 		float	scale;
+		int		alpha;
 
-		scale = (p->origin[0] - ap.vieworg[0]) * ap.viewaxis[0][0] +
-				(p->origin[1] - ap.vieworg[1]) * ap.viewaxis[0][1] +
-				(p->origin[2] - ap.vieworg[2]) * ap.viewaxis[0][2];
+		scale = (p->org[0] - ap.vieworg[0]) * ap.viewaxis[0][0] +
+				(p->org[1] - ap.vieworg[1]) * ap.viewaxis[0][1] +
+				(p->org[2] - ap.vieworg[2]) * ap.viewaxis[0][2];
 		if (scale < 20.0f)
 			scale = 1;
 		else
 			scale = scale / 500.0f + 1.0f;
 
+		alpha = p->alpha * 255;
+		if (alpha < 0)
+			alpha = 0;
+		else if (alpha > 255)
+			alpha = 255;
+
 		switch (p->type)
 		{
 		case PT_SPARKLE:
-			if (p->alpha < 64)
+			if (alpha < 64)
 			{
 				c[0] = 255;
-				c[1] = 128 + 2 * p->alpha;
+				c[1] = 135 + alpha * 120 / 64;
 				c[2] = 144;
 			}
 			else
 			{
 				c[0] = c[1] = 255;
-				c[2] = (p->alpha - 64) * 4 / 3 * 111 / 256 + 144;
+				c[2] = (alpha - 64) * 4 / 3 * 111 / 256 + 144;
 			}
 			break;
 		default:
 			*(int*)c = gl_config.tbl_8to32[p->color];
 		}
-		c[3] = p->alpha;
+		c[3] = alpha;
 		qglColor4ubv (c);
 
 		qglTexCoord2f (0.0625, 0.0625);
-		qglVertex3fv (p->origin);
+		qglVertex3fv (p->org);
 
 		qglTexCoord2f (1.0625, 0.0625);
-		qglVertex3f (p->origin[0] + up[0] * scale, p->origin[1] + up[1] * scale, p->origin[2] + up[2] * scale);
+		qglVertex3f (p->org[0] + up[0] * scale, p->org[1] + up[1] * scale, p->org[2] + up[2] * scale);
 
 		qglTexCoord2f (0.0625, 1.0625);
-		qglVertex3f (p->origin[0] + right[0] * scale, p->origin[1] + right[1] * scale, p->origin[2] + right[2] * scale);
+		qglVertex3f (p->org[0] + right[0] * scale, p->org[1] + right[1] * scale, p->org[2] + right[2] * scale);
 	}
 	qglEnd ();
 }
@@ -1700,13 +1702,15 @@ static void RB_DrawScene (void)
 	numSkySurfs = 0;
 
 	si = sortedSurfaces;
-	SetCurrentShader ((*si)->surf->shader);
 	for (index = 0; index < ap.numSurfaces; index++, si++)
 	{
 		surf = (*si)->surf;
-		shader = surf->shader;
+		shader = GL_GetShaderByNum (((*si)->sort >> SHADERNUM_SHIFT) & SHADERNUM_MASK);
 		if (shader->type != SHADERTYPE_SKY)
 			break;
+
+		if (!index)
+			SetCurrentShader (shader);
 
 		TesselatePlanarSurf (surf->pl);	//!! may be other types
 		AddSkySurfaces ();

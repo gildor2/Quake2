@@ -49,6 +49,7 @@
 	"..\ref_gl\qgl.h"\
 	"..\ref_gl\qgl_decl.h"\
 	".\anorms.h"\
+	".\anormtab.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
 	

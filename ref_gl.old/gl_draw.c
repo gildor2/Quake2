@@ -154,13 +154,9 @@ Draw_FindPic
 image_t	*Draw_FindPic (char *name)
 {
 	image_t *gl;
-	char	fullname[MAX_QPATH];
 
 	if (name[0] != '/' && name[0] != '\\')
-	{
-		Com_sprintf (fullname, sizeof(fullname), "pics/%s.???", name);
-		gl = GL_FindImage (fullname, it_pic);
-	}
+		gl = GL_FindImage (va("pics/%s.???", name), it_pic);
 	else
 		gl = GL_FindImage (name+1, it_pic);
 

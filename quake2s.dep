@@ -297,7 +297,9 @@
 .\qcommon\images.c : \
 	".\client\ref_defs.h"\
 	".\jpeg\jconfig.h"\
+	".\jpeg\jerror.h"\
 	".\jpeg\jmorecfg.h"\
+	".\jpeg\jpegint.h"\
 	".\jpeg\jpeglib.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -397,7 +399,12 @@
 	
 
 .\qcommon\q_shared2.c : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
+	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
 	
 
 .\client\qmenu.c : \
@@ -750,6 +757,8 @@
 	
 
 .\win32\q_shwin.c : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -1368,6 +1377,7 @@
 	".\jpeg\jerror.h"\
 	".\jpeg\jinclude.h"\
 	".\jpeg\jmorecfg.h"\
+	".\jpeg\jpegint.h"\
 	".\jpeg\jpeglib.h"\
 	
 

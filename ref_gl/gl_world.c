@@ -43,15 +43,49 @@ int			gl_numEntities;
 static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 {
 	int		i, res, frustumMask, mask;
-	vec3_t	box[8];
-	float	*v;
+//	float	*v;
 	cplane_t *fr;
+//	vec3_t	box[8];
 
 	if (r_nocull->integer)
 		return FRUSTUM_ON;
 
-	frustumMask = e->frustumMask;
+	frustumMask = e->frustumMask;	//?? get this as OR(all_occupied_leafs->frustumMask) or remove
 
+#if 1	// this version FASTER
+	res = 0;
+
+	for (i = 0, mask = 1, fr = vp.frustum; i < 4; i++, mask<<=1, fr++)
+	{
+		cplane_t pl;
+
+		if (!(mask & frustumMask))
+		{
+			res |= FRUSTUM_INSIDE;
+			continue;
+		}
+
+		// transform frustum plane to entity coordinate system
+		pl.dist = fr->dist - DotProduct (e->origin, fr->normal);
+		pl.normal[0] = DotProduct (fr->normal, e->axis[0]);
+		pl.normal[1] = DotProduct (fr->normal, e->axis[1]);
+		pl.normal[2] = DotProduct (fr->normal, e->axis[2]);
+//		pl.type = PLANE_NON_AXIAL;
+		SetPlaneSignbits (&pl);
+
+		switch (BoxOnPlaneSide (mins, maxs, &pl))	// do not use BOX_ON_PLANE_SIDE -- useless
+		{
+		case 1:
+			frustumMask &= ~mask;
+			res |= FRUSTUM_INSIDE;
+			break;
+		case 2:
+			return FRUSTUM_OUTSIDE;
+		default:
+			res = FRUSTUM_ON;
+		}
+	}
+#else
 	// transform bounding box to a world coordinates
 	for (i = 0, v = box[0]; i < 8; i++, v += 3)	// check all 8 verts of bounding box
 	{
@@ -100,6 +134,7 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 			frustumMask &= ~mask;	// the box is completely inside this frustum plane
 		res |= side;
 	}
+#endif
 
 	if (frustumMask & ~15)			// update frustum mask for entity
 		e->frustumMask = frustumMask & 15;
@@ -152,7 +187,7 @@ static void RecursiveWorldNode (node_t *node, int frustumMask)
 #define CULL_NODE(bit)	\
 		if (frustumMask & (1<<bit))	\
 		{							\
-			switch (BOX_ON_PLANE_SIDE(node->mins, node->maxs, &vp.frustum[bit])) {	\
+			switch (BoxOnPlaneSide(node->mins, node->maxs, &vp.frustum[bit])) {	\
 			case 1:					\
 				frustumMask &= ~(1<<bit);	\
 				break;				\
@@ -254,7 +289,7 @@ static void RecursiveWorldNode (node_t *node, int frustumMask)
 				{
 #define CULL_PLANE(bit)	\
 					if (frustumMask & (1<<bit) &&	\
-						BOX_ON_PLANE_SIDE(pl->mins, pl->maxs, &vp.frustum[bit]) == 2)	\
+						BoxOnPlaneSide(pl->mins, pl->maxs, &vp.frustum[bit]) == 2)	\
 						{							\
 							gl_speeds.cullSurfs++;	\
 							continue;				\

@@ -477,7 +477,7 @@ SCR_PlayCinematic
 void SCR_PlayCinematic (char *arg)
 {
 	int		width, height;
-	char	name[MAX_OSPATH], *ext;
+	char	*ext;
 	int		old_khz;
 
 	// make sure CD isn't playing music
@@ -496,7 +496,7 @@ void SCR_PlayCinematic (char *arg)
 
 	if (ext && !strcmp (ext, ".pcx"))
 	{	// static image
-		Q_CopyFilename (cin.imageName, arg, sizeof(name)-1);
+		Q_CopyFilename (cin.imageName, arg, sizeof(cin.imageName)-1);
 		cin.imageName[ext - arg] = 0;		// cut extension
 		re.DrawGetPicSize (&cin.width, &cin.height, cin.imageName);
 		cl.cinematicframe = -1;			// flag signalling "draw pic"
@@ -511,8 +511,7 @@ void SCR_PlayCinematic (char *arg)
 		return;
 	}
 
-	Com_sprintf (name, sizeof(name), "video/%s", arg);
-	FS_FOpenFile (name, &cl.cinematic_file);
+	FS_FOpenFile (va("video/%s", arg), &cl.cinematic_file);
 	if (!cl.cinematic_file)
 	{
 //		Com_Error (ERR_DROP, "Cinematic %s not found.\n", name);
