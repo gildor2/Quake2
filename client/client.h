@@ -19,7 +19,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // client.h -- primary header for client
 
-//define	PARANOID			// speed sapping error checking
+#include "qcommon.h"
+#include "protocol.h"
 
 #include "ref.h"
 
@@ -78,11 +79,11 @@ typedef struct
 {
 	char	name[MAX_QPATH];
 	char	cinfo[MAX_QPATH];
-	struct image_s	*skin;
-	struct image_s	*icon;
+	image_t	*skin;
+	image_t	*icon;
 	char	iconname[MAX_QPATH];
-	struct model_s	*model;
-	struct model_s	*weaponmodel[MAX_CLIENTWEAPONMODELS];
+	model_t	*model;
+	model_t	*weaponmodel[MAX_CLIENTWEAPONMODELS];
 } clientinfo_t;
 
 extern char cl_weaponmodels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
@@ -163,11 +164,11 @@ typedef struct
 	//
 	// locally derived information from server state
 	//
-	struct model_s	*model_draw[MAX_MODELS];
-	cmodel_t	*model_clip[MAX_MODELS];
+	model_t	*model_draw[MAX_MODELS];
+	cmodel_t *model_clip[MAX_MODELS];
 
 	struct sfx_s	*sound_precache[MAX_SOUNDS];
-	struct image_s	*image_precache[MAX_IMAGES];
+	image_t	*image_precache[MAX_IMAGES];
 
 	clientinfo_t	clientinfo[MAX_CLIENTS];
 	clientinfo_t	baseclientinfo;
@@ -509,8 +510,8 @@ void CL_ParseClientinfo (int player);
 // cl_view.cpp
 //
 #ifdef GUN_DEBUG
-extern	int			gun_frame;
-extern	struct model_s	*gun_model;
+extern	int		gun_frame;
+extern	model_t	*gun_model;
 #endif
 
 void V_Init (void);

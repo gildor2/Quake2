@@ -300,11 +300,14 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 
 static void NetchanAppendArgs (char **argv, int first, int last)
 {
+	char	buf[1024];
+	buf[0] = 0;
 	for (int i = first; i < last; i++)
 	{
-		if (i > first) SZ_Print (&cls.netchan.message, " ");
-		SZ_Print (&cls.netchan.message, argv[i]);
+		if (i > first) appStrcatn (ARRAY_ARG(buf), " ");
+		appStrcatn (ARRAY_ARG(buf), argv[i]);
 	}
+	MSG_WriteString (&cls.netchan.message, buf);
 }
 
 /*
@@ -318,9 +321,7 @@ so when they are typed in at the console, they will need to be forwarded.
 */
 void Cmd_ForwardToServer (int argc, char **argv)
 {
-	char	*cmd;
-
-	cmd = argv[0];
+	const char *cmd = argv[0];
 	if (cls.state <= ca_connected || *cmd == '-' || *cmd == '+')
 	{
 		Com_WPrintf ("Unknown command \"%s\"\n", cmd);

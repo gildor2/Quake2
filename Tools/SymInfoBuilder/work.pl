@@ -26,6 +26,7 @@ sub ProcessMap {
 		$name =~ s/\*\s+(\S)/\*$1/g;			# remove spaces on a right side of '*'
 		my $curr = hex($addr);
 		next if $name =~ /^__/;					# do not include in list names, started with double underscore
+		$name =~ s/\(void\)$/\(\)/;				# replace func(void) -> func()
 		printf(STDERR ".%06X %5X %s\n", $curr, $curr-$prev,$prevName) if $doDump;
 		# write symbol info
 		syswrite (DBG, pack ("l", $curr));		# symbol RVA

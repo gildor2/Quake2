@@ -3,6 +3,7 @@
 #include "gl_backend.h"
 #include "gl_buffers.h"
 #include "gl_math.h"
+#include "protocol.h"		//!! for RF_XXX consts only !
 
 
 static int visFrame, drawFrame;

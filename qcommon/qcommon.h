@@ -58,25 +58,15 @@ typedef float vec3_t[3];
 #include "qfiles.h"
 
 
+//--------------- some constants ------------------------------
+
+// version number
+
 #define	VERSION		4.10
-
-#define APPNAME		"Quake2"
-#define	BASEDIRNAME	"baseq2"
-#define CONFIGNAME	"config.cfg"
-// if CD_PATH is not defined, CD checking and adding its paths will not be performed
-#define CD_PATH		"install/data"
-#define CD_CHECK	"install/data/quake2.exe"	// file used for CD validation
-
-#define NEW_PROTOCOL_ID "gildor"
 
 #ifdef WIN32
 
-//?????? DEBUG:
-//#ifdef NDEBUG
-#define BUILDSTRING "Win32 RELEASE"
-//#else
-//#define BUILDSTRING "Win32 DEBUG"
-//#endif
+#define BUILDSTRING "Win32"
 
 #ifdef _M_IX86
 #define	CPUSTRING	"x86"
@@ -114,6 +104,19 @@ typedef float vec3_t[3];
 #endif
 
 
+#define VERSION_STR		STR(VERSION) " " CPUSTRING " " __DATE__ " " BUILDSTRING
+
+// some configuration
+
+#define APPNAME		"Quake2"
+#define	BASEDIRNAME	"baseq2"
+#define CONFIGNAME	"config.cfg"
+// if CD_PATH is not defined, CD checking and adding its paths will not be performed
+#define CD_PATH		"install/data"
+#define CD_CHECK	"install/data/quake2.exe"	// file used for CD validation
+
+#define NEW_PROTOCOL_ID "gildor"
+
 #define SAVEGAME_DIRECTORY			"save"
 #define SAVEGAME_SERVER_EXTENSION	"sv2"
 #define SAVEGAME_GAME_EXTENSION		"sav"
@@ -126,9 +129,12 @@ typedef float vec3_t[3];
 #define DEDICATED	1
 #endif
 
-//============================================================================
 
-typedef struct sizebuf_s
+/*-----------------------------------------------------------------------------
+	msg.cpp
+-----------------------------------------------------------------------------*/
+
+typedef struct
 {
 	bool	allowoverflow;		// if false, do a error when overflowed
 	bool	overflowed;			// set to true if the buffer size failed
@@ -140,13 +146,7 @@ typedef struct sizebuf_s
 
 void	SZ_Init (sizebuf_t *buf, void *data, int length);
 void	SZ_Clear (sizebuf_t *buf);
-void	*SZ_GetSpace (sizebuf_t *buf, int length);
 void	SZ_Write (sizebuf_t *buf, const void *data, int length);
-void	SZ_Insert (sizebuf_t *buf, const void *data, int length, int pos);	// used for Cbuf_InsertText() only
-void	SZ_Print (sizebuf_t *buf, const char *data);						// strcats onto the sizebuf
-
-//============================================================================
-
 
 void	MSG_WriteChar (sizebuf_t *sb, int c);
 void	MSG_WriteByte (sizebuf_t *sb, int c);
@@ -197,6 +197,18 @@ void	MSG_ReadDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, p
 void	MSG_WriteDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState);
 
 
+/*-----------------------------------------------------------------------------
+	anorms.cpp
+-----------------------------------------------------------------------------*/
+
+#define NUMVERTEXNORMALS	162
+// used by:
+// 1. common.cpp: MSG_WriteDir(), MSG_ReadDir()
+// 2. cl_fx.cpp:  CL_FlyParticles(), CL_BfgParticles()
+extern	/*const*/ vec3_t bytedirs[NUMVERTEXNORMALS];
+
+void	InitByteDirs ();
+
 //============================================================================
 
 
@@ -212,7 +224,9 @@ void	Info_SetValueForKey (char *s, const char *key, const char *value);
 void	Info_Print (const char *s);
 
 
-/* crc.h */
+/*-----------------------------------------------------------------------------
+	crc.cpp
+-----------------------------------------------------------------------------*/
 
 void	CRC_Init(unsigned short *crcvalue);
 void	CRC_ProcessByte(unsigned short *crcvalue, byte data);
@@ -326,15 +340,9 @@ enum
 
 //==============================================
 
-/*
-==============================================================
-
-CMD
-
-Command text buffering and command execution
-
-==============================================================
-*/
+/*-----------------------------------------------------------------------------
+	Command text buffering and command execution (cmd.cpp)
+-----------------------------------------------------------------------------*/
 
 /*
 
@@ -353,11 +361,6 @@ void	Cbuf_AddText (const char *text);
 // as new commands are generated from the console or keybindings,
 // the text is added to the end of the command buffer.
 
-void	Cbuf_InsertText (const char *text);
-// when a command wants to issue other commands immediately, the text is
-// inserted at the beginning of the buffer, before any remaining unexecuted
-// commands.
-
 void	Cbuf_Execute (void);
 // Pulls off \n terminated lines of text from the command buffer and sends
 // them through Cmd_ExecuteString.  Stops when the buffer is empty.
@@ -370,7 +373,6 @@ void	Cbuf_InsertFromDefer (void);
 // is being loaded (NOTE: cannot simply disable Cbuf_Execute(): while map is loading,
 // there can be executed different commands)
 
-//===========================================================================
 
 //!! here for command completion (current version) only
 class CAlias : public CStringItem
@@ -415,13 +417,10 @@ void	Cmd_ForwardToServer (int argc, char **argv);
 
 void	Cmd_WriteAliases (FILE *f);
 
-/*
-==============================================================
 
-CVAR
-
-==============================================================
-*/
+/*-----------------------------------------------------------------------------
+	cvar.cpp
+-----------------------------------------------------------------------------*/
 
 struct cvarInfo_t
 {
@@ -495,15 +494,11 @@ extern bool userinfo_modified;
 // this is set each time a CVAR_USERINFO variable is changed
 // so that the client knows to send it to the server
 
-/*
-==============================================================
 
-NET
+/*-----------------------------------------------------------------------------
+	net_chan.cpp, net_{platform}.cpp
+-----------------------------------------------------------------------------*/
 
-==============================================================
-*/
-
-// net.h -- quake's interface to the networking layer
 
 #define	PORT_ANY		-1
 
@@ -538,7 +533,6 @@ bool	NET_IsLocalAddress (netadr_t *adr);
 char	*NET_AdrToString (netadr_t *a);
 bool	NET_StringToAdr (const char *s, netadr_t *a);
 
-//============================================================================
 
 typedef struct
 {
@@ -591,13 +585,9 @@ bool	Netchan_Process (netchan_t *chan, sizebuf_t *msg);
 bool	Netchan_CanReliable (netchan_t *chan);
 
 
-/*
-==============================================================
-
-CMODEL
-
-==============================================================
-*/
+/*-----------------------------------------------------------------------------
+	cmodel.cpp
+-----------------------------------------------------------------------------*/
 
 
 // cmodel_t.flags
@@ -657,28 +647,20 @@ bool	CM_HeadnodeVisible (int headnode, byte *visbits);
 void	CM_WritePortalState (FILE *f);
 void	CM_ReadPortalState (FILE *f);
 
-/*
-==============================================================
 
-PLAYER MOVEMENT CODE
-
-Common between server and client so prediction matches
-
-==============================================================
-*/
+/*-----------------------------------------------------------------------------
+	Player movement code (pmove.cpp)
+	Common between server and client so prediction matches
+-----------------------------------------------------------------------------*/
 
 extern float pm_airaccelerate;
 
 void	Pmove (pmove_t *pmove);
 
 
-/*----------------- Debugging ------------------*/
-
-
-void	DebugPrintf (const char *fmt, ...);
-
-
-/*----------------- File system ----------------*/
+/*-----------------------------------------------------------------------------
+	File system (files.cpp)
+-----------------------------------------------------------------------------*/
 
 extern cvar_t	*fs_gamedirvar;
 
@@ -712,6 +694,10 @@ void		Sys_FindClose (void);
 
 
 /*------------- Miscellaneous -----------------*/
+
+// debugging
+void	DebugPrintf (const char *fmt, ...);
+
 
 extern	int linewidth;		// for functions, which wants to perform advanced output formatting
 
@@ -760,22 +746,17 @@ extern unsigned time_before_game, time_after_game, time_before_ref, time_after_r
 
 bool	COM_CheckCmdlineVar (const char *name);
 
-void	QCommon_Init (const char *cmdline);
-void	QCommon_Frame (float msec);
-void	QCommon_Shutdown (void);
-
-#define NUMVERTEXNORMALS	162
-// used by:
-// 1. common.cpp: MSG_WriteDir(), MSG_ReadDir()
-// 2. cl_fx.cpp:  CL_FlyParticles(), CL_BfgParticles()
-extern	const vec3_t bytedirs[NUMVERTEXNORMALS];
+void	Com_Init (const char *cmdline);
+void	Com_Frame (float msec);
+void	Com_Shutdown (void);
 
 // this is in the client code, but can be used for debugging from server
 void	SCR_DebugGraph (float value, int color);
 
 
-/*-------- Non-portable system services --------*/
-
+/*-----------------------------------------------------------------------------
+	Non-portable system services (sys_*.cpp)
+-----------------------------------------------------------------------------*/
 
 void	Sys_Init (void);
 
@@ -790,7 +771,9 @@ void	NORETURN Sys_Quit (void);
 void	Sys_CopyProtect (void);
 
 
-/*------- Client / server systems ---------*/
+/*-----------------------------------------------------------------------------
+	Client / server systems
+-----------------------------------------------------------------------------*/
 
 
 void	CL_Init (void);
@@ -806,10 +789,12 @@ void	SV_Shutdown (const char *finalmsg, bool reconnect);
 void	SV_Frame (float msec);
 
 
-/*---------- Map and model stuff ----------*/
+/*-----------------------------------------------------------------------------
+	Map and model stuff
+-----------------------------------------------------------------------------*/
 
 
-typedef struct lightFlare_s
+struct lightFlare_t
 {
 	vec3_t	origin;
 	float	size;
@@ -817,15 +802,15 @@ typedef struct lightFlare_s
 	byte	color[4];
 	byte	style;
 	int		model;
-	struct lightFlare_s *next;
-} lightFlare_t;
+	lightFlare_t *next;
+};
 
 
 // static map light
 
 typedef enum {sl_linear, sl_inverse, sl_inverse2} slightType_t;
 
-typedef struct slight_s
+struct slight_t
 {
 	slightType_t type;
 	byte	spot;					// bool
@@ -839,16 +824,16 @@ typedef struct slight_s
 	// for spotlights
 	float	spotDot;
 	vec3_t	spotDir;
-	struct slight_s *next;
-} slight_t;
+	slight_t *next;
+};
 
 // static map effects
 
-typedef struct splash_s
+struct splash_t
 {
 	vec3_t	origin;
-	struct splash_s *next;
-} splash_t;
+	splash_t *next;
+};
 
 
 typedef enum {map_q2, map_kp, map_hl} mapType_t;

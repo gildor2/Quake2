@@ -20,7 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <winsock2.h>
 #include <wsipx.h>
-#include "../qcommon/qcommon.h"
+#include "qcommon.h"
 
 #define	MAX_LOOPBACK	8
 

@@ -25,8 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef GUN_DEBUG
 // development tools for weapons
-int			gun_frame;
-struct model_s	*gun_model;
+int		gun_frame;
+model_t	*gun_model;
 #endif
 
 static cvar_t	*cl_testparticles;

@@ -1,4 +1,4 @@
-#include "../qcommon/qcommon.h"
+#include "qcommon.h"
 
 //?? NOTE: copied from cmd.cpp
 //?? should rework

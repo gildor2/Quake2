@@ -467,8 +467,8 @@ static int	complMenu_x, complMenu_y, complMenu_w, complMenu_h;
 static void CompleteMenuDraw (void)
 {
 	re.DrawFill2 (complMenu_x, complMenu_y, complMenu_w, complMenu_h, RGBA(0.1,0.5,0.5,0.8));
-	Menu_AdjustCursor (&completeMenu, 1);
-	Menu_Draw (&completeMenu);
+	completeMenu.AdjustCursor (1);
+	completeMenu.Draw ();
 }
 
 static const char *CompleteMenuKey (int key)
@@ -492,7 +492,7 @@ static void CompleteMenuCallback (void *item)
 {
 	char	*s;
 
-	s = completeVariants[((menuAction_t*) item)->generic.localdata[0]];
+	s = completeVariants[((menuAction_t*) item)->localData];
 	M_PopMenu ();
 
 	editLine[1] = '/';
@@ -521,9 +521,9 @@ static void CompleteMenu (void)
 	for (i = 0, y = 0; i < completed_count; i++, y += 10)
 	{
 		MENU_ACTION(completeItems[i], y, completeVariants[i], CompleteMenuCallback);
-		completeItems[i].generic.flags = QMF_LEFT_JUSTIFY;
-		completeItems[i].generic.localdata[0] = i;
-		Menu_AddItem (&completeMenu, &completeItems[i]);
+		completeItems[i].flags = QMF_LEFT_JUSTIFY;
+		completeItems[i].localData = i;
+		completeMenu.AddItem (&completeItems[i]);
 		len = strlen (completeVariants[i]);
 		if (len > maxLen) maxLen = len;
 	}

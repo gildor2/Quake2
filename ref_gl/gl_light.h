@@ -3,7 +3,7 @@
 
 
 // point light / spot light
-typedef struct
+struct gl_slight_t
 {
 	slightType_t type;
 	bool	spot;
@@ -18,10 +18,10 @@ typedef struct
 	// fields for culling
 	int		cluster;
 	float	maxDist2;
-} gl_slight_t;
+};
 
 
-typedef struct surfLight_s
+struct surfLight_t
 {
 	bool	sky;
 	vec3_t	color;
@@ -29,12 +29,12 @@ typedef struct surfLight_s
 	surfacePlanar_t *pl;		// used for normal/axis/bounds
 		//!! NOTE: if few surflights will be combined into a single one, should insert this fields here;
 		//!! in this case can remove gl_model.h dependency and surfacePlanar_t decl. from gl_local.h
-	struct surfLight_s *next;
+	surfLight_t *next;
 	// fields for culling
 	vec3_t	center;
 	int		cluster;
 	float	maxDist2;
-} surfLight_t;
+};
 
 
 #define LIGHTGRID_STEP	32

@@ -382,11 +382,8 @@ void CL_Heatbeam (vec3_t start, vec3_t forward)
 //	MakeNormalVectors (vec, right, up);
 	VectorCopy (cl.v_right, right);
 	VectorCopy (cl.v_up, up);
-//	if (vidref_val == VIDREF_GL) (removed by Gildor)
-	{ // GL mode
-		VectorMA (move, -0.5f, right, move);
-		VectorMA (move, -0.5f, up, move);
-	}
+	VectorMA (move, -0.5f, right, move);
+	VectorMA (move, -0.5f, up, move);
 	// otherwise assume SOFT
 
 	int step = 32;

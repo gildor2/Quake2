@@ -18,9 +18,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-//define	PARANOID				// speed sapping error checking
-
-#include "../qcommon/qcommon.h"
+#include "qcommon.h"
+#include "protocol.h"
 
 // need qboolean declaration for game library interface
 typedef unsigned int		qboolean;

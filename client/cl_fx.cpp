@@ -2134,7 +2134,7 @@ void CL_EntityEvent (entityState_t *ent)
 		S_StartSound (NULL, ent->number, CHAN_AUTO, cl_sfx_spectator[ent->event-EV_SPECTATOR0], 1, ATTN_NORM, 0);
 		return;
 	} */
-	else if (ent->event >= EV_CAMPER0 && ent->event <= EV_CAMPER8)
+	else if (ent->event >= EV_CAMPER0 && ent->event < EV_CAMPER0+NUM_CAMPER_EVENTS)
 	{
 		S_StartSound (NULL, ent->number, CHAN_AUTO, cl_sfx_camper[ent->event-EV_CAMPER0], 1, ATTN_NORM, 0);
 		return;

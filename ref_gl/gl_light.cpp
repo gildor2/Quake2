@@ -2,6 +2,7 @@
 #include "gl_light.h"
 #include "gl_backend.h"
 #include "gl_math.h"
+#include "protocol.h"		//!! for RF_XXX consts only !
 
 
 /* NOTES:

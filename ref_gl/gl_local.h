@@ -50,10 +50,7 @@
 
 #include "qgl_decl.h"
 
-//#ifndef STATIC_BUILD
-// engine functions will be accessed via function table
-//#	define DYNAMIC_REF
-//#endif
+#include "qcommon.h"
 #include "../client/ref.h"
 
 
@@ -81,14 +78,14 @@ void	QGL_LogMessage (const char *text);
 extern unsigned vid_width, vid_height;
 
 // forwards
-typedef struct viewPortal_s	viewPortal_t;
-typedef struct refEntity_s	refEntity_t;
-typedef struct image_s		image_t;
-typedef struct shader_s		shader_t;
-typedef struct model_s		model_t;
-typedef struct surfaceCommon_s surfaceCommon_t;
-typedef struct surfacePlanar_s surfacePlanar_t;
-typedef struct dynamicLightmap_s dynamicLightmap_t;
+struct viewPortal_t;
+struct refEntity_t;
+struct image_t;
+struct shader_t;
+struct model_t;
+struct surfaceCommon_t;
+struct surfacePlanar_t;
+struct dynamicLightmap_t;
 
 
 #include "gl_interface.h"

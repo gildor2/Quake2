@@ -122,7 +122,7 @@ typedef enum
 #define MAX_SHADER_STAGES	32
 #define MAX_STAGE_TEXTURES	128
 
-typedef struct
+struct tcModParms_t
 {
 	tcModType_t type;
 	union {
@@ -146,9 +146,9 @@ typedef struct
 			float	t[2];
 		};
 	};
-} tcModParms_t;
+};
 
-typedef struct
+struct deformParms_t
 {
 	deformType_t type;
 	union {
@@ -163,10 +163,10 @@ typedef struct
 			float	move_x, move_y, move_z;
 		};
 	};
-} deformParms_t;
+};
 
 
-typedef struct
+struct shaderStage_t
 {
 	// GL_State ...
 	unsigned glState;
@@ -195,7 +195,7 @@ typedef struct
 	float	animMapFreq;			// valid only when numAnimTextures > 1 && (frameFromEntity == false || model = WORLD)
 	bool	frameFromEntity;
 	image_t	*mapImage[1];
-} shaderStage_t;
+};
 
 
 /*--------------- Shader itself ----------------*/
@@ -209,7 +209,7 @@ typedef enum
 } shaderType_t;
 
 
-typedef struct shader_s
+struct shader_t
 {
 	char	name[MAX_QPATH];
 
@@ -260,14 +260,14 @@ typedef struct shader_s
 	}; */
 
 	// remap shader
-	struct shader_s *alphaShader;		// for skins: same shader as current, but translucent
+	shader_t *alphaShader;	// for skins: same shader as current, but translucent
 
-	struct shader_s *hashNext;
+	shader_t *hashNext;
 
 	// stages: variable length
 	int		numStages;
 	shaderStage_t *stages[1];
-} shader_t;
+};
 
 
 /*--------------- System shaders ------------------*/

@@ -20,7 +20,7 @@
 // mask of flags, stored in image (exclude hints)
 #define IMAGE_FLAGMASK		0x0000FFFF
 
-typedef struct image_s
+struct image_t
 {
 	char	name[MAX_QPATH];			// lowercased game-relative image name (system images started with "*")
 	int		width, height;
@@ -32,8 +32,8 @@ typedef struct image_s
 	unsigned flags;
 	byte	*pic;						// when non NULL, image was not uploaded
 	color_t	color;
-	struct image_s *hashNext;
-} image_t;
+	image_t *hashNext;
+};
 
 
 extern	image_t		*gl_defaultImage;

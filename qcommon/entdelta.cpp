@@ -323,7 +323,7 @@ void MSG_WriteDeltaEntity (sizebuf_t *msg, const entity_state_t *from, entity_st
 	if (to->event)
 		bits |= 1<<U_EVENT;
 	// send old_origin for beams and for new entities only
-	if (newentity || (to->renderfx & RF_BEAM))
+	if (newentity || (to->renderfx & 0x80)) //!! RF_BEAM
 		bits |= 1<<U_OLDORIGIN;
 
 	//----------------------------------------------------

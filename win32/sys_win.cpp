@@ -445,7 +445,7 @@ int main (int argc, const char **argv)
 #endif
 
 		appInit ();		//!!!!
-		QCommon_Init (cmdline);
+		Com_Init (cmdline);
 
 		double oldtime = appMillisecondsf ();
 
@@ -475,7 +475,7 @@ int main (int argc, const char **argv)
 			Sleep (10);
 #endif
 
-			// do not allow Qcommon_Frame(0)
+			// do not allow Com_Frame(0)
 			double timeDelta, newtime;
 			while (true)
 			{
@@ -486,7 +486,7 @@ int main (int argc, const char **argv)
 			}
 			GUARD_BEGIN
 			{
-				QCommon_Frame (timeDelta);
+				Com_Frame (timeDelta);
 			}
 			GUARD_CATCH
 			{
@@ -524,7 +524,7 @@ int main (int argc, const char **argv)
 			// shutdown all subsystems
 			SV_Shutdown (va("Server fatal crashed: %s\n", GErr.message), false);	// message
 			CL_Shutdown (true);
-			QCommon_Shutdown ();
+			Com_Shutdown ();
 		} GUARD_CATCH {
 			// nothing here ...
 		}

@@ -2,7 +2,7 @@
 #define __GL_INTERFACE_INCLUDED__
 
 
-typedef struct
+struct glconfig_t
 {
 	int		maxTextureSize;
 	int		maxRectTextureSize;
@@ -38,7 +38,7 @@ typedef struct
 
 	// tables
 	unsigned tbl_8to32[256];		// palette->RGBA
-} glconfig_t;
+};
 
 // macro for checking extension support
 #define GL_SUPPORT(ext)		(gl_config.extensionMask & (ext))
@@ -64,7 +64,7 @@ typedef enum
 //!! make struc tmuState_t, gl_state_t will have 'tmuState_t _old[32], _new[32]'; GL_SelectTexture() will set
 //!! 'tmuState_t *currTmu'; faster copying old->new for GL_Lock, faster GL_Unlock and other funcs ?
 
-typedef struct
+struct glstate_t
 {
 	bool	locked;
 	// up to 32 texture units supports by OpenGL 1.3
@@ -96,7 +96,7 @@ typedef struct
 	bool	have3d;
 	bool	haveFullScreen3d;
 	bool	useFastSky;
-} glstate_t;
+};
 
 extern glconfig_t  gl_config;
 extern glstate_t   gl_state;

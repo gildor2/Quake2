@@ -72,6 +72,7 @@ DED_CLIENT = \
 
 D = qcommon
 COMMON = \
+	$D/anorms.cpp \
 	$D/cmd.cpp \
 	$D/cmodel.cpp \
 	$D/common.cpp \
@@ -82,6 +83,7 @@ COMMON = \
 	$D/images.cpp \
 	$D/md4.cpp \
 	$D/model.cpp \
+	$D/msg.cpp \
 	$D/net_chan.cpp \
 	$D/pmove.cpp \
 	$D/q_shared2.cpp \
@@ -111,8 +113,7 @@ WIN32_FILES = \
 	$D/q_shwin.cpp \
 	$D/snd_win.cpp \
 	$D/sys_win.cpp \
-	$D/vid_dll.cpp \
-	$D/vid_menu.cpp
+	$D/vid_dll.cpp
 DED_WIN32 = \
 	$D/net_wins.cpp \
 	$D/q_shwin.cpp \
@@ -130,7 +131,7 @@ RES_FILES = \
 	resource/makeres.asm
 
 
-INCLUDES = Core/Inc
+INCLUDES = Core/Inc qcommon
 
 #------------------------------------------------------------------------------
 # static build

@@ -354,7 +354,7 @@ void SV_BuildClientFrame (client_t *client)
 				evt = EV_FOOTSTEP;
 			else if (evt >= EV_FALLSHORT0 && evt < EV_FALLSHORT0 + MATERIAL_COUNT)
 				evt = EV_FALLSHORT;
-			else if (evt >= EV_SPECTATOR0 && evt <= EV_CAMPER8)
+			else if (evt >= EV_SPECTATOR0 && evt < EV_CAMPER0+NUM_CAMPER_EVENTS)
 				evt = EV_NONE;
 
 			state->event = evt;

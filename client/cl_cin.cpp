@@ -189,7 +189,7 @@ void SCR_StopCinematic ()
 {
 	// tell the server to advance to the next map / cinematic
 	MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-	SZ_Print (&cls.netchan.message, va("nextserver %d\n", cl.servercount));
+	MSG_WriteString (&cls.netchan.message, va("nextserver %d\n", cl.servercount));
 
 	FreeCinematic ();
 }

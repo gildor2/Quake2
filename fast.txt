@@ -11,4 +11,3 @@
   - if upgrade compression, should parse demos with
     a) original protocol b)ext protocol, but old-style delta
     c) ext protocol and new-style delta;  may be, change EXT_PROTOCOL_ID too (add version number)
-- cut some strucs, cut protocol enums to q2protocol.h (and include when needed only)

@@ -678,10 +678,10 @@ Vid_LoadRefresh
 
 static void	D_RenderFrame (refdef_t *fd) {}
 static void	D_BeginRegistration (const char *map) {}
-static struct model_s *D_RegisterModel (const char *name) { return NULL; }
-static struct image_s *D_RegisterSkin (const char *name) { return NULL; }
+static model_t *D_RegisterModel (const char *name) { return NULL; }
+static image_t *D_RegisterSkin (const char *name) { return NULL; }
 static void D_ReloadImage (const char *name) {}
-static struct image_s *D_FindPic (const char *name) { return NULL; }
+static image_t *D_FindPic (const char *name) { return NULL; }
 static void D_SetSky (const char *name, float rotate, vec3_t axis) {}
 static void	D_EndRegistration (void) {}
 

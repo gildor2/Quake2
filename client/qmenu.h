@@ -42,131 +42,123 @@ typedef enum {
 #define QMF_NUMBERSONLY		0x00000004
 #define QMF_CENTER			0x00000008
 
-struct menuCommon_s;
+// forward
+struct menuCommon_t;
 
-typedef struct menuFramework_s
+struct menuFramework_t
 {
-	int		x, y;
-	int		cursor;
+	short	x, y;
+	short	cursor;
 
-	int		nitems;
-	struct menuCommon_s *itemList;
+	short	nitems;
+	menuCommon_t *itemList;
 
 	const char *statusbar;
 
-	void (*cursordraw) (struct menuFramework_s *m);
-} menuFramework_t;
+	void (*cursordraw) (menuFramework_t *m);
 
-typedef struct menuCommon_s
+	void	AddItem (void *item);
+	void	AdjustCursor (int dir);
+	void	Center ();
+	void	Draw ();
+	menuCommon_t *ItemAtCursor ();
+	bool	SelectItem ();
+	void	SetStatusBar (const char *string);
+	void	SlideItem (int dir);
+	int		TallySlots ();
+};
+
+struct menuCommon_t
 {
 	menuItemType_t type;
-	struct menuCommon_s *next;
+	menuCommon_t *next;
 	char	*name;
-	int		x, y;
+	short	x, y;
 	menuFramework_t *parent;
-	int		cursor_offset;
-	int		localdata[4];
-	int		flags;
+	short	cursor_offset;
+	int		localData;
+	byte	flags;
 
 	char	*statusbar;
 
 	void (*callback) (void *self);
 	void (*ownerdraw) (void *self);
 	void (*cursordraw) (void *self);
-} menuCommon_t;
+};
 
-typedef struct
+struct menuField_t : menuCommon_t
 {
-	menuCommon_t generic;
-
 	char	buffer[80];
-	int		cursor;
-	int		length;
-	int		visible_length;
-	int		visible_offset;
-} menuField_t;
+	short	cursor;
+	short	length;
+	short	visible_length;
+	short	visible_offset;
+};
 
-typedef struct
+struct menuSlider_t : menuCommon_t
 {
-	menuCommon_t generic;
-
 	float	minvalue;
 	float	maxvalue;
 	float	curvalue;
 	float	range;
-} menuSlider_t;
+};
 
-typedef struct
+struct menuList_t : menuCommon_t
 {
-	menuCommon_t generic;
-
-	int		curvalue;
+	short	curvalue;
 	const char	**itemnames;
-} menuList_t;
+};
 
-typedef struct
+struct menuList2_t : menuCommon_t
 {
-	menuCommon_t generic;
-
-	int		curvalue;
+	short	curvalue;
 	CStringItem *itemnames;
-} menuList2_t;
+};
 
-typedef struct
+struct menuAction_t : menuCommon_t
 {
-	menuCommon_t generic;
-} menuAction_t;
+};
 
-typedef struct
+struct menuSeparator_t : menuCommon_t
 {
-	menuCommon_t generic;
-} menuSeparator_t;
+};
 
 
 bool	Field_Key (menuField_t *field, int key);
 
-void	Menu_AddItem (menuFramework_t *menu, void *item);
-void	Menu_AdjustCursor (menuFramework_t *menu, int dir);
-void	Menu_Center (menuFramework_t *menu);
-void	Menu_Draw (menuFramework_t *menu);
-menuCommon_t *Menu_ItemAtCursor (menuFramework_t *m);
-bool	Menu_SelectItem (menuFramework_t *s);
-void	Menu_SetStatusBar (menuFramework_t *s, const char *string);
-void	Menu_SlideItem (menuFramework_t *s, int dir);
-int		Menu_TallySlots (menuFramework_t *menu);
 
 #define Menu_DrawStringR2L(x,y,s)			DrawString(x-(appCStrlen(s)-1)*CHAR_WIDTH,y,s)
 #define Menu_DrawStringCenter(x,y,s)		DrawString(x-(appCStrlen(s)-1)*CHAR_WIDTH/2,y,s)
 
 
 #define MENU_ACTION(var,ypos,text,call)	\
-	{									\
-		var.generic.type = MTYPE_ACTION;\
-		var.generic.x = 0;				\
-		var.generic.y = ypos;			\
-		var.generic.name = text;		\
-		var.generic.callback = (void(*)(void*))call;\
+	{							\
+		var.type = MTYPE_ACTION;\
+		var.x = 0;				\
+		var.y = ypos;			\
+		var.name = text;		\
+		var.callback = (void(*)(void*))call;\
 	}
 
 #define MENU_SLIDER(var,ypos,text,call,min,max)	\
-	{									\
-		var.generic.type = MTYPE_SLIDER;\
-		var.generic.x = 0;				\
-		var.generic.y = ypos;			\
-		var.generic.name = text;		\
-		var.generic.callback = call;	\
-		var.minvalue = min;				\
-		var.maxvalue = max;				\
+	{							\
+		var.type = MTYPE_SLIDER;\
+		var.x = 0;				\
+		var.y = ypos;			\
+		var.name = text;		\
+		var.callback = call;	\
+		var.minvalue = min;		\
+		var.maxvalue = max;		\
 	}
 
 #define MENU_SPIN(var,ypos,text,call,items)	\
-	{										\
-		var.generic.type = MTYPE_SPINCONTROL;\
-		var.generic.x = 0;				\
-		var.generic.y = ypos;			\
-		var.generic.name = text;		\
-		var.generic.callback = call;	\
-		var.itemnames = items;			\
+	{							\
+		var.type = MTYPE_SPINCONTROL;\
+		var.x = 0;				\
+		var.y = ypos;			\
+		var.name = text;		\
+		var.callback = call;	\
+		var.itemnames = items;	\
 	}
 
 #endif

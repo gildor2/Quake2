@@ -28,7 +28,7 @@ typedef struct
 {
 	int		entity;
 	int		dest_entity;
-	struct model_s	*model;
+	model_t	*model;
 	int		endtime;
 	vec3_t	offset;
 	vec3_t	start, end;
@@ -67,25 +67,25 @@ struct sfx_s	*cl_sfx_plasexp;
 struct sfx_s	*cl_sfx_fallshort;
 struct sfx_s	*cl_sfx_footsteps[4];
 
-struct model_s	*cl_mod_explode;
-struct model_s	*cl_mod_smoke;
-struct model_s	*cl_mod_flash;
-struct model_s	*cl_mod_parasite_segment;
-struct model_s	*cl_mod_grapple_cable;
-struct model_s	*cl_mod_parasite_tip;
-struct model_s	*cl_mod_explo4;
-struct model_s	*cl_mod_bfg_explo;
-struct model_s	*cl_mod_powerscreen;
+model_t	*cl_mod_explode;
+model_t	*cl_mod_smoke;
+model_t	*cl_mod_flash;
+model_t	*cl_mod_parasite_segment;
+model_t	*cl_mod_grapple_cable;
+model_t	*cl_mod_parasite_tip;
+model_t	*cl_mod_explo4;
+model_t	*cl_mod_bfg_explo;
+model_t	*cl_mod_powerscreen;
 // RAFAEL
-struct model_s	*cl_mod_plasmaexplo;
+model_t	*cl_mod_plasmaexplo;
 
 //ROGUE
 struct sfx_s	*cl_sfx_lightning;
 struct sfx_s	*cl_sfx_disrexp;
-struct model_s	*cl_mod_lightning;
-struct model_s	*cl_mod_heatbeam;
-struct model_s	*cl_mod_monster_heatbeam;
-struct model_s	*cl_mod_explo4_big;
+model_t	*cl_mod_lightning;
+model_t	*cl_mod_heatbeam;
+model_t	*cl_mod_monster_heatbeam;
+model_t	*cl_mod_explo4_big;
 
 //ROGUE
 
@@ -516,7 +516,7 @@ void CL_ParseParticles (void)
 CL_ParseBeam
 =================
 */
-int CL_ParseBeam (struct model_s *model)
+int CL_ParseBeam (model_t *model)
 {
 	int		ent;
 	vec3_t	start, end;
@@ -564,7 +564,7 @@ int CL_ParseBeam (struct model_s *model)
 CL_ParseBeam2
 =================
 */
-int CL_ParseBeam2 (struct model_s *model)
+int CL_ParseBeam2 (model_t *model)
 {
 	int		ent;
 	vec3_t	start, end, offset;
@@ -617,7 +617,7 @@ CL_ParsePlayerBeam
   - adds to the cl_mPlayerbeam array instead of the cl_mBeams array
 =================
 */
-int CL_ParsePlayerBeam (struct model_s *model)
+int CL_ParsePlayerBeam (model_t *model)
 {
 	int		ent;
 	vec3_t	start, end, offset;
@@ -681,7 +681,7 @@ int CL_ParsePlayerBeam (struct model_s *model)
 CL_ParseLightning
 =================
 */
-int CL_ParseLightning (struct model_s *model)
+int CL_ParseLightning (model_t *model)
 {
 	int		srcEnt, destEnt;
 	vec3_t	start, end;

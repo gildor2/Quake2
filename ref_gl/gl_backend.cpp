@@ -6,6 +6,7 @@
 #include "gl_sky.h"
 #include "gl_math.h"
 #include "gl_buffers.h"
+#include "protocol.h"		//!! for RF_XXX consts only !
 
 
 //#define SWAP_ON_BEGIN		// call GLimp_EndFrame() with SwapBuffers() on frame begin (or frame end if not defined)

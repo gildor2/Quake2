@@ -1,4 +1,4 @@
-#include "../qcommon/qcommon.h"
+#include "qcommon.h"
 
 // some dummy (stub) functions for (small) dedicated server
 // NOTE: dedicated server can be compiled from complete Q2 executable source

@@ -5,7 +5,7 @@
 #define MAX_LIGHTMAPS	64		// max lightmap textures
 #define LIGHTMAP_SIZE	256		// width and height of the lightmap texture (square)
 
-typedef struct
+struct lightmapBlock_t
 {
 	byte	index;				// "*lightmap%d"
 	bool	empty;
@@ -13,12 +13,12 @@ typedef struct
 	image_t	*image;				// required for uploading (updating) lightmap
 	int		*allocated;			// [LIGHTMAP_SIZE]
 	byte	*pic;				// [LIGHTMAP_SIZE*LIGHTMAP_SIZE*4]
-} lightmapBlock_t;
+};
 
 
 #define IS_FAST_STYLE(s)	(s >= 1 && s <= 31 && gl_config.multiPassLM)
 
-typedef struct dynamicLightmap_s
+struct dynamicLightmap_t
 {
 	// style info
 	byte	numStyles;			// 1..4
@@ -32,7 +32,7 @@ typedef struct dynamicLightmap_s
 	// info for uploading lightmap
 	short	s, t;				// glTexSubimage to (s,t)-(s+w,t+h)
 	lightmapBlock_t *block;
-} dynamicLightmap_t;
+};
 
 
 void LM_Init (void);

@@ -23,26 +23,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // dmflags->integer flags
 //!! NOTE: all DF_XXX... values used in engine for dmflags edit menu only
 // should remove this consts (place into a separate script for dmflags editor !!)
-#define	DF_NO_HEALTH		0x00000001	// 1
-#define	DF_NO_ITEMS			0x00000002	// 2
-#define	DF_WEAPONS_STAY		0x00000004	// 4
-#define	DF_NO_FALLING		0x00000008	// 8
-#define	DF_INSTANT_ITEMS	0x00000010	// 16
-#define	DF_SAME_LEVEL		0x00000020	// 32
-#define DF_SKINTEAMS		0x00000040	// 64
-#define DF_MODELTEAMS		0x00000080	// 128
-#define DF_NO_FRIENDLY_FIRE	0x00000100	// 256
-#define	DF_SPAWN_FARTHEST	0x00000200	// 512
-#define DF_FORCE_RESPAWN	0x00000400	// 1024
-#define DF_NO_ARMOR			0x00000800	// 2048
-#define DF_ALLOW_EXIT		0x00001000	// 4096
-#define DF_INFINITE_AMMO	0x00002000	// 8192
-#define DF_QUAD_DROP		0x00004000	// 16384
-#define DF_FIXED_FOV		0x00008000	// 32768
-
+#define	DF_NO_HEALTH		0x00000001
+#define	DF_NO_ITEMS			0x00000002
+#define	DF_WEAPONS_STAY		0x00000004
+#define	DF_NO_FALLING		0x00000008
+#define	DF_INSTANT_ITEMS	0x00000010
+#define	DF_SAME_LEVEL		0x00000020
+#define DF_SKINTEAMS		0x00000040
+#define DF_MODELTEAMS		0x00000080
+#define DF_NO_FRIENDLY_FIRE	0x00000100
+#define	DF_SPAWN_FARTHEST	0x00000200
+#define DF_FORCE_RESPAWN	0x00000400
+#define DF_NO_ARMOR			0x00000800
+#define DF_ALLOW_EXIT		0x00001000
+#define DF_INFINITE_AMMO	0x00002000
+#define DF_QUAD_DROP		0x00004000
+#define DF_FIXED_FOV		0x00008000
 // XATRIX
-#define	DF_QUADFIRE_DROP	0x00010000	// 65536
-
+#define	DF_QUADFIRE_DROP	0x00010000
 // ROGUE
 #define DF_NO_MINES			0x00020000
 #define DF_NO_STACK_DOUBLE	0x00040000
@@ -62,6 +60,14 @@ static const char *menu_in_sound   = "misc/menu1.wav";
 static const char *menu_move_sound = "misc/menu2.wav";
 static const char *menu_out_sound  = "misc/menu3.wav";
 
+
+static const char *yesno_names[] = {
+	"no", "yes", NULL
+};
+
+
+
+// forward declarations
 void M_Menu_Main_f (void);
 	void M_Menu_Game_f (void);
 		void M_Menu_LoadGame_f (void);
@@ -81,6 +87,7 @@ void M_Menu_Main_f (void);
 	void M_Menu_Quit_f (void);
 
 	void M_Menu_Credits (void);
+
 
 static bool m_entersound;		// play after drawing a frame, so caching
 								// won't disrupt the sound
@@ -180,18 +187,15 @@ void M_PopMenu (void)
 const char *Default_MenuKey (menuFramework_t *m, int key)
 {
 	const char *sound = NULL;
+	if (!m) return NULL;
 
-	if (m)
+	menuCommon_t *item;
+	if ((item = m->ItemAtCursor ()) != 0)
 	{
-		menuCommon_t *item;
-
-		if ((item = Menu_ItemAtCursor (m)) != 0)
+		if (item->type == MTYPE_FIELD)
 		{
-			if (item->type == MTYPE_FIELD)
-			{
-				if (Field_Key ((menuField_t*) item, key))
-					return NULL;
-			}
+			if (Field_Key ((menuField_t*) item, key))
+				return NULL;
 		}
 	}
 
@@ -204,61 +208,42 @@ const char *Default_MenuKey (menuFramework_t *m, int key)
 	case K_KP_UPARROW:
 	case K_UPARROW:
 	case K_MWHEELUP:
-		if (m)
-		{
-			m->cursor--;
-			Menu_AdjustCursor (m, -1);
-			sound = menu_move_sound;
-		}
+		m->cursor--;
+		m->AdjustCursor (-1);
+		sound = menu_move_sound;
 		break;
 	case K_KP_DOWNARROW:
 	case K_DOWNARROW:
 	case K_MWHEELDOWN:
-		if (m)
-		{
-			m->cursor++;
-			Menu_AdjustCursor (m, 1);
-			sound = menu_move_sound;
-		}
+		m->cursor++;
+		m->AdjustCursor (1);
+		sound = menu_move_sound;
 		break;
 	case K_KP_LEFTARROW:
 	case K_LEFTARROW:
-		if (m)
-		{
-			Menu_SlideItem (m, -1);
-			sound = menu_move_sound;
-		}
+		m->SlideItem (-1);
+		sound = menu_move_sound;
 		break;
 	case K_KP_RIGHTARROW:
 	case K_RIGHTARROW:
-		if (m)
-		{
-			Menu_SlideItem (m, 1);
-			sound = menu_move_sound;
-		}
+		m->SlideItem (1);
+		sound = menu_move_sound;
 		break;
 	case K_HOME:
-		if (m)
-		{
-			m->cursor = 0;
-			Menu_AdjustCursor (m, 1);
-			sound = menu_move_sound;
-		}
+		m->cursor = 0;
+		m->AdjustCursor (1);
+		sound = menu_move_sound;
 		break;
 	case K_END:
-		if (m)
-		{
-			m->cursor = m->nitems - 1;
-			Menu_AdjustCursor (m, -1);
-			sound = menu_move_sound;
-		}
+		m->cursor = m->nitems - 1;
+		m->AdjustCursor (-1);
+		sound = menu_move_sound;
 		break;
 
 	case K_MOUSE1:
 	case K_KP_ENTER:
 	case K_ENTER:
-		if (m)
-			Menu_SelectItem (m);
+		m->SelectItem ();
 		sound = menu_move_sound;
 		break;
 	}
@@ -279,21 +264,21 @@ higher res screens.
 */
 void M_DrawCharacter (int cx, int cy, int num)
 {
-	re.DrawChar (cx + ((viddef.width - 320)>>1), cy + ((viddef.height - 240)>>1), num);
+	re.DrawChar (cx + ((viddef.width - 320)/2), cy + ((viddef.height - 240)/2), num);
 }
 
 void M_Print (int cx, int cy, char *str)
 {
 	while (*str)
 	{
-		re.DrawChar (cx + ((viddef.width - 320)>>1), cy + ((viddef.height - 240)>>1), *str++, C_RED);
+		re.DrawChar (cx + ((viddef.width - 320)/2), cy + ((viddef.height - 240)/2), *str++, C_RED);
 		cx += CHAR_WIDTH;
 	}
 }
 
 void M_DrawPic (int x, int y, char *pic)
 {
-	re.DrawPic (x + ((viddef.width - 320)>>1), y + ((viddef.height - 240)>>1), pic);
+	re.DrawPic (x + ((viddef.width - 320)/2), y + ((viddef.height - 240)/2), pic);
 }
 
 
@@ -308,18 +293,6 @@ and both above and below y.
 */
 void M_DrawCursor (int x, int y, int f)
 {
-/* -- disabled (will not work after vid_restart anyway)
-	static bool cached;
-
-	if (!cached)
-	{
-		int		i;
-
-		for (i = 0; i < NUM_CURSOR_FRAMES; i++)
-			re.RegisterPic (va("m_cursor%d", i));
-		cached = true;
-	}
-*/
 	re.DrawPic (x, y, va("m_cursor%d", f));
 }
 
@@ -384,23 +357,21 @@ void M_Main_Draw (void)
 	int		widest = -1;
 	int		totalheight = 0;
 	char	litname[80];
-	static char	*names[] =
+	static const char *names[] =
 	{
 		"m_main_game",
 		"m_main_multiplayer",
 		"m_main_options",
 		"m_main_video",
-		"m_main_quit",
-		NULL
+		"m_main_quit"
 	};
 
 	// compute menu size
-	for (i = 0; names[i]; i++)
+	for (i = 0; i < ARRAY_COUNT(names); i++)
 	{
 		re.DrawGetPicSize (&w, &h, names[i]);
 
-		if (w > widest)
-			widest = w;
+		if (w > widest) widest = w;
 		totalheight += (h + 12);
 	}
 
@@ -408,7 +379,7 @@ void M_Main_Draw (void)
 	xoffset = (viddef.width - widest + 70) / 2;
 
 	// draw non-current items
-	for (i = 0; names[i]; i++)
+	for (i = 0; i < ARRAY_COUNT(names); i++)
 	{
 		if (i != m_main_cursor)
 			re.DrawPic (xoffset, ystart + i * 40 + 13, names[i]);
@@ -513,8 +484,8 @@ static void Multiplayer_MenuDraw (void)
 {
 	M_Banner ("m_banner_multiplayer");
 
-	Menu_AdjustCursor (&s_multiplayer_menu, 1);
-	Menu_Draw (&s_multiplayer_menu);
+	s_multiplayer_menu.AdjustCursor (1);
+	s_multiplayer_menu.Draw ();
 }
 
 static void Multiplayer_Disconnect (void)
@@ -530,25 +501,23 @@ static void Multiplayer_MenuInit (void)
 	s_multiplayer_menu.nitems = 0;
 
 	MENU_ACTION(s_join_network_server_action,0,"join network server",M_Menu_JoinServer_f)
-	s_join_network_server_action.generic.flags  = QMF_LEFT_JUSTIFY;
+	s_join_network_server_action.flags  = QMF_LEFT_JUSTIFY;
+	s_multiplayer_menu.AddItem (&s_join_network_server_action);
 
 	MENU_ACTION(s_start_network_server_action,10,"start network server",M_Menu_StartServer_f)
-	s_start_network_server_action.generic.flags  = QMF_LEFT_JUSTIFY;
+	s_start_network_server_action.flags  = QMF_LEFT_JUSTIFY;
+	s_multiplayer_menu.AddItem (&s_start_network_server_action);
 
 	MENU_ACTION(s_multiplayer_disconnect_action,20,"disconnect",Multiplayer_Disconnect)
-	s_multiplayer_disconnect_action.generic.flags  = QMF_LEFT_JUSTIFY;
+	s_multiplayer_disconnect_action.flags  = QMF_LEFT_JUSTIFY;
+	s_multiplayer_menu.AddItem (&s_multiplayer_disconnect_action);
 
 	MENU_ACTION(s_player_setup_action,30,"player setup",M_Menu_PlayerConfig_f)
-	s_player_setup_action.generic.flags  = QMF_LEFT_JUSTIFY;
+	s_player_setup_action.flags  = QMF_LEFT_JUSTIFY;
+	s_multiplayer_menu.AddItem (&s_player_setup_action);
 
-	Menu_AddItem (&s_multiplayer_menu, (void *) &s_join_network_server_action);
-	Menu_AddItem (&s_multiplayer_menu, (void *) &s_start_network_server_action);
-	Menu_AddItem (&s_multiplayer_menu, (void *) &s_multiplayer_disconnect_action);
-	Menu_AddItem (&s_multiplayer_menu, (void *) &s_player_setup_action);
-
-	Menu_SetStatusBar (&s_multiplayer_menu, NULL);
-
-	Menu_Center (&s_multiplayer_menu);
+	s_multiplayer_menu.SetStatusBar (NULL);
+	s_multiplayer_menu.Center ();
 }
 
 static const char *Multiplayer_MenuKey (int key)
@@ -586,10 +555,10 @@ static char bindmenubuf[MAX_KEYS_BUF];
 
 static void M_UnbindCommand (char *command)
 {
-	int		i, numKeys, keys[256];
+	int		keys[256];
 
-	numKeys = Key_FindBinding (command, ARRAY_ARG(keys));
-	for (i = 0; i < numKeys; i++)
+	int numKeys = Key_FindBinding (command, ARRAY_ARG(keys));
+	for (int i = 0; i < numKeys; i++)
 	{
 		Key_SetBinding (keys[i], NULL);
 //		Com_DPrintf ("unbind %s\n",Key_KeynumToString(keys[i]));
@@ -609,8 +578,7 @@ static void DrawKeyBindingFunc (void *self)
 	menuAction_t *a = (menuAction_t *) self;
 	char	text[256];
 
-//	M_FindKeysForCommand (bindnames[a->generic.localdata[0]][0], keys); !!! remove
-	numKeys = Key_FindBinding (bindnames[a->generic.localdata[0]][0], ARRAY_ARG(keys));
+	numKeys = Key_FindBinding (bindnames[a->localData][0], ARRAY_ARG(keys));
 
 	if (!numKeys)
 		strcpy (text, S_RED"(not bound)");
@@ -622,7 +590,7 @@ static void DrawKeyBindingFunc (void *self)
 			appSprintf (ARRAY_ARG(text), "%s or %s%s",
 				Key_KeynumToString (keys[0]), Key_KeynumToString (keys[1]), numKeys > 2 ? " ..." : "");
 	}
-	DrawString (a->generic.x + a->generic.parent->x + 16, a->generic.y + a->generic.parent->y, text);
+	DrawString (a->x + a->parent->x + 16, a->y + a->parent->y, text);
 }
 
 static void SeekLine (const char *&s)
@@ -702,56 +670,55 @@ static void Keys_MenuInit (void)
 	{
 		if (*bindnames[i][0])
 		{
-			s_keys_item[i].generic.type = MTYPE_ACTION;
-			s_keys_item[i].generic.flags = QMF_GRAYED;
+			s_keys_item[i].type = MTYPE_ACTION;
+			s_keys_item[i].flags = QMF_GRAYED;
 		}
 		else
 		{
-			s_keys_item[i].generic.type = MTYPE_SEPARATOR;
-			s_keys_item[i].generic.flags = QMF_CENTER;
+			s_keys_item[i].type = MTYPE_SEPARATOR;
+			s_keys_item[i].flags = QMF_CENTER;
 		}
-		s_keys_item[i].generic.x = 0;
-		s_keys_item[i].generic.y = y; y += BIND_LINE_HEIGHT;
-		s_keys_item[i].generic.ownerdraw = DrawKeyBindingFunc;
-		s_keys_item[i].generic.localdata[0] = i;
-		s_keys_item[i].generic.name = bindnames[i][1];
-		Menu_AddItem (&s_keys_menu, &s_keys_item[i]);
+		s_keys_item[i].x = 0;
+		s_keys_item[i].y = y; y += BIND_LINE_HEIGHT;
+		s_keys_item[i].ownerdraw = DrawKeyBindingFunc;
+		s_keys_item[i].localData = i;
+		s_keys_item[i].name = bindnames[i][1];
+		s_keys_menu.AddItem ( &s_keys_item[i]);
 	}
 
-	Menu_SetStatusBar (&s_keys_menu, "enter to change, backspace to clear");
-	Menu_Center (&s_keys_menu);
+	s_keys_menu.SetStatusBar ("enter to change, backspace to clear");
+	s_keys_menu.Center ();
 }
 
 static void Keys_MenuDraw (void)
 {
-	Menu_AdjustCursor (&s_keys_menu, 1);
-	Menu_Draw (&s_keys_menu);
+	s_keys_menu.AdjustCursor (1);
+	s_keys_menu.Draw ();
 }
 
 static void KeyBindingFunc (void *self)
 {
 	menuAction_t *a = (menuAction_t *) self;
 
-	if (Key_FindBinding (bindnames[a->generic.localdata[0]][0], NULL, 0) > 1)
-		M_UnbindCommand (bindnames[a->generic.localdata[0]][0]);
+	if (Key_FindBinding (bindnames[a->localData][0], NULL, 0) > 1)
+		M_UnbindCommand (bindnames[a->localData][0]);
 
 	cls.key_dest = key_bindingMenu;		// hook keyboard
 
-	Menu_SetStatusBar (&s_keys_menu, "press a key or button for this action");
+	s_keys_menu.SetStatusBar ("press a key or button for this action");
 }
 
 static const char *Keys_MenuKey (int key)
 {
 	menuAction_t *item;
 
-	item = (menuAction_t *) Menu_ItemAtCursor (&s_keys_menu);
+	item = (menuAction_t *) s_keys_menu.ItemAtCursor ();
 	if (cls.key_dest == key_bindingMenu)
 	{
 		if (key != K_ESCAPE && key != '`')
-			Key_SetBinding (key, bindnames[item->generic.localdata[0]][0]);
-//			Cbuf_InsertText (va("bind %s %s\n", Key_KeynumToString(key), COM_QuoteString (bindnames[item->generic.localdata[0]][0], true)));
+			Key_SetBinding (key, bindnames[item->localData][0]);
 
-		Menu_SetStatusBar (&s_keys_menu, "enter to change, backspace to clear");
+		s_keys_menu.SetStatusBar ("enter to change, backspace to clear");
 		cls.key_dest = key_menu;		// unhook keyboard
 		return menu_out_sound;
 	}
@@ -766,7 +733,7 @@ static const char *Keys_MenuKey (int key)
 	case K_BACKSPACE:		// delete bindings
 	case K_DEL:
 	case K_KP_DEL:
-		M_UnbindCommand (bindnames[item->generic.localdata[0]][0]);
+		M_UnbindCommand (bindnames[item->localData][0]);
 		return menu_out_sound;
 	default:
 		return Default_MenuKey (&s_keys_menu, key);
@@ -796,7 +763,6 @@ static menuAction_t		s_options_defaults_action;
 static menuAction_t		s_options_customize_options_action;
 static menuSlider_t		s_options_sensitivity_slider;
 static menuList_t		s_options_freelook_box;
-//static menuList_t		s_options_noalttab_box;
 static menuList_t		s_options_alwaysrun_box;
 static menuList_t		s_options_invertmouse_box;
 static menuList_t		s_options_lookspring_box;
@@ -844,21 +810,12 @@ static void MouseSpeedFunc (void *unused)
 	Cvar_SetValue ("sensitivity", s_options_sensitivity_slider.curvalue / 2.0f);
 }
 
-/*
-static void NoAltTabFunc( void *unused )
-{
-	Cvar_SetInteger ("win_noalttab", s_options_noalttab_box.curvalue);
-}
-*/
-
 static void ControlsSetMenuItemValues (void)
 {
-	int		i;
-
 	s_options_sfxvolume_slider.curvalue		= Cvar_VariableValue ("s_volume") * 10;
 	s_options_cdvolume_box.curvalue 		= !Cvar_VariableInt ("cd_nocd");
 	s_options_s_8bit.curvalue				= Cvar_VariableInt ("s_loadas8bit");
-	i = Cvar_VariableInt ("s_khz");
+	int i = Cvar_VariableInt ("s_khz");
 	s_options_s_khz.curvalue				= i == 11 ? 0 : i == 22 ? 1 : 2;
 	s_options_s_reverse.curvalue			= Cvar_VariableInt ("s_reverse_stereo");
 
@@ -886,8 +843,6 @@ static void ControlsSetMenuItemValues (void)
 
 	in_joystick->Clamp (0, 1);
 	s_options_joystick_box.curvalue			= in_joystick->integer;
-
-//	s_options_noalttab_box.curvalue			= win_noalttab->integer;
 }
 
 static void ControlsResetDefaultsFunc( void *unused )
@@ -983,10 +938,6 @@ static void Options_MenuInit( void )
 		"max compatibility", "max performance", NULL
 	};
 
-	static const char *yesno_names[] = {
-		"no", "yes", NULL
-	};
-
 //	win_noalttab = Cvar_Get( "win_noalttab", "0", CVAR_ARCHIVE );
 
 	/*------- configure controls menu and menu items -------*/
@@ -997,49 +948,47 @@ static void Options_MenuInit( void )
 	y = 0;
 
 	MENU_SLIDER(s_options_sfxvolume_slider,y,"effects volume",UpdateVolumeFunc,0,10)
+	s_options_menu.AddItem (&s_options_sfxvolume_slider);
 	MENU_SPIN(s_options_cdvolume_box,y+=10,"CD music",UpdateCDVolumeFunc,cd_music_items)
+	s_options_menu.AddItem (&s_options_cdvolume_box);
 	MENU_SPIN(s_options_s_khz,y+=10,"sound quality",UpdateSoundFunc,s_khz_items)
+	s_options_menu.AddItem (&s_options_s_khz);
 	MENU_SPIN(s_options_s_8bit,y+=10,"8 bit sound",UpdateSoundFunc,yesno_names)
+	s_options_menu.AddItem (&s_options_s_8bit);
 	MENU_SPIN(s_options_s_reverse,y+=10,"reverse stereo",UpdateSoundFunc,yesno_names)
+	s_options_menu.AddItem (&s_options_s_reverse);
 	MENU_SPIN(s_options_compatibility_list,y+=10,"sound compatibility",UpdateSoundFunc,compatibility_items)
 	s_options_compatibility_list.curvalue = Cvar_VariableInt ("s_primary");
+	s_options_menu.AddItem (&s_options_compatibility_list);
 	y += 10;
 	MENU_SLIDER(s_options_sensitivity_slider,y+=10,"mouse speed",MouseSpeedFunc,2,22)
+	s_options_menu.AddItem (&s_options_sensitivity_slider);
 	MENU_SPIN(s_options_alwaysrun_box,y+=10,"always run",AlwaysRunFunc,yesno_names)
+	s_options_menu.AddItem (&s_options_alwaysrun_box);
 	MENU_SPIN(s_options_invertmouse_box,y+=10,"invert mouse",InvertMouseFunc,yesno_names)
+	s_options_menu.AddItem (&s_options_invertmouse_box);
 	MENU_SPIN(s_options_lookspring_box,y+=10,"lookspring",LookspringFunc,yesno_names)
+	s_options_menu.AddItem (&s_options_lookspring_box);
 	MENU_SPIN(s_options_lookstrafe_box,y+=10,"lookstrafe",LookstrafeFunc,yesno_names)
+	s_options_menu.AddItem (&s_options_lookstrafe_box);
 	MENU_SPIN(s_options_freelook_box,y+=10,"free look",FreeLookFunc,yesno_names)
+	s_options_menu.AddItem (&s_options_freelook_box);
 	y += 10;
 	MENU_SPIN(s_options_crosshair_box,y+=10,"crosshair shape",CrosshairFunc,crosshair_names)
+	s_options_menu.AddItem (&s_options_crosshair_box);
 	MENU_SPIN(s_options_crosshair_color_box,y+=10,"crosshair color",CrosshairFunc,crosshair_color_names)
+	s_options_menu.AddItem (&s_options_crosshair_color_box);
 	y += 10;
-//	MENU_SPIN(s_options_noalttab_box,y+=10,"disable alt-tab",NoAltTabFun,yesno+names)
 	MENU_SPIN(s_options_joystick_box,y+=10,"use joystick",JoystickFunc,yesno_names)
+	s_options_menu.AddItem (&s_options_joystick_box);
 	y += 10;
 	MENU_ACTION(s_options_customize_options_action,y+=10,"customize controls",CustomizeControlsFunc)
+	s_options_menu.AddItem (&s_options_customize_options_action);
 	MENU_ACTION(s_options_defaults_action,y+=10,S_RED"reset defaults",ControlsResetDefaultsFunc)
+	s_options_menu.AddItem (&s_options_defaults_action);
 
 	Options_ScanCrosshairs ();
 	ControlsSetMenuItemValues ();
-
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_sfxvolume_slider );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_cdvolume_box );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_s_khz );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_s_8bit );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_s_reverse );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_compatibility_list );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_sensitivity_slider );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_alwaysrun_box );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_invertmouse_box );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_lookspring_box );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_lookstrafe_box );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_freelook_box );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_crosshair_box );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_crosshair_color_box );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_joystick_box );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_customize_options_action );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_defaults_action );
 }
 
 static void Options_CrosshairDraw (void)
@@ -1047,12 +996,11 @@ static void Options_CrosshairDraw (void)
 	int		w, h;
 	char	name[32];
 
-	if (!crosshair->integer)
-		return;
+	if (!crosshair->integer) return;
 
 	appSprintf (ARRAY_ARG(name), "ch%d", crosshair->integer);
 	re.DrawGetPicSize (&w, &h, name);
-	re.DrawPic ((viddef.width - w) / 2 + 32, s_options_crosshair_box.generic.y + s_options_menu.y + 10 - h / 2,
+	re.DrawPic ((viddef.width - w) / 2 + 32, s_options_crosshair_box.y + s_options_menu.y + 10 - h / 2,
 		name, crosshairColor->integer);
 }
 
@@ -1060,8 +1008,8 @@ static void Options_MenuDraw (void)
 {
 	M_Banner ("m_banner_options");
 	Options_CrosshairDraw ();
-	Menu_AdjustCursor (&s_options_menu, 1);
-	Menu_Draw (&s_options_menu);
+	s_options_menu.AdjustCursor (1);
+	s_options_menu.Draw ();
 }
 
 static const char *Options_MenuKey( int key )
@@ -1074,21 +1022,6 @@ void M_Menu_Options_f (void)
 	MENU_CHECK
 	Options_MenuInit();
 	M_PushMenu ( Options_MenuDraw, Options_MenuKey );
-}
-
-/*
-=======================================================================
-
-VIDEO MENU
-
-=======================================================================
-*/
-
-void M_Menu_Video_f (void)
-{
-	MENU_CHECK
-	Vid_MenuInit ();
-	M_PushMenu (Vid_MenuDraw, Vid_MenuKey);
 }
 
 /*
@@ -1254,34 +1187,33 @@ static void Game_MenuInit( void )
 	s_game_menu.nitems = 0;
 
 	MENU_ACTION(s_easy_game_action,0,"easy",EasyGameFunc)
-	s_easy_game_action.generic.flags  = QMF_LEFT_JUSTIFY;
+	s_easy_game_action.flags  = QMF_LEFT_JUSTIFY;
+	s_game_menu.AddItem (&s_easy_game_action);
 	MENU_ACTION(s_medium_game_action,10,"medium",MediumGameFunc)
-	s_medium_game_action.generic.flags  = QMF_LEFT_JUSTIFY;
+	s_medium_game_action.flags  = QMF_LEFT_JUSTIFY;
+	s_game_menu.AddItem (&s_medium_game_action);
 	MENU_ACTION(s_hard_game_action,20,"hard",HardGameFunc)
-	s_hard_game_action.generic.flags  = QMF_LEFT_JUSTIFY;
+	s_hard_game_action.flags  = QMF_LEFT_JUSTIFY;
+	s_game_menu.AddItem (&s_hard_game_action);
 
 	MENU_ACTION(s_load_game_action,40,"load game",M_Menu_LoadGame_f)
-	s_load_game_action.generic.flags  = QMF_LEFT_JUSTIFY;
+	s_load_game_action.flags  = QMF_LEFT_JUSTIFY;
+	s_game_menu.AddItem (&s_load_game_action);
 	MENU_ACTION(s_save_game_action,50,"save game",M_Menu_SaveGame_f)
-	s_save_game_action.generic.flags  = QMF_LEFT_JUSTIFY;
+	s_save_game_action.flags  = QMF_LEFT_JUSTIFY;
+	s_game_menu.AddItem (&s_save_game_action);
 	MENU_ACTION(s_credits_action,60,"credits",M_Menu_Credits_f)
-	s_credits_action.generic.flags  = QMF_LEFT_JUSTIFY;
+	s_credits_action.flags  = QMF_LEFT_JUSTIFY;
+	s_game_menu.AddItem (&s_credits_action);
 
-	Menu_AddItem( &s_game_menu, ( void * ) &s_easy_game_action );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_medium_game_action );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_hard_game_action );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_load_game_action );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_save_game_action );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_credits_action );
-
-	Menu_Center( &s_game_menu );
+	s_game_menu.Center ();
 }
 
 static void Game_MenuDraw (void)
 {
 	M_Banner ("m_banner_game");
-	Menu_AdjustCursor (&s_game_menu, 1);
-	Menu_Draw (&s_game_menu);
+	s_game_menu.AdjustCursor (1);
+	s_game_menu.Draw ();
 }
 
 static const char *Game_MenuKey (int key)
@@ -1371,8 +1303,8 @@ static void LoadGameCallback (void *self)
 {
 	menuAction_t *a = (menuAction_t *) self;
 
-	if (m_savevalid[a->generic.localdata[0]])
-		Cbuf_AddText (va("load save%d\n",  a->generic.localdata[0]));
+	if (m_savevalid[a->localData])
+		Cbuf_AddText (va("load save%d\n",  a->localData));
 	M_ForceMenuOff ();
 }
 
@@ -1388,29 +1320,29 @@ static void LoadGame_MenuInit (void)
 
 	for (i = 0; i < MAX_SAVEGAMES; i++)
 	{
-		s_loadgame_actions[i].generic.name			= m_savestrings[i];
-		s_loadgame_actions[i].generic.flags			= QMF_LEFT_JUSTIFY;
-		s_loadgame_actions[i].generic.localdata[0]	= i;
-		s_loadgame_actions[i].generic.callback		= LoadGameCallback;
+		s_loadgame_actions[i].name		= m_savestrings[i];
+		s_loadgame_actions[i].flags		= QMF_LEFT_JUSTIFY;
+		s_loadgame_actions[i].localData	= i;
+		s_loadgame_actions[i].callback	= LoadGameCallback;
 
-		s_loadgame_actions[i].generic.x = 0;
-		s_loadgame_actions[i].generic.y = i * 10;
+		s_loadgame_actions[i].x = 0;
+		s_loadgame_actions[i].y = i * 10;
 		if (i > 0)	// separate from autosave
-			s_loadgame_actions[i].generic.y += 10;
+			s_loadgame_actions[i].y += 10;
 
-		s_loadgame_actions[i].generic.type = MTYPE_ACTION;
+		s_loadgame_actions[i].type = MTYPE_ACTION;
 
-		Menu_AddItem (&s_loadgame_menu, &s_loadgame_actions[i]);
+		s_loadgame_menu.AddItem ( &s_loadgame_actions[i]);
 	}
 }
 
 static void LoadGame_MenuDraw( void )
 {
-//	Menu_AdjustCursor (&s_loadgame_menu, 1);
+//	s_loadgame_menu.AdjustCursor (1);
 
 	DrawSavegameShot (s_loadgame_menu.cursor, s_loadgame_menu.y);
 	M_Banner ("m_banner_load_game");
-	Menu_Draw (&s_loadgame_menu);
+	s_loadgame_menu.Draw ();
 }
 
 static const char *LoadGame_MenuKey (int key)
@@ -1446,23 +1378,21 @@ static void SaveGameCallback( void *self )
 {
 	menuAction_t *a = ( menuAction_t * ) self;
 
-	Cbuf_AddText (va("save save%d\n", a->generic.localdata[0] ));
+	Cbuf_AddText (va("save save%d\n", a->localData));
 	M_ForceMenuOff ();
 }
 
 static void SaveGame_MenuDraw (void)
 {
-	Menu_AdjustCursor (&s_savegame_menu, 1);
+	s_savegame_menu.AdjustCursor (1);
 
 	DrawSavegameShot (s_savegame_menu.cursor + 1, s_savegame_menu.y);
 	M_Banner ("m_banner_save_game");
-	Menu_Draw (&s_savegame_menu);
+	s_savegame_menu.Draw ();
 }
 
 static void SaveGame_MenuInit (void)
 {
-	int i;
-
 	s_savegame_menu.x = viddef.width / 2 - 120 - (viddef.width - 320) / 6;
 	s_savegame_menu.y = viddef.height / 2 - 58;
 	s_savegame_menu.nitems = 0;
@@ -1470,25 +1400,25 @@ static void SaveGame_MenuInit (void)
 	Create_Savestrings();
 
 	// don't include the autosave slot
-	for (i = 0; i < MAX_SAVEGAMES-1; i++)
+	for (int i = 0; i < MAX_SAVEGAMES-1; i++)
 	{
-		s_savegame_actions[i].generic.name = m_savestrings[i+1];
-		s_savegame_actions[i].generic.localdata[0] = i+1;
-		s_savegame_actions[i].generic.flags = QMF_LEFT_JUSTIFY;
-		s_savegame_actions[i].generic.callback = SaveGameCallback;
+		s_savegame_actions[i].name = m_savestrings[i+1];
+		s_savegame_actions[i].localData = i+1;
+		s_savegame_actions[i].flags = QMF_LEFT_JUSTIFY;
+		s_savegame_actions[i].callback = SaveGameCallback;
 
-		s_savegame_actions[i].generic.x = 0;
-		s_savegame_actions[i].generic.y = ( i ) * 10;
+		s_savegame_actions[i].x = 0;
+		s_savegame_actions[i].y = i * 10;
 
-		s_savegame_actions[i].generic.type = MTYPE_ACTION;
+		s_savegame_actions[i].type = MTYPE_ACTION;
 
-		Menu_AddItem( &s_savegame_menu, &s_savegame_actions[i] );
+		s_savegame_menu.AddItem (&s_savegame_actions[i]);
 	}
 }
 
-static const char *SaveGame_MenuKey( int key )
+static const char *SaveGame_MenuKey (int key)
 {
-	if ( key == K_ENTER || key == K_ESCAPE || key == K_MOUSE1 || key == K_MOUSE2 )
+	if (key == K_ENTER || key == K_ESCAPE || key == K_MOUSE1 || key == K_MOUSE2)
 	{
 		s_loadgame_menu.cursor = s_savegame_menu.cursor - 1;
 		if ( s_loadgame_menu.cursor < 0 )
@@ -1594,39 +1524,36 @@ static void SearchLocalGames (void)
 
 static void JoinServer_MenuInit( void )
 {
-	int		i, y;
-
 	s_joinserver_menu.x = viddef.width / 2 - 120;
 	s_joinserver_menu.nitems = 0;
 
-	s_joinserver_server_title.generic.type = MTYPE_SEPARATOR;
-	s_joinserver_server_title.generic.name = "connect to...";
-	s_joinserver_server_title.generic.x    = 80;
-	s_joinserver_server_title.generic.y	   = 0;
+	s_joinserver_server_title.type = MTYPE_SEPARATOR;
+	s_joinserver_server_title.name = "connect to...";
+	s_joinserver_server_title.x    = 80;
+	s_joinserver_server_title.y	   = 0;
+	s_joinserver_menu.AddItem ( &s_joinserver_server_title);
 
-	y = 0;
-	for (i = 0; i < MAX_LOCAL_SERVERS; i++)
+	int y = 0;
+	for (int i = 0; i < MAX_LOCAL_SERVERS; i++)
 	{
 		strcpy (local_server_names[i], NO_SERVER_STRING);
 		MENU_ACTION(s_joinserver_server_actions[i],y+=10,local_server_names[i],JoinServerFunc)
-		s_joinserver_server_actions[i].generic.flags	= QMF_LEFT_JUSTIFY;
-		s_joinserver_server_actions[i].generic.statusbar = "press ENTER to connect";
+		s_joinserver_server_actions[i].flags	= QMF_LEFT_JUSTIFY;
+		s_joinserver_server_actions[i].statusbar = "press ENTER to connect";
+		s_joinserver_menu.AddItem ( &s_joinserver_server_actions[i] );
 	}
+
 	MENU_ACTION(s_joinserver_address_book_action,y+=20,"address book",M_Menu_AddressBook_f)
-	s_joinserver_address_book_action.generic.flags	= QMF_LEFT_JUSTIFY;
+	s_joinserver_address_book_action.flags	= QMF_LEFT_JUSTIFY;
+	s_joinserver_menu.AddItem ( &s_joinserver_address_book_action);
 
 	MENU_ACTION(s_joinserver_search_action,y+=10,"search for servers",SearchLocalGames)
-	s_joinserver_search_action.generic.flags	= QMF_LEFT_JUSTIFY;
-	s_joinserver_search_action.generic.statusbar = "search for servers";
+	s_joinserver_search_action.flags	= QMF_LEFT_JUSTIFY;
+	s_joinserver_search_action.statusbar = "search for servers";
+	s_joinserver_menu.AddItem ( &s_joinserver_search_action);
 
-
-	for (i = 0; i < 8; i++)
-		Menu_AddItem( &s_joinserver_menu, &s_joinserver_server_actions[i] );
-	Menu_AddItem (&s_joinserver_menu, &s_joinserver_server_title);
-	Menu_AddItem (&s_joinserver_menu, &s_joinserver_address_book_action);
-	Menu_AddItem (&s_joinserver_menu, &s_joinserver_search_action);
-
-	Menu_Center( &s_joinserver_menu );
+	s_joinserver_menu.Center ();
+	s_joinserver_menu.AdjustCursor (1);
 
 	SearchLocalGames();
 }
@@ -1634,7 +1561,7 @@ static void JoinServer_MenuInit( void )
 static void JoinServer_MenuDraw(void)
 {
 	M_Banner( "m_banner_join_server" );
-	Menu_Draw( &s_joinserver_menu );
+	s_joinserver_menu.Draw ();
 }
 
 
@@ -1685,28 +1612,28 @@ static void RulesChangeFunc (void *self)
 {
 	if (s_rules_box.curvalue == 0)				// deathmatch
 	{
-		s_maxclients_field.generic.statusbar = NULL;
-		s_startserver_dmoptions_action.generic.statusbar = NULL;
+		s_maxclients_field.statusbar = NULL;
+		s_startserver_dmoptions_action.statusbar = NULL;
 	}
 	else if (s_rules_box.curvalue == 1)			// coop
 	{
-		s_maxclients_field.generic.statusbar = "4 maximum for cooperative";
+		s_maxclients_field.statusbar = "4 maximum for cooperative";
 		if (atoi(s_maxclients_field.buffer) > 4)
 			strcpy( s_maxclients_field.buffer, "4" );
-		s_startserver_dmoptions_action.generic.statusbar = "N/A for cooperative";
+		s_startserver_dmoptions_action.statusbar = "N/A for cooperative";
 	}
 	else if (!stricmp (fs_gamedirvar->string, "rogue"))
 	{
 		if (s_rules_box.curvalue == 2)			// tag
 		{
-			s_maxclients_field.generic.statusbar = NULL;
-			s_startserver_dmoptions_action.generic.statusbar = NULL;
+			s_maxclients_field.statusbar = NULL;
+			s_startserver_dmoptions_action.statusbar = NULL;
 		}
 /*
 		else if(s_rules_box.curvalue == 3)		// deathball
 		{
-			s_maxclients_field.generic.statusbar = NULL;
-			s_startserver_dmoptions_action.generic.statusbar = NULL;
+			s_maxclients_field.statusbar = NULL;
+			s_startserver_dmoptions_action.statusbar = NULL;
 		}
 */
 	}
@@ -1862,47 +1789,49 @@ static void StartServer_MenuInit( void )
 	s_startserver_menu.x = viddef.width / 2;
 	s_startserver_menu.nitems = 0;
 
-	s_startmap_list.generic.type = MTYPE_SPINCONTROL2;
-	s_startmap_list.generic.x	= 0;
-	s_startmap_list.generic.y	= 0;
-	s_startmap_list.generic.name = "initial map";
+	s_startmap_list.type = MTYPE_SPINCONTROL2;
+	s_startmap_list.x	= 0;
+	s_startmap_list.y	= 0;
+	s_startmap_list.name = "initial map";
 	s_startmap_list.itemnames = mapNames.First();
+	s_startserver_menu.AddItem ( &s_startmap_list);
 
-	s_rules_box.generic.type = MTYPE_SPINCONTROL;
-	s_rules_box.generic.x	= 0;
-	s_rules_box.generic.y	= 20;
-	s_rules_box.generic.name = "rules";
-
+	s_rules_box.type = MTYPE_SPINCONTROL;
+	s_rules_box.x	= 0;
+	s_rules_box.y	= 20;
+	s_rules_box.name = "rules";
 	if (!stricmp (fs_gamedirvar->string, "rogue"))
 		s_rules_box.itemnames = dm_coop_names_rogue;
 	else
 		s_rules_box.itemnames = dm_coop_names;
-
 	if (Cvar_VariableInt ("coop"))
 		s_rules_box.curvalue = 1;
 	else
 		s_rules_box.curvalue = 0;
-	s_rules_box.generic.callback = RulesChangeFunc;
+	s_rules_box.callback = RulesChangeFunc;
+	s_startserver_menu.AddItem ( &s_rules_box);
 
-	s_timelimit_field.generic.type = MTYPE_FIELD;
-	s_timelimit_field.generic.name = "time limit";
-	s_timelimit_field.generic.flags = QMF_NUMBERSONLY;
-	s_timelimit_field.generic.x	= 0;
-	s_timelimit_field.generic.y	= 36;
-	s_timelimit_field.generic.statusbar = "0 = no limit";
+	s_timelimit_field.type = MTYPE_FIELD;
+	s_timelimit_field.name = "time limit";
+	s_timelimit_field.flags = QMF_NUMBERSONLY;
+	s_timelimit_field.x	= 0;
+	s_timelimit_field.y	= 36;
+	s_timelimit_field.statusbar = "0 = no limit";
 	s_timelimit_field.length = 3;
 	s_timelimit_field.visible_length = 3;
 	strcpy (s_timelimit_field.buffer, Cvar_VariableString ("timelimit"));
+	s_startserver_menu.AddItem ( &s_timelimit_field);
 
-	s_fraglimit_field.generic.type = MTYPE_FIELD;
-	s_fraglimit_field.generic.name = "frag limit";
-	s_fraglimit_field.generic.flags = QMF_NUMBERSONLY;
-	s_fraglimit_field.generic.x	= 0;
-	s_fraglimit_field.generic.y	= 54;
-	s_fraglimit_field.generic.statusbar = "0 = no limit";
+	s_fraglimit_field.type = MTYPE_FIELD;
+	s_fraglimit_field.name = "frag limit";
+	s_fraglimit_field.flags = QMF_NUMBERSONLY;
+	s_fraglimit_field.x	= 0;
+	s_fraglimit_field.y	= 54;
+	s_fraglimit_field.statusbar = "0 = no limit";
 	s_fraglimit_field.length = 3;
 	s_fraglimit_field.visible_length = 3;
 	strcpy (s_fraglimit_field.buffer, Cvar_VariableString ("fraglimit"));
+	s_startserver_menu.AddItem ( &s_fraglimit_field);
 
 	/*
 	** maxclients determines the maximum number of players that can join
@@ -1910,54 +1839,49 @@ static void StartServer_MenuInit( void )
 	** option to 8 players, otherwise use whatever its current value is.
 	** Clamping will be done when the server is actually started.
 	*/
-	s_maxclients_field.generic.type = MTYPE_FIELD;
-	s_maxclients_field.generic.name = "max players";
-	s_maxclients_field.generic.flags = QMF_NUMBERSONLY;
-	s_maxclients_field.generic.x	= 0;
-	s_maxclients_field.generic.y	= 72;
-	s_maxclients_field.generic.statusbar = NULL;
+	s_maxclients_field.type = MTYPE_FIELD;
+	s_maxclients_field.name = "max players";
+	s_maxclients_field.flags = QMF_NUMBERSONLY;
+	s_maxclients_field.x	= 0;
+	s_maxclients_field.y	= 72;
+	s_maxclients_field.statusbar = NULL;
 	s_maxclients_field.length = 3;
 	s_maxclients_field.visible_length = 3;
 	if (Cvar_VariableInt ("maxclients") == 1)
 		strcpy (s_maxclients_field.buffer, "8");
 	else
 		strcpy (s_maxclients_field.buffer, Cvar_VariableString ("maxclients"));
+	s_startserver_menu.AddItem ( &s_maxclients_field);
 
-	s_hostname_field.generic.type = MTYPE_FIELD;
-	s_hostname_field.generic.name = "hostname";
-	s_hostname_field.generic.flags = 0;
-	s_hostname_field.generic.x	= 0;
-	s_hostname_field.generic.y	= 90;
-	s_hostname_field.generic.statusbar = NULL;
+	s_hostname_field.type = MTYPE_FIELD;
+	s_hostname_field.name = "hostname";
+	s_hostname_field.flags = 0;
+	s_hostname_field.x	= 0;
+	s_hostname_field.y	= 90;
+	s_hostname_field.statusbar = NULL;
 	s_hostname_field.length = 12;
 	s_hostname_field.visible_length = 12;
 	strcpy (s_hostname_field.buffer, Cvar_VariableString("hostname"));
+	s_startserver_menu.AddItem ( &s_hostname_field);
 
 	MENU_ACTION(s_startserver_dmoptions_action,108,"deathmatch flags",DMOptionsFunc)
-	s_startserver_dmoptions_action.generic.flags= QMF_LEFT_JUSTIFY;
-	s_startserver_dmoptions_action.generic.x	= 24;
-	s_startserver_dmoptions_action.generic.statusbar = NULL;
+	s_startserver_dmoptions_action.flags= QMF_LEFT_JUSTIFY;
+	s_startserver_dmoptions_action.x	= 24;
+	s_startserver_dmoptions_action.statusbar = NULL;
+	s_startserver_menu.AddItem ( &s_startserver_dmoptions_action);
 
 	MENU_ACTION(s_startserver_dmbrowse_action,118,"browse maps",M_Menu_DMBrowse_f)
-	s_startserver_dmbrowse_action.generic.flags= QMF_LEFT_JUSTIFY;
-	s_startserver_dmbrowse_action.generic.x	= 24;
-	s_startserver_dmbrowse_action.generic.statusbar = NULL;
+	s_startserver_dmbrowse_action.flags= QMF_LEFT_JUSTIFY;
+	s_startserver_dmbrowse_action.x	= 24;
+	s_startserver_dmbrowse_action.statusbar = NULL;
+	s_startserver_menu.AddItem ( &s_startserver_dmbrowse_action);
 
 	MENU_ACTION(s_startserver_start_action,138,"begin",StartServerActionFunc)
-	s_startserver_start_action.generic.flags= QMF_LEFT_JUSTIFY;
-	s_startserver_start_action.generic.x	= 24;
+	s_startserver_start_action.flags= QMF_LEFT_JUSTIFY;
+	s_startserver_start_action.x	= 24;
+	s_startserver_menu.AddItem ( &s_startserver_start_action);
 
-	Menu_AddItem (&s_startserver_menu, &s_startmap_list);
-	Menu_AddItem (&s_startserver_menu, &s_rules_box);
-	Menu_AddItem (&s_startserver_menu, &s_timelimit_field);
-	Menu_AddItem (&s_startserver_menu, &s_fraglimit_field);
-	Menu_AddItem (&s_startserver_menu, &s_maxclients_field);
-	Menu_AddItem (&s_startserver_menu, &s_hostname_field);
-	Menu_AddItem (&s_startserver_menu, &s_startserver_dmoptions_action);
-	Menu_AddItem (&s_startserver_menu, &s_startserver_dmbrowse_action);
-	Menu_AddItem (&s_startserver_menu, &s_startserver_start_action);
-
-	Menu_Center (&s_startserver_menu);
+	s_startserver_menu.Center ();
 
 	// call this now to set proper inital state
 	RulesChangeFunc (NULL);
@@ -1965,7 +1889,7 @@ static void StartServer_MenuInit( void )
 
 static void StartServer_MenuDraw (void)
 {
-	Menu_Draw (&s_startserver_menu);
+	s_startserver_menu.Draw ();
 }
 
 static const char *StartServer_MenuKey (int key)
@@ -2063,7 +1987,6 @@ static void DMFlagCallback (void *self)
 		{
 			flags &= ~(DF_MODELTEAMS|DF_SKINTEAMS);
 		}
-
 	}
 	else if (f == &s_samelevel_box)
 		bit = DF_SAME_LEVEL;
@@ -2104,10 +2027,6 @@ static void DMFlagCallback (void *self)
 
 static void DMOptions_MenuInit (void)
 {
-	static const char *yes_no_names[] =
-	{
-		"no", "yes", 0
-	};
 	static const char *teamplay_names[] =
 	{
 		"disabled", "by skin", "by model", 0
@@ -2118,83 +2037,78 @@ static void DMOptions_MenuInit (void)
 	s_dmoptions_menu.x = viddef.width / 2;
 	s_dmoptions_menu.nitems = 0;
 
-	MENU_SPIN(s_falls_box,y,"falling damage",DMFlagCallback,yes_no_names)
+	MENU_SPIN(s_falls_box,y,"falling damage",DMFlagCallback,yesno_names)
 	s_falls_box.curvalue = ( dmflags & DF_NO_FALLING ) == 0;
-	MENU_SPIN(s_weapons_stay_box,y+=10,"weapons stay",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_falls_box );
+	MENU_SPIN(s_weapons_stay_box,y+=10,"weapons stay",DMFlagCallback,yesno_names)
 	s_weapons_stay_box.curvalue = ( dmflags & DF_WEAPONS_STAY ) != 0;
-	MENU_SPIN(s_instant_powerups_box,y+=10,"instant powerups",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_weapons_stay_box );
+	MENU_SPIN(s_instant_powerups_box,y+=10,"instant powerups",DMFlagCallback,yesno_names)
 	s_instant_powerups_box.curvalue = ( dmflags & DF_INSTANT_ITEMS ) != 0;
-	MENU_SPIN(s_powerups_box,y+=10,"allow powerups",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_instant_powerups_box );
+	MENU_SPIN(s_powerups_box,y+=10,"allow powerups",DMFlagCallback,yesno_names)
 	s_powerups_box.curvalue = ( dmflags & DF_NO_ITEMS ) == 0;
-	MENU_SPIN(s_health_box,y+=10,"allow health",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_powerups_box );
+	MENU_SPIN(s_health_box,y+=10,"allow health",DMFlagCallback,yesno_names)
 	s_health_box.curvalue = ( dmflags & DF_NO_HEALTH ) == 0;
-	MENU_SPIN(s_armor_box,y+=10,"allow armor",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_health_box );
+	MENU_SPIN(s_armor_box,y+=10,"allow armor",DMFlagCallback,yesno_names)
 	s_armor_box.curvalue = ( dmflags & DF_NO_ARMOR ) == 0;
-	MENU_SPIN(s_spawn_farthest_box,y+=10,"spawn farthest",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_armor_box );
+	MENU_SPIN(s_spawn_farthest_box,y+=10,"spawn farthest",DMFlagCallback,yesno_names)
 	s_spawn_farthest_box.curvalue = ( dmflags & DF_SPAWN_FARTHEST ) != 0;
-	MENU_SPIN(s_samelevel_box,y+=10,"same map",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_spawn_farthest_box );
+	MENU_SPIN(s_samelevel_box,y+=10,"same map",DMFlagCallback,yesno_names)
 	s_samelevel_box.curvalue = ( dmflags & DF_SAME_LEVEL ) != 0;
-	MENU_SPIN(s_force_respawn_box,y+=10,"force respawn",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_samelevel_box );
+	MENU_SPIN(s_force_respawn_box,y+=10,"force respawn",DMFlagCallback,yesno_names)
 	s_force_respawn_box.curvalue = ( dmflags & DF_FORCE_RESPAWN ) != 0;
-	MENU_SPIN(s_teamplay_box,y+=10,"teamplay",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_force_respawn_box );
+	MENU_SPIN(s_teamplay_box,y+=10,"teamplay",DMFlagCallback,yesno_names)
 	s_teamplay_box.itemnames = teamplay_names;
-	MENU_SPIN(s_allow_exit_box,y+=10,"allow exit",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_teamplay_box );
+	MENU_SPIN(s_allow_exit_box,y+=10,"allow exit",DMFlagCallback,yesno_names)
 	s_allow_exit_box.curvalue = ( dmflags & DF_ALLOW_EXIT ) != 0;
-	MENU_SPIN(s_infinite_ammo_box,y+=10,"infinite ammo",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_allow_exit_box );
+	MENU_SPIN(s_infinite_ammo_box,y+=10,"infinite ammo",DMFlagCallback,yesno_names)
 	s_infinite_ammo_box.curvalue = ( dmflags & DF_INFINITE_AMMO ) != 0;
-	MENU_SPIN(s_fixed_fov_box,y+=10,"fixed FOV",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_infinite_ammo_box );
+	MENU_SPIN(s_fixed_fov_box,y+=10,"fixed FOV",DMFlagCallback,yesno_names)
 	s_fixed_fov_box.curvalue = ( dmflags & DF_FIXED_FOV ) != 0;
-	MENU_SPIN(s_quad_drop_box,y+=10,"quad drop",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_fixed_fov_box );
+	MENU_SPIN(s_quad_drop_box,y+=10,"quad drop",DMFlagCallback,yesno_names)
 	s_quad_drop_box.curvalue = ( dmflags & DF_QUAD_DROP ) != 0;
-	MENU_SPIN(s_friendlyfire_box,y+=10,"friendly fire",DMFlagCallback,yes_no_names)
+	s_dmoptions_menu.AddItem ( &s_quad_drop_box );
+	MENU_SPIN(s_friendlyfire_box,y+=10,"friendly fire",DMFlagCallback,yesno_names)
 	s_friendlyfire_box.curvalue = ( dmflags & DF_NO_FRIENDLY_FIRE ) == 0;
+	s_dmoptions_menu.AddItem ( &s_friendlyfire_box );
 
 	if (!stricmp (fs_gamedirvar->string, "rogue"))
 	{
-		MENU_SPIN(s_no_mines_box,y+=10,"remove mines",DMFlagCallback,yes_no_names)
+		MENU_SPIN(s_no_mines_box,y+=10,"remove mines",DMFlagCallback,yesno_names)
 		s_no_mines_box.curvalue = ( dmflags & DF_NO_MINES ) != 0;
-		MENU_SPIN(s_no_nukes_box,y+=10,"remove nukes",DMFlagCallback,yes_no_names)
+		s_dmoptions_menu.AddItem ( &s_no_mines_box );
+		MENU_SPIN(s_no_nukes_box,y+=10,"remove nukes",DMFlagCallback,yesno_names)
 		s_no_nukes_box.curvalue = ( dmflags & DF_NO_NUKES ) != 0;
-		MENU_SPIN(s_stack_double_box,y+=10,"2x/4x stacking off",DMFlagCallback,yes_no_names)
+		s_dmoptions_menu.AddItem ( &s_no_nukes_box );
+		MENU_SPIN(s_stack_double_box,y+=10,"2x/4x stacking off",DMFlagCallback,yesno_names)
 		s_stack_double_box.curvalue = ( dmflags & DF_NO_STACK_DOUBLE ) != 0;
-		MENU_SPIN(s_no_spheres_box,y+=10,"remove spheres",DMFlagCallback,yes_no_names)
+		s_dmoptions_menu.AddItem ( &s_stack_double_box );
+		MENU_SPIN(s_no_spheres_box,y+=10,"remove spheres",DMFlagCallback,yesno_names)
 		s_no_spheres_box.curvalue = ( dmflags & DF_NO_SPHERES ) != 0;
+		s_dmoptions_menu.AddItem ( &s_no_spheres_box );
 	}
 
-	Menu_AddItem( &s_dmoptions_menu, &s_falls_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_weapons_stay_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_instant_powerups_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_powerups_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_health_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_armor_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_spawn_farthest_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_samelevel_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_force_respawn_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_teamplay_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_allow_exit_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_infinite_ammo_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_fixed_fov_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_quad_drop_box );
-	Menu_AddItem( &s_dmoptions_menu, &s_friendlyfire_box );
-
-	if (!stricmp (fs_gamedirvar->string, "rogue"))
-	{
-		Menu_AddItem( &s_dmoptions_menu, &s_no_mines_box );
-		Menu_AddItem( &s_dmoptions_menu, &s_no_nukes_box );
-		Menu_AddItem( &s_dmoptions_menu, &s_stack_double_box );
-		Menu_AddItem( &s_dmoptions_menu, &s_no_spheres_box );
-	}
-
-	Menu_Center( &s_dmoptions_menu );
+	s_dmoptions_menu.Center ();
 
 	// set the original dmflags statusbar
 	DMFlagCallback( 0 );
-	Menu_SetStatusBar( &s_dmoptions_menu, dmoptions_statusbar );
+	s_dmoptions_menu.SetStatusBar (dmoptions_statusbar );
 }
 
 static void DMOptions_MenuDraw(void)
 {
-	Menu_Draw( &s_dmoptions_menu );
+	s_dmoptions_menu.Draw ();
 }
 
 static const char *DMOptions_MenuKey( int key )
@@ -2227,7 +2141,7 @@ static menuList_t	s_allow_download_sounds_box;
 
 static void DownloadCallback (void *self)
 {
-	char	*name;
+	const char *name;
 	menuList_t *f = (menuList_t *) self;
 
 	if (f == &s_allow_download_box)
@@ -2247,48 +2161,40 @@ static void DownloadCallback (void *self)
 
 static void DownloadOptions_MenuInit( void )
 {
-	static const char *yes_no_names[] =
-	{
-		"no", "yes", 0
-	};
 	int y = 0;
 
 	s_downloadoptions_menu.x = viddef.width / 2;
 	s_downloadoptions_menu.nitems = 0;
 
-	s_download_title.generic.type = MTYPE_SEPARATOR;
-	s_download_title.generic.name = "Download Options";
-	s_download_title.generic.x	= 48;
-	s_download_title.generic.y	= y;
+	s_download_title.type = MTYPE_SEPARATOR;
+	s_download_title.name = "Download Options";
+	s_download_title.x	= 48;
+	s_download_title.y	= y;
+	s_downloadoptions_menu.AddItem ( &s_download_title);
 
-	MENU_SPIN(s_allow_download_box, y+=20,"allow downloading", DownloadCallback, yes_no_names);
+	MENU_SPIN(s_allow_download_box, y+=20,"allow downloading", DownloadCallback, yesno_names);
 	s_allow_download_box.curvalue = Cvar_VariableInt ("allow_download");
-	MENU_SPIN(s_allow_download_maps_box, y+=20,"maps", DownloadCallback, yes_no_names);
+	s_downloadoptions_menu.AddItem ( &s_allow_download_box);
+	MENU_SPIN(s_allow_download_maps_box, y+=20,"maps", DownloadCallback, yesno_names);
 	s_allow_download_maps_box.curvalue = Cvar_VariableInt ("allow_download_maps");
-	MENU_SPIN(s_allow_download_players_box, y+=20,"player models/skins",DownloadCallback, yes_no_names);
+	s_downloadoptions_menu.AddItem ( &s_allow_download_maps_box);
+	MENU_SPIN(s_allow_download_players_box, y+=20,"player models/skins",DownloadCallback, yesno_names);
 	s_allow_download_players_box.curvalue = Cvar_VariableInt ("allow_download_players");
-	MENU_SPIN(s_allow_download_models_box, y+=20,"models", DownloadCallback, yes_no_names)
+	s_downloadoptions_menu.AddItem ( &s_allow_download_players_box);
+	MENU_SPIN(s_allow_download_models_box, y+=20,"models", DownloadCallback, yesno_names)
 	s_allow_download_models_box.curvalue = Cvar_VariableInt("allow_download_models");
-	MENU_SPIN(s_allow_download_sounds_box, y+=20,"sounds", DownloadCallback, yes_no_names)
+	s_downloadoptions_menu.AddItem ( &s_allow_download_models_box);
+	MENU_SPIN(s_allow_download_sounds_box, y+=20,"sounds", DownloadCallback, yesno_names)
 	s_allow_download_sounds_box.curvalue = Cvar_VariableInt ("allow_download_sounds");
+	s_downloadoptions_menu.AddItem ( &s_allow_download_sounds_box);
 
-	Menu_AddItem (&s_downloadoptions_menu, &s_download_title);
-	Menu_AddItem (&s_downloadoptions_menu, &s_allow_download_box);
-	Menu_AddItem (&s_downloadoptions_menu, &s_allow_download_maps_box);
-	Menu_AddItem (&s_downloadoptions_menu, &s_allow_download_players_box);
-	Menu_AddItem (&s_downloadoptions_menu, &s_allow_download_models_box);
-	Menu_AddItem (&s_downloadoptions_menu, &s_allow_download_sounds_box);
-
-	Menu_Center (&s_downloadoptions_menu);
-
-	// skip over title
-	if (s_downloadoptions_menu.cursor == 0)
-		s_downloadoptions_menu.cursor = 1;
+	s_downloadoptions_menu.Center ();
+	s_downloadoptions_menu.AdjustCursor (1);
 }
 
 static void DownloadOptions_MenuDraw(void)
 {
-	Menu_Draw( &s_downloadoptions_menu );
+	s_downloadoptions_menu.Draw ();
 }
 
 static const char *DownloadOptions_MenuKey( int key )
@@ -2321,19 +2227,19 @@ static void AddressBook_MenuInit( void )
 
 	for (int i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
 	{
-		s_addressbook_fields[i].generic.type = MTYPE_FIELD;
-		s_addressbook_fields[i].generic.name = 0;
-		s_addressbook_fields[i].generic.callback = 0;
-		s_addressbook_fields[i].generic.x	= 0;
-		s_addressbook_fields[i].generic.y	= i * 18 + 0;
-		s_addressbook_fields[i].generic.localdata[0] = i;
+		s_addressbook_fields[i].type = MTYPE_FIELD;
+		s_addressbook_fields[i].name = 0;
+		s_addressbook_fields[i].callback = 0;
+		s_addressbook_fields[i].x	= 0;
+		s_addressbook_fields[i].y	= i * 18 + 0;
+		s_addressbook_fields[i].localData = i;
 		s_addressbook_fields[i].cursor		= 0;
 		s_addressbook_fields[i].length		= 60;
 		s_addressbook_fields[i].visible_length = 30;
 
 		strcpy (s_addressbook_fields[i].buffer, Cvar_VariableString (va("adr%d", i)));
 
-		Menu_AddItem (&s_addressbook_menu, &s_addressbook_fields[i]);
+		s_addressbook_menu.AddItem ( &s_addressbook_fields[i]);
 	}
 }
 
@@ -2348,7 +2254,7 @@ static const char *AddressBook_MenuKey( int key )
 static void AddressBook_MenuDraw(void)
 {
 	M_Banner( "m_banner_addressbook" );
-	Menu_Draw( &s_addressbook_menu );
+	s_addressbook_menu.Draw ();
 }
 
 void M_Menu_AddressBook_f(void)
@@ -2396,7 +2302,7 @@ static int numPlayerModels;
 
 static int modelChangeTime;
 
-static int rate_tbl[] = {
+static const int rate_tbl[] = {
 	2500, 3200, 5000, 10000, 25000, 0
 };
 
@@ -2495,10 +2401,8 @@ static bool PlayerConfig_ScanDirectories (void)
 		for (CStringItem *pcxitem = pcxnames.First(); pcxitem; pcxitem = pcxnames.Next(pcxitem))
 			if (IsValidSkin (pcxitem->name, pcxnames.First()))
 			{
-				char	*str, *ext;
-
-				str = strrchr (pcxitem->name, '/') + 1;
-				ext = strrchr (str, '.');
+				char *str = strrchr (pcxitem->name, '/') + 1;
+				char *ext = strrchr (str, '.');
 				ext[0] = 0;
 				skins.CreateAndInsert (str, pmiChain);
 				numSkins++;
@@ -2525,7 +2429,6 @@ static bool PlayerConfig_MenuInit (void)
 {
 	extern cvar_t *name, *team, *skin;
 	char	currentModel[MAX_QPATH], currentSkin[MAX_QPATH], *path;
-	int		i, y, currentModelIndex, currentSkinIndex;
 
 	cvar_t *hand = Cvar_Get ("hand", "0", CVAR_USERINFO|CVAR_ARCHIVE);
 
@@ -2551,7 +2454,9 @@ static bool PlayerConfig_MenuInit (void)
 		strcpy (currentSkin, "grunt");
 	}
 
+	// find current model/skin index
 	playerModelInfo_t *info;
+	int currentModelIndex, currentSkinIndex;
 	for (info = pmiList.First(), currentModelIndex = 0; info; info = pmiList.Next(info), currentModelIndex++)
 		if (!stricmp (info->name, currentModel))
 		{	// we have found model - find skin
@@ -2571,127 +2476,127 @@ static bool PlayerConfig_MenuInit (void)
 	s_player_config_menu.y = viddef.height * 23 / 240;
 	s_player_config_menu.nitems = 0;
 
-	s_player_name_field.generic.type = MTYPE_FIELD;
-	s_player_name_field.generic.name = "name";
-	s_player_name_field.generic.x	= 0;
-	s_player_name_field.generic.y	= viddef.height * 20 / 240 - 20;
+	s_player_name_field.type = MTYPE_FIELD;
+	s_player_name_field.name = "name";
+	s_player_name_field.x	= 0;
+	s_player_name_field.y	= viddef.height * 20 / 240 - 20;
 	s_player_name_field.length		= 20;
 	s_player_name_field.visible_length = 20;
 	strcpy (s_player_name_field.buffer, name->string);
 	s_player_name_field.cursor = strlen (name->string);
+	s_player_config_menu.AddItem ( &s_player_name_field);
 
-	y = viddef.height * 68 / 240;
+	int y = viddef.height * 68 / 240;
 
 	// model
-	s_player_model_title.generic.type = MTYPE_SEPARATOR;
-	s_player_model_title.generic.name = "model";
-	s_player_model_title.generic.x	= -8;
-	s_player_model_title.generic.y	= y+=10;
+	s_player_model_title.type = MTYPE_SEPARATOR;
+	s_player_model_title.name = "model";
+	s_player_model_title.x	= -8;
+	s_player_model_title.y	= y+=10;
+	s_player_config_menu.AddItem ( &s_player_model_title);
 
-	s_player_model_box.generic.type = MTYPE_SPINCONTROL2;
-	s_player_model_box.generic.x	= -56;
-	s_player_model_box.generic.y	= y+=10;
-	s_player_model_box.generic.callback = ModelCallback;
-	s_player_model_box.generic.cursor_offset = -48;
+	s_player_model_box.type = MTYPE_SPINCONTROL2;
+	s_player_model_box.x	= -56;
+	s_player_model_box.y	= y+=10;
+	s_player_model_box.callback = ModelCallback;
+	s_player_model_box.cursor_offset = -48;
 	s_player_model_box.curvalue = currentModelIndex;
 	s_player_model_box.itemnames = pmiList.First();
+	s_player_config_menu.AddItem ( &s_player_model_box);
 
-	// skin
-	s_player_skin_title.generic.type = MTYPE_SEPARATOR;
-	s_player_skin_title.generic.name = "skin";
-	s_player_skin_title.generic.x   = -16;
-	s_player_skin_title.generic.y	= y+=14;
+	if (s_player_skin_box.itemnames)
+	{
+		// skin
+		s_player_skin_title.type = MTYPE_SEPARATOR;
+		s_player_skin_title.name = "skin";
+		s_player_skin_title.x   = -16;
+		s_player_skin_title.y	= y+=14;
+		s_player_config_menu.AddItem ( &s_player_skin_title);
 
-	s_player_skin_box.generic.type	= MTYPE_SPINCONTROL2;
-	s_player_skin_box.generic.x		= -56;
-	s_player_skin_box.generic.y		= y+=10;
-	s_player_skin_box.generic.cursor_offset = -48;
-	s_player_skin_box.curvalue = currentSkinIndex;
-	s_player_skin_box.itemnames = info->skins.First();
+		s_player_skin_box.type	= MTYPE_SPINCONTROL2;
+		s_player_skin_box.x		= -56;
+		s_player_skin_box.y		= y+=10;
+		s_player_skin_box.cursor_offset = -48;
+		s_player_skin_box.curvalue = currentSkinIndex;
+		s_player_skin_box.itemnames = info->skins.First();
+		s_player_config_menu.AddItem ( &s_player_skin_box);
+	}
 
 	// rail type
-	s_player_rtype_title.generic.type = MTYPE_SEPARATOR;
-	s_player_rtype_title.generic.name = "rail type";
-	s_player_rtype_title.generic.x	= 24;
-	s_player_rtype_title.generic.y	= y+=14;
+	s_player_rtype_title.type = MTYPE_SEPARATOR;
+	s_player_rtype_title.name = "rail type";
+	s_player_rtype_title.x	= 24;
+	s_player_rtype_title.y	= y+=14;
+	s_player_config_menu.AddItem ( &s_player_rtype_title);
 
-	s_player_rtype_box.generic.type = MTYPE_SPINCONTROL;
-	s_player_rtype_box.generic.x = -56;
-	s_player_rtype_box.generic.y = y+=10;
-	s_player_rtype_box.generic.cursor_offset = -48;
-	s_player_rtype_box.generic.callback = RTypeCallback;
+	s_player_rtype_box.type = MTYPE_SPINCONTROL;
+	s_player_rtype_box.x = -56;
+	s_player_rtype_box.y = y+=10;
+	s_player_rtype_box.cursor_offset = -48;
+	s_player_rtype_box.callback = RTypeCallback;
 	s_player_rtype_box.curvalue = Cvar_VariableInt ("railtype");
 	s_player_rtype_box.itemnames = railTypes;
+	s_player_config_menu.AddItem ( &s_player_rtype_box);
 
 	// rail color
-	s_player_rcolor_title.generic.type = MTYPE_SEPARATOR;
-	s_player_rcolor_title.generic.name = "rail color";
-	s_player_rcolor_title.generic.x	= 32;
-	s_player_rcolor_title.generic.y	= y+=14;
+	s_player_rcolor_title.type = MTYPE_SEPARATOR;
+	s_player_rcolor_title.name = "rail color";
+	s_player_rcolor_title.x	= 32;
+	s_player_rcolor_title.y	= y+=14;
+	s_player_config_menu.AddItem ( &s_player_rcolor_title);
 
-	s_player_rcolor_box.generic.type = MTYPE_SPINCONTROL;
-	s_player_rcolor_box.generic.x = -56;
-	s_player_rcolor_box.generic.y = y+=10;
-	s_player_rcolor_box.generic.cursor_offset = -48;
-	s_player_rcolor_box.generic.callback = RColorCallback;
+	s_player_rcolor_box.type = MTYPE_SPINCONTROL;
+	s_player_rcolor_box.x = -56;
+	s_player_rcolor_box.y = y+=10;
+	s_player_rcolor_box.cursor_offset = -48;
+	s_player_rcolor_box.callback = RColorCallback;
 	s_player_rcolor_box.curvalue = Cvar_VariableInt ("railcolor");
 	s_player_rcolor_box.itemnames = colorNames;
+	s_player_config_menu.AddItem ( &s_player_rcolor_box);
 
 	// handedness
-	s_player_hand_title.generic.type = MTYPE_SEPARATOR;
-	s_player_hand_title.generic.name = "handedness";
-	s_player_hand_title.generic.x	= 32;
-	s_player_hand_title.generic.y	= y+=14;
+	s_player_hand_title.type = MTYPE_SEPARATOR;
+	s_player_hand_title.name = "handedness";
+	s_player_hand_title.x	= 32;
+	s_player_hand_title.y	= y+=14;
+	s_player_config_menu.AddItem ( &s_player_hand_title);
 
-	s_player_handedness_box.generic.type = MTYPE_SPINCONTROL;
-	s_player_handedness_box.generic.x = -56;
-	s_player_handedness_box.generic.y = y+=10;
-	s_player_handedness_box.generic.cursor_offset = -48;
-	s_player_handedness_box.generic.callback = HandednessCallback;
+	s_player_handedness_box.type = MTYPE_SPINCONTROL;
+	s_player_handedness_box.x = -56;
+	s_player_handedness_box.y = y+=10;
+	s_player_handedness_box.cursor_offset = -48;
+	s_player_handedness_box.callback = HandednessCallback;
 	s_player_handedness_box.curvalue = Cvar_VariableInt ("hand");
 	s_player_handedness_box.itemnames = handedness;
+	s_player_config_menu.AddItem ( &s_player_handedness_box);
 
-	for (i = 0; i < ARRAY_COUNT(rate_tbl) - 1; i++)
+	// rate
+	for (int i = 0; i < ARRAY_COUNT(rate_tbl) - 1; i++)
 		if (Cvar_VariableInt ("rate") == rate_tbl[i])
 			break;
 
-	s_player_rate_title.generic.type = MTYPE_SEPARATOR;
-	s_player_rate_title.generic.name = "connect speed";
-	s_player_rate_title.generic.x	= 56;
-	s_player_rate_title.generic.y	= y+=14;
+	s_player_rate_title.type = MTYPE_SEPARATOR;
+	s_player_rate_title.name = "connect speed";
+	s_player_rate_title.x	= 56;
+	s_player_rate_title.y	= y+=14;
+	s_player_config_menu.AddItem ( &s_player_rate_title);
 
-	s_player_rate_box.generic.type	= MTYPE_SPINCONTROL;
-	s_player_rate_box.generic.x		= -56;
-	s_player_rate_box.generic.y		= y+=10;
-	s_player_rate_box.generic.cursor_offset = -48;
-	s_player_rate_box.generic.callback = RateCallback;
+	s_player_rate_box.type	= MTYPE_SPINCONTROL;
+	s_player_rate_box.x		= -56;
+	s_player_rate_box.y		= y+=10;
+	s_player_rate_box.cursor_offset = -48;
+	s_player_rate_box.callback = RateCallback;
 	s_player_rate_box.curvalue = i;
 	s_player_rate_box.itemnames = rate_names;
+	s_player_config_menu.AddItem ( &s_player_rate_box);
 
-	s_player_download_action.generic.type = MTYPE_ACTION;
-	s_player_download_action.generic.name = "download options";
-	s_player_download_action.generic.flags= QMF_LEFT_JUSTIFY;
-	s_player_download_action.generic.x = -24;
-	s_player_download_action.generic.y = y+=14;
-	s_player_download_action.generic.callback = (void (*)(void*))M_Menu_DownloadOptions_f;
-
-	Menu_AddItem (&s_player_config_menu, &s_player_name_field);
-	Menu_AddItem (&s_player_config_menu, &s_player_model_title);
-	Menu_AddItem (&s_player_config_menu, &s_player_model_box);
-	if (s_player_skin_box.itemnames)
-	{
-		Menu_AddItem (&s_player_config_menu, &s_player_skin_title);
-		Menu_AddItem (&s_player_config_menu, &s_player_skin_box);
-	}
-	Menu_AddItem (&s_player_config_menu, &s_player_rtype_title);
-	Menu_AddItem (&s_player_config_menu, &s_player_rtype_box);
-	Menu_AddItem (&s_player_config_menu, &s_player_rcolor_title);
-	Menu_AddItem (&s_player_config_menu, &s_player_rcolor_box);
-	Menu_AddItem (&s_player_config_menu, &s_player_hand_title);
-	Menu_AddItem (&s_player_config_menu, &s_player_handedness_box);
-	Menu_AddItem (&s_player_config_menu, &s_player_rate_title);
-	Menu_AddItem (&s_player_config_menu, &s_player_rate_box);
-	Menu_AddItem (&s_player_config_menu, &s_player_download_action);
+	s_player_download_action.type = MTYPE_ACTION;
+	s_player_download_action.name = "download options";
+	s_player_download_action.flags= QMF_LEFT_JUSTIFY;
+	s_player_download_action.x = -24;
+	s_player_download_action.y = y+=14;
+	s_player_download_action.callback = (void (*)(void*))M_Menu_DownloadOptions_f;
+	s_player_config_menu.AddItem ( &s_player_download_action);
 
 	return true;
 }
@@ -2706,7 +2611,6 @@ static bool PlayerConfig_MenuInit (void)
 static void PlayerConfig_MenuDraw (void)
 {
 	extern float CalcFov (float fov_x, float w, float h);
-	refdef_t	refdef;
 	entity_t	e[2];
 	static dlight_t	dl[] = {
 		{{30, 100, 100}, {1, 1, 1}, 400},
@@ -2724,15 +2628,15 @@ static void PlayerConfig_MenuDraw (void)
 	CStringItem *skin = &model->skins[s_player_skin_box.curvalue];
 	if (!skin) return;
 
+	refdef_t refdef;
 	memset (&refdef, 0, sizeof (refdef));
-
 	refdef.x = viddef.width / 2;
 	refdef.y = viddef.height * 6 / 25;
 	refdef.width = viddef.width * 4 / 10 + 16;
 	refdef.height = viddef.width * 5 / 10;
 	refdef.fov_x = refdef.width * 90 / viddef.width;
 	refdef.fov_y = CalcFov (refdef.fov_x, refdef.width, refdef.height);
-	refdef.time = cls.realtime * 0.001;
+	refdef.time = cls.realtime / 1000.0f;
 
 	memset (&e, 0, sizeof(e));
 
@@ -2770,7 +2674,7 @@ static void PlayerConfig_MenuDraw (void)
 	}
 	refdef.rdflags = RDF_NOWORLDMODEL;
 
-	Menu_Draw (&s_player_config_menu);
+	s_player_config_menu.Draw ();
 
 	re.DrawFill2 (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
 	re.RenderFrame (&refdef);
@@ -2788,19 +2692,14 @@ static const char *PlayerConfig_MenuKey (int key)
 {
 	if (key == K_ESCAPE || key == K_MOUSE2)
 	{
-		char	*s;
-		int		color, c;
-
 		// check colorizing of player name
-		color = C_WHITE;
-		s = s_player_name_field.buffer;
-		while (c = *s++)
+		int color = C_WHITE;
+		const char *s = s_player_name_field.buffer;
+		while (char c = *s++)
 		{
-			int		col;
-
 			if (c == COLOR_ESCAPE)
 			{
-				col = *s - '0';
+				int col = *s - '0';
 				if (col >= 0 && col <= 7)
 				{
 					color = col;
@@ -2833,10 +2732,10 @@ static void M_Menu_PlayerConfig_f (void)
 	if (!PlayerConfig_MenuInit ())
 	{
 		delete pmiChain;
-		Menu_SetStatusBar (&s_multiplayer_menu, S_YELLOW"No valid player models found");
+		s_multiplayer_menu.SetStatusBar (S_YELLOW"No valid player models found");
 		return;
 	}
-	Menu_SetStatusBar (&s_multiplayer_menu, NULL);
+	s_multiplayer_menu.SetStatusBar (NULL);
 	M_PushMenu (PlayerConfig_MenuDraw, PlayerConfig_MenuKey);
 }
 
@@ -2855,9 +2754,9 @@ BROWSE FOR MAP
 
 typedef struct
 {
-	int		w, h;			// thumbnail sizes
-	int		cx, cy;			// number of thumbnail on screen
-	int		x0, y0, dx, dy;	// delta for coputing thumbnail coordinates on screen (Xo+Ix*Dx, Yo+Iy*Dy)
+	unsigned short w, h;	// thumbnail sizes
+	byte	cx, cy;			// number of thumbnail on screen
+	unsigned short x0, y0, dx, dy; // delta for coputing thumbnail coordinates on screen (Xo+Ix*Dx, Yo+Iy*Dy)
 	int		count;			// number of maps
 	int		top;
 	int		current;
@@ -2865,9 +2764,9 @@ typedef struct
 
 typedef struct
 {
-	int		width;			// max screen width
-	int		cx, cy;
-	int		w, h;
+	unsigned short width;	// max screen width
+	byte	cx, cy;			// count of thumbs per x/y side
+	unsigned short w, h;	// thumb sizes
 } thumbLayout_t;
 
 
@@ -2875,14 +2774,14 @@ static char			*browse_map_names[MAX_BROWSE_MAPS];
 static TList<CStringItem> browse_list;
 static thumbParams_t thumbs;
 
-static thumbLayout_t thumbLayout[] =
+static const thumbLayout_t thumbLayout[] =
 {
 	{320, 2, 1, 128, 96},
 	{512, 2, 2, 128, 96},
 	{640, 2, 2, 192, 144},
 	{800, 3, 3, 192, 144},
 	{1024, 3, 3, 256, 192},
-	{BIG_NUMBER, 4, 4, 256, 192}
+	{65535, 4, 4, 256, 192}		// I don't think screen will have resolution of 65536 x 49152 pixels (~12 TBytes with 32-bit color)
 };
 
 /*
@@ -3099,11 +2998,282 @@ static void M_Menu_DMBrowse_f (void)
 	MENU_CHECK
 	if (!DMBrowse_MenuInit ())
 	{
-		Menu_SetStatusBar (&s_startserver_menu, S_YELLOW"No levelshots found");
+		s_startserver_menu.SetStatusBar (S_YELLOW"No levelshots found");
 		return;
 	}
-	Menu_SetStatusBar (&s_startserver_menu, NULL);	//?? "ESC to quit, ENTER to select ..."
+	s_startserver_menu.SetStatusBar (NULL);	//?? "ESC to quit, ENTER to select ..."
 	M_PushMenu (DMBrowse_MenuDraw, DMBrowse_MenuKey);
+}
+
+
+/*
+=======================================================================
+
+VIDEO MENU
+
+=======================================================================
+*/
+
+#define MIN_GAMMA		10		// 0.5
+#define MAX_GAMMA		30		// 2.0
+
+#define MIN_CONTRAST	10		// 0.5
+#define MAX_CONTRAST	30		// 1.5
+
+// cvars
+
+//?? ADD r_ignorehwgamma, gl_ext_texture_compression
+extern cvar_t *scr_viewsize;
+//static cvar_t *gl_driver;
+static cvar_t *gl_mode;
+static cvar_t *gl_picmip;
+static cvar_t *gl_bitdepth;
+static cvar_t *gl_textureBits;
+static cvar_t *gl_vertexLight;
+static cvar_t *gl_overbright;
+
+
+// Menu interaction
+
+
+static menuFramework_t	s_opengl_menu;
+
+/*--- Common menu items ---*/
+static menuList_t		s_mode_list;				// video mode
+static menuSlider_t		s_screensize_slider;		// screen size
+static menuSlider_t		s_brightness_slider;		// gamma
+static menuSlider_t		s_contrast_slider;			// contrast
+static menuSlider_t		s_saturation;				// saturation
+static menuList_t  		s_fs_box;					// fullscreen
+static menuAction_t		s_cancel_action;
+static menuAction_t		s_undo_action;
+
+/*---- OpenGL renderer ----*/
+static menuList_t  		s_finish_box;				// gl_finish
+static menuList_t		s_colorDepth;				// gl_bitdepth
+static menuList_t		s_overbright;				// gl_overbright
+// quality/speed
+static menuList_t		s_lightStyle;				// gl_vertexLight
+static menuList_t		s_fastSky;					// gl_fastSky
+// textures
+static menuSlider_t		s_tq_slider;				// gl_picmip
+static menuList_t		s_textureBits;				// gl_textureBits
+static menuList_t		s_textureFilter;			// gl_texturemode
+
+
+static float vid_menu_old_gamma;
+
+
+static void ScreenSizeCallback (void *s)
+{
+	menuSlider_t *slider = (menuSlider_t *) s;
+
+	Cvar_SetValue ("scr_viewsize", slider->curvalue * 10);
+}
+
+static void BrightnessCallback (void *s)
+{
+	menuSlider_t *slider = (menuSlider_t *) s;
+	Cvar_SetValue ("r_gamma", slider->curvalue / (MAX_GAMMA - MIN_GAMMA));
+}
+
+
+static void ContrastCallback (void *s)
+{
+	menuSlider_t *slider = (menuSlider_t *) s;
+	Cvar_SetValue ("r_contrast", slider->curvalue / (MAX_CONTRAST - MIN_CONTRAST));
+	Cvar_SetValue ("r_brightness", slider->curvalue / (MAX_CONTRAST - MIN_CONTRAST));
+}
+
+
+static void Vid_ApplyChanges (void *)
+{
+	bool modeChanded = false;
+
+	Cvar_SetInteger ("r_fullscreen", s_fs_box.curvalue);
+	Cvar_SetValue ("r_saturation", s_saturation.curvalue / 10.0);
+	Cvar_SetInteger ("gl_picmip", 3 - appRound (s_tq_slider.curvalue));
+	Cvar_SetInteger ("gl_finish", s_finish_box.curvalue);
+	Cvar_SetInteger ("gl_mode", s_mode_list.curvalue);
+	Cvar_SetInteger ("gl_fastsky", s_fastSky.curvalue);
+	Cvar_SetInteger ("gl_bitdepth", s_colorDepth.curvalue * 16);
+	Cvar_SetInteger ("gl_overbright", s_overbright.curvalue);
+	Cvar_SetInteger ("gl_textureBits", s_textureBits.curvalue * 16);
+	Cvar_SetInteger ("gl_vertexLight", s_lightStyle.curvalue);
+	Cvar_Set ("gl_texturemode", s_textureFilter.curvalue ? "trilinear" : "bilinear");
+
+#define CHECK_UPDATE(var)	\
+	if (var->modified)	\
+	{	\
+		var->modified = false;		\
+		vid_ref->modified = true;	\
+	}
+
+	CHECK_UPDATE(r_saturation);
+	CHECK_UPDATE(r_gamma);
+
+	CHECK_UPDATE(gl_mode);
+	CHECK_UPDATE(gl_picmip);
+	CHECK_UPDATE(gl_vertexLight);
+	CHECK_UPDATE(gl_textureBits);
+	CHECK_UPDATE(gl_overbright);
+	CHECK_UPDATE(gl_bitdepth);
+//??	if (gl_bitdepth->modified)
+//??		vid_ref->modified = true;		// do not reset "modified"
+
+	if (vid_ref->modified || modeChanded)
+		M_ForceMenuOff ();
+	else
+		M_PopMenu ();
+}
+
+static void Vid_CancelChanges (void *)
+{
+	Cvar_SetValue ("r_gamma", vid_menu_old_gamma);
+	//!! restore contrast too
+	M_PopMenu ();
+}
+
+/*
+ * Vid_MenuInit
+ */
+static void Vid_MenuInit (void)
+{
+	static const char *resolutions[] = {
+		"[320  240 ]",	"[400  300 ]",	"[512  384 ]",	"[640  480 ]",
+		"[800  600 ]",	"[960  720 ]",	"[1024 768 ]",	"[1152 864 ]",
+		"[1280 960 ]",	"[1600 1200]",	"[2048 1536]",	NULL
+	};
+	static const char *overbrightNames[] = {
+		"no",			"yes",			"auto",			NULL
+	};
+	static const char *bits[] = {
+		"default",		"16 bit",		"32 bit",		NULL
+	};
+	static const char *lighting[] = {
+		"lightmap",		"vertex",		NULL
+	};
+	static const char *filters[] = {
+		"bilinear",		"trilinear",	NULL
+	};
+
+	// init cvars
+CVAR_BEGIN(vars)
+//	CVAR_GET(gl_driver, opengl32, CVAR_ARCHIVE),
+//	CVAR_VAR(scr_viewsize, 100, CVAR_ARCHIVE),
+	CVAR_VAR(gl_mode, 3, CVAR_ARCHIVE),
+	CVAR_VAR(gl_picmip, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_textureBits, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_overbright, 2, CVAR_ARCHIVE)
+CVAR_END
+
+	Cvar_GetVars (ARRAY_ARG(vars));
+
+	s_mode_list.curvalue = Cvar_Get ("gl_mode", "3", CVAR_ARCHIVE)->integer;
+
+	s_opengl_menu.x = viddef.width / 2;
+	s_opengl_menu.y = viddef.height / 2 - 58;
+	s_opengl_menu.nitems = 0;
+
+	// save current gamma (for cancel action)
+	vid_menu_old_gamma = r_gamma->value;
+
+	int y = 0;
+	MENU_SPIN(s_mode_list, y+=10, "video mode", NULL, resolutions);
+	s_opengl_menu.AddItem (&s_mode_list);
+	MENU_SLIDER(s_screensize_slider, y+=10, "screen size", ScreenSizeCallback, 4, 10);
+	s_screensize_slider.curvalue = scr_viewsize->value / 10;
+	s_opengl_menu.AddItem (&s_screensize_slider);
+	MENU_SLIDER(s_brightness_slider, y+=10, "brightness", BrightnessCallback, MIN_GAMMA, MAX_GAMMA);
+	r_gamma->Clamp (0.5, 3);
+	s_brightness_slider.curvalue = r_gamma->value * (MAX_GAMMA - MIN_GAMMA);
+	s_opengl_menu.AddItem (&s_brightness_slider);
+	MENU_SLIDER(s_contrast_slider, y+=10, "contrast", ContrastCallback, MIN_CONTRAST, MAX_CONTRAST);
+	r_contrast->Clamp (0.5, 1.5);
+	s_contrast_slider.curvalue = r_contrast->value * (MAX_CONTRAST - MIN_CONTRAST);
+	s_opengl_menu.AddItem (&s_contrast_slider);
+	MENU_SLIDER(s_saturation, y+=10, "saturation", NULL, 0, 20);
+	r_saturation->Clamp (0, 2);
+	s_saturation.curvalue = r_saturation->value * 10;
+	s_opengl_menu.AddItem (&s_saturation);
+	MENU_SPIN(s_fs_box, y+=10, "fullscreen", NULL, yesno_names);
+	s_fs_box.curvalue = r_fullscreen->integer;
+	s_opengl_menu.AddItem (&s_fs_box);
+
+	y += 10;
+	MENU_SPIN(s_colorDepth, y+=10, "color depth", NULL, bits);
+	s_colorDepth.curvalue = gl_bitdepth->integer >> 4;
+	s_opengl_menu.AddItem (&s_colorDepth);
+	MENU_SPIN(s_overbright, y+=10, "gamma overbright", NULL, overbrightNames);
+	s_overbright.curvalue = gl_overbright->integer;
+	s_opengl_menu.AddItem (&s_overbright);
+	MENU_SPIN(s_lightStyle, y+=10, "lighting", NULL, lighting);
+	s_lightStyle.curvalue = gl_vertexLight->integer;
+	s_opengl_menu.AddItem (&s_lightStyle);
+	MENU_SPIN(s_fastSky, y+=10, "fast sky", NULL, yesno_names);
+	s_fastSky.curvalue = Cvar_Get ("gl_fastsky", "0", CVAR_ARCHIVE)->integer;
+	s_opengl_menu.AddItem (&s_fastSky);
+	MENU_SLIDER(s_tq_slider, y+=10, "texture detail", NULL, 0, 3);
+	s_tq_slider.curvalue = 3 - gl_picmip->integer;
+	s_opengl_menu.AddItem (&s_tq_slider);
+	MENU_SPIN(s_textureBits, y+=10, "texture quality", NULL, bits);
+	s_textureBits.curvalue = gl_textureBits->integer >> 4;
+	s_opengl_menu.AddItem (&s_textureBits);
+	MENU_SPIN(s_textureFilter, y+=10, "texture filter", NULL, filters);
+	s_textureFilter.curvalue = stricmp (Cvar_Get ("gl_texturemode", "bilinear", CVAR_ARCHIVE)->string,
+		"bilinear") ? 1 : 0;
+	s_opengl_menu.AddItem (&s_textureFilter);
+	MENU_SPIN(s_finish_box, y+=10, "sync every frame", NULL, yesno_names);
+	s_finish_box.curvalue = Cvar_Get ("gl_finish", "0", CVAR_ARCHIVE)->integer;
+	s_opengl_menu.AddItem (&s_finish_box);
+
+	y += 10;
+	MENU_ACTION(s_undo_action, y+=10, "undo changes", Vid_MenuInit);	//!! will not restore gamma
+	s_opengl_menu.AddItem (&s_undo_action);
+	MENU_ACTION(s_cancel_action, y+=10, "cancel", Vid_CancelChanges);
+	s_opengl_menu.AddItem (&s_cancel_action);
+}
+
+/*
+================
+Vid_MenuDraw
+================
+*/
+static void Vid_MenuDraw (void)
+{
+	M_Banner ("m_banner_video");
+	s_opengl_menu.Draw ();
+}
+
+/*
+================
+Vid_MenuKey
+================
+*/
+static const char *Vid_MenuKey (int key)
+{
+	switch (key)
+	{
+	case K_ESCAPE:
+	case K_MOUSE2:
+		Vid_ApplyChanges (NULL);
+		return NULL;
+	case K_KP_ENTER:
+	case K_ENTER:
+		if (!s_opengl_menu.SelectItem ()) Vid_ApplyChanges (NULL);
+		return menu_out_sound;
+	}
+	return Default_MenuKey (&s_opengl_menu, key);
+}
+
+
+static void M_Menu_Video_f (void)
+{
+	MENU_CHECK
+	Vid_MenuInit ();
+	M_PushMenu (Vid_MenuDraw, Vid_MenuKey);
 }
 
 
@@ -3129,7 +3299,6 @@ static const char *M_Quit_Key (int key)
 	case 'Y':
 	case 'y':
 	case K_MOUSE1:
-		cls.key_dest = key_console;		//??
 		CL_Quit_f ();
 		break;
 
@@ -3162,8 +3331,6 @@ static void M_Menu_Quit_f (void)
 
 
 //=============================================================================
-/* Menu Subsystem */
-
 
 /*
 =================

@@ -99,7 +99,7 @@ Adds command text immediately after the current command
 Adds a \n to the text
 ============
 */
-void Cbuf_InsertText (const char *text)
+static void Cbuf_InsertText (const char *text)
 {
 	int len = strlen (text);
 
@@ -115,7 +115,11 @@ void Cbuf_InsertText (const char *text)
 		else
 			Com_Printf (S_BLUE"InsText: \"%s\"\n", text);
 	}
-	SZ_Insert (&cmd_text, text, len, 0);
+	// NOTE: here no overflow
+	// SZ_Insert (&cmd_text, text, len, 0);
+	if (cmd_text.cursize > 0) memmove (cmd_text.data + len, cmd_text.data, cmd_text.cursize);
+	memcpy (cmd_text.data, text, len);
+	cmd_text.cursize += len;
 }
 
 
@@ -210,7 +214,7 @@ void Cbuf_Execute (void)
 		{
 			i++;
 			cmd_text.cursize -= i;
-			memmove (text, text+i, cmd_text.cursize);
+			memcpy (text, text+i, cmd_text.cursize);
 		}
 
 		// execute the command line

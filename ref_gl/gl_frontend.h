@@ -14,7 +14,7 @@ extern float	gl_fogStart, gl_fogEnd;
 
 
 //?? rename (gl_entity_t ? entity_t) and separate beam
-typedef struct refEntity_s
+struct refEntity_t
 {
 	int		flags;
 	model_t	*model;
@@ -51,20 +51,20 @@ typedef struct refEntity_s
 	shader_t	*customShader;			// one shader for all surfaces
 	color_t		shaderColor;			// for "rgbGen/alphaGen entity"
 	// draw sequence
-	struct refEntity_s *drawNext;
-} refEntity_t;
+	refEntity_t *drawNext;
+};
 
 extern refEntity_t	gl_entities[];
 extern int			gl_numEntities;
 
 
-typedef struct
+struct refDlight_t
 {
 	vec3_t	origin;
 	float	intensity;
 	vec3_t	modelOrg;					// temporaty: origin in model coordinates
 	color_t	c;
-} refDlight_t;
+};
 
 extern refDlight_t	gl_dlights[];
 extern int			gl_numDlights;
@@ -74,18 +74,18 @@ void	GL_DrawPortal (void);
 void	GL_AddEntity (entity_t *ent);
 void	GL_AddDlight (dlight_t *dl);
 
-typedef struct surfaceInfo_s
+struct surfaceInfo_t
 {
 	int		sort;
-	surfaceCommon_t			*surf;
-	struct surfaceInfo_s	*sortNext;
-} surfaceInfo_t;
+	surfaceCommon_t *surf;
+	surfaceInfo_t *sortNext;
+};
 
 
 #define NUM_FRUSTUM_PLANES	5
 #define MAX_FRUSTUM_MASK	((1<<NUM_FRUSTUM_PLANES)-1)
 
-typedef struct viewPortal_s
+struct viewPortal_t
 {
 	int		flags;
 	float	time;				// time in seconds (for shader effects etc)
@@ -116,7 +116,7 @@ typedef struct viewPortal_s
 	// particles
 	particle_t *particles;
 	beam_t	*beams;
-} viewPortal_t;
+};
 
 
 extern viewPortal_t	vp;

@@ -5,15 +5,15 @@
 #define MAX_POLYVERTS	1024
 
 
-typedef struct poly_s
+struct poly_t
 {
 	int		numIndexes;
 	int		*indexes;
 #ifdef POLY_DEBUG
 	int		maxIndexes;
 #endif
-	struct poly_s *next;
-} poly_t;
+	poly_t	*next;
+};
 
 extern int subdivNumVerts;
 

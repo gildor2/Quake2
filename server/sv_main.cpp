@@ -856,7 +856,7 @@ void SV_PostprocessFrame (void)
 				}
 				else
 				{
-					sfx0 = EV_CAMPER2;
+					sfx0 = EV_CAMPER0+2;
 					sfxn = 7;
 				}
 				ent->s.event = sfx0 + rand() % sfxn;

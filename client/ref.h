@@ -2,7 +2,10 @@
 #define __REF_INCLUDED__
 
 
-#include "../qcommon/qcommon.h"
+// forward declarations (renderer types)
+struct model_t;
+struct image_t;
+
 
 #define	MAX_DLIGHTS			32
 #define	MAX_ENTITIES		1024
@@ -37,7 +40,7 @@ typedef union
 //!!! clean beam comments
 typedef struct
 {
-	struct model_s *model;	// opaque type outside refresh
+	model_t	*model;			// opaque type outside renderer
 	float	angles[3];
 	/*------- most recent data --------*/
 	float	origin[3];
@@ -53,7 +56,7 @@ typedef struct
 	/*----------- color info ----------*/
 	float	alpha;			// ignore if RF_TRANSLUCENT isn't set
 
-	struct image_s	*skin;	// NULL for inline skin
+	image_t	*skin;			// NULL for inline skin
 	int		flags;
 } entity_t;
 
@@ -182,7 +185,7 @@ typedef struct
 	// if necessary.
 	//
 	// EndRegistration will free any remaining data that wasn't registered.
-	// Any model_s or skin_s pointers from before the BeginRegistration
+	// Any model_t or image_t pointers from before the BeginRegistration
 	// are no longer valid after EndRegistration.
 	//
 	// Skins and images need to be differentiated, because skins
@@ -190,9 +193,9 @@ typedef struct
 	// an implicit "pics/" prepended to the name. (a pic name that starts with a
 	// slash will not use the "pics/" prefix or the ".pcx" postfix)
 	void	(*BeginRegistration) (const char *map);
-	struct model_s *(*RegisterModel) (const char *name);
-	struct image_s *(*RegisterSkin) (const char *name);
-	struct image_s *(*RegisterPic) (const char *name);
+	model_t* (*RegisterModel) (const char *name);
+	image_t* (*RegisterSkin) (const char *name);
+	image_t* (*RegisterPic) (const char *name);
 	void	(*SetSky) (const char *name, float rotate, vec3_t axis);
 	void	(*EndRegistration) (void);
 

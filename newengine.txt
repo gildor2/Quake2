@@ -120,3 +120,8 @@
   ! can use for GL::AllocDynamicMem()
 - AllocTempMem(size) -- alloc memory from large static buffer (for use in functions); may be, use
   "TMemoryPool<TEMP_MEM_SIZE> TempPool" for allocs
+
+-------------------- Names -----------------
+- BackEnd = renderer
+- FrontEnd = SceneGraph
+- Using skeletal animation = skinning; KeyFrameAnimation

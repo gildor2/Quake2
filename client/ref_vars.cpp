@@ -1,4 +1,4 @@
-#include "ref.h"
+#include "qcommon.h"
 
 cvar_t	*vid_ref;
 cvar_t	*r_fullscreen;

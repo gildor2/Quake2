@@ -19,7 +19,7 @@ extern	HINSTANCE	global_hInstance;
 #undef SHIFT_PRESSED
 #undef MOD_ALT
 
-#include "../qcommon/qcommon.h"
+#include "qcommon.h"
 
 extern HWND cl_hwnd;
 extern bool	ActiveApp, Minimized;
