@@ -91,6 +91,11 @@ typedef struct
 
 cvar_t	*fs_gamedirvar;
 
+// debugging
+static cvar_t	*fs_debug;
+#define DEBUG_LOG(msg)	if (fs_debug->integer) Com_Printf("^2%s", msg);
+
+
 static cvar_t	*fs_basedir;
 static cvar_t	*fs_cddir;
 static cvar_t	*fs_configfile;
@@ -471,6 +476,7 @@ void FS_CreatePath (char *path)
 {
 	char	*ofs;
 
+	DEBUG_LOG(va("path: %s\n", path));
 	for (ofs = path + 1; *ofs; ofs++)
 	{
 		if (*ofs == '/')
@@ -652,7 +658,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 			if (f = fopen (netpath, "rb"))
 			{
 				*file = AllocFileInternal (netpath, f, FT_NORMAL);
-				Com_DPrintf ("link: %s\n", netpath);
+				DEBUG_LOG(va("link: %s\n", netpath));
 				return FileLength (f);
 			}
 			*file = NULL;
@@ -668,7 +674,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 		gamePos = strlen (fs_cddir->string);
 		if (strncmp (filename, fs_cddir->string, gamePos))
 		{
-			Com_DPrintf ("FS_FOpenFile: bad path: %s\n", filename);
+			Com_DPrintf ("FS_FOpenFile: bad path %s\n", filename);
 			*file = NULL;
 			return -1;
 		}
@@ -707,7 +713,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 			{
 //				DebugPrintf ("\nAllocPakfile(\"%s\" in \"%s\")%s\n", pakname, pak->filename, is_zip_str[pak->isZip]);
 				fileFromPak = 1;
-				Com_DPrintf ("pfile: %s (%s)\n", pakname, pak->filename);
+				DEBUG_LOG(va("pfile: %s (%s)\n", pakname, pak->filename));
 				// open a new file on the pakfile
 				*file = AllocFileInternal (pak->filename, NULL, pak->isZip ? FT_ZPAK : FT_PAK);
 				(*(FILE2**)file)->pFile = pfile;
@@ -723,7 +729,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 
 				if (!(f = fopen (netpath, "rb"))) continue;
 				*file = AllocFileInternal (netpath, f, FT_NORMAL);
-				Com_DPrintf ("file: %s\n", netpath);
+				DEBUG_LOG(va("file: %s\n", netpath));
 				return FileLength (f);
 			}
 		}
@@ -733,7 +739,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 	if (gamelen && (f = fopen (filename, "rb")))
 	{
 		*file = AllocFileInternal (filename, f, FT_NORMAL);
-		Com_DPrintf ("file: %s\n", filename);
+		DEBUG_LOG(va("file: %s\n", filename));
 		return FileLength (f);
 	}
 
@@ -743,11 +749,11 @@ int FS_FOpenFile (char *filename, FILE **file)
 		{
 			*file = AllocFileInternal (filename, NULL, FT_ZMEM);
 			(*(FILE2**)file)->rFile = rf;
-			Com_DPrintf ("rfile: %s\n", filename);
+			DEBUG_LOG(va("rfile: %s\n", filename));
 			return rf->size;
 		}
 
-	Com_DPrintf ("FindFile: can't find %s\n", filename);
+	DEBUG_LOG(va("can't find file %s\n", filename));
 
 	*file = NULL;
 	return -1;
@@ -776,7 +782,7 @@ qboolean FS_FileExists (char *filename)
 	fileFromPak = 0;
 	Q_CopyFilename (buf, filename, sizeof(buf)-1);
 	filename = buf;
-	Com_DPrintf ("check: %s\n", filename);
+	DEBUG_LOG(va("check: %s\n", filename));
 
 	/*------------- check for links first ----------------------*/
 	for (link = fs_links; link; link = link->next)
@@ -874,14 +880,11 @@ Properly handles partial reads
 =================
 */
 void CDAudio_Stop (void);
-#define	MAX_READ	0x10000		// read in blocks of 64k (??)
 
 void FS_Read (void *buffer, int len, FILE *f)
 {
-	int		block, remaining;
 	int		read;
 	byte	*buf;
-	int		tries;
 	FILE2	*f2;
 	zip_file zfs;
 
@@ -957,33 +960,9 @@ void FS_Read (void *buffer, int len, FILE *f)
 	{
 		// read in chunks for progress bar (needed ??)
 		buf = (byte *)buffer;
-		remaining = len;
-		tries = 0;
-		while (remaining)
-		{
-			block = remaining;
-			if (block > MAX_READ)
-				block = MAX_READ;
-			read = fread (buf, 1, block, f2->file);
-			if (read == 0)
-			{
-				// we might have been trying to read from a CD
-				if (!tries)
-				{
-					Com_DPrintf ("FS_Read: 0 bytes read; retry ...\n");
-					tries = 1;
-					CDAudio_Stop ();
-				}
-				else
-					Com_Error (ERR_FATAL, "FS_Read: 0 bytes read");
-			}
-			if (read == -1)
-				Com_Error (ERR_FATAL, "FS_Read: -1 bytes read");
-
-			// do some progress bar thing here...
-			remaining -= read;
-			buf += read;
-		}
+		read = fread (buf, 1, len, f2->file);
+		if (read == -1)
+			Com_Error (ERR_FATAL, "FS_Read: -1 bytes read");
 	}
 }
 
@@ -1552,6 +1531,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigne
 	int		gamePos;
 
 	Q_CopyFilename (buf, name, sizeof(buf)-1);
+	DEBUG_LOG(va("list: %s\n", name));
 	name = buf;
 
 	/*	Make gamePos = index of first char in game directory part of source filename (after '/').
@@ -1825,10 +1805,10 @@ static void FS_Type_f (void)
 		return;
 	}
 	name = Cmd_Argv(1);
-	oldDev = developer->integer;
-	Cvar_SetInteger ("developer", 256);	// hack? or feature?
+	oldDev = fs_debug->integer;
+	Cvar_SetInteger ("fs_debug", 1);	//?? another way
 	len = FS_FOpenFile (name, &f);
-	Cvar_SetInteger ("developer", oldDev);
+	Cvar_SetInteger ("fs_debug", oldDev);
 	if (!f)
 	{
 		Com_Printf ("File \"%s\" is not found\n", name);
@@ -1878,7 +1858,8 @@ CVAR_BEGIN(vars)
 	// cddir <path>	   -- logically concatenates the cddir after the basedir for
 	// allows the game to run from outside the data tree
 	{&fs_cddir, "cddir", "", CVAR_NOSET},
-	{&fs_gamedirvar, "game", "", CVAR_LATCH|CVAR_SERVERINFO}
+	{&fs_gamedirvar, "game", "", CVAR_LATCH|CVAR_SERVERINFO},
+	CVAR_VAR(fs_debug, 0, 0)
 CVAR_END
 
 	CVAR_GET_VARS(vars);

@@ -1,6 +1,4 @@
-! map "trainstation": very slow (10-20ms) server (too much traces ?)
-? reimplement "showtrace" (rename cvar, make it with DrawTextXxx(), display every frame (com_speeds too!), update
-  every server frame (implemented with com_speeds ?? if so, remove "showtrace" cvar)
+! map "trainstation": very slow (10-20ms) server (AMD K6-2+)
 ! unpack PVS in LoadBsp(); use unpacked version in renderer and CM_InPVS() etc.
 ! check "OPCODE" collision detection library (is it suitable for BSP ?)
 
@@ -8,12 +6,8 @@
 KINGPIN:
   ! map "teehc2":
     - have entity "{ *3 }" ("noclass") (KP have error with it too)
-  ! map "dm_dukecity"
-    - room across the road of disco: have reflections
   - "worldspawn": "sounds"="2" -- what is it?
   - fire/steam
-  BUGS with RF2_SURF_ALPHA, map "rc1":
-    - "func_explosive"(??) - unbreakable ventillation doors (add flag for server: "don't pass bullets"?)
 FAKK:
   ? FS_FileInInPAK(const char *name)
   - qcommon.h: SAVEGAME_DIRECTORY "save", SAVEGAME_EXTENSION "sav", etc.
@@ -35,6 +29,7 @@ TRACE:
     limits with additional refining following traces)
     NOTE: cannot TRACE to (start - trace.endpos) - will produce different trace.frac
 
+- improve (speedup) MSG_WriteDir() with tables
 ! improve server and client communication (server should be able to set map loading screenshot)
 ? "dir" -> "ls"
 ! reimplement Cbuf_Execute(): need comment ('//') parsing (should go to another place)
@@ -52,7 +47,8 @@ DINPUT MOUSE BUGS/NOTES:
 - check behaviour when no DirectX installed (where ?)
 - add MOUSE4 ?
 - check DirectInput8
-*? add mouse cursor hiding (not always disappear with DInput after deactivate+activate)
+! add mouse cursor hiding (not always disappear with DInput after deactivate+activate)
+  to hide cursor: "in_mouse 1;in_mouse 2"
 
 ! improve memory management: allocate with alignment of 16 bytes (large blocks only ? Z_AllocAligned(size, align) func ?)
 - command for hiding files from pak: "pakhide <pakname> <filemask>" - non-reversive command, changes (be sure non-destructive
@@ -73,9 +69,6 @@ BSP:
 
 *** BUGS ***
 ! sometimes key_up skipped (or key_down spontaneously pressed)
-! (Win2K) when one client exits, server makes "Sys_Error(ERR_DROP,...)" (network error)
-- (Win2K, at home, where no IPX protocol) menu|join_server -- fatal error in user32.dll (should be ERR_DROP)
-  (no crush when launched with "noudp 1" -- R/O cvar)
 - map "temple2", "lavatube" -- waterfall: bullet sounds (change sound for water sparks, change place for water bullet sounds
   or something another ??)
 - command line: "+set cddir <dir>" (etc.) - will display error, when var will be parsed 2nd time
@@ -83,17 +76,13 @@ BSP:
 - Sys_Error(ERR_FATAL): will not restore mouse (not always ??!)
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
-- map "ground3_beta3": have (server, "MAX_ENTS=128"- related ?) bug "SZ_Overflow" (??) when spectating and flying from inside wall
+*? map "ground3_beta3": have (server, "MAX_ENTS=128"- related ?) bug "SZ_Overflow" (??) when spectating and flying from inside wall
   (see cl_ents.c MAX_PARSE_ENTITIES: seems, no more than 128 entities delta between frames)
 - prediction:
   - map "beachassault": ship's entry, when in "down" state -- drizzle
   - map "japan", lift, 3rd_person, going up with looking up -- camera drizzle (bad collision with lift entity)
-  *? have a small grenade-standing drizzle
 
 ? menu interface: appearing/disappearing fx (see itmastio etc.)
-
-- chasecam (see Q3 cgame)
-? eliminate all qsort's
 
 - bindtmp, aliastmp, aliaslist (now it is "alias <no-args>")
 
@@ -156,7 +145,6 @@ BSP:
   - add 2nd {viewcluster, leaf[].frame} set (1st for main scene, 2nd for portal) -- Q3 has recalculation of leaf visibility
     every frame twice, and without portal - once per few frames.
 - better alt-tabbing (with CDS()), better GLimp_InitGL() (reserve stencil (?), gl_depthBits)
-- disable auto-envmap when surface not from CONTENTS_WINDOW -- need Trace()/PointContents() to detect 
 ? place LoadMd2 outside ref_xxx and perform lovercase for a skin names
 - use GL_NV_fog_distance (?) / GL_EXT_fog_coord, GL_EXT_texture_filter_anisotropic (?)
 ! fog occlusion (for global fog) -- implement it like sky (occluded surface -> sky surface, sky -> fog color);

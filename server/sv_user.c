@@ -123,7 +123,7 @@ SV_Configstrings_f
 */
 void SV_Configstrings_f (void)
 {
-	int			start;
+	int		start, mid;
 
 	Com_DPrintf ("Configstrings() from %s\n", sv_client->name);
 
@@ -144,9 +144,8 @@ void SV_Configstrings_f (void)
 	start = atoi(Cmd_Argv(2));
 
 	// write a packet full of data
-
-	while ( sv_client->netchan.message.cursize < MAX_MSGLEN/2
-		&& start < MAX_CONFIGSTRINGS)
+	mid = sv_client->newprotocol ? MAX_MSGLEN / 2 : MAX_MSGLEN_OLD / 2;
+	while ( sv_client->netchan.message.cursize < mid && start < MAX_CONFIGSTRINGS)
 	{
 		if (sv.configstrings[start][0])
 		{
@@ -158,7 +157,6 @@ void SV_Configstrings_f (void)
 	}
 
 	// send next command
-
 	if (start == MAX_CONFIGSTRINGS)
 	{
 		MSG_WriteByte (&sv_client->netchan.message, svc_stufftext);
@@ -178,7 +176,7 @@ SV_Baselines_f
 */
 void SV_Baselines_f (void)
 {
-	int		start;
+	int		start, mid;
 	entity_state_t	nullstate;
 	entity_state_t	*base;
 
@@ -203,9 +201,8 @@ void SV_Baselines_f (void)
 	memset (&nullstate, 0, sizeof(nullstate));
 
 	// write a packet full of data
-
-	while ( sv_client->netchan.message.cursize <  MAX_MSGLEN/2
-		&& start < MAX_EDICTS)
+	mid = sv_client->newprotocol ? MAX_MSGLEN / 2 : MAX_MSGLEN_OLD / 2;
+	while ( sv_client->netchan.message.cursize < mid && start < MAX_EDICTS)
 	{
 		base = &sv.baselines[start];
 		if (base->modelindex || base->sound || base->effects)
@@ -217,7 +214,6 @@ void SV_Baselines_f (void)
 	}
 
 	// send next command
-
 	if (start == MAX_EDICTS)
 	{
 		MSG_WriteByte (&sv_client->netchan.message, svc_stufftext);
@@ -385,7 +381,7 @@ The client is going to disconnect, so remove the connection immediately
 void SV_Disconnect_f (void)
 {
 //	SV_EndRedirect ();
-	SV_DropClient (sv_client);
+	SV_DropClient (sv_client, NULL);	// "user disconnected" will be printed by game dll
 }
 
 
@@ -557,7 +553,7 @@ void SV_ExecuteClientMessage (client_t *cl)
 		if (net_message.readcount > net_message.cursize)
 		{
 			Com_Printf ("SV_ReadClientMessage: badread\n");
-			SV_DropClient (cl);
+			SV_DropClient (cl, NULL);
 			return;
 		}
 
@@ -569,7 +565,7 @@ void SV_ExecuteClientMessage (client_t *cl)
 		{
 		default:
 			Com_Printf ("SV_ReadClientMessage: unknown command char\n");
-			SV_DropClient (cl);
+			SV_DropClient (cl, NULL);
 			return;
 
 		case clc_nop:

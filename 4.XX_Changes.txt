@@ -83,6 +83,7 @@ Comments:
 - fixed binding to "semicolon", added "comma"
 - disabled mouse acceleration
 - fixed collision detection code to prevent from "blocked inside the opening door" and some other bugs
+- fixed "WSAECONRESET" error for Win2K (server was crushed when one client exits game)
 
 5. ADDONS
 ~~~~~~~~~
@@ -172,6 +173,7 @@ Configuration
 - cvar "cfgfile" -- may be set from command line; default - "config.cfg"
 - command "writeconfig filename[.cfg]" - write settings to file
 
+- command "wait": added parameter <num_frames>; default 1
 - added "players/model.lst": this file contains names of models, which gender should be female (always female for
   "female" and "crakhor")
 - added "sound/materials.lst" - contains sound description depended of texture name (almost HalfLife style)
@@ -185,6 +187,7 @@ Debugging
 - "r_drawfps" variable: display FPS when it is set
 - "r_playerpos" variable: when it is set to "1", player (spectator) world coordinates are shown
 - "r_sfx_pause 1" stops particles/fx; "r_sfx_pause 2" also disables particle/fx creation
+- "fs_debug" variable: when non-zero, most file system activity will be displayed on console
 
 
 - "r_saturation" variable: default 1 (all textures and lightmaps - as is), 0 - full grayscale

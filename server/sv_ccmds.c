@@ -88,63 +88,6 @@ void SV_SetMaster_f (void)
 
 
 /*
-==================
-SV_SetPlayer
-
-Sets sv_client and sv_player to the player with idnum Cmd_Argv(1)
-==================
-*/
-qboolean SV_SetPlayer (void)
-{
-	client_t	*cl;
-	int			i;
-	int			idnum;
-	char		*s;
-
-	if (Cmd_Argc() < 2)
-		return false;
-
-	s = Cmd_Argv(1);
-
-	// numeric values are just slot numbers
-	if (s[0] >= '0' && s[0] <= '9')
-	{
-		idnum = atoi(Cmd_Argv(1));
-		if (idnum < 0 || idnum >= maxclients->integer)
-		{
-			Com_WPrintf ("Bad client slot: %i\n", idnum);
-			return false;
-		}
-
-		sv_client = &svs.clients[idnum];
-		sv_player = sv_client->edict;
-		if (!sv_client->state)
-		{
-			Com_WPrintf ("Client %i is not active\n", idnum);
-			return false;
-		}
-		return true;
-	}
-
-	// check for a name match
-	for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
-	{
-		if (!cl->state)
-			continue;
-		if (!strcmp(cl->name, s))
-		{
-			sv_client = cl;
-			sv_player = sv_client->edict;
-			return true;
-		}
-	}
-
-	Com_WPrintf ("Userid %s is not on the server\n", s);
-	return false;
-}
-
-
-/*
 ===============================================================================
 
 SAVEGAME FILES
@@ -738,6 +681,62 @@ void SV_Savegame_f (void)
 
 /*
 ==================
+SV_SetPlayer
+
+Sets sv_client and sv_player to the player with idnum Cmd_Argv(1)
+==================
+*/
+static qboolean SV_SetPlayer (void)
+{
+	client_t *cl;
+	int		i, idnum;
+	char	*s;
+
+	if (Cmd_Argc() < 2)
+		return false;
+
+	s = Cmd_Argv(1);
+
+	// numeric values are just slot numbers
+	if (!s[1] && s[0] >= '0' && s[0] <= '9')
+	{
+		idnum = atoi (Cmd_Argv(1));
+		if (idnum < 0 || idnum >= maxclients->integer)
+		{
+			Com_WPrintf ("Bad client slot: %d\n", idnum);
+			return false;
+		}
+
+		sv_client = &svs.clients[idnum];
+		sv_player = sv_client->edict;
+		if (!sv_client->state)
+		{
+			Com_WPrintf ("Client %d is not active\n", idnum);
+			return false;
+		}
+		return true;
+	}
+
+	// check for a name match
+	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+	{
+		if (!cl->state)
+			continue;
+		if (!stricmp (cl->name, s))
+		{
+			sv_client = cl;
+			sv_player = sv_client->edict;
+			return true;
+		}
+	}
+
+	Com_WPrintf ("Userid %s is not on the server\n", s);
+	return false;
+}
+
+
+/*
+==================
 SV_Kick_f
 
 Kick a user off of the server
@@ -760,12 +759,41 @@ void SV_Kick_f (void)
 	if (!SV_SetPlayer ())
 		return;
 
-	SV_BroadcastPrintf (PRINT_HIGH, "%s was kicked\n", sv_client->name);
-	// print directly, because the dropped client won't get the
+	if (sv_client->netchan.remote_address.type == NA_LOOPBACK)
+	{
+		Com_WPrintf ("Cannot kick host player\n");
+		return;
+	}
+
+/*	// print directly, because the dropped client won't get the
 	// SV_BroadcastPrintf message
-	SV_ClientPrintf (sv_client, PRINT_HIGH, "You were kicked from the game\n");
-	SV_DropClient (sv_client);
-	sv_client->lastmessage = svs.realtime;	// min case there is a funny zombie
+	SV_ClientPrintf (sv_client, PRINT_HIGH, "You were kicked from the game\n"); */
+	SV_DropClient (sv_client, "was kicked");
+	sv_client->lastmessage = svs.realtime;			// min case there is a funny zombie
+}
+
+
+/*
+===========
+SV_DumpUser_f
+
+Examine all a users info strings
+===========
+*/
+void SV_DumpUser_f (void)
+{
+	if (Cmd_Argc() != 2)
+	{
+		Com_Printf ("Usage: info <userid>\n");
+		return;
+	}
+
+	if (!SV_SetPlayer ())
+		return;
+
+	Com_Printf ("userinfo\n");
+	Com_Printf ("--------\n");
+	Info_Print (sv_client->userinfo);
 }
 
 
@@ -785,7 +813,7 @@ void SV_Status_f (void)
 		Com_WPrintf ("No server running.\n");
 		return;
 	}
-	Com_Printf ("map              : %s\n", sv.name);
+	Com_Printf ("map: %s\n", sv.name);
 
 	Com_Printf ("num score ping name            lastmsg address               qport \n");
 	Com_Printf ("--- ----- ---- --------------- ------- --------------------- ------\n");
@@ -793,8 +821,7 @@ void SV_Status_f (void)
 	{
 		if (!cl->state)
 			continue;
-		Com_Printf ("%3i ", i);
-		Com_Printf ("%5i ", cl->edict->client->ps.stats[STAT_FRAGS]);
+		Com_Printf ("%3d %5d ", i, cl->edict->client->ps.stats[STAT_FRAGS]);
 
 		if (cl->state == cs_connected)
 			Com_Printf ("CNCT ");
@@ -803,25 +830,19 @@ void SV_Status_f (void)
 		else
 		{
 			ping = cl->ping < 9999 ? cl->ping : 9999;
-			Com_Printf ("%4i ", ping);
+			Com_Printf ("%4d ", ping);
 		}
 
 		Com_Printf ("%s", cl->name);
-		l = 16 - strlen(cl->name);
-		for (j=0 ; j<l ; j++)
-			Com_Printf (" ");
-
-		Com_Printf ("%7i ", svs.realtime - cl->lastmessage );
+		l = 16 - strlen (cl->name);
+		for (j = 0; j < l; j++) Com_Printf (" ");
 
 		s = NET_AdrToString ( cl->netchan.remote_address);
-		Com_Printf ("%s", s);
-		l = 22 - strlen(s);
-		for (j=0 ; j<l ; j++)
-			Com_Printf (" ");
+		Com_Printf ("%7d %s", svs.realtime - cl->lastmessage, s);
+		l = 22 - strlen (s);
+		for (j = 0; j < l; j++) Com_Printf (" ");
 
-		Com_Printf ("%5i", cl->netchan.qport);
-
-		Com_Printf ("\n");
+		Com_Printf ("%5d\n", cl->netchan.qport);
 	}
 	Com_Printf ("\n");
 }
@@ -887,31 +908,6 @@ void SV_Serverinfo_f (void)
 
 
 /*
-===========
-SV_DumpUser_f
-
-Examine all a users info strings
-===========
-*/
-void SV_DumpUser_f (void)
-{
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf ("Usage: info <userid>\n");
-		return;
-	}
-
-	if (!SV_SetPlayer ())
-		return;
-
-	Com_Printf ("userinfo\n");
-	Com_Printf ("--------\n");
-	Info_Print (sv_client->userinfo);
-
-}
-
-
-/*
 ==============
 SV_ServerRecord_f
 
@@ -933,25 +929,25 @@ void SV_ServerRecord_f (void)
 
 	if (svs.demofile)
 	{
-		Com_WPrintf ("Already recording.\n");
+		Com_WPrintf ("Already recording\n");
 		return;
 	}
 
 	if (sv.state != ss_game)
 	{
-		Com_WPrintf ("You must be in a level to record.\n");
+		Com_WPrintf ("You must be in a level to record\n");
 		return;
 	}
 
 	// open the demo file
 	Com_sprintf (name, sizeof(name), "%s/demos/%s.dm2", FS_Gamedir(), Cmd_Argv(1));
 
-	Com_Printf ("recording to %s.\n", name);
+	Com_Printf ("recording to %s\n", name);
 	FS_CreatePath (name);
 	svs.demofile = fopen (name, "wb");
 	if (!svs.demofile)
 	{
-		Com_WPrintf ("ERROR: couldn't open.\n");
+		Com_WPrintf ("ERROR: couldn't open\n");
 		return;
 	}
 

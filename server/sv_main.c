@@ -71,8 +71,11 @@ or unwillingly.  This is NOT called if the entire server is quiting
 or crashing.
 =====================
 */
-void SV_DropClient (client_t *drop)
+void SV_DropClient (client_t *drop, char *info)
 {
+	if (info)
+		SV_BroadcastPrintf (PRINT_HIGH, "%s %s\n", drop->name, info);
+
 	// add the disconnect
 	MSG_WriteByte (&drop->netchan.message, svc_disconnect);
 
@@ -234,7 +237,7 @@ void SVC_GetChallenge (void)
 	int		oldestTime;
 
 	oldest = 0;
-	oldestTime = 0x7fffffff;
+	oldestTime = 0x7FFFFFFF;
 
 	// see if we already have a challenge for this ip
 	for (i = 0 ; i < MAX_CHALLENGES ; i++)
@@ -251,7 +254,7 @@ void SVC_GetChallenge (void)
 	if (i == MAX_CHALLENGES)
 	{
 		// overwrite the oldest
-		svs.challenges[oldest].challenge = rand() & 0x7fff;
+		svs.challenges[oldest].challenge = rand() & 0x7FFF;
 		svs.challenges[oldest].adr = net_from;
 		svs.challenges[oldest].time = curtime;
 		i = oldest;
@@ -695,8 +698,7 @@ void SV_CheckTimeouts (void)
 		}
 		if ((cl->state == cs_connected || cl->state == cs_spawned) && cl->lastmessage < droppoint)
 		{
-			SV_BroadcastPrintf (PRINT_HIGH, "%s timed out\n", cl->name);
-			SV_DropClient (cl);
+			SV_DropClient (cl, "timed out");
 			cl->state = cs_free;	// don't bother with zombie state
 		}
 	}
@@ -1187,31 +1189,6 @@ to totally exit after returning from this function.
 */
 void SV_FinalMessage (char *message, qboolean reconnect)
 {
-	int			i;
-	client_t	*cl;
-
-	SZ_Clear (&net_message);
-	MSG_WriteByte (&net_message, svc_print);
-	MSG_WriteByte (&net_message, PRINT_HIGH);
-	MSG_WriteString (&net_message, message);
-
-	if (reconnect)
-		MSG_WriteByte (&net_message, svc_reconnect);
-	else
-		MSG_WriteByte (&net_message, svc_disconnect);
-
-	// send it twice
-	// stagger the packets to crutch operating system limited buffers
-
-	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
-		if (cl->state >= cs_connected)
-			Netchan_Transmit (&cl->netchan, net_message.cursize
-			, net_message.data);
-
-	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
-		if (cl->state >= cs_connected)
-			Netchan_Transmit (&cl->netchan, net_message.cursize
-			, net_message.data);
 }
 
 
@@ -1227,7 +1204,27 @@ before Sys_Quit or Sys_Error
 void SV_Shutdown (char *finalmsg, qboolean reconnect)
 {
 	if (svs.clients)
-		SV_FinalMessage (finalmsg, reconnect);
+	{
+		int			i;
+		client_t	*cl;
+
+		for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+		{
+			if (cl->state < cs_connected)
+				continue;
+
+			SZ_Clear (&net_message);
+			MSG_WriteByte (&net_message, svc_print);
+			MSG_WriteByte (&net_message, PRINT_HIGH);
+			if (cl->newprotocol && !reconnect)	// colorize exit message
+				MSG_WriteString (&net_message, va("^1%s", finalmsg));
+			else
+				MSG_WriteString (&net_message, finalmsg);
+			MSG_WriteByte (&net_message, reconnect ? svc_reconnect : svc_disconnect);
+
+			Netchan_Transmit (&cl->netchan, net_message.cursize, net_message.data);
+		}
+	}
 
 	Master_Shutdown ();
 	SV_ShutdownGameProgs ();

@@ -46,6 +46,16 @@
      - nearest		== 16
      - <float value>
   -------------------- FAKK2: --------------------
+   17) sort (Alice, may be FAKK2 too ...)
+     - portal           == 1
+     - sky              == 3
+     - opaque           == 4
+     - decal            == 5
+     - seeThrough       == 6
+     - banner           == 7
+     - underwater       == 9
+     - additive         == 11
+     - nearest          == 17
    18) if <0|1|mtex|no_mtex> / endif
    19) fogonly  (required for fog ??)
    20) light <value>    -- lightflare for surface
@@ -154,9 +164,9 @@
 - tcMod scroll <fromEntity> <fromEntity>
 - tcMod rotate <fromEntity>
 - tcMod offset <fromEntity> <fromEntity>
-- deformVertexes wave <div> <waveform> <wave> <fromEntity> <fromEntity> <fromEntity> <fromEntity>
-- alphaGen wave <waveform> <fromEntity> <fromEntity> <fromEntity> <fromEntity>
-- rgbGen wave <waveform> <fromEntity> <fromEntity> <fromEntity> <fromEntity>
+- deformVertexes wave <div> <func> <fromEntity> <fromEntity> <fromEntity> <fromEntity>
+- alphaGen wave <func> <fromEntity> <fromEntity> <fromEntity> <fromEntity>
+- rgbGen wave <func> <fromEntity> <fromEntity> <fromEntity> <fromEntity>
 - frameFromEntity                 (for animmap)
 
 Script commands:
@@ -182,3 +192,5 @@ Alice:
   - global == globalAlpha
   - fromentity ( == entity)
   - fromclient ( == vertex)
+- deformVertexes
+  - wavenormal <div> <f> <v1> <v2> <v3> <func> <base> <amp> <phase> <freq>

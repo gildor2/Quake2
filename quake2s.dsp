@@ -425,6 +425,14 @@ SOURCE=.\ref_gl\gl_shader.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\ref_gl\gl_sky.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_sky.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ref_gl\gl_world.c
 # End Source File
 # Begin Source File

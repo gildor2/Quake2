@@ -2,6 +2,41 @@
 #define __GL_BACKEND_INCLUDED__
 
 
+#include "gl_model.h"
+
+// per-shader limits
+#define MAX_VERTEXES	4096		// 1024 in Q3, 2048 in Q2, but have VALID model with more than 2048 verts
+#define MAX_INDEXES		(MAX_VERTEXES*6)
+
+
+typedef struct
+{
+	float	xyz[3];
+	float	pad;
+} bufVertex_t;
+
+
+typedef struct
+{
+	float	tex[2];
+} bufTexCoord_t;
+
+// some data may be grouped by few vertexes
+typedef struct
+{
+	int		numVerts;
+	int		lmWidth;
+	vec3_t	normal;
+	vec3_t	*axis;
+	surfDlight_t *dlight;
+} bufExtra_t;
+
+
+extern int gl_numVerts, gl_numIndexes, gl_numExtra;
+extern int			gl_indexesArray[MAX_INDEXES];
+extern bufExtra_t	gl_extra[MAX_VERTEXES];
+
+
 #define MAX_BACKEND_COMMANDS	(64 * 1024)		// test results: 33K usage for 1600x1200 with a full console
 extern byte backendCommands[MAX_BACKEND_COMMANDS];
 extern int	backendCmdSize;

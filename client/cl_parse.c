@@ -683,12 +683,6 @@ void CL_ParseStartSoundPacket(void)
 }
 
 
-void SHOWNET(char *s)
-{
-	if (cl_shownet->integer >= 2)
-		Com_Printf ("%3i:%s\n", net_message.readcount-1, s);
-}
-
 /*
 =====================
 CL_ParseServerMessage
@@ -700,18 +694,14 @@ void CL_ParseServerMessage (void)
 	char		*s;
 	int			i;
 
-//
-// if recording demos, copy the message out
-//
+	// if recording demos, copy the message out
 	if (cl_shownet->integer == 1)
 		Com_Printf ("%i ",net_message.cursize);
 	else if (cl_shownet->integer >= 2)
 		Com_Printf ("------------------\n");
 
 
-//
-// parse the message
-//
+	// parse the message
 	while (1)
 	{
 		if (net_message.readcount > net_message.cursize)
@@ -731,12 +721,12 @@ void CL_ParseServerMessage (void)
 		if (cl_shownet->integer >= 2)
 		{
 			if (!svc_strings[cmd])
-				Com_Printf ("%3i:BAD CMD %i\n", net_message.readcount-1,cmd);
+				Com_WPrintf ("%3d:bad cmd %d\n", net_message.readcount-1,cmd);
 			else
 				SHOWNET(svc_strings[cmd]);
 		}
 
-	// other commands
+		// other commands
 		switch (cmd)
 		{
 		default:
@@ -748,7 +738,7 @@ void CL_ParseServerMessage (void)
 			break;
 
 		case svc_disconnect:
-			Com_Error (ERR_DISCONNECT,"Server disconnected\n");
+			Com_Error (ERR_DISCONNECT, "Server disconnected\n");	// this message will not appear
 			break;
 
 		case svc_reconnect:
@@ -840,10 +830,8 @@ void CL_ParseServerMessage (void)
 
 	CL_AddNetgraph ();
 
-	//
 	// we don't know if it is ok to save a demo message until
 	// after we have parsed the frame
-	//
 	if (cls.demorecording && !cls.demowaiting)
 		CL_WriteDemoMessage ();
 

@@ -219,8 +219,8 @@ int CL_ParseEntityBits (unsigned *bits)
 	}
 
 	// count the bits for net profiling
-	for (i=0 ; i<32 ; i++)
-		if (total&(1<<i))
+	for (i = 0; i < 32; i++)
+		if (total & (1<<i))
 			bitcounts[i]++;
 
 	if (total & U_NUMBER16)
@@ -410,18 +410,17 @@ void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 	{
 		newnum = CL_ParseEntityBits (&bits);
 		if (newnum >= MAX_EDICTS)
-			Com_Error (ERR_DROP,"CL_ParsePacketEntities: bad number:%i", newnum);
+			Com_Error (ERR_DROP,"CL_ParsePacketEntities: bad number: %d", newnum);
 
 		if (net_message.readcount > net_message.cursize)
 			Com_Error (ERR_DROP,"CL_ParsePacketEntities: end of message");
 
-		if (!newnum)
-			break;
+		if (!newnum) break;
 
 		while (oldnum < newnum)
 		{	// one or more entities from the old packet are unchanged
 			if (cl_shownet->integer == 3)
-				Com_Printf ("   unchanged: %i\n", oldnum);
+				Com_Printf ("   unchanged: %d\n", oldnum);
 			CL_DeltaEntity (newframe, oldnum, oldstate, 0);
 
 			oldindex++;
@@ -438,7 +437,7 @@ void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 		if (bits & U_REMOVE)
 		{	// the entity present in oldframe is not in the current frame
 			if (cl_shownet->integer == 3)
-				Com_Printf ("   remove: %i\n", newnum);
+				Com_Printf ("   remove: %d\n", newnum);
 			if (oldnum != newnum)
 				Com_Printf ("U_REMOVE: oldnum != newnum\n");
 
@@ -457,7 +456,7 @@ void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 		if (oldnum == newnum)
 		{	// delta from previous state
 			if (cl_shownet->integer == 3)
-				Com_Printf ("   delta: %i\n", newnum);
+				Com_Printf ("   delta: %d\n", newnum);
 			CL_DeltaEntity (newframe, newnum, oldstate, bits);
 
 			oldindex++;
@@ -475,18 +474,17 @@ void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 		if (oldnum > newnum)
 		{	// delta from baseline
 			if (cl_shownet->integer == 3)
-				Com_Printf ("   baseline: %i\n", newnum);
+				Com_Printf ("   baseline: %d\n", newnum);
 			CL_DeltaEntity (newframe, newnum, &cl_entities[newnum].baseline, bits);
 			continue;
 		}
-
 	}
 
 	// any remaining entities in the old frame are copied over
 	while (oldnum != 99999)
 	{	// one or more entities from the old packet are unchanged
 		if (cl_shownet->integer == 3)
-			Com_Printf ("   unchanged: %i\n", oldnum);
+			Com_Printf ("   unchanged: %d\n", oldnum);
 		CL_DeltaEntity (newframe, oldnum, oldstate, 0);
 
 		oldindex++;
@@ -525,9 +523,7 @@ void CL_ParsePlayerstate (frame_t *oldframe, frame_t *newframe)
 
 	flags = MSG_ReadShort (&net_message);
 
-	//
 	// parse the pmove_state_t
-	//
 	if (flags & PS_M_TYPE)
 		state->pmove.pm_type = MSG_ReadByte (&net_message);
 
@@ -1139,6 +1135,18 @@ static void CL_AddPacketEntities (void)
 			}
 		}
 
+		// add glow around player with COLOR_SHELL
+		if (renderfx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE))
+		{
+			float	r, g, b;
+
+			r = g = b = 0.2;
+			if (renderfx & RF_SHELL_RED)	r = 1;
+			if (renderfx & RF_SHELL_GREEN)	g = 1;
+			if (renderfx & RF_SHELL_BLUE)	b = 1;
+			V_AddLight (ent.origin, 96 + (rand() & 15), r, g, b);
+		}
+
 		if (s1->number == cl.playernum+1)
 		{
 			ent.flags |= RF_VIEWERMODEL;	// only draw from mirrors
@@ -1185,17 +1193,6 @@ static void CL_AddPacketEntities (void)
 //pmm
 		// add to refresh list
 		AddEntityWithEffects (&ent, renderfx);
-		// add glow around player
-		if (renderfx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE))
-		{
-			float	r, g, b;
-
-			r = g = b = 0.2;
-			if (renderfx & RF_SHELL_RED)	r = 1;
-			if (renderfx & RF_SHELL_GREEN)	g = 1;
-			if (renderfx & RF_SHELL_BLUE)	b = 1;
-			V_AddLight (ent.origin, 64 + (rand() & 15), r, g, b);
-		}
 
 		ent.skin = NULL;		// never use a custom skin on others
 		ent.skinnum = 0;

@@ -180,11 +180,7 @@ void Com_DPrintf (char *fmt, ...)
 	va_start (argptr,fmt);
 	vsprintf (msg,fmt,argptr);
 	va_end (argptr);
-
-	if (developer->integer == 256)
-		Com_Printf ("%s", msg);
-	else
-		Com_Printf ("^4%s", msg);
+	Com_Printf ("^4%s", msg);
 	if (developer->integer == 2) DebugPrintf ("%s", msg);
 }
 
@@ -490,12 +486,10 @@ void MSG_WriteLong (sizebuf_t *sb, int c)
 
 void MSG_WriteFloat (sizebuf_t *sb, float f)
 {
-	union
-	{
+	union {
 		float	f;
-		int	l;
+		int		l;
 	} dat;
-
 
 	dat.f = f;
 	dat.l = LittleLong (dat.l);
@@ -538,47 +532,29 @@ void MSG_WriteDeltaUsercmd (sizebuf_t *buf, usercmd_t *from, usercmd_t *cmd)
 {
 	int		bits;
 
-//
-// send the movement message
-//
+	// send the movement message
 	bits = 0;
-	if (cmd->angles[0] != from->angles[0])
-		bits |= CM_ANGLE1;
-	if (cmd->angles[1] != from->angles[1])
-		bits |= CM_ANGLE2;
-	if (cmd->angles[2] != from->angles[2])
-		bits |= CM_ANGLE3;
-	if (cmd->forwardmove != from->forwardmove)
-		bits |= CM_FORWARD;
-	if (cmd->sidemove != from->sidemove)
-		bits |= CM_SIDE;
-	if (cmd->upmove != from->upmove)
-		bits |= CM_UP;
-	if (cmd->buttons != from->buttons)
-		bits |= CM_BUTTONS;
-	if (cmd->impulse != from->impulse)
-		bits |= CM_IMPULSE;
+	if (cmd->angles[0] != from->angles[0])		bits |= CM_ANGLE1;
+	if (cmd->angles[1] != from->angles[1])		bits |= CM_ANGLE2;
+	if (cmd->angles[2] != from->angles[2])		bits |= CM_ANGLE3;
+	if (cmd->forwardmove != from->forwardmove)	bits |= CM_FORWARD;
+	if (cmd->sidemove != from->sidemove)		bits |= CM_SIDE;
+	if (cmd->upmove != from->upmove)			bits |= CM_UP;
+	if (cmd->buttons != from->buttons)			bits |= CM_BUTTONS;
+	if (cmd->impulse != from->impulse)			bits |= CM_IMPULSE;
 
     MSG_WriteByte (buf, bits);
 
-	if (bits & CM_ANGLE1)
-		MSG_WriteShort (buf, cmd->angles[0]);
-	if (bits & CM_ANGLE2)
-		MSG_WriteShort (buf, cmd->angles[1]);
-	if (bits & CM_ANGLE3)
-		MSG_WriteShort (buf, cmd->angles[2]);
+	if (bits & CM_ANGLE1)	MSG_WriteShort (buf, cmd->angles[0]);
+	if (bits & CM_ANGLE2)	MSG_WriteShort (buf, cmd->angles[1]);
+	if (bits & CM_ANGLE3)	MSG_WriteShort (buf, cmd->angles[2]);
 
-	if (bits & CM_FORWARD)
-		MSG_WriteShort (buf, cmd->forwardmove);
-	if (bits & CM_SIDE)
-	  	MSG_WriteShort (buf, cmd->sidemove);
-	if (bits & CM_UP)
-		MSG_WriteShort (buf, cmd->upmove);
+	if (bits & CM_FORWARD)	MSG_WriteShort (buf, cmd->forwardmove);
+	if (bits & CM_SIDE)	  	MSG_WriteShort (buf, cmd->sidemove);
+	if (bits & CM_UP)		MSG_WriteShort (buf, cmd->upmove);
 
- 	if (bits & CM_BUTTONS)
-	  	MSG_WriteByte (buf, cmd->buttons);
- 	if (bits & CM_IMPULSE)
-	    MSG_WriteByte (buf, cmd->impulse);
+ 	if (bits & CM_BUTTONS) 	MSG_WriteByte (buf, cmd->buttons);
+ 	if (bits & CM_IMPULSE)	MSG_WriteByte (buf, cmd->impulse);
 
     MSG_WriteByte (buf, cmd->msec);
 	MSG_WriteByte (buf, cmd->lightlevel);
@@ -598,7 +574,7 @@ void MSG_WriteDir (sizebuf_t *sb, vec3_t dir)
 
 	bestd = 0;
 	best = 0;
-	for (i=0 ; i<NUMVERTEXNORMALS ; i++)
+	for (i = 0; i < NUMVERTEXNORMALS; i++)
 	{
 		d = DotProduct (dir, bytedirs[i]);
 		if (d > bestd)
@@ -639,27 +615,21 @@ void MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *
 	if (to->number >= MAX_EDICTS)
 		Com_Error (ERR_FATAL, "Entity number >= MAX_EDICTS");
 
-// send an update
+	// send an update
 	bits = 0;
 
 	if (to->number >= 256)
 		bits |= U_NUMBER16;		// number8 is implicit otherwise
 
-	if (to->origin[0] != from->origin[0])
-		bits |= U_ORIGIN1;
-	if (to->origin[1] != from->origin[1])
-		bits |= U_ORIGIN2;
-	if (to->origin[2] != from->origin[2])
-		bits |= U_ORIGIN3;
+	if (to->origin[0] != from->origin[0])	bits |= U_ORIGIN1;
+	if (to->origin[1] != from->origin[1])	bits |= U_ORIGIN2;
+	if (to->origin[2] != from->origin[2])	bits |= U_ORIGIN3;
 
-	if ( to->angles[0] != from->angles[0] )
-		bits |= U_ANGLE1;
-	if ( to->angles[1] != from->angles[1] )
-		bits |= U_ANGLE2;
-	if ( to->angles[2] != from->angles[2] )
-		bits |= U_ANGLE3;
+	if (to->angles[0] != from->angles[0])	bits |= U_ANGLE1;
+	if (to->angles[1] != from->angles[1])	bits |= U_ANGLE2;
+	if (to->angles[2] != from->angles[2])	bits |= U_ANGLE3;
 
-	if ( to->skinnum != from->skinnum )
+	if (to->skinnum != from->skinnum)
 	{
 		if ((unsigned)to->skinnum < 256)
 			bits |= U_SKIN8;
@@ -669,7 +639,7 @@ void MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *
 			bits |= (U_SKIN8|U_SKIN16);
 	}
 
-	if ( to->frame != from->frame )
+	if (to->frame != from->frame)
 	{
 		if (to->frame < 256)
 			bits |= U_FRAME8;
@@ -677,7 +647,7 @@ void MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *
 			bits |= U_FRAME16;
 	}
 
-	if ( to->effects != from->effects )
+	if (to->effects != from->effects)
 	{
 		if (to->effects < 256)
 			bits |= U_EFFECTS8;
@@ -687,7 +657,7 @@ void MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *
 			bits |= U_EFFECTS8|U_EFFECTS16;
 	}
 
-	if ( to->renderfx != from->renderfx )
+	if (to->renderfx != from->renderfx)
 	{
 		if (to->renderfx < 256)
 			bits |= U_RENDERFX8;
@@ -697,59 +667,49 @@ void MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *
 			bits |= U_RENDERFX8|U_RENDERFX16;
 	}
 
-	if ( to->solid != from->solid )
-		bits |= U_SOLID;
+	if (to->solid != from->solid)		bits |= U_SOLID;
 
 	// event is not delta compressed, just 0 compressed
-	if ( to->event  )
-		bits |= U_EVENT;
+	if (to->event)						bits |= U_EVENT;
 
-	if ( to->modelindex != from->modelindex )
-		bits |= U_MODEL;
-	if ( to->modelindex2 != from->modelindex2 )
-		bits |= U_MODEL2;
-	if ( to->modelindex3 != from->modelindex3 )
-		bits |= U_MODEL3;
-	if ( to->modelindex4 != from->modelindex4 )
-		bits |= U_MODEL4;
+	if (to->modelindex != from->modelindex)		bits |= U_MODEL;
+	if (to->modelindex2 != from->modelindex2)	bits |= U_MODEL2;
+	if (to->modelindex3 != from->modelindex3)	bits |= U_MODEL3;
+	if (to->modelindex4 != from->modelindex4)	bits |= U_MODEL4;
 
-	if ( to->sound != from->sound )
-		bits |= U_SOUND;
+	if (to->sound != from->sound)		bits |= U_SOUND;
 
-	if (newentity || (to->renderfx & RF_BEAM))
-		bits |= U_OLDORIGIN;
+	if (newentity || (to->renderfx & RF_BEAM))	bits |= U_OLDORIGIN;
 
-	//
 	// write the message
-	//
 	if (!bits && !force)
 		return;		// nothing to send!
 
 	//----------
 
-	if (bits & 0xff000000)
+	if (bits & 0xFF000000)
 		bits |= U_MOREBITS3 | U_MOREBITS2 | U_MOREBITS1;
-	else if (bits & 0x00ff0000)
+	else if (bits & 0x00FF0000)
 		bits |= U_MOREBITS2 | U_MOREBITS1;
-	else if (bits & 0x0000ff00)
+	else if (bits & 0x0000FF00)
 		bits |= U_MOREBITS1;
 
-	MSG_WriteByte (msg,	bits&255 );
+	MSG_WriteByte (msg,	bits & 0xFF);
 
-	if (bits & 0xff000000)
+	if (bits & 0xFF000000)
 	{
-		MSG_WriteByte (msg,	(bits>>8)&255 );
-		MSG_WriteByte (msg,	(bits>>16)&255 );
-		MSG_WriteByte (msg,	(bits>>24)&255 );
+		MSG_WriteByte (msg,	(bits>>8)&255);
+		MSG_WriteByte (msg,	(bits>>16)&255);
+		MSG_WriteByte (msg,	(bits>>24)&255);
 	}
-	else if (bits & 0x00ff0000)
+	else if (bits & 0x00FF0000)
 	{
-		MSG_WriteByte (msg,	(bits>>8)&255 );
-		MSG_WriteByte (msg,	(bits>>16)&255 );
+		MSG_WriteByte (msg,	(bits>>8)&255);
+		MSG_WriteByte (msg,	(bits>>16)&255);
 	}
-	else if (bits & 0x0000ff00)
+	else if (bits & 0x0000FF00)
 	{
-		MSG_WriteByte (msg,	(bits>>8)&255 );
+		MSG_WriteByte (msg,	(bits>>8)&255);
 	}
 
 	//----------
@@ -759,19 +719,13 @@ void MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *
 	else
 		MSG_WriteByte (msg,	to->number);
 
-	if (bits & U_MODEL)
-		MSG_WriteByte (msg,	to->modelindex);
-	if (bits & U_MODEL2)
-		MSG_WriteByte (msg,	to->modelindex2);
-	if (bits & U_MODEL3)
-		MSG_WriteByte (msg,	to->modelindex3);
-	if (bits & U_MODEL4)
-		MSG_WriteByte (msg,	to->modelindex4);
+	if (bits & U_MODEL)		MSG_WriteByte (msg,	to->modelindex);
+	if (bits & U_MODEL2)	MSG_WriteByte (msg,	to->modelindex2);
+	if (bits & U_MODEL3)	MSG_WriteByte (msg,	to->modelindex3);
+	if (bits & U_MODEL4)	MSG_WriteByte (msg,	to->modelindex4);
 
-	if (bits & U_FRAME8)
-		MSG_WriteByte (msg, to->frame);
-	if (bits & U_FRAME16)
-		MSG_WriteShort (msg, to->frame);
+	if (bits & U_FRAME8)	MSG_WriteByte (msg, to->frame);
+	if (bits & U_FRAME16)	MSG_WriteShort (msg, to->frame);
 
 	if ((bits & U_SKIN8) && (bits & U_SKIN16))		//used for laser colors
 		MSG_WriteLong (msg, to->skinnum);
@@ -795,19 +749,13 @@ void MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *
 	else if (bits & U_RENDERFX16)
 		MSG_WriteShort (msg, to->renderfx);
 
-	if (bits & U_ORIGIN1)
-		MSG_WriteCoord (msg, to->origin[0]);
-	if (bits & U_ORIGIN2)
-		MSG_WriteCoord (msg, to->origin[1]);
-	if (bits & U_ORIGIN3)
-		MSG_WriteCoord (msg, to->origin[2]);
+	if (bits & U_ORIGIN1)	MSG_WriteCoord (msg, to->origin[0]);
+	if (bits & U_ORIGIN2)	MSG_WriteCoord (msg, to->origin[1]);
+	if (bits & U_ORIGIN3)	MSG_WriteCoord (msg, to->origin[2]);
 
-	if (bits & U_ANGLE1)
-		MSG_WriteAngle(msg, to->angles[0]);
-	if (bits & U_ANGLE2)
-		MSG_WriteAngle(msg, to->angles[1]);
-	if (bits & U_ANGLE3)
-		MSG_WriteAngle(msg, to->angles[2]);
+	if (bits & U_ANGLE1) 	MSG_WriteAngle(msg, to->angles[0]);
+	if (bits & U_ANGLE2) 	MSG_WriteAngle(msg, to->angles[1]);
+	if (bits & U_ANGLE3) 	MSG_WriteAngle(msg, to->angles[2]);
 
 	if (bits & U_OLDORIGIN)
 	{
@@ -816,12 +764,9 @@ void MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *
 		MSG_WriteCoord (msg, to->old_origin[2]);
 	}
 
-	if (bits & U_SOUND)
-		MSG_WriteByte (msg, to->sound);
-	if (bits & U_EVENT)
-		MSG_WriteByte (msg, to->event);
-	if (bits & U_SOLID)
-		MSG_WriteShort (msg, to->solid);
+	if (bits & U_SOUND)  	MSG_WriteByte (msg, to->sound);
+	if (bits & U_EVENT)  	MSG_WriteByte (msg, to->event);
+	if (bits & U_SOLID)  	MSG_WriteShort (msg, to->solid);
 }
 
 
@@ -990,33 +935,25 @@ void MSG_ReadDeltaUsercmd (sizebuf_t *msg_read, usercmd_t *from, usercmd_t *move
 
 	bits = MSG_ReadByte (msg_read);
 
-// read current angles
-	if (bits & CM_ANGLE1)
-		move->angles[0] = MSG_ReadShort (msg_read);
-	if (bits & CM_ANGLE2)
-		move->angles[1] = MSG_ReadShort (msg_read);
-	if (bits & CM_ANGLE3)
-		move->angles[2] = MSG_ReadShort (msg_read);
+	// read current angles
+	if (bits & CM_ANGLE1)	move->angles[0] = MSG_ReadShort (msg_read);
+	if (bits & CM_ANGLE2)	move->angles[1] = MSG_ReadShort (msg_read);
+	if (bits & CM_ANGLE3)	move->angles[2] = MSG_ReadShort (msg_read);
 
-// read movement
-	if (bits & CM_FORWARD)
-		move->forwardmove = MSG_ReadShort (msg_read);
-	if (bits & CM_SIDE)
-		move->sidemove = MSG_ReadShort (msg_read);
-	if (bits & CM_UP)
-		move->upmove = MSG_ReadShort (msg_read);
+	// read movement
+	if (bits & CM_FORWARD)	move->forwardmove = MSG_ReadShort (msg_read);
+	if (bits & CM_SIDE)   	move->sidemove = MSG_ReadShort (msg_read);
+	if (bits & CM_UP)     	move->upmove = MSG_ReadShort (msg_read);
 
-// read buttons
-	if (bits & CM_BUTTONS)
-		move->buttons = MSG_ReadByte (msg_read);
+	// read buttons
+	if (bits & CM_BUTTONS)	move->buttons = MSG_ReadByte (msg_read);
 
-	if (bits & CM_IMPULSE)
-		move->impulse = MSG_ReadByte (msg_read);
+	if (bits & CM_IMPULSE)	move->impulse = MSG_ReadByte (msg_read);
 
-// read time to run command
+	// read time to run command
 	move->msec = MSG_ReadByte (msg_read);
 
-// read the light level
+	// read the light level
 	move->lightlevel = MSG_ReadByte (msg_read);
 }
 
@@ -1025,7 +962,7 @@ void MSG_ReadData (sizebuf_t *msg_read, void *data, int len)
 {
 	int		i;
 
-	for (i=0 ; i<len ; i++)
+	for (i = 0; i < len; i++)
 		((byte *)data)[i] = MSG_ReadByte (msg_read);
 }
 
@@ -1048,8 +985,10 @@ void SZ_Clear (sizebuf_t *buf)
 void *SZ_GetSpace (sizebuf_t *buf, int length)
 {
 	void	*data;
+	int		need;
 
-	if (buf->cursize + length > buf->maxsize)
+	need = buf->cursize + length;
+	if (need > buf->maxsize)
 	{
 		if (!buf->allowoverflow)
 			Com_Error (ERR_FATAL, "SZ_GetSpace: overflow without allowoverflow set");
@@ -1057,13 +996,13 @@ void *SZ_GetSpace (sizebuf_t *buf, int length)
 		if (length > buf->maxsize)
 			Com_Error (ERR_FATAL, "SZ_GetSpace: %i is > full buffer size", length);
 
-		Com_Printf ("SZ_GetSpace: overflow\n");
+		Com_Printf ("SZ_GetSpace: overflow (max=%d, need=%d)\n", buf->maxsize, need);
 		SZ_Clear (buf);
 		buf->overflowed = true;
 	}
 
 	data = buf->data + buf->cursize;
-	buf->cursize += length;
+	buf->cursize = need;
 
 	return data;
 }
@@ -1328,12 +1267,12 @@ byte	COM_BlockSequenceCRCByte (byte *base, int length, int sequence)
 
 //========================================================
 
-float	frand(void)
+float frand(void)
 {
 	return (rand()&32767) * (1.0f/32767);
 }
 
-float	crand(void)
+float crand(void)
 {
 	return (rand()&32767) * (2.0f/32767) - 1;
 }
@@ -1456,6 +1395,7 @@ Qcommon_Frame
 extern	int c_traces, c_brush_traces;
 extern	int	c_pointcontents;
 
+//??
 #define SV_PROFILE
 
 #ifdef SV_PROFILE
@@ -1496,13 +1436,10 @@ void Qcommon_Frame (int msec)
 			if (log_stats_file)
 				fprintf (log_stats_file, "entities,dlights,parts,frame time\n");
 		}
-		else
+		else if (log_stats_file)
 		{
-			if (log_stats_file)
-			{
-				fclose (log_stats_file);
-				log_stats_file = NULL;
-			}
+			fclose (log_stats_file);
+			log_stats_file = NULL;
 		}
 	}
 

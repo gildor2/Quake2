@@ -887,6 +887,7 @@ void GL_ResetShaders (void)
 	sh.cullMode = CULL_NONE;
 	st[0].rgbGenType = RGBGEN_VERTEX;
 #if 0
+//	st[0].alphaGenType = ALPHAGEN_VERTEX;
 	st[0].glState = GLSTATE_NODEPTHTEST|GLSTATE_SRC_SRCCOLOR|GLSTATE_DST_ONE;
 #else
 	st[0].alphaGenType = ALPHAGEN_VERTEX;
@@ -929,7 +930,7 @@ void GL_ResetShaders (void)
 //	deform->wave.freq = 0;
 	deform->wave.base = 2;		//!! fromEntity: 3 / 0.5
 //	deform->wave.phase = 0;
-	deform->waveDiv = 0;
+//	deform->waveDiv = 0;
 	sh.numDeforms = 1;
 	shaderImages[0] = GL_FindImage ("env/colorshell", IMAGE_MIPMAP);
 	sh.lightmapNumber = LIGHTMAP_NONE;

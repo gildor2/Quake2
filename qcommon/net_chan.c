@@ -217,12 +217,11 @@ void Netchan_Transmit (netchan_t *chan, int length, byte *data)
 	qboolean	send_reliable;
 	unsigned	w1, w2;
 
-// check for message overflow
+	// check for message overflow
 	if (chan->message.overflowed)
 	{
 		chan->fatal_error = true;
-		Com_Printf ("%s:Outgoing message overflow\n"
-			, NET_AdrToString (chan->remote_address));
+		Com_WPrintf ("%s: outgoing message overflow\n", NET_AdrToString (chan->remote_address));
 		return;
 	}
 
@@ -237,7 +236,7 @@ void Netchan_Transmit (netchan_t *chan, int length, byte *data)
 	}
 
 
-// write the packet header
+	// write the packet header
 	SZ_Init (&send, send_buf, sizeof(send_buf));
 
 	w1 = ( chan->outgoing_sequence & ~(1<<31) ) | (send_reliable<<31);

@@ -559,7 +559,8 @@ NET
 
 #define	PORT_ANY	-1
 
-#define	MAX_MSGLEN		1400		// max length of a message
+#define	MAX_MSGLEN		16384		// max length of a message
+#define MAX_MSGLEN_OLD	1400		// MAX_MSGLEN for old clients
 
 typedef enum {NA_LOOPBACK, NA_BROADCAST, NA_IP, NA_IPX, NA_BROADCAST_IPX} netadrtype_t;
 

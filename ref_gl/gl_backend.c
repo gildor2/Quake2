@@ -1,7 +1,7 @@
 #include "gl_local.h"
 #include "gl_shader.h"
 #include "gl_backend.h"
-#include "gl_model.h"
+#include "gl_sky.h"
 
 //#define SWAP_ON_BEGIN		// call GLimp_EndFrame() with SwapBuffers() on frame begin (or frame end if not defined)
 
@@ -15,27 +15,6 @@ typedef struct
 	float	tex[2];
 	float	lm[2];
 } bufTexCoordSrc_t;
-
-typedef struct
-{
-	float	tex[2];
-} bufTexCoord_t;
-
-typedef struct
-{
-	float	xyz[3];
-	float	pad;
-} bufVertex_t;
-
-// some data may be grouped by few vertexes
-typedef struct
-{
-	int		numVerts;
-	int		lmWidth;
-	vec3_t	normal;
-	vec3_t	*axis;
-	surfDlight_t *dlight;
-} bufExtra_t;
 
 
 /*------------- Command buffer ---------------*/
@@ -51,10 +30,6 @@ static int			currentDlightMask;
 
 /*-------------- Vertex arrays ---------------*/
 
-
-// per-shader limits
-#define MAX_VERTEXES	4096		// 1024 in Q3, 2048 in Q2, but have VALID model with more than 2048 verts
-#define MAX_INDEXES		(MAX_VERTEXES*6)
 
 #define NUM_VERTEX_BUFFERS	64
 
@@ -91,12 +66,13 @@ static void SwitchVertexArray (void)
 }
 
 
-static int				indexesArray[MAX_INDEXES];
+int				gl_indexesArray[MAX_INDEXES];
+bufExtra_t		gl_extra[MAX_VERTEXES];
+
 static color_t			srcVertexColor[MAX_VERTEXES];
 static bufTexCoordSrc_t	srcTexCoord[MAX_VERTEXES];
-static bufExtra_t		extra[MAX_VERTEXES];
 
-static int numVerts, numIndexes, numExtra;
+int gl_numVerts, gl_numIndexes, gl_numExtra;
 
 
 /*--- Tables for fast periodic function computation ---*/
@@ -146,10 +122,8 @@ static void InitFuncTables (void)
 	for (i = 0; i < 256; i++)
 	{
 		sqrtTable[i] = pow (i / 255.0f, 0.5f);
-		n = rand ();
-		noiseTablei[i] = (int)(n * 255.0f / RAND_MAX) & 0xFF;
-		n = rand ();
-		noiseTablef[i] = ((float)n / RAND_MAX) * 2.0f - 1.0f;	// range -1..1
+		noiseTablei[i] = (int)(rand() * 255.0f / RAND_MAX) & 0xFF;
+		noiseTablef[i] = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;	// range -1..1
 	}
 }
 
@@ -189,7 +163,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 			t = deform->wave.freq * ap.time + deform->wave.phase;
 
 			vec = vb->verts;
-			for (j = 0, ex = extra; j < numExtra; j++, ex++)
+			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
 				norm = ex->normal;
 				for (k = 0; k < ex->numVerts; k++, vec++)
@@ -222,15 +196,15 @@ static void GenerateColorArray (shaderStage_t *st)
 	{
 	case RGBGEN_CONST:
 		rgba = st->rgbaConst.rgba;
-		for (i = 0; i < numVerts; i++, dst++)
+		for (i = 0; i < gl_numVerts; i++, dst++)
 			dst->rgba = rgba;
 		break;
 	case RGBGEN_EXACT_VERTEX:
-		for (i = 0; i < numVerts; i++, src++, dst++)	//?? memcpy()
+		for (i = 0; i < gl_numVerts; i++, src++, dst++)	//?? memcpy()
 			dst->rgba = src->rgba;
 		break;
 	case RGBGEN_VERTEX:
-		for (i = 0; i < numVerts; i++, src++, dst++)
+		for (i = 0; i < gl_numVerts; i++, src++, dst++)
 		{
 			dst->c[0] = src->c[0] >> gl_config.overbrightBits;
 			dst->c[1] = src->c[1] >> gl_config.overbrightBits;
@@ -244,7 +218,7 @@ static void GenerateColorArray (shaderStage_t *st)
 #define MIN_BOOST_BRIGHT		48
 			ka = (256 - MIN_BOOST_BRIGHT) >> gl_config.overbrightBits;
 			kb = (MIN_BOOST_BRIGHT * 256) >> gl_config.overbrightBits;
-			for (i = 0; i < numVerts; i++, src++, dst++)
+			for (i = 0; i < gl_numVerts; i++, src++, dst++)
 			{
 				int		r, g, b, oldbr, newbr, scale;
 
@@ -269,7 +243,7 @@ static void GenerateColorArray (shaderStage_t *st)
 		}
 		break;
 	case RGBGEN_ONE_MINUS_VERTEX:
-		for (i = 0; i < numVerts; i++, src++, dst++)
+		for (i = 0; i < gl_numVerts; i++, src++, dst++)
 		{
 			dst->c[0] = (255 - src->c[0]) >> gl_config.overbrightBits;
 			dst->c[1] = (255 - src->c[1]) >> gl_config.overbrightBits;
@@ -288,15 +262,15 @@ static void GenerateColorArray (shaderStage_t *st)
 	{
 	case ALPHAGEN_CONST:
 		a = st->rgbaConst.c[3];
-		for (i = 0; i < numVerts; i++, dst++)
+		for (i = 0; i < gl_numVerts; i++, dst++)
 			dst->c[3] = a;
 		break;
 	case ALPHAGEN_VERTEX:
-		for (i = 0; i < numVerts; i++, dst++)
+		for (i = 0; i < gl_numVerts; i++, dst++)
 			dst->c[3] = srcVertexColor[i].c[3];
 		break;
 	case ALPHAGEN_ONE_MINUS_VERTEX:
-		for (i = 0; i < numVerts; i++, dst++)
+		for (i = 0; i < gl_numVerts; i++, dst++)
 			dst->c[3] = 255 - srcVertexColor[i].c[3];
 		break;
 	case ALPHAGEN_DOT:
@@ -318,7 +292,7 @@ static void GenerateColorArray (shaderStage_t *st)
 				scale = (st->alphaMin - st->alphaMax) * 255;
 			}
 			vec = vb->verts;
-			for (j = 0, ex = extra; j < numExtra; j++, ex++)
+			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
 				norm = ex->normal;
 				for (i = 0; i < ex->numVerts; i++, vec++, dst++)
@@ -360,14 +334,14 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 	switch (st->tcGenType)
 	{
 	case TCGEN_TEXTURE:
-		for (j = 0; j < numVerts; j++, src++, dst++)
+		for (j = 0; j < gl_numVerts; j++, src++, dst++)
 		{
 			dst->tex[0] = src->tex[0];
 			dst->tex[1] = src->tex[1];
 		}
 		break;
 	case TCGEN_LIGHTMAP:
-		for (j = 0; j < numVerts; j++, src++, dst++)
+		for (j = 0; j < gl_numVerts; j++, src++, dst++)
 		{
 			dst->tex[0] = src->lm[0];
 			dst->tex[1] = src->lm[1];
@@ -381,7 +355,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 			float	d;
 
 			vec = vb->verts;
-			for (j = 0, ex = extra; j < numExtra; j++, ex++)
+			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
 				if (ex->axis)
 				{	// compute envmap using surface axis
@@ -424,7 +398,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 			bufExtra_t *ex;
 
 			mul = (float)(st->tcGenType - TCGEN_LIGHTMAP1 + 1) / LIGHTMAP_SIZE;
-			for (j = 0, ex = extra; j < numExtra; j++, ex++)
+			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
 				shift = ex->lmWidth * mul;
 				for (k = 0; k < ex->numVerts; k++, src++, dst++)
@@ -447,7 +421,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 
 			num = st->tcGenType - TCGEN_DLIGHT0;
 			vec = vb->verts;
-			for (j = 0, ex = extra; j < numExtra; j++, ex++)
+			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
 				float	invRadius;
 
@@ -475,7 +449,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 			f1 = f1 - (int)f1;
 			f2 = tcmod->tSpeed * ap.time;
 			f2 = f2 - (int)f2;
-			for (k = 0; k < numVerts; k++, dst++)
+			for (k = 0; k < gl_numVerts; k++, dst++)
 			{
 				dst->tex[0] += f1;
 				dst->tex[1] += f2;
@@ -484,7 +458,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 		case TCMOD_TURB:
 			f1 = tcmod->wave.freq * ap.time + tcmod->wave.phase;
 			f2 = tcmod->wave.amp;
-			for (k = 0; k < numVerts; k++, dst++)
+			for (k = 0; k < gl_numVerts; k++, dst++)
 			{
 				float	*vec, f;
 
@@ -497,7 +471,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 			}
 			break;
 		case TCMOD_WARP:
-			for (k = 0; k < numVerts; k++, dst++)
+			for (k = 0; k < gl_numVerts; k++, dst++)
 			{
 				f1 = dst->tex[0];
 				f2 = dst->tex[1];
@@ -508,7 +482,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 		case TCMOD_SCALE:
 			f1 = tcmod->sScale;
 			f2 = tcmod->tScale;
-			for (k = 0; k < numVerts; k++, dst++)
+			for (k = 0; k < gl_numVerts; k++, dst++)
 			{
 				dst->tex[0] *= f1;
 				dst->tex[1] *= f2;
@@ -523,7 +497,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 				f2 = PERIODIC_FUNC(sinTable, f + 0.25);				// cos(angle)
 				c1 = 0.5f * (1 - f1 - f2);
 				c2 = 0.5f * (1 + f1 - f2);
-				for (k = 0; k < numVerts; k++, dst++)
+				for (k = 0; k < gl_numVerts; k++, dst++)
 				{
 					f = dst->tex[0];
 					dst->tex[0] = dst->tex[1] * f1 + f * f2 + c1;
@@ -1012,7 +986,7 @@ static void StageIterator (void)
 	renderPass_t *pass;
 
 //	DrawTextLeft (va("StageIterator(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes),1,1,1);//!!!
-	LOG_STRING (va("*** StageIterator(%s, %d, %d) ***\n", currentShader->name, numVerts, numIndexes));
+	LOG_STRING (va("*** StageIterator(%s, %d, %d) ***\n", currentShader->name, gl_numVerts, gl_numIndexes));
 
 	if (!currentShader->numStages)
 		return;
@@ -1037,7 +1011,7 @@ static void StageIterator (void)
 		// do not lock texcoords and colors
 		qglDisableClientState (GL_COLOR_ARRAY);
 		GL_DisableTexCoordArrays ();
-		qglLockArraysEXT (0, numVerts);
+		qglLockArraysEXT (0, gl_numVerts);
 	}
 
 	/*---------------- draw stages ----------------*/
@@ -1087,7 +1061,7 @@ static void StageIterator (void)
 		else if (Cvar_VariableInt("test"))//??
 			GL_EnableFog (false);
 
-		DrawArrays (indexesArray, numIndexes);
+		DrawArrays (gl_indexesArray, gl_numIndexes);
 	}
 
 	/*----------------- finalize ------------------*/
@@ -1108,24 +1082,24 @@ static void StageIterator (void)
 	}
 
 	// stats
-	gl_speeds.tris += numIndexes * numTmpStages / 3;
-	gl_speeds.trisMT += numIndexes * numRenderPasses / 3;
+	gl_speeds.tris += gl_numIndexes * numTmpStages / 3;
+	gl_speeds.trisMT += gl_numIndexes * numRenderPasses / 3;
 	gl_speeds.numIterators++;
 }
 
 
 static void SetCurrentShader (shader_t *shader)
 {
-	if (numVerts && numIndexes)
+	if (gl_numVerts && gl_numIndexes)
 		// we can get situation, when verts==2 and inds==0 due to geometry simplification -- this is OK (??)
 		// sample: map "actmet", inside building with rotating glass doors, floor 2: exotic lamp (nested cilinders with alpha)
 	{
 		DrawTextLeft ("SetCurrentShader() without flush!",1,0,0);
 		Com_WPrintf ("SetCurrentShader(%s) without flush (old: %s, %d verts, %d inds)\n",
-			shader->name, currentShader->name, numVerts, numIndexes);
+			shader->name, currentShader->name, gl_numVerts, gl_numIndexes);
 	}
 	currentShader = shader;
-	numVerts = numIndexes = numExtra = 0;		// clear buffer
+	gl_numVerts = gl_numIndexes = gl_numExtra = 0;		// clear buffer
 	//?? setup shader time
 }
 
@@ -1133,340 +1107,37 @@ static void SetCurrentShader (shader_t *shader)
 static void FlushArrays (void)
 {
 //	DrawTextLeft(va("FlushArrays(%s,%d,%d)\n",currentShader->name,numVerts,numIndexes),1,1,1);
-	if (!numIndexes) return;	// buffer is empty
+	if (!gl_numIndexes) return;	// buffer is empty
 
 	StageIterator ();
 	SwitchVertexArray ();
 	WaitVertexArray ();
 
-	numVerts = numIndexes = numExtra = 0;
+	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
 }
 
 
-static void CheckOverflow (int verts, int inds)
+static void ReserveVerts (int verts, int inds)
 {
-	if (numIndexes + inds > MAX_INDEXES || numVerts + verts > MAX_VERTEXES)
+	if (gl_numIndexes + inds > MAX_INDEXES || gl_numVerts + verts > MAX_VERTEXES)
 		FlushArrays ();
 
-	if (verts > MAX_VERTEXES)
-		Com_Error (ERR_DROP, "R_CheckOverflow: verts > MAX_VERTEXES (%d)", verts);
-	if (inds > MAX_INDEXES)
-		Com_Error (ERR_DROP, "R_CheckOverflow: inds > MAX_INDEXES (%d)", inds);
+	if (verts > MAX_VERTEXES)	Com_Error (ERR_DROP, "ReserveVerts: %d > MAX_VERTEXES", verts);
+	if (inds > MAX_INDEXES)		Com_Error (ERR_DROP, "ReserveVerts: %d > MAX_INDEXES", inds);
 }
 
 
 /*---------------- Skybox ------------------*/
 
 
-static float skyMins[2][6], skyMaxs[2][6];
-
-
-#define	ON_EPSILON		0.1			// point on plane side epsilon
-#define	MAX_CLIP_VERTS	64
-
-typedef enum {SIDE_FRONT, SIDE_BACK, SIDE_ON};
-
-static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
-{
-	float	*norm;
-	float	*vec;
-	qboolean	front, back;
-	float	dists[MAX_CLIP_VERTS];
-	int		sides[MAX_CLIP_VERTS];
-	vec3_t	newv[2][MAX_CLIP_VERTS];	// new polys
-	int		newc[2];					// number of verts in new polys
-	int		i;
-
-	static vec3_t skyClip[6] = {
-		{ 1, 1, 0},
-		{ 1,-1, 0},
-		{ 0,-1, 1},
-		{ 0, 1, 1},
-		{ 1, 0, 1},
-		{-1, 0, 1}
-	};
-
-	static int vecToSt[6][3] = {	// s = [0]/[2], t = [1]/[2]
-		{-2, 3, 1},
-		{ 2, 3,-1},
-		{ 1, 3, 2},
-		{-1, 3,-2},
-		{-2,-1, 3},
-		{-2, 1,-3}
-	};
-
-
-	if (!numVerts) return;			// empty polygon
-
-	if (numVerts > MAX_CLIP_VERTS - 2)
-		Com_Error (ERR_DROP, "ClipSkyPolygon: MAX_CLIP_VERTS hit");
-
-	if (stage == 6)
-	{	// fully clipped -- update skymins/skymaxs
-		int		axis;
-		vec3_t	av, v;
-		float	*vp;
-
-		// decide which face it maps to
-		VectorClear (v);
-		for (i = 0, vp = verts; i < numVerts; i++, vp += 3)
-			VectorAdd (vp, v, v);
-		av[0] = fabs(v[0]);
-		av[1] = fabs(v[1]);
-		av[2] = fabs(v[2]);
-		// Here: v = sum vector, av = abs(v)
-		if (av[0] > av[1] && av[0] > av[2])
-			axis = (v[0] < 0) ? 1 : 0;
-		else if (av[1] > av[2] && av[1] > av[0])
-			axis = (v[1] < 0) ? 3 : 2;
-		else
-			axis = (v[2] < 0) ? 5 : 4;
-
-		// project new texture coords
-		for (i = 0; i < numVerts; i++, verts += 3)
-		{
-			int		j;
-			float	s, t, dv;
-
-			j = vecToSt[axis][2];
-			if (j < 0)	dv = -verts[-j - 1];
-			else		dv = verts[j - 1];
-
-			if (dv < 0.001f) continue;	// don't divide by zero
-
-			j = vecToSt[axis][0];
-			if (j < 0)	s = -verts[-j - 1] / dv;
-			else		s = verts[j - 1] / dv;
-
-			j = vecToSt[axis][1];
-			if (j < 0)	t = -verts[-j - 1] / dv;
-			else		t = verts[j - 1] / dv;
-
-			if (s < skyMins[0][axis]) skyMins[0][axis] = s;
-			if (s > skyMaxs[0][axis]) skyMaxs[0][axis] = s;
-			if (t < skyMins[1][axis]) skyMins[1][axis] = t;
-			if (t > skyMaxs[1][axis]) skyMaxs[1][axis] = t;
-		}
-		return;
-	}
-
-	front = back = false;
-	norm = skyClip[stage];
-	for (i = 0, vec = verts; i < numVerts; i++, vec += 3)
-	{
-		float	d;
-
-		d = DotProduct (vec, norm);
-		if (d > ON_EPSILON)
-		{
-			front = true;
-			sides[i] = SIDE_FRONT;
-		}
-		else if (d < -ON_EPSILON)
-		{
-			back = true;
-			sides[i] = SIDE_BACK;
-		}
-		else
-			sides[i] = SIDE_ON;
-		dists[i] = d;
-	}
-
-	if (!front || !back)
-	{	// not clipped
-		ClipSkyPolygon (numVerts, verts, stage + 1);
-		return;
-	}
-
-	// clip it
-	sides[i] = sides[0];
-	dists[i] = dists[0];
-	VectorCopy (verts, (verts + (i * 3)));
-	newc[0] = newc[1] = 0;
-
-	for (i = 0, vec = verts; i < numVerts; i++, vec += 3)
-	{
-		int		j;
-		float	d;
-
-		switch (sides[i])
-		{
-		case SIDE_FRONT:
-			VectorCopy (vec, newv[0][newc[0]]);
-			newc[0]++;	// cannot insert this command to VectorCopy(), because it is a macro ...
-			break;
-		case SIDE_BACK:
-			VectorCopy (vec, newv[1][newc[1]]);
-			newc[1]++;
-			break;
-		case SIDE_ON:
-			VectorCopy (vec, newv[0][newc[0]]);
-			newc[0]++;
-			VectorCopy (vec, newv[1][newc[1]]);
-			newc[1]++;
-			break;
-		}
-
-		if (sides[i] == SIDE_ON || sides[i+1] == SIDE_ON || sides[i+1] == sides[i])
-			continue;		// line placed on one side of clip plane
-
-		// line intersects clip plane: split line to 2 parts by adding new point
-		d = dists[i] / (dists[i] - dists[i+1]);
-		for (j = 0; j < 3; j++)
-		{
-			float	e;
-
-			e = vec[j] + d * (vec[j + 3] - vec[j]);
-			newv[0][newc[0]][j] = e;
-			newv[1][newc[1]][j] = e;
-		}
-		newc[0]++;
-		newc[1]++;
-	}
-
-	// process new polys
-	if (newc[0]) ClipSkyPolygon (newc[0], newv[0][0], stage + 1);
-	if (newc[1]) ClipSkyPolygon (newc[1], newv[1][0], stage + 1);
-}
-
-
-static void ClearSkyBox (void)
-{
-	int		i;
-
-	// clear bounds for all sky box planes
-	for (i = 0; i < 6; i++)
-	{
-		skyMins[0][i] = skyMins[1][i] = 999999;
-		skyMaxs[0][i] = skyMaxs[1][i] = -999999;
-	}
-}
-
-
-static void AddSkySurfaces (void)
-{
-	vec3_t	triangle[4];	// fill 3 points, other (1?) -- filled by ClipSkyPolygon()
-	int		index;
-
-	if (gl_fastsky->integer)
-		return;
-
-	index = 0;
-	while (index < numIndexes)
-	{
-		int		i;
-
-		// create triangle
-		for (i = 0; i < 3; i++)
-		{
-			VectorSubtract (vb->verts[indexesArray[index]].xyz, ap.vieworg, triangle[i]);
-			index++;	// cannot put it to a line above: VectorSubtract() is a macro
-		}
-		// send triangle to ClipSkyPolygon()
-		ClipSkyPolygon (3, triangle[0], 0);
-	}
-}
-
-
-// In: s, t in range [-1..1]
-static void MakeSkyVec (float s, float t, int axis, float *tex, vec3_t vec)
-{
-	vec3_t		b;
-	int			i;
-
-	static int stToVec[6][3] = {	// 1 = s, 2 = t, 3 = zFar
-		{ 3,-1, 2},
-		{-3, 1, 2},
-		{ 1, 3, 2},
-		{-1,-3, 2},
-		{-2,-1, 3},		// 0 degrees yaw, look straight up
-		{ 2,-1,-3}		// look straight down
-	};
-
-	float		scale;
-
-	// sqrt(a^2 + (a^2 + (a/2)^2)) = sqrt(2*a^2 + 1/4*a^2) = a * sqrt(9/4) = a * 1.5
-	scale = ap.zFar / 3;	// any non-zero value not works no TNT2 (but works with GeForce2)
-	b[0] = s * scale;
-	b[1] = t * scale;
-	b[2] = scale;
-
-	for (i = 0; i < 3; i++)
-	{
-		int		tmp;
-
-		tmp = stToVec[axis][i];
-		if (tmp < 0)
-			vec[i] = -b[-tmp - 1];
-		else
-			vec[i] = b[tmp - 1];
-	}
-
-	if (tex)
-	{
-		// convert range [-1, 1] to [0, 1]
-		s = (s + 1) / 2;
-		t = (t + 1) / 2;
-
-		if (s < 0)		s = 0;
-		else if (s > 1)	s = 1;
-		if (t < 0)		t = 0;
-		else if (t > 1)	t = 1;
-
-/*		if (!currentShader->bad && Cvar_VariableInt("skyfix"))
-		{
-			float	fix, fix2;
-
-			fix = 0.5f / currentShader->width * Cvar_VariableInt("skyfix");
-			fix2 = 1 - 2 * fix;
-			s = fix + fix2 * s;
-			t = fix + fix2 * t;
-		} */
-		tex[0] = s;
-		tex[1] = 1.0 - t;
-	}
-}
-
-
-#define SKY_TESS_SIZE	4
-
-#if (SKY_TESS_SIZE*2+1) * (SKY_TESS_SIZE*2+1) > MAX_VERTEXES
-#  error Not enough vertex buffer size: cannot tesselate sky surface
-#endif
-
 static void DrawSkyBox (void)
 {
-	int		i, j;
+	int		side;
 
 	LOG_STRING ("*** DrawSkyBox() ***\n");
 	if (gl_fastsky->integer) return;
 
-	if (!currentShader->skyRotate)
-	{
-		for (i = 0; i < 6; i++)
-		{
-			for (j = 0; j < 2; j++)
-			{
-				float	v;
-
-				v = floor (skyMins[j][i] * SKY_TESS_SIZE) / SKY_TESS_SIZE;
-				if (v < -1) v = -1;
-				skyMins[j][i] = v;
-
-				v = ceil (skyMaxs[j][i] * SKY_TESS_SIZE) / SKY_TESS_SIZE;
-				if (v > 1) v = 1;
-				skyMaxs[j][i] = v;
-			}
-		}
-	}
-	else
-	{
-		for (i = 0; i < 6; i++)
-		{
-			skyMins[0][i] = skyMins[1][i] = -1;
-			skyMaxs[0][i] = skyMaxs[1][i] = 1;
-		}
-	}
+	if (currentShader->skyRotate) GL_ShowWholeSky ();
 
 	if (gl_showsky->integer)
 		qglDepthRange (0, 0);	// hack to see sky (for debugging)
@@ -1502,67 +1173,23 @@ static void DrawSkyBox (void)
 	qglTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord[0]);
 	qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
 
-	for (i = 0; i < 6; i++)
+	for (side = 0; side < 6; side++)
 	{
-		float	s, t;
-		int		ds, dt, si, ti;
-		bufVertex_t		*vec;
-		bufTexCoord_t	*tex;
-		int				*idx, i1, i2;
-
-		if (skyMins[0][i] > skyMaxs[0][i] || skyMins[1][i] > skyMaxs[1][i])
-			continue;				// no visible sky surfaces on this plane
-
-		// tesselate sky surface (up to 9 points per diminsion)
-		vec = &vb->verts[0];
-		tex = vb->texCoord[0];
-		numVerts = 0;
-		for (t = skyMins[1][i]; t <= skyMaxs[1][i]; t += 1.0f/SKY_TESS_SIZE)
-			for (s = skyMins[0][i]; s <= skyMaxs[0][i]; s += 1.0f/SKY_TESS_SIZE)
-			{
-				MakeSkyVec (s, t, i, tex->tex, vec->xyz);
-				tex++;
-				vec++;
-				numVerts++;
-			}
-		ds = (skyMaxs[0][i] - skyMins[0][i]) * SKY_TESS_SIZE + 1;
-		dt = (skyMaxs[1][i] - skyMins[1][i]) * SKY_TESS_SIZE + 1;
-		// generate indexes
-		idx = indexesArray;
-		i1 = 0;
-		i2 = ds;
-		numIndexes = 0;
-		for (ti = 0; ti < dt - 1; ti++)
-		{
-			for (si = 0; si < ds - 1; si++)
-			{
-				// triangle 1 (1-3-2)
-				*idx++ = i1++;		// i1(1) ----- i1+1(2)
-				*idx++ = i2;		//  |           |
-				*idx++ = i1;		//  |           |
-									// i2(3) ----- i2+1(4)
-				// triangle 2 (3-4-2)
-				*idx++ = i2++;
-				*idx++ = i2;
-				*idx++ = i1;
-				numIndexes += 6;
-			}
-			i1++;
-			i2++;
-		}
+		gl_numIndexes = GL_TesselateSkySide (side, vb->verts, vb->texCoord[0], ap.zFar);
+		if (!gl_numIndexes) continue;	// no surfaces on this side
 
 		if (currentShader != gl_defaultSkyShader)
-			GL_Bind (currentShader->skyFarBox[i]);
+			GL_Bind (currentShader->skyFarBox[side]);
 		else
-			GL_Bind (NULL);		// disable texturing
+			GL_Bind (NULL);			// disable texturing
 
-		DrawArrays (indexesArray, numIndexes);
+		DrawArrays (gl_indexesArray, gl_numIndexes);
 	}
 	qglPopMatrix ();
 
-	numVerts = numIndexes = numExtra = 0;
+	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
 
-	qglDepthRange (0, 1);		// restore depth range (to default values)
+	qglDepthRange (0, 1);			// restore depth range (to default values)
 }
 
 
@@ -1624,14 +1251,14 @@ static void TesselatePlanarSurf (surfacePlanar_t *surf)
 	int			*c;
 	vertex_t	*vs;
 
-	CheckOverflow (surf->numVerts, surf->numIndexes);
+	ReserveVerts (surf->numVerts, surf->numIndexes);
 
-	firstVert = numVerts;
-	numVerts += surf->numVerts;
-	firstIndex = numIndexes;
-	numIndexes += surf->numIndexes;
+	firstVert = gl_numVerts;
+	gl_numVerts += surf->numVerts;
+	firstIndex = gl_numIndexes;
+	gl_numIndexes += surf->numIndexes;
 
-	ex = &extra[numExtra++];
+	ex = &gl_extra[gl_numExtra++];
 	ex->numVerts = surf->numVerts;
 	if (surf->lightmap) ex->lmWidth = surf->lightmap->w;
 	VectorCopy (surf->plane.normal, ex->normal);
@@ -1655,7 +1282,7 @@ static void TesselatePlanarSurf (surfacePlanar_t *surf)
 	}
 
 	// copy indexes
-	idx = &indexesArray[firstIndex];
+	idx = &gl_indexesArray[firstIndex];
 	idxSrc = surf->indexes;
 	for (i = 0; i < surf->numIndexes; i++)
 		*idx++ = *idxSrc++ + firstVert;
@@ -1673,14 +1300,14 @@ static void TesselatePolySurf (surfacePoly_t *surf)
 	vertexPoly_t *vs;
 
 	numIdx = (surf->numVerts - 2) * 3;
-	CheckOverflow (surf->numVerts, numIdx);
+	ReserveVerts (surf->numVerts, numIdx);
 
-	firstVert = numVerts;
-	numVerts += surf->numVerts;
-	firstIndex = numIndexes;
-	numIndexes += numIdx;
+	firstVert = gl_numVerts;
+	gl_numVerts += surf->numVerts;
+	firstIndex = gl_numIndexes;
+	gl_numIndexes += numIdx;
 
-	ex = &extra[numExtra++];
+	ex = &gl_extra[gl_numExtra++];
 	ex->numVerts = surf->numVerts;
 	// setup normal ??
 	ex->axis = NULL;
@@ -1703,9 +1330,9 @@ static void TesselatePolySurf (surfacePoly_t *surf)
 	}
 
 	// copy indexes
-	idx = &indexesArray[firstIndex];
+	idx = &gl_indexesArray[firstIndex];
 
-	for (i = 1; i < numVerts-1; i++)
+	for (i = 1; i < gl_numVerts - 1; i++)
 	{
 		*idx++ = firstVert;
 		*idx++ = firstVert + i;
@@ -1726,15 +1353,15 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 	int		numIdx;
 
 	numIdx = surf->numTris * 3;
-	CheckOverflow (surf->numVerts, numIdx);
+	ReserveVerts (surf->numVerts, numIdx);
 
-	firstVert = numVerts;
-	numVerts += surf->numVerts;
-	firstIndex = numIndexes;
-	numIndexes += numIdx;
+	firstVert = gl_numVerts;
+	gl_numVerts += surf->numVerts;
+	firstIndex = gl_numIndexes;
+	gl_numIndexes += numIdx;
 
-	ex = &extra[numExtra];
-	numExtra += surf->numVerts;
+	ex = &gl_extra[gl_numExtra];
+	gl_numExtra += surf->numVerts;
 
 	/*------------- lerp verts ---------------*/
 	vs1 = surf->verts + surf->numVerts * currentEntity->frame;
@@ -1790,7 +1417,7 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 		}
 
 	c = &srcVertexColor[firstVert].rgba;
-	for (i = 0; i < numVerts; i++, c++)
+	for (i = 0; i < gl_numVerts; i++, c++)
 		*c = 0xFFFFFFFF;	//!! vertex color (should not use "RGBGEN_VERTEX", or use another function to generate color; see UberEngine)
 
 	/*----------- copy texcoords -------------*/
@@ -1803,7 +1430,7 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 	}
 
 	/*------------ copy indexes --------------*/
-	idx = &indexesArray[firstIndex];
+	idx = &gl_indexesArray[firstIndex];
 	idxSrc = surf->indexes;
 	for (i = 0; i < numIdx; i++)
 		*idx++ = *idxSrc++ + firstVert;
@@ -1944,7 +1571,7 @@ static void DrawTriangles (void)
 	qglDisableClientState (GL_COLOR_ARRAY);
 	GL_DisableTexCoordArrays ();
 	// draw
-	DrawArrays (indexesArray, numIndexes);
+	DrawArrays (gl_indexesArray, gl_numIndexes);
 	// restore state
 	qglDepthRange (0, 1);
 }
@@ -1975,7 +1602,7 @@ static void DrawNormals (void)
 	// draw
 	qglBegin (GL_LINES);
 	vec = vb->verts;
-	for (i = 0, ex = extra; i < numExtra; i++, ex++)
+	for (i = 0, ex = gl_extra; i < gl_numExtra; i++, ex++)
 	{
 		norm = ex->normal;
 		for (j = 0; j < ex->numVerts; j++, vec++)
@@ -2152,7 +1779,7 @@ static void DrawScene (void)
 
 	LOG_STRING (va("******** R_DrawScene: (%g, %g) - (%g, %g) ********\n", ap.x, ap.y, ap.x+ap.w, ap.y+ap.h));
 
-	if (numVerts) FlushArrays ();
+	if (gl_numVerts) FlushArrays ();
 	GL_Setup (&ap);
 
 	// sort surfaces
@@ -2165,7 +1792,7 @@ static void DrawScene (void)
 
 	/*------------ draw sky --------------*/
 
-	ClearSkyBox ();
+	GL_ClearSkyBox ();
 	numSkySurfs = 0;
 
 	si = sortedSurfaces;
@@ -2177,10 +1804,9 @@ static void DrawScene (void)
 
 		if (!index) SetCurrentShader (shader);
 
-		TesselatePlanarSurf (surf->pl);	//!! may be other types
-		AddSkySurfaces ();
+		if (!shader->skyRotate)
+			GL_AddSkySurface (surf->pl, ap.vieworg);	//?? may be another types
 		numSkySurfs++;
-		numVerts = numIndexes = 0;
 	}
 	//?? may be, require to set dlightMask, currentShader, currentEntity etc.
 	if (numSkySurfs) DrawSkyBox ();
@@ -2319,18 +1945,18 @@ static void TesselateStretchPic (bkDrawPic_t *p)
 
 	GL_Set2DMode ();
 
-	CheckOverflow (4, 6);
+	ReserveVerts (4, 6);
 
 	/*   0 (0,0) -- 1 (1,0)
 	 *     |   \____   |
 	 *     |        \  |
 	 *   3 (0,1) -- 2 (1,1)
 	 */
-	v = &vb->verts[numVerts];
-	t = &srcTexCoord[numVerts];
-	c = &srcVertexColor[numVerts].rgba;
-	idx0 = numVerts;
-	numVerts += 4;
+	v = &vb->verts[gl_numVerts];
+	t = &srcTexCoord[gl_numVerts];
+	c = &srcVertexColor[gl_numVerts].rgba;
+	idx0 = gl_numVerts;
+	gl_numVerts += 4;
 
 	// set vert.z
 	v[0].xyz[2] = v[1].xyz[2] = v[2].xyz[2] = v[3].xyz[2] = 0;
@@ -2349,8 +1975,8 @@ static void TesselateStretchPic (bkDrawPic_t *p)
 	// store colors
 	c[0] = c[1] = c[2] = c[3] = p->c.rgba;
 
-	idx = &indexesArray[numIndexes];
-	numIndexes += 6;
+	idx = &gl_indexesArray[gl_numIndexes];
+	gl_numIndexes += 6;
 	*idx++ = idx0+0; *idx++ = idx0+1; *idx++ = idx0+2;
 	*idx++ = idx0+0; *idx++ = idx0+2; *idx++ = idx0+3;
 }
@@ -2374,13 +2000,13 @@ void TesselateText (bkDrawText_t *p)
 
 	GL_Set2DMode ();
 
-	CheckOverflow (p->len * 4, p->len * 6);
+	ReserveVerts (p->len * 4, p->len * 6);
 
-	v = &vb->verts[numVerts];
-	t = &srcTexCoord[numVerts];
-	c = &srcVertexColor[numVerts].rgba;
-	idx = &indexesArray[numIndexes];
-	idx0 = numVerts;
+	v = &vb->verts[gl_numVerts];
+	t = &srcTexCoord[gl_numVerts];
+	c = &srcVertexColor[gl_numVerts].rgba;
+	idx = &gl_indexesArray[gl_numIndexes];
+	idx0 = gl_numVerts;
 
 	s = p->text;
 	xp = p->x;
@@ -2423,8 +2049,8 @@ void TesselateText (bkDrawText_t *p)
 			v += 4;
 			t += 4;
 			c += 4;
-			numVerts += 4;
-			numIndexes += 6;
+			gl_numVerts += 4;
+			gl_numIndexes += 6;
 		}
 		xp = x;
 		x += p->w;

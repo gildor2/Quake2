@@ -2,6 +2,8 @@
   - map "dm_dukecity_beta":
     - disco: neon lamp text should not disappear
   - g_misc.c::SP_light() -- disabled lights with style>=32
+- dir "../dirty/maps" will display list same twice
+- when sound is busy, error about "command already registered" appears for sound commands
 
 ! cannot load map "dog..." in soft: "bad surface extents" (but GL can ...)
 ! map "toomuchbloodv2": sound "dmg/TISM.wav" loaded twice (upper- and lowercase)

@@ -328,6 +328,7 @@
 	".\client\console.h"\
 	".\client\input.h"\
 	".\client\keys.h"\
+	".\client\qmenu.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -492,6 +493,8 @@
 	
 
 .\server\sv_ccmds.c : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\game\game.h"\
 	".\qcommon\q_shared2.h"\
@@ -712,6 +715,20 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
+.\ref_gl\gl_sky.c : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
+	".\client\ref_defs.h"\
+	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
+	".\ref_gl\gl_backend.h"\
+	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_model.h"\
+	".\ref_gl\gl_sky.h"\
+	".\ref_gl\qgl_decl.h"\
+	
+
 .\ref_gl\gl_world.c : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
@@ -761,6 +778,8 @@
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_backend.h"\
 	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_model.h"\
+	".\ref_gl\gl_shader.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 

@@ -43,14 +43,15 @@ float		gl_fogStart, gl_fogEnd;
  * TODO:
  *   - oclusion culling (leafs, models, surfaces)
  *   - trisurfs backface culling
- *   ? weapon model frustum culling (with lower plane)
+ *   ? weapon model tris frustum culling (with lower plane)
  */
 
 /*------------------- Frustum culling -------------------*/
 
-#define FRUSTUM_INSIDE	1
-#define FRUSTUM_OUTSIDE	2
-#define FRUSTUM_ON		(FRUSTUM_INSIDE|FRUSTUM_OUTSIDE)
+#define FRUSTUM_INSIDE			1
+#define FRUSTUM_OUTSIDE			2
+#define FRUSTUM_CENTER_OUTSIDE	4
+#define FRUSTUM_ON				(FRUSTUM_INSIDE|FRUSTUM_OUTSIDE)
 
 
 static int BoxCull (vec3_t mins, vec3_t maxs, int frustumMask)
@@ -185,28 +186,41 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 }
 
 
-static int SphereCull (vec3_t origin, float radius)
+static int SphereCull (vec3_t origin, float radius, byte *frustumMask)
 {
-	int		i;
+	int		i, ret, mask, m;
 	cplane_t *pl;
-	qboolean hasOutside;
 
 	if (r_nocull->integer)
+	{
+		if (frustumMask)
+			*frustumMask = 15;
 		return FRUSTUM_ON;
+	}
 
-	hasOutside = false;
 	// perform frustum culling
-	for (i = 0, pl = vp.frustum; i < 4; i++, pl++)
+	ret = 0;
+	mask = frustumMask ? *frustumMask : 15;
+	for (i = 0, pl = vp.frustum, m = 1; i < 4; i++, pl++, m <<= 1)
 	{	// loop by frustum planes
 		float	dist;
+
+		if (!(m & mask)) continue;
 
 		dist = DotProduct (origin, pl->normal) - pl->dist;
 		if (dist < -radius)
 			return FRUSTUM_OUTSIDE;
 		if (dist <= radius)
-			hasOutside = true;
+		{
+			ret |= FRUSTUM_OUTSIDE;
+			if (dist < 0) ret |= FRUSTUM_CENTER_OUTSIDE;
+		}
+		else
+			mask &= ~m;
 	}
-	return hasOutside ? FRUSTUM_ON : FRUSTUM_INSIDE;
+	if (frustumMask)
+		*frustumMask = mask;
+	return ret | FRUSTUM_INSIDE;
 }
 
 
@@ -983,7 +997,7 @@ static node_t *WalkBspTree (void)
 
 static void DrawEntities (int firstEntity, int numEntities)
 {
-	int		i;
+	int		i, ret;
 	refEntity_t	*e;
 	node_t	*leaf;
 	vec3_t	delta, center;
@@ -999,6 +1013,11 @@ static void DrawEntities (int firstEntity, int numEntities)
 		gl_speeds.cullEnts++;	\
 		continue;	\
 	}
+#define CULL_ENT2	\
+	{				\
+		gl_speeds.cullEntsBox++;	\
+		continue;	\
+	}
 		if (e->model)
 		{
 			switch (e->model->type)
@@ -1009,8 +1028,12 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 					im = e->model->inlineModel;
 					e->frustumMask = -1;		// for updating
+					ret = SphereCull (im->center, im->radius, &e->frustumMask);
+					// try to cull bounding sphere (faster than box cull)
+					if (ret == FRUSTUM_OUTSIDE) CULL_ENT;
 					// frustum culling (entire model)
-					if (TransformedBoxCull (im->mins, im->maxs, e) == FRUSTUM_OUTSIDE) CULL_ENT;
+					if (ret & FRUSTUM_CENTER_OUTSIDE)
+						if (TransformedBoxCull (im->mins, im->maxs, e) == FRUSTUM_OUTSIDE) CULL_ENT2;
 
 					leaf = SphereLeaf (im->center, im->radius);
 					VectorCopy (im->center, center);
@@ -1029,13 +1052,13 @@ static void DrawEntities (int firstEntity, int numEntities)
 					frame1 = md3->frames + e->frame;
 					frame2 = md3->frames + e->oldFrame;
 					ModelToWorldCoord (frame1->localOrigin, e, center);
-					cull1 = SphereCull (center, frame1->radius);
+					cull1 = SphereCull (center, frame1->radius, NULL);
 					if (frame1 == frame2 && cull1 == FRUSTUM_OUTSIDE)
 						CULL_ENT
 					else
 					{
 						ModelToWorldCoord (frame2->localOrigin, e, center2);
-						cull2 = SphereCull (center2, frame2->radius);
+						cull2 = SphereCull (center2, frame2->radius, NULL);
 						if (cull1 == cull2 && cull1 == FRUSTUM_OUTSIDE) CULL_ENT;
 					}
 					leaf = SphereLeaf (center, frame1->radius);
@@ -1101,6 +1124,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 		if (e->model) SetupModelMatrix (e);
 	}
 #undef CULL_ENT
+#undef CULL_ENT2
 }
 
 
@@ -1423,6 +1447,7 @@ void GL_AddEntity (entity_t *ent)
 	}
 
 	out = &gl_entities[gl_numEntities++];
+	vp.numEntities++;
 
 	// common fields
 	out->flags = ent->flags;
@@ -1490,7 +1515,7 @@ void GL_AddEntity (entity_t *ent)
 				if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_HALF_DAM|RF_SHELL_DOUBLE))
 				{
 					out->customShader = gl_colorShellShader;
-					out->shaderColor.rgba = 0;			// required for RED/GREEN/BLUE
+					out->shaderColor.rgba = 0x202020;			// required for RED/GREEN/BLUE
 					if (ent->flags & RF_SHELL_HALF_DAM)
 						out->shaderColor.rgba = 0x73968F;
 					if (ent->flags & RF_SHELL_DOUBLE)

@@ -425,7 +425,7 @@ qboolean SV_SendClientDatagram (client_t *client)
 
 	SV_BuildClientFrame (client);
 
-	SZ_Init (&msg, msg_buf, sizeof(msg_buf));
+	SZ_Init (&msg, msg_buf, client->newprotocol ? MAX_MSGLEN : MAX_MSGLEN_OLD);
 	msg.allowoverflow = true;
 
 	// send over all the relevant entity_state_t
@@ -437,14 +437,14 @@ qboolean SV_SendClientDatagram (client_t *client)
 	// it is necessary for this to be after the WriteEntities
 	// so that entity references will be current
 	if (client->datagram.overflowed)
-		Com_Printf ("WARNING: datagram overflowed for %s\n", client->name);
+		Com_WPrintf ("Datagram overflowed for %s\n", client->name);
 	else
 		SZ_Write (&msg, client->datagram.data, client->datagram.cursize);
 	SZ_Clear (&client->datagram);
 
 	if (msg.overflowed)
 	{	// must have room left for the packet header
-		Com_Printf ("WARNING: msg overflowed for %s\n", client->name);
+		Com_WPrintf ("Msg overflowed for %s\n", client->name);
 		SZ_Clear (&msg);
 	}
 
@@ -546,34 +546,27 @@ void SV_SendClientMessages (void)
 	// send a message to each connected client
 	for (i = 0, c = svs.clients ; i < maxclients->integer; i++, c++)
 	{
-		if (!c->state)
-			continue;
+		if (!c->state) continue;
 		// if the reliable message overflowed,
 		// drop the client
 		if (c->netchan.message.overflowed)
 		{
 			SZ_Clear (&c->netchan.message);
 			SZ_Clear (&c->datagram);
-			SV_BroadcastPrintf (PRINT_HIGH, "%s overflowed\n", c->name);
-			SV_DropClient (c);
+			SV_DropClient (c, "overflowed");
 		}
 
-		if (sv.state == ss_cinematic
-			|| sv.state == ss_demo
-			|| sv.state == ss_pic
-			)
+		if (sv.state == ss_cinematic || sv.state == ss_demo || sv.state == ss_pic)
 			Netchan_Transmit (&c->netchan, msglen, msgbuf);
 		else if (c->state == cs_spawned)
 		{
 			// don't overrun bandwidth
-			if (SV_RateDrop (c))
-				continue;
-
+			if (SV_RateDrop (c)) continue;
 			SV_SendClientDatagram (c);
 		}
 		else
 		{
-	// just update reliable	if needed
+			// just update reliable	if needed
 			if (c->netchan.message.cursize	|| curtime - c->netchan.last_sent > 1000 )
 				Netchan_Transmit (&c->netchan, 0, NULL);
 		}

@@ -150,7 +150,7 @@ void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t 
 			newnum = 9999;
 		else
 		{
-			newent = &svs.client_entities[(to->first_entity+newindex)%svs.num_client_entities];
+			newent = &svs.client_entities[(to->first_entity + newindex) % svs.num_client_entities];
 			newnum = newent->number;
 		}
 
@@ -158,7 +158,7 @@ void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t 
 			oldnum = 9999;
 		else
 		{
-			oldent = &svs.client_entities[(from->first_entity+oldindex)%svs.num_client_entities];
+			oldent = &svs.client_entities[(from->first_entity + oldindex) % svs.num_client_entities];
 			oldnum = oldent->number;
 		}
 
@@ -187,9 +187,9 @@ void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t 
 			if (oldnum >= 256)
 				bits |= U_NUMBER16 | U_MOREBITS1;
 
-			MSG_WriteByte (msg,	bits&255 );
-			if (bits & 0x0000ff00)
-				MSG_WriteByte (msg,	(bits>>8)&255 );
+			MSG_WriteByte (msg,	bits & 255);
+			if (bits & 0x0000FF00)
+				MSG_WriteByte (msg,	(bits>>8) & 255);
 
 			if (bits & U_NUMBER16)
 				MSG_WriteShort (msg, oldnum);

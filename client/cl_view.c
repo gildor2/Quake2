@@ -419,28 +419,25 @@ typedef struct
 	char	*name;
 } flagInfo_t;
 
-static void DrawFlag (int flag, flagInfo_t *info, int numFlags)
+static void DrawFlag (int flag, flagInfo_t *info, int numFlags, char *prefix)
 {
 	int		i;
 
 	for (i = 0; i < numFlags; i++, info++)
 		if (flag & info->code)
-			re.DrawTextLeft (info->name, 0.3, 0.6, 0.4);
+			re.DrawTextLeft (va("%s%s", prefix, info->name), 0.3, 0.6, 0.4);
 }
 
 
 static void DecodeContents (int i)
 {
 	static flagInfo_t contentsNames[] = {
-#define T(name)		{name, #name}
-		T(CONTENTS_SOLID),			T(CONTENTS_WINDOW),		T(CONTENTS_AUX),
-		T(CONTENTS_LAVA),			T(CONTENTS_SLIME),		T(CONTENTS_WATER),
-		T(CONTENTS_MIST),			T(CONTENTS_AREAPORTAL),	T(CONTENTS_PLAYERCLIP),
-		T(CONTENTS_MONSTERCLIP),	T(CONTENTS_CURRENT_0),	T(CONTENTS_CURRENT_90),
-		T(CONTENTS_CURRENT_180),	T(CONTENTS_CURRENT_270),T(CONTENTS_CURRENT_UP),
-		T(CONTENTS_CURRENT_DOWN),	T(CONTENTS_ORIGIN),		T(CONTENTS_MONSTER),
-		T(CONTENTS_DEADMONSTER),	T(CONTENTS_DETAIL),		T(CONTENTS_TRANSLUCENT),
-		T(CONTENTS_LADDER)
+#define T(name)		{CONTENTS_##name, #name}
+		T(SOLID),	T(WINDOW),		T(AUX),		T(LAVA),	T(SLIME),		T(WATER),
+		T(MIST),	T(AREAPORTAL),	T(PLAYERCLIP),	T(MONSTERCLIP),
+		T(CURRENT_0),	T(CURRENT_90),	T(CURRENT_180),	T(CURRENT_270),
+		T(CURRENT_UP),	T(CURRENT_DOWN),T(ORIGIN),		T(MONSTER),
+		T(DEADMONSTER),	T(DETAIL),		T(TRANSLUCENT),	T(LADDER)
 #undef T
 	};
 
@@ -449,7 +446,7 @@ static void DecodeContents (int i)
 	if (!i)
 		re.DrawTextLeft ("CONTENTS_EMPTY", 0.3, 0.6, 0.4);
 	else
-		DrawFlag (i, contentsNames, sizeof(contentsNames)/sizeof(flagInfo_t));
+		DrawFlag (i, contentsNames, sizeof(contentsNames)/sizeof(flagInfo_t), "CONTENTS_");
 }
 
 
@@ -463,12 +460,11 @@ static void DrawSurfInfo (void)
 	char	*s;
 
 	static flagInfo_t surfNames[] = {
-#define T(name)		{name, #name}
-		T(SURF_LIGHT),	T(SURF_SLICK),	T(SURF_SKY),
-		T(SURF_WARP),	T(SURF_TRANS33),T(SURF_TRANS66),
-		T(SURF_FLOWING),T(SURF_NODRAW),
+#define T(name)		{SURF_##name, #name}
+		T(LIGHT), T(SLICK), T(SKY), T(WARP),
+		T(TRANS33), T(TRANS66), T(FLOWING), T(NODRAW),
 		// Kingpin flags
-		T(SURF_ALPHA), T(SURF_DIFFUSE), T(SURF_SPECULAR)
+		T(ALPHA), T(DIFFUSE), T(SPECULAR)
 #undef T
 	};
 
@@ -512,7 +508,7 @@ static void DrawSurfInfo (void)
 			re.DrawTextLeft (va("Normal: %g  %g  %g", norm[0], norm[1], norm[2]), 0.2, 0.4, 1);
 			if (surf->value)
 				re.DrawTextLeft (va("Value: %i (0x%X)", surf->value, surf->value), 0.2, 0.4, 1);
-			DrawFlag (surf->flags, surfNames, sizeof(surfNames)/sizeof(flagInfo_t));
+			DrawFlag (surf->flags, surfNames, sizeof(surfNames)/sizeof(flagInfo_t), "SURF_");
 #define SURF_KNOWN	(0xFF|SURF_ALPHA|SURF_DIFFUSE|SURF_SPECULAR)
 			if (surf->flags & ~SURF_KNOWN) // unknown flags
 				re.DrawTextLeft (va("SURF_UNK_%X", surf->flags & ~SURF_KNOWN), 0.6, 0.3, 0.4);

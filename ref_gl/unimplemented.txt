@@ -1,14 +1,18 @@
 !!! game_loading screenshots:
   - update when written new file (force to update inside renderer after screenshot performing: find loaded images and reload, pics only)
   - display from menu
+?* bug: when "hand 2" - "NULL model"
+?* bug: game="", noclip, player model selection menu: player model appear on world scene too
 
 ? cmodel_t:
   - add "void *faces"   - filled/used by renderer (and clean R_LoadSubmodels)
   - add "vec3_t center" - who will fill/update this ? ((mod->mins+mod->maxs)/2+ent->origin)
+? remove gl_fog stuff
 
 - color shell: should use size=0.5 for weapons and =3 for main model (use "fromEntity" ?)
 - reflections:
   - small bugs when one can see througs another (for example, lift on map "japan"; "ground3") - unstable draw order
+    (or not enough vertex buffer size -- in this case, multitexturing for envmaps will help)
   - adjust ALPHAGEN_DOT consts (+ compensate near distances -- too opaque)
   - should add reflections on SURF_ALPHA with minAlpha > 0 (require to check image)
   - map "ground3": invalid reflections on smoke - should not be (used tex with maxAlpha=0)
@@ -89,6 +93,8 @@ PreprocessShader:
   	else				side1 = 3;
      to detect side[1|2] (no error when used "<=" and ">=" instead of "<" and ">")
 
+- map "ha5" (dirty/test/): cannot build lightmap
+
 BUGS:
 ! gl_singleShader don't works with dynamic lightmaps
 ? map "terrain", light cone from helicopter: too opaque when overbright is 1 (invalid lightmap on alpha-surf ?)
@@ -123,13 +129,11 @@ FOR GAME:
   (texture_env_combine (slightly different!), texture_env_add etc.)
 ? rail fx (change)
 - optimize sky box drawing:
-  - make more than 6 rects (6 * skyTessSize^2)
-  - perform fast surface tesselation (need only verts.xyz)
   ? can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs) (problems when surf can be placed on some
     box sides)
-  - can use surface normal to determine IMPOSSIBLE planes
-  - find fast cases, when surface placed only on one plane
-- gl_showbboxes, gl_singleShader, gl_showtris -> cheat
+  ? can use surface normal to determine IMPOSSIBLE planes
+  - find fast cases, when surface placed only on one plane (use surface bounds ?)
+- gl_showbboxes, gl_singleShader, gl_showtris, gl_shownormals -> cheat
 - vertex lighting:
   - surface simplification (?) + subdivision (!) for complex lightmaps (non-gradient color change) - as option
     (lighting = "lightmap", "vertex", "hq vertex")
@@ -139,7 +143,7 @@ FOR GAME:
   ?? add profiling (qgl.in: PROFILE)
 ?? make area_t, cluster_t, area.clusterList, cluster.leafList (faster MarkLeafs()/LightPoint())
 ? make skins for models with 1 frame to be sh.fast==true (and implement it in AGP memory);
-  Problem: how to apply lighting? (and: skins may be dynamically changed from "fast" to "slow")
+  Problem: how to apply lighting (use hw lights)? (and: skins may be dynamically changed from "fast" to "slow")
 ! triangle models: build lods
 ? "gl_alphaLightmap" (arc, def: "1") -- can disable lighting of alpha/warp surfaces; add option to menu
   (easy implement, but naming problems ...)

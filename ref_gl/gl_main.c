@@ -690,9 +690,8 @@ static void GL_RenderFrame (refdef_t *fd)
 	vp.time = fd->time;
 
 	// add entities
-	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.cullEnts2 = 0;
+	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.cullEntsBox = gl_speeds.cullEnts2 = 0;
 	vp.firstEntity = gl_numEntities;
-	vp.numEntities = fd->num_entities;
 	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
 		GL_AddEntity (ent);
 
@@ -731,8 +730,8 @@ static void GL_RenderFrame (refdef_t *fd)
 			gl_speeds.surfs, gl_speeds.cullSurfs), 1, 0.5, 0);
 		DrawTextRight (va("tris: %d mtex: %1.2f",
 			gl_speeds.trisMT, gl_speeds.trisMT ? (float)gl_speeds.tris / gl_speeds.trisMT : 0), 1, 0.5, 0);
-		DrawTextRight (va("ents: %d fcull: %d cull: %d",
-			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEnts2), 1, 0.5, 0);
+		DrawTextRight (va("ents: %d fcull: %d+%d cull: %d",
+			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEntsBox, gl_speeds.cullEnts2), 1, 0.5, 0);
 		DrawTextRight (va("particles: %d cull: %d",
 			gl_speeds.parts, gl_speeds.cullParts), 1, 0.5, 0);
 		DrawTextRight (va("dlights: %d surfs: %d verts: %d",

@@ -551,7 +551,7 @@ typedef struct
 	int		leafs, visLeafs, frustLeafs;	//?? frustLeafs -> ~cullLeafs
 	int		surfs, cullSurfs;
 	int		tris, trisMT;		// number of tris, which will be drawn without mtex and with mtex (same if no multitexture)
-	int		ents, cullEnts, cullEnts2;
+	int		ents, cullEnts, cullEntsBox, cullEnts2;
 	int		parts, cullParts;	// particles
 	int		dlightSurfs, dlightVerts;
 	int		flares, testFlares, cullFlares;

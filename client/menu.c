@@ -2904,7 +2904,7 @@ BROWSE FOR MAP
 =======================================================================
 */
 
-#define MAX_BROWSE_MAPS		512
+#define MAX_BROWSE_MAPS		1024
 #define THUMBNAIL_BORDER	4
 #define THUMBNAIL_TEXT		10
 
@@ -2945,15 +2945,13 @@ static thumbLayout_t thumbLayout[] =
 /*
  * Read screenshots list and refine it with maps that doesn't exists. Do not bother
  * about freeing screenshots from imagelist - this will be done automatically when a
- * new level started (??) (registration sequence is less than new level sequence by 1 ...)
+ * new level started (NOT IMPLEMENTED NOW !!) (registration sequence is less than new level sequence by 1 ...)
  */
 static qboolean DMBrowse_MenuInit ()
 {
 	basenamed_t *item;
-	char	*name, *ext;
+	char	*name, *ext, *path;
 	int		i, x, y, oldcount;
-
-	char *path = NULL;
 
 	// free previous levelshots list
 	if (browse_list)
@@ -2983,7 +2981,12 @@ static qboolean DMBrowse_MenuInit ()
 	thumbs.x0 = (x - thumbs.cx * thumbs.dx + thumbs.dx - thumbs.w) / 2;	// (x-cx*dx)/2 + (dx-w)/2
 	thumbs.y0 = (y - thumbs.cy * thumbs.dy + thumbs.dy - thumbs.h) / 2 - 8;
 
-	browse_list = FS_ListFiles ("levelshots/*.*", NULL, 0, SFF_SUBDIR);
+	path = NULL;
+	do
+	{
+		path = FS_NextPath (path);
+		if (browse_list = FS_ListFiles (va("%s/levelshots/*.*", path), NULL, 0, SFF_SUBDIR)) break;
+	} while (path);
 	for (item = browse_list; item; item = item->next)
 	{
 		name = strrchr (item->name, '/');

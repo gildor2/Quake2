@@ -366,190 +366,49 @@ void DDRAW_Shutdown( void )
 
 static const char *DDrawError (int code)
 {
-    switch(code) {
-        case DD_OK:
-            return "DD_OK";
-        case DDERR_ALREADYINITIALIZED:
-            return "DDERR_ALREADYINITIALIZED";
-        case DDERR_BLTFASTCANTCLIP:
-            return "DDERR_BLTFASTCANTCLIP";
-        case DDERR_CANNOTATTACHSURFACE:
-            return "DDER_CANNOTATTACHSURFACE";
-        case DDERR_CANNOTDETACHSURFACE:
-            return "DDERR_CANNOTDETACHSURFACE";
-        case DDERR_CANTCREATEDC:
-            return "DDERR_CANTCREATEDC";
-        case DDERR_CANTDUPLICATE:
-            return "DDER_CANTDUPLICATE";
-        case DDERR_CLIPPERISUSINGHWND:
-            return "DDER_CLIPPERUSINGHWND";
-        case DDERR_COLORKEYNOTSET:
-            return "DDERR_COLORKEYNOTSET";
-        case DDERR_CURRENTLYNOTAVAIL:
-            return "DDERR_CURRENTLYNOTAVAIL";
-        case DDERR_DIRECTDRAWALREADYCREATED:
-            return "DDERR_DIRECTDRAWALREADYCREATED";
-        case DDERR_EXCEPTION:
-            return "DDERR_EXCEPTION";
-        case DDERR_EXCLUSIVEMODEALREADYSET:
-            return "DDERR_EXCLUSIVEMODEALREADYSET";
-        case DDERR_GENERIC:
-            return "DDERR_GENERIC";
-        case DDERR_HEIGHTALIGN:
-            return "DDERR_HEIGHTALIGN";
-        case DDERR_HWNDALREADYSET:
-            return "DDERR_HWNDALREADYSET";
-        case DDERR_HWNDSUBCLASSED:
-            return "DDERR_HWNDSUBCLASSED";
-        case DDERR_IMPLICITLYCREATED:
-            return "DDERR_IMPLICITLYCREATED";
-        case DDERR_INCOMPATIBLEPRIMARY:
-            return "DDERR_INCOMPATIBLEPRIMARY";
-        case DDERR_INVALIDCAPS:
-            return "DDERR_INVALIDCAPS";
-        case DDERR_INVALIDCLIPLIST:
-            return "DDERR_INVALIDCLIPLIST";
-        case DDERR_INVALIDDIRECTDRAWGUID:
-            return "DDERR_INVALIDDIRECTDRAWGUID";
-        case DDERR_INVALIDMODE:
-            return "DDERR_INVALIDMODE";
-        case DDERR_INVALIDOBJECT:
-            return "DDERR_INVALIDOBJECT";
-        case DDERR_INVALIDPARAMS:
-            return "DDERR_INVALIDPARAMS";
-        case DDERR_INVALIDPIXELFORMAT:
-            return "DDERR_INVALIDPIXELFORMAT";
-        case DDERR_INVALIDPOSITION:
-            return "DDERR_INVALIDPOSITION";
-        case DDERR_INVALIDRECT:
-            return "DDERR_INVALIDRECT";
-        case DDERR_LOCKEDSURFACES:
-            return "DDERR_LOCKEDSURFACES";
-        case DDERR_NO3D:
-            return "DDERR_NO3D";
-        case DDERR_NOALPHAHW:
-            return "DDERR_NOALPHAHW";
-        case DDERR_NOBLTHW:
-            return "DDERR_NOBLTHW";
-        case DDERR_NOCLIPLIST:
-            return "DDERR_NOCLIPLIST";
-        case DDERR_NOCLIPPERATTACHED:
-            return "DDERR_NOCLIPPERATTACHED";
-        case DDERR_NOCOLORCONVHW:
-            return "DDERR_NOCOLORCONVHW";
-        case DDERR_NOCOLORKEY:
-            return "DDERR_NOCOLORKEY";
-        case DDERR_NOCOLORKEYHW:
-            return "DDERR_NOCOLORKEYHW";
-        case DDERR_NOCOOPERATIVELEVELSET:
-            return "DDERR_NOCOOPERATIVELEVELSET";
-        case DDERR_NODC:
-            return "DDERR_NODC";
-        case DDERR_NODDROPSHW:
-            return "DDERR_NODDROPSHW";
-        case DDERR_NODIRECTDRAWHW:
-            return "DDERR_NODIRECTDRAWHW";
-        case DDERR_NOEMULATION:
-            return "DDERR_NOEMULATION";
-        case DDERR_NOEXCLUSIVEMODE:
-            return "DDERR_NOEXCLUSIVEMODE";
-        case DDERR_NOFLIPHW:
-            return "DDERR_NOFLIPHW";
-        case DDERR_NOGDI:
-            return "DDERR_NOGDI";
-        case DDERR_NOHWND:
-            return "DDERR_NOHWND";
-        case DDERR_NOMIRRORHW:
-            return "DDERR_NOMIRRORHW";
-        case DDERR_NOOVERLAYDEST:
-            return "DDERR_NOOVERLAYDEST";
-        case DDERR_NOOVERLAYHW:
-            return "DDERR_NOOVERLAYHW";
-        case DDERR_NOPALETTEATTACHED:
-            return "DDERR_NOPALETTEATTACHED";
-        case DDERR_NOPALETTEHW:
-            return "DDERR_NOPALETTEHW";
-        case DDERR_NORASTEROPHW:
-            return "Operation could not be carried out because there is no appropriate raster op hardware present or available.\0";
-        case DDERR_NOROTATIONHW:
-            return "Operation could not be carried out because there is no rotation hardware present or available.\0";
-        case DDERR_NOSTRETCHHW:
-            return "Operation could not be carried out because there is no hardware support for stretching.\0";
-        case DDERR_NOT4BITCOLOR:
-            return "DirectDrawSurface is not in 4 bit color palette and the requested operation requires 4 bit color palette.\0";
-        case DDERR_NOT4BITCOLORINDEX:
-            return "DirectDrawSurface is not in 4 bit color index palette and the requested operation requires 4 bit color index palette.\0";
-        case DDERR_NOT8BITCOLOR:
-            return "DDERR_NOT8BITCOLOR";
-        case DDERR_NOTAOVERLAYSURFACE:
-            return "Returned when an overlay member is called for a non-overlay surface.\0";
-        case DDERR_NOTEXTUREHW:
-            return "Operation could not be carried out because there is no texture mapping hardware present or available.\0";
-        case DDERR_NOTFLIPPABLE:
-            return "DDERR_NOTFLIPPABLE";
-        case DDERR_NOTFOUND:
-            return "DDERR_NOTFOUND";
-        case DDERR_NOTLOCKED:
-            return "DDERR_NOTLOCKED";
-        case DDERR_NOTPALETTIZED:
-            return "DDERR_NOTPALETTIZED";
-        case DDERR_NOVSYNCHW:
-            return "DDERR_NOVSYNCHW";
-        case DDERR_NOZBUFFERHW:
-            return "Operation could not be carried out because there is no hardware support for zbuffer blitting.\0";
-        case DDERR_NOZOVERLAYHW:
-            return "Overlay surfaces could not be z layered based on their BltOrder because the hardware does not support z layering of overlays.\0";
-        case DDERR_OUTOFCAPS:
-            return "The hardware needed for the requested operation has already been allocated.\0";
-        case DDERR_OUTOFMEMORY:
-            return "DDERR_OUTOFMEMORY";
-        case DDERR_OUTOFVIDEOMEMORY:
-            return "DDERR_OUTOFVIDEOMEMORY";
-        case DDERR_OVERLAYCANTCLIP:
-            return "The hardware does not support clipped overlays.\0";
-        case DDERR_OVERLAYCOLORKEYONLYONEACTIVE:
-            return "Can only have ony color key active at one time for overlays.\0";
-        case DDERR_OVERLAYNOTVISIBLE:
-            return "Returned when GetOverlayPosition is called on a hidden overlay.\0";
-        case DDERR_PALETTEBUSY:
-            return "DDERR_PALETTEBUSY";
-        case DDERR_PRIMARYSURFACEALREADYEXISTS:
-            return "DDERR_PRIMARYSURFACEALREADYEXISTS";
-        case DDERR_REGIONTOOSMALL:
-            return "Region passed to Clipper::GetClipList is too small.\0";
-        case DDERR_SURFACEALREADYATTACHED:
-            return "DDERR_SURFACEALREADYATTACHED";
-        case DDERR_SURFACEALREADYDEPENDENT:
-            return "DDERR_SURFACEALREADYDEPENDENT";
-        case DDERR_SURFACEBUSY:
-            return "DDERR_SURFACEBUSY";
-        case DDERR_SURFACEISOBSCURED:
-            return "Access to surface refused because the surface is obscured.\0";
-        case DDERR_SURFACELOST:
-            return "DDERR_SURFACELOST";
-        case DDERR_SURFACENOTATTACHED:
-            return "DDERR_SURFACENOTATTACHED";
-        case DDERR_TOOBIGHEIGHT:
-            return "Height requested by DirectDraw is too large.\0";
-        case DDERR_TOOBIGSIZE:
-            return "Size requested by DirectDraw is too large, but the individual height and width are OK.\0";
-        case DDERR_TOOBIGWIDTH:
-            return "Width requested by DirectDraw is too large.\0";
-        case DDERR_UNSUPPORTED:
-            return "DDERR_UNSUPPORTED";
-        case DDERR_UNSUPPORTEDFORMAT:
-            return "FOURCC format requested is unsupported by DirectDraw.\0";
-        case DDERR_UNSUPPORTEDMASK:
-            return "Bitmask in the pixel format requested is unsupported by DirectDraw.\0";
-        case DDERR_VERTICALBLANKINPROGRESS:
-            return "Vertical blank is in progress.\0";
-        case DDERR_WASSTILLDRAWING:
-            return "DDERR_WASSTILLDRAWING";
-        case DDERR_WRONGMODE:
-            return "This surface can not be restored because it was created in a different mode.\0";
-        case DDERR_XALIGN:
-            return "Rectangle provided was not horizontally aligned on required boundary.\0";
-        default:
-            return "UNKNOWN\0";
+	static struct {
+		int		code;
+		char	*str;
+	} info[] = {
+		// list DirectDraw error consts
+#define T(str)	{DDERR_##str, #str}
+		T(ALREADYINITIALIZED), T(BLTFASTCANTCLIP), T(CANNOTATTACHSURFACE), T(CANNOTDETACHSURFACE),
+		T(CANTCREATEDC), T(CANTDUPLICATE), T(CLIPPERISUSINGHWND), T(COLORKEYNOTSET), T(CURRENTLYNOTAVAIL),
+		T(DIRECTDRAWALREADYCREATED), T(EXCEPTION), T(EXCLUSIVEMODEALREADYSET), T(GENERIC), T(HEIGHTALIGN),
+		T(HWNDALREADYSET), T(HWNDSUBCLASSED), T(IMPLICITLYCREATED), T(INCOMPATIBLEPRIMARY), T(INVALIDCAPS),
+		T(INVALIDCLIPLIST), T(INVALIDDIRECTDRAWGUID), T(INVALIDMODE), T(INVALIDOBJECT), T(INVALIDPARAMS),
+		T(INVALIDPIXELFORMAT), T(INVALIDPOSITION), T(INVALIDRECT), T(LOCKEDSURFACES), T(NO3D), T(NOALPHAHW),
+		T(NOBLTHW), T(NOCLIPLIST), T(NOCLIPPERATTACHED), T(NOCOLORCONVHW), T(NOCOLORKEY), T(NOCOLORKEYHW),
+		T(NOCOOPERATIVELEVELSET), T(NODC), T(NODDROPSHW), T(NODIRECTDRAWHW), T(NOEMULATION),
+		T(NOEXCLUSIVEMODE), T(NOFLIPHW), T(NOGDI), T(NOHWND), T(NOMIRRORHW), T(NOOVERLAYDEST), T(NOOVERLAYHW),
+		T(NOPALETTEATTACHED), T(NOPALETTEHW), T(NORASTEROPHW), T(NOROTATIONHW), T(NOSTRETCHHW), T(NOT4BITCOLOR),
+		T(NOT4BITCOLORINDEX), T(NOT8BITCOLOR), T(NOTAOVERLAYSURFACE), T(NOTEXTUREHW), T(NOTFLIPPABLE),
+		T(NOTFOUND), T(NOTLOCKED), T(NOTPALETTIZED), T(NOVSYNCHW), T(NOZBUFFERHW), T(NOZOVERLAYHW), T(OUTOFCAPS),
+		T(OUTOFMEMORY), T(OUTOFVIDEOMEMORY), T(OVERLAYCANTCLIP), T(OVERLAYCOLORKEYONLYONEACTIVE),
+		T(OVERLAYNOTVISIBLE), T(PALETTEBUSY), T(PRIMARYSURFACEALREADYEXISTS), T(REGIONTOOSMALL),
+		T(SURFACEALREADYATTACHED), T(SURFACEALREADYDEPENDENT), T(SURFACEBUSY), T(SURFACEISOBSCURED),
+		T(SURFACELOST), T(SURFACENOTATTACHED), T(TOOBIGHEIGHT), T(TOOBIGSIZE), T(TOOBIGWIDTH), T(UNSUPPORTED),
+		T(UNSUPPORTEDFORMAT), T(UNSUPPORTEDMASK), T(VERTICALBLANKINPROGRESS), T(WASSTILLDRAWING),
+		T(WRONGMODE), T(XALIGN)
+	};
+
+	if (code == DD_OK)
+		return "DD_OK";
+	else
+	{
+		char	*s;
+		int		i;
+
+		s = NULL;
+		for (i = 0; i < sizeof(info) / sizeof(info[0]); i++)
+			if (info[i].code == code)
+			{
+				s = info[i].str;
+				break;
+			}
+		if (s)
+			return va("DDERR_%s", s);
+		else
+			return va("DDERR_UNK_%d", code);
 	}
 }

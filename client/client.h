@@ -530,7 +530,10 @@ extern	char *svc_strings[256];
 
 void CL_ParseServerMessage (void);
 void CL_LoadClientinfo (clientinfo_t *ci, char *s);
-void SHOWNET(char *s);
+
+#define SHOWNET(s)	\
+	if (cl_shownet->integer >= 2) Com_Printf ("%3d:%s\n", net_message.readcount-1, s);
+
 void CL_ParseClientinfo (int player);
 void CL_Download_f (void);
 

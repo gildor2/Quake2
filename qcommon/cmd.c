@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 void Cmd_ForwardToServer (void);
 
 
-static qboolean cmdWait;
+static int cmdWait;
 
 #define	ALIAS_LOOP_COUNT	64
 static int	aliasCount;		// for detecting runaway loops
@@ -43,7 +43,17 @@ bind g "impulse 5 ; +attack ; wait ; -attack ; impulse 2"
 */
 static void Cmd_Wait_f (void)
 {
-	cmdWait = true;
+	switch (Cmd_Argc ())
+	{
+	case 1:
+		cmdWait = 1;
+		break;
+	case 2:
+		cmdWait = atoi (Cmd_Argv(1));
+		break;
+	default:
+		Com_Printf ("Usage: wait [<num_frames>]\n");
+	}
 }
 
 
@@ -196,6 +206,14 @@ void Cbuf_Execute (void)
 
 	while (cmd_text.cursize)
 	{
+		if (cmdWait)
+		{
+			// skip out while text still remains in buffer, leaving it
+			// for next frame
+			cmdWait--;
+			break;
+		}
+
 		// find a \n or ; line break
 		text = (char*)cmd_text.data;
 
@@ -241,14 +259,6 @@ void Cbuf_Execute (void)
 
 		// execute the command line
 		Cmd_ExecuteString (line);
-
-		if (cmdWait)
-		{
-			// skip out while text still remains in buffer, leaving it
-			// for next frame
-			cmdWait = false;
-			break;
-		}
 	}
 }
 

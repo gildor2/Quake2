@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // net_wins.c
 
-#include "winsock.h"
+#include "winsock2.h"
 #include "wsipx.h"
 #include "../qcommon/qcommon.h"
 
@@ -33,8 +33,8 @@ typedef struct
 
 typedef struct
 {
-	loopmsg_t	msgs[MAX_LOOPBACK];
-	int			get, send;
+	loopmsg_t msgs[MAX_LOOPBACK];
+	int		get, send;
 } loopback_t;
 
 
@@ -42,11 +42,54 @@ cvar_t		*net_shownet;
 static cvar_t	*noudp;
 static cvar_t	*noipx;
 
-loopback_t	loopbacks[2];
-int			ip_sockets[2];
-int			ipx_sockets[2];
+static loopback_t	loopbacks[2];
+static int			ip_sockets[2];
+static int			ipx_sockets[2];
 
-char *NET_ErrorString (void);
+
+/*
+====================
+NET_ErrorString
+====================
+*/
+static char *NET_ErrorString (void)
+{
+	int		i, code;
+	char	*s;
+	static struct {
+		int		code;
+		char	*str;
+	} info[] = {
+		// list winsock2 error consts
+#define T(str)	{WSA##str, #str}
+		T(EINTR), T(EBADF), T(EACCES), T(EDISCON), T(EFAULT), T(EINVAL), T(EMFILE),
+		T(EWOULDBLOCK), T(EINPROGRESS), T(EALREADY), T(ENOTSOCK), T(EDESTADDRREQ),
+		T(EMSGSIZE), T(EPROTOTYPE), T(ENOPROTOOPT), T(EPROTONOSUPPORT), T(ESOCKTNOSUPPORT),
+		T(EOPNOTSUPP), T(EPFNOSUPPORT), T(EAFNOSUPPORT), T(EADDRINUSE), T(EADDRNOTAVAIL),
+		T(ENETDOWN), T(ENETUNREACH), T(ENETRESET), T(ECONNABORTED), T(ECONNRESET), T(ENOBUFS),
+		T(EISCONN), T(ENOTCONN), T(ESHUTDOWN), T(ETOOMANYREFS), T(ETIMEDOUT), T(ECONNREFUSED),
+		T(ELOOP), T(ENAMETOOLONG), T(EHOSTDOWN), T(EHOSTUNREACH), T(ENOTEMPTY), T(EPROCLIM),
+		T(EUSERS), T(EDQUOT), T(ESTALE), T(EREMOTE), T(SYSNOTREADY), T(VERNOTSUPPORTED),
+		T(NOTINITIALISED), T(EDISCON), T(ENOMORE), T(ECANCELLED), T(EINVALIDPROCTABLE),
+		T(EINVALIDPROVIDER), T(EPROVIDERFAILEDINIT), T(SYSCALLFAILURE), T(SERVICE_NOT_FOUND),
+		T(TYPE_NOT_FOUND), T(_E_NO_MORE), T(_E_CANCELLED), T(EREFUSED), T(HOST_NOT_FOUND),
+		T(TRY_AGAIN), T(NO_RECOVERY), T(NO_DATA)
+#undef ERR
+	};
+
+	code = WSAGetLastError ();
+	s = NULL;
+	for (i = 0; i < sizeof(info) / sizeof(info[0]); i++)
+		if (info[i].code == code)
+		{
+			s = info[i].str;
+			break;
+		}
+	if (s)
+		return va("WSA%s", s);
+	else
+		return va("WSA_ERR_%d", code);
+}
 
 //=============================================================================
 
@@ -54,31 +97,30 @@ void NetadrToSockadr (netadr_t *a, struct sockaddr *s)
 {
 	memset (s, 0, sizeof(*s));
 
-	if (a->type == NA_BROADCAST)
+	switch (a->type)
 	{
+	case NA_BROADCAST:
 		((struct sockaddr_in *)s)->sin_family = AF_INET;
 		((struct sockaddr_in *)s)->sin_port = a->port;
 		((struct sockaddr_in *)s)->sin_addr.s_addr = INADDR_BROADCAST;
-	}
-	else if (a->type == NA_IP)
-	{
+		break;
+	case NA_IP:
 		((struct sockaddr_in *)s)->sin_family = AF_INET;
 		((struct sockaddr_in *)s)->sin_addr.s_addr = *(int *)&a->ip;
 		((struct sockaddr_in *)s)->sin_port = a->port;
-	}
-	else if (a->type == NA_IPX)
-	{
+		break;
+	case NA_IPX:
 		((struct sockaddr_ipx *)s)->sa_family = AF_IPX;
 		memcpy(((struct sockaddr_ipx *)s)->sa_netnum, &a->ipx[0], 4);
 		memcpy(((struct sockaddr_ipx *)s)->sa_nodenum, &a->ipx[4], 6);
 		((struct sockaddr_ipx *)s)->sa_socket = a->port;
-	}
-	else if (a->type == NA_BROADCAST_IPX)
-	{
+		break;
+	case NA_BROADCAST_IPX:
 		((struct sockaddr_ipx *)s)->sa_family = AF_IPX;
 		memset(((struct sockaddr_ipx *)s)->sa_netnum, 0, 4);
 		memset(((struct sockaddr_ipx *)s)->sa_nodenum, 0xff, 6);
 		((struct sockaddr_ipx *)s)->sa_socket = a->port;
+		break;
 	}
 }
 
@@ -100,22 +142,23 @@ void SockadrToNetadr (struct sockaddr *s, netadr_t *a)
 }
 
 
-qboolean	NET_CompareAdr (netadr_t a, netadr_t b)
+qboolean NET_CompareAdr (netadr_t a, netadr_t b)
 {
 	if (a.type != b.type)
 		return false;
 
-	if (a.type == NA_LOOPBACK)
-		return true;
-	else if (a.type == NA_IP)
+	switch (a.type)
 	{
+	case NA_LOOPBACK:
+		return true;
+	case NA_IP:
 		if (a.ip[0] == b.ip[0] && a.ip[1] == b.ip[1] && a.ip[2] == b.ip[2] && a.ip[3] == b.ip[3] && a.port == b.port)
 			return true;
-	}
-	else if (a.type == NA_IPX)
-	{
+		break;
+	case NA_IPX:
 		if ((memcmp(a.ipx, b.ipx, 10) == 0) && a.port == b.port)
 			return true;
+		break;
 	}
 
 	return false;
@@ -128,7 +171,7 @@ NET_CompareBaseAdr
 Compares without the port
 ===================
 */
-qboolean	NET_CompareBaseAdr (netadr_t a, netadr_t b)
+qboolean NET_CompareBaseAdr (netadr_t a, netadr_t b)
 {
 	if (a.type != b.type)
 		return false;
@@ -149,7 +192,7 @@ qboolean	NET_CompareBaseAdr (netadr_t a, netadr_t b)
 	return false;
 }
 
-char	*NET_AdrToString (netadr_t a)
+char *NET_AdrToString (netadr_t a)
 {
 	static	char	s[64];
 
@@ -175,7 +218,7 @@ idnewt:28000
 192.246.40.70:28000
 =============
 */
-qboolean	NET_StringToSockaddr (char *s, struct sockaddr *sadr)
+qboolean NET_StringToSockaddr (char *s, struct sockaddr *sadr)
 {
 	struct hostent	*h;
 	char	*colon;
@@ -248,7 +291,7 @@ idnewt:28000
 192.246.40.70:28000
 =============
 */
-qboolean	NET_StringToAdr (char *s, netadr_t *a)
+qboolean NET_StringToAdr (char *s, netadr_t *a)
 {
 	struct sockaddr sadr;
 
@@ -281,7 +324,7 @@ LOOPBACK BUFFERS FOR LOCAL PLAYER
 =============================================================================
 */
 
-qboolean	NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
+qboolean NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 {
 	int		i;
 	loopback_t	*loop;
@@ -322,7 +365,7 @@ void NET_SendLoopPacket (netsrc_t sock, int length, void *data, netadr_t to)
 
 //=============================================================================
 
-qboolean	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
+qboolean NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 {
 	int 	ret;
 	struct sockaddr from;
@@ -345,28 +388,20 @@ qboolean	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_messag
 			continue;
 
 		fromlen = sizeof(from);
-		ret = recvfrom (net_socket, net_message->data, net_message->maxsize
-			, 0, (struct sockaddr *)&from, &fromlen);
+		ret = recvfrom (net_socket, net_message->data, net_message->maxsize, 0, (struct sockaddr *)&from, &fromlen);
 
 		SockadrToNetadr (&from, net_from);
 
-		if (ret == -1)
+		if (ret == SOCKET_ERROR)
 		{
 			err = WSAGetLastError();
 
-			if (err == WSAEWOULDBLOCK)
+			if (err == WSAEWOULDBLOCK || err == WSAECONNRESET)	// WSAECONNRESET: see Q263823 in MSDN (applies to Win2k)
 				continue;
 			if (err == WSAEMSGSIZE)
-			{
-				Com_WPrintf ("Oversize packet from %s\n",
-						NET_AdrToString(*net_from));
-				continue;
-			}
-
-			if (dedicated->integer)	// let dedicated servers continue after errors
-				Com_WPrintf ("NET_GetPacket: %s from %s\n", NET_ErrorString(), NET_AdrToString(*net_from));
+				Com_WPrintf ("Oversize packet from %s\n", NET_AdrToString(*net_from));
 			else
-				Com_Error (ERR_DROP, "NET_GetPacket: %s from %s", NET_ErrorString(), NET_AdrToString(*net_from));
+				Com_DPrintf ("NET_GetPacket(%s): %s\n", NET_AdrToString(*net_from), NET_ErrorString());
 			continue;
 		}
 
@@ -391,43 +426,32 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
 	struct sockaddr	addr;
 	int		net_socket;
 
-	if (to.type == NA_LOOPBACK)
+	switch (to.type)
 	{
+	case NA_LOOPBACK:
 		NET_SendLoopPacket (sock, length, data, to);
 		return;
-	}
-
-	if (to.type == NA_BROADCAST)
-	{
+	case NA_BROADCAST:
 		net_socket = ip_sockets[sock];
-		if (!net_socket)
-			return;
-	}
-	else if (to.type == NA_IP)
-	{
+		break;
+	case NA_IP:
 		net_socket = ip_sockets[sock];
-		if (!net_socket)
-			return;
-	}
-	else if (to.type == NA_IPX)
-	{
+		break;
+	case NA_IPX:
 		net_socket = ipx_sockets[sock];
-		if (!net_socket)
-			return;
-	}
-	else if (to.type == NA_BROADCAST_IPX)
-	{
+		break;
+	case NA_BROADCAST_IPX:
 		net_socket = ipx_sockets[sock];
-		if (!net_socket)
-			return;
+		break;
+	default:
+		Com_Error (ERR_FATAL, "NET_SendPacket: bad address type %d", to.type);
 	}
-	else
-		Com_Error (ERR_FATAL, "NET_SendPacket: bad address type");
+	if (!net_socket) return;
 
 	NetadrToSockadr (&to, &addr);
 
 	ret = sendto (net_socket, data, length, 0, &addr, sizeof(addr) );
-	if (ret == -1)
+	if (ret == SOCKET_ERROR)
 	{
 		int err = WSAGetLastError();
 
@@ -439,15 +463,7 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
 		if ((err == WSAEADDRNOTAVAIL) && ((to.type == NA_BROADCAST) || (to.type == NA_BROADCAST_IPX)))
 			return;
 
-		if (dedicated->integer)	// let dedicated servers continue after errors
-			Com_WPrintf ("NET_SendPacket: %s to %s\n", NET_ErrorString(), NET_AdrToString (to));
-		else
-		{
-			if (err == WSAEADDRNOTAVAIL)
-				Com_DPrintf ("NET_SendPacket Warning: %s : %s\n", NET_ErrorString(), NET_AdrToString (to));
-			else
-				Com_Error (ERR_DROP, "NET_SendPacket: %s to %s\n", NET_ErrorString(), NET_AdrToString (to));
-		}
+		Com_DPrintf ("NET_SendPacket(%s): %s\n", NET_AdrToString (to), NET_ErrorString());
 	}
 }
 
@@ -772,72 +788,8 @@ CVAR_END
 NET_Shutdown
 ====================
 */
-void	NET_Shutdown (void)
+void NET_Shutdown (void)
 {
 	NET_Config (false);	// close sockets
-
 	WSACleanup ();
-}
-
-
-/*
-====================
-NET_ErrorString
-====================
-*/
-static char *NET_ErrorString (void)
-{
-	int		code;
-
-	code = WSAGetLastError ();
-	switch (code)
-	{
-#define ERR(str)	case str: return #str
-	ERR(WSAEINTR);
-	ERR(WSAEBADF);
-	ERR(WSAEACCES);
-	ERR(WSAEDISCON);
-	ERR(WSAEFAULT);
-	ERR(WSAEINVAL);
-	ERR(WSAEMFILE);
-	ERR(WSAEWOULDBLOCK);
-	ERR(WSAEINPROGRESS);
-	ERR(WSAEALREADY);
-	ERR(WSAENOTSOCK);
-	ERR(WSAEDESTADDRREQ);
-	ERR(WSAEMSGSIZE);
-	ERR(WSAEPROTOTYPE);
-	ERR(WSAENOPROTOOPT);
-	ERR(WSAEPROTONOSUPPORT);
-	ERR(WSAESOCKTNOSUPPORT);
-	ERR(WSAEOPNOTSUPP);
-	ERR(WSAEPFNOSUPPORT);
-	ERR(WSAEAFNOSUPPORT);
-	ERR(WSAEADDRINUSE);
-	ERR(WSAEADDRNOTAVAIL);
-	ERR(WSAENETDOWN);
-	ERR(WSAENETUNREACH);
-	ERR(WSAENETRESET);
-	ERR(WSAECONNABORTED);
-	ERR(WSAECONNRESET);
-	ERR(WSAENOBUFS);
-	ERR(WSAEISCONN);
-	ERR(WSAENOTCONN);
-	ERR(WSAESHUTDOWN);
-	ERR(WSAETOOMANYREFS);
-	ERR(WSAETIMEDOUT);
-	ERR(WSAECONNREFUSED);
-	ERR(WSAELOOP);
-	ERR(WSAENAMETOOLONG);
-	ERR(WSAEHOSTDOWN);
-	ERR(WSASYSNOTREADY);
-	ERR(WSAVERNOTSUPPORTED);
-	ERR(WSANOTINITIALISED);
-	ERR(WSAHOST_NOT_FOUND);
-	ERR(WSATRY_AGAIN);
-	ERR(WSANO_RECOVERY);
-	ERR(WSANO_DATA);
-#undef ERR
-	default: return "NO ERROR";
-	}
 }
