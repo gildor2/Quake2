@@ -172,7 +172,8 @@ Configuration
 - cvar "cfgfile" -- may be set from command line; default - "config.cfg"
 - command "writeconfig filename[.cfg]" - write settings to file
 
-- added "players/model.lst": this file contains names of models, which gender should be female
+- added "players/model.lst": this file contains names of models, which gender should be female (always female for
+  "female" and "crakhor")
 - added "sound/materials.lst" - contains sound description depended of texture name (almost HalfLife style)
 - surface footstep sounds depended on material (Kingpin, "materials.lst")
 - "screenshot [-silent] [-levelshot] [-no2d] [-jpeg] [<filename>]"
