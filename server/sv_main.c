@@ -52,7 +52,7 @@ static cvar_t	*public_server;			// should heartbeats be sent
 
 static cvar_t	*sv_reconnect_limit;	// minimum seconds between connect messages
 
-static cvar_t	*sv_extProtocol;
+cvar_t			*sv_extProtocol;
 static cvar_t	*sv_camperSounds;
 //static cvar_t	*sv_fps;
 
@@ -290,8 +290,7 @@ void SVC_DirectConnect (void)
 	port = atoi(Cmd_Argv(2));
 	challenge = atoi(Cmd_Argv(3));
 
-	strncpy (userinfo, Cmd_Argv(4), sizeof(userinfo)-1);
-	userinfo[sizeof(userinfo) - 1] = 0;
+	Q_strncpyz (userinfo, Cmd_Argv(4), sizeof(userinfo));
 
 	// force the IP key/value pair so the game can filter based on ip
 	Info_SetValueForKey (userinfo, "ip", NET_AdrToString(&net_from));
@@ -723,11 +722,10 @@ static void SV_PrepWorldFrame (void)
 }
 
 
-/*
-==================
-SV_PostprocessFrame
-==================
-*/
+/*=============================================================================
+	Protocol extensions support
+=============================================================================*/
+
 void SV_PostprocessFrame (void)
 {
 	edict_t *ent;
@@ -899,6 +897,94 @@ void SV_PostprocessFrame (void)
 		}
 	}
 }
+
+
+static client_t *FindClient (vec3_t origin, float maxDist2)
+{
+	client_t *cl;
+	pmove_state_t *pm;
+	edict_t	*ent;
+	vec3_t	pm_origin, delta;
+	float	dist2;
+	int		i;
+
+	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+	{
+		ent = cl->edict;
+		pm = &ent->client->ps.pmove;
+		if (cl->state != cs_spawned && cl->state != cs_connected)
+			continue;
+
+		pm_origin[0] = pm->origin[0] / 8.0f;
+		pm_origin[1] = pm->origin[1] / 8.0f;
+		pm_origin[2] = pm->origin[2] / 8.0f;
+		VectorSubtract (origin, pm_origin, delta);
+		dist2 = DotProduct (delta, delta);
+		if (dist2 > maxDist2) continue;
+		return cl;
+	}
+
+	return NULL;
+}
+
+
+sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
+{
+	byte	cmd;
+	vec3_t	v1, v2;
+	char	*s;
+
+	MSG_BeginReading (original);
+
+	// check for interesting messages
+	if (MSG_ReadByte (original) != svc_temp_entity)
+		return original;
+
+	SZ_Clear (ext);
+	cmd = MSG_ReadByte (original);
+	switch (cmd)
+	{
+	case TE_RAILTRAIL:
+		{
+			int		rColor, rType;
+			client_t *cl;
+
+			MSG_ReadPos (original, v1);		// start
+			MSG_ReadPos (original, v2);		// end
+
+			cl = FindClient (v1, 16*16);
+			rType = 1;
+			rColor = 0;
+			if (cl)
+			{
+				if (s = Info_ValueForKey (cl->userinfo, "railcolor"))
+				{
+					rColor = atoi (s);
+					rColor = bound (rColor, 0, 7);
+				}
+				if (s = Info_ValueForKey (cl->userinfo, "railtype"))
+				{
+					rType = atoi (s);
+					rType = bound (rType, 0, 3);
+				}
+			}
+			if (!rType) return original;	// type==0 -> original rail trail
+
+			MSG_WriteByte (ext, svc_temp_entity);
+			MSG_WriteByte (ext, TE_RAILTRAIL_EXT);
+			MSG_WritePos (ext, v1);
+			MSG_WritePos (ext, v2);
+			MSG_WriteByte (ext, rColor);
+			MSG_WriteByte (ext, rType);
+		}
+		return ext;
+	}
+
+	return original;
+}
+
+
+//=============================================================================
 
 
 /*

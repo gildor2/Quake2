@@ -170,29 +170,6 @@ void Cbuf_InsertFromDefer (void)
 
 /*
 ============
-Cbuf_ExecuteText
-============
-*/
-void Cbuf_ExecuteText (int exec_when, char *text)
-{
-	switch (exec_when)
-	{
-	case EXEC_NOW:
-		Cmd_ExecuteString (text);
-		break;
-	case EXEC_INSERT:
-		Cbuf_InsertText (text);
-		break;
-	case EXEC_APPEND:
-		Cbuf_AddText (text);
-		break;
-	default:
-		Com_Error (ERR_FATAL, "Cbuf_ExecuteText: bad exec_when");
-	}
-}
-
-/*
-============
 Cbuf_Execute
 ============
 */

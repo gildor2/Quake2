@@ -819,7 +819,8 @@ void V_RenderView (float stereo_separation)
 
 		if (!cl_add_entities->integer)	r_numentities = 0;
 		if (!cl_add_lights->integer)	r_numdlights = 0;
-		if (!cl_add_blend->integer)		VectorClear (cl.refdef.blend);
+		if (!cl_add_blend->integer || cl.refdef.rdflags & RDF_THIRD_PERSON)
+			memset (cl.refdef.blend, 0, sizeof(cl.refdef.blend));
 
 		cl.refdef.num_entities = r_numentities;
 		cl.refdef.entities = r_entities;

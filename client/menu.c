@@ -533,7 +533,6 @@ KEYS MENU
 */
 
 static int	keys_cursor;
-static int	bind_grab;
 
 static menuFramework_t	s_keys_menu;
 
@@ -592,7 +591,7 @@ static void M_FindKeysForCommand (char *command, int *twokeys)
 static void KeyCursorDrawFunc (menuFramework_t *menu)
 {
 	re.DrawCharColor (menu->x, menu->y + menu->cursor * BIND_LINE_HEIGHT,
-		bind_grab ? '=' : 12 + (Sys_Milliseconds() / 250 & 1), 7);
+		cls.key_dest == key_forcemenu ? '=' : 12 + (Sys_Milliseconds() / 250 & 1), 7);
 }
 
 static void DrawKeyBindingFunc (void *self)
@@ -623,21 +622,6 @@ static void DrawKeyBindingFunc (void *self)
 			Menu_DrawString (a->generic.x + a->generic.parent->x + 48 + x, a->generic.y + a->generic.parent->y, Key_KeynumToString (keys[1]));
 		}
 	}
-}
-
-static void KeyBindingFunc( void *self )
-{
-	menuAction_t *a = (menuAction_t *) self;
-	int keys[2];
-
-	M_FindKeysForCommand (bindnames[a->generic.localdata[0]][0], keys);
-
-	if (keys[1] != -1)
-		M_UnbindCommand (bindnames[a->generic.localdata[0]][0]);
-
-	bind_grab = true;
-
-	Menu_SetStatusBar (&s_keys_menu, "press a key or button for this action");
 }
 
 static void SeekLine (char **s)
@@ -740,18 +724,33 @@ static void Keys_MenuDraw (void)
 	Menu_Draw (&s_keys_menu);
 }
 
+static void KeyBindingFunc( void *self )
+{
+	menuAction_t *a = (menuAction_t *) self;
+	int keys[2];
+
+	M_FindKeysForCommand (bindnames[a->generic.localdata[0]][0], keys);
+
+	if (keys[1] != -1)
+		M_UnbindCommand (bindnames[a->generic.localdata[0]][0]);
+
+	cls.key_dest = key_forcemenu;		// hook keyboard
+
+	Menu_SetStatusBar (&s_keys_menu, "press a key or button for this action");
+}
+
 static const char *Keys_MenuKey (int key)
 {
 	menuAction_t *item;
 
 	item = (menuAction_t *) Menu_ItemAtCursor (&s_keys_menu);
-	if (bind_grab)
+	if (cls.key_dest == key_forcemenu)
 	{
 		if (key != K_ESCAPE && key != '`')
 			Cbuf_InsertText (va("bind \"%s\" \"%s\"\n", Key_KeynumToString(key), bindnames[item->generic.localdata[0]][0]));
 
 		Menu_SetStatusBar (&s_keys_menu, "enter to change, backspace to clear");
-		bind_grab = false;
+		cls.key_dest = key_menu;		// unhook keyboard
 		return menu_out_sound;
 	}
 
@@ -1357,7 +1356,7 @@ static menuFramework_t	s_savegame_menu;
 static menuFramework_t	s_loadgame_menu;
 static menuAction_t		s_loadgame_actions[MAX_SAVEGAMES];
 
-static char		m_savestrings[MAX_SAVEGAMES][32];
+static char		m_savestrings[MAX_SAVEGAMES][32+1];	// reserve 1 byte for 0 (for overflowed names)
 static qboolean	m_savevalid[MAX_SAVEGAMES];
 static qboolean m_shotvalid[MAX_SAVEGAMES];
 
@@ -1378,7 +1377,7 @@ static void Create_Savestrings (void)
 			char	*name;
 			int		width;
 
-			fread (m_savestrings[i], sizeof(m_savestrings[i]), 1, f);
+			fread (m_savestrings[i], sizeof(m_savestrings[i])-1, 1, f);
 			fclose (f);
 			m_savevalid[i] = true;
 			name = va("/" SAVEGAME_DIRECTORY "/save%d/shot.pcx", i);
@@ -2520,10 +2519,14 @@ static menuFramework_t	s_player_config_menu;
 static menuField_t		s_player_name_field;
 static menuList2_t		s_player_model_box;
 static menuList2_t		s_player_skin_box;
+static menuList_t		s_player_rtype_box;
+static menuList_t		s_player_rcolor_box;
 static menuList_t		s_player_handedness_box;
 static menuList_t		s_player_rate_box;
 static menuSeparator_t	s_player_skin_title;
 static menuSeparator_t	s_player_model_title;
+static menuSeparator_t	s_player_rtype_title;
+static menuSeparator_t	s_player_rcolor_title;
 static menuSeparator_t	s_player_hand_title;
 static menuSeparator_t	s_player_rate_title;
 static menuAction_t		s_player_download_action;
@@ -2542,9 +2545,12 @@ static playerModelInfo_t *pmi;
 static int numPlayerModels;
 static void *pmiChain;
 
+static int modelChangeTime;
+
 static int rate_tbl[] = {
 	2500, 3200, 5000, 10000, 25000, 0
 };
+
 static const char *rate_names[] = {
 	"28.8 Modem", "33.6 Modem", "Single ISDN", "Dual ISDN/Cable", "T1/LAN", "User defined", NULL
 };
@@ -2552,6 +2558,16 @@ static const char *rate_names[] = {
 static void HandednessCallback (void *unused)
 {
 	Cvar_SetInteger ("hand", s_player_handedness_box.curvalue);
+}
+
+static void RTypeCallback (void *unused)
+{
+	Cvar_SetInteger ("railtype", s_player_rtype_box.curvalue);
+}
+
+static void RColorCallback (void *unused)
+{
+	Cvar_SetInteger ("railcolor", s_player_rcolor_box.curvalue);
 }
 
 static void RateCallback (void *unused)
@@ -2570,19 +2586,28 @@ static void ModelCallback (void *unused)
 	else
 		Com_Error (ERR_FATAL, "ModelCallback: bad index");	//?? debug
 	s_player_skin_box.curvalue = 0;
+	modelChangeTime = Sys_Milliseconds ();
 }
 
 //!! place skin functions to a separate unit
 static qboolean IsValidSkin (char *skin, basenamed_t *pcxfiles)
 {
-	char	scratch[MAX_OSPATH], *ext;
+	char	scratch[MAX_OSPATH], *ext, *name;
 	basenamed_t *item;
 
 	ext = strrchr (skin, '.');
-	if (!ext)
-		return false;
+	if (!ext) return false;
+
 	if (stricmp (ext, ".pcx") && stricmp (ext, ".tga") && stricmp (ext, ".jpg"))
-		return false;	// not image
+		return false;		// not image
+
+	// modelname/skn_* have no icon
+	name = strrchr (skin, '/');
+	if (!name) return false;
+	else name++;			// skip '/'
+
+	if (!strncmp (name, "skn_", 4))
+		return true;
 	strcpy (scratch, skin);
 	*strrchr (scratch, '.') = 0;
 	strcat (scratch, "_i.pcx");
@@ -2678,7 +2703,9 @@ static qboolean PlayerConfig_MenuInit (void)
 
 	cvar_t *hand = Cvar_Get ("hand", "0", CVAR_USERINFO|CVAR_ARCHIVE);
 
-	static const char *handedness[] = {"right", "left", "center", 0};
+	static const char *handedness[] = {"right", "left", "center", NULL};
+	static const char *colorNames[] = {"default", "red", "green", "yellow", "blue", "magenta", "cyan", "white", NULL};
+	static const char *railTypes[]  = {"original", "spiral", "rings", "beam", NULL};
 
 	PlayerConfig_ScanDirectories ();
 
@@ -2728,6 +2755,7 @@ static qboolean PlayerConfig_MenuInit (void)
 
 	y = viddef.height * 68 / 240;
 
+	// model
 	s_player_model_title.generic.type = MTYPE_SEPARATOR;
 	s_player_model_title.generic.name = "model";
 	s_player_model_title.generic.x	= -8;
@@ -2741,6 +2769,7 @@ static qboolean PlayerConfig_MenuInit (void)
 	s_player_model_box.curvalue = currentModelIndex;
 	s_player_model_box.itemnames = (basenamed_t*)pmi;
 
+	// skin
 	s_player_skin_title.generic.type = MTYPE_SEPARATOR;
 	s_player_skin_title.generic.name = "skin";
 	s_player_skin_title.generic.x   = -16;
@@ -2753,6 +2782,35 @@ static qboolean PlayerConfig_MenuInit (void)
 	s_player_skin_box.curvalue = currentSkinIndex;
 	s_player_skin_box.itemnames = info->skins;
 
+	// rail type
+	s_player_rtype_title.generic.type = MTYPE_SEPARATOR;
+	s_player_rtype_title.generic.name = "rail type";
+	s_player_rtype_title.generic.x	= 24;
+	s_player_rtype_title.generic.y	= y+=14;
+
+	s_player_rtype_box.generic.type = MTYPE_SPINCONTROL;
+	s_player_rtype_box.generic.x = -56;
+	s_player_rtype_box.generic.y = y+=10;
+	s_player_rtype_box.generic.cursor_offset = -48;
+	s_player_rtype_box.generic.callback = RTypeCallback;
+	s_player_rtype_box.curvalue = Cvar_VariableInt ("railtype");
+	s_player_rtype_box.itemnames = railTypes;
+
+	// rail color
+	s_player_rcolor_title.generic.type = MTYPE_SEPARATOR;
+	s_player_rcolor_title.generic.name = "rail color";
+	s_player_rcolor_title.generic.x	= 32;
+	s_player_rcolor_title.generic.y	= y+=14;
+
+	s_player_rcolor_box.generic.type = MTYPE_SPINCONTROL;
+	s_player_rcolor_box.generic.x = -56;
+	s_player_rcolor_box.generic.y = y+=10;
+	s_player_rcolor_box.generic.cursor_offset = -48;
+	s_player_rcolor_box.generic.callback = RColorCallback;
+	s_player_rcolor_box.curvalue = Cvar_VariableInt ("railcolor");
+	s_player_rcolor_box.itemnames = colorNames;
+
+	// handedness
 	s_player_hand_title.generic.type = MTYPE_SEPARATOR;
 	s_player_hand_title.generic.name = "handedness";
 	s_player_hand_title.generic.x	= 32;
@@ -2798,6 +2856,10 @@ static qboolean PlayerConfig_MenuInit (void)
 		Menu_AddItem (&s_player_config_menu, &s_player_skin_title);
 		Menu_AddItem (&s_player_config_menu, &s_player_skin_box);
 	}
+	Menu_AddItem (&s_player_config_menu, &s_player_rtype_title);
+	Menu_AddItem (&s_player_config_menu, &s_player_rtype_box);
+	Menu_AddItem (&s_player_config_menu, &s_player_rcolor_title);
+	Menu_AddItem (&s_player_config_menu, &s_player_rcolor_box);
 	Menu_AddItem (&s_player_config_menu, &s_player_hand_title);
 	Menu_AddItem (&s_player_config_menu, &s_player_handedness_box);
 	Menu_AddItem (&s_player_config_menu, &s_player_rate_title);
@@ -2812,6 +2874,8 @@ static qboolean PlayerConfig_MenuInit (void)
 #define LAST_FRAME	39
 #define FRAME_COUNT (LAST_FRAME-FIRST_FRAME+1)
 
+#define MODEL_DELAY	300
+
 static void PlayerConfig_MenuDraw (void)
 {
 	extern float CalcFov (float fov_x, float w, float h);
@@ -2824,10 +2888,14 @@ static void PlayerConfig_MenuDraw (void)
 		{{-50, 50, 150}, {0.8, 0.8, 0.8}, 300},
 		{{-50, -100, -150}, {0, 0.5, 0}, 250}
 	};
+	qboolean	showModels;
+	char	*icon;
 
 //	sscanf(Cvar_VariableString("dl0"), "%g %g %g %g", VECTOR_ARGS(&dl[0].origin), &dl[0].intensity);
 //	sscanf(Cvar_VariableString("dl1"), "%g %g %g %g", VECTOR_ARGS(&dl[1].origin), &dl[1].intensity);
 //	sscanf(Cvar_VariableString("dl2"), "%g %g %g %g", VECTOR_ARGS(&dl[2].origin), &dl[2].intensity);
+
+	showModels = Sys_Milliseconds () - modelChangeTime > MODEL_DELAY;
 
 	model = (playerModelInfo_t*)FindNamedStrucByIndex ((basenamed_t*)pmi, s_player_model_box.curvalue);
 	if (!model) return;
@@ -2846,44 +2914,50 @@ static void PlayerConfig_MenuDraw (void)
 
 	memset (&e, 0, sizeof(e));
 
-	// add player model
-	e[0].model = re.RegisterModel (va("players/%s/tris.md2", model->name));
-	e[0].skin = re.RegisterSkin (va("players/%s/%s.pcx", model->name, skin->name));
-//	e[0].flags = 0;
-	e[0].origin[0] = 90;
-//	e[0].origin[1] = 0;
-//	e[0].origin[2] = 0;
-	VectorCopy (e[0].origin, e[0].oldorigin);
+	if (showModels)
+	{
+		// add player model
+		e[0].model = re.RegisterModel (va("players/%s/tris.md2", model->name));
+		e[0].skin = re.RegisterSkin (va("players/%s/%s.pcx", model->name, skin->name));
+//		e[0].flags = 0;
+		e[0].origin[0] = 90;
+//		e[0].origin[1] = 0;
+//		e[0].origin[2] = 0;
+		VectorCopy (e[0].origin, e[0].oldorigin);
 
-	e[0].frame = (cls.realtime + 99) / 100 % FRAME_COUNT + FIRST_FRAME;
-	e[0].oldframe = e[0].frame - 1;
-	if (e[0].oldframe < FIRST_FRAME)
-		e[0].oldframe = LAST_FRAME;
-	e[0].backlerp = 1.0 - (cls.realtime % 100) / 100.0;
-	if (e[0].backlerp == 1.0)
-		e[0].backlerp = 0.0;
-	e[0].angles[1] = cls.realtime / 20 % 360;
+		e[0].frame = (cls.realtime + 99) / 100 % FRAME_COUNT + FIRST_FRAME;
+		e[0].oldframe = e[0].frame - 1;
+		if (e[0].oldframe < FIRST_FRAME)
+			e[0].oldframe = LAST_FRAME;
+		e[0].backlerp = 1.0 - (cls.realtime % 100) / 100.0;
+		if (e[0].backlerp == 1.0)
+			e[0].backlerp = 0.0;
+		e[0].angles[1] = cls.realtime / 20 % 360;
 
-	// add weapon model
-	memcpy (&e[1], &e[0], sizeof (e[0]));		// fill angles, lerp and more ...
-	e[1].model = re.RegisterModel (va("players/%s/weapon.md2", model->name));
-	e[1].skin = NULL;
+		// add weapon model
+		memcpy (&e[1], &e[0], sizeof (e[0]));		// fill angles, lerp and more ...
+		e[1].model = re.RegisterModel (va("players/%s/weapon.md2", model->name));
+		e[1].skin = NULL;
 
-	refdef.areabits = NULL;
-	refdef.num_entities = 2;
-	refdef.entities = e;
-	refdef.lightstyles = NULL;
-	refdef.dlights = dl;
-	refdef.num_dlights = 3;
+//		refdef.areabits = NULL;
+		refdef.num_entities = 2;
+		refdef.entities = e;
+//		refdef.lightstyles = NULL;
+		refdef.dlights = dl;
+		refdef.num_dlights = 3;
+	}
 	refdef.rdflags = RDF_NOWORLDMODEL;
 
 	Menu_Draw (&s_player_config_menu);
 
 	re.RenderFrame (&refdef);
 
+	if (!strncmp (skin->name, "skn_", 4))
+		icon = "/pics/default_icon.pcx";
+	else
+		icon = va("/players/%s/%s_i.pcx", model->name, skin->name);
 	re.DrawStretchPic (s_player_config_menu.x - 40, refdef.y,
-		viddef.height * 32 / 240, viddef.height * 32 / 240,
-		va("/players/%s/%s_i.pcx", model->name, skin->name));
+		viddef.height * 32 / 240, viddef.height * 32 / 240, icon);
 }
 
 static const char *PlayerConfig_MenuKey (int key)
@@ -3308,7 +3382,7 @@ M_Draw
 */
 void M_Draw (void)
 {
-	if (cls.key_dest != key_menu)
+	if (cls.key_dest != key_menu && cls.key_dest != key_forcemenu)
 		return;
 
 	// repaint everything next frame

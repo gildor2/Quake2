@@ -20,6 +20,9 @@ centerview "center view"
 +mlook "mouse look"
 +klook "keyboard look"
 
+messagemode "send message"
+messagemode2 "send team message"
+
 inven inventory
 invuse "use item"
 invdrop "drop item"
@@ -27,3 +30,12 @@ invprev "prev item"
 invnext "next item"
 
 "cmd help" "help computer"
+menu_savegame "save game"
+menu_loadgame "load game"
+menu_quit "quit game"
+
+menu_startserver "start server"
+menu_keys "configure keyboard"
+screenshot screenshot
+sizeup "grow screen"
+sizedown "shrink screen"

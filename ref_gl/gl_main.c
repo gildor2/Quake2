@@ -1067,6 +1067,7 @@ static shader_t *RegisterPic (char *name)
 	return FindPic (name, false);
 }
 
+// Reload shader image
 static void ReloadImage (char *name)
 {
 	shader_t *sh;

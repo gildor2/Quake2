@@ -313,7 +313,8 @@ static cvar_t *Cvar_Set2 (char *var_name, char *value, int flags, qboolean force
 	{
 		if (var->flags & CVAR_NOSET)
 		{
-			Com_WPrintf ("%s is write protected\n", var_name);
+			if (strcmp (var->string, value))						// no error when value is not changed
+				Com_WPrintf ("%s is write protected\n", var_name);
 			return var;
 		}
 
@@ -322,7 +323,7 @@ static cvar_t *Cvar_Set2 (char *var_name, char *value, int flags, qboolean force
 			if (flags & CVAR_USER_CREATED)
 				Com_WPrintf ("%s is cheat protected\n", var_name);
 			else
-				Com_DPrintf ("%s is cheat protected\n", var_name);		// trying to modify cheat cvar by engine without "force"
+				Com_DPrintf ("%s is cheat protected\n", var_name);	// trying to modify cheat cvar by engine without "force"
 			return var;
 		}
 
@@ -351,7 +352,7 @@ static cvar_t *Cvar_Set2 (char *var_name, char *value, int flags, qboolean force
 			if (Com_ServerState ())
 			{
 				if (Com_ServerState () == ss_demo)
-					return var;		// disable changing of latched cvars from demos
+					return var;										// disable changing of latched cvars from demos
 
 				Com_Printf ("%s will be changed for next game.\n", var_name);
 				var->latched_string = CopyString (value);

@@ -1081,8 +1081,24 @@ void CL_ParseTEnt (void)
 	case TE_RAILTRAIL:			// railgun effect
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadPos (&net_message, pos2);
-		CL_RailTrail (pos, pos2);
+		if (cls.newprotocol)
+			CL_RailTrail (pos, pos2);
+		else
+			CL_RailTrailExt (pos, pos2, 1, 0);
 		S_StartSound (pos2, 0, 0, cl_sfx_railg, 1, ATTN_NORM, 0);
+		break;
+
+	case TE_RAILTRAIL_EXT:		// advanced railgun effect
+		{
+			byte	rColor, rType;
+
+			MSG_ReadPos (&net_message, pos);
+			MSG_ReadPos (&net_message, pos2);
+			rColor = MSG_ReadByte (&net_message);
+			rType = MSG_ReadByte (&net_message);
+			CL_RailTrailExt (pos, pos2, rType, rColor);
+			S_StartSound (pos2, 0, 0, cl_sfx_railg, 1, ATTN_NORM, 0);
+		}
 		break;
 
 	case TE_EXPLOSION2:

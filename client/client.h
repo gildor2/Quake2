@@ -221,7 +221,7 @@ typedef enum {
 	dl_single
 } dltype_t;						// download type
 
-typedef enum {key_game, key_console, key_message, key_menu} keydest_t;
+typedef enum {key_game, key_console, key_message, key_menu, key_forcemenu} keydest_t;
 
 typedef struct
 {
@@ -367,23 +367,9 @@ typedef struct cl_sustain_s
 //---------------- particles ---------------------
 
 
-typedef struct
-{
-	qboolean	allocated;
-	particleType_t type;
-	float		time;					// in sec
-	float		lifeTime, fadeTime;		// in sec
-	float		gravity, elasticity;
-	byte		minAlpha, maxAlpha;
-	vec3_t		vel, pos;
-	vec3_t		up, right;	//??
-	float		radius;
-} particleTrace_t;
-
 void CL_ClearParticles (void);
 void CL_UpdateParticles (void);
 particle_t *CL_AllocParticle (void);
-particleTrace_t *CL_AllocParticleTrace (vec3_t pos, vec3_t vel, float lifeTime, float fadeTime);
 void CL_MetalSparks (vec3_t pos, vec3_t dir, int count);
 
 extern particle_t	*active_particles, *free_particles;
@@ -426,6 +412,7 @@ void CL_ClearTEnts (void);
 void CL_BlasterTrail (vec3_t start, vec3_t end);
 void CL_QuadTrail (vec3_t start, vec3_t end);
 void CL_RailTrail (vec3_t start, vec3_t end);
+void CL_RailTrailExt (vec3_t start, vec3_t end, byte rType, byte rColor);
 void CL_BubbleTrail (vec3_t start, vec3_t end);
 void CL_FlagTrail (vec3_t start, vec3_t end, float color);
 

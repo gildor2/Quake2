@@ -695,7 +695,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 				needLightmap = false;
 				if (map.sunColor[0] + map.sunColor[1] + map.sunColor[2] == 0)
 				{
-					img = GL_FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP);	// find sky image only for taking its color
+					img = GL_FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP|IMAGE_PICMIP);	// find sky image only for taking its color
 					if (img)
 					{
 						map.sunColor[0] = img->color.c[0];		// do not require to divide by 255: will be normalized anyway

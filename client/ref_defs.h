@@ -7,7 +7,6 @@
 #define Cmd_Argc	ri._Cmd_Argc
 #define Cmd_Argv	ri._Cmd_Argv
 #define Cmd_Args	ri._Cmd_Args
-#define Cbuf_ExecuteText	ri._Cbuf_ExecuteText
 #define Cvar_Get	ri._Cvar_Get
 #define Cvar_GetVars	ri._Cvar_GetVars
 #define Cvar_Set	ri._Cvar_Set
@@ -69,7 +68,6 @@ void	Cmd_RemoveCommand (char *name);
 int	Cmd_Argc (void);
 char*	Cmd_Argv (int i);
 char*	Cmd_Args (void);
-void	Cbuf_ExecuteText (int exec_when, char *text);
 cvar_t*	Cvar_Get (char *name, char *value, int flags);
 void	Cvar_GetVars (cvarInfo_t *vars, int count);
 cvar_t*	Cvar_Set (char *name, char *value);

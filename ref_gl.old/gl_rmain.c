@@ -1006,12 +1006,12 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_nosubimage, 0, 0),
 	CVAR_VAR(gl_allow_software, 0, 0),
 
-	CVAR_VAR(gl_particle_min_size, 2, CVAR_ARCHIVE),
-	CVAR_VAR(gl_particle_max_size, 40, CVAR_ARCHIVE),
-	CVAR_VAR(gl_particle_size, 40, CVAR_ARCHIVE),
-	CVAR_VAR(gl_particle_att_a, 0.01, CVAR_ARCHIVE),
-	CVAR_VAR(gl_particle_att_b, 0, CVAR_ARCHIVE),
-	CVAR_VAR(gl_particle_att_c, 0.01, CVAR_ARCHIVE),
+//	CVAR_VAR(gl_particle_min_size, 2, CVAR_ARCHIVE),
+//	CVAR_VAR(gl_particle_max_size, 40, CVAR_ARCHIVE),
+//	CVAR_VAR(gl_particle_size, 40, CVAR_ARCHIVE),
+//	CVAR_VAR(gl_particle_att_a, 0.01, CVAR_ARCHIVE),
+//	CVAR_VAR(gl_particle_att_b, 0, CVAR_ARCHIVE),
+//	CVAR_VAR(gl_particle_att_c, 0.01, CVAR_ARCHIVE),
 
 	CVAR_VAR(gl_modulate, 1, CVAR_ARCHIVE),
 	CVAR_VAR(gl_logFile, 0, 0),

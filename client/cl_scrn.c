@@ -46,7 +46,6 @@ vrect_t		scr_vrect;		// position of render window on screen
 
 
 cvar_t		*scr_viewsize;
-cvar_t		*scr_conspeed;
 cvar_t		*scr_centertime;
 cvar_t		*scr_showturtle;
 cvar_t		*scr_showpause;
@@ -404,7 +403,6 @@ void SCR_Init (void)
 {
 CVAR_BEGIN(vars)
 	{&scr_viewsize, "viewsize", "100", CVAR_ARCHIVE},
-	{&scr_conspeed, "scr_conspeed", "3", 0},
 	{&scr_showturtle, "scr_showturtle", "0", 0},
 	{&scr_showpause, "scr_showpause", "1", 0},
 	{&scr_centertime, "scr_centertime", "2.5", 0},
@@ -473,6 +471,9 @@ Scroll it up or down
 */
 void SCR_RunConsole (void)
 {
+	static int lastConTime = 0;
+	int		currTime, timeDelta;
+
 	// decide on the height of the console
 	if (*re.flags & REF_CONSOLE_ONLY)
 	{
@@ -486,20 +487,28 @@ void SCR_RunConsole (void)
 	else
 		scr_conlines = 0;		// none visible
 
+	currTime = Sys_Milliseconds ();
+	if (lastConTime)
+		timeDelta = currTime - lastConTime;
+	else
+		timeDelta = 0;
+	lastConTime = currTime;
+
 	if (scr_conlines < scr_con_current)
 	{
-		scr_con_current -= scr_conspeed->value * cls.frametime;
+		scr_con_current -= 3 * timeDelta / 1000.0f;
 		if (scr_conlines > scr_con_current)
 			scr_con_current = scr_conlines;
 
 	}
 	else if (scr_conlines > scr_con_current)
 	{
-		scr_con_current += scr_conspeed->value * cls.frametime;
+		scr_con_current += 3 * timeDelta / 1000.0f;
 		if (scr_conlines < scr_con_current)
 			scr_con_current = scr_conlines;
 	}
-
+	else		// console in-place
+		lastConTime = 0;
 }
 
 /*
@@ -1356,7 +1365,7 @@ void SCR_UpdateScreen (void)
 		// and console specially
 		else if (cl.cinematictime > 0)
 		{
-			if (cls.key_dest == key_menu)
+			if (cls.key_dest == key_menu || cls.key_dest == key_forcemenu)
 			{
 				if (cl.cinematicpalette_active)
 				{

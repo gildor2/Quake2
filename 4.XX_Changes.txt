@@ -10,14 +10,13 @@ Comments:
   should be in a following form:
     "path/path.../wildcard1,wildcard2,...wildcard"
 - ip mask: 4 elements, delimited with '.'; element can be:
-  - "*" - any number
   - "NNN" - specified number
   - "AAA-BBB" - any number in range
+  - "*" - any number (same as "0-255")
   All-IP mask is "*.*.*.*" or "0-255.0-255.0-255.0-255"
 
 1. REF_GL (old ??)
 ~~~~~~~~~~~~~~~~~~
-
 - extended view area for working with large maps (variable "gl_zmax" controls clipping of view range)
 - improved vid_restart performance (Win32)
 - fixed cursor appearance when in fullscreen mode (Win32)
@@ -43,7 +42,6 @@ Comments:
 
 2. REF_SOFT
 ~~~~~~~~~~~
-
 - changed appearance of "r_speeds" and "r_dspeeds" output
 - fixed crash of using sprite models when one of frame images is not found
 - "sw_console_only" variable (see "gl_console_only" comments for details)
@@ -54,7 +52,6 @@ Comments:
 
 3. IMPROVEMENTS
 ~~~~~~~~~~~~~~~
-
 - demomap can be called without ".dm2" extension (added by default)
 - added support of reading/listing player models from pak files
 - improved a ladder descending
@@ -72,7 +69,6 @@ Comments:
 
 4. FIXES
 ~~~~~~~~
-
 - on game change:
   - saving current config
   - reconfiguration from mod's default.cfg, config.cfg and autoexec.cfg
@@ -94,10 +90,10 @@ Comments:
 - allowed cheatvars when server started with "cheats 1"
 - commandline: removed '-' parsing, added support for quotes
 - cinematic: ability to stop with any key (was incorrect when playing sequence of few cinematics)
+- allowed binds to all keys (except ESC and "~")
 
 5. ADDONS
 ~~~~~~~~~
-
 Cvar system
 -----------
 - command "add":
@@ -218,6 +214,9 @@ Debugging
   - surface-dependent bullet hit sounds (client-side)
   - camper sounds (server-side)
   - falling sounds (server-side)
+  - customised rail trail
+  * side effect: demos will crush server, when played with original Quake2; to record compatible demos, just
+    use cl_extprotocol=0 or sv_extprotocol=0
 ?(not finished) new particle/fx system; can be disabled with "cl_newfx 0"
 - crosshairs:
   - unlimited number of crosshairs; must be named "pics/ch%d.???"; when trying to set crosshair,
@@ -233,12 +232,10 @@ Debugging
 
 6. MISFEATURES
 ~~~~~~~~~~~~~~
-
 - no negative dlights in renderer (can be emulated with multiplicative dlights ?)
 
 7. API (internals)
 ~~~~~~~~~~~~~~~~~~
-
 Memory management
 -----------------
 - void *Z_BlockMalloc(int size) - allocates memory block with a chunks of 4K (less memory fragmentation?)

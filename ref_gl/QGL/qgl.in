@@ -409,40 +409,15 @@ void MultiTexCoord2fARB (GLenum target, GLfloat s, GLfloat t) ARGS	//!! for old 
 #name GL_EXT_compiled_vertex_array
 //alias: GL_SGI_compiled_vertex_array (with slightly different func names) ??
 #cvar gl_ext_compiled_vertex_array
-#prefer GL_NV_vertex_array_range
 void LockArraysEXT (GLint first, GLint count) ARGS
 void UnlockArraysEXT (void);
 
 #name GL_NV_fog_distance
 #cvar gl_ext_fog_distance_nv
 
-#name GL_NV_fence
-#cvar gl_ext_vertex_array_range
-void GenFencesNV (GLint n, GLuint *fences);
-void DeleteFencesNV (GLint n, const GLuint *fences);
-void SetFenceNV (GLuint fence, GLenum condition);
-void FinishFenceNV (GLuint fence);
-
 #platform win32
 
 #name WGL_EXT_swap_control
 BOOL wglSwapIntervalEXT (int interval) ARGS
 
-#name GL_NV_vertex_array_range
-#cvar gl_ext_vertex_array_range
-#require GL_NV_fence
-void glVertexArrayRangeNV (GLint lenght, GLvoid *pointer);
-void glFlushVertexArrayRangeNV (void);
-void* glAllocateMemoryNV (int size, float readFreq, float writeFreq, float prior) NAME wglAllocateMemoryNV;
-void glFreeMemoryNV (void *pointer) NAME wglFreeMemoryNV;
-
 #platform linux
-
-#name GL_NV_vertex_array_range
-#cvar gl_ext_vertex_array_range
-#require GL_NV_fence
-void glVertexArrayRangeNV (GLint lenght, GLvoid *pointer);
-void glFlushVertexArrayRangeNV (void);
-void* glAllocateMemoryNV (int size, float readFreq, float writeFreq, float prior) NAME glXAllocateMemoryNV;
-void glFreeMemoryNV (void *pointer) NAME glXFreeMemoryNV;
-

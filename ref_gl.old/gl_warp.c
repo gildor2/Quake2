@@ -635,6 +635,6 @@ void R_SetSky (char *name, float rotate, vec3_t axis)
 	}
 //	Com_sprintf (pathname, sizeof(pathname), "env/%swinrefl.tga", skyname);
 //	reflect_img = GL_FindImage (pathname, it_sky);
-	/*if (!reflect_img)*/ reflect_img = GL_FindImage ("env/defrefl.???", it_sky);
+	/*if (!reflect_img)*/ reflect_img = GL_FindImage ("fx/specular.???", it_sky);
 	if (!reflect_img) reflect_img = sky_images[4]; // "...up.tga"
 }

@@ -68,6 +68,7 @@ cvar_t	*info_password;
 cvar_t	*info_spectator;
 cvar_t	*name;
 cvar_t	*skin;
+cvar_t	*railcolor, *railtype;
 cvar_t	*rate;
 cvar_t	*fov;
 cvar_t	*msg;
@@ -241,7 +242,10 @@ void CL_Record_f (void)
 
 	// send the serverdata
 	MSG_WriteByte (&buf, svc_serverdata);
-	MSG_WriteLong (&buf, PROTOCOL_VERSION);
+	if (cls.newprotocol)
+		MSG_WriteLong (&buf, -PROTOCOL_VERSION);
+	else
+		MSG_WriteLong (&buf, PROTOCOL_VERSION);
 	MSG_WriteLong (&buf, 0x10000 + cl.servercount);
 	MSG_WriteByte (&buf, 1);	// demos are always attract loops
 	MSG_WriteString (&buf, cl.gamedir);
@@ -828,7 +832,7 @@ void CL_PingServers_f (void)
 	// send a broadcast packet
 	Com_Printf ("pinging broadcast...\n");
 
-	noudp = Cvar_Get ("noudp", "0", CVAR_NOSET);
+	noudp = Cvar_Get ("noudp", "", CVAR_NODEFAULT);
 	if (!noudp->integer)
 	{
 		adr.type = NA_BROADCAST;
@@ -836,7 +840,7 @@ void CL_PingServers_f (void)
 		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d", PROTOCOL_VERSION));
 	}
 
-	noipx = Cvar_Get ("noipx", "0", CVAR_NOSET);
+	noipx = Cvar_Get ("noipx", "", CVAR_NODEFAULT);
 	if (!noipx->integer)
 	{
 		adr.type = NA_BROADCAST_IPX;
@@ -1545,6 +1549,8 @@ CVAR_BEGIN(vars)
 	{&info_spectator, "spectator", "0", CVAR_USERINFO},
 	CVAR_VAR(name, unnamed, CVAR_USERINFO|CVAR_ARCHIVE),
 	CVAR_VAR(skin, male/grunt, CVAR_USERINFO|CVAR_ARCHIVE),
+	CVAR_VAR(railcolor, 0, CVAR_USERINFO|CVAR_ARCHIVE),
+	CVAR_VAR(railtype, 1, CVAR_USERINFO|CVAR_ARCHIVE),
 	CVAR_VAR(rate, 25000, CVAR_USERINFO|CVAR_ARCHIVE),				// FIXME
 	CVAR_VAR(msg, 1, CVAR_USERINFO|CVAR_ARCHIVE),
 	CVAR_VAR(hand, 0, CVAR_USERINFO|CVAR_ARCHIVE),

@@ -5,8 +5,6 @@ int	Cmd_Argc (void);
 char*	Cmd_Argv (int i);
 char*	Cmd_Args (void);
 
-void	Cbuf_ExecuteText (int exec_when, char *text);
-
 //--------- cvars -----------
 cvar_t*	Cvar_Get (char *name, char *value, int flags);
 void	Cvar_GetVars (cvarInfo_t *vars, int count);

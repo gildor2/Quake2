@@ -27,7 +27,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	MAX_ENTITIES		1024
 #define	MAX_PARTICLES		4096
 #define MAX_PARTICLE_TRACES	256
+#define MAX_PARTICLE_BEAMS	256
 #define	MAX_LIGHTSTYLES		256
+
+
+typedef union
+{
+	byte	c[4];
+	int		rgba;
+} color_t;
+
+
+typedef enum
+{
+	BEAM_RAILBEAM = 256,
+	BEAM_RAILSPIRAL,
+	BEAM_RAILRINGS
+} beamType_t;
+
 
 typedef struct entity_s
 {
@@ -41,7 +58,8 @@ typedef struct entity_s
 	int		oldframe;
 	float	backlerp;		// 0.0 = current, 1.0 = old
 	/*-------------- misc -------------*/
-	int		skinnum;		// also used as RF_BEAM's palette index
+	int		skinnum;		// also used as RF_BEAM's palette index; if >= 256 - extended beam (beamType_t)
+	color_t	color;			// for extended beam
 	/*----------- color info ----------*/
 	int		lightstyle;		// for flashing entities (unused ??)
 	float	alpha;			// ignore if RF_TRANSLUCENT isn't set

@@ -2,14 +2,14 @@
 
 #ifdef _WIN32
 #  define NUM_GLFUNCS	70
-#  define NUM_EXTFUNCS	17
-#  define NUM_EXTENSIONS	14
+#  define NUM_EXTFUNCS	9
+#  define NUM_EXTENSIONS	12
 #endif
 
 #ifdef __linux__
 #  define NUM_GLFUNCS	62
-#  define NUM_EXTFUNCS	16
-#  define NUM_EXTENSIONS	13
+#  define NUM_EXTFUNCS	8
+#  define NUM_EXTENSIONS	11
 #endif
 
 static char *qglNames[NUM_GLFUNCS + NUM_EXTFUNCS] = {
@@ -94,26 +94,14 @@ static char *qglNames[NUM_GLFUNCS + NUM_EXTFUNCS] = {
 	"glClientActiveTextureARB",
 	"glMultiTexCoord2fARB",
 	"glLockArraysEXT",
-	"glUnlockArraysEXT",
-	"glGenFencesNV",
-	"glDeleteFencesNV",
-	"glSetFenceNV",
-	"glFinishFenceNV"
+	"glUnlockArraysEXT"
 #ifdef _WIN32
 ,
-	"wglSwapIntervalEXT",
-	"glVertexArrayRangeNV",
-	"glFlushVertexArrayRangeNV",
-	"wglAllocateMemoryNV",
-	"wglFreeMemoryNV"
+	"wglSwapIntervalEXT"
 #endif
 
 #ifdef __linux__
-,
-	"glVertexArrayRangeNV",
-	"glFlushVertexArrayRangeNV",
-	"glXAllocateMemoryNV",
-	"glXFreeMemoryNV"
+
 #endif
 
 };
@@ -843,30 +831,6 @@ static void APIENTRY logUnlockArraysEXT (void)
 	lib.UnlockArraysEXT ();
 }
 
-static void APIENTRY logGenFencesNV (GLint n, GLuint *fences)
-{
-	fprintf (glw_state.log_fp, "%s\n", "glGenFencesNV");
-	lib.GenFencesNV (n, fences);
-}
-
-static void APIENTRY logDeleteFencesNV (GLint n, const GLuint *fences)
-{
-	fprintf (glw_state.log_fp, "%s\n", "glDeleteFencesNV");
-	lib.DeleteFencesNV (n, fences);
-}
-
-static void APIENTRY logSetFenceNV (GLuint fence, GLenum condition)
-{
-	fprintf (glw_state.log_fp, "%s\n", "glSetFenceNV");
-	lib.SetFenceNV (fence, condition);
-}
-
-static void APIENTRY logFinishFenceNV (GLuint fence)
-{
-	fprintf (glw_state.log_fp, "%s\n", "glFinishFenceNV");
-	lib.FinishFenceNV (fence);
-}
-
 
 #ifdef _WIN32
 
@@ -876,59 +840,11 @@ static BOOL APIENTRY logwglSwapIntervalEXT (int interval)
 	return lib.wglSwapIntervalEXT (interval);
 }
 
-static void APIENTRY logglVertexArrayRangeNV (GLint lenght, GLvoid *pointer)
-{
-	fprintf (glw_state.log_fp, "%s\n", "glVertexArrayRangeNV");
-	lib.glVertexArrayRangeNV (lenght, pointer);
-}
-
-static void APIENTRY logglFlushVertexArrayRangeNV (void)
-{
-	fprintf (glw_state.log_fp, "%s\n", "glFlushVertexArrayRangeNV");
-	lib.glFlushVertexArrayRangeNV ();
-}
-
-static void* APIENTRY logglAllocateMemoryNV (int size, float readFreq, float writeFreq, float prior)
-{
-	fprintf (glw_state.log_fp, "%s\n", "glAllocateMemoryNV");
-	return lib.glAllocateMemoryNV (size, readFreq, writeFreq, prior);
-}
-
-static void APIENTRY logglFreeMemoryNV (void *pointer)
-{
-	fprintf (glw_state.log_fp, "%s\n", "glFreeMemoryNV");
-	lib.glFreeMemoryNV (pointer);
-}
-
 
 #endif
 
 
 #ifdef __linux__
-
-static void APIENTRY logglVertexArrayRangeNV (GLint lenght, GLvoid *pointer)
-{
-	fprintf (glw_state.log_fp, "%s\n", "glVertexArrayRangeNV");
-	lib.glVertexArrayRangeNV (lenght, pointer);
-}
-
-static void APIENTRY logglFlushVertexArrayRangeNV (void)
-{
-	fprintf (glw_state.log_fp, "%s\n", "glFlushVertexArrayRangeNV");
-	lib.glFlushVertexArrayRangeNV ();
-}
-
-static void* APIENTRY logglAllocateMemoryNV (int size, float readFreq, float writeFreq, float prior)
-{
-	fprintf (glw_state.log_fp, "%s\n", "glAllocateMemoryNV");
-	return lib.glAllocateMemoryNV (size, readFreq, writeFreq, prior);
-}
-
-static void APIENTRY logglFreeMemoryNV (void *pointer)
-{
-	fprintf (glw_state.log_fp, "%s\n", "glFreeMemoryNV");
-	lib.glFreeMemoryNV (pointer);
-}
 
 
 #endif
@@ -1015,26 +931,14 @@ static qgl_t logFuncs = {
 	logClientActiveTextureARB,
 	logMultiTexCoord2fARB,
 	logLockArraysEXT,
-	logUnlockArraysEXT,
-	logGenFencesNV,
-	logDeleteFencesNV,
-	logSetFenceNV,
-	logFinishFenceNV
+	logUnlockArraysEXT
 #ifdef _WIN32
 ,
-	logwglSwapIntervalEXT,
-	logglVertexArrayRangeNV,
-	logglFlushVertexArrayRangeNV,
-	logglAllocateMemoryNV,
-	logglFreeMemoryNV
+	logwglSwapIntervalEXT
 #endif
 
 #ifdef __linux__
-,
-	logglVertexArrayRangeNV,
-	logglFlushVertexArrayRangeNV,
-	logglAllocateMemoryNV,
-	logglFreeMemoryNV
+
 #endif
 
 };
@@ -1056,18 +960,15 @@ static extInfo_t extInfo[NUM_EXTENSIONS] = {
 	{"GL_NV_texture_env_combine4", "gl_ext_texture_env_combine_nv", 0, 0, QGL_ARB_MULTITEXTURE, 0},
 	{"GL_S3_s3tc", "gl_ext_compressed_textures", 0, 0, 0, QGL_ARB_TEXTURE_COMPRESSION},
 	{"GL_ARB_texture_compression", "gl_ext_compressed_textures", 0, 0, 0, 0},
-	{"GL_EXT_compiled_vertex_array", "gl_ext_compiled_vertex_array", NUM_GLFUNCS+6, 2, 0, QGL_NV_VERTEX_ARRAY_RANGE},
-	{"GL_NV_fog_distance", "gl_ext_fog_distance_nv", 0, 0, 0, 0},
-	{"GL_NV_fence", "gl_ext_vertex_array_range", NUM_GLFUNCS+8, 4, 0, 0}
+	{"GL_EXT_compiled_vertex_array", "gl_ext_compiled_vertex_array", NUM_GLFUNCS+6, 2, 0, 0},
+	{"GL_NV_fog_distance", "gl_ext_fog_distance_nv", 0, 0, 0, 0}
 #ifdef _WIN32
 ,
-	{"WGL_EXT_swap_control", NULL, NUM_GLFUNCS+12, 1, 0, 0},
-	{"GL_NV_vertex_array_range", "gl_ext_vertex_array_range", NUM_GLFUNCS+13, 4, QGL_NV_FENCE, 0}
+	{"WGL_EXT_swap_control", NULL, NUM_GLFUNCS+8, 1, 0, 0}
 #endif
 
 #ifdef __linux__
-,
-	{"GL_NV_vertex_array_range", "gl_ext_vertex_array_range", NUM_GLFUNCS+12, 4, QGL_NV_FENCE, 0}
+
 #endif
 };
 

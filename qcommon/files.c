@@ -1405,14 +1405,14 @@ FS_LoadPak_f
 ================
 */
 
-static int TryLoadPak (char *pakname)
+static 	qboolean TryLoadPak (char *pakname)
 {
 	FILE	*f;
 
 	if (FindPakStruc (pakname))
 	{
 		Com_WPrintf ("Packfile %s is already loaded\n", pakname);
-		return 1;		// already loaded
+		return true;		// already loaded
 	}
 	if (f = fopen (pakname, "rb"))
 	{
@@ -1426,9 +1426,9 @@ static int TryLoadPak (char *pakname)
 		search->pack = pak;
 		search->next = fs_searchpaths;
 		fs_searchpaths = search;
-		return 1;		// loaded
+		return true;		// loaded
 	}
-	return 0;
+	return false;
 }
 
 

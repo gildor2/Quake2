@@ -86,24 +86,12 @@ typedef union
 		void	(APIENTRY * MultiTexCoord2fARB) (GLenum target, GLfloat s, GLfloat t);
 		void	(APIENTRY * LockArraysEXT) (GLint first, GLint count);
 		void	(APIENTRY * UnlockArraysEXT) (void);
-		void	(APIENTRY * GenFencesNV) (GLint n, GLuint *fences);
-		void	(APIENTRY * DeleteFencesNV) (GLint n, const GLuint *fences);
-		void	(APIENTRY * SetFenceNV) (GLuint fence, GLenum condition);
-		void	(APIENTRY * FinishFenceNV) (GLuint fence);
 
 #ifdef _WIN32
 		BOOL	(APIENTRY * wglSwapIntervalEXT) (int interval);
-		void	(APIENTRY * glVertexArrayRangeNV) (GLint lenght, GLvoid *pointer);
-		void	(APIENTRY * glFlushVertexArrayRangeNV) (void);
-		void*	(APIENTRY * glAllocateMemoryNV) (int size, float readFreq, float writeFreq, float prior);
-		void	(APIENTRY * glFreeMemoryNV) (void *pointer);
 #endif
 
 #ifdef __linux__
-		void	(APIENTRY * glVertexArrayRangeNV) (GLint lenght, GLvoid *pointer);
-		void	(APIENTRY * glFlushVertexArrayRangeNV) (void);
-		void*	(APIENTRY * glAllocateMemoryNV) (int size, float readFreq, float writeFreq, float prior);
-		void	(APIENTRY * glFreeMemoryNV) (void *pointer);
 #endif
 	};
 	dummyFunc_t funcs[1];
@@ -192,24 +180,12 @@ extern qgl_t qgl;
 #define qglMultiTexCoord2fARB	qgl.MultiTexCoord2fARB
 #define qglLockArraysEXT	qgl.LockArraysEXT
 #define qglUnlockArraysEXT	qgl.UnlockArraysEXT
-#define qglGenFencesNV	qgl.GenFencesNV
-#define qglDeleteFencesNV	qgl.DeleteFencesNV
-#define qglSetFenceNV	qgl.SetFenceNV
-#define qglFinishFenceNV	qgl.FinishFenceNV
 
 #ifdef _WIN32
 #define qwglSwapIntervalEXT	qgl.wglSwapIntervalEXT
-#define qglVertexArrayRangeNV	qgl.glVertexArrayRangeNV
-#define qglFlushVertexArrayRangeNV	qgl.glFlushVertexArrayRangeNV
-#define qglAllocateMemoryNV	qgl.glAllocateMemoryNV
-#define qglFreeMemoryNV	qgl.glFreeMemoryNV
 #endif
 
 #ifdef __linux__
-#define qglVertexArrayRangeNV	qgl.glVertexArrayRangeNV
-#define qglFlushVertexArrayRangeNV	qgl.glFlushVertexArrayRangeNV
-#define qglAllocateMemoryNV	qgl.glAllocateMemoryNV
-#define qglFreeMemoryNV	qgl.glFreeMemoryNV
 #endif
 
 
@@ -224,14 +200,11 @@ extern qgl_t qgl;
 #define QGL_ARB_TEXTURE_COMPRESSION	(1 << 8)
 #define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 9)
 #define QGL_NV_FOG_DISTANCE	(1 << 10)
-#define QGL_NV_FENCE	(1 << 11)
 
 #ifdef _WIN32
-#define QWGL_EXT_SWAP_CONTROL	(1 << 12)
-#define QGL_NV_VERTEX_ARRAY_RANGE	(1 << 13)
+#define QWGL_EXT_SWAP_CONTROL	(1 << 11)
 #endif
 
 #ifdef __linux__
-#define QGL_NV_VERTEX_ARRAY_RANGE	(1 << 12)
 #endif
 

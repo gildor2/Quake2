@@ -732,6 +732,7 @@ static void AddSp2Surface (refEntity_t *e)
 }
 
 
+//?? needs ability to provide "detailLevel": some beams needs only 1 rect (flat)
 static void AddBeamSurfaces (refEntity_t *e)
 {
 	vec3_t	viewDir, viewDir2;
@@ -740,7 +741,7 @@ static void AddBeamSurfaces (refEntity_t *e)
 	float	z1, z2, size, angle, angleStep;
 	int		i, numParts;
 
-	// compute detail level
+	// compute level of detail
 	VectorSubtract (e->beamStart, vp.vieworg, viewDir);
 	z1 = DotProduct (viewDir, vp.viewaxis[0]);		// beamStart.Z
 	VectorSubtract (e->beamEnd, vp.vieworg, viewDir2);
@@ -774,6 +775,7 @@ static void AddBeamSurfaces (refEntity_t *e)
 		surfaceCommon_t *surf;
 		float	sx, cx;
 
+		//!! use SURF_TRISURF to allocate all parts in one surface with shared verts
 		p = GL_AllocDynamicMemory (sizeof(surfacePoly_t) + 4 * sizeof(vertexPoly_t));
 		if (!p)		// out of dynamic memory
 			return;
@@ -801,7 +803,211 @@ static void AddBeamSurfaces (refEntity_t *e)
 
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = e->shaderColor.rgba;
 
+		//!! can be different shader to provide any types of lined particles
 		surf = GL_AddDynamicSurface (gl_identityLightShader2, ENTITYNUM_WORLD);
+		if (!surf) return;
+		surf->poly = p;
+		surf->type = SURFACE_POLY;
+	}
+}
+
+
+#define CYLINDER_PARTS	16		// should be even number
+#define CYLINDER_FIX_ALPHA
+
+static void AddCylinderSurfaces (refEntity_t *e)
+{
+	vec3_t	viewDir, viewDir2;
+	vec3_t	axis[3];	// length, width, depth
+	float	z1, z2, len, angle, anglePrev, angleStep;
+	int		i;
+#ifdef CYLINDER_FIX_ALPHA
+	vec3_t	v;
+	float	f, fixAngle;
+#endif
+
+	// cull beam (improve with frustum culling ??)
+	VectorSubtract (e->beamStart, vp.vieworg, viewDir);
+	z1 = DotProduct (viewDir, vp.viewaxis[0]);		// beamStart.Z
+	VectorSubtract (e->beamEnd, vp.vieworg, viewDir2);
+	z2 = DotProduct (viewDir2, vp.viewaxis[0]);		// beamEnd.Z
+	if (z1 < 0 && z2 < 0)
+		return;
+
+	// compute beam axis
+	VectorSubtract (e->beamEnd, e->beamStart, axis[0]);
+	len = VectorNormalize (axis[0]);
+	CrossProduct (axis[0], viewDir, axis[1]);
+	VectorNormalizeFast (axis[1]);
+	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
+
+#ifdef CYLINDER_FIX_ALPHA
+	// compute minimal distance to beam
+	f = DotProduct (viewDir, axis[0]);
+	VectorMA (e->beamStart, -f, axis[0], v);		// v is a nearest point on beam line
+	VectorSubtract (v, vp.vieworg, v);
+	f = DotProduct (v, v);
+	f = SQRTFAST(f);								// distance to line
+	if (f <= e->beamRadius)
+		fixAngle = -1;
+	else
+	{
+		// here: f > beamRadius (should be > 0)
+		f = e->beamRadius / f;
+		fixAngle = ASIN_FUNC(f) / (2 * M_PI);
+	}
+
+#endif
+
+	for (i = 0; i < CYLINDER_PARTS; i++)
+	{
+		surfacePoly_t *p;
+		surfaceCommon_t *surf;
+		float	sx, cx;
+		vec3_t	dir1, dir2;
+
+		// cylinder will be drawn with 2 passes, from far to near
+		// (for correct image when used shader with depthwrites)
+		switch (i)
+		{
+		case 0:										// starting
+			angle = -0.25;
+			angleStep = 1.0f / CYLINDER_PARTS;
+			break;
+		case CYLINDER_PARTS/2:
+			angle = 0.75;
+			angleStep = -1.0f / CYLINDER_PARTS;
+			break;
+		}
+
+		p = GL_AllocDynamicMemory (sizeof(surfacePoly_t) + 4 * sizeof(vertexPoly_t));
+		if (!p)		// out of dynamic memory
+			return;
+		p->numVerts = 4;
+
+		// rotate dir1 & dir2 vectors
+		anglePrev = angle;
+		if (i == CYLINDER_PARTS/2-1 || i == CYLINDER_PARTS-1)
+			angle = 0.25;
+		else
+			angle += angleStep;
+
+		sx = SIN_FUNC(anglePrev) * e->beamRadius;
+		cx = COS_FUNC(anglePrev) * e->beamRadius;
+		VectorScale (axis[1], cx, dir1);
+		VectorMA (dir1, sx, axis[2], dir1);
+
+		sx = SIN_FUNC(angle) * e->beamRadius;
+		cx = COS_FUNC(angle) * e->beamRadius;
+		VectorScale (axis[1], cx, dir2);
+		VectorMA (dir2, sx, axis[2], dir2);
+
+		// setup xyz
+		VectorAdd (e->beamStart, dir1, p->verts[0].xyz);
+		VectorAdd (e->beamEnd, dir1, p->verts[1].xyz);
+		VectorAdd (e->beamStart, dir2, p->verts[3].xyz);
+		VectorAdd (e->beamEnd, dir2, p->verts[2].xyz);
+
+		p->verts[0].st[1] = p->verts[3].st[1] = len / (e->beamRadius * 2 * M_PI);
+		p->verts[1].st[1] = p->verts[2].st[1] = 0;
+		p->verts[0].st[0] = p->verts[1].st[0] = anglePrev;
+		p->verts[2].st[0] = p->verts[3].st[0] = angle;
+
+		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = e->shaderColor.rgba;
+#ifdef CYLINDER_FIX_ALPHA
+#define MIN_FIXED_ALPHA			0.1f
+		// fix alpha: make it depends on angle (better image quality)
+		if (fixAngle >= 0)
+		{
+			float	a1, a2;
+
+			if (i < CYLINDER_PARTS / 2)
+			{	// angles in -0.25..0.25 range
+				a1 = fabs (anglePrev - fixAngle);
+				a2 = fabs (angle - fixAngle);
+			}
+			else
+			{	// angles in 0.25..0.72 range
+				a1 = fabs (anglePrev - 0.5 + fixAngle);
+				a2 = fabs (angle - 0.5 + fixAngle);
+			}
+			if (a1 > 0.25) a1 = 0.25;
+			if (a2 > 0.25) a2 = 0.25;
+			a1 = a1 * 4 * (1 - MIN_FIXED_ALPHA) + MIN_FIXED_ALPHA;
+			a2 = a2 * 4 * (1 - MIN_FIXED_ALPHA) + MIN_FIXED_ALPHA;
+
+			p->verts[0].c.c[3] = p->verts[1].c.c[3] = Q_ftol (e->shaderColor.c[3] * a1);
+			p->verts[2].c.c[3] = p->verts[3].c.c[3] = Q_ftol (e->shaderColor.c[3] * a2);
+		}
+#endif
+
+		surf = GL_AddDynamicSurface (e->customShader, ENTITYNUM_WORLD);
+		if (!surf) return;
+		surf->poly = p;
+		surf->type = SURFACE_POLY;
+	}
+}
+
+
+#define BEAM_PARTS	3		// 1 - flat
+
+static void AddFlatBeam (refEntity_t *e)
+{
+	vec3_t	viewDir, viewDir2;
+	vec3_t	axis[3];	// length, width, depth
+	float	z1, z2, len, angle;
+	int		i;
+
+	// cull beam (improve with frustum culling ??)
+	VectorSubtract (e->beamStart, vp.vieworg, viewDir);
+	z1 = DotProduct (viewDir, vp.viewaxis[0]);		// beamStart.Z
+	VectorSubtract (e->beamEnd, vp.vieworg, viewDir2);
+	z2 = DotProduct (viewDir2, vp.viewaxis[0]);		// beamEnd.Z
+	if (z1 < 0 && z2 < 0)
+		return;
+
+	// compute beam axis
+	VectorSubtract (e->beamEnd, e->beamStart, axis[0]);
+	len = VectorNormalize (axis[0]);
+	CrossProduct (axis[0], viewDir, axis[1]);
+	VectorNormalizeFast (axis[1]);
+	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
+
+	angle = 0;
+	for (i = 0; i < BEAM_PARTS; i++)
+	{
+		surfacePoly_t *p;
+		surfaceCommon_t *surf;
+		float	sx, cx;
+		vec3_t	dir1, dir2;
+
+		p = GL_AllocDynamicMemory (sizeof(surfacePoly_t) + 4 * sizeof(vertexPoly_t));
+		if (!p)		// out of dynamic memory
+			return;
+		p->numVerts = 4;
+
+		sx = SIN_FUNC(angle) * e->beamRadius;
+		cx = COS_FUNC(angle) * e->beamRadius;
+		VectorScale (axis[1], cx, dir1);
+		VectorMA (dir1, sx, axis[2], dir1);
+		VectorNegate (dir1, dir2);
+
+		angle += 0.5f / BEAM_PARTS;
+
+		// setup xyz
+		VectorAdd (e->beamStart, dir1, p->verts[0].xyz);
+		VectorAdd (e->beamEnd, dir1, p->verts[1].xyz);
+		VectorAdd (e->beamStart, dir2, p->verts[3].xyz);
+		VectorAdd (e->beamEnd, dir2, p->verts[2].xyz);
+
+		p->verts[0].st[1] = p->verts[3].st[1] = len / (e->beamRadius * 2 * M_PI);
+		p->verts[1].st[1] = p->verts[2].st[1] = 0;
+		p->verts[0].st[0] = p->verts[1].st[0] = 0;
+		p->verts[2].st[0] = p->verts[3].st[0] = 1;
+
+		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = e->shaderColor.rgba;
+
+		surf = GL_AddDynamicSurface (e->customShader, ENTITYNUM_WORLD);
 		if (!surf) return;
 		surf->poly = p;
 		surf->type = SURFACE_POLY;
@@ -1021,7 +1227,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 				continue;
 			}
 		}
-		else if (e->flags & RF_BEAM)
+		else if (e->flags & (RF_BEAM|RF_BEAM_EXT))
 		{
 			VectorAdd (e->beamStart, e->beamEnd, center);
 			VectorScale (center, 0.5f, e->center);
@@ -1321,6 +1527,14 @@ static void DrawBspSequence (node_t *leaf)
 				}
 			else if (e->flags & RF_BEAM)
 				AddBeamSurfaces (e);
+			else if (e->flags & RF_BEAM_EXT)
+			{
+				//!! need another way to select function
+				if (e->customShader != gl_railBeamShader)
+					AddCylinderSurfaces (e);
+				else
+					AddFlatBeam (e);
+			}
 		}
 
 		/*------------ draw particles -------------*/
@@ -1519,6 +1733,27 @@ void GL_AddEntity (entity_t *ent)
 		out->beamRadius = ent->frame / 2.0f;
 		out->shaderColor.rgba = gl_config.tbl_8to32[ent->skinnum];
 		out->shaderColor.c[3] = Q_ftol (ent->alpha * 255);
+	}
+	else if (ent->flags & RF_BEAM_EXT)
+	{
+		VectorCopy (ent->origin, out->beamStart);
+		VectorCopy (ent->oldorigin, out->beamEnd);
+		out->beamRadius = ent->alpha / 2.0f;
+		switch (ent->skinnum)
+		{
+		case BEAM_RAILBEAM:
+			out->customShader = gl_railBeamShader;
+			break;
+		case BEAM_RAILSPIRAL:
+			out->customShader = gl_railSpiralShader;
+			break;
+		case BEAM_RAILRINGS:
+			out->customShader = gl_railRingsShader;
+			break;
+		default:
+			out->customShader = gl_defaultShader;
+		}
+		out->shaderColor.rgba = ent->color.rgba;
 	}
 
 	gl_speeds.ents++;

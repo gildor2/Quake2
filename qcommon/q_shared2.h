@@ -163,6 +163,7 @@ MATHLIB
 
 typedef float vec3_t[3];
 
+
 #ifndef M_PI
 #define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
 #endif
@@ -673,6 +674,8 @@ typedef struct
 #define RF_USE_DISGUISE		0x00040000
 //ROGUE
 
+#define RF_BEAM_EXT			0x80000000
+
 // player_state_t->refdef flags
 #define	RDF_UNDERWATER		1		// warp the screen as apropriate
 #define RDF_NOWORLDMODEL	2		// used for player configuration screen
@@ -1022,8 +1025,11 @@ enum
 	TE_WIDOWSPLASH,
 	TE_EXPLOSION1_BIG,
 	TE_EXPLOSION1_NP,
-	TE_FLECHETTE
+	TE_FLECHETTE,
 //ROGUE
+
+	// extended protocol constants
+	TE_RAILTRAIL_EXT = 128
 };
 
 #define SPLASH_UNKNOWN		0

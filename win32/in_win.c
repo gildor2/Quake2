@@ -54,6 +54,7 @@ static DWORD	dwControlMap[JOY_MAX_AXES];
 static PDWORD	pdwRawValue[JOY_MAX_AXES];
 
 static cvar_t *in_mouse;
+qboolean in_needRestart;
 
 cvar_t	*in_joystick;
 
@@ -164,6 +165,7 @@ static void IN_FreeDirect (void)
 		FreeLibrary (hInstDI);
 		hInstDI = NULL;
 	}
+	ShowCursor (TRUE);
 }
 
 
@@ -220,6 +222,7 @@ static qboolean IN_InitDirect (void)
 
 	old_x = old_y = 0;
 
+	ShowCursor (FALSE);
 	SetCursor (NULL);		// DirectX manual says: "cursor will disappear"; but, in some circusmances it appears ...
 	return true;
 }
@@ -264,8 +267,7 @@ static void IN_InitWin32 (void)
 	SetCapture (cl_hwnd);
 	ClipCursor (&window_rect);
 
-	//?? both SetCursor() and ShowCursor() works good... try SetCursor() only...
-	SetCursor (NULL); //??
+	SetCursor (NULL);
 	ShowCursor (FALSE);
 }
 
@@ -398,6 +400,7 @@ IN_MouseMove
 */
 
 static int move_x, move_y;
+
 
 static void IN_MouseMove (usercmd_t *cmd)
 {
@@ -563,6 +566,14 @@ void IN_Frame (void)
 	if (!in_mouse || !in_appactive)	//??
 	{
 		IN_DeactivateMouse ();
+		return;
+	}
+
+	if (in_needRestart)
+	{
+		in_needRestart = false;
+		IN_DeactivateMouse ();
+		IN_ActivateMouse ();
 		return;
 	}
 

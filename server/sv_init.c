@@ -199,6 +199,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	}
 
 	SZ_Init (&sv.multicast, sv.multicast_buf, sizeof(sv.multicast_buf));
+	SZ_Init (&sv.multicastNew, sv.multicast_bufNew, sizeof(sv.multicast_bufNew));
 
 	strcpy (sv.name, server);
 
@@ -437,7 +438,7 @@ void SV_Map (qboolean attractloop, char *levelstring, qboolean loadgame)
 	{
 		SV_SendClientMessages ();
 		SV_SpawnServer (level, spawnpoint, ss_game, attractloop, loadgame);
-		Cbuf_CopyToDefer ();
+		Cbuf_CopyToDefer ();	//!! just use paused execution (pause in buffer)
 	}
 	else
 	{

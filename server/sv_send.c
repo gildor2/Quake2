@@ -166,6 +166,7 @@ void SV_Multicast (vec3_t origin, multicast_t to, qboolean oldclients)
 	int			j;
 	qboolean	reliable;
 	int			area1, area2;
+	sizebuf_t	*buf, *newBuf;
 
 	reliable = false;
 
@@ -214,6 +215,9 @@ void SV_Multicast (vec3_t origin, multicast_t to, qboolean oldclients)
 		Com_Error (ERR_FATAL, "SV_Multicast: bad to:%i", to);
 	}
 
+	// process transferring message and create a copy for new clients
+	newBuf = (sv_extProtocol->integer) ? SV_MulticastHook (&sv.multicast, &sv.multicastNew) : &sv.multicast;
+
 	// send the data to all relevent clients
 	for (j = 0, client = svs.clients; j < maxclients->integer; j++, client++)
 	{
@@ -223,6 +227,8 @@ void SV_Multicast (vec3_t origin, multicast_t to, qboolean oldclients)
 			continue;
 		if (!oldclients && !client->newprotocol)
 			continue;
+
+		buf = (client->newprotocol) ? newBuf : &sv.multicast;
 
 		if (mask)
 		{
@@ -236,12 +242,13 @@ void SV_Multicast (vec3_t origin, multicast_t to, qboolean oldclients)
 		}
 
 		if (reliable)
-			SZ_Write (&client->netchan.message, sv.multicast.data, sv.multicast.cursize);
+			SZ_Write (&client->netchan.message, buf->data, buf->cursize);
 		else
-			SZ_Write (&client->datagram, sv.multicast.data, sv.multicast.cursize);
+			SZ_Write (&client->datagram, buf->data, buf->cursize);
 	}
 
 	SZ_Clear (&sv.multicast);
+	SZ_Clear (&sv.multicastNew);
 }
 
 void SV_MulticastOld (vec3_t origin, multicast_t to)

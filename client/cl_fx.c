@@ -241,7 +241,36 @@ PARTICLE MANAGEMENT
 particle_t	*active_particles, *free_particles;
 particle_t	particles[MAX_PARTICLES];
 
-particleTrace_t particleTraces[MAX_PARTICLE_TRACES];
+
+typedef struct
+{
+	qboolean	allocated;
+	particleType_t type;
+	float		time;					// in sec
+	float		lifeTime, fadeTime;		// in sec
+	float		gravity, elasticity;
+	byte		minAlpha, maxAlpha;
+	vec3_t		vel, pos;
+	vec3_t		up, right;	//??
+	float		radius;
+} particleTrace_t;
+
+
+typedef struct
+{
+	qboolean allocated;
+	beamType_t type;
+	vec3_t	start;
+	vec3_t	end;
+	float	radius;
+	color_t	color;
+	float	fadeTime;					// in sec
+	float	growSpeed;					// radius_delta/sec
+} particleBeam_t;
+
+
+static particleTrace_t particleTraces[MAX_PARTICLE_TRACES];
+static particleBeam_t particleBeams[MAX_PARTICLE_BEAMS];
 
 
 void CL_ClearParticles (void)
@@ -256,6 +285,7 @@ void CL_ClearParticles (void)
 	particles[MAX_PARTICLES-1].next = NULL;
 
 	memset (particleTraces, 0, sizeof(particleTraces));
+	memset (particleBeams, 0, sizeof(particleBeams));
 }
 
 
@@ -415,6 +445,68 @@ particleTrace_t *CL_AllocParticleTrace (vec3_t pos, vec3_t vel, float lifeTime, 
 }
 
 
+static void CL_AddParticleBeams (float timeDelta)
+{
+	particleBeam_t *b;
+	int		i;
+
+	for (i = 0, b = particleBeams; i < MAX_PARTICLE_BEAMS; i++, b++)
+		if (b->allocated)
+		{
+			int		alphaDelta;
+			float	radiusDelta;
+			entity_t ent;
+
+			alphaDelta = b->fadeTime > 0 ? Q_ftol (timeDelta / b->fadeTime * 255.0f) : 0;
+			radiusDelta = timeDelta * b->growSpeed;
+			if (b->color.c[3] <= alphaDelta || b->radius <= -radiusDelta)
+			{
+				b->allocated = false;
+				continue;
+			}
+			ent.model = NULL;
+			ent.flags = RF_BEAM_EXT;
+
+			b->color.c[3] -= alphaDelta;
+			b->radius += radiusDelta;
+			VectorCopy (b->start, ent.origin);
+			VectorCopy (b->end, ent.oldorigin);
+			ent.skinnum = b->type;
+			ent.alpha = b->radius;
+			ent.color.rgba = b->color.rgba;
+
+			V_AddEntity (&ent);
+
+			if (b->fadeTime <= 0) b->allocated = false;
+		}
+}
+
+
+particleBeam_t *CL_AllocParticleBeam (vec3_t start, vec3_t end, float radius, float fadeTime)
+{
+	particleBeam_t *b;
+	int		i;
+
+	for (i = 0, b = particleBeams; i < MAX_PARTICLE_BEAMS; i++, b++)
+		if (!b->allocated)
+		{
+			b->allocated = true;
+
+			VectorCopy (start, b->start);
+			VectorCopy (end, b->end);
+			b->radius = radius;
+			b->fadeTime = fadeTime;
+
+			b->color.rgba = 0xFFFFFFFF;
+			b->type = BEAM_RAILBEAM;
+			b->growSpeed = 0;
+
+			return b;
+		}
+	return NULL;
+}
+
+
 particle_t *CL_AllocParticle (void)
 {
 	particle_t *p;
@@ -438,6 +530,8 @@ particle_t *CL_AllocParticle (void)
 	return p;
 }
 
+
+
 /*
 ===============
 CL_UpdateParticles
@@ -458,6 +552,7 @@ void CL_UpdateParticles (void)
 	time2 = timeDelta * timeDelta;
 
 	CL_AddParticleTraces (timeDelta);
+	CL_AddParticleBeams (timeDelta);
 
 	prev = NULL;
 	for (p = active_particles; p; p = next)
@@ -1677,6 +1772,62 @@ void CL_RailTrail (vec3_t start, vec3_t end)
 		VectorAdd (move, vec, move);
 	}
 }
+
+
+void CL_RailTrailExt (vec3_t start, vec3_t end, byte rType, byte rColor)
+{
+	particleBeam_t *b;
+#define c(r,g,b)	(r + (g<<8) + (b<<16) + (255<<24))
+#	define I 255
+#	define o 0
+static int colorTable[9] = {
+	c(23, 83, 111),	c(I, o, o),	c(o, I, o),	c(I, I, o),
+	c(o, o, I),	c(I, o, I),	c(o, I, I),	c(I, I, I)
+};
+#	undef I
+#	undef o
+
+#	define I 255
+#	define o 128
+static int colorTable2[9] = {
+	c(I, I, I),	c(I, o, o),	c(o, I, o),	c(I, I, o),
+	c(o, o, I),	c(I, o, I),	c(o, I, I),	c(I, I, I)
+};
+#	undef I
+#	undef o
+#undef c
+
+	if (!rType || !cls.newfx)
+	{
+		CL_RailTrail (start, end);
+		return;
+	}
+
+	b = CL_AllocParticleBeam (start, end, 10, 1.4);
+	if (!b) return;
+	b->type = BEAM_RAILBEAM;
+	b->color.rgba = colorTable2[rColor];
+	b->color.c[3] = 64;
+
+	switch (rType)
+	{
+	case 1:
+		b = CL_AllocParticleBeam (start, end, 8, 1.0);
+		if (!b) return;
+		b->type = BEAM_RAILSPIRAL;
+		b->color.rgba = colorTable[rColor];
+		b->color.c[3] = 160;
+		break;
+	case 2:
+		b = CL_AllocParticleBeam (start, end, 8, 0.8);
+		if (!b) return;
+		b->type = BEAM_RAILRINGS;
+		b->color.rgba = colorTable[rColor];
+		b->color.c[3] = 128;
+		break;
+	}
+}
+
 
 // RAFAEL
 /*

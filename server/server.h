@@ -48,6 +48,8 @@ typedef struct
 	// it is only used to marshall data until SV_Multicast is called
 	sizebuf_t	multicast;
 	byte		multicast_buf[MAX_MSGLEN];
+	sizebuf_t	multicastNew;
+	byte		multicast_bufNew[MAX_MSGLEN];
 
 	// demo server information
 	FILE		*demofile;
@@ -193,6 +195,7 @@ extern	cvar_t		*sv_paused;
 extern	cvar_t		*maxclients;
 extern	cvar_t		*sv_noreload;			// don't reload level state when reentering
 extern	cvar_t		*sv_airaccelerate;		// don't reload level state when reentering
+extern	cvar_t		*sv_extProtocol;
 											// development tool
 extern	cvar_t		*sv_enforcetime;
 
@@ -217,6 +220,8 @@ void SV_InitOperatorCommands (void);
 
 void SV_SendServerinfo (client_t *client);
 void SV_UserinfoChanged (client_t *cl);
+
+sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext);
 
 
 void Master_Heartbeat (void);

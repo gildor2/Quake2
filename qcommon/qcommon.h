@@ -366,10 +366,6 @@ The + command line options are also added to the command buffer.
 
 */
 
-#define	EXEC_NOW	0		// don't return until completed
-#define	EXEC_INSERT	1		// insert at current position, but don't run yet
-#define	EXEC_APPEND	2		// add to end of the command buffer
-
 void	Cbuf_Init (void);
 // allocates an initial text buffer that will grow as needed
 
@@ -381,9 +377,6 @@ void	Cbuf_InsertText (char *text);
 // when a command wants to issue other commands immediately, the text is
 // inserted at the beginning of the buffer, before any remaining unexecuted
 // commands.
-
-//--void Cbuf_ExecuteText (int exec_when, char *text);
-// this can be used in place of either Cbuf_AddText or Cbuf_InsertText
 
 void	Cbuf_AddEarlyCommands (qboolean clear);
 // adds all the +set commands from the command line

@@ -191,7 +191,7 @@ void SV_WriteServerFile (qboolean autosave, char *dir)
 	FILE	*f;
 	cvar_t	*var;
 	char	name[MAX_OSPATH], string[128];
-	char	comment[32];
+	char	comment[128];
 	time_t	aclock;
 	struct tm	*newtime;
 
@@ -220,7 +220,7 @@ void SV_WriteServerFile (qboolean autosave, char *dir)
 		Com_sprintf (comment, sizeof(comment), "ENTERING %s", sv.configstrings[CS_NAME]);
 	}
 
-	fwrite (comment, 1, sizeof(comment), f);
+	fwrite (comment, 1, 32, f);
 
 	// write the mapcmd
 	fwrite (svs.mapcmd, 1, sizeof(svs.mapcmd), f);

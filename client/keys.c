@@ -1215,9 +1215,9 @@ void Key_Event (int key, qboolean down, unsigned time)
 		return;
 	}
 
-	// any key during the attract mode will bring up the menu
-	if (cl.attractloop && cls.key_dest != key_menu &&
-		!(key >= K_F1 && key <= K_F12))
+	// any key during the demoplay mode will bring up the menu
+//	if (cl.attractloop && cls.key_dest != key_menu && !(key >= K_F1 && key <= K_F12)) --
+	if (cl.attractloop && cls.key_dest == key_game && !(key >= K_F1 && key <= K_F12))
 		key = K_ESCAPE;
 
 	// menu key is hardcoded, so the user can never unbind it
@@ -1226,7 +1226,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 		if (!down)
 			return;
 
-		if (cl.frame.playerstate.stats[STAT_LAYOUTS] && cls.key_dest == key_game)
+		if (!cl.attractloop && cls.key_dest == key_game && cl.frame.playerstate.stats[STAT_LAYOUTS])
 		{	// put away help computer / inventory
 			Cbuf_AddText ("cmd putaway\n");
 			return;
@@ -1237,6 +1237,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 			Key_Message (key);
 			break;
 		case key_menu:
+		case key_forcemenu:
 			M_Keydown (key);
 			break;
 		case key_game:
@@ -1244,7 +1245,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 			M_Menu_Main_f ();
 			break;
 		default:
-			Com_Error (ERR_FATAL, "Bad cls.key_dest");
+			Com_Error (ERR_FATAL, "Bad cls.key_dest %d", cls.key_dest);
 		}
 		return;
 	}
@@ -1291,10 +1292,11 @@ void Key_Event (int key, qboolean down, unsigned time)
 
 	// at this point, we have only down==true events ...
 
-	// if not a consolekey, send to the interpreter no matter what mode is
-	if ((cls.key_dest == key_menu && menubound[key])
-		|| (cls.key_dest == key_console && !consolekeys[key])
-		|| (cls.key_dest == key_game && ( cls.state == ca_active || !consolekeys[key])))
+	// process key bindings
+	if ((cls.key_dest == key_menu && menubound[key]) ||
+		(cls.key_dest == key_console && !consolekeys[key]) ||
+		(cls.key_dest == key_game && (cls.state == ca_active || !consolekeys[key])))
+		// here: no key_forcemenu code (will never use bindings in this mode)
 	{
 		kb = keybindings[key];
 		if (kb)
@@ -1322,6 +1324,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 		Key_Message (key);
 		break;
 	case key_menu:
+	case key_forcemenu:
 		M_Keydown (key);
 		break;
 
@@ -1330,7 +1333,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 		Key_Console (key);
 		break;
 	default:
-		Com_Error (ERR_FATAL, "Bad cls.key_dest");
+		Com_Error (ERR_FATAL, "Bad cls.key_dest %d", cls.key_dest);
 	}
 }
 

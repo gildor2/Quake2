@@ -426,6 +426,7 @@ static void Vid_NewWindow (int width, int height)
 	viddef.height = height;
 
 	cl.force_refdef = true;		// can't use a paused refdef
+	in_needRestart = true;
 }
 
 /*

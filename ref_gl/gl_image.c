@@ -216,16 +216,8 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 				r >>= 2; g >>= 2; b >>= 2; a >>= 2;
 				break;
 			case 0:
-				// don't allow transparent textures become black
-#define PROCESS_PIXEL(row,col)	\
-	pix = (byte *)row + col[j];		\
-	r += *pix++; g += *pix++; b += *pix++; pix++;
-				PROCESS_PIXEL(inrow, p1);
-				PROCESS_PIXEL(inrow, p2);
-				PROCESS_PIXEL(inrow2, p1);
-				PROCESS_PIXEL(inrow2, p2);
-#undef PROCESS_PIXEL
-				r >>= 2; g >>= 2; b >>= 2;
+				r = g = b = 0;
+				break;
 			}
 
 			((byte *)(out+j))[0] = r;
@@ -374,15 +366,8 @@ static void MipMap (byte *in, int width, int height)
 				r >>= 2; g >>= 2; b >>= 2; a >>= 2;
 				break;
 			case 0:
-				// don't allow transparent textures become black (in a case of its usage without blending)
-#define PROCESS_PIXEL(idx)	\
-		r += in[idx]; g += in[idx+1]; b += in[idx+2];
-				PROCESS_PIXEL(0);
-				PROCESS_PIXEL(4);
-				PROCESS_PIXEL(width);
-				PROCESS_PIXEL(width+4);
-#undef PROCESS_PIXEL
-				r /= 4; g /= 4; b /= 4;
+				r = g = b = 0;
+				break;
 			}
 			out[0] = r; out[1] = g; out[2] = b;
 			// generate alpha-channel for mipmaps (don't let it be transparent)
@@ -408,9 +393,9 @@ static void GetImageDimensions (int width, int height, int *scaledWidth, int *sc
 		if (sh > 64 && sh > (height * 4 / 3)) sh >>= 1;
 	}
 	if (picmip)
-	{	// perform picmip only for large images
-		if (sw > 64) sw >>= gl_picmip->integer;
-		if (sh > 64) sh >>= gl_picmip->integer;
+	{
+		sw >>= gl_picmip->integer;
+		sh >>= gl_picmip->integer;
 	}
 
 	maxSize = min(gl_config.maxTextureSize, MAX_TEX_SIZE);
@@ -452,6 +437,28 @@ static void Upload (void *pic, int flags, image_t *image)
 	int		scaledWidth, scaledHeight;
 	int		format, size;
 	unsigned *scaledPic;
+
+	/*------------ Eliminate alpha-channel when needed---------------*/
+	if (flags & IMAGE_NOALPHA)
+	{
+		int		i;
+		byte	*p;
+		qboolean alphaRemoved;
+
+		alphaRemoved = false;
+		size = image->width * image->height;
+		p = (byte*)pic + 3;
+		for (i = 0; i < size; i++, p += 4)
+		{
+			if (*p != 255)
+			{
+				alphaRemoved = true;
+				*p = 255;
+			}
+		}
+		if (!alphaRemoved)
+			image->flags &= ~IMAGE_NOALPHA;		// original image have no alpha-channel -- reset NOALPHA flag
+	}
 
 	/*----- Calculate internal dimensions of the new texture --------*/
 	GetImageDimensions (image->width, image->height, &scaledWidth, &scaledHeight, image->flags & IMAGE_PICMIP);
@@ -852,7 +859,7 @@ void GL_SetupGamma (void)
 
 	gl_config.overbrightBits = overbright;
 	gl_config.identityLightValue = 255 / (1 << overbright);
-	gl_config.identityLightValue_f = 1.0 / (float)(1 << overbright);
+	gl_config.identityLightValue_f = 1.0f / (float)(1 << overbright);
 
 	invGamma = 1.0 / Cvar_Clamp (r_gamma, 0.5, 3.0);
 	intens = Cvar_Clamp (r_intensity, 0, 1);
@@ -963,7 +970,7 @@ static void Imagelist_f (void)
 
 	if (Cmd_Argc () > 2)
 	{
-		Com_Printf ("Usaeg: imagelist [<mask>]\n");
+		Com_Printf ("Usage: imagelist [<mask>]\n");
 		return;
 	}
 
@@ -972,7 +979,7 @@ static void Imagelist_f (void)
 	else
 		mask = NULL;
 
-	Com_Printf ("----w---h---a-wr-m-fmt------name----------\n");
+	Com_Printf ("----w----h----a-wr-m-fmt------name----------\n");
 	idx = texels = n = 0;
 
 	for (i = 0; i < MAX_TEXTURES; i++)
@@ -999,8 +1006,9 @@ static void Imagelist_f (void)
 				break;
 			}
 
-		Com_Printf ("%-3d %-3d %-3d %c %c  %c %-8s %s\n", idx, img->internalWidth, img->internalHeight,
-			alphaTypes[img->alphaType], boolTypes[(img->flags & IMAGE_CLAMP) == 0], boolTypes[(img->flags & IMAGE_MIPMAP) != 0],
+		Com_Printf ("%-3d %-4d %-4d %c %c  %c %-8s %s\n", idx, img->internalWidth, img->internalHeight,
+			img->flags & IMAGE_NOALPHA ? '-' : alphaTypes[img->alphaType],
+			boolTypes[(img->flags & IMAGE_CLAMP) == 0], boolTypes[(img->flags & IMAGE_MIPMAP) != 0],
 			fmt, img->name);
 	}
 
@@ -1029,6 +1037,33 @@ static void Imagelist_f (void)
 			Com_Printf ("Chain %dx : %d\n", i, distr[i]);
 	}
 #endif
+}
+
+
+static void ImageReload_f (void)
+{
+	char	*mask;
+	int		i;
+
+	if (Cmd_Argc () != 2)
+	{
+		Com_Printf ("Usage: img_reload <mask>\n");
+		return;
+	}
+
+	mask = Cmd_Argv (1);
+	for (i = 0; i < MAX_TEXTURES; i++)
+	{
+		image_t	*img;
+
+		img = &imagesArray[i];
+		if (!img->name[0]) continue;	// free slot
+		if (!MatchWildcard2 (img->name, mask, true)) continue;
+
+		if (img->name[0] == '*' || img->flags & IMAGE_SYSTEM) continue;
+		if (GL_FindImage (img->name, img->flags | IMAGE_RELOAD))
+			Com_DPrintf ("%s reloaded\n", img->name);
+	}
 }
 
 
@@ -1156,6 +1191,7 @@ void GL_InitImages (void)
 	GetPalette ();		// read palette for 8-bit WAL textures
 
 	Cmd_AddCommand ("imagelist", Imagelist_f);
+	Cmd_AddCommand ("img_reload", ImageReload_f);
 
 	/*--------- create default texture -----------*/
 	memset (tex, 0, 16*16*4);
@@ -1274,8 +1310,8 @@ void GL_InitImages (void)
 	gl_fogImage = GL_CreateImage ("*fog", tex, 256, 32, IMAGE_CLAMP|IMAGE_TRUECOLOR);	//?? mipmap
 	gl_fogImage->flags |= IMAGE_SYSTEM; */
 
-	gl_reflImage = GL_FindImage ("env/specular", IMAGE_MIPMAP|IMAGE_TRUECOLOR);	//!! move reflection images to a different place
-	gl_reflImage2 = GL_FindImage ("env/diffuse", IMAGE_MIPMAP|IMAGE_TRUECOLOR);
+	gl_reflImage = GL_FindImage ("fx/specular", IMAGE_MIPMAP|IMAGE_TRUECOLOR);	//!! move reflection images to a different place
+	gl_reflImage2 = GL_FindImage ("fx/diffuse", IMAGE_MIPMAP|IMAGE_TRUECOLOR);
 }
 
 
@@ -1285,6 +1321,7 @@ void GL_ShutdownImages (void)
 	image_t	*img;
 
 	Cmd_RemoveCommand ("imagelist");
+	Cmd_RemoveCommand ("img_reload");
 
 	if (!imageCount) return;
 
@@ -1420,15 +1457,29 @@ image_t *GL_FindImage (char *name, int flags)
 				// found a name ...
 				// compare image flags
 				if ((img->flags & (IMAGE_MIPMAP|IMAGE_CLAMP)) == flags2)
-					return img;
-//				Com_Printf ("hash: %s  (fl: %X)  --> %s  (fl: %X)", name, flags, img->name, img->flags);//!!!!!
-				// flags are different ...
-				if (name[0] == '*')
 				{
-					Com_WPrintf ("R_FindImage(%s): Using different flags (%X != %X) for system image\n", name2, flags, img->flags);
-					return img;
+					if (img->flags & IMAGE_SYSTEM) return img;
+
+					// check required alpha channel
+					if (flags & IMAGE_NOALPHA)
+					{
+						if (img->alphaType == 0) return img;
+					}
+					else
+					{
+						if (!(img->flags & IMAGE_NOALPHA)) return img;
+					}
 				}
-				hash = -1;	// mark: image used with a different flags
+				else
+				{
+					// flags are different ...
+					if (name[0] == '*' || img->flags & IMAGE_SYSTEM)
+					{
+						Com_WPrintf ("R_FindImage(%s): using different flags (%X != %X) for system image\n", name2, flags, img->flags);
+						return img;
+					}
+					hash = -1;	// mark: image used with a different flags (for displaying a warning message)
+				}
 				// continue search ...
 			}
 	}

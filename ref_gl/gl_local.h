@@ -55,13 +55,6 @@ typedef struct
 extern viddef_t vid;
 
 
-typedef union
-{
-	byte	c[4];
-	int		rgba;
-} color_t;
-
-
 // forwards
 typedef struct viewPortal_s viewPortal_t;
 
@@ -74,6 +67,7 @@ typedef struct viewPortal_s viewPortal_t;
 #define	IMAGE_MIPMAP		2
 #define IMAGE_PICMIP		4
 #define IMAGE_SYSTEM		8			// auto-generated image (default, fog, dlight etc.)
+#define IMAGE_NOALPHA		0x10		// original image have alpha-channel, but it was removed
 // hints for image creating
 #define IMAGE_TRUECOLOR		0x80000000	// hint for GL_CreateImage: force to upload image in 32 bit
 #define IMAGE_LIGHTMAP		0x40000000
@@ -358,6 +352,7 @@ extern	shader_t	*gl_defaultSkyShader;
 extern	shader_t	*gl_particleShader;
 extern	shader_t	*gl_flareShader;			// NULL if not found
 extern	shader_t	*gl_colorShellShader;
+extern	shader_t	*gl_railSpiralShader, *gl_railRingsShader, *gl_railBeamShader;
 extern	shader_t	*gl_skyShader;
 extern	shader_t	*gl_alphaShader1, *gl_alphaShader2;
 
@@ -453,17 +448,18 @@ typedef struct refEntity_s
 			int		frame, oldFrame;
 			float	backLerp;
 			// shading
-			shader_t *customShader;		// one shader for all surfaces
 			//?? skin_t *customSkin;	// multiple shaders (1 per surface)
 			int		skinNum;			// number of default (inline) skin
 		};
 		struct {
 		/*------------- beam ----------------*/
+			beamType_t beamType;
 			vec3_t	beamStart, beamEnd;
 			float	beamRadius;
 		};
 	};
 
+	shader_t	*customShader;			// one shader for all surfaces
 	color_t		shaderColor;			// for "rgbGen/alphaGen entity"
 	// draw sequence
 	struct refEntity_s *drawNext;

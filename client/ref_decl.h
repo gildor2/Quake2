@@ -8,7 +8,6 @@ typedef struct {
 	int	(*_Cmd_Argc) (void);
 	char*	(*_Cmd_Argv) (int i);
 	char*	(*_Cmd_Args) (void);
-	void	(*_Cbuf_ExecuteText) (int exec_when, char *text);
 	cvar_t*	(*_Cvar_Get) (char *name, char *value, int flags);
 	void	(*_Cvar_GetVars) (cvarInfo_t *vars, int count);
 	cvar_t*	(*_Cvar_Set) (char *name, char *value);

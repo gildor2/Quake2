@@ -1,10 +1,9 @@
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
    but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
-! when loadgame in 320x240, in_mouse=1, begins unstoppable very fast rotation (with looking down); to stop -- set 800x600+vid_restart
+- explosions are invisible through non-transparent water (incorrect server-side PVS cull ?)
 ! sometimes key_up skipped (or key_down spontaneously pressed) (Win2K bug ?)
 - map "temple2", "lavatube" -- waterfall: bullet sounds (change sound for water sparks, change place for water bullet sounds
   or something another ??)
-- command line: "+set cddir <dir>" (etc.) - will display error, when var will be parsed 2nd time
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
 
@@ -12,7 +11,7 @@
   - map "dm_dukecity_beta":
     - disco: neon lamp text should not disappear
   ? g_misc.c::SP_light() -- disabled lights with style>=32
-- dir "../dirty/maps" will display list same twice
+- dir "../dirty/maps" will display the same list twice
 - when sound is busy, error about "command already registered" appears for sound commands
 
 ! cannot load map "dog..." in soft: "bad surface extents 272 x XXX" (but GL can ...; seems, ref_soft
@@ -31,14 +30,9 @@
   ("ground3": early - crash, now - lost polygons ...)
 - ref_soft hangs on map "japan" (from Kingpin)
 
-? name conflict REF_HARD_LINKED Win32/irix
-
 ? once game was crushed (after singleplayer) with Z_FreeTags(TAG_LEVEL): zero in chain
 - bug: "game baseq2;unloadpak q2maps;game bad_dir(?);demomap demo1;game baseq2(?);demomap demo1"
   (1st demomap - "cannot load map (q2maps not loaded)", 2nd - "bad map contents (pak loaded, but name cached??)"
-
-ref_soft:
-  r_main.c: STRINGER macro doesn't works (iD's bug)
 
 ref_gl:
   DrawTile(): when viewport is small and gl_clear=1 - bugs on a left screen part

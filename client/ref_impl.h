@@ -8,7 +8,6 @@ refImport_t ri = {
 	Cmd_Argc,
 	Cmd_Argv,
 	Cmd_Args,
-	Cbuf_ExecuteText,
 	Cvar_Get,
 	Cvar_GetVars,
 	Cvar_Set,

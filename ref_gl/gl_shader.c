@@ -10,6 +10,7 @@ shader_t *gl_defaultSkyShader;		// default sky shader (black image)
 shader_t *gl_particleShader;
 shader_t *gl_flareShader;
 shader_t *gl_colorShellShader;
+shader_t *gl_railSpiralShader, *gl_railRingsShader, *gl_railBeamShader;
 shader_t *gl_skyShader;				// current sky shader (have mapped images)
 shader_t *gl_alphaShader1, *gl_alphaShader2;
 
@@ -508,6 +509,8 @@ shader_t *GL_SetShaderLightstyles (shader_t *shader, int styles)
 
 shader_t *GL_GetAlphaShader (shader_t *shader)
 {
+	int		i, j;
+
 	if (shader->alphaShader)
 		return shader->alphaShader;			// already done
 
@@ -526,6 +529,18 @@ shader_t *GL_GetAlphaShader (shader_t *shader)
 	st[0].alphaGenType = ALPHAGEN_ENTITY;
 	st[0].glState |= GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA;
 	st[0].glState &= ~GLSTATE_DEPTHWRITE;	// allow to see inside alpha-model
+	// setup shader images
+	for (i = 0; i < sh.numStages; i++)
+		for (j = 0; j < st[i].numAnimTextures; j++)
+		{
+			image_t	*img;
+			int		idx;
+
+			idx = i * MAX_STAGE_TEXTURES + j;
+			img = shaderImages[idx];
+			if (img->name[0] != '*' && !(img->flags & IMAGE_SYSTEM) && img->flags & IMAGE_NOALPHA)
+				shaderImages[idx] = GL_FindImage (img->name, img->flags & ~IMAGE_NOALPHA);
+		}
 
 	shader->alphaShader = FinishShader ();
 	return shader->alphaShader;
@@ -540,6 +555,8 @@ shader_t *GL_FindShader (char *name, int style)
 	shader_t *shader;
 
 	imgFlags = (style & (SHADER_WALL|SHADER_SKIN)) ? (IMAGE_PICMIP|IMAGE_MIPMAP) : 0;
+	if (!(style & (SHADER_ALPHA|SHADER_FORCEALPHA|SHADER_TRANS33|SHADER_TRANS66)))
+		imgFlags |= IMAGE_NOALPHA;
 
 	if (style & SHADER_ENVMAP && !gl_reflImage)	// remove reflection if nothing to apply
 		style &= ~SHADER_ENVMAP;
@@ -725,10 +742,15 @@ shader_t *GL_FindShader (char *name, int style)
 			}
 			else if (style & SHADER_ALPHA && img->alphaType)
 			{
-				if (img->alphaType == 1)
-					stage->glState = GLSTATE_ALPHA_GE05;
-				else
+				if (style & SHADER_WALL)
 					stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_DEPTHWRITE|GLSTATE_ALPHA_GT0;
+				else
+				{
+					if (img->alphaType == 1)
+						stage->glState = GLSTATE_ALPHA_GE05;
+					else
+						stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_ALPHA_GT0;
+				}
 			}
 			else if (style & (SHADER_TRANS33|SHADER_TRANS66))
 			{
@@ -912,6 +934,7 @@ void GL_ResetShaders (void)
 	else
 		gl_flareShader = NULL;
 
+	//---------------------------------------------
 	ClearTempShader ();
 	strcpy (sh.name, "*colorShell");
 	sh.sortParam = SORT_SEETHROUGH;
@@ -945,11 +968,72 @@ void GL_ResetShaders (void)
 //	deform->wave.phase = 0;
 //	deform->waveDiv = 0;
 	sh.numDeforms = 1;
-	shaderImages[0] = GL_FindImage ("env/colorshell", IMAGE_MIPMAP);
+	shaderImages[0] = GL_FindImage ("fx/colorshell", IMAGE_MIPMAP);
 	sh.lightmapNumber = LIGHTMAP_NONE;
 	st[0].numAnimTextures = 1;
 	gl_colorShellShader = FinishShader ();//?? AddPermanentShader ();
 
+	//---------------------------------------------
+	ClearTempShader ();
+	strcpy (sh.name, "*railBeam");
+	sh.sortParam = SORT_SEETHROUGH;
+	sh.cullMode = CULL_NONE;
+	st[0].rgbGenType = RGBGEN_VERTEX;
+	st[0].alphaGenType = ALPHAGEN_VERTEX;
+	st[0].glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONE;//MINUSSRCALPHA/*|GLSTATE_DEPTHWRITE|GLSTATE_ALPHA_GT0*/;
+	st[0].tcGenType = TCGEN_TEXTURE;
+	shaderImages[0] = GL_FindImage ("fx/rail2", 0);		// no mipmaps here
+	sh.lightmapNumber = LIGHTMAP_NONE;
+	st[0].numAnimTextures = 1;
+	gl_railBeamShader = FinishShader ();
+
+	//---------------------------------------------
+	ClearTempShader ();
+	strcpy (sh.name, "*railSpiral");
+	sh.sortParam = SORT_SEETHROUGH;
+	sh.cullMode = CULL_NONE;
+	st[0].rgbGenType = RGBGEN_VERTEX;
+	st[0].alphaGenType = ALPHAGEN_VERTEX;
+	st[0].glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONE;//MINUSSRCALPHA/*|GLSTATE_DEPTHWRITE|GLSTATE_ALPHA_GT0*/;
+	st[0].tcGenType = TCGEN_TEXTURE;
+	// scale
+	tcmod = NewTcModStage (st);
+	tcmod->type = TCMOD_SCALE;
+	tcmod->tScale = 0.25;
+	tcmod->sScale = 1;
+	// scroll
+	tcmod = NewTcModStage (st);
+	tcmod->type = TCMOD_SCROLL;
+	tcmod->tSpeed = 2;
+	shaderImages[0] = GL_FindImage ("fx/rail", 0);		// no mipmaps here
+	sh.lightmapNumber = LIGHTMAP_NONE;
+	st[0].numAnimTextures = 1;
+	gl_railSpiralShader = FinishShader ();
+
+	//---------------------------------------------
+	ClearTempShader ();
+	strcpy (sh.name, "*railRings");
+	sh.sortParam = SORT_SEETHROUGH;
+	sh.cullMode = CULL_NONE;
+	st[0].rgbGenType = RGBGEN_VERTEX;
+	st[0].alphaGenType = ALPHAGEN_VERTEX;
+	st[0].glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONE;//MINUSSRCALPHA/*|GLSTATE_DEPTHWRITE|GLSTATE_ALPHA_GT0*/;
+	st[0].tcGenType = TCGEN_TEXTURE;
+	// scale
+	tcmod = NewTcModStage (st);
+	tcmod->type = TCMOD_SCALE;
+	tcmod->sScale = 0;
+	tcmod->tScale = 1;
+	// scroll
+	tcmod = NewTcModStage (st);
+	tcmod->type = TCMOD_SCROLL;
+	tcmod->tSpeed = 4;
+	shaderImages[0] = GL_FindImage ("fx/rail", 0);		// no mipmaps here
+	sh.lightmapNumber = LIGHTMAP_NONE;
+	st[0].numAnimTextures = 1;
+	gl_railRingsShader = FinishShader ();
+
+	//---------------------------------------------
 	gl_skyShader = gl_defaultSkyShader = GL_FindShader ("*sky", SHADER_SKY|SHADER_ABSTRACT);
 
 	gl_concharsShader = GL_FindShader ("pics/conchars", SHADER_ALPHA);

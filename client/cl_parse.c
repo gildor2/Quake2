@@ -211,7 +211,11 @@ void CL_Download_f (void)
 	// download to a temp name, and only rename
 	// to the real name when done, so if interrupted
 	// a runt file wont be left
+#if 0
 	COM_StripExtension (cls.downloadname, cls.downloadtempname);
+#else
+	strcpy (cls.downloadtempname, filename);
+#endif
 	strcat (cls.downloadtempname, ".tmp");
 
 	MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
@@ -363,12 +367,22 @@ void CL_ParseServerData (void)
 	i = MSG_ReadLong (&net_message);
 	cls.serverProtocol = i;
 
-	// BIG HACK to let demos from release work with the 3.0x patch!!!
-	if (Com_ServerState() && PROTOCOL_VERSION == 34)
+	if (Com_ServerState() == ss_demo)
 	{
+		if (cls.serverProtocol < 0)
+		{
+			cls.serverProtocol = -cls.serverProtocol;
+			Com_DPrintf ("demo recorded with extended protocol\n");
+		}
+		else
+		{
+			cls.newprotocol = false;
+			Com_DPrintf ("demo recorded with protocol %d\n", cls.serverProtocol);
+		}
+		// here: if serverProtocol != PROTOCOL_VERSION -- allow demo to play
 	}
 	else if (i != PROTOCOL_VERSION)
-		Com_Error (ERR_DROP,"Server returned version %i, not %i", i, PROTOCOL_VERSION);
+		Com_Error (ERR_DROP,"Server returned version %d <> %d", i, PROTOCOL_VERSION);
 
 	cl.servercount = MSG_ReadLong (&net_message);
 	cl.attractloop = MSG_ReadByte (&net_message);
@@ -508,7 +522,10 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 		}
 
 		// icon file
-		Com_sprintf (ci->iconname, sizeof(ci->iconname), "/players/%s/%s_i.pcx", model_name, skin_name);
+		if (!strncmp (skin_name, "skn_", 4))
+			strcpy (ci->iconname, "/pics/default_icon.pcx");
+		else
+			Com_sprintf (ci->iconname, sizeof(ci->iconname), "/players/%s/%s_i.pcx", model_name, skin_name);
 		ci->icon = re.RegisterPic (ci->iconname);
 	}
 
