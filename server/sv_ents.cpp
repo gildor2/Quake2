@@ -71,7 +71,7 @@ static void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, siz
 			// delta update from old position
 			// note that players are always 'newentities', this updates their oldorigin always and prevents warping
 			// NOTE: it's impossible to get newindex AND oldindex both overflowed (> num_entities), because of while() condition
-			MSG_WriteDeltaEntity (oldent, newent, msg, false, newent->number <= maxclients->integer);
+			MSG_WriteDeltaEntity (msg, oldent, newent, false, newent->number <= maxclients->integer);
 			oldindex++;
 			newindex++;
 			continue;
@@ -80,29 +80,15 @@ static void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, siz
 		if (newnum < oldnum)
 		{
 			// this is a new entity, send it from the baseline
-			MSG_WriteDeltaEntity (&sv.baselines[newnum], newent, msg, true, true);
+			MSG_WriteDeltaEntity (msg, &sv.baselines[newnum], newent, true, true);
 			newindex++;
 			continue;
 		}
 
 		if (newnum > oldnum)
 		{
-			int		bits;
-
 			// the old entity isn't present in the new message
-			bits = U_REMOVE;
-			if (oldnum >= 256)
-				bits |= U_NUMBER16 | U_MOREBITS1;
-
-			MSG_WriteByte (msg,	bits & 255);
-			if (bits & 0x0000FF00)
-				MSG_WriteByte (msg,	(bits>>8) & 255);
-
-			if (bits & U_NUMBER16)
-				MSG_WriteShort (msg, oldnum);
-			else
-				MSG_WriteByte (msg, oldnum);
-
+			MSG_WriteRemoveEntity (msg, oldnum);
 			oldindex++;
 			continue;
 		}
@@ -111,192 +97,6 @@ static void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, siz
 	MSG_WriteShort (msg, 0);	// end of packetentities; corresponds to bits(byte)=0,entNum(byte)=0
 }
 
-
-
-/*
-=============
-SV_WritePlayerstateToClient
-
-=============
-*/
-void SV_WritePlayerstateToClient (client_frame_t *from, client_frame_t *to, sizebuf_t *msg)
-{
-	int				i;
-	int				pflags;
-	player_state_t	*ps, *ops;
-	player_state_t	dummy;
-	int				statbits;
-
-	ps = &to->ps;
-	if (!from)
-	{
-		memset (&dummy, 0, sizeof(dummy));
-		ops = &dummy;
-	}
-	else
-		ops = &from->ps;
-
-	// determine what needs to be sent
-	pflags = 0;
-
-	if (ps->pmove.pm_type != ops->pmove.pm_type)
-		pflags |= PS_M_TYPE;
-
-	if (ps->pmove.origin[0] != ops->pmove.origin[0] ||
-		ps->pmove.origin[1] != ops->pmove.origin[1] ||
-		ps->pmove.origin[2] != ops->pmove.origin[2])
-		pflags |= PS_M_ORIGIN;
-
-	if (ps->pmove.velocity[0] != ops->pmove.velocity[0] ||
-		ps->pmove.velocity[1] != ops->pmove.velocity[1] ||
-		ps->pmove.velocity[2] != ops->pmove.velocity[2])
-		pflags |= PS_M_VELOCITY;
-
-	if (ps->pmove.pm_time != ops->pmove.pm_time)
-		pflags |= PS_M_TIME;
-
-	if (ps->pmove.pm_flags != ops->pmove.pm_flags)
-		pflags |= PS_M_FLAGS;
-
-	if (ps->pmove.gravity != ops->pmove.gravity)
-		pflags |= PS_M_GRAVITY;
-
-	if (ps->pmove.delta_angles[0] != ops->pmove.delta_angles[0] ||
-		ps->pmove.delta_angles[1] != ops->pmove.delta_angles[1] ||
-		ps->pmove.delta_angles[2] != ops->pmove.delta_angles[2])
-		pflags |= PS_M_DELTA_ANGLES;
-
-
-	if (ps->viewoffset[0] != ops->viewoffset[0] ||
-		ps->viewoffset[1] != ops->viewoffset[1] ||
-		ps->viewoffset[2] != ops->viewoffset[2])
-		pflags |= PS_VIEWOFFSET;
-
-	if (ps->viewangles[0] != ops->viewangles[0] ||
-		ps->viewangles[1] != ops->viewangles[1] ||
-		ps->viewangles[2] != ops->viewangles[2])
-		pflags |= PS_VIEWANGLES;
-
-	if (ps->kick_angles[0] != ops->kick_angles[0] ||
-		ps->kick_angles[1] != ops->kick_angles[1] ||
-		ps->kick_angles[2] != ops->kick_angles[2])
-		pflags |= PS_KICKANGLES;
-
-	if (ps->blend[0] != ops->blend[0] ||
-		ps->blend[1] != ops->blend[1] ||
-		ps->blend[2] != ops->blend[2] ||
-		ps->blend[3] != ops->blend[3])
-		pflags |= PS_BLEND;
-
-	if (ps->fov != ops->fov)
-		pflags |= PS_FOV;
-
-	if (ps->rdflags != ops->rdflags)
-		pflags |= PS_RDFLAGS;
-
-	if (ps->gunframe != ops->gunframe)
-		pflags |= PS_WEAPONFRAME;
-
-	pflags |= PS_WEAPONINDEX;
-
-	// write it
-	MSG_WriteByte (msg, svc_playerinfo);
-	MSG_WriteShort (msg, pflags);
-
-	// write the pmove_state_t
-	if (pflags & PS_M_TYPE)
-		MSG_WriteByte (msg, ps->pmove.pm_type);
-
-	if (pflags & PS_M_ORIGIN)
-	{
-		MSG_WriteShort (msg, ps->pmove.origin[0]);
-		MSG_WriteShort (msg, ps->pmove.origin[1]);
-		MSG_WriteShort (msg, ps->pmove.origin[2]);
-	}
-
-	if (pflags & PS_M_VELOCITY)
-	{
-		MSG_WriteShort (msg, ps->pmove.velocity[0]);
-		MSG_WriteShort (msg, ps->pmove.velocity[1]);
-		MSG_WriteShort (msg, ps->pmove.velocity[2]);
-	}
-
-	if (pflags & PS_M_TIME)
-		MSG_WriteByte (msg, ps->pmove.pm_time);
-
-	if (pflags & PS_M_FLAGS)
-		MSG_WriteByte (msg, ps->pmove.pm_flags);
-
-	if (pflags & PS_M_GRAVITY)
-		MSG_WriteShort (msg, ps->pmove.gravity);
-
-	if (pflags & PS_M_DELTA_ANGLES)
-	{
-		MSG_WriteShort (msg, ps->pmove.delta_angles[0]);
-		MSG_WriteShort (msg, ps->pmove.delta_angles[1]);
-		MSG_WriteShort (msg, ps->pmove.delta_angles[2]);
-	}
-
-	// write the rest of the player_state_t
-	if (pflags & PS_VIEWOFFSET)
-	{
-		MSG_WriteChar (msg, appRound (ps->viewoffset[0]*4));
-		MSG_WriteChar (msg, appRound (ps->viewoffset[1]*4));
-		MSG_WriteChar (msg, appRound (ps->viewoffset[2]*4));
-	}
-
-	if (pflags & PS_VIEWANGLES)
-	{
-		MSG_WriteAngle16 (msg, ps->viewangles[0]);
-		MSG_WriteAngle16 (msg, ps->viewangles[1]);
-		MSG_WriteAngle16 (msg, ps->viewangles[2]);
-	}
-
-	if (pflags & PS_KICKANGLES)
-	{
-		MSG_WriteChar (msg, appRound (ps->kick_angles[0]*4));
-		MSG_WriteChar (msg, appRound (ps->kick_angles[1]*4));
-		MSG_WriteChar (msg, appRound (ps->kick_angles[2]*4));
-	}
-
-	if (pflags & PS_WEAPONINDEX)
-	{
-		MSG_WriteByte (msg, ps->gunindex);
-	}
-
-	if (pflags & PS_WEAPONFRAME)
-	{
-		MSG_WriteByte (msg, ps->gunframe);
-		MSG_WriteChar (msg, appRound (ps->gunoffset[0]*4));
-		MSG_WriteChar (msg, appRound (ps->gunoffset[1]*4));
-		MSG_WriteChar (msg, appRound (ps->gunoffset[2]*4));
-		MSG_WriteChar (msg, appRound (ps->gunangles[0]*4));
-		MSG_WriteChar (msg, appRound (ps->gunangles[1]*4));
-		MSG_WriteChar (msg, appRound (ps->gunangles[2]*4));
-	}
-
-	if (pflags & PS_BLEND)
-	{
-		MSG_WriteByte (msg, appRound (ps->blend[0]*255));
-		MSG_WriteByte (msg, appRound (ps->blend[1]*255));
-		MSG_WriteByte (msg, appRound (ps->blend[2]*255));
-		MSG_WriteByte (msg, appRound (ps->blend[3]*255));
-	}
-	if (pflags & PS_FOV)
-		MSG_WriteByte (msg, appRound (ps->fov));
-	if (pflags & PS_RDFLAGS)
-		MSG_WriteByte (msg, ps->rdflags);
-
-	// send stats
-	statbits = 0;
-	for (i = 0; i < MAX_STATS; i++)
-		if (ps->stats[i] != ops->stats[i])
-			statbits |= 1<<i;
-	MSG_WriteLong (msg, statbits);
-	for (i = 0; i < MAX_STATS; i++)
-		if (statbits & (1<<i))
-			MSG_WriteShort (msg, ps->stats[i]);
-}
 
 
 /*
@@ -341,7 +141,8 @@ void SV_WriteFrameToClient (client_t *client, sizebuf_t *msg)
 	SZ_Write (msg, frame->areabits, frame->areabytes);
 
 	// delta encode the playerstate
-	SV_WritePlayerstateToClient (oldframe, frame, msg);
+	MSG_WriteByte (msg, svc_playerinfo);
+	MSG_WriteDeltaPlayerstate (msg, oldframe ? &oldframe->ps : NULL, &frame->ps);
 
 	// delta encode the entities
 	SV_EmitPacketEntities (oldframe, frame, msg);
@@ -606,7 +407,7 @@ void SV_RecordDemoMessage (void)
 		// ignore ents without visible models unless they have an effect
 		if (ent->inuse && ent->s.number && !(ent->svflags & SVF_NOCLIENT) &&
 			(ent->s.modelindex || ent->s.effects || ent->s.sound || ent->s.event))
-			MSG_WriteDeltaEntity (&nostate, &ent->s, &buf, false, true);
+			MSG_WriteDeltaEntity (&buf, &nostate, &ent->s, false, true);
 	}
 
 	MSG_WriteShort (&buf, 0);		// end of packetentities

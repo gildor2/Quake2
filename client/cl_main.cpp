@@ -280,7 +280,7 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 		}
 
 		MSG_WriteByte (&buf, svc_spawnbaseline);
-		MSG_WriteDeltaEntity (&nullstate, (entity_state_t*)&cl_entities[i].baseline, &buf, true, true);
+		MSG_WriteDeltaEntity (&buf, &nullstate, (entity_state_t*)&cl_entities[i].baseline, true, true);
 	}
 
 	MSG_WriteByte (&buf, svc_stufftext);

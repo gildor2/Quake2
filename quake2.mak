@@ -55,6 +55,7 @@ STATIC = \
 	Release/obj/q2stat/common.obj \
 	Release/obj/q2stat/crc.obj \
 	Release/obj/q2stat/cvar.obj \
+	Release/obj/q2stat/entdelta.obj \
 	Release/obj/q2stat/files.obj \
 	Release/obj/q2stat/images.obj \
 	Release/obj/q2stat/md4.obj \
@@ -121,6 +122,7 @@ DEDICATED = \
 	Release/obj/dedstat/common.obj \
 	Release/obj/dedstat/crc.obj \
 	Release/obj/dedstat/cvar.obj \
+	Release/obj/dedstat/entdelta.obj \
 	Release/obj/dedstat/files.obj \
 	Release/obj/dedstat/images.obj \
 	Release/obj/dedstat/md4.obj \
@@ -1000,6 +1002,9 @@ Release/obj/dedstat/crc.obj : qcommon/crc.cpp $(DEPENDS)
 Release/obj/dedstat/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedstat/cvar.obj" qcommon/cvar.cpp
 
+Release/obj/dedstat/entdelta.obj : qcommon/entdelta.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedstat/entdelta.obj" qcommon/entdelta.cpp
+
 Release/obj/dedstat/model.obj : qcommon/model.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedstat/model.obj" qcommon/model.cpp
 
@@ -1034,6 +1039,9 @@ Release/obj/q2stat/crc.obj : qcommon/crc.cpp $(DEPENDS)
 
 Release/obj/q2stat/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/q2stat/cvar.obj" qcommon/cvar.cpp
+
+Release/obj/q2stat/entdelta.obj : qcommon/entdelta.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/q2stat/entdelta.obj" qcommon/entdelta.cpp
 
 Release/obj/q2stat/model.obj : qcommon/model.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/q2stat/model.obj" qcommon/model.cpp

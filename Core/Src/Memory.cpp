@@ -42,14 +42,14 @@ struct FMemHeader
 	/*------ all blocks are in double-linked list -------*/
 	static FMemHeader *first;
 
-	void Link (void)
+	inline void Link (void)
 	{
 		if (first) first->prev = this;
 		next = first;
 		prev = NULL;
 		first = this;
 	}
-	void Unlink (void)
+	inline void Unlink (void)
 	{
 		if (first == this) first = next;
 		if (prev) prev->next = next;

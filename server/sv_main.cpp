@@ -1412,10 +1412,8 @@ void SV_Shutdown (const char *finalmsg, bool reconnect)
 	Com_SetServerState (sv.state);
 
 	// free server static data
-	if (svs.clients)
-		appFree (svs.clients);
-	if (svs.client_entities)
-		appFree (svs.client_entities);
+	if (svs.clients) delete svs.clients;
+	if (svs.client_entities) delete svs.client_entities;
 	if (svs.demofile)
 		fclose (svs.demofile);
 	memset (&svs, 0, sizeof(svs));

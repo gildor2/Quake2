@@ -134,8 +134,6 @@ void	MSG_WriteCoord (sizebuf_t *sb, float f);
 void	MSG_WritePos (sizebuf_t *sb, vec3_t pos);
 void	MSG_WriteAngle (sizebuf_t *sb, float f);
 void	MSG_WriteAngle16 (sizebuf_t *sb, float f);
-void	MSG_WriteDeltaUsercmd (sizebuf_t *sb, usercmd_t *from, usercmd_t *cmd);
-void	MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *msg, bool force, bool newentity);
 void	MSG_WriteDir (sizebuf_t *sb, vec3_t vector);
 
 
@@ -152,11 +150,30 @@ float	MSG_ReadCoord (sizebuf_t *sb);
 void	MSG_ReadPos (sizebuf_t *sb, vec3_t pos);
 float	MSG_ReadAngle (sizebuf_t *sb);
 float	MSG_ReadAngle16 (sizebuf_t *sb);
-void	MSG_ReadDeltaUsercmd (sizebuf_t *sb, usercmd_t *from, usercmd_t *cmd);
 
 void	MSG_ReadDir (sizebuf_t *sb, vec3_t vector);
 
 void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
+
+
+/*-----------------------------------------------------------------------------
+	Delta compression for quake2 protocol (entdelta.cpp)
+-----------------------------------------------------------------------------*/
+
+// entity_state_t communication
+
+void	MSG_WriteDeltaEntity (sizebuf_t *msg, entity_state_t *from, entity_state_t *to, bool force, bool newentity);
+void	MSG_WriteRemoveEntity (sizebuf_t *msg, int num);
+
+void	MSG_ReadDeltaUsercmd (sizebuf_t *sb, usercmd_t *from, usercmd_t *cmd);
+void	MSG_WriteDeltaUsercmd (sizebuf_t *sb, usercmd_t *from, usercmd_t *cmd);
+
+int		MSG_ReadEntityBits (sizebuf_t *msg, unsigned *bits, bool *remove);
+void	MSG_ReadDeltaEntity (sizebuf_t *msg, entity_state_t *from, entity_state_t *to, unsigned bits);
+
+void	MSG_ReadDeltaPlayerstate (sizebuf_t *msg, player_state_t *oldState, player_state_t *newState);
+void	MSG_WriteDeltaPlayerstate (sizebuf_t *msg, player_state_t *oldState, player_state_t *newState);
+
 
 //============================================================================
 
@@ -229,7 +246,7 @@ typedef enum {
 //
 // server to client
 //
-enum svc_ops_e
+enum
 {
 	svc_bad,
 
@@ -265,7 +282,7 @@ enum svc_ops_e
 //
 // client to server
 //
-enum clc_ops_e
+enum
 {
 	clc_bad,
 	clc_nop,
@@ -273,41 +290,6 @@ enum clc_ops_e
 	clc_userinfo,				// [[userinfo string]
 	clc_stringcmd				// [string] message
 };
-
-//==============================================
-
-// plyer_state_t communication
-
-#define	PS_M_TYPE			(1<<0)
-#define	PS_M_ORIGIN			(1<<1)
-#define	PS_M_VELOCITY		(1<<2)
-#define	PS_M_TIME			(1<<3)
-#define	PS_M_FLAGS			(1<<4)
-#define	PS_M_GRAVITY		(1<<5)
-#define	PS_M_DELTA_ANGLES	(1<<6)
-
-#define	PS_VIEWOFFSET		(1<<7)
-#define	PS_VIEWANGLES		(1<<8)
-#define	PS_KICKANGLES		(1<<9)
-#define	PS_BLEND			(1<<10)
-#define	PS_FOV				(1<<11)
-#define	PS_WEAPONINDEX		(1<<12)
-#define	PS_WEAPONFRAME		(1<<13)
-#define	PS_RDFLAGS			(1<<14)
-
-//==============================================
-
-// user_cmd_t communication
-
-// ms and light always sent, the others are optional
-#define	CM_ANGLE1 			(1<<0)
-#define	CM_ANGLE2		 	(1<<1)
-#define	CM_ANGLE3 			(1<<2)
-#define	CM_FORWARD			(1<<3)
-#define	CM_SIDE				(1<<4)
-#define	CM_UP				(1<<5)
-#define	CM_BUTTONS			(1<<6)
-#define	CM_IMPULSE			(1<<7)
 
 //==============================================
 
@@ -322,48 +304,6 @@ enum clc_ops_e
 #define DEFAULT_SOUND_PACKET_ATTENUATION	1.0
 
 //==============================================
-
-// entity_state_t communication
-
-#define U_MODEL_N	(U_MODEL|U_MODEL2|U_MODEL3|U_MODEL4)
-#define U_ORIGIN_N	(U_ORIGIN1|U_ORIGIN2|U_ORIGIN3)
-#define U_ANGLE_N	(U_ANGLE1|U_ANGLE2|U_ANGLE3)
-
-// try to pack the common update flags into the first byte
-#define	U_ORIGIN1			(1<<0)
-#define	U_ORIGIN2			(1<<1)
-#define	U_ANGLE2			(1<<2)
-#define	U_ANGLE3			(1<<3)
-#define	U_FRAME8			(1<<4)		// frame is a byte
-#define	U_EVENT				(1<<5)
-#define	U_REMOVE			(1<<6)		// REMOVE this entity, don't add it
-#define	U_MOREBITS1			(1<<7)		// read one additional byte
-
-// second byte
-#define	U_NUMBER16			(1<<8)		// NUMBER8 is implicit if not set
-#define	U_ORIGIN3			(1<<9)
-#define	U_ANGLE1			(1<<10)
-#define	U_MODEL				(1<<11)
-#define U_RENDERFX8			(1<<12)		// fullbright, etc
-#define	U_EFFECTS8			(1<<14)		// autorotate, trails, etc
-#define	U_MOREBITS2			(1<<15)		// read one additional byte
-
-// third byte
-#define	U_SKIN8				(1<<16)
-#define	U_FRAME16			(1<<17)		// frame is a short
-#define	U_RENDERFX16		(1<<18)		// 8 + 16 = 32
-#define	U_EFFECTS16			(1<<19)		// 8 + 16 = 32
-#define	U_MODEL2			(1<<20)		// weapons, flags, etc
-#define	U_MODEL3			(1<<21)
-#define	U_MODEL4			(1<<22)
-#define	U_MOREBITS3			(1<<23)		// read one additional byte
-
-// fourth byte
-#define	U_OLDORIGIN			(1<<24)		// FIXME: get rid of this ??
-#define	U_SKIN16			(1<<25)
-#define	U_SOUND				(1<<26)
-#define	U_SOLID				(1<<27)
-
 
 /*
 ==============================================================

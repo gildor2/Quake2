@@ -47,28 +47,15 @@ typedef struct
 	int		parse_entities;		// non-masked index into cl_parse_entities array
 } frame_t;
 
-typedef struct
+
+struct entityState_t : public entity_state_t
 {
-	// these fields are copied from entity_state_t
-	short	number;				// edict index
-	short	frame;
-	vec3_t	origin;
-	vec3_t	old_origin;			// for lerping
-	vec3_t	angles;
-	byte	modelindex, modelindex2, modelindex3, modelindex4;
-	int		skinnum;
-	unsigned effects;
-	unsigned renderfx;
-	short	solid;				// encoded bbox
-	byte	sound;
-	byte	event;
-	// additional fields
 	bool	valid;				// when "false", additional fields are not initialized
 	vec3_t	center;
 	vec3_t	axis[3];
 	vec3_t	mins, maxs;			// decoded bbox
 	float	radius;
-} entityState_t;
+};
 
 
 typedef struct
@@ -431,8 +418,7 @@ void CL_WidowSplash (vec3_t org);
 // PGM
 // ========
 
-int CL_ParseEntityBits (unsigned *bits);
-void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, int bits, bool baseline);
+void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, unsigned bits, bool baseline);
 void CL_ParseFrame (void);
 
 void CL_ParseTEnt (void);
@@ -480,6 +466,8 @@ void CL_WriteDemoMessage (void);
 //
 // cl_input.cpp
 //
+
+// declarations for exporting to in_win32.cpp:
 typedef struct
 {
 	int			down[2];		// key nums holding it down
@@ -487,7 +475,6 @@ typedef struct
 	unsigned	msec;			// msec down this frame
 	int			state;
 } kbutton_t;
-
 extern 	kbutton_t 	in_Strafe;
 extern 	kbutton_t 	in_Speed;
 

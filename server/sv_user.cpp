@@ -198,7 +198,7 @@ static void SV_Baselines_f (int argc, char **argv)
 		if (base->modelindex || base->sound || base->effects)
 		{
 			MSG_WriteByte (&sv_client->netchan.message, svc_spawnbaseline);
-			MSG_WriteDeltaEntity (&nullstate, base, &sv_client->netchan.message, true, true);
+			MSG_WriteDeltaEntity (&sv_client->netchan.message, &nullstate, base, true, true);
 		}
 		start++;
 	}

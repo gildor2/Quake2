@@ -76,6 +76,7 @@ COMMON = \
 	$D/common.cpp \
 	$D/crc.cpp \
 	$D/cvar.cpp \
+	$D/entdelta.cpp \
 	$D/files.cpp \
 	$D/images.cpp \
 	$D/md4.cpp \

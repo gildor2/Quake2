@@ -32,44 +32,6 @@ FRAME PARSING
 =========================================================================
 */
 
-/*
-=================
-CL_ParseEntityBits
-
-Returns the entity number and the header bits
-=================
-*/
-int CL_ParseEntityBits (unsigned *bits)
-{
-	unsigned	b, total;
-	int			number;
-
-	total = MSG_ReadByte (&net_message);
-	if (total & U_MOREBITS1)
-	{
-		b = MSG_ReadByte (&net_message);
-		total |= b<<8;
-	}
-	if (total & U_MOREBITS2)
-	{
-		b = MSG_ReadByte (&net_message);
-		total |= b<<16;
-	}
-	if (total & U_MOREBITS3)
-	{
-		b = MSG_ReadByte (&net_message);
-		total |= b<<24;
-	}
-
-	if (total & U_NUMBER16)
-		number = MSG_ReadShort (&net_message);
-	else
-		number = MSG_ReadByte (&net_message);
-
-	*bits = total;
-
-	return number;
-}
 
 /*
 ==================
@@ -78,62 +40,24 @@ CL_ParseDelta
 Can go from either a baseline or a previous packet_entity
 ==================
 */
-void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, int bits, bool baseline)
+void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, unsigned bits, bool baseline)
 {
 	guard(CL_ParseDelta);
 
 	// set everything to the state we are delta'ing from
 	*to = *from;
 
-	VectorCopy (from->origin, to->old_origin);
+	VectorCopy (from->origin, to->old_origin);				// before MSG_ReadDeltaEntity()
+
+	MSG_ReadDeltaEntity (&net_message, from, to, bits);
+
 	to->number = number;
 
-	if (bits & U_MODEL)		to->modelindex = MSG_ReadByte (&net_message);
-	if (bits & U_MODEL2)	to->modelindex2 = MSG_ReadByte (&net_message);
-	if (bits & U_MODEL3)	to->modelindex3 = MSG_ReadByte (&net_message);
-	if (bits & U_MODEL4)	to->modelindex4 = MSG_ReadByte (&net_message);
-
-	if (bits & U_FRAME8)	to->frame = MSG_ReadByte (&net_message);
-	if (bits & U_FRAME16)	to->frame = MSG_ReadShort (&net_message);
-
-	if ((bits & U_SKIN8) && (bits & U_SKIN16))		//used for laser colors
-		to->skinnum = MSG_ReadLong(&net_message);
-	else if (bits & U_SKIN8)
-		to->skinnum = MSG_ReadByte(&net_message);
-	else if (bits & U_SKIN16)
-		to->skinnum = MSG_ReadShort(&net_message);
-
-	if ((bits & (U_EFFECTS8|U_EFFECTS16)) == (U_EFFECTS8|U_EFFECTS16))
-		to->effects = MSG_ReadLong(&net_message);
-	else if (bits & U_EFFECTS8)
-		to->effects = MSG_ReadByte(&net_message);
-	else if (bits & U_EFFECTS16)
-		to->effects = MSG_ReadShort(&net_message);
-
-	if ((bits & (U_RENDERFX8|U_RENDERFX16)) == (U_RENDERFX8|U_RENDERFX16))
-		to->renderfx = MSG_ReadLong(&net_message);
-	else if (bits & U_RENDERFX8)
-		to->renderfx = MSG_ReadByte(&net_message);
-	else if (bits & U_RENDERFX16)
-		to->renderfx = MSG_ReadShort(&net_message);
-
-	if (bits & U_ORIGIN1)	to->origin[0] = MSG_ReadCoord (&net_message);
-	if (bits & U_ORIGIN2)	to->origin[1] = MSG_ReadCoord (&net_message);
-	if (bits & U_ORIGIN3)	to->origin[2] = MSG_ReadCoord (&net_message);
-
-	if (bits & U_ANGLE1)	to->angles[0] = MSG_ReadAngle(&net_message);
-	if (bits & U_ANGLE2)	to->angles[1] = MSG_ReadAngle(&net_message);
-	if (bits & U_ANGLE3)	to->angles[2] = MSG_ReadAngle(&net_message);
-
-	if (bits & U_OLDORIGIN)	MSG_ReadPos (&net_message, to->old_origin);
-	if (bits & U_SOUND)		to->sound = MSG_ReadByte (&net_message);
-	to->event = bits & U_EVENT ? MSG_ReadByte (&net_message) : 0;
-	if (bits & U_SOLID)		to->solid = MSG_ReadShort (&net_message);
-
-	if (bits & (U_ANGLE_N|U_MODEL_N) || baseline)
+	//!! if remove line "if (bits & (...) || baseline) ...", can remove "baseline" arg and "ent->valid" field
+//	if (bits & (U_ANGLE_N|U_MODEL_N) || baseline)
 		AnglesToAxis (to->angles, to->axis);
 
-	if (bits & (U_SOLID|U_ANGLE_N|U_ORIGIN_N|U_MODEL_N) || baseline || !to->valid)
+//	if (bits & (U_SOLID|U_ANGLE_N|U_ORIGIN_N|U_MODEL_N) || baseline || !to->valid)
 	{
 		if (to->solid && to->solid != 31)
 		{
@@ -179,7 +103,7 @@ Parses deltas from the given base and adds the resulting entity
 to the current frame
 ==================
 */
-void CL_DeltaEntity (frame_t *frame, int newnum, entityState_t *old, int bits)
+static void CL_DeltaEntity (frame_t *frame, int newnum, entityState_t *old, unsigned bits)
 {
 	centity_t	*ent;
 	entityState_t	*state;
@@ -251,12 +175,12 @@ void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 	oldindex = 0;
 	old_num_entities = oldframe ? oldframe->num_entities : 0;
 
-	while (1)
+	while (true)
 	{
-		int		newnum;
 		unsigned bits;
+		bool	remove;
 
-		newnum = CL_ParseEntityBits (&bits);
+		int newnum = MSG_ReadEntityBits (&net_message, &bits, &remove);
 		if (net_message.readcount > net_message.cursize)
 			Com_DropError ("CL_ParsePacketEntities: end of message");
 		if (newnum >= MAX_EDICTS)
@@ -288,12 +212,12 @@ void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 			oldnum = oldstate->number;
 		}
 
-		if (bits & U_REMOVE)
+		if (remove)
 		{	// the entity present in oldframe is not in the current frame
 			if (cl_shownet->integer == 3)
 				Com_Printf ("   remove: %d\n", newnum);
 			if (oldnum != newnum)
-				Com_Printf ("U_REMOVE: oldnum != newnum\n");
+				Com_WPrintf ("CL_ParsePacketEntities: remove: oldnum != newnum\n");
 
 			oldindex++;
 			continue;
@@ -338,127 +262,6 @@ void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 
 
 /*
-===================
-CL_ParsePlayerstate
-===================
-*/
-void CL_ParsePlayerstate (frame_t *oldframe, frame_t *newframe)
-{
-	int			flags;
-	player_state_t	*state;
-	int			i;
-	int			statbits;
-
-	state = &newframe->playerstate;
-
-	// clear to old value before delta parsing
-	if (oldframe)
-		*state = oldframe->playerstate;
-	else
-		memset (state, 0, sizeof(*state));
-
-	flags = MSG_ReadShort (&net_message);
-
-	// parse the pmove_state_t
-	if (flags & PS_M_TYPE)
-		state->pmove.pm_type = (pmtype_t)MSG_ReadByte (&net_message);
-
-	if (flags & PS_M_ORIGIN)
-	{
-		state->pmove.origin[0] = MSG_ReadShort (&net_message);
-		state->pmove.origin[1] = MSG_ReadShort (&net_message);
-		state->pmove.origin[2] = MSG_ReadShort (&net_message);
-	}
-
-	if (flags & PS_M_VELOCITY)
-	{
-		state->pmove.velocity[0] = MSG_ReadShort (&net_message);
-		state->pmove.velocity[1] = MSG_ReadShort (&net_message);
-		state->pmove.velocity[2] = MSG_ReadShort (&net_message);
-	}
-
-	if (flags & PS_M_TIME)
-		state->pmove.pm_time = MSG_ReadByte (&net_message);
-
-	if (flags & PS_M_FLAGS)
-		state->pmove.pm_flags = MSG_ReadByte (&net_message);
-
-	if (flags & PS_M_GRAVITY)
-		state->pmove.gravity = MSG_ReadShort (&net_message);
-
-	if (flags & PS_M_DELTA_ANGLES)
-	{
-		state->pmove.delta_angles[0] = MSG_ReadShort (&net_message);
-		state->pmove.delta_angles[1] = MSG_ReadShort (&net_message);
-		state->pmove.delta_angles[2] = MSG_ReadShort (&net_message);
-	}
-
-	if (cl.attractloop)
-		state->pmove.pm_type = PM_FREEZE;		// demo playback
-
-	//
-	// parse the rest of the player_state_t
-	//
-	if (flags & PS_VIEWOFFSET)
-	{
-		state->viewoffset[0] = MSG_ReadChar (&net_message) * 0.25;
-		state->viewoffset[1] = MSG_ReadChar (&net_message) * 0.25;
-		state->viewoffset[2] = MSG_ReadChar (&net_message) * 0.25;
-	}
-
-	if (flags & PS_VIEWANGLES)
-	{
-		state->viewangles[0] = MSG_ReadAngle16 (&net_message);
-		state->viewangles[1] = MSG_ReadAngle16 (&net_message);
-		state->viewangles[2] = MSG_ReadAngle16 (&net_message);
-	}
-
-	if (flags & PS_KICKANGLES)
-	{
-		state->kick_angles[0] = MSG_ReadChar (&net_message) * 0.25;
-		state->kick_angles[1] = MSG_ReadChar (&net_message) * 0.25;
-		state->kick_angles[2] = MSG_ReadChar (&net_message) * 0.25;
-	}
-
-	if (flags & PS_WEAPONINDEX)
-	{
-		state->gunindex = MSG_ReadByte (&net_message);
-	}
-
-	if (flags & PS_WEAPONFRAME)
-	{
-		state->gunframe = MSG_ReadByte (&net_message);
-		state->gunoffset[0] = MSG_ReadChar (&net_message)*0.25;
-		state->gunoffset[1] = MSG_ReadChar (&net_message)*0.25;
-		state->gunoffset[2] = MSG_ReadChar (&net_message)*0.25;
-		state->gunangles[0] = MSG_ReadChar (&net_message)*0.25;
-		state->gunangles[1] = MSG_ReadChar (&net_message)*0.25;
-		state->gunangles[2] = MSG_ReadChar (&net_message)*0.25;
-	}
-
-	if (flags & PS_BLEND)
-	{
-		state->blend[0] = MSG_ReadByte (&net_message)/255.0;
-		state->blend[1] = MSG_ReadByte (&net_message)/255.0;
-		state->blend[2] = MSG_ReadByte (&net_message)/255.0;
-		state->blend[3] = MSG_ReadByte (&net_message)/255.0;
-	}
-
-	if (flags & PS_FOV)
-		state->fov = MSG_ReadByte (&net_message);
-
-	if (flags & PS_RDFLAGS)
-		state->rdflags = MSG_ReadByte (&net_message);
-
-	// parse stats
-	statbits = MSG_ReadLong (&net_message);
-	for (i=0 ; i<MAX_STATS ; i++)
-		if (statbits & (1<<i) )
-			state->stats[i] = MSG_ReadShort(&net_message);
-}
-
-
-/*
 ==================
 CL_FireEntityEvents
 
@@ -466,13 +269,10 @@ CL_FireEntityEvents
 */
 void CL_FireEntityEvents (frame_t *frame)
 {
-	entityState_t		*s1;
-	int					pnum, num;
-
-	for (pnum = 0 ; pnum<frame->num_entities ; pnum++)
+	for (int pnum = 0 ; pnum<frame->num_entities ; pnum++)
 	{
-		num = (frame->parse_entities + pnum)&(MAX_PARSE_ENTITIES-1);
-		s1 = &cl_parse_entities[num];
+		int num = (frame->parse_entities + pnum)&(MAX_PARSE_ENTITIES-1);
+		entityState_t *s1 = &cl_parse_entities[num];
 		if (s1->event)
 			CL_EntityEvent (s1);
 
@@ -490,8 +290,6 @@ CL_ParseFrame
 */
 void CL_ParseFrame (void)
 {
-	int			cmd;
-	int			len;
 	frame_t		*old;
 
 	memset (&cl.frame, 0, sizeof(cl.frame));
@@ -553,15 +351,17 @@ void CL_ParseFrame (void)
 	}
 
 	// read areabits
-	len = MSG_ReadByte (&net_message);
+	int len = MSG_ReadByte (&net_message);
 	MSG_ReadData (&net_message, &cl.frame.areabits, len);
 
 	// read playerinfo
-	cmd = MSG_ReadByte (&net_message);
+	int cmd = MSG_ReadByte (&net_message);
 	SHOWNET(svc_strings[cmd]);
 	if (cmd != svc_playerinfo)
 		Com_DropError ("CL_ParseFrame: not playerinfo");
-	CL_ParsePlayerstate (old, &cl.frame);
+
+	MSG_ReadDeltaPlayerstate (&net_message, old ? &old->playerstate : NULL, &cl.frame.playerstate);
+	if (cl.attractloop) cl.frame.playerstate.pmove.pm_type = PM_FREEZE;		//?? is it needed ?
 
 	// read packet entities
 	cmd = MSG_ReadByte (&net_message);
@@ -737,12 +537,8 @@ CL_AddViewWeapon
 */
 static void AddViewWeapon (int renderfx)
 {
-	entity_t	gun;		// view model
-	int			i;
-	player_state_t *ps, *ops;
-
-	ps = &cl.frame.playerstate;
-	ops = &cl.oldFrame->playerstate;
+	player_state_t *ps = &cl.frame.playerstate;
+	player_state_t *ops = &cl.oldFrame->playerstate;
 
 	// allow the gun to be completely removed
 	if (!cl_gun->integer) return;
@@ -750,6 +546,7 @@ static void AddViewWeapon (int renderfx)
 	// don't draw gun if in wide angle view
 	if (ps->fov > 90) return;
 
+	entity_t	gun;		// view model
 	memset (&gun, 0, sizeof(gun));
 
 #ifdef GUN_DEBUG
@@ -762,7 +559,7 @@ static void AddViewWeapon (int renderfx)
 		return;
 
 	// set up gun position
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 	{
 		gun.origin[i] = cl.refdef.vieworg[i] + ops->gunoffset[i] + cl.lerpfrac * (ps->gunoffset[i] - ops->gunoffset[i]);
 		gun.angles[i] = cl.refdef.viewangles[i] + LerpAngle (ops->gunangles[i], ps->gunangles[i], cl.lerpfrac);
@@ -794,11 +591,10 @@ static void AddViewWeapon (int renderfx)
 void CL_AddEntityBox (entityState_t *st, unsigned rgba)
 {
 	entity_t	ent;
-	centity_t	*cent;
-
-	cent = &cl_entities[st->number];
-
 	memset (&ent, 0, sizeof(ent));
+
+	centity_t *cent = &cl_entities[st->number];
+
 	ent.flags = RF_BBOX;
 	ent.color.rgba = rgba;
 
@@ -809,9 +605,7 @@ void CL_AddEntityBox (entityState_t *st, unsigned rgba)
 
 	if (st->solid == 31)
 	{
-		cmodel_t	*cmodel;
-
-		cmodel = cl.model_clip[st->modelindex];
+		cmodel_t *cmodel = cl.model_clip[st->modelindex];
 		VectorSubtract (cmodel->maxs, cmodel->mins, ent.size);
 		VectorScale (ent.size, 0.5f, ent.size);
 	}
@@ -886,7 +680,7 @@ static void CL_AddPacketEntities (void)
 			ent.frame = s1->frame;
 
 		ent.oldframe = cent->prev.frame;
-		ent.backlerp = 1.0 - cl.lerpfrac;
+		ent.backlerp = 1.0f - cl.lerpfrac;
 
 		if (renderfx & (RF_FRAMELERP|RF_BEAM))
 		{	// step origin discretely, because the frames do the animation properly
@@ -923,7 +717,7 @@ static void CL_AddPacketEntities (void)
 		if (s1->modelindex == 255)
 		{	// use custom player skin
 			ent.skinnum = 0;
-			ci = &cl.clientinfo[s1->skinnum & 0xff];
+			ci = &cl.clientinfo[s1->skinnum & 0xFF];
 			ent.skin = ci->skin;
 			ent.model = ci->model;
 			if (!ent.skin || !ent.model)

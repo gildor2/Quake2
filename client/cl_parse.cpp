@@ -125,14 +125,12 @@ ParseBaseline
 */
 static void ParseBaseline (void)
 {
-	unsigned	bits, newnum;
-	entityState_t *es, nullstate;
-
+	entityState_t nullstate;
 	memset (&nullstate, 0, sizeof(nullstate));
 
-	newnum = CL_ParseEntityBits (&bits);
-	es = &cl_entities[newnum].baseline;
-	CL_ParseDelta (&nullstate, es, newnum, bits, true);
+	unsigned	bits;
+	int newnum = MSG_ReadEntityBits (&net_message, &bits, NULL);
+	CL_ParseDelta (&nullstate, &cl_entities[newnum].baseline, newnum, bits, true);
 }
 
 

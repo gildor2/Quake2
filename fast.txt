@@ -1,0 +1,18 @@
+- when rendering disabled, img will be uploaded later w/o alpha-channel (when texture_rectangle==1 only; NV
+  untested?!); to test: "t.bat", switch to q2ded, "error", switch to quake2
+=============
+- replace Sys_Find() and Sys_MkDir() with FileSystemWin32.cpp, and move Sys_Milliseconds()
+  to something another, then can remove q_shwin.cpp ...
+=============
+- cmd.cpp -> Commands.cpp (Core) & cbuf.cpp (qcommon)
+  - SplitCmdline == TokenizeString, diff is 1. delim = '-', 2. delim = ';'
+  - MacroExpand(), cmd_debug, CL_ForwardToServer() -> cbuf code; should parse comments in cfg files here
+     too (remove them after FS_LoadFile(cfgfile) !?)
+- DeltaEntity():
+  - for new protocol try plib-like (dcc32) delta func; display compression ratio (may use old-style delta and
+    measure compression for new-style for testing); best place for testing - client (here can test demos too)
+  - can create DeltaCompress() and DeltaDecompress() functions for plib-style compression
+  - if upgrade compression, should parse demos with
+    a) original protocol b)ext protocol, but old-style delta
+    c) ext protocol and new-style delta;  may be, change EXT_PROTOCOL_ID too (add version number)
+- cut some strucs, cut protocol enums to q2protocol.h (and include when needed only)

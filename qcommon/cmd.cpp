@@ -380,24 +380,9 @@ static char *MacroExpandString (const char *text)
 		Com_WPrintf ("Line exceeded "STR(MAX_STRING_CHARS)" chars, discarded\n");
 		return NULL;
 	}
+	strcpy (buf, text);
 
-	char *s1 = strchr (text, '=');
-	char *s2 = strchr (text, '\"');
-	if (s1 && (!s2 || s2 > s1) &&							// a=b, but '=' not inside quotes
-		(s1 > text && s1[-1] != ' ' && s1[1] != ' '))		// ingnore "a = b" (may be "bind = scr_sizeup" etc; should change keyname ??)
-	{
-		// convert to "set a b"
-		strcpy (buf, "set ");
-		appStrncpyz (buf + 4, text, s1 - text + 1);	// copy "a"
-		int i = strlen (buf);
-		appSprintf (buf + i, sizeof(buf) - i,
-			s1[1] != '\"' ? " %s" : " %s",					// will expand 'a=b' to 'set a b'; no quotes added - when needed, can call 'a="b"'
-			s1 + 1);
-	}
-	else
-		memcpy (buf, text, len+1);
-
-	int count = 0;									// to prevent infinite recurse
+	int count = 0;								// to prevent infinite recurse
 	int quotes = 0;
 
 	for (char *s = buf; *s; s++)
@@ -442,6 +427,27 @@ static char *MacroExpandString (const char *text)
 		Com_WPrintf ("Line has unmatched quote, discarded.\n");
 		if (cmd_debug->integer)
 			Com_Printf ("bad str: <%s> -> <%s>\n", text, buf);
+		return NULL;
+	}
+
+	char *s1 = strchr (buf, '=');
+	char *s2 = strchr (buf, '\"');
+	if (s1 && (!s2 || s2 > s1) &&						// a=b, but '=' not inside quotes
+		(s1 > buf && s1[-1] != ' ' && s1[1] != ' '))	// ingnore "a = b" (may be "bind = scr_sizeup" etc; NOTE: keyname already changed)
+	{
+		*s1 = 0;			// cut varName
+		s1++;				// skip '='
+		if (s2 == s1)		// pos(") is pos(=)+1
+		{
+			s2 = s1 + strlen (s1) - 1;
+			if (*s2 == '\"')
+			{
+				s1++;		// skip '"'
+				*s2 = 0;	// cut trailng '"'
+			}
+		}
+//		Com_WPrintf("[%s] <- [%s]\n", buf, s1);
+		Cvar_Set (buf, s1);
 		return NULL;
 	}
 

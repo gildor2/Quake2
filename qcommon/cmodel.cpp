@@ -994,6 +994,8 @@ cmodel_t *CM_LoadMap (char *name, bool clientload, unsigned *checksum)
 	static unsigned	last_checksum;
 	bspfile_t	*bsp;
 
+	guard(CM_LoadMap);
+
 	map_noareas = Cvar_Get ("map_noareas", "0", 0);
 
 	if (map_name[0] && !stricmp (map_name, name) && (clientload || !Cvar_VariableInt ("flushmap")))
@@ -1018,12 +1020,13 @@ cmodel_t *CM_LoadMap (char *name, bool clientload, unsigned *checksum)
 	map_name[0] = 0;
 	map_bspfile = NULL;
 	if (dataChain) delete dataChain;
+	dataChain = NULL;
 
 	if (!name || !name[0])
 	{
 		numLeafs = 0;
-		numclusters = 1;
-		numAreas = 1;
+		numclusters = 0;
+		numAreas = 0;
 		*checksum = 0;
 		map_clientLoaded = false;
 		return &map_cmodels[0];			// cinematic servers won't have anything at all
@@ -1055,6 +1058,8 @@ cmodel_t *CM_LoadMap (char *name, bool clientload, unsigned *checksum)
 
 	strcpy (map_name, name);
 	return &map_cmodels[0];
+
+	unguard;
 }
 
 /*

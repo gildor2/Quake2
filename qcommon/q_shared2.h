@@ -21,12 +21,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef QSHARED_H
 #define QSHARED_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
+//#include <stdarg.h>
 
-#include <math.h>
+//#include <math.h>
 #include <time.h>
 
 
@@ -1027,24 +1027,22 @@ enum
 // need to render in some way
 typedef struct
 {
-	int		number;			// edict index
+	int		number;			// edict index; real size is "short"
 
 	vec3_t	origin;
 	vec3_t	angles;
 	vec3_t	old_origin;		// for lerping
 	int		modelindex;
-	int		modelindex2, modelindex3, modelindex4;	// weapons, CTF flags, etc
-	int		frame;
+	int		modelindex2, modelindex3, modelindex4;	// weapons, CTF flags, etc; real size is "byte"
+	int		frame;			// real size is "short"
 	int		skinnum;
-	unsigned int		effects;		// PGM - we're filling it, so it needs to be unsigned
-	int		renderfx;
-	int		solid;			// 16-bit int; for client side prediction, 8*(bits 0-4) is x/y radius
-							// 8*(bits 5-9) is z down distance, 8*(bits10-15) is z up
-							// gi.linkentity sets this properly
-	int		sound;			// for looping sounds, to guarantee shutoff
-	int		event;			// impulse events -- muzzle flashes, footsteps, etc
-							// events only go out for a single frame, they
-							// are automatically cleared each frame
+	unsigned effects;
+	unsigned renderfx;
+	int		solid;			// 16-bit int; for client side prediction, 8*bits[0-4] is x/y radius; 8*bits[5-9] is z
+							// down distance, 8*bits[10-15] is z up; gi.linkentity() sets this; real size is "short"
+	int		sound;			// for looping sounds, to guarantee shutoff; real size is "byte"
+	int		event;			// impulse events -- muzzle flashes, footsteps, etc; events only go out for a single frame,
+							// they are automatically cleared each frame; real size is "byte"
 } entity_state_t;
 
 //==============================================
