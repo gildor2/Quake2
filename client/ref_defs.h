@@ -42,18 +42,6 @@ inline float Cvar_ClampName (const char *name, float low, float high)
 {
 	return ri._Cvar_ClampName (name, low, high);
 }
-inline void* CreateMemoryChain (void)
-{
-	return ri._CreateMemoryChain ();
-}
-inline void* AllocChainBlock (void *chain, int size)
-{
-	return ri._AllocChainBlock (chain, size);
-}
-inline void FreeMemoryChain (void *chain)
-{
-	ri._FreeMemoryChain (chain);
-}
 inline void* Hunk_Begin (int maxsize)
 {
 	return ri._Hunk_Begin (maxsize);
@@ -77,19 +65,6 @@ inline int Sys_Milliseconds (void)
 #define Com_Printf	ri._Com_Printf
 #define Com_DPrintf	ri._Com_DPrintf
 #define Com_WPrintf	ri._Com_WPrintf
-#define Com_FatalError	ri._Com_FatalError
-#define Com_DropError	ri._Com_DropError
-#ifdef _WIN32
-inline int win32ExceptFilter2 (void)
-{
-	return ri._win32ExceptFilter2 ();
-}
-#endif
-inline void appUnwindPrefix (const char *fmt)
-{
-	ri._appUnwindPrefix (fmt);
-}
-#define appUnwindThrow	ri._appUnwindThrow
 inline bool FS_FileExists (char *filename)
 {
 	return ri._FS_FileExists (filename);
@@ -206,9 +181,6 @@ float	Cvar_VariableValue (const char *name);
 int	Cvar_VariableInt (const char *name);
 float	Cvar_Clamp (cvar_t *cvar, float low, float high);
 float	Cvar_ClampName (const char *name, float low, float high);
-void*	CreateMemoryChain (void);
-void*	AllocChainBlock (void *chain, int size);
-void	FreeMemoryChain (void *chain);
 void*	Hunk_Begin (int maxsize);
 void*	Hunk_Alloc (int size);
 int	Hunk_End (void);
@@ -217,13 +189,6 @@ int	Sys_Milliseconds (void);
 void	Com_Printf (const char *str, ...);
 void	Com_DPrintf (const char *str, ...);
 void	Com_WPrintf (const char *str, ...);
-void	NORETURN	Com_FatalError (const char *fmt, ...);
-void 	NORETURN	Com_DropError (const char *fmt, ...);
-#ifdef _WIN32
-int	win32ExceptFilter2 (void);
-#endif
-void	appUnwindPrefix (const char *fmt);
-void	NORETURN	appUnwindThrow (const char *fmt, ...);
 bool	FS_FileExists (char *filename);
 TList<CStringItem>	FS_ListFiles (char *name, int *numfiles, int flags);
 void*	FS_LoadFile (const char *name, unsigned *size = NULL);

@@ -535,16 +535,15 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 	if (hasLight)
 	{
 		byte	*dst;
-		float	m;
 
 		// alloc new cell
-		cell = (lightCell_t*)AllocChainBlock (map.lightGridChain, sizeof(lightCell_t));
+		cell = new (map.lightGridChain) lightCell_t;
 		*pcell = cell;
 		map.numLightCells++;
 
 #ifdef NORMALIZE_AXIS
 		// find maximal color
-		m = 0;
+		float m = 0;
 		for (i = 0, out = entityColorAxis[0]; i < 6*3; i++, out++)
 			if (*out > m) m = *out;
 		// normalize color axis and copy to grid
@@ -557,11 +556,9 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 #else
 		for (i = 0, out = entityColorAxis[0], dst = cell->c[0]; i < 6; i++)
 		{
-			int		r, g, b;
-
-			r = appRound (*out++ / CACHE_LIGHT_SCALE);
-			g = appRound (*out++ / CACHE_LIGHT_SCALE);
-			b = appRound (*out++ / CACHE_LIGHT_SCALE);
+			int r = appRound (*out++ / CACHE_LIGHT_SCALE);
+			int g = appRound (*out++ / CACHE_LIGHT_SCALE);
+			int b = appRound (*out++ / CACHE_LIGHT_SCALE);
 			NORMALIZE_COLOR255(r, g, b);
 			*dst++ = r;
 			*dst++ = g;
@@ -855,8 +852,8 @@ void GL_InitLightGrid (void)
 		map.mapGrid[i] = appCeil (map.nodes[0].maxs[i] / LIGHTGRID_STEP) - map.gridMins[i];
 	}
 	map.numLightCells = 0;
-	map.lightGridChain = CreateMemoryChain ();
-	map.lightGrid = (lightCell_t**)AllocChainBlock (map.lightGridChain, sizeof(lightCell_t*) * map.mapGrid[0] * map.mapGrid[1] * map.mapGrid[2]);
+	map.lightGridChain = new CMemoryChain;
+	map.lightGrid = new (map.lightGridChain) lightCell_t* [map.mapGrid[0] * map.mapGrid[1] * map.mapGrid[2]];
 }
 
 

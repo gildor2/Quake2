@@ -441,7 +441,6 @@ void* CStringItem::operator new (size_t size, const char *str, CMemoryChain *cha
 	CStringItem *item;
 
 	guardSlow(CStringItem::new(chain));
-	MEM_ALLOCATOR(size);
 	len = strlen (str) + 1;
 	item = (CStringItem*) chain->Alloc (size + len);
 	item->name = (char*) OffsetPointer (item, size);

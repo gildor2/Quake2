@@ -31,6 +31,8 @@ BUGS:
   when app command line contains "map"/"demomap" command (and automatically disable intro; change "4.XX_Changes.txt" about this)
   Current: when specify "map", intro will be initialized + immediately server changed to map; when specify "demomap", server
   will be killed as it was called from "d1" alias
+! cmodel.cpp -- do not use static arrays, allocate required amounts with appMalloc(); this will remove requirement to check
+  MAX_MAP_SOMETHING bounds !
   
 ! new pmove.c errors:
   - "ground3" cafe, on the street: cannot jump onto a corner column (horiz. speed set to 0 due to position snap)
@@ -172,8 +174,6 @@ BSP:
 - 3rd person view: ground3_beta3, dist=300, enter dark place (near ladder) between street lamp and garage: garage
   door will disappear (server sends entity list depends on model origin, not vieworg) -- needs protocol extension,
   when client sends its 3rd-person origin too, and server uses BOTH positions for PVS multicast
-- memory leak 4096 bytes (map rexro/discon/vid_res/STATS/beachassault/rexro/discon/vid_res/STATS)
-  - tested 1.11.2004, version is 399p40
 - script comments stripper: removes '//' and '/* ... */' comments from each line (should remove from script only) AND
   '/*' will work as '//' when no corresponding '*/' (for example, cmd "map /*lightmap1" will work as "map ", but when mapname
   is quoted - works fine) -- do not remove comments from console command line ?

@@ -1,10 +1,3 @@
-- ALREADY can use following modules:
-  - CoreMain.cpp
-  - Strings.cpp
-  - Memory.cpp
-  - DbgSymbols[Win32].cpp
-  - ExceptFilterWin32.cpp
-
 - can't use:
   - Commands.cpp -- require alias, cvar + command buffer support
   - FileSystem... -- unfinished
@@ -35,20 +28,26 @@
 - appPrintf() etc:
   - should be able to use few output devices
   - ability to hook output (for rcon etc)
+
+--------------- Output ---------------------
 - COutputDevice:
-    bool useColors -- when "false" - UncolString before output (e.g. for file logging)
-- CErrorDevice:
-    bool fatalError
-    bool softError
-    char errorHistory[]
-    void Reset()
-- appPrintf, appWPrintf, appDPrintf, appError -> called via GLog, GErr etc.
-  Implement wrappers (appPrintf()==GLog->Printf() etc) in separate cpp file (CoreWrapper.cpp or CoreGlobal.cpp ...)
-- appInit():
-  - make GErr, GLog have default params == GErrDevice, GLogDevice (do not pass implicitly, create device var in
-    "OutputDeviceXxxx.h")
-  ?? may be, when STATIC_BUILD -- try to avoid GLog, GErr etc (e.g. defaulted args) passing with appInit() -- use from
-    Core global variables (will not allow run-time overriding + tee-like functions !)
+   - bool useColors -- when "false" - UncolString before output (e.g. for file logging)
+   - appPrintf, appWPrintf, appDPrintf -> called via GLog etc.
+     Implement wrappers (appPrintf()==GLog->Printf() etc) in separate cpp file (CoreWrapper.cpp or CoreGlobal.cpp ...)
+   - wrapper should allow placing few COutputDevice's; they should be called in LIFO order, and function should be able
+     to prevent sending text to remainder of loggers (completely catch output)
+- CErrorHandler:
+   - bool isDropError -- when Com_DropError; no such error in Core, so can place DropError() function in Engine; this func
+     will set "GDropError=true", and call appError(msg)
+     (?) may implement as:
+         a) "bool Engine::GDropError" - separate var, and GErr.Reset() will not reset this var (but, really, Reset() should
+            be called mostly after DropError() !) -- will reset this var manually
+         b) make derived "class GEngineErrorHandler <- GErrorHandler" with "virtual Reset()" and "bool dropError"; this will
+            require to set GErr with appInit()
+     (-) can remove func appNonFatalError() from Core, and, may be, rename appFatalError() to appError(), because no other
+         errors in Core
+     (!) isDropError == !fatalError; fatalError=true (now) called from Win32ExceptHandler() only, so, when not used WIN32_SEH,
+         any GFP will raise error without fatalError==true, and app will not crash -- incorrect!
 
 ------------------- GUI --------------------
 - make K_CONSOLE, K_MENU, K_CANCEL -- as aliases or vars, do not use '`' or K_ESCAPE

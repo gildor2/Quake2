@@ -64,7 +64,6 @@ STATIC = \
 	Release/obj/pmove.obj \
 	Release/obj/q_shared2.obj \
 	Release/obj/zip.obj \
-	Release/obj/memory2.obj \
 	Release/obj/cd_win.obj \
 	Release/obj/in_win.obj \
 	Release/obj/net_wins.obj \
@@ -150,7 +149,6 @@ DYN_EXE = \
 	Release/obj/dyn_exe/pmove.obj \
 	Release/obj/dyn_exe/q_shared2.obj \
 	Release/obj/dyn_exe/zip.obj \
-	Release/obj/dyn_exe/memory2.obj \
 	Release/obj/dyn_exe/makeres.obj \
 	Release/obj/dyn_exe/cd_win.obj \
 	Release/obj/dyn_exe/in_win.obj \
@@ -224,7 +222,6 @@ DEDICATED = \
 	Release/obj/dedicated/pmove.obj \
 	Release/obj/dedicated/q_shared2.obj \
 	Release/obj/dedicated/zip.obj \
-	Release/obj/dedicated/memory2.obj \
 	Release/obj/dedicated/net_wins.obj \
 	Release/obj/dedicated/q_shwin.obj \
 	Release/obj/dedicated/sys_win.obj \
@@ -1369,9 +1366,6 @@ Release/obj/dyn_exe/crc.obj : qcommon/crc.cpp $(DEPENDS)
 Release/obj/dyn_exe/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/cvar.obj" qcommon/cvar.cpp
 
-Release/obj/dyn_exe/memory2.obj : qcommon/memory2.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/memory2.obj" qcommon/memory2.cpp
-
 Release/obj/dyn_exe/model.obj : qcommon/model.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/model.obj" qcommon/model.cpp
 
@@ -1406,9 +1400,6 @@ Release/obj/dedicated/crc.obj : qcommon/crc.cpp $(DEPENDS)
 
 Release/obj/dedicated/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cvar.obj" qcommon/cvar.cpp
-
-Release/obj/dedicated/memory2.obj : qcommon/memory2.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/memory2.obj" qcommon/memory2.cpp
 
 Release/obj/dedicated/model.obj : qcommon/model.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/model.obj" qcommon/model.cpp
@@ -1452,9 +1443,6 @@ Release/obj/crc.obj : qcommon/crc.cpp $(DEPENDS)
 
 Release/obj/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/cvar.obj" qcommon/cvar.cpp
-
-Release/obj/memory2.obj : qcommon/memory2.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/memory2.obj" qcommon/memory2.cpp
 
 Release/obj/model.obj : qcommon/model.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/model.obj" qcommon/model.cpp

@@ -35,7 +35,7 @@ static shader_t *shadersArray[MAX_SHADERS];	// sorted in ascending order with ke
 static shader_t *hashTable[HASH_SIZE];
 static int	shaderCount;
 
-static void *shaderChain;
+static CMemoryChain *shaderChain;
 
 
 // name should be in a lower case
@@ -127,7 +127,7 @@ void GL_ShutdownShaders (void)
 {
 	if (shaderChain)
 	{
-		FreeMemoryChain (shaderChain);
+		delete shaderChain;
 		shaderChain = NULL;
 	}
 	shaderCount = 0;
@@ -240,7 +240,7 @@ static shader_t *AddPermanentShader (void)
 	}
 
 	// allocate and copy new shader
-	nsh = (shader_t*)AllocChainBlock (shaderChain, sizeof(shader_t) + (sh.numStages-1) * sizeof(shaderStage_t*));
+	nsh = (shader_t*) shaderChain->Alloc(sizeof(shader_t) + (sh.numStages-1) * sizeof(shaderStage_t*));
 	memcpy (nsh, &sh, sizeof(shader_t));
 
 	// allocate and copy stages
@@ -250,7 +250,7 @@ static shader_t *AddPermanentShader (void)
 		int		size;
 
 		size = sh.numStages * sizeof(shaderStage_t) + (st[i].numAnimTextures-1) * sizeof(image_t*);
-		nst = (shaderStage_t*)AllocChainBlock (shaderChain, size);
+		nst = (shaderStage_t*) shaderChain->Alloc(size);
 		nsh->stages[i] = nst;
 		memcpy (nst, &st[i], size);
 		// copy texture info
@@ -377,7 +377,7 @@ static shader_t *FinishShader (void)
 			int		size;
 
 			size = s->numTcMods * sizeof(tcModParms_t);
-			tc = (tcModParms_t*)AllocChainBlock (shaderChain, size);
+			tc = (tcModParms_t*) shaderChain->Alloc(size);
 			memcpy (tc, s->tcModParms, size);
 			s->tcModParms = tc;
 		}
@@ -905,9 +905,8 @@ void GL_ResetShaders (void)
 
 	guard(GL_ResetShaders);
 
-	if (shaderChain)
-		FreeMemoryChain (shaderChain);
-	shaderChain = CreateMemoryChain ();
+	if (shaderChain) delete shaderChain;
+	shaderChain = new CMemoryChain;
 
 	memset (hashTable, 0, sizeof(hashTable));
 	memset (shadersArray, 0, sizeof(shadersArray));

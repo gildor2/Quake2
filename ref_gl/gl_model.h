@@ -220,7 +220,7 @@ typedef struct
 	int		visRowSize;
 	byte	*visInfo;
 	// lights
-	void	*lightGridChain;
+	CMemoryChain *lightGridChain;
 	lightCell_t **lightGrid;
 	int		numLightCells;
 	int		gridMins[3], mapGrid[3];	// start/size of world in lightgrid units

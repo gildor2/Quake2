@@ -81,8 +81,7 @@ COMMON = \
 	$D/net_chan.cpp \
 	$D/pmove.cpp \
 	$D/q_shared2.cpp \
-	$D/zip.cpp \
-	$D/memory2.cpp		#!!! remove
+	$D/zip.cpp
 
 D = ref_gl
 GL_RENDERER = \

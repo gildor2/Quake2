@@ -12,9 +12,6 @@ typedef struct {
 	int	(*_Cvar_VariableInt) (const char *name);
 	float	(*_Cvar_Clamp) (cvar_t *cvar, float low, float high);
 	float	(*_Cvar_ClampName) (const char *name, float low, float high);
-	void*	(*_CreateMemoryChain) (void);
-	void*	(*_AllocChainBlock) (void *chain, int size);
-	void	(*_FreeMemoryChain) (void *chain);
 	void*	(*_Hunk_Begin) (int maxsize);
 	void*	(*_Hunk_Alloc) (int size);
 	int	(*_Hunk_End) (void);
@@ -23,13 +20,6 @@ typedef struct {
 	void	(*_Com_Printf) (const char *str, ...);
 	void	(*_Com_DPrintf) (const char *str, ...);
 	void	(*_Com_WPrintf) (const char *str, ...);
-	void	NORETURN	(*_Com_FatalError) (const char *fmt, ...);
-	void 	NORETURN	(*_Com_DropError) (const char *fmt, ...);
-#ifdef _WIN32
-	int	(*_win32ExceptFilter2) (void);
-#endif
-	void	(*_appUnwindPrefix) (const char *fmt);
-	void	NORETURN	(*_appUnwindThrow) (const char *fmt, ...);
 	bool	(*_FS_FileExists) (char *filename);
 	TList<CStringItem>	(*_FS_ListFiles) (char *name, int *numfiles, int flags);
 	void*	(*_FS_LoadFile) (const char *name, unsigned *size = NULL);

@@ -11,7 +11,7 @@ static vec3_t **psubdivVerts;				// pointer to a destination "vector pointer" ar
 static int subdivNumVerts2;					// number of NEW vertexes
 static vec3_t subdivVerts[MAX_POLYVERTS];	// place for a NEW vertexes
 // polys
-static void *subdivPolyChain;
+static CMemoryChain *subdivPolyChain;
 static poly_t *subdivPolys;
 
 
@@ -48,11 +48,9 @@ static int NewVert (float x, float y, float z)
 
 static poly_t *NewPoly (int numVerts)
 {
-	poly_t	*p;
-
 //	DebugPrintf ("NewPoly(%d)\n", numVerts);
 	// alloc poly
-	p = (poly_t*)AllocChainBlock (subdivPolyChain, sizeof(poly_t) + 4 * numVerts);
+	poly_t *p = (poly_t*) subdivPolyChain->Alloc (sizeof(poly_t) + 4 * numVerts);
 	p->indexes = (int*)(p+1);
 	p->numIndexes = 0;
 #ifdef POLY_DEBUG
@@ -169,7 +167,7 @@ int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
 	psubdivVerts = verts;
 	subdivNumVerts = numVerts;
 	subdivNumVerts2 = 0;
-	subdivPolyChain = CreateMemoryChain ();
+	subdivPolyChain = new CMemoryChain;
 	tessError = tessSize * SUBDIV_ERROR;
 
 	/*---- generate initial poly ----*/
@@ -250,7 +248,7 @@ void FreeSubdividedPlane (void)
 {
 	if (subdivPolyChain)
 	{
-		FreeMemoryChain (subdivPolyChain);
+		delete subdivPolyChain;
 		subdivPolyChain = NULL;
 	}
 }

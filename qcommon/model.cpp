@@ -979,6 +979,8 @@ char *ProcessEntstring (char *entString)
 	unsigned plen;
 	char	*patch;
 
+	guard(ProcessEntstring);
+
 	patch = (char*) FS_LoadFile (va("%s.add", bspfile.name), &plen);
 	plen++;	// add 1 byte for trailing zero
 
@@ -1010,7 +1012,7 @@ char *ProcessEntstring (char *entString)
 	}
 
 	// parse patch
-	if (plen)
+	if (patch)
 	{
 		Com_DPrintf ("Adding entity patch ...\n");
 		isPatch = true;
@@ -1020,6 +1022,7 @@ char *ProcessEntstring (char *entString)
 			if (ProcessEntity ())
 				WriteEntity (&dst);
 		}
+		FS_FreeFile (patch);
 	}
 
 	if (haveErrors)
@@ -1027,4 +1030,6 @@ char *ProcessEntstring (char *entString)
 
 	Com_DPrintf ("ProcessEntstring(): old size = %d, new size = %d\n", strlen (entString), dst - dst2);
 	return dst2;
+
+	unguard;
 }

@@ -136,7 +136,7 @@ static CMemoryChain *surfMaterialChain;
 static TList<surfMaterial_t> surfMaterialList;
 
 
-static void CMod_ReadSurfMaterials (char *filename)
+static void ReadSurfMaterials (char *filename)
 {
 	if (surfMaterialChain)
 	{
@@ -206,7 +206,7 @@ static void CMod_ReadSurfMaterials (char *filename)
 			break;
 		}
 		// s points to surface name
-		sm = new (s) surfMaterial_t;
+		sm = new (s, surfMaterialChain) surfMaterial_t;
 		sm->material = m;
 		// add to list
 		surfMaterialList.InsertAfter (sm, prev);
@@ -293,7 +293,7 @@ static void CMod_LoadSurfaces (texinfo_t *data, int size)
 	if (size > MAX_MAP_TEXINFO)
 		Com_DropError ("Map has too many surfaces");
 
-	CMod_ReadSurfMaterials ("sound/materials.lst");
+	ReadSurfMaterials ("sound/materials.lst");
 
 	numtexinfo = size;
 	out = map_surfaces;

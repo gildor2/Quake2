@@ -1169,7 +1169,7 @@ END_PROFILE
 static void FreeMapData (void)
 {
 	if (map.hunk) Hunk_Free (map.hunk);
-	if (map.lightGridChain) FreeMemoryChain (map.lightGridChain);
+	if (map.lightGridChain) delete map.lightGridChain;
 }
 
 void GL_LoadWorldMap (const char *name)

@@ -2365,8 +2365,7 @@ CVAR_END
 	GL_ClearBuffers ();
 
 	vbSize = sizeof(vertexBuffer_t) + (gl_config.maxActiveTextures-1) * sizeof(bufTexCoord_t) * MAX_VERTEXES;	// space for 1 texcoord already reserved
-	vb = (vertexBuffer_t*)appMalloc (vbSize);
-	Com_Printf(S_RED"**** buf: %08X (%d bytes) ****\n", vb, vbSize);//?? should be 16-byte aligned
+	vb = (vertexBuffer_t*)appMalloc (vbSize, 16);
 }
 
 

@@ -14,9 +14,6 @@ static refImport_t ri = {
 	Cvar_VariableInt,
 	Cvar_Clamp,
 	Cvar_ClampName,
-	CreateMemoryChain,
-	AllocChainBlock,
-	FreeMemoryChain,
 	Hunk_Begin,
 	Hunk_Alloc,
 	Hunk_End,
@@ -25,15 +22,6 @@ static refImport_t ri = {
 	Com_Printf,
 	Com_DPrintf,
 	Com_WPrintf,
-	Com_FatalError,
-	Com_DropError
-#ifdef _WIN32
-,
-	win32ExceptFilter2
-#endif
-,
-	appUnwindPrefix,
-	appUnwindThrow,
 	FS_FileExists,
 	FS_ListFiles,
 	FS_LoadFile,

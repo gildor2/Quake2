@@ -741,7 +741,6 @@ char	*ChainCopyString (const char *in, void *chain);
 
 // Named structure lists
 basenamed_t *AllocNamedStruc (int size, char *name);
-#define FreeNamedStruc(s)   appFree(s)
 basenamed_t *ChainAllocNamedStruc (int size, char *name, void *chain);
 
 basenamed_t *FindNamedStruc (char *name, basenamed_t *first, basenamed_t **where);

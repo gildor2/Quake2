@@ -138,6 +138,7 @@ float Q_rsqrt (float number);
 
 #if !defined C_ONLY && !defined __linux__ && !defined __sgi
 
+//?? use C++ ...cast<>
 #define uint_cast(f)	(* (unsigned *) &(f))
 #define IsNegative(f)	(uint_cast(f) >> 31)
 #define FAbsSign(f,d,s)	\

@@ -10,11 +10,6 @@ int	Cvar_VariableInt (const char *name);
 float	Cvar_Clamp (cvar_t *cvar, float low, float high);
 float	Cvar_ClampName (const char *name, float low, float high);
 
-//--- memory management -----
-void*	CreateMemoryChain (void);
-void*	AllocChainBlock (void *chain, int size);
-void	FreeMemoryChain (void *chain);
-
 //--- system-dependent ?? ---
 void*	Hunk_Begin (int maxsize);
 void*	Hunk_Alloc (int size);
@@ -26,18 +21,6 @@ int	Sys_Milliseconds (void);
 void	Com_Printf (const char *str, ...);
 void	Com_DPrintf (const char *str, ...);
 void	Com_WPrintf (const char *str, ...);
-
-//------ error support ------
-void	NORETURN Com_FatalError (const char *fmt, ...);
-void 	NORETURN Com_DropError (const char *fmt, ...);
-#ifdef _WIN32
-int	win32ExceptFilter2 (void);
-#endif
-void	appUnwindPrefix (const char *fmt);		//!!! rename
-void	NORETURN appUnwindThrow (const char *fmt, ...);
-
-
-//?? unused now:	void	KeyEvent (int key, bool down, unsigned time);
 
 //---------- files ----------
 bool	FS_FileExists (char *filename);

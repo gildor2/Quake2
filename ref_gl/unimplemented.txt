@@ -226,8 +226,6 @@ PreprocessShader():
 ? don't need shader->sortParam other than sky/opaque/seethrough (may be, +coronas (already painted after all) +hud (2D ? already separate))
 - r_colorMipLevels changing: cat auto-reload all IMAGE_MIPMAP pics (but may require to recreate some system images)
 
-! vertex arrays are not 16-byte aligned
-
 - dlights:
   - cut dlights (by angle: rad/intens = cos(angle)); backlights -- rad/intens can be greater (for culling)
   - speedup of markup process (?):

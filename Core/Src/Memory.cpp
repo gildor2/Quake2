@@ -354,7 +354,7 @@ static int BuildAllocatorsTable (void *info1, int maxCount)
 }
 
 
-#define MAX_ALLOCATORS		4096
+#define MAX_ALLOCATORS		256
 
 static FAllocatorInfo *MarkedAllocs;
 static int numMarkedAllocs;

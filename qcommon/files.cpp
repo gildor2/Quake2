@@ -73,9 +73,10 @@ typedef enum
 } fileType_t;
 
 
-typedef struct
+class FILE2 : public CStringItem
 {
-	char	*name;		// just for info (layout the same as basenamed_t)
+	// used CStringItem::name for info
+public:
 	fileType_t type;
 	FILE	*file;		// handle of file (if non-zipped) or .PAK
 	union {
@@ -88,7 +89,7 @@ typedef struct
 			resFile_t *rFile;
 		};
 	};
-} FILE2;
+};
 
 cvar_t	*fs_gamedirvar;
 
@@ -114,14 +115,13 @@ typedef struct fileLink_s
 
 static fileLink_t *fs_links;
 
-typedef struct searchPath_s
+class searchPath_t : public CStringItem
 {
-	char	*filename;		// must be a 1st field (for AllocNamedStruc())
-	struct searchPath_s *next;
+public:
 	pack_t	*pack;			// only "filename" or "pack" will be used
-} searchPath_t;
+};
 
-static searchPath_t *fs_searchpaths;
+static TList<searchPath_t> fs_searchpaths;
 static searchPath_t *fs_base_searchpaths;	// without gamedirs
 
 
@@ -189,7 +189,6 @@ static void InitResFiles (void)
 /*
 =====================================================
 Functions to work with in-memory directory/file trees
-Requires, that AllocNamedStruc() zeroes memory.
 =====================================================
 */
 
@@ -616,7 +615,7 @@ void FS_FCloseFile (FILE *f)
 		Zip_CloseBuf (f2->zBuf);
 //	else Com_FatalError ("FS_FCloseFile: invalid handle type");
 
-	FreeNamedStruc (f);
+	delete f;
 }
 
 
@@ -637,10 +636,10 @@ static FILE *AllocFileInternal (char *name, FILE *file, fileType_t type)
 {
 	FILE2* f2;
 
-	f2 = (FILE2*) AllocNamedStruc (sizeof(FILE2), name);
+	f2 = new (name) FILE2;
 	f2->file = file;
 	f2->type = type;
-	return (FILE*)f2;
+	return (FILE*) f2;
 }
 
 
@@ -650,7 +649,6 @@ int fileFromPak;		// used for precaching
 
 int FS_FOpenFile (const char *filename2, FILE **file)
 {
-	searchPath_t	*search;
 	char			netpath[MAX_OSPATH], *pakname, game[MAX_OSPATH], filename[MAX_OSPATH];
 	pack_t			*pak;
 	packFile_t		*pfile;
@@ -718,7 +716,7 @@ int FS_FOpenFile (const char *filename2, FILE **file)
 
 	// pakname = game-relative path, game = subtracted game path, gamelen = strlen(game).
 	// We should refine .pak files with a game path (if specified, gamelen > 0)
-	for (search = fs_searchpaths; search; search = search->next)
+	for (searchPath_t *search = fs_searchpaths.First(); search; search = fs_searchpaths.Next(search))
 	{
 		// is the element a pak file?
 		if (pak = search->pack)
@@ -743,7 +741,7 @@ int FS_FOpenFile (const char *filename2, FILE **file)
 			if (!gamelen)
 			{
 				// check a file in the directory tree (only for game-relative path)
-				appSprintf (ARRAY_ARG(netpath), "%s/%s", search->filename, filename);
+				appSprintf (ARRAY_ARG(netpath), "%s/%s", search->name, filename);
 
 				if (!(f = fopen (netpath, "rb"))) continue;
 				*file = AllocFileInternal (netpath, f, FT_NORMAL);
@@ -789,7 +787,6 @@ Will not check inline files (only filesystem or paks)
 
 bool FS_FileExists (char *filename)
 {
-	searchPath_t	*search;
 	char			*pakname, game[MAX_OSPATH], buf[MAX_OSPATH];
 	pack_t			*pak;
 	packFile_t		*pfile;
@@ -855,7 +852,7 @@ bool FS_FileExists (char *filename)
 //	Com_Printf(S_RED"check %s in %s; l = %d\n", pakname, game, gamelen);
 	// pakname = game relative path, game = subtracted game path, gamelen = strlen(game).
 	// We should refine .pak files with a game path (if specified, gamelen > 0)
-	for (search = fs_searchpaths; search; search = search->next)
+	for (searchPath_t *search = fs_searchpaths.First(); search; search = fs_searchpaths.Next(search))
 	{
 		// is the element a pak file?
 		if (pak = search->pack)
@@ -875,7 +872,7 @@ bool FS_FileExists (char *filename)
 			if (!gamelen)
 			{
 				// check a file in the directory tree (only for game-relative path)
-				if (!(f = fopen (va("%s/%s",search->filename, filename), "rb")))
+				if (!(f = fopen (va("%s/%s",search->name, filename), "rb")))
 					continue;
 
 				fclose (f);
@@ -1014,6 +1011,7 @@ void* FS_LoadFile (const char *path, unsigned *len)
 
 	if (len) *len = len2;
 
+//	MEM_ALLOCATOR(path);	//!!
 	byte *buf = (byte*)appMalloc (len2 + 1); // adds 1 for trailing zero
 	FS_Read (buf, len2, (FILE*)h);
 	FS_FCloseFile ((FILE*)h);
@@ -1159,8 +1157,6 @@ then loads and adds pak1.pak pak2.pak ...
 */
 static void AddGameDirectory (char *dir)
 {
-	searchPath_t *search;
-
 	strcpy (fs_gamedir, dir);
 
 	/*-------- check for valid game directory -----------------*/
@@ -1175,9 +1171,8 @@ static void AddGameDirectory (char *dir)
 	}
 
 	/*------- add the directory to the search path ------------*/
-	search = (searchPath_t*) AllocNamedStruc (sizeof(searchPath_t), dir);
-	search->next = fs_searchpaths;
-	fs_searchpaths = search;
+	searchPath_t *search = new (dir) searchPath_t;
+	fs_searchpaths.InsertAfter (search, NULL);		// first
 
 	TList<CStringItem> PakList;
 	AddDirFilesToList (va("%s/*.pak", dir), &PakList, LIST_FILES);
@@ -1186,10 +1181,9 @@ static void AddGameDirectory (char *dir)
 		pack_t *pak = LoadPackFile (pakName->name);
 		if (!pak) continue;
 
-		search = (searchPath_t*) AllocNamedStruc (sizeof(searchPath_t), "");
+		search = new ("") searchPath_t;
+		fs_searchpaths.InsertAfter (search, NULL);	// first
 		search->pack = pak;
-		search->next = fs_searchpaths;
-		fs_searchpaths = search;
 	}
 	PakList.Free();
 }
@@ -1245,7 +1239,6 @@ Sets the gamedir and path to a different directory.
 */
 bool FS_SetGamedir (const char *dir)
 {
-	searchPath_t *next;
 	char	path[MAX_OSPATH];
 
 	if (strchr (dir, '/') || strchr (dir, '\\') || strchr (dir, ':'))
@@ -1273,12 +1266,13 @@ bool FS_SetGamedir (const char *dir)
 		return true;		// directory is not changed (should return something another to avoid FS_Restart ??)
 
 	// free up any current game dir info
-	while (fs_searchpaths != fs_base_searchpaths)
+	searchPath_t *next;
+	for (searchPath_t *search = fs_searchpaths.First(); search != fs_base_searchpaths; search = next)
 	{
-		if (fs_searchpaths->pack) UnloadPackFile (fs_searchpaths->pack);
-		next = fs_searchpaths->next;
-		FreeNamedStruc (fs_searchpaths);
-		fs_searchpaths = next;
+		if (search->pack) UnloadPackFile (search->pack);
+		next = fs_searchpaths.Next(search);
+		fs_searchpaths.Remove (search);
+		delete search;
 	}
 
 	// flush all data, so it will be forced to reload
@@ -1302,17 +1296,13 @@ bool FS_SetGamedir (const char *dir)
 }
 
 
-static searchPath_t *FindPakStruc (char *name)
+static searchPath_t *FindPakStruc (const char *name)
 {
-	searchPath_t *item;
-	int namelen, len;
-	pack_t *pak;
-
-	namelen = strlen (name);
-	for (item = fs_searchpaths; item; item = item->next)
-		if (pak = item->pack)
+	int namelen = strlen (name);
+	for (searchPath_t *item = fs_searchpaths.First(); item; item = fs_searchpaths.Next(item))
+		if (pack_t *pak = item->pack)
 		{
-			len = strlen (pak->filename);
+			int len = strlen (pak->filename);
 			if (len < namelen) continue;
 			// compare last namelen chars if pak filename with a name
 			if (!stricmp (name, &pak->filename[len - namelen]))
@@ -1340,16 +1330,14 @@ static bool TryLoadPak (char *pakname)
 	if (f = fopen (pakname, "rb"))
 	{
 		pack_t	*pak;
-		searchPath_t *search;
 
 		fclose (f);
-		if (!(pak = LoadPackFile (pakname))) return 1; // not loaded, but don't try more
+		if (!(pak = LoadPackFile (pakname))) return 1;	// not loaded, but don't try more
 		// include new packfile in search paths
-		search = (searchPath_t*) AllocNamedStruc (sizeof(searchPath_t), "");
+		searchPath_t *search = new ("") searchPath_t;
+		fs_searchpaths.InsertAfter (search, NULL);		// first
 		search->pack = pak;
-		search->next = fs_searchpaths;
-		fs_searchpaths = search;
-		return true;		// loaded
+		return true;
 	}
 	return false;
 }
@@ -1398,7 +1386,6 @@ FS_UnloadPak_f
 static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 {
 	char	pakname[MAX_OSPATH];
-	searchPath_t *search, *item, *prev, *next;
 
 	if (argc != 2 || usage)
 	{
@@ -1407,36 +1394,27 @@ static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 		return;
 	}
 	if (strchr (argv[1], '*'))
-	{	// name is a wildcard
-		pack_t	*pak;
-		bool	found;
-
-		prev = NULL;
-		found = false;
+	{
+		// name is a wildcard
+		bool found = false;
 		appSprintf (ARRAY_ARG(pakname), "%s/%s", fs_gamedir, argv[1]);
 
-		for (item = fs_searchpaths; item; item = next)
+		searchPath_t *next;
+		for (searchPath_t *item = fs_searchpaths.First(); item; item = next)
 		{
-			next = item->next;
-
-			pak = item->pack;
+			next = fs_searchpaths.Next(item);
+			pack_t *pak = item->pack;
 			if (pak && appMatchWildcard (pak->filename, pakname, true))
 			{
-				if (prev)
-					prev->next = item->next;
-				else
-					fs_searchpaths = item->next;
-
+				fs_searchpaths.Remove (item);
 				if (fs_base_searchpaths == item)
-					fs_base_searchpaths = item->next;
+					fs_base_searchpaths = next;
 
 				UnloadPackFile (pak);
-				FreeNamedStruc (item);
+				delete item;
 
 				found = true;
 			}
-			else
-				prev = item;
 		}
 		if (!found)
 			Com_WPrintf ("Packfile %s is not loaded\n", pakname);
@@ -1445,6 +1423,7 @@ static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 
 	appSprintf (ARRAY_ARG(pakname), "/%s", argv[1]);
 
+	searchPath_t *search;
 	if (!(search = FindPakStruc (pakname)))
 	{
 		strcat (pakname, ".pak");
@@ -1454,19 +1433,14 @@ static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 			return;
 		}
 	}
-	prev = NULL;
-	for (item = fs_searchpaths; item; prev = item, item = item->next)
+	for (searchPath_t *item = fs_searchpaths.First(); item; item = fs_searchpaths.Next(item))
 		if (item == search)
 		{
-			if (prev)
-				prev->next = search->next;
-			else
-				fs_searchpaths = search->next;
-
-			if (fs_base_searchpaths == search)
-				fs_base_searchpaths = search->next;
-			UnloadPackFile (search->pack);
-			FreeNamedStruc (search);
+			fs_searchpaths.Remove (item);
+			if (fs_base_searchpaths == item)
+				fs_base_searchpaths = fs_searchpaths.Next(item);;
+			UnloadPackFile (item->pack);
+			delete item;
 			return;
 		}
 }
@@ -1527,7 +1501,6 @@ TList<CStringItem> FS_ListFiles (char *name, int *numfiles, int flags)
 {
 	char	buf[MAX_OSPATH], game[MAX_OSPATH], *pakname, *mask, path[MAX_OSPATH];
 	int		gamelen;
-	searchPath_t *search;
 	int		gamePos;
 
 	appCopyFilename (buf, name, sizeof(buf));
@@ -1593,7 +1566,7 @@ TList<CStringItem> FS_ListFiles (char *name, int *numfiles, int flags)
 	}
 
 	/*------------- check pak files --------------------*/
-	for (search = fs_searchpaths; search; search = search->next)
+	for (searchPath_t *search = fs_searchpaths.First(); search; search = fs_searchpaths.Next(search))
 	{
 		if (pack_t *pak = search->pack)
 		{
@@ -1713,13 +1686,12 @@ FS_Path_f
 */
 static void FS_Path_f (void)
 {
-	searchPath_t	*s;
 	fileLink_t		*l;
 
 	Com_Printf (S_GREEN"Current search path:\n");
 	Com_Printf ("----zip-files-name------------\n");
 	int n = 0;
-	for (s = fs_searchpaths; s; s = s->next)
+	for (searchPath_t *s = fs_searchpaths.First(); s; s = fs_searchpaths.Next(s))
 	{
 		n++;
 		if (s == fs_base_searchpaths)
@@ -1727,7 +1699,7 @@ static void FS_Path_f (void)
 		if (s->pack)
 			Com_Printf ("%-3d  %c  %-5d %s\n", n, s->pack->isZip ? '+' : ' ', s->pack->numFiles, s->pack->filename);
 		else
-			Com_Printf ("%-3d     --    %s\n", n, s->filename);
+			Com_Printf ("%-3d     --    %s\n", n, s->name);
 	}
 
 	if (fs_links)
@@ -1816,16 +1788,15 @@ Allows enumerating all of the directories in the search path
 */
 char *FS_NextPath (const char *prevpath)
 {
-	searchPath_t *s;
-	char *prev;
+	const char *prev;
 
 	prev = NULL;
-	for (s = fs_searchpaths; s; s = s->next)
+	for (searchPath_t *s = fs_searchpaths.First(); s; s = fs_searchpaths.Next(s))
 	{
 		if (s->pack) continue;
 		if (prevpath == prev)
-			return s->filename;
-		prev = s->filename;
+			return s->name;
+		prev = s->name;
 	}
 	return NULL;
 }
@@ -1872,7 +1843,7 @@ CVAR_END
 	AddGameDirectory (va("%s/"BASEDIRNAME, fs_basedir->string));
 
 	// any set gamedirs will be freed up to here
-	fs_base_searchpaths = fs_searchpaths;
+	fs_base_searchpaths = fs_searchpaths.First();
 
 	// check for game override
 	if (fs_gamedirvar->string[0])
