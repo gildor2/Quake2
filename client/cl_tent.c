@@ -886,7 +886,6 @@ void CL_ParseNuke (void)
 CL_ParseTEnt
 =================
 */
-static byte splash_color[] = {0x00, 0xe0, 0xb0, 0x50, 0xd0, 0xe0, 0xe8};
 
 void CL_ParseTEnt (void)
 {
@@ -984,19 +983,26 @@ void CL_ParseTEnt (void)
 		CL_SmokeAndFlash(pos);
 		break;
 
-	case TE_SPLASH:				// bullet hitting water
+	case TE_SPLASH:
 		cnt = MSG_ReadByte (&net_message);
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
 		r = MSG_ReadByte (&net_message);
-		if (r > 6)
+		if (r > 8)
 			color = 0x00;
 		else
+		{
+			static byte splash_color[] = {
+				0x00, 0xE0, 0xB0, 0x50, 0xD0, 0xE0, 0xE8,	// unk, sparks, blue water, brown water, slime, lava, blood
+				0xB0, 0x50			// bullet blue water, bullet brown water
+			};
 			color = splash_color[r];
+		}
 		CL_ParticleEffect (pos, dir, color, cnt);
 
 		if (r == SPLASH_SPARKS)
-		{	// just particles -- not water
+		{
+			// just particles -- not water
 			r = rand() & 3;
 			if (r == 0)
 				S_StartSound (pos, 0, 0, cl_sfx_spark5, 1, ATTN_STATIC, 0);
@@ -1005,8 +1011,9 @@ void CL_ParseTEnt (void)
 			else
 				S_StartSound (pos, 0, 0, cl_sfx_spark7, 1, ATTN_STATIC, 0);
 		}
-		else if ((r == SPLASH_BLUE_WATER || r == SPLASH_BROWN_WATER) && cls.newprotocol)
+		else if ((r == SPLASH_BULLET_BLUE_WATER || r == SPLASH_BULLET_BROWN_WATER) && cls.newprotocol)
 		{
+			// bullet hitting water
 			S_StartSound (pos, 0, 0, cl_sfx_bullethits[IMPACT_WATER*3 + rand()%3], 1, ATTN_NORM, 0);
 		}
 		break;

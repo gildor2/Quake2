@@ -1,5 +1,5 @@
 - menu.c
-  - M_Draw(): skip when != key_menu|key_forcemenu
+  - M_Draw(): skip when != key_menu|key_bindingMenu
   - M_PushMenu(): set to key_menu to show it
 - in_win.c
   - IN_Frame(): checks for key_console and [de]activates mouse when changed

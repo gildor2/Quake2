@@ -270,7 +270,7 @@ void SV_ReadServerFile (void)
 	FILE	*f;
 	char	name[MAX_OSPATH], string[128];
 	char	comment[32];
-	char	mapcmd[MAX_TOKEN_CHARS];
+	char	mapcmd[128];
 
 	Com_DPrintf("SV_ReadServerFile()\n");
 	SCR_SetLevelshot ("/" SAVEGAME_DIRECTORY "/current/shot.pcx");

@@ -43,7 +43,6 @@ BUGS:
 - if Win32 can't get keyboard focus, "set r_fullscreen 0" (as Unreal2)
 BINDS:
   - bind key "action1"|onrelease "action2" (Unreal-like)
-  ? bind key+Alt or altbind (?)
   ? bindtmp, aliastmp (not stered in config ?)
 SAVEGAMES:
   ? show game time (like Anachronox)

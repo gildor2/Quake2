@@ -161,7 +161,7 @@ typedef struct
 	int			realtime;					// always increasing, no clamping, etc
 	float		realtimef;					// same as "realtime", but more precisious (may be fractional, when timescale < 1)
 
-	char		mapcmd[MAX_TOKEN_CHARS];	// ie: *intro.cin+base
+	char		mapcmd[128];				// ie: *intro.cin+base
 
 	int			spawncount;					// incremented each server start
 											// used to check late spawns

@@ -639,7 +639,7 @@ void S_IssuePlaysound (playsound_t *ps)
 	sfxcache_t	*sc;
 
 	if (s_show->integer)
-		Com_Printf ("Issue %i  for entity %i  at channel %i\n", ps->begin, ps->entnum, ps->entchannel);
+		Com_Printf ("Sound: %s begin:%d ent:%d chn:%d\n", ps->sfx->name, ps->begin, ps->entnum, ps->entchannel);
 	// pick a channel to play on
 	ch = S_PickChannel(ps->entnum, ps->entchannel);
 	if (!ch)
@@ -1115,7 +1115,7 @@ void S_Update(vec3_t origin, vec3_t forward, vec3_t right, vec3_t up)
 
 	// update spatialization for dynamic sounds
 	ch = channels;
-	for (i=0 ; i<MAX_CHANNELS; i++, ch++)
+	for (i = 0; i < MAX_CHANNELS; i++, ch++)
 	{
 		if (!ch->sfx)
 			continue;

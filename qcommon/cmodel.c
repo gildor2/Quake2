@@ -108,13 +108,14 @@ void	FloodAreaConnections (void);
 
 int		c_traces, c_pointcontents;
 
+bspfile_t *map_bspfile;
 
 /*
-** Support for Half-Life maps
+** Support for Half-Life maps ??
 */
 
 static mapType_t maptype;
-static int firstnode; // 0->firstclipnode, this->firstnode
+static int firstnode; // 0->firstclipnode, this->firstnode ??
 
 
 /*
@@ -1063,6 +1064,7 @@ cmodel_t *CM_LoadMap (char *name, qboolean clientload, unsigned *checksum)
 	numentitychars = 0;
 	map_entitystring = "";
 	map_name[0] = 0;
+	map_bspfile = NULL;
 
 	if (!name || !name[0])
 	{
@@ -1073,7 +1075,7 @@ cmodel_t *CM_LoadMap (char *name, qboolean clientload, unsigned *checksum)
 		return &map_cmodels[0];			// cinematic servers won't have anything at all
 	}
 
-	bsp = LoadBspFile (name, clientload, &last_checksum);
+	bsp = map_bspfile = LoadBspFile (name, clientload, &last_checksum);
 	*checksum = last_checksum;
 
 	maptype = bsp->type;
@@ -1269,11 +1271,7 @@ static int PointLeafnum_r (vec3_t p, int num)
 		plane = node->plane;
 
 		d = DISTANCE_TO_PLANE(p,plane);
-
-		if (d < 0)
-			num = node->children[1];
-		else
-			num = node->children[0];
+		num = node->children[IsNegative(d)];
 	}
 
 	c_pointcontents++;		// optimize counter
@@ -1284,7 +1282,7 @@ static int PointLeafnum_r (vec3_t p, int num)
 int CM_PointLeafnum (vec3_t p)
 {
 	if (!numplanes)
-		return 0;		// sound may call this without map loaded
+		return 0;			// sound may call this without map loaded
 	return PointLeafnum_r (p, 0);
 }
 
@@ -1918,7 +1916,7 @@ void CM_BoxTrace (trace_t *trace, vec3_t start, vec3_t end, vec3_t mins, vec3_t 
 		for (i = 0; i < numleafs; i++)
 		{
 			TestInLeaf (leafs[i]);
-			if (trace_trace.allsolid)	// always set when 1st intersection bt CM_TestBoxInBrush()
+			if (trace_trace.allsolid)	// always set when 1st intersection by CM_TestBoxInBrush()
 				break;
 		}
 		VectorCopy (start, trace_trace.endpos);

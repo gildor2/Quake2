@@ -547,81 +547,43 @@ static char bindmenubuf[MAX_KEYS_BUF];
 
 static void M_UnbindCommand (char *command)
 {
-	int		j;
-	int		l;
-	char	*b;
+	int		i, numKeys, keys[256];
 
-	l = strlen(command);
-
-	for (j = 0; j < NUM_KEYS; j++)
+	numKeys = Key_FindBinding (command, ARRAY_ARG(keys));
+	for (i = 0; i < numKeys; i++)
 	{
-		b = keybindings[j];
-		if (!b)
-			continue;
-		if (!strncmp (b, command, l) )
-			Key_SetBinding (j, "");
+		Key_SetBinding (keys[i], "");
+//		Com_DPrintf ("unbind %s\n",Key_KeynumToString(keys[i]));
 	}
 }
 
-static void M_FindKeysForCommand (char *command, int *twokeys)
-{
-	int		count;
-	int		j;
-	char	*b;
-
-	twokeys[0] = twokeys[1] = -1;
-	count = 0;
-
-	for (j = 0; j < NUM_KEYS; j++)
-	{
-		b = keybindings[j];
-		if (!b)
-			continue;
-
-		if (!strcmp (b, command))
-		{
-			twokeys[count] = j;
-			count++;
-			if (count == 2)
-				break;
-		}
-	}
-}
 
 static void KeyCursorDrawFunc (menuFramework_t *menu)
 {
 	re.DrawCharColor (menu->x, menu->y + menu->cursor * BIND_LINE_HEIGHT,
-		cls.key_dest == key_forcemenu ? '=' : 12 + (Sys_Milliseconds() / 250 & 1), 7);
+		cls.key_dest == key_bindingMenu ? '=' : 12 + (Sys_Milliseconds() / 250 & 1), 7);
 }
 
 static void DrawKeyBindingFunc (void *self)
 {
-	int keys[2];
+	int		keys[2], numKeys;
 	menuAction_t *a = (menuAction_t *) self;
+	char	text[256];
 
-	M_FindKeysForCommand (bindnames[a->generic.localdata[0]][0], keys);
+//	M_FindKeysForCommand (bindnames[a->generic.localdata[0]][0], keys); !!! remove
+	numKeys = Key_FindBinding (bindnames[a->generic.localdata[0]][0], ARRAY_ARG(keys));
 
-	if (keys[0] == -1)
-	{
-		Menu_DrawString (a->generic.x + a->generic.parent->x + 16, a->generic.y + a->generic.parent->y, "^1(not bound)");
-	}
+	if (!numKeys)
+		strcpy (text, "^1(not bound)");
 	else
 	{
-		int x;
-		const char *name;
-
-		name = Key_KeynumToString (keys[0]);
-
-		Menu_DrawString (a->generic.x + a->generic.parent->x + 16, a->generic.y + a->generic.parent->y, name);
-
-		x = strlen(name) * 8;
-
-		if (keys[1] != -1)
-		{
-			Menu_DrawString (a->generic.x + a->generic.parent->x + 24 + x, a->generic.y + a->generic.parent->y, "or");
-			Menu_DrawString (a->generic.x + a->generic.parent->x + 48 + x, a->generic.y + a->generic.parent->y, Key_KeynumToString (keys[1]));
-		}
+		if (numKeys == 1)
+			strcpy (text, Key_KeynumToString (keys[0]));
+		else
+			Com_sprintf (ARRAY_ARG(text), "%s or %s%s",
+				Key_KeynumToString (keys[0]), Key_KeynumToString (keys[1]), numKeys > 2 ? " ..." : "");
 	}
+	Menu_DrawString (a->generic.x + a->generic.parent->x + 16, a->generic.y + a->generic.parent->y, text);
 }
 
 static void SeekLine (char **s)
@@ -724,17 +686,14 @@ static void Keys_MenuDraw (void)
 	Menu_Draw (&s_keys_menu);
 }
 
-static void KeyBindingFunc( void *self )
+static void KeyBindingFunc (void *self)
 {
 	menuAction_t *a = (menuAction_t *) self;
-	int keys[2];
 
-	M_FindKeysForCommand (bindnames[a->generic.localdata[0]][0], keys);
-
-	if (keys[1] != -1)
+	if (Key_FindBinding (bindnames[a->generic.localdata[0]][0], NULL, 0) > 1)
 		M_UnbindCommand (bindnames[a->generic.localdata[0]][0]);
 
-	cls.key_dest = key_forcemenu;		// hook keyboard
+	cls.key_dest = key_bindingMenu;		// hook keyboard
 
 	Menu_SetStatusBar (&s_keys_menu, "press a key or button for this action");
 }
@@ -744,10 +703,10 @@ static const char *Keys_MenuKey (int key)
 	menuAction_t *item;
 
 	item = (menuAction_t *) Menu_ItemAtCursor (&s_keys_menu);
-	if (cls.key_dest == key_forcemenu)
+	if (cls.key_dest == key_bindingMenu)
 	{
 		if (key != K_ESCAPE && key != '`')
-			Cbuf_InsertText (va("bind \"%s\" \"%s\"\n", Key_KeynumToString(key), bindnames[item->generic.localdata[0]][0]));
+			Cbuf_InsertText (va("bind %s %s\n", Key_KeynumToString(key), COM_QuoteString (bindnames[item->generic.localdata[0]][0], true)));
 
 		Menu_SetStatusBar (&s_keys_menu, "enter to change, backspace to clear");
 		cls.key_dest = key_menu;		// unhook keyboard
@@ -3300,7 +3259,7 @@ M_Draw
 */
 void M_Draw (void)
 {
-	if (cls.key_dest != key_menu && cls.key_dest != key_forcemenu)
+	if (cls.key_dest != key_menu && cls.key_dest != key_bindingMenu)
 		return;
 
 	if (!cls.keep_console)	// do not blend whole screen when small menu painted

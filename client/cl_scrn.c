@@ -1207,7 +1207,7 @@ void SCR_UpdateScreen (void)
 		// and console specially
 		else if (cl.cinematictime > 0)
 		{
-			if (cls.key_dest == key_menu || cls.key_dest == key_forcemenu)
+			if (cls.key_dest == key_menu || cls.key_dest == key_bindingMenu)
 			{
 				if (cl.cinematicpalette_active)
 				{

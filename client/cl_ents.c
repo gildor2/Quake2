@@ -1046,20 +1046,20 @@ static void CL_AddPacketEntities (void)
 			}
 		}
 
-		// add glow around player with COLOR_SHELL
-		if (renderfx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE))
-		{
-			float	r, g, b;
-
-			r = g = b = frand () * 0.4;
-			if (renderfx & RF_SHELL_RED)	r = 1;
-			if (renderfx & RF_SHELL_GREEN)	g = 1;
-			if (renderfx & RF_SHELL_BLUE)	b = 1;
-			V_AddLight (ent.origin, 96 + (frand() * 15), r, g, b);
-		}
-
 		if (s1->number == cl.playernum+1)
 		{
+			// add glow around player with COLOR_SHELL
+			if (renderfx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE))
+			{
+				float	r, g, b;
+
+				r = g = b = frand () * 0.4;
+				if (renderfx & RF_SHELL_RED)	r = 1;
+				if (renderfx & RF_SHELL_GREEN)	g = 1;
+				if (renderfx & RF_SHELL_BLUE)	b = 1;
+				V_AddLight (ent.origin, 96 + (frand() * 15), r, g, b);
+			}
+
 			ent.flags |= RF_VIEWERMODEL;	// only draw from mirrors
 
 			if (effects & EF_FLAG1)

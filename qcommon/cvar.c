@@ -927,26 +927,49 @@ static void Cvar_Toggle_f (void)
 static void Cvar_Cycle_f (void)
 {
 	cvar_t	*var;
-	int		i, numValues;
+	int		i, numValues, firstValue;
+	bool	revert;
 
-	numValues = Cmd_Argc () - 2;
+	if (!stricmp (Cmd_Argv (1), "-r"))
+	{
+		revert = true;
+		firstValue = 3;
+	}
+	else
+	{
+		revert = false;
+		firstValue = 2;
+	}
+	numValues = Cmd_Argc () - firstValue;
 	if (numValues < 2)
 	{
-		Com_Printf ("Usage: cycle <variable> <value1> <value2> [<value3> ...]\n");
+		Com_Printf ("Usage: cycle [-r] <variable> <value1> <value2> [<value3> ...]\n");
 		return;
 	}
 
-	if (!(var = Cvar_FindVar (Cmd_Argv (1))))
+	if (!(var = Cvar_FindVar (Cmd_Argv (firstValue-1))))
 	{
-		Cvar_Set2 (Cmd_Argv (1), Cmd_Argv (2), CVAR_USER_CREATED|CVAR_NODEFAULT, false);
+		Cvar_Set2 (Cmd_Argv (firstValue-1), Cmd_Argv (firstValue), CVAR_USER_CREATED|CVAR_NODEFAULT, false);
 		return;
 	}
 
 	for (i = 0; i < numValues; i++)
-		if (!stricmp (var->string, Cmd_Argv (i+2))) break;
+		if (!stricmp (var->string, Cmd_Argv (firstValue+i))) break;
 
-	if (i >= numValues - 1) i = -1;
-	Cvar_Set2 (Cmd_Argv (1), Cmd_Argv (i+3), CVAR_USER_CREATED|CVAR_NODEFAULT, false);	// set to a next value
+	if (i == numValues)		// not found
+		i = 0;
+	else if (!revert)
+	{	// next value
+		i++;
+		if (i > numValues - 1) i = 0;
+	}
+	else
+	{	// previous value
+		i--;
+		if (i < 0) i = numValues - 1;
+	}
+
+	Cvar_Set2 (Cmd_Argv (firstValue-1), Cmd_Argv (firstValue+i), CVAR_USER_CREATED|CVAR_NODEFAULT, false);
 }
 
 

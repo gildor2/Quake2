@@ -26,8 +26,7 @@ Comments:
   reflection taken from /* "env/<skyname>winrefl.???" or */ "env/defrefl.???")
 - changed appearance of "r_speeds" output
 - support of the Kingpin SURF_ALPHA surface flag
-- hardware gamma control (can be disabled with "set r_ignorehwgamma 1"); uses "vid_gamma" and "intensity"
-  to calculate gamma; changes applied without "vid_restart" (Win32)
+- hardware gamma control (can be disabled with "set r_ignorehwgamma 1"); changes applied without "vid_restart" (Win32)
 - support for GL_S3_s3tc and GL_ARB_texture_compression (can be disabled with "set gl_ext_compressed_textures 0")
 # improved "imagelist" command: now it shows texture internal formats and info about scrap
 - "gl_console_only" variable: when "1", no graphical information displayed and display forced to full console
@@ -85,7 +84,6 @@ Comments:
   4) exec config.cfg
 - bug with menu spin control (crush when curvalue > maxvalue)
 - removed calling "-alias" EVERY time key depressed
-- fixed binding to "semicolon", added "comma", "kp_star"
 - disabled mouse acceleration
 - fixed collision detection code to prevent from "blocked inside the opening door" and some other bugs
 - fixed "WSAECONRESET" error for Win2K (server was crushed when one client exits game)
@@ -112,9 +110,9 @@ Cvar system
     - if "f" ("force") specified and variable is not found, it will be created (error message otherwise)
 - command "scale <varname> <scale>" will multiply variable value by scale
 - command "toggle <varname>" will set variable to 0 if var != 0 or set to 1 otherwise
-- command "cycle <varname> <v[1]> <v[2]> ..." - set variable to v[i+1] if it is matched to v[i];
-    if no matches found - set to v[1]; if matched with last value - set to 1st (i.e. cycle variable values
-    within value list)
+- command "cycle [-r] <varname> <v[1]> <v[2]> ..." - set variable to v[i+1] if it is matched to v[i];
+    (if "-r" specified -- reverse order, i.e. set to v[i-1] when matched with v[i]); if no matches found - set to
+    v[1]; if matched with last value - set to 1st (i.e. cycle variable values within value list)
 - command "cvarlist" - added parameter:
   cvarlist [mask]          -- will display only variables, which names matched wildcard
 - "set[a|u|s] <variable> <value>", "set <variable> <value> [a|u|s]" (archive|userinfo|serverinfo)
@@ -167,8 +165,20 @@ Console/Menu
   - added menu navigation and console scrolling with mouse
   - added support of home/end keys; disabled menu auto-wrapping
   - scrolling of long menus
-- added keyboard autorepeat
-- added UNK46, UNK59-UNK5F keys for bindings
+
+Keyboard
+--------
+- new keys:
+  - UnkXX
+  - right-side keys RAlt and RCtrl (Alt and Ctrl are left-side)
+  - F13-F24
+  - CapsLock, NumLock, ScrLock
+- added names for keys:
+  - ';' is Semicolon
+  - ',' is Comma
+  - '*' is KP_Star (extended keyboard key)
+- implemented keyboard autorepeat
+- added binding to "Ctrl+Key" and "Alt+Key"
 
 Configuration
 -------------
@@ -193,6 +203,8 @@ Configuration
 - "screenshot [-silent] [-levelshot] [-no2d] [-nogamma] [-jpeg] [<filename>]"
   "-levelshot" will create screenshot 256x256 as "levelshots/<mapname>.???"
   "-nogamma" will skips gamma correction for image
+- support for "//..." and "/*...*/" comments
+- support for quote doubling: 'echo "help ""me"""' will display 'help "me"'
 
 Server
 ------
@@ -248,7 +260,7 @@ Debugging
   - to disable auto-startup "dedicated_start" alias, use "nointro 1"
 - main executable command line:
   - to change cvar use "-var=value"
-  - to set cvar, known at the time of initialization, to "1", use "-var"
+  - to set cvar, known at the time of initialization, to "1", use "-var" (same as "-var=1")
   - to execute commands, use "-command [arguments]"
   - example: quake2 -nosound -deathmatch=1 -map q2dm1 -echo "hello world!"
 - commands "lookdown <angle>" and "lookup <angle>"
@@ -261,7 +273,6 @@ Debugging
 ~~~~~~~~~~~~~~~~~~
 Memory management
 -----------------
-- void *Z_BlockMalloc(int size) - allocates memory block with a chunks of 4K (less memory fragmentation?)
 - replaced Z_TagMalloc() in gameimport_t with NewTagMalloc(), with reserves (size+1) bytes.
     We should make 1 more byte for Z_Malloc() & Z_TagMalloc() when it is called
     from "gi->" (gamex86.dll) - we cannot control bugs in third-party mods, but
@@ -270,7 +281,5 @@ Memory management
 
 Miscellaneous
 -------------
-- changed ALIAS_LOOP_COUNT from 16 to 64
 - FS_LoadFile() will load file into a buffer of size (filelength+1) with added zero byte
 - Com_WPrintf() will print message with warning color and log when developer=2
-- q_shared.h and q_shared.c are migrated from game/q_shared.* to common/q_shared2.*;

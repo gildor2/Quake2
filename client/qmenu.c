@@ -180,8 +180,7 @@ qboolean Field_Key (menuField_t *f, int key)
 	}
 
 	/*-------- support pasting from the clipboard ------------*/
-	if ( ( toupper (key) == 'V' && keydown[K_CTRL] ) ||
-		 ( ( ( key == K_INS ) || ( key == K_KP_INS ) ) && keydown[K_SHIFT] ) )
+	if ((key == 'v' && CTRL_PRESSED) || (key == K_INS && SHIFT_PRESSED))
 	{
 		char *cbd;
 
@@ -229,8 +228,7 @@ qboolean Field_Key (menuField_t *f, int key)
 		return false;
 
 	default:
-		if (key >= 128) return
-			false;
+		if (key < 32 || key >= 128) return false;
 		if (!isdigit (key) && (f->generic.flags & QMF_NUMBERSONLY))
 			return false;
 

@@ -35,9 +35,10 @@ GRAPHICS
 
 MISC
 ~~~~
-- "beachassault": when standing on wall (upstairs) inside ship projector cone, lighting may be incorrect when AddPointLight()
+? "beachassault": when standing on wall (upstairs) inside ship projector cone, lighting may be incorrect when AddPointLight()
   uses VectorNormalizeFast() instead of VectorNormalize() to detect distance/direction
 
 PHYSICS
 ~~~~~~~
 - "japan" - underwater have brush sides between 2 water brushes; clipped on this sides (3rd person, r_surfinfo etc.)
+- map (q2:) "fusion", (aq2:) "temple2", "lavatube" -- waterfall have func_splash with same flags, as water bullethit splash

@@ -19,7 +19,7 @@ image_t	*gl_defaultImage;
 image_t	*gl_identityLightImage;
 image_t	*gl_dlightImage;
 image_t	*gl_particleImage;
-image_t	*gl_fogImage;
+//image_t	*gl_fogImage;
 image_t	*gl_videoImage;
 image_t	*gl_reflImage;
 image_t	*gl_reflImage2;

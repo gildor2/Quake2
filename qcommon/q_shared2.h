@@ -115,7 +115,6 @@ typedef unsigned char		bool;			// C++ equalent
 
 #define	MAX_STRING_CHARS	1024	// max length of a string passed to Cmd_TokenizeString
 #define	MAX_STRING_TOKENS	80		// max tokens resulting from Cmd_TokenizeString
-#define	MAX_TOKEN_CHARS		128		// max length of an individual token
 
 #define	MAX_QPATH			64		// max length of a quake game pathname
 #define	MAX_OSPATH			128		// max length of a filesystem pathname
@@ -334,6 +333,7 @@ void COM_DefaultExtension (char *path, char *extension);
 char *COM_ParseExt (char **data_p, qboolean allowLineBreaks);
 //char *COM_Parse (char **data_p);
 #define COM_Parse(p)	COM_ParseExt(p,true)
+const char *COM_QuoteString (const char *str, bool alwaysQuote);
 // data is an in/out parm, returns a parsed out token
 void SkipBracedSection (char **program);
 void SkipRestOfLine (char **data);
@@ -1121,13 +1121,18 @@ enum
 	TE_RAILTRAIL_EXT = 128
 };
 
-#define SPLASH_UNKNOWN		0
-#define SPLASH_SPARKS		1
-#define SPLASH_BLUE_WATER	2
-#define SPLASH_BROWN_WATER	3
-#define SPLASH_SLIME		4
-#define	SPLASH_LAVA			5
-#define SPLASH_BLOOD		6
+enum {
+	SPLASH_UNKNOWN,
+	SPLASH_SPARKS,
+	SPLASH_BLUE_WATER,
+	SPLASH_BROWN_WATER,
+	SPLASH_SLIME,
+	SPLASH_LAVA,
+	SPLASH_BLOOD,
+	// extended protocol
+	SPLASH_BULLET_BLUE_WATER,
+	SPLASH_BULLET_BROWN_WATER
+};
 
 
 // sound channels

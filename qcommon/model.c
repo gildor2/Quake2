@@ -412,7 +412,7 @@ static void ErrMsg (char *str)
 }
 
 
-static qboolean ReadEntity (char **src)
+static bool ReadEntity (char **src)
 {
 	char	*tok;
 	entField_t *field;
@@ -546,7 +546,7 @@ static float *FindEntityTarget (char *name)
 
 
 // Returns "true" if entity should be passed to game
-static qboolean ProcessEntity ()
+static bool ProcessEntity ()
 {
 	entField_t *f;
 	qboolean haveOrigin, haveModel;
@@ -920,6 +920,23 @@ static qboolean ProcessEntity ()
 		// Voodoo fog params
 		RemoveField ("fogdensity2");
 		RemoveField ("fogval2");
+
+		return true;
+	}
+
+	/*---------------------------------------------*/
+
+	if (!strcmp (class, "target_splash"))
+	{
+		if (haveOrigin)
+		{
+			splash_t	*spl;
+			spl = AllocChainBlock (bspfile.extraChain, sizeof(splash_t));
+			spl->next = bspfile.splashes;
+			bspfile.splashes = spl;
+			VectorCopy (origin, spl->origin);
+			bspfile.numSplashes++;
+		}
 
 		return true;
 	}

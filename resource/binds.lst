@@ -3,7 +3,7 @@ weapnext "next weapon"
 weapprev "prev weapon"
 
 +forward "walk forward"
-+back backpedal
++back "walk backward"
 +moveleft "step left"
 +moveright "step right"
 +left "turn left"

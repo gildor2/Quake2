@@ -1,16 +1,10 @@
 - after timedemo in game (in demo too ...), can receive "server is out" state
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
-   but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
+   (saved without shot) but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?)
 ! sometimes key_up skipped (or key_down spontaneously pressed) (Win2K bug ?)
-- map "temple2", "lavatube" -- waterfall: bullet sounds (change sound for water sparks, change place for water bullet sounds
-  or something another ??)
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
-- position quantization errors (when FPS is large, i.e. 200; disappear when cl_maxfps=10 !!)
-  ?* crouched forvard/backward movement will be combined with side-move
-  ?* no ability to move when timescale=0.1
-  - map "countdown"; entity - "light_mine" - collision errors (bad pmove.c::SnapPosition())
 - notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move crouched)
 - Sys_Error(ERR_FATAL): sometimes not restore mouse (crush in "special place" ?)
 
@@ -28,8 +22,6 @@
 ? game crush in msvcrt.dll (pak loading/unloading/download breaking/map not found)
 ? crush on map change/game load (cl_predict, CM_TransformedPointContents2(); bad leaf pointer ?)
   (Anachronox: crush when door/elevator moving somewhere on level -- absolute pointers)
-
-- CapsLock displayed as an unknown key
 
 - z-buffer bugs with glass floor on omd_map1
 

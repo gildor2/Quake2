@@ -892,7 +892,7 @@ void Key_Console (int key)
 	}
 
 	KEY = toupper (key);
-	if (KEY == 'V' && keydown[K_CTRL] || key == K_INS && keydown[K_SHIFT])	// Ctrl-V or Shift-Ins
+	if (KEY == 'V' && CTRL_PRESSED || key == K_INS && SHIFT_PRESSED)	// Ctrl-V or Shift-Ins
 	{
 		char	*cbd;
 
@@ -915,7 +915,7 @@ void Key_Console (int key)
 		return;
 	}
 
-	if (KEY == 'L' && keydown[K_CTRL])		// Ctrl-L
+	if (KEY == 'L' && CTRL_PRESSED)		// Ctrl-L
 	{
 		Cbuf_AddText ("clear\n");
 		return;
@@ -976,7 +976,7 @@ void Key_Console (int key)
 	{
 		if (editPos <= 1) return;
 		i = editPos;
-		if (keydown[K_CTRL])
+		if (CTRL_PRESSED)
 		{
 			while (editPos > 1 && !iswordsym (editLine[--editPos]));
 			while (editPos > 0 && iswordsym (editLine[--editPos]));
@@ -992,7 +992,7 @@ void Key_Console (int key)
 
 	if (key == K_RIGHTARROW)
 	{
-		if (keydown[K_CTRL])
+		if (CTRL_PRESSED)
 		{
 			while (editLine[editPos] && iswordsym (editLine[editPos])) editPos++;
 			while (editLine[editPos] && !iswordsym (editLine[editPos])) editPos++;
@@ -1007,14 +1007,14 @@ void Key_Console (int key)
 		char	*s;
 
 		s = &editLine[editPos];
-		if (keydown[K_CTRL])
+		if (CTRL_PRESSED)
 			*s = 0;
 		else
 			strcpy (s, s + 1);
 		return;
 	}
 
-	if (key == K_UPARROW || (KEY == 'P' && keydown[K_CTRL]))
+	if (key == K_UPARROW || (KEY == 'P' && CTRL_PRESSED))
 	{
 		if (!historyLine) return;					// empty or top of history
 
@@ -1023,7 +1023,7 @@ void Key_Console (int key)
 		return;
 	}
 
-	if (key == K_DOWNARROW || (KEY == 'N' && keydown[K_CTRL]))
+	if (key == K_DOWNARROW || (KEY == 'N' && CTRL_PRESSED))
 	{
 		if (historyLine >= historyCount) return;	// bottom of history
 
@@ -1066,7 +1066,7 @@ void Key_Console (int key)
 
 	if (key == K_HOME)
 	{
-		if (keydown[K_CTRL])
+		if (CTRL_PRESSED)
 			con.display = con.current - con.totallines + 10;
 		else
 			editPos = 1;
@@ -1076,15 +1076,15 @@ void Key_Console (int key)
 
 	if (key == K_END)
 	{
-		if (keydown[K_CTRL])
+		if (CTRL_PRESSED)
 			con.display = con.current;
 		else
 			editPos = strlen (editLine);
 		return;
 	}
 
-	if (key < 32 || key > 127)
-		return;	// non printable
+	if (key < 32 || key >= 128)
+		return;		// non printable
 
 	if (editPos < MAXCMDLINE - 2)
 	{

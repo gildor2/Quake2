@@ -1239,7 +1239,7 @@ char *va (char *format, ...)
 }
 
 
-static char com_token[MAX_TOKEN_CHARS];
+static char com_token[MAX_STRING_CHARS];
 static int	com_lines;
 
 /*
@@ -1278,12 +1278,8 @@ char *COM_ParseExt (char **data_p, qboolean allowLineBreaks)
 	com_token[0] = 0;
 	hasNewLines = false;
 
-	// make sure incoming data is valid
-	if (!data)
-	{
-		*data_p = NULL;
-		return com_token;
-	}
+	if (!data)					// all data is out
+		return com_token;		// ""
 
 	while (1)
 	{
@@ -1328,24 +1324,31 @@ char *COM_ParseExt (char **data_p, qboolean allowLineBreaks)
 		while (1)
 		{
 			c = *data++;
+			if (c == '\"' && *data == '\"')
+			{
+				// doubled quotes
+				data++;				// skip both quotes
+				if (len < sizeof(com_token))
+					com_token[len++] = c;
+				continue;
+			}
+
 			if (c=='\"' || !c)
 			{
 				com_token[len] = 0;
 				*data_p = (char *) data;
 				return com_token;
 			}
-			if (len < MAX_TOKEN_CHARS)
-			{
-				com_token[len] = c;
-				len++;
-			}
+
+			if (len < sizeof(com_token))
+				com_token[len++] = c;
 		}
 	}
 
 	// parse a regular word
 	do
 	{
-		if (len < MAX_TOKEN_CHARS)
+		if (len < sizeof(com_token))
 		{
 			com_token[len] = c;
 			len++;
@@ -1356,9 +1359,9 @@ char *COM_ParseExt (char **data_p, qboolean allowLineBreaks)
 			com_lines++;
 	} while (c > 32);
 
-	if (len == MAX_TOKEN_CHARS)
+	if (len == sizeof(com_token))
 	{
-//		Com_WPrintf ("Token exceeded %i chars, discarded.\n", MAX_TOKEN_CHARS);
+//		Com_WPrintf ("Token exceeded %i chars, discarded.\n", sizeof(com_token));
 		len = 0;
 	}
 	com_token[len] = 0;
@@ -1373,6 +1376,34 @@ char *COM_Parse (char **data_p)
 	return COM_ParseExt (data_p, true);
 }
 */
+
+const char *COM_QuoteString (const char *str, bool alwaysQuote)
+{
+	char	*dst, c;
+
+	if (!alwaysQuote)
+	{
+		const char *s;
+
+		s = str;
+		while (c = *s++)
+			if (c == ' ' || c == '\"' || c == ';') break;
+		if (!c) return str;				// line have no chars, which requires quoting
+	}
+
+	dst = com_token;
+	*dst++ = '\"';
+	while (c = *str++)
+	{
+		*dst++ = c;
+		if (c == '\"') *dst++ = c;
+	}
+	*dst++ = '\"';
+	*dst = 0;
+
+	return com_token;
+}
+
 
 /*
 =================

@@ -222,7 +222,7 @@ typedef enum {
 	dl_single
 } dltype_t;						// download type
 
-typedef enum {key_game, key_console, key_message, key_menu, key_forcemenu} keydest_t;
+typedef enum {key_game, key_console, key_message, key_menu, key_bindingMenu} keydest_t;
 
 typedef struct
 {
@@ -519,9 +519,6 @@ void CL_WriteToServer (usercmd_t *cmd);
 void CL_BaseMove (usercmd_t *cmd);
 
 void IN_CenterView (void);
-
-float CL_KeyState (kbutton_t *key);
-char *Key_KeynumToString (int keynum);
 
 //
 // cl_demo.c

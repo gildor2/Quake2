@@ -889,6 +889,7 @@ static client_t *FindClient (vec3_t origin, float maxDist2)
 	float	dist2;
 	int		i;
 
+//	Com_Printf("find for %g %g %g dist=%g\n",VECTOR_ARG(origin),maxDist2);
 	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 	{
 		ent = cl->edict;
@@ -896,12 +897,18 @@ static client_t *FindClient (vec3_t origin, float maxDist2)
 		if (cl->state != cs_spawned && cl->state != cs_connected)
 			continue;
 
+//		Com_Printf("? %s");
 		pm_origin[0] = pm->origin[0] / 8.0f;
 		pm_origin[1] = pm->origin[1] / 8.0f;
 		pm_origin[2] = pm->origin[2] / 8.0f;
 		VectorSubtract (origin, pm_origin, delta);
 		dist2 = DotProduct (delta, delta);
-		if (dist2 > maxDist2) continue;
+		if (dist2 > maxDist2)
+		{
+//			Com_Printf(" far: %g\n", dist2);
+			continue;
+		}
+//		Com_Printf(" + %g\n", dist2);
 		return cl;
 	}
 
@@ -933,7 +940,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 			MSG_ReadPos (original, v1);		// start
 			MSG_ReadPos (original, v2);		// end
 
-			cl = FindClient (v1, 16*16);
+			cl = FindClient (v1, 18*18);
 			rType = 1;
 			rColor = 0;
 			if (cl)
@@ -988,7 +995,35 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 		}
 		return ext;
 
-//	case TE_SPLASH:		?? replace with TE_WATER_SPLASH (?) when shotLevel>0
+	case TE_SPLASH:
+		{
+			int		i, count, type;
+			splash_t *spl;
+
+			count = MSG_ReadByte (original);
+			MSG_ReadPos (original, v1);		// pos
+			MSG_ReadDir (original, v2);		// dir
+			type = MSG_ReadByte (original);
+			if (type != SPLASH_BLUE_WATER && type != SPLASH_BROWN_WATER)
+				return original;			// not bullet effect
+
+			// find splash origin in static map splashes to avoid bullethit sounds for waterfalls etc.
+			for (i = 0, spl = map_bspfile->splashes; i < map_bspfile->numSplashes; i++, spl = spl->next)
+			{
+				//?? may be, compare with quantized spl->origin ?
+				if (spl->origin[0] == v1[0] && spl->origin[1] == v1[1] && spl->origin[2] == v1[2])
+					return original;
+			}
+
+			//?? can add ripple effect on water, water smoke
+			MSG_WriteByte (ext, svc_temp_entity);
+			MSG_WriteByte (ext, TE_SPLASH);
+			MSG_WriteByte (ext, count);
+			MSG_WritePos (ext, v1);
+			MSG_WriteDir (ext, v2);
+			MSG_WriteByte (ext, type - SPLASH_BLUE_WATER + SPLASH_BULLET_BLUE_WATER);
+		}
+		return ext;
 	}
 
 	return original;

@@ -2,48 +2,37 @@
 #define __KEYS_INCULDED__
 
 
+// Single keys: 32..127 -- printable keys (lowercased), 128..255 -- known other keys, 256..511 -- unknown (non-standard) keys
 #define NUM_KEYS		512
 
-// 32..127 -- printable keys, 128..255 -- known other keys, 256..511 -- unknown (non-standard) keys
 enum {
+	K_LEFTARROW = 1, K_UPARROW, K_RIGHTARROW, K_DOWNARROW,
+	K_BACKSPACE = 8,
 	K_TAB		= 9,
-	K_ENTER		= 13,
-	K_ESCAPE	= 27,
+	K_ENTER		= 0x0D,
+	K_ESCAPE	= 0x1B,
 	K_SPACE		= 32,
-	// normal keys should be passed as lowercased ascii
 
-	K_BACKSPACE	= 128,
-	K_UPARROW, K_DOWNARROW, K_LEFTARROW, K_RIGHTARROW,
+	// shift modifiers
+	K_ALT = 128, K_RALT, K_CTRL, K_RCTRL, K_SHIFT,
 
-	K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_F7, K_F8, K_F9, K_F10, K_F11, K_F12,
-	K_F13, K_F14, K_F15, K_F16, K_F17, K_F18, K_F19, K_F20, K_F21, K_F22, K_F23, K_F24,
-	K_ALT, K_CTRL, K_SHIFT,
-	K_INS, K_DEL,
-	K_PGDN, K_PGUP, K_HOME, K_END,
+	K_INS, K_DEL, K_HOME, K_END, K_PGUP, K_PGDN,
 
 	// keypad
-	K_KP_HOME,
-	K_KP_UPARROW,
-	K_KP_PGUP,
-	K_KP_LEFTARROW,
-	K_KP_5,
-	K_KP_RIGHTARROW,
-	K_KP_END,
-	K_KP_DOWNARROW,
-	K_KP_PGDN,
-	K_KP_ENTER,
-	K_KP_INS,
-	K_KP_DEL,
-	K_KP_SLASH,
-	K_KP_MINUS,
-	K_KP_PLUS,
+	K_KP_HOME,	K_KP_UPARROW,	K_KP_PGUP,
+	K_KP_LEFTARROW,	K_KP_5,	K_KP_RIGHTARROW,
+	K_KP_END,	K_KP_DOWNARROW,	K_KP_PGDN,
+	K_KP_INS,	K_KP_DEL,
+	K_KP_SLASH,	K_KP_MINUS,
+	K_KP_PLUS,	K_KP_ENTER,
 
 	// mouse buttons
-	K_MOUSE1,
-	K_MOUSE2,
-	K_MOUSE3,
-	K_MWHEELDOWN,
-	K_MWHEELUP,
+	K_MOUSE1,	K_MOUSE2,	K_MOUSE3,
+	K_MWHEELDOWN,	K_MWHEELUP,
+
+	// functional keys
+	K_F1, K_F2, K_F3, K_F4, K_F5, K_F6, K_F7, K_F8, K_F9, K_F10, K_F11, K_F12,
+	K_F13, K_F14, K_F15, K_F16, K_F17, K_F18, K_F19, K_F20, K_F21, K_F22, K_F23, K_F24,
 
 	// joystick buttons
 	K_JOY1, K_JOY2, K_JOY3, K_JOY4,
@@ -61,21 +50,31 @@ enum {
 	K_SCRLOCK,
 	K_PRINTSCRN,
 	K_PAUSE
+	// should not be greater than 255
 };
 
+// keys with code >= FIRST_NONCONSOLE_KEY will not be sent to console
+#define FIRST_NONCONSOLE_KEY	K_F1
 
-extern char		*keybindings[NUM_KEYS];
-extern byte		keydown[NUM_KEYS];
-extern int		key_repeats[NUM_KEYS];
 
-extern int		anykeydown;
+#define CTRL_PRESSED	(keydown[K_CTRL]||keydown[K_RCTRL])
+#define ALT_PRESSED		(keydown[K_ALT]||keydown[K_RALT])
+#define SHIFT_PRESSED	(keydown[K_SHIFT])
 
-void Key_Event (int key, qboolean down, unsigned time);
-void Key_Init (void);
-void Key_WriteBindings (FILE *f);
+
+extern bool		keydown[NUM_KEYS];			// exported for [CTRL|ALT|SHIFT]_PRESSED only
+extern int		keysDown;					// number of holded keys
+
+char *Key_KeynumToString (int keynum);
+
 void Key_SetBinding (int keynum, char *binding);
+int Key_FindBinding (const char *str, int *keys, int maxKeys);
+void Key_WriteBindings (FILE *f);
+
+void Key_Init (void);
+void Key_Event (int key, qboolean down, unsigned time);
 void Key_ClearStates (void);
-void Key_ClearTyping (void);
+void Key_ClearTyping (void);				//?? move to console
 
 #define		MAXCMDLINE	256
 extern char		editLine[MAXCMDLINE];

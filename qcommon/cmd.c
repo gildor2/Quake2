@@ -1,24 +1,3 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-// cmd.c -- Quake script command processing module
-
 #include "qcommon.h"
 
 void Cmd_ForwardToServer (void);
@@ -317,7 +296,7 @@ void Cmd_Alias_f (void)
 
 	if (Cmd_Argc() == 2)
 	{
-		Com_Printf ("Usage: alias <name> <value>\n");
+		Com_Printf ("Usage: alias [<name> <value>]\n");
 		return;
 	}
 
@@ -400,7 +379,7 @@ void Cmd_WriteAliases (FILE *f)
 	cmdAlias_t *alias;
 
 	for (alias = cmdAlias; alias; alias = alias->next)
-		fprintf (f, "alias %s \"%s\"\n", alias->name, alias->value);
+		fprintf (f, "alias %s %s\n", alias->name, COM_QuoteString (alias->value, true));
 }
 
 
@@ -458,56 +437,51 @@ Cmd_MacroExpandString
 */
 static char *Cmd_MacroExpandString (char *text)
 {
-	int		i, j, count, len;
+	int		count, len;
 	int		quotes;
-	char	*scan;
-	static	char	expanded[MAX_STRING_CHARS];
-	char	temporary[MAX_STRING_CHARS];
-	char	*token, *start;
+	char	*s;
+	static char	buf[MAX_STRING_CHARS];			// will contain result
 
-	quotes = 0;
-	scan = text;
-
-	len = strlen (scan);
-	if (len >= MAX_STRING_CHARS)
+	len = strlen (text);
+	if (len >= sizeof(buf))
 	{
-		Com_WPrintf ("Line exceeded %d chars, discarded\n", MAX_STRING_CHARS);
+		Com_WPrintf ("Line exceeded %d chars, discarded\n", sizeof(buf));
 		return NULL;
 	}
 
-	count = 0;
+	count = 0;									// to prevent infinite recurse
+	quotes = 0;
+	memcpy (buf, text, len+1);					// strcpy
 
-	for (i = 0; i < len; i++)
+	for (s = buf; *s; s++)
 	{
-		if (scan[i] == '"')
-			quotes ^= 1;
-		if (quotes)
-			continue;	// don't expand inside quotes
-		if (scan[i] != '$')
-			continue;
+		char	*data, *token;
+		char	tmp[MAX_STRING_CHARS];
+		int		varLen;
+
+		if (*s == '"') quotes ^= 1;
+		if (quotes) continue;					// don't expand inside quotes
+		if (*s != '$') continue;
+
 		// scan out the complete macro
-		start = scan+i+1;
-		token = COM_Parse (&start);
-		if (!start)
-			continue;
+		data = s + 1;							// $varname -> varname
+		token = COM_Parse (&data);
+		if (!data) continue;					// null token
 
 		token = Cvar_VariableString (token);
+		varLen = strlen (token);
 
-		j = strlen (token);
-		len += j;
-		if (len >= MAX_STRING_CHARS)
+		len = len - (data - s) + varLen;		// update length for overflow checking
+		if (len >= sizeof(buf))
 		{
-			Com_WPrintf ("Expanded line exceeded %d chars, discarded\n", MAX_STRING_CHARS);
+			Com_WPrintf ("Expanded line exceeded %d chars, discarded\n", sizeof(buf));
 			return NULL;
 		}
 
-		strncpy (temporary, scan, i);
-		strcpy (temporary+i, token);
-		strcpy (temporary+i+j, start);
-
-		strcpy (expanded, temporary);
-		scan = expanded;
-		i--;
+		strcpy (tmp, data);						// save tail
+		memcpy (s, token, varLen);				// strcpy
+		strcpy (s + varLen, tmp);				// append tail
+		s--;									// continue from the same position
 
 		if (++count == MACRO_LOOP_COUNT)
 		{
@@ -519,10 +493,12 @@ static char *Cmd_MacroExpandString (char *text)
 	if (quotes)
 	{
 		Com_WPrintf ("Line has unmatched quote, discarded.\n");
+		if (cmd_debug->integer)
+			Com_Printf ("bad str: <%s> -> <%s>\n", text, buf);
 		return NULL;
 	}
 
-	return scan;
+	return buf;
 }
 
 
@@ -731,7 +707,7 @@ Cmd_List_f
 static void Cmd_List_f (void)
 {
 	cmdFunc_t *cmd;
-	int		i;
+	int		num;
 	char	*mask;
 
 	if (Cmd_Argc () > 2)
@@ -745,14 +721,14 @@ static void Cmd_List_f (void)
 	else
 		mask = NULL;
 
-	i = 0;
+	num = 0;
 	for (cmd = cmdFuncs; cmd; cmd = cmd->next)
 	{
 		if (mask && !MatchWildcard2 (cmd->name, mask, true)) continue;
-		i++;
+		num++;
 		Com_Printf ("%s\n", cmd->name);
 	}
-	Com_Printf ("%d commands\n", i);
+	Com_Printf ("%d commands\n", num);
 }
 
 /*

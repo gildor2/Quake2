@@ -62,15 +62,11 @@ CL_DrawInventory
 
 void CL_DrawInventory (void)
 {
-	int		i, j;
-	int		num, selected_num, item;
+	int		i, num, selected_num, item;
 	int		index[MAX_ITEMS];
 	char	string[1024];
 	int		x, y;
-	char	binding[1024];
-	char	*bind;
-	int		selected;
-	int		top;
+	int		selected, top;
 
 	selected = cl.frame.playerstate.stats[STAT_SELECTED_ITEM];
 
@@ -106,18 +102,17 @@ void CL_DrawInventory (void)
 	y += 16;
 	for (i=top ; i<num && i < top+DISPLAY_ITEMS ; i++)
 	{
-		item = index[i];
-		// search for a binding
-		Com_sprintf (ARRAY_ARG(binding), "use %s", cl.configstrings[CS_ITEMS+item]);
-		bind = "";
-		for (j = 0; j < NUM_KEYS; j++)
-			if (keybindings[j] && !Q_stricmp (keybindings[j], binding))
-			{
-				bind = Key_KeynumToString (j);
-				break;
-			}
+		int		key;
+		char	binding[256], *keyName;
 
-		Com_sprintf (ARRAY_ARG(string), "%6s %3i %s", bind, cl.inventory[item], cl.configstrings[CS_ITEMS+item]);
+		item = index[i];
+		Com_sprintf (ARRAY_ARG(binding), "use %s", cl.configstrings[CS_ITEMS+item]);
+		if (Key_FindBinding (binding, &key, 1))
+			keyName = Key_KeynumToString (key);
+		else
+			keyName = "";
+
+		Com_sprintf (ARRAY_ARG(string), "%6s %3i %s", keyName, cl.inventory[item], cl.configstrings[CS_ITEMS+item]);
 		if (item == selected)
 			re_DrawChar (x-8, y, 13);	//?? original: 15 (but not displayed) anyway
 

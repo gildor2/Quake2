@@ -121,7 +121,7 @@ static void KeyUp (kbutton_t *b)
 	else if (b->down[1] == k)
 		b->down[1] = 0;
 	else
-		return;					// key up without coresponding down (menu pass through)
+		return;					// key up without corresponding down (menu pass through)
 	if (b->down[0] || b->down[1])
 		return;					// some other key is still holding it down
 
@@ -159,12 +159,12 @@ static void IN_##name##Down (void) { KeyDown(&in_##name); }
 
 /*
 ===============
-CL_KeyState
+KeyState
 
 Returns the fraction of the frame that the key was down
 ===============
 */
-static float CL_KeyState (kbutton_t *key)
+static float KeyState (kbutton_t *key)
 {
 	float		val;
 	int			msec;
@@ -222,17 +222,17 @@ static void AdjustAngles (void)
 
 	if (!(in_Strafe.state & 1))
 	{
-		cl.viewangles[YAW] -= speed * cl_yawspeed->value * CL_KeyState (&in_Right);
-		cl.viewangles[YAW] += speed * cl_yawspeed->value * CL_KeyState (&in_Left);
+		cl.viewangles[YAW] -= speed * cl_yawspeed->value * KeyState (&in_Right);
+		cl.viewangles[YAW] += speed * cl_yawspeed->value * KeyState (&in_Left);
 	}
 	if (in_KLook.state & 1)
 	{
-		cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * CL_KeyState (&in_Forward);
-		cl.viewangles[PITCH] += speed * cl_pitchspeed->value * CL_KeyState (&in_Back);
+		cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * KeyState (&in_Forward);
+		cl.viewangles[PITCH] += speed * cl_pitchspeed->value * KeyState (&in_Back);
 	}
 
-	up = CL_KeyState (&in_Lookup);
-	down = CL_KeyState(&in_Lookdown);
+	up = KeyState (&in_Lookup);
+	down = KeyState(&in_Lookdown);
 
 	cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * up;
 	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * down;
@@ -257,20 +257,20 @@ static void BaseMove (usercmd_t *cmd)
 	cmd->angles[2] = Q_round (cl.viewangles[2]);
 	if (in_Strafe.state & 1)
 	{
-		cmd->sidemove += Q_round (cl_sidespeed->value * CL_KeyState (&in_Right));
-		cmd->sidemove -= Q_round (cl_sidespeed->value * CL_KeyState (&in_Left));
+		cmd->sidemove += Q_round (cl_sidespeed->value * KeyState (&in_Right));
+		cmd->sidemove -= Q_round (cl_sidespeed->value * KeyState (&in_Left));
 	}
 
-	cmd->sidemove += Q_round (cl_sidespeed->value * CL_KeyState (&in_Moveright));
-	cmd->sidemove -= Q_round (cl_sidespeed->value * CL_KeyState (&in_Moveleft));
+	cmd->sidemove += Q_round (cl_sidespeed->value * KeyState (&in_Moveright));
+	cmd->sidemove -= Q_round (cl_sidespeed->value * KeyState (&in_Moveleft));
 
-	cmd->upmove += Q_round (cl_upspeed->value * CL_KeyState (&in_Up));
-	cmd->upmove -= Q_round (cl_upspeed->value * CL_KeyState (&in_Down));
+	cmd->upmove += Q_round (cl_upspeed->value * KeyState (&in_Up));
+	cmd->upmove -= Q_round (cl_upspeed->value * KeyState (&in_Down));
 
 	if (! (in_KLook.state & 1) )
 	{
-		cmd->forwardmove += Q_round (cl_forwardspeed->value * CL_KeyState (&in_Forward));
-		cmd->forwardmove -= Q_round (cl_forwardspeed->value * CL_KeyState (&in_Back));
+		cmd->forwardmove += Q_round (cl_forwardspeed->value * KeyState (&in_Forward));
+		cmd->forwardmove -= Q_round (cl_forwardspeed->value * KeyState (&in_Back));
 	}
 
 	// adjust for speed key / running
@@ -314,7 +314,7 @@ static void FinishMove (usercmd_t *cmd)
 		cmd->buttons |= BUTTON_USE;
 	in_Use.state &= ~2;
 
-	if (anykeydown && cls.key_dest == key_game)
+	if (keysDown && cls.key_dest == key_game)
 		cmd->buttons |= BUTTON_ANY;
 
 	// send milliseconds of time to apply the move
@@ -343,10 +343,9 @@ static void CreateCmd (usercmd_t *cmd)
 	frame_msec = sys_frame_time - old_sys_frame_time;
 	frame_msec = bound(frame_msec, 1, 200);
 
-	// get basic movement from keyboard
+	// keyboard movement
 	BaseMove (cmd);
-
-	// allow mice or other external controllers to add to the move
+	// mouse and joystick movement
 	IN_Move (cmd);
 
 	FinishMove (cmd);
@@ -367,7 +366,7 @@ static void IN_Lookdown (void)
 {
 	if (Cmd_Argc () != 2)
 	{
-		Com_Printf ("Usage: lookdown <angle>");
+		Com_Printf ("Usage: lookdown <angle>\n");
 		return;
 	}
 	cl.viewangles[PITCH] += atof (Cmd_Argv(1));
@@ -378,7 +377,7 @@ static void IN_Lookup (void)		// can be used "lookdown -angle" instead
 {
 	if (Cmd_Argc () != 2)
 	{
-		Com_Printf ("Usage: lookup <angle>");
+		Com_Printf ("Usage: lookup <angle>\n");
 		return;
 	}
 	cl.viewangles[PITCH] -= atof (Cmd_Argv(1));
@@ -392,20 +391,20 @@ CL_InitInput
 */
 void CL_InitInput (void)
 {
-	Cmd_AddCommand ("centerview",IN_CenterView);
+	Cmd_AddCommand ("centerview", IN_CenterView);
 
-	Cmd_AddCommand ("+moveup",IN_UpDown);
-	Cmd_AddCommand ("-moveup",IN_UpUp);
-	Cmd_AddCommand ("+movedown",IN_DownDown);
-	Cmd_AddCommand ("-movedown",IN_DownUp);
-	Cmd_AddCommand ("+left",IN_LeftDown);
-	Cmd_AddCommand ("-left",IN_LeftUp);
-	Cmd_AddCommand ("+right",IN_RightDown);
-	Cmd_AddCommand ("-right",IN_RightUp);
-	Cmd_AddCommand ("+forward",IN_ForwardDown);
-	Cmd_AddCommand ("-forward",IN_ForwardUp);
-	Cmd_AddCommand ("+back",IN_BackDown);
-	Cmd_AddCommand ("-back",IN_BackUp);
+	Cmd_AddCommand ("+moveup", IN_UpDown);
+	Cmd_AddCommand ("-moveup", IN_UpUp);
+	Cmd_AddCommand ("+movedown", IN_DownDown);
+	Cmd_AddCommand ("-movedown", IN_DownUp);
+	Cmd_AddCommand ("+left", IN_LeftDown);
+	Cmd_AddCommand ("-left", IN_LeftUp);
+	Cmd_AddCommand ("+right", IN_RightDown);
+	Cmd_AddCommand ("-right", IN_RightUp);
+	Cmd_AddCommand ("+forward", IN_ForwardDown);
+	Cmd_AddCommand ("-forward", IN_ForwardUp);
+	Cmd_AddCommand ("+back", IN_BackDown);
+	Cmd_AddCommand ("-back", IN_BackUp);
 	Cmd_AddCommand ("+lookup", IN_LookupDown);
 	Cmd_AddCommand ("-lookup", IN_LookupUp);
 	Cmd_AddCommand ("+lookdown", IN_LookdownDown);

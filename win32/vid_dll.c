@@ -141,7 +141,7 @@ static byte vkToKey[256] = {
 /*88*/		UNK,		UNK,		UNK,		UNK,		UNK,		UNK,		UNK,		UNK,
 /*90*/		K_NUMLOCK,	K_SCRLOCK,	UNK,		UNK,		UNK,		UNK,		UNK,		UNK,
 /*98*/		UNK,		UNK,		UNK,		UNK,		UNK,		UNK,		UNK,		UNK,
-/*A0*/		K_SHIFT,	K_SHIFT,	K_CTRL,		K_CTRL,		UNK,		UNK,		UNK,		UNK,
+/*A0*/		K_SHIFT,	K_SHIFT,	K_CTRL,		K_CTRL,		K_ALT,		K_ALT,		UNK,		UNK,
 /*A8*/		UNK,		UNK,		UNK,		UNK,		UNK,		UNK,		UNK,		UNK,
 /*B0*/		UNK,		UNK,		UNK,		UNK,		UNK,		UNK,		UNK,		UNK,
 /*B8*/		UNK,		UNK,		';',		'=',		',',		'-',		'.',		'/',
@@ -182,7 +182,8 @@ static int MapKey (int vkCode, qboolean extended)
 		switch (vkCode)
 		{
 		case VK_RETURN:	return K_KP_ENTER;
-		// here can be right-Ctrl/Alt
+		case VK_CONTROL:return K_RCTRL;
+		case VK_MENU:	return K_RALT;
 		}
 	}
 	key = vkToKey[vkCode];

@@ -241,13 +241,15 @@ void SV_LinkEdict (edict_t *ent)
 	{
 		// assume that x/y are equal and symetric
 		i = Q_round (ent->maxs[0] / 8);
-		i = bound(i, 1, 31);
 		// z is not symetric
 		j = Q_round (-ent->mins[2] / 8);
-		j = bound(j, 1, 31);
 		// and z maxs can be negative...
 		k = Q_round ((ent->maxs[2] + 32) / 8);
-		k = bound(k, 1, 63);
+		// original Q2 have bounded i/j/k/ with lower margin==1 (for client prediction only); this will
+		// produce incorrect collision test when bbox mins/maxs is (0,0,0)
+		i = bound(i, 0, 31);		// mins/maxs[0,1] range is -248..0/0..248
+		j = bound(j, 0, 31);		// mins[2] range is [-248..0]
+		k = bound(k, 0, 63);		// maxs[2] range is [-32..472]
 
 		// if SVF_DEADMONSTER, s.solid should be 0
 		ent->s.solid = (ent->svflags & SVF_DEADMONSTER) ? 0 : (k<<10) | (j<<5) | i;
@@ -260,7 +262,7 @@ void SV_LinkEdict (edict_t *ent)
 		VectorAdd (ex->maxs, ex->mins, v);
 		VectorMA (ent->s.origin, 0.5f, v, ex->center);
 		ex->model = NULL;
-		ex->radius = VectorDistance (ex->maxs, ex->center);
+		ex->radius = VectorDistance (ex->maxs, ex->mins) / 2;
 	}
 	else if (ent->solid == SOLID_BSP)
 	{
@@ -273,7 +275,7 @@ void SV_LinkEdict (edict_t *ent)
 		VectorMA (tmp, v[2], ex->axis[2], ex->center);
 		ex->radius = ex->model->radius;
 
-		ent->s.solid = 31;		// a solid_bbox will never create this value
+		ent->s.solid = 31;		// a SOLID_BBOX will never create this value (mins=(-248,-248,0) maxs=(248,248,-32))
 	}
 	else
 		ent->s.solid = 0;
@@ -543,6 +545,8 @@ void SV_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs,
 	float	t, traceLen, traceWidth, b1, b2;
 	vec3_t	amins, amaxs, traceDir;
 
+	if (tr->allsolid) return;
+
 	for (i = 0; i < 3; i++)
 	{
 		if (start[i] < end[i])
@@ -561,7 +565,7 @@ void SV_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs,
 
 	b1 = DotProduct (mins, mins);
 	b2 = DotProduct (maxs, maxs);
-	t = b1 > b2 ? b1 : b2;
+	t = max(b1, b2);
 	traceWidth = SQRTFAST(t);
 	VectorSubtract (end, start, traceDir);
 	traceLen = VectorNormalize (traceDir) + traceWidth;

@@ -927,6 +927,14 @@ typedef struct slight_s
 	struct slight_s *next;
 } slight_t;
 
+// static map effects
+
+typedef struct splash_s
+{
+	vec3_t	origin;
+	struct splash_s *next;
+} splash_t;
+
 
 typedef enum {map_q2, map_kp, map_hl} mapType_t;
 typedef enum {fog_no, fog_linear, fog_exp, fog_exp2} fogMode_t;
@@ -941,29 +949,23 @@ typedef struct
 	int			length;
 	void		*extraChain;
 
+	// entstring
 	int			entDataSize;
 	byte		*entities;
 
+	// geometry
 	int			numPlanes;
 	dplane_t	*planes;
 
 	int			numVertexes;
 	dvertex_t	*vertexes;
 
+	// BSP
 	int			visDataSize;
 	dvis_t		*visibility;
 
 	int			numNodes;
 	dnode_t		*nodes;
-
-	int			numTexinfo;
-	texinfo_t	*texinfo;
-
-	int			numFaces;
-	dface_t		*faces;
-
-	int			lightDataSize;
-	byte		*lighting;
 
 	int			numLeafs;
 	dleaf_t		*leafs;
@@ -980,9 +982,6 @@ typedef struct
 	int			numSurfedges;
 	int			*surfedges;
 
-	int			numModels;
-	cmodel_t	*models;
-
 	int			numBrushes;
 	dbrush_t	*brushes;
 
@@ -995,12 +994,31 @@ typedef struct
 	int			numAreaportals;
 	dareaportal_t *areaportals;
 
+	int			numModels;
+	cmodel_t	*models;
+
+	// faces
+	int			numTexinfo;
+	texinfo_t	*texinfo;
+
+	int			numFaces;
+	dface_t		*faces;
+
+	// lighting
+	int			lightDataSize;
+	byte		*lighting;
+
 	int			numFlares;
 	lightFlare_t *flares;
 
 	int			numSlights;
 	slight_t	*slights;
 
+	// static effects
+	int			numSplashes;			// target_splash entities
+	splash_t	*splashes;
+
+	// fog
 	//?? remove
 	fogMode_t	fogMode;
 	float		fogColor[3];
@@ -1021,6 +1039,8 @@ typedef struct
 	vec3_t	sunSurface;
 	vec3_t	ambientLight;	// global ambient light
 } bspfile_t;
+
+extern bspfile_t *map_bspfile;
 
 
 //--bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum);
