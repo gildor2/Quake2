@@ -138,7 +138,7 @@ static void Field_Draw (menuField_t *f)
 	}
 }
 
-bool Field_Key (menuField_t *f, int key)
+static bool Field_Key (menuField_t *f, int key)
 {
 	// numpad keys -> ASCII
 	static const char *kpString = KEYPAD_STRING;
@@ -284,6 +284,8 @@ void menuFramework_t::AdjustCursor (int dir)
 {
 	menuCommon_t *citem;
 
+	if (!nitems) return;
+
 	/* it's not in a valid spot, so crawl in the direction indicated until we
 	 * find a valid spot
 	 */
@@ -294,7 +296,8 @@ void menuFramework_t::AdjustCursor (int dir)
 			citem = ItemAtCursor ();
 			if (citem && citem->type != MTYPE_SEPARATOR)
 				break;
-			if (++cursor >= nitems)
+			cursor += dir;		// may be changed
+			if (cursor >= nitems)
 				// cursor = 0; -- will wrap cursor
 				dir = -1;
 		}
@@ -306,7 +309,8 @@ void menuFramework_t::AdjustCursor (int dir)
 			citem = ItemAtCursor ();
 			if (citem && citem->type != MTYPE_SEPARATOR)
 				break;
-			if (--cursor < 0)
+			cursor += dir;
+			if (cursor < 0)
 				// cursor = nitems - 1; -- will wrap cursor
 				dir = 1;
 		}
@@ -339,6 +343,14 @@ void menuFramework_t::Draw ()
 {
 	int		i, vis;
 	menuCommon_t *item;
+
+	/*------- draw banner ---------*/
+	if (banner)
+	{
+		int w, h;
+		re.DrawGetPicSize (&w, &h, banner);
+		re.DrawPic ((viddef.width - w) / 2, viddef.height / 2 - 110, banner);
+	}
 
 	/*------- draw contents -------*/
 	vis = -1;
@@ -501,15 +513,12 @@ static void MenuList_Draw (menuList_t *l)
 
 	DrawCaption (l);
 	n = l->itemnames;
-  	re.DrawFill (l->x - 112 + l->parent->x, l->parent->y + l->y + l->curvalue*10 + 10,
-  		128, CHAR_HEIGHT+2, 16);
+  	re.DrawFill (l->x - 112 + l->parent->x, l->parent->y + l->y + l->curvalue*10 + 10, 128, CHAR_HEIGHT+2, 16);
 
 	int y = 0;
 	while (*n)
 	{
-		Menu_DrawStringR2L (l->x + l->parent->x + LCOLUMN_OFFSET, l->y + l->parent->y + y + CHAR_HEIGHT+2,
-			va(S_GREEN"%s", *n));
-
+		Menu_DrawStringR2L (l->x + l->parent->x + LCOLUMN_OFFSET, l->y + l->parent->y + y + CHAR_HEIGHT+2, va(S_GREEN"%s", *n));
 		n++;
 		y += CHAR_HEIGHT + 2;
 	}
@@ -650,4 +659,163 @@ static void SpinControl2_Draw (menuList2_t *s)
 		DrawString (RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y, buffer);
 		DrawString (RCOLUMN_OFFSET + s->x + s->parent->x, s->y + s->parent->y + 10, newline+1);
 	}
+}
+
+
+//-----------------------------------------------------------------------------
+
+#define	MAX_MENU_DEPTH	16
+static menuFramework_t *m_layers[MAX_MENU_DEPTH];
+
+menuFramework_t *m_current;
+static int		m_menudepth;
+
+void menuFramework_t::Push ()
+{
+	if (*re.flags & REF_CONSOLE_ONLY) return;	// no menus in this mode
+
+	if (!m_current) CL_Pause (true);
+
+	// if this menu is already present, drop back to that level
+	// to avoid stacking menus by hotkeys
+	int i;
+	for (i = 0; i < m_menudepth; i++)
+		if (m_layers[i] == this)
+		{
+			m_menudepth = i++;	//!! if we use dynamic menus - need to free i+1..m_menudepth (check all m_menudepth changes !!)
+			//?? add SetMenuDepth() function?
+			break;
+		}
+
+	if (i == m_menudepth)
+	{	// menu was not pushed
+		if (m_menudepth >= MAX_MENU_DEPTH)
+			Com_FatalError ("M_PushMenu: MAX_MENU_DEPTH");
+		if (!Init ()) return;
+		m_layers[m_menudepth++] = this;
+	}
+	m_current = this;
+	AdjustCursor (1);
+	cls.key_dest = key_menu;
+}
+
+void M_ForceMenuOff (void)
+{
+	m_current = NULL;
+	cls.key_dest = key_game;
+	m_menudepth = 0;
+	Key_ClearStates ();
+	CL_Pause (false);
+}
+
+void menuFramework_t::Pop ()
+{
+	S_StartLocalSound (menu_out_sound);
+	if (m_menudepth < 1)
+		Com_FatalError ("M_PopMenu: depth < 1");
+
+	m_menudepth--;
+	if (m_menudepth)
+		m_current = m_layers[m_menudepth-1];
+	else
+		M_ForceMenuOff ();
+}
+
+
+const char *menuFramework_t::KeyDown (int key)
+{
+	const char *sound = NULL;
+
+	menuCommon_t *item;
+	if ((item = ItemAtCursor ()) && item->type == MTYPE_FIELD && Field_Key ((menuField_t*) item, key))
+		return NULL;
+
+	switch (key)
+	{
+	case K_ESCAPE:
+	case K_MOUSE2:
+		Pop ();
+		return menu_out_sound;
+	case K_KP_UPARROW:
+	case K_UPARROW:
+	case K_MWHEELUP:
+		cursor--;
+		AdjustCursor (-1);
+		sound = menu_move_sound;
+		break;
+	case K_KP_DOWNARROW:
+	case K_DOWNARROW:
+	case K_MWHEELDOWN:
+		cursor++;
+		AdjustCursor (1);
+		sound = menu_move_sound;
+		break;
+	case K_KP_LEFTARROW:
+	case K_LEFTARROW:
+		SlideItem (-1);
+		sound = menu_move_sound;
+		break;
+	case K_KP_RIGHTARROW:
+	case K_RIGHTARROW:
+		SlideItem (1);
+		sound = menu_move_sound;
+		break;
+	case K_HOME:
+		cursor = 0;
+		AdjustCursor (1);
+		sound = menu_move_sound;
+		break;
+	case K_END:
+		cursor = nitems - 1;
+		AdjustCursor (-1);
+		sound = menu_move_sound;
+		break;
+
+	case K_MOUSE1:
+	case K_KP_ENTER:
+	case K_ENTER:
+		SelectItem ();
+		sound = menu_move_sound;
+		break;
+	}
+
+	return sound;
+}
+
+
+bool menuFramework_t::Init ()
+{
+	return true;		// enable menu by default
+}
+
+
+/*
+=================
+M_Draw
+=================
+*/
+
+void M_Draw (void)
+{
+	if (!m_current) return;
+
+	if (!cls.keep_console)	// do not blend whole screen when small menu painted
+		re.DrawFill2 (0, 0, viddef.width, viddef.height, RGBA(0,0,0,0.5));
+
+	m_current->Draw ();
+}
+
+
+/*
+=================
+M_Keydown
+=================
+*/
+void M_Keydown (int key)
+{
+	const char *s;
+
+	if (m_current)
+		if ((s = m_current->KeyDown (key)) != NULL)
+			S_StartLocalSound (s);
 }

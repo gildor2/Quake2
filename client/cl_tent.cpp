@@ -239,45 +239,51 @@ void CL_RegisterTEntSounds (void)
 CL_RegisterTEntModels
 =================
 */
+
+static model_t *RegModel (const char *name)
+{
+	return re.RegisterModel (va("models/%s/tris.md2", name));
+}
+
 void CL_RegisterTEntModels (void)
 {
 	static const char *modelNames[] = {
-		"models/objects/laser/tris.md2",
-		"models/objects/grenade2/tris.md2",
-		"models/weapons/v_machn/tris.md2",
-		"models/weapons/v_handgr/tris.md2",
-		"models/weapons/v_shotg2/tris.md2",
-		"models/objects/gibs/bone/tris.md2",
-		"models/objects/gibs/sm_meat/tris.md2",
-		"models/objects/gibs/bone2/tris.md2"
+		"objects/laser",
+		"objects/grenade2",
+		"weapons/v_machn",
+		"weapons/v_handgr",
+		"weapons/v_shotg2",
+		"objects/gibs/bone",
+		"objects/gibs/sm_meat",
+		"objects/gibs/bone2"
 	};
 
-	cl_mod_explode = re.RegisterModel ("models/objects/explode/tris.md2");
-	cl_mod_smoke = re.RegisterModel ("models/objects/smoke/tris.md2");
-	cl_mod_flash = re.RegisterModel ("models/objects/flash/tris.md2");
-	cl_mod_parasite_segment = re.RegisterModel ("models/monsters/parasite/segment/tris.md2");
-	cl_mod_grapple_cable = re.RegisterModel ("models/ctf/segment/tris.md2");
-	cl_mod_parasite_tip = re.RegisterModel ("models/monsters/parasite/tip/tris.md2");
-	cl_mod_explo4 = re.RegisterModel ("models/objects/r_explode/tris.md2");
+	cl_mod_explode = RegModel ("objects/explode");
+	cl_mod_smoke = RegModel ("objects/smoke");
+	cl_mod_flash = RegModel ("objects/flash");
+	cl_mod_parasite_segment = RegModel ("monsters/parasite/segment");
+	cl_mod_grapple_cable = RegModel ("ctf/segment");
+	cl_mod_parasite_tip = RegModel ("monsters/parasite/tip");
+	cl_mod_explo4 = RegModel ("objects/r_explode");
 	cl_mod_bfg_explo = re.RegisterModel ("sprites/s_bfg2.sp2");
-	cl_mod_powerscreen = re.RegisterModel ("models/items/armor/effect/tris.md2");
+	cl_mod_powerscreen = RegModel ("items/armor/effect");
 
 	for (int i = 0; i < ARRAY_COUNT(modelNames); i++)
-		re.RegisterModel (modelNames[i]);
+		RegModel (modelNames[i]);
 	// RAFAEL
-	// re.RegisterModel ("models/objects/blaser/tris.md2");
+	// RegModel ("objects/blaser");
 
+	//??
 	re.RegisterPic ("w_machinegun");
 	re.RegisterPic ("a_bullets");
 	re.RegisterPic ("i_health");
 	re.RegisterPic ("a_grenades");
 
 	//ROGUE
-	cl_mod_explo4_big = re.RegisterModel ("models/objects/r_explode2/tris.md2");
-	cl_mod_lightning = re.RegisterModel ("models/proj/lightning/tris.md2");
-	cl_mod_heatbeam = re.RegisterModel ("models/proj/beam/tris.md2");
-	cl_mod_monster_heatbeam = re.RegisterModel ("models/proj/widowbeam/tris.md2");
-	//ROGUE
+	cl_mod_explo4_big = RegModel ("objects/r_explode2");
+	cl_mod_lightning = RegModel ("proj/lightning");
+	cl_mod_heatbeam = RegModel ("proj/beam");
+	cl_mod_monster_heatbeam = RegModel ("proj/widowbeam");
 }
 
 
@@ -312,10 +318,9 @@ void CL_ClearTEnts (void)
 	memset (cl_mBeams, 0, sizeof(cl_mBeams));
 	memset (cl_explosions, 0, sizeof(cl_explosions));
 
-//ROGUE
+	//ROGUE
 	memset (cl_mPlayerbeams, 0, sizeof(cl_mPlayerbeams));
 	memset (cl_sustains, 0, sizeof(cl_sustains));
-//ROGUE
 }
 
 /*

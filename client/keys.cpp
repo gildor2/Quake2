@@ -28,7 +28,7 @@ typedef struct
 } keyname_t;
 
 //?? make a table keyNames[NUM_KEYS] for faster searching (can store BAD_KEY mark in this table)
-static keyname_t keynames[] =
+static const keyname_t keynames[] =
 {
 	{"Tab",			K_TAB},
 	{"Enter",		K_ENTER},
@@ -123,7 +123,7 @@ static int HexDigit (char c)
 static int Key_StringToKeynum (const char *str)
 {
 	int		i, mod;
-	keyname_t *kn;
+	const keyname_t *kn;
 	char	name[32], *key;
 
 	if (!str || !str[0]) return -1;			// bad string
@@ -170,9 +170,7 @@ static int Key_StringToKeynum (const char *str)
 
 const char *Key_KeynumToString (int keynum)
 {
-	int		i;
-	keyname_t *kn;
-	char	*pref;
+	const char *pref;
 
 	if (keynum == -1)
 		return S_RED"<KEY NOT FOUND>";
@@ -198,6 +196,8 @@ const char *Key_KeynumToString (int keynum)
 	if (keynum >= 256)
 		return va("%sUnk%02X", pref, keynum - 256);
 
+	int		i;
+	const keyname_t *kn;
 	// named keys
 	for (i = 0, kn = keynames; i < ARRAY_COUNT(keynames); i++, kn++)
 	{
@@ -456,92 +456,84 @@ static char *Do_CompleteCommand (char *partial)
 	return completed_name;
 }
 
-// from menu.c
-const char *Default_MenuKey (menuFramework_t *m, int key);
-void M_PushMenu (void (*draw) (void), const char *(*key) (int k));
 
-static menuAction_t		completeItems[MAX_COMPLETE_ITEMS];
-static menuFramework_t	completeMenu;
-static int	complMenu_x, complMenu_y, complMenu_w, complMenu_h;
+/*--------------- Complete menu --------------------*/
 
-static void CompleteMenuDraw (void)
+#define CHAR_WIDTH	8
+#define CHAR_HEIGHT	8
+
+struct completeMenu_t : menuFramework_t
 {
-	re.DrawFill2 (complMenu_x, complMenu_y, complMenu_w, complMenu_h, RGBA(0.1,0.5,0.5,0.8));
-	completeMenu.AdjustCursor (1);
-	completeMenu.Draw ();
-}
+	menuAction_t completeItems[MAX_COMPLETE_ITEMS];
+	int		complMenu_x, complMenu_y, complMenu_w, complMenu_h;
 
-static const char *CompleteMenuKey (int key)
-{
-	int		old_depth;
-	const char	*res;
-
-	old_depth = m_menudepth;
-	res = Default_MenuKey (&completeMenu, key);
-	if (m_menudepth != old_depth)
+	void Draw ()
 	{
-		// "ESCAPE" (or any other menu-exit-key) pressed
+		re.DrawFill2 (complMenu_x, complMenu_y, complMenu_w, complMenu_h, RGBA(0.1,0.5,0.5,0.8));
+		menuFramework_t::Draw ();
+	}
+
+	const char *KeyDown (int key)
+	{
+		const char *res = menuFramework_t::KeyDown (key);
+		if (m_current != this)
+		{
+			// "ESCAPE" (or any other menu-exit-key) pressed
+			cls.key_dest = key_console;
+			cls.keep_console = false;
+		}
+		return res;
+	}
+
+	static void CompleteMenuCallback (void *item)
+	{
+		char *s = completeVariants[((menuAction_t*) item)->localData];
+		m_current->Pop ();
+
+		editLine[1] = '/';
+		if (complete_command[0])
+			strcpy (editLine + 2, va("%s %s ", complete_command, s));
+		else
+			strcpy (editLine + 2, va("%s ", s));
+		editPos = strlen (editLine);
+		editLine[editPos] = 0;
+
 		cls.key_dest = key_console;
 		cls.keep_console = false;
 	}
 
-	return res;
-}
-
-static void CompleteMenuCallback (void *item)
-{
-	char	*s;
-
-	s = completeVariants[((menuAction_t*) item)->localData];
-	M_PopMenu ();
-
-	editLine[1] = '/';
-	if (complete_command[0])
-		strcpy (editLine + 2, va("%s %s ", complete_command, s));
-	else
-		strcpy (editLine + 2, va("%s ", s));
-	editPos = strlen (editLine);
-	editLine[editPos] = 0;
-
-	cls.key_dest = key_console;
-	cls.keep_console = false;
-}
-
-
-static void CompleteMenu (void)
-{
-	int		i, y, len, maxLen;
-
-	MENU_CHECK
-
-	// init menu
-	completeMenu.nitems = 0;
-	completeMenu.cursor = 0;
-	maxLen = 0;
-	for (i = 0, y = 0; i < completed_count; i++, y += 10)
+	bool Init ()
 	{
-		MENU_ACTION(completeItems[i], y, completeVariants[i], CompleteMenuCallback);
-		completeItems[i].flags = QMF_LEFT_JUSTIFY;
-		completeItems[i].localData = i;
-		completeMenu.AddItem (&completeItems[i]);
-		len = strlen (completeVariants[i]);
-		if (len > maxLen) maxLen = len;
+		nitems = 0;
+		cursor = 0;
+		int maxLen = 0;
+		int		i, y1;
+		for (i = 0, y1 = 0; i < completed_count; i++, y1 += 10)
+		{
+			MENU_ACTION(completeItems[i], y1, completeVariants[i], CompleteMenuCallback);
+			completeItems[i].flags = QMF_LEFT_JUSTIFY;
+			completeItems[i].localData = i;
+			AddItem (&completeItems[i]);
+			int len = strlen (completeVariants[i]);
+			if (len > maxLen) maxLen = len;
+		}
+
+		complMenu_h = completed_count * 10 + CHAR_HEIGHT;
+		complMenu_w = (maxLen + 3) * CHAR_WIDTH + 4;
+		x = editPos * CHAR_WIDTH + CHAR_WIDTH;
+		if (x + complMenu_w > viddef.width)
+			x = viddef.width - complMenu_w;
+		complMenu_x = x - 28;
+		y = con_height - 22;
+		if (y + complMenu_h > viddef.height)
+			y = viddef.height - complMenu_h;
+		complMenu_y = y - 4;
+
+		cls.keep_console = true;
+		return true;
 	}
-
-	complMenu_h = completed_count * 10 + 8;
-	complMenu_w = maxLen * 8 + 28;
-	completeMenu.x = editPos * 8 + 8;
-	completeMenu.y = con_height - 22;
-	if (completeMenu.x + complMenu_w > viddef.width)
-		completeMenu.x = viddef.width - complMenu_w;
-	if (completeMenu.y + complMenu_h > viddef.height)
-		completeMenu.y = viddef.height - complMenu_h;
-	complMenu_x = completeMenu.x - 28;
-	complMenu_y = completeMenu.y - 4;
-
-	cls.keep_console = true;
-	M_PushMenu (CompleteMenuDraw, CompleteMenuKey);
-}
+};
+static completeMenu_t completeMenu;
 
 
 void CompleteCommand (void)
@@ -556,7 +548,7 @@ void CompleteCommand (void)
 
 	if (!strcmp (completed_name, s) && completed_count > 1 && completed_count <= MAX_COMPLETE_ITEMS && !DEDICATED)
 	{
-		CompleteMenu ();
+		completeMenu.Push ();
 		return;
 	}
 

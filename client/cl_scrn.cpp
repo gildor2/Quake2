@@ -502,7 +502,7 @@ void SCR_ShowConsole (bool show, bool noAnim)
 
 	if (!show)
 	{
-		cls.key_dest = m_menudepth > 0 ? key_menu : key_game;
+		cls.key_dest = m_current > 0 ? key_menu : key_game;
 		if (noAnim) conCurrent = 0;
 		if (cls.key_dest != key_menu)
 			CL_Pause (false);

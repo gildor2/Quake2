@@ -20,9 +20,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef __QMENU_H__
 #define __QMENU_H__
 
-// do not display menus when in console-only mode
-#define MENU_CHECK	if (*re.flags & REF_CONSOLE_ONLY) return;
-
 
 #define MENU_SCROLL_BORDER	32
 #define MENU_SCROLL_AHEAD	3
@@ -54,18 +51,25 @@ struct menuFramework_t
 	menuCommon_t *itemList;
 
 	const char *statusbar;
+	const char *banner;
 
 	void (*cursordraw) (menuFramework_t *m);
 
 	void	AddItem (void *item);
 	void	AdjustCursor (int dir);
 	void	Center ();
-	void	Draw ();
 	menuCommon_t *ItemAtCursor ();
 	bool	SelectItem ();
 	void	SetStatusBar (const char *string);
 	void	SlideItem (int dir);
 	int		TallySlots ();
+	// menu opening/closing
+	void	Push ();
+	void	Pop ();
+	// virtual functions
+	virtual bool Init ();
+	virtual void Draw ();
+	virtual const char * KeyDown (int key);
 };
 
 struct menuCommon_t
@@ -124,7 +128,9 @@ struct menuSeparator_t : menuCommon_t
 };
 
 
-bool	Field_Key (menuField_t *field, int key);
+extern const char *menu_in_sound;
+extern const char *menu_move_sound;
+extern const char *menu_out_sound;
 
 
 #define Menu_DrawStringR2L(x,y,s)			DrawString(x-(appCStrlen(s)-1)*CHAR_WIDTH,y,s)

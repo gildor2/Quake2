@@ -542,16 +542,17 @@ void CL_TrapParticles (entity_t *ent);
 //
 // menus
 //
-extern int	m_menudepth;
-
 void M_Init (void);
 void M_Keydown (int key);
 void M_Draw (void);
 void M_Menu_Main_f (void);
 void M_ForceMenuOff (void);
 void M_ForceMenuOn (void);
-void M_PopMenu (void);
 void M_AddToServerList (netadr_t adr, char *info);
+
+struct menuFramework_t;
+extern menuFramework_t *m_current;
+
 
 //
 // cl_pred.cpp
