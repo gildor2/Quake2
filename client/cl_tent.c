@@ -959,15 +959,17 @@ void CL_ParseTEnt (void)
 				trace_t	trace;
 				vec3_t	zero = {0, 0, 0};
 				vec3_t	start, end;
-				csurface_t	*surf;
 				int		impactType;
 
 				VectorAdd (pos, dir, start);
 				VectorMA (start, -2, dir, end);
 				trace = CM_BoxTrace (start, end, zero, zero, 0, MASK_ALL);
 				CL_ClipMoveToEntities (start, zero, zero, end, &trace);
-				if (trace.fraction < 1.0 && (surf = trace.surface))
+				if (trace.fraction < 1.0)
 				{
+					csurface_t	*surf;
+
+					surf = trace.surface;
 					impactType = materialImpacts[surf->material];
 					if (impactType < 0) break;		// silent
 

@@ -38,6 +38,7 @@ static float	r_avertexnormals[NUMVERTEXNORMALS][3] = {
 #include "anorms.h"
 };
 
+#define MAX_VERTS	2048	// from qfiles.h
 static	float s_lerped[MAX_VERTS][4];		// padded for SIMD
 
 static vec3_t	shadevector;
@@ -541,19 +542,19 @@ void R_DrawAliasModel (entity_t *e)
 				shadelight[1] = 0.59;
 				shadelight[2] = 0.45;
 		}
-		if ( currententity->flags & RF_SHELL_DOUBLE )
+		if (currententity->flags & RF_SHELL_DOUBLE)
 		{
 			shadelight[0] = 0.9;
 			shadelight[1] = 0.7;
 		}
-		if ( currententity->flags & RF_SHELL_RED )
+		if (currententity->flags & RF_SHELL_RED)
 			shadelight[0] = 1.0;
-		if ( currententity->flags & RF_SHELL_GREEN )
+		if (currententity->flags & RF_SHELL_GREEN)
 			shadelight[1] = 1.0;
-		if ( currententity->flags & RF_SHELL_BLUE )
+		if (currententity->flags & RF_SHELL_BLUE)
 			shadelight[2] = 1.0;
 	}
-	else if ( currententity->flags & RF_FULLBRIGHT )
+	else if (currententity->flags & RF_FULLBRIGHT)
 	{
 		for (i=0 ; i<3 ; i++)
 			shadelight[i] = 1.0;
@@ -685,7 +686,7 @@ void R_DrawAliasModel (entity_t *e)
 		skin = currententity->skin;	// custom player skin
 	else
 	{
-		if (currententity->skinnum >= MAX_MD2SKINS)
+		if (currententity->skinnum >= MD2_MAX_SKINS)
 			skin = currentmodel->skins[0];
 		else
 		{

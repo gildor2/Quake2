@@ -540,11 +540,11 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 					dist = DISTANCE_TO_PLANE(vieworg, &pl->plane);
 					if (cull == CULL_FRONT)
 					{
-						if (dist > 8) CULL_SURF;
+						if (dist < -8) CULL_SURF;
 					}
 					else
 					{
-						if (dist < -8) CULL_SURF;
+						if (dist > 8) CULL_SURF;
 					}
 				}
 			}
@@ -591,8 +591,8 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 						dist = DISTANCE_TO_PLANE(dl_org, &pl->plane);
 //if (currentEntity != ENTITYNUM_WORLD)//!!
 //	DrawTextLeft(va("dl: dist=%g :: surf=(%g,%g)-(%g,%g)",dist,pl->mins2[0],pl->maxs2[0],pl->mins2[1],pl->maxs2[1]),1,0,1);
+						if (!gl_dlightBacks->integer && dist < -8) CULL_DLIGHT;
 						if (dist < 0) dist = -dist;
-						else if (!gl_dlightBacks->integer && dist > 8) CULL_DLIGHT;
 
 						if (dist >= dl->intensity) CULL_DLIGHT;
 						rad = sqrt (dl->intensity * dl->intensity - dist * dist);	//!! use tables
@@ -618,6 +618,11 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 					}
 #undef CULL_DLIGHT
 				GL_ResizeDynamicMemory (pl->dlights, sizeof(surfDlight_t) * numDlights);
+				if (numDlights)
+				{
+					gl_speeds.dlightSurfs++;
+					gl_speeds.dlightVerts += numDlights * pl->numVerts;
+				}
 			}
 			else
 				surf->dlightMask = 0;
@@ -1121,8 +1126,9 @@ static void DrawParticles (particle_t *p)
 
 #define FLARE_DIST0		40
 #define FLARE_DIST1		256
-#define FLARE_DIST2		512		// Cvar_VariableValue("flare")
+#define FLARE_DIST2		768		// Cvar_VariableValue("flare")
 #define FLARE_FADE		0.2		// Cvar_VariableValue("flare")
+#define SUN_DRAWDIST	32
 
 static void DrawFlares (void)
 {
@@ -1134,7 +1140,7 @@ static void DrawFlares (void)
 		qboolean cull;
 		surfaceCommon_t *surf;
 		surfacePoly_t *p;
-		float	dist, scale;
+		float	scale;
 		vec3_t	tmp, flarePos;
 		color_t	color;
 		int		style;
@@ -1148,17 +1154,21 @@ static void DrawFlares (void)
 			// it (mostly) will be placed inside invisible (solid) leaf)
 			if (f->radius == 0)
 			{
-				if (f->leaf->frame != drawFrame)
-					cull = true;
+				if (f->leaf->frame != drawFrame) cull = true;
 			}
 			else
 			{
-				if (!SphereLeaf (f->origin, f->radius))
-					cull = true;
+				if (!SphereLeaf (f->origin, f->radius)) cull = true;
 			}
 		}
 		else
-			VectorMA (vp.vieworg, FLARE_DIST1, f->origin, flarePos);
+		{
+			// sun flare
+			if (gl_fastsky->integer || gl_skyShader == gl_defaultSkyShader)
+				continue;	// no flare with this sky
+			VectorMA (vp.vieworg, SUN_DRAWDIST, f->origin, flarePos);
+			scale = f->size * SUN_DRAWDIST / (2 * FLARE_DIST1);
+		}
 
 		// should perform frustum culling even if flare not in PVS:
 		// can be occluded / outside frustum -- fade / hide
@@ -1168,31 +1178,37 @@ static void DrawFlares (void)
 			continue;
 		}
 
-		// get viewsize
-		scale = f->size / 2;
-		dist  = (flarePos[0] - vp.vieworg[0]) * vp.viewaxis[0][0] +
-				(flarePos[1] - vp.vieworg[1]) * vp.viewaxis[0][1] +
-				(flarePos[2] - vp.vieworg[2]) * vp.viewaxis[0][2];		// get Z-coordinate
-
 		color.rgba = f->color.rgba;
 		style = vp.lightStyles[f->style].value;
 
-		if (dist < FLARE_DIST0)			// too near - do not fade
+		// get viewsize
+		if (f->radius >= 0)
 		{
-			gl_speeds.cullFlares++;
-			continue;
+			float	dist;
+
+			scale = f->size / 2;
+			dist  = (flarePos[0] - vp.vieworg[0]) * vp.viewaxis[0][0] +
+					(flarePos[1] - vp.vieworg[1]) * vp.viewaxis[0][1] +
+					(flarePos[2] - vp.vieworg[2]) * vp.viewaxis[0][2];		// get Z-coordinate
+
+			if (dist < FLARE_DIST0)			// too near - do not fade
+			{
+				gl_speeds.cullFlares++;
+				continue;
+			}
+			if (dist < FLARE_DIST1)
+				style = Q_ftol (style * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0));
+//				scale = scale * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0);
+			else if (dist > FLARE_DIST2)
+				scale = scale * dist / FLARE_DIST2;
 		}
-		if (dist < FLARE_DIST1)
-			style = Q_ftol (style * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0));
-//			scale = scale * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0);
-		else if (dist > FLARE_DIST2)
-			scale = scale * dist / FLARE_DIST2;
 
 		if (!cull)
 		{
 			trace_t	trace;
 			static vec3_t zero = {0, 0, 0};
 
+			gl_speeds.testFlares++;
 			// check visibility with trace
 			if (f->radius >= 0)
 			{
@@ -1436,7 +1452,7 @@ void GL_AddEntity (entity_t *ent)
 
 		out->customShader = (shader_t*) ent->skin;	//!! should use customSkin
 		out->skinNum = ent->skinnum;				//?? check skinnum in [0..model.numSkins]
-		out->shaderColor.rgba = 0xFFFFFF;			//?? white
+		out->shaderColor.rgba = 0xFFFFFF;
 		out->shaderColor.c[3] = (int)(ent->alpha * 255);
 
 		// model-specific code and calculate model center
@@ -1470,6 +1486,23 @@ void GL_AddEntity (entity_t *ent)
 				// lerp origin
 				VectorSubtract (ent->oldorigin, ent->origin, v);
 				VectorMA (ent->origin, out->backLerp, v, out->origin);
+				// check for COLOR_SHELL
+				if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_HALF_DAM|RF_SHELL_DOUBLE))
+				{
+					out->customShader = gl_colorShellShader;
+					out->shaderColor.rgba = 0;			// required for RED/GREEN/BLUE
+					if (ent->flags & RF_SHELL_HALF_DAM)
+						out->shaderColor.rgba = 0x73968F;
+					if (ent->flags & RF_SHELL_DOUBLE)
+						out->shaderColor.rgba = 0x00B2E5;
+					if (ent->flags & RF_SHELL_RED)
+						out->shaderColor.c[0] = 255;
+					if (ent->flags & RF_SHELL_GREEN)
+						out->shaderColor.c[1] = 255;
+					if (ent->flags & RF_SHELL_BLUE)
+						out->shaderColor.c[2] = 255;
+					out->shaderColor.c[3] = 255;
+				}
 			}
 			break;
 		}

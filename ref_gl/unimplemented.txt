@@ -6,23 +6,21 @@
   - add "void *faces"   - filled/used by renderer (and clean R_LoadSubmodels)
   - add "vec3_t center" - who will fill/update this ? ((mod->mins+mod->maxs)/2+ent->origin)
 
+- color shell: should use size=0.5 for weapons and =3 for main model (use "fromEntity" ?)
 - reflections:
   - small bugs when one can see througs another (for example, lift on map "japan"; "ground3") - unstable draw order
   - adjust ALPHAGEN_DOT consts (+ compensate near distances -- too opaque)
   - should add reflections on SURF_ALPHA with minAlpha > 0 (require to check image)
   - map "ground3": invalid reflections on smoke - should not be (used tex with maxAlpha=0)
-  ! use both "q3-like" and "2-axis" paths for trisurfs and planars (1st - when extra.pAxis == NULL)
   - try another texture
   - try cvar (temp) for envmap_scale and envmap_alpha_const
-
-- gl_drawtexts: dump all DrawText[Left|Right]() to console (for a single frame ? params as for gl_logFile ?)
-  (can simply add flag to gl_state or any var, whith will be checked and processed by DrawTexts())
-
+  - cvar for disabling envmaps
+  - cvar for disabling HQ windows with envmaps
+  - needs to remove extra.plane.axis when shader have deformVertexes
 - flares:
-  - trace with inline models (add TransformedBoxTrace() to ref interface)
-  ? add TextureTrace to renderer: should be faster (no brushes + point against box)
-  ! should be visible through SURF_TRANS (implement in TextureTrace ? make this trace in cmodel.c, add interface to game ?)
   ? correct fov
+  ? try (with map script) "autoflare" for SURF_LIGHT (auto: color, position, size (depends on s->value and s->size ?))
+  ? (auto-)link to surface, cull with surface backface culling
 - fog:
   !!! BUGS !!! works incorrect with multi-pass rendering
   ? reading parms from file (model.c)
@@ -43,8 +41,11 @@ COLORS:
   - remove gl_overbrightBits
   - menu selectable
 
-? add GL_DECAL blend: src=SRC_ALPHA, dst=ONE_MINUS_SRC_ALPHA
-? add GLSTATE_MODULATE2 (to blend modes, valid only with GL_EXT_texenv_combine or GL_NV_blend_square (only for 1st tmu ??))
+PreprocessShader:
+  - add GL_DECAL blend: src=SRC_ALPHA, dst=ONE_MINUS_SRC_ALPHA
+  - add GLSTATE_MODULATE2 (to blend modes, valid only with GL_EXT_texenv_combine or GL_NV_blend_square (only for 1st tmu ??))
+  - can combine (src_a, 1-src_a)+(1,1)
+  - constRgba/identRgba -> rgbType,alphaType = {compute,const,ident (const=1),vertex,vertexConst(vetrex*const)}
 
 - dynamic lightmaps:
   ? option (menu): dynamic lightmap type - uploadable/multipass/auto
@@ -80,24 +81,28 @@ COLORS:
   ? gamma info (on startup: remove or extend ?), overbright info, extended mtex info -> gfxinfo
   ? "UberEngine": cvar "r_gfxinfo" (display when modified only ??)
 
+- tesselation (subdivision):
+  - map "ground3": bug on broken window (look outside caffe)
+  - map "campmc": bug on water (bad tesselation) when tessSize=64,SUBDIV_ERROR=0.1 and SubdividePoly() have
+  	if ((*v1)[axis] < value1)	side1 = 1;
+  	else if ((*v1)[axis] > value2)	side1 = 2;
+  	else				side1 = 3;
+     to detect side[1|2] (no error when used "<=" and ">=" instead of "<" and ">")
+
 BUGS:
 ! gl_singleShader don't works with dynamic lightmaps
 ? map "terrain", light cone from helicopter: too opaque when overbright is 1 (invalid lightmap on alpha-surf ?)
 ? check demo "massive1": have error "frame #46 not found"
+- screenshot is black after changing color depth, but all OK when make one more vid_restart (TNT2, Win2K, 41.09)
 
 UNSTABLE BUGS:
-? map "campmc": bug on water (bad tesselation) when tessSize=64,SUBDIV_ERROR=0.1 and SubdividePoly() have
-	if ((*v1)[axis] < value1)	side1 = 1;
-	else if ((*v1)[axis] > value2)	side1 = 2;
-	else				side1 = 3;
-   to detect side[1|2] (no error when used "<=" and ">=" instead of "<" and ">")
 ?* check: cannot change bitdepth (at home): may be, require to recreate window (check ol Q2 versions, check work)
 
 --------- Mandatory ------------
 VISIBLE:
 - models (entities)
   - md2
-    - "outline" effect (quad damage etc.), cheaters fx (whole player is white), IR-vision fx
+    - IR-vision fx
     - flashing fx (sometimes rgbGen entity, or 2 shaders: with/without flashing ?)
     - lefthand (weapon model):
       - for directional lighting: inverse axis[1] for normals (use different normals array ?)

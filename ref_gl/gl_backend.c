@@ -33,8 +33,8 @@ typedef struct
 	int		numVerts;
 	int		lmWidth;
 	vec3_t	normal;
+	vec3_t	*axis;
 	surfDlight_t *dlight;
-//??	add data for TCGEN_ENVIRONMENT
 } bufExtra_t;
 
 
@@ -162,7 +162,7 @@ static surfaceInfo_t *sortedSurfaces[MAX_SCENE_SURFACES];
 
 /*--------------- Draw portal --------------*/
 
-static viewPortal_t ap;	// active portal
+static viewPortal_t ap;		// active portal
 
 
 /*----- Process deforms, ...gens etc. ------*/
@@ -194,8 +194,11 @@ static void ProcessShaderDeforms (shader_t *sh)
 				norm = ex->normal;
 				for (k = 0; k < ex->numVerts; k++, vec++)
 				{
-					f = PERIODIC_FUNC(table, t + deform->waveDiv * (vec->xyz[0] + vec->xyz[1] + vec->xyz[2]))
-						* deform->wave.amp + deform->wave.base;
+					if (deform->wave.amp)
+						f = PERIODIC_FUNC(table, t + deform->waveDiv * (vec->xyz[0] + vec->xyz[1] + vec->xyz[2]))
+							* deform->wave.amp + deform->wave.base;
+					else
+						f = deform->wave.base;		// used for "outline shield" effect
 					VectorMA (vec->xyz, f, norm, vec->xyz);
 				}
 			}
@@ -304,7 +307,6 @@ static void GenerateColorArray (shaderStage_t *st)
 			int		j, min;
 			float	scale, *norm;
 
-			vec = vb->verts;
 			if (st->alphaGenType == ALPHAGEN_DOT)
 			{
 				min = Q_ftol (st->alphaMin * 255);
@@ -315,6 +317,7 @@ static void GenerateColorArray (shaderStage_t *st)
 				min = Q_ftol (st->alphaMax * 255);
 				scale = (st->alphaMin - st->alphaMax) * 255;
 			}
+			vec = vb->verts;
 			for (j = 0, ex = extra; j < numExtra; j++, ex++)
 			{
 				norm = ex->normal;
@@ -323,10 +326,14 @@ static void GenerateColorArray (shaderStage_t *st)
 					vec3_t	v;
 					float	d;
 
-					VectorSubtract (vec->xyz, currentEntity->modelvieworg, v);
+					VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
 					VectorNormalizeFast (v);
 					d = DotProduct (v, norm);
-					d = d * d;	//??
+#if 0
+					d = d * d;
+#else
+					if (d < 0) d = 0;
+#endif
 					dst->c[3] = Q_ftol (d * scale) + min;
 				}
 			}
@@ -368,26 +375,42 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 		break;
 	case TCGEN_ENVIRONMENT:
 		{
-			//!! reimplement: now computes as Quake3 !!
 			bufExtra_t *ex;
 			bufVertex_t *vec;
+			vec3_t	v;
+			float	d;
 
 			vec = vb->verts;
 			for (j = 0, ex = extra; j < numExtra; j++, ex++)
 			{
-				float	*norm;
+				if (ex->axis)
+				{	// compute envmap using surface axis
+					vec3_t	*axis;
 
-				norm = ex->normal;
-				for (k = 0; k < ex->numVerts; k++, vec++, dst++)
-				{
-					vec3_t	v;
-					float	d;
+					axis = ex->axis;
+					for (k = 0; k < ex->numVerts; k++, vec++, dst++)
+					{
+						VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
+						VectorNormalizeFast (v);
+						d = DotProduct (v, axis[0]);
+						dst->tex[0] = (d - 1) / 2;
+						d = DotProduct (v, axis[1]);
+						dst->tex[1] = (d - 1) / 2;
+					}
+				}
+				else
+				{	// axis is not provided - use normal
+					float	*norm;
 
-					VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
-					VectorNormalizeFast (v);
-					d = DotProduct (v, norm);
-					dst->tex[0] = (d * norm[1] * 2 - v[1] + 1) / 2.0f;
-					dst->tex[1] = 0.5f - (v[2] - d * norm[2] * 2) / 2.0f;
+					norm = ex->normal;
+					for (k = 0; k < ex->numVerts; k++, vec++, dst++)
+					{
+						VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
+						VectorNormalizeFast (v);
+						d = DotProduct (v, norm);
+						dst->tex[0] = (d * norm[1] * 2 - v[1] + 1) / 2.0f;
+						dst->tex[1] = (d * norm[2] * 2 - v[2] + 1) / 2.0f;
+					}
 				}
 			}
 		}
@@ -397,12 +420,13 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 	case TCGEN_LIGHTMAP3:
 	case TCGEN_LIGHTMAP4:
 		{
-			float	shift;
+			float	shift, mul;
 			bufExtra_t *ex;
 
+			mul = (float)(st->tcGenType - TCGEN_LIGHTMAP1 + 1) / LIGHTMAP_SIZE;
 			for (j = 0, ex = extra; j < numExtra; j++, ex++)
 			{
-				shift = (float)(ex->lmWidth * (st->tcGenType - TCGEN_LIGHTMAP1 + 1)) / LIGHTMAP_SIZE;
+				shift = ex->lmWidth * mul;
 				for (k = 0; k < ex->numVerts; k++, src++, dst++)
 				{
 					dst->tex[0] = src->lm[0] + shift;
@@ -490,7 +514,24 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 				dst->tex[1] *= f2;
 			}
 			break;
-		// other types: TRANSFORM, ENTITYTRANSLATE, STRETCH, ROTATE
+		case TCMOD_ROTATE:
+			{
+				float	f, c1, c2;
+
+				f = - tcmod->rotateSpeed * ap.time / 180 * M_PI;	// angle
+				f1 = PERIODIC_FUNC(sinTable, f);					// sin(angle)
+				f2 = PERIODIC_FUNC(sinTable, f + 0.25);				// cos(angle)
+				c1 = 0.5f * (1 - f1 - f2);
+				c2 = 0.5f * (1 + f1 - f2);
+				for (k = 0; k < numVerts; k++, dst++)
+				{
+					f = dst->tex[0];
+					dst->tex[0] = dst->tex[1] * f1 + f * f2 + c1;
+					dst->tex[1] = dst->tex[1] * f2 - f * f1 + c2;
+				}
+			}
+			break;
+		// other types: TRANSFORM, ENTITYTRANSLATE, STRETCH
 		}
 	}
 }
@@ -727,8 +768,6 @@ static void PreprocessShader (shader_t *sh)
 	if (!numTmpStages)
 		DrawTextLeft (va("R_PreprocessShader(%s): 0 stages", currentShader->name), 1, 0, 0);
 
-	//!! reorder stages, add fog (?)
-
 	if (numTmpStages > MAX_TMP_STAGES)
 		Com_Error (ERR_FATAL, "R_PreprocessShader: numStages is too big (%d)", numTmpStages);
 
@@ -962,6 +1001,11 @@ static void DrawArrays (int *indexes, int numIndexes)
 }
 
 
+// forwards
+void DrawTriangles (void);
+void DrawNormals (void);
+
+
 static void StageIterator (void)
 {
 	int		i;
@@ -1054,6 +1098,16 @@ static void StageIterator (void)
 	if (currentShader->usePolygonOffset)
 		qglDisable (GL_POLYGON_OFFSET_FILL);
 
+	// debug
+	if (!gl_state.is2dMode)
+	{
+		if (gl_showtris->integer)
+			DrawTriangles ();
+		if (gl_shownormals->integer)
+			DrawNormals ();
+	}
+
+	// stats
 	gl_speeds.tris += numIndexes * numTmpStages / 3;
 	gl_speeds.trisMT += numIndexes * numRenderPasses / 3;
 	gl_speeds.numIterators++;
@@ -1162,20 +1216,11 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 		av[2] = fabs(v[2]);
 		// Here: v = sum vector, av = abs(v)
 		if (av[0] > av[1] && av[0] > av[2])
-		{
-			if (v[0] < 0)	axis = 1;
-			else			axis = 0;
-		}
+			axis = (v[0] < 0) ? 1 : 0;
 		else if (av[1] > av[2] && av[1] > av[0])
-		{
-			if (v[1] < 0)	axis = 3;
-			else			axis = 2;
-		}
+			axis = (v[1] < 0) ? 3 : 2;
 		else
-		{
-			if (v[2] < 0)	axis = 5;
-			else			axis = 4;
-		}
+			axis = (v[2] < 0) ? 5 : 4;
 
 		// project new texture coords
 		for (i = 0; i < numVerts; i++, verts += 3)
@@ -1292,8 +1337,8 @@ static void ClearSkyBox (void)
 	// clear bounds for all sky box planes
 	for (i = 0; i < 6; i++)
 	{
-		skyMins[0][i] = skyMins[1][i] = 9999;
-		skyMaxs[0][i] = skyMaxs[1][i] = -9999;
+		skyMins[0][i] = skyMins[1][i] = 999999;
+		skyMaxs[0][i] = skyMaxs[1][i] = -999999;
 	}
 }
 
@@ -1589,8 +1634,8 @@ static void TesselatePlanarSurf (surfacePlanar_t *surf)
 	ex = &extra[numExtra++];
 	ex->numVerts = surf->numVerts;
 	if (surf->lightmap) ex->lmWidth = surf->lightmap->w;
-	// copy normal
 	VectorCopy (surf->plane.normal, ex->normal);
+	ex->axis = surf->axis;
 	ex->dlight = surf->dlights;
 
 	v = &vb->verts[firstVert];
@@ -1620,6 +1665,7 @@ static void TesselatePlanarSurf (surfacePlanar_t *surf)
 static void TesselatePolySurf (surfacePoly_t *surf)
 {
 	bufVertex_t	*v;
+	bufExtra_t	*ex;
 	bufTexCoordSrc_t *t;
 	int			*idx, i, firstVert, firstIndex;
 	int			*c;
@@ -1634,7 +1680,11 @@ static void TesselatePolySurf (surfacePoly_t *surf)
 	firstIndex = numIndexes;
 	numIndexes += numIdx;
 
+	ex = &extra[numExtra++];
+	ex->numVerts = surf->numVerts;
 	// setup normal ??
+	ex->axis = NULL;
+	ex->dlight = NULL;
 
 	v = &vb->verts[firstVert];
 	t = &srcTexCoord[firstVert];
@@ -1667,6 +1717,7 @@ static void TesselatePolySurf (surfacePoly_t *surf)
 static void TesselateMd3Surf (surfaceMd3_t *surf)
 {
 	bufVertex_t	*v;
+	bufExtra_t	*ex;
 	bufTexCoordSrc_t *t;
 	int			*idx, *idxSrc, i, firstVert, firstIndex;
 	int			*c;
@@ -1682,34 +1733,65 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 	firstIndex = numIndexes;
 	numIndexes += numIdx;
 
+	ex = &extra[numExtra];
+	numExtra += surf->numVerts;
+
 	/*------------- lerp verts ---------------*/
 	vs1 = surf->verts + surf->numVerts * currentEntity->frame;
 	v = &vb->verts[firstVert];
 	if (currentEntity->backLerp != 0.0f && currentEntity->frame != currentEntity->oldFrame)
 	{
-		float	frontScale, backScale;
+		float	frontScale, backScale, frontLerp;
+		float	a1, sa1, b1, a2, sa2, b2, *norm;
 
 		vs2 = surf->verts + surf->numVerts * currentEntity->oldFrame;
-		backScale = currentEntity->backLerp / 64.0f;				// MD3_XYZ_SCALE
-		frontScale = (1.0f - currentEntity->backLerp) / 64.0f;		// MD3_XYZ_SCALE
-		for (i = 0; i < surf->numVerts; i++, vs1++, vs2++, v++)
+		backScale = currentEntity->backLerp * MD3_XYZ_SCALE;
+		frontLerp = 1.0f - currentEntity->backLerp;
+		frontScale = frontLerp * MD3_XYZ_SCALE;
+		for (i = 0; i < surf->numVerts; i++, vs1++, vs2++, v++, ex++)
 		{
 			v->xyz[0] = vs1->xyz[0] * frontScale + vs2->xyz[0] * backScale;
 			v->xyz[1] = vs1->xyz[1] * frontScale + vs2->xyz[1] * backScale;
 			v->xyz[2] = vs1->xyz[2] * frontScale + vs2->xyz[2] * backScale;
+			norm = ex->normal;
+			// lerp normal
+			a1 = (vs1->normal & 255) / 255.0f;
+			b1 = ((vs1->normal >> 8) & 255) / 255.0f;
+			sa1 = PERIODIC_FUNC(sinTable, a1) * frontLerp;
+			a2 = (vs2->normal & 255) / 255.0f;
+			b2 = ((vs2->normal >> 8) & 255) / 255.0f;
+			sa2 = PERIODIC_FUNC(sinTable, a2) * currentEntity->backLerp;
+			norm[0] = sa1 * PERIODIC_FUNC(sinTable, b1 + 0.25f) + sa2 * PERIODIC_FUNC(sinTable, b2 + 0.25f);
+			norm[1] = sa1 * PERIODIC_FUNC(sinTable, b1) + sa2 * PERIODIC_FUNC(sinTable, b2);
+			norm[2] = PERIODIC_FUNC(sinTable, a1 + 0.25f) * frontLerp + PERIODIC_FUNC(sinTable, a2 + 0.25f) * currentEntity->backLerp;
+			ex->numVerts = 1;
+			ex->axis = NULL;
+			ex->dlight = NULL;
 		}
 	}
 	else
-		for (i = 0; i < surf->numVerts; i++, vs1++, v++)
+		for (i = 0; i < surf->numVerts; i++, vs1++, v++, ex++)
 		{
-			v->xyz[0] = vs1->xyz[0] / 64.0f;						// MD3_XYZ_SCALE
-			v->xyz[1] = vs1->xyz[1] / 64.0f;
-			v->xyz[2] = vs1->xyz[2] / 64.0f;
+			float	a, sa, b, *norm;
+
+			v->xyz[0] = vs1->xyz[0] * MD3_XYZ_SCALE;
+			v->xyz[1] = vs1->xyz[1] * MD3_XYZ_SCALE;
+			v->xyz[2] = vs1->xyz[2] * MD3_XYZ_SCALE;
+			norm = ex->normal;
+			a = (vs1->normal & 255) / 255.0f;
+			b = ((vs1->normal >> 8) & 255) / 255.0f;
+			sa = PERIODIC_FUNC(sinTable, a);
+			norm[0] = sa * PERIODIC_FUNC(sinTable, b + 0.25f);	// sin(a)*cos(b)
+			norm[1] = sa * PERIODIC_FUNC(sinTable, b);			// sin(a)*sin(b)
+			norm[2] = PERIODIC_FUNC(sinTable, a + 0.25f);		// cos(a)
+			ex->numVerts = 1;
+			ex->axis = NULL;
+			ex->dlight = NULL;
 		}
 
 	c = &srcVertexColor[firstVert].rgba;
 	for (i = 0; i < numVerts; i++, c++)
-		*c = 0xFFFFFFFF;	//!! color
+		*c = 0xFFFFFFFF;	//!! vertex color (should not use "RGBGEN_VERTEX", or use another function to generate color; see UberEngine)
 
 	/*----------- copy texcoords -------------*/
 	t = &srcTexCoord[firstVert];
@@ -1846,74 +1928,68 @@ static void DrawBBoxes (void)
 
 static void DrawTriangles (void)
 {
-	int		i, index, lastEntity;
-	surfaceInfo_t	**si;
-	surfaceCommon_t *surf;
-	int		inds[512];
-
 	GL_SetMultitexture (0);		// disable texturing
 	if (gl_showtris->integer - 1 & 1)
-	{	// use depth test
-		GL_State (0);
-//		qglEnable (GL_POLYGON_OFFSET_FILL);
-//		qglPolygonOffset (-3, -2);
-	}
+		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);	// use depth test
 	else	// no depth test
-		GL_State (GLSTATE_NODEPTHTEST);
-
-	if (gl_showtris->integer - 1 & 4)
+	{
+		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
+		qglDepthRange (0, 0);
+	}
+	// setup colors
+	if (gl_showtris->integer - 1 & 2)
 		FlashColor ();
 	else
 		qglColor3f (0, 0, 0);
 	qglDisableClientState (GL_COLOR_ARRAY);
+	GL_DisableTexCoordArrays ();
+	// draw
+	DrawArrays (indexesArray, numIndexes);
+	// restore state
+	qglDepthRange (0, 1);
+}
 
-	for (i = 0; i < 512; i++)
-		inds[i] = i;
 
-	lastEntity = -1;
-	for (i = 0, si = sortedSurfaces; i < ap.numSurfaces; i++, si++)
+static void DrawNormals (void)
+{
+	bufExtra_t *ex;
+	bufVertex_t *vec;
+	float	*norm;
+	int		i, j;
+
+	GL_SetMultitexture (0);		// disable texturing
+	if (gl_shownormals->integer - 1 & 1)
+		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);	// use depth test
+	else	// no depth test
 	{
-		surfacePlanar_t *pl;
-		int		entityNum;
-
-		entityNum = ((*si)->sort >> ENTITYNUM_SHIFT) & ENTITYNUM_MASK;
-		if (entityNum != lastEntity)
+		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
+		qglDepthRange (0, 0);
+	}
+	// setup colors
+	if (gl_shownormals->integer - 1 & 2)
+		FlashColor ();
+	else
+		qglColor3f (0, 0, 0);
+	qglDisableClientState (GL_COLOR_ARRAY);
+	GL_DisableTexCoordArrays ();
+	// draw
+	qglBegin (GL_LINES);
+	vec = vb->verts;
+	for (i = 0, ex = extra; i < numExtra; i++, ex++)
+	{
+		norm = ex->normal;
+		for (j = 0; j < ex->numVerts; j++, vec++)
 		{
-			if (entityNum == ENTITYNUM_WORLD)
-				qglLoadMatrixf (&ap.modelMatrix[0][0]);
-			else
-				qglLoadMatrixf (&gl_entities[entityNum].modelMatrix[0][0]);
-			lastEntity = entityNum;
-		}
+			vec3_t	vec2;
 
-		surf = (*si)->surf;
-		if (!surf) continue;	// dummy surface ??
-
-		switch (surf->type)
-		{
-		case SURFACE_PLANAR:
-			pl = surf->pl;
-			qglVertexPointer (3, GL_FLOAT, sizeof(vertex_t), pl->verts);
-
-			if (!(gl_showtris->integer - 1 & 2))
-			{
-				if (qglLockArraysEXT) qglLockArraysEXT (0, pl->numVerts);
-
-				// show triangles
-				for (index = 0; index < pl->numIndexes; index += 3)
-					qglDrawElements (GL_LINE_LOOP, 3, GL_UNSIGNED_INT, &pl->indexes[index]);
-
-				if (qglUnlockArraysEXT) qglUnlockArraysEXT ();
-			}
-			else	// show edges
-				qglDrawElements (GL_LINE_LOOP, pl->numVerts, GL_UNSIGNED_INT, inds);
-
-			break;
+			qglVertex3fv (vec->xyz);
+			VectorAdd (vec->xyz, ex->normal, vec2);
+			qglVertex3fv (vec2);
 		}
 	}
-
-//	if (gl_showtris->integer - 1 & 1)
-//		qglDisable (GL_POLYGON_OFFSET_FILL);
+	qglEnd ();
+	// restore state
+	qglDepthRange (0, 1);
 }
 
 
@@ -2086,11 +2162,8 @@ static void DrawScene (void)
 	gl_speeds.begin3D = Sys_Milliseconds ();
 
 	currentDlightMask = 0;
-	gl_state.inverseCull = false;
 
 	/*------------ draw sky --------------*/
-
-//??	GL_EnableFog (false);
 
 	ClearSkyBox ();
 	numSkySurfs = 0;
@@ -2222,9 +2295,6 @@ static void DrawScene (void)
 
 	if (currentDepthHack)
 		qglDepthRange (0, 1);
-
-	if (gl_showtris->integer)
-		DrawTriangles ();
 
 	if (gl_showbboxes->integer)
 		DrawBBoxes ();
@@ -2404,11 +2474,7 @@ void GL_BackEnd (void)
 			if (gl_finish->integer) qglFinish ();
 #endif
 
-			if (stricmp (gl_drawbuffer->string, "GL_FRONT"))
-				qglDrawBuffer (GL_BACK);
-			else
-				qglDrawBuffer (GL_FRONT);
-
+			qglDrawBuffer (stricmp (gl_drawbuffer->string, "GL_FRONT") ? GL_BACK : GL_FRONT);
 			if (gl_config.consoleOnly)
 			{
 				qglClearColor (0, 0.2, 0, 1);

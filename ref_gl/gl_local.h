@@ -102,6 +102,7 @@ extern	image_t		*gl_dlightImage;
 extern	image_t		*gl_particleImage;
 extern	image_t		*gl_fogImage;
 extern	image_t		*gl_reflImage;		// NULL if not found
+extern	image_t		*gl_reflImage2;		// NULL if not found
 
 extern int 	gl_screenshotFlags;
 extern char	*gl_screenshotName;
@@ -344,6 +345,7 @@ extern	shader_t	*gl_concharsShader;
 extern	shader_t	*gl_defaultSkyShader;
 extern	shader_t	*gl_particleShader;
 extern	shader_t	*gl_flareShader;			// NULL if not found
+extern	shader_t	*gl_colorShellShader;
 extern	shader_t	*gl_skyShader;
 extern	shader_t	*gl_alphaShader1, *gl_alphaShader2;
 
@@ -361,14 +363,15 @@ void	GL_ResetShaders (void);	// should be called every time before loading a new
 #define SHADER_TURB			2			// SURF_WARP (tcMod turb ...?)
 #define SHADER_TRANS33		4			// SURF_TRANS33 (alphaGen const 0.33, blend)
 #define SHADER_TRANS66		8			// SURF_TRANS66 (alphaGen const 0.66, blend)
-#define SHADER_FORCEALPHA	0x10		// for alphaGen vertex (image itself may be without alpha-channel)
-#define SHADER_ALPHA		0x20		// use texture's alpha channel (depends on itage.alphaType: 0->none, 1->alphaTest or blend, 2->blend)
-#define SHADER_WALL			0x40		// shader used as a wall texture (not GUI 2D image), also do mipmap
-#define SHADER_SKY			0x80		// SURF_SKY (use stage iterator for sky)
-#define SHADER_ANIM			0x100		// main stage will contain more than 1 texture (names passed as name1<0>name2<0>...nameN<0><0>)
-#define SHADER_LIGHTMAP		0x200		// reserve lightmap stage (need GL_SetShaderLightmap() later)
-#define SHADER_TRYLIGHTMAP	0x400		// usualy not containing lightmap, but if present - generate it
-#define SHADER_ENVMAP		0x800		// make additional rendering pass with default environment map
+#define SHADER_FORCEALPHA	0x0010		// for alphaGen vertex (image itself may be without alpha-channel)
+#define SHADER_ALPHA		0x0020		// use texture's alpha channel (depends on itage.alphaType: 0->none, 1->alphaTest or blend, 2->blend)
+#define SHADER_WALL			0x0040		// shader used as a wall texture (not GUI 2D image), also do mipmap
+#define SHADER_SKY			0x0080		// SURF_SKY (use stage iterator for sky)
+#define SHADER_ANIM			0x0100		// main stage will contain more than 1 texture (names passed as name1<0>name2<0>...nameN<0><0>)
+#define SHADER_LIGHTMAP		0x0200		// reserve lightmap stage (need GL_SetShaderLightmap() later)
+#define SHADER_TRYLIGHTMAP	0x0400		// usualy not containing lightmap, but if present - generate it
+#define SHADER_ENVMAP		0x0800		// make additional rendering pass with specular environment map
+#define SHADER_ENVMAP2		0x1000		// add diffuse environment map
 // styles (hints) valid for FindShader(), buf not stored in shader_t
 #define SHADER_ABSTRACT		0x20000000	// create shader without stages
 #define SHADER_CHECK		0x40000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error
@@ -540,6 +543,7 @@ typedef struct
 } glrefdef_t;
 
 
+//!! need to perform clearing this struc with "memset()" (clear all fields in one place)
 typedef struct
 {
 	int		numFrames;
@@ -549,7 +553,8 @@ typedef struct
 	int		tris, trisMT;		// number of tris, which will be drawn without mtex and with mtex (same if no multitexture)
 	int		ents, cullEnts, cullEnts2;
 	int		parts, cullParts;	// particles
-	int		flares, cullFlares;
+	int		dlightSurfs, dlightVerts;
+	int		flares, testFlares, cullFlares;
 	// OpenGL statistics
 	int		numBinds, numUploads, numIterators;
 	// pefromance measuring
@@ -646,6 +651,7 @@ extern cvar_t	*r_drawworld;
 extern cvar_t	*r_drawentities;
 extern cvar_t	*gl_showbboxes;
 extern cvar_t	*gl_showtris;
+extern cvar_t	*gl_shownormals;
 extern cvar_t	*gl_singleShader;
 
 extern cvar_t	*gl_clear;

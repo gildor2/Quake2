@@ -818,16 +818,172 @@ struct model_s *S_RegisterSexedModel (entity_state_t *ent, char *base)
 	return mdl;
 }
 
+
 // PMM - used in shell code
 extern int Developer_searchpath (int who);
 // pmm
+
+static void GetEntityInfo (int entityNum, entity_state_t **st, int *eff, int *rfx)
+{
+	int		effects, renderfx;
+	entity_state_t *state;
+
+	state = &cl_parse_entities[(cl.frame.parse_entities + entityNum) & (MAX_PARSE_ENTITIES-1)];
+	effects = state->effects;
+	renderfx = state->renderfx;
+
+	// convert some EF_XXX to EF_COLOR_SHELL+RF_XXX
+	if (effects & (EF_PENT|EF_QUAD|EF_DOUBLE|EF_HALF_DAMAGE))
+	{
+		if (effects & EF_PENT)
+		{
+			effects &= ~EF_PENT;
+			renderfx |= RF_SHELL_RED;
+		}
+		if (effects & EF_QUAD)
+		{
+			effects &= ~EF_QUAD;
+			renderfx |= RF_SHELL_BLUE;
+		}
+		if (effects & EF_DOUBLE)
+		{
+			effects &= ~EF_DOUBLE;
+			renderfx |= RF_SHELL_DOUBLE;
+		}
+		if (effects & EF_HALF_DAMAGE)
+		{
+			effects &= ~EF_HALF_DAMAGE;
+			renderfx |= RF_SHELL_HALF_DAM;
+		}
+		effects |= EF_COLOR_SHELL;
+	}
+	if (effects & EF_COLOR_SHELL)
+	{
+		// PMM - at this point, all of the shells have been handled
+		// if we're in the rogue pack, set up the custom mixing, otherwise just
+		// keep going
+		// all of the solo colors are fine.  we need to catch any of the combinations that look bad
+		// (double & half) and turn them into the appropriate color, and make double/quad something special
+		if (renderfx & RF_SHELL_HALF_DAM)
+		{
+			if (Developer_searchpath(2) == 2)
+			{
+				// ditch the half damage shell if any of red, blue, or double are on
+				if (renderfx & (RF_SHELL_RED|RF_SHELL_BLUE|RF_SHELL_DOUBLE))
+					renderfx &= ~RF_SHELL_HALF_DAM;
+			}
+		}
+
+		if (renderfx & RF_SHELL_DOUBLE)
+		{
+			if (Developer_searchpath(2) == 2)
+			{
+				// lose the yellow shell if we have a red, blue, or green shell
+				if (renderfx & (RF_SHELL_RED|RF_SHELL_BLUE|RF_SHELL_GREEN))
+					renderfx &= ~RF_SHELL_DOUBLE;
+				// if we have a red shell, turn it to purple by adding blue
+				if (renderfx & RF_SHELL_RED)
+					renderfx |= RF_SHELL_BLUE;
+				// if we have a blue shell (and not a red shell), turn it to cyan by adding green
+				else if (renderfx & RF_SHELL_BLUE)
+					// go to green if it's on already, otherwise do cyan (flash green)
+					if (renderfx & RF_SHELL_GREEN)
+						renderfx &= ~RF_SHELL_BLUE;
+					else
+						renderfx |= RF_SHELL_GREEN;
+			}
+		}
+	}
+
+	if (st)  *st  = state;
+	if (eff) *eff = effects;
+	if (rfx) *rfx = renderfx;
+}
+
+
+static void AddEntityWithEffects (entity_t *ent, int fx)
+{
+	V_AddEntity (ent);
+
+	// color shells generate a seperate entity for the main model
+	if (fx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
+	{
+		ent->flags |= (fx | RF_TRANSLUCENT);
+		ent->alpha = 0.30;
+		V_AddEntity (ent);
+	}
+}
+
+
+/*
+==============
+CL_AddViewWeapon
+==============
+*/
+static void AddViewWeapon (int renderfx)
+{
+	entity_t	gun;		// view model
+	int			i;
+	frame_t		*oldframe;
+	player_state_t *ps, *ops;
+
+	ps = &cl.frame.playerstate;
+	oldframe = &cl.frames[(cl.frame.serverframe - 1) & UPDATE_MASK];
+	ops = &oldframe->playerstate;
+
+	// allow the gun to be completely removed
+	if (!cl_gun->integer)
+		return;
+
+	// don't draw gun if in wide angle view
+	if (ps->fov > 90)
+		return;
+
+	memset (&gun, 0, sizeof(gun));
+
+	if (gun_model)
+		gun.model = gun_model;	// development tool
+	else
+		gun.model = cl.model_draw[ps->gunindex];
+	if (!gun.model)
+		return;
+
+	// set up gun position
+	for (i = 0; i < 3; i++)
+	{
+		gun.origin[i] = cl.refdef.vieworg[i] + ops->gunoffset[i] + cl.lerpfrac * (ps->gunoffset[i] - ops->gunoffset[i]);
+		gun.angles[i] = cl.refdef.viewangles[i] + LerpAngle (ops->gunangles[i], ps->gunangles[i], cl.lerpfrac);
+	}
+
+	if (gun_frame)
+	{
+		gun.frame = gun_frame;	// development tool
+		gun.oldframe = gun_frame;	// development tool
+	}
+	else
+	{
+		gun.frame = ps->gunframe;
+		if (gun.frame == 0)
+			gun.oldframe = 0;	// just changed weapons, don't lerp from old
+		else
+			gun.oldframe = ops->gunframe;
+	}
+
+	gun.flags = RF_MINLIGHT|RF_DEPTHHACK|RF_WEAPONMODEL;
+	gun.backlerp = 1.0 - cl.lerpfrac;
+	VectorCopy (gun.origin, gun.oldorigin);	// don't lerp at all
+	AddEntityWithEffects (&gun, renderfx);
+//	V_AddEntity (&gun);
+}
+
+
 /*
 ===============
 CL_AddPacketEntities
 
 ===============
 */
-void CL_AddPacketEntities (frame_t *frame)
+static void CL_AddPacketEntities (void)
 {
 	entity_t			ent;
 	entity_state_t		*s1;
@@ -847,16 +1003,13 @@ void CL_AddPacketEntities (frame_t *frame)
 
 	memset (&ent, 0, sizeof(ent));
 
-	for (pnum = 0; pnum < frame->num_entities; pnum++)
+	for (pnum = 0; pnum < cl.frame.num_entities; pnum++)
 	{
-		s1 = &cl_parse_entities[(frame->parse_entities+pnum)&(MAX_PARSE_ENTITIES-1)];
-
+		GetEntityInfo (pnum, &s1, &effects, &renderfx);
+		s1 = &cl_parse_entities[(cl.frame.parse_entities+pnum)&(MAX_PARSE_ENTITIES-1)];
 		cent = &cl_entities[s1->number];
 
-		effects = s1->effects;
-		renderfx = s1->renderfx;
-
-			// set frame
+		// set frame
 		if (effects & EF_ANIM01)
 			ent.frame = autoanim & 1;
 		else if (effects & EF_ANIM23)
@@ -868,37 +1021,7 @@ void CL_AddPacketEntities (frame_t *frame)
 		else
 			ent.frame = s1->frame;
 
-		// quad and pent can do different things on client
-		if (effects & EF_PENT)
-		{
-			effects &= ~EF_PENT;
-			effects |= EF_COLOR_SHELL;
-			renderfx |= RF_SHELL_RED;
-		}
 
-		if (effects & EF_QUAD)
-		{
-			effects &= ~EF_QUAD;
-			effects |= EF_COLOR_SHELL;
-			renderfx |= RF_SHELL_BLUE;
-		}
-//======
-// PMM
-		if (effects & EF_DOUBLE)
-		{
-			effects &= ~EF_DOUBLE;
-			effects |= EF_COLOR_SHELL;
-			renderfx |= RF_SHELL_DOUBLE;
-		}
-
-		if (effects & EF_HALF_DAMAGE)
-		{
-			effects &= ~EF_HALF_DAMAGE;
-			effects |= EF_COLOR_SHELL;
-			renderfx |= RF_SHELL_HALF_DAM;
-		}
-// pmm
-//======
 		ent.oldframe = cent->prev.frame;
 		ent.backlerp = 1.0 - cl.lerpfrac;
 
@@ -1030,7 +1153,10 @@ void CL_AddPacketEntities (frame_t *frame)
 				V_AddLight (ent.origin, 225, -1.0, -1.0, -1.0);	//PGM
 
 			if (!(cl.refdef.rdflags & RDF_THIRD_PERSON))
-				continue;		//?? extend when implement mirrors
+			{
+				AddViewWeapon (renderfx);
+				continue;		//?? extend when implement mirrors (with renderfx!)
+			}
 		}
 
 		// if set to invisible, skip
@@ -1054,61 +1180,21 @@ void CL_AddPacketEntities (frame_t *frame)
 		{
 			ent.flags |= RF_TRANSLUCENT;
 			// PMM - *sigh*  yet more EF overloading
-			if (effects & EF_TRACKERTRAIL)
-				ent.alpha = 0.6;
-			else
-				ent.alpha = 0.3;
+			ent.alpha = (effects & EF_TRACKERTRAIL) ? 0.6 : 0.3;
 		}
 //pmm
-
 		// add to refresh list
-		V_AddEntity (&ent);
-
-
-		// color shells generate a seperate entity for the main model
-		if (effects & EF_COLOR_SHELL)
+		AddEntityWithEffects (&ent, renderfx);
+		// add glow around player
+		if (renderfx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE))
 		{
-			// PMM - at this point, all of the shells have been handled
-			// if we're in the rogue pack, set up the custom mixing, otherwise just
-			// keep going
-//			if(Developer_searchpath(2) == 2)
-//			{
-				// all of the solo colors are fine.  we need to catch any of the combinations that look bad
-				// (double & half) and turn them into the appropriate color, and make double/quad something special
-				if (renderfx & RF_SHELL_HALF_DAM)
-				{
-					if(Developer_searchpath(2) == 2)
-					{
-						// ditch the half damage shell if any of red, blue, or double are on
-						if (renderfx & (RF_SHELL_RED|RF_SHELL_BLUE|RF_SHELL_DOUBLE))
-							renderfx &= ~RF_SHELL_HALF_DAM;
-					}
-				}
+			float	r, g, b;
 
-				if (renderfx & RF_SHELL_DOUBLE)
-				{
-					if(Developer_searchpath(2) == 2)
-					{
-						// lose the yellow shell if we have a red, blue, or green shell
-						if (renderfx & (RF_SHELL_RED|RF_SHELL_BLUE|RF_SHELL_GREEN))
-							renderfx &= ~RF_SHELL_DOUBLE;
-						// if we have a red shell, turn it to purple by adding blue
-						if (renderfx & RF_SHELL_RED)
-							renderfx |= RF_SHELL_BLUE;
-						// if we have a blue shell (and not a red shell), turn it to cyan by adding green
-						else if (renderfx & RF_SHELL_BLUE)
-							// go to green if it's on already, otherwise do cyan (flash green)
-							if (renderfx & RF_SHELL_GREEN)
-								renderfx &= ~RF_SHELL_BLUE;
-							else
-								renderfx |= RF_SHELL_GREEN;
-					}
-				}
-//			}
-			// pmm
-			ent.flags = renderfx | RF_TRANSLUCENT;
-			ent.alpha = 0.30;
-			V_AddEntity (&ent);
+			r = g = b = 0.2;
+			if (renderfx & RF_SHELL_RED)	r = 1;
+			if (renderfx & RF_SHELL_GREEN)	g = 1;
+			if (renderfx & RF_SHELL_BLUE)	b = 1;
+			V_AddLight (ent.origin, 64 + (rand() & 15), r, g, b);
 		}
 
 		ent.skin = NULL;		// never use a custom skin on others
@@ -1122,15 +1208,14 @@ void CL_AddPacketEntities (frame_t *frame)
 			if (s1->modelindex2 == 255)
 			{	// custom weapon
 				ci = &cl.clientinfo[s1->skinnum & 0xff];
-				i = (s1->skinnum >> 8); // 0 is default weapon model
+				i = (s1->skinnum >> 8);
 				if (!cl_vwep->integer || i > MAX_CLIENTWEAPONMODELS - 1)
-					i = 0;
+					i = 0;		// 0 is default weapon model
 				ent.model = ci->weaponmodel[i];
-				if (!ent.model) {
-					if (i != 0)
-						ent.model = ci->weaponmodel[0];
-					if (!ent.model)
-						ent.model = cl.baseclientinfo.weaponmodel[0];
+				if (!ent.model)
+				{
+					ent.model = ci->weaponmodel[0];
+					if (!ent.model)	ent.model = cl.baseclientinfo.weaponmodel[0];
 				}
 			}
 			else
@@ -1145,7 +1230,8 @@ void CL_AddPacketEntities (frame_t *frame)
 			}
 			// pmm
 
-			V_AddEntity (&ent);
+			AddEntityWithEffects (&ent, renderfx);
+//			V_AddEntity (&ent);
 
 			//PGM - make sure these get reset.
 			ent.flags = 0;
@@ -1155,15 +1241,17 @@ void CL_AddPacketEntities (frame_t *frame)
 		if (s1->modelindex3)
 		{
 			ent.model = cl.model_draw[s1->modelindex3];
-			V_AddEntity (&ent);
+			AddEntityWithEffects (&ent, renderfx);
+//			V_AddEntity (&ent);
 		}
 		if (s1->modelindex4)
 		{
 			ent.model = cl.model_draw[s1->modelindex4];
-			V_AddEntity (&ent);
+			AddEntityWithEffects (&ent, renderfx);
+//			V_AddEntity (&ent);
 		}
 
-		if ( effects & EF_POWERSCREEN )
+		if (effects & EF_POWERSCREEN)
 		{
 			ent.model = cl_mod_powerscreen;
 			ent.oldframe = 0;
@@ -1174,7 +1262,7 @@ void CL_AddPacketEntities (frame_t *frame)
 		}
 
 		// add automatic particle trails
-		if ( (effects&~EF_ROTATE) )
+		if (effects & ~EF_ROTATE)
 		{
 			if (effects & EF_ROCKET)
 			{
@@ -1314,64 +1402,6 @@ void CL_AddPacketEntities (frame_t *frame)
 }
 
 
-
-/*
-==============
-CL_AddViewWeapon
-==============
-*/
-void CL_AddViewWeapon (player_state_t *ps, player_state_t *ops)
-{
-	entity_t	gun;		// view model
-	int			i;
-
-	// allow the gun to be completely removed
-	if (!cl_gun->integer)
-		return;
-
-	// don't draw gun if in wide angle view
-	if (ps->fov > 90)
-		return;
-
-	memset (&gun, 0, sizeof(gun));
-
-	if (gun_model)
-		gun.model = gun_model;	// development tool
-	else
-		gun.model = cl.model_draw[ps->gunindex];
-	if (!gun.model)
-		return;
-
-	// set up gun position
-	for (i=0 ; i<3 ; i++)
-	{
-		gun.origin[i] = cl.refdef.vieworg[i] + ops->gunoffset[i]
-			+ cl.lerpfrac * (ps->gunoffset[i] - ops->gunoffset[i]);
-		gun.angles[i] = cl.refdef.viewangles[i] + LerpAngle (ops->gunangles[i],
-			ps->gunangles[i], cl.lerpfrac);
-	}
-
-	if (gun_frame)
-	{
-		gun.frame = gun_frame;	// development tool
-		gun.oldframe = gun_frame;	// development tool
-	}
-	else
-	{
-		gun.frame = ps->gunframe;
-		if (gun.frame == 0)
-			gun.oldframe = 0;	// just changed weapons, don't lerp from old
-		else
-			gun.oldframe = ops->gunframe;
-	}
-
-	gun.flags = RF_MINLIGHT|RF_DEPTHHACK|RF_WEAPONMODEL;
-	gun.backlerp = 1.0 - cl.lerpfrac;
-	VectorCopy (gun.origin, gun.oldorigin);	// don't lerp at all
-	V_AddEntity (&gun);
-}
-
-
 #define CAMERA_MINIMUM_DISTANCE	40
 
 void CL_OffsetThirdPersonView (void)
@@ -1438,8 +1468,7 @@ void CL_CalcViewValues (void)
 
 	// find the previous frame to interpolate from
 	ps = &cl.frame.playerstate;
-	i = (cl.frame.serverframe - 1) & UPDATE_MASK;
-	oldframe = &cl.frames[i];
+	oldframe = &cl.frames[(cl.frame.serverframe - 1) & UPDATE_MASK];
 	if (oldframe->serverframe != cl.frame.serverframe-1 || !oldframe->valid)
 		oldframe = &cl.frame;		// previous frame was dropped or involid
 	ops = &oldframe->playerstate;
@@ -1497,7 +1526,7 @@ void CL_CalcViewValues (void)
 	cl.refdef.fov_x = ops->fov + lerp * (ps->fov - ops->fov);
 
 	// don't interpolate blend color
-	for (i=0 ; i<4 ; i++)
+	for (i = 0; i < 4; i++)
 		cl.refdef.blend[i] = ps->blend[i];
 
 	if ((cl_3rd_person->integer || cl.frame.playerstate.stats[STAT_HEALTH] <= 0) &&
@@ -1510,10 +1539,6 @@ void CL_CalcViewValues (void)
 	}
 
 	AngleVectors (cl.refdef.viewangles, cl.v_forward, cl.v_right, cl.v_up);
-
-	// add the weapon
-	if (!(cl.refdef.rdflags & RDF_THIRD_PERSON))
-		CL_AddViewWeapon (ps, ops);
 }
 
 /*
@@ -1550,7 +1575,7 @@ void CL_AddEntities (void)
 
 	CL_CalcViewValues ();
 	// PMM - moved this here so the heat beam has the right values for the vieworg, and can lock the beam to the gun
-	CL_AddPacketEntities (&cl.frame);
+	CL_AddPacketEntities ();
 #if 0
 	CL_AddProjectiles ();
 #endif

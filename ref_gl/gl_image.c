@@ -9,6 +9,7 @@ image_t	*gl_particleImage;
 image_t	*gl_fogImage;
 image_t	*gl_videoImage;
 image_t	*gl_reflImage;
+image_t	*gl_reflImage2;
 
 int 	gl_screenshotFlags;
 char	*gl_screenshotName;
@@ -184,15 +185,27 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 			PROCESS_PIXEL(inrow, p2);
 			PROCESS_PIXEL(inrow2, p1);
 			PROCESS_PIXEL(inrow2, p2);
+#undef PROCESS_PIXEL
 			if (n)
 			{
 				r /= n; g /= n; b /= n; a /= 4;
+			}
+			else
+			{	// don't allow transparent textures become black
+#define PROCESS_PIXEL(row,col)	\
+	pix = (byte *)row + col[j];		\
+	r += *pix++; g += *pix++; b += *pix++; pix++;
+			PROCESS_PIXEL(inrow, p1);
+			PROCESS_PIXEL(inrow, p2);
+			PROCESS_PIXEL(inrow2, p1);
+			PROCESS_PIXEL(inrow2, p2);
+#undef PROCESS_PIXEL
+				r /= 4; g /= 4; b /= 4;
 			}
 			((byte *)(out+j))[0] = r;
 			((byte *)(out+j))[1] = g;
 			((byte *)(out+j))[2] = b;
 			((byte *)(out+j))[3] = a;
-#undef PROCESS_PIXEL
 		}
 	}
 }
@@ -320,7 +333,7 @@ static void MipMap (byte *in, int width, int height)
 	{	\
 		n++;	\
 		r += in[idx]; g += in[idx+1]; b += in[idx+2]; a += in[idx+3];	\
-		if (in[idx+3] > am) am = in[idx+3];	\
+		am = max(am, in[idx+3]);	\
 	}
 			PROCESS_PIXEL(0);
 			PROCESS_PIXEL(4);
@@ -332,7 +345,7 @@ static void MipMap (byte *in, int width, int height)
 				r /= n; g /= n; b /= n; a /= 4;
 			}
 			else
-			{	// don't allow transparent textures to be black (in a case of its usage without blending)
+			{	// don't allow transparent textures become black (in a case of its usage without blending)
 #define PROCESS_PIXEL(idx)	\
 		r += in[idx]; g += in[idx+1]; b += in[idx+2];
 				PROCESS_PIXEL(0);
@@ -1013,6 +1026,12 @@ void GL_PerformScreenshot (void)
 	// read frame buffer data
 	qglReadPixels (0, 0, vid.width, vid.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
+/*
+	if (!buffer[2000] && !buffer[2001] && !buffer[2002] && !buffer[2004] && !buffer[2005] && !buffer[2006]) Com_WPrintf("BLACK!\n");
+	for (i = 2000; i < 2240; i++) Com_Printf("%02X  ", buffer[i]);
+	Com_Printf ("\n");
+*/
+
 	if (gl_screenshotFlags & SHOT_SMALL)
 	{
 		byte *buffer2;
@@ -1201,7 +1220,8 @@ void GL_InitImages (void)
 	gl_fogImage = GL_CreateImage ("*fog", tex, 256, 32, IMAGE_CLAMP|IMAGE_TRUECOLOR);	//?? mipmap
 	gl_fogImage->flags |= IMAGE_SYSTEM; */
 
-	gl_reflImage = GL_FindImage ("env/defrefl", IMAGE_MIPMAP);	//!! move image to a different place
+	gl_reflImage = GL_FindImage ("env/specular", IMAGE_MIPMAP|IMAGE_TRUECOLOR);	//!! move reflection images to a different place
+	gl_reflImage2 = GL_FindImage ("env/diffuse", IMAGE_MIPMAP|IMAGE_TRUECOLOR);
 }
 
 

@@ -1073,9 +1073,9 @@ void CL_FixUpGender(void)
 		strncpy(sk, skin->string, sizeof(sk) - 1);
 		if ((p = strchr(sk, '/')) != NULL)
 			*p = 0;
-		if (Q_stricmp(sk, "male") == 0 || Q_stricmp(sk, "cyborg") == 0)
+		if (!Q_stricmp(sk, "male") || !Q_stricmp(sk, "cyborg"))
 			Cvar_Set ("gender", "male");
-		else if (Q_stricmp(sk, "female") == 0 || Q_stricmp(sk, "crackhor") == 0 || S_IsFemale (sk))
+		else if (S_IsFemale (sk))
 			Cvar_Set ("gender", "female");
 		else
 			Cvar_Set ("gender", "none");
@@ -1168,7 +1168,7 @@ void CL_RequestNextDownload (void)
 						precache_check++;
 						continue; // couldn't load it
 					}
-					if (LittleLong(*(unsigned *)precache_model) != IDALIASHEADER) {
+					if (LittleLong(*(unsigned *)precache_model) != MD2_IDENT) {
 						// not an alias model
 						FS_FreeFile(precache_model);
 						precache_model = 0;
@@ -1177,7 +1177,7 @@ void CL_RequestNextDownload (void)
 						continue;
 					}
 					pheader = (dmdl_t *)precache_model;
-					if (LittleLong (pheader->version) != ALIAS_VERSION) {
+					if (LittleLong (pheader->version) != MD2_VERSION) {
 						precache_check++;
 						precache_model_skin = 0;
 						continue; // couldn't load it
@@ -1188,7 +1188,7 @@ void CL_RequestNextDownload (void)
 
 				while (precache_model_skin - 1 < LittleLong(pheader->numSkins)) {
 					if (!CL_CheckOrDownloadFile((char *)precache_model + LittleLong(pheader->ofsSkins) +
-						(precache_model_skin - 1)*MAX_SKINNAME))
+						(precache_model_skin - 1)*MD2_MAX_SKINNAME))
 					{
 						precache_model_skin++;
 						return; // started a download

@@ -58,10 +58,10 @@ model_t	*GL_FindModel (char *name)
 
 	switch (LittleLong(*file))
 	{
-	case IDALIASHEADER:
+	case MD2_IDENT:
 		if (!LoadMd2 (m, (byte*)file, len)) m = NULL;
 		break;
-	case IDSPRITEHEADER:
+	case SP2_IDENT:
 		if (!LoadSp2 (m, (byte*)file, len)) m = NULL;
 		break;
 	default:
@@ -1084,7 +1084,8 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (stex->flags & SURF_SKY && gl_showsky->integer != 2) sflags |= SHADER_SKY;
 		if (stex->flags & SURF_FLOWING)	sflags |= SHADER_SCROLL;
 		if (stex->flags & SURF_WARP)	sflags |= SHADER_TURB;
-		if (stex->flags & (SURF_DIFFUSE|SURF_SPECULAR)) sflags |= SHADER_ENVMAP;	//?? separate this flags
+		if (stex->flags & SURF_SPECULAR) sflags |= SHADER_ENVMAP;
+		if (stex->flags & SURF_DIFFUSE) sflags |= SHADER_ENVMAP2;
 
 		// find owner model
 		for (j = 0, owner = models; j < numModels; j++, owner++)
@@ -1226,7 +1227,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		out->type = SURFACE_PLANAR;
 		out->pl = s = Hunk_Alloc (sizeof(*s) + sizeof(vertex_t)*numVerts + sizeof(int)*numIndexes);
 		memcpy (&s->plane, map.planes + surfs->planenum, sizeof(cplane_t));
-		if (!surfs->side)
+		if (surfs->side)
 		{
 			// backface (needed for backface culling)
 			VectorNegate (s->plane.normal, s->plane.normal);
@@ -1633,7 +1634,7 @@ static void LoadVisinfo2 (dvis_t *data, int size)
 					else
 					{	// zero byte -- decompress RLE data (with filler 0)
 						c = *src++;			// count
-						if (c > j) c = j;	// should not be, but ...
+						c = min(c, j);		// should not be, but ...
 						j -= c;
 						while (c--)
 							*dst++ = 0;
@@ -1723,7 +1724,7 @@ void GL_LoadWorldMap (char *name)
 		break;
 	default:
 		Hunk_End ();
-		Com_Error (ERR_DROP, "R_FindModel: unknown BSP type");
+		Com_Error (ERR_DROP, "R_LoadWorldMap: unknown BSP type");
 	}
 	if (bsp->numFlares)
 		LoadFlares (bsp->flares, bsp->numFlares);
@@ -1799,7 +1800,7 @@ static int ParseGlCmds (char *name, surfaceMd3_t *surf, int *cmds, int *xyzIndex
 
 			// find st in allocated vertexes
 			for (index = 0, dst = surf->texCoords; index < allocatedVerts; index++, dst += 2)
-				if (dst[0] == s && dst[1] == t && xyzIndexes[index] == cmds[2]) break;
+				if (xyzIndexes[index] == cmds[2] && dst[0] == s && dst[1] == t) break;
 
 			if (index == allocatedVerts)
 			{	// vertex not found - allocate it
@@ -1817,7 +1818,7 @@ static int ParseGlCmds (char *name, surfaceMd3_t *surf, int *cmds, int *xyzIndex
 			vertsIndexes[i] = index;
 		}
 
-		if (!idx)	// called for calculate numVerts - skip index generation
+		if (!idx)	// called to calculate numVerts - skip index generation
 			continue;
 
 		// generate indexes
@@ -1830,16 +1831,14 @@ static int ParseGlCmds (char *name, surfaceMd3_t *surf, int *cmds, int *xyzIndex
 			// prepare next step
 			if (strip)
 			{
-				if (!(i & 1))
-					i1 = i3;
-				else
-					i2 = i3;
+				if (!(i & 1))	i1 = i3;
+				else			i2 = i3;
 			}
-			else
-				i2 = i3;
+			else				i2 = i3;
 		}
 	}
 
+	surf->numTris = numTris;	// update triangle count
 	return allocatedVerts;
 }
 
@@ -1864,10 +1863,11 @@ static void ProcessMd2Frame (vertexMd3_t *verts, dAliasFrame_t *srcFrame, md3Fra
 		// update bounding box
 		AddPointToBounds (p, dstFrame->mins, dstFrame->maxs);
 		// put vertex in a "short" form
-		dstVerts->xyz[0] = (int)(p[0] * 64);	// (1.0f / MD3_XYZ_SCALE)
-		dstVerts->xyz[1] = (int)(p[1] * 64);
-		dstVerts->xyz[2] = (int)(p[2] * 64);
+		dstVerts->xyz[0] = Q_ftol (p[0] / MD3_XYZ_SCALE);
+		dstVerts->xyz[1] = Q_ftol (p[1] / MD3_XYZ_SCALE);
+		dstVerts->xyz[2] = Q_ftol (p[2] / MD3_XYZ_SCALE);
 	}
+
 	// compute bounding sphere
 	for (i = 0; i < 3; i++)
 		dstFrame->localOrigin[i] = (dstFrame->mins[i] + dstFrame->maxs[i]) / 2;
@@ -1877,15 +1877,67 @@ static void ProcessMd2Frame (vertexMd3_t *verts, dAliasFrame_t *srcFrame, md3Fra
 		vec3_t	p;
 		float	tmp;
 
-		p[0] = dstVerts->xyz[0] / 64.0f;
-		p[1] = dstVerts->xyz[1] / 64.0f;
-		p[2] = dstVerts->xyz[2] / 64.0f;
+		p[0] = dstVerts->xyz[0] * MD3_XYZ_SCALE;
+		p[1] = dstVerts->xyz[1] * MD3_XYZ_SCALE;
+		p[2] = dstVerts->xyz[2] * MD3_XYZ_SCALE;
 		VectorSubtract (p, dstFrame->localOrigin, p);
 		tmp = DotProduct (p, p);	// tmp = dist(p, localOrigin) ^2
-		if (tmp > radius)
-			radius = tmp;
+		radius = max(tmp, radius);
 	}
 	dstFrame->radius = sqrt (radius);
+}
+
+
+static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
+{
+	int		i, j, k, *idx;
+	vec3_t	normals[MD3_MAX_VERTS];	// normal per xyzIndex
+	short	norm_i[MD3_MAX_VERTS];
+	vertexMd3_t *verts;
+	float	*dst;
+
+	for (i = 0, verts = surf->verts; i < surf->numFrames; i++, verts += surf->numVerts)
+	{
+		// clear normals array
+		memset (normals, 0, sizeof(normals));
+		for (j = 0, idx = surf->indexes; j < surf->numTris; j++, idx += 3)
+		{
+			vec3_t	vecs[3], n;
+
+			// compute triangle normal
+			VectorSubtract (verts[idx[0]].xyz, verts[idx[1]].xyz, vecs[0]);
+			VectorSubtract (verts[idx[1]].xyz, verts[idx[2]].xyz, vecs[1]);
+			VectorSubtract (verts[idx[2]].xyz, verts[idx[0]].xyz, vecs[2]);
+			for (k = 0; k < 3; k++)
+				VectorNormalizeFast (vecs[k]);
+			CrossProduct (vecs[1], vecs[0], n);
+			VectorNormalizeFast (n);
+			// add normal to verts
+			for (k = 0; k < 3; k++)
+			{
+				float	ang;
+
+				ang = acos (-DotProduct (vecs[k], vecs[k == 0 ? 2 : k - 1]));
+				dst = &normals[xyzIndexes[idx[k]]][0];
+				VectorMA (dst, ang, n, dst);		// weighted normal: weight ~ angle
+			}
+		}
+		// transform computed xyz normals to compact form
+		for (j = 0; j < numXyz; j++)
+		{
+			byte	a, b;
+
+			dst = &normals[j][0];
+			VectorNormalize (dst);
+			a = Q_ftol (acos (dst[2]) / (M_PI * 2) * 255);
+			if (dst[0])		b = Q_ftol (atan2 (dst[1], dst[0]) / (M_PI * 2) * 255);
+			else			b = dst[1] > 0 ? 127.5 : -127.5;
+			norm_i[j] = a | (b << 8);
+		}
+		// copy normals
+		for (j = 0; j < surf->numVerts; j++)
+			verts[j].normal = norm_i[xyzIndexes[j]];
+	}
 }
 
 
@@ -1932,13 +1984,13 @@ static qboolean LoadMd2 (model_t *m, byte *buf, int len)
 	md3Model_t *md3;
 	surfaceCommon_t *cs;
 	surfaceMd3_t *surf;
-	int		i, numVerts;
+	int		i, numVerts, numTris;
 	int		xyzIndexes[MAX_XYZ_INDEXES];
 	char	*skin;
 
 	//?? should add ri.LoadMd2 (buf, size) -- sanity check + swap bytes for big-endian machines
 	hdr = (dmdl_t*)buf;
-	if (hdr->version != ALIAS_VERSION)
+	if (hdr->version != MD2_VERSION)
 	{
 		Com_WPrintf ("R_LoadMd2: %s has wrong version %d\n", m->name, hdr->version);
 		return false;
@@ -1956,6 +2008,7 @@ static qboolean LoadMd2 (model_t *m, byte *buf, int len)
 	surf->numVerts = MAX_XYZ_INDEXES;
 	surf->numTris = MAX_XYZ_INDEXES - 2;
 	numVerts = ParseGlCmds (m->name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes);
+	numTris = surf->numTris;		// just computed
 	Z_Free (surf);
 	Com_DPrintf ("LoadMD2(%s): %d xyz  %d st  %d verts\n", m->name, hdr->numXyz, hdr->numSt, numVerts);
 
@@ -1989,7 +2042,7 @@ static qboolean LoadMd2 (model_t *m, byte *buf, int len)
 	cs->shader = gl_defaultShader;		//?? any?
 	surf->numFrames = hdr->numFrames;
 	surf->numVerts = numVerts;
-	surf->numTris = hdr->numTris;
+	surf->numTris = numTris;
 	surf->numShaders = hdr->numSkins;
 	surf->texCoords = (float*)(surf + 1);
 	surf->indexes = (int*)(surf->texCoords + 2*surf->numVerts);
@@ -2003,18 +2056,17 @@ static qboolean LoadMd2 (model_t *m, byte *buf, int len)
 		return false;
 	}
 
-	/*-------- generate vertexes ---------*/
+	/*---- generate vertexes/normals -----*/
 	for (i = 0; i < surf->numFrames; i++)
 		ProcessMd2Frame (surf->verts + i * numVerts,
 				(dAliasFrame_t*)(buf + hdr->ofsFrames + i * hdr->frameSize),
 				md3->frames + i, numVerts, xyzIndexes);
+	BuildMd2Normals (surf, xyzIndexes, hdr->numXyz);
 
 	/*---------- load skins --------------*/
 	surf->numShaders = hdr->numSkins;
-	for (i = 0, skin = (char*)(buf + hdr->ofsSkins); i < surf->numShaders; i++, skin += MAX_SKINNAME)
+	for (i = 0, skin = (char*)(buf + hdr->ofsSkins); i < surf->numShaders; i++, skin += MD2_MAX_SKINNAME)
 		SetMd3Skin (m, surf, i, skin);
-
-	//!! generate light normals
 
 	m->type = MODEL_MD3;
 	m->md3 = md3;
@@ -2041,7 +2093,7 @@ static qboolean LoadSp2 (model_t *m, byte *buf, int len)
 	int		i;
 
 	hdr = (dsprite_t*)buf;
-	if (hdr->version != SPRITE_VERSION)
+	if (hdr->version != SP2_VERSION)
 	{
 		Com_WPrintf ("R_LoadSp2: %s has wrong version %d\n", m->name, hdr->version);
 		return false;
@@ -2064,15 +2116,10 @@ static qboolean LoadSp2 (model_t *m, byte *buf, int len)
 		out->localOrigin[0] = in->origin_x;
 		out->localOrigin[1] = in->origin_y;
 
-		s = out->width - out->localOrigin[0];
-		if (s < out->localOrigin[0])
-			s = out->localOrigin[0];
-		t = out->height - out->localOrigin[1];
-		if (t < out->localOrigin[1])
-			t = out->localOrigin[1];
+		s = max (out->localOrigin[0], out->width - out->localOrigin[0]);
+		t = max (out->localOrigin[1], out->height - out->localOrigin[1]);
 		radius = sqrt (s * s + t * t);
-		if (radius > sp2->radius)
-			sp2->radius = radius;
+		sp2->radius = max (sp2->radius, radius);
 
 		out->shader = GL_FindShader (in->name, SHADER_CHECK|SHADER_WALL|SHADER_FORCEALPHA);
 		if (!out->shader)

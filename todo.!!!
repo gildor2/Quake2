@@ -2,6 +2,7 @@
 ? reimplement "showtrace" (rename cvar, make it with DrawTextXxx(), display every frame (com_speeds too!), update
   every server frame (implemented with com_speeds ?? if so, remove "showtrace" cvar)
 ! unpack PVS in LoadBsp(); use unpacked version in renderer and CM_InPVS() etc.
+! check "OPCODE" collision detection library (is it suitable for BSP ?)
 
 !!! check PCX/WAL palette: alpha == 0 for index != 255 ??
 KINGPIN:

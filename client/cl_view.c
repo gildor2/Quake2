@@ -504,7 +504,8 @@ static void DrawSurfInfo (void)
 		re.DrawTextLeft (va("Point: %g  %g  %g",
 			trace.endpos[0], trace.endpos[1], trace.endpos[2]),
 			0.2, 0.4, 1);
-		if (surf = trace.surface)
+		surf = trace.surface;
+		if (surf->rname[0])		// non-null surface
 		{
 			re.DrawTextLeft (va("Surface name: %s", surf->rname), 0.2, 0.4, 1);
 			VectorCopy (trace.plane.normal, norm);
@@ -711,7 +712,7 @@ static void FixWaterVis (void)
 		trace = CM_BoxTrace (cl.refdef.vieworg, p, zero, zero, 0, MASK_WATER);
 	else
 		trace = CM_BoxTrace (p, cl.refdef.vieworg, zero, zero, 0, MASK_WATER);
-	if (trace.fraction < 1.0f && trace.surface && !(trace.surface->flags & (SURF_TRANS33|SURF_TRANS66)))
+	if (trace.fraction < 1.0f && !(trace.surface->flags & (SURF_TRANS33|SURF_TRANS66)))
 	{
 //		re.DrawTextLeft("WATER FIX!", 1, 1, 1);
 		if (cl.refdef.vieworg[2] < trace.endpos[2])

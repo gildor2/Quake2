@@ -9,6 +9,7 @@ shader_t *gl_concharsShader;
 shader_t *gl_defaultSkyShader;		// default sky shader (black image)
 shader_t *gl_particleShader;
 shader_t *gl_flareShader;
+shader_t *gl_colorShellShader;
 shader_t *gl_skyShader;				// current sky shader (have mapped images)
 shader_t *gl_alphaShader1, *gl_alphaShader2;
 
@@ -817,18 +818,20 @@ shader_t *GL_FindShader (char *name, int style)
 			if (style & SHADER_ABSTRACT)
 				st[0].numAnimTextures = 0;			// remove all stages
 
-			if (style & SHADER_ENVMAP)
+			if (style & (SHADER_ENVMAP|SHADER_ENVMAP2))
 			{
 				stage++;	// add next stage
 				stageIdx++;
 				stage->numAnimTextures = 1;
-				shaderImages[stageIdx * MAX_STAGE_TEXTURES] = gl_reflImage;
+				shaderImages[stageIdx * MAX_STAGE_TEXTURES] = style & SHADER_ENVMAP ? gl_reflImage : gl_reflImage2;
 				stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONE;
 				stage->rgbGenType = RGBGEN_VERTEX;
 				stage->alphaGenType = ALPHAGEN_CONST;
-				stage->rgbaConst.c[3] = 128;	//??
+				stage->rgbaConst.c[3] = 128;
 				stage->tcGenType = TCGEN_ENVIRONMENT;
 			}
+			if (style & (SHADER_ENVMAP|SHADER_ENVMAP2) && style & (SHADER_TRANS33|SHADER_TRANS66))
+				sh.tessSize = 64;		//?? add cvar to disable this
 		}
 	}
 	return FinishShader ();
@@ -845,6 +848,9 @@ shader_t *GL_GetShaderByNum (int num)
 
 void GL_ResetShaders (void)
 {
+	tcModParms_t	*tcmod;
+	deformParms_t	*deform;
+
 	if (shaderChain)
 		FreeMemoryChain (shaderChain);
 	shaderChain = CreateMemoryChain ();
@@ -854,6 +860,7 @@ void GL_ResetShaders (void)
 	shaderCount = 0;
 
 	/*---------------- creating system shaders --------------------*/
+	//!! most of this shaders can be created with script
 
 	// abstract shaders should be created in reverse (with relation to sortParam) order
 	gl_alphaShader2 = GL_FindShader ("*alpha2", SHADER_ABSTRACT);
@@ -890,6 +897,44 @@ void GL_ResetShaders (void)
 		gl_flareShader = FinishShader ();//?? AddPermanentShader ();
 	else
 		gl_flareShader = NULL;
+
+	ClearTempShader ();
+	strcpy (sh.name, "*colorShell");
+	sh.sortParam = SORT_SEETHROUGH;
+	st[0].rgbGenType = RGBGEN_ENTITY;
+#if 1
+	st[0].alphaGenType = ALPHAGEN_IDENTITY;
+	st[0].glState = GLSTATE_SRC_ONE|GLSTATE_DST_ONE|GLSTATE_DEPTHWRITE;
+#else
+	st[0].alphaGenType = ALPHAGEN_DOT;
+	st[0].alphaMin = 0;
+	st[0].alphaMax = 1;
+	st[0].glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONE|GLSTATE_DEPTHWRITE;
+#endif
+	st[0].tcGenType = TCGEN_ENVIRONMENT;
+	// rotate
+	tcmod = NewTcModStage (st);
+	tcmod->type = TCMOD_ROTATE;
+	tcmod->rotateSpeed = 30;
+	// scroll
+	tcmod = NewTcModStage (st);
+	tcmod->type = TCMOD_SCROLL;
+	tcmod->sSpeed = 1;
+	tcmod->tSpeed = 0.1;
+	// deform verts
+	deform = &sh.deforms[0];
+	deform->type = DEFORM_WAVE;
+	deform->wave.type = FUNC_SIN;
+	deform->wave.amp = 0;
+//	deform->wave.freq = 0;
+	deform->wave.base = 2;		//!! fromEntity: 3 / 0.5
+//	deform->wave.phase = 0;
+	deform->waveDiv = 0;
+	sh.numDeforms = 1;
+	shaderImages[0] = GL_FindImage ("env/colorshell", IMAGE_MIPMAP);
+	sh.lightmapNumber = LIGHTMAP_NONE;
+	st[0].numAnimTextures = 1;
+	gl_colorShellShader = FinishShader ();//?? AddPermanentShader ();
 
 	gl_skyShader = gl_defaultSkyShader = GL_FindShader ("*sky", SHADER_SKY|SHADER_ABSTRACT);
 

@@ -237,7 +237,7 @@ typedef struct model_s
 	byte		*lightdata;
 
 	// for alias models and skins
-	image_t		*skins[MAX_MD2SKINS];
+	image_t		*skins[MD2_MAX_SKINS];
 
 	int			extradatasize;
 	void		*extradata;

@@ -71,7 +71,9 @@ cvar_t	*r_drawworld;
 cvar_t	*r_drawentities;
 cvar_t	*gl_showbboxes;
 cvar_t	*gl_showtris;
+cvar_t	*gl_shownormals;
 cvar_t	*gl_singleShader;
+cvar_t	*gl_logTexts;
 
 
 static void ClearTexts (void);
@@ -102,7 +104,7 @@ static void GL_Register (void)
 CVAR_BEGIN(vars)
 	CVAR_VAR(gl_texturemode, GL_LINEAR_MIPMAP_NEAREST, CVAR_ARCHIVE),
 	CVAR_VAR(gl_picmip, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
-	CVAR_VAR(gl_roundImagesDown, 1, 0),
+	CVAR_VAR(gl_roundImagesDown, 0, CVAR_ARCHIVE),
 
 //	CVAR_VAR(gl_shadows, 0, CVAR_ARCHIVE ),
 	CVAR_VAR(r_gamma, 1, CVAR_ARCHIVE),
@@ -158,7 +160,9 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(r_drawentities, 1, 0),
 	CVAR_VAR(gl_showbboxes, 0, 0),
 	CVAR_VAR(gl_showtris, 0, 0),
+	CVAR_VAR(gl_shownormals, 0, 0),
 	CVAR_VAR(gl_singleShader, 0, 0),
+	CVAR_VAR(gl_logTexts, 0, 0),
 
 	CVAR_VAR(r_fullscreen, 1, CVAR_ARCHIVE),
 	CVAR_GET(vid_ref),
@@ -698,7 +702,8 @@ static void GL_RenderFrame (refdef_t *fd)
 	for (i = 0, dl = fd->dlights; i < fd->num_dlights; i++, dl++)
 		GL_AddDlight (dl);
 
-	gl_speeds.flares = gl_speeds.cullFlares = 0;
+	gl_speeds.dlightSurfs = gl_speeds.dlightVerts = 0;
+	gl_speeds.flares = gl_speeds.testFlares = gl_speeds.cullFlares = 0;
 	gl_speeds.parts = gl_speeds.cullParts = 0;
 	vp.particles = fd->particles;
 
@@ -730,8 +735,10 @@ static void GL_RenderFrame (refdef_t *fd)
 			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEnts2), 1, 0.5, 0);
 		DrawTextRight (va("particles: %d cull: %d",
 			gl_speeds.parts, gl_speeds.cullParts), 1, 0.5, 0);
-		DrawTextRight (va("flares: %d cull: %d",
-			gl_speeds.flares, gl_speeds.cullFlares), 1, 0.5, 0);
+		DrawTextRight (va("dlights: %d surfs: %d verts: %d",
+			gl_numDlights, gl_speeds.dlightSurfs, gl_speeds.dlightVerts), 1, 0.5, 0);
+		DrawTextRight (va("flares: %d test: %d cull: %d",
+			gl_speeds.flares, gl_speeds.testFlares, gl_speeds.cullFlares), 1, 0.5, 0);
 		DrawTextRight (va("binds: %d uploads: %2d draws: %d",
 			gl_speeds.numBinds, gl_speeds.numUploads, gl_speeds.numIterators), 1, 0.5, 0);
 
@@ -931,6 +938,9 @@ static void DrawTexts (void)
 		len = strlen (rec->text);
 		if (!len) continue;
 
+		if (gl_logTexts->integer)
+			Com_Printf ("^5%s\n", rec->text);
+
 		{
 			PUT_BACKEND_COMMAND2(bkDrawText_t, p, len);
 			p->type = BACKEND_TEXT;
@@ -943,6 +953,8 @@ static void DrawTexts (void)
 			memcpy (p->text, rec->text, len);	// not ASCIIZ
 		}
 	}
+	if (gl_logTexts->integer == 2)				// special value: log only 1 frame
+		Cvar_SetInteger ("gl_logTexts", 0);
 
 	textbufCount = 0;
 }

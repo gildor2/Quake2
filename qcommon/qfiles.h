@@ -52,45 +52,21 @@ typedef struct
 /*
 ========================================================================
 
-PCX files are used for as many images as possible
-
-========================================================================
-*/
-
-typedef struct
-{
-    char	manufacturer;
-    char	version;
-    char	encoding;
-    char	bits_per_pixel;
-    unsigned short	xmin,ymin,xmax,ymax;
-    unsigned short	hres,vres;
-    unsigned char	palette[48];
-    char	reserved;
-    char	color_planes;
-    unsigned short	bytes_per_line;
-    unsigned short	palette_type;
-    char	filler[58];
-    unsigned char	data;			// unbounded
-} pcx_t;
-
-
-/*
-========================================================================
-
 .MD2 triangle model file format
 
 ========================================================================
 */
 
-#define IDALIASHEADER		('I'+('D'<<8)+('P'<<16)+('2'<<24))
-#define ALIAS_VERSION	8
+#define MD2_IDENT			('I'+('D'<<8)+('P'<<16)+('2'<<24))
+#define MD2_VERSION			8
 
-#define	MAX_TRIANGLES	4096
-#define MAX_VERTS		2048
-#define MAX_FRAMES		512
-#define MAX_MD2SKINS	32
-#define	MAX_SKINNAME	64
+/*
+#define	MAX_TRIANGLES		4096
+#define MAX_VERTS			2048
+#define MAX_FRAMES			512
+*/
+#define MD2_MAX_SKINS		32
+#define	MD2_MAX_SKINNAME	64
 
 typedef struct
 {
@@ -110,6 +86,7 @@ typedef struct
 	byte	lightnormalindex;
 } dTriVertx_t;
 
+// Q2 ref_soft asm code uses this:
 #define DTRIVERTX_V0   0
 #define DTRIVERTX_V1   1
 #define DTRIVERTX_V2   2
@@ -150,7 +127,7 @@ typedef struct
 	int		numGlcmds;		// dwords in strip/fan command list
 	int		numFrames;
 
-	int		ofsSkins;		// each skin is a MAX_SKINNAME string
+	int		ofsSkins;		// each skin is a MD2_MAX_SKINNAME string
 	int		ofsSt;			// byte offset from start for stverts
 	int		ofsTris;		// offset for dtriangles
 	int		ofsFrames;		// offset for first frame
@@ -161,19 +138,37 @@ typedef struct
 /*
 ========================================================================
 
+.MD3 file format
+
+========================================================================
+*/
+
+#define MD3_IDENT			(('3'<<24)+('P'<<16)+('D'<<8)+'I')
+#define MD3_VERSION			15
+
+#define	MD3_XYZ_SCALE		(1.0f/64)	// vertex scales
+
+#define	MD3_MAX_TRIANGLES	8192		// per surface
+#define MD3_MAX_VERTS		4096		// per surface
+//!! unfinished!
+
+
+/*
+========================================================================
+
 .SP2 sprite file format
 
 ========================================================================
 */
 
-#define IDSPRITEHEADER	('I'+('D'<<8)+('S'<<16)+('2'<<24))
-#define SPRITE_VERSION	2
+#define SP2_IDENT			('I'+('D'<<8)+('S'<<16)+('2'<<24))
+#define SP2_VERSION			2
 
 typedef struct
 {
 	int		width, height;
 	int		origin_x, origin_y;		// raster coordinates inside pic
-	char	name[MAX_SKINNAME];		// name of pcx file
+	char	name[MD2_MAX_SKINNAME];	// name of pcx file
 } dsprframe_t;
 
 typedef struct {
@@ -214,8 +209,8 @@ typedef struct miptex_s
 ==============================================================================
 */
 
-#define IDBSPHEADER	('I'+('B'<<8)+('S'<<16)+('P'<<24))
-#define BSPVERSION	38
+#define BSP2_IDENT			('I'+('B'<<8)+('S'<<16)+('P'<<24))
+#define BSP2_VERSION		38
 
 
 // upper design bounds
@@ -497,7 +492,7 @@ typedef struct
 #define SURF_KP_MATERIAL	0x0FF80000
 
 //............... Half-Life stuff ......................
-#define HL_BSPVERSION	30
+#define BSPHL_VERSION	30
 
 /* Marks:
  * "*" - same as Quake2

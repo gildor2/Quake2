@@ -756,10 +756,7 @@ void SV_PostprocessFrame (void)
 			trace = SV_Trace (ent->s.origin, ent->mins, ent->maxs, point, ent, MASK_PLAYERSOLID|MASK_MONSTERSOLID|MASK_WATER);
 			if (trace.fraction < 1)
 			{
-				if (!trace.surface)
-					footsteptype = -1;	//?? silent
-				else
-					footsteptype = trace.surface->material - 1;
+				footsteptype = trace.surface->material - 1;
 
 				if (footsteptype < 0)//?? || footsteptype >= MATERIAL_COUNT)	// i.e. MATERIAL_SILENT (== 0) or incorrect
 					ent->s.event = 0;	// EV_FOOTSTEP ?
@@ -802,7 +799,7 @@ void SV_PostprocessFrame (void)
 			if (cl->screaming && (curr_vel >= FALLING_SCREAM_VELOCITY1 || prev_vel >= FALLING_SCREAM_VELOCITY1
 							 || pm->pm_type != PM_NORMAL))	// killed
 			{	// stop scream
-				SV_StartSoundNew (NULL, ent, CHAN_BODY, SV_SoundIndex ("*fall.wav"), 0.0, ATTN_NORM, 0);
+				SV_StartSoundNew (NULL, ent, CHAN_BODY, SV_SoundIndex ("*fall.wav"), 0.0f, ATTN_NORM, 0);	// volume=0
 				cl->screaming = false;
 			}
 
@@ -849,8 +846,9 @@ void SV_PostprocessFrame (void)
 						if (trace.fraction == 1.0 && !trace.startsolid)	// no water and start not in water
 						{
 							end[2] = pm_origin[2] - FALLING_SCREAM_HEIGHT_SOLID;
-							trace = SV_Trace (pm_origin, mins, maxs, end, NULL, CONTENTS_SOLID);
-							if (trace.fraction == 1.0 || (!trace.ent && trace.plane.normal[2] < 0.5))
+							trace = SV_Trace (pm_origin, mins, maxs, end, NULL, CONTENTS_SOLID|CONTENTS_LAVA);
+							if (trace.fraction == 1.0 || (!trace.ent && trace.plane.normal[2] < 0.5) ||
+								trace.contents & CONTENTS_LAVA || trace.surface->flags & SURF_SKY)
 								cl->screaming = true;
 						}
 					}

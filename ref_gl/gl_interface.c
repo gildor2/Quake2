@@ -622,6 +622,9 @@ void GL_Set2DMode (void)
 	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_NODEPTHTEST);
 	GL_CullFace (CULL_NONE);
 	gl_state.is2dMode = true;
+
+	gl_state.inverseCull = false;
+	GL_CullFace (CULL_FRONT);
 }
 
 
@@ -653,4 +656,7 @@ void GL_Setup (viewPortal_t *port)
 		qglClearColor (0, 0.03, 0.03, 1);
 	}
 	qglClear (bits);
+
+	gl_state.inverseCull = false;
+	GL_CullFace (CULL_FRONT);
 }

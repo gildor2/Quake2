@@ -307,12 +307,12 @@ model_t *Mod_ForName (char *name, qboolean crash)
 
 		switch (LittleLong(*buf))
 		{
-		case IDALIASHEADER:
+		case MD2_IDENT:
 			loadmodel->extradata = Hunk_Begin (0x200000);
 			Mod_LoadAliasModel (mod, buf);
 			break;
 
-		case IDSPRITEHEADER:
+		case SP2_IDENT:
 			loadmodel->extradata = Hunk_Begin (0x10000);
 			Mod_LoadSpriteModel (mod, buf);
 			break;
@@ -1338,9 +1338,8 @@ void Mod_LoadAliasModel (model_t *mod, void *buffer)
 	pinmodel = (dmdl_t *)buffer;
 
 	version = LittleLong (pinmodel->version);
-	if (version != ALIAS_VERSION)
-		Com_Error (ERR_DROP, "%s has wrong version number (%i should be %i)",
-				 mod->name, version, ALIAS_VERSION);
+	if (version != MD2_VERSION)
+		Com_Error (ERR_DROP, "%s has wrong version number (%i should be %i)", mod->name, version, MD2_VERSION);
 
 	pheader = Hunk_Alloc (LittleLong(pinmodel->ofsEnd));
 
@@ -1354,7 +1353,7 @@ void Mod_LoadAliasModel (model_t *mod, void *buffer)
 	if (pheader->numXyz <= 0)
 		Com_Error (ERR_DROP, "model %s has no vertices", mod->name);
 
-	if (pheader->numXyz > MAX_VERTS)
+	if (pheader->numXyz > 2048)//MAX_VERTS)
 		Com_Error (ERR_DROP, "model %s has too many vertices", mod->name);
 
 	if (pheader->numSt <= 0)
@@ -1417,11 +1416,11 @@ void Mod_LoadAliasModel (model_t *mod, void *buffer)
 
 	/*------- register all skins -----------*/
 	memcpy ((char *)pheader + pheader->ofsSkins, (char *)pinmodel + pheader->ofsSkins,
-		pheader->numSkins*MAX_SKINNAME);
+		pheader->numSkins*MD2_MAX_SKINNAME);
 	for (i = 0; i < pheader->numSkins; i++)
 	{
 //		Com_Printf ("^1skin #%d  %s\n", i, (char *)pheader + pheader->ofsSkins + i*MAX_SKINNAME);
-		mod->skins[i] = GL_FindImage ((char *)pheader + pheader->ofsSkins + i*MAX_SKINNAME, it_skin);
+		mod->skins[i] = GL_FindImage ((char *)pheader + pheader->ofsSkins + i*MD2_MAX_SKINNAME, it_skin);
 	}
 //	mod->numframes = pheader->num_frames;
 
@@ -1458,13 +1457,12 @@ void Mod_LoadSpriteModel (model_t *mod, void *buffer)
 	sprout->version = LittleLong (sprin->version);
 	sprout->numframes = LittleLong (sprin->numframes);
 
-	if (sprout->version != SPRITE_VERSION)
-		Com_Error (ERR_DROP, "%s has wrong version number (%i should be %i)",
-				 mod->name, sprout->version, SPRITE_VERSION);
+	if (sprout->version != SP2_VERSION)
+		Com_Error (ERR_DROP, "%s has wrong version number (%i should be %i)", mod->name, sprout->version, SP2_VERSION);
 
-	if (sprout->numframes > MAX_MD2SKINS)
+	if (sprout->numframes > MD2_MAX_SKINS)
 		Com_Error (ERR_DROP, "%s has too many frames (%i > %i)",
-				mod->name, sprout->numframes, MAX_MD2SKINS);
+				mod->name, sprout->numframes, MD2_MAX_SKINS);
 
 	// byte swap everything
 	for (i=0 ; i<sprout->numframes ; i++)
@@ -1473,7 +1471,7 @@ void Mod_LoadSpriteModel (model_t *mod, void *buffer)
 		sprout->frames[i].height = LittleLong (sprin->frames[i].height);
 		sprout->frames[i].origin_x = LittleLong (sprin->frames[i].origin_x);
 		sprout->frames[i].origin_y = LittleLong (sprin->frames[i].origin_y);
-		memcpy (sprout->frames[i].name, sprin->frames[i].name, MAX_SKINNAME);
+		memcpy (sprout->frames[i].name, sprin->frames[i].name, MD2_MAX_SKINNAME);
 		mod->skins[i] = GL_FindImage (sprout->frames[i].name, it_sprite);
 		if (!mod->skins[i]) Com_DPrintf ("Cannot find frame #%d (%s)\n", i, sprout->frames[i].name);
 	}
@@ -1543,7 +1541,7 @@ struct model_s *R_RegisterModel (char *name)
 		{
 			pheader = (dmdl_t *)mod->extradata;
 			for (i=0 ; i<pheader->numSkins ; i++)
-				mod->skins[i] = GL_FindImage ((char *)pheader + pheader->ofsSkins + i*MAX_SKINNAME, it_skin);
+				mod->skins[i] = GL_FindImage ((char *)pheader + pheader->ofsSkins + i*MD2_MAX_SKINNAME, it_skin);
 //PGM
 			mod->numframes = pheader->numFrames;
 //PGM

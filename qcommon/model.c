@@ -262,8 +262,8 @@ void LoadQ2BspFile (void)
 	for (i = 0; i < sizeof(dheader_t) / 4; i++)
 		((int *)header)[i] = LittleLong (((int *)header)[i]);
 
-	if (header->version != BSPVERSION)
-		Com_Error (ERR_DROP, "%s is version %i, not %i\n", bspfile.name, header->version, BSPVERSION);
+	if (header->version != BSP2_VERSION)
+		Com_Error (ERR_DROP, "%s is version %i, not %i\n", bspfile.name, header->version, BSP2_VERSION);
 
 	bspfile.type = map_q2;
 
@@ -329,10 +329,10 @@ bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum)
 
 	switch (LittleLong(*(unsigned *)bspfile.file))
 	{
-		case IDBSPHEADER:
+		case BSP2_IDENT:
 			LoadQ2BspFile ();
 			return &bspfile;
-//??		case HL_BSPVERSION:
+//??		case BSPHL_VERSION:
 //			LoadHLBspFile ();
 //			return &bspfile;
 	}
@@ -580,16 +580,21 @@ static qboolean ProcessEntity ()
 					VectorNormalize (origin);				// just a sun direction
 					break;
 				case 2:
-					flare->color[2] = 128;					// amber
+//					flare->color[2] = 128;					// amber (198,130,90)
+//					VectorSet (flare->color, 255, 167, 115);
+					VectorSet (flare->color, 255, 180, 132);
 					break;
 				case 3:
-					flare->color[1] = flare->color[2] = 64;	// red
+//					flare->color[1] = flare->color[2] = 64;	// red (231,40,31)
+					VectorSet (flare->color, 255, 44, 34);
 					break;
 				case 4:
-					flare->color[0] = flare->color[1] = 64;	// blue
+//					flare->color[0] = flare->color[1] = 64;	// blue (123,113,165)
+					VectorSet (flare->color, 190, 174, 255);
 					break;
 				case 5:
-					flare->color[0] = flare->color[2] = 64;	// green
+//					flare->color[0] = flare->color[2] = 64;	// green (115,138,99)
+					VectorSet (flare->color, 212, 255, 183);
 					break;
 				}
 			}

@@ -16,7 +16,7 @@
      - move <x> <y> <z> <func> <base> <amp> <phase> <freq>
   4) tessSize - ignore
   5) clampTime <value>
-  6) q3map*		-- ignore
+  6) q3map*		-- ignore (note: check "q3map_surfacelight" and other "q3map_*light*")
   7) surfaceParm	-- ignore (?)
      - contents: slime, lava, playerclip, monsterclip, nodrop, origin, translucent,
        detail, structural, areaportal, clusterportal, donotenter, fog, sky, 

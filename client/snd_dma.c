@@ -164,14 +164,22 @@ qboolean S_IsFemale (char *model)
 
 	Com_DPrintf ("Checking %s gender...\n",model);
 
+	if (!Q_stricmp(model, "female") || !Q_stricmp(model, "crakhor"))
+	{
+		Com_DPrintf ("...hardcoded female\n");
+		return true;
+	}
 	i = 0;
 	while (s = female_models[i++])
 	{
 		Com_DPrintf ("%s ...\n",s);
 		if (!Q_stricmp (s, model))
+		{
+			Com_DPrintf ("...female\n");
 			return true;
+		}
 	}
-	Com_DPrintf ("Male!\n");
+	Com_DPrintf ("...male\n");
 	return false;
 }
 

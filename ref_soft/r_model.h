@@ -219,7 +219,7 @@ typedef struct model_s
 	byte		*lightdata;
 
 	// for alias models and sprites
-	image_t		*skins[MAX_MD2SKINS];
+	image_t		*skins[MD2_MAX_SKINS];
 	void		*extradata;
 	int			extradatasize;
 } model_t;
