@@ -248,6 +248,7 @@
 	".\jpeglib\jerror.h"\
 	".\jpeglib\jinclude.h"\
 	".\jpeglib\jmorecfg.h"\
+	".\jpeglib\jpegint.h"\
 	".\jpeglib\jpeglib.h"\
 	
 

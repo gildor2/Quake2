@@ -33,10 +33,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef enum {SIS_SUCCESS, SIS_FAILURE, SIS_NOTAVAIL} sndinitstat;
 
-#ifdef WAVEOUT_DRV
-cvar_t	*s_wavonly;
-#endif
-
 static bool	dsound_init;
 static bool	wav_init;
 static bool	snd_firsttime = true, snd_isdirect, snd_iswave;
@@ -56,6 +52,8 @@ static int	snd_sent, snd_completed;
 //-------------- WaveOut ---------------------
 
 #ifdef WAVEOUT_DRV
+
+static cvar_t		*s_wavonly;
 
 static HANDLE		hData;
 static HPSTR		lpData, lpData2;
@@ -197,7 +195,7 @@ static qboolean DS_CreateBuffers (void)
 
 		if (DS_OK != IDirectSoundBuffer_GetCaps (pDSBuf, &dsbcaps))
 		{
-			Com_Printf ("*** GetCaps failed ***\n");
+			Com_WPrintf ("*** GetCaps failed ***\n");
 			FreeSound ();
 			return false;
 		}
@@ -219,7 +217,7 @@ static qboolean DS_CreateBuffers (void)
 
 		if (DS_OK != IDirectSoundBuffer_GetCaps (pDSPBuf, &dsbcaps))
 		{
-			Com_Printf ("*** GetCaps failed ***\n");
+			Com_WPrintf ("*** GetCaps failed ***\n");
 			return false;
 		}
 
@@ -280,7 +278,7 @@ static void DS_DestroyBuffers (void)
 	}
 
 	// only release primary buffer if it's not also the mixing buffer we just released
-	if (pDSPBuf && ( pDSBuf != pDSPBuf ))
+	if (pDSPBuf && pDSBuf != pDSPBuf)
 	{
 		Com_DPrintf ("...releasing primary buffer\n");
 		IDirectSoundBuffer_Release (pDSPBuf);

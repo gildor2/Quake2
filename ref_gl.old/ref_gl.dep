@@ -1,6 +1,7 @@
 # Microsoft Developer Studio Generated Dependency File, included by ref_gl.mak
 
 .\gl_draw.c : \
+	"..\..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -14,6 +15,7 @@
 	
 
 .\gl_image.c : \
+	"..\..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -27,6 +29,7 @@
 	
 
 .\gl_light.c : \
+	"..\..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -40,6 +43,7 @@
 	
 
 .\gl_mesh.c : \
+	"..\..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -55,6 +59,7 @@
 	
 
 .\gl_model.c : \
+	"..\..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -68,6 +73,7 @@
 	
 
 .\gl_rmain.c : \
+	"..\..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -81,6 +87,7 @@
 	
 
 .\gl_rmisc.c : \
+	"..\..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -94,6 +101,7 @@
 	
 
 .\gl_rsurf.c : \
+	"..\..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -107,6 +115,7 @@
 	
 
 .\gl_textout.c : \
+	"..\..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -120,6 +129,7 @@
 	
 
 .\gl_warp.c : \
+	"..\..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -133,6 +143,7 @@
 	
 
 glw_imp.c : \
+	"..\..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -157,6 +168,7 @@ glw_imp.c : \
 	
 
 .\qgl_win.c : \
+	"..\..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\

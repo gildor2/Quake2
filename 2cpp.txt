@@ -1,0 +1,4 @@
+- DirectInput, DirectSound: vtbl -> classes
+- renderer:
+  - make as class
+    ! console-only renderer: can't replace functions to dummy (vid_dll.c, D_Xxxx() function family)

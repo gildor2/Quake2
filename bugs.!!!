@@ -13,7 +13,11 @@
   - map "dm_dukecity_beta":
     - disco: neon lamp text should not disappear
   ? g_misc.c::SP_light() -- disabled lights with style>=32
-- dir "../dirty/maps" will display the same list twice
+
+- filesystem:
+  - "dir ../dirty/maps" will display the same list twice
+  - when q2 launched from "release" directory (w/o baseq2 subdir), FS "search paths" will be empty, "dir" command will not work at all
+
 - when sound is busy, error about "command already registered" appears for sound commands
 
 ! cannot load map "dog..." in soft: "bad surface extents 272 x XXX" (but GL can ...; seems, ref_soft

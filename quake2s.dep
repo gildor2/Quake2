@@ -1,6 +1,7 @@
 # Microsoft Developer Studio Generated Dependency File, included by quake2s.mak
 
 .\win32\cd_win.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -248,6 +249,7 @@
 	
 
 .\win32\conproc.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\win32\conproc.h"\
 	
 
@@ -303,6 +305,7 @@
 	
 
 .\win32\in_win.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -382,6 +385,7 @@
 	
 
 .\win32\net_wins.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -472,6 +476,7 @@
 	
 
 .\win32\snd_win.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -565,6 +570,7 @@
 	
 
 .\win32\sys_win.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -584,6 +590,7 @@
 	
 
 .\win32\vid_dll.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -631,6 +638,7 @@
 	
 
 .\ref_gl\gl_backend.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -654,6 +662,7 @@
 	
 
 .\ref_gl\gl_buffers.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -673,6 +682,7 @@
 	
 
 .\ref_gl\gl_frontend.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -694,6 +704,7 @@
 	
 
 .\ref_gl\gl_image.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -711,6 +722,7 @@
 	
 
 .\ref_gl\gl_interface.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -727,6 +739,7 @@
 	
 
 .\ref_gl\gl_light.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -747,6 +760,7 @@
 	
 
 .\ref_gl\gl_lightmap.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -767,6 +781,7 @@
 	
 
 .\ref_gl\gl_main.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -788,6 +803,7 @@
 	
 
 .\ref_gl\gl_math.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -805,6 +821,7 @@
 	
 
 .\ref_gl\gl_model.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -826,6 +843,7 @@
 	
 
 .\ref_gl\gl_poly.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -840,6 +858,7 @@
 	
 
 .\ref_gl\gl_shader.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -857,6 +876,7 @@
 	
 
 .\ref_gl\gl_sky.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -878,6 +898,7 @@
 	
 
 .\win32\glw_imp.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -892,6 +913,7 @@
 	
 
 .\win32\qgl_win.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -907,6 +929,7 @@
 	
 
 .\win32\q_shwin.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -1104,6 +1127,7 @@
 	
 
 .\win32\rw_ddraw.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1117,6 +1141,7 @@
 	
 
 .\win32\rw_dib.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1129,6 +1154,7 @@
 	
 
 .\win32\rw_imp.c : \
+	"..\program files\microsoft visual studio\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\

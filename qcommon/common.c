@@ -97,6 +97,28 @@ to the apropriate place.
 static qboolean console_logged = false;
 static char log_name[MAX_OSPATH];
 
+// from new engine strings.cpp
+static void appUncolorizeString (char *dst, const char *src)
+{
+	char	c, c1;
+
+	if (!src) src = dst;
+	do
+	{
+		c = *src++;
+		if (c == '^')
+		{
+			c1 = *src;
+			if (c1 < '0' || c1 > '7')
+				*dst++ = c;
+			else
+				src++;
+		}
+		else
+			*dst++ = c;
+	} while (c);
+}
+
 void Com_Printf (const char *fmt, ...)
 {
 	va_list	argptr;
@@ -110,7 +132,7 @@ void Com_Printf (const char *fmt, ...)
 	{
 		if ((strlen (msg) + strlen(rd_buffer)) > rd_buffersize - 1)
 		{
-			rd_flush(rd_target, rd_buffer);
+			rd_flush (rd_target, rd_buffer);
 			*rd_buffer = 0;
 		}
 		strcat (rd_buffer, msg);
@@ -138,12 +160,12 @@ void Com_Printf (const char *fmt, ...)
 		}
 		if (logfile)
 		{
+			appUncolorizeString (msg, msg);
 			fprintf (logfile, "%s", msg);
-			if (logfile_active->integer > 1)
+			if (logfile_active->integer > 1)	// force to save every message
 			{
 				fclose (logfile);
 				logfile = NULL;
-			//	fflush (logfile);		// force it to save every time
 			}
 		}
 		console_logged = true;
@@ -173,7 +195,11 @@ void Com_DPrintf (const char *fmt, ...)
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
 	Com_Printf ("^4%s", msg);
-	if (developer->integer == 2) DebugPrintf ("%s", msg);
+	if (developer->integer == 2)
+	{
+		appUncolorizeString (msg, msg);
+		DebugPrintf ("%s", msg);
+	}
 }
 
 

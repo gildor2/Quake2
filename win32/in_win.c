@@ -25,6 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../client/client.h"
 
 
+//!! add DirectInput keyboard support, remove win32 mouse/keyboard support; joystick - DirectInput only
+
 #define NUM_MOUSE_BUTTONS	3
 
 
@@ -165,18 +167,14 @@ static qboolean IN_InitDirect (void)
 	Com_Printf ("Initializing DirectInput\n");
 	if (!hInstDI)
 	{
-		Com_DPrintf ("...loading dinput.dll\n");
-		hInstDI = LoadLibrary ("dinput.dll");
-		if (!hInstDI)
+		if (!(hInstDI = LoadLibrary ("dinput.dll")))
 		{
-			Com_Printf ("failed\n");
+			Com_WPrintf ("...loading dinput.dll failed\n");
 			return false;
 		}
-		Com_Printf ("ok\n");
-		pDirectInputCreate = (void *)GetProcAddress (hInstDI, "DirectInputCreateA");
-		if (!pDirectInputCreate)
+		if (!(pDirectInputCreate = (void *)GetProcAddress (hInstDI, "DirectInputCreateA")))
 		{
-			Com_WPrintf ("*** couldn't get DI proc addr ***\n");
+			Com_WPrintf ("... couldn't get DI proc address\n");
 			return false;
 		}
 	}
@@ -200,13 +198,16 @@ static qboolean IN_InitDirect (void)
 	IDirectInputDevice_SetDataFormat (pDID, &c_dfDIMouse);	// may fail
 	if FAILED(IDirectInputDevice_SetCooperativeLevel (pDID, cl_hwnd, DISCL_EXCLUSIVE|DISCL_FOREGROUND))
 	{
-		Com_Printf ("Cannot set cooperative level\n");
+		//?? set fullscreen to 0 -- if cannot capture mouse in fullscreen mode
+		//?? (if fullscreen is already 0, it will not be changed)
+		Com_Printf ("... cannot set cooperative level\n");
 		IN_FreeDirect ();
 		return false;
 	}
 	if FAILED(IDirectInputDevice_Acquire (pDID))
 	{
-		Com_Printf ("Cannot acquire mouse\n");
+		//?? fullscreen <- 0
+		Com_Printf ("... cannot acquire mouse\n");
 		IN_FreeDirect ();
 		return false;
 	}
@@ -964,7 +965,7 @@ void IN_Frame (void)
 		if (ms.rgbButtons[1]) tmp |= 2;
 		if (ms.rgbButtons[2]) tmp |= 4;
 		IN_MouseEvent (tmp);			// call this always - to detect button on/off
-		//?? can access 4 buttons
+		//?? can access 4 (and more?) buttons
 		return;
 	}
 

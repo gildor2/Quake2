@@ -1164,7 +1164,8 @@ static void ReserveVerts (int verts, int inds)
 	Skybox
 -----------------------------------------------------------------------------*/
 
-#define SKY_FRUST_DIST	1
+#define SKY_FRUST_DIST	10			// 1 is not enough - bad FP precision
+//#define VISUALIZE_SKY_FRUSTUM		// NOTE: SKY_FRUST_DIST should be at least gl_znear->value to make rect visible
 
 static void DrawSkyBox (void)
 {
@@ -1178,8 +1179,12 @@ static void DrawSkyBox (void)
 
 	// build frustum cover
 	VectorMA (vp.vieworg, SKY_FRUST_DIST, vp.viewaxis[0], tmp);
-	VectorScale (vp.viewaxis[1], SKY_FRUST_DIST * vp.t_fov_x, right);
-	VectorScale (vp.viewaxis[2], SKY_FRUST_DIST * vp.t_fov_y, up);
+	VectorScale (vp.viewaxis[1], SKY_FRUST_DIST * vp.t_fov_x * 1.05, right);	// *1.05 -- to avoid FP precision bugs
+	VectorScale (vp.viewaxis[2], SKY_FRUST_DIST * vp.t_fov_y * 1.05, up);
+#ifdef VISUALIZE_SKY_FRUSTUM
+	VectorScale (right, 0.9, right);
+	VectorScale (up, 0.9, up);
+#endif
 	VectorAdd (tmp, up, tmp1);				// up
 	VectorAdd (tmp1, right, fv[0].xyz);
 	VectorSubtract (tmp1, right, fv[1].xyz);
@@ -1190,6 +1195,7 @@ static void DrawSkyBox (void)
 	pl.numVerts = 4;
 	pl.verts = fv;
 	GL_AddSkySurface (&pl, vp.vieworg, SKY_FRUSTUM);
+
 	if (!GL_SkyVisible ()) return;			// all sky surfaces are outside frustum
 
 	// draw sky
@@ -1251,6 +1257,24 @@ static void DrawSkyBox (void)
 	glPopMatrix ();
 
 	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
+
+#ifdef VISUALIZE_SKY_FRUSTUM
+	glPushMatrix ();
+	glLoadMatrixf (&vp.modelMatrix[0][0]);		// world matrix
+	GL_SetMultitexture (0);
+	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
+	GL_DepthRange (DEPTH_NEAR);
+	glDisableClientState (GL_COLOR_ARRAY);
+	glColor3f (0, 0, 0);
+	GL_CullFace (CULL_NONE);	//??
+	glBegin (GL_QUADS);
+	glVertex3fv (fv[0].xyz);
+	glVertex3fv (fv[1].xyz);
+	glVertex3fv (fv[2].xyz);
+	glVertex3fv (fv[3].xyz);
+	glEnd ();
+	glPopMatrix ();
+#endif
 
 	GL_DepthRange (DEPTH_NORMAL);
 }
@@ -2320,7 +2344,7 @@ CVAR_END
 
 	vbSize = sizeof(vertexBuffer_t) + gl_config.maxActiveTextures * sizeof(bufTexCoord_t) * MAX_VERTEXES;
 	vb = Z_Malloc (vbSize);
-	Com_Printf("^1 **** buf: %08X (%d bytes) ****\n", vb, vbSize);//?? should be 16-byte aligned
+	Com_Printf("^1**** buf: %08X (%d bytes) ****\n", vb, vbSize);//?? should be 16-byte aligned
 }
 
 

@@ -420,7 +420,27 @@ static void PZ_FreeTags (int tag)
 
 void SV_InitGameProgs (void)
 {
-	game_import_t	import;
+	game_import_t import;
+	static const game_import_t import2 = {
+		SV_BroadcastPrintf, PF_dprintf, PF_cprintf, PF_centerprintf,
+		PF_StartSound, SV_StartSoundOld,
+		PF_Configstring,
+		PF_error,
+		SV_ModelIndex, SV_SoundIndex, SV_ImageIndex,
+		PF_setmodel,
+		SV_TraceHook, SV_PointContents,
+		PF_inPVS, PF_inPHS, CM_SetAreaPortalState, CM_AreasConnected,
+		SV_LinkEdict, SV_UnlinkEdict, SV_AreaEdicts,
+		SV_Pmove,
+		SV_MulticastOld, PF_Unicast,
+		PF_WriteChar, PF_WriteByte, PF_WriteShort, PF_WriteLong, PF_WriteFloat,
+		PF_WriteString, PF_WritePos, PF_WriteDir, PF_WriteAngle,
+		PF_TagMalloc, Z_Free, Z_FreeTags,
+		PF_Cvar_Get, Cvar_Set, Cvar_ForceSet,
+		Cmd_Argc, Cmd_Argv, Cmd_Args,
+		Cbuf_AddText,
+		SCR_DebugGraph
+	};
 
 	guard(SV_InitGameProgs);
 
@@ -428,59 +448,7 @@ void SV_InitGameProgs (void)
 	if (ge) SV_ShutdownGameProgs ();
 
 	// load a new game dll
-	import.multicast = SV_MulticastOld;	//?? we can hook some messages in this function
-	import.unicast = PF_Unicast;
-	import.bprintf = SV_BroadcastPrintf;
-	import.dprintf = PF_dprintf;
-	import.cprintf = PF_cprintf;
-	import.centerprintf = PF_centerprintf;
-	import.error = PF_error;
-
-	import.linkentity = SV_LinkEdict;
-	import.unlinkentity = SV_UnlinkEdict;
-	import.BoxEdicts = SV_AreaEdicts;
-	import.trace = SV_TraceHook;
-	import.pointcontents = SV_PointContents;
-	import.setmodel = PF_setmodel;
-	import.inPVS = PF_inPVS;
-	import.inPHS = PF_inPHS;
-	import.Pmove = SV_Pmove;
-
-	import.modelindex = SV_ModelIndex;
-	import.soundindex = SV_SoundIndex;
-	import.imageindex = SV_ImageIndex;
-
-	import.configstring = PF_Configstring;
-	import.sound = PF_StartSound;
-	import.positioned_sound = SV_StartSoundOld;
-
-	import.WriteChar = PF_WriteChar;
-	import.WriteByte = PF_WriteByte;
-	import.WriteShort = PF_WriteShort;
-	import.WriteLong = PF_WriteLong;
-	import.WriteFloat = PF_WriteFloat;
-	import.WriteString = PF_WriteString;
-	import.WritePosition = PF_WritePos;
-	import.WriteDir = PF_WriteDir;
-	import.WriteAngle = PF_WriteAngle;
-
-	import.TagMalloc = PF_TagMalloc;		// Z_TagMalloc
-	import.TagFree = Z_Free;
-	import.FreeTags = Z_FreeTags;
-
-	import.cvar = PF_Cvar_Get;				// Cvar_Get
-	import.cvar_set = Cvar_Set;
-	import.cvar_forceset = Cvar_ForceSet;
-
-	import.argc = Cmd_Argc;
-	import.argv = Cmd_Argv;
-	import.args = Cmd_Args;
-	import.AddCommandString = Cbuf_AddText;
-
-	import.DebugGraph = SCR_DebugGraph;
-	import.SetAreaPortalState = CM_SetAreaPortalState;
-	import.AreasConnected = CM_AreasConnected;
-
+	import = import2;
 	ge = (game_export_t *)Sys_GetGameAPI (&import);
 
 	if (!ge)
