@@ -38,7 +38,7 @@ extern LPDIRECTSOUNDBUFFER pDSBuf;
 extern DWORD gSndBufSize;
 
 extern HWND		cl_hwnd;
-extern qboolean	ActiveApp, Minimized;
+extern qboolean	ActiveApp;
 
 void IN_Activate (qboolean active);
 void IN_MouseEvent (int mstate);

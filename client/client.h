@@ -150,6 +150,7 @@ typedef struct
 
 	int		time;				// this is the time value that the client
 								// is rendering at, in msec; always <= cls.realtime
+	int		overtime;			// amount of time clamped (used for detection of hang server); ms
 	float	ftime;				// same as "time/1000", in sec; more precisious than "time"
 	float	lerpfrac;			// between oldframe and frame
 
@@ -397,12 +398,9 @@ typedef struct
 	vec3_t	origin;
 	float	radius;
 	float	die;				// stop lighting after this time
-	float	decay;				// drop this each second
-	float	minlight;			// don't add when contributing less
 } cdlight_t;
 
-cdlight_t *CL_AllocDlight (int key);
-void CL_RunDLights (void);
+cdlight_t *CL_AllocDlight (int key, vec3_t origin);
 void CL_AddDLights (void);
 
 
@@ -433,10 +431,8 @@ void CL_ParticleEffect3 (vec3_t org, vec3_t dir, int color, int count);
 void CL_BlasterParticles2 (vec3_t org, vec3_t dir, unsigned int color);
 void CL_BlasterTrail2 (vec3_t start, vec3_t end);
 void CL_DebugTrail (vec3_t start, vec3_t end);
-void CL_SmokeTrail (vec3_t start, vec3_t end, int colorStart, int colorRun, int spacing);
 void CL_Flashlight (int ent, vec3_t pos);
 void CL_ForceWall (vec3_t start, vec3_t end, int color);
-void CL_FlameEffects (centity_t *ent, vec3_t origin);
 void CL_GenericParticleEffect (vec3_t org, vec3_t dir, int color, int count, int numcolors, int dirspread, float alphavel);
 void CL_BubbleTrail2 (vec3_t start, vec3_t end, int dist);
 void CL_Heatbeam (vec3_t start, vec3_t end);

@@ -1237,7 +1237,8 @@ void GL_InitImages (void)
 
 			xv = (x - DLIGHT_SIZE/2 + 0.5f); xv *= xv;
 #if 1
-			v = 255 * (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2));
+			v = 255 * (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2));		// linear
+//			xv = (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2)); xv = bound(xv, 0, 1); v = xv * xv * 255;	// square
 			v = bound(v, 0, 255);
 #else
 			v = (int) (4000.0f / (xv + yv));
@@ -1532,7 +1533,24 @@ START_PROFILE(..img::pcx)
 		LoadPCX (name2, &pic8, &palette, &width, &height);
 		if (pic8)
 		{
+#if 0
+			unsigned pal[256];
+			byte	*p;
+			int		i;
+
+			p = palette;
+			for (i = 0; i < 256; i++, p += 3)
+			{
+				unsigned	v;
+
+				v = (p[0]<<0) + (p[1]<<8) + (p[2]<<16) + (255<<24);	// R G B A
+				pal[i] = LittleLong(v);
+			}
+			pal[255] &= LittleLong(0x00FFFFFF);						// #255 is transparent (alpha = 0)
+			pic = Convert8to32bit (pic8, width, height, pal);
+#else
 			pic = Convert8to32bit (pic8, width, height, NULL);
+#endif
 			Z_Free (pic8);
 			Z_Free (palette);
 		}

@@ -133,66 +133,61 @@ void Sys_Mkdir (char *path)
 
 //============================================
 
-static char	findbase[MAX_OSPATH];
-static char	findpath[MAX_OSPATH];
-static int	findhandle;
+static char	findBase[MAX_OSPATH];
+static char	findPath[MAX_OSPATH];
+static int	findHandle, findFlags;
 
-static qboolean CompareAttributes (unsigned found, unsigned musthave, unsigned canthave)
+static qboolean CheckAttributes (unsigned attrs)
 {
-#define COMP(a1,a2)	\
-	if ((found & a1) && (canthave & a2)) return false;	\
-	if (!(found & a1) && (musthave & a2)) return false;
-	COMP(_A_RDONLY, SFF_RDONLY);
-	COMP(_A_HIDDEN, SFF_HIDDEN);
-	COMP(_A_SYSTEM, SFF_SYSTEM);
-	COMP(_A_SUBDIR, SFF_SUBDIR);
-	COMP(_A_ARCH,   SFF_ARCH);
-#undef COMP
+	if (attrs & _A_SUBDIR)
+	{
+		if (!(findFlags & LIST_DIRS)) return false;
+	}
+	else
+	{
+		if (!(findFlags & LIST_FILES)) return false;
+	}
 
 	return true;
 }
 
-char *Sys_FindFirst (char *path, unsigned musthave, unsigned canthave)
+char *Sys_FindFirst (char *path, int flags)
 {
 	struct _finddata_t findinfo;
 
-	if (findhandle)
-		Sys_Error ("Sys_BeginFind without close");
-	findhandle = 0;
+	COM_FilePath (path, findBase);
+	findHandle = _findfirst (path, &findinfo);
+	if (findHandle == -1) return NULL;			// not found
+	findFlags = flags;
 
-	COM_FilePath (path, findbase);
-	findhandle = _findfirst (path, &findinfo);
-	if (findhandle == -1)
-		return NULL;
+	if (!CheckAttributes (findinfo.attrib))
+		return Sys_FindNext ();
 
-	if (!CompareAttributes (findinfo.attrib, musthave, canthave))
-		return Sys_FindNext (musthave, canthave);
-
-	Com_sprintf (findpath, sizeof(findpath), "%s/%s", findbase, findinfo.name);
-	return findpath;
+	Com_sprintf (findPath, sizeof(findPath), "%s/%s", findBase, findinfo.name);
+	return findPath;
 }
 
-char *Sys_FindNext (unsigned musthave, unsigned canthave)
+char *Sys_FindNext (void)
 {
 	struct _finddata_t findinfo;
 
-	while (findhandle != -1)
+	while (findHandle != -1)
 	{
-		if (_findnext (findhandle, &findinfo) == -1)
+		if (_findnext (findHandle, &findinfo) == -1)
 			return NULL;
 
-		if (!CompareAttributes (findinfo.attrib, musthave, canthave))
+		if (!CheckAttributes (findinfo.attrib))
 			continue;
 
-		Com_sprintf (findpath, sizeof(findpath), "%s/%s", findbase, findinfo.name);
-		return findpath;
+		Com_sprintf (findPath, sizeof(findPath), "%s/%s", findBase, findinfo.name);
+		return findPath;
 	}
 	return NULL;
 }
 
 void Sys_FindClose (void)
 {
-	if (findhandle != -1)
-		_findclose (findhandle);
-	findhandle = 0;
+	if (findHandle != -1)
+		_findclose (findHandle);
+	findHandle = 0;
 }

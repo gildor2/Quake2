@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <direct.h>
 #include <io.h>
 #include <conio.h>
-#include "../win32/conproc.h"
+#include "conproc.h"
 
 #define MINIMUM_WIN_MEMORY	0x0a00000
 #define MAXIMUM_WIN_MEMORY	0x1000000
@@ -50,10 +50,6 @@ unsigned	sys_frame_time;
 
 static HANDLE		qwclsemaphore;
 
-#define	MAX_NUM_ARGVS	128
-int			argc;
-char		*argv[MAX_NUM_ARGVS];
-
 
 /*
 ===============================================================================
@@ -70,7 +66,7 @@ void Sys_Error (char *error, ...)
 	char		text[1024];
 
 	CL_Shutdown ();
-	Qcommon_Shutdown ();
+	QCommon_Shutdown ();
 
 	va_start (argptr, error);
 	vsprintf (text, error, argptr);
@@ -92,7 +88,7 @@ void Sys_Quit (void)
 	timeEndPeriod( 1 );
 
 	CL_Shutdown ();
-	Qcommon_Shutdown ();
+	QCommon_Shutdown ();
 	CloseHandle (qwclsemaphore);
 	if (dedicated && dedicated->integer)
 		FreeConsole ();
@@ -357,7 +353,7 @@ void Sys_Init (void)
 		houtput = GetStdHandle (STD_OUTPUT_HANDLE);
 
 		// let QHOST hook in
-		InitConProc (argc, argv);
+//??		InitConProc (argc, argv);
 	}
 	SetUnhandledExceptionFilter (ExceptionFilter);
 }
@@ -379,7 +375,6 @@ char *Sys_ConsoleInput (void)
 
 	if (!dedicated || !dedicated->integer)
 		return NULL;
-
 
 	for ( ;; )
 	{
@@ -661,39 +656,6 @@ void *Sys_GetGameAPI (void *parms)
 
 /*
 ==================
-ParseCommandLine
-
-==================
-*/
-void ParseCommandLine (LPSTR lpCmdLine)
-{
-	argc = 1;
-	argv[0] = "exe";
-
-	while (*lpCmdLine && (argc < MAX_NUM_ARGVS))
-	{
-		while (*lpCmdLine && ((*lpCmdLine <= ' ') || (*lpCmdLine > 126)))
-			lpCmdLine++;
-
-		if (*lpCmdLine)
-		{
-			argv[argc] = lpCmdLine;
-			argc++;
-
-			while (*lpCmdLine && ((*lpCmdLine > ' ') && (*lpCmdLine <= 126)))
-				lpCmdLine++;
-
-			if (*lpCmdLine)
-			{
-				*lpCmdLine = 0;
-				lpCmdLine++;
-			}
-		}
-	}
-}
-
-/*
-==================
 WinMain
 
 ==================
@@ -703,30 +665,23 @@ HINSTANCE	global_hInstance;
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	int		time, oldtime, newtime;
-	char	*cddir;
+	char	*cddir, *cmdline;
+	char	cmdline2[1024];
 
 	global_hInstance = hInstance;
 
-	ParseCommandLine (lpCmdLine);
-
-	// if we find the CD, add a "+set cddir xxx" command line
+	// if we find the CD, add a "-cddir=xxx" command line
 	cddir = Sys_ScanForCD ();
-	if (cddir && cddir[0] && argc < MAX_NUM_ARGVS - 3)
+	if (cddir && cddir[0])
 	{
-		int		i;
-
-		// don't override a cddir on the command line
-		for (i = 0; i < argc; i++)
-			if (!stricmp (argv[i], "cddir")) break;
-		if (i == argc)	// not found
-		{
-			argv[argc++] = "+set";
-			argv[argc++] = "cddir";
-			argv[argc++] = cddir;
-		}
+		// add to the end of cmdline, so, if already specified - will not override option
+		Com_sprintf (cmdline2, sizeof(cmdline2), "%s -cddir=\"%s\"", lpCmdLine, cddir);
+		cmdline = cmdline2;
 	}
+	else
+		cmdline = lpCmdLine;
 
-	Qcommon_Init (argc, argv);
+	QCommon_Init (cmdline);
 	oldtime = Sys_Milliseconds ();
 
 	/*--------- main window message loop ------------*/
@@ -734,9 +689,8 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	{
 		MSG		msg;
 
-		// if at a full screen console, don't update unless needed
-		if (Minimized || (dedicated && dedicated->integer))
-			Sleep (10);
+		if ((!ActiveApp && IsIconic (cl_hwnd)) || (dedicated && dedicated->integer))
+			Sleep (10);		//?? what about client and server in one place: will server become slower ?
 
 		while (PeekMessage (&msg, NULL, 0, 0, PM_NOREMOVE))
 		{
@@ -747,8 +701,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
    			DispatchMessage (&msg);
 		}
 
-		// do not allow Qcommon_Frame(0)  (?)
-#if 1
+		// do not allow Qcommon_Frame(0)
 		while (1)
 		{
 			newtime = Sys_Milliseconds ();
@@ -756,19 +709,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 			if (time >= 1) break;
 			Sleep (1);
 		}
-#else
-		do
-		{	// original code -- eats CPU time
-			newtime = Sys_Milliseconds ();
-			time = newtime - oldtime;
-		} while (time < 1);
-#endif
-
-//		Com_Printf ("time:%5.2f - %5.2f = %5.2f\n", newtime, oldtime, time);
-
-//		_controlfp (~( _EM_ZERODIVIDE /*| _EM_INVALID*/ ), _MCW_EM);
-//		_controlfp (_PC_24, _MCW_PC);
-		Qcommon_Frame (time);
+		QCommon_Frame (time);
 
 		oldtime = newtime;
 	}

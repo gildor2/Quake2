@@ -36,6 +36,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define CD_PATH		"install/data"
 #define CD_CHECK	"install/data/quake2.exe"	// file used for CD validation
 
+#define NEW_PROTOCOL_ID "gildor"
+
 #ifdef WIN32
 
 #ifdef NDEBUG
@@ -143,10 +145,6 @@ void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
 
 //============================================================================
 
-
-int		COM_Argc (void);
-char	*COM_Argv (int arg);	// range and null checked
-void	COM_ClearArgv (int arg);
 
 void	COM_Init (void);
 void	COM_InitArgv (int argc, char **argv);
@@ -377,14 +375,6 @@ void	Cbuf_InsertText (char *text);
 // inserted at the beginning of the buffer, before any remaining unexecuted
 // commands.
 
-void	Cbuf_AddEarlyCommands (qboolean clear);
-// adds all the +set commands from the command line
-
-qboolean Cbuf_AddLateCommands (void);
-// adds all the remaining + commands from the command line
-// Returns true if any late commands were added, which
-// will keep the demoloop from immediately starting
-
 void	Cbuf_Execute (void);
 // Pulls off \n terminated lines of text from the command buffer and sends
 // them through Cmd_ExecuteString.  Stops when the buffer is empty.
@@ -482,6 +472,7 @@ typedef struct
 
 
 extern cvar_t *cvar_vars;
+extern int	cvar_initialized;
 
 //--cvar_t *Cvar_Get (char *var_name, char *value, int flags);
 // creates the variable if it doesn't exist, or returns the existing one
@@ -514,7 +505,7 @@ qboolean Cvar_Command (void);
 // command.  Returns true if the command was a variable reference that
 // was handled. (print or change)
 
-void 	Cvar_WriteVariables (FILE *f);
+void 	Cvar_WriteVariables (FILE *f, qboolean userVars);
 // appends lines containing "set variable value" for all variables
 // with the archive flag set to true.
 
@@ -639,6 +630,7 @@ CMODEL
 
 // cmodel_t.flags
 #define CMODEL_ALPHA	1
+#define CMODEL_MOVABLE	2
 
 typedef struct
 {
@@ -762,7 +754,10 @@ void	FreeNamedList (basenamed_t *list);
 /*----------------- File system ----------------*/
 
 
-//--basenamed_t *FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigned canthave);
+#define LIST_FILES	1
+#define LIST_DIRS	2
+
+//--basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags);
 
 void	FS_InitFilesystem (void);
 qboolean FS_SetGamedir (char *dir);
@@ -783,8 +778,16 @@ void	FS_Read (void *buffer, int len, FILE *f);
 
 //--void	FS_CreatePath (char *path);
 
+void	Sys_Mkdir (char *path);
+
+char	*Sys_FindFirst (char *path, int flags);
+char	*Sys_FindNext (void);
+void	Sys_FindClose (void);
+
 
 /*------------- Miscellaneous -----------------*/
+
+extern	int	curtime;		// time returned by last Sys_Milliseconds
 
 
 #define	ERR_FATAL	0		// exit the entire game with a popup window
@@ -822,10 +825,11 @@ extern int	time_after_game;
 extern int	time_before_ref;
 extern int	time_after_ref;
 
+qboolean COM_CheckCmdlineVar (char *name);
 
-void	Qcommon_Init (int argc, char **argv);
-void	Qcommon_Frame (int msec);
-void	Qcommon_Shutdown (void);
+void	QCommon_Init (char *cmdline);
+void	QCommon_Frame (int msec);
+void	QCommon_Shutdown (void);
 
 #define NUMVERTEXNORMALS	162
 extern	vec3_t	bytedirs[NUMVERTEXNORMALS];

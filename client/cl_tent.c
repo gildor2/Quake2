@@ -327,35 +327,53 @@ void CL_ClearTEnts (void)
 CL_AllocExplosion
 =================
 */
-explosion_t *CL_AllocExplosion (void)
+explosion_t *CL_AllocExplosion (vec3_t origin, exptype_t type)
 {
 	int		i;
-	float	time;
-	explosion_t *ex, *ex1;
+	explosion_t *ex, *dst;
 
+	dst = NULL;
+	// find another explosion with the same origin
 	for (i = 0, ex = cl_explosions; i < MAX_EXPLOSIONS; i++, ex++)
 	{
-		if (ex->type == ex_free)
+		if (ex->type == ex_free) continue;
+		if (type == ex->type && VectorCompare (ex->ent.origin, origin))
 		{
-			memset (ex, 0, sizeof(explosion_t));
-			ex->time = -100;	// will keep 1st frame for 100ms ??
-			return ex;
+			dst = ex;
+			break;
 		}
+    }
+
+	// find free explosion
+	if (!dst)
+		for (i = 0, ex = cl_explosions; i < MAX_EXPLOSIONS; i++, ex++)
+			if (ex->type == ex_free)
+			{
+				dst = ex;
+				break;
+			}
+
+	if (!dst)
+	{
+		float	time;
+
+		// find the oldest explosion (add priority for smoke/explode ??)
+		time = 0;
+		dst = cl_explosions;
+
+		for (i = 1, ex = &cl_explosions[1]; i < MAX_EXPLOSIONS; i++, ex++)
+			if (ex->time > time)
+			{
+				time = ex->time;
+				dst = ex;
+			}
 	}
 
-	// find the oldest explosion (add priority for smoke/explode ??)
-	time = 0;
-	ex1 = cl_explosions;
-
-	for (i = 1, ex = &cl_explosions[1]; i < MAX_EXPLOSIONS; i++, ex++)
-		if (ex->time > time)
-		{
-			time = ex->time;
-			ex1 = ex;
-		}
-	memset (ex1, 0, sizeof(explosion_t));
-	ex1->time = -100;
-	return ex1;
+	memset (dst, 0, sizeof(explosion_t));
+	VectorCopy (origin, dst->ent.origin);
+	dst->time = -100;
+	dst->type = type;
+	return dst;
 }
 
 
@@ -367,9 +385,9 @@ CL_AddExplosions
 void CL_AddExplosions (void)
 {
 	entity_t	*ent;
-	int			i, frm, timeDelta;
+	int			i, frm;
 	explosion_t	*ex;
-	float		frac;
+	float		 timeDelta, frac;
 	static float oldTime;
 
 	timeDelta = (cl.ftime - oldTime) * 1000.0f;		// msec
@@ -434,9 +452,13 @@ void CL_AddExplosions (void)
 			break;
 		}
 
+//re.DrawTextLeft(va("[%d / %g * %g] o(%g %g %g) c(%g %g %g)", i, ex->light, ent->alpha,
+//VECTOR_ARGS(ent->origin), VECTOR_ARGS(ex->lightcolor)),1,1,1);//!!
 		if (ex->light)
 		{
-			V_AddLight (ent->origin, ex->light * ent->alpha, VECTOR_ARGS(ex->lightcolor));
+//			V_AddLight (ent->origin, ex->light * ent->alpha, VECTOR_ARGS(ex->lightcolor));
+			V_AddLight (ent->origin, ex->light * ent->alpha,
+				ex->lightcolor[0] * ent->alpha, ex->lightcolor[1] * ent->alpha, ex->lightcolor[2] * ent->alpha);
 //			re.DrawTextLeft(va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARGS(ent->origin), ent->alpha, VECTOR_ARGS(ex->lightcolor)),1,1,1);
 		}
 
@@ -460,16 +482,12 @@ void CL_SmokeAndFlash(vec3_t origin)
 {
 	explosion_t	*ex;
 
-	ex = CL_AllocExplosion ();
-	VectorCopy (origin, ex->ent.origin);
-	ex->type = ex_misc;
+	ex = CL_AllocExplosion (origin, ex_misc);
 	ex->frames = 4;
 	ex->ent.flags = RF_TRANSLUCENT;
 	ex->ent.model = cl_mod_smoke;
 
-	ex = CL_AllocExplosion ();
-	VectorCopy (origin, ex->ent.origin);
-	ex->type = ex_flash;
+	ex = CL_AllocExplosion (origin, ex_flash);
 	ex->ent.flags = RF_FULLBRIGHT;
 	ex->frames = 2;
 	ex->ent.model = cl_mod_flash;
@@ -1029,8 +1047,7 @@ void CL_ParseTEnt (void)
 		MSG_ReadDir (&net_message, dir);
 		CL_BlasterParticles (pos, dir);
 
-		ex = CL_AllocExplosion ();
-		VectorCopy (pos, ex->ent.origin);
+		ex = CL_AllocExplosion (pos, ex_misc);
 		ex->ent.angles[0] = acos(dir[2])/M_PI*180;
 	// PMM - fixed to correct for pitch of 0
 		if (dir[0])
@@ -1042,7 +1059,6 @@ void CL_ParseTEnt (void)
 		else
 			ex->ent.angles[1] = 0;
 
-		ex->type = ex_misc;
 		ex->ent.flags = RF_FULLBRIGHT|RF_TRANSLUCENT;
 		ex->light = 150;
 		ex->lightcolor[0] = 1;
@@ -1080,9 +1096,7 @@ void CL_ParseTEnt (void)
 	case TE_GRENADE_EXPLOSION_WATER:
 		MSG_ReadPos (&net_message, pos);
 
-		ex = CL_AllocExplosion ();
-		VectorCopy (pos, ex->ent.origin);
-		ex->type = ex_poly;
+		ex = CL_AllocExplosion (pos, ex_poly);
 		ex->ent.flags = RF_FULLBRIGHT;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
@@ -1102,9 +1116,7 @@ void CL_ParseTEnt (void)
 	// RAFAEL
 	case TE_PLASMA_EXPLOSION:
 		MSG_ReadPos (&net_message, pos);
-		ex = CL_AllocExplosion ();
-		VectorCopy (pos, ex->ent.origin);
-		ex->type = ex_poly;
+		ex = CL_AllocExplosion (pos, ex_poly);
 		ex->ent.flags = RF_FULLBRIGHT;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
@@ -1126,9 +1138,7 @@ void CL_ParseTEnt (void)
 	case TE_EXPLOSION1_NP:						// PMM
 		MSG_ReadPos (&net_message, pos);
 
-		ex = CL_AllocExplosion ();
-		VectorCopy (pos, ex->ent.origin);
-		ex->type = ex_poly;
+		ex = CL_AllocExplosion (pos, ex_poly);
 		ex->ent.flags = RF_FULLBRIGHT;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
@@ -1152,9 +1162,7 @@ void CL_ParseTEnt (void)
 
 	case TE_BFG_EXPLOSION:
 		MSG_ReadPos (&net_message, pos);
-		ex = CL_AllocExplosion ();
-		VectorCopy (pos, ex->ent.origin);
-		ex->type = ex_poly;
+		ex = CL_AllocExplosion (pos, ex_poly);
 		ex->ent.flags = RF_FULLBRIGHT;
 		ex->light = 350;
 		ex->lightcolor[0] = 0.0;
@@ -1204,9 +1212,7 @@ void CL_ParseTEnt (void)
 		color = MSG_ReadByte (&net_message);
 		CL_ParticleEffect2 (pos, dir, color, cnt);
 
-		ex = CL_AllocExplosion ();
-		VectorCopy (pos, ex->ent.origin);
-		ex->type = ex_flash;
+		ex = CL_AllocExplosion (pos, ex_flash);
 		// note to self
 		// we need a better no draw flag (????)
 		ex->ent.flags = RF_BEAM;
@@ -1247,8 +1253,7 @@ void CL_ParseTEnt (void)
 		else
 			CL_BlasterParticles2 (pos, dir, 0x6f); // 75
 
-		ex = CL_AllocExplosion ();
-		VectorCopy (pos, ex->ent.origin);
+		ex = CL_AllocExplosion (pos, ex_misc);
 		ex->ent.angles[0] = acos(dir[2])/M_PI*180;
 	// PMM - fixed to correct for pitch of 0
 		if (dir[0])
@@ -1260,7 +1265,6 @@ void CL_ParseTEnt (void)
 		else
 			ex->ent.angles[1] = 0;
 
-		ex->type = ex_misc;
 		ex->ent.flags = RF_FULLBRIGHT|RF_TRANSLUCENT;
 
 		// PMM
@@ -1299,9 +1303,7 @@ void CL_ParseTEnt (void)
 	case TE_PLAIN_EXPLOSION:
 		MSG_ReadPos (&net_message, pos);
 
-		ex = CL_AllocExplosion ();
-		VectorCopy (pos, ex->ent.origin);
-		ex->type = ex_poly;
+		ex = CL_AllocExplosion (pos, ex_poly);
 		ex->ent.flags = RF_FULLBRIGHT;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;

@@ -3,7 +3,7 @@
 ? check for hook ability of precicious PMove (more than 1/8)
 ! console: use "SetConsoleCtrlHandler()" to hook exit with "x" or Ctrl-C
 ! command "banchat": disable chat of concrete IP
-- remove IPX protocol from win32 code
+?! remove IPX protocol from win32 code
 ? eliminate BigShort(MASTER|SERVER_PORT) (sv_cmds.c, cl_main.c) -- only one thing, for which BigXxx() is used (big-endian numbers)
 ! check bug: dirty, map mine4, laser cannon -- when shoot rock, invisible entity painted (should not be entity at all,
   "hall of mirrors" effect appears); check with baseq2 (sp+deathmatch); when do it 2nd time (wall respawned in DM) - all OK
@@ -12,12 +12,11 @@
   cheats, protocol (old,both,new))
 - sv_extProtocol: "2" - force (no clients without this); if map.type != map_q2 -> force too; if cl_extProtocol=0, but server
   requires it, connect with extProtocol (should add sv_extProtocol to serverinfo + check it on a client side + detect non-q2 maps)
-- scoreboard: add blendrect (?) (try to improve look anyway ...)
+? scoreboard: add blendrect (try to improve look anyway ...)
 ! prediction errors:
   - zaero, plasma shield (jump + shield in down direction - movement lock when landed on shield);
     original Q2 works incorrect too, but in a different way: can pass through shield
   ! lerp entity angles (may remove bug with locking inside opening door)
-  - other: find "prediction" in this document
 ? make "r_consoleOnly" work without "vid_restart"
 - r_speeds -> r_times + r_stats
 
@@ -32,7 +31,7 @@ BINDS:
   ? bind key+Alt or altbind (?)
   ? bindtmp, aliastmp (not stered in config ?)
 SAVEGAMES:
-  ? show game time (a-la Anachronox)
+  ? show game time (like Anachronox)
   - quicksave: save to a few (4?) slots
   - sort savegames by time, ignore slots; any number of savegames (?)
   ? qcommon.h: NO_SAVEGAMES - remove save/load game code
@@ -44,7 +43,6 @@ HALFLIFE:
   - step sound: volume = 0.2/0.5 (walk/run) (+ add slowwalk -- crouched)
   - if moving slow - no step sounds
   - walking/running: step sound length = 400/300; water = 600; ladder = 350
-  - stop when |velocity| less than STOP_EPSILON==0.1 (friction)
 
 CAMERA:
   - interpolate camera 1st/3rd person change
@@ -115,8 +113,6 @@ BSP:
   '/*' will work as '//' when no corresponding '*/' (for example, cmd "map /*lightmap1" will work as "map ", but when mapname
   is quoted - works fine)
 
-*! remove auto-demo start on quake loading (option? timeout? first run?)
-
 ! add materials: glass, grass, sand
 ? make atmospheric effects (some maps in kingpin and halflife does, Q3F too ...)
   (make surface-dependent raindrop sounds? (KP:main/sound/world/rain*.wav))
@@ -131,17 +127,15 @@ BSP:
     (just insert into list, but add flags "do not free on remove")
   - macro CMD_ADD_COMMANDS(var) -> Cmd_AddCommands(var,sizeof(var)/sizeof(*var)) etc.
 ? add "Cmd_AddHidden()" - for server commands (cannot be completed/listed, but accessible)
-  (or just implement with Cmd_AddCommand(), but use name prefix, which will be ignored for seaching/completion,
-  but disables completion)
+  (or just implement with Cmd_AddCommand(), but use name prefix, which will be ignored for seaching, but disables completion)
 ? Com_DWPrintf() -- same as Com_DPrintf(), but display only when "developer" != 0 (or "warnings" != 0 ??)
 
 ------------ MENUS ---------------
 
 - place "download options" to another place (not "player setup", or to upper level: where model selection performed);
-  make download options to be a bitfield
+  make download options to be a bitfield (and make additional options: download paks etc)
 - when menu script will be implemented:
   - add developer submenus
-  - add Half-Life-like screen action menus (semi-transparent rects with text; accessible with keyboard and mouse)
 
 -------- CLIENT/SERVER -----------
 
@@ -192,14 +186,13 @@ BSP:
 
 ------------ VIDEO ---------------
 
-? remove non-transparent water vis bugfix from oldgl (add to new gl ?!)
+? remove non-transparent water vis bugfix from oldgl (or add to new gl ?! have some buggy maps)
+  NEW_ENGINE: add q2bsp_t::GetVis(point) -- will combine 2 clusters when near to non-transparent water
 
-- add WriteTGA compression; add support for top-to-bottom TGA loading
-- PCX: own palette for each file (but: 255 is transparent ?)
 ? h/w gamma: check for valid gamma when read
 - video config menu: make "reset to defaults" works correctly (Cvar_Reset() ??)
 - CDS:
-  - when mode cannot be changed, use current (with fullscreen available)
+  - when mode cannot be changed, use current (with fullscreen available); try to enumerate video modes ?
   - add support for "1024x768@70"-like strings (see UT2003 for ideas)
 
 - add marks: bulletholes (?), explosion marks, blood (!), "cheesy shadow" (!), water ripple
@@ -216,13 +209,11 @@ BSP:
 
 - "fs_debug 2": profile FS_LoadFile(), monitor cvar change and when set to 0 -> "loaded %d files %d bytes in %.2f seconds"
 ??!! zipped (??) file cache (controlled with cvar "fs_cacheSize" [Mb]) (can attach buffer to packFile_t struc)
-? implement FS_ListFiles() / FreeNamedList() within a memory chains (not just linked list)
 - add FS_FOpenFileEx(name, mode), where mode is READ/WRITE/OSREAD (no PAK support)/ZWRITE (gzip compression)
 ? FILE2 -> STREAM, isZipped -> funcRead / funcWrite / funcClose / funcOpen (??)
 
 ------------ COMMON --------------
 
-- redo command line parser: remove COM_Argc/COM_Argv etc from common.c
 ? meminfo (see Alice) - renderer (hunks), z, chains etc. ???
 ? hunks -> chains; align blocks by 16 bytes (currently: msvcrt, 8)
 ? own memory manager (without malloc; use OS functions at low-lewel)

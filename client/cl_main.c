@@ -822,6 +822,7 @@ void CL_PingServers_f (void)
 		adr.type = NA_BROADCAST;
 		adr.port = BigShort(PORT_SERVER);
 		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d", PROTOCOL_VERSION));
+//		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d\nUDP", PROTOCOL_VERSION));
 	}
 
 	noipx = Cvar_Get ("noipx", "", CVAR_NODEFAULT);
@@ -830,6 +831,7 @@ void CL_PingServers_f (void)
 		adr.type = NA_BROADCAST_IPX;
 		adr.port = BigShort(PORT_SERVER);
 		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d", PROTOCOL_VERSION));
+//		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d\nIPX", PROTOCOL_VERSION));
 	}
 
 	// send a packet to each address book entry
@@ -924,6 +926,12 @@ void CL_ConnectionlessPacket (void)
 	// server responding to a status broadcast
 	if (!strcmp (c, "info"))
 	{
+		if (Cmd_Argc() != 1)
+		{
+			// this can be message from ourselves -- request command is "info <protocol>", answer is "info\n<data>"
+			return;
+		}
+
 		Com_Printf ("%s\n", s1);
 		M_AddToServerList (net_from, s1);
 		return;
@@ -1025,8 +1033,7 @@ void CL_ReadPackets (void)
 	}
 
 	// check timeout
-	if (cls.state >= ca_connected
-	 && cls.realtime - cls.netchan.last_received > cl_timeout->value*1000)
+	if (cls.state >= ca_connected && cls.realtime - cls.netchan.last_received > cl_timeout->integer * 1000)
 	{
 		if (++cl.timeoutcount > 5)	// timeoutcount saves debugger
 		{
@@ -1445,7 +1452,9 @@ void CL_WriteConfiguration (char *filename)
 	fprintf (f, "//\n// Key bindings\n//\n");
 	Key_WriteBindings (f);
 	fprintf (f, "//\n// Cvars\n//\n");
-	Cvar_WriteVariables (f);
+	Cvar_WriteVariables (f, false);
+	fprintf (f, "// user created variables\n");
+	Cvar_WriteVariables (f, true);
 	fprintf (f, "//\n// Aliases\n//\n");
 	Cmd_WriteAliases (f);
 	fclose (f);
@@ -1733,8 +1742,6 @@ void CL_Frame (float msec, int realMsec)
 	CDAudio_Update();
 
 	// advance local effects for next frame
-	CL_RunDLights ();
-//	CL_RunLightStyles ();
 	SCR_RunCinematic ();
 	SCR_RunConsole ();
 

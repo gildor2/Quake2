@@ -599,7 +599,7 @@ static void Con_DrawInput (void)
 			if (!c) eoln = true;
 		}
 		if (eoln) c = ' ';
-		if ((i == editPos  - shift) && (cls.realtime >> 8) & 1 &&
+		if ((i == editPos  - shift) && (curtime >> 8) & 1 &&
 //??			(cls.key_dest == key_console || cls.state != ca_active))
 			cls.key_dest != key_menu)
 			c = 11 + 128;		// cursor char
@@ -697,7 +697,7 @@ void Con_DrawNotify (qboolean drawBack)
 			x++;
 		}
 		// draw cursor
-		re_DrawCharColor (x << 3, v, 10 + ((cls.realtime >> 8) & 1), 7);
+		re_DrawCharColor (x << 3, v, 10 + ((curtime >> 8) & 1), 7);
 		v += 8;
 	}
 

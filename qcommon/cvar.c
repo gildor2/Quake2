@@ -1,5 +1,6 @@
 #include "qcommon.h"
 
+int		cvar_initialized = 0;			// 0 - before config read, 1 - before system finished init, 2 - after init (2 is unused ??)
 cvar_t	*cvar_vars;
 static void *cvar_chain;
 
@@ -36,7 +37,8 @@ static void Cvar_SetString (cvar_t *var, char *str)
 	if (var->string && !strcmp (var->string, str))
 		return;		// not changed
 
-//	Com_WPrintf("set(%s) \"%s\" -> \"%s\"\n", var->name, var->string, str);
+//	Com_Printf ("^5set %s = %s\n", var->name, str);//!!
+
 	// update non-string fields
 	var->value = atof (str);
 	var->integer = atoi (str);
@@ -240,8 +242,15 @@ cvar_t *Cvar_Get (char *var_name, char *var_value, int flags)
 	var->name = AllocChainBlock (cvar_chain, strlen (var_name) + 1);
 	strcpy (var->name, var_name);
 
-	FilterValue (var, &var_name);
-	Cvar_SetString (var, var_value);
+	if (cvar_initialized < 2 && COM_CheckCmdlineVar (var_name))
+	{	// variable overriden with commandline as "1"
+		Cvar_SetString (var, "1");
+	}
+	else
+	{	// ordinary variable
+		FilterValue (var, &var_name);
+		Cvar_SetString (var, var_value);
+	}
 
 	// link the variable in
 	var->next = cvar_vars;
@@ -297,6 +306,13 @@ static cvar_t *Cvar_Set2 (char *var_name, char *value, int flags, qboolean force
 	if (!var)
 	{	// create it
 		return Cvar_Get (var_name, value, flags|CVAR_NODEFAULT);
+	}
+
+	if (var->flags & CVAR_CMDLINE && !cvar_initialized && !force)
+	{
+		// prevent from modification of cvars, created from command line
+//		Com_DPrintf ("Cvar_Set: ignore var %s\n", var->name);
+		return var;
 	}
 
 	if (var->flags & (CVAR_USERINFO|CVAR_SERVERINFO))
@@ -514,7 +530,12 @@ qboolean Cvar_Command (void)
 			latch = "";
 		// get string for default value
 		if (var->reset_string)
-			def = va("default:\"%s\"", var->reset_string);
+		{
+			if (!strcmp (var->string, var->reset_string))
+				def = "(default)";
+			else
+				def = va("default:\"%s\"", var->reset_string);
+		}
 		else
 			def = "(no default)";
 		// print info
@@ -542,7 +563,15 @@ static void Cvar_SetWithFlags (int set, int reset)
 
 	var = Cvar_FindVar (Cmd_Argv(1));
 	if (var)
+	{
 		flags = var->flags;
+		if (flags & CVAR_CMDLINE && !cvar_initialized)
+		{
+			// prevent from modification of cvars, created from command line
+//			Com_DPrintf ("Cvar_SetWithFlags: ignore var %s\n", var->name);
+			return;
+		}
+	}
 	else
 		flags = CVAR_USER_CREATED|CVAR_NODEFAULT;
 	flags = flags & ~reset | set;
@@ -647,13 +676,22 @@ Appends lines containing "set variable value" for all variables
 with the archive flag set to true.
 ============
 */
-void Cvar_WriteVariables (FILE *f)
+void Cvar_WriteVariables (FILE *f, qboolean userVars)
 {
 	cvar_t	*var;
 	char	type;
 
 	for (var = cvar_vars; var; var = var->next)
 	{
+		if (var->flags & CVAR_USER_CREATED)
+		{
+			if (!userVars) continue;
+		}
+		else
+		{
+			if (userVars) continue;
+		}
+
 		if (var->flags & CVAR_ARCHIVE)
 		{
 			if (var->reset_string && !(var->flags & CVAR_GAME_CREATED) && !strcmp (var->string, var->reset_string))
@@ -695,7 +733,7 @@ static void Cvar_List_f (void)
 	i = 0;
 	for (var = cvar_vars; var; var = var->next)
 	{
-		char	s[5], *color;
+		char	s[6], *color;
 		int		flags;
 
 		if (mask && !MatchWildcard2 (var->name, mask, true)) continue;
@@ -713,12 +751,9 @@ static void Cvar_List_f (void)
 			s[0] = 'G';
 			color = "^5";
 		}
-		if (flags & CVAR_ARCHIVE)
-			s[1] = 'A';
-		if (flags & CVAR_USERINFO)
-			s[2] = 'U';
-		if (flags & CVAR_SERVERINFO)
-			s[3] = 'S';
+		if (flags & CVAR_ARCHIVE)		s[1] = 'A';
+		if (flags & CVAR_USERINFO)		s[2] = 'U';
+		if (flags & CVAR_SERVERINFO)	s[3] = 'S';
 		if (flags & CVAR_NOSET)
 		{
 			s[4] = '-';

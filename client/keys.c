@@ -408,7 +408,7 @@ static char *Do_CompleteCommand (char *partial)
 		}
 
 		// complete "map" or "demomap" with mask/arg*
-		filelist = FS_ListFiles (va("%s/*%s", path, ext), NULL, 0, SFF_SUBDIR);
+		filelist = FS_ListFiles (va("%s/*%s", path, ext), NULL, LIST_FILES);
 		if (filelist)
 		{
 			for (fileitem = filelist; fileitem; fileitem = fileitem->next)

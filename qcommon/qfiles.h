@@ -322,6 +322,7 @@ typedef struct
 #define	CONTENTS_SLIME			0x00000010
 #define	CONTENTS_WATER			0x00000020
 #define	CONTENTS_MIST			0x00000040
+#define CONTENTS_ALPHA			0x00000080	// from Kingping - can shoot through this
 
 // remaining contents are non-visible, and don't eat brushes
 

@@ -111,7 +111,7 @@ void InitConProc (int argc, char **argv)
 			heventChild = (HANDLE)atoi (ccom_argv[t+1]);
 	}
 
-
+//	DebugPrintf("qhost: %d %d %d\n", hFile, heventParent, heventChild);//!!
 	// ignore if we don't have all the events.
 	if (!hFile || !heventParent || !heventChild)
 	{

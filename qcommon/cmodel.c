@@ -2076,10 +2076,6 @@ static void CM_ClipBoxToBrush (vec3_t mins, vec3_t maxs, vec3_t p1, vec3_t p2, t
 
 		side = &map_brushsides[brush->firstbrushside+i];
 
-//		if (Cvar_VariableInt ("test") && //!!
-//			trace_ispoint && side->surface && side->surface->flags & SURF_ALPHA)		//?? shooting through SURF_ALPHA
-//			continue;
-
 		plane = side->plane;
 		// FIXME: special case for axial
 
@@ -2263,7 +2259,8 @@ static void CM_TraceToLeaf (int leafnum)
 
 		save_trace = trace_trace;
 		CM_ClipBoxToBrush (trace_mins, trace_maxs, trace_start, trace_end, &trace_trace, b);
-		if (trace_ispoint && trace_trace.surface && trace_trace.surface->flags & SURF_ALPHA)	//?? shooting through SURF_ALPHA
+		if (trace_ispoint && trace_trace.contents & CONTENTS_ALPHA)		// shooting through CONTENTS_ALPHA
+//		if (trace_ispoint && trace_trace.surface && trace_trace.surface->flags & SURF_ALPHA)	// shooting through SURF_ALPHA
 		{
 			trace_trace = save_trace;
 			continue;

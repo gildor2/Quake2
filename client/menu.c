@@ -892,14 +892,14 @@ static void ControlsSetMenuItemValues (void)
 static void ControlsResetDefaultsFunc( void *unused )
 {
 	Cbuf_AddText ("exec default.cfg\n");
-	Cbuf_Execute();
+	Cbuf_Execute ();
 
-	ControlsSetMenuItemValues();
+	ControlsSetMenuItemValues ();
 }
 
 static void InvertMouseFunc (void *unused)
 {
-	Cvar_SetValue( "m_pitch", -m_pitch->value );
+	Cvar_SetValue ("m_pitch", -m_pitch->value);
 }
 
 static void LookspringFunc (void *unused)
@@ -1129,19 +1129,20 @@ static void M_Credits_MenuDraw (void)
 	y = viddef.height - (cls.realtime - credits_start_time) / 40.0f;
 	for (i = 0; credits[i] && y < viddef.height; y += 10, i++)
 	{
-		int		j, stringoffset, bold;
+		int		j, stringoffset;
+		qboolean bold;
 
 		if (y <= -8)
 			continue;
 
 		if (credits[i][0] == '+')
 		{
-			bold = 128;
+			bold = true;
 			stringoffset = 1;
 		}
 		else
 		{
-			bold = 0;
+			bold = false;
 			stringoffset = 0;
 		}
 
@@ -1150,7 +1151,8 @@ static void M_Credits_MenuDraw (void)
 			int		x;
 
 			x = (viddef.width - strlen (credits[i]) * 8 - stringoffset * 8) / 2 + (j + stringoffset) * 8;
-			re.DrawCharColor (x, y, credits[i][j+stringoffset] + bold, 7);
+//			re.DrawCharColor (x, y, credits[i][j+stringoffset] + (bold ? 128 : 0), 7);
+			re.DrawCharColor (x, y, credits[i][j+stringoffset], bold ? 1 : 7);
 		}
 	}
 
@@ -1258,23 +1260,23 @@ static void StartGame (void)
 
 	Cvar_SetInteger ("gamerules", 0);		//PGM
 
-	Cbuf_AddText ("loading ; killserver ; wait ; newgame\n");
+	Cbuf_AddText ("killserver\nloading\nwait\nnewgame\n");
 	cls.key_dest = key_game;
 }
 
-static void EasyGameFunc( void *data )
+static void EasyGameFunc (void *data)
 {
 	Cvar_ForceSet ("skill", "0");
 	StartGame ();
 }
 
-static void MediumGameFunc( void *data )
+static void MediumGameFunc (void *data)
 {
 	Cvar_ForceSet ("skill", "1");
 	StartGame ();
 }
 
-static void HardGameFunc( void *data )
+static void HardGameFunc (void *data)
 {
 	Cvar_ForceSet ("skill", "2");
 	StartGame ();
@@ -1282,12 +1284,8 @@ static void HardGameFunc( void *data )
 
 static void Game_MenuInit( void )
 {
-	static const char *difficulty_names[] =
-	{
-		"easy",
-		"medium",
-		"hard",
-		0
+	static const char *difficulty_names[] = {
+		"easy", "medium", "hard", NULL
 	};
 
 	s_game_menu.x = viddef.width * 0.50;
@@ -1321,23 +1319,23 @@ static void Game_MenuInit( void )
 	Menu_Center( &s_game_menu );
 }
 
-static void Game_MenuDraw( void )
+static void Game_MenuDraw (void)
 {
 	M_Banner ("m_banner_game");
 	Menu_AdjustCursor (&s_game_menu, 1);
 	Menu_Draw (&s_game_menu);
 }
 
-static const char *Game_MenuKey( int key )
+static const char *Game_MenuKey (int key)
 {
-	return Default_MenuKey( &s_game_menu, key );
+	return Default_MenuKey (&s_game_menu, key);
 }
 
 void M_Menu_Game_f (void)
 {
 	MENU_CHECK
-	Game_MenuInit();
-	M_PushMenu( Game_MenuDraw, Game_MenuKey );
+	Game_MenuInit ();
+	M_PushMenu (Game_MenuDraw, Game_MenuKey);
 	m_game_cursor = 1;
 }
 
@@ -1414,12 +1412,12 @@ static void DrawSavegameShot (int index, int y)
 }
 
 
-static void LoadGameCallback( void *self )
+static void LoadGameCallback (void *self)
 {
-	menuAction_t *a = ( menuAction_t * ) self;
+	menuAction_t *a = (menuAction_t *) self;
 
-	if ( m_savevalid[ a->generic.localdata[0] ] )
-		Cbuf_AddText (va("load save%d\n",  a->generic.localdata[0] ) );
+	if (m_savevalid[a->generic.localdata[0]])
+		Cbuf_AddText (va("load save%d\n",  a->generic.localdata[0]));
 	M_ForceMenuOff ();
 }
 
@@ -1431,7 +1429,7 @@ static void LoadGame_MenuInit (void)
 	s_loadgame_menu.y = viddef.height / 2 - 58;
 	s_loadgame_menu.nitems = 0;
 
-	Create_Savestrings();
+	Create_Savestrings ();
 
 	for (i = 0; i < MAX_SAVEGAMES; i++)
 	{
@@ -1447,7 +1445,7 @@ static void LoadGame_MenuInit (void)
 
 		s_loadgame_actions[i].generic.type = MTYPE_ACTION;
 
-		Menu_AddItem( &s_loadgame_menu, &s_loadgame_actions[i] );
+		Menu_AddItem (&s_loadgame_menu, &s_loadgame_actions[i]);
 	}
 }
 
@@ -1462,20 +1460,20 @@ static void LoadGame_MenuDraw( void )
 
 static const char *LoadGame_MenuKey( int key )
 {
-	if ( key == K_ESCAPE || key == K_ENTER )
+	if (key == K_ESCAPE || key == K_ENTER)
 	{
 		s_savegame_menu.cursor = s_loadgame_menu.cursor - 1;
-		if ( s_savegame_menu.cursor < 0 )
+		if (s_savegame_menu.cursor < 0)
 			s_savegame_menu.cursor = 0;
 	}
-	return Default_MenuKey( &s_loadgame_menu, key );
+	return Default_MenuKey (&s_loadgame_menu, key);
 }
 
 void M_Menu_LoadGame_f (void)
 {
 	MENU_CHECK
-	LoadGame_MenuInit();
-	M_PushMenu( LoadGame_MenuDraw, LoadGame_MenuKey );
+	LoadGame_MenuInit ();
+	M_PushMenu (LoadGame_MenuDraw, LoadGame_MenuKey);
 }
 
 
@@ -1998,7 +1996,7 @@ static void StartServer_MenuInit( void )
 	s_hostname_field.generic.statusbar = NULL;
 	s_hostname_field.length = 12;
 	s_hostname_field.visible_length = 12;
-	strcpy( s_hostname_field.buffer, Cvar_VariableString("hostname") );
+	strcpy (s_hostname_field.buffer, Cvar_VariableString("hostname"));
 
 	MENU_ACTION(s_startserver_dmoptions_action,108,"deathmatch flags",DMOptionsFunc)
 	s_startserver_dmoptions_action.generic.flags= QMF_LEFT_JUSTIFY;
@@ -2093,128 +2091,70 @@ static menuList_t	s_no_spheres_box;
 
 static void DMFlagCallback (void *self)
 {
-	menuList_t *f = (menuList_t *) self;
-	int flags;
-	int bit = 0;
+	menuList_t *f;
+	int		flags, bit, nobit;
 
+	f = (menuList_t *)self;
 	flags = Cvar_VariableInt ("dmflags");
+	bit = nobit = 0;
 
 	if (f == &s_friendlyfire_box)
-	{
-		if (f->curvalue)
-			flags &= ~DF_NO_FRIENDLY_FIRE;
-		else
-			flags |= DF_NO_FRIENDLY_FIRE;
-		goto setvalue;
-	}
+		nobit = DF_NO_FRIENDLY_FIRE;
 	else if (f == &s_falls_box)
-	{
-		if (f->curvalue)
-			flags &= ~DF_NO_FALLING;
-		else
-			flags |= DF_NO_FALLING;
-		goto setvalue;
-	}
+		nobit = DF_NO_FALLING;
 	else if (f == &s_weapons_stay_box)
-	{
 		bit = DF_WEAPONS_STAY;
-	}
 	else if (f == &s_instant_powerups_box)
-	{
 		bit = DF_INSTANT_ITEMS;
-	}
 	else if (f == &s_allow_exit_box)
-	{
 		bit = DF_ALLOW_EXIT;
-	}
 	else if (f == &s_powerups_box)
-	{
-		if (f->curvalue)
-			flags &= ~DF_NO_ITEMS;
-		else
-			flags |= DF_NO_ITEMS;
-		goto setvalue;
-	}
+		nobit = DF_NO_ITEMS;
 	else if (f == &s_health_box)
-	{
-		if (f->curvalue)
-			flags &= ~DF_NO_HEALTH;
-		else
-			flags |= DF_NO_HEALTH;
-		goto setvalue;
-	}
+		nobit = DF_NO_HEALTH;
 	else if (f == &s_spawn_farthest_box)
-	{
 		bit = DF_SPAWN_FARTHEST;
-	}
 	else if (f == &s_teamplay_box)
 	{
 		if (f->curvalue == 1)
 		{
-			flags |=  DF_SKINTEAMS;
-			flags &= ~DF_MODELTEAMS;
+			flags = flags | DF_SKINTEAMS & ~DF_MODELTEAMS;
 		}
 		else if (f->curvalue == 2)
 		{
-			flags |=  DF_MODELTEAMS;
-			flags &= ~DF_SKINTEAMS;
+			flags = flags | DF_MODELTEAMS & ~DF_SKINTEAMS;
 		}
 		else
 		{
 			flags &= ~(DF_MODELTEAMS|DF_SKINTEAMS);
 		}
 
-		goto setvalue;
 	}
 	else if (f == &s_samelevel_box)
-	{
 		bit = DF_SAME_LEVEL;
-	}
 	else if (f == &s_force_respawn_box)
-	{
 		bit = DF_FORCE_RESPAWN;
-	}
 	else if (f == &s_armor_box)
-	{
-		if (f->curvalue)
-			flags &= ~DF_NO_ARMOR;
-		else
-			flags |= DF_NO_ARMOR;
-		goto setvalue;
-	}
+		nobit = DF_NO_ARMOR;
 	else if (f == &s_infinite_ammo_box)
-	{
 		bit = DF_INFINITE_AMMO;
-	}
 	else if (f == &s_fixed_fov_box)
-	{
 		bit = DF_FIXED_FOV;
-	}
 	else if (f == &s_quad_drop_box)
-	{
 		bit = DF_QUAD_DROP;
-	}
 
 //=======
 //ROGUE
 	else if (Developer_searchpath(2) == 2)
 	{
 		if (f == &s_no_mines_box)
-		{
 			bit = DF_NO_MINES;
-		}
 		else if (f == &s_no_nukes_box)
-		{
 			bit = DF_NO_NUKES;
-		}
 		else if (f == &s_stack_double_box)
-		{
 			bit = DF_NO_STACK_DOUBLE;
-		}
 		else if (f == &s_no_spheres_box)
-		{
 			bit = DF_NO_SPHERES;
-		}
 	}
 //ROGUE
 //=======
@@ -2222,15 +2162,14 @@ static void DMFlagCallback (void *self)
 	if (f)
 	{
 		if (f->curvalue == 0)
-			flags &= ~bit;
+			flags = flags & ~bit | nobit;
 		else
-			flags |= bit;
+			flags = flags & ~nobit | bit;
 	}
 
-setvalue:
 	Cvar_SetInteger ("dmflags", flags);
 
-	Com_sprintf (dmoptions_statusbar, sizeof( dmoptions_statusbar ), "dmflags = %d", flags);
+	Com_sprintf (dmoptions_statusbar, sizeof(dmoptions_statusbar), "dmflags = %d", flags);
 }
 
 static void DMOptions_MenuInit (void)
@@ -2631,7 +2570,7 @@ static qboolean PlayerConfig_ScanDirectories (void)
 	do
 	{
 		path = FS_NextPath (path);
-		if (dirnames = FS_ListFiles (va("%s/players/*.*", path), &numModelDirs, SFF_SUBDIR, 0)) break;
+		if (dirnames = FS_ListFiles (va("%s/players/*.*", path), &numModelDirs, LIST_DIRS)) break;
 	} while (path);
 
 	if (!dirnames) return false;
@@ -2649,7 +2588,7 @@ static qboolean PlayerConfig_ScanDirectories (void)
 
 		// verify the existence of at least one pcx skin
 		// "/*.pcx" -> pcx,tga,jpg (see IsValidSkin())
-		pcxnames = FS_ListFiles (va("%s/*.*", diritem->name), NULL, 0, SFF_SUBDIR|SFF_HIDDEN|SFF_SYSTEM);
+		pcxnames = FS_ListFiles (va("%s/*.*", diritem->name), NULL, LIST_FILES);
 		if (!pcxnames) continue;
 
 		// count valid skins, which consist of a skin with a matching "_i" icon
@@ -3106,7 +3045,7 @@ static qboolean DMBrowse_MenuInit ()
 	do
 	{
 		path = FS_NextPath (path);
-		if (browse_list = FS_ListFiles (va("%s/levelshots/*.*", path), NULL, 0, SFF_SUBDIR)) break;
+		if (browse_list = FS_ListFiles (va("%s/levelshots/*.*", path), NULL, LIST_FILES)) break;
 	} while (path);
 	for (item = browse_list; item; item = item->next)
 	{

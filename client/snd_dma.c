@@ -196,8 +196,8 @@ void S_Init (void)
 
 	Com_Printf("\n------- sound initialization -------\n");
 
-	cv = Cvar_Get ("s_initsound", "1", 0);
-	if (!cv->integer)
+	cv = Cvar_Get ("nosound", "0", 0);
+	if (cv->integer)
 		Com_Printf ("not initializing.\n");
 	else
 	{

@@ -19,11 +19,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // net_wins.c
 
-#include "winsock2.h"
-#include "wsipx.h"
+#include <winsock2.h>
+#include <wsipx.h>
 #include "../qcommon/qcommon.h"
 
-#define	MAX_LOOPBACK	4
+#define	MAX_LOOPBACK	8
 
 typedef struct
 {
@@ -43,8 +43,8 @@ static cvar_t	*noudp;
 static cvar_t	*noipx;
 
 static loopback_t	loopbacks[2];
-static int			ip_sockets[2];
-static int			ipx_sockets[2];
+static int			ip_socket;
+static int			ipx_socket;
 
 
 /*
@@ -356,10 +356,10 @@ qboolean NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_me
 
 	memcpy (net_message->data, loop->msgs[i].data, loop->msgs[i].datalen);
 	net_message->cursize = loop->msgs[i].datalen;
+
 	memset (net_from, 0, sizeof(*net_from));
 	net_from->type = NA_LOOPBACK;
 	return true;
-
 }
 
 
@@ -390,13 +390,8 @@ qboolean NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_messag
 
 	for (protocol = 0 ; protocol < 2 ; protocol++)
 	{
-		if (protocol == 0)
-			net_socket = ip_sockets[sock];
-		else
-			net_socket = ipx_sockets[sock];
-
-		if (!net_socket)
-			continue;
+		net_socket = protocol == 0 ? ip_socket : ipx_socket;
+		if (!net_socket) continue;
 
 		fromlen = sizeof(from);
 		ret = recvfrom (net_socket, net_message->data, net_message->maxsize, 0, (SOCKADDR *)&from, &fromlen);
@@ -443,16 +438,16 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
 		NET_SendLoopPacket (sock, length, data, to);
 		return;
 	case NA_BROADCAST:
-		net_socket = ip_sockets[sock];
+		net_socket = ip_socket;
 		break;
 	case NA_IP:
-		net_socket = ip_sockets[sock];
+		net_socket = ip_socket;
 		break;
 	case NA_IPX:
-		net_socket = ipx_sockets[sock];
+		net_socket = ipx_socket;
 		break;
 	case NA_BROADCAST_IPX:
-		net_socket = ipx_sockets[sock];
+		net_socket = ipx_socket;
 		break;
 	default:
 		Com_Error (ERR_FATAL, "NET_SendPacket: bad address type %d", to.type);
@@ -545,50 +540,23 @@ int NET_IPSocket (char *net_interface, int port)
 NET_OpenIP
 ====================
 */
+
+#define NUM_TRIES	10
+
 void NET_OpenIP (void)
 {
 	cvar_t	*ip;
-	int		port;
-	int		dedicated;
+	int		port, tries;
 
 	ip = Cvar_Get ("ip", "localhost", CVAR_NOSET);
+	port = Cvar_Get ("port", va("%d", PORT_SERVER), CVAR_NOSET)->integer;
 
-	dedicated = Cvar_VariableInt ("dedicated");
+	ip_socket = NET_IPSocket (ip->string, port);
 
-	if (!ip_sockets[NS_SERVER])
-	{
-		port = Cvar_Get ("ip_hostport", "0", CVAR_NOSET)->integer;
-		if (!port)
-		{
-			port = Cvar_Get ("hostport", "0", CVAR_NOSET)->integer;
-			if (!port)
-			{
-				port = Cvar_Get ("port", va("%d", PORT_SERVER), CVAR_NOSET)->integer;
-			}
-		}
-		ip_sockets[NS_SERVER] = NET_IPSocket (ip->string, port);
-		if (!ip_sockets[NS_SERVER] && dedicated)
-			Com_Error (ERR_FATAL, "Couldn't allocate dedicated server IP port");
-	}
-
-
-	// dedicated servers don't need client ports
-	if (dedicated)
-		return;
-
-	if (!ip_sockets[NS_CLIENT])
-	{
-		port = Cvar_Get ("ip_clientport", "0", CVAR_NOSET)->integer;
-		if (!port)
-		{
-			port = Cvar_Get ("clientport", va("%i", PORT_CLIENT), CVAR_NOSET)->integer;
-			if (!port)
-				port = PORT_ANY;
-		}
-		ip_sockets[NS_CLIENT] = NET_IPSocket (ip->string, port);
-		if (!ip_sockets[NS_CLIENT])
-			ip_sockets[NS_CLIENT] = NET_IPSocket (ip->string, PORT_ANY);
-	}
+	for (tries = 0; !ip_socket && tries < NUM_TRIES; tries++)
+		ip_socket = NET_IPSocket (ip->string, PORT_ANY);
+	if (!ip_socket)
+		Com_WPrintf ("OpenIP: Unable to allocate IP socket\n");
 }
 
 
@@ -597,10 +565,10 @@ void NET_OpenIP (void)
 IPX_Socket
 ====================
 */
-int NET_IPXSocket (int port)
+static int NET_IPXSocket (int port)
 {
 	int		newsocket;
-	SOCKADDR_IPX	address;
+	SOCKADDR_IPX address;
 	int		_true = 1;
 	int		err;
 
@@ -616,6 +584,7 @@ int NET_IPXSocket (int port)
 	if (ioctlsocket (newsocket, FIONBIO, &_true) == -1)
 	{
 		Com_WPrintf ("IPX_Socket: ioctl FIONBIO: %s\n", NET_ErrorString());
+		closesocket (newsocket);
 		return 0;
 	}
 
@@ -623,6 +592,7 @@ int NET_IPXSocket (int port)
 	if (setsockopt(newsocket, SOL_SOCKET, SO_BROADCAST, (char *)&_true, sizeof(_true)) == -1)
 	{
 		Com_WPrintf ("IPX_Socket: setsockopt SO_BROADCAST: %s\n", NET_ErrorString());
+		closesocket (newsocket);
 		return 0;
 	}
 
@@ -634,7 +604,7 @@ int NET_IPXSocket (int port)
 	else
 		address.sa_socket = htons((short)port);
 
-	if( bind (newsocket, (void *)&address, sizeof(address)) == -1)
+	if (bind (newsocket, (void *)&address, sizeof(address)) == -1)
 	{
 		Com_WPrintf ("IPX_Socket: bind: %s\n", NET_ErrorString());
 		closesocket (newsocket);
@@ -653,40 +623,14 @@ NET_OpenIPX
 void NET_OpenIPX (void)
 {
 	int		port;
-	qboolean dedicated;
 
-	dedicated = Cvar_VariableInt ("dedicated");
-
-	if (!ipx_sockets[NS_SERVER])
+	port = Cvar_Get ("port", va("%i", PORT_SERVER), CVAR_NOSET)->integer;
+	ipx_socket = NET_IPXSocket (port);
+	if (!ipx_socket)
 	{
-		port = Cvar_Get ("ipx_hostport", "0", CVAR_NOSET)->integer;
-		if (!port)
-		{
-			port = Cvar_Get ("hostport", "0", CVAR_NOSET)->integer;
-			if (!port)
-			{
-				port = Cvar_Get ("port", va("%i", PORT_SERVER), CVAR_NOSET)->integer;
-			}
-		}
-		ipx_sockets[NS_SERVER] = NET_IPXSocket (port);
-	}
-
-	// dedicated servers don't need client ports
-	if (dedicated)
-		return;
-
-	if (!ipx_sockets[NS_CLIENT])
-	{
-		port = Cvar_Get ("ipx_clientport", "0", CVAR_NOSET)->integer;
-		if (!port)
-		{
-			port = Cvar_Get ("clientport", va("%i", PORT_CLIENT), CVAR_NOSET)->integer;
-			if (!port)
-				port = PORT_ANY;
-		}
-		ipx_sockets[NS_CLIENT] = NET_IPXSocket (port);
-		if (!ipx_sockets[NS_CLIENT])
-			ipx_sockets[NS_CLIENT] = NET_IPXSocket (PORT_ANY);
+		//!! try different sockets
+		Com_WPrintf ("OpenIPX: unable to allocate socket. IPX disabled\n");
+		Cvar_ForceSet ("noipx", "1");
 	}
 }
 
@@ -698,47 +642,57 @@ NET_Config
 A single player game will only use the loopback code
 ====================
 */
+static int netConfig = 2;		// not initialized
+
 void NET_Config (qboolean multiplayer)
 {
-	int		i;
-	static	qboolean	old_config;
-
-	if (old_config == multiplayer)
+	if (netConfig == multiplayer)
 		return;
 
-	old_config = multiplayer;
+	netConfig = multiplayer;
 
-	if (!multiplayer)
+	if (!multiplayer || noipx->modified || noudp->modified)
 	{	// shut down any existing sockets
-		for (i = 0; i < 2; i++)
+		if (ip_socket)
 		{
-			if (ip_sockets[i])
-			{
-				closesocket (ip_sockets[i]);
-				ip_sockets[i] = 0;
-			}
-			if (ipx_sockets[i])
-			{
-				closesocket (ipx_sockets[i]);
-				ipx_sockets[i] = 0;
-			}
+			closesocket (ip_socket);
+			ip_socket = 0;
+		}
+		if (ipx_socket)
+		{
+			closesocket (ipx_socket);
+			ipx_socket = 0;
 		}
 	}
-	else
+
+	if (multiplayer)
 	{	// open sockets
 		if (!noudp->integer)
 			NET_OpenIP ();
 		if (!noipx->integer)
 			NET_OpenIPX ();
 	}
+
+	noipx->modified = noudp->modified = false;
 }
 
+static void Cmd_NetRestart_f (void)
+{
+	if (netConfig == 2)
+	{
+		Com_WPrintf ("Network not started\n");
+		return;
+	}
+	NET_Config (netConfig);
+}
+
+
 // sleeps msec or until net socket is ready
+//?? remove this function
 void NET_Sleep(int msec)
 {
 	struct timeval timeout;
 	fd_set	fdset;
-	extern cvar_t *dedicated;
 	int		i;
 
 	if (!dedicated || !dedicated->integer)
@@ -746,16 +700,16 @@ void NET_Sleep(int msec)
 
 	FD_ZERO(&fdset);
 	i = 0;
-	if (ip_sockets[NS_SERVER])
+	if (ip_socket)
 	{
-		FD_SET(ip_sockets[NS_SERVER], &fdset); // network socket
-		i = ip_sockets[NS_SERVER];
+		FD_SET(ip_socket, &fdset);		// network socket
+		i = ip_socket;
 	}
-	if (ipx_sockets[NS_SERVER])
+	if (ipx_socket)
 	{
-		FD_SET(ipx_sockets[NS_SERVER], &fdset); // network socket
-		if (ipx_sockets[NS_SERVER] > i)
-			i = ipx_sockets[NS_SERVER];
+		FD_SET(ipx_socket, &fdset);		// network socket
+		if (ipx_socket > i)
+			i = ipx_socket;
 	}
 	timeout.tv_sec = msec/1000;
 	timeout.tv_usec = (msec%1000)*1000;
@@ -774,18 +728,16 @@ NET_Init
 */
 void NET_Init (void)
 {
-	WORD	wVersionRequested;
 	int		r;
 
 CVAR_BEGIN(vars)
-	CVAR_VAR(noudp, 0, CVAR_NOSET),
-	CVAR_VAR(noipx, 0, CVAR_NOSET),
+	CVAR_VAR(noudp, 0, 0),
+	CVAR_VAR(noipx, 0, 0),
 	CVAR_VAR(net_shownet, 0, 0)
 CVAR_END
 
+	Cmd_AddCommand ("net_restart", Cmd_NetRestart_f);
 	CVAR_GET_VARS(vars);
-
-	wVersionRequested = MAKEWORD(1, 1);
 
 	r = WSAStartup (MAKEWORD(1, 1), &winsockdata);
 	if (r) Com_Error (ERR_FATAL, "Winsock initialization failed.");

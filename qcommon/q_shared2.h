@@ -337,37 +337,6 @@ void Info_RemoveKey (char *s, char *key);
 void Info_SetValueForKey (char *s, char *key, char *value);
 qboolean Info_Validate (char *s);
 
-/*
-==============================================================
-
-SYSTEM SPECIFIC
-place to qcommon.h or ref.h ??
-
-==============================================================
-*/
-
-extern	int	curtime;		// time returned by last Sys_Milliseconds
-
-//--int		Sys_Milliseconds (void);
-void	Sys_Mkdir (char *path);
-
-// large block stack allocation routines
-//--void	*Hunk_Begin (int maxsize);
-//--void	*Hunk_Alloc (int size);
-//--void	Hunk_Free (void *buf);
-//--int		Hunk_End (void);
-
-// directory searching
-#define SFF_ARCH    0x01
-#define SFF_HIDDEN  0x02
-#define SFF_RDONLY  0x04
-#define SFF_SUBDIR  0x08
-#define SFF_SYSTEM  0x10
-
-char	*Sys_FindFirst (char *path, unsigned musthave, unsigned canthave);
-char	*Sys_FindNext (unsigned musthave, unsigned canthave);
-void	Sys_FindClose (void);
-
 
 /*
 ==========================================================
@@ -387,6 +356,7 @@ CVARS (console variables)
 #define	CVAR_USER_CREATED	0x00020	// created by a set command
 #define CVAR_GAME_CREATED	0x00040	// created from game library
 #define CVAR_CHEAT			0x00080	// will be reset to its default value when cheat protection active
+#define CVAR_CMDLINE		0x00100	// variable was set from command line
 
 #define CVAR_FLAG_MASK		0x0FFFF	// mask of stored cvar flags
 
@@ -1307,15 +1277,5 @@ typedef struct
 	short		stats[MAX_STATS];		// fast status bar updates
 } player_state_t;
 
-
-/*
-==============================================================
-
-SERVER PROTOCOL EXTENSIONS
-
-==============================================================
-*/
-
-#define NEW_PROTOCOL_ID "gildor"
 
 #endif // QSHARED_H

@@ -394,7 +394,7 @@ static shader_t *FinishShader (void)
 			sh.fast = false;
 
 		// check entity dependence
-		if (s->rgbGenType == RGBGEN_ENTITY || s->rgbGenType == RGBGEN_ONE_MINUS_ENTITY ||
+		if (s->rgbGenType == RGBGEN_ENTITY || s->rgbGenType == RGBGEN_ONE_MINUS_ENTITY || s->rgbGenType == RGBGEN_LIGHTING_DIFFUSE ||
 			s->alphaGenType == ALPHAGEN_ENTITY || s->alphaGenType == ALPHAGEN_ONE_MINUS_ENTITY ||
 			s->frameFromEntity)
 			sh.dependOnEntity = true;

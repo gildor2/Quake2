@@ -56,6 +56,7 @@ cvar_t			*sv_extProtocol;
 static cvar_t	*sv_camperSounds;
 //static cvar_t	*sv_fps;
 
+void Master_Heartbeat (void);
 void Master_Shutdown (void);
 
 
@@ -151,7 +152,6 @@ The second parameter should be the current protocol version number.
 void SVC_Info (void)
 {
 	char	string[64];
-	int		i, count;
 	int		version;
 
 	if (maxclients->integer == 1 || sv.state == ss_demo)
@@ -159,10 +159,18 @@ void SVC_Info (void)
 
 	version = atoi (Cmd_Argv(1));
 
+	if (!version)
+	{	// we should reject this packet -- this is our "info" answer to local client
+		Com_DPrintf ("rejected \"info\" answer\n");
+		return;
+	}
+
 	if (version != PROTOCOL_VERSION)
-		Com_sprintf (string, sizeof(string), "%s: wrong version\n", hostname->string);
+		Com_sprintf (string, sizeof(string), "%s: wrong version %d\n", hostname->string, version);
 	else
 	{
+		int		i, count;
+
 		count = 0;
 		for (i = 0; i < maxclients->integer; i++)
 			if (svs.clients[i].state >= cs_connected)
@@ -170,7 +178,6 @@ void SVC_Info (void)
 
 		Com_sprintf (string, sizeof(string), "%16s %8s %2d/%2d\n", hostname->string, sv.name, count, maxclients->integer);
 	}
-
 	Netchan_OutOfBandPrint (NS_SERVER, net_from, "info\n%s", string);
 }
 
@@ -613,7 +620,7 @@ void SV_ReadPackets (void)
 				cl->netchan.remote_address.port = net_from.port;
 			}
 
-			if (Netchan_Process(&cl->netchan, &net_message))
+			if (Netchan_Process (&cl->netchan, &net_message))
 			{	// this is a valid, sequenced packet, so process it
 				if (cl->state != cs_zombie)
 				{
@@ -624,8 +631,7 @@ void SV_ReadPackets (void)
 			break;
 		}
 
-		if (i != maxclients->integer)
-			continue;
+//		if (i != maxclients->integer) continue;
 	}
 }
 
@@ -969,6 +975,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 			MSG_ReadDir (original, v2);
 
 			// compute reflection vector
+//			Com_Printf("sp: (%g %g %g) -> (%g %g %g)\n",VECTOR_ARGS(v1),VECTOR_ARGS(v2));//!!
 			VectorSubtract (shotStart, shotEnd, d);
 			VectorNormalizeFast (d);
 			back = DotProduct (d, v2);
@@ -1077,7 +1084,7 @@ void SV_Frame (float msec)
 			svs.realtime = sv.time - frameTime;
 			svs.realtimef = svs.realtime;
 		}
-		NET_Sleep(sv.time - svs.realtime);		//?? timescaled value
+//		NET_Sleep(sv.time - svs.realtime);		//?? timescaled value
 		return;
 	}
 
@@ -1144,7 +1151,7 @@ let it know we are alive, and log information
 ================
 */
 #define	HEARTBEAT_SECONDS	300
-void Master_Heartbeat (void)
+static void Master_Heartbeat (void)
 {
 	char		*string;
 	int			i;
@@ -1185,15 +1192,13 @@ Master_Shutdown
 Informs all masters that this server is going down
 =================
 */
-void Master_Shutdown (void)
+static void Master_Shutdown (void)
 {
 	int			i;
 
-	// pgm post3.19 change, cvar pointer not validated before dereferencing
 	if (!dedicated || !dedicated->integer)
 		return;		// only dedicated servers send heartbeats
 
-	// pgm post3.19 change, cvar pointer not validated before dereferencing
 	if (!public_server || !public_server->integer)
 		return;		// a private dedicated game
 

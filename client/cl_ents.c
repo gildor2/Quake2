@@ -529,6 +529,8 @@ void CL_ParseFrame (void)
 		Com_Printf ("   frame:%i  delta:%i\n", cl.frame.serverframe,
 		cl.frame.deltaframe);
 
+	cl.overtime = 0;
+
 	// If the frame is delta compressed from data that we
 	// no longer have available, we must suck up the rest of
 	// the frame, but not use it, then ask for a non-compressed
@@ -873,7 +875,7 @@ static void CL_AddDebugLines (void)
 	for (pnum = 0; pnum < cl.frame.num_entities; pnum++)
 	{
 		st = &cl_parse_entities[(cl.frame.parse_entities+pnum)&(MAX_PARSE_ENTITIES-1)];
-		if (!st->solid) continue;
+		if (!st->solid) continue;			// no collision with this entity
 
 		CL_AddEntityBox (st, 0xFF808000);
 	}
@@ -888,19 +890,17 @@ CL_AddPacketEntities
 */
 static void CL_AddPacketEntities (void)
 {
-	entity_t			ent;
-	entityState_t		*s1;
-	float				autorotate;
-	int					i;
-	int					pnum;
-	centity_t			*cent;
-	int					autoanim;
-	clientinfo_t		*ci;
-	unsigned int		effects, renderfx;
+	entity_t	ent;
+	entityState_t *s1;
+	float		autorotate;
+	int			i, pnum;
+	centity_t	*cent;
+	clientinfo_t *ci;
+	int			autoanim;
+	unsigned 	effects, renderfx;
 
 	// bonus items rotate at a fixed rate
 	autorotate = anglemod(cl.ftime * 100);
-
 	// brush models can auto animate their frames
 	autoanim = 2 * cl.time / 1000;
 
@@ -935,7 +935,7 @@ static void CL_AddPacketEntities (void)
 		}
 		else
 		{	// interpolate origin
-			for (i=0 ; i<3 ; i++)
+			for (i = 0; i < 3; i++)
 			{
 				ent.origin[i] = ent.oldorigin[i] = cent->prev.origin[i] + cl.lerpfrac *
 					(cent->current.origin[i] - cent->prev.origin[i]);
@@ -1046,11 +1046,11 @@ static void CL_AddPacketEntities (void)
 		{
 			float	r, g, b;
 
-			r = g = b = 0.2;
+			r = g = b = frand () * 0.4;
 			if (renderfx & RF_SHELL_RED)	r = 1;
 			if (renderfx & RF_SHELL_GREEN)	g = 1;
 			if (renderfx & RF_SHELL_BLUE)	b = 1;
-			V_AddLight (ent.origin, 96 + (rand() & 15), r, g, b);
+			V_AddLight (ent.origin, 96 + (frand() * 15), r, g, b);
 		}
 
 		if (s1->number == cl.playernum+1)
@@ -1211,18 +1211,26 @@ static void CL_AddPacketEntities (void)
 			}
 			else if (effects & EF_BFG)
 			{
-				static int bfg_lightramp[6] = {300, 400, 600, 300, 150, 75};
-
 				if (effects & EF_ANIM_ALLFAST)
 				{
+					float	extra;
+
 					CL_BfgParticles (&ent);
-					i = 200;
+					extra = frand () * 0.5;
+					V_AddLight (ent.origin, 200, extra, 1, extra);
 				}
 				else
 				{
-					i = bfg_lightramp[s1->frame];
+					static float bfg_lightramp[7] = {200, 300, 400, 600, 300, 150, 75};
+					float	intens, prev, bright;
+
+					intens = bfg_lightramp[s1->frame + 1];
+					prev = bfg_lightramp[s1->frame];
+					intens = prev * (1.0f - cl.lerpfrac) + intens * cl.lerpfrac;
+					bright = s1->frame > 2 ? (5.0f - s1->frame) / (5 - 2) : 1;
+					V_AddLight (ent.origin, intens, 0, bright, 0);
 				}
-				V_AddLight (ent.origin, i, 0, 1, 0);
+//				re.DrawTextLeft(va("bfg: %d (%c) [%3.1f]", s1->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac),1,1,1);//!!
 			}
 			// RAFAEL
 			else if (effects & EF_TRAP)
@@ -1466,6 +1474,7 @@ void CL_AddEntities (void)
 	{
 		if (cl_showclamp->integer)
 			Com_Printf ("high clamp %i\n", cl.time - cl.frame.servertime);
+		cl.overtime += cl.time - cl.frame.servertime;
 		cl.time = cl.frame.servertime;
 		cl.ftime = cl.time / 1000.0f;
 		cl.lerpfrac = 1.0;
@@ -1474,6 +1483,7 @@ void CL_AddEntities (void)
 	{
 		if (cl_showclamp->integer)
 			Com_Printf ("low clamp %i\n", cl.frame.servertime - 100 - cl.time);
+		cl.overtime = 0;
 		cl.time = cl.frame.servertime - 100;
 		cl.ftime = cl.time / 1000.0f;
 		cl.lerpfrac = 0;

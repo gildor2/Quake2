@@ -62,18 +62,18 @@ qboolean QGL_Init (const char *dllname)
 
 static qboolean ExtensionSupported (const char *name)
 {
-	char	*match, *next, *origin;
 	int		len;
+	const char *s;
 
 	len = strlen (name);
-	for (origin = gl_config.extensionsString; *origin; origin = next)
+	s = gl_config.extensionsString;
+	while (true)
 	{
-		match = strstr (origin, name);
-		if (!match) return false;
+		while (s[0] == ' ') s++;				// skip spaces
+		if (!s[0]) break;						// end of extension string
 
-		next = match + len;
-		if ((match == origin || *(match - 1) == ' ') && (*next == ' ' || *next == 0))
-			return true;
+		if (!memcmp (s, name, len) && (s[len] == 0 || s[len] == ' ')) return true;
+		while (s[0] != ' ' && s[0] != 0) s++;	// skip name
 	}
 	return false;
 }
@@ -84,10 +84,31 @@ void QGL_InitExtensions (void)
 	int		i, notFoundExt, disabledExt;
 	extInfo_t *ext;
 	dummyFunc_t func;
+	const char *ext1, *ext2;
 
 	gl_config.extensionMask = 0;
 	notFoundExt = disabledExt = 0;
-	gl_config.extensionsString = CopyString (qglGetString (GL_EXTENSIONS));
+	ext1 = qglGetString (GL_EXTENSIONS);
+
+#if 1
+	{
+		const char * (APIENTRY *qwglGetExtensionsStringARB) (HDC hdc);
+
+		qwglGetExtensionsStringARB = (void*)qwglGetProcAddress ("wglGetExtensionsStringARB");	//?? better type conversion
+		if (qwglGetExtensionsStringARB)
+			ext2 = qwglGetExtensionsStringARB (glw_state.hDC);
+	}
+#else
+	ext2 = NULL;
+#endif
+
+	i = strlen (ext1) + 1;
+	if (ext2) i += strlen (ext2) + 1;
+	gl_config.extensionsString = Z_Malloc (i);
+	if (ext2)
+		Com_sprintf (gl_config.extensionsString, i, "%s %s", ext1, ext2);
+	else
+		strcpy (gl_config.extensionsString, ext1);
 
 	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 	{

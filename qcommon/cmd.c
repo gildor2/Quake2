@@ -243,119 +243,6 @@ void Cbuf_Execute (void)
 
 
 /*
-===============
-Cbuf_AddEarlyCommands
-
-Adds command line parameters as script statements
-Commands lead with a +, and continue until another +
-
-Set commands are added early, so they are guaranteed to be set before
-the client and server initialize for the first time.
-
-Other commands are added late, after all initialization is complete.
-===============
-*/
-void Cbuf_AddEarlyCommands (qboolean clear)
-{
-	int		i;
-	char	*s;
-
-	for (i = 0; i < COM_Argc(); i++)
-	{
-		s = COM_Argv(i);
-		if (strcmp (s, "+set"))
-			continue;
-		Cbuf_AddText (va("set %s %s\n", COM_Argv(i+1), COM_Argv(i+2)));
-		if (clear)
-		{
-			COM_ClearArgv(i);
-			COM_ClearArgv(i+1);
-			COM_ClearArgv(i+2);
-		}
-		i+=2;
-	}
-}
-
-/*
-=================
-Cbuf_AddLateCommands
-
-Adds command line parameters as script statements
-Commands lead with a '+' and continue until another '+'
-quake2 +vid_ref gl +map amlev1
-
-Returns true if any late commands were added, which
-will keep the demoloop from immediately starting
-=================
-*/
-qboolean Cbuf_AddLateCommands (void)
-{
-	int		i, s, argc;
-	char	*text, *build;
-	qboolean ret;
-
-	// build the combined string to parse from
-	s = 0;
-	argc = COM_Argc();
-	for (i = 1; i < argc; i++)
-	{
-		s += strlen (COM_Argv(i)) + 1;
-	}
-	if (!s)
-		return false;
-
-	text = Z_Malloc (s+1);
-//	text[0] = 0; -- zero initialized
-	for (i = 1; i < argc; i++)
-	{
-		strcat (text, COM_Argv(i));
-		if (i != argc-1)
-			strcat (text, " ");
-	}
-
-	// pull out the commands
-	build = Z_Malloc (s+1);
-	build[0] = 0;
-
-	for (i = 0; i < s-1; i++)
-	{
-		if (text[i] == '+')
-		{
-			char	c;
-			int		quote, j;
-
-			i++;				// skip '+'
-			quote = 0;
-			for (j = i; (c = text[j]) != 0; j++)
-			{
-				if (c == '"')
-					quote ^= 1;
-				if (!quote && c == '+')
-					break;		// found unquoted '+' -- next command
-			}
-
-			c = text[j];
-			text[j] = 0;
-
-			strcat (build, text+i);
-			strcat (build, "\n");
-			text[j] = c;
-			i = j-1;
-		}
-	}
-
-	ret = (build[0] != 0);
-	if (ret)
-		Cbuf_AddText (build);
-
-	Z_Free (text);
-	Z_Free (build);
-
-	return ret;
-}
-
-
-/*
 ==============================================================================
 
 						SCRIPT COMMANDS
@@ -646,19 +533,35 @@ $Cvars will be expanded unless they are in a quoted token
 void Cmd_TokenizeString (char *text, qboolean macroExpand)
 {
 	int		i;
-	char	*com_token;
+	char	*com_token, *s1, *s2;
+	char	set_string[MAX_STRING_CHARS];
 
 	// clear the args from the last string
 	for (i = 0; i < cmd_argc; i++)
 		Z_Free (cmd_argv[i]);
 
 	cmd_argc = 0;
-	cmd_args[0] = 0;
+//	cmd_args[0] = NULL;
 
 	// macro expand the text
 	if (macroExpand)
 		text = Cmd_MacroExpandString (text);
 	if (!text) return;
+
+	s1 = strchr (text, '=');
+	s2 = strchr (text, '\"');
+	if (s1 && (!s2 || s2 > s1))		// a=b, but '=' not inside quotes
+	{
+		// convert to "set a b"
+		strcpy (set_string, "set ");
+		Q_strncpyz (set_string + 4, text, s1 - text + 1);	// copy "a"
+		i = strlen (set_string);
+		Com_sprintf (set_string + i, sizeof(set_string) - i,
+			s1[1] != '\"' ? " \"%s\"\n" : " %s\n",
+			s1 + 1);
+
+		text = set_string;
+	}
 
 	while (1)
 	{

@@ -24,15 +24,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	MAXPRINTMSG	4096
 
-#define MAX_NUM_ARGVS	50
-
-
-static int		com_argc;
-static char	*com_argv[MAX_NUM_ARGVS+1];
-
 int		realtime;
 
 static jmp_buf abortframe;			// an ERR_DROP occured, exit the entire frame
+static qboolean insideFrame;
 
 extern	refExport_t	re;		// interface to refresh .dll
 
@@ -260,7 +255,7 @@ void Com_Error (int code, char *fmt, ...)
 		recursive = false;
 		longjmp (abortframe, -1);
 	}
-	else if (code == ERR_DROP)
+	else if (code == ERR_DROP && insideFrame)	// ERR_DROP->ERR_FATAL until not initialized
 	{
 		Com_Printf ("^1********************\nERROR: %s\n********************\n", msg);
 		SV_Shutdown (va("Server crashed: %s\n", msg), false);
@@ -281,6 +276,7 @@ void Com_Error (int code, char *fmt, ...)
 		logfile = NULL;
 	}
 
+	if (debugLogged) DebugPrintf ("FATAL ERROR: %s\n", msg);
 	Sys_Error ("%s", msg);
 }
 
@@ -366,6 +362,7 @@ qboolean MatchWildcard (char *name, char *mask)
 
 			// "*text" or "text*" mask
 			suff = strchr (mask, '*');
+			if (next && suff >= next) suff = NULL;		// suff can be in next wildcard
 			if (suff)
 			{
 				int		preflen, sufflen;
@@ -1185,52 +1182,6 @@ void SZ_Print (sizebuf_t *buf, char *data)
 
 
 //============================================================================
-// This set of functions used only by Cbuf_AddEarlyCommands() and Cbuf_AddLateCommands()
-
-int COM_Argc (void)
-{
-	return com_argc;
-}
-
-char *COM_Argv (int arg)
-{
-	if (arg < 0 || arg >= com_argc || !com_argv[arg])
-		return "";
-	return com_argv[arg];
-}
-
-// used from cmd.c :: Cbuf_AddEarlyCommands() only
-void COM_ClearArgv (int arg)
-{
-	if (arg < 0 || arg >= com_argc || !com_argv[arg])
-		return;
-	com_argv[arg] = "";
-}
-
-
-/*
-================
-COM_InitArgv
-================
-*/
-void COM_InitArgv (int argc, char **argv)
-{
-	int		i;
-
-	if (argc > MAX_NUM_ARGVS)
-		Com_Error (ERR_FATAL, "argc > MAX_NUM_ARGVS");
-	com_argc = argc;
-	for (i = 0; i < argc; i++)
-	{
-		if (!argv[i] || strlen(argv[i]) >= MAX_TOKEN_CHARS)
-			com_argv[i] = "";
-		else
-			com_argv[i] = argv[i];
-	}
-}
-
-
-//============================================================================
 
 void Info_Print (char *s)
 {
@@ -1416,14 +1367,152 @@ static void Com_Error_f (void)
 }
 
 
+/*-----------------------------------------------------------------------------
+	Commandline parsing
+-----------------------------------------------------------------------------*/
+
+
+#define MAX_CMDLINE_PARTS	64
+
+static char *cmdlineParts[MAX_CMDLINE_PARTS];
+static int cmdlineNumParts;
+
+static void ParseCmdline (char *cmdline)
+{
+	char	c, *dst;
+	static char buf[512];
+	int		i, quotes;
+
+	buf[0] = 0;						// starts with 0 (needs for trimming trailing spaces)
+	dst = &buf[1];
+	while (true)
+	{
+		while ((c = *cmdline) == ' ') cmdline++;	// skip spaces
+		if (!c) break;				// end of commandline
+
+		if (c != '-')
+		{
+			// bad argument
+			Com_Printf ("ParseCmdline: bad argument \"");
+			do
+			{
+				Com_Printf ("%c", c);
+				c = *++cmdline;
+			} while (c != ' ' && c != 0);
+			Com_Printf ("\"\n");
+			continue;				// try next argument
+		}
+
+		// cmdline points to start of possible command
+		if (cmdlineNumParts == MAX_CMDLINE_PARTS)
+		{
+			Com_WPrintf ("ParseCmdline: overflow\n");
+			break;
+		}
+		cmdlineParts[cmdlineNumParts++] = dst;
+		quotes = 0;
+		while (c = *++cmdline)
+		{
+			if (c == '\"')
+				quotes ^= 1;
+			else if (c == '-' && !quotes)
+			{
+				char	prev;
+
+				prev = *(dst-1);
+				if (prev == 0 || prev == ' ')
+					break;
+			}
+			*dst++ = c;
+		}
+		while (*(dst-1) == ' ') dst--;
+
+		*dst++ = 0;
+//		Com_Printf("arg[%d] = <%s>\n", cmdlineNumParts-1, cmdlineParts[cmdlineNumParts-1]);
+	}
+
+	// immediately exec strings of type "var=value"
+	for (i = 0; i < cmdlineNumParts; i++)
+	{
+		char	*cmd, *s1, *s2;
+
+		cmd = cmdlineParts[i];
+		s1 = strchr (cmd, '=');
+		s2 = strchr (cmd, '\"');
+		if (s1 && (!s2 || s2 > s1))		// a=b, but '=' not inside quotes
+		{
+			char	varName[64], varValue[256];
+			char	*value;
+			int		len;
+			cvar_t	*var;
+
+			// convert to "set a b"
+			Q_strncpyz (varName, cmd, s1 - cmd + 1);	// copy "a"
+			Q_strncpyz (varValue, s1 + 1, sizeof(varValue));
+			len = strlen (varValue);
+			if (varValue[0] == '\"' && varValue[len-1] == '\"')
+			{
+				// remove quotes
+				value = varValue + 1;
+				varValue[len-1] = 0;
+			}
+			else
+				value = varValue;
+			var = Cvar_Set (varName, value);
+			if (var)
+				var->flags |= CVAR_CMDLINE;
+			else
+				Com_WPrintf ("ParseCmdline: unable to set \"%s\"\n", varName);
+
+			cmdlineParts[i] = NULL;		// remove command
+		}
+	}
+}
+
+
+qboolean COM_CheckCmdlineVar (char *name)
+{
+	int		i;
+	char	*cmd;
+
+	for (i = 0; i < cmdlineNumParts; i++)
+	{
+		cmd = cmdlineParts[i];
+		if (!cmd || strchr (cmd, ' ')) continue;	// already removed or contains arguments
+		if (!Q_stricmp (name, cmd))
+		{
+			cmdlineParts[i] = NULL;
+			return true;
+		}
+	}
+	return false;
+}
+
+
+static void PushCmdline (void)
+{
+	int		i;
+	char	*cmd;
+
+	for (i = 0; i < cmdlineNumParts; i++)
+	{
+		cmd = cmdlineParts[i];
+		if (!cmd) continue;				// already removed
+		Cbuf_AddText (va("%s\n", cmd));
+		cmdlineParts[i] = NULL;			// just in case
+	}
+}
+
+
+/*-----------------------------------------------------------------------------
+	Initialization
+-----------------------------------------------------------------------------*/
+
+static cvar_t	*nointro;
 extern void Z_Init (void);
 
-/*
-=================
-Qcommon_Init
-=================
-*/
-void Qcommon_Init (int argc, char **argv)
+
+void QCommon_Init (char *cmdline)
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(com_speeds, 0, 0),
@@ -1431,6 +1520,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(developer, 0, 0),
 	CVAR_VAR(timescale, 1, CVAR_CHEAT),
 	CVAR_VAR(fixedtime, 0, CVAR_CHEAT),
+	CVAR_VAR(nointro, 0, CVAR_NOSET),
 	{&logfile_active, "logfile", "0", 0},
 	{&sv_cheats, "cheats", "0", CVAR_SERVERINFO|CVAR_LATCH},
 #ifdef DEDICATED_ONLY
@@ -1440,36 +1530,22 @@ CVAR_BEGIN(vars)
 #endif
 CVAR_END
 
-	if (setjmp (abortframe))	// Sys_Error(ERR_DROP...) thrown before entering main loop
-		Sys_Error ("Error during initialization");
-
 	Z_Init ();
-
-	// prepare enough of the subsystems to handle
-	// cvar and command buffer management
-	COM_InitArgv (argc, argv);
 
 	Swap_Init ();
 	Cbuf_Init ();
 
 	Cmd_Init ();
 	Cvar_Init ();
+	ParseCmdline (cmdline);			// should be executed before any cvar creation
 
 	Key_Init ();
-
-	// we need to add the early commands twice, because
-	// a basedir or cddir needs to be set before execing
-	// config files, but we want other parms to override
-	// the settings of the config files
-	Cbuf_AddEarlyCommands (false);
-	Cbuf_Execute ();
 
 	FS_InitFilesystem ();
 
 	FS_LoadGameConfig ();
-
-	Cbuf_AddEarlyCommands (true);
 	Cbuf_Execute ();
+	cvar_initialized = 1;			// config executed -- allow cmdline cvars to be modified
 
 	// init commands and vars
 	Cmd_AddCommand ("error", Com_Error_f);
@@ -1493,28 +1569,28 @@ CVAR_END
 	srand (Sys_Milliseconds ());
 
 	// add "+commands" from command line
-	if (!Cbuf_AddLateCommands ())
+//!!	Cbuf_AddLateCommands ();
+
+	if (nointro->integer == 0)
 	{	// if the user didn't give any commands, run default action
 		if (!dedicated->integer)
+		{
+			Cvar_ForceSet ("nointro", "2");		// indicates intro playback
 			Cbuf_AddText ("d1\n");
+		}
 		else
 			Cbuf_AddText ("dedicated_start\n");
 		Cbuf_Execute ();
 	}
-	else
-	{	// the user asked for something explicit
-		// so drop the loading plaque
-		SCR_EndLoadingPlaque ();
-	}
+	else if (nointro->integer != 1)				// do not allow values other than 0 or 1
+		Cvar_ForceSet ("nointro", "1");
 
+	cvar_initialized = 2;
+	PushCmdline ();
 	Com_Printf ("====== " APPNAME " Initialized ======\n\n");
 }
 
-/*
-=================
-Qcommon_Frame
-=================
-*/
+
 extern	int c_traces, c_brush_traces;
 extern	int	c_pointcontents;
 
@@ -1541,7 +1617,7 @@ __inline unsigned cycles (void)	  // taken from UT
 #endif
 
 
-void Qcommon_Frame (int msec)
+void QCommon_Frame (int msec)
 {
 	char	*s;
 	int		time_before, time_between, time_after;
@@ -1551,6 +1627,7 @@ void Qcommon_Frame (int msec)
 	if (setjmp (abortframe))
 		return;			// an ERR_DROP was thrown
 
+	insideFrame = true;
 	if (log_stats->modified)
 	{
 		log_stats->modified = false;
@@ -1592,6 +1669,7 @@ void Qcommon_Frame (int msec)
 		time_before_game = -1;
 	}
 
+//if (!Cvar_VariableInt("sv_block"))
 	SV_Frame (msecf);
 
 	if (com_speeds->integer)
@@ -1658,13 +1736,10 @@ void Qcommon_Frame (int msec)
 #endif
 	}
 
+	insideFrame = false;
 }
 
-/*
-=================
-Qcommon_Shutdown
-=================
-*/
-void Qcommon_Shutdown (void)
+
+void QCommon_Shutdown (void)
 {
 }

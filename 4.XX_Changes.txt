@@ -2,6 +2,7 @@
 
 - intensity, saturation, vid_gamma, vid_fullscreen -> r_...
 - r_gamma = 1/vid_gamma
+- nosound = !s_initsound
 
 Comments:
 ? when filename.??? appeared in this log, this means "tga"/"jpg"/"pcx"/"wal"
@@ -113,7 +114,8 @@ Cvar system
     within value list)
 - command "cvarlist" - added parameter:
   cvarlist [mask]          -- will display only variables, which names matched wildcard
-- "set[a|u|s] <variable> <vaule>", "set <variable> <value> [a|u|s]" (archive|userinfo|serverinfo)
+- "set[a|u|s] <variable> <value>", "set <variable> <value> [a|u|s]" (archive|userinfo|serverinfo)
+- alias for "set" command: "a=b" internally replaced with "set a b"
 - "reset <mask>" - set value of all archive cvars which names are matched mask to default
 
 File system
@@ -234,6 +236,18 @@ Debugging
   - fixed low timescale (was not able to perform frames with scaled time less than 1 ms)
 - added mouse support via DirectInput (activated with "set in_mouse 2", default)
 - third-person view: activated with "cl_3rd_person 1"
+- intro playback:
+  - removed from "toggleconsole" command
+  - on startup, will be displayed only cinematics
+  - to disable intro on startup, use "nointro 1" in commandline
+- dedicated server:
+  - to disable auto-startup "dedicated_start" alias, use "nointro 1"
+- main executable command line:
+  - to change cvar use "-var=value"
+  - to set cvar, known at the time of initialization, to "1", use "-var"
+  - to execute commands, use "-command [arguments]"
+  - example: quake2 -nosound -deathmatch=1 -map q2dm1 -echo "hello world!"
+- commands "lookdown <angle>" and "lookup <angle>"
 
 6. MISFEATURES
 ~~~~~~~~~~~~~~

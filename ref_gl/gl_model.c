@@ -652,6 +652,12 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (owner->flags & CMODEL_ALPHA)
 			sflags |= SHADER_ALPHA;
 
+/*if (Cvar_VariableInt("dlmodels"))	//??
+{
+		if (owner->flags & CMODEL_MOVABLE && !(sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA)))
+			sflags = SHADER_SKIN;
+}*/
+
 		// check covered contents and update shader flags
 		if (stex->flags & (SURF_TRANS33|SURF_TRANS66) && !(stex->flags &
 			(SURF_SPECULAR|SURF_DIFFUSE|SURF_WARP|SURF_FLOWING)))		// && gl_autoReflect ??
@@ -685,7 +691,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 
 
 		// check for shader lightmap
-		if (surfs->lightofs >= 0)
+		if (surfs->lightofs >= 0 && !(sflags & SHADER_SKIN))	//??
 		{
 			if (sflags & SHADER_SKY)
 			{
@@ -878,7 +884,8 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			// check for single-color lightmap block
 			if (lm->numStyles == 1)
 			{
-#define MAX_DEV		4					// maximal deviation of texture color (4 looks bad with 1-texel lm, but good with vertex lighting)
+#define MAX_DEV		4		// maximal deviation of texture color (4 looks bad with 1-texel lm, but good with vertex lighting)
+				//?? MAX_DEV should depend on value ( fabs(v1-v2)/(v1+v2) < MAX_DEV , MAX_DEV--float )
 				byte	*p;
 				byte	min[3], max[3];
 

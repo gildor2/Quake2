@@ -33,7 +33,7 @@ typedef struct {
 	void	(*_Com_WPrintf) (char *str, ...);
 	void	(*_Com_Error) (int err_level, char *str, ...);
 	qboolean	(*_FS_FileExists) (char *filename);
-	basenamed_t*	(*_FS_ListFiles) (char *name, int *numfiles, unsigned musthave, unsigned canthave);
+	basenamed_t*	(*_FS_ListFiles) (char *name, int *numfiles, int flags);
 	int	(*_FS_LoadFile) (char *name, void **buf);
 	void	(*_FS_FreeFile) (void *buf);
 	char*	(*_FS_Gamedir) (void);
@@ -46,7 +46,7 @@ typedef struct {
 	qboolean	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
 	void	(*_Vid_MenuInit) (void);
 	int	(*_ImageExists) (char *name, int stop_mask);
-	void	(*_LoadPCX) (char *filename, byte **pic, byte **palette, int *width, int *height);
+	void	(*_LoadPCX) (char *name, byte **pic, byte **palette, int *width, int *height);
 	void	(*_LoadTGA) (char *name, byte **pic, int *width, int *height);
 	void	(*_LoadJPG) (char *name, byte **pic, int *width, int *height);
 	qboolean	(*_WriteTGA) (char *name, byte *pic, int width, int height);

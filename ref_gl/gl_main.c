@@ -557,7 +557,7 @@ static void SetFrustum (void)
 	int		i;
 
 	// setup plane [0]: view direction + znear
-	VectorCopy (vp.viewaxis[0], &vp.frustum[0]);
+	VectorCopy (vp.viewaxis[0], vp.frustum[0].normal);
 
 #define SCALE	(0.5/360.0f)
 	sx = SIN_FUNC(vp.fov_x * SCALE);	// fov/2 * pi/180

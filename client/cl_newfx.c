@@ -71,10 +71,8 @@ void CL_Flashlight (int ent, vec3_t pos)
 {
 	cdlight_t	*dl;
 
-	dl = CL_AllocDlight (ent);
-	VectorCopy (pos,  dl->origin);
+	dl = CL_AllocDlight (ent, pos);
 	dl->radius = 400;
-	dl->minlight = 250;
 	dl->die = cl.time + 100;
 	dl->color[0] = 1;
 	dl->color[1] = 1;
@@ -91,10 +89,8 @@ void CL_ColorFlash (vec3_t pos, int ent, int intensity, float r, float g, float 
 {
 	cdlight_t	*dl;
 
-	dl = CL_AllocDlight (ent);
-	VectorCopy (pos,  dl->origin);
+	dl = CL_AllocDlight (ent, pos);
 	dl->radius = intensity;
-	dl->minlight = 250;
 	dl->die = cl.time + 100;
 	dl->color[0] = r;
 	dl->color[1] = g;
@@ -161,44 +157,6 @@ void CL_DebugTrail (vec3_t start, vec3_t end)
 
 }
 
-/*
-===============
-CL_SmokeTrail
-===============
-*/
-void CL_SmokeTrail (vec3_t start, vec3_t end, int colorStart, int colorRun, int spacing)
-{
-	vec3_t		move;
-	vec3_t		vec;
-	float		len;
-	int			j;
-	particle_t	*p;
-
-	VectorCopy (start, move);
-	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
-
-	VectorScale (vec, spacing, vec);
-
-	// FIXME: this is a really silly way to have a loop
-	while (len > 0)
-	{
-		len -= spacing;
-
-		if (!(p = CL_AllocParticle ()))
-			return;
-		p->accel[2] = 0;
-
-		p->alpha = 1.0;
-		p->alphavel = -1.0 / (1+frand()*0.5);
-		p->color = colorStart + (rand() % colorRun);
-		for (j=0 ; j<3 ; j++)
-			p->org[j] = move[j] + crand()*3;
-		p->vel[2] = 20 + crand()*5;
-
-		VectorAdd (move, vec, move);
-	}
-}
 
 void CL_ForceWall (vec3_t start, vec3_t end, int color)
 {
@@ -240,48 +198,6 @@ void CL_ForceWall (vec3_t start, vec3_t end, int color)
 
 		VectorAdd (move, vec, move);
 	}
-}
-
-void CL_FlameEffects (centity_t *ent, vec3_t origin)
-{
-	int			n, count;
-	int			j;
-	particle_t	*p;
-
-	count = rand() & 0xF;
-
-	for(n=0;n<count;n++)
-	{
-		if (!(p = CL_AllocParticle ()))
-			return;
-
-		p->alpha = 1.0;
-		p->alphavel = -1.0 / (1+frand()*0.2);
-		p->color = 226 + (rand() % 4);
-		for (j=0 ; j<3 ; j++)
-		{
-			p->org[j] = origin[j] + crand()*5;
-			p->vel[j] = crand()*5;
-		}
-		p->vel[2] = crand() * -10;
-	}
-
-	count = rand() & 0x7;
-
-	for(n=0;n<count;n++)
-	{
-		if (!(p = CL_AllocParticle ()))
-			return;
-		p->accel[2] = 0;
-
-		p->alpha = 1.0;
-		p->alphavel = -1.0 / (1+frand()*0.5);
-		p->color = 0 + (rand() % 4);
-		for (j=0 ; j<3 ; j++)
-			p->org[j] = origin[j] + crand()*3;
-		p->vel[2] = 20 + crand()*5;
-	}
-
 }
 
 

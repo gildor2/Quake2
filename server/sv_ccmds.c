@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //?? only for screenshot
 #include "../client/ref.h"
 extern refExport_t re;
-void SCR_UpdateScreen (void);
+void SCR_UpdateScreen (void);		//?? remove
 void SCR_SetLevelshot (char *name);
 
 /*
@@ -255,7 +255,8 @@ void SV_WriteServerFile (qboolean autosave, char *dir)
 	{
 		re.Screenshot (SHOT_SMALL|SHOT_SILENT|SHOT_NO_2D|SHOT_WAIT_3D|SHOT_JPEG,
 			va("%s/" SAVEGAME_DIRECTORY "/%s/shot", FS_Gamedir(), dir));
-		SCR_UpdateScreen ();			// required for screenshot performing
+//--		SCR_UpdateScreen ();			// required for screenshot performing
+			// BUT: here we must wait for NEXT map, and if performing shot immediately, it can be from PREVIOUS map
 	}
 }
 
@@ -326,10 +327,19 @@ Puts the server in demo mode on a specific map/cinematic
 */
 void SV_DemoMap_f (void)
 {
-	char	*map;
+	char	*map, *ext;
 
 	map = Cmd_Argv(1);
-	if (!strchr (map, '.'))
+	ext = strchr (map, '.');
+
+	if (Cvar_VariableInt ("nointro") == 2 && (!ext || (strcmp (ext, ".cin") && strcmp (ext, ".pcx"))))
+	{	// allow .CIN files while playing intro (stop intro when trying to play demofile)
+		Cbuf_AddText ("nextserver \"\";disconnect;menu_main\n");
+		Cvar_ForceSet ("nointro", "1");
+		return;
+	}
+
+	if (!ext)
 		map = va("%s.dm2", map);
 
 	SV_Map (true, map, false);

@@ -1631,8 +1631,8 @@ int Com_sprintf (char *dest, int size, char *fmt, ...)
 	va_start (argptr, fmt);
 	len = vsnprintf (dest, size, fmt, argptr);
 	va_end (argptr);
-	if (len < 0 || len >= size - 1)
-		Com_WPrintf ("Com_sprintf: overflow of %d" RETADDR_STR "\n", size, GET_RETADDR(dest));
+	if (len < 0 || len > size - 1)
+		Com_WPrintf ("Com_sprintf: overflow %d > %d" RETADDR_STR "\n", len, size, GET_RETADDR(dest));
 #else
 	char	bigbuffer[0x10000];
 
@@ -1640,7 +1640,7 @@ int Com_sprintf (char *dest, int size, char *fmt, ...)
 	len = vsprintf (bigbuffer, fmt, argptr);
 	va_end (argptr);
 	if (len >= size)
-		Com_WPrintf ("Com_sprintf: overflow of %i in %i\n", len, size);
+		Com_WPrintf ("Com_sprintf: overflow %d > %d\n", len, size);
 	strncpy (dest, bigbuffer, size-1);
 #endif
 

@@ -466,9 +466,20 @@ static qboolean ReadEntity (char **src)
 static void WriteEntity (char **dst)
 {
 	int		i;
+	qboolean found;
 #ifdef SHOW_WRITE
 	char	*txt = *dst;
 #endif
+
+	// check presence of any non-removed field
+	found = false;
+	for (i = 0; i < numEntFields; i++)
+		if (entity[i].name[0] && strcmp (entity[i].name, "classname"))
+		{
+			found = true;
+			break;
+		}
+	if (!found) return;
 
 	strcpy (*dst, "{\n"); (*dst) += 2;
 	for (i = 0; i < numEntFields; i++)
@@ -583,6 +594,12 @@ static qboolean ProcessEntity ()
 	}
 	else
 		haveModel = false;
+
+	/*----------- check movable inline models -----------*/
+
+	if (haveModel && modelIdx > 0 && MatchWildcard (class,
+		"func_plat,func_*rotating,func_door,func_train"))
+		bspfile.models[modelIdx].flags |= CMODEL_MOVABLE;
 
 	/*---------------- get lighting info ----------------*/
 

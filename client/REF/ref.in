@@ -42,7 +42,7 @@ void	Com_Error (int err_level, char *str, ...);
 
 //---------- files ----------
 qboolean FS_FileExists (char *filename);
-basenamed_t* FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigned canthave);
+basenamed_t* FS_ListFiles (char *name, int *numfiles, int flags);
 int	FS_LoadFile (char *name, void **buf);
 void	FS_FreeFile (void *buf);
 char*	FS_Gamedir (void);
@@ -60,7 +60,7 @@ void	Vid_MenuInit (void);
 
 //--------- images ----------
 int	ImageExists (char *name, int stop_mask);
-void	LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *height);
+void	LoadPCX (char *name, byte **pic, byte **palette, int *width, int *height);
 void	LoadTGA (char *name, byte **pic, int *width, int *height);
 void	LoadJPG (char *name, byte **pic, int *width, int *height);
 qboolean WriteTGA (char *name, byte *pic, int width, int height);

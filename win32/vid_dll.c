@@ -204,17 +204,10 @@ static int MapKey (int key)
 	}
 }
 
-void AppActivate (BOOL fActive, BOOL minimize)
+static void AppActivate (qboolean fActive)
 {
-	Minimized = minimize;
-
 	Key_ClearStates ();
-
-	// we don't want to act like we're active if we're minimized
-	if (fActive && !Minimized)
-		ActiveApp = true;
-	else
-		ActiveApp = false;
+	ActiveApp = fActive;
 
 	// minimize/restore mouse-capture on demand
 	if (!ActiveApp)
@@ -303,16 +296,15 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 	case WM_ACTIVATE:
 		{
-			int	fActive, fMinimized;
+			qboolean	fActive;
 
 			// KJB: Watch this for problems in fullscreen modes with Alt-tabbing.
-			fActive = LOWORD(wParam);
-			fMinimized = (BOOL) HIWORD(wParam);
+			fActive = LOWORD(wParam) != WA_INACTIVE;
 
-			AppActivate (fActive != WA_INACTIVE, fMinimized);
+			AppActivate (fActive);
 
 			if (refActive)
-				re.AppActivate (!(fActive == WA_INACTIVE));
+				re.AppActivate (fActive);
 		}
 		break;
 

@@ -40,6 +40,19 @@ lighting bugs:
   ! should use lightstyle 0: mod "nightdm" uses it for creating dark maps
   - allow overbright on models (use modulate2x, cache light in 0..2 range); WARNING: check correct light/angle dependency
     (for test: ship projector on "beachassault")
+  - movable inline model lighting (disabled now):
+     ? incorrect intensity ("actcity2" - rotating gate) -- may be, for frame models too
+     - make it with entity script only -- lightmaps by default (or reject by size)
+     - should make envmaps work
+     - dlights should be applied in a usual for lightmaps way (not )
+     - some models have "_minlight" field (other fields too?)
+     - entity may have its own light surfaces (map "skytower" -- lift have SURF_LIGHT)
+       (if attach lights to entity, lightgrid should be reimplemented ? or check this lights every time ?)
+     ? compute lighting not for point but for box (or for each surface separately ??); may be, with special (not generic)
+       function -- without dlights etc (if for each surface -- only 1 vector)
+     ? cache lighting when entity in a stopped state (cache will require separate holding of fast lightstyles)
+     info: "rc1" escalator looking good
+     each_surface: check "teehc2" with crane enabled
 
 - replace "sqrt" -> SQRTFAST
 
@@ -125,7 +138,6 @@ PreprocessShader():
 ? don't need shader->sortParam other than sky/opaque/seethrough (may be, +coronas +hud)
 ? disable REF_NEWFX when necessary image files absent
 
-? do not render while window is minimized (less CPU usage)
 - r_nocull works only with frustum culling (extend cvar or add another ...)
 !! vertex arrays are not 16-byte aligned (see gl.log)
 ? reimplement (remove?) fast drawing

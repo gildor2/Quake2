@@ -73,6 +73,9 @@ CL_ClipMoveToEntities
 
 ====================
 */
+
+//#define NO_PREDICT_LERP
+
 void CL_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 {
 	int		i, j;
@@ -103,8 +106,12 @@ void CL_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs,
 		cent = &cl_entities[ent->number];
 		frac = predictLerp;							// called CL_PredictMovement()
 		if (frac < 0) frac = cl.lerpfrac;			// called from any other place
+#ifndef NO_PREDICT_LERP
 		for (j = 0; j < 3; j++)
 			delta[j] = (1.0f - frac) * (cent->current.origin[j] - cent->prev.origin[j]);
+#else
+		VectorClear (delta);
+#endif
 
 		VectorSubtract (ent->center, start, eCenter);
 		VectorSubtract (eCenter, delta, eCenter);
@@ -202,8 +209,12 @@ int CL_PMpointcontents (vec3_t point)
 
 		// compute lerped entity position
 		cent = &cl_entities[ent->number];
+#ifndef NO_PREDICT_LERP
 		for (j = 0; j < 3; j++)
 			delta[j] = (1.0f - cl.lerpfrac) * (cent->current.origin[j] - cent->prev.origin[j]);
+#else
+		VectorClear (delta);
+#endif
 		VectorSubtract (ent->center, delta, eCenter);
 		VectorSubtract (ent->origin, delta, eOrigin);
 

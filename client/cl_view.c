@@ -421,11 +421,36 @@ typedef struct
 
 static void DrawFlag (int flag, flagInfo_t *info, int numFlags, char *prefix)
 {
+#if 0
 	int		i;
 
 	for (i = 0; i < numFlags; i++, info++)
 		if (flag & info->code)
 			re.DrawTextLeft (va("%s%s", prefix, info->name), 0.3, 0.6, 0.4);
+#else
+	char	buf[256];
+	int		i;
+
+	buf[0] = 0;
+	for (i = 0; i < numFlags; i++, info++)
+		if (flag & info->code)
+		{
+			if (buf[0])
+				strncat (buf, va(" %s%s", prefix, info->name), sizeof(buf));
+			else
+				Com_sprintf (buf, sizeof(buf), "%s%s", prefix, info->name);
+			if (strlen (buf) > 40)
+			{
+				re.DrawTextLeft (buf, 0.3, 0.6, 0.4);
+				buf[0] = 0;
+			}
+			flag &= ~info->code;
+		}
+	if (buf[0])
+		re.DrawTextLeft (buf, 0.3, 0.6, 0.4);
+	if (flag)
+		re.DrawTextLeft (va("%sUNK_%X", prefix, flag), 0.6, 0.3, 0.4);
+#endif
 }
 
 
@@ -434,15 +459,15 @@ static void DecodeContents (int i)
 	static flagInfo_t contentsNames[] = {
 #define T(name)		{CONTENTS_##name, #name}
 		T(SOLID),	T(WINDOW),		T(AUX),		T(LAVA),	T(SLIME),		T(WATER),
-		T(MIST),	T(AREAPORTAL),	T(PLAYERCLIP),	T(MONSTERCLIP),
+		T(MIST),	T(ALPHA),		T(AREAPORTAL),	T(PLAYERCLIP),	T(MONSTERCLIP),
 		T(CURRENT_0),	T(CURRENT_90),	T(CURRENT_180),	T(CURRENT_270),
 		T(CURRENT_UP),	T(CURRENT_DOWN),T(ORIGIN),		T(MONSTER),
 		T(DEADMONSTER),	T(DETAIL),		T(TRANSLUCENT),	T(LADDER)
 #undef T
 	};
 
-	re.DrawTextLeft ("Contents:", 0.4, 0.4, 0.6);
-	re.DrawTextLeft ("---------", 0.4, 0.4, 0.6);
+//	re.DrawTextLeft ("Contents:", 0.4, 0.4, 0.6);
+//	re.DrawTextLeft ("---------", 0.4, 0.4, 0.6);
 	if (!i)
 		re.DrawTextLeft ("CONTENTS_EMPTY", 0.3, 0.6, 0.4);
 	else
@@ -514,15 +539,15 @@ static void DrawSurfInfo (void)
 		surf = trace.surface;
 		if (surf->rname[0])		// non-null surface
 		{
-			re.DrawTextLeft (va("Surface name: %s", surf->rname), 0.2, 0.4, 1);
+			re.DrawTextLeft (va("Texture: %s", surf->rname), 0.2, 0.4, 1);
 			VectorCopy (trace.plane.normal, norm);
 			re.DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARGS(norm)), 0.2, 0.4, 1);
 			if (surf->value)
-				re.DrawTextLeft (va("Value: %i (0x%X)", surf->value, surf->value), 0.2, 0.4, 1);
+				re.DrawTextLeft (va("Value: %d", surf->value), 0.2, 0.4, 1);
 			DrawFlag (surf->flags, surfNames, sizeof(surfNames)/sizeof(flagInfo_t), "SURF_");
-#define SURF_KNOWN	(0xFF|SURF_ALPHA|SURF_DIFFUSE|SURF_SPECULAR|SURF_AUTOFLARE)
-			if (surf->flags & ~SURF_KNOWN) // unknown flags
-				re.DrawTextLeft (va("SURF_UNK_%X", surf->flags & ~SURF_KNOWN), 0.6, 0.3, 0.4);
+//#define SURF_KNOWN	(0xFF|SURF_ALPHA|SURF_DIFFUSE|SURF_SPECULAR|SURF_AUTOFLARE)
+//			if (surf->flags & ~SURF_KNOWN) // unknown flags
+//				re.DrawTextLeft (va("SURF_UNK_%X", surf->flags & ~SURF_KNOWN), 0.6, 0.3, 0.4);
 			// material
 			if (surf->material >= MATERIAL_FIRST && surf->material <= MATERIAL_LAST)
 				s = materialNames[surf->material];
@@ -540,14 +565,10 @@ static void DrawSurfInfo (void)
 			re.DrawTextLeft ("-------", 0.4, 0.4, 0.6);
 			re.DrawTextLeft (va("Origin: %g %g %g", VECTOR_ARGS(ent->origin)), 0.4, 0.4, 0.6);
 			re.DrawTextLeft (va("fx: %X  rfx: %X", ent->effects, ent->renderfx), 0.2, 0.4, 1);
-			if (ent->modelindex)
-				re.DrawTextLeft (va("model: %s", ModelName (ent->modelindex)), 0.2, 0.4, 1);
-			if (ent->modelindex2)
-				re.DrawTextLeft (va("model2: %s", ModelName (ent->modelindex2)), 0.2, 0.4, 1);
-			if (ent->modelindex3)
-				re.DrawTextLeft (va("model3: %s", ModelName (ent->modelindex3)), 0.2, 0.4, 1);
-			if (ent->modelindex4)
-				re.DrawTextLeft (va("model4: %s", ModelName (ent->modelindex4)), 0.2, 0.4, 1);
+			if (ent->modelindex)	re.DrawTextLeft (va("model: %s", ModelName (ent->modelindex)), 0.2, 0.4, 1);
+			if (ent->modelindex2)	re.DrawTextLeft (va("model2: %s", ModelName (ent->modelindex2)), 0.2, 0.4, 1);
+			if (ent->modelindex3)	re.DrawTextLeft (va("model3: %s", ModelName (ent->modelindex3)), 0.2, 0.4, 1);
+			if (ent->modelindex4)	re.DrawTextLeft (va("model4: %s", ModelName (ent->modelindex4)), 0.2, 0.4, 1);
 
 			CL_AddEntityBox (ent, 0xFF2020FF);
 		}

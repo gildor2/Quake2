@@ -140,39 +140,39 @@ static void KeyUp (kbutton_t *b)
 }
 
 
-void IN_KLookDown (void)	{KeyDown(&in_klook);}
-void IN_KLookUp (void)		{KeyUp(&in_klook);}
-void IN_UpDown(void)		{KeyDown(&in_up);}
-void IN_UpUp(void)			{KeyUp(&in_up);}
-void IN_DownDown(void)		{KeyDown(&in_down);}
-void IN_DownUp(void)		{KeyUp(&in_down);}
-void IN_LeftDown(void)		{KeyDown(&in_left);}
-void IN_LeftUp(void)		{KeyUp(&in_left);}
-void IN_RightDown(void)		{KeyDown(&in_right);}
-void IN_RightUp(void)		{KeyUp(&in_right);}
-void IN_ForwardDown(void)	{KeyDown(&in_forward);}
-void IN_ForwardUp(void)		{KeyUp(&in_forward);}
-void IN_BackDown(void)		{KeyDown(&in_back);}
-void IN_BackUp(void)		{KeyUp(&in_back);}
-void IN_LookupDown(void)	{KeyDown(&in_lookup);}
-void IN_LookupUp(void)		{KeyUp(&in_lookup);}
-void IN_LookdownDown(void)	{KeyDown(&in_lookdown);}
-void IN_LookdownUp(void)	{KeyUp(&in_lookdown);}
-void IN_MoveleftDown(void)	{KeyDown(&in_moveleft);}
-void IN_MoveleftUp(void)	{KeyUp(&in_moveleft);}
-void IN_MoverightDown(void)	{KeyDown(&in_moveright);}
-void IN_MoverightUp(void)	{KeyUp(&in_moveright);}
+static void IN_KLookDown (void)	{KeyDown(&in_klook);}
+static void IN_KLookUp (void)		{KeyUp(&in_klook);}
+static void IN_UpDown(void)		{KeyDown(&in_up);}
+static void IN_UpUp(void)			{KeyUp(&in_up);}
+static void IN_DownDown(void)		{KeyDown(&in_down);}
+static void IN_DownUp(void)		{KeyUp(&in_down);}
+static void IN_LeftDown(void)		{KeyDown(&in_left);}
+static void IN_LeftUp(void)		{KeyUp(&in_left);}
+static void IN_RightDown(void)		{KeyDown(&in_right);}
+static void IN_RightUp(void)		{KeyUp(&in_right);}
+static void IN_ForwardDown(void)	{KeyDown(&in_forward);}
+static void IN_ForwardUp(void)		{KeyUp(&in_forward);}
+static void IN_BackDown(void)		{KeyDown(&in_back);}
+static void IN_BackUp(void)		{KeyUp(&in_back);}
+static void IN_LookupDown(void)	{KeyDown(&in_lookup);}
+static void IN_LookupUp(void)		{KeyUp(&in_lookup);}
+static void IN_LookdownDown(void)	{KeyDown(&in_lookdown);}
+static void IN_LookdownUp(void)	{KeyUp(&in_lookdown);}
+static void IN_MoveleftDown(void)	{KeyDown(&in_moveleft);}
+static void IN_MoveleftUp(void)	{KeyUp(&in_moveleft);}
+static void IN_MoverightDown(void)	{KeyDown(&in_moveright);}
+static void IN_MoverightUp(void)	{KeyUp(&in_moveright);}
 
-void IN_SpeedDown(void)		{KeyDown(&in_speed);}
-void IN_SpeedUp(void)		{KeyUp(&in_speed);}
-void IN_StrafeDown(void)	{KeyDown(&in_strafe);}
-void IN_StrafeUp(void)		{KeyUp(&in_strafe);}
+static void IN_SpeedDown(void)		{KeyDown(&in_speed);}
+static void IN_SpeedUp(void)		{KeyUp(&in_speed);}
+static void IN_StrafeDown(void)	{KeyDown(&in_strafe);}
+static void IN_StrafeUp(void)		{KeyUp(&in_strafe);}
 
-void IN_AttackDown(void)	{KeyDown(&in_attack);}
-void IN_AttackUp(void)		{KeyUp(&in_attack);}
+static void IN_AttackDown(void)	{KeyDown(&in_attack);}
+static void IN_AttackUp(void)		{KeyUp(&in_attack);}
 
-void IN_UseDown (void)		{KeyDown(&in_use);}
-void IN_UseUp (void)		{KeyUp(&in_use);}
+static void IN_UseDown (void)		{KeyDown(&in_use);}
+static void IN_UseUp (void)		{KeyUp(&in_use);}
 
 /*
 ===============
@@ -181,7 +181,7 @@ CL_KeyState
 Returns the fraction of the frame that the key was down
 ===============
 */
-float CL_KeyState (kbutton_t *key)
+static float CL_KeyState (kbutton_t *key)
 {
 	float		val;
 	int			msec;
@@ -227,7 +227,7 @@ CL_AdjustAngles
 Moves the local angle positions
 ================
 */
-void CL_AdjustAngles (void)
+static void AdjustAngles (void)
 {
 	float	speed;
 	float	up, down;
@@ -262,9 +262,9 @@ CL_BaseMove
 Send the intended movement message to the server
 ================
 */
-void CL_BaseMove (usercmd_t *cmd)
+static void BaseMove (usercmd_t *cmd)
 {
-	CL_AdjustAngles ();
+	AdjustAngles ();
 
 	memset (cmd, 0, sizeof(*cmd));
 
@@ -291,7 +291,7 @@ void CL_BaseMove (usercmd_t *cmd)
 	}
 
 	// adjust for speed key / running
-	if ( (in_speed.state & 1) ^ cl_run->integer )
+	if ((in_speed.state & 1) ^ cl_run->integer)
 	{
 		cmd->forwardmove *= 2;
 		cmd->sidemove *= 2;
@@ -299,18 +299,13 @@ void CL_BaseMove (usercmd_t *cmd)
 	}
 }
 
-void CL_ClampPitch (void)
+static void ClampPitch (void)
 {
 	float	pitch;
 
 	pitch = SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
 	if (pitch > 180)
 		pitch -= 360;
-
-	if (cl.viewangles[PITCH] + pitch < -360)
-		cl.viewangles[PITCH] += 360;		// wrapped
-	if (cl.viewangles[PITCH] + pitch > 360)
-		cl.viewangles[PITCH] -= 360;		// wrapped
 
 	if (cl.viewangles[PITCH] + pitch > 89)
 		cl.viewangles[PITCH] = 89 - pitch;
@@ -323,7 +318,7 @@ void CL_ClampPitch (void)
 CL_FinishMove
 ==============
 */
-void CL_FinishMove (usercmd_t *cmd)
+static void FinishMove (usercmd_t *cmd)
 {
 	int		ms;
 	int		i;
@@ -346,7 +341,7 @@ void CL_FinishMove (usercmd_t *cmd)
 		ms = 100;		// time was unreasonable
 	cmd->msec = ms;
 
-	CL_ClampPitch ();
+	ClampPitch ();
 	for (i = 0; i < 3; i++)
 		cmd->angles[i] = ANGLE2SHORT(cl.viewangles[i]);
 
@@ -361,7 +356,7 @@ void CL_FinishMove (usercmd_t *cmd)
 CL_CreateCmd
 =================
 */
-usercmd_t CL_CreateCmd (void)
+static usercmd_t CL_CreateCmd (void)
 {
 	usercmd_t	cmd;
 
@@ -369,12 +364,12 @@ usercmd_t CL_CreateCmd (void)
 	frame_msec = bound(frame_msec, 1, 200);
 
 	// get basic movement from keyboard
-	CL_BaseMove (&cmd);
+	BaseMove (&cmd);
 
 	// allow mice or other external controllers to add to the move
 	IN_Move (&cmd);
 
-	CL_FinishMove (&cmd);
+	FinishMove (&cmd);
 
 	old_sys_frame_time = sys_frame_time;
 
@@ -388,6 +383,29 @@ void IN_CenterView (void)
 {
 	cl.viewangles[PITCH] = -SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
 }
+
+
+static void IN_Lookdown (void)
+{
+	if (Cmd_Argc () != 2)
+	{
+		Com_Printf ("Usage: lookdown <angle>");
+		return;
+	}
+	cl.viewangles[PITCH] += atof (Cmd_Argv(1));
+}
+
+
+static void IN_Lookup (void)		// can be used "lookdown -angle" instead
+{
+	if (Cmd_Argc () != 2)
+	{
+		Com_Printf ("Usage: lookup <angle>");
+		return;
+	}
+	cl.viewangles[PITCH] -= atof (Cmd_Argv(1));
+}
+
 
 /*
 ============
@@ -428,6 +446,9 @@ void CL_InitInput (void)
 	Cmd_AddCommand ("-use", IN_UseUp);
 	Cmd_AddCommand ("+klook", IN_KLookDown);
 	Cmd_AddCommand ("-klook", IN_KLookUp);
+
+	Cmd_AddCommand ("lookdown", IN_Lookdown);
+	Cmd_AddCommand ("lookup", IN_Lookup);
 
 	cl_nodelta = Cvar_Get ("cl_nodelta", "0", 0);
 }

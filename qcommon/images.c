@@ -21,106 +21,94 @@ typedef struct
 	unsigned short	bytes_per_line;
 	unsigned short	palette_type;
 	char	filler[58];
-	unsigned char	data;			// unbounded
 } pcx_t;
 
 
-void LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *height)
+void LoadPCX (char *name, byte **pic, byte **palette, int *width, int *height)
 {
-	byte	*raw;
-	pcx_t	*pcx;
-	int		x, y;
-	int		len;
-	int		dataByte, runLength;
-	byte	*out, *pix;
+	byte	*src, *dst;
+	pcx_t	*hdr;
+	int		filelen, x, y, w, h;
+	char	*errMsg;
 
 	*pic = NULL;
 	*palette = NULL;
 
-	// load the file
-	len = FS_LoadFile (filename, (void **)&raw);
-	if (!raw)
+	filelen = FS_LoadFile (name, &hdr);
+	if (!hdr) return;
+
+	src = (byte *)(hdr + 1);
+
+//	hdr->xmin = LittleShort(hdr->xmin);
+//	hdr->ymin = LittleShort(hdr->ymin);
+	w = LittleShort(hdr->xmax) + 1;
+	h = LittleShort(hdr->ymax) + 1;
+//	hdr->hres = LittleShort(hdr->hres);
+//	hdr->vres = LittleShort(hdr->vres);
+//	hdr->bytes_per_line = LittleShort(hdr->bytes_per_line);
+//	hdr->palette_type = LittleShort(hdr->palette_type);
+
+	errMsg = NULL;
+	if (filelen < sizeof(pcx_t) + 768 || hdr->manufacturer != 10 || hdr->version != 5 || hdr->encoding != 1 || hdr->bits_per_pixel != 8)
+		errMsg = "LoadPCX(%s): bad pcx file\n";
+	else if (w > MAX_IMG_SIZE || h > MAX_IMG_SIZE)
+		errMsg = "LoadPCX(%s): image is too large\n";
+
+	if (errMsg)
 	{
-//		Com_DPrintf ("Bad pcx file %s\n", filename);
-		return;
-	}
-
-	// parse the PCX file
-	pcx = (pcx_t *)raw;
-	raw = &pcx->data;
-
-	pcx->xmin = LittleShort(pcx->xmin);
-	pcx->ymin = LittleShort(pcx->ymin);
-	pcx->xmax = LittleShort(pcx->xmax);
-	pcx->ymax = LittleShort(pcx->ymax);
-	pcx->hres = LittleShort(pcx->hres);
-	pcx->vres = LittleShort(pcx->vres);
-	pcx->bytes_per_line = LittleShort(pcx->bytes_per_line);
-	pcx->palette_type = LittleShort(pcx->palette_type);
-
-	if (pcx->manufacturer != 10 ||
-		pcx->version != 5		||
-		pcx->encoding != 1		||
-		pcx->bits_per_pixel != 8 ||
-		pcx->xmax > MAX_IMG_SIZE ||
-		pcx->ymax > MAX_IMG_SIZE)
-	{
-		Com_Printf ("LoadPCX(%s): bad pcx file\n", filename);
-		return;
+		FS_FreeFile (hdr);
+		Com_Error (ERR_DROP, errMsg, name);
 	}
 
 	if (palette)
 	{
 		*palette = Z_Malloc (768);
-		memcpy (*palette, (byte *)pcx + len - 768, 768);
+		memcpy (*palette, (byte *)hdr + filelen - 768, 768);
 	}
 
-	if (width)
-		*width = pcx->xmax + 1;
-	if (height)
-		*height = pcx->ymax + 1;
+	if (width)	*width = w;
+	if (height)	*height = h;
 
-	out = Z_Malloc ((pcx->ymax + 1) * (pcx->xmax + 1));
+	dst = Z_Malloc (w * h);
+	*pic = dst;
 
-	*pic = out;
-
-	pix = out;
-
-	for (y = 0; y <= pcx->ymax; y++, pix += pcx->xmax + 1)
+	for (y = 0; y < h; y++)
 	{
-		for (x = 0; x <= pcx->xmax; )
+		for (x = 0; x < w; )
 		{
-			dataByte = *raw++;
+			int		len;
+			byte	c;
 
-			if((dataByte & 0xC0) == 0xC0)
+			c = *src++;
+			if (c >= 0xC0)
 			{
-				runLength = dataByte & 0x3F;
-				dataByte = *raw++;
+				len = c & 0x3F;
+				c = *src++;
+				while (len-- > 0)
+				{
+					*dst++ = c;
+					if (++x == w) break;
+				}
 			}
 			else
-				runLength = 1;
-
-			// Truncate runLength so we don't overrun the end of the buffer (bad PCX ?)
-			if ((y == pcx->ymax) && (x + runLength > pcx->xmax + 1))
-				runLength = pcx->xmax - x + 1;
-
-			while (runLength-- > 0)
-				pix[x++] = dataByte;
+			{
+				*dst++ = c;
+				x++;
+			}
 		}
 	}
 
-	if ( raw - (byte *)pcx > len)
-	{
-		Com_DPrintf ("LoadPCX(%s): file was malformed", filename);
-		Z_Free (*pic);
-		*pic = NULL;
-	}
-
-	FS_FreeFile (pcx);
+	FS_FreeFile (hdr);
 }
 
 
 /*-------------------------- TGA loading --------------------------*/
+
+#define TGA_ORIGIN_MASK		0x30
+#define TGA_BOTLEFT			0x00
+#define TGA_BOTRIGHT		0x10		// unused
+#define TGA_TOPLEFT			0x20
+#define TGA_TOPRIGHT		0x30		// unused
 
 #ifdef _WIN32
 #pragma pack(push,1)
@@ -143,202 +131,130 @@ typedef struct
 //!! add top-to-bottom support
 void LoadTGA (char *name, byte **pic, int *width, int *height)
 {
-	int		columns, rows, numPixels;
-	byte	*pixbuf;
-	int		row, column;
-	byte	*buf_p;
-	tgaHdr_t header;
-	byte	*rgba;
-	byte	*buffer;
-	int		length;
+	int		numColumns, numRows, bpp, numPixels;
+	int		type, flags;
+	int		num, column, stride, copy;
+	byte	*file, *src, *dst;
+	tgaHdr_t header;		//??
+	char	*errMsg;
 
 	*pic = NULL;
 
-	// load the file
-	length = FS_LoadFile (name, (void **)&buffer);
-	if (!buffer)
+	FS_LoadFile (name, &file);
+	if (!file) return;		// not found
+
+	src = file;
+
+#define GET_BYTE(x)		x = *src++
+#define GET_SHORT(x)	x = LittleShort(*(short*)src); src += 2;
+
+	GET_BYTE(header.id_length);
+	GET_BYTE(header.colormap_type);
+	GET_BYTE(type);
+
+	GET_SHORT(header.colormap_index);
+	GET_SHORT(header.colormap_length);
+	GET_BYTE(header.colormap_size);
+	GET_SHORT(header.x_origin);
+	GET_SHORT(header.y_origin);
+	GET_SHORT(numColumns);
+	GET_SHORT(numRows);
+	GET_BYTE(bpp);
+	GET_BYTE(flags);
+
+	errMsg = NULL;
+
+	if (type != 2 && type != 10 && type != 3)
+		errMsg = "LoadTGA(%s): Only type 2 (RGB), 3 (grey) and 10 (RGB RLE) targa RGB images supported\n";
+	else if (header.colormap_type != 0)
+		errMsg = "LoadTGA(%s): colormaps not supported\n";
+	else if (bpp != 32 && bpp != 24 && !(type == 3 && bpp == 8))
 	{
-//		Com_DPrintf ("Bad tga file %s\n", name);
-		return;
+		FS_FreeFile (file);
+		Com_Error (ERR_DROP, "LoadTGA(%s): invalid color depth %d for format %d\n", name, bpp, type);
+	}
+	else if (numColumns > MAX_IMG_SIZE || numRows > MAX_IMG_SIZE)
+		errMsg = "LoadTGA(%s): image is too large\n";
+
+	if (errMsg)
+	{
+		FS_FreeFile (file);
+		Com_Error (ERR_DROP, errMsg, name);
 	}
 
-	buf_p = buffer;
+	numPixels = numColumns * numRows;
 
-	header.id_length = *buf_p++;
-	header.colormap_type = *buf_p++;
-	header.image_type = *buf_p++;
+	if (width)	*width = numColumns;
+	if (height)	*height = numRows;
 
-	header.colormap_index = LittleShort (*((short *)buf_p));
-	buf_p += 2;
-	header.colormap_length = LittleShort (*((short *)buf_p));
-	buf_p += 2;
-	header.colormap_size = *buf_p++;
-	header.x_origin = LittleShort (*((short *)buf_p));
-	buf_p += 2;
-	header.y_origin = LittleShort (*((short *)buf_p));
-	buf_p += 2;
-	header.width = LittleShort (*((short *)buf_p));
-	buf_p += 2;
-	header.height = LittleShort (*((short *)buf_p));
-	buf_p += 2;
-	header.pixel_size = *buf_p++;
-	header.attributes = *buf_p++;
-
-	if (header.image_type != 2	&&
-		header.image_type != 10	&&
-		header.image_type != 3)
-		Com_Error (ERR_DROP, "LoadTGA(%s): Only type 2 (RGB), 3 (grey) and 10 (RGB RLE) targa RGB images supported\n", name);
-
-	if (header.colormap_type != 0)
-		Com_Error (ERR_DROP, "LoadTGA(%s): colormaps not supported\n", name);
-
-	if ((header.pixel_size != 32 && header.pixel_size != 24) && header.image_type != 3)
-		Com_Error (ERR_DROP, "LoadTGA(%s): Only 32 or 24 bit images supported\n", name);
-
-	columns = header.width;
-	rows = header.height;
-	numPixels = columns * rows;
-
-	if (width)
-		*width = columns;
-	if (height)
-		*height = rows;
-
-	rgba = Z_Malloc (numPixels * 4);
-	*pic = rgba;
+	dst = Z_Malloc (numPixels * 4);
+	*pic = dst;
 
 	if (header.id_length != 0)
-		buf_p += header.id_length;		// skip image comment
+		src += header.id_length;		// skip image comment
 
-	if (header.image_type == 2 || header.image_type == 3)
-	{	// Uncompressed RGB or grey scale image
-		for (row = rows - 1; row >= 0; row--)
-		{
-			pixbuf = rgba + row * columns * 4;
-			for (column = 0; column < columns; column++)
-			{
-				unsigned char r, g, b, a;
-
-				switch (header.pixel_size)
-				{
-				case 8:
-					b = g = r = *buf_p++;
-					a = 255;
-					break;
-				case 24:
-					b = *buf_p++;
-					g = *buf_p++;
-					r = *buf_p++;
-					a = 255;
-					break;
-				case 32:
-					b = *buf_p++;
-					g = *buf_p++;
-					r = *buf_p++;
-					a = *buf_p++;
-					break;
-				default:
-					Com_Error (ERR_DROP, "LoadTGA(%s): illegal pixel size %d\n", name, header.pixel_size);
-				}
-				*pixbuf++ = r;
-				*pixbuf++ = g;
-				*pixbuf++ = b;
-				*pixbuf++ = a;
-			}
-		}
+	if ((flags & TGA_ORIGIN_MASK) == TGA_TOPLEFT)
+	{
+		stride = 0;
 	}
-	else if (header.image_type == 10)
-	{	// RLE RGB images
-		unsigned char r, g, b, a, packetHeader, packetSize, j;
-
-		for (row = rows - 1; row >= 0; row--)
-		{
-			pixbuf = rgba + row * columns * 4;
-			for (column = 0; column < columns; )
-			{
-				packetHeader = *buf_p++;
-				packetSize = 1 + (packetHeader & 0x7F);
-				if (packetHeader & 0x80)
-				{	// run-length packet
-					switch (header.pixel_size)
-					{
-					case 24:
-						b = *buf_p++;
-						g = *buf_p++;
-						r = *buf_p++;
-						a = 255;
-						break;
-					case 32:
-						b = *buf_p++;
-						g = *buf_p++;
-						r = *buf_p++;
-						a = *buf_p++;
-						break;
-					default:
-						Com_Error (ERR_DROP, "LoadTGA(%s): illegal pixel size %d\n", name, header.pixel_size);
-					}
-
-					for (j = 0; j < packetSize; j++)
-					{
-						*pixbuf++ = r;
-						*pixbuf++ = g;
-						*pixbuf++ = b;
-						*pixbuf++ = a;
-						column++;
-						if (column == columns)
-						{	// run spans across rows
-							column=0;
-							if (row>0)
-								row--;
-							else
-								goto breakOut;
-							pixbuf = rgba + row * columns * 4;
-						}
-					}
-				}
-				else
-				{	// non run-length packet
-					for(j = 0; j < packetSize; j++)
-					{
-						switch (header.pixel_size)
-						{
-						case 24:
-							b = *buf_p++;
-							g = *buf_p++;
-							r = *buf_p++;
-							a = 255;
-							break;
-						case 32:
-							b = *buf_p++;
-							g = *buf_p++;
-							r = *buf_p++;
-							a = *buf_p++;
-							break;
-						default:
-							Com_Error (ERR_DROP, "LoadTGA(%s): illegal pixel size %d in file %s\n", name, header.pixel_size);
-						}
-						*pixbuf++ = r;
-						*pixbuf++ = g;
-						*pixbuf++ = b;
-						*pixbuf++ = a;
-						column++;
-						if (column == columns)
-						{	// pixel packet run spans across rows
-							column = 0;
-							if (row > 0)
-								row--;
-							else
-								goto breakOut;
-							pixbuf = rgba + row * columns * 4;
-						}
-					}
-				}
-			}
-breakOut:;
-		}
+	else
+	{
+		stride = -numColumns * 4 * 2;
+		dst = dst + (numRows - 1) * numColumns * 4;
 	}
 
-	FS_FreeFile (buffer);
+	column = num = 0;
+	copy = 0;
+	while (num < numPixels)
+	{
+		byte	r, g, b, a;
+		int		ct, i;
+
+		if (copy) copy--;
+		if (type == 10 && !copy)
+		{
+			byte	f;
+
+			GET_BYTE(f);
+			if (f & 0x80)
+				ct = f + 1 - 0x80;	// packed
+			else
+			{
+				copy = f + 1;		// not packed
+				ct = 1;
+			}
+		}
+		else
+			ct = 1;
+
+		GET_BYTE(b);
+		if (bpp > 8)
+		{
+			GET_BYTE(g);
+			GET_BYTE(r);
+			if (bpp == 32) GET_BYTE(a); else a = 255;
+		}
+		else
+		{
+			r = g = b;
+			a = 255;
+		}
+
+		for (i = 0; i < ct; i++)
+		{
+			*dst++ = r; *dst++ = g; *dst++ = b; *dst++ = a;
+			if (++column == numColumns)
+			{
+				column = 0;
+				dst += stride;
+			}
+		}
+		num += ct;
+	}
+#undef GET_SHORT
+#undef GET_BYTE
+
+	FS_FreeFile (file);
 }
 
 
@@ -351,7 +267,7 @@ static qboolean jpegerror;
 static void JpegError ()
 {
 	if (jpegerror) return;
-	Com_WPrintf ("Damaged JPEG file %s\n", jpegname);
+	Com_WPrintf ("LoadJPG(%s): damaged file\n", jpegname);
 //	Com_Error (ERR_DROP, "Bad JPEG");
 	jpegerror = true;
 }
@@ -427,30 +343,25 @@ static struct jpeg_error_mgr *InitJpegError (struct jpeg_error_mgr *err)
 
 void LoadJPG (char *name, byte **pic, int *width, int *height)
 {
-	int	columns, rows;
+	int		i, columns, rows, length;
 	byte	*buffer, *decompr, *scanline, *in, *out;
-	int	length, i;
-	qboolean error;
 	struct jpeg_decompress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 	byte	line[MAX_IMG_SIZE*3];
+	char	*errMsg;
 
 	*pic = NULL;
 
-	error = jpegerror = false;
+	jpegerror = false;
 
-	// load the file
 	length = FS_LoadFile (name, (void **)&buffer);
-	if (!buffer)
-	{
-//		Com_DPrintf ("Bad jpeg file %s\n", name);
-		return;
-	}
+	if (!buffer) return;
 
 	jpegname = name;
+	errMsg = NULL;
 
-	cinfo.err = InitJpegError(&jerr);
-	jpeg_create_decompress(&cinfo);
+	cinfo.err = InitJpegError (&jerr);
+	jpeg_create_decompress (&cinfo);
 
 	// init jpeg source
 	cinfo.src = (struct jpeg_source_mgr *) (*cinfo.mem->alloc_small) ((j_common_ptr) &cinfo, JPOOL_PERMANENT,
@@ -470,21 +381,15 @@ void LoadJPG (char *name, byte **pic, int *width, int *height)
 	rows = cinfo.output_height;
 
 	if (cinfo.output_components != 3)
-	{
-		Com_WPrintf ("LoadJPG(%s): color components not equal 3\n", name);
-		error = true;
-	}
+		errMsg = "LoadJPG(%s): color components not equal 3\n";
 	else if (columns > MAX_IMG_SIZE || rows > MAX_IMG_SIZE)
-	{
-		Com_WPrintf ("LoadJPG(%s): image is too large\n", name);
-		error = true;
-	}
+		errMsg = "LoadJPG(%s): image is too large\n";
 
-	if (error)
+	if (errMsg)
 	{
 		jpeg_destroy_decompress (&cinfo);
 		FS_FreeFile (buffer);
-		return;
+		Com_Error (ERR_DROP, errMsg, name);
 	}
 
 	decompr = Z_Malloc (columns * rows * 4);
@@ -535,7 +440,7 @@ int ImageExists (char *name, int stop_mask)
 
 	while (path = FS_NextPath (path))
 	{
-		if (list = FS_ListFiles (va("%s/%s.*", path, name), NULL, 0 , SFF_SUBDIR))
+		if (list = FS_ListFiles (va("%s/%s.*", path, name), NULL, LIST_FILES))
 		{
 			for (item = list; item; item = item->next)
 			{
@@ -568,8 +473,9 @@ qboolean WriteTGA (char *name, byte *pic, int width, int height)
 {
 	FILE	*f;
 	tgaHdr_t header;
-	int		size, i;
-	byte	*pic2;
+	int		size, i, column;
+	byte	*src, *dst, *packed, *flag, *threshold;
+	qboolean rle, done;
 
 	if (!(f = fopen (name, "wb")))
 	{
@@ -579,26 +485,104 @@ qboolean WriteTGA (char *name, byte *pic, int width, int height)
 
 	size = width * height;
 	// convert RGB to BGR (inplace conversion !)
-	for (i = 0, pic2 = pic; i < size; i++, pic2 += 3)
+	for (i = 0, src = pic; i < size; i++, src += 3)
 	{
 		byte	tmp;
 
-		tmp = pic2[2];		// B
-		pic2[2] = pic2[0];	// R
-		pic2[0] = tmp;
+		tmp = src[2];		// B
+		src[2] = src[0];	// R
+		src[0] = tmp;
+	}
+
+	packed = Z_Malloc (width * height * 3);
+	threshold = packed + width * height * 3 - 16;			// threshold for "dst"
+
+	src = pic;
+	dst = packed;
+	i = column = 0;
+	flag = NULL;
+	rle = false;
+
+	done = true;
+	for (i = 0; i < size; i++)
+	{
+		byte	r, g, b;
+
+		if (dst >= threshold)								// when compressed is too large, same uncompressed
+		{
+			done = false;
+			break;
+		}
+
+		b = *src++;
+		g = *src++;
+		r = *src++;
+
+		if (column < width - 1 &&							// not on screen edge; NOTE: when i == size-1, col==width-1
+			b == src[0] && g == src[1] && r == src[2] &&	// next byte will be the same
+			!(rle && flag && *flag == 254))					// flag overflow
+		{
+			if (!rle || !flag)
+			{
+				// starting new RLE sequence
+				flag = dst++;
+				*flag = 128 - 1;							// will be incremented below
+				*dst++ = b; *dst++ = g; *dst++ = r;
+			}
+			(*flag)++;										// enqueue one more texel
+			rle = true;
+		}
+		else
+		{
+			if (rle)
+			{
+				// previous block was RLE, and next (now: current) byte was
+				// the same - enqueue it to previous block and close block
+				(*flag)++;
+				flag = NULL;
+			}
+			else
+			{
+				if (!flag)
+				{
+					// start new copy sequence
+					flag = dst++;
+					*flag = 0 - 1;							// 255, to be exact
+				}
+				*dst++ = b; *dst++ = g; *dst++ = r;			// copy texel
+				(*flag)++;
+				if (*flag == 127) flag = NULL;				// check for overflow
+			}
+			rle = false;
+		}
+
+		if (++column == width) column = 0;
 	}
 
 	// write header
 	memset (&header, 0, sizeof(header));
-	header.image_type = 2;		// uncompressed
 	header.width = width;
 	header.height = height;
 	header.pixel_size = 24;
-	// write data
-	fwrite (&header, 1, sizeof(header), f);
-	fwrite (pic, 1, size * 3, f);
+	if (done)
+	{
+		Com_DPrintf ("WriteTGA(): packed %d -> %d\n", size * 3, dst - packed);
+		header.image_type = 10;		// RLE
+		// write data
+		fwrite (&header, 1, sizeof(header), f);
+		fwrite (packed, 1, dst - packed, f);
+	}
+	else
+	{
+		Com_DPrintf ("WriteTGA(): revert to uncompressed\n");
+		header.image_type = 2;		// uncompressed
+		// write data
+		fwrite (&header, 1, sizeof(header), f);
+		fwrite (pic, 1, size * 3, f);
+	}
 
 	fclose (f);
+	Z_Free (packed);
 	return true;
 }
 

@@ -774,7 +774,8 @@ void CL_ParseServerMessage (void)
 
 		case svc_stufftext:
 			s = MSG_ReadString (&net_message);
-			if (cl.attractloop && Q_strncasecmp (s, "precache", 8))	// demo playback: allow "precache" stufftext only
+			if (cl.attractloop && (strncmp (s, "precache", 8) && strncmp (s, "changing", 8) && strncmp (s, "reconnect", 9)))
+			// demo playback: allow special stufftext only (should disable messages from demofile and allow local !!)
 			{
 				Com_DPrintf ("stuff (disabled): %s\n", s);
 				break;

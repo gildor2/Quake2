@@ -374,7 +374,7 @@ void	GL_ResetShaders (void);	// should be called every time before loading a new
 #define SHADER_FORCEALPHA	0x0010		// for alphaGen vertex (image itself may be without alpha-channel)
 #define SHADER_ALPHA		0x0020		// use texture's alpha channel (depends on itage.alphaType: 0->none, 1->alphaTest or blend, 2->blend)
 #define SHADER_WALL			0x0040		// shader used as a wall texture (not GUI 2D image), also do mipmap
-#define SHADER_SKIN			0x0080		// shader used as skin for alias models
+#define SHADER_SKIN			0x0080		// shader used as skin for frame models
 #define SHADER_SKY			0x0100		// SURF_SKY (use stage iterator for sky)
 #define SHADER_ANIM			0x0200		// main stage will contain more than 1 texture (names passed as name1<0>name2<0>...nameN<0><0>)
 #define SHADER_LIGHTMAP		0x0400		// reserve lightmap stage (need GL_SetShaderLightmap() later)

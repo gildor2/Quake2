@@ -1,6 +1,6 @@
  ref_oldgl
 
- Timestamp is 3f200149 (Thu Jul 24 19:54:49 2003)
+ Timestamp is 3f2a44f0 (Fri Aug 01 14:46:08 2003)
 
  Preferred load address is 10000000
 
@@ -190,11 +190,11 @@
  0001:0000bf7e       _va                        1000cf7e f   q_shared2.obj
  0001:0000bfcb       _Q_stricmp                 1000cfcb f   q_shared2.obj
  0001:0000bfdc       _Com_sprintf               1000cfdc f   q_shared2.obj
- 0001:0000d59e       _QGL_Shutdown              1000e59e f   qgl_win.obj
- 0001:0000d5dd       _QGL_Init                  1000e5dd f   qgl_win.obj
- 0001:0000d663       _QGL_InitExtensions        1000e663 f   qgl_win.obj
- 0001:0000d99e       _QGL_EnableLogging         1000e99e f   qgl_win.obj
- 0001:0000da6a       _QGL_LogMessage            1000ea6a f   qgl_win.obj
+ 0001:0000d59f       _QGL_Shutdown              1000e59f f   qgl_win.obj
+ 0001:0000d5de       _QGL_Init                  1000e5de f   qgl_win.obj
+ 0001:0000d664       _QGL_InitExtensions        1000e664 f   qgl_win.obj
+ 0001:0000d99f       _QGL_EnableLogging         1000e99f f   qgl_win.obj
+ 0001:0000da6b       _QGL_LogMessage            1000ea6b f   qgl_win.obj
  0001:0000da90       __chkstk                   1000ea90 f   MSVCRT:chkstk.obj
  0001:0000da90       __alloca_probe             1000ea90 f   MSVCRT:chkstk.obj
  0001:0000dac0       __ftol                     1000eac0 f   MSVCRT:MSVCRT.dll
@@ -664,7 +664,7 @@
  0003:000061dc       ??_C@_0CK@PHLH@GLimp_EndFrame?$CI?$CJ?5?9?5SwapBuffers?$CI?$CJ@ 100161dc     glw_imp.obj
  0003:00006208       ??_C@_0P@BDAP@SwapBuffers?$CI?$CJ?6?$AA@ 10016208     glw_imp.obj
  0003:00006218       ??_C@_0BC@BACP@GLimp_EndFrame?$CI?$CJ?6?$AA@ 10016218     glw_imp.obj
- 0003:0000622c       ??_C@_0CO@GIJI@Com_sprintf?3?5overflow?5of?5?$CFd?5?$CIcal@ 1001622c     q_shared2.obj
+ 0003:0000622c       ??_C@_0DA@DOBA@Com_sprintf?3?5overflow?5?$CFd?5?$DO?5?$CFd?5?$CIc@ 1001622c     q_shared2.obj
  0003:00006500       ??_C@_0BF@NADO@WGL_EXT_swap_control?$AA@ 10016500     qgl_win.obj
  0003:00006518       ??_C@_0BN@MLLO@GL_EXT_compiled_vertex_array?$AA@ 10016518     qgl_win.obj
  0003:00006538       ??_C@_0BE@EHGK@GL_ARB_multitexture?$AA@ 10016538     qgl_win.obj
@@ -1011,82 +1011,82 @@
 
  Static symbols
 
- 0001:0000c022       _logAlphaFunc@8            1000d022 f   qgl_win.obj
- 0001:0000c063       _EnumName                  1000d063 f   qgl_win.obj
- 0001:0000c4e5       _logArrayElement@4         1000d4e5 f   qgl_win.obj
- 0001:0000c50f       _logBegin@4                1000d50f f   qgl_win.obj
- 0001:0000c53f       _logBindTexture@8          1000d53f f   qgl_win.obj
- 0001:0000c578       _logBlendFunc@8            1000d578 f   qgl_win.obj
- 0001:0000c5b8       _logClear@4                1000d5b8 f   qgl_win.obj
- 0001:0000c5de       _logClearColor@16          1000d5de f   qgl_win.obj
- 0001:0000c63f       _logClearDepth@8           1000d63f f   qgl_win.obj
- 0001:0000c671       _logColor3f@12             1000d671 f   qgl_win.obj
- 0001:0000c6c3       _logColor3fv@4             1000d6c3 f   qgl_win.obj
- 0001:0000c6e9       _logColor4f@16             1000d6e9 f   qgl_win.obj
- 0001:0000c74a       _logColor4fv@4             1000d74a f   qgl_win.obj
- 0001:0000c770       _logColor4ub@16            1000d770 f   qgl_win.obj
- 0001:0000c7b6       _logColor4ubv@4            1000d7b6 f   qgl_win.obj
- 0001:0000c7dc       _logColorPointer@16        1000d7dc f   qgl_win.obj
- 0001:0000c821       _logCullFace@4             1000d821 f   qgl_win.obj
- 0001:0000c851       _logDeleteTextures@8       1000d851 f   qgl_win.obj
- 0001:0000c883       _logDepthFunc@4            1000d883 f   qgl_win.obj
- 0001:0000c8b3       _logDepthMask@4            1000d8b3 f   qgl_win.obj
- 0001:0000c8df       _logDepthRange@16          1000d8df f   qgl_win.obj
- 0001:0000c923       _logDisable@4              1000d923 f   qgl_win.obj
- 0001:0000c953       _logDrawBuffer@4           1000d953 f   qgl_win.obj
- 0001:0000c983       _logEnable@4               1000d983 f   qgl_win.obj
- 0001:0000c9b3       _logEnableClientState@4    1000d9b3 f   qgl_win.obj
- 0001:0000c9e3       _logEnd@0                  1000d9e3 f   qgl_win.obj
- 0001:0000ca02       _logFinish@0               1000da02 f   qgl_win.obj
- 0001:0000ca21       _logFogf@8                 1000da21 f   qgl_win.obj
- 0001:0000ca62       _logFogfv@8                1000da62 f   qgl_win.obj
- 0001:0000ca9b       _logFrustum@48             1000da9b f   qgl_win.obj
- 0001:0000cb1f       _logGetError@0             1000db1f f   qgl_win.obj
- 0001:0000cb3e       _logGetFloatv@8            1000db3e f   qgl_win.obj
- 0001:0000cb68       _logGetIntegerv@8          1000db68 f   qgl_win.obj
- 0001:0000cb92       _logGetString@4            1000db92 f   qgl_win.obj
- 0001:0000cbb8       _logLoadIdentity@0         1000dbb8 f   qgl_win.obj
- 0001:0000cbd7       _logLoadMatrixf@4          1000dbd7 f   qgl_win.obj
- 0001:0000cbfd       _logMatrixMode@4           1000dbfd f   qgl_win.obj
- 0001:0000cc2d       _logOrtho@48               1000dc2d f   qgl_win.obj
- 0001:0000ccb1       _logPolygonMode@8          1000dcb1 f   qgl_win.obj
- 0001:0000ccf1       _logPopMatrix@0            1000dcf1 f   qgl_win.obj
- 0001:0000cd10       _logPushMatrix@0           1000dd10 f   qgl_win.obj
- 0001:0000cd2f       _logReadPixels@28          1000dd2f f   qgl_win.obj
- 0001:0000cd8d       _logRotatef@16             1000dd8d f   qgl_win.obj
- 0001:0000cdee       _logScalef@12              1000ddee f   qgl_win.obj
- 0001:0000ce40       _logScissor@16             1000de40 f   qgl_win.obj
- 0001:0000ce7e       _logShadeModel@4           1000de7e f   qgl_win.obj
- 0001:0000ceae       _logTexCoord2f@8           1000deae f   qgl_win.obj
- 0001:0000cef1       _logTexCoordPointer@16     1000def1 f   qgl_win.obj
- 0001:0000cf36       _logTexEnvf@12             1000df36 f   qgl_win.obj
- 0001:0000cf84       _logTexEnvfv@12            1000df84 f   qgl_win.obj
- 0001:0000cfca       _logTexEnvi@12             1000dfca f   qgl_win.obj
- 0001:0000d017       _logTexImage2D@36          1000e017 f   qgl_win.obj
- 0001:0000d088       _logTexParameterf@12       1000e088 f   qgl_win.obj
- 0001:0000d0d6       _logTexSubImage2D@36       1000e0d6 f   qgl_win.obj
- 0001:0000d147       _logTranslatef@12          1000e147 f   qgl_win.obj
- 0001:0000d199       _logVertex2f@8             1000e199 f   qgl_win.obj
- 0001:0000d1dc       _logVertex3f@12            1000e1dc f   qgl_win.obj
- 0001:0000d22e       _logVertex3fv@4            1000e22e f   qgl_win.obj
- 0001:0000d254       _logVertexPointer@16       1000e254 f   qgl_win.obj
- 0001:0000d299       _logViewport@16            1000e299 f   qgl_win.obj
- 0001:0000d2d7       _logwglChoosePixelFormat@8 1000e2d7 f   qgl_win.obj
- 0001:0000d301       _logwglDescribePixelFormat@16 1000e301 f   qgl_win.obj
- 0001:0000d333       _logwglSetPixelFormat@12   1000e333 f   qgl_win.obj
- 0001:0000d361       _logwglSwapBuffers@4       1000e361 f   qgl_win.obj
- 0001:0000d387       _logwglCreateContext@4     1000e387 f   qgl_win.obj
- 0001:0000d3ad       _logwglDeleteContext@4     1000e3ad f   qgl_win.obj
- 0001:0000d3d3       _logwglGetProcAddress@4    1000e3d3 f   qgl_win.obj
- 0001:0000d3f9       _logwglMakeCurrent@8       1000e3f9 f   qgl_win.obj
- 0001:0000d423       _logSelectTextureSGIS@4    1000e423 f   qgl_win.obj
- 0001:0000d453       _logMultiTexCoord2fSGIS@12 1000e453 f   qgl_win.obj
- 0001:0000d4a3       _logActiveTextureARB@4     1000e4a3 f   qgl_win.obj
- 0001:0000d4d3       _logMultiTexCoord2fARB@12  1000e4d3 f   qgl_win.obj
- 0001:0000d523       _logLockArraysEXT@8        1000e523 f   qgl_win.obj
- 0001:0000d555       _logUnlockArraysEXT@0      1000e555 f   qgl_win.obj
- 0001:0000d574       _logwglSwapIntervalEXT@4   1000e574 f   qgl_win.obj
- 0001:0000d94c       _ExtensionSupported        1000e94c f   qgl_win.obj
+ 0001:0000c023       _logAlphaFunc@8            1000d023 f   qgl_win.obj
+ 0001:0000c064       _EnumName                  1000d064 f   qgl_win.obj
+ 0001:0000c4e6       _logArrayElement@4         1000d4e6 f   qgl_win.obj
+ 0001:0000c510       _logBegin@4                1000d510 f   qgl_win.obj
+ 0001:0000c540       _logBindTexture@8          1000d540 f   qgl_win.obj
+ 0001:0000c579       _logBlendFunc@8            1000d579 f   qgl_win.obj
+ 0001:0000c5b9       _logClear@4                1000d5b9 f   qgl_win.obj
+ 0001:0000c5df       _logClearColor@16          1000d5df f   qgl_win.obj
+ 0001:0000c640       _logClearDepth@8           1000d640 f   qgl_win.obj
+ 0001:0000c672       _logColor3f@12             1000d672 f   qgl_win.obj
+ 0001:0000c6c4       _logColor3fv@4             1000d6c4 f   qgl_win.obj
+ 0001:0000c6ea       _logColor4f@16             1000d6ea f   qgl_win.obj
+ 0001:0000c74b       _logColor4fv@4             1000d74b f   qgl_win.obj
+ 0001:0000c771       _logColor4ub@16            1000d771 f   qgl_win.obj
+ 0001:0000c7b7       _logColor4ubv@4            1000d7b7 f   qgl_win.obj
+ 0001:0000c7dd       _logColorPointer@16        1000d7dd f   qgl_win.obj
+ 0001:0000c822       _logCullFace@4             1000d822 f   qgl_win.obj
+ 0001:0000c852       _logDeleteTextures@8       1000d852 f   qgl_win.obj
+ 0001:0000c884       _logDepthFunc@4            1000d884 f   qgl_win.obj
+ 0001:0000c8b4       _logDepthMask@4            1000d8b4 f   qgl_win.obj
+ 0001:0000c8e0       _logDepthRange@16          1000d8e0 f   qgl_win.obj
+ 0001:0000c924       _logDisable@4              1000d924 f   qgl_win.obj
+ 0001:0000c954       _logDrawBuffer@4           1000d954 f   qgl_win.obj
+ 0001:0000c984       _logEnable@4               1000d984 f   qgl_win.obj
+ 0001:0000c9b4       _logEnableClientState@4    1000d9b4 f   qgl_win.obj
+ 0001:0000c9e4       _logEnd@0                  1000d9e4 f   qgl_win.obj
+ 0001:0000ca03       _logFinish@0               1000da03 f   qgl_win.obj
+ 0001:0000ca22       _logFogf@8                 1000da22 f   qgl_win.obj
+ 0001:0000ca63       _logFogfv@8                1000da63 f   qgl_win.obj
+ 0001:0000ca9c       _logFrustum@48             1000da9c f   qgl_win.obj
+ 0001:0000cb20       _logGetError@0             1000db20 f   qgl_win.obj
+ 0001:0000cb3f       _logGetFloatv@8            1000db3f f   qgl_win.obj
+ 0001:0000cb69       _logGetIntegerv@8          1000db69 f   qgl_win.obj
+ 0001:0000cb93       _logGetString@4            1000db93 f   qgl_win.obj
+ 0001:0000cbb9       _logLoadIdentity@0         1000dbb9 f   qgl_win.obj
+ 0001:0000cbd8       _logLoadMatrixf@4          1000dbd8 f   qgl_win.obj
+ 0001:0000cbfe       _logMatrixMode@4           1000dbfe f   qgl_win.obj
+ 0001:0000cc2e       _logOrtho@48               1000dc2e f   qgl_win.obj
+ 0001:0000ccb2       _logPolygonMode@8          1000dcb2 f   qgl_win.obj
+ 0001:0000ccf2       _logPopMatrix@0            1000dcf2 f   qgl_win.obj
+ 0001:0000cd11       _logPushMatrix@0           1000dd11 f   qgl_win.obj
+ 0001:0000cd30       _logReadPixels@28          1000dd30 f   qgl_win.obj
+ 0001:0000cd8e       _logRotatef@16             1000dd8e f   qgl_win.obj
+ 0001:0000cdef       _logScalef@12              1000ddef f   qgl_win.obj
+ 0001:0000ce41       _logScissor@16             1000de41 f   qgl_win.obj
+ 0001:0000ce7f       _logShadeModel@4           1000de7f f   qgl_win.obj
+ 0001:0000ceaf       _logTexCoord2f@8           1000deaf f   qgl_win.obj
+ 0001:0000cef2       _logTexCoordPointer@16     1000def2 f   qgl_win.obj
+ 0001:0000cf37       _logTexEnvf@12             1000df37 f   qgl_win.obj
+ 0001:0000cf85       _logTexEnvfv@12            1000df85 f   qgl_win.obj
+ 0001:0000cfcb       _logTexEnvi@12             1000dfcb f   qgl_win.obj
+ 0001:0000d018       _logTexImage2D@36          1000e018 f   qgl_win.obj
+ 0001:0000d089       _logTexParameterf@12       1000e089 f   qgl_win.obj
+ 0001:0000d0d7       _logTexSubImage2D@36       1000e0d7 f   qgl_win.obj
+ 0001:0000d148       _logTranslatef@12          1000e148 f   qgl_win.obj
+ 0001:0000d19a       _logVertex2f@8             1000e19a f   qgl_win.obj
+ 0001:0000d1dd       _logVertex3f@12            1000e1dd f   qgl_win.obj
+ 0001:0000d22f       _logVertex3fv@4            1000e22f f   qgl_win.obj
+ 0001:0000d255       _logVertexPointer@16       1000e255 f   qgl_win.obj
+ 0001:0000d29a       _logViewport@16            1000e29a f   qgl_win.obj
+ 0001:0000d2d8       _logwglChoosePixelFormat@8 1000e2d8 f   qgl_win.obj
+ 0001:0000d302       _logwglDescribePixelFormat@16 1000e302 f   qgl_win.obj
+ 0001:0000d334       _logwglSetPixelFormat@12   1000e334 f   qgl_win.obj
+ 0001:0000d362       _logwglSwapBuffers@4       1000e362 f   qgl_win.obj
+ 0001:0000d388       _logwglCreateContext@4     1000e388 f   qgl_win.obj
+ 0001:0000d3ae       _logwglDeleteContext@4     1000e3ae f   qgl_win.obj
+ 0001:0000d3d4       _logwglGetProcAddress@4    1000e3d4 f   qgl_win.obj
+ 0001:0000d3fa       _logwglMakeCurrent@8       1000e3fa f   qgl_win.obj
+ 0001:0000d424       _logSelectTextureSGIS@4    1000e424 f   qgl_win.obj
+ 0001:0000d454       _logMultiTexCoord2fSGIS@12 1000e454 f   qgl_win.obj
+ 0001:0000d4a4       _logActiveTextureARB@4     1000e4a4 f   qgl_win.obj
+ 0001:0000d4d4       _logMultiTexCoord2fARB@12  1000e4d4 f   qgl_win.obj
+ 0001:0000d524       _logLockArraysEXT@8        1000e524 f   qgl_win.obj
+ 0001:0000d556       _logUnlockArraysEXT@0      1000e556 f   qgl_win.obj
+ 0001:0000d575       _logwglSwapIntervalEXT@4   1000e575 f   qgl_win.obj
+ 0001:0000d94d       _ExtensionSupported        1000e94d f   qgl_win.obj
  0001:0000b341       _RestoreGamma              1000c341 f   glw_imp.obj
  0001:0000b3ea       _ReadGamma                 1000c3ea f   glw_imp.obj
  0001:0000b42c       _GLimp_InitGL              1000c42c f   glw_imp.obj

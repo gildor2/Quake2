@@ -140,78 +140,43 @@ void CL_ClearDlights (void)
 }
 
 
-cdlight_t *CL_AllocDlight (int key)
+cdlight_t *CL_AllocDlight (int key, vec3_t origin)
 {
 	int		i;
-	cdlight_t *dl;
+	cdlight_t *dl, *dst;
 
+	dst = NULL;
 	// first look for an exact key match
 	if (key)
 	{
 		dl = cl_dlights;
 		for (i = 0; i < MAX_DLIGHTS; i++, dl++)
-		{
 			if (dl->key == key)
 			{
-				memset (dl, 0, sizeof(*dl));
-				dl->key = key;
-				return dl;
+				dst = dl;
+				break;
 			}
-		}
 	}
 
 	// then look for anything else
-	dl = cl_dlights;
-	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
+	if (!dst)
 	{
-		if (dl->die < cl.time)
-		{
-			memset (dl, 0, sizeof(*dl));
-			dl->key = key;
-			return dl;
-		}
+		dl = cl_dlights;
+		for (i = 0; i < MAX_DLIGHTS; i++, dl++)
+			if (dl->die < cl.time)
+			{
+				dst = dl;
+				break;
+			}
 	}
 
-	dl = cl_dlights;
-	memset (dl, 0, sizeof(*dl));
-	dl->key = key;
-	return dl;
-}
+	if (!dst)
+		dst = cl_dlights;
 
-
-void CL_NewDlight (int key, float x, float y, float z, float radius, float time)
-{
-	cdlight_t	*dl;
-
-	dl = CL_AllocDlight (key);
-	dl->origin[0] = x;
-	dl->origin[1] = y;
-	dl->origin[2] = z;
-	dl->radius = radius;
-	dl->die = cl.time + time;
-}
-
-
-void CL_RunDLights (void)
-{
-	int			i;
-	cdlight_t	*dl;
-
-	dl = cl_dlights;
-	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
-	{
-		if (!dl->radius)
-			continue;
-
-		if (dl->die < cl.time)
-		{
-			dl->radius = 0;
-			return;
-		}
-		dl->radius -= cls.frametime * dl->decay;
-		if (dl->radius < 0)
-			dl->radius = 0;
-	}
+	memset (dst, 0, sizeof(cdlight_t));
+	dst->key = key;
+	VectorCopy (origin, dst->origin);
+	return dst;
 }
 
 
@@ -225,6 +190,11 @@ void CL_AddDLights (void)
 	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
 	{
 		if (!dl->radius) continue;
+		if (dl->die < cl.time)
+		{
+			dl->radius = 0;
+			continue;
+		}
 		V_AddLight (dl->origin, dl->radius, dl->color[0], dl->color[1], dl->color[2]);
 	}
 }
@@ -334,6 +304,8 @@ static void CL_AddParticleTraces (float timeDelta)
 		else
 			if (trace.startsolid || trace.allsolid || trace.fraction < 1.0f)
 			{
+//Com_Printf("tr: st=%d all=%d f=%g / %g %g %g = %d\n",
+//trace.startsolid, trace.allsolid, trace.fraction, VECTOR_ARGS(trace.endpos), trace.contents);//!!
 				p->allocated = false;
 				continue;
 			}
@@ -547,12 +519,13 @@ void CL_UpdateParticles (void)
 
 	timeDelta = cl.ftime - oldTime;
 	oldTime = cl.ftime;
+	if (r_sfx_pause->integer) timeDelta = 0;
+
 	CL_AddParticleBeams (timeDelta);
 
 	if (timeDelta <= 0)
 		return;
 
-	if (r_sfx_pause->integer) timeDelta = 0;
 	time2 = timeDelta * timeDelta;
 
 	CL_AddParticleTraces (timeDelta);
@@ -616,9 +589,9 @@ void CL_MetalSparks (vec3_t pos, vec3_t dir, int count)
 		for (i = 0; i < 3; i++)
 			vel[i] = (frand () * 150.0f + 100.0f) * dir[i] + crand () * 30.0f;
 		// do not start inside wall
-		VectorAdd (pos, dir, pos2);
+		VectorMA (pos, 2, dir, pos2);
 
-		p = CL_AllocParticleTrace (pos2, vel, frand () * 0.32f, 0.1f);	//?? lifeTime = rnd*0.64 ?
+		p = CL_AllocParticleTrace (pos2, vel, frand () * 0.64f, 0.1f);
 		if (!p) return;
 		//!! p->brightness = 32;
 		if (!CL_AllocParticleTrace (pos2, vel, 0.2f, 0.05f)) return;
@@ -655,8 +628,7 @@ void CL_ParseMuzzleFlash (void)
 
 	pl = &cl_entities[i];
 
-	dl = CL_AllocDlight (i);
-	VectorCopy (pl->current.origin,  dl->origin);
+	dl = CL_AllocDlight (i, pl->current.origin);
 	AngleVectors (pl->current.angles, fv, rv, NULL);
 	VectorMA (dl->origin, 18, fv, dl->origin);
 	VectorMA (dl->origin, 16, rv, dl->origin);
@@ -664,8 +636,7 @@ void CL_ParseMuzzleFlash (void)
 		dl->radius = 100 + (rand()&31);
 	else
 		dl->radius = 200 + (rand()&31);
-	dl->minlight = 32;
-	dl->die = cl.time; // + 0.1;
+	dl->die = cl.time + 10;
 
 	if (silenced)
 		volume = 0.2;
@@ -710,14 +681,14 @@ void CL_ParseMuzzleFlash (void)
 	case MZ_CHAINGUN2:
 		dl->radius = 225 + (rand()&31);
 		dl->color[0] = 1;dl->color[1] = 0.5;dl->color[2] = 0;
-		dl->die = cl.time  + 0.1;	// long delay
+		dl->die = cl.time  + 10;	// long delay
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound(va("weapons/machgf%ib.wav", (rand() % 5) + 1)), volume, ATTN_NORM, 0);
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound(va("weapons/machgf%ib.wav", (rand() % 5) + 1)), volume, ATTN_NORM, 0.05);
 		break;
 	case MZ_CHAINGUN3:
 		dl->radius = 250 + (rand()&31);
 		dl->color[0] = 1;dl->color[1] = 1;dl->color[2] = 0;
-		dl->die = cl.time  + 0.1;	// long delay
+		dl->die = cl.time  + 10;	// long delay
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound(va("weapons/machgf%ib.wav", (rand() % 5) + 1)), volume, ATTN_NORM, 0);
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound(va("weapons/machgf%ib.wav", (rand() % 5) + 1)), volume, ATTN_NORM, 0.033);
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound(va("weapons/machgf%ib.wav", (rand() % 5) + 1)), volume, ATTN_NORM, 0.066);
@@ -743,19 +714,19 @@ void CL_ParseMuzzleFlash (void)
 
 	case MZ_LOGIN:
 		dl->color[0] = 0;dl->color[1] = 1; dl->color[2] = 0;
-		dl->die = cl.time + 1.0;
+		dl->die = cl.time + 10;
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
 		CL_LogoutEffect (pl->current.origin, weapon);
 		break;
 	case MZ_LOGOUT:
 		dl->color[0] = 1;dl->color[1] = 0; dl->color[2] = 0;
-		dl->die = cl.time + 1.0;
+		dl->die = cl.time + 10;
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
 		CL_LogoutEffect (pl->current.origin, weapon);
 		break;
 	case MZ_RESPAWN:
 		dl->color[0] = 1;dl->color[1] = 1; dl->color[2] = 0;
-		dl->die = cl.time + 1.0;
+		dl->die = cl.time + 10;
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
 		CL_LogoutEffect (pl->current.origin, weapon);
 		break;
@@ -846,10 +817,8 @@ void CL_ParseMuzzleFlash2 (void)
 	VectorMA (origin, -monster_flash_offset[flash_number][1], left, origin);
 	origin[2] += monster_flash_offset[flash_number][2];
 
-	dl = CL_AllocDlight (ent);
-	VectorCopy (origin,  dl->origin);
+	dl = CL_AllocDlight (ent, origin);
 	dl->radius = 200 + (rand()&31);
-	dl->minlight = 32;
 	dl->die = cl.time;	// + 0.1;
 
 	if (*re.flags & REF_CONSOLE_ONLY)
@@ -1685,7 +1654,7 @@ void CL_RocketTrail (vec3_t start, vec3_t end, centity_t *old)
 	{
 		len -= dec;
 
-		if ( (rand()&7) == 0)
+		if ((rand()&7) == 0)
 		{
 			if (!(p = CL_AllocParticle ()))
 				return;
@@ -1709,14 +1678,10 @@ void CL_RailTrail (vec3_t start, vec3_t end)
 {
 	vec3_t		move;
 	vec3_t		vec;
-	float		len;
-	int			j;
+	float		len, dec, d, c, s;
+	int			i, j;
 	particle_t	*p;
-	float		dec;
-	vec3_t		right, up;
-	int			i;
-	float		d, c, s;
-	vec3_t		dir;
+	vec3_t		right, up, dir;
 	byte		clr = 0x74;
 
 	VectorCopy (start, move);
@@ -1783,7 +1748,7 @@ void CL_RailTrailExt (vec3_t start, vec3_t end, byte rType, byte rColor)
 #define c(r,g,b)	(r + (g<<8) + (b<<16) + (255<<24))
 #	define I 255
 #	define o 0
-static int colorTable[9] = {
+static int colorTable[8] = {
 	c(23, 83, 111),	c(I, o, o),	c(o, I, o),	c(I, I, o),
 	c(o, o, I),	c(I, o, I),	c(o, I, I),	c(I, I, I)
 };
@@ -1792,7 +1757,7 @@ static int colorTable[9] = {
 
 #	define I 255
 #	define o 128
-static int colorTable2[9] = {
+static int colorTable2[8] = {
 	c(I, I, I),	c(I, o, o),	c(o, I, o),	c(I, I, o),
 	c(o, o, I),	c(I, o, I),	c(o, I, I),	c(I, I, I)
 };

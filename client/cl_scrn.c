@@ -430,19 +430,6 @@ CVAR_END
 
 /*
 ==============
-SCR_DrawNet
-==============
-*/
-void SCR_DrawNet (void)
-{
-	if (cls.netchan.outgoing_sequence - cls.netchan.incoming_acknowledged < CMD_BACKUP-1)
-		return;
-
-	re_DrawPic (scr_vrect.x+64, scr_vrect.y, "net");
-}
-
-/*
-==============
 SCR_DrawPause
 ==============
 */
@@ -1237,17 +1224,17 @@ void SCR_ExecuteLayoutString (char *s)
 			continue;
 		}
 
-		if (!strcmp(token, "string"))
-		{
-			token = COM_Parse (&s);
-			DrawString (x, y, token);
-			continue;
-		}
-
 		if (!strcmp(token, "cstring2"))
 		{
 			token = COM_Parse (&s);
 			DrawHUDString (token, x, y, 320,0x80);
+			continue;
+		}
+
+		if (!strcmp(token, "string"))
+		{
+			token = COM_Parse (&s);
+			DrawString (x, y, token);
 			continue;
 		}
 
@@ -1410,7 +1397,10 @@ void SCR_UpdateScreen (void)
 			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 2)
 				CL_DrawInventory ();
 
-			SCR_DrawNet ();
+			// show disconnected icon when server is not responding
+			if (cl.overtime > 200)
+				re_DrawPic (scr_vrect.x+64, scr_vrect.y, "net");
+
 			SCR_CheckDrawCenterString ();
 
 			if (scr_timegraph->integer)

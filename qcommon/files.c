@@ -1,7 +1,7 @@
 #include "qcommon.h"
 
 #include "../zip/zip.h"
-#include "../client/console.h"
+#include "../client/console.h"		//?? dependency on client code
 
 
 /*------------ In memory -----------------*/
@@ -192,7 +192,7 @@ Requires, that AllocNamedStruc() zeroes memory.
 =====================================================
 */
 
-static basenamed_t *AddDirFilesToList (char *findname, basenamed_t *list, unsigned musthave, unsigned canthave)
+static basenamed_t *AddDirFilesToList (char *findname, basenamed_t *list, int flags)
 {
 	char	*s, *mask, pattern[MAX_OSPATH], wildcard[MAX_OSPATH];
 
@@ -206,7 +206,7 @@ static basenamed_t *AddDirFilesToList (char *findname, basenamed_t *list, unsign
 	else
 		wildcard[0] = 0;				// no path in filename ? (should not happens)
 
-	s = Sys_FindFirst (pattern, musthave, canthave);
+	s = Sys_FindFirst (pattern, flags);
 	while (s)
 	{
 		if (!wildcard[0] || s[strlen (s)-1] != '.')	// ignore "." and ".." directory items
@@ -217,7 +217,7 @@ static basenamed_t *AddDirFilesToList (char *findname, basenamed_t *list, unsign
 			if (name && MatchWildcard2 (name+1, wildcard, true))
 				list = AddToNamedList (s, list);
 		}
-		s = Sys_FindNext (musthave, canthave);
+		s = Sys_FindNext ();
 	}
 	Sys_FindClose ();
 
@@ -385,12 +385,9 @@ static packFile_t *AddPakFile (pack_t *pak, char *name)
 }
 
 
-#define LISTPAK_FILES  1
-#define LISTPAK_DIRS   2
-
 // Appends contents of pak directory dir with mask onto a list. Returns start of list.
 // list can be NULL (will be created). attr is combination of LISTPAK_FILES and LISTPAK_DIRS
-static basenamed_t *ListPakDirectory (pack_t *pak, char *dir, char *mask, int attr, basenamed_t *list, char *prefix)
+static basenamed_t *ListPakDirectory (pack_t *pak, char *dir, char *mask, int flags, basenamed_t *list, char *prefix)
 {
 	packDir_t *d, *dirlist;
 	packFile_t *filelist;
@@ -400,14 +397,14 @@ static basenamed_t *ListPakDirectory (pack_t *pak, char *dir, char *mask, int at
 	addbufptr = strchr (addbuf, 0);		// find end of line
 	if (d = FindPakDirectory (pak, dir))
 	{
-		if (attr & LISTPAK_DIRS)
+		if (flags & LIST_DIRS)
 			for (dirlist = d->cDir; dirlist; dirlist = dirlist->next)
 				if (MatchWildcard2 (dirlist->name, mask, true))
 				{
 					strcpy (addbufptr, dirlist->name);
 					list = AddToNamedList (addbuf, list);
 				}
-		if (attr & LISTPAK_FILES)
+		if (flags & LIST_FILES)
 			for (filelist = d->cFile; filelist; filelist = filelist->next)
 				if (MatchWildcard2 (filelist->name, mask, true))
 				{
@@ -551,7 +548,7 @@ void FS_CopyFiles (char *srcMask, char *dstDir)
 	// create destination directory
 	FS_CreatePath (pattern);
 	// copy files
-	for (found = Sys_FindFirst (srcMask, 0, SFF_SUBDIR); found; found = Sys_FindNext (0, SFF_SUBDIR))
+	for (found = Sys_FindFirst (srcMask, LIST_FILES); found; found = Sys_FindNext ())
 	{
 		strcpy (pattern + pos2, found + pos1);
 		FS_CopyFile (found, pattern);
@@ -565,7 +562,7 @@ void FS_RemoveFiles (char *mask)
 	char	*found;
 
 	DEBUG_LOG(va("RemoveFiles(%s)\n", mask));
-	for (found = Sys_FindFirst (mask, 0, SFF_SUBDIR); found; found = Sys_FindNext (0, SFF_SUBDIR))
+	for (found = Sys_FindFirst (mask, LIST_FILES); found; found = Sys_FindNext ())
 	{
 		DEBUG_LOG(va("del(%s)\n", found));
 		remove (found);
@@ -1136,7 +1133,7 @@ static qboolean EnumZippedPak (zip_file *file)
 }
 
 
-pack_t *FS_LoadPackFile (char *packfile)
+static pack_t *LoadPackFile (char *packfile)
 {
 	dPackHeader_t	header;
 	int				i, is_zip;
@@ -1206,7 +1203,7 @@ pack_t *FS_LoadPackFile (char *packfile)
 		Zip_CloseArchive (packHandle);
 	}
 
-	Com_Printf ("Added packfile%s %s (%d files)\n", is_zip_str[pack->isZip], packfile, pack->numFiles);	//?? DPrintf
+	Com_DPrintf ("Added packfile%s %s (%d files)\n", is_zip_str[pack->isZip], packfile, pack->numFiles);
 
 	/* debug:
 	packhandle = fopen("pakfiles.log", "a+");
@@ -1218,7 +1215,7 @@ pack_t *FS_LoadPackFile (char *packfile)
 }
 
 
-void FS_UnloadPackFile (pack_t *pak)
+static void UnloadPackFile (pack_t *pak)
 {
 	Com_Printf ("Unloading pak %s (%d files)\n", pak->filename, pak->numFiles);
 	FreeMemoryChain (pak->chain);
@@ -1234,7 +1231,7 @@ Sets fs_gamedir, adds the directory to the head of the path,
 then loads and adds pak1.pak pak2.pak ...
 ================
 */
-void FS_AddGameDirectory (char *dir)
+static void AddGameDirectory (char *dir)
 {
 	searchPath_t *search;
 	basenamed_t	*paklist, *pakname;
@@ -1243,7 +1240,7 @@ void FS_AddGameDirectory (char *dir)
 
 	/*-------- check for valid game directory -----------------*/
 //??	if (Sys_FindFirst (va("%s/%s/*.*", fs_basedir->string, dir), 0, 0))  -- not works with CD
-	if (Sys_FindFirst (va("%s/*", dir), 0, 0))
+	if (Sys_FindFirst (va("%s/*", dir), LIST_FILES|LIST_DIRS))
 		Sys_FindClose ();
 	else
 	{
@@ -1257,12 +1254,12 @@ void FS_AddGameDirectory (char *dir)
 	search->next = fs_searchpaths;
 	fs_searchpaths = search;
 
-	paklist = AddDirFilesToList (va("%s/*.pak", dir), NULL, 0, SFF_SUBDIR);
+	paklist = AddDirFilesToList (va("%s/*.pak", dir), NULL, LIST_FILES);
 	for (pakname = paklist; pakname; pakname = pakname->next)
 	{
 		pack_t			*pak;
 
-		pak = FS_LoadPackFile (pakname->name);
+		pak = LoadPackFile (pakname->name);
 		if (!pak) continue;
 
 		search = (searchPath_t*) AllocNamedStruc (sizeof(searchPath_t), "");
@@ -1337,7 +1334,7 @@ qboolean FS_SetGamedir (char *dir)
 		dir = BASEDIRNAME;
 
 	// check for valid game directory
-	if (Sys_FindFirst (va("%s/%s/*", fs_basedir->string, dir), 0, 0))
+	if (Sys_FindFirst (va("%s/%s/*", fs_basedir->string, dir), LIST_FILES|LIST_DIRS))
 		Sys_FindClose ();
 	else
 	{
@@ -1354,7 +1351,7 @@ qboolean FS_SetGamedir (char *dir)
 	// free up any current game dir info
 	while (fs_searchpaths != fs_base_searchpaths)
 	{
-		if (fs_searchpaths->pack) FS_UnloadPackFile (fs_searchpaths->pack);
+		if (fs_searchpaths->pack) UnloadPackFile (fs_searchpaths->pack);
 		next = fs_searchpaths->next;
 		FreeNamedStruc (fs_searchpaths);
 		fs_searchpaths = next;
@@ -1371,8 +1368,8 @@ qboolean FS_SetGamedir (char *dir)
 	if (strcmp (dir, BASEDIRNAME))
 	{	// add dirs only when current game is not BASEDIRNAME
 		if (fs_cddir->string[0])
-			FS_AddGameDirectory (va("%s/%s", fs_cddir->string, dir));
-		FS_AddGameDirectory (va("%s/%s", fs_basedir->string, dir));
+			AddGameDirectory (va("%s/%s", fs_cddir->string, dir));
+		AddGameDirectory (va("%s/%s", fs_basedir->string, dir));
 	}
 
 	return true;
@@ -1420,7 +1417,7 @@ static 	qboolean TryLoadPak (char *pakname)
 		searchPath_t *search;
 
 		fclose (f);
-		if (!(pak = FS_LoadPackFile (pakname))) return 1; // not loaded, but don't try more
+		if (!(pak = LoadPackFile (pakname))) return 1; // not loaded, but don't try more
 		// include new packfile in search paths
 		search = (searchPath_t*) AllocNamedStruc (sizeof(searchPath_t), "");
 		search->pack = pak;
@@ -1448,7 +1445,7 @@ static void FS_LoadPak_f (void)
 	{	// name is a wildcard
 		basenamed_t *paklist, *pakitem;
 
-		paklist = AddDirFilesToList (pakname, NULL, 0, SFF_SUBDIR);
+		paklist = AddDirFilesToList (pakname, NULL, LIST_FILES);
 		if (paklist)
 		{
 			for (pakitem = paklist; pakitem; pakitem = pakitem->next)
@@ -1508,7 +1505,7 @@ static void FS_UnloadPak_f (void)
 				if (fs_base_searchpaths == item)
 					fs_base_searchpaths = item->next;
 
-				FS_UnloadPackFile (pak);
+				UnloadPackFile (pak);
 				FreeNamedStruc (item);
 
 				found = true;
@@ -1543,7 +1540,7 @@ static void FS_UnloadPak_f (void)
 
 			if (fs_base_searchpaths == search)
 				fs_base_searchpaths = search->next;
-			FS_UnloadPackFile (search->pack);
+			UnloadPackFile (search->pack);
 			FreeNamedStruc (search);
 			return;
 		}
@@ -1603,10 +1600,10 @@ FS_ListFiles
 ================
 */
 
-basenamed_t *FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigned canthave)
+basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 {
 	char	buf[MAX_OSPATH], game[MAX_OSPATH], *pakname, *mask, path[MAX_OSPATH];
-	int		gamelen, attr;
+	int		gamelen;
 	searchPath_t *search;
 	basenamed_t *list;
 	int		gamePos;
@@ -1665,13 +1662,6 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigne
 		mask++; // skip '/'
 	}
 
-	if (musthave & SFF_SUBDIR)
-		attr = LISTPAK_DIRS;
-	else if (canthave & SFF_SUBDIR)
-		attr = LISTPAK_FILES;
-	else
-		attr = LISTPAK_FILES|LISTPAK_DIRS;
-
 	// initialize file list
 	list = NULL;
 
@@ -1689,20 +1679,20 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigne
 				continue;		// .pak placed in other game directory - skip it
 			}
 //			Com_Printf ("^1  use pak %s\n", pak->filename);
-			list = ListPakDirectory (pak, path, mask, attr, list, game);
+			list = ListPakDirectory (pak, path, mask, flags, list, game);
 		}
 	}
 
 	/*------------ check directory tree ----------------*/
 	if (name[0] == '.' && name[1] == '/')	// root-relative listing
-		list = AddDirFilesToList (name, list, musthave, canthave);
+		list = AddDirFilesToList (name, list, flags);
 	else
 	{	// game is not specified - list all searchpaths
 		char	*path2;
 
 		path2 = NULL;
 		while (path2 = FS_NextPath (path2))
-			list = AddDirFilesToList (va("%s/%s", path2, name), list, musthave, canthave);
+			list = AddDirFilesToList (va("%s/%s", path2, name), list, flags);
 	}
 
 	/*----------- count number of files ----------------*/
@@ -1764,7 +1754,7 @@ static void FS_Dir_f (void)
 		}
 		Com_Printf ("Directory of %s\n--------\n", findname);
 
-		if (dirnames = FS_ListFiles (findname, NULL, 0, 0))
+		if (dirnames = FS_ListFiles (findname, NULL, LIST_FILES|LIST_DIRS))
 		{
 			maxlen = 0;
 			for (item = dirnames; item; item = item->next)
@@ -1956,10 +1946,10 @@ CVAR_END
 	InitResFiles ();
 
 	if (fs_cddir->string[0])
-		FS_AddGameDirectory (va("%s/"BASEDIRNAME, fs_cddir->string));
+		AddGameDirectory (va("%s/"BASEDIRNAME, fs_cddir->string));
 
 	// start up with baseq2 by default
-	FS_AddGameDirectory (va("%s/"BASEDIRNAME, fs_basedir->string));
+	AddGameDirectory (va("%s/"BASEDIRNAME, fs_basedir->string));
 
 	// any set gamedirs will be freed up to here
 	fs_base_searchpaths = fs_searchpaths;
