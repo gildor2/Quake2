@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 viddef_t	vid;
 refImport_t	ri;
+static int ref_flags;
 
 unsigned	d_8to24table[256];
 
@@ -282,7 +283,6 @@ CVAR_END
 	sw_maxedges = Cvar_Get ("sw_maxedges", va("%d", NUMSTACKEDGES), 0);	//?? MAXSTACKSURFACES
 
 	Cmd_AddCommand ("modellist", Mod_Modellist_f);
-	Cmd_AddCommand ("screenshot", R_ScreenShot_f);
 	Cmd_AddCommand ("imagelist", R_ImageList_f);
 
 	sw_mode->modified = true; // force us to do mode specific stuff later
@@ -291,7 +291,6 @@ CVAR_END
 
 void R_UnRegister (void)
 {
-	Cmd_RemoveCommand( "screenshot" );
 	Cmd_RemoveCommand ("modellist");
 	Cmd_RemoveCommand( "imagelist" );
 }
@@ -1048,6 +1047,9 @@ void R_RenderFrame (refdef_t *fd)
 
 	R_CalcPalette ();
 
+	if (r_screenshotName && r_screenshotFlags & SHOT_NO_2D)
+		R_ScreenShot ();
+
 	R_DrawTexts ();
 
 	if (sw_aliasstats->integer)
@@ -1064,6 +1066,7 @@ void R_RenderFrame (refdef_t *fd)
 
 	if (sw_reportedgeout->integer && r_outofedges)
 		Com_Printf ("Short roughly %d edges\n", r_outofedges * 2 / 3);
+
 }
 
 /*
@@ -1381,9 +1384,42 @@ void	Draw_ConCharColor (int x, int y, int c, int color)
 	Draw_CharColor (x * 8, y * 8, c, color);
 }
 
+static void Screenshot (int flags, char *name)
+{
+	r_screenshotFlags = flags;
+	r_screenshotName = name;
+}
+
 static float GetClientLight (void)
 {
 	return sw_lightlevel;
+}
+
+static void R_EndFrame (void)
+{
+	if (r_screenshotName)
+		R_ScreenShot ();
+	SWimp_EndFrame ();
+}
+
+extern unsigned char d_16to8table[65536];
+
+static void Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, float a)
+{
+	int ri, gi, bi, color;
+
+	ri = floor(r * 31.9);
+	gi = floor(g * 63.9);
+	bi = floor(b * 31.9);
+	color = d_16to8table[ri | (gi << 5) | (bi << 11)];
+
+	if (a == 1)
+	{
+		// convert to DrawFill()
+		Draw_Fill (x, y, w, h, color);
+	}
+	else
+		Draw_Fade (x, y, w, h, color);
 }
 
 
@@ -1412,16 +1448,18 @@ refExport_t GetRefAPI (refImport_t rimp)
 
 	re.struc_size = sizeof(re);
 	re.api_version = API_VERSION;
-	re.flags = 0;
+	re.flags = &ref_flags;
+	ref_flags = 0;
 	if (con_only)
-		re.flags |= REF_CONSOLE_ONLY;
+		ref_flags |= REF_CONSOLE_ONLY;
 
 	re.Init = R_Init;
 	re.Shutdown = R_Shutdown;
 	re.BeginFrame = R_BeginFrame;
-	re.EndFrame = SWimp_EndFrame;
+	re.EndFrame = R_EndFrame;
 	re.AppActivate = SWimp_AppActivate;
 	re.DrawConCharColor = Draw_ConCharColor;
+	re.Screenshot =		Screenshot;
 
 	re.RenderFrame = R_RenderFrame;
 	re.BeginRegistration = R_BeginRegistration;
@@ -1437,7 +1475,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.DrawCharColor = Draw_CharColor;
 	re.DrawTileClear = Draw_TileClear;
 	re.DrawFill = Draw_Fill;
-	re.DrawFadeScreen= Draw_FadeScreen;
+	re.DrawFill2 = Draw_Fill2;
 
 	re.DrawStretchRaw = Draw_StretchRaw;
 	re.CinematicSetPalette = R_CinematicSetPalette;

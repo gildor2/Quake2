@@ -101,8 +101,14 @@ extern	image_t		*gl_identityLightImage;
 extern	image_t		*gl_dlightImage;
 extern	image_t		*gl_particleImage;
 extern	image_t		*gl_fogImage;
+extern	image_t		*gl_reflImage;		// NULL if not found
+
+extern int 	gl_screenshotFlags;
+extern char	*gl_screenshotName;
 
 void	GL_TextureMode (char *name);
+
+void	GL_PerformScreenshot (void);
 
 // setup
 void	GL_SetupGamma (void);
@@ -145,10 +151,12 @@ typedef struct
 	int		formatAlpha1;			// RGB_A1 (1 bit for alpha)
 
 	int		colorBits;
-	int		prevMode;				// last valid video mode
-	qboolean fullscreen;
+	byte	fullscreen;
+	byte	prevMode;				// last valid video mode
+	byte	prevBPP;
+	byte	prevFS;
 
-	qboolean consoleOnly;			// true if graphics disabled
+	byte	consoleOnly;			// true if graphics disabled (can use ref_flags & REF_CONSOLE_ONLY !!)
 
 	// gamma
 	qboolean deviceSupportsGamma;
@@ -170,15 +178,15 @@ typedef struct
 	qboolean locked;
 	// up to 32 texture units supports by OpenGL 1.3
 	int		currentTmu;
-	int		currentBinds[32];
-	int		currentEnv[32];
+	image_t	*currentBinds[32];
+	unsigned currentEnv[32];
 	byte	texCoordEnabled[32];
 	byte	textureEnabled[32];
 	color_t	texEnvColor[32];
 	// fields for locked state
 	int		newTmu;
-	int		newBinds[32];
-	int		newEnv[32];
+	image_t	*newBinds[32];
+	unsigned newEnv[32];
 	byte	newTexCoordEnabled[32];
 	byte	newTextureEnabled[32];
 	void	*newTCPointer[32];
@@ -186,9 +194,12 @@ typedef struct
 
 	int		currentState;
 	int		currentCullMode;
+	qboolean inverseCull;
+	qboolean fogEnabled;
 
 	int		maxUsedShaderIndex;
 	qboolean is2dMode;
+	qboolean have3d;
 } glstate_t;
 
 extern glconfig_t  gl_config;
@@ -247,15 +258,56 @@ typedef enum
 
 // GL_TexEnv constants
 
-// function
-#define TEXENV_REPLACE		0
-#define TEXENV_MODULATE		1
-#define TEXENV_ADD			2
-#define TEXENV_INTERP		3
-#define TEXENV_FUNC_MASK	15
-// additional flags
-#define TEXENV_MUL2			0x80000000
-#define TEXENV_COLOR		0x40000000
+// standard modes (0 - undefined)
+#define TEXENV_REPLACE				1
+#define TEXENV_MODULATE				2
+#define TEXENV_ADD					3
+// combine_arb modes
+#define TEXENV_C_MODULATE			4
+#define TEXENV_C_ADD				5
+#define TEXENV_C_INTERP				6
+// combine4_nv mode(s)
+#define TEXENV_C4_ADD				7
+
+#define TEXENV_FUNC_MASK			15		// 4 bits
+
+// some flags
+#define TEXENV_MUL2					0x10
+#define TEXENV_ENVCOLOR				0x20
+
+// source selection (0 - undefined)
+#define TEXENV_TEXTURE				1
+#define TEXENV_ONE_MINUS_TEXTURE	2
+#define TEXENV_TEXALPHA				3
+#define TEXENV_ONE_MINUS_TEXALPHA	4
+#define TEXENV_PREVIOUS				5
+#define TEXENV_ONE_MINUS_PREVIOUS	6
+#define TEXENV_PREVALPHA			7
+#define TEXENV_ONE_MINUS_PREVALPHA	8
+#define TEXENV_CONSTANT				9		// environment color
+#define TEXENV_ONE_MINUS_CONSTANT	10
+#define TEXENV_COLOR2				11		// primary color     !!! rename to _COLOR (temporary name to remove old name usage)
+#define TEXENV_ONE_MINUS_COLOR		12
+// combine4_nv:
+#define TEXENV_ZERO					13
+#define TEXENV_ONE					14
+
+
+#define TEXENV_SRC_BITS				4
+#define TEXENV_SRC_MASK				((1<<TEXENV_SRC_BITS) - 1)
+
+#define TEXENV_SRC0_SHIFT			(32-TEXENV_SRC_BITS)
+#define TEXENV_SRC1_SHIFT			(32-TEXENV_SRC_BITS*2)
+#define TEXENV_SRC2_SHIFT			(32-TEXENV_SRC_BITS*3)
+#define TEXENV_SRC3_SHIFT			(32-TEXENV_SRC_BITS*4)
+
+#define TEXENV_SRC0_MASK			(TEXENV_SRC_MASK<<TEXENV_SRC0_SHIFT)
+#define TEXENV_SRC1_MASK			(TEXENV_SRC_MASK<<TEXENV_SRC1_SHIFT)
+#define TEXENV_SRC2_MASK			(TEXENV_SRC_MASK<<TEXENV_SRC2_SHIFT)
+#define TEXENV_SRC3_MASK			(TEXENV_SRC_MASK<<TEXENV_SRC3_SHIFT)
+
+// some common defines
+#define TEXENV_0PREV_1TEX			((TEXENV_PREVIOUS<<TEXENV_SRC0_SHIFT)|(TEXENV_TEXTURE<<TEXENV_SRC1_SHIFT))
 
 
 void	GL_Lock (void);
@@ -266,13 +318,14 @@ void	GL_BindForce (image_t *tex);
 
 void	GL_SelectTexture (int tmu);
 void	GL_TexCoordPointer (void *ptr);
-void	GL_TexEnv (int env);
+void	GL_TexEnv (unsigned env);
 void	GL_TexEnvColor (color_t *c);
 void	GL_SetMultitexture (int level);
 void	GL_DisableTexCoordArrays (void);
 
 void	GL_CullFace (gl_cullMode_t mode);
 void	GL_State (int state);
+void	GL_EnableFog (qboolean enable);
 
 void	GL_SetDefaultState (void);
 void	GL_Set2DMode (void);
@@ -290,6 +343,7 @@ extern	shader_t	*gl_identityLightShader2;	// with depth test/write
 extern	shader_t	*gl_concharsShader;
 extern	shader_t	*gl_defaultSkyShader;
 extern	shader_t	*gl_particleShader;
+extern	shader_t	*gl_flareShader;			// NULL if not found
 extern	shader_t	*gl_skyShader;
 extern	shader_t	*gl_alphaShader1, *gl_alphaShader2;
 
@@ -314,6 +368,7 @@ void	GL_ResetShaders (void);	// should be called every time before loading a new
 #define SHADER_ANIM			0x100		// main stage will contain more than 1 texture (names passed as name1<0>name2<0>...nameN<0><0>)
 #define SHADER_LIGHTMAP		0x200		// reserve lightmap stage (need GL_SetShaderLightmap() later)
 #define SHADER_TRYLIGHTMAP	0x400		// usualy not containing lightmap, but if present - generate it
+#define SHADER_ENVMAP		0x800		// make additional rendering pass with default environment map
 // styles (hints) valid for FindShader(), buf not stored in shader_t
 #define SHADER_ABSTRACT		0x20000000	// create shader without stages
 #define SHADER_CHECK		0x40000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error
@@ -350,11 +405,20 @@ void	GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 /*------------ gl_world.c -------------------*/
 
 
+//?? move to gl_state/gl_config ??
+GLenum		gl_fogMode;
+float		gl_fogColor[4];
+float		gl_fogDensity;
+float		gl_fogStart, gl_fogEnd;
+
+
+//?? rename (gl_entity_t ? entity_t) and separate beam
 typedef struct refEntity_s
 {
 	int		flags;
 	model_t	*model;
 	float	dist2;						// Z-coordinate of model
+	qboolean visible;					// valid for current frame
 
 	union {
 		struct {
@@ -362,7 +426,8 @@ typedef struct refEntity_s
 			// position info
 			vec3_t	origin;
 			vec3_t	axis[3];
-			qboolean worldMatrix;
+			byte	worldMatrix;		// bool
+			byte	mirror;				// bool
 			byte	frustumMask;		//?? remove
 			vec3_t	modelvieworg;		// vieworg in model coordinate system
 			float	modelMatrix[4][4];	// modelview matrix
@@ -484,6 +549,7 @@ typedef struct
 	int		tris, trisMT;		// number of tris, which will be drawn without mtex and with mtex (same if no multitexture)
 	int		ents, cullEnts, cullEnts2;
 	int		parts, cullParts;	// particles
+	int		flares, cullFlares;
 	// OpenGL statistics
 	int		numBinds, numUploads, numIterators;
 	// pefromance measuring
@@ -552,6 +618,8 @@ extern cvar_t	*gl_texturemode;
 extern cvar_t	*gl_overBrightBits;
 
 extern cvar_t	*gl_fastsky;
+extern cvar_t	*gl_fog;
+extern cvar_t	*gl_flares;
 extern cvar_t	*gl_dynamic;
 extern cvar_t	*gl_dlightBacks;
 extern cvar_t	*gl_vertexLight;
@@ -559,6 +627,8 @@ extern cvar_t	*gl_ignoreFastPath;
 
 extern cvar_t	*gl_driver;
 extern cvar_t	*gl_bitdepth;
+
+extern cvar_t	*gl_hand;
 
 extern cvar_t	*gl_nobind;
 extern cvar_t	*r_colorMipLevels;	//?? can we implement colorized mips in software? (if no, rename to "gl_")

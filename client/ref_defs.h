@@ -28,7 +28,6 @@
 #define Hunk_End	ri._Hunk_End
 #define Hunk_Free	ri._Hunk_Free
 #define Sys_Milliseconds	ri._Sys_Milliseconds
-#define Sys_Mkdir	ri._Sys_Mkdir
 #define Com_Printf	ri._Com_Printf
 #define Com_DPrintf	ri._Com_DPrintf
 #define Com_WPrintf	ri._Com_WPrintf
@@ -38,6 +37,7 @@
 #define FS_LoadFile	ri._FS_LoadFile
 #define FS_FreeFile	ri._FS_FreeFile
 #define FS_Gamedir	ri._FS_Gamedir
+#define FS_CreatePath	ri._FS_CreatePath
 #define MatchWildcard	ri._MatchWildcard
 #define Vid_GetModeInfo	ri._Vid_GetModeInfo
 #define Vid_MenuInit	ri._Vid_MenuInit
@@ -48,6 +48,8 @@
 #define WriteTGA	ri._WriteTGA
 #define WriteJPG	ri._WriteJPG
 #define LoadBspFile	ri._LoadBspFile
+#define CM_BoxTrace	ri._CM_BoxTrace
+#define CM_TransformedBoxTrace	ri._CM_TransformedBoxTrace
 #ifdef _WIN32
 #define Vid_CreateWindow	ri._Vid_CreateWindow
 #define Vid_DestroyWindow	ri._Vid_DestroyWindow
@@ -83,7 +85,6 @@ void*	Hunk_Alloc (int size);
 int	Hunk_End (void);
 void	Hunk_Free (void *buf);
 int	Sys_Milliseconds (void);
-void	Sys_Mkdir (char *path);
 void	Com_Printf (char *str, ...);
 void	Com_DPrintf (char *str, ...);
 void	Com_WPrintf (char *str, ...);
@@ -93,6 +94,7 @@ basenamed_t*	FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigne
 int	FS_LoadFile (char *name, void **buf);
 void	FS_FreeFile (void *buf);
 char*	FS_Gamedir (void);
+void	FS_CreatePath (char *path);
 qboolean	MatchWildcard (char *name, char *mask);
 qboolean	Vid_GetModeInfo (int *width, int *height, int mode);
 void	Vid_MenuInit (void);
@@ -103,6 +105,8 @@ void	LoadJPG (char *name, byte **pic, int *width, int *height);
 qboolean	WriteTGA (char *name, byte *pic, int width, int height);
 qboolean	WriteJPG (char *name, byte *pic, int width, int height, qboolean highQuality);
 bspfile_t*	LoadBspFile (char *filename, qboolean clientload, unsigned *checksum);
+trace_t	CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
+trace_t	CM_TransformedBoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
 #ifdef _WIN32
 void*	Vid_CreateWindow (int width, int height, qboolean fullscreen);
 void	Vid_DestroyWindow (qboolean force);

@@ -45,11 +45,12 @@ typedef struct
 typedef struct
 {
 	vec3_t		mins, maxs;
-	vec3_t		origin;		// for sounds or lights
+//	vec3_t		origin;		// for sounds or lights
 	float		radius;
 	int			headnode;
 	int			visleafs;		// not including the solid leaf 0
 	int			firstface, numfaces;
+	int			flags;
 } mmodel_t;
 
 

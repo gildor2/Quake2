@@ -45,7 +45,6 @@ cvar_t	*developer;
 cvar_t	*timescale;
 cvar_t	*fixedtime;
 cvar_t	*logfile_active;	// 1 = buffer log, 2 = flush after each print
-cvar_t	*showtrace;
 cvar_t	*dedicated;
 
 FILE	*logfile;
@@ -1372,7 +1371,6 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(timescale, 1, 0),
 	CVAR_VAR(fixedtime, 0, 0),
 	{&logfile_active, "logfile", "0", 0},
-	CVAR_VAR(showtrace, 0, 0),
 #ifdef DEDICATED_ONLY
 	CVAR_VAR(dedicated, 1, CVAR_NOSET)
 #else
@@ -1455,6 +1453,31 @@ CVAR_END
 Qcommon_Frame
 =================
 */
+extern	int c_traces, c_brush_traces;
+extern	int	c_pointcontents;
+
+#define SV_PROFILE
+
+#ifdef SV_PROFILE
+
+#pragma warning (push)
+#pragma warning (disable : 4035)
+#pragma warning (disable : 4715)
+__inline unsigned cycles (void)	  // taken from UT
+{
+	__asm
+	{
+		xor   eax,eax	          // Required so that VC++ realizes EAX is modified.
+		_emit 0x0F		          // RDTSC  -  Pentium+ time stamp register to EDX:EAX.
+		_emit 0x31		          // Use only 32 bits in EAX - even a Ghz cpu would have a 4+ sec period.
+		xor   edx,edx	          // Required so that VC++ realizes EDX is modified.
+	}
+}
+#pragma warning (pop)
+
+#endif
+
+
 void Qcommon_Frame (int msec)
 {
 	char	*s;
@@ -1468,11 +1491,7 @@ void Qcommon_Frame (int msec)
 		log_stats->modified = false;
 		if (log_stats->integer)
 		{
-			if (log_stats_file)
-			{
-				fclose (log_stats_file);
-				log_stats_file = NULL;
-			}
+			if (log_stats_file) fclose (log_stats_file);
 			log_stats_file = fopen ("stats.log", "w");
 			if (log_stats_file)
 				fprintf (log_stats_file, "entities,dlights,parts,frame time\n");
@@ -1482,7 +1501,7 @@ void Qcommon_Frame (int msec)
 			if (log_stats_file)
 			{
 				fclose (log_stats_file);
-				log_stats_file = 0;
+				log_stats_file = NULL;
 			}
 		}
 	}
@@ -1492,31 +1511,25 @@ void Qcommon_Frame (int msec)
 	else if (timescale->value)
 	{
 		msec *= timescale->value;
-		if (msec < 1)
-			msec = 1;
+		if (msec < 1) msec = 1;
 	}
 
-	if (showtrace->integer)
-	{
-		extern	int c_traces, c_brush_traces;
-		extern	int	c_pointcontents;
-
-		Com_Printf ("%4i traces  %4i points\n", c_traces, c_pointcontents);
-		c_traces = 0;
-		c_brush_traces = 0;
-		c_pointcontents = 0;
-	}
+	c_traces = 0;
+	c_brush_traces = 0;
+	c_pointcontents = 0;
 
 	do
 	{
 		s = Sys_ConsoleInput ();
-		if (s)
-			Cbuf_AddText (va("%s\n",s));
+		if (s) Cbuf_AddText (va("%s\n",s));
 	} while (s);
 	Cbuf_Execute ();
 
 	if (com_speeds->integer)
+	{
 		time_before = Sys_Milliseconds ();
+		time_before_game = -1;
+	}
 
 	SV_Frame (msec);
 
@@ -1526,23 +1539,64 @@ void Qcommon_Frame (int msec)
 	CL_Frame (msec);
 
 	if (com_speeds->integer)
-		time_after = Sys_Milliseconds ();
-
-
-	if (com_speeds->integer)
 	{
 		int		all, sv, gm, cl, rf;
+		static int old_gm, old_tr, old_pc;
 
+		time_after = Sys_Milliseconds ();
 		all = time_after - time_before;
 		sv = time_between - time_before;
 		cl = time_after - time_between;
 		gm = time_after_game - time_before_game;
+		if (time_before_game > 0)	// have a valid game frame
+		{
+			old_gm = gm;
+			old_tr = c_traces;
+			old_pc = c_pointcontents;
+		}
 		rf = time_after_ref - time_before_ref;
 		sv -= gm;
 		cl -= rf;
-		re.DrawTextRight (va("all:%2d sv:%2d gm:%2d cl:%2d rf:%2d\n",
-				all, sv, gm, cl, rf), 1, 0.8, 0.3);
+		re.DrawTextRight (va("sv:%2d gm:%2d (%2d) cl:%2d rf:%2d all:%2d",
+				sv, gm, old_gm, cl, rf, all), 1, 0.8, 0.3);
+		re.DrawTextRight (va("tr: %4d (%4d) pt: %4d (%4d)",
+				c_traces, old_tr, c_pointcontents, old_pc), 1, 0.8, 0.3);
+
+#ifdef SV_PROFILE
+		if (1)	//??
+		{
+			extern int prof_times[256];
+			extern int prof_counts[256];
+			static char *names[12] = {"LinkEdict", "UnlinkEdict", "AreaEdicts", "Trace",
+				"PtContents", "Pmove", "ModIndex", "ImgIndex", "SndIndex",
+				"Malloc", "Free", "FreeTags"};
+			static unsigned counts[12], times[12];
+			static unsigned cyc, lastCycles, lastMsec;
+			int		i, msec;
+			float	scale;
+
+			cyc = cycles (); msec = Sys_Milliseconds ();
+			if (msec != lastMsec)
+				scale = (cyc - lastCycles) / (msec - lastMsec);
+			else
+				scale = 1e10;
+			if (!scale) scale = 1;
+			for (i = 0; i < 12; i++)
+			{
+				re.DrawTextLeft (va("%s: %3d %4f", names[i], counts[i], times[i]/scale),
+					1, 0.8, 0.3);
+				if (time_before_game > 0)
+				{
+					counts[i] = prof_counts[i];
+					times[i] = prof_times[i];
+					prof_counts[i] = prof_times[i] = 0;
+				}
+			}
+			lastCycles = cyc; lastMsec = msec;
+		}
+#endif
 	}
+
 }
 
 /*

@@ -203,6 +203,7 @@ typedef struct
 {
 	connstate_t	state;
 	keydest_t	key_dest;
+	qboolean	keep_console;		// do not hide console even if menu active
 
 	int			framecount;
 	int			realtime;			// always increasing, no clamping, etc
@@ -292,6 +293,9 @@ extern	cvar_t	*cl_paused;
 extern	cvar_t	*cl_timedemo;
 
 extern	cvar_t	*cl_vwep;
+extern	cvar_t	*cl_3rd_person;
+extern	cvar_t	*cl_cameradist;
+extern	cvar_t	*cl_cameraheight;
 
 extern  cvar_t  *cl_extProtocol;
 
@@ -577,6 +581,8 @@ void CL_TrapParticles (entity_t *ent);
 //
 // menus
 //
+extern int	m_menudepth;
+
 void M_Init (void);
 void M_Keydown (int key);
 void M_Draw (void);

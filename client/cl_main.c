@@ -76,6 +76,9 @@ cvar_t	*gender;
 cvar_t	*gender_auto;
 
 cvar_t	*cl_vwep;
+cvar_t	*cl_3rd_person;
+cvar_t	*cl_cameradist;
+cvar_t	*cl_cameraheight;
 
 cvar_t  *cl_extProtocol;
 
@@ -597,7 +600,7 @@ void CL_ClearState (void)
 	CL_ClearEffects ();
 	CL_ClearTEnts ();
 
-// wipe the entire cl structure
+	// wipe the entire cl structure
 	memset (&cl, 0, sizeof(cl));
 	memset (&cl_entities, 0, sizeof(cl_entities));
 
@@ -1389,11 +1392,24 @@ before allowing the client into the server
 */
 void CL_Precache_f (void)
 {
-	SCR_SetLevelshot (cl.configstrings[CS_MODELS+1]);
+	char	mapname[MAX_QPATH], levelshot[MAX_QPATH], *tmp;
+
+	// set levelshot
+	Q_CopyFilename (mapname, cl.configstrings[CS_MODELS+1], sizeof(levelshot) - 1);
+	tmp = strchr (mapname, '.');
+	if (tmp) tmp[0] = 0;
+	tmp = strrchr (mapname, '/');
+	if (!tmp)
+		tmp = mapname;
+	else
+		tmp++;				// skip '/'
+	Com_sprintf (levelshot, sizeof(levelshot), "/levelshots/%s.pcx", tmp);
+	SCR_SetLevelshot (levelshot);
 
 	//Yet another hack to let old demos work
 	//the old precache sequence
-	if (Cmd_Argc() < 2) {
+	if (Cmd_Argc() < 2)
+	{
 		unsigned	map_checksum;		// for detecting cheater maps
 
 		CM_LoadMap (cl.configstrings[CS_MODELS+1], true, &map_checksum);
@@ -1533,6 +1549,9 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gender_auto, 1, CVAR_ARCHIVE),
 
 	CVAR_VAR(cl_vwep, 1, CVAR_ARCHIVE),
+	CVAR_VAR(cl_3rd_person, 0, CVAR_ARCHIVE),
+	CVAR_VAR(cl_cameradist, 80, CVAR_ARCHIVE),
+	CVAR_VAR(cl_cameraheight, 10, CVAR_ARCHIVE),
 
 	CVAR_VAR(cl_extProtocol, 1, CVAR_ARCHIVE),
 
@@ -1729,7 +1748,7 @@ void CL_Frame (int msec)
 	cl.time += extratime;
 	cls.realtime = curtime;
 
-	cls.newfx = cl_newfx->integer && (re.flags & REF_NEW_FX);
+	cls.newfx = cl_newfx->integer && (*re.flags & REF_NEW_FX);
 
 	extratime = 0;
 #if 0

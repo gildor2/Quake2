@@ -550,8 +550,8 @@ void Menu_DrawStatusBar (const char *string)
 		Draw_Fill (0, VID_HEIGHT-8, VID_WIDTH, 8, 4);
 		Menu_DrawString (col*8, VID_HEIGHT - 8, string);
 	}
-	else
-		Draw_Fill (0, VID_HEIGHT-8, VID_WIDTH, 8, 0);
+//	else
+//		Draw_Fill (0, VID_HEIGHT-8, VID_WIDTH, 8, 0);
 }
 
 void Menu_DrawStringCommon (int x, int y, const char *string, int shift)

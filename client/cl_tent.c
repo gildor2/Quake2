@@ -1622,7 +1622,7 @@ void CL_AddPlayerBeams (void)
 //PMM
 
 // update beams
-	for (i=0, b=cl_playerbeams ; i< MAX_BEAMS ; i++, b++)
+	for (i = 0, b = cl_playerbeams; i < MAX_BEAMS; i++, b++)
 	{
 		vec3_t		f,r,u;
 		if (!b->model || b->endtime < cl.time)
@@ -1640,7 +1640,7 @@ void CL_AddPlayerBeams (void)
 				j = (cl.frame.serverframe - 1) & UPDATE_MASK;
 				oldframe = &cl.frames[j];
 				if (oldframe->serverframe != cl.frame.serverframe-1 || !oldframe->valid)
-					oldframe = &cl.frame;		// previous frame was dropped or involid
+					oldframe = &cl.frame;		// previous frame was dropped or invalid
 				ops = &oldframe->playerstate;
 				for (j=0 ; j<3 ; j++)
 				{
@@ -1650,9 +1650,8 @@ void CL_AddPlayerBeams (void)
 				VectorMA (b->start, (hand_multiplier * b->offset[0]), cl.v_right, org);
 				VectorMA (     org, b->offset[1], cl.v_forward, org);
 				VectorMA (     org, b->offset[2], cl.v_up, org);
-				if ((hand) && (hand->integer == 2)) {
+				if (hand && (hand->integer == 2))
 					VectorMA (org, -1, cl.v_up, org);
-				}
 				// FIXME - take these out when final
 				VectorCopy (cl.v_right, r);
 				VectorCopy (cl.v_forward, f);

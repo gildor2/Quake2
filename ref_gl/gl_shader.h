@@ -44,12 +44,13 @@ typedef enum
 	TCGEN_NONE,
 	TCGEN_TEXTURE,
 	TCGEN_LIGHTMAP,
-	TCGEN_LIGHTMAP1, TCGEN_LIGHTMAP2, TCGEN_LIGHTMAP3, TCGEN_LIGHTMAP4,	// for fast lightstyles; should go exactly after TCGEN_LIGHTMAP (??)
-	TCGEN_DLIGHT0,	// 32 values
-	TCGEN_ENVIRONMENT = TCGEN_DLIGHT0 + MAX_DLIGHTS,
+	TCGEN_ENVIRONMENT,
 	TCGEN_VECTOR,
-	TCGEN_ZERO,		//?? s = t = 0
-	TCGEN_FOG		//?? used for fog image
+	// internal-use modes
+	TCGEN_LIGHTMAP1, TCGEN_LIGHTMAP2, TCGEN_LIGHTMAP3, TCGEN_LIGHTMAP4,	// for fast lightstyles
+	TCGEN_DLIGHT0,				// 32 values
+	TCGEN_ZERO = TCGEN_DLIGHT0 + MAX_DLIGHTS,	//?? s = t = 0 (unused/unimplemented)
+	TCGEN_FOG									//?? used for fog image
 } tcGenType_t;
 
 typedef enum
@@ -73,6 +74,7 @@ typedef enum
 	RGBGEN_VERTEX,				// vertex lighting (overbrighted)
 	RGBGEN_EXACT_VERTEX,		// not affected by overbrighting
 	RGBGEN_ONE_MINUS_VERTEX,
+	RGBGEN_BOOST_VERTEX,		// vertex color with boosted
 	RGBGEN_ENTITY,
 	RGBGEN_ONE_MINUS_ENTITY,
 	RGBGEN_WAVE,
@@ -82,13 +84,15 @@ typedef enum
 
 typedef enum
 {
-	ALPHAGEN_IDENTITY,	// => alphaGen const 1
+	ALPHAGEN_IDENTITY,			// => alphaGen const 1
 	ALPHAGEN_CONST,
-//	ALPHAGEN_NONE,		//?? use const (is it needed?)
+//	ALPHAGEN_NONE,				//?? use const (is it needed?)
 	ALPHAGEN_ENTITY,
 	ALPHAGEN_ONE_MINUS_ENTITY,
 	ALPHAGEN_VERTEX,
 	ALPHAGEN_ONE_MINUS_VERTEX,
+	ALPHAGEN_DOT,
+	ALPHAGEN_ONE_MINUS_DOT,
 	ALPHAGEN_LIGHTING_SPECULAR,
 	ALPHAGEN_WAVE,
 	ALPHAGEN_PORTAL
@@ -170,6 +174,7 @@ typedef struct
 	// alphaGen params
 	alphaGenType_t alphaGenType;
 	waveParams_t alphaGenWave;		// if ALPHAGEN_WAVE
+	float	alphaMin, alphaMax;		// if ALPHAGEN_[ONE_MINUS_]DOT
 	/*--------------- texture params --------------*/
 	// tcGen params
 	tcGenType_t tcGenType;
@@ -190,7 +195,7 @@ typedef enum
 {
 	SHADERTYPE_NORMAL,
 	SHADERTYPE_SKY,
-	SHADERTYPE_FOG,		//?? make this as non-shader?
+	SHADERTYPE_FOG,			//?? make this as non-shader?
 	SHADERTYPE_PORTAL
 } shaderType_t;
 

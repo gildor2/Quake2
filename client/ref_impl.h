@@ -29,7 +29,6 @@ refImport_t ri = {
 	Hunk_End,
 	Hunk_Free,
 	Sys_Milliseconds,
-	Sys_Mkdir,
 	Com_Printf,
 	Com_DPrintf,
 	Com_WPrintf,
@@ -39,6 +38,7 @@ refImport_t ri = {
 	FS_LoadFile,
 	FS_FreeFile,
 	FS_Gamedir,
+	FS_CreatePath,
 	MatchWildcard,
 	Vid_GetModeInfo,
 	Vid_MenuInit,
@@ -48,7 +48,9 @@ refImport_t ri = {
 	LoadJPG,
 	WriteTGA,
 	WriteJPG,
-	LoadBspFile
+	LoadBspFile,
+	CM_BoxTrace,
+	CM_TransformedBoxTrace
 #ifdef _WIN32
 ,
 	Vid_CreateWindow,

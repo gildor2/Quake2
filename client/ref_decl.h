@@ -29,7 +29,6 @@ typedef struct {
 	int	(*_Hunk_End) (void);
 	void	(*_Hunk_Free) (void *buf);
 	int	(*_Sys_Milliseconds) (void);
-	void	(*_Sys_Mkdir) (char *path);
 	void	(*_Com_Printf) (char *str, ...);
 	void	(*_Com_DPrintf) (char *str, ...);
 	void	(*_Com_WPrintf) (char *str, ...);
@@ -39,6 +38,7 @@ typedef struct {
 	int	(*_FS_LoadFile) (char *name, void **buf);
 	void	(*_FS_FreeFile) (void *buf);
 	char*	(*_FS_Gamedir) (void);
+	void	(*_FS_CreatePath) (char *path);
 	qboolean	(*_MatchWildcard) (char *name, char *mask);
 	qboolean	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
 	void	(*_Vid_MenuInit) (void);
@@ -49,6 +49,8 @@ typedef struct {
 	qboolean	(*_WriteTGA) (char *name, byte *pic, int width, int height);
 	qboolean	(*_WriteJPG) (char *name, byte *pic, int width, int height, qboolean highQuality);
 	bspfile_t*	(*_LoadBspFile) (char *filename, qboolean clientload, unsigned *checksum);
+	trace_t	(*_CM_BoxTrace) (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
+	trace_t	(*_CM_TransformedBoxTrace) (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
 #ifdef _WIN32
 	void*	(*_Vid_CreateWindow) (int width, int height, qboolean fullscreen);
 	void	(*_Vid_DestroyWindow) (qboolean force);

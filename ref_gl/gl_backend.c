@@ -210,33 +210,67 @@ static void GenerateColorArray (shaderStage_t *st)
 {
 	int		i, rgba;
 	byte	a;
+	color_t	*src, *dst;
 
 	/*---------- rgbGen -----------*/
+	src = srcVertexColor;
+	dst = vb->color;
 	switch (st->rgbGenType)
 	{
 	case RGBGEN_CONST:
 		rgba = st->rgbaConst.rgba;
-		for (i = 0; i < numVerts; i++)
-			vb->color[i].rgba = rgba;
+		for (i = 0; i < numVerts; i++, dst++)
+			dst->rgba = rgba;
 		break;
 	case RGBGEN_EXACT_VERTEX:
-		for (i = 0; i < numVerts; i++)
-			vb->color[i].rgba = srcVertexColor[i].rgba;
+		for (i = 0; i < numVerts; i++, src++, dst++)	//?? memcpy()
+			dst->rgba = src->rgba;
 		break;
 	case RGBGEN_VERTEX:
-		for (i = 0; i < numVerts; i++)
+		for (i = 0; i < numVerts; i++, src++, dst++)
 		{
-			vb->color[i].c[0] = srcVertexColor[i].c[0] >> gl_config.overbrightBits;
-			vb->color[i].c[1] = srcVertexColor[i].c[1] >> gl_config.overbrightBits;
-			vb->color[i].c[2] = srcVertexColor[i].c[2] >> gl_config.overbrightBits;
+			dst->c[0] = src->c[0] >> gl_config.overbrightBits;
+			dst->c[1] = src->c[1] >> gl_config.overbrightBits;
+			dst->c[2] = src->c[2] >> gl_config.overbrightBits;
+		}
+		break;
+	case RGBGEN_BOOST_VERTEX:
+		{
+			int		ka, kb;
+
+#define MIN_BOOST_BRIGHT		48
+			ka = (256 - MIN_BOOST_BRIGHT) >> gl_config.overbrightBits;
+			kb = (MIN_BOOST_BRIGHT * 256) >> gl_config.overbrightBits;
+			for (i = 0; i < numVerts; i++, src++, dst++)
+			{
+				int		r, g, b, oldbr, newbr, scale;
+
+				r = src->c[0];
+				g = src->c[1];
+				b = src->c[2];
+				oldbr = max(r, g);
+				oldbr = max(oldbr, b);
+				newbr = oldbr * ka + kb;
+				if (oldbr)				// if at least one of r,g,b is non-zero
+				{
+					scale = newbr / oldbr;
+					r = (r * scale) >> 8;
+					g = (g * scale) >> 8;
+					b = (b * scale) >> 8;
+					NORMALIZE_COLOR255(r, g, b);
+				}
+				dst->c[0] = r;
+				dst->c[1] = g;
+				dst->c[2] = b;
+			}
 		}
 		break;
 	case RGBGEN_ONE_MINUS_VERTEX:
-		for (i = 0; i < numVerts; i++)
+		for (i = 0; i < numVerts; i++, src++, dst++)
 		{
-			vb->color[i].c[0] = (255 - srcVertexColor[i].c[0]) >> gl_config.overbrightBits;
-			vb->color[i].c[1] = (255 - srcVertexColor[i].c[1]) >> gl_config.overbrightBits;
-			vb->color[i].c[2] = (255 - srcVertexColor[i].c[2]) >> gl_config.overbrightBits;
+			dst->c[0] = (255 - src->c[0]) >> gl_config.overbrightBits;
+			dst->c[1] = (255 - src->c[1]) >> gl_config.overbrightBits;
+			dst->c[2] = (255 - src->c[2]) >> gl_config.overbrightBits;
 		}
 		break;
 	// other types: LIGHTING_DIFFUSE, FOG
@@ -246,20 +280,57 @@ static void GenerateColorArray (shaderStage_t *st)
 		return;	// alpha is already set
 
 	/*--------- alphaGen ----------*/
+	dst = vb->color;
 	switch (st->alphaGenType)
 	{
 	case ALPHAGEN_CONST:
 		a = st->rgbaConst.c[3];
-		for (i = 0; i < numVerts; i++)
-			vb->color[i].c[3] = a;
+		for (i = 0; i < numVerts; i++, dst++)
+			dst->c[3] = a;
 		break;
 	case ALPHAGEN_VERTEX:
-		for (i = 0; i < numVerts; i++)
-			vb->color[i].c[3] = srcVertexColor[i].c[3];
+		for (i = 0; i < numVerts; i++, dst++)
+			dst->c[3] = srcVertexColor[i].c[3];
 		break;
 	case ALPHAGEN_ONE_MINUS_VERTEX:
-		for (i = 0; i < numVerts; i++)
-			vb->color[i].c[3] = 255 - srcVertexColor[i].c[3];
+		for (i = 0; i < numVerts; i++, dst++)
+			dst->c[3] = 255 - srcVertexColor[i].c[3];
+		break;
+	case ALPHAGEN_DOT:
+	case ALPHAGEN_ONE_MINUS_DOT:
+		{
+			bufExtra_t *ex;
+			bufVertex_t *vec;
+			int		j, min;
+			float	scale, *norm;
+
+			vec = vb->verts;
+			if (st->alphaGenType == ALPHAGEN_DOT)
+			{
+				min = Q_ftol (st->alphaMin * 255);
+				scale = (st->alphaMax - st->alphaMin) * 255;
+			}
+			else
+			{
+				min = Q_ftol (st->alphaMax * 255);
+				scale = (st->alphaMin - st->alphaMax) * 255;
+			}
+			for (j = 0, ex = extra; j < numExtra; j++, ex++)
+			{
+				norm = ex->normal;
+				for (i = 0; i < ex->numVerts; i++, vec++, dst++)
+				{
+					vec3_t	v;
+					float	d;
+
+					VectorSubtract (vec->xyz, currentEntity->modelvieworg, v);
+					VectorNormalizeFast (v);
+					d = DotProduct (v, norm);
+					d = d * d;	//??
+					dst->c[3] = Q_ftol (d * scale) + min;
+				}
+			}
+		}
 		break;
 	// other types: LIGHTING_SPECULAR, PORTAL
 	}
@@ -295,6 +366,32 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 			dst->tex[1] = src->lm[1];
 		}
 		break;
+	case TCGEN_ENVIRONMENT:
+		{
+			//!! reimplement: now computes as Quake3 !!
+			bufExtra_t *ex;
+			bufVertex_t *vec;
+
+			vec = vb->verts;
+			for (j = 0, ex = extra; j < numExtra; j++, ex++)
+			{
+				float	*norm;
+
+				norm = ex->normal;
+				for (k = 0; k < ex->numVerts; k++, vec++, dst++)
+				{
+					vec3_t	v;
+					float	d;
+
+					VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
+					VectorNormalizeFast (v);
+					d = DotProduct (v, norm);
+					dst->tex[0] = (d * norm[1] * 2 - v[1] + 1) / 2.0f;
+					dst->tex[1] = 0.5f - (v[2] - d * norm[2] * 2) / 2.0f;
+				}
+			}
+		}
+		break;
 	case TCGEN_LIGHTMAP1:
 	case TCGEN_LIGHTMAP2:
 	case TCGEN_LIGHTMAP3:
@@ -314,7 +411,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 			}
 		}
 		break;
-	// other types: ENVIRONMENT, VECTOR, ZERO (?), FOG (?)
+	// other types: VECTOR, ZERO (?), FOG (?)
 
 	default:
 		if (st->tcGenType >= TCGEN_DLIGHT0 && st->tcGenType < TCGEN_DLIGHT0 + MAX_DLIGHTS)
@@ -367,7 +464,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 			{
 				float	*vec, f;
 
-				vec = &vb->verts[k].xyz[0];
+				vec = &vb->verts[k].xyz[0];	//?? optimize (vec++, but with different type)
 				f = PERIODIC_FUNC(sinTable, (vec[0] + vec[1] + vec[2]) / TABLE_SIZE + f1) * f2;
 				dst->tex[0] += f;
 				dst->tex[1] += f;
@@ -405,7 +502,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 // should rename "temp", "tmp" ??
 typedef struct
 {
-	int		texEnv;			// REPLACE/MODILATE/ADD or COMBINE/COMBINE_NV (uses st.glState.blend ??)
+	unsigned texEnv;		// REPLACE/MODILATE/ADD or COMBINE/COMBINE_NV (uses st.glState.blend ??)
 	byte	tmu;
 	byte	constRGBA;		// bool
 	byte	identityRGBA;	// bool
@@ -438,6 +535,9 @@ static int			numRenderPasses;
 
 #define DEBUG_FULLBRIGHT	1
 #define DEBUG_LIGHTMAP		2
+
+//#define LOG_PP(x)	LOG_STRING(x)
+#define LOG_PP(x)
 
 static void PreprocessShader (shader_t *sh)
 {
@@ -597,11 +697,10 @@ static void PreprocessShader (shader_t *sh)
 
 				//?? function may be NOISE
 #define P stage->rgbGenWave
-				c1 = Q_ftol(PERIODIC_FUNC(mathFuncs[stage->rgbGenWave.type], P.freq * ap.time + P.phase) * P.amp + P.base);
+				c1 = PERIODIC_FUNC(mathFuncs[stage->rgbGenWave.type], P.freq * ap.time + P.phase) * P.amp + P.base;
 #undef P
-				if (c1 <= 0)		c2 = 0;
-				else if (c1 >= 1)	c2 = 255;
-				else				c2 = Q_ftol(c1 * 255.0f);
+				c2 = Q_ftol(c1 * 255);
+				c2 = bound(c2, 0, 255);
 				st->st.rgbaConst.c[0] = st->st.rgbaConst.c[1] = st->st.rgbaConst.c[2] = c2;
 				st->st.rgbGenType = RGBGEN_CONST;
 			}
@@ -658,7 +757,7 @@ static void PreprocessShader (shader_t *sh)
 	numRenderPasses = 0;
 	tmuLeft = tmuUsed = 0;
 	passStyle = BLEND_UNKNOWN;
-//	LOG_STRING(va("--- PreprocessShader(%s) ---\n", sh->name));
+	LOG_PP(va("--- PreprocessShader(%s) ---\n", sh->name));
 	for (i = 0; i < numTmpStages; i++, st++)
 	{
 		int		blend2;
@@ -691,10 +790,10 @@ static void PreprocessShader (shader_t *sh)
 			default:
 				passStyle = BLEND_INCOMPATIBLE;
 			}
-//			LOG_STRING("-- next pass\n");
+			LOG_PP("-- next pass\n");
 		}
-//		LOG_STRING(va("  tmu[%d:%d] = \"%s\" (rgba: %s %s %8X)\n", i, tmuUsed, st[0].st.mapImage[0]->name,
-//			st[0].constRGBA ? "const" : "var", st[0].identityRGBA ? "ident" : "--", st[0].st.rgbaConst.rgba));
+		LOG_PP(va("  tmu[%d:%d] = \"%s\" (rgba: %s %s %8X)\n", i, tmuUsed, st[0].st.mapImage[0]->name,
+			st[0].constRGBA ? "const" : "var", st[0].identityRGBA ? "ident" : "--", st[0].st.rgbaConst.rgba));
 
 		st[0].tmu = tmuUsed++;
 		tmuLeft--;
@@ -725,41 +824,97 @@ static void PreprocessShader (shader_t *sh)
 			// pure multitexture can emulate only 2 blendmodes: "src*dst" and "src+dst" (when texenv_add)
 			if (blend2 == (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO) && passStyle & BLEND_MULTIPLICATIVE)
 			{
-//				LOG_STRING(va("  MT(MUL): with \"%s\"\n", st[1].st.mapImage[0]->name));
+				LOG_PP(va("  MT(MUL): with \"%s\"\n", st[1].st.mapImage[0]->name));
 				st[1].texEnv = TEXENV_MODULATE;
 				pass->numStages++;
 				continue;
 			}
 
-			if (GL_SUPPORT(QGL_EXT_TEXTURE_ENV_ADD|QGL_ARB_TEXTURE_ENV_ADD) &&
+			if (GL_SUPPORT(QGL_EXT_TEXTURE_ENV_ADD|QGL_ARB_TEXTURE_ENV_ADD|QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE) &&
 				blend2 == (GLSTATE_SRC_ONE|GLSTATE_DST_ONE) && passStyle & BLEND_ADDITIVE)
 			{
-//				LOG_STRING(va("  MT(ADD): with \"%s\"\n", st[1].st.mapImage[0]->name));
-				st[1].texEnv = TEXENV_ADD;
+				LOG_PP(va("  MT(ADD): with \"%s\"\n", st[1].st.mapImage[0]->name));
+				st[1].texEnv = (GL_SUPPORT(QGL_EXT_TEXTURE_ENV_ADD|QGL_ARB_TEXTURE_ENV_ADD))
+					? TEXENV_ADD : TEXENV_C_ADD | TEXENV_0PREV_1TEX;
 				pass->numStages++;
 				continue;
 			}
 
-			if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE) && blend2 == (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR)
+			if (GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE)
+				&& blend2 == (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR)
 				&& passStyle & BLEND_MULTIPLICATIVE)
 			{
-//				LOG_STRING(va("  MT(MUL2): with \"%s\"\n", st[1].st.mapImage[0]->name));
-				st[1].texEnv = TEXENV_MODULATE|TEXENV_MUL2;
+				LOG_PP(va("  MT(MUL2): with \"%s\"\n", st[1].st.mapImage[0]->name));
+				st[1].texEnv = TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX;
 				pass->numStages++;
 				continue;
 			}
 		}
-		//!! texenv_combine4 should be here
 
+		if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4) && st[1].constRGBA && (tmuUsed == 1 || st[0].constRGBA) &&
+			(st[1].identityRGBA || (blend2 & GLSTATE_SRCMASK) == GLSTATE_SRC_ONE))	// unable to multiply 3 sources ...
+		{
+			unsigned env, env1, env2, b1, b2;
+			qboolean combine;
+			static unsigned blendToEnv[] = {	// this table is corresponding to GLSTATE_[SRC|DST]_XXX
+				0,
+				TEXENV_ZERO, TEXENV_ONE,
+				TEXENV_TEXTURE, TEXENV_ONE_MINUS_TEXTURE,
+				TEXENV_TEXALPHA, TEXENV_ONE_MINUS_TEXALPHA,
+				TEXENV_PREVIOUS, TEXENV_ONE_MINUS_PREVIOUS,
+				TEXENV_PREVALPHA, TEXENV_ONE_MINUS_PREVALPHA,
+				0								// SRC_ALPHASATURATE - cannot be multitextured
+			};
+
+			combine = true;
+
+			// check for valid blend mode
+			b1 = blend2 & GLSTATE_SRCMASK;
+			b2 = blend2 & GLSTATE_DSTMASK;
+			if (passStyle == BLEND_ADDITIVE)
+			{
+				if (b1 != GLSTATE_SRC_ONE && b1 != GLSTATE_SRC_SRCALPHA && b1 != GLSTATE_SRC_ONEMINUSSRCALPHA)
+					combine = false;
+				if (b2 != GLSTATE_DST_ONE && b2 != GLSTATE_DST_DSTALPHA && b2 != GLSTATE_DST_ONEMINUSDSTALPHA)
+					combine = false;
+			}
+			if (combine && passStyle == BLEND_MULTIPLICATIVE)
+			{
+				if (b1 != GLSTATE_SRC_ZERO && b2 != GLSTATE_DST_ZERO && blend2 != (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR))
+					combine = false;
+			}
+			// convert blendmode to TexEnv
+			env1 = blendToEnv[(blend2 & GLSTATE_SRCMASK) >> GLSTATE_SRCSHIFT];
+			env2 = blendToEnv[(blend2 & GLSTATE_DSTMASK) >> GLSTATE_DSTSHIFT];
+			if (!(env1 && env2)) combine = false;
+
+			env = TEXENV_C4_ADD | (TEXENV_TEXTURE<<TEXENV_SRC1_SHIFT) | (TEXENV_PREVIOUS<<TEXENV_SRC3_SHIFT);
+			if (st[1].identityRGBA || env1 != TEXENV_ONE)
+				env |= env1 << TEXENV_SRC0_SHIFT;
+			else
+				env |= (TEXENV_CONSTANT << TEXENV_SRC0_SHIFT) | TEXENV_ENVCOLOR;
+			env |= env2 << TEXENV_SRC2_SHIFT;
+
+			// combine stages ...
+			if (combine)
+			{
+				st[1].texEnv = env;
+				LOG_PP(va("  MT(NV): %X -> %08X\n", blend2, env));
+				pass->numStages++;
+				continue;
+			}
+		}
+
+		// QGL_EXT_TEXTURE_ENV_COMBINE unsupported here
 		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE) && blend2 == (GLSTATE_SRC_ONE|GLSTATE_DST_ONE)
 			&& passStyle & BLEND_ADDITIVE && st[0].constRGBA && st[1].constRGBA && tmuUsed == 1)
 		{
 			int		k;
 
-//			LOG_STRING(va("  MT(INTERP*2): with \"%s\"\n", st[1].st.mapImage[0]->name));
-			st[1].texEnv = TEXENV_INTERP|TEXENV_MUL2|TEXENV_COLOR;
+			LOG_PP(va("  MT(INTERP*2): with \"%s\"\n", st[1].st.mapImage[0]->name));
+			st[1].texEnv = TEXENV_C_INTERP | TEXENV_MUL2 | TEXENV_ENVCOLOR | TEXENV_0PREV_1TEX | (TEXENV_CONSTANT<<TEXENV_SRC2_SHIFT);
 			// set RGBA for both stages
-//			LOG_STRING(va("  (old rgba: %X %X", st[0].st.rgbaConst.rgba, st[1].st.rgbaConst.rgba));
+			LOG_PP(va("  (old rgba: %X %X", st[0].st.rgbaConst.rgba, st[1].st.rgbaConst.rgba));
 			for (k = 0; k < 4; k++)
 			{
 				int		k2;
@@ -768,7 +923,7 @@ static void PreprocessShader (shader_t *sh)
 				st[0].st.rgbaConst.c[k] = st[0].st.rgbaConst.c[k] * 255 / (255*2 - k2);
 				st[1].st.rgbaConst.c[k] = 255 - k2 / 2;
 			}
-//			LOG_STRING(va(" new rgba: %X %X)\n",  st[0].st.rgbaConst.rgba, st[1].st.rgbaConst.rgba));
+			LOG_PP(va(" new rgba: %X %X)\n",  st[0].st.rgbaConst.rgba, st[1].st.rgbaConst.rgba));
 			pass->numStages++;
 			continue;
 		}
@@ -776,8 +931,9 @@ static void PreprocessShader (shader_t *sh)
 		// not combined - begin new pass
 		tmuLeft = 0;
 	}
-//	LOG_STRING("-----------------\n");
+	LOG_PP("-----------------\n");
 }
+#undef LOG_PP
 
 
 //?? remove function
@@ -879,6 +1035,14 @@ static void StageIterator (void)
 
 		GL_State (pass->glState);
 		GL_Unlock ();
+
+		//!! don't works
+		if (i == numRenderPasses - 1 && !(ap.flags & RDF_NOWORLDMODEL)
+			&& currentShader->type == SHADERTYPE_NORMAL && !gl_state.is2dMode)
+			GL_EnableFog (true);
+		else if (Cvar_VariableInt("test"))//??
+			GL_EnableFog (false);
+
 		DrawArrays (indexesArray, numIndexes);
 	}
 
@@ -1270,11 +1434,12 @@ static void DrawSkyBox (void)
 					gl_config.identityLightValue_f,
 					gl_config.identityLightValue_f); // avoid overbright
 	else
-		qglColor3f (0, 0, 0);	// bad sky -- make it black (almost as gl_fastsky)
+//		qglColor3f (0, 0, 0);	// bad sky -- make it black (almost as gl_fastsky)
+		qglColor3fv (gl_fogColor);
 
 	qglPushMatrix ();
 	if (gl_showsky->integer)
-		GL_State (GLSTATE_DEPTHWRITE|GLSTATE_NODEPTHTEST);
+		GL_State (GLSTATE_DEPTHWRITE);	// if we will add "NODEPTHTEST" - DEPTHWITE will no effect
 	else
 		GL_State (GLSTATE_NODEPTHTEST);
 	// change modelview matrix
@@ -1288,6 +1453,7 @@ static void DrawSkyBox (void)
 	}
 
 	GL_SetMultitexture (1);
+	GL_TexEnv (TEXENV_MODULATE);
 	qglTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord[0]);
 	qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
 
@@ -1569,7 +1735,7 @@ static void FlashColor (void)
 {
 	int		i;
 
-	i = (int)(ap.time / 3 * TABLE_SIZE);
+	i = Q_ftol(ap.time / 3 * TABLE_SIZE);
 	qglColor3f (sinTable[i & TABLE_MASK] / 2 + 0.5,
 				sinTable[i + 100 & TABLE_MASK] / 2 + 0.5,
 				sinTable[600 - i & TABLE_MASK] / 2 + 0.5);
@@ -1581,9 +1747,7 @@ static void FlashColor (void)
 static void DrawBBoxes (void)
 {
 	int		i;
-	byte	entsVisible[MAX_GLENTITIES];
 	refEntity_t *ent;
-	surfaceInfo_t **si;
 
 	// common GL setup
 #ifdef BBOX_WORLD
@@ -1598,23 +1762,12 @@ static void DrawBBoxes (void)
 		qglColor3f (0.6, 0.6, 0.2);
 	GL_State (0);
 
-	/*----- check entity visibility -------*/
-	memset (entsVisible, 0, gl_numEntities);
-	for (i = 0, si = sortedSurfaces; i < ap.numSurfaces; i++, si++)
-	{
-		int		entNum;
-
-		entNum = ((*si)->sort >> ENTITYNUM_SHIFT) & ENTITYNUM_MASK;
-		if (entNum < gl_numEntities)
-			entsVisible[entNum] = true;
-	}
-
 	/*-------- draw bounding boxes --------*/
 	for (i = 0, ent = gl_entities; i < gl_numEntities; i++, ent++)
 	{
 		model_t		*m;
 		float		*mins, *maxs;
-		int		j;
+		int			j;
 		bufVertex_t v[8];
 		static int inds[24] = {
 			0,1, 1,3, 3,2, 2,0,	// rect1
@@ -1622,8 +1775,8 @@ static void DrawBBoxes (void)
 			0,4, 1,5, 3,7, 2,6	// connectors
 		};
 
-		if (!entsVisible[i])
-			continue;	// entity is culled or from different scene
+		if (!ent->visible)
+			continue;			// entity is culled or from different scene
 
 		if (!(m = ent->model)) continue;	// no bbox info
 
@@ -1659,9 +1812,16 @@ static void DrawBBoxes (void)
 
 #ifdef BBOX_WORLD
 			// project point to a world coordinate system (org + x*axis[0] + y*axis[1] + z*axis[2])
-			VectorMA (ent->origin, x, ent->axis[0], tmp);
-			VectorMA (tmp,		   y, ent->axis[1], tmp);
-			VectorMA (tmp,		   z, ent->axis[2], v[j].xyz);
+			if (!ent->worldMatrix)
+			{
+				VectorMA (ent->origin, x, ent->axis[0], tmp);
+				VectorMA (tmp,		   y, ent->axis[1], tmp);
+				VectorMA (tmp,		   z, ent->axis[2], v[j].xyz);
+			}
+			else
+			{
+				v[j].xyz[0] = x; v[j].xyz[1] = y; v[j].xyz[2] = z;
+			}
 #else
 			v[j].xyz[0] = x; v[j].xyz[1] = y; v[j].xyz[2] = z;
 #endif
@@ -1671,6 +1831,13 @@ static void DrawBBoxes (void)
 #ifndef BBOX_WORLD
 		qglLoadMatrixf (&ent->modelMatrix[0][0]);
 #endif
+		if (gl_showbboxes->integer == 3)
+		{
+			if (!ent->worldMatrix)
+				qglColor3f (0.6, 0.6, 0.2);
+			else
+				qglColor3f (0.2, 0.8, 0.2);
+		}
 		qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
 		qglDrawElements (GL_LINES, 24, GL_UNSIGNED_INT, inds);
 	}
@@ -1840,14 +2007,15 @@ static void DrawParticles (particle_t *p)
 				(p->org[1] - ap.vieworg[1]) * ap.viewaxis[0][1] +
 				(p->org[2] - ap.vieworg[2]) * ap.viewaxis[0][2];		// get Z-coordinate
 		scale *= ap.fov_scale;
+		if (scale < 10)
+			continue;		// too near
 		if (scale < 20.0f)
 			scale = 1;
 		else
 			scale = scale / 500.0f + 1.0f;
 
 		alpha = p->alpha * 255;
-		if (alpha < 0)			alpha = 0;
-		else if (alpha > 255)	alpha = 255;
+		alpha = bound(alpha, 0, 255);
 
 		switch (p->type)
 		{
@@ -1918,8 +2086,11 @@ static void DrawScene (void)
 	gl_speeds.begin3D = Sys_Milliseconds ();
 
 	currentDlightMask = 0;
+	gl_state.inverseCull = false;
 
 	/*------------ draw sky --------------*/
+
+//??	GL_EnableFog (false);
 
 	ClearSkyBox ();
 	numSkySurfs = 0;
@@ -1954,6 +2125,8 @@ static void DrawScene (void)
 	}
 
 	/*-------- draw world/models ---------*/
+
+//??	if (!(ap.flags & RDF_NOWORLDMODEL))	GL_EnableFog (true);
 
 	numFastSurfs = 0;
 	currentShaderNum = currentEntityNum = -1;
@@ -1994,20 +2167,21 @@ static void DrawScene (void)
 		if (entNum != currentEntityNum)
 		{
 			currentEntityNum = entNum;
+			currentEntity = &gl_entities[entNum];
 			if (entNum == ENTITYNUM_WORLD)
 			{
 				//?? set shader.time to ap.time
 				LOG_STRING (va("******** Change entity to WORLD ********\n"));
 				qglLoadMatrixf (&ap.modelMatrix[0][0]);
+				gl_state.inverseCull = false;
 				depthHack = false;
-				currentEntity = NULL;		//?? gl_worldEntity ?
 			}
 			else
 			{
-				currentEntity = &gl_entities[entNum];
 				//?? set shader.time to ap.time - entity.time
 				LOG_STRING (va("******** Change entity to %s ********\n", currentEntity->model->name));
 				qglLoadMatrixf (&currentEntity->modelMatrix[0][0]);
+				gl_state.inverseCull = currentEntity->mirror;
 				depthHack = ((currentEntity->flags & RF_DEPTHHACK) != 0);
 			}
 
@@ -2043,6 +2217,8 @@ static void DrawScene (void)
 
 	/*--------- finilize/debug -----------*/
 	FLUSH();
+
+	GL_EnableFog (false);	//??
 
 	if (currentDepthHack)
 		qglDepthRange (0, 1);
@@ -2248,6 +2424,8 @@ void GL_BackEnd (void)
 
 		case BACKEND_END_FRAME:
 			FlushArrays ();
+			if (gl_screenshotName)
+				GL_PerformScreenshot ();
 			if (strcmp (gl_showImages->string, "0"))
 				GL_ShowImages ();
 

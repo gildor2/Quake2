@@ -184,7 +184,7 @@ typedef struct model_s
 	int			firstmodelsurface, nummodelsurfaces;
 
 	int			numsubmodels;
-	dmodel_t	*submodels;
+	cmodel_t	*submodels;
 
 	int			numplanes;
 	cplane_t	*planes;

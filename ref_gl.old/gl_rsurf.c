@@ -544,7 +544,7 @@ void R_RenderBrushPoly (msurface_t *fa)
 dynamic:
 		if (gl_dynamic->integer)
 		{
-			if (!(fa->texinfo->flags & (SURF_SKY|SURF_TRANS33|SURF_TRANS66|SURF_ALPHA|SURF_WARP)))
+			if (!(fa->texinfo->flags & (SURF_SKY|SURF_TRANS33|SURF_TRANS66|/*SURF_ALPHA|*/SURF_WARP)))
 			{
 				is_dynamic = true;
 			}
@@ -791,6 +791,30 @@ void R_DrawAlphaSurfaces (void)
 	// so scale it back down
 	intens = gl_state.inverse_intensity;
 
+	if (gl_winrefl->integer && (gl_winrefl->integer - 1) & 1)
+	{
+		// draw reflections on all surfaces
+//		qglColor3f (0.4, 0.4, 0.5);
+//		intens /= 2;
+		qglColor3f (intens,intens,intens);
+		qglBlendFunc (GL_ONE, GL_ONE);
+		for (s = r_alpha_surfaces; s; s = s->texturechain)
+		{
+			f = s->texinfo->flags;
+			if (!(s->flags & SURF_DRAWTURB) &&
+			    !(f & SURF_FLOWING) &&
+			    !(s->texinfo->image->has_alpha) &&
+			    !(f & SURF_ALPHA))
+			    {
+					if ((gl_winrefl->integer - 1) & 2)
+						DrawReflectPoly (s, reflect_img);
+					else
+						DrawReflectPoly3 (s, reflect_img);
+				}
+		}
+		qglBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+
 	for (s = r_alpha_surfaces; s; s = s->texturechain)
 	{
 		float	alpha;
@@ -810,25 +834,30 @@ void R_DrawAlphaSurfaces (void)
 		else
 			alpha = 1.0;
 
-		qglColor4f (intens,intens,intens,alpha);
-
-		if (s->flags & SURF_DRAWTURB)
-			EmitWaterPolys (s);
-		else if(f & SURF_FLOWING)					// PGM	9/16/98
-			DrawGLFlowingPoly (s);					// PGM
-		else if (f & SURF_ALPHA)
+		if (f & SURF_ALPHA)
 		{
+			qglColor4f (intens, intens, intens, 1);
+//			qglEnable (GL_BLEND);
 			qglEnable (GL_ALPHA_TEST);
+//			qglBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			DrawGLPoly (s->polys);
 			qglDisable (GL_ALPHA_TEST);
 		}
 		else
-			DrawGLPoly (s->polys);
+		{
+			qglColor4f (intens,intens,intens,alpha);
+			if (s->flags & SURF_DRAWTURB)
+				EmitWaterPolys (s);
+			else if(f & SURF_FLOWING)					// PGM	9/16/98
+				DrawGLFlowingPoly (s);					// PGM
+			else
+				DrawGLPoly (s->polys);
+		}
 
 		if (gl_finish->integer == 2) qglFinish ();
 	}
 
-	if (gl_winrefl->integer)
+	if (gl_winrefl->integer && !((gl_winrefl->integer - 1) & 1))
 	{
 		// draw reflections on all surfaces
 //		qglColor3f (0.4, 0.4, 0.5);
@@ -845,7 +874,7 @@ void R_DrawAlphaSurfaces (void)
 			    !(s->texinfo->image->has_alpha) &&
 			    !(f & SURF_ALPHA))
 			    {
-					if (gl_winrefl->integer != 2)
+					if ((gl_winrefl->integer - 1) & 2)
 						DrawReflectPoly (s, reflect_img);
 					else
 						DrawReflectPoly3 (s, reflect_img);
@@ -962,7 +991,7 @@ static void GL_RenderLightmappedPoly( msurface_t *surf )
 dynamic:
 		if ( gl_dynamic->integer )
 		{
-			if ( !(surf->texinfo->flags & (SURF_SKY|SURF_TRANS33|SURF_TRANS66|SURF_ALPHA|SURF_WARP ) ) )
+			if ( !(surf->texinfo->flags & (SURF_SKY|SURF_TRANS33|SURF_TRANS66|/*SURF_ALPHA|*/SURF_WARP ) ) )
 			{
 				is_dynamic = true;
 			}
@@ -1144,6 +1173,12 @@ void R_DrawInlineBModel (void)
 		qglColor4f (1,1,1,0.25);
 		GL_TexEnv( GL_MODULATE );
 	}
+	else if (currentmodel->flags & CMODEL_ALPHA)
+	{
+//		qglEnable (GL_ALPHA_TEST);
+		qglEnable (GL_BLEND);
+		qglColor4f (1, 1, 1, 1);
+	}
 
 	//
 	// draw texture
@@ -1182,11 +1217,17 @@ void R_DrawInlineBModel (void)
 		if (!GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
 			R_BlendLightmaps ();
 	}
-	else
+
+	if ( currententity->flags & RF_TRANSLUCENT )
 	{
 		qglDisable (GL_BLEND);
 		qglColor4f (1,1,1,1);
 		GL_TexEnv( GL_REPLACE );
+	}
+	else if (currentmodel->flags & CMODEL_ALPHA)
+	{
+//		qglDisable (GL_ALPHA_TEST);
+		qglDisable (GL_BLEND);
 	}
 }
 

@@ -437,8 +437,7 @@ SCR_DrawNet
 */
 void SCR_DrawNet (void)
 {
-	if (cls.netchan.outgoing_sequence - cls.netchan.incoming_acknowledged
-		< CMD_BACKUP-1)
+	if (cls.netchan.outgoing_sequence - cls.netchan.incoming_acknowledged < CMD_BACKUP-1)
 		return;
 
 	re_DrawPic (scr_vrect.x+64, scr_vrect.y, "net");
@@ -475,28 +474,28 @@ Scroll it up or down
 void SCR_RunConsole (void)
 {
 	// decide on the height of the console
-	if (re.flags & REF_CONSOLE_ONLY)
+	if (*re.flags & REF_CONSOLE_ONLY)
 	{
 		cls.key_dest = key_console;
 		scr_conlines = 1.0;
 		return;
 	}
 
-	if (cls.key_dest == key_console)
+	if (cls.key_dest == key_console || cls.keep_console)
 		scr_conlines = 0.5;		// half screen
 	else
-		scr_conlines = 0;				// none visible
+		scr_conlines = 0;		// none visible
 
 	if (scr_conlines < scr_con_current)
 	{
-		scr_con_current -= scr_conspeed->value*cls.frametime;
+		scr_con_current -= scr_conspeed->value * cls.frametime;
 		if (scr_conlines > scr_con_current)
 			scr_con_current = scr_conlines;
 
 	}
 	else if (scr_conlines > scr_con_current)
 	{
-		scr_con_current += scr_conspeed->value*cls.frametime;
+		scr_con_current += scr_conspeed->value * cls.frametime;
 		if (scr_conlines < scr_con_current)
 			scr_con_current = scr_conlines;
 	}
@@ -512,7 +511,7 @@ void SCR_DrawConsole (void)
 {
 	Con_CheckResize ();
 
-	if (re.flags & REF_CONSOLE_ONLY || cls.state == ca_disconnected || cls.state == ca_connecting)
+	if (*re.flags & REF_CONSOLE_ONLY || cls.state == ca_disconnected || cls.state == ca_connecting)
 	{	// forced full screen console
 		Con_DrawConsole (1.0);
 		return;
@@ -532,34 +531,33 @@ void SCR_DrawConsole (void)
 	else
 	{
 		if (cls.key_dest == key_game || cls.key_dest == key_message)
-			Con_DrawNotify ();	// only draw notify in game
+			Con_DrawNotify (true);	// only draw notify in game
 	}
 }
 
 //=============================================================================
 
+static int loadingScrEnabled;
+
 void SCR_SetLevelshot (char *name)
 {
-	char	mapname[MAX_OSPATH], *tmp;
 	static char levelshot[MAX_OSPATH];
 	int		width;
 
-	Q_CopyFilename (mapname, name, sizeof(levelshot) - 1);
-	tmp = strchr (mapname, '.');
-	if (tmp) tmp[0] = 0;
-	tmp = strrchr (mapname, '/');
-	if (!tmp)
-		tmp = mapname;
-	else
-		tmp++;	// skip '/'
-	Com_sprintf (levelshot, sizeof(levelshot), "/levelshots/%s.pcx", tmp);
+	if (scr_map_levelshot)
+		return;			// already set
+
+	strcpy (levelshot, name);
 	re.DrawGetPicSize (&width, NULL, levelshot);
 	if (width > 0)
 	{
 		scr_map_levelshot = levelshot;
 		scr_draw_loading = 1;
 		Com_DPrintf ("SetLevelshot: %s\n", levelshot);
+		loadingScrEnabled = 20;		// allow only 20 frames with "ca_disconnected" state
 	}
+	else
+		scr_map_levelshot = NULL;
 }
 
 
@@ -568,6 +566,8 @@ void SCR_SetLevelshot (char *name)
 SCR_DrawLoading
 ==============
 */
+
+
 void SCR_DrawLoading (void)
 {
 	int		w, h;
@@ -575,22 +575,29 @@ void SCR_DrawLoading (void)
 	if (!scr_draw_loading)
 		return;
 
-	if (cls.state == ca_active || cls.key_dest == key_menu)
+	if (cls.state == ca_disconnected || cls.state == ca_active || cls.key_dest == key_menu)
 	{
-		scr_draw_loading = 0;
-		return;
+//Com_Printf("draw(disc): %d, %d\n", scr_draw_loading, loadingScrEnabled);//!!
+		if (!loadingScrEnabled)
+		{
+			scr_draw_loading = 0;
+			return;
+		}
+		else
+			loadingScrEnabled--;
 	}
+//Com_Printf("draw(conn): %d %d %d\n", cls.state == ca_disconnected, cls.state == ca_active, cls.key_dest == key_menu);//!!
 
 	if (scr_map_levelshot)
 	{
 		re.DrawStretchPic (0, 0, viddef.width, viddef.height, scr_map_levelshot);
 		//!! DrawLevelshotDetail for GL
-		Con_DrawNotify ();
+		Con_DrawNotify (false);
 	}
 	else //if (scr_draw_loading == 2)
 	{
 		re.DrawGetPicSize (&w, &h, "loading");
-		re_DrawPic ((viddef.width-w)/2, (viddef.height-h)/2, "loading");
+		re_DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading");
 	}
 }
 
@@ -619,6 +626,7 @@ void SCR_BeginLoadingPlaque (void)
 	SCR_UpdateScreen ();
 	cls.disable_screen = 0;//Sys_Milliseconds ();
 	cls.disable_servercount = cl.servercount;
+	loadingScrEnabled = 20;		// allow only 20 frames with "ca_disconnected" state
 }
 
 /*
@@ -629,6 +637,7 @@ SCR_EndLoadingPlaque
 void SCR_EndLoadingPlaque (void)
 {
 	scr_draw_loading = 0;
+	loadingScrEnabled = 0;
 	scr_map_levelshot = NULL;
 	cls.disable_screen = 0;
 	Con_ClearNotify ();
@@ -945,7 +954,7 @@ void SCR_TouchPics (void)
 {
 	int		i, j, ch_num;
 
-	if (re.flags & REF_CONSOLE_ONLY)
+	if (*re.flags & REF_CONSOLE_ONLY)
 		return;
 
 	for (i=0 ; i<2 ; i++)

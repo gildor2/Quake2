@@ -728,7 +728,7 @@ void S_StartSound(vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float f
 	playsound_t	*ps, *sort;
 	int			start;
 
-	if (re.flags & REF_CONSOLE_ONLY)
+	if (*re.flags & REF_CONSOLE_ONLY)
 		return;
 
 	if (!sound_started)
@@ -866,7 +866,7 @@ void S_StopAllSounds(void)
 	s_freeplays.next = s_freeplays.prev = &s_freeplays;
 	s_pendingplays.next = s_pendingplays.prev = &s_pendingplays;
 
-	for (i=0 ; i<MAX_PLAYSOUNDS ; i++)
+	for (i = 0; i < MAX_PLAYSOUNDS; i++)
 	{
 		s_playsounds[i].prev = &s_freeplays;
 		s_playsounds[i].next = s_freeplays.next;
@@ -1085,7 +1085,7 @@ void S_Update(vec3_t origin, vec3_t forward, vec3_t right, vec3_t up)
 	channel_t	*ch;
 	channel_t	*combine;
 
-	if (re.flags & REF_CONSOLE_ONLY)
+	if (*re.flags & REF_CONSOLE_ONLY)
 		return;
 
 	if (!sound_started) return;

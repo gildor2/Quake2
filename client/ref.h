@@ -137,10 +137,19 @@ typedef struct
 
 
 
-#define	API_VERSION		4
+#define	API_VERSION			4
 
+// renderer flasg
 #define REF_CONSOLE_ONLY	1		// if set -- no graphics output
 #define REF_NEW_FX			2		// if set, renderer supports sprite fx
+
+// screenshot flags
+#define SHOT_SMALL			1		// stretch screenshot to reduce its dimensions (levelshots, savegames etc.)
+#define SHOT_NO_2D			2		// perform screenshot before switching to 2D mode
+#define SHOT_WAIT_3D		4		// perform screenshot with first available frame with 3D output
+#define SHOT_SILENT			8		// do not write "wrote shotxxx.jpg" to console
+#define SHOT_JPEG			0x8000	// can be unsupported
+
 
 /*-------- These are the functions exported by the refresh module --------*/
 typedef struct
@@ -150,7 +159,7 @@ typedef struct
 	// if api_version is different, the dll cannot be used
 	int		api_version;
 	// if console_only is true, no graphical information will be displayed and no mouse input performed
-	int		flags;
+	int		*flags;
 
 	// called when the library is loaded
 	qboolean (*Init) (void);
@@ -179,6 +188,7 @@ typedef struct
 	void	(*EndRegistration) (void);
 
 	void	(*RenderFrame) (refdef_t *fd);
+	void	(*Screenshot) (int flags, char *name);
 
 	void	(*DrawGetPicSize) (int *w, int *h, char *name);	// will return (0, 0) if not found
 	void	(*DrawPicColor) (int x, int y, char *pic, int color);
@@ -186,7 +196,7 @@ typedef struct
 	void	(*DrawCharColor) (int x, int y, int c, int color);
 	void	(*DrawTileClear) (int x, int y, int w, int h, char *name);
 	void	(*DrawFill) (int x, int y, int w, int h, int c);
-	void	(*DrawFadeScreen) (void);
+	void	(*DrawFill2) (int x, int y, int w, int h, float r, float g, float b, float a);
 
 	// Draw images for cinematic rendering (which can have a different palette). Note that calls
 	void	(*DrawStretchRaw) (int x, int y, int w, int h, int cols, int rows, byte *data);

@@ -103,18 +103,14 @@ void CL_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, 
 		{	// special value for bmodel
 			cmodel_t *cmodel;
 			vec3_t	center, tmp;
-			vec3_t	center2;//!! remove
 			float	entPos, dist2, dist0;
 
 			cmodel = cl.model_clip[ent->modelindex];
 			if (!cmodel) continue;
 
-if (Cvar_VariableInt("test")) {//!!
-
 			// get model center
 			VectorAdd (cmodel->mins, cmodel->maxs, center);
 			VectorMA (ent->origin, 0.5f, center, center);
-			VectorCopy (center, center2);//!! remove
 			VectorSubtract (center, start, center);
 
 			// collision detection: line vs sphere
@@ -126,14 +122,6 @@ if (Cvar_VariableInt("test")) {//!!
 			dist2 = DotProduct (tmp, tmp);
 			dist0 = cmodel->radius + traceWidth;
 			if (dist2 >= dist0 * dist0) continue;
-/*			re.DrawTextLeft(va("ent%d {%g,%g,%g:%g}  tr{%g,%g,%g}-{%g,%g,%g}:%g  pos:%g",
-				i, center2[0], center2[1], center2[2], cmodel->radius,
-				start[0],start[1],start[2],end[0],end[1],end[2],traceWidth,
-				entPos
-				),
-				1,1,0.5);//!!
-*/
-};//!!
 
 			headnode = cmodel->headnode;
 			angles = ent->angles;

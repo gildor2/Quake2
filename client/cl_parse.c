@@ -66,21 +66,57 @@ Returns true if the file exists, otherwise it attempts
 to start a download from the server.
 ===============
 */
+
+#define MAX_CHECK_CACHE		32768
+#define MAX_CHECK_NAMES		512
+static char *checkedNames[MAX_CHECK_NAMES], checkNameCache[MAX_CHECK_CACHE];
+static int numCheckedNames, nextCheckCachePos;
+
+
 qboolean	CL_CheckOrDownloadFile (char *filename)
 {
 	FILE	*fp;
 	char	name[MAX_OSPATH], name2[MAX_OSPATH], *ext;
+	int		i;
 
-	if (strstr (filename, ".."))
+	Q_CopyFilename (name, filename, sizeof(name));
+	if (strstr (name, ".."))
 	{
 		Com_Printf ("Refusing to download a path with ..\n");
 		return true;
 	}
 
-	Q_CopyFilename (name, filename, sizeof(name));
-	// check all image format for .PCX and .WAL extension
 	strcpy (name2, name);
 	ext = strrchr (name2, '.');
+
+	// checking map - this should be a first precache request, so - clear name cache
+	if (ext && !strcmp (ext, ".bsp"))
+		numCheckedNames = nextCheckCachePos = 0;
+	// prevent from checking the same file twice
+	for (i = 0; i < numCheckedNames; i++)
+		if (!strcmp (name, checkedNames[i]))
+		{
+//			Com_Printf("^1chk: %s\n", name);//!!
+			return true;	// already checked, return "found" even if not found
+		}
+	// register new name
+	if (numCheckedNames < MAX_CHECK_NAMES)
+	{
+		int		len;
+
+		len = strlen (name);
+		if (len + nextCheckCachePos + 1 < MAX_CHECK_CACHE)
+		{
+			char	*s;
+
+//			Com_Printf("^2new: %s\n", name);//!!
+			s = checkedNames[numCheckedNames++] = &checkNameCache[nextCheckCachePos];
+			strcpy (s, name);
+			nextCheckCachePos += len + 1;
+		}
+	}
+
+	// check all image format for .PCX and .WAL extension
 	if (ext && (!strcmp (ext, ".pcx") || !strcmp (ext, ".wal")))
 	{
 		*ext = 0; // strip extension
@@ -555,7 +591,7 @@ void CL_ParseConfigString (void)
 	}
 	else if (i >= CS_SOUNDS && i < CS_SOUNDS+MAX_MODELS)
 	{
-		if (re.flags & REF_CONSOLE_ONLY)
+		if (*re.flags & REF_CONSOLE_ONLY)
 			return;
 
 		if (cl.refresh_prepped)

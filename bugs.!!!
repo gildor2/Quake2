@@ -1,3 +1,8 @@
+- bugs with deathmatch mode
+  - map "dm_dukecity_beta":
+    - disco: neon lamp text should not disappear
+  - g_misc.c::SP_light() -- disabled lights with style>=32
+
 ! cannot load map "dog..." in soft: "bad surface extents" (but GL can ...)
 ! map "toomuchbloodv2": sound "dmg/TISM.wav" loaded twice (upper- and lowercase)
 ! REF_SOFT: crush
@@ -11,7 +16,6 @@
 - ref_soft/r_poly.c "R_PolygonScanLeft(Right)Edge ()" should be rewritten
   ("ground3": early - crash, now - lost polygons ...)
 - ref_soft hangs on map "japan" (from Kingpin)
-- ref_gl: SURF_ALPHA is buggy in 1 or 2 places in map "rc3"
 
 ? name conflict REF_HARD_LINKED Win32/irix
 

@@ -147,6 +147,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 		switch (bsp->type)
 		{
 		case map_q2:
+		case map_kp:
 			Mod_LoadBrushModel (mod, bsp);
 			break;
 //		case map_hl:
@@ -401,7 +402,7 @@ void Mod_LoadVertexes (dvertex_t *data, int size)
 Mod_LoadSubmodels
 =================
 */
-void Mod_LoadSubmodels (dmodel_t *data, int size)
+void Mod_LoadSubmodels (cmodel_t *data, int size)
 {
 	loadmodel->submodels = data;
 	loadmodel->numsubmodels = size;
@@ -814,7 +815,7 @@ Mod_LoadBrushModel
 void Mod_LoadBrushModel (model_t *mod, bspfile_t *bsp)
 {
 	int			i;
-	dmodel_t 	*bm;
+	cmodel_t 	*bm;
 
 	loadmodel->type = mod_brush;
 	if (loadmodel != mod_known)

@@ -25,7 +25,7 @@ static int	m_main_cursor;
 
 #define NUM_CURSOR_FRAMES 15
 
-#define MENU_CHECK	if (re.flags & REF_CONSOLE_ONLY) return;
+#define MENU_CHECK	if (*re.flags & REF_CONSOLE_ONLY) return;
 
 static char *menu_in_sound		= "misc/menu1.wav";
 static char *menu_move_sound	= "misc/menu2.wav";
@@ -706,7 +706,7 @@ static void Keys_MenuInit (void)
 	// build menu
 	y = 0;
 
-	s_keys_menu.x = viddef.width * 0.50;
+	s_keys_menu.x = viddef.width / 2;
 	s_keys_menu.nitems = 0;
 	s_keys_menu.cursordraw = KeyCursorDrawFunc;
 
@@ -763,7 +763,7 @@ static const char *Keys_MenuKey (int key)
 		KeyBindingFunc (item);
 		return menu_in_sound;
 	case K_BACKSPACE:		// delete bindings
-	case K_DEL:				// delete bindings
+	case K_DEL:
 	case K_KP_DEL:
 		M_UnbindCommand (bindnames[item->generic.localdata[0]][0]);
 		return menu_out_sound;
@@ -1404,8 +1404,8 @@ static void LoadGame_MenuInit( void )
 		s_loadgame_actions[i].generic.callback		= LoadGameCallback;
 
 		s_loadgame_actions[i].generic.x = 0;
-		s_loadgame_actions[i].generic.y = ( i ) * 10;
-		if (i>0)	// separate from autosave
+		s_loadgame_actions[i].generic.y = i * 10;
+		if (i > 0)	// separate from autosave
 			s_loadgame_actions[i].generic.y += 10;
 
 		s_loadgame_actions[i].generic.type = MTYPE_ACTION;
@@ -2326,32 +2326,22 @@ static menuList_t	s_allow_download_sounds_box;
 
 static void DownloadCallback (void *self)
 {
+	char	*name;
 	menuList_t *f = (menuList_t *) self;
 
 	if (f == &s_allow_download_box)
-	{
-		Cvar_SetInteger ("allow_download", f->curvalue);
-	}
-
+		name = "allow_download";
 	else if (f == &s_allow_download_maps_box)
-	{
-		Cvar_SetInteger ("allow_download_maps", f->curvalue);
-	}
-
+		name = "allow_download_maps";
 	else if (f == &s_allow_download_models_box)
-	{
-		Cvar_SetInteger ("allow_download_models", f->curvalue);
-	}
-
+		name = "allow_download_models";
 	else if (f == &s_allow_download_players_box)
-	{
-		Cvar_SetInteger ("allow_download_players", f->curvalue);
-	}
-
+		name = "allow_download_players";
 	else if (f == &s_allow_download_sounds_box)
-	{
-		Cvar_SetInteger ("allow_download_sounds", f->curvalue);
-	}
+		name = "allow_download_sounds";
+	else
+		return;
+	Cvar_SetInteger (name, f->curvalue);
 }
 
 static void DownloadOptions_MenuInit( void )
@@ -2512,12 +2502,10 @@ static int numPlayerModels;
 static void *pmiChain;
 
 static int rate_tbl[] = {
-	2500, 3200, 5000,
-	10000, 25000, 0
+	2500, 3200, 5000, 10000, 25000, 0
 };
 static const char *rate_names[] = {
-	"28.8 Modem", "33.6 Modem", "Single ISDN",
-	"Dual ISDN/Cable", "T1/LAN", "User defined", NULL
+	"28.8 Modem", "33.6 Modem", "Single ISDN", "Dual ISDN/Cable", "T1/LAN", "User defined", NULL
 };
 
 static void HandednessCallback (void *unused)
@@ -2789,10 +2777,10 @@ static qboolean PlayerConfig_MenuInit (void)
 static void PlayerConfig_MenuDraw (void)
 {
 	extern float CalcFov (float fov_x, float w, float h);
-	refdef_t refdef;
-	entity_t e[2];
+	refdef_t	refdef;
+	entity_t	e[2];
 	playerModelInfo_t *model;
-	basenamed_t *skin;
+	basenamed_t	*skin;
 
 	model = (playerModelInfo_t*)FindNamedStrucByIndex ((basenamed_t*)pmi, s_player_model_box.curvalue);
 	if (!model) return;
@@ -3280,11 +3268,14 @@ void M_Draw (void)
 	// repaint everything next frame
 	SCR_DirtyScreen ();
 
-	// dim everything behind it down
-	if (cl.cinematictime > 0)
-		re.DrawFill (0, 0, viddef.width, viddef.height, 0);
-	else
-		re.DrawFadeScreen ();
+	if (!cls.keep_console)	// do not blend whole screen when small menu painted
+	{
+		// dim everything behind it down
+		if (cl.cinematictime > 0)
+			re.DrawFill (0, 0, viddef.width, viddef.height, 0);
+		else
+			re.DrawFill2 (0, 0, viddef.width, viddef.height, 0, 0, 0, 0.8);
+	}
 
 	m_drawfunc ();
 

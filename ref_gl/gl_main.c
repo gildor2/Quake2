@@ -9,6 +9,7 @@ viewPortal_t	vp;
 
 drawSpeeds_t gl_speeds;
 
+static int ref_flags;
 refImport_t	ri;
 
 
@@ -21,7 +22,7 @@ cvar_t	*gl_mode;
 cvar_t	*gl_bitdepth;
 cvar_t	*gl_driver;
 // GLimp
-cvar_t	*gl_allow_software;
+cvar_t	*gl_allow_software;	//??
 cvar_t	*gl_drawbuffer;
 
 // image-specific
@@ -38,10 +39,15 @@ cvar_t	*gl_textureBits;
 
 // rendering speed/quality settings
 cvar_t	*gl_fastsky;		// do not draw skybox
+cvar_t	*gl_fog;
+cvar_t	*gl_flares;
 cvar_t	*gl_dynamic;		// enable dynamic lightmaps for Q2/HL maps
 cvar_t	*gl_dlightBacks;	// when disabled, do not draw dlights on backfaces
 cvar_t	*gl_vertexLight;	// use glColor() against lightmaps
 cvar_t	*gl_ignoreFastPath;	// do not use GenericStageIterator() when possible
+
+// game settings
+cvar_t	*gl_hand;			// for weapon model
 
 // renderer settings
 cvar_t	*gl_clear;
@@ -109,10 +115,14 @@ CVAR_BEGIN(vars)
 	//!! add gl_depthBits
 
 	CVAR_VAR(gl_fastsky, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_fog, 0, 0),	//?? ARCHIVE? CHEAT?
+	CVAR_VAR(gl_flares, 1, CVAR_ARCHIVE),
 	CVAR_VAR(gl_dynamic, 1, 0),
 	CVAR_VAR(gl_dlightBacks, 1, 0),
 	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gl_ignoreFastPath, 1, 0),						//!! use with VertexArrayRange ONLY !!
+
+	{&gl_hand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE},
 
 	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_clear, 0, 0),
@@ -125,7 +135,9 @@ CVAR_BEGIN(vars)
 	CVAR_NULL(gl_ext_multitexture, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_texture_env_add, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_texture_env_combine, 1, CVAR_ARCHIVE),
+	CVAR_NULL(gl_ext_texture_env_combine_nv, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_compiled_vertex_array, 1, CVAR_ARCHIVE),
+	CVAR_NULL(gl_ext_fog_distance_nv, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_vertex_array_range, 0, CVAR_ARCHIVE),	//?? do not works now
 	CVAR_NULL(gl_ext_compressed_textures, 1, CVAR_ARCHIVE),
 
@@ -161,7 +173,7 @@ CVAR_END
 }
 
 
-qboolean GL_SetMode (void)
+static qboolean GL_SetMode (void)
 {
 	rserr_t err;
 	qboolean fullscreen;
@@ -172,7 +184,11 @@ qboolean GL_SetMode (void)
 	gl_mode->modified = false;
 
 	if ((err = GLimp_SetMode (&vid.width, &vid.height, gl_mode->integer, fullscreen)) == rserr_ok)
+	{
 		gl_config.prevMode = gl_mode->integer;
+		gl_config.prevBPP = gl_bitdepth->integer;
+		gl_config.prevFS = gl_config.fullscreen;
+	}
 	else
 	{
 		if  (err == rserr_invalid_fullscreen)
@@ -186,14 +202,15 @@ qboolean GL_SetMode (void)
 		else if (err == rserr_invalid_mode)
 		{
 			Cvar_SetInteger ("gl_mode", gl_config.prevMode);
+			Cvar_SetInteger ("gl_bitdepth", gl_config.prevBPP);
 			gl_mode->modified = false;
 			Com_WPrintf ("R_SetMode() - invalid mode\n");
 		}
 
 		// try setting it back to something safe
-		if ((err = GLimp_SetMode (&vid.width, &vid.height, gl_config.prevMode, false)) != rserr_ok)
+		if ((err = GLimp_SetMode (&vid.width, &vid.height, gl_config.prevMode, gl_config.prevFS)) != rserr_ok)
 		{
-			Com_WPrintf ("R_SetMode() - could not revert to safe mode\n");
+			Com_WPrintf ("R_SetMode() - could not revert to safe mode\n");	//?? "to previous mode" ? (but, here will be mode "3")
 			return false;
 		}
 	}
@@ -235,21 +252,21 @@ static int GL_Init (void)
 		}
 	}
 
-	// initialize OS-specific parts of OpenGL
-	if (!GLimp_Init ())
-	{
-		QGL_Shutdown ();
-		return -1;
-	}
-
 	// set our "safe" mode
-	gl_config.prevMode = 3;
+	gl_config.prevMode = 3;				//??
 
 	/*----- create the window and set up the context -----*/
 	if (!GL_SetMode ())
 	{
 		QGL_Shutdown ();
         Com_WPrintf ("ref_gl::R_Init() - could not R_SetMode()\n");
+		return -1;
+	}
+
+	// initialize OS-specific parts of OpenGL
+	if (!GLimp_Init ())
+	{
+		QGL_Shutdown ();
 		return -1;
 	}
 
@@ -279,7 +296,8 @@ static int GL_Init (void)
 	}
 	else
 		gl_config.maxActiveTextures = 1;
-	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE) && !GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE))	//!! COMBINE4 too
+	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE) &&
+		!GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|QGL_NV_TEXTURE_ENV_COMBINE4))
 		gl_config.lightmapOverbright = true;
 
 
@@ -336,10 +354,10 @@ static void GL_Shutdown (void)
 	GL_SetMultitexture (0);
 
 	// shut down OS-specific OpenGL stuff like contexts, etc.
-	GLimp_Shutdown();
+	GLimp_Shutdown ();
 
 	// shutdown our QGL subsystem
-	QGL_Shutdown();
+	QGL_Shutdown ();
 }
 
 
@@ -397,6 +415,7 @@ static void GL_BeginFrame (float camera_separation)
 
 	//?? what to do with the camera_separation ?
 
+	gl_state.have3d = false;
 	gl_state.maxUsedShaderIndex = -1;
 
 	if (gl_texturemode->modified)
@@ -633,6 +652,7 @@ static void GL_RenderFrame (refdef_t *fd)
 
 	/*----------- prepare data ------------*/
 
+	gl_state.have3d = true;
 	if (!(fd->rdflags & RDF_NOWORLDMODEL))
 	{
 		byte	*areas, floodArea[MAX_MAP_AREAS/8];
@@ -644,8 +664,8 @@ static void GL_RenderFrame (refdef_t *fd)
 			memset (floodArea, 0xFF, sizeof(floodArea));
 			areas = &floodArea[0];
 		}
-		gl_refdef.areaMaskChanged = memcmp (gl_refdef.areaMask, fd->areabits, MAX_MAP_AREAS/8);
-		memcpy (gl_refdef.areaMask, fd->areabits, MAX_MAP_AREAS/8);
+		gl_refdef.areaMaskChanged = memcmp (gl_refdef.areaMask, fd->areabits, sizeof(gl_refdef.areaMask));
+		memcpy (gl_refdef.areaMask, fd->areabits, sizeof(floodArea));
 	}
 
 	/*------------ rendering -------------*/
@@ -678,6 +698,7 @@ static void GL_RenderFrame (refdef_t *fd)
 	for (i = 0, dl = fd->dlights; i < fd->num_dlights; i++, dl++)
 		GL_AddDlight (dl);
 
+	gl_speeds.flares = gl_speeds.cullFlares = 0;
 	gl_speeds.parts = gl_speeds.cullParts = 0;
 	vp.particles = fd->particles;
 
@@ -709,6 +730,8 @@ static void GL_RenderFrame (refdef_t *fd)
 			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEnts2), 1, 0.5, 0);
 		DrawTextRight (va("particles: %d cull: %d",
 			gl_speeds.parts, gl_speeds.cullParts), 1, 0.5, 0);
+		DrawTextRight (va("flares: %d cull: %d",
+			gl_speeds.flares, gl_speeds.cullFlares), 1, 0.5, 0);
 		DrawTextRight (va("binds: %d uploads: %2d draws: %d",
 			gl_speeds.numBinds, gl_speeds.numUploads, gl_speeds.numIterators), 1, 0.5, 0);
 
@@ -809,12 +832,16 @@ static void DrawFill (int x, int y, int w, int h, int c)
 	GL_DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, gl_config.tbl_8to32[c]);
 }
 
-
-static void FadeScreen (void)
+static void DrawFill2 (int x, int y, int w, int h, float r, float g, float b, float a)
 {
-	GL_DrawStretchPic (gl_identityLightShader, 0, 0, vid.width, vid.height, 0, 0, 0, 0, (224<<24));
-}
+	color_t	c;
 
+	c.c[0] = Q_ftol(r * 255);
+	c.c[1] = Q_ftol(g * 255);
+	c.c[2] = Q_ftol(b * 255);
+	c.c[3] = Q_ftol(a * 255);
+	GL_DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, c.rgba);
+}
 
 static void DrawTileClear (int x, int y, int w, int h, char *name)
 {
@@ -1029,6 +1056,12 @@ static void SetSky (char *name, float rotate, vec3_t axis)
 		if (surf->shader == old) surf->shader = shader;
 }
 
+static void Screenshot (int flags, char *name)
+{
+	gl_screenshotFlags = flags;
+	gl_screenshotName = name;
+}
+
 
 static float GetClientLight (void)
 {
@@ -1060,9 +1093,10 @@ refExport_t GetRefAPI (refImport_t rimp)
 
 	re.struc_size = sizeof(re);
 	re.api_version = API_VERSION;
-	re.flags = REF_NEW_FX;
+	re.flags = &ref_flags;
+	ref_flags = REF_NEW_FX;
 	if (gl_config.consoleOnly)
-		re.flags |= REF_CONSOLE_ONLY;
+		ref_flags |= REF_CONSOLE_ONLY;
 
 	re.Init =			GL_Init;
 	re.Shutdown =		GL_Shutdown;
@@ -1070,6 +1104,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.EndFrame =		GL_EndFrame;
 	re.AppActivate =	GLimp_AppActivate;
 	re.DrawConCharColor = DrawConCharColor;
+	re.Screenshot =		Screenshot;
 
 	re.RenderFrame =	GL_RenderFrame;
 	re.BeginRegistration = BeginRegistration;
@@ -1085,7 +1120,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.DrawCharColor =	DrawCharColor;
 	re.DrawTileClear =	DrawTileClear;
 	re.DrawFill =		DrawFill;
-	re.DrawFadeScreen =	FadeScreen;
+	re.DrawFill2 =		DrawFill2;
 
 	re.DrawStretchRaw =	GL_DrawStretchRaw;
 	re.CinematicSetPalette = GL_SetRawPalette;

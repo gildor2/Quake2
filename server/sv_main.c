@@ -54,6 +54,7 @@ static cvar_t	*sv_reconnect_limit;	// minimum seconds between connect messages
 
 static cvar_t	*sv_extProtocol;
 static cvar_t	*sv_camperSounds;
+//static cvar_t	*sv_fps;
 
 void Master_Shutdown (void);
 
@@ -725,43 +726,6 @@ void SV_PrepWorldFrame (void)
 
 
 /*
-=================
-SV_RunGameFrame
-=================
-*/
-void SV_RunGameFrame (void)
-{
-	if (com_speeds->integer)
-		time_before_game = Sys_Milliseconds ();
-
-	// we always need to bump framenum, even if we
-	// don't run the world, otherwise the delta
-	// compression can get confused when a client
-	// has the "current" frame
-	sv.framenum++;
-	sv.time = sv.framenum*100;
-
-	// don't run if paused
-	if (!sv_paused->integer || maxclients->integer > 1)
-	{
-		ge->RunFrame ();
-
-		// never get more than one tic behind
-		if (sv.time < svs.realtime)
-		{
-			if (sv_showclamp->integer)
-				Com_Printf ("sv highclamp\n");
-			svs.realtime = sv.time;
-		}
-	}
-
-	if (com_speeds->integer)
-		time_after_game = Sys_Milliseconds ();
-
-}
-
-
-/*
 ==================
 SV_PostprocessFrame
 ==================
@@ -949,6 +913,8 @@ SV_Frame
 */
 void SV_Frame (int msec)
 {
+	int		frameTime;
+
 	time_before_game = time_after_game = 0;
 
 	// if server is not active, do nothing
@@ -966,15 +932,17 @@ void SV_Frame (int msec)
 	// get packets from clients
 	SV_ReadPackets ();
 
+	frameTime = 100;	// (sv_fps->integer > 10) ? (1000 / sv_fps->integer) : 100;
+
 	// move autonomous things around if enough time has passed
 	if (!sv_timedemo->integer && svs.realtime < sv.time)
 	{
 		// never let the time get too far off
-		if (sv.time - svs.realtime > 100)
+		if (sv.time - svs.realtime > frameTime)
 		{
 			if (sv_showclamp->integer)
 				Com_Printf ("sv lowclamp\n");
-			svs.realtime = sv.time - 100;
+			svs.realtime = sv.time - frameTime;
 		}
 		NET_Sleep(sv.time - svs.realtime);
 		return;
@@ -987,7 +955,32 @@ void SV_Frame (int msec)
 	SV_GiveMsec ();
 
 	// let everything in the world think and move
-	SV_RunGameFrame ();
+	/*-------- SV_RunGameFrame () ---------------*/
+	// we always need to bump framenum, even if we
+	// don't run the world, otherwise the delta
+	// compression can get confused when a client
+	// has the "current" frame
+	sv.framenum++;
+	sv.time += frameTime;	// = sv.framenum*100; ??
+
+	// don't run if paused
+	if (!sv_paused->integer || maxclients->integer > 1)
+	{
+		if (com_speeds->integer)
+			time_before_game = Sys_Milliseconds ();
+
+		ge->RunFrame ();
+
+		// never get more than one tic behind
+		if (sv.time < svs.realtime)
+		{
+			if (sv_showclamp->integer)
+				Com_Printf ("sv highclamp\n");
+			svs.realtime = sv.time;
+		}
+		if (com_speeds->integer)
+			time_after_game = Sys_Milliseconds ();
+	}
 
 	// if extended protocol used, recalculate footstep sounds, mdx/mdl/md3 frames etc.
 	if (sv_extProtocol->integer)
@@ -1171,7 +1164,8 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(sv_reconnect_limit, 3, CVAR_ARCHIVE),
 
 	CVAR_VAR(sv_extProtocol, 1, CVAR_SERVERINFO|CVAR_LATCH|CVAR_ARCHIVE),
-	CVAR_VAR(sv_camperSounds, 1, CVAR_SERVERINFO|CVAR_ARCHIVE),
+	CVAR_VAR(sv_camperSounds, 1, CVAR_SERVERINFO|CVAR_ARCHIVE)
+//	CVAR_VAR(sv_fps, 20, 0)	// archive/serverinfo ??
 CVAR_END
 
 	SV_InitOperatorCommands	();

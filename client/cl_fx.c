@@ -44,6 +44,26 @@ lightstyle_t cl_lightstyles[MAX_LIGHTSTYLES];
 void CL_ClearLightStyles (void)
 {
 	memset (cl_lightstyles, 0, sizeof(cl_lightstyles));
+
+	// Kingpin light styles
+	// 12 FIRE FLICKER (third variety)
+	CL_SetLightstyle (12, "mmnommomhkmmomnonmmonqnmmo");
+	// 13 FLUORESCENT FLICKER (second variety)
+	CL_SetLightstyle (13, "kmamaamakmmmaakmamakmakmmmma");
+	// 14 FLUORESCENT FLICKER (third variety)
+	CL_SetLightstyle (14, "kmmmakakmmaaamammamkmamakmmmma");
+	// 15 REALISTIC FADE (first variety)
+	CL_SetLightstyle (15, "mmnnoonnmmmmmmmmmnmmmmnonmmmmmmm");
+	// 16 REALISTIC FADE (second variety)
+	CL_SetLightstyle (16, "mmmmnonmmmmnmmmmmnonmmmmmnmmmmmmm");
+	// 17 SLOW STRONG STROBE (out of phase with 9)
+	CL_SetLightstyle (17, "zzzzzzzzaaaaaaaa");
+	// 18 THREE CYCLE STROBE (cycle 1)
+	CL_SetLightstyle (18, "zzzzzzzzaaaaaaaaaaaaaaaa");
+	// 19 THREE CYCLE STROBE (cycle 2)
+	CL_SetLightstyle (19, "aaaaaaaazzzzzzzzaaaaaaaa");
+	// 20 THREE CYCLE STROBE (cycle 3)
+	CL_SetLightstyle (20, "aaaaaaaaaaaaaaaazzzzzzzz");
 }
 
 
@@ -553,7 +573,7 @@ void CL_ParseMuzzleFlash (void)
 	else
 		volume = 1;
 
-	if (re.flags & REF_CONSOLE_ONLY)
+	if (*re.flags & REF_CONSOLE_ONLY)
 		return;
 
 	switch (weapon)
@@ -729,7 +749,7 @@ void CL_ParseMuzzleFlash2 (void)
 	dl->minlight = 32;
 	dl->die = cl.time;	// + 0.1;
 
-	if (re.flags & REF_CONSOLE_ONLY)
+	if (*re.flags & REF_CONSOLE_ONLY)
 		return;
 
 	switch (flash_number)
@@ -2085,7 +2105,7 @@ extern struct sfx_s	*cl_sfx_camper[9];
 
 void CL_EntityEvent (entity_state_t *ent)
 {
-	if (re.flags & REF_CONSOLE_ONLY)
+	if (*re.flags & REF_CONSOLE_ONLY)
 		return;
 
 	if (ent->event >= EV_FOOTSTEP0 && ent->event < EV_FOOTSTEP0 + MATERIAL_COUNT)

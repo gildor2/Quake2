@@ -20,8 +20,7 @@ Comments:
 - implemented environment mapping simulation on transparent objects (can be disabled with "gl_winrefl 0";
   reflection taken from /* "env/<skyname>winrefl.???" or */ "env/defrefl.???")
 - changed appearance of "r_speeds" output
-- support of the Kingpin SURF_ALPHA surface flag (SHOULD IMPLEMENT USAGE OF flags "CONTENTS_ALPHA" and
-  "RF...ALPHA" and more !!)
+- support of the Kingpin SURF_ALPHA surface flag
 - hardware gamma control (can be disabled with "set r_ignorehwgamma 1"); uses "vid_gamma" and "intensity"
   to calculate gamma; changes applied without "vid_restart" (Win32)
 - support for GL_S3_s3tc and GL_ARB_texture_compression (can be disabled with "set gl_ext_compressed_textures 0")
@@ -36,9 +35,6 @@ Comments:
 - "r_lightmap 2" solarizes lightmaps (as in Quake3)
   "r_lightmap 3" inverses saturation of lightmaps on map loading
   (both requires "vid_restart" to activate)
-- "screenshot[JPEG] [silent|levelshot]"
-  "screenshot silent" will create screenshot without echoing on console
-  "screenshot levelshot" will create screenshot 256x256 as "levelshots/<mapname>.tga"
 
 2. REF_SOFT
 ~~~~~~~~~~~
@@ -137,6 +133,7 @@ Console/Menu
   - complete "variable_name " with its value
   - complete "alias" with its name / value
   - complete "bind key" with its binding
+  - when pressing TAB twice (complete same thing twice), will appear popup with variants (if no more than 16 selections)
 - console edit:
   - Home / End - move cursor to the line start/end
   - Crtl-Home / Ctrl-End will rewind console to begin/end of buffer
@@ -178,6 +175,8 @@ Configuration
 - added "players/model.lst": this file contains names of models, which gender should be female
 - added "sound/materials.lst" - contains sound description depended of texture name (almost HalfLife style)
 - surface footstep sounds depended on material (Kingpin, "materials.lst")
+- "screenshot [-silent] [-levelshot] [-no2d] [-jpeg] [<filename>]"
+  "-levelshot" will create screenshot 256x256 as "levelshots/<mapname>.???"
 
 Debugging
 ---------
@@ -204,6 +203,7 @@ Debugging
 - "cl_draw2d 0" removes HUD
 - sound pitch affected by timescale (DirectSound only)
 - added mouse support via DirectInput (activated with "set in_mouse 2", default)
+- third-person view: activated with "cl_3rd_person 1"
 
 6. MISFEATURES
 ~~~~~~~~~~~~~~

@@ -26,6 +26,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 cvar_t	*sw_mipcap;
 cvar_t	*sw_mipscale;
 
+int 	r_screenshotFlags;
+char	*r_screenshotName;
+
 surfcache_t		*d_initial_rover;
 qboolean		d_roverwrapped;
 int				d_minmip;
@@ -613,28 +616,41 @@ void WritePCXfile (char *filename, byte *data, int width, int height,
 
 /*
 ==================
-R_ScreenShot_f
+R_ScreenShot
 ==================
 */
-void R_ScreenShot_f (void)
+void R_ScreenShot (void)
 {
 	int			i;
 	char		name[MAX_OSPATH];
 	FILE		*f;
 	byte		palette[768];
 
-	// create the screenshots directory if it doesn't exist
-	Com_sprintf (name, sizeof(name), "%s/screenshots", FS_Gamedir());
-	Sys_Mkdir (name);
+	if (r_screenshotFlags & (SHOT_SMALL|SHOT_JPEG) &&
+		!(r_screenshotFlags & SHOT_SILENT))
+		Com_WPrintf ("WARNING: unsupported \"small\" and \"jpeg\" flags\n");
 
-	// find a file name to save it to
-	for (i = 0; i < 10000; i++)
-	{	// check for a free filename
-		Com_sprintf (name, sizeof(name), "%s/screenshots/shot%04d.pcx", FS_Gamedir(), i);
-		if (!(f = fopen (name, "rb")))
-			break;	// file doesn't exist
-		fclose (f);
+	if (r_screenshotName[0])
+	{
+		strcpy (name, r_screenshotName);
+		strcat (name, ".pcx");
 	}
+	else
+	{
+		// autogenerate name
+		for (i = 0; i < 10000; i++)
+		{	// check for a free filename
+			Com_sprintf (name, sizeof(name), "%s/screenshots/shot%04d.pcx", FS_Gamedir (), i);
+			if (!(f = fopen (name, "rb")))
+				break;	// file doesn't exist
+			fclose (f);
+		}
+
+	}
+	r_screenshotName = NULL;
+
+	// create the screenshots directory if it doesn't exist
+	FS_CreatePath (name);
 
 	// turn the current 32 bit palette into a 24 bit palette
 	for (i = 0; i < 256; i++)
@@ -648,5 +664,6 @@ void R_ScreenShot_f (void)
 	WritePCXfile (name, vid.buffer, vid.width, vid.height, vid.rowbytes,
 				  palette);
 
-	Com_Printf ("Wrote %s\n", name);
+	if (!(r_screenshotFlags & SHOT_SILENT))
+		Com_Printf ("Wrote %s\n", name);
 }

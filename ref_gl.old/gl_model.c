@@ -276,6 +276,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 		switch (bsp->type)
 		{
 		case map_q2:
+		case map_kp:
 			Mod_LoadBrushModel (mod, bsp);
 			break;
 //		case map_hl:
@@ -472,7 +473,7 @@ void Mod_LoadVertexes (dvertex_t *data, int size)
 RadiusFromBounds
 =================
 */
-float RadiusFromBounds (vec3_t mins, vec3_t maxs)
+/*float RadiusFromBounds (vec3_t mins, vec3_t maxs)
 {
 	int		i;
 	vec3_t	corner;
@@ -484,16 +485,16 @@ float RadiusFromBounds (vec3_t mins, vec3_t maxs)
 
 	return VectorLength (corner);
 }
-
+*/
 
 /*
 =================
 Mod_LoadSubmodels
 =================
 */
-void Mod_LoadSubmodels (dmodel_t *data, int size)
+void Mod_LoadSubmodels (cmodel_t *data, int size)
 {
-	dmodel_t	*in;
+	cmodel_t	*in;
 	mmodel_t	*out;
 	int			i, j;
 
@@ -509,12 +510,13 @@ void Mod_LoadSubmodels (dmodel_t *data, int size)
 		{	// spread the mins / maxs by a pixel
 			out->mins[j] = in->mins[j]; // -1 -- migrated to LoadBspFile()
 			out->maxs[j] = in->maxs[j]; // +1
-			out->origin[j] = in->origin[j];
+//			out->origin[j] = in->origin[j];
 		}
-		out->radius = RadiusFromBounds (out->mins, out->maxs);
+		out->radius = data->radius;
 		out->headnode = in->headnode;
 		out->firstface = in->firstface;
 		out->numfaces = in->numfaces;
+		out->flags = in->flags;
 	}
 }
 
@@ -960,6 +962,7 @@ void Mod_LoadBrushModel (model_t *mod, bspfile_t *bsp)
 		VectorCopy (bm->maxs, starmod->maxs);
 		VectorCopy (bm->mins, starmod->mins);
 		starmod->radius = bm->radius;
+		starmod->flags = bm->flags;
 
 		if (i == 0)
 			*loadmodel = *starmod;

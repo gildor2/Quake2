@@ -89,8 +89,8 @@ void End (void);
 //void FeedbackBuffer (GLsizei size, GLenum type, GLfloat *buffer);
 void Finish (void);
 //void Flush (void);
-//void Fogf (GLenum pname, GLfloat param);
-//void Fogfv (GLenum pname, const GLfloat *params);
+void Fogf (GLenum pname, GLfloat param) ARGS
+void Fogfv (GLenum pname, const GLfloat *params) ARGS
 //void Fogi (GLenum pname, GLint param);
 //void Fogiv (GLenum pname, const GLint *params);
 //void FrontFace (GLenum mode);
@@ -289,7 +289,7 @@ void TexCoord2f (GLfloat s, GLfloat t) ARGS
 //void TexCoord4sv (const GLshort *v);
 void TexCoordPointer (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) ARGS
 void TexEnvf (GLenum target, GLenum pname, GLfloat param) ARGS
-void TexEnvfv (GLenum target, GLenum pname, const GLfloat *params);
+void TexEnvfv (GLenum target, GLenum pname, const GLfloat *params) ARGS
 void TexEnvi (GLenum target, GLenum pname, GLenum param) ARGS	// really, param is GLint, but ...
 //void TexEnviv (GLenum target, GLenum pname, const GLint *params);
 //void TexGend (GLenum coord, GLenum pname, GLdouble param);
@@ -384,13 +384,20 @@ void MultiTexCoord2fARB (GLenum target, GLfloat s, GLfloat t) ARGS	//!! for old 
 #name GL_ARB_texture_env_add
 #cvar gl_ext_texture_env_add
 
-// Cannot use this extension: it limits SOURCE2/OPERAND2 to GL_SRC_ALPHA (we need GL_CONSTANT/GL_SRC_COLOR)
-//#name GL_EXT_texture_env_combine
-//#cvar gl_ext_texture_env_combine
-//#prefer GL_ARB_texture_env_combine
+#name GL_EXT_texture_env_combine
+#cvar gl_ext_texture_env_combine
+#require GL_ARB_multitexture
+#prefer GL_ARB_texture_env_combine
+#prefer GL_NV_texture_env_combine4
 
 #name GL_ARB_texture_env_combine
 #cvar gl_ext_texture_env_combine
+#require GL_ARB_multitexture
+#prefer GL_NV_texture_env_combine4
+
+#name GL_NV_texture_env_combine4
+#cvar gl_ext_texture_env_combine_nv
+#require GL_ARB_multitexture
 
 #name GL_S3_s3tc
 #cvar gl_ext_compressed_textures
@@ -405,6 +412,9 @@ void MultiTexCoord2fARB (GLenum target, GLfloat s, GLfloat t) ARGS	//!! for old 
 #prefer GL_NV_vertex_array_range
 void LockArraysEXT (GLint first, GLint count) ARGS
 void UnlockArraysEXT (void);
+
+#name GL_NV_fog_distance
+#cvar gl_ext_fog_distance_nv
 
 #name GL_NV_fence
 #cvar gl_ext_vertex_array_range

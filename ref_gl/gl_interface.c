@@ -5,6 +5,65 @@ glconfig_t	gl_config;
 glstate_t	gl_state;
 
 
+/*------- Some tables for GL_TexEnv() ---------*/
+
+
+#define STD_MASK		(TEXENV_FUNC_MASK)
+#define ARB_MASK		(TEXENV_FUNC_MASK|TEXENV_MUL2|TEXENV_SRC0_MASK|TEXENV_SRC1_MASK)
+
+typedef struct
+{
+	int		mask;
+	GLint	mode1;
+	GLint	mode2;
+} texEnvInfo_t;
+
+typedef struct
+{
+	GLint	src;
+	GLint	op_rgb;
+	GLint	op_a;
+} texEnvSource_t;
+
+
+// Used fields for TexEnv for each function
+static texEnvInfo_t texEnvInfo[] = {
+	{-1, 0, 0},
+	{STD_MASK, GL_REPLACE, 0},
+	{STD_MASK, GL_MODULATE, 0},
+	{STD_MASK, GL_ADD, 0},
+	{ARB_MASK, GL_COMBINE_ARB, GL_MODULATE},
+	{ARB_MASK, GL_COMBINE_ARB, GL_ADD},
+	{ARB_MASK|TEXENV_SRC2_MASK, GL_COMBINE_ARB, GL_INTERPOLATE_ARB},
+	{ARB_MASK|TEXENV_SRC2_MASK|TEXENV_SRC3_MASK, GL_COMBINE4_NV, GL_ADD}
+};
+
+static texEnvSource_t texEnvSource[] = {
+	{-1, -1, -1},		// "-1" is differs from "GL_ZERO"
+	// texture
+	{GL_TEXTURE, GL_SRC_COLOR, GL_SRC_ALPHA},
+	{GL_TEXTURE, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA},
+	// texture alpha
+	{GL_TEXTURE, GL_SRC_ALPHA, GL_SRC_ALPHA},
+	{GL_TEXTURE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA},
+	// previous
+	{GL_PREVIOUS_ARB, GL_SRC_COLOR, GL_SRC_ALPHA},
+	{GL_PREVIOUS_ARB, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA},
+	// previous alpha
+	{GL_PREVIOUS_ARB, GL_SRC_ALPHA, GL_SRC_ALPHA},
+	{GL_PREVIOUS_ARB, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA},
+	// constant
+	{GL_CONSTANT_ARB, GL_SRC_COLOR, GL_SRC_ALPHA},
+	{GL_CONSTANT_ARB, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA},
+	// primary color
+	{GL_PRIMARY_COLOR_ARB, GL_SRC_COLOR, GL_SRC_ALPHA},
+	{GL_PRIMARY_COLOR_ARB, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA},
+	// one/zero
+	{GL_ZERO, GL_SRC_COLOR, GL_SRC_ALPHA},
+	{GL_ZERO, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA}
+};
+
+
 /*--------------- Lock/unlock -----------------*/
 
 
@@ -44,17 +103,18 @@ void GL_Unlock (void)
 		else
 			tmu = i;
 
-		if ((n = gl_state.newBinds[tmu]) != gl_state.currentBinds[tmu])
+		if (gl_state.newBinds[tmu] != gl_state.currentBinds[tmu])
 		{
 			GL_SelectTexture (tmu);
-			gl_state.currentBinds[tmu] = n;
-			qglBindTexture (GL_TEXTURE_2D, n);
-			gl_speeds.numBinds++;
+			GL_Bind (gl_state.newBinds[tmu]);
 		}
 		if ((n = gl_state.newEnv[tmu]) != gl_state.currentEnv[tmu])
 		{
-			GL_SelectTexture (tmu);
-			GL_TexEnv (n);
+			if ((n ^ gl_state.currentEnv[tmu]) & texEnvInfo[n & TEXENV_FUNC_MASK].mask)
+			{
+				GL_SelectTexture (tmu);
+				GL_TexEnv (n);
+			}
 		}
 		if ((f = gl_state.newTexCoordEnabled[tmu]) != gl_state.texCoordEnabled[tmu])
 		{
@@ -75,7 +135,7 @@ void GL_Unlock (void)
 			GL_SelectTexture (tmu);
 			qglTexCoordPointer (2, GL_FLOAT, 0, gl_state.newTCPointer[tmu]);
 		}
-		if (gl_state.newEnv[tmu] & TEXENV_COLOR && (c.rgba = gl_state.newEnvColor[tmu].rgba) != gl_state.texEnvColor[tmu].rgba)
+		if (gl_state.newEnv[tmu] & TEXENV_ENVCOLOR && (c.rgba = gl_state.newEnvColor[tmu].rgba) != gl_state.texEnvColor[tmu].rgba)
 		{
 			GL_SelectTexture (tmu);
 			GL_TexEnvColor (&c);
@@ -91,12 +151,15 @@ void GL_Bind (image_t *tex)
 {
 	int		tmu;
 
+	if (tex && gl_nobind->integer && (gl_nobind->integer != 2 || strcmp (tex->name, "pics/conchars.pcx")))
+		tex = gl_dlightImage;		//?? need a better way to detect force-bind images
+
 	if (gl_state.locked)
 	{
 		tmu = gl_state.newTmu;
 		if (tex)
 		{
-			gl_state.newBinds[tmu] = tex->texnum;
+			gl_state.newBinds[tmu] = tex;
 			gl_state.newTextureEnabled[tmu] = true;
 		}
 		else
@@ -116,26 +179,18 @@ void GL_Bind (image_t *tex)
 	}
 	else
 	{
-		int		h, h1;
-
 		if (!gl_state.textureEnabled[tmu])
 		{
 			qglEnable (GL_TEXTURE_2D);
 			gl_state.textureEnabled[tmu] = true;
 		}
 
-		h = tex->texnum;
-		if (gl_nobind->integer && (h1 = gl_dlightImage->texnum))
-		{
-			if (gl_nobind->integer != 2 || strcmp (tex->name, "pics/conchars.pcx"))	//?? need better way to detect force-bind images
-				h = h1;
-		}
+		if (tex == gl_state.currentBinds[tmu]) return;
 
-		if (h == gl_state.currentBinds[tmu]) return;
-
-		qglBindTexture (GL_TEXTURE_2D, h);
+		gl_state.currentBinds[tmu] = tex;
+		LOG_STRING(va("// GL_Bind(%s)\n", tex->name));
+		qglBindTexture (GL_TEXTURE_2D, tex->texnum);
 		gl_speeds.numBinds++;
-		gl_state.currentBinds[tmu] = h;
 	}
 }
 
@@ -143,7 +198,7 @@ void GL_Bind (image_t *tex)
 // Bind image even if nobind active (i.e. for uploading image)
 void GL_BindForce (image_t *tex)
 {
-	int		tmu, h;
+	int		tmu;
 
 	tmu = gl_state.currentTmu;
 
@@ -153,21 +208,27 @@ void GL_BindForce (image_t *tex)
 		gl_state.textureEnabled[tmu] = true;
 	}
 
-	h = tex->texnum;
-	if (gl_state.currentBinds[tmu] == h) return;
+	if (gl_state.currentBinds[tmu] == tex) return;
 
-	qglBindTexture (GL_TEXTURE_2D, h);
+	gl_state.currentBinds[tmu] = tex;
+	qglBindTexture (GL_TEXTURE_2D, tex->texnum);
 	gl_speeds.numBinds++;
-	gl_state.currentBinds[tmu] = h;
 }
 
 
 /*---------------- Multitexturing -------------*/
 
 
-void GL_TexEnv (int env)
+void GL_TexEnv (unsigned env)
 {
-	int		tmu, mode;
+	int		tmu, func;
+	unsigned i, diff, mask, shift;
+	texEnvInfo_t *info;
+
+	static GLint sourceRgb[4] = {GL_SOURCE0_RGB_ARB, GL_SOURCE1_RGB_ARB, GL_SOURCE2_RGB_ARB, GL_SOURCE3_RGB_NV};
+	static GLint sourceAlpha[4] = {GL_SOURCE0_ALPHA_ARB, GL_SOURCE1_ALPHA_ARB, GL_SOURCE2_ALPHA_ARB, GL_SOURCE3_ALPHA_NV};
+	static GLint operandRgb[4] = {GL_OPERAND0_RGB_ARB, GL_OPERAND1_RGB_ARB, GL_OPERAND2_RGB_ARB, GL_OPERAND3_RGB_NV};
+	static GLint operandAlpha[4] = {GL_OPERAND0_ALPHA_ARB, GL_OPERAND1_ALPHA_ARB, GL_OPERAND2_ALPHA_ARB, GL_OPERAND3_ALPHA_NV};
 
 	if (gl_state.locked)
 	{
@@ -176,59 +237,57 @@ void GL_TexEnv (int env)
 	}
 
 	tmu = gl_state.currentTmu;
-	if (gl_state.currentEnv[tmu] == env)
-		return;
+	func = env & TEXENV_FUNC_MASK;
+	info = &texEnvInfo[func];
+	diff = (env ^ gl_state.currentEnv[tmu]) & info->mask;
+	if (!diff) return;
+/*LOG_STRING(va("ENV=%08X  OLD=%08X  MASK=%08X  DIFF=%08X  NEW=%08X\n",
+	env, gl_state.currentEnv[tmu], info->mask, diff, gl_state.currentEnv[tmu] ^ diff)); */
 
-	gl_state.currentEnv[tmu] = env;
+	gl_state.currentEnv[tmu] ^= diff;		// this will not update fields, which can be unchanged
 
-	switch (env & TEXENV_FUNC_MASK)
+//	diff = env & info->mask;	//?? always update all registers
+
+	if (diff & TEXENV_FUNC_MASK)
 	{
-	case TEXENV_MODULATE:
-		mode = GL_MODULATE;
-		break;
-	case TEXENV_ADD:
-		mode = GL_ADD;
-		break;
-	case TEXENV_INTERP:
-		mode = GL_INTERPOLATE_ARB;
-		break;
-	//!! other
-	default:
-		mode = GL_REPLACE;
+		// func is changed
+		qglTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, info->mode1);
+		if (!info->mode2) return;
+
+		qglTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, info->mode2);
+		qglTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, info->mode2);
 	}
 
-	if (!(env & ~TEXENV_FUNC_MASK))	//?? need another way to check base multitexturing
+	if (diff & TEXENV_MUL2)
+		qglTexEnvf (GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, (env & TEXENV_MUL2 ? 2 : 1));
+
+	mask = TEXENV_SRC0_MASK;
+	shift = TEXENV_SRC0_SHIFT;
+	for (i = 0; i < 4; i++)
 	{
-		qglTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, mode);
-		return;
+//LOG_STRING(va("i: %d  mask: %08X  shift: %d\n", i, mask, shift));//!!
+		if (diff & mask)
+		{
+			texEnvSource_t	*src, *prevSrc;
+
+			src = &texEnvSource[(env & mask) >> shift];
+			prevSrc = &texEnvSource[((env ^ diff) & mask) >> shift];
+
+//LOG_STRING(va("  src: %d  prev: %d\n", src-texEnvSource, prevSrc-texEnvSource));//!!
+
+			if (src->src != prevSrc->src)
+			{
+				qglTexEnvi (GL_TEXTURE_ENV, sourceRgb[i], src->src);
+				qglTexEnvi (GL_TEXTURE_ENV, sourceAlpha[i], src->src);
+			}
+			if (src->op_rgb != prevSrc->op_rgb)
+				qglTexEnvi (GL_TEXTURE_ENV, operandRgb[i], src->op_rgb);
+			if (src->op_a != prevSrc->op_a)
+				qglTexEnvi (GL_TEXTURE_ENV, operandAlpha[i], src->op_a);
+		}
+		mask >>= TEXENV_SRC_BITS;
+		shift -= TEXENV_SRC_BITS;
 	}
-
-	//!! add code for combine4_nv
-
-	qglTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
-	// combine mode
-	qglTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, mode);
-	qglTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, mode);
-	// source 0
-	qglTexEnvi (GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB);
-	qglTexEnvi (GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
-	qglTexEnvi (GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB);
-	qglTexEnvi (GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA);
-	// source 1
-	qglTexEnvi (GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE);
-	qglTexEnvi (GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR);
-	qglTexEnvi (GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_TEXTURE);
-	qglTexEnvi (GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA);
-	// source 2
-	if (mode == GL_INTERPOLATE_ARB)
-	{
-		qglTexEnvi (GL_TEXTURE_ENV, GL_SOURCE2_RGB_ARB, GL_CONSTANT_ARB);
-		qglTexEnvi (GL_TEXTURE_ENV, GL_OPERAND2_RGB_ARB, GL_SRC_COLOR);
-		qglTexEnvi (GL_TEXTURE_ENV, GL_SOURCE2_ALPHA_ARB, GL_CONSTANT_ARB);
-		qglTexEnvi (GL_TEXTURE_ENV, GL_OPERAND2_ALPHA_ARB, GL_SRC_ALPHA);
-	}
-
-	qglTexEnvf (GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, (env & TEXENV_MUL2 ? 2 : 1));
 }
 
 
@@ -240,15 +299,16 @@ void GL_TexEnvColor (color_t *c)
 	if (gl_state.locked)
 	{
 		tmu = gl_state.newTmu;
-		if (gl_state.newEnv[tmu] & TEXENV_COLOR)
+		if (gl_state.newEnv[tmu] & TEXENV_ENVCOLOR)
 			gl_state.newEnvColor[gl_state.newTmu].rgba = c->rgba;
 		return;
 	}
 
 	tmu = gl_state.currentTmu;
-	if (!(gl_state.newEnv[tmu] & TEXENV_COLOR) || gl_state.texEnvColor[tmu].rgba == c->rgba)
+	if (!(gl_state.newEnv[tmu] & TEXENV_ENVCOLOR) || gl_state.texEnvColor[tmu].rgba == c->rgba)
 		return;
 
+//	LOG_STRING(va("// GL_TexEnvColor(%d, %d, %d, %d)\n", c->c[0], c->c[1], c->c[2], c->c[3]));
 	gl_state.texEnvColor[tmu].rgba = c->rgba;
 	color[0] = c->c[0] / 255.0f;
 	color[1] = c->c[1] / 255.0f;
@@ -371,6 +431,14 @@ void GL_DisableTexCoordArrays (void)
 
 void GL_CullFace (gl_cullMode_t mode)
 {
+	if (gl_state.inverseCull)
+	{
+		if (mode == CULL_FRONT)
+			mode = CULL_BACK;
+		else if (mode == CULL_BACK)
+			mode = CULL_FRONT;
+	}
+
 	if (gl_state.currentCullMode == mode)
 		return;
 
@@ -415,7 +483,8 @@ void GL_State (int state)
 			dst = ((state & GLSTATE_DSTMASK) - GLSTATE_DST_ZERO) >> GLSTATE_DSTSHIFT;
 			dst = blends[dst];
 
-			qglEnable (GL_BLEND);
+			if (!(gl_state.currentState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK)))
+				qglEnable (GL_BLEND);
 			qglBlendFunc (src, dst);
 		}
 		else
@@ -431,7 +500,8 @@ void GL_State (int state)
 			qglDisable (GL_ALPHA_TEST);
 		else
 		{
-			qglEnable (GL_ALPHA_TEST);
+			if (!(gl_state.currentState & GLSTATE_ALPHAMASK))
+				qglEnable (GL_ALPHA_TEST);
 			if (m == GLSTATE_ALPHA_GT0)
 				qglAlphaFunc (GL_GREATER, 0.05f);	//?? 0.0f
 			else if (m == GLSTATE_ALPHA_LT05)
@@ -462,6 +532,41 @@ void GL_State (int state)
 }
 
 
+void GL_EnableFog (qboolean enable)
+{
+	if (enable == gl_state.fogEnabled)
+		return;
+
+	if (enable && gl_fogMode && gl_fog->integer)
+	{
+		qglEnable (GL_FOG);
+//		qglHint (GL_FOG_HINT, GL_NICEST);
+		qglFogf (GL_FOG_MODE, gl_fogMode);
+		qglFogfv (GL_FOG_COLOR, gl_fogColor);
+		switch (gl_fogMode)
+		{
+		case GL_EXP:
+		case GL_EXP2:
+			qglFogf (GL_FOG_DENSITY, gl_fogDensity);
+			break;
+		case GL_LINEAR:
+			qglFogf (GL_FOG_START, gl_fogStart);
+			qglFogf (GL_FOG_END, gl_fogEnd);
+			break;
+		}
+
+		if (GL_SUPPORT(QGL_NV_FOG_DISTANCE))
+			qglFogf (GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
+		gl_state.fogEnabled = true;
+	}
+	else
+	{
+		qglDisable (GL_FOG);
+		gl_state.fogEnabled = false;
+	}
+}
+
+
 void GL_SetDefaultState (void)
 {
 	int		i;
@@ -474,12 +579,12 @@ void GL_SetDefaultState (void)
 	{
 		GL_SelectTexture (i);
 		qglDisable (GL_TEXTURE_2D);
-		gl_state.currentBinds[i] = -1;
+		gl_state.currentEnv[i] = 0;
 		GL_TexEnv (TEXENV_REPLACE);
 	}
 	if (gl_config.maxActiveTextures > 1) GL_SelectTexture (0);
 	qglDisable (GL_TEXTURE_2D);
-	gl_state.currentBinds[0] = -1;
+	gl_state.currentEnv[0] = 0;
 	GL_TexEnv (TEXENV_MODULATE);
 
 	GL_TextureMode (gl_texturemode->string);
@@ -502,6 +607,9 @@ void GL_Set2DMode (void)
 {
 	if (gl_state.is2dMode)
 		return;
+
+	if (gl_screenshotName && gl_screenshotFlags & SHOT_NO_2D)
+		GL_PerformScreenshot ();
 
 	LOG_STRING ("***** Set2DMode() *****\n");
 	qglViewport (0, 0, vid.width, vid.height);
@@ -531,7 +639,7 @@ void GL_Setup (viewPortal_t *port)
 
 	qglViewport (port->x, port->y, port->w, port->h);
 	qglScissor (port->x, port->y, port->w, port->h);
-	GL_State (GLSTATE_DEPTHWRITE);
+	GL_State(GLSTATE_DEPTHWRITE);					// affects glClear(DEPTH)
 
 	bits = GL_DEPTH_BUFFER_BIT;
 	if (gl_fastsky->integer && !(port->flags & RDF_NOWORLDMODEL))

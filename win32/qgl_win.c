@@ -60,11 +60,12 @@ qboolean QGL_Init (const char *dllname)
 
 void QGL_InitExtensions (void)
 {
-	int		i;
+	int		i, notFoundExt, disabledExt;
 	extInfo_t *ext;
 	dummyFunc_t func;
 
 	gl_config.extensionMask = 0;
+	notFoundExt = disabledExt = 0;
 
 	Q_strncpyz (gl_config.extensions_string, qglGetString (GL_EXTENSIONS), sizeof(gl_config.extensions_string));
 	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
@@ -78,10 +79,10 @@ void QGL_InitExtensions (void)
 			if (!ext->cvar || Cvar_VariableInt (ext->cvar))
 				enable = true;
 			else
-				Com_Printf ("^6...ignoring %s\n", ext->name);
+				disabledExt |= 1 << i;
 		}
 		else
-			Com_Printf ("...%s not found\n", ext->name);
+			notFoundExt |= 1 << i;
 
 		if (enable)
 		{
@@ -133,29 +134,74 @@ void QGL_InitExtensions (void)
 	}
 
 	/*-------- choose preferred extensions ----------*/
-	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
+	if (gl_config.extensionMask)
 	{
-		int		tmp;
-
-		if (!(gl_config.extensionMask & (1 << i)))
-			continue;
-
-		tmp = gl_config.extensionMask & ext->deprecate;
-		if (tmp)
+		Com_Printf ("...used extensions:\n");
+		for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 		{
-			int		j;
+			int		tmp;
 
-			// display error
-			for (j = 0; j < NUM_EXTENSIONS; j++)
+			if (!(gl_config.extensionMask & (1 << i)))
+				continue;
+
+			tmp = gl_config.extensionMask & ext->deprecate;
+			if (tmp)
 			{
-				if ((1 << j) & tmp)
-					Com_DPrintf ("...%s deprecated in favor of %s\n", ext->name, extInfo[j].name);
+				int		j;
+
+				// display error
+				for (j = 0; j < NUM_EXTENSIONS; j++)
+				{
+					if ((1 << j) & tmp)
+						Com_DPrintf ("   %s deprecated in favor of %s\n", ext->name, extInfo[j].name);
+				}
+				// disable extension
+				gl_config.extensionMask &= ~(1 << i);
 			}
-			// disable extension
-			gl_config.extensionMask &= ~(1 << i);
+			else
+				Com_Printf ("   %s\n", ext->name);
 		}
-		else
-			Com_Printf ("...using %s\n", ext->name);
+	}
+	else
+		Com_WPrintf ("...no extensions was found\n");
+
+	/*---------- notify disabled extensions ---------*/
+	if (disabledExt)
+	{
+		Com_Printf ("^6...disabled extensions:\n");
+		for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
+			if (disabledExt & (1 << i))
+				Com_Printf ("^6   %s\n", ext->name);
+	}
+
+	/*----------- notify extension absence ----------*/
+	if (notFoundExt)
+	{
+		Com_Printf ("...undetected extensions:\n");
+		for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
+			if (notFoundExt & (1 << i))
+			{
+				int		tmp;
+
+				tmp = gl_config.extensionMask & ext->deprecate;
+				if (tmp)
+				{
+					int		j;
+
+					// display error
+					for (j = 0; j < NUM_EXTENSIONS; j++)
+					{
+						if ((1 << j) & tmp)
+						{
+							Com_DPrintf ("   %s is covered by %s\n", ext->name, extInfo[j].name);
+							break;		// ignore other exteensions
+						}
+					}
+				}
+				else
+					Com_Printf ("   %s\n", ext->name);
+			}
+		Com_Printf ("\n");
 	}
 }
 

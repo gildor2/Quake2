@@ -375,9 +375,11 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_SYSCOMMAND:
 		if (wParam == SC_SCREENSAVE)
 			return 0;
+		if (wParam == SC_KEYMENU)	// disable activating window menu with keyboard
+			return 0;
 		return DefWindowProc (hWnd, uMsg, wParam, lParam);
 	case WM_SYSKEYDOWN:
-		if (wParam == 13) 		// Alt+Enter
+		if (wParam == 13) 			// Alt+Enter
 		{
 			if (r_fullscreen) Cvar_SetInteger ("r_fullscreen", !r_fullscreen->integer);
 			return 0;
@@ -537,6 +539,7 @@ void Vid_DestroyWindow (qboolean force)
 		return;
 	}
 
+	Com_DPrintf ("...destroying window\n");
 	if (mainHwnd)
 	{
 		ShowWindow (mainHwnd, SW_HIDE);		// as Q3 does...
@@ -661,12 +664,17 @@ static void	D_Draw_GetPicSize (int *w, int *h, char *pic)
 	if (h) *h = 0;
 }
 
+static void D_Screenshot (int flags, char *name)
+{
+	Com_WPrintf ("Screenshots are unsupported by this renderer\n");
+}
+
 static void	D_Draw_PicColor (int x, int y, char *name, int color) {}
 static void	D_Draw_StretchPic (int x, int y, int w, int h, char *pic) {}
 static void	D_Draw_CharColor (int x, int y, int c, int color) {}
 static void	D_Draw_TileClear (int x, int y, int w, int h, char *name) {}
 static void	D_Draw_Fill (int x, int y, int w, int h, int c) {}
-static void	D_Draw_FadeScreen (void) {}
+static void D_Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, float a) {}
 static void	D_DrawTextPos (int x, int y, char *text, float r, float g, float b) {}
 static void	D_DrawTextSide (char *text, float r, float g, float b) {}
 static void	D_Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data) {}
@@ -725,9 +733,10 @@ static qboolean Vid_LoadRefresh (char *name)
 		return false;
 	}
 
-	if (re.flags & REF_CONSOLE_ONLY)
+	if (*re.flags & REF_CONSOLE_ONLY)
 	{
 		re.RenderFrame =	D_RenderFrame;
+		re.Screenshot =		D_Screenshot;
 		re.BeginRegistration = D_BeginRegistration;
 		re.RegisterModel =	D_RegisterModel;
 		re.RegisterSkin =	D_RegisterSkin;
@@ -741,7 +750,7 @@ static qboolean Vid_LoadRefresh (char *name)
 		re.DrawCharColor =	D_Draw_CharColor;
 		re.DrawTileClear =	D_Draw_TileClear;
 		re.DrawFill =		D_Draw_Fill;
-		re.DrawFadeScreen =	D_Draw_FadeScreen;
+		re.DrawFill2 =		D_Draw_Fill2;
 
 		re.DrawStretchRaw =	D_Draw_StretchRaw;
 		re.CinematicSetPalette = D_SetPalette;

@@ -123,6 +123,8 @@
   10) alphaGen
      - dot [min] [max]            (DotProduct(viewDir, surfNormal); a=0 when parallel, 1 when perpendicular)
        (water, reflections)
+       def: min = 0; max = 1
+       expression: dst_alpha = DotProduct(NormalVec(vieworg-vec), normal) * (max-min) + min  (if dot() < 0 dot = 0)
      - oneMinusDot
      - lightingSpecular <x y z>   ???
      - skyalpha
@@ -167,3 +169,16 @@ Script commands:
 - shader waveamp [amplitude of wave function]
 - shader wavephase [phase of wave function]
 - shader wavefreq [frequency of wave function]
+
+
+-----------------------------------------------
+
+Alice:
+- animMapOnce
+- rgbGen:
+  - global == globalColor
+  - fromclient ( == vertex)
+- alphaGen:
+  - global == globalAlpha
+  - fromentity ( == entity)
+  - fromclient ( == vertex)

@@ -21,6 +21,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "gl_local.h"
 
+int 	gl_screenshotFlags;
+char	*gl_screenshotName;
+
 /*
 ==================
 R_InitParticleTexture
@@ -92,152 +95,104 @@ typedef struct _TargaHeader {
 } TargaHeader;
 
 
-/*
-==================
-GL_ScreenShot_f
-==================
-*/
+/*-------------------- Screenshots ---------------------*/
+
 
 #define		LEVELSHOT_W		256
 #define		LEVELSHOT_H		256
 
-void GL_Levelshot ()
+
+void GL_PerformScreenshot (void)
 {
-	byte		*buffer, *buffer2, *in, *out;
-	char		filename[MAX_OSPATH], scratch[MAX_OSPATH], *mapname, *ext;
-	int			i;
-	FILE		*f;
+	byte	*buffer, *src, *dst;
+	char	name[MAX_OSPATH], *ext;
+	int		i, width, height, size;
+	qboolean result;
+	FILE	*f;
 
-	// create the levelshots directory if it doesn't exist
-	Com_sprintf (filename, sizeof(filename), "%s/levelshots", FS_Gamedir());
-	Sys_Mkdir (filename);
+	if (!gl_screenshotName) return;		// already performed in current frame
 
-	mapname = strrchr (r_worldmodel->name, '/');
-	if (!mapname)
-		mapname = r_worldmodel->name;	// normally, maps must be stored in "maps/*", but ...
+	qglFinish ();
+
+	ext = (gl_screenshotFlags & SHOT_JPEG ? ".jpg" : ".tga");
+	if (gl_screenshotName[0])
+	{
+		strcpy (name, gl_screenshotName);
+		strcat (name, ext);
+	}
 	else
-		mapname++;
-	Com_sprintf (scratch, sizeof(scratch), "/%s", mapname);
-	ext = strrchr (scratch, '.');
-	if (!ext)
-		ext = strrchr (scratch, 0);		// normally, ext must points to ".bsp"
-	strcpy (ext, ".tga");
-	strcat (filename, scratch);
-
-	buffer = Z_Malloc (LEVELSHOT_W*LEVELSHOT_H*4 + 18 + 4);
-
-	buffer2 = Z_Malloc (vid.width*vid.height*4);
-	qglReadPixels (0, 0, vid.width, vid.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer2);
-	//?? may be, GL_ResampleTexture crushes when vid.height > 1024
-	GL_ResampleTexture ((unsigned*)buffer2, vid.width, vid.height, (unsigned*)(buffer + 18 + 4), LEVELSHOT_W, LEVELSHOT_H);
-	Z_Free (buffer2);
-
-	memset (buffer, 0, 18);
-	buffer[2] = 2;		// uncompressed type
-	buffer[12] = LEVELSHOT_W&255;
-	buffer[13] = LEVELSHOT_W>>8;
-	buffer[14] = LEVELSHOT_H&255;
-	buffer[15] = LEVELSHOT_H>>8;
-	buffer[16] = 24;	// pixel size
-
-	// convert RGBA to BGR
-	in = buffer + 18 + 4;
-	out = buffer + 18;
-	for (i = 0; i < LEVELSHOT_W*LEVELSHOT_H; i++)
 	{
-		*out++ = in[2];	// B
-		*out++ = in[1];	// G
-		*out++ = in[0];	// R
-		in += 4;
+		// autogenerate name
+		for (i = 0; i < 10000; i++)
+		{	// check for a free filename
+			Com_sprintf (name, sizeof(name), "%s/screenshots/quake%04d%s", FS_Gamedir (), i, ext);
+			if (!(f = fopen (name, "rb")))
+				break;	// file doesn't exist
+			fclose (f);
+		}
+
 	}
-
-	GL_BufCorrectGamma (&buffer[18], LEVELSHOT_W*LEVELSHOT_H*3);
-
-	f = fopen (filename, "wb");
-	if (!f)
-	{
-		Com_Printf ("Cannot write file %s\n", filename);
-		return;
-	}
-	fwrite (buffer, 1, LEVELSHOT_W*LEVELSHOT_H*3 + 18, f);
-	fclose (f);
-
-	Z_Free (buffer);
-}
-
-
-void GL_ScreenShot_f (void)
-{
-	byte		*buffer;
-	char		picname[80];
-	char		checkname[MAX_OSPATH];
-	int			i, c;
-	FILE		*f;
-
-	if (!strcmp (Cmd_Argv(1), "levelshot"))
-	{
-		GL_Levelshot ();
-		return;
-	}
+	gl_screenshotName = NULL;
 
 	// create the screenshots directory if it doesn't exist
-	Com_sprintf (checkname, sizeof(checkname), "%s/screenshots", FS_Gamedir());
-	Sys_Mkdir (checkname);
+	FS_CreatePath (name);
 
-	//
-	// find a file name to save it to
-	//
-	strcpy(picname,"quake00.tga");
+	// allocate buffer for 4 color components (required for ResampleTexture()
+	buffer = Z_Malloc (vid.width * vid.height * 4);
+	// read frame buffer data
+	qglReadPixels (0, 0, vid.width, vid.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
-	for (i = 0; i < 100; i++)
+	if (gl_screenshotFlags & SHOT_SMALL)
 	{
-		picname[5] = i/10 + '0';
-		picname[6] = i%10 + '0';
-		Com_sprintf (checkname, sizeof(checkname), "%s/screenshots/%s", FS_Gamedir(), picname);
-		f = fopen (checkname, "rb");
-		if (!f)
-			break;	// file doesn't exist
-		fclose (f);
+		byte *buffer2;
+
+		//?? check: is there map rendered?
+		buffer2 = Z_Malloc (LEVELSHOT_W * LEVELSHOT_H * 4);
+		GL_ResampleTexture ((unsigned *)buffer, vid.width, vid.height, (unsigned *)buffer2, LEVELSHOT_W, LEVELSHOT_H);
+		Z_Free (buffer);
+		buffer = buffer2;
+		width = LEVELSHOT_W;
+		height = LEVELSHOT_H;
 	}
-	if (i == 100)
+	else
 	{
-		Com_Printf ("SCR_ScreenShot_f: Couldn't create a file\n");
-		return;
- 	}
+		width = vid.width;
+		height = vid.height;
+	}
+	size = width * height;
 
-
-	buffer = Z_Malloc (vid.width*vid.height*3 + 18);
-	memset (buffer, 0, 18);
-	buffer[2] = 2;		// uncompressed type
-	buffer[12] = vid.width&255;
-	buffer[13] = vid.width>>8;
-	buffer[14] = vid.height&255;
-	buffer[15] = vid.height>>8;
-	buffer[16] = 24;	// pixel size
-
-	qglReadPixels (0, 0, vid.width, vid.height, GL_RGB, GL_UNSIGNED_BYTE, buffer+18 );
-
-	// swap rgb to bgr
-	c = 18+vid.width*vid.height*3;
-	for (i = 18; i < c; i+=3)
+	// remove 4th color component and correct gamma
+	src = dst = buffer;
+	for (i = 0; i < size; i++)
 	{
-		int temp;
+		byte	r, g, b;
 
-		temp = buffer[i];
-		buffer[i] = buffer[i+2];
-		buffer[i+2] = temp;
+		r = *src++; g = *src++; b = *src++;
+		src++;	// skip alpha
+/*		// correct gamma (disabled: too lazy to implement !!)
+		if (gl_config.deviceSupportsGamma)
+		{
+			r = gammaTable[r];
+			g = gammaTable[g];
+			b = gammaTable[b];
+		} */
+		// put new values back
+		*dst++ = r;
+		*dst++ = g;
+		*dst++ = b;
 	}
 
-	GL_BufCorrectGamma (&buffer[18], c - 18);
-
-	f = fopen (checkname, "wb");
-	fwrite (buffer, 1, c, f);
-	fclose (f);
+	if (gl_screenshotFlags & SHOT_JPEG)
+		result = WriteJPG (name, buffer, width, height, (gl_screenshotFlags & SHOT_SMALL));
+	else
+		result = WriteTGA (name, buffer, width, height);
 
 	Z_Free (buffer);
-	if (strcmp (Cmd_Argv(1), "silent"))
-		Com_Printf ("Wrote %s\n", picname);
+
+	if (result && !(gl_screenshotFlags & SHOT_SILENT))
+		Com_Printf ("Wrote %s\n", strrchr (name, '/') + 1);
 }
+
 
 /*
 ** GL_Strings_f

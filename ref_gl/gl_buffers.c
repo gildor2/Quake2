@@ -49,30 +49,11 @@ void GL_ResizeDynamicMemory (void *ptr, int newSize)
 }
 
 
-//------------------------------------------!!
+/*----------- Surface arrays --------------*/
 
 
 static surfaceInfo_t surfaceBuffer[MAX_SCENE_SURFACES];
 static int numSurfacesTotal;
-
-
-void GL_ClearBuffers (void)
-{
-	numSurfacesTotal = 0;
-	gl_numEntities = 0;
-	gl_numDlights = 0;
-	dynamicBufferSize = 0;
-}
-
-
-/*----------- Work with "vp" --------------*/
-
-
-void GL_ClearPortal (void)
-{
-	vp.surfaces = &surfaceBuffer[numSurfacesTotal];
-	vp.numSurfaces = 0;
-}
 
 
 // Add surface to a current scene (to a "vp" structure)
@@ -98,20 +79,10 @@ surfaceCommon_t *GL_AddDynamicSurface (shader_t *shader, int entityNum)
 	surfaceCommon_t *surf;
 
 	surf = (surfaceCommon_t*) GL_AllocDynamicMemory (sizeof(surfaceCommon_t));
+	if (!surf) return NULL;
 
 	GL_AddSurfaceToPortal (surf, shader, entityNum, 0);
 	return surf;
-}
-
-
-void GL_FinishPortal (void)
-{
-	if (!vp.numSurfaces) return;
-	{
-		PUT_BACKEND_COMMAND (bkDrawFrame_t, c);
-		c->type = BACKEND_DRAW_FRAME;
-		memcpy (&c->portal, &vp, sizeof(vp));
-	}
 }
 
 
@@ -136,12 +107,33 @@ void GL_InsertShaderIndex (int index)
 }
 
 
+/*----------- Work with "vp" --------------*/
+
+
+void GL_ClearPortal (void)
+{
+	vp.surfaces = &surfaceBuffer[numSurfacesTotal];
+	vp.numSurfaces = 0;
+}
+
+
+void GL_FinishPortal (void)
+{
+	if (!vp.numSurfaces) return;
+	{
+		PUT_BACKEND_COMMAND (bkDrawFrame_t, c);
+		c->type = BACKEND_DRAW_FRAME;
+		memcpy (&c->portal, &vp, sizeof(vp));
+	}
+}
+
+
 /*-------- Radix sort surfaces ----------*/
 
 
 #define SORT_BITS	8	// 11
-#define SORT_SIZE	(1<<SORT_BITS)
-#define SORT_MASK	((1<<SORT_BITS)-1)
+#define SORT_SIZE	(1 << SORT_BITS)
+#define SORT_MASK	(SORT_SIZE - 1)
 
 void GL_SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 {
@@ -162,7 +154,7 @@ void GL_SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 	}
 	else
 	{	// debug mode (make alpha1 > alpha2)
-		alpha1 = 1 << 14;
+		alpha1 = 1;
 		alpha2 = 0;
 	}
 
@@ -237,4 +229,16 @@ void GL_SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 			*dst++ = s;
 	}
 #undef GET_SORT
+}
+
+
+/*-----------------------------------------*/
+
+
+void GL_ClearBuffers (void)
+{
+	numSurfacesTotal = 0;
+	gl_numEntities = 0;
+	gl_numDlights = 0;
+	dynamicBufferSize = 0;
 }

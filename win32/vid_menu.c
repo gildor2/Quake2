@@ -171,7 +171,6 @@ static void ApplyChanges (void *unused)
 	{	\
 		var->modified = false;		\
 		vid_ref->modified = true;	\
-		Com_DPrintf ("%s modified -- updating\n", var->name);	\
 	}
 
 	CHECK_UPDATE(r_saturation);
@@ -181,8 +180,10 @@ static void ApplyChanges (void *unused)
 	{
 		CHECK_UPDATE(gl_picmip);
 		CHECK_UPDATE(gl_vertexLight);
-		CHECK_UPDATE(gl_bitdepth);
 		CHECK_UPDATE(gl_textureBits);
+//		CHECK_UPDATE(gl_bitdepth);
+		if (gl_bitdepth->modified)
+			vid_ref->modified = true;		// do not reset "modified"
 	}
 
 	if (vid_ref->modified || quit)

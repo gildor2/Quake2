@@ -396,7 +396,7 @@ SCR_DrawCrosshair
 */
 void SCR_DrawCrosshair (void)
 {
-	if (!crosshair->integer)
+	if (!crosshair->integer || cl.refdef.rdflags & RDF_THIRD_PERSON)
 		return;
 
 	if (crosshair->modified)
@@ -457,7 +457,7 @@ static void DrawSurfInfo (void)
 {
 	vec3_t	start, end;
 	trace_t	trace;
-	vec3_t	v1 = {1, 1, 1}, v2 = {-1, -1, -1}, zero = {0, 0, 0};
+	static vec3_t v1 = {1, 1, 1}, v2 = {-1, -1, -1};
 	csurface_t	*surf;
 	vec3_t	norm;
 	char	*s;
@@ -467,8 +467,8 @@ static void DrawSurfInfo (void)
 		T(SURF_LIGHT),	T(SURF_SLICK),	T(SURF_SKY),
 		T(SURF_WARP),	T(SURF_TRANS33),T(SURF_TRANS66),
 		T(SURF_FLOWING),T(SURF_NODRAW),
-		// extra flags
-		T(SURF_ALPHA)
+		// Kingpin flags
+		T(SURF_ALPHA), T(SURF_DIFFUSE), T(SURF_SPECULAR)
 #undef T
 	};
 
@@ -495,7 +495,7 @@ static void DrawSurfInfo (void)
 
 	trace = CM_BoxTrace (start, end, v1, v2, 0, MASK_SHOT|MASK_WATER);
 	if (r_surfinfo->integer != 2)
-		CL_ClipMoveToEntities (start, zero, zero, end, &trace);
+		CL_ClipMoveToEntities (start, v1, v2, end, &trace);
 
 	if (trace.fraction < 1.0)
 	{
@@ -512,8 +512,9 @@ static void DrawSurfInfo (void)
 			if (surf->value)
 				re.DrawTextLeft (va("Value: %i (0x%X)", surf->value, surf->value), 0.2, 0.4, 1);
 			DrawFlag (surf->flags, surfNames, sizeof(surfNames)/sizeof(flagInfo_t));
-			if (surf->flags & (0xFFFFFF00 & ~SURF_ALPHA /*?? need another way to mask */)) // unknown flags
-				re.DrawTextLeft (va("SURF_UNK_%X", surf->flags & (0xFFFFFF00 & ~SURF_ALPHA)), 0.6, 0.3, 0.4);
+#define SURF_KNOWN	(0xFF|SURF_ALPHA|SURF_DIFFUSE|SURF_SPECULAR)
+			if (surf->flags & ~SURF_KNOWN) // unknown flags
+				re.DrawTextLeft (va("SURF_UNK_%X", surf->flags & ~SURF_KNOWN), 0.6, 0.3, 0.4);
 			// material
 			if (surf->material >= MATERIAL_FIRST && surf->material <= MATERIAL_LAST)
 				s = materialNames[surf->material];
@@ -599,6 +600,76 @@ static void DrawFpsInfo (void)
 }
 
 
+static void Screenshot_f (void)
+{
+	int		i, flags;
+	static char filename[MAX_OSPATH], tmpName[MAX_OSPATH];
+
+	filename[0] = 0;
+	flags = 0;
+
+	if (Cmd_Argc() == 2 && !strcmp(Cmd_Argv(1), "/?"))
+	{
+		Com_Printf ("Usage: screenshot [-levelshot] [-no2d] [-silent] [-jpeg] [<filename>]\n");
+		return;
+	}
+
+	for (i = 1; i < Cmd_Argc(); i++)
+	{
+		char	*opt;
+
+		opt = Cmd_Argv(i);
+		if (opt[0] == '-')
+		{
+			opt++;
+			if (!stricmp (opt, "levelshot"))
+			{
+				char	*tmp;
+
+				if (cls.state != ca_active)
+				{
+					Com_WPrintf ("No levelshots in disconnected state\n");
+					return;
+				}
+
+				if (!(tmp = strrchr (map_name, '/')))
+				{
+					Com_WPrintf ("Invalid map_name: %s\n", map_name);
+					return;
+				}
+				tmp++;	// skip '/'
+
+				flags |= SHOT_SMALL|SHOT_NO_2D;
+				Com_sprintf (filename, sizeof(filename), "%s/levelshots/%s", FS_Gamedir (), tmp);
+				// cut extension
+				tmp = strrchr (filename, '.');
+				if (tmp) *tmp = 0;
+			}
+			else if (!stricmp (opt, "no2d"))
+				flags |= SHOT_NO_2D;
+			else if (!stricmp (opt, "silent"))
+				flags |= SHOT_SILENT;
+			else if (!stricmp (opt, "jpeg"))
+				flags |= SHOT_JPEG;
+			else
+			{
+				Com_WPrintf ("Unknown option: %s\n", opt);
+				return;
+			}
+		}
+		else
+		{
+			if (filename[0])
+				Com_WPrintf ("WARNING: name already specified (%s). Changed.\n", filename);
+			Com_sprintf (tmpName, sizeof(tmpName), "%s/screenshots/%s", FS_Gamedir (), opt);
+			Q_CopyFilename (filename, tmpName, sizeof(filename)-1);
+		}
+	}
+
+	re.Screenshot (flags, filename);
+}
+
+
 #define MIN_WATER_DISTANCE	4.5
 
 static void FixWaterVis (void)
@@ -609,7 +680,10 @@ static void FixWaterVis (void)
 	trace_t		trace;
 	static vec3_t zero = {0, 0, 0};
 
-	w1 = (cl.refdef.rdflags & RDF_UNDERWATER) != 0;
+	if (cl.refdef.rdflags & RDF_THIRD_PERSON)
+		w1 = CM_PointContents (cl.refdef.vieworg, 0) & MASK_WATER;	// need to recompute UNDERWATER flag
+	else
+		w1 = (cl.refdef.rdflags & RDF_UNDERWATER) != 0;
 	p[0] = cl.refdef.vieworg[0];
 	p[1] = cl.refdef.vieworg[1];
 
@@ -701,6 +775,8 @@ void V_RenderView( float stereo_separation )
 
 		V_ClearScene ();
 
+		cl.refdef.rdflags = cl.frame.playerstate.rdflags;
+
 		// build a refresh entity list and calc cl.sim*
 		// this also calls CL_CalcViewValues which loads
 		// v_forward, etc.
@@ -756,8 +832,6 @@ void V_RenderView( float stereo_separation )
 		cl.refdef.dlights = r_dlights;
 		cl.refdef.lightstyles = cl_lightstyles;
 
-		cl.refdef.rdflags = cl.frame.playerstate.rdflags;
-
 		// underwater fov warp (taken from Q3 game source)
 		if (cl.refdef.rdflags & RDF_UNDERWATER)
 		{
@@ -767,7 +841,6 @@ void V_RenderView( float stereo_separation )
 			cl.refdef.fov_x += v;
 			cl.refdef.fov_y -= v;
 		}
-
 		FixWaterVis ();
 
 		// sort entities for better cache locality
@@ -840,4 +913,5 @@ CVAR_END
 	Cmd_AddCommand ("gun_prev", V_Gun_Prev_f);
 	Cmd_AddCommand ("gun_model", V_Gun_Model_f);
 	Cmd_AddCommand ("viewpos", V_Viewpos_f);
+	Cmd_AddCommand ("screenshot", Screenshot_f);
 }

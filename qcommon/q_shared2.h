@@ -61,6 +61,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define idaxp	0
 #endif
 
+#ifndef min
+#define min(a,b)  (((a) < (b)) ? (a) : (b))
+#endif
+#ifndef max
+#define max(a,b)  (((a) > (b)) ? (a) : (b))
+#endif
+
+#define bound(a,minval,maxval)  ( ((a) > (minval)) ? ( ((a) < (maxval)) ? (a) : (maxval) ) : (minval) )
+
+
 typedef unsigned char 		byte;
 typedef enum {false, true}	qboolean;
 
@@ -80,6 +90,12 @@ typedef enum {false, true}	qboolean;
 #define	GET_RETADDR()
 
 #endif
+
+
+// use "STR(any_value)" to convert it to string (may be float value)
+#define STR2(s) #s
+#define STR(s) STR2(s)
+
 
 //============================================================================
 
@@ -329,7 +345,7 @@ place to qcommon.h ??
 extern	int	curtime;		// time returned by last Sys_Milliseconds
 
 //--int		Sys_Milliseconds (void);
-//--void	Sys_Mkdir (char *path);
+void	Sys_Mkdir (char *path);
 
 // large block stack allocation routines
 //--void	*Hunk_Begin (int maxsize);
@@ -459,7 +475,9 @@ COLLISION DETECTION
 #define	SURF_NODRAW		0x80	// don't bother referencing the texture
 
 // added since 4.00
-#define SURF_ALPHA		0x1000	// migrated from KingPin (has the same value): black color => alpha = 0, other color => alpha = 1
+#define SURF_ALPHA		0x1000	// Kingpin
+#define	SURF_SPECULAR	0x4000	// have a bug in KP q_shared.h: SPECULAR and DIFFUSE consts are 0x400 and 0x800
+#define	SURF_DIFFUSE	0x8000
 
 
 // content masks
@@ -486,14 +504,13 @@ COLLISION DETECTION
 #define	PLANE_Z			2
 #define	PLANE_NON_AXIAL	3
 
-// plane_t structure (the same as Q2 dplane_t!)
-// !!! if this is changed, it must be changed in asm code too !!!
+// plane_t structure (the same as Q2 dplane_t, but "int type" -> "byte type,signbits,pad[2]")
 typedef struct cplane_s
 {
 	vec3_t	normal;
 	float	dist;
 	byte	type;			// for fast side tests
-	byte	signbits;		// signx + (signy<<1) + (signz<<1)
+	byte	signbits;		// signx + (signy<<1) + (signz<<2)
 	byte	pad[2];
 } cplane_t;
 
@@ -728,6 +745,8 @@ typedef struct
 #define	RDF_IRGOGGLES		4
 #define RDF_UVGOGGLES		8
 //ROGUE
+
+#define RDF_THIRD_PERSON	0x10
 
 //
 // muzzle flashes / player effects

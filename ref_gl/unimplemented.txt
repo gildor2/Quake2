@@ -1,15 +1,35 @@
-? SetMultitexture(N): should enable texturing (WAS required in a case env_crossbar work ??)
-- add async commands to gl:
-  - screenshot (before SwapBuffers() and can perform it before 2D part, may be as option for "screenshot" command)
-    (add var - screenshot type: 3D | 3D+2D, levelshot, silent)
-  - gl_drawtexts: dump all DrawText[Left|Right]() to console (for a single frame ? params as for gl_logFile ?)
-    (can simply add flag to gl_state or any var, whith will be checked and processed by DrawTexts())
-? qgl: don't draw "ext1 not found" when if ext1 is found it will be deprecated by currently found/enabled extension
-  (or (?!): use DPrintf for this situation) (example: have ARB_multitex and no SGIS_multitex)
-- add dependency of ARB_texenv_combine from ARB_multitexture
-- remove FadeScreen() and add FadeRect(); can add param "alpha"; can simply extend FillRect() by adding alpha to it (it's better)
-- gl_shader.h: separate scriptable tcGen's from internal-use-only (e.g. TEXTURE,LIGHTMAP -- LIGHTMAP1..4,DLIGHT0..31)
-  (be sure to reserve 32 dlights !)
+!!! game_loading screenshots:
+  - update when written new file (force to update inside renderer after screenshot performing: find loaded images and reload, pics only)
+  - display from menu
+
+? cmodel_t:
+  - add "void *faces"   - filled/used by renderer (and clean R_LoadSubmodels)
+  - add "vec3_t center" - who will fill/update this ? ((mod->mins+mod->maxs)/2+ent->origin)
+
+- reflections:
+  - small bugs when one can see througs another (for example, lift on map "japan"; "ground3") - unstable draw order
+  - adjust ALPHAGEN_DOT consts (+ compensate near distances -- too opaque)
+  - should add reflections on SURF_ALPHA with minAlpha > 0 (require to check image)
+  - map "ground3": invalid reflections on smoke - should not be (used tex with maxAlpha=0)
+  ! use both "q3-like" and "2-axis" paths for trisurfs and planars (1st - when extra.pAxis == NULL)
+  - try another texture
+  - try cvar (temp) for envmap_scale and envmap_alpha_const
+
+- gl_drawtexts: dump all DrawText[Left|Right]() to console (for a single frame ? params as for gl_logFile ?)
+  (can simply add flag to gl_state or any var, whith will be checked and processed by DrawTexts())
+
+- flares:
+  - trace with inline models (add TransformedBoxTrace() to ref interface)
+  ? add TextureTrace to renderer: should be faster (no brushes + point against box)
+  ! should be visible through SURF_TRANS (implement in TextureTrace ? make this trace in cmodel.c, add interface to game ?)
+  ? correct fov
+- fog:
+  !!! BUGS !!! works incorrect with multi-pass rendering
+  ? reading parms from file (model.c)
+  - gl_fog cvar
+  ? controlling from console
+  ? should not be affected by fog (check it!)
+  ! if fogDens > LIMIT -> sky = defaultSky, its color = fogColor
 
 COLORS:
 ! need to save dlight color before overbright for entity lighting
@@ -23,10 +43,7 @@ COLORS:
   - remove gl_overbrightBits
   - menu selectable
 
-! gl_nobind don't works (bacause of GL_Lock/GL_Unlock)
-
 ? add GL_DECAL blend: src=SRC_ALPHA, dst=ONE_MINUS_SRC_ALPHA
-? add GL_ADD via EXT_COMBINE (if no GL_EXT_texture_env_add)
 ? add GLSTATE_MODULATE2 (to blend modes, valid only with GL_EXT_texenv_combine or GL_NV_blend_square (only for 1st tmu ??))
 
 - dynamic lightmaps:
@@ -38,12 +55,8 @@ COLORS:
 - SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
 - add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
 ? don't need shader->sortParam other than sky/opaque/seethrough (may be, +coronas +hud)
-* implement hWnd caching (move CreateWindow()/DeleteWindow() from ref to main
-  ? add cvar "win_singleWnd"
-  ? add flag to renderer: REF_NO_WND to disable common window holding-alive
 
-?? add mean filter for DrawFPS() (ignore dropped frames and long (with FS access) frames)
-! do not render while window is minimized (less CPU usage)
+? do not render while window is minimized (less CPU usage)
 - r_nocull works only with frustum culling (extend cvar or add another ...)
 !! vertex arrays are not 16-byte aligned (see gl.log)
 ? reimplement fast drawing (multitexturing etc.)
@@ -61,7 +74,6 @@ COLORS:
   ? make shader_t.name dynamically allocated (~ basenamed_t)
   ? sky shader: specify color for "gl_fastSky"
 ? "gl_fastSky 2" - use "*sky" shader; add color to "*sky" shader (color-filled skies)
-? gl_maxVerts cvar [1..2048] -- used by RB_CheckOverflow()
 ? gl_lastValidRenderer (reset all config params ("reset gl_*" if changed ??); example of value -- "Riva TNT2/SSE")
 ? remove "SHADER_WALL" flag; add "SHADER_WORLD" -- depth test/write (other -- 2D) ? "SHADER_MIPMAP" ?
 - gfxinfo:
@@ -70,9 +82,16 @@ COLORS:
 
 BUGS:
 ! gl_singleShader don't works with dynamic lightmaps
-- "gl_showsky 1" don't works (399p10->399p11: multitexturing, PreprocessShader() etc.)
 ? map "terrain", light cone from helicopter: too opaque when overbright is 1 (invalid lightmap on alpha-surf ?)
 ? check demo "massive1": have error "frame #46 not found"
+
+UNSTABLE BUGS:
+? map "campmc": bug on water (bad tesselation) when tessSize=64,SUBDIV_ERROR=0.1 and SubdividePoly() have
+	if ((*v1)[axis] < value1)	side1 = 1;
+	else if ((*v1)[axis] > value2)	side1 = 2;
+	else				side1 = 3;
+   to detect side[1|2] (no error when used "<=" and ">=" instead of "<" and ">")
+?* check: cannot change bitdepth (at home): may be, require to recreate window (check ol Q2 versions, check work)
 
 --------- Mandatory ------------
 VISIBLE:
@@ -80,10 +99,14 @@ VISIBLE:
   - md2
     - "outline" effect (quad damage etc.), cheaters fx (whole player is white), IR-vision fx
     - flashing fx (sometimes rgbGen entity, or 2 shaders: with/without flashing ?)
-    - lefthand (weapon model)
+    - lefthand (weapon model):
+      - for directional lighting: inverse axis[1] for normals (use different normals array ?)
     - dynamic lighting (RecursiveLightPoint)
-- screen blending (underwater etc.)
+    - check all RF_XXX flags from q_shared2.h
+- screen blending (underwater etc.): move this outside renderer, make with DrawFill2 (check ref_soft !)
 - shadows
+- inlineModels: RF_TRANSLUCENT/RF2_ALPHA: qglColor4f (1,1,1,0.25)/qglColor4f(1,1,1,1) + blend + no lightmap (vertex light ?)
+  (require entstring preprocessing ? may be implemented on map-load-time ?)
 INVISIBLE:
 ! freeing of old images (and "bool temp" or "int usage" flag)
 FOR GAME:
@@ -96,7 +119,7 @@ FOR GAME:
 ? rail fx (change)
 - optimize sky box drawing:
   - make more than 6 rects (6 * skyTessSize^2)
-  - perform fast surface tessalation (need only verts.xyz)
+  - perform fast surface tesselation (need only verts.xyz)
   ? can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs) (problems when surf can be placed on some
     box sides)
   - can use surface normal to determine IMPOSSIBLE planes
@@ -110,12 +133,9 @@ FOR GAME:
   ? add error checking after commands (qgl.in: ERROR)
   ?? add profiling (qgl.in: PROFILE)
 ?? make area_t, cluster_t, area.clusterList, cluster.leafList (faster MarkLeafs()/LightPoint())
-- gl_model:
-  - add surfaceFast_t (for use with FastIterator())
 ? make skins for models with 1 frame to be sh.fast==true (and implement it in AGP memory);
   Problem: how to apply lighting? (and: skins may be dynamically changed from "fast" to "slow")
 ! triangle models: build lods
-? "screenshort levelshot" -> "levelshot"
 ? "gl_alphaLightmap" (arc, def: "1") -- can disable lighting of alpha/warp surfaces; add option to menu
   (easy implement, but naming problems ...)
 ! water lightmaps: try to GENERATE vertex light for water
@@ -123,9 +143,14 @@ FOR GAME:
   - scale (enlarge) texture with keeping alpha = 0 or 255
   ? make 2 copies of image (when necessary): with and without alpha-channel (have some KP maps with same texture used
     as window and as wall) -- IMAGE_ALPHA flag (use different resampling techniques)
-? cvar "gl_spyShader <name (mask?)>" - show info about shader rendering (how combined, etc)
-
----------------------------
-- inlineModels: RF_TRANSLUCENT/RF2_ALPHA: qglColor4f (1,1,1,0.25)/qglColor4f(1,1,1,1) + blend + no lightmap
-  (require entstring preprocessing?)
 ? what to do with "intens" param in GLimp_SetGamma() ? remove ??
+- backend GeterateColors (and other?): for multipass rendering can save "current
+  type of data in buffer" and use it later (example: 1st pass - rgbGen_vertex, 2nd -
+  same -- do not update)
+
+-------------------------------------
+
+NOTES:
+
+- for directional lighting: can use quantization of normals with 256 values,
+  use glut/progs/advanced[97 ?? same ??]/sphere.c for generate required number of vertexes

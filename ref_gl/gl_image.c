@@ -1,16 +1,21 @@
 #include "gl_local.h"
 #include "gl_model.h"			// for accessing to some map info
 
-image_t		*gl_defaultImage;
-//image_t		*gl_whiteImage;		//?? unneeded: can use "image = NULL" for this (CHECK THIS WITH MTEX!)
-image_t		*gl_identityLightImage;
-image_t		*gl_dlightImage;
-image_t		*gl_particleImage;
-image_t		*gl_fogImage;
-image_t		*gl_videoImage;
+image_t	*gl_defaultImage;
+//image_t	*gl_whiteImage;		//?? unneeded: can use "image = NULL" for this (CHECK THIS WITH MTEX!)
+image_t	*gl_identityLightImage;
+image_t	*gl_dlightImage;
+image_t	*gl_particleImage;
+image_t	*gl_fogImage;
+image_t	*gl_videoImage;
+image_t	*gl_reflImage;
 
-int		gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
-int		gl_filter_max = GL_LINEAR;
+int 	gl_screenshotFlags;
+char	*gl_screenshotName;
+
+
+static int	gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
+static int	gl_filter_max = GL_LINEAR;
 
 #define HASH_BITS		8
 #define HASH_SIZE		(1 << HASH_BITS)
@@ -159,8 +164,8 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 
 	for (i = 0; i < outheight; i++, out += outwidth)
 	{
-		inrow = in + inwidth*(int)((0.25f + i) * inheight / outheight);
-		inrow2 = in + inwidth*(int)((0.75f + i) * inheight / outheight);
+		inrow = in + inwidth * Q_ftol((0.25f + i) * inheight / outheight);
+		inrow2 = in + inwidth * Q_ftol((0.75f + i) * inheight / outheight);
 		frac = fracstep >> 1;
 		for (j = 0; j < outwidth; j++)
 		{
@@ -210,7 +215,7 @@ static void LightScaleTexture (unsigned *pic, int width, int height, qboolean on
 		p = (byte *)pic;
 		for (i = 0; i < c; i++, p+=4)
 		{
-#define SATURATE(c,l,v) c = (l+0.5+(c-l)*v); if (c < 0) c = 0; else if (c > 255) c = 255;
+#define SATURATE(c,l,v) c = (l+0.5+(c-l)*v); c = bound(c, 0, 255);
 			// get color
 			r = p[0];  g = p[1];  b = p[2];
 			// change saturation
@@ -411,10 +416,10 @@ static void Upload (void *pic, int flags, image_t *image)
 		format = GL_RGBA8;
 	else
 	{
-		int		alpha, i, n;
+		int		alpha, numAlpha0, i, n;
 		byte	*scan, a;
 		// Check for alpha channel in image
-		alpha = 0;
+		alpha = numAlpha0 = 0;
 		n = scaledWidth * scaledHeight;
 		scan = (byte *)scaledPic + 3;
 		for (i = 0; i < n; i++, scan += 4)
@@ -424,12 +429,34 @@ static void Upload (void *pic, int flags, image_t *image)
 			if (a == 0)
 			{
 				alpha = 1;	// have alpha == 0 (1 bit alpha)
+				numAlpha0++;
 				continue;
 			}
 			alpha = 2;		// have alpha == [1..254] (8 bit alpha)
 			break;
 		}
+/*		if (numAlpha0 == n)
+		{
+			int		*scan2, c0;
 
+Com_Printf("alpha=%d; ", alpha);
+			// here: evety texel in image have alpha == 0; try to decide: keep alpha or treat image as "buggy alpha"
+			scan2 = scaledPic;
+			c0 = *scan2++;
+			if (c0 == gl_config.tbl_8to32[255] || c0 == 0)	// standard "null pic" color
+			{
+				for (i = 1; i < n; i++, scan2++)
+					if (*scan2 != c0) break;
+				if (i != n)
+					alpha = 0;	// have texels with different color
+			}
+			else
+				alpha = 0;
+			if (!alpha)
+				Com_WPrintf ("GL_Upload(%s): removed alpha-channel\n", image->name);
+Com_Printf("i=%d,n=%d; c0=%08X\n",i,n,c0);//!!
+		}
+*/
 		// select texture format
 		format = 0;
 		if (alpha && (flags & IMAGE_MIPMAP))
@@ -461,16 +488,10 @@ static void Upload (void *pic, int flags, image_t *image)
 					format = GL_RGB5;
 				break;
 			case 32:
-				if (alpha)
-					format = GL_RGBA8;
-				else
-					format = GL_RGB8;
+				format = (alpha ? GL_RGBA8 : GL_RGB8);
 				break;
 			default:	// 0
-				if (alpha)
-					format = 4;
-				else
-					format = 3;
+				format = (alpha ? 4 : 3);
 			}
 		}
 	}
@@ -502,28 +523,19 @@ static void Upload (void *pic, int flags, image_t *image)
 			size = scaledWidth * scaledHeight;
 			if (r_colorMipLevels->integer)
 			{
-				int		i, r, g, b;
+				int		i;
 				byte	*p;
+				color_t	c;
 
 				// here miplevel >= 1
-				r = g = b = 0;
-				switch (miplevel % 3)
-				{
-				case 1:
-					r = 255;
-					break;
-				case 2:
-					g = 255;
-					break;
-				default:	// case 2
-					b = 255;
-				}
+				c.rgba = 0;
+				c.c[(miplevel - 1) % 3] = 255;
 				p = (byte *) scaledPic;
 				for (i = 0; i < size; i++, p += 4)
 				{
-					p[0] = (r + p[0]) / 4;
-					p[1] = (g + p[1]) / 4;
-					p[2] = (b + p[2]) / 4;
+					p[0] = (c.c[0] + p[0]) / 4;
+					p[1] = (c.c[1] + p[1]) / 4;
+					p[2] = (c.c[2] + p[2]) / 4;
 				}
 			}
 			qglTexImage2D (GL_TEXTURE_2D, miplevel, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
@@ -790,9 +802,7 @@ void GL_SetupGamma (void)
 			v = (int) (pow (i / 255.0f, invGamma) * 255.0f + 0.5f);
 
 		v <<= overbright;
-		if (v < 0) v = 0;
-		else if (v > 255) v = 255;
-		gammaTable[i] = v;
+		gammaTable[i] = bound(v, 0, 255);
 	}
 
 	for (i = 0; i < 256; i++)
@@ -800,9 +810,7 @@ void GL_SetupGamma (void)
 		int		v;
 
 		v = (int) (intens * (float)i + 0.5f);
-
-		if (v < 0) v = 0;
-		else if (v > 255) v = 255;
+		v = bound(v, 0, 255);
 
 		if (!gl_config.deviceSupportsGamma)
 			v = gammaTable[v];
@@ -963,65 +971,49 @@ static void Imagelist_f (void)
 #define		LEVELSHOT_H		256
 
 
-static void PerformScreenshot (qboolean jpeg)
+void GL_PerformScreenshot (void)
 {
 	byte	*buffer, *src, *dst;
-	char	name[MAX_OSPATH];
-	char	*dir, *ext;
+	char	name[MAX_OSPATH], *ext;
 	int		i, width, height, size;
-	qboolean levelshot, result;
+	qboolean result;
 	FILE	*f;
 
-	levelshot = !stricmp (Cmd_Argv(1), "levelshot");
-	if (levelshot)
-		dir = "levelshots";
-	else
-		dir = "screenshots";
+	if (!gl_screenshotName ||
+		((gl_screenshotFlags & SHOT_WAIT_3D) && !gl_state.have3d))
+		return;		// already performed in current frame or wait another frame
 
-	if (jpeg)
-		ext = "jpg";
-	else
-		ext = "tga";
+	qglFinish ();
 
-	// create the screenshots directory if it doesn't exist
-	Sys_Mkdir (va("%s/%s", FS_Gamedir(), dir));
-
-	// find a file name to save it to
-	if (levelshot)
+	ext = (gl_screenshotFlags & SHOT_JPEG ? ".jpg" : ".tga");
+	if (gl_screenshotName[0])
 	{
-		char	mapname[32], *tmp;
-
-		// cur path
-		tmp = strrchr (gl_worldModel.name, '/');
-		if (!tmp) tmp = gl_worldModel.name;
-		strcpy (mapname, tmp);
-		// cut extension
-		tmp = strrchr (mapname, '.');
-		if (tmp)
-			*tmp = 0;
-		else	// no ".bsp"
-		{
-			Com_WPrintf ("R_PerformScreenshot: cannot get mapname\n");
-			return;
-		}
-		// create name
-		Com_sprintf (name, sizeof(name), "%s/%s/%s.%s", FS_Gamedir(), dir, mapname, ext);
+		strcpy (name, gl_screenshotName);
+		strcat (name, ext);
 	}
 	else
+	{
+		// autogenerate name
 		for (i = 0; i < 10000; i++)
 		{	// check for a free filename
-			Com_sprintf (name, sizeof(name), "%s/%s/shot%04d.%s", FS_Gamedir(), dir, i, ext);
+			Com_sprintf (name, sizeof(name), "%s/screenshots/shot%04d%s", FS_Gamedir (), i, ext);
 			if (!(f = fopen (name, "rb")))
 				break;	// file doesn't exist
 			fclose (f);
 		}
+
+	}
+	gl_screenshotName = NULL;
+
+	// create the screenshots directory if it doesn't exist
+	FS_CreatePath (name);
 
 	// allocate buffer for 4 color components (required for ResampleTexture()
 	buffer = Z_Malloc (vid.width * vid.height * 4);
 	// read frame buffer data
 	qglReadPixels (0, 0, vid.width, vid.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
-	if (levelshot)
+	if (gl_screenshotFlags & SHOT_SMALL)
 	{
 		byte *buffer2;
 
@@ -1061,27 +1053,15 @@ static void PerformScreenshot (qboolean jpeg)
 		*dst++ = b;
 	}
 
-	if (jpeg)
-		result = WriteJPG (name, buffer, width, height, levelshot);
+	if (gl_screenshotFlags & SHOT_JPEG)
+		result = WriteJPG (name, buffer, width, height, (gl_screenshotFlags & SHOT_SMALL));
 	else
 		result = WriteTGA (name, buffer, width, height);
 
 	Z_Free (buffer);
 
-	if (result && strcmp (Cmd_Argv(1), "silent"))
+	if (result && !(gl_screenshotFlags & SHOT_SILENT))
 		Com_Printf ("Wrote %s\n", strrchr (name, '/') + 1);
-}
-
-
-static Screenshot_f (void)
-{
-	PerformScreenshot (false);
-}
-
-
-static ScreenshotJPEG_f (void)
-{
-	PerformScreenshot (true);
 }
 
 
@@ -1103,8 +1083,6 @@ void GL_InitImages (void)
 	GetPalette ();		// read palette for 8-bit WAL textures
 
 	Cmd_AddCommand ("imagelist", Imagelist_f);
-	Cmd_AddCommand ("screenshot", Screenshot_f);
-	Cmd_AddCommand ("screenshotJPEG", ScreenshotJPEG_f);
 
 	/*--------- create default texture -----------*/
 	memset (tex, 0, 16*16*4);
@@ -1150,8 +1128,7 @@ void GL_InitImages (void)
 			xv = (x - DLIGHT_SIZE/2 + 0.5f); xv *= xv;
 #if 1
 			v = 255 * (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2));
-			if (v < 0) v = 0;
-			else if (v > 255) v = 255;
+			v = bound(v, 0, 255);
 #else
 			v = (int) (4000.0f / (xv + yv));
 			if (v < 75) v = 0;
@@ -1223,6 +1200,8 @@ void GL_InitImages (void)
 	}
 	gl_fogImage = GL_CreateImage ("*fog", tex, 256, 32, IMAGE_CLAMP|IMAGE_TRUECOLOR);	//?? mipmap
 	gl_fogImage->flags |= IMAGE_SYSTEM; */
+
+	gl_reflImage = GL_FindImage ("env/defrefl", IMAGE_MIPMAP);	//!! move image to a different place
 }
 
 
@@ -1232,8 +1211,6 @@ void GL_ShutdownImages (void)
 	image_t	*img;
 
 	Cmd_RemoveCommand ("imagelist");
-	Cmd_RemoveCommand ("screenshot");
-	Cmd_RemoveCommand ("screenshotJPEG");
 
 	if (!imageCount) return;
 

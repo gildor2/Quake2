@@ -24,15 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 void Cmd_ForwardToServer (void);
 
 
-typedef struct cmdAlias_s
-{	// derived from basenamed_t
-	char	*name;
-	struct cmdAlias_s *next;
-	char	*value;
-} cmdAlias_t;
-
-cmdAlias_t	*cmdAlias;
-
 static qboolean cmdWait;
 
 #define	ALIAS_LOOP_COUNT	64
@@ -196,7 +187,7 @@ Cbuf_Execute
 */
 void Cbuf_Execute (void)
 {
-	int		i;
+	int		i, len;
 	char	*text;
 	char	line[1024];
 	int		quotes;
@@ -209,19 +200,31 @@ void Cbuf_Execute (void)
 		text = (char*)cmd_text.data;
 
 		quotes = 0;
+		len = cmd_text.cursize;
 		for (i = 0; i < cmd_text.cursize; i++)
 		{
+			if (!(quotes & 1) && text[i] == '/' && i < cmd_text.cursize-1 && text[i+1] == '/')
+			{	// remove "//" comments
+				len = i;
+				while (i < cmd_text.cursize && text[i] != '\n') i++;
+				break;
+			}
 			if (text[i] == '"')
 				quotes++;
-			if ( !(quotes&1) &&  text[i] == ';')
+			if (!(quotes & 1) && text[i] == ';')
+			{
+				len = i;
 				break;	// don't break if inside a quoted string
+			}
 			if (text[i] == '\n')
+			{
+				len = i;
 				break;
+			}
 		}
 
-
-		memcpy (line, text, i);
-		line[i] = 0;
+		memcpy (line, text, len);
+		line[len] = 0;
 
 		// delete the text from the command buffer and move remaining commands down
 		// this is necessary because commands (exec, alias) can insert data at the
@@ -523,19 +526,9 @@ void Cmd_WriteAliases (FILE *f)
 =============================================================================
 */
 
-typedef struct cmdFunc_s
-{
-	struct cmdFunc_s *next;
-	char	*name;
-	void	(*func) (void);
-} cmdFunc_t;
-
-
 static int	cmd_argc;
 static char	*cmd_argv[MAX_STRING_TOKENS];
 static char	cmd_args[MAX_STRING_CHARS];
-
-static cmdFunc_t *cmdFuncs;
 
 /*
 ============
@@ -661,7 +654,7 @@ void Cmd_TokenizeString (char *text, qboolean macroExpand)
 	char	*com_token;
 
 	// clear the args from the last string
-	for (i=0 ; i<cmd_argc ; i++)
+	for (i = 0; i < cmd_argc; i++)
 		Z_Free (cmd_argv[i]);
 
 	cmd_argc = 0;
@@ -670,16 +663,12 @@ void Cmd_TokenizeString (char *text, qboolean macroExpand)
 	// macro expand the text
 	if (macroExpand)
 		text = Cmd_MacroExpandString (text);
-	if (!text)
-		return;
+	if (!text) return;
 
 	while (1)
 	{
 		// skip whitespace up to a /n
-		while (*text && *text <= ' ' && *text != '\n')
-		{
-			text++;
-		}
+		while (*text && *text <= ' ' && *text != '\n') text++;
 
 		if (*text == '\n')
 		{	// a newline seperates commands in the buffer
@@ -687,8 +676,7 @@ void Cmd_TokenizeString (char *text, qboolean macroExpand)
 			break;
 		}
 
-		if (!*text)
-			return;
+		if (!text[0]) return;
 
 		// set cmd_args to everything after the first arg
 		if (cmd_argc == 1)
@@ -699,16 +687,12 @@ void Cmd_TokenizeString (char *text, qboolean macroExpand)
 
 			// strip off any trailing whitespace
 			l = strlen (cmd_args) - 1;
-			for ( ; l >= 0 ; l--)
-				if (cmd_args[l] <= ' ')
-					cmd_args[l] = 0;
-				else
-					break;
+			while (l >= 0 && cmd_args[l] <= ' ')
+				cmd_args[l--] = 0;
 		}
 
 		com_token = COM_Parse (&text);
-		if (!text)
-			return;
+		if (!text) return;
 
 		if (cmd_argc < MAX_STRING_TOKENS)
 		{
@@ -717,7 +701,6 @@ void Cmd_TokenizeString (char *text, qboolean macroExpand)
 			cmd_argc++;
 		}
 	}
-
 }
 
 
@@ -798,246 +781,6 @@ qboolean Cmd_Exists (char *cmd_name)
 	}
 
 	return false;
-}
-
-
-
-/*
-============
-Cmd_CompleteCommand
-============
-*/
-static char completed_name[256], *partial_name;
-static int completed_count, partial_len;
-
-static void TryComplete (char *full, int display, char mark)
-{
-	if (!Q_strncasecmp (partial_name, full, partial_len))
-	{
-		if (display) Com_Printf ("  %c  %s\n", mark + 128, full);
-
-		if (!completed_count)	// have not yet completed - just copy string
-			strcpy (completed_name, full);
-		else					// already completed - refine string
-		{
-			char *s, *d;
-
-			s = completed_name;
-			d = full;
-			while (*s == *d++) s++;
-			*s = 0;				// limit with last matched char
-		}
-
-		completed_count++;
-	}
-}
-
-// declarations from keys.c
-extern char	*keybindings[256];
-int Key_StringToKeynum (char *str);
-
-char *Cmd_CompleteCommand (char *partial)
-{
-	int		display, len;
-	char	*path, *ext;
-	char	command[256], *arg1s, arg1[256], *arg2s;	// arg1s -> "arg1 arg2 ..."; arg2s -> "arg2 arg3 ..."
-	char	*name, comp_type;
-	cvar_t	*cvar;
-
-	completed_name[0] = 0;
-
-	/*------ complete argument for variable/map/demomap -------*/
-
-	if (arg1s = strchr (partial, ' '))
-	{
-		basenamed_t	*filelist, *fileitem;
-
-		if (arg1s == partial)
-			return NULL;	// space is first line char!
-
-		len = arg1s - partial;
-		strncpy (command, partial, len);
-		command[len] = 0;
-		arg1s++;							// skip ' '
-
-		if (arg2s = strchr (arg1s, ' '))
-		{
-			len = arg2s - arg1s;
-			strncpy (arg1, arg1s, len);
-			arg1[len] = 0;
-			arg2s++;
-		}
-		else
-			strcpy (arg1, arg1s);
-
-//		Com_Printf ("cmd: \"%s\"  arg1s: \"%s\"  arg2s: \"%s\"  arg1: \"%s\"\n",command, arg1s, arg2s, arg1);
-
-		if (arg2s)
-		{
-			if (strlen (arg2s))
-				return NULL;		// have non-zero 2nd argument
-
-			// have "command arg1 " (space after arg1)
-
-			// complete "alias name "
-			if (!Q_strcasecmp (command, "alias"))
-			{
-				cmdAlias_t *alias;
-
-				for (alias = cmdAlias; alias; alias = alias->next)
-					if (!Q_strcasecmp (alias->name, arg1))
-					{
-						strcpy (completed_name, va("alias %s \"%s\"", arg1, alias->value));
-						return completed_name;
-					}
-				return NULL;
-			}
-			// complete "bind key "
-			else if (!Q_strcasecmp (command, "bind"))
-			{
-				int		key;
-
-				key = Key_StringToKeynum (arg1);
-				if (key < 0 || !keybindings[key])
-					return NULL;
-
-				strcpy (completed_name, va("bind %s \"%s\"", arg1, keybindings[key]));
-				return completed_name;
-			}
-		}
-
-		if (!Q_strcasecmp (command, "alias"))
-		{
-			// complete alias name
-			for (display = 0; display < 2; display++)
-			{
-				cmdAlias_t *alias;
-
-				partial_name = arg1s;
-				partial_len = strlen (arg1s);
-				completed_count = 0;
-				for (alias = cmdAlias; alias; alias = alias->next)
-					TryComplete (alias->name, display, 'a');
-				if (!completed_count)
-					return NULL;
-
-				if (completed_count == 1)
-				{
-					strcat (completed_name, " ");
-					break;
-				}
-				if (!display)
-					Com_Printf ("]/%s\n", partial);
-			}
-
-			strcpy (completed_name, va("%s %s", command, completed_name));
-			return completed_name;
-		}
-
-		if (!Q_strcasecmp (command, "map"))
-		{
-			path = "maps";
-			ext = ".bsp";
-			comp_type = 'm';
-		}
-		else if (!Q_strcasecmp (command, "demomap"))
-		{
-			path = "demos";
-			ext = ".dm2";
-			comp_type = 'd';
-		}
-		else // try to complete varname with its value
-		{
-			if (*arg1s)
-				return NULL;				// arg is not empty
-
-			for (cvar = cvar_vars; cvar; cvar = cvar->next)
-				if (!Q_strcasecmp (cvar->name, command))
-				{
-					strcpy (completed_name, partial); // "varname "
-					strcat (completed_name, cvar->string);
-					return completed_name;
-				}
-			return NULL;
-		}
-
-		// complete "map" or "demomap" with mask/arg*
-		filelist = FS_ListFiles (va("%s/*%s", path, ext), NULL, 0, SFF_SUBDIR);
-		if (filelist)
-		{
-			for (fileitem = filelist; fileitem; fileitem = fileitem->next)
-			{
-				// remove path part
-				if (name = strrchr (fileitem->name, '/'))
-					fileitem->name = name + 1;
-				// refine/remove file extension
-				if ((name = strrchr (fileitem->name, '.')) && !Q_strcasecmp (name, ext))
-					*name = 0;				// cut extension
-				else
-					*fileitem->name = 0;	// cut whole filename - refined by ext
-			}
-			partial_name = arg1;
-			partial_len = strlen (arg1);
-			for (display = 0; display < 2; display++)
-			{
-				completed_count = 0;
-				for (fileitem = filelist; fileitem; fileitem = fileitem->next)
-					TryComplete (fileitem->name, display, comp_type);
-				if (!completed_count)
-					return NULL;			// not completed
-
-				if (completed_count == 1)
-				{
-					strcat (completed_name, " ");
-					break;
-				}
-				if (!display)
-				{	// at this loop we just see, that we have many matches ...
-					Com_Printf ("]/%s\n", partial);
-				}
-			}
-			strcpy (completed_name, va("%s %s", command, completed_name));
-			FreeNamedList (filelist);
-			return completed_name;
-		}
-		return NULL;
-	}
-
-	/*--------- complete command/variable/alias name ------------*/
-
-	partial_len = strlen (partial);
-	if (!partial_len) return NULL;
-	partial_name = partial;
-
-	for (display = 0; display < 2; display++)
-	{
-		cmdFunc_t *cmd;
-		cmdAlias_t *a;
-
-		completed_count = 0;
-
-		// check for partial match
-		for (cmd = cmdFuncs; cmd; cmd = cmd->next)
-			TryComplete (cmd->name, display, 'c');
-		for (a = cmdAlias; a; a=a->next)
-			TryComplete (a->name, display, 'a');
-		for (cvar = cvar_vars; cvar; cvar=cvar->next)
-			TryComplete (cvar->name, display, 'v');
-
-		if (!completed_count) return NULL; // not completed
-
-		if (completed_count == 1)
-		{	// only one match
-			strcat (completed_name, " ");
-			return completed_name;
-		}
-		// many matches
-		if (!display)
-		{	// at this loop we just see, that we have many matches ...
-			Com_Printf ("]/%s\n", partial);
-		}
-	}
-	return completed_name;
 }
 
 

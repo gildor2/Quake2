@@ -183,14 +183,14 @@ sub EmitLogDecl {
 
 				#............... log with parsing params ........................
 				die ("Array used for ", $s, " in func ", $func) if $arr[$i] ne "";
-				if ($s =~ /\w*(int|sizei|byte|boolean)/) {
+				if ($s =~ /.*\*/) {
+					$fmt = "\$%X";
+				} elsif ($s =~ /\w*(int|sizei|byte|boolean)/) {
 					$fmt = "%d";
 				} elsif ($s =~ /\w*(float|double|clampd|clampf)/) {
 					$fmt = "%g";
 				} elsif ($s =~ /\w*(enum)/) {
 					$fmt = "GL_%s";
-				} elsif ($s =~ /.*\*/) {
-					$fmt = "\$%X";
 				} else {
 					die "Unknown argument type \"", $s, "\"";
 				}
@@ -430,6 +430,8 @@ print (CODE "\n};\n\n");
 
 #------------------- Create EnumName () ------------------------------
 
+#?? put this to external file
+
 print (CODE "static char *EnumName (GLenum v)\n{\n\tswitch (v)\n\t{\n");
 
 const ("GL_LINE_LOOP", "GL_LINE_STRIP", "GL_TRIANGLES", "GL_TRIANGLE_STRIP", "GL_TRIANGLE_FAN", "GL_QUADS",
@@ -442,7 +444,8 @@ const ("GL_COMBINE_ARB", "GL_COMBINE_RGB_ARB", "GL_COMBINE_ALPHA_ARB", "GL_RGB_S
 	"GL_SOURCE0_RGB_ARB", "GL_OPERAND0_RGB_ARB", "GL_SOURCE0_ALPHA_ARB", "GL_OPERAND0_ALPHA_ARB",
 	"GL_SOURCE1_RGB_ARB", "GL_OPERAND1_RGB_ARB", "GL_SOURCE1_ALPHA_ARB", "GL_OPERAND1_ALPHA_ARB",
 	"GL_SOURCE2_RGB_ARB", "GL_OPERAND2_RGB_ARB", "GL_SOURCE2_ALPHA_ARB", "GL_OPERAND2_ALPHA_ARB",
-	"GL_INTERPOLATE_ARB", "GL_CONSTANT_ARB", "GL_PREVIOUS_ARB");
+	"GL_INTERPOLATE_ARB", "GL_CONSTANT_ARB", "GL_PREVIOUS_ARB", "GL_PRIMARY_COLOR_ARB");
+const ("GL_SOURCE3_RGB_NV", "GL_OPERAND3_RGB_NV", "GL_SOURCE3_ALPHA_NV", "GL_OPERAND3_ALPHA_NV", "GL_COMBINE4_NV");	# nv_combine4
 const ("GL_FRONT", "GL_BACK");												# draw buffer
 const ("GL_MODELVIEW", "GL_PROJECTION", "GL_TEXTURE");						# matrix mode
 const ("GL_TEXTURE_ENV", "GL_NEAREST", "GL_LINEAR", "GL_NEAREST_MIPMAP_NEAREST", "GL_LINEAR_MIPMAP_NEAREST",
@@ -451,6 +454,8 @@ const ("GL_TEXTURE_ENV", "GL_NEAREST", "GL_LINEAR", "GL_NEAREST_MIPMAP_NEAREST",
 const ("GL_CLAMP", "GL_REPEAT");
 const ("GL_MODULATE", "GL_DECAL", "GL_REPLACE", "GL_ADD");					# texenv mode
 const ("GL_TEXTURE_ENV_MODE", "GL_TEXTURE_ENV_COLOR");
+const ("GL_FOG_MODE", "GL_FOG_START", "GL_FOG_END", "GL_FOG_COLOR", "GL_FOG_DENSITY",
+	"GL_FOG_DISTANCE_MODE_NV", "GL_EYE_RADIAL_NV");	# fog
 const ("GL_RGB5", "GL_RGB8", "GL_RGBA4", "GL_RGB5_A1", "GL_RGBA8",
 	"GL_RGB4_S3TC", "GL_COMPRESSED_RGB_ARB", "GL_COMPRESSED_RGBA_ARB");		# texture formats
 const ("GL_ACTIVE_TEXTURE_ARB", "GL_CLIENT_ACTIVE_TEXTURE_ARB", "GL_MAX_TEXTURE_UNITS_ARB", "GL_TEXTURE0_ARB", "GL_TEXTURE1_ARB",

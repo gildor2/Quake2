@@ -185,14 +185,27 @@ typedef struct node_s
 } node_t;
 
 
-typedef struct
+typedef struct	//?? replace this structure with extended cmodel_t
 {
-	float	mins[3], maxs[3];
-	vec3_t	center;
+	vec3_t	mins, maxs;
+	vec3_t	center;				// model center (in world coordinate system)
 	float	radius;
+	int		headnode;			//?? is Q3 inline models have this ?
 	surfaceCommon_t **faces;
 	int		numFaces;
 } inlineModel_t;
+
+
+typedef struct
+{
+	vec3_t	origin;
+	float	size;
+	float	radius;
+	color_t	color;
+	byte	style;				//!! unused now (is it needed ?)
+	node_t	*leaf;
+	float	lastTime;
+} gl_flare_t;
 
 
 typedef struct
@@ -221,6 +234,9 @@ typedef struct
 	int		numClusters;
 	int		visRowSize;
 	byte	*visInfo;
+	// flares
+	int		numFlares;
+	gl_flare_t *flares;
 } bspModel_t;
 
 

@@ -686,9 +686,9 @@ void CL_ParseFrame (void)
 	// message
 	if (cl.frame.deltaframe <= 0)
 	{
-		cl.frame.valid = true;		// uncompressed frame
+		cl.frame.valid = true;				// uncompressed frame
 		old = NULL;
-		cls.demowaiting = false;	// we can start recording now
+		cls.demowaiting = false;			// we can start recording now
 	}
 	else
 	{
@@ -707,7 +707,7 @@ void CL_ParseFrame (void)
 			Com_Printf ("Delta parse_entities too old.\n");
 		}
 		else
-			cl.frame.valid = true;	// valid delta parse
+			cl.frame.valid = true;			// valid delta parse
 	}
 
 	// clamp time
@@ -748,16 +748,16 @@ void CL_ParseFrame (void)
 		if (cls.state != ca_active)
 		{
 			cls.state = ca_active;
+			cls.key_dest = key_game;		// hide console
 			cl.force_refdef = true;
-			cl.predicted_origin[0] = cl.frame.playerstate.pmove.origin[0]*0.125;
-			cl.predicted_origin[1] = cl.frame.playerstate.pmove.origin[1]*0.125;
-			cl.predicted_origin[2] = cl.frame.playerstate.pmove.origin[2]*0.125;
+			cl.predicted_origin[0] = cl.frame.playerstate.pmove.origin[0] * 0.125f;
+			cl.predicted_origin[1] = cl.frame.playerstate.pmove.origin[1] * 0.125f;
+			cl.predicted_origin[2] = cl.frame.playerstate.pmove.origin[2] * 0.125f;
 			VectorCopy (cl.frame.playerstate.viewangles, cl.predicted_angles);
-			if (cls.disable_servercount != cl.servercount
-				&& cl.refresh_prepped)
+			if (cls.disable_servercount != cl.servercount && cl.refresh_prepped)
 				SCR_EndLoadingPlaque ();	// get rid of loading plaque
 		}
-		cl.sound_prepped = true;	// can start mixing ambient sounds
+		cl.sound_prepped = true;			// can start mixing ambient sounds
 
 		// fire entity events
 		CL_FireEntityEvents (&cl.frame);
@@ -843,7 +843,7 @@ void CL_AddPacketEntities (frame_t *frame)
 	autorotate = anglemod(cl.time/10);
 
 	// brush models can auto animate their frames
-	autoanim = 2*cl.time/1000;
+	autoanim = 2 * cl.time / 1000;
 
 	memset (&ent, 0, sizeof(ent));
 
@@ -1019,7 +1019,6 @@ void CL_AddPacketEntities (frame_t *frame)
 		if (s1->number == cl.playernum+1)
 		{
 			ent.flags |= RF_VIEWERMODEL;	// only draw from mirrors
-			// FIXME: still pass to refresh
 
 			if (effects & EF_FLAG1)
 				V_AddLight (ent.origin, 225, 1.0, 0.1, 0.1);
@@ -1030,7 +1029,8 @@ void CL_AddPacketEntities (frame_t *frame)
 			else if (effects & EF_TRACKERTRAIL)					//PGM
 				V_AddLight (ent.origin, 225, -1.0, -1.0, -1.0);	//PGM
 
-			continue;
+			if (!(cl.refdef.rdflags & RDF_THIRD_PERSON))
+				continue;		//?? extend when implement mirrors
 		}
 
 		// if set to invisible, skip
@@ -1372,6 +1372,55 @@ void CL_AddViewWeapon (player_state_t *ps, player_state_t *ops)
 }
 
 
+#define CAMERA_MINIMUM_DISTANCE	40
+
+void CL_OffsetThirdPersonView (void)
+{
+	vec3_t	forward, pos;
+	trace_t	trace;
+	float	camDist;//, dist;
+	static vec3_t mins = {-5, -5, -5}, maxs = {5, 5, 5};
+
+	// algorithm was taken from FAKK2
+	camDist = max(cl_cameradist->value, CAMERA_MINIMUM_DISTANCE);
+	AngleVectors (cl.refdef.viewangles, forward, NULL, NULL);
+	VectorMA(cl.refdef.vieworg, -camDist, forward, pos);
+	pos[2] += cl_cameraheight->value;
+
+	trace = CM_BoxTrace (cl.refdef.vieworg, pos, mins, maxs, 0, MASK_SHOT|MASK_WATER);
+	CL_ClipMoveToEntities (cl.refdef.vieworg, mins, maxs, pos, &trace);
+	if (trace.fraction < 1)
+		VectorCopy (trace.endpos, pos);
+/*	dist = VectorDistance (pos, cl.refdef.vieworg);
+
+	if (dist < CAMERA_MINIMUM_DISTANCE)
+	{
+		vec3_t	angles;
+
+		VectorCopy (cl.refdef.viewangles, angles);
+		while (angles[PITCH] < 90)
+		{
+			angles[PITCH] += 2;
+			AngleVectors (angles, forward, NULL, NULL);
+			VectorMA (cl.refdef.vieworg, -camDist, forward, pos);
+			pos[2] += cl_cameraheight->value;
+
+			trace = CM_BoxTrace (cl.refdef.vieworg, pos, mins, maxs, 0, MASK_SHOT|MASK_WATER);
+			CL_ClipMoveToEntities (cl.refdef.vieworg, mins, maxs, pos, &trace);
+			VectorCopy (trace.endpos, pos);
+			dist = VectorDistance (pos, cl.refdef.vieworg);
+			if (dist >= CAMERA_MINIMUM_DISTANCE)
+			{
+               cl.refdef.viewangles[PITCH] = (0.4f * angles[PITCH]) + (0.6f * cl.refdef.viewangles[PITCH]);
+               break;
+			}
+        }
+	} */
+
+	VectorCopy(pos, cl.refdef.vieworg);
+}
+
+
 /*
 ===============
 CL_CalcViewValues
@@ -1396,9 +1445,9 @@ void CL_CalcViewValues (void)
 	ops = &oldframe->playerstate;
 
 	// see if the player entity was teleported this frame
-	if ( fabs(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256*8
-		|| abs(ops->pmove.origin[1] - ps->pmove.origin[1]) > 256*8
-		|| abs(ops->pmove.origin[2] - ps->pmove.origin[2]) > 256*8)
+	if (abs(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256*8 ||
+		abs(ops->pmove.origin[1] - ps->pmove.origin[1]) > 256*8 ||
+		abs(ops->pmove.origin[2] - ps->pmove.origin[2]) > 256*8)
 		ops = ps;		// don't interpolate
 
 	ent = &cl_entities[cl.playernum+1];
@@ -1410,7 +1459,7 @@ void CL_CalcViewValues (void)
 		unsigned	delta;
 
 		backlerp = 1.0 - lerp;
-		for (i=0 ; i<3 ; i++)
+		for (i = 0; i < 3; i++)
 		{
 			cl.refdef.vieworg[i] = cl.predicted_origin[i] + ops->viewoffset[i]
 				+ cl.lerpfrac * (ps->viewoffset[i] - ops->viewoffset[i])
@@ -1420,32 +1469,29 @@ void CL_CalcViewValues (void)
 		// smooth out stair climbing
 		delta = cls.realtime - cl.predicted_step_time;
 		if (delta < 100)
-			cl.refdef.vieworg[2] -= cl.predicted_step * (100 - delta) * 0.01;
+			cl.refdef.vieworg[2] -= cl.predicted_step * (100 - delta) * 0.01f;
 	}
 	else
 	{	// just use interpolated values
-		for (i=0 ; i<3 ; i++)
-			cl.refdef.vieworg[i] = ops->pmove.origin[i]*0.125 + ops->viewoffset[i]
-				+ lerp * (ps->pmove.origin[i]*0.125 + ps->viewoffset[i]
-				- (ops->pmove.origin[i]*0.125 + ops->viewoffset[i]) );
+		for (i = 0; i < 3; i++)
+			cl.refdef.vieworg[i] = ops->pmove.origin[i] * 0.125f + ops->viewoffset[i]
+				+ lerp * (ps->pmove.origin[i] * 0.125f + ps->viewoffset[i] - (ops->pmove.origin[i] * 0.125f + ops->viewoffset[i]));
 	}
 
 	// if not running a demo or on a locked frame, add the local angle movement
 	if ( cl.frame.playerstate.pmove.pm_type < PM_DEAD )
 	{	// use predicted values
-		for (i=0 ; i<3 ; i++)
+		for (i = 0; i < 3; i++)
 			cl.refdef.viewangles[i] = cl.predicted_angles[i];
 	}
 	else
 	{	// just use interpolated values
-		for (i=0 ; i<3 ; i++)
+		for (i = 0; i < 3; i++)
 			cl.refdef.viewangles[i] = LerpAngle (ops->viewangles[i], ps->viewangles[i], lerp);
 	}
 
-	for (i=0 ; i<3 ; i++)
+	for (i = 0; i < 3; i++)
 		cl.refdef.viewangles[i] += LerpAngle (ops->kick_angles[i], ps->kick_angles[i], lerp);
-
-	AngleVectors (cl.refdef.viewangles, cl.v_forward, cl.v_right, cl.v_up);
 
 	// interpolate field of view
 	cl.refdef.fov_x = ops->fov + lerp * (ps->fov - ops->fov);
@@ -1454,8 +1500,20 @@ void CL_CalcViewValues (void)
 	for (i=0 ; i<4 ; i++)
 		cl.refdef.blend[i] = ps->blend[i];
 
+	if ((cl_3rd_person->integer || cl.frame.playerstate.stats[STAT_HEALTH] <= 0) &&
+		cl.frame.playerstate.pmove.pm_type != PM_SPECTATOR)
+	{
+		cl.refdef.rdflags |= RDF_THIRD_PERSON;
+		CL_OffsetThirdPersonView ();
+		if (CM_PointContents (cl.refdef.vieworg, 0) & MASK_WATER)
+			cl.refdef.rdflags |= RDF_UNDERWATER;
+	}
+
+	AngleVectors (cl.refdef.viewangles, cl.v_forward, cl.v_right, cl.v_up);
+
 	// add the weapon
-	CL_AddViewWeapon (ps, ops);
+	if (!(cl.refdef.rdflags & RDF_THIRD_PERSON))
+		CL_AddViewWeapon (ps, ops);
 }
 
 /*

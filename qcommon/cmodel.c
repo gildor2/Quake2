@@ -73,7 +73,7 @@ int			numleafbrushes;
 unsigned short map_leafbrushes[MAX_MAP_LEAFBRUSHES];
 
 int			numcmodels;
-cmodel_t	map_cmodels[MAX_MAP_MODELS];
+cmodel_t	*map_cmodels;
 
 int			numbrushes;
 cbrush_t	map_brushes[MAX_MAP_BRUSHES];
@@ -113,7 +113,7 @@ int		c_traces, c_brush_traces;
 ** Support for Half-Life maps
 */
 
-static maptype_t maptype;
+static mapType_t maptype;
 static int firstnode; // 0->firstclipnode, this->firstnode
 
 
@@ -277,30 +277,10 @@ material_t CMod_GetSurfMaterial (char *name)
 CMod_LoadSubmodels
 =================
 */
-static void CMod_LoadSubmodels (dmodel_t *data, int count)
+static void CMod_LoadSubmodels (cmodel_t *data, int count)
 {
-	cmodel_t	*out;
-	int			i;
-
-	if (count < 1)
-		Com_Error (ERR_DROP, "Map with no models");
-	if (count > MAX_MAP_MODELS)
-		Com_Error (ERR_DROP, "Map has too many models");
-
-	out = map_cmodels;
+	map_cmodels = data;
 	numcmodels = count;
-
-	for (i = 0; i < count; i++, data++, out++)
-	{
-		vec3_t	tmp;
-
-		VectorCopy (data->mins, out->mins);
-		VectorCopy (data->maxs, out->maxs);
-		VectorSubtract (out->maxs, out->mins, tmp);
-		out->radius = VectorLength (tmp) / 2;
-//??		VectorCopy (data->origin, out->origin);
-		out->headnode = data->headnode;
-	}
 }
 
 
@@ -1090,7 +1070,7 @@ cmodel_t *CM_LoadMap (char *name, qboolean clientload, unsigned *checksum)
 			memset (portalopen, 0, sizeof(portalopen));
 			FloodAreaConnections ();
 		}
-		return &map_cmodels[0];		// still have the right version
+		return &map_cmodels[0];
 	}
 
 	// free old stuff
@@ -2563,10 +2543,12 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int he
 		trace_ispoint = false;	//??
 		mins = maxs = zero_vec;
 		VectorClear (trace_extents);
+		VectorClear (trace_mins);
+		VectorClear (trace_maxs);
 	}
 	// check for "point" special case
-	else if (mins[0] == 0 && mins[1] == 0 && mins[2] == 0
-		&& maxs[0] == 0 && maxs[1] == 0 && maxs[2] == 0)
+	else if (mins[0] == 0 && mins[1] == 0 && mins[2] == 0 &&
+			 maxs[0] == 0 && maxs[1] == 0 && maxs[2] == 0)
 	{
 		trace_ispoint = true;
 		VectorClear (trace_extents);
@@ -2629,15 +2611,13 @@ rotating entities
 */
 
 
-trace_t CM_TransformedBoxTrace (vec3_t start, vec3_t end,
-				vec3_t mins, vec3_t maxs, int headnode, int brushmask,
-				vec3_t origin, vec3_t angles)
+trace_t CM_TransformedBoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,
+	int headnode, int brushmask, vec3_t origin, vec3_t angles)
 {
 	trace_t		trace;
 	vec3_t		start_l, end_l;
-	vec3_t		a;
+	vec3_t		a, temp;
 	vec3_t		forward, right, up;
-	vec3_t		temp;
 	qboolean	rotated;
 
 	// subtract origin offset

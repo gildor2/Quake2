@@ -1633,7 +1633,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigne
 	}
 
 	/*------------ check directory tree ----------------*/
-	if (gamelen) // root-relative listing (game specified)
+	if (name[0] == '.' && name[1] == '/')	// root-relative listing
 		list = AddDirFilesToList (name, list, musthave, canthave);
 	else
 	{	// game is not specified - list all searchpaths

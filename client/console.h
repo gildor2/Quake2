@@ -54,7 +54,7 @@ void Con_DrawConsole (float frac);
 void Con_Print (char *txt);
 void Con_CenteredPrint (char *text);
 void Con_Clear_f (void);
-void Con_DrawNotify (void);
+void Con_DrawNotify (qboolean drawBack);
 void Con_ClearNotify (void);
 void Con_ToggleConsole_f (void);
 

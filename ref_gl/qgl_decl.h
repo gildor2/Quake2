@@ -33,6 +33,8 @@ typedef union
 		void	(APIENTRY * EnableClientState) (GLenum array);
 		void	(APIENTRY * End) (void);
 		void	(APIENTRY * Finish) (void);
+		void	(APIENTRY * Fogf) (GLenum pname, GLfloat param);
+		void	(APIENTRY * Fogfv) (GLenum pname, const GLfloat *params);
 		void	(APIENTRY * Frustum) (GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
 		GLenum	(APIENTRY * GetError) (void);
 		void	(APIENTRY * GetFloatv) (GLenum pname, GLfloat *params);
@@ -137,6 +139,8 @@ extern qgl_t qgl;
 #define qglEnableClientState	qgl.EnableClientState
 #define qglEnd	qgl.End
 #define qglFinish	qgl.Finish
+#define qglFogf	qgl.Fogf
+#define qglFogfv	qgl.Fogfv
 #define qglFrustum	qgl.Frustum
 #define qglGetError	qgl.GetError
 #define qglGetFloatv	qgl.GetFloatv
@@ -213,18 +217,21 @@ extern qgl_t qgl;
 #define QGL_ARB_MULTITEXTURE	(1 << 1)
 #define QGL_EXT_TEXTURE_ENV_ADD	(1 << 2)
 #define QGL_ARB_TEXTURE_ENV_ADD	(1 << 3)
-#define QGL_ARB_TEXTURE_ENV_COMBINE	(1 << 4)
-#define QGL_S3_S3TC	(1 << 5)
-#define QGL_ARB_TEXTURE_COMPRESSION	(1 << 6)
-#define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 7)
-#define QGL_NV_FENCE	(1 << 8)
+#define QGL_EXT_TEXTURE_ENV_COMBINE	(1 << 4)
+#define QGL_ARB_TEXTURE_ENV_COMBINE	(1 << 5)
+#define QGL_NV_TEXTURE_ENV_COMBINE4	(1 << 6)
+#define QGL_S3_S3TC	(1 << 7)
+#define QGL_ARB_TEXTURE_COMPRESSION	(1 << 8)
+#define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 9)
+#define QGL_NV_FOG_DISTANCE	(1 << 10)
+#define QGL_NV_FENCE	(1 << 11)
 
 #ifdef _WIN32
-#define QWGL_EXT_SWAP_CONTROL	(1 << 9)
-#define QGL_NV_VERTEX_ARRAY_RANGE	(1 << 10)
+#define QWGL_EXT_SWAP_CONTROL	(1 << 12)
+#define QGL_NV_VERTEX_ARRAY_RANGE	(1 << 13)
 #endif
 
 #ifdef __linux__
-#define QGL_NV_VERTEX_ARRAY_RANGE	(1 << 9)
+#define QGL_NV_VERTEX_ARRAY_RANGE	(1 << 12)
 #endif
 

@@ -709,10 +709,10 @@ void	NET_Config (qboolean multiplayer)
 // sleeps msec or until net socket is ready
 void NET_Sleep(int msec)
 {
-    struct timeval timeout;
+	struct timeval timeout;
 	fd_set	fdset;
 	extern cvar_t *dedicated;
-	int i;
+	int		i;
 
 	if (!dedicated || !dedicated->integer)
 		return; // we're not a server, just run full speed

@@ -1,6 +1,6 @@
 - gl_showsky == 2 -> show sky surfaces (restart required)
 - gl_showtris: 1 + (1 -- use depthtest) + (2 -- show polys (not tris)) + (4 -- flash color)
-- gl_showbboxes (2 -- flash color; 3 -- show boxes around "world" entities too)
+- gl_showbboxes (2 -- flash color; 3 -- show boxes around "world" entities with different color)
 - gl_finish == 2 -> glFinish() after all draw stages
 - "imagelist *" - show hash distribution (collisions)
 - gl_logFile == 2 -> log only 1 frame

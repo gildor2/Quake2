@@ -34,6 +34,7 @@ void R_Clear (void);
 viddef_t	vid;
 
 refImport_t	ri;
+static int ref_flags;
 
 model_t		*r_worldmodel;
 
@@ -57,8 +58,6 @@ int			r_framecount;		// used for dlight push checking
 int			c_brush_polys, c_alias_polys;
 
 float		v_blend[4];			// final blending color
-
-qboolean	con_only;	// gl_console_only
 
 void GL_Strings_f( void );
 
@@ -324,7 +323,9 @@ void R_DrawEntitiesOnList (void)
 	for (i=0 ; i<r_newrefdef.num_entities ; i++)
 	{
 		currententity = &r_newrefdef.entities[i];
-		if (currententity->flags & RF_TRANSLUCENT)
+		currentmodel = currententity->model;
+
+		if (currententity->flags & RF_TRANSLUCENT || currentmodel->flags & CMODEL_ALPHA)
 			continue;	// solid
 
 		if ( currententity->flags & RF_BEAM )
@@ -334,7 +335,6 @@ void R_DrawEntitiesOnList (void)
 		}
 		else
 		{
-			currentmodel = currententity->model;
 			if (!currentmodel)
 			{
 //				DrawTextLeft("NULL",1,1,1);//!!
@@ -367,7 +367,9 @@ void R_DrawEntitiesOnList (void)
 	for (i=0 ; i<r_newrefdef.num_entities ; i++)
 	{
 		currententity = &r_newrefdef.entities[i];
-		if (!(currententity->flags & RF_TRANSLUCENT))
+		currentmodel = currententity->model;
+
+		if (!(currententity->flags & RF_TRANSLUCENT || currentmodel->flags & CMODEL_ALPHA))
 			continue;	// solid
 
 		if ( currententity->flags & RF_BEAM )
@@ -377,8 +379,6 @@ void R_DrawEntitiesOnList (void)
 		}
 		else
 		{
-			currentmodel = currententity->model;
-
 			if (!currentmodel)
 			{
 //				DrawTextLeft("NULL2",1,1,1);//!!
@@ -767,7 +767,7 @@ R_Clear
 */
 void R_Clear (void)
 {
-	if (con_only)
+	if (ref_flags & REF_CONSOLE_ONLY)
 	{
 		qglClearColor (0,0,0,1);
 		qglClear (GL_COLOR_BUFFER_BIT);
@@ -882,6 +882,9 @@ void R_RenderView (refdef_t *fd)
 
 void	R_SetGL2D (void)
 {
+	if (gl_screenshotName && gl_screenshotFlags & SHOT_NO_2D)
+		GL_PerformScreenshot ();
+
 	// set 2D virtual screen size
 	qglViewport (0,0, vid.width, vid.height);
 	qglMatrixMode(GL_PROJECTION);
@@ -1066,7 +1069,6 @@ CVAR_END
 	CVAR_GET_VARS(vars);
 
 	Cmd_AddCommand ("imagelist", GL_ImageList_f);
-	Cmd_AddCommand ("screenshot", GL_ScreenShot_f);
 	Cmd_AddCommand ("modellist", Mod_Modellist_f);
 	Cmd_AddCommand ("gl_strings", GL_Strings_f);
 }
@@ -1372,7 +1374,6 @@ R_Shutdown
 void R_Shutdown (void)
 {
 	Cmd_RemoveCommand ("modellist");
-	Cmd_RemoveCommand ("screenshot");
 	Cmd_RemoveCommand ("imagelist");
 	Cmd_RemoveCommand ("gl_strings");
 
@@ -1526,6 +1527,9 @@ void R_BeginFrame( float camera_separation )
 
 static void R_EndFrame (void)
 {
+	if (gl_screenshotName)
+		GL_PerformScreenshot ();
+
 	GLimp_EndFrame ();
 
 	if (gl_finish->integer)	// old place: beginning of the R_RenderFrame()
@@ -1672,7 +1676,6 @@ void	Draw_Pic (int x, int y, char *name);
 void	Draw_Char (int x, int y, int c);
 void	Draw_TileClear (int x, int y, int w, int h, char *name);
 void	Draw_Fill (int x, int y, int w, int h, int c);
-void	Draw_FadeScreen (void);
 
 /*
 Draw_ConCharColor
@@ -1682,11 +1685,16 @@ void	Draw_ConCharColor (int x, int y, int c, int color)
 	Draw_CharColor (x * 8, y * 8, c, color);
 }
 
+static void Screenshot (int flags, char *name)
+{
+	gl_screenshotFlags = flags;
+	gl_screenshotName = name;
+}
+
 static float GetClientLight (void)
 {
 	return gl_lightlevel;
 }
-
 
 /*
 @@@@@@@@@@@@@@@@@@@@@
@@ -1709,13 +1717,12 @@ refExport_t GetRefAPI (refImport_t rimp )
 	}
 #endif
 
-	con_only = Cvar_Get ("gl_console_only", "0", 0)->integer;
-
 	re.struc_size = sizeof(re);
 	re.api_version = API_VERSION;
-	re.flags = 0;
-	if (con_only)
-		re.flags |= REF_CONSOLE_ONLY;
+	re.flags = &ref_flags;
+	ref_flags = 0;
+	if (Cvar_Get ("gl_console_only", "0", 0)->integer)
+		ref_flags |= REF_CONSOLE_ONLY;
 
 	re.Init = R_Init;
 	re.Shutdown = R_Shutdown;
@@ -1723,6 +1730,7 @@ refExport_t GetRefAPI (refImport_t rimp )
 	re.EndFrame = R_EndFrame;
 	re.AppActivate = GLimp_AppActivate;
 	re.DrawConCharColor = Draw_ConCharColor;
+	re.Screenshot =		Screenshot;
 
 	re.RenderFrame = R_RenderFrame;
 	re.BeginRegistration = R_BeginRegistration;
@@ -1738,7 +1746,7 @@ refExport_t GetRefAPI (refImport_t rimp )
 	re.DrawCharColor = Draw_CharColor;
 	re.DrawTileClear = Draw_TileClear;
 	re.DrawFill = Draw_Fill;
-	re.DrawFadeScreen= Draw_FadeScreen;
+	re.DrawFill2 = Draw_Fill2;
 
 	re.DrawStretchRaw = Draw_StretchRaw;
 	re.CinematicSetPalette = R_SetPalette;

@@ -8,6 +8,7 @@ shader_t *gl_identityLightShader2;
 shader_t *gl_concharsShader;
 shader_t *gl_defaultSkyShader;		// default sky shader (black image)
 shader_t *gl_particleShader;
+shader_t *gl_flareShader;
 shader_t *gl_skyShader;				// current sky shader (have mapped images)
 shader_t *gl_alphaShader1, *gl_alphaShader2;
 
@@ -535,6 +536,8 @@ shader_t *GL_FindShader (char *name, int style)
 		imgFlags = IMAGE_PICMIP|IMAGE_MIPMAP;
 	else
 		imgFlags = 0;
+	if (style & SHADER_ENVMAP && !gl_reflImage)	// remove reflection if nothing to apply
+		style &= ~SHADER_ENVMAP;
 
 	if (style & SHADER_LIGHTMAP && gl_singleShader->integer)
 	{
@@ -655,9 +658,8 @@ shader_t *GL_FindShader (char *name, int style)
 
 			if (style & SHADER_TRYLIGHTMAP)
 			{
-				//?? vertex lighting for alpha/warp-surfaces
 				lightmapNumber = LIGHTMAP_NONE;
-				stage->rgbGenType = RGBGEN_EXACT_VERTEX;
+				stage->rgbGenType = (style & (SHADER_TRANS33|SHADER_TRANS66)) ? RGBGEN_BOOST_VERTEX : RGBGEN_EXACT_VERTEX;
 				sh.lightmapNumber = LIGHTMAP_VERTEX;
 			}
 
@@ -715,10 +717,7 @@ shader_t *GL_FindShader (char *name, int style)
 						// image has no alpha, but use glColor(x,x,x,<1)
 				stage->alphaGenType = ALPHAGEN_VERTEX;
 			}
-			else if ((style & SHADER_ALPHA && img->alphaType) /* ?? || (style & (SHADER_TRANS33|SHADER_TRANS66) && img->alphaType) */)
-			/* NOTE about commented part: need to complex check texture; cannot make this as SHADER_ALPHA only by checking
-			 * alpha-channel (map ground3, rhcity4 (fences): need, but vertigo (glass1b ?) - don't); make this with script ? (best way)
-			 */
+			else if (style & SHADER_ALPHA && img->alphaType)
 			{
 				if (img->alphaType == 1)
 					stage->glState = GLSTATE_ALPHA_GE05;
@@ -727,17 +726,24 @@ shader_t *GL_FindShader (char *name, int style)
 			}
 			else if (style & (SHADER_TRANS33|SHADER_TRANS66))
 			{
+				float	alpha;
+
 				stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_DEPTHWRITE;
-				stage->alphaGenType = ALPHAGEN_CONST;
 				if (style & SHADER_TRANS33)
 				{
-					if (style & SHADER_TRANS66)
-						stage->rgbaConst.c[3] = 0.22 * 255;	// both flags -- make it more translucent
-					else
-						stage->rgbaConst.c[3] = 0.33 * 255;
+					if (style & SHADER_TRANS66)	alpha = 0.22;	// both flags -- make it more translucent
+					else						alpha = 0.33;
 				}
-				else if (style & SHADER_TRANS66)
-					stage->rgbaConst.c[3] = 0.66 * 255;
+				else alpha = 0.66;
+
+#if 0
+				stage->alphaGenType = ALPHAGEN_CONST;
+				stage->rgbaConst.c[3] = Q_ftol (alpha * 255);
+#else
+				stage->alphaGenType = ALPHAGEN_ONE_MINUS_DOT;
+				stage->alphaMin = alpha * 2 / 3;
+				stage->alphaMax = 0.8;
+#endif
 			}
 //??			if (!(stage->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK)) && lightmapNumber == LIGHTMAP_NONE)
 //				stage->glState |= GLSTATE_DEPTHWRITE;
@@ -810,6 +816,19 @@ shader_t *GL_FindShader (char *name, int style)
 
 			if (style & SHADER_ABSTRACT)
 				st[0].numAnimTextures = 0;			// remove all stages
+
+			if (style & SHADER_ENVMAP)
+			{
+				stage++;	// add next stage
+				stageIdx++;
+				stage->numAnimTextures = 1;
+				shaderImages[stageIdx * MAX_STAGE_TEXTURES] = gl_reflImage;
+				stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONE;
+				stage->rgbGenType = RGBGEN_VERTEX;
+				stage->alphaGenType = ALPHAGEN_CONST;
+				stage->rgbaConst.c[3] = 128;	//??
+				stage->tcGenType = TCGEN_ENVIRONMENT;
+			}
 		}
 	}
 	return FinishShader ();
@@ -835,25 +854,43 @@ void GL_ResetShaders (void)
 	shaderCount = 0;
 
 	/*---------------- creating system shaders --------------------*/
+
 	// abstract shaders should be created in reverse (with relation to sortParam) order
 	gl_alphaShader2 = GL_FindShader ("*alpha2", SHADER_ABSTRACT);
 	gl_alphaShader2->sortParam = SORT_SEETHROUGH + 1;
-	gl_particleShader = GL_FindShader ("*particle", SHADER_ABSTRACT);
+	gl_particleShader = GL_FindShader ("*particle", SHADER_ABSTRACT);	//!! NOCULL
 	gl_particleShader->sortParam = SORT_SEETHROUGH;
 	gl_alphaShader1 = GL_FindShader ("*alpha1", SHADER_ABSTRACT);
 	gl_alphaShader1->sortParam = SORT_SEETHROUGH;
 
 	gl_defaultShader = GL_FindShader ("*default", SHADER_WALL);
+
 	gl_identityLightShader = GL_FindShader ("*identityLight", SHADER_FORCEALPHA|SHADER_WALL);
-	gl_identityLightShader->stages[0]->rgbGenType = RGBGEN_EXACT_VERTEX;	//!! hack (should provide different flags for "create()")
+	gl_identityLightShader->stages[0]->rgbGenType = RGBGEN_EXACT_VERTEX;
 	gl_identityLightShader->stages[0]->glState |= GLSTATE_NODEPTHTEST;		// remove depth test/write (this is 2D shader)
 	gl_identityLightShader->stages[0]->glState &= ~GLSTATE_DEPTHWRITE;
+
 	// create 2nd "identityLight" (with depth test/write and different name)
 	strcpy (sh.name, "*identitylight2");
+	st[0].rgbGenType = RGBGEN_EXACT_VERTEX;
 	gl_identityLightShader2 = AddPermanentShader ();
-//??	gl_identityLightShader2 = GL_FindShader ("*identityLight", SHADER_FORCEALPHA|SHADER_WALL|SHADER_TRYLIGHTMAP);
-			//!! make different ->name
-	gl_identityLightShader2->stages[0]->rgbGenType = RGBGEN_EXACT_VERTEX;
+
+	strcpy (sh.name, "*flare");
+	sh.sortParam = SORT_SPRITE;
+	sh.cullMode = CULL_NONE;
+	st[0].rgbGenType = RGBGEN_VERTEX;
+#if 0
+	st[0].glState = GLSTATE_NODEPTHTEST|GLSTATE_SRC_SRCCOLOR|GLSTATE_DST_ONE;
+#else
+	st[0].alphaGenType = ALPHAGEN_VERTEX;
+	st[0].glState = GLSTATE_NODEPTHTEST|GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONE;
+#endif
+	shaderImages[0] = GL_FindImage ("sprites/corona", IMAGE_MIPMAP|IMAGE_TRUECOLOR);
+	if (shaderImages[0])
+		gl_flareShader = FinishShader ();//?? AddPermanentShader ();
+	else
+		gl_flareShader = NULL;
+
 	gl_skyShader = gl_defaultSkyShader = GL_FindShader ("*sky", SHADER_SKY|SHADER_ABSTRACT);
 
 	gl_concharsShader = GL_FindShader ("pics/conchars", SHADER_ALPHA);

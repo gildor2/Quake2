@@ -1,17 +1,19 @@
 #include "qcommon.h"
 
-bspfile_t bspfile;
+
+static bspfile_t bspfile;
+static dheader_t *header;
 
 
 //?? Should perform SwapBlock() (as in Q3 bsp tools)
-void SwapQ2BspFile (bspfile_t *f)
+static void SwapQ2BspFile (bspfile_t *f)
 {
 	int		i, j;
 
 	// models
 	for (i = 0; i < f->numModels; i++)
 	{
-		dmodel_t	*d;
+		cmodel_t	*d;
 
 		d = &f->models[i];
 
@@ -23,7 +25,7 @@ void SwapQ2BspFile (bspfile_t *f)
 		{
 			d->mins[j] = LittleFloat(d->mins[j]);
 			d->maxs[j] = LittleFloat(d->maxs[j]);
-			d->origin[j] = LittleFloat(d->origin[j]);
+//			d->origin[j] = LittleFloat(d->origin[j]);
 		}
 	}
 
@@ -161,14 +163,14 @@ void SwapQ2BspFile (bspfile_t *f)
 	}
 }
 
-void ProcessQ2BspFile (bspfile_t *f)
+static void ProcessQ2BspFile (bspfile_t *f)
 {
 	int i, j;
 
 	// models: inflate mins/maxs by 1
 	for (i = 0; i < f->numModels; i++)
 	{
-		dmodel_t	*d;
+		cmodel_t	*d;
 
 		d = &f->models[i];
 
@@ -203,12 +205,37 @@ void ProcessQ2BspFile (bspfile_t *f)
 	for (i = 0; i < f->numFaces; i++)
 		if (f->faces[i].lightofs > f->lightDataSize)
 			f->faces[i].lightofs = -1;
+
 }
 
 
-dheader_t	*header;
+static void LoadQ2Submodels (bspfile_t *f, dmodel_t *data)
+{
+	cmodel_t *out;
+	int		i;
 
-int CheckLump (int lump, void **ptr, int size)
+	if (f->numModels < 1)
+		Com_Error (ERR_DROP, "Map with no models");
+
+	out = f->models = AllocChainBlock (f->extraChain, sizeof(cmodel_t) * f->numModels);
+	for (i = 0; i < f->numModels; i++, data++, out++)
+	{
+		vec3_t	tmp;
+
+		VectorCopy (data->mins, out->mins);
+		VectorCopy (data->maxs, out->maxs);
+		VectorSubtract (out->maxs, out->mins, tmp);
+		out->radius = VectorLength (tmp) / 2;
+		out->headnode = data->headnode;
+		out->flags = 0;
+		out->firstface = data->firstface;
+		out->numfaces = data->numfaces;
+		// dmodel_t have unused field "origin"
+	}
+}
+
+
+static int CheckLump (int lump, void **ptr, int size)
 {
 	int		length, ofs;
 
@@ -227,6 +254,7 @@ int CheckLump (int lump, void **ptr, int size)
 void LoadQ2BspFile (void)
 {
 	int			i;
+	dmodel_t	*models;
 
 	header = (dheader_t *) bspfile.file;
 
@@ -237,11 +265,13 @@ void LoadQ2BspFile (void)
 	if (header->version != BSPVERSION)
 		Com_Error (ERR_DROP, "%s is version %i, not %i\n", bspfile.name, header->version, BSPVERSION);
 
+	bspfile.type = map_q2;
+
 	bspfile.lightDataSize = CheckLump (LUMP_LIGHTING, &bspfile.lighting, 1);
-	bspfile.entDataSize = CheckLump (LUMP_ENTITIES, &bspfile.entities, 1);
 	bspfile.visDataSize = CheckLump (LUMP_VISIBILITY, &bspfile.visibility, 1);
 
-	bspfile.numModels = CheckLump (LUMP_MODELS, &bspfile.models, sizeof(dmodel_t));
+	bspfile.numModels = CheckLump (LUMP_MODELS, &models, sizeof(dmodel_t));
+	LoadQ2Submodels (&bspfile, models);
 	bspfile.numVertexes = CheckLump (LUMP_VERTEXES, &bspfile.vertexes, sizeof(dvertex_t));
 	bspfile.numPlanes = CheckLump (LUMP_PLANES, &bspfile.planes, sizeof(dplane_t));
 	bspfile.numLeafs = CheckLump (LUMP_LEAFS, &bspfile.leafs, sizeof(dleaf_t));
@@ -260,6 +290,14 @@ void LoadQ2BspFile (void)
 	// swap everything
 	SwapQ2BspFile (&bspfile);
 	ProcessQ2BspFile (&bspfile);
+
+	// load entstring after all: we may require to change something
+#if 0
+	bspfile.entDataSize = CheckLump (LUMP_ENTITIES, &bspfile.entities, 1);
+#else
+	bspfile.entities = ProcessEntstring ((byte*)header + header->lumps[LUMP_ENTITIES].fileofs);
+	bspfile.entDataSize = strlen (bspfile.entities);
+#endif
 }
 
 
@@ -274,7 +312,10 @@ bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum)
 
 	if (bspfile.name[0] && bspfile.file)
 		FS_FreeFile (bspfile.file);
+	if (bspfile.extraChain)
+		FreeMemoryChain (bspfile.extraChain);
 
+	memset (&bspfile, 0, sizeof(bspfile));
 	strcpy (bspfile.name, filename);
 	bspfile.length = FS_LoadFile (filename, &bspfile.file);
 	if (!bspfile.file)
@@ -283,8 +324,8 @@ bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum)
 		Com_Error (ERR_DROP, "Couldn't load %s", filename);
 	}
 	bspfile.checksum = LittleLong (Com_BlockChecksum (bspfile.file, bspfile.length));
-		if (checksum)
-			*checksum = bspfile.checksum;
+		if (checksum) *checksum = bspfile.checksum;
+	bspfile.extraChain = CreateMemoryChain ();
 
 	switch (LittleLong(*(unsigned *)bspfile.file))
 	{
@@ -295,9 +336,421 @@ bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum)
 //			LoadHLBspFile ();
 //			return &bspfile;
 	}
+	// error
 	FS_FreeFile (bspfile.file);
 	bspfile.name[0] = 0;
 	bspfile.file = NULL;
 	Com_Error (ERR_DROP, "LoadBrushModel: %s has a wrong BSP header\n", filename);
 	return NULL;		// make compiler happy
+}
+
+
+/*--------------------------------------------------------------------*/
+
+#define MAX_ENT_FIELDS	32
+
+typedef struct
+{
+	char	name[64];
+	char	value[192];
+} entField_t;
+
+
+static qboolean haveErrors;
+static entField_t entity[MAX_ENT_FIELDS];
+static int numEntFields;
+
+
+static entField_t *FindField (char *name)
+{
+	int		i;
+	entField_t *f;
+
+	for (i = 0, f = entity; i < numEntFields; i++, f++)
+		if (!stricmp (f->name, name))
+			return f;
+	return NULL;
+}
+
+
+static void RemoveField (char *name)
+{
+	entField_t *field;
+
+	if (field = FindField (name))
+		field->name[0] = 0;
+}
+
+
+static void AddField (char *name, char *value)
+{
+	if (numEntFields >= MAX_ENT_FIELDS) return;
+
+	strcpy (entity[numEntFields].name, name);
+	strcpy (entity[numEntFields].value, value);
+	numEntFields++;
+}
+
+
+static void ErrMsg (char *str)
+{
+	haveErrors = true;
+	Com_WPrintf ("EntString error: %s\n", str);
+}
+
+
+static qboolean ReadEntity (char **src)
+{
+	char	*tok;
+	entField_t *field;
+
+	numEntFields = 0;
+
+	if (!src) return false;
+
+	tok = COM_Parse (src);
+	if (!tok[0]) return false;
+
+	if (tok[0] != '{' || tok[1] != 0)
+	{
+		ErrMsg ("expected \"{\"");
+		return false;
+	}
+
+	field = entity;
+	while (1)
+	{
+		tok = COM_Parse (src);
+		if (tok[0] == '}' && tok[1] == 0)
+			break;
+
+		// add field name
+		strcpy (field->name, tok);
+
+		// add field value
+		tok = COM_Parse (src);
+		if (!tok)
+		{
+			ErrMsg ("unexpected end of data");
+			return false;
+		}
+		strcpy (field->value, tok);
+
+		if (numEntFields++ == MAX_ENT_FIELDS)
+		{
+			ErrMsg ("MAX_ENT_FIELDS");
+			return false;
+		}
+		field++;
+	}
+
+	return true;
+}
+
+
+//#define SHOW_WRITE
+
+static void WriteEntity (char **dst)
+{
+	int		i;
+#ifdef SHOW_WRITE
+	char	*txt = *dst;
+#endif
+
+	strcpy (*dst, "{\n"); (*dst) += 2;
+	for (i = 0; i < numEntFields; i++)
+		if (entity[i].name[0])	// may be removed field
+			(*dst) += Com_sprintf (*dst, 1024, "\"%s\" \"%s\"\n", entity[i].name, entity[i].value);
+	strcpy (*dst, "}\n"); (*dst) += 2;
+#ifdef SHOW_WRITE
+	Com_Printf ("^6%s", txt);
+#endif
+}
+
+
+// Returns "true" if entity should be passed to game
+static qboolean ProcessEntity ()
+{
+	entField_t *f;
+	qboolean haveOrigin, haveModel;
+	int		modelIdx;
+	vec3_t	origin;
+	int		spawnflags;
+	char	*class;
+
+	/*------------------ get some fields -------------------*/
+
+	// get classname
+	if (f = FindField ("classname"))
+		class = f->value;
+	else
+		class = "";
+	// get spawnflags
+	if (f = FindField ("spawnflags"))
+		spawnflags = atoi (f->value);
+	else
+		spawnflags = 0;
+#if 0
+#define SPAWNFLAG_NOT_DEATHMATCH	0x800
+	if (Cvar_VariableInt("keep_sp") && (spawnflags & SPAWNFLAG_NOT_DEATHMATCH))//!!
+	{
+		spawnflags &= ~SPAWNFLAG_NOT_DEATHMATCH;
+		Com_sprintf (f->value, sizeof(f->value), "%d", spawnflags);
+	}
+#endif
+	// get origin
+	if (f = FindField ("origin"))
+	{
+		haveOrigin = true;
+		sscanf (f->value, "%f %f %f", &origin[0], &origin[1], &origin[2]);
+	}
+	else
+		haveOrigin = false;
+	// get inline model
+	if (f = FindField ("model"))
+	{
+		haveModel = true;
+		sscanf (f->value, "*%d", &modelIdx);
+	}
+	else
+		haveModel = false;
+
+	/*---------------- get lighting info ----------------*/
+
+//#define SHOW_LIGHTS
+	if (!strncmp (class, "light", 5))
+	{
+#ifndef SHOW_LIGHTS
+		if (!class[5] || !strcmp (class + 5, "flare"))	// "light" or "lightflare"
+#endif
+		{
+			lightFlare_t *flare;
+			int		style;
+
+			/* !!
+			- "style": if >= 32 ... (def: 0)
+			- "spawnflags": &2 -> flare, &4 -> resize, {&8 -> dynamic??}
+			- if flare -> add flare
+			  {
+			  	"health" -> size (def: 24)
+			  	"dmg": normal (0, def), sun, amber, red, blue, green
+			  	if "dmg" == SUN -> VectorNormalize(origin)
+			  }
+			  else -> lightsource for dir lighting
+			  {
+			  	def "light" = 300 (light_level)
+			  	AddLightSource if "light" > 100
+			  }
+			*/
+
+			if (f = FindField ("style"))
+				style = atoi (f->value);			// default is 0
+			else
+				style = 0;
+#ifndef SHOW_LIGHTS
+			if (!(spawnflags & 2))					// need 2 -> FLARE
+				return (style >= 32);
+#endif
+
+			flare = AllocChainBlock (bspfile.extraChain, sizeof(lightFlare_t));
+			if (bspfile.flares)
+			{
+				flare->next = bspfile.flares;
+				bspfile.flares = flare;
+			}
+			else
+				bspfile.flares = flare;
+			bspfile.numFlares++;
+
+			if (f = FindField ("health"))
+				flare->size = atof (f->value);
+			else
+				flare->size = 24;							// default size
+			flare->style = style;
+
+			flare->color[0] = flare->color[1] = flare->color[2] = flare->color[3] = 255;
+			if (f = FindField ("dmg"))
+			{
+				switch (atoi (f->value))
+				{
+				case 1:
+					if (bspfile.type == map_kp) DebugPrintf ("HAVE SUN FLARE: %s\n", bspfile.name);//!!
+					flare->radius = -1;						// mark as "sun"
+					flare->color[2] = 192;
+					VectorNormalize (origin);				// just a sun direction
+					break;
+				case 2:
+					flare->color[2] = 128;					// amber
+					break;
+				case 3:
+					flare->color[1] = flare->color[2] = 64;	// red
+					break;
+				case 4:
+					flare->color[0] = flare->color[1] = 64;	// blue
+					break;
+				case 5:
+					flare->color[0] = flare->color[2] = 64;	// green
+					break;
+				}
+			}
+#ifdef SHOW_LIGHTS
+			if (!(spawnflags & 2))
+			{
+				flare->color[0] = 64;
+				flare->color[1] = 128;
+				flare->color[2] = 255;
+				flare->size = 48;
+//				flare->style = 4;
+			}
+#endif
+			VectorCopy(origin, flare->origin);
+			if (f = FindField ("radius"))
+				flare->radius = atof (f->value);
+			if (f = FindField ("color"))					// can override sun color ...
+				sscanf (f->value, "%d %d %d", &flare->color[0], &flare->color[1], &flare->color[2]);
+
+			return (style >= 32);
+		}
+		// can be "light_mine ..."
+		return true;
+	}
+
+	// our map script (temp !!)
+	if (!strcmp (class, "surfparam"))
+	{
+		if (f = FindField ("name"))
+		{
+			int		i;
+			texinfo_t *d;
+			char	*name;
+
+			name = f->value;
+			if (f = FindField ("flags"))
+			{
+				qboolean found;
+				int		flags, testflags, testmask;
+
+				flags = atoi (f->value);
+				if (f = FindField ("inflags"))
+					sscanf (f->value, "%d %d", &testmask, &testflags);
+				else
+					testflags = testmask = 0;
+				found = false;
+				for (i = 0, d = bspfile.texinfo; i < bspfile.numTexinfo; i++, d++)
+					if (!strcmp (d->texture, name) && ((d->flags & testmask) == testflags))
+					{
+						d->flags = d->flags & ~testmask | flags;
+						found = true;
+					}
+				if (!found)
+					Com_DPrintf ("texinfo %s is not found\n", name);
+			}
+			else
+				Com_DPrintf ("no flags specified for %s\n", name);
+		}
+		return false;
+	}
+
+	if (bspfile.type == map_kp)
+	{
+		int		chk;
+
+		// check entities to remove
+		if (!strcmp (class, "junior"))
+			return false;	// KP "junior" entity
+
+		/*----- check entities with KP RF2_SURF_ALPHA flags ------*/
+		chk = 0;
+		if (!stricmp (class, "func_wall"))
+			chk = 32;
+		else if (!stricmp (class, "func_door"))
+			chk = 128;
+		else if (!stricmp (class, "func_door_rotating"))
+			chk = 4;
+		else if (!stricmp (class, "func_explosive") ||
+				 !stricmp (class, "func_train") || !stricmp (class, "func_train_rotating"))
+			chk = 8;
+
+		if ((chk & spawnflags) && haveModel && modelIdx > 0)
+			bspfile.models[modelIdx].flags |= CMODEL_ALPHA;
+	}
+
+	/*---------------------------------------------*/
+
+	if (!strcmp (class, "worldspawn"))
+	{
+		if (bspfile.type == map_kp && !FindField ("sky"))
+			AddField ("sky", "sr");		// set default Kingpin sky
+		if (f = FindField ("fogval"))
+		{
+			sscanf (f->value, "%f %f %f", &bspfile.fogColor[0], &bspfile.fogColor[1], &bspfile.fogColor[2]);
+			f->name[0] = 0;				// remove field
+			if (f = FindField ("fogdensity"))
+			{
+				bspfile.fogDens = atof (f->value);
+				f->name[0] = 0;			// remove field
+				bspfile.fogMode = fog_exp;
+			}
+		}
+		// Voodoo fog params
+		RemoveField ("fogdensity2");
+		RemoveField ("fogval2");
+
+		return true;
+	}
+
+/*	Com_Printf("------------\n");
+	for (i = 0; i < numEntFields; i++)
+	{
+		Com_Printf("\"%s\"=\"%s\"\n", entity[i].name, entity[i].value);
+	} */
+
+	return true;
+}
+
+
+char *ProcessEntstring (char *entString)
+{
+	char	*dst, *dst2, *src;
+	// patch (temporary !!)
+	int		plen;
+	char	*patch;
+
+	plen = FS_LoadFile (va("%s.add", bspfile.name), &patch) + 1;
+
+	src = entString;
+	dst = dst2 = AllocChainBlock (bspfile.extraChain, strlen (entString) + 1 + plen);
+
+	// detect Kingpin map
+	if (strstr (entString, "\"classname\" \"junior\"") ||
+		strstr (entString, "\"classname\" \"lightflare\"") ||
+		strstr (entString, "\"fogdensity2\""))
+	{
+		bspfile.type = map_kp;
+		Com_DPrintf ("Kingpin map detected\n");
+	}
+
+	haveErrors = false;
+	while (!haveErrors && ReadEntity (&src))
+	{
+		if (ProcessEntity (&src))
+			WriteEntity (&dst);
+	}
+
+	if (plen)
+	{
+		Com_DPrintf ("Adding entity patch ...\n");
+		src = patch;
+		while (!haveErrors && ReadEntity (&src))
+		{
+			if (ProcessEntity (&src))
+				WriteEntity (&dst);
+		}
+	}
+
+	if (haveErrors)
+		return entString;
+
+	Com_DPrintf ("ProcessEntstring(): old size = %d, new size = %d\n", strlen (entString), dst - dst2);
+	return dst2;
 }

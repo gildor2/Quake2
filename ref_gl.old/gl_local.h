@@ -87,7 +87,7 @@ void	QGL_LogMessage (char *text);
 #define Draw_PicColor		GLDraw_PicColor
 #define Draw_TileClear		GLDraw_TileClear
 #define Draw_Fill			GLDraw_Fill
-#define Draw_FadeScreen		GLDraw_FadeScreen
+#define Draw_Fill2			GLDraw_Fill2
 #define R_RegisterSkin		GLR_RegisterSkin
 #define R_MarkLights		GLR_MarkLights
 #define R_PushDlights		GLR_PushDlights
@@ -217,6 +217,10 @@ typedef struct image_s
 #define	TEXNUM_IMAGES		1153
 
 #define		MAX_GLTEXTURES	1024
+
+extern int 	gl_screenshotFlags;
+extern char	*gl_screenshotName;
+void GL_PerformScreenshot (void);
 
 //===================================================================
 
@@ -386,7 +390,6 @@ int 	R_Init( void );
 void	R_Shutdown( void );
 
 void R_RenderView (refdef_t *fd);
-void GL_ScreenShot_f (void);
 void R_DrawAliasModel (entity_t *e);
 void R_DrawBrushModel (entity_t *e);
 void R_DrawSpriteModel (entity_t *e);
@@ -429,7 +432,7 @@ void	Draw_Char (int x, int y, int c);
 void	Draw_CharColor (int x, int y, int num, int color);
 void	Draw_TileClear (int x, int y, int w, int h, char *name);
 void	Draw_Fill (int x, int y, int w, int h, int c);
-void	Draw_FadeScreen (void);
+void	Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, float a);
 void	Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data);
 
 void	R_BeginFrame( float camera_separation );
@@ -531,10 +534,12 @@ typedef struct
 	int		formatAlpha1;			// RGB_A1 (1 bit for alpha)
 
 	int		colorBits;
-	int		prevMode;				// last valid video mode
-	qboolean fullscreen;
+	byte	fullscreen;
+	byte	prevMode;				// last valid video mode
+	byte	prevBPP;
+	byte	prevFS;
 
-	qboolean consoleOnly;			// true if graphics disabled
+	byte	consoleOnly;			// true if graphics disabled (can use ref_flags & REF_CONSOLE_ONLY !!)
 
 	// gamma
 	qboolean deviceSupportsGamma;
@@ -613,7 +618,7 @@ IMPLEMENTATION SPECIFIC FUNCTIONS
 void		GLimp_BeginFrame( float camera_separation );
 void		GLimp_EndFrame( void );
 int 		GLimp_Init( void );
-void		GLimp_Shutdown( void );
+void		GLimp_Shutdown(void);
 int     	GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen );
 void		GLimp_AppActivate( qboolean active );
 

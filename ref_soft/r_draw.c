@@ -659,25 +659,27 @@ void Draw_Fill (int x, int y, int w, int h, int c)
 
 /*
 ================
-Draw_FadeScreen
+Draw_Fade
 
 ================
 */
-void Draw_FadeScreen (void)
+void Draw_Fade (int x, int y, int w, int h, int c)
 {
-	int			x,y;
-	byte		*pbuf;
-	int	t;
+	int		x1, x2, y1, y2;
+	byte	*pbuf;
+	int		t;
 
-	for (y=0 ; y<vid.height ; y++)
+	x2 = x + w;
+	y2 = y + h;
+	for (y1 = y; y1 < y2; y1++)
 	{
-		pbuf = (byte *)(vid.buffer + vid.rowbytes*y);
-		t = (y & 1) << 1;
+		pbuf = (byte *)(vid.buffer + vid.rowbytes * y1);
+		t = (y1 & 1) << 1;
 
-		for (x=0 ; x<vid.width ; x++)
+		for (x1 = x; x1 < x2; x1++)
 		{
-			if ((x & 3) != t)
-				pbuf[x] = 0;
+			if ((x1 & 3) != t)
+				pbuf[x1] = c;
 		}
 	}
 }

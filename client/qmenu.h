@@ -20,6 +20,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef __QMENU_H__
 #define __QMENU_H__
 
+// do not display menus when in console-only mode
+#define MENU_CHECK	if (*re.flags & REF_CONSOLE_ONLY) return;
+
+
 #define MAXMENUITEMS		64
 
 #define MENU_SCROLL_BORDER	32

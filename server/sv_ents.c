@@ -721,10 +721,8 @@ void SV_RecordDemoMessage (void)
 	while (e < ge->num_edicts)
 	{
 		// ignore ents without visible models unless they have an effect
-		if (ent->inuse &&
-			ent->s.number &&
-			(ent->s.modelindex || ent->s.effects || ent->s.sound || ent->s.event) &&
-			!(ent->svflags & SVF_NOCLIENT))
+		if (ent->inuse && ent->s.number && !(ent->svflags & SVF_NOCLIENT) &&
+			(ent->s.modelindex || ent->s.effects || ent->s.sound || ent->s.event))
 			MSG_WriteDeltaEntity (&nostate, &ent->s, &buf, false, true);
 
 		e++;

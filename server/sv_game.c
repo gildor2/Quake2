@@ -285,8 +285,7 @@ static qboolean PF_inPHS (vec3_t p1, vec3_t p2)
 	return true;
 }
 
-static void PF_StartSound (edict_t *entity, int channel, int sound_num, float volume,
-    float attenuation, float timeofs)
+static void PF_StartSound (edict_t *entity, int channel, int sound_num, float volume, float attenuation, float timeofs)
 {
 	if (!entity)
 		return;
@@ -338,6 +337,104 @@ static cvar_t *PF_Cvar_Get (char *name, char *value, int flags)
 
 void SCR_DebugGraph (float value, int color);
 
+
+//----------------------------------------------------------------------------------
+
+#define SV_Pmove Pmove
+
+
+#define SV_PROFILE
+
+#ifdef SV_PROFILE
+
+int prof_times[256];
+int prof_counts[256];
+
+
+#pragma warning (push)
+#pragma warning (disable : 4035)
+#pragma warning (disable : 4715)
+__inline unsigned cycles (void)	  // taken from UT
+{
+	__asm
+	{
+		xor   eax,eax	          // Required so that VC++ realizes EAX is modified.
+		_emit 0x0F		          // RDTSC  -  Pentium+ time stamp register to EDX:EAX.
+		_emit 0x31		          // Use only 32 bits in EAX - even a Ghz cpu would have a 4+ sec period.
+		xor   edx,edx	          // Required so that VC++ realizes EDX is modified.
+	}
+}
+#pragma warning (pop)
+
+#define PROF						\
+	int	st_t = cycles();
+
+#define PROF2(type)					\
+	type res;						\
+	int st_t = cycles();			\
+	res =
+
+#define EPROF(n) 					\
+	prof_times[n] += cycles()-st_t;	\
+	prof_counts[n]++;
+
+#define EPROF2(n) 					\
+	prof_times[n] += cycles()-st_t;	\
+	prof_counts[n]++;				\
+	return res;
+
+
+static void PSV_LinkEdict(edict_t *e)
+{	PROF; SV_LinkEdict(e); EPROF(0);	}
+#define SV_LinkEdict PSV_LinkEdict
+
+static void PSV_UnlinkEdict (edict_t *e)
+{	PROF; SV_UnlinkEdict(e); EPROF(1);	}
+#define SV_UnlinkEdict PSV_UnlinkEdict
+
+static int PSV_AreaEdicts (vec3_t mins, vec3_t maxs, edict_t **list, int maxcount, int areatype)
+{	PROF2(int)	SV_AreaEdicts(mins,maxs,list,maxcount,areatype); EPROF2(2);	}
+#define SV_AreaEdicts PSV_AreaEdicts
+
+static trace_t PSV_Trace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
+{	PROF2(trace_t)	SV_Trace(start,mins,maxs,end,passedict,contentmask); EPROF2(3);	}
+#define SV_Trace PSV_Trace
+
+static int PSV_PointContents (vec3_t p)
+{	PROF2(int)	SV_PointContents(p); EPROF2(4);	}
+#define SV_PointContents PSV_PointContents
+
+static void PPmove (pmove_t *pmove)
+{	PROF; Pmove(pmove); EPROF(5);	}
+#define SV_Pmove PPmove
+
+static int PSV_ModelIndex (char *name)
+{	PROF2(int)	SV_ModelIndex(name); EPROF2(6);	}
+#define SV_ModelIndex PSV_ModelIndex
+
+static int PSV_ImageIndex (char *name)
+{	PROF2(int)	SV_ImageIndex(name); EPROF2(7);	}
+#define SV_ImageIndex PSV_ImageIndex
+
+static int PSV_SoundIndex (char *name)
+{	PROF2(int)	SV_SoundIndex(name); EPROF2(8);	}
+#define SV_SoundIndex PSV_SoundIndex
+
+static void* PPF_TagMalloc (int size, int tag)
+{	PROF2(void*)	PF_TagMalloc (size, tag); EPROF2(9);	}
+#define PF_TagMalloc PPF_TagMalloc
+
+static void PZ_Free (void *ptr)
+{	PROF;	Z_Free (ptr); EPROF(10);	}
+#define Z_Free PZ_Free
+
+static void PZ_FreeTags (int tag)
+{	PROF;	Z_FreeTags (tag); EPROF(11);	}
+#define Z_FreeTags PZ_FreeTags
+
+#endif // SV_PROFILE
+
+
 void SV_InitGameProgs (void)
 {
 	game_import_t	import;
@@ -364,7 +461,7 @@ void SV_InitGameProgs (void)
 	import.setmodel = PF_setmodel;
 	import.inPVS = PF_inPVS;
 	import.inPHS = PF_inPHS;
-	import.Pmove = Pmove;
+	import.Pmove = SV_Pmove;	// really, this is a Pmove() !!
 
 	import.modelindex = SV_ModelIndex;
 	import.soundindex = SV_SoundIndex;

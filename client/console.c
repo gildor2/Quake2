@@ -59,6 +59,8 @@ void DrawAltString (int x, int y, const char *s)
 
 void Con_ToggleConsole_f (void)
 {
+	if (cls.keep_console) return;
+
 	SCR_EndLoadingPlaque ();	// get rid of loading plaque
 
 	if (cl.attractloop)
@@ -86,8 +88,7 @@ void Con_ToggleConsole_f (void)
 		M_ForceMenuOff ();
 		cls.key_dest = key_console;
 
-		if (Cvar_VariableInt ("maxclients") == 1
-			&& Com_ServerState ())
+		if (Cvar_VariableInt ("maxclients") == 1 && Com_ServerState ())
 			Cvar_Set ("paused", "1");
 	}
 }
@@ -565,9 +566,9 @@ static void Con_DrawInput (void)
 	char	*text, c;
 	qboolean eoln;
 
-	if (cls.key_dest == key_menu) return;
-	if (cls.key_dest != key_console && cls.state == ca_active)
-		return;		// don't draw anything (always draw if not active)
+//	if (cls.key_dest == key_menu) return;
+//	if (cls.key_dest != key_console && cls.state == ca_active)
+//		return;		// don't draw anything (always draw if not active)
 
 	text = editLine;
 
@@ -581,7 +582,7 @@ static void Con_DrawInput (void)
 		shift = 0;
 
 	// draw it
-	if (!(re.flags & REF_CONSOLE_ONLY))
+	if (!(*re.flags & REF_CONSOLE_ONLY))
 		y = con.vislines-22;
 	else
 		y = (viddef.height >> 3) - 2;
@@ -595,10 +596,12 @@ static void Con_DrawInput (void)
 			if (!c) eoln = true;
 		}
 		if (eoln) c = ' ';
-		if ((i == editPos  - shift) && (cls.realtime >> 8) & 1)
+		if ((i == editPos  - shift) && (cls.realtime >> 8) & 1 &&
+//??			(cls.key_dest == key_console || cls.state != ca_active))
+			cls.key_dest != key_menu)
 			c = 11 + 128;		// cursor char
 
-		if (!(re.flags & REF_CONSOLE_ONLY))
+		if (!(*re.flags & REF_CONSOLE_ONLY))
 			re.DrawCharColor ((i+1)<<3, y, c, 7);	// do not colorize input
 		else
 			re.DrawConCharColor (i+1, y, c, 7);
@@ -613,17 +616,19 @@ Con_DrawNotify
 Draws the last few lines of output transparently over the game top
 ================
 */
-void Con_DrawNotify (void)
+void Con_DrawNotify (qboolean drawBack)
 {
 	int		x, v, i, pos;
 	char	*s;
+	qboolean bgPaint;
 
-	if (re.flags & REF_CONSOLE_ONLY)
+	if (*re.flags & REF_CONSOLE_ONLY || !cl_draw2d->integer)
 		return;
 
 	v = 0;
 	pos = -1;
-	for (i = con.current - NUM_CON_TIMES + 1 ;i <= con.current; i++)
+	bgPaint = !drawBack;
+	for (i = con.current - NUM_CON_TIMES; i <= con.current; i++)
 	{
 		int		time;
 
@@ -645,6 +650,11 @@ void Con_DrawNotify (void)
 
 		if (pos == -1) continue;	// should not happen
 
+		if (!bgPaint)
+		{
+			re.DrawFill2 (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * 8 + 4, 1, 0, 0, 0.3);
+			bgPaint = true;
+		}
 		for (x = 0; x < con.linewidth; x++)
 		{
 			int		color;
@@ -708,7 +718,8 @@ void Con_DrawConsole (float frac)
 	int		i, j, x, y, n, topline;
 	int		row, rows, lines;
 	int		dx, dy, color;
-	char	*text, c, version[64], dlbar[1024];
+	char	*text, c, dlbar[1024];
+	const char version[] = APPNAME " v" STR(VERSION);
 
 	lines = viddef.height * frac;
 	if (lines <= 0)
@@ -728,9 +739,9 @@ void Con_DrawConsole (float frac)
 	dy = viddef.height >> 3;
 
 	/*------------ draw version info ---------------*/
-	i = Com_sprintf (version, sizeof(version), APPNAME " v%4.2f", VERSION);
+	i = sizeof(version) - 1;
 	for (x = 0; x < i; x++)
-		if (!(re.flags & REF_CONSOLE_ONLY))
+		if (!(*re.flags & REF_CONSOLE_ONLY))
 			re.DrawCharColor (viddef.width - i * 8 - 4 + x * 8, lines - 12, 128 + version[x], 7);
 		else
 			re.DrawConCharColor (dx - i - 1 + x, dy - 1, 128 + version[x], 7);
@@ -738,15 +749,10 @@ void Con_DrawConsole (float frac)
 	// draw the text
 	con.vislines = lines;
 
-	if (!(re.flags & REF_CONSOLE_ONLY))
+	if (!(*re.flags & REF_CONSOLE_ONLY))
 	{
-#if 0
-		rows = (lines - 8) >> 3;		// rows of text to draw
-		y = lines - 24;
-#else
 		rows = (lines - 22) >> 3;		// rows of text to draw
 		y = lines - 30;
-#endif
 	}
 	else
 	{
@@ -765,7 +771,7 @@ void Con_DrawConsole (float frac)
 	if (con.totallines && con.display != con.current)
 	{
 		/*------ draw arrows to show the buffer is backscrolled -------*/
-		if (!(re.flags & REF_CONSOLE_ONLY))
+		if (!(*re.flags & REF_CONSOLE_ONLY))
 		{
 			y = (rows - 1) * 8;
 			for (x = 0; x < con.linewidth; x += 4)
@@ -782,13 +788,7 @@ void Con_DrawConsole (float frac)
 		rows--;
 	}
 
-//	if (rows > con.totallines)
-//	{	// buffer have a text with size less than a page
-//		rows = con.totallines;
-//		row = topline; // top line to display
-//	}
-//	else
-		row = con.display - rows + 1; // top line to display
+	row = con.display - rows + 1; // top line to display
 
 	if (row < topline)
 	{
@@ -804,7 +804,7 @@ void Con_DrawConsole (float frac)
 	con.disp.line = row;
 	con.disp.pos = i;
 
-	if (!(re.flags & REF_CONSOLE_ONLY))
+	if (!(*re.flags & REF_CONSOLE_ONLY))
 		y -= (rows - 1) * 8;
 	else
 		y -= rows - 1;
@@ -821,12 +821,12 @@ void Con_DrawConsole (float frac)
 				if (c == '\n' || c == WRAP_CHAR) break;
 
 				if (!con_colortext->integer) color = 7;
-				if (!(re.flags & REF_CONSOLE_ONLY))
+				if (!(*re.flags & REF_CONSOLE_ONLY))
 					re.DrawCharColor ((x + 1) * 8, y, c, color);
 				else
 					re.DrawConCharColor (x + 1, y, c, color);
 			}
-			if (!(re.flags & REF_CONSOLE_ONLY))
+			if (!(*re.flags & REF_CONSOLE_ONLY))
 				y += 8;
 			else
 				y++;
@@ -836,7 +836,7 @@ void Con_DrawConsole (float frac)
 	//ZOID
 	// draw the download bar
 	// figure out width
-	if (!(re.flags & REF_CONSOLE_ONLY) && cls.download)
+	if (!(*re.flags & REF_CONSOLE_ONLY) && cls.download)
 	{
 		if ((text = strrchr (cls.downloadname, '/')) != NULL)
 			text++;

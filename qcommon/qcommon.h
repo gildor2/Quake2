@@ -419,6 +419,25 @@ then searches for a command or variable that matches the first token.
 
 */
 
+typedef struct cmdAlias_s
+{	// derived from basenamed_t
+	char	*name;
+	struct cmdAlias_s *next;
+	char	*value;
+} cmdAlias_t;
+
+cmdAlias_t	*cmdAlias;
+
+typedef struct cmdFunc_s
+{
+	struct cmdFunc_s *next;
+	char	*name;
+	void	(*func) (void);
+} cmdFunc_t;
+
+cmdFunc_t *cmdFuncs;
+
+
 void	Cmd_Init (void);
 
 //--void	Cmd_AddCommand (char *cmd_name, void (*func)(void));
@@ -431,10 +450,6 @@ void	Cmd_Init (void);
 
 qboolean Cmd_Exists (char *cmd_name);
 // used by the cvar code to check for cvar / command name overlap
-
-char 	*Cmd_CompleteCommand (char *partial);
-// attempts to match a partial command for automatic command line completion
-// returns NULL if nothing fits
 
 //--int		Cmd_Argc (void);
 //--char	*Cmd_Argv (int arg);
@@ -635,12 +650,19 @@ CMODEL
 */
 
 
+// cmodel_t.flags
+#define CMODEL_ALPHA	1
+
 typedef struct
 {
 	vec3_t	mins, maxs;
 	float	radius;
 	int		headnode;
+	int		firstface, numfaces;
+	int		flags;
 } cmodel_t;
+
+extern char map_name[];
 
 cmodel_t *CM_LoadMap (char *name, qboolean clientload, unsigned *checksum);
 cmodel_t *CM_InlineModel (char *name);	// *1, *2, etc
@@ -657,9 +679,8 @@ int		CM_HeadnodeForBox (vec3_t mins, vec3_t maxs);
 int		CM_PointContents (vec3_t p, int headnode);
 int		CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t angles);
 
-trace_t	CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
-trace_t	CM_TransformedBoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,	int headnode,
-			int brushmask, vec3_t origin, vec3_t angles);
+//--trace_t	CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
+trace_t	CM_TransformedBoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,	int headnode, int brushmask, vec3_t origin, vec3_t angles);
 
 byte	*CM_ClusterPVS (int cluster);
 byte	*CM_ClusterPHS (int cluster);
@@ -772,7 +793,7 @@ void	FS_Read (void *buffer, int len, FILE *f);
 // a -1 length is not present
 //--void	FS_FreeFile (void *buffer);
 
-void	FS_CreatePath (char *path);
+//--void	FS_CreatePath (char *path);
 
 
 /*------------- Miscellaneous -----------------*/
@@ -880,15 +901,29 @@ void	SV_Frame (int msec);
 /*---------- Map and model stuff ----------*/
 
 
-typedef enum {map_q2, map_hl} maptype_t;
+typedef struct lightFlare_s
+{
+	vec3_t	origin;
+	float	size;
+	float	radius;
+	byte	color[4];
+	byte	style;
+	struct lightFlare_s *next;
+} lightFlare_t;
+
+
+typedef enum {map_q2, map_kp, map_hl} mapType_t;
+typedef enum {fog_no, fog_linear, fog_exp, fog_exp2} fogMode_t;
+
 
 typedef struct
 {
 	char		name[MAX_QPATH];	// mapname
 	void		*file;				// buffer, returned by FS_LoadFile()
-	maptype_t	type;
+	mapType_t	type;
 	unsigned	checksum;
-	int		length;
+	int			length;
+	void		*extraChain;
 
 	int			entDataSize;
 	byte		*entities;
@@ -930,7 +965,7 @@ typedef struct
 	int			*surfedges;
 
 	int			numModels;
-	dmodel_t	*models;
+	cmodel_t	*models;
 
 	int			numBrushes;
 	dbrush_t	*brushes;
@@ -943,10 +978,27 @@ typedef struct
 
 	int			numAreaportals;
 	dareaportal_t *areaportals;
+
+	int			numFlares;
+	lightFlare_t *flares;
+
+	fogMode_t	fogMode;
+	float		fogColor[3];
+	union {
+		struct {	// exp/exp2
+			float	fogDens;
+		};
+		struct {	// linear
+			float	fogStart;
+			float	fogEnd;
+		};
+	};
 } bspfile_t;
 
 
 //--bspfile_t *LoadBspFile (char *filename, qboolean clientload, unsigned *checksum);
+char *ProcessEntstring (char *entString);
+
 
 #include "../client/ref_defs.h"
 

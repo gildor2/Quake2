@@ -1,11 +1,46 @@
-? "dir" -> "ls"
+! map "trainstation": very slow (10-20ms) server (too much traces ?)
+? reimplement "showtrace" (rename cvar, make it with DrawTextXxx(), display every frame (com_speeds too!), update
+  every server frame (implemented with com_speeds ?? if so, remove "showtrace" cvar)
+! unpack PVS in LoadBsp(); use unpacked version in renderer and CM_InPVS() etc.
 
-*** Ideas from HL (may be unimplementable) ***
-// from pm_shader.c
-- step sound: volume = 0.2/0.5 (walk/run) (+ add slowwalk -- crouched)
-- if moving slow - no step sounds
-- walking/running: step sound length = 400/300; water = 600; ladder = 350
-- stop when |velocity| less than STOP_EPSILON==0.1 (friction)
+!!! check PCX/WAL palette: alpha == 0 for index != 255 ??
+KINGPIN:
+  ! map "teehc2":
+    - have entity "{ *3 }" ("noclass") (KP have error with it too)
+  ! map "dm_dukecity"
+    - room across the road of disco: have reflections
+  - "worldspawn": "sounds"="2" -- what is it?
+  - fire/steam
+  BUGS with RF2_SURF_ALPHA, map "rc1":
+    - "func_explosive"(??) - unbreakable ventillation doors (add flag for server: "don't pass bullets"?)
+FAKK:
+  ? FS_FileInInPAK(const char *name)
+  - qcommon.h: SAVEGAME_DIRECTORY "save", SAVEGAME_EXTENSION "sav", etc.
+CAMERA:
+  - make FAKK-like camera lift-up when collided with wall
+  ? interpolate camera
+  ? interpolate duck (1st person)
+HALFLIFE:
+  // from pm_shader.c
+  - step sound: volume = 0.2/0.5 (walk/run) (+ add slowwalk -- crouched)
+  - if moving slow - no step sounds
+  - walking/running: step sound length = 400/300; water = 600; ladder = 350
+  - stop when |velocity| less than STOP_EPSILON==0.1 (friction)
+
+TRACE:
+  ? speedup ClipToEntities() (client/server/ref_gl): COMPARE only with entities in range
+    (start - trace.endpos)   (trace.endpos frequently updated); can sort ents by distance
+    (find a list of potentially collided ents, sort by coord and collide + update collision
+    limits with additional refining following traces)
+    NOTE: cannot TRACE to (start - trace.endpos) - will produce different trace.frac
+
+! improve server and client communication (server should be able to set map loading screenshot)
+? "dir" -> "ls"
+! reimplement Cbuf_Execute(): need comment ('//') parsing (should go to another place)
+! make screnshots for savegames + display screenshot instead of levelshot on savegame loading
+- cvar commands: "push", "pop"; 2 variants:
+  a) push <var> , pop <var>     -- each cvar have its ovn stack; "push $a;push $b;pop a;pop b" will not change vars
+  b) push <value> , pop <var>   -- global cvar stack; "push a;push b;pop a;pop b" will exchange "a" and "b" values
 
 !? improve SV_ClipMoveToEntities() like CL_ClipMoveToEntities(); don't need SV_AreaEdicts in this function ?
 ? (when sprite-fx will be implemented) disable REF_NEWFX when necessary image files absent
@@ -32,7 +67,7 @@ BSP:
 ? mirrored maps
 - commands spmap, devmap etc.
 - advanced "map" command syntax: add scaling and mirroring (separate scale each axis, mirror - X *= -1 ?)
-  "map [--dev] [--sp] [--mirror] [--scale] <name>" (?!)
+  "map [-dev] [-sp] [-mirror] [-scale] <name>" (?!)
 ? Q1 map support (easier than HL)
 
 *** BUGS ***
@@ -48,6 +83,11 @@ BSP:
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
 - map "ground3_beta3": have (server, "MAX_ENTS=128"- related ?) bug "SZ_Overflow" (??) when spectating and flying from inside wall
+  (see cl_ents.c MAX_PARSE_ENTITIES: seems, no more than 128 entities delta between frames)
+- prediction:
+  - map "beachassault": ship's entry, when in "down" state -- drizzle
+  - map "japan", lift, 3rd_person, going up with looking up -- camera drizzle (bad collision with lift entity)
+  *? have a small grenade-standing drizzle
 
 ? menu interface: appearing/disappearing fx (see itmastio etc.)
 
@@ -59,9 +99,6 @@ BSP:
 ! remove auto-demo start on quake loading (option? timeout? first run?)
 
 ! add materials: glass, grass, sand
-*? SURF_ALPHA, RF2_SURF_ALPHA: must be transparent for bullets (CONTENTS_WINDOW+SURF_ALPHA, mins=maxs={0,0,0})
-  (make transparency parameter for bullets, depends on surface alpha percent; make panetration semi-random)
-- RF2_SURF_ALPHA, RF_TRANSLUCENT (for inline models): preprocess entstring and mark inline model surfaces with required flags
 ? make atmospheric effects (some maps in kingpin and halflife does, Q3F too ...)
   (make surface-dependent raindrop sounds? (KP:main/sound/world/rain*.wav))
 
@@ -106,12 +143,11 @@ BSP:
   LoadMd2() and global model list ??
 ? SV_FindIndex() -- use hash tables ?
 ! try to remove "MAX_ENTS=128" limit (see "BUGS" section, "ground3_beta3")
+? server: if game_time is comparable with ref_time, need to Sleep(game_time) every frame between game frames
 
 ------------ REF_GL (new) --------------
 
 - R_RecursiveWorldNode():
-  1) surface visibility determination (already implemented in Q2/3)
-  2) dlight-in-leaf (Q3)
   3) fog-in-leaf
   4) leaf-use-detailTex
 - portals:
@@ -119,10 +155,6 @@ BSP:
   - add 2nd {viewcluster, leaf[].frame} set (1st for main scene, 2nd for portal) -- Q3 has recalculation of leaf visibility
     every frame twice, and without portal - once per few frames.
 - better alt-tabbing (with CDS()), better GLimp_InitGL() (reserve stencil (?), gl_depthBits)
-- coronas:
-  ? corona lightstyles - find nearest surface with numLightStyles > 1) (implemented in KP)
-  - auto-coronas for Q2 maps (scripted or with shader) - surfaces with certain shader will give corona in its center
-    (often in Q2 DM maps)
 - disable auto-envmap when surface not from CONTENTS_WINDOW -- need Trace()/PointContents() to detect 
 ? place LoadMd2 outside ref_xxx and perform lovercase for a skin names
 - use GL_NV_fog_distance (?) / GL_EXT_fog_coord, GL_EXT_texture_filter_anisotropic (?)
@@ -152,8 +184,7 @@ BSP:
 ? h/w gamma: check for valid gamma when read
 - video config menu: make "reset to defaults" works correctly (Cvar_Reset() ??)
 
-- add bulletholes, explosion marks and (??) blood marks
-? add kingpin default sky ("sr")
+- add marks: bulletholes, explosion marks, blood, "cheesy shadow", water ripple
 
 - ref_console (Win32 console-mode application, no GDI/OpenGL) -- auto-use in dedicated server (should attach
   dedicated server to ref)
@@ -199,8 +230,6 @@ BSP:
 ? completion cvarnames after "set", "toggle", "add" (etc.) and "...$varname"
   (add flags for Cmd_AddCommand() - complete type: cvar, map, demo ... ???)
 ? make completion "dir"-like formatting + colorizing against char-marks (types)
-? make pressing TAB twice (complete same thing twice) to appear popup (if have not too much
-  variants) with selections
 
 ------------- LINUX --------------------
 

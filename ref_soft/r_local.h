@@ -775,7 +775,9 @@ void R_Shutdown (void);
 void R_InitCaches (void);
 void D_FlushCaches (void);
 
-void	R_ScreenShot_f( void );
+extern int 	r_screenshotFlags;
+extern char	*r_screenshotName;
+void	R_ScreenShot( void );
 void    R_BeginRegistration (char *map);
 struct model_s  *R_RegisterModel (char *name);
 void    R_EndRegistration (void);
@@ -793,7 +795,7 @@ void    Draw_Char (int x, int y, int c);
 void    Draw_CharColor (int x, int y, int c, int color);
 void    Draw_TileClear (int x, int y, int w, int h, char *name);
 void    Draw_Fill (int x, int y, int w, int h, int c);
-void    Draw_FadeScreen (void);
+void    Draw_Fade (int x, int y, int w, int h, int c);
 
 void    Draw_GetPalette (void);
 

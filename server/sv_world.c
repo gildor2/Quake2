@@ -46,8 +46,8 @@ typedef struct areanode_s
 	link_t	solid_edicts;
 } areanode_t;
 
-#define	AREA_DEPTH	4
-#define	AREA_NODES	32
+#define	AREA_DEPTH	6
+#define	AREA_NODES	(1 << (AREA_DEPTH + 1))		// (1<<AREA_DEPTH) for nodes and same count for leafs
 
 static areanode_t sv_areanodes[AREA_NODES];
 static int		sv_numareanodes;
@@ -90,7 +90,6 @@ Builds a uniformly subdivided tree for the given world size
 static areanode_t *SV_CreateAreaNode (int depth, vec3_t mins, vec3_t maxs)
 {
 	areanode_t	*anode;
-	vec3_t		size;
 	vec3_t		mins1, maxs1, mins2, maxs2;
 
 	anode = &sv_areanodes[sv_numareanodes++];
@@ -105,8 +104,7 @@ static areanode_t *SV_CreateAreaNode (int depth, vec3_t mins, vec3_t maxs)
 		return anode;
 	}
 
-	VectorSubtract (maxs, mins, size);
-	if (size[0] > size[1])
+	if (maxs[0] - mins[0] > maxs[1] - mins[1])
 		anode->axis = 0;
 	else
 		anode->axis = 1;
@@ -135,6 +133,8 @@ void SV_ClearWorld (void)
 {
 	memset (sv_areanodes, 0, sizeof(sv_areanodes));
 	sv_numareanodes = 0;
+	if (!sv.models[1])
+		return;			// map is not yet loaded (check [1], not [0] ...)
 	SV_CreateAreaNode (0, sv.models[1]->mins, sv.models[1]->maxs);
 }
 
@@ -161,21 +161,22 @@ SV_LinkEdict
 ===============
 */
 #define MAX_TOTAL_ENT_LEAFS		128
+
 void SV_LinkEdict (edict_t *ent)
 {
 	areanode_t	*node;
-	int			leafs[MAX_TOTAL_ENT_LEAFS];
-	int			clusters[MAX_TOTAL_ENT_LEAFS];
-	int			num_leafs;
-	int			i, j, k;
-	int			area;
-	int			topnode;
+	int		leafs[MAX_TOTAL_ENT_LEAFS];
+	int		clusters[MAX_TOTAL_ENT_LEAFS];
+	int		num_leafs;
+	int		i, j, k;
+	int		area;
+	int		topnode;
 
 	if (ent->area.prev)
-		SV_UnlinkEdict (ent);	// unlink from old position
+		SV_UnlinkEdict (ent);	// unlink from old position (i.e. relink edict)
 
 	if (ent == ge->edicts)
-		return;		// don't add the world
+		return;					// don't add the world
 
 	if (!ent->inuse)
 		return;
@@ -186,27 +187,25 @@ void SV_LinkEdict (edict_t *ent)
 	// encode the size into the entity_state for client prediction
 	if (ent->solid == SOLID_BBOX && !(ent->svflags & SVF_DEADMONSTER))
 	{	// assume that x/y are equal and symetric
-		i = (ent->maxs[0] + 4) / 8;
-		if (i < 1)
-			i = 1;
-		if (i > 31)
-			i = 31;
-
+#if 1
+		i = Q_ftol ((ent->maxs[0] + 4) / 8);
 		// z is not symetric
-		j = (-ent->mins[2] + 4) / 8;
-		if (j < 1)
-			j = 1;
-		if (j > 31)
-			j = 31;
-
+		j = Q_ftol ((-ent->mins[2] + 4) / 8);
 		// and z maxs can be negative...
-		k = (ent->maxs[2] + 32 + 4) / 8;
-		if (k < 1)
-			k = 1;
-		if (k > 63)
-			k = 63;
+		k = Q_ftol ((ent->maxs[2] + 32 + 4) / 8);
+#else
+		i = floor((ent->maxs[0] + 4) / 8);
+		// z is not symetric
+		j = floor((-ent->mins[2] + 4) / 8);
+		// and z maxs can be negative...
+		k = floor((ent->maxs[2] + 32 + 4) / 8);
+#endif
+		i = bound(i, 1, 31);
+		j = bound(j, 1, 31);
+		k = bound(k, 1, 63);
 
 		ent->s.solid = (k<<10) | (j<<5) | i;
+//		if (ent->s.number >= 2) Com_Printf("^1ADD(%d): %d %d %d (%X)\n", ent->s.number, i, j, k, ent->s.solid);
 	}
 	else if (ent->solid == SOLID_BSP)
 		ent->s.solid = 31;		// a solid_bbox will never create this value
@@ -215,19 +214,18 @@ void SV_LinkEdict (edict_t *ent)
 
 	// set the abs box
 	if (ent->solid == SOLID_BSP && (ent->s.angles[0] || ent->s.angles[1] || ent->s.angles[2]))
-	{	// expand for rotation
-		float		max, v;
-		int			i;
+	{
+		// expand for rotation
+		float	max, v;
+		int		i;
 
 		max = 0;
 		for (i = 0; i < 3; i++)
 		{
-			v =fabs (ent->mins[i]);
-			if (v > max)
-				max = v;
-			v =fabs (ent->maxs[i]);
-			if (v > max)
-				max = v;
+			v = fabs (ent->mins[i]);
+			if (v > max) max = v;
+			v = fabs (ent->maxs[i]);
+			if (v > max) max = v;
 		}
 		for (i = 0; i < 3 ; i++)
 		{
@@ -320,7 +318,7 @@ void SV_LinkEdict (edict_t *ent)
 	while (1)
 	{
 		if (node->axis == -1)
-			break;
+			break;		// inside this node
 		if (ent->absmin[node->axis] > node->dist)
 			node = node->children[0];
 		else if (ent->absmax[node->axis] < node->dist)
@@ -334,7 +332,6 @@ void SV_LinkEdict (edict_t *ent)
 		InsertLinkBefore (&ent->area, &node->trigger_edicts);
 	else
 		InsertLinkBefore (&ent->area, &node->solid_edicts);
-
 }
 
 
@@ -354,7 +351,7 @@ static void SV_AreaEdicts_r (areanode_t *node)
 	else
 		start = &node->trigger_edicts;
 
-	for (l = start->next; l != start ; l = next)
+	for (l = start->next; l != start; l = next)
 	{
 		edict_t		*check;
 
@@ -363,12 +360,12 @@ static void SV_AreaEdicts_r (areanode_t *node)
 
 		if (check->solid == SOLID_NOT)
 			continue;		// deactivated
-		if (check->absmin[0] > area_maxs[0]
-			|| check->absmin[1] > area_maxs[1]
-			|| check->absmin[2] > area_maxs[2]
-			|| check->absmax[0] < area_mins[0]
-			|| check->absmax[1] < area_mins[1]
-			|| check->absmax[2] < area_mins[2])
+		if (check->absmin[0] > area_maxs[0] ||
+			check->absmin[1] > area_maxs[1] ||
+			check->absmin[2] > area_maxs[2] ||
+			check->absmax[0] < area_mins[0] ||
+			check->absmax[1] < area_mins[1] ||
+			check->absmax[2] < area_mins[2])
 			continue;		// not touching
 
 		if (area_count == area_maxcount)
@@ -517,23 +514,30 @@ void SV_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, 
 
 		if (ent->solid != SOLID_BSP)
 		{
-#if 1
 			int		x, zd, zu;
 			vec3_t	bmins, bmaxs;
 
-			// align bbox to grid with step 8 (to be equal with client movement prediction code -- see "encoded bbox")
-			x = floor ((ent->maxs[0] + 4) / 8) * 8;
-			zd =  floor ((ent->mins[2] + 4) / 8) * 8;
-			zu = floor ((ent->maxs[2] + 4) / 8) * 8;
+			if (ent->s.solid)
+			{
+				// make trace to be equal with client movement prediction code -- see "encoded bbox"
+				x = 8 * (ent->s.solid & 31);
+				zd = 8 * ((ent->s.solid>>5) & 31);
+				zu = 8 * ((ent->s.solid>>10) & 63) - 32;
+			}
+			else
+			{
+				// ent->s.solid will be 0 when entity is a SVF_DEADMONSTER
+				x = ent->maxs[0];
+				zd = -ent->mins[2];
+				zu = ent->maxs[2];
+			}
 
 			bmins[0] = bmins[1] = -x;
 			bmaxs[0] = bmaxs[1] = x;
-			bmins[2] = zd;
+			bmins[2] = -zd;
 			bmaxs[2] = zu;
+
 			headnode = CM_HeadnodeForBox (bmins, bmaxs);
-#else
-			headnode = CM_HeadnodeForBox (ent->mins, ent->maxs);
-#endif
 			angles = vec3_origin;		// boxes don't rotate
 		}
 		else

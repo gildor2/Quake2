@@ -82,7 +82,6 @@ static qboolean GLimp_CreateWindow (int width, int height, qboolean fullscreen)
 int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 {
 	int		width, height, colorBits;
-	const char *win_fs[] = { "W", "FS" };
 
 	Com_Printf ("Initializing OpenGL display\n");
 
@@ -94,7 +93,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 		return rserr_invalid_mode;
 	}
 
-	Com_Printf (" %d %d %s\n", width, height, win_fs[fullscreen != false]);
+	Com_Printf (" %d %d %s\n", width, height, fullscreen ? "FS" : "W");
 
 	// destroy the existing window
 	if (glw_state.hWnd)
@@ -104,6 +103,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 	}
 
 	colorBits = gl_bitdepth->integer;
+	gl_bitdepth->modified = false;
 
 	// do a CDS if needed
 	if (fullscreen)
@@ -123,7 +123,7 @@ int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
 		{
 			dm.dmBitsPerPel = colorBits;
 			dm.dmFields |= DM_BITSPERPEL;
-			Com_Printf ("...using gl_bitdepth of %d\n", colorBits);
+			Com_Printf ("...using bitdepth of %d\n", colorBits);
 		}
 		else
 		{
@@ -351,19 +351,20 @@ void GLimp_Shutdown (void)
 {
 	RestoreGamma ();
 
+	Com_Printf ("...performing shutdown\n");
 	if (qwglMakeCurrent && !qwglMakeCurrent (NULL, NULL))
-		Com_WPrintf ("ref_gl::R_Shutdown() - wglMakeCurrent failed\n");
+		Com_WPrintf ("...wglMakeCurrent failed\n");
 	if (glw_state.hGLRC)
 	{
 		if (qwglDeleteContext && !qwglDeleteContext (glw_state.hGLRC))
-			Com_WPrintf ("ref_gl::R_Shutdown() - wglDeleteContext failed\n");
+			Com_WPrintf ("...wglDeleteContext failed\n");
 		glw_state.hGLRC = NULL;
 	}
 
 	if (glw_state.hDC)
 	{
 		if (!ReleaseDC (glw_state.hWnd, glw_state.hDC))
-			Com_WPrintf ("ref_gl::R_Shutdown() - ReleaseDC failed\n");
+			Com_WPrintf ("...ReleaseDC failed\n");
 		glw_state.hDC = NULL;
 	}
 
@@ -373,7 +374,7 @@ void GLimp_Shutdown (void)
 		glw_state.log_fp = NULL;
 	}
 
-	Vid_DestroyWindow (false);
+	Vid_DestroyWindow (gl_bitdepth->modified);
 	glw_state.hWnd = NULL;
 
 	if (gl_config.fullscreen)
@@ -419,7 +420,7 @@ int GLimp_Init (void)
 	}
 	else
 	{
-		Com_WPrintf ("GLimp_Init() - GetVersionEx failed\n");
+		Com_WPrintf ("GLimp_Init(): GetVersionEx failed\n");
 		return false;
 	}
 
@@ -428,9 +429,9 @@ int GLimp_Init (void)
 	return true;
 }
 
-qboolean GLimp_InitGL (void)
+static qboolean GLimp_SetPixelFormat (void)
 {
-	PIXELFORMATDESCRIPTOR pfd =
+	PIXELFORMATDESCRIPTOR pfd =			// non-static var
 	{
 		sizeof(PIXELFORMATDESCRIPTOR),	// size of this pfd
 		1,								// version number
@@ -468,21 +469,6 @@ qboolean GLimp_InitGL (void)
 		gl_state.stereo_enabled = false;
 	}
 */
-	/*------- figure out if we're running on a minidriver or not ---------*/
-	if (strstr (gl_driver->string, "opengl32"))
-		glw_state.minidriver = false;
-	else
-		glw_state.minidriver = true;
-
-	// Get a DC for the specified window
-	if (glw_state.hDC != NULL)
-		Com_WPrintf ("GLimp_Init() - non-NULL DC exists\n");
-
-	if ((glw_state.hDC = GetDC (glw_state.hWnd)) == NULL)
-	{
-		Com_WPrintf ("GLimp_Init() - GetDC failed\n");
-		return false;
-	}
 
 	if (glw_state.minidriver)
 	{
@@ -496,7 +482,6 @@ qboolean GLimp_InitGL (void)
 			Com_WPrintf ("GLimp_Init() - qwglSetPixelFormat failed\n");
 			return false;
 		}
-		qwglDescribePixelFormat (glw_state.hDC, pixelformat, sizeof(pfd), &pfd);
 	}
 	else
 	{
@@ -510,7 +495,6 @@ qboolean GLimp_InitGL (void)
 			Com_WPrintf ("GLimp_Init() - SetPixelFormat failed\n");
 			return false;
 		}
-		DescribePixelFormat (glw_state.hDC, pixelformat, sizeof(pfd), &pfd);
 
 		if (!(pfd.dwFlags & PFD_GENERIC_ACCELERATED))
 		{
@@ -536,42 +520,65 @@ qboolean GLimp_InitGL (void)
 	// startup the OpenGL subsystem by creating a context and making it current
 	if ((glw_state.hGLRC = qwglCreateContext (glw_state.hDC)) == 0)
 	{
-		Com_WPrintf ("GLimp_Init() - qwglCreateContext failed\n");
-		goto fail;
+		Com_WPrintf ("...qwglCreateContext failed\n");
+		return false;
 	}
 
 	if (!qwglMakeCurrent (glw_state.hDC, glw_state.hGLRC))
 	{
-		Com_WPrintf ("GLimp_Init() - qwglMakeCurrent failed\n");
-		goto fail;
+		Com_WPrintf ("...qwglMakeCurrent failed\n");
+		return false;
 	}
 
 	if (!VerifyDriver ())
 	{
-		Com_WPrintf ("GLimp_Init() - no hardware acceleration detected\n");
-		goto fail;
+		Com_WPrintf ("...no hardware acceleration detected\n");
+		return false;
 	}
 
 	// print out PFD specifics
+	DescribePixelFormat (glw_state.hDC, pixelformat, sizeof(pfd), &pfd);
 	Com_Printf ("GL PFD: color(%d-bits) Z(%d-bit)\n", pfd.cColorBits, pfd.cDepthBits);
+	return true;
+}
+
+
+static qboolean GLimp_InitGL (void)
+{
+	// figure out if we're running on a minidriver or not
+	if (strstr (gl_driver->string, "opengl32"))
+		glw_state.minidriver = false;
+	else
+		glw_state.minidriver = true;
+
+	// Get a DC for the specified window
+	if (glw_state.hDC != NULL)
+		Com_WPrintf ("...non-NULL DC exists\n");
+	if ((glw_state.hDC = GetDC (glw_state.hWnd)) == NULL)
+	{
+		Com_WPrintf ("...GetDC() failed\n");
+		return false;
+	}
+
+	if (!GLimp_SetPixelFormat ())
+	{
+		if (glw_state.hGLRC)
+		{
+			qwglDeleteContext (glw_state.hGLRC);
+			glw_state.hGLRC = NULL;
+		}
+		if (glw_state.hDC)
+		{
+			ReleaseDC (glw_state.hWnd, glw_state.hDC);
+			glw_state.hDC = NULL;
+		}
+		return false;
+	}
+
 	// gamma info
-	Com_Printf ("GAMMA: %s\n", gammaStored ? "hardware" : "software");
+	Com_Printf ("GAMMA: %s\n", gammaStored ? "hardware" : "software");	//!! move this
 
 	return true;
-
-fail:
-	if (glw_state.hGLRC)
-	{
-		qwglDeleteContext (glw_state.hGLRC);
-		glw_state.hGLRC = NULL;
-	}
-
-	if (glw_state.hDC)
-	{
-		ReleaseDC (glw_state.hWnd, glw_state.hDC);
-		glw_state.hDC = NULL;
-	}
-	return false;
 }
 
 

@@ -20,7 +20,14 @@ int			gl_numEntities;
 refDlight_t	gl_dlights[MAX_GLDLIGHTS];
 int			gl_numDlights;
 
-#define SATURATE(c,l,v) c = (l+0.5+(c-l)*v); if (c < 0) c = 0; else if (c > 255) c = 255;
+
+GLenum		gl_fogMode;
+float		gl_fogColor[4];
+float		gl_fogDensity;
+float		gl_fogStart, gl_fogEnd;
+
+
+#define SATURATE(c,l,v) c = (l+0.5+(c-l)*v); c = bound(c, 0, 255);
 
 
 /* Culling on BSP:
@@ -54,6 +61,9 @@ static int BoxCull (vec3_t mins, vec3_t maxs, int frustumMask)
 	if (r_nocull->integer)
 		return FRUSTUM_ON;
 
+	if (!frustumMask)
+		return FRUSTUM_INSIDE;
+
 	res = FRUSTUM_INSIDE;
 	for (i = 0, pl = vp.frustum; i < 4; i++, pl++)
 		if (frustumMask & (1 << i))
@@ -81,6 +91,8 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 		return FRUSTUM_ON;
 
 	frustumMask = e->frustumMask;	//?? get this as OR(all_occupied_leafs->frustumMask) or remove
+	if (!frustumMask)
+		return FRUSTUM_INSIDE;
 
 #if 1	// this version FASTER
 	res = 0;
@@ -176,7 +188,7 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 static int SphereCull (vec3_t origin, float radius)
 {
 	int		i;
-	cplane_t *fr;
+	cplane_t *pl;
 	qboolean hasOutside;
 
 	if (r_nocull->integer)
@@ -184,17 +196,39 @@ static int SphereCull (vec3_t origin, float radius)
 
 	hasOutside = false;
 	// perform frustum culling
-	for (i = 0, fr = vp.frustum; i < 4; i++, fr++)
+	for (i = 0, pl = vp.frustum; i < 4; i++, pl++)
 	{	// loop by frustum planes
 		float	dist;
 
-		dist = DotProduct (origin, fr->normal) - fr->dist;
+		dist = DotProduct (origin, pl->normal) - pl->dist;
 		if (dist < -radius)
 			return FRUSTUM_OUTSIDE;
 		if (dist <= radius)
 			hasOutside = true;
 	}
 	return hasOutside ? FRUSTUM_ON : FRUSTUM_INSIDE;
+}
+
+
+// Reduced SphereCull()
+static int PointCull (vec3_t point, int frustumMask)
+{
+	int		i;
+	cplane_t *pl;
+
+	if (r_nocull->integer)
+		return FRUSTUM_INSIDE;
+
+	if (!frustumMask)
+		return FRUSTUM_INSIDE;
+
+	for (i = 0, pl = vp.frustum; i < 4; i++, pl++)
+		if (frustumMask & (1 << i))
+		{
+			if (DotProduct (point, pl->normal) - pl->dist < 0)
+				return FRUSTUM_OUTSIDE;
+		}
+	return FRUSTUM_INSIDE;
 }
 
 
@@ -234,6 +268,10 @@ static void SetupModelMatrix (refEntity_t *e)
 	for (i = 0; i < 3; i++)
 		for (j = 0; j < 3; j++)
 			matrix[i][j] = e->axis[i][j];
+
+	if (e->mirror)
+		VectorNegate (matrix[1], matrix[1]);
+
 	matrix[3][0] = e->origin[0];
 	matrix[3][1] = e->origin[1];
 	matrix[3][2] = e->origin[2];
@@ -252,6 +290,74 @@ static void SetupModelMatrix (refEntity_t *e)
 	// set e.modelvieworg
 	// NOTE: in Q3 axis may be non-normalized, so, there result is divided by length(axis[i])
 	WorldToModelCoord (vp.vieworg, e, e->modelvieworg);
+}
+
+
+// Point trace to visible INLINE models; function based on CL_ClipMoveToEntities()
+// NOTE: can easily extend to any (invisible too) inline models (add flag "visibleOnly") ( can be useful for lighting ??)
+static void ClipTraceToEntities (vec3_t start, vec3_t end, int brushmask, trace_t *tr)
+{
+	int		i;
+	refEntity_t *e;
+	trace_t	trace;
+	float	traceLen;
+	vec3_t	traceDir;
+
+	VectorSubtract (end, start, traceDir);
+	traceLen = VectorNormalize (traceDir);	//!! uses sqrt()
+
+	for (i = 0, e = gl_entities + vp.firstEntity; i < vp.numEntities; i++, e++)
+	{
+		inlineModel_t *im;
+		float	entPos, dist2;
+		vec3_t	tmp, center2;
+		static vec3_t zero = {0, 0, 0};
+
+		if (!e->visible || !e->model || e->model->type != MODEL_INLINE)
+			continue;
+
+		im = e->model->inlineModel;
+		VectorSubtract (im->center, start, center2);
+
+		// collision detection: line vs sphere
+		entPos = DotProduct (center2, traceDir);
+		if (entPos < -im->radius || entPos > traceLen + im->radius)
+			continue;		// too near / too far
+
+//DrawTextLeft(va("clip: %s (pos: %g)", e->model->name, entPos),0,1,1);//!!
+		VectorMA (center2, -entPos, traceDir, tmp);
+		dist2 = DotProduct (tmp, tmp);
+		if (dist2 >= im->radius * im->radius) continue;
+
+//DrawTextLeft(va("clip: %s (dist2: %g)", e->model->name, dist2),1,1,1);//!!
+		// trace
+		if (!e->worldMatrix)
+		{
+			// transform start/end to entity coordinate system
+			vec3_t	start2, end2;
+
+			WorldToModelCoord (start, e, start2);
+			WorldToModelCoord (end, e, end2);
+			trace = CM_BoxTrace (start2, end2, zero, zero, im->headnode, brushmask);
+		}
+		else
+			trace = CM_BoxTrace (start, end, zero, zero, im->headnode, brushmask);
+
+		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
+		{
+			trace.ent = (struct edict_s *)e;
+		 	if (tr->startsolid)
+			{
+				*tr = trace;
+				tr->startsolid = true;
+			}
+			else
+				*tr = trace;
+		}
+		else if (trace.startsolid)
+			tr->startsolid = true;
+		if (tr->allsolid) return;
+	}
 }
 
 
@@ -396,13 +502,10 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 	refDlight_t *dl;
 	float	*vieworg;
 
-	if (!e || (e->worldMatrix && gl_showbboxes->integer != 3))
+	if (e->worldMatrix)
 		currentEntity = ENTITYNUM_WORLD;
 
-	if (currentEntity == ENTITYNUM_WORLD)
-		vieworg = vp.vieworg;
-	else
-		vieworg = e->modelvieworg;
+	vieworg = e->modelvieworg;
 
 	for (i = 0; i < numFaces; i++)
 	{
@@ -482,7 +585,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 		continue;	\
 	}
 						if (currentEntity == ENTITYNUM_WORLD)
-							dl_org = dl->origin, &pl->plane;
+							dl_org = dl->origin;
 						else
 							dl_org = dl->modelOrg;
 						dist = DISTANCE_TO_PLANE(dl_org, &pl->plane);
@@ -538,6 +641,7 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 	unsigned dlightMask, mask;
 
 	im = e->model->inlineModel;
+//	DrawTextLeft (va("%s {%g,%g,%g}", e->model->name, im->center[0], im->center[1], im->center[2]), 1, 0.2, 0.2);
 	// check dlights
 	dlightMask = 0;
 	for (i = 0, dl = vp.dlights, mask = 1; i < vp.numDlights; i++, dl++, mask <<= 1)
@@ -663,9 +767,8 @@ static void AddBeamSurfaces (refEntity_t *e)
 		return;
 	}
 	size = e->beamRadius * 200 / (size * vp.fov_scale);
-	numParts = size;
-	if (numParts < 1) numParts = 1;
-	else if (numParts > 6) numParts = 6;
+	numParts = Q_ftol(size);
+	numParts = bound(numParts, 1, 6);
 
 	// compute beam axis
 	VectorSubtract (e->beamEnd, e->beamStart, axis[0]);
@@ -711,6 +814,7 @@ static void AddBeamSurfaces (refEntity_t *e)
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = e->shaderColor.rgba;
 
 		surf = GL_AddDynamicSurface (gl_identityLightShader2, ENTITYNUM_WORLD);
+		if (!surf) return;
 		surf->poly = p;
 		surf->type = SURFACE_POLY;
 	}
@@ -884,6 +988,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 	for (i = 0, e = gl_entities + firstEntity; i < numEntities; i++, e++)
 	{
+		e->visible = false;
 #define CULL_ENT	\
 	{				\
 		gl_speeds.cullEnts++;	\
@@ -957,6 +1062,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 		if (!leaf) CULL_ENT;			// entity do not occupy any visible leafs
 
+		e->visible = true;
 		// calc model distance
 		VectorSubtract (center, vp.vieworg, delta);
 		dist2 = e->dist2 = DotProduct (delta, vp.viewaxis[0]);
@@ -1013,6 +1119,161 @@ static void DrawParticles (particle_t *p)
 }
 
 
+#define FLARE_DIST0		40
+#define FLARE_DIST1		256
+#define FLARE_DIST2		512		// Cvar_VariableValue("flare")
+#define FLARE_FADE		0.2		// Cvar_VariableValue("flare")
+
+static void DrawFlares (void)
+{
+	int		i;
+	gl_flare_t	*f;
+
+	for (i = 0, f = map.flares; i < map.numFlares; i++, f++)
+	{
+		qboolean cull;
+		surfaceCommon_t *surf;
+		surfacePoly_t *p;
+		float	dist, scale;
+		vec3_t	tmp, flarePos;
+		color_t	color;
+		int		style;
+
+		cull = false;
+
+		if (f->radius >= 0)
+		{
+			VectorCopy (f->origin, flarePos);
+			// perform PVS cull for flares with radius 0 (if flare have radius > 0
+			// it (mostly) will be placed inside invisible (solid) leaf)
+			if (f->radius == 0)
+			{
+				if (f->leaf->frame != drawFrame)
+					cull = true;
+			}
+			else
+			{
+				if (!SphereLeaf (f->origin, f->radius))
+					cull = true;
+			}
+		}
+		else
+			VectorMA (vp.vieworg, FLARE_DIST1, f->origin, flarePos);
+
+		// should perform frustum culling even if flare not in PVS:
+		// can be occluded / outside frustum -- fade / hide
+		if (PointCull (flarePos, cull || f->radius < 0 ? 15 : f->leaf->frustumMask) == FRUSTUM_OUTSIDE)
+		{
+			gl_speeds.cullFlares++;		// outside frustum - do not fade
+			continue;
+		}
+
+		// get viewsize
+		scale = f->size / 2;
+		dist  = (flarePos[0] - vp.vieworg[0]) * vp.viewaxis[0][0] +
+				(flarePos[1] - vp.vieworg[1]) * vp.viewaxis[0][1] +
+				(flarePos[2] - vp.vieworg[2]) * vp.viewaxis[0][2];		// get Z-coordinate
+
+		color.rgba = f->color.rgba;
+		style = vp.lightStyles[f->style].value;
+
+		if (dist < FLARE_DIST0)			// too near - do not fade
+		{
+			gl_speeds.cullFlares++;
+			continue;
+		}
+		if (dist < FLARE_DIST1)
+			style = Q_ftol (style * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0));
+//			scale = scale * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0);
+		else if (dist > FLARE_DIST2)
+			scale = scale * dist / FLARE_DIST2;
+
+		if (!cull)
+		{
+			trace_t	trace;
+			static vec3_t zero = {0, 0, 0};
+
+			// check visibility with trace
+			if (f->radius >= 0)
+			{
+				trace = CM_BoxTrace (vp.vieworg, flarePos, zero, zero, 0, CONTENTS_SOLID);
+				ClipTraceToEntities (vp.vieworg, flarePos, CONTENTS_SOLID, &trace);
+				if (trace.fraction < 1 && (f->radius <= 0 || (VectorDistance (trace.endpos, flarePos) > f->radius)))
+					cull = true;
+			}
+			else
+			{	// sun flare
+				vec3_t	tracePos;
+
+				VectorMA (vp.vieworg, 99999, f->origin, tracePos);
+				trace = CM_BoxTrace (vp.vieworg, tracePos, zero, zero, 0, CONTENTS_SOLID);
+				ClipTraceToEntities (vp.vieworg, tracePos, CONTENTS_SOLID, &trace);
+				if (!(trace.fraction < 1 && trace.surface->flags & SURF_SKY))
+					cull = true;
+			}
+
+			if (!cull)
+				f->lastTime = vp.time;
+		}
+
+		if (cull)
+		{
+			float	timeDelta;
+
+			// fade flare
+			timeDelta = (vp.time - f->lastTime) / FLARE_FADE;
+			if (timeDelta >= 1)
+			{
+				gl_speeds.cullFlares++;
+				continue;
+			}
+			style = Q_ftol((1 - timeDelta) * style);
+		}
+
+		// alloc surface
+		p = GL_AllocDynamicMemory (sizeof(surfacePoly_t) + 4 * sizeof(vertexPoly_t));
+		if (!p) return;
+		p->numVerts = 4;
+
+		// setup xyz
+		VectorMA (flarePos, -scale, vp.viewaxis[2], tmp);			// down
+		VectorMA (tmp, -scale, vp.viewaxis[1], p->verts[0].xyz);	// 0
+		VectorMA (tmp, scale, vp.viewaxis[1], p->verts[1].xyz);		// 1
+		VectorScale (vp.viewaxis[2], scale * 2, tmp);				// up-down
+		VectorAdd (p->verts[0].xyz, tmp, p->verts[3].xyz);			// 3
+		VectorAdd (p->verts[1].xyz, tmp, p->verts[2].xyz);			// 2
+
+		// setup st
+		p->verts[0].st[0] = p->verts[3].st[0] = 1;
+		p->verts[1].st[0] = p->verts[2].st[0] = 0;
+		p->verts[0].st[1] = p->verts[1].st[1] = 1;
+		p->verts[2].st[1] = p->verts[3].st[1] = 0;
+
+		// setup color
+		if (style != 128)
+		{
+			int		r, g, b;
+			r = color.c[0] * style >> 7;
+			g = color.c[1] * style >> 7;
+			b = color.c[2] * style >> 7;
+			if (style > 128)
+				NORMALIZE_COLOR255(r, g, b);
+			color.c[0] = r;
+			color.c[1] = g;
+			color.c[2] = b;
+		}
+		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color.rgba;
+
+		surf = GL_AddDynamicSurface (gl_flareShader, ENTITYNUM_WORLD);
+		if (!surf) return;
+		surf->poly = p;
+		surf->type = SURFACE_POLY;
+	}
+
+	gl_speeds.flares = map.numFlares;
+}
+
+
 static void DrawBspSequence (node_t *leaf)
 {
 	refEntity_t *e;
@@ -1036,7 +1297,7 @@ static void DrawBspSequence (node_t *leaf)
 
 		/*------ add leafFaces to draw list -------*/
 
-		AddBspSurfaces (leaf->leafFaces, leaf->numLeafFaces, leaf->frustumMask, NULL);
+		AddBspSurfaces (leaf->leafFaces, leaf->numLeafFaces, leaf->frustumMask, &gl_entities[ENTITYNUM_WORLD]);
 
 		/*---------- draw leaf entities -----------*/
 
@@ -1128,12 +1389,23 @@ void GL_AddEntity (entity_t *ent)
 {
 	refEntity_t	*out;
 	vec3_t	v;
+	qboolean mirror;
 
 	if (gl_numEntities >= MAX_GLENTITIES)
 	{
 		Com_WPrintf ("R_AddEntity: MAX_GLENTITIES hit\n");
 		return;
 	}
+
+	mirror = false;
+	if (ent->flags & RF_WEAPONMODEL)
+	{
+		if (gl_hand->integer == 1)
+			mirror = true;
+		else if (gl_hand->integer == 2)		// do not draw weapon when "hand" == 2
+			return;
+	}
+
 	out = &gl_entities[gl_numEntities++];
 
 	// common fields
@@ -1143,13 +1415,21 @@ void GL_AddEntity (entity_t *ent)
 	if (ent->model)
 	{
 		VectorCopy (ent->origin, out->origin);
-		AnglesToAxis (ent->angles, out->axis);
+		if (ent->model->type == MODEL_MD3)
+		{	// need to negate angles[2]
+			ent->angles[2] = -ent->angles[2];
+			AnglesToAxis (ent->angles, out->axis);
+			ent->angles[2] = -ent->angles[2];
+		}
+		else
+			AnglesToAxis (ent->angles, out->axis);
 
 		if (!ent->origin[0] && !ent->origin[1] && !ent->origin[2] &&
 			!ent->angles[0] && !ent->angles[1] && !ent->angles[2])
 			out->worldMatrix = true;
 		else
 			out->worldMatrix = false;
+		out->mirror = mirror;
 		out->frame = ent->frame;
 		out->oldFrame = ent->oldframe;
 		out->backLerp = ent->backlerp;
@@ -1264,6 +1544,10 @@ void GL_DrawPortal (void)
 		drawFrame++;
 		gl_speeds.frustLeafs = 0;
 
+		// setup world entity
+		VectorCopy (vp.vieworg, gl_entities[ENTITYNUM_WORLD].modelvieworg);
+		gl_entities[ENTITYNUM_WORLD].worldMatrix = true;
+
 		MarkLeaves ();
 		ClearBounds (vp.mins, vp.maxs);
 		firstLeaf = WalkBspTree ();
@@ -1271,6 +1555,8 @@ void GL_DrawPortal (void)
 		DrawParticles (vp.particles);
 
 		DrawBspSequence (firstLeaf);
+		if (gl_flares->integer && gl_flareShader)
+			DrawFlares ();
 	}
 	else
 		for (i = 0, e = gl_entities + vp.firstEntity; i < vp.numEntities; i++, e++)

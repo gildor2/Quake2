@@ -369,25 +369,19 @@ void Draw_Fill (int x, int y, int w, int h, int c)
 	qglEnable (GL_TEXTURE_2D);
 }
 
-//=============================================================================
-
-/*
-================
-Draw_FadeScreen
-
-================
-*/
-void Draw_FadeScreen (void)
+void Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, float a)
 {
+	if (a < 0.7) a = 0.7;	// because of alpha-test ...
+
 	qglEnable (GL_BLEND);
 	qglDisable (GL_TEXTURE_2D);
-	qglColor4f (0, 0, 0, 0.8);
+	qglColor4f (r, g, b, a);
 	qglBegin (GL_QUADS);
 
-	qglVertex2f (0,0);
-	qglVertex2f (vid.width, 0);
-	qglVertex2f (vid.width, vid.height);
-	qglVertex2f (0, vid.height);
+	qglVertex2f (x,y);
+	qglVertex2f (x+w, y);
+	qglVertex2f (x+w, y+h);
+	qglVertex2f (x, y+h);
 
 	qglEnd ();
 	qglColor4f (1,1,1,1);

@@ -231,9 +231,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	}
 	Com_sprintf (sv.configstrings[CS_MAPCHECKSUM], sizeof(sv.configstrings[CS_MAPCHECKSUM]), "%i", checksum);
 
-	//
 	// clear physics interaction links
-	//
 	SV_ClearWorld ();
 
 	for (i = 1; i < CM_NumInlineModels () ; i++)
@@ -242,9 +240,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 		sv.models[i+1] = CM_InlineModel (sv.configstrings[CS_MODELS+1+i]);
 	}
 
-	//
 	// spawn the rest of the entities on the map
-	//
 
 	// precache and static commands can be issued during
 	// map initialization

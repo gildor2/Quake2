@@ -101,6 +101,25 @@ static void LoadPlanes (dplane_t *data, int count, int stride)
 }
 
 
+static void LoadFlares (lightFlare_t *data, int count)
+{
+	int		i;
+	gl_flare_t *out;
+
+	map.numFlares = count;
+	map.flares = out = Hunk_Alloc (count * sizeof(gl_flare_t));
+	for (i = 0; i < count; i++, data = data->next, out++)
+	{
+		VectorCopy (data->origin, out->origin);
+		out->size = data->size;
+		out->radius = data->radius;
+		out->color.rgba = *((int*)data->color) | 0xFF000000;
+		out->style = data->style;
+		out->leaf = GL_PointInLeaf (data->origin);
+	}
+}
+
+
 static void SetNodeParent (node_t *node, node_t *parent)
 {
 	node->parent = parent;
@@ -114,6 +133,7 @@ static void SetNodeParent (node_t *node, node_t *parent)
 
 
 // Helper function for creating lightmaps with r_lightmap=2 (taken from Q3)
+// Converts brightness to color
 static void CreateSolarColor (float a, float x, float y, float *vec)
 {
 	float	a0, s, t;
@@ -276,14 +296,6 @@ static void PostprocessSurfaces (void)
 				pl->mins2[1] = min2;
 				pl->maxs2[0] = max1;
 				pl->maxs2[1] = max2;
-/*				if (i < 20) //??? remove
-				{
-					Com_Printf ("***** surf %d *****\n", i);
-					Com_Printf ("norm: %g, %g, %g\n", pl->plane.normal[0], pl->plane.normal[1], pl->plane.normal[2]);
-					Com_Printf ("axis[0]: %g, %g, %g\n", pl->axis[0][0], pl->axis[0][1], pl->axis[0][2]);
-					Com_Printf ("axis[1]: %g, %g, %g\n", pl->axis[1][0], pl->axis[1][1], pl->axis[1][2]);
-					Com_Printf ("bounds: (%g, %g) - (%g, %g)\n", pl->mins2[0], pl->mins2[1], pl->maxs2[0], pl->maxs2[1]);
-				} */
 			}
 			break;
 		}
@@ -468,7 +480,6 @@ static void LM_PutBlock (dynamicLightmap_t *dl)
 		{
 			for (x = 0; x < dl->w; x++)
 			{
-				//!! do not "*2" if have texenv_combine (can modulate at run-time)
 				*dst++ = *src++;
 				*dst++ = *src++;
 				*dst++ = *src++;
@@ -477,8 +488,6 @@ static void LM_PutBlock (dynamicLightmap_t *dl)
 			dst += stride;
 		}
 	}
-
-//	if (dl->w * (numFast + 1) != dl->w2) Com_Printf("^1%d * 1+%d <> %d\n", dl->w, numFast, dl->w2);//!! DEBUG
 
 	// mark lightmap block as used
 	dl->block->empty = false;
@@ -511,8 +520,6 @@ static void SortLightStyles (dynamicLightmap_t *dl)
 	}
 }
 
-
-#define MIN_ALPHA_BRIGHT		48
 
 void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean vertexOnly, unsigned dlightMask)
 {
@@ -574,7 +581,7 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 				unsigned frac;			// point frac: 0 -- 0.0f, 16384*128 -- 1.0f (rang=14+7=21)
 
 				// calculate vertex color as weighted average of 4 points
-				scale = dl->modulate[z];
+				scale = dl->modulate[z] * 2 >> gl_config.overbrightBits;
 				point = dl->source[z] + ((int)v->lm2[1] * dl->w + (int)v->lm2[0]) * 3;
 				// calculate s/t weights
 				frac_s = Q_ftol (v->lm2[0] * 128) & 127;
@@ -591,34 +598,10 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 				STEP(r, 3); STEP(g, 4); STEP(b, 5);
 #undef STEP
 			}
-			// "float" -> int
+			// "fixed" -> int
 			r >>= 21;
 			g >>= 21;
 			b >>= 21;
-			// scale (boost) color for alpha-surfaces
-			if (shader->style & (SHADER_TRANS33|SHADER_TRANS66))
-			{
-				int		oldbr, newbr, scale;
-
-				oldbr = r;
-				if (r < g) oldbr = g;
-				if (oldbr < b) oldbr = b;
-				newbr = oldbr * (256 - MIN_ALPHA_BRIGHT) + MIN_ALPHA_BRIGHT * 256;
-				if (oldbr)
-				{
-					scale = newbr / oldbr;
-					r = (r * scale) / 256;
-					g = (g * scale) / 256;
-					b = (b * scale) / 256;
-				}
-			}
-
-			/* NOTE: cannot integrate following lines to "scale" above (scale = scale * 2 >> gl_config.overbrightBits)
-			 *   because block for SURF_ALPHA (BOOST_COLOR) uses normal (not overbrighten) rgb
-			 */
-			r = r * 2 >> gl_config.overbrightBits;
-			g = g * 2 >> gl_config.overbrightBits;
-			b = b * 2 >> gl_config.overbrightBits;
 
 			NORMALIZE_COLOR255(r, g, b);
 			v->c.c[0] = r;
@@ -669,8 +652,8 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 /*---------------- Planar surface subdivision ----------------*/
 
 
-#define POLY_DEBUG
-#define SUBDIV_ERROR	0.1		// max deviation from splitting plane
+//#define POLY_DEBUG
+#define SUBDIV_ERROR	0.2		// max deviation from splitting plane
 
 typedef struct poly_s
 {
@@ -709,7 +692,7 @@ static int Subdivide_NewVert (float x, float y, float z)
 		}
 	}
 	if (subdivNumVerts >= MAX_POLYVERTS)
-		Com_Error (ERR_DROP, "SubdividePlane: MAX_POLYVERTS hit.\n");
+		Com_Error (ERR_DROP, "SubdividePlane: MAX_POLYVERTS hit");
 
 	// alloc vertex
 	v = &subdivVerts[subdivNumVerts2++];
@@ -746,7 +729,7 @@ static void Subdivide_AddPointToPoly (poly_t *poly, int index)
 {
 #ifdef POLY_DEBUG
 	if (poly->numIndexes >= poly->maxIndexes)
-		Com_Error (ERR_DROP, "Subdivide_AddPointToPoly: index error\n");
+		Com_Error (ERR_DROP, "Subdivide_AddPointToPoly: index error");
 #endif
 	poly->indexes[poly->numIndexes] = index;
 	poly->numIndexes++;
@@ -779,28 +762,23 @@ static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis,
 		// process next point
 		v1 = v2;
 		idx1 = idx2;
-		if (i == lastIndex)
-			idx2 = poly->indexes[0];
-		else
-			idx2 = poly->indexes[i + 1];
+		idx2 = poly->indexes[i == lastIndex ? 0 : i + 1];
 		v2 = psubdivVerts[idx2];
 
 		// check point side
-		if ((*v1)[axis] < value1)			side1 = 1;
-		else if ((*v1)[axis] > value2)		side1 = 2;
+		if ((*v1)[axis] <= value1)			side1 = 1;
+		else if ((*v1)[axis] >= value2)		side1 = 2;
 		else								side1 = 3;
 		// check next point side
-		if ((*v2)[axis] < value1)			side2 = 1;
-		else if ((*v2)[axis] > value2)		side2 = 2;
+		if ((*v2)[axis] <= value1)			side2 = 1;
+		else if ((*v2)[axis] >= value2)		side2 = 2;
 		else								side2 = 3;
-		// add point to a corresponding poly
+		// add point to the corresponding poly
 		if (side1 == 3 && side2 == 3)
 		{
-			// both points are on divider -- add point only to one poly
-			if ((*v1)[axis] < (*v2)[axis])
-				Subdivide_AddPointToPoly (poly1, idx1);
-			else
-				Subdivide_AddPointToPoly (poly2, idx1);
+			// both points are on divider -- add point only to the one poly
+			Subdivide_AddPointToPoly ((*v1)[axis] < (*v2)[axis] ? poly1 : poly2, idx1);
+			// NOTE: can be error here (non-convex polygon)
 		}
 		else
 		{
@@ -812,7 +790,6 @@ static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis,
 			{
 				float	frac;
 				vec3_t	mid;
-//				double	frac;//??
 
 				// calculate midpoint
 				frac = (value - (*v1)[axis]) / ((*v2)[axis] - (*v1)[axis]);
@@ -903,7 +880,7 @@ static int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
 				else
 					lastPoly->next = poly1;
 				lastPoly = poly1;
-				// subdivide: cut workPoly to poly1 and poly2
+				// subdivide: split workPoly to poly1 and poly2
 				SubdividePoly (workPoly, poly1, poly2, axis, value, tessError);
 				// switch to poly2
 				workPoly = poly2;
@@ -948,7 +925,7 @@ static void GetSubdivideIndexes (int *pindex)
 	{
 		int		i;
 
-		for (i = 0; i < poly->numIndexes - 2; i++)	// numTris
+		for (i = 0; i < poly->numIndexes - 2; i++)	// numTris; this will also reject polys with 2 vertexes
 		{
 			*pindex++ = poly->indexes[0];
 			*pindex++ = poly->indexes[i+1];
@@ -1036,7 +1013,7 @@ static void LoadLeafsNodes2 (dnode_t *nodes, int numNodes, dleaf_t *leafs, int n
 }
 
 
-static void LoadInlineModels2 (dmodel_t *data, int count)
+static void LoadInlineModels2 (cmodel_t *data, int count)
 {
 	inlineModel_t	*out;
 	int		i;
@@ -1046,13 +1023,12 @@ static void LoadInlineModels2 (dmodel_t *data, int count)
 
 	for (i = 0; i < count; i++, data++, out++)
 	{
-		vec3_t	tmp;
 		int		j;
 
 		VectorCopy (data->mins, out->mins);
 		VectorCopy (data->maxs, out->maxs);
-		VectorSubtract (out->maxs, out->mins, tmp);
-		out->radius = VectorLength (tmp) / 2;
+		out->radius = data->radius;
+		out->headnode = data->headnode;
 		// create surface list
 		out->numFaces = data->numfaces;
 		out->faces = Hunk_Alloc (out->numFaces * sizeof(surfaceCommon_t*));
@@ -1062,7 +1038,8 @@ static void LoadInlineModels2 (dmodel_t *data, int count)
 }
 
 
-static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedge_t *edges, dvertex_t *verts, texinfo_t *tex)
+static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedge_t *edges,
+	dvertex_t *verts, texinfo_t *tex, cmodel_t *models, int numModels)
 {
 	int		i, j;
 	surfaceCommon_t *out;
@@ -1073,6 +1050,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 	{
 		int			numTextures, numVerts, numIndexes, numTris;
 		surfacePlanar_t *s;
+		cmodel_t	*owner;
 		vertex_t	*v;
 		int			*pedge, *pindex, sflags;
 		texinfo_t	*stex, *ptex;
@@ -1083,6 +1061,20 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		int			prevVert, validVerts;
 		char		textures[MAX_QPATH * MAX_STAGE_TEXTURES], *pname;
 
+		numVerts = surfs->numedges;
+		/*------- build vertex list -------*/
+		pedge = surfedges + surfs->firstedge;
+		for (j = 0; j < numVerts; j++, pedge++)
+		{
+			int		idx;
+
+			idx = *pedge;
+			if (idx > 0)
+				pverts[j] = &(verts + (edges+idx)->v[0])->point;
+			else
+				pverts[j] = &(verts + (edges-idx)->v[1])->point;
+		}
+
 		/*---- Generate shader with name and SURF_XXX flags ----*/
 		stex = tex + surfs->texinfo;
 		sflags = SHADER_WALL;
@@ -1092,7 +1084,49 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (stex->flags & SURF_SKY && gl_showsky->integer != 2) sflags |= SHADER_SKY;
 		if (stex->flags & SURF_FLOWING)	sflags |= SHADER_SCROLL;
 		if (stex->flags & SURF_WARP)	sflags |= SHADER_TURB;
+		if (stex->flags & (SURF_DIFFUSE|SURF_SPECULAR)) sflags |= SHADER_ENVMAP;	//?? separate this flags
 
+		// find owner model
+		for (j = 0, owner = models; j < numModels; j++, owner++)
+			if (i >= owner->firstface && i < owner->firstface + owner->numfaces)
+				break;
+
+		if (owner->flags & CMODEL_ALPHA)
+			sflags |= SHADER_ALPHA;
+
+		// check covered contents and update shader flags
+		if (stex->flags & (SURF_TRANS33|SURF_TRANS66) && !(stex->flags &
+			(SURF_SPECULAR|SURF_DIFFUSE|SURF_WARP|SURF_FLOWING)))		// && gl_autoReflect ??
+		{
+			vec3_t	mid, p1, p2;
+			float	scale, *norm;
+			trace_t	trace;
+			int		headnode;
+			static vec3_t v1 = {1, 1, 1}, v2 = {-1, -1, -1};
+
+			headnode = owner->headnode;
+			// find middle point
+			VectorClear (mid);
+			for (j = 0; j < numVerts; j++)
+				VectorAdd (mid, (*pverts[j]), mid);
+			scale = 1.0f / numVerts;
+			VectorScale (mid, scale, mid);
+			// get trace points
+			norm = (map.planes + surfs->planenum)->normal;
+			// vector with length 1 is not enough for non-axial surfaces
+			VectorMA (mid, 2, norm, p1);
+			VectorMA (mid, -2, norm, p2);
+			// perform trace
+			if (!surfs->side)
+				trace = CM_BoxTrace (p1, p2, v1, v2, headnode, MASK_SOLID);
+			else
+				trace = CM_BoxTrace (p2, p1, v1, v2, headnode, MASK_SOLID);
+			if (trace.fraction < 1)	// && (trace.contents & (CONTENTS_WINDOW|CONTENTS_TRANSLUCENT)))
+				sflags |= SHADER_ENVMAP;
+		}
+
+
+		// check for shader lightmap
 		if (surfs->lightofs >= 0)
 		{
 			if (sflags & SHADER_SKY)
@@ -1140,24 +1174,10 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		out->shader = shader;
 		//!! update sflags from this (created) shader -- it may be scripted (with different flags)
 
-		numVerts = surfs->numedges;
-		/*------- build vertex list -------*/
-		pedge = surfedges + surfs->firstedge;
-		for (j = 0; j < numVerts; j++, pedge++)
-		{
-			int		idx;
-
-			idx = *pedge;
-			if (idx > 0)
-				pverts[j] = &(verts + (edges+idx)->v[0])->point;
-			else
-				pverts[j] = &(verts + (edges-idx)->v[1])->point;
-		}
-
 		if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA|SHADER_TURB|SHADER_SKY))
 		{
 			/*--------- remove collinear points ----------*/
-			pverts[j] = pverts[0];			// make a loop
+			pverts[numVerts] = pverts[0];			// make a loop
 			prevVert = 0;
 			for (j = 1; j < numVerts; j++)
 			{
@@ -1207,7 +1227,8 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		out->pl = s = Hunk_Alloc (sizeof(*s) + sizeof(vertex_t)*numVerts + sizeof(int)*numIndexes);
 		memcpy (&s->plane, map.planes + surfs->planenum, sizeof(cplane_t));
 		if (!surfs->side)
-		{	// backface (needed for backface culling)
+		{
+			// backface (needed for backface culling)
 			VectorNegate (s->plane.normal, s->plane.normal);
 			s->plane.dist = -s->plane.dist;
 			//?? set signbits
@@ -1635,13 +1656,37 @@ static void LoadBsp2 (bspfile_t *bsp)
 	// Load planes
 	LoadPlanes (bsp->planes, bsp->numPlanes, sizeof(dplane_t));
 	// Load surfaces
-	LoadSurfaces2 (bsp->faces, bsp->numFaces, bsp->surfedges, bsp->edges, bsp->vertexes, bsp->texinfo);
+	LoadSurfaces2 (bsp->faces, bsp->numFaces, bsp->surfedges, bsp->edges, bsp->vertexes, bsp->texinfo, bsp->models, bsp->numModels);
 	LoadLeafSurfaces2 (bsp->leaffaces, bsp->numLeaffaces);
 	GenerateLightmaps2 ();
 	// Load bsp (leafs and nodes)
 	LoadLeafsNodes2 (bsp->nodes, bsp->numNodes, bsp->leafs, bsp->numLeafs);
 	LoadVisinfo2 (bsp->visibility, bsp->visDataSize);
 	LoadInlineModels2 (bsp->models, bsp->numModels);
+
+	switch (bsp->fogMode)
+	{
+	case fog_exp:
+		gl_fogMode = GL_EXP;
+		gl_fogDensity = bsp->fogDens;
+		break;
+	case fog_exp2:
+		gl_fogMode = GL_EXP2;
+		gl_fogDensity = bsp->fogDens;
+		break;
+	case fog_linear:
+		gl_fogMode = GL_LINEAR;
+		gl_fogStart = bsp->fogStart;
+		gl_fogEnd = bsp->fogEnd;
+		break;
+	default:
+		gl_fogMode = 0;
+	}
+	if (bsp->fogMode)
+		VectorCopy (bsp->fogColor, gl_fogColor);
+	else
+		VectorClear (gl_fogColor);
+	gl_fogColor[3] = 1;
 }
 
 
@@ -1653,7 +1698,7 @@ void GL_LoadWorldMap (char *name)
 	char	name2[MAX_QPATH];
 
 	if (!name[0])
-		Com_Error (ERR_FATAL, "R_FindModel: NULL name");
+		Com_Error (ERR_FATAL, "R_LoadWorldMap: NULL name");
 
 	Q_CopyFilename (name2, name, sizeof(name2)-1);
 
@@ -1673,12 +1718,15 @@ void GL_LoadWorldMap (char *name)
 	switch (bsp->type)
 	{
 	case map_q2:
+	case map_kp:
 		LoadBsp2 (bsp);
 		break;
 	default:
 		Hunk_End ();
 		Com_Error (ERR_DROP, "R_FindModel: unknown BSP type");
 	}
+	if (bsp->numFlares)
+		LoadFlares (bsp->flares, bsp->numFlares);
 	Hunk_End ();
 }
 
