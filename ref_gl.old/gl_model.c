@@ -888,7 +888,7 @@ void Mod_LoadPlanes (dplane_t *data, int size)
 	int			bits;
 
 	in = data;
-	out = Hunk_Alloc (size*sizeof(*out)); //?? old:  "size*2*sizeof(*out)"; WHY ??!! (Q3 has the same ...); removed 13.03.2002
+	out = Hunk_Alloc (size*sizeof(*out));	//?? old:  "size*2*sizeof(*out)"; WHY ??!! (Q3 has the same ...); removed 13.03.2002
 
 	loadmodel->planes = out;
 	loadmodel->numplanes = size;
@@ -1494,7 +1494,8 @@ void R_BeginRegistration (char *model)
 	cvar_t	*flushmap;
 
 	registration_sequence++;
-	r_oldviewcluster = -1;		// force markleafs
+	r_viewcluster = -2;
+	r_oldviewcluster = -2;		// force markleafs
 
 	Com_sprintf (fullname, sizeof(fullname), "maps/%s.bsp", model);
 
@@ -1505,8 +1506,6 @@ void R_BeginRegistration (char *model)
 		Mod_Free (&gl_mod_known[0]);
 	r_worldmodel = Mod_ForName(fullname, true);
 	r_worldmodel->registration_sequence = registration_sequence;
-
-	r_viewcluster = -1;
 }
 
 

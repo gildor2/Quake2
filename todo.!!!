@@ -166,6 +166,12 @@ BUGS:
 ? completion cvarnames after "set", "toggle", "add" (etc.) and "...$varname"
   (add flags for Cmd_AddCommand() - complete type: cvar, map, demo ... ???)
 
+?? CVAR_VAR (name,val,flags):
+  - CVAR_VARA(name,val): flags = archive
+  - CVAR_GET(name,val) : flags = 0
+  - old CVAR_GET(n) -> CVAR_FIND(n)
+  - CVAR_NULL(n,v,f) -> CVAR_CREATE(n,v,f)
+
 ------------- LINUX --------------------
 
 - check all "#pragma pack" places

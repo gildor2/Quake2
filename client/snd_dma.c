@@ -387,6 +387,15 @@ sfx_t *S_RegisterSound (char *name)
 
 	if (!s_registering)
 		S_LoadSound (sfx);
+	else
+		if (name[0] != '#' && name[0] != '*')
+		{
+			char	buf[MAX_OSPATH];
+
+			Com_sprintf (buf, sizeof(buf), "sound/%s", name);
+			if (!FS_FileExists (buf))
+				sfx->absent = true;
+		}
 
 	return sfx;
 }

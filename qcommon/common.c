@@ -1456,35 +1456,35 @@ void Qcommon_Frame (int msec)
 	char	*s;
 	int		time_before, time_between, time_after;
 
-	if (setjmp (abortframe) )
+	if (setjmp (abortframe))
 		return;			// an ERR_DROP was thrown
 
-	if ( log_stats->modified )
+	if (log_stats->modified)
 	{
 		log_stats->modified = false;
-		if ( log_stats->integer )
+		if (log_stats->integer)
 		{
-			if ( log_stats_file )
+			if (log_stats_file)
 			{
-				fclose( log_stats_file );
-				log_stats_file = 0;
+				fclose (log_stats_file);
+				log_stats_file = NULL;
 			}
-			log_stats_file = fopen( "stats.log", "w" );
-			if ( log_stats_file )
-				fprintf( log_stats_file, "entities,dlights,parts,frame time\n" );
+			log_stats_file = fopen ("stats.log", "w");
+			if (log_stats_file)
+				fprintf (log_stats_file, "entities,dlights,parts,frame time\n");
 		}
 		else
 		{
-			if ( log_stats_file )
+			if (log_stats_file)
 			{
-				fclose( log_stats_file );
+				fclose (log_stats_file);
 				log_stats_file = 0;
 			}
 		}
 	}
 
-	if (fixedtime->value)
-		msec = fixedtime->value;
+	if (fixedtime->integer)
+		msec = fixedtime->integer;
 	else if (timescale->value)
 	{
 		msec *= timescale->value;
@@ -1536,8 +1536,6 @@ void Qcommon_Frame (int msec)
 		rf = time_after_ref - time_before_ref;
 		sv -= gm;
 		cl -= rf;
-//		Com_Printf ("all:%3i sv:%3i gm:%3i cl:%3i rf:%3i\n",
-//			all, sv, gm, cl, rf);
 		re.DrawTextRight (va("all:%2d sv:%2d gm:%2d cl:%2d rf:%2d\n",
 				all, sv, gm, cl, rf), 1, 0.8, 0.3);
 	}

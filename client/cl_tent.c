@@ -235,12 +235,12 @@ void CL_RegisterTEntSounds (void)
 		for (i = 0; i < NUM_STEP_MATERIALS; i++)
 		{
 			sfx = S_RegisterSound (va("player/footsteps/%s/land1.wav", footstepTypes[i]));
-			cl_sfx_fallshort2[i] = (sfx && sfx->absent) ? cl_sfx_fallshort : sfx;
+			cl_sfx_fallshort2[i] = (!sfx || sfx->absent) ? cl_sfx_fallshort : sfx;
 
 			for (j = 0; j < 4; j++)
 			{
 				sfx = S_RegisterSound (va("player/footsteps/%s/step%d.wav", footstepTypes[i], j + 1));
-				cl_sfx_footsteps2[i*4 + j] = (sfx && sfx->absent) ? cl_sfx_footsteps[i] : sfx;
+				cl_sfx_footsteps2[i*4 + j] = (!sfx || sfx->absent) ? cl_sfx_footsteps[j] : sfx;
 			}
 		}
 		for (i = 0; i < IMPACT_COUNT; i++)
@@ -248,7 +248,7 @@ void CL_RegisterTEntSounds (void)
 			for (j = 0; j < 3; j++)
 			{
 				sfx = S_RegisterSound (va("weapons/%s/impact%d.wav", impactSounds[i], j + 1));
-				cl_sfx_bullethits[i*3 + j] = (sfx && sfx->absent) ? cl_sfx_ric[j] : sfx;
+				cl_sfx_bullethits[i*3 + j] = (!sfx || sfx->absent) ? cl_sfx_ric[j] : sfx;
 			}
 		}
 /*		for (i = 0; i < 3; i++)

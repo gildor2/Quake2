@@ -3,6 +3,7 @@
 ! REF_SOFT: crush
 
 ? game crush in msvcrt.dll (pak loading/unloading/download breaking/map not found)
+? hang while DirectSound initialization (on loading; when "developer 1" - not hang -- very unstable)
 
 - CapsLock will be displayed as unknown key!
 
@@ -24,4 +25,6 @@ ref_soft:
 
 ref_gl:
   DrawTile(): when viewport is small and gl_clear=1 - bugs on a left screen part
-  map rc3: window (V-type) bug (see window through window) -- translucent entities
+
+ref_oldgl:
+  map passin;map passin (BUGS!!!); map rexro (CRUSH!!!)  (this bug found only for passin -- bad map? no bug when "flushmap 1")

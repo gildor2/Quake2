@@ -212,7 +212,7 @@ int GLimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
 
 		gl_state.colorBits = colorBits;
 		Com_Printf ("...calling CDS: ");
-		if (ChangeDisplaySettings (&dm, 0 /* CDS_FULLSCREEN */ ) == DISP_CHANGE_SUCCESSFUL)
+		if (ChangeDisplaySettings (&dm, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL)
 		{
 			*pwidth = width;
 			*pheight = height;
