@@ -81,6 +81,29 @@ class CMemoryChain;
 	Text output system
 -----------------------------------------------------------------------------*/
 
+// Color codes
+
+#define C_BLACK		0
+#define C_RED		1
+#define C_GREEN		2
+#define C_YELLOW	3
+#define C_BLUE		4
+#define C_MAGENTA	5
+#define C_CYAN		6
+#define C_WHITE		7
+
+#define COLOR_ESCAPE	'^'			// may be used for quick location of color-processing code
+
+#define S_BLACK		"^0"
+#define S_RED		"^1"
+#define S_GREEN		"^2"
+#define S_YELLOW	"^3"
+#define S_BLUE		"^4"
+#define S_MAGENTA	"^5"
+#define S_CYAN		"^6"
+#define S_WHITE		"^7"
+
+
 // Output device
 class CORE_API COutputDevice
 {

@@ -1,8 +1,11 @@
 
 #if MEM_DEBUG
-/* NOTE: some compilers (not VC) may have problems with "Class::operator new" hooking by MEM_ALLOCATOR()
- *       (register-allocated arguments, implicit arguments etc.). In this case, make this function to be inline
- *       wrapper around non-cpp cdecl function, which will use MEM_ALLOCATOR().
+/* NOTES:
+ *	1.	some compilers (not VC) may have problems with "Class::operator new" hooking by MEM_ALLOCATOR()
+ *		(register-allocated arguments, implicit arguments etc.). In this case, make this function to be inline
+ *		wrapper around non-cpp cdecl function, which will use MEM_ALLOCATOR().
+ *	2.	use MEM_ALLOCATOR() for wrappers, which will call appMalloc() ONLY (directly or indirectly; no memory chains!);
+ *		if call to appMalloc() suppressed, should use MEM_ALLOCATOR(NULL) if MEM_ALLOCATOR(arg) was used. (??)
  */
 CORE_API extern unsigned GCurrentMemAllocator;	//?? address_t
 #	define MEM_ALLOCATOR(firstarg)	GCurrentMemAllocator = GET_RETADDR(firstarg)

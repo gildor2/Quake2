@@ -2,7 +2,7 @@
 
 int		cvar_initialized = 0;			// 0 - before config read, 1 - before system finished init, 2 - after init
 cvar_t	*cvar_vars;
-static void *cvar_chain;
+static CMemoryChain *cvar_chain;
 
 bool userinfo_modified;
 
@@ -203,7 +203,7 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 			if (!(flags & CVAR_NODEFAULT))
 			{
 				if (!var->reset_string)
-					var->reset_string = ChainCopyString (var_value, cvar_chain);	// save "default" value
+					var->reset_string = CopyString (var_value, cvar_chain);	// save "default" value
 				else if (stricmp (var->reset_string, var_value))
 					Com_WPrintf ("Different default value for cvar %s: %s != %s\n", var_name, var_value, var->reset_string);
 			}
@@ -244,8 +244,8 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 		}
 	}
 
-	var = (cvar_t*)AllocChainBlock (cvar_chain, sizeof(*var));
-	var->name = ChainCopyString (var_name, cvar_chain);
+	var = new (cvar_chain) cvar_t;
+	var->name = CopyString (var_name, cvar_chain);
 
 	if (cvar_initialized < 2 && COM_CheckCmdlineVar (var_name))
 	{	// variable overriden with commandline as "1"
@@ -267,7 +267,7 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 	hashTable[hash] = var;
 
 	if (!(flags & (CVAR_NODEFAULT|CVAR_USER_CREATED)))
-		var->reset_string = ChainCopyString (var_value, cvar_chain);
+		var->reset_string = CopyString (var_value, cvar_chain);
 
 	var->flags = flags & CVAR_FLAG_MASK;
 
@@ -995,7 +995,7 @@ Reads in all archived cvars
 */
 void Cvar_Init (void)
 {
-	cvar_chain = CreateMemoryChain ();
+	cvar_chain = new CMemoryChain;
 
 	RegisterCommand ("set", Cvar_Set_f);
 	RegisterCommand ("seta", Cvar_Seta_f);

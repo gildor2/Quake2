@@ -125,40 +125,38 @@ static int firstnode; // 0->firstclipnode, this->firstnode ??
 */
 
 
-typedef struct surfMaterial_s
+class surfMaterial_t : public CStringItem
 {
-	char	*name;			// full name or wildcard
-	struct surfMaterial_s *next;
+public:
 	material_t material;
-} surfMaterial_t;
+};
 
 
-static void *surfMaterialChain;
-static surfMaterial_t *surfMaterialList;
+static CMemoryChain *surfMaterialChain;
+static TList<surfMaterial_t> surfMaterialList;
 
 
 static void CMod_ReadSurfMaterials (char *filename)
 {
-	char	*file, *in, *s;
-	surfMaterial_t *prev;
-
 	if (surfMaterialChain)
 	{
-		FreeMemoryChain (surfMaterialChain);
+		delete surfMaterialChain;
 		surfMaterialChain = NULL;
-		surfMaterialList = NULL;
+		surfMaterialList.Reset();
 	}
 
+	char *file;
 	if (!(file = (char*) FS_LoadFile (filename)))
 	{
 		Com_DPrintf ("ReadSurfMaterials: %s is not found\n", filename);
 		return;
 	}
 
-	surfMaterialChain = CreateMemoryChain ();
-	prev = NULL;
-	in = file;
+	surfMaterialChain = new CMemoryChain;
+	surfMaterial_t *prev = NULL;
+	char *in = file;
 
+	const char *s;
 	while (s = COM_Parse (in), in)
 	{
 		material_t	m;
@@ -208,15 +206,12 @@ static void CMod_ReadSurfMaterials (char *filename)
 			break;
 		}
 		// s points to surface name
-		sm = (surfMaterial_t*) ChainAllocNamedStruc (sizeof(surfMaterial_t), s, surfMaterialChain);
+		sm = new (s) surfMaterial_t;
 		sm->material = m;
 		// add to list
-		if (!prev)
-			surfMaterialList = sm;
-		else
-			prev->next = sm;
-		prev = sm;
+		surfMaterialList.InsertAfter (sm, prev);
 
+		prev = sm;
 //		Com_DPrintf ("Added surface material: %d for %s\n", m, s);
 	}
 
@@ -226,7 +221,6 @@ static void CMod_ReadSurfMaterials (char *filename)
 // name must be without "textures/" prefix and without extension
 material_t CMod_GetSurfMaterial (char *name)
 {
-	surfMaterial_t *sm;
 	char	*checkname;		// points to a name without path
 
 	checkname = strrchr (name, '/');
@@ -235,12 +229,9 @@ material_t CMod_GetSurfMaterial (char *name)
 	else
 		checkname = name;
 
-	for (sm = surfMaterialList; sm; sm = sm->next)
+	for (surfMaterial_t *sm = surfMaterialList.First(); sm; sm = surfMaterialList.Next(sm))
 	{
-		char	*s;
-		material_t	m;
-
-		s = sm->name;
+		const char *s = sm->name;
 		if (strchr (s, '/'))
 		{	// mask have a path separator - compare full names
 			if (!appMatchWildcard (name, sm->name, true))
@@ -252,7 +243,7 @@ material_t CMod_GetSurfMaterial (char *name)
 				continue;
 		}
 
-		m = sm->material;
+		material_t m = sm->material;
 //		Com_DPrintf ("set material %d for %s\n", m, name);
 		return m;
 	}

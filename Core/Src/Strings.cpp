@@ -395,15 +395,23 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 -----------------------------------------------------------------------------*/
 
 //?? make strdup()-like name
+
 char *CopyString (const char *str)
 {
 	MEM_ALLOCATOR(str);
-	int len = strlen (str) + 1;
-	char *out = (char*)appMalloc (len);
-	memcpy (out, str, len);
+	int size = strlen (str) + 1;
+	char *out = (char*)appMalloc (size);
+	memcpy (out, str, size);
 	return out;
 }
 
+char *CopyString (const char *str, CMemoryChain *chain)
+{
+	int size = strlen (str) + 1;
+	char *out = (char*)chain->Alloc (size);
+	memcpy (out, str, size);
+	return out;
+}
 
 /*-----------------------------------------------------------------------------
 	String lists
@@ -450,7 +458,7 @@ CStringItem *CStringList::Find (const char *name, CStringItem **after)
 	if (after) *after = NULL;
 	for (CStringItem *item = first; item; item = item->next)
 	{
-		int cmp = appStricmp (name, item->name);	//?? case-insensitive
+		int cmp = appStricmp (name, item->name);
 		if (!cmp)
 		{
 			// found exact item
@@ -483,7 +491,7 @@ int CStringList::IndexOf (const char *str)
 
 	guardSlow(CStringList::IndexOf);
 	for (item = first, index = 0; item; item = item->next, index++)
-		if (!appStricmp (str, item->name))			//?? case-insensitive; NOTE: when list is alpha-sorted, can return NULL if cmp<0
+		if (!appStricmp (str, item->name))		//!! NOTE: when list is alpha-sorted, can return NULL if cmp<0
 			return index;
 	return -1;
 	unguardSlow;

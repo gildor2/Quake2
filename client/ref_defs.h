@@ -94,7 +94,7 @@ inline bool FS_FileExists (char *filename)
 {
 	return ri._FS_FileExists (filename);
 }
-inline basenamed_t* FS_ListFiles (char *name, int *numfiles, int flags)
+inline TList<CStringItem> FS_ListFiles (char *name, int *numfiles, int flags)
 {
 	return ri._FS_ListFiles (name, numfiles, flags);
 }
@@ -225,7 +225,7 @@ int	win32ExceptFilter2 (void);
 void	appUnwindPrefix (const char *fmt);
 void	NORETURN	appUnwindThrow (const char *fmt, ...);
 bool	FS_FileExists (char *filename);
-basenamed_t*	FS_ListFiles (char *name, int *numfiles, int flags);
+TList<CStringItem>	FS_ListFiles (char *name, int *numfiles, int flags);
 void*	FS_LoadFile (const char *name, unsigned *size = NULL);
 void	FS_FreeFile (void *buf);
 char*	FS_Gamedir (void);

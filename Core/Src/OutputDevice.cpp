@@ -42,7 +42,7 @@ void appWPrintf (const char *fmt, ...)
 	int		len;
 
 	va_start (argptr, fmt);
-	buf[0] = '^'; buf[1] = '3';			// make string colored
+	buf[0] = COLOR_ESCAPE; buf[1] = C_YELLOW + '0';		// make string colored
 	len = vsnprintf (buf+2, sizeof(buf)-2, fmt, argptr);
 	va_end (argptr);
 	if (len < 0 || len >= sizeof(buf) - 1 - 2)

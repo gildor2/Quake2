@@ -53,6 +53,7 @@ typedef unsigned int	address_t;
 #pragma warning(disable : 4291)			// no matched operator delete found
 #pragma warning(disable : 4275)			// non dll-interface class used as base for dll-interface class
 #pragma warning(disable : 4305)			// truncation from 'const double' to 'const float'
+#pragma warning(disable : 4244)			// conversion from 'int'/'double' to 'float'
 
 
 /*-----------------------------------------------------------------------------

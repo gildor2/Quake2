@@ -281,6 +281,7 @@ static int CompareAllocators (FAllocatorInfo *a1, FAllocatorInfo *a2)
 
 
 //?? used "void*" to avoid FAllocatorInfo declaration in MemoryMgr.h (may be, can do this better ?)
+//?? BuildAllocatorsTable declared in MemoryMgr.h as friend of CMemoryChain
 static int BuildAllocatorsTable (void *info1, int maxCount)
 {
 	int		numAllocators, i;
@@ -289,50 +290,58 @@ static int BuildAllocatorsTable (void *info1, int maxCount)
 	FAllocatorInfo* info = (FAllocatorInfo*)info1;
 	// enumerate all memory blocks
 	numAllocators = 0;
-	for (FMemHeader *hdr = FMemHeader::first; hdr; hdr = hdr->next)
-	{
-		// find same owner
-		for (i = 0, p = info; i < numAllocators; i++, p++)
-			if (p->address == hdr->owner) break;
+	GUARD_BEGIN {
+		for (FMemHeader *hdr = FMemHeader::first; hdr; hdr = hdr->next)
+		{
+			// find same owner
+			for (i = 0, p = info; i < numAllocators; i++, p++)
+				if (p->address == hdr->owner) break;
 
-		if (i >= numAllocators)
-		{
-			if (numAllocators >= maxCount) continue;	// list is full
-			// init new cell
-			p->count = 1;
-			p->isChain = false;
-			p->total = hdr->size;
-			p->address = hdr->owner;
-			numAllocators++;
+			if (i >= numAllocators)
+			{
+				if (numAllocators >= maxCount) continue;	// list is full
+				// init new cell
+				p->count = 1;
+				p->isChain = false;
+				p->total = hdr->size;
+				p->address = hdr->owner;
+				numAllocators++;
+			}
+			else
+			{
+				p->count++;
+				p->total += hdr->size;
+			}
 		}
-		else
-		{
-			p->count++;
-			p->total += hdr->size;
-		}
+	} GUARD_CATCH {
+		appWPrintf ("BuildAllocatorsTable: error in memory blocks\n");
 	}
 	// enumerate memory chains
-	for (CMemoryChain *ch = CMemoryChain::first; ch; ch = ch->dNext)
-	{
-		// find same owner
-		for (i = 0, p = info; i < numAllocators; i++, p++)
-			if (p->address == ch->owner) break;
+	GUARD_BEGIN {
+		for (CMemoryChain *ch = CMemoryChain::first; ch; ch = ch->dNext)
+		{
+			// find same owner
+			for (i = 0, p = info; i < numAllocators; i++, p++)
+				if (p->address == ch->owner) break;
 
-		if (i >= numAllocators)
-		{
-			if (numAllocators >= maxCount) continue;	// list ls full
-			// init new block
-			p->count = 1;
-			p->isChain = true;
-			p->total = ch->size;
-			p->address = ch->owner;
-			numAllocators++;
+			if (i >= numAllocators)
+			{
+				if (numAllocators >= maxCount) continue;	// list ls full
+				// init new block
+				p->count = 1;
+				p->isChain = true;
+				p->total = ch->size;
+				p->address = ch->owner;
+				numAllocators++;
+			}
+			else
+			{
+				p->count++;
+				p->total += ch->size;
+			}
 		}
-		else
-		{
-			p->count++;
-			p->total += ch->size;
-		}
+	} GUARD_CATCH {
+		appWPrintf ("BuildAllocatorsTable: error in memory chains\n");
 	}
 
 	if (numAllocators == maxCount)
@@ -354,21 +363,21 @@ static int numMarkedAllocs;
 static void Cmd_DumpAllocs (void)
 {
 	FAllocatorInfo info[MAX_ALLOCATORS], *p;
-	int		numAllocators, i;
 
-	numAllocators = BuildAllocatorsTable (ARRAY_ARG(info));
+	int numAllocators = BuildAllocatorsTable (ARRAY_ARG(info));
 
 	//?? filter symbol names (and/or package name) ?!
 	//?? can split by packages and dump per-package info too (requires appSymbolName() returns package info)
 	//?? (in this case, should display "/?" help for command)
+	int i;
 	for (i = 0, p = info; i < numAllocators; i++, p++)
 	{
 		char	symbol[256];
-
+		const char *color = p->isChain ? S_GREEN : "";
 		if (!appSymbolName (p->address, ARRAY_ARG(symbol)))
-			appPrintf ("%8d/%-4d  %08X\n", p->total, p->count, p->address);		//?? highlight
+			appPrintf ("%8d/%-4d  %s%08X\n", p->total, p->count, color, p->address);
 		else
-			appPrintf ("%8d/%-4d  %s\n", p->total, p->count, symbol);
+			appPrintf ("%8d/%-4d  %s%s\n", p->total, p->count, color, symbol);
 	}
 	appPrintf ("Displayed %d points\n", numAllocators);
 }
@@ -380,7 +389,7 @@ static void Cmd_MarkAllocs (bool usage)
 
 	if (usage)
 	{
-		appPrintf ("Remembers current memory allocations for later \"checkallocs\"\n");
+		appPrintf ("Remembers current memory allocations for later \"mem_check\"\n");
 		return;
 	}
 
@@ -469,7 +478,7 @@ static void Cmd_CheckAllocs (bool usage)
 
 		if (!appSymbolName (addr, ARRAY_ARG(symbol)))
 			appSprintf (ARRAY_ARG(symbol), "%08X", addr);
-		appPrintf ("%s\n", symbol);
+		appPrintf ("%s%s\n", p1->isChain ? S_GREEN : S_WHITE, symbol);
 
 		// advance list pointers
 		if (p1)

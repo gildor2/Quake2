@@ -57,7 +57,7 @@ CORE_API bool appMatchWildcard (const char *name, const char *mask, bool ignoreC
 
 
 CORE_API char *CopyString (const char *str);
-
+CORE_API char *CopyString (const char *str, CMemoryChain *chain);
 
 
 /*-----------------------------------------------------------------------------
@@ -92,7 +92,13 @@ public:
 	{
 		first = NULL;
 	}
+	// function for implicit list initialization
+	void Reset ()
+	{
+		first = NULL;
+	}
 	CORE_API int IndexOf (const char *str);
+	//!! IndexOfWildcard (str)
 	// unlink item from list
 	CORE_API bool Remove (CStringItem *item);
 	// freeing list of items, allocated in generic memory
@@ -123,6 +129,13 @@ public:
 		return (T*) CStringList::Find (index);
 	}
 	// list insertion
+	bool Insert (T *item)
+	{
+		T *prev;
+		Find (item->name, &prev);		// allow duplicates
+		InsertAfter (item, prev);
+		return true;
+	}
 	void InsertAfter (T *Item, T *Point)
 	{
 		if (Point)
@@ -135,6 +148,19 @@ public:
 			Item->next = (T*) first;
 			first = Item;
 		}
+	}
+	// creation and insertion
+	T *CreateAndInsert (const char *name)
+	{
+		T *item = new (name) T;
+		Insert (item);
+		return item;
+	}
+	T *CreateAndInsert (const char *name, CMemoryChain *chain)
+	{
+		T *item = new (name, chain) T;
+		Insert (item);
+		return item;
 	}
 	// WARNING: this function can return &NULL when index is out of bounds (generate appError ??)
 	T& operator[] (int index)

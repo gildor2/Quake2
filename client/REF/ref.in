@@ -41,7 +41,7 @@ void	NORETURN appUnwindThrow (const char *fmt, ...);
 
 //---------- files ----------
 bool	FS_FileExists (char *filename);
-basenamed_t* FS_ListFiles (char *name, int *numfiles, int flags);
+TList<CStringItem> FS_ListFiles (char *name, int *numfiles, int flags);
 void*	FS_LoadFile (const char *name, unsigned *size = NULL);
 void	FS_FreeFile (void *buf);
 char*	FS_Gamedir (void);

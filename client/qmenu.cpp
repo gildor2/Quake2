@@ -676,7 +676,7 @@ static void SpinControl2_DoSlide (menuList2_t *s, int dir)
 		s->curvalue = 0;
 	else
 	{
-		basenamed_t *item;
+		CStringItem *item;
 		int		i;
 
 		for (i = 0, item = s->itemnames; item && i < s->curvalue; item = item->next, i++) ;
@@ -691,7 +691,7 @@ static void SpinControl2_DoSlide (menuList2_t *s, int dir)
 static void SpinControl2_Draw (menuList2_t *s)
 {
 	int		i;
-	basenamed_t *item, *last;
+	CStringItem *item, *last;
 	const char	*text;
 	char	*newline;
 

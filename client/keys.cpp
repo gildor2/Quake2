@@ -265,8 +265,6 @@ static char *Do_CompleteCommand (char *partial)
 
 	if (arg1s = strchr (partial, ' '))
 	{
-		basenamed_t	*filelist, *fileitem;
-
 		if (arg1s == partial)
 			return NULL;	// space is first line char!
 
@@ -385,10 +383,10 @@ static char *Do_CompleteCommand (char *partial)
 		}
 
 		// complete "map" or "demomap" with mask/arg*
-		filelist = FS_ListFiles (va("%s/*%s", path, ext), NULL, file_type);
-		if (filelist)
+		TList<CStringItem> filelist = FS_ListFiles (va("%s/*%s", path, ext), NULL, file_type);
+		if (filelist.First())
 		{
-			for (fileitem = filelist; fileitem; fileitem = fileitem->next)
+			for (CStringItem *fileitem = filelist.First(); fileitem; fileitem = filelist.Next(fileitem))
 			{
 				// remove path part
 				if (name = strrchr (fileitem->name, '/'))
@@ -402,7 +400,7 @@ static char *Do_CompleteCommand (char *partial)
 			for (display = 0; display < 2; display++)
 			{
 				completed_count = 0;
-				for (fileitem = filelist; fileitem; fileitem = fileitem->next)
+				for (fileitem = filelist.First(); fileitem; fileitem = filelist.Next(fileitem))
 					TryComplete (fileitem->name, display, comp_type);
 				if (!completed_count)
 					return NULL;			// not completed
@@ -418,7 +416,7 @@ static char *Do_CompleteCommand (char *partial)
 				}
 			}
 			strcpy (completed_name, va("%s %s", complete_command, completed_name));
-			FreeNamedList (filelist);
+			filelist.Free();
 			return completed_name;
 		}
 		return NULL;

@@ -329,7 +329,6 @@ static void Cmd_Alias_f (bool usage, int argc, char **argv)
 void Cmd_Unalias_f (bool usage, int argc, char **argv)
 {
 	CAlias *alias, *next;
-	int		n;
 
 	if (argc != 2 || usage)
 	{
@@ -337,13 +336,14 @@ void Cmd_Unalias_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	n = 0;
+	int n = 0;
 	for (alias = AliasList.First(); alias; alias = next)
 	{
 		next = AliasList.Next(alias);
 		if (appMatchWildcard (alias->name, argv[1], true))
 		{
 			AliasList.Remove(alias);		// will scan list again
+			delete alias->value;
 			delete alias;
 			n++;
 		}

@@ -30,24 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 
 
-#ifdef _WIN32
-//  disable some compiler warnings
-#pragma warning(disable : 4018)			// signed/unsigned mismatch
-#pragma warning(disable : 4291)			// no matched operator delete found
-#pragma warning(disable : 4275)			// non dll-interface class used as base for dll-interface class
-#pragma warning(disable : 4244)			// conversion from 'int'/'double' to 'float'
-#pragma warning(disable : 4305)			// truncation from 'const double' to 'const float'
-
-#ifdef _MSC_VER
-//!! move to Core/Inc/VcWin32.h
-#pragma intrinsic(memcpy, memset, memcmp, abs, fabs)
-#endif
-
-#ifndef vsnprintf
-#	define vsnprintf	_vsnprintf
-#endif
-
-#else // _WIN32
+#ifndef _WIN32
 
 #define DLL_EXPORT
 #define NORETURN
@@ -62,50 +45,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define id386	0
 #endif
 
-#define EXPAND_BOUNDS(a,minval,maxval)	\
-	if (a < minval) minval = a;			\
-	if (a > maxval) maxval = a;
-
-#define VECTOR_ARG(name)	name[0],name[1],name[2]
-#define ARRAY_ARG(array)	array, sizeof(array)/sizeof(array[0])
-
-typedef unsigned char		byte;
-
-#ifndef NULL
-#define NULL ((void *)0)
-#endif
-
-
-// use "STR(any_value)" to convert it to string (may be float value)
-#define STR2(s) #s
-#define STR(s) STR2(s)
-
 
 #define BIG_NUMBER			0x1000000
 
-/*-----------------------------------------------------------------------------
-	Color codes
------------------------------------------------------------------------------*/
-
-#define C_BLACK		0
-#define C_RED		1
-#define C_GREEN		2
-#define C_YELLOW	3
-#define C_BLUE		4
-#define C_MAGENTA	5
-#define C_CYAN		6
-#define C_WHITE		7
-
-#define COLOR_ESCAPE	'^'			// may be used for quick location of color-processing code
-
-#define S_BLACK		"^0"
-#define S_RED		"^1"
-#define S_GREEN		"^2"
-#define S_YELLOW	"^3"
-#define S_BLUE		"^4"
-#define S_MAGENTA	"^5"
-#define S_CYAN		"^6"
-#define S_WHITE		"^7"
 
 //============================================================================
 

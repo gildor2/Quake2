@@ -435,30 +435,26 @@ void LoadJPG (const char *name, byte **pic, int *width, int *height)
 
 int ImageExists (const char *name, int stop_mask)
 {
-	basenamed_t *list, *item;
-	char	*ext;
-
 	char *path = NULL;
 	int out = 0;
 
 	while (path = FS_NextPath (path))
 	{
-		if (list = FS_ListFiles (va("%s/%s.*", path, name), NULL, LIST_FILES))
+		TList<CStringItem> list;
+		list = FS_ListFiles (va("%s/%s.*", path, name), NULL, LIST_FILES);
+		for (CStringItem *item = list.First(); item; item = list.Next(item))
 		{
-			for (item = list; item; item = item->next)
-			{
-				ext = strrchr (item->name, '/'); // find filename
-				if (!ext) continue;
-				ext = strchr (ext, '.'); // find FIRST dot in a filename
-				if (!ext) continue;
+			char *ext = strrchr (item->name, '/'); // find filename
+			if (!ext) continue;
+			ext = strchr (ext, '.'); // find FIRST dot in a filename
+			if (!ext) continue;
 
-				if (!strcmp (ext, ".pcx")) out |= IMAGE_PCX;
-				else if (!strcmp (ext, ".wal")) out |= IMAGE_WAL;
-				else if (!strcmp (ext, ".tga")) out |= IMAGE_TGA;
-				else if (!strcmp (ext, ".jpg")) out |= IMAGE_JPG;
-			}
-			FreeNamedList (list);
+			if (!strcmp (ext, ".pcx")) out |= IMAGE_PCX;
+			else if (!strcmp (ext, ".wal")) out |= IMAGE_WAL;
+			else if (!strcmp (ext, ".tga")) out |= IMAGE_TGA;
+			else if (!strcmp (ext, ".jpg")) out |= IMAGE_JPG;
 		}
+		list.Free();
 		if (out & stop_mask) break;
 		if ((out & IMAGE_8BIT) && (out & IMAGE_32BIT))
 			break; // found both 8 and 32-bit images - stop search

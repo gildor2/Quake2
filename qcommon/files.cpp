@@ -7,41 +7,39 @@ static bool initialized;
 
 /*------------ In memory -----------------*/
 
-typedef struct packFile_s
-{	// derived from basenamed_t, so: 1st field is "char *name", 2nd - "selfType_t *next"
-	char	*name;
-	struct packFile_s *next;// next file in the same directory
+class packFile_t : public CStringItem
+{
+public:
 	int		method; 		// 0-store, 8-deflate
 	int		pos;			// position of data in .PAK file
 	int		cSize;			// size of compressed data
 	int		ucSize;			// size of uncompressed data
 	int		crc;			// 0 for old (uncompressed) .PAK files
-} packFile_t;
+};
 
-typedef struct packDir_s
-{	// derived from basenamed_t
-	char	*name;
-	struct packDir_s *next;	// next directory in the same directory
-	struct packDir_s *cDir;	// 1st subdirectory (child subdirectory)
-	packFile_t *cFile;		// 1st file in this directory (child file)
-} packDir_t;
-
-typedef struct
+class packDir_t : public CStringItem
 {
+public:
+	TList<packDir_t> cDir;	// 1st subdirectory (child subdirectory)
+	TList<packFile_t> cFile; // 1st file in this directory (child file)
+};
+
+class pack_t
+{
+public:
 	char	*filename;		// .PAK filename (statistics)
 	packDir_t *root;		// root directory of .PAK file
 	int		numFiles;		// number of files in .PAK (statistics)
 	bool	isZip;			// true if PKWare ZIP file (statistics)
-	void	*chain;			// chain of memory blocks (freed all at once)
-} pack_t;
+	CMemoryChain *chain;	// chain of memory blocks (freed all at once)
+};
 
-typedef struct resFile_s
+class resFile_t : public CStringItem
 {
-	char	*name;			// derived on basenamed_t
-	struct resFile_s *next;
+public:
 	int		pos;
 	int		size;
-} resFile_t;
+};
 
 
 /*..............................................................
@@ -139,8 +137,8 @@ extern "C" byte zresource_start[], zresource_end[];
 
 
 
-static void *resChain;
-static resFile_t *resFiles;
+static CMemoryChain *resChain;
+static TList<resFile_t> resFiles;
 static int resFileCount;
 
 
@@ -151,7 +149,7 @@ static void InitResFiles (void)
 	int		fsize, offs;
 	resFile_t *f, *last;
 
-	resChain = CreateMemoryChain ();
+	resChain = new CMemoryChain;
 	z = OpenZRes();
 
 	last = NULL;
@@ -166,19 +164,17 @@ static void InitResFiles (void)
 			*s++ = c;
 		} while (c);
 		// create file struc
-		f = (resFile_t*)ChainAllocNamedStruc (sizeof(resFile_t), name, resChain);
+		f = new (name, resChain) resFile_t;
 		f->size = fsize;
 		// add to chain
-		if (!last)
-			resFiles = f;
-		else
-			last->next = f;
+		resFiles.InsertAfter (f, last);
+
 		resFileCount++;
 		last = f;
 	}
 	// now zstream points to begin of 1st file data - need to calculate file offsets
 	offs = z->readed;
-	for (f = resFiles; f; f = f->next)
+	for (f = resFiles.First(); f; f = resFiles.Next(f))
 	{
 		f->pos = offs;
 		offs += f->size;
@@ -197,12 +193,12 @@ Requires, that AllocNamedStruc() zeroes memory.
 =====================================================
 */
 
-static basenamed_t *AddDirFilesToList (char *findname, basenamed_t *list, int flags)
+static void AddDirFilesToList (const char *findname, TList<CStringItem> *List, int flags)
 {
-	char	*s, *mask, pattern[MAX_OSPATH], wildcard[MAX_OSPATH];
+	char	pattern[MAX_OSPATH], wildcard[MAX_OSPATH];
 
 	appStrncpyz (pattern, findname, sizeof(pattern));
-	mask = strrchr (pattern, '/');
+	char *mask = strrchr (pattern, '/');
 	if (mask)
 	{
 		strcpy (wildcard, mask+1);
@@ -211,36 +207,35 @@ static basenamed_t *AddDirFilesToList (char *findname, basenamed_t *list, int fl
 	else
 		wildcard[0] = 0;				// no path in filename ? (should not happens)
 
-	s = Sys_FindFirst (pattern, flags);
-	while (s)
+	for (const char *s = Sys_FindFirst (pattern, flags); s; s = Sys_FindNext ())
 	{
 		if (!wildcard[0] || s[strlen (s)-1] != '.')	// ignore "." and ".." directory items
 		{
-			char	*name;
-
-			name = strrchr (s, '/');	// should always be not NULL
+			const char *name = strrchr (s, '/');	// should always be not NULL
 			if (name && appMatchWildcard (name+1, wildcard, true))
-				list = AddToNamedList (s, list);
+			{
+				CStringItem *item, *place;
+				if (!(item = List->Find (s, &place)))
+				{
+					item = new (s) CStringItem;
+					appStrncpylwr (item->name, item->name, BIG_NUMBER);		//!! lowercase the name
+					List->InsertAfter (item, place);
+				}
+			}
 		}
-		s = Sys_FindNext ();
 	}
 	Sys_FindClose ();
-
-	return list;
 }
 
 
 // Find directory "name" in "pak". Returns NULL if not found.
-static packDir_t *FindPakDirectory (pack_t *pak, char *name)
+static packDir_t *FindPakDirectory (pack_t *pak, const char *name)
 {
-	char	*s;
-	packDir_t *dir;
-
-	dir = pak->root;
-	s = name;
+	packDir_t *dir = pak->root;
+	const char *s = name;
 	if (!name || !*name || name[0] == '/' && !name[1]) return dir; // empty string or "/" => root directory
 
-	while (1)
+	while (true)
 	{
 		char	*rest, dirname[MAX_OSPATH];
 		int		len;
@@ -252,11 +247,11 @@ static packDir_t *FindPakDirectory (pack_t *pak, char *name)
 		else		len = rest - s;
 		appStrncpyz (dirname, s, len+1);
 
-		if (!dir->cDir)
+		if (!dir->cDir.First ())
 			return NULL;				// current directory have no childs
 		else
 		{
-			newdir = (packDir_t*) FindNamedStruc (dirname, (basenamed_t*)dir->cDir, NULL);
+			newdir = dir->cDir.Find (dirname);
 			if (!newdir) return NULL;	// directory not found
 		}
 		// rest=NULL or ->"/\0" or ->"/another_text..."
@@ -268,9 +263,9 @@ static packDir_t *FindPakDirectory (pack_t *pak, char *name)
 
 
 // Returns packFile_t structure or NULL
-static packFile_t *FindPakFile (pack_t *pak, char *name)
+static packFile_t *FindPakFile (pack_t *pak, const char *name)
 {
-	char	*filename;
+	const char *filename;
 	packDir_t *dir;
 
 	filename = strrchr (name, '/');
@@ -293,7 +288,7 @@ static packFile_t *FindPakFile (pack_t *pak, char *name)
 		filename++;			// skip '/'
 	}
 //	DebugPrintf("  ... dir '%s' is found; searching for '%s'\n", dir->name, filename);
-	return (packFile_t*) FindNamedStruc (filename, (basenamed_t*)dir->cFile, NULL);
+	return dir->cFile.Find (filename);
 }
 
 
@@ -301,17 +296,16 @@ static packFile_t *FindPakFile (pack_t *pak, char *name)
 
 // Find directory "name" in "pak". If not found - create it.
 // Returns found or new directory.
-static packDir_t *AddPakDirectory (pack_t *pak, char *name)
+static packDir_t *AddPakDirectory (pack_t *pak, const char *name)
 {
-	char	dirname[MAX_OSPATH], *s, *rest;
-	packDir_t *dir, *newdir, *insdir;
+	char	dirname[MAX_OSPATH], *rest;
 	int		len;
 
-	dir = pak->root;
-	s = name;
+	packDir_t *dir = pak->root;
+	const char *s = name;
 	if (!name || !*name || name[0] == '/' && !name[1]) return dir; // empty string or "/" => root directory
 
-	while (1)
+	while (true)
 	{
 		// get name of the next directory into dirname
 		rest = strchr (s, '/');
@@ -319,28 +313,13 @@ static packDir_t *AddPakDirectory (pack_t *pak, char *name)
 		else len = rest - s;
 		Q_strncpylower (dirname, s, len);
 
-		if (!dir->cDir)
-		{	// current directory have no childs - this will be first
-			newdir = (packDir_t*) ChainAllocNamedStruc (sizeof(packDir_t), dirname, pak->chain);
-			dir->cDir = newdir;
-		}
-		else
+		packDir_t *insdir;
+		packDir_t *newdir = dir->cDir.Find (dirname, &insdir);
+		if (!newdir)
 		{
-			newdir = (packDir_t*) FindNamedStruc (dirname, (basenamed_t*)dir->cDir, (basenamed_t **)&insdir);
-			if (!newdir)
-			{	// not found - create and insert
-				newdir = (packDir_t*) ChainAllocNamedStruc (sizeof(packDir_t), dirname, pak->chain);
-				if (insdir)
-				{	// insert in a middle of chain
-					newdir->next = insdir->next;
-					insdir->next = newdir;
-				}
-				else
-				{	// insert as a first
-					newdir->next = dir->cDir;
-					dir->cDir = newdir;
-				}
-			}
+			// not found - create and insert
+			newdir = new (dirname, pak->chain) packDir_t;
+			dir->cDir.InsertAfter (newdir, insdir);
 		}
 		// rest=NULL or ->"/\0" or ->"/another_text..."
 		if (!rest || !rest[1]) return newdir;
@@ -353,11 +332,11 @@ static packDir_t *AddPakDirectory (pack_t *pak, char *name)
 // Returns UNFILLED packFile_t structure
 static packFile_t *AddPakFile (pack_t *pak, char *name)
 {
-	char	dirname[MAX_OSPATH], *filename;
+	char	dirname[MAX_OSPATH];
 	packDir_t *dir;
 	packFile_t *file, *insfile;
 
-	filename = strrchr (name, '/');
+	char *filename = strrchr (name, '/');
 	if (!filename)
 	{	// root directory
 		filename = name;
@@ -370,20 +349,14 @@ static packFile_t *AddPakFile (pack_t *pak, char *name)
 		if (!*filename) return NULL;	// empty name
 		dir = AddPakDirectory (pak, dirname);
 	}
-	file = (packFile_t*) FindNamedStruc (filename, (basenamed_t*)dir->cFile, (basenamed_t **)&insfile);
+	file = dir->cFile.Find (filename, &insfile);
 	if (!file)
-	{	// normally (if correct .PAK/.ZIP), should newer be found - always create
-		file = (packFile_t*) ChainAllocNamedStruc (sizeof(packFile_t), filename, pak->chain);
-		if (insfile)
-		{	// insert in a chain
-			file->next = insfile->next;
-			insfile->next = file;
-		}
-		else
-		{	// make it first
-			file->next = dir->cFile;
-			dir->cFile = file;
-		}
+	{
+		// normally (if correct .PAK/.ZIP), should newer be found - always create
+		file = new (filename, pak->chain) packFile_t;
+		appStrncpylwr (file->name, file->name, BIG_NUMBER);		// lowercase the name !!
+		dir->cFile.InsertAfter (file, insfile);
+
 		pak->numFiles++;
 	}
 	return file;
@@ -392,7 +365,7 @@ static packFile_t *AddPakFile (pack_t *pak, char *name)
 
 // Appends contents of pak directory dir with mask onto a list. Returns start of list.
 // list can be NULL (will be created). attr is combination of LISTPAK_FILES and LISTPAK_DIRS
-static basenamed_t *ListPakDirectory (pack_t *pak, char *dir, char *mask, int flags, basenamed_t *list, char *prefix)
+static void ListPakDirectory (pack_t *pak, const char *dir, const char *mask, int flags, TList<CStringItem> *List, const char *prefix)
 {
 	packDir_t *d, *dirlist;
 	packFile_t *filelist;
@@ -403,21 +376,20 @@ static basenamed_t *ListPakDirectory (pack_t *pak, char *dir, char *mask, int fl
 	if (d = FindPakDirectory (pak, dir))
 	{
 		if (flags & LIST_DIRS)
-			for (dirlist = d->cDir; dirlist; dirlist = dirlist->next)
+			for (dirlist = d->cDir.First(); dirlist; dirlist = d->cDir.Next(dirlist))
 				if (appMatchWildcard (dirlist->name, mask, true))
 				{
-					strcpy (addbufptr, dirlist->name);
-					list = AddToNamedList (addbuf, list);
+					strcpy (addbufptr, dirlist->name);		//?? can use va()
+					List->CreateAndInsert (addbuf);
 				}
 		if (flags & LIST_FILES)
-			for (filelist = d->cFile; filelist; filelist = filelist->next)
+			for (filelist = d->cFile.First(); filelist; filelist = d->cFile.Next(filelist))
 				if (appMatchWildcard (filelist->name, mask, true))
 				{
 					strcpy (addbufptr, filelist->name);
-					list = AddToNamedList (addbuf, list);
+					List->CreateAndInsert (addbuf);
 				}
 	}
-	return list;
 }
 
 
@@ -426,19 +398,17 @@ static basenamed_t *ListPakDirectory (pack_t *pak, char *dir, char *mask, int fl
 static void DumpPakDirectory (packDir_t *dir, FILE *log)
 {
 	int		i;
-	packFile_t *f;
-	packDir_t *d;
 	static int dumpPakLevel = 0;
 
 	for (i = 0; i < dumpPakLevel * 2; i++) fputc (' ', log);
 	fprintf (log, "%s/\n", dir->name);
 	dumpPakLevel++;
-	for (f = dir->cFile; f; f = f->next)
+	for (packFile_t *f = dir->cFile.First(); f; f = dir->cFile.Next(f))
 	{
 		for (i = 0; i < dumpPakLevel * 2; i++) fputc (' ', log);
 		fprintf (log, "%s\n", f->name);
 	}
-	for (d = dir->cDir; d; d = d->next)
+	for (packDir_t *d = dir->cDir.First(); d; d = dir->cDir.Next(d))
 		DumpPakDirectory (d, log);
 	dumpPakLevel--;
 }
@@ -453,12 +423,9 @@ static void DumpPakContents (pack_t *pak, FILE *log)
 
 static int FileLength (FILE *f)
 {
-	int		pos;
-	int		end;
-
-	pos = ftell (f);
+	unsigned pos = ftell (f);
 	fseek (f, 0, SEEK_END);
-	end = ftell (f);
+	unsigned end = ftell (f);
 	fseek (f, pos, SEEK_SET);
 
 	return end;
@@ -476,6 +443,7 @@ void FS_CreatePath (char *path)
 {
 	char	*ofs;
 
+	//!! will modify "path"
 	DEBUG_LOG(va("path: %s\n", path));
 	for (ofs = path + 1; *ofs; ofs++)
 	{
@@ -688,7 +656,6 @@ int FS_FOpenFile (const char *filename2, FILE **file)
 	packFile_t		*pfile;
 	int				gamelen, gamePos;
 	fileLink_t		*link;
-	resFile_t		*rf;
 	FILE			*f;
 
 	fileFromPak = 0;
@@ -795,14 +762,14 @@ int FS_FOpenFile (const char *filename2, FILE **file)
 	}
 
 	// check for a resource (inline) file
-	for (rf = resFiles; rf; rf = rf->next)
-		if (!strcmp (rf->name, filename))
-		{
-			*file = AllocFileInternal (filename, NULL, FT_ZMEM);
-			(*(FILE2**)file)->rFile = rf;
-			DEBUG_LOG(va("rfile: %s\n", filename));
-			return rf->size;
-		}
+	resFile_t *rf = resFiles.Find (filename);
+	if (rf)
+	{
+		*file = AllocFileInternal (filename, NULL, FT_ZMEM);
+		(*(FILE2**)file)->rFile = rf;
+		DEBUG_LOG(va("rfile: %s\n", filename));
+		return rf->size;
+	}
 
 	DEBUG_LOG(va("no file %s\n", filename));
 
@@ -1082,13 +1049,10 @@ static pack_t *createdPak;
 
 static bool EnumZippedPak (zipFile_t *file)
 {
-	int		len;
-	packFile_t *newfile;
-
-	len = strlen (file->name);
+	int len = strlen (file->name);
 	if (len > 0 && file->name[len - 1] != '/')
 	{	// not a directory - add file
-		newfile = AddPakFile (createdPak, file->name);
+		packFile_t *newfile = AddPakFile (createdPak, file->name);
 		newfile->method = file->method;
 		newfile->pos = file->pos;
 		newfile->cSize = file->csize;
@@ -1101,23 +1065,16 @@ static bool EnumZippedPak (zipFile_t *file)
 
 static pack_t *LoadPackFile (char *packfile)
 {
-	dPackHeader_t	header;
-	int				i;
-	bool			is_zip;
-	packFile_t		*newfile;
-	int				numpackfiles;
-	pack_t			*pack;
-	FILE			*packHandle;
-	dPackFile_t		info;
-	void			*memchain;
+	bool	is_zip;
 
-	packHandle = fopen(packfile, "rb");
+	FILE *packHandle = fopen(packfile, "rb");
 	if (!packHandle)
 	{
 		Com_WPrintf ("Cannot open packfile %s\n", packfile);
 		return NULL;
 	}
 
+	dPackHeader_t	header;
 	if (fread (&header, sizeof(header), 1, packHandle) != 1)
 	{
 		Com_WPrintf ("Cannot read packfile %s\n", packfile);
@@ -1139,24 +1096,26 @@ static pack_t *LoadPackFile (char *packfile)
 		is_zip = false;
 
 	// create pack_t
-	memchain = CreateMemoryChain ();
-	pack = (pack_t*) ChainAllocNamedStruc (sizeof(pack_t), packfile, memchain);
-	pack->root = (packDir_t*) ChainAllocNamedStruc (sizeof(packDir_t), "", memchain);
+	CMemoryChain *chain = new CMemoryChain;
+	pack_t *pack = new (chain) pack_t;
+	pack->filename = CopyString (packfile, chain);
+	pack->root = new ("", chain) packDir_t;
 	pack->isZip = is_zip;
-	pack->chain = memchain;
+	pack->chain = chain;
 
 	if (!is_zip)
 	{	// load standard quake pack file
 		header.dirofs = LittleLong (header.dirofs);
 		header.dirlen = LittleLong (header.dirlen);
-		numpackfiles = header.dirlen / sizeof(dPackFile_t);
+		int numpackfiles = header.dirlen / sizeof(dPackFile_t);
 		if (fseek (packHandle, header.dirofs, SEEK_SET))
 			Com_FatalError ("Cannot seek pakfile %s", packfile);
 		// parse the directory
-		for (i = 0; i < numpackfiles; i++)
+		for (int i = 0; i < numpackfiles; i++)
 		{
+			dPackFile_t info;
 			fread (&info, sizeof(dPackFile_t), 1, packHandle);
-			newfile = AddPakFile (pack, info.name);
+			packFile_t *newfile = AddPakFile (pack, info.name);
 			newfile->pos = LittleLong(info.filepos);
 			newfile->ucSize = LittleLong(info.filelen);
 			newfile->cSize = newfile->ucSize; // unpacked file
@@ -1185,7 +1144,7 @@ static pack_t *LoadPackFile (char *packfile)
 static void UnloadPackFile (pack_t *pak)
 {
 	Com_DPrintf ("Unloading pak %s (%d files)\n", pak->filename, pak->numFiles);
-	FreeMemoryChain (pak->chain);
+	delete pak->chain;
 	ClearFileCache(); // we must do it somewhere ... this is a good place.
 }
 
@@ -1201,7 +1160,6 @@ then loads and adds pak1.pak pak2.pak ...
 static void AddGameDirectory (char *dir)
 {
 	searchPath_t *search;
-	basenamed_t	*paklist, *pakname;
 
 	strcpy (fs_gamedir, dir);
 
@@ -1221,12 +1179,11 @@ static void AddGameDirectory (char *dir)
 	search->next = fs_searchpaths;
 	fs_searchpaths = search;
 
-	paklist = AddDirFilesToList (va("%s/*.pak", dir), NULL, LIST_FILES);
-	for (pakname = paklist; pakname; pakname = pakname->next)
+	TList<CStringItem> PakList;
+	AddDirFilesToList (va("%s/*.pak", dir), &PakList, LIST_FILES);
+	for (CStringItem *pakName = PakList.First(); pakName; pakName = PakList.Next(pakName))
 	{
-		pack_t			*pak;
-
-		pak = LoadPackFile (pakname->name);
+		pack_t *pak = LoadPackFile (pakName->name);
 		if (!pak) continue;
 
 		search = (searchPath_t*) AllocNamedStruc (sizeof(searchPath_t), "");
@@ -1234,7 +1191,7 @@ static void AddGameDirectory (char *dir)
 		search->next = fs_searchpaths;
 		fs_searchpaths = search;
 	}
-	FreeNamedList (paklist);
+	PakList.Free();
 }
 
 /*
@@ -1256,10 +1213,10 @@ FS_LoadGameConfig
 */
 void FS_LoadGameConfig (void)
 {
-	char	*gdir, dir[MAX_QPATH];
+	char	dir[MAX_QPATH];
 	FILE	*f;
 
-	gdir = Cvar_VariableString ("gamedir");
+	char *gdir = Cvar_VariableString ("gamedir");
 	// game = "" => gdir = "baseq2"
 	appSprintf (ARRAY_ARG(dir), "%s/%s", fs_basedir->string, *gdir ? gdir : BASEDIRNAME);
 
@@ -1412,14 +1369,13 @@ static void FS_LoadPak_f (bool usage, int argc, char **argv)
 
 	if (strchr (pakname, '*'))
 	{	// name is a wildcard
-		basenamed_t *paklist, *pakitem;
-
-		paklist = AddDirFilesToList (pakname, NULL, LIST_FILES);
-		if (paklist)
+		TList<CStringItem> PakList;
+		AddDirFilesToList (pakname, &PakList, LIST_FILES);
+		if (PakList.First())
 		{
-			for (pakitem = paklist; pakitem; pakitem = pakitem->next)
-				TryLoadPak (pakitem->name);
-			FreeNamedList (paklist);
+			for (CStringItem *item = PakList.First(); item; item = PakList.Next(item))
+				TryLoadPak (item->name);
+			PakList.Free();
 			return;
 		}
 	}
@@ -1567,12 +1523,11 @@ FS_ListFiles
 ================
 */
 
-basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
+TList<CStringItem> FS_ListFiles (char *name, int *numfiles, int flags)
 {
 	char	buf[MAX_OSPATH], game[MAX_OSPATH], *pakname, *mask, path[MAX_OSPATH];
 	int		gamelen;
 	searchPath_t *search;
-	basenamed_t *list;
 	int		gamePos;
 
 	appCopyFilename (buf, name, sizeof(buf));
@@ -1582,6 +1537,9 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 	/*	Make gamePos = index of first char in game directory part of source filename (after '/').
 	 *  After all calculations, gamelen = position of 1st char of game-relative path in the source filename.
 	 */
+
+	// initialize file list
+	TList<CStringItem> List;
 
 	gamelen = 0;
 	gamePos = 0;
@@ -1593,12 +1551,12 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 		if (memcmp (name, fs_cddir->string, gamePos))
 		{
 			Com_DPrintf ("FS_ListFiles: bad path %s\n", name);
-			return NULL;
+			return List;	// empty
 		}
 		gamePos++;		// skip '/'
 #else
 		Com_DPrintf ("FS_ListFiles: bad path %s\n", name);
-		return NULL;
+		return List;		// empty
 #endif
 	}
 	else if (name[0] == '.' && name[1] == '/')
@@ -1634,15 +1592,10 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 		mask++; // skip '/'
 	}
 
-	// initialize file list
-	list = NULL;
-
 	/*------------- check pak files --------------------*/
 	for (search = fs_searchpaths; search; search = search->next)
 	{
-		pack_t	*pak;
-
-		if (pak = search->pack)
+		if (pack_t *pak = search->pack)
 		{
 			// validate .pak game directory
 			if (gamelen && memcmp(pak->filename, game, gamelen))
@@ -1651,35 +1604,31 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 				continue;		// .pak placed in other game directory - skip it
 			}
 //			Com_Printf (S_RED"  use pak %s\n", pak->filename);
-			list = ListPakDirectory (pak, path, mask, flags, list, game);
+			ListPakDirectory (pak, path, mask, flags, &List, game);
 		}
 	}
 
 	/*------------ check directory tree ----------------*/
 	if (name[0] == '.' && name[1] == '/')		// root-relative listing
-		list = AddDirFilesToList (name, list, flags);
+		AddDirFilesToList (name, &List, flags);
 	else if (name[0] == '.' && name[1] == '.' && name[2] == '/')	// "../dir" (game-relative) -> "./dir" (root-relative) path
-		list = AddDirFilesToList (name+1, list, flags);
+		AddDirFilesToList (name+1, &List, flags);
 	else
 	{	// game is not specified - list all searchpaths
-		char	*path2;
-
-		path2 = NULL;
+		const char *path2 = NULL;
 		while (path2 = FS_NextPath (path2))
-			list = AddDirFilesToList (va("%s/%s", path2, name), list, flags);
+			AddDirFilesToList (va("%s/%s", path2, name), &List, flags);
 	}
 
 	/*----------- count number of files ----------------*/
 	if (numfiles)
 	{
-		basenamed_t *item;
-
 		*numfiles = 0;
-		for (item = list; item; item = item->next)
+		for (CStringItem *item = List.First(); item; item = List.Next(item))
 			(*numfiles)++;
 	}
 
-	return list;
+	return List;
 }
 
 
@@ -1693,7 +1642,6 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 	char	*path = NULL;
 	char	findname[1024];
 	char	wildcard[256];
-	basenamed_t	*dirnames, *item;
 	int		len, maxlen, col, colwidth, colcount;
 	char	*name;
 
@@ -1720,10 +1668,11 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 		appCopyFilename (findname, findname, sizeof(findname));	// in-place compact filename
 		Com_Printf (S_GREEN"Directory of %s\n-------------------\n", findname);
 
-		if (dirnames = FS_ListFiles (findname, NULL, LIST_FILES|LIST_DIRS))
+		TList<CStringItem> dirnames = FS_ListFiles (findname, NULL, LIST_FILES|LIST_DIRS);
+		if (dirnames.First())
 		{
 			maxlen = 0;
-			for (item = dirnames; item; item = item->next)
+			for (CStringItem *item = dirnames.First(); item; item = dirnames.Next(item))
 			{
 				if (name = strrchr (item->name, '/'))
 					item->name = name + 1; // cut directory prefix
@@ -1735,7 +1684,7 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 			if (!colcount) colcount = 1;
 
 			colwidth = maxlen + SPACING;
-			for (col = 0, item = dirnames; item; item = item->next)
+			for (col = 0, item = dirnames.First(); item; item = dirnames.Next(item))
 			{
 				Com_Printf ("%s", item->name);
 				if (++col >= colcount)
@@ -1748,7 +1697,7 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 				for (int i = 0; i < colwidth - len; i++) Com_Printf (" ");
 			}
 			if (col) Com_Printf ("\n");
-			FreeNamedList (dirnames);
+			dirnames.Free();
 		}
 		Com_Printf ("\n");
 		// if wildcard starts from "../" - dir is root-based, ignore other paths

@@ -760,8 +760,6 @@ extern cvar_t	*fs_gamedirvar;
 #define LIST_FILES	1
 #define LIST_DIRS	2
 
-//--basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags);
-
 void	FS_InitFilesystem (void);
 bool	FS_SetGamedir (const char *dir);
 //--char	*FS_Gamedir (void);
@@ -959,7 +957,7 @@ typedef struct
 	mapType_t	type;
 	unsigned	checksum;
 	unsigned	length;
-	void		*extraChain;
+	CMemoryChain *extraChain;
 
 	// entstring
 	int			entDataSize;

@@ -32,7 +32,7 @@ typedef enum {
 	MTYPE_LIST,
 	MTYPE_ACTION,
 	MTYPE_SPINCONTROL,		// uses array of *char
-	MTYPE_SPINCONTROL2,		// uses *basenamed_t list
+	MTYPE_SPINCONTROL2,		// uses *CStringItem list
 	MTYPE_SEPARATOR,
 	MTYPE_FIELD
 } menuItemType_t;
@@ -109,7 +109,7 @@ typedef struct
 	menuCommon_t generic;
 
 	int		curvalue;
-	basenamed_t *itemnames;
+	CStringItem *itemnames;
 } menuList2_t;
 
 typedef struct

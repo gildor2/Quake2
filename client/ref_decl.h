@@ -31,7 +31,7 @@ typedef struct {
 	void	(*_appUnwindPrefix) (const char *fmt);
 	void	NORETURN	(*_appUnwindThrow) (const char *fmt, ...);
 	bool	(*_FS_FileExists) (char *filename);
-	basenamed_t*	(*_FS_ListFiles) (char *name, int *numfiles, int flags);
+	TList<CStringItem>	(*_FS_ListFiles) (char *name, int *numfiles, int flags);
 	void*	(*_FS_LoadFile) (const char *name, unsigned *size = NULL);
 	void	(*_FS_FreeFile) (void *buf);
 	char*	(*_FS_Gamedir) (void);

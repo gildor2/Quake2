@@ -1,5 +1,7 @@
 #include "server.h"
 
+#define SV_PROFILE			//?? change
+
 game_export_t	*ge;
 static bool dummyGame;		// when demomap or cinematic loaded
 
@@ -338,6 +340,9 @@ static void *Z_TagMalloc (int size, int tag)
 	zhead_t	*z;
 
 	guard(Z_TagMalloc);
+#ifndef SV_PROFILE
+	MEM_ALLOCATOR(size);
+#endif
 	size += sizeof(zhead_t) + 1;	// reserve 1 byte for buggy mods
 
 	z = (zhead_t*) appMalloc (size);
@@ -389,8 +394,6 @@ static cvar_t *PF_Cvar_Get (char *name, char *value, int flags)
 
 
 //--------------------------------------------------------------
-
-#define SV_PROFILE
 
 #ifdef SV_PROFILE
 
@@ -469,7 +472,7 @@ static int PSV_SoundIndex (char *name)
 #define SV_SoundIndex PSV_SoundIndex
 
 static void* PZ_TagMalloc (int size, int tag)
-{	PROF2(void*)	Z_TagMalloc (size, tag); EPROF2(9);	}
+{	PROF; MEM_ALLOCATOR(size); void *res = Z_TagMalloc (size, tag); EPROF2(9);	}
 #define Z_TagMalloc PZ_TagMalloc
 
 static void PZ_Free (void *ptr)

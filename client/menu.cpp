@@ -1663,8 +1663,8 @@ START SERVER MENU
 */
 static menuFramework_t s_startserver_menu;
 
-static basenamed_t *mapNames;
-static void *mapNamesChain;
+static TList<CStringItem> mapNames;
+static CMemoryChain *mapNamesChain;
 static int	numMaps;
 
 static menuAction_t	s_startserver_start_action;
@@ -1779,7 +1779,7 @@ static void StartServerFunc (char *map)
 
 	if (mapNamesChain)
 	{
-		FreeMemoryChain (mapNamesChain);
+		delete mapNamesChain;
 		mapNamesChain = NULL;
 	}
 	M_ForceMenuOff ();
@@ -1787,11 +1787,8 @@ static void StartServerFunc (char *map)
 
 static void StartServerActionFunc (void *self)
 {
-	basenamed_t *item;
-
-	item = FindNamedStrucByIndex (mapNames, s_startmap_list.curvalue);
-	if (item)
-		StartServerFunc (strchr (item->name, '\n') + 1);
+	CStringItem *item = &mapNames[s_startmap_list.curvalue];
+	if (item) StartServerFunc (strchr (item->name, '\n') + 1);
 }
 
 static void StartServer_MenuInit( void )
@@ -1842,25 +1839,17 @@ static void StartServer_MenuInit( void )
 	numMaps = 0;
 	if (buffer)
 	{
-		basenamed_t *item, *last;
-		char	*s;
+		mapNamesChain = new CMemoryChain;
+		mapNames.Reset();
 
-		mapNamesChain = CreateMemoryChain ();
-		mapNames = last = NULL;
-
-		s = buffer;
+		const char *s = buffer;
 		while (s)
 		{
 			char	name[256];
 
 			Q_strncpylower (name, COM_Parse (s, true), sizeof(name)-1);
 			if (!name[0]) break;
-			item = (basenamed_t*)AllocChainBlock (mapNamesChain, sizeof(basenamed_t));
-			item->name = ChainCopyString (va("%s\n%s", COM_Parse (s, false), name), mapNamesChain);
-			// add new string to the end of list
-			if (last) last->next = item;
-			last = item;
-			if (!mapNames) mapNames = item;
+			CStringItem *item = mapNames.CreateAndInsert (va("%s\n%s", COM_Parse (s, false), name), mapNamesChain);
 
 			numMaps++;
 		}
@@ -1879,7 +1868,7 @@ static void StartServer_MenuInit( void )
 	s_startmap_list.generic.x	= 0;
 	s_startmap_list.generic.y	= 0;
 	s_startmap_list.generic.name = "initial map";
-	s_startmap_list.itemnames = mapNames;
+	s_startmap_list.itemnames = mapNames.First();
 
 	s_rules_box.generic.type = MTYPE_SPINCONTROL;
 	s_rules_box.generic.x	= 0;
@@ -1987,7 +1976,7 @@ static const char *StartServer_MenuKey (int key)
 	{
 		if (mapNamesChain)
 		{
-			FreeMemoryChain (mapNamesChain);
+			delete mapNamesChain;
 			mapNamesChain = NULL;
 		}
 		numMaps = 0;
@@ -2396,17 +2385,16 @@ static menuAction_t		s_player_download_action;
 
 #define MAX_DISPLAYNAME 16
 
-typedef struct playerModelInfo_s
-{	// derived from basenamed_t
-	char	*name;
-	struct playerModelInfo_s *next;
+class playerModelInfo_t : public CStringItem
+{
+public:
 	int		numSkins;
-	basenamed_t *skins;
-} playerModelInfo_t;
+	TList<CStringItem> skins;
+};
 
-static playerModelInfo_t *pmi;
+static CMemoryChain *pmiChain;
+static TList<playerModelInfo_t> pmiList;
 static int numPlayerModels;
-static void *pmiChain;
 
 static int modelChangeTime;
 
@@ -2441,22 +2429,16 @@ static void RateCallback (void *unused)
 
 static void ModelCallback (void *unused)
 {
-	playerModelInfo_t *info;
-
-	info = (playerModelInfo_t*) FindNamedStrucByIndex ((basenamed_t*)pmi, s_player_model_box.curvalue);
-	if (info)
-		s_player_skin_box.itemnames = info->skins;
-	else
-		Com_FatalError ("ModelCallback: bad index");	//?? debug
+	playerModelInfo_t *info = &pmiList[s_player_model_box.curvalue];
+	s_player_skin_box.itemnames = info->skins.First();
 	s_player_skin_box.curvalue = 0;
 	modelChangeTime = Sys_Milliseconds ();
 }
 
 //!! place skin functions to a separate unit
-static bool IsValidSkin (char *skin, basenamed_t *pcxfiles)
+static bool IsValidSkin (char *skin, CStringItem *pcxfiles)
 {
 	char	scratch[MAX_OSPATH], *ext, *name;
-	basenamed_t *item;
 
 	ext = strrchr (skin, '.');
 	if (!ext) return false;
@@ -2475,7 +2457,7 @@ static bool IsValidSkin (char *skin, basenamed_t *pcxfiles)
 	*strrchr (scratch, '.') = 0;
 	strcat (scratch, "_i.pcx");
 
-	for (item = pcxfiles; item; item = item->next)
+	for (CStringItem *item = pcxfiles; item; item = item->next)
 		if (!strcmp (item->name, scratch)) return true;
 	return false;
 }
@@ -2483,74 +2465,60 @@ static bool IsValidSkin (char *skin, basenamed_t *pcxfiles)
 static bool PlayerConfig_ScanDirectories (void)
 {
 	char	*path;
-	int		numModelDirs, i;
-	basenamed_t *dirnames, *diritem;
+	int		numModelDirs;
 
 	numPlayerModels = 0;
-	pmi = NULL;
+	pmiList.Reset();
 
 	/*----- get a list of directories -----*/
 	path = NULL;
+	TList<CStringItem> dirnames;
 	while (path = FS_NextPath (path))
 	{
-		if (dirnames = FS_ListFiles (va("%s/players/*.*", path), &numModelDirs, LIST_DIRS)) break;
+		dirnames = FS_ListFiles (va("%s/players/*.*", path), &numModelDirs, LIST_DIRS);
+		if (dirnames.First()) break;
 	}
-	if (!dirnames) return false;
+	if (!dirnames.First()) return false;
 
 	/*--- go through the subdirectories ---*/
-	for (i = 0, diritem = dirnames; i < numModelDirs; i++, diritem = diritem->next)
+	for (CStringItem *diritem = dirnames.First(); diritem; diritem = dirnames.Next(diritem))
 	{
-		basenamed_t *pcxnames, *pcxitem;
-		int		numSkins;
-		playerModelInfo_t *info, *infoIns;
-		basenamed_t *skins;
-
 		// verify the existence of tris.md2
 		if (!FS_FileExists (va("%s/tris.md2", diritem->name))) continue;
 
 		// verify the existence of at least one pcx skin
 		// "/*.pcx" -> pcx,tga,jpg (see IsValidSkin())
-		pcxnames = FS_ListFiles (va("%s/*.*", diritem->name), NULL, LIST_FILES);
-		if (!pcxnames) continue;
+		TList<CStringItem> pcxnames = FS_ListFiles (va("%s/*.*", diritem->name), NULL, LIST_FILES);
+		if (!pcxnames.First()) continue;
 
 		// count valid skins, which consist of a skin with a matching "_i" icon
-		numSkins = 0;
-		skins = NULL;
-		for (pcxitem = pcxnames; pcxitem; pcxitem = pcxitem->next)
-			if (IsValidSkin (pcxitem->name, pcxnames))
+		TList<CStringItem> skins;
+		int numSkins = 0;
+		for (CStringItem *pcxitem = pcxnames.First(); pcxitem; pcxitem = pcxnames.Next(pcxitem))
+			if (IsValidSkin (pcxitem->name, pcxnames.First()))
 			{
 				char	*str, *ext;
 
 				str = strrchr (pcxitem->name, '/') + 1;
 				ext = strrchr (str, '.');
 				ext[0] = 0;
-				skins = ChainAddToNamedList (str, skins, pmiChain);
+				skins.CreateAndInsert (str, pmiChain);
 				numSkins++;
 			}
-		FreeNamedList (pcxnames);
+		pcxnames.Free();
 		if (!numSkins) continue;
 
 		// create model info
-		info = (playerModelInfo_t*) ChainAllocNamedStruc (sizeof(playerModelInfo_t), strrchr (diritem->name, '/')+1, pmiChain);
+		playerModelInfo_t *info = new (strrchr (diritem->name, '/')+1, pmiChain) playerModelInfo_t;
 		info->numSkins = numSkins;
 		info->skins = skins;
 
 		// add model info to pmi
-		FindNamedStruc (info->name, (basenamed_t*)pmi, (basenamed_t**)&infoIns);
-		if (infoIns)
-		{	// place after infoIns
-			info->next = infoIns->next;
-			infoIns->next = info;
-		}
-		else
-		{	// place first
-			info->next = pmi;
-			pmi = info;
-		}
+		pmiList.Insert (info);
 
 		numPlayerModels++;
 	}
-	if (dirnames) FreeNamedList (dirnames);
+	dirnames.Free();
 	return true;
 }
 
@@ -2560,7 +2528,6 @@ static bool PlayerConfig_MenuInit (void)
 	extern cvar_t *name, *team, *skin;
 	char	currentModel[MAX_QPATH], currentSkin[MAX_QPATH], *path;
 	int		i, y, currentModelIndex, currentSkinIndex;
-	playerModelInfo_t *info;
 
 	cvar_t *hand = Cvar_Get ("hand", "0", CVAR_USERINFO|CVAR_ARCHIVE);
 
@@ -2586,17 +2553,18 @@ static bool PlayerConfig_MenuInit (void)
 		strcpy (currentSkin, "grunt");
 	}
 
-	for (info = pmi, currentModelIndex = 0; info; info = info->next, currentModelIndex++)
+	playerModelInfo_t *info;
+	for (info = pmiList.First(), currentModelIndex = 0; info; info = pmiList.Next(info), currentModelIndex++)
 		if (!stricmp (info->name, currentModel))
 		{	// we have found model - find skin
-			currentSkinIndex = IndexOfNamedStruc (currentSkin, info->skins);
+			currentSkinIndex = info->skins.IndexOf (currentSkin);
 			if (currentSkinIndex < 0)	// not found
 				currentSkinIndex = 0;
 			break;
 		}
 	if (!info)
 	{	// model not found
-		info = pmi;
+		info = pmiList.First();
 		currentModelIndex = 0;
 		currentSkinIndex = 0;
 	}
@@ -2628,7 +2596,7 @@ static bool PlayerConfig_MenuInit (void)
 	s_player_model_box.generic.callback = ModelCallback;
 	s_player_model_box.generic.cursor_offset = -48;
 	s_player_model_box.curvalue = currentModelIndex;
-	s_player_model_box.itemnames = (basenamed_t*)pmi;
+	s_player_model_box.itemnames = pmiList.First();
 
 	// skin
 	s_player_skin_title.generic.type = MTYPE_SEPARATOR;
@@ -2641,7 +2609,7 @@ static bool PlayerConfig_MenuInit (void)
 	s_player_skin_box.generic.y		= y+=10;
 	s_player_skin_box.generic.cursor_offset = -48;
 	s_player_skin_box.curvalue = currentSkinIndex;
-	s_player_skin_box.itemnames = info->skins;
+	s_player_skin_box.itemnames = info->skins.First();
 
 	// rail type
 	s_player_rtype_title.generic.type = MTYPE_SEPARATOR;
@@ -2742,8 +2710,6 @@ static void PlayerConfig_MenuDraw (void)
 	extern float CalcFov (float fov_x, float w, float h);
 	refdef_t	refdef;
 	entity_t	e[2];
-	playerModelInfo_t *model;
-	basenamed_t	*skin;
 	static dlight_t	dl[] = {
 		{{30, 100, 100}, {1, 1, 1}, 400},
 		{{90, -100, 10}, {0.4, 0.2, 0.2}, 200}
@@ -2756,9 +2722,9 @@ static void PlayerConfig_MenuDraw (void)
 
 	showModels = Sys_Milliseconds () - modelChangeTime > MODEL_DELAY;
 
-	model = (playerModelInfo_t*)FindNamedStrucByIndex ((basenamed_t*)pmi, s_player_model_box.curvalue);
+	playerModelInfo_t *model = &pmiList[s_player_model_box.curvalue];
 	if (!model) return;
-	skin = FindNamedStrucByIndex (model->skins, s_player_skin_box.curvalue);
+	CStringItem *skin = &model->skins[s_player_skin_box.curvalue];
 	if (!skin) return;
 
 	memset (&refdef, 0, sizeof (refdef));
@@ -2826,8 +2792,6 @@ static const char *PlayerConfig_MenuKey (int key)
 	{
 		char	*s;
 		int		color, c;
-		playerModelInfo_t *model;
-		basenamed_t *skin;
 
 		// check colorizing of player name
 		color = C_WHITE;
@@ -2852,13 +2816,13 @@ static const char *PlayerConfig_MenuKey (int key)
 		else
 			Cvar_Set ("name", s_player_name_field.buffer);
 
-		model = (playerModelInfo_t*)FindNamedStrucByIndex ((basenamed_t*)pmi, s_player_model_box.curvalue);
-		skin = FindNamedStrucByIndex (model->skins, s_player_skin_box.curvalue);
+		playerModelInfo_t *model = &pmiList[s_player_model_box.curvalue];
+		CStringItem *skin = &model->skins[s_player_skin_box.curvalue];
 		// set "skin" variable
 		Cvar_Set ("skin", va("%s/%s", model->name, skin->name));
 
 		// free directory scan data
-		FreeMemoryChain (pmiChain);
+		delete pmiChain;
 	}
 	return Default_MenuKey( &s_player_config_menu, key );
 }
@@ -2867,10 +2831,10 @@ static const char *PlayerConfig_MenuKey (int key)
 static void M_Menu_PlayerConfig_f (void)
 {
 	MENU_CHECK
-	pmiChain = CreateMemoryChain ();
+	pmiChain = new CMemoryChain;
 	if (!PlayerConfig_MenuInit ())
 	{
-		FreeMemoryChain (pmiChain);
+		delete pmiChain;
 		Menu_SetStatusBar (&s_multiplayer_menu, S_RED"No valid player models found");
 		return;
 	}
@@ -2910,7 +2874,7 @@ typedef struct
 
 
 static char			*browse_map_names[MAX_BROWSE_MAPS];
-static basenamed_t	*browse_list;
+static TList<CStringItem> browse_list;
 static thumbParams_t thumbs;
 
 static thumbLayout_t thumbLayout[] =
@@ -2931,8 +2895,7 @@ static thumbLayout_t thumbLayout[] =
 static bool DMBrowse_MenuInit ()
 {
 	// free previous levelshots list
-	if (browse_list)
-		FreeNamedList (browse_list);
+	browse_list.Free();
 
 	int oldcount = thumbs.count;
 	thumbs.count = 0;
@@ -2959,9 +2922,10 @@ static bool DMBrowse_MenuInit ()
 	const char *path = NULL;
 	while (path = FS_NextPath (path))
 	{
-		if (browse_list = FS_ListFiles (va("%s/levelshots/*.*", path), NULL, LIST_FILES)) break;
+		browse_list = FS_ListFiles (va("%s/levelshots/*.*", path), NULL, LIST_FILES);
+		if (browse_list.First()) break;
 	}
-	for (basenamed_t *item = browse_list; item; item = item->next)
+	for (CStringItem *item = browse_list.First(); item; item = browse_list.Next(item))
 	{
 		char *name = strrchr (item->name, '/');
 		if (!name)
@@ -2991,8 +2955,7 @@ static bool DMBrowse_MenuInit ()
 		return true;
 
 	// no maps found - free list
-	FreeNamedList (browse_list);
-	browse_list = NULL;
+	browse_list.Free();		//?? not needed -- already empty ?
 	return false;
 }
 

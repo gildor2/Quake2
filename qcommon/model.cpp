@@ -217,7 +217,7 @@ static void LoadQ2Submodels (bspfile_t *f, dmodel_t *data)
 	if (f->numModels < 1)
 		Com_DropError ("Map with no models");
 
-	out = f->models = (cmodel_t*)AllocChainBlock (f->extraChain, sizeof(cmodel_t) * f->numModels);
+	out = f->models = new (f->extraChain) cmodel_t[f->numModels];
 	for (i = 0; i < f->numModels; i++, data++, out++)
 	{
 		vec3_t	tmp;
@@ -331,7 +331,7 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 	if (bspfile.name[0] && bspfile.file)
 		FS_FreeFile (bspfile.file);
 	if (bspfile.extraChain)
-		FreeMemoryChain (bspfile.extraChain);
+		delete bspfile.extraChain;
 
 	memset (&bspfile, 0, sizeof(bspfile));
 	strcpy (bspfile.name, filename);
@@ -342,7 +342,7 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 	}
 	bspfile.checksum = LittleLong (Com_BlockChecksum (bspfile.file, bspfile.length));
 		if (checksum) *checksum = bspfile.checksum;
-	bspfile.extraChain = CreateMemoryChain ();
+	bspfile.extraChain = new CMemoryChain;
 
 	map_clientLoaded = clientload;
 	switch (LittleLong(*(unsigned *)bspfile.file))
@@ -649,7 +649,7 @@ static bool ProcessEntity ()
 			// "dmg": normal (0, def), sun, amber, red, blue, green
 			// if "dmg" == SUN -> VectorNormalize(origin)
 
-			flare = (lightFlare_t*)AllocChainBlock (bspfile.extraChain, sizeof(lightFlare_t));
+			flare = new (bspfile.extraChain) lightFlare_t;
 			flare->next = bspfile.flares;
 			bspfile.flares = flare;
 			bspfile.numFlares++;
@@ -699,7 +699,7 @@ static bool ProcessEntity ()
 
 		/*-------------- light, light_mine -------------*/
 
-		slight = (slight_t*)AllocChainBlock (bspfile.extraChain, sizeof(slight_t));
+		slight = new (bspfile.extraChain) slight_t;
 		slight->next = bspfile.slights;
 		bspfile.slights = slight;
 		bspfile.numSlights++;
@@ -951,7 +951,7 @@ static bool ProcessEntity ()
 		if (haveOrigin)
 		{
 			splash_t	*spl;
-			spl = (splash_t*)AllocChainBlock (bspfile.extraChain, sizeof(splash_t));
+			spl = new (bspfile.extraChain) splash_t;
 			spl->next = bspfile.splashes;
 			bspfile.splashes = spl;
 			VectorCopy (origin, spl->origin);
@@ -982,7 +982,7 @@ char *ProcessEntstring (char *entString)
 	patch = (char*) FS_LoadFile (va("%s.add", bspfile.name), &plen);
 	plen++;	// add 1 byte for trailing zero
 
-	dst = dst2 = (char*)AllocChainBlock (bspfile.extraChain, strlen (entString) + 1 + plen);
+	dst = dst2 = (char*) bspfile.extraChain->Alloc (strlen (entString) + 1 + plen);
 
 	// detect Kingpin map
 	if (strstr (entString, "\"classname\" \"junior\"") ||
