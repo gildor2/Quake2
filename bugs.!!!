@@ -18,18 +18,10 @@
 - bug: "game baseq2;unloadpak q2maps;game bad_dir(?);demomap demo1;game baseq2(?);demomap demo1"
   (1st demomap - "cannot load map (q2maps not loaded)", 2nd - "bad map contents (pak loaded, but name cached??)"
 
-- once: tried to draw main menu cursor with a negative image number (should be 0..15): menu.c :: M_DrawCursor()
+? once: tried to draw main menu cursor with a negative image number (should be 0..15): menu.c :: M_DrawCursor()
 - menus: when renderer changed (with a different resolution!) - menus should be repositioned (fatal errors may appear)
 
-- REF_OLDGL: map passin;map passin (BUGS!!!); map rexro (CRUSH!!!)  (this bug found only for passin -- bad map? no bug when "flushmap 1")
-
 - z-buffer bugs with glass floor on "omd_map1"
-
-- ref_soft:
-  - r_poly.c "R_PolygonScanLeft(Right)Edge ()" should be rewritten ("ground3": early - crash, now - lost polygons ...)
-  - crash on map "japan" (from Kingpin)
-  - cannot load map "dog...": "bad surface extents 272 x XXX" (but GL can ...; seems, ref_soft can't render texture with larger
-    than 256 size ...)
 
 - filesystem:
   - when q2 launched from "release" directory (w/o baseq2 subdir), FS "search paths" will be empty, "dir" command will not work at all
@@ -49,20 +41,24 @@ BUGGY MAPS:
 - "reboot" (from KP, user-created) pos(-658,-242,-178) dir(-0.91,0.39,0) -- incorrect backface culling in gl (OK in oldgl); reason:
   gl and oldgl have different backface culling (gl -- DotProduct(videdir,normal); oldgl -- using BSP only, w/o DotProduct()), this
   map have incorrect normal info for this surface (if look at r_surfinfo, can see: incorrect brushes too - to simplify map navigation ?)
+  To fix: can rebuild normals for draw surfaces
 - "winter" (AQ2) pos(-1023,463,55) dir(0,1,0) - incorrect backface culling in gl (OK in oldgl) (same as "reboot")
 - game=dirty, map "mine4" (baseq2), laser cannon -- when shoot rock, invisible entity painted (should not be entity at all, "hall of mirrors"
   effect appears); check with baseq2 (sp+deathmatch); when do it 2nd time (wall respawned in DM) - all OK
-- "team_harbor" (KP, 3rd-party) - PF_SetModel() -- NULL name
+- "team_harbor" (KP, 3rd-party) - PF_SetModel() -- NULL name (game=dirty; with baseq2 - no problems)
+  ? try to create empty (dummy) model and assign it from PF_SetModel(name==NULL) calls
 
 HARDWARE:
 ~~~~~~~~~
 - ATI:
   - when uploading rectangular texture (GL_TEXTURE_RECTANGLE_NV) with compressed internal format, app will crash in ICD GL dll
-  - when game launched fullscreen, <Alt-Enter> will switch to windowed mode with incorrect viewport (visible region);
+  - (old drivers) when game launched fullscreen, <Alt-Enter> will switch to windowed mode with incorrect viewport (visible region);
     vid_restart will not fix situation
-  - (Omega 2.5.76) GL_SGIS_multitexture: GL_MAX_TEXTURES_SGIS == 0
-  - gamma: after app startup (screen resolution changing) drivers will set gamma==1; tech info: main window will get messages:
+  - (Catalyst 4.9) GL_SGIS_multitexture: GL_MAX_TEXTURES_SGIS == 0
+  * gamma: after app startup (screen resolution changing) drivers will set gamma==1; tech info: main window will get messages:
     WM_SYNCPAINT, WM_NCPAINT, WM_ERASEBKGND, WM_PAINT; Q3 have no this problem, UT2004 (GL) have.
+    * FIXED: set TOPMOST wnd attribute with SetWindowPos(), not with SetWindowLong(); when restore from minimized state - update
+      gamma in AppActivate() using "r_gamma->modified=true" i.e. in 1st rendering frame, not using UpdateGamma() call
 - NV
   - (NV:bitdepth change, Blade3D:vid_restart): cannot restart GL with Vid_DestroyWindow(force=false) -- require to recreate window
   - screenshot is black after changing color depth, but all OK when make one more vid_restart (TNT2, Win2K, 41.09)
@@ -75,8 +71,8 @@ HARDWARE:
 - notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move
   crouched)
 
-SOURCE FILES:
-~~~~~~~~~~~~~
+SOURCE FILES (COMPILER):
+~~~~~~~~~~~~~~~~~~~~~~~~
 - (VisualC++ 6) when compiling renderer with DYNAMIC_REF:
   - "unguard" will be linked to "NORETURN struc.appUnwindThrow()"; VC ignores NORETURN here,
     and will display warning C4715 (not all control paths return value)

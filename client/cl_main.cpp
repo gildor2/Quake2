@@ -230,7 +230,7 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 	cls.demowaiting = true;
 
 	// write out messages to hold the startup information
-	SZ_Init (&buf, buf_data, sizeof(buf_data));
+	buf.Init (ARRAY_ARG(buf_data));
 
 	// send the serverdata
 	MSG_WriteByte (&buf, svc_serverdata);
@@ -1390,7 +1390,7 @@ void CL_ClearState (void)
 	memset (&cl, 0, sizeof(cl));
 	memset (cl_entities, 0, sizeof(centity_t[MAX_EDICTS]));
 
-	SZ_Clear (&cls.netchan.message);
+	cls.netchan.message.Clear ();
 }
 
 /*

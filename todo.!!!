@@ -10,7 +10,6 @@ BUGS:
     ? may be, bring back white texture support (glBind(NULL) -> glBind("*white"))
 ! add [auto-]detail for rail
 ? make InitialSnapPosition() work with Trace() to allow "teleporter grenade" in LOX mod
-- GL: separate gl_combiners.c
 ! check for valid key names for bindings (now: works ':', ';', '+', '=', UNK01, Ctrl+Alt, Alt+Ctrl etc)
 - beams are not depth-sorted now! (to sort it, needs to create temp entity!)
 - minimize in Win98:
@@ -31,14 +30,12 @@ BUGS:
   when app command line contains "map"/"demomap" command (and automatically disable intro; change "4.XX_Changes.txt" about this)
   Current: when specify "map", intro will be initialized + immediately server changed to map; when specify "demomap", server
   will be killed as it was called from "d1" alias
-! cmodel.cpp -- do not use static arrays, allocate required amounts with appMalloc(); this will remove requirement to check
-  MAX_MAP_SOMETHING bounds !
-! LARGE STATIC ARRAYS:
+! LARGE (STATIC) ARRAYS:
   - cl_particles[] - 240 Kb (4096 particles) -- try to reduce particle_t size (different types -> union) + MAX_PARTICLES=256 (?) -
     - most particle use was from railgun effect, which is gone (almost gone); may be, analyze cl_newFx cvar and dynamically
     allocate array of good size (i.e. make array dynamic)
   - cl_parse_entities - 164 Kb
-  * cl_entities[]  - 1024 * ((entityState_t==(41*4))*3+6*4) = 1024 * 516 = 516 Kb
+  * (dynamic) cl_entities[]  - 1024 * ((entityState_t==(41*4))*3+6*4) = 1024 * 516 = 516 Kb
   ! backend: few static arrays [MAX_VERTEXES][MAX_INDEXES][MAX_SCENE_SURFACES]
     ? all gl buffers should be allocated dynamically; may be, vary size from map surface count
   
@@ -59,7 +56,7 @@ BUGS:
   1) disable "cmd say[_team]" etc. for client (will not disable non-"say" chat, when message typed in console)
   2) disable PRINT_CHAT with text "Player: message"
   3) (best?) hook ge->ClientCommand(from), and disable all PF_cprintf(to,PRINT_CHAT,"...") inside this call, when from!=to
-?! remove IPX protocol from win32 code (MS-DOS rudiment)
+? remove IPX protocol from win32 code (MS-DOS rudiment)
 ? eliminate BigShort(MASTER|SERVER_PORT) (sv_cmds.c, cl_main.c) -- only one thing, for which BigXxx() is used (big-endian numbers)
 ! spec for map script
 - colorize server list (old/new-only/cheats/full) (make legend ? or make table with some attributes: server-name, map-name, players,
@@ -148,18 +145,25 @@ TRACE:
   b) push <value> , pop <var>   -- global cvar stack; "push a;push b;pop a;pop b" will exchange "a" and "b" values
 
 MODEL SYSTEM:
-- when no skin for model, use any (?) other; if no skins - use different (default) model
-- scan for models on initialization; check its gender, type (q2,hl,q3 etc.), skin list; create animation system
-- needs ability to specify model gender without "models.lst" file
+~~~~~~~~~~~~~
+- when no SPECIFIED skin for model, use any (?) other; if no skins - use different (default) model
+- scan for models on initialization; check its gender, type (q2,hl,q3 etc.), skin list; create animation system (should convert
+  Q2 animation requests to q3 etc)
+- needs ability to specify model gender without "models.lst" file (special config file in model dir)
 ? player setup: add model type/gender filter
 ? make pmove player bounds to be taken from the actual player model (server option (?), requires extptotocol for
   correct prediction)
-? create (compressed ?) model cache
+? create (compressed ?) model cache (some model loading stages are slow, e.g. normal calculations and skeleton building (if will be
+  implemented))
 - ability to detect unused models/skins (for unloading from renderer)
 - client entity code should work with this_model_system objects, these objects should link to renderer models (move refEntity_t to
-  model system)
+  model system); may be, use CBaseEntity -> CRendererEntity, and allocate entities by renderer (frontend) with some basic caps from
+  client code (i.e. renderer will allocate and display (and perform some display-relative modifications), but most modifications
+  will be performed by client code)
+
 
 DINPUT MOUSE BUGS/NOTES:
+~~~~~~~~~~~~~~~~~~~~~~~~
 - add MOUSE4 ?
 - check DirectInput8
 ? add mouse cursor hiding (not always disappear with DInput after deactivate+activate); now to hide cursor: "in_mouse 1;in_mouse 2"
@@ -171,6 +175,7 @@ DINPUT MOUSE BUGS/NOTES:
 - menu option: priority (win_priorityBoost) -- for Win2K+
 
 BSP:
+~~~~
 ? KP map scaling (auto) -- needs force extprotocol
 ? mirrored maps
 ? commands spmap, devmap etc. (set "cheats" and "deathmatch" vars before SV_Map())
@@ -189,9 +194,6 @@ BSP:
 ! add materials: glass, grass, sand
 ? make atmospheric effects (some maps in kingpin and halflife does, Q3F too ...)
   (make surface-dependent raindrop sounds? (KP:main/sound/world/rain*.wav))
-
-? ref_SOFT sprites: get sprite size not from md2, but from image dimensions (see new explosions ...); we can do it,
-  because GL do this in this way
 
 ------------ MENUS ---------------
 
@@ -272,8 +274,6 @@ BSP:
 
 ------------ VIDEO ---------------
 
-? remove non-transparent water vis bugfix from oldgl (or add to new gl ?! have some buggy maps)
-  NEW_ENGINE: add q2bsp_t::GetVis(point) -- will combine 2 clusters when near to non-transparent water
 - .WAL mipmaps: used in ref_soft only (if recompute, can shrink wal files by 1st mipmap -- reduce size of texture.pak)
   - to recompute: 1. convert 8->32 bit; 2. generate mipmaps (as for TGA/JPG); 3. downsample 32->8 bit
   - may recompute mipmaps only when absent (when present, use from wal file)
@@ -288,7 +288,7 @@ BSP:
 
 ? change "gl_console_only" and "sw_console_only" to "r_consoleOnly"
 
-- decompress visinfo for client (cmodel); share this with renderers (require to modify oldgl and soft)
+- decompress visinfo for client (cmodel); share this with renderer
 
 ? support for view-dependent LightForPoint()
 

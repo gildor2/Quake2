@@ -28,10 +28,10 @@ static void PF_Unicast (edict_t *ent, qboolean reliable)
 	client_t *client = svs.clients + (p-1);
 
 	if (reliable)
-		SZ_Write (&client->netchan.message, sv.multicast.data, sv.multicast.cursize);
+		client->netchan.message.Write (sv.multicast);
 	else
-		SZ_Write (&client->datagram, sv.multicast.data, sv.multicast.cursize);
-	SZ_Clear (&sv.multicast);
+		client->datagram.Write (sv.multicast);
+	sv.multicast.Clear ();
 
 	unguard;
 }
@@ -184,7 +184,7 @@ static void PF_Configstring (int index, char *val)
 	if (sv.state != ss_loading)
 	{
 		// send the update to everyone
-		SZ_Clear (&sv.multicast);
+		sv.multicast.Clear ();
 		MSG_WriteChar (&sv.multicast, svc_configstring);
 		MSG_WriteShort (&sv.multicast, index);
 		MSG_WriteString (&sv.multicast, val);

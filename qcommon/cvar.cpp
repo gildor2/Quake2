@@ -19,13 +19,9 @@ static cvar_t	*hashTable[HASH_SIZE];
 
 static int ComputeHash (const char *name)
 {
-	int		h;
-	const char *s;
-	char	c;
-
-	h = 0;
-	s = name;
-	while (c = *s++)
+	int h = 0;
+	char c;
+	while (c = *name++)
 		h = (h ^ 0x25) + (c & 0xDF);	// ignore case for hash computation
 	return h & HASH_MASK;
 }
@@ -241,7 +237,7 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 	var = new (cvar_chain) cvar_t;
 	var->name = CopyString (var_name, cvar_chain);
 
-	if (cvar_initialized < 2 && COM_CheckCmdlineVar (var_name))
+	if (cvar_initialized < 2 && Com_CheckCmdlineVar (var_name))
 	{	// variable overriden with commandline as "1"
 		Cvar_SetString (var, "1");
 	}

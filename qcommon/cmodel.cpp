@@ -60,8 +60,8 @@ int		c_traces, c_pointcontents;
 static int		numBrushSides;
 static cbrushside_t *map_brushSides;
 
-int			numTexinfo;				// global (for precache)
-csurface_t	*map_surfaces;			// global (for precache)
+int				numTexinfo;				// global (for precache)
+csurface_t		*map_surfaces;			// global (for precache)
 
 static int		numPlanes;
 static cplane_t	*map_planes;
@@ -77,29 +77,29 @@ static int		emptyLeaf;
 static int		numLeafBrushes;
 static unsigned short *map_leafBrushes;
 
-static int			numcmodels;
+static int		numcmodels;
 static cmodel_t	*map_cmodels;
 
 static int		numBrushes;
 static cbrush_t	*map_brushes;
 
-static int			numvisibility;
-static byte			*map_visibility;
+static int		numvisibility;
+static byte		*map_visibility;
 
-static int			numentitychars;
-static char			*map_entitystring;
+static int		numentitychars;
+static char		*map_entitystring;
 
 static int		numAreas;
 static carea_t	*map_areas;
 
-static int			numareaportals;
+static int		numareaportals;
 static dareaportal_t *map_areaportals;
 
-static int			numclusters;
+static int		numclusters;
 
 static csurface_t	nullsurface;
 
-static int			floodvalid;
+static int		floodvalid;
 
 static bool portalopen[MAX_MAP_AREAPORTALS];
 
@@ -284,8 +284,7 @@ static void CMod_LoadSurfaces (texinfo_t *data, int size)
 {
 	texinfo_t *in = data;
 
-	if (size < 1)
-		Com_DropError ("Map with no surfaces");
+	if (size < 1) Com_DropError ("Map with no surfaces");
 
 	ReadSurfMaterials ("sound/materials.lst");
 
@@ -372,17 +371,15 @@ CMod_LoadLeafs
 static void CMod_LoadLeafs (dleaf_t *data, int size)
 {
 	int			i;
-	dleaf_t 	*in;
 
-	if (size < 1)
-		Com_DropError ("Map with no leafs");
+	if (size < 1) Com_DropError ("Map with no leafs");
 
 	map_leafs = new (dataChain) dleaf_t [size + 1];		// extra for box hull
 	memcpy (map_leafs, data, sizeof(dleaf_t)*size);		// must perform this, because needs 1 more leaf for InitBoxHull()
 //--	map_leafs = data; -- cannot do this
 	numLeafs = size;
 
-	in = data;
+	dleaf_t *in = data;
 	numclusters = 0;
 
 	for (i = 0; i < size; i++, in++)
@@ -435,8 +432,7 @@ CMod_LoadLeafBrushes
 */
 static void CMod_LoadLeafBrushes (unsigned short *data, int size)
 {
-	if (size < 1)
-		Com_DropError ("Map with no leafbrushes");
+	if (size < 1) Com_DropError ("Map with no leafbrushes");
 
 //	map_leafBrushes = data; -- can't do this, because we need 1 more for InitBoxHull()
 	map_leafBrushes = new (dataChain) unsigned short [size+1];	// extra for box hull
@@ -1068,11 +1064,9 @@ CM_InlineModel
 */
 cmodel_t *CM_InlineModel (char *name)
 {
-	int		num;
-
 	if (!name || name[0] != '*') Com_DropError ("CM_InlineModel: bad name");
 
-	num = atoi (name+1);
+	int num = atoi (name+1);
 	if (num < 1 || num >= numcmodels) Com_DropError ("CM_InlineModel: bad number");
 
 	return &map_cmodels[num];
@@ -1131,10 +1125,6 @@ can just be stored out and get a proper clipping hull structure.
 */
 static void InitBoxHull (void)
 {
-	cnode_t		*c;
-	cplane_t	*p;
-	cbrushside_t	*s;
-
 	box_headnode = numNodes;
 	box_planes = &map_planes[numPlanes];
 
@@ -1155,12 +1145,12 @@ static void InitBoxHull (void)
 		int side = i & 1;
 
 		// brush sides
-		s = &map_brushSides[numBrushSides+i];
+		cbrushside_t *s = &map_brushSides[numBrushSides+i];
 		s->plane = map_planes + (numPlanes+i*2+side);
 		s->surface = &nullsurface;
 
 		// nodes
-		c = &map_nodes[box_headnode+i];
+		cnode_t *c = &map_nodes[box_headnode+i];
 		c->plane = map_planes + (numPlanes+i*2);
 		c->children[side] = -1 - emptyLeaf;	// one child -> empty leaf
 		if (i != 5)
@@ -1169,7 +1159,7 @@ static void InitBoxHull (void)
 			c->children[side^1] = -1 - numLeafs;		// ... or -> box_leaf
 
 		// planes
-		p = &box_planes[i*2];
+		cplane_t *p = &box_planes[i*2];
 		p->type = PLANE_X + (i>>1);
 		VectorClear (p->normal);
 		p->normal[i>>1] = 1;
@@ -1221,11 +1211,8 @@ int CM_PointLeafnum (vec3_t p, int num)
 	if (!numNodes) return 0;			// map is not yet loaded
 	while (num >= 0)
 	{
-		cnode_t	*node;
-		float	d;
-
-		node = map_nodes + num;
-		d = DISTANCE_TO_PLANE(p, node->plane);
+		cnode_t *node = map_nodes + num;
+		float d = DISTANCE_TO_PLANE(p, node->plane);
 		num = node->children[IsNegative(d)];
 	}
 
@@ -1291,14 +1278,12 @@ int	CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t 
 
 int CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topnode, int headnode)
 {
-	int		count, _topnode, nodenum;
-	int		stack[MAX_TREE_DEPTH], sptr;		// stack
-
 	guard(CM_BoxLeafnums);
 
-	count = 0;
-	_topnode = -1;
-	nodenum = headnode;
+	int		stack[MAX_TREE_DEPTH], sptr;		// stack
+	int count = 0;
+	int _topnode = -1;
+	int nodenum = headnode;
 
 	sptr = 0;
 	while (true)
@@ -1337,9 +1322,9 @@ int CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topn
 	}
 
 	if (topnode) *topnode = _topnode;
-	unguard;
-
 	return count;
+
+	unguard;
 }
 
 
@@ -1365,33 +1350,28 @@ ClipBoxToBrush
 */
 static void ClipBoxToBrush (const cbrush_t *brush)
 {
-	int			i;
-	cplane_t	*clipplane;
-	float		enterfrac, leavefrac;
-	bool		getout, startout;
-	cbrushside_t *leadside, *side;
+	int		i;
+	cbrushside_t *side;
 
-	if (!brush->numsides)
-		return;
+	if (!brush->numsides) return;
 
-	enterfrac = -1;
-	leavefrac = 1;						// used only for validating enterfrac
-	clipplane = NULL;
+	float enterfrac = -1;
+	float leavefrac = 1;					// used only for validating enterfrac
+	cplane_t *clipplane = NULL;
 
+	bool	getout, startout;
 	getout = startout = false;
-	leadside = NULL;
+	cbrushside_t *leadside = NULL;
 
 	for (i = 0, side = &map_brushSides[brush->firstbrushside]; i < brush->numsides; i++, side++)
 	{
-		cplane_t *plane;
 		float	d1, d2, dist, f;
 
-		plane = side->plane;
+		cplane_t *plane = side->plane;
 
 		if (!trace_ispoint)
 		{	// general box case
 			vec3_t	ofs;
-			int		j;
 
 			if (plane->type <= PLANE_Z)
 			{
@@ -1405,7 +1385,7 @@ static void ClipBoxToBrush (const cbrush_t *brush)
 			}
 			else
 			{
-				for (j = 0; j < 3; j++)
+				for (int j = 0; j < 3; j++)
 					ofs[j] = (plane->normal[j] < 0) ? trace_maxs[j] : trace_mins[j];
 				dist = plane->dist - DotProduct (plane->normal, ofs);
 			}
@@ -1540,7 +1520,7 @@ static bool TestBoxInBrush (const cbrush_t *brush)
 	if (!brush->numsides)
 		return false;
 
-	clipdist = -999999;
+	clipdist = -BIG_NUMBER;
 	clipside = NULL;
 	clipplane = NULL;
 	for (i = 0, side = &map_brushSides[brush->firstbrushside]; i < brush->numsides; i++, side++)
@@ -1629,19 +1609,15 @@ RecursiveHullCheck
 */
 static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
 {
-	cnode_t		*node;
-	cplane_t	*plane;
-	float		t1, t2, offset;
-	float		frac1, frac2, midf;
-	int			i;
 	vec3_t		mid, p1a;
-	int			side;
 
 	if (trace_trace.fraction <= p1f)
 		return;		// already hit something nearer (??)
 
 	while (true)
 	{
+		int		i;
+
 		// if < 0, we are in a leaf node
 		if (nodeNum < 0)
 		{
@@ -1651,9 +1627,10 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const vec3_t 
 
 		// find the point distances to the separating plane
 		// and the offset for the size of the box
-		node = map_nodes + nodeNum;
-		plane = node->plane;
+		cnode_t *node = map_nodes + nodeNum;
+		cplane_t *plane = node->plane;
 
+		float t1, t2, offset;
 		if (plane->type <= PLANE_Z)
 		{
 			t1 = p1[plane->type] - plane->dist;
@@ -1690,6 +1667,8 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const vec3_t 
 			continue;
 		}
 
+		int side;
+		float frac1, frac2;
 		// put the crosspoint DIST_EPSILON pixels on the near side
 		if (t1 == t2)
 		{
@@ -1699,9 +1678,7 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const vec3_t 
 		}
 		else
 		{
-			float	idist;
-
-			idist = 1.0f / (t1 - t2);
+			float idist = 1.0f / (t1 - t2);
 			offset += DIST_EPSILON;
 			if (t1 < t2)
 			{
@@ -1730,6 +1707,7 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const vec3_t 
 		re.DrawTextRight(buf,RGB(1,0.3,0.3));
 	}//===*/
 
+		float midf;
 		// move up to the node
 		midf = p1f + frac1 * (p2f - p1f);
 		for (i = 0; i < 3; i++)
@@ -1797,7 +1775,6 @@ void CM_BoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const ve
 	// check for "position test" special case
 	if (start[0] == end[0] && start[1] == end[1] && start[2] == end[2])
 	{
-		int		leafs[1024], numLeafs;
 		vec3_t	c1, c2;
 
 		for (i = 0; i < 3; i++)
@@ -1806,7 +1783,8 @@ void CM_BoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const ve
 			c2[i] = start[i] + maxs[i] + 1;
 		}
 
-		numLeafs = CM_BoxLeafnums (c1, c2, ARRAY_ARG(leafs), NULL, headnode);
+		int leafs[1024];
+		int numLeafs = CM_BoxLeafnums (c1, c2, ARRAY_ARG(leafs), NULL, headnode);
 		for (int i = 0; i < numLeafs; i++)
 		{
 			TestInLeaf (leafs[i]);
@@ -2223,15 +2201,13 @@ static byte	phsrow[MAX_MAP_LEAFS/8];
 
 byte *CM_ClusterPVS (int cluster)
 {
-	int	i;
-
 	guard(CM_ClusterPVS);
 
 	if (cluster <= -1)
 		memset (pvsrow, 0, (numclusters + 7) >> 3);
 	else
 	{
-		i = ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PVS];
+		int i = ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PVS];
 		if (i != -1)
 			DecompressVis (map_visibility + i, pvsrow);
 		else
@@ -2243,15 +2219,13 @@ byte *CM_ClusterPVS (int cluster)
 
 byte *CM_ClusterPHS (int cluster)
 {
-	int	i;
-
 	guard(CM_ClusterPHS);
 
 	if (cluster <= -1)
 		memset (phsrow, 0, (numclusters + 7) >> 3);
 	else
 	{
-		i = ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PHS];
+		int i = ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PHS];
 		if (i != -1)
 			DecompressVis (map_visibility + i, phsrow);
 		else
@@ -2272,9 +2246,6 @@ AREAPORTALS
 
 static void FloodArea_r (carea_t *area, int floodnum)
 {
-	int		i;
-	dareaportal_t	*p;
-
 	if (area->floodvalid == floodvalid)
 	{
 		if (area->floodnum == floodnum)
@@ -2284,8 +2255,8 @@ static void FloodArea_r (carea_t *area, int floodnum)
 
 	area->floodnum = floodnum;
 	area->floodvalid = floodvalid;
-	p = &map_areaportals[area->firstareaportal];
-	for (i = 0; i < area->numareaportals; i++, p++)
+	dareaportal_t *p = &map_areaportals[area->firstareaportal];
+	for (int i = 0; i < area->numareaportals; i++, p++)
 	{
 		if (portalopen[p->portalnum])
 			FloodArea_r (&map_areas[p->otherarea], floodnum);
@@ -2299,18 +2270,14 @@ FloodAreaConnections
 */
 static void FloodAreaConnections (void)
 {
-	int		i;
-	carea_t	*area;
-	int		floodnum;
-
 	// all current floods are now invalid
 	floodvalid++;
-	floodnum = 0;
+	int floodnum = 0;
 
 	// area 0 is not used
-	for (i = 1; i < numAreas; i++)
+	for (int i = 1; i < numAreas; i++)
 	{
-		area = &map_areas[i];
+		carea_t *area = &map_areas[i];
 		if (area->floodvalid == floodvalid)
 			continue;		// already flooded into
 		floodnum++;
@@ -2355,9 +2322,7 @@ This is used by the client refreshes to cull visibility
 */
 int CM_WriteAreaBits (byte *buffer, int area)
 {
-	int		i, floodnum, bytes;
-
-	bytes = (numAreas + 7) >> 3;
+	int bytes = (numAreas + 7) >> 3;
 
 	if (map_noareas->integer)
 	{	// for debugging, send everything
@@ -2367,8 +2332,8 @@ int CM_WriteAreaBits (byte *buffer, int area)
 	{
 		memset (buffer, 0, bytes);
 
-		floodnum = map_areas[area].floodnum;
-		for (i = 0; i < numAreas; i++)
+		int floodnum = map_areas[area].floodnum;
+		for (int i = 0; i < numAreas; i++)
 		{
 			if (map_areas[i].floodnum == floodnum || !area)
 				buffer[i >> 3] |= 1 << (i & 7);
@@ -2416,8 +2381,7 @@ is potentially visible
 // This function used only from sv_ents.c :: SV_BuildClientFrame()
 bool CM_HeadnodeVisible (int nodenum, byte *visbits)
 {
-	cnode_t	*node;
-	int		stack[MAX_TREE_DEPTH], sptr;
+	int		stack[MAX_TREE_DEPTH], sptr;	// stack
 
 	guard(CM_HeadnodeVisible);
 
@@ -2426,9 +2390,7 @@ bool CM_HeadnodeVisible (int nodenum, byte *visbits)
 	{
 		if (nodenum < 0)
 		{
-			int		cluster;
-
-			cluster = map_leafs[-1-nodenum].cluster;
+			int cluster = map_leafs[-1-nodenum].cluster;
 			if (cluster == -1 || !(visbits[cluster>>3] & (1<<(cluster&7))))
 			{
 				if (!sptr) return false;		// whole tree visited
@@ -2438,7 +2400,7 @@ bool CM_HeadnodeVisible (int nodenum, byte *visbits)
 			return true;
 		}
 
-		node = &map_nodes[nodenum];
+		cnode_t *node = &map_nodes[nodenum];
 		stack[sptr++] = node->children[0];
 		nodenum = node->children[1];
 	}

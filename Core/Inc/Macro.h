@@ -53,7 +53,7 @@ template <class T> int Sign (T value)
 
 #define VECTOR_ARG(name)	name[0],name[1],name[2]
 #define ARRAY_ARG(array)	array, sizeof(array)/sizeof(array[0])
-#define ARRAY_COUNT(array)	sizeof(array)/sizeof(array[0])
+#define ARRAY_COUNT(array)	(sizeof(array)/sizeof(array[0]))
 
 
 // use "STR(any_value)" to convert it to string (may be float value)

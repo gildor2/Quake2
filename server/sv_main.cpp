@@ -389,7 +389,7 @@ static void cDirectConnect (int argc, char **argv)
 
 	newcl->state = cs_connected;
 
-	SZ_Init (&newcl->datagram, newcl->datagram_buf, sizeof(newcl->datagram_buf));
+	newcl->datagram.Init (newcl->datagram_buf, sizeof(newcl->datagram_buf));
 	newcl->datagram.allowoverflow = true;
 	newcl->lastmessage = svs.realtime;	// don't timeout
 	newcl->lastconnect = svs.realtime;
@@ -923,7 +923,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 	if (MSG_ReadByte (original) != svc_temp_entity)
 		return original;
 
-	SZ_Clear (ext);
+	ext->Clear ();
 	cmd = MSG_ReadByte (original);
 	switch (cmd)
 	{
@@ -1345,7 +1345,7 @@ CVAR_END
 	guard(SV_Init);
 	Cvar_GetVars (ARRAY_ARG(vars));
 	SV_InitOperatorCommands	();
-	SZ_Init (&net_message, net_message_buffer, sizeof(net_message_buffer));
+	net_message.Init (ARRAY_ARG(net_message_buffer));
 	unguard;
 }
 
@@ -1375,7 +1375,7 @@ void SV_Shutdown (const char *finalmsg, bool reconnect)
 			if (cl->state < cs_connected)
 				continue;
 
-			SZ_Clear (&net_message);
+			net_message.Clear ();
 			MSG_WriteByte (&net_message, svc_print);
 			MSG_WriteByte (&net_message, PRINT_HIGH);
 			if (cl->newprotocol && !reconnect)	// colorize exit message

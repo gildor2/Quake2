@@ -981,10 +981,10 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 	}
 
 	// setup a buffer to catch all multicasts
-	SZ_Init (&svs.demo_multicast, svs.demo_multicast_buf, sizeof(svs.demo_multicast_buf));
+	svs.demo_multicast.Init (ARRAY_ARG(svs.demo_multicast_buf));
 
 	// write a single giant fake message with all the startup info
-	SZ_Init (&buf, buf_data, sizeof(buf_data));
+	buf.Init (ARRAY_ARG(buf_data));
 
 	// serverdata needs to go over for all types of servers
 	// to make sure the protocol is right, and to set the gamedir

@@ -669,6 +669,8 @@ static void DrawOriginInfo (void)
 
 extern int fileFromPak;
 
+//#define SMOOTH_FPS_COUNTER
+
 static void DrawFpsInfo (void)
 {
 	static float startSecTime, lastFrameTime;
@@ -689,11 +691,35 @@ static void DrawFpsInfo (void)
 	// update min/max stats
 	if (!fileFromPak)					// ignore frame if packfile was read
 	{
+#ifdef SMOOTH_FPS_COUNTER
+		static float frameTime[5];
+		static float timeSum = 0;
+		static int frameIdx = 0;
+		float frmTime = time - lastFrameTime;
+		// smooth tmpFps
+		if (minFps > maxFps)
+		{
+			for (int i = 0; i < ARRAY_COUNT(frameTime); i++) frameTime[i] = frmTime;
+			timeSum = ARRAY_COUNT(frameTime) * frmTime;
+		}
+		else
+		{
+			timeSum = timeSum - frameTime[frameIdx] + frmTime;
+			frameTime[frameIdx] = frmTime;
+			if (++frameIdx >= ARRAY_COUNT(frameTime)) frameIdx = 0;
+		}
+		float tmpFps = timeSum / ARRAY_COUNT(frameTime);
+		if (tmpFps > 0)
+		{
+			tmpFps = 1000.0f / tmpFps;
+			EXPAND_BOUNDS(tmpFps, minFps, maxFps);
+		}
+#else
 		// avoid zero-divide
 		float tmpFps = (time == lastFrameTime) ? 1000 : 1000.0f / (time - lastFrameTime);
-		//?? should smooth tmpFps
 		//?? may be, draw FPS graph on screen (to detect min/max FPS spikes reason)
 		EXPAND_BOUNDS(tmpFps, minFps, maxFps);
+#endif
 	}
 	else
 		fileFromPak = 0;

@@ -170,11 +170,10 @@ static int Key_StringToKeynum (const char *str)
 
 const char *Key_KeynumToString (int keynum)
 {
-	const char *pref;
-
 	if (keynum == -1)
 		return S_RED"<KEY NOT FOUND>";
 
+	const char *pref;
 	if (keynum >= MOD_ALT)
 	{
 		keynum -= MOD_ALT;
@@ -251,11 +250,7 @@ static void TryComplete (const char *full, int display, char mark)
 
 static char *Do_CompleteCommand (char *partial)
 {
-	int		display, len;
-	char	*path, *ext;
 	char	*arg1s, arg1[256], *arg2s;	// arg1s -> "arg1 arg2 ..."; arg2s -> "arg2 arg3 ..."
-	char	*name, comp_type;
-	int		file_type;
 
 	complete_command[0] = 0;
 	completed_name[0] = 0;
@@ -268,7 +263,7 @@ static char *Do_CompleteCommand (char *partial)
 		if (arg1s == partial)
 			return NULL;	// space is first line char!
 
-		len = arg1s - partial;
+		int len = arg1s - partial;
 		strncpy (complete_command, partial, len);
 		complete_command[len] = 0;
 		arg1s++;							// skip ' '
@@ -305,9 +300,7 @@ static char *Do_CompleteCommand (char *partial)
 			// complete "bind key "
 			else if (!stricmp (complete_command, "bind"))
 			{
-				int		key;
-
-				key = Key_StringToKeynum (arg1);
+				int key = Key_StringToKeynum (arg1);
 				if (key < 0 || !keybindings[key])
 					return NULL;
 
@@ -320,7 +313,7 @@ static char *Do_CompleteCommand (char *partial)
 		{
 			// complete alias name
 			strcpy (complete_command, "alias");
-			for (display = 0; display < 2; display++)
+			for (int display = 0; display < 2; display++)
 			{
 				partial_name = arg1s;
 				partial_len = strlen (arg1s);
@@ -343,6 +336,9 @@ static char *Do_CompleteCommand (char *partial)
 			return completed_name;
 		}
 
+		char comp_type;
+		int file_type;
+		const char *path, *ext;
 		if (!stricmp (complete_command, "map"))
 		{
 			path = "maps";
@@ -388,6 +384,7 @@ static char *Do_CompleteCommand (char *partial)
 		{
 			for (CStringItem *fileitem = filelist.First(); fileitem; fileitem = filelist.Next(fileitem))
 			{
+				char *name;
 				// remove path part
 				if (name = strrchr (fileitem->name, '/'))
 					fileitem->name = name + 1;
@@ -397,7 +394,7 @@ static char *Do_CompleteCommand (char *partial)
 			}
 			partial_name = arg1;
 			partial_len = strlen (arg1);
-			for (display = 0; display < 2; display++)
+			for (int display = 0; display < 2; display++)
 			{
 				completed_count = 0;
 				for (fileitem = filelist.First(); fileitem; fileitem = filelist.Next(fileitem))
@@ -428,7 +425,7 @@ static char *Do_CompleteCommand (char *partial)
 	if (!partial_len) return NULL;
 	partial_name = partial;
 
-	for (display = 0; display < 2; display++)
+	for (int display = 0; display < 2; display++)
 	{
 		completed_count = 0;
 
@@ -510,7 +507,7 @@ struct completeMenu_t : menuFramework_t
 		int		i, y1;
 		for (i = 0, y1 = 0; i < completed_count; i++, y1 += 10)
 		{
-			MENU_ACTION(completeItems[i], y1, completeVariants[i], CompleteMenuCallback);
+			MENU_ACTION(completeItems[i], y1, completeVariants[i], CompleteMenuCallback, NULL);
 			completeItems[i].flags = QMF_LEFT_JUSTIFY;
 			completeItems[i].localData = i;
 			AddItem (&completeItems[i]);
@@ -538,11 +535,9 @@ static completeMenu_t completeMenu;
 
 void CompleteCommand (void)
 {
-	char	*cmd, *s;
-
 	guard(CompleteCommand);
 
-	s = &editLine[1];
+	char *s = &editLine[1];
 	if (*s == '\\' || *s == '/')
 		s++;
 
@@ -552,7 +547,7 @@ void CompleteCommand (void)
 		return;
 	}
 
-	cmd = Do_CompleteCommand (s);
+	char *cmd = Do_CompleteCommand (s);
 	if (cmd)
 	{
 		editLine[1] = '/';
@@ -588,10 +583,8 @@ void Key_SetBinding (int keynum, const char *binding)
 
 int Key_FindBinding (const char *str, int *keys, int maxKeys)
 {
-	int		i, numKeys;
-
-	numKeys = 0;
-	for (i = 0; i < NUM_BINDINGS; i++)
+	int numKeys = 0;
+	for (int i = 0; i < NUM_BINDINGS; i++)
 		if (keybindings[i] && !stricmp (keybindings[i], str))
 		{
 			if (numKeys < maxKeys)
@@ -604,20 +597,16 @@ int Key_FindBinding (const char *str, int *keys, int maxKeys)
 
 static void Key_Unbind_f (bool usage, int argc, char **argv)
 {
-	int		i, n;
-	char	*mask;
-	bool	found;
-
 	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: unbind <key mask>\n");
 		return;
 	}
-	mask = argv[1];
+	const char *mask = argv[1];
 
-	n = 0;
-	found = false;
-	for (i = 0; i < NUM_BINDINGS; i++)
+	int n = 0;
+	bool found = false;
+	for (int i = 0; i < NUM_BINDINGS; i++)
 	{
 		const char *keyName = Key_KeynumToString (i);
 		if (appMatchWildcard (keyName, mask, true))
@@ -641,9 +630,7 @@ static void Key_Unbind_f (bool usage, int argc, char **argv)
 
 static void Key_Unbindall_f (void)
 {
-	int		i;
-
-	for (i = 0; i < NUM_BINDINGS; i++)
+	for (int i = 0; i < NUM_BINDINGS; i++)
 		if (keybindings[i])
 			Key_SetBinding (i, NULL);
 }
@@ -651,15 +638,12 @@ static void Key_Unbindall_f (void)
 
 static void Key_Bind_f (bool usage, int argc, char **argv)
 {
-	int		i, b;
-	char	cmd[1024];
-
 	if (argc < 2 || usage)
 	{
 		Com_Printf ("Usage: bind <key> [command]\n");
 		return;
 	}
-	b = Key_StringToKeynum (argv[1]);
+	int b = Key_StringToKeynum (argv[1]);
 	if (b == -1)
 	{
 		Com_WPrintf ("\"%s\" isn't a valid key\n", argv[1]);
@@ -676,8 +660,9 @@ static void Key_Bind_f (bool usage, int argc, char **argv)
 	}
 
 	// copy the rest of the command line
+	char cmd[1024];
 	cmd[0] = 0;		// start out with a null string
-	for (i = 2; i < argc; i++)
+	for (int i = 2; i < argc; i++)
 	{
 		strcat (cmd, argv[i]);
 		if (i != argc-1) strcat (cmd, " ");
@@ -689,20 +674,17 @@ static void Key_Bind_f (bool usage, int argc, char **argv)
 
 static void Key_Bindlist_f (bool usage, int argc, char **argv)
 {
-	int		i, n;
-	char	*mask;
-
 	if (argc > 2 || usage)
 	{
 		Com_Printf ("Usage: bindlist [<action mask>]\n");
 		return;
 	}
 
-	mask = argc == 2 ? argv[1] : NULL;
+	const char *mask = argc == 2 ? argv[1] : NULL;
 
-	n = 0;
+	int n = 0;
 	Com_Printf ("---key----action---------\n");
-	for (i = 0; i < NUM_BINDINGS; i++)
+	for (int i = 0; i < NUM_BINDINGS; i++)
 		if (keybindings[i] && (!mask || appMatchWildcard (keybindings[i], mask, true)))
 		{
 			n++;
@@ -722,9 +704,7 @@ Writes lines containing "bind key value"
 */
 void Key_WriteBindings (FILE *f)
 {
-	int		i;
-
-	for (i = 0; i < NUM_BINDINGS; i++)
+	for (int i = 0; i < NUM_BINDINGS; i++)
 		if (keybindings[i] && keybindings[i][0])
 			fprintf (f, "bind %s %s\n", Key_KeynumToString (i), COM_QuoteString (keybindings[i], true));
 }
@@ -736,14 +716,14 @@ void Key_WriteBindings (FILE *f)
 
 void Key_Init (void)
 {
-	int		i;
-	static struct {byte base; byte shift;} keyShifts[] = {
+	static const struct {byte base; byte shift;} keyShifts[] = {
 		{'1', '!'},	{'2', '@'},	{'3', '#'},	{'4', '$'},	{'5', '%'},
 		{'6', '^'},	{'7', '&'},	{'8', '*'},	{'9', '('},	{'0', ')'},
 		{'-', '_'},	{'=', '+'},	{',', '<'},	{'.', '>'},	{'/', '?'},
 		{';', ':'},	{'\'', '"'},{'[', '{'},	{']', '}'},	{'`', '~'},
 		{'\\', '|'}
 	};
+	int		i;
 
 	for (i = 0; i < ARRAY_COUNT(keyShifts); i++)
 		keyshift[i] = i;
@@ -940,9 +920,7 @@ void Key_Event (int key, bool down, unsigned time)
 
 void Key_ClearStates (void)
 {
-	int		key;
-
-	for (key = 0; key < NUM_KEYS; key++)
+	for (int key = 0; key < NUM_KEYS; key++)
 	{
 //		if (key == '`' || key == K_ESCAPE) continue;	// hardcoded keys - do not clear states
 		if (keydown[key])

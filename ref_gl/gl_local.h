@@ -170,7 +170,7 @@ typedef enum
 void	GLimp_BeginFrame (float camera_separation);
 void	GLimp_EndFrame (void);
 int 	GLimp_Init (void);
-void	GLimp_Shutdown (void);
+void	GLimp_Shutdown (bool complete);
 rserr_t GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscreen);
 void	GLimp_AppActivate (bool active);
 

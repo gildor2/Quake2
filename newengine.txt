@@ -82,12 +82,11 @@
   ? stream helpers: ReadInts(), ReadFloats() ... -- read array of data, with BIG_ENDIAN support
 
 ------------ New renderer system -----------
-- make build target: "static build with single GL renderer" (to feel free for renderer API modification)
 - change GetRefAPI() -> something another (different method of renderer creation; can change backend only)
 - separate renderer (math only) and backend (OpenGL); call hierarchy: mainEngine->renderer->backend->gl
 - backend should provide "caps" field:
   - rect textures (GL_NV_texture_rectangle: clamp, no mipmap)
-  - rect textures 2 (GL_ARB_texture_non_power_of_two: full-feautered textures)
+  - rect textures 2 (GL_ARB_texture_non_power_of_two: full-feautured textures)
   - compressed textures (for disabling by menu)
   - fast blend (for soft renderer: can draw console etc with opaque rects)
   - fast culling (for soft: when "false" will try to cull everything before sending to backend)
@@ -122,6 +121,6 @@
   "TMemoryPool<TEMP_MEM_SIZE> TempPool" for allocs
 
 -------------------- Names -----------------
-- BackEnd = renderer
+- BackEnd = Renderer
 - FrontEnd = SceneGraph
-- Using skeletal animation = skinning; KeyFrameAnimation
+- Using skeletal animation = skinning; Q2 tech = KeyFrameAnimation

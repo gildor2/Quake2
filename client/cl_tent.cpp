@@ -105,7 +105,7 @@ typedef enum {
 	IMPACT_COUNT
 } impactType_t;
 
-static impactType_t materialImpacts[NUM_STEP_MATERIALS + 1] = {
+static const impactType_t materialImpacts[NUM_STEP_MATERIALS + 1] = {
 	IMPACT_SILENT,		// silent
 	IMPACT_STONE,
 	IMPACT_WOOD,
@@ -898,17 +898,11 @@ CL_ParseTEnt
 
 void CL_ParseTEnt (void)
 {
-	int		type;
 	vec3_t	pos, pos2, dir;
 	explosion_t	*ex;
-	int		cnt;
-	int		color;
-	int		r;
-	int		ent;
-	int		magnitude;
+	int		cnt, color, ent;
 
-	type = MSG_ReadByte (&net_message);
-
+	int type = MSG_ReadByte (&net_message);
 	switch (type)
 	{
 	case TE_BLOOD:			// bullet hitting flesh
@@ -944,17 +938,14 @@ void CL_ParseTEnt (void)
 				trace_t	trace;
 				vec3_t	zero = {0, 0, 0};
 				vec3_t	start, end;
-				int		impactType;
 
 				VectorAdd (pos, dir, start);
 				VectorMA (start, -2, dir, end);
 				CL_Trace (&trace, start, end, zero, zero, MASK_ALL);
 				if (trace.fraction < 1.0)
 				{
-					csurface_t	*surf;
-
-					surf = trace.surface;
-					impactType = materialImpacts[surf->material];
+					csurface_t *surf = trace.surface;
+					int impactType = materialImpacts[surf->material];
 					if (impactType < 0) break;		// silent
 
 					CL_SmokeAndFlash (pos);
@@ -993,37 +984,39 @@ void CL_ParseTEnt (void)
 		break;
 
 	case TE_SPLASH:
-		cnt = MSG_ReadByte (&net_message);
-		MSG_ReadPos (&net_message, pos);
-		MSG_ReadDir (&net_message, dir);
-		r = MSG_ReadByte (&net_message);
-		if (r > 8)
-			color = 0x00;
-		else
 		{
-			static byte splash_color[] = {
-				0x00, 0xE0, 0xB0, 0x50, 0xD0, 0xE0, 0xE8,	// unk, sparks, blue water, brown water, slime, lava, blood
-				0xB0, 0x50			// bullet blue water, bullet brown water
-			};
-			color = splash_color[r];
-		}
-		CL_ParticleEffect (pos, dir, color, cnt);
-
-		if (r == SPLASH_SPARKS)
-		{
-			// just particles -- not water
-			r = rand() & 3;
-			if (r == 0)
-				S_StartSound (pos, 0, 0, cl_sfx_spark5, 1, ATTN_STATIC, 0);
-			else if (r == 1)
-				S_StartSound (pos, 0, 0, cl_sfx_spark6, 1, ATTN_STATIC, 0);
+			cnt = MSG_ReadByte (&net_message);
+			MSG_ReadPos (&net_message, pos);
+			MSG_ReadDir (&net_message, dir);
+			int r = MSG_ReadByte (&net_message);
+			if (r > 8)
+				color = 0x00;
 			else
-				S_StartSound (pos, 0, 0, cl_sfx_spark7, 1, ATTN_STATIC, 0);
-		}
-		else if ((r == SPLASH_BULLET_BLUE_WATER || r == SPLASH_BULLET_BROWN_WATER) && cls.newprotocol)
-		{
-			// bullet hitting water
-			S_StartSound (pos, 0, 0, cl_sfx_bullethits[IMPACT_WATER*3 + rand()%3], 1, ATTN_NORM, 0);
+			{
+				static byte splash_color[] = {
+					0x00, 0xE0, 0xB0, 0x50, 0xD0, 0xE0, 0xE8,	// unk, sparks, blue water, brown water, slime, lava, blood
+					0xB0, 0x50			// bullet blue water, bullet brown water
+				};
+				color = splash_color[r];
+			}
+			CL_ParticleEffect (pos, dir, color, cnt);
+
+			if (r == SPLASH_SPARKS)
+			{
+				// just particles -- not water
+				r = rand() & 3;
+				if (r == 0)
+					S_StartSound (pos, 0, 0, cl_sfx_spark5, 1, ATTN_STATIC, 0);
+				else if (r == 1)
+					S_StartSound (pos, 0, 0, cl_sfx_spark6, 1, ATTN_STATIC, 0);
+				else
+					S_StartSound (pos, 0, 0, cl_sfx_spark7, 1, ATTN_STATIC, 0);
+			}
+			else if ((r == SPLASH_BULLET_BLUE_WATER || r == SPLASH_BULLET_BROWN_WATER) && cls.newprotocol)
+			{
+				// bullet hitting water
+				S_StartSound (pos, 0, 0, cl_sfx_bullethits[IMPACT_WATER*3 + rand()%3], 1, ATTN_NORM, 0);
+			}
 		}
 		break;
 
@@ -1080,12 +1073,10 @@ void CL_ParseTEnt (void)
 
 	case TE_RAILTRAIL_EXT:		// advanced railgun effect
 		{
-			byte	rColor, rType;
-
 			MSG_ReadPos (&net_message, pos);
 			MSG_ReadPos (&net_message, pos2);
-			rColor = MSG_ReadByte (&net_message);
-			rType = MSG_ReadByte (&net_message);
+			byte rColor = MSG_ReadByte (&net_message);
+			byte rType = MSG_ReadByte (&net_message);
 			CL_RailTrailExt (pos, pos2, rType, rColor);
 			S_StartSound (pos2, 0, 0, cl_sfx_railg, 1, ATTN_NORM, 0);
 		}
@@ -1145,19 +1136,14 @@ void CL_ParseTEnt (void)
 		ex->lightcolor[1] = 0.5;
 		ex->lightcolor[2] = 0.5;
 		ex->ent.angles[1] = rand() % 360;
-		if (type != TE_EXPLOSION1_BIG)				// PMM
-			ex->ent.model = cl_mod_explo4;			// PMM
-		else
-			ex->ent.model = cl_mod_explo4_big;
+		ex->ent.model = (type != TE_EXPLOSION1_BIG) ? cl_mod_explo4 : cl_mod_explo4_big;			// PMM
 		if (frand() < 0.5)
 			ex->baseframe = 15;
 		ex->frames = 15;
 		if ((type != TE_EXPLOSION1_BIG) && (type != TE_EXPLOSION1_NP))		// PMM
 			CL_ExplosionParticles (pos);									// PMM
-		if (type == TE_ROCKET_EXPLOSION_WATER)
-			S_StartSound (pos, 0, 0, cl_sfx_watrexp, 1, ATTN_NORM, 0);
-		else
-			S_StartSound (pos, 0, 0, cl_sfx_rockexp, 1, ATTN_NORM, 0);
+		S_StartSound (pos, 0, 0, (type == TE_ROCKET_EXPLOSION_WATER) ? cl_sfx_watrexp : cl_sfx_rockexp,
+			1, ATTN_NORM, 0);
 		break;
 
 	case TE_BFG_EXPLOSION:
@@ -1180,7 +1166,7 @@ void CL_ParseTEnt (void)
 		break;
 
 	case TE_BFG_LASER:
-		CL_ParseLaser (0xd0d1d2d3);
+		CL_ParseLaser (0xD0D1D2D3);
 		break;
 
 	case TE_BUBBLETRAIL:
@@ -1224,7 +1210,7 @@ void CL_ParseTEnt (void)
 	case TE_GREENBLOOD:
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
-		CL_ParticleEffect2 (pos, dir, 0xdf, 30);
+		CL_ParticleEffect2 (pos, dir, 0xDF, 30);
 		break;
 
 	// RAFAEL
@@ -1245,10 +1231,7 @@ void CL_ParseTEnt (void)
 		MSG_ReadDir (&net_message, dir);
 
 		// PMM
-		if (type == TE_BLASTER2)
-			CL_BlasterParticles2 (pos, dir, 0xd0);
-		else
-			CL_BlasterParticles2 (pos, dir, 0x6f); // 75
+		CL_BlasterParticles2 (pos, dir, (type == TE_BLASTER2) ? 0xD0 : 0x6F);
 
 		ex = CL_AllocExplosion (pos, ex_misc);
 		ex->ent.angles[0] = acos(dir[2])/M_PI*180;
@@ -1265,10 +1248,7 @@ void CL_ParseTEnt (void)
 		ex->ent.flags = RF_FULLBRIGHT|RF_TRANSLUCENT;
 
 		// PMM
-		if (type == TE_BLASTER2)
-			ex->ent.skinnum = 1;
-		else // flechette
-			ex->ent.skinnum = 2;
+		ex->ent.skinnum = (type == TE_BLASTER2) ? 1 : 2;
 
 		ex->light = 150;
 		// PMM
@@ -1339,29 +1319,18 @@ void CL_ParseTEnt (void)
 		break;
 
 	case TE_HEATBEAM_SPARKS:
-//		cnt = MSG_ReadByte (&net_message);
 		cnt = 50;
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
-//		r = MSG_ReadByte (&net_message);
-//		magnitude = MSG_ReadShort (&net_message);
-		magnitude = 60;
-		color = 8;
-		CL_ParticleSteamEffect (pos, dir, color, cnt, magnitude);
+		CL_ParticleSteamEffect (pos, dir, 8, cnt, 60);
 		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
 
 	case TE_HEATBEAM_STEAM:
-//		cnt = MSG_ReadByte (&net_message);
 		cnt = 20;
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
-//		r = MSG_ReadByte (&net_message);
-//		magnitude = MSG_ReadShort (&net_message);
-//		color = r & 0xff;
-		color = 0xe0;
-		magnitude = 60;
-		CL_ParticleSteamEffect (pos, dir, color, cnt, magnitude);
+		CL_ParticleSteamEffect (pos, dir, 0xE0, cnt, 60);
 		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
 
@@ -1370,7 +1339,6 @@ void CL_ParseTEnt (void)
 		break;
 
 	case TE_BUBBLETRAIL2:
-//		cnt = MSG_ReadByte (&net_message);
 		cnt = 8;
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadPos (&net_message, pos2);
@@ -1666,7 +1634,7 @@ void CL_AddPlayerBeams (void)
 			if (yaw < 0) yaw += 360.0f;
 
 			forward = sqrt (dist[0]*dist[0] + dist[1]*dist[1]);	//!! slow
-			pitch = (atan2(dist[2], forward) * -180.0 / M_PI);
+			pitch = (atan2(dist[2], forward) * -180.0 / M_PI);	//
 			if (pitch < 0) pitch += 360.0f;
 		}
 

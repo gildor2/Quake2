@@ -273,8 +273,7 @@ static void SV_NextDownload_f (int argc, char **argv)
 		size = 1;
 	percent = sv_client->downloadcount * 100 / size;
 	MSG_WriteByte (&sv_client->netchan.message, percent);
-	SZ_Write (&sv_client->netchan.message,
-		sv_client->download + sv_client->downloadcount - r, r);
+	sv_client->netchan.message.Write (sv_client->download + sv_client->downloadcount - r, r);
 
 	if (sv_client->downloadcount != sv_client->downloadsize)
 		return;
@@ -577,7 +576,7 @@ void SV_ExecuteClientMessage (client_t *cl)
 			}
 
 			// if the checksum fails, ignore the rest of the packet
-			calculatedChecksum = COM_BlockSequenceCRCByte (
+			calculatedChecksum = Com_BlockSequenceCRCByte (
 				net_message.data + checksumIndex + 1,
 				net_message.readcount - checksumIndex - 1,
 				cl->netchan.incoming_sequence);

@@ -53,6 +53,9 @@ bool GLimp_InitGL (void);
 
 glwstate_t glw_state;
 
+static bool minidriver;
+static bool allowdisplaydepthchange;
+
 
 static bool GLimp_CreateWindow (int width, int height, bool fullscreen)
 {
@@ -73,22 +76,17 @@ rserr_t GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fulls
 
 	Com_Printf ("Initializing OpenGL display\n");
 
-	Com_Printf ("...setting mode %d:", mode);
-
 	if (!Vid_GetModeInfo (&width, &height, mode))
 	{
-		Com_WPrintf (" invalid mode\n");
+		Com_WPrintf ("Invalid mode: %d\n", mode);
 		return rserr_invalid_mode;
 	}
 
-	Com_Printf (" %d %d %s\n", width, height, fullscreen ? "FS" : "W");
+	Com_Printf ("...setting mode %d: %d %d %s\n", mode, width, height, fullscreen ? "FS" : "W");
 
 	// destroy the existing window
 	if (glw_state.hWnd)
-	{
-		gl_config.fullscreen = false; // disable ChangeDisplaySettings(0,0) in Shutdown()
-		GLimp_Shutdown ();
-	}
+		GLimp_Shutdown (false);
 
 	colorBits = gl_bitdepth->integer;
 	gl_bitdepth->modified = false;
@@ -121,13 +119,11 @@ rserr_t GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fulls
 			Com_Printf ("...using desktop display depth of %d\n", bitspixel);
 		}
 
-		Com_Printf ("...calling CDS: ");
 		if (ChangeDisplaySettings (&dm, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL)
 		{
 			*pwidth = width;
 			*pheight = height;
 			gl_config.fullscreen = true;
-			Com_Printf ("ok\n");
 
 			if (!GLimp_CreateWindow (width, height, true))
 				return rserr_invalid_mode;
@@ -139,8 +135,8 @@ rserr_t GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fulls
 			*pwidth = width;
 			*pheight = height;
 
-			Com_WPrintf ("failed\n");
-			Com_Printf ("...calling CDS assuming dual monitors:");
+			Com_WPrintf ("...CDS() failed\n");
+			Com_Printf ("...calling CDS assuming dual monitors: ");
 
 			dm.dmPelsWidth = width * 2;
 			dm.dmPelsHeight = height;
@@ -158,8 +154,7 @@ rserr_t GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fulls
 			*/
 			if (ChangeDisplaySettings (&dm, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)
 			{
-				Com_WPrintf (" failed\n");
-
+				Com_WPrintf ("failed\n");
 				Com_Printf ("...setting windowed mode\n");
 
 				ChangeDisplaySettings (NULL, 0);
@@ -173,7 +168,7 @@ rserr_t GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fulls
 			}
 			else
 			{
-				Com_Printf (" ok\n");
+				Com_Printf ("ok\n");
 				if (!GLimp_CreateWindow (width, height, true))
 					return rserr_invalid_mode;
 
@@ -437,20 +432,20 @@ int GLimp_Init (void)
 
 	vinfo.dwOSVersionInfoSize = sizeof(vinfo);
 
-	glw_state.allowdisplaydepthchange = false;
+	allowdisplaydepthchange = false;
 
 	if (GetVersionEx (&vinfo))
 	{
 		if (vinfo.dwMajorVersion > 4)
-			glw_state.allowdisplaydepthchange = true;
+			allowdisplaydepthchange = true;
 		else if (vinfo.dwMajorVersion == 4)
 		{
 			if (vinfo.dwPlatformId == VER_PLATFORM_WIN32_NT)
-				glw_state.allowdisplaydepthchange = true;
+				allowdisplaydepthchange = true;
 			else if (vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
 			{
 				if (LOWORD(vinfo.dwBuildNumber) >= OSR2_BUILD_NUMBER)
-					glw_state.allowdisplaydepthchange = true;
+					allowdisplaydepthchange = true;
 			}
 		}
 	}
@@ -504,16 +499,16 @@ static bool GLimp_SetPixelFormat (void)
 	}
 */
 
-	if (glw_state.minidriver)
+	if (minidriver)
 	{
 		if ((pixelformat = wglChoosePixelFormat (glw_state.hDC, &pfdBase)) == 0)
 		{
-			Com_WPrintf ("GLimp_Init() - wglChoosePixelFormat failed\n");
+			Com_WPrintf ("wglChoosePixelFormat() failed\n");
 			return false;
 		}
 		if (wglSetPixelFormat (glw_state.hDC, pixelformat, &pfdBase) == FALSE)
 		{
-			Com_WPrintf ("GLimp_Init() - wglSetPixelFormat failed\n");
+			Com_WPrintf ("wglSetPixelFormat() failed\n");
 			return false;
 		}
 		wglDescribePixelFormat (glw_state.hDC, pixelformat, sizeof(pfd), &pfd);
@@ -522,12 +517,12 @@ static bool GLimp_SetPixelFormat (void)
 	{
 		if ((pixelformat = ChoosePixelFormat (glw_state.hDC, &pfdBase)) == 0)
 		{
-			Com_WPrintf ("GLimp_Init() - ChoosePixelFormat failed\n");
+			Com_WPrintf ("ChoosePixelFormat() failed\n");
 			return false;
 		}
 		if (SetPixelFormat (glw_state.hDC, pixelformat, &pfdBase) == FALSE)
 		{
-			Com_WPrintf ("GLimp_Init() - SetPixelFormat failed\n");
+			Com_WPrintf ("SetPixelFormat() failed\n");
 			return false;
 		}
 
@@ -564,7 +559,7 @@ static bool GLimp_SetPixelFormat (void)
 	}
 
 	// print out PFD specifics
-	Com_Printf ("GL PFD: color(%d-bits) Z(%d-bit)\n", pfd.cColorBits, pfd.cDepthBits);
+	Com_Printf ("PIXELFORMAT: color(%d-bits) Z(%d-bit)\n", pfd.cColorBits, pfd.cDepthBits);
 	return true;
 }
 
@@ -573,11 +568,11 @@ static bool GLimp_InitGL (void)
 {
 	// figure out if we're running on a minidriver or not
 	if (gl_driver->IsDefault())				// compare with opengl32.dll
-		glw_state.minidriver = false;
+		minidriver = false;
 	else
 	{
 		Com_Printf ("...minidriver detected\n");
-		glw_state.minidriver = true;
+		minidriver = true;
 	}
 
 	// Get a DC for the specified window
@@ -608,7 +603,7 @@ static bool GLimp_InitGL (void)
  * for the window.  The state structure is also nulled out.
  *
  */
-void GLimp_Shutdown (void)
+void GLimp_Shutdown (bool complete)
 {
 	RestoreGamma ();
 
@@ -617,7 +612,7 @@ void GLimp_Shutdown (void)
 	if (glw_state.hDC)
 	{
 		if (!ReleaseDC (glw_state.hWnd, glw_state.hDC))
-			Com_WPrintf ("...ReleaseDC failed\n");
+			Com_WPrintf ("...ReleaseDC() failed\n");
 		glw_state.hDC = NULL;
 	}
 
@@ -626,8 +621,11 @@ void GLimp_Shutdown (void)
 
 	if (gl_config.fullscreen)
 	{
-		if (!vid_ref->string[0])
+		if (complete)
+		{
+			Com_DPrintf ("...restore display mode\n");
 			ChangeDisplaySettings (NULL, 0);
+		}
 		gl_config.fullscreen = false;
 	}
 }
@@ -656,7 +654,7 @@ void GLimp_EndFrame (void)
 			wglSwapIntervalEXT (gl_swapinterval->integer);
 	}
 
-	if (!glw_state.minidriver)
+	if (!minidriver)
 	{
 		LOG_STRING("SwapBuffers()\n");
 		SwapBuffers (glw_state.hDC);
@@ -665,7 +663,7 @@ void GLimp_EndFrame (void)
 	{
 		// use wglSwapBuffers() for miniGL and Voodoo
 		if (!wglSwapBuffers (glw_state.hDC))
-			Com_FatalError ("GLimp_EndFrame() - SwapBuffers() failed!\n");
+			Com_FatalError ("GLimp_EndFrame(): SwapBuffers() failed!\n");
 	}
 }
 
@@ -678,7 +676,7 @@ void GLimp_BeginFrame (float camera_separation)
 	LOG_STRING("GLimp_BeginFrame()\n");
 	if (gl_bitdepth->modified)
 	{
-		if (gl_bitdepth->integer && !glw_state.allowdisplaydepthchange)
+		if (gl_bitdepth->integer && !allowdisplaydepthchange)
 		{
 			Cvar_SetInteger ("gl_bitdepth", 0);
 			Com_WPrintf ("gl_bitdepth requires Win95 OSR2.x or WinNT 4.x\n" );
@@ -716,7 +714,12 @@ void GLimp_AppActivate (bool active)
 			ActivateGLcontext ();
 			SetWindowPos (glw_state.hWnd, 0, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
 		}
-		UpdateGamma ();
+		// update gamma
+#if 0
+		UpdateGamma ();				// immediately -- bugs with ATI
+#else
+		r_gamma->modified = true;	// later
+#endif
 	}
 	else
 	{

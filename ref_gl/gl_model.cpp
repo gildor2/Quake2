@@ -1066,21 +1066,15 @@ static void LoadVisinfo2 (dvis_t *data, int size)
 	map.visRowSize = rowSize = (map.numClusters + 7) >> 3;
 	if (size)
 	{
-		byte	*dst;
-
-		dst = map.visInfo = new (map.dataChain) byte [rowSize * map.numClusters];
+		byte *dst = map.visInfo = new (map.dataChain) byte [rowSize * map.numClusters];
 		for (int i = 0; i < map.numClusters; i++)
 		{
-			int		pos, j;
-
-			pos = data->bitofs[i][DVIS_PVS];
+			int pos = data->bitofs[i][DVIS_PVS];
 			if (pos != -1)
 			{
-				byte	*src;
-
-				src = (byte*)data + pos;
+				byte *src = (byte*)data + pos;
 				// decompress vis
-				j = rowSize;
+				int j = rowSize;
 				while (j)
 				{
 					byte	c;

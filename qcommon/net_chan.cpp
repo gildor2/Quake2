@@ -109,14 +109,14 @@ Sends an out-of-band datagram
 */
 void Netchan_OutOfBand (netsrc_t net_socket, netadr_t adr, int length, void *data)
 {
-	sizebuf_t	send;
+	sizebuf_t	send;		//?? almost useless here
 	byte		send_buf[MAX_MSGLEN];
 
 	// write the packet header
-	SZ_Init (&send, send_buf, sizeof(send_buf));
+	send.Init (ARRAY_ARG(send_buf));
 
 	MSG_WriteLong (&send, -1);	// -1 sequence means out of band
-	SZ_Write (&send, data, length);
+	send.Write (data, length);
 
 	// send the datagram
 	NET_SendPacket (net_socket, send.cursize, send.data, adr);
@@ -160,7 +160,7 @@ void Netchan_Setup (netsrc_t sock, netchan_t *chan, netadr_t adr, int qport)
 	chan->incoming_sequence = 0;
 	chan->outgoing_sequence = 1;
 
-	SZ_Init (&chan->message, chan->message_buf, sizeof(chan->message_buf));
+	chan->message.Init (chan->message_buf, sizeof(chan->message_buf));
 	chan->message.allowoverflow = true;
 }
 
@@ -237,7 +237,7 @@ void Netchan_Transmit (netchan_t *chan, int length, void *data)
 
 
 	// write the packet header
-	SZ_Init (&send, send_buf, sizeof(send_buf));
+	send.Init (ARRAY_ARG(send_buf));
 
 	w1 = ( chan->outgoing_sequence & 0x7FFFFFFF ) | (send_reliable<<31);
 	w2 = ( chan->incoming_sequence & 0x7FFFFFFF ) | (chan->incoming_reliable_sequence<<31);
@@ -252,20 +252,20 @@ void Netchan_Transmit (netchan_t *chan, int length, void *data)
 	if (chan->sock == NS_CLIENT)
 		MSG_WriteShort (&send, qport->integer);
 
-// copy the reliable message to the packet first
+	// copy the reliable message to the packet first
 	if (send_reliable)
 	{
-		SZ_Write (&send, chan->reliable_buf, chan->reliable_length);
+		send.Write (chan->reliable_buf, chan->reliable_length);
 		chan->last_reliable_sequence = chan->outgoing_sequence;
 	}
 
-// add the unreliable part if space is available
+	// add the unreliable part if space is available
 	if (send.maxsize - send.cursize >= length)
-		SZ_Write (&send, data, length);
+		send.Write (data, length);
 	else
 		Com_Printf ("Netchan_Transmit: dumped unreliable\n");
 
-// send the datagram
+	// send the datagram
 	NET_SendPacket (chan->sock, send.cursize, send.data, chan->remote_address);
 
 	if (showpackets->integer)
@@ -300,7 +300,7 @@ bool Netchan_Process (netchan_t *chan, sizebuf_t *msg)
 	unsigned	reliable_ack, reliable_message;
 	int			qport;
 
-// get sequence numbers
+	// get sequence numbers
 	MSG_BeginReading (msg);
 	sequence = MSG_ReadLong (msg);
 	sequence_ack = MSG_ReadLong (msg);
@@ -332,9 +332,9 @@ bool Netchan_Process (netchan_t *chan, sizebuf_t *msg)
 				, reliable_ack);
 	}
 
-//
-// discard stale or duplicated packets
-//
+	//
+	// discard stale or duplicated packets
+	//
 	if (sequence <= chan->incoming_sequence)
 	{
 		if (showdrop->integer)
@@ -345,9 +345,9 @@ bool Netchan_Process (netchan_t *chan, sizebuf_t *msg)
 		return false;
 	}
 
-//
-// dropped packets don't keep the message from being used
-//
+	//
+	// dropped packets don't keep the message from being used
+	//
 	chan->dropped = sequence - (chan->incoming_sequence+1);
 	if (chan->dropped > 0)
 	{
@@ -358,16 +358,16 @@ bool Netchan_Process (netchan_t *chan, sizebuf_t *msg)
 			, sequence);
 	}
 
-//
-// if the current outgoing reliable message has been acknowledged
-// clear the buffer to make way for the next
-//
+	//
+	// if the current outgoing reliable message has been acknowledged
+	// clear the buffer to make way for the next
+	//
 	if (reliable_ack == chan->reliable_sequence)
 		chan->reliable_length = 0;	// it has been received
 
-//
-// if this message contains a reliable message, bump incoming_reliable_sequence
-//
+	//
+	// if this message contains a reliable message, bump incoming_reliable_sequence
+	//
 	chan->incoming_sequence = sequence;
 	chan->incoming_acknowledged = sequence_ack;
 	chan->incoming_reliable_acknowledged = reliable_ack;
@@ -376,9 +376,9 @@ bool Netchan_Process (netchan_t *chan, sizebuf_t *msg)
 		chan->incoming_reliable_sequence ^= 1;
 	}
 
-//
-// the message can now be read from the current message pointer
-//
+	//
+	// the message can now be read from the current message pointer
+	//
 	chan->last_received = appMilliseconds ();
 
 	return true;

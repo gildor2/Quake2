@@ -12,14 +12,14 @@ Remove decompression with integer types:
 	JDCT_FASTEST=JDCT_FLOAT
 3) Can remove files:
 	"jfdctfst.c", "jfdctint.c", "jidctfst.c", "jidctint.c"
-4) define "NO_GETENV" -- will disable env var "JPEGMEM" and slightly reduce code
+4) define "NO_GETENV" -- will disable env var "JPEGMEM" and slightly reduce code size
 
 Use "jmemnobs.c" as a memory manager.
-Or create own error manager.
+Or use own memory manager.
 
 
 ZLib:
 ~~~~~
 
 Add defines DYNAMIC_CRC_TABLE,BUILDFIXED to reduce executable size in a cost of slightly
-slower startup.
+slower library startup.

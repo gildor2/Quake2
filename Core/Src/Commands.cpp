@@ -34,15 +34,14 @@ static TList<CAlias> AliasList;
 
 bool RegisterCommand (const char *name, void(*func)(), int flags)
 {
-	CCommand *cmd, *pos;
-
 	guard(RegisterCommand);
+	CCommand *pos;
 	if (CmdList.Find (name, &pos))
 	{
 		appWPrintf ("RegisterCommand: \"%s\" is already registered\n", name);
 		return false;
 	}
-	cmd = new (name) CCommand;
+	CCommand *cmd = new (name) CCommand;
 	cmd->flags = flags;
 	cmd->func = func;
 	CmdList.InsertAfter (cmd, pos);
@@ -240,25 +239,26 @@ static void Cmd_CmdList (bool usage, int argc, char **argv)
 {
 	int		n, total;
 
-	if (usage || argc > 2)
+	if (argc > 2 || usage)
 	{
-		appPrintf ("Usage: cmdlist [<mask>]\n");
+		Com_Printf ("Usage: cmdlist [<mask>]\n");
 		return;
 	}
+
+	const char *mask = (argc == 2) ? argv[1] : NULL;
 	n = total = 0;
+	Com_Printf ("----i-a-name----------------\n");
 	for (CCommand *cmd = CmdList.First(); cmd; cmd = CmdList.Next(cmd))
 	{
 		total++;
-		if (argc < 2 || appMatchWildcard (cmd->name, argv[1]))
-		{
-			appPrintf ("[%c%c] %s\n",
-				cmd->flags & COMMAND_USAGE ? '?' : ' ',
-				cmd->flags & COMMAND_ARGS ? 'a' : ' ',
-				cmd->name);
-			n++;
-		}
+		if (mask && !appMatchWildcard (cmd->name, mask, true)) continue;
+		Com_Printf ("%-3d %c %c %s\n", total,
+			cmd->flags & COMMAND_USAGE ? 'I' : ' ',
+			cmd->flags & COMMAND_ARGS ? 'A' : ' ',
+			cmd->name);
+		n++;
 	}
-	appPrintf ("Displayed %d/%d commands\n", n, total);
+	Com_Printf ("Displayed %d/%d commands\n", n, total);
 }
 
 

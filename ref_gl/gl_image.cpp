@@ -70,17 +70,15 @@ static int		imageCount;
  *  1. when gamma is hardware -- for lightscaling screenshots
  *  2. when gamma is software -- for lightscaling uploadable textures
  */
+//?? sw gamma: should lightscale lightmaps or textures (not both) ?
 static byte		gammaTable[256];
 
 // name should be in a lower case
-static int ComputeHash (char *name)
+static int ComputeHash (const char *name)
 {
-	int		h;
-	char	*s, c;
-
-	h = 0;
-	s = name;
-	while (c = *s++, c && c != '.')		// exclude extension from hash
+	int h = 0;
+	char c;
+	while (c = *name++, c && c != '.')	// exclude extension from hash
 		h = (h ^ 0x25) + c;				// good values: 07 (best in 10-bit hash), 25, 61, 7B
 	return h & HASH_MASK;
 }
@@ -90,14 +88,14 @@ static int ComputeHash (char *name)
 static void GetPalette (void)
 {
 	int		width, height;
-	byte	*pic, *pal, *p;
+	byte	*pic, *pal;
 
 	// get the palette
 	LoadPCX ("pics/colormap.pcx", &pic, &pal, &width, &height);
 	if (!pal)
-		Com_FatalError ("Couldn't load pics/colormap.pcx");
+		Com_FatalError ("Can not load pics/colormap.pcx");
 
-	p = pal;
+	const byte *p = pal;
 	for (int i = 0; i < 256; i++, p += 3)
 	{
 		unsigned v = RGB255(p[0], p[1], p[2]);
@@ -113,17 +111,14 @@ static void GetPalette (void)
 
 static byte *Convert8to32bit (byte *in, int width, int height, unsigned *palette)
 {
-	byte	*out;
-	unsigned *p;
-
 	guard(Convert8to32bit);
 	if (!palette)
 		palette = gl_config.tbl_8to32;
 
 	int size = width * height;
-	out = (byte*)appMalloc (size * 4);
+	byte *out = (byte*)appMalloc (size * 4);
 
-	p = (unsigned*)out;
+	unsigned *p = (unsigned*) out;
 	for (int i = 0; i < size; i++)
 		*p++ = palette[*in++];
 
@@ -155,25 +150,23 @@ void GL_TextureMode (char *name)	//?? change (not strings; use enum {none,biline
 	GL_SetMultitexture (1);
 	for (int i = 0; i < ARRAY_COUNT(texModes); i++)
 	{
-		if (!stricmp (texModes[i].name, name))
+		if (stricmp (texModes[i].name, name)) continue;
+
+		gl_filter_min = texModes[i].minimize;
+		gl_filter_max = texModes[i].maximize;
+
+		int		j;
+		image_t *img;
+		// change all the existing mipmap texture objects
+		for (j = 0, img = imagesArray; j < MAX_TEXTURES; j++, img++)
 		{
-			image_t *img;
-
-			gl_filter_min = texModes[i].minimize;
-			gl_filter_max = texModes[i].maximize;
-
-			int		j;
-			// change all the existing mipmap texture objects
-			for (j = 0, img = imagesArray; j < MAX_TEXTURES; j++, img++)
-			{
-				if (!img->name[0]) continue;	// free slot
-				if (!(img->flags & IMAGE_MIPMAP)) continue;
-				GL_BindForce (img);
-				glTexParameteri (img->target, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-				glTexParameteri (img->target, GL_TEXTURE_MAG_FILTER, gl_filter_max);
-			}
-			return;
+			if (!img->name[0]) continue;	// free slot
+			if (!(img->flags & IMAGE_MIPMAP)) continue;
+			GL_BindForce (img);
+			glTexParameteri (img->target, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+			glTexParameteri (img->target, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 		}
+		return;
 	}
 
 	Com_WPrintf ("R_TextureMode: bad filter name\n");
@@ -803,8 +796,14 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 	{
 		// convert 8->32 bit
 		pic32 = Convert8to32bit (pic, width, height, palette);
+#if 0
 		if (image->target != GL_TEXTURE_RECTANGLE_NV)
 			Com_DropError ("bad target");
+#else
+		glDeleteTextures (1, &image->texnum);
+		image->internalWidth = width + 1;		// something different
+		image->target = GL_TEXTURE_RECTANGLE_NV;
+#endif
 	}
 	else
 	{

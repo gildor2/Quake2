@@ -1,4 +1,4 @@
-- replace Sys_Find() and Sys_MkDir() with FileSystemWin32.cpp, then can remove q_shwin.cpp ...
+- replace Sys_Find() and Sys_MkDir() with FileSystemWin32.cpp, then can remove fs_win.cpp ...
 =============
 - cmd.cpp -> Commands.cpp (Core) & cbuf.cpp (qcommon)
   - SplitCmdline == TokenizeString, diff is 1. delim = '-', 2. delim = ';' (or ' ' ??!)
@@ -14,7 +14,7 @@
 - move 8/TestApp to this project (choose dir for it!), remove C:/8 and unlink from FAR menu
 - Q2 menu system: have a LOTS of menu items with callbacks == direct linking to cvar: on Init() reads value
   from cvar, on Modify() write value back to cvar; uses cvar->Clamp() on init
-  + few action item item with Cbuf_Add() action (or launching Command_f())
-  ! can add text field, and flags QMF_CVAR, QMF_COMMAND etc -- will init menu item from cvar, update
+  ! can add text field, and flags QMF_CVAR -- will init menu item from cvar, update
     cvar when item changed (for slider - should specify base + scale)
-
+- screen blending: move this outside renderer, make with DrawFill2 (REF_SOFT: cannot do this, because of paletted implementation,
+  but this renderer is already gone ...)

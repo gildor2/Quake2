@@ -52,7 +52,7 @@ int SV_FindIndex (char *name, int start, int max, bool create)
 
 	if (sv.state != ss_loading)
 	{	// send the update to everyone
-		SZ_Clear (&sv.multicast);
+		sv.multicast.Clear ();
 		MSG_WriteChar (&sv.multicast, svc_configstring);
 		MSG_WriteShort (&sv.multicast, start+i);
 		MSG_WriteString (&sv.multicast, name);
@@ -204,8 +204,8 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 		pm_airaccelerate = 0;
 	}
 
-	SZ_Init (&sv.multicast, sv.multicast_buf, sizeof(sv.multicast_buf));
-	SZ_Init (&sv.multicastNew, sv.multicast_bufNew, sizeof(sv.multicast_bufNew));
+	sv.multicast.Init (sv.multicast_buf, sizeof(sv.multicast_buf));
+	sv.multicastNew.Init (sv.multicast_bufNew, sizeof(sv.multicast_bufNew));
 
 	strcpy (sv.name, server);
 

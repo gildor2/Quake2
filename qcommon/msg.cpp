@@ -1,44 +1,34 @@
 #include "qcommon.h"
 
 
-void SZ_Init (sizebuf_t *buf, void *data, int length)
+void sizebuf_t::Init (void *data, int length)
 {
-	memset (buf, 0, sizeof(sizebuf_t));
-	buf->data = (byte*)data;
-	buf->maxsize = length;
+	memset (this, 0, sizeof(sizebuf_t));
+	this->data = (byte*)data;
+	this->maxsize = length;
 }
 
-void SZ_Clear (sizebuf_t *buf)
-{
-	buf->cursize = 0;
-	buf->overflowed = false;
-}
 
-static void *SZ_GetSpace (sizebuf_t *buf, int length)
+void sizebuf_t::Write (const void *data, int length)
 {
-	int need = buf->cursize + length;
-	if (need > buf->maxsize)
+	int need = cursize + length;
+	if (need > maxsize)
 	{
-		if (!buf->allowoverflow)
-			Com_FatalError ("SZ_GetSpace: overflow without allowoverflow (size is %d)", buf->maxsize);
+		if (!allowoverflow)
+			Com_FatalError ("MSG_Write: overflow without allowoverflow (size is %d)", maxsize);
 
-		if (length > buf->maxsize)
-			Com_FatalError ("SZ_GetSpace: %d is > full buffer size", length);
+		if (length > maxsize)
+			Com_FatalError ("MSG_Write: %d is > full buffer size", length);
 
-		Com_Printf ("SZ_GetSpace: overflow (max=%d, need=%d)\n", buf->maxsize, need);
-		SZ_Clear (buf);
-		buf->overflowed = true;
+		Com_Printf ("MSG_Write: overflow (max=%d, need=%d)\n", maxsize, need);
+		Clear ();
+		overflowed = true;
 	}
 
-	void *data = buf->data + buf->cursize;
-	buf->cursize = need;
+	void *dst = this->data + cursize;
+	cursize = need;
 
-	return data;
-}
-
-void SZ_Write (sizebuf_t *buf, const void *data, int length)
-{
-	memcpy (SZ_GetSpace (buf,length), data, length);
+	memcpy (dst, data, length);
 }
 
 
@@ -55,51 +45,37 @@ Handles byte ordering and avoids alignment errors
 
 void MSG_WriteChar (sizebuf_t *sb, int c)
 {
-	byte *buf = (byte*)SZ_GetSpace (sb, 1);
-	buf[0] = c;
+	sb->Write (&c, 1);
 }
 
 void MSG_WriteByte (sizebuf_t *sb, int c)
 {
-	byte *buf = (byte*)SZ_GetSpace (sb, 1);
-	buf[0] = c;
+	sb->Write (&c, 1);
 }
 
 void MSG_WriteShort (sizebuf_t *sb, int c)
 {
-	byte *buf = (byte*)SZ_GetSpace (sb, 2);
-	//!! optimize for little-endian machines
-	buf[0] = c&0xff;
-	buf[1] = c>>8;
+//	c = LittleShort (c);
+	c = LittleLong (c);		// HERE: faster than LittleShort()
+	sb->Write (&c, 2);
 }
 
 void MSG_WriteLong (sizebuf_t *sb, int c)
 {
-	byte *buf = (byte*)SZ_GetSpace (sb, 4);
-	//!! optimize
-	*buf++ = c & 0xff;
-	*buf++ = (c>>8) & 0xff;
-	*buf++ = (c>>16) & 0xff;
-	*buf = c>>24;
+	c = LittleLong (c);
+	sb->Write (&c, 4);
 }
 
 void MSG_WriteFloat (sizebuf_t *sb, float f)
 {
-	union {
-		float	f;
-		int		l;
-	} dat;
-
-	dat.f = f;
-	dat.l = LittleLong (dat.l);
-
-	SZ_Write (sb, &dat.l, 4);
+	f = LittleFloat (f);
+	sb->Write (&f, 4);
 }
 
 void MSG_WriteString (sizebuf_t *sb, const char *s)
 {
-	if (!s)	SZ_Write (sb, "", 1);
-	else	SZ_Write (sb, s, strlen(s)+1);
+	if (!s)	sb->Write ("", 1);
+	else	sb->Write (s, strlen(s)+1);
 }
 
 void MSG_WritePos (sizebuf_t *sb, vec3_t pos)
@@ -248,11 +224,6 @@ void MSG_ReadDir (sizebuf_t *sb, vec3_t dir)
 // reading functions
 //
 
-void MSG_BeginReading (sizebuf_t *msg)
-{
-	msg->readcount = 0;
-}
-
 // returns -1 if no more characters are available
 int MSG_ReadChar (sizebuf_t *msg_read)
 {
@@ -262,8 +233,8 @@ int MSG_ReadChar (sizebuf_t *msg_read)
 		c = -1;
 	else
 		c = (signed char)msg_read->data[msg_read->readcount];
-	msg_read->readcount++;
 
+	msg_read->readcount++;
 	return c;
 }
 
@@ -275,8 +246,8 @@ int MSG_ReadByte (sizebuf_t *msg_read)
 		c = -1;
 	else
 		c = (unsigned char)msg_read->data[msg_read->readcount];
-	msg_read->readcount++;
 
+	msg_read->readcount++;
 	return c;
 }
 
@@ -284,14 +255,12 @@ int MSG_ReadShort (sizebuf_t *msg_read)
 {
 	int	c;
 
-	//!! optimize
 	if (msg_read->readcount+2 > msg_read->cursize)
 		c = -1;
 	else
-		c = (short)(msg_read->data[msg_read->readcount] + (msg_read->data[msg_read->readcount+1]<<8));
+		c = LittleShort (*((short*)&msg_read->data[msg_read->readcount]));
 
 	msg_read->readcount += 2;
-
 	return c;
 }
 
@@ -299,44 +268,25 @@ int MSG_ReadLong (sizebuf_t *msg_read)
 {
 	int	c;
 
-	//!! optimize
 	if (msg_read->readcount+4 > msg_read->cursize)
 		c = -1;
 	else
-		c = msg_read->data[msg_read->readcount]         +
-			(msg_read->data[msg_read->readcount+1]<<8)  +
-			(msg_read->data[msg_read->readcount+2]<<16) +
-			(msg_read->data[msg_read->readcount+3]<<24);
+		c = LittleLong (*((int*)&msg_read->data[msg_read->readcount]));
 
 	msg_read->readcount += 4;
-
 	return c;
 }
 
 float MSG_ReadFloat (sizebuf_t *msg_read)
 {
-	union
-	{
-		byte	b[4];
-		float	f;
-		int	l;
-	} dat;
+	float	f;
 
 	if (msg_read->readcount+4 > msg_read->cursize)
-		dat.f = -1;
+		f = -1;
 	else
-	{
-		//!! optimize
-		dat.b[0] =	msg_read->data[msg_read->readcount];
-		dat.b[1] =	msg_read->data[msg_read->readcount+1];
-		dat.b[2] =	msg_read->data[msg_read->readcount+2];
-		dat.b[3] =	msg_read->data[msg_read->readcount+3];
-	}
+		f = LittleFloat (*(float*)&msg_read->data[msg_read->readcount]);
 	msg_read->readcount += 4;
-
-	dat.l = LittleLong (dat.l);
-
-	return dat.f;
+	return f;
 }
 
 char *MSG_ReadString (sizebuf_t *msg_read)

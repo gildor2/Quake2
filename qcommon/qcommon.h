@@ -134,19 +134,31 @@ typedef float vec3_t[3];
 	msg.cpp
 -----------------------------------------------------------------------------*/
 
-typedef struct
+class sizebuf_t
 {
-	bool	allowoverflow;		// if false, do a error when overflowed
-	bool	overflowed;			// set to true if the buffer size failed
+public:
+	//!! should be private:
 	byte	*data;
-	int		maxsize;
-	int		cursize;
-	int		readcount;
-} sizebuf_t;
+	int		maxsize;						// size of buffer
+	bool	overflowed;						// set to true if the buffer size failed
+	//!! should be public:
+	bool	allowoverflow;					// if false, do a error when overflowed
+	int		cursize;						// writting cursor
+	int		readcount;						// reading cursor
 
-void	SZ_Init (sizebuf_t *buf, void *data, int length);
-void	SZ_Clear (sizebuf_t *buf);
-void	SZ_Write (sizebuf_t *buf, const void *data, int length);
+	// Functions
+	void Init (void *data, int length);		// setup buffer
+	inline Clear ()							// clear writting
+	{
+		cursize = 0;
+		overflowed = false;
+	}
+	void Write (const void *data, int length);
+	inline void Write (sizebuf_t &from)
+	{
+		Write (from.data, from.cursize);
+	}
+};
 
 void	MSG_WriteChar (sizebuf_t *sb, int c);
 void	MSG_WriteByte (sizebuf_t *sb, int c);
@@ -160,7 +172,11 @@ void	MSG_WriteAngle16 (sizebuf_t *sb, float f);
 void	MSG_WriteDir (sizebuf_t *sb, vec3_t vector);
 
 
-void	MSG_BeginReading (sizebuf_t *sb);
+inline void MSG_BeginReading (sizebuf_t *msg)
+{
+	msg->readcount = 0;
+}
+
 
 int		MSG_ReadChar (sizebuf_t *sb);
 int		MSG_ReadByte (sizebuf_t *sb);
@@ -176,7 +192,6 @@ float	MSG_ReadAngle16 (sizebuf_t *sb);
 void	MSG_ReadDir (sizebuf_t *sb, vec3_t vector);
 
 void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
-
 
 /*-----------------------------------------------------------------------------
 	Delta compression for quake2 protocol (entdelta.cpp)
@@ -228,11 +243,8 @@ void	Info_Print (const char *s);
 	crc.cpp
 -----------------------------------------------------------------------------*/
 
-void	CRC_Init(unsigned short *crcvalue);
-void	CRC_ProcessByte(unsigned short *crcvalue, byte data);
-unsigned short CRC_Value(unsigned short crcvalue);
-unsigned short CRC_Block (byte *start, int count);
 
+byte	Com_BlockSequenceCRCByte (byte *base, int length, int sequence);
 
 
 /*
@@ -354,8 +366,6 @@ The + command line options are also added to the command buffer.
 
 */
 
-void	Cbuf_Init (void);
-// allocates an initial text buffer that will grow as needed
 
 void	Cbuf_AddText (const char *text);
 // as new commands are generated from the console or keybindings,
@@ -711,8 +721,8 @@ void	NORETURN Com_Quit (void);
 server_state_t Com_ServerState (void);		// this should have just been a cvar...
 void	Com_SetServerState (server_state_t state);
 
+// md4.cpp
 unsigned Com_BlockChecksum (void *buffer, int length);
-byte	COM_BlockSequenceCRCByte (byte *base, int length, int sequence);
 
 #ifdef DYNAMIC_REF
 // Using inline version will grow executable with ~2Kb (cl_fx.cpp uses a lots of [c|f]rand() calls)
@@ -744,7 +754,7 @@ extern cvar_t	*sv_cheats;
 // com_speeds times
 extern unsigned time_before_game, time_after_game, time_before_ref, time_after_ref;
 
-bool	COM_CheckCmdlineVar (const char *name);
+bool	Com_CheckCmdlineVar (const char *name);
 
 void	Com_Init (const char *cmdline);
 void	Com_Frame (float msec);
@@ -781,6 +791,7 @@ void	CL_Drop (bool fromError = false);
 void	CL_Shutdown (bool error);
 void	CL_Frame (float msec, float realMsec);
 
+void	Key_Init (void);
 void	Con_Print (const char *text);
 void	SCR_BeginLoadingPlaque (void);
 

@@ -9,6 +9,7 @@
 
 //!! make this file multi-platform (and move from /win32 to renderer directory + rename file + header)
 
+static HINSTANCE libGL;	//!! win32 (type)
 qgl_t			qgl;
 static qgl_t	lib;
 
@@ -27,13 +28,11 @@ void QGL_Shutdown (void)
 		logFile = NULL;
 	}
 
-	if (glw_state.hinstOpenGL)
+	if (libGL)
 	{
-		FreeLibrary (glw_state.hinstOpenGL);	//!! win32
-		glw_state.hinstOpenGL = NULL;
+		FreeLibrary (libGL);	//!! win32
+		libGL = NULL;
 	}
-
-	glw_state.hinstOpenGL = NULL;
 
 	memset (&qgl, 0, sizeof(qgl));
 }
@@ -44,23 +43,20 @@ void QGL_Shutdown (void)
 
 bool QGL_Init (const char *libName)
 {
-	int		i;
-	dummyFunc_t func;
-
-	if (!(glw_state.hinstOpenGL = LoadLibrary (libName)))	//!! win32
+	if (!(libGL = LoadLibrary (libName)))	//!! win32
 	{
 		Com_WPrintf ("QGL_Init: LoadLibrary (%s) failed\n", libName);
 		return false;
 	}
 
-	for (i = 0; i < NUM_GLFUNCS; i++)
+	for (int i = 0; i < NUM_GLFUNCS; i++)
 	{
-		func = qgl.funcs[i] = lib.funcs[i] = (dummyFunc_t) (GetProcAddress (glw_state.hinstOpenGL, qglNames[i]));	//!! win32
+		dummyFunc_t func = qgl.funcs[i] = lib.funcs[i] = (dummyFunc_t) (GetProcAddress (libGL, qglNames[i]));	//!! win32
 		if (!func)
 		{
 			// free library
-			FreeLibrary (glw_state.hinstOpenGL);	//!! win32
-			glw_state.hinstOpenGL = NULL;
+			FreeLibrary (libGL);	//!! win32
+			libGL = NULL;
 
 			Com_WPrintf ("QGL_Init: inconsistent OpenGL library %s: function %s is not found\n", libName, qglNames[i]);
 			return false;
@@ -74,13 +70,10 @@ bool QGL_Init (const char *libName)
 
 static bool ExtensionNameSupported (const char *name, const char *extString)
 {
-	int		len;
-	const char *s;
-
 	if (!extString) return false;
 
-	len = strlen (name);
-	s = extString;
+	int len = strlen (name);
+	const char *s = extString;
 	while (true)
 	{
 		while (s[0] == ' ') s++;				// skip spaces
@@ -95,9 +88,7 @@ static bool ExtensionNameSupported (const char *name, const char *extString)
 
 static bool ExtensionSupported (extInfo_t *ext, const char *extStr1, const char *extStr2)
 {
-	const char *s;
-
-	s = ext->name = ext->names;		// 1st alias
+	const char *s = ext->name = ext->names;		// 1st alias
 	if (ExtensionNameSupported (s, extStr1) || ExtensionNameSupported (s, extStr2))
 		return true;
 	while (true)
@@ -116,10 +107,8 @@ static bool ExtensionSupported (extInfo_t *ext, const char *extStr1, const char 
 
 void QGL_InitExtensions (void)
 {
-	int		i;
-	unsigned notFoundExt;
+	int		i, j;
 	extInfo_t *ext;
-	dummyFunc_t func;
 	const char *ext1, *ext2;
 
 	guard(QGL_InitExtensions);
@@ -129,7 +118,7 @@ void QGL_InitExtensions (void)
 		if (ext->cvar) Cvar_Get (ext->cvar, "1", CVAR_ARCHIVE);
 
 	gl_config.extensionMask = 0;
-	notFoundExt = 0;
+	unsigned notFoundExt = 0;
 	gl_config.disabledExt = gl_config.ignoredExt = 0;
 	gl_config.extensions = ext1 = (char*)glGetString (GL_EXTENSIONS);
 
@@ -148,8 +137,6 @@ void QGL_InitExtensions (void)
 
 	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 	{
-		int		j;
-
 		bool enable = false;
 		if (ExtensionSupported (ext, ext1, ext2))
 		{
@@ -166,7 +153,7 @@ void QGL_InitExtensions (void)
 			gl_config.extensionMask |= 1 << i;
 			for (j = ext->first; j < ext->first + ext->count; j++)
 			{
-				func = qgl.funcs[j] = lib.funcs[j] = (dummyFunc_t) (wglGetProcAddress (qglNames[j]));	//!! win32
+				dummyFunc_t func = qgl.funcs[j] = lib.funcs[j] = (dummyFunc_t) (wglGetProcAddress (qglNames[j]));	//!! win32
 				if (!func)
 				{
 					Com_WPrintf ("Inconsistent extension %s: function %s is not found\n", ext->name, qglNames[j]);
@@ -193,8 +180,6 @@ void QGL_InitExtensions (void)
 
 		if ((gl_config.extensionMask & ext->require) != ext->require)
 		{
-			int		j;
-
 			if (gl_config.disabledExt & ext->require)	// require disabled extension
 				gl_config.disabledExt |= 1 << i;		// mark this extension as disabled too
 			else
@@ -219,16 +204,12 @@ void QGL_InitExtensions (void)
 		Com_Printf ("...used extensions:\n");
 		for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 		{
-			int		tmp;
-
 			if (!(gl_config.extensionMask & (1 << i)))
 				continue;
 
-			tmp = gl_config.extensionMask & ext->deprecate;
+			unsigned tmp = gl_config.extensionMask & ext->deprecate;
 			if (tmp)
 			{
-				int		j;
-
 				// display error
 				for (j = 0; j < NUM_EXTENSIONS; j++)
 				{
@@ -262,13 +243,9 @@ void QGL_InitExtensions (void)
 		for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 			if (notFoundExt & (1 << i))
 			{
-				int		tmp;
-
-				tmp = gl_config.extensionMask & ext->deprecate;
+				unsigned tmp = gl_config.extensionMask & ext->deprecate;
 				if (tmp)
 				{
-					int		j;
-
 					// display error
 					for (j = 0; j < NUM_EXTENSIONS; j++)
 					{
@@ -292,15 +269,11 @@ void QGL_InitExtensions (void)
 void QGL_PrintExtensionsString (const char *label, const char *str, const char *mask)
 {
 	char	name[256];
-	int		i, j;
-	unsigned m;
-	extInfo_t *ext;
-	const char *color;
 
 	// display label
 	Com_Printf (S_RED"%s extensions: ", label);
 	// display extension names
-	i = 0;
+	int i = 0;
 	while (true)
 	{
 		char c = *str++;
@@ -314,7 +287,10 @@ void QGL_PrintExtensionsString (const char *label, const char *str, const char *
 				// check display mask
 				if (mask && !appMatchWildcard (name, mask, true)) continue;
 				// determine color for name display
-				color = NULL;
+				const char *color = NULL;
+				int j;
+				unsigned m;
+				extInfo_t *ext;
 				for (j = 0, m = 1, ext = extInfo; j < NUM_EXTENSIONS; j++, ext++, m <<= 1)
 				{
 					const char *s = ext->names;

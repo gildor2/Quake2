@@ -177,7 +177,7 @@ typedef struct
 	int		(*Init) (void);
 
 	// called before the library is unloaded
-	void	(*Shutdown) (void);
+	void	(*Shutdown) (bool complete = false);
 
 	// All data that will be used in a level should be
 	// registered before rendering any frames to prevent disk hits,
@@ -199,10 +199,11 @@ typedef struct
 	void	(*SetSky) (const char *name, float rotate, vec3_t axis);
 	void	(*EndRegistration) (void);
 
+	void	(*BeginFrame) (float camera_separation);
 	void	(*RenderFrame) (refdef_t *fd);
-	void	(*Screenshot) (int flags, const char *name);
+	void	(*EndFrame) (void);
 
-	void	(*ReloadImage) (const char *name);
+	// drawing
 	void	(*DrawGetPicSize) (int *w, int *h, const char *name);	// will return (0, 0) if not found
 	void	(*DrawPic) (int x, int y, const char *pic, int color = C_WHITE);
 	void	(*DrawStretchPic) (int x, int y, int w, int h, const char *name);
@@ -213,11 +214,9 @@ typedef struct
 	void	(*DrawFill2) (int x, int y, int w, int h, unsigned rgba);
 	void	(*DrawStretchRaw8) (int x, int y, int w, int h, int cols, int rows, byte *data, unsigned *palette);
 
-	/*---- video mode and refresh state management entry points ----*/
-	void	(*BeginFrame) (float camera_separation);
-	void	(*EndFrame) (void);
-
 	void	(*AppActivate) (bool activate);
+	void	(*Screenshot) (int flags, const char *name);
+	void	(*ReloadImage) (const char *name);
 
 	/*---- drawing colored text in any screen position ----*/
 	void	(*DrawTextPos) (int x, int y, const char *text, unsigned rgba);

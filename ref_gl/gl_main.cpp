@@ -374,7 +374,7 @@ static int GL_Init (void)
 }
 
 
-static void GL_Shutdown (void)
+static void GL_Shutdown (bool complete)
 {
 	guard(GL_Shutdown);
 
@@ -389,7 +389,7 @@ static void GL_Shutdown (void)
 	GL_SetMultitexture (0);
 
 	// shut down OS-specific OpenGL stuff like contexts, etc.
-	GLimp_Shutdown ();
+	GLimp_Shutdown (complete);
 
 	// shutdown our QGL subsystem
 	QGL_Shutdown ();

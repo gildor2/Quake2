@@ -481,7 +481,15 @@ int main (int argc, const char **argv)
 			{
 				newtime = appMillisecondsf ();	//?? can use appCycles() for measuring time delta, but (currently) this is Pentium-only
 				timeDelta = newtime - oldtime;
-				if (timeDelta > 1) break;		//?? client (or server?) time bugs with ">0" condition & cl_maxfps!=0 -- net/prediction errors
+				if (timeDelta < 0)
+				{
+					// may be, resumed from sleep mode - fix delta
+					//?? may be, implement fix in appMilliseconds() (for global effect) ?
+					Com_DPrintf ("fixing timeDelta < 0\n");
+					timeDelta = 100;
+					break;
+				}
+				if (timeDelta > 1) break;		//?? client (or server?) time bugs with ">0" condition & cl_maxfps < realFPS -- net/prediction errors
 				Sleep (0);
 			}
 			GUARD_BEGIN

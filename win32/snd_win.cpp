@@ -391,7 +391,10 @@ static bool SNDDMA_InitDirect (void)
 	{
 		HRESULT hresult = pDirectSoundCreate (NULL, &pDS, NULL);
 		if (hresult == DS_OK)
+		{
+			Com_DPrintf ("ok\n");
 			break;
+		}
 		else
 		{
 			if (hresult != DSERR_ALLOCATED)
@@ -409,7 +412,6 @@ static bool SNDDMA_InitDirect (void)
 			Sleep (2000);
 		}
 	}
-	Com_DPrintf ("ok\n");
 
 /*	dscaps.dwSize = sizeof(dscaps);
 

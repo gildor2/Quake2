@@ -36,10 +36,10 @@ cvar_t *win_noalttab;
 cvar_t *win_priorityBoost;
 
 #ifndef WM_MOUSEWHEEL
-#define WM_MOUSEWHEEL (WM_MOUSELAST+1)  // message that will be supported by the OS
+#define WM_MOUSEWHEEL (WM_MOUSELAST+1)  	// message that will be supported by the OS
 #endif
 
-static UINT MSH_MOUSEWHEEL;
+static UINT MSH_MOUSEWHEEL = 0xDEAD0000;	// initialized to something unused
 
 // Console variables that we need to access from this module
 static cvar_t	*vid_xpos;			// X coordinate of window position
@@ -61,49 +61,35 @@ extern unsigned sys_msg_time;
 */
 static bool s_win95;
 
-static void WIN_DisableAltTab (void)
+static void DisableAltTab (bool enable)
 {
-	if (s_alttab_disabled)
-		return;
+	if (s_alttab_disabled == enable) return;
+	s_alttab_disabled = enable;
 
 	if (s_win95)
 	{
 		BOOL old;
-
-		SystemParametersInfo (SPI_SCREENSAVERRUNNING, 1, &old, 0);
+		SystemParametersInfo (SPI_SCREENSAVERRUNNING, enable, &old, 0);
 	}
 	else
 	{
-		RegisterHotKey (0, 0, 1/*MOD_ALT*/, VK_TAB);	// MOD_ALT is redefined, so use winuser.h const directly
-		RegisterHotKey (0, 1, 1/*MOD_ALT*/, VK_RETURN);
-	}
-	s_alttab_disabled = true;
-}
-
-static void WIN_EnableAltTab (void)
-{
-	if (s_alttab_disabled)
-	{
-		if (s_win95)
+		if (enable)
 		{
-			BOOL old;
-
-			SystemParametersInfo (SPI_SCREENSAVERRUNNING, 0, &old, 0);
+			RegisterHotKey (0, 0, 1/*MOD_ALT*/, VK_TAB);	// MOD_ALT is redefined, so use winuser.h const directly
+//			RegisterHotKey (0, 1, 1/*MOD_ALT*/, VK_RETURN);	// disable Alt+Enter too (do not allow fullscreen noggle)
+			// really, should disable <Win>, <Ctrl+Esc>, <Alt+Esc> key combinations too; see Q226359 in MSDN
 		}
 		else
 		{
 			UnregisterHotKey (0, 0);
-			UnregisterHotKey (0, 1);
+//			UnregisterHotKey (0, 1);
 		}
-		s_alttab_disabled = false;
 	}
 }
 
-static void WIN_HighPriority (bool enable)
+static void SetHighPriority (bool enable)
 {
-	HANDLE	hProcess;
-
-	hProcess = GetCurrentProcess ();
+	HANDLE hProcess = GetCurrentProcess ();
 	SetPriorityClass (hProcess, enable ? HIGH_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS);
 }
 
@@ -113,7 +99,7 @@ static void WIN_HighPriority (bool enable)
 
 #define UNK		255
 
-static byte vkToKey[256] = {
+static const byte vkToKey[256] = {
 //			08			19			2A			3B			4C			5D			6E			7F
 /*00*/		0,			0,			0,			0,			0,	 		UNK,		UNK,		UNK,
 /*08*/		K_BACKSPACE,K_TAB,		UNK,		UNK,		UNK,		K_ENTER,	UNK,		UNK,
@@ -156,16 +142,17 @@ static int MapKey (int vkCode, bool extended)
 
 	if (!extended)
 	{
+
 		switch (vkCode)
 		{
-		case VK_LEFT:	return K_KP_LEFTARROW;
-		case VK_RIGHT:	return K_KP_RIGHTARROW;
-		case VK_UP:		return K_KP_UPARROW;
-		case VK_DOWN:	return K_KP_DOWNARROW;
 		case VK_PRIOR:	return K_KP_PGUP;
 		case VK_NEXT:	return K_KP_PGDN;
-		case VK_HOME:	return K_KP_HOME;
 		case VK_END:	return K_KP_END;
+		case VK_HOME:	return K_KP_HOME;
+		case VK_LEFT:	return K_KP_LEFTARROW;
+		case VK_UP:		return K_KP_UPARROW;
+		case VK_RIGHT:	return K_KP_RIGHTARROW;
+		case VK_DOWN:	return K_KP_DOWNARROW;
 		case VK_CLEAR:	return K_KP_5;
 		case VK_DELETE:	return K_KP_DEL;
 		case VK_INSERT: return K_KP_INS;
@@ -188,31 +175,20 @@ static int MapKey (int vkCode, bool extended)
 
 static void AppActivate (bool active, bool minimized)
 {
-	Key_ClearStates ();
-	ActiveApp = active;
+//	Com_DPrintf("act:%d min:%d\n", active, minimized);//!!
 	Minimized = minimized;
-
-	// minimize/restore mouse-capture on demand
-	if (!ActiveApp)
+	if (ActiveApp != active)
 	{
-		IN_Activate (false);
-		CDAudio_Activate (false);
-		S_Activate (false);
+		ActiveApp = active;
 
-		if (win_noalttab->integer)
-			WIN_EnableAltTab ();
-		if (win_priorityBoost->integer)
-			WIN_HighPriority (false);
-	}
-	else
-	{
-		IN_Activate (true);
-		CDAudio_Activate (true);
-		S_Activate (true);
-		if (win_noalttab->integer)
-			WIN_DisableAltTab ();
-		if (win_priorityBoost->integer)
-			WIN_HighPriority (true);
+		Key_ClearStates ();
+		IN_Activate (active);
+		CDAudio_Activate (active);
+		S_Activate (active);
+		if (refActive) re.AppActivate (active);
+
+		if (win_noalttab->integer)		DisableAltTab (active);
+		if (win_priorityBoost->integer)	SetHighPriority (active);
 	}
 }
 
@@ -227,30 +203,15 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 {
 	guard(MainWndProc);
 
-	LONG	lRet = 0;
-
-//	DebugPrintf("msg=%X\n",uMsg);//!!
-	if (uMsg == MSH_MOUSEWHEEL)
-	{
-		if ((int)wParam > 0)
-		{
-			Key_Event (K_MWHEELUP, true, sys_msg_time);
-			Key_Event (K_MWHEELUP, false, sys_msg_time);
-		}
-		else
-		{
-			Key_Event (K_MWHEELDOWN, true, sys_msg_time);
-			Key_Event (K_MWHEELDOWN, false, sys_msg_time);
-		}
-		return DefWindowProc (hWnd, uMsg, wParam, lParam);
-	}
+//	DebugPrintf("msg=%X w=%X l=%X\n",uMsg,wParam,lParam);//!!
+	if (uMsg == MSH_MOUSEWHEEL) uMsg = WM_MOUSEWHEEL;
 
 	switch (uMsg)
 	{
 	case WM_MOUSEWHEEL:
 		// this chunk of code theoretically only works under NT4+ and Win98+
 		// since this message doesn't exist under Win95
-		if ((short) HIWORD(wParam) > 0)
+		if (wParam > 0)	// really, HIWORD(wParam) should be checked, but LOWORD() does not affects the sign of result
 		{
 			Key_Event (K_MWHEELUP, true, sys_msg_time);
 			Key_Event (K_MWHEELUP, false, sys_msg_time);
@@ -265,85 +226,68 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_HOTKEY:
 		return 0;
 
-	case WM_CREATE:
-		cl_hwnd = hWnd;
-
-		MSH_MOUSEWHEEL = RegisterWindowMessage ("MSWHEEL_ROLLMSG");
-		break;
-
-	case WM_DESTROY:
-		// let sound and input know about this?
-		cl_hwnd = NULL;
-		break;
-
 	case WM_SIZE:
 		if (r_fullscreen->integer)
 		{
 			static DEVMODE dm;
+			static bool desktopMode = false;
 
 //			Com_Printf("WM_SIZE: %d (act=%d min=%d)\n",wParam, ActiveApp, Minimized);//!!
-			if (wParam == SIZE_MINIMIZED)
+			if (wParam == SIZE_MINIMIZED && !desktopMode)
 			{
-				HDC		dc;
-
 				Com_DPrintf ("Setting desktop resolution\n");
-				dc = GetDC (NULL);
+				// save screen parameters
+				HDC dc = GetDC (NULL);
 				dm.dmSize = sizeof(dm);
 				dm.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL;
 				dm.dmPelsWidth = GetDeviceCaps (dc, HORZRES);
 				dm.dmPelsHeight = GetDeviceCaps (dc, VERTRES);
 				dm.dmBitsPerPel = GetDeviceCaps (dc, BITSPIXEL);
+				// restore mode
 				ChangeDisplaySettings (NULL, 0);
+				desktopMode = true;
 			}
-			else if (wParam == SIZE_RESTORED && Minimized)
+			else if (wParam == SIZE_RESTORED && Minimized && desktopMode)
 			{
 				Com_DPrintf ("Setting game resolution\n");
 				ChangeDisplaySettings (&dm, CDS_FULLSCREEN);
-				SetWindowPos (hWnd, 0, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
+				SetWindowPos (hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE);
 				SetForegroundWindow (hWnd);
+				desktopMode = false;
 			}
 		}
 		break;
 
 	case WM_ACTIVATE:
 		{
-			bool		fActive;
-
-//			Com_Printf("WM_ACTIVATE: a=%d m=%d (act=%d min=%d)\n",LOWORD(wParam), HIWORD(wParam),ActiveApp, Minimized);//!!
-			fActive = LOWORD(wParam) != WA_INACTIVE;
-			AppActivate (fActive, HIWORD(wParam) != 0);
-
-			if (refActive)
-				re.AppActivate (fActive);
+			bool active = LOWORD(wParam) != WA_INACTIVE;
+			bool minimized = HIWORD(wParam) != 0;
+//			Com_Printf("WM_ACTIVATE: a=%d m=%d (act=%d min=%d)\n",active, minimized, ActiveApp, Minimized);//!!
+			AppActivate (active, minimized);
 		}
 		break;
 
 	case WM_MOVE:
+		if (!r_fullscreen->integer)
 		{
-			int		xPos, yPos;
+			int xPos = (short) LOWORD(lParam);    // horizontal position
+			int yPos = (short) HIWORD(lParam);    // vertical position
+
 			RECT r;
-			int		style;
+			r.left   = 0;
+			r.top    = 0;
+			r.right  = 1;
+			r.bottom = 1;
 
-			if (!r_fullscreen->integer)
-			{
-				xPos = (short) LOWORD(lParam);    // horizontal position
-				yPos = (short) HIWORD(lParam);    // vertical position
+			int style = GetWindowLong (hWnd, GWL_STYLE);
+			AdjustWindowRect (&r, style, FALSE);
 
-				r.left   = 0;
-				r.top    = 0;
-				r.right  = 1;
-				r.bottom = 1;
-
-				style = GetWindowLong (hWnd, GWL_STYLE);
-				AdjustWindowRect (&r, style, FALSE);
-
-				Cvar_SetInteger ("vid_xpos", xPos + r.left);
-				Cvar_SetInteger ("vid_ypos", yPos + r.top);
-				vid_xpos->modified = false;
-				vid_ypos->modified = false;
-				if (ActiveApp)
-					IN_Activate (true);
-			}
+			Cvar_SetInteger ("vid_xpos", xPos + r.left);
+			Cvar_SetInteger ("vid_ypos", yPos + r.top);
+			vid_xpos->modified = false;
+			vid_ypos->modified = false;
+			if (ActiveApp)
+				IN_Activate (true);
 		}
 		break;
 
@@ -357,17 +301,10 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_MBUTTONUP:
 	case WM_MOUSEMOVE:
 		{
-			int		temp;
-
-			temp = 0;
-
-			if (wParam & MK_LBUTTON)
-				temp |= 1;
-			if (wParam & MK_RBUTTON)
-				temp |= 2;
-			if (wParam & MK_MBUTTON)
-				temp |= 4;
-
+			int temp = 0;
+			if (wParam & MK_LBUTTON) temp |= 1;
+			if (wParam & MK_RBUTTON) temp |= 2;
+			if (wParam & MK_MBUTTON) temp |= 4;
 			IN_MouseEvent (temp);
 		}
 		break;
@@ -391,9 +328,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		// fall through
 	case WM_KEYDOWN:
 		{
-			int		k;
-
-			k = MapKey (wParam, (lParam >> 24) & 1);
+			int k = MapKey (wParam, (lParam >> 24) & 1);
 			if (k) Key_Event (k, true, sys_msg_time);
 		}
 		return 0;
@@ -401,19 +336,15 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_SYSKEYUP:
 	case WM_KEYUP:
 		{
-			int		k;
-
-			k = MapKey (wParam, (lParam >> 24) & 1);
+			int k = MapKey (wParam, (lParam >> 24) & 1);
 			if (k) Key_Event (k, false, sys_msg_time);
 		}
 		return 0;
 
-#if 0
 	case WM_POWERBROADCAST:
-		if (wParam == PBT_APMSUSPEND)	// insufficient result
+		if (wParam == PBT_APMSUSPEND)	// will minimize window when in fullscreen mode
 			re.AppActivate (false);
 		break;
-#endif
 
 	case WM_CLOSE:
 		Com_Quit ();
@@ -421,9 +352,8 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 	case MM_MCINOTIFY:
 		{
-			LONG CDAudio_MessageHandler (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);	//??
-
-			lRet = CDAudio_MessageHandler (hWnd, uMsg, wParam, lParam);
+			LONG CDAudio_MessageHandler (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);	//?? extern
+			CDAudio_MessageHandler (hWnd, uMsg, wParam, lParam);
 		}
 		break;
 	}
@@ -449,8 +379,6 @@ static void Vid_NewWindow (int width, int height)
 /*
  * Vid_CreateWindow
  */
-
-static HWND mainHwnd;
 
 void *Vid_CreateWindow (int width, int height, bool fullscreen)
 {
@@ -498,57 +426,42 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 		y = vid_ypos->integer;
 	}
 
-	if (mainHwnd)
+	if (cl_hwnd)
 	{
-		SetWindowLong (mainHwnd, GWL_STYLE, stylebits);
-		SetWindowLong (mainHwnd, GWL_EXSTYLE, exstyle);
-		ShowWindow (mainHwnd, SW_SHOW);
-		SetWindowPos (mainHwnd, 0, x, y, w, h, SWP_NOZORDER);
+		SetWindowLong (cl_hwnd, GWL_STYLE, stylebits);
+//		SetWindowLong (cl_hwnd, GWL_EXSTYLE, exstyle); -- require to change WS_EX_TOPMOST only, do it with SetWindowPos() (better effect)
+		ShowWindow (cl_hwnd, SW_SHOW);
+		SetWindowPos (cl_hwnd, fullscreen ? HWND_TOPMOST : HWND_NOTOPMOST, x, y, w, h, 0);
+	}
+	else
+	{
+		// Register the frame class
+		wc.style			= 0;
+		wc.lpfnWndProc		= MainWndProc;
+		wc.cbClsExtra		= 0;
+		wc.cbWndExtra		= 0;
+		wc.hInstance		= global_hInstance;
+		wc.hIcon			= LoadIcon (global_hInstance, MAKEINTRESOURCE(IDI_ICON1));
+		wc.hCursor			= LoadCursor (NULL,IDC_ARROW);
+		wc.hbrBackground	= (HBRUSH) COLOR_GRAYTEXT;
+		wc.lpszMenuName 	= NULL;
+		wc.lpszClassName	= APPNAME;
+		if (!RegisterClass (&wc)) Com_FatalError ("Couldn't register window class");
 
-		UpdateWindow (mainHwnd);
-		SetForegroundWindow (mainHwnd);
-		SetFocus (mainHwnd);
+		cl_hwnd = CreateWindowEx (exstyle, APPNAME, APPNAME, stylebits, x, y, w, h, NULL, NULL, global_hInstance, NULL);
+		if (!cl_hwnd) Com_FatalError ("Couldn't create window");
 
-		Vid_NewWindow (width, height);
-		return mainHwnd;
+		if (width || height) ShowWindow (cl_hwnd, SW_SHOW);
 	}
 
-	// Register the frame class
-	wc.style			= 0;
-	wc.lpfnWndProc		= MainWndProc;
-	wc.cbClsExtra		= 0;
-	wc.cbWndExtra		= 0;
-	wc.hInstance		= global_hInstance;
-	wc.hIcon			= LoadIcon (global_hInstance, MAKEINTRESOURCE(IDI_ICON1));
-	wc.hCursor			= LoadCursor (NULL,IDC_ARROW);
-	wc.hbrBackground	= (HBRUSH) COLOR_GRAYTEXT;
-	wc.lpszMenuName 	= NULL;
-	wc.lpszClassName	= APPNAME;
-
-	if (!RegisterClass (&wc))
-		Com_FatalError ("Couldn't register window class");
-
-	mainHwnd = CreateWindowEx (
-		exstyle,
-		APPNAME, APPNAME,
-		stylebits,
-		x, y, w, h,
-		NULL, NULL,
-		global_hInstance, NULL);
-
-	if (!mainHwnd) Com_FatalError ("Couldn't create window");
-
-	if (width || height)
-		ShowWindow (mainHwnd, SW_SHOW);
-	UpdateWindow (mainHwnd);
-
-	SetForegroundWindow (mainHwnd);
-	SetFocus (mainHwnd);
+	UpdateWindow (cl_hwnd);
+	SetForegroundWindow (cl_hwnd);
+	SetFocus (cl_hwnd);
 
 	// let the sound and input subsystems know about the new window
 	Vid_NewWindow (width, height);
 
-	return mainHwnd;
+	return cl_hwnd;
 
 	unguard;
 }
@@ -562,16 +475,16 @@ void Vid_DestroyWindow (bool force)
 //force = true; //???
 	if (!force)	//?? add cvar "win_singleWindow"
 	{
-//		ShowWindow (mainHwnd, SW_HIDE);
+//		ShowWindow (cl_hwnd, SW_HIDE);
 		return;
 	}
 
 	Com_DPrintf ("...destroying window\n");
-	if (mainHwnd)
+	if (cl_hwnd)
 	{
-//		ShowWindow (mainHwnd, SW_HIDE);	-- this will force to CDS(0,0) when vid_restart, because Activate(0)->Minimize()->WM_SIZE
-		DestroyWindow (mainHwnd);
-		mainHwnd = 0;
+//		ShowWindow (cl_hwnd, SW_HIDE);	-- this will force to CDS(0,0) when vid_restart, because Activate(0)->Minimize()->WM_SIZE
+		DestroyWindow (cl_hwnd);
+		cl_hwnd = 0;
 	}
 
 	UnregisterClass (APPNAME, global_hInstance);
@@ -603,10 +516,10 @@ static void Vid_Front_f (void)
 
 typedef struct
 {
-	int		width, height;
+	short	width, height;
 } vidMode_t;
 
-static vidMode_t vid_modes[] =
+static const vidMode_t vid_modes[] =
 {
 	{320,	240},
 	{400,	300},
@@ -634,38 +547,35 @@ bool Vid_GetModeInfo (int *width, int *height, int mode)
 }
 
 
-/*
-** Vid_UpdateWindowPosAndSize
-*/
-void Vid_UpdateWindowPosAndSize (int x, int y)
+static void Vid_UpdateWindowPosAndSize (int x, int y)
 {
 	RECT	r;
-	int		style;
-	int		w, h;
-
 	r.left   = 0;
 	r.top    = 0;
 	r.right  = viddef.width;
 	r.bottom = viddef.height;
 
-	style = GetWindowLong (cl_hwnd, GWL_STYLE);
+	int style = GetWindowLong (cl_hwnd, GWL_STYLE);
 	AdjustWindowRect (&r, style, FALSE);
 
-	w = r.right - r.left;
-	h = r.bottom - r.top;
+	int w = r.right - r.left;
+	int h = r.bottom - r.top;
 
 	MoveWindow (cl_hwnd, vid_xpos->integer, vid_ypos->integer, w, h, TRUE);
 }
 
-void Vid_FreeReflib (void)
-{
-	refActive  = false;
-	if (!refLibrary) return;	// statically linked?
 
-	if (!FreeLibrary (refLibrary))
-		Com_FatalError ("Reflib FreeLibrary() failed");
+static void Vid_FreeReflib (void)
+{
+	refActive = false;
+
+	if (refLibrary)		// if false - sattically linked
+	{
+		if (!FreeLibrary (refLibrary))
+			Com_FatalError ("Reflib FreeLibrary() failed");
+		refLibrary = NULL;
+	}
 	memset (&re, 0, sizeof(re));
-	refLibrary = NULL;
 }
 
 /*
@@ -714,9 +624,6 @@ extern "C" refExport_t GL_GetRefAPI (const refImport_t *);		// ref_gl
 
 static bool Vid_LoadRefresh (char *name)
 {
-	GetRefAPI_t	pGetRefAPI;
-	char	dllName[MAX_OSPATH];
-
 	guard(Vid_LoadRefresh);
 
 	if (refActive)
@@ -725,6 +632,7 @@ static bool Vid_LoadRefresh (char *name)
 		Vid_FreeReflib ();
 	}
 
+	char	dllName[MAX_OSPATH];
 	appSprintf (ARRAY_ARG(dllName), "ref_%s.dll", name);
 	Com_Printf ("Loading %s\n", name);
 
@@ -732,7 +640,7 @@ static bool Vid_LoadRefresh (char *name)
 	refLibrary = NULL;
 
 	if (!strcmp (name, "gl"))
-		pGetRefAPI = GL_GetRefAPI;
+		re = GL_GetRefAPI (&ri);
 	else
 #endif
 	{
@@ -741,21 +649,21 @@ static bool Vid_LoadRefresh (char *name)
 			Com_WPrintf ("LoadLibrary(\"%s\") failed\n", dllName);
 			return false;
 		}
+		GetRefAPI_t	pGetRefAPI;
 		if (!(pGetRefAPI = (GetRefAPI_t) GetProcAddress (refLibrary, "GetRefAPI")))
 		{
 			Com_WPrintf ("GetProcAddress() failed on %s\n", dllName);
 			Vid_FreeReflib ();
 			return false;
 		}
-	}
 
-	re = pGetRefAPI (&ri);
-
-	if (re.struc_size != sizeof(refExport_t))
-	{
-		Com_WPrintf ("%s has incompatible renderer\n", dllName);
-		Vid_FreeReflib ();
-		return false;
+		re = pGetRefAPI (&ri);
+		if (re.struc_size != sizeof(refExport_t))
+		{
+			Com_WPrintf ("%s has incompatible renderer\n", dllName);
+			Vid_FreeReflib ();
+			return false;
+		}
 	}
 
 	if (*re.flags & REF_CONSOLE_ONLY)
@@ -818,34 +726,25 @@ void Vid_CheckChanges (void)
 {
 	if (win_noalttab->modified)
 	{
-		if (win_noalttab->integer)
-			WIN_DisableAltTab ();
-		else
-			WIN_EnableAltTab ();
-
+		DisableAltTab (win_noalttab->integer != 0);
 		win_noalttab->modified = false;
 	}
 
 	if (win_priorityBoost->modified)
 	{
-		WIN_HighPriority (win_priorityBoost->integer != 0);
+		SetHighPriority (win_priorityBoost->integer != 0);
 		win_priorityBoost->modified = false;
 	}
 
 	if (vid_ref->modified)
 	{
-		bool	loaded;
-
 		// refresh has changed
 		cl.force_refdef = true;		// can't use a paused refdef
 		S_StopAllSounds_f ();
 
-		r_fullscreen->modified = true;
 		cl.refresh_prepped = false;
 
-		loaded = false;
-		if (Vid_LoadRefresh (vid_ref->string))
-			loaded = true;
+		bool loaded = Vid_LoadRefresh (vid_ref->string);
 		if (!loaded && lastRenderer[0])
 		{
 			if (Vid_LoadRefresh (lastRenderer))
@@ -901,7 +800,10 @@ CVAR_END
 //	if (vinfo.dwMajorVersion < 4)
 //		Com_FatalError ("Requires Windows version 4 or greater");
 	if (vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
+	{
 		s_win95 = true;
+		MSH_MOUSEWHEEL = RegisterWindowMessage ("MSWHEEL_ROLLMSG");
+	}
 
 #if 0
 	// this is a gross hack but necessary to clamp the mode for 3Dfx
@@ -938,12 +840,8 @@ void Vid_Shutdown (void)
 {
 	if (refActive)
 	{
-		/* signal for ref_xx.dll to completely shutdown; it is called after
-		 * CL_WriteConfiguration(), so we can safely change vid_ref value
-		 */
-		Cvar_Set ("vid_ref", "");
 		// perform shutdown
-		re.Shutdown ();
+		re.Shutdown (true);
 		Vid_DestroyWindow (true);
 		Vid_FreeReflib ();
 	}

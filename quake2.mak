@@ -70,7 +70,7 @@ STATIC = \
 	Release/obj/q2stat/cd_win.obj \
 	Release/obj/q2stat/in_win.obj \
 	Release/obj/q2stat/net_wins.obj \
-	Release/obj/q2stat/q_shwin.obj \
+	Release/obj/q2stat/fs_win.obj \
 	Release/obj/q2stat/snd_win.obj \
 	Release/obj/q2stat/sys_win.obj \
 	Release/obj/q2stat/vid_dll.obj \
@@ -137,7 +137,7 @@ DEDICATED = \
 	Release/obj/dedstat/q_shared2.obj \
 	Release/obj/dedstat/zip.obj \
 	Release/obj/dedstat/net_wins.obj \
-	Release/obj/dedstat/q_shwin.obj \
+	Release/obj/dedstat/fs_win.obj \
 	Release/obj/dedstat/sys_win.obj \
 	Release/obj/dedstat/makeres.obj
 
@@ -151,16 +151,10 @@ Release/q2ded.exe : DIRS $(DEDICATED)
 
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I Core/Inc -I qcommon
 
-Release/obj/dedstat/crc.obj : qcommon/crc.cpp
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedstat/crc.obj" qcommon/crc.cpp
-
 Release/obj/dedstat/md4.obj : qcommon/md4.cpp
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedstat/md4.obj" qcommon/md4.cpp
 
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I Core/Inc -I qcommon
-
-Release/obj/q2stat/crc.obj : qcommon/crc.cpp
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/q2stat/crc.obj" qcommon/crc.cpp
 
 Release/obj/q2stat/md4.obj : qcommon/md4.cpp
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/q2stat/md4.obj" qcommon/md4.cpp
@@ -1093,6 +1087,9 @@ Release/obj/dedstat/cmd.obj : qcommon/cmd.cpp $(DEPENDS)
 Release/obj/dedstat/cmodel.obj : qcommon/cmodel.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedstat/cmodel.obj" qcommon/cmodel.cpp
 
+Release/obj/dedstat/crc.obj : qcommon/crc.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedstat/crc.obj" qcommon/crc.cpp
+
 Release/obj/dedstat/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedstat/cvar.obj" qcommon/cvar.cpp
 
@@ -1136,6 +1133,9 @@ Release/obj/q2stat/cmd.obj : qcommon/cmd.cpp $(DEPENDS)
 
 Release/obj/q2stat/cmodel.obj : qcommon/cmodel.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/q2stat/cmodel.obj" qcommon/cmodel.cpp
+
+Release/obj/q2stat/crc.obj : qcommon/crc.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/q2stat/crc.obj" qcommon/crc.cpp
 
 Release/obj/q2stat/cvar.obj : qcommon/cvar.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/q2stat/cvar.obj" qcommon/cvar.cpp
@@ -1182,13 +1182,13 @@ DEPENDS = \
 	qcommon/qfiles.h \
 	win32/winquake.h
 
-Release/obj/dedstat/q_shwin.obj : win32/q_shwin.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedstat/q_shwin.obj" win32/q_shwin.cpp
+Release/obj/dedstat/fs_win.obj : win32/fs_win.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedstat/fs_win.obj" win32/fs_win.cpp
 
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I Core/Inc -I qcommon
 
-Release/obj/q2stat/q_shwin.obj : win32/q_shwin.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/q2stat/q_shwin.obj" win32/q_shwin.cpp
+Release/obj/q2stat/fs_win.obj : win32/fs_win.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/q2stat/fs_win.obj" win32/fs_win.cpp
 
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I Core/Inc -I qcommon
 

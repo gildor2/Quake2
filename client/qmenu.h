@@ -55,7 +55,7 @@ struct menuFramework_t
 
 	void (*cursordraw) (menuFramework_t *m);
 
-	void	AddItem (void *item);
+	void	AddItem (menuCommon_t *item);
 	void	AdjustCursor (int dir);
 	void	Center ();
 	menuCommon_t *ItemAtCursor ();
@@ -121,6 +121,7 @@ struct menuList2_t : menuCommon_t
 
 struct menuAction_t : menuCommon_t
 {
+	char	*command;
 };
 
 struct menuSeparator_t : menuCommon_t
@@ -137,13 +138,14 @@ extern const char *menu_out_sound;
 #define Menu_DrawStringCenter(x,y,s)		DrawString(x-(appCStrlen(s)-1)*CHAR_WIDTH/2,y,s)
 
 
-#define MENU_ACTION(var,ypos,text,call)	\
+#define MENU_ACTION(var,ypos,text,call,cmd)	\
 	{							\
 		var.type = MTYPE_ACTION;\
 		var.x = 0;				\
 		var.y = ypos;			\
 		var.name = text;		\
 		var.callback = (void(*)(void*))call;\
+		var.command = cmd;		\
 	}
 
 #define MENU_SLIDER(var,ypos,text,call,min,max)	\

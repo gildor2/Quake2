@@ -489,7 +489,7 @@ void CL_SendCmd (void)
 		MSG_WriteString (&cls.netchan.message, Cvar_Userinfo() );
 	}
 
-	SZ_Init (&buf, data, sizeof(data));
+	buf.Init (ARRAY_ARG(data));
 
 	if (cmd->buttons && cl.cinematicActive && !cl.attractloop)
 		SCR_StopCinematic ();		// skip the rest of the cinematic with any key down
@@ -526,7 +526,7 @@ void CL_SendCmd (void)
 	MSG_WriteDeltaUsercmd (&buf, oldcmd, cmd);
 
 	// calculate a checksum over the move commands
-	buf.data[checksumIndex] = COM_BlockSequenceCRCByte(
+	buf.data[checksumIndex] = Com_BlockSequenceCRCByte(
 		buf.data + checksumIndex + 1, buf.cursize - checksumIndex - 1,
 		cls.netchan.outgoing_sequence);
 

@@ -1,3 +1,5 @@
+SOMETHING WAS CHANGED, SO NEEDS TO CHECK THIS:
+
 - disable CDS on minimization in Win9x:
   1) TNT2 - taskbar appears until vid_restart (SetForegroundWindow will not
      help)

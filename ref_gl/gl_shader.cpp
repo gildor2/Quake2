@@ -41,12 +41,9 @@ static CMemoryChain *shaderChain;
 // name should be in a lower case
 static int ComputeHash (char *name)
 {
-	int		h;
-	char	*s, c;
-
-	h = 0;
-	s = name;
-	while (c = *s++)
+	int h = 0;
+	char c;
+	while (c = *name++)
 		h = (h ^ 0x25) + c;
 	return h & HASH_MASK;
 }

@@ -461,7 +461,7 @@ void MSG_WriteDeltaUsercmd (sizebuf_t *msg, const usercmd_t *from, usercmd_t *to
 
 	unsigned bits = ComputeDeltaBits (from, to, ARRAY_ARG(userCmdDelta));
 	MSG_WriteByte (msg, bits);
-	WriteDelta (from, to, ARRAY_ARG(userCmdDelta), bits | (1<<31), msg);	// 31 bit - for msec and lightlevel
+	WriteDelta (from, to, ARRAY_ARG(userCmdDelta), bits | (1<<31), msg);	// bit #31 - for msec and lightlevel
 
 	LOG("----------\n");
 

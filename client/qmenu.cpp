@@ -66,6 +66,7 @@ menuCommon_t * menuFramework_t::ItemAtCursor ()
 
 static void Action_DoEnter (menuAction_t *a)
 {
+	if (a->command) Cbuf_AddText (a->command);
 	if (a->callback) a->callback (a);
 }
 
@@ -193,31 +194,30 @@ static bool Field_Key (menuField_t *f, int key)
 	return true;
 }
 
-void menuFramework_t::AddItem (void *item)
+void menuFramework_t::AddItem (menuCommon_t *item)
 {
-	menuCommon_t *last, *p, *c;
+	menuCommon_t *last, *p;
 	int		i;
 
 	guard(Menu_AddItem);
 	// NOTE: menu without items will have nitems==0, but itemList will not be NULL !
-	c = (menuCommon_t*) item;
 	// find last item
 	last = NULL;
 	for (i = 0, p = itemList; i < nitems; i++, p = p->next)
 	{
-		if (p == c)					// item already present in list -- fatal (circular linked list)
-			Com_FatalError ("double item \"%s\" in menu, index=%d, count=%d", c->name, i, nitems);
+		if (p == item)				// item already present in list -- fatal (circular linked list)
+			Com_FatalError ("double item \"%s\" in menu, index=%d, count=%d", item->name, i, nitems);
 		last = p;
 	}
 	if (last && last->next)			// last item (with index == menu->nitem) have next != NULL
 		Com_FatalError ("invalid item list");
 	// add to list
-	if (i > 0)	last->next = c;		// append to list tail
-	else		itemList = c;		// first in list
+	if (i > 0)	last->next = item;	// append to list tail
+	else		itemList = item;	// first in list
 	nitems++;
 	// setup new item
-	c->parent = this;
-	c->next = NULL;
+	item->parent = this;
+	item->next = NULL;
 	unguard;
 }
 
@@ -682,7 +682,7 @@ void menuFramework_t::Push ()
 	for (i = 0; i < m_menudepth; i++)
 		if (m_layers[i] == this)
 		{
-			m_menudepth = i++;	//!! if we use dynamic menus - need to free i+1..m_menudepth (check all m_menudepth changes !!)
+			m_menudepth = ++i;	//!! if we use dynamic menus - need to free i+1..m_menudepth (check all m_menudepth changes !!)
 			//?? add SetMenuDepth() function?
 			break;
 		}

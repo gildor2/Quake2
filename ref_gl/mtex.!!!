@@ -1,4 +1,4 @@
-?? can't remember, what is this, but seems, here I trying to get multitextured envmapped windows
+?? can't remember, what is this, but seems, here I trying to get multitextured (1-pass) envmapped windows
 before:
 ~~~~~~~
 blend = dst*(1-a) + src*a  (src=T1)

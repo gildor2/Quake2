@@ -174,7 +174,6 @@ void SV_Multicast (vec3_t origin, multicast_t to, bool oldclients)
 	int			j;
 	bool		reliable;
 	int			area1, area2;
-	sizebuf_t	*buf, *newBuf;
 
 	guard(SV_Multicast);
 
@@ -193,7 +192,7 @@ void SV_Multicast (vec3_t origin, multicast_t to, bool oldclients)
 
 	// if doing a serverrecord, store everything
 	if (svs.demofile)
-		SZ_Write (&svs.demo_multicast, sv.multicast.data, sv.multicast.cursize);
+		svs.demo_multicast.Write (sv.multicast);
 
 	switch (to)
 	{
@@ -226,7 +225,7 @@ void SV_Multicast (vec3_t origin, multicast_t to, bool oldclients)
 	}
 
 	// process transferring message and create a copy for new clients
-	newBuf = (sv_extProtocol->integer) ? SV_MulticastHook (&sv.multicast, &sv.multicastNew) : &sv.multicast;
+	sizebuf_t *newBuf = (sv_extProtocol->integer) ? SV_MulticastHook (&sv.multicast, &sv.multicastNew) : &sv.multicast;
 
 	// send the data to all relevent clients
 	for (j = 0, client = svs.clients; j < maxclients->integer; j++, client++)
@@ -238,6 +237,7 @@ void SV_Multicast (vec3_t origin, multicast_t to, bool oldclients)
 		if (!oldclients && !client->newprotocol)
 			continue;
 
+		sizebuf_t *buf;
 		buf = (client->newprotocol) ? newBuf : &sv.multicast;
 
 		if (mask)
@@ -252,13 +252,13 @@ void SV_Multicast (vec3_t origin, multicast_t to, bool oldclients)
 		}
 
 		if (reliable)
-			SZ_Write (&client->netchan.message, buf->data, buf->cursize);
+			client->netchan.message.Write (*buf);
 		else
-			SZ_Write (&client->datagram, buf->data, buf->cursize);
+			client->datagram.Write (*buf);
 	}
 
-	SZ_Clear (&sv.multicast);
-	SZ_Clear (&sv.multicastNew);
+	sv.multicast.Clear ();
+	sv.multicastNew.Clear ();
 
 	unguard;
 }
@@ -449,7 +449,7 @@ bool SV_SendClientDatagram (client_t *client)
 
 	SV_BuildClientFrame (client);
 
-	SZ_Init (&msg, msg_buf, client->maxPacketSize);
+	msg.Init (msg_buf, client->maxPacketSize);
 	msg.allowoverflow = true;
 
 	// send over all the relevant entity_state_t
@@ -463,13 +463,13 @@ bool SV_SendClientDatagram (client_t *client)
 	if (client->datagram.overflowed)
 		Com_WPrintf ("Datagram overflowed for %s\n", client->name);
 	else
-		SZ_Write (&msg, client->datagram.data, client->datagram.cursize);
-	SZ_Clear (&client->datagram);
+		msg.Write (client->datagram);
+	client->datagram.Clear ();
 
 	if (msg.overflowed)
 	{	// must have room left for the packet header
 		Com_WPrintf ("Msg overflowed for %s\n", client->name);
-		SZ_Clear (&msg);
+		msg.Clear ();
 	}
 
 	// send the datagram
@@ -572,8 +572,8 @@ void SV_SendClientMessages (void)
 		// if the reliable message overflowed, drop the client
 		if (c->netchan.message.overflowed)
 		{
-			SZ_Clear (&c->netchan.message);
-			SZ_Clear (&c->datagram);
+			c->netchan.message.Clear ();
+			c->datagram.Clear ();
 			SV_DropClient (c, "overflowed");
 		}
 

@@ -24,11 +24,6 @@ Comments:
 - added unhandled exception filter, which will restore screen/mouse/sound parameters if game crashes and logs error ("crash.log")
 - logging developer messages to "debug.log" when "developer" is set to 2
 - "host_speeds" -> "com_speeds", better output
-- timedemo:
-  - timedemo <n> -- gather timing statistics with rendering <n> frames per (demo-)server frame
-  - when displaying cinematics, will be played with a maximal speed
-  - added min_fps stats
-- ref_gl and ref_soft are now statically linked with quake2
 - no autosaves in deathmatch mode
 - if sound file not found, game doesn't try to load it every time it must appear
 - improved look of "player setup" menu
@@ -248,12 +243,16 @@ Network
   - sound pitch affected by timescale (DirectSound only, restart required)
   - support for low timescale (was not able to perform frames with scaled time less than 1 ms)
     timescale=0 - stop everything
+- timedemo:
+  - timedemo <n> -- gather timing statistics with rendering <n> frames per (demo-)server frame
+  - when displaying cinematics, will be played with a maximal speed
+  - added min_fps stats
 - added mouse support via DirectInput (activated with "in_mouse 2", default)
 - third-person view: activated with "cl_3rd_person 1"
 - intro playback:
   - removed from "toggleconsole" command
-  - on startup, will be displayed only cinematics (no demos)
-  - to disable intro on startup, use "nointro 1" from commandline
+  - on startup, only cinematics will be displayed (no demos)
+  - to disable intro on startup, set "nointro 1" from commandline
   - old-style startup behaviour: add "-nointro -d1" to commandline
   - to play any demo from a command line, use "-nointro -demomap <demoname>"
 - dedicated server:
@@ -262,17 +261,17 @@ Network
 
 4. MISFEATURES
 ~~~~~~~~~~~~~~
-- no negative dlights in renderer (can be emulated with multiplicative dlights ?)
+- no negative (black) dlights in renderer (can be emulated with multiplicative dlights ?)
 
 5. API (internals)
 ~~~~~~~~~~~~~~~~~~
 Memory management
 -----------------
-- replaced Z_TagMalloc() in gameimport_t with NewTagMalloc(), with reserves (size+1) bytes.
-    We should make 1 more byte for Z_Malloc() & Z_TagMalloc() when it is called
-    from "gi->" (gamex86.dll) - we cannot control bugs in third-party mods, but
-    at least "dirty" reads entities in buffer = sizeof(ents) and adds 1 zero byte
-    after (ASCIIZ) - memory overrun! (so, we should reserve 1 byte for buggy mods).
+- replaced Z_TagMalloc() in gameimport_t with different function, with reserves (size+1) bytes.
+  We should make 1 more byte for Z_Malloc() & Z_TagMalloc() when it is called from "gi->"
+  (gamex86.dll) - we cannot control bugs in third-party mods, but at least "dirty" mod reads
+  entities in buffer = sizeof(ents) and adds 1 zero byte after (ASCIIZ) - memory overrun!
+  (so, we should reserve 1 byte for buggy mods).
 
 Miscellaneous
 -------------

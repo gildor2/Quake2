@@ -15,27 +15,6 @@ static cvar_t *cmd_debug;
 static char	*_argv[MAX_STRING_TOKENS];
 static int	_argc;
 
-//=============================================================================
-
-/*
-============
-Cmd_Wait_f
-
-Causes execution of the remainder of the command buffer to be delayed until
-next frame.  This allows commands like:
-bind g "impulse 5 ; +attack ; wait ; -attack ; impulse 2"
-============
-*/
-static void Cmd_Wait_f (bool usage, int argc, char **argv)
-{
-	if (argc > 2 || usage)
-	{
-		Com_Printf ("Usage: wait [<num_frames>]\n");
-		return;
-	}
-	cmdWait = argc == 2 ? atoi (argv[1]) : 1;
-}
-
 
 /*
 =============================================================================
@@ -48,19 +27,9 @@ static void Cmd_Wait_f (bool usage, int argc, char **argv)
 #define CBUF_MAXSIZE	8192
 
 static sizebuf_t cmd_text;
+
 static char cmd_text_buf[CBUF_MAXSIZE];
-
 static char defer_text_buf[CBUF_MAXSIZE];
-
-/*
-============
-Cbuf_Init
-============
-*/
-void Cbuf_Init (void)
-{
-	SZ_Init (&cmd_text, cmd_text_buf, sizeof(cmd_text_buf));
-}
 
 /*
 ============
@@ -71,9 +40,7 @@ Adds command text at the end of the buffer
 */
 void Cbuf_AddText (const char *text)
 {
-	int		len;
-
-	len = strlen (text);
+	int len = strlen (text);
 
 	if (cmd_text.cursize + len >= cmd_text.maxsize)
 	{
@@ -87,7 +54,7 @@ void Cbuf_AddText (const char *text)
 		else
 			Com_Printf (S_BLUE"AddText: \"%s\"\n", text);
 	}
-	SZ_Write (&cmd_text, text, len);
+	cmd_text.Write (text, len);
 }
 
 
@@ -235,6 +202,22 @@ void Cbuf_Execute (void)
 
 
 /*
+============
+Cmd_Wait_f
+============
+*/
+static void Cmd_Wait_f (bool usage, int argc, char **argv)
+{
+	if (argc > 2 || usage)
+	{
+		Com_Printf ("Usage: wait [<num_frames>]\n");
+		return;
+	}
+	cmdWait = argc == 2 ? atoi (argv[1]) : 1;
+}
+
+
+/*
 ===============
 Cmd_Exec_f
 ===============
@@ -286,8 +269,7 @@ Creates a new command that executes a command string (possibly ";"-separated)
 static void Cmd_Alias_f (bool usage, int argc, char **argv)
 {
 	char	cmd[1024];
-	char	*name;
-	CAlias	*a, *pos;
+	CAlias	*a;
 
 	if (argc == 2 || usage)
 	{
@@ -303,9 +285,10 @@ static void Cmd_Alias_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	name = argv[1];
+	const char *name = argv[1];
 
 	// if the alias already exists, reuse it
+	CAlias *pos;
 	a = AliasList.Find (name, &pos);
 	if (a)
 		appFree (a->value);
@@ -507,15 +490,14 @@ static void TokenizeString (const char *text)
 
 bool RegisterCommand (const char *name, void(*func)(), int flags)
 {
-	CCommand *cmd, *pos;
-
 	guard(RegisterCommand);
+	CCommand *pos;
 	if (CmdList.Find (name, &pos))
 	{
 		appWPrintf ("RegisterCommand: \"%s\" is already registered\n", name);
 		return false;
 	}
-	cmd = new (name) CCommand;
+	CCommand *cmd = new (name) CCommand;
 	cmd->flags = flags;
 	cmd->func = func;
 	CmdList.InsertAfter (cmd, pos);
@@ -641,7 +623,6 @@ Cmd_List_f
 static void Cmd_List_f (bool usage, int argc, char **argv)
 {
 	int		n, total;
-	char	*mask;
 
 	if (argc > 2 || usage)
 	{
@@ -649,11 +630,7 @@ static void Cmd_List_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	if (argc == 2)
-		mask = argv[1];
-	else
-		mask = NULL;
-
+	const char *mask = (argc == 2) ? argv[1] : NULL;
 	n = total = 0;
 	Com_Printf ("----i-a-name----------------\n");
 	for (CCommand *cmd = CmdList.First(); cmd; cmd = CmdList.Next(cmd))
@@ -676,11 +653,15 @@ Cmd_Init
 */
 void Cmd_Init (void)
 {
+	// cbuf
+	cmd_text.Init (ARRAY_ARG(cmd_text_buf));
+	// commands
 	RegisterCommand ("cmdlist", Cmd_List_f);
 	RegisterCommand ("exec", Cmd_Exec_f);
 	RegisterCommand ("echo", Cmd_Echo_f);
 	RegisterCommand ("alias", Cmd_Alias_f);
 	RegisterCommand ("unalias", Cmd_Unalias_f);
 	RegisterCommand ("wait", Cmd_Wait_f);
+	// cvars
 	cmd_debug = Cvar_Get ("cmd_debug", "0", 0);
 }

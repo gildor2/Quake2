@@ -138,7 +138,7 @@ void SV_WriteFrameToClient (client_t *client, sizebuf_t *msg)
 
 	// send over the areabits
 	MSG_WriteByte (msg, frame->areabytes);
-	SZ_Write (msg, frame->areabits, frame->areabytes);
+	msg->Write (frame->areabits, frame->areabytes);
 
 	// delta encode the playerstate
 	MSG_WriteByte (msg, svc_playerinfo);
@@ -382,16 +382,14 @@ Used for recording footage for merged or assembled demos
 */
 void SV_RecordDemoMessage (void)
 {
-	int		i, len;
+	if (!svs.demofile) return;
+
 	entity_state_t	nostate;
-	sizebuf_t buf;
-	byte	buf_data[32768];
-
-	if (!svs.demofile)
-		return;
-
 	memset (&nostate, 0, sizeof(nostate));
-	SZ_Init (&buf, buf_data, sizeof(buf_data));
+
+	sizebuf_t buf;
+	byte buf_data[32768];
+	buf.Init (ARRAY_ARG(buf_data));
 
 	// write a frame message that doesn't contain a player_state_t
 	MSG_WriteByte (&buf, svc_frame);
@@ -399,11 +397,9 @@ void SV_RecordDemoMessage (void)
 
 	MSG_WriteByte (&buf, svc_packetentities);
 
-	for (i = 1; i < ge->num_edicts; i++)
+	for (int i = 1; i < ge->num_edicts; i++)
 	{
-		edict_t		*ent;
-
-		ent = EDICT_NUM(i);
+		edict_t *ent = EDICT_NUM(i);
 		// ignore ents without visible models unless they have an effect
 		if (ent->inuse && ent->s.number && !(ent->svflags & SVF_NOCLIENT) &&
 			(ent->s.modelindex || ent->s.effects || ent->s.sound || ent->s.event))
@@ -413,11 +409,11 @@ void SV_RecordDemoMessage (void)
 	MSG_WriteShort (&buf, 0);		// end of packetentities
 
 	// now add the accumulated multicast information
-	SZ_Write (&buf, svs.demo_multicast.data, svs.demo_multicast.cursize);
-	SZ_Clear (&svs.demo_multicast);
+	buf.Write (svs.demo_multicast);
+	svs.demo_multicast.Clear ();
 
 	// now write the entire message to the file, prefixed by the length
-	len = LittleLong (buf.cursize);
+	int len = LittleLong (buf.cursize);
 	fwrite (&len, 4, 1, svs.demofile);
 	fwrite (buf.data, buf.cursize, 1, svs.demofile);
 }
