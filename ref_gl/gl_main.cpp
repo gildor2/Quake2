@@ -253,13 +253,13 @@ static int GL_Init (void)
 	// initialize our QGL dynamic bindings
 	if (!QGL_Init (gl_driver->string))
 	{
-		if (strcmp (gl_driver->string, gl_driver->reset_string))
+		if (!gl_driver->IsDefault())
 		{
-			Com_WPrintf ("Cannot load %s - trying default driver (%s) ... ", gl_driver->string, gl_driver->reset_string);
-			if (QGL_Init (gl_driver->reset_string))
+			Com_WPrintf ("Cannot load %s - trying default driver (%s) ... ", gl_driver->string, gl_driver->resetString);
+			if (QGL_Init (gl_driver->resetString))
 			{
 				Com_Printf ("OK\n");
-				Cvar_Set ("gl_driver", gl_driver->reset_string);
+				gl_driver->Reset();
 			}
 			else
 			{

@@ -222,7 +222,7 @@ DEPENDS = \
 	client/console.h \
 	client/input.h \
 	client/keys.h \
-	client/m_flash.h \
+	client/monster_flash.h \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \

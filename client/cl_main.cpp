@@ -102,27 +102,28 @@ static char	cl_gamename[MAX_QPATH];
 
 static bool TryParseStatus (char *str)
 {
-	char	buf[MAX_MSGLEN], *s;
+	char	buf[MAX_MSGLEN];
 
 	if (!statusRequest) return false;
 
 	appStrncpyz (buf, str, sizeof(buf));
 	// remove players info
-	s = strchr (buf, '\n');
+	char *s = strchr (buf, '\n');
 	if (!s) return false;
 	*s = 0;
+
 	// validate ServerInfo
-	s = Info_ValueForKey (buf, "mapname");
-	if (!s) return false;
-	strcpy (cl_mapname, s);
+	const char *v = Info_ValueForKey (buf, "mapname");
+	if (!v) return false;
+	strcpy (cl_mapname, v);
 
-	s = Info_ValueForKey (buf, "gamename");
-	if (!s) return false;
-	strcpy (cl_gamename, s);
+	v = Info_ValueForKey (buf, "gamename");
+	if (!v) return false;
+	strcpy (cl_gamename, v);
 
-	s = Info_ValueForKey (buf, "cheats");
-	if (!s) return false;
-	cl_cheats = atoi (s) != 0;
+	v = Info_ValueForKey (buf, "cheats");
+	if (!v) return false;
+	cl_cheats = atoi (v) != 0;
 
 //	Com_Printf (S_RED"map: %s  game: %s  cheats: %d\n", cl_mapname, cl_gamename, cl_cheats);
 

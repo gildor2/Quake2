@@ -1054,7 +1054,7 @@ void SCR_UpdateScreen (void)
 	if (!initialized) return;		// not initialized yet
 
 	// range check cl_camera_separation so we don't inadvertently fry someone's brain
-	Cvar_Clamp (cl_stereo_separation, 0, 1);
+	cl_stereo_separation->Clamp (0, 1);
 
 	int numframes;
 	if (cl_stereo->integer)

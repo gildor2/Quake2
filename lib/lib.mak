@@ -68,8 +68,7 @@ LIB = \
 	obj/crc32.obj \
 	obj/inffast.obj \
 	obj/inflate.obj \
-	obj/inftrees.obj \
-	obj/zutil.obj
+	obj/inftrees.obj
 
 lib.lib : DIRS $(LIB)
 	echo Creating static "lib.lib" ...
@@ -413,14 +412,6 @@ DEPENDS = \
 
 obj/adler32.obj : zlib/adler32.c $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/adler32.obj" zlib/adler32.c
-
-DEPENDS = \
-	zlib/zconf.h \
-	zlib/zlib.h \
-	zlib/zutil.h
-
-obj/zutil.obj : zlib/zutil.c $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"obj/zutil.obj" zlib/zutil.c
 
 #------------------------------------------------------------------------------
 #	creating output directories

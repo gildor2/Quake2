@@ -939,7 +939,7 @@ void GL_SetupGamma (void)
 	gl_config.identityLightValue = 255 / (1 << overbright);
 	gl_config.identityLightValue_f = 1.0f / (float)(1 << overbright);
 
-	float invGamma = 1.0 / Cvar_Clamp (r_gamma, 0.5, 3.0);
+	float invGamma = 1.0 / r_gamma->Clamp (0.5, 3.0);
 
 	if (gl_config.deviceSupportsGamma)
 		GLimp_SetGamma (r_gamma->value);

@@ -381,7 +381,7 @@ void CL_BlasterTrail (vec3_t start, vec3_t end);
 void CL_RailTrail (vec3_t start, vec3_t end);
 void CL_RailTrailExt (vec3_t start, vec3_t end, byte rType, byte rColor);
 void CL_BubbleTrail (vec3_t start, vec3_t end);
-void CL_FlagTrail (vec3_t start, vec3_t end, float color);
+void CL_FlagTrail (vec3_t start, vec3_t end, int color);
 
 // RAFAEL
 void CL_IonripperTrail (vec3_t start, vec3_t end);
@@ -406,7 +406,7 @@ void CL_Heatbeam (vec3_t start, vec3_t end);
 void CL_ParticleSteamEffect (vec3_t org, vec3_t dir, int color, int count, int magnitude);
 void CL_TrackerTrail (vec3_t start, vec3_t end, int particleColor);
 void CL_Tracker_Explode(vec3_t origin);
-void CL_TagTrail (vec3_t start, vec3_t end, float color);
+void CL_TagTrail (vec3_t start, vec3_t end, int color);
 void CL_ColorFlash (vec3_t pos, int ent, int intensity, float r, float g, float b);
 void CL_Tracker_Shell(vec3_t origin);
 void CL_MonsterPlasma_Shell(vec3_t origin);

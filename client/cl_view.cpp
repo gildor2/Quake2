@@ -358,7 +358,7 @@ static struct
 
 static void CalcVrect (void)
 {
-	float frac = Cvar_Clamp (scr_viewsize, 40, 100) / 100.0f;
+	float frac = scr_viewsize->Clamp (40, 100) / 100.0f;
 
 	scr_vrect.width = appRound (viddef.width * frac);
 	scr_vrect.height = appRound (viddef.height * frac);

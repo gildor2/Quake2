@@ -19,11 +19,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "server.h"
+#include <time.h>
 
 //?? only for screenshot
 #include "../client/ref.h"
 extern refExport_t re;
-void SCR_UpdateScreen (void);		//?? remove
+//void SCR_UpdateScreen (void);		//?? remove
 void SCR_SetLevelshot (const char *name);
 
 /*

@@ -572,7 +572,7 @@ static bool GLimp_SetPixelFormat (void)
 static bool GLimp_InitGL (void)
 {
 	// figure out if we're running on a minidriver or not
-	if (!stricmp (gl_driver->string, gl_driver->reset_string))	// compare with opengl32.dll
+	if (gl_driver->IsDefault())				// compare with opengl32.dll
 		glw_state.minidriver = false;
 	else
 	{

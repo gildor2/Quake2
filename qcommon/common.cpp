@@ -19,7 +19,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // common.cpp -- misc functions used in client and server
 #include "qcommon.h"
-#include "../client/ref.h"
+#include <time.h>
+
+#include "../client/ref.h"	// using re.DrawTextXxx() for com_speeds
 
 #define	MAXPRINTMSG	4096
 
@@ -361,7 +363,7 @@ Handles byte ordering and avoids alignment errors
 ==============================================================================
 */
 
-vec3_t	bytedirs[NUMVERTEXNORMALS] =
+const vec3_t bytedirs[NUMVERTEXNORMALS] =
 {
 #include "anorms.h"
 };
@@ -823,110 +825,84 @@ Searches the string for the given
 key and returns the associated value, or an empty string.
 ===============
 */
-char *Info_ValueForKey (char *s, char *key)
+const char *Info_ValueForKey (const char *s, const char *key)
 {
-	char	pkey[512];
-	static	char value[2][512];	// use two buffers so compares
-								// work without stomping on each other
-	static	int	valueindex;
-	char	*o;
-
-	valueindex ^= 1;
-	if (*s == '\\')
-		s++;
-	while (1)
-	{
-		o = pkey;
-		while (*s != '\\')
-		{
-			if (!*s)
-				return "";
-			*o++ = *s++;
-		}
-		*o = 0;
-		s++;
-
-		o = value[valueindex];
-
-		while (*s != '\\' && *s)
-		{
-			if (!*s)
-				return "";
-			*o++ = *s++;
-		}
-		*o = 0;
-
-		if (!strcmp (key, pkey) )
-			return value[valueindex];
-
-		if (!*s)
-			return "";
-		s++;
-	}
-}
-
-void Info_RemoveKey (char *s, char *key)
-{
-	char	*start;
 	char	pkey[512];
 	char	value[512];
-	char	*o;
-
-	if (strchr (key, '\\'))
+								// work without stomping on each other
+	if (*s == '\\') s++;
+	while (true)
 	{
-//		Com_Printf ("Can't use a key with a '\\'\n");
-		return;
-	}
-
-	while (1)
-	{
-		start = s;
-		if (*s == '\\')
-			s++;
-		o = pkey;
+		char *o = pkey;
 		while (*s != '\\')
 		{
-			if (!*s)
-				return;
+			if (!*s) return "";
 			*o++ = *s++;
 		}
 		*o = 0;
 		s++;
 
 		o = value;
-		while (*s != '\\' && *s)
+		while (*s && *s != '\\')
+			*o++ = *s++;
+		*o = 0;
+
+		if (!strcmp (key, pkey))
+			return va("%s", value);
+
+		if (!*s) return "";
+		s++;
+	}
+}
+
+static void Info_RemoveKey (char *s, const char *key)
+{
+	char	pkey[512];
+	char	value[512];
+
+	if (*s == '\\') s++;
+	while (true)
+	{
+		char *start = s;
+		char *o = pkey;
+		while (*s != '\\')
 		{
-			if (!*s)
-				return;
+			if (!*s) return;
 			*o++ = *s++;
 		}
 		*o = 0;
+		s++;
 
-		if (!strcmp (key, pkey) )
+		o = value;
+		while (*s && *s != '\\')
+			*o++ = *s++;
+		*o = 0;
+
+		if (!strcmp (key, pkey))
 		{
 			strcpy (start, s);	// remove this part
 			return;
 		}
 
-		if (!*s)
-			return;
+		if (!*s) return;
+		s++;
 	}
 
 }
 
 
-void Info_SetValueForKey (char *s, char *key, char *value)
+void Info_SetValueForKey (char *s, const char *key, const char *value)
 {
 	char	newi[MAX_INFO_STRING], *v;
-	int		c;
 	int		maxsize = MAX_INFO_STRING;
 
 	if (strchr (key, '\\') || strchr (value, '\\'))
 	{
-		Com_WPrintf ("Can't use keys or values with a '\\'\n");
+		Com_WPrintf ("Info_Set(\"%s\",\"%s\"): can't use keys or values with a '\\'\n", key, value);
 		return;
 	}
 
+#if 0
 	if (strchr (key, '\"') || strchr (value, '\"'))
 	{
 		Com_WPrintf ("Can't use keys or values with a '\"'\n");
@@ -938,66 +914,53 @@ void Info_SetValueForKey (char *s, char *key, char *value)
 		Com_WPrintf ("Can't use keys or values with a semicolon\n");
 		return;
 	}
+#endif
 
 	if (strlen (key) > MAX_INFO_KEY - 1 || strlen (value) > MAX_INFO_KEY - 1)
 	{
-		Com_WPrintf ("Keys and values must be < 64 characters\n");
+		Com_WPrintf ("Keys and values must be < " STR(MAX_INFO_KEY) " characters\n");
 		return;
 	}
 	Info_RemoveKey (s, key);
 	if (!value || !value[0])
 		return;
 
-	appSprintf (ARRAY_ARG(newi), "\\%s\\%s", key, value);
-
-	if (strlen (newi) + strlen (s) > maxsize)
+	int size = appSprintf (ARRAY_ARG(newi), "\\%s\\%s", key, value);
+	if (strlen (s) + size > maxsize)
 	{
 		Com_WPrintf ("Info string length exceeded\n");
 		return;
 	}
 
-	// only copy ascii values
+	// only copy ASCII values
 	s += strlen (s);
 	v = newi;
 	while (*v)
 	{
-		c = *v++;
-		c &= 127;		// strip high bits
-		if (c >= 32 && c < 127)
-			*s++ = c;
+		char c = *v++ & 127;		// strip high bits
+		if (c >= 32) *s++ = c;
 	}
 	*s = 0;
 }
 
 
-void Info_Print (char *s)
+void Info_Print (const char *s)
 {
 	char	key[512];
 	char	value[512];
-	char	*o;
-	int		l;
 
-	if (*s == '\\')
-		s++;
-	while (*s)
+	if (*s == '\\') s++;
+	while (true)
 	{
-		o = key;
+		char *o = key;
 		while (*s && *s != '\\')
 			*o++ = *s++;
-
-		l = o - key;
-		if (l < 20)
-		{
-			memset (o, ' ', 20-l);
-			key[20] = 0;
-		}
-		else
-			*o = 0;
-		Com_Printf (S_GREEN"%s", key);
+		*o = 0;
+		Com_Printf (S_GREEN"%-22s", key);
 
 		if (!*s)
 		{
-			Com_WPrintf ("Info_Print(): missing value\n");
+			Com_WPrintf ("missing value\n");
 			return;
 		}
 
@@ -1006,10 +969,10 @@ void Info_Print (char *s)
 		while (*s && *s != '\\')
 			*o++ = *s++;
 		*o = 0;
-
-		if (*s)
-			s++;
 		Com_Printf ("%s\n", value);
+
+		if (!*s) return;
+		s++;
 	}
 }
 

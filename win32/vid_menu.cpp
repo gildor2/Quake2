@@ -281,13 +281,13 @@ CVAR_END
 		MENU_SLIDER(s_screensize_slider[i], y+=10, "screen size", ScreenSizeCallback, 4, 10);
 		s_screensize_slider[i].curvalue = scr_viewsize->value / 10;
 		MENU_SLIDER(s_brightness_slider[i], y+=10, "brightness", BrightnessCallback, MIN_GAMMA, MAX_GAMMA);
-		Cvar_Clamp (r_gamma, 0.5, 3);
+		r_gamma->Clamp (0.5, 3);
 		s_brightness_slider[i].curvalue = r_gamma->value * (MAX_GAMMA - MIN_GAMMA);
 		MENU_SLIDER(s_contrast_slider[i], y+=10, "contrast", ContrastCallback, MIN_CONTRAST, MAX_CONTRAST);
-		Cvar_Clamp (r_contrast, 0.5, 1.5);
+		r_contrast->Clamp (0.5, 1.5);
 		s_contrast_slider[i].curvalue = r_contrast->value * (MAX_CONTRAST - MIN_CONTRAST);
 		MENU_SLIDER(s_saturation[i], y+=10, "saturation", NULL, 0, 20);
-		Cvar_Clamp (r_saturation, 0, 2);
+		r_saturation->Clamp (0, 2);
 		s_saturation[i].curvalue = r_saturation->value * 10;
 		MENU_SPIN(s_fs_box[i], y+=10, "fullscreen", NULL, yesnoNames);
 		s_fs_box[i].curvalue = r_fullscreen->integer;

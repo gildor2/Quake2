@@ -526,7 +526,7 @@ static void Multiplayer_Disconnect (void)
 
 static void Multiplayer_MenuInit (void)
 {
-	s_multiplayer_menu.x = viddef.width * 0.50 - 64;
+	s_multiplayer_menu.x = viddef.width / 2 - 64;
 	s_multiplayer_menu.nitems = 0;
 
 	MENU_ACTION(s_join_network_server_action,0,"join network server",M_Menu_JoinServer_f)
@@ -864,27 +864,27 @@ static void ControlsSetMenuItemValues (void)
 
 	s_options_sensitivity_slider.curvalue	= sensitivity->value * 2;
 
-	Cvar_Clamp (cl_run, 0, 1);
+	cl_run->Clamp (0, 1);
 	s_options_alwaysrun_box.curvalue		= cl_run->integer;
 
 	s_options_invertmouse_box.curvalue		= m_pitch->value < 0;
 
-	Cvar_Clamp (lookspring, 0, 1);
+	lookspring->Clamp (0, 1);
 	s_options_lookspring_box.curvalue		= lookspring->integer;
 
-	Cvar_Clamp (lookstrafe, 0, 1);
+	lookstrafe->Clamp (0, 1);
 	s_options_lookstrafe_box.curvalue		= lookstrafe->integer;
 
-	Cvar_Clamp (freelook, 0, 1);
+	freelook->Clamp (0, 1);
 	s_options_freelook_box.curvalue			= freelook->integer;
 
-	Cvar_Clamp (crosshair, 0, crosshairs_count);
+	crosshair->Clamp (0, crosshairs_count);
 	s_options_crosshair_box.curvalue		= crosshair->integer;
 
-	Cvar_Clamp (crosshairColor, 0, 7);
+	crosshairColor->Clamp (0, 7);
 	s_options_crosshair_color_box.curvalue	= crosshairColor->integer;
 
-	Cvar_Clamp (in_joystick, 0, 1);
+	in_joystick->Clamp (0, 1);
 	s_options_joystick_box.curvalue			= in_joystick->integer;
 
 //	s_options_noalttab_box.curvalue			= win_noalttab->integer;
@@ -1250,7 +1250,7 @@ static void Game_MenuInit( void )
 		"easy", "medium", "hard", NULL
 	};
 
-	s_game_menu.x = viddef.width * 0.50;
+	s_game_menu.x = viddef.width / 2;
 	s_game_menu.nitems = 0;
 
 	MENU_ACTION(s_easy_game_action,0,"easy",EasyGameFunc)
@@ -1596,7 +1596,7 @@ static void JoinServer_MenuInit( void )
 {
 	int		i, y;
 
-	s_joinserver_menu.x = viddef.width * 0.50 - 120;
+	s_joinserver_menu.x = viddef.width / 2 - 120;
 	s_joinserver_menu.nitems = 0;
 
 	s_joinserver_server_title.generic.type = MTYPE_SEPARATOR;
@@ -1726,6 +1726,7 @@ static void StartServerFunc (char *map)
 	timelimit	= atoi (s_timelimit_field.buffer);
 	fraglimit	= atoi (s_fraglimit_field.buffer);
 
+	//?? low limit is 0, upper limit - unlimited ?
 	Cvar_ClampName ("maxclients", 0, maxclients);
 	Cvar_ClampName ("timelimit", 0, timelimit);
 	Cvar_ClampName ("fraglimit", 0, fraglimit);
@@ -1858,7 +1859,7 @@ static void StartServer_MenuInit( void )
 	}
 
 	// initialize the menu stuff
-	s_startserver_menu.x = viddef.width * 0.50;
+	s_startserver_menu.x = viddef.width / 2;
 	s_startserver_menu.nitems = 0;
 
 	s_startmap_list.generic.type = MTYPE_SPINCONTROL2;
@@ -2114,7 +2115,7 @@ static void DMOptions_MenuInit (void)
 	int dmflags = Cvar_VariableInt ("dmflags");
 	int y = 0;
 
-	s_dmoptions_menu.x = viddef.width * 0.50;
+	s_dmoptions_menu.x = viddef.width / 2;
 	s_dmoptions_menu.nitems = 0;
 
 	MENU_SPIN(s_falls_box,y,"falling damage",DMFlagCallback,yes_no_names)
@@ -2252,7 +2253,7 @@ static void DownloadOptions_MenuInit( void )
 	};
 	int y = 0;
 
-	s_downloadoptions_menu.x = viddef.width * 0.50;
+	s_downloadoptions_menu.x = viddef.width / 2;
 	s_downloadoptions_menu.nitems = 0;
 
 	s_download_title.generic.type = MTYPE_SEPARATOR;
@@ -2536,7 +2537,7 @@ static bool PlayerConfig_MenuInit (void)
 
 	if (!numPlayerModels) return false;
 
-	Cvar_Clamp (hand, 0, 2);
+	hand->Clamp (0, 2);
 
 	strcpy (currentModel, skin->string);
 	if (path = strchr (currentModel, '/'))

@@ -18,8 +18,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-// qcommon.h -- definitions common between client and server, but not game.dll
-
 #ifndef QCOMMON_H
 #define QCOMMON_H
 
@@ -29,7 +27,34 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define Com_FatalError	appFatalError
 #define Com_DropError	appNonFatalError
 
+//-------- declarations, required for ref_xxxx.h --------------
+
+// forward declarations
+struct cvar_t;
+struct cvarInfo_t;
+struct trace_t;
+struct bspfile_t;
+
+typedef float vec3_t[3];
+
+// image flags
+#define IMAGE_PCX	1
+#define IMAGE_WAL	2
+#define IMAGE_TGA	4
+#define IMAGE_JPG	8
+
+#define IMAGE_8BIT	(IMAGE_PCX|IMAGE_WAL)
+#define IMAGE_32BIT	(IMAGE_TGA|IMAGE_JPG)
+#define IMAGE_ANY	(IMAGE_8BIT|IMAGE_32BIT)
+
+// exports for renderer
+#include "../client/ref_decl.h"
+#include "../client/ref_defs.h"
+
+// declarations for game system (!!)
 #include "q_shared2.h"
+
+// Quake2 file formats (use when needed only ??)
 #include "qfiles.h"
 
 
@@ -182,10 +207,9 @@ void	MSG_WriteDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, 
 #define	MAX_INFO_VALUE		64
 #define	MAX_INFO_STRING		512
 
-char*	Info_ValueForKey (char *s, char *key);
-void	Info_RemoveKey (char *s, char *key);
-void	Info_SetValueForKey (char *s, char *key, char *value);
-void	Info_Print (char *s);
+const char * Info_ValueForKey (const char *s, const char *key);
+void	Info_SetValueForKey (char *s, const char *key, const char *value);
+void	Info_Print (const char *s);
 
 
 /* crc.h */
@@ -399,12 +423,12 @@ CVAR
 ==============================================================
 */
 
-typedef struct
+struct cvarInfo_t
 {
 	cvar_t	**var;				// destination, may be NULL
 	const char *string;			// name[/value]
-	int		flags;
-} cvarInfo_t;
+	unsigned flags;
+};
 
 // NOTES:
 //	CVAR_FULL() useful for any case (especially for vars with value == "")
@@ -417,7 +441,7 @@ typedef struct
 #define CVAR_VAR(name,value,flags)			CVAR_FULL(&name, #name, #value, flags)	// var == name, non-empty value, flags
 #define CVAR_VAR2(var,name,value,flags)		CVAR_FULL(&var,  #name, #value, flags)	// var != name, non-empty value, flags
 #define CVAR_GET(name)						CVAR_FULL(&name, #name, "",		CVAR_NODEFAULT)	// just set var
-#define CVAR_NULL(name,value,flags)			CVAR_FULL(NULL,  #name, #value, flags)	// register cvar with
+#define CVAR_NULL(name,value,flags)			CVAR_FULL(NULL,  #name, #value, flags)	// register cvar without saving pointer
 #define CVAR_END						};
 
 
@@ -429,7 +453,7 @@ extern int	cvar_initialized;
 // if it exists, the value will not be changed, but flags will be ORed in
 // that allows variables to be unarchived without needing bitflags
 
-cvar_t 	*Cvar_FullSet (const char *var_name, const char *value, int flags);
+cvar_t 	*Cvar_FullSet (const char *var_name, const char *value, unsigned flags);
 
 //--cvar_t	*Cvar_SetValue (char *var_name, float value);
 //--cvar_t	*Cvar_SetInteger (char *var_name, int value);
@@ -461,10 +485,10 @@ void	Cvar_WriteVariables (FILE *f, int includeMask, int excludeMask, const char 
 void	Cvar_Cheats (bool enable);
 void	Cvar_Init (void);
 
-char	*Cvar_Userinfo (void);
+const char *Cvar_Userinfo (void);
 // returns an info string containing all the CVAR_USERINFO cvars
 
-char	*Cvar_Serverinfo (void);
+const char *Cvar_Serverinfo (void);
 // returns an info string containing all the CVAR_SERVERINFO cvars
 
 extern bool userinfo_modified;
@@ -748,7 +772,7 @@ void	QCommon_Shutdown (void);
 // used by:
 // 1. common.cpp: MSG_WriteDir(), MSG_ReadDir()
 // 2. cl_fx.cpp:  CL_FlyParticles(), CL_BfgParticles()
-extern	vec3_t	bytedirs[NUMVERTEXNORMALS];
+extern	const vec3_t bytedirs[NUMVERTEXNORMALS];
 
 // this is in the client code, but can be used for debugging from server
 void	SCR_DebugGraph (float value, int color);
@@ -784,25 +808,6 @@ void	SCR_BeginLoadingPlaque (void);
 void	SV_Init (void);
 void	SV_Shutdown (const char *finalmsg, bool reconnect);
 void	SV_Frame (float msec);
-
-
-/*------------- Image loading -------------*/
-
-
-//--void LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *height);
-//--void LoadTGA (char *name, byte **pic, int *width, int *height);
-//--void LoadJPG (char *name, byte **pic, int *width, int *height);
-
-#define IMAGE_PCX	1
-#define IMAGE_WAL	2
-#define IMAGE_TGA	4
-#define IMAGE_JPG	8
-
-#define IMAGE_8BIT	(IMAGE_PCX|IMAGE_WAL)
-#define IMAGE_32BIT	(IMAGE_TGA|IMAGE_JPG)
-#define IMAGE_ANY	(IMAGE_8BIT|IMAGE_32BIT)
-
-//--int ImageExists (char *name, int stop_mask);
 
 
 /*---------- Map and model stuff ----------*/
@@ -854,7 +859,7 @@ typedef enum {map_q2, map_kp, map_hl} mapType_t;
 typedef enum {fog_no, fog_linear, fog_exp, fog_exp2} fogMode_t;
 
 
-typedef struct
+struct bspfile_t
 {
 	char		name[MAX_QPATH];	// mapname
 	void		*file;				// buffer, returned by FS_LoadFile()
@@ -952,7 +957,7 @@ typedef struct
 	vec3_t	sunAmbient;		// ambient light from sky surfaces
 	vec3_t	sunSurface;
 	vec3_t	ambientLight;	// global ambient light
-} bspfile_t;
+};
 
 extern bspfile_t *map_bspfile;
 
@@ -960,12 +965,5 @@ extern bspfile_t *map_bspfile;
 //--bspfile_t *LoadBspFile (char *filename, bool clientload, unsigned *checksum);
 char *ProcessEntstring (char *entString);
 
-
-/*-----------------------------------------------------------------------------
-	Staff from new engine
------------------------------------------------------------------------------*/
-
-#include "../client/ref_decl.h"
-#include "../client/ref_defs.h"
 
 #endif // QCOMMON_H

@@ -227,9 +227,8 @@ static void FindNextChunk (char *name)
 //		if (iff_chunk_len > 1024*1024)
 //			Com_FatalError ("FindNextChunk: %i length is past the 1 meg sanity limit", iff_chunk_len);
 		data_p -= 8;
-		last_chunk = data_p + 8 + ( (iff_chunk_len + 1) & ~1 );
-		if (!memcmp (data_p, name, 4))
-			return;
+		last_chunk = data_p + 8 + Align (iff_chunk_len, 2);
+		if (!memcmp (data_p, name, 4)) return;
 	}
 }
 
@@ -252,7 +251,7 @@ static void DumpChunks(void)
 		data_p += 4;
 		iff_chunk_len = GetLittleLong();
 		Com_Printf ("0x%x : %s (%d)\n", (int)(data_p - 4), str, iff_chunk_len);
-		data_p += (iff_chunk_len + 1) & ~1;
+		data_p += Align (iff_chunk_len, 2);
 	} while (data_p < iff_end);
 }
 

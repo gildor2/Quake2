@@ -105,10 +105,8 @@ void CL_DebugTrail (vec3_t start, vec3_t end)
 {
 	vec3_t		move;
 	vec3_t		vec;
-	float		len;
 //	int			j;
 	particle_t	*p;
-	float		dec;
 	vec3_t		right, up;
 //	int			i;
 //	float		d, c, s;
@@ -116,7 +114,7 @@ void CL_DebugTrail (vec3_t start, vec3_t end)
 
 	VectorCopy (start, move);
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = VectorNormalize (vec);
 
 	MakeNormalVectors (vec, right, up);
 
@@ -124,7 +122,7 @@ void CL_DebugTrail (vec3_t start, vec3_t end)
 
 //	dec = 1.0;
 //	dec = 0.75;
-	dec = 3;
+	float dec = 3;
 	VectorScale (vec, dec, vec);
 	VectorCopy (start, move);
 
@@ -241,19 +239,16 @@ void CL_BubbleTrail2 (vec3_t start, vec3_t end, int dist)
 {
 	vec3_t		move;
 	vec3_t		vec;
-	float		len;
 	int			i, j;
 	particle_t	*p;
-	float		dec;
 
 	VectorCopy (start, move);
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	int len = appFloor (VectorNormalize (vec));
 
-	dec = dist;
-	VectorScale (vec, dec, vec);
+	VectorScale (vec, dist, vec);
 
-	for (i=0 ; i<len ; i+=dec)
+	for (i=0 ; i<len ; i+=dist)
 	{
 		if (!(p = CL_AllocParticle ()))
 			return;
@@ -293,7 +288,7 @@ void CL_Heatbeam (vec3_t start, vec3_t end)
 	float		d, c, s;
 	vec3_t		dir;
 	float		ltime;
-	float		step = 5.0;
+	int			step = 5;
 
 	VectorCopy (start, move);
 	VectorSubtract (end, start, vec);
@@ -312,8 +307,8 @@ void CL_Heatbeam (vec3_t start, vec3_t end)
 	for (i=0 ; i<len ; i+=step)
 	{
 		d = i * 0.1 - fmod(ltime,16.0)*M_PI;
-		c = cos(d)/1.75;
-		s = sin(d)/1.75;
+		c = cos(d)/1.75f;
+		s = sin(d)/1.75f;
 #ifdef DOUBLE_SCREW
 		for (k=-1; k<2; k+=2)
 		{
@@ -324,7 +319,7 @@ void CL_Heatbeam (vec3_t start, vec3_t end)
 				return;
 			p->accel[2] = 0;
 
-			p->alpha = 0.5;
+			p->alpha = 0.5f;
 	//		p->alphavel = -1.0 / (1+frand()*0.2);
 			// only last one frame!
 			p->alphavel = INSTANT_PARTICLE;
@@ -336,8 +331,8 @@ void CL_Heatbeam (vec3_t start, vec3_t end)
 			// trim it so it looks like it's starting at the origin
 			if (i < 10)
 			{
-				VectorScale (right, c*(i/10.0)*k, dir);
-				VectorMA (dir, s*(i/10.0)*k, up, dir);
+				VectorScale (right, c*(i/10.0f)*k, dir);
+				VectorMA (dir, s*(i/10.0f)*k, up, dir);
 			}
 			else
 			{
@@ -372,7 +367,6 @@ void CL_Heatbeam (vec3_t start, vec3_t forward)
 	float		c, s;
 	vec3_t		dir;
 	float		ltime;
-	float		step = 32.0, rstep;
 	float		start_pt;
 	float		rot;
 	float		variance;
@@ -390,20 +384,21 @@ void CL_Heatbeam (vec3_t start, vec3_t forward)
 	VectorCopy (cl.v_up, up);
 //	if (vidref_val == VIDREF_GL) (removed by Gildor)
 	{ // GL mode
-		VectorMA (move, -0.5, right, move);
-		VectorMA (move, -0.5, up, move);
+		VectorMA (move, -0.5f, right, move);
+		VectorMA (move, -0.5f, up, move);
 	}
 	// otherwise assume SOFT
 
+	int step = 32;
 	ltime = cl.ftime;
-	start_pt = fmod(ltime*96.0,step);
+	start_pt = fmod(ltime*96.0f,step);
 	VectorMA (move, start_pt, vec, move);
 
 	VectorScale (vec, step, vec);
 
 //	Com_Printf ("%f\n", ltime);
-	rstep = M_PI/10.0;
-	for (i=start_pt ; i<len ; i+=step)
+	float rstep = M_PI/10.0f;
+	for (i=appRound(start_pt) ; i<len ; i+=step)
 	{
 		if (i>step*5) // don't bother after the 5th ring
 			break;
@@ -417,15 +412,15 @@ void CL_Heatbeam (vec3_t start, vec3_t forward)
 //			c = cos(rot)/2.0;
 //			s = sin(rot)/2.0;
 //			variance = 0.4 + ((float)rand()/(float)RAND_MAX) *0.2;
-			variance = 0.5;
+			variance = 0.5f;
 			c = cos(rot)*variance;
 			s = sin(rot)*variance;
 
 			// trim it so it looks like it's starting at the origin
 			if (i < 10)
 			{
-				VectorScale (right, c*(i/10.0), dir);
-				VectorMA (dir, s*(i/10.0), up, dir);
+				VectorScale (right, c*(i/10.0f), dir);
+				VectorMA (dir, s*(i/10.0f), up, dir);
 			}
 			else
 			{
@@ -433,9 +428,9 @@ void CL_Heatbeam (vec3_t start, vec3_t forward)
 				VectorMA (dir, s, up, dir);
 			}
 
-			p->alpha = 0.5;
+			p->alpha = 0.5f;
 	//		p->alphavel = -1.0 / (1+frand()*0.2);
-			p->alphavel = -1000.0;
+			p->alphavel = -1000.0f;
 	//		p->color = 0x74 + (rand()&7);
 			p->color = 223 - (rand()&7);
 			for (j=0 ; j<3 ; j++)
@@ -876,20 +871,19 @@ CL_TagTrail
 
 ===============
 */
-void CL_TagTrail (vec3_t start, vec3_t end, float color)
+void CL_TagTrail (vec3_t start, vec3_t end, int color)
 {
 	vec3_t		move;
 	vec3_t		vec;
 	float		len;
 	int			j;
 	particle_t	*p;
-	int			dec;
 
 	VectorCopy (start, move);
 	VectorSubtract (end, start, vec);
 	len = VectorNormalize (vec);
 
-	dec = 5;
+	int dec = 5;
 	VectorScale (vec, 5, vec);
 
 	while (len >= 0)
@@ -900,8 +894,8 @@ void CL_TagTrail (vec3_t start, vec3_t end, float color)
 			return;
 		p->accel[2] = 0;
 
-		p->alpha = 1.0;
-		p->alphavel = -1.0 / (0.8+frand()*0.2);
+		p->alpha = 1.0f;
+		p->alphavel = -1.0f / (0.8f+frand()*0.2f);
 		p->color = color;
 		for (j=0 ; j<3 ; j++)
 		{

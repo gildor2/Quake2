@@ -742,7 +742,7 @@ void CL_ParseMuzzleFlash (void)
 }
 
 
-#include "m_flash.h"
+#include "monster_flash.h"
 
 /*
 ==============
@@ -1394,7 +1394,7 @@ void CL_BlasterTrail (vec3_t start, vec3_t end)
 }
 
 
-void CL_FlagTrail (vec3_t start, vec3_t end, float color)
+void CL_FlagTrail (vec3_t start, vec3_t end, int color)
 {
 	vec3_t		move;
 	vec3_t		vec;
@@ -1419,8 +1419,8 @@ void CL_FlagTrail (vec3_t start, vec3_t end, float color)
 			return;
 		p->accel[2] = 0;		// accel = 0
 
-		p->alpha = 1.0;
-		p->alphavel = -1.0 / (0.8+frand()*0.2);
+		p->alpha = 1.0f;
+		p->alphavel = -1.0f / (0.8f + frand() * 0.2f);
 		p->color = color;
 		for (j=0 ; j<3 ; j++)
 		{
@@ -1440,7 +1440,6 @@ void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags)
 	float		len;
 	int			j;
 	particle_t	*p;
-	float		dec;
 	float		orgscale;
 	float		velscale;
 
@@ -1448,7 +1447,7 @@ void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags)
 	VectorSubtract (end, start, vec);
 	len = VectorNormalize (vec);
 
-	dec = 0.5;
+	float dec = 0.5f;
 	VectorScale (vec, dec, vec);
 
 	if (old->trailcount > 900)
@@ -1480,8 +1479,8 @@ void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags)
 
 			if (flags & EF_GIB)
 			{
-				p->alpha = 1.0;
-				p->alphavel = -1.0 / (1+frand()*0.4);
+				p->alpha = 1.0f;
+				p->alphavel = -1.0f / (1+frand()*0.4f);
 				p->color = 0xe8 + (rand()&7);
 				for (j=0 ; j<3 ; j++)
 				{
@@ -1492,8 +1491,8 @@ void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags)
 			}
 			else if (flags & EF_GREENGIB)
 			{
-				p->alpha = 1.0;
-				p->alphavel = -1.0 / (1+frand()*0.4);
+				p->alpha = 1.0f;
+				p->alphavel = -1.0f / (1+frand()*0.4f);
 				p->color = 0xdb + (rand()&7);
 				for (j=0; j< 3; j++)
 				{
@@ -1504,8 +1503,8 @@ void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags)
 			}
 			else
 			{
-				p->alpha = 1.0;
-				p->alphavel = -1.0 / (1+frand()*0.2);
+				p->alpha = 1.0f;
+				p->alphavel = -1.0f / (1+frand()*0.2f);
 				p->color = 4 + (rand()&7);
 				for (j=0 ; j<3 ; j++)
 				{
@@ -1531,7 +1530,6 @@ void CL_RocketTrail (vec3_t start, vec3_t end, centity_t *old)
 	float		len;
 	int			j;
 	particle_t	*p;
-	float		dec;
 
 	// smoke
 	CL_DiminishingTrail (start, end, old, EF_ROCKET);
@@ -1541,7 +1539,7 @@ void CL_RocketTrail (vec3_t start, vec3_t end, centity_t *old)
 	VectorSubtract (end, start, vec);
 	len = VectorNormalize (vec);
 
-	dec = 1;
+	int dec = 1;
 	VectorScale (vec, dec, vec);
 
 	while (len > 0)
@@ -1699,14 +1697,13 @@ void CL_IonripperTrail (vec3_t start, vec3_t ent)
 	vec3_t	vec;
 	float	len;
 	particle_t *p;
-	int		dec;
 	int     left = 0;
 
 	VectorCopy (start, move);
 	VectorSubtract (ent, start, vec);
 	len = VectorNormalize (vec);
 
-	dec = 5;
+	int dec = 5;
 	VectorScale (vec, 5, vec);
 
 	while (len > 0)
@@ -1754,13 +1751,12 @@ void CL_BubbleTrail (vec3_t start, vec3_t end)
 	float		len;
 	int			i, j;
 	particle_t	*p;
-	float		dec;
 
 	VectorCopy (start, move);
 	VectorSubtract (end, start, vec);
 	len = VectorNormalize (vec);
 
-	dec = 32;
+	int dec = 32;
 	VectorScale (vec, dec, vec);
 
 	for (i=0 ; i<len ; i+=dec)
@@ -1769,8 +1765,8 @@ void CL_BubbleTrail (vec3_t start, vec3_t end)
 			return;
 		p->accel[2] = 0;
 
-		p->alpha = 1.0;
-		p->alphavel = -1.0 / (1+frand()*0.2);
+		p->alpha = 1.0f;
+		p->alphavel = -1.0f / (1+frand()*0.2f);
 		p->color = 4 + (rand()&7);
 		for (j=0 ; j<3 ; j++)
 		{
@@ -1798,7 +1794,6 @@ void CL_FlyParticles (vec3_t origin, int count)
 	float		angle;
 	float		sr, sp, sy, cr, cp, cy;
 	vec3_t		forward;
-	float		dist = 64;
 	float		ltime;
 
 	if (count > NUMVERTEXNORMALS)
@@ -1830,7 +1825,7 @@ void CL_FlyParticles (vec3_t origin, int count)
 		if (!(p = CL_AllocParticle ()))
 			return;
 
-		dist = sin(ltime + i)*64;
+		float dist = sin(ltime + i)*64;
 		p->org[0] = origin[0] + bytedirs[i][0]*dist + forward[0]*BEAMLENGTH;
 		p->org[1] = origin[1] + bytedirs[i][1]*dist + forward[1]*BEAMLENGTH;
 		p->org[2] = origin[2] + bytedirs[i][2]*dist + forward[2]*BEAMLENGTH;
@@ -1863,12 +1858,12 @@ void CL_FlyEffect (centity_t *ent, vec3_t origin)
 
 	n = cl.time - starttime;
 	if (n < 20000)
-		count = n * 162 / 20000.0;
+		count = n * 162 / 20000;
 	else
 	{
 		n = ent->fly_stoptime - cl.time;
 		if (n < 20000)
-			count = n * 162 / 20000.0;
+			count = n * 162 / 20000;
 		else
 			count = 162;
 	}

@@ -251,20 +251,14 @@ A connection request that did not come from the master
 */
 static void cDirectConnect (int argc, char **argv)
 {
-	char		userinfo[MAX_INFO_STRING];
-	netadr_t	adr;
-	int			i;
-	client_t	*cl, *newcl;
-	client_t	temp;
-	edict_t		*ent;
-	int			edictnum;
-	int			version, port, challenge;
+	char	userinfo[MAX_INFO_STRING];
+	int		i;
 
-	adr = net_from;
+	netadr_t adr = net_from;
 
 	Com_DPrintf ("SVC_DirectConnect()\n");
 
-	version = atoi (argv[1]);
+	int version = atoi (argv[1]);
 	if (version != PROTOCOL_VERSION)
 	{
 		Netchan_OutOfBandPrint (NS_SERVER, adr, "print\nServer is version %4.2f.\n", VERSION);
@@ -272,12 +266,12 @@ static void cDirectConnect (int argc, char **argv)
 		return;
 	}
 
-	port = atoi (argv[2]);
-	challenge = atoi (argv[3]);
+	int port = atoi (argv[2]);
+	int challenge = atoi (argv[3]);
 
+	// get userinfo
 	appStrncpyz (userinfo, argv[4], sizeof(userinfo));
-
-	// force the IP key/value pair so the game can filter based on ip
+	// force the IP key/value pair to be in userinfo (for game-side IP filters)
 	Info_SetValueForKey (userinfo, "ip", NET_AdrToString(&net_from));
 
 	// attractloop servers are ONLY for local clients
@@ -295,7 +289,6 @@ static void cDirectConnect (int argc, char **argv)
 	if (!NET_IsLocalAddress (&adr))
 	{
 		for (i = 0; i < MAX_CHALLENGES; i++)
-		{
 			if (NET_CompareBaseAdr (&net_from, &svs.challenges[i].adr))
 			{
 				if (challenge == svs.challenges[i].challenge)
@@ -303,7 +296,6 @@ static void cDirectConnect (int argc, char **argv)
 				Netchan_OutOfBandPrint (NS_SERVER, adr, "print\nBad challenge.\n");
 				return;
 			}
-		}
 		if (i == MAX_CHALLENGES)
 		{
 			Netchan_OutOfBandPrint (NS_SERVER, adr, "print\nNo challenge for address.\n");
@@ -311,8 +303,9 @@ static void cDirectConnect (int argc, char **argv)
 		}
 	}
 
+	client_t temp, *cl;
 	memset (&temp, 0, sizeof(client_t));
-	newcl = NULL;
+	client_t *newcl = NULL;
 
 	// if there is already a slot for this ip, reuse it
 	for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
@@ -355,10 +348,10 @@ static void cDirectConnect (int argc, char **argv)
 	// build a new connection
 	// accept the new client
 	// this is the only place a client_t is ever initialized
-	memcpy (newcl, &temp, sizeof(client_t));
+	*newcl = temp;
 	sv_client = newcl;
-	edictnum = (newcl-svs.clients)+1;
-	ent = EDICT_NUM(edictnum);
+	int edictnum = (newcl-svs.clients)+1;
+	edict_t *ent = EDICT_NUM(edictnum);
 	newcl->edict = ent;
 	newcl->challenge = challenge;		// save challenge for checksumming
 
@@ -920,7 +913,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 {
 	byte	cmd;
 	vec3_t	v1, v2;
-	char	*s;
+	const char	*s;
 
 	guard(SV_MulticastHook);
 
@@ -1248,16 +1241,11 @@ Informs all masters that this server is going down
 */
 static void Master_Shutdown (void)
 {
-	int			i;
-
-	if (!DEDICATED)
-		return;		// only dedicated servers send heartbeats
-
-	if (!public_server->integer)
-		return;		// a private dedicated game
+	if (!DEDICATED) return;						// only dedicated servers send heartbeats
+	if (!public_server->integer) return;		// a private dedicated game
 
 	// send to group master
-	for (i = 0; i < MAX_MASTERS; i++)
+	for (int i = 0; i < MAX_MASTERS; i++)
 		if (master_adr[i].port)
 		{
 			if (i > 0)
@@ -1279,19 +1267,17 @@ into a more C freindly form.
 */
 void SV_UserinfoChanged (client_t *cl)
 {
-	char	*val;
-	int		i;
+	const char *val;
 
-	// call prog code to allow overrides
+	// call game code to allow overrides
 	ge->ClientUserinfoChanged (cl->edict, cl->userinfo);
 
-	// name for C code
+	// name
 	appStrncpyz (cl->name, Info_ValueForKey (cl->userinfo, "name"), sizeof(cl->name));
 	// mask off high bit
-	for (i = 0; i < sizeof(cl->name); i++)
-		cl->name[i] &= 127;
+	for (int i = 0; i < sizeof(cl->name); i++) cl->name[i] &= 127;
 
-	// rate command
+	// rate
 	val = Info_ValueForKey (cl->userinfo, "rate");
 	if (strlen(val))
 	{
@@ -1301,7 +1287,7 @@ void SV_UserinfoChanged (client_t *cl)
 	else
 		cl->rate = 5000;
 
-	// msg command
+	// msg
 	val = Info_ValueForKey (cl->userinfo, "msg");
 	if (strlen(val))
 	{

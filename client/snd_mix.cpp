@@ -160,7 +160,7 @@ void S_TransferPaintBuffer(int endtime)
 		// write a fixed sine wave
 		count = (endtime - paintedtime);
 		for (i = 0; i < count; i++)
-			paintbuffer[i].left = paintbuffer[i].right = sin((paintedtime+i)*0.1)*20000*256;
+			paintbuffer[i].left = paintbuffer[i].right = appRound (sin((paintedtime+i)*0.1f)*20000*256);
 	}
 
 

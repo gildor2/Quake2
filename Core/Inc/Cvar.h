@@ -29,11 +29,9 @@
 #define	CVAR_SYSTEMINFO		0x00008	// these cvars will be duplicated on all clients
 #define	CVAR_NOSET			0x00010	// don't allow change from console at all, but can be set from the command line
 #define CVAR_INIT			CVAR_NOSET		//?? alias
-#define	CVAR_LATCH			0x00020	// will only change when C code next does ??????
-									// a Cvar_Get(), so it can't be changed
-									// without proper initialization.  "modified"
-									// will be set, even though the value hasn't
-									// changed yet
+#define	CVAR_LATCH			0x00020	// will only change when C code next does a Cvar_Get(), so it can't be changed
+									// without proper initialization. "modified" will be set, even though the value
+									// hasn't changed yet
 #define	CVAR_ROM			0x00040	// display only, cannot be set by user at all
 #define	CVAR_USER_CREATED	0x00080	// created by a set command
 #define	CVAR_TEMP			0x00100	// can be set even when cheats are disabled, but is not archived
@@ -84,7 +82,8 @@ public:
 	char	*latchedString;			// for CVAR_LATCH vars
 #ifdef QUAKE2
 	unsigned flags;
-	qboolean modified;				// set each time the cvar is changed
+	bool	modified;				// set each time the cvar is changed
+	byte	pad[3];					// align to 4 bytes (Q2 qboolean)
 #else
 	word	flags;					// 2 bytes enough (even for Quake3)
 	bool	modified;

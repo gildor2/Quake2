@@ -91,8 +91,7 @@ sources(LIB) = \
 	$D/crc32.c \
 	$D/inffast.c \
 	$D/inflate.c \
-	$D/inftrees.c \
-	$D/zutil.c
+	$D/inftrees.c
 
 
 #------------------------------------------------------------------------------

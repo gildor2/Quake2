@@ -5,6 +5,8 @@
 #include "../ref_gl/gl_local.h"
 #include "glw_win.h"
 
+#include <time.h>
+
 //!! make this file multi-platform (and move from /win32 to renderer directory + rename file + header)
 
 qgl_t			qgl;

@@ -1,3 +1,4 @@
+#include "qcommon.h"
 #include "zip.h"
 
 /*
@@ -454,4 +455,24 @@ void Zip_CloseBuf (ZBUF *z)
 {
 	inflateEnd (&z->s);
 	appFree (z);
+}
+
+
+/*-----------------------------------------------------------------------------
+	Replacement of zutil.c functions
+-----------------------------------------------------------------------------*/
+
+extern "C" {
+	void *zcalloc (int opaque, int items, int size);
+	void zcfree (int opaque, void *ptr);
+}
+
+void *zcalloc (int opaque, int items, int size)
+{
+	return appMalloc (items * size);
+}
+
+void zcfree (int opaque, void *ptr)
+{
+	appFree (ptr);
 }

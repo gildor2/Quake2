@@ -21,9 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef QSHARED_H
 #define QSHARED_H
 
-#include <time.h>
-
-
 #ifndef _WIN32
 
 #define DLL_EXPORT
@@ -98,9 +95,6 @@ MATHLIB
 
 ==============================================================
 */
-
-typedef float vec3_t[3];
-
 
 #ifndef M_PI
 #define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
@@ -273,23 +267,37 @@ CVARS (console variables)
 #define	CVAR_BUFFER_SIZE	16		// size of buffer for var->string inside cvar_t
 
 // nothing outside the Cvar_*() functions should modify these fields!
-typedef struct cvar_s
+struct cvar_t
 {
 	char	*name;
 	char	*string;
-	char	*latched_string;		// for CVAR_LATCH vars
-	int		flags;
+	char	*latchedString;			// for CVAR_LATCH vars
+	unsigned flags;
 	bool	modified;				// set each time the cvar is changed; originally - qboolean
 	byte	pad[3];					// qboolean pad (4 bytes)
 	float	value;					// atof(string)
-	struct cvar_s *next;
+	cvar_t	*next;
 	// added since 4.00
-	char	*reset_string;			// default cvar value (unset for user-created vars)
+	char	*resetString;			// default cvar value (unset for user-created vars)
 	int		integer;				// atoi(string)
-	int		string_length;			// size of buffer, allocated for holding var->string (or 0 if var->buf used)
+	int		stringLength;			// size of buffer, allocated for holding var->string (or 0 if var->buf used)
 	char	buf[CVAR_BUFFER_SIZE];
-	struct cvar_s *hashNext;
-} cvar_t;
+	cvar_t	*hashNext;
+	// functions
+	inline bool IsDefault ()
+	{
+		return resetString && strcmp (string, resetString) == 0;
+	}
+	inline void Reset ()
+	{
+		//!! not optimal - should use cvar_t struc instead of "name"
+		Cvar_Set (name, resetString);
+	}
+	inline float Clamp (float low, float high)
+	{
+		return Cvar_Clamp (this, low, high);
+	}
+};
 
 
 
@@ -306,7 +314,7 @@ COLLISION DETECTION
 #define	AREA_SOLID		1
 #define	AREA_TRIGGERS	2
 
-// normal type for plane
+// normal type for cplane_t
 #define	PLANE_X			0			// { 1, 0, 0}
 #define	PLANE_Y			1			// { 0, 1, 0}
 #define	PLANE_Z			2			// { 0, 0, 1}
@@ -381,7 +389,7 @@ typedef struct
 {
 	// standard csurface_t fields (do not change this!)
 	char	name[16];
-	int		flags;
+	unsigned flags;
 	int		value;
 	// field from mapsurface_t (so, csurface_t now contains old csurface_t and mapsurface_t)
 	char	rname[32];		// used internally due to name len probs: ZOID (used only for precaching??)
@@ -397,7 +405,7 @@ typedef struct mapsurface_s
 */
 
 // a trace is returned when a box is swept through the world
-typedef struct
+struct trace_t
 {
 	bool		allsolid;		// if true, plane is not valid
 	byte		pad1[3];		// qboolean pad
@@ -409,7 +417,7 @@ typedef struct
 	csurface_t	*surface;		// surface hit
 	int			contents;		// contents on other side of surface hit
 	struct edict_s	*ent;		// not set by CM_*() functions
-} trace_t;
+};
 
 
 
