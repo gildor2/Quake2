@@ -464,12 +464,12 @@ void CL_SendConnectPacket (void)
 	userinfo_modified = false;
 
 	if (cl_extProtocol->integer)
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect %d %d %d \"%s\" %s\n",
+		Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect %d %d %d \"%s\" %s",
 			PROTOCOL_VERSION, port, cls.challenge, Cvar_Userinfo (), NEW_PROTOCOL_ID);
 	else
 	{
 		Com_DPrintf ("Extended protocol disabled\n");
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect %d %d %d \"%s\"\n",
+		Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect %d %d %d \"%s\"",
 			PROTOCOL_VERSION, port, cls.challenge, Cvar_Userinfo ());
 	}
 }
@@ -516,8 +516,8 @@ void CL_CheckForResend (void)
 	Com_Printf ("Connecting to %s...\n", cls.servername);
 
 	statusRequest = true;
-	Netchan_OutOfBandPrint (NS_CLIENT, adr, "status\n");
-	Netchan_OutOfBandPrint (NS_CLIENT, adr, "getchallenge\n");
+	Netchan_OutOfBandPrint (NS_CLIENT, adr, "status");
+	Netchan_OutOfBandPrint (NS_CLIENT, adr, "getchallenge");
 }
 
 
@@ -797,23 +797,6 @@ void CL_Reconnect_f (void)
 	}
 }
 
-/*
-=================
-CL_ParseStatusMessage
-
-Handle a reply from a ping
-=================
-*/
-void CL_ParseStatusMessage (void)
-{
-	char	*s;
-
-	s = MSG_ReadString (&net_message);
-
-	Com_Printf ("%s\n", s);
-	M_AddToServerList (net_from, s);
-}
-
 
 /*
 =================
@@ -902,12 +885,15 @@ Responses to broadcasts, etc
 
 void CL_ConnectionlessPacket (void)
 {
-	char	*s, *c;
+	char	*s, *s1, *c;
 
 	MSG_BeginReading (&net_message);
 	MSG_ReadLong (&net_message);	// skip the -1
 
-	s = MSG_ReadStringLine (&net_message);
+	s = MSG_ReadString (&net_message);
+	s1 = strchr (s, '\n');
+	if (s1) s1++;					// s1 = NULL || next line ptr
+	else s1 = "";					// just in case
 
 	Cmd_TokenizeString (s, false);
 
@@ -938,7 +924,8 @@ void CL_ConnectionlessPacket (void)
 	// server responding to a status broadcast
 	if (!strcmp (c, "info"))
 	{
-		CL_ParseStatusMessage ();
+		Com_Printf ("%s\n", s1);
+		M_AddToServerList (net_from, s1);
 		return;
 	}
 
@@ -950,20 +937,17 @@ void CL_ConnectionlessPacket (void)
 			Com_Printf ("Command packet from remote host.  Ignored.\n");
 			return;
 		}
-		Sys_AppActivate ();
-		s = MSG_ReadString (&net_message);
-		Cbuf_AddText (s);
+		Sys_AppActivate ();					//??
+		Cbuf_AddText (s1);
 		Cbuf_AddText ("\n");
 		return;
 	}
 	// print command from somewhere
 	if (!strcmp (c, "print"))
 	{
-		s = MSG_ReadString (&net_message);
+		if (TryParseStatus (s1)) return;	// do not pring status message
 
-		if (TryParseStatus (s)) return;		// do not pring status message
-
-		Com_Printf ("%s", s);
+		Com_Printf ("%s", s1);
 		return;
 	}
 
@@ -986,7 +970,7 @@ void CL_ConnectionlessPacket (void)
 			cl_mapname[0] = 0;		// needed ??
 			cl_gamename[0] = 0;
 		}
-		Cvar_SetInteger ("cheats", cl_cheats);		// synchronize "cheats" cvar on server and client
+		Cvar_SetInteger ("cheats", cl_cheats);		// synchronize client "cheats" cvar with server
 
 		cls.challenge = atoi(Cmd_Argv(1));
 		CL_SendConnectPacket ();
@@ -1663,22 +1647,6 @@ void CL_FixCvarCheats (void)
 
 //============================================================================
 
-/*
-==================
-CL_SendCommand
-
-==================
-*/
-void CL_SendCommand (void)
-{
-	Sys_SendKeyEvents ();		// get new key events
-	IN_Commands ();				// allow mice or other external controllers to add commands
-	Cbuf_Execute ();			// process console commands
-	CL_FixCvarCheats ();		// fix any cheating cvars
-	CL_SendCmd ();				// send intentions now
-	CL_CheckForResend ();		// resend a connection request if necessary
-}
-
 
 /*
 ==================
@@ -1686,34 +1654,40 @@ CL_Frame
 
 ==================
 */
-void CL_Frame (int msec)
+
+void CL_Frame (float msec, int realMsec)
 {
-	static int	extratime;
-	static int  lasttimecalled;
+	static int extratime_real;
+	static float extratime;
 
 	if (dedicated->integer)
 		return;
 
-	extratime += msec;
+	extratime += msec / 1000.0f;
+	extratime_real += realMsec;
 
 	if (!cl_timedemo->integer)
 	{
-		if (cls.state == ca_connected && extratime < 100)
+		// here extratime can be accumulated between frames
+		if (cls.state == ca_connected && extratime < 0.1f)
 			return;			// don't flood packets out while connecting
-		if (extratime < 1000 / cl_maxfps->value)		// NOTE: extratime <- msec is timescaled (cl_maxfps will not work with timescale)
+		if (extratime_real < 1000.0f / cl_maxfps->value)
 			return;			// framerate is too high
 	}
 
 	IN_Frame ();
 
 	// decide the simulation time
-	cls.frametime = extratime / 1000.0f;
-	cl.time += extratime;
+	cls.frametime = extratime;
+	cl.ftime += extratime;
+	cl.time = (int) (cl.ftime * 1000.0f);
+	extratime = 0;
+	extratime_real = 0;
+
 	cls.realtime = curtime;
 
 	cls.newfx = cl_newfx->integer && (*re.flags & REF_NEW_FX);
 
-	extratime = 0;
 #if 0
 	if (cls.frametime > (1.0f / cl_minfps->value))
 		cls.frametime = (1.0f / cl_minfps->value);
@@ -1729,8 +1703,14 @@ void CL_Frame (int msec)
 	// fetch results from server
 	CL_ReadPackets ();
 
+	Sys_SendKeyEvents ();		// get OS events
+	IN_Commands ();				// allow mice or other external controllers to add commands
+	Cbuf_Execute ();			// process console commands
+	CL_FixCvarCheats ();		// fix any cheating cvars
+
 	// send a new command message to the server
-	CL_SendCommand ();
+	CL_SendCmd ();				// send intentions now
+	CL_CheckForResend ();		// resend a connection request if necessary
 
 	// predict all unacknowledged movements
 	CL_PredictMovement ();
@@ -1762,6 +1742,8 @@ void CL_Frame (int msec)
 
 	if (log_stats->integer && cls.state == ca_active)
 	{
+		static int  lasttimecalled;
+
 		if (!lasttimecalled)
 		{
 			lasttimecalled = Sys_Milliseconds ();

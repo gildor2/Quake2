@@ -10,18 +10,9 @@
 ! spec for map script
 - colorize server list (old/new-only/cheats/full) (make legend ? or make table with some attributes: server-name, map-name, players,
   cheats, protocol (old,both,new))
-? add "devmap", "spmap" (?), "spdevmap" (?)
 - sv_extProtocol: "2" - force (no clients without this); if map.type != map_q2 -> force too; if cl_extProtocol=0, but server
   requires it, connect with extProtocol (should add sv_extProtocol to serverinfo + check it on a client side + detect non-q2 maps)
 - scoreboard: add blendrect (?) (try to improve look anyway ...)
-? command system: register commands with help-string; automatically show it when "cmd /?" or "cmd -help" (?); add to API Cmd_Help()
-  to display help for current command (==Cmd_Argv(0)); add command "help cmd"
-- bind key "action1"|onrelease "action2" (Unreal-like)
-? bind key+Alt or altbind (?)
-- savegames:
-  ? show game time (a-la Anachronox)
-  - quicksave: save to a few (4?) slots
-  - sort savegames by time, ignore slots; any number of savegames (?)
 ! prediction errors:
   - zaero, plasma shield (jump + shield in down direction - movement lock when landed on shield);
     original Q2 works incorrect too, but in a different way: can pass through shield
@@ -29,38 +20,34 @@
   - other: find "prediction" in this document
 ? make "r_consoleOnly" work without "vid_restart"
 - r_speeds -> r_times + r_stats
-* BUG: demo "match5...": have "crosshair 0;hand 2" on start -- should disable this (now disabled "set" command, need Cvar_Command);
-  position: cl_parse.c :: CL_ParseServerMessage() :: svc_stufftext
-  can: Cvar_Lock() -- disable cvar set with scripts, add cmd cvar_unlock cmd + put this command after Cbuf_AddText() (put "lock" before?)
-  cannot disable ALL commands here: some commands are used within network protocol ("precache", "cmd", dirty:"alias" etc.; demos:
-  "precache" only ?)
 
 ----------------------------------------
-
-! speedup: 
-  1) FS: cache FS_ListFiles() for file system: list all files in all nested dirs and save as PAK file (in memory)
-  2) ref_gl: ?? speedup BuildMd2Normals()
 
 ! map "trainstation": very slow (10-20ms) server (AMD K6-2+) (slow SV_AreaEdicts(), >800 times/sv_frame)
 ! unpack PVS in LoadBsp(); use unpacked version in renderer and CM_InPVS() etc.
 
 - if Win32 can't get keyboard focus, "set r_fullscreen 0" (as Unreal2)
+BINDS:
+  - bind key "action1"|onrelease "action2" (Unreal-like)
+  ? bind key+Alt or altbind (?)
+  ? bindtmp, aliastmp (not stered in config ?)
+SAVEGAMES:
+  ? show game time (a-la Anachronox)
+  - quicksave: save to a few (4?) slots
+  - sort savegames by time, ignore slots; any number of savegames (?)
+  ? qcommon.h: NO_SAVEGAMES - remove save/load game code
+  ? gzip file
 KINGPIN:
-  ! map "teehc2":
-    - have entity "{ *3 }" ("noclass") (KP have error with it too)
   - fire/steam
-FAKK:
-  ? FS_FileIsInPAK(const char *name)
-  (not FAKK)? qcommon.h: NO_SAVEGAMES - remove save/load game code
-CAMERA:
-  - interpolate camera
-  ? interpolate duck (1st person)
 HALFLIFE:
   // from pm_shader.c
   - step sound: volume = 0.2/0.5 (walk/run) (+ add slowwalk -- crouched)
   - if moving slow - no step sounds
   - walking/running: step sound length = 400/300; water = 600; ladder = 350
   - stop when |velocity| less than STOP_EPSILON==0.1 (friction)
+
+CAMERA:
+  - interpolate camera 1st/3rd person change
 
 TRACE:
   ? speedup ClipToEntities() (client/server/ref_gl): COMPARE only with entities in range (start - trace.endpos)
@@ -83,24 +70,20 @@ TRACE:
 - console: "nochat" - disable messages from game (engine/developer messages only); may be, display game messages
   in notify area only ? (this will require console extensions, 2nd console etc.)
 - improve (speedup) MSG_WriteDir() with tables
-? "dir" -> "ls"
-! reimplement Cbuf_Execute(): need comment ('//') parsing (should go to another place) (or: "exec <file>" - parse before Cbuf_Execute())
 - cvar commands: "push", "pop"; 2 variants:
   a) push <var> , pop <var>     -- each cvar have its ovn stack; "push $a;push $b;pop a;pop b" will not change vars
      (needs "save"/"restore" names for commands ("save" is already used) ??)
   b) push <value> , pop <var>   -- global cvar stack; "push a;push b;pop a;pop b" will exchange "a" and "b" values
-
-!? improve SV_ClipMoveToEntities()/SV_PointContents() like cl_pred.c: don't need SV_AreaEdicts in this function(s) ?
-? (when sprite-fx will be implemented) disable REF_NEWFX when necessary image files absent
 
 MODEL SYSTEM:
 - when no skin for model, use any (?) other; if no skins - use different (default) model
 - scan for models on initialization; check its gender, type (q2,hl,q3 etc.), skin list; create animation system
 - needs ability to specify model gender without "models.lst" file
 ? player setup: add model type/gender filter
-? make pmove player bounds to be taken from the actual player model
+? make pmove player bounds to be taken from the actual player model (server option (?), requires extptotocol for
+  correct prediction)
 ? create (compressed ?) model cache
-- ability to detect unused models/skins
+- ability to detect unused models/skins (for unloading from renderer)
 - client entity code should work with this_model_system objects, these objects should link to renderer models (move refEntity_t to
   model system)
 
@@ -110,27 +93,21 @@ DINPUT MOUSE BUGS/NOTES:
 - check DirectInput8
 ! add mouse cursor hiding (not always disappear with DInput after deactivate+activate); now to hide cursor: "in_mouse 1;in_mouse 2"
 
-! improve memory management: allocate with alignment of 16 bytes (large blocks only ? Z_AllocAligned(size, align) func ?)
 ? command for hiding files from pak: "pakhide <pakname> <filemask>" - non-reversive command, changes (be sure non-destructive
   for alpha-sort names) files info so it will not found on next requests
 ? improve camper detection: track player position every ... 5 sec (??) for a 1+n minute period and set "camper" to true
   if current player position is near (tune this distance !) to history[now-1min .. now-2min]
-- menu option: priority (win_priorityBoost) -- for Win2K
-- savegames:
-  ? gzip file
+- menu option: priority (win_priorityBoost) -- for Win2K+
 
 BSP:
-? KP map scaling (auto)
+? KP map scaling (auto) -- needs force extprotocol
 ? mirrored maps
-- commands spmap, devmap etc.
+? commands spmap, devmap etc. (set "cheats" and "deathmatch" vars before SV_Map())
 - advanced "map" command syntax: add scaling and mirroring (separate scale each axis, mirror - X *= -1 ?)
   "map [-dev] [-sp] [-mirror] [-scale] <name>" (?!)
-? Q1 map support (easier than HL)
+? Q1 map support (easier than HL; requires renderer ability to load textures from BSP)
 
 *** BUGS ***
-- Sys_Error(ERR_FATAL): will not restore mouse (not always ??!)
-*? map "ground3_beta3": have (server, "MAX_ENTS=128"- related ?) bug "SZ_Overflow" (??) when spectating and flying from inside wall
-  (see cl_ents.c MAX_PARSE_ENTITIES: seems, no more than 128 entities delta between frames)
 - 3rd person view: ground3_beta3, dist=300, enter dark place (near ladder) between street lamp and garage: garage
   door will disappear (server sends entity list depends on model origin, not vieworg)
 - memory leak 4096 bytes (map rexro/discon/vid_res/STATS/beachassault/rexro/discon/vid_res/STATS)
@@ -138,12 +115,7 @@ BSP:
   '/*' will work as '//' when no corresponding '*/' (for example, cmd "map /*lightmap1" will work as "map ", but when mapname
   is quoted - works fine)
 
-? menu interface: appearing/disappearing fx (see itmastio etc.)
-
-- bindtmp, aliastmp, aliaslist (now it is "alias <no-args>")
-
-! remove auto-demo start on quake loading (option? timeout? first run?); remove "~"=="d1" (make demo playback like a normal game
-  (non-controllable movement), but: find a way to stop demo (see as Q3 does ?))
+*! remove auto-demo start on quake loading (option? timeout? first run?)
 
 ! add materials: glass, grass, sand
 ? make atmospheric effects (some maps in kingpin and halflife does, Q3F too ...)
@@ -154,11 +126,11 @@ BSP:
 
 ------------- API ----------------
 
-- add Cmd_AddCommands(list,num), Cmd_RemoveCommands(list,num)
+? add Cmd_AddCommands(list,num), Cmd_RemoveCommands(list,num)
   - Cmd_AddCommands() may be implemented WITHOUT copying name, or just with using static cmdFunc_t for list
     (just insert into list, but add flags "do not free on remove")
   - macro CMD_ADD_COMMANDS(var) -> Cmd_AddCommands(var,sizeof(var)/sizeof(*var)) etc.
-- add "Cmd_AddHidden()" - for server commands (cannot be completed/listed, but accessible)
+? add "Cmd_AddHidden()" - for server commands (cannot be completed/listed, but accessible)
   (or just implement with Cmd_AddCommand(), but use name prefix, which will be ignored for seaching/completion,
   but disables completion)
 ? Com_DWPrintf() -- same as Com_DPrintf(), but display only when "developer" != 0 (or "warnings" != 0 ??)
@@ -176,12 +148,10 @@ BSP:
 - record demos: make .dm2 file to be gzipped (produce with command other than "record"?)
   (may use old command too: who wants to send demo to other players, may just un-gzip it)
 ? demos with full list of events (already: serverrecord);
-  make player for this demos (total control over movement: move, chase, eye etc.)
-*? improve movement prediction (lots of bugs, such as "stand-on-grenage drizzle" (fixed?) and "hooked-in opening-door"):
-  ? use acceleration (see Q3, HL ??)
+  ! make player for this demos (total control over movement: move, chase, eye etc.)
 ? add support for moving ladders: when player on entity with ladder, move player within entity (example: map "mesto", helicopter)
   (seems, this is game code ...)
-? improve speed of downloading: limited by qcommon.h::MAX_MSGLEN (used in )
+? improve speed of downloading: current - 1024K/1 sv_frame
   client: cl_parse.c :: CL_ParseDownload() - net_massege ;; SZ_Print(..,"nextdl")
   server: sv_user.c :: SV_NextDownload_f() - write_size=r (1024 max < MAX_MSGLEN)
 ? perform extended protocol checking by adding "[cl_]extprotocol" to userinfo
@@ -189,8 +159,9 @@ BSP:
   will try to display this name somewhere (check all API functions!), replace it with original name
   ! WANRING: check demo recording -- should display correct names (this is client-side, so - safe ?)
 ? SV_FindIndex() -- use hash tables ?
-? server: if game_time is comparable with ref_time, need to Sleep(game_time) every frame between game frames
-? check sv_user.c :: SV_ExecuteUserCmd() ("false")
+? server: if game_time is comparable (or greater than ?) with ref_time, need to Sleep(game_time) every frame between game
+  frames (smooth FPS)
+? CHECK: sv_user.c :: SV_ExecuteUserCmd() ("false")
 
 --------- REF_GL (new) -----------
 
@@ -201,11 +172,9 @@ BSP:
   - try software clipplane (1. add to frustum; 2. clip triangles)
   - add 2nd {viewcluster, leaf[].frame} set (1st for main scene, 2nd for portal) -- Q3 has recalculation of leaf visibility
     every frame twice, and without portal - once per few frames.
-- better alt-tabbing (with CDS()), better GLimp_InitGL() (reserve stencil (?), gl_depthBits)
 ? place LoadMd2 outside ref_xxx and perform lovercase for a skin names
-- use GL_NV_fog_distance (?) / GL_EXT_fog_coord, GL_EXT_texture_filter_anisotropic (?)
 ! fog occlusion (for global fog) -- implement it like sky (occluded surface -> sky surface, sky -> fog color);
-  may look at Alice ...
+  may look at Alice (additional clip plane to 4 frustum planes)
 
 ------------ SOUND ---------------
 
@@ -214,7 +183,7 @@ BSP:
 ? add hardware mixing (DirectSound), try DirectSound3D (or OpenAL, or own implementation ??)
   Maps with slow sound fx: beachassault (multiple barrel blast)
 
-- fix stereo sound rotation (bad positioning)
+? fix stereo sound rotation (bad positioning)
 
 - make camper sounds gender-sensitive; change sounds (get it from Thief II), but let old (current)
   system works with "sv_campersounds 2"
@@ -223,7 +192,7 @@ BSP:
 
 ------------ VIDEO ---------------
 
-? remove non-transparent water vis bugfix from oldgl
+? remove non-transparent water vis bugfix from oldgl (add to new gl ?!)
 
 - add WriteTGA compression; add support for top-to-bottom TGA loading
 - PCX: own palette for each file (but: 255 is transparent ?)
@@ -233,7 +202,7 @@ BSP:
   - when mode cannot be changed, use current (with fullscreen available)
   - add support for "1024x768@70"-like strings (see UT2003 for ideas)
 
-- add marks: bulletholes (?), explosion marks, blood, "cheesy shadow", water ripple
+- add marks: bulletholes (?), explosion marks, blood (!), "cheesy shadow" (!), water ripple
 
 - ref_console (Win32 console-mode application, no GDI/OpenGL) -- auto-use in dedicated server (should attach
   dedicated server to ref)
@@ -275,9 +244,6 @@ BSP:
 
 !? add Python virtual machine (game library, inline map scripts)
 
-? separate "math.c"; make "MMX", "3D Now!", "SSE" and "common" versions for some functions (all trace functions, ...)
-- make some functions #define -> inline (DotProduct etc.)
-                                 
 ------------- CVARS --------------
 
 ? cvarclear - clear all archive flags from cvars, which was not created with quake2 (created with "set <var> <value> a" command)
@@ -289,9 +255,7 @@ BSP:
 
 ------------- LINUX --------------
 
-- check all "#pragma pack" places
-- check Sys_FindFirst/FindNext/FindClose to work correctly (on Win32 was a bug: when canthave=DIR and 1st match
-  found is a directory (".",".." or other) - no more searches performed, because FindFirst()/FindNext() returned NULL
+? check all "#pragma pack" places (gcc have ability to compile this)
 - update video config menu
 ? loading Win32 mods (Wine)
 - hardware gamma (see /usr/X11R6/bin/xgamma as example ...)

@@ -341,7 +341,7 @@ void CL_FinishMove (usercmd_t *cmd)
 		cmd->buttons |= BUTTON_ANY;
 
 	// send milliseconds of time to apply the move
-	ms = cls.frametime * 1000;
+	ms = Q_ftol (cls.frametime * 1000);
 	if (ms > 250)
 		ms = 100;		// time was unreasonable
 	cmd->msec = ms;
@@ -443,7 +443,7 @@ void CL_SendCmd (void)
 {
 	sizebuf_t	buf;
 	byte		data[128];
-	int			i;
+	int			i, fillness;
 	usercmd_t	*cmd, *oldcmd;
 	usercmd_t	nullcmd;
 	int			checksumIndex;
@@ -468,6 +468,12 @@ void CL_SendCmd (void)
 			Netchan_Transmit (&cls.netchan, 0, NULL);
 		return;
 	}
+
+	// restrict outgoing commands to avoid CMD_BACKUP overflow when cl.fps/sv.fps is too
+	// large (fast system or small timescale)
+	fillness = cls.netchan.outgoing_sequence - cls.netchan.incoming_acknowledged;
+	if (fillness > CMD_BACKUP/10 && (float)fillness / CMD_BACKUP > cl.lerpfrac * 0.9f)
+		return;
 
 	// send a userinfo update if needed
 	// disallow sending userinfo notification while playing demos

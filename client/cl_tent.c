@@ -370,12 +370,10 @@ void CL_AddExplosions (void)
 	int			i, frm, timeDelta;
 	explosion_t	*ex;
 	float		frac;
-	static int oldTime;
+	static float oldTime;
 
-	timeDelta = cl.time - oldTime;
-	oldTime = cl.time;
-	if (timeDelta <= 0)
-		return;
+	timeDelta = (cl.ftime - oldTime) * 1000.0f;		// msec
+	oldTime = cl.ftime;
 
 	if (r_sfx_pause->integer) timeDelta = 0;
 

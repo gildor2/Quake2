@@ -632,22 +632,17 @@ Passedict and edicts owned by passedict are explicitly not checked.
 
 ==================
 */
-//?? used by PMove() and game, else - can do "void SV_Trace(&trace, start, ...)"
-trace_t SV_Trace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
+void SV_Trace (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
 {
-	trace_t trace;
-
 	if (!mins)	mins = vec3_origin;
 	if (!maxs)	maxs = vec3_origin;
 
 	// clip to world
-	CM_BoxTrace (&trace, start, end, mins, maxs, 0, contentmask);
+	CM_BoxTrace (tr, start, end, mins, maxs, 0, contentmask);
 
-	trace.ent = ge->edicts;
-	if (!trace.fraction) return trace;		// blocked by the world
+	tr->ent = ge->edicts;
+	if (!tr->fraction) return;		// blocked by the world
 
 	// clip to other solid entities
-	SV_ClipMoveToEntities (&trace, start, mins, maxs, end, passedict, contentmask);
-
-	return trace;
+	SV_ClipMoveToEntities (tr, start, mins, maxs, end, passedict, contentmask);
 }

@@ -24,6 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 game_export_t	*ge;
 
 
+#define SV_Pmove Pmove
+
 /*
 ===============
 PF_Unicast
@@ -311,16 +313,7 @@ void SV_ShutdownGameProgs (void)
 	ge = NULL;
 }
 
-
-/*
-===============
-SV_InitGameProgs
-
-Init the game subsystem for a new map
-===============
-*/
-
-/*------- Wrappers for some system functions -------*/
+/*-------- Wrappers for some system functions ----------------*/
 
 static void *PF_TagMalloc (int size, int tag)
 {
@@ -339,9 +332,6 @@ void SCR_DebugGraph (float value, int color);
 
 
 //----------------------------------------------------------------------------------
-
-#define SV_Pmove Pmove
-
 
 #define SV_PROFILE
 
@@ -396,9 +386,9 @@ static int PSV_AreaEdicts (vec3_t mins, vec3_t maxs, edict_t **list, int maxcoun
 {	PROF2(int)	SV_AreaEdicts(mins,maxs,list,maxcount,areatype); EPROF2(2);	}
 #define SV_AreaEdicts PSV_AreaEdicts
 
-static trace_t PSV_Trace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
-{	PROF2(trace_t)	SV_Trace(start,mins,maxs,end,passedict,contentmask); EPROF2(3);	}
-#define SV_Trace PSV_Trace
+static trace_t PSV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
+{	PROF2(trace_t)	SV_TraceHook(start,mins,maxs,end,passedict,contentmask); EPROF2(3);	}
+#define SV_TraceHook PSV_TraceHook
 
 static int PSV_PointContents (vec3_t p)
 {	PROF2(int)	SV_PointContents(p); EPROF2(4);	}
@@ -406,6 +396,7 @@ static int PSV_PointContents (vec3_t p)
 
 static void PPmove (pmove_t *pmove)
 {	PROF; Pmove(pmove); EPROF(5);	}
+#undef SV_Pmove
 #define SV_Pmove PPmove
 
 static int PSV_ModelIndex (char *name)
@@ -455,12 +446,12 @@ void SV_InitGameProgs (void)
 	import.linkentity = SV_LinkEdict;
 	import.unlinkentity = SV_UnlinkEdict;
 	import.BoxEdicts = SV_AreaEdicts;
-	import.trace = SV_Trace;
+	import.trace = SV_TraceHook;
 	import.pointcontents = SV_PointContents;
 	import.setmodel = PF_setmodel;
 	import.inPVS = PF_inPVS;
 	import.inPHS = PF_inPHS;
-	import.Pmove = SV_Pmove;	// really, this is a Pmove() !!
+	import.Pmove = SV_Pmove;
 
 	import.modelindex = SV_ModelIndex;
 	import.soundindex = SV_SoundIndex;

@@ -139,33 +139,6 @@ char *SV_StatusString (void)
 	return status;
 }
 
-/*
-================
-SVC_Status
-
-Responds with all the info that qplug or qspy can see
-================
-*/
-void SVC_Status (void)
-{
-	Netchan_OutOfBandPrint (NS_SERVER, net_from, "print\n%s", SV_StatusString());
-#if 0
-	Com_BeginRedirect (RD_PACKET, sv_outputbuf, SV_OUTPUTBUF_LENGTH, SV_FlushRedirect);
-	Com_Printf (SV_StatusString());
-	Com_EndRedirect ();
-#endif
-}
-
-/*
-================
-SVC_Ack
-
-================
-*/
-void SVC_Ack (void)
-{
-	Com_Printf ("Ping acknowledge from %s\n", NET_AdrToString (&net_from));
-}
 
 /*
 ================
@@ -200,19 +173,6 @@ void SVC_Info (void)
 
 	Netchan_OutOfBandPrint (NS_SERVER, net_from, "info\n%s", string);
 }
-
-/*
-================
-SVC_Ping
-
-Just responds with an acknowledgement
-================
-*/
-void SVC_Ping (void)
-{
-	Netchan_OutOfBandPrint (NS_SERVER, net_from, "ack");
-}
-
 
 /*
 =================
@@ -417,6 +377,7 @@ void SVC_DirectConnect (void)
 	newcl->lastconnect = svs.realtime;
 }
 
+
 int Rcon_Validate (void)
 {
 	if (!strlen (rcon_password->string))
@@ -488,7 +449,7 @@ void SV_ConnectionlessPacket (void)
 	MSG_BeginReading (&net_message);
 	MSG_ReadLong (&net_message);		// skip the -1 marker
 
-	s = MSG_ReadStringLine (&net_message);
+	s = MSG_ReadString (&net_message);
 
 	Cmd_TokenizeString (s, false);
 
@@ -501,11 +462,22 @@ void SV_ConnectionlessPacket (void)
 	}
 
 	if (!strcmp (c, "ping"))
-		SVC_Ping ();
+	{
+		// Just responds with an acknowledgement
+		Netchan_OutOfBandPrint (NS_SERVER, net_from, "ack");
+	}
 	else if (!strcmp (c, "ack"))
-		SVC_Ack ();
+		Com_Printf ("Ping acknowledge from %s\n", NET_AdrToString (&net_from));
 	else if (!strcmp (c, "status"))
-		SVC_Status ();
+	{
+		// Responds with all the info that qplug or qspy can see
+		Netchan_OutOfBandPrint (NS_SERVER, net_from, "print\n%s", SV_StatusString());
+#if 0
+		Com_BeginRedirect (RD_PACKET, sv_outputbuf, SV_OUTPUTBUF_LENGTH, SV_FlushRedirect);
+		Com_Printf (SV_StatusString());
+		Com_EndRedirect ();
+#endif
+	}
 	else if (!strcmp (c, "info"))
 		SVC_Info ();
 	else if (!strcmp (c, "getchallenge"))
@@ -726,6 +698,10 @@ static void SV_PrepWorldFrame (void)
 	Protocol extensions support
 =============================================================================*/
 
+static vec3_t shotStart, shotEnd;
+static int shotLevel;
+
+
 void SV_PostprocessFrame (void)
 {
 	edict_t *ent;
@@ -749,7 +725,7 @@ void SV_PostprocessFrame (void)
 			point[0] = ent->s.origin[0];
 			point[1] = ent->s.origin[1];
 			point[2] = ent->s.origin[2] - 64;
-			trace = SV_Trace (ent->s.origin, ent->mins, ent->maxs, point, ent, MASK_PLAYERSOLID|MASK_MONSTERSOLID|MASK_WATER);
+			SV_Trace (&trace, ent->s.origin, ent->mins, ent->maxs, point, ent, MASK_PLAYERSOLID|MASK_MONSTERSOLID|MASK_WATER);
 			if (trace.fraction < 1)
 			{
 				footsteptype = trace.surface->material - 1;
@@ -838,11 +814,11 @@ void SV_PostprocessFrame (void)
 						end[0] = pm_origin[0];
 						end[1] = pm_origin[1];
 						end[2] = pm_origin[2] - FALLING_SCREAM_HEIGHT_WATER;
-						trace = SV_Trace (pm_origin, mins, maxs, end, NULL, CONTENTS_WATER);
+						SV_Trace (&trace, pm_origin, mins, maxs, end, NULL, CONTENTS_WATER);
 						if (trace.fraction == 1.0 && !trace.startsolid)	// no water and start not in water
 						{
 							end[2] = pm_origin[2] - FALLING_SCREAM_HEIGHT_SOLID;
-							trace = SV_Trace (pm_origin, mins, maxs, end, NULL, CONTENTS_SOLID|CONTENTS_LAVA);
+							SV_Trace (&trace, pm_origin, mins, maxs, end, NULL, CONTENTS_SOLID|CONTENTS_LAVA);
 							if (trace.fraction == 1.0 || (!trace.ent && trace.plane.normal[2] < 0.5) ||
 								trace.contents & CONTENTS_LAVA || trace.surface->flags & SURF_SKY)
 								cl->screaming = true;
@@ -978,9 +954,78 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 			MSG_WriteByte (ext, rType);
 		}
 		return ext;
+
+	case TE_GUNSHOT:
+	case TE_SPARKS:
+	case TE_BULLET_SPARKS:
+		{
+			vec3_t	d;
+			float	back;
+			int		i;
+
+			if (shotLevel != 2) return original;
+
+			MSG_ReadPos (original, v1);
+			MSG_ReadDir (original, v2);
+
+			// compute reflection vector
+			VectorSubtract (shotStart, shotEnd, d);
+			VectorNormalizeFast (d);
+			back = DotProduct (d, v2);
+			for (i = 0; i < 3; i++)
+				v2[i] = d[i] - 2 * (d[i] - back * v2[i]);
+
+			MSG_WriteByte (ext, svc_temp_entity);
+			MSG_WriteByte (ext, cmd);
+			MSG_WritePos (ext, v1);
+			MSG_WriteDir (ext, v2);
+		}
+		return ext;
+
+//	case TE_SPLASH:		?? replace with TE_WATER_SPLASH (?) when shotLevel>0
 	}
 
 	return original;
+}
+
+
+trace_t SV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
+{
+	trace_t	tr;
+	static edict_t *ent;
+
+#define RESET  { shotLevel = 0; return tr; }
+
+	SV_Trace (&tr, start, mins, maxs, end, passedict, contentmask);
+	if (!sv_extProtocol->integer) return tr;
+
+	if (mins || maxs) RESET
+
+	// for details, look game/g_weapon.c :: fire_lead()
+	if (contentmask == MASK_SHOT && ((unsigned)passedict) + 4 == (unsigned)start)
+	{
+		if (ent == passedict && VectorCompare (end, shotStart))
+			RESET			// shotgun shot
+		shotLevel = 1;
+		VectorCopy (end, shotStart);
+		ent = passedict;
+	}
+	else if (shotLevel == 1)
+	{
+		if (passedict != ent || !VectorCompare (start, shotStart) ||
+			(contentmask != (MASK_SHOT|MASK_WATER) && contentmask != MASK_SHOT))
+			RESET
+		VectorCopy (end, shotEnd);
+
+		shotLevel = 2;
+	}
+	else if (shotLevel > 1)
+	{
+		if (passedict != ent) RESET
+	}
+
+#undef RESET
+	return tr;
 }
 
 
@@ -993,7 +1038,10 @@ SV_Frame
 
 ==================
 */
-void SV_Frame (int msec)
+
+//void DrawTextLeft(char *fmt, float r, float g, float b);//!!
+
+void SV_Frame (float msec)
 {
 	int		frameTime;
 
@@ -1003,9 +1051,11 @@ void SV_Frame (int msec)
 	if (!svs.initialized)
 		return;
 
-	svs.realtime += msec;
+//	DrawTextLeft(va("time: %10d rf: %10.5f d: %10.4f ri:%10d", sv.time, svs.realtimef, msec, svs.realtime),1,1,1);//!!
+	svs.realtimef += msec;
+	svs.realtime = (int)svs.realtimef;		// WARNING: Q_ftol() will produce bad result
 
-	// keep the random time dependent
+	// keep the random time dependent (??)
 	rand ();
 
 	// check timeouts
@@ -1023,10 +1073,11 @@ void SV_Frame (int msec)
 		if (sv.time - svs.realtime > frameTime)
 		{
 			if (sv_showclamp->integer)
-				Com_Printf ("sv lowclamp\n");
+				Com_Printf ("sv lowclamp s:%d -- r:%d -> %d\n", sv.time, svs.realtime, sv.time - frameTime);
 			svs.realtime = sv.time - frameTime;
+			svs.realtimef = svs.realtime;
 		}
-		NET_Sleep(sv.time - svs.realtime);
+		NET_Sleep(sv.time - svs.realtime);		//?? timescaled value
 		return;
 	}
 
@@ -1043,7 +1094,7 @@ void SV_Frame (int msec)
 	// compression can get confused when a client
 	// has the "current" frame
 	sv.framenum++;
-	sv.time += frameTime;	// = sv.framenum*100; ??
+	sv.time += frameTime;	//  = sv.framenum*100; ??
 
 	// don't run if paused
 	if (!sv_paused->integer || maxclients->integer > 1)
@@ -1057,8 +1108,9 @@ void SV_Frame (int msec)
 		if (sv.time < svs.realtime)
 		{
 			if (sv_showclamp->integer)
-				Com_Printf ("sv highclamp\n");
+				Com_Printf ("sv highclamp s:%d r:%d -> %d\n", sv.time, svs.realtime, sv.time);
 			svs.realtime = sv.time;
+			svs.realtimef = sv.time;
 		}
 		if (com_speeds->integer)
 			time_after_game = Sys_Milliseconds ();
@@ -1255,22 +1307,6 @@ CVAR_END
 }
 
 /*
-==================
-SV_FinalMessage
-
-Used by SV_Shutdown to send a final message to all
-connected clients before the server goes down.  The messages are sent immediately,
-not just stuck on the outgoing message list, because the server is going
-to totally exit after returning from this function.
-==================
-*/
-void SV_FinalMessage (char *message, qboolean reconnect)
-{
-}
-
-
-
-/*
 ================
 SV_Shutdown
 
@@ -1285,6 +1321,9 @@ void SV_Shutdown (char *finalmsg, qboolean reconnect)
 		int			i;
 		client_t	*cl;
 
+		// Send a final message to all connected clients before the server goes down.
+		//  The messages are sent immediately, not just stuck on the outgoing message
+		// list, because the server is going to totally exit after returning from this function.
 		for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 		{
 			if (cl->state < cs_connected)

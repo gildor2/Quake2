@@ -35,7 +35,7 @@ typedef struct
 	qboolean	attractloop;			// running cinematics and demos for the local system only
 	qboolean	loadgame;				// client begins should reuse existing entity
 
-	unsigned	time;					// always sv.framenum * 100 msec
+	unsigned	time;					// always sv.framenum * 100; msec
 	int			framenum;
 
 	char		name[MAX_QPATH];		// map name, or cinematic name
@@ -160,6 +160,7 @@ typedef struct
 {
 	qboolean	initialized;				// sv_init has completed
 	int			realtime;					// always increasing, no clamping, etc
+	float		realtimef;					// same as "realtime", but more precisious (may be fractional, when timescale < 1)
 
 	char		mapcmd[MAX_TOKEN_CHARS];	// ie: *intro.cin+base
 
@@ -222,6 +223,7 @@ void SV_SendServerinfo (client_t *client);
 void SV_UserinfoChanged (client_t *cl);
 
 sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext);
+trace_t SV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask);
 
 
 void Master_Heartbeat (void);
@@ -332,7 +334,7 @@ int SV_PointContents (vec3_t p);
 // Quake 2 extends this to also check entities, to allow moving liquids
 
 
-trace_t SV_Trace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask);
+void SV_Trace (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask);
 // mins and maxs are relative
 
 // if the entire move stays in a solid volume, trace.allsolid will be set,

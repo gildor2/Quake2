@@ -561,9 +561,15 @@ void CL_ParseFrame (void)
 
 	// clamp time
 	if (cl.time > cl.frame.servertime)
+	{
 		cl.time = cl.frame.servertime;
+		cl.ftime = cl.time / 1000.0f;
+	}
 	else if (cl.time < cl.frame.servertime - 100)
+	{
 		cl.time = cl.frame.servertime - 100;
+		cl.ftime = cl.time / 1000.0f;
+	}
 
 	// read areabits
 	len = MSG_ReadByte (&net_message);
@@ -893,7 +899,7 @@ static void CL_AddPacketEntities (void)
 	unsigned int		effects, renderfx;
 
 	// bonus items rotate at a fixed rate
-	autorotate = anglemod(cl.time/10);
+	autorotate = anglemod(cl.ftime * 100);
 
 	// brush models can auto animate their frames
 	autoanim = 2 * cl.time / 1000;
@@ -1461,6 +1467,7 @@ void CL_AddEntities (void)
 		if (cl_showclamp->integer)
 			Com_Printf ("high clamp %i\n", cl.time - cl.frame.servertime);
 		cl.time = cl.frame.servertime;
+		cl.ftime = cl.time / 1000.0f;
 		cl.lerpfrac = 1.0;
 	}
 	else if (cl.time < cl.frame.servertime - 100)
@@ -1468,6 +1475,7 @@ void CL_AddEntities (void)
 		if (cl_showclamp->integer)
 			Com_Printf ("low clamp %i\n", cl.frame.servertime - 100 - cl.time);
 		cl.time = cl.frame.servertime - 100;
+		cl.ftime = cl.time / 1000.0f;
 		cl.lerpfrac = 0;
 	}
 	else

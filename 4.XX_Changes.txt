@@ -229,7 +229,9 @@ Debugging
 - browsing levelshots in "start server" menu (accessible via menu or "menu_dmbrowse"); displaying it while map loading
 - screenshots in savegames: display in save/load game menu, display while map loading
 - "cl_draw2d 0" removes HUD
-- sound pitch affected by timescale (DirectSound only)
+- timescale:
+  - sound pitch affected by timescale (DirectSound only, restart required)
+  - fixed low timescale (was not able to perform frames with scaled time less than 1 ms)
 - added mouse support via DirectInput (activated with "set in_mouse 2", default)
 - third-person view: activated with "cl_3rd_person 1"
 

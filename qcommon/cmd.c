@@ -665,13 +665,8 @@ void Cmd_TokenizeString (char *text, qboolean macroExpand)
 		// skip whitespace up to a /n
 		while (*text && *text <= ' ' && *text != '\n') text++;
 
-		if (*text == '\n')
-		{	// a newline seperates commands in the buffer
-			text++;
-			break;
-		}
-
-		if (!text[0]) return;
+		if (!text[0] || text[0] == '\n')
+			return;
 
 		// set cmd_args to everything after the first arg
 		if (cmd_argc == 1)

@@ -149,7 +149,8 @@ typedef struct
 	vec3_t	viewangles;
 
 	int		time;				// this is the time value that the client
-									// is rendering at.  always <= cls.realtime
+								// is rendering at, in msec; always <= cls.realtime
+	float	ftime;				// same as "time/1000", in sec; more precisious than "time"
 	float	lerpfrac;			// between oldframe and frame
 
 	refdef_t refdef;

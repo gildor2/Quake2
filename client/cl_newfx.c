@@ -395,7 +395,7 @@ void CL_Heatbeam (vec3_t start, vec3_t end)
 	VectorMA (move, -1, up, move);
 
 	VectorScale (vec, step, vec);
-	ltime = (float) cl.time/1000.0;
+	ltime = cl.ftime;
 
 //	for (i=0 ; i<len ; i++)
 	for (i=0 ; i<len ; i+=step)
@@ -484,7 +484,7 @@ void CL_Heatbeam (vec3_t start, vec3_t forward)
 	}
 	// otherwise assume SOFT
 
-	ltime = (float) cl.time/1000.0;
+	ltime = cl.ftime;
 	start_pt = fmod(ltime*96.0,step);
 	VectorMA (move, start_pt, vec, move);
 
@@ -590,7 +590,7 @@ void CL_Heatbeam (vec3_t start, vec3_t end)
 	}
 /*
 
-	ltime = (float) cl.time/1000.0;
+	ltime = cl.ftime;
 	start_pt = fmod(ltime*16.0,step);
 	VectorMA (move, start_pt, vec, move);
 

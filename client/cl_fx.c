@@ -264,6 +264,7 @@ typedef struct
 	vec3_t	end;
 	float	radius;
 	color_t	color;
+	float	alpha;						// color.c[3] is byte and not enough precision
 	float	fadeTime;					// in sec
 	float	growSpeed;					// radius_delta/sec
 } particleBeam_t;
@@ -453,13 +454,12 @@ static void CL_AddParticleBeams (float timeDelta)
 	for (i = 0, b = particleBeams; i < MAX_PARTICLE_BEAMS; i++, b++)
 		if (b->allocated)
 		{
-			int		alphaDelta;
-			float	radiusDelta;
+			float	alphaDelta, radiusDelta;
 			entity_t ent;
 
-			alphaDelta = b->fadeTime > 0 ? Q_ftol (timeDelta / b->fadeTime * 255.0f) : 0;
+			alphaDelta = b->fadeTime > 0 ? timeDelta / b->fadeTime : 0;
 			radiusDelta = timeDelta * b->growSpeed;
-			if (b->color.c[3] <= alphaDelta || b->radius <= -radiusDelta)
+			if (b->alpha <= alphaDelta || b->radius <= -radiusDelta)
 			{
 				b->allocated = false;
 				continue;
@@ -467,7 +467,8 @@ static void CL_AddParticleBeams (float timeDelta)
 			ent.model = NULL;
 			ent.flags = RF_BEAM_EXT;
 
-			b->color.c[3] -= alphaDelta;
+			b->alpha -= alphaDelta;
+			b->color.c[3] = Q_ftol (b->alpha * 255);
 			b->radius += radiusDelta;
 			VectorCopy (b->start, ent.origin);
 			VectorCopy (b->end, ent.oldorigin);
@@ -498,6 +499,7 @@ particleBeam_t *CL_AllocParticleBeam (vec3_t start, vec3_t end, float radius, fl
 			b->fadeTime = fadeTime;
 
 			b->color.rgba = 0xFFFFFFFF;
+			b->alpha = 1;
 			b->type = BEAM_RAILBEAM;
 			b->growSpeed = 0;
 
@@ -541,10 +543,12 @@ void CL_UpdateParticles (void)
 {
 	particle_t *p, *prev, *next;
 	float	timeDelta, time2;		// time delta, ms
-	static int oldTime;
+	static float oldTime;
 
-	timeDelta = (cl.time - oldTime) / 1000.0f;
-	oldTime = cl.time;
+	timeDelta = cl.ftime - oldTime;
+	oldTime = cl.ftime;
+	CL_AddParticleBeams (timeDelta);
+
 	if (timeDelta <= 0)
 		return;
 
@@ -552,7 +556,6 @@ void CL_UpdateParticles (void)
 	time2 = timeDelta * timeDelta;
 
 	CL_AddParticleTraces (timeDelta);
-	CL_AddParticleBeams (timeDelta);
 
 	prev = NULL;
 	for (p = active_particles; p; p = next)
@@ -1807,7 +1810,7 @@ static int colorTable2[9] = {
 	if (!b) return;
 	b->type = BEAM_RAILBEAM;
 	b->color.rgba = colorTable2[rColor];
-	b->color.c[3] = 64;
+	b->alpha = 0.25;
 
 	switch (rType)
 	{
@@ -1816,14 +1819,14 @@ static int colorTable2[9] = {
 		if (!b) return;
 		b->type = BEAM_RAILSPIRAL;
 		b->color.rgba = colorTable[rColor];
-		b->color.c[3] = 160;
+		b->alpha = 0.6;
 		break;
 	case 2:
 		b = CL_AllocParticleBeam (start, end, 8, 0.8);
 		if (!b) return;
 		b->type = BEAM_RAILRINGS;
 		b->color.rgba = colorTable[rColor];
-		b->color.c[3] = 128;
+		b->alpha = 0.5;
 		break;
 	}
 }
@@ -1954,7 +1957,7 @@ void CL_FlyParticles (vec3_t origin, int count)
 	}
 
 
-	ltime = (float)cl.time / 1000.0;
+	ltime = cl.ftime;
 	for (i=0 ; i<count ; i+=2)
 	{
 		angle = ltime * avelocities[i][0];
@@ -2046,7 +2049,7 @@ void CL_BfgParticles (entity_t *ent)
 	}
 
 
-	ltime = (float)cl.time / 1000.0;
+	ltime = cl.ftime;
 	for (i=0 ; i<NUMVERTEXNORMALS ; i++)
 	{
 		angle = ltime * avelocities[i][0];

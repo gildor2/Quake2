@@ -1059,26 +1059,6 @@ char *MSG_ReadString (sizebuf_t *msg_read)
 	return string;
 }
 
-char *MSG_ReadStringLine (sizebuf_t *msg_read)
-{
-	static char	string[2048];
-	int		l,c;
-
-	l = 0;
-	do
-	{
-		c = MSG_ReadChar (msg_read);
-		if (c == -1 || c == 0 || c == '\n')
-			break;
-		string[l] = c;
-		l++;
-	} while (l < sizeof(string)-1);
-
-	string[l] = 0;
-
-	return string;
-}
-
 float MSG_ReadCoord (sizebuf_t *msg_read)
 {
 	return MSG_ReadShort(msg_read) * (1.0f/8);
@@ -1565,6 +1545,8 @@ void Qcommon_Frame (int msec)
 {
 	char	*s;
 	int		time_before, time_between, time_after;
+	int		realMsec;
+	float	msecf;
 
 	if (setjmp (abortframe))
 		return;			// an ERR_DROP was thrown
@@ -1586,13 +1568,12 @@ void Qcommon_Frame (int msec)
 		}
 	}
 
-	if (fixedtime->integer)
-		msec = fixedtime->integer;
-	else if (timescale->value)
-	{
-		msec *= timescale->value;
-		if (msec < 1) msec = 1;
-	}
+	realMsec = msec;
+	if (fixedtime->value)
+		msecf = fixedtime->value;
+	else // if (timescale->value)
+		msecf = msec * timescale->value;
+	if (msecf < 0) msecf = 0;		// no reverse time
 
 	c_traces = 0;
 	c_brush_traces = 0;
@@ -1611,12 +1592,12 @@ void Qcommon_Frame (int msec)
 		time_before_game = -1;
 	}
 
-	SV_Frame (msec);
+	SV_Frame (msecf);
 
 	if (com_speeds->integer)
 		time_between = Sys_Milliseconds ();
 
-	CL_Frame (msec);
+	CL_Frame (msecf, realMsec);
 
 	if (com_speeds->integer)
 	{
@@ -1652,7 +1633,7 @@ void Qcommon_Frame (int msec)
 				"Malloc", "Free", "FreeTags"};
 			static unsigned counts[12], times[12];
 			static unsigned cyc, lastCycles, lastMsec;
-			int		i, msec;
+			int		i, msec;		// NOTE: msec overrided
 			float	scale;
 
 			cyc = cycles (); msec = Sys_Milliseconds ();

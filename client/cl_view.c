@@ -847,7 +847,7 @@ void V_RenderView (float stereo_separation)
 		cl.refdef.width = scr_vrect.width;
 		cl.refdef.height = scr_vrect.height;
 		cl.refdef.fov_y = CalcFov (cl.refdef.fov_x, cl.refdef.width, cl.refdef.height);
-		cl.refdef.time = cl.time / 1000.0f;
+		cl.refdef.time = cl.ftime;
 
 		cl.refdef.areabits = cl.frame.areabits;
 

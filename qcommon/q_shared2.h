@@ -197,15 +197,12 @@ void VectorNormalizeFast (vec3_t v);
 float Q_rsqrt (float number);
 #define SQRTFAST(x)		(x * Q_rsqrt(x))
 
-// microsoft's fabs seems to be ungodly slow...
-//float Q_fabs (float f);
-//#define	fabs(f) Q_fabs(f)
-
 #if !defined C_ONLY && !defined __linux__ && !defined __sgi
 //extern long Q_ftol (float f);
 
 __inline long Q_ftol (float val)
 {
+	// WARNING: this function works correct only for numbers less than ~49000
     double v = (double)val + (68719476736.0*1.5);
     return ((long*)&v)[0] >> 16;
 }

@@ -123,6 +123,7 @@ PreprocessShader():
 - SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
 - add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
 ? don't need shader->sortParam other than sky/opaque/seethrough (may be, +coronas +hud)
+? disable REF_NEWFX when necessary image files absent
 
 ? do not render while window is minimized (less CPU usage)
 - r_nocull works only with frustum culling (extend cvar or add another ...)

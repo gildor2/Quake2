@@ -130,7 +130,6 @@ int		MSG_ReadShort (sizebuf_t *sb);
 int		MSG_ReadLong (sizebuf_t *sb);
 float	MSG_ReadFloat (sizebuf_t *sb);
 char	*MSG_ReadString (sizebuf_t *sb);
-char	*MSG_ReadStringLine (sizebuf_t *sb);
 
 float	MSG_ReadCoord (sizebuf_t *sb);
 void	MSG_ReadPos (sizebuf_t *sb, vec3_t pos);
@@ -861,13 +860,13 @@ void	Sys_CopyProtect (void);
 void	CL_Init (void);
 void	CL_Drop (void);
 void	CL_Shutdown (void);
-void	CL_Frame (int msec);
+void	CL_Frame (float msec, int realMsec);
 void	Con_Print (char *text);
 void	SCR_BeginLoadingPlaque (void);
 
 void	SV_Init (void);
 void	SV_Shutdown (char *finalmsg, qboolean reconnect);
-void	SV_Frame (int msec);
+void	SV_Frame (float msec);
 
 
 /*------------- Image loading -------------*/

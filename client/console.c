@@ -127,6 +127,7 @@ static void Con_Clear_f (void)
 {
 	con.totallines = 1;		// current line, even if empty, encounted
 	con.current = con.display = 0;
+	con.x = 0;
 
 	con.startpos = con.endpos = 0;
 	con.wrapped = false;

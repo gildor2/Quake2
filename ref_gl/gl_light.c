@@ -517,116 +517,119 @@ void GL_LightForEntity (refEntity_t *ent)
 
 	memset (entityColorAxis, 0, sizeof(entityColorAxis));
 
-	if (!(ap.flags & RDF_NOWORLDMODEL) && !gl_nogrid->integer)
+	if (!(ap.flags & RDF_NOWORLDMODEL))
 	{
-		byte	*row;
-		vec3_t	accum[6];
-		vec3_t	pos, frac;
-		int		coord[3];
-		float	totalFrac;
-
-		i = GL_PointInLeaf (ent->center)->cluster;
-		row = i < 0 ? NULL : map.visInfo + i * map.visRowSize;
-
-		for (i = 0; i < 3; i++)
+		if (!gl_nogrid->integer)
 		{
-			coord[i] = Q_ftol (floor (ent->center[i] / LIGHTGRID_STEP));
-			pos[i] = coord[i] * LIGHTGRID_STEP;
-			frac[i] = (ent->center[i] - pos[i]) / LIGHTGRID_STEP;
-			coord[i] -= map.gridMins[i];
-		}
+			byte	*row;
+			vec3_t	accum[6];
+			vec3_t	pos, frac;
+			int		coord[3];
+			float	totalFrac;
 
-		if (gl_showgrid->integer)
-		{
-//			DrawTextLeft (va("pos: %g %g %g frac: %g %g %g", VECTOR_ARGS(pos), VECTOR_ARGS(frac)), 1, 1, 1);
-			prevDepth = gl_state.currentDepthMode;
-			GL_DepthRange (DEPTH_NEAR);
-			qglPushMatrix ();
-			qglLoadMatrixf (&ap.modelMatrix[0][0]);
-			GL_SetMultitexture (0);		// disable texturing
-			GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
-			qglDisableClientState (GL_COLOR_ARRAY);
-		}
+			i = GL_PointInLeaf (ent->center)->cluster;
+			row = i < 0 ? NULL : map.visInfo + i * map.visRowSize;
 
-		memset (accum, 0, sizeof(accum));
-		totalFrac = 0;
-		for (i = 0; i < 8; i++)
-		{
-			vec3_t	origin;
-			int		c[3], j;
-			float	f;
-
-			f = 1;
-			for (j = 0; j < 3; j++)
-				if (i & (1<<j))
-				{
-					origin[j] = pos[j];
-					c[j] = coord[j];
-					f *= 1 - frac[j];
-				}
-				else
-				{
-					origin[j] = pos[j] + LIGHTGRID_STEP;
-					c[j] = coord[j] + 1;
-					f *= frac[j];
-				}
-			if (!f) continue;			// will not add light anyway
-			if (GetCellLight (origin, c, NULL))
+			for (i = 0; i < 3; i++)
 			{
-				totalFrac += f;
-				for (j = 0; j < 6; j++)
-					VectorMA (accum[j], f, entityColorAxis[j], accum[j]);
+				coord[i] = Q_ftol (floor (ent->center[i] / LIGHTGRID_STEP));
+				pos[i] = coord[i] * LIGHTGRID_STEP;
+				frac[i] = (ent->center[i] - pos[i]) / LIGHTGRID_STEP;
+				coord[i] -= map.gridMins[i];
+			}
 
-				if (gl_showgrid->integer)
-				{
-					qglBegin (GL_LINES);
-					for (j = 0; j < 6; j++)
+			if (gl_showgrid->integer)
+			{
+//				DrawTextLeft (va("pos: %g %g %g frac: %g %g %g", VECTOR_ARGS(pos), VECTOR_ARGS(frac)), 1, 1, 1);
+				prevDepth = gl_state.currentDepthMode;
+				GL_DepthRange (DEPTH_NEAR);
+				qglPushMatrix ();
+				qglLoadMatrixf (&ap.modelMatrix[0][0]);
+				GL_SetMultitexture (0);		// disable texturing
+				GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
+				qglDisableClientState (GL_COLOR_ARRAY);
+			}
+
+			memset (accum, 0, sizeof(accum));
+			totalFrac = 0;
+			for (i = 0; i < 8; i++)
+			{
+				vec3_t	origin;
+				int		c[3], j;
+				float	f;
+
+				f = 1;
+				for (j = 0; j < 3; j++)
+					if (i & (1<<j))
 					{
-						vec3_t	origin2;
-
-						qglColor3f (entityColorAxis[j][0]/255, entityColorAxis[j][1]/255, entityColorAxis[j][2]/255);
-						qglVertex3fv (origin);
-						VectorCopy (origin, origin2);
-						origin2[j >> 1] += (j & 1) ? 2 : -2;
-						qglVertex3fv (origin2);
+						origin[j] = pos[j];
+						c[j] = coord[j];
+						f *= 1 - frac[j];
 					}
-					qglEnd ();
+					else
+					{
+						origin[j] = pos[j] + LIGHTGRID_STEP;
+						c[j] = coord[j] + 1;
+						f *= frac[j];
+					}
+				if (!f) continue;			// will not add light anyway
+				if (GetCellLight (origin, c, NULL))
+				{
+					totalFrac += f;
+					for (j = 0; j < 6; j++)
+						VectorMA (accum[j], f, entityColorAxis[j], accum[j]);
+
+					if (gl_showgrid->integer)
+					{
+						qglBegin (GL_LINES);
+						for (j = 0; j < 6; j++)
+						{
+							vec3_t	origin2;
+
+							qglColor3f (entityColorAxis[j][0]/255, entityColorAxis[j][1]/255, entityColorAxis[j][2]/255);
+							qglVertex3fv (origin);
+							VectorCopy (origin, origin2);
+							origin2[j >> 1] += (j & 1) ? 2 : -2;
+							qglVertex3fv (origin2);
+						}
+						qglEnd ();
+					}
 				}
 			}
-		}
-		if (totalFrac != 1)
-		{	// if some points have missed (outside the world) -- scale light from correct points
-			totalFrac = 1.0f / totalFrac;
-			for (i = 0; i < 6; i++) VectorScale (accum[i], totalFrac, accum[i]);
-		}
-		if (gl_showgrid->integer)
-		{
-			qglPopMatrix ();
-			GL_DepthRange (prevDepth);
-		}
+			if (totalFrac != 1)
+			{	// if some points have missed (outside the world) -- scale light from correct points
+				totalFrac = 1.0f / totalFrac;
+				for (i = 0; i < 6; i++) VectorScale (accum[i], totalFrac, accum[i]);
+			}
+			if (gl_showgrid->integer)
+			{
+				qglPopMatrix ();
+				GL_DepthRange (prevDepth);
+			}
 
-		memset (entityColorAxis, 0, sizeof(entityColorAxis));
-		for (i = 0; i < 6; i++)
-		{
-			float	v;
+			memset (entityColorAxis, 0, sizeof(entityColorAxis));
+			for (i = 0; i < 6; i++)
+			{
+				float	v;
 
 #define STEP(n)						\
-			v = ent->axis[n][i>>1];	\
-			if (i & 1) v = -v;		\
-			if (v < 0)	VectorMA (entityColorAxis[n*2+1], -v, accum[i], entityColorAxis[n*2+1]);	\
-			else		VectorMA (entityColorAxis[n * 2],  v, accum[i], entityColorAxis[n * 2]);
-			STEP(0); STEP(1); STEP(2);
+				v = ent->axis[n][i>>1];	\
+				if (i & 1) v = -v;		\
+				if (v < 0)	VectorMA (entityColorAxis[n*2+1], -v, accum[i], entityColorAxis[n*2+1]);	\
+				else		VectorMA (entityColorAxis[n * 2],  v, accum[i], entityColorAxis[n * 2]);
+				STEP(0); STEP(1); STEP(2);
 #undef STEP
+			}
+
+			/*--------------- point/surface lights ------------------*/
+
+			for (i = 0, sl = map.slights; i < map.numSlights; i++, sl++)
+				if (sl->style != 0)
+					AddPointLight (sl, ent->center, ent->axis, row);
 		}
-
-		/*--------------- point/surface lights ------------------*/
-
-		for (i = 0, sl = map.slights; i < map.numSlights; i++, sl++)
-			if (sl->style != 0)
-				AddPointLight (sl, ent->center, ent->axis, row);
+		else
+			GetCellLight (NULL, NULL, ent);
 	}
-	else if (gl_nogrid->integer)
-		GetCellLight (NULL, NULL, ent);
 
 	/*---------------------- dlights ------------------------*/
 

@@ -1,3 +1,36 @@
+bullet trace hook:
+~~~~~~~~~~~~~~~~~~
+(from game/g_weapon.c :: fire_lead())
+	// check fire output from bbox
+	gi.trace(self->s.origin%, NULL, NULL, start#, self%, MASK_SHOT)
+	// check dst
+	gi.trace(start#, NULL, NULL, end, self%, content_mask)
+	if (tr & MASK_WATER)
+	{
+		if (start != tr.endpos) Multicast(splash)
+		water_start = tr.endpos
+		end2 = water_start -> dir(8192) + spread
+		gi.trace(water_start, NULL, NULL, end2, self%, MASK_SHOT)
+	}
+	may_be: Multicast(impact) -- sparks
+	,,,
+
+NOTES:
+  - &self->s.origin == self + 4
+  - content_mask == MASK_SHOT || MASK_SHOT|MASK_WATER
+  - dist(self->s.origin, start) -- near
+  - dist(start,end) ~ 8192 (with spread)
+  - shooting: start->end
+  ? check shotgun (not bullet weapon) (repeat at least 10 times with the same "start" and "self")
+
+Use for:
+  - tracers
+  - correct metal sparks angle
+  - bullet nearby-fly sound
+  - correctly detect bullet water splashes
+
+-------------------------------
+
 sv_fps:
 ~~~~~~~
 - sv_main.c
