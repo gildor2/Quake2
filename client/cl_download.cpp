@@ -488,11 +488,11 @@ static void RequestNextDownload (void)
 	if (precache_check == DCS_TEXTURE + 1)
 	{
 		// from qcommon/cmodel.c
-		extern int			numtexinfo;
-		extern csurface_t	map_surfaces[];
+		extern int			numTexinfo;
+		extern csurface_t	*map_surfaces;
 
 		if (allow_download->integer && allow_download_maps->integer)
-			while (precache_tex < numtexinfo)
+			while (precache_tex < numTexinfo)
 				if (!CheckOrDownloadFile("textures/%s.wal", map_surfaces[precache_tex++].rname))	//??? WAL
 					return; // started a download
 		precache_check = DCS_SKIP_ALL;

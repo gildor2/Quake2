@@ -438,25 +438,26 @@ FS_CreatePath
 Creates any directories needed to store the given filename
 ============
 */
-void FS_CreatePath (char *path)
+void FS_CreatePath (const char *path)
 {
-	char	*ofs;
-
-	//!! will modify "path"
-	DEBUG_LOG(va("path: %s\n", path));
-	for (ofs = path + 1; *ofs; ofs++)
+	// need a copy of path, because will modify (and restore) path string
+	char	copy[MAX_QPATH];
+	appCopyFilename (copy, path, sizeof(copy));
+	DEBUG_LOG(va("path: %s\n", copy));
+	for (char *ofs = copy + 1; *ofs; ofs++)
 	{
 		if (*ofs == '/')
-		{	// create the directory
-			*ofs = 0;
-			Sys_Mkdir (path);
-			*ofs = '/';
+		{
+			// create the directory
+			*ofs = 0;			// cut rest of path
+			Sys_Mkdir (copy);
+			*ofs = '/';			// restore path
 		}
 	}
 }
 
 
-void FS_CopyFile (char *src, char *dst)
+void FS_CopyFile (const char *src, const char *dst)
 {
 	FILE	*f1, *f2;
 
@@ -490,25 +491,24 @@ void FS_CopyFile (char *src, char *dst)
 }
 
 
-void FS_CopyFiles (char *srcMask, char *dstDir)
+void FS_CopyFiles (const char *srcMask, const char *dstDir)
 {
-	char	*found, pattern[MAX_OSPATH];
-	int		pos1, pos2;
+	char	pattern[MAX_OSPATH];
 
 	DEBUG_LOG(va("CopyFiles(%s->%s)\n", srcMask, dstDir));
 
 	// prepare src string
-	found = strrchr (srcMask, '/');
+	const char *found = strrchr (srcMask, '/');
 	if (!found)
 	{
 		Com_WPrintf ("CopyFiles: bad srcMask \"%s\"\n", srcMask);
 		return;
 	}
-	pos1 = found - srcMask + 1;
+	int pos1 = found - srcMask + 1;
 
 	// prepare dst string
 	appCopyFilename (pattern, dstDir, sizeof(pattern));
-	pos2 = strlen (pattern);
+	int pos2 = strlen (pattern);
 	if (!pos2 || pattern[pos2 - 1] != '/')
 	{
 		pattern[pos2] = '/';
@@ -527,12 +527,10 @@ void FS_CopyFiles (char *srcMask, char *dstDir)
 }
 
 
-void FS_RemoveFiles (char *mask)
+void FS_RemoveFiles (const char *mask)
 {
-	char	*found;
-
 	DEBUG_LOG(va("RemoveFiles(%s)\n", mask));
-	for (found = Sys_FindFirst (mask, LIST_FILES); found; found = Sys_FindNext ())
+	for (const char *found = Sys_FindFirst (mask, LIST_FILES); found; found = Sys_FindNext ())
 	{
 		DEBUG_LOG(va("del(%s)\n", found));
 		remove (found);
@@ -785,14 +783,10 @@ Will not check inline files (only filesystem or paks)
 =================
 */
 
-bool FS_FileExists (char *filename)
+bool FS_FileExists (const char *filename)
 {
-	char			*pakname, game[MAX_OSPATH], buf[MAX_OSPATH];
-	pack_t			*pak;
-	packFile_t		*pfile;
-	int				gamelen, gamePos;
-	fileLink_t		*link;
-	FILE			*f;
+	char		game[MAX_OSPATH], buf[MAX_OSPATH];
+	FILE		*f;
 
 	fileFromPak = 0;
 	appCopyFilename (buf, filename, sizeof(buf));
@@ -800,7 +794,7 @@ bool FS_FileExists (char *filename)
 	DEBUG_LOG(va("check: %s\n", filename));
 
 	/*------------- check for links first ----------------------*/
-	for (link = fs_links; link; link = link->next)
+	for (fileLink_t *link = fs_links; link; link = link->next)
 	{
 		if (!memcmp (filename, link->from, link->fromlength))
 		{
@@ -814,8 +808,8 @@ bool FS_FileExists (char *filename)
 	}
 
 	/*----- search through the path, one element at a time -----*/
-	gamelen = 0;
-	gamePos = 0;
+	int gamelen = 0;
+	int gamePos = 0;
 	if (filename[1] == ':' && filename[2] == '/')		// CD path?
 	{
 #ifdef CD_PATH
@@ -834,6 +828,7 @@ bool FS_FileExists (char *filename)
 	else if (filename[0] == '.' && filename[1] == '/')
 		gamePos = 2;
 
+	const char	*pakname;
 	if (gamePos)
 	{
 		pakname = strchr (filename + gamePos, '/');	// find end of [CD +] game directory
@@ -855,13 +850,13 @@ bool FS_FileExists (char *filename)
 	for (searchPath_t *search = fs_searchpaths.First(); search; search = fs_searchpaths.Next(search))
 	{
 		// is the element a pak file?
-		if (pak = search->pack)
+		if (pack_t *pak = search->pack)
 		{
 			// validate .pak game directory
 			if (gamelen && memcmp (pak->filename, game, gamelen))
 				continue; // .pak placed in other game directory - skip it
 			// look through all the pak file elements
-			if (pfile = FindPakFile (pak, pakname))	// found
+			if (FindPakFile (pak, pakname))			// found
 			{
 				fileFromPak = 1;
 				return true;
@@ -1155,7 +1150,7 @@ Sets fs_gamedir, adds the directory to the head of the path,
 then loads and adds pak1.pak pak2.pak ...
 ================
 */
-static void AddGameDirectory (char *dir)
+static void AddGameDirectory (const char *dir)
 {
 	strcpy (fs_gamedir, dir);
 
@@ -1497,11 +1492,9 @@ FS_ListFiles
 ================
 */
 
-TList<CStringItem> FS_ListFiles (char *name, int *numfiles, int flags)
+TList<CStringItem> FS_ListFiles (const char *name, int *numfiles, int flags)
 {
-	char	buf[MAX_OSPATH], game[MAX_OSPATH], *pakname, *mask, path[MAX_OSPATH];
-	int		gamelen;
-	int		gamePos;
+	char	buf[MAX_OSPATH], game[MAX_OSPATH], path[MAX_OSPATH];
 
 	appCopyFilename (buf, name, sizeof(buf));
 	DEBUG_LOG(va("list: %s\n", name));
@@ -1514,8 +1507,8 @@ TList<CStringItem> FS_ListFiles (char *name, int *numfiles, int flags)
 	// initialize file list
 	TList<CStringItem> List;
 
-	gamelen = 0;
-	gamePos = 0;
+	int gamelen = 0;
+	int gamePos = 0;
 	game[0] = 0;		// "game" will be used aniway as "prefix" for ListPakDirectory()
 	if (name[1] == ':' && name[2] == '/')	// allow only CD path with X:/path
 	{
@@ -1535,6 +1528,7 @@ TList<CStringItem> FS_ListFiles (char *name, int *numfiles, int flags)
 	else if (name[0] == '.' && name[1] == '/')
 		gamePos = 2;
 
+	const char *pakname;
 	if (gamePos)
 	{
 		pakname = strchr (name + gamePos, '/');	// find end of [CD +] game directory
@@ -1553,7 +1547,7 @@ TList<CStringItem> FS_ListFiles (char *name, int *numfiles, int flags)
 //	Com_Printf (S_RED"list: %s in %s (l = %d); fullname = \"%s\"\n", pakname, game, gamelen, name);
 
 	// extract wildcard
-	mask = strrchr (pakname, '/');
+	const char *mask = strrchr (pakname, '/');
 	if (!mask)
 	{
 		mask = pakname;

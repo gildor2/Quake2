@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../client/ref.h"
 extern refExport_t re;
 void SCR_UpdateScreen (void);		//?? remove
-void SCR_SetLevelshot (char *name);
+void SCR_SetLevelshot (const char *name);
 
 /*
 ===============================================================================
@@ -326,7 +326,7 @@ Puts the server in demo mode on a specific map/cinematic
 */
 static void SV_DemoMap_f (int argc, char **argv)
 {
-	char	*map, *ext;
+	const char *map, *ext;
 
 	map = argv[1];
 	ext = strchr (map, '.');
@@ -372,7 +372,7 @@ static void SV_GameMap_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	char *map = argv[1];
+	const char *map = argv[1];
 	Com_DPrintf ("SV_GameMap(%s)\n", map);
 
 	// check for clearing the current savegame
@@ -899,7 +899,7 @@ static void SV_ConSay_f (int argc, char **argv)
 
 	strcpy (text, "console:");
 	for (i = 1; i < argc; i++)
-		strncat (text, va(" %s", argv[i]), sizeof(text));
+		appStrcatn (ARRAY_ARG(text), va(" %s", argv[i]));
 
 	for (i = 0, client = svs.clients; i < maxclients->integer; i++, client++)
 	{
@@ -1071,8 +1071,8 @@ static void SV_ServerCommand_f (int argc, char **argv)
 	char buffer[1024];
 	for (int i = 0; i < argc; i++)
 	{
-		if (i > 0) strncat (buffer, " ", sizeof(buffer));
-		strncat (buffer, argv[i], sizeof(buffer));
+		if (i > 0) appStrcatn (ARRAY_ARG(buffer), " ");
+		appStrcatn (ARRAY_ARG(buffer), argv[i]);
 	}
 	SV_TokenizeString (buffer);
 

@@ -69,7 +69,7 @@ Cbuf_AddText
 Adds command text at the end of the buffer
 ============
 */
-void Cbuf_AddText (char *text)
+void Cbuf_AddText (const char *text)
 {
 	int		len;
 
@@ -99,11 +99,9 @@ Adds command text immediately after the current command
 Adds a \n to the text
 ============
 */
-void Cbuf_InsertText (char *text)
+void Cbuf_InsertText (const char *text)
 {
-	int		len;
-
-	len = strlen (text);
+	int len = strlen (text);
 
 	if (cmd_text.cursize + len >= cmd_text.maxsize)
 	{
@@ -393,7 +391,7 @@ static char *MacroExpandString (const char *text)
 		appStrncpyz (buf + 4, text, s1 - text + 1);	// copy "a"
 		int i = strlen (buf);
 		appSprintf (buf + i, sizeof(buf) - i,
-			s1[1] != '\"' ? " \"%s\"\n" : " %s\n",
+			s1[1] != '\"' ? " %s" : " %s",					// will expand 'a=b' to 'set a b'; no quotes added - when needed, can call 'a="b"'
 			s1 + 1);
 	}
 	else

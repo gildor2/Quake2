@@ -7,7 +7,7 @@
 /*---------- Dynamic surface buffer ----------*/
 
 #define MAX_DYNAMIC_BUFFER		(384 * 1024)
-static byte	dynamicBuffer[MAX_DYNAMIC_BUFFER];
+static byte	*dynamicBuffer;		// [MAX_DYNAMIC_BUFFER]
 static int	dynamicBufferSize;
 
 static void *lastDynamicPtr;
@@ -53,7 +53,7 @@ void GL_ResizeDynamicMemory (void *ptr, int newSize)
 /*----------- Surface arrays --------------*/
 
 
-static surfaceInfo_t surfaceBuffer[MAX_SCENE_SURFACES];
+static surfaceInfo_t *surfaceBuffer;	// [MAX_SCENE_SURFACES]
 static int numSurfacesTotal;
 
 
@@ -233,11 +233,31 @@ void GL_SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 
 /*-----------------------------------------*/
 
-
+// prepare buffers for new scene
 void GL_ClearBuffers (void)
 {
 	numSurfacesTotal = 0;
 	gl_numEntities = 0;
 	gl_numDlights = 0;
 	dynamicBufferSize = 0;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Initialization/finalization
+-----------------------------------------------------------------------------*/
+
+void GL_CreateBuffers (void)
+{
+	dynamicBuffer = new byte [MAX_DYNAMIC_BUFFER];
+	surfaceBuffer = new surfaceInfo_t [MAX_SCENE_SURFACES];
+}
+
+void GL_FreeBuffers (void)
+{
+	if (!dynamicBuffer) return;
+	delete dynamicBuffer;
+	dynamicBuffer = NULL;
+
+	delete surfaceBuffer;
 }

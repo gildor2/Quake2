@@ -42,22 +42,6 @@ inline float Cvar_ClampName (const char *name, float low, float high)
 {
 	return ri._Cvar_ClampName (name, low, high);
 }
-inline void* Hunk_Begin (int maxsize)
-{
-	return ri._Hunk_Begin (maxsize);
-}
-inline void* Hunk_Alloc (int size)
-{
-	return ri._Hunk_Alloc (size);
-}
-inline int Hunk_End (void)
-{
-	return ri._Hunk_End ();
-}
-inline void Hunk_Free (void *buf)
-{
-	ri._Hunk_Free (buf);
-}
 inline int Sys_Milliseconds (void)
 {
 	return ri._Sys_Milliseconds ();
@@ -65,11 +49,11 @@ inline int Sys_Milliseconds (void)
 #define Com_Printf	ri._Com_Printf
 #define Com_DPrintf	ri._Com_DPrintf
 #define Com_WPrintf	ri._Com_WPrintf
-inline bool FS_FileExists (char *filename)
+inline bool FS_FileExists (const char *filename)
 {
 	return ri._FS_FileExists (filename);
 }
-inline TList<CStringItem> FS_ListFiles (char *name, int *numfiles, int flags)
+inline TList<CStringItem> FS_ListFiles (const char *name, int *numfiles, int flags)
 {
 	return ri._FS_ListFiles (name, numfiles, flags);
 }
@@ -85,19 +69,19 @@ inline char* FS_Gamedir (void)
 {
 	return ri._FS_Gamedir ();
 }
-inline void FS_CreatePath (char *path)
+inline void FS_CreatePath (const char *path)
 {
 	ri._FS_CreatePath (path);
 }
-inline void FS_CopyFile (char *src, char *dst)
+inline void FS_CopyFile (const char *src, const char *dst)
 {
 	ri._FS_CopyFile (src, dst);
 }
-inline void FS_CopyFiles (char *srcMask, char *dstDir)
+inline void FS_CopyFiles (const char *srcMask, const char *dstDir)
 {
 	ri._FS_CopyFiles (srcMask, dstDir);
 }
-inline void FS_RemoveFiles (char *mask)
+inline void FS_RemoveFiles (const char *mask)
 {
 	ri._FS_RemoveFiles (mask);
 }
@@ -181,23 +165,19 @@ float	Cvar_VariableValue (const char *name);
 int	Cvar_VariableInt (const char *name);
 float	Cvar_Clamp (cvar_t *cvar, float low, float high);
 float	Cvar_ClampName (const char *name, float low, float high);
-void*	Hunk_Begin (int maxsize);
-void*	Hunk_Alloc (int size);
-int	Hunk_End (void);
-void	Hunk_Free (void *buf);
 int	Sys_Milliseconds (void);
 void	Com_Printf (const char *str, ...);
 void	Com_DPrintf (const char *str, ...);
 void	Com_WPrintf (const char *str, ...);
-bool	FS_FileExists (char *filename);
-TList<CStringItem>	FS_ListFiles (char *name, int *numfiles, int flags);
+bool	FS_FileExists (const char *filename);
+TList<CStringItem>	FS_ListFiles (const char *name, int *numfiles, int flags);
 void*	FS_LoadFile (const char *name, unsigned *size = NULL);
 void	FS_FreeFile (void *buf);
 char*	FS_Gamedir (void);
-void	FS_CreatePath (char *path);
-void	FS_CopyFile (char *src, char *dst);
-void	FS_CopyFiles (char *srcMask, char *dstDir);
-void	FS_RemoveFiles (char *mask);
+void	FS_CreatePath (const char *path);
+void	FS_CopyFile (const char *src, const char *dst);
+void	FS_CopyFiles (const char *srcMask, const char *dstDir);
+void	FS_RemoveFiles (const char *mask);
 bool	Vid_GetModeInfo (int *width, int *height, int mode);
 int	ImageExists (const char *name, int stop_mask = IMAGE_ANY);
 void	LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *height);

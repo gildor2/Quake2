@@ -47,21 +47,21 @@ typedef struct
 	int		parse_entities;		// non-masked index into cl_parse_entities array
 } frame_t;
 
-typedef struct	//?? : entity_state_t
+typedef struct
 {
 	// these fields are copied from entity_state_t
-	int		number;				// edict index
+	short	number;				// edict index
+	short	frame;
 	vec3_t	origin;
-	vec3_t	angles;
 	vec3_t	old_origin;			// for lerping
-	int		modelindex, modelindex2, modelindex3, modelindex4;
-	int		frame;
+	vec3_t	angles;
+	byte	modelindex, modelindex2, modelindex3, modelindex4;
 	int		skinnum;
-	unsigned int effects;
-	int		renderfx;
-	int		solid;				// encoded bbox
-	int		sound;
-	int		event;
+	unsigned effects;
+	unsigned renderfx;
+	short	solid;				// encoded bbox
+	byte	sound;
+	byte	event;
 	// additional fields
 	bool	valid;				// when "false", additional fields are not initialized
 	vec3_t	center;
@@ -316,7 +316,7 @@ extern	cvar_t	*r_sfx_pause;
 
 extern	cvar_t	*cl_infps;
 
-extern	centity_t	cl_entities[MAX_EDICTS];
+extern	centity_t	*cl_entities;	// [MAX_EDICTS]
 
 // the cl_parse_entities must be large enough to hold UPDATE_BACKUP frames of
 // entities, so that when a delta compressed message arives from the server

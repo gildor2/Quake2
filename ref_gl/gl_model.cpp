@@ -113,15 +113,14 @@ END_PROFILE
 // Both this structures has same fields, except Q3 lost "type"
 static void LoadPlanes (dplane_t *data, int count, int stride)
 {
-	int		i;
 	dplane_t *in;
 	cplane_t *out;
 
 	map.numPlanes = count;
-	map.planes = out = (cplane_t*)Hunk_Alloc (count * sizeof(cplane_t));
+	map.planes = out = new (map.dataChain) cplane_t [count];
 	in = data;
 
-	for (i = 0; i < count; i++, in = (dplane_t*)((byte*)in + stride), out++)
+	for (int i = 0; i < count; i++, in = (dplane_t*)((byte*)in + stride), out++)
 	{
 		VectorCopy (in->normal, out->normal);
 		out->dist = in->dist;
@@ -133,7 +132,6 @@ static void LoadPlanes (dplane_t *data, int count, int stride)
 
 static void LoadFlares (lightFlare_t *data, int count)
 {
-	int		i;
 	gl_flare_t *out;
 
 	// get leafs/owner for already built flares (from SURF_AUTOFLARE)
@@ -144,8 +142,8 @@ static void LoadFlares (lightFlare_t *data, int count)
 	}
 
 	map.numFlares += count;
-	out = (gl_flare_t*)Hunk_Alloc (count * sizeof(gl_flare_t));
-	for (i = 0; i < count; i++, data = data->next, out++)
+	out = new (map.dataChain) gl_flare_t [count];
+	for (int i = 0; i < count; i++, data = data->next, out++)
 	{
 		VectorCopy (data->origin, out->origin);
 		out->size = data->size;
@@ -184,7 +182,7 @@ static void BuildSurfFlare (surfaceCommon_t *surf, color_t *color, float intens)
 	VectorMA (origin, y, pl->axis[1], origin);
 	VectorMA (origin, pl->plane.dist + 1, pl->plane.normal, origin);
 
-	f = (gl_flare_t*)Hunk_Alloc (sizeof(gl_flare_t));
+	f = new (map.dataChain) gl_flare_t;
 
 	VectorCopy (origin, f->origin);
 	f->surf = surf;
@@ -212,13 +210,12 @@ static void BuildSurfFlare (surfaceCommon_t *surf, color_t *color, float intens)
 
 static void LoadSlights (slight_t *data, int count)
 {
-	int		i, j;
 	gl_slight_t *out;
 
 	map.numSlights = count;
-	map.slights = out = (gl_slight_t*)Hunk_Alloc (count * sizeof(gl_slight_t));
+	map.slights = out = new (map.dataChain) gl_slight_t [count];
 	// copy slights from map
-	for (i = 0; i < count; i++, data = data->next)
+	for (int i = 0; i < count; i++, data = data->next)
 	{
 		VectorCopy (data->origin, out->origin);
 		VectorCopy (data->color, out->color);
@@ -234,7 +231,7 @@ static void LoadSlights (slight_t *data, int count)
 		SaturateColor3f (out->color);
 
 		// move away lights from nearby surfaces to avoid precision errors during computation
-		for (j = 0; j < 3; j++)
+		for (int j = 0; j < 3; j++)
 		{
 			static vec3_t mins = {-0.3, -0.3, -0.3}, maxs = {0.3, 0.3, 0.3};
 			trace_t	tr;
@@ -253,9 +250,7 @@ static void LoadSlights (slight_t *data, int count)
 
 static void BuildSurfLight (surfacePlanar_t *pl, color_t *color, float area, float intens, bool sky)
 {
-	surfLight_t *sl;
 	vec3_t	c;
-
 	c[0] = color->c[0] / 255.0f;
 	c[1] = color->c[1] / 255.0f;
 	c[2] = color->c[2] / 255.0f;
@@ -284,7 +279,7 @@ static void BuildSurfLight (surfacePlanar_t *pl, color_t *color, float area, flo
 	}
 	intens *= NormalizeColor (c, c);
 
-	sl = (surfLight_t*)Hunk_Alloc (sizeof(surfLight_t));
+	surfLight_t *sl = new (map.dataChain) surfLight_t;
 	sl->next = map.surfLights;
 	map.surfLights = sl;
 	map.numSurfLights++;
@@ -383,11 +378,11 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 static void LoadLeafsNodes2 (dnode_t *nodes, int numNodes, dleaf_t *leafs, int numLeafs)
 {
 	node_t	*out;
-	int		i, j, p;
+	int		i, j;
 
 	map.numNodes = numNodes;
 	map.numLeafNodes = numLeafs + numNodes;
-	map.nodes = out = (node_t*)Hunk_Alloc ((numNodes + numLeafs) * sizeof(node_t));
+	map.nodes = out = new (map.dataChain) node_t [numNodes + numLeafs];
 
 	// Load nodes
 	for (i = 0; i < numNodes; i++, nodes++, out++)
@@ -397,7 +392,7 @@ static void LoadLeafsNodes2 (dnode_t *nodes, int numNodes, dleaf_t *leafs, int n
 		// setup children[]
 		for (j = 0; j < 2; j++)
 		{
-			p = nodes->children[j];
+			int p = nodes->children[j];
 			if (p >= 0)
 				out->children[j] = map.nodes + p;
 			else
@@ -416,13 +411,13 @@ static void LoadLeafsNodes2 (dnode_t *nodes, int numNodes, dleaf_t *leafs, int n
 	{
 		out->isNode = false;
 
-		p = leafs->cluster;
+		int p = leafs->cluster;
 		out->cluster = p;
 		if (p >= map.numClusters)
 			map.numClusters = p + 1;
 		out->area = leafs->area;
 		// copy/convert mins/maxs
-		for (j = 0; j < 3; j++)
+		for (int j = 0; j < 3; j++)
 		{
 			out->mins[j] = leafs->mins[j];
 			out->maxs[j] = leafs->maxs[j];
@@ -441,23 +436,22 @@ static void LoadLeafsNodes2 (dnode_t *nodes, int numNodes, dleaf_t *leafs, int n
 static void LoadInlineModels2 (cmodel_t *data, int count)
 {
 	inlineModel_t	*out;
-	int		i;
 
-	map.models = out = (inlineModel_t*)Hunk_Alloc (count * sizeof(inlineModel_t));
+	map.models = out = new (map.dataChain) inlineModel_t [count];
 	map.numModels = count;
 
-	for (i = 0; i < count; i++, data++, out++)
+	for (int i = 0; i < count; i++, data++, out++)
 	{
-		int		j;
-		surfaceCommon_t *s;
-
 		VectorCopy (data->mins, out->mins);
 		VectorCopy (data->maxs, out->maxs);
 		out->radius = data->radius;
 		out->headnode = data->headnode;
 		// create surface list
 		out->numFaces = data->numfaces;
-		out->faces = (surfaceCommon_t**)Hunk_Alloc (out->numFaces * sizeof(surfaceCommon_t*));
+		out->faces = new (map.dataChain) surfaceCommon_t* [out->numFaces];
+
+		int		j;
+		surfaceCommon_t *s;
 		for (j = 0, s = &map.faces[data->firstface]; j < out->numFaces; j++, s++)
 		{
 			out->faces[j] = s;
@@ -470,12 +464,12 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedge_t *edges,
 	dvertex_t *verts, texinfo_t *tex, cmodel_t *models, int numModels)
 {
-	int		i, j;
+	int		j;
 	surfaceCommon_t *out;
 
 	map.numFaces = numSurfaces;
-	map.faces = out = (surfaceCommon_t*)Hunk_Alloc (numSurfaces * sizeof(*out));
-	for (i = 0; i < numSurfaces; i++, surfs++, out++)
+	map.faces = out = new (map.dataChain) surfaceCommon_t [numSurfaces];
+	for (int i = 0; i < numSurfaces; i++, surfs++, out++)
 	{
 		int			numTextures, numVerts, numIndexes, numTris;
 		surfacePlanar_t *s;
@@ -642,7 +636,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 
 		/*------- Prepare for vertex generation ----------------*/
 		out->type = SURFACE_PLANAR;
-		out->pl = s = (surfacePlanar_t*)Hunk_Alloc (sizeof(*s) + sizeof(vertex_t)*numVerts + sizeof(int)*numIndexes);
+		out->pl = s = (surfacePlanar_t*) map.dataChain->Alloc (sizeof(surfacePlanar_t) + sizeof(vertex_t)*numVerts + sizeof(int)*numIndexes);
 		memcpy (&s->plane, map.planes + surfs->planenum, sizeof(cplane_t));
 		if (surfs->side)
 		{
@@ -738,7 +732,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 				v->lm2[1] = v->lm[1] - 0.5;
 			}
 			// create dynamic lightmap
-			s->lightmap = lm = (dynamicLightmap_t*)Hunk_Alloc (sizeof (*lm));
+			s->lightmap = lm = new (map.dataChain) dynamicLightmap_t;
 			for (j = 0; j < 4; j++)			// enum styles
 			{
 				int		st;
@@ -1053,12 +1047,11 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 // Q3's leafFaces are int, Q1/2 - short
 static void LoadLeafSurfaces2 (unsigned short *data, int count)
 {
-	int		i;
 	surfaceCommon_t **out;
 
 	map.numLeafFaces = count;
-	map.leafFaces = out = (surfaceCommon_t**)Hunk_Alloc (count * sizeof(*out));
-	for (i = 0; i < count; i++, data++, out++)
+	map.leafFaces = out = new (map.dataChain) surfaceCommon_t* [count];
+	for (int i = 0; i < count; i++, data++, out++)
 		*out = map.faces + *data;
 }
 
@@ -1070,11 +1063,10 @@ static void LoadVisinfo2 (dvis_t *data, int size)
 	map.visRowSize = rowSize = (map.numClusters + 7) >> 3;
 	if (size)
 	{
-		int		i;
 		byte	*dst;
 
-		dst = map.visInfo = (byte*)Hunk_Alloc (rowSize * map.numClusters);
-		for (i = 0; i < map.numClusters; i++)
+		dst = map.visInfo = new (map.dataChain) byte [rowSize * map.numClusters];
+		for (int i = 0; i < map.numClusters; i++)
 		{
 			int		pos, j;
 
@@ -1168,7 +1160,7 @@ END_PROFILE
 
 static void FreeMapData (void)
 {
-	if (map.hunk) Hunk_Free (map.hunk);
+	if (map.dataChain) delete map.dataChain;
 	if (map.lightGridChain) delete map.lightGridChain;
 }
 
@@ -1190,7 +1182,7 @@ void GL_LoadWorldMap (const char *name)
 	FreeMapData ();
 	memset (&map, 0, sizeof(map));
 	strcpy (map.name, name2);
-	map.hunk = Hunk_Begin (32 * 1024*1024);
+	map.dataChain = new CMemoryChain;
 
 	// map should be already loaded by client
 	bspfile = LoadBspFile (name2, true, NULL);
@@ -1221,19 +1213,12 @@ void GL_LoadWorldMap (const char *name)
 		}
 		break;
 	default:
-		Hunk_End ();
 		Com_DropError ("R_LoadWorldMap: unknown BSP type");
 	}
 	LoadFlares (bspfile->flares, bspfile->numFlares);
 	LoadSlights (bspfile->slights, bspfile->numSlights);
 	GL_PostLoadLights ();
 	GL_InitLightGrid ();
-
-#if 0
-	Com_Printf ("used %d hunk bytes\n", Hunk_End ());
-#else
-	Hunk_End ();
-#endif
 
 	unguard;
 }
@@ -1845,10 +1830,8 @@ static void FreeModel (model_t *m)
 
 static void FreeModels (void)
 {
-	int		i;
-
 	// free non-inline models
-	for (i = 0; i < modelCount; i++)
+	for (int i = 0; i < modelCount; i++)
 		FreeModel (&modelsArray[i]);
 
 	memset (modelsArray, 0, sizeof(modelsArray));

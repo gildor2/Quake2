@@ -23,6 +23,7 @@
 -------------- WinMain() -------------------
 - WinMain():
   appInit() -- pass NULL (==outputDevice) for GUI and OutputDeviceWin32Console for dedicated (cvar "dedicated" unknown here ?)
+    + pass APPNAME (make non-#define, just const string for appInit()) (and request later with appName() -- different name?)
 - CL_Init: set (add) OutputDeviceConsole
   ? func SetOutputDevice() - can add output devices
 - appPrintf() etc:
@@ -108,3 +109,14 @@
   - screen manager - top level, draw GUI and HUD; can draw 3D in GUI/HUD
   - primary world 3D scene manager - entities, sprites/fx, dlights ...; will call renderer->DrawScene()
 - NullBackend (builtin?) - empty functions; may be useful for on-fly switching to dedicated server and to back GUI
+
+--------------- Memory manager -------------
+- meminfo: implement subsystems (gl, game etc)
+  - chain helper: CMemoryChain::GetSize() - to get whole chains size
+- TMemoryPool<size> - memory pool; like memory chain, but static memory and cannot be larger than "size"
+  - TMemoryPool::Alloc(size)  -- increment internal pointer; check size!
+  - TMemoryPool::Release()    -- reset internal pointer
+  ? zero-fill memory ? (may be, on Release() - zero-fill ALLOCATED memory only)
+  ! can use for GL::AllocDynamicMem()
+- AllocTempMem(size) -- alloc memory from large static buffer (for use in functions); may be, use
+  "TMemoryPool<TEMP_MEM_SIZE> TempPool" for allocs

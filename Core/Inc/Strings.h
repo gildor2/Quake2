@@ -37,7 +37,7 @@ CORE_API void appStrncpyz (char *dst, const char *src, int count);
 // Copy filename from src to dst with some path compression, replacing '\' with '/' and lowercasing;
 // dst string will fit count chars and null-terminated.
 CORE_API void appCopyFilename (char *dst, const char *src, int count);
-CORE_API void appStrncat (char *dst, const char *src, int count);
+CORE_API void appStrcatn (char *dst, int count, const char *src);
 
 //?? quake3-style ?? make single-byte color codes + conversion q3<->our style (codes should be i+0..i+7, i != 0 (!!))
 //?? + add string codes for colors S_COLOR_RED,S_COLOR_BLACK etc. (diff. names?), + inline funcs for converting color_str -> num (??)
@@ -49,7 +49,7 @@ CORE_API int appCStrlen (const char *str);
 CORE_API void appUncolorizeString (char *dst, const char *src = NULL);
 
 
-CORE_API char *va (const char *format, ...);
+CORE_API const char *va (const char *format, ...);
 CORE_API int appSprintf (char *dest, int size, const char *fmt, ...);
 
 
@@ -129,13 +129,6 @@ public:
 		return (T*) CStringList::Find (index);
 	}
 	// list insertion
-	bool Insert (T *item)
-	{
-		T *prev;
-		Find (item->name, &prev);		// allow duplicates
-		InsertAfter (item, prev);
-		return true;
-	}
 	void InsertAfter (T *Item, T *Point)
 	{
 		if (Point)
@@ -148,6 +141,13 @@ public:
 			Item->next = (T*) first;
 			first = Item;
 		}
+	}
+	bool Insert (T *item)
+	{
+		T *prev;
+		Find (item->name, &prev);		// allow duplicates
+		InsertAfter (item, prev);
+		return true;
 	}
 	// creation and insertion
 	T *CreateAndInsert (const char *name)
@@ -185,7 +185,7 @@ public:
 	int icmp (const char *s2)	{ return stricmp (str, s2); }
 	void cpy (const char *s2, int len = N)	{ strncpy (str, s2, Min(N,len)); }
 	void cpyz (const char *s2)	{ appStrncpyz (str, s2, N); }
-	void cat (const char *s2)	{ appStrncat (str, s2, N); }
+	void cat (const char *s2)	{ appStrcatn (str, N, s2); }
 	char chr (char c)			{ return strchr (str, c); }
 	char rchr (char c)			{ return strrchr (str, c); }
 	void toLower () { appStrncpylwr (str, str, N); }

@@ -43,9 +43,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define CD_PATH		"install/data"
 #define CD_CHECK	"install/data/quake2.exe"	// file used for CD validation
 
-#define DO_GUARD		1
-#define DO_GUARD_SLOW	0
-
 #define NEW_PROTOCOL_ID "gildor"
 
 #ifdef WIN32
@@ -120,9 +117,9 @@ typedef struct sizebuf_s
 void	SZ_Init (sizebuf_t *buf, void *data, int length);
 void	SZ_Clear (sizebuf_t *buf);
 void	*SZ_GetSpace (sizebuf_t *buf, int length);
-void	SZ_Write (sizebuf_t *buf, void *data, int length);
-void	SZ_Insert (sizebuf_t *buf, void *data, int length, int pos);	// used for Cbuf_InsertText() only
-void	SZ_Print (sizebuf_t *buf, char *data);	// strcats onto the sizebuf
+void	SZ_Write (sizebuf_t *buf, const void *data, int length);
+void	SZ_Insert (sizebuf_t *buf, const void *data, int length, int pos);	// used for Cbuf_InsertText() only
+void	SZ_Print (sizebuf_t *buf, const char *data);						// strcats onto the sizebuf
 
 //============================================================================
 
@@ -132,7 +129,7 @@ void	MSG_WriteByte (sizebuf_t *sb, int c);
 void	MSG_WriteShort (sizebuf_t *sb, int c);
 void	MSG_WriteLong (sizebuf_t *sb, int c);
 void	MSG_WriteFloat (sizebuf_t *sb, float f);
-void	MSG_WriteString (sizebuf_t *sb, char *s);
+void	MSG_WriteString (sizebuf_t *sb, const char *s);
 void	MSG_WriteCoord (sizebuf_t *sb, float f);
 void	MSG_WritePos (sizebuf_t *sb, vec3_t pos);
 void	MSG_WriteAngle (sizebuf_t *sb, float f);
@@ -391,11 +388,11 @@ The + command line options are also added to the command buffer.
 void	Cbuf_Init (void);
 // allocates an initial text buffer that will grow as needed
 
-void	Cbuf_AddText (char *text);
+void	Cbuf_AddText (const char *text);
 // as new commands are generated from the console or keybindings,
 // the text is added to the end of the command buffer.
 
-void	Cbuf_InsertText (char *text);
+void	Cbuf_InsertText (const char *text);
 // when a command wants to issue other commands immediately, the text is
 // inserted at the beginning of the buffer, before any remaining unexecuted
 // commands.
@@ -720,38 +717,6 @@ void	Pmove (pmove_t *pmove);
 void	DebugPrintf (const char *fmt, ...);
 
 
-/*-------------- Memory management -------------*/
-
-/* Layout of fields:
-	1. char *name
-	2. self_t *next
-	3. all othen fields
-	4. char name[] (pointed by field #1)
-*/
-typedef struct basenamed_s
-{
-	char *name;
-	struct basenamed_s *next;
-	// place for other fields
-} basenamed_t;
-
-
-// Strings
-char	*ChainCopyString (const char *in, void *chain);
-
-// Named structure lists
-basenamed_t *AllocNamedStruc (int size, char *name);
-basenamed_t *ChainAllocNamedStruc (int size, char *name, void *chain);
-
-basenamed_t *FindNamedStruc (char *name, basenamed_t *first, basenamed_t **where);
-basenamed_t *FindNamedStrucByIndex (basenamed_t *first, int index);
-int IndexOfNamedStruc (char *name, basenamed_t *first);
-
-basenamed_t *AddToNamedList (char *name, basenamed_t *list);
-basenamed_t *ChainAddToNamedList (char *name, basenamed_t *list, void *chain);
-void	FreeNamedList (basenamed_t *list);
-
-
 /*----------------- File system ----------------*/
 
 extern cvar_t	*fs_gamedirvar;
@@ -780,9 +745,9 @@ void	FS_Read (void *buffer, int len, FILE *f);
 
 void	Sys_Mkdir (char *path);
 
-char	*Sys_FindFirst (char *path, int flags);
-char	*Sys_FindNext (void);
-void	Sys_FindClose (void);
+const char	*Sys_FindFirst (const char *path, int flags);
+const char	*Sys_FindNext (void);
+void		Sys_FindClose (void);
 
 
 /*------------- Miscellaneous -----------------*/
@@ -843,6 +808,9 @@ void	QCommon_Frame (int msec);
 void	QCommon_Shutdown (void);
 
 #define NUMVERTEXNORMALS	162
+// used by:
+// 1. common.cpp: MSG_WriteDir(), MSG_ReadDir()
+// 2. cl_fx.cpp:  CL_FlyParticles(), CL_BfgParticles()
 extern	vec3_t	bytedirs[NUMVERTEXNORMALS];
 
 // this is in the client code, but can be used for debugging from server
@@ -859,7 +827,7 @@ void	*Sys_GetGameAPI (void *parms);
 // loads the game dll and calls the api init function
 
 char	*Sys_ConsoleInput (void);
-void	Sys_ConsoleOutput (char *string);
+void	Sys_ConsoleOutput (const char *string);
 void	Sys_SendKeyEvents (void);
 void	NORETURN Sys_Error (const char *error, ...);
 void	NORETURN Sys_Quit (void);
@@ -873,11 +841,12 @@ void	CL_Init (void);
 void	CL_Drop (bool fromError = false);
 void	CL_Shutdown (bool error);
 void	CL_Frame (float msec, int realMsec);
+
 void	Con_Print (const char *text);
 void	SCR_BeginLoadingPlaque (void);
 
 void	SV_Init (void);
-void	SV_Shutdown (char *finalmsg, bool reconnect);
+void	SV_Shutdown (const char *finalmsg, bool reconnect);
 void	SV_Frame (float msec);
 
 

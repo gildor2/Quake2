@@ -377,6 +377,7 @@ static bool CreateGLcontext (void)
 static bool ActivateGLcontext (void)
 {
 	if (contextActive) return true;
+	// 1st - activate context, 2nd - enable rendering
 	if (!wglMakeCurrent (glw_state.hDC, contextHandle))
 	{
 		Com_WPrintf ("...ActivateGLcontext() failed\n");
@@ -391,12 +392,13 @@ static bool ActivateGLcontext (void)
 static bool DeactivateGLcontext (void)
 {
 	if (!contextActive) return true;
+	// 1st - disable rendering, 2nd - deactivate context
+	GL_EnableRendering (false);
 	if (!wglMakeCurrent (glw_state.hDC, NULL))
 	{
 		Com_WPrintf ("...DeactivateGLcontext() failed\n");
 		return false;
 	}
-	GL_EnableRendering (false);
 	contextActive = false;
 	return true;
 }

@@ -6,6 +6,7 @@ static bool initialized;
 cvar_t		*crosshair;
 cvar_t		*crosshairColor;
 
+
 // static cvars
 static cvar_t	*con_maxSize;
 static cvar_t	*scr_centertime;
@@ -304,7 +305,7 @@ static void SCR_MessageMode2_f (void)
 
 static const char *map_levelshot;
 
-void SCR_SetLevelshot (char *name)
+void SCR_SetLevelshot (const char *name)
 {
 	static const char defLevelshot[] = "/pics/levelshot";
 

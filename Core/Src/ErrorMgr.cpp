@@ -3,40 +3,39 @@
 
 CErrorHandler GErr;
 
-
-static char errMsg[256];		// to avoid stack-overflow dependency
-
 void appFatalError (const char *fmt, ...)
 {
 	va_list argptr;
 
-	GErr.fatalError = true;
 	GErr.swError = true;
 
 	va_start (argptr, fmt);
-	vsnprintf (ARRAY_ARG(errMsg), fmt, argptr);
+	vsnprintf (ARRAY_ARG(GErr.message), fmt, argptr);
 	va_end (argptr);
 
 //??	if (debugLogged) DebugPrintf ("FATAL ERROR: %s\n", errMsg);
-	appSprintf (ARRAY_ARG(GErr.history), "Error: %s\n\nHistory: ", errMsg);
 
 	throw 1;
 }
 
 
+//?? try to call via FatalError() (handle situation when fmt==NULL)
 void appNonFatalError (const char *fmt, ...)
 {
 	va_list argptr;
 
 	GErr.swError = true;
+	GErr.nonFatalError = true;
 
 	if (fmt)
 	{
 		va_start (argptr, fmt);
-		vsnprintf (ARRAY_ARG(errMsg), fmt, argptr);
+		vsnprintf (ARRAY_ARG(GErr.message), fmt, argptr);
 		va_end (argptr);
-//??		appPrintf (S_RED"ERROR: %s\n", errMsg);
+		appPrintf (S_RED"ERROR: %s\n", GErr.message);
 	}
+	else
+		GErr.message[0] = 0;
 
 	throw 1;
 }
@@ -52,7 +51,7 @@ void appUnwindPrefix (const char *fmt)
 		appSprintf (buf, sizeof(buf), "%s:", fmt);
 
 	GErr.wasError = false;		// will not insert "<-" next appUnwindThrow()
-	strncat (GErr.history, buf, sizeof(GErr.history));
+	appStrcatn (ARRAY_ARG(GErr.history), buf);
 }
 
 
@@ -72,7 +71,7 @@ void appUnwindThrow (const char *fmt, ...)
 	va_end (argptr);
 	GErr.wasError = true;
 
-	strncat (GErr.history, buf, sizeof(GErr.history));
+	appStrcatn (ARRAY_ARG(GErr.history), buf);
 
 #if 1
 	throw;
@@ -84,18 +83,23 @@ void appUnwindThrow (const char *fmt, ...)
 
 void CErrorHandler::Reset ()
 {
-	swError = fatalError = wasError = false;
-	strcpy (history, "General Protection Fault !\n\nHistory: ");	//?? check: is this message appears ?
+	swError = nonFatalError = wasError = false;
+	strcpy (message, "General Protection Fault !");	//?? check: is this message appears ?
+	history[0] = 0;
 }
 
 
 static void Cmd_Error (int argc, char **argv)
 {
+	guard(Cmd_Error);
 	if (!stricmp (argv[1], "-gpf"))
 		*((int*)NULL) = 0;						// this is not "throw" command, this is GPF
 	else if (!stricmp (argv[1], "-drop"))		//?? "drop" error - Q2-style (drop server); global usage (and name) may be different
 		appNonFatalError ("testing drop error");
+	else if (!stricmp (argv[1], "-stack"))
+		Cmd_Error (argc, argv);					// infinite recurse
 	appFatalError ("%s", argv[1]);
+	unguard;
 }
 
 

@@ -123,14 +123,14 @@ void appStrncpyz (char *dst, const char *src, int count)
 }
 
 
-void appStrncat (char *dst, const char *src, int count)
+// NOTE: not same, as strncat(dst, src, count): strncat's "count" is a maximum length of "src", but
+//	here "count" is maximal result size of "dst" ...
+void appStrcatn (char *dst, int count, const char *src)
 {
-	char	*p;
-	int		maxLen;
-
-	p = strchr (dst, 0);
-	maxLen = count - (p - dst);
-	appStrncpyz (p, src, maxLen);
+	char *p = strchr (dst, 0);
+	int maxLen = count - (p - dst);
+	if (maxLen > 1)
+		appStrncpyz (p, src, maxLen);
 }
 
 
@@ -197,10 +197,9 @@ void appCopyFilename (char *dest, const char *src, int len)
 
 int appCStrlen (const char *str)
 {
-	int		len;
 	char	c, c1;
 
-	len = 0;
+	int len = 0;
 	while (c = *str++)
 	{
 		if (c == '^')
@@ -249,7 +248,8 @@ void appUncolorizeString (char *dst, const char *src)
 #define VA_GOODSIZE		512
 #define VA_BUFSIZE		2048
 
-char *va (const char *format, ...)
+//?? should be "const char* va()"
+const char *va (const char *format, ...)
 {
 	va_list argptr;
 	static char buf[VA_BUFSIZE];
@@ -258,19 +258,34 @@ char *va (const char *format, ...)
 	char	*str;
 
 	guardSlow(va);
-	str = &buf[bufPos];
+
 	va_start (argptr, format);
-	len = vsnprintf (str, VA_GOODSIZE, format, argptr);
+
+	// wrap buffer
+	if (bufPos >= VA_BUFSIZE - VA_GOODSIZE) bufPos = 0;
+	// print
+	str = buf + bufPos;
+	len = vsnprintf (str, VA_BUFSIZE - bufPos, format, argptr);
+	if (len < 0 && bufPos > 0)
+	{
+		// buffer overflow - try again with printing to buffer start
+		bufPos = 0;
+		str = buf;
+		len = vsnprintf (buf, VA_BUFSIZE, format, argptr);
+	}
+
 	va_end (argptr);
 
-	if (len < 0)
-		return NULL;	// error (may be, overflow)
+	if (len < 0)		// not enough buffer space
+	{
+		const char suffix[] = " ... (overflow)";		// it is better, than return empty string
+		memcpy (buf + VA_BUFSIZE - sizeof(suffix), suffix, sizeof(suffix));
+		return str;
+	}
 
 	bufPos += len + 1;
-	if (bufPos > VA_BUFSIZE - VA_GOODSIZE)
-		bufPos = 0;		// cycle buffer
-
 	return str;
+
 	unguardSlow;
 }
 
@@ -413,6 +428,7 @@ char *CopyString (const char *str, CMemoryChain *chain)
 	return out;
 }
 
+
 /*-----------------------------------------------------------------------------
 	String lists
 -----------------------------------------------------------------------------*/
@@ -420,13 +436,10 @@ char *CopyString (const char *str, CMemoryChain *chain)
 
 void* CStringItem::operator new (size_t size, const char *str)
 {
-	int		len;
-	CStringItem *item;
-
 	guardSlow(CStringItem::new);
 	MEM_ALLOCATOR(size);
-	len = strlen (str) + 1;
-	item = (CStringItem*) appMalloc (size + len);
+	int len = strlen (str) + 1;
+	CStringItem *item = (CStringItem*) appMalloc (size + len);
 	item->name = (char*) OffsetPointer (item, size);
 	memcpy (item->name, str, len);			// may be faster than strcpy()
 

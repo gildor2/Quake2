@@ -36,7 +36,7 @@ void ProcessMapFile (const char *name)
 	// get base address
 	while (true)
 	{
-		if (feof (f)) Abort ("unexpected EOF1");
+		if (feof (f)) Abort ("unexpected EOF");
 		fgets (line, sizeof(line), f);
 		if (sscanf (line, " Preferred load address is %08X", &baseAddr) == 1)
 			break;

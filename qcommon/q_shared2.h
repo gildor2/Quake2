@@ -207,7 +207,6 @@ float VectorNormalize (vec3_t v);		// returns vector length
 float VectorNormalize2 (const vec3_t v, vec3_t out);
 void VectorInverse (vec3_t v);
 void VectorScale (const vec3_t in, float scale, vec3_t out);
-int Q_log2(int val);
 
 void MatrixMultiply (float in1[3][3], float in2[3][3], float out[3][3]);
 
@@ -222,12 +221,6 @@ void MakeNormalVectors (vec3_t forward, vec3_t right, vec3_t up);
 
 
 //=============================================
-
-char *COM_SkipPath (char *pathname);
-void COM_StripExtension (char *in, char *out);
-void COM_FileBase (char *in, char *out);
-void COM_FilePath (char *in, char *out);
-void COM_DefaultExtension (char *path, char *extension);
 
 char *COM_Parse (const char *&data_p, bool allowLineBreaks = true);
 const char *COM_QuoteString (const char *str, bool alwaysQuote);
@@ -1045,7 +1038,7 @@ typedef struct
 	int		skinnum;
 	unsigned int		effects;		// PGM - we're filling it, so it needs to be unsigned
 	int		renderfx;
-	int		solid;			// for client side prediction, 8*(bits 0-4) is x/y radius
+	int		solid;			// 16-bit int; for client side prediction, 8*(bits 0-4) is x/y radius
 							// 8*(bits 5-9) is z down distance, 8*(bits10-15) is z up
 							// gi.linkentity sets this properly
 	int		sound;			// for looping sounds, to guarantee shutoff

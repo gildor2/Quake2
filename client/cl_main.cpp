@@ -88,7 +88,7 @@ cvar_t	*cl_infps;
 client_static_t	cls;
 client_state_t	cl;
 
-centity_t		cl_entities[MAX_EDICTS];
+centity_t		*cl_entities;	// [MAX_EDICTS]
 
 entityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 
@@ -562,25 +562,6 @@ void CL_Rcon_f (int argc, char **argv)
 	NET_SendPacket (NS_CLIENT, strlen(message)+1, message, to);
 }
 
-
-/*
-=====================
-CL_ClearState
-
-=====================
-*/
-void CL_ClearState (void)
-{
-	S_StopAllSounds_f ();
-	CL_ClearEffects ();
-	CL_ClearTEnts ();
-
-	// wipe the entire cl structure
-	memset (&cl, 0, sizeof(cl));
-	memset (&cl_entities, 0, sizeof(cl_entities));
-
-	SZ_Clear (&cls.netchan.message);
-}
 
 /*
 =====================
@@ -1394,6 +1375,25 @@ void CL_Frame (float msec, int realMsec)
 //============================================================================
 
 /*
+=====================
+CL_ClearState
+
+=====================
+*/
+void CL_ClearState (void)
+{
+	S_StopAllSounds_f ();
+	CL_ClearEffects ();
+	CL_ClearTEnts ();
+
+	// wipe the entire cl structure
+	memset (&cl, 0, sizeof(cl));
+	memset (cl_entities, 0, sizeof(centity_t[MAX_EDICTS]));
+
+	SZ_Clear (&cls.netchan.message);
+}
+
+/*
 ====================
 CL_Init
 ====================
@@ -1413,6 +1413,7 @@ void CL_Init (void)
 
 	net_message.data = net_message_buffer;
 	net_message.maxsize = sizeof(net_message_buffer);
+	if (!DEDICATED) cl_entities = new centity_t [MAX_EDICTS];
 
 	V_Init ();
 	M_Init ();
@@ -1439,6 +1440,7 @@ void CL_Shutdown (bool error)
 
 	if (!DEDICATED)
 	{
+		delete cl_entities;
 		if (!error)		// do not write configuration when error occured
 			CL_WriteConfiguration (Cvar_VariableString ("cfgfile"));
 		CDAudio_Shutdown ();

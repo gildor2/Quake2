@@ -4,7 +4,7 @@
 // NOTE: dedicated server can be compiled from complete Q2 executable source
 
 // cl_scrn.cpp
-void SCR_SetLevelshot (char *name)
+void SCR_SetLevelshot (const char *name)
 {
 }
 

@@ -11,10 +11,6 @@ float	Cvar_Clamp (cvar_t *cvar, float low, float high);
 float	Cvar_ClampName (const char *name, float low, float high);
 
 //--- system-dependent ?? ---
-void*	Hunk_Begin (int maxsize);
-void*	Hunk_Alloc (int size);
-int	Hunk_End (void);
-void	Hunk_Free (void *buf);
 int	Sys_Milliseconds (void);
 
 //--------- console ---------
@@ -23,15 +19,15 @@ void	Com_DPrintf (const char *str, ...);
 void	Com_WPrintf (const char *str, ...);
 
 //---------- files ----------
-bool	FS_FileExists (char *filename);
-TList<CStringItem> FS_ListFiles (char *name, int *numfiles, int flags);
+bool	FS_FileExists (const char *filename);
+TList<CStringItem> FS_ListFiles (const char *name, int *numfiles, int flags);
 void*	FS_LoadFile (const char *name, unsigned *size = NULL);
 void	FS_FreeFile (void *buf);
 char*	FS_Gamedir (void);
-void	FS_CreatePath (char *path);
-void	FS_CopyFile (char *src, char *dst);
-void	FS_CopyFiles (char *srcMask, char *dstDir);
-void	FS_RemoveFiles (char *mask);
+void	FS_CreatePath (const char *path);
+void	FS_CopyFile (const char *src, const char *dst);
+void	FS_CopyFiles (const char *srcMask, const char *dstDir);
+void	FS_RemoveFiles (const char *mask);
 
 //------- video mode --------
 bool	Vid_GetModeInfo (int *width, int *height, int mode);

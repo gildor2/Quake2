@@ -395,7 +395,7 @@ static int numTargets;
 static char sunTarget[64];
 
 
-static entField_t *FindField (char *name)
+static entField_t *FindField (const char *name)
 {
 	int		i;
 	entField_t *f;

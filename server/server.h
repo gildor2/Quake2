@@ -233,7 +233,7 @@ trace_t SV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_
 // sv_init.c
 //
 void SV_InitGame (void);
-void SV_Map (bool attractloop, char *levelstring, bool loadgame);
+void SV_Map (bool attractloop, const char *levelstring, bool loadgame);
 
 
 //

@@ -457,7 +457,7 @@ void MSG_WriteFloat (sizebuf_t *sb, float f)
 	SZ_Write (sb, &dat.l, 4);
 }
 
-void MSG_WriteString (sizebuf_t *sb, char *s)
+void MSG_WriteString (sizebuf_t *sb, const char *s)
 {
 	if (!s)	SZ_Write (sb, "", 1);
 	else	SZ_Write (sb, s, strlen(s)+1);
@@ -1038,12 +1038,12 @@ void *SZ_GetSpace (sizebuf_t *buf, int length)
 	return data;
 }
 
-void SZ_Write (sizebuf_t *buf, void *data, int length)
+void SZ_Write (sizebuf_t *buf, const void *data, int length)
 {
 	memcpy (SZ_GetSpace (buf,length), data, length);
 }
 
-void SZ_Insert (sizebuf_t *buf, void *data, int length, int pos)
+void SZ_Insert (sizebuf_t *buf, const void *data, int length, int pos)
 {
 	int		len;
 	byte	*from, *to;
@@ -1059,21 +1059,19 @@ void SZ_Insert (sizebuf_t *buf, void *data, int length, int pos)
 	memcpy (from, data, length);
 }
 
-void SZ_Print (sizebuf_t *buf, char *data)
+void SZ_Print (sizebuf_t *buf, const char *data)
 {
-	int		len;
-
-	len = strlen(data)+1;
+	int len = strlen(data)+1;
 
 	if (buf->cursize)
 	{
 		if (buf->data[buf->cursize-1])
-			memcpy ((byte *)SZ_GetSpace(buf, len),data,len);		// no trailing 0
+			memcpy (SZ_GetSpace(buf, len),data,len);			// no trailing 0
 		else
-			memcpy ((byte *)SZ_GetSpace(buf, len-1)-1,data,len);	// write over trailing 0
+			memcpy ((byte*)SZ_GetSpace(buf, len-1)-1,data,len);	// write over trailing 0
 	}
 	else
-		memcpy ((byte *)SZ_GetSpace(buf, len),data,len);
+		memcpy (SZ_GetSpace(buf, len),data,len);
 }
 
 

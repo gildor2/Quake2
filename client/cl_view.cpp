@@ -46,10 +46,6 @@ static dlight_t	r_dlights[MAX_DLIGHTS];
 static int		r_numentities;
 static entity_t	r_entities[MAX_ENTITIES];
 
-static particle_t	r_particles[MAX_PARTICLES];
-
-static lightstyle_t	r_lightstyles[MAX_LIGHTSTYLES];
-
 char cl_weaponmodels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
 int num_cl_weaponmodels;
 
@@ -485,14 +481,13 @@ static void Sky_f (bool usage, int argc, char **argv)
 
 //============================================================================
 
-
 typedef struct
 {
 	int		code;
 	char	*name;
 } flagInfo_t;
 
-static void DrawFlag (int flag, flagInfo_t *info, int numFlags, char *prefix)
+static void DrawFlag (int flag, const flagInfo_t *info, int numFlags, char *prefix)
 {
 #if 0
 	int		i;
@@ -502,14 +497,13 @@ static void DrawFlag (int flag, flagInfo_t *info, int numFlags, char *prefix)
 			re.DrawTextLeft (va("%s%s", prefix, info->name), RGB(0.3, 0.6, 0.4));
 #else
 	char	buf[256];
-	int		i;
 
 	buf[0] = 0;
-	for (i = 0; i < numFlags; i++, info++)
+	for (int i = 0; i < numFlags; i++, info++)
 		if (flag & info->code)
 		{
 			if (buf[0])
-				strncat (buf, va(" %s%s", prefix, info->name), sizeof(buf));
+				appStrcatn (ARRAY_ARG(buf), va(" %s%s", prefix, info->name));
 			else
 				appSprintf (ARRAY_ARG(buf), "%s%s", prefix, info->name);
 			if (strlen (buf) > 40)
@@ -529,7 +523,7 @@ static void DrawFlag (int flag, flagInfo_t *info, int numFlags, char *prefix)
 
 static void DecodeContents (int i)
 {
-	static flagInfo_t contentsNames[] = {
+	static const flagInfo_t contentsNames[] = {
 #define T(name)		{CONTENTS_##name, #name}
 		T(SOLID),	T(WINDOW),		T(AUX),		T(LAVA),	T(SLIME),		T(WATER),
 		T(MIST),	T(ALPHA),		T(AREAPORTAL),	T(PLAYERCLIP),	T(MONSTERCLIP),
@@ -565,10 +559,10 @@ static void DrawSurfInfo (void)
 	static vec3_t zero = {0, 0, 0};
 	csurface_t	*surf;
 	vec3_t	norm;
-	char	*s;
+	const char *s;
 	int		cont;
 
-	static flagInfo_t surfNames[] = {
+	static const flagInfo_t surfNames[] = {
 #define T(name)		{SURF_##name, #name}
 		T(LIGHT), T(SLICK), T(SKY), T(WARP),
 		T(TRANS33), T(TRANS66), T(FLOWING), T(NODRAW),
@@ -579,7 +573,7 @@ static void DrawSurfInfo (void)
 #undef T
 	};
 
-	static char *materialNames[MATERIAL_COUNT] = {
+	static const char *materialNames[MATERIAL_COUNT] = {
 		"silent",
 		"concrete",
 		"fabric",
@@ -650,7 +644,6 @@ static void DrawSurfInfo (void)
 		re.DrawTextLeft ("", RGB(0, 0, 0));
 	}
 }
-
 
 static void DrawOriginInfo (void)
 {

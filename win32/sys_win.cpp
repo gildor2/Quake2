@@ -435,7 +435,7 @@ Sys_ConsoleOutput
 Print text to the dedicated console
 ================
 */
-void Sys_ConsoleOutput (char *string)
+void Sys_ConsoleOutput (const char *string)
 {
 	DWORD	dummy;
 	char	c;
@@ -675,18 +675,17 @@ int main (int argc, const char **argv)
 			}
 			GUARD_CATCH
 			{
-				if (GErr.fatalError)
-					throw;
-				else
+				if (GErr.nonFatalError)
 				{
-					SV_Shutdown (va("Server crashed: %s\n", GErr.history), false);		//!!!!! message only
-					//?? may be, pass NULL to SV_Shutdown(), and SV_Shutdown will get error message from GErr
-					//?? top line (if so, remove "message" field from GErr)
 					//!! TEST: dedicated: error -drop, error -gpf, error "msg"
-					Com_DPrintf ("History: %s\n", GErr.history);			//!!!!! history only
+					//!! check old behaviour on DropError(NULL)
+					SV_Shutdown (va("Server crashed: %s\n", GErr.message), false);	// message
+					Com_DPrintf ("History: %s\n", GErr.history);					// history
 					if (!DEDICATED) CL_Drop (true);
 					GErr.Reset ();
 				}
+				else
+					throw;
 			}
 			oldtime = newtime;
 		}
@@ -699,9 +698,8 @@ int main (int argc, const char **argv)
 		if (FILE *f = fopen (CRASH_LOG, "a+"))
 		{
 			if (GErr.swError)
-				fprintf (f, "----- " APPNAME " software exception -----\n%s\n\n", GErr.history);
-			else
-				fprintf (f, "%s\n\n", strrchr (GErr.history, '\n') + 1);
+				fprintf (f, "----- " APPNAME " software exception -----\n%s\n\n", GErr.message);
+			fprintf (f, "History: %s\n\n", GErr.history);
 			fclose (f);
 		}
 		if (debugLogged)
@@ -709,7 +707,7 @@ int main (int argc, const char **argv)
 
 		GUARD_BEGIN {
 			// shutdown all subsystems
-			SV_Shutdown (va("Server fatal crashed: %s\n", GErr.history), false);	//!!!!! message only
+			SV_Shutdown (va("Server fatal crashed: %s\n", GErr.message), false);	// message
 			CL_Shutdown (true);
 			QCommon_Shutdown ();
 		} GUARD_CATCH {
@@ -717,10 +715,11 @@ int main (int argc, const char **argv)
 		}
 		// display error
 #ifndef DEDICATED_ONLY
-		MessageBox (NULL, GErr.history, APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
+		MessageBox (NULL, va("%s\n\nHistory: %s", GErr.message, GErr.history),
+			APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
 #else
 		Sys_ConsoleOutput ("\n\n"S_RED"--------------------\n" APPNAME " fatal error\n");
-		Sys_ConsoleOutput (GErr.history);
+		Sys_ConsoleOutput (va("%s\nHistory: %s\n", GErr.message, GErr.history));
 #endif
 	}
 	// will get here only when fatal error happens

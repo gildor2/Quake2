@@ -56,11 +56,9 @@ static int ComputeHash (char *name)
 
 static void Shaderlist_f (bool usage, int argc, char **argv)
 {
-	int		i, n;
-	char	*mask;
-	static char *shTypes[] = {"", "sky", "fog", "por"};
-	static char *boolNames[] = {" ", "+"};
-	static char *badNames[] = {"", S_RED" (errors)"S_WHITE};
+	static const char *shTypes[] = {"", "sky", "fog", "por"};
+	static const char *boolNames[] = {" ", "+"};
+	static const char *badNames[] = {"", S_RED" (errors)"S_WHITE};
 
 	if (argc > 2 || usage)
 	{
@@ -68,19 +66,15 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	if (argc == 2)
-		mask = argv[1];
-	else
-		mask = NULL;
+	const char *mask = (argc == 2) ? argv[1] : NULL;
 
-	n = 0;
+	int n = 0;
 	Com_Printf ("----ns-lm-s--type-name--------\n");
-	for (i = 0; i < shaderCount; i++)
+	for (int i = 0; i < shaderCount; i++)
 	{
-		shader_t *sh;
-		char	*lmInfo, *color;
+		const char *lmInfo, *color;
 
-		sh = shadersArray[i];
+		shader_t *sh = shadersArray[i];
 		if (mask && !appMatchWildcard (sh->name, mask, true)) continue;
 		n++;
 

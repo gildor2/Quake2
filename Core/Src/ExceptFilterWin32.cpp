@@ -176,12 +176,11 @@ static void DumpMem (FILE *f, unsigned *data, CONTEXT *ctx)
 
 int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 {
-	static bool disable = false;
+	static bool dumped = false;
 
-	if (disable) return EXCEPTION_EXECUTE_HANDLER;			// error will be handled only once
-	disable = true;
-	if (GErr.swError) return EXCEPTION_EXECUTE_HANDLER;	// no interest to thread context when software-generated errors
-	GErr.fatalError = true;
+	if (GErr.swError) return EXCEPTION_EXECUTE_HANDLER;		// no interest to thread context when software-generated errors
+	if (dumped) return EXCEPTION_EXECUTE_HANDLER;			// error will be handled only once
+	dumped = true;
 
 	__try
 	{
@@ -220,13 +219,12 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			time_t	itime;
 			char	ctime[256];
 
-			appSprintf (ARRAY_ARG(GErr.history), "%s at \"%s\"\n", excName, appSymbolName (ctx->Eip));	//?? may be, supply package name
+			appSprintf (ARRAY_ARG(GErr.message), "%s at \"%s\"", excName, appSymbolName (ctx->Eip));	//?? may be, supply package name
 
 			time (&itime);
 			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
 			fprintf (f, "----- "APPNAME" crash at %s -----\n", ctime);		//!! should use main_package name instead of APPNAME
-			fprintf (f, "%s\n", GErr.history);
-			strcat (GErr.history, "\nHistory: ");
+			fprintf (f, "%s\n\n", GErr.message);
 
 			DumpReg4 (f, "EAX", ctx->Eax); DumpReg4 (f, "EBX", ctx->Ebx); DumpReg4 (f, "ECX", ctx->Ecx); DumpReg4 (f, "EDX", ctx->Edx);
 			DumpReg4 (f, "ESI", ctx->Esi); DumpReg4 (f, "EDI", ctx->Edi); DumpReg4 (f, "EBP", ctx->Ebp); DumpReg4 (f, "ESP", ctx->Esp);

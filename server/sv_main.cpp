@@ -1371,7 +1371,7 @@ Called when each game quits,
 before Sys_Quit or Sys_Error
 ================
 */
-void SV_Shutdown (char *finalmsg, bool reconnect)
+void SV_Shutdown (const char *finalmsg, bool reconnect)
 {
 	guard(SV_Shutdown);
 

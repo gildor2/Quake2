@@ -1,6 +1,6 @@
 #/bin/bash
 
-../genmake lib.prj COMPILER=VisualC > lib.mak
+../Tools/GenMake/genmake lib.prj COMPILER=VisualC > lib.mak
 
 export logfile="build.log"
 rm -f $logfile

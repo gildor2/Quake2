@@ -392,7 +392,7 @@ another level:
 	map tram.cin+jail_e3
 ======================
 */
-void SV_Map (bool attractloop, char *levelstring, bool loadgame)
+void SV_Map (bool attractloop, const char *levelstring, bool loadgame)
 {
 	char	level[MAX_QPATH], spawnpoint[MAX_QPATH], *ch, *s;
 	server_state_t newState;

@@ -38,6 +38,14 @@ template <class T> inline T OffsetPointer (const T ptr, int offset)
 	return (T) ((unsigned)ptr + offset);
 }
 
+//?? make 2 functions: for float and for int; as CORE_API
+template <class T> int Sign (T value)
+{
+	if (value < 0) return -1;
+	else if (value > 0) return 1;
+	return 0;
+}
+
 
 #define EXPAND_BOUNDS(a,minval,maxval)	\
 	if (a < minval) minval = a;			\

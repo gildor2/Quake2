@@ -167,7 +167,7 @@ typedef struct
 
 	// add commands to the server console as if they were typed in
 	// for map changing, etc
-	void	(*AddCommandString) (char *text);
+	void	(*AddCommandString) (const char *text);							// ORIGINAL: not "const"
 
 	void	(*DebugGraph) (float value, int color);
 } game_import_t;

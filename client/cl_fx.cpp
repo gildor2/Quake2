@@ -207,6 +207,7 @@ PARTICLE MANAGEMENT
 
 particle_t	*active_particles;
 static particle_t *free_particles, particles[MAX_PARTICLES];
+//!! NOTE: particles[] array is 240 Kb of size !
 
 
 typedef struct

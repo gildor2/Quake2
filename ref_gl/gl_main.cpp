@@ -363,6 +363,7 @@ static int GL_Init (void)
 	GL_InitShaders ();
 	GL_InitModels ();
 	GL_InitBackend ();
+	GL_CreateBuffers ();
 
 	gl_refdef.viewCluster = -2;		// force update visinfo for map:
 				// -1 is "no visinfo", >= 0 -- visinfo, so, -2 is unused (not reserved)
@@ -379,6 +380,7 @@ static void GL_Shutdown (void)
 
 	UnregisterCommand ("gfxinfo");
 
+	GL_FreeBuffers ();
 	GL_ShutdownBackend ();
 	GL_ShutdownModels ();
 	GL_ShutdownShaders ();

@@ -16,4 +16,7 @@ void	GL_FinishPortal (void);
 void	GL_SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination);
 
 
+void	GL_CreateBuffers (void);
+void	GL_FreeBuffers (void);
+
 #endif

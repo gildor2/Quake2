@@ -379,6 +379,7 @@ static void ShutdownGameMemory (void)
 }
 
 // Memory status console command
+//?? make as global "meminfo" subsystem
 static void GZ_Stats_f (void)
 {
 	Com_Printf ("Game memory:\n%d bytes in %d blocks\n", z_bytes, z_count);

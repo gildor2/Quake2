@@ -33,6 +33,14 @@ BUGS:
   will be killed as it was called from "d1" alias
 ! cmodel.cpp -- do not use static arrays, allocate required amounts with appMalloc(); this will remove requirement to check
   MAX_MAP_SOMETHING bounds !
+! LARGE STATIC ARRAYS:
+  - cl_particles[] - 240 Kb (4096 particles) -- try to reduce particle_t size (different types -> union) + MAX_PARTICLES=256 (?) -
+    - most particle use was from railgun effect, which is gone (almost gone); may be, analyze cl_newFx cvar and dynamically
+    allocate array of good size (i.e. make array dynamic)
+  - cl_parse_entities - 164 Kb
+  * cl_entities[]  - 1024 * ((entityState_t==(41*4))*3+6*4) = 1024 * 516 = 516 Kb
+  ! backend: few static arrays [MAX_VERTEXES][MAX_INDEXES][MAX_SCENE_SURFACES]
+    ? all gl buffers should be allocated dynamically; may be, vary size from map surface count
   
 ! new pmove.c errors:
   - "ground3" cafe, on the street: cannot jump onto a corner column (horiz. speed set to 0 due to position snap)
@@ -292,12 +300,6 @@ BSP:
 
 ------------ COMMON --------------
 
-? meminfo (see Alice) - renderer (hunks), z, chains etc. ???
-? hunks -> chains; align blocks by 16 bytes (currently: msvcrt, 8)
-? own memory manager (without malloc; use OS functions at low-lewel)
-? make AllocChainBlock() will try to use free space of PREVIOUS blocks when current (last) is full
-
-
 ? console command line parsing: add special chars (C-like '\"' etc.)
 ? console: change "]/command" -> "]command" (after completion, may be, other places), but keep
   removing "/" and "\" at line start before parsing; may be, change prompt "]" -> other (">", "#"
@@ -305,7 +307,6 @@ BSP:
   "" (in memory), not "]")
 
 - make zip.c big-endian compatible
-? update JPEG code (new version)
 - md4.c::Encode()/Decode() -- works exactly as memcpy() with little-endian platforms, memcpy()+LongSwapBuffer() with big-endian
 
 - create tool for automated Little/Big-endian file format conversion (parse C-headers); can create table:

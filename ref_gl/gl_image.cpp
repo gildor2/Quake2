@@ -711,8 +711,9 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int
 			appFree (image->pic);
 		int size = width * height * 4;
 		image->pic = (byte*)appMalloc (size);
-		image->internalFormat = 0;
 		memcpy (image->pic, pic, size);
+		image->flags = flags;			//?? without IMAGE_FLAGMASK
+		image->internalFormat = 0;		//??
 	}
 
 	if (!reuse)
@@ -726,6 +727,28 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int
 	return image;
 
 	unguardf(("%s", name));
+}
+
+
+void GL_LoadDelayedImages (void)
+{
+	int		i;
+	image_t	*img;
+
+	int time = Sys_Milliseconds ();
+	int num = 0;
+	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
+	{
+		if (!img->name[0]) continue;	// free slot
+		if (!(img->pic)) continue;
+
+//		Com_Printf ("up: %s\n", img->name);
+		GL_CreateImage (img->name, img->pic, img->width, img->height, img->flags);
+		appFree (img->pic);
+		img->pic = NULL;
+		num++;
+	}
+	Com_DPrintf ("%d images uploaded in %g sec\n", num, (Sys_Milliseconds () - time) / 1000.0f);
 }
 
 
@@ -1426,28 +1449,6 @@ void GL_ShutdownImages (void)
 
 	// don't clear other fields: after GL_ShutdownImages should not be called nothing
 	// but GL_InitImages, which will perform this work
-}
-
-
-void GL_LoadDelayedImages (void)
-{
-	int		i, num, time;
-	image_t	*img;
-
-	time = Sys_Milliseconds ();
-	num = 0;
-	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
-	{
-		if (!img->name[0]) continue;	// free slot
-		if (!(img->pic)) continue;
-
-//		Com_Printf ("up: %s\n", img->name);
-		GL_CreateImage (img->name, img->pic, img->width, img->height, img->flags);
-		appFree (img->pic);
-		img->pic = NULL;
-		num++;
-	}
-	Com_DPrintf ("%d images uploaded in %g sec\n", num, (Sys_Milliseconds () - time) / 1000.0f);
 }
 
 

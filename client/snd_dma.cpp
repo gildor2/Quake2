@@ -332,7 +332,7 @@ S_AliasName
 
 ==================
 */
-sfx_t *S_AliasName (char *aliasname, char *truename)
+static sfx_t *S_AliasName (const char *aliasname, const char *truename)
 {
 	sfx_t	*sfx;
 	int		i;

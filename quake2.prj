@@ -1,5 +1,7 @@
 # script file; perl highlighting
 
+NOSHARED=1			#!!!! shared
+
 #!! should be specified with cmdline
 COMPILER = VisualC
 
@@ -9,7 +11,7 @@ COMPILER = VisualC
 	STDLIBS   = kernel32 user32 gdi32
 !endif
 
-OUTDIR = Release
+OUT = Release
 MAPFILES = 1
 
 #------------------------------------------------------------------------------
@@ -132,35 +134,62 @@ INCLUDES = Core/Inc
 # static build
 
 DEFINES = STATIC_BUILD CORE_API=
-OBJDIR  = $OUTDIR/obj
+OBJDIR  = $OUT/obj/CoreStatic
+sources(STATIC) = $CORE $CORE_WIN32
 
-sources(STATIC) = $CORE $CORE_WIN32 $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER
+DEFINES = STATIC_BUILD CORE_API=
+OBJDIR  = $OUT/obj/q2stat
+sources(STATIC) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER
+
 LIBS = winmm wsock32 dinput lib/lib
-target(executable, $OUTDIR/quake2, STATIC, STATIC)
+target(executable, $OUT/quake2, STATIC, STATIC)
 
 #------------------------------------------------------------------------------
 # dynamic build
 
-DEFINES = CORE_API=
-OBJDIR  = $OUTDIR/obj/dyn_exe
+!ifndef  NOSHARED		#!!!! shared
 
-sources(DYN_EXE) = $CORE $CORE_WIN32 $CLIENT $SERVER $COMMON $RES_FILES $WIN32_FILES
-LIBS = winmm wsock32 dinput lib/lib
-target(executable, $OUTDIR/quake2_dyn, DYN_EXE, DYNAMIC)
+# !! not works now !!
+DEFINES = CORE_API=DLL_EXPORT
+OBJDIR  = $OUT/obj/CoreShared
+sources(CORE) = $CORE $CORE_WIN32
 
-#?? we should define DYNAMIC_REF to allow link from renderer to engine functions
-DEFINES = DYNAMIC_REF
-OBJDIR  = $OUTDIR/obj/dyn_ref
+IMPLIB = $OUT/Core
+target(shared, $OUT/Core, CORE, DYNAMIC)
 
+#----------------------------
+
+LIBS = winmm wsock32 dinput lib/lib $OUT/Core
+
+DEFINES = CORE_API=DLL_IMPORT
+OBJDIR  = $OUT/obj/q2dyn
+sources(DYN_EXE) = $CLIENT $SERVER $COMMON $RES_FILES $WIN32_FILES
+
+target(executable, $OUT/quake2_dyn, DYN_EXE, DYNAMIC)
+
+#----------------------------
+
+LIBS = winmm $OUT/Core
+
+# we should define DYNAMIC_REF to allow link from renderer to engine functions
+DEFINES = CORE_API=DLL_IMPORT DYNAMIC_REF
+OBJDIR  = $OUT/obj/gldyn
 sources(DYN_GL) = $GL_RENDERER qcommon/q_shared2.cpp client/ref_vars.cpp
-target(shared, $OUTDIR/ref_gl, DYN_GL, DYNAMIC)
+
+target(shared, $OUT/ref_gl, DYN_GL, DYNAMIC)
+
+!endif				#!!!! shared
 
 #------------------------------------------------------------------------------
 # dedicated server
 
-DEFINES = DEDICATED_ONLY
-OBJDIR  = $OUTDIR/obj/dedicated
+DEFINES = STATIC_BUILD CORE_API=
+OBJDIR  = $OUT/obj/CoreStatic
+sources(DEDICATED) = $CORE $CORE_WIN32
 
+DEFINES = STATIC_BUILD CORE_API= DEDICATED_ONLY
+OBJDIR  = $OUT/obj/dedstat
 sources(DEDICATED) = $DED_CLIENT $SERVER $COMMON $DED_WIN32 $RES_FILES
+
 LIBS = winmm wsock32 lib/lib
-target(executable, $OUTDIR/q2ded, DEDICATED, DEDICATED)
+target(executable, $OUT/q2ded, DEDICATED, DEDICATED)

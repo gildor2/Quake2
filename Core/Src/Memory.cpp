@@ -459,21 +459,34 @@ static void Cmd_CheckAllocs (bool usage)
 		if (p1 && !p2)
 		{
 			// new allocation
-			appPrintf ("      ---        %8d/%-4d", p1->total, p1->count);
+			appPrintf ("     ---        %8d/%-4d ", p1->total, p1->count);
 		}
 		else if (!p1)
 		{
 			// released allocation
-			appPrintf ("   %8d/%-4d      ---     ", p2->total, p2->count);
+			appPrintf ("  %8d/%-4d      ---      ", p2->total, p2->count);
 		}
 		else
 		{	// p1 && p2 -- both-list-allocation
 			if (p1->count == p2->count && p1->total == p2->total)
-				appPrintf ("     [  %9d/%-4d  ]     ", p1->total, p1->count);
+				appPrintf ("     "S_BLUE"["S_WHITE"  %9d/%-4d  "S_BLUE"]"S_WHITE"     ", p1->total, p1->count);
 			else
+			{
+				int totalDelta = p1->total - p2->total;
+				int countDelta = p1->count - p2->count;
+#if 1
+				static const char *colors[] = { S_GREEN, S_WHITE, S_RED };
+				const char *totalColor = colors[Sign (totalDelta) + 1];
+				const char *countColor = colors[Sign (countDelta) + 1];
+				appPrintf ("%21s/%-15s ",
+					va("%d%s%+d"S_WHITE, p2->total, totalColor, totalDelta),
+					va("%d%s%+d"S_WHITE, p2->count, countColor, countDelta));
+#else	// no colors
 				appPrintf ("%17s/%-11s ",
-					va("%d%+d", p2->total, p1->total - p2->total),
-					va("%d%+d", p2->count, p1->count - p2->count));
+					va("%d%+d", p2->total, totalDelta),
+					va("%d%+d", p2->count, countDelta));
+#endif
+			}
 		}
 
 		if (!appSymbolName (addr, ARRAY_ARG(symbol)))

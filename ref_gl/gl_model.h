@@ -197,7 +197,7 @@ typedef struct gl_flare_s
 typedef struct
 {
 	char	name[MAX_QPATH];
-	void	*hunk;
+	CMemoryChain *dataChain;
 	//?? shaders, fog, lightGrid (Q3)
 	// planes
 	cplane_t *planes;

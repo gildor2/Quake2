@@ -1330,14 +1330,12 @@ static void Create_Savestrings (void)
 			strcpy (m_savestrings[i], "<EMPTY>");
 		else
 		{
-			char	*name;
-			int		width;
-
 			fread (m_savestrings[i], sizeof(m_savestrings[i])-1, 1, f);
 			fclose (f);
 			m_savevalid[i] = true;
-			name = va("/" SAVEGAME_DIRECTORY "/save%d/shot.pcx", i);
+			const char *name = va("/" SAVEGAME_DIRECTORY "/save%d/shot.pcx", i);
 			re.ReloadImage (name);		// force renderer to refresh image
+			int		width;
 			re.DrawGetPicSize (&width, NULL, name);
 			if (width) m_shotvalid[i] = true;
 		}
@@ -1346,10 +1344,9 @@ static void Create_Savestrings (void)
 
 static void DrawSavegameShot (int index, int y)
 {
-	char	*name;
 	int		x, w, h;
 
-	name = va("/" SAVEGAME_DIRECTORY "/save%d/shot.pcx", index);
+	const char *name = va("/" SAVEGAME_DIRECTORY "/save%d/shot.pcx", index);
 	if (viddef.width >= 320)
 	{
 		x = viddef.width / 2 + 20;
@@ -2715,7 +2712,6 @@ static void PlayerConfig_MenuDraw (void)
 		{{90, -100, 10}, {0.4, 0.2, 0.2}, 200}
 	};
 	bool	showModels;
-	char	*icon;
 
 //	sscanf(Cvar_VariableString("dl0"), "%g %g %g %g", VECTOR_ARG(&dl[0].origin), &dl[0].intensity);
 //	sscanf(Cvar_VariableString("dl1"), "%g %g %g %g", VECTOR_ARG(&dl[1].origin), &dl[1].intensity);
@@ -2778,6 +2774,7 @@ static void PlayerConfig_MenuDraw (void)
 	re.DrawFill2 (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
 	re.RenderFrame (&refdef);
 
+	const char *icon;
 	if (!memcmp (skin->name, "skn_", 4))
 		icon = "/pics/default_icon.pcx";
 	else

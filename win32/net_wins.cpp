@@ -52,11 +52,9 @@ static int			ipx_socket;
 NET_ErrorString
 ====================
 */
-static char *NET_ErrorString (void)
+static const char *NET_ErrorString (void)
 {
-	int		i, code;
-	char	*s;
-	static struct {
+	static const struct {
 		int		code;
 		char	*str;
 	} info[] = {
@@ -77,9 +75,9 @@ static char *NET_ErrorString (void)
 #undef ERR
 	};
 
-	code = WSAGetLastError ();
-	s = NULL;
-	for (i = 0; i < ARRAY_COUNT(info); i++)
+	int code = WSAGetLastError ();
+	const char *s = NULL;
+	for (int i = 0; i < ARRAY_COUNT(info); i++)
 		if (info[i].code == code)
 		{
 			s = info[i].str;

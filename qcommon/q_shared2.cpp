@@ -324,6 +324,7 @@ void SetPlaneSignbits (cplane_t *out)
 LerpAngle
 ===============
 */
+//!! incorrect in most cases (should be slerp); used by cl_ents.cpp only
 float LerpAngle (float a2, float a1, float frac)
 {
 	if (a1 - a2 > 180)
@@ -391,22 +392,17 @@ BoxOnPlaneSide
 Returns 1, 2, or 1 + 2
 ==================
 */
-#if	1	//let compiler optimize this // !id386 || defined __linux__
 
 int BoxOnPlaneSide (const vec3_t mins, const vec3_t maxs, const cplane_t *p)
 {
+	float i0 = p->normal[0] * mins[0];
+	float a0 = p->normal[0] * maxs[0];
+	float i1 = p->normal[1] * mins[1];
+	float a1 = p->normal[1] * maxs[1];
+	float i2 = p->normal[2] * mins[2];
+	float a2 = p->normal[2] * maxs[2];
+
 	float	dist1, dist2;
-	int		sides;
-	float	i0, i1, i2, a0, a1, a2;
-
-	i0 = p->normal[0] * mins[0];
-	a0 = p->normal[0] * maxs[0];
-	i1 = p->normal[1] * mins[1];
-	a1 = p->normal[1] * maxs[1];
-	i2 = p->normal[2] * mins[2];
-	a2 = p->normal[2] * maxs[2];
-
-	// general case
 	switch (p->signbits)
 	{
 	case 0:
@@ -447,7 +443,7 @@ int BoxOnPlaneSide (const vec3_t mins, const vec3_t maxs, const cplane_t *p)
 //		break;
 	}
 
-	sides = 0;
+	int sides = 0;
 #if 0
 	if (dist1 >= p->dist)
 		sides = 1;
@@ -462,240 +458,6 @@ int BoxOnPlaneSide (const vec3_t mins, const vec3_t maxs, const cplane_t *p)
 
 	return sides;
 }
-#else
-#pragma warning( disable: 4035 )
-
-__declspec (naked) int BoxOnPlaneSide (const vec3_t emins, const vec3_t emaxs, const cplane_t *p)
-{
-	static int bops_initialized;
-	static int Ljmptab[8];
-
-	__asm {
-
-		push	ebx
-
-		cmp		bops_initialized, 1
-		je		initialized
-		mov		bops_initialized, 1
-
-		mov		Ljmptab[0*4], offset Lcase0
-		mov		Ljmptab[1*4], offset Lcase1
-		mov		Ljmptab[2*4], offset Lcase2
-		mov		Ljmptab[3*4], offset Lcase3
-		mov		Ljmptab[4*4], offset Lcase4
-		mov		Ljmptab[5*4], offset Lcase5
-		mov		Ljmptab[6*4], offset Lcase6
-		mov		Ljmptab[7*4], offset Lcase7
-
-initialized:
-
-		mov		edx,dword ptr[4+12+esp]
-		mov		ecx,dword ptr[4+4+esp]
-		xor		eax,eax
-		mov		ebx,dword ptr[4+8+esp]
-		mov		al,byte ptr[17+edx]
-		cmp		al,8
-		jge		Lerror
-		fld		dword ptr[0+edx]
-		fld		st(0)
-		jmp		dword ptr[Ljmptab+eax*4]
-Lcase0:
-		fmul	dword ptr[ebx]
-		fld		dword ptr[0+4+edx]
-		fxch	st(2)
-		fmul	dword ptr[ecx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[4+ebx]
-		fld		dword ptr[0+8+edx]
-		fxch	st(2)
-		fmul	dword ptr[4+ecx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[8+ebx]
-		fxch	st(5)
-		faddp	st(3),st(0)
-		fmul	dword ptr[8+ecx]
-		fxch	st(1)
-		faddp	st(3),st(0)
-		fxch	st(3)
-		faddp	st(2),st(0)
-		jmp		LSetSides
-Lcase1:
-		fmul	dword ptr[ecx]
-		fld		dword ptr[0+4+edx]
-		fxch	st(2)
-		fmul	dword ptr[ebx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[4+ebx]
-		fld		dword ptr[0+8+edx]
-		fxch	st(2)
-		fmul	dword ptr[4+ecx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[8+ebx]
-		fxch	st(5)
-		faddp	st(3),st(0)
-		fmul	dword ptr[8+ecx]
-		fxch	st(1)
-		faddp	st(3),st(0)
-		fxch	st(3)
-		faddp	st(2),st(0)
-		jmp		LSetSides
-Lcase2:
-		fmul	dword ptr[ebx]
-		fld		dword ptr[0+4+edx]
-		fxch	st(2)
-		fmul	dword ptr[ecx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[4+ecx]
-		fld		dword ptr[0+8+edx]
-		fxch	st(2)
-		fmul	dword ptr[4+ebx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[8+ebx]
-		fxch	st(5)
-		faddp	st(3),st(0)
-		fmul	dword ptr[8+ecx]
-		fxch	st(1)
-		faddp	st(3),st(0)
-		fxch	st(3)
-		faddp	st(2),st(0)
-		jmp		LSetSides
-Lcase3:
-		fmul	dword ptr[ecx]
-		fld		dword ptr[0+4+edx]
-		fxch	st(2)
-		fmul	dword ptr[ebx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[4+ecx]
-		fld		dword ptr[0+8+edx]
-		fxch	st(2)
-		fmul	dword ptr[4+ebx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[8+ebx]
-		fxch	st(5)
-		faddp	st(3),st(0)
-		fmul	dword ptr[8+ecx]
-		fxch	st(1)
-		faddp	st(3),st(0)
-		fxch	st(3)
-		faddp	st(2),st(0)
-		jmp		LSetSides
-Lcase4:
-		fmul	dword ptr[ebx]
-		fld		dword ptr[0+4+edx]
-		fxch	st(2)
-		fmul	dword ptr[ecx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[4+ebx]
-		fld		dword ptr[0+8+edx]
-		fxch	st(2)
-		fmul	dword ptr[4+ecx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[8+ecx]
-		fxch	st(5)
-		faddp	st(3),st(0)
-		fmul	dword ptr[8+ebx]
-		fxch	st(1)
-		faddp	st(3),st(0)
-		fxch	st(3)
-		faddp	st(2),st(0)
-		jmp		LSetSides
-Lcase5:
-		fmul	dword ptr[ecx]
-		fld		dword ptr[0+4+edx]
-		fxch	st(2)
-		fmul	dword ptr[ebx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[4+ebx]
-		fld		dword ptr[0+8+edx]
-		fxch	st(2)
-		fmul	dword ptr[4+ecx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[8+ecx]
-		fxch	st(5)
-		faddp	st(3),st(0)
-		fmul	dword ptr[8+ebx]
-		fxch	st(1)
-		faddp	st(3),st(0)
-		fxch	st(3)
-		faddp	st(2),st(0)
-		jmp		LSetSides
-Lcase6:
-		fmul	dword ptr[ebx]
-		fld		dword ptr[0+4+edx]
-		fxch	st(2)
-		fmul	dword ptr[ecx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[4+ecx]
-		fld		dword ptr[0+8+edx]
-		fxch	st(2)
-		fmul	dword ptr[4+ebx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[8+ecx]
-		fxch	st(5)
-		faddp	st(3),st(0)
-		fmul	dword ptr[8+ebx]
-		fxch	st(1)
-		faddp	st(3),st(0)
-		fxch	st(3)
-		faddp	st(2),st(0)
-		jmp		LSetSides
-Lcase7:
-		fmul	dword ptr[ecx]
-		fld		dword ptr[0+4+edx]
-		fxch	st(2)
-		fmul	dword ptr[ebx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[4+ecx]
-		fld		dword ptr[0+8+edx]
-		fxch	st(2)
-		fmul	dword ptr[4+ebx]
-		fxch	st(2)
-		fld		st(0)
-		fmul	dword ptr[8+ecx]
-		fxch	st(5)
-		faddp	st(3),st(0)
-		fmul	dword ptr[8+ebx]
-		fxch	st(1)
-		faddp	st(3),st(0)
-		fxch	st(3)
-		faddp	st(2),st(0)
-LSetSides:
-		faddp	st(2),st(0)
-		fcomp	dword ptr[12+edx]
-		xor		ecx,ecx
-		fnstsw	ax
-		fcomp	dword ptr[12+edx]
-		and		ah,1
-		xor		ah,1
-		add		cl,ah
-		fnstsw	ax
-		and		ah,1
-		add		ah,ah
-		add		cl,ah
-		pop		ebx
-		mov		eax,ecx
-		ret
-Lerror:
-		int		3
-	}
-}
-#pragma warning( default: 4035 )
-#endif
 
 void ClearBounds (vec3_t mins, vec3_t maxs)
 {
@@ -854,141 +616,6 @@ void _AxisCopy (vec3_t in[3], vec3_t out[3])
 	VectorCopy (in[2], out[2]);
 }
 
-
-int Q_log2 (int val)
-{
-	int answer=0;
-	while (val>>=1)
-		answer++;
-	return answer;
-}
-
-
-
-//====================================================================================
-
-/*
-============
-COM_SkipPath
-============
-*/
-char *COM_SkipPath (char *pathname)
-{
-	char	*last;
-
-	last = pathname;
-	while (*pathname)
-	{
-		if (*pathname=='/')
-			last = pathname+1;
-		pathname++;
-	}
-	return last;
-}
-
-/*
-============
-COM_StripExtension
-============
-*/
-void COM_StripExtension (char *in, char *out)
-{
-	while (*in && *in != '.')
-		*out++ = *in++;
-	*out = 0;
-}
-
-/*
-============
-COM_FileExtension
-============
-*/
-char *COM_FileExtension (char *in)
-{
-	static char exten[8];
-	int		i;
-
-	while (*in && *in != '.')
-		in++;
-	if (!*in)
-		return "";
-	in++;
-	for (i=0 ; i<7 && *in ; i++,in++)
-		exten[i] = *in;
-	exten[i] = 0;
-	return exten;
-}
-
-/*
-============
-COM_FileBase
-============
-*/
-void COM_FileBase (char *in, char *out)
-{
-	char *s, *s2;
-
-	s = in + strlen(in) - 1;
-
-	while (s != in && *s != '.')
-		s--;
-
-	for (s2 = s ; s2 != in && *s2 != '/' ; s2--)
-	;
-
-	if (s-s2 < 2)
-		out[0] = 0;
-	else
-	{
-		s--;
-		strncpy (out,s2+1, s-s2);
-		out[s-s2] = 0;
-	}
-}
-
-/*
-============
-COM_FilePath
-
-Returns the path up to, but not including the last /
-============
-*/
-void COM_FilePath (char *in, char *out)
-{
-	char *s;
-
-	s = in + strlen(in) - 1;
-
-	while (s != in && *s != '/')
-		s--;
-
-	strncpy (out,in, s-in);
-	out[s-in] = 0;
-}
-
-
-/*
-==================
-COM_DefaultExtension
-==================
-*/
-void COM_DefaultExtension (char *path, char *extension)
-{
-	char    *src;
-
-	// if path doesn't have a .EXT, append extension
-	// (extension should include the .)
-	src = path + strlen(path) - 1;
-
-	while (*src != '/' && src != path)
-	{
-		if (*src == '.')
-			return;                 // it has an extension
-		src--;
-	}
-
-	strcat (path, extension);
-}
 
 /*
 ============================================================================

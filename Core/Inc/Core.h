@@ -129,11 +129,12 @@ class CORE_API CErrorHandler
 {
 public:
 	bool	swError;			// true when error was thrown by appError() call; will not dump CPU context
-	bool	fatalError;			// when false, app can try to recover from error (and swError will be true)
 	bool	wasError;			// used for error history formatting
-	char	history[4096];
-	char	message[128];		//?? for "server crashed ..." message
+	char	message[128];		// error message
+	char	history[2048];		// call history
 	void	Reset ();
+	// fields for non-fatal error
+	bool	nonFatalError;		// when false, app can try to recover from error (and swError will be true)
 };
 
 CORE_API NORETURN void appFatalError (const char *fmt, ...);

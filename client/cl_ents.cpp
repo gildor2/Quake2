@@ -80,6 +80,8 @@ Can go from either a baseline or a previous packet_entity
 */
 void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, int bits, bool baseline)
 {
+	guard(CL_ParseDelta);
+
 	// set everything to the state we are delta'ing from
 	*to = *from;
 
@@ -135,12 +137,11 @@ void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, int bits
 	{
 		if (to->solid && to->solid != 31)
 		{
-			int		x, zd, zu;
 			vec3_t	d;
 
-			x = 8 * (to->solid & 31);
-			zd = 8 * ((to->solid>>5) & 31);
-			zu = 8 * ((to->solid>>10) & 63) - 32;
+			int x = 8 * (to->solid & 31);
+			int zd = 8 * ((to->solid>>5) & 31);
+			int zu = 8 * ((to->solid>>10) & 63) - 32;
 
 			VectorSet (to->mins, -x, -x, -zd);
 			VectorSet (to->maxs, x, x, zu);
@@ -151,12 +152,11 @@ void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, int bits
 		}
 		else
 		{
-			cmodel_t *m;
-			vec3_t	v, tmp;
-
-			m = cl.model_clip[to->modelindex];
+			cmodel_t *m = cl.model_clip[to->modelindex];
 			if (m)
 			{
+				vec3_t	v, tmp;
+
 				VectorAdd (m->mins, m->maxs, v);
 				VectorScale (v, 0.5f, v);
 				VectorMA (to->origin, v[0], to->axis[0], tmp);
@@ -167,6 +167,8 @@ void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, int bits
 			}
 		}
 	}
+
+	unguard;
 }
 
 /*

@@ -158,7 +158,7 @@ bool appSymbolName (address_t addr, char *buffer, int size)
 }
 
 
-char *appSymbolName (address_t addr)
+const char *appSymbolName (address_t addr)
 {
 	static char	buf[256];
 

@@ -1,109 +1,7 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-
-// NOTE: if remove Hunk() functions, can remove Id Software (c) !!
-
-#define WIN32_LEAN_AND_MEAN			// exclude rarely-used services from windown headers
-#include <windows.h>
-#include <mmsystem.h>				// for time services
+#include "winquake.h"
 
 #include <direct.h>
 #include <io.h>
-
-#include "../qcommon/qcommon.h"
-
-
-//===============================================================================
-
-
-static byte	*membase;
-static int	hunkmaxsize;
-static int	cursize;
-
-#define	VIRTUAL_ALLOC
-
-void *Hunk_Begin (int maxsize)
-{
-	// reserve a huge chunk of memory, but don't commit any yet
-	cursize = 0;
-	hunkmaxsize = maxsize;
-#ifdef VIRTUAL_ALLOC
-	membase = (byte*)VirtualAlloc (NULL, maxsize, MEM_RESERVE, PAGE_NOACCESS);
-#else
-	membase = (byte*)malloc (maxsize);
-	memset (membase, 0, maxsize);
-#endif
-	if (!membase)
-		Sys_Error ("VirtualAlloc reserve failed");
-	return (void *)membase;
-}
-
-void *Hunk_Alloc (int size)
-{
-	void	*buf;
-
-	// round to cacheline
-	size = (size+31)&~31;
-
-#ifdef VIRTUAL_ALLOC
-	// commit pages as needed
-//	buf = VirtualAlloc (membase+cursize, size, MEM_COMMIT, PAGE_READWRITE);
-	buf = VirtualAlloc (membase, cursize+size, MEM_COMMIT, PAGE_READWRITE);
-	if (!buf)
-		Sys_Error ("VirtualAlloc commit failed.");
-#endif
-	cursize += size;
-	if (cursize > hunkmaxsize)
-		Sys_Error ("Hunk_Alloc overflow");
-
-	return (void *)(membase+cursize-size);
-}
-
-int Hunk_End (void)
-{
-	// free the remaining unused virtual memory
-#if 0
-	void	*buf;
-
-	// write protect it
-	buf = VirtualAlloc (membase, cursize, MEM_COMMIT, PAGE_READONLY);
-	if (!buf)
-		Sys_Error ("VirtualAlloc commit failed");
-#endif
-
-	return cursize;
-}
-
-void Hunk_Free (void *base)
-{
-	if (base)
-#ifdef VIRTUAL_ALLOC
-		VirtualFree (base, 0, MEM_RELEASE);
-#else
-		free (base);
-#endif
-}
-
-
-//===============================================================================
-
 
 /*
 ================
@@ -153,11 +51,15 @@ static bool CheckAttributes (unsigned attrs)
 	return true;
 }
 
-char *Sys_FindFirst (char *path, int flags)
+
+const char *Sys_FindFirst (const char *path, int flags)
 {
 	struct _finddata_t findinfo;
 
-	COM_FilePath (path, findBase);
+	if (const char *s = strrchr (path, '/'))
+		appStrncpyz (findBase, path, s - path + 2);	// +1 for '/' char and +1 for zero
+	else
+		findBase[0] = 0;
 	findHandle = _findfirst (path, &findinfo);
 	if (findHandle == -1) return NULL;			// not found
 	findFlags = flags;
@@ -165,11 +67,11 @@ char *Sys_FindFirst (char *path, int flags)
 	if (!CheckAttributes (findinfo.attrib))
 		return Sys_FindNext ();
 
-	appSprintf (ARRAY_ARG(findPath), "%s/%s", findBase, findinfo.name);
+	appSprintf (ARRAY_ARG(findPath), "%s%s", findBase, findinfo.name);
 	return findPath;
 }
 
-char *Sys_FindNext (void)
+const char *Sys_FindNext (void)
 {
 	struct _finddata_t findinfo;
 
@@ -181,7 +83,7 @@ char *Sys_FindNext (void)
 		if (!CheckAttributes (findinfo.attrib))
 			continue;
 
-		appSprintf (ARRAY_ARG(findPath), "%s/%s", findBase, findinfo.name);
+		appSprintf (ARRAY_ARG(findPath), "%s%s", findBase, findinfo.name);
 		return findPath;
 	}
 	return NULL;

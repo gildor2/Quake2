@@ -323,9 +323,7 @@ void Con_Print (const char *txt)
 	{
 		if (c == COLOR_ESCAPE)
 		{
-			int		col;
-
-			col = *txt - '0';
+			int col = *txt - '0';
 			if (col >= 0 && col <= 7)
 			{
 				color = col;
@@ -387,10 +385,11 @@ static void DrawInput (void)
 		// draw blinking cursor
 		if ((i == editPos  - shift) && (curtime >> 8) & 1 && cls.key_dest != key_menu)
 		{
+#define CURSOR_HEIGHT	(CHAR_HEIGHT/4)
 			if (!(*re.flags & REF_CONSOLE_ONLY))
 			{
 				re.DrawChar (x, y, c);
-				re.DrawFill2 (x, y+CHAR_HEIGHT/2, CHAR_WIDTH, CHAR_HEIGHT/2, RGBA(0.2,1,0.3,0.5));
+				re.DrawFill2 (x, y+CHAR_HEIGHT-CURSOR_HEIGHT, CHAR_WIDTH, CURSOR_HEIGHT, RGBA(1,0.2,0.3,0.8));
 				continue;
 			}
 			c = 11;									// cursor char
@@ -461,7 +460,7 @@ void Con_DrawConsole (float frac)
 #ifdef DEBUG_CONSOLE
 	char	dbgBuf[256];
 	dbgBuf[0] = 0;
-#define CON_DBG(x)	strncat(dbgBuf,x,sizeof(dbgBuf))
+#define CON_DBG(x)	appStrcatn(ARRAY_ARG(dbgBuf),x)
 #else
 #define CON_DBG(x)
 #endif
