@@ -54,7 +54,9 @@ refImport_t ri = {
 	LoadBspFile,
 	CM_BoxTrace,
 	CM_TransformedBoxTrace,
-	CM_TransformedBoxTrace2
+	CM_TransformedBoxTrace2,
+	CM_BrushTrace,
+	CM_RefineBrushTrace
 #ifdef _WIN32
 ,
 	Vid_CreateWindow,

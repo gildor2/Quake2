@@ -247,6 +247,7 @@ void CL_PredictMovement (void)
 	usercmd_t *cmd;
 	pmove_t	pm;
 	int		i, step, oldz;
+	qboolean predicted;
 
 	if (cls.state != ca_active || cl.attractloop)
 		return;
@@ -285,6 +286,7 @@ void CL_PredictMovement (void)
 
 	// immediately after server frame, there will be 1 Pmove() cycle; till next server frame this
 	// number will be incremented up to (FPS / sv_fps)
+	predicted = false;
 	while (++ack < current)
 	{
 		frame = ack & (CMD_BACKUP-1);
@@ -298,6 +300,7 @@ void CL_PredictMovement (void)
 		cl.predicted_origins[frame][0] = pm.s.origin[0];
 		cl.predicted_origins[frame][1] = pm.s.origin[1];
 		cl.predicted_origins[frame][2] = pm.s.origin[2];
+		predicted = true;
 	}
 	predictLerp = -1;			// flag to use cl.lerpfrac
 
@@ -316,5 +319,6 @@ void CL_PredictMovement (void)
 	cl.predicted_origin[1] = pm.s.origin[1]*0.125f;
 	cl.predicted_origin[2] = pm.s.origin[2]*0.125f;
 
-	VectorCopy (pm.viewangles, cl.predicted_angles);
+	if (predicted)				// there can be a situation (when very fast fps or small timescale), when ack+1==current
+		VectorCopy (pm.viewangles, cl.predicted_angles);
 }

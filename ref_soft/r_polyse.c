@@ -123,7 +123,7 @@ void R_InitAdivtab (void)
 			}
 			else
 			{
-				q = floor ((float)y / x);
+				q = Q_floor ((float)y / x);
 				r = y - x * q;
 			}
 			p = &adivtab[(y+15)*32 + (x+15)];
@@ -361,23 +361,21 @@ void FloorDivMod (float numer, float denom, int *quotient,
 		int *rem)
 {
 	int		q, r;
-	float	x;
+//	float	x;
 
 	if (numer >= 0.0)
 	{
 
-		x = floor(numer / denom);
-		q = (int)x;
-		r = (int)floor(numer - (x * denom));
+		q = Q_floor(numer / denom);
+		r = Q_floor(numer - q * denom);
 	}
 	else
 	{
 	//
 	// perform operations with positive values, and fix mod to make floor-based
 	//
-		x = floor(-numer / denom);
-		q = -(int)x;
-		r = (int)floor(-numer - (x * denom));
+		q = -Q_floor(-numer / denom);
+		r = Q_floor(-numer + (q * denom));
 		if (r != 0)
 		{
 			q--;
@@ -713,31 +711,23 @@ void R_PolysetCalcGradients (int skinwidth)
 // very visible, overflow is very unlikely, because of ambient lighting
 	t0 = r_p0[4] - r_p2[4];
 	t1 = r_p1[4] - r_p2[4];
-	r_lstepx = (int)
-			ceil((t1 * p01_minus_p21 - t0 * p11_minus_p21) * xstepdenominv);
-	r_lstepy = (int)
-			ceil((t1 * p00_minus_p20 - t0 * p10_minus_p20) * ystepdenominv);
+	r_lstepx = Q_ceil((t1 * p01_minus_p21 - t0 * p11_minus_p21) * xstepdenominv);
+	r_lstepy = Q_ceil((t1 * p00_minus_p20 - t0 * p10_minus_p20) * ystepdenominv);
 
 	t0 = r_p0[2] - r_p2[2];
 	t1 = r_p1[2] - r_p2[2];
-	r_sstepx = (int)((t1 * p01_minus_p21 - t0 * p11_minus_p21) *
-			xstepdenominv);
-	r_sstepy = (int)((t1 * p00_minus_p20 - t0* p10_minus_p20) *
-			ystepdenominv);
+	r_sstepx = Q_ceil((t1 * p01_minus_p21 - t0 * p11_minus_p21) * xstepdenominv);	//?? (int)
+	r_sstepy = Q_ceil((t1 * p00_minus_p20 - t0* p10_minus_p20) * ystepdenominv);		// (int)
 
 	t0 = r_p0[3] - r_p2[3];
 	t1 = r_p1[3] - r_p2[3];
-	r_tstepx = (int)((t1 * p01_minus_p21 - t0 * p11_minus_p21) *
-			xstepdenominv);
-	r_tstepy = (int)((t1 * p00_minus_p20 - t0 * p10_minus_p20) *
-			ystepdenominv);
+	r_tstepx = Q_ceil((t1 * p01_minus_p21 - t0 * p11_minus_p21) * xstepdenominv);	// (int)
+	r_tstepy = Q_ceil((t1 * p00_minus_p20 - t0 * p10_minus_p20) * ystepdenominv);	// (int)
 
 	t0 = r_p0[5] - r_p2[5];
 	t1 = r_p1[5] - r_p2[5];
-	r_zistepx = (int)((t1 * p01_minus_p21 - t0 * p11_minus_p21) *
-			xstepdenominv);
-	r_zistepy = (int)((t1 * p00_minus_p20 - t0 * p10_minus_p20) *
-			ystepdenominv);
+	r_zistepx = Q_ceil((t1 * p01_minus_p21 - t0 * p11_minus_p21) * xstepdenominv);	// (int)
+	r_zistepy = Q_ceil((t1 * p00_minus_p20 - t0 * p10_minus_p20) * ystepdenominv);	// (int)
 
 //#if	id386ALIAS
 #if id386

@@ -130,7 +130,7 @@ Sys_ScanForCD
 
 ================
 */
-char *Sys_ScanForCD (void)
+static char *Sys_ScanForCD (void)
 {
 	static char	cddir[MAX_OSPATH];
 	static qboolean	done;
@@ -479,7 +479,7 @@ Send Key_Event calls
 */
 void Sys_SendKeyEvents (void)
 {
-    MSG        msg;
+	MSG		msg;
 
 	while (PeekMessage (&msg, NULL, 0, 0, PM_NOREMOVE))
 	{
@@ -665,11 +665,15 @@ HINSTANCE	global_hInstance;
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	int		time, oldtime, newtime;
-	char	*cddir, *cmdline;
-	char	cmdline2[1024];
+	char	*cmdline;
+#ifdef CD_PATH
+	char	*cddir, cmdline2[1024];
+#endif
 
 	global_hInstance = hInstance;
 
+	cmdline = lpCmdLine;
+#ifdef CD_PATH
 	// if we find the CD, add a "-cddir=xxx" command line
 	cddir = Sys_ScanForCD ();
 	if (cddir && cddir[0])
@@ -678,8 +682,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 		Com_sprintf (cmdline2, sizeof(cmdline2), "%s -cddir=\"%s\"", lpCmdLine, cddir);
 		cmdline = cmdline2;
 	}
-	else
-		cmdline = lpCmdLine;
+#endif
 
 	QCommon_Init (cmdline);
 	oldtime = Sys_Milliseconds ();

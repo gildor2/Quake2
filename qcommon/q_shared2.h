@@ -202,13 +202,54 @@ float Q_rsqrt (float number);
 
 __inline long Q_ftol (float val)
 {
-	// WARNING: this function works correct only for numbers less than ~49000
+	// WARNING: this function works correct only with numbers -32768..32767
+	// result is ceil(val)
     double v = (double)val + (68719476736.0*1.5);
     return ((long*)&v)[0] >> 16;
 }
 
+__inline int Q_round (float f)
+{
+	int		i;
+
+	__asm {
+		fld		[f]
+		fistp	[i]
+	}
+	return i;
+}
+
+__inline int Q_floor (float f)
+{
+	int		i;
+	static const float h = 0.4999999;	// 0.5
+
+	__asm {
+		fld		[f]
+		fsub	[h]
+		fistp	[i]
+	}
+	return i;
+}
+
+__inline int Q_ceil (float f)
+{
+	int		i;
+	static const float h = 0.4999999;	// 0.5
+
+	__asm {
+		fld		[f]
+		fadd	[h]
+		fistp	[i]
+	}
+	return i;
+}
+
 #else
-#define Q_ftol(f) (long) (f)
+#define Q_ftol(f)	(long) (f)
+#define Q_round(f)	(int) (f >= 0 ? (int)(f+0.5f) : (int)(f-0.5f))
+#define Q_floor(f)	((int)floor(f))
+#define Q_ceil(f)	((int)ceil(f))
 #endif
 
 #define DotProduct(x,y)			(x[0]*y[0]+x[1]*y[1]+x[2]*y[2])

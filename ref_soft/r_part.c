@@ -503,8 +503,8 @@ void R_DrawParticle( void )
 	*/
 	// FIXME: preadjust xcenter and ycenter
 	zi = 1.0 / transformed[2];
-	u = (int)(xcenter + zi * transformed[0] + 0.5);
-	v = (int)(ycenter - zi * transformed[1] + 0.5);
+	u = Q_round (xcenter + zi * transformed[0]);
+	v = Q_round (ycenter - zi * transformed[1]);
 
 	if ((v > d_vrectbottom_particle) ||
 		(u > d_vrectright_particle) ||
@@ -520,7 +520,7 @@ void R_DrawParticle( void )
 	*/
 	pz = d_pzbuffer + (d_zwidth * v) + u;
 	pdest = d_viewbuffer + d_scantable[v] + u;
-	izi = (int)(zi * 0x8000);
+	izi = Q_floor (zi * 0x8000);
 
 	/*
 	** determine the screen area covered by the particle,

@@ -550,12 +550,12 @@ void S_SpatializeOrigin (vec3_t origin, float master_vol, float dist_mult, int *
 
 	// add in distance effect
 	scale = (1.0f - dist) * rscale;
-	*right_vol = (int) (master_vol * scale);
+	*right_vol = Q_round (master_vol * scale);
 	if (*right_vol < 0)
 		*right_vol = 0;
 
 	scale = (1.0f - dist) * lscale;
-	*left_vol = Q_ftol (master_vol * scale);
+	*left_vol = Q_round (master_vol * scale);
 	if (*left_vol < 0)
 		*left_vol = 0;
 }

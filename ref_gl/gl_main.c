@@ -64,6 +64,7 @@ cvar_t	*gl_showImages;
 cvar_t	*gl_logFile;
 cvar_t	*r_novis;
 cvar_t	*r_nocull;
+cvar_t	*gl_oCull;
 cvar_t	*gl_facePlaneCull;
 cvar_t	*gl_sortAlpha;
 cvar_t	*r_speeds;
@@ -159,6 +160,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_logFile, 0, 0),
 	CVAR_VAR(r_novis, 0, 0),
 	CVAR_VAR(r_nocull, 0, 0),
+	CVAR_VAR(gl_oCull, 1, 0),
 	CVAR_VAR(gl_facePlaneCull, 1, 0),
 	CVAR_VAR(gl_sortAlpha, 0, 0),
 	CVAR_VAR(r_speeds, 0, 0),
@@ -709,7 +711,7 @@ static void GL_RenderFrame (refdef_t *fd)
 
 //DrawTextLeft(va("begin scene: %d ents (%d+) %d dlights (%d+)",fd->num_entities,gl_numEntities,fd->num_dlights,gl_numDlights),1,0,0);
 	// add entities
-	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.cullEntsBox = gl_speeds.cullEnts2 = 0;
+	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.cullEntsBox = gl_speeds.cullEnts2 = gl_speeds.ocullEnts = 0;
 	vp.firstEntity = gl_numEntities;
 	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
 		GL_AddEntity (ent);
@@ -744,10 +746,10 @@ static void GL_RenderFrame (refdef_t *fd)
 
 //		DrawTextLeft(va("blend: %f %f %f %f",VECTOR_ARGS(fd->blend),fd->blend[3]),1,1,1);
 		// standard Quake2 blending
-		c.c[0] = Q_ftol (fd->blend[0] * 255);
-		c.c[1] = Q_ftol (fd->blend[1] * 255);
-		c.c[2] = Q_ftol (fd->blend[2] * 255);
-		c.c[3] = Q_ftol (fd->blend[3] * 255);
+		c.c[0] = Q_round (fd->blend[0] * 255);
+		c.c[1] = Q_round (fd->blend[1] * 255);
+		c.c[2] = Q_round (fd->blend[2] * 255);
+		c.c[3] = Q_round (fd->blend[3] * 255);
 		GL_DrawStretchPic (gl_identityLightShader, 0, 0, vid.width, vid.height, 0, 0, 0, 0, c.rgba);
 	}
 
@@ -762,8 +764,8 @@ static void GL_RenderFrame (refdef_t *fd)
 			gl_speeds.surfs, gl_speeds.cullSurfs), 1, 0.5, 0);
 		DrawTextRight (va("tris: %d (+%d) mtex: %1.2f",
 			gl_speeds.trisMT, gl_speeds.tris2D, gl_speeds.trisMT ? (float)gl_speeds.tris / gl_speeds.trisMT : 0), 1, 0.5, 0);
-		DrawTextRight (va("ents: %d fcull: %d+%d cull: %d",
-			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEntsBox, gl_speeds.cullEnts2), 1, 0.5, 0);
+		DrawTextRight (va("ents: %d fcull: %d+%d cull: %d ocull: %d",
+			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEntsBox, gl_speeds.cullEnts2, gl_speeds.ocullEnts), 1, 0.5, 0);
 		DrawTextRight (va("particles: %d cull: %d",
 			gl_speeds.parts, gl_speeds.cullParts), 1, 0.5, 0);
 		DrawTextRight (va("dlights: %d surfs: %d verts: %d",
@@ -875,10 +877,10 @@ static void DrawFill2 (int x, int y, int w, int h, float r, float g, float b, fl
 {
 	color_t	c;
 
-	c.c[0] = Q_ftol(r * 255);
-	c.c[1] = Q_ftol(g * 255);
-	c.c[2] = Q_ftol(b * 255);
-	c.c[3] = Q_ftol(a * 255);
+	c.c[0] = Q_round (r * 255);
+	c.c[1] = Q_round (g * 255);
+	c.c[2] = Q_round (b * 255);
+	c.c[3] = Q_round (a * 255);
 	GL_DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, c.rgba);
 }
 

@@ -447,12 +447,12 @@ static void IN_MouseMove (usercmd_t *cmd)
 	mouse_y *= sensitivity->value * 1.5f;
 
 	// add mouse X/Y movement to cmd
-	if ((in_strafe.state & 1) || (lookstrafe->integer && mlooking))
+	if ((in_Strafe.state & 1) || (lookstrafe->integer && mlooking))
 		cmd->sidemove += m_side->value * mouse_x;
 	else
 		cl.viewangles[YAW] -= m_yaw->value * mouse_x;
 
-	if ((mlooking || freelook->value) && !(in_strafe.state & 1))
+	if ((mlooking || freelook->value) && !(in_Strafe.state & 1))
 		cl.viewangles[PITCH] += m_pitch->value * mouse_y;
 	else
 		cmd->forwardmove -= m_forward->value * mouse_y;
@@ -958,7 +958,7 @@ void IN_JoyMove (usercmd_t *cmd)
 		return;
 	}
 
-	if ((in_speed.state & 1) ^ cl_run->integer)
+	if ((in_Speed.state & 1) ^ cl_run->integer)
 		speed = 2;
 	else
 		speed = 1;
@@ -1010,7 +1010,7 @@ void IN_JoyMove (usercmd_t *cmd)
 			break;
 
 		case AxisTurn:
-			if ((in_strafe.state & 1) || (lookstrafe->value && mlooking))
+			if ((in_Strafe.state & 1) || (lookstrafe->value && mlooking))
 			{
 				// user wants turn control to become side control
 				if (fabs(fAxisValue) > joy_sidethreshold->value)

@@ -93,8 +93,8 @@ void D_ViewChanged (void)
 	if (d_pix_min < 1)
 		d_pix_min = 1;
 
-	d_pix_max = (int)((float)r_refdef.vrect.width / (320.0 / 4.0) + 0.5);
-	d_pix_shift = 8 - (int)((float)r_refdef.vrect.width / 320.0 + 0.5);
+	d_pix_max = Q_round ((float)r_refdef.vrect.width / (320.0 / 4.0));
+	d_pix_shift = 8 - Q_round ((float)r_refdef.vrect.width / 320.0);
 	if (d_pix_max < 1)
 		d_pix_max = 1;
 
@@ -359,10 +359,10 @@ void R_ViewChanged (vrect_t *vr)
 	r_refdef.fvrectbottom = (float)r_refdef.vrectbottom;
 	r_refdef.fvrectbottom_adj = (float)r_refdef.vrectbottom - 0.5;
 
-	r_refdef.aliasvrect.x = (int)(r_refdef.vrect.x * r_aliasuvscale);
-	r_refdef.aliasvrect.y = (int)(r_refdef.vrect.y * r_aliasuvscale);
-	r_refdef.aliasvrect.width = (int)(r_refdef.vrect.width * r_aliasuvscale);
-	r_refdef.aliasvrect.height = (int)(r_refdef.vrect.height * r_aliasuvscale);
+	r_refdef.aliasvrect.x = Q_round(r_refdef.vrect.x * r_aliasuvscale);
+	r_refdef.aliasvrect.y = Q_round(r_refdef.vrect.y * r_aliasuvscale);
+	r_refdef.aliasvrect.width = Q_round(r_refdef.vrect.width * r_aliasuvscale);
+	r_refdef.aliasvrect.height = Q_round(r_refdef.vrect.height * r_aliasuvscale);
 	r_refdef.aliasvrectright = r_refdef.aliasvrect.x + r_refdef.aliasvrect.width;
 	r_refdef.aliasvrectbottom = r_refdef.aliasvrect.y + r_refdef.aliasvrect.height;
 

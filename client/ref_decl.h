@@ -55,6 +55,8 @@ typedef struct {
 	void	(*_CM_BoxTrace) (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
 	void	(*_CM_TransformedBoxTrace) (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
 	void	(*_CM_TransformedBoxTrace2) (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t *axis);
+	int	(*_CM_BrushTrace) (vec3_t start, vec3_t end, int *brushes, int maxBrushes);
+	int	(*_CM_RefineBrushTrace) (vec3_t start, vec3_t end, int *brushes, int numBrushes);
 #ifdef _WIN32
 	void*	(*_Vid_CreateWindow) (int width, int height, qboolean fullscreen);
 	void	(*_Vid_DestroyWindow) (qboolean force);

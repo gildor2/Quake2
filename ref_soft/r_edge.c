@@ -840,9 +840,9 @@ void D_CalcGradients (msurface_t *pface)
 	if (pface->texinfo->flags & SURF_FLOWING)
 	{
 		if(pface->texinfo->flags & SURF_WARP)
-			sadjust += 0x10000 * (-128 * ( (r_newrefdef.time * 0.25) - (int)(r_newrefdef.time * 0.25) ));
+			sadjust += 0x10000 * (-128 * ( (r_newrefdef.time * 0.25) - Q_floor(r_newrefdef.time * 0.25) ));
 		else
-			sadjust += 0x10000 * (-128 * ( (r_newrefdef.time * 0.77) - (int)(r_newrefdef.time * 0.77) ));
+			sadjust += 0x10000 * (-128 * ( (r_newrefdef.time * 0.77) - Q_floor(r_newrefdef.time * 0.77) ));
 	}
 	// PGM
 

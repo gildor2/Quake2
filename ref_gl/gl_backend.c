@@ -210,12 +210,12 @@ static void GenerateColorArray (shaderStage_t *st)
 
 			if (st->alphaGenType == ALPHAGEN_DOT)
 			{
-				min = Q_ftol (st->alphaMin * 255);
+				min = Q_round (st->alphaMin * 255);
 				scale = (st->alphaMax - st->alphaMin) * 255;
 			}
 			else
 			{
-				min = Q_ftol (st->alphaMax * 255);
+				min = Q_round (st->alphaMax * 255);
 				scale = (st->alphaMin - st->alphaMax) * 255;
 			}
 			vec = vb->verts;
@@ -235,7 +235,7 @@ static void GenerateColorArray (shaderStage_t *st)
 #else
 					if (d < 0) d = 0;
 #endif
-					dst->c[3] = Q_ftol (d * scale) + min;
+					dst->c[3] = Q_round (d * scale) + min;
 				}
 			}
 		}
@@ -593,7 +593,7 @@ static void PreprocessShader (shader_t *sh)
 			int		n;
 
 			if (currentEntity == &gl_entities[ENTITYNUM_WORLD] || !stage->frameFromEntity)
-				n = Q_ftol (ap.time * stage->animMapFreq);
+				n = Q_round (ap.time * stage->animMapFreq);
 			else
 				n = currentEntity->frame;
 			st->st.mapImage[0] = stage->mapImage[n % stage->numAnimTextures];
@@ -652,7 +652,7 @@ static void PreprocessShader (shader_t *sh)
 #define P stage->rgbGenWave
 				c1 = PERIODIC_FUNC(mathFuncs[stage->rgbGenWave.type], P.freq * ap.time + P.phase) * P.amp + P.base;
 #undef P
-				c2 = Q_ftol(c1 * 255);
+				c2 = Q_round (c1 * 255);
 				c2 = bound(c2, 0, 255);
 				st->st.rgbaConst.c[0] = st->st.rgbaConst.c[1] = st->st.rgbaConst.c[2] = c2;
 				st->st.rgbGenType = RGBGEN_CONST;
@@ -1415,7 +1415,7 @@ static void FlashColor (void)
 {
 	int		i;
 
-	i = Q_ftol (ap.time / 3 * TABLE_SIZE);
+	i = Q_round (ap.time / 3 * TABLE_SIZE);
 	qglColor3f (sinTable[i & TABLE_MASK] / 2 + 0.5,
 				sinTable[i + 100 & TABLE_MASK] / 2 + 0.5,
 				sinTable[600 - i & TABLE_MASK] / 2 + 0.5);
@@ -1662,7 +1662,7 @@ static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 		if (stage->numAnimTextures == 1)
 			GL_Bind (stage->mapImage[0]);
 		else
-			GL_Bind (stage->mapImage[Q_ftol(ap.time * stage->animMapFreq) % stage->numAnimTextures]);
+			GL_Bind (stage->mapImage[Q_round(ap.time * stage->animMapFreq) % stage->numAnimTextures]);
 
 		for (j = 0, psurf = surfs; j < numSurfs; j++, psurf++)
 		{

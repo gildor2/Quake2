@@ -687,35 +687,6 @@ static void Cmd_NetRestart_f (void)
 }
 
 
-// sleeps msec or until net socket is ready
-//?? remove this function
-void NET_Sleep(int msec)
-{
-	struct timeval timeout;
-	fd_set	fdset;
-	int		i;
-
-	if (!dedicated || !dedicated->integer)
-		return; // we're not a server, just run full speed
-
-	FD_ZERO(&fdset);
-	i = 0;
-	if (ip_socket)
-	{
-		FD_SET(ip_socket, &fdset);		// network socket
-		i = ip_socket;
-	}
-	if (ipx_socket)
-	{
-		FD_SET(ipx_socket, &fdset);		// network socket
-		if (ipx_socket > i)
-			i = ipx_socket;
-	}
-	timeout.tv_sec = msec/1000;
-	timeout.tv_usec = (msec%1000)*1000;
-	select (i+1, &fdset, NULL, NULL, &timeout);
-}
-
 //===================================================================
 
 

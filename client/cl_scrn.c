@@ -165,8 +165,8 @@ void SCR_DrawDebugGraph (void)
 		v = v*scr_graphscale->value + scr_graphshift->value;
 
 		if (v < 0)
-			v += scr_graphheight->integer * (1+(int)(-v/scr_graphheight->value));
-		h = (int)v % scr_graphheight->integer;
+			v += scr_graphheight->integer * (1+Q_round(-v/scr_graphheight->value));
+		h = Q_round(v) % scr_graphheight->integer;
 		re.DrawFill (x+w-1-a, y - h, 1,	h, color);
 	}
 }

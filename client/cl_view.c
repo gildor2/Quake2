@@ -489,7 +489,7 @@ static void DrawSurfInfo (void)
 {
 	vec3_t	start, end;
 	trace_t	trace;
-	static vec3_t v1 = {1, 1, 1}, v2 = {-1, -1, -1};
+	static vec3_t zero = {0, 0, 0};
 	csurface_t	*surf;
 	vec3_t	norm;
 	char	*s;
@@ -526,9 +526,9 @@ static void DrawSurfInfo (void)
 	VectorScale (end, 500, end);
 	VectorAdd (start, end, end);
 
-	CM_BoxTrace (&trace, start, end, v1, v2, 0, r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER);
+	CM_BoxTrace (&trace, start, end, zero, zero, 0, r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER);
 	if (!(r_surfinfo->integer & 2))
-		CL_ClipMoveToEntities (&trace, start, v1, v2, end);
+		CL_ClipMoveToEntities (&trace, start, zero, zero, end);
 
 	if (trace.fraction < 1.0)
 	{

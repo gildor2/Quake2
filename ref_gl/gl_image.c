@@ -182,8 +182,8 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 	f = (float)inheight / outheight;
 	for (i = 0, f1 = 0.25f * f, f2 = 0.75f * f; i < outheight; i++, out += outwidth, f1 += f, f2 += f)
 	{
-		inrow = in + inwidth * Q_ftol(f1);
-		inrow2 = in + inwidth * Q_ftol(f2);
+		inrow = in + inwidth * Q_round (f1);
+		inrow2 = in + inwidth * Q_round (f2);
 		for (j = 0; j < outwidth; j++)
 		{
 			int		n, r, g, b, a;
@@ -254,7 +254,7 @@ static void LightScaleTexture (unsigned *pic, int width, int height, qboolean on
 			SATURATE(g,light,sat);
 			SATURATE(b,light,sat);
 			// put color
-			p[0] = Q_ftol (r);  p[1] = Q_ftol (g);  p[2] = Q_ftol (b);
+			p[0] = Q_round (r);  p[1] = Q_round (g);  p[2] = Q_round (b);
 		}
 	}
 
@@ -736,7 +736,7 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 		byte	*src;
 		unsigned *dst;
 
-		row = Q_ftol (hScale * i);
+		row = Q_round (hScale * i);
 		if (row > height) break;
 
 		src = &pic[width * row];
@@ -874,7 +874,7 @@ void GL_SetupGamma (void)
 		if (invGamma == 1.0)
 			v = i;
 		else
-			v = (int) (pow (i / 255.0f, invGamma) * 255.0f + 0.5f);
+			v = Q_round (pow (i / 255.0f, invGamma) * 255.0f);
 
 		v <<= overbright;
 		gammaTable[i] = bound(v, 0, 255);
@@ -884,7 +884,7 @@ void GL_SetupGamma (void)
 	{
 		int		v;
 
-		v = (int) (intens * (float)i + 0.5f);
+		v = Q_round (intens * i);
 		v = bound(v, 0, 255);
 
 		if (!gl_config.deviceSupportsGamma)
@@ -1241,7 +1241,7 @@ void GL_InitImages (void)
 //			xv = (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2)); xv = bound(xv, 0, 1); v = xv * xv * 255;	// square
 			v = bound(v, 0, 255);
 #else
-			v = (int) (4000.0f / (xv + yv));
+			v = Q_ceil (4000.0f / (xv + yv));
 			if (v < 75) v = 0;
 			if (v > 255) v = 255;
 #endif
@@ -1305,7 +1305,7 @@ void GL_InitImages (void)
 			}
 
 			p[0] = p[1] = p[2] = 255;
-			p[3] = (int)(v * 255);
+			p[3] = Q_round (v * 255);
 			p += 4;
 		}
 	}

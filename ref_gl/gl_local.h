@@ -581,7 +581,7 @@ typedef struct
 	int		surfs, cullSurfs;
 	int		tris, trisMT;		// number of tris, which will be drawn without mtex and with mtex (same if no multitexture)
 	int		tris2D;				// number of triangles for HUD/console
-	int		ents, cullEnts, cullEntsBox, cullEnts2;
+	int		ents, cullEnts, cullEntsBox, cullEnts2, ocullEnts;
 	int		parts, cullParts;	// particles
 	int		dlightSurfs, dlightVerts;
 	int		flares, testFlares, cullFlares;
@@ -673,6 +673,7 @@ extern cvar_t	*gl_logFile;
 extern cvar_t	*gl_showImages;
 extern cvar_t	*r_novis;			//?? ~gl_pvsCull ?
 extern cvar_t	*r_nocull;			//?? ~gl_frustumCull ?
+extern cvar_t	*gl_oCull;
 extern cvar_t	*gl_facePlaneCull;	//?? gl_backfaceCull ?
 extern cvar_t	*gl_sortAlpha;
 extern cvar_t	*r_speeds;

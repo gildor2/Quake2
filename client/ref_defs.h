@@ -54,6 +54,8 @@
 #define CM_BoxTrace	ri._CM_BoxTrace
 #define CM_TransformedBoxTrace	ri._CM_TransformedBoxTrace
 #define CM_TransformedBoxTrace2	ri._CM_TransformedBoxTrace2
+#define CM_BrushTrace	ri._CM_BrushTrace
+#define CM_RefineBrushTrace	ri._CM_RefineBrushTrace
 #ifdef _WIN32
 #define Vid_CreateWindow	ri._Vid_CreateWindow
 #define Vid_DestroyWindow	ri._Vid_DestroyWindow
@@ -115,6 +117,8 @@ bspfile_t*	LoadBspFile (char *filename, qboolean clientload, unsigned *checksum)
 void	CM_BoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
 void	CM_TransformedBoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
 void	CM_TransformedBoxTrace2 (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t *axis);
+int	CM_BrushTrace (vec3_t start, vec3_t end, int *brushes, int maxBrushes);
+int	CM_RefineBrushTrace (vec3_t start, vec3_t end, int *brushes, int numBrushes);
 #ifdef _WIN32
 void*	Vid_CreateWindow (int width, int height, qboolean fullscreen);
 void	Vid_DestroyWindow (qboolean force);

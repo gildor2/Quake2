@@ -803,7 +803,7 @@ void R_AliasTransformFinalVerts( int numpoints, finalvert_t *fv, dTriVertx_t *ol
 
 		if (lightcos < 0)
 		{
-			temp += (int)(r_shadelight * lightcos);
+			temp += Q_round (r_shadelight * lightcos);
 
 			// clamp; because we limited the minimum ambient and shading light, we
 			// don't have to clamp low light, just bright

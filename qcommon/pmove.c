@@ -339,12 +339,12 @@ static void Accelerate (vec3_t wishdir, float wishspeed, float accel)
 	addspeed = wishspeed - currentspeed;
 	if (addspeed <= 0)
 		return;
-	accelspeed = accel*pml.frametime*wishspeed;
+	accelspeed = accel * pml.frametime * wishspeed;
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
 	for (i = 0; i < 3; i++)
-		pml.velocity[i] += accelspeed*wishdir[i];
+		pml.velocity[i] += accelspeed * wishdir[i];
 }
 
 
@@ -613,7 +613,7 @@ static void CatagorizePosition (void)
 	point[2] = pml.origin[2] - 0.25;
 
 	if (pml.velocity[2] > 180) //ZOID changed from 100 to 180 (ramp accel)
-	{	// NOTE: if disable this code, jumppads will be VERY buggy
+	{	// NOTE: if disable this code, jumppads will be VERY buggy; and waterjump will be very high
 		pm->s.pm_flags &= ~PMF_ON_GROUND;
 		pm->groundentity = NULL;
 	}
@@ -989,15 +989,15 @@ static void DeadMove (void)
 static qboolean GoodPosition (void)
 {
 	trace_t	trace;
-	vec3_t	origin, end;
+	vec3_t	v;
 	int		i;
 
 	if (pm->s.pm_type == PM_SPECTATOR)
 		return true;
 
 	for (i = 0; i < 3; i++)
-		origin[i] = end[i] = pm->s.origin[i] / 8.0f;
-	trace = pm->trace (origin, pm->mins, pm->maxs, end);
+		v[i] = pm->s.origin[i] / 8.0f;
+	trace = pm->trace (v, pm->mins, pm->maxs, v);
 
 	return !trace.allsolid;
 }
@@ -1012,49 +1012,45 @@ precision of the network channel and in a valid position.
 */
 static void SnapPosition (void)
 {
-	int		sign[3];
-	int		i, j, bits;
+	qboolean exact[3];
+	int		i, i1, i2, i3;
 	short	base[3];
-	// try all single bits first
-	static int jitterbits[8] = {0,4,1,2,3,5,6,7};
-
-	// snap velocity to eigths
-	for (i = 0; i < 3; i++)
-		pm->s.velocity[i] = (int)(pml.velocity[i] * 8);		//!! do not use Q_ftol()
+	static int offset[3] = {0, 1, -1};
 
 	for (i = 0; i < 3; i++)
 	{
-		if (pml.origin[i] >= 0)
-			sign[i] = 1;
-		else
-			sign[i] = -1;
-		pm->s.origin[i] = (int)(pml.origin[i] * 8);			//!! do not use Q_ftol()
-		if (pm->s.origin[i] / 8.0f == pml.origin[i])
-			sign[i] = 0;
+		pm->s.origin[i] = Q_round (pml.origin[i] * 8);
+		pm->s.velocity[i] = Q_round (pml.velocity[i] * 8);
+		exact[i] = (pm->s.origin[i] / 8.0f == pml.origin[i]);
+		base[i] = pm->s.origin[i];
 	}
-	base[0] = pm->s.origin[0];
-	base[1] = pm->s.origin[1];
-	base[2] = pm->s.origin[2];
 
-	// try all combinations
-	for (j = 0; j < 8; j++)
+	if (exact[0] && exact[1] && exact[2]) return;
+
+	// jitter a quantized position to find a correct one
+#define COMP(idx,var)	\
+	pm->s.origin[idx] = base[idx];	\
+	if (!exact[idx]) pm->s.origin[idx] += offset[var];
+	for (i1 = 0; i1 < 3; i1++)
 	{
-		bits = jitterbits[j];
-		for (i = 0; i < 3; i++)
-			if (bits & (1<<i))
-				pm->s.origin[i] = base[i] + sign[i];
-			else
-				pm->s.origin[i] = base[i];
-
-		if (GoodPosition ())
-			return;
+		COMP(0,i1);
+		for (i2 = 0; i2 < 3; i2++)
+		{
+			COMP(1,i2);
+			for (i3 = 0; i3 < 3; i3++)
+			{
+				COMP(2,i3);
+				if (GoodPosition ()) return;
+			}
+		}
 	}
+#undef COMP
 
+//	Com_Printf("BAD!\n");//!!
 	// go back to the last position
 	pm->s.origin[0] = pml.previous_origin[0];
 	pm->s.origin[1] = pml.previous_origin[1];
 	pm->s.origin[2] = pml.previous_origin[2];
-//	Com_DPrintf ("using previous_origin\n");
 }
 
 /*
@@ -1062,6 +1058,7 @@ static void SnapPosition (void)
 InitialSnapPosition
 ================
 */
+//?? combine ...SnapPosition() funcs, +GoodPosition()
 static void InitialSnapPosition(void)
 {
 	int        x, y, z;
@@ -1156,13 +1153,13 @@ void Pmove (pmove_t *pmove)
 	memset (&pml, 0, sizeof(pml));
 
 	// convert origin and velocity to float values
-	pml.origin[0] = pm->s.origin[0]*0.125f;
-	pml.origin[1] = pm->s.origin[1]*0.125f;
-	pml.origin[2] = pm->s.origin[2]*0.125f;
+	pml.origin[0] = pm->s.origin[0] * 0.125f;
+	pml.origin[1] = pm->s.origin[1] * 0.125f;
+	pml.origin[2] = pm->s.origin[2] * 0.125f;
 
-	pml.velocity[0] = pm->s.velocity[0]*0.125f;
-	pml.velocity[1] = pm->s.velocity[1]*0.125f;
-	pml.velocity[2] = pm->s.velocity[2]*0.125f;
+	pml.velocity[0] = pm->s.velocity[0] * 0.125f;
+	pml.velocity[1] = pm->s.velocity[1] * 0.125f;
+	pml.velocity[2] = pm->s.velocity[2] * 0.125f;
 
 	// save old org in case we get stuck
 	pml.previous_origin[0] = pm->s.origin[0];
@@ -1207,18 +1204,18 @@ void Pmove (pmove_t *pmove)
 	// drop timing counter
 	if (pm->s.pm_time)
 	{
-		int		msec;
+		int		quant;		// each unit is 8ms
 
-		msec = pm->cmd.msec >> 3;
-		if (!msec)
-			msec = 1;
-		if ( msec >= pm->s.pm_time)
+		quant = pm->cmd.msec >> 3;
+		if (!quant)
+			quant = 1;
+		if (quant >= pm->s.pm_time)
 		{
-			pm->s.pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT);
+			pm->s.pm_flags &= ~(PMF_TIME_WATERJUMP|PMF_TIME_LAND|PMF_TIME_TELEPORT);
 			pm->s.pm_time = 0;
 		}
 		else
-			pm->s.pm_time -= msec;
+			pm->s.pm_time -= quant;
 	}
 
 	if (pm->s.pm_flags & PMF_TIME_TELEPORT)
@@ -1229,7 +1226,7 @@ void Pmove (pmove_t *pmove)
 		pml.velocity[2] -= pm->s.gravity * pml.frametime;
 		if (pml.velocity[2] < 0)
 		{	// cancel as soon as we are falling down again
-			pm->s.pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT);
+			pm->s.pm_flags &= ~(PMF_TIME_WATERJUMP|PMF_TIME_LAND|PMF_TIME_TELEPORT);
 			pm->s.pm_time = 0;
 		}
 

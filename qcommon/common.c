@@ -585,19 +585,19 @@ void MSG_WriteString (sizebuf_t *sb, char *s)
 
 void MSG_WriteCoord (sizebuf_t *sb, float f)
 {
-	MSG_WriteShort (sb, Q_ftol (f*8));
+	MSG_WriteShort (sb, Q_round (f*8));	//??
 }
 
 void MSG_WritePos (sizebuf_t *sb, vec3_t pos)
 {
-	MSG_WriteShort (sb, Q_ftol (pos[0]*8));
-	MSG_WriteShort (sb, Q_ftol (pos[1]*8));
-	MSG_WriteShort (sb, Q_ftol (pos[2]*8));
+	MSG_WriteShort (sb, Q_round (pos[0]*8));	//??
+	MSG_WriteShort (sb, Q_round (pos[1]*8));	//??
+	MSG_WriteShort (sb, Q_round (pos[2]*8));	//??
 }
 
 void MSG_WriteAngle (sizebuf_t *sb, float f)
 {
-	MSG_WriteByte (sb, Q_ftol (f*256.0f/360) & 255);
+	MSG_WriteByte (sb, Q_round (f*256.0f/360) & 255);	//??
 }
 
 void MSG_WriteAngle16 (sizebuf_t *sb, float f)
@@ -1591,8 +1591,7 @@ CVAR_END
 }
 
 
-extern	int c_traces, c_brush_traces;
-extern	int	c_pointcontents;
+extern	int	c_traces, c_pointcontents;
 
 //??
 #define SV_PROFILE
@@ -1653,7 +1652,6 @@ void QCommon_Frame (int msec)
 	if (msecf < 0) msecf = 0;		// no reverse time
 
 	c_traces = 0;
-	c_brush_traces = 0;
 	c_pointcontents = 0;
 
 	do

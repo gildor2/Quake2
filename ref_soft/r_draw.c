@@ -253,9 +253,9 @@ void DrawText_Pos (int x, int y, char *text, float r, float g, float b)
 	textrec_t *rec;
 	int ri, gi, bi, color;
 
-	ri = floor(r * 31.9);
-	gi = floor(g * 63.9);
-	bi = floor(b * 31.9);
+	ri = Q_floor(r * 31.9);
+	gi = Q_floor(g * 63.9);
+	bi = Q_floor(b * 31.9);
 	color = d_16to8table[ri | (gi << 5) | (bi << 11)] | MARK_COLOR_8BIT;
 
 	if (!text || !*text) return; // empty text

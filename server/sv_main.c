@@ -996,14 +996,19 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 }
 
 
+extern qboolean trace_skipAlpha;	//!! hack
+
 trace_t SV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
 {
 	trace_t	tr;
 	static edict_t *ent;
 
 #define RESET  { shotLevel = 0; return tr; }
+	trace_skipAlpha = true;	//!!
+	if (mins || maxs) trace_skipAlpha = false;
 
 	SV_Trace (&tr, start, mins, maxs, end, passedict, contentmask);
+	trace_skipAlpha = false;	//!!
 	if (!sv_extProtocol->integer) return tr;
 
 	if (mins || maxs) RESET
@@ -1060,7 +1065,7 @@ void SV_Frame (float msec)
 
 //	DrawTextLeft(va("time: %10d rf: %10.5f d: %10.4f ri:%10d", sv.time, svs.realtimef, msec, svs.realtime),1,1,1);//!!
 	svs.realtimef += msec;
-	svs.realtime = (int)svs.realtimef;		// WARNING: Q_ftol() will produce bad result
+	svs.realtime = Q_floor (svs.realtimef);
 
 	// keep the random time dependent (??)
 	rand ();
@@ -1084,7 +1089,6 @@ void SV_Frame (float msec)
 			svs.realtime = sv.time - frameTime;
 			svs.realtimef = svs.realtime;
 		}
-//		NET_Sleep(sv.time - svs.realtime);		//?? timescaled value
 		return;
 	}
 

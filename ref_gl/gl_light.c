@@ -25,9 +25,9 @@ static void LightLine (vec3_t *axis, vec3_t from, vec3_t to, float *color, float
 	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 	GL_DepthRange (DEPTH_NEAR);
 
-	r = Q_ftol(color[0] * lightScale);
-	g = Q_ftol(color[1] * lightScale);
-	b = Q_ftol(color[2] * lightScale);
+	r = Q_round (color[0] * lightScale);
+	g = Q_round (color[1] * lightScale);
+	b = Q_round (color[2] * lightScale);
 	NORMALIZE_COLOR255(r, g, b);
 	c.c[0] = r; c.c[1] = g; c.c[2] = b; c.c[3] = 255;
 	qglColor4ubv (c.c);
@@ -191,7 +191,7 @@ static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *v
 	float	dist, scale;
 	vec3_t	dif;
 	float	linearScale, invScale;
-	trace_t	tr;
+	int		br;
 
 	if (vis && sl->cluster >= 0)
 	{
@@ -242,8 +242,7 @@ static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *v
 //if (sl->spot) DrawTextLeft(va("  scale=%g",scale),1,1,0);
 	if (scale < 1) return;							// "scale" will convert 0..1 range to 0..255
 
-	CM_BoxTrace (&tr, sl->origin, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
-	if (tr.fraction < 1) return;
+	if (CM_BrushTrace (sl->origin, origin, &br, 1)) return;
 
 	AddLight (axis, dif, scale, sl->color);
 	if (gl_lightLines->value)
@@ -261,6 +260,7 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 	qboolean slope, ambient;
 	trace_t	tr;
 	vec3_t	dir, dst;
+	int		br;
 
 	if (vis && rl->cluster >= 0)
 	{
@@ -331,18 +331,18 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 	CM_BoxTrace (&tr, dst, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
 	if (tr.fraction < 1) return;
 
-	if (tr.startsolid)
+	if (tr.startsolid)		//?? may be, light source is placed in niche -- check the center of surface
 	{
-		if (intens < 10) return;
+		if (intens < 10 || !slope) return;
 
+		//?? can optimize by checking niche while loading; or -- trace (size/distance < threshold) lights into center
 		// try to trace into surface center
 		x = (pl->mins2[0] + pl->maxs2[0]) / 2;
 		y = (pl->mins2[1] + pl->maxs2[1]) / 2;
 		VectorScale (pl->axis[0], x, dst);
 		VectorMA (dst, y, pl->axis[1], dst);
 		VectorMA (dst, pl->plane.dist + 1, pl->plane.normal, dst);
-		CM_BoxTrace (&tr, dst, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
-		if (tr.fraction < 1 || tr.startsolid) return;
+		if (CM_BrushTrace (dst, origin, &br, 1)) return;
 	}
 
 	if (ambient)
@@ -482,15 +482,15 @@ static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 		else
 			m = 1;
 		for (i = 0, out = entityColorAxis[0], dst = cell->c[0]; i < 6*3; i++, out++, dst++)
-			*dst = Q_ftol (*out * m);
+			*dst = Q_round (*out * m);
 #else
 		for (i = 0, out = entityColorAxis[0], dst = cell->c[0]; i < 6; i++)
 		{
 			int		r, g, b;
 
-			r = Q_ftol (*out++);
-			g = Q_ftol (*out++);
-			b = Q_ftol (*out++);
+			r = Q_round (*out++);
+			g = Q_round (*out++);
+			b = Q_round (*out++);
 			NORMALIZE_COLOR255(r, g, b);
 			*dst++ = r;
 			*dst++ = g;
@@ -532,7 +532,7 @@ void GL_LightForEntity (refEntity_t *ent)
 
 			for (i = 0; i < 3; i++)
 			{
-				coord[i] = Q_ftol (floor (ent->center[i] / LIGHTGRID_STEP));
+				coord[i] = Q_floor (ent->center[i] / LIGHTGRID_STEP);
 				pos[i] = coord[i] * LIGHTGRID_STEP;
 				frac[i] = (ent->center[i] - pos[i]) / LIGHTGRID_STEP;
 				coord[i] -= map.gridMins[i];
@@ -734,7 +734,7 @@ void GL_ApplyEntitySpherelights (color_t *dst)
 #undef STEP
 
 #define STEP(n)		\
-		c1 = Q_ftol (color[n]);		\
+		c1 = Q_round (color[n]);	\
 		c.c[n] = (c1 > 255) ? 255 : c1;
 		STEP(0); STEP(1); STEP(2);
 #undef STEP

@@ -201,8 +201,8 @@ int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
 //			DebugPrintf ("bounds: (%g, %g, %g) - (%g, %g, %g)\n", VECTOR_ARGS(mins), VECTOR_ARGS(maxs));
 
 			// mins/maxs, aligned to tessSize grid and shifted to the poly center by tessSize
-			min = floor((mins[axis] + tessSize + tessError) / tessSize) * tessSize;
-			max = ceil((maxs[axis] - tessSize - tessError) / tessSize) * tessSize;
+			min = Q_floor((mins[axis] + tessSize + tessError) / tessSize) * tessSize;
+			max = Q_ceil((maxs[axis] - tessSize - tessError) / tessSize) * tessSize;
 //			DebugPrintf ("... stepping from %g to %g with step %g\n", min, max, tessSize);
 
 			// shred workPoly

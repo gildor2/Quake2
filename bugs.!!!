@@ -1,4 +1,4 @@
-?* after timedemo in game (in demo too ...), can receive "server is out" state
+- after timedemo in game (in demo too ...), can receive "server is out" state
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
    but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?)
@@ -7,6 +7,10 @@
   or something another ??)
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
+- position quantization errors (when FPS is large, i.e. 200; disappear when cl_maxfps=10 !!)
+  ?* crouched forvard/backward movement will be combined with side-move
+  ?* no ability to move when timescale=0.1
+  - map "countdown"; entity - "light_mine" - collision errors (bad pmove.c::SnapPosition())
 
 - Sys_Error(ERR_FATAL): sometimes not restore mouse (crush in "special place" ?)
 

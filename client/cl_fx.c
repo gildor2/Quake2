@@ -2044,7 +2044,7 @@ void CL_BfgParticles (entity_t *ent)
 
 		VectorSubtract (p->org, ent->origin, v);
 		dist = VectorLength(v) / 90.0;
-		p->color = floor (0xd0 + dist * 7);
+		p->color = Q_floor (0xd0 + dist * 7);
 
 		p->alpha = 1.0 - dist;
 		p->alphavel = -100;

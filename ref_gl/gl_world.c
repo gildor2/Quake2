@@ -241,6 +241,45 @@ static int PointCull (vec3_t point, int frustumMask)
 }
 
 
+#define NUM_TEST_BRUSHES	32
+
+static qboolean BoxOccluded (refEntity_t *e, vec3_t mins, vec3_t maxs)
+{
+	int		i;
+	float	x, y, z;
+	vec3_t	v;
+	int		n, brushes[NUM_TEST_BRUSHES];
+
+	//!! optimize: 8 -> 4 points; change trace order in a case of fast non-occluded test: up-left,down-right,others ...)
+	//!! do not try to cull weapon model (this check should be outside)
+	for (i = 0; i < 8; i++)
+	{
+		x = (i & 1) ? maxs[0] : mins[0];
+		y = (i & 2) ? maxs[1] : mins[1];
+		z = (i & 4) ? maxs[2] : mins[2];
+
+		if (!e->worldMatrix)
+		{
+			VectorMA (e->origin, x, e->axis[0], v);
+			VectorMA (v,		 y, e->axis[1], v);
+			VectorMA (v,		 z, e->axis[2], v);
+		}
+		else
+		{
+			v[0] = x; v[1] = y; v[2] = z;
+		}
+
+		if (i == 0)
+			n = CM_BrushTrace (vp.vieworg, v, brushes, NUM_TEST_BRUSHES);
+		else
+			n = CM_RefineBrushTrace (vp.vieworg, v, brushes, n);
+		if (!n) return false;
+	}
+
+	return true;
+}
+
+
 static void SetupModelMatrix (refEntity_t *e)
 {
 	float	matrix[4][4];
@@ -756,7 +795,7 @@ static void AddBeamSurfaces (refEntity_t *e)
 		return;
 	}
 	size = e->beamRadius * 200 / (size * vp.fov_scale);
-	numParts = Q_ftol(size);
+	numParts = Q_round(size);
 	numParts = bound(numParts, 1, 6);
 
 	// compute beam axis
@@ -936,8 +975,8 @@ static void AddCylinderSurfaces (refEntity_t *e)
 			a1 = a1 * 4 * (1 - MIN_FIXED_ALPHA) + MIN_FIXED_ALPHA;
 			a2 = a2 * 4 * (1 - MIN_FIXED_ALPHA) + MIN_FIXED_ALPHA;
 
-			p->verts[0].c.c[3] = p->verts[1].c.c[3] = Q_ftol (e->shaderColor.c[3] * a1);
-			p->verts[2].c.c[3] = p->verts[3].c.c[3] = Q_ftol (e->shaderColor.c[3] * a2);
+			p->verts[0].c.c[3] = p->verts[1].c.c[3] = Q_round (e->shaderColor.c[3] * a1);
+			p->verts[2].c.c[3] = p->verts[3].c.c[3] = Q_round (e->shaderColor.c[3] * a2);
 		}
 #endif
 
@@ -1248,11 +1287,39 @@ static void DrawEntities (int firstEntity, int numEntities)
 		}
 		else
 		{
-			DrawTextLeft (va("NULL entity %d", i), 1, 0, 0);
+			DrawTextLeft (va("NULL entity %d: flags=%X origin=(%g %g %g), ", i, e->flags, VECTOR_ARGS(e->origin)), 1, 0, 0);
 			continue;
 		}
 
 		if (!leaf) CULL_ENT;			// entity do not occupy any visible leafs
+
+		// occlusion culling
+		if (e->model && gl_oCull->integer)
+		{
+			float	*mins, *maxs;
+
+			mins = NULL;
+			switch (e->model->type)
+			{
+			case MODEL_INLINE:
+				//?? test distance/complexity
+				mins = e->model->inlineModel->mins;
+				maxs = e->model->inlineModel->maxs;
+				break;
+			case MODEL_MD3:
+				//?? check numtris
+				if (e->flags & (RF_WEAPONMODEL|RF_DEPTHHACK))
+					break;		// should not be occluded
+				mins = e->model->md3->frames[e->frame].mins;
+				maxs = e->model->md3->frames[e->frame].maxs;
+				break;
+			}
+			if (mins && BoxOccluded (e, mins, maxs))
+			{
+				gl_speeds.ocullEnts++;
+				continue;
+			}
+		}
 
 		e->visible = true;
 		// calc model distance
@@ -1401,7 +1468,7 @@ static void DrawFlares (void)
 				continue;
 			}
 			if (dist < FLARE_DIST1)
-				style = Q_ftol (style * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0));
+				style = Q_round (style * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0));
 //				scale = scale * (dist - FLARE_DIST0) / (FLARE_DIST1 - FLARE_DIST0);
 			else if (dist > FLARE_DIST2)
 				scale = scale * dist / FLARE_DIST2;
@@ -1447,7 +1514,7 @@ static void DrawFlares (void)
 				gl_speeds.cullFlares++;
 				continue;
 			}
-			style = Q_ftol((1 - timeDelta) * style);
+			style = Q_round((1 - timeDelta) * style);
 		}
 
 		// alloc surface
@@ -1667,7 +1734,7 @@ void GL_AddEntity (entity_t *ent)
 		out->customShader = (shader_t*) ent->skin;	//!! should use customSkin
 		out->skinNum = ent->skinnum;				//?? check skinnum in [0..model.numSkins]
 		out->shaderColor.rgba = 0xFFFFFF;
-		out->shaderColor.c[3] = Q_ftol (ent->alpha * 255);
+		out->shaderColor.c[3] = Q_round (ent->alpha * 255);
 
 		// model-specific code and calculate model center
 		switch (ent->model->type)
@@ -1745,7 +1812,7 @@ void GL_AddEntity (entity_t *ent)
 		VectorCopy (ent->oldorigin, out->beamEnd);
 		out->beamRadius = ent->frame / 2.0f;
 		out->shaderColor.rgba = gl_config.tbl_8to32[ent->skinnum];
-		out->shaderColor.c[3] = Q_ftol (ent->alpha * 255);
+		out->shaderColor.c[3] = Q_round (ent->alpha * 255);
 	}
 	else if (ent->flags & RF_BEAM_EXT)
 	{
@@ -1806,7 +1873,7 @@ void GL_AddDlight (dlight_t *dl)
 		SATURATE(g,l,sat);
 		SATURATE(b,l,sat);
 	}
-	r1 = Q_ftol(r); g1 = Q_ftol(g); b1 = Q_ftol(b);
+	r1 = Q_round(r); g1 = Q_round(g); b1 = Q_round(b);
 	if (gl_config.lightmapOverbright)
 	{
 		r1 <<= 1;

@@ -97,8 +97,10 @@ static cvar_t	*fs_debug;
 
 
 static cvar_t	*fs_basedir;
-static cvar_t	*fs_cddir;
 static cvar_t	*fs_configfile;
+#ifdef CD_PATH
+static cvar_t	*fs_cddir;
+#endif
 static char	fs_gamedir[MAX_OSPATH];
 
 typedef struct fileLink_s
@@ -753,6 +755,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 	gamePos = 0;
 	if (filename[1] == ':' && filename[2] == '/')	// CD path?
 	{
+#ifdef CD_PATH
 		gamePos = strlen (fs_cddir->string);
 		if (strncmp (filename, fs_cddir->string, gamePos))
 		{
@@ -761,6 +764,11 @@ int FS_FOpenFile (char *filename, FILE **file)
 			return -1;
 		}
 		gamePos++;			// skip '/'
+#else
+		Com_DPrintf ("FS_FOpenFile: bad path %s\n", filename);
+		*file = NULL;
+		return -1;
+#endif
 	}
 	else if (filename[0] == '.' && filename[1] == '/')
 		gamePos = 2;
@@ -885,6 +893,7 @@ qboolean FS_FileExists (char *filename)
 	gamePos = 0;
 	if (filename[1] == ':' && filename[2] == '/')		// CD path?
 	{
+#ifdef CD_PATH
 		gamePos = strlen (fs_cddir->string);
 		if (strncmp (filename, fs_cddir->string, gamePos))
 		{
@@ -892,6 +901,10 @@ qboolean FS_FileExists (char *filename)
 			return false;
 		}
 		gamePos++;			// skip '/'
+#else
+		Com_DPrintf ("FS_FileExists: bad path: %s\n", filename);
+		return false;
+#endif
 	}
 	else if (filename[0] == '.' && filename[1] == '/')
 		gamePos = 2;
@@ -1367,8 +1380,10 @@ qboolean FS_SetGamedir (char *dir)
 	Cvar_FullSet ("gamedir", dir, CVAR_SERVERINFO|CVAR_NOSET);
 	if (strcmp (dir, BASEDIRNAME))
 	{	// add dirs only when current game is not BASEDIRNAME
+#ifdef CD_PATH
 		if (fs_cddir->string[0])
 			AddGameDirectory (va("%s/%s", fs_cddir->string, dir));
+#endif
 		AddGameDirectory (va("%s/%s", fs_basedir->string, dir));
 	}
 
@@ -1621,6 +1636,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 	game[0] = 0;		// "game" will be used aniway as "prefix" for ListPakDirectory()
 	if (name[1] == ':' && name[2] == '/')	// allow only CD path with X:/path
 	{
+#ifdef CD_PATH
 		gamePos = strlen (fs_cddir->string);
 		if (strncmp (name, fs_cddir->string, gamePos))
 		{
@@ -1628,6 +1644,10 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 			return NULL;
 		}
 		gamePos++;		// skip '/'
+#else
+		Com_DPrintf ("FS_ListFiles: bad path %s\n", name);
+		return NULL;
+#endif
 	}
 	else if (name[0] == '.' && name[1] == '/')
 		gamePos = 2;
@@ -1928,7 +1948,9 @@ CVAR_BEGIN(vars)
 	{&fs_configfile, "cfgfile", CONFIGNAME, CVAR_NOSET},
 	// cddir <path>	   -- logically concatenates the cddir after the basedir for
 	// allows the game to run from outside the data tree
+#ifdef CD_PATH
 	{&fs_cddir, "cddir", "", CVAR_NOSET},
+#endif
 	{&fs_gamedirvar, "game", "", CVAR_LATCH|CVAR_SERVERINFO},
 	CVAR_VAR(fs_debug, 0, 0)
 CVAR_END
@@ -1945,8 +1967,10 @@ CVAR_END
 
 	InitResFiles ();
 
+#ifdef CD_PATH
 	if (fs_cddir->string[0])
 		AddGameDirectory (va("%s/"BASEDIRNAME, fs_cddir->string));
+#endif
 
 	// start up with baseq2 by default
 	AddGameDirectory (va("%s/"BASEDIRNAME, fs_basedir->string));

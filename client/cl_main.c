@@ -1689,7 +1689,7 @@ void CL_Frame (float msec, int realMsec)
 	// decide the simulation time
 	cls.frametime = extratime;
 	cl.ftime += extratime;
-	cl.time = (int) (cl.ftime * 1000.0f);
+	cl.time = Q_floor (cl.ftime * 1000.0f);
 	extratime = 0;
 	extratime_real = 0;
 

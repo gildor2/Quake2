@@ -465,11 +465,11 @@ float anglemod (float a)
 {
 #if 0
 	if (a >= 0)
-		a -= 360*(int)(a/360);
+		a -= 360 * Q_floor (a/360);
 	else
-		a += 360*( 1 + Q_ftol (-a/360) );
+		a += 360 * (1 + Q_floor (-a/360));
 #endif
-	a = (360.0f/65536) * (Q_ftol (a*(65536.0f/360)) & 65535);
+	a = (360.0f/65536) * (Q_round (a*(65536.0f/360)) & 65535);
 	return a;
 }
 

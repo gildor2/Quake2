@@ -301,10 +301,10 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 				// calculate vertex color as weighted average of 4 points
 				scale = dl->modulate[z] * 2 >> gl_config.overbrightBits;
 //				point = dl->source[z] + ((int)v->lm2[1] * dl->w + (int)v->lm2[0]) * 3;
-				point = dl->source[z] + (Q_ftol (v->lm2[1]) * dl->w + Q_ftol (v->lm2[0])) * 3;
+				point = dl->source[z] + (Q_round (v->lm2[1]) * dl->w + Q_floor (v->lm2[0])) * 3;
 				// calculate s/t weights
-				frac_s = Q_ftol (v->lm2[0] * 128) & 127;
-				frac_t = Q_ftol (v->lm2[1] * 128) & 127;
+				frac_s = Q_round (v->lm2[0] * 128) & 127;
+				frac_t = Q_round (v->lm2[1] * 128) & 127;
 #define STEP(c,n)	c += point[n] * frac;
 				frac = (128 - frac_s) * (128 - frac_t) * scale;
 				STEP(r, 0); STEP(g, 1); STEP(b, 2);
@@ -352,7 +352,7 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 					dist2 = f1 * f1 + f2 * f2;
 					if (dist2 >= intens2) continue;			// vertex is too far from dlight
 
-					intens = Q_ftol ((1 - dist2 / intens2) * 256);
+					intens = Q_round ((1 - dist2 / intens2) * 256);
 					r = v->c.c[0] + (dlight->c.c[0] * intens >> 8);
 					g = v->c.c[1] + (dlight->c.c[1] * intens >> 8);
 					b = v->c.c[2] + (dlight->c.c[2] * intens >> 8);

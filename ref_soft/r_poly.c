@@ -595,7 +595,7 @@ void R_PolygonDrawSpans(espan_t *pspan, int iswater )
 
 //PGM
 	if ( iswater & SURF_WARP)
-		r_turb_turb = sintable + ((int)(r_newrefdef.time*SPEED)&(CYCLE-1));
+		r_turb_turb = sintable + (Q_round(r_newrefdef.time*SPEED)&(CYCLE-1));
 	else if (iswater & SURF_FLOWING)
 		r_turb_turb = blanktable;
 //PGM
@@ -631,10 +631,10 @@ void R_PolygonDrawSpans(espan_t *pspan, int iswater )
 		zi = d_ziorigin + dv*d_zistepv + du*d_zistepu;
 		z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
 	// we count on FP exceptions being turned off to avoid range problems
-		s_spanletvars.izi = (int)(zi * 0x8000 * 0x10000);
+		s_spanletvars.izi = Q_floor(zi * 0x8000 * 0x10000);
 
-		s_spanletvars.s = (int)(sdivz * z) + sadjust;
-		s_spanletvars.t = (int)(tdivz * z) + tadjust;
+		s_spanletvars.s = Q_floor(sdivz * z) + sadjust;
+		s_spanletvars.t = Q_floor(tdivz * z) + tadjust;
 
 		if ( !iswater )
 		{
@@ -668,8 +668,8 @@ void R_PolygonDrawSpans(espan_t *pspan, int iswater )
 				zi += zispanletstepu;
 				z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
 
-				snext = (int)(sdivz * z) + sadjust;
-				tnext = (int)(tdivz * z) + tadjust;
+				snext = Q_floor(sdivz * z) + sadjust;
+				tnext = Q_floor(tdivz * z) + tadjust;
 
 				if ( !iswater )
 				{
@@ -700,8 +700,8 @@ void R_PolygonDrawSpans(espan_t *pspan, int iswater )
 				tdivz += d_tdivzstepu * spancountminus1;
 				zi += d_zistepu * spancountminus1;
 				z = (float)0x10000 / zi;	// prescale to 16.16 fixed-point
-				snext = (int)(sdivz * z) + sadjust;
-				tnext = (int)(tdivz * z) + tadjust;
+				snext = Q_floor(sdivz * z) + sadjust;
+				tnext = Q_floor(tdivz * z) + tadjust;
 
 				if ( !iswater )
 				{
@@ -768,14 +768,14 @@ void R_PolygonScanLeftEdge (void)
 	if (lmaxindex == 0)
 		lmaxindex = r_polydesc.nump;
 
-	vtop = ceil (r_polydesc.pverts[i].v);
+	vtop = Q_ceil (r_polydesc.pverts[i].v);
 
 	do
 	{
 		pvert = &r_polydesc.pverts[i];
 		pnext = pvert - 1;
 
-		vbottom = ceil (pnext->v);
+		vbottom = Q_ceil (pnext->v);
 
 		if (vtop < vbottom)
 		{
@@ -783,12 +783,11 @@ void R_PolygonScanLeftEdge (void)
 			dv = pnext->v - pvert->v;
 
 			slope = du / dv;
-			u_step = (int)(slope * 0x10000);
+			u_step = Q_floor(slope * 0x10000);
 		// adjust u to ceil the integer portion
-			u = (int)((pvert->u + (slope * (vtop - pvert->v))) * 0x10000) +
-					(0x10000 - 1);
-			itop = (int)vtop;
-			ibottom = (int)vbottom;
+			u = Q_floor((pvert->u + (slope * (vtop - pvert->v))) * 0x10000) + (0x10000 - 1);
+			itop = Q_floor(vtop);
+			ibottom = Q_floor(vbottom);
 
 			for (v=itop ; v<ibottom ; v++)
 			{
@@ -838,7 +837,7 @@ void R_PolygonScanRightEdge (void)
 	if (vvert > r_refdef.fvrectbottom_adj)
 		vvert = r_refdef.fvrectbottom_adj;
 
-	vtop = ceil (vvert);
+	vtop = Q_ceil (vvert);
 
 	do
 	{
@@ -851,7 +850,7 @@ void R_PolygonScanRightEdge (void)
 		if (vnext > r_refdef.fvrectbottom_adj)
 			vnext = r_refdef.fvrectbottom_adj;
 
-		vbottom = ceil (vnext);
+		vbottom = Q_ceil (vnext);
 
 		if (vtop < vbottom)
 		{
@@ -870,12 +869,11 @@ void R_PolygonScanRightEdge (void)
 			du = unext - uvert;
 			dv = vnext - vvert;
 			slope = du / dv;
-			u_step = (int)(slope * 0x10000);
+			u_step = Q_floor(slope * 0x10000);
 		// adjust u to ceil the integer portion
-			u = (int)((uvert + (slope * (vtop - vvert))) * 0x10000) +
-					(0x10000 - 1);
-			itop = (int)vtop;
-			ibottom = (int)vbottom;
+			u = Q_floor((uvert + (slope * (vtop - vvert))) * 0x10000) + (0x10000 - 1);
+			itop = Q_floor(vtop);
+			ibottom = Q_floor(vbottom);
 
 			for (v=itop ; v<ibottom ; v++)
 			{
@@ -1109,7 +1107,7 @@ void R_BuildPolygonFromSurface(msurface_t *fa)
 	// scrolling texture addition
 	if (fa->texinfo->flags & SURF_FLOWING)
 	{
-		r_polydesc.s_offset += -128 * ( (r_newrefdef.time*0.25) - (int)(r_newrefdef.time*0.25) );
+		r_polydesc.s_offset += -128 * ( (r_newrefdef.time*0.25) - Q_round(r_newrefdef.time*0.25) );
 	}
 
 	r_polydesc.nump = lnumverts;
@@ -1191,8 +1189,8 @@ static void R_DrawPoly( int iswater )
 		pverts++;
 	}
 
-	ymin = ceil (ymin);
-	ymax = ceil (ymax);
+	ymin = Q_ceil (ymin);
+	ymax = Q_ceil (ymax);
 
 	if (ymin >= ymax)
 		return;		// doesn't cross any scans at all

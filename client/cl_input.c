@@ -27,6 +27,7 @@ extern	unsigned	sys_frame_time;
 
 static unsigned	frame_msec;
 static unsigned	old_sys_frame_time;
+static float accum_frame_time;
 
 /*
 ===============================================================================
@@ -55,12 +56,12 @@ Key_Event (int key, qboolean down, unsigned time);
 */
 
 
-static kbutton_t	in_klook;
-static kbutton_t	in_left, in_right, in_forward, in_back;
-static kbutton_t	in_lookup, in_lookdown, in_moveleft, in_moveright;
-static kbutton_t	in_use, in_attack;
-static kbutton_t	in_up, in_down;
-kbutton_t	in_strafe, in_speed;
+static kbutton_t	in_KLook;
+static kbutton_t	in_Left, in_Right, in_Forward, in_Back;
+static kbutton_t	in_Lookup, in_Lookdown, in_Moveleft, in_Moveright;
+static kbutton_t	in_Use, in_Attack;
+static kbutton_t	in_Up, in_Down;
+kbutton_t	in_Strafe, in_Speed;
 
 
 static void KeyDown (kbutton_t *b)
@@ -139,40 +140,22 @@ static void KeyUp (kbutton_t *b)
 	b->state |= 4; 				// impulse up
 }
 
+// Declare console functions
+#define KB(name)	\
+static void IN_##name##Up (void) { KeyUp(&in_##name); }	\
+static void IN_##name##Down (void) { KeyDown(&in_##name); }
 
-static void IN_KLookDown (void)	{KeyDown(&in_klook);}
-static void IN_KLookUp (void)		{KeyUp(&in_klook);}
-static void IN_UpDown(void)		{KeyDown(&in_up);}
-static void IN_UpUp(void)			{KeyUp(&in_up);}
-static void IN_DownDown(void)		{KeyDown(&in_down);}
-static void IN_DownUp(void)		{KeyUp(&in_down);}
-static void IN_LeftDown(void)		{KeyDown(&in_left);}
-static void IN_LeftUp(void)		{KeyUp(&in_left);}
-static void IN_RightDown(void)		{KeyDown(&in_right);}
-static void IN_RightUp(void)		{KeyUp(&in_right);}
-static void IN_ForwardDown(void)	{KeyDown(&in_forward);}
-static void IN_ForwardUp(void)		{KeyUp(&in_forward);}
-static void IN_BackDown(void)		{KeyDown(&in_back);}
-static void IN_BackUp(void)		{KeyUp(&in_back);}
-static void IN_LookupDown(void)	{KeyDown(&in_lookup);}
-static void IN_LookupUp(void)		{KeyUp(&in_lookup);}
-static void IN_LookdownDown(void)	{KeyDown(&in_lookdown);}
-static void IN_LookdownUp(void)	{KeyUp(&in_lookdown);}
-static void IN_MoveleftDown(void)	{KeyDown(&in_moveleft);}
-static void IN_MoveleftUp(void)	{KeyUp(&in_moveleft);}
-static void IN_MoverightDown(void)	{KeyDown(&in_moveright);}
-static void IN_MoverightUp(void)	{KeyUp(&in_moveright);}
+	KB(KLook)
+	KB(Up)			KB(Down)
+	KB(Right)		KB(Left)
+	KB(Forward)		KB(Back)
+	KB(Lookup)		KB(Lookdown)
+	KB(Moveleft)	KB(Moveright)
+	KB(Speed)
+	KB(Strafe)
+	KB(Attack)		KB(Use)
 
-static void IN_SpeedDown(void)		{KeyDown(&in_speed);}
-static void IN_SpeedUp(void)		{KeyUp(&in_speed);}
-static void IN_StrafeDown(void)	{KeyDown(&in_strafe);}
-static void IN_StrafeUp(void)		{KeyUp(&in_strafe);}
-
-static void IN_AttackDown(void)	{KeyDown(&in_attack);}
-static void IN_AttackUp(void)		{KeyUp(&in_attack);}
-
-static void IN_UseDown (void)		{KeyDown(&in_use);}
-static void IN_UseUp (void)		{KeyUp(&in_use);}
+#undef KB
 
 /*
 ===============
@@ -232,24 +215,24 @@ static void AdjustAngles (void)
 	float	speed;
 	float	up, down;
 
-	if (in_speed.state & 1)
+	if (in_Speed.state & 1)
 		speed = cls.frametime * cl_anglespeedkey->value;
 	else
 		speed = cls.frametime;
 
-	if (!(in_strafe.state & 1))
+	if (!(in_Strafe.state & 1))
 	{
-		cl.viewangles[YAW] -= speed * cl_yawspeed->value * CL_KeyState (&in_right);
-		cl.viewangles[YAW] += speed * cl_yawspeed->value * CL_KeyState (&in_left);
+		cl.viewangles[YAW] -= speed * cl_yawspeed->value * CL_KeyState (&in_Right);
+		cl.viewangles[YAW] += speed * cl_yawspeed->value * CL_KeyState (&in_Left);
 	}
-	if (in_klook.state & 1)
+	if (in_KLook.state & 1)
 	{
-		cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * CL_KeyState (&in_forward);
-		cl.viewangles[PITCH] += speed * cl_pitchspeed->value * CL_KeyState (&in_back);
+		cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * CL_KeyState (&in_Forward);
+		cl.viewangles[PITCH] += speed * cl_pitchspeed->value * CL_KeyState (&in_Back);
 	}
 
-	up = CL_KeyState (&in_lookup);
-	down = CL_KeyState(&in_lookdown);
+	up = CL_KeyState (&in_Lookup);
+	down = CL_KeyState(&in_Lookdown);
 
 	cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * up;
 	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * down;
@@ -272,26 +255,26 @@ static void BaseMove (usercmd_t *cmd)
 	cmd->angles[0] = cl.viewangles[0];
 	cmd->angles[1] = cl.viewangles[1];
 	cmd->angles[2] = cl.viewangles[2];
-	if (in_strafe.state & 1)
+	if (in_Strafe.state & 1)
 	{
-		cmd->sidemove += cl_sidespeed->value * CL_KeyState (&in_right);
-		cmd->sidemove -= cl_sidespeed->value * CL_KeyState (&in_left);
+		cmd->sidemove += cl_sidespeed->value * CL_KeyState (&in_Right);
+		cmd->sidemove -= cl_sidespeed->value * CL_KeyState (&in_Left);
 	}
 
-	cmd->sidemove += cl_sidespeed->value * CL_KeyState (&in_moveright);
-	cmd->sidemove -= cl_sidespeed->value * CL_KeyState (&in_moveleft);
+	cmd->sidemove += cl_sidespeed->value * CL_KeyState (&in_Moveright);
+	cmd->sidemove -= cl_sidespeed->value * CL_KeyState (&in_Moveleft);
 
-	cmd->upmove += cl_upspeed->value * CL_KeyState (&in_up);
-	cmd->upmove -= cl_upspeed->value * CL_KeyState (&in_down);
+	cmd->upmove += cl_upspeed->value * CL_KeyState (&in_Up);
+	cmd->upmove -= cl_upspeed->value * CL_KeyState (&in_Down);
 
-	if (! (in_klook.state & 1) )
+	if (! (in_KLook.state & 1) )
 	{
-		cmd->forwardmove += cl_forwardspeed->value * CL_KeyState (&in_forward);
-		cmd->forwardmove -= cl_forwardspeed->value * CL_KeyState (&in_back);
+		cmd->forwardmove += cl_forwardspeed->value * CL_KeyState (&in_Forward);
+		cmd->forwardmove -= cl_forwardspeed->value * CL_KeyState (&in_Back);
 	}
 
 	// adjust for speed key / running
-	if ((in_speed.state & 1) ^ cl_run->integer)
+	if ((in_Speed.state & 1) ^ cl_run->integer)
 	{
 		cmd->forwardmove *= 2;
 		cmd->sidemove *= 2;
@@ -320,25 +303,24 @@ CL_FinishMove
 */
 static void FinishMove (usercmd_t *cmd)
 {
-	int		ms;
-	int		i;
+	int		i, ms;
 
 	// figure button bits
-	if ( in_attack.state & 3 )
+	if ( in_Attack.state & 3 )
 		cmd->buttons |= BUTTON_ATTACK;
-	in_attack.state &= ~2;
+	in_Attack.state &= ~2;
 
-	if (in_use.state & 3)
+	if (in_Use.state & 3)
 		cmd->buttons |= BUTTON_USE;
-	in_use.state &= ~2;
+	in_Use.state &= ~2;
 
 	if (anykeydown && cls.key_dest == key_game)
 		cmd->buttons |= BUTTON_ANY;
 
 	// send milliseconds of time to apply the move
-	ms = Q_ftol (cls.frametime * 1000);
-	if (ms > 250)
-		ms = 100;		// time was unreasonable
+	ms = Q_round ((cls.frametime + accum_frame_time) * 1000);
+	if (ms > 250) ms = 100;		// time was unreasonable
+
 	cmd->msec = ms;
 
 	ClampPitch ();
@@ -348,7 +330,7 @@ static void FinishMove (usercmd_t *cmd)
 	cmd->impulse = 0;		//!! unused
 
 	// send the ambient light level at the player's current position
-	cmd->lightlevel = Q_ftol(re.GetClientLight ());
+	cmd->lightlevel = Q_ftol (re.GetClientLight ());
 }
 
 /*
@@ -356,26 +338,22 @@ static void FinishMove (usercmd_t *cmd)
 CL_CreateCmd
 =================
 */
-static usercmd_t CL_CreateCmd (void)
+static void CreateCmd (usercmd_t *cmd)
 {
-	usercmd_t	cmd;
-
 	frame_msec = sys_frame_time - old_sys_frame_time;
 	frame_msec = bound(frame_msec, 1, 200);
 
 	// get basic movement from keyboard
-	BaseMove (&cmd);
+	BaseMove (cmd);
 
 	// allow mice or other external controllers to add to the move
-	IN_Move (&cmd);
+	IN_Move (cmd);
 
-	FinishMove (&cmd);
+	FinishMove (cmd);
 
 	old_sys_frame_time = sys_frame_time;
 
-//	cmd.impulse = cls.framecount;
-
-	return cmd;
+//??	cmd->impulse = cls.framecount;
 }
 
 
@@ -470,13 +448,12 @@ void CL_SendCmd (void)
 	int			checksumIndex;
 
 	// build a command even if not connected
-
 	// save this command off for prediction
 	i = cls.netchan.outgoing_sequence & (CMD_BACKUP-1);
 	cmd = &cl.cmds[i];
 	cl.cmd_time[i] = cls.realtime;	// for netgraph ping calculation
 
-	*cmd = CL_CreateCmd ();
+	CreateCmd (cmd);
 
 	cl.cmd = *cmd;
 
@@ -494,7 +471,18 @@ void CL_SendCmd (void)
 	// large (fast system or small timescale)
 	fillness = cls.netchan.outgoing_sequence - cls.netchan.incoming_acknowledged;
 	if (fillness > CMD_BACKUP/10 && (float)fillness / CMD_BACKUP > cl.lerpfrac * 0.9f)
+	{
+		accum_frame_time += cls.frametime;
 		return;
+	}
+
+	if (cmd->msec == 0)
+	{
+		accum_frame_time += cls.frametime;
+		return;
+	}
+	else
+		accum_frame_time = 0;
 
 	// send a userinfo update if needed
 	// disallow sending userinfo notification while playing demos
@@ -510,9 +498,7 @@ void CL_SendCmd (void)
 	SZ_Init (&buf, data, sizeof(data));
 
 	if (cmd->buttons && cl.cinematictime > 0 && !cl.attractloop)
-	{	// skip the rest of the cinematic
-		SCR_FinishCinematic ();
-	}
+		SCR_FinishCinematic ();		// skip the rest of the cinematic
 
 	// begin a client move command
 	MSG_WriteByte (&buf, clc_move);

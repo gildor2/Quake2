@@ -1411,9 +1411,9 @@ static void Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, f
 {
 	int ri, gi, bi, color;
 
-	ri = floor(r * 31.9);
-	gi = floor(g * 63.9);
-	bi = floor(b * 31.9);
+	ri = Q_floor(r * 31.9);
+	gi = Q_floor(g * 63.9);
+	bi = Q_floor(b * 31.9);
 	color = d_16to8table[ri | (gi << 5) | (bi << 11)];
 
 	if (a == 1)

@@ -767,7 +767,7 @@ shader_t *GL_FindShader (char *name, int style)
 
 #if 0
 				stage->alphaGenType = ALPHAGEN_CONST;
-				stage->rgbaConst.c[3] = Q_ftol (alpha * 255);
+				stage->rgbaConst.c[3] = Q_round (alpha * 255);
 #else
 				stage->alphaGenType = ALPHAGEN_ONE_MINUS_DOT;
 				stage->alphaMin = alpha * 2 / 3;

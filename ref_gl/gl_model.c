@@ -190,9 +190,9 @@ static void BuildSurfFlare (surfaceCommon_t *surf, color_t *color, float intens)
 	c[1] = color->c[1];
 	c[2] = color->c[2];
 	NormalizeColor255 (c, c);
-	f->color.c[0] = Q_ftol (c[0]);
-	f->color.c[1] = Q_ftol (c[1]);
-	f->color.c[2] = Q_ftol (c[2]);
+	f->color.c[0] = Q_round (c[0]);
+	f->color.c[1] = Q_round (c[1]);
+	f->color.c[2] = Q_round (c[2]);
 
 	f->next = map.flares;
 	map.flares = f;
@@ -313,8 +313,8 @@ static void InitLightGrid (void)
 
 	for (i = 0; i < 3; i++)
 	{
-		map.gridMins[i] = Q_ftol (floor(map.nodes[0].mins[i] / LIGHTGRID_STEP));
-		map.mapGrid[i] = Q_ftol (ceil(map.nodes[0].maxs[i] / LIGHTGRID_STEP)) - map.gridMins[i];
+		map.gridMins[i] = Q_floor (map.nodes[0].mins[i] / LIGHTGRID_STEP);
+		map.mapGrid[i] = Q_ceil (map.nodes[0].maxs[i] / LIGHTGRID_STEP) - map.gridMins[i];
 	}
 	map.numLightCells = 0;
 	map.lightGridChain = CreateMemoryChain ();
@@ -342,7 +342,7 @@ static void CreateSolarColor (float a, float x, float y, float *vec)
 	int		i;
 
 	a0 = a * 5;
-	i = (int) a0;
+	i = Q_ceil (a0);
 	a0 = a0 - i;	// frac part
 	s = (1.0f - x) * y;
 	t = (1.0f - a0 * x) * y;
@@ -420,7 +420,7 @@ static void CopyLightmap (byte *dst, byte *src, int samples)
 				SATURATE(g,light,sat);
 				SATURATE(b,light,sat);
 				// put color
-				*dst++ = Q_ftol (r);  *dst++ = Q_ftol (g);  *dst++ = Q_ftol (b);
+				*dst++ = Q_round (r);  *dst++ = Q_round (g);  *dst++ = Q_round (b);
 			}
 		}
 	}
@@ -846,22 +846,23 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (needLightmap)
 		{
 			int		size[2];		// lightmap size
+			int		imins[2], imaxs[2];		// int mins/maxs, aligned to lightmap grid
 			dynamicLightmap_t *lm;
 
 			// round mins/maxs to a lightmap cell size
-			mins[0] = floor(mins[0] / 16) * 16;
-			mins[1] = floor(mins[1] / 16) * 16;
-			maxs[0] = ceil(maxs[0] / 16) * 16;
-			maxs[1] = ceil(maxs[1] / 16) * 16;
+			imins[0] = Q_floor(mins[0] / 16.0f) * 16;
+			imins[1] = Q_floor(mins[1] / 16.0f) * 16;
+			imaxs[0] = Q_ceil(maxs[0] / 16.0f) * 16;
+			imaxs[1] = Q_ceil(maxs[1] / 16.0f) * 16;
 			// calculate lightmap size
-			size[0] = (maxs[0] - mins[0]) / 16 + 1;
-			size[1] = (maxs[1] - mins[1]) / 16 + 1;
+			size[0] = (imaxs[0] - imins[0]) / 16 + 1;
+			size[1] = (imaxs[1] - imins[1]) / 16 + 1;
 
 			v = s->verts;
 			for (j = 0; j < numVerts; j++, v++)
 			{
-				v->lm[0] = (v->lm[0] - mins[0]) / 16 + 0.5;		// divide to lightmap unit size and shift
-				v->lm[1] = (v->lm[1] - mins[1]) / 16 + 0.5;
+				v->lm[0] = (v->lm[0] - imins[0]) / 16 + 0.5;	// divide to lightmap unit size and shift
+				v->lm[1] = (v->lm[1] - imins[1]) / 16 + 0.5;
 				v->lm2[0] = v->lm[0] - 0.5;
 				v->lm2[1] = v->lm[1] - 0.5;
 			}
@@ -1274,8 +1275,8 @@ static void LoadVisinfo2 (dvis_t *data, int size)
 					}
 					else
 					{	// zero byte -- decompress RLE data (with filler 0)
-						c = *src++;			// count
-						c = min(c, j);		// should not be, but ...
+						c = *src++;				// count
+						c = min(c, j);			// should not be, but ...
 						j -= c;
 						while (c--)
 							*dst++ = 0;
@@ -1283,9 +1284,9 @@ static void LoadVisinfo2 (dvis_t *data, int size)
 				}
 			}
 			else
-			{	// all visible
-				for (j = 0; j < rowSize; j++)
-					*dst++ = 0xFF;
+			{
+				memset (dst, 0xFF, rowSize);	// all visible
+				dst += rowSize;
 			}
 		}
 	}
@@ -1546,9 +1547,9 @@ static void ProcessMd2Frame (vertexMd3_t *verts, dAliasFrame_t *srcFrame, md3Fra
 		// update bounding box
 		AddPointToBounds (p, dstFrame->mins, dstFrame->maxs);
 		// put vertex in a "short" form
-		dstVerts->xyz[0] = Q_ftol (p[0] / MD3_XYZ_SCALE);
-		dstVerts->xyz[1] = Q_ftol (p[1] / MD3_XYZ_SCALE);
-		dstVerts->xyz[2] = Q_ftol (p[2] / MD3_XYZ_SCALE);
+		dstVerts->xyz[0] = Q_round (p[0] / MD3_XYZ_SCALE);
+		dstVerts->xyz[1] = Q_round (p[1] / MD3_XYZ_SCALE);
+		dstVerts->xyz[2] = Q_round (p[2] / MD3_XYZ_SCALE);
 	}
 
 	// compute bounding sphere
@@ -1619,11 +1620,11 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 			dst = &normals[j][0];
 			VectorNormalize (dst);
 #if 1
-			a = Q_ftol (ACOS_FUNC(dst[2]) / (M_PI * 2) * 255);
-			if (dst[0])		b = Q_ftol (ATAN2_FUNC (dst[1], dst[0]) / (M_PI * 2) * 255);
+			a = Q_round (ACOS_FUNC(dst[2]) / (M_PI * 2) * 255);
+			if (dst[0])		b = Q_round (ATAN2_FUNC (dst[1], dst[0]) / (M_PI * 2) * 255);
 #else
-			a = Q_ftol (acos (dst[2]) / (M_PI * 2) * 255);
-			if (dst[0])		b = Q_ftol (atan2 (dst[1], dst[0]) / (M_PI * 2) * 255);
+			a = Q_round (acos (dst[2]) / (M_PI * 2) * 255);
+			if (dst[0])		b = Q_round (atan2 (dst[1], dst[0]) / (M_PI * 2) * 255);
 #endif
 			else			b = dst[1] > 0 ? 127 : -127;
 			norm_i[j] = a | (b << 8);

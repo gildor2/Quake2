@@ -53,7 +53,7 @@ void GL_InitFuncTables (void)
 	for (i = 0; i < 256; i++)
 	{
 		sqrtTable[i] = pow (i / 255.0f, 0.5f);
-		noiseTablei[i] = (int)(rand() * 255.0f / RAND_MAX) & 0xFF;
+		noiseTablei[i] = Q_round (rand() * 255.0f / RAND_MAX) & 0xFF;
 		noiseTablef[i] = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;	// range -1..1
 	}
 }
