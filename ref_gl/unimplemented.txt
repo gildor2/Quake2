@@ -128,6 +128,7 @@ lighting bugs:
   - zaero, demo4, kamikaze: too dark explosion (should get lighting for LARGE objects in a different way)
     same: 1st map, beginning, give EMP grenade, throw (best viewed from 3rd person) -- can be bad lighting
     (can use sphereLighting (FAKK-style) for large models; requires new lightgrid)
+  - map "golgotha": lots of light sources from static entities (currently, lights some from world model only ?)
 
 - vis bugs: use BoxLeafs() + LeafVis() to get combined vis without checking "near-nontrans-water" (of course, ignore
   non-world invisible leafs) - will fix water vis bug and, may be, some other vis bugs too (map "ground3", "actmet" have some ...)

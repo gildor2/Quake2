@@ -46,15 +46,14 @@ typedef struct {
 	void	(*_FS_CopyFile) (char *src, char *dst);
 	void	(*_FS_CopyFiles) (char *srcMask, char *dstDir);
 	void	(*_FS_RemoveFiles) (char *mask);
-	bool	(*_MatchWildcard) (const char *name, const char *mask);
-	bool	(*_MatchWildcard2) (const char *name, const char *mask, qboolean ignoreCase);
-	qboolean	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
+	bool	(*_MatchWildcard) (const char *name, const char *mask, bool ignoreCase = false);
+	bool	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
 	int	(*_ImageExists) (char *name, int stop_mask);
 	void	(*_LoadPCX) (char *name, byte **pic, byte **palette, int *width, int *height);
 	void	(*_LoadTGA) (char *name, byte **pic, int *width, int *height);
 	void	(*_LoadJPG) (char *name, byte **pic, int *width, int *height);
-	qboolean	(*_WriteTGA) (char *name, byte *pic, int width, int height);
-	qboolean	(*_WriteJPG) (char *name, byte *pic, int width, int height, qboolean highQuality);
+	bool	(*_WriteTGA) (char *name, byte *pic, int width, int height);
+	bool	(*_WriteJPG) (char *name, byte *pic, int width, int height, bool highQuality);
 	bspfile_t*	(*_LoadBspFile) (char *filename, bool clientload, unsigned *checksum);
 	void	(*_CM_BoxTrace) (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask);
 	void	(*_CM_TransformedBoxTrace) (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles);
@@ -62,8 +61,8 @@ typedef struct {
 	int	(*_CM_BrushTrace) (const vec3_t start, const vec3_t end, int *brushes, int maxBrushes);
 	int	(*_CM_RefineBrushTrace) (const vec3_t start, const vec3_t end, int *brushes, int numBrushes);
 #ifdef _WIN32
-	void*	(*_Vid_CreateWindow) (int width, int height, qboolean fullscreen);
-	void	(*_Vid_DestroyWindow) (qboolean force);
+	void*	(*_Vid_CreateWindow) (int width, int height, bool fullscreen);
+	void	(*_Vid_DestroyWindow) (bool force);
 #else
 	void	(*_Vid_NewWindow) (int width, int height);
 #endif

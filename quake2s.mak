@@ -25,6 +25,10 @@ NULL=
 NULL=nul
 !ENDIF 
 
+CPP=cl.exe
+MTL=midl.exe
+RSC=rc.exe
+
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
 OUTDIR=.\release
@@ -86,6 +90,7 @@ CLEAN :
 	-@erase "$(INTDIR)\q_shared2.obj"
 	-@erase "$(INTDIR)\qgl_win.obj"
 	-@erase "$(INTDIR)\qmenu.obj"
+	-@erase "$(INTDIR)\ref_vars.obj"
 	-@erase "$(INTDIR)\snd_dma.obj"
 	-@erase "$(INTDIR)\snd_mem.obj"
 	-@erase "$(INTDIR)\snd_mix.obj"
@@ -130,42 +135,8 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MD /W3 /GX /Zd /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "REF_HARD_LINKED" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-MTL=midl.exe
 MTL_PROJ=/nologo /D "NDEBUG" /mktyplib203 /win32 
-RSC=rc.exe
 RSC_PROJ=/l 0x409 /fo"$(INTDIR)\q2.res" /d "NDEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\quake2s.bsc" 
@@ -207,6 +178,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\pmove.obj" \
 	"$(INTDIR)\q_shared2.obj" \
 	"$(INTDIR)\qmenu.obj" \
+	"$(INTDIR)\ref_vars.obj" \
 	"$(INTDIR)\snd_dma.obj" \
 	"$(INTDIR)\snd_mem.obj" \
 	"$(INTDIR)\snd_mix.obj" \
@@ -412,6 +384,8 @@ CLEAN :
 	-@erase "$(INTDIR)\r_sprite.sbr"
 	-@erase "$(INTDIR)\r_surf.obj"
 	-@erase "$(INTDIR)\r_surf.sbr"
+	-@erase "$(INTDIR)\ref_vars.obj"
+	-@erase "$(INTDIR)\ref_vars.sbr"
 	-@erase "$(INTDIR)\rw_ddraw.obj"
 	-@erase "$(INTDIR)\rw_ddraw.sbr"
 	-@erase "$(INTDIR)\rw_dib.obj"
@@ -460,42 +434,8 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\quake2s.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-MTL=midl.exe
 MTL_PROJ=/nologo /D "_DEBUG" /mktyplib203 /win32 
-RSC=rc.exe
 RSC_PROJ=/l 0x409 /fo"$(INTDIR)\q2.res" /d "_DEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\quake2s.bsc" 
@@ -533,6 +473,7 @@ BSC32_SBRS= \
 	"$(INTDIR)\pmove.sbr" \
 	"$(INTDIR)\q_shared2.sbr" \
 	"$(INTDIR)\qmenu.sbr" \
+	"$(INTDIR)\ref_vars.sbr" \
 	"$(INTDIR)\snd_dma.sbr" \
 	"$(INTDIR)\snd_mem.sbr" \
 	"$(INTDIR)\snd_mix.sbr" \
@@ -627,6 +568,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\pmove.obj" \
 	"$(INTDIR)\q_shared2.obj" \
 	"$(INTDIR)\qmenu.obj" \
+	"$(INTDIR)\ref_vars.obj" \
 	"$(INTDIR)\snd_dma.obj" \
 	"$(INTDIR)\snd_mem.obj" \
 	"$(INTDIR)\snd_mix.obj" \
@@ -697,6 +639,36 @@ LINK32_OBJS= \
 
 !ENDIF 
 
+.c{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.c{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
 
 !IF "$(NO_EXTERNAL_DEPS)" != "1"
 !IF EXISTS("quake2s.dep")
@@ -708,7 +680,7 @@ LINK32_OBJS= \
 
 
 !IF "$(CFG)" == "quake2s - Win32 Release" || "$(CFG)" == "quake2s - Win32 Debug"
-SOURCE=.\win32\cd_win.c
+SOURCE=.\win32\cd_win.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -726,7 +698,7 @@ SOURCE=.\win32\cd_win.c
 
 !ENDIF 
 
-SOURCE=.\client\cl_cin.c
+SOURCE=.\client\cl_cin.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -744,7 +716,7 @@ SOURCE=.\client\cl_cin.c
 
 !ENDIF 
 
-SOURCE=.\client\cl_ents.c
+SOURCE=.\client\cl_ents.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -762,7 +734,7 @@ SOURCE=.\client\cl_ents.c
 
 !ENDIF 
 
-SOURCE=.\client\cl_fx.c
+SOURCE=.\client\cl_fx.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -780,7 +752,7 @@ SOURCE=.\client\cl_fx.c
 
 !ENDIF 
 
-SOURCE=.\client\cl_input.c
+SOURCE=.\client\cl_input.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -798,7 +770,7 @@ SOURCE=.\client\cl_input.c
 
 !ENDIF 
 
-SOURCE=.\client\cl_inv.c
+SOURCE=.\client\cl_inv.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -816,7 +788,7 @@ SOURCE=.\client\cl_inv.c
 
 !ENDIF 
 
-SOURCE=.\client\cl_main.c
+SOURCE=.\client\cl_main.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -834,7 +806,7 @@ SOURCE=.\client\cl_main.c
 
 !ENDIF 
 
-SOURCE=.\client\cl_newfx.c
+SOURCE=.\client\cl_newfx.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -852,7 +824,7 @@ SOURCE=.\client\cl_newfx.c
 
 !ENDIF 
 
-SOURCE=.\client\cl_parse.c
+SOURCE=.\client\cl_parse.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -870,7 +842,7 @@ SOURCE=.\client\cl_parse.c
 
 !ENDIF 
 
-SOURCE=.\client\cl_pred.c
+SOURCE=.\client\cl_pred.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -888,7 +860,7 @@ SOURCE=.\client\cl_pred.c
 
 !ENDIF 
 
-SOURCE=.\client\cl_scrn.c
+SOURCE=.\client\cl_scrn.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -906,7 +878,7 @@ SOURCE=.\client\cl_scrn.c
 
 !ENDIF 
 
-SOURCE=.\client\cl_tent.c
+SOURCE=.\client\cl_tent.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -924,7 +896,7 @@ SOURCE=.\client\cl_tent.c
 
 !ENDIF 
 
-SOURCE=.\client\cl_view.c
+SOURCE=.\client\cl_view.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -942,7 +914,7 @@ SOURCE=.\client\cl_view.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\cmd.c
+SOURCE=.\qcommon\cmd.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -960,7 +932,7 @@ SOURCE=.\qcommon\cmd.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\cmodel.c
+SOURCE=.\qcommon\cmodel.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -978,7 +950,7 @@ SOURCE=.\qcommon\cmodel.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\common.c
+SOURCE=.\qcommon\common.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -996,7 +968,7 @@ SOURCE=.\qcommon\common.c
 
 !ENDIF 
 
-SOURCE=.\client\console.c
+SOURCE=.\client\console.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1014,7 +986,7 @@ SOURCE=.\client\console.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\crc.c
+SOURCE=.\qcommon\crc.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1032,7 +1004,7 @@ SOURCE=.\qcommon\crc.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\cvar.c
+SOURCE=.\qcommon\cvar.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1050,7 +1022,7 @@ SOURCE=.\qcommon\cvar.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\files.c
+SOURCE=.\qcommon\files.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1068,7 +1040,7 @@ SOURCE=.\qcommon\files.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\images.c
+SOURCE=.\qcommon\images.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1086,7 +1058,7 @@ SOURCE=.\qcommon\images.c
 
 !ENDIF 
 
-SOURCE=.\win32\in_win.c
+SOURCE=.\win32\in_win.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1104,7 +1076,7 @@ SOURCE=.\win32\in_win.c
 
 !ENDIF 
 
-SOURCE=.\client\keys.c
+SOURCE=.\client\keys.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1140,7 +1112,7 @@ SOURCE=.\game\m_flash.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\md4.c
+SOURCE=.\qcommon\md4.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1158,7 +1130,7 @@ SOURCE=.\qcommon\md4.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\memory.c
+SOURCE=.\qcommon\memory.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1176,7 +1148,7 @@ SOURCE=.\qcommon\memory.c
 
 !ENDIF 
 
-SOURCE=.\client\menu.c
+SOURCE=.\client\menu.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1194,7 +1166,7 @@ SOURCE=.\client\menu.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\model.c
+SOURCE=.\qcommon\model.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1212,7 +1184,7 @@ SOURCE=.\qcommon\model.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\net_chan.c
+SOURCE=.\qcommon\net_chan.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1230,7 +1202,7 @@ SOURCE=.\qcommon\net_chan.c
 
 !ENDIF 
 
-SOURCE=.\win32\net_wins.c
+SOURCE=.\win32\net_wins.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1248,7 +1220,7 @@ SOURCE=.\win32\net_wins.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\pmove.c
+SOURCE=.\qcommon\pmove.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1266,7 +1238,7 @@ SOURCE=.\qcommon\pmove.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\q_shared2.c
+SOURCE=.\qcommon\q_shared2.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1284,7 +1256,7 @@ SOURCE=.\qcommon\q_shared2.c
 
 !ENDIF 
 
-SOURCE=.\client\qmenu.c
+SOURCE=.\client\qmenu.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1302,7 +1274,25 @@ SOURCE=.\client\qmenu.c
 
 !ENDIF 
 
-SOURCE=.\client\snd_dma.c
+SOURCE=.\client\ref_vars.cpp
+
+!IF  "$(CFG)" == "quake2s - Win32 Release"
+
+
+"$(INTDIR)\ref_vars.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
+
+
+"$(INTDIR)\ref_vars.obj"	"$(INTDIR)\ref_vars.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
+SOURCE=.\client\snd_dma.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1320,7 +1310,7 @@ SOURCE=.\client\snd_dma.c
 
 !ENDIF 
 
-SOURCE=.\client\snd_mem.c
+SOURCE=.\client\snd_mem.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1338,7 +1328,7 @@ SOURCE=.\client\snd_mem.c
 
 !ENDIF 
 
-SOURCE=.\client\snd_mix.c
+SOURCE=.\client\snd_mix.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1356,7 +1346,7 @@ SOURCE=.\client\snd_mix.c
 
 !ENDIF 
 
-SOURCE=.\win32\snd_win.c
+SOURCE=.\win32\snd_win.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1374,7 +1364,7 @@ SOURCE=.\win32\snd_win.c
 
 !ENDIF 
 
-SOURCE=.\server\sv_ccmds.c
+SOURCE=.\server\sv_ccmds.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1392,7 +1382,7 @@ SOURCE=.\server\sv_ccmds.c
 
 !ENDIF 
 
-SOURCE=.\server\sv_ents.c
+SOURCE=.\server\sv_ents.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1410,7 +1400,7 @@ SOURCE=.\server\sv_ents.c
 
 !ENDIF 
 
-SOURCE=.\server\sv_game.c
+SOURCE=.\server\sv_game.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1428,7 +1418,7 @@ SOURCE=.\server\sv_game.c
 
 !ENDIF 
 
-SOURCE=.\server\sv_init.c
+SOURCE=.\server\sv_init.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1446,7 +1436,7 @@ SOURCE=.\server\sv_init.c
 
 !ENDIF 
 
-SOURCE=.\server\sv_main.c
+SOURCE=.\server\sv_main.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1464,7 +1454,7 @@ SOURCE=.\server\sv_main.c
 
 !ENDIF 
 
-SOURCE=.\server\sv_send.c
+SOURCE=.\server\sv_send.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1482,7 +1472,7 @@ SOURCE=.\server\sv_send.c
 
 !ENDIF 
 
-SOURCE=.\server\sv_user.c
+SOURCE=.\server\sv_user.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1500,7 +1490,7 @@ SOURCE=.\server\sv_user.c
 
 !ENDIF 
 
-SOURCE=.\server\sv_world.c
+SOURCE=.\server\sv_world.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1518,7 +1508,7 @@ SOURCE=.\server\sv_world.c
 
 !ENDIF 
 
-SOURCE=.\win32\sys_win.c
+SOURCE=.\win32\sys_win.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1536,7 +1526,7 @@ SOURCE=.\win32\sys_win.c
 
 !ENDIF 
 
-SOURCE=.\win32\vid_dll.c
+SOURCE=.\win32\vid_dll.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1554,7 +1544,7 @@ SOURCE=.\win32\vid_dll.c
 
 !ENDIF 
 
-SOURCE=.\win32\vid_menu.c
+SOURCE=.\win32\vid_menu.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1572,7 +1562,7 @@ SOURCE=.\win32\vid_menu.c
 
 !ENDIF 
 
-SOURCE=.\qcommon\zip.c
+SOURCE=.\qcommon\zip.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1608,7 +1598,7 @@ SOURCE=.\win32\q2.rc
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_backend.c
+SOURCE=.\ref_gl\gl_backend.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1626,7 +1616,7 @@ SOURCE=.\ref_gl\gl_backend.c
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_buffers.c
+SOURCE=.\ref_gl\gl_buffers.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1644,7 +1634,7 @@ SOURCE=.\ref_gl\gl_buffers.c
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_frontend.c
+SOURCE=.\ref_gl\gl_frontend.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1662,7 +1652,7 @@ SOURCE=.\ref_gl\gl_frontend.c
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_image.c
+SOURCE=.\ref_gl\gl_image.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1680,7 +1670,7 @@ SOURCE=.\ref_gl\gl_image.c
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_interface.c
+SOURCE=.\ref_gl\gl_interface.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1698,7 +1688,7 @@ SOURCE=.\ref_gl\gl_interface.c
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_light.c
+SOURCE=.\ref_gl\gl_light.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1716,7 +1706,7 @@ SOURCE=.\ref_gl\gl_light.c
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_lightmap.c
+SOURCE=.\ref_gl\gl_lightmap.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1734,7 +1724,7 @@ SOURCE=.\ref_gl\gl_lightmap.c
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_main.c
+SOURCE=.\ref_gl\gl_main.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1752,7 +1742,7 @@ SOURCE=.\ref_gl\gl_main.c
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_math.c
+SOURCE=.\ref_gl\gl_math.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1770,7 +1760,7 @@ SOURCE=.\ref_gl\gl_math.c
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_model.c
+SOURCE=.\ref_gl\gl_model.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1788,7 +1778,7 @@ SOURCE=.\ref_gl\gl_model.c
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_poly.c
+SOURCE=.\ref_gl\gl_poly.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1806,7 +1796,7 @@ SOURCE=.\ref_gl\gl_poly.c
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_shader.c
+SOURCE=.\ref_gl\gl_shader.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1824,7 +1814,7 @@ SOURCE=.\ref_gl\gl_shader.c
 
 !ENDIF 
 
-SOURCE=.\ref_gl\gl_sky.c
+SOURCE=.\ref_gl\gl_sky.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1842,7 +1832,7 @@ SOURCE=.\ref_gl\gl_sky.c
 
 !ENDIF 
 
-SOURCE=.\win32\glw_imp.c
+SOURCE=.\win32\glw_imp.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1860,7 +1850,7 @@ SOURCE=.\win32\glw_imp.c
 
 !ENDIF 
 
-SOURCE=.\win32\qgl_win.c
+SOURCE=.\win32\qgl_win.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1878,7 +1868,7 @@ SOURCE=.\win32\qgl_win.c
 
 !ENDIF 
 
-SOURCE=.\win32\q_shwin.c
+SOURCE=.\win32\q_shwin.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1902,7 +1892,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_aclip.c
+SOURCE=.\ref_soft\r_aclip.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1926,7 +1916,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_alias.c
+SOURCE=.\ref_soft\r_alias.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1950,7 +1940,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_bsp.c
+SOURCE=.\ref_soft\r_bsp.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1974,7 +1964,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_draw.c
+SOURCE=.\ref_soft\r_draw.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1998,7 +1988,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_edge.c
+SOURCE=.\ref_soft\r_edge.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2022,7 +2012,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_image.c
+SOURCE=.\ref_soft\r_image.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2046,7 +2036,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_light.c
+SOURCE=.\ref_soft\r_light.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2070,7 +2060,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_main.c
+SOURCE=.\ref_soft\r_main.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2094,7 +2084,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_misc.c
+SOURCE=.\ref_soft\r_misc.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2118,7 +2108,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_model.c
+SOURCE=.\ref_soft\r_model.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2142,7 +2132,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_part.c
+SOURCE=.\ref_soft\r_part.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2166,7 +2156,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_poly.c
+SOURCE=.\ref_soft\r_poly.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2190,7 +2180,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_polyse.c
+SOURCE=.\ref_soft\r_polyse.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2214,7 +2204,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_rast.c
+SOURCE=.\ref_soft\r_rast.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2238,7 +2228,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_scan.c
+SOURCE=.\ref_soft\r_scan.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2262,7 +2252,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_sprite.c
+SOURCE=.\ref_soft\r_sprite.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2286,7 +2276,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\ref_soft\r_surf.c
+SOURCE=.\ref_soft\r_surf.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2310,7 +2300,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\win32\rw_ddraw.c
+SOURCE=.\win32\rw_ddraw.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2334,7 +2324,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\win32\rw_dib.c
+SOURCE=.\win32\rw_dib.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2358,7 +2348,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\win32\rw_imp.c
+SOURCE=.\win32\rw_imp.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 

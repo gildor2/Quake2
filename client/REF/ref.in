@@ -47,7 +47,7 @@ void	appUnwindPrefix (const char *fmt);		//!!! rename
 void	__declspec(noreturn) appUnwindThrow (const char *fmt, ...);	//?? make noreturn as #define
 
 
-//?? unused now:	void	KeyEvent (int key, qboolean down, unsigned time);
+//?? unused now:	void	KeyEvent (int key, bool down, unsigned time);
 
 //---------- files ----------
 bool	FS_FileExists (char *filename);
@@ -60,19 +60,18 @@ void	FS_CopyFile (char *src, char *dst);
 void	FS_CopyFiles (char *srcMask, char *dstDir);
 void	FS_RemoveFiles (char *mask);
 
-bool MatchWildcard (const char *name, const char *mask);
-bool MatchWildcard2 (const char *name, const char *mask, qboolean ignoreCase);
+bool MatchWildcard (const char *name, const char *mask, bool ignoreCase = false);
 
 //------- video mode --------
-qboolean Vid_GetModeInfo (int *width, int *height, int mode);
+bool	Vid_GetModeInfo (int *width, int *height, int mode);
 
 //--------- images ----------
 int	ImageExists (char *name, int stop_mask);
 void	LoadPCX (char *name, byte **pic, byte **palette, int *width, int *height);
 void	LoadTGA (char *name, byte **pic, int *width, int *height);
 void	LoadJPG (char *name, byte **pic, int *width, int *height);
-qboolean WriteTGA (char *name, byte *pic, int width, int height);
-qboolean WriteJPG (char *name, byte *pic, int width, int height, qboolean highQuality);
+bool	WriteTGA (char *name, byte *pic, int width, int height);
+bool	WriteJPG (char *name, byte *pic, int width, int height, bool highQuality);
 
 //--------- models ----------
 bspfile_t* LoadBspFile (char *filename, bool clientload, unsigned *checksum);
@@ -84,8 +83,8 @@ int CM_RefineBrushTrace (const vec3_t start, const vec3_t end, int *brushes, int
 
 //-- system-dependent code --
 #ifdef _WIN32
-void*	Vid_CreateWindow (int width, int height, qboolean fullscreen);
-void	Vid_DestroyWindow (qboolean force);
+void*	Vid_CreateWindow (int width, int height, bool fullscreen);
+void	Vid_DestroyWindow (bool force);
 #else
 void	Vid_NewWindow (int width, int height);
 #endif

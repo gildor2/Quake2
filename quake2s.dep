@@ -1,6 +1,6 @@
 # Microsoft Developer Studio Generated Dependency File, included by quake2s.mak
 
-.\win32\cd_win.c : \
+.\win32\cd_win.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -18,7 +18,7 @@
 	".\win32\winquake.h"\
 	
 
-.\client\cl_cin.c : \
+.\client\cl_cin.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -35,7 +35,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\cl_ents.c : \
+.\client\cl_ents.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -52,7 +52,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\cl_fx.c : \
+.\client\cl_fx.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -69,7 +69,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\cl_input.c : \
+.\client\cl_input.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -86,7 +86,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\cl_inv.c : \
+.\client\cl_inv.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -103,7 +103,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\cl_main.c : \
+.\client\cl_main.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -120,7 +120,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\cl_newfx.c : \
+.\client\cl_newfx.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -137,7 +137,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\cl_parse.c : \
+.\client\cl_parse.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -154,7 +154,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\cl_pred.c : \
+.\client\cl_pred.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -171,7 +171,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\cl_scrn.c : \
+.\client\cl_scrn.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -188,7 +188,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\cl_tent.c : \
+.\client\cl_tent.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -206,7 +206,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\cl_view.c : \
+.\client\cl_view.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -223,21 +223,21 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\qcommon\cmd.c : \
+.\qcommon\cmd.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	
 
-.\qcommon\cmodel.c : \
+.\qcommon\cmodel.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	
 
-.\qcommon\common.c : \
+.\qcommon\common.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -247,7 +247,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\console.c : \
+.\client\console.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -264,21 +264,21 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\qcommon\crc.c : \
+.\qcommon\crc.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	
 
-.\qcommon\cvar.c : \
+.\qcommon\cvar.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	
 
-.\qcommon\files.c : \
+.\qcommon\files.cpp : \
 	".\client\ref_defs.h"\
 	".\lib\zlib\zconf.h"\
 	".\lib\zlib\zlib.h"\
@@ -288,7 +288,7 @@
 	".\qcommon\zip.h"\
 	
 
-.\qcommon\images.c : \
+.\qcommon\images.cpp : \
 	".\client\ref_defs.h"\
 	".\lib\jpeglib\jconfig.h"\
 	".\lib\jpeglib\jmorecfg.h"\
@@ -298,7 +298,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\win32\in_win.c : \
+.\win32\in_win.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -316,7 +316,7 @@
 	".\win32\winquake.h"\
 	
 
-.\client\keys.c : \
+.\client\keys.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -338,14 +338,14 @@
 	".\game\q_shared.h"\
 	
 
-.\qcommon\memory.c : \
+.\qcommon\memory.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	
 
-.\client\menu.c : \
+.\client\menu.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -363,39 +363,39 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\qcommon\model.c : \
+.\qcommon\model.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	
 
-.\qcommon\net_chan.c : \
+.\qcommon\net_chan.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	
 
-.\win32\net_wins.c : \
+.\win32\net_wins.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	
 
-.\qcommon\pmove.c : \
+.\qcommon\pmove.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	
 
-.\qcommon\q_shared2.c : \
+.\qcommon\q_shared2.cpp : \
 	".\qcommon\q_shared2.h"\
 	
 
-.\client\qmenu.c : \
+.\client\qmenu.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -413,7 +413,16 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\snd_dma.c : \
+.\client\ref_vars.cpp : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
+	".\client\ref_defs.h"\
+	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
+	
+
+.\client\snd_dma.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -431,7 +440,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\snd_mem.c : \
+.\client\snd_mem.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -449,7 +458,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\snd_mix.c : \
+.\client\snd_mix.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -467,7 +476,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\win32\snd_win.c : \
+.\win32\snd_win.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -486,7 +495,7 @@
 	".\win32\winquake.h"\
 	
 
-.\server\sv_ccmds.c : \
+.\server\sv_ccmds.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -497,7 +506,7 @@
 	".\server\server.h"\
 	
 
-.\server\sv_ents.c : \
+.\server\sv_ents.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -506,7 +515,7 @@
 	".\server\server.h"\
 	
 
-.\server\sv_game.c : \
+.\server\sv_game.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -515,7 +524,7 @@
 	".\server\server.h"\
 	
 
-.\server\sv_init.c : \
+.\server\sv_init.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -524,7 +533,7 @@
 	".\server\server.h"\
 	
 
-.\server\sv_main.c : \
+.\server\sv_main.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -533,7 +542,7 @@
 	".\server\server.h"\
 	
 
-.\server\sv_send.c : \
+.\server\sv_send.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -542,7 +551,7 @@
 	".\server\server.h"\
 	
 
-.\server\sv_user.c : \
+.\server\sv_user.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -551,7 +560,7 @@
 	".\server\server.h"\
 	
 
-.\server\sv_world.c : \
+.\server\sv_world.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -560,7 +569,7 @@
 	".\server\server.h"\
 	
 
-.\win32\sys_win.c : \
+.\win32\sys_win.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -578,7 +587,7 @@
 	".\win32\winquake.h"\
 	
 
-.\win32\vid_dll.c : \
+.\win32\vid_dll.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -597,7 +606,7 @@
 	".\win32\winquake.h"\
 	
 
-.\win32\vid_menu.c : \
+.\win32\vid_menu.cpp : \
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -615,7 +624,7 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\qcommon\zip.c : \
+.\qcommon\zip.cpp : \
 	".\client\ref_defs.h"\
 	".\lib\zlib\zconf.h"\
 	".\lib\zlib\zlib.h"\
@@ -625,7 +634,7 @@
 	".\qcommon\zip.h"\
 	
 
-.\ref_gl\gl_backend.c : \
+.\ref_gl\gl_backend.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -648,7 +657,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\ref_gl\gl_buffers.c : \
+.\ref_gl\gl_buffers.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -667,7 +676,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\ref_gl\gl_frontend.c : \
+.\ref_gl\gl_frontend.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -688,7 +697,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\ref_gl\gl_image.c : \
+.\ref_gl\gl_image.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -705,7 +714,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\ref_gl\gl_interface.c : \
+.\ref_gl\gl_interface.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -721,7 +730,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\ref_gl\gl_light.c : \
+.\ref_gl\gl_light.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -741,7 +750,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\ref_gl\gl_lightmap.c : \
+.\ref_gl\gl_lightmap.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -761,7 +770,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\ref_gl\gl_main.c : \
+.\ref_gl\gl_main.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -782,7 +791,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\ref_gl\gl_math.c : \
+.\ref_gl\gl_math.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -799,7 +808,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\ref_gl\gl_model.c : \
+.\ref_gl\gl_model.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -820,7 +829,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\ref_gl\gl_poly.c : \
+.\ref_gl\gl_poly.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -834,7 +843,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\ref_gl\gl_shader.c : \
+.\ref_gl\gl_shader.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -851,7 +860,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\ref_gl\gl_sky.c : \
+.\ref_gl\gl_sky.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -872,7 +881,7 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
-.\win32\glw_imp.c : \
+.\win32\glw_imp.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -886,7 +895,7 @@
 	".\win32\glw_win.h"\
 	
 
-.\win32\qgl_win.c : \
+.\win32\qgl_win.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -901,14 +910,14 @@
 	".\win32\glw_win.h"\
 	
 
-.\win32\q_shwin.c : \
+.\win32\q_shwin.cpp : \
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
 	
 
-.\ref_soft\r_aclip.c : \
+.\ref_soft\r_aclip.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -919,7 +928,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_alias.c : \
+.\ref_soft\r_alias.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -931,7 +940,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_bsp.c : \
+.\ref_soft\r_bsp.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -942,7 +951,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_draw.c : \
+.\ref_soft\r_draw.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -953,7 +962,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_edge.c : \
+.\ref_soft\r_edge.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -964,7 +973,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_image.c : \
+.\ref_soft\r_image.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -975,7 +984,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_light.c : \
+.\ref_soft\r_light.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -986,7 +995,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_main.c : \
+.\ref_soft\r_main.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -997,7 +1006,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_misc.c : \
+.\ref_soft\r_misc.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1008,7 +1017,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_model.c : \
+.\ref_soft\r_model.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1019,7 +1028,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_part.c : \
+.\ref_soft\r_part.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1030,7 +1039,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_poly.c : \
+.\ref_soft\r_poly.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1041,7 +1050,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_polyse.c : \
+.\ref_soft\r_polyse.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1053,7 +1062,7 @@
 	".\ref_soft\rand1k.h"\
 	
 
-.\ref_soft\r_rast.c : \
+.\ref_soft\r_rast.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1064,7 +1073,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_scan.c : \
+.\ref_soft\r_scan.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1075,7 +1084,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_sprite.c : \
+.\ref_soft\r_sprite.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1086,7 +1095,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\ref_soft\r_surf.c : \
+.\ref_soft\r_surf.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1097,19 +1106,7 @@
 	".\ref_soft\r_model.h"\
 	
 
-.\win32\rw_ddraw.c : \
-	".\client\ref.h"\
-	".\client\ref_decl.h"\
-	".\client\ref_defs.h"\
-	".\qcommon\q_shared2.h"\
-	".\qcommon\qcommon.h"\
-	".\qcommon\qfiles.h"\
-	".\ref_soft\r_local.h"\
-	".\ref_soft\r_model.h"\
-	".\win32\rw_win.h"\
-	
-
-.\win32\rw_dib.c : \
+.\win32\rw_ddraw.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -1121,7 +1118,19 @@
 	".\win32\rw_win.h"\
 	
 
-.\win32\rw_imp.c : \
+.\win32\rw_dib.cpp : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
+	".\client\ref_defs.h"\
+	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
+	".\ref_soft\r_local.h"\
+	".\ref_soft\r_model.h"\
+	".\win32\rw_win.h"\
+	
+
+.\win32\rw_imp.cpp : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\

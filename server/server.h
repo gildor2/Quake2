@@ -21,6 +21,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //define	PARANOID				// speed sapping error checking
 
 #include "../qcommon/qcommon.h"
+
+// need qboolean declaration for game library interface
+typedef unsigned int		qboolean;
+
 #include "game.h"
 
 //=============================================================================
@@ -32,8 +36,8 @@ typedef struct
 {
 	server_state_t	state;				// precache commands are only valid during load
 
-	qboolean	attractloop;			// running cinematics and demos for the local system only
-	qboolean	loadgame;				// client begins should reuse existing entity
+	bool		attractloop;			// running cinematics and demos for the local system only
+	bool		loadgame;				// client begins should reuse existing entity
 
 	unsigned	time;					// always sv.framenum * 100; msec
 	int			framenum;
@@ -124,14 +128,14 @@ typedef struct client_s
 
 	//------ extended protocol fields --------
 	int			maxPacketSize;
-	qboolean	newprotocol;			// true if client uses a new communication protocol
+	bool		newprotocol;			// true if client uses a new communication protocol
 	// stuff for anti-camper sounds
 	int			lastcluster;
 	int			nextsfxtime;
 	int			sfxstate;				// 0-none, 1-spectator (don't works now!!), 2-normal (may be, camper)
 	// falling sounds
 	int			last_velocity2;
-	qboolean	screaming;
+	bool		screaming;
 } client_t;
 
 // a client can leave the server in one of four ways:
@@ -157,7 +161,7 @@ typedef struct
 
 typedef struct
 {
-	qboolean	initialized;				// sv_init has completed
+	bool		initialized;				// sv_init has completed
 	int			realtime;					// always increasing, no clamping, etc
 	float		realtimef;					// same as "realtime", but more precisious (may be fractional, when timescale < 1)
 
@@ -229,7 +233,7 @@ trace_t SV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_
 // sv_init.c
 //
 void SV_InitGame (void);
-void SV_Map (qboolean attractloop, char *levelstring, qboolean loadgame);
+void SV_Map (bool attractloop, char *levelstring, bool loadgame);
 
 
 //
@@ -259,7 +263,7 @@ void SV_ExecuteClientMessage (client_t *cl);
 //
 // sv_ccmds.c
 //
-qboolean SV_AddressBanned (netadr_t *a);
+bool SV_AddressBanned (netadr_t *a);
 void SV_ReadLevelFile (void);
 
 //
@@ -277,7 +281,7 @@ void SV_Error (char *error, ...);
 //
 extern	game_export_t	*ge;
 
-void SV_InitGameProgs (qboolean dummy);
+void SV_InitGameProgs (bool dummy);
 void SV_ShutdownGameProgs (void);
 void SV_InitEdict (edict_t *e);
 

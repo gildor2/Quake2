@@ -4,7 +4,7 @@
   - makefile for splitted renderers (!REF_HARD_LINKED; rename define!)
   - makefile for integrated gl-only executable (NO_SOFT_RENDERER, vid_dll.c only + remove ref_soft/* files from makefile)
     (when no soft renderer - single renderer only - can remove vid_ref cvar)
-- DirectInput, DirectSound: vtbl -> classes
+* DirectInput, DirectSound: vtbl -> classes
 - renderer:
   - make as class
     ? console-only renderer: can't replace virtual functions to dummy (vid_dll.c, D_Xxxx() function family)

@@ -128,7 +128,7 @@ typedef struct
 	short	x, y;			// position on screen
 	short	w, h;			// character output size
 	color_t	c;
-	char	text[0];		// [len]
+	char	text[1];		// [len]
 } bkDrawText_t;
 
 

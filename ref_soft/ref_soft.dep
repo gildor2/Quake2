@@ -1,6 +1,6 @@
 # Microsoft Developer Studio Generated Dependency File, included by ref_soft.mak
 
-..\qcommon\q_shared2.c : \
+..\qcommon\q_shared2.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -9,7 +9,7 @@
 	"..\qcommon\qfiles.h"\
 	
 
-.\r_aclip.c : \
+.\r_aclip.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -26,7 +26,7 @@
 
 !ENDIF 
 
-.\r_alias.c : \
+.\r_alias.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -38,7 +38,7 @@
 	".\r_model.h"\
 	
 
-.\r_bsp.c : \
+.\r_bsp.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -49,30 +49,7 @@
 	".\r_model.h"\
 	
 
-.\r_draw.c : \
-	"..\client\ref.h"\
-	"..\client\ref_decl.h"\
-	"..\client\ref_defs.h"\
-	"..\qcommon\q_shared2.h"\
-	"..\qcommon\qcommon.h"\
-	"..\qcommon\qfiles.h"\
-	".\r_local.h"\
-	".\r_model.h"\
-	
-
-!IF  "$(CFG)" == "ref_soft - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
-
-!ENDIF 
-
-!IF  "$(CFG)" == "ref_soft - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
-
-!ENDIF 
-
-.\r_edge.c : \
+.\r_draw.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -89,73 +66,13 @@
 
 !ENDIF 
 
-.\r_image.c : \
-	"..\client\ref.h"\
-	"..\client\ref_decl.h"\
-	"..\client\ref_defs.h"\
-	"..\qcommon\q_shared2.h"\
-	"..\qcommon\qcommon.h"\
-	"..\qcommon\qfiles.h"\
-	".\r_local.h"\
-	".\r_model.h"\
-	
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
 
-.\r_light.c : \
-	"..\client\ref.h"\
-	"..\client\ref_decl.h"\
-	"..\client\ref_defs.h"\
-	"..\qcommon\q_shared2.h"\
-	"..\qcommon\qcommon.h"\
-	"..\qcommon\qfiles.h"\
-	".\r_local.h"\
-	".\r_model.h"\
-	
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
 
-.\r_main.c : \
-	"..\client\ref.h"\
-	"..\client\ref_decl.h"\
-	"..\client\ref_defs.h"\
-	"..\qcommon\q_shared2.h"\
-	"..\qcommon\qcommon.h"\
-	"..\qcommon\qfiles.h"\
-	".\r_local.h"\
-	".\r_model.h"\
-	
+!ENDIF 
 
-.\r_misc.c : \
-	"..\client\ref.h"\
-	"..\client\ref_decl.h"\
-	"..\client\ref_defs.h"\
-	"..\qcommon\q_shared2.h"\
-	"..\qcommon\qcommon.h"\
-	"..\qcommon\qfiles.h"\
-	".\r_local.h"\
-	".\r_model.h"\
-	
-
-.\r_model.c : \
-	"..\client\ref.h"\
-	"..\client\ref_decl.h"\
-	"..\client\ref_defs.h"\
-	"..\qcommon\q_shared2.h"\
-	"..\qcommon\qcommon.h"\
-	"..\qcommon\qfiles.h"\
-	".\r_local.h"\
-	".\r_model.h"\
-	
-
-.\r_part.c : \
-	"..\client\ref.h"\
-	"..\client\ref_decl.h"\
-	"..\client\ref_defs.h"\
-	"..\qcommon\q_shared2.h"\
-	"..\qcommon\qcommon.h"\
-	"..\qcommon\qfiles.h"\
-	".\r_local.h"\
-	".\r_model.h"\
-	
-
-.\r_poly.c : \
+.\r_edge.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -172,7 +89,90 @@
 
 !ENDIF 
 
-.\r_polyse.c : \
+.\r_image.cpp : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_light.cpp : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_main.cpp : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_misc.cpp : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_model.cpp : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_part.cpp : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_poly.cpp : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
+
+!ENDIF 
+
+.\r_polyse.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -184,7 +184,7 @@
 	".\rand1k.h"\
 	
 
-.\r_rast.c : \
+.\r_rast.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -195,41 +195,7 @@
 	".\r_model.h"\
 	
 
-.\r_scan.c : \
-	"..\client\ref.h"\
-	"..\client\ref_decl.h"\
-	"..\client\ref_defs.h"\
-	"..\qcommon\q_shared2.h"\
-	"..\qcommon\qcommon.h"\
-	"..\qcommon\qfiles.h"\
-	".\r_local.h"\
-	".\r_model.h"\
-	
-
-!IF  "$(CFG)" == "ref_soft - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
-
-!ENDIF 
-
-!IF  "$(CFG)" == "ref_soft - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
-
-!ENDIF 
-
-.\r_sprite.c : \
-	"..\client\ref.h"\
-	"..\client\ref_decl.h"\
-	"..\client\ref_defs.h"\
-	"..\qcommon\q_shared2.h"\
-	"..\qcommon\qcommon.h"\
-	"..\qcommon\qfiles.h"\
-	".\r_local.h"\
-	".\r_model.h"\
-	
-
-.\r_surf.c : \
+.\r_scan.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -252,7 +218,41 @@
 
 !ENDIF 
 
-..\win32\rw_ddraw.c : \
+.\r_sprite.cpp : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+.\r_surf.cpp : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
+	".\r_local.h"\
+	".\r_model.h"\
+	
+
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
+
+!ENDIF 
+
+!IF  "$(CFG)" == "ref_soft - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "ref_soft - Win32 Debug"
+
+!ENDIF 
+
+..\win32\rw_ddraw.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -264,7 +264,7 @@
 	".\r_model.h"\
 	
 
-..\win32\rw_dib.c : \
+..\win32\rw_dib.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -276,7 +276,7 @@
 	".\r_model.h"\
 	
 
-..\win32\rw_imp.c : \
+..\win32\rw_imp.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\

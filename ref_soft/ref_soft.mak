@@ -25,6 +25,10 @@ NULL=
 NULL=nul
 !ENDIF 
 
+CPP=cl.exe
+MTL=midl.exe
+RSC=rc.exe
+
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
 OUTDIR=.\release
@@ -63,42 +67,8 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /Fo"$(INTDIR)\\" /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-MTL=midl.exe
 MTL_PROJ=/nologo /D "NDEBUG" /mktyplib203 /win32 
-RSC=rc.exe
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\ref_soft.bsc" 
 BSC32_SBRS= \
@@ -210,42 +180,8 @@ CLEAN :
 "$(INTDIR)" :
     if not exist "$(INTDIR)/$(NULL)" mkdir "$(INTDIR)"
 
-CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\ref_soft.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-MTL=midl.exe
 MTL_PROJ=/nologo /D "_DEBUG" /mktyplib203 /win32 
-RSC=rc.exe
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\ref_soft.bsc" 
 BSC32_SBRS= \
@@ -317,6 +253,36 @@ LINK32_OBJS= \
 
 !ENDIF 
 
+.c{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.c{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
 
 !IF "$(NO_EXTERNAL_DEPS)" != "1"
 !IF EXISTS("ref_soft.dep")
@@ -328,7 +294,7 @@ LINK32_OBJS= \
 
 
 !IF "$(CFG)" == "ref_soft - Win32 Release" || "$(CFG)" == "ref_soft - Win32 Debug"
-SOURCE=..\qcommon\q_shared2.c
+SOURCE=..\qcommon\q_shared2.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -352,7 +318,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\r_aclip.c
+SOURCE=.\r_aclip.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -406,7 +372,7 @@ InputName=r_aclipa
 
 !ENDIF 
 
-SOURCE=.\r_alias.c
+SOURCE=.\r_alias.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -430,7 +396,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\r_bsp.c
+SOURCE=.\r_bsp.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -454,7 +420,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\r_draw.c
+SOURCE=.\r_draw.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -538,7 +504,7 @@ InputName=r_drawa
 
 !ENDIF 
 
-SOURCE=.\r_edge.c
+SOURCE=.\r_edge.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -592,7 +558,7 @@ InputName=r_edgea
 
 !ENDIF 
 
-SOURCE=.\r_image.c
+SOURCE=.\r_image.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -616,7 +582,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\r_light.c
+SOURCE=.\r_light.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -640,7 +606,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\r_main.c
+SOURCE=.\r_main.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -664,7 +630,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\r_misc.c
+SOURCE=.\r_misc.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -688,7 +654,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\r_model.c
+SOURCE=.\r_model.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -712,7 +678,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\r_part.c
+SOURCE=.\r_part.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -736,7 +702,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\r_poly.c
+SOURCE=.\r_poly.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -790,7 +756,7 @@ InputName=r_polysa
 
 !ENDIF 
 
-SOURCE=.\r_polyse.c
+SOURCE=.\r_polyse.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -814,7 +780,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\r_rast.c
+SOURCE=.\r_rast.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -838,7 +804,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\r_scan.c
+SOURCE=.\r_scan.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -922,7 +888,7 @@ InputName=r_spr8
 
 !ENDIF 
 
-SOURCE=.\r_sprite.c
+SOURCE=.\r_sprite.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -946,7 +912,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\r_surf.c
+SOURCE=.\r_surf.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -1030,7 +996,7 @@ InputName=r_varsa
 
 !ENDIF 
 
-SOURCE=..\win32\rw_ddraw.c
+SOURCE=..\win32\rw_ddraw.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -1054,7 +1020,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=..\win32\rw_dib.c
+SOURCE=..\win32\rw_dib.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 
@@ -1078,7 +1044,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=..\win32\rw_imp.c
+SOURCE=..\win32\rw_imp.cpp
 
 !IF  "$(CFG)" == "ref_soft - Win32 Release"
 

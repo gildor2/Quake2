@@ -53,7 +53,7 @@ void	QGL_InitExtensions (void);
 void	QGL_PrintExtensionsString (const char *label, const char *str);
 void	QGL_Shutdown (void);
 // logging
-void	QGL_EnableLogging (qboolean enable);
+void	QGL_EnableLogging (bool enable);
 void	QGL_LogMessage (const char *text);
 #define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
 
@@ -140,7 +140,7 @@ void	QGL_LogMessage (const char *text);
 #else	// REF_HARD_LINKED
 
 //?? make common declaration
-/*extern "C"*/ DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
+extern "C" DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
 
 #endif	// REF_HARD_LINKED
 
@@ -193,17 +193,17 @@ typedef struct image_s
 {
 	char	name[MAX_QPATH];			// game path, including extension
 	imagetype_t	type;
-	int		width, height;			// source image
-	int		upload_width, upload_height;	// after power of two and picmip
-	int		upload_format;			// type of image in video memory
+	int		width, height;				// source image
+	int		upload_width, upload_height;// after power of two and picmip
+	int		upload_format;				// type of image in video memory
 	int		registration_sequence;		// 0 = free
-	struct msurface_s	*texturechain;		// for sort-by-texture world drawing
-	int		texnum;				// gl texture binding
+	struct msurface_s	*texturechain;	// for sort-by-texture world drawing
+	unsigned texnum;					// gl texture binding
 	float	sl, tl, sh, th;				// 0,0 - 1,1 unless part of the scrap
-	qboolean	scrap;
-	qboolean	has_alpha;
+	bool	scrap;
+	bool	has_alpha;
 
-//	qboolean paletted;
+//	bool	paletted;
 } image_t;
 
 #define	TEXNUM_LIGHTMAPS	1024
@@ -283,11 +283,7 @@ extern	int		r_viewcluster, r_viewcluster2, r_oldviewcluster, r_oldviewcluster2;
 extern	cvar_t	*r_norefresh;
 extern	cvar_t	*r_lefthand;
 extern	cvar_t	*r_drawentities;
-extern	cvar_t	*r_drawworld;
 
-extern	cvar_t	*r_speeds;
-
-extern	cvar_t	*r_fullbright;
 extern	cvar_t	*r_novis;
 extern	cvar_t	*gl_frustumCull;
 extern	cvar_t	*r_lerpmodels;
@@ -307,7 +303,6 @@ extern	cvar_t	*gl_nosubimage;
 extern	cvar_t	*gl_bitdepth;
 extern	cvar_t	*gl_mode;
 extern	cvar_t	*gl_logFile;
-extern	cvar_t	*r_lightmap;
 extern	cvar_t	*gl_shadows;
 extern	cvar_t	*gl_dynamic;
 extern	cvar_t	*gl_dlightBacks;
@@ -339,9 +334,6 @@ extern  cvar_t  *gl_lockpvs;
 extern  cvar_t  *gl_zmax;
 extern  cvar_t  *gl_winrefl;
 
-extern	cvar_t	*r_fullscreen;
-
-extern cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
 
 extern	int	gl_solid_format;
 extern	int	gl_alpha_format;
@@ -360,7 +352,7 @@ void R_TranslatePlayerSkin (int playernum);
 void GL_Bind (int texnum);
 void GL_MBind (int tmu, int texnum);
 void GL_TexEnv( GLenum value );
-void GL_EnableMultitexture( qboolean enable );
+void GL_EnableMultitexture( bool enable );
 void GL_SelectTexture (int tmu);
 void qglMTexCoord2f (int tmu, float s, float t);	// will choose ARB or SGIS function
 
@@ -393,7 +385,7 @@ void R_RenderBrushPoly (msurface_t *fa);
 void R_InitParticleTexture (void);
 void Draw_InitLocal (void);
 void GL_SubdivideSurface (msurface_t *fa);
-qboolean R_CullBox (vec3_t mins, vec3_t maxs);
+bool R_CullBox (vec3_t mins, vec3_t maxs);
 void R_RotateForEntity (entity_t *e);
 void R_MarkLeaves (void);
 
@@ -414,8 +406,6 @@ char	*va(char *format, ...);
 // does a varargs printf into a temp buffer
 #endif
 
-void COM_StripExtension (char *in, char *out);
-
 void	Draw_GetPicSize (int *w, int *h, char *name);
 void	Draw_Pic (int x, int y, char *name);
 void	Draw_PicColor (int x, int y, char *pic, int color);
@@ -429,7 +419,7 @@ void	Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *dat
 
 void	R_BeginFrame( float camera_separation );
 void	R_SwapBuffers( int );
-void	R_SetPalette ( const unsigned char *palette);
+void	R_SetPalette ( const byte *palette);
 
 int		Draw_GetPalette (void);
 
@@ -535,7 +525,7 @@ typedef struct
 	unsigned tbl_8to32[256];		// palette->RGBA
 	//--------------------------
 	int         renderer;
-	qboolean	allow_cds;
+	bool	allow_cds;
 } glconfig_t;
 
 // macro for checking extension support
@@ -554,7 +544,7 @@ typedef struct
 	int lightmap_textures;
 
 	float camera_separation;
-	qboolean stereo_enabled;
+	bool stereo_enabled;
 
 	int texture_format_solid;
 	int texture_format_alpha;
@@ -600,8 +590,8 @@ void		GLimp_BeginFrame( float camera_separation );
 void		GLimp_EndFrame( void );
 int 		GLimp_Init( void );
 void		GLimp_Shutdown(void);
-int     	GLimp_SetMode (int *pwidth, int *pheight, int mode, bool fullscreen);
-void		GLimp_AppActivate (qboolean active);
+rserr_t    	GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscreen);
+void		GLimp_AppActivate (bool active);
 
 bool		GLimp_HasGamma (void);
 void		GLimp_SetGamma (float gamma, float intens);
@@ -612,4 +602,4 @@ void	DrawTextPos (int x, int y, char *text, unsigned rgba);
 void	DrawTextLeft (char *text, unsigned rgba);
 void	DrawTextRight (char *text, unsigned rgba);
 
-extern qboolean con_only;
+extern bool con_only;

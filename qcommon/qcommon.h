@@ -109,7 +109,7 @@ typedef struct sizebuf_s
 	int		readcount;
 } sizebuf_t;
 
-void	SZ_Init (sizebuf_t *buf, byte *data, int length);
+void	SZ_Init (sizebuf_t *buf, void *data, int length);
 void	SZ_Clear (sizebuf_t *buf);
 void	*SZ_GetSpace (sizebuf_t *buf, int length);
 void	SZ_Write (sizebuf_t *buf, void *data, int length);
@@ -130,7 +130,7 @@ void	MSG_WritePos (sizebuf_t *sb, vec3_t pos);
 void	MSG_WriteAngle (sizebuf_t *sb, float f);
 void	MSG_WriteAngle16 (sizebuf_t *sb, float f);
 void	MSG_WriteDeltaUsercmd (sizebuf_t *sb, usercmd_t *from, usercmd_t *cmd);
-void	MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *msg, qboolean force, qboolean newentity);
+void	MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *msg, bool force, bool newentity);
 void	MSG_WriteDir (sizebuf_t *sb, vec3_t vector);
 
 
@@ -413,7 +413,7 @@ typedef struct cmdAlias_s
 	char	*value;
 } cmdAlias_t;
 
-cmdAlias_t	*cmdAlias;
+extern cmdAlias_t *cmdAlias;
 
 typedef struct cmdFunc_s
 {
@@ -422,7 +422,7 @@ typedef struct cmdFunc_s
 	void	(*func) (void);
 } cmdFunc_t;
 
-cmdFunc_t *cmdFuncs;
+extern cmdFunc_t *cmdFuncs;
 
 
 void	Cmd_Init (void);
@@ -442,7 +442,7 @@ void	Cmd_Init (void);
 // functions. Cmd_Argv () will return an empty string, not a NULL
 // if arg > argc, so string operations are always safe.
 
-void	Cmd_TokenizeString (char *text, qboolean macroExpand);
+void	Cmd_TokenizeString (char *text, bool macroExpand);
 // Takes a null terminated string.  Does not need to be /n terminated.
 // breaks the string up into arg tokens.
 
@@ -510,7 +510,7 @@ cvar_t	*Cvar_ForceSet (const char *var_name, const char *value);	// will set the
 void	Cvar_GetLatchedVars (void);
 // any CVAR_LATCHED variables that have been set will now take effect
 
-qboolean Cvar_Command (void);
+bool	Cvar_Command (void);
 // called by Cmd_ExecuteString when Cmd_Argv(0) doesn't match a known
 // command.  Returns true if the command was a variable reference that
 // was handled. (print or change)
@@ -518,7 +518,7 @@ qboolean Cvar_Command (void);
 void	Cvar_WriteVariables (FILE *f, int includeMask, int excludeMask, const char *header);
 // appends lines containing "set variable value" for all variables with the archive flag set.
 
-void	Cvar_Cheats (qboolean enable);
+void	Cvar_Cheats (bool enable);
 void	Cvar_Init (void);
 
 char	*Cvar_Userinfo (void);
@@ -527,7 +527,7 @@ char	*Cvar_Userinfo (void);
 char	*Cvar_Serverinfo (void);
 // returns an info string containing all the CVAR_SERVERINFO cvars
 
-extern qboolean userinfo_modified;
+extern bool userinfo_modified;
 // this is set each time a CVAR_USERINFO variable is changed
 // so that the client knows to send it to the server
 
@@ -558,27 +558,27 @@ typedef struct
 	unsigned short port;
 } netadr_t;
 
-qboolean IPWildcard (netadr_t *a, char *mask);
+bool	IPWildcard (netadr_t *a, char *mask);
 
 void	NET_Init (void);
 void	NET_Shutdown (void);
 
-void	NET_Config (qboolean multiplayer);
+void	NET_Config (bool multiplayer);
 
-qboolean NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message);
+bool	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message);
 void	NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to);
 
-qboolean NET_CompareAdr (netadr_t *a, netadr_t *b);
-qboolean NET_CompareBaseAdr (netadr_t *a, netadr_t *b);
-qboolean NET_IsLocalAddress (netadr_t *adr);
+bool	NET_CompareAdr (netadr_t *a, netadr_t *b);
+bool	NET_CompareBaseAdr (netadr_t *a, netadr_t *b);
+bool	NET_IsLocalAddress (netadr_t *adr);
 char	*NET_AdrToString (netadr_t *a);
-qboolean NET_StringToAdr (char *s, netadr_t *a);
+bool	NET_StringToAdr (char *s, netadr_t *a);
 
 //============================================================================
 
 typedef struct
 {
-	qboolean fatal_error;
+	bool	fatal_error;
 
 	netsrc_t sock;
 
@@ -618,13 +618,13 @@ extern byte		net_message_buffer[MAX_MSGLEN];
 void	Netchan_Init (void);
 void	Netchan_Setup (netsrc_t sock, netchan_t *chan, netadr_t adr, int qport);
 
-qboolean Netchan_NeedReliable (netchan_t *chan);
-void	Netchan_Transmit (netchan_t *chan, int length, byte *data);
-void	Netchan_OutOfBand (int net_socket, netadr_t adr, int length, byte *data);
-void	Netchan_OutOfBandPrint (int net_socket, netadr_t adr, char *format, ...);
-qboolean Netchan_Process (netchan_t *chan, sizebuf_t *msg);
+bool	Netchan_NeedReliable (netchan_t *chan);
+void	Netchan_Transmit (netchan_t *chan, int length, void *data);
+void	Netchan_OutOfBand (netsrc_t net_socket, netadr_t adr, int length, void *data);
+void	Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, char *format, ...);
+bool	Netchan_Process (netchan_t *chan, sizebuf_t *msg);
 
-qboolean Netchan_CanReliable (netchan_t *chan);
+bool	Netchan_CanReliable (netchan_t *chan);
 
 
 /*
@@ -684,8 +684,8 @@ int		CM_LeafContents (int leafnum);
 int		CM_LeafCluster (int leafnum);
 int		CM_LeafArea (int leafnum);
 
-void	CM_SetAreaPortalState (int portalnum, qboolean open);
-qboolean CM_AreasConnected (int area1, int area2);
+void	CM_SetAreaPortalState (int portalnum, bool open);
+bool	CM_AreasConnected (int area1, int area2);
 
 int		CM_WriteAreaBits (byte *buffer, int area);
 bool	CM_HeadnodeVisible (int headnode, byte *visbits);
@@ -776,7 +776,7 @@ char	*FS_NextPath (char *prevpath);
 void	FS_LoadGameConfig (void);
 
 int		FS_FOpenFile (char *filename, FILE **file);
-//--qboolean FS_FileExists (char *filename);
+//--bool FS_FileExists (char *filename);
 void	FS_FCloseFile (FILE *f);
 void	FS_Read (void *buffer, int len, FILE *f);
 // properly handles partial reads
@@ -801,16 +801,15 @@ extern	int	curtime;		// time returned by last Sys_Milliseconds
 extern	int linewidth;		// for functions, which wants to perform advanced output formatting
 
 
-void	Com_BeginRedirect (char *buffer, int buffersize, void (*flush));
+void	Com_BeginRedirect (char *buffer, int buffersize, void (*flush)(char*));
 void	Com_EndRedirect (void);
 
 void 	Com_Quit (void);
 
-//--qboolean MatchWildcard (char *name, char *mask);
-//--qboolean MatchWildcard2 (char *name, char *mask, qboolean ignoreCase);
+//--bool MatchWildcard (char *name, char *mask, bool ignoreCase = false);
 
-int		Com_ServerState (void);		// this should have just been a cvar...
-void	Com_SetServerState (int state);
+server_state_t Com_ServerState (void);		// this should have just been a cvar...
+void	Com_SetServerState (server_state_t state);
 
 unsigned Com_BlockChecksum (void *buffer, int length);
 byte	COM_BlockSequenceCRCByte (byte *base, int length, int sequence);
@@ -831,7 +830,7 @@ extern int	time_after_game;
 extern int	time_before_ref;
 extern int	time_after_ref;
 
-qboolean COM_CheckCmdlineVar (const char *name);
+bool	COM_CheckCmdlineVar (const char *name);
 
 void	QCommon_Init (char *cmdline);
 void	QCommon_Frame (int msec);
@@ -873,7 +872,7 @@ void	Con_Print (char *text);
 void	SCR_BeginLoadingPlaque (void);
 
 void	SV_Init (void);
-void	SV_Shutdown (char *finalmsg, qboolean reconnect);
+void	SV_Shutdown (char *finalmsg, bool reconnect);
 void	SV_Frame (float msec);
 
 
@@ -956,7 +955,7 @@ typedef struct
 
 	// entstring
 	int			entDataSize;
-	byte		*entities;
+	char		*entities;
 
 	// geometry
 	int			numPlanes;
@@ -1078,7 +1077,6 @@ void Com_ResetErrorState (void);	//?? Sys_ResetErrorState()
 //int win32ExceptFilter2 (void);
 //void appUnwindPrefix (const char *fmt);		//!!! rename
 //void __declspec(noreturn) appUnwindThrow (const char *fmt, ...);
-#define throw	*((int*)NULL) = 0
 
 
 #define EXCEPT_FILTER	win32ExceptFilter2()

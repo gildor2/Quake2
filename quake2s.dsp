@@ -95,95 +95,95 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;hpj;bat;for;f90"
 # Begin Source File
 
-SOURCE=.\win32\cd_win.c
+SOURCE=.\win32\cd_win.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\cl_cin.c
+SOURCE=.\client\cl_cin.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\cl_ents.c
+SOURCE=.\client\cl_ents.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\cl_fx.c
+SOURCE=.\client\cl_fx.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\cl_input.c
+SOURCE=.\client\cl_input.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\cl_inv.c
+SOURCE=.\client\cl_inv.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\cl_main.c
+SOURCE=.\client\cl_main.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\cl_newfx.c
+SOURCE=.\client\cl_newfx.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\cl_parse.c
+SOURCE=.\client\cl_parse.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\cl_pred.c
+SOURCE=.\client\cl_pred.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\cl_scrn.c
+SOURCE=.\client\cl_scrn.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\cl_tent.c
+SOURCE=.\client\cl_tent.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\cl_view.c
+SOURCE=.\client\cl_view.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\cmd.c
+SOURCE=.\qcommon\cmd.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\cmodel.c
+SOURCE=.\qcommon\cmodel.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\common.c
+SOURCE=.\qcommon\common.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\console.c
+SOURCE=.\client\console.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\crc.c
+SOURCE=.\qcommon\crc.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\cvar.c
+SOURCE=.\qcommon\cvar.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\files.c
+SOURCE=.\qcommon\files.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\images.c
+SOURCE=.\qcommon\images.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\win32\in_win.c
+SOURCE=.\win32\in_win.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\keys.c
+SOURCE=.\client\keys.cpp
 # End Source File
 # Begin Source File
 
@@ -191,103 +191,107 @@ SOURCE=.\game\m_flash.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\md4.c
+SOURCE=.\qcommon\md4.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\memory.c
+SOURCE=.\qcommon\memory.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\menu.c
+SOURCE=.\client\menu.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\model.c
+SOURCE=.\qcommon\model.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\net_chan.c
+SOURCE=.\qcommon\net_chan.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\win32\net_wins.c
+SOURCE=.\win32\net_wins.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\pmove.c
+SOURCE=.\qcommon\pmove.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\q_shared2.c
+SOURCE=.\qcommon\q_shared2.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\qmenu.c
+SOURCE=.\client\qmenu.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\snd_dma.c
+SOURCE=.\client\ref_vars.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\snd_mem.c
+SOURCE=.\client\snd_dma.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\client\snd_mix.c
+SOURCE=.\client\snd_mem.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\win32\snd_win.c
+SOURCE=.\client\snd_mix.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\server\sv_ccmds.c
+SOURCE=.\win32\snd_win.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\server\sv_ents.c
+SOURCE=.\server\sv_ccmds.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\server\sv_game.c
+SOURCE=.\server\sv_ents.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\server\sv_init.c
+SOURCE=.\server\sv_game.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\server\sv_main.c
+SOURCE=.\server\sv_init.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\server\sv_send.c
+SOURCE=.\server\sv_main.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\server\sv_user.c
+SOURCE=.\server\sv_send.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\server\sv_world.c
+SOURCE=.\server\sv_user.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\win32\sys_win.c
+SOURCE=.\server\sv_world.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\win32\vid_dll.c
+SOURCE=.\win32\sys_win.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\win32\vid_menu.c
+SOURCE=.\win32\vid_dll.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\qcommon\zip.c
+SOURCE=.\win32\vid_menu.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\qcommon\zip.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -395,66 +399,66 @@ SOURCE=.\win32\q2.rc
 # PROP Default_Filter ""
 # Begin Group "Source Files (gl)"
 
-# PROP Default_Filter "*.c"
+# PROP Default_Filter "*.cpp"
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_backend.c
+SOURCE=.\ref_gl\gl_backend.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_buffers.c
+SOURCE=.\ref_gl\gl_buffers.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_frontend.c
+SOURCE=.\ref_gl\gl_frontend.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_image.c
+SOURCE=.\ref_gl\gl_image.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_interface.c
+SOURCE=.\ref_gl\gl_interface.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_light.c
+SOURCE=.\ref_gl\gl_light.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_lightmap.c
+SOURCE=.\ref_gl\gl_lightmap.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_main.c
+SOURCE=.\ref_gl\gl_main.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_math.c
+SOURCE=.\ref_gl\gl_math.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_model.c
+SOURCE=.\ref_gl\gl_model.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_poly.c
+SOURCE=.\ref_gl\gl_poly.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_shader.c
+SOURCE=.\ref_gl\gl_shader.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_sky.c
+SOURCE=.\ref_gl\gl_sky.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\win32\glw_imp.c
+SOURCE=.\win32\glw_imp.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\win32\qgl_win.c
+SOURCE=.\win32\qgl_win.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files (gl)"
@@ -526,7 +530,7 @@ SOURCE=.\win32\glw_win.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\win32\q_shwin.c
+SOURCE=.\win32\q_shwin.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -539,7 +543,7 @@ SOURCE=.\win32\q_shwin.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_aclip.c
+SOURCE=.\ref_soft\r_aclip.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -552,7 +556,7 @@ SOURCE=.\ref_soft\r_aclip.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_alias.c
+SOURCE=.\ref_soft\r_alias.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -565,7 +569,7 @@ SOURCE=.\ref_soft\r_alias.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_bsp.c
+SOURCE=.\ref_soft\r_bsp.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -578,7 +582,7 @@ SOURCE=.\ref_soft\r_bsp.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_draw.c
+SOURCE=.\ref_soft\r_draw.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -591,7 +595,7 @@ SOURCE=.\ref_soft\r_draw.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_edge.c
+SOURCE=.\ref_soft\r_edge.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -604,7 +608,7 @@ SOURCE=.\ref_soft\r_edge.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_image.c
+SOURCE=.\ref_soft\r_image.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -617,7 +621,7 @@ SOURCE=.\ref_soft\r_image.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_light.c
+SOURCE=.\ref_soft\r_light.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -630,7 +634,7 @@ SOURCE=.\ref_soft\r_light.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_main.c
+SOURCE=.\ref_soft\r_main.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -643,7 +647,7 @@ SOURCE=.\ref_soft\r_main.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_misc.c
+SOURCE=.\ref_soft\r_misc.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -656,7 +660,7 @@ SOURCE=.\ref_soft\r_misc.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_model.c
+SOURCE=.\ref_soft\r_model.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -669,7 +673,7 @@ SOURCE=.\ref_soft\r_model.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_part.c
+SOURCE=.\ref_soft\r_part.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -682,7 +686,7 @@ SOURCE=.\ref_soft\r_part.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_poly.c
+SOURCE=.\ref_soft\r_poly.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -695,7 +699,7 @@ SOURCE=.\ref_soft\r_poly.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_polyse.c
+SOURCE=.\ref_soft\r_polyse.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -708,7 +712,7 @@ SOURCE=.\ref_soft\r_polyse.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_rast.c
+SOURCE=.\ref_soft\r_rast.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -721,7 +725,7 @@ SOURCE=.\ref_soft\r_rast.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_scan.c
+SOURCE=.\ref_soft\r_scan.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -734,7 +738,7 @@ SOURCE=.\ref_soft\r_scan.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_sprite.c
+SOURCE=.\ref_soft\r_sprite.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -747,7 +751,7 @@ SOURCE=.\ref_soft\r_sprite.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_soft\r_surf.c
+SOURCE=.\ref_soft\r_surf.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -760,7 +764,7 @@ SOURCE=.\ref_soft\r_surf.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\win32\rw_ddraw.c
+SOURCE=.\win32\rw_ddraw.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -773,7 +777,7 @@ SOURCE=.\win32\rw_ddraw.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\win32\rw_dib.c
+SOURCE=.\win32\rw_dib.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -786,7 +790,7 @@ SOURCE=.\win32\rw_dib.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\win32\rw_imp.c
+SOURCE=.\win32\rw_imp.cpp
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 

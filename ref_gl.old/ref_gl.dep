@@ -1,6 +1,6 @@
 # Microsoft Developer Studio Generated Dependency File, included by ref_gl.mak
 
-.\gl_draw.c : \
+.\gl_draw.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -13,7 +13,7 @@
 	".\qgl_decl.h"\
 	
 
-.\gl_image.c : \
+.\gl_image.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -26,7 +26,7 @@
 	".\qgl_decl.h"\
 	
 
-.\gl_light.c : \
+.\gl_light.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -39,7 +39,7 @@
 	".\qgl_decl.h"\
 	
 
-.\gl_mesh.c : \
+.\gl_mesh.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -54,7 +54,7 @@
 	".\qgl_decl.h"\
 	
 
-.\gl_model.c : \
+.\gl_model.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -67,7 +67,7 @@
 	".\qgl_decl.h"\
 	
 
-.\gl_rmain.c : \
+.\gl_rmain.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -80,7 +80,7 @@
 	".\qgl_decl.h"\
 	
 
-.\gl_rmisc.c : \
+.\gl_rmisc.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -93,7 +93,7 @@
 	".\qgl_decl.h"\
 	
 
-.\gl_rsurf.c : \
+.\gl_rsurf.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -106,7 +106,7 @@
 	".\qgl_decl.h"\
 	
 
-.\gl_textout.c : \
+.\gl_textout.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -119,7 +119,7 @@
 	".\qgl_decl.h"\
 	
 
-.\gl_warp.c : \
+.\gl_warp.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -132,7 +132,7 @@
 	".\qgl_decl.h"\
 	
 
-glw_imp.c : \
+glw_imp.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -147,7 +147,7 @@ glw_imp.c : \
 	".\qgl_decl.h"\
 	
 
-..\qcommon\q_shared2.c : \
+..\qcommon\q_shared2.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -156,7 +156,7 @@ glw_imp.c : \
 	"..\qcommon\qfiles.h"\
 	
 
-.\qgl_win.c : \
+.\qgl_win.cpp : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -169,4 +169,13 @@ glw_imp.c : \
 	".\gl_model.h"\
 	".\qgl_decl.h"\
 	".\qgl_impl.h"\
+	
+
+..\client\ref_vars.cpp : \
+	"..\client\ref.h"\
+	"..\client\ref_decl.h"\
+	"..\client\ref_defs.h"\
+	"..\qcommon\q_shared2.h"\
+	"..\qcommon\qcommon.h"\
+	"..\qcommon\qfiles.h"\
 	

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -31,4 +31,4 @@ void IN_Frame (void);
 void IN_Move (usercmd_t *cmd);
 // add additional movement on top of the keyboard move cmd
 
-void IN_Activate (qboolean active);
+void IN_Activate (bool active);

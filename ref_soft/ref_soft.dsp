@@ -95,7 +95,7 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;hpj;bat;for;f90"
 # Begin Source File
 
-SOURCE=..\qcommon\q_shared2.c
+SOURCE=..\qcommon\q_shared2.cpp
 DEP_CPP_Q_SHA=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -116,7 +116,7 @@ DEP_CPP_Q_SHA=\
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_aclip.c
+SOURCE=.\r_aclip.cpp
 DEP_CPP_R_ACL=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -171,7 +171,7 @@ InputName=r_aclipa
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_alias.c
+SOURCE=.\r_alias.cpp
 DEP_CPP_R_ALI=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -195,7 +195,7 @@ DEP_CPP_R_ALI=\
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_bsp.c
+SOURCE=.\r_bsp.cpp
 DEP_CPP_R_BSP=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -218,7 +218,7 @@ DEP_CPP_R_BSP=\
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_draw.c
+SOURCE=.\r_draw.cpp
 DEP_CPP_R_DRA=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -305,7 +305,7 @@ InputName=r_drawa
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_edge.c
+SOURCE=.\r_edge.cpp
 DEP_CPP_R_EDG=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -360,7 +360,7 @@ InputName=r_edgea
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_image.c
+SOURCE=.\r_image.cpp
 DEP_CPP_R_IMA=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -383,7 +383,7 @@ DEP_CPP_R_IMA=\
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_light.c
+SOURCE=.\r_light.cpp
 DEP_CPP_R_LIG=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -406,7 +406,7 @@ DEP_CPP_R_LIG=\
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_main.c
+SOURCE=.\r_main.cpp
 DEP_CPP_R_MAI=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -429,7 +429,7 @@ DEP_CPP_R_MAI=\
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_misc.c
+SOURCE=.\r_misc.cpp
 DEP_CPP_R_MIS=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -452,7 +452,7 @@ DEP_CPP_R_MIS=\
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_model.c
+SOURCE=.\r_model.cpp
 DEP_CPP_R_MOD=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -475,7 +475,7 @@ DEP_CPP_R_MOD=\
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_part.c
+SOURCE=.\r_part.cpp
 DEP_CPP_R_PAR=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -498,7 +498,7 @@ DEP_CPP_R_PAR=\
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_poly.c
+SOURCE=.\r_poly.cpp
 DEP_CPP_R_POL=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -553,7 +553,7 @@ InputName=r_polysa
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_polyse.c
+SOURCE=.\r_polyse.cpp
 DEP_CPP_R_POLY=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -577,7 +577,7 @@ DEP_CPP_R_POLY=\
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_rast.c
+SOURCE=.\r_rast.cpp
 DEP_CPP_R_RAS=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -600,7 +600,7 @@ DEP_CPP_R_RAS=\
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_scan.c
+SOURCE=.\r_scan.cpp
 DEP_CPP_R_SCA=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -687,7 +687,7 @@ InputName=r_spr8
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_sprite.c
+SOURCE=.\r_sprite.cpp
 DEP_CPP_R_SPR=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -710,7 +710,7 @@ DEP_CPP_R_SPR=\
 # End Source File
 # Begin Source File
 
-SOURCE=.\r_surf.c
+SOURCE=.\r_surf.cpp
 DEP_CPP_R_SUR=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -797,7 +797,7 @@ InputName=r_varsa
 # End Source File
 # Begin Source File
 
-SOURCE=..\win32\rw_ddraw.c
+SOURCE=..\win32\rw_ddraw.cpp
 DEP_CPP_RW_DD=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -822,7 +822,7 @@ DEP_CPP_RW_DD=\
 # End Source File
 # Begin Source File
 
-SOURCE=..\win32\rw_dib.c
+SOURCE=..\win32\rw_dib.cpp
 DEP_CPP_RW_DI=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
@@ -846,7 +846,7 @@ DEP_CPP_RW_DI=\
 # End Source File
 # Begin Source File
 
-SOURCE=..\win32\rw_imp.c
+SOURCE=..\win32\rw_imp.cpp
 DEP_CPP_RW_IM=\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\

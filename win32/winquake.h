@@ -17,9 +17,9 @@ extern HWND		cl_hwnd;
 extern bool	ActiveApp, Minimized;
 
 // in_win.c
-void IN_Activate (qboolean active);
+void IN_Activate (bool active);
 void IN_MouseEvent (int mstate);
-extern qboolean in_needRestart;		//?? used from vid_dll.c::Vid_NewVindow()
+extern bool in_needRestart;		//?? used from vid_dll.c::Vid_NewVindow()
 
 
 // Remove some MS defines from <windows.h>

@@ -22,13 +22,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define QSHARED_H
 
 #ifdef _WIN32
-// unknown pragmas are SUPPOSED to be ignored, but....
-#pragma warning(disable : 4244)     // MIPS
-#pragma warning(disable : 4136)     // X86
-#pragma warning(disable : 4051)     // ALPHA
-
-#pragma warning(disable : 4018)     // signed/unsigned mismatch
-#pragma warning(disable : 4305)		// truncation from const double to float
+//  disable some compiler warnings
+#pragma warning(disable : 4018)			// signed/unsigned mismatch
+#pragma warning(disable : 4291)			// no matched operator delete found
+#pragma warning(disable : 4275)			// non dll-interface class used as base for dll-interface class
+#pragma warning(disable : 4244)			// conversion from 'int'/'double' to 'float'
+#pragma warning(disable : 4305)			// truncation from 'const double' to 'const float'
 
 #define DLL_EXPORT	__declspec(dllexport)
 
@@ -82,11 +81,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define ARRAY_COUNT(array)	(sizeof(array)/sizeof(array[0]))
 
 typedef unsigned char		byte;
-//typedef enum {false, true}	qboolean;
-enum {false, true};
-typedef unsigned int		qboolean;
-typedef unsigned char		bool;			// C++ equalent
-
 
 #ifndef NULL
 #define NULL ((void *)0)
@@ -296,7 +290,7 @@ void _VectorCopy (vec3_t in, vec3_t out);
 
 void ClearBounds (vec3_t mins, vec3_t maxs);
 void AddPointToBounds (const vec3_t v, vec3_t mins, vec3_t maxs);
-qboolean VectorCompare (const vec3_t v1, const vec3_t v2);
+bool VectorCompare (const vec3_t v1, const vec3_t v2);
 float VectorLength (const vec3_t v);
 float VectorDistance (const vec3_t vec1, const vec3_t vec2);
 void AnglesToAxis (const vec3_t angles, vec3_t axis[3]);
@@ -330,7 +324,7 @@ void COM_FileBase (char *in, char *out);
 void COM_FilePath (char *in, char *out);
 void COM_DefaultExtension (char *path, char *extension);
 
-char *COM_ParseExt (char **data_p, qboolean allowLineBreaks);
+char *COM_ParseExt (char **data_p, bool allowLineBreaks);
 //char *COM_Parse (char **data_p);
 #define COM_Parse(p)	COM_ParseExt(p,true)
 const char *COM_QuoteString (const char *str, bool alwaysQuote);
@@ -341,7 +335,7 @@ void SkipRestOfLine (char **data);
 // format arguments with fmt and put result to dest with a maximum size of size; return strlen(dest)
 int Com_sprintf (char *dest, int size, const char *fmt, ...);
 
-void Com_PageInMemory (byte *buffer, int size);
+void Com_PageInMemory (void *buffer, int size);
 
 //=============================================
 
@@ -394,7 +388,7 @@ char	*va(char *format, ...);
 char *Info_ValueForKey (char *s, char *key);
 void Info_RemoveKey (char *s, char *key);
 void Info_SetValueForKey (char *s, char *key, char *value);
-qboolean Info_Validate (char *s);
+bool Info_Validate (char *s);
 
 
 /*
@@ -433,7 +427,8 @@ typedef struct cvar_s
 	char	*string;
 	char	*latched_string;		// for CVAR_LATCH vars
 	int		flags;
-	qboolean modified;				// set each time the cvar is changed
+	bool	modified;				// set each time the cvar is changed; originally - qboolean
+	byte	pad[3];					// qboolean pad (4 bytes)
 	float	value;					// atof(string)
 	struct cvar_s *next;
 	// added since 4.00
@@ -583,8 +578,10 @@ typedef struct mapsurface_s
 // a trace is returned when a box is swept through the world
 typedef struct
 {
-	qboolean	allsolid;		// if true, plane is not valid
-	qboolean	startsolid;		// if true, the initial point was in a solid area
+	bool		allsolid;		// if true, plane is not valid
+	byte		pad1[3];		// qboolean pad
+	bool		startsolid;		// if true, the initial point was in a solid area
+	byte		pad2[3];		// qboolean pad
 	float		fraction;		// time completed, 1.0 = didn't hit anything
 	vec3_t		endpos;			// final position
 	cplane_t	plane;			// surface normal at impact
@@ -660,20 +657,21 @@ typedef struct
 typedef struct
 {
 	// state (in / out)
-	pmove_state_t	s;
+	pmove_state_t s;
 
 	// command (in)
-	usercmd_t		cmd;
-	qboolean		snapinitial;	// if s has been changed outside pmove
+	usercmd_t	cmd;
+	bool		snapinitial;	// if s has been changed outside pmove
+	byte		pad[3];			// qboolean pad
 
 	// results (out)
 	int			numtouch;
 	struct edict_s	*touchents[MAXTOUCH];
 
-	vec3_t		viewangles;			// clamped
+	vec3_t		viewangles;		// clamped
 	float		viewheight;
 
-	vec3_t		mins, maxs;			// bounding box size
+	vec3_t		mins, maxs;		// bounding box size
 
 	struct edict_s	*groundentity;
 	int			watertype;
@@ -913,7 +911,7 @@ enum {
 
 // ROGUE
 
-extern	vec3_t monster_flash_offset [];
+extern "C" vec3_t monster_flash_offset [];
 
 
 // temp entity events

@@ -25,6 +25,10 @@ NULL=
 NULL=nul
 !ENDIF 
 
+CPP=cl.exe
+MTL=midl.exe
+RSC=rc.exe
+
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
 OUTDIR=.\release
@@ -47,6 +51,7 @@ CLEAN :
 	-@erase "$(INTDIR)\glw_imp.obj"
 	-@erase "$(INTDIR)\q_shared2.obj"
 	-@erase "$(INTDIR)\qgl_win.obj"
+	-@erase "$(INTDIR)\ref_vars.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(OUTDIR)\ref_oldgl.exp"
 	-@erase "..\release\ref_oldgl.dll"
@@ -55,42 +60,8 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-MTL=midl.exe
 MTL_PROJ=/nologo /D "NDEBUG" /mktyplib203 /win32 
-RSC=rc.exe
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\ref_gl.bsc" 
 BSC32_SBRS= \
@@ -110,7 +81,8 @@ LINK32_OBJS= \
 	"$(INTDIR)\gl_warp.obj" \
 	"$(INTDIR)\glw_imp.obj" \
 	"$(INTDIR)\q_shared2.obj" \
-	"$(INTDIR)\qgl_win.obj"
+	"$(INTDIR)\qgl_win.obj" \
+	"$(INTDIR)\ref_vars.obj"
 
 "..\release\ref_oldgl.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -155,6 +127,8 @@ CLEAN :
 	-@erase "$(INTDIR)\q_shared2.sbr"
 	-@erase "$(INTDIR)\qgl_win.obj"
 	-@erase "$(INTDIR)\qgl_win.sbr"
+	-@erase "$(INTDIR)\ref_vars.obj"
+	-@erase "$(INTDIR)\ref_vars.sbr"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\ref_gl.bsc"
@@ -169,8 +143,55 @@ CLEAN :
 "$(INTDIR)" :
     if not exist "$(INTDIR)/$(NULL)" mkdir "$(INTDIR)"
 
-CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\ref_gl.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+MTL_PROJ=/nologo /D "_DEBUG" /mktyplib203 /win32 
+BSC32=bscmake.exe
+BSC32_FLAGS=/nologo /o"$(OUTDIR)\ref_gl.bsc" 
+BSC32_SBRS= \
+	"$(INTDIR)\gl_draw.sbr" \
+	"$(INTDIR)\gl_image.sbr" \
+	"$(INTDIR)\gl_light.sbr" \
+	"$(INTDIR)\gl_mesh.sbr" \
+	"$(INTDIR)\gl_model.sbr" \
+	"$(INTDIR)\gl_rmain.sbr" \
+	"$(INTDIR)\gl_rmisc.sbr" \
+	"$(INTDIR)\gl_rsurf.sbr" \
+	"$(INTDIR)\gl_textout.sbr" \
+	"$(INTDIR)\gl_warp.sbr" \
+	"$(INTDIR)\glw_imp.sbr" \
+	"$(INTDIR)\q_shared2.sbr" \
+	"$(INTDIR)\qgl_win.sbr" \
+	"$(INTDIR)\ref_vars.sbr"
+
+"$(OUTDIR)\ref_gl.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
+    $(BSC32) @<<
+  $(BSC32_FLAGS) $(BSC32_SBRS)
+<<
+
+LINK32=link.exe
+LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winmm.lib /nologo /subsystem:windows /dll /incremental:no /pdb:"$(OUTDIR)\ref_gl.pdb" /map:"..\debug\ref_gl.map" /debug /machine:I386 /out:"$(OUTDIR)\ref_gl.dll" /implib:"$(OUTDIR)\ref_gl.lib" 
+LINK32_OBJS= \
+	"$(INTDIR)\gl_draw.obj" \
+	"$(INTDIR)\gl_image.obj" \
+	"$(INTDIR)\gl_light.obj" \
+	"$(INTDIR)\gl_mesh.obj" \
+	"$(INTDIR)\gl_model.obj" \
+	"$(INTDIR)\gl_rmain.obj" \
+	"$(INTDIR)\gl_rmisc.obj" \
+	"$(INTDIR)\gl_rsurf.obj" \
+	"$(INTDIR)\gl_textout.obj" \
+	"$(INTDIR)\gl_warp.obj" \
+	"$(INTDIR)\glw_imp.obj" \
+	"$(INTDIR)\q_shared2.obj" \
+	"$(INTDIR)\qgl_win.obj" \
+	"$(INTDIR)\ref_vars.obj"
+
+"$(OUTDIR)\ref_gl.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
+    $(LINK32) @<<
+  $(LINK32_FLAGS) $(LINK32_OBJS)
+<<
+
+!ENDIF 
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -202,55 +223,6 @@ CPP_PROJ=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /
    $(CPP_PROJ) $< 
 <<
 
-MTL=midl.exe
-MTL_PROJ=/nologo /D "_DEBUG" /mktyplib203 /win32 
-RSC=rc.exe
-BSC32=bscmake.exe
-BSC32_FLAGS=/nologo /o"$(OUTDIR)\ref_gl.bsc" 
-BSC32_SBRS= \
-	"$(INTDIR)\gl_draw.sbr" \
-	"$(INTDIR)\gl_image.sbr" \
-	"$(INTDIR)\gl_light.sbr" \
-	"$(INTDIR)\gl_mesh.sbr" \
-	"$(INTDIR)\gl_model.sbr" \
-	"$(INTDIR)\gl_rmain.sbr" \
-	"$(INTDIR)\gl_rmisc.sbr" \
-	"$(INTDIR)\gl_rsurf.sbr" \
-	"$(INTDIR)\gl_textout.sbr" \
-	"$(INTDIR)\gl_warp.sbr" \
-	"$(INTDIR)\glw_imp.sbr" \
-	"$(INTDIR)\q_shared2.sbr" \
-	"$(INTDIR)\qgl_win.sbr"
-
-"$(OUTDIR)\ref_gl.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
-    $(BSC32) @<<
-  $(BSC32_FLAGS) $(BSC32_SBRS)
-<<
-
-LINK32=link.exe
-LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winmm.lib /nologo /subsystem:windows /dll /incremental:no /pdb:"$(OUTDIR)\ref_gl.pdb" /map:"..\debug\ref_gl.map" /debug /machine:I386 /out:"$(OUTDIR)\ref_gl.dll" /implib:"$(OUTDIR)\ref_gl.lib" 
-LINK32_OBJS= \
-	"$(INTDIR)\gl_draw.obj" \
-	"$(INTDIR)\gl_image.obj" \
-	"$(INTDIR)\gl_light.obj" \
-	"$(INTDIR)\gl_mesh.obj" \
-	"$(INTDIR)\gl_model.obj" \
-	"$(INTDIR)\gl_rmain.obj" \
-	"$(INTDIR)\gl_rmisc.obj" \
-	"$(INTDIR)\gl_rsurf.obj" \
-	"$(INTDIR)\gl_textout.obj" \
-	"$(INTDIR)\gl_warp.obj" \
-	"$(INTDIR)\glw_imp.obj" \
-	"$(INTDIR)\q_shared2.obj" \
-	"$(INTDIR)\qgl_win.obj"
-
-"$(OUTDIR)\ref_gl.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
-    $(LINK32) @<<
-  $(LINK32_FLAGS) $(LINK32_OBJS)
-<<
-
-!ENDIF 
-
 
 !IF "$(NO_EXTERNAL_DEPS)" != "1"
 !IF EXISTS("ref_gl.dep")
@@ -262,7 +234,7 @@ LINK32_OBJS= \
 
 
 !IF "$(CFG)" == "ref_gl - Win32 Release" || "$(CFG)" == "ref_gl - Win32 Debug"
-SOURCE=.\gl_draw.c
+SOURCE=.\gl_draw.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -286,7 +258,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\gl_image.c
+SOURCE=.\gl_image.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -310,7 +282,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\gl_light.c
+SOURCE=.\gl_light.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -334,7 +306,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\gl_mesh.c
+SOURCE=.\gl_mesh.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -358,7 +330,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\gl_model.c
+SOURCE=.\gl_model.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -382,7 +354,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\gl_rmain.c
+SOURCE=.\gl_rmain.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -406,7 +378,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\gl_rmisc.c
+SOURCE=.\gl_rmisc.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -430,7 +402,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\gl_rsurf.c
+SOURCE=.\gl_rsurf.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -454,7 +426,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\gl_textout.c
+SOURCE=.\gl_textout.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -478,7 +450,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\gl_warp.c
+SOURCE=.\gl_warp.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -502,7 +474,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=glw_imp.c
+SOURCE=glw_imp.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -526,7 +498,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=..\qcommon\q_shared2.c
+SOURCE=..\qcommon\q_shared2.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -550,7 +522,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\qgl_win.c
+SOURCE=.\qgl_win.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -567,6 +539,30 @@ CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "NDEBUG" /D "WIN32" /D "_WINDOW
 CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\ref_gl.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\qgl_win.obj"	"$(INTDIR)\qgl_win.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ENDIF 
+
+SOURCE=..\client\ref_vars.cpp
+
+!IF  "$(CFG)" == "ref_gl - Win32 Release"
+
+CPP_SWITCHES=/nologo /G5 /MD /W3 /GX /O1 /Ob2 /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "DYNAMIC_REF" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\ref_vars.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) @<<
+  $(CPP_SWITCHES) $(SOURCE)
+<<
+
+
+!ELSEIF  "$(CFG)" == "ref_gl - Win32 Debug"
+
+CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\ref_gl.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+"$(INTDIR)\ref_vars.obj"	"$(INTDIR)\ref_vars.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
   $(CPP_SWITCHES) $(SOURCE)
 <<

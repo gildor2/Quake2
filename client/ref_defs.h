@@ -47,7 +47,6 @@
 #define FS_CopyFiles	ri._FS_CopyFiles
 #define FS_RemoveFiles	ri._FS_RemoveFiles
 #define MatchWildcard	ri._MatchWildcard
-#define MatchWildcard2	ri._MatchWildcard2
 #define Vid_GetModeInfo	ri._Vid_GetModeInfo
 #define ImageExists	ri._ImageExists
 #define LoadPCX	ri._LoadPCX
@@ -114,15 +113,14 @@ void	FS_CreatePath (char *path);
 void	FS_CopyFile (char *src, char *dst);
 void	FS_CopyFiles (char *srcMask, char *dstDir);
 void	FS_RemoveFiles (char *mask);
-bool	MatchWildcard (const char *name, const char *mask);
-bool	MatchWildcard2 (const char *name, const char *mask, qboolean ignoreCase);
-qboolean	Vid_GetModeInfo (int *width, int *height, int mode);
+bool	MatchWildcard (const char *name, const char *mask, bool ignoreCase = false);
+bool	Vid_GetModeInfo (int *width, int *height, int mode);
 int	ImageExists (char *name, int stop_mask);
 void	LoadPCX (char *name, byte **pic, byte **palette, int *width, int *height);
 void	LoadTGA (char *name, byte **pic, int *width, int *height);
 void	LoadJPG (char *name, byte **pic, int *width, int *height);
-qboolean	WriteTGA (char *name, byte *pic, int width, int height);
-qboolean	WriteJPG (char *name, byte *pic, int width, int height, qboolean highQuality);
+bool	WriteTGA (char *name, byte *pic, int width, int height);
+bool	WriteJPG (char *name, byte *pic, int width, int height, bool highQuality);
 bspfile_t*	LoadBspFile (char *filename, bool clientload, unsigned *checksum);
 void	CM_BoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask);
 void	CM_TransformedBoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles);
@@ -130,8 +128,8 @@ void	CM_TransformedBoxTrace2 (trace_t *tr, const vec3_t start, const vec3_t end,
 int	CM_BrushTrace (const vec3_t start, const vec3_t end, int *brushes, int maxBrushes);
 int	CM_RefineBrushTrace (const vec3_t start, const vec3_t end, int *brushes, int numBrushes);
 #ifdef _WIN32
-void*	Vid_CreateWindow (int width, int height, qboolean fullscreen);
-void	Vid_DestroyWindow (qboolean force);
+void*	Vid_CreateWindow (int width, int height, bool fullscreen);
+void	Vid_DestroyWindow (bool force);
 #else
 void	Vid_NewWindow (int width, int height);
 #endif

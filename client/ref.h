@@ -171,7 +171,7 @@ typedef struct
 	int		*flags;
 
 	// called when the library is loaded
-	qboolean (*Init) (void);
+	int		(*Init) (void);
 
 	// called before the library is unloaded
 	void	(*Shutdown) (void);
@@ -209,14 +209,14 @@ typedef struct
 	void	(*DrawFill2) (int x, int y, int w, int h, unsigned rgba);
 
 	// Draw images for cinematic rendering (which can have a different palette)
-	void	(*SetRawPalette) (const unsigned char *palette);	// NULL = game palette
+	void	(*SetRawPalette) (const byte *palette);	// NULL = game palette
 	void	(*DrawStretchRaw8) (int x, int y, int w, int h, int cols, int rows, byte *data);
 
 	/*---- video mode and refresh state management entry points ----*/
 	void	(*BeginFrame) (float camera_separation);
 	void	(*EndFrame) (void);
 
-	void	(*AppActivate) (qboolean activate);
+	void	(*AppActivate) (bool activate);
 
 	/*---- drawing colored text in any screen position ----*/
 	void	(*DrawTextPos) (int x, int y, char *text, unsigned rgba);
@@ -237,6 +237,15 @@ typedef struct
 
 // this is the only function actually exported at the linker level
 typedef	refExport_t	(*GetRefAPI_t) (const refImport_t *);
+
+
+/*-------------------- Common renderer cvars -----------------------------*/
+
+void InitRendererVars (void);
+
+extern	cvar_t	*vid_ref, *r_fullscreen;
+extern	cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
+extern	cvar_t	*r_fullbright, *r_lightmap;
 
 
 #endif

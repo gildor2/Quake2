@@ -118,7 +118,7 @@ typedef struct
 typedef struct
 {
 	int		numVerts;
-	vertexPoly_t verts[0];		// [numVerts]
+	vertexPoly_t verts[1];		// [numVerts]
 } surfacePoly_t;
 
 typedef struct surfaceCommon_s
@@ -264,7 +264,7 @@ typedef struct
 {
 	int		numFrames;
 	float	radius;
-	sp2Frame_t frames[0];		// [numFrames]
+	sp2Frame_t frames[1];		// [numFrames]
 } sp2Model_t;
 
 /*---------------- Models ------------------*/

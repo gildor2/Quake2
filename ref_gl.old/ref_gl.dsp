@@ -94,7 +94,7 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;hpj;bat;for;f90"
 # Begin Source File
 
-SOURCE=.\gl_draw.c
+SOURCE=.\gl_draw.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -107,7 +107,7 @@ SOURCE=.\gl_draw.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\gl_image.c
+SOURCE=.\gl_image.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -120,7 +120,7 @@ SOURCE=.\gl_image.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\gl_light.c
+SOURCE=.\gl_light.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -133,7 +133,7 @@ SOURCE=.\gl_light.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\gl_mesh.c
+SOURCE=.\gl_mesh.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -146,7 +146,7 @@ SOURCE=.\gl_mesh.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\gl_model.c
+SOURCE=.\gl_model.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -159,7 +159,7 @@ SOURCE=.\gl_model.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\gl_rmain.c
+SOURCE=.\gl_rmain.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -172,7 +172,7 @@ SOURCE=.\gl_rmain.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\gl_rmisc.c
+SOURCE=.\gl_rmisc.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -185,7 +185,7 @@ SOURCE=.\gl_rmisc.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\gl_rsurf.c
+SOURCE=.\gl_rsurf.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -198,7 +198,7 @@ SOURCE=.\gl_rsurf.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\gl_textout.c
+SOURCE=.\gl_textout.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -211,7 +211,7 @@ SOURCE=.\gl_textout.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\gl_warp.c
+SOURCE=.\gl_warp.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -224,7 +224,7 @@ SOURCE=.\gl_warp.c
 # End Source File
 # Begin Source File
 
-SOURCE=glw_imp.c
+SOURCE=glw_imp.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -237,7 +237,7 @@ SOURCE=glw_imp.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\qcommon\q_shared2.c
+SOURCE=..\qcommon\q_shared2.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -250,7 +250,20 @@ SOURCE=..\qcommon\q_shared2.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\qgl_win.c
+SOURCE=.\qgl_win.cpp
+
+!IF  "$(CFG)" == "ref_gl - Win32 Release"
+
+# ADD CPP /D "DYNAMIC_REF"
+
+!ELSEIF  "$(CFG)" == "ref_gl - Win32 Debug"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\client\ref_vars.cpp
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 

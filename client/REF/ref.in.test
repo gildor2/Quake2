@@ -4,6 +4,6 @@ void Com_DPrintf (char *fmt, ...);
 void Com_WPrintf (char *fmt, ...);
 void Com_Error (int code, char *fmt, ...);
 #ifdef _WIN32
-int CreateWindow (int w, int h, qboolean fullscreen);
+int CreateWindow (int w, int h, bool fullscreen);
 #endif
-qboolean Shutdown (void);
+bool Shutdown (void);

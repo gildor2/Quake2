@@ -175,7 +175,7 @@ typedef struct model_s
 //
 // solid volume for clipping (sent from server)
 //
-	qboolean	clipbox;
+	bool	clipbox;
 	vec3_t		clipmins, clipmaxs;
 
 //
@@ -228,7 +228,7 @@ typedef struct model_s
 
 void	Mod_Init (void);
 void	Mod_ClearAll (void);
-model_t *Mod_ForName (char *name, qboolean crash);
+model_t *Mod_ForName (char *name, bool crash);
 void	*Mod_Extradata (model_t *mod);	// handles caching
 void	Mod_TouchModel (char *name);
 

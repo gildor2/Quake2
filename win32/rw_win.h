@@ -35,17 +35,17 @@ typedef struct
 	COLORREF		oldsyscolors[20];	// original system colors
 
 	HINSTANCE		hinstDDRAW;			// library instance for DDRAW.DLL
-	LPDIRECTDRAW 	lpDirectDraw;		// pointer to DirectDraw object
+	IDirectDraw		*DirectDraw;		// pointer to DirectDraw object
 
-	LPDIRECTDRAWSURFACE lpddsFrontBuffer;	// video card display memory front buffer
-	LPDIRECTDRAWSURFACE lpddsBackBuffer;	// system memory backbuffer
-	LPDIRECTDRAWSURFACE lpddsOffScreenBuffer;	// system memory backbuffer
-	LPDIRECTDRAWPALETTE	lpddpPalette;		// DirectDraw palette
+	IDirectDrawSurface *ddsFrontBuffer;	// video card display memory front buffer
+	IDirectDrawSurface *ddsBackBuffer;	// system memory backbuffer
+	IDirectDrawSurface *ddsOffScreenBuffer;	// system memory backbuffer
+	IDirectDrawPalette *ddpPalette;		// DirectDraw palette
 
-	qboolean		palettized;			// true if desktop is paletted
-	qboolean		modex;
+	bool			palettized;			// true if desktop is paletted
+	bool			modex;
 
-	qboolean		initializing;
+	bool			initializing;
 } swwstate_t;
 
 extern swwstate_t sww_state;
@@ -53,12 +53,12 @@ extern swwstate_t sww_state;
 /*
 ** DIB code
 */
-qboolean DIB_Init( unsigned char **ppbuffer, int *ppitch );
-void     DIB_Shutdown( void );
-void     DIB_SetPalette( const unsigned char *palette );
+bool	DIB_Init( unsigned char **ppbuffer, int *ppitch );
+void    DIB_Shutdown( void );
+void    DIB_SetPalette( const unsigned char *palette );
 
-qboolean DDRAW_Init( unsigned char **ppbuffer, int *ppitch );
-void     DDRAW_Shutdown( void );
-void     DDRAW_SetPalette( const unsigned char *palette );
+bool	DDRAW_Init( unsigned char **ppbuffer, int *ppitch );
+void    DDRAW_Shutdown( void );
+void    DDRAW_SetPalette( const unsigned char *palette );
 
 #endif

@@ -71,7 +71,7 @@ typedef struct image_s
 	char    name[MAX_QPATH];        // game path, including extension
 	imagetype_t     type;
 	int             width, height;
-	qboolean        transparent;    // true if any 255 pixels in image
+	bool        transparent;    // true if any 255 pixels in image
 	int             registration_sequence;  // 0 = free
 	byte		*pixels[4];				// mip levels
 } image_t;
@@ -319,7 +319,7 @@ typedef struct
 	int		numtriangles;
 	int		drawtype;
 	int		seamfixupX16;
-	qboolean do_vis_thresh;
+	bool do_vis_thresh;
 	int		vis_thresh;
 } affinetridesc_t;
 
@@ -420,7 +420,7 @@ typedef struct surf_s
 	msurface_t *msurf;
 	entity_t *entity;
 	float	nearzi;				// nearest 1/z on surface, for mipmapping
-	qboolean insubmodel;
+	bool insubmodel;
 	float	d_ziorigin, d_zistepu, d_zistepv;
 
 	int		pad[2];				// to 64 bytes
@@ -450,7 +450,7 @@ VARS
 extern int d_spanpixcount;
 extern int r_framecount;		// sequence # of current frame since Quake started
 extern float r_aliasuvscale;	// scale-up factor for screen u and v on Alias vertices passed to driver
-extern qboolean r_dowarp;
+extern bool r_dowarp;
 
 extern affinetridesc_t r_affinetridesc;
 
@@ -481,7 +481,7 @@ extern byte			r_warpbuffer[WARP_WIDTH * WARP_HEIGHT];
 
 extern float    scale_for_mip;
 
-extern qboolean		d_roverwrapped;
+extern bool		d_roverwrapped;
 extern surfcache_t	*sc_rover;
 extern surfcache_t	*d_initial_rover;
 
@@ -570,22 +570,11 @@ extern cvar_t   *sw_stipplealpha;
 extern cvar_t   *sw_surfcacheoverride;
 extern cvar_t   *sw_waterwarp;
 
-extern cvar_t   *r_fullbright;
 extern cvar_t	*r_lefthand;
-extern cvar_t   *r_drawentities;
-extern cvar_t   *r_drawworld;
 extern cvar_t   *r_dspeeds;
 extern cvar_t   *r_lerpmodels;
 
-extern cvar_t   *r_speeds;
-
 extern float	sw_lightlevel;
-
-extern cvar_t	*r_fullscreen;
-extern cvar_t	*r_gamma;
-extern cvar_t	*r_contrast;
-extern cvar_t	*r_brightness;
-
 
 extern clipplane_t  view_clipplanes[4];
 extern int          *pfrustum_indexes[4];
@@ -622,7 +611,7 @@ void R_DrawPolyList (void);
 //
 // current entity info
 //
-extern  qboolean                insubmodel;
+extern  bool                insubmodel;
 
 void R_DrawAlphaSurfaces( void );
 
@@ -735,14 +724,14 @@ extern float	dp_time1, dp_time2, db_time1, db_time2, rw_time1, rw_time2;
 extern float	se_time1, se_time2, de_time1, de_time2, dv_time1, dv_time2;
 extern int              r_frustum_indexes[4*6];
 extern int              r_maxsurfsseen, r_maxedgesseen, r_cnumsurfs;
-extern qboolean r_surfsonstack;
+extern bool r_surfsonstack;
 
 extern	mleaf_t		*r_viewleaf;
 extern	int			r_viewcluster, r_oldviewcluster;
 
 extern int              r_clipflags;
 extern int              r_dlightframecount;
-extern qboolean r_fov_greater_than_90;
+extern bool r_fov_greater_than_90;
 
 extern  image_t         *r_notexture_mip;
 extern  model_t         *r_worldmodel;
@@ -772,8 +761,6 @@ void R_NewMap (void);
 void R_Register (void);
 void R_UnRegister (void);
 void Draw_InitLocal (void);
-qboolean R_Init (void);
-void R_Shutdown (void);
 void R_InitCaches (void);
 void D_FlushCaches (void);
 
@@ -803,7 +790,7 @@ void    Draw_GetPalette (void);
 
 void	 R_BeginFrame( float camera_separation );
 
-void	R_CinematicSetPalette( const unsigned char *palette );
+void	R_CinematicSetPalette( const byte *palette );
 
 extern unsigned d_8to24table[256]; // base
 
@@ -825,7 +812,7 @@ void R_InitSkyBox (void);
 
 typedef struct swstate_s
 {
-	qboolean fullscreen;
+	bool fullscreen;
 	int      prev_mode;				// last valid SW mode
 
 	byte		gammatable[256];
@@ -862,8 +849,8 @@ void		SWimp_EndFrame (void);
 int			SWimp_Init( void );
 void		SWimp_SetPalette( const unsigned char *palette);
 void		SWimp_Shutdown( void );
-rserr_t		SWimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen );
-void		SWimp_AppActivate( qboolean active );
+rserr_t		SWimp_SetMode( int *pwidth, int *pheight, int mode, bool fullscreen );
+void		SWimp_AppActivate( bool active );
 
 void R_DrawTexts (void);
 void DrawText_Pos (int x, int y, char *text, unsigned rgba);
@@ -871,6 +858,9 @@ void DrawText_Left (char *text, unsigned rgba);
 void DrawText_Right (char *text, unsigned rgba);
 
 //?? make common declaration
-#ifdef DYNAMIC_REF
-/*extern "C"*/ DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
+#ifdef REF_HARD_LINKED
+extern "C" refExport_t GetRefAPI (const refImport_t *);
+#else
+//?? make common declaration
+extern "C" DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
 #endif

@@ -37,7 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef struct
 {
-	qboolean valid;				// cleared if delta parsing was invalid
+	bool	valid;				// cleared if delta parsing was invalid
 	int		serverframe;
 	int		servertime;			// server time the message is valid for (in msec)
 	int		deltaframe;
@@ -63,7 +63,7 @@ typedef struct	//?? : entity_state_t
 	int		sound;
 	int		event;
 	// additional fields
-	qboolean valid;				// when "false", additional fields are not initialized
+	bool	valid;				// when "false", additional fields are not initialized
 	vec3_t	center;
 	vec3_t	axis[3];
 	vec3_t	mins, maxs;			// decoded bbox
@@ -115,9 +115,9 @@ typedef struct
 	int		timedemoStart;
 	int		timedemoLongestFrame;
 
-	qboolean refresh_prepped;	// false if on new level or new ref dll
-	qboolean sound_prepped;		// ambient sounds can start
-	qboolean force_refdef;		// vid has changed, so we can't use a paused refdef
+	bool	refresh_prepped;	// false if on new level or new ref dll
+	bool	sound_prepped;		// ambient sounds can start
+	bool	force_refdef;		// vid has changed, so we can't use a paused refdef
 
 	int		parse_entities;		// index (not anded off) into cl_parse_entities[]
 
@@ -167,13 +167,13 @@ typedef struct
 	FILE	*cinematic_file;
 	int		cinematictime;		// cls.realtime for first cinematic frame
 	int		cinematicframe;
-	char	cinematicpalette[768];
-	qboolean cinematicpalette_active;
+	byte	cinematicpalette[768];
+	bool	cinematicpalette_active;
 
 	//
 	// server state information
 	//
-	qboolean attractloop;		// running the attract loop, any key will menu
+	bool	attractloop;		// running the attract loop, any key will menu
 	int		servercount;		// server identification for prespawns
 	char	gamedir[MAX_QPATH];
 	int		playernum;
@@ -226,11 +226,11 @@ typedef struct
 {
 	connstate_t	state;
 	keydest_t	key_dest;
-	qboolean	keep_console;	// do not hide console even if menu active
+	bool		keep_console;	// do not hide console even if menu active
 
 	int			realtime;		// always increasing, no clamping, etc
 	float		frametime;		// seconds since last frame
-	qboolean	netFrameDropped;
+	bool		netFrameDropped;
 
 	/*----- screen rendering information -----*/
 	int			disable_servercount; // when we receive a frame and cl.servercount
@@ -255,12 +255,12 @@ typedef struct
 	int			downloadpercent;
 
 	// demo recording info must be here, so it isn't cleared on level change
-	qboolean	demorecording;
-	qboolean	demowaiting;	// don't record until a non-delta message is received
+	bool		demorecording;
+	bool		demowaiting;	// don't record until a non-delta message is received
 	FILE		*demofile;
 
-	qboolean	newfx;			// true when client enables new fx (and when renderer supports it)
-	qboolean	newprotocol;
+	bool		newfx;			// true when client enables new fx (and when renderer supports it)
+	bool		newprotocol;
 } client_static_t;
 
 extern client_static_t	cls;
@@ -340,7 +340,7 @@ extern	sizebuf_t	net_message;
 
 // Draw colorized strings
 void	DrawString (int x, int y, const char *s);				// draw string; used by menus/console
-qboolean CL_CheckOrDownloadFile (char *filename);
+bool	CL_CheckOrDownloadFile (char *filename);
 
 void	CL_AddNetgraph (void);
 
@@ -447,7 +447,7 @@ void CL_WidowSplash (vec3_t org);
 // ========
 
 int CL_ParseEntityBits (unsigned *bits);
-void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, int bits, qboolean baseline);
+void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, int bits, bool baseline);
 void CL_ParseFrame (void);
 
 void CL_ParseTEnt (void);
@@ -480,7 +480,7 @@ extern refExport_t re;			// interface to refresh .dll
 
 void CL_Init (void);
 
-void CL_Pause (qboolean enable);
+void CL_Pause (bool enable);
 void CL_FixUpGender(void);
 void CL_Disconnect (void);
 void CL_Disconnect_f (void);

@@ -28,7 +28,7 @@ typedef struct image_s
 	GLenum	target;						// GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE_NV
 	int		internalWidth, internalHeight;	// statistics
 	int		internalFormat;				// statistics (for imagelist)
-	int		texnum;						// gl texture binding
+	unsigned texnum;					// gl texture binding
 	int		flags;
 	byte	*pic;						// when non NULL, image was not uploaded
 	color_t	color;
@@ -63,7 +63,7 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 image_t *GL_FindImage (char *name, int flags);
 
 // video support
-void	GL_SetRawPalette (const unsigned char *palette);
+void	GL_SetRawPalette (const byte *palette);
 void	GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic);
 
 void GL_ShowImages (void);

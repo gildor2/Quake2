@@ -51,7 +51,6 @@ static refImport_t ri = {
 	FS_CopyFiles,
 	FS_RemoveFiles,
 	MatchWildcard,
-	MatchWildcard2,
 	Vid_GetModeInfo,
 	ImageExists,
 	LoadPCX,

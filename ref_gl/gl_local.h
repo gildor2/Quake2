@@ -35,16 +35,17 @@ void	QGL_InitExtensions (void);
 void	QGL_PrintExtensionsString (const char *label, const char *str);
 void	QGL_Shutdown (void);
 // logging
-void	QGL_EnableLogging (qboolean enable);
+void	QGL_EnableLogging (bool enable);
 void	QGL_LogMessage (const char *text);
 #define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
 
 
 #ifdef REF_HARD_LINKED
 #	define GetRefAPI			GL_GetRefAPI
+extern "C" refExport_t GetRefAPI (const refImport_t *);
 #else
 //?? make common declaration
-/*extern "C"*/ DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
+extern "C" DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
 #endif
 
 
@@ -72,7 +73,7 @@ typedef struct dynamicLightmap_s dynamicLightmap_t;
 
 /*------------- gl_main.c -------------------*/
 
-bool gl_renderingEnabled;
+extern bool gl_renderingEnabled;
 void GL_EnableRendering (bool enable);
 
 
@@ -156,8 +157,8 @@ void	GLimp_BeginFrame (float camera_separation);
 void	GLimp_EndFrame (void);
 int 	GLimp_Init (void);
 void	GLimp_Shutdown (void);
-int     GLimp_SetMode (int *pwidth, int *pheight, int mode, bool fullscreen);
-void	GLimp_AppActivate (qboolean active);
+rserr_t GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscreen);
+void	GLimp_AppActivate (bool active);
 
 bool	GLimp_HasGamma (void);
 void	GLimp_SetGamma (float gamma);
@@ -167,8 +168,6 @@ void	GLimp_SetGamma (float gamma);
 
 extern cvar_t	*gl_texMipBias, *gl_skinMipBias;
 extern cvar_t	*gl_texturemode;
-
-extern cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
 
 extern cvar_t	*gl_overbright;
 
@@ -193,8 +192,6 @@ extern cvar_t	*r_novis;			//?? ~gl_pvsCull ?
 extern cvar_t	*gl_frustumCull;
 extern cvar_t	*gl_oCull;
 extern cvar_t	*gl_backfaceCull;
-extern cvar_t	*r_speeds;
-extern cvar_t	*r_fullbright, *r_lightmap;
 extern cvar_t	*gl_showSky;
 extern cvar_t	*r_drawworld, *r_drawentities;
 extern cvar_t	*gl_sortAlpha;
