@@ -1,12 +1,12 @@
 #include "gl_local.h"
-#include "gl_shader.h"
+#include "gl_frontend.h"
 #include "gl_backend.h"
-#include "gl_model.h"
 #include "gl_math.h"
+#include "gl_image.h"
+#include "gl_buffers.h"
+
 
 glrefdef_t	gl_refdef;
-
-viewPortal_t	vp;
 
 drawSpeeds_t gl_speeds;
 
@@ -662,6 +662,7 @@ static void SetPerspective (void)
 
 
 // Can be called few RenderFrame() between BeginFrame() and EndFrame()
+//?? so: rename - RenderPortal ?
 static void GL_RenderFrame (refdef_t *fd)
 {
 	entity_t *ent;

@@ -107,7 +107,8 @@ BSP:
 
 *** BUGS ***
 - 3rd person view: ground3_beta3, dist=300, enter dark place (near ladder) between street lamp and garage: garage
-  door will disappear (server sends entity list depends on model origin, not vieworg)
+  door will disappear (server sends entity list depends on model origin, not vieworg) -- needs protocol extension,
+  when client sends its 3rd-person origin too, and server uses BOTH positions for PVS multicast
 - memory leak 4096 bytes (map rexro/discon/vid_res/STATS/beachassault/rexro/discon/vid_res/STATS)
 - script comments stripper: removes '//' and '/* ... */' comments from each line (should remove from script only) AND
   '/*' will work as '//' when no corresponding '*/' (for example, cmd "map /*lightmap1" will work as "map ", but when mapname
@@ -122,10 +123,6 @@ BSP:
 
 ------------- API ----------------
 
-? add Cmd_AddCommands(list,num), Cmd_RemoveCommands(list,num)
-  - Cmd_AddCommands() may be implemented WITHOUT copying name, or just with using static cmdFunc_t for list
-    (just insert into list, but add flags "do not free on remove")
-  - macro CMD_ADD_COMMANDS(var) -> Cmd_AddCommands(var,sizeof(var)/sizeof(*var)) etc.
 ? add "Cmd_AddHidden()" - for server commands (cannot be completed/listed, but accessible)
   (or just implement with Cmd_AddCommand(), but use name prefix, which will be ignored for seaching, but disables completion)
 ? Com_DWPrintf() -- same as Com_DPrintf(), but display only when "developer" != 0 (or "warnings" != 0 ??)

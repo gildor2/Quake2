@@ -632,6 +632,8 @@ void R_DrawAliasModel (entity_t *e)
 		}
 	}
 
+	VectorScale (shadelight, 2.0f, shadelight);		// src*tex*2
+
 // =================
 // PGM	ir goggles color override
 	if ( r_newrefdef.rdflags & RDF_IRGOGGLES && currententity->flags & RF_IR_VISIBLE)

@@ -1,6 +1,6 @@
 - map "resort": have too dark sun light (very dark map itself; lightmaps looks buggy)
 - map "mxcity": have "_sun_surface" (different from sky surf->value)
-- map "takoma": whole map lighted with spotlights (cone=2000, i.e. pointlight; style=32 - not cached; lightmaps saturated with blue color)
+- map "tacoma": whole map lighted with spotlights (cone=2000, i.e. pointlight; style=32 - not cached; lightmaps saturated with blue color)
 - map "uatown", "village2": lighted only with point lights; have minlight ??
 - map "washing": very dark map, most light - from sky (SURF_LIGHT)
 - map "civilwar": point lights only; most light from 1 light ("sun"), in shadows - emission from other surfaces

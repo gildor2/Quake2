@@ -234,7 +234,7 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 	lightplane = plane;
 
 	modul = gl_modulate->value;
-	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
+	if (!(GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE)))
 		modul *= 2;
 	surf = r_worldmodel->surfaces + node->firstsurface;
 	for (i=0 ; i<node->numsurfaces ; i++, surf++)
@@ -275,7 +275,7 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 
 			for (maps = 0 ; maps < MAXLIGHTMAPS && surf->styles[maps] != 255 ; maps++)
 			{
-				scale = modul * r_newrefdef.lightstyles[surf->styles[maps]].value / 128.0f;
+				scale = r_newrefdef.lightstyles[surf->styles[maps]].value / 128.0f;
 
 				pointcolor[0] += lightmap[0] * scale / 255.0f;
 				pointcolor[1] += lightmap[1] * scale / 255.0f;
@@ -342,7 +342,7 @@ void R_LightPoint (vec3_t p, vec3_t color)
 	}
 
 	modul = gl_modulate->value;
-	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
+	if (!(GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE)))
 		modul *= 2;
 	VectorScale (color, modul, color);
 }

@@ -1,5 +1,6 @@
 #include "gl_local.h"
 #include "gl_shader.h"
+#include "gl_buffers.h"
 
 
 shader_t *gl_defaultShader;
@@ -562,7 +563,7 @@ shader_t *GL_FindShader (char *name, int style)
 	if (style & SHADER_ENVMAP && !gl_reflImage)	// remove reflection if nothing to apply
 		style &= ~SHADER_ENVMAP;
 
-	if (style & SHADER_LIGHTMAP && gl_singleShader->integer)
+	if (style & SHADER_LIGHTMAP && gl_singleShader->integer && name[0] != '*')
 	{
 		style &= ~SHADER_ANIM;	// no animation in this mode
 		name = "*default";		// use this image

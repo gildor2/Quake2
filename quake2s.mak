@@ -62,6 +62,7 @@ CLEAN :
 	-@erase "$(INTDIR)\files.obj"
 	-@erase "$(INTDIR)\gl_backend.obj"
 	-@erase "$(INTDIR)\gl_buffers.obj"
+	-@erase "$(INTDIR)\gl_frontend.obj"
 	-@erase "$(INTDIR)\gl_image.obj"
 	-@erase "$(INTDIR)\gl_interface.obj"
 	-@erase "$(INTDIR)\gl_light.obj"
@@ -72,7 +73,6 @@ CLEAN :
 	-@erase "$(INTDIR)\gl_poly.obj"
 	-@erase "$(INTDIR)\gl_shader.obj"
 	-@erase "$(INTDIR)\gl_sky.obj"
-	-@erase "$(INTDIR)\gl_world.obj"
 	-@erase "$(INTDIR)\glw_imp.obj"
 	-@erase "$(INTDIR)\images.obj"
 	-@erase "$(INTDIR)\in_win.obj"
@@ -302,7 +302,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\gl_poly.obj" \
 	"$(INTDIR)\gl_shader.obj" \
 	"$(INTDIR)\gl_sky.obj" \
-	"$(INTDIR)\gl_world.obj" \
+	"$(INTDIR)\gl_frontend.obj" \
 	"$(INTDIR)\glw_imp.obj" \
 	"$(INTDIR)\qgl_win.obj" \
 	".\release\q_shwin.obj" \
@@ -463,6 +463,8 @@ CLEAN :
 	-@erase "$(INTDIR)\gl_backend.sbr"
 	-@erase "$(INTDIR)\gl_buffers.obj"
 	-@erase "$(INTDIR)\gl_buffers.sbr"
+	-@erase "$(INTDIR)\gl_frontend.obj"
+	-@erase "$(INTDIR)\gl_frontend.sbr"
 	-@erase "$(INTDIR)\gl_image.obj"
 	-@erase "$(INTDIR)\gl_image.sbr"
 	-@erase "$(INTDIR)\gl_interface.obj"
@@ -483,8 +485,6 @@ CLEAN :
 	-@erase "$(INTDIR)\gl_shader.sbr"
 	-@erase "$(INTDIR)\gl_sky.obj"
 	-@erase "$(INTDIR)\gl_sky.sbr"
-	-@erase "$(INTDIR)\gl_world.obj"
-	-@erase "$(INTDIR)\gl_world.sbr"
 	-@erase "$(INTDIR)\glw_imp.obj"
 	-@erase "$(INTDIR)\glw_imp.sbr"
 	-@erase "$(INTDIR)\images.obj"
@@ -829,7 +829,7 @@ BSC32_SBRS= \
 	"$(INTDIR)\gl_poly.sbr" \
 	"$(INTDIR)\gl_shader.sbr" \
 	"$(INTDIR)\gl_sky.sbr" \
-	"$(INTDIR)\gl_world.sbr" \
+	"$(INTDIR)\gl_frontend.sbr" \
 	"$(INTDIR)\glw_imp.sbr" \
 	"$(INTDIR)\qgl_win.sbr" \
 	"$(INTDIR)\q_shwin.sbr" \
@@ -990,7 +990,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\gl_poly.obj" \
 	"$(INTDIR)\gl_shader.obj" \
 	"$(INTDIR)\gl_sky.obj" \
-	"$(INTDIR)\gl_world.obj" \
+	"$(INTDIR)\gl_frontend.obj" \
 	"$(INTDIR)\glw_imp.obj" \
 	"$(INTDIR)\qgl_win.obj" \
 	"$(INTDIR)\q_shwin.obj" \
@@ -2046,6 +2046,24 @@ SOURCE=.\ref_gl\gl_buffers.c
 
 !ENDIF 
 
+SOURCE=.\ref_gl\gl_frontend.c
+
+!IF  "$(CFG)" == "quake2s - Win32 Release"
+
+
+"$(INTDIR)\gl_frontend.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
+
+
+"$(INTDIR)\gl_frontend.obj"	"$(INTDIR)\gl_frontend.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
 SOURCE=.\ref_gl\gl_image.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
@@ -2221,24 +2239,6 @@ SOURCE=.\ref_gl\gl_sky.c
 
 
 "$(INTDIR)\gl_sky.obj"	"$(INTDIR)\gl_sky.sbr" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ENDIF 
-
-SOURCE=.\ref_gl\gl_world.c
-
-!IF  "$(CFG)" == "quake2s - Win32 Release"
-
-
-"$(INTDIR)\gl_world.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
-
-
-"$(INTDIR)\gl_world.obj"	"$(INTDIR)\gl_world.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 

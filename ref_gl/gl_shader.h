@@ -2,7 +2,10 @@
 #define __GL_SHADER_INCLUDED__
 
 
-/*-------------- Shader parameters -------------*/
+#include "gl_image.h"
+
+
+/*---------------- Shader parameters --------------*/
 
 typedef enum
 {
@@ -264,6 +267,62 @@ typedef struct shader_s
 	int		numStages;
 	shaderStage_t *stages[1];
 } shader_t;
+
+
+/*--------------- System shaders ------------------*/
+
+extern	shader_t	*gl_defaultShader;
+extern	shader_t	*gl_identityLightShader;	// no depth test/write
+extern	shader_t	*gl_identityLightShader2;	// with depth test/write
+extern	shader_t	*gl_concharsShader;
+extern	shader_t	*gl_defaultSkyShader;
+extern	shader_t	*gl_particleShader;
+extern	shader_t	*gl_entityShader;
+extern	shader_t	*gl_flareShader;			// NULL if not found
+extern	shader_t	*gl_colorShellShader;
+extern	shader_t	*gl_railSpiralShader, *gl_railRingsShader, *gl_railBeamShader;
+extern	shader_t	*gl_skyShader;
+extern	shader_t	*gl_alphaShader1, *gl_alphaShader2;
+
+
+/*------------------- Functions -------------------*/
+
+void	GL_InitShaders (void);
+void	GL_ShutdownShaders (void);
+void	GL_ResetShaders (void);	// should be called every time before loading a new map
+
+// lightmap types (negative numbers -- no lightmap stage, >= 0 -- has lightmap stage)
+#define LIGHTMAP_NONE		(-1)
+#define LIGHTMAP_VERTEX		(-2)		// no lightmap, but use vertex lighting instead
+#define LIGHTMAP_RESERVE	(1024-1)	// lightmap will be set when valid number specified in subsequent SetShaderLightmap() call
+
+// shader styles for auto-generation (if script is not found)
+#define SHADER_SCROLL		0x0001		// SURF_FLOWING (tcMod scroll -1.4 0 ?)
+#define SHADER_TURB			0x0002		// SURF_WARP (tcMod turb ...?)
+#define SHADER_TRANS33		0x0004		// SURF_TRANS33 (alphaGen const 0.33, blend)
+#define SHADER_TRANS66		0x0008		// SURF_TRANS66 (alphaGen const 0.66, blend)
+#define SHADER_FORCEALPHA	0x0010		// for alphaGen vertex (image itself may be without alpha-channel)
+#define SHADER_ALPHA		0x0020		// use texture's alpha channel (depends on itage.alphaType: 0->none, 1->alphaTest or blend, 2->blend)
+#define SHADER_WALL			0x0040		// shader used as a wall texture (not GUI 2D image), also do mipmap
+#define SHADER_SKIN			0x0080		// shader used as skin for frame models
+#define SHADER_SKY			0x0100		// SURF_SKY (use stage iterator for sky)
+#define SHADER_ANIM			0x0200		// main stage will contain more than 1 texture (names passed as name1<0>name2<0>...nameN<0><0>)
+#define SHADER_LIGHTMAP		0x0400		// reserve lightmap stage (need GL_SetShaderLightmap() later)
+#define SHADER_TRYLIGHTMAP	0x0800		// usualy not containing lightmap, but if present - generate it
+#define SHADER_ENVMAP		0x1000		// make additional rendering pass with specular environment map
+#define SHADER_ENVMAP2		0x2000		// add diffuse environment map
+// styles (hints) valid for FindShader(), buf not stored in shader_t
+#define SHADER_ABSTRACT		0x20000000	// create shader without stages
+#define SHADER_CHECK		0x40000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error
+#define SHADER_CHECKLOADED	0x80000000	// if shader loaded, return it, else - NULL
+// mask of styles, stored to shader (exclude hints)
+#define SHADER_STYLEMASK	0x0000FFFF
+
+shader_t *GL_FindShader (char *name, int style);
+shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber);
+shader_t *GL_SetShaderLightstyles (shader_t *shader, int styles);
+shader_t *GL_GetAlphaShader (shader_t *shader);
+shader_t *GL_GetShaderByNum (int num);
 
 
 #endif

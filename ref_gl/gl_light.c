@@ -3,6 +3,26 @@
 #include "gl_math.h"
 
 
+/* NOTES:
+ *  - we have used lightstyle 0 for sun and surface light
+ *  - !! cached only style 0, in prescaled by style form; if style was changed before
+ *    requesting light from grid, we will receive OLD light value (whould scale AFTER
+ *    taking light from grid)
+ *  - ambient light not scaled !
+ *  - lightstyles used in a way, which provides double scale of computed light
+ *    (which is used for model lighting src*color, allows double lighting)
+ *  - now XXXX_SCALE==2 and lightstyle_scale==0.5
+ *  - !! but color stored in a byte form (clamped before), which restricts us in max
+ *    double-light == 255 (1.0f -- keep texture lights, no brighten texture!) even when
+ *    overbright!=0 or modulate2x available
+ *    (should store double-light * identityLight clamped by 255, and scale it after requesting
+ *    255 -> 2.0, 128 -> 1.0; if lighting cannot be performed src*light*2 -- modulate by 2 HERE;
+ *    - divide XXXX_SCALE by 2 (+ambient!) -OR- "lightStyles[i].value/255"->lightScales[i]/512
+ *      (needs ambient to be scaled by style 0!), modulate light in GL_ApplyEntitySpherelights()
+ *      by 2 when needed (add arg to function: "bool scale")
+ */
+
+
 static vec3_t entityColorAxis[6];
 // array layout: back/front/right/left/bottom/top
 
@@ -182,8 +202,9 @@ static void AddLight (vec3_t *axis, vec3_t dir, float scale, vec3_t color)
 
 
 #define LINEAR_SCALE	2.0f	// */ Cvar_VariableValue("lscale")
-#define INV_SCALE		4.0f	// */ Cvar_VariableValue("iscale")
+#define INV_SCALE		4.0f	// ??2.0f  */ Cvar_VariableValue("iscale")
 #define SURF_SCALE		2.0f	// */ Cvar_VariableValue("sscale")
+#define SUN_SCALE		2.0f
 
 
 static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *vis)
@@ -238,7 +259,7 @@ static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *v
 		DrawTextLeft ("unknown point sl.type", 1, 0, 0);
 	}
 
-	scale = scale * vp.lightStyles[sl->style].value / 255.0f;
+	scale = scale * vp.lightStyles[sl->style].value / 255.0f;		// 0--0.0, 128--1.0, 256--2.0
 //if (sl->spot) DrawTextLeft(va("  scale=%g",scale),1,1,0);
 	if (scale < 1) return;							// "scale" will convert 0..1 range to 0..255
 
@@ -315,6 +336,7 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 		intens = rl->intens / (distN * distN) * SURF_SCALE;
 	}
 
+	intens *= vp.lightStyles[0].value / 255.0f;		// surface lights have style=0
 	if (intens < 1 && !ambient) return;
 
 	w0 = pl->maxs2[0] - pl->mins2[0];
@@ -350,7 +372,7 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 		int		i;
 		vec3_t	c;
 
-		c[0] = map.sunColor[0] * map.sunAmbient[0];
+		c[0] = map.sunColor[0] * map.sunAmbient[0];		//?? * style[0]
 		c[1] = map.sunColor[1] * map.sunAmbient[1];
 		c[2] = map.sunColor[2] * map.sunAmbient[2];
 		for (i = 0; i < 6; i++)
@@ -414,7 +436,7 @@ static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 	row = i < 0 ? NULL : map.visInfo + i * map.visRowSize;
 
 	for (i = 0; i < 6; i++)
-		VectorCopy(map.ambientLight, entityColorAxis[i]);
+		VectorCopy(map.ambientLight, entityColorAxis[i]);		//?? * style[0]
 
 	if (!row && map.visInfo)
 	{
@@ -431,8 +453,11 @@ static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 
 		VectorMA (origin, -16384, map.sunVec, dst);
 		CM_BoxTrace (&tr, origin, dst, zero, zero, 0, CONTENTS_SOLID);
-		if (tr.surface->flags & SURF_SKY && !tr.startsolid)	// can be "startsolid" even if "row"!=NULL
+		if (tr.surface->flags & SURF_SKY && !tr.startsolid)		// can be "startsolid" even if "row"!=NULL
 		{
+			float	intens;
+
+			intens = map.sunLight * SUN_SCALE * vp.lightStyles[0].value / 255.0f;	// sun light have style=0
 			AddLight (axis, map.sunVec, map.sunLight, map.sunColor);
 			if (gl_lightLines->value)
 				LightLine (axis, tr.endpos, origin, map.sunColor, map.sunLight);
@@ -704,14 +729,17 @@ void GL_LightForEntity (refEntity_t *ent)
 }
 
 
-//!! rename
+//!! rename; + bool arg: "modulate by 2"
 void GL_ApplyEntitySpherelights (color_t *dst)
 {
 	int		i, j;
 	bufExtra_t *ex;
 	float	light;
 
-	light = gl_config.identityLightValue_f;
+	light = gl_config.identityLightValue_f * 2;			// *2 -- because 1 == double light (similar to lightmaps)
+	//?? modulate by identityLight before light computation (this will allow
+	//?? storage of more than 2x overbright, but it is USELESS: clamped by 255 here anyway)
+	//?? useful when hw have 2x and overbright==1 ??
 	for (i = 0, ex = gl_extra; i < gl_numExtra; i++, ex++)
 	{
 		float	*norm, *axis, val;

@@ -1,6 +1,7 @@
 #include "gl_local.h"
 #include "gl_math.h"
 
+
 /*----- Tables for fast periodic function computation -----*/
 
 float sinTable[TABLE_SIZE], squareTable[TABLE_SIZE], triangleTable[TABLE_SIZE],
@@ -79,49 +80,87 @@ void WorldToModelCoord (vec3_t world, refEntity_t *e, vec3_t local)
 }
 
 
-// 12 + 8 * 4 = 44 dots
-// mins/maxs should be center-related (symmetric ?? -- replace with maxs only?)
-qboolean GetBoxRect (refEntity_t *ent, vec3_t mins, vec3_t maxs, float mins2[2], float maxs2[2])
+// 3/12 + 4 * 3 = 15/24 dots (worldMatrix/non-worldMatrix)
+// In: ent -- axis + center, center+size2 = maxs, center-size2 = mins
+qboolean GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2], qboolean clamp)
 {
-	vec3_t	axis[3], tmp;
-	float	viewdist, x0, y0;
+	vec3_t	axis[3], tmp, v;
+	float	x0, y0, z0;
 	int		i;
 
-	// rotate screen axis
-	for (i = 0; i < 3; i++)
+	if (!ent->worldMatrix)
 	{
-		axis[i][0] = DotProduct (vp.viewaxis[i], ent->axis[0]);
-		axis[i][1] = DotProduct (vp.viewaxis[i], ent->axis[1]);
-		axis[i][2] = DotProduct (vp.viewaxis[i], ent->axis[2]);
+		// rotate screen axis
+		for (i = 0; i < 3; i++)
+		{
+			axis[i][0] = DotProduct (vp.viewaxis[i], ent->axis[0]);
+			axis[i][1] = DotProduct (vp.viewaxis[i], ent->axis[1]);
+			axis[i][2] = DotProduct (vp.viewaxis[i], ent->axis[2]);
+		}
 	}
+	else
+	{
+		VectorCopy (vp.viewaxis[0], axis[0]);
+		VectorCopy (vp.viewaxis[1], axis[1]);
+		VectorCopy (vp.viewaxis[2], axis[2]);
+	}
+
 	VectorSubtract (ent->center, vp.vieworg, tmp);
+	z0 = DotProduct (tmp, vp.viewaxis[0]);
+	if (z0 < 4) return false;
 	x0 = DotProduct (tmp, vp.viewaxis[1]);
 	y0 = DotProduct (tmp, vp.viewaxis[2]);
-	viewdist = DotProduct (tmp, vp.viewaxis[0]);
-
-	if (viewdist < 4) return false;
 
 	// ClearBounds2D(mins2, maxs2)
 	mins2[0] = mins2[1] = 999999;
 	maxs2[0] = maxs2[1] = -999999;
+
 	// enumerate all box points (can try to optimize: find contour ??)
-	for (i = 0; i < 8; i++)
+	v[2] = size2[2];									// constant for all iterations
+	for (i = 0; i < 4; i++)
 	{
-		vec3_t	v;
-		float	proj, x, y, scale;
+		float	x, y, z, scale, x1, y1;
 
-		v[0] = (i & 1) ? maxs[0] : mins[0];
-		v[1] = (i & 2) ? maxs[1] : mins[1];
-		v[2] = (i & 4) ? maxs[2] : mins[2];
+		v[0] = (i & 1) ? size2[0] : -size2[0];
+		v[1] = (i & 2) ? size2[1] : -size2[1];
 
-		proj = -DotProduct (v, axis[0]);
-		if (proj >= viewdist) return false;			// this box vertex have negative z-coord
-		VectorMA (v, -proj, axis[0], v);
-		scale = viewdist / (viewdist - proj);
-		x = (DotProduct (v, axis[1]) + x0) * scale - x0;
-		y = (DotProduct (v, axis[2]) + y0) * scale - y0;
-		EXPAND_BOUNDS(x, mins2[0], maxs2[0]);
-		EXPAND_BOUNDS(y, mins2[1], maxs2[1]);
+		z = DotProduct (v, axis[0]);
+		if ((z >= z0 || z <= -z0)) return false;			// this box vertex have negative z-coord
+		x = DotProduct (v, axis[1]);
+		y = DotProduct (v, axis[2]);
+
+		// we use orthogonal projection of symmetric box - can use half of computations
+		scale = z0 / (z0 + z);
+		x1 = (x0 + x) * scale - x0;
+		y1 = (y0 + y) * scale - y0;
+		EXPAND_BOUNDS(x1, mins2[0], maxs2[0]);
+		EXPAND_BOUNDS(y1, mins2[1], maxs2[1]);
+
+		scale = z0 / (z0 - z);
+		x1 = (x0 - x) * scale - x0;
+		y1 = (y0 - y) * scale - y0;
+		EXPAND_BOUNDS(x1, mins2[0], maxs2[0]);
+		EXPAND_BOUNDS(y1, mins2[1], maxs2[1]);
 	}
+
+	if (clamp)
+	{
+		float	f;
+
+		f = vp.t_fov_x * z0;
+		if (maxs2[0] + x0 < -f) return false;
+		if (mins2[0] + x0 > f) return false;
+		if (maxs2[0] + x0 > f) maxs2[0] = f - x0;
+		if (mins2[0] + x0 < -f) mins2[0] = -f - x0;
+		if (mins2[0] >= maxs2[0]) return false;
+
+		f = vp.t_fov_y * z0;
+		if (maxs2[1] + y0 < -f) return false;
+		if (mins2[1] + y0 > f) return false;
+		if (maxs2[1] + y0 > f) maxs2[1] = f - y0;
+		if (mins2[1] + y0 < -f) mins2[1] = -f - y0;
+		if (mins2[1] >= maxs2[1]) return false;
+	}
+
 	return true;
 }

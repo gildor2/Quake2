@@ -1,6 +1,7 @@
 #include "gl_local.h"
-#include "gl_lightmap.h"
 #include "gl_model.h"
+#include "gl_lightmap.h"
+#include "gl_image.h"
 
 
 static int lightmapsNum, currentLightmapNum;

@@ -1,9 +1,9 @@
 #include "gl_local.h"
 #include "gl_model.h"
-#include "gl_lightmap.h"
-#include "gl_shader.h"
 #include "gl_math.h"
 #include "gl_poly.h"
+#include "gl_lightmap.h"
+#include "gl_shader.h"
 
 
 #define PROFILE_LOADING

@@ -2,6 +2,9 @@
 #define __GL_MATH_INCLUDED__
 
 
+#include "gl_frontend.h"
+
+
 #define TABLE_SIZE	1024
 #define TABLE_MASK	(TABLE_SIZE-1)
 
@@ -65,7 +68,7 @@ extern float noiseTablef[];
 void GL_InitFuncTables (void);
 void ModelToWorldCoord (vec3_t localOrigin, refEntity_t *e, vec3_t center);
 void WorldToModelCoord (vec3_t world, refEntity_t *e, vec3_t local);
-qboolean GetBoxRect (refEntity_t *ent, vec3_t mins, vec3_t maxs, float mins2[2], float maxs2[2]);
+qboolean GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2], qboolean clamp);
 
 
 #endif

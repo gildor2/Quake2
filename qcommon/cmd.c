@@ -29,6 +29,7 @@ static int cmdWait;
 #define	ALIAS_LOOP_COUNT	64
 #define MACRO_LOOP_COUNT	64
 static int	aliasCount;		// for detecting runaway loops
+static cvar_t *cmd_debug;
 
 
 //=============================================================================
@@ -99,10 +100,13 @@ void Cbuf_AddText (char *text)
 		Com_Printf ("Cbuf_AddText: overflow\n");
 		return;
 	}
-	if (l > 256)
-		Com_DPrintf ("Cbuf_AddText: %d chars\n", l);
-	else
-		Com_DPrintf ("Cbuf_AddText: \"%s\"\n", text);
+	if (cmd_debug->integer & 2)
+	{
+		if (l > 256)
+			Com_DPrintf ("Cbuf_AddText: %d chars\n", l);
+		else
+			Com_DPrintf ("Cbuf_AddText: \"%s\"\n", text);
+	}
 	SZ_Write (&cmd_text, text, strlen (text));
 }
 
@@ -678,7 +682,8 @@ void Cmd_ExecuteString (char *text)
 	if (!Cmd_Argc ())
 		return;		// no tokens
 
-	Com_DPrintf ("cmd: %s\n", text);
+	if (cmd_debug->integer & 1)
+		Com_Printf ("^6cmd: %s\n", text);
 
 	// check functions
 	for (cmd = cmdFuncs; cmd; cmd = cmd->next)
@@ -763,4 +768,5 @@ void Cmd_Init (void)
 	Cmd_AddCommand ("alias", Cmd_Alias_f);
 	Cmd_AddCommand ("unalias", Cmd_Unalias_f);
 	Cmd_AddCommand ("wait", Cmd_Wait_f);
+	cmd_debug = Cvar_Get ("cmd_debug", "0", 0);
 }

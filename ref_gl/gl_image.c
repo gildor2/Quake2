@@ -11,7 +11,7 @@
 
 
 #include "gl_local.h"
-#include "gl_model.h"			// for accessing to some map info
+#include "gl_image.h"
 #include "gl_math.h"
 
 image_t	*gl_defaultImage;

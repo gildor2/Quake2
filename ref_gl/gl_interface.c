@@ -1,4 +1,6 @@
 #include "gl_local.h"
+#include "gl_image.h"
+#include "gl_frontend.h"		//?? for fog params only ?
 
 
 glconfig_t	gl_config;

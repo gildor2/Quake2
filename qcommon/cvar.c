@@ -336,6 +336,8 @@ static cvar_t *Cvar_Set2 (char *var_name, char *value, int flags, qboolean force
 
 		if (var->flags & CVAR_CHEAT && !cheats)
 		{
+			if (!strcmp (value, var->string))						// no message when not modified
+				return var;
 			if (flags & CVAR_USER_CREATED)
 				Com_WPrintf ("%s is cheat protected\n", var_name);
 			else

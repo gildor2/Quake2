@@ -1,9 +1,11 @@
 #include "gl_local.h"
-#include "gl_shader.h"
 #include "gl_backend.h"
+#include "gl_image.h"
 #include "gl_lightmap.h"
 #include "gl_sky.h"
 #include "gl_math.h"
+#include "gl_buffers.h"
+
 
 //#define SWAP_ON_BEGIN		// call GLimp_EndFrame() with SwapBuffers() on frame begin (or frame end if not defined)
 
@@ -657,12 +659,6 @@ static void PreprocessShader (shader_t *sh)
 			}
 			break;
 		case RGBGEN_LIGHTING_DIFFUSE:
-		/*	if (Cvar_VariableInt("nolight")) // DEBUG
-			{
-				st->st.rgbaConst.c[0] = st->st.rgbaConst.c[1] = st->st.rgbaConst.c[2] = gl_config.identityLightValue;
-				st->st.rgbGenType = RGBGEN_CONST;
-				break;
-			} */
 			if (!entityLightingDone)
 			{
 				if (currentEntity->flags & RF_FULLBRIGHT)
@@ -1461,7 +1457,7 @@ static void DrawBBoxes (void)
 		{
 			float	mins2[2], maxs2[2];
 
-			if (GetBoxRect (ent, ent->mins, ent->maxs, mins2, maxs2))
+			if (GetBoxRect (ent, ent->size2, mins2, maxs2, true))
 			{
 				vec3_t	h;
 				static int idx2[4] = {0, 2, 3, 1};
@@ -1481,7 +1477,10 @@ static void DrawBBoxes (void)
 
 				GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA);
 				GL_DepthRange (DEPTH_NORMAL);
-				qglColor4f (0.1, 0.1, 0.3, 0.4);
+				if (!ent->worldMatrix)
+					qglColor4f (0.1, 0.1, 0.3, 0.4);
+				else
+					qglColor4f (0.5, 0.1, 0.1, 0.4);
 				qglDrawElements (GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
 
 				qglColor3f (0.6, 0.6, 0.2);
@@ -1494,9 +1493,9 @@ static void DrawBBoxes (void)
 			float	x, y, z;
 			vec3_t	tmp;
 
-			x = (j & 1) ? ent->maxs[0] : ent->mins[0];
-			y = (j & 2) ? ent->maxs[1] : ent->mins[1];
-			z = (j & 4) ? ent->maxs[2] : ent->mins[2];
+			x = (j & 1) ? ent->size2[0] : -ent->size2[0];
+			y = (j & 2) ? ent->size2[1] : -ent->size2[1];
+			z = (j & 4) ? ent->size2[2] : -ent->size2[2];
 
 #ifdef BBOX_WORLD
 			// project point to a world coordinate system (org + x*axis[0] + y*axis[1] + z*axis[2])
@@ -2012,7 +2011,7 @@ static void TesselateStretchPic (bkDrawPic_t *p)
 
 
 // This is slightly optimized version of TesselateStretchPic() for drawing texts
-void TesselateText (bkDrawText_t *p)
+static void TesselateText (bkDrawText_t *p)
 {
 	bufVertex_t	*v;
 	bufTexCoordSrc_t *t;

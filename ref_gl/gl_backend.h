@@ -44,6 +44,15 @@ extern byte *lastBackendCommand;
 
 #define MAX_SCENE_SURFACES	(64*1024)
 
+
+/*-------------------- Functions -------------------------------*/
+
+void	GL_BackEnd (void);
+
+void	GL_InitBackend (void);
+void	GL_ShutdownBackend (void);
+
+
 /*-------- Macro for easy generating backend commands ----------*/
 
 /* should be placed in {}

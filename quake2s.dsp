@@ -405,6 +405,10 @@ SOURCE=.\ref_gl\gl_buffers.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\ref_gl\gl_frontend.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\ref_gl\gl_image.c
 # End Source File
 # Begin Source File
@@ -421,19 +425,11 @@ SOURCE=.\ref_gl\gl_lightmap.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_lightmap.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\ref_gl\gl_main.c
 # End Source File
 # Begin Source File
 
 SOURCE=.\ref_gl\gl_math.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\ref_gl\gl_math.h
 # End Source File
 # Begin Source File
 
@@ -445,23 +441,11 @@ SOURCE=.\ref_gl\gl_poly.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\ref_gl\gl_poly.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\ref_gl\gl_shader.c
 # End Source File
 # Begin Source File
 
 SOURCE=.\ref_gl\gl_sky.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\ref_gl\gl_sky.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\ref_gl\gl_world.c
 # End Source File
 # Begin Source File
 
@@ -481,7 +465,31 @@ SOURCE=.\ref_gl\gl_backend.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ref_gl\gl_buffers.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_frontend.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_image.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_interface.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_lightmap.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ref_gl\gl_local.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_math.h
 # End Source File
 # Begin Source File
 
@@ -489,7 +497,15 @@ SOURCE=.\ref_gl\gl_model.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ref_gl\gl_poly.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ref_gl\gl_shader.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ref_gl\gl_sky.h
 # End Source File
 # Begin Source File
 

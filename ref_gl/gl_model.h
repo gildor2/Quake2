@@ -4,6 +4,8 @@
 
 #define map gl_worldModel		// short alias
 
+#include "gl_frontend.h"
+
 /*--------------------- Lighting --------------------------*/
 
 typedef struct
@@ -330,6 +332,16 @@ extern bspModel_t	gl_worldModel;
 /*---------------- Functions ---------------*/
 
 node_t *GL_PointInLeaf (vec3_t p);
+
+void	GL_InitModels (void);
+void	GL_ShutdownModels (void);
+void	GL_ResetModels (void);
+
+model_t	*GL_FindModel (char *name);
+shader_t *GL_FindSkin (char *name);
+void	GL_LoadWorldMap (char *name);
+
+void	GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean vertexOnly, unsigned dlightMask);
 
 
 #endif

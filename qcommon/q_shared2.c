@@ -981,7 +981,7 @@ void AnglesToAxis (const vec3_t angles, vec3_t axis[3])
 
 	// angle vectors returns "right" instead of "y axis"
 	AngleVectors (angles, axis[0], right, axis[2]);
-	VectorSubtract (vec3_origin, right, axis[1]);
+	VectorNegate (right, axis[1]);
 }
 
 void _AxisClear (vec3_t axis[3])

@@ -463,14 +463,24 @@ static qboolean ReadEntity (char **src)
 
 //#define SHOW_WRITE
 
+// debug helper
+#define DUMP_ENTITY	\
+			{		\
+				int i;	\
+				for (i = 0; i < numEntFields; i++)	\
+					DebugPrintf("-- %s : %s\n", entity[i].name, entity[i].value);	\
+			}
+
+
 static void WriteEntity (char **dst)
 {
 	int		i;
-	qboolean found;
 #ifdef SHOW_WRITE
 	char	*txt = *dst;
 #endif
 
+/* -- disabled: will remove { "classname" "worldspawn" }  (map "campblud")
+	qboolean found;
 	// check presence of any non-removed field
 	found = false;
 	for (i = 0; i < numEntFields; i++)
@@ -479,7 +489,8 @@ static void WriteEntity (char **dst)
 			found = true;
 			break;
 		}
-	if (!found) return;
+	if (!found) { DUMP_ENTITY return; }
+*/
 
 	strcpy (*dst, "{\n"); (*dst) += 2;
 	for (i = 0; i < numEntFields; i++)
@@ -490,15 +501,6 @@ static void WriteEntity (char **dst)
 	Com_Printf ("^6%s", txt);
 #endif
 }
-
-// debug helper
-#define DUMP_ENTITY	\
-			{		\
-				int i;	\
-				for (i = 0; i < numEntFields; i++)	\
-					Com_Printf("-- %s : %s\n", entity[i].name, entity[i].value);	\
-			}
-
 
 // gets "%f %f %f" or "%f"
 static void GetVector (char *str, vec3_t vec)

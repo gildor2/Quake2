@@ -1,13 +1,15 @@
 #include "gl_local.h"
-#include "gl_model.h"
+#include "gl_frontend.h"
 #include "gl_backend.h"
-#include "gl_shader.h"
+#include "gl_buffers.h"
 #include "gl_math.h"
 
 
 static int visFrame, drawFrame;
 static int currentEntity;
 
+
+viewPortal_t vp;
 
 // entities
 refEntity_t gl_entities[MAX_GLENTITIES];
@@ -241,20 +243,22 @@ static int PointCull (vec3_t point, int frustumMask)
 }
 
 
-#define NUM_TEST_BRUSHES	32
+#define NUM_TEST_BRUSHES	2 // 32
 
-static qboolean BoxOccluded (refEntity_t *e, vec3_t mins, vec3_t maxs)
+static qboolean BoxOccluded (refEntity_t *e, vec3_t size2)
 {
 	float	mins2[2], maxs2[2];
 	vec3_t	v, left, right;
 	int		n, brushes[NUM_TEST_BRUSHES];
+//	static cvar_t *test;
 
-	if (!GetBoxRect (e, mins, maxs, mins2, maxs2)) return false;
+	if (!GetBoxRect (e, size2, mins2, maxs2, true)) return false;
 
+//	if (!test) test=Cvar_Get("test","32",0);
 	// top-left
 	VectorMA (e->center, mins2[0], vp.viewaxis[1], left);
 	VectorMA (left, mins2[1], vp.viewaxis[2], v);
-	n = CM_BrushTrace (vp.vieworg, v, brushes, NUM_TEST_BRUSHES);
+	n = CM_BrushTrace (vp.vieworg, v, brushes, NUM_TEST_BRUSHES);	// test->integer);
 	if (!n) return false;
 
 	// bottom-right (diagonal with 1st point)
@@ -272,6 +276,33 @@ static qboolean BoxOccluded (refEntity_t *e, vec3_t mins, vec3_t maxs)
 	VectorMA (right, mins2[1], vp.viewaxis[2], v);
 	n = CM_RefineBrushTrace (vp.vieworg, v, brushes, n);
 	if (!n) return false;
+
+	return true;
+}
+
+
+static qboolean WorldBoxOccluded (vec3_t mins, vec3_t maxs)
+{
+	int		i;
+	vec3_t	v;
+	int		n, brushes[NUM_TEST_BRUSHES];
+//	static cvar_t *test;
+
+//	if (!test) test=Cvar_Get("test","32",0);
+	//!! optimize: 8 -> 4 points; change trace order in a case of fast non-occluded test: up-left,down-right,others ...)
+	//!! do not try to cull weapon model (this check should be outside)
+	for (i = 0; i < 8; i++)
+	{
+		v[0] = (i & 1) ? maxs[0] : mins[0];
+		v[1] = (i & 2) ? maxs[1] : mins[1];
+		v[2] = (i & 4) ? maxs[2] : mins[2];
+
+		if (i == 0)
+			n = CM_BrushTrace (vp.vieworg, v, brushes, NUM_TEST_BRUSHES);	// test->integer);
+		else
+			n = CM_RefineBrushTrace (vp.vieworg, v, brushes, n);
+		if (!n) return false;
+	}
 
 	return true;
 }
@@ -1124,6 +1155,66 @@ static node_t *WalkBspTree (void)
 #undef CULL_NODE
 		}
 
+#if 0
+		if (gl_oCull->integer >= 2 && node->isNode)	// && sptr >= 2 && sptr <= 5)
+		{
+			static int tests;
+			static int frm;
+			qboolean occl;
+
+			/* NOTES:
+			 *   1. 1st version mostly faster (sometimes reverse !)
+			 *   2. its faster to cull every node, than cull every leaf
+			 */
+			if (gl_oCull->integer == 2)
+				occl = WorldBoxOccluded (node->mins, node->maxs);
+			else
+			{	// >= 3
+				static refEntity_t ent;		// just zeroed entity
+				vec3_t	v, h;
+
+				VectorAdd (node->mins, node->maxs, v);		//?? can pre-compute on map loading
+				VectorScale (v, 0.5f, ent.center);
+				VectorSubtract (node->maxs, ent.center, ent.size2);
+				ent.worldMatrix = true;
+				occl = BoxOccluded (&ent, ent.size2);
+				if (occl && gl_oCull->integer == 4)
+				{
+					float	mins2[2], maxs2[2];
+
+					GetBoxRect (&ent, ent.size2, mins2, maxs2, true);
+					VectorMA (ent.center, mins2[0], vp.viewaxis[1], h);
+					VectorMA (h, mins2[1], vp.viewaxis[2], v);
+#if 1
+					DrawText3D(v, "*", 0.2, 0.6, 0.1);
+					VectorMA (h, maxs2[1], vp.viewaxis[2], v);
+					DrawText3D(v, "*", 0.2, 0.6, 0.1);
+					VectorMA (ent.center, maxs2[0], vp.viewaxis[1], h);
+					VectorMA (h, mins2[1], vp.viewaxis[2], v);
+					DrawText3D(v, "*", 0.2, 0.6, 0.1);
+					VectorMA (h, maxs2[1], vp.viewaxis[2], v);
+					DrawText3D(v, "*", 0.2, 0.6, 0.1);
+#else
+					DrawText3D(v, va("(%d: %gx%gx%g)", sptr, ent.maxs[0]*2,ent.maxs[1]*2,ent.maxs[2]*2), 0.3, 0.9, 0.2);
+#endif
+				}
+			}
+			if (occl)
+			{
+				tests++;
+				POP_NODE();
+				continue;
+			}
+			// stats
+			if (frm != drawFrame)
+			{
+				DrawTextLeft (va("occl: %d", tests),1,1,1);
+				frm = drawFrame;
+				tests = 0;
+			}
+		}
+#endif
+
 		node->drawOrder = drawOrder++;
 		if (node->isNode)
 		{
@@ -1163,6 +1254,7 @@ static node_t *WalkBspTree (void)
 				continue;
 			}
 		}
+
 
 		// node is leaf
 		if (!firstLeaf)
@@ -1293,11 +1385,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 		// occlusion culling
 		if (e->model && gl_oCull->integer)
 		{
-			float	*mins, *maxs;
-
-			mins = e->mins;
-			maxs = e->maxs;
-			if (BoxOccluded (e, mins, maxs))
+			if (BoxOccluded (e, e->size2))
 			{
 				if (gl_labels->integer == 2)
 					DrawText3D (e->center, va("occluded\n%s", e->model->name), 0.1, 0.2, 0.4);
@@ -1756,8 +1844,7 @@ void GL_AddEntity (entity_t *ent)
 				im = ent->model->inlineModel;
 				VectorAdd (im->mins, im->maxs, v);
 				VectorScale (v, 0.5f, v);
-				VectorSubtract (im->mins, v, out->mins);
-				VectorSubtract (im->maxs, v, out->maxs);
+				VectorSubtract (im->maxs, v, out->size2);
 				ModelToWorldCoord (v, out, out->center);
 				out->radius = im->radius;
 			}
@@ -1793,8 +1880,7 @@ void GL_AddEntity (entity_t *ent)
 				// lerp radius
 				out->radius = (frame2->radius - frame1->radius) * out->backLerp + frame1->radius;
 				// compute mins/maxs (lerp ??)
-				VectorSubtract (frame1->mins, frame1->localOrigin, out->mins);
-				VectorSubtract (frame1->maxs, frame1->localOrigin, out->maxs);
+				VectorSubtract (frame1->maxs, frame1->localOrigin, out->size2);
 				// check for COLOR_SHELL
 				if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_HALF_DAM|RF_SHELL_DOUBLE))
 				{
@@ -1918,8 +2004,12 @@ void GL_DrawPortal (void)
 		gl_speeds.frustLeafs = 0;
 
 		// setup world entity
+		memset (&gl_entities[ENTITYNUM_WORLD], 0, sizeof(refEntity_t));
 		VectorCopy (vp.vieworg, gl_entities[ENTITYNUM_WORLD].modelvieworg);
 		gl_entities[ENTITYNUM_WORLD].worldMatrix = true;
+//		gl_entities[ENTITYNUM_WORLD].axis[0][0] = 1;
+//		gl_entities[ENTITYNUM_WORLD].axis[1][1] = 1;
+//		gl_entities[ENTITYNUM_WORLD].axis[2][2] = 1;
 
 		MarkLeaves ();
 		ClearBounds (vp.mins, vp.maxs);

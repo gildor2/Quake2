@@ -1535,8 +1535,8 @@ CVAR_END
 	Swap_Init ();
 	Cbuf_Init ();
 
-	Cmd_Init ();
 	Cvar_Init ();
+	Cmd_Init ();
 	ParseCmdline (cmdline);			// should be executed before any cvar creation
 
 	Key_Init ();
