@@ -134,7 +134,11 @@ qboolean CL_CheckOrDownloadFile (char *filename)
 	// download to a temp name, and only rename
 	// to the real name when done, so if interrupted
 	// a runt file wont be left
+#if 0
 	COM_StripExtension (cls.downloadname, cls.downloadtempname);
+#else
+	strcpy (cls.downloadtempname, name);
+#endif
 	strcat (cls.downloadtempname, ".tmp");
 
 //ZOID

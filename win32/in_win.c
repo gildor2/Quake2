@@ -266,7 +266,7 @@ static void IN_InitWin32 (void)
 
 	//?? both SetCursor() and ShowCursor() works good... try SetCursor() only...
 	SetCursor (NULL); //??
-//	while (ShowCursor (FALSE) >= 0);
+	ShowCursor (FALSE);
 }
 
 

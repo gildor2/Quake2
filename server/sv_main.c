@@ -273,9 +273,7 @@ void SVC_DirectConnect (void)
 	client_t	temp;
 	edict_t		*ent;
 	int			edictnum;
-	int			version;
-	int			qport;
-	int			challenge;
+	int			version, port, challenge;
 
 	adr = net_from;
 
@@ -289,8 +287,7 @@ void SVC_DirectConnect (void)
 		return;
 	}
 
-	qport = atoi(Cmd_Argv(2));
-
+	port = atoi(Cmd_Argv(2));
 	challenge = atoi(Cmd_Argv(3));
 
 	strncpy (userinfo, Cmd_Argv(4), sizeof(userinfo)-1);
@@ -330,37 +327,38 @@ void SVC_DirectConnect (void)
 		}
 	}
 
-	newcl = &temp;
-	memset (newcl, 0, sizeof(client_t));
+	memset (&temp, 0, sizeof(client_t));
+	newcl = NULL;
 
 	// if there is already a slot for this ip, reuse it
 	for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
 	{
-		if (cl->state == cs_free)
-			continue;
-		if (NET_CompareBaseAdr (&adr, &cl->netchan.remote_address)
-			&& ( cl->netchan.qport == qport
-			|| adr.port == cl->netchan.remote_address.port ) )
+		if (cl->state == cs_free) continue;
+
+		if (NET_CompareBaseAdr (&adr, &cl->netchan.remote_address) &&
+			(cl->netchan.qport == port || adr.port == cl->netchan.remote_address.port))
 		{
-			if (!NET_IsLocalAddress (&adr) && (svs.realtime - cl->lastconnect) < ((int)sv_reconnect_limit->value * 1000))
+			if (!NET_IsLocalAddress (&adr) && (svs.realtime - cl->lastconnect) < (sv_reconnect_limit->integer * 1000))
 			{
 				Com_DPrintf ("%s:reconnect rejected : too soon\n", NET_AdrToString (&adr));
 				return;
 			}
 			Com_Printf ("%s:reconnect\n", NET_AdrToString (&adr));
 			newcl = cl;
-			goto gotnewcl;
+			break;
 		}
 	}
 
 	// find a client slot
-	newcl = NULL;
-	for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
+	if (!newcl)
 	{
-		if (cl->state == cs_free)
+		for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
 		{
-			newcl = cl;
-			break;
+			if (cl->state == cs_free)
+			{
+				newcl = cl;
+				break;
+			}
 		}
 	}
 	if (!newcl)
@@ -370,16 +368,15 @@ void SVC_DirectConnect (void)
 		return;
 	}
 
-gotnewcl:
 	// build a new connection
 	// accept the new client
 	// this is the only place a client_t is ever initialized
-	*newcl = temp;
+	memcpy (newcl, &temp, sizeof(client_t));
 	sv_client = newcl;
 	edictnum = (newcl-svs.clients)+1;
 	ent = EDICT_NUM(edictnum);
 	newcl->edict = ent;
-	newcl->challenge = challenge; // save challenge for checksumming
+	newcl->challenge = challenge;		// save challenge for checksumming
 
 	// get the game a chance to reject this connection or modify the userinfo
 	if (!(ge->ClientConnect (ent, userinfo)))
@@ -408,7 +405,10 @@ gotnewcl:
 	else
 		Netchan_OutOfBandPrint (NS_SERVER, adr, "client_connect");
 
-	Netchan_Setup (NS_SERVER, &newcl->netchan , adr, qport);
+	Netchan_Setup (NS_SERVER, &newcl->netchan, adr, port);
+	newcl->maxPacketSize = MAX_MSGLEN_OLD;
+	if (cl->newprotocol && (adr.type == NA_IP || adr.type == NA_LOOPBACK))
+		newcl->maxPacketSize = MAX_MSGLEN;
 
 	newcl->state = cs_connected;
 

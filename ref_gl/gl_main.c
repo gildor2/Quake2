@@ -1067,6 +1067,15 @@ static shader_t *RegisterPic (char *name)
 	return FindPic (name, false);
 }
 
+static void ReloadImage (char *name)
+{
+	shader_t *sh;
+
+	sh = FindPic (name, false);
+	// NOTE: this function will not work with shaders, whose names are differs from image name
+	if (sh) GL_FindImage (sh->name, IMAGE_RELOAD);
+}
+
 
 static void SetSky (char *name, float rotate, vec3_t axis)
 {
@@ -1161,6 +1170,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.SetSky =			SetSky;
 	re.EndRegistration = EndRegistration;
 
+	re.ReloadImage =    ReloadImage;
 	re.DrawGetPicSize =	GetPicSize;
 	re.DrawPicColor =	DrawPicColor;
 	re.DrawStretchPic =	DrawStretchPic;

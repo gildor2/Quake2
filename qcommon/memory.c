@@ -153,20 +153,22 @@ typedef struct chainBlock_s
 
 static chainBlock_t *AllocChain(int size)
 {
+	int		alloc;
 	chainBlock_t *chain;
 
-	chain = malloc (size + BLOCK_ALIGN-1);
+	alloc = size + BLOCK_ALIGN - 1;
+	chain = malloc (alloc);
 	if (!chain)
 		Com_Error (ERR_FATAL, "AllocChunk: failed on allocation of %d bytes", size);
-	chain->free = size - sizeof(chainBlock_t);
+	chain->size = size;
 	chain->next = NULL;
 	chain->data = (void*) (((int) (chain + 1) + BLOCK_ALIGN-1) & ~(BLOCK_ALIGN-1));
-	chain->size = size;
+	chain->free = (byte*)chain + alloc - (byte*)chain->data;
 
-	memset (chain->data, 0, size - sizeof(chainBlock_t));
+	memset (chain->data, 0, chain->free);
 
 	// update z_stats info
-	z_bytes += size;
+	z_bytes += alloc;
 	z_count++;
 
 	return (void*) chain;

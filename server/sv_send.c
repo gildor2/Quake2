@@ -420,17 +420,12 @@ SV_SendClientDatagram
 */
 qboolean SV_SendClientDatagram (client_t *client)
 {
-	int			maxSize;
 	byte		msg_buf[MAX_MSGLEN];
 	sizebuf_t	msg;
 
 	SV_BuildClientFrame (client);
 
-	if (!client->newprotocol || client->netchan.remote_address.type != NA_IP)
-		maxSize = MAX_MSGLEN_OLD;
-	else
-		maxSize = MAX_MSGLEN;
-	SZ_Init (&msg, msg_buf, maxSize);
+	SZ_Init (&msg, msg_buf, client->maxPacketSize);
 	msg.allowoverflow = true;
 
 	// send over all the relevant entity_state_t
@@ -572,7 +567,7 @@ void SV_SendClientMessages (void)
 		else
 		{
 			// just update reliable	if needed
-			if (c->netchan.message.cursize	|| curtime - c->netchan.last_sent > 1000 )
+			if (c->netchan.message.cursize	|| curtime - c->netchan.last_sent > 1000)
 				Netchan_Transmit (&c->netchan, 0, NULL);
 		}
 	}

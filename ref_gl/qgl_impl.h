@@ -358,6 +358,12 @@ static char *EnumName (GLenum v)
 		return "FLOAT";
 	case GL_DOUBLE:
 		return "DOUBLE";
+	case GL_FRONT_AND_BACK:
+		return "FRONT_AND_BACK";
+	case GL_FILL:
+		return "FILL";
+	case GL_LINE:
+		return "LINE";
 	default:
 		return "???";
 	}
@@ -1037,7 +1043,7 @@ typedef struct {
 	char	*name;
 	char	*cvar;
 	short	first, count;
-	int		require, deprecate;
+	unsigned require, deprecate;
 } extInfo_t;
 
 static extInfo_t extInfo[NUM_EXTENSIONS] = {

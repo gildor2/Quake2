@@ -395,9 +395,9 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 		{
 		case TCMOD_SCROLL:
 			f1 = tcmod->sSpeed * ap.time;
-			f1 = f1 - (int)f1;
+			f1 = f1 - floor (f1);
 			f2 = tcmod->tSpeed * ap.time;
-			f2 = f2 - (int)f2;
+			f2 = f2 - floor (f2);
 			for (k = 0; k < gl_numVerts; k++, dst++)
 			{
 				dst->tex[0] += f1;
@@ -844,7 +844,9 @@ static void PreprocessShader (shader_t *sh)
 		}
 
 		if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4) && st[1].constRGBA && (tmuUsed == 1 || st[0].constRGBA) &&
-			(st[1].identityRGBA || (blend2 & GLSTATE_SRCMASK) == GLSTATE_SRC_ONE))	// unable to multiply 3 sources ...
+			// This extension can perform A*T1+B*T2, where A/B is 1|0|prev|tex
+			// st[1] is B*T2, if rgba is not 1, rgbGen will eat B and we will not be able to use most of blends ...
+			(st[1].identityRGBA || (blend2 & GLSTATE_SRCMASK) == GLSTATE_SRC_ONE))
 		{
 			unsigned env, env1, env2, b1, b2;
 			qboolean combine;
@@ -897,7 +899,7 @@ static void PreprocessShader (shader_t *sh)
 			}
 		}
 
-		// QGL_EXT_TEXTURE_ENV_COMBINE is unsupported here
+		// GL_EXT_TEXTURE_ENV_COMBINE is unsupported here (no INTERP in this extension)
 		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE) && blend2 == (GLSTATE_SRC_ONE|GLSTATE_DST_ONE)
 			&& passStyle & BLEND_ADDITIVE && st[0].constRGBA && st[1].constRGBA && tmuUsed == 1)
 		{
@@ -1037,8 +1039,8 @@ static void StageIterator (void)
 		if (i == numRenderPasses - 1 && !(ap.flags & RDF_NOWORLDMODEL)
 			&& currentShader->type == SHADERTYPE_NORMAL && !gl_state.is2dMode)
 			GL_EnableFog (true);
-		else if (Cvar_VariableInt("test"))//??
-			GL_EnableFog (false);
+//		else if (Cvar_VariableInt("test"))//??
+//			GL_EnableFog (false);
 
 		DrawArrays (gl_indexesArray, gl_numIndexes);
 	}
@@ -1438,7 +1440,7 @@ static void FlashColor (void)
 {
 	int		i;
 
-	i = Q_ftol(ap.time / 3 * TABLE_SIZE);
+	i = Q_ftol (ap.time / 3 * TABLE_SIZE);
 	qglColor3f (sinTable[i & TABLE_MASK] / 2 + 0.5,
 				sinTable[i + 100 & TABLE_MASK] / 2 + 0.5,
 				sinTable[600 - i & TABLE_MASK] / 2 + 0.5);
@@ -1504,14 +1506,9 @@ static void DrawBBoxes (void)
 			float	x, y, z;
 			vec3_t	tmp;
 
-			if (j & 1)	x = maxs[0];
-			else		x = mins[0];
-
-			if (j & 2)	y = maxs[1];
-			else		y = mins[1];
-
-			if (j & 4)	z = maxs[2];
-			else		z = mins[2];
+			x = (j & 1) ? maxs[0] : mins[0];
+			y = (j & 2) ? maxs[1] : mins[1];
+			z = (j & 4) ? maxs[2] : mins[2];
 
 #ifdef BBOX_WORLD
 			// project point to a world coordinate system (org + x*axis[0] + y*axis[1] + z*axis[2])
@@ -1566,7 +1563,6 @@ static void DrawTriangles (void)
 	else
 		qglColor3f (0, 0, 0);
 	qglDisableClientState (GL_COLOR_ARRAY);
-//	GL_DisableTexCoordArrays ();
 	// draw
 	DrawArrays (gl_indexesArray, gl_numIndexes);
 	// restore state
@@ -1597,7 +1593,6 @@ static void DrawNormals (void)
 	else
 		qglColor3f (0, 0, 0);
 	qglDisableClientState (GL_COLOR_ARRAY);
-//	GL_DisableTexCoordArrays ();
 	// draw
 	qglBegin (GL_LINES);
 	vec = vb->verts;
@@ -2014,7 +2009,7 @@ void TesselateText (bkDrawText_t *p)
 	xp = p->x;
 	x = p->x + p->w;
 
-	size = 1.0f / 16.0f;
+	size = 1.0f / 16;
 	for (i = p->len; i > 0 && xp < vid.width; i--)
 	{
 		chr = *s++;
@@ -2063,10 +2058,13 @@ void TesselateText (bkDrawText_t *p)
 void GL_BackEnd (void)
 {
 	int		*p;
-//	static int max = 0;
+#if 0
+	static int max = 0;
 
-//	if (backendCmdSize > max) max = backendCmdSize;
-//	Cvar_SetInteger("backend", max);
+	// measure maximal backend command buffer size
+	if (backendCmdSize > max) max = backendCmdSize;
+	Cvar_SetInteger ("backend", max);
+#endif
 	* ((int*) &backendCommands[backendCmdSize]) = BACKEND_STOP;
 	backendCmdSize = 0;
 	lastBackendCommand = NULL;

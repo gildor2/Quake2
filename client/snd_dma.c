@@ -230,7 +230,7 @@ CVAR_END
 		soundtime = 0;
 		paintedtime = 0;
 
-		Com_Printf ("sound sampling rate: %i\n", dma.speed);
+		Com_Printf ("sound sampling rate: %d\n", dma.speed);
 
 		S_StopAllSounds ();
 	}
@@ -549,13 +549,13 @@ void S_SpatializeOrigin (vec3_t origin, float master_vol, float dist_mult, int *
 	}
 
 	// add in distance effect
-	scale = (1.0 - dist) * rscale;
+	scale = (1.0f - dist) * rscale;
 	*right_vol = (int) (master_vol * scale);
 	if (*right_vol < 0)
 		*right_vol = 0;
 
-	scale = (1.0 - dist) * lscale;
-	*left_vol = (int) (master_vol * scale);
+	scale = (1.0f - dist) * lscale;
+	*left_vol = Q_ftol (master_vol * scale);
 	if (*left_vol < 0)
 		*left_vol = 0;
 }
@@ -1018,10 +1018,8 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 			{
 				dst = s_rawend&(MAX_RAW_SAMPLES-1);
 				s_rawend++;
-				s_rawsamples[dst].left =
-				    LittleShort(((short *)data)[i*2]) << 8;
-				s_rawsamples[dst].right =
-				    LittleShort(((short *)data)[i*2+1]) << 8;
+				s_rawsamples[dst].left =  LittleShort(((short *)data)[i*2]) << 8;
+				s_rawsamples[dst].right = LittleShort(((short *)data)[i*2+1]) << 8;
 			}
 		}
 		else
@@ -1033,10 +1031,8 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 					break;
 				dst = s_rawend&(MAX_RAW_SAMPLES-1);
 				s_rawend++;
-				s_rawsamples[dst].left =
-				    LittleShort(((short *)data)[src*2]) << 8;
-				s_rawsamples[dst].right =
-				    LittleShort(((short *)data)[src*2+1]) << 8;
+				s_rawsamples[dst].left =  LittleShort(((short *)data)[src*2]) << 8;
+				s_rawsamples[dst].right = LittleShort(((short *)data)[src*2+1]) << 8;
 			}
 		}
 	}
@@ -1049,10 +1045,8 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 				break;
 			dst = s_rawend&(MAX_RAW_SAMPLES-1);
 			s_rawend++;
-			s_rawsamples[dst].left =
-			    LittleShort(((short *)data)[src]) << 8;
-			s_rawsamples[dst].right =
-			    LittleShort(((short *)data)[src]) << 8;
+			s_rawsamples[dst].left =  LittleShort(((short *)data)[src]) << 8;
+			s_rawsamples[dst].right = LittleShort(((short *)data)[src]) << 8;
 		}
 	}
 	else if (channels == 2 && width == 1)
@@ -1064,10 +1058,8 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 				break;
 			dst = s_rawend&(MAX_RAW_SAMPLES-1);
 			s_rawend++;
-			s_rawsamples[dst].left =
-			    ((char *)data)[src*2] << 16;
-			s_rawsamples[dst].right =
-			    ((char *)data)[src*2+1] << 16;
+			s_rawsamples[dst].left =  ((char *)data)[src*2] << 16;
+			s_rawsamples[dst].right = ((char *)data)[src*2+1] << 16;
 		}
 	}
 	else if (channels == 1 && width == 1)
@@ -1079,8 +1071,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 				break;
 			dst = s_rawend&(MAX_RAW_SAMPLES-1);
 			s_rawend++;
-			s_rawsamples[dst].left =
-			    (((byte *)data)[src]-128) << 16;
+			s_rawsamples[dst].left =  (((byte *)data)[src]-128) << 16;
 			s_rawsamples[dst].right = (((byte *)data)[src]-128) << 16;
 		}
 	}

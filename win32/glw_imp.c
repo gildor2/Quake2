@@ -304,42 +304,22 @@ void GLimp_SetGamma (float gamma, float intens)
 
 //	DebugPrintf("set gamma %g, %g\n", gamma, intens);//!!
 
-	invGamma = 1.0 / gamma;
+	invGamma = 1.0f / gamma;
 	overbright = (float) (1 << gl_config.overbrightBits);
-	for (i = 0; i < 256*3; i++)
+	for (i = 0; i < 256; i++)
 	{
 		float	tmp;
-
-#if 1
 		float	contr, bright;
 
 		contr = r_contrast->value;
 		bright = r_brightness->value;
 		contr = bound(contr, 0.3, 1.8);
 		bright = bound(bright, 0.3, 1.8);
-		tmp = ((((i & 255) << 8) * overbright - 32768) * contr + 32768) * bright;
+		tmp = (((i << 8) * overbright - 32768) * contr + 32768) * bright;
 		if (invGamma == 1.0)
 			v = tmp;
 		else
 			v = 65535.0f * pow (tmp / 65535.5f, invGamma);
-
-#else
-
-#if 1	// overbright->pow
-		tmp = gammaRamp[i] * overbright + 128.0f;
-		if (invGamma == 1.0)
-			v = tmp;
-		else
-			v = 65535.0f * pow (tmp / 65535.5f, invGamma);
-#else	// pow->overbright (as Q3 does)
-		tmp = gammaRamp[i] * intens + 128.0f;
-		if (invGamma == 1.0)
-			v = tmp * overbright;
-		else
-			v = 65535.0f * pow (tmp / 65535.5f, invGamma) * overbright;
-#endif
-
-#endif
 
 		if (_winmajor >= 5)
 		{
@@ -348,13 +328,13 @@ void GLimp_SetGamma (float gamma, float intens)
 			// Win2K/XP performs checking of gamma ramp and may reject it (clamp with (0,MAX_GAMMA)-(255,FFFF) line)
 #define MAX_GAMMA		0x8000					// don't works with higher values
 #define GAMMA_STEP		((0x10000 - MAX_GAMMA) / 256)
-			m = (i & 255) * GAMMA_STEP + MAX_GAMMA;
+			m = i * GAMMA_STEP + MAX_GAMMA;
 			v = bound(v, 0, m);
 		}
 		else
 			v = bound(v, 0, 65535);
 
-		newGamma[i] = v;
+		newGamma[i] = newGamma[i+256] = newGamma[i+512] = v;
 	}
 
 	gammaValid = true;

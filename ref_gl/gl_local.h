@@ -78,6 +78,7 @@ typedef struct viewPortal_s viewPortal_t;
 #define IMAGE_TRUECOLOR		0x80000000	// hint for GL_CreateImage: force to upload image in 32 bit
 #define IMAGE_LIGHTMAP		0x40000000
 #define IMAGE_NOCOMPRESS	0x20000000
+#define IMAGE_RELOAD		0x10000000	// load image from disk even when it was already loaded
 // mask of flags, stored in image (exclude hints)
 #define IMAGE_FLAGMASK		0x0000FFFF
 
@@ -88,7 +89,6 @@ typedef struct image_s
 	int		alphaType;					// 0 - none, 1 - 1-bit alpha, 2 - 8-bit alpha
 	int		internalWidth, internalHeight;	// statistics
 	int		internalFormat;				// statistics (for imagelist)
-	int		registrationSequence;		// for detecting unused images
 	int		texnum;						// gl texture binding
 	int		flags;
 	color_t	color;
@@ -368,7 +368,7 @@ void	GL_ResetShaders (void);	// should be called every time before loading a new
 // lightmap types (negative numbers -- no lightmap stage, >= 0 -- has lightmap stage)
 #define LIGHTMAP_NONE		(-1)
 #define LIGHTMAP_VERTEX		(-2)		// no lightmap, but use vertex lighting instead
-#define LIGHTMAP_RESERVE	(1024-1)	// lightmap will be set when valid number specified in subsequent FindShader() call
+#define LIGHTMAP_RESERVE	(1024-1)	// lightmap will be set when valid number specified in subsequent SetShaderLightmap() call
 
 // shader styles for auto-generation (if script is not found)
 #define SHADER_SCROLL		0x0001		// SURF_FLOWING (tcMod scroll -1.4 0 ?)

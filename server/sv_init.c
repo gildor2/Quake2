@@ -175,8 +175,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	if (sv.demofile)
 		FS_FCloseFile (sv.demofile);
 
-	svs.spawncount++;		// any partially connected client will be
-							// restarted
+	svs.spawncount++;		// any partially connected client will be restarted
 	sv.state = ss_dead;
 	Com_SetServerState (sv.state);
 
@@ -378,10 +377,9 @@ another level:
 */
 void SV_Map (qboolean attractloop, char *levelstring, qboolean loadgame)
 {
-	char	level[MAX_QPATH];
-	char	*ch, *s;
+	char	level[MAX_QPATH], spawnpoint[MAX_QPATH], *ch, *s;
+	server_state_t newState;
 	int		l;
-	char	spawnpoint[MAX_QPATH];
 
 	sv.loadgame = loadgame;
 	sv.attractloop = attractloop;
@@ -419,34 +417,31 @@ void SV_Map (qboolean attractloop, char *levelstring, qboolean loadgame)
 	if (level[0] == '*')
 		strcpy (level, level+1);
 
-	l = strlen(level);
+	l = strlen (level);
 	s = level+l-4;
-	if (l > 4 && !strcmp (s, ".cin") )
+
+	newState = ss_game;
+	if (l > 4)
 	{
-		SCR_BeginLoadingPlaque ();			// for local system
-		SV_BroadcastCommand ("changing\n");
-		SV_SpawnServer (level, spawnpoint, ss_cinematic, attractloop, loadgame);
+		if (!strcmp (s, ".cin"))
+			newState = ss_cinematic;
+		else if (!strcmp (s, ".dm2"))
+			newState = ss_demo;
+		else if (!strcmp (s, ".pcx") || !strcmp (s, ".tga") || !strcmp (s, ".jpg"))
+			newState = ss_pic;
 	}
-	else if (l > 4 && !strcmp (s, ".dm2") )
+
+	SCR_BeginLoadingPlaque ();			// for local system
+	SV_BroadcastCommand ("changing\n");
+	if (newState == ss_game)
 	{
-		SCR_BeginLoadingPlaque ();			// for local system
-		SV_BroadcastCommand ("changing\n");
-		SV_SpawnServer (level, spawnpoint, ss_demo, attractloop, loadgame);
-	}
-	else if (l > 4 && (!strcmp (s, ".pcx") || !strcmp (s, ".tga") || !strcmp (s, ".jpg")))
-	{
-		SCR_BeginLoadingPlaque ();			// for local system
-		SV_BroadcastCommand ("changing\n");
-		SV_SpawnServer (level, spawnpoint, ss_pic, attractloop, loadgame);
-	}
-	else
-	{
-		SCR_BeginLoadingPlaque ();			// for local system
-		SV_BroadcastCommand ("changing\n");
 		SV_SendClientMessages ();
 		SV_SpawnServer (level, spawnpoint, ss_game, attractloop, loadgame);
 		Cbuf_CopyToDefer ();
 	}
-
+	else
+	{
+		SV_SpawnServer (level, spawnpoint, newState, attractloop, loadgame);
+	}
 	SV_BroadcastCommand ("reconnect\n");
 }

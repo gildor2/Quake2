@@ -884,14 +884,14 @@ void	SV_Frame (int msec);
 //--void LoadTGA (char *name, byte **pic, int *width, int *height);
 //--void LoadJPG (char *name, byte **pic, int *width, int *height);
 
-#define IMAGE_PCX 1
-#define IMAGE_WAL 2
-#define IMAGE_TGA 4
-#define IMAGE_JPG 8
+#define IMAGE_PCX	1
+#define IMAGE_WAL	2
+#define IMAGE_TGA	4
+#define IMAGE_JPG	8
 
-#define IMAGE_8BIT  (IMAGE_PCX|IMAGE_WAL)
-#define IMAGE_32BIT (IMAGE_TGA|IMAGE_JPG)
-#define IMAGE_ANY   (IMAGE_8BIT|IMAGE_32BIT)
+#define IMAGE_8BIT	(IMAGE_PCX|IMAGE_WAL)
+#define IMAGE_32BIT	(IMAGE_TGA|IMAGE_JPG)
+#define IMAGE_ANY	(IMAGE_8BIT|IMAGE_32BIT)
 
 //--int ImageExists (char *name, int stop_mask);
 

@@ -144,11 +144,8 @@ void SV_Configstrings_f (void)
 	start = atoi(Cmd_Argv(2));
 
 	// write a packet full of data
-	if (sv_client->newprotocol && sv_client->netchan.remote_address.type == NA_IP)
-		mid = MAX_MSGLEN / 2;
-	else
-		mid = MAX_MSGLEN_OLD / 2;
-	while ( sv_client->netchan.message.cursize < mid && start < MAX_CONFIGSTRINGS)
+	mid = sv_client->maxPacketSize / 2;
+	while (sv_client->netchan.message.cursize < mid && start < MAX_CONFIGSTRINGS)
 	{
 		if (sv.configstrings[start][0])
 		{
@@ -204,7 +201,7 @@ void SV_Baselines_f (void)
 	memset (&nullstate, 0, sizeof(nullstate));
 
 	// write a packet full of data
-	mid = sv_client->newprotocol ? MAX_MSGLEN / 2 : MAX_MSGLEN_OLD / 2;
+	mid = sv_client->maxPacketSize / 2;
 	while ( sv_client->netchan.message.cursize < mid && start < MAX_EDICTS)
 	{
 		base = &sv.baselines[start];
@@ -309,7 +306,7 @@ void SV_BeginDownload_f(void)
 	extern	int		fileFromPak; // ZOID did file come from pak?
 	int offset = 0;
 
-	name = Cmd_Argv(1);
+	name = Cmd_Argv(1);			//?? name = CopyFilename(name)
 
 	if (Cmd_Argc() > 2)
 		offset = atoi(Cmd_Argv(2)); // downloaded offset
@@ -322,13 +319,13 @@ void SV_BeginDownload_f(void)
 		// leading slash bad as well, must be in subdir
 		|| *name == '/'
 		// next up, skin check
-		|| (strncmp (name, "players/", 6) == 0 && !allow_download_players->integer)
+		|| (!strncmp (name, "players/", 6) && !allow_download_players->integer)
 		// now models
-		|| (strncmp (name, "models/", 6) == 0 && !allow_download_models->integer)
+		|| (!strncmp (name, "models/", 6) && !allow_download_models->integer)
 		// now sounds
-		|| (strncmp (name, "sound/", 6) == 0 && !allow_download_sounds->integer)
+		|| (!strncmp (name, "sound/", 6) && !allow_download_sounds->integer)
 		// now maps (note special case for maps, must not be in pak)
-		|| (strncmp (name, "maps/", 6) == 0 && !allow_download_maps->integer)
+		|| (!strncmp (name, "maps/", 6) && !allow_download_maps->integer)
 		// MUST be in a subdirectory
 		|| !strchr (name, '/'))
 	{	// don't allow anything with .. path
@@ -349,9 +346,8 @@ void SV_BeginDownload_f(void)
 		sv_client->downloadcount = sv_client->downloadsize;
 
 	if (!sv_client->download
-		// special check for maps, if it came from a pak file, don't allow
-		// download  ZOID
-		|| (strncmp(name, "maps/", 5) == 0 && fileFromPak))
+	/*	// special check for maps, if it came from a pak file, don't allow download  (ZOID) ??
+		|| (strncmp (name, "maps/", 5) == 0 && fileFromPak) */)
 	{
 		Com_DPrintf ("Couldn't download %s to %s\n", name, sv_client->name);
 		if (sv_client->download) {

@@ -1,5 +1,5 @@
-- map script: "surfparam" can use MatchWildcard() instead of strcmp() for "name" field
-  (after it will speedup)
+! check bug: dirty, map mine4, laser cannon -- when shoot rock, invisible entity painted (should not be entity at all,
+  "hall of mirrors" effect appears); check with baseq2 (sp+deathmatch); when do it 2nd time (wall respawned in DM) - all OK
 ! spec for map script
 - colorize server list (old/new-only/cheats/full) (make legend ? or make table with some attributes: server-name, map-name, players,
   cheats, protocol (old,both,new))
@@ -15,6 +15,11 @@
   ? show game time (a-la Anachronox)
   - quicksave: save to a few (4?) slots
   - sort savegames by time, ignore slots; any number of savegames (?)
+! prediction errors:
+  - zaero, plasma shield (jump + shield in down direction - movement lock when landed on shield);
+    original Q2 works incorrect too, but in a different way: can pass through shield
+  - other: find "prediction" in this document
+? make "r_consoleOnly" work without "vid_restart"
 
 ----------------------------------------
 
@@ -31,7 +36,7 @@ KINGPIN:
     - have entity "{ *3 }" ("noclass") (KP have error with it too)
   - fire/steam
 FAKK:
-  ? FS_FileInInPAK(const char *name)
+  ? FS_FileIsInPAK(const char *name)
   (not FAKK)? qcommon.h: NO_SAVEGAMES - remove save/load game code
 CAMERA:
   - interpolate camera
@@ -55,6 +60,7 @@ TRACE:
     +) add something like ent.worldMatrix in client/server prediction, call BoxTrace() instead of TransformedBoxTrace() when true;
        for alias models: make origin=0,angles=0,box=mins+origin,maxs+origin (make separate "trace" function for this (clip line
        with AABB) ?)
+  - speedup detection of "tr.fraction != 1" - stop on 1st collision
   - TransformedBoxTrace: replace (headnode,origin,angles) with entity; make HeadnodeForBox() -> tempEntity;
     cache/update ent.angles->ent.axis ! (in renderer: ClipToEntities() -- use TransformedBoxTrace; send to renderer axis, not angles
     (check how this will affects left-hand weapon model))
@@ -67,11 +73,22 @@ TRACE:
 ! reimplement Cbuf_Execute(): need comment ('//') parsing (should go to another place) (or: "exec <file>" - parse before Cbuf_Execute())
 - cvar commands: "push", "pop"; 2 variants:
   a) push <var> , pop <var>     -- each cvar have its ovn stack; "push $a;push $b;pop a;pop b" will not change vars
+     (needs "save"/"restore" names for commands ("save" is already used) ??)
   b) push <value> , pop <var>   -- global cvar stack; "push a;push b;pop a;pop b" will exchange "a" and "b" values
 
 !? improve SV_ClipMoveToEntities()/SV_PointContents() like cl_pred.c: don't need SV_AreaEdicts in this function(s) ?
 ? (when sprite-fx will be implemented) disable REF_NEWFX when necessary image files absent
 
+MODEL SYSTEM:
+- when no skin for model, use any (?) other; if no skins - use different (default) model
+- scan for models on initialization; check its gender, type (q2,hl,q3 etc.), skin list; create animation system
+- needs ability to specify model gender without "models.lst" file
+? player setup: add model type/gender filter
+? make pmove player bounds to be taken from the actual player model
+? create (compressed ?) model cache
+- ability to detect unused models/skins
+- client entity code should work with this_model_system objects, these objects should link to renderer models (move refEntity_t to
+  model system)
 
 DINPUT MOUSE BUGS/NOTES:
 - in_initmouse -- needed?
@@ -82,11 +99,11 @@ DINPUT MOUSE BUGS/NOTES:
 ! improve memory management: allocate with alignment of 16 bytes (large blocks only ? Z_AllocAligned(size, align) func ?)
 ? command for hiding files from pak: "pakhide <pakname> <filemask>" - non-reversive command, changes (be sure non-destructive
   for alpha-sort names) files info so it will not found on next requests
-- stop cin playback within a mouse click (already?) (and something another?)
 ? improve camper detection: track player position every ... 5 sec (??) for a 1+n minute period and set "camper" to true
   if current player position is near (tune this distance !) to history[now-1min .. now-2min]
 - menu option: priority (win_priorityBoost) -- for Win2K
-? savegames: add screenshot (*?), gzip file
+- savegames:
+  ? gzip file
 
 BSP:
 ? KP map scaling (auto)
@@ -105,8 +122,10 @@ BSP:
   - map "japan", lift (really, within all lifts), 3rd_person, going up with looking up -- camera drizzle (bad collision with lift entity)
 - 3rd person view: ground3_beta3, dist=300, enter dark place (near ladder) between street lamp and garage: garage
   door will disappear (server sends entity list depends on model origin, not vieworg)
-? unable (sometimes?) for client to download map from server
 - memory leak 4096 bytes (map rexro/discon/vid_res/STATS/beachassault/rexro/discon/vid_res/STATS)
+- script comments stripper: removes '//' and '/* ... */' comments from each line (should remove from script only) AND
+  '/*' will work as '//' when no corresponding '*/' (for example, cmd "map /*lightmap1" will work as "map ", but when mapname
+  is quoted - works fine)
 
 ? menu interface: appearing/disappearing fx (see itmastio etc.)
 
@@ -155,9 +174,6 @@ BSP:
   client: cl_parse.c :: CL_ParseDownload() - net_massege ;; SZ_Print(..,"nextdl")
   server: sv_user.c :: SV_NextDownload_f() - write_size=r (1024 max < MAX_MSGLEN)
 ? perform extended protocol checking by adding "[cl_]extprotocol" to userinfo
-? make pmove player bounds to be taken from the actual player model
-? improve model precaching in cl_mail.c::CL_RequestNextDownload() (find FS_LoadFile) - make it with global
-  LoadMd2() and global model list ??
 ? SV_FindIndex() -- use hash tables ?
 ? server: if game_time is comparable with ref_time, need to Sleep(game_time) every frame between game frames
 ? check sv_user.c :: SV_ExecuteUserCmd() ("false")
@@ -195,10 +211,13 @@ BSP:
 
 ? remove non-transparent water vis bugfix from oldgl
 
-- add WriteTGA compression
-- PCX: own palette for each file (??)
+- add WriteTGA compression; add support for top-to-bottom TGA loading
+- PCX: own palette for each file (but: 255 is transparent ?)
 ? h/w gamma: check for valid gamma when read
 - video config menu: make "reset to defaults" works correctly (Cvar_Reset() ??)
+- CDS:
+  - when mode cannot be changed, use current (with fullscreen available)
+  - add support for "1024x768@70"-like strings (see UT2003 for ideas)
 
 - add marks: bulletholes (?), explosion marks, blood, "cheesy shadow", water ripple
 
@@ -207,6 +226,8 @@ BSP:
 ? change "gl_console_only" and "sw_console_only" to "r_consoleOnly"
 
 - decompress visinfo for client (cmodel); share this with renderers (require to modify oldgl and soft)
+
+? support for view-dependent LightForPoint()
 
 -------------- FS ----------------
 

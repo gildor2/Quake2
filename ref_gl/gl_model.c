@@ -181,7 +181,7 @@ static void BuildSurfFlare (surfaceCommon_t *surf, color_t *color, float intens)
 	f->surf = surf;
 //	f->owner = surf->owner;				// cannot do it: models not yet loaded
 	f->leaf = NULL;
-	f->size = sqrt (intens) * 6;
+	f->size = sqrt (intens) * 3;
 	f->radius = 0;
 	f->color.rgba = color->rgba | 0xFF000000;
 	f->style = 0;
@@ -478,10 +478,8 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 		p2 = DotProduct (v->xyz, pl->axis[1]);
 		v->pos[0] = p1;
 		v->pos[1] = p2;
-		if (p1 < min1) min1 = p1;
-		if (p1 > max1) max1 = p1;
-		if (p2 < min2) min2 = p2;
-		if (p2 > max2) max2 = p2;
+		EXPAND_BOUNDS(p1, min1, max1);
+		EXPAND_BOUNDS(p2, min2, max2);
 	}
 	pl->mins2[0] = min1;
 	pl->mins2[1] = min2;
@@ -600,9 +598,10 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedge_t *edges,
 	dvertex_t *verts, texinfo_t *tex, cmodel_t *models, int numModels)
 {
-	int		i, j;
+	int		i, j, optLmTexels;
 	surfaceCommon_t *out;
 
+	optLmTexels = 0;
 	map.numFaces = numSurfaces;
 	map.faces = out = Hunk_Alloc (numSurfaces * sizeof(*out));
 	for (i = 0; i < numSurfaces; i++, surfs++, out++)
@@ -815,10 +814,8 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 				v1 = DotProduct (v->xyz, stex->vecs[0]) + stex->vecs[0][3];
 				v2 = DotProduct (v->xyz, stex->vecs[1]) + stex->vecs[1][3];
 				/*----------- Update bounds --------------*/
-				if (v1 < mins[0]) mins[0] = v1;
-				if (v2 < mins[1]) mins[1] = v2;
-				if (v1 > maxs[0]) maxs[0] = v1;
-				if (v2 > maxs[1]) maxs[1] = v2;
+				EXPAND_BOUNDS(v1, mins[0], maxs[0]);
+				EXPAND_BOUNDS(v2, mins[1], maxs[1]);
 				AddPointToBounds (v->xyz, s->mins, s->maxs);
 				/*-------- Texture coordinates -----------*/
 				if (!(sflags & SHADER_TURB)) //?? (!shader->tessSize)
@@ -877,6 +874,100 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			lm->numStyles = j;
 			lm->w = size[0];
 			lm->h = size[1];
+
+			// check for single-color lightmap block
+			if (lm->numStyles == 1)
+			{
+#define MAX_DEV		4					// maximal deviation of texture color
+				byte	*p;
+				byte	min[3], max[3];
+
+				p = lm->source[0];
+				min[0] = max[0] = *p++;
+				min[1] = max[1] = *p++;
+				min[2] = max[2] = *p++;
+				for (j = 1; j < lm->w * lm->h; j++, p += 3)
+				{
+					byte	c;
+					qboolean m;
+
+					m = false;
+#define STEP(n)	\
+					c = p[n];		\
+					if (c < min[n])	\
+					{				\
+						min[n] = c;	\
+						m = true;	\
+					}				\
+					if (c > max[n])	\
+					{				\
+						max[n] = c;	\
+						m = true;	\
+					}
+
+					STEP(0); STEP(1); STEP(2);
+#undef STEP
+					if (m && ((max[0] - min[0] > MAX_DEV) || (max[1] - min[1] > MAX_DEV) || (max[2] - min[2] > MAX_DEV)))
+					{
+						p = NULL;
+						break;
+					}
+				}
+
+				if (p)
+				{
+					p = lm->source[0];
+#if 1
+//!! if no mtex+env_add/env_combine -- use 1-pixel lm; otherwise -- vertex lm
+					if (1)
+					{
+						// replace lightmap block with a single texel
+						p[0] = (max[0] + min[0]) / 2;		// use average color
+						p[1] = (max[1] + min[1]) / 2;
+						p[2] = (max[2] + min[2]) / 2;
+						for (j = 0, v = s->verts; j < numVerts; j++, v++)
+							v->lm[0] = v->lm[1] = 0.5;		// all verts should point to a middle of lightmap texel
+						optLmTexels += lm->w * lm->h - 1;
+						lm->w = lm->h = 1;
+					}
+					else
+					{
+						// convert to a vertex lightmap
+						//!! UNFINISHED: need SPECIAL vertex lm, which will be combined with dyn. lm with ENV_ADD
+						out->shader = GL_FindShader (textures, sflags | SHADER_TRYLIGHTMAP);
+						optLmTexels += lm->w * lm->h;
+					}
+#else
+					// show optimized lightmap zones
+					p[0] = 192; p[1] = 32; p[2] = 32; //??
+#endif
+				}
+			}
+
+			//?? test
+/*			for (j = 0, v = s->verts; j < numVerts; j++, v++)
+				if (v->xyz[0] > -2155 && v->xyz[0] < -2150 &&
+					v->xyz[1] > -355 && v->xyz[1] < -350 &&
+					v->xyz[2] > 172 && v->xyz[2] < 180 && lm->numStyles == 1)
+			{
+				int		k, x;
+				byte	*p;
+
+				p = lm->source[0];
+				Com_Printf ("surf #%d : %d x %d\n", i, lm->w, lm->h);
+				for (k = 0, x = 0; k < lm->w * lm->h; k++, p += 3)
+				{
+					Com_Printf ("^2%d-%d-%d ", p[0], p[1], p[2]);
+					if (++x == lm->w)
+					{
+						Com_Printf ("\n");
+						x = 0;
+					}
+				}
+				Com_Printf ("---------\n");
+				p = lm->source[0];
+			} */
+
 		}
 		else
 			s->lightmap = NULL;
@@ -886,7 +977,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		{
 			image_t	*img;
 			float	area;
-			static color_t	defColor = {128, 96, 64, 255};// {255, 255, 255, 255};
+			static color_t	defColor = {96, 96, 96, 255};// {255, 255, 255, 255};
 
 			area = GetPolyArea (pverts, numVerts);
 			img = GL_FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP);
@@ -895,6 +986,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 				BuildSurfFlare (out, img ? &img->color : &defColor, area);
 		}
 	}
+	Com_DPrintf ("removed %d lm texels (%.3f blocks)\n", optLmTexels, (float)optLmTexels / (LIGHTMAP_SIZE * LIGHTMAP_SIZE));
 }
 
 

@@ -122,6 +122,7 @@ typedef struct client_s
 	netchan_t	netchan;
 
 	//------ extended protocol fields --------
+	int			maxPacketSize;
 	qboolean	newprotocol;			// true if client uses a new communication protocol
 	// stuff for anti-camper sounds
 	int			lastcluster;

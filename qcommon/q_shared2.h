@@ -67,6 +67,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 #define bound(a,minval,maxval)  ( ((a) > (minval)) ? ( ((a) < (maxval)) ? (a) : (maxval) ) : (minval) )
+#define EXPAND_BOUNDS(a,minval,maxval)	\
+	if (a < minval) minval = a;			\
+	if (a > maxval) maxval = a;
 
 #define VECTOR_ARGS(name)	name[0],name[1],name[2]
 
@@ -1144,8 +1147,8 @@ ROGUE - VERSIONS
 ==========================================================
 */
 
-#define	ANGLE2SHORT(x)	((int)((x)*65536/360) & 65535)
-#define	SHORT2ANGLE(x)	((x)*(360.0/65536))
+#define	ANGLE2SHORT(x)	(Q_ftol ((x)*65536.0f/360) & 65535)
+#define	SHORT2ANGLE(x)	((x)*(360.0f/65536))
 
 
 //
@@ -1260,7 +1263,7 @@ typedef struct
 	unsigned int		effects;		// PGM - we're filling it, so it needs to be unsigned
 	int		renderfx;
 	int		solid;			// for client side prediction, 8*(bits 0-4) is x/y radius
-							// 8*(bits 5-9) is z down distance, 8(bits10-15) is z up
+							// 8*(bits 5-9) is z down distance, 8*(bits10-15) is z up
 							// gi.linkentity sets this properly
 	int		sound;			// for looping sounds, to guarantee shutoff
 	int		event;			// impulse events -- muzzle flashes, footsteps, etc

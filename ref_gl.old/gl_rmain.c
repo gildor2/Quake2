@@ -1700,6 +1700,11 @@ static float GetClientLight (void)
 	return gl_lightlevel;
 }
 
+static void ReloadImage (char *name)
+{
+	// do nothing in this renderer ??
+}
+
 /*
 @@@@@@@@@@@@@@@@@@@@@
 GetRefAPI
@@ -1744,6 +1749,7 @@ refExport_t GetRefAPI (refImport_t rimp )
 	re.SetSky = R_SetSky;
 	re.EndRegistration = R_EndRegistration;
 
+	re.ReloadImage = ReloadImage;
 	re.DrawGetPicSize = Draw_GetPicSize;
 	re.DrawPicColor = Draw_PicColor;
 	re.DrawStretchPic = Draw_StretchPic;

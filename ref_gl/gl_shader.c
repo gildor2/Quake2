@@ -443,7 +443,7 @@ shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber)
 
 	if (!dest)
 	{
-		// shader not found -- duplicate source and change its lightmap
+		// shader is not found -- duplicate source and change its lightmap
 		ExtractShader (shader);
 		sh.lightmapNumber = LIGHTMAP_RESERVE;	// temporarily mark as reserved (for CreatePermanentShader())
 		dest = AddPermanentShader ();
@@ -831,10 +831,16 @@ shader_t *GL_FindShader (char *name, int style)
 				stageIdx++;
 				stage->numAnimTextures = 1;
 				shaderImages[stageIdx * MAX_STAGE_TEXTURES] = style & SHADER_ENVMAP ? gl_reflImage : gl_reflImage2;
+#if 1
 				stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONE;
 				stage->rgbGenType = RGBGEN_VERTEX;
 				stage->alphaGenType = ALPHAGEN_CONST;
 				stage->rgbaConst.c[3] = 128;
+#else
+				stage->glState = GLSTATE_SRC_SRCCOLOR|GLSTATE_DST_ONEMINUSSRCCOLOR;
+				stage->rgbGenType = RGBGEN_VERTEX;
+				stage->alphaGenType = ALPHAGEN_IDENTITY;
+#endif
 				stage->tcGenType = TCGEN_ENVIRONMENT;
 			}
 			if (style & (SHADER_ENVMAP|SHADER_ENVMAP2) && style & (SHADER_TRANS33|SHADER_TRANS66))

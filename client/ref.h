@@ -169,6 +169,7 @@ typedef struct
 	void	(*RenderFrame) (refdef_t *fd);
 	void	(*Screenshot) (int flags, char *name);
 
+	void	(*ReloadImage) (char *name);
 	void	(*DrawGetPicSize) (int *w, int *h, char *name);	// will return (0, 0) if not found
 	void	(*DrawPicColor) (int x, int y, char *pic, int color);
 	void	(*DrawStretchPic) (int x, int y, int w, int h, char *name);

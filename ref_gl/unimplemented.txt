@@ -1,7 +1,6 @@
-?! detect monotone lightmaps (filled with a single color), replace it with a vertex lighting (rgbGen const ?)
+*? detect monotone lightmaps (filled with a single color), replace it with a vertex lighting (rgbGen const ?)
   (control with gl_optimizeLightmaps ?)
 
-??? check TCGEN_LIGHTMAP == TCGEN_LIGHTMAP1
 ! image/shader manager:
   - easily can reuse DEFAULT shader (2D - 1 stage, 3D - 2 stages, no gens/mods)
 - gl: HW lighting: do not require to rotate/remap grid lights to model axis
@@ -30,6 +29,10 @@ lighting bugs:
   - R_LightPoint
   - saturate lights (when r_lightmap==3 - with "-1" ?)
     + check lighting with saturation == 0, == -1; with overbright
+  - subdivide large surface lights (trace additional points) when computing light
+  ! speedup trace: "stop-on-collide" flag (for fast detection of tr.fraction != 1)
+  !! NEW LIGHTGRID SYSTEM !!
+  ! should use lightstyle 0: mod "nightdm" uses it for creating dark maps
 
 - replace "sqrt" -> SQRTFAST
 *? app icon/button is lazy to appear on taskbar
@@ -41,10 +44,6 @@ lighting bugs:
   - document this cvars
   - move gamma computations to renderer, send computed table to SetGamma() (but with more precition ? WHO WILL COMPUTE TABLE ??)
   - update software gamma code
-
-!!! game_loading screenshots:
-  - update when written new file (force to update inside renderer after screenshot performing: find loaded images and reload, pics only)
-  - display from menu
 
 ? cmodel_t:
   - add "void *faces"   - filled/used by renderer (and clean R_LoadSubmodels)
@@ -96,7 +95,7 @@ Colors:
   - remove gl_overbrightBits
   - menu selectable
 
-PreprocessShader:
+PreprocessShader():
   - add GL_DECAL blend: src=SRC_ALPHA, dst=ONE_MINUS_SRC_ALPHA
   - add GLSTATE_MODULATE2 (to blend modes, valid only with GL_EXT_texenv_combine or GL_NV_blend_square (only for 1st tmu ??))
   - can combine (src_a, 1-src_a)+(1,1)
@@ -108,6 +107,9 @@ PreprocessShader:
     type of data in buffer" and use it later (example: 1st pass - rgbGen_vertex, 2nd -
     same -- do not update)
 
+Images/textures
+- dither 32->16 bit (when r_textureBits==16); dither mipmaps
+? dither mipmaps
 
 - dynamic lightmaps:
   ? option (menu): dynamic lightmap type - uploadable/multipass/auto
@@ -162,6 +164,7 @@ HW occlusion:
   ? for details and other ideas, see GL_NV_occlusion_query spec
 
 BUGS:
+! map "ktdm1", {64,0,144} - teleporter model is too black (gives color from inside wall)
 ! map "underrain": have sky brushes (MYST) for cave lighting; when vieworg is inside such brush - only sky painted
   (oldgl: same as non-transparent water, combines 2 clusters vis)
 - Com_Error(ERR_DROP, ...) can cause "halt" renderer (will in loop display "red" message without screen update,

@@ -392,7 +392,7 @@ void M_Main_Draw (void)
 	strcat (litname, "_sel");
 	re.DrawPicColor (xoffset, ystart + m_main_cursor * 40 + 13, litname, 7);
 
-	M_DrawCursor (xoffset - 25, ystart + m_main_cursor * 40 + 11, (int)(cls.realtime / 100) % NUM_CURSOR_FRAMES);
+	M_DrawCursor (xoffset - 25, ystart + m_main_cursor * 40 + 11, (unsigned)Q_ftol (cls.realtime / 100) % NUM_CURSOR_FRAMES);
 
 	re.DrawGetPicSize (&w, &h, "m_main_plaque");
 	re.DrawPicColor (xoffset - 30 - w, ystart, "m_main_plaque", 7);
@@ -1324,7 +1324,7 @@ static void Game_MenuInit( void )
 
 static void Game_MenuDraw( void )
 {
-	M_Banner( "m_banner_game" );
+	M_Banner ("m_banner_game");
 	Menu_AdjustCursor (&s_game_menu, 1);
 	Menu_Draw (&s_game_menu);
 }
@@ -1359,28 +1359,61 @@ static menuAction_t		s_loadgame_actions[MAX_SAVEGAMES];
 
 static char		m_savestrings[MAX_SAVEGAMES][32];
 static qboolean	m_savevalid[MAX_SAVEGAMES];
+static qboolean m_shotvalid[MAX_SAVEGAMES];
 
 static void Create_Savestrings (void)
 {
 	int		i;
 	FILE	*f;
 
+	memset (m_savevalid, 0, sizeof(m_savevalid));
+	memset (m_shotvalid, 0, sizeof(m_shotvalid));
 	for (i = 0; i < MAX_SAVEGAMES; i++)
 	{
 		f = fopen (va("%s/" SAVEGAME_DIRECTORY "/save%d/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir (), i), "rb");
 		if (!f)
-		{
 			strcpy (m_savestrings[i], "<EMPTY>");
-			m_savevalid[i] = false;
-		}
 		else
 		{
+			char	*name;
+			int		width;
+
 			fread (m_savestrings[i], sizeof(m_savestrings[i]), 1, f);
 			fclose (f);
 			m_savevalid[i] = true;
+			name = va("/" SAVEGAME_DIRECTORY "/save%d/shot.pcx", i);
+			re.ReloadImage (name);		// force renderer to refresh image
+			re.DrawGetPicSize (&width, NULL, name);
+			if (width) m_shotvalid[i] = true;
 		}
 	}
 }
+
+static void DrawSavegameShot (int index, int y)
+{
+	char	*name;
+	int		x, w, h;
+
+	name = va("/" SAVEGAME_DIRECTORY "/save%d/shot.pcx", index);
+	if (viddef.width >= 320)
+	{
+		x = viddef.width / 2 + 20;
+		w = viddef.width / 4 + 20;
+		h = w * 3 / 4;
+	}
+	else
+	{
+		x = viddef.width / 10;
+		w = viddef.width * 8 / 10;
+		h = w * 3 / 4;
+		y = (viddef.height - h) / 2;
+	}
+	re.DrawFill (x - 3, y - 3, w + 6, h + 6, 0);
+
+	if (!m_shotvalid[index]) return;
+	re.DrawStretchPic (x, y, w, h, name);
+}
+
 
 static void LoadGameCallback( void *self )
 {
@@ -1391,17 +1424,17 @@ static void LoadGameCallback( void *self )
 	M_ForceMenuOff ();
 }
 
-static void LoadGame_MenuInit( void )
+static void LoadGame_MenuInit (void)
 {
 	int i;
 
-	s_loadgame_menu.x = viddef.width / 2 - 120;
+	s_loadgame_menu.x = viddef.width / 2 - 120 - (viddef.width - 320) / 6;
 	s_loadgame_menu.y = viddef.height / 2 - 58;
 	s_loadgame_menu.nitems = 0;
 
 	Create_Savestrings();
 
-	for ( i = 0; i < MAX_SAVEGAMES; i++ )
+	for (i = 0; i < MAX_SAVEGAMES; i++)
 	{
 		s_loadgame_actions[i].generic.name			= m_savestrings[i];
 		s_loadgame_actions[i].generic.flags			= QMF_LEFT_JUSTIFY;
@@ -1421,8 +1454,10 @@ static void LoadGame_MenuInit( void )
 
 static void LoadGame_MenuDraw( void )
 {
-	M_Banner( "m_banner_load_game" );
 //	Menu_AdjustCursor (&s_loadgame_menu, 1);
+
+	DrawSavegameShot (s_loadgame_menu.cursor, s_loadgame_menu.y);
+	M_Banner ("m_banner_load_game");
 	Menu_Draw (&s_loadgame_menu);
 }
 
@@ -1463,18 +1498,20 @@ static void SaveGameCallback( void *self )
 	M_ForceMenuOff ();
 }
 
-static void SaveGame_MenuDraw( void )
+static void SaveGame_MenuDraw (void)
 {
-	M_Banner( "m_banner_save_game" );
 	Menu_AdjustCursor (&s_savegame_menu, 1);
+
+	DrawSavegameShot (s_savegame_menu.cursor + 1, s_savegame_menu.y);
+	M_Banner ("m_banner_save_game");
 	Menu_Draw (&s_savegame_menu);
 }
 
-static void SaveGame_MenuInit( void )
+static void SaveGame_MenuInit (void)
 {
 	int i;
 
-	s_savegame_menu.x = viddef.width / 2 - 120;
+	s_savegame_menu.x = viddef.width / 2 - 120 - (viddef.width - 320) / 6;
 	s_savegame_menu.y = viddef.height / 2 - 58;
 	s_savegame_menu.nitems = 0;
 
@@ -2771,7 +2808,7 @@ static qboolean PlayerConfig_MenuInit (void)
 }
 
 // stand: 0-39; run: 40-45
-#define FIRST_FRAME	0
+#define FIRST_FRAME	0			//!! replace with animation_type (to work correctly with ANY model type)
 #define LAST_FRAME	39
 #define FRAME_COUNT (LAST_FRAME-FIRST_FRAME+1)
 
@@ -3005,7 +3042,7 @@ static qboolean DMBrowse_MenuInit ()
 		else
 			name++;
 		ext = strrchr (name, '.');
-		if (ext && (!strcmp (ext, ".jpg") || !strcmp (ext, ".tga")))
+		if (ext && (!strcmp (ext, ".jpg") || !strcmp (ext, ".tga") || !strcmp (ext, ".pcx")))
 		{	// screenshot found - check map presence
 			*ext = 0;	// cut extension
 			if (!FS_FileExists (va("maps/%s.bsp", name)))

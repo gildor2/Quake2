@@ -467,9 +467,9 @@ float anglemod (float a)
 	if (a >= 0)
 		a -= 360*(int)(a/360);
 	else
-		a += 360*( 1 + (int)(-a/360) );
+		a += 360*( 1 + Q_ftol (-a/360) );
 #endif
-	a = (360.0f/65536) * ((int)(a*(65536.0f/360)) & 65535);
+	a = (360.0f/65536) * (Q_ftol (a*(65536.0f/360)) & 65535);
 	return a;
 }
 
@@ -842,10 +842,7 @@ void AddPointToBounds (vec3_t v, vec3_t mins, vec3_t maxs)
 	for (i = 0; i < 3; i++)
 	{
 		val = v[i];
-		if (val < mins[i])
-			mins[i] = val;
-		if (val > maxs[i])
-			maxs[i] = val;
+		EXPAND_BOUNDS(val, mins[i], maxs[i]);
 	}
 }
 

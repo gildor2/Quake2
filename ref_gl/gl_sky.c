@@ -86,10 +86,8 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 			if (j < 0)	t = -verts[-j - 1] / dv;
 			else		t = verts[j - 1] / dv;
 
-			if (s < skyMins[0][axis]) skyMins[0][axis] = s;
-			if (s > skyMaxs[0][axis]) skyMaxs[0][axis] = s;
-			if (t < skyMins[1][axis]) skyMins[1][axis] = t;
-			if (t > skyMaxs[1][axis]) skyMaxs[1][axis] = t;
+			EXPAND_BOUNDS(s, skyMins[0][axis], skyMaxs[0][axis]);
+			EXPAND_BOUNDS(t, skyMins[1][axis], skyMaxs[1][axis]);
 		}
 		return;
 	}

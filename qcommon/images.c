@@ -140,6 +140,7 @@ typedef struct
 #endif
 
 
+//!! add top-to-bottom support
 void LoadTGA (char *name, byte **pic, int *width, int *height)
 {
 	int		columns, rows, numPixels;
@@ -237,7 +238,7 @@ void LoadTGA (char *name, byte **pic, int *width, int *height)
 					a = *buf_p++;
 					break;
 				default:
-					Com_Error (ERR_DROP, "LoadTGA: illegal pixel size %d in file %s\n", header.pixel_size, name);
+					Com_Error (ERR_DROP, "LoadTGA(%s): illegal pixel size %d\n", name, header.pixel_size);
 				}
 				*pixbuf++ = r;
 				*pixbuf++ = g;
@@ -379,7 +380,7 @@ METHODDEF(void) J_TermSource (j_decompress_ptr cinfo)
 
 METHODDEF(void) J_ErrorExit (j_common_ptr cinfo)
 {
-	Com_Error (ERR_FATAL, "JPEG error");
+	Com_Error (ERR_DROP, "JPEG error");
 }
 
 METHODDEF(void) J_EmitMessage (j_common_ptr cinfo, int msg_level)

@@ -288,10 +288,6 @@ SOURCE=.\win32\vid_dll.c
 
 SOURCE=.\win32\vid_menu.c
 # End Source File
-# Begin Source File
-
-SOURCE=.\client\x86.c
-# End Source File
 # End Group
 # Begin Group "Header Files"
 

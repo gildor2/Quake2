@@ -208,7 +208,7 @@ typedef struct shader_s
 	int		lightmapNumber;
 	union {
 		byte	lightStyles[4];	// 0 - unused; can be 1..31
-		int		lightStyles_i;	//?? is it used
+		int		lightStyles_i;
 	};
 	int		sortIndex;
 	float	sortParam;		// values from sortParam_t, but in float representation
@@ -222,6 +222,7 @@ typedef struct shader_s
 
 	gl_cullMode_t cullMode;
 
+	//!! make bitfield (bool)
 	byte	scripted;
 	byte	bad;			// errors in script or no map image found (for auto-generated shader)
 	byte	fast;			// have no deforms, tcGen/tcMod, rgb/alpha-gen (remove ??)
@@ -242,7 +243,7 @@ typedef struct shader_s
 		}; */
 		// sky params SHADERTYPE_SKY)
 		struct {
-			float	skyCloudHeight;
+//			float	skyCloudHeight;
 			image_t	*skyFarBox[6];
 //			image_t	*skyNearBox[6];
 			float	skyRotate;

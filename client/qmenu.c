@@ -514,11 +514,11 @@ void Menu_Draw (menuFramework_t *menu)
 	{
 		if (item->flags & QMF_LEFT_JUSTIFY)
 		{
-			Draw_Char (menu->x + item->x - 24 + item->cursor_offset, menu->y + item->y, 12 + ((int)(Sys_Milliseconds()/250) & 1));
+			Draw_Char (menu->x + item->x - 24 + item->cursor_offset, menu->y + item->y, 12 + (Sys_Milliseconds()/250 & 1));
 		}
 		else
 		{
-			Draw_Char (menu->x + item->cursor_offset, menu->y + item->y, 12 + ((int)(Sys_Milliseconds()/250) & 1));
+			Draw_Char (menu->x + item->cursor_offset, menu->y + item->y, 12 + (Sys_Milliseconds()/250 & 1));
 		}
 	}
 
@@ -707,7 +707,7 @@ void Slider_DoSlide (menuSlider_t *s, int dir)
 
 void Slider_Draw (menuSlider_t *s)
 {
-	int	i;
+	int		i;
 
 	DrawCaption (&s->generic);
 

@@ -1,6 +1,7 @@
-- when demo server started, other players can see it in server list (but cannot join: "Remote connect in attract loop. Ignored"
-  (should not send serverinfo)
-! sometimes key_up skipped (or key_down spontaneously pressed) (hardware bug ?)
+?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
+   but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
+! when loadgame in 320x240, in_mouse=1, begins unstoppable very fast rotation (with looking down); to stop -- set 800x600+vid_restart
+! sometimes key_up skipped (or key_down spontaneously pressed) (Win2K bug ?)
 - map "temple2", "lavatube" -- waterfall: bullet sounds (change sound for water sparks, change place for water bullet sounds
   or something another ??)
 - command line: "+set cddir <dir>" (etc.) - will display error, when var will be parsed 2nd time
@@ -10,7 +11,7 @@
 - bugs with deathmatch mode
   - map "dm_dukecity_beta":
     - disco: neon lamp text should not disappear
-  - g_misc.c::SP_light() -- disabled lights with style>=32
+  ? g_misc.c::SP_light() -- disabled lights with style>=32
 - dir "../dirty/maps" will display list same twice
 - when sound is busy, error about "command already registered" appears for sound commands
 
@@ -46,3 +47,5 @@ ref_oldgl:
   map passin;map passin (BUGS!!!); map rexro (CRUSH!!!)  (this bug found only for passin -- bad map? no bug when "flushmap 1")
 
 - map team_harbor: PF_SetModel() -- NULL name
+- once: tried to draw main menu cursor with a negative image number (should be 0..15): menu.c :: M_DrawCursor() (added "unsigned" to
+  resolve ?)

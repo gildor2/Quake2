@@ -300,7 +300,8 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 
 				// calculate vertex color as weighted average of 4 points
 				scale = dl->modulate[z] * 2 >> gl_config.overbrightBits;
-				point = dl->source[z] + ((int)v->lm2[1] * dl->w + (int)v->lm2[0]) * 3;
+//				point = dl->source[z] + ((int)v->lm2[1] * dl->w + (int)v->lm2[0]) * 3;
+				point = dl->source[z] + (Q_ftol (v->lm2[1]) * dl->w + Q_ftol (v->lm2[0])) * 3;
 				// calculate s/t weights
 				frac_s = Q_ftol (v->lm2[0] * 128) & 127;
 				frac_t = Q_ftol (v->lm2[1] * 128) & 127;

@@ -658,6 +658,7 @@ static void	D_RenderFrame (refdef_t *fd) {}
 static void	D_BeginRegistration (char *map) {}
 static struct model_s *D_RegisterModel (char *name) { return NULL; }
 static struct image_s *D_RegisterSkin (char *name) { return NULL; }
+static void D_ReloadImage (char *name) {}
 static struct image_s *D_FindPic (char *name) { return NULL; }
 static void D_SetSky (char *name, float rotate, vec3_t axis) {}
 static void	D_EndRegistration (void) {}
@@ -748,6 +749,7 @@ static qboolean Vid_LoadRefresh (char *name)
 		re.SetSky =			D_SetSky;
 		re.EndRegistration = D_EndRegistration;
 
+		re.ReloadImage =    D_ReloadImage;
 		re.DrawGetPicSize =	D_Draw_GetPicSize;
 		re.DrawPicColor =	D_Draw_PicColor;
 		re.DrawStretchPic =	D_Draw_StretchPic;

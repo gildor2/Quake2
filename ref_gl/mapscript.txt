@@ -4,10 +4,10 @@
 - map scale (mostly for KP)
 ? sun/ambient light
 - change sky
-- coronas (size, color, lightstyle, position, radius (for placing inside objects, e.g. lamp))
+* coronas (size, color, lightstyle, position, radius (for placing inside objects, e.g. lamp))
 - inline shaders
 - surface sounds (local materials.lst)
-- C-style preprocessor (#include, at least) -- may be, inside COM_Parse?
+! C-style preprocessor (#include, at least) -- may be, inside COM_Parse?
 - entity editor (not convert, just "add"/"remove")
 - shader manipulations (FAKK2)
 
@@ -15,4 +15,5 @@
 
 - shader texplates: specify name mask instead of exact shader name before {script}
 - map $texture     -- map image with the same name as shader name (useful for shader templates)
-- mapsize <w> <h>  -- change image sizes (for Q2 maps: allows to replace texture without resampling)
+- map size <w> <h> -- change image sizes (for Q2 maps: allows to replace texture without resampling)
+- map color        -- change color of SURF_LIGHT source

@@ -548,6 +548,7 @@ void SCR_SetLevelshot (char *name)
 		return;			// already set
 
 	strcpy (levelshot, name);
+	re.ReloadImage (levelshot);		// force renderer to refresh image
 	re.DrawGetPicSize (&width, NULL, levelshot);
 	if (width > 0)
 	{

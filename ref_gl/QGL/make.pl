@@ -464,6 +464,7 @@ const ("GL_FOG", "GL_TEXTURE_2D", "GL_CULL_FACE", "GL_ALPHA_TEST", "GL_BLEND", "
 	"GL_VERTEX_ARRAY", "GL_COLOR_ARRAY", "GL_TEXTURE_COORD_ARRAY");			# enables/disables
 const ("GL_BYTE", "GL_UNSIGNED_BYTE", "GL_SHORT", "GL_UNSIGNED_SHORT", "GL_INT", "GL_UNSIGNED_INT",
 	"GL_FLOAT", "GL_DOUBLE");												# data types
+const ("GL_FRONT_AND_BACK", "GL_FILL", "GL_LINE");	# polygon mode
 
 print (CODE "\tdefault:\n\t\treturn \"???\";\n\t}\n}\n\n");
 
@@ -478,7 +479,7 @@ print (CODE "\n};\n\n");
 
 #-------------------- Extensions suport ----------------------------
 
-print (CODE "typedef struct {\n\tchar\t*name;\n\tchar\t*cvar;\n\tshort\tfirst, count;\n\tint\t\trequire, deprecate;\n} ");
+print (CODE "typedef struct {\n\tchar\t*name;\n\tchar\t*cvar;\n\tshort\tfirst, count;\n\tunsigned require, deprecate;\n} ");
 print (CODE $extArrName, "_t;\n\n");
 
 printf (CODE "static %s_t %s[%s] = {\n", $extArrName, $extArrName, $constname3);

@@ -469,9 +469,9 @@ void CL_SendCmd (void)
 	if (cls.state == ca_disconnected || cls.state == ca_connecting)
 		return;
 
-	if ( cls.state == ca_connected)
+	if (cls.state == ca_connected)
 	{
-		if (cls.netchan.message.cursize	|| curtime - cls.netchan.last_sent > 1000 )
+		if (cls.netchan.message.cursize	|| curtime - cls.netchan.last_sent > 1000)
 			Netchan_Transmit (&cls.netchan, 0, NULL);//?? 10.07.2002: buf.data -> NULL
 		return;
 	}
@@ -487,7 +487,7 @@ void CL_SendCmd (void)
 
 	SZ_Init (&buf, data, sizeof(data));
 
-	if (cmd->buttons && cl.cinematictime > 0 && !cl.attractloop && cls.realtime - cl.cinematictime > 1000)
+	if (cmd->buttons && cl.cinematictime > 0 && !cl.attractloop)
 	{	// skip the rest of the cinematic
 		SCR_FinishCinematic ();
 	}

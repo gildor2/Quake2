@@ -168,7 +168,6 @@ CLEAN :
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vid_dll.obj"
 	-@erase "$(INTDIR)\vid_menu.obj"
-	-@erase "$(INTDIR)\x86.obj"
 	-@erase "$(INTDIR)\zip.obj"
 	-@erase "$(INTDIR)\zutil.obj"
 	-@erase "$(OUTDIR)\quake2.exe"
@@ -291,7 +290,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\sys_win.obj" \
 	"$(INTDIR)\vid_dll.obj" \
 	"$(INTDIR)\vid_menu.obj" \
-	"$(INTDIR)\x86.obj" \
 	"$(INTDIR)\gl_backend.obj" \
 	"$(INTDIR)\gl_image.obj" \
 	"$(INTDIR)\gl_interface.obj" \
@@ -718,8 +716,6 @@ CLEAN :
 	-@erase "$(INTDIR)\vid_dll.sbr"
 	-@erase "$(INTDIR)\vid_menu.obj"
 	-@erase "$(INTDIR)\vid_menu.sbr"
-	-@erase "$(INTDIR)\x86.obj"
-	-@erase "$(INTDIR)\x86.sbr"
 	-@erase "$(INTDIR)\zip.obj"
 	-@erase "$(INTDIR)\zip.sbr"
 	-@erase "$(INTDIR)\zutil.obj"
@@ -821,7 +817,6 @@ BSC32_SBRS= \
 	"$(INTDIR)\sys_win.sbr" \
 	"$(INTDIR)\vid_dll.sbr" \
 	"$(INTDIR)\vid_menu.sbr" \
-	"$(INTDIR)\x86.sbr" \
 	"$(INTDIR)\gl_backend.sbr" \
 	"$(INTDIR)\gl_image.sbr" \
 	"$(INTDIR)\gl_interface.sbr" \
@@ -983,7 +978,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\sys_win.obj" \
 	"$(INTDIR)\vid_dll.obj" \
 	"$(INTDIR)\vid_menu.obj" \
-	"$(INTDIR)\x86.obj" \
 	"$(INTDIR)\gl_backend.obj" \
 	"$(INTDIR)\gl_image.obj" \
 	"$(INTDIR)\gl_interface.obj" \
@@ -1993,24 +1987,6 @@ SOURCE=.\win32\vid_menu.c
 
 
 "$(INTDIR)\vid_menu.obj"	"$(INTDIR)\vid_menu.sbr" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ENDIF 
-
-SOURCE=.\client\x86.c
-
-!IF  "$(CFG)" == "quake2s - Win32 Release"
-
-
-"$(INTDIR)\x86.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
-
-
-"$(INTDIR)\x86.obj"	"$(INTDIR)\x86.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 

@@ -1036,7 +1036,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 	if (f2->zFile)
 	{
 		if (Zip_ReadFile (f2->zFile, buffer, len) != len)
-			Com_Error (ERR_FATAL, "Error reading zip file.\n");
+			Com_Error (ERR_FATAL, "Error reading zip file");
 	}
 	else
 	{
@@ -1046,7 +1046,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 		buf = (byte *)buffer;
 		read = fread (buf, 1, len, f2->file);
 		if (read == -1)
-			Com_Error (ERR_FATAL, "FS_Read: -1 bytes read");
+			Com_Error (ERR_FATAL, "FS_Read: cannot read file");
 	}
 }
 

@@ -507,7 +507,7 @@ END_PROFILE
 
 		// select texture format
 		format = 0;
-		if (alpha && (flags & IMAGE_MIPMAP))
+		if (alpha == 1 && numAlpha0 > (n / 100) && (flags & IMAGE_MIPMAP))
 			alpha = 2;		// mipmaps will create middle alpha's
 		image->alphaType = alpha;
 
@@ -605,15 +605,10 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 	char	name2[MAX_QPATH];
 	int		texnum, hash;
 	image_t	*image;
+	GLenum	repMode;
+	qboolean reuse;
 
-	if (!name[0])
-		Com_Error (ERR_FATAL, "R_CreateImage: null name");
-
-	if (imageCount == MAX_TEXTURES)
-	{
-		Com_WPrintf ("R_CreateImage(%s): MAX_TEXTURES hit\n", name);
-		return gl_defaultImage;
-	}
+	if (!name[0]) Com_Error (ERR_FATAL, "R_CreateImage: null name");
 
 //	Com_Printf ("CreateImage(%s)\n", name);//!!!!
 
@@ -621,10 +616,32 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 //		Com_Error (ERR_FATAL, "R_CreateImage: name \"%s\" is too long", name);
 	Q_CopyFilename (name2, name, sizeof(name2)-1);
 
-	// allocate free image slot
+	// find image with the same name
+	reuse = false;
 	for (texnum = 0, image = &imagesArray[0]; texnum < MAX_TEXTURES; texnum++, image++)
-		if (!image->name[0]) break;		// found unused slot
-	imageCount++;
+	{
+		if (!image->name[0]) continue;
+		if (!strcmp (name2, image->name) &&
+			image->flags == (flags & IMAGE_FLAGMASK))
+		{
+			reuse = true;
+			break;
+		}
+	}
+
+	if (!reuse)
+	{
+		if (imageCount == MAX_TEXTURES)
+		{
+			Com_WPrintf ("R_CreateImage(%s): MAX_TEXTURES hit\n", name);
+			return gl_defaultImage;
+		}
+
+		// not found - allocate free image slot
+		for (texnum = 0, image = &imagesArray[0]; texnum < MAX_TEXTURES; texnum++, image++)
+			if (!image->name[0]) break;		// found unused slot
+		imageCount++;
+	}
 
 	// setup image_t fields
 	image->texnum = texnum;
@@ -638,21 +655,18 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 	// upload image
 	GL_BindForce (image);
 	Upload (pic, flags, image);
-	if (flags & IMAGE_CLAMP)
-	{
-		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	}
-	else
-	{
-		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	}
 
-	// insert image into a hash table
-	hash = ComputeHash (name2);
-	image->hashNext = hashTable[hash];
-	hashTable[hash] = image;
+	repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
+	qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repMode);
+	qglTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repMode);
+
+	if (!reuse)
+	{
+		// insert image into a hash table
+		hash = ComputeHash (name2);
+		image->hashNext = hashTable[hash];
+		hashTable[hash] = image;
+	}
 
 	return image;
 }
@@ -715,7 +729,7 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 		byte	*src;
 		unsigned *dst;
 
-		row = (int)(hScale * i);
+		row = Q_ftol (hScale * i);
 		if (row > height) break;
 
 		src = &pic[width * row];
@@ -1397,24 +1411,27 @@ image_t *GL_FindImage (char *name, int flags)
 	len = s - name2;				// length of name without extension
 
 	flags2 = flags & (IMAGE_MIPMAP|IMAGE_CLAMP);
-	for (img = hashTable[hash]; img; img = img->hashNext)
-		if (!Q_strncasecmp (img->name, name2, len) &&		// len chars matched
-			(!img->name[len] || img->name[len] == '.'))		// rest of img->name if null or extension
-		{
-			// found a name ...
-			// compare image flags
-			if ((img->flags & (IMAGE_MIPMAP|IMAGE_CLAMP)) == flags2)
-				return img;
-//			Com_Printf ("hash: %s  (fl: %X)  --> %s  (fl: %X)", name, flags, img->name, img->flags);//!!!!!
-			// flags are different ...
-			if (name[0] == '*')
+	if (!(flags & IMAGE_RELOAD))
+	{
+		for (img = hashTable[hash]; img; img = img->hashNext)
+			if (!Q_strncasecmp (img->name, name2, len) &&		// len chars matched
+				(!img->name[len] || img->name[len] == '.'))		// rest of img->name if null or extension
 			{
-				Com_WPrintf ("R_FindImage(%s): Using different flags (%X != %X) for system image\n", name2, flags, img->flags);
-				return img;
+				// found a name ...
+				// compare image flags
+				if ((img->flags & (IMAGE_MIPMAP|IMAGE_CLAMP)) == flags2)
+					return img;
+//				Com_Printf ("hash: %s  (fl: %X)  --> %s  (fl: %X)", name, flags, img->name, img->flags);//!!!!!
+				// flags are different ...
+				if (name[0] == '*')
+				{
+					Com_WPrintf ("R_FindImage(%s): Using different flags (%X != %X) for system image\n", name2, flags, img->flags);
+					return img;
+				}
+				hash = -1;	// mark: image used with a different flags
+				// continue search ...
 			}
-			hash = -1;	// mark: image used with a different flags
-			// continue search ...
-		}
+	}
 	if (hash == -1)
 		Com_WPrintf ("R_FindImage(%s): Reusing image with a different flags %X\n", name2, flags);
 
@@ -1482,7 +1499,7 @@ START_PROFILE(..img::wal)
 		{
 			width = LittleLong(mt->width);
 			height = LittleLong(mt->height);
-			pic = Convert8to32bit ((byte*)mt+LittleLong(mt->offsets[0]), width, height, NULL);
+			pic = Convert8to32bit ((byte*)mt + LittleLong(mt->offsets[0]), width, height, NULL);
 			FS_FreeFile ((void*)mt);
 		}
 		else

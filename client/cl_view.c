@@ -870,18 +870,6 @@ void V_RenderView (float stereo_separation)
 
 /*
 =============
-V_Viewpos_f
-=============
-*/
-void V_Viewpos_f (void)	//?? remove
-{
-	Com_Printf ("(%d %d %d) : %d\n", (int)cl.refdef.vieworg[0],
-		(int)cl.refdef.vieworg[1], (int)cl.refdef.vieworg[2],
-		(int)cl.refdef.viewangles[YAW]);
-}
-
-/*
-=============
 V_Init
 =============
 */
@@ -908,6 +896,5 @@ CVAR_END
 	Cmd_AddCommand ("gun_next", V_Gun_Next_f);
 	Cmd_AddCommand ("gun_prev", V_Gun_Prev_f);
 	Cmd_AddCommand ("gun_model", V_Gun_Model_f);
-	Cmd_AddCommand ("viewpos", V_Viewpos_f);
 	Cmd_AddCommand ("screenshot", Screenshot_f);
 }

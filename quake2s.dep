@@ -622,23 +622,6 @@
 	".\qcommon\qfiles.h"\
 	
 
-.\client\x86.c : \
-	".\client\cdaudio.h"\
-	".\client\client.h"\
-	".\client\console.h"\
-	".\client\input.h"\
-	".\client\keys.h"\
-	".\client\ref.h"\
-	".\client\ref_decl.h"\
-	".\client\ref_defs.h"\
-	".\client\screen.h"\
-	".\client\sound.h"\
-	".\client\vid.h"\
-	".\qcommon\q_shared2.h"\
-	".\qcommon\qcommon.h"\
-	".\qcommon\qfiles.h"\
-	
-
 .\ref_gl\gl_backend.c : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
@@ -1462,6 +1445,7 @@
 	".\jpeg\jerror.h"\
 	".\jpeg\jinclude.h"\
 	".\jpeg\jmorecfg.h"\
+	".\jpeg\jpegint.h"\
 	".\jpeg\jpeglib.h"\
 	
 

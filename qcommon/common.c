@@ -550,6 +550,7 @@ void MSG_WriteShort (sizebuf_t *sb, int c)
 #endif
 
 	buf = SZ_GetSpace (sb, 2);
+	//!! optimize for little-endian machines
 	buf[0] = c&0xff;
 	buf[1] = c>>8;
 }
@@ -559,6 +560,7 @@ void MSG_WriteLong (sizebuf_t *sb, int c)
 	byte	*buf;
 
 	buf = SZ_GetSpace (sb, 4);
+	//!! optimize
 	*buf++ = c & 0xff;
 	*buf++ = (c>>8) & 0xff;
 	*buf++ = (c>>16) & 0xff;
@@ -586,19 +588,19 @@ void MSG_WriteString (sizebuf_t *sb, char *s)
 
 void MSG_WriteCoord (sizebuf_t *sb, float f)
 {
-	MSG_WriteShort (sb, (int)(f*8));
+	MSG_WriteShort (sb, Q_ftol (f*8));
 }
 
 void MSG_WritePos (sizebuf_t *sb, vec3_t pos)
 {
-	MSG_WriteShort (sb, (int)(pos[0]*8));
-	MSG_WriteShort (sb, (int)(pos[1]*8));
-	MSG_WriteShort (sb, (int)(pos[2]*8));
+	MSG_WriteShort (sb, Q_ftol (pos[0]*8));
+	MSG_WriteShort (sb, Q_ftol (pos[1]*8));
+	MSG_WriteShort (sb, Q_ftol (pos[2]*8));
 }
 
 void MSG_WriteAngle (sizebuf_t *sb, float f)
 {
-	MSG_WriteByte (sb, (int)(f*256/360) & 255);
+	MSG_WriteByte (sb, Q_ftol (f*256.0f/360) & 255);
 }
 
 void MSG_WriteAngle16 (sizebuf_t *sb, float f)
@@ -868,18 +870,18 @@ void MSG_WriteDeltaEntity (entity_state_t *from, entity_state_t *to, sizebuf_t *
 
 	if (bits & 0xFF000000)
 	{
-		MSG_WriteByte (msg,	(bits>>8)&255);
-		MSG_WriteByte (msg,	(bits>>16)&255);
-		MSG_WriteByte (msg,	(bits>>24)&255);
+		MSG_WriteByte (msg,	(bits>>8)  & 255);
+		MSG_WriteByte (msg,	(bits>>16) & 255);
+		MSG_WriteByte (msg,	(bits>>24) & 255);
 	}
 	else if (bits & 0x00FF0000)
 	{
-		MSG_WriteByte (msg,	(bits>>8)&255);
-		MSG_WriteByte (msg,	(bits>>16)&255);
+		MSG_WriteByte (msg,	(bits>>8)  & 255);
+		MSG_WriteByte (msg,	(bits>>16) & 255);
 	}
 	else if (bits & 0x0000FF00)
 	{
-		MSG_WriteByte (msg,	(bits>>8)&255);
+		MSG_WriteByte (msg,	(bits>>8)  & 255);
 	}
 
 	//----------
@@ -982,11 +984,11 @@ int MSG_ReadShort (sizebuf_t *msg_read)
 {
 	int	c;
 
+	//!! optimize
 	if (msg_read->readcount+2 > msg_read->cursize)
 		c = -1;
 	else
-		c = (short)(msg_read->data[msg_read->readcount]
-		+ (msg_read->data[msg_read->readcount+1]<<8));
+		c = (short)(msg_read->data[msg_read->readcount] + (msg_read->data[msg_read->readcount+1]<<8));
 
 	msg_read->readcount += 2;
 
@@ -997,13 +999,14 @@ int MSG_ReadLong (sizebuf_t *msg_read)
 {
 	int	c;
 
+	//!! optimize
 	if (msg_read->readcount+4 > msg_read->cursize)
 		c = -1;
 	else
-		c = msg_read->data[msg_read->readcount]
-		+ (msg_read->data[msg_read->readcount+1]<<8)
-		+ (msg_read->data[msg_read->readcount+2]<<16)
-		+ (msg_read->data[msg_read->readcount+3]<<24);
+		c = msg_read->data[msg_read->readcount]         +
+			(msg_read->data[msg_read->readcount+1]<<8)  +
+			(msg_read->data[msg_read->readcount+2]<<16) +
+			(msg_read->data[msg_read->readcount+3]<<24);
 
 	msg_read->readcount += 4;
 
@@ -1023,6 +1026,7 @@ float MSG_ReadFloat (sizebuf_t *msg_read)
 		dat.f = -1;
 	else
 	{
+		//!! optimize
 		dat.b[0] =	msg_read->data[msg_read->readcount];
 		dat.b[1] =	msg_read->data[msg_read->readcount+1];
 		dat.b[2] =	msg_read->data[msg_read->readcount+2];
@@ -1077,19 +1081,19 @@ char *MSG_ReadStringLine (sizebuf_t *msg_read)
 
 float MSG_ReadCoord (sizebuf_t *msg_read)
 {
-	return MSG_ReadShort(msg_read) * (1.0/8);
+	return MSG_ReadShort(msg_read) * (1.0f/8);
 }
 
 void MSG_ReadPos (sizebuf_t *msg_read, vec3_t pos)
 {
-	pos[0] = MSG_ReadShort(msg_read) * (1.0/8);
-	pos[1] = MSG_ReadShort(msg_read) * (1.0/8);
-	pos[2] = MSG_ReadShort(msg_read) * (1.0/8);
+	pos[0] = MSG_ReadShort(msg_read) * (1.0f/8);
+	pos[1] = MSG_ReadShort(msg_read) * (1.0f/8);
+	pos[2] = MSG_ReadShort(msg_read) * (1.0f/8);
 }
 
 float MSG_ReadAngle (sizebuf_t *msg_read)
 {
-	return MSG_ReadChar(msg_read) * (360.0/256);
+	return MSG_ReadChar(msg_read) * (360.0f/256);
 }
 
 float MSG_ReadAngle16 (sizebuf_t *msg_read)

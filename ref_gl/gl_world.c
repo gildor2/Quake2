@@ -596,7 +596,8 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 						sdl++;
 					}
 #undef CULL_DLIGHT
-				GL_ResizeDynamicMemory (pl->dlights, sizeof(surfDlight_t) * numDlights);
+				if (pl->dlights)
+					GL_ResizeDynamicMemory (pl->dlights, sizeof(surfDlight_t) * numDlights);
 				if (numDlights)
 				{
 					gl_speeds.dlightSurfs++;
@@ -1439,7 +1440,7 @@ void GL_AddEntity (entity_t *ent)
 		out->customShader = (shader_t*) ent->skin;	//!! should use customSkin
 		out->skinNum = ent->skinnum;				//?? check skinnum in [0..model.numSkins]
 		out->shaderColor.rgba = 0xFFFFFF;
-		out->shaderColor.c[3] = (int)(ent->alpha * 255);
+		out->shaderColor.c[3] = Q_ftol (ent->alpha * 255);
 
 		// model-specific code and calculate model center
 		switch (ent->model->type)
@@ -1466,12 +1467,12 @@ void GL_AddEntity (entity_t *ent)
 				// sanity check
 				if (out->frame >= md3->numFrames || out->frame < 0)
 				{
-					Com_WPrintf ("R_AddEntity: no frame %d in %s\n", out->frame, out->model->name);
+					DrawTextLeft (va("R_AddEntity: no frame %d in %s\n", out->frame, out->model->name), 1,0,0);
 					out->frame = out->oldFrame = 0;
 				}
 				if (out->oldFrame >= md3->numFrames || out->oldFrame < 0)
 				{
-					Com_WPrintf ("R_AddEntity: no frame %d in %s\n", out->oldFrame, out->model->name);
+					DrawTextLeft (va("R_AddEntity: no frame %d in %s\n", out->oldFrame, out->model->name), 1,0,0);
 					out->frame = out->oldFrame = 0;
 				}
 				frame1 = md3->frames + out->frame;
@@ -1517,7 +1518,7 @@ void GL_AddEntity (entity_t *ent)
 		VectorCopy (ent->oldorigin, out->beamEnd);
 		out->beamRadius = ent->frame / 2.0f;
 		out->shaderColor.rgba = gl_config.tbl_8to32[ent->skinnum];
-		out->shaderColor.c[3] = (int)(ent->alpha * 255);
+		out->shaderColor.c[3] = Q_ftol (ent->alpha * 255);
 	}
 
 	gl_speeds.ents++;

@@ -1425,6 +1425,11 @@ static void Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, f
 		Draw_Fade (x, y, w, h, color);
 }
 
+static void ReloadImage (char *name)
+{
+	// do nothing here ??
+}
+
 
 /*
 @@@@@@@@@@@@@@@@@@@@@
@@ -1472,6 +1477,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.SetSky = R_SetSky;
 	re.EndRegistration = R_EndRegistration;
 
+	re.ReloadImage = ReloadImage;
 	re.DrawGetPicSize = Draw_GetPicSize;
 	re.DrawPicColor = Draw_PicColor;
 	re.DrawStretchPic = Draw_StretchPic;

@@ -1018,7 +1018,7 @@ static void SnapPosition (void)
 
 	// snap velocity to eigths
 	for (i = 0; i < 3; i++)
-		pm->s.velocity[i] = (int)(pml.velocity[i] * 8);
+		pm->s.velocity[i] = (int)(pml.velocity[i] * 8);		//!! do not use Q_ftol()
 
 	for (i = 0; i < 3; i++)
 	{
@@ -1026,7 +1026,7 @@ static void SnapPosition (void)
 			sign[i] = 1;
 		else
 			sign[i] = -1;
-		pm->s.origin[i] = (int)(pml.origin[i] * 8);
+		pm->s.origin[i] = (int)(pml.origin[i] * 8);			//!! do not use Q_ftol()
 		if (pm->s.origin[i] / 8.0f == pml.origin[i])
 			sign[i] = 0;
 	}

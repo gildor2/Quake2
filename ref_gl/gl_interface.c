@@ -13,16 +13,16 @@ glstate_t	gl_state;
 
 typedef struct
 {
-	int		mask;
+	unsigned mask;
 	GLint	mode1;
 	GLint	mode2;
 } texEnvInfo_t;
 
 typedef struct
 {
-	GLint	src;
-	GLint	op_rgb;
-	GLint	op_a;
+	GLenum	src;
+	GLenum	op_rgb;
+	GLenum	op_a;
 } texEnvSource_t;
 
 
@@ -225,10 +225,10 @@ void GL_TexEnv (unsigned env)
 	unsigned i, diff, mask, shift;
 	texEnvInfo_t *info;
 
-	static GLint sourceRgb[4] = {GL_SOURCE0_RGB_ARB, GL_SOURCE1_RGB_ARB, GL_SOURCE2_RGB_ARB, GL_SOURCE3_RGB_NV};
-	static GLint sourceAlpha[4] = {GL_SOURCE0_ALPHA_ARB, GL_SOURCE1_ALPHA_ARB, GL_SOURCE2_ALPHA_ARB, GL_SOURCE3_ALPHA_NV};
-	static GLint operandRgb[4] = {GL_OPERAND0_RGB_ARB, GL_OPERAND1_RGB_ARB, GL_OPERAND2_RGB_ARB, GL_OPERAND3_RGB_NV};
-	static GLint operandAlpha[4] = {GL_OPERAND0_ALPHA_ARB, GL_OPERAND1_ALPHA_ARB, GL_OPERAND2_ALPHA_ARB, GL_OPERAND3_ALPHA_NV};
+	static GLenum sourceRgb[4] = {GL_SOURCE0_RGB_ARB, GL_SOURCE1_RGB_ARB, GL_SOURCE2_RGB_ARB, GL_SOURCE3_RGB_NV};
+	static GLenum sourceAlpha[4] = {GL_SOURCE0_ALPHA_ARB, GL_SOURCE1_ALPHA_ARB, GL_SOURCE2_ALPHA_ARB, GL_SOURCE3_ALPHA_NV};
+	static GLenum operandRgb[4] = {GL_OPERAND0_RGB_ARB, GL_OPERAND1_RGB_ARB, GL_OPERAND2_RGB_ARB, GL_OPERAND3_RGB_NV};
+	static GLenum operandAlpha[4] = {GL_OPERAND0_ALPHA_ARB, GL_OPERAND1_ALPHA_ARB, GL_OPERAND2_ALPHA_ARB, GL_OPERAND3_ALPHA_NV};
 
 	if (gl_state.locked)
 	{
@@ -465,9 +465,9 @@ void GL_DepthRange (gl_depthMode_t mode)
 
 void GL_State (int state)
 {
-	int		dif;
+	unsigned	diff;
 
-	static int blends[] = {
+	static GLenum blends[] = {
 		GL_ZERO, GL_ONE,
 		GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR,
 		GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
@@ -476,11 +476,11 @@ void GL_State (int state)
 		GL_SRC_ALPHA_SATURATE
 	};
 
-	dif = state ^ gl_state.currentState;
-	if (!dif)
+	diff = state ^ gl_state.currentState;
+	if (!diff)
 		return;
 
-	if (dif & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
+	if (diff & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
 	{
 		if (state & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
 		{
@@ -500,7 +500,7 @@ void GL_State (int state)
 			qglDisable (GL_BLEND);
 	}
 
-	if (dif & GLSTATE_ALPHAMASK)
+	if (diff & GLSTATE_ALPHAMASK)
 	{
 		int		m;
 
@@ -520,10 +520,10 @@ void GL_State (int state)
 		}
 	}
 
-	if (dif & GLSTATE_DEPTHWRITE)
+	if (diff & GLSTATE_DEPTHWRITE)
 		qglDepthMask ((GLboolean)(state & GLSTATE_DEPTHWRITE ? GL_TRUE : GL_FALSE));
 
-	if (dif & GLSTATE_NODEPTHTEST)
+	if (diff & GLSTATE_NODEPTHTEST)
 	{
 		if (state & GLSTATE_NODEPTHTEST)
 			qglDisable (GL_DEPTH_TEST);
@@ -531,10 +531,10 @@ void GL_State (int state)
 			qglEnable (GL_DEPTH_TEST);
 	}
 
-	if (dif & GLSTATE_DEPTHEQUALFUNC)
+	if (diff & GLSTATE_DEPTHEQUALFUNC)
 		qglDepthFunc (state & GLSTATE_DEPTHEQUALFUNC ? GL_EQUAL : GL_LEQUAL);
 
-	if (dif & GLSTATE_POLYGON_LINE)
+	if (diff & GLSTATE_POLYGON_LINE)
 		qglPolygonMode (GL_FRONT_AND_BACK, state & GLSTATE_POLYGON_LINE ? GL_LINE : GL_FILL);
 
 	gl_state.currentState = state;
@@ -642,7 +642,7 @@ void GL_Set2DMode (void)
 // Setup OpenGL as specified in active portal
 void GL_Setup (viewPortal_t *port)
 {
-	int		bits;
+	GLbitfield	bits;
 
 	LOG_STRING ("*** GL_Setup() ***\n");
 	gl_state.is2dMode = false;

@@ -190,7 +190,8 @@ byte 	*iff_data;
 int 	iff_chunk_len;
 
 
-short GetLittleShort(void)
+//??
+static short GetLittleShort(void)
 {
 	short val = 0;
 	val = *data_p;
@@ -199,7 +200,7 @@ short GetLittleShort(void)
 	return val;
 }
 
-int GetLittleLong(void)
+static int GetLittleLong(void)
 {
 	int val = 0;
 	val = *data_p;
