@@ -1257,7 +1257,7 @@ refExport_t GetRefAPI (const refImport_t * rimp)
 
 	re.struc_size = sizeof(re);
 	re.flags = &ref_flags;
-	ref_flags = REF_NEW_FX;
+	ref_flags = 0;
 	if (gl_config.consoleOnly)
 		ref_flags |= REF_CONSOLE_ONLY;
 

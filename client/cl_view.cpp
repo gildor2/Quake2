@@ -19,6 +19,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // cl_view.c -- player rendering positioning
 
+//?? combine with cl_tent.cpp and put as cl_scene.cpp ?
+
 #include "client.h"
 
 #ifdef GUN_DEBUG
@@ -27,15 +29,16 @@ int			gun_frame;
 struct model_s	*gun_model;
 #endif
 
-cvar_t		*cl_testparticles;
-cvar_t		*cl_testentities;
-cvar_t		*cl_testlights;
-cvar_t		*cl_testblend;
+static cvar_t	*cl_testparticles;
+static cvar_t	*cl_testentities;
+static cvar_t	*cl_testlights;
+static cvar_t	*cl_testblend;
 
-cvar_t		*r_playerpos;
-cvar_t		*r_drawfps;
-cvar_t		*r_surfinfo;
+static cvar_t	*r_playerpos;
+static cvar_t	*r_drawfps;
+static cvar_t	*r_surfinfo;
 
+cvar_t			*scr_viewsize;		// non-static for menu
 
 static int		r_numdlights;
 static dlight_t	r_dlights[MAX_DLIGHTS];
@@ -212,6 +215,7 @@ CL_PrepRefresh
 Call before entering a new level, or after changing dlls
 =================
 */
+//?? try to make with tables/automaton, call SCR_UpdateScreen() and check "disconnect" every step, + get keyboard events
 void CL_PrepRefresh (void)
 {
 	char		mapname[32];
@@ -266,7 +270,7 @@ void CL_PrepRefresh (void)
 	CL_RegisterTEntModels ();
 
 	num_cl_weaponmodels = 1;
-	strcpy (cl_weaponmodels[0], "weapon.md2");
+	strcpy (cl_weaponmodels[0], "weapon.md2");	//??
 
 	for (i = 1; i < MAX_MODELS && cl.configstrings[CS_MODELS+i][0]; i++)
 	{
@@ -332,7 +336,7 @@ void CL_PrepRefresh (void)
 
 	// the renderer can now free unneeded stuff
 	re.EndRegistration ();
-	Com_Printf ("\r");			// clear console notification about loading process
+	Com_Printf (" \r");			// clear console notification about loading process; require to send space char !
 
 	Con_ClearNotify ();
 
@@ -344,6 +348,50 @@ void CL_PrepRefresh (void)
 	// start the cd track
 	CDAudio_Play (atoi(cl.configstrings[CS_CDTRACK]), true);
 }
+
+
+/*-----------------------------------------------------------------------------
+	Support for reducing rendering viewport
+-----------------------------------------------------------------------------*/
+
+static struct
+{
+	int		x, y, width, height;
+} scr_vrect;					// position of render window (changed when scr_viewsize cvar modified)
+//?? rename to v_vrect ?
+
+static void CalcVrect (void)
+{
+	float frac = Cvar_Clamp (scr_viewsize, 40, 100) / 100.0f;
+
+	scr_vrect.width = appRound (viddef.width * frac);
+	scr_vrect.height = appRound (viddef.height * frac);
+
+	scr_vrect.width &= ~7;		// align(8)
+	scr_vrect.height &= ~7;		// align(8)
+
+	scr_vrect.x = (viddef.width - scr_vrect.width) / 2;
+	scr_vrect.y = (viddef.height - scr_vrect.height) / 2;
+}
+
+
+static void TileClear (void)
+{
+	const char *tileName = "backtile";	//?? try "/*detail" with a different color
+	if (con_height == viddef.height || scr_viewsize->integer == 100) return;
+
+	int y1 = scr_vrect.y;
+	int y2 = y1 + scr_vrect.height;
+	re.DrawTileClear (0, 0, viddef.width, y1, tileName);
+	re.DrawTileClear (0, y2, viddef.width, viddef.height - y2, tileName);
+	int x1 = scr_vrect.x;
+	int x2 = x1 + scr_vrect.width;
+	re.DrawTileClear (0, y1, x1, scr_vrect.height, tileName);
+	re.DrawTileClear (x2, y1, viddef.width - x2, scr_vrect.height, tileName);
+
+	return;
+}
+
 
 /*
 ====================
@@ -753,9 +801,10 @@ bool V_RenderView (float stereo_separation)
 
 	if (cls.state != ca_active)
 		return false;
-
 	if (!cl.refresh_prepped)
 		return false;			// still loading
+	if (!map_clientLoaded)
+		return false;			// map already unloaded (by server), but client is still active (ca_active)
 
 	if (timedemo->integer)
 	{
@@ -782,6 +831,9 @@ bool V_RenderView (float stereo_separation)
 	// we can't use the old frame if the video mode has changed, though...
 	if (cl.frame.valid && (cl.force_refdef || !cl_paused->integer))
 	{
+		CalcVrect ();
+		TileClear ();
+
 		cl.force_refdef = false;
 
 		V_ClearScene ();
@@ -891,7 +943,9 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(r_drawfps, 0, 0),
 	CVAR_VAR(r_playerpos, 0, CVAR_CHEAT),
-	CVAR_VAR(r_surfinfo, 0, CVAR_CHEAT)
+	CVAR_VAR(r_surfinfo, 0, CVAR_CHEAT),
+
+	CVAR_VAR(scr_viewsize, 100, CVAR_ARCHIVE)	//?? should rename: not scr var
 CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));

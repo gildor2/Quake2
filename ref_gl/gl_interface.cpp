@@ -7,7 +7,9 @@ glconfig_t	gl_config;
 glstate_t	gl_state;
 
 
-/*------- Some tables for GL_TexEnv() ---------*/
+/*-----------------------------------------------------------------------------
+	Some tables for GL_TexEnv()
+-----------------------------------------------------------------------------*/
 
 
 #define STD_MASK		(TEXENV_FUNC_MASK)
@@ -67,7 +69,9 @@ static const texEnvSource_t texEnvSource[] = {
 };
 
 
-/*--------------- Lock/unlock -----------------*/
+/*-----------------------------------------------------------------------------
+	Lock/unlock
+-----------------------------------------------------------------------------*/
 
 
 void GL_Lock (void)
@@ -158,7 +162,9 @@ void GL_Unlock (void)
 }
 
 
-/*------------------ Bind ---------------------*/
+/*-----------------------------------------------------------------------------
+	Bind
+-----------------------------------------------------------------------------*/
 
 
 void GL_Bind (image_t *tex)
@@ -247,7 +253,9 @@ void GL_BindForce (image_t *tex)
 }
 
 
-/*---------------- Multitexturing -------------*/
+/*-----------------------------------------------------------------------------
+	Multitexturing
+-----------------------------------------------------------------------------*/
 
 
 void GL_TexEnv (unsigned env)
@@ -256,10 +264,10 @@ void GL_TexEnv (unsigned env)
 	unsigned i, diff, mask, shift;
 	const texEnvInfo_t *info;
 
-	static GLenum sourceRgb[4] = {GL_SOURCE0_RGB_ARB, GL_SOURCE1_RGB_ARB, GL_SOURCE2_RGB_ARB, GL_SOURCE3_RGB_NV};
-	static GLenum sourceAlpha[4] = {GL_SOURCE0_ALPHA_ARB, GL_SOURCE1_ALPHA_ARB, GL_SOURCE2_ALPHA_ARB, GL_SOURCE3_ALPHA_NV};
-	static GLenum operandRgb[4] = {GL_OPERAND0_RGB_ARB, GL_OPERAND1_RGB_ARB, GL_OPERAND2_RGB_ARB, GL_OPERAND3_RGB_NV};
-	static GLenum operandAlpha[4] = {GL_OPERAND0_ALPHA_ARB, GL_OPERAND1_ALPHA_ARB, GL_OPERAND2_ALPHA_ARB, GL_OPERAND3_ALPHA_NV};
+	static const GLenum sourceRgb[4] = {GL_SOURCE0_RGB_ARB, GL_SOURCE1_RGB_ARB, GL_SOURCE2_RGB_ARB, GL_SOURCE3_RGB_NV};
+	static const GLenum sourceAlpha[4] = {GL_SOURCE0_ALPHA_ARB, GL_SOURCE1_ALPHA_ARB, GL_SOURCE2_ALPHA_ARB, GL_SOURCE3_ALPHA_NV};
+	static const GLenum operandRgb[4] = {GL_OPERAND0_RGB_ARB, GL_OPERAND1_RGB_ARB, GL_OPERAND2_RGB_ARB, GL_OPERAND3_RGB_NV};
+	static const GLenum operandAlpha[4] = {GL_OPERAND0_ALPHA_ARB, GL_OPERAND1_ALPHA_ARB, GL_OPERAND2_ALPHA_ARB, GL_OPERAND3_ALPHA_NV};
 
 	if (gl_state.locked)
 	{
@@ -272,8 +280,6 @@ void GL_TexEnv (unsigned env)
 	info = &texEnvInfo[func];
 	diff = (env ^ gl_state.currentEnv[tmu]) & info->mask;
 	if (!diff) return;
-/*LOG_STRING(va("ENV=%08X  OLD=%08X  MASK=%08X  DIFF=%08X  NEW=%08X\n",
-	env, gl_state.currentEnv[tmu], info->mask, diff, gl_state.currentEnv[tmu] ^ diff)); */
 
 	gl_state.currentEnv[tmu] ^= diff;		// this will not update fields, which can be unchanged
 
@@ -296,15 +302,12 @@ void GL_TexEnv (unsigned env)
 	shift = TEXENV_SRC0_SHIFT;
 	for (i = 0; i < 4; i++)
 	{
-//LOG_STRING(va("i: %d  mask: %08X  shift: %d\n", i, mask, shift));//!!
 		if (diff & mask)
 		{
 			const texEnvSource_t *src, *prevSrc;
 
 			src = &texEnvSource[(env & mask) >> shift];
 			prevSrc = &texEnvSource[((env ^ diff) & mask) >> shift];
-
-//LOG_STRING(va("  src: %d  prev: %d\n", src-texEnvSource, prevSrc-texEnvSource));//!!
 
 			if (src->src != prevSrc->src)
 			{
@@ -473,7 +476,9 @@ void GL_DisableTexCoordArrays (void)
 }
 
 
-/*--------------- Miscellaneous ---------------*/
+/*-----------------------------------------------------------------------------
+	Miscellaneous
+-----------------------------------------------------------------------------*/
 
 
 void GL_CullFace (gl_cullMode_t mode)

@@ -58,8 +58,6 @@ static int	m_main_cursor;
 
 #define NUM_CURSOR_FRAMES 15
 
-#define MENU_CHECK	if (*re.flags & REF_CONSOLE_ONLY) return;
-
 static const char *menu_in_sound   = "misc/menu1.wav";
 static const char *menu_move_sound = "misc/menu2.wav";
 static const char *menu_out_sound  = "misc/menu3.wav";
@@ -2811,7 +2809,7 @@ static void PlayerConfig_MenuDraw (void)
 
 	Menu_Draw (&s_player_config_menu);
 
-	if (*re.flags & REF_NEW_FX) re.DrawFill2 (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
+	re.DrawFill2 (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
 	re.RenderFrame (&refdef);
 
 	if (!memcmp (skin->name, "skn_", 4))

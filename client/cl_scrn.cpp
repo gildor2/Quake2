@@ -2,12 +2,11 @@
 
 static bool initialized;
 
-vrect_t		scr_vrect;			// position of render window on screen
-
+// cvars (non-static for menu)
 cvar_t		*crosshair;
 cvar_t		*crosshairColor;
 
-cvar_t		*scr_viewsize;		// non-static for menu
+// static cvars
 static cvar_t	*con_maxSize;
 static cvar_t	*scr_centertime;
 static cvar_t	*cl_draw2d;
@@ -80,10 +79,8 @@ SCR_DrawDebugGraph
 */
 static void DrawDebugGraph (void)
 {
-	int x = scr_vrect.x;
-	int y = scr_vrect.y + scr_vrect.height;
-	int w = min(scr_vrect.width, 1024);
-	re.DrawFill (x, y - graphheight->integer, w, graphheight->integer, 8);
+	int w = min(viddef.width, 1024);
+	re.DrawFill (0, viddef.height - graphheight->integer, w, graphheight->integer, 8);
 
 	for (int a = 0; a < w; a++)
 	{
@@ -95,7 +92,7 @@ static void DrawDebugGraph (void)
 		if (v < 0)
 			v += graphheight->integer * (1 + appRound (-v / graphheight->value));
 		int h = appRound(v) % graphheight->integer;
-		re.DrawFill (x+w-1-a, y - h, 1,	h, color);
+		re.DrawFill (w-1-a, viddef.height - h, 1, h, color);
 	}
 }
 
@@ -170,48 +167,33 @@ void SCR_CenterPrint (char *str)
 
 static void DrawCenterString (void)
 {
-	char	*start;
-	int		l, j, x, y;
-	int		remaining;
-
 	scr_centertime_off -= cls.frametime;
-
 	if (scr_centertime_off <= 0) return;
 
-	// the finale prints the characters one at a time
-	remaining = BIG_NUMBER;
-
 	scr_erase_center = 0;
-	start = scr_centerstring;
+	const char *start = scr_centerstring;
 
-	if (scr_center_lines <= 4)
-		y = appRound (viddef.height * 0.35f);
-	else
-		y = 48;
+	int y = (scr_center_lines <= 4) ? appRound (viddef.height * 0.35f) : 48;
 
-	do
+	while (true)
 	{
 		// scan the width of the line
-		for (l = 0; l < 40; l++)
+		for (int l = 0; l < 40; l++)
 			if (start[l] == '\n' || !start[l])
 				break;
-		x = (viddef.width - l*8)/2;
-		for (j = 0; j < l; j++, x+=8)
-		{
+		int x = (viddef.width - l * CHAR_WIDTH) / 2;
+		for (int j = 0; j < l; j++, x += CHAR_WIDTH)
 			re.DrawChar (x, y, start[j]);
-			if (!remaining--)
-				return;
-		}
 
-		y += 8;
+		y += CHAR_HEIGHT;
 
 		while (*start && *start != '\n')
 			start++;
 
 		if (!*start)
 			break;
-		start++;		// skip the \n
-	} while (1);
+		start++;		// skip the '\n'
+	}
 }
 
 
@@ -654,32 +636,6 @@ static void TimeRefresh_f (void)
 }
 
 
-/*
-==============
-TileClear
-
-Clear any parts of the tiled background that were drawn on last frame
-==============
-*/
-static void TileClear (void)
-{
-	int		x1, x2, y1, y2;
-
-	if (con_height == viddef.height || scr_viewsize->integer == 100 || cl.cinematicTime > 0) return;
-
-	y1 = scr_vrect.y;
-	y2 = y1 + scr_vrect.height;
-	re.DrawTileClear (0, 0, viddef.width, y1, "backtile");
-	re.DrawTileClear (0, y2, viddef.width, viddef.height - y2, "backtile");
-	x1 = scr_vrect.x;
-	x2 = x1 + scr_vrect.width;
-	re.DrawTileClear (0, y1, x1, scr_vrect.height, "backtile");
-	re.DrawTileClear (x2, y1, viddef.width - x2, scr_vrect.height, "backtile");
-
-	return;
-}
-
-
 /*-----------------------------------------------------------------------------
 	Game HUD
 -----------------------------------------------------------------------------*/
@@ -854,7 +810,7 @@ static void DrawCrosshair (void)
 
 	if (!crosshair_pic[0]) return;
 
-	re.DrawPic (scr_vrect.x + ((scr_vrect.width - crosshair_width)>>1), scr_vrect.y + ((scr_vrect.height - crosshair_height)>>1),
+	re.DrawPic ((viddef.width - crosshair_width) / 2, (viddef.height - crosshair_height) / 2,
 		crosshair_pic, crosshairColor->integer);
 }
 
@@ -1082,23 +1038,6 @@ void SCR_TouchPics (void)
 }
 
 
-static void CalcVrect (void)
-{
-	float	frac;
-
-	frac = Cvar_Clamp (scr_viewsize, 40, 100) / 100.0f;
-
-	scr_vrect.width = appRound (viddef.width * frac);
-	scr_vrect.height = appRound (viddef.height * frac);
-
-	scr_vrect.width &= ~7;		// align(8)
-	scr_vrect.height &= ~1;		// align(2)
-
-	scr_vrect.x = (viddef.width - scr_vrect.width) / 2;
-	scr_vrect.y = (viddef.height - scr_vrect.height) / 2;
-}
-
-
 /*
 ==================
 SCR_UpdateScreen
@@ -1136,20 +1075,14 @@ void SCR_UpdateScreen (void)
 	{
 		re.BeginFrame (separation[i]);
 
-		if (cl.cinematicTime > 0)
+		if (cl.cinematicActive)
 		{
-			if (cls.loading)
-				// loading plaque over black screen
+			if (!SCR_DrawCinematic ())
 				re.DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
-			else
-				SCR_DrawCinematic ();
-
 			DrawGUI (false);
 		}
 		else
 		{
-			CalcVrect ();
-
 			if (V_RenderView (separation[i]))
 			{
 				//------------------- HUD --------------------
@@ -1167,7 +1100,7 @@ void SCR_UpdateScreen (void)
 
 					// show disconnected icon when server is not responding
 					if (cl.overtime > 200)
-						re.DrawPic (scr_vrect.x+64, scr_vrect.y, "net");
+						re.DrawPic (64, 0, "net");
 
 					DrawCenterString ();
 
@@ -1176,14 +1109,11 @@ void SCR_UpdateScreen (void)
 					{
 						int		w, h;
 						re.DrawGetPicSize (&w, &h, "pause");
-						re.DrawPic ((viddef.width-w)/2, viddef.height/2 + 8, "pause");
+						re.DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "pause");
 					}
 
 					DrawChatInput ();
 				}
-
-				// clear any dirty part of the background
-				TileClear ();
 			}
 			else
 			{
@@ -1222,7 +1152,6 @@ CVAR_BEGIN(vars)
 	CVAR_FULL(&crosshairColor, "crosshairColor", STR(C_WHITE), CVAR_ARCHIVE),
 
 	CVAR_VAR(con_maxSize, 0.8, 0),
-	CVAR_VAR(scr_viewsize, 100, CVAR_ARCHIVE),
 	CVAR_VAR(scr_centertime, 2.5, 0),
 	CVAR_VAR(cl_draw2d, 1, 0),
 	CVAR_VAR(netgraph, 0, 0),

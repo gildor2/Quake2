@@ -809,9 +809,9 @@ void Key_Event (int key, bool down, unsigned time)
 			Cbuf_AddText ("cmd putaway\n");
 			return;
 		}
-		if (/* cl.attractloop && */ cl.cinematicTime > 0)
+		if (/* cl.attractloop && */ cl.cinematicActive)
 		{
-			SCR_FinishCinematic ();		// stop cinematic with ESC while playing game or with any key when playing demo
+			SCR_StopCinematic ();		// stop cinematic with ESC while playing game or with any key when playing demo
 			return;
 		}
 		switch (cls.key_dest)

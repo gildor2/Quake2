@@ -82,8 +82,6 @@ static void Con_Clear_f (void)
 
 static void Con_Dump_f (bool usage, int argc, char **argv)
 {
-	int		pos, size, out;
-	char	c;
 	FILE	*f;
 	char	buffer[1024], name[MAX_OSPATH];
 
@@ -96,21 +94,20 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 	appSprintf (ARRAY_ARG(name), "%s/%s.txt", FS_Gamedir(), argv[1]);
 
 	FS_CreatePath (name);
-	f = fopen (name, "w");
-	if (!f)
+	if (!(f = fopen (name, "w")))
 	{
 		Com_WPrintf ("ERROR: couldn't open %s\n", name);
 		return;
 	}
 
-	pos = con.startpos;
-	size = con.endpos - pos;
+	int pos = con.startpos;
+	int size = con.endpos - pos;
 	if (size < 0) size += CON_TEXTSIZE;
 
-	out = 0;
+	int out = 0;
 	while (size)
 	{
-		c = con.text[pos++];
+		char c = con.text[pos++];
 		if (pos >= CON_TEXTSIZE) pos -= CON_TEXTSIZE;
 		size--;
 
@@ -205,7 +202,7 @@ void Con_CheckResize (void)
 
 static int FindLine (int lineno)
 {
-	int		i, size, line, x;
+	int		i;
 
 	// try to get line info from cache
 	if (lineno == con.disp.line)
@@ -220,22 +217,20 @@ static int FindLine (int lineno)
 		return i;
 	}
 
-	line = con.current - con.totallines + 1;	// number of 1st line in buffer
+	int line = con.current - con.totallines + 1; // number of 1st line in buffer
 	if (lineno < line || lineno > con.current) return -1; // this line is out of buffer
 	if (lineno == line) return con.startpos;	// first line in buffer
 
-	size = con.endpos - con.startpos;	// number of bytes in buffer
-	if (size < 0) size += CON_TEXTSIZE;	// wrap buffer: endpos < startpos
+	int size = con.endpos - con.startpos;		// number of bytes in buffer
+	if (size < 0) size += CON_TEXTSIZE;			// wrap buffer: endpos < startpos
 
-	if (!size) return -1;				// no text in buffer
+	if (!size) return -1;						// no text in buffer
 
 	i = con.startpos;
-	x = 0;
+	int x = 0;
 	while (size--)
 	{
-		char	c;
-
-		c = con.text[i++];
+		char c = con.text[i++];
 		if (i >= CON_TEXTSIZE) i -= CON_TEXTSIZE;
 
 		if (c == '\n' || c == WRAP_CHAR || ++x >= linewidth)
@@ -251,21 +246,18 @@ static int FindLine (int lineno)
 
 static void PlaceChar (char c, byte color)
 {
-	int		size, i, x;
-
 	// calculate free space in buffer
-	size = con.startpos - con.endpos;
-	if (size < 0) size += CON_TEXTSIZE;	// size of free space in buffer
+	int size = con.startpos - con.endpos;
+	if (size < 0) size += CON_TEXTSIZE;					// size of free space in buffer
 
 	if (!size && !con.wrapped) size = CON_TEXTSIZE;
 	if (size <= 2)
-	{	// kill first line in buffer
-		char	t;
-
-		x = 0;
+	{
+		// kill first line in buffer
+		int x = 0;
 		while (true)
 		{
-			t = con.text[con.startpos++];
+			char t = con.text[con.startpos++];
 			if (con.startpos >= CON_TEXTSIZE) con.startpos -= CON_TEXTSIZE;
 
 			if (t == '\n' || t == WRAP_CHAR || ++x >= linewidth) break; // killed
@@ -291,15 +283,15 @@ static void PlaceChar (char c, byte color)
 		con.endpos -= CON_TEXTSIZE;
 		con.wrapped = true;
 	}
-	con.text[con.endpos] = '\n';	// mark (temporary) end of line
+	con.text[con.endpos] = '\n';						// mark (temporary) end of line
 
 	if (c == '\n' || ++con.x >= linewidth)
 	{	// new line
 		con.x = 0;
 		if (con.wordwrap && c != '\n')
 		{	// make a word wrap
-			i = con.endpos;	// seek back to find space
-			x = -1;
+			int i = con.endpos;							// seek back to find space
+			int x = -1;
 			while (++x < linewidth)
 			{
 				if (--i < 0) i += CON_TEXTSIZE;
@@ -324,14 +316,10 @@ static void PlaceChar (char c, byte color)
 
 void Con_Print (const char *txt)
 {
-	byte	color;
-	char	c;
-
 	if (!con.started) Con_Clear_f ();
 
-	color = C_WHITE;
-
-	while (c = *txt++)
+	byte color = C_WHITE;
+	while (char c = *txt++)
 	{
 		if (c == COLOR_ESCAPE)
 		{
@@ -467,10 +455,8 @@ void Con_DrawNotify (bool drawBack)
 
 void Con_DrawConsole (float frac)
 {
-	int		i, j, x, y, y0, topline;
-	int		row, rows, lines;
-	int		dx, dy, color;
-	char	c;
+	int		i, j, x, y;
+	int		row, rows;
 	static const char version[] = APPNAME " v" STR(VERSION);
 #ifdef DEBUG_CONSOLE
 	char	dbgBuf[256];
@@ -480,7 +466,7 @@ void Con_DrawConsole (float frac)
 #define CON_DBG(x)
 #endif
 
-	lines = appRound (viddef.height * frac);
+	int lines = appRound (viddef.height * frac);
 	con_height = lines;
 	if (lines <= 0) return;
 
@@ -497,8 +483,8 @@ void Con_DrawConsole (float frac)
 	}
 
 	// Variables for console-only mode
-	dx = viddef.width / CHAR_WIDTH;
-	dy = viddef.height / CHAR_HEIGHT;
+	int dx = viddef.width / CHAR_WIDTH;
+	int dy = viddef.height / CHAR_HEIGHT;
 
 	// draw version info
 	i = sizeof(version) - 1;
@@ -522,7 +508,7 @@ void Con_DrawConsole (float frac)
 		y = rows - 1;
 	}
 
-	topline = con.current - con.totallines + 1;				// number of top line in buffer
+	int topline = con.current - con.totallines + 1;			// number of top line in buffer
 
 	// fix con.display if out of buffer
 	if (con.display < topline+10)	con.display = topline+10;
@@ -548,7 +534,7 @@ void Con_DrawConsole (float frac)
 	con.disp.line = row;
 	con.disp.pos = i;
 
-	y0 = y;							// last console text line
+	int y0 = y;												// last console text line
 	if (!(*re.flags & REF_CONSOLE_ONLY))
 		y -= (rows - 1) * CHAR_HEIGHT;
 	else
@@ -576,8 +562,8 @@ void Con_DrawConsole (float frac)
 		{
 			for (x = 0; x < linewidth; x++)
 			{
-				c = con.text[i];
-				color = con.text[i + CON_TEXTSIZE];
+				char c = con.text[i];
+				int color = con.text[i + CON_TEXTSIZE];
 				if (++i >= CON_TEXTSIZE) i -= CON_TEXTSIZE;
 
 				if (c == '\n' || c == WRAP_CHAR) break;

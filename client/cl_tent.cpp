@@ -918,7 +918,7 @@ void CL_ParseTEnt (void)
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
 
-		if (cls.newfx)
+		if (cl_newfx->integer)
 		{	//!! check for metal surface (smoke for non-metals) + check for "type" (see below) (see KP)
 			// AND: should make sparks sometimes not appear (or very short lifetime ?)
 			CL_MetalSparks (pos, dir, rand() % 5 + 1);

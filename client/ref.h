@@ -153,7 +153,6 @@ typedef struct
 
 // renderer flags (capabilities)
 #define REF_CONSOLE_ONLY	1		// if set -- no graphics output
-#define REF_NEW_FX			2		// if set, renderer supports sprite fx
 
 // screenshot flags
 #define SHOT_SMALL			1		// stretch screenshot to reduce its dimensions (levelshots, savegames etc.)

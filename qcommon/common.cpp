@@ -33,8 +33,17 @@ cvar_t	*developer;
 cvar_t	*timescale;
 cvar_t	*timedemo;
 cvar_t	*sv_cheats;
+
+#ifndef DEDICATED_ONLY
+static cvar_t dummyDedicated;
+cvar_t	*dedicated = &dummyDedicated;
+	// dummy cvar; may be used before initialized - when error happens before
+	// QCommon_Init()::Cvar_GetVars(); after this, will point to actual cvar
+#else
 cvar_t	*dedicated;
-static cvar_t	*logfile_active;	// 1 = buffer log, 2 = flush after each print
+#endif
+
+static cvar_t	*logfile_active;		// 1 = buffer log, 2 = flush after each print
 
 static FILE	*logfile;
 
@@ -118,6 +127,8 @@ void Com_Printf (const char *fmt, ...)
 	va_list	argptr;
 	char	msg[MAXPRINTMSG];
 
+	guard(Com_Printf);
+
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
@@ -140,7 +151,7 @@ void Com_Printf (const char *fmt, ...)
 	Sys_ConsoleOutput (msg);
 
 	// logfile
-	if (logfile_active && logfile_active->integer)
+	if (logfile && logfile_active->integer)
 	{
 		const char *s = strchr (msg, '\r');		// find line-feed
 		if (s)	s++;
@@ -161,6 +172,8 @@ void Com_Printf (const char *fmt, ...)
 		}
 		console_logged = true;
 	}
+
+	unguard;
 }
 
 
@@ -179,8 +192,7 @@ void Com_DPrintf (const char *fmt, ...)
 	va_list	argptr;
 	char	msg[MAXPRINTMSG];
 
-	if (!developer || !developer->integer)
-		return;			// don't confuse non-developers with techie stuff...
+	if (!developer->integer) return;
 
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
@@ -239,7 +251,7 @@ void Com_WPrintf (const char *fmt, ...)
 	va_end (argptr);
 
 	Com_Printf (S_YELLOW"%s", msg);
-	if (developer && developer->integer == 2) DebugPrintf ("%s", msg);
+	if (developer->integer == 2) DebugPrintf ("%s", msg);
 }
 
 
@@ -1685,6 +1697,8 @@ static void ParseCmdline (const char *cmdline)
 	static char buf[512];
 	int		i, quotes;
 
+	guard(ParseCmdline);
+
 	// parse command line; fill cmdlineParts[] array
 	buf[0] = 0;						// starts with 0 (needs for trimming trailing spaces)
 	dst = &buf[1];
@@ -1768,6 +1782,8 @@ static void ParseCmdline (const char *cmdline)
 			cmdlineParts[i] = NULL;		// remove command
 		}
 	}
+
+	unguard;
 }
 
 

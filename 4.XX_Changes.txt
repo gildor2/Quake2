@@ -26,6 +26,7 @@ Comments:
 - "host_speeds" -> "com_speeds", better output
 - timedemo:
   - timedemo <n> -- gather timing statistics with rendering <n> frames per (demo-)server frame
+  - when displaying cinematics, will be played with a maximal speed
   - added min_fps stats
 - ref_gl and ref_soft are now statically linked with quake2
 - no autosaves in deathmatch mode

@@ -224,7 +224,6 @@ PreprocessShader():
 ? SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
 - add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
 ? don't need shader->sortParam other than sky/opaque/seethrough (may be, +coronas (already painted after all) +hud (2D ? already separate))
-? disable REF_NEWFX when necessary image files absent
 - r_colorMipLevels changing: cat auto-reload all IMAGE_MIPMAP pics (but may require to recreate some system images)
 
 ! vertex arrays are not 16-byte aligned

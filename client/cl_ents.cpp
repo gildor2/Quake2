@@ -829,7 +829,6 @@ static void CL_AddDebugLines (void)
 	int			pnum;
 	entityState_t *st;
 
-	if (!cls.newfx) return;					// current renderer cannot process this
 	if (!cl_showbboxes->integer) return;
 
 	for (pnum = 0; pnum < cl.frame.num_entities; pnum++)

@@ -491,8 +491,8 @@ void CL_SendCmd (void)
 
 	SZ_Init (&buf, data, sizeof(data));
 
-	if (cmd->buttons && cl.cinematicTime > 0 && !cl.attractloop)
-		SCR_FinishCinematic ();		// skip the rest of the cinematic with any key down
+	if (cmd->buttons && cl.cinematicActive && !cl.attractloop)
+		SCR_StopCinematic ();		// skip the rest of the cinematic with any key down
 
 	// begin a client move command
 	MSG_WriteByte (&buf, clc_move);

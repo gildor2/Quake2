@@ -236,14 +236,16 @@ void CL_ParseDownload (void)
 	Precaching and downloading
 -----------------------------------------------------------------------------*/
 
-static int precache_check;		// for autodownload of precache items
+static int precache_check;					// for autodownload of precache items
 static int precache_spawncount;
 static int precache_tex;
 static int precache_model_skin;
 
-static byte *precache_model;	// used for skin checking in alias models
+static byte *precache_model;				// used for skin checking in alias models
 
-#define PLAYER_MULT 5
+// player has few things to download: model, weapon model, skins for player and weapon,
+// and player icon; so PLAYER_MULT = 5
+#define PLAYER_MULT		5
 // Dummy configstring indexes:
 #define DCS_START		0
 #define DCS_MAP_LOAD	(CS_PLAYERSKINS + MAX_CLIENTS * PLAYER_MULT)
@@ -263,7 +265,7 @@ static void RequestNextDownload (void)
 		return;
 
 	if (cls.netchan.remote_address.type == NA_LOOPBACK)
-		precache_check = DCS_SKIP_ALL;	// local server: download is nonsense (skip this phase)
+		precache_check = DCS_SKIP_ALL;		// local server: download is nonsense (skip this phase)
 
 	if (!allow_download->integer && precache_check < DCS_MAP_LOAD)
 		precache_check = DCS_MAP_LOAD;
@@ -324,19 +326,14 @@ static void RequestNextDownload (void)
 						precache_check++;
 						continue; // couldn't load it
 					}
-					if (LittleLong(*(unsigned *)precache_model) != MD2_IDENT) {
-						// not an alias model
+					pheader = (dmdl_t *)precache_model;
+					if (LittleLong(pheader) != MD2_IDENT || LittleLong(pheader->version) != MD2_VERSION) {
+						// not an alias model, or wrong model version
 						FS_FreeFile (precache_model);
-						precache_model = 0;
+						precache_model = NULL;
 						precache_model_skin = 0;
 						precache_check++;
 						continue;
-					}
-					pheader = (dmdl_t *)precache_model;
-					if (LittleLong (pheader->version) != MD2_VERSION) {
-						precache_check++;
-						precache_model_skin = 0;
-						continue; // couldn't load it
 					}
 				}
 
@@ -392,9 +389,6 @@ static void RequestNextDownload (void)
 		precache_check = CS_PLAYERSKINS;
 	}
 
-	// skins are special, since a player has three things to download:
-	// model, weapon model and skin
-	// so precache_check is now *3
 	if (precache_check >= CS_PLAYERSKINS && precache_check < CS_PLAYERSKINS + MAX_CLIENTS * PLAYER_MULT) {
 		if (allow_download_players->integer) {
 			while (precache_check < CS_PLAYERSKINS + MAX_CLIENTS * PLAYER_MULT) {
@@ -463,7 +457,7 @@ static void RequestNextDownload (void)
 	{
 		unsigned map_checksum;		// for detecting cheater maps
 
-		precache_check++;	// DCS_SKY
+		precache_check++;			// DCS_SKY
 		CM_LoadMap (cl.configstrings[CS_MODELS+1], true, &map_checksum);
 		// verify map checksum
 		if (map_checksum != atoi(cl.configstrings[CS_MAPCHECKSUM]))

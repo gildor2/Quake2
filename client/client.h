@@ -161,13 +161,7 @@ typedef struct
 	char	layout[1024];		// general 2D overlay
 	int		inventory[MAX_ITEMS];
 
-	//
-	// non-gameserver infornamtion
-	// FIXME: move this cinematic stuff into the cin_t structure
-	FILE	*cinematicFile;
-	int		cinematicTime;		// cls.realtime for first cinematic frame
-	int		cinematicFrame;
-	unsigned cinematicPalette[256];
+	bool	cinematicActive;
 
 	//
 	// server state information
@@ -258,7 +252,6 @@ typedef struct
 	bool		demowaiting;	// don't record until a non-delta message is received
 	FILE		*demofile;
 
-	bool		newfx;			// true when client enables new fx (and when renderer supports it)
 	bool		newprotocol;
 } client_static_t;
 

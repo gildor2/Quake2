@@ -331,12 +331,11 @@ static void SV_DemoMap_f (int argc, char **argv)
 	map = argv[1];
 	ext = strchr (map, '.');
 
-	if (Cvar_VariableInt ("nointro") == 0 && (!ext || (strcmp (ext, ".cin") && strcmp (ext, ".pcx"))))
+	if (Cvar_VariableInt ("nointro") == 0 && (!ext || !(stricmp (ext, ".dm2"))))
 	{
 		// allow .CIN files while playing intro (stop intro when trying to play demofile)
 		Cvar_ForceSet ("nointro", "1");
 		Cbuf_AddText ("nextserver=\"\"\n");
-//		Com_Printf (S_RED"STATE: %d\n", sv.state);
 		if (sv.state) Cbuf_AddText ("disconnect\n");
 		return;
 	}

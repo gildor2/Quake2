@@ -47,14 +47,10 @@ static vec3_t entityColorAxis[6];
 
 static void LightLine (const vec3_t *axis, const vec3_t from, const vec3_t to, const float *color, float lightScale)
 {
-	gl_depthMode_t prevDepth;
-	int		i, r, g, b;
-	color_t	c;
-
 	if (lightScale < gl_lightLines->value) return;
 	if (vp.flags & RDF_NOWORLDMODEL) return;
 
-	prevDepth = gl_state.currentDepthMode;
+	gl_depthMode_t prevDepth = gl_state.currentDepthMode;
 
 
 	glPushMatrix ();
@@ -63,10 +59,12 @@ static void LightLine (const vec3_t *axis, const vec3_t from, const vec3_t to, c
 	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 	GL_DepthRange (DEPTH_NEAR);
 
-	r = appRound (color[0] * lightScale);
-	g = appRound (color[1] * lightScale);
-	b = appRound (color[2] * lightScale);
+	int r = appRound (color[0] * lightScale);
+	int g = appRound (color[1] * lightScale);
+	int b = appRound (color[2] * lightScale);
 	NORMALIZE_COLOR255(r, g, b);
+
+	color_t	c;
 	c.c[0] = r; c.c[1] = g; c.c[2] = b; c.c[3] = 255;
 	glColor4ubv (c.c);
 	glDisableClientState (GL_COLOR_ARRAY);
@@ -75,7 +73,7 @@ static void LightLine (const vec3_t *axis, const vec3_t from, const vec3_t to, c
 	glBegin (GL_LINES);
 	glVertex3fv (from);
 	glVertex3fv (to);
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 	{
 		vec3_t	v;
 
@@ -97,8 +95,6 @@ static void LightLine (const vec3_t *axis, const vec3_t from, const vec3_t to, c
 
 void GL_ShowLights (void)
 {
-	gl_slight_t	*sl;
-	surfLight_t *rl;
 	int		i, j;
 
 	if (vp.flags & RDF_NOWORLDMODEL) return;
@@ -109,6 +105,7 @@ void GL_ShowLights (void)
 	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 	glDisableClientState (GL_COLOR_ARRAY);
 
+	gl_slight_t	*sl;
 	for (i = 0, sl = map.slights; i < map.numSlights; i++, sl++)
 	{
 		glColor3fv (sl->color);
@@ -117,7 +114,7 @@ void GL_ShowLights (void)
 			bufVertex_t	vecs[5];
 			vec3_t	forward, right, up;
 			float	dot, scale;
-			static int	indexes[16] = {0, 1, 0, 2, 0, 3, 0, 4, 1, 2, 2, 3, 3, 4, 4, 1};
+			static const int indexes[16] = {0, 1, 0, 2, 0, 3, 0, 4, 1, 2, 2, 3, 3, 4, 4, 1};
 
 			if (sl->focus != 1)
 			{
@@ -156,6 +153,7 @@ void GL_ShowLights (void)
 			DrawText3D (sl->origin, va("%g", sl->intens), RGBS(sl->color[0], sl->color[1], sl->color[2]));
 	}
 
+	surfLight_t *rl;
 	for (i = 0, rl = map.surfLights; i < map.numSurfLights; i++, rl = rl->next)
 	{
 		int		j;
@@ -238,10 +236,7 @@ static int traces, fasttraces, badtraces;
 
 static void AddPointLight (const gl_slight_t *sl, const vec3_t origin, const vec3_t *axis, const byte *vis)
 {
-	float	dist, scale;
 	vec3_t	dif;
-	float	linearScale, invScale;
-	int		br;
 
 	if (vis && sl->cluster >= 0)
 	{
@@ -250,9 +245,10 @@ static void AddPointLight (const gl_slight_t *sl, const vec3_t origin, const vec
 	}
 
 	VectorSubtract (origin, sl->origin, dif);
-	dist = DotProduct (dif, dif);						// dist*dist
+	float dist = DotProduct (dif, dif);					// dist*dist
 	if (dist > sl->maxDist2) return;					// too far
 
+	float	scale;
 	if (sl->spot)
 	{
 		dist = sqrt (dist);								// should be more precisious
@@ -265,13 +261,11 @@ static void AddPointLight (const gl_slight_t *sl, const vec3_t origin, const vec
 	}
 	VectorScale (dif, scale, dif);
 
-	linearScale = LINEAR_SCALE;
-	invScale = INV_SCALE;
+	float linearScale = LINEAR_SCALE;
+	float invScale = INV_SCALE;
 	if (sl->spot)
 	{
-		float	dot2;
-
-		dot2 = DotProduct (dif, sl->spotDir);
+		float dot2 = DotProduct (dif, sl->spotDir);
 		if (dot2 <= sl->spotDot) return;				// outside cone
 		if (sl->focus != 1)
 		{
@@ -296,12 +290,13 @@ static void AddPointLight (const gl_slight_t *sl, const vec3_t origin, const vec
 		scale = LIGHT_INV2_POINTLIGHT(sl->intens, dist, invScale);
 		break;
 	default:
-		scale = 0;									// unknown type
+		scale = 0;										// unknown type
 	}
 
 	scale = scale * vp.lightStyles[sl->style].value / 128.0f;		// 0--0.0, 128--1.0, 256--2.0
 	if (scale < MIN_POINT_LIGHT) return;							// "scale" will convert 0..1 range to 0..255
 
+	int br;
 	if (CM_BrushTrace (sl->origin, origin, &br, 1)) return;
 
 	AddLight (axis, dif, scale, sl->color);
@@ -854,9 +849,7 @@ void GL_DiffuseLight (color_t *dst, float lightScale)
 
 void GL_InitLightGrid (void)
 {
-	int		i;
-
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 	{
 		map.gridMins[i] = appFloor (map.nodes[0].mins[i] / LIGHTGRID_STEP);
 		map.mapGrid[i] = appCeil (map.nodes[0].maxs[i] / LIGHTGRID_STEP) - map.gridMins[i];
@@ -869,22 +862,21 @@ void GL_InitLightGrid (void)
 
 static void GetSurfLightCluster (void)
 {
-	node_t	*n;
-	surfLight_t *sl;
 	surfaceCommon_t **s;
-	surfacePlanar_t *pl;
-	int		i, j, cl;
+	int		i, j;
 
+	surfLight_t *sl;
 	for (i = 0, sl = map.surfLights; i < map.numSurfLights; i++, sl = sl->next)
 		sl->cluster = -2;							// uninitialized
 
+	node_t	*n;
 	for (i = 0, n = map.nodes + map.numNodes; i < map.numLeafNodes - map.numNodes; i++, n++)
 	{
-		cl = n->cluster;
+		int cl = n->cluster;
 		for (j = 0, s = n->leafFaces; j < n->numLeafFaces; j++, s++)
 			if ((*s)->type == SURFACE_PLANAR && !(*s)->owner)		//?? other types
 			{
-				pl = (*s)->pl;
+				surfacePlanar_t *pl = (*s)->pl;
 				if (pl->light)
 				{
 					if (pl->light->cluster == -2)	// uninitialized
@@ -899,11 +891,10 @@ static void GetSurfLightCluster (void)
 
 void GL_PostLoadLights (void)
 {
-	int		i;
-	gl_slight_t *sl;
-	surfLight_t *rl;
 	float	f;
+	int		i;
 
+	gl_slight_t *sl;
 	for (i = 0, sl = map.slights; i < map.numSlights; i++, sl++)
 	{
 		sl->cluster = GL_PointInLeaf (sl->origin)->cluster;
@@ -930,6 +921,7 @@ void GL_PostLoadLights (void)
 	}
 
 	GetSurfLightCluster ();
+	surfLight_t *rl;
 	for (i = 0, rl = map.surfLights; i < map.numSurfLights; i++, rl = rl->next)
 	{
 		float	x, y;

@@ -1,24 +1,11 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
+//!! TODO: cin_t -> class
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
 #include "client.h"
 
+#define CIN_SPEED	14		// do not change: video format depends on in (number of sound samples)
+							// to change video playback speed, edit RunCinematic() function (CIN_MSEC_PER_FRAME)
+
+//?? remove?
 typedef struct
 {
 	byte	*data;
@@ -27,275 +14,216 @@ typedef struct
 
 typedef struct
 {
-	bool	restart_sound;
+	// sound info
+	bool	restartSound;
 	int		s_rate;
 	int		s_width;
 	int		s_channels;
 
+	// video info
 	int		width;
 	int		height;
-	byte	*pic;
-	byte	*pic_pending;
+	int		frameSize;					// width*height
+	unsigned palette[256];
+
+	// file data
+	FILE	*file;						// if NULL, display pic
 	char	imageName[MAX_OSPATH];		// used for "map image.pcx"
 
-	// order 1 huffman stuff
-	int		*hnodes1;					// [256][256][2];
-	int		numhnodes1[256];
+	int		frame;
+	float	frameTime;					// == cls.realtime for current cinematic frame; float precision for correct
+										// video/audio synchronization; why: S_RawSamples() will not restart sound, but sound
+										// buffer will be filled every 1000/CIN_SPEED ~ 71.4 msecs; when round this value to
+										// 71 or 72 will get desynchronization about 0.5/71 == 0.007 => ~0.42 sec per minute ...)
 
-	int		h_used[512];
-	int		h_count[512];
+	// image to display
+	byte	*buf[2];					// 2 buffers, size = width*height; 1 for current frame, 1 for next (precaching)
+	byte	activeBuf;					// index of current frame buffer
+
+	// fields for Huffman decoding
+	int		*huffNodes;					// [256][256][2];
+	int		numHuffNodes[256];
 } cinematics_t;
 
 static cinematics_t cin;
 
-//==========================================================================
 
-/*
-==================
-SmallestNode1
-==================
-*/
-static int SmallestNode1 (int numhnodes)
+//?? helper function (should place to files.cpp)
+static int ReadCinInt (void)
 {
-	int		i, best, bestnode;
+	int		tmp;
+	FS_Read (&tmp, 4, cin.file);
+	//?? may perform error checking here, but FS_Read() already throw FatalError() when cannot read file
+	return LittleLong (tmp);
+}
 
-	best = BIG_NUMBER;
-	bestnode = -1;
-	for (i = 0; i < numhnodes; i++)
+
+/*-----------------------------------------------------------------------------
+	Decompression of .CIN files
+-----------------------------------------------------------------------------*/
+
+static int SmallestNode1 (int numhnodes, bool *h_used, int *h_count)
+{
+	int best = BIG_NUMBER;
+	int bestnode = -1;
+	for (int i = 0; i < numhnodes; i++)
 	{
-		if (cin.h_used[i])
+		if (h_used[i] || !h_count[i])
 			continue;
-		if (!cin.h_count[i])
-			continue;
-		if (cin.h_count[i] < best)
+		if (h_count[i] < best)
 		{
-			best = cin.h_count[i];
+			best = h_count[i];
 			bestnode = i;
 		}
 	}
 
-	if (bestnode == -1)
-		return -1;
-
-	cin.h_used[bestnode] = true;
+	if (bestnode >= 0)
+		h_used[bestnode] = true;
 	return bestnode;
 }
 
 
-/*
-==================
-Huff1TableInit
-
-Reads the 64k counts table and initializes the node trees
-==================
-*/
-static void Huff1TableInit (void)
+// .CIN compression uses huffman encoding with dependency on previous byte
+// This function will create 256 huffman tables (for each previous byte)
+static void InitHuffTable (void)
 {
-	int		prev, j, numhnodes;
-	int		*node, *nodebase;
-	byte	counts[256];
+	//?? if make cin dynamically allocated, can place huffNodes[] as static
+	cin.huffNodes = (int*) appMalloc (256*256*2*sizeof(int));		// 128K integers
+	memset (cin.huffNodes, 0, 256*256*2*sizeof(int));
 
-	cin.hnodes1 = (int*)appMalloc (256*256*2*sizeof(int));
-	memset (cin.hnodes1, 0, 256*256*2*sizeof(int));
-
-	for (prev = 0; prev < 256; prev++)
+	for (int prev = 0; prev < 256; prev++)
 	{
-		memset (cin.h_count, 0, sizeof(cin.h_count));
-		memset (cin.h_used, 0, sizeof(cin.h_used));
+		bool	h_used[512];
+		int		h_count[512];
+		memset (h_used, 0, sizeof(h_used));
 
-		// read a row of counts
-		FS_Read (counts, sizeof(counts), cl.cinematicFile);
-		for (j = 0; j < 256; j++)
-			cin.h_count[j] = counts[j];
+		// read a row of counts and convert byte[]->int[]
+		byte	counts[256];
+		FS_Read (counts, sizeof(counts), cin.file);
+		for (int j = 0; j < 256; j++)
+			h_count[j] = counts[j];
 
 		// build the nodes
-		numhnodes = 256;
-		nodebase = cin.hnodes1 + prev*256*2;
-
-		while (numhnodes != 511)
+		int *node = cin.huffNodes + prev*256*2;
+		for (int numhnodes = 256; numhnodes < 511; numhnodes++, node += 2)
 		{
-			node = nodebase + (numhnodes-256)*2;
-
 			// pick two lowest counts
-			node[0] = SmallestNode1 (numhnodes);
-			if (node[0] == -1)
-				break;	// no more
-
-			node[1] = SmallestNode1 (numhnodes);
-			if (node[1] == -1)
-				break;
-
-			cin.h_count[numhnodes] = cin.h_count[node[0]] + cin.h_count[node[1]];
-			numhnodes++;
+			node[0] = SmallestNode1 (numhnodes, h_used, h_count);
+			if (node[0] == -1) break;	// no more
+			node[1] = SmallestNode1 (numhnodes, h_used, h_count);
+			if (node[1] == -1) break;	// no more
+			h_count[numhnodes] = h_count[node[0]] + h_count[node[1]];
 		}
 
-		cin.numhnodes1[prev] = numhnodes-1;
+		cin.numHuffNodes[prev] = numhnodes-1;
 	}
 }
 
-/*
-==================
-Huff1Decompress
-==================
-*/
-static cblock_t Huff1Decompress (cblock_t in)
+
+static void HuffDecompress (cblock_t *in, cblock_t *out, byte *buffer, int count)
 {
-	byte	*input;
-	byte	*out_p;
-	int		nodenum;
-	int		count;
-	cblock_t out;
-	int		inbyte;
-	int		*hnodes, *hnodesbase;
+	byte *input = in->data;
+	out->data = buffer;
 
-	// get decompressed count
-	count = in.data[0] + (in.data[1]<<8) + (in.data[2]<<16) + (in.data[3]<<24);
-	input = in.data + 4;
-	out_p = out.data = (byte*)appMalloc (count);
+#define NEXT_TABLE(prevByte)	\
+	hnodes = cin.huffNodes + ((prevByte-1)*256*2); \
+	nodenum = cin.numHuffNodes[prevByte];
 
-	// read bits
+	// hnodes -> huffman table for current decoding byte
+	int		*hnodes, nodenum;
+	// init decompression; assume previous byte is 0
+	NEXT_TABLE(0);
 
-	hnodesbase = cin.hnodes1 - 256*2;	// nodes 0-255 aren't stored
-
-	hnodes = hnodesbase;
-	nodenum = cin.numhnodes1[0];
-	while (count)
+	byte bit = 0;
+	byte inbyte;
+	while (true)
 	{
-		inbyte = *input++;
-#define PROCESS_BIT	\
-		if (nodenum < 256)	\
-		{					\
-			hnodes = hnodesbase + (nodenum<<9);	\
-			*out_p++ = nodenum;					\
-			if (!--count)	\
-				break;		\
-			nodenum = cin.numhnodes1[nodenum];	\
-		}					\
-		nodenum = hnodes[nodenum*2 + (inbyte&1)];	\
-		inbyte >>=1;
-		PROCESS_BIT;
-		PROCESS_BIT;
-		PROCESS_BIT;
-		PROCESS_BIT;
-		PROCESS_BIT;
-		PROCESS_BIT;
-		PROCESS_BIT;
-		PROCESS_BIT;
-#undef PROCESS_BIT
+		if (nodenum < 256)
+		{
+			// leaf - place output byte
+			*buffer++ = nodenum;
+			if (!--count) break;
+			// prepare to decode next byte
+			NEXT_TABLE(nodenum);
+		}
+		// acquire next data byte when needed
+		if (!bit)
+		{
+			inbyte = *input++;
+			bit = 8;
+		}
+		// analyze next bit
+		nodenum = hnodes[nodenum*2 + (inbyte&1)];
+		inbyte >>= 1;
+		bit--;
 	}
 
-	if (input - in.data != in.count && input - in.data != in.count + 1)
-	{
-		Com_WPrintf ("Decompression overread by %d", (input - in.data) - in.count);
-	}
-	out.count = out_p - out.data;
+	int readCount = input - in->data;
+	if (readCount != in->count && readCount != in->count + 1)
+		Com_WPrintf ("Decompression overread by %d\n", readCount - in->count);
 
-	return out;
+	out->count = buffer - out->data;
+	return;
+#undef NEXT_TABLE
 }
 
 
-//------------------------------------------------------------------
-
-/*
-==================
-SCR_StopCinematic
-==================
-*/
-
-static bool needStop;	// disable multiple FinishCinematic() calls before StopCinematic() executed
-
+/*-----------------------------------------------------------------------------
+	Cinematic control
+-----------------------------------------------------------------------------*/
 
 static void FreeCinematic (void)
 {
-	if (cin.pic)
-	{
-		appFree (cin.pic);
-		cin.pic = NULL;
-	}
-	if (cin.pic_pending)
-	{
-		appFree (cin.pic_pending);
-		cin.pic_pending = NULL;
-	}
-	if (cl.cinematicFile)
-	{
-		FS_FCloseFile (cl.cinematicFile);
-		cl.cinematicFile = NULL;
-	}
-	if (cin.hnodes1)
-	{
-		appFree (cin.hnodes1);
-		cin.hnodes1 = NULL;
-	}
+	if (cin.buf[0])		appFree (cin.buf[0]);
+	if (cin.buf[1])		appFree (cin.buf[1]);
+	if (cin.file)		FS_FCloseFile (cin.file);
+	if (cin.huffNodes)	appFree (cin.huffNodes);
+	if (cin.restartSound) CL_Snd_Restart_f ();
+	memset (&cin, 0, sizeof(cin));
+
+	cl.cinematicActive = false;
 }
 
 
-void SCR_StopCinematic (void)
+void SCR_StopCinematic ()
 {
-	FreeCinematic ();
-
-	// restore sound rate if necessary
-	if (cin.restart_sound)
-	{
-		cin.restart_sound = false;
-		CL_Snd_Restart_f ();
-	}
-
-	needStop = false;
-	cl.cinematicTime = 0;			// done
-}
-
-/*
-====================
-SCR_FinishCinematic
-
-Called when either the cinematic completes, or it is aborted
-====================
-*/
-void SCR_FinishCinematic (void)
-{
-	if (needStop) return;
-
 	// tell the server to advance to the next map / cinematic
 	MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-	SZ_Print (&cls.netchan.message, va("nextserver %i\n", cl.servercount));
-	needStop = true;
-	SCR_StopCinematic ();	// if we enable this line, after cinematic will be displayed a loading plague, otherwise - last pic
-			// NOTE: when showing pic, during loading can be flicking 2 last cin frames
+	SZ_Print (&cls.netchan.message, va("nextserver %d\n", cl.servercount));
+
+	FreeCinematic ();
 }
 
-
-#define CIN_SPEED	14		// can change for debug purposes (normal value = 14)
-#define CIN_PIC		-2		// should not be >= 0
 
 /*
 ==================
 ReadNextFrame
 ==================
 */
-static byte *ReadNextFrame (void)
+static bool ReadNextFrame (byte *buffer)
 {
 	int		command;
 	byte	samples[22050 * 4];
 	byte	compressed[0x20000];
 	int		size;
 	byte	*pic;
-	cblock_t	in, huf1;
+	cblock_t in, huf1;
 	int		start, end, count;
 
+	guard(ReadNextFrame);
+
 	// read the next frame
-	FS_Read (&command, 4, cl.cinematicFile);
-	command = LittleLong(command);
-	if (command == 2)
-		return NULL;	// last frame marker
+	command = ReadCinInt ();
+	if (command == 2) return false;			// last frame marker
 
 	if (command == 1)
 	{
 		byte	palette[256*3];
 		// read palette
-		FS_Read (palette, sizeof(palette), cl.cinematicFile);	//?? add error checking
+		FS_Read (palette, sizeof(palette), cin.file);
+		// convert 3-byte RGB palette to 4-byte RGBA for renderer
 		byte *src = palette;
-		byte *dst = (byte*) cl.cinematicPalette;
+		byte *dst = (byte*) cin.palette;
 		for (int i = 0; i < 256; i++)
 		{
 			*dst++ = *src++;
@@ -306,188 +234,179 @@ static byte *ReadNextFrame (void)
 	}
 
 	// decompress the next frame
-	FS_Read (&size, 4, cl.cinematicFile);		//?? add error checking
-	size = LittleLong(size);
+	size = ReadCinInt () - 4;
 	if (size > sizeof(compressed) || size < 1)
 		Com_DropError ("Bad compressed frame size: %d\n", size);
-	FS_Read (compressed, size, cl.cinematicFile);		//?? add error checking (bytes_read != size) -- bad cinematic
+	// read and verify check decompressed frame size
+	if (ReadCinInt() != cin.frameSize)
+		Com_FatalError ("bad cinematic frame size");
+
+	FS_Read (compressed, size, cin.file);
 
 	// read sound
-	start = cl.cinematicFrame * cin.s_rate / 14;		// CIN_SPEED;
-	end = (cl.cinematicFrame + 1) * cin.s_rate / 14;	// CIN_SPEED;
+	start = cin.frame * cin.s_rate / CIN_SPEED;
+	end = (cin.frame + 1) * cin.s_rate / CIN_SPEED;
 	count = end - start;
 
-	FS_Read (samples, count*cin.s_width*cin.s_channels, cl.cinematicFile);	//?? add error checking
+	FS_Read (samples, count*cin.s_width*cin.s_channels, cin.file);
 	S_RawSamples (count, cin.s_rate, cin.s_width, cin.s_channels, samples);
 
 	in.data = compressed;
 	in.count = size;
 
-	huf1 = Huff1Decompress (in);
+	HuffDecompress (&in, &huf1, buffer, cin.frameSize);
 	pic = huf1.data;
 
-	return pic;
+	return true;
+
+	unguard;
 }
 
 
-/*
-==================
-SCR_RunCinematic
-==================
-*/
-void SCR_RunCinematic (void)
+static void RunCinematic (void)
 {
-	int		frame;
-
-	if (cl.cinematicTime <= 0)
-	{
-		SCR_StopCinematic ();
-		return;
-	}
-
-	if (cl.cinematicFrame == CIN_PIC)
-		return;		// static image
+	guard(RunCinematic);
 
 	if (cls.key_dest != key_game)
 	{
 		// pause if menu or console is up
-		cl.cinematicTime = cls.realtime - cl.cinematicFrame * 1000 / CIN_SPEED;
+		cin.frameTime = cls.realtime;
+		// disable sound looping
+		S_StopAllSounds_f ();
 		return;
 	}
 
-	frame = appRound ((cls.realtime - cl.cinematicTime) * CIN_SPEED / 1000.0f);	//?? use timescale too
-	if (frame <= cl.cinematicFrame)
-		return;
-	if (frame > cl.cinematicFrame+1)
+#if 0
+	// use timescale
+	float CIN_MSEC_PER_FRAME = (timescale->value) ? 1000.0f/CIN_SPEED/timescale->value : 0x7FFFFFF;
+#else
+#define CIN_MSEC_PER_FRAME	(1000.0f/CIN_SPEED)
+#endif
+
+	if (!timedemo->integer)
 	{
-		Com_DPrintf ("RunCinematic: dropped %d frames\n", frame - cl.cinematicFrame+1);
-		cl.cinematicTime = cls.realtime - cl.cinematicFrame * 1000 / CIN_SPEED;
+		int frameDelta = appFloor ((cls.realtime - cin.frameTime) / CIN_MSEC_PER_FRAME);
+		if (frameDelta == 0) return;			// display previous frame
+#if 1
+		if (frameDelta < 0)
+		{
+			Com_DPrintf ("RunCinematic: fix %d\n", frameDelta);
+			cin.frameTime = cls.realtime;
+			return;
+		}
+#endif
+
+		if (frameDelta >= 2)
+		{
+			Com_DPrintf ("RunCinematic: dropped %d frames\n", frameDelta - 1);
+			cin.frameTime = cls.realtime;
+		}
+		cin.frameTime += CIN_MSEC_PER_FRAME;
 	}
+	else
+		cin.frameTime = cls.realtime;
 
-	if (cin.pic) appFree (cin.pic);
-	cin.pic = cin.pic_pending;					// current frame to draw
-	cin.pic_pending = ReadNextFrame ();			// next frame
-	cl.cinematicFrame++;
+	cin.frame++;
 
-	if (!cin.pic_pending)
-	{
+	cin.activeBuf ^= 1;
+	if (!ReadNextFrame (cin.buf[cin.activeBuf ^ 1]))
 		SCR_StopCinematic ();
-		SCR_FinishCinematic ();
-		cl.cinematicTime = 1;					// hack to get the black screen behind loading (??)
-		SCR_BeginLoadingPlaque ();
-		cl.cinematicTime = 0;
-	}
+
+	unguard;
 }
 
-/*
-==================
-SCR_DrawCinematic
 
-Returns true if a cinematic is active, meaning the view rendering
-should be skipped
-==================
-*/
 bool SCR_DrawCinematic (void)
 {
-	if (cl.cinematicTime <= 0)
+	if (!cl.cinematicActive)
 		return false;
 
-	if (cl.cinematicFrame == CIN_PIC) {
+	if (cin.imageName[0]) {
 		// static image
 		re.DrawDetailedPic (0, 0, viddef.width, viddef.height, cin.imageName);
-	} else if (cin.pic) {
+	} else if (cin.file) {
 		// cinematic frame
-		re.DrawStretchRaw8 (0, 0, viddef.width, viddef.height, cin.width, cin.height, cin.pic, cl.cinematicPalette);
-	}
+		re.DrawStretchRaw8 (0, 0, viddef.width, viddef.height, cin.width, cin.height, cin.buf[cin.activeBuf], cin.palette);
+		RunCinematic ();
+	} else
+		return false;
 	return true;
 }
 
-/*
-==================
-SCR_PlayCinematic
-==================
-*/
-void SCR_PlayCinematic (char *arg)
-{
-	int		width, height;
-	char	*ext;
-	int		old_khz;
 
+void SCR_PlayCinematic (char *filename)
+{
 	guard(SCR_PlayCinematic);
 
 	// make sure CD isn't playing music
 	CDAudio_Stop ();
 
-	needStop = false;
 	if (*re.flags & REF_CONSOLE_ONLY)
-	{	// no cinematic for text-only mode
-		SCR_FinishCinematic ();
-		cl.cinematicTime = 0;
+	{
+		// no cinematic for text-only mode
+		SCR_StopCinematic ();
 		return;
 	}
 
 	FreeCinematic ();
-	cl.cinematicFrame = 0;
-	ext = strchr (arg, '.');
 
-	if (ext && (!strcmp (ext, ".pcx") || !strcmp (ext, ".jpg") || !strcmp (ext, ".tga")))
-	{	// static image
-		Q_CopyFilename (cin.imageName, arg, sizeof(cin.imageName));
-		cin.imageName[ext - arg] = 0;		// cut extension
+	const char *ext = strchr (filename, '.');
+	if (ext && strcmp (ext, ".cin"))
+	{
+		// not ".cin" extension - try static image
+		Q_CopyFilename (cin.imageName, filename, sizeof(cin.imageName));
+		cin.imageName[ext - filename] = 0;	// cut extension
 		re.DrawGetPicSize (&cin.width, &cin.height, cin.imageName);
-		cl.cinematicFrame = CIN_PIC;		// flag signalling "draw pic"
-		cl.cinematicTime = 1;
-		SCR_EndLoadingPlaque (true);
-		cls.state = ca_active;
 		if (!cin.width)
 		{
-			Com_WPrintf ("%s not found.\n", arg);
-			cl.cinematicTime = 0;
+			Com_WPrintf ("%s not found.\n", filename);
+			SCR_StopCinematic ();			// launch next server
+			return;
 		}
-		return;
 	}
-
-	FS_FOpenFile (va("video/%s", arg), &cl.cinematicFile);
-	if (!cl.cinematicFile)
+	else
 	{
-		Com_DPrintf ("Cinematic %s not found.\n", arg);
-		SCR_FinishCinematic ();
-		cl.cinematicTime = 0;	// done
-		return;
+		// .cin file
+		FS_FOpenFile (va("video/%s", filename), &cin.file);
+		if (!cin.file)
+		{
+			Com_DPrintf ("Cinematic %s not found\n", filename);
+			SCR_StopCinematic ();			// launch next server
+			return;
+		}
+
+		cin.width = ReadCinInt ();
+		cin.height = ReadCinInt ();
+		cin.s_rate = ReadCinInt ();
+		cin.s_width = ReadCinInt ();
+		cin.s_channels = ReadCinInt ();
+
+		cin.frameSize = cin.width * cin.height;
+		cin.buf[0] = (byte*) appMalloc (cin.frameSize);
+		cin.buf[1] = (byte*) appMalloc (cin.frameSize);
+		cin.activeBuf = 0;
+
+		InitHuffTable ();
+
+		// switch to cinematic sound rate if it is higher then current one
+		int oldKhz = Cvar_VariableInt ("s_khz");
+		if (oldKhz < cin.s_rate / 1000)
+		{
+			cin.restartSound = true;
+			Cvar_SetInteger ("s_khz", cin.s_rate / 1000);
+			CL_Snd_Restart_f ();
+			Cvar_SetInteger ("s_khz", oldKhz);
+		}
+		// prepare 2 display frames
+		ReadNextFrame (cin.buf[0]);
+		ReadNextFrame (cin.buf[1]);
+		cin.frame = 0;
+		cin.frameTime = cls.realtime;
 	}
 
 	SCR_EndLoadingPlaque (true);
-
 	cls.state = ca_active;
-
-	FS_Read (&width, 4, cl.cinematicFile);
-	FS_Read (&height, 4, cl.cinematicFile);
-	cin.width = LittleLong(width);
-	cin.height = LittleLong(height);
-
-	FS_Read (&cin.s_rate, 4, cl.cinematicFile);
-	cin.s_rate = LittleLong(cin.s_rate);
-	FS_Read (&cin.s_width, 4, cl.cinematicFile);
-	cin.s_width = LittleLong(cin.s_width);
-	FS_Read (&cin.s_channels, 4, cl.cinematicFile);
-	cin.s_channels = LittleLong(cin.s_channels);
-
-	Huff1TableInit ();
-
-	// switch to cinematic sound rate if it is higher then current one
-	old_khz = Cvar_VariableInt ("s_khz");
-	if (old_khz < cin.s_rate / 1000)
-	{
-		cin.restart_sound = true;
-		Cvar_SetInteger ("s_khz", cin.s_rate / 1000);
-		CL_Snd_Restart_f ();
-		Cvar_SetInteger ("s_khz", old_khz);
-	}
-
-	cin.pic = ReadNextFrame ();
-	cin.pic_pending = ReadNextFrame ();
-	cl.cinematicFrame = 0;
-	cl.cinematicTime = Sys_Milliseconds ();
+	cl.cinematicActive = true;
 
 	unguard;
 }

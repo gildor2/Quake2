@@ -1097,11 +1097,14 @@ int main (int argc, const char **argv)
 		if (debugLogged)
 			DebugPrintf ("***** CRASH *****\n%s\n*****************\n", GErr.history);
 
-		// shutdown all subsystems
-		//?? SV_Shutdown()
-		CL_Shutdown (true);
-		QCommon_Shutdown ();
-
+		GUARD_BEGIN {
+			// shutdown all subsystems
+			//?? SV_Shutdown()
+			CL_Shutdown (true);
+			QCommon_Shutdown ();
+		} GUARD_CATCH {
+			// nothing here ...
+		}
 		// display error
 #ifndef DEDICATED_ONLY
 		MessageBox (NULL, GErr.history, APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);

@@ -1349,8 +1349,6 @@ void CL_Frame (float msec, int realMsec)
 
 	cls.realtime = curtime;
 
-	cls.newfx = cl_newfx->integer && (*re.flags & REF_NEW_FX);
-
 	if (cls.frametime > (1.0f / 5))	// low FPS fix ?? (cannot send user commands with frame time > 255ms)
 		cls.frametime = (1.0f / 5);
 
@@ -1389,9 +1387,6 @@ void CL_Frame (float msec, int realMsec)
 	S_Update (cl.refdef.vieworg, cl.v_forward, cl.v_right, cl.v_up);
 
 	CDAudio_Update();
-
-	// advance local effects for next frame
-	SCR_RunCinematic ();
 
 	unguard;
 }

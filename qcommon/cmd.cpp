@@ -546,7 +546,7 @@ void UnregisterCommand (const char *cmd_name)
 	cmdFunc_t *cmd, **back;
 
 	back = &cmdFuncs;
-	while (1)
+	while (true)
 	{
 		cmd = *back;
 		if (!cmd)
@@ -573,9 +573,6 @@ $Cvars will be expanded unless they are in a quoted token
 */
 bool Cmd_ExecuteString (const char *text)
 {
-	cmdFunc_t	*cmd;
-	cmdAlias_t	*a;
-
 	guard(Cmd_ExecuteString);
 
 	TokenizeString (MacroExpandString (text));
@@ -587,7 +584,7 @@ bool Cmd_ExecuteString (const char *text)
 		Com_Printf (S_CYAN"cmd: %s\n", text);
 
 	// check functions
-	for (cmd = cmdFuncs; cmd; cmd = cmd->next)
+	for (cmdFunc_t *cmd = cmdFuncs; cmd; cmd = cmd->next)
 	{
 		if (!stricmp (_argv[0], cmd->name))
 		{
@@ -621,18 +618,17 @@ bool Cmd_ExecuteString (const char *text)
 	}
 
 	// check alias
-	for (a = cmdAlias; a; a = a->next)
+	for (cmdAlias_t *a = cmdAlias; a; a = a->next)
 	{
-		if (!stricmp (_argv[0], a->name))
+		if (stricmp (_argv[0], a->name)) continue;
+
+		if (++aliasCount == ALIAS_LOOP_COUNT)
 		{
-			if (++aliasCount == ALIAS_LOOP_COUNT)
-			{
-				Com_WPrintf ("ALIAS_LOOP_COUNT\n");
-				return true;
-			}
-			Cbuf_InsertText (va("%s\n", a->value));
+			Com_WPrintf ("ALIAS_LOOP_COUNT\n");
 			return true;
 		}
+		Cbuf_InsertText (va("%s\n", a->value));
+		return true;
 	}
 
 	// check cvars
