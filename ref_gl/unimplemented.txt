@@ -129,7 +129,6 @@ lighting bugs:
   - zaero, demo4, kamikaze: too dark explosion (should get lighting for LARGE objects in a different way)
     same: 1st map, beginning, give EMP grenade, throw (best viewed from 3rd person) -- can be bad lighting
     (can use sphereLighting (FAKK-style) for large models; requires new lightgrid)
-  - map "golgotha": lots of light sources from static entities (currently, lights some from world model only ?)
 
 - vis bugs: use BoxLeafs() + LeafVis() to get combined vis without checking "near-nontrans-water" (of course, ignore
   non-world invisible leafs) - will fix water vis bug and, may be, some other vis bugs too (map "ground3", "actmet" have some ...)
@@ -176,12 +175,14 @@ lighting bugs:
     test should be performed after whole 3D world is out from backend
 
 - fog:
-  !!! BUGS !!! works incorrect with multi-pass rendering
+  !!! BUG !!! OpenGL fog works incorrect with multi-pass rendering (needs special fog rendering pass; will be separate pass -
+    cannot be added to multipass shader)
   ? reading parms from file (model.c)
   - gl_fog cvar
-  ? controlling from console
-  ? should not be affected by fog (check it!) -- flares
+  ? controlling from console (color, depth)
+  ? should not be affected by fog (check it!): flares
   ! if fogDens > LIMIT -> sky = defaultSky, its color = fogColor
+  - cull surfaces by fog (or simplify shader: keep fog pass only)
 
 ? gl_state:
   - add GL_Color() (do not compare, but save to struc ...)
@@ -206,6 +207,7 @@ PreprocessShader():
   ? sky shader: specify color for "gl_fastSky"
   - backend GenerateColors (and other?): for multipass rendering can save "current type of data in buffer" and use it
     later (example: 1st pass - rgbGen_vertex, 2nd - same -- do not update)
+  - parser: try to use Execute[Simple]Command(shaderLine) for parsing
 
 - dynamic lightmaps:
   ? option (menu): dynamic lightmap type - uploadable/multipass/auto
@@ -213,11 +215,13 @@ PreprocessShader():
   - many dynamic lightmaps in: market, alley1 (look outside world), rc4 (at start point), punwar (not too slow?), vertigo
     lpbheaven (strong lighting, lots of SURF_TRANS + dl), beachassault (inside ship: shader with 3 lightstyles)
 
-! rename "gl_local.h" to something another (and change "#ifndef __GL_LOCAL_...")
-- SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
+! rename "gl_local.h" to something another (and change "#ifndef __GL_LOCAL_..."); rename all files from "gl_something.*" to
+  "GLRendererSomething.*" ??
+? SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
 - add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
 ? don't need shader->sortParam other than sky/opaque/seethrough (may be, +coronas (already painted after all) +hud (2D ? already separate))
 ? disable REF_NEWFX when necessary image files absent
+- r_colorMipLevels changing: cat auto-reload all IMAGE_MIPMAP pics (but may require to recreate some system images)
 
 ! vertex arrays are not 16-byte aligned
 
@@ -254,9 +258,9 @@ Screenshots:
 - Shaders:
   ! should load scripts (scripts/*.shader); replace system shaders with script
   ? may use separate file for each shader (use the same name as texture, but with different extension)
+  - need ability to get shader script from memory (map script with builtin shaders; main engine will pass them to renderer)
   - shader templates (in scripts/*.shader, use mask instead of shader name; use "map $texture" for image specification)
-  - need ability to get shader script from memory (map script with builtin shaders)
-  - map $texture     -- map image with the same name as shader name (useful for shader templates)
+    - map $texture     -- map image with the same name as shader name
   - map size <w> <h> -- change image size (for Q2 maps: allows to replace texture without resampling to original size)
   ? map color        -- change color of SURF_LIGHT source (see Q3/FAKK q3map_color etc. -- different name)
   ? implement SHADER_ENVMAP[2]/SHADER_TRANS[33|66] etc. with templates (script, uses "if ... / else ... endif" with analyzing
@@ -290,7 +294,7 @@ BUGS:
 VISIBLE:
 - models (entities)
   - md2
-    - IR-vision fx
+    - IR-vision fx (can force different (special) shader (skin) for IR-visible model)
     - check all RF_XXX flags from q_shared2.h
 - shadows
 ? inlineModels: RF_TRANSLUCENT: glColor4f (1,1,1,0.25) + blend + no lightmap (vertex light ?)

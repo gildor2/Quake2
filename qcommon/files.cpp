@@ -945,7 +945,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 	f2 = (FILE2*)f;
 
 	// simple validation of FILE2 structure (don't let to pass FILE structure, allocated without FS_FOpenFile())
-	if ((char *)f2->name - (char *)f2 != sizeof(FILE2))
+	if (f2->name - (char *)f2 != sizeof(FILE2))
 		Com_FatalError ("FS_Read: invalid file handle" RETADDR_STR, GET_RETADDR(buffer));
 
 	if (f2->type == FT_ZMEM)
@@ -1395,17 +1395,17 @@ static bool TryLoadPak (char *pakname)
 }
 
 
-static void FS_LoadPak_f (void)
+static void FS_LoadPak_f (bool usage, int argc, char **argv)
 {
 	char pakname[MAX_OSPATH];
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: loadpak <pakname>[.pak]\n"
 					"  or   loadpak <wildcard>\n");
 		return;
 	}
-	Com_sprintf (ARRAY_ARG(pakname), "%s/%s", fs_gamedir, Cmd_Argv(1));
+	Com_sprintf (ARRAY_ARG(pakname), "%s/%s", fs_gamedir, argv[1]);
 
 	if (strchr (pakname, '*'))
 	{	// name is a wildcard
@@ -1427,7 +1427,7 @@ static void FS_LoadPak_f (void)
 		if (TryLoadPak (pakname)) return;
 	}
 
-	Com_WPrintf ("Packfile %s is not found\n", Cmd_Argv(1));
+	Com_WPrintf ("Packfile %s is not found\n", argv[1]);
 }
 
 
@@ -1436,25 +1436,25 @@ static void FS_LoadPak_f (void)
 FS_UnloadPak_f
 ================
 */
-static void FS_UnloadPak_f (void)
+static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 {
 	char	pakname[MAX_OSPATH];
 	searchPath_t *search, *item, *prev, *next;
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: unloadpak <pakname>[.pak]\n"
 					"  or   unloadpak <wildcard>\n");
 		return;
 	}
-	if (strchr (Cmd_Argv(1), '*'))
+	if (strchr (argv[1], '*'))
 	{	// name is a wildcard
 		pack_t	*pak;
 		bool	found;
 
 		prev = NULL;
 		found = false;
-		Com_sprintf (ARRAY_ARG(pakname), "%s/%s", fs_gamedir, Cmd_Argv(1));
+		Com_sprintf (ARRAY_ARG(pakname), "%s/%s", fs_gamedir, argv[1]);
 
 		for (item = fs_searchpaths; item; item = next)
 		{
@@ -1484,7 +1484,7 @@ static void FS_UnloadPak_f (void)
 		return;
 	}
 
-	Com_sprintf (ARRAY_ARG(pakname), "/%s", Cmd_Argv(1));
+	Com_sprintf (ARRAY_ARG(pakname), "/%s", argv[1]);
 
 	if (!(search = FindPakStruc (pakname)))
 	{
@@ -1518,11 +1518,11 @@ static void FS_UnloadPak_f (void)
 FS_Link_f
 ================
 */
-static void FS_Link_f (void)
+static void FS_Link_f (bool usage, int argc, char **argv)
 {
 	fileLink_t	*l, **prev;
 
-	if (Cmd_Argc() != 3)
+	if (argc != 3 || usage)
 	{
 		Com_Printf ("Usage: link <from> <to>\n");
 		return;
@@ -1532,17 +1532,17 @@ static void FS_Link_f (void)
 	prev = &fs_links;
 	for (l = fs_links; l; l = l->next)
 	{
-		if (!strcmp (l->from, Cmd_Argv(1)))
+		if (!strcmp (l->from, argv[1]))
 		{
 			appFree (l->to);
-			if (!Cmd_Argv(2)[0])	// <to> is ""
+			if (!argv[2][0])	// <to> is ""
 			{	// delete it
 				*prev = l->next;
 				appFree (l->from);
 				appFree (l);
 				return;
 			}
-			l->to = CopyString (Cmd_Argv(2));
+			l->to = CopyString (argv[2]);
 			return;
 		}
 		prev = &l->next;
@@ -1552,9 +1552,9 @@ static void FS_Link_f (void)
 	l = (fileLink_t*)appMalloc(sizeof(*l));
 	l->next = fs_links;
 	fs_links = l;
-	l->from = CopyString(Cmd_Argv(1));
+	l->from = CopyString (argv[1]);
 	l->fromlength = strlen (l->from);
-	l->to = CopyString(Cmd_Argv(2));
+	l->to = CopyString (argv[2]);
 }
 
 
@@ -1685,7 +1685,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 FS_Dir_f
 ===============
 */
-static void FS_Dir_f (void)
+static void FS_Dir_f (bool usage, int argc, char **argv)
 {
 	char	*path = NULL;
 	char	findname[1024];
@@ -1694,17 +1694,17 @@ static void FS_Dir_f (void)
 	int		len, maxlen, col, colwidth, colcount;
 	char	*name;
 
-	if (Cmd_Argc() > 2)
+	if (argc > 2 || usage)
 	{
 		Com_Printf ("Usage: dir [<mask>]\n");
 		return;
 	}
 
-	if (Cmd_Argc() == 1)
+	if (argc == 1)
 		strcpy (wildcard, "*.*");
 	else
 	{
-		strcpy (wildcard, Cmd_Argv(1));
+		strcpy (wildcard, argv[1]);
 		if (wildcard[strlen (wildcard) - 1] == '/')
 			strcat (wildcard, "*.*");
 		else if (!strchr (wildcard, '*'))	// not a file mask
@@ -1764,41 +1764,44 @@ static void FS_Path_f (void)
 	searchPath_t	*s;
 	fileLink_t		*l;
 
-	Com_Printf ("Current search path:\n");
+	Com_Printf (S_GREEN"Current search path:\n");
+	Com_Printf ("----zip-files-name------------\n");
+	int n = 0;
 	for (s = fs_searchpaths; s; s = s->next)
 	{
+		n++;
 		if (s == fs_base_searchpaths)
-			Com_Printf ("----------\n");
+			Com_Printf (S_GREEN"------------------------\n");
 		if (s->pack)
-			Com_Printf ("%s%s (%d files)\n", s->pack->filename, is_zip_str[s->pack->isZip], s->pack->numFiles);
+			Com_Printf ("%-3d  %c  %-5d %s\n", n, s->pack->isZip ? '+' : ' ', s->pack->numFiles, s->pack->filename);
 		else
-			Com_Printf ("%s\n", s->filename);
+			Com_Printf ("%-3d     --    %s\n", n, s->filename);
 	}
 
 	if (fs_links)
 	{
-		Com_Printf ("\nLinks:\n");
+		Com_Printf (S_GREEN"\nLinks:\n");
 		for (l = fs_links; l; l = l->next)
 			Com_Printf ("%s : %s\n", l->from, l->to);
 	}
 }
 
 
-static void FS_Cat_f (void)
+static void FS_Cat_f (bool usage, int argc, char **argv)
 {
 	FILE	*f;
 	int		len;
 	char	buf[64];
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: cat <filename>\n");
 		return;
 	}
-	len = FS_FOpenFile (Cmd_Argv(1), &f);
+	len = FS_FOpenFile (argv[1], &f);
 	if (!f)
 	{
-		Com_Printf ("File %s is not found\n", Cmd_Argv(1));
+		Com_Printf ("File %s is not found\n", argv[1]);
 		return;
 	}
 	Com_Printf ("\n--------\n");
@@ -1827,18 +1830,18 @@ static void FS_Cat_f (void)
 }
 
 
-static void FS_Type_f (void)
+static void FS_Type_f (bool usage, int argc, char **argv)
 {
 	FILE	*f;
 	int		len, oldDev;
 	char	*name;
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: type <filename>\n");
 		return;
 	}
-	name = Cmd_Argv(1);
+	name = argv[1];
 	oldDev = fs_debug->integer;
 	Cvar_SetInteger ("fs_debug", 1);	//?? another way
 	len = FS_FOpenFile (name, &f);
@@ -1900,13 +1903,13 @@ CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 
-	Cmd_AddCommand ("path", FS_Path_f);
-	Cmd_AddCommand ("link", FS_Link_f);
-	Cmd_AddCommand ("dir", FS_Dir_f);
-	Cmd_AddCommand ("loadpak", FS_LoadPak_f);
-	Cmd_AddCommand ("unloadpak", FS_UnloadPak_f);
-	Cmd_AddCommand ("cat", FS_Cat_f);
-	Cmd_AddCommand ("type", FS_Type_f);
+	RegisterCommand ("path", FS_Path_f);
+	RegisterCommand ("link", FS_Link_f);
+	RegisterCommand ("dir", FS_Dir_f);
+	RegisterCommand ("loadpak", FS_LoadPak_f);
+	RegisterCommand ("unloadpak", FS_UnloadPak_f);
+	RegisterCommand ("cat", FS_Cat_f);
+	RegisterCommand ("type", FS_Type_f);
 
 	InitResFiles ();
 

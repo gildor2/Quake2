@@ -197,14 +197,11 @@ rserr_t SWimp_SetMode( int *pwidth, int *pheight, int mode, bool fullscreen )
 			if ( SWimp_InitGraphics( 0 ) )
 			{
 				// mode is legal but not as fullscreen
-				fullscreen = 0;
+				fullscreen = false;
 				retval = rserr_invalid_fullscreen;
 			}
 			else
-			{
-				// failed to set a valid mode in windowed mode
-				retval = rserr_unknown;
-			}
+				Com_FatalError ("Failed to set a valid mode in windowed mode");
 		}
 	}
 	else
@@ -213,7 +210,7 @@ rserr_t SWimp_SetMode( int *pwidth, int *pheight, int mode, bool fullscreen )
 		if ( !SWimp_InitGraphics( fullscreen ) )
 		{
 			sww_state.initializing = true;
-			return rserr_unknown;
+			Com_FatalError ("Failed to set a valid mode in windowed mode");
 		}
 	}
 

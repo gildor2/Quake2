@@ -2,78 +2,222 @@
 
 #ifdef DYNAMIC_REF
 
-#define Cmd_AddCommand	ri._Cmd_AddCommand
-#define Cmd_RemoveCommand	ri._Cmd_RemoveCommand
-#define Cmd_Argc	ri._Cmd_Argc
-#define Cmd_Argv	ri._Cmd_Argv
-#define Cmd_Args	ri._Cmd_Args
-#define Cvar_Get	ri._Cvar_Get
-#define Cvar_GetVars	ri._Cvar_GetVars
-#define Cvar_Set	ri._Cvar_Set
-#define Cvar_SetValue	ri._Cvar_SetValue
-#define Cvar_SetInteger	ri._Cvar_SetInteger
-#define Cvar_VariableString	ri._Cvar_VariableString
-#define Cvar_VariableValue	ri._Cvar_VariableValue
-#define Cvar_VariableInt	ri._Cvar_VariableInt
-#define Cvar_Clamp	ri._Cvar_Clamp
-#define Cvar_ClampName	ri._Cvar_ClampName
-#define appMalloc	ri._appMalloc
-#define appFree	ri._appFree
-#define CreateMemoryChain	ri._CreateMemoryChain
-#define AllocChainBlock	ri._AllocChainBlock
-#define FreeMemoryChain	ri._FreeMemoryChain
-#define Hunk_Begin	ri._Hunk_Begin
-#define Hunk_Alloc	ri._Hunk_Alloc
-#define Hunk_End	ri._Hunk_End
-#define Hunk_Free	ri._Hunk_Free
-#define Sys_Milliseconds	ri._Sys_Milliseconds
+inline bool RegisterCommand (const char *name, void(*func)(), int flags)
+{
+	return ri._RegisterCommand (name, func, flags);
+}
+inline void UnregisterCommand (const char *name)
+{
+	ri._UnregisterCommand (name);
+}
+inline cvar_t* Cvar_Get (const char *name, const char *value, int flags)
+{
+	return ri._Cvar_Get (name, value, flags);
+}
+inline void Cvar_GetVars (const cvarInfo_t *vars, int count)
+{
+	ri._Cvar_GetVars (vars, count);
+}
+inline cvar_t* Cvar_Set (const char *name, const char *value)
+{
+	return ri._Cvar_Set (name, value);
+}
+inline cvar_t* Cvar_SetValue (const char *name, float value)
+{
+	return ri._Cvar_SetValue (name, value);
+}
+inline cvar_t* Cvar_SetInteger (const char *name, int value)
+{
+	return ri._Cvar_SetInteger (name, value);
+}
+inline char* Cvar_VariableString (const char *name)
+{
+	return ri._Cvar_VariableString (name);
+}
+inline float Cvar_VariableValue (const char *name)
+{
+	return ri._Cvar_VariableValue (name);
+}
+inline int Cvar_VariableInt (const char *name)
+{
+	return ri._Cvar_VariableInt (name);
+}
+inline float Cvar_Clamp (cvar_t *cvar, float low, float high)
+{
+	return ri._Cvar_Clamp (cvar, low, high);
+}
+inline float Cvar_ClampName (const char *name, float low, float high)
+{
+	return ri._Cvar_ClampName (name, low, high);
+}
+inline void* appMalloc (int size)
+{
+	return ri._appMalloc (size);
+}
+inline void appFree (void *ptr)
+{
+	ri._appFree (ptr);
+}
+inline void* CreateMemoryChain (void)
+{
+	return ri._CreateMemoryChain ();
+}
+inline void* AllocChainBlock (void *chain, int size)
+{
+	return ri._AllocChainBlock (chain, size);
+}
+inline void FreeMemoryChain (void *chain)
+{
+	ri._FreeMemoryChain (chain);
+}
+inline void* Hunk_Begin (int maxsize)
+{
+	return ri._Hunk_Begin (maxsize);
+}
+inline void* Hunk_Alloc (int size)
+{
+	return ri._Hunk_Alloc (size);
+}
+inline int Hunk_End (void)
+{
+	return ri._Hunk_End ();
+}
+inline void Hunk_Free (void *buf)
+{
+	ri._Hunk_Free (buf);
+}
+inline int Sys_Milliseconds (void)
+{
+	return ri._Sys_Milliseconds ();
+}
 #define Com_Printf	ri._Com_Printf
 #define Com_DPrintf	ri._Com_DPrintf
 #define Com_WPrintf	ri._Com_WPrintf
 #define Com_FatalError	ri._Com_FatalError
 #define Com_DropError	ri._Com_DropError
 #ifdef _WIN32
-#define win32ExceptFilter2	ri._win32ExceptFilter2
+inline int win32ExceptFilter2 (void)
+{
+	return ri._win32ExceptFilter2 ();
+}
 #endif
-#define appUnwindPrefix	ri._appUnwindPrefix
+inline void appUnwindPrefix (const char *fmt)
+{
+	ri._appUnwindPrefix (fmt);
+}
 #define appUnwindThrow	ri._appUnwindThrow
-#define FS_FileExists	ri._FS_FileExists
-#define FS_ListFiles	ri._FS_ListFiles
-#define FS_LoadFile	ri._FS_LoadFile
-#define FS_FreeFile	ri._FS_FreeFile
-#define FS_Gamedir	ri._FS_Gamedir
-#define FS_CreatePath	ri._FS_CreatePath
-#define FS_CopyFile	ri._FS_CopyFile
-#define FS_CopyFiles	ri._FS_CopyFiles
-#define FS_RemoveFiles	ri._FS_RemoveFiles
-#define MatchWildcard	ri._MatchWildcard
-#define Vid_GetModeInfo	ri._Vid_GetModeInfo
-#define ImageExists	ri._ImageExists
-#define LoadPCX	ri._LoadPCX
-#define LoadTGA	ri._LoadTGA
-#define LoadJPG	ri._LoadJPG
-#define WriteTGA	ri._WriteTGA
-#define WriteJPG	ri._WriteJPG
-#define LoadBspFile	ri._LoadBspFile
-#define CM_BoxTrace	ri._CM_BoxTrace
-#define CM_TransformedBoxTrace	ri._CM_TransformedBoxTrace
-#define CM_TransformedBoxTrace2	ri._CM_TransformedBoxTrace2
-#define CM_BrushTrace	ri._CM_BrushTrace
-#define CM_RefineBrushTrace	ri._CM_RefineBrushTrace
+inline bool FS_FileExists (char *filename)
+{
+	return ri._FS_FileExists (filename);
+}
+inline basenamed_t* FS_ListFiles (char *name, int *numfiles, int flags)
+{
+	return ri._FS_ListFiles (name, numfiles, flags);
+}
+inline void* FS_LoadFile (const char *name, unsigned *size = NULL)
+{
+	return ri._FS_LoadFile (name, NULL);
+}
+inline void FS_FreeFile (void *buf)
+{
+	ri._FS_FreeFile (buf);
+}
+inline char* FS_Gamedir (void)
+{
+	return ri._FS_Gamedir ();
+}
+inline void FS_CreatePath (char *path)
+{
+	ri._FS_CreatePath (path);
+}
+inline void FS_CopyFile (char *src, char *dst)
+{
+	ri._FS_CopyFile (src, dst);
+}
+inline void FS_CopyFiles (char *srcMask, char *dstDir)
+{
+	ri._FS_CopyFiles (srcMask, dstDir);
+}
+inline void FS_RemoveFiles (char *mask)
+{
+	ri._FS_RemoveFiles (mask);
+}
+inline bool MatchWildcard (const char *name, const char *mask, bool ignoreCase = false)
+{
+	return ri._MatchWildcard (name, mask, false);
+}
+inline bool Vid_GetModeInfo (int *width, int *height, int mode)
+{
+	return ri._Vid_GetModeInfo (width, height, mode);
+}
+inline int ImageExists (const char *name, int stop_mask = IMAGE_ANY)
+{
+	return ri._ImageExists (name, IMAGE_ANY);
+}
+inline void LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *height)
+{
+	ri._LoadPCX (name, pic, palette, width, height);
+}
+inline void LoadTGA (const char *name, byte **pic, int *width, int *height)
+{
+	ri._LoadTGA (name, pic, width, height);
+}
+inline void LoadJPG (const char *name, byte **pic, int *width, int *height)
+{
+	ri._LoadJPG (name, pic, width, height);
+}
+inline bool WriteTGA (const char *name, byte *pic, int width, int height)
+{
+	return ri._WriteTGA (name, pic, width, height);
+}
+inline bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQuality)
+{
+	return ri._WriteJPG (name, pic, width, height, highQuality);
+}
+inline bspfile_t* LoadBspFile (const char *filename, bool clientload, unsigned *checksum)
+{
+	return ri._LoadBspFile (filename, clientload, checksum);
+}
+inline void CM_BoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask)
+{
+	ri._CM_BoxTrace (tr, start, end, mins, maxs, headnode, brushmask);
+}
+inline void CM_TransformedBoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles)
+{
+	ri._CM_TransformedBoxTrace (tr, start, end, mins, maxs, headnode, brushmask, origin, angles);
+}
+inline void CM_TransformedBoxTrace2 (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t *axis)
+{
+	ri._CM_TransformedBoxTrace2 (tr, start, end, mins, maxs, headnode, brushmask, origin, axis);
+}
+inline int CM_BrushTrace (const vec3_t start, const vec3_t end, int *brushes, int maxBrushes)
+{
+	return ri._CM_BrushTrace (start, end, brushes, maxBrushes);
+}
+inline int CM_RefineBrushTrace (const vec3_t start, const vec3_t end, int *brushes, int numBrushes)
+{
+	return ri._CM_RefineBrushTrace (start, end, brushes, numBrushes);
+}
 #ifdef _WIN32
-#define Vid_CreateWindow	ri._Vid_CreateWindow
-#define Vid_DestroyWindow	ri._Vid_DestroyWindow
+inline void* Vid_CreateWindow (int width, int height, bool fullscreen)
+{
+	return ri._Vid_CreateWindow (width, height, fullscreen);
+}
+inline void Vid_DestroyWindow (bool force)
+{
+	ri._Vid_DestroyWindow (force);
+}
 #else
-#define Vid_NewWindow	ri._Vid_NewWindow
+inline void Vid_NewWindow (int width, int height)
+{
+	ri._Vid_NewWindow (width, height);
+}
 #endif
 
 #else
 
-void	Cmd_AddCommand (const char *name, void(*func)(void));
-void	Cmd_RemoveCommand (const char *name);
-int	Cmd_Argc (void);
-char*	Cmd_Argv (int i);
-char*	Cmd_Args (void);
+bool	RegisterCommand (const char *name, void(*func)(), int flags);
+void	UnregisterCommand (const char *name);
 cvar_t*	Cvar_Get (const char *name, const char *value, int flags);
 void	Cvar_GetVars (const cvarInfo_t *vars, int count);
 cvar_t*	Cvar_Set (const char *name, const char *value);
@@ -115,13 +259,13 @@ void	FS_CopyFiles (char *srcMask, char *dstDir);
 void	FS_RemoveFiles (char *mask);
 bool	MatchWildcard (const char *name, const char *mask, bool ignoreCase = false);
 bool	Vid_GetModeInfo (int *width, int *height, int mode);
-int	ImageExists (char *name, int stop_mask);
-void	LoadPCX (char *name, byte **pic, byte **palette, int *width, int *height);
-void	LoadTGA (char *name, byte **pic, int *width, int *height);
-void	LoadJPG (char *name, byte **pic, int *width, int *height);
-bool	WriteTGA (char *name, byte *pic, int width, int height);
-bool	WriteJPG (char *name, byte *pic, int width, int height, bool highQuality);
-bspfile_t*	LoadBspFile (char *filename, bool clientload, unsigned *checksum);
+int	ImageExists (const char *name, int stop_mask = IMAGE_ANY);
+void	LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *height);
+void	LoadTGA (const char *name, byte **pic, int *width, int *height);
+void	LoadJPG (const char *name, byte **pic, int *width, int *height);
+bool	WriteTGA (const char *name, byte *pic, int width, int height);
+bool	WriteJPG (const char *name, byte *pic, int width, int height, bool highQuality);
+bspfile_t*	LoadBspFile (const char *filename, bool clientload, unsigned *checksum);
 void	CM_BoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask);
 void	CM_TransformedBoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles);
 void	CM_TransformedBoxTrace2 (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t *axis);

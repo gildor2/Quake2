@@ -421,6 +421,8 @@ void SCR_PlayCinematic (char *arg)
 	char	*ext;
 	int		old_khz;
 
+	guard(SCR_PlayCinematic);
+
 	// make sure CD isn't playing music
 	CDAudio_Stop ();
 
@@ -456,7 +458,7 @@ void SCR_PlayCinematic (char *arg)
 	FS_FOpenFile (va("video/%s", arg), &cl.cinematic_file);
 	if (!cl.cinematic_file)
 	{
-//		Com_DropError ("Cinematic %s not found.\n", name);
+		Com_DPrintf ("Cinematic %s not found.\n", arg);
 		SCR_FinishCinematic ();
 		cl.cinematictime = 0;	// done
 		return;
@@ -494,4 +496,6 @@ void SCR_PlayCinematic (char *arg)
 	cin.pic_pending = ReadNextFrame ();
 	cl.cinematicframe = 0;
 	cl.cinematictime = Sys_Milliseconds ();
+
+	unguard;
 }

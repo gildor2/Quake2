@@ -5,19 +5,20 @@
 #include "gl_lightmap.h"
 #include "gl_shader.h"
 
+//#define TEST_LOAD	// will add command "loadmodel <filename>"; may implement this in client (not renderer)
 
 #define PROFILE_LOADING
 
 #ifdef PROFILE_LOADING
 #define START_PROFILE(name)			\
 	{								\
-		static char _name[] = #name;\
-		char *_arg = "";			\
+		static const char _name[] = #name;\
+		const char *_arg = "";			\
 		int	_time = Sys_Milliseconds();
 #define START_PROFILE2(name,arg)	\
 	{								\
-		static char _name[] = #name;\
-		char *_arg = arg;			\
+		static const char _name[] = #name;\
+		const char *_arg = arg;			\
 		int	_time = Sys_Milliseconds();
 #define END_PROFILE	\
 		_time = Sys_Milliseconds() - _time;	\
@@ -43,7 +44,7 @@ static bool LoadMd2 (model_t *m, byte *buf, unsigned len);
 static bool LoadSp2 (model_t *m, byte *buf, unsigned len);
 
 
-model_t	*GL_FindModel (char *name)
+model_t	*GL_FindModel (const char *name)
 {
 	char	name2[MAX_QPATH];
 	int		i;
@@ -764,7 +765,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 
 			area = GetPolyArea (pverts, numVerts);
 			img = GL_FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP);
-			BuildSurfLight (s, img ? &img->color : &defColor, area, stex->value, stex->flags & SURF_SKY != 0);
+			BuildSurfLight (s, img ? &img->color : &defColor, area, stex->value, (stex->flags & SURF_SKY) != 0);
 			if (stex->flags & SURF_AUTOFLARE && !(stex->flags & SURF_SKY))
 				BuildSurfFlare (out, img ? &img->color : &defColor, area);
 		}
@@ -1171,7 +1172,7 @@ static void FreeMapData (void)
 	if (map.lightGridChain) FreeMemoryChain (map.lightGridChain);
 }
 
-void GL_LoadWorldMap (char *name)
+void GL_LoadWorldMap (const char *name)
 {
 	char	name2[MAX_QPATH];
 
@@ -1274,6 +1275,8 @@ static int ParseGlCmds (char *name, surfaceMd3_t *surf, int *cmds, int *xyzIndex
 	int		count, numTris, *idx, allocatedVerts;
 	int		vertsIndexes[1024];		// verts per triangle strip/fan
 
+	guard(ParseGlCmds);
+
 	numTris = 0;
 	allocatedVerts = 0;
 	idx = surf->indexes;
@@ -1291,7 +1294,7 @@ static int ParseGlCmds (char *name, surfaceMd3_t *surf, int *cmds, int *xyzIndex
 
 		if (numTris > surf->numTris)
 		{
-			Com_WPrintf ("R_LoadMd2: %s has incorrect triangle count\n", name);
+			Com_WPrintf ("R_LoadMd2(%s): incorrect triangle count\n", name);
 			return 0;
 		}
 
@@ -1312,7 +1315,7 @@ static int ParseGlCmds (char *name, surfaceMd3_t *surf, int *cmds, int *xyzIndex
 			{	// vertex not found - allocate it
 				if (allocatedVerts == surf->numVerts)
 				{
-					Com_WPrintf ("R_LoadMd2: %s has too much texcoords\n", name);
+					Com_WPrintf ("R_LoadMd2(%s): too much texcoords\n", name);
 					return false;
 				}
 				dst[0] = s;
@@ -1346,6 +1349,8 @@ static int ParseGlCmds (char *name, surfaceMd3_t *surf, int *cmds, int *xyzIndex
 
 	surf->numTris = numTris;	// update triangle count
 	return allocatedVerts;
+
+	unguard;
 }
 
 
@@ -1354,6 +1359,8 @@ static void ProcessMd2Frame (vertexMd3_t *verts, dAliasFrame_t *srcFrame, md3Fra
 	int		i;
 	vertexMd3_t *dstVerts;
 	float	radius;
+
+	guard(ProcessMd2Frame);
 
 	ClearBounds (dstFrame->mins, dstFrame->maxs);
 	for (i = 0, dstVerts = verts; i < numVerts; i++, dstVerts++)
@@ -1391,6 +1398,8 @@ static void ProcessMd2Frame (vertexMd3_t *verts, dAliasFrame_t *srcFrame, md3Fra
 		radius = max(tmp, radius);
 	}
 	dstFrame->radius = sqrt (radius);
+
+	unguard;
 }
 
 
@@ -1401,6 +1410,8 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 	short	norm_i[MD3_MAX_VERTS];
 	vertexMd3_t *verts;
 	float	*dst;
+
+	guard(BuildMd2Normals);
 
 	for (i = 0, verts = surf->verts; i < surf->numFrames; i++, verts += surf->numVerts)
 	{
@@ -1456,6 +1467,8 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 		for (j = 0; j < surf->numVerts; j++)
 			verts[j].normal = norm_i[xyzIndexes[j]];
 	}
+
+	unguard;
 }
 
 
@@ -1494,7 +1507,7 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 }
 
 
-#define MAX_XYZ_INDEXES		4096
+#define MAX_XYZ_INDEXES		4096	// maximum number of verts in loaded md3 model
 
 static bool LoadMd2 (model_t *m, byte *buf, unsigned len)
 {
@@ -1522,15 +1535,19 @@ static bool LoadMd2 (model_t *m, byte *buf, unsigned len)
 		return false;
 	}
 
-	/*--- determine number of vertexes ---*/
-	surf = (surfaceMd3_t*)appMalloc (sizeof(surfaceMd3_t) + MAX_XYZ_INDEXES * sizeof(int));
+	/* We should determine number of vertexes for conversion of md2 model into md3 format, because
+	 * in md2 one vertex may have few texcoords (for skin seams); ParseGlCmds() will detect seams and
+	 * duplicate vertex
+	 */
+	surf = (surfaceMd3_t*)appMalloc (sizeof(surfaceMd3_t) + MAX_XYZ_INDEXES * 2*sizeof(int));	// alloc space for MAX_XYZ_INDEXES texcoords
 	surf->texCoords = (float*)(surf+1);
 	surf->numVerts = MAX_XYZ_INDEXES;
 	surf->numTris = MAX_XYZ_INDEXES - 2;
 	numVerts = ParseGlCmds (m->name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes);
 	numTris = surf->numTris;		// just computed
+	if (numTris != hdr->numTris) Com_WPrintf ("LoadMd2(%s): computed numTris %d != %d\n", m->name, numTris, hdr->numTris);
 	appFree (surf);
-	Com_DPrintf ("LoadMD2(%s): %d xyz  %d st  %d verts\n", m->name, hdr->numXyz, hdr->numSt, numVerts);
+	Com_DPrintf ("LoadMD2(%s): %d xyz  %d st  %d verts  %d tris\n", m->name, hdr->numXyz, hdr->numSt, numVerts, numTris);
 
 	/* Allocate memory:
 		md3Model_t		[1]
@@ -1605,7 +1622,7 @@ END_PROFILE
 }
 
 
-shader_t *GL_FindSkin (char *name)
+shader_t *GL_FindSkin (const char *name)
 {
 	return GL_FindShader (name, SHADER_CHECK|SHADER_SKIN);
 	//?? do we need to disable mipmapping for skins ?
@@ -1670,17 +1687,25 @@ static bool LoadSp2 (model_t *m, byte *buf, unsigned len)
 /*----------------------------------------------*/
 
 
-static void Modellist_f (void)
+static void Modellist_f (bool usage, int argc, char **argv)
 {
 	int		i, totalSize;
 	model_t	*m;
 	static char *types[] = {"unk",	"inl",	"sp2",		"md3"};	// see modelType_t
 	static char *colors[] = {S_RED,	"",		S_MAGENTA, S_GREEN};			// ...
 
+	if (argc > 2 || usage)
+	{
+		Com_Printf ("Usage: modellist [mask]\n");
+		return;
+	}
+	const char *mask = (argc == 2) ? argv[1] : NULL;
+
 	totalSize = 0;
 	Com_Printf ("-----type-size----name---------\n");
 	for (i = 0, m = modelsArray; i < modelCount; i++, m++)
 	{
+		if (mask && !MatchWildcard (m->name, mask, true)) continue;
 		Com_Printf ("%-3d  %3s  %-7d %s%s\n", i, types[m->type], m->size, colors[m->type], m->name);
 		totalSize += m->size;
 	}
@@ -1745,12 +1770,28 @@ void GL_ResetModels (void)
 }
 
 
+#ifdef TEST_LOAD
+static void LoadModel_f (bool usage, int argc, char **argv)
+{
+	if (argc != 2 || usage)
+	{
+		Com_Printf ("Usage: loadmodel <filename>\n");
+		return;
+	}
+	GL_FindModel (argv[1]);
+}
+#endif
+
+
 void GL_InitModels (void)
 {
 	memset (&map, 0, sizeof(map));
 	GL_ResetModels ();
 
-	Cmd_AddCommand ("modellist", Modellist_f);
+	RegisterCommand ("modellist", Modellist_f);
+#ifdef TEST_LOAD
+	RegisterCommand ("loadmodel", LoadModel_f);
+#endif
 }
 
 
@@ -1759,5 +1800,8 @@ void GL_ShutdownModels (void)
 	FreeModels ();
 	FreeMapData ();
 
-	Cmd_RemoveCommand ("modellist");
+	UnregisterCommand ("modellist");
+#ifdef TEST_LOAD
+	UnregisterCommand ("loadmodel");
+#endif
 }

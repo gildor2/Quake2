@@ -512,6 +512,7 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			fprintf (f, "\nStack frame:\n");
 			DumpMem (f, (unsigned*) ctx->Esp, ctx);
 			fprintf (f, "\n");
+
 			fclose (f);
 		}
 	}

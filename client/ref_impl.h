@@ -4,11 +4,8 @@ static refImport_t ri = {
 	sizeof(refImport_t),
 #ifndef DEDICATED_ONLY
 
-	Cmd_AddCommand,
-	Cmd_RemoveCommand,
-	Cmd_Argc,
-	Cmd_Argv,
-	Cmd_Args,
+	RegisterCommand,
+	UnregisterCommand,
 	Cvar_Get,
 	Cvar_GetVars,
 	Cvar_Set,

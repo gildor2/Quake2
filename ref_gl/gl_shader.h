@@ -7,6 +7,7 @@
 
 /*---------------- Shader parameters --------------*/
 
+//?? useless
 typedef enum
 {
 	SORT_BAD,
@@ -62,6 +63,7 @@ typedef enum
 	TCMOD_TURB,					// wave(sin), but without base (or: base is vertex coords)
 	TCMOD_WARP,					// standard fx for quake "SURF_WARP"
 	TCMOD_SCROLL,				// coord[i] += speed[i] * shader.time
+	TCMOD_OFFSET,				// coord[i] += offset[i]
 	TCMOD_ENTITYTRANSLATE,		// == SCROLL with speeds, taken from entity
 	TCMOD_SCALE,				// coord[i] *= scales[i]
 	TCMOD_STRETCH,				// coord[i] = (coord[i]-0.5) * wave + 0.5  (wave stretch, center-relative)
@@ -129,6 +131,9 @@ typedef struct
 		};
 		struct {	// TCMOD_SCROLL
 			float	sSpeed, tSpeed;
+		};
+		struct {	// TCMOD_OFFSET
+			float	sOffset, tOffset;
 		};
 		struct {	// TCMOD_SCALE
 			float	sScale, tScale;
@@ -271,6 +276,7 @@ extern	shader_t	*gl_defaultShader;
 extern	shader_t	*gl_identityLightShader;	// no depth test/write
 extern	shader_t	*gl_identityLightShader2;	// with depth test/write
 extern	shader_t	*gl_concharsShader;
+extern	shader_t	*gl_videoShader;
 extern	shader_t	*gl_defaultSkyShader;
 extern	shader_t	*gl_particleShader;
 extern	shader_t	*gl_entityShader;
@@ -308,14 +314,16 @@ void	GL_ResetShaders (void);	// should be called every time before loading a new
 #define SHADER_ENVMAP		0x1000		// make additional rendering pass with specular environment map
 #define SHADER_ENVMAP2		0x2000		// add diffuse environment map
 #define SHADER_CLAMP		0x4000		// load image with IMAGE_CLAMP flag
+
+// mask of styles, stored to shader (exclude hints)
+#define SHADER_STYLEMASK	0x0000FFFF
+
 // styles (hints) valid for FindShader(), buf not stored in shader_t
 #define SHADER_ABSTRACT		0x20000000	// create shader without stages
 #define SHADER_CHECK		0x40000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error
 #define SHADER_CHECKLOADED	0x80000000	// if shader loaded, return it, else - NULL
-// mask of styles, stored to shader (exclude hints)
-#define SHADER_STYLEMASK	0x0000FFFF
 
-shader_t *GL_FindShader (char *name, int style);
+shader_t *GL_FindShader (const char *name, int style);
 shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber);
 shader_t *GL_SetShaderLightstyles (shader_t *shader, int styles);
 shader_t *GL_GetAlphaShader (shader_t *shader);

@@ -38,34 +38,6 @@ static bool s_systemcolors_saved;
 
 static HGDIOBJ previously_selected_GDI_obj;
 
-static int s_syspalindices[] =
-{
-  COLOR_ACTIVEBORDER,
-  COLOR_ACTIVECAPTION,
-  COLOR_APPWORKSPACE,
-  COLOR_BACKGROUND,
-  COLOR_BTNFACE,
-  COLOR_BTNSHADOW,
-  COLOR_BTNTEXT,
-  COLOR_CAPTIONTEXT,
-  COLOR_GRAYTEXT,
-  COLOR_HIGHLIGHT,
-  COLOR_HIGHLIGHTTEXT,
-  COLOR_INACTIVEBORDER,
-
-  COLOR_INACTIVECAPTION,
-  COLOR_MENU,
-  COLOR_MENUTEXT,
-  COLOR_SCROLLBAR,
-  COLOR_WINDOW,
-  COLOR_WINDOWFRAME,
-  COLOR_WINDOWTEXT
-};
-
-#define NUM_SYS_COLORS ( sizeof( s_syspalindices ) / sizeof( int ) )
-
-static DWORD s_oldsyscolors[NUM_SYS_COLORS];
-
 typedef struct dibinfo
 {
 	BITMAPINFOHEADER	header;
@@ -89,10 +61,10 @@ static void DIB_RestoreSystemColors( void );
 **
 ** Builds our DIB section
 */
-bool DIB_Init( unsigned char **ppbuffer, int *ppitch )
+bool DIB_Init (byte **ppbuffer, int *ppitch)
 {
 	dibinfo_t   dibheader;
-	BITMAPINFO *pbmiDIB = ( BITMAPINFO * ) &dibheader;
+	BITMAPINFO *pbmiDIB = (BITMAPINFO*) &dibheader;
 	int i;
 
 	memset( &dibheader, 0, sizeof( dibheader ) );
@@ -128,17 +100,20 @@ bool DIB_Init( unsigned char **ppbuffer, int *ppitch )
 	/*
 	** fill in the BITMAPINFO struct
 	*/
-	pbmiDIB->bmiHeader.biSize          = sizeof(BITMAPINFOHEADER);
-	pbmiDIB->bmiHeader.biWidth         = vid.width;
-	pbmiDIB->bmiHeader.biHeight        = vid.height;
-	pbmiDIB->bmiHeader.biPlanes        = 1;
-	pbmiDIB->bmiHeader.biBitCount      = 8;
-	pbmiDIB->bmiHeader.biCompression   = BI_RGB;
-	pbmiDIB->bmiHeader.biSizeImage     = 0;
-	pbmiDIB->bmiHeader.biXPelsPerMeter = 0;
-	pbmiDIB->bmiHeader.biYPelsPerMeter = 0;
-	pbmiDIB->bmiHeader.biClrUsed       = 256;
-	pbmiDIB->bmiHeader.biClrImportant  = 256;
+	static const BITMAPINFOHEADER hdr = {
+		sizeof(BITMAPINFOHEADER),	// biSize
+		vid.width,					// biWidth
+		vid.height,					// biHeight
+		1,							// biPlanes
+		8,							// biBitCount
+		BI_RGB,						// biCompression
+		0,							// biSizeImage
+		0,							// biXPelsPerMeter
+		0,							// biYPelsPerMeter
+		256,						// biClrUsed
+		256,						// biClrImportant
+	};
+	pbmiDIB->bmiHeader = hdr;
 
 	/*
 	** fill in the palette
@@ -220,6 +195,7 @@ void DIB_SetPalette( const unsigned char *_pal )
 	int				ret;
 	HDC				hDC = sww_state.hDC;
 
+	guard(DIB_SetPalette);
 	/*
 	** set the DIB color table
 	*/
@@ -243,7 +219,7 @@ void DIB_SetPalette( const unsigned char *_pal )
 
 		if ( SetDIBColorTable( sww_state.hdcDIBSection, 0, 256, colors ) == 0 )
 		{
-			Com_WPrintf ("DIB_SetPalette() - SetDIBColorTable failed\n");
+			Com_WPrintf ("SetDIBColorTable failed");
 		}
 	}
 
@@ -258,7 +234,7 @@ void DIB_SetPalette( const unsigned char *_pal )
 
 		if ( SetSystemPaletteUse( hDC, SYSPAL_NOSTATIC ) == SYSPAL_ERROR )
 		{
-			Com_FatalError ("DIB_SetPalette() - SetSystemPaletteUse() failed\n" );
+			Com_FatalError ("SetSystemPaletteUse() failed" );
 		}
 
 		/*
@@ -295,12 +271,12 @@ void DIB_SetPalette( const unsigned char *_pal )
 
 		if ( ( sww_state.hPal = CreatePalette( pLogPal ) ) == NULL )
 		{
-			Com_FatalError ("DIB_SetPalette() - CreatePalette failed(%x)\n", GetLastError() );
+			Com_FatalError ("CreatePalette failed (%x)", GetLastError() );
 		}
 
 		if ( ( hpalOld = SelectPalette( hDC, sww_state.hPal, FALSE ) ) == NULL )
 		{
-			Com_FatalError ("DIB_SetPalette() - SelectPalette failed(%x)\n",GetLastError() );
+			Com_FatalError ("SelectPalette failed (%x)",GetLastError() );
 		}
 
 		if ( sww_state.hpalOld == NULL )
@@ -308,9 +284,11 @@ void DIB_SetPalette( const unsigned char *_pal )
 
 		if ( ( ret = RealizePalette( hDC ) ) != pLogPal->palNumEntries )
 		{
-			Com_FatalError ("DIB_SetPalette() - RealizePalette set %d entries\n", ret);
+			Com_FatalError ("RealizePalette set %d entries", ret);
 		}
 	}
+
+	unguard;
 }
 
 /*
@@ -359,16 +337,40 @@ void DIB_Shutdown( void )
 /*
 ** DIB_Save/RestoreSystemColors
 */
+static const int s_syspalindices[] =
+{
+  COLOR_ACTIVEBORDER,
+  COLOR_ACTIVECAPTION,
+  COLOR_APPWORKSPACE,
+  COLOR_BACKGROUND,
+  COLOR_BTNFACE,
+  COLOR_BTNSHADOW,
+  COLOR_BTNTEXT,
+  COLOR_CAPTIONTEXT,
+  COLOR_GRAYTEXT,
+  COLOR_HIGHLIGHT,
+  COLOR_HIGHLIGHTTEXT,
+  COLOR_INACTIVEBORDER,
+
+  COLOR_INACTIVECAPTION,
+  COLOR_MENU,
+  COLOR_MENUTEXT,
+  COLOR_SCROLLBAR,
+  COLOR_WINDOW,
+  COLOR_WINDOWFRAME,
+  COLOR_WINDOWTEXT
+};
+
+static DWORD s_oldsyscolors[ARRAY_COUNT(s_syspalindices)];
+
 static void DIB_RestoreSystemColors( void )
 {
     SetSystemPaletteUse( sww_state.hDC, SYSPAL_STATIC );
-    SetSysColors( NUM_SYS_COLORS, s_syspalindices, s_oldsyscolors );
+    SetSysColors (ARRAY_COUNT(s_syspalindices), s_syspalindices, s_oldsyscolors);
 }
 
 static void DIB_SaveSystemColors( void )
 {
-	int i;
-
-	for ( i = 0; i < NUM_SYS_COLORS; i++ )
-		s_oldsyscolors[i] = GetSysColor( s_syspalindices[i] );
+	for (int i = 0; i < ARRAY_COUNT(s_syspalindices); i++)
+		s_oldsyscolors[i] = GetSysColor (s_syspalindices[i]);
 }

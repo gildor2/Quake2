@@ -450,47 +450,7 @@
 	".\jpeglib\jpeglib.h"\
 	
 
-.\jpeglib\jfdctfst.c : \
-	".\jpeglib\jconfig.h"\
-	".\jpeglib\jdct.h"\
-	".\jpeglib\jerror.h"\
-	".\jpeglib\jinclude.h"\
-	".\jpeglib\jmorecfg.h"\
-	".\jpeglib\jpegint.h"\
-	".\jpeglib\jpeglib.h"\
-	
-
-.\jpeglib\jfdctint.c : \
-	".\jpeglib\jconfig.h"\
-	".\jpeglib\jdct.h"\
-	".\jpeglib\jerror.h"\
-	".\jpeglib\jinclude.h"\
-	".\jpeglib\jmorecfg.h"\
-	".\jpeglib\jpegint.h"\
-	".\jpeglib\jpeglib.h"\
-	
-
 .\jpeglib\jidctflt.c : \
-	".\jpeglib\jconfig.h"\
-	".\jpeglib\jdct.h"\
-	".\jpeglib\jerror.h"\
-	".\jpeglib\jinclude.h"\
-	".\jpeglib\jmorecfg.h"\
-	".\jpeglib\jpegint.h"\
-	".\jpeglib\jpeglib.h"\
-	
-
-.\jpeglib\jidctfst.c : \
-	".\jpeglib\jconfig.h"\
-	".\jpeglib\jdct.h"\
-	".\jpeglib\jerror.h"\
-	".\jpeglib\jinclude.h"\
-	".\jpeglib\jmorecfg.h"\
-	".\jpeglib\jpegint.h"\
-	".\jpeglib\jpeglib.h"\
-	
-
-.\jpeglib\jidctint.c : \
 	".\jpeglib\jconfig.h"\
 	".\jpeglib\jdct.h"\
 	".\jpeglib\jerror.h"\
@@ -510,7 +470,7 @@
 	".\jpeglib\jpeglib.h"\
 	
 
-.\jpeglib\jmemansi.c : \
+.\jpeglib\jmemmgr.c : \
 	".\jpeglib\jconfig.h"\
 	".\jpeglib\jerror.h"\
 	".\jpeglib\jinclude.h"\
@@ -520,7 +480,7 @@
 	".\jpeglib\jpeglib.h"\
 	
 
-.\jpeglib\jmemmgr.c : \
+.\jpeglib\jmemnobs.c : \
 	".\jpeglib\jconfig.h"\
 	".\jpeglib\jerror.h"\
 	".\jpeglib\jinclude.h"\

@@ -2,3 +2,4 @@
 ! lighthouse
 - tequila
 - townv2
+- plaza, plaza2

@@ -3,9 +3,6 @@
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?)
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
-- when gl_clear=1, cinematics is not displayed (requires GL_BeginFrame before DrawStretchRaw(); currently BeginFrame code executed
-  immediately after GL_EndFrame from backend command buffer, but DrawStretchRaw() called BEFORE GL_EndFrame -- EndFrame will erase raw
-  drawings)
 
 - bugs with deathmatch mode
   - map "dm_dukecity_beta":

@@ -166,7 +166,7 @@ CL_Stop_f
 stop recording a demo
 ====================
 */
-void CL_Stop_f (void)
+static void CL_Stop_f (void)
 {
 	int		len;
 
@@ -194,7 +194,7 @@ record <demoname>
 Begins recording a demo from the current position
 ====================
 */
-void CL_Record_f (void)
+static void CL_Record_f (bool usage, int argc, char **argv)
 {
 	char	name[MAX_OSPATH];
 	byte	buf_data[MAX_MSGLEN];
@@ -203,7 +203,7 @@ void CL_Record_f (void)
 	entityState_t	*ent;
 	entity_state_t	nullstate;
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: record <demoname>\n");
 		return;
@@ -222,7 +222,7 @@ void CL_Record_f (void)
 	}
 
 	// open the demo file
-	Com_sprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), Cmd_Argv(1));
+	Com_sprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
 	Com_Printf ("recording to %s.\n", name);
 	FS_CreatePath (name);
@@ -315,11 +315,11 @@ things like godmode, noclip, etc, are commands directed to the server,
 so when they are typed in at the console, they will need to be forwarded.
 ===================
 */
-void Cmd_ForwardToServer (void)
+void Cmd_ForwardToServer (int argc, char **argv)
 {
 	char	*cmd;
 
-	cmd = Cmd_Argv(0);
+	cmd = argv[0];
 	if (cls.state <= ca_connected || *cmd == '-' || *cmd == '+')
 	{
 		Com_WPrintf ("Unknown command \"%s\"\n", cmd);
@@ -328,7 +328,7 @@ void Cmd_ForwardToServer (void)
 
 	MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
 	SZ_Print (&cls.netchan.message, cmd);
-	if (Cmd_Argc() > 1)
+	if (argc > 1)
 	{
 		SZ_Print (&cls.netchan.message, " ");
 		SZ_Print (&cls.netchan.message, Cmd_Args());
@@ -340,16 +340,16 @@ void Cmd_ForwardToServer (void)
 CL_ForwardToServer_f
 ==================
 */
-void CL_ForwardToServer_f (void)
+void CL_ForwardToServer_f (int argc, char **argv)
 {
 	if (cls.state != ca_connected && cls.state != ca_active)
 	{
-		Com_WPrintf ("Can't \"%s\", not connected\n", Cmd_Argv(0));
+		Com_WPrintf ("Can't \"%s\", not connected\n", argv[0]);
 		return;
 	}
 
 	// don't forward the first argument
-	if (Cmd_Argc() > 1)
+	if (argc > 1)
 	{
 		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
 		SZ_Print (&cls.netchan.message, Cmd_Args());
@@ -493,11 +493,11 @@ CL_Connect_f
 
 ================
 */
-void CL_Connect_f (void)
+void CL_Connect_f (bool usage, int argc, char **argv)
 {
 	char	*server;
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: connect <server>\n");
 		return;
@@ -512,7 +512,7 @@ void CL_Connect_f (void)
 		CL_Disconnect ();
 	}
 
-	server = Cmd_Argv (1);
+	server = argv[1];
 
 	NET_Config (true);			// allow remote
 
@@ -532,7 +532,7 @@ CL_Rcon_f
   an unconnected command.
 =====================
 */
-void CL_Rcon_f (void)
+void CL_Rcon_f (int argc, char **argv)
 {
 	char	message[1024];
 	int		i;
@@ -547,9 +547,9 @@ void CL_Rcon_f (void)
 	NET_Config (true);		// allow remote
 
 	Com_sprintf (ARRAY_ARG(message), "\xFF\xFF\xFF\xFFrcon %s ", rcon_client_password->string);
-	for (i = 1; i < Cmd_Argc(); i++)
+	for (i = 1; i < argc; i++)
 	{
-		strcat (message, Cmd_Argv(i));
+		strcat (message, argv[i]);
 		strcat (message, " ");
 	}
 
@@ -578,7 +578,7 @@ CL_ClearState
 */
 void CL_ClearState (void)
 {
-	S_StopAllSounds ();
+	S_StopAllSounds_f ();
 	CL_ClearEffects ();
 	CL_ClearTEnts ();
 
@@ -665,14 +665,14 @@ packet <destination> <contents>
 Contents allows \n escape character
 ====================
 */
-void CL_Packet_f (void)
+void CL_Packet_f (bool usage, int argc, char **argv)
 {
 	char	send[2048];
 	int		i, l;
 	char	*in, *out;
 	netadr_t	adr;
 
-	if (Cmd_Argc() != 3)
+	if (argc != 3 || usage)
 	{
 		Com_Printf ("Usage: packet <destination> <contents>\n");
 		return;
@@ -680,15 +680,15 @@ void CL_Packet_f (void)
 
 	NET_Config (true);		// allow remote
 
-	if (!NET_StringToAdr (Cmd_Argv(1), &adr))
+	if (!NET_StringToAdr (argv[1], &adr))
 	{
-		Com_WPrintf ("Bad address %s\n", Cmd_Argv(1));
+		Com_WPrintf ("Bad address %s\n", argv[1]);
 		return;
 	}
 	if (!adr.port)
 		adr.port = BigShort (PORT_SERVER);
 
-	in = Cmd_Argv(2);
+	in = argv[2];
 	out = send+4;
 	send[0] = send[1] = send[2] = send[3] = (char)0xff;
 
@@ -743,7 +743,7 @@ void CL_Reconnect_f (void)
 	if (cls.download)
 		return;
 
-	S_StopAllSounds ();
+	S_StopAllSounds_f ();
 	if (cls.state == ca_connected) {
 		Com_Printf ("reconnecting...\n");
 		cls.state = ca_connected;
@@ -855,113 +855,128 @@ Responses to broadcasts, etc
 =================
 */
 
+static char *cnstr;
+
+static void cClientConnect (int argc, char **argv)
+{
+	// server connection
+	if (cls.state == ca_connected)
+	{
+		Com_Printf ("dup connect received: ignored\n");
+		return;
+	}
+	Netchan_Setup (NS_CLIENT, &cls.netchan, net_from, 0);	// use default qport value
+	MSG_WriteChar (&cls.netchan.message, clc_stringcmd);
+	MSG_WriteString (&cls.netchan.message, "new");
+	cls.state = ca_connected;
+	cls.newprotocol = !strcmp (argv[1], NEW_PROTOCOL_ID);
+	if (cls.newprotocol)
+		Com_DPrintf ("Connected using extended protocol\n");
+	else if (cl_extProtocol->integer)
+		Com_DPrintf ("Server does not support extended protocol\n");
+}
+
+static void cInfo (int argc, char **argv)
+{
+	// server responding to a status broadcast
+	if (argc != 1)
+	{
+		// this can be message from ourselves -- request command is "info <protocol>", answer is "info\n<data>"
+		return;
+	}
+
+	Com_Printf ("%s\n", cnstr);
+	M_AddToServerList (net_from, cnstr);
+}
+
+static void cCmd (int argc, char **argv)
+{
+	if (!NET_IsLocalAddress (&net_from))
+	{
+		Com_Printf ("Command packet from remote host. Ignored.\n");
+		return;
+	}
+	Cbuf_AddText (cnstr);
+	Cbuf_AddText ("\n");
+}
+
+static void cPrint (int argc, char **argv)
+{
+	// print command from somewhere
+	if (TryParseStatus (cnstr)) return;	// do not pring status message
+
+	Com_Printf ("%s", cnstr);
+}
+
+static void cPing (int argc, char **argv)
+{
+	Netchan_OutOfBandPrint (NS_CLIENT, net_from, "ack");
+}
+
+static void cChallenge (int argc, char **argv)
+{
+	// challenge from the server we are connecting to
+	// check status info
+	if (statusRequest)
+	{
+		Com_DPrintf ("no status answer\n");
+		statusRequest = false;
+		cl_cheats = false;
+		cl_mapname[0] = 0;		// needed ??
+		cl_gamename[0] = 0;
+	}
+	Cvar_SetInteger ("cheats", cl_cheats);		// synchronize client "cheats" cvar with server
+
+	cls.challenge = atoi (argv[1]);
+	CL_SendConnectPacket ();
+}
+
+static void cEcho (int argc, char **argv)
+{
+	// echo request from server
+	Netchan_OutOfBandPrint (NS_CLIENT, net_from, "%s", argv[1]);
+}
+
+static const CSimpleCommand connectionlessCmds[] = {
+	{"client_connect", cClientConnect},
+	{"info", cInfo},
+	{"cmd", cCmd},
+	{"print", cPrint},
+	{"ping", cPing},
+	{"challenge", cChallenge},
+	{"echo", cEcho}
+};
+
+
 void CL_ConnectionlessPacket (void)
 {
-	char	*s, *s1, *c;
+	char	cmd[1024];
+
+	guard(CL_ConnectionlessPacket);
 
 	MSG_BeginReading (&net_message);
 	MSG_ReadLong (&net_message);	// skip the -1
 
-	s = MSG_ReadString (&net_message);
-	s1 = strchr (s, '\n');
-	if (s1) s1++;					// s1 = NULL || next line ptr
-	else s1 = "";					// just in case
-
-	Cmd_TokenizeString (s, false);
-
-	c = Cmd_Argv(0);
-
-	Com_DPrintf ("%s: %s\n", NET_AdrToString (&net_from), c);
-
-	// server connection
-	if (!strcmp (c, "client_connect"))
+	char *s = MSG_ReadString (&net_message);
+	cnstr = strchr (s, '\n');
+	if (cnstr)
 	{
-		if (cls.state == ca_connected)
-		{
-			Com_Printf ("dup connect received: ignored\n");
-			return;
-		}
-		Netchan_Setup (NS_CLIENT, &cls.netchan, net_from, 0);	// use default qport value
-		MSG_WriteChar (&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString (&cls.netchan.message, "new");
-		cls.state = ca_connected;
-		cls.newprotocol = !strcmp (Cmd_Argv (1), NEW_PROTOCOL_ID);
-		if (cls.newprotocol)
-			Com_DPrintf ("Connected using extended protocol\n");
-		else if (cl_extProtocol->integer)
-			Com_DPrintf ("Server does not support extended protocol\n");
-		return;
+		cnstr++;
+		Q_strncpyz (cmd, s, cnstr - s);
 	}
-
-	// server responding to a status broadcast
-	if (!strcmp (c, "info"))
+	else
 	{
-		if (Cmd_Argc() != 1)
-		{
-			// this can be message from ourselves -- request command is "info <protocol>", answer is "info\n<data>"
-			return;
-		}
-
-		Com_Printf ("%s\n", s1);
-		M_AddToServerList (net_from, s1);
-		return;
+		strcpy (cmd, s);
+		cnstr = "";				// just in case
 	}
+	// cnstr = NULL || next line ptr
 
-	// remote command from gui front end
-	if (!strcmp (c, "cmd"))
-	{
-		if (!NET_IsLocalAddress (&net_from))
-		{
-			Com_Printf ("Command packet from remote host.  Ignored.\n");
-			return;
-		}
-		Cbuf_AddText (s1);
-		Cbuf_AddText ("\n");
-		return;
-	}
-	// print command from somewhere
-	if (!strcmp (c, "print"))
-	{
-		if (TryParseStatus (s1)) return;	// do not pring status message
+	Com_DPrintf ("%s: %s\n", NET_AdrToString (&net_from), cmd);
 
-		Com_Printf ("%s", s1);
-		return;
-	}
+	if (!ExecuteCommand (s, ARRAY_ARG(connectionlessCmds)))
+		Com_Printf ("Unknown command \"%s\".\n", cmd);
 
-	// ping from somewhere
-	if (!strcmp (c, "ping"))
-	{
-		Netchan_OutOfBandPrint (NS_CLIENT, net_from, "ack");
-		return;
-	}
-
-	// challenge from the server we are connecting to
-	if (!strcmp (c, "challenge"))
-	{
-		// check status info
-		if (statusRequest)
-		{
-			Com_DPrintf ("no status answer\n");
-			statusRequest = false;
-			cl_cheats = false;
-			cl_mapname[0] = 0;		// needed ??
-			cl_gamename[0] = 0;
-		}
-		Cvar_SetInteger ("cheats", cl_cheats);		// synchronize client "cheats" cvar with server
-
-		cls.challenge = atoi(Cmd_Argv(1));
-		CL_SendConnectPacket ();
-		return;
-	}
-
-	// echo request from server
-	if (!strcmp (c, "echo"))
-	{
-		Netchan_OutOfBandPrint (NS_CLIENT, net_from, "%s", Cmd_Argv(1) );
-		return;
-	}
-
-	Com_Printf ("Unknown command \"%s\".\n", c);
+	unguard;
 }
 
 
@@ -1063,7 +1078,7 @@ CL_Userinfo_f
 */
 void CL_Userinfo_f (void)
 {
-	Com_Printf ("User info settings:\n");
+	Com_Printf (S_GREEN"------- User info settings -------\n");
 	Info_Print (Cvar_Userinfo());
 }
 
@@ -1110,13 +1125,35 @@ void CL_RequestNextDownload (void)
 	if (!allow_download->integer && precache_check < ENV_CNT)
 		precache_check = ENV_CNT;
 
+#if 0
 //ZOID
-	if (precache_check == CS_MODELS) { // confirm map
-		precache_check = CS_MODELS+2; // 0 isn't used
+	if (precache_check == CS_MODELS) {	// confirm map
+		precache_check = CS_MODELS+2;	// 0 isn't used
 		if (allow_download_maps->integer)
 			if (!CL_CheckOrDownloadFile(cl.configstrings[CS_MODELS+1]))
 				return; // started a download
 	}
+#else
+	if (precache_check == CS_MODELS) {	// confirm map
+		char *s = strrchr (cl.configstrings[CS_MODELS+1], '/');
+		if (s) {
+			char mapname[MAX_QPATH];
+			strcpy (mapname, s+1);
+			s = strrchr (mapname, '.');
+			if (s) *s = 0;
+			precache_check++;	// 0 isn't used
+			if (!CL_CheckOrDownloadFile (va("levelshots/%s.jpg", mapname)))	//??? should download any image (not JPG only) !!
+				return;
+		}
+	}
+	if (precache_check == CS_MODELS+1) {
+		SCR_SetLevelshot ();
+		precache_check++;
+		if (allow_download_maps->integer)
+			if (!CL_CheckOrDownloadFile(cl.configstrings[CS_MODELS+1]))
+				return; // started a download
+	}
+#endif
 	if (precache_check >= CS_MODELS && precache_check < CS_MODELS+MAX_MODELS) {
 		if (allow_download_models->integer) {
 			while (precache_check < CS_MODELS+MAX_MODELS &&
@@ -1204,7 +1241,7 @@ void CL_RequestNextDownload (void)
 		if (precache_check == CS_IMAGES) precache_check++; // zero is blank
 		while (precache_check < CS_IMAGES+MAX_IMAGES && cl.configstrings[precache_check][0])
 		{
-			if (!CL_CheckOrDownloadFile(va("pics/%s.pcx", cl.configstrings[precache_check++])))
+			if (!CL_CheckOrDownloadFile(va("pics/%s.pcx", cl.configstrings[precache_check++])))	//??? not PCX only
 				return; // started a download
 		}
 		precache_check = CS_PLAYERSKINS;
@@ -1262,7 +1299,7 @@ void CL_RequestNextDownload (void)
 					/*FALL THROUGH*/
 
 				case 2: // weapon skin
-					if (!CL_CheckOrDownloadFile(va("players/%s/weapon.pcx", model)))
+					if (!CL_CheckOrDownloadFile(va("players/%s/weapon.pcx", model)))	//??? PCX
 					{
 						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 3;
 						return; // started a download
@@ -1271,7 +1308,7 @@ void CL_RequestNextDownload (void)
 					/*FALL THROUGH*/
 
 				case 3: // skin
-					if (!CL_CheckOrDownloadFile(va("players/%s/%s.pcx", model, skin)))
+					if (!CL_CheckOrDownloadFile(va("players/%s/%s.pcx", model, skin)))	//??? PCX
 					{
 						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 4;
 						return; // started a download
@@ -1280,7 +1317,7 @@ void CL_RequestNextDownload (void)
 					/*FALL THROUGH*/
 
 				case 4: // skin_i
-					if (!CL_CheckOrDownloadFile(va("players/%s/%s_i.pcx", model, skin)))
+					if (!CL_CheckOrDownloadFile(va("players/%s/%s_i.pcx", model, skin)))	//??? PCX
 					{
 						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 5;
 						return; // started a download
@@ -1317,7 +1354,7 @@ void CL_RequestNextDownload (void)
 				static char *env_suf[6] = {"rt", "bk", "lf", "ft", "up", "dn"};
 				int n = precache_check++ - ENV_CNT - 1;
 
-				if (!CL_CheckOrDownloadFile(va("env/%s%s.pcx", cl.configstrings[CS_SKY], env_suf[n/2])))
+				if (!CL_CheckOrDownloadFile(va("env/%s%s.pcx", cl.configstrings[CS_SKY], env_suf[n/2])))	//??? PCX
 					return; // started a download
 			}
 		}
@@ -1341,7 +1378,7 @@ void CL_RequestNextDownload (void)
 		{
 			while (precache_tex < numtexinfo)
 			{
-				if (!CL_CheckOrDownloadFile(va("textures/%s.wal", map_surfaces[precache_tex++].rname)))
+				if (!CL_CheckOrDownloadFile(va("textures/%s.wal", map_surfaces[precache_tex++].rname)))	//??? WAL
 					return; // started a download
 			}
 		}
@@ -1364,12 +1401,12 @@ The server will send this command right
 before allowing the client into the server
 =================
 */
-void CL_Precache_f (void)
+void CL_Precache_f (int argc, char **argv)
 {
-	SCR_SetLevelshot2 ();
+	SCR_SetLevelshot ();
 	//Yet another hack to let old demos work
 	//the old precache sequence
-	if (Cmd_Argc() < 2)
+	if (argc < 2)
 	{
 		unsigned map_checksum;		// for detecting cheater maps
 
@@ -1380,7 +1417,7 @@ void CL_Precache_f (void)
 	}
 
 	precache_check = CS_MODELS;
-	precache_spawncount = atoi(Cmd_Argv(1));
+	precache_spawncount = atoi (argv[1]);
 	precache_model = 0;
 	precache_model_skin = 0;
 
@@ -1422,16 +1459,16 @@ void CL_WriteConfiguration (char *filename)
 }
 
 
-void CL_WriteConfig_f (void)
+void CL_WriteConfig_f (bool usage, int argc, char **argv)
 {
 	char	name[MAX_OSPATH];
 
-	if (Cmd_Argc () != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: writeconfig <filename>\n");
 		return;
 	}
-	strcpy (name, Cmd_Argv(1));
+	strcpy (name, argv[1]);
 	if (!strchr (name, '.'))
 		strcat (name, ".cfg");
 	CL_WriteConfiguration (name);
@@ -1534,31 +1571,31 @@ CVAR_END
 	gender->modified = false; // clear this so we know when user sets it manually (??)
 
 	// register our commands
-	Cmd_AddCommand ("cmd", CL_ForwardToServer_f);
-	Cmd_AddCommand ("pause", CL_Pause_f);
-	Cmd_AddCommand ("pingservers", CL_PingServers_f);
-	Cmd_AddCommand ("skins", CL_Skins_f);
+	RegisterCommand ("cmd", CL_ForwardToServer_f);
+	RegisterCommand ("pause", CL_Pause_f);
+	RegisterCommand ("pingservers", CL_PingServers_f);
+	RegisterCommand ("skins", CL_Skins_f);
 
-	Cmd_AddCommand ("userinfo", CL_Userinfo_f);
-	Cmd_AddCommand ("snd_restart", CL_Snd_Restart_f);
+	RegisterCommand ("userinfo", CL_Userinfo_f);
+	RegisterCommand ("snd_restart", CL_Snd_Restart_f);
 
-	Cmd_AddCommand ("changing", CL_Changing_f);
-	Cmd_AddCommand ("disconnect", CL_Disconnect_f);
-	Cmd_AddCommand ("record", CL_Record_f);
-	Cmd_AddCommand ("stop", CL_Stop_f);
+	RegisterCommand ("changing", CL_Changing_f);
+	RegisterCommand ("disconnect", CL_Disconnect_f);
+	RegisterCommand ("record", CL_Record_f);
+	RegisterCommand ("stop", CL_Stop_f);
 
-	Cmd_AddCommand ("quit", CL_Quit_f);
+	RegisterCommand ("quit", CL_Quit_f);
 
-	Cmd_AddCommand ("connect", CL_Connect_f);
-	Cmd_AddCommand ("reconnect", CL_Reconnect_f);
-	Cmd_AddCommand ("rcon", CL_Rcon_f);
+	RegisterCommand ("connect", CL_Connect_f);
+	RegisterCommand ("reconnect", CL_Reconnect_f);
+	RegisterCommand ("rcon", CL_Rcon_f);
 
-//	Cmd_AddCommand ("packet", CL_Packet_f);		// this is dangerous to leave in
+//	RegisterCommand ("packet", CL_Packet_f);		// this is dangerous to leave in
 
-	Cmd_AddCommand ("precache", CL_Precache_f);
-	Cmd_AddCommand ("download", CL_Download_f);
+	RegisterCommand ("precache", CL_Precache_f);
+	RegisterCommand ("download", CL_Download_f);
 
-	Cmd_AddCommand ("writeconfig", CL_WriteConfig_f);
+	RegisterCommand ("writeconfig", CL_WriteConfig_f);
 }
 
 

@@ -58,7 +58,7 @@ static float gl_colortable[8][3] = {
 Draw_InitLocal
 ===============
 */
-struct image_s  *Draw_FindPic (char *name);
+struct image_s  *Draw_FindPic (const char *name);
 
 void Draw_InitLocal (void)
 {
@@ -151,7 +151,7 @@ void Draw_CharColor (int x, int y, int num, int color)
 Draw_FindPic
 =============
 */
-image_t	*Draw_FindPic (char *name)
+image_t	*Draw_FindPic (const char *name)
 {
 	image_t *gl;
 
@@ -168,7 +168,7 @@ image_t	*Draw_FindPic (char *name)
 Draw_GetPicSize
 =============
 */
-void Draw_GetPicSize (int *w, int *h, char *pic)
+void Draw_GetPicSize (int *w, int *h, const char *pic)
 {
 	image_t *gl;
 
@@ -190,7 +190,7 @@ void Draw_GetPicSize (int *w, int *h, char *pic)
 Draw_StretchPic
 =============
 */
-void Draw_StretchPic (int x, int y, int w, int h, char *pic)
+void Draw_StretchPic (int x, int y, int w, int h, const char *pic)
 {
 	image_t *gl;
 
@@ -229,7 +229,7 @@ void Draw_StretchPic (int x, int y, int w, int h, char *pic)
 Draw_Pic
 =============
 */
-void Draw_Pic (int x, int y, char *pic)
+void Draw_Pic (int x, int y, const char *pic)
 {
 	image_t *gl;
 
@@ -278,7 +278,7 @@ Draw_PicColor
 =============
 */
 
-void Draw_PicColor (int x, int y, char *pic, int color)
+void Draw_PicColor (int x, int y, const char *pic, int color)
 {
 	if (color >= 0 && color <= 6)	// white is hardcoded - no modulate
 	{
@@ -301,7 +301,7 @@ This repeats a 64*64 tile graphic to fill the screen around a sized down
 refresh window.
 =============
 */
-void Draw_TileClear (int x, int y, int w, int h, char *pic)
+void Draw_TileClear (int x, int y, int w, int h, const char *pic)
 {
 	image_t	*image;
 

@@ -224,6 +224,7 @@
 	
 
 .\qcommon\cmd.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -231,6 +232,7 @@
 	
 
 .\qcommon\cmodel.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -265,6 +267,7 @@
 	
 
 .\qcommon\crc.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -272,6 +275,7 @@
 	
 
 .\qcommon\cvar.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -279,6 +283,7 @@
 	
 
 .\qcommon\files.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\lib\zlib\zconf.h"\
 	".\lib\zlib\zlib.h"\
@@ -289,6 +294,7 @@
 	
 
 .\qcommon\images.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\lib\jpeglib\jconfig.h"\
 	".\lib\jpeglib\jmorecfg.h"\
@@ -339,6 +345,7 @@
 	
 
 .\qcommon\memory.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -364,6 +371,7 @@
 	
 
 .\qcommon\model.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -371,6 +379,7 @@
 	
 
 .\qcommon\net_chan.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -378,6 +387,7 @@
 	
 
 .\win32\net_wins.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -385,6 +395,7 @@
 	
 
 .\qcommon\pmove.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -507,6 +518,7 @@
 	
 
 .\server\sv_ents.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -516,6 +528,7 @@
 	
 
 .\server\sv_game.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -525,6 +538,7 @@
 	
 
 .\server\sv_init.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -534,6 +548,7 @@
 	
 
 .\server\sv_main.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -543,6 +558,7 @@
 	
 
 .\server\sv_send.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -552,6 +568,7 @@
 	
 
 .\server\sv_user.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -561,6 +578,7 @@
 	
 
 .\server\sv_world.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -625,6 +643,7 @@
 	
 
 .\qcommon\zip.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\lib\zlib\zconf.h"\
 	".\lib\zlib\zlib.h"\
@@ -911,6 +930,7 @@
 	
 
 .\win32\q_shwin.cpp : \
+	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\

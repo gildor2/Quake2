@@ -341,7 +341,11 @@ void appUnwindThrow (const char *fmt, ...)
 
 	strncat (GErr.history, buf, sizeof(GErr.history));
 
+#if 1
 	throw;
+#else
+	*((int*)NULL) &= 123;
+#endif
 }
 
 
@@ -1283,7 +1287,7 @@ void Info_Print (char *s)
 		}
 		else
 			*o = 0;
-		Com_Printf ("%s", key);
+		Com_Printf (S_GREEN"%s", key);
 
 		if (!*s)
 		{
@@ -1438,13 +1442,13 @@ Just throw a fatal error to
 test error shutdown procedures
 =============
 */
-static void Com_Error_f (void)
+static void Com_Error_f (int argc, char **argv)
 {
-	if (!stricmp (Cmd_Argv(1), "-gpf"))
+	if (!stricmp (argv[1], "-gpf"))
 		*((int*)NULL) = 0;		// this is not "throw" command, this is GPF
-	else if (!stricmp (Cmd_Argv(1), "-drop"))
+	else if (!stricmp (argv[1], "-drop"))
 		Com_DropError ("testing drop error");
-	Com_FatalError ("%s", Cmd_Argv(1));
+	Com_FatalError ("%s", argv[1]);
 }
 
 
@@ -1499,9 +1503,7 @@ static void ParseCmdline (const char *cmdline)
 				quotes ^= 1;
 			else if (c == '-' && !quotes)
 			{
-				char	prev;
-
-				prev = *(dst-1);
+				char prev = *(dst-1);
 				if (prev == 0 || prev == ' ')
 					break;
 			}
@@ -1591,7 +1593,6 @@ static void PushCmdline (void)
 -----------------------------------------------------------------------------*/
 
 static cvar_t	*nointro;
-extern void Z_Init (void);
 
 
 void QCommon_Init (char *cmdline)
@@ -1615,7 +1616,7 @@ CVAR_END
 
 	Com_ResetErrorState ();
 	Swap_Init ();
-	Z_Init ();
+	Mem_Init ();
 	Cvar_Init ();
 
 	ParseCmdline (cmdline);			// should be executed before any cvar creation
@@ -1636,11 +1637,11 @@ CVAR_END
 	cvar_initialized = 1;			// config executed -- allow cmdline cvars to be modified
 
 	// init commands and vars
-	Cmd_AddCommand ("error", Com_Error_f);
+	RegisterCommand ("error", Com_Error_f);
 
 	if (DEDICATED)
 	{
-		Cmd_AddCommand ("quit", Com_Quit);
+		RegisterCommand ("quit", Com_Quit);
 		linewidth = 80;
 	}
 
@@ -1671,7 +1672,7 @@ CVAR_END
 
 	cvar_initialized = 2;
 	PushCmdline ();
-	Com_Printf ("====== " APPNAME " Initialized ======\n\n");
+	Com_Printf (S_GREEN"\n====== " APPNAME " Initialized ======\n\n");
 
 	unguard;
 }

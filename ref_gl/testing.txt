@@ -7,7 +7,7 @@
 - gl_logTexts == 2 -> log only 1 frame
 - r_surfinfo = +2 -- do not trace entities, +4 -- clip to all brushes
 - gl_showImages <mask> | 1==* | 0
-- r_lightmap && r_fullbright -> wireframe drawing (within a lightmap and texture); hint: use gl_fastsky or gl_clear
+- r_lightmap && r_fullbright -> wireframe drawing (within a lightmap and texture)
 - gl_dynamic == 2 -> uploadable dynamic lightmaps (not dlights!; restart required)
 - img_reload <mask> -- reload all matched images (system images and images, which names are started with '*', not reloaded)
 - gl_labels == 2 -> show labels of occluded ents

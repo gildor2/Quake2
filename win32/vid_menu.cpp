@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 /*--------------------- cvars ------------------------------*/
 
-//?? ADD r_ignorehwgamma, gl_ext_compressed_textures
+//?? ADD r_ignorehwgamma, gl_ext_texture_compression
 extern cvar_t *scr_viewsize;
 //static cvar_t *gl_driver;
 static cvar_t *gl_picmip;
@@ -161,7 +161,7 @@ static void ApplyChanges (void *unused)
 	Cvar_SetInteger ("gl_overbright", s_overbright.curvalue);
 	Cvar_SetInteger ("gl_textureBits", s_textureBits.curvalue * 16);
 	Cvar_SetInteger ("gl_vertexLight", s_lightStyle.curvalue);
-	Cvar_Set ("gl_texturemode", s_textureFilter.curvalue ? "GL_LINEAR_MIPMAP_LINEAR" : "GL_LINEAR_MIPMAP_NEAREST");
+	Cvar_Set ("gl_texturemode", s_textureFilter.curvalue ? "trilinear" : "bilinear");
 
 	switch (s_ref_list[s_current_menu_index].curvalue)
 	{
@@ -321,8 +321,8 @@ CVAR_END
 	MENU_SPIN(s_textureBits, y+=10, "texture quality", NULL, bits);
 	s_textureBits.curvalue = gl_textureBits->integer >> 4;
 	MENU_SPIN(s_textureFilter, y+=10, "texture filter", NULL, filters);
-	s_textureFilter.curvalue = stricmp (Cvar_Get ("gl_texturemode", "GL_LINEAR_MIPMAP_NEAREST", CVAR_ARCHIVE)->string,
-		"GL_LINEAR_MIPMAP_LINEAR") ? 0 : 1;
+	s_textureFilter.curvalue = stricmp (Cvar_Get ("gl_texturemode", "bilinear", CVAR_ARCHIVE)->string,
+		"bilinear") ? 1 : 0;
 	MENU_SPIN(s_finish_box, y+=10, "sync every frame", NULL, yesnoNames);
 	s_finish_box.curvalue = Cvar_Get ("gl_finish", "0", CVAR_ARCHIVE)->integer;
 

@@ -135,8 +135,8 @@ enum {
 	ROLL							// fall over
 };
 
-#define	MAX_STRING_CHARS	1024	// max length of a string passed to Cmd_TokenizeString
-#define	MAX_STRING_TOKENS	80		// max tokens resulting from Cmd_TokenizeString
+#define	MAX_STRING_CHARS	1024	// max length of a string passed to TokenizeString()
+#define	MAX_STRING_TOKENS	80		// max tokens resulting from TokenizeString()
 
 #define	MAX_QPATH			64		// max length of a quake game pathname
 #define	MAX_OSPATH			128		// max length of a filesystem pathname
@@ -341,12 +341,9 @@ void COM_FileBase (char *in, char *out);
 void COM_FilePath (char *in, char *out);
 void COM_DefaultExtension (char *path, char *extension);
 
-char *COM_ParseExt (char **data_p, bool allowLineBreaks);
-//char *COM_Parse (char **data_p);
-#define COM_Parse(p)	COM_ParseExt(p,true)
+char *COM_Parse (const char *&data_p, bool allowLineBreaks = true);
 const char *COM_QuoteString (const char *str, bool alwaysQuote);
 // data is an in/out parm, returns a parsed out token
-void SkipBracedSection (char **program);
 void SkipRestOfLine (char **data);
 
 // format arguments with fmt and put result to dest with a maximum size of size; return strlen(dest)

@@ -59,8 +59,8 @@ void	GL_ShutdownImages (void);
 void	GL_LoadDelayedImages (void);
 
 // creating images
-image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags);
-image_t *GL_FindImage (char *name, int flags);
+image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int flags);
+image_t *GL_FindImage (const char *name, int flags);
 
 // video support
 void	GL_SetRawPalette (const byte *palette);

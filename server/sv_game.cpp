@@ -6,6 +6,7 @@ static bool dummyGame;		// when demomap or cinematic loaded
 
 #define SV_Pmove Pmove		// for profiling
 
+
 /*
 ===============
 PF_Unicast
@@ -561,10 +562,10 @@ void SV_InitGameLibrary (bool dummy)
 	ge->Init ();
 	unguard;
 
-	Cmd_AddCommand ("gz_stats", GZ_Stats_f);
+	RegisterCommand ("gz_stats", GZ_Stats_f);
 	// register NULL commands for ability to complete them from console (will be forwarded to server)
 	for (int i = 0; i < ARRAY_COUNT(gameCommands); i++)
-		Cmd_AddCommand (gameCommands[i], NULL);
+		RegisterCommand (gameCommands[i], NULL, 0);
 
 	unguard;
 }
@@ -590,9 +591,9 @@ void SV_ShutdownGameLibrary (void)
 	// free tagged memory (in a case of memory leaks)
 	ShutdownGameMemory ();
 
-	Cmd_RemoveCommand ("gz_stats");
+	UnregisterCommand ("gz_stats");
 	// unregister game commands
 	for (int i = 0; i < ARRAY_COUNT(gameCommands); i++)
-		Cmd_RemoveCommand (gameCommands[i]);
+		UnregisterCommand (gameCommands[i]);
 	unguard;
 }

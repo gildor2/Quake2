@@ -32,7 +32,7 @@
 
 bool	QGL_Init (const char *libName);
 void	QGL_InitExtensions (void);
-void	QGL_PrintExtensionsString (const char *label, const char *str);
+void	QGL_PrintExtensionsString (const char *label, const char *str, const char *mask = NULL);
 void	QGL_Shutdown (void);
 // logging
 void	QGL_EnableLogging (bool enable);
@@ -62,6 +62,7 @@ extern viddef_t vid;
 typedef struct viewPortal_s	viewPortal_t;
 typedef struct refEntity_s	refEntity_t;
 typedef struct image_s		image_t;
+typedef struct shader_s		shader_t;
 typedef struct model_s		model_t;
 typedef struct surfaceCommon_s surfaceCommon_t;
 typedef struct surfacePlanar_s surfacePlanar_t;
@@ -105,7 +106,6 @@ typedef struct
 //!! need to perform clearing this struc with "memset()" (clear all fields in one place)
 typedef struct
 {
-	int		numFrames;
 	// geometry complexity
 	int		leafs, visLeafs, frustLeafs;	//?? frustLeafs -> ~cullLeafs
 	int		surfs, cullSurfs;
@@ -130,10 +130,11 @@ extern glrefdef_t  gl_refdef;	//!! used from gl_frontend.c :: MarkLeaves() only 
 extern drawSpeeds_t gl_speeds;
 
 
-void	DrawTextPos (int x, int y, char *text, unsigned rgba);
-void	DrawTextLeft (char *text, unsigned rgba);
-void	DrawTextRight (char *text, unsigned rgba);
-void	DrawText3D (vec3_t pos, char *text, unsigned rgba);
+void	GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color);
+void	DrawTextPos (int x, int y, const char *text, unsigned rgba);
+void	DrawTextLeft (const char *text, unsigned rgba);
+void	DrawTextRight (const char *text, unsigned rgba);
+void	DrawText3D (vec3_t pos, const char *text, unsigned rgba);
 
 
 /*----------- Imported functions ------------*/
@@ -149,8 +150,7 @@ typedef enum
 {	//?? remove
 	rserr_ok,
 	rserr_invalid_fullscreen,
-	rserr_invalid_mode,
-	rserr_unknown
+	rserr_invalid_mode
 } rserr_t;
 
 void	GLimp_BeginFrame (float camera_separation);
@@ -171,7 +171,6 @@ extern cvar_t	*gl_texturemode;
 
 extern cvar_t	*gl_overbright;
 
-extern cvar_t	*gl_fastSky;
 extern cvar_t	*gl_fog;
 
 extern cvar_t	*gl_flares;
@@ -200,10 +199,10 @@ extern cvar_t	*gl_finish;
 extern cvar_t	*gl_labels;
 extern cvar_t	*gl_lightLines, *gl_showLights;
 extern cvar_t	*gl_singleShader;
+extern cvar_t	*gl_showFillRate;
 
 extern cvar_t	*gl_znear;
 extern cvar_t	*gl_swapinterval;
-extern cvar_t	*gl_drawbuffer;
 
 
 #endif

@@ -1666,7 +1666,7 @@ static void DrawFlares (void)
 		else
 		{
 			// sun flare
-			if (gl_fastSky->integer || gl_skyShader == gl_defaultSkyShader)
+			if (gl_state.useFastSky || gl_skyShader == gl_defaultSkyShader)
 				continue;	// no flare with this sky
 			VectorMA (vp.vieworg, SUN_DRAWDIST, f->origin, flarePos);
 			scale = f->size * SUN_DRAWDIST / (2 * FLARE_DIST1);

@@ -26,7 +26,6 @@ typedef union
 		void	(APIENTRY * DepthRange) (GLclampd zNear, GLclampd zFar);
 		void	(APIENTRY * Disable) (GLenum cap);
 		void	(APIENTRY * DisableClientState) (GLenum array);
-		void	(APIENTRY * DrawBuffer) (GLenum mode);
 		void	(APIENTRY * DrawElements) (GLenum mode, GLsizei count, GLenum type, const GLvoid *indices);
 		void	(APIENTRY * Enable) (GLenum cap);
 		void	(APIENTRY * EnableClientState) (GLenum array);
@@ -114,7 +113,6 @@ extern qgl_t qgl;
 #define glDepthRange	qgl.DepthRange
 #define glDisable	qgl.Disable
 #define glDisableClientState	qgl.DisableClientState
-#define glDrawBuffer	qgl.DrawBuffer
 #define glDrawElements	qgl.DrawElements
 #define glEnable	qgl.Enable
 #define glEnableClientState	qgl.EnableClientState

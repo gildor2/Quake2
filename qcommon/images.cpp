@@ -1,7 +1,7 @@
 #include "qcommon.h"
 
-extern "C" {
 // hack to allow jpeglib to work from C++ source (no "#ifdef __cplusplus ..." in jpeglib.h)
+extern "C" {
 #include "../lib/jpeglib/jpeglib.h"
 }
 
@@ -28,7 +28,7 @@ typedef struct
 } pcx_t;
 
 
-void LoadPCX (char *name, byte **pic, byte **palette, int *width, int *height)
+void LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *height)
 {
 	byte	*src, *dst;
 	pcx_t	*hdr;
@@ -133,7 +133,7 @@ typedef struct
 
 
 //!! add top-to-bottom support
-void LoadTGA (char *name, byte **pic, int *width, int *height)
+void LoadTGA (const char *name, byte **pic, int *width, int *height)
 {
 	int		numColumns, numRows, bpp, numPixels;
 	int		type, flags;
@@ -264,7 +264,7 @@ void LoadTGA (char *name, byte **pic, int *width, int *height)
 /*-------------------------- JPG loading --------------------------*/
 
 
-static char *jpegname;
+static const char *jpegname;
 static bool jpegerror;
 
 static void JpegError ()
@@ -344,7 +344,7 @@ static struct jpeg_error_mgr *InitJpegError (struct jpeg_error_mgr *err)
 }
 
 
-void LoadJPG (char *name, byte **pic, int *width, int *height)
+void LoadJPG (const char *name, byte **pic, int *width, int *height)
 {
 	int		i, columns, rows;
 	unsigned length;
@@ -433,7 +433,7 @@ void LoadJPG (char *name, byte **pic, int *width, int *height)
  * set of IMAGE_XXX flags. Name should not have dots and MUST be in a lowercase
  */
 
-int ImageExists (char *name, int stop_mask)
+int ImageExists (const char *name, int stop_mask)
 {
 	basenamed_t *list, *item;
 	char	*ext;
@@ -472,7 +472,7 @@ int ImageExists (char *name, int stop_mask)
 
 // All functions receive data in RGB format; data may be damaged while writting.
 
-bool WriteTGA (char *name, byte *pic, int width, int height)
+bool WriteTGA (const char *name, byte *pic, int width, int height)
 {
 	FILE	*f;
 	tgaHdr_t header;
@@ -590,7 +590,7 @@ bool WriteTGA (char *name, byte *pic, int width, int height)
 }
 
 
-bool WriteJPG (char *name, byte *pic, int width, int height, bool highQuality)
+bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQuality)
 {
 	FILE	*f;
 	struct jpeg_compress_struct cinfo;

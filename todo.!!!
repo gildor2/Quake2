@@ -19,6 +19,9 @@ BUGS:
 ? cl_3rd_person 2 -- smooth camera; add game option: play with 3rd person camera (ext protocol only ?)
 - 3rd person camera trace: can extend Trace() to decect point of contents change
   (do not leave water; current: will not enter water, but can leave it)
+- "conchars.pcx": create drop-shadow effect (in pic; may be, require to cut (as grid) + grow image + different drawing code)
+  for better reading (require MemBitmap fx code ...)
+- CVAR_LOG -- add to crash.log on fatal exit (vid_ref,developer,dedicated, {deathmatch,cheats,maxclients}==CVAR_SERVERINFO)
   
 ! new pmove.c errors:
   - "ground3" cafe, on the street: cannot jump onto a corner column (horiz. speed set to 0 due to position snap)
@@ -85,7 +88,8 @@ HALFLIFE:
   - if moving slow - no step sounds
   - walking/running: step sound length = 400/300; water = 600; ladder = 350
 HALFLIFE2:
-  - see measure fillrate (add surfaces -> additive, no tex, color - signal depthwrite on/off)
+  - measure and display (as number) fillrate (current: 3d display only); + needs to disable fog (for KP etc) !!
+  ? check their full-scene fog implementation (for multi-pass rendering)
 
 CAMERA:
   - interpolate camera 1st/3rd person change
@@ -188,9 +192,9 @@ BSP:
 ? downloading:
   - sv_user.c :: SV_NextDownload_f() -- should limit downloading speed when server is on modem
   - ext protocol:
-    - allow downloading of jpg/tga instead of pcx/wal
+    - allow downloading of jpg/tga instead of pcx/wal (any suitable image)
     - download paks (when not very large)
-    - download map levelshot
+    * download map levelshot (current: jpg only, no other file types)
     - download player models/skins at game time (and allow download indicator during game)
   - menu: move "download options" to another place (not "player setup", or to upper level: where model selection performed)
     (separate for server/client)
@@ -227,6 +231,7 @@ BSP:
     will modify Z coord, but allows clipping using 'Z<0')
   - add 2nd {viewcluster, leaf[].frame} set (1st for main scene, 2nd for portal) -- Q3 has recalculation of leaf visibility
     every frame twice, and without portal - once per few frames.
+  ? try implement using stencil or render-to-texture
 ? place LoadMd2 outside ref_xxx and perform lovercase for a skin names
 ! fog occlusion (for global fog) -- implement it like sky (occluded surface -> sky surface, sky -> fog color);
   may look at Alice (additional clip plane to 4 frustum planes)

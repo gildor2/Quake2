@@ -152,7 +152,7 @@ static const char *impactSounds[IMPACT_COUNT] = {
 	"wood"
 };
 
-static const char *camperSounds[9] = {	//?? is it used ?
+static const char *camperSounds[9] = {
 	"tinyfart",
 	"cough1",
 	"cough2",
@@ -241,6 +241,17 @@ CL_RegisterTEntModels
 */
 void CL_RegisterTEntModels (void)
 {
+	static const char *modelNames[] = {
+		"models/objects/laser/tris.md2",
+		"models/objects/grenade2/tris.md2",
+		"models/weapons/v_machn/tris.md2",
+		"models/weapons/v_handgr/tris.md2",
+		"models/weapons/v_shotg2/tris.md2",
+		"models/objects/gibs/bone/tris.md2",
+		"models/objects/gibs/sm_meat/tris.md2",
+		"models/objects/gibs/bone2/tris.md2"
+	};
+
 	cl_mod_explode = re.RegisterModel ("models/objects/explode/tris.md2");
 	cl_mod_smoke = re.RegisterModel ("models/objects/smoke/tris.md2");
 	cl_mod_flash = re.RegisterModel ("models/objects/flash/tris.md2");
@@ -251,14 +262,8 @@ void CL_RegisterTEntModels (void)
 	cl_mod_bfg_explo = re.RegisterModel ("sprites/s_bfg2.sp2");
 	cl_mod_powerscreen = re.RegisterModel ("models/items/armor/effect/tris.md2");
 
-	re.RegisterModel ("models/objects/laser/tris.md2");
-	re.RegisterModel ("models/objects/grenade2/tris.md2");
-	re.RegisterModel ("models/weapons/v_machn/tris.md2");
-	re.RegisterModel ("models/weapons/v_handgr/tris.md2");
-	re.RegisterModel ("models/weapons/v_shotg2/tris.md2");
-	re.RegisterModel ("models/objects/gibs/bone/tris.md2");
-	re.RegisterModel ("models/objects/gibs/sm_meat/tris.md2");
-	re.RegisterModel ("models/objects/gibs/bone2/tris.md2");
+	for (int i = 0; i < ARRAY_COUNT(modelNames); i++)
+		re.RegisterModel (modelNames[i]);
 	// RAFAEL
 	// re.RegisterModel ("models/objects/blaser/tris.md2");
 

@@ -227,7 +227,7 @@ void CL_PrepRefresh (void)
 	if (!cl.configstrings[CS_MODELS+1][0])
 		return;				// no map loaded
 
-	SCR_SetLevelshot2 ();
+	SCR_SetLevelshot ();
 
 	// wait a small time to let server complete initialization
 	// allow map to be changed before initializing renderer, when loading savegames,
@@ -389,14 +389,14 @@ void V_Gun_Prev_f (void)
 	Com_Printf ("frame %i\n", gun_frame);
 }
 
-void V_Gun_Model_f (void)
+void V_Gun_Model_f (int argc, char **argv)
 {
-	if (Cmd_Argc() != 2)
+	if (argc != 2)
 	{
 		gun_model = NULL;
 		return;
 	}
-	gun_model = re.RegisterModel (va("models/%s/tris.md2", Cmd_Argv(1)));
+	gun_model = re.RegisterModel (va("models/%s/tris.md2", argv[1]));
 }
 
 #endif
@@ -670,7 +670,7 @@ static void DrawFpsInfo (void)
 }
 
 
-static void Screenshot_f (void)
+static void Screenshot_f (bool usage, int argc, char **argv)
 {
 	int		i, flags;
 	static char filename[MAX_OSPATH], tmpName[MAX_OSPATH];
@@ -678,17 +678,15 @@ static void Screenshot_f (void)
 	filename[0] = 0;
 	flags = 0;
 
-	if (Cmd_Argc() == 2 && !strcmp(Cmd_Argv(1), "/?"))
+	if (usage)
 	{
 		Com_Printf ("Usage: screenshot [-levelshot] [-no2d] [-nogamma] [-silent] [-jpeg] [<filename>]\n");
 		return;
 	}
 
-	for (i = 1; i < Cmd_Argc(); i++)
+	for (i = 1; i < argc; i++)
 	{
-		char	*opt;
-
-		opt = Cmd_Argv(i);
+		char *opt = argv[i];
 		if (opt[0] == '-')
 		{
 			opt++;
@@ -966,9 +964,9 @@ CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
 
 #ifdef GUN_DEBUG
-	Cmd_AddCommand ("gun_next", V_Gun_Next_f);
-	Cmd_AddCommand ("gun_prev", V_Gun_Prev_f);
-	Cmd_AddCommand ("gun_model", V_Gun_Model_f);
+	RegisterCommand ("gun_next", V_Gun_Next_f);
+	RegisterCommand ("gun_prev", V_Gun_Prev_f);
+	RegisterCommand ("gun_model", V_Gun_Model_f);
 #endif
-	Cmd_AddCommand ("screenshot", Screenshot_f);
+	RegisterCommand ("screenshot", Screenshot_f);
 }

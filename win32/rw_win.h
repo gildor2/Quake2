@@ -53,12 +53,12 @@ extern swwstate_t sww_state;
 /*
 ** DIB code
 */
-bool	DIB_Init( unsigned char **ppbuffer, int *ppitch );
+bool	DIB_Init( byte **ppbuffer, int *ppitch );
 void    DIB_Shutdown( void );
-void    DIB_SetPalette( const unsigned char *palette );
+void    DIB_SetPalette( const byte *palette );
 
-bool	DDRAW_Init( unsigned char **ppbuffer, int *ppitch );
+bool	DDRAW_Init( byte **ppbuffer, int *ppitch );
 void    DDRAW_Shutdown( void );
-void    DDRAW_SetPalette( const unsigned char *palette );
+void    DDRAW_SetPalette( const byte *palette );
 
 #endif

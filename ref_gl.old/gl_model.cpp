@@ -219,7 +219,7 @@ Mod_ForName
 Loads in a model for the given name
 ==================
 */
-model_t *Mod_ForName (char *name, bool crash)
+static model_t *Mod_ForName (const char *name, bool crash)
 {
 	model_t	*mod;
 	unsigned *buf;
@@ -1493,7 +1493,7 @@ R_BeginRegistration
 Specifies the model that will be used as the world
 @@@@@@@@@@@@@@@@@@@@@
 */
-void R_BeginRegistration (char *model)
+void R_BeginRegistration (const char *model)
 {
 	char	fullname[MAX_QPATH];
 	cvar_t	*flushmap;
@@ -1520,7 +1520,7 @@ R_RegisterModel
 
 @@@@@@@@@@@@@@@@@@@@@
 */
-struct model_s *R_RegisterModel (char *name)
+struct model_s *R_RegisterModel (const char *name)
 {
 	model_t	*mod;
 	int		i;

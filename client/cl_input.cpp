@@ -64,12 +64,12 @@ static kbutton_t	in_Up, in_Down;
 kbutton_t	in_Strafe, in_Speed;
 
 
-static void KeyDown (kbutton_t *b)
+static void KeyDown (kbutton_t *b, char **argv)
 {
 	int		k;
 	char	*c;
 
-	c = Cmd_Argv(1);
+	c = argv[1];
 	if (c[0])
 		k = atoi(c);
 	else
@@ -92,7 +92,7 @@ static void KeyDown (kbutton_t *b)
 		return;					// still down
 
 	// save timestamp
-	c = Cmd_Argv(2);
+	c = argv[2];
 	b->downtime = atoi(c);
 	if (!b->downtime)
 		b->downtime = sys_frame_time - 100;
@@ -100,13 +100,13 @@ static void KeyDown (kbutton_t *b)
 	b->state |= 1 + 2;			// down + impulse down
 }
 
-static void KeyUp (kbutton_t *b)
+static void KeyUp (kbutton_t *b, char **argv)
 {
 	int		k;
 	char	*c;
 	unsigned	uptime;
 
-	c = Cmd_Argv(1);
+	c = argv[1];
 	if (c[0])
 		k = atoi(c);
 	else
@@ -129,7 +129,7 @@ static void KeyUp (kbutton_t *b)
 		return;					// still up (this should not happen)
 
 	// save timestamp
-	c = Cmd_Argv(2);
+	c = argv[2];
 	uptime = atoi(c);
 	if (uptime)
 		b->msec += uptime - b->downtime;
@@ -142,8 +142,8 @@ static void KeyUp (kbutton_t *b)
 
 // Declare console functions
 #define KB(name)	\
-static void IN_##name##Up (void) { KeyUp(&in_##name); }	\
-static void IN_##name##Down (void) { KeyDown(&in_##name); }
+static void IN_##name##Up (int argc, char **argv) { KeyUp(&in_##name, argv); }	\
+static void IN_##name##Down (int argc, char **argv) { KeyDown(&in_##name, argv); }
 
 	KB(KLook)
 	KB(Up)			KB(Down)
@@ -362,25 +362,25 @@ void IN_CenterView (void)
 }
 
 
-static void IN_Lookdown (void)
+static void IN_Lookdown (bool usage, int argc, char **argv)
 {
-	if (Cmd_Argc () != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: lookdown <angle>\n");
 		return;
 	}
-	cl.viewangles[PITCH] += atof (Cmd_Argv(1));
+	cl.viewangles[PITCH] += atof (argv[1]);
 }
 
 
-static void IN_Lookup (void)		// can be used "lookdown -angle" instead
+static void IN_Lookup (bool usage, int argc, char **argv)	// can be used "lookdown -angle" instead
 {
-	if (Cmd_Argc () != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: lookup <angle>\n");
 		return;
 	}
-	cl.viewangles[PITCH] -= atof (Cmd_Argv(1));
+	cl.viewangles[PITCH] -= atof (argv[1]);
 }
 
 
@@ -391,41 +391,41 @@ CL_InitInput
 */
 void CL_InitInput (void)
 {
-	Cmd_AddCommand ("centerview", IN_CenterView);
+	RegisterCommand ("centerview", IN_CenterView);
 
-	Cmd_AddCommand ("+moveup", IN_UpDown);
-	Cmd_AddCommand ("-moveup", IN_UpUp);
-	Cmd_AddCommand ("+movedown", IN_DownDown);
-	Cmd_AddCommand ("-movedown", IN_DownUp);
-	Cmd_AddCommand ("+left", IN_LeftDown);
-	Cmd_AddCommand ("-left", IN_LeftUp);
-	Cmd_AddCommand ("+right", IN_RightDown);
-	Cmd_AddCommand ("-right", IN_RightUp);
-	Cmd_AddCommand ("+forward", IN_ForwardDown);
-	Cmd_AddCommand ("-forward", IN_ForwardUp);
-	Cmd_AddCommand ("+back", IN_BackDown);
-	Cmd_AddCommand ("-back", IN_BackUp);
-	Cmd_AddCommand ("+lookup", IN_LookupDown);
-	Cmd_AddCommand ("-lookup", IN_LookupUp);
-	Cmd_AddCommand ("+lookdown", IN_LookdownDown);
-	Cmd_AddCommand ("-lookdown", IN_LookdownUp);
-	Cmd_AddCommand ("+strafe", IN_StrafeDown);
-	Cmd_AddCommand ("-strafe", IN_StrafeUp);
-	Cmd_AddCommand ("+moveleft", IN_MoveleftDown);
-	Cmd_AddCommand ("-moveleft", IN_MoveleftUp);
-	Cmd_AddCommand ("+moveright", IN_MoverightDown);
-	Cmd_AddCommand ("-moveright", IN_MoverightUp);
-	Cmd_AddCommand ("+speed", IN_SpeedDown);
-	Cmd_AddCommand ("-speed", IN_SpeedUp);
-	Cmd_AddCommand ("+attack", IN_AttackDown);
-	Cmd_AddCommand ("-attack", IN_AttackUp);
-	Cmd_AddCommand ("+use", IN_UseDown);
-	Cmd_AddCommand ("-use", IN_UseUp);
-	Cmd_AddCommand ("+klook", IN_KLookDown);
-	Cmd_AddCommand ("-klook", IN_KLookUp);
+	RegisterCommand ("+moveup", IN_UpDown);
+	RegisterCommand ("-moveup", IN_UpUp);
+	RegisterCommand ("+movedown", IN_DownDown);
+	RegisterCommand ("-movedown", IN_DownUp);
+	RegisterCommand ("+left", IN_LeftDown);
+	RegisterCommand ("-left", IN_LeftUp);
+	RegisterCommand ("+right", IN_RightDown);
+	RegisterCommand ("-right", IN_RightUp);
+	RegisterCommand ("+forward", IN_ForwardDown);
+	RegisterCommand ("-forward", IN_ForwardUp);
+	RegisterCommand ("+back", IN_BackDown);
+	RegisterCommand ("-back", IN_BackUp);
+	RegisterCommand ("+lookup", IN_LookupDown);
+	RegisterCommand ("-lookup", IN_LookupUp);
+	RegisterCommand ("+lookdown", IN_LookdownDown);
+	RegisterCommand ("-lookdown", IN_LookdownUp);
+	RegisterCommand ("+strafe", IN_StrafeDown);
+	RegisterCommand ("-strafe", IN_StrafeUp);
+	RegisterCommand ("+moveleft", IN_MoveleftDown);
+	RegisterCommand ("-moveleft", IN_MoveleftUp);
+	RegisterCommand ("+moveright", IN_MoverightDown);
+	RegisterCommand ("-moveright", IN_MoverightUp);
+	RegisterCommand ("+speed", IN_SpeedDown);
+	RegisterCommand ("-speed", IN_SpeedUp);
+	RegisterCommand ("+attack", IN_AttackDown);
+	RegisterCommand ("-attack", IN_AttackUp);
+	RegisterCommand ("+use", IN_UseDown);
+	RegisterCommand ("-use", IN_UseUp);
+	RegisterCommand ("+klook", IN_KLookDown);
+	RegisterCommand ("-klook", IN_KLookUp);
 
-	Cmd_AddCommand ("lookdown", IN_Lookdown);
-	Cmd_AddCommand ("lookup", IN_Lookup);
+	RegisterCommand ("lookdown", IN_Lookdown);
+	RegisterCommand ("lookup", IN_Lookup);
 
 	cl_nodelta = Cvar_Get ("cl_nodelta", "0", 0);
 }

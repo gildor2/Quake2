@@ -84,7 +84,7 @@ void R_DrawTexts (void)
 }
 
 
-void DrawTextPos (int x, int y, char *text, unsigned rgba)
+void DrawTextPos (int x, int y, const char *text, unsigned rgba)
 {
 	int size;
 	char *text_copy;
@@ -118,7 +118,7 @@ void DrawTextPos (int x, int y, char *text, unsigned rgba)
 }
 
 
-void DrawTextLeft (char *text, unsigned rgba)
+void DrawTextLeft (const char *text, unsigned rgba)
 {
 	if (gl_next_left_y >= vid.height) return; // out of screen
 	DrawTextPos (0, gl_next_left_y, text, rgba);
@@ -126,7 +126,7 @@ void DrawTextLeft (char *text, unsigned rgba)
 }
 
 
-void DrawTextRight (char *text, unsigned rgba)
+void DrawTextRight (const char *text, unsigned rgba)
 {
 	if (gl_next_right_y >= vid.height) return; // out of screen
 	DrawTextPos (vid.width - strlen(text) * CHARSIZE_X, gl_next_right_y, text, rgba);

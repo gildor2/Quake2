@@ -17,7 +17,7 @@ extern HWND		cl_hwnd;
 extern bool	ActiveApp, Minimized;
 
 // in_win.c
-void IN_Activate (bool active);
+void IN_Activate (bool active);	//?? declared in cl_input.h too
 void IN_MouseEvent (int mstate);
 extern bool in_needRestart;		//?? used from vid_dll.c::Vid_NewVindow()
 

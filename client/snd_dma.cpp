@@ -22,10 +22,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "snd_loc.h"
 
-void S_Play(void);
-void S_SoundList(void);
+void S_Play_f (int argc, char **argv);
+void S_SoundList_f (bool usage, int argc, char **argv);
 void S_Update_();
-void S_StopAllSounds(void);
+void S_StopAllSounds_f (void);
 
 
 /* NOTES:
@@ -130,7 +130,7 @@ void S_ReadModelsSex (void)
 	free = MAX_FEMALE_MODEL_BUF;
 	i = 0;
 
-	while (s = COM_Parse (&in), in)
+	while (s = COM_Parse (in), in)
 	{
 		int		n;
 
@@ -158,24 +158,24 @@ bool S_IsFemale (char *model)
 	int		i;
 	char	*s;
 
-	Com_DPrintf ("Checking %s gender...\n",model);
+//	Com_DPrintf ("Checking %s gender...\n",model);
 
 	if (!stricmp(model, "female") || !stricmp(model, "crakhor"))
 	{
-		Com_DPrintf ("...hardcoded female\n");
+//		Com_DPrintf ("...hardcoded female\n");
 		return true;
 	}
 	i = 0;
 	while (s = female_models[i++])
 	{
-		Com_DPrintf ("%s ...\n",s);
+//		Com_DPrintf ("%s ...\n",s);
 		if (!stricmp (s, model))
 		{
-			Com_DPrintf ("...female\n");
+//			Com_DPrintf ("...female\n");
 			return true;
 		}
 	}
-	Com_DPrintf ("...male\n");
+//	Com_DPrintf ("...male\n");
 	return false;
 }
 
@@ -187,13 +187,9 @@ S_Init
 */
 void S_Init (void)
 {
-	cvar_t	*cv;
-
-	Com_Printf("\n------- sound initialization -------\n");
-
-	cv = Cvar_Get ("nosound", "0", 0);
+	cvar_t *cv = Cvar_Get ("nosound", "0", 0);
 	if (cv->integer)
-		Com_Printf ("not initializing.\n");
+		Com_Printf (S_CYAN"Sound disabled\n");
 	else
 	{
 CVAR_BEGIN(vars)
@@ -209,10 +205,12 @@ CVAR_END
 
 		Cvar_GetVars (ARRAY_ARG(vars));
 
-		Cmd_AddCommand ("play", S_Play);
-		Cmd_AddCommand ("stopsound", S_StopAllSounds);
-		Cmd_AddCommand ("soundlist", S_SoundList);
-		Cmd_AddCommand ("soundinfo", S_SoundInfo_f);
+		Com_Printf("\n------- Sound initialization -------\n");
+
+		RegisterCommand ("play", S_Play_f);
+		RegisterCommand ("stopsound", S_StopAllSounds_f);
+		RegisterCommand ("soundlist", S_SoundList_f);
+		RegisterCommand ("soundinfo", S_SoundInfo_f);
 
 		if (!SNDDMA_Init())
 			return;
@@ -227,11 +225,12 @@ CVAR_END
 
 		Com_Printf ("sound sampling rate: %d\n", dma.speed);
 
-		S_StopAllSounds ();
+		S_StopAllSounds_f ();
+
+		Com_Printf("------------------------------------\n");
 	}
 	S_ReadModelsSex ();
 
-	Com_Printf("------------------------------------\n");
 }
 
 
@@ -251,10 +250,10 @@ void S_Shutdown (void)
 
 	sound_started = false;
 
-	Cmd_RemoveCommand("play");
-	Cmd_RemoveCommand("stopsound");
-	Cmd_RemoveCommand("soundlist");
-	Cmd_RemoveCommand("soundinfo");
+	UnregisterCommand ("play");
+	UnregisterCommand ("stopsound");
+	UnregisterCommand ("soundlist");
+	UnregisterCommand ("soundinfo");
 
 	// free all sounds
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
@@ -862,10 +861,10 @@ void S_ClearBuffer (void)
 
 /*
 ==================
-S_StopAllSounds
+S_StopAllSounds_f
 ==================
 */
-void S_StopAllSounds(void)
+void S_StopAllSounds_f (void)
 {
 	int		i;
 
@@ -1167,7 +1166,7 @@ void GetSoundtime(void)
 		{	// time to chop things off to avoid 32 bit limits
 			buffers = 0;
 			paintedtime = fullsamples;
-			S_StopAllSounds ();
+			S_StopAllSounds_f ();
 		}
 	}
 	oldsamplepos = samplepos;
@@ -1221,29 +1220,27 @@ console functions
 ===============================================================================
 */
 
-void S_Play (void)
+static void S_Play_f (int argc, char **argv)
 {
 	int 	i;
 	char name[256];
 	sfx_t	*sfx;
 
-	i = 1;
-	while (i<Cmd_Argc())
+	for (i = 1; i < argc; i++)
 	{
-		if (!strrchr(Cmd_Argv(i), '.'))
+		if (!strrchr (argv[i], '.'))
 		{
-			strcpy(name, Cmd_Argv(i));
+			strcpy(name, argv[i]);
 			strcat(name, ".wav");
 		}
 		else
-			strcpy(name, Cmd_Argv(i));
+			strcpy(name, argv[i]);
 		sfx = S_RegisterSound(name);
 		S_StartSound(NULL, cl.playernum+1, 0, sfx, 1.0, 1.0, 0);
-		i++;
 	}
 }
 
-static void S_SoundList (void)
+static void S_SoundList_f (bool usage, int argc, char **argv)
 {
 	int		i, n;
 	sfx_t	*sfx;
@@ -1251,16 +1248,13 @@ static void S_SoundList (void)
 	int		size, total;
 	char	*mask;
 
-	if (Cmd_Argc () > 2)
+	if (argc > 2 || usage)
 	{
 		Com_Printf ("Usage: soundlist [<mask>]\n");
 		return;
 	}
 
-	if (Cmd_Argc () == 2)
-		mask = Cmd_Argv (1);
-	else
-		mask = NULL;
+	mask = argc == 2 ? argv[1] : NULL;
 
 	Com_Printf ("---lp-bit-size----name----------\n");
 

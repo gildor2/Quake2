@@ -565,7 +565,6 @@ void KBD_Close(void)
 /*****************************************************************************/
 
 static qboolean GLimp_SwitchFullscreen( int width, int height );
-qboolean GLimp_InitGL (void);
 
 static void signal_handler(int sig)
 {

@@ -625,20 +625,20 @@ static void DrawKeyBindingFunc (void *self)
 	Menu_DrawString (a->generic.x + a->generic.parent->x + 16, a->generic.y + a->generic.parent->y, text);
 }
 
-static void SeekLine (char **s)
+static void SeekLine (const char *&s)
 {
 	char c1, c2;
-	c1 = **s;								// remember line delimiter (CR or LF)
+	c1 = *s;								// remember line delimiter (CR or LF)
 	if (c1 != '\n' && c1 != '\r') return;	// it was not line delimiter!
 	while (1)
 	{
-		c2 = *(++(*s));
+		c2 = *(++s);
 		if (c1 == c2) return;				// next end of line
 		if (c2 != '\n' && c2 != '\r') return; // next line text
 	}
 }
 
-static void AppendToken (char **dest, char **src)
+static void AppendToken (char **dest, const char *&src)
 {
 	char *tok;
 	tok = COM_Parse (src);
@@ -650,7 +650,8 @@ static void Keys_MenuInit (void)
 {
 	int		i, numbinds, y;
 	unsigned length;
-	char	*buffer, *s, *d, c;
+	char	*buffer, *d, c;
+	const char *s;
 
 	//?? change parser
 	// load "binds.lst" (file always present - have inline file)
@@ -669,22 +670,22 @@ static void Keys_MenuInit (void)
 		while ((c = *s) == ' ') s++;		// skip whitespace
 		if (c == '\r' || c == '\n')
 		{
-			SeekLine (&s);
+			SeekLine (s);
 			continue;	// empty line
 		}
 		bindnames[i][0] = d;				// remember place for command name
-		AppendToken (&d, &s);
+		AppendToken (&d, s);
 		while ((c = *s) == ' ') s++;
 		if (c == '\r' || c == '\n')
 		{	// EOLN => command = menu string
 			bindnames[i][1] = bindnames[i][0];
-			SeekLine (&s);
+			SeekLine (s);
 			continue;
 		}
 		bindnames[i][1] = d;
-		AppendToken (&d, &s);
+		AppendToken (&d, s);
 		while (*s != '\n') s++;				// was '\r'
-		SeekLine (&s);
+		SeekLine (s);
 	}
 
 	// unload "binds.lst"
@@ -747,7 +748,7 @@ static const char *Keys_MenuKey (int key)
 	if (cls.key_dest == key_bindingMenu)
 	{
 		if (key != K_ESCAPE && key != '`')
-			Key_SetBinding (key, COM_QuoteString (bindnames[item->generic.localdata[0]][0], true));
+			Key_SetBinding (key, bindnames[item->generic.localdata[0]][0]);
 //			Cbuf_InsertText (va("bind %s %s\n", Key_KeynumToString(key), COM_QuoteString (bindnames[item->generic.localdata[0]][0], true)));
 
 		Menu_SetStatusBar (&s_keys_menu, "enter to change, backspace to clear");
@@ -945,13 +946,14 @@ static void UpdateSoundFunc (void *unused)
 
 
 #define MAX_CROSSHAIRS 256
-static const char *crosshair_names[MAX_CROSSHAIRS + 1] = {S_RED"(none)"};	// reserve last item for NULL
+static const char *crosshair_names[MAX_CROSSHAIRS + 1];	// reserve last item for NULL
 static const char *crosshair_color_names[9] = {"", "", "", "", "", "", "", "", NULL};
 
 static void Options_ScanCrosshairs (void)
 {
 	int		i;
 
+	crosshair_names[0] = S_RED"(none)";
 	for (i = 1; i <= MAX_CROSSHAIRS; i++)	// item [0] is "none"
 	{
 		if (!ImageExists (va("pics/ch%d", i), IMAGE_ANY))
@@ -1861,10 +1863,10 @@ static void StartServer_MenuInit( void )
 		{
 			char	name[256];
 
-			Q_strncpylower (name, COM_ParseExt (&s, true), sizeof(name)-1);
+			Q_strncpylower (name, COM_Parse (s, true), sizeof(name)-1);
 			if (!name[0]) break;
 			item = (basenamed_t*)AllocChainBlock (mapNamesChain, sizeof(basenamed_t));
-			item->name = ChainCopyString (va("%s\n%s", COM_ParseExt (&s, false), name), mapNamesChain);
+			item->name = ChainCopyString (va("%s\n%s", COM_Parse (s, false), name), mapNamesChain);
 			// add new string to the end of list
 			if (last) last->next = item;
 			last = item;
@@ -2828,6 +2830,7 @@ static void PlayerConfig_MenuDraw (void)
 
 	Menu_Draw (&s_player_config_menu);
 
+	if (*re.flags & REF_NEW_FX) re.DrawFill2 (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
 	re.RenderFrame (&refdef);
 
 	if (!memcmp (skin->name, "skn_", 4))
@@ -3235,23 +3238,23 @@ M_Init
 */
 void M_Init (void)
 {
-	Cmd_AddCommand ("menu_main", M_Menu_Main_f);
-	Cmd_AddCommand ("menu_game", M_Menu_Game_f);
-		Cmd_AddCommand ("menu_loadgame", M_Menu_LoadGame_f);
-		Cmd_AddCommand ("menu_savegame", M_Menu_SaveGame_f);
-		Cmd_AddCommand ("menu_joinserver", M_Menu_JoinServer_f);
-			Cmd_AddCommand ("menu_addressbook", M_Menu_AddressBook_f);
-		Cmd_AddCommand ("menu_startserver", M_Menu_StartServer_f);
-			Cmd_AddCommand ("menu_dmoptions", M_Menu_DMOptions_f);
-			Cmd_AddCommand ("menu_dmbrowse", M_Menu_DMBrowse_f);
-		Cmd_AddCommand ("menu_playerconfig", M_Menu_PlayerConfig_f);
-			Cmd_AddCommand ("menu_downloadoptions", M_Menu_DownloadOptions_f);
-		Cmd_AddCommand ("menu_credits", M_Menu_Credits_f );
-	Cmd_AddCommand ("menu_multiplayer", M_Menu_Multiplayer_f );
-	Cmd_AddCommand ("menu_video", M_Menu_Video_f);
-	Cmd_AddCommand ("menu_options", M_Menu_Options_f);
-		Cmd_AddCommand ("menu_keys", M_Menu_Keys_f);
-	Cmd_AddCommand ("menu_quit", M_Menu_Quit_f);
+	RegisterCommand ("menu_main", M_Menu_Main_f);
+	RegisterCommand ("menu_game", M_Menu_Game_f);
+		RegisterCommand ("menu_loadgame", M_Menu_LoadGame_f);
+		RegisterCommand ("menu_savegame", M_Menu_SaveGame_f);
+		RegisterCommand ("menu_joinserver", M_Menu_JoinServer_f);
+			RegisterCommand ("menu_addressbook", M_Menu_AddressBook_f);
+		RegisterCommand ("menu_startserver", M_Menu_StartServer_f);
+			RegisterCommand ("menu_dmoptions", M_Menu_DMOptions_f);
+			RegisterCommand ("menu_dmbrowse", M_Menu_DMBrowse_f);
+		RegisterCommand ("menu_playerconfig", M_Menu_PlayerConfig_f);
+			RegisterCommand ("menu_downloadoptions", M_Menu_DownloadOptions_f);
+		RegisterCommand ("menu_credits", M_Menu_Credits_f );
+	RegisterCommand ("menu_multiplayer", M_Menu_Multiplayer_f );
+	RegisterCommand ("menu_video", M_Menu_Video_f);
+	RegisterCommand ("menu_options", M_Menu_Options_f);
+		RegisterCommand ("menu_keys", M_Menu_Keys_f);
+	RegisterCommand ("menu_quit", M_Menu_Quit_f);
 }
 
 

@@ -21,10 +21,10 @@ int glxTestFunc (int tst) ARGS
 #extensions
 
 #name GL_ARB_TEXTURE_COMPRESSION
-#cvar gl_ext_compressed_textures
+#cvar gl_ext_texture_compression
 
 #name GL_EXT_TEXTURE_COMPRESSION
-#cvar gl_ext_compressed_textures
+#cvar gl_ext_texture_compression
 #prefer GL_ARB_TEXTURE_COMPRESSION
 
 #name GL_TEST_EXTENSION

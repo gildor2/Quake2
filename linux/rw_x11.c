@@ -1122,8 +1122,6 @@ void SWimp_EndFrame (void)
 */
 rserr_t SWimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen )
 {
-	rserr_t retval = rserr_ok;
-
 	ri.Com_Printf ("setting mode %d:", mode );
 
 	if ( !ri.Vid_GetModeInfo( pwidth, pheight, mode ) )
@@ -1141,7 +1139,7 @@ rserr_t SWimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen 
 
 	R_GammaCorrectAndSetPalette( ( const unsigned char * ) d_8to24table );
 
-	return retval;
+	return rserr_ok;
 }
 
 /*

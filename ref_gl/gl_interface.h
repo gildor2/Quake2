@@ -91,9 +91,11 @@ typedef struct
 	bool	inverseCull;
 	bool	fogEnabled;
 
-	int		maxUsedShaderIndex;
+	short	maxUsedShaderIndex;
 	bool	is2dMode;
 	bool	have3d;
+	bool	haveFullScreen3d;
+	bool	useFastSky;
 } glstate_t;
 
 extern glconfig_t  gl_config;

@@ -709,16 +709,16 @@ void GL_Setup (viewPortal_t *port)
 	GL_State(GLSTATE_DEPTHWRITE);					// affects glClear(DEPTH)
 
 	bits = GL_DEPTH_BUFFER_BIT;
-	if (gl_fastSky->integer && !(port->flags & RDF_NOWORLDMODEL))
+	if (gl_state.useFastSky && !(port->flags & RDF_NOWORLDMODEL))
 	{
 		bits |= GL_COLOR_BUFFER_BIT;
 		glClearColor (0, 0, 0, 1);
 	}
-	else if (port->flags & RDF_NOWORLDMODEL)
+/*	else if (port->flags & RDF_NOWORLDMODEL)
 	{
 		bits |= GL_COLOR_BUFFER_BIT;
 		glClearColor (0, 0.03, 0.03, 1);
-	}
+	} */
 	glClear (bits);
 
 	gl_state.inverseCull = false;

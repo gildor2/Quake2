@@ -1,0 +1,24 @@
+JPEG lib:
+~~~~~~~~~
+
+INLINE=__inline  -- speed optimization
+
+Remove decompression with integer types:
+1) Remove (comment) in "jmorecfg.h"
+	#define DCT_ISLOW_SUPPORTED
+	#define DCT_IFAST_SUPPORTED
+2) Add defines:
+	JDCT_DEFAULT=JDCT_FLOAT
+	JDCT_FASTEST=JDCT_FLOAT
+3) Can remove files:
+	"jfdctfst.c", "jfdctint.c", "jidctfst.c", "jidctint.c"
+
+Use "jmemnobs.c" as a memory manager.
+Create own error manager.
+
+
+ZLib:
+~~~~~
+
+Add defines DYNAMIC_CRC_TABLE,BUILDFIXED to reduce executable size in a cost of slightly
+slower startup.

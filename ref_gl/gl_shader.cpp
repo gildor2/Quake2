@@ -7,6 +7,7 @@ shader_t *gl_defaultShader;
 shader_t *gl_identityLightShader;
 shader_t *gl_identityLightShader2;
 shader_t *gl_concharsShader;
+shader_t *gl_videoShader;			// fullscreen video
 shader_t *gl_defaultSkyShader;		// default sky shader (black image)
 shader_t *gl_particleShader;
 shader_t *gl_entityShader;
@@ -52,7 +53,7 @@ static int ComputeHash (char *name)
 
 /*------- Initialization/finalization ----------*/
 
-static void Shaderlist_f (void)
+static void Shaderlist_f (bool usage, int argc, char **argv)
 {
 	int		i, n;
 	char	*mask;
@@ -60,14 +61,14 @@ static void Shaderlist_f (void)
 	static char *boolNames[] = {" ", "+"};
 	static char *badNames[] = {"", S_RED" (errors)"S_WHITE};
 
-	if (Cmd_Argc () > 2)
+	if (argc > 2 || usage)
 	{
 		Com_Printf ("Usage: shaderlist [<mask>]\n");
 		return;
 	}
 
-	if (Cmd_Argc () == 2)
-		mask = Cmd_Argv (1);
+	if (argc == 2)
+		mask = argv[1];
 	else
 		mask = NULL;
 
@@ -112,7 +113,7 @@ static void Shaderlist_f (void)
 
 void GL_InitShaders (void)
 {
-	Cmd_AddCommand ("shaderlist", Shaderlist_f);
+	RegisterCommand ("shaderlist", Shaderlist_f);
 
 	/*------- reading scripts --------*/
 	//!!
@@ -129,7 +130,7 @@ void GL_ShutdownShaders (void)
 		shaderChain = NULL;
 	}
 	shaderCount = 0;
-	Cmd_RemoveCommand ("shaderlist");
+	UnregisterCommand ("shaderlist");
 }
 
 
@@ -551,7 +552,7 @@ shader_t *GL_GetAlphaShader (shader_t *shader)
 
 
 // "mipmap" is used only for auto-generated shaders
-shader_t *GL_FindShader (char *name, int style)
+shader_t *GL_FindShader (const char *name, int style)
 {
 	char	name2[MAX_QPATH], *s;
 	int		hash, lightmapNumber, imgFlags;
@@ -925,6 +926,7 @@ void GL_ResetShaders (void)
 	gl_alphaShader1->sortParam = SORT_SEETHROUGH;
 
 	gl_defaultShader = GL_FindShader ("*default", SHADER_WALL);
+	gl_videoShader = GL_FindShader ("*video", SHADER_CLAMP);
 
 	gl_identityLightShader = GL_FindShader ("*identityLight", SHADER_FORCEALPHA|SHADER_WALL);
 	gl_identityLightShader->stages[0]->rgbGenType = RGBGEN_EXACT_VERTEX;
@@ -1058,9 +1060,43 @@ void GL_ResetShaders (void)
 	gl_railRingsShader = FinishShader ();
 
 	//---------------------------------------------
+
 	gl_skyShader = gl_defaultSkyShader = GL_FindShader ("*sky", SHADER_SKY|SHADER_ABSTRACT);
 
+	shader_t *detail = GL_FindShader ("fx/detail", SHADER_ALPHA|SHADER_CLAMP);	//?? should be in a different place (as Q3?) and scripted
+	detail->stages[0]->glState = GLSTATE_NODEPTHTEST|GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR;
+
+#if 1
 	gl_concharsShader = GL_FindShader ("pics/conchars", SHADER_ALPHA);
+#else
+	//?? font with shadow: require bitmap modification + avoid shadow from one char to another char
+	ClearTempShader ();
+	strcpy (sh.name, "pics/conchars");
+	sh.style = SHADER_ALPHA;
+	sh.sortParam = SORT_OPAQUE;	//??
+	sh.cullMode = CULL_NONE;
+	sh.lightmapNumber = LIGHTMAP_NONE;
+	// 1st stage
+	st[0].rgbGenType = RGBGEN_IDENTITY;	//?? same as stage2
+	st[0].alphaGenType = ALPHAGEN_IDENTITY;
+	st[0].glState = GLSTATE_ALPHA_GE05|GLSTATE_NODEPTHTEST|GLSTATE_SRC_ZERO|GLSTATE_DST_ONEMINUSSRCALPHA;
+	st[0].tcGenType = TCGEN_TEXTURE;
+	shaderImages[0] = GL_FindImage ("pics/conchars", IMAGE_CLAMP);
+	st[0].numAnimTextures = 1;
+	// tcMod for 1st stage
+	tcmod = NewTcModStage (st);
+	tcmod->type = TCMOD_OFFSET;
+	tcmod->sOffset = tcmod->tOffset = -1.0f / 128;
+	// 2nd stage
+	st[1].rgbGenType = RGBGEN_VERTEX;
+	st[1].alphaGenType = ALPHAGEN_IDENTITY;	//?? same as rgb
+	st[1].glState = GLSTATE_ALPHA_GE05|GLSTATE_NODEPTHTEST|GLSTATE_SRC_ONE|GLSTATE_DST_ONEMINUSSRCALPHA;
+	st[1].tcGenType = TCGEN_TEXTURE;
+	shaderImages[MAX_STAGE_TEXTURES] = GL_FindImage ("pics/conchars", IMAGE_CLAMP);
+	st[1].numAnimTextures = 1;
+
+	gl_concharsShader = FinishShader ();
+#endif
 
 	unguard;
 }

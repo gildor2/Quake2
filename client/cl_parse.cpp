@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "client.h"
 
-char *svc_strings[256] =
+char *svc_strings[svc_last] =
 {
 	"svc_bad",
 
@@ -181,17 +181,17 @@ CL_Download_f
 Request a download from the server
 ===============
 */
-void CL_Download_f (void)
+void CL_Download_f (bool usage, int argc, char **argv)
 {
 	char filename[MAX_OSPATH];
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf("Usage: download <filename>\n");
 		return;
 	}
 
-	Q_CopyFilename (filename, Cmd_Argv(1), sizeof(filename));
+	Q_CopyFilename (filename, argv[1], sizeof(filename));
 
 	if (strstr (filename, ".."))
 	{

@@ -55,7 +55,7 @@ Comments:
 - demomap can be called without ".dm2" extension (added by default)
 - added support of reading/listing player models from pak files
 - improved a ladder descending
-- added unhandled exception filter, which will restore screen/mouse/sound parameters if game crashes and logs error ("crush.log")
+- added unhandled exception filter, which will restore screen/mouse/sound parameters if game crashes and logs error ("crash.log")
 - logging developer messages to "debug.log" when "developer" is set to 2
 - "host_speeds" -> "com_speeds", better output
 - timedemo:
@@ -65,7 +65,7 @@ Comments:
 - no autosaves in deathmatch mode
 - if sound file not found, game doesn't try to load it every time it must appear
 - improved look of "player setup" menu
-- improved "set game directory"
+- improved "set game directory" action
 - ability to reverse sound channels; controllable with "s_reverse_stereo"
 - can use skins without icon ("*_i.???") file -- skin shound have name "skn_*.???"; side effect: even when
   skin icon exists, it will be ignored
@@ -86,12 +86,11 @@ Comments:
 - removed calling "-alias" EVERY time key depressed
 - disabled mouse acceleration
 - fixed collision detection code to prevent from "blocked inside the opening door" and some other bugs
-- fixed "WSAECONRESET" error for Win2K (server was crushed when one client exits game)
+- fixed "WSAECONRESET" error for Win2K (server was crashed when one client exits game)
 - demos:
   - allowed cheatvars (timedemo, r_lightmap ...) for demos, recorded from deathmatch
   - disabled "set <var> <value>" commands from recorded demos
 - allowed cheatvars when server started with "cheats 1"
-- commandline: removed '-' parsing, added support for quotes
 - cinematic:
   - stopped with ESC (old: open menu)
   - ability to stop with any key (old: incorrect when playing sequence of few cinematics)
@@ -183,9 +182,13 @@ Keyboard
   - CapsLock, NumLock, ScrLock
   - UnkXX (most other keys)
 - added names for keys:
-  - ';' is Semicolon
-  - ',' is Comma
-  - '*' is KP_Star (extended keyboard key)
+     key | name               key | name
+     ----+-----------         ----+-----------
+      ;  | Semicolon           -  | Minus
+      ,  | Comma               =  | Equals
+      .  | Period              [  | LeftBracket
+      /  | Slash               ]  | RightBracket
+      *  | KP_Star (extended keyboard)
 - implemented keyboard autorepeat
 - added binding to "Ctrl+Key" and "Alt+Key"
 
@@ -203,6 +206,8 @@ Configuration
 - command "unalias <mask>" - remove all matched aliases
 - cvar "cfgfile" -- may be set from command line; default - "config.cfg"
 - command "writeconfig filename[.cfg]" - write settings to file
+- command "cmdlist [<mask>]" - will display command list with additional info:
+  "A" - command receives arguments; "I" - can type "command /?" to get help info
 
 - command "wait": added parameter <num_frames>; default 1
 - added "players/model.lst": this file contains names of models, which gender should be female (always female for
@@ -218,7 +223,8 @@ Configuration
   - to change cvar use "-var=value"
   - to set cvar, known at the time of initialization, to "1", use "-var" (same as "-var=1")
   - to execute commands, use "-command [arguments]"
-  - example: quake2 -nosound -deathmatch=1 -map q2dm1 -echo "hello world!"
+  - examples: quake2 -nosound -deathmatch=1 -map q2dm1 -echo "hello world!"
+              quake2 -nointro -nosound -timedemo -demomap demo1 -set nextserver quit
 
 Server
 ------

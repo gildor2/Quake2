@@ -9,4 +9,4 @@ rm -rf ../Debug
 rm -f ../ref_{gl,soft,gl.old}/*.{ncb,plg,opt}
 
 rm -f *.obj *.pch *.exp *.lib *.idb *.pdb
-rm -f q2.res build.log
+rm -f q2.res *.log

@@ -709,7 +709,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(net_shownet, 0, 0)
 CVAR_END
 
-	Cmd_AddCommand ("net_restart", Cmd_NetRestart_f);
+	RegisterCommand ("net_restart", Cmd_NetRestart_f);
 	Cvar_GetVars (ARRAY_ARG(vars));
 
 	r = WSAStartup (MAKEWORD(1, 1), &winsockdata);

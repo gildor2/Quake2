@@ -99,14 +99,16 @@ static keyname_t keynames[] =
 
 	{"KP_Star",		'*'},		// to resolve "unbind *" ambiguity
 	{"Comma",		','},		// because comma used for separating multiple wildcards
-	{"Semicolon",	';'}		// because a raw semicolon separates commands
+	{"Period",		'.'},
+	{"Semicolon",	';'},		// because a raw semicolon separates commands
+	{"Minus",		'-'},
+	{"Equals",		'='},
+	{"LeftBracket",	'['},
+	{"RigntBracket",']'},
+	{"Slash",		'/'}
+	//?? add:  ' (UT name: SingleQuote)
 };
 
-
-static bool IsSimpleKeyName (int keynum)
-{
-	return keynum > 32 && keynum < 127 && keynum != ',' && keynum != ';';
-}
 
 // NOTE: 'c' is lowercase digit
 static int HexDigit (char c)
@@ -187,22 +189,26 @@ const char *Key_KeynumToString (int keynum)
 	else
 		pref = "";
 
-	if (IsSimpleKeyName (keynum))
-	{
+	// alphanumeric keys
+	if (keynum >= '0' && keynum <= '9' || keynum >= 'A' && keynum <= 'Z' || keynum >= 'a' && keynum <= 'z')
 		return va("%s%c", pref, keynum);
-	}
 
+	// unknown keys
 	if (keynum >= 256)
-	{
 		return va("%sUnk%02X", pref, keynum - 256);
-	}
 
+	// named keys
 	for (i = 0, kn = keynames; i < ARRAY_COUNT(keynames); i++, kn++)
 	{
 		if (keynum == kn->keynum)
 			return va("%s%s", pref, kn->name);
 	}
 
+	// other keys
+	if (keynum >= 32 && keynum < 128)	// visible ASCII codes
+		return va("%s%c", pref, keynum);
+
+	// no name found for key
 	return S_RED"<UNKNOWN KEYNUM>";
 }
 
@@ -618,18 +624,18 @@ int Key_FindBinding (const char *str, int *keys, int maxKeys)
 }
 
 
-static void Key_Unbind_f (void)
+static void Key_Unbind_f (bool usage, int argc, char **argv)
 {
 	int		i, n;
 	char	*mask;
 	bool	found;
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: unbind <key mask>\n");
 		return;
 	}
-	mask = Cmd_Argv (1);
+	mask = argv[1];
 
 	n = 0;
 	found = false;
@@ -665,69 +671,64 @@ static void Key_Unbindall_f (void)
 }
 
 
-static void Key_Bind_f (void)
+static void Key_Bind_f (bool usage, int argc, char **argv)
 {
-	int		i, c, b;
+	int		i, b;
 	char	cmd[1024];
 
-	c = Cmd_Argc();
-
-	if (c < 2)
+	if (argc < 2 || usage)
 	{
 		Com_Printf ("Usage: bind <key> [command]\n");
 		return;
 	}
-	b = Key_StringToKeynum (Cmd_Argv(1));
+	b = Key_StringToKeynum (argv[1]);
 	if (b == -1)
 	{
-		Com_WPrintf ("\"%s\" isn't a valid key\n", Cmd_Argv(1));
+		Com_WPrintf ("\"%s\" isn't a valid key\n", argv[1]);
 		return;
 	}
 
-	if (c == 2)
+	if (argc == 2)
 	{	// just print current binding
 		if (keybindings[b])
-			Com_Printf ("\"%s\" = \"%s\"\n", Cmd_Argv(1), keybindings[b] );
+			Com_Printf ("\"%s\" = \"%s\"\n", argv[1], keybindings[b] );
 		else
-			Com_Printf ("\"%s\" is not bound\n", Cmd_Argv(1) );
+			Com_Printf ("\"%s\" is not bound\n", argv[1] );
 		return;
 	}
 
 	// copy the rest of the command line
 	cmd[0] = 0;		// start out with a null string
-	for (i = 2; i < c; i++)
+	for (i = 2; i < argc; i++)
 	{
-		strcat (cmd, Cmd_Argv(i));
-		if (i != (c-1))
-			strcat (cmd, " ");
+		strcat (cmd, argv[i]);
+		if (i != argc-1) strcat (cmd, " ");
 	}
 
 	Key_SetBinding (b, cmd);
 }
 
 
-static void Key_Bindlist_f (void)
+static void Key_Bindlist_f (bool usage, int argc, char **argv)
 {
 	int		i, n;
 	char	*mask;
 
-	if (Cmd_Argc () > 2)
+	if (argc > 2 || usage)
 	{
 		Com_Printf ("Usage: bindlist [<action mask>]\n");
 		return;
 	}
 
-	if (Cmd_Argc () == 2)
-		mask = Cmd_Argv (1);
-	else
-		mask = NULL;
+	mask = argc == 2 ? argv[1] : NULL;
 
 	n = 0;
+	Com_Printf ("---key----action---------\n");
 	for (i = 0; i < NUM_BINDINGS; i++)
 		if (keybindings[i] && (!mask || MatchWildcard (keybindings[i], mask, true)))
 		{
 			n++;
-			Com_Printf ("%s \"%s\"\n", Key_KeynumToString(i), keybindings[i]);
+			Com_Printf (S_YELLOW"%-9s "S_WHITE"%s\n", Key_KeynumToString(i), keybindings[i]);
 		}
 	if (mask)
 		Com_Printf ("    %d binds found\n", n);
@@ -747,7 +748,7 @@ void Key_WriteBindings (FILE *f)
 
 	for (i = 0; i < NUM_BINDINGS; i++)
 		if (keybindings[i] && keybindings[i][0])
-			fprintf (f, "bind %s %s\n", Key_KeynumToString(i), COM_QuoteString (keybindings[i], true));
+			fprintf (f, "bind %s %s\n", Key_KeynumToString (i), COM_QuoteString (keybindings[i], true));
 }
 
 
@@ -775,10 +776,10 @@ void Key_Init (void)
 	for (i = 0; i < ARRAY_COUNT(keyShifts); i++)
 		keyshift[keyShifts[i].base] = keyShifts[i].shift;
 
-	Cmd_AddCommand ("bind", Key_Bind_f);
-	Cmd_AddCommand ("unbind", Key_Unbind_f);
-	Cmd_AddCommand ("unbindall", Key_Unbindall_f);
-	Cmd_AddCommand ("bindlist", Key_Bindlist_f);
+	RegisterCommand ("bind", Key_Bind_f);
+	RegisterCommand ("unbind", Key_Unbind_f);
+	RegisterCommand ("unbindall", Key_Unbindall_f);
+	RegisterCommand ("bindlist", Key_Bindlist_f);
 }
 
 

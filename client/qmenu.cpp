@@ -242,7 +242,7 @@ bool Field_Key (menuField_t *f, int key)
 
 	default:
 		if (key < 32 || key >= 128) return false;
-		if (!isdigit (key) && (f->generic.flags & QMF_NUMBERSONLY))
+		if ((f->generic.flags & QMF_NUMBERSONLY) && (key < '0' || key > '9'))
 			return false;
 
 		if (f->cursor < f->length)

@@ -112,20 +112,20 @@ Con_Dump_f
 Save the console contents out to a file
 ================
 */
-static void Con_Dump_f (void)
+static void Con_Dump_f (bool usage, int argc, char **argv)
 {
 	int		pos, size, out;
 	char	c;
 	FILE	*f;
 	char	buffer[1024], name[MAX_OSPATH];
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: condump <filename>\n");
 		return;
 	}
 
-	Com_sprintf (ARRAY_ARG(name), "%s/%s.txt", FS_Gamedir(), Cmd_Argv(1));
+	Com_sprintf (ARRAY_ARG(name), "%s/%s.txt", FS_Gamedir(), argv[1]);
 
 	FS_CreatePath (name);
 	f = fopen (name, "w");
@@ -700,7 +700,7 @@ void Con_DrawConsole (float frac)
 		if (!(*re.flags & REF_CONSOLE_ONLY))
 			re.DrawChar (x*CHAR_WIDTH, lines - 12, dbgBuf[x], C_BLUE);
 		else
-			re.DrawConChar (i, dy - 1, version[x], C_BLUE);
+			re.DrawConChar (x, dy - 1, dbgBuf[x], C_BLUE);
 #endif
 	// draw the input prompt, user text, and cursor
 	DrawInput ();
@@ -1042,11 +1042,11 @@ CVAR_END
 
 	Con_CheckResize ();
 
-	Cmd_AddCommand ("toggleconsole", Con_ToggleConsole_f);
-	Cmd_AddCommand ("messagemode", Con_MessageMode_f);
-	Cmd_AddCommand ("messagemode2", Con_MessageMode2_f);
-	Cmd_AddCommand ("clear", Con_Clear_f);
-	Cmd_AddCommand ("condump", Con_Dump_f);
+	RegisterCommand ("toggleconsole", Con_ToggleConsole_f);
+	RegisterCommand ("messagemode", Con_MessageMode_f);
+	RegisterCommand ("messagemode2", Con_MessageMode2_f);
+	RegisterCommand ("clear", Con_Clear_f);
+	RegisterCommand ("condump", Con_Dump_f);
 
 	con_initialized = true;
 }

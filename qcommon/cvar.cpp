@@ -50,7 +50,7 @@ static void Cvar_SetString (cvar_t *var, const char *str)
 
 	if (!var->string_length && len <= CVAR_BUFFER_SIZE)
 	{	// buffer is not allocated and cvar_t.buf is enough for holding str
-		strcpy (var->buf, str);
+		memcpy (var->buf, str, len);
 		var->string = var->buf;
 		return;
 	}
@@ -510,17 +510,15 @@ Cvar_Command
 Handles variable inspection and changing from the console
 ============
 */
-bool Cvar_Command (void)
+bool Cvar_Command (int argc, char **argv)
 {
 	cvar_t	*var;
 
 	// check variables
-	var = Cvar_FindVar (Cmd_Argv(0));
-	if (!var)
-		return false;
+	if (!(var = Cvar_FindVar (argv[0]))) return false;
 
 	// perform a variable print or set
-	if (Cmd_Argc() == 1)
+	if (argc == 1)
 	{
 		const char *def;
 
@@ -541,7 +539,7 @@ bool Cvar_Command (void)
 		return true;
 	}
 
-	Cvar_Set2 (var->name, Cmd_Argv(1), CVAR_USER_CREATED|CVAR_NODEFAULT, false);
+	Cvar_Set2 (var->name, argv[1], CVAR_USER_CREATED|CVAR_NODEFAULT, false);
 	return true;
 }
 
@@ -554,12 +552,12 @@ Allows setting and defining of arbitrary cvars from console
 ============
 */
 
-static void Cvar_SetWithFlags (int set, int reset)
+static void Cvar_SetWithFlags (const char *name, const char *value, int set, int reset)
 {
 	cvar_t	*var;
 	int		flags;
 
-	var = Cvar_FindVar (Cmd_Argv(1));
+	var = Cvar_FindVar (name);
 	if (var)
 	{
 		flags = var->flags;
@@ -573,35 +571,32 @@ static void Cvar_SetWithFlags (int set, int reset)
 	else
 		flags = CVAR_USER_CREATED|CVAR_NODEFAULT;
 	flags = flags & ~reset | set;
-	Cvar_FullSet (Cmd_Argv(1), Cmd_Argv(2), flags);
+	Cvar_FullSet (name, value, flags);
 }
 
 
-static void Cvar_Set_f (void)
+static void Cvar_Set_f (bool usage, int argc, char **argv)
 {
-	int			c;
-
-	c = Cmd_Argc();
-	if (c != 3 && c != 4)
+	if (argc != 3 && argc != 4 || usage)
 	{
 		Com_Printf ("Usage: set <variable> <value> [u|s|a]\n  (userinfo|serverinfo|archive)\n");
 		return;
 	}
 
-	if (c == 4)
+	if (argc == 4)
 	{
 		char	flag;
 
-		switch (flag = *Cmd_Argv(3))
+		switch (flag = argv[3][0])
 		{
 		case 'u':
-			Cvar_SetWithFlags (CVAR_USERINFO, CVAR_SERVERINFO);	// -s +u
+			Cvar_SetWithFlags (argv[1], argv[2], CVAR_USERINFO, CVAR_SERVERINFO);	// -s +u
 			break;
 		case 's':
-			Cvar_SetWithFlags (CVAR_SERVERINFO, CVAR_USERINFO);	// +s -u
+			Cvar_SetWithFlags (argv[1], argv[2], CVAR_SERVERINFO, CVAR_USERINFO);	// +s -u
 			break;
 		case 'a':
-			Cvar_SetWithFlags (CVAR_ARCHIVE, 0);				// +a
+			Cvar_SetWithFlags (argv[1], argv[2], CVAR_ARCHIVE, 0);					// +a
 			break;
 		default:
 			Com_WPrintf ("Invalid flag for set: %c\n", flag);
@@ -609,54 +604,54 @@ static void Cvar_Set_f (void)
 		}
 	}
 	else
-		Cvar_Set2 (Cmd_Argv(1), Cmd_Argv(2), CVAR_USER_CREATED|CVAR_NODEFAULT, false);
+		Cvar_Set2 (argv[1], argv[2], CVAR_USER_CREATED|CVAR_NODEFAULT, false);
 }
 
 
-static void Cvar_Seta_f (void)
+static void Cvar_Seta_f (bool usage, int argc, char **argv)
 {
-	if (Cmd_Argc() != 3)
+	if (argc != 3 || usage)
 	{
 		Com_Printf ("Usage: seta <variable> <value>\n");
 		return;
 	}
-	Cvar_SetWithFlags (CVAR_ARCHIVE, 0);
+	Cvar_SetWithFlags (argv[1], argv[2], CVAR_ARCHIVE, 0);
 }
 
 
-static void Cvar_Setu_f (void)
+static void Cvar_Setu_f (bool usage, int argc, char **argv)
 {
-	if (Cmd_Argc() != 3)
+	if (argc != 3 || usage)
 	{
 		Com_Printf ("Usage: setu <variable> <value>\n");
 		return;
 	}
-	Cvar_SetWithFlags (CVAR_USERINFO, CVAR_SERVERINFO);
+	Cvar_SetWithFlags (argv[1], argv[2], CVAR_USERINFO, CVAR_SERVERINFO);
 }
 
 
-static void Cvar_Sets_f (void)
+static void Cvar_Sets_f (bool usage, int argc, char **argv)
 {
-	if (Cmd_Argc() != 3)
+	if (argc != 3 || usage)
 	{
 		Com_Printf ("Usage: sets <variable> <value>\n");
 		return;
 	}
-	Cvar_SetWithFlags (CVAR_SERVERINFO, CVAR_USERINFO);
+	Cvar_SetWithFlags (argv[1], argv[2], CVAR_SERVERINFO, CVAR_USERINFO);
 }
 
 
-static void Cvar_Reset_f (void)
+static void Cvar_Reset_f (bool usage, int argc, char **argv)
 {
 	cvar_t	*var;
 	char	*mask;
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: reset <mask>\n");
 		return;
 	}
-	mask = Cmd_Argv(1);
+	mask = argv[1];
 	for (var = cvar_vars; var; var = var->next)
 	{
 		if (MatchWildcard (var->name, mask, true) && !(var->flags & (CVAR_NOSET|CVAR_LATCH|CVAR_GAME_CREATED|CVAR_USER_CREATED))
@@ -711,27 +706,24 @@ void Cvar_WriteVariables (FILE *f, int includeMask, int excludeMask, const char 
 Cvar_List_f
 ============
 */
-static void Cvar_List_f (void)
+static void Cvar_List_f (bool usage, int argc, char **argv)
 {
 	cvar_t	*var;
 	int		n, total;
 	char	*mask;
 
-	if (Cmd_Argc() > 2)
+	if (argc > 2 || usage)
 	{
 		Com_Printf ("Usage: cvarlist [<mask>]\n");
 		return;
 	}
 
-	if (Cmd_Argc () == 2)
-		mask = Cmd_Argv (1);
-	else
-		mask = NULL;
+	mask = argc == 2 ? argv[1] : NULL;
 
 	n = total = 0;
 	for (var = cvar_vars; var; var = var->next)
 	{
-		char	s[6], *color;
+		char	s[7], *color;
 		int		flags;
 
 		total++;
@@ -800,28 +792,25 @@ char *Cvar_Serverinfo (void)
 Cvar_Add_f
 ============
 */
-static void Cvar_Add_f (void)
+static void Cvar_Add_f (bool usage, int argc, char **argv)
 {
-	int		c;
 	cvar_t	*var;
-	char	*varName, *flags, flag;
-	float	min, max, value;
+	char	*varName;
 	bool	wrap, force;							//?? rot[ate] -> wr[ap]
 
-	c = Cmd_Argc();
-	if (c != 3 && c != 5 && c != 6)
+	if (argc != 3 && argc != 5 && argc != 6 || usage)
 	{
 		Com_Printf ("Usage: add <variable> <increment> [<min> <max> [w][f]]\n");
 		return;
 	}
 
 	wrap = force = false;
-	if (c == 6)
+	if (argc == 6)
 	{
-		flags = Cmd_Argv(5);
+		char *flags = argv[5];
 		while (*flags)
 		{
-			switch (flag = *flags++)
+			switch (char flag = *flags++)
 			{
 			case 'w':
 				wrap = true;
@@ -836,7 +825,7 @@ static void Cvar_Add_f (void)
 		}
 	}
 
-	varName = Cmd_Argv(1);
+	varName = argv[1];
 	var = Cvar_FindVar (varName);
 	if (!var)
 	{
@@ -849,11 +838,11 @@ static void Cvar_Add_f (void)
 		}
 	}
 
-	value = var->value + atof (Cmd_Argv(2));
-	if (c == 5 || c == 6)
+	float value = var->value + atof (argv[2]);
+	if (argc == 5 || argc == 6)
 	{
-		min = atof (Cmd_Argv(3));
-		max = atof (Cmd_Argv(4));
+		float min = atof (argv[3]);
+		float max = atof (argv[4]);
 		if (min >= max)
 		{
 			Com_WPrintf ("add: MIN >= MAX\n");
@@ -880,18 +869,18 @@ static void Cvar_Add_f (void)
 }
 
 
-static void Cvar_Scale_f (void)
+static void Cvar_Scale_f (bool usage, int argc, char **argv)
 {
 	cvar_t	*var;
 	char	*varName;
 
-	if (Cmd_Argc() != 3)
+	if (argc != 3 || usage)
 	{
 		Com_Printf ("Usage: scale <variable> <scale>\n");
 		return;
 	}
 
-	varName = Cmd_Argv(1);
+	varName = argv[1];
 	var = Cvar_FindVar (varName);
 	if (!var)
 	{
@@ -899,35 +888,35 @@ static void Cvar_Scale_f (void)
 		return;
 	}
 
-	Cvar_Set2 (varName, va("%g", var->value * atof (Cmd_Argv(2))), CVAR_USER_CREATED|CVAR_NODEFAULT, false);
+	Cvar_Set2 (varName, va("%g", var->value * atof (argv[2])), CVAR_USER_CREATED|CVAR_NODEFAULT, false);
 }
 
 
-static void Cvar_Toggle_f (void)
+static void Cvar_Toggle_f (bool usage, int argc, char **argv)
 {
 	cvar_t	*var;
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: toggle <variable>\n");
 		return;
 	}
 
-	var = Cvar_FindVar (Cmd_Argv(1));
+	var = Cvar_FindVar (argv[1]);
 	if (!var || !var->value)
-		Cvar_Set2 (Cmd_Argv(1), "1", CVAR_USER_CREATED|CVAR_NODEFAULT, false);
+		Cvar_Set2 (argv[1], "1", CVAR_USER_CREATED|CVAR_NODEFAULT, false);
 	else
-		Cvar_Set2 (Cmd_Argv(1), "0", CVAR_USER_CREATED|CVAR_NODEFAULT, false);
+		Cvar_Set2 (argv[1], "0", CVAR_USER_CREATED|CVAR_NODEFAULT, false);
 }
 
 
-static void Cvar_Cycle_f (void)
+static void Cvar_Cycle_f (bool usage, int argc, char **argv)
 {
 	cvar_t	*var;
 	int		i, numValues, firstValue;
 	bool	revert;
 
-	if (!stricmp (Cmd_Argv (1), "-r"))
+	if (!stricmp (argv[1], "-r"))
 	{
 		revert = true;
 		firstValue = 3;
@@ -937,21 +926,21 @@ static void Cvar_Cycle_f (void)
 		revert = false;
 		firstValue = 2;
 	}
-	numValues = Cmd_Argc () - firstValue;
-	if (numValues < 2)
+	numValues = argc - firstValue;
+	if (numValues < 2 || usage)
 	{
 		Com_Printf ("Usage: cycle [-r] <variable> <value1> <value2> [<value3> ...]\n");
 		return;
 	}
 
-	if (!(var = Cvar_FindVar (Cmd_Argv (firstValue-1))))
+	if (!(var = Cvar_FindVar (argv[firstValue-1])))
 	{
-		Cvar_Set2 (Cmd_Argv (firstValue-1), Cmd_Argv (firstValue), CVAR_USER_CREATED|CVAR_NODEFAULT, false);
+		Cvar_Set2 (argv[firstValue-1], argv[firstValue], CVAR_USER_CREATED|CVAR_NODEFAULT, false);
 		return;
 	}
 
 	for (i = 0; i < numValues; i++)
-		if (!stricmp (var->string, Cmd_Argv (firstValue+i))) break;
+		if (!stricmp (var->string, argv[firstValue+i])) break;
 
 	if (i == numValues)		// not found
 		i = 0;
@@ -966,7 +955,7 @@ static void Cvar_Cycle_f (void)
 		if (i < 0) i = numValues - 1;
 	}
 
-	Cvar_Set2 (Cmd_Argv (firstValue-1), Cmd_Argv (firstValue+i), CVAR_USER_CREATED|CVAR_NODEFAULT, false);
+	Cvar_Set2 (argv[firstValue-1], argv[firstValue+i], CVAR_USER_CREATED|CVAR_NODEFAULT, false);
 }
 
 
@@ -998,14 +987,14 @@ void Cvar_Init (void)
 {
 	cvar_chain = CreateMemoryChain ();
 
-	Cmd_AddCommand ("set", Cvar_Set_f);
-	Cmd_AddCommand ("seta", Cvar_Seta_f);
-	Cmd_AddCommand ("setu", Cvar_Setu_f);
-	Cmd_AddCommand ("sets", Cvar_Sets_f);
-	Cmd_AddCommand ("reset", Cvar_Reset_f);
-	Cmd_AddCommand ("cvarlist", Cvar_List_f);
-	Cmd_AddCommand ("add", Cvar_Add_f);
-	Cmd_AddCommand ("scale", Cvar_Scale_f);
-	Cmd_AddCommand ("toggle", Cvar_Toggle_f);
-	Cmd_AddCommand ("cycle", Cvar_Cycle_f);
+	RegisterCommand ("set", Cvar_Set_f);
+	RegisterCommand ("seta", Cvar_Seta_f);
+	RegisterCommand ("setu", Cvar_Setu_f);
+	RegisterCommand ("sets", Cvar_Sets_f);
+	RegisterCommand ("reset", Cvar_Reset_f);
+	RegisterCommand ("cvarlist", Cvar_List_f);
+	RegisterCommand ("add", Cvar_Add_f);
+	RegisterCommand ("scale", Cvar_Scale_f);
+	RegisterCommand ("toggle", Cvar_Toggle_f);
+	RegisterCommand ("cycle", Cvar_Cycle_f);
 }

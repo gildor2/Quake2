@@ -106,6 +106,17 @@ CONNECTIONLESS COMMANDS
 ==============================================================================
 */
 
+static void cPing (int argc, char **argv)
+{
+	// Just responds with an acknowledgement
+	Netchan_OutOfBandPrint (NS_SERVER, net_from, "ack");
+}
+
+static void cAck (int argc, char **argv)
+{
+	Com_Printf ("Ping acknowledge from %s\n", NET_AdrToString (&net_from));
+}
+
 /*
 ===============
 SV_StatusString
@@ -118,13 +129,12 @@ char *SV_StatusString (void)
 	char	player[256];
 	static char	status[MAX_MSGLEN - 16];
 	client_t *cl;
-	int		i, statusLength, playerLength;
+	int		statusLength, playerLength;
 
-	if (sv.attractloop)
-		return "";
+	if (sv.attractloop) return "";
 
 	statusLength = Com_sprintf (ARRAY_ARG(status), "%s\n", Cvar_Serverinfo ());
-	for (i = 0; i < maxclients->integer; i++)
+	for (int i = 0; i < maxclients->integer; i++)
 	{
 		cl = &svs.clients[i];
 		if (cl->state == cs_connected || cl->state == cs_spawned)
@@ -142,16 +152,22 @@ char *SV_StatusString (void)
 	return status;
 }
 
+static void cStatus (int argc, char **argv)
+{
+	// Responds with all the info that qplug or qspy can see
+	Netchan_OutOfBandPrint (NS_SERVER, net_from, "print\n%s", SV_StatusString());
+}
+
 
 /*
 ================
-SVC_Info
+cInfo
 
 Responds with short info for broadcast scans
 The second parameter should be the current protocol version number.
 ================
 */
-void SVC_Info (void)
+static void cInfo (int argc, char **argv)
 {
 	char	string[64];
 	int		version;
@@ -159,7 +175,7 @@ void SVC_Info (void)
 	if (maxclients->integer == 1 || sv.state == ss_demo || sv.attractloop)
 		return;					// ignore in single player or demoplay
 
-	version = atoi (Cmd_Argv(1));
+	version = atoi (argv[1]);
 
 	if (!version)
 	{	// we should reject this packet -- this is our "info" answer to local client
@@ -185,7 +201,7 @@ void SVC_Info (void)
 
 /*
 =================
-SVC_GetChallenge
+cGetChallenge
 
 Returns a challenge number that can be used
 in a subsequent client_connect command.
@@ -194,7 +210,7 @@ flood the server with invalid connection IPs.  With a
 challenge, they must give a valid IP address.
 =================
 */
-void SVC_GetChallenge (void)
+static void cGetChallenge (int argc, char **argv)
 {
 	int		i, oldest, oldestTime;
 
@@ -228,12 +244,12 @@ void SVC_GetChallenge (void)
 
 /*
 ==================
-SVC_DirectConnect
+cDirectConnect
 
 A connection request that did not come from the master
 ==================
 */
-void SVC_DirectConnect (void)
+static void cDirectConnect (int argc, char **argv)
 {
 	char		userinfo[MAX_INFO_STRING];
 	netadr_t	adr;
@@ -248,7 +264,7 @@ void SVC_DirectConnect (void)
 
 	Com_DPrintf ("SVC_DirectConnect()\n");
 
-	version = atoi(Cmd_Argv(1));
+	version = atoi (argv[1]);
 	if (version != PROTOCOL_VERSION)
 	{
 		Netchan_OutOfBandPrint (NS_SERVER, adr, "print\nServer is version %4.2f.\n", VERSION);
@@ -256,10 +272,10 @@ void SVC_DirectConnect (void)
 		return;
 	}
 
-	port = atoi(Cmd_Argv(2));
-	challenge = atoi(Cmd_Argv(3));
+	port = atoi (argv[2]);
+	challenge = atoi (argv[3]);
 
-	Q_strncpyz (userinfo, Cmd_Argv(4), sizeof(userinfo));
+	Q_strncpyz (userinfo, argv[4], sizeof(userinfo));
 
 	// force the IP key/value pair so the game can filter based on ip
 	Info_SetValueForKey (userinfo, "ip", NET_AdrToString(&net_from));
@@ -363,7 +379,7 @@ void SVC_DirectConnect (void)
 	SV_UserinfoChanged (newcl);
 
 	// check if client trying to connect with a new protocol
-	newcl->newprotocol = !strcmp (Cmd_Argv (5), NEW_PROTOCOL_ID) && sv_extProtocol->integer;
+	newcl->newprotocol = !strcmp (argv [5], NEW_PROTOCOL_ID) && sv_extProtocol->integer;
 	// send the connect packet to the client
 	if (newcl->newprotocol)
 	{
@@ -389,21 +405,21 @@ void SVC_DirectConnect (void)
 
 /*
 ===============
-SVC_RemoteCommand
+cRemoteCommand
 
 A client issued an rcon command.
 Shift down the remaining args
 Redirect all printfs
 ===============
 */
-void SVC_RemoteCommand (void)
+static void cRemoteCommand (int argc, char **argv)
 {
 	int		i;
 	char	remaining[1024];
 
 	guard(SVC_RemoteCommand);
 
-	if (!rcon_password->string[0] || strcmp (Cmd_Argv(1), rcon_password->string))
+	if (!rcon_password->string[0] || strcmp (argv[1], rcon_password->string))
 	{
 		Com_Printf ("Bad rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
 		Netchan_OutOfBandPrint (NS_SERVER, net_from, "print\nBad rcon password\n");
@@ -414,9 +430,9 @@ void SVC_RemoteCommand (void)
 
 		// fill line with a rest of command string (cut "rcon")
 		remaining[0] = 0;
-		for (i = 2; i < Cmd_Argc(); i++)
+		for (i = 2; i < argc; i++)
 		{
-			strcat (remaining, Cmd_Argv(i));
+			strcat (remaining, argv[i]);
 			strcat (remaining, " ");
 		}
 
@@ -440,47 +456,35 @@ Clients that are in the game can still send
 connectionless packets.
 =================
 */
+
+static const CSimpleCommand connectionlessCmds[] = {
+	{"ping", cPing},
+	{"ack", cAck},
+	{"status", cStatus},
+	{"info", cInfo},
+	{"getchallenge", cGetChallenge},
+	{"connect", cDirectConnect},
+	{"rcon", cRemoteCommand}
+};
+
 void SV_ConnectionlessPacket (void)
 {
-	char	*s, *c;
-
+	guard(SV_ConnectionlessPacket);
 	MSG_BeginReading (&net_message);
 	MSG_ReadLong (&net_message);		// skip the -1 marker
 
-	s = MSG_ReadString (&net_message);
+	char *s = MSG_ReadString (&net_message);
+	Com_DPrintf ("Packet %s : %s\n", NET_AdrToString (&net_from), s);
 
-	Cmd_TokenizeString (s, false);
-
-	c = Cmd_Argv(0);
-	Com_DPrintf ("Packet %s : %s\n", NET_AdrToString (&net_from), c);
 	if (SV_AddressBanned (&net_from))
 	{
 		Com_DPrintf ("... banned\n");
 		return;
 	}
 
-	if (!strcmp (c, "ping"))
-	{
-		// Just responds with an acknowledgement
-		Netchan_OutOfBandPrint (NS_SERVER, net_from, "ack");
-	}
-	else if (!strcmp (c, "ack"))
-		Com_Printf ("Ping acknowledge from %s\n", NET_AdrToString (&net_from));
-	else if (!strcmp (c, "status"))
-	{
-		// Responds with all the info that qplug or qspy can see
-		Netchan_OutOfBandPrint (NS_SERVER, net_from, "print\n%s", SV_StatusString());
-	}
-	else if (!strcmp (c, "info"))
-		SVC_Info ();
-	else if (!strcmp (c, "getchallenge"))
-		SVC_GetChallenge ();
-	else if (!strcmp (c, "connect"))
-		SVC_DirectConnect ();
-	else if (!strcmp (c, "rcon"))
-		SVC_RemoteCommand ();
-	else
+	if (!ExecuteCommand (s, ARRAY_ARG(connectionlessCmds)))
 		Com_WPrintf ("Bad connectionless packet from %s: \"%s\"\n", NET_AdrToString (&net_from), s);
+	unguard;
 }
 
 

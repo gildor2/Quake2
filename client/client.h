@@ -380,7 +380,7 @@ extern beam_t	*active_beams;
 
 //--------------- lightstyles --------------------
 
-void CL_SetLightstyle (int i, char *s);
+void CL_SetLightstyle (int i, const char *s);
 void CL_RunLightStyles (void);
 extern lightstyle_t cl_lightstyles[MAX_LIGHTSTYLES];
 
@@ -489,6 +489,9 @@ void CL_PingServers_f (void);
 void CL_Snd_Restart_f (void);
 void CL_RequestNextDownload (void);
 
+void CL_WriteDemoMessage (void);
+
+
 //
 // cl_input.c
 //
@@ -518,16 +521,9 @@ void CL_BaseMove (usercmd_t *cmd);
 void IN_CenterView (void);
 
 //
-// cl_demo.c
-//
-void CL_WriteDemoMessage (void);
-void CL_Stop_f (void);
-void CL_Record_f (void);
-
-//
 // cl_parse.c
 //
-extern	char *svc_strings[256];
+extern	char *svc_strings[svc_last];
 
 void CL_ParseServerMessage (void);
 void CL_LoadClientinfo (clientinfo_t *ci, char *s);
@@ -536,13 +532,12 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s);
 	if (cl_shownet->integer >= 2) Com_Printf ("%3d:%s\n", net_message.readcount-1, s);
 
 void CL_ParseClientinfo (int player);
-void CL_Download_f (void);
+void CL_Download_f (bool usage, int argc, char **argv);
 
 //
 // cl_scrn.c
 //
-void SCR_SetLevelshot (char *name);		// give exact levelshot name
-void SCR_SetLevelshot2 (void);			// compute name from map name
+void SCR_SetLevelshot (char *name = NULL);		// give levelshot name (if name not specified - compute from map name)
 void SCR_ShowConsole (bool show, bool noAnim);
 
 //

@@ -119,6 +119,12 @@ void QGL_InitExtensions (void)
 	dummyFunc_t func;
 	const char *ext1, *ext2;
 
+	guard(QGL_InitExtensions);
+
+	// init cvars for controlling extensions
+	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
+		if (ext->cvar) Cvar_Get (ext->cvar, "1", CVAR_ARCHIVE);
+
 	gl_config.extensionMask = 0;
 	notFoundExt = 0;
 	gl_config.disabledExt = gl_config.ignoredExt = 0;
@@ -139,10 +145,9 @@ void QGL_InitExtensions (void)
 
 	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 	{
-		bool	enable;
 		int		j;
 
-		enable = false;
+		bool enable = false;
 		if (ExtensionSupported (ext, ext1, ext2))
 		{
 			if (!ext->cvar || Cvar_VariableInt (ext->cvar))
@@ -276,6 +281,8 @@ void QGL_InitExtensions (void)
 			}
 		Com_Printf ("\n");
 	}
+
+	unguard;
 }
 
 

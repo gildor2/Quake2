@@ -34,6 +34,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../ref_soft/r_local.h"
 //-- (see in_win.c) #define INITGUID
 
+//#define SHOW_DDRAW_ERRORS
+
 static const char *DDrawError( int code );
 
 /*
@@ -355,7 +357,8 @@ void DDRAW_Shutdown( void )
 
 static const char *DDrawError (int code)
 {
-	static struct {
+#ifdef SHOW_DDRAW_ERRORS
+	static const struct {
 		int		code;
 		char	*str;
 	} info[] = {
@@ -380,11 +383,13 @@ static const char *DDrawError (int code)
 		T(UNSUPPORTEDFORMAT), T(UNSUPPORTEDMASK), T(VERTICALBLANKINPROGRESS), T(WASSTILLDRAWING),
 		T(WRONGMODE), T(XALIGN)
 	};
+#endif
 
 	if (code == DD_OK)
 		return "DD_OK";
 	else
 	{
+#ifdef SHOW_DDRAW_ERRORS
 		char	*s;
 		int		i;
 
@@ -398,6 +403,7 @@ static const char *DDrawError (int code)
 		if (s)
 			return va("DDERR_%s", s);
 		else
+#endif
 			return va("DDERR_UNK_%d", code);
 	}
 }

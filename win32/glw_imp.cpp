@@ -18,6 +18,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+/*!! TODO:
+ *	- remove BeginFrame()/EndFrame() -- EndFrame() call SwapBuffers() (can make as
+ *		inline function and call from main source), BeginFrame() do nothing (checks
+ *		(winVer < OSR2) bitdepth change only -- can place warning in GLimp_SetMode())
+ *	- Linux: if gl_finish!=0 required (see gl_main.cpp::GL_Init() -- can force
+ *		glFinish() on begin or end of frame (check this!))
+ */
+
 /*
  * GLW_IMP.C
  *
@@ -48,13 +56,7 @@ static bool GLimp_CreateWindow (int width, int height, bool fullscreen)
 	if (!glw_state.hWnd)
 		return false;
 
-	// init all the gl stuff for the window
-	if (!GLimp_InitGL ())
-	{
-		Com_WPrintf ("GLimp_CreateWindow: InitGL() failed\n");
-		return false;
-	}
-	return true;
+	return GLimp_InitGL ();
 }
 
 
@@ -567,11 +569,12 @@ static bool GLimp_InitGL (void)
 	if (strstr (gl_driver->string, "opengl32"))
 		glw_state.minidriver = false;
 	else
+	{
+		Com_Printf ("...minidriver detected\n");
 		glw_state.minidriver = true;
+	}
 
 	// Get a DC for the specified window
-	if (glw_state.hDC != NULL)
-		Com_WPrintf ("...non-NULL DC exists\n");
 	if ((glw_state.hDC = GetDC (glw_state.hWnd)) == NULL)
 	{
 		Com_WPrintf ("...GetDC() failed\n");
@@ -647,19 +650,16 @@ void GLimp_EndFrame (void)
 			wglSwapIntervalEXT (gl_swapinterval->integer);
 	}
 
-	if (stricmp (gl_drawbuffer->string, "GL_FRONT"))
-	{	// draw buffer = GL_BACK
-		if (!glw_state.minidriver)
-		{
-			LOG_STRING("SwapBuffers()\n");
-			SwapBuffers (glw_state.hDC);
-		}
-		else
-		{
-			// use wglSwapBuffers() for miniGL and Voodoo
-			if (!wglSwapBuffers (glw_state.hDC))
-				Com_FatalError ("GLimp_EndFrame() - SwapBuffers() failed!\n");
-		}
+	if (!glw_state.minidriver)
+	{
+		LOG_STRING("SwapBuffers()\n");
+		SwapBuffers (glw_state.hDC);
+	}
+	else
+	{
+		// use wglSwapBuffers() for miniGL and Voodoo
+		if (!wglSwapBuffers (glw_state.hDC))
+			Com_FatalError ("GLimp_EndFrame() - SwapBuffers() failed!\n");
 	}
 }
 

@@ -272,8 +272,8 @@ CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
 	sw_maxedges = Cvar_Get ("sw_maxedges", va("%d", NUMSTACKEDGES), 0);	//?? MAXSTACKSURFACES
 
-	Cmd_AddCommand ("modellist", Mod_Modellist_f);
-	Cmd_AddCommand ("imagelist", R_ImageList_f);
+	RegisterCommand ("modellist", Mod_Modellist_f);
+	RegisterCommand ("imagelist", R_ImageList_f);
 
 	sw_mode->modified = true; // force us to do mode specific stuff later
 	r_gamma->modified = true; // force us to rebuild the gamma table later
@@ -281,8 +281,8 @@ CVAR_END
 
 void R_UnRegister (void)
 {
-	Cmd_RemoveCommand ("modellist");
-	Cmd_RemoveCommand( "imagelist" );
+	UnregisterCommand ("modellist");
+	UnregisterCommand ("imagelist");
 }
 
 /*
@@ -1110,41 +1110,39 @@ void R_BeginFrame( float camera_separation )
 
 	while ( sw_mode->modified || r_fullscreen->modified )
 	{
-		rserr_t err;
-
 		/*
 		** if this returns rserr_invalid_fullscreen then it set the mode but not as a
 		** fullscreen mode, e.g. 320x200 on a system that doesn't support that res
 		*/
-		if ( ( err = SWimp_SetMode( &vid.width, &vid.height, sw_mode->integer, r_fullscreen->integer != 0) ) == rserr_ok )
+		switch (SWimp_SetMode (&vid.width, &vid.height, sw_mode->integer, r_fullscreen->integer != 0))
 		{
+		case rserr_ok:
 			R_InitGraphics( vid.width, vid.height );
 
 			sw_state.prev_mode = sw_mode->integer;
 			r_fullscreen->modified = false;
-			sw_mode->modified = false;
-		}
-		else
-		{
-			if ( err == rserr_invalid_mode )
+			sw_mode->modified = false;			// will exit from loop
+			break;
+
+		case rserr_invalid_mode:
+			if (sw_mode->integer != sw_state.prev_mode)
 			{
 				Cvar_SetInteger ("sw_mode", sw_state.prev_mode);
-				Com_Printf ("ref_soft::R_BeginFrame() - could not set mode\n");
-			}
-			else if ( err == rserr_invalid_fullscreen )
-			{
-				R_InitGraphics( vid.width, vid.height );
-
-				Cvar_SetInteger ("r_fullscreen", 0);
-				Com_Printf ("ref_soft::R_BeginFrame() - fullscreen unavailable in this mode\n");
-				sw_state.prev_mode = sw_mode->integer;
-//				r_fullscreen->modified = false;
-//				sw_mode->modified = false;
+				Com_WPrintf ("ref_soft::R_BeginFrame() - could not set mode\n");
 			}
 			else
-			{
-				Com_FatalError ("ref_soft::R_BeginFrame() - catastrophic mode change failure\n" );
-			}
+				Com_FatalError ("Cannot set video mode");
+			break;
+
+		case rserr_invalid_fullscreen:
+			R_InitGraphics( vid.width, vid.height );
+
+			Cvar_SetInteger ("r_fullscreen", 0);
+			Com_WPrintf ("ref_soft::R_BeginFrame() - fullscreen unavailable in this mode\n");
+			sw_state.prev_mode = sw_mode->integer;
+//			r_fullscreen->modified = false;
+//			sw_mode->modified = false;
+			break;
 		}
 	}
 
@@ -1299,7 +1297,7 @@ R_SetSky
 char	*suf[6] = {"rt", "bk", "lf", "ft", "up", "dn"};
 int	r_skysideimage[6] = {5, 2, 4, 1, 0, 3};
 extern	mtexinfo_t		r_skytexinfo[6];
-void R_SetSky (char *name, float rotate, vec3_t axis)
+static void R_SetSky (const char *name, float rotate, vec3_t axis)
 {
 	int		i;
 	char	pathname[MAX_QPATH];
@@ -1365,15 +1363,17 @@ void Draw_GetPalette (void)
 	appFree (pal);
 }
 
-struct image_s *R_RegisterSkin (char *name);
-
+static struct image_s *R_RegisterSkin (const char *name)
+{
+	return R_FindImage (name, it_skin);
+}
 
 void	Draw_ConCharColor (int x, int y, int c, int color)
 {
 	Draw_CharColor (x * 8, y * 8, c, color);
 }
 
-static void Screenshot (int flags, char *name)
+static void Screenshot (int flags, const char *name)
 {
 	static char shotName[MAX_QPATH];
 
@@ -1420,7 +1420,7 @@ static void Draw_Fill2 (int x, int y, int w, int h, unsigned rgba)
 		Draw_Fade (x, y, w, h, color);
 }
 
-static void ReloadImage (char *name)
+static void ReloadImage (const char *name)
 {
 	// do nothing here ??
 }

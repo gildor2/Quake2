@@ -53,7 +53,26 @@ sub EmitStruc {
 }
 
 sub EmitDefine1 {
-	printf (DEFS "#define %s\t$strucname._%s\n", $func, $func);
+	@args = split (',', $args);
+	if ($args[$#args] =~ /\.\.\./) {
+		# vararg function
+		printf (DEFS "#define %s\t$strucname._%s\n", $func, $func);
+	} else {
+		# regular function, may be overloaded - so make inline code
+		print (DEFS "inline $type $func ($args)\n{\n\t");
+		print (DEFS "return ") if ($type ne "void");
+		print (DEFS "$strucname._$func (");
+		# args
+		my $i = 0;
+		for $arg (@args) {
+			my (undef, $param, undef) = $arg =~ / \s* (\S+ .* [\*\s]) (\w+) (\[.*\])? /x;
+			print (DEFS ", ") if $i > 0;
+			print (DEFS $param);
+			$i++;
+		}
+		# finish
+		print (DEFS ");\n}\n");
+	}
 }
 
 sub EmitDefine2 {	#?? unused

@@ -34,7 +34,7 @@ static int colortable[8] = {0x00, 0xF2, 0xD0, 0xDD, 0xF3, 0xB0, 0x6F, 0xD7};
 Draw_FindPic
 ================
 */
-image_t *Draw_FindPic (char *name)
+image_t *Draw_FindPic (const char *name)
 {
 	image_t	*image;
 	char	fullname[MAX_QPATH];
@@ -262,7 +262,7 @@ void R_DrawTexts (void)
 
 extern unsigned char d_16to8table[65536];
 
-void DrawText_Pos (int x, int y, char *text, unsigned rgba)
+void DrawText_Pos (int x, int y, const char *text, unsigned rgba)
 {
 	int size;
 	char *text_copy;
@@ -301,14 +301,14 @@ void DrawText_Pos (int x, int y, char *text, unsigned rgba)
 	textbuf_count++;
 }
 
-void DrawText_Left (char *text, unsigned rgba)
+void DrawText_Left (const char *text, unsigned rgba)
 {
 	if (next_left_y >= vid.height) return; // out of screen
 	DrawText_Pos (0, next_left_y, text, rgba);
 	next_left_y += 8;
 }
 
-void DrawText_Right (char *text, unsigned rgba)
+void DrawText_Right (const char *text, unsigned rgba)
 {
 	if (next_right_y >= vid.height) return; // out of screen
 	DrawText_Pos (vid.width - strlen(text) * 8, next_right_y, text, rgba);
@@ -320,7 +320,7 @@ void DrawText_Right (char *text, unsigned rgba)
 Draw_GetPicSize
 =============
 */
-void Draw_GetPicSize (int *w, int *h, char *pic)
+void Draw_GetPicSize (int *w, int *h, const char *pic)
 {
 	image_t *gl;
 
@@ -399,7 +399,7 @@ void Draw_StretchPicImplementation (int x, int y, int w, int h, image_t	*pic)
 Draw_StretchPic
 =============
 */
-void Draw_StretchPic (int x, int y, int w, int h, char *name)
+void Draw_StretchPic (int x, int y, int w, int h, const char *name)
 {
 	image_t	*pic;
 
@@ -440,7 +440,7 @@ void Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *dat
 Draw_Pic
 =============
 */
-void Draw_Pic (int x, int y, char *name)
+void Draw_Pic (int x, int y, const char *name)
 {
 	image_t			*pic;
 	byte			*dest, *source;
@@ -521,7 +521,7 @@ Draw_PicColor
 =============
 */
 
-void Draw_PicColor (int x, int y, char *name, int color)
+void Draw_PicColor (int x, int y, const char *name, int color)
 {
 	image_t			*pic;
 	byte			*dest, *source;
@@ -608,7 +608,7 @@ This repeats a 64*64 tile graphic to fill the screen around a sized down
 refresh window.
 =============
 */
-void Draw_TileClear (int x, int y, int w, int h, char *name)
+void Draw_TileClear (int x, int y, int w, int h, const char *name)
 {
 	int			i, j;
 	byte		*psrc;
@@ -706,6 +706,8 @@ void Draw_Fade (int x, int y, int w, int h, int c)
 	int		t;
 
 	guard(Draw_Fade);
+
+	if (x < 0 || y < 0 || x+w > vid.width || y+h > vid.height) return;	// out of screen
 
 	x2 = x + w;
 	y2 = y + h;

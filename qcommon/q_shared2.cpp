@@ -1166,9 +1166,9 @@ COM_Parse
 Parse a token out of a string
 ==============
 */
-static char *SkipWhitespace (char *data, bool *hasNewLines)
+static const char *SkipWhitespace (const char *data, bool *hasNewLines)
 {
-	int c;
+	int		c;
 
 	while ((c = *data) <= ' ')
 	{
@@ -1184,13 +1184,13 @@ static char *SkipWhitespace (char *data, bool *hasNewLines)
 	return data;
 }
 
-char *COM_ParseExt (char **data_p, bool allowLineBreaks)
+char *COM_Parse (const char *&data_p, bool allowLineBreaks)
 {
 	int		c, len;
 	bool	hasNewLines;
-	char	*data;
+	const char *data;
 
-	data = *data_p;
+	data = data_p;
 	len = c = 0;
 	com_token[0] = 0;
 	hasNewLines = false;
@@ -1204,12 +1204,12 @@ char *COM_ParseExt (char **data_p, bool allowLineBreaks)
 		data = SkipWhitespace (data, &hasNewLines);
 		if (!data)
 		{
-			*data_p = NULL;
+			data_p = NULL;
 			return com_token;
 		}
 		if (hasNewLines && !allowLineBreaks)
 		{
-			*data_p = data;
+			data_p = data;
 			return com_token;
 		}
 
@@ -1253,7 +1253,7 @@ char *COM_ParseExt (char **data_p, bool allowLineBreaks)
 			if (c=='\"' || !c)
 			{
 				com_token[len] = 0;
-				*data_p = (char *) data;
+				data_p = (char *) data;
 				return com_token;
 			}
 
@@ -1283,16 +1283,9 @@ char *COM_ParseExt (char **data_p, bool allowLineBreaks)
 	}
 	com_token[len] = 0;
 
-	*data_p = (char *) data;
+	data_p = (char *) data;
 	return com_token;
 }
-
-/*
-char *COM_Parse (char **data_p)
-{
-	return COM_ParseExt (data_p, true);
-}
-*/
 
 const char *COM_QuoteString (const char *str, bool alwaysQuote)
 {
@@ -1321,34 +1314,6 @@ const char *COM_QuoteString (const char *str, bool alwaysQuote)
 	return com_token;
 }
 
-
-/*
-=================
-SkipBracedSection
-
-The next token should be an open brace.
-Skips until a matching close brace is found.
-Internal brace depths are properly skipped.
-=================
-*/
-void SkipBracedSection (char **program)
-{
-	char	*token;
-	int		depth;
-
-	depth = 0;
-	do
-	{
-		token = COM_ParseExt (program, true);
-		if (token[1] == 0)
-		{
-			if (token[0] == '{')
-				depth++;
-			else if (token[0] == '}')
-				depth--;
-		}
-	} while (depth && *program);
-}
 
 /*
 =================

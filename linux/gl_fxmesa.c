@@ -54,7 +54,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 glwstate_t glw_state;
 
 static qboolean GLimp_SwitchFullscreen( int width, int height );
-qboolean GLimp_InitGL (void);
 
 extern cvar_t *r_fullscreen;
 static fxMesaContext fc = NULL;

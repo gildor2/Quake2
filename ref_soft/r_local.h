@@ -109,9 +109,7 @@ typedef enum
 	rserr_ok,
 
 	rserr_invalid_fullscreen,
-	rserr_invalid_mode,
-
-	rserr_unknown
+	rserr_invalid_mode
 } rserr_t;
 
 extern viddef_t vid;
@@ -767,22 +765,22 @@ void D_FlushCaches (void);
 extern int 	r_screenshotFlags;
 extern char	*r_screenshotName;
 void	R_ScreenShot( void );
-void    R_BeginRegistration (char *map);
-struct model_s  *R_RegisterModel (char *name);
+void    R_BeginRegistration (const char *map);
+struct model_s  *R_RegisterModel (const char *name);
 void    R_EndRegistration (void);
 
 void    R_RenderFrame (refdef_t *fd);
 
-struct image_s  *Draw_FindPic (char *name);
+struct image_s  *Draw_FindPic (const char *name);
 
-void    Draw_GetPicSize (int *w, int *h, char *name);
-void    Draw_Pic (int x, int y, char *name);
-void	Draw_PicColor (int x, int y, char *name, int color);
-void    Draw_StretchPic (int x, int y, int w, int h, char *name);
+void    Draw_GetPicSize (int *w, int *h, const char *name);
+void    Draw_Pic (int x, int y, const char *name);
+void	Draw_PicColor (int x, int y, const char *name, int color);
+void    Draw_StretchPic (int x, int y, int w, int h, const char *name);
 void    Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data);
 void    Draw_Char (int x, int y, int c);
 void    Draw_CharColor (int x, int y, int c, int color);
-void    Draw_TileClear (int x, int y, int w, int h, char *name);
+void    Draw_TileClear (int x, int y, int w, int h, const char *name);
 void    Draw_Fill (int x, int y, int w, int h, int c);
 void    Draw_Fade (int x, int y, int w, int h, int c);
 
@@ -801,7 +799,7 @@ void    Sys_SetFPCW (void);
 
 void    R_InitImages (void);
 void	R_ShutdownImages (void);
-image_t *R_FindImage (char *name, imagetype_t type);
+image_t *R_FindImage (const char *name, imagetype_t type);
 void    R_FreeUnusedImages (void);
 
 void	R_GammaCorrectAndSetPalette( const unsigned char *pal );
@@ -853,9 +851,9 @@ rserr_t		SWimp_SetMode( int *pwidth, int *pheight, int mode, bool fullscreen );
 void		SWimp_AppActivate( bool active );
 
 void R_DrawTexts (void);
-void DrawText_Pos (int x, int y, char *text, unsigned rgba);
-void DrawText_Left (char *text, unsigned rgba);
-void DrawText_Right (char *text, unsigned rgba);
+void DrawText_Pos (int x, int y, const char *text, unsigned rgba);
+void DrawText_Left (const char *text, unsigned rgba);
+void DrawText_Right (const char *text, unsigned rgba);
 
 //?? make common declaration
 #ifdef REF_HARD_LINKED

@@ -98,7 +98,6 @@ void	QGL_LogMessage (const char *text);
 #define R_SetupFrame		GLR_SetupFrame
 #define Mod_Modellist_f		GLMod_Modellist_f
 #define Mod_Init			GLMod_Init
-#define Mod_ForName			GLMod_ForName
 #define Mod_PointInLeaf		GLMod_PointInLeaf
 #define Mod_DecompressVis	GLMod_DecompressVis
 #define Mod_ClusterPVS		GLMod_ClusterPVS
@@ -223,9 +222,7 @@ typedef enum
 	rserr_ok,
 
 	rserr_invalid_fullscreen,
-	rserr_invalid_mode,
-
-	rserr_unknown
+	rserr_invalid_mode
 } rserr_t;
 
 #include "gl_model.h"
@@ -322,7 +319,6 @@ extern	cvar_t	*gl_polyblend;
 extern	cvar_t	*gl_flashblend;
 extern	cvar_t	*gl_modulate;
 extern	cvar_t	*gl_playermip;
-extern	cvar_t	*gl_drawbuffer;
 extern	cvar_t	*gl_3dlabs_broken;
 extern  cvar_t  *gl_driver;
 extern	cvar_t	*gl_swapinterval;
@@ -406,13 +402,13 @@ char	*va(char *format, ...);
 // does a varargs printf into a temp buffer
 #endif
 
-void	Draw_GetPicSize (int *w, int *h, char *name);
-void	Draw_Pic (int x, int y, char *name);
-void	Draw_PicColor (int x, int y, char *pic, int color);
-void	Draw_StretchPic (int x, int y, int w, int h, char *name);
+void	Draw_GetPicSize (int *w, int *h, const char *name);
+void	Draw_Pic (int x, int y, const char *name);
+void	Draw_PicColor (int x, int y, const char *pic, int color);
+void	Draw_StretchPic (int x, int y, int w, int h, const char *name);
 void	Draw_Char (int x, int y, int c);
 void	Draw_CharColor (int x, int y, int num, int color);
-void	Draw_TileClear (int x, int y, int w, int h, char *name);
+void	Draw_TileClear (int x, int y, int w, int h, const char *name);
 void	Draw_Fill (int x, int y, int w, int h, int c);
 void	Draw_Fill2 (int x, int y, int w, int h, unsigned rgba);
 void	Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data);
@@ -426,11 +422,11 @@ int		Draw_GetPalette (void);
 void GL_BufCorrectGamma (byte *pic, int size);
 void GL_ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *out,  int outwidth, int outheight);
 
-struct image_s *R_RegisterSkin (char *name);
+struct image_s *R_RegisterSkin (const char *name);
 
 //void LoadPCX (char *filename, byte **pic, byte **palette, int *width, int *height);
-image_t *GL_LoadPic (char *name, byte *pic, int width, int height, imagetype_t type, int bits);
-image_t	*GL_FindImage (char *name, imagetype_t type);
+image_t *GL_LoadPic (const char *name, byte *pic, int width, int height, imagetype_t type, int bits);
+image_t	*GL_FindImage (const char *name, imagetype_t type);
 void	GL_TextureMode( char *string );
 void	GL_ImageList_f (void);
 
@@ -598,8 +594,8 @@ void		GLimp_SetGamma (float gamma, float intens);
 
 
 void	R_DrawTexts (void);
-void	DrawTextPos (int x, int y, char *text, unsigned rgba);
-void	DrawTextLeft (char *text, unsigned rgba);
-void	DrawTextRight (char *text, unsigned rgba);
+void	DrawTextPos (int x, int y, const char *text, unsigned rgba);
+void	DrawTextLeft (const char *text, unsigned rgba);
+void	DrawTextRight (const char *text, unsigned rgba);
 
 extern bool con_only;

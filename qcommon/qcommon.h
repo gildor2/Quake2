@@ -113,7 +113,7 @@ void	SZ_Init (sizebuf_t *buf, void *data, int length);
 void	SZ_Clear (sizebuf_t *buf);
 void	*SZ_GetSpace (sizebuf_t *buf, int length);
 void	SZ_Write (sizebuf_t *buf, void *data, int length);
-void	SZ_Insert (sizebuf_t *buf, void *data, int length, int pos);
+void	SZ_Insert (sizebuf_t *buf, void *data, int length, int pos);	// used for Cbuf_InsertText() only
 void	SZ_Print (sizebuf_t *buf, char *data);	// strcats onto the sizebuf
 
 //============================================================================
@@ -240,7 +240,9 @@ enum svc_ops_e
 	svc_playerinfo,				// variable
 	svc_packetentities,			// [...]
 	svc_deltapacketentities,	// [...]
-	svc_frame
+	svc_frame,
+
+	svc_last					// number of commands
 };
 
 //==============================================
@@ -414,7 +416,8 @@ typedef struct cmdFunc_s
 {
 	struct cmdFunc_s *next;
 	const char	*name;
-	void	(*func) (void);
+	int		flags;
+	void (*func) ();
 } cmdFunc_t;
 
 extern cmdFunc_t *cmdFuncs;
@@ -422,30 +425,28 @@ extern cmdFunc_t *cmdFuncs;
 
 void	Cmd_Init (void);
 
-//--void	Cmd_AddCommand (char *cmd_name, void (*func)(void));
+//--bool	RegisterCommand (char *cmd_name, void (*func)(void), int flags);
 // called by the init functions of other parts of the program to
 // register commands and functions to call for them.
 // The cmd_name is referenced later, so it should not be in temp memory
 // if function is NULL, the command will be forwarded to the server
 // as a clc_stringcmd instead of executed locally
-//--void	Cmd_RemoveCommand (char *cmd_name);
+//--void	UnregisterCommand (const char *cmd_name);
 
-//--int		Cmd_Argc (void);
-//--char	*Cmd_Argv (int arg);
-//--char	*Cmd_Args (void);
+//?? remove later
+int		Cmd_Argc (void);
+char*	Cmd_Argv (int i);
+
+char	*Cmd_Args (void);
 // The functions that execute commands get their parameters with these
 // functions. Cmd_Argv () will return an empty string, not a NULL
 // if arg > argc, so string operations are always safe.
 
-void	Cmd_TokenizeString (char *text, bool macroExpand);
-// Takes a null terminated string.  Does not need to be /n terminated.
-// breaks the string up into arg tokens.
-
-bool	Cmd_ExecuteString (char *text);
+bool	Cmd_ExecuteString (const char *text);
 // Parses a single line of text into arguments and tries to execute it
 // as if it was typed at the console; if command is unknown, will return false
 
-void	Cmd_ForwardToServer (void);
+void	Cmd_ForwardToServer (int argc, char **argv);
 // adds the current command line as a clc_stringcmd to the client message.
 // things like godmode, noclip, etc, are commands directed to the server,
 // so when they are typed in at the console, they will need to be forwarded.
@@ -505,7 +506,7 @@ cvar_t	*Cvar_ForceSet (const char *var_name, const char *value);	// will set the
 void	Cvar_GetLatchedVars (void);
 // any CVAR_LATCHED variables that have been set will now take effect
 
-bool	Cvar_Command (void);
+bool	Cvar_Command (int argc, char **argv);
 // called by Cmd_ExecuteString when Cmd_Argv(0) doesn't match a known
 // command.  Returns true if the command was a variable reference that
 // was handled. (print or change)
@@ -792,6 +793,7 @@ void	Sys_FindClose (void);
 extern	int	curtime;		// time returned by last Sys_Milliseconds
 extern	int linewidth;		// for functions, which wants to perform advanced output formatting
 
+void	Mem_Init (void);
 
 void	Com_BeginRedirect (char *buffer, int buffersize, void (*flush)(char*));
 void	Com_EndRedirect (void);
@@ -1043,6 +1045,9 @@ extern bspfile_t *map_bspfile;
 char *ProcessEntstring (char *entString);
 
 
+/*-----------------------------------------------------------------------------
+	Staff from new engine
+-----------------------------------------------------------------------------*/
 
 #include "../client/ref_decl.h"
 #include "../client/ref_defs.h"
@@ -1056,6 +1061,37 @@ inline void operator delete (void *ptr)
 	appFree (ptr);
 }
 
+
+#define COMMAND_USAGE	1
+#define COMMAND_ARGS	2
+
+inline bool RegisterCommand (const char *name, void(*func)(void))
+{
+	return RegisterCommand (name, func, 0);
+}
+
+inline bool RegisterCommand (const char *name, void(*func)(bool))
+{
+	return RegisterCommand (name, (void(*)())func, COMMAND_USAGE);
+}
+
+inline bool RegisterCommand (const char *name, void(*func)(int,char**))
+{
+	return RegisterCommand (name, (void(*)())func, COMMAND_ARGS);
+}
+
+inline bool RegisterCommand (const char *name, void(*func)(bool,int,char**))
+{
+	return RegisterCommand (name, (void(*)())func, COMMAND_USAGE|COMMAND_ARGS);
+}
+
+struct CSimpleCommand
+{
+	const char	*name;
+	void (*func)(int argc, char **argv);
+};
+
+bool ExecuteCommand (const char *str, const CSimpleCommand *CmdList, int numCommands);
 
 /*-----------------------------------------------------------------------------
 	guard macros

@@ -647,19 +647,16 @@ void GLimp_EndFrame (void)
 			wglSwapIntervalEXT (gl_swapinterval->integer);
 	}
 
-	if (stricmp (gl_drawbuffer->string, "GL_FRONT"))
-	{	// draw buffer = GL_BACK
-		if (!glw_state.minidriver)
-		{
-			LOG_STRING("SwapBuffers()\n");
-			SwapBuffers (glw_state.hDC);
-		}
-		else
-		{
-			// use wglSwapBuffers() for miniGL and Voodoo
-			if (!wglSwapBuffers (glw_state.hDC))
-				Com_FatalError ("GLimp_EndFrame() - SwapBuffers() failed!\n");
-		}
+	if (!glw_state.minidriver)
+	{
+		LOG_STRING("SwapBuffers()\n");
+		SwapBuffers (glw_state.hDC);
+	}
+	else
+	{
+		// use wglSwapBuffers() for miniGL and Voodoo
+		if (!wglSwapBuffers (glw_state.hDC))
+			Com_FatalError ("GLimp_EndFrame() - SwapBuffers() failed!\n");
 	}
 }
 

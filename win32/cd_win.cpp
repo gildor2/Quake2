@@ -237,15 +237,14 @@ void CDAudio_Resume (void)
 }
 
 
-static void CD_f (void)
+static void CD_f (int argc, char **argv)
 {
-	char	*command;
 	int		ret;
 	int		n;
 
-	if (Cmd_Argc() < 2) return;
+	if (argc < 2) return;
 
-	command = Cmd_Argv (1);
+	char *command = argv[1];
 
 	if (!stricmp (command, "on"))
 	{
@@ -274,7 +273,7 @@ static void CD_f (void)
 
 	if (!stricmp (command, "remap"))
 	{
-		ret = Cmd_Argc() - 2;
+		ret = argc - 2;
 		if (ret <= 0)
 		{
 			for (n = 1; n < 100; n++)
@@ -283,7 +282,7 @@ static void CD_f (void)
 			return;
 		}
 		for (n = 1; n <= ret; n++)
-			remap[n] = atoi (Cmd_Argv (n+1));
+			remap[n] = atoi (argv[n+1]);
 		return;
 	}
 
@@ -305,13 +304,13 @@ static void CD_f (void)
 
 	if (!stricmp (command, "play"))
 	{
-		CDAudio_Play (atoi (Cmd_Argv (2)), false);
+		CDAudio_Play (atoi (argv[2]), false);
 		return;
 	}
 
 	if (!stricmp (command, "loop"))
 	{
-		CDAudio_Play (atoi (Cmd_Argv (2)), true);
+		CDAudio_Play (atoi (argv[2]), true);
 		return;
 	}
 
@@ -460,7 +459,7 @@ CVAR_END
 		enabled = false;
 	}
 
-	Cmd_AddCommand ("cd", CD_f);
+	RegisterCommand ("cd", CD_f);
 
 	Com_Printf("CD Audio Initialized\n");
 

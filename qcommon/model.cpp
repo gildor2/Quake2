@@ -253,14 +253,17 @@ static int CheckLump (int lump, void **ptr, int size)
 
 void LoadQ2BspFile (void)
 {
-	int			i;
 	dmodel_t	*models;
+
+	guard(LoadQ2BspFile);
 
 	header = (dheader_t *) bspfile.file;
 
+#ifndef LITTLE_ENDIAN
 	// swap the header
-	for (i = 0; i < sizeof(dheader_t) / 4; i++)
+	for (int i = 0; i < sizeof(dheader_t) / 4; i++)
 		((int *)header)[i] = LittleLong (((int *)header)[i]);
+#endif
 
 	if (header->version != BSP2_VERSION)
 		Com_DropError ("%s is version %d, not " STR(BSP2_VERSION) "\n", bspfile.name, header->version);
@@ -289,8 +292,10 @@ void LoadQ2BspFile (void)
 	bspfile.numModels =		CheckLump (LUMP_MODELS, (void**)&models, sizeof(dmodel_t));	// not in bspfile_t struc
 	LoadQ2Submodels (&bspfile, models);
 
+#ifndef LITTLE_ENDIAN
 	// swap everything
 	SwapQ2BspFile (&bspfile);
+#endif
 	ProcessQ2BspFile (&bspfile);
 
 	// load entstring after all: we may require to change something
@@ -301,10 +306,12 @@ void LoadQ2BspFile (void)
 	bspfile.entities = ProcessEntstring ((char*)header + header->lumps[LUMP_ENTITIES].fileofs);
 	bspfile.entDataSize = strlen (bspfile.entities);
 #endif
+
+	unguard;
 }
 
 
-bspfile_t *LoadBspFile (char *filename, bool clientload, unsigned *checksum)
+bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksum)
 {
 	server_state_t ss;
 	guard(LoadBspFile);
@@ -352,7 +359,7 @@ bspfile_t *LoadBspFile (char *filename, bool clientload, unsigned *checksum)
 	bspfile.name[0] = 0;
 	bspfile.file = NULL;
 	map_clientLoaded = false;
-	Com_DropError ("LoadBrushModel: %s has a wrong BSP header\n", filename);
+	Com_DropError ("%s has a wrong BSP header\n", filename);
 	return NULL;		// make compiler happy
 
 	unguard;
@@ -426,7 +433,7 @@ static void ErrMsg (char *str)
 }
 
 
-static bool ReadEntity (char **src)
+static bool ReadEntity (const char *&src)
 {
 	char	*tok;
 	entField_t *field;
@@ -966,7 +973,8 @@ static bool ProcessEntity ()
 
 char *ProcessEntstring (char *entString)
 {
-	char	*dst, *dst2, *src;
+	char	*dst, *dst2;
+	const char *src;
 	// patch (temporary !!)
 	unsigned plen;
 	char	*patch;
@@ -988,14 +996,14 @@ char *ProcessEntstring (char *entString)
 	// find target entities
 	src = entString;
 	numTargets = 0;
-	while (!haveErrors && ReadEntity (&src))
+	while (!haveErrors && ReadEntity (src))
 		ProcessEntityTarget ();
 
 	// parse main entstring
 	src = entString;
 	haveErrors = isPatch = false;
 	sunTarget[0] = 0;
-	while (!haveErrors && ReadEntity (&src))
+	while (!haveErrors && ReadEntity (src))
 	{
 		if (ProcessEntity ())
 			WriteEntity (&dst);
@@ -1007,7 +1015,7 @@ char *ProcessEntstring (char *entString)
 		Com_DPrintf ("Adding entity patch ...\n");
 		isPatch = true;
 		src = patch;
-		while (!haveErrors && ReadEntity (&src))
+		while (!haveErrors && ReadEntity (src))
 		{
 			if (ProcessEntity ())
 				WriteEntity (&dst);

@@ -305,9 +305,9 @@ void	GL_InitModels (void);
 void	GL_ShutdownModels (void);
 void	GL_ResetModels (void);
 
-model_t	*GL_FindModel (char *name);
-shader_t *GL_FindSkin (char *name);
-void	GL_LoadWorldMap (char *name);
+model_t	*GL_FindModel (const char *name);
+shader_t *GL_FindSkin (const char *name);
+void	GL_LoadWorldMap (const char *name);
 
 
 #endif

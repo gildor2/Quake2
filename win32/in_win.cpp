@@ -25,10 +25,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../client/client.h"
 
 
-//!! add DirectInput keyboard support, remove win32 mouse/keyboard support; joystick - DirectInput only
+/*!! Add DirectInput keyboard support, remove win32 mouse/keyboard support; joystick - DirectInput only;
+ *   After this, can change "in_mouse==0|1|2" to "nomouse" cvar + can remove mouse/keyboard code from MainWndProc()
+ */
 
 #define NUM_MOUSE_BUTTONS	3
-
 
 extern	unsigned	sys_msg_time;
 
@@ -91,9 +92,6 @@ static DWORD	joy_numbuttons;
 
 static JOYINFOEX ji;
 
-static bool		in_appactive;
-
-
 /*
 ============================================================
 
@@ -107,12 +105,12 @@ static cvar_t	*m_filter;
 
 static bool mlooking;
 
-void IN_MLookDown (void)
+static void IN_MLookDown (void)
 {
 	mlooking = true;
 }
 
-void IN_MLookUp (void)
+static void IN_MLookUp (void)
 {
 	mlooking = false;
 	if (!freelook->integer && lookspring->integer)
@@ -171,7 +169,7 @@ static bool IN_InitDirect (void)
 	{
 		if (!(hInstDI = LoadLibrary ("dinput.dll")))
 		{
-			Com_WPrintf ("...loading dinput.dll failed\n");
+			Com_WPrintf ("... loading dinput.dll failed\n");
 			return false;
 		}
 		if (!(pDirectInputCreate = (pDirectInputCreate_t) GetProcAddress (hInstDI, "DirectInputCreateA")))
@@ -181,22 +179,20 @@ static bool IN_InitDirect (void)
 		}
 	}
 
-	Com_DPrintf ("...creating DirectInput object: ");
 	if FAILED(pDirectInputCreate (global_hInstance, DIRECTINPUT_VERSION, &pDI, NULL))
 	{
-		Com_DPrintf ("failed\n");
+		Com_DPrintf ("... cannot create DirectInput object\n");
 		IN_FreeDirect ();
 		return false;
 	}
 
-	Com_DPrintf ("ok\n...creating DirectInput mouse: ");
 	if FAILED(pDI->CreateDevice (GUID_SysMouse, &pDID, NULL))
 	{
-		Com_DPrintf ("failed\n");
+		Com_DPrintf ("... cannot create DirectInput mouse\n");
 		IN_FreeDirect ();
 		return false;
 	}
-	Com_DPrintf ("ok\n");
+
 	pDID->SetDataFormat (&c_dfDIMouse);	// may fail
 	if FAILED(pDID->SetCooperativeLevel (cl_hwnd, DISCL_EXCLUSIVE|DISCL_FOREGROUND))
 	{
@@ -281,40 +277,6 @@ static void IN_FreeWin32 (void)
 
 
 //------------- Common mouse support ----------------------
-/*
-===========
-IN_ActivateMouse
-
-Called when the window gains focus or changes in some way
-===========
-*/
-
-void IN_DeactivateMouse (void);
-
-static void IN_ActivateMouse (void)
-{
-	if (mouseType)
-	{
-		if (!in_mouse->modified)
-			return;
-		Com_DPrintf ("reactivating mouse\n");
-		// deactivate than reactivate mouse
-		IN_DeactivateMouse ();
-	}
-
-	if (in_mouse->integer == 2 && IN_InitDirect ())
-		mouseType = 2;
-	else if (in_mouse->integer)
-	{
-		IN_InitWin32 ();
-		mouseType = 1;
-	}
-	else
-		mouseType = 0;
-
-	in_mouse->modified = false;
-}
-
 
 /*
 ===========
@@ -333,6 +295,38 @@ static void IN_DeactivateMouse (void)
 	mouseType = 0;
 }
 
+
+/*
+===========
+IN_ActivateMouse
+
+Called when the window gains focus or changes in some way
+===========
+*/
+
+static void IN_ActivateMouse (void)
+{
+	if (mouseType)
+	{
+		if (!in_mouse->modified)
+			return;
+		Com_DPrintf ("Changing mouse type\n");
+		// deactivate then reactivate mouse
+		IN_DeactivateMouse ();
+	}
+
+	if (in_mouse->integer == 2 && IN_InitDirect ())
+		mouseType = 2;
+	else if (in_mouse->integer)
+	{
+		IN_InitWin32 ();
+		mouseType = 1;
+	}
+	else
+		mouseType = 0;
+
+	in_mouse->modified = false;
+}
 
 
 /*
@@ -476,27 +470,33 @@ static void IN_StartupJoystick (void)
 	joy_avail = false;
 
 	// verify joystick driver is present
-	if ((numdevs = joyGetNumDevs ()) == 0)
+	if (!(numdevs = joyGetNumDevs ()))
 	{
 //		Com_Printf ("\njoystick not found -- driver not present\n\n");
 		return;
 	}
 
 	// cycle through the joystick ids for the first valid one
-	for (joy_id = 0; joy_id < numdevs; joy_id++)
+	for (joy_id = JOYSTICKID1; joy_id < JOYSTICKID1+numdevs; joy_id++)
 	{
 		memset (&ji, 0, sizeof(ji));
 		ji.dwSize = sizeof(ji);
 		ji.dwFlags = JOY_RETURNCENTERED;
 
-		if ((mmr = joyGetPosEx (joy_id, &ji)) == JOYERR_NOERROR)
-			break;
+		mmr = joyGetPosEx (joy_id, &ji);
+		if (mmr == JOYERR_NOERROR || mmr == JOYERR_PARMS) break;		// found a connected joystick
 	}
 
-	// abort startup if we didn't find a valid joystick
+	// MSDN Q133065
+	if (mmr == JOYERR_PARMS)
+	{
+		Com_Printf ("No connected joysticks found\n");
+		return;
+	}
+
 	if (mmr != JOYERR_NOERROR)
 	{
-		Com_Printf ("\njoystick not found -- no valid joysticks (%x)\n\n", mmr);
+		Com_Printf ("No valid joysticks (err=%X)\n", mmr);
 		return;
 	}
 
@@ -505,7 +505,7 @@ static void IN_StartupJoystick (void)
 	memset (&jc, 0, sizeof(jc));
 	if ((mmr = joyGetDevCaps (joy_id, &jc, sizeof(jc))) != JOYERR_NOERROR)
 	{
-		Com_Printf ("\njoystick not found -- invalid joystick capabilities (%x)\n\n", mmr);
+		Com_Printf ("Invalid joystick capabilities (err=%X)\n", mmr);
 		return;
 	}
 
@@ -522,7 +522,7 @@ static void IN_StartupJoystick (void)
 	joy_avail = true;
 	joy_advancedinit = false;
 
-	Com_Printf ("\njoystick detected\n\n");
+	Com_Printf ("Joystick detected\n");
 }
 
 
@@ -627,13 +627,12 @@ void IN_Commands (void)
 	int		i, key_index;
 	DWORD	buttonstate, povstate;
 
-	if (!joy_avail)
-		return;
+	if (!joy_avail) return;
 
 	// loop through the joystick buttons
 	// key a joystick event or auxillary event for higher number buttons for each state change
 	buttonstate = ji.dwButtons;
-	for (i=0 ; i < joy_numbuttons ; i++)
+	for (i = 0; i < joy_numbuttons; i++)
 	{
 		if ( (buttonstate & (1<<i)) && !(joy_oldbuttonstate & (1<<i)) )
 		{
@@ -723,15 +722,11 @@ static void IN_JoyMove (usercmd_t *cmd)
 
 	// verify joystick is available and that the user wants to use it
 	if (!joy_avail || !in_joystick->integer)
-	{
 		return;
-	}
 
 	// collect the joystick data, if possible
 	if (IN_ReadJoystick () != true)
-	{
 		return;
-	}
 
 	if ((in_Speed.state & 1) ^ cl_run->integer)
 		speed = 2;
@@ -861,10 +856,10 @@ CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 
-	Cmd_AddCommand ("+mlook", IN_MLookDown);
-	Cmd_AddCommand ("-mlook", IN_MLookUp);
+	RegisterCommand ("+mlook", IN_MLookDown);
+	RegisterCommand ("-mlook", IN_MLookUp);
 
-	Cmd_AddCommand ("joy_advancedupdate", Joy_AdvancedUpdate_f);
+	RegisterCommand ("joy_advancedupdate", Joy_AdvancedUpdate_f);
 
 	IN_StartupMouse ();
 	IN_StartupJoystick ();
@@ -894,10 +889,17 @@ The window may have been destroyed and recreated
 between a deactivate and an activate.
 ===========
 */
+static bool in_active = false;
+
 void IN_Activate (bool active)
-{	//!! check this function
-	in_appactive = active;
-	mouseType = !active;		// force a new window check or turn off
+{
+	in_active = active;
+	/* NOTES:
+	 * 1) when call IN_ActivateMouse()/IN_DeactivateMouse() directly from here, will appear mouse capture
+	 *	bugs (should call IN_[De]activateMouse() from IN_Frame())
+	 * 2) but, if we call this functions from here, require to check initialization of mouse cvars: this
+	 *  function can be called after creation of main window from Vid_Init() before CL_Init() calls IN_Init()
+	 */
 }
 
 
@@ -910,9 +912,24 @@ Called every frame, even if not generating commands
 */
 void IN_Frame (void)
 {
-	if (!in_mouse || !in_appactive)	//??
+	guard(IN_Frame);
+
+	if ((!cl.refresh_prepped || cls.key_dest == key_console || cls.key_dest == key_menu) && !r_fullscreen->integer)
 	{
+		// temporarily deactivate if not in fullscreen
 		IN_DeactivateMouse ();
+		return;
+	}
+
+	if (!in_active)
+	{
+		if (mouseType) IN_DeactivateMouse ();
+		return;
+	}
+	if (in_active && !mouseType)
+	{
+		in_needRestart = false;
+		IN_ActivateMouse ();
 		return;
 	}
 
@@ -924,17 +941,19 @@ void IN_Frame (void)
 		return;
 	}
 
-	if (in_mouse->modified)
+	if (in_mouse->modified || !mouseType)
+	{
 		IN_ActivateMouse ();
+		return;
+	}
 
+	// DirectInput mouse frame
 	if (mouseType == 2)
 	{
 		DIMOUSESTATE ms;
-		HRESULT hresult;
-		int		tmp;
 
 		// poll DirectInput mouse
-		hresult = pDID->GetDeviceState (sizeof(ms), &ms);
+		HRESULT hresult = pDID->GetDeviceState (sizeof(ms), &ms);
 		if (hresult == DIERR_INPUTLOST)
 		{
 			// try to acquire mouse
@@ -949,12 +968,7 @@ void IN_Frame (void)
 		// process mouse wheel
 		if (ms.lZ)
 		{
-			int		msg;
-
-			if (ms.lZ > 0)
-				msg = K_MWHEELUP;
-			else
-				msg = K_MWHEELDOWN;
+			int msg = (ms.lZ > 0) ? K_MWHEELUP : K_MWHEELDOWN;
 			Key_Event (msg, true, sys_msg_time);	//!! check for correct sys_msg_time
 			Key_Event (msg, false, sys_msg_time);
 		}
@@ -962,25 +976,13 @@ void IN_Frame (void)
 		move_x = ms.lX;
 		move_y = ms.lY;
 		// process buttons
-		tmp = 0;
+		int tmp = 0;
 		if (ms.rgbButtons[0]) tmp |= 1;
 		if (ms.rgbButtons[1]) tmp |= 2;
 		if (ms.rgbButtons[2]) tmp |= 4;
 		IN_MouseEvent (tmp);			// call this always - to detect button on/off
 		//?? can access 4 (and more?) buttons
-		return;
 	}
 
-
-	if (!cl.refresh_prepped || cls.key_dest == key_console || cls.key_dest == key_menu)
-	{
-		// temporarily deactivate if in fullscreen
-		if (!r_fullscreen->integer)
-		{
-			IN_DeactivateMouse ();
-			return;
-		}
-	}
-
-	IN_ActivateMouse ();
+	unguard;
 }

@@ -174,7 +174,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	if (attractloop)
 		Cvar_Set ("paused", "0");
 
-	Com_Printf ("------- Server Initialization -------\n");
+	Com_Printf ("\n------- Server Initialization -------\n");
 
 	Com_DPrintf ("SpawnServer: %s\n",server);
 	if (sv.demofile)
@@ -195,13 +195,12 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	strcpy (sv.configstrings[CS_NAME], server);
 	if (Cvar_VariableInt ("deathmatch"))
 	{
-		Com_sprintf (sv.configstrings[CS_AIRACCEL], sizeof(sv.configstrings[CS_AIRACCEL]),
-			"%g", sv_airaccelerate->value);
+		Com_sprintf (ARRAY_ARG(sv.configstrings[CS_AIRACCEL]), "%g", sv_airaccelerate->value);
 		pm_airaccelerate = sv_airaccelerate->value;
 	}
 	else
 	{
-		strcpy(sv.configstrings[CS_AIRACCEL], "0");
+		strcpy (sv.configstrings[CS_AIRACCEL], "0");
 		pm_airaccelerate = 0;
 	}
 

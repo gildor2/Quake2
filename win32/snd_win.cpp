@@ -18,7 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-//#define WAVEOUT_DRV
+//#define WAVEOUT_DRV -- not works anyway
 
 #include "winquake.h"
 #include <dsound.h>
@@ -297,7 +297,7 @@ static void DS_DestroyBuffers (void)
 FreeSound
 ==================
 */
-void FreeSound (void)
+static void FreeSound (void)
 {
 	Com_Printf ("Shutting down sound system\n");
 
@@ -373,7 +373,7 @@ SNDDMA_InitDirect
 Direct-Sound support
 ==================
 */
-sndinitstat_t SNDDMA_InitDirect (void)
+static sndinitstat_t SNDDMA_InitDirect (void)
 {
 //	DSCAPS	dscaps;
 	int		i;
@@ -477,7 +477,7 @@ SNDDM_InitWav
 Crappy windows multimedia base
 ==================
 */
-bool SNDDMA_InitWav (void)
+static bool SNDDMA_InitWav (void)
 {
 	WAVEFORMATEX  format;
 	int				i;
@@ -549,7 +549,7 @@ bool SNDDMA_InitWav (void)
 	Com_DPrintf ("ok\n");
 
 	Com_DPrintf ("...locking waveform buffer: ");
-	lpData = GlobalLock (hData);
+	lpData = (char*) GlobalLock (hData);
 	if (!lpData)
 	{
 		Com_Printf (" failed\n");

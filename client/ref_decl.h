@@ -2,11 +2,8 @@
 
 typedef struct {
 	int		struc_size;
-	void	(*_Cmd_AddCommand) (const char *name, void(*func)(void));
-	void	(*_Cmd_RemoveCommand) (const char *name);
-	int	(*_Cmd_Argc) (void);
-	char*	(*_Cmd_Argv) (int i);
-	char*	(*_Cmd_Args) (void);
+	bool	(*_RegisterCommand) (const char *name, void(*func)(), int flags);
+	void	(*_UnregisterCommand) (const char *name);
 	cvar_t*	(*_Cvar_Get) (const char *name, const char *value, int flags);
 	void	(*_Cvar_GetVars) (const cvarInfo_t *vars, int count);
 	cvar_t*	(*_Cvar_Set) (const char *name, const char *value);
@@ -48,13 +45,13 @@ typedef struct {
 	void	(*_FS_RemoveFiles) (char *mask);
 	bool	(*_MatchWildcard) (const char *name, const char *mask, bool ignoreCase = false);
 	bool	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
-	int	(*_ImageExists) (char *name, int stop_mask);
-	void	(*_LoadPCX) (char *name, byte **pic, byte **palette, int *width, int *height);
-	void	(*_LoadTGA) (char *name, byte **pic, int *width, int *height);
-	void	(*_LoadJPG) (char *name, byte **pic, int *width, int *height);
-	bool	(*_WriteTGA) (char *name, byte *pic, int width, int height);
-	bool	(*_WriteJPG) (char *name, byte *pic, int width, int height, bool highQuality);
-	bspfile_t*	(*_LoadBspFile) (char *filename, bool clientload, unsigned *checksum);
+	int	(*_ImageExists) (const char *name, int stop_mask = IMAGE_ANY);
+	void	(*_LoadPCX) (const char *name, byte **pic, byte **palette, int *width, int *height);
+	void	(*_LoadTGA) (const char *name, byte **pic, int *width, int *height);
+	void	(*_LoadJPG) (const char *name, byte **pic, int *width, int *height);
+	bool	(*_WriteTGA) (const char *name, byte *pic, int width, int height);
+	bool	(*_WriteJPG) (const char *name, byte *pic, int width, int height, bool highQuality);
+	bspfile_t*	(*_LoadBspFile) (const char *filename, bool clientload, unsigned *checksum);
 	void	(*_CM_BoxTrace) (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask);
 	void	(*_CM_TransformedBoxTrace) (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles);
 	void	(*_CM_TransformedBoxTrace2) (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t *axis);

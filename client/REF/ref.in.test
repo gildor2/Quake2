@@ -7,3 +7,5 @@ void Com_Error (int code, char *fmt, ...);
 int CreateWindow (int w, int h, bool fullscreen);
 #endif
 bool Shutdown (void);
+void Test (int a, char* b);
+void *Alloc (int size);

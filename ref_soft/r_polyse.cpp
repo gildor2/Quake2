@@ -22,13 +22,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "r_local.h"
 
-int	rand1k[] = {
+static byte	rand1k[] = {
 #include "rand1k.h"
 };
 
 #define MASK_1K	0x3FF
 
-int		rand1k_index = 0;
+static int	rand1k_index = 0;
 
 // TODO: put in span spilling to shrink list size
 // !!! if this is changed, it must be changed in d_polysa.s too !!!

@@ -100,7 +100,7 @@ void CL_RunLightStyles (void)
 }
 
 
-void CL_SetLightstyle (int i, char *s)
+void CL_SetLightstyle (int i, const char *s)
 {
 	byte	*dst;
 	int		len, j;

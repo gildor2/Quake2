@@ -42,7 +42,7 @@ SV_SetMaster_f
 Specify a list of master servers
 ====================
 */
-void SV_SetMaster_f (void)
+static void SV_SetMaster_f (int argc, char **argv)
 {
 	int		i, slot;
 
@@ -60,14 +60,14 @@ void SV_SetMaster_f (void)
 		memset (&master_adr[i], 0, sizeof(master_adr[i]));
 
 	slot = 1;		// slot 0 will always contain the id master
-	for (i = 1; i < Cmd_Argc(); i++)
+	for (i = 1; i < argc; i++)
 	{
 		if (slot == MAX_MASTERS)
 			break;
 
-		if (!NET_StringToAdr (Cmd_Argv(i), &master_adr[i]))
+		if (!NET_StringToAdr (argv[i], &master_adr[i]))
 		{
-			Com_Printf ("Bad address: %s\n", Cmd_Argv(i));
+			Com_Printf ("Bad address: %s\n", argv[i]);
 			continue;
 		}
 		if (master_adr[slot].port == 0)
@@ -273,7 +273,7 @@ void SV_ReadServerFile (void)
 	char	mapcmd[128];
 
 	Com_DPrintf("SV_ReadServerFile()\n");
-	if (!DEDICATED) SCR_SetLevelshot ("/" SAVEGAME_DIRECTORY "/current/shot.pcx");
+	if (!DEDICATED) SCR_SetLevelshot ("/" SAVEGAME_DIRECTORY "/current/shot");
 
 	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
 	f = fopen (name, "rb");
@@ -324,18 +324,20 @@ SV_DemoMap_f
 Puts the server in demo mode on a specific map/cinematic
 ==================
 */
-void SV_DemoMap_f (void)
+static void SV_DemoMap_f (int argc, char **argv)
 {
 	char	*map, *ext;
 
-	map = Cmd_Argv(1);
+	map = argv[1];
 	ext = strchr (map, '.');
 
 	if (Cvar_VariableInt ("nointro") == 0 && (!ext || (strcmp (ext, ".cin") && strcmp (ext, ".pcx"))))
 	{
 		// allow .CIN files while playing intro (stop intro when trying to play demofile)
 		Cvar_ForceSet ("nointro", "1");
-		Cbuf_AddText ("nextserver=\"\";disconnect\n");
+		Cbuf_AddText ("nextserver=\"\"\n");
+//		Com_Printf (S_RED"STATE: %d\n", sv.state);
+		if (sv.state) Cbuf_AddText ("disconnect\n");
 		return;
 	}
 
@@ -363,19 +365,15 @@ Clears the archived maps, plays the inter.cin cinematic, then
 goes to map jail.bsp.
 ==================
 */
-void SV_GameMap_f (void)
+static void SV_GameMap_f (bool usage, int argc, char **argv)
 {
-	char		*map;
-	int			i;
-	client_t	*cl;
-
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: gamemap <map>\n");
 		return;
 	}
 
-	map = Cmd_Argv(1);
+	char *map = argv[1];
 	Com_DPrintf ("SV_GameMap(%s)\n", map);
 
 	// check for clearing the current savegame
@@ -388,7 +386,9 @@ void SV_GameMap_f (void)
 	{	// save the map just exited
 		if (sv.state == ss_game)
 		{
+			int		i;
 			bool	savedInUse[MAX_CLIENTS];
+			client_t *cl;
 
 			FS_CreatePath (va("%s/" SAVEGAME_DIRECTORY "/current/", FS_Gamedir()));
 			// clear all the client.inuse flags before saving so that
@@ -431,12 +431,12 @@ Goes directly to a given map without any savegame archiving.
 For development work
 ==================
 */
-void SV_Map_f (void)
+static void SV_Map_f (int argc, char **argv)
 {
 	char	*map;
 
 	// if not a pcx, demo, or cinematic, check to make sure the level exists
-	map = Cmd_Argv(1);
+	map = argv[1];
 	if (!strchr (map, '.'))
 	{
 		char	expanded[MAX_QPATH];
@@ -451,7 +451,7 @@ void SV_Map_f (void)
 
 	sv.state = ss_dead;		// don't save current level when changing
 	SV_WipeSavegame ("current");
-	SV_GameMap_f ();
+	SV_GameMap_f (false, argc, argv);
 }
 
 /*
@@ -469,13 +469,13 @@ SV_Loadgame_f
 
 ==============
 */
-void SV_Loadgame_f (void)
+static void SV_Loadgame_f (bool usage, int argc, char **argv)
 {
 	char	name[MAX_OSPATH];
 	FILE	*f;
 	char	*dir;
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: loadgame <directory>\n");
 		return;
@@ -483,7 +483,7 @@ void SV_Loadgame_f (void)
 
 	Com_Printf ("Loading game...\n");
 
-	dir = Cmd_Argv(1);
+	dir = argv[1];
 	if (strstr (dir, "..") || strchr (dir, '/') || strchr (dir, '\\'))
 	{
 		Com_WPrintf ("Bad savedir\n");
@@ -491,7 +491,7 @@ void SV_Loadgame_f (void)
 	}
 
 	// make sure the server.ssv file exists
-	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), Cmd_Argv(1));
+	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), argv[1]);
 	f = fopen (name, "rb");
 	if (!f)
 	{
@@ -500,7 +500,7 @@ void SV_Loadgame_f (void)
 	}
 	fclose (f);
 
-	SV_CopySaveGame (Cmd_Argv(1), "current");
+	SV_CopySaveGame (argv[1], "current");
 
 	SV_ReadServerFile ();
 
@@ -517,19 +517,19 @@ SV_Savegame_f
 
 ==============
 */
-void SV_Savegame_f (void)
+static void SV_Savegame_f (bool usage, int argc, char **argv)
 {
 	char	*dir;
+
+	if (argc != 2 || usage)
+	{
+		Com_Printf ("Usage: savegame <directory>\n");
+		return;
+	}
 
 	if (sv.state != ss_game)
 	{
 		Com_WPrintf ("You must be in a game to save.\n");
-		return;
-	}
-
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf ("Usage: savegame <directory>\n");
 		return;
 	}
 
@@ -539,7 +539,7 @@ void SV_Savegame_f (void)
 		return;
 	}
 
-	if (!strcmp (Cmd_Argv(1), "current"))
+	if (!strcmp (argv[1], "current"))
 	{
 		Com_WPrintf ("Can't save to 'current'\n");
 		return;
@@ -551,7 +551,7 @@ void SV_Savegame_f (void)
 		return;
 	}
 
-	dir = Cmd_Argv(1);
+	dir = argv[1];
 	if (strstr (dir, "..") || strchr (dir, '/') || strchr (dir, '\\'))
 	{
 		Com_WPrintf ("Bad savedir\n");
@@ -586,7 +586,7 @@ static bool SetPlayer (char *s)
 	// numeric values are just slot numbers
 	if (s[0] >= '0' && s[0] <= '9')
 	{
-		idnum = atoi (Cmd_Argv(1));
+		idnum = atoi (s);
 		if (idnum >= maxclients->integer)		// negative values are impossible here
 		{
 			Com_WPrintf ("Bad client slot: %d\n", idnum);
@@ -627,21 +627,21 @@ SV_Kick_f
 Kick a user off of the server
 ==================
 */
-static void SV_Kick_f (void)
+static void SV_Kick_f (bool usage, int argc, char **argv)
 {
+	if (argc != 2 || usage)
+	{
+		Com_Printf ("Usage: kick <userid>\n");
+		return;
+	}
+
 	if (!svs.initialized)
 	{
 		Com_WPrintf ("No server running.\n");
 		return;
 	}
 
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf ("Usage: kick <userid>\n");
-		return;
-	}
-
-	if (!SetPlayer (Cmd_Argv(1)))
+	if (!SetPlayer (argv[1]))
 		return;
 
 	if (sv_client->netchan.remote_address.type == NA_LOOPBACK)
@@ -701,10 +701,16 @@ bool SV_AddressBanned (netadr_t *a)
 }
 
 
-static void SV_Ban_f (void)
+static void SV_Ban_f (bool usage, int argc, char **argv)
 {
 	char	ban[40];
 	byte	*ip;
+
+	if (argc != 2 || usage)
+	{
+		Com_Printf ("Usage: ban <userid>\n");
+		return;
+	}
 
 	if (!svs.initialized)		// ban by userid requires user to be connected, so -- server must be launched
 	{
@@ -712,13 +718,7 @@ static void SV_Ban_f (void)
 		return;
 	}
 
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf ("Usage: ban <userid>\n");
-		return;
-	}
-
-	if (!SetPlayer (Cmd_Argv(1)))
+	if (!SetPlayer (argv[1]))
 		return;
 
 	if (sv_client->netchan.remote_address.type != NA_IP)
@@ -737,20 +737,20 @@ static void SV_Ban_f (void)
 }
 
 
-static void SV_BanIP_f (void)
+static void SV_BanIP_f (bool usage, int argc, char **argv)
 {
 	char	*str;
 	client_t *cl;
 	int		i;
 
 	// can modify banlist before server launched
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: banip <ip-mask>\n");
 		return;
 	}
 
-	str = Cmd_Argv(1);
+	str = argv[1];
 	if (strlen (str) > 32)
 	{
 		Com_WPrintf ("IP-mask is too long\n");
@@ -783,17 +783,17 @@ static void SV_BanList_f (void)
 }
 
 
-static void SV_BanRemove_f (void)
+static void SV_BanRemove_f (bool usage, int argc, char **argv)
 {
 	char	*str;
 	int		n;
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: banremove <list-index or ip-mask>\n");
 		return;
 	}
-	str = Cmd_Argv(1);
+	str = argv[1];
 	if (strchr (str, '.'))
 	{
 		n = FindBanString (str);
@@ -810,7 +810,7 @@ static void SV_BanRemove_f (void)
 			Com_WPrintf ("Bad list index %d\n", str);
 			return;
 		}
-		n = atoi(str);
+		n = atoi (str);
 		if (n >= banCount)		// do not need "< 0" check: if number have "-" - will not get here
 		{
 			Com_WPrintf ("Index %d is out of list bounds\n", n);
@@ -830,19 +830,18 @@ SV_DumpUser_f
 Examine all a users info strings
 ===========
 */
-static void SV_DumpUser_f (void)
+static void SV_DumpUser_f (bool usage, int argc, char **argv)
 {
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: info <userid>\n");
+		Com_Printf ("Usage: dumpuser <userid>\n");
 		return;
 	}
 
-	if (!SetPlayer (Cmd_Argv(1)))
+	if (!SetPlayer (argv[1]))
 		return;
 
-	Com_Printf ("userinfo\n");
-	Com_Printf ("--------\n");
+	Com_Printf (S_GREEN"userinfo\n--------\n");
 	Info_Print (sv_client->userinfo);
 }
 
@@ -891,18 +890,17 @@ static void SV_Status_f (void)
 SV_ConSay_f
 ==================
 */
-static void SV_ConSay_f (void)
+static void SV_ConSay_f (int argc, char **argv)
 {
 	client_t *client;
 	int		j;
 	char	*p;
 	char	text[1024];
 
-	if (Cmd_Argc () < 2)
-		return;
+	if (argc < 2) return;
 
 	strcpy (text, "console: ");
-	p = Cmd_Args();
+	p = Cmd_Args ();
 
 	if (*p == '"')
 	{
@@ -941,7 +939,7 @@ SV_Serverinfo_f
 */
 static void SV_Serverinfo_f (void)
 {
-	Com_Printf ("Server info settings:\n");
+	Com_Printf (S_GREEN"------ Server info settings ------\n");
 	Info_Print (Cvar_Serverinfo());
 }
 
@@ -954,13 +952,13 @@ Begins server demo recording.  Every entity and every message will be
 recorded, but no playerinfo will be stored.  Primarily for demo merging.
 ==============
 */
-static void SV_ServerRecord_f (void)
+static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 {
 	char	name[MAX_OSPATH], buf_data[32768];
 	int		len, i;
 	sizebuf_t buf;
 
-	if (Cmd_Argc() != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: serverrecord <demoname>\n");
 		return;
@@ -979,7 +977,7 @@ static void SV_ServerRecord_f (void)
 	}
 
 	// open the demo file
-	Com_sprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), Cmd_Argv(1));
+	Com_sprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
 	Com_Printf ("recording to %s\n", name);
 	FS_CreatePath (name);
@@ -1019,7 +1017,6 @@ static void SV_ServerRecord_f (void)
 		}
 
 	// write it to the demo file
-	Com_DPrintf ("signon message length: %i\n", buf.cursize);
 	len = LittleLong (buf.cursize);
 	fwrite (&len, 4, 1, svs.demofile);
 	fwrite (buf.data, buf.cursize, 1, svs.demofile);
@@ -1068,18 +1065,18 @@ static void SV_KillServer_f (void)
 ===============
 SV_ServerCommand_f
 
-Let the game dll handle a command
+Let the game library handle a command
 ===============
 */
 static void SV_ServerCommand_f (void)
 {
 	if (!ge)
 	{
-		Com_Printf ("No game loaded.\n");
+		Com_WPrintf ("No game loaded.\n");
 		return;
 	}
 
-	ge->ServerCommand();
+	ge->ServerCommand ();
 }
 
 //===========================================================
@@ -1091,33 +1088,33 @@ SV_InitOperatorCommands
 */
 void SV_InitOperatorCommands (void)
 {
-	Cmd_AddCommand ("heartbeat", SV_Heartbeat_f);
+	RegisterCommand ("heartbeat", SV_Heartbeat_f);
 
-	Cmd_AddCommand ("kick", SV_Kick_f);
-	Cmd_AddCommand ("ban", SV_Ban_f);
-	Cmd_AddCommand ("banip", SV_BanIP_f);
-	Cmd_AddCommand ("banlist", SV_BanList_f);
-	Cmd_AddCommand ("banremove", SV_BanRemove_f);
+	RegisterCommand ("kick", SV_Kick_f);
+	RegisterCommand ("ban", SV_Ban_f);
+	RegisterCommand ("banip", SV_BanIP_f);
+	RegisterCommand ("banlist", SV_BanList_f);
+	RegisterCommand ("banremove", SV_BanRemove_f);
 
-	Cmd_AddCommand ("status", SV_Status_f);
-	Cmd_AddCommand ("serverinfo", SV_Serverinfo_f);
-	Cmd_AddCommand ("dumpuser", SV_DumpUser_f);
+	RegisterCommand ("status", SV_Status_f);
+	RegisterCommand ("serverinfo", SV_Serverinfo_f);
+	RegisterCommand ("dumpuser", SV_DumpUser_f);
 
-	Cmd_AddCommand ("map", SV_Map_f);
-	Cmd_AddCommand ("demomap", SV_DemoMap_f);
-	Cmd_AddCommand ("gamemap", SV_GameMap_f);
-	Cmd_AddCommand ("setmaster", SV_SetMaster_f);
+	RegisterCommand ("map", SV_Map_f);
+	RegisterCommand ("demomap", SV_DemoMap_f);
+	RegisterCommand ("gamemap", SV_GameMap_f);
+	RegisterCommand ("setmaster", SV_SetMaster_f);
 
 	if (DEDICATED)
-		Cmd_AddCommand ("say", SV_ConSay_f);
+		RegisterCommand ("say", SV_ConSay_f);
 
-	Cmd_AddCommand ("serverrecord", SV_ServerRecord_f);
-	Cmd_AddCommand ("serverstop", SV_ServerStop_f);
+	RegisterCommand ("serverrecord", SV_ServerRecord_f);
+	RegisterCommand ("serverstop", SV_ServerStop_f);
 
-	Cmd_AddCommand ("save", SV_Savegame_f);
-	Cmd_AddCommand ("load", SV_Loadgame_f);
+	RegisterCommand ("save", SV_Savegame_f);
+	RegisterCommand ("load", SV_Loadgame_f);
 
-	Cmd_AddCommand ("killserver", SV_KillServer_f);
+	RegisterCommand ("killserver", SV_KillServer_f);
 
-	Cmd_AddCommand ("sv", SV_ServerCommand_f);
+	RegisterCommand ("sv", SV_ServerCommand_f);
 }

@@ -1,13 +1,14 @@
 //??
 #define START_PROFILE(name)	\
 	{	\
-		static char _name[] = #name;	\
+		static const char _name[] = #name;	\
 		int	_time = Sys_Milliseconds();
 #define END_PROFILE	\
 		_time = Sys_Milliseconds() - _time;	\
 		if (Cvar_VariableInt("r_profile2")) Com_Printf(S_MAGENTA"%s: %d ms\n", _name, _time);	\
 	}
 
+#define DELAYED_RAW_PAINT
 
 
 #include "gl_local.h"
@@ -77,7 +78,7 @@ static int ComputeHash (char *name)
 
 static void GetPalette (void)
 {
-	int		i, width, height;
+	int		width, height;
 	byte	*pic, *pal, *p;
 
 	// get the palette
@@ -86,11 +87,9 @@ static void GetPalette (void)
 		Com_FatalError ("Couldn't load pics/colormap.pcx");
 
 	p = pal;
-	for (i = 0; i < 256; i++, p += 3)
+	for (int i = 0; i < 256; i++, p += 3)
 	{
-		unsigned	v;
-
-		v = RGB255(p[0], p[1], p[2]);
+		unsigned v = RGB255(p[0], p[1], p[2]);
 		gl_config.tbl_8to32[i] = LittleLong(v);
 	}
 	gl_config.tbl_8to32[255] &= LittleLong(0x00FFFFFF);		// #255 is transparent (alpha = 0)
@@ -103,7 +102,6 @@ static void GetPalette (void)
 
 static byte *Convert8to32bit (byte *in, int width, int height, unsigned *palette)
 {
-	int		i, size;
 	byte	*out;
 	unsigned *p;
 
@@ -111,11 +109,11 @@ static byte *Convert8to32bit (byte *in, int width, int height, unsigned *palette
 	if (!palette)
 		palette = gl_config.tbl_8to32;
 
-	size = width * height;
+	int size = width * height;
 	out = (byte*)appMalloc (size * 4);
 
 	p = (unsigned*)out;
-	for (i = 0; i < size; i++)
+	for (int i = 0; i < size; i++)
 		*p++ = palette[*in++];
 
 	return out;
@@ -125,33 +123,37 @@ static byte *Convert8to32bit (byte *in, int width, int height, unsigned *palette
 
 //----------------------------------------------------------------------
 
-void GL_TextureMode (char *name)
+void GL_TextureMode (char *name)	//?? change (not strings; use enum {none,bilinear,trilinear,anysotropic})
 {
-	int		i, j;
-	image_t *img;
-
 	static struct {
 		char	*name;
 		GLenum	minimize, maximize;
 	} texModes[] = {
-		{"GL_NEAREST", GL_NEAREST, GL_NEAREST},
-		{"GL_LINEAR", GL_LINEAR, GL_LINEAR},
-		{"GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},
-		{"GL_LINEAR_MIPMAP_NEAREST", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR},
+		{"GL_NEAREST", GL_NEAREST, GL_NEAREST},				// box filter, no mipmaps
+		{"GL_LINEAR", GL_LINEAR, GL_LINEAR},				// linear filter, no mipmaps
+		{"GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},	// no (box) filter
+		{"GL_LINEAR_MIPMAP_NEAREST", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR},		// bilinear filter
 		{"GL_NEAREST_MIPMAP_LINEAR", GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST},
-		{"GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR}
+		{"GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR},		// trilinear filter
+		// aliases
+		{"none", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},
+		{"bilinear", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR},
+		{"trilinear", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR}
 	};
 
 	GL_SetMultitexture (1);
-	for (i = 0; i < ARRAY_COUNT(texModes); i++)
+	for (int i = 0; i < ARRAY_COUNT(texModes); i++)
 	{
 		if (!stricmp (texModes[i].name, name))
 		{
+			image_t *img;
+
 			gl_filter_min = texModes[i].minimize;
 			gl_filter_max = texModes[i].maximize;
 
+			int		j;
 			// change all the existing mipmap texture objects
-			for (j = 0, img = &imagesArray[0]; j < MAX_TEXTURES; j++, img++)
+			for (j = 0, img = imagesArray; j < MAX_TEXTURES; j++, img++)
 			{
 				if (!img->name[0]) continue;	// free slot
 				if (!(img->flags & IMAGE_MIPMAP)) continue;
@@ -667,7 +669,7 @@ END_PROFILE
 }
 
 
-image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags)
+image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int flags)
 {
 	char	name2[MAX_QPATH];
 	int		texnum;
@@ -827,6 +829,7 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 			glTexImage2D (image->target, 0, image->internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pic32);
 		}
 		// draw
+#ifndef DELAYED_RAW_PAINT
 //		GL_BackEnd ();		// need to perform begin_frame in a case of gl_clear!=0; or - enqueue draw command into backend command list
 		GL_Set2DMode ();
 		glColor3f (gl_config.identityLightValue_f, gl_config.identityLightValue_f, gl_config.identityLightValue_f);
@@ -840,6 +843,11 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 		glTexCoord2f (0.5f, height - 0.5f);
 		glVertex2f (x, y + h);
 		glEnd ();
+#else
+		gl_videoShader->width = width;
+		gl_videoShader->height = height;
+		GL_DrawStretchPic (gl_videoShader, x, y, w, h, 0, 0, 1, 1, RGB(1,1,1));
+#endif
 		// free converted pic
 		appFree (pic32);
 		return;
@@ -899,6 +907,7 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 	height = scaledHeight;
 
 	/*--------------------- draw ----------------------*/
+#ifndef DELAYED_RAW_PAINT
 //	GL_BackEnd ();		// need to perform begin_frame in a case of gl_clear!=0; or - enqueue draw command into backend command list
 	GL_Set2DMode ();
 	glColor3f (gl_config.identityLightValue_f, gl_config.identityLightValue_f, gl_config.identityLightValue_f);
@@ -912,6 +921,11 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 	glTexCoord2f (0.5f / width, 1.0f - 0.5f / height);
 	glVertex2f (x, y + h);
 	glEnd ();
+#else
+	gl_videoShader->width = width;
+	gl_videoShader->height = height;
+	GL_DrawStretchPic (gl_videoShader, x, y, w, h, 0, 0, 1, 1, RGB(1,1,1));
+#endif
 
 	unguard;
 }
@@ -1014,7 +1028,7 @@ void GL_SetupGamma (void)
 /*----------------- Imagelist -----------------*/
 
 
-static void Imagelist_f (void)
+static void Imagelist_f (bool usage, int argc, char **argv)
 {
 #if 0
 	// testing hash function
@@ -1088,14 +1102,14 @@ static void Imagelist_f (void)
 	static char alphaTypes[3] = {' ', '1', '8'};
 	static char boolTypes[2] = {' ', '+'};
 
-	if (Cmd_Argc () > 2)
+	if (argc > 2 || usage)
 	{
 		Com_Printf ("Usage: imagelist [<mask>]\n");
 		return;
 	}
 
-	if (Cmd_Argc () == 2)
-		mask = Cmd_Argv (1);
+	if (argc == 2)
+		mask = argv[1];
 	else
 		mask = NULL;
 
@@ -1166,20 +1180,20 @@ static void Imagelist_f (void)
 }
 
 
-static void ImageReload_f (void)
+static void ImageReload_f (bool usage, int argc, char **argv)
 {
 	char	*mask;
 	int		i, num, time;
 	image_t	*img;
 
-	if (Cmd_Argc () != 2)
+	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: img_reload <mask>\n");
 		return;
 	}
 
 	time = Sys_Milliseconds ();
-	mask = Cmd_Argv (1);
+	mask = argv[1];
 	num = 0;
 	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
@@ -1333,6 +1347,8 @@ CVAR_END
 	int		texnum, x, y;
 	image_t	*image;
 
+	guard(GL_InitImages);
+
 	Cvar_GetVars (ARRAY_ARG(vars));
 	imageCount = 0;
 	memset (hashTable, 0, sizeof(hashTable));
@@ -1343,8 +1359,8 @@ CVAR_END
 	GL_SetupGamma ();	// before texture creation
 	GetPalette ();		// read palette for 8-bit WAL textures
 
-	Cmd_AddCommand ("imagelist", Imagelist_f);
-	Cmd_AddCommand ("img_reload", ImageReload_f);
+	RegisterCommand ("imagelist", Imagelist_f);
+	RegisterCommand ("img_reload", ImageReload_f);
 
 	/*--------- create default texture -----------*/
 	memset (tex, 0, DEF_IMG_SIZE*DEF_IMG_SIZE*4);
@@ -1470,6 +1486,8 @@ CVAR_END
 
 	gl_reflImage = GL_FindImage ("fx/specular", IMAGE_MIPMAP|IMAGE_TRUECOLOR);	//!! move reflection images to a different place
 	gl_reflImage2 = GL_FindImage ("fx/diffuse", IMAGE_MIPMAP|IMAGE_TRUECOLOR);
+
+	unguard;
 }
 
 
@@ -1478,8 +1496,8 @@ void GL_ShutdownImages (void)
 	int		i;
 	image_t	*img;
 
-	Cmd_RemoveCommand ("imagelist");
-	Cmd_RemoveCommand ("img_reload");
+	UnregisterCommand ("imagelist");
+	UnregisterCommand ("img_reload");
 
 	if (!imageCount) return;
 
@@ -1618,7 +1636,7 @@ void GL_ShowImages (void)
 //------------- Loading images --------------------------
 
 // GL_FindImage -- main image creating/loading function
-image_t *GL_FindImage (char *name, int flags)
+image_t *GL_FindImage (const char *name, int flags)
 {
 	char	name2[MAX_QPATH], *s;
 	int		hash, flags2, fmt, prefFmt, width, height, len;
@@ -1693,14 +1711,12 @@ image_t *GL_FindImage (char *name, int flags)
 	else
 		prefFmt = 0;
 
-START_PROFILE(img::check)
 	*s = 0; // cut extension
 	fmt = ImageExists (name2, IMAGE_32BIT);
 	if (fmt & prefFmt)
 		fmt = prefFmt;				// restrict loading to this image type
-END_PROFILE
 
-	// load image within a preferred (or priorized) format
+	// load image within a preferred (or prioritized) format
 	if (fmt & IMAGE_TGA)
 	{
 		strcpy (s, ".tga");

@@ -112,7 +112,6 @@ cvar_t	*gl_particle_att_c;
 
 cvar_t	*gl_logFile;
 cvar_t	*gl_bitdepth;
-cvar_t	*gl_drawbuffer;
 cvar_t  *gl_driver;
 cvar_t	*gl_shadows;
 cvar_t	*gl_mode;
@@ -888,8 +887,7 @@ static void GL_DrawColoredStereoLinePair( float r, float g, float b, float y )
 
 static void GL_DrawStereoPattern( void )
 {
-	int i;
-
+#if 0
 	if ( !( gl_config.renderer & GL_RENDERER_INTERGRAPH ) )
 		return;
 
@@ -900,7 +898,7 @@ static void GL_DrawStereoPattern( void )
 
 	glDrawBuffer( GL_BACK_LEFT );
 
-	for ( i = 0; i < 20; i++ )
+	for (int i = 0; i < 20; i++)
 	{
 		glBegin( GL_LINES );
 			GL_DrawColoredStereoLinePair( 1, 0, 0, 0 );
@@ -915,6 +913,7 @@ static void GL_DrawStereoPattern( void )
 
 		GLimp_EndFrame();
 	}
+#endif
 }
 
 
@@ -1014,7 +1013,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_playermip, 0, 0),
 	CVAR_VAR(gl_monolightmap, 0, 0),
 	CVAR_VAR(gl_driver, opengl32, CVAR_ARCHIVE),
-	CVAR_VAR(gl_texturemode, GL_LINEAR_MIPMAP_NEAREST, CVAR_ARCHIVE),
+	CVAR_VAR(gl_texturemode, bilinear, CVAR_ARCHIVE),
 	CVAR_VAR(gl_texturealphamode, default, CVAR_ARCHIVE),
 	CVAR_VAR(gl_texturesolidmode, default, CVAR_ARCHIVE),
 	CVAR_VAR(gl_lockpvs, 0, 0),
@@ -1023,13 +1022,6 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(gl_vertex_arrays, 0, CVAR_ARCHIVE),
 
-//	CVAR_NULL(gl_ext_palettedtexture, 0, CVAR_ARCHIVE),
-	CVAR_NULL(gl_ext_multitexture, 1, CVAR_ARCHIVE),
-	CVAR_NULL(gl_ext_compressed_textures, 1, CVAR_ARCHIVE),
-//	CVAR_NULL(gl_ext_pointparameters, 1, CVAR_ARCHIVE),
-	CVAR_NULL(gl_ext_compiled_vertex_array, 1, CVAR_ARCHIVE),
-
-	CVAR_VAR(gl_drawbuffer, GL_BACK, 0),
 	CVAR_VAR(gl_swapinterval, 0, CVAR_ARCHIVE|CVAR_UPDATE),
 
 	CVAR_VAR(gl_saturatelighting, 0, 0),
@@ -1039,9 +1031,9 @@ CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 
-	Cmd_AddCommand ("imagelist", GL_ImageList_f);
-	Cmd_AddCommand ("modellist", Mod_Modellist_f);
-	Cmd_AddCommand ("gfxinfo", GL_Strings_f);
+	RegisterCommand ("imagelist", GL_ImageList_f);
+	RegisterCommand ("modellist", Mod_Modellist_f);
+	RegisterCommand ("gfxinfo", GL_Strings_f);
 }
 
 /*
@@ -1342,9 +1334,9 @@ R_Shutdown
 */
 void R_Shutdown (void)
 {
-	Cmd_RemoveCommand ("modellist");
-	Cmd_RemoveCommand ("imagelist");
-	Cmd_RemoveCommand ("gfxinfo");
+	UnregisterCommand ("modellist");
+	UnregisterCommand ("imagelist");
+	UnregisterCommand ("gfxinfo");
 
 	Mod_FreeAll ();
 
@@ -1444,22 +1436,6 @@ void R_BeginFrame( float camera_separation )
 	glDisable (GL_BLEND);
 	glEnable (GL_ALPHA_TEST);
 	glColor4f (1,1,1,1);
-
-	/*
-	** draw buffer stuff
-	*/
-	if ( gl_drawbuffer->modified )
-	{
-		gl_drawbuffer->modified = false;
-
-		if ( gl_state.camera_separation == 0 || !gl_state.stereo_enabled )
-		{
-			if ( stricmp( gl_drawbuffer->string, "GL_FRONT" ) == 0 )
-				glDrawBuffer( GL_FRONT );
-			else
-				glDrawBuffer( GL_BACK );
-		}
-	}
 
 	/*
 	** texturemode stuff
@@ -1626,20 +1602,15 @@ void R_DrawBeam (beam_t *e)
 //===================================================================
 
 
-void	R_BeginRegistration (char *map);
-struct model_s	*R_RegisterModel (char *name);
-struct image_s	*R_RegisterSkin (char *name);
-void R_SetSky (char *name, float rotate, vec3_t axis);
+void	R_BeginRegistration (const char *map);
+struct model_s	*R_RegisterModel (const char *name);
+struct image_s	*R_RegisterSkin (const char *name);
+void R_SetSky (const char *name, float rotate, vec3_t axis);
 void	R_EndRegistration (void);
 
 void	R_RenderFrame (refdef_t *fd);
 
-struct image_s	*Draw_FindPic (char *name);
-
-void	Draw_Pic (int x, int y, char *name);
-void	Draw_Char (int x, int y, int c);
-void	Draw_TileClear (int x, int y, int w, int h, char *name);
-void	Draw_Fill (int x, int y, int w, int h, int c);
+struct image_s	*Draw_FindPic (const char *name);
 
 /*
 Draw_ConCharColor
@@ -1649,7 +1620,7 @@ void	Draw_ConCharColor (int x, int y, int c, int color)
 	Draw_CharColor (x * 8, y * 8, c, color);
 }
 
-static void Screenshot (int flags, char *name)
+static void Screenshot (int flags, const char *name)
 {
 	static char shotName[MAX_QPATH];
 
@@ -1663,7 +1634,7 @@ static float GetClientLight (void)
 	return gl_lightlevel;
 }
 
-static void ReloadImage (char *name)
+static void ReloadImage (const char *name)
 {
 	// do nothing in this renderer ??
 }

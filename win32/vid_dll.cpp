@@ -226,6 +226,8 @@ main window procedure
 */
 static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	guard(MainWndProc);
+
 	LONG	lRet = 0;
 
 	if (uMsg == MSH_MOUSEWHEEL)
@@ -420,6 +422,8 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	}
 
 	return DefWindowProc (hWnd, uMsg, wParam, lParam);
+
+	unguardf(("msg=%X", uMsg));
 }
 
 
@@ -666,33 +670,33 @@ Vid_LoadRefresh
 /*-------- Dummy functions for console-only mode ---------*/
 
 static void	D_RenderFrame (refdef_t *fd) {}
-static void	D_BeginRegistration (char *map) {}
-static struct model_s *D_RegisterModel (char *name) { return NULL; }
-static struct image_s *D_RegisterSkin (char *name) { return NULL; }
-static void D_ReloadImage (char *name) {}
-static struct image_s *D_FindPic (char *name) { return NULL; }
-static void D_SetSky (char *name, float rotate, vec3_t axis) {}
+static void	D_BeginRegistration (const char *map) {}
+static struct model_s *D_RegisterModel (const char *name) { return NULL; }
+static struct image_s *D_RegisterSkin (const char *name) { return NULL; }
+static void D_ReloadImage (const char *name) {}
+static struct image_s *D_FindPic (const char *name) { return NULL; }
+static void D_SetSky (const char *name, float rotate, vec3_t axis) {}
 static void	D_EndRegistration (void) {}
 
-static void	D_Draw_GetPicSize (int *w, int *h, char *pic)
+static void	D_Draw_GetPicSize (int *w, int *h, const char *pic)
 {
 	if (w) *w = 0;
 	if (h) *h = 0;
 }
 
-static void D_Screenshot (int flags, char *name)
+static void D_Screenshot (int flags, const char *name)
 {
 	Com_WPrintf ("Screenshots are unsupported by this renderer\n");
 }
 
-static void	D_Draw_Pic (int x, int y, char *name, int color) {}
-static void	D_Draw_StretchPic (int x, int y, int w, int h, char *pic) {}
+static void	D_Draw_Pic (int x, int y, const char *name, int color) {}
+static void	D_Draw_StretchPic (int x, int y, int w, int h, const char *pic) {}
 static void	D_Draw_Char (int x, int y, int c, int color) {}
-static void	D_Draw_TileClear (int x, int y, int w, int h, char *name) {}
+static void	D_Draw_TileClear (int x, int y, int w, int h, const char *name) {}
 static void	D_Draw_Fill (int x, int y, int w, int h, int c) {}
 static void D_Draw_Fill2 (int x, int y, int w, int h, unsigned rgba) {}
-static void	D_DrawTextPos (int x, int y, char *text, unsigned rgba) {}
-static void	D_DrawTextSide (char *text, unsigned rgba) {}
+static void	D_DrawTextPos (int x, int y, const char *text, unsigned rgba) {}
+static void	D_DrawTextSide (const char *text, unsigned rgba) {}
 static void	D_Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data) {}
 static void	D_SetPalette (const unsigned char *palette) {}
 static float D_GetClientLight (void) { return 0; }		// normal value is 150
@@ -832,7 +836,7 @@ void Vid_CheckChanges (void)
 
 		// refresh has changed
 		cl.force_refdef = true;		// can't use a paused refdef
-		S_StopAllSounds ();
+		S_StopAllSounds_f ();
 
 		r_fullscreen->modified = true;
 		cl.refresh_prepped = false;
@@ -892,8 +896,8 @@ CVAR_END
 	InitRendererVars ();
 
 	// Add some console commands that we want to handle
-	Cmd_AddCommand ("vid_restart", Vid_Restart_f);
-	Cmd_AddCommand ("vid_front", Vid_Front_f);
+	RegisterCommand ("vid_restart", Vid_Restart_f);
+	RegisterCommand ("vid_front", Vid_Front_f);
 
 #if 0
 	// this is a gross hack but necessary to clamp the mode for 3Dfx

@@ -116,6 +116,12 @@ void QGL_InitExtensions (void)
 	dummyFunc_t func;
 	const char *ext1, *ext2;
 
+	guard(QGL_InitExtensions);
+
+	// init cvars for controlling extensions
+	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
+		if (ext->cvar) Cvar_Get (ext->cvar, "1", CVAR_ARCHIVE);
+
 	gl_config.extensionMask = 0;
 	notFoundExt = 0;
 	gl_config.disabledExt = gl_config.ignoredExt = 0;
@@ -136,10 +142,9 @@ void QGL_InitExtensions (void)
 
 	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 	{
-		bool	enable;
 		int		j;
 
-		enable = false;
+		bool enable = false;
 		if (ExtensionSupported (ext, ext1, ext2))
 		{
 			if (!ext->cvar || Cvar_VariableInt (ext->cvar))
@@ -273,10 +278,12 @@ void QGL_InitExtensions (void)
 			}
 		Com_Printf ("\n");
 	}
+
+	unguard;
 }
 
 
-void QGL_PrintExtensionsString (const char *label, const char *str)
+void QGL_PrintExtensionsString (const char *label, const char *str, const char *mask)
 {
 	char	name[256];
 	int		i, j;
@@ -296,7 +303,11 @@ void QGL_PrintExtensionsString (const char *label, const char *str)
 			if (i)
 			{
 				name[i] = 0;
+				i = 0;
 				// name[] now contains current extension name
+				// check display mask
+				if (mask && !MatchWildcard (name, mask, true)) continue;
+				// determine color for name display
 				color = NULL;
 				for (j = 0, m = 1, ext = extInfo; j < NUM_EXTENSIONS; j++, ext++, m <<= 1)
 				{
@@ -320,7 +331,6 @@ void QGL_PrintExtensionsString (const char *label, const char *str)
 					break;
 				}
 				if (!color) Com_Printf ("%s ", name);		// unsupported extension
-				i = 0;
 			}
 		}
 		else

@@ -176,15 +176,6 @@ typedef struct
 	int	minimize, maximize;
 } glmode_t;
 
-static glmode_t modes[] = {
-	{"GL_NEAREST", GL_NEAREST, GL_NEAREST},
-	{"GL_LINEAR", GL_LINEAR, GL_LINEAR},
-	{"GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},
-	{"GL_LINEAR_MIPMAP_NEAREST", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR},
-	{"GL_NEAREST_MIPMAP_LINEAR", GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST},
-	{"GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR}
-};
-
 typedef struct
 {
 	int mode;
@@ -222,23 +213,38 @@ GL_TextureMode
 */
 void GL_TextureMode( char *string )
 {
+	static struct {
+		char	*name;
+		GLenum	minimize, maximize;
+	} texModes[] = {
+		{"GL_NEAREST", GL_NEAREST, GL_NEAREST},				// box filter, no mipmaps
+		{"GL_LINEAR", GL_LINEAR, GL_LINEAR},				// linear filter, no mipmaps
+		{"GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},	// no (box) filter
+		{"GL_LINEAR_MIPMAP_NEAREST", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR},		// bilinear filter
+		{"GL_NEAREST_MIPMAP_LINEAR", GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST},
+		{"GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR},		// trilinear filter
+		// aliases
+		{"none", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},
+		{"bilinear", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR},
+		{"trilinear", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR}
+	};
 	int		i;
 	image_t	*glt;
 
-	for (i=0 ; i< ARRAY_COUNT(modes) ; i++)
+	for (i=0 ; i< ARRAY_COUNT(texModes) ; i++)
 	{
-		if ( !stricmp( modes[i].name, string ) )
+		if ( !stricmp( texModes[i].name, string ) )
 			break;
 	}
 
-	if (i == ARRAY_COUNT(modes))
+	if (i == ARRAY_COUNT(texModes))
 	{
 		Com_Printf ("bad filter name\n");
 		return;
 	}
 
-	gl_filter_min = modes[i].minimize;
-	gl_filter_max = modes[i].maximize;
+	gl_filter_min = texModes[i].minimize;
+	gl_filter_max = texModes[i].maximize;
 
 	// change all the existing mipmap texture objects
 	for (i=0, glt=gltextures ; i<numgltextures ; i++, glt++)
@@ -337,11 +343,11 @@ const  fmt_info_t fmt_names[] =
 	_STR(GL_RGB5_A1),
 	// compressed modes
 //	_STR(GL_RGB_S3TC),
-	{GL_RGB4_S3TC,	"S3TC"}, //"RGB4_S3TC"},
+//	{GL_RGB4_S3TC,	"S3TC"}, //"RGB4_S3TC"},
 //	{GL_RGBA_S3TC,	"RGBA_S3TC"},
 //	{GL_RGBA4_S3TC,	"RGBA4_S3TC"},
-	{GL_COMPRESSED_RGB_ARB, "RGB_ARB"},
-	{GL_COMPRESSED_RGBA_ARB, "RGBA_ARB"},
+//	{GL_COMPRESSED_RGB_ARB, "RGB_ARB"},
+//	{GL_COMPRESSED_RGBA_ARB, "RGBA_ARB"},
 	// paletted
 	{GL_COLOR_INDEX8_EXT, "PAL"},
 };
@@ -1136,7 +1142,7 @@ GL_LoadPic
 This is also used as an entry point for the generated r_notexture
 ================
 */
-image_t *GL_LoadPic (char *name, byte *pic, int width, int height, imagetype_t type, int bits)
+image_t *GL_LoadPic (const char *name, byte *pic, int width, int height, imagetype_t type, int bits)
 {
 	image_t		*image;
 	int			i;
@@ -1254,47 +1260,40 @@ GL_FindImage
 Finds or loads the given image
 ===============
 */
-image_t	*GL_FindImage (char *name, imagetype_t type)
+image_t	*GL_FindImage (const char *name, imagetype_t type)
 {
 	image_t	*image;
 //	image_t *findimage;
 	int	i, len, check_other;
 	byte	*pic, *palette;
 	int	width, height, bits, fmt;
-	char	c, *s, *d, buf[256];
+	char	*s, buf[256];
 
 	if (!name)
 		return NULL;	//	Com_DropError ("GL_FindImage: NULL name");
-
-	// make a local copy of image name with a lower case conversion
-	s = name;
-	d = buf;
-	while (c = *s++)
-	{
-		if (c >= 'A' && c <= 'Z') c += 32;
-		*d++ = c;
-	}
-	*d = 0; // ASCIIZ
-	name = buf;
 
 	len = strlen(name);
 	if (len<5)
 		return NULL;	//	Com_DropError ("GL_FindImage: bad name: %s", name);
 
-	len -= 4;	// &name[len] -> ".ext"
-	s = &name[len];		// points to extension
+	// make a local copy of image name with a lower case conversion
+	Q_strncpylower (buf, name, sizeof(buf));
+
+	if (buf[len-4] == '.')
+		len -= 4;		// &name[len] -> ".ext"
+	s = &buf[len];		// points to extension
 
 	// Check if texture already loaded
 
 	// if extension is .??? (originally, .PCX or .WAL), check TGA and JPG first, then PCX/WAL
-	check_other = !strcmp (s, ".???") || !strcmp (s, ".pcx") || !strcmp (s, ".wal");
+	check_other = !*s || !strcmp (s, ".???") || !strcmp (s, ".pcx") || !strcmp (s, ".wal");
 	// look for it
 //	findimage = NULL;
 	for (i = 0, image = gltextures; i < numgltextures; i++,image++)
 	{
 		char *s1;
 
-		if (memcmp (name, image->name, len)) continue; // different name
+		if (memcmp (buf, image->name, len)) continue; // different name
 
 		s1 = &image->name[len];
 		if (check_other)
@@ -1317,7 +1316,7 @@ image_t	*GL_FindImage (char *name, imagetype_t type)
 	}
 //	if (findimage) return findimage; // TGA or JPG not found, but PCX or WAL found
 
-	if (type == it_pic && memcmp (name, "pics/", 4))	// mark pics from other directories as temporary
+	if (type == it_pic && memcmp (buf, "pics/", 4))	// mark pics from other directories as temporary
 		type = it_temp;
 
 	//
@@ -1330,7 +1329,7 @@ image_t	*GL_FindImage (char *name, imagetype_t type)
 	if (check_other)
 	{
 		*s = 0; // cut extension
-		fmt = ImageExists (name, IMAGE_32BIT);
+		fmt = ImageExists (buf, IMAGE_32BIT);
 		if (fmt & IMAGE_TGA)
 			strcpy (s, ".tga");
 		else if (fmt & IMAGE_JPG)
@@ -1341,7 +1340,7 @@ image_t	*GL_FindImage (char *name, imagetype_t type)
 			strcpy (s, ".wal");
 		else
 		{
-			Com_DPrintf ("Cannot find image %s.*\n", name);
+			Com_DPrintf ("Cannot find image %s.*\n", buf);
 			return NULL;
 		}
 	}
@@ -1357,34 +1356,34 @@ image_t	*GL_FindImage (char *name, imagetype_t type)
 			fmt = IMAGE_WAL;
 		else
 		{
-			Com_WPrintf ("Unrecognized image extension: %s\n", name);
+			Com_WPrintf ("Unrecognized image extension: %s\n", buf);
 			return NULL;
 		}
 	}
 
 	if (fmt & IMAGE_TGA)
 	{
-		LoadTGA (name, &pic, &width, &height);
+		LoadTGA (buf, &pic, &width, &height);
 		bits = 32;
 	}
 	else if (fmt & IMAGE_JPG)
 	{
-		LoadJPG (name, &pic, &width, &height);
+		LoadJPG (buf, &pic, &width, &height);
 		bits = 32;
 	}
 	else if (fmt & IMAGE_PCX)
 	{
-		LoadPCX (name, &pic, &palette, &width, &height);
+		LoadPCX (buf, &pic, &palette, &width, &height);
 		bits = 8;
 	}
 	else if (fmt & IMAGE_WAL)
-		image = GL_LoadWal (name);
+		image = GL_LoadWal (buf);
 
 	if (pic)
-		image = GL_LoadPic (name, pic, width, height, type, bits);
+		image = GL_LoadPic (buf, pic, width, height, type, bits);
 
 	if (!image)
-		Com_WPrintf ("Cannot load texture %s\n", name);
+		Com_WPrintf ("Cannot load texture %s\n", buf);
 
 	if (pic)
 		appFree (pic);
@@ -1401,7 +1400,7 @@ image_t	*GL_FindImage (char *name, imagetype_t type)
 R_RegisterSkin
 ===============
 */
-struct image_s *R_RegisterSkin (char *name)
+struct image_s *R_RegisterSkin (const char *name)
 {
 	return GL_FindImage (name, it_skin);
 }

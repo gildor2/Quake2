@@ -54,8 +54,7 @@ static cvar_t	*graphshift;
 char		crosshair_pic[MAX_QPATH];
 int			crosshair_width, crosshair_height;
 
-void SCR_TimeRefresh_f (void);
-void SCR_Loading_f (void);
+void SCR_TimeRefresh_f (int argc, char **argv);
 
 
 #define CHAR_WIDTH	8
@@ -219,7 +218,7 @@ void SCR_CenterPrint (char *str)
 	}
 
 	// echo it to the console
-	Com_Printf("\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
+	Com_Printf("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
 
 	s = str;
 	do
@@ -245,7 +244,7 @@ void SCR_CenterPrint (char *str)
 		if (!*s) break;
 		s++;		// skip the \n
 	} while (1);
-	Com_Printf("\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
+	Com_Printf("\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
 	Con_ClearNotify ();
 }
 
@@ -337,25 +336,25 @@ SCR_Sky_f
 Set a specific sky and rotation speed
 =================
 */
-void SCR_Sky_f (void)
+void SCR_Sky_f (bool usage, int argc, char **argv)
 {
 	float	rotate;
 	vec3_t	axis;
 
-	if (Cmd_Argc() < 2)
+	if (argc < 2 || usage)
 	{
 		Com_Printf ("Usage: sky <basename> <rotate> <axis x y z>\n");
 		return;
 	}
-	if (Cmd_Argc() > 2)
-		rotate = atof(Cmd_Argv(2));
+	if (argc > 2)
+		rotate = atof (argv[2]);
 	else
 		rotate = 0;
-	if (Cmd_Argc() == 6)
+	if (argc == 6)
 	{
-		axis[0] = atof(Cmd_Argv(3));
-		axis[1] = atof(Cmd_Argv(4));
-		axis[2] = atof(Cmd_Argv(5));
+		axis[0] = atof (argv[3]);
+		axis[1] = atof (argv[4]);
+		axis[2] = atof (argv[5]);
 	}
 	else
 	{
@@ -364,7 +363,7 @@ void SCR_Sky_f (void)
 		axis[2] = 1;
 	}
 
-	re.SetSky (Cmd_Argv(1), rotate, axis);
+	re.SetSky (argv[1], rotate, axis);
 }
 
 //============================================================================
@@ -390,9 +389,9 @@ CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 
-	Cmd_AddCommand ("timerefresh", SCR_TimeRefresh_f);
-	Cmd_AddCommand ("loading", SCR_Loading_f);
-	Cmd_AddCommand ("sky", SCR_Sky_f);
+	RegisterCommand ("timerefresh", SCR_TimeRefresh_f);
+	RegisterCommand ("loading", SCR_BeginLoadingPlaque);
+	RegisterCommand ("sky", SCR_Sky_f);
 
 	initialized = true;
 }
@@ -403,51 +402,94 @@ CVAR_END
 -----------------------------------------------------------------------------*/
 
 static int loadingScrTime;
-static char *map_levelshot;
+static const char *map_levelshot;
 
 
 void SCR_SetLevelshot (char *name)
 {
-	static char levelshot[MAX_OSPATH];
-	int		width;
+	static const char defLevelshot[] = "/pics/levelshot";
 
-	if (map_levelshot)
+	if (!name)
+	{
+		char mapname[MAX_QPATH], *tmp;
+
+		// get levelshot name from map name
+		Q_CopyFilename (mapname, cl.configstrings[CS_MODELS+1], sizeof(mapname));
+		tmp = strchr (mapname, '.');
+		if (tmp) tmp[0] = 0;
+		tmp = strrchr (mapname, '/');
+		if (!tmp)
+			tmp = tmp ? ++tmp : mapname;
+		else
+			tmp++;				// skip '/'
+		name = va("/levelshots/%s", tmp);
+	}
+
+	if (map_levelshot && !stricmp (map_levelshot, name))
 		return;						// already set
 
-	strcpy (levelshot, name);
-	re.ReloadImage (levelshot);		// force renderer to refresh image
-	re.DrawGetPicSize (&width, NULL, levelshot);
-	if (width > 0)
-		map_levelshot = levelshot;
-	else
+	if (ImageExists (name))
 	{
-		strcpy (levelshot, "/pics/levelshot.pcx");
-		re.DrawGetPicSize (&width, NULL, levelshot);
-		if (width > 0)
-			map_levelshot = levelshot;
-		else
-			map_levelshot = NULL;
+		static char levelshot[MAX_OSPATH];
+
+		Com_DPrintf ("SetLevelshot: %s\n", name);
+		strcpy (levelshot, name);
+		re.ReloadImage (name);		// force renderer to refresh image
+		map_levelshot = levelshot;
 	}
-	if (map_levelshot)
-		Com_DPrintf ("SetLevelshot: %s\n", levelshot);
+	else if (ImageExists (defLevelshot))
+	{
+		if (map_levelshot != defLevelshot)
+		{
+			Com_DPrintf ("SetLevelshot: %s\n", defLevelshot);
+			map_levelshot = defLevelshot;
+		}
+	}
+	else
+		map_levelshot = NULL;
+
 	SCR_BeginLoadingPlaque ();
 }
 
 
-void SCR_SetLevelshot2 (void)
+/*
+================
+SCR_BeginLoadingPlaque
+================
+*/
+void SCR_BeginLoadingPlaque (void)
 {
-	char	mapname[MAX_QPATH], *tmp;
+	guard(SCR_BeginLoadingPlaque);
+	S_StopAllSounds_f ();
+	cl.sound_prepped = false;		// don't play ambients
+	CDAudio_Stop ();
+	cls.loading = true;
+	loadingScrTime = cls.realtime;
+	cls.disable_servercount = cl.servercount;
 
-	// set levelshot
-	Q_CopyFilename (mapname, cl.configstrings[CS_MODELS+1], sizeof(mapname));
-	tmp = strchr (mapname, '.');
-	if (tmp) tmp[0] = 0;
-	tmp = strrchr (mapname, '/');
-	if (!tmp)
-		tmp = tmp ? ++tmp : mapname;
-	else
-		tmp++;				// skip '/'
-	SCR_SetLevelshot (va("/levelshots/%s.pcx", tmp));
+	M_ForceMenuOff ();
+	SCR_ShowConsole (false, true);
+	SCR_UpdateScreen ();
+	unguard;
+}
+
+/*
+================
+SCR_EndLoadingPlaque
+================
+*/
+void SCR_EndLoadingPlaque (bool force)
+{
+	guard(SCR_EndLoadingPlaque);
+	if (force || (cls.disable_servercount != cl.servercount && cl.refresh_prepped))
+	{
+		cls.loading = false;
+		loadingScrTime = 0;
+		map_levelshot = NULL;
+		Con_ClearNotify ();
+		SCR_ShowConsole (false, true);
+	}
+	unguard;
 }
 
 
@@ -523,7 +565,8 @@ static void DrawLoadingAndConsole (bool allowNotifyArea)
 			if (map_levelshot)
 			{
 				re.DrawStretchPic (0, 0, viddef.width, viddef.height, map_levelshot);
-				//!! DrawLevelshotDetail for GL
+				if (cls.newfx)
+					re.DrawStretchPic (0, 0, viddef.width, viddef.height, "/fx/detail");
 			}
 			else
 			{
@@ -533,7 +576,8 @@ static void DrawLoadingAndConsole (bool allowNotifyArea)
 				re.DrawGetPicSize (&w, &h, "loading");
 				re.DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading");
 			}
-			Con_DrawNotify (false);
+			if (!conCurrent)
+				Con_DrawNotify (false);		// do not draw notify area when console is visible too
 			allowNotifyArea = false;
 
 			// draw downloading info
@@ -592,62 +636,14 @@ void SCR_ShowConsole (bool show, bool noAnim)
 }
 
 
-/*
-================
-SCR_BeginLoadingPlaque
-================
-*/
-void SCR_BeginLoadingPlaque (void)
-{
-	guard(SCR_BeginLoadingPlaque);
-	S_StopAllSounds ();
-	cl.sound_prepped = false;		// don't play ambients
-	CDAudio_Stop ();
-	cls.loading = true;
-	loadingScrTime = cls.realtime;
-	cls.disable_servercount = cl.servercount;
-
-	M_ForceMenuOff ();
-	SCR_ShowConsole (false, true);
-	SCR_UpdateScreen ();
-	unguard;
-}
-
-/*
-================
-SCR_EndLoadingPlaque
-================
-*/
-void SCR_EndLoadingPlaque (bool force)
-{
-	guard(SCR_EndLoadingPlaque);
-	if (force || (cls.disable_servercount != cl.servercount && cl.refresh_prepped))
-	{
-		cls.loading = false;
-		loadingScrTime = 0;
-		map_levelshot = NULL;
-		Con_ClearNotify ();
-		SCR_ShowConsole (false, true);
-	}
-	unguard;
-}
-
-/*
-================
-SCR_Loading_f
-================
-*/
-void SCR_Loading_f (void)
-{
-	SCR_BeginLoadingPlaque ();
-}
+//-----------------------------------------------------------------------------
 
 /*
 ================
 SCR_TimeRefresh_f
 ================
 */
-void SCR_TimeRefresh_f (void)
+void SCR_TimeRefresh_f (int argc, char **argv)
 {
 	int		i;
 	int		start, stop;
@@ -658,7 +654,7 @@ void SCR_TimeRefresh_f (void)
 
 	start = Sys_Milliseconds ();
 
-	if (Cmd_Argc() == 2)	//????
+	if (argc == 2)	//????
 	{	// run without page flipping
 		re.BeginFrame (0);
 		for (i = 0; i < 128; i++)
@@ -713,13 +709,6 @@ void SCR_TileClear (void)
 
 
 //===============================================================
-
-#define STAT_MINUS		10	// num frame for '-' stats digit
-static char *sb_nums[2][11] =
-{
-	{"num_0", "num_1", "num_2", "num_3", "num_4", "num_5", "num_6", "num_7", "num_8", "num_9", "num_minus"},
-	{"anum_0", "anum_1", "anum_2", "anum_3", "anum_4", "anum_5", "anum_6", "anum_7", "anum_8", "anum_9", "anum_minus"}
-};
 
 #define	ICON_WIDTH		24
 #define	ICON_HEIGHT		24
@@ -789,33 +778,27 @@ static void DrawHUDString (char *string, int x0, int y, int centerwidth, int col
 static void DrawField (int x, int y, int color, int width, int value)
 {
 	char	num[16], *ptr;
-	int		l;
-	int		frame;
 
 	if (width < 1)
 		return;
 
 	// draw number string
+	int len = Com_sprintf (ARRAY_ARG(num), "%d", value);
 	if (width > 5) width = 5;
+	if (len > width) len = width;
 
-	Com_sprintf (ARRAY_ARG(num), "%d", value);
-	l = strlen (num);
-	if (l > width) l = width;
 	// align number to right
-	x += 2 + HUDCHAR_WIDTH * (width - l);
+	x += 2 + HUDCHAR_WIDTH * (width - len);
 
 	ptr = num;
-	while (*ptr && l)
+	while (*ptr && len--)
 	{
 		if (*ptr == '-')
-			frame = STAT_MINUS;
+			re.DrawPic (x, y, va("%snum_minus", color ? "a" : ""));
 		else
-			frame = *ptr -'0';
-
-		re.DrawPic (x, y, sb_nums[color][frame]);
+			re.DrawPic (x, y, va("%snum_%c", color ? "a" : "", *ptr));
 		x += HUDCHAR_WIDTH;
 		ptr++;
-		l--;
 	}
 }
 
@@ -829,14 +812,14 @@ Allows rendering code to cache all needed sbar graphics
 */
 void SCR_TouchPics (void)
 {
-	int		i, j, ch_num;
+	int		ch_num;
 
 	if (*re.flags & REF_CONSOLE_ONLY)
 		return;
 
-	for (i = 0; i < 2; i++)
-		for (j = 0 ; j < 11 ; j++)
-			re.RegisterPic (sb_nums[i][j]);		// can remember image handles and use later (faster drawing, but need API extension ??)
+//	for (int i = 0; i < 2; i++)
+//		for (int j = 0 ; j < 11 ; j++)
+//			re.RegisterPic (sb_nums[i][j]);		// can remember image handles and use later (faster drawing, but need API extension ??)
 
 	ch_num = crosshair->integer;
 	if (ch_num)
@@ -883,22 +866,22 @@ void SCR_ExecuteLayoutString (char *s)
 
 	while (s)
 	{
-		token = COM_Parse (&s);
+		token = COM_Parse (s);
 		if (!strcmp (token, "xl"))
-			x = atoi (COM_Parse (&s));
+			x = atoi (COM_Parse (s));
 		else if (!strcmp (token, "xr"))
-			x = viddef.width + atoi (COM_Parse (&s));
+			x = viddef.width + atoi (COM_Parse (s));
 		else if (!strcmp (token, "xv"))
-			x = viddef.width/2 - 160 + atoi (COM_Parse (&s));
+			x = viddef.width/2 - 160 + atoi (COM_Parse (s));
 		else if (!strcmp (token, "yt"))
-			y = atoi (COM_Parse (&s));
+			y = atoi (COM_Parse (s));
 		else if (!strcmp (token, "yb"))
-			y = viddef.height + atoi (COM_Parse (&s));
+			y = viddef.height + atoi (COM_Parse (s));
 		else if (!strcmp (token, "yv"))
-			y = viddef.height/2 - 120 + atoi (COM_Parse (&s));
+			y = viddef.height/2 - 120 + atoi (COM_Parse (s));
 		else if (!strcmp (token, "pic"))
 		{	// draw a pic from a stat number
-			value = cl.frame.playerstate.stats[atoi (COM_Parse (&s))];
+			value = cl.frame.playerstate.stats[atoi (COM_Parse (s))];
 			if (value >= MAX_IMAGES)
 				Com_DropError ("Pic >= MAX_IMAGES");
 			if (cl.configstrings[CS_IMAGES+value])
@@ -908,17 +891,17 @@ void SCR_ExecuteLayoutString (char *s)
 		{	// draw a deathmatch client block
 			int		score, ping, time;
 
-			x = viddef.width/2 - 160 + atoi (COM_Parse (&s));
-			y = viddef.height/2 - 120 + atoi (COM_Parse (&s));
+			x = viddef.width/2 - 160 + atoi (COM_Parse (s));
+			y = viddef.height/2 - 120 + atoi (COM_Parse (s));
 
-			value = atoi (COM_Parse (&s));
+			value = atoi (COM_Parse (s));
 			if (value >= MAX_CLIENTS || value < 0)
 				Com_DropError ("client >= MAX_CLIENTS");
 			ci = &cl.clientinfo[value];
 
-			score = atoi (COM_Parse (&s));
-			ping = atoi (COM_Parse (&s));
-			time = atoi (COM_Parse (&s));
+			score = atoi (COM_Parse (s));
+			ping = atoi (COM_Parse (s));
+			time = atoi (COM_Parse (s));
 
 			DrawString (x+32, y, va(S_GREEN"%s", ci->name));
 			DrawString (x+32, y+8,  "Score: ");
@@ -935,16 +918,16 @@ void SCR_ExecuteLayoutString (char *s)
 			int		score, ping;
 			char	block[80];
 
-			x = viddef.width/2 - 160 + atoi (COM_Parse (&s));
-			y = viddef.height/2 - 120 + atoi (COM_Parse (&s));
+			x = viddef.width/2 - 160 + atoi (COM_Parse (s));
+			y = viddef.height/2 - 120 + atoi (COM_Parse (s));
 
-			value = atoi (COM_Parse (&s));
+			value = atoi (COM_Parse (s));
 			if (value >= MAX_CLIENTS || value < 0)
 				Com_DropError ("client >= MAX_CLIENTS");
 			ci = &cl.clientinfo[value];
 
-			score = atoi (COM_Parse (&s));
-			ping = atoi (COM_Parse (&s));
+			score = atoi (COM_Parse (s));
+			ping = atoi (COM_Parse (s));
 			if (ping > 999) ping = 999;
 
 			Com_sprintf (ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, ci->name);
@@ -956,12 +939,12 @@ void SCR_ExecuteLayoutString (char *s)
 		}
 		else if (!strcmp (token, "picn"))
 		{	// draw a pic from a name
-			re.DrawPic (x, y, COM_Parse (&s));
+			re.DrawPic (x, y, COM_Parse (s));
 		}
 		else if (!strcmp (token, "num"))
 		{	// draw a number
-			width = atoi (COM_Parse (&s));
-			value = cl.frame.playerstate.stats[atoi (COM_Parse (&s))];
+			width = atoi (COM_Parse (s));
+			value = cl.frame.playerstate.stats[atoi (COM_Parse (s))];
 			DrawField (x, y, 0, width, value);
 		}
 		else if (!strcmp (token, "hnum"))
@@ -1017,7 +1000,7 @@ void SCR_ExecuteLayoutString (char *s)
 		}
 		else if (!strcmp (token, "stat_string"))
 		{
-			index = atoi (COM_Parse (&s));
+			index = atoi (COM_Parse (s));
 			if (index < 0 || index >= MAX_CONFIGSTRINGS)
 				Com_DropError ("Bad stat_string index");
 			index = cl.frame.playerstate.stats[index];
@@ -1026,21 +1009,21 @@ void SCR_ExecuteLayoutString (char *s)
 			DrawString (x, y, cl.configstrings[index]);
 		}
 		else if (!strcmp (token, "cstring"))
-			DrawHUDString (COM_Parse (&s), x, y, 320, C_WHITE);
+			DrawHUDString (COM_Parse (s), x, y, 320, C_WHITE);
 		else if (!strcmp (token, "cstring2"))
-			DrawHUDString (COM_Parse (&s), x, y, 320, C_GREEN);
+			DrawHUDString (COM_Parse (s), x, y, 320, C_GREEN);
 		else if (!strcmp (token, "string"))
-			DrawString (x, y, COM_Parse (&s));
+			DrawString (x, y, COM_Parse (s));
 		else if (!strcmp (token, "string2"))
-			DrawString (x, y, va(S_GREEN"%s", COM_Parse (&s)));
+			DrawString (x, y, va(S_GREEN"%s", COM_Parse (s)));
 		else if (!strcmp (token, "if"))
 		{	// draw a number
-			value = cl.frame.playerstate.stats[atoi (COM_Parse (&s))];
+			value = cl.frame.playerstate.stats[atoi (COM_Parse (s))];
 			if (!value)
 			{	// skip to endif
 				while (s && strcmp (token, "endif"))
 				{
-					token = COM_Parse (&s);
+					token = COM_Parse (s);
 				}
 			}
 		}

@@ -33,21 +33,6 @@ sv_client and sv_player will be valid.
 */
 
 /*
-==================
-SV_BeginDemoServer
-==================
-*/
-void SV_BeginDemoserver (void)
-{
-	char		name[MAX_OSPATH];
-
-	Com_sprintf (ARRAY_ARG(name), "demos/%s", sv.name);
-	FS_FOpenFile (name, &sv.demofile);
-	if (!sv.demofile)
-		Com_DropError ("Couldn't open %s\n", name);
-}
-
-/*
 ================
 SV_New_f
 
@@ -55,7 +40,7 @@ Sends the first message from the server to a connected client.
 This will be sent on the initial connection and upon each server load.
 ================
 */
-void SV_New_f (void)
+static void SV_New_f (int argc, char **argv)
 {
 	char		*gamedir;
 	int			playernum;
@@ -72,7 +57,12 @@ void SV_New_f (void)
 	// demo servers just dump the file message
 	if (sv.state == ss_demo)
 	{
-		SV_BeginDemoserver ();
+		char		name[MAX_OSPATH];
+
+		Com_sprintf (ARRAY_ARG(name), "demos/%s", sv.name);
+		FS_FOpenFile (name, &sv.demofile);
+		if (!sv.demofile)
+			Com_DropError ("Couldn't open %s\n", name);
 		return;
 	}
 
@@ -121,7 +111,7 @@ void SV_New_f (void)
 SV_Configstrings_f
 ==================
 */
-void SV_Configstrings_f (void)
+static void SV_Configstrings_f (int argc, char **argv)
 {
 	int		start, mid;
 
@@ -134,14 +124,14 @@ void SV_Configstrings_f (void)
 	}
 
 	// handle the case of a level changing while a client was connecting
-	if (atoi(Cmd_Argv(1)) != svs.spawncount)
+	if (atoi (argv[1]) != svs.spawncount)
 	{
 		Com_Printf ("SV_Configstrings_f from different level\n");
-		SV_New_f ();
+		SV_New_f (argc, argv);
 		return;
 	}
 
-	start = atoi(Cmd_Argv(2));
+	start = atoi (argv[2]);
 
 	// write a packet full of data
 	mid = sv_client->maxPacketSize / 2;
@@ -174,7 +164,7 @@ void SV_Configstrings_f (void)
 SV_Baselines_f
 ==================
 */
-void SV_Baselines_f (void)
+static void SV_Baselines_f (int argc, char **argv)
 {
 	int		start, mid;
 	entity_state_t	nullstate;
@@ -189,14 +179,14 @@ void SV_Baselines_f (void)
 	}
 
 	// handle the case of a level changing while a client was connecting
-	if ( atoi(Cmd_Argv(1)) != svs.spawncount )
+	if (atoi (argv[1]) != svs.spawncount)
 	{
 		Com_Printf ("SV_Baselines_f from different level\n");
-		SV_New_f ();
+		SV_New_f (argc, argv);
 		return;
 	}
 
-	start = atoi(Cmd_Argv(2));
+	start = atoi (argv[2]);
 
 	memset (&nullstate, 0, sizeof(nullstate));
 
@@ -231,22 +221,24 @@ void SV_Baselines_f (void)
 SV_Begin_f
 ==================
 */
-void SV_Begin_f (void)
+static void SV_Begin_f (int argc, char **argv)
 {
 	Com_DPrintf ("Begin() from %s\n", sv_client->name);
 
 	// handle the case of a level changing while a client was connecting
-	if (atoi(Cmd_Argv(1)) != svs.spawncount)
+	if (atoi (argv[1]) != svs.spawncount)
 	{
 		Com_Printf ("SV_Begin_f from different level\n");
-		SV_New_f ();
+		SV_New_f (argc, argv);
 		return;
 	}
 
 	sv_client->state = cs_spawned;
 
+	guard(ge.ClientBegin);
 	// call the game begin function
 	ge->ClientBegin (sv_player);
+	unguard;
 
 	Cbuf_InsertFromDefer ();	//!! unpause buffer
 }
@@ -258,7 +250,7 @@ void SV_Begin_f (void)
 SV_NextDownload_f
 ==================
 */
-void SV_NextDownload_f (void)
+static void SV_NextDownload_f (int argc, char **argv)
 {
 	int		r, max, percent, size;
 
@@ -296,7 +288,7 @@ void SV_NextDownload_f (void)
 SV_BeginDownload_f
 ==================
 */
-void SV_BeginDownload_f(void)
+static void SV_BeginDownload_f (int argc, char **argv)
 {
 	char	*name;
 	extern	cvar_t *allow_download;
@@ -307,10 +299,10 @@ void SV_BeginDownload_f(void)
 	extern	int		fileFromPak; // ZOID did file come from pak?
 	int offset = 0;
 
-	name = Cmd_Argv(1);			//?? name = CopyFilename(name)
+	name = argv[1];			//?? name = CopyFilename(name)
 
-	if (Cmd_Argc() > 2)
-		offset = atoi(Cmd_Argv(2)); // downloaded offset
+	if (argc > 2)
+		offset = atoi (argv[2]); // downloaded offset
 
 	// hacked by zoid to allow more conrol over download
 	// first off, no .. or global allow check
@@ -362,7 +354,7 @@ void SV_BeginDownload_f(void)
 		return;
 	}
 
-	SV_NextDownload_f ();
+	SV_NextDownload_f (argc, argv);
 	Com_DPrintf ("Downloading %s to %s\n", name, sv_client->name);
 }
 
@@ -378,7 +370,7 @@ SV_Disconnect_f
 The client is going to disconnect, so remove the connection immediately
 =================
 */
-void SV_Disconnect_f (void)
+static void SV_Disconnect_f (int argc, char **argv)
 {
 //	SV_EndRedirect ();
 	SV_DropClient (sv_client, NULL);	// "user disconnected" will be printed by game dll
@@ -392,9 +384,9 @@ SV_ShowServerinfo_f
 Dumps the serverinfo info string
 ==================
 */
-void SV_ShowServerinfo_f (void)
+static void SV_ShowServerinfo_f (int argc, char **argv)
 {
-	Info_Print (Cvar_Serverinfo());
+	Info_Print (Cvar_Serverinfo ());
 }
 
 
@@ -425,9 +417,9 @@ A cinematic has completed or been aborted by a client, so move
 to the next server,
 ==================
 */
-void SV_Nextserver_f (void)
+static void SV_Nextserver_f (int argc, char **argv)
 {
-	if (atoi (Cmd_Argv(1)) != svs.spawncount)
+	if (atoi (argv[1]) != svs.spawncount)
 	{
 		Com_DPrintf ("Nextserver() from wrong level, from %s\n", sv_client->name);
 		return;		// leftover from last server
@@ -438,13 +430,7 @@ void SV_Nextserver_f (void)
 	SV_Nextserver ();
 }
 
-typedef struct
-{
-	char	*name;
-	void	(*func) (void);
-} ucmd_t;
-
-ucmd_t ucmds[] =
+static const CSimpleCommand ucmds[] =
 {
 	// auto issued
 	{"new", SV_New_f},
@@ -460,9 +446,7 @@ ucmd_t ucmds[] =
 	{"info", SV_ShowServerinfo_f},
 
 	{"download", SV_BeginDownload_f},
-	{"nextdl", SV_NextDownload_f},
-
-	{NULL, NULL}
+	{"nextdl", SV_NextDownload_f}
 };
 
 /*
@@ -472,28 +456,17 @@ SV_ExecuteUserCommand
 */
 void SV_ExecuteUserCommand (char *s)
 {
-	ucmd_t	*u;
-	char	*cmd;
+	guard(SV_ExecuteUserCommand);
 
-	Cmd_TokenizeString (s, false);		//?? "false" -- disable macro expansion (anti-hack?); can use different TokenizeString()
 	sv_player = sv_client->edict;
-
-	cmd = Cmd_Argv(0);
-	for (u = ucmds; u->name ; u++)
-		if (!strcmp (cmd, u->name))
-		{
-			guard(SV_ExecuteUserCommand);
-			u->func ();
-			unguardf(("cmd=%s", cmd));
-			break;
-		}
-
-	if (!u->name && sv.state == ss_game)
+	if (!ExecuteCommand (s, ARRAY_ARG(ucmds)) && sv.state == ss_game)
 	{
 		guard(ge.ClientCommand);
 		ge->ClientCommand (sv_player);
-		unguardf(("cmd=%s", cmd));
+		unguardf(("cmd=%s", s));
 	}
+
+	unguard;
 }
 
 /*

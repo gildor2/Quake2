@@ -159,7 +159,7 @@ static void CMod_ReadSurfMaterials (char *filename)
 	prev = NULL;
 	in = file;
 
-	while (s = COM_Parse (&in), in)
+	while (s = COM_Parse (in), in)
 	{
 		char		c;
 		material_t	m;
@@ -202,7 +202,7 @@ static void CMod_ReadSurfMaterials (char *filename)
 			m = MATERIAL_CONCRETE;
 		}
 
-		s = COM_Parse (&in);
+		s = COM_Parse (in);
 		if (!in)
 		{
 			Com_WPrintf ("Unexpected end of file %s\n", filename);

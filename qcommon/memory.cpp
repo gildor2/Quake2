@@ -394,13 +394,13 @@ void FreeNamedList (basenamed_t *list)
 
 
 // Memory status console command
-static void Z_Stats_f (void)
+static void Mem_Stats_f (void)
 {
 	Com_Printf ("System memory:\n%d bytes in %d blocks\n", z_bytes, z_count);
 }
 
 
-void Z_Init (void)
+void Mem_Init (void)
 {
-	Cmd_AddCommand ("z_stats", Z_Stats_f);
+	RegisterCommand ("MemStats", Mem_Stats_f);
 }

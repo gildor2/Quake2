@@ -294,45 +294,38 @@ Finds or loads the given image
 ===============
 */
 
-image_t	*R_FindImage (char *name, imagetype_t type)
+image_t	*R_FindImage (const char *name, imagetype_t type)
 {
 	image_t	*image;
 	int	i, len, check_other;
 	byte	*pic, *palette;
 	int	width, height, bits, fmt;
-	char	c, *s, *d, buf[256];
+	char	*s, buf[256];
 
 	if (!name)
 		return NULL;	//	Com_DropError ("GL_FindImage: NULL name");
-
-	// make a local copy of image name with a lower case conversion
-	s = name;
-	d = buf;
-	while (c = *s++)
-	{
-		if (c >= 'A' && c <= 'Z') c += 32;
-		*d++ = c;
-	}
-	*d = 0; // ASCIIZ
-	name = buf;
 
 	len = strlen (name);
 	if (len < 5)
 		return NULL;	//	Com_DropError ("GL_FindImage: bad name: %s", name);
 
-	len -= 4;	// &name[len] -> ".ext"
-	s = &name[len];		// points to extension
+	// make a local copy of image name with a lower case conversion
+	Q_strncpylower (buf, name, sizeof(buf));
+
+	if (buf[len-4] == '.')
+		len -= 4;		// &name[len] -> ".ext"
+	s = &buf[len];		// points to extension
 
 	// Check if texture already loaded
 
 	// if extension is .??? (originally, .PCX or .WAL), check TGA and JPG first, then PCX/WAL
-	check_other = !strcmp (s, ".???") || !strcmp (s, ".pcx") || !strcmp (s, ".wal");
+	check_other = !*s || !strcmp (s, ".???") || !strcmp (s, ".pcx") || !strcmp (s, ".wal");
 	// look for it
 	for (i = 0, image = r_images; i < numr_images; i++,image++)
 	{
 		char *s1;
 
-		if (memcmp (name, image->name, len)) continue; // different name
+		if (memcmp (buf, image->name, len)) continue; // different name
 
 		s1 = &image->name[len];
 		if (check_other)
@@ -354,7 +347,7 @@ image_t	*R_FindImage (char *name, imagetype_t type)
 		}
 	}
 
-	if (type == it_pic && memcmp (name, "pics/", 4))	// mark pics from other directories as temporary
+	if (type == it_pic && memcmp (buf, "pics/", 4))	// mark pics from other directories as temporary
 		type = it_temp;
 
 	//
@@ -369,11 +362,11 @@ image_t	*R_FindImage (char *name, imagetype_t type)
 		*s = 0; // cut extension
 		if (sw_prefer8bittex->integer)
 		{
-			fmt = ImageExists (name, IMAGE_8BIT);
+			fmt = ImageExists (buf, IMAGE_8BIT);
 			if (fmt & IMAGE_8BIT) fmt &= IMAGE_8BIT;	// disable loading TGA and JPG when PCX or WAL exists
 		}
 		else
-			fmt = ImageExists (name, IMAGE_32BIT);
+			fmt = ImageExists (buf, IMAGE_32BIT);
 		if (fmt & IMAGE_TGA)
 			strcpy (s, ".tga");
 		else if (fmt & IMAGE_JPG)
@@ -384,7 +377,7 @@ image_t	*R_FindImage (char *name, imagetype_t type)
 			strcpy (s, ".wal");
 		else
 		{
-			Com_DPrintf ("Cannot find image %s.*\n", name);
+			Com_DPrintf ("Cannot find image %s.*\n", buf);
 			return NULL;
 		}
 
@@ -401,44 +394,42 @@ image_t	*R_FindImage (char *name, imagetype_t type)
 			fmt = IMAGE_WAL;
 		else
 		{
-			Com_WPrintf ("Unrecognized image extension: %s\n", name);
+			Com_WPrintf ("Unrecognized image extension: %s\n", buf);
 			return NULL;
 		}
 	}
 
 	if (fmt & IMAGE_TGA)
 	{
-		LoadTGA (name, &pic, &width, &height);
+		LoadTGA (buf, &pic, &width, &height);
 		bits = 32;
 	}
 	else if (fmt & IMAGE_JPG)
 	{
-		LoadJPG (name, &pic, &width, &height);
+		LoadJPG (buf, &pic, &width, &height);
 		bits = 32;
 	}
 	else if (fmt & IMAGE_PCX)
 	{
-		LoadPCX (name, &pic, &palette, &width, &height);
+		LoadPCX (buf, &pic, &palette, &width, &height);
 		bits = 8;
 	}
 	else if (fmt & IMAGE_WAL)
-		image = R_LoadWal (name);
+		image = R_LoadWal (buf);
 
 	if (pic)
 	{
-		bool iswall;
-
-		iswall = (type == it_wall);
+		bool iswall = (type == it_wall);
 		if (bits == 32)
 			R_DownsampleImage (&pic, width, height, iswall);
 		if (iswall)
-			image = R_LoadTex (name, pic, width, height);
+			image = R_LoadTex (buf, pic, width, height);
 		else
-			image = R_LoadPic (name, pic, width, height, type);
+			image = R_LoadPic (buf, pic, width, height, type);
 	}
 
 	if (!image)
-		Com_WPrintf ("Cannot load texture %s\n", name);
+		Com_WPrintf ("Cannot load texture %s\n", buf);
 
 	if (pic)
 		appFree(pic);
@@ -446,17 +437,6 @@ image_t	*R_FindImage (char *name, imagetype_t type)
 		appFree(palette);
 
 	return image;
-}
-
-
-/*
-===============
-R_RegisterSkin
-===============
-*/
-struct image_s *R_RegisterSkin (char *name)
-{
-	return R_FindImage (name, it_skin);
 }
 
 

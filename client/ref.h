@@ -189,22 +189,22 @@ typedef struct
 	// are flood filled to eliminate mip map edge errors, and pics have
 	// an implicit "pics/" prepended to the name. (a pic name that starts with a
 	// slash will not use the "pics/" prefix or the ".pcx" postfix)
-	void	(*BeginRegistration) (char *map);
-	struct model_s *(*RegisterModel) (char *name);
-	struct image_s *(*RegisterSkin) (char *name);
-	struct image_s *(*RegisterPic) (char *name);
-	void	(*SetSky) (char *name, float rotate, vec3_t axis);
+	void	(*BeginRegistration) (const char *map);
+	struct model_s *(*RegisterModel) (const char *name);
+	struct image_s *(*RegisterSkin) (const char *name);
+	struct image_s *(*RegisterPic) (const char *name);
+	void	(*SetSky) (const char *name, float rotate, vec3_t axis);
 	void	(*EndRegistration) (void);
 
 	void	(*RenderFrame) (refdef_t *fd);
-	void	(*Screenshot) (int flags, char *name);
+	void	(*Screenshot) (int flags, const char *name);
 
-	void	(*ReloadImage) (char *name);
-	void	(*DrawGetPicSize) (int *w, int *h, char *name);	// will return (0, 0) if not found
-	void	(*DrawPic) (int x, int y, char *pic, int color = C_WHITE);
-	void	(*DrawStretchPic) (int x, int y, int w, int h, char *name);
+	void	(*ReloadImage) (const char *name);
+	void	(*DrawGetPicSize) (int *w, int *h, const char *name);	// will return (0, 0) if not found
+	void	(*DrawPic) (int x, int y, const char *pic, int color = C_WHITE);
+	void	(*DrawStretchPic) (int x, int y, int w, int h, const char *name);
 	void	(*DrawChar) (int x, int y, int c, int color = C_WHITE);
-	void	(*DrawTileClear) (int x, int y, int w, int h, char *name);
+	void	(*DrawTileClear) (int x, int y, int w, int h, const char *name);
 	void	(*DrawFill) (int x, int y, int w, int h, int c);
 	void	(*DrawFill2) (int x, int y, int w, int h, unsigned rgba);
 
@@ -219,9 +219,9 @@ typedef struct
 	void	(*AppActivate) (bool activate);
 
 	/*---- drawing colored text in any screen position ----*/
-	void	(*DrawTextPos) (int x, int y, char *text, unsigned rgba);
-	void	(*DrawTextLeft) (char *text, unsigned rgba);
-	void	(*DrawTextRight) (char *text, unsigned rgba);
+	void	(*DrawTextPos) (int x, int y, const char *text, unsigned rgba);
+	void	(*DrawTextLeft) (const char *text, unsigned rgba);
+	void	(*DrawTextRight) (const char *text, unsigned rgba);
 
 	/*---- draw char at (x,y) (char-related coordinates) ----*/
 	void	(*DrawConChar) (int x, int y, int c, int color = C_WHITE);

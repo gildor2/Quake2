@@ -417,10 +417,19 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 		switch (tcmod->type)
 		{
 		case TCMOD_SCROLL:
-			f1 = tcmod->sSpeed * vp.time;
-			f1 = f1 - floor (f1);
-			f2 = tcmod->tSpeed * vp.time;
-			f2 = f2 - floor (f2);
+		case TCMOD_OFFSET:
+			if (tcmod->type == TCMOD_SCROLL)
+			{
+				f1 = tcmod->sSpeed * vp.time;
+				f1 = f1 - floor (f1);		// frac(f1)
+				f2 = tcmod->tSpeed * vp.time;
+				f2 = f2 - floor (f2);		// frac(f2)
+			}
+			else
+			{
+				f1 = tcmod->sOffset;
+				f2 = tcmod->tOffset;
+			}
 			for (k = 0; k < gl_numVerts; k++, dst++)
 			{
 				dst->tex[0] += f1;
@@ -536,7 +545,8 @@ static int			numRenderPasses;
 
 #ifndef LOG_PP
 #	ifdef SPY_SHADER
-#		define LOG_PP(x)	if (spy) DrawTextLeft(x,RGB(0.3,0.6,0.6))
+#		define LOG_PP(x)	if (spy) DrawTextLeft(x,RGB(0.3,0.6,0.6));
+		// NOTE: when LOG_PP() placed inside "if" operator, we should use {} around LOG_PP() (because LOG_PP have own "if")
 #	else
 #		define LOG_PP(x)
 #		define NO_LOG_PP
@@ -562,7 +572,7 @@ static void PreprocessShader (shader_t *sh)
 
 		spy = false;
 		mask = gl_spyShader->string;
-		if (mask[0] && !(mask[0] == '0' && mask[1] == 0))
+		if ((mask[0] && mask[1]) || mask[0] == '*')		// string >= 2 chars or "*"
 			spy = MatchWildcard (sh->name, mask, false);
 	}
 #endif
@@ -705,6 +715,37 @@ static void PreprocessShader (shader_t *sh)
 
 		st++;
 		numTmpStages++;
+	}
+
+	// override current shader when displaying fillrate
+	if (gl_showFillRate->integer && GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|
+		QGL_ARB_TEXTURE_ENV_ADD|QGL_NV_TEXTURE_ENV_COMBINE4|QGL_ATI_TEXTURE_ENV_COMBINE3))	// requires env add caps
+	{
+		numTmpStages = 2;
+		//---- 1st stage: color.red == fillrate
+		// color
+		tmpSt[0].st.rgbGenType = RGBGEN_CONST;
+		tmpSt[0].st.alphaGenType = ALPHAGEN_CONST;
+		tmpSt[0].st.rgbaConst.rgba = RGB255(sh->numStages * 16, 0, 0);
+		// texture
+		tmpSt[0].st.tcGenType = TCGEN_TEXTURE;	// any
+		tmpSt[0].st.numTcMods = 0;
+		tmpSt[0].st.numAnimTextures = 1;
+		tmpSt[0].st.mapImage[0] = NULL;
+		// glState
+		tmpSt[0].st.glState = GLSTATE_SRC_ONE|GLSTATE_DST_ONE|GLSTATE_NODEPTHTEST;
+		//---- 2nd stage: display wireframe with non-red color
+		// color
+		tmpSt[1].st.rgbGenType = RGBGEN_CONST;
+		tmpSt[1].st.alphaGenType = ALPHAGEN_CONST;
+		tmpSt[1].st.rgbaConst.rgba = RGB255(0, 10, 10);
+		// texture
+		tmpSt[1].st.tcGenType = TCGEN_TEXTURE;	// any
+		tmpSt[1].st.numTcMods = 0;
+		tmpSt[1].st.numAnimTextures = 1;
+		tmpSt[1].st.mapImage[0] = NULL;
+		// glState
+		tmpSt[1].st.glState = GLSTATE_SRC_ONE|GLSTATE_DST_ONE|GLSTATE_NODEPTHTEST|GLSTATE_POLYGON_LINE;
 	}
 
 	entityLightingDone = false;
@@ -1004,14 +1045,16 @@ static void PreprocessShader (shader_t *sh)
 					"E.c", "(1-E.c)", "C", "(1-C)", "0", "1"
 				};
 #define ENV_NAME(x)		envNames[(env >> TEXENV_SRC##x##_SHIFT) & TEXENV_SRC_MASK]
-#endif
-				st[1].texEnv = env;
-				if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4))
+
+				if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4)) {
 					LOG_PP(va("  MT(NV): %X -> %08X == %s x %s + %s x %s\n", blend2, env,
 						ENV_NAME(0), ENV_NAME(1), ENV_NAME(2), ENV_NAME(3)));
-				else // if (GL_SUPPORT(QGL_ATI_TEXTURE_ENV_COMBINE3))
+				} else { // if (GL_SUPPORT(QGL_ATI_TEXTURE_ENV_COMBINE3))
 					LOG_PP(va("  MT(ATI): %X -> %08X == %s x %s + %s\n", blend2, env,
 						ENV_NAME(0), ENV_NAME(2), ENV_NAME(1)));
+				}
+#endif // NO_LOG_PP
+				st[1].texEnv = env;
 				pass->numStages++;
 				continue;
 			}
@@ -1130,10 +1173,10 @@ static void StageIterator (void)
 		GL_State (pass->glState);
 		GL_Unlock ();
 
-		//!! don't works
-		if (i == numRenderPasses - 1 && !(vp.flags & RDF_NOWORLDMODEL)
+		//!! glFog don't works with multi-pass rendering
+		if (i == numRenderPasses - 1 && gl_state.haveFullScreen3d && !gl_showFillRate->integer
 			&& currentShader->type == SHADERTYPE_NORMAL && !gl_state.is2dMode)
-			GL_EnableFog (true);
+			GL_EnableFog (true);	//!!! else GL_DisableFog()!!!
 
 		glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 	}
@@ -1217,7 +1260,7 @@ static void DrawSkyBox (void)
 	vec3_t	tmp, tmp1, up, right;
 
 	LOG_STRING ("*** DrawSkyBox() ***\n");
-	if (gl_fastSky->integer) return;
+	if (gl_state.useFastSky) return;
 
 	// build frustum cover
 	VectorMA (vp.vieworg, SKY_FRUST_DIST, vp.viewaxis[0], tmp);
@@ -2233,13 +2276,17 @@ void GL_BackEnd (void)
 			if (gl_finish->integer) glFinish ();
 #endif
 
-			glDrawBuffer (stricmp (gl_drawbuffer->string, "GL_FRONT") ? GL_BACK : GL_FRONT);
 			if (gl_config.consoleOnly)
 			{
 				glClearColor (0, 0.2, 0, 1);
 				glClear (GL_COLOR_BUFFER_BIT);
 			}
-			else if (gl_clear->integer)
+			else if (gl_state.useFastSky && !gl_state.haveFullScreen3d)
+			{
+				glClearColor (0, 0, 0, 1);
+				glClear (GL_COLOR_BUFFER_BIT);
+			}
+			else if (gl_clear->integer && !gl_state.useFastSky)	// HERE: if useFastSky==true, then haveFullScreen3d==true too
 			{
 				glClearColor (0.1, 0.6, 0.3, 1);
 				glClear (GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);

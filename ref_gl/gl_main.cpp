@@ -25,7 +25,6 @@ cvar_t	*gl_mode, *gl_bitdepth;
 cvar_t	*gl_driver;
 // GLimp
 cvar_t	*gl_allow_software;	//??
-cvar_t	*gl_drawbuffer;
 
 // image-specific
 cvar_t	*gl_nobind;
@@ -37,11 +36,11 @@ cvar_t	*gl_texMipBias, *gl_skinMipBias;
 cvar_t	*gl_texturemode;
 
 // rendering speed/quality settings
-cvar_t	*gl_fastSky;		// do not draw skybox
+static cvar_t *gl_fastSky;	// do not draw skybox
 cvar_t	*gl_fog;			//??
 
 cvar_t	*gl_flares;
-cvar_t	*gl_dynamic;		// enable dynamic lightmaps for Q2/HL maps
+cvar_t	*gl_dynamic;		// enable dynamic lightmaps for Q2/HL maps + dlights
 cvar_t	*gl_dlightBacks;	// when disabled, do not draw dlights on backfaces
 cvar_t	*gl_vertexLight;	// use glColor() against lightmaps
 cvar_t	*gl_noGrid;
@@ -67,26 +66,34 @@ cvar_t	*gl_sortAlpha;
 cvar_t	*gl_labels;
 cvar_t	*gl_lightLines, *gl_showLights;
 cvar_t	*gl_singleShader;
+cvar_t	*gl_showFillRate;
 
 static cvar_t	*gl_logTexts;
 
 
 static void ClearTexts (void);
-void DrawTexts (void);
+void FlushTexts (void);
 
 
-static void Gfxinfo_f (void)
+static void Gfxinfo_f (bool usage, int argc, char **argv)
 {
 	static const char *boolNames[] = {"no", "yes"};
 	static const char *overbrNames[2][2] = {"disabled", "forced", "unneeded", "required"};
+
+	if (argc > 2 || usage)
+	{
+		Com_Printf ("Usage: gfxinfo [extension_mask]");
+		return;
+	}
+	char *mask = (argc == 2) ? argv[1] : NULL;
 
 	Com_Printf (S_RED"---------- OpenGL info ----------\n");
 	Com_Printf (S_RED"Vendor:  "S_WHITE" %s\n", glGetString (GL_VENDOR));
 	Com_Printf (S_RED"Renderer:"S_WHITE" %s\n", glGetString (GL_RENDERER));
 	Com_Printf (S_RED"Version: "S_WHITE" %s\n", glGetString (GL_VERSION));
-	QGL_PrintExtensionsString ("Base", gl_config.extensions);
+	QGL_PrintExtensionsString ("Base", gl_config.extensions, mask);
 	if (gl_config.extensions2)
-		QGL_PrintExtensionsString ("Platform", gl_config.extensions2);
+		QGL_PrintExtensionsString ("Platform", gl_config.extensions2, mask);
 	Com_Printf (S_RED"---------------------------------\n");
 	// multitexturing
 	Com_Printf ("Multitexturing: ");
@@ -135,7 +142,7 @@ static void GL_Register (void)
  * If cvar have "CVAR_UPDATE" flag, its value will be re-analyzed (settings, which are (potentially) inactive by defaults)
  */
 CVAR_BEGIN(vars)
-	CVAR_VAR(gl_texturemode, GL_LINEAR_MIPMAP_NEAREST, CVAR_ARCHIVE),
+	CVAR_VAR(gl_texturemode, bilinear, CVAR_ARCHIVE),
 	CVAR_VAR(gl_texMipBias, -0.5, CVAR_ARCHIVE),
 	CVAR_VAR(gl_skinMipBias, -1, CVAR_ARCHIVE),
 	CVAR_VAR(r_ignorehwgamma, 0, CVAR_ARCHIVE),
@@ -161,16 +168,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_driver, opengl32, CVAR_ARCHIVE),			//?? use different gl_driver default value for Linux
 	CVAR_VAR(gl_mode, 3, CVAR_ARCHIVE),
 
-	CVAR_NULL(gl_ext_multitexture, 1, CVAR_ARCHIVE),
 	CVAR_VAR(gl_maxTextureUnits, 0, CVAR_ARCHIVE),
-	CVAR_NULL(gl_ext_texture_env_add, 1, CVAR_ARCHIVE),
-	CVAR_NULL(gl_ext_texture_env_combine, 1, CVAR_ARCHIVE),
-	CVAR_NULL(gl_ext_texture_env_combine_nv, 1, CVAR_ARCHIVE),
-	CVAR_NULL(gl_ext_texture_env_combine_ati, 1, CVAR_ARCHIVE),
-	CVAR_NULL(gl_ext_compiled_vertex_array, 1, CVAR_ARCHIVE),
-	CVAR_NULL(gl_ext_texture_rectangle, 1, CVAR_ARCHIVE),
-	CVAR_NULL(gl_ext_fog_distance_nv, 1, CVAR_ARCHIVE),
-	CVAR_NULL(gl_ext_compressed_textures, 1, CVAR_ARCHIVE),
 
 	CVAR_VAR(gl_nobind, 0, 0),
 	CVAR_VAR(gl_logFile, 0, 0),
@@ -187,22 +185,21 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_lightLines, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showLights, 0, 0),
 	CVAR_VAR(gl_singleShader, 0, CVAR_CHEAT),
+	CVAR_VAR(gl_showFillRate, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_logTexts, 0, 0),
 	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE),
 
 	CVAR_VAR(gl_allow_software, 0, 0),
-	CVAR_VAR(gl_drawbuffer, GL_BACK, 0)
 CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 
-	Cmd_AddCommand ("gfxinfo", Gfxinfo_f);
+	RegisterCommand ("gfxinfo", Gfxinfo_f);
 }
 
 
 static bool GL_SetMode (void)
 {
-	rserr_t err;
 	bool	fullscreen;
 
 	fullscreen = r_fullscreen->integer != 0;
@@ -210,36 +207,34 @@ static bool GL_SetMode (void)
 	r_fullscreen->modified = false;
 	gl_mode->modified = false;
 
-	if ((err = GLimp_SetMode (&vid.width, &vid.height, gl_mode->integer, fullscreen)) == rserr_ok)
+	switch (GLimp_SetMode (&vid.width, &vid.height, gl_mode->integer, fullscreen))
 	{
+	case rserr_ok:
 		gl_config.prevMode = gl_mode->integer;
 		gl_config.prevBPP = gl_bitdepth->integer;
 		gl_config.prevFS = gl_config.fullscreen;
-	}
-	else
-	{
-		if (err == rserr_invalid_fullscreen)
-		{
-			Cvar_SetInteger ("r_fullscreen", 0);
-			r_fullscreen->modified = false;
-			Com_WPrintf ("R_SetMode() - fullscreen unavailable in this mode\n");
-			if ((err = GLimp_SetMode (&vid.width, &vid.height, gl_mode->integer, false)) == rserr_ok)
-				return true;
-		}
-		else if (err == rserr_invalid_mode)
-		{
-			Cvar_SetInteger ("gl_mode", gl_config.prevMode);
-			Cvar_SetInteger ("gl_bitdepth", gl_config.prevBPP);
-			gl_mode->modified = false;
-			Com_WPrintf ("R_SetMode() - invalid mode\n");
-		}
+		return true;
 
-		// try setting it back to something safe
-		if ((err = GLimp_SetMode (&vid.width, &vid.height, gl_config.prevMode, gl_config.prevFS)) != rserr_ok)
-		{
-			Com_WPrintf ("R_SetMode() - could not revert to safe mode\n");	//?? "to previous mode" ? (but, here will be mode "3")
-			return false;
-		}
+	case rserr_invalid_fullscreen:
+		Cvar_SetInteger ("r_fullscreen", 0);
+		r_fullscreen->modified = false;
+		Com_WPrintf ("R_SetMode() - fullscreen unavailable in this mode\n");
+		if (GLimp_SetMode (&vid.width, &vid.height, gl_mode->integer, false) == rserr_ok)
+			return true;
+		break;
+
+	case rserr_invalid_mode:
+		Cvar_SetInteger ("gl_mode", gl_config.prevMode);
+		Cvar_SetInteger ("gl_bitdepth", gl_config.prevBPP);
+		gl_mode->modified = false;
+		Com_WPrintf ("R_SetMode() - invalid mode\n");
+	}
+
+	// try setting it back to something safe
+	if (GLimp_SetMode (&vid.width, &vid.height, gl_config.prevMode, gl_config.prevFS) != rserr_ok)
+	{
+		Com_WPrintf ("R_SetMode() - could not revert to safe mode\n");	//?? "to previous mode" ? (but, here will be mode "3")
+		return false;
 	}
 	return true;
 }
@@ -249,7 +244,7 @@ static int GL_Init (void)
 {
 	guard(GL_Init);
 
-	Com_Printf ("--- Initializing OpenGL renderer ---\n");
+	Com_Printf ("\n--- Initializing OpenGL renderer ---\n");
 
 	GL_Register ();
 
@@ -380,7 +375,7 @@ static void GL_Shutdown (void)
 {
 	guard(GL_Shutdown);
 
-	Cmd_RemoveCommand ("gfxinfo");
+	UnregisterCommand ("gfxinfo");
 
 	GL_ShutdownBackend ();
 	GL_ShutdownModels ();
@@ -412,7 +407,7 @@ void GL_EnableRendering (bool enable)
 
 /*---------------- Backend helpers ----------------------*/
 
-static void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color)
+void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color)
 {
 	PUT_BACKEND_COMMAND (bkDrawPic_t, p);
 	p->type = BACKEND_PIC;
@@ -466,12 +461,14 @@ static void GL_BeginFrame (float camera_separation)
 
 	if (gl_finish->integer == 2) glFinish ();
 	gl_speeds.beginFrame = Sys_Milliseconds ();
-	gl_speeds.numFrames = 0;
 
 	//?? what to do with the camera_separation ?
 
-	gl_state.have3d = false;
+	gl_state.have3d = gl_state.haveFullScreen3d = false;
 	gl_state.maxUsedShaderIndex = -1;
+	//?? useFastSky: when gl_fastSky!=0 - should clear screen only when at least one of sky surfaces visible
+	//?? (perform glClear() in DrawSkyBox() ?)
+	gl_state.useFastSky = gl_fastSky->integer || (r_fullbright->integer && r_lightmap->integer) || gl_showFillRate->integer;
 
 	if (gl_texturemode->modified)
 	{
@@ -505,7 +502,7 @@ static void GL_EndFrame (void)
 {
 	if (!gl_renderingEnabled) return;
 
-	if (!gl_speeds.numFrames) ClearTexts ();
+	if (!gl_state.have3d) ClearTexts ();
 
 //	DrawTextRight ("---------EndFrame---------\n", RGB(1,0,0));
 	{
@@ -519,14 +516,16 @@ static void GL_EndFrame (void)
 
 	if (gl_finish->integer == 2) glFinish ();
 	gl_speeds.endFrame = Sys_Milliseconds ();
-	if (r_speeds->integer && gl_speeds.beginFrame <= gl_speeds.begin3D)	// draw only when have 3D on screen
+	if (r_speeds->integer && gl_state.have3d)	// draw only when have 3D on screen
 	{
+#define S gl_speeds
 		DrawTextRight (va("fe: %2d bk: %2d (srt: %2d 3d: %2d 2d: %2d)",
-			gl_speeds.beginSort - gl_speeds.beginFrame,
-			gl_speeds.endFrame - gl_speeds.beginSort,
-			gl_speeds.begin3D - gl_speeds.beginSort,
-			gl_speeds.begin2D - gl_speeds.begin3D,
-			gl_speeds.endFrame - gl_speeds.begin2D
+			S.beginSort - S.beginFrame,
+			S.endFrame - S.beginSort,
+			S.begin3D - S.beginSort,
+			S.begin2D - S.begin3D,
+			S.endFrame - S.begin2D
+#undef S
 			), RGB(1,0.5,0));
 	}
 }
@@ -728,6 +727,8 @@ static void GL_RenderFrame (refdef_t *fd)
 
 	/*------------ rendering -------------*/
 
+	gl_state.haveFullScreen3d = (vp.x == 0) && (vp.y == 0) && (vp.w == vid.width) && (vp.h == vid.height);
+
 	// setup viewPortal structure
 	memset (&vp, 0, sizeof(vp));
 	vp.flags = fd->rdflags;
@@ -792,37 +793,43 @@ static void GL_RenderFrame (refdef_t *fd)
 
 	/*------------ debug info ------------*/
 
-	gl_speeds.numFrames++;
 	if (r_speeds->integer)
 	{
-		DrawTextRight (va("visLeafs: %d frLeafs: %d total: %d",
-			gl_speeds.visLeafs, gl_speeds.frustLeafs, gl_speeds.leafs), RGB(1,0.5,0));
-		DrawTextRight (va("surfs: %d culled: %d",
-			gl_speeds.surfs, gl_speeds.cullSurfs), RGB(1,0.5,0));
-		DrawTextRight (va("tris: %d (+%d) mtex: %1.2f",
-			gl_speeds.trisMT, gl_speeds.tris2D, gl_speeds.trisMT ? (float)gl_speeds.tris / gl_speeds.trisMT : 0), RGB(1,0.5,0));
-		DrawTextRight (va("ents: %d fcull: %d+%d cull: %d ocull: %d",
-			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEntsBox, gl_speeds.cullEnts2, gl_speeds.ocullEnts), RGB(1,0.5,0));
-		DrawTextRight (va("particles: %d cull: %d",
-			gl_speeds.parts, gl_speeds.cullParts), RGB(1,0.5,0));
-		DrawTextRight (va("dlights: %d surfs: %d verts: %d",
-			gl_numDlights, gl_speeds.dlightSurfs, gl_speeds.dlightVerts), RGB(1,0.5,0));
-		DrawTextRight (va("flares: %d test: %d cull: %d lgrid: %d/%d",
-			gl_speeds.flares, gl_speeds.testFlares, gl_speeds.cullFlares,
-			map.numLightCells, map.mapGrid[0]*map.mapGrid[1]*map.mapGrid[2]), RGB(1,0.5,0));
-		DrawTextRight (va("binds: %d uploads: %2d draws: %d",
-			gl_speeds.numBinds, gl_speeds.numUploads, gl_speeds.numIterators), RGB(1,0.5,0));
+#define S gl_speeds
+		int lgridSize = map.mapGrid[0]*map.mapGrid[1]*map.mapGrid[2];
+		if (!lgridSize) lgridSize = 1;	// to avoid zero divide
+		DrawTextRight (va(
+			"leafs: vis: %-3d fr: %-3d total: %d\n"
+			"surfs: %d culled: %d\n"
+			"tris: %d (+%d) mtex: %1.2f\n"
+			"ents: %d fcull: %d+%d cull: %d ocull: %d\n"
+			"particles: %d cull: %d\n"
+			"dlights: %d surfs: %d verts: %d\n"
+			"flares: %d test: %d cull: %d\n"
+			"lightgrid: %d/%d (%.1f%%)\n"		//?? add memory size too
+			"binds: %d uploads: %2d draws: %d",
+			S.visLeafs, S.frustLeafs, S.leafs,
+			S.surfs, S.cullSurfs,
+			S.trisMT, S.tris2D, S.trisMT ? (float)S.tris / S.trisMT : 0,
+			S.ents, S.cullEnts, S.cullEntsBox, S.cullEnts2, S.ocullEnts,
+			S.parts, S.cullParts,
+			gl_numDlights, S.dlightSurfs, S.dlightVerts,
+			S.flares, S.testFlares, S.cullFlares,
+			map.numLightCells, lgridSize, (float)map.numLightCells / lgridSize * 100,
+			S.numBinds, S.numUploads, S.numIterators
+			), RGB(1,0.5,0));
 
 		/* perform clearing after displaying, so, we will see speeds of previous frame
 		 * (some data will be set up in EndFrame()->BackEnd())
 		 */
-		gl_speeds.surfs = gl_speeds.cullSurfs = 0;
-		gl_speeds.tris = gl_speeds.trisMT = gl_speeds.tris2D = 0;
-		gl_speeds.numBinds = gl_speeds.numUploads = 0;
-		gl_speeds.numIterators = 0;
+		S.surfs = S.cullSurfs = 0;
+		S.tris = S.trisMT = S.tris2D = 0;
+		S.numBinds = S.numUploads = 0;
+		S.numIterators = 0;
+#undef S
 	}
 
-	DrawTexts ();
+	FlushTexts ();
 }
 
 
@@ -849,18 +856,15 @@ static unsigned colorTable[8] = {
 
 static void DrawChar (int x, int y, int c, int color)
 {
-	bkDrawText_t *p;
-	unsigned col;
-
 	if (c == ' ') return;
 
-	col = colorTable[color];
+	unsigned col = colorTable[color];
+	bkDrawText_t *p = (bkDrawText_t*)lastBackendCommand;
 
-	p = (bkDrawText_t*)lastBackendCommand;
 	if (p && p->type == BACKEND_TEXT &&
 		p->c.rgba == col &&
-		p->w == 8 && p->h == 8 &&
-		p->y == y && (p->x + p->len * 8) == x)
+		p->w == CHAR_WIDTH && p->h == CHAR_HEIGHT &&
+		p->y == y && (p->x + p->len * CHAR_WIDTH) == x)
 	{
 		if (GET_BACKEND_SPACE(1))
 		{
@@ -892,17 +896,16 @@ static void	DrawConChar (int x, int y, int c, int color)
 
 /*--------------------- 2D picture output ---------------------*/
 
-static shader_t *FindPic (char *name, bool force)
+static shader_t *FindPic (const char *name, bool force)
 {
-	char	*s;
-	int		flags;
+	const char *s;
 
 	if (name[0] != '/' && name[0] != '\\')	//?? is '\\' needed
 		s = va("pics/%s.pcx", name);
 	else
 		s = name+1;		// skip '/'
 
-	flags = SHADER_ALPHA|SHADER_CLAMP;
+	int flags = SHADER_ALPHA|SHADER_CLAMP;
 	if (!force) flags |= SHADER_CHECK;
 	return GL_FindShader (s, flags);
 }
@@ -918,10 +921,9 @@ static void DrawFill2 (int x, int y, int w, int h, unsigned rgba)
 	GL_DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, rgba);
 }
 
-static void DrawTileClear (int x, int y, int w, int h, char *name)
+static void DrawTileClear (int x, int y, int w, int h, const char *name)
 {
-	char	*s;
-	shader_t *sh;
+	const char *s;
 
 	// FindPic() without SHADER_CLAMP
 	if (name[0] != '/' && name[0] != '\\')
@@ -929,7 +931,7 @@ static void DrawTileClear (int x, int y, int w, int h, char *name)
 	else
 		s = name+1;		// skip '/'
 
-	sh = GL_FindShader (s, SHADER_CHECK);
+	shader_t *sh = GL_FindShader (s, SHADER_CHECK);
 	if (sh)
 		GL_DrawStretchPic (sh, x, y, w, h, (float)x / sh->width, (float)y / sh->height,
 			(float)(x + w) / sh->width, (float)(y + h) / sh->height, colorTable[7]);
@@ -938,27 +940,23 @@ static void DrawTileClear (int x, int y, int w, int h, char *name)
 }
 
 
-static void DrawStretchPic (int x, int y, int w, int h, char *name)
+static void DrawStretchPic (int x, int y, int w, int h, const char *name)
 {
 	GL_DrawStretchPic (FindPic (name, true), x, y, w, h, 0, 0, 1, 1, colorTable[7]);
 }
 
 
-static void DrawPic (int x, int y, char *name, int color)
+static void DrawPic (int x, int y, const char *name, int color)
 {
-	shader_t *sh;
-
-	sh = FindPic (name, true);
+	shader_t *sh = FindPic (name, true);
 	if (color < 0 || color > 7) color = 7;
 	GL_DrawStretchPic (sh, x, y, sh->width, sh->height, 0, 0, 1, 1, colorTable[color]);
 }
 
 
-static void GetPicSize (int *w, int *h, char *name)
+static void GetPicSize (int *w, int *h, const char *name)
 {
-	shader_t *sh;
-
-	sh = FindPic (name, false);
+	shader_t *sh = FindPic (name, false);
 	if (sh)
 	{
 		if (w) *w = sh->width;
@@ -983,7 +981,7 @@ static void GetPicSize (int *w, int *h, char *name)
 
 typedef struct textRec_s
 {
-	int		x, y;
+	short	x, y;
 	color_t	c;
 	char	*text;
 	struct textRec_s *next;
@@ -992,7 +990,7 @@ typedef struct textRec_s
 
 static char	textbuf[TEXTBUF_SIZE];
 static int	textbufPos;			// position for next record
-static int	textbufCount;		// count of records in buffer (0 or greater)
+static bool	textbufEmpty;		// count of records in buffer (0 or greater)
 static textRec_t *lastTextRec;
 
 static int nextLeft_y = TOP_TEXT_POS;
@@ -1002,22 +1000,42 @@ static int nextRight_y = TOP_TEXT_POS;
 static void ClearTexts (void)
 {
 	nextLeft_y = nextRight_y = TOP_TEXT_POS;
-	textbufCount = 0;
+	textbufEmpty = true;
 }
 
 
-static void DrawTexts (void)
+//?? later (CFont): implement as CFont method
+static void GetTextExtents (const char *s, int &width, int &height)
+{
+	int		x, w, h;
+	x = w = 0;
+	h = CHARSIZE_Y;
+	while (char c = *s++)
+	{
+		if (c == '\n')
+		{
+			if (x > w) w = x;
+			x = 0;
+			h += CHARSIZE_Y;
+			continue;
+		}
+		x += CHARSIZE_X;
+	}
+	width = max(x, w);
+	height = h;
+}
+
+
+static void FlushTexts (void)
 {
 	textRec_t *rec;
 
 	nextLeft_y = nextRight_y = TOP_TEXT_POS;
-	if (!textbufCount) return;
+	if (textbufEmpty) return;
 
 	for (rec = (textRec_t*)textbuf; rec; rec = rec->next)
 	{
-		int		len;
-
-		len = strlen (rec->text);
+		int len = strlen (rec->text);
 		if (!len) continue;
 
 		if (gl_logTexts->integer)
@@ -1038,90 +1056,86 @@ static void DrawTexts (void)
 	if (gl_logTexts->integer == 2)				// special value: log only 1 frame
 		Cvar_SetInteger ("gl_logTexts", 0);
 
-	textbufCount = 0;
+	textbufEmpty = true;
 }
 
 
-static void DrawTextPos (int x, int y, char *text, unsigned rgba)
+static void DrawTextPos (int x, int y, const char *text, unsigned rgba)
 {
-	int size;
-	char *textCopy;
-	textRec_t *rec;
-
 	if (!text || !*text) return;	// empty text
-	if (!textbufCount)
+
+	if (textbufEmpty)
 	{	// 1st record - perform initialization
 		lastTextRec = NULL;
 		textbufPos = 0;
-		rec = (textRec_t*) textbuf;
+		textbufEmpty = false;
 	}
-	else
-		rec = (textRec_t*) &textbuf[textbufPos];
 
-	size = sizeof(textRec_t) + strlen (text) + 1;
-	if (size + textbufPos > TEXTBUF_SIZE) return;	// out of buffer space
+	while (true)
+	{
+		textRec_t *rec = (textRec_t*) &textbuf[textbufPos];
+		const char *s = strchr (text, '\n');
+		int len = s ? s - text : strlen (text);
 
-	textCopy = (char*)rec + sizeof(textRec_t);
-	strcpy (textCopy, text);
-	rec->x = x;
-	rec->y = y;
-	rec->text = textCopy;
-	rec->c.rgba = rgba;
-	rec->next = NULL;
+		if (len)
+		{
+			int size = sizeof(textRec_t) + len + 1;
+			if (size + textbufPos > TEXTBUF_SIZE) return;	// out of buffer space
 
-	if (lastTextRec) lastTextRec->next = rec;
-	lastTextRec = rec;
-	textbufPos += size;
-	textbufCount++;
+			char *textCopy = (char*)rec + sizeof(textRec_t);
+			memcpy (textCopy, text, len);
+			textCopy[len] = 0;
+			rec->x = x;
+			rec->y = y;
+			rec->text = textCopy;
+			rec->c.rgba = rgba;
+			rec->next = NULL;
+
+			if (lastTextRec) lastTextRec->next = rec;
+			lastTextRec = rec;
+			textbufPos += size;
+		}
+		y += CHARSIZE_Y;
+		if (s)
+			text = s + 1;
+		else
+			return;
+	}
 }
 
 
-void DrawTextLeft (char *text, unsigned rgba)
+void DrawTextLeft (const char *text, unsigned rgba)
 {
+	int		w, h;
 	if (nextLeft_y >= vid.height) return;	// out of screen
+	GetTextExtents (text, w, h);
 	DrawTextPos (0, nextLeft_y, text, rgba);
-	nextLeft_y += CHARSIZE_Y;
+	nextLeft_y += h;
 }
 
 
-void DrawTextRight (char *text, unsigned rgba)
+void DrawTextRight (const char *text, unsigned rgba)
 {
+	int		w, h;
 	if (nextRight_y >= vid.height) return;	// out of screen
-	DrawTextPos (vid.width - strlen(text) * CHARSIZE_X, nextRight_y, text, rgba);
-	nextRight_y += CHARSIZE_Y;
+	GetTextExtents (text, w, h);
+	DrawTextPos (vid.width - w, nextRight_y, text, rgba);
+	nextRight_y += h;
 }
 
 
-void DrawText3D (vec3_t pos, char *text, unsigned rgba)
+void DrawText3D (vec3_t pos, const char *text, unsigned rgba)
 {
 	int		coords[2];
 
 	if (!ProjectToScreen (pos, coords)) return;
-
-	do
-	{
-		char	buf[256], *next;
-		int		len;
-
-		next = strchr (text, '\n');
-		if (next)
-		{
-			len = next - text + 1;
-			if (len > sizeof(buf)) len = sizeof(buf);
-			Q_strncpyz (buf, text, len);
-			text = buf;
-			next++;		// skip '\n'
-		}
-		DrawTextPos (coords[0], coords[1], text, rgba);
-		text = next;
-		coords[1] += CHARSIZE_Y;
-	} while (text);
+	DrawTextPos (coords[0], coords[1], text, rgba);
 }
 
 
 /*------------------- Model registration ----------------------*/
 
-static void BeginRegistration (char *mapname)
+static void BeginRegistration (const char *mapname)
 {
 	GL_ResetShaders ();				// delete all shaders and re-create auto-shaders
 	GL_LoadWorldMap (va("maps/%s.bsp", mapname));
@@ -1136,18 +1150,16 @@ static void EndRegistration (void)
 }
 
 
-static shader_t *RegisterPic (char *name)
+static shader_t *RegisterPic (const char *name)
 {
 	return FindPic (name, false);
 }
 
 // Reload shader image
-static void ReloadImage (char *name)
+static void ReloadImage (const char *name)
 {
-	shader_t *sh;
-
 	//?? place into gl_shader.c as ReloadShaderImages() (no needs to reload shader script -- for debug only)
-	sh = FindPic (name, false);
+	shader_t *sh = FindPic (name, false);
 	// NOTE: this function will not work with shaders, whose names are differs from image name
 	if (sh && sh->numStages && sh->stages[0]->numAnimTextures)
 	{
@@ -1157,7 +1169,7 @@ static void ReloadImage (char *name)
 }
 
 
-static void SetSky (char *name, float rotate, vec3_t axis)
+static void SetSky (const char *name, float rotate, vec3_t axis)
 {
 	int		i;
 	shader_t *shader, *old;
@@ -1185,11 +1197,12 @@ static void SetSky (char *name, float rotate, vec3_t axis)
 
 	gl_skyShader = shader;
 	// change all sky surfaces
+	//?? is it really needed ? whole map uses at most 1 sky shader, which processed specially
 	for (i = 0, surf = map.faces; i < map.numFaces; i++, surf++)
 		if (surf->shader == old) surf->shader = shader;
 }
 
-static void Screenshot (int flags, char *name)
+static void Screenshot (int flags, const char *name)
 {
 	static char shotName[MAX_QPATH];
 
@@ -1201,7 +1214,7 @@ static void Screenshot (int flags, char *name)
 
 static float GetClientLight (void)
 {
-	return 150;		//!! need to implement
+	return 150;		//!! need to implement (outside renderer !!)
 }
 
 
@@ -1245,8 +1258,8 @@ refExport_t GetRefAPI (const refImport_t * rimp)
 	re.RenderFrame =	GL_RenderFrame;
 	re.BeginRegistration = BeginRegistration;
 	re.RegisterModel =	GL_FindModel;
-	re.RegisterSkin =	(image_t* (*)(char *)) GL_FindSkin;
-	re.RegisterPic =	(image_t* (*)(char *)) RegisterPic;
+	re.RegisterSkin =	(image_t* (*)(const char *)) GL_FindSkin;	//?? conversion
+	re.RegisterPic =	(image_t* (*)(const char *)) RegisterPic;	//?? conversion
 	re.SetSky =			SetSky;
 	re.EndRegistration = EndRegistration;
 
