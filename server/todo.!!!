@@ -1,0 +1,19 @@
+sc_world.c:
+- edict_t: have field "area", which is link_t: 2 pointers; we can use this 2 pointers in our own purposes
+  BUT(!!): used area.prev!=0 for check world link
+  SO: use "edict->area.prev" for link (0 == unlinked), "edict->area.next" - any use
+- SV_LinkEdict: check for requirement of RELINK: need to save edict->entity_state_t (can use edict.s.number as index
+  in server-side edict array) and relink only when needed (most longest operation is CM_BoxLeafnums)
+- SV_ClipMoveToEntities: refine entities with bounding sphere (as in CL_ClipMoveToEntities)
+? add areanode_t.parent (tree structure) and edict_num with counting child edicts; in AreaEdicts stop recursion when
+  areanode have no edicts
+? rename areanode_t to sector_t
+? may be, reimplement areas as 2-dim. array (grid), use edict.area.prev as int: N bits for X and M bits for Y, 0 - unlinked
+  (need a way to specify edicts, which are placed in a few sectors)
+- edict.area.next -- point to structure:
+    entity_state_t oldState   -- for fast relink (relink only when edict moved/rotated)
+    edict_t *entity           -- back link to edict
+    edict_t *sectorNext, *sectorPrev -- double-linked list for enumerating sector edicts
+    ... can be extended more
+  Need to specify MAX_ENTITIES and static array of this structures (LinkEdict: make Com_Error(DROP) when edict.s.number >= MAX_ENTITIES)
+? can remove GPL comment - this is our unit
