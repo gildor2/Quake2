@@ -308,6 +308,7 @@ void	GL_ResetShaders (void);	// should be called every time before loading a new
 #define SHADER_TRYLIGHTMAP	0x0800		// usualy not containing lightmap, but if present - generate it
 #define SHADER_ENVMAP		0x1000		// make additional rendering pass with specular environment map
 #define SHADER_ENVMAP2		0x2000		// add diffuse environment map
+#define SHADER_CLAMP		0x4000		// load image with IMAGE_CLAMP flag
 // styles (hints) valid for FindShader(), buf not stored in shader_t
 #define SHADER_ABSTRACT		0x20000000	// create shader without stages
 #define SHADER_CHECK		0x40000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error

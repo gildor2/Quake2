@@ -429,13 +429,22 @@ Parse ("EmitDefine", "EmitPlatformHDR");
 $i = 1;
 while ($i <= $#numBase)
 {
-	print (CODE "#ifdef ", PlatformDefine ($i), "\n");
+	if ($i == 1) {
+		print (CODE "#if defined(", PlatformDefine ($i), ")\n");
+	} else {
+		print (CODE "#elif defined(", PlatformDefine ($i), ")\n");
+	}
 	printf (CODE "#  define %s\t%d\n", $constname, $numBase[0] + $numBase[$i]);
 	printf (CODE "#  define %s\t%d\n", $constname2, $numExt[0] + $numExt[$i]);
 	printf (CODE "#  define %s\t%d\n", $constname3, $numExtensions[0] + $numExtensions[$i]);
-	print (CODE "#endif\n\n");
 	$i++;
 }
+print (CODE "#else\n");
+printf (CODE "#  define %s\t%d\n", $constname, $numBase[0]);
+printf (CODE "#  define %s\t%d\n", $constname2, $numExt[0]);
+printf (CODE "#  define %s\t%d\n", $constname3, $numExtensions[0]);
+print (CODE "#endif\n\n");
+
 printf (CODE "static char *%sNames[%s + %s] = {", $strucname, $constname, $constname2);
 Parse ("EmitString", "EmitPlatformCODE2");
 print (CODE "\n};\n\n");

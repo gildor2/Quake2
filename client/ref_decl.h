@@ -33,6 +33,11 @@ typedef struct {
 	void	(*_Com_WPrintf) (const char *str, ...);
 	void	(*_Com_FatalError) (const char *fmt, ...);
 	void	(*_Com_DropError) (const char *fmt, ...);
+#ifdef _WIN32
+	int	(*_win32ExceptFilter2) (void);
+#endif
+	void	(*_appUnwindPrefix) (const char *fmt);
+	void	__declspec(noreturn)	(*_appUnwindThrow) (const char *fmt, ...);
 	bool	(*_FS_FileExists) (char *filename);
 	basenamed_t*	(*_FS_ListFiles) (char *name, int *numfiles, int flags);
 	int	(*_FS_LoadFile) (char *name, void **buf);

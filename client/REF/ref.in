@@ -25,7 +25,7 @@ void*	CreateMemoryChain (void);
 void*	AllocChainBlock (void *chain, int size);
 void	FreeMemoryChain (void *chain);
 
-//----- system-dependent ----
+//--- system-dependent ?? ---
 void*	Hunk_Begin (int maxsize);
 void*	Hunk_Alloc (int size);
 int	Hunk_End (void);
@@ -36,8 +36,16 @@ int	Sys_Milliseconds (void);
 void	Com_Printf (const char *str, ...);
 void	Com_DPrintf (const char *str, ...);
 void	Com_WPrintf (const char *str, ...);
+
+//------ error support ------
 void	Com_FatalError (const char *fmt, ...);
 void	Com_DropError (const char *fmt, ...);
+#ifdef _WIN32
+int	win32ExceptFilter2 (void);
+#endif
+void	appUnwindPrefix (const char *fmt);		//!!! rename
+void	__declspec(noreturn) appUnwindThrow (const char *fmt, ...);	//?? noreturn
+
 
 //?? unused now:	void	KeyEvent (int key, qboolean down, unsigned time);
 

@@ -1071,9 +1071,9 @@ void Com_ResetErrorState (void);	//?? Sys_ResetErrorState()
 
 #ifdef WIN32
 
-int win32ExceptFilter2 (void);
-void appUnwindPrefix (const char *fmt);		//!!! rename
-void __declspec(noreturn) appUnwindThrow (const char *fmt, ...);
+//int win32ExceptFilter2 (void);
+//void appUnwindPrefix (const char *fmt);		//!!! rename
+//void __declspec(noreturn) appUnwindThrow (const char *fmt, ...);
 #define throw	*((int*)NULL) = 0
 
 

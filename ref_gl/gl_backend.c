@@ -134,6 +134,8 @@ static void GenerateColorArray (shaderStage_t *st)
 	byte	a;
 	color_t	*src, *dst;
 
+	guard(GenerateColorArray);
+
 	/*---------- rgbGen -----------*/
 	src = srcVertexColor;
 	dst = vb->color;
@@ -267,10 +269,12 @@ static void GenerateColorArray (shaderStage_t *st)
 		break;
 	// other types: LIGHTING_SPECULAR, PORTAL
 	}
+
+	unguard;
 }
 
 
-static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
+static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 {
 	int				j, k;
 	tcModParms_t	*tcmod;
@@ -282,14 +286,30 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 	src = srcTexCoord;
 	dst2 = dst;		// save this for tcMod
 
+	guard(GenerateTexCoordArray);
+	if (tex && tex->target == GL_TEXTURE_RECTANGLE_NV && st->tcGenType != TCGEN_TEXTURE)
+		Com_DropError ("shader %s uses TEXTURE_RECTANGLE with not \"tcGen texture\"", currentShader->name);
+
 	// process tcGen
 	switch (st->tcGenType)
 	{
 	case TCGEN_TEXTURE:
-		for (j = 0; j < gl_numVerts; j++, src++, dst++)
+		if (!tex || tex->target != GL_TEXTURE_RECTANGLE_NV)
+			for (j = 0; j < gl_numVerts; j++, src++, dst++)
+			{
+				dst->tex[0] = src->tex[0];
+				dst->tex[1] = src->tex[1];
+			}
+		else
 		{
-			dst->tex[0] = src->tex[0];
-			dst->tex[1] = src->tex[1];
+			float	w, h;
+			w = tex->internalWidth;
+			h = tex->internalHeight;
+			for (j = 0; j < gl_numVerts; j++, src++, dst++)
+			{
+				dst->tex[0] = src->tex[0] * w;
+				dst->tex[1] = src->tex[1] * h;
+			}
 		}
 		break;
 	case TCGEN_LIGHTMAP:
@@ -462,6 +482,8 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 		// other types: TRANSFORM, ENTITYTRANSLATE, STRETCH
 		}
 	}
+
+	unguard;
 }
 
 
@@ -771,7 +793,7 @@ static void PreprocessShader (shader_t *sh)
 		DrawTextLeft (va("R_PreprocessShader(%s): 0 stages", currentShader->name), RGB(1,0,0));
 
 	if (numTmpStages > MAX_TMP_STAGES)
-		Com_FatalError ("R_PreprocessShader: large numStages (%d)", numTmpStages);
+		Com_FatalError ("R_PreprocessShader: numStages too large (%d)", numTmpStages);
 
 	pass = renderPasses;
 	st = tmpSt;
@@ -995,6 +1017,8 @@ static void StageIterator (void)
 	int		i;
 	renderPass_t *pass;
 
+	guard(StageIterator);
+
 //	DrawTextLeft (va("StageIterator(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes), RGB(1,1,1));//!!!
 	LOG_STRING (va("*** StageIterator(%s, %d, %d) ***\n", currentShader->name, gl_numVerts, gl_numIndexes));
 
@@ -1043,7 +1067,7 @@ static void StageIterator (void)
 			GL_TexEnv (st->texEnv);
 			GL_TexEnvColor (&st->st.rgbaConst);
 			GL_Bind (stage->mapImage[0]);
-			GenerateTexCoordArray (stage, st->tmu);
+			GenerateTexCoordArray (stage, st->tmu, stage->mapImage[0]);
 			GL_TexCoordPointer (vb->texCoord[st->tmu]);
 		}
 
@@ -1095,6 +1119,8 @@ static void StageIterator (void)
 		gl_speeds.tris2D += gl_numIndexes * numTmpStages / 3;
 
 	gl_speeds.numIterators++;
+
+	unguardf(("%s", currentShader->name));
 }
 
 
@@ -1442,7 +1468,7 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 		}
 	}
 	else
-		for (i = 0; i < surf->numVerts; i++, vs1++, v++, ex++)
+		for (i = 0; i < surf->numVerts; i++, vs1++, v++, ex++)	// fast non-lerp case
 		{
 			float	sa, *norm;
 			int		a, b;
@@ -1891,6 +1917,8 @@ static void DrawScene (void)
 	int		currentShaderNum, currentEntityNum;
 	bool	currentWorld, isWorld;
 
+	guard(DrawScene);
+
 	LOG_STRING (va("******** R_DrawScene: (%d, %d) - (%d, %d) ********\n", vp.x, vp.y, vp.x+vp.w, vp.y+vp.h));
 
 	if (gl_numVerts) FlushArrays ();
@@ -2044,6 +2072,8 @@ static void DrawScene (void)
 
 	if (gl_finish->integer == 2) glFinish ();
 	gl_speeds.begin2D = Sys_Milliseconds ();
+
+	unguard;
 }
 
 

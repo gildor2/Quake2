@@ -667,8 +667,7 @@ void SV_CheckTimeouts (void)
 		if (cl->lastmessage > svs.realtime)
 			cl->lastmessage = svs.realtime;
 
-		if (cl->state == cs_zombie
-		&& cl->lastmessage < zombiepoint)
+		if (cl->state == cs_zombie && cl->lastmessage < zombiepoint)
 		{
 			cl->state = cs_free;	// can now be reused
 			continue;

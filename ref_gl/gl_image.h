@@ -23,8 +23,9 @@
 typedef struct image_s
 {
 	char	name[MAX_QPATH];			// lowercased game-relative image name (system images started with "*")
-	int		width, height;				// statistics (?)
-	int		alphaType;					// 0 - none, 1 - 1-bit alpha, 2 - 8-bit alpha
+	int		width, height;
+	byte	alphaType;					// 0 - none, 1 - 1-bit alpha, 2 - 8-bit alpha
+	GLenum	target;						// GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE_NV
 	int		internalWidth, internalHeight;	// statistics
 	int		internalFormat;				// statistics (for imagelist)
 	int		texnum;						// gl texture binding

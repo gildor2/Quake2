@@ -1178,6 +1178,8 @@ void GL_LoadWorldMap (char *name)
 	if (!name[0])
 		Com_FatalError ("R_LoadWorldMap: NULL name");
 
+	guard(GL_LoadWorldMap);
+
 	Q_CopyFilename (name2, name, sizeof(name2));
 
 	// map must be reloaded to update shaders (which are restarted every BeginRegistration())
@@ -1231,6 +1233,8 @@ void GL_LoadWorldMap (char *name)
 #else
 	Hunk_End ();
 #endif
+
+	unguard;
 }
 
 
@@ -1502,6 +1506,8 @@ static bool LoadMd2 (model_t *m, byte *buf, int len)
 	int		xyzIndexes[MAX_XYZ_INDEXES];
 	char	*skin;
 
+	guard(LoadMd2);
+
 	//?? should add ri.LoadMd2 (buf, size) -- sanity check + swap bytes for big-endian machines
 	hdr = (dmdl_t*)buf;
 	if (hdr->version != MD2_VERSION)
@@ -1536,10 +1542,11 @@ static bool LoadMd2 (model_t *m, byte *buf, int len)
 		vertexMd3_t		verts[numVerts*numFrames]
 		shader_t*		shaders[numShaders == numSkins]
 	 */
-	md3 = Z_Malloc (sizeof(md3Model_t) + hdr->numFrames*sizeof(md3Frame_t) +
+	m->size = sizeof(md3Model_t) + hdr->numFrames*sizeof(md3Frame_t) +
 		sizeof(surfaceCommon_t) + sizeof(surfaceMd3_t) +
 		numVerts*2*sizeof(float) + 3*hdr->numTris*sizeof(int)
-		+ numVerts*hdr->numFrames*sizeof(vertexMd3_t) + hdr->numSkins*sizeof(shader_t*));
+		+ numVerts*hdr->numFrames*sizeof(vertexMd3_t) + hdr->numSkins*sizeof(shader_t*);
+	md3 = Z_Malloc (m->size);
 
 	/*-------- fill md3 structure --------*/
 	md3->numSurfaces = 1;
@@ -1593,6 +1600,8 @@ END_PROFILE
 	m->type = MODEL_MD3;
 	m->md3 = md3;
 	return true;
+
+	unguardf(("%s", m->name));
 }
 
 
@@ -1626,7 +1635,8 @@ static bool LoadSp2 (model_t *m, byte *buf, int len)
 		return false;
 	}
 
-	sp2 = Z_Malloc (sizeof(sp2Model_t) + hdr->numframes * sizeof(sp2Frame_t));
+	m->size = sizeof(sp2Model_t) + hdr->numframes * sizeof(sp2Frame_t);
+	sp2 = Z_Malloc (m->size);
 	sp2->numFrames = hdr->numframes;
 	sp2->radius = 0;
 	for (i = 0, in = hdr->frames, out = sp2->frames; i < hdr->numframes; i++, in++, out++)
@@ -1662,15 +1672,19 @@ static bool LoadSp2 (model_t *m, byte *buf, int len)
 
 static void Modellist_f (void)
 {
+	int		i, totalSize;
 	model_t	*m;
-	int		i;
-	static char *modelTypes[] = {"^1unk", "inl", "^5sp2", "^2md3"};	// see modelType_t
+	static char *types[] = {"unk", "inl", "sp2", "md3"};	// see modelType_t
+	static char *colors[] = {"^1", "", "^5", "^2"};			// ...
 
-	Com_Printf ("-----type-name---------\n");
+	totalSize = 0;
+	Com_Printf ("-----type-size----name---------\n");
 	for (i = 0, m = modelsArray; i < modelCount; i++, m++)
 	{
-		Com_Printf ("%-3d  %3s  %s\n", i, modelTypes[m->type], m->name);
+		Com_Printf ("%-3d  %3s  %-7d %s%s\n", i, types[m->type], m->size, colors[m->type], m->name);
+		totalSize += m->size;
 	}
+	Com_Printf ("Displayed %d models, used %d bytes\n", modelCount, totalSize);
 }
 
 
@@ -1725,6 +1739,7 @@ void GL_ResetModels (void)
 			Com_sprintf (m->name, sizeof(m->name), "*%d", i);
 			m->type = MODEL_INLINE;
 			m->inlineModel = im;
+			m->size = 0;
 		}
 	}
 }

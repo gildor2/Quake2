@@ -281,6 +281,7 @@ typedef enum {
 typedef struct model_s
 {
 	char	name[MAX_QPATH];
+	int		size;
 
 	modelType_t	type;
 	union {								// MODEL_UNKNOWN: NULL in this field

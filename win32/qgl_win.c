@@ -15,7 +15,7 @@ static FILE *logFile;
 
 void QGL_Shutdown (void)
 {
-	int		i;
+//	int		i;
 
 	if (logFile)
 	{
@@ -31,8 +31,9 @@ void QGL_Shutdown (void)
 
 	glw_state.hinstOpenGL = NULL;
 
-	for (i = 0; i < NUM_GLFUNCS; i++)
-		qgl.funcs[i] = NULL;
+	memset (&qgl, 0, sizeof(qgl));
+//	for (i = 0; i < NUM_GLFUNCS; i++)
+//		qgl.funcs[i] = NULL;
 }
 
 
@@ -133,7 +134,7 @@ void QGL_InitExtensions (void)
 			gl_config.extensionMask |= 1 << i;
 			for (j = ext->first; j < ext->first + ext->count; j++)
 			{
-				func = qgl.funcs[j] = lib.funcs[j] = (dummyFunc_t) (wglGetProcAddress (qglNames[j]));
+				func = qgl.funcs[j] = lib.funcs[j] = (dummyFunc_t) (wglGetProcAddress (qglNames[j]));	//!! win32
 				if (!func)
 				{
 					Com_WPrintf ("Inconsistent extension %s - function %s is not found\n", ext->name, qglNames[j]);
@@ -143,7 +144,7 @@ void QGL_InitExtensions (void)
 			}
 		}
 
-		// can get "enable == false" in previous block
+		// (theoretically) can get "enable == false" in previous block
 		if (!enable)
 		{
 			gl_config.extensionMask &= ~(1 << i);
@@ -252,7 +253,7 @@ void QGL_InitExtensions (void)
 
 void QGL_EnableLogging (qboolean enable)
 {
-	int		i;
+//	int		i;
 
 	if (enable)
 	{
@@ -268,11 +269,12 @@ void QGL_EnableLogging (qboolean enable)
 			fprintf (logFile, "\n------------------------\n%s------------------------\n", asctime (newtime));
 		}
 
-		for (i = 0; i < NUM_GLFUNCS; i++)					//?? memcpy()
-			qgl.funcs[i] = logFuncs.funcs[i];
-		for ( ; i < NUM_GLFUNCS + NUM_EXTFUNCS; i++)		//?? ... ???
-			if (lib.funcs[i])		// enable logging only when extension is active
-				qgl.funcs[i] = logFuncs.funcs[i];
+		qgl = logFuncs;
+//		for (i = 0; i < NUM_GLFUNCS; i++)					//?? memcpy()
+//			qgl.funcs[i] = logFuncs.funcs[i];
+//		for ( ; i < NUM_GLFUNCS + NUM_EXTFUNCS; i++)		//?? ... ???
+//			if (lib.funcs[i])		// enable logging only when extension is active
+//				qgl.funcs[i] = logFuncs.funcs[i];
 	}
 	else
 	{
@@ -282,8 +284,9 @@ void QGL_EnableLogging (qboolean enable)
 			logFile = NULL;
 		}
 
-		for (i = 0; i < NUM_GLFUNCS + NUM_EXTFUNCS; i++)	//?? ...
-			qgl.funcs[i] = lib.funcs[i];
+		qgl = lib;
+//		for (i = 0; i < NUM_GLFUNCS + NUM_EXTFUNCS; i++)	//?? ...
+//			qgl.funcs[i] = lib.funcs[i];
 	}
 }
 

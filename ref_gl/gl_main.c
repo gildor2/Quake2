@@ -109,6 +109,11 @@ static void Gfxinfo_f (void)
 	}
 	else
 		Com_Printf ("no\n");
+	Com_Printf ("Texture rectangle: ");
+	if (GL_SUPPORT(QGL_EXT_TEXTURE_RECTANGLE))
+		Com_Printf ("max size is %d\n", gl_config.maxRectTextureSize);
+	else
+		Com_Printf ("unsupported\n");
 	Com_Printf ("Lighting: %s\n", gl_config.vertexLight ? "vertex" : "lightmap");
 	Com_Printf ("Gamma: ");
 	if (gl_config.deviceSupportsGamma)
@@ -166,6 +171,7 @@ CVAR_BEGIN(vars)
 	CVAR_NULL(gl_ext_texture_env_combine, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_texture_env_combine_nv, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_compiled_vertex_array, 1, CVAR_ARCHIVE),
+	CVAR_NULL(gl_ext_texture_rectangle, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_fog_distance_nv, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_vertex_array_range, 0, CVAR_ARCHIVE),	//?? do not works now
 	CVAR_NULL(gl_ext_compressed_textures, 1, CVAR_ARCHIVE),
@@ -343,6 +349,9 @@ static int GL_Init (void)
 		gl_config.formatAlpha = 0;
 		gl_config.formatAlpha1 = 0;
 	}
+
+	if (GL_SUPPORT(QGL_EXT_TEXTURE_RECTANGLE))
+		glGetIntegerv (GL_MAX_RECTANGLE_TEXTURE_SIZE_NV, &gl_config.maxRectTextureSize);
 
 	glGetIntegerv (GL_MAX_TEXTURE_SIZE, &gl_config.maxTextureSize);
 
@@ -881,12 +890,12 @@ static shader_t *FindPic (char *name, bool force)
 	char	*s;
 	int		flags;
 
-	if (name[0] != '/' && name[0] != '\\')
+	if (name[0] != '/' && name[0] != '\\')	//?? is '\\' needed
 		s = va("pics/%s.pcx", name);
 	else
-		s = name+1;
+		s = name+1;		// skip '/'
 
-	flags = SHADER_ALPHA;
+	flags = SHADER_ALPHA|SHADER_CLAMP;
 	if (!force) flags |= SHADER_CHECK;
 	return GL_FindShader (s, flags);
 }
@@ -910,7 +919,21 @@ static void DrawFill2 (int x, int y, int w, int h, float r, float g, float b, fl
 
 static void DrawTileClear (int x, int y, int w, int h, char *name)
 {
-	GL_DrawStretchPic (FindPic (name, true), x, y, w, h, x/64.0f, y/64.0f, (x+w)/64.0f, (y+h)/64.0f, colorTable[7]);
+	char	*s;
+	shader_t *sh;
+
+	// FindPic() without SHADER_CLAMP
+	if (name[0] != '/' && name[0] != '\\')
+		s = va("pics/%s.pcx", name);
+	else
+		s = name+1;		// skip '/'
+
+	sh = GL_FindShader (s, SHADER_CHECK);
+	if (sh)
+		GL_DrawStretchPic (sh, x, y, w, h, (float)x / sh->width, (float)y / sh->height,
+			(float)(x + w) / sh->width, (float)(y + h) / sh->height, colorTable[7]);
+	else
+		DrawFill2 (x, y, w, h, 0, 0, 0, 1);
 }
 
 

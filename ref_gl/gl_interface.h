@@ -5,6 +5,7 @@
 typedef struct
 {
 	int		maxTextureSize;
+	int		maxRectTextureSize;
 	unsigned extensionMask;
 	// fields for gfxinfo
 	const char	*extensions, *extensions2;
@@ -71,7 +72,7 @@ typedef struct
 	image_t	*currentBinds[32];
 	unsigned currentEnv[32];
 	bool	texCoordEnabled[32];
-	bool	textureEnabled[32];
+	GLenum	textureTarget[32];					// 0 - disabled, else == currentBinds[]->target
 	color_t	texEnvColor[32];
 	float	mipBias[32];
 	// fields for locked state
@@ -79,7 +80,7 @@ typedef struct
 	image_t	*newBinds[32];
 	unsigned newEnv[32];
 	bool	newTexCoordEnabled[32];
-	bool	newTextureEnabled[32];
+	GLenum	newTextureTarget[32];
 	void	*newTCPointer[32];
 	color_t	newEnvColor[32];
 	float	newMipBias[32];

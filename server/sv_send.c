@@ -507,11 +507,8 @@ qboolean SV_RateDrop (client_t *c)
 		return false;
 
 	total = 0;
-
 	for (i = 0 ; i < RATE_MESSAGES ; i++)
-	{
 		total += c->message_size[i];
-	}
 
 	if (total > c->rate)
 	{
@@ -562,8 +559,7 @@ void SV_SendClientMessages (void)
 	for (i = 0, c = svs.clients ; i < maxclients->integer; i++, c++)
 	{
 		if (!c->state) continue;
-		// if the reliable message overflowed,
-		// drop the client
+		// if the reliable message overflowed, drop the client
 		if (c->netchan.message.overflowed)
 		{
 			SZ_Clear (&c->netchan.message);
@@ -582,7 +578,7 @@ void SV_SendClientMessages (void)
 		else
 		{
 			// just update reliable	if needed
-			if (c->netchan.message.cursize	|| curtime - c->netchan.last_sent > 1000)
+			if (c->netchan.message.cursize || curtime - c->netchan.last_sent > 1000)
 				Netchan_Transmit (&c->netchan, 0, NULL);
 		}
 	}

@@ -77,7 +77,7 @@ void GL_Lock (void)
 	COPY(newBinds, currentBinds);
 	COPY(newEnv, currentEnv);
 	COPY(newTexCoordEnabled, texCoordEnabled);
-	COPY(newTextureEnabled, textureEnabled);
+	COPY(newTextureTarget, textureTarget);
 	COPY(newEnvColor, texEnvColor);
 	COPY(newMipBias, mipBias);
 	memset (gl_state.newTCPointer, 0, sizeof(gl_state.newTCPointer));
@@ -93,6 +93,7 @@ void GL_Unlock (void)
 	bool	f;
 	color_t	c;
 	float	v;
+	GLenum	tgt;
 
 	if (!gl_state.locked) return;
 	gl_state.locked = false;
@@ -112,6 +113,15 @@ void GL_Unlock (void)
 			GL_SelectTexture (tmu);
 			GL_Bind (gl_state.newBinds[tmu]);
 		}
+		else if ((tgt = gl_state.newTextureTarget[tmu]) != gl_state.textureTarget[tmu])
+		{
+			GL_SelectTexture (tmu);
+			if (gl_state.textureTarget[tmu])
+				glDisable (gl_state.textureTarget[tmu]);
+			if (tgt) glEnable (tgt);
+			gl_state.textureTarget[tmu] = tgt;
+		}
+
 		if ((n = gl_state.newEnv[tmu]) != gl_state.currentEnv[tmu])
 		{
 			if ((n ^ gl_state.currentEnv[tmu]) & texEnvInfo[n & TEXENV_FUNC_MASK].mask)
@@ -132,13 +142,6 @@ void GL_Unlock (void)
 			gl_state.texCoordEnabled[tmu] = f;
 			if (f)	glEnableClientState (GL_TEXTURE_COORD_ARRAY);
 			else	glDisableClientState (GL_TEXTURE_COORD_ARRAY);
-		}
-		if ((f = gl_state.newTextureEnabled[tmu]) != gl_state.textureEnabled[tmu])
-		{
-			GL_SelectTexture (tmu);
-			gl_state.textureEnabled[tmu] = f;
-			if (f)	glEnable (GL_TEXTURE_2D);
-			else	glDisable (GL_TEXTURE_2D);
 		}
 		if (gl_state.newTCPointer[tmu])
 		{
@@ -183,10 +186,10 @@ void GL_Bind (image_t *tex)
 		if (tex)
 		{
 			gl_state.newBinds[tmu] = tex;
-			gl_state.newTextureEnabled[tmu] = true;
+			gl_state.newTextureTarget[tmu] = tex->target;
 		}
 		else
-			gl_state.newTextureEnabled[tmu] = false;
+			gl_state.newTextureTarget[tmu] = 0;
 		return;
 	}
 
@@ -194,25 +197,27 @@ void GL_Bind (image_t *tex)
 
 	if (!tex)
 	{
-		if (gl_state.textureEnabled[tmu])
+		if (gl_state.textureTarget[tmu])
 		{
-			glDisable (GL_TEXTURE_2D);
-			gl_state.textureEnabled[tmu] = false;
+			glDisable (gl_state.textureTarget[tmu]);
+			gl_state.textureTarget[tmu] = 0;
 		}
 	}
 	else
 	{
-		if (!gl_state.textureEnabled[tmu])
+		if (gl_state.textureTarget[tmu] != tex->target)
 		{
-			glEnable (GL_TEXTURE_2D);
-			gl_state.textureEnabled[tmu] = true;
+			if (gl_state.textureTarget[tmu])
+				glDisable (gl_state.textureTarget[tmu]);
+			glEnable (tex->target);
+			gl_state.textureTarget[tmu] = tex->target;
 		}
 
 		if (tex == gl_state.currentBinds[tmu]) return;
 
 		gl_state.currentBinds[tmu] = tex;
 		LOG_STRING(va("// GL_Bind(%s)\n", tex->name));
-		glBindTexture (GL_TEXTURE_2D, tex->texnum);
+		glBindTexture (tex->target, tex->texnum);
 		gl_speeds.numBinds++;
 	}
 }
@@ -222,19 +227,21 @@ void GL_Bind (image_t *tex)
 void GL_BindForce (image_t *tex)
 {
 	int		tmu;
-
 	tmu = gl_state.currentTmu;
 
-	if (!gl_state.textureEnabled[tmu])
+	if (gl_state.textureTarget[tmu] != tex->target)
 	{
-		glEnable (GL_TEXTURE_2D);
-		gl_state.textureEnabled[tmu] = true;
+		if (gl_state.textureTarget[tmu])
+			glDisable (gl_state.textureTarget[tmu]);
+		glEnable (tex->target);
+		gl_state.textureTarget[tmu] = tex->target;
 	}
 
 	if (gl_state.currentBinds[tmu] == tex) return;
 
 	gl_state.currentBinds[tmu] = tex;
-	glBindTexture (GL_TEXTURE_2D, tex->texnum);
+	LOG_STRING(va("// GL_Bind(%s)\n", tex->name));
+	glBindTexture (tex->target, tex->texnum);
 	gl_speeds.numBinds++;
 }
 
@@ -418,13 +425,13 @@ void GL_SetMultitexture (int level)
 			else
 			{
 				gl_state.newTexCoordEnabled[i] = false;
-				gl_state.newTextureEnabled[i] = false;
+				gl_state.newTextureTarget[i] = 0;
 			}
 		return;
 	}
 
 	for (i = level; i < gl_config.maxActiveTextures; i++)
-		if (gl_state.textureEnabled[i] || gl_state.texCoordEnabled[i])
+		if (gl_state.textureTarget[i] || gl_state.texCoordEnabled[i])
 		{
 			GL_SelectTexture (i);
 			GL_Bind (NULL);
@@ -629,14 +636,19 @@ void GL_SetDefaultState (void)
 	{
 		GL_SelectTexture (i);
 		glDisable (GL_TEXTURE_2D);
+		if (GL_SUPPORT(QGL_EXT_TEXTURE_RECTANGLE))
+			glDisable (GL_TEXTURE_RECTANGLE_NV);
 		gl_state.currentEnv[i] = 0;
 		GL_TexEnv (TEXENV_REPLACE);
 	}
 	if (gl_config.maxActiveTextures > 1) GL_SelectTexture (0);
 	glDisable (GL_TEXTURE_2D);
+	if (GL_SUPPORT(QGL_EXT_TEXTURE_RECTANGLE))
+		glDisable (GL_TEXTURE_RECTANGLE_NV);
 	gl_state.currentEnv[0] = 0;
 	GL_TexEnv (TEXENV_MODULATE);
 
+	// prepare filter values for new images (images are not exists at this point)
 	GL_TextureMode (gl_texturemode->string);
 
 	// set GL_State to a corresponding zero values

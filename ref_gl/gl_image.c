@@ -107,6 +107,7 @@ static byte *Convert8to32bit (byte *in, int width, int height, unsigned *palette
 	byte	*out;
 	unsigned *p;
 
+	guard(Convert8to32bit);
 	if (!palette)
 		palette = gl_config.tbl_8to32;
 
@@ -118,6 +119,7 @@ static byte *Convert8to32bit (byte *in, int width, int height, unsigned *palette
 		*p++ = palette[*in++];
 
 	return out;
+	unguard;
 }
 
 
@@ -140,6 +142,7 @@ void GL_TextureMode (char *name)
 		{"GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR}
 	};
 
+	GL_SetMultitexture (1);
 	for (i = 0; i < ARRAY_COUNT(texModes); i++)
 	{
 		if (!Q_stricmp (texModes[i].name, name))
@@ -152,9 +155,9 @@ void GL_TextureMode (char *name)
 			{
 				if (!img->name[0]) continue;	// free slot
 				if (!(img->flags & IMAGE_MIPMAP)) continue;
-				GL_Bind (img);
-				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+				GL_BindForce (img);
+				glTexParameteri (img->target, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+				glTexParameteri (img->target, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 			}
 			return;
 		}
@@ -488,6 +491,8 @@ static void Upload (void *pic, int flags, image_t *image)
 	int		format, size;
 	unsigned *scaledPic;
 
+	LOG_STRING(va("// Upload(%s)\n", image->name));
+
 	/*------------ Eliminate alpha-channel when needed---------------*/
 	if (flags & IMAGE_NOALPHA)
 	{
@@ -511,7 +516,13 @@ static void Upload (void *pic, int flags, image_t *image)
 	}
 
 	/*----- Calculate internal dimensions of the new texture --------*/
-	GetImageDimensions (image->width, image->height, &scaledWidth, &scaledHeight, image->flags & IMAGE_PICMIP);
+	if (image->target != GL_TEXTURE_RECTANGLE_NV)
+		GetImageDimensions (image->width, image->height, &scaledWidth, &scaledHeight, image->flags & IMAGE_PICMIP);
+	else
+	{
+		scaledWidth = image->width;
+		scaledHeight = image->height;
+	}
 
 	image->internalWidth = scaledWidth;
 	image->internalHeight = scaledHeight;
@@ -579,7 +590,7 @@ END_PROFILE
 			format = gl_config.formatSolid;
 
 		// no suitable compressed format
-		if (!format || flags & IMAGE_NOCOMPRESS)
+		if (!format || flags & IMAGE_NOCOMPRESS || image->target == GL_TEXTURE_RECTANGLE_NV)	// ATI will crash when uploading rect as compressed
 		{
 			switch (gl_textureBits->integer)
 			{
@@ -604,12 +615,12 @@ END_PROFILE
 
 	/*------------------ Upload the image ---------------------------*/
 START_PROFILE(..up::gl)
-	glTexImage2D (GL_TEXTURE_2D, 0, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
+	glTexImage2D (image->target, 0, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 END_PROFILE
 	if (!(flags & IMAGE_MIPMAP))
 	{
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri (image->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri (image->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 	else
 	{
@@ -645,10 +656,10 @@ START_PROFILE(..up::mip)
 					p[2] = (c.c[2] + p[2]) / 4;
 				}
 			}
-			glTexImage2D (GL_TEXTURE_2D, miplevel, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
+			glTexImage2D (image->target, miplevel, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 		}
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+		glTexParameteri (image->target, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+		glTexParameteri (image->target, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 END_PROFILE
 	}
 
@@ -660,9 +671,10 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 {
 	char	name2[MAX_QPATH];
 	int		texnum;
-	image_t	*image;
+	image_t	*image, *freeSlot;
 	bool	reuse;
 
+	guard(GL_CreateImage);
 	if (!name[0]) Com_FatalError ("R_CreateImage: null name");
 
 //	Com_Printf ("CreateImage(%s)\n", name);//!!!!
@@ -673,11 +685,15 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 
 	// find image with the same name
 	reuse = false;
+	freeSlot = NULL;
 	for (texnum = 0, image = &imagesArray[0]; texnum < MAX_TEXTURES; texnum++, image++)
 	{
-		if (!image->name[0]) continue;
-		if (!strcmp (name2, image->name) &&
-			image->flags == (flags & IMAGE_FLAGMASK))
+		if (!image->name[0])
+		{
+			if (!freeSlot) freeSlot = image;
+			continue;
+		}
+		if (!strcmp (name2, image->name) && image->flags == (flags & IMAGE_FLAGMASK))
 		{
 			reuse = true;
 			break;
@@ -686,24 +702,29 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 
 	if (!reuse)
 	{
-		if (imageCount == MAX_TEXTURES)
+		if (!freeSlot)
 		{
 			Com_WPrintf ("R_CreateImage(%s): MAX_TEXTURES hit\n", name);
 			return gl_defaultImage;
 		}
-
 		// not found - allocate free image slot
-		for (texnum = 0, image = &imagesArray[0]; texnum < MAX_TEXTURES; texnum++, image++)
-			if (!image->name[0]) break;		// found unused slot
+		image = freeSlot;
 		imageCount++;
 	}
 
 	// setup image_t fields
-	image->texnum = texnum;
 	strcpy (image->name, name2);
 	image->width = width;
 	image->height = height;
 	image->flags = flags & IMAGE_FLAGMASK;
+	image->target = GL_TEXTURE_2D;
+
+	// choose TEXTURE_RECTANGLE target when possible
+	if ((flags & (IMAGE_CLAMP|IMAGE_MIPMAP|IMAGE_PICMIP)) == IMAGE_CLAMP &&	// !wrap, !mipmap, !picmip
+		width  <= gl_config.maxRectTextureSize	&&				// suitable size
+		height <= gl_config.maxRectTextureSize	&&
+		(width & (width-1) | height & (height-1)))				// non power-of-2 dimensions
+		image->target = GL_TEXTURE_RECTANGLE_NV;
 
 	ComputeImageColor (pic, width, height, &image->color);
 
@@ -712,12 +733,13 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 		GLenum	repMode;
 
 		// upload image
+		GL_SetMultitexture (1);
 		GL_BindForce (image);
 		Upload (pic, flags, image);
 
 		repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repMode);
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repMode);
+		glTexParameteri (image->target, GL_TEXTURE_WRAP_S, repMode);
+		glTexParameteri (image->target, GL_TEXTURE_WRAP_T, repMode);
 	}
 	else
 	{
@@ -743,6 +765,8 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 	}
 
 	return image;
+
+	unguardf(("%s", name));
 }
 
 
@@ -773,20 +797,52 @@ void GL_SetRawPalette (const unsigned char *palette)
 
 void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic)
 {
-#if 0
-	byte	*pic32;
-
-	GL_BindForce (gl_videoImage);
-	// convert 8 bit -> 32 bit
-	pic32 = Convert8to32bit (pic, width, height, rawPalette);
-	// upload
-	Upload (pic32, width, height, false, false, false, gl_videoImage);
-	Z_Free (pic32);
-#else
 	int		scaledWidth, scaledHeight, i;
 	unsigned scaledPic[MAX_VIDEO_SIZE*MAX_VIDEO_SIZE];
 	image_t	*image;
 	float	hScale;
+
+	guard(GL_DrawStretchRaw8);
+
+	if (GL_SUPPORT(QGL_EXT_TEXTURE_RECTANGLE))	//?? check for max [rect] texture size
+	{
+		// convert 8->32 bit
+		byte *pic32 = Convert8to32bit (pic, width, height, rawPalette);
+		// upload texture
+		image = gl_videoImage;		//?? to allow multiple videos in a screen, should use gl_videoImage[some_number]
+		image->target = GL_TEXTURE_RECTANGLE_NV;
+		GL_SetMultitexture (1);
+		GL_BindForce (image);
+
+		image->internalFormat = 3;
+		if (image->internalWidth == width && image->internalHeight == height)
+		{	// TexSubImage()
+			glTexSubImage2D (image->target, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pic32);
+		}
+		else
+		{	// TexImage()
+			image->internalWidth = width;
+			image->internalHeight = height;
+			glTexImage2D (image->target, 0, image->internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pic32);
+		}
+		// draw
+//		GL_BackEnd ();		// need to perform begin_frame in a case of gl_clear!=0; or - enqueue draw command into backend command list
+		GL_Set2DMode ();
+		glColor3f (gl_config.identityLightValue_f, gl_config.identityLightValue_f, gl_config.identityLightValue_f);
+		glBegin (GL_QUADS);
+		glTexCoord2f (0.5f, 0.5f);
+		glVertex2f (x, y);
+		glTexCoord2f (width - 0.5f, 0.5f);
+		glVertex2f (x + w, y);
+		glTexCoord2f (width - 0.5f, height - 0.5f);
+		glVertex2f (x + w, y + h);
+		glTexCoord2f (0.5f, height - 0.5f);
+		glVertex2f (x, y + h);
+		glEnd ();
+		// free converted pic
+		Z_Free (pic32);
+		return;
+	}
 
 	/* we can do uploading pic without scaling using TexSubImage onto a large texture and using
 	 * (0..width/large_width) - (0..height/large_height) coords when drawing ?? (but needs palette conversion anyway)
@@ -825,24 +881,22 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 	image->internalFormat = 3;
 	if (image->internalWidth == scaledWidth && image->internalHeight == scaledHeight)
 	{	// TexSubImage()
-		glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, scaledWidth, scaledHeight, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
+		glTexSubImage2D (image->target, 0, 0, 0, scaledWidth, scaledHeight, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 	}
 	else
 	{	// TexImage()
 		image->internalWidth = scaledWidth;
 		image->internalHeight = scaledHeight;
-		glTexImage2D (GL_TEXTURE_2D, 0, image->internalFormat, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
+		glTexImage2D (image->target, 0, image->internalFormat, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 	}
 	// set texture parameters
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri (image->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri (image->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	gl_speeds.numUploads++;
 
 	width = scaledWidth;	//!!!
 	height = scaledHeight;
-#endif
+
 	/*--------------------- draw ----------------------*/
 //	GL_BackEnd ();		// need to perform begin_frame in a case of gl_clear!=0; or - enqueue draw command into backend command list
 	GL_Set2DMode ();
@@ -857,15 +911,17 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 	glTexCoord2f (0.5f / width, 1.0f - 0.5f / height);
 	glVertex2f (x, y + h);
 	glEnd ();
+
+	unguard;
 }
 
 
-static void GL_FreeImage (image_t *image)
+static void GL_FreeImage (image_t *image)	//?? unused function
 {
 	int		hash;
 	image_t	*img;
 
-	if (!image->name)
+	if (!image->name[0])
 		return;		// already ...
 	if (image->flags & IMAGE_SYSTEM)
 		return;		// system image - don't free it
@@ -1269,12 +1325,15 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_textureBits, 0, CVAR_ARCHIVE|CVAR_NOUPDATE)
 CVAR_END
 	byte	tex[256*32*4], *p;
-	int		x, y;
+	int		texnum, x, y;
+	image_t	*image;
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 	imageCount = 0;
 	memset (hashTable, 0, sizeof(hashTable));
 	memset (imagesArray, 0, sizeof(imagesArray));
+	for (texnum = 0, image = &imagesArray[0]; texnum < MAX_TEXTURES; texnum++, image++)
+		image->texnum = texnum;
 
 	GL_SetupGamma ();	// before texture creation
 	GetPalette ();		// read palette for 8-bit WAL textures
@@ -1421,10 +1480,15 @@ void GL_ShutdownImages (void)
 
 	if (!imageCount) return;
 
+	// clear binds
+	GL_SetMultitexture (0);
+
+	// delete textures
 	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
 		if (!img->name[0]) continue;	// free slot
 		glDeleteTextures (1, &img->texnum);
+		img->name[0] = 0;				// required for statically linked renderer
 		if (img->pic)
 		{
 			Z_Free (img->pic);
@@ -1433,14 +1497,6 @@ void GL_ShutdownImages (void)
 	}
 	imageCount = 0;
 
-	// clear binds
-	if (gl_config.maxActiveTextures > 1)
-	{
-		GL_SelectTexture (1);
-		glBindTexture (GL_TEXTURE_2D, 0);
-		GL_SelectTexture (0);
-	}
-	glBindTexture (GL_TEXTURE_2D, 0);
 	// don't clear other fields: after GL_ShutdownImages should not be called nothing
 	// but GL_InitImages, which will perform this work
 }
@@ -1493,6 +1549,7 @@ void GL_ShowImages (void)
 	GL_Set2DMode ();
 	GL_SetMultitexture (1);
 	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_NODEPTHTEST);
+	glClearColor (0.1, 0.02, 0.02, 1);
 	glClear (GL_COLOR_BUFFER_BIT);
 	glColor3f (1, 1, 1);
 
@@ -1511,7 +1568,7 @@ void GL_ShowImages (void)
 	img = &imagesArray[0];
 	for (y = 0; y < ny && num; y++)
 	{
-		float	y0, x0;
+		float	y0, x0, s, t;
 
 		y0 = y * dy;
 		for (x = 0; x < nx; x++)
@@ -1529,13 +1586,23 @@ void GL_ShowImages (void)
 
 			GL_BindForce (img);
 			glBegin (GL_QUADS);
+			if (img->target != GL_TEXTURE_RECTANGLE_NV)
+			{
+				s = 1;
+				t = 1;
+			}
+			else
+			{
+				s = img->internalWidth;
+				t = img->internalHeight;
+			}
 			glTexCoord2f (0, 0);
 			glVertex2f (x0, y0);
-			glTexCoord2f (1, 0);
+			glTexCoord2f (s, 0);
 			glVertex2f (x0 + dx, y0);
-			glTexCoord2f (1, 1);
+			glTexCoord2f (s, t);
 			glVertex2f (x0 + dx, y0 + dy);
-			glTexCoord2f (0, 1);
+			glTexCoord2f (0, t);
 			glVertex2f (x0, y0 + dy);
 			glEnd ();
 

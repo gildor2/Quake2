@@ -54,7 +54,7 @@ typedef union
 		void	(APIENTRY * TexEnvf) (GLenum target, GLenum pname, GLfloat param);
 		void	(APIENTRY * TexEnvfv) (GLenum target, GLenum pname, const GLfloat *params);
 		void	(APIENTRY * TexEnvi) (GLenum target, GLenum pname, GLenum param);
-		void	(APIENTRY * TexImage2D) (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
+		void	(APIENTRY * TexImage2D) (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
 		void	(APIENTRY * TexParameteri) (GLenum target, GLenum pname, GLint param);
 		void	(APIENTRY * TexSubImage2D) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
 		void	(APIENTRY * Translatef) (GLfloat x, GLfloat y, GLfloat z);
@@ -188,11 +188,12 @@ extern qgl_t qgl;
 #define QGL_S3_S3TC	(1 << 8)
 #define QGL_ARB_TEXTURE_COMPRESSION	(1 << 9)
 #define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 10)
-#define QGL_NV_FOG_DISTANCE	(1 << 11)
-#define QGL_EXT_TEXTURE_LOD_BIAS	(1 << 12)
+#define QGL_EXT_TEXTURE_RECTANGLE	(1 << 11)
+#define QGL_NV_FOG_DISTANCE	(1 << 12)
+#define QGL_EXT_TEXTURE_LOD_BIAS	(1 << 13)
 
 #ifdef _WIN32
-#define QWGL_EXT_SWAP_CONTROL	(1 << 13)
+#define QWGL_EXT_SWAP_CONTROL	(1 << 14)
 #endif
 
 #ifdef __linux__

@@ -264,20 +264,26 @@ HW occlusion:
   - try to use frame-to-frame coherency to reduce number of occlusion queries
   ? for details and other ideas, see GL_NV_occlusion_query spec
 
+QGL system:
+  ? implement extension aliasing (EXT -> ARB) with aliases for extension/function names (constants are the same)
+    (texture_env_combine (slightly different!), texture_env_add etc. -- mark extension as aliased and auto-replace ARB<->EXT in
+    ext (GL_[ARB|EXT]_EXTENSION)/func (glFunction[ARB|EXT]) names)
+    ? may be, implement universal subst: for NV->ARB, SGI->EXT etc. (specify alternatives in decrease priority form + place where
+      to put prefix/suffix "GL_._MULTITEXTURE/EXT/ARB/SGI" + names for QGL_CONSTANT qgl.FuncName() !!)
+  - gl_logFile:
+    ? remove "GL_" and "gl" prefixes (to look like OpenGL spec)
+    ? add error checking after commands (qgl.in: ERROR)
+    - option to compile without logfile capabilities
+
+
 BUGS:
-- Com_DropError (...) can cause "halt" renderer (will in loop display "red" message without screen update,
+?* Com_DropError (...) can cause "halt" renderer (will in loop display "red" message without screen update,
   can switch to "oldgl" (to see this messages), but will crush when switch back to "gl" (if StageIterator() ?))
 ? map "terrain", light cone from helicopter: too opaque when overbright is 1 (invalid lightmap on alpha-surf ?)
 ? check demo "massive1": have error "frame #46 not found"
 - can't use alpha test for SHADER_WALL (dm_duke... have assault/glass texture, which is SURF_ALPHA with alpha < 0.5)
 - lightmap optimization bugs: beachassault, rhstation (should use adaptive threshold: depends on light intensity? (0 for dark,
   16 (?) for bright))
-
-HARDWARE BUGS:
-- NV (bitdepth change ?), Blade3D (vid_restart): cannot restart GL with Vid_DestroyWindow(force=false) -- require to recreate window
-- NV: screenshot is black after changing color depth, but all OK when make one more vid_restart (TNT2, Win2K, 41.09)
-- ATI: when game launched fullscreen, <Alt-Enter> will switch to windowed mode with incorrect viewport (visible region);
-  vid_restart will not fix situation
 
 --------- Mandatory ------------
 VISIBLE:
@@ -293,21 +299,12 @@ FOR GAME:
 --------- Improvements -----------
 
 ? combine all tcMod's (all but wave) into a single matrix (TCMOD_TRANSFORM)
-!? for qgl: implement extension aliasing (EXT -> ARB) with aliases for extension/function names (constants are the same)
-  (texture_env_combine (slightly different!), texture_env_add etc. -- mark extension as aliased and auto-replace ARB<->EXT in
-  ext (GL_[ARB|EXT]_EXTENSION)/func (glFunction[ARB|EXT]) names)
-  ? may be, implement universal subst: for NV->ARB, SGI->EXT etc. (specify alternatives in decrease priority form + place where
-    to put prefix/suffix "GL_._MULTITEXTURE/EXT/ARB/SGI" + names for QGL_CONSTANT qgl.FuncName() !!)
 - optimize sky box drawing:
   ? can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs) (problems when surf can be placed on few box sides)
     ? find fast cases, when surface placed only on one plane (use surface bounds ?)
 - vertex lighting:
   - surface simplification (?) + subdivision (!) for complex lightmaps (non-gradient color change) - as option
     (lighting = "lightmap", "vertex", "hq vertex")
-- gl_logFile:
-  ? remove "GL_" and "gl" prefixes (looks like OpenGL spec)
-  ? add error checking after commands (qgl.in: ERROR)
-  - option to compile without logfile capabilities
 ?? make area_t, cluster_t, area.clusterList, cluster.leafList (faster MarkLeafs()/LightPoint())
 ? make skins for models with 1 frame to be sh.fast==true (and implement it in AGP memory);
   Problem: how to apply lighting (use hw lights)? (and: skins may be dynamically changed from "fast" to "slow")
@@ -318,13 +315,13 @@ FOR GAME:
   - scale (enlarge) texture with keeping alpha = 0 or 255
   ? adjust alpha-test const for surface in accordance to its average alpha (but: what to do with mipmaps code (it modifies avg alpha))
 - screen blending: move this outside renderer, make with DrawFill2 (REF_SOFT: cannot do this, because of paletted implementation)
-? gl_extensions: 0 - disable, 1 - standard only (ARB), 2 - +vendor-specific, i.e. all (NV)
 - fast vid_restart: can reload all (necessary!?) textures/lightmaps (+ update vertex colors); problems:
   - some changes requires vid_restart (GL_Register/GL_Init etc.) -- extensions, overbright etc. -- just check all cvars in gl_main.c
   - should restart shaders: remove unnecessary shaders
 - make refEntity_t (rename it!), particle_t, beam_t to be derived from a single structure: { strucType, next, drawNext }, node_t (leaf)
   should have a single pointer to this list, not separate pointers to entities, particles, beams (sprites too ??)
-? CL_Cull() --(insert)-> GL_State()
-? RGBGEN_SPECULAR (rgb depends on viewer direction and light positions)
+? GL_Cull() --(insert)-> GL_State()
+? RGBGEN_SPECULAR (rgb depends on viewer direction and light positions) -- for windows/water
 ? reflect flares from water/windows (see Raiman3)
-- shaders (load-time): when texture have no alpha-channel, but alpha-channel used as specular mask, remove specular mask
+- shaders (load-time, Q3 shaders): when texture have no alpha-channel, but alpha-channel used as specular mask, remove specular mask
+- support ARB_texture_non_power_of_two (GeForce6+)

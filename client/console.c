@@ -643,7 +643,12 @@ void Con_DrawConsole (float frac)
 		lines = viddef.height;
 
 	// draw the background
-	re.DrawFill2 (0, 0, viddef.width, lines, 0, 0, 0.02, 0.5);
+	if (!(*re.flags & REF_CONSOLE_ONLY))
+	{
+		re.DrawFill2 (0, 0, viddef.width, lines, 0, 0, 0.02, 0.5);
+		if (lines < viddef.height)
+			re.DrawFill2 (0, lines - 1, viddef.width, 1, 0.2, 0.2, 0.2, 0.8);
+	}
 
 	// Variables for console-only mode
 	dx = viddef.width >> 3;

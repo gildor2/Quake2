@@ -3,8 +3,6 @@ BUGS:
   *? 1st try to start demomap after start, when no d1 alias -- "killserver+menu_main"
   - jumpy demo "tower" (at home, all Q2 versions -- at least from p10) -- low fps on original server computer ?
 
-! QGL/make.pl: when platform is not WIN32 or Linux, NUM_GLFUNCS is undefined !
-
 ! new pmove.c errors:
   - "ground3" cafe, on the street: cannot jump onto a corner column (horiz. speed set to 0 due to position snap)
 - "paused": incorrect timing (at least, fx will be incorrect after paused=0)
@@ -89,6 +87,9 @@ TRACE:
     cache/update ent.angles->ent.axis ! (in renderer: ClipToEntities() -- use TransformedBoxTrace; send to renderer axis, not angles
     (check how this will affects left-hand weapon model))
   ? try something like AreaEdicts() for client trace code
+  ? make blaster/rocket shooting do not clip by sky (game trace: sky brushes -> playerclip, monsterclip, but bullets will go here)
+    problems: 1) PointContents() will display CONTENTS_SOLID; 2) after sky contents may go CONTENTS_EMPTY -- another part of map --
+    bullets should not leave sky
 
 - console: "nochat" - disable messages from game (engine/developer messages only); may be, display game messages
   in notify area only ? (this will require console extensions, 2nd console etc.)

@@ -1609,7 +1609,8 @@ CVAR_END
 
 	ParseCmdline (cmdline);			// should be executed before any cvar creation
 	Cvar_GetVars (ARRAY_ARG(vars));
-	Cvar_Get ("version", va("%4.2f %s %s %s", VERSION, CPUSTRING, __DATE__, BUILDSTRING), CVAR_SERVERINFO|CVAR_NOSET);
+//	Cvar_Get ("version", va("%4.2f %s %s %s", VERSION, CPUSTRING, __DATE__, BUILDSTRING), CVAR_SERVERINFO|CVAR_NOSET);
+	Cvar_Get ("version", STR(VERSION) " " CPUSTRING " " __DATE__ " " BUILDSTRING, CVAR_SERVERINFO|CVAR_NOSET);
 
 	Cbuf_Init ();
 	Cmd_Init ();
@@ -1781,7 +1782,7 @@ void QCommon_Frame (int msec)
 		{
 			extern int prof_times[256];
 			extern int prof_counts[256];
-			static char *names[12] = {"LinkEdict", "UnlinkEdict", "AreaEdicts", "Trace",
+			static char *names[] = {"LinkEdict", "UnlinkEdict", "AreaEdicts", "Trace",
 				"PtContents", "Pmove", "ModIndex", "ImgIndex", "SndIndex",
 				"Malloc", "Free", "FreeTags"};
 			static unsigned counts[12], times[12];
@@ -1795,7 +1796,7 @@ void QCommon_Frame (int msec)
 			else
 				scale = 1e10;
 			if (!scale) scale = 1;
-			for (i = 0; i < 12; i++)
+			for (i = 0; i < ARRAY_COUNT(names); i++)
 			{
 				re.DrawTextLeft (va("%s: %3d %4f", names[i], counts[i], times[i]/scale), RGB(1, 0.8, 0.3));
 				if (time_before_game > 0)

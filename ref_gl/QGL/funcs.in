@@ -299,7 +299,7 @@ void TexEnvi (GLenum target, GLenum pname, GLenum param) ARGS	// really, param i
 //void TexGeni (GLenum coord, GLenum pname, GLint param);
 //void TexGeniv (GLenum coord, GLenum pname, const GLint *params);
 //void TexImage1D (GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
-void TexImage2D (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) ARGS
+void TexImage2D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) ARGS
 //void TexParameterf (GLenum target, GLenum pname, GLfloat param) ARGS
 //void TexParameterfv (GLenum target, GLenum pname, const GLfloat *params);
 void TexParameteri (GLenum target, GLenum pname, GLint param) ARGS
@@ -415,6 +415,11 @@ void ClientActiveTextureARB (GLenum texture) ARGS
 void LockArraysEXT (GLint first, GLint count) ARGS
 void UnlockArraysEXT (void);
 
+#name GL_EXT_texture_rectangle
+// exact alias: GL_NV_texture_rectangle
+#cvar gl_ext_texture_rectangle
+
+//?? unused
 #name GL_NV_fog_distance
 #cvar gl_ext_fog_distance_nv
 

@@ -5,7 +5,6 @@
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?)
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
-- notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move crouched)
 - when gl_clear=1, cinematics is not displayed (requires GL_BeginFrame before DrawStretchRaw(); currently BeginFrame code executed
   immediately after GL_EndFrame from backend command buffer, but DrawStretchRaw() called BEFORE GL_EndFrame -- EndFrame will erase raw
   drawings)
@@ -38,8 +37,8 @@ ref_oldgl:
   map passin;map passin (BUGS!!!); map rexro (CRUSH!!!)  (this bug found only for passin -- bad map? no bug when "flushmap 1")
 
 - map team_harbor: PF_SetModel() -- NULL name
-- once: tried to draw main menu cursor with a negative image number (should be 0..15): menu.c :: M_DrawCursor() (added "unsigned" to
-  resolve ?)
+- once: tried to draw main menu cursor with a negative image number (should be 0..15): menu.c :: M_DrawCursor() (added "unsigned"
+  to resolve ?)
 
 
 UNRECOVARABLE:
@@ -47,3 +46,18 @@ UNRECOVARABLE:
 - rogue demo3: ".../items/defender/tris..." - linked NULL-model entity (modelindex2 > max available model index)
   reason: old rogue used linked model ".../shell/...", but link was created using "modelindex|0x80"; now rogue is new, but this
   demo was recorded using this buggy game
+
+
+HARDWARE:
+~~~~~~~~~
+- ATI:
+  - when uploading rectangular texture (GL_TEXTURE_RECTANGLE_NV) with compressed internal format, app will crash in ICD GL dll
+  - when game launched fullscreen, <Alt-Enter> will switch to windowed mode with incorrect viewport (visible region);
+    vid_restart will not fix situation
+- NV
+  - (NV:bitdepth change, Blade3D:vid_restart): cannot restart GL with Vid_DestroyWindow(force=false) -- require to recreate window
+  - screenshot is black after changing color depth, but all OK when make one more vid_restart (TNT2, Win2K, 41.09)
+  - GF FX5200 + det.56.72, compiled_vertex_array: have geometry bugs when mixing non-CVA & CVA rendering (disappear with
+    gl_showtris=1); workaround: CVA is ALWAYS used (i.e. for 1-pass rendering too); ATI have no this bug
+- notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move
+  crouched)

@@ -1,0 +1,82 @@
+Detect video memory size:
+-------------------------
+#define PROXY_NUM_TEX_INC		32			// 32 textures.
+
+	num = num_alloc = 0;
+	num_per_set = 0;
+	flags = 0;
+	names = 0;
+	
+	video_memory_size = 0;
+	
+	R_glSetActiveTMU( TMU_0 );	
+	glEnable( GL_TEXTURE_2D );
+	R_SetScreenLocal();
+	
+	meg = OS_AllocAPointer( MEG );
+	
+	tex_size = R_glMaxTextureSize();
+	if( tex_size > 512 ) tex_size = 512;
+	num_per_set = ((MEG/4) / (tex_size*tex_size)) * 8;	// gives us 8 megs.
+	
+	for( ;; )
+	{
+		//
+		// alloc some textures
+		//
+		if( num+num_per_set > num_alloc )
+		{
+			num_alloc += PROXY_NUM_TEX_INC;
+			names = (GLuint*)OS_ResizeAPointer( names, sizeof(GLuint)*num_alloc );
+			flags = (GLboolean*)OS_ResizeAPointer( flags, sizeof(GLboolean)*num_alloc );
+		}
+		
+		glGenTextures( num_per_set, &names[num] );
+		
+		for(i = 0; i < num_per_set; i++)
+		{
+			glBindTexture( GL_TEXTURE_2D, names[num+i] );
+			
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+			
+			glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, tex_size, tex_size, 0, GL_RGBA, GL_UNSIGNED_BYTE, meg );
+			
+			glBegin( GL_QUADS );
+			glTexCoord2f( 0, 0 );
+			glVertex2f( 0, 0 );
+			glTexCoord2f( 1, 0 );
+			glVertex2f( 16, 0);
+			glTexCoord2f( 1, 1 );
+			glVertex2f( 16, 16 );
+			glTexCoord2f( 0, 1 );
+			glVertex2f( 0, 16 );
+			glEnd();
+		}
+		
+		num += num_per_set;
+		
+		//
+		// Are these resident?
+		//
+		if( glAreTexturesResident( num, names, flags ) == FALSE )
+		{
+			break;
+		}
+		
+		video_memory_size += MEG*8;
+	}
+	
+	//
+	// Clear it out.
+	//
+	glDeleteTextures( num, names );
+	OS_DeallocAPointer( meg );
+	if( names ) OS_DeallocAPointer( names );
+	if( flags ) OS_DeallocAPointer( flags );
+	
+	glDisable( GL_TEXTURE_2D );
+	
+	video_memory_size += MEG*8;

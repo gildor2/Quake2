@@ -134,7 +134,7 @@ void SV_Configstrings_f (void)
 	}
 
 	// handle the case of a level changing while a client was connecting
-	if ( atoi(Cmd_Argv(1)) != svs.spawncount )
+	if (atoi(Cmd_Argv(1)) != svs.spawncount)
 	{
 		Com_Printf ("SV_Configstrings_f from different level\n");
 		SV_New_f ();

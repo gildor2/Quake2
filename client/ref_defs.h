@@ -32,6 +32,11 @@
 #define Com_WPrintf	ri._Com_WPrintf
 #define Com_FatalError	ri._Com_FatalError
 #define Com_DropError	ri._Com_DropError
+#ifdef _WIN32
+#define win32ExceptFilter2	ri._win32ExceptFilter2
+#endif
+#define appUnwindPrefix	ri._appUnwindPrefix
+#define appUnwindThrow	ri._appUnwindThrow
 #define FS_FileExists	ri._FS_FileExists
 #define FS_ListFiles	ri._FS_ListFiles
 #define FS_LoadFile	ri._FS_LoadFile
@@ -96,6 +101,11 @@ void	Com_DPrintf (const char *str, ...);
 void	Com_WPrintf (const char *str, ...);
 void	Com_FatalError (const char *fmt, ...);
 void	Com_DropError (const char *fmt, ...);
+#ifdef _WIN32
+int	win32ExceptFilter2 (void);
+#endif
+void	appUnwindPrefix (const char *fmt);
+void	__declspec(noreturn)	appUnwindThrow (const char *fmt, ...);
 bool	FS_FileExists (char *filename);
 basenamed_t*	FS_ListFiles (char *name, int *numfiles, int flags);
 int	FS_LoadFile (char *name, void **buf);

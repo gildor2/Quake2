@@ -566,12 +566,15 @@ shader_t *GL_FindShader (char *name, int style)
 	int		hash, lightmapNumber, imgFlags;
 	shader_t *shader;
 
+	guard(GL_FindShader);
+
 	// compute image flags
 	imgFlags = (style & (SHADER_WALL|SHADER_SKIN)) ? (IMAGE_PICMIP|IMAGE_MIPMAP) : 0;
 	if (!(style & (SHADER_ALPHA|SHADER_FORCEALPHA|SHADER_TRANS33|SHADER_TRANS66)))
 		imgFlags |= IMAGE_NOALPHA;
 	if (style & SHADER_WALL) imgFlags |= IMAGE_WORLD;
 	if (style & SHADER_SKIN) imgFlags |= IMAGE_SKIN;
+	if (style & SHADER_CLAMP) imgFlags |= IMAGE_CLAMP;
 
 	if (style & SHADER_ENVMAP && !gl_reflImage)	// remove reflection if nothing to apply
 		style &= ~SHADER_ENVMAP;
@@ -889,6 +892,8 @@ shader_t *GL_FindShader (char *name, int style)
 		}
 	}
 	return FinishShader ();
+
+	unguardf(("%s", name));
 }
 
 
@@ -904,6 +909,8 @@ void GL_ResetShaders (void)
 {
 	tcModParms_t	*tcmod;
 	deformParms_t	*deform;
+
+	guard(GL_ResetShaders);
 
 	if (shaderChain)
 		FreeMemoryChain (shaderChain);
@@ -1063,4 +1070,6 @@ void GL_ResetShaders (void)
 	gl_skyShader = gl_defaultSkyShader = GL_FindShader ("*sky", SHADER_SKY|SHADER_ABSTRACT);
 
 	gl_concharsShader = GL_FindShader ("pics/conchars", SHADER_ALPHA);
+
+	unguard;
 }

@@ -152,7 +152,7 @@ typedef struct
 
 #define	API_VERSION			4
 
-// renderer flasg
+// renderer flags (capabilities)
 #define REF_CONSOLE_ONLY	1		// if set -- no graphics output
 #define REF_NEW_FX			2		// if set, renderer supports sprite fx
 #define REF_USE_PALETTE		4		// if set, renderer cannot display DrawStretchRaw8 simultaneously with other objects

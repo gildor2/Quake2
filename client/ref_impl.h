@@ -32,7 +32,14 @@ static refImport_t ri = {
 	Com_DPrintf,
 	Com_WPrintf,
 	Com_FatalError,
-	Com_DropError,
+	Com_DropError
+#ifdef _WIN32
+,
+	win32ExceptFilter2
+#endif
+,
+	appUnwindPrefix,
+	appUnwindThrow,
 	FS_FileExists,
 	FS_ListFiles,
 	FS_LoadFile,
