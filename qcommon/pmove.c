@@ -611,18 +611,20 @@ static void CatagorizePosition (void)
 	point[0] = pml.origin[0];
 	point[1] = pml.origin[1];
 	point[2] = pml.origin[2] - 0.25;
-	if (pml.velocity[2] > 180) //ZOID changed from 100 to 180 (ramp accel)
-	{
+
+/*	if (pml.velocity[2] > 180) //ZOID changed from 100 to 180 (ramp accel)
+??	{
 		pm->s.pm_flags &= ~PMF_ON_GROUND;
 		pm->groundentity = NULL;
 	}
-	else
+	else */
 	{
 		trace = pm->trace (pml.origin, pm->mins, pm->maxs, point);
 		pml.groundplane = trace.plane;
 		pml.groundsurface = trace.surface;
 		pml.groundcontents = trace.contents;
 
+//		if (trace.allsolid) Com_WPrintf("locked: %g %g %g\n", VECTOR_ARGS(point));
 		if (!trace.ent || (trace.plane.normal[2] < 0.7 && !trace.startsolid))
 		{
 			pm->groundentity = NULL;

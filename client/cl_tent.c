@@ -22,28 +22,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "snd_loc.h"
 
-typedef enum
-{
-	ex_free, ex_explosion, ex_misc, ex_flash, ex_mflash, ex_poly, ex_poly2
-} exptype_t;
-
-typedef struct
-{
-	exptype_t	type;
-	entity_t	ent;
-
-	int			frames;
-	float		light;
-	vec3_t		lightcolor;
-	float		time;
-	int			baseframe;
-} explosion_t;
-
-
-
-#define	MAX_EXPLOSIONS	32
-explosion_t	cl_explosions[MAX_EXPLOSIONS];
-
 
 #define	MAX_BEAMS	32
 typedef struct
@@ -305,6 +283,28 @@ void CL_RegisterTEntModels (void)
 	//ROGUE
 }
 
+
+typedef enum
+{
+	ex_free, ex_explosion, ex_misc, ex_flash, ex_mflash, ex_poly
+} exptype_t;
+
+typedef struct
+{
+	exptype_t	type;
+	entity_t	ent;
+
+	int			frames;			// lifetime in number of frames (0.1s units)
+	float		light;
+	vec3_t		lightcolor;
+	float		time;
+	int			baseframe;
+} explosion_t;
+
+
+
+#define	MAX_EXPLOSIONS	32
+explosion_t	cl_explosions[MAX_EXPLOSIONS];
 /*
 =================
 CL_ClearTEnts
@@ -338,7 +338,7 @@ explosion_t *CL_AllocExplosion (void)
 		if (ex->type == ex_free)
 		{
 			memset (ex, 0, sizeof(explosion_t));
-			ex->time = -100;	//?? just a negative number
+			ex->time = -100;	// will keep 1st frame for 100ms ??
 			return ex;
 		}
 	}
@@ -367,7 +367,7 @@ CL_AddExplosions
 void CL_AddExplosions (void)
 {
 	entity_t	*ent;
-	int			i, f, timeDelta;
+	int			i, frm, timeDelta;
 	explosion_t	*ex;
 	float		frac;
 	static int oldTime;
@@ -390,87 +390,63 @@ void CL_AddExplosions (void)
 			ex->time = 0;	// just started
 		else
 			ex->time += timeDelta;
+
 		frac = ex->time / 100.0f;
 		if (frac < 0) frac = 0;
-		f = floor (frac);
+		frm = floor (frac);
+
+		if (frm >= ex->frames-1)
+		{
+			ex->type = ex_free;
+			continue;
+		}
 
 		ent = &ex->ent;
 
 		switch (ex->type)
 		{
-		case ex_mflash:
-			if (f >= ex->frames-1)
-				ex->type = ex_free;
-			break;
+//		case ex_mflash:
+//			break;
+
 		case ex_misc:
-			if (f >= ex->frames-1)
-			{
-				ex->type = ex_free;
-				break;
-			}
-			ent->alpha = 1.0 - frac / (ex->frames - 1);
+			ent->alpha = 1.0f - frac / (ex->frames - 1);
 			break;
+
 		case ex_flash:
-			if (f >= 1)
-			{
-				ex->type = ex_free;
-				break;
-			}
 			ent->alpha = 1.0;
 			break;
+
 		case ex_poly:
-			if (f >= ex->frames-1)
+//			ent->alpha = 1.0f - frm / 16.0f;		// ladder effect
+			ent->alpha = 1.0f - frac / 16.0f;		// smooth
+			if (frm < 10)
 			{
-				ex->type = ex_free;
-				break;
-			}
-
-			ent->alpha = (16 - f) / 16.0f;
-
-			if (f < 10)
-			{
-				ent->skinnum = (f>>1);
+				ent->skinnum = (frm >> 1);
 				if (ent->skinnum < 0)
 					ent->skinnum = 0;
 			}
 			else
 			{
 				ent->flags |= RF_TRANSLUCENT;
-				if (f < 13)
+				if (frm < 13)
 					ent->skinnum = 5;
 				else
 					ent->skinnum = 6;
 			}
 			break;
-		case ex_poly2:
-			if (f >= ex->frames-1)
-			{
-				ex->type = ex_free;
-				break;
-			}
-
-			ent->alpha = (5 - f) / 5.0f;
-			ent->skinnum = 0;
-			ent->flags |= RF_TRANSLUCENT;
-			break;
 		}
 
-		if (ex->type == ex_free)
-			continue;
 		if (ex->light)
 		{
-			V_AddLight (ent->origin, ex->light*ent->alpha,
-				ex->lightcolor[0], ex->lightcolor[1], ex->lightcolor[2]);
+			V_AddLight (ent->origin, ex->light * ent->alpha, VECTOR_ARGS(ex->lightcolor));
+//			re.DrawTextLeft(va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARGS(ent->origin), ent->alpha, VECTOR_ARGS(ex->lightcolor)),1,1,1);
 		}
 
 		VectorCopy (ent->origin, ent->oldorigin);
 
-		if (f < 0)
-			f = 0;
-		ent->frame = ex->baseframe + f + 1;
-		ent->oldframe = ex->baseframe + f;
-//		ent->backlerp = r_sfx_pause->integer ? 0 : 1.0f - cl.lerpfrac;
-		ent->backlerp = r_sfx_pause->integer ? 0 : 1.0f - (frac - f);
+		ent->frame = ex->baseframe + frm + 1;
+		ent->oldframe = ex->baseframe + frm;
+		ent->backlerp = r_sfx_pause->integer ? 0 : 1.0f - (frac - frm);
 
 		V_AddEntity (ent);
 	}
@@ -963,8 +939,8 @@ void CL_ParseTEnt (void)
 
 				VectorAdd (pos, dir, start);
 				VectorMA (start, -2, dir, end);
-				trace = CM_BoxTrace (start, end, zero, zero, 0, MASK_ALL);
-				CL_ClipMoveToEntities (start, zero, zero, end, &trace);
+				CM_BoxTrace (&trace, start, end, zero, zero, 0, MASK_ALL);
+				CL_ClipMoveToEntities (&trace, start, zero, zero, end);
 				if (trace.fraction < 1.0)
 				{
 					csurface_t	*surf;
@@ -1115,7 +1091,7 @@ void CL_ParseTEnt (void)
 		ex->lightcolor[1] = 0.5;
 		ex->lightcolor[2] = 0.5;
 		ex->ent.model = cl_mod_explo4;
-		ex->frames = 19;
+		ex->frames = 15;	//?? original: max frame was 19; for this explosion type should be 15 (can be negative ex->alpha)
 		ex->baseframe = 30;
 		ex->ent.angles[1] = rand() % 360;
 		CL_ExplosionParticles (pos);
@@ -1372,9 +1348,8 @@ void CL_ParseTEnt (void)
 		MSG_ReadDir (&net_message, dir);
 //		r = MSG_ReadByte (&net_message);
 //		magnitude = MSG_ReadShort (&net_message);
-//??		r = 8;
 		magnitude = 60;
-		color = 8;//?? r & 0xff;
+		color = 8;
 		CL_ParticleSteamEffect (pos, dir, color, cnt, magnitude);
 		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;

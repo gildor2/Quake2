@@ -401,6 +401,10 @@ SOURCE=.\ref_gl\gl_backend.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\ref_gl\gl_buffers.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\ref_gl\gl_image.c
 # End Source File
 # Begin Source File
@@ -500,10 +504,6 @@ SOURCE=.\ref_gl\qgl_decl.h
 SOURCE=.\ref_gl\qgl_impl.h
 # End Source File
 # End Group
-# Begin Source File
-
-SOURCE=.\ref_gl\gl_buffers.c
-# End Source File
 # End Group
 # Begin Group "ref_soft"
 

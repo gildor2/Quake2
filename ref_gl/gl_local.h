@@ -350,6 +350,7 @@ extern	shader_t	*gl_identityLightShader2;	// with depth test/write
 extern	shader_t	*gl_concharsShader;
 extern	shader_t	*gl_defaultSkyShader;
 extern	shader_t	*gl_particleShader;
+extern	shader_t	*gl_entityShader;
 extern	shader_t	*gl_flareShader;			// NULL if not found
 extern	shader_t	*gl_colorShellShader;
 extern	shader_t	*gl_railSpiralShader, *gl_railRingsShader, *gl_railBeamShader;
@@ -456,6 +457,11 @@ typedef struct refEntity_s
 			beamType_t beamType;
 			vec3_t	beamStart, beamEnd;
 			float	beamRadius;
+		};
+		/*------------- bbox ----------------*/
+		struct {
+			vec3_t	boxAxis[3];
+			vec3_t	boxSize;
 		};
 	};
 

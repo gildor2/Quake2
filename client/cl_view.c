@@ -450,6 +450,16 @@ static void DecodeContents (int i)
 }
 
 
+static char *ModelName (int modelIndex)
+{
+	if (!modelIndex) return NULL;
+	if (modelIndex < 255)
+		return cl.configstrings[CS_MODELS + modelIndex];
+	else
+		return "(custom)";
+}
+
+
 static void DrawSurfInfo (void)
 {
 	vec3_t	start, end;
@@ -491,9 +501,9 @@ static void DrawSurfInfo (void)
 	VectorScale (end, 500, end);
 	VectorAdd (start, end, end);
 
-	trace = CM_BoxTrace (start, end, v1, v2, 0, r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER);
+	CM_BoxTrace (&trace, start, end, v1, v2, 0, r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER);
 	if (!(r_surfinfo->integer & 2))
-		CL_ClipMoveToEntities (start, v1, v2, end, &trace);
+		CL_ClipMoveToEntities (&trace, start, v1, v2, end);
 
 	if (trace.fraction < 1.0)
 	{
@@ -521,6 +531,26 @@ static void DrawSurfInfo (void)
 			re.DrawTextLeft (va("Material: %s", s), 0.3, 0.6, 0.4);
 		}
 		DecodeContents (trace.contents);
+		if (trace.ent)
+		{
+			entityState_t *ent;
+
+			ent = (entityState_t*)trace.ent;
+			re.DrawTextLeft ("Entity:", 0.4, 0.4, 0.6);
+			re.DrawTextLeft ("-------", 0.4, 0.4, 0.6);
+			re.DrawTextLeft (va("Origin: %g %g %g", VECTOR_ARGS(ent->origin)), 0.4, 0.4, 0.6);
+			re.DrawTextLeft (va("fx: %X  rfx: %X", ent->effects, ent->renderfx), 0.2, 0.4, 1);
+			if (ent->modelindex)
+				re.DrawTextLeft (va("model: %s", ModelName (ent->modelindex)), 0.2, 0.4, 1);
+			if (ent->modelindex2)
+				re.DrawTextLeft (va("model2: %s", ModelName (ent->modelindex2)), 0.2, 0.4, 1);
+			if (ent->modelindex3)
+				re.DrawTextLeft (va("model3: %s", ModelName (ent->modelindex3)), 0.2, 0.4, 1);
+			if (ent->modelindex4)
+				re.DrawTextLeft (va("model4: %s", ModelName (ent->modelindex4)), 0.2, 0.4, 1);
+
+			CL_AddEntityBox (ent, 0xFF2020FF);
+		}
 		re.DrawTextLeft ("", 0, 0, 0);
 	}
 }
@@ -704,9 +734,9 @@ static void FixWaterVis (void)
 
 	// trace from air to water
 	if (!w1)
-		trace = CM_BoxTrace (cl.refdef.vieworg, p, zero, zero, 0, MASK_WATER);
+		CM_BoxTrace (&trace, cl.refdef.vieworg, p, zero, zero, 0, MASK_WATER);
 	else
-		trace = CM_BoxTrace (p, cl.refdef.vieworg, zero, zero, 0, MASK_WATER);
+		CM_BoxTrace (&trace, p, cl.refdef.vieworg, zero, zero, 0, MASK_WATER);
 	if (trace.fraction < 1.0f && !(trace.surface->flags & (SURF_TRANS33|SURF_TRANS66)))
 	{
 //		re.DrawTextLeft("WATER FIX!", 1, 1, 1);
@@ -801,6 +831,10 @@ void V_RenderView (float stereo_separation)
 			VectorAdd (cl.refdef.vieworg, tmp, cl.refdef.vieworg);
 		}
 
+		// debug output
+		if (r_playerpos->integer)	DrawOriginInfo ();
+		if (r_surfinfo->integer)	DrawSurfInfo ();
+
 		// never let it sit exactly on a node line, because a water plane can
 		// dissapear when viewed with the eye exactly on it.
 		// the server protocol only specifies to 1/8 pixel, so add 1/16 in each axis
@@ -846,8 +880,7 @@ void V_RenderView (float stereo_separation)
 
 	re.RenderFrame (&cl.refdef);
 
-	if (r_playerpos->integer)	DrawOriginInfo ();
-	if (r_surfinfo->integer)	DrawSurfInfo ();
+	// stats
 	if (r_drawfps->integer)		DrawFpsInfo ();
 
 	if (cl_stats->integer)
@@ -887,9 +920,9 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(cl_stats, 0, 0),
 
-	CVAR_VAR(r_playerpos, 0, 0),
 	CVAR_VAR(r_drawfps, 0, 0),
-	CVAR_VAR(r_surfinfo, 0, 0)
+	CVAR_VAR(r_playerpos, 0, CVAR_CHEAT),
+	CVAR_VAR(r_surfinfo, 0, CVAR_CHEAT)
 CVAR_END
 
 	CVAR_GET_VARS(vars);

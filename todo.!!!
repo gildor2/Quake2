@@ -1,3 +1,6 @@
+! make NEW_PROTOCOL_VERSION: send with NEW_PROTOCOL_ID, client warning when client older than server and disabling
+  ext protocol for client
+? check for hook ability of precicious PMove (more than 1/8)
 ! console: use "SetConsoleCtrlHandler()" to hook exit with "x" or Ctrl-C
 ! command "banchat": disable chat of concrete IP
 - remove IPX protocol from win32 code
@@ -22,9 +25,15 @@
 ! prediction errors:
   - zaero, plasma shield (jump + shield in down direction - movement lock when landed on shield);
     original Q2 works incorrect too, but in a different way: can pass through shield
+  ! lerp entity angles (may remove bug with locking inside opening door)
   - other: find "prediction" in this document
 ? make "r_consoleOnly" work without "vid_restart"
 - r_speeds -> r_times + r_stats
+* BUG: demo "match5...": have "crosshair 0;hand 2" on start -- should disable this (now disabled "set" command, need Cvar_Command);
+  position: cl_parse.c :: CL_ParseServerMessage() :: svc_stufftext
+  can: Cvar_Lock() -- disable cvar set with scripts, add cmd cvar_unlock cmd + put this command after Cbuf_AddText() (put "lock" before?)
+  cannot disable ALL commands here: some commands are used within network protocol ("precache", "cmd", dirty:"alias" etc.; demos:
+  "precache" only ?)
 
 ----------------------------------------
 
@@ -122,9 +131,6 @@ BSP:
 - Sys_Error(ERR_FATAL): will not restore mouse (not always ??!)
 *? map "ground3_beta3": have (server, "MAX_ENTS=128"- related ?) bug "SZ_Overflow" (??) when spectating and flying from inside wall
   (see cl_ents.c MAX_PARSE_ENTITIES: seems, no more than 128 entities delta between frames)
-? prediction:
-  - map "beachassault": ship's entry, when in "down" state -- drizzle
-  - map "japan", lift (really, within all lifts), 3rd_person, going up with looking up -- camera drizzle (bad collision with lift entity)
 - 3rd person view: ground3_beta3, dist=300, enter dark place (near ladder) between street lamp and garage: garage
   door will disappear (server sends entity list depends on model origin, not vieworg)
 - memory leak 4096 bytes (map rexro/discon/vid_res/STATS/beachassault/rexro/discon/vid_res/STATS)

@@ -2446,7 +2446,7 @@ When start==end:
 ==================
 */
 //?? check: can this be faster if trace with sphere
-trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask)
+void CM_BoxTrace (trace_t *trace, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask)
 {
 	int		i;
 
@@ -2459,7 +2459,10 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int he
 	trace_trace.surface = &nullsurface;
 
 	if (!numnodes)	// map not loaded
-		return trace_trace;
+	{
+		*trace = trace_trace;
+		return;
+	}
 
 /*	if (maptype == map_hl)
 	//!!!!
@@ -2539,7 +2542,8 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int he
 			re.DrawTextRight (buf,1,1,1);
 			re.DrawTextRight ("====================", 0.5,0,0.5);
 		}//===*/
-		return trace_trace;
+		*trace = trace_trace;
+		return;
 	}
 
 	// our "clip to all" special case (mins > maxs) -- point trace, but not go through SURF_ALPHA
@@ -2604,7 +2608,8 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int he
 			VECTOR_ARGS(mins), VECTOR_ARGS(maxs));
 	}
 */
-	return trace_trace;
+	*trace = trace_trace;
+	return;
 }
 
 
@@ -2618,10 +2623,9 @@ rotating entities
 */
 
 
-trace_t CM_TransformedBoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,
+void CM_TransformedBoxTrace (trace_t *trace, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,
 	int headnode, int brushmask, vec3_t origin, vec3_t angles)
 {
-	trace_t		trace;
 	vec3_t		start1, end1, tmp;
 	vec3_t		axis[3];
 	qboolean	rotated;
@@ -2654,33 +2658,30 @@ trace_t CM_TransformedBoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t ma
 	}
 
 	// sweep the box through the model
-	trace = CM_BoxTrace (start1, end1, mins, maxs, headnode, brushmask);
+	CM_BoxTrace (trace, start1, end1, mins, maxs, headnode, brushmask);
 
 	// transform normal/endpos to world coordinate system
-	if (trace.fraction != 1.0f && rotated)
+	if (trace->fraction != 1.0f && rotated)
 	{
-		VectorScale (axis[0], trace.plane.normal[0], tmp);
-		VectorMA (tmp, trace.plane.normal[1], axis[1], tmp);
-		VectorMA (tmp, trace.plane.normal[2], axis[2], trace.plane.normal);
+		VectorScale (axis[0], trace->plane.normal[0], tmp);
+		VectorMA (tmp, trace->plane.normal[1], axis[1], tmp);
+		VectorMA (tmp, trace->plane.normal[2], axis[2], trace->plane.normal);
 	}
 
 	if (rotated)
 	{
-		VectorMA (origin, trace.endpos[0], axis[0], tmp);
-		VectorMA (tmp, trace.endpos[1], axis[1], tmp);
-		VectorMA (tmp, trace.endpos[2], axis[2], trace.endpos);
+		VectorMA (origin, trace->endpos[0], axis[0], tmp);
+		VectorMA (tmp, trace->endpos[1], axis[1], tmp);
+		VectorMA (tmp, trace->endpos[2], axis[2], trace->endpos);
 	}
 	else
-		VectorAdd (trace.endpos, origin, trace.endpos);
-
-	return trace;
+		VectorAdd (trace->endpos, origin, trace->endpos);
 }
 
 
-trace_t CM_TransformedBoxTrace2 (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,
+void CM_TransformedBoxTrace2 (trace_t *trace, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,
 	int headnode, int brushmask, vec3_t origin, vec3_t *axis)
 {
-	trace_t		trace;
 	vec3_t		start1, end1, tmp;
 
 	// transform start/end to axis (model coordinate system)
@@ -2695,21 +2696,19 @@ trace_t CM_TransformedBoxTrace2 (vec3_t start, vec3_t end, vec3_t mins, vec3_t m
 	end1[2] = DotProduct (tmp, axis[2]);
 
 	// sweep the box through the model
-	trace = CM_BoxTrace (start1, end1, mins, maxs, headnode, brushmask);
+	CM_BoxTrace (trace, start1, end1, mins, maxs, headnode, brushmask);
 
 	// transform normal/endpos to world coordinate system
-	if (trace.fraction != 1.0f)
+	if (trace->fraction != 1.0f)
 	{
-		VectorScale (axis[0], trace.plane.normal[0], tmp);
-		VectorMA (tmp, trace.plane.normal[1], axis[1], tmp);
-		VectorMA (tmp, trace.plane.normal[2], axis[2], trace.plane.normal);
+		VectorScale (axis[0], trace->plane.normal[0], tmp);
+		VectorMA (tmp, trace->plane.normal[1], axis[1], tmp);
+		VectorMA (tmp, trace->plane.normal[2], axis[2], trace->plane.normal);
 	}
 
-	VectorMA (origin, trace.endpos[0], axis[0], tmp);
-	VectorMA (tmp, trace.endpos[1], axis[1], tmp);
-	VectorMA (tmp, trace.endpos[2], axis[2], trace.endpos);
-
-	return trace;
+	VectorMA (origin, trace->endpos[0], axis[0], tmp);
+	VectorMA (tmp, trace->endpos[1], axis[1], tmp);
+	VectorMA (tmp, trace->endpos[2], axis[2], trace->endpos);
 }
 
 

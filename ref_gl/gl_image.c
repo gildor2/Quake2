@@ -1097,6 +1097,7 @@ void GL_PerformScreenshot (void)
 	else
 	{
 		// autogenerate name
+		//?? should ListFiles(..."shot*") in current mod (OS FS) and find unused name in this list
 		for (i = 0; i < 10000; i++)
 		{	// check for a free filename
 			Com_sprintf (name, sizeof(name), "%s/screenshots/shot%04d%s", FS_Gamedir (), i, ext);

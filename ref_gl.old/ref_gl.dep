@@ -7,10 +7,9 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\gl.h"\
-	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
+	".\qgl_decl.h"\
 	
 
 .\gl_image.c : \
@@ -20,10 +19,9 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\gl.h"\
-	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
+	".\qgl_decl.h"\
 	
 
 .\gl_light.c : \
@@ -33,10 +31,9 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\gl.h"\
-	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
+	".\qgl_decl.h"\
 	
 
 .\gl_mesh.c : \
@@ -46,12 +43,11 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\gl.h"\
-	"..\ref_gl\qgl_decl.h"\
 	".\anorms.h"\
 	".\anormtab.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
+	".\qgl_decl.h"\
 	
 
 .\gl_model.c : \
@@ -61,10 +57,9 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\gl.h"\
-	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
+	".\qgl_decl.h"\
 	
 
 .\gl_rmain.c : \
@@ -74,10 +69,9 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\gl.h"\
-	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
+	".\qgl_decl.h"\
 	
 
 .\gl_rmisc.c : \
@@ -87,10 +81,9 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\gl.h"\
-	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
+	".\qgl_decl.h"\
 	
 
 .\gl_rsurf.c : \
@@ -100,10 +93,9 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\gl.h"\
-	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
+	".\qgl_decl.h"\
 	
 
 .\gl_textout.c : \
@@ -113,10 +105,9 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\gl.h"\
-	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
+	".\qgl_decl.h"\
 	
 
 .\gl_warp.c : \
@@ -126,23 +117,23 @@
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\gl.h"\
-	"..\ref_gl\qgl_decl.h"\
 	".\gl_local.h"\
 	".\gl_model.h"\
+	".\qgl_decl.h"\
 	
 
-..\win32\glw_imp.c : \
+glw_imp.c : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\gl_local.h"\
-	"..\ref_gl\qgl_decl.h"\
 	"..\win32\glw_win.h"\
 	"..\win32\winquake.h"\
+	".\gl_local.h"\
+	".\gl_model.h"\
+	".\qgl_decl.h"\
 	
 
 ..\qcommon\q_shared2.c : \
@@ -154,15 +145,16 @@
 	"..\qcommon\qfiles.h"\
 	
 
-..\win32\qgl_win.c : \
+.\qgl_win.c : \
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
 	"..\qcommon\q_shared2.h"\
 	"..\qcommon\qcommon.h"\
 	"..\qcommon\qfiles.h"\
-	"..\ref_gl\gl_local.h"\
-	"..\ref_gl\qgl_decl.h"\
-	"..\ref_gl\qgl_impl.h"\
 	"..\win32\glw_win.h"\
+	".\gl_local.h"\
+	".\gl_model.h"\
+	".\qgl_decl.h"\
+	".\qgl_impl.h"\
 	

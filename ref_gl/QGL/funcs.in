@@ -1,7 +1,7 @@
 //void Accum (GLenum op, GLfloat value);
 void AlphaFunc (GLenum func, GLclampf ref) ARGS
 //GLboolean AreTexturesResident (GLsizei n, const GLuint *textures, GLboolean *residences);
-void ArrayElement (GLint i) ARGS	//!! required for old ref_gl
+//void ArrayElement (GLint i) ARGS
 void Begin (GLenum mode) ARGS
 void BindTexture (GLenum target, GLuint texture) ARGS
 //void Bitmap (GLsizei width, GLsizei height, GLfloat xorig, GLfloat yorig, GLfloat xmove, GLfloat ymove, const GLubyte *bitmap);
@@ -94,14 +94,14 @@ void Fogfv (GLenum pname, const GLfloat *params) ARGS
 //void Fogi (GLenum pname, GLint param);
 //void Fogiv (GLenum pname, const GLint *params);
 //void FrontFace (GLenum mode);
-void Frustum (GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar) ARGS
+//void Frustum (GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar) ARGS
 //GLuint GenLists (GLsizei range);
 //void GenTextures (GLsizei n, GLuint *textures);
 //void GetBooleanv (GLenum pname, GLboolean *params);
 //void GetClipPlane (GLenum plane, GLdouble *equation);
 //void GetDoublev (GLenum pname, GLdouble *params);
 GLenum GetError (void);
-void GetFloatv (GLenum pname, GLfloat *params);
+//void GetFloatv (GLenum pname, GLfloat *params);
 void GetIntegerv (GLenum pname, GLint *params);
 //void GetLightfv (GLenum light, GLenum pname, GLfloat *params);
 //void GetLightiv (GLenum light, GLenum pname, GLint *params);
@@ -248,7 +248,7 @@ void ReadPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format,
 //void Rotated (GLdouble angle, GLdouble x, GLdouble y, GLdouble z) ARGS
 void Rotatef (GLfloat angle, GLfloat x, GLfloat y, GLfloat z) ARGS
 //void Scaled (GLdouble x, GLdouble y, GLdouble z) ARGS
-void Scalef (GLfloat x, GLfloat y, GLfloat z) ARGS	//!! required for old ref_gl
+//void Scalef (GLfloat x, GLfloat y, GLfloat z) ARGS
 void Scissor (GLint x, GLint y, GLsizei width, GLsizei height) ARGS
 //void SelectBuffer (GLsizei size, GLuint *buffer);
 void ShadeModel (GLenum mode) ARGS
@@ -368,13 +368,13 @@ BOOL wglMakeCurrent (HDC hdc, HGLRC hglrc);
 #prefer GL_ARB_multitexture
 void SelectTextureSGIS (GLenum target) ARGS
 void SelectTextureCoordSetSGIS (GLenum target) ARGS
-void MultiTexCoord2fSGIS (GLenum target, GLfloat s, GLfloat t) ARGS	//!! for old ref_gl
+//void MultiTexCoord2fSGIS (GLenum target, GLfloat s, GLfloat t) ARGS
 
 #name GL_ARB_multitexture
 #cvar gl_ext_multitexture
 void ActiveTextureARB (GLenum texture) ARGS
 void ClientActiveTextureARB (GLenum texture) ARGS
-void MultiTexCoord2fARB (GLenum target, GLfloat s, GLfloat t) ARGS	//!! for old ref_gl
+//void MultiTexCoord2fARB (GLenum target, GLfloat s, GLfloat t) ARGS
 
 // ?? alias ARB
 #name GL_EXT_texture_env_add

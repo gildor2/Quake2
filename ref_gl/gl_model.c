@@ -676,9 +676,9 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			VectorMA (mid, -2, norm, p2);
 			// perform trace
 			if (!surfs->side)
-				trace = CM_BoxTrace (p1, p2, v1, v2, headnode, MASK_SOLID);
+				CM_BoxTrace (&trace, p1, p2, v1, v2, headnode, MASK_SOLID);
 			else
-				trace = CM_BoxTrace (p2, p1, v1, v2, headnode, MASK_SOLID);
+				CM_BoxTrace (&trace, p2, p1, v1, v2, headnode, MASK_SOLID);
 			if (trace.fraction < 1 && !(trace.contents & CONTENTS_MIST))
 				sflags |= SHADER_ENVMAP;
 		}
@@ -878,7 +878,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			// check for single-color lightmap block
 			if (lm->numStyles == 1)
 			{
-#define MAX_DEV		4					// maximal deviation of texture color
+#define MAX_DEV		4					// maximal deviation of texture color (4 looks bad with 1-texel lm, but good with vertex lighting)
 				byte	*p;
 				byte	min[3], max[3];
 

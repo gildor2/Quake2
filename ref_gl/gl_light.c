@@ -242,7 +242,7 @@ static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *v
 //if (sl->spot) DrawTextLeft(va("  scale=%g",scale),1,1,0);
 	if (scale < 1) return;							// "scale" will convert 0..1 range to 0..255
 
-	tr = CM_BoxTrace (sl->origin, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
+	CM_BoxTrace (&tr, sl->origin, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
 	if (tr.fraction < 1) return;
 
 	AddLight (axis, dif, scale, sl->color);
@@ -328,7 +328,7 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 	}
 
 	VectorMA (origin, -dist + 1, dir, dst);				// need to shift in light direction because of trace bugs with non-axial planes
-	tr = CM_BoxTrace (dst, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
+	CM_BoxTrace (&tr, dst, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
 	if (tr.fraction < 1) return;
 
 	if (tr.startsolid)
@@ -341,7 +341,7 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 		VectorScale (pl->axis[0], x, dst);
 		VectorMA (dst, y, pl->axis[1], dst);
 		VectorMA (dst, pl->plane.dist + 1, pl->plane.normal, dst);
-		tr = CM_BoxTrace (dst, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
+		CM_BoxTrace (&tr, dst, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
 		if (tr.fraction < 1 || tr.startsolid) return;
 	}
 
@@ -430,7 +430,7 @@ static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 		static vec3_t zero = {0, 0, 0};
 
 		VectorMA (origin, -16384, map.sunVec, dst);
-		tr = CM_BoxTrace (origin, dst, zero, zero, 0, CONTENTS_SOLID);
+		CM_BoxTrace (&tr, origin, dst, zero, zero, 0, CONTENTS_SOLID);
 		if (tr.surface->flags & SURF_SKY && !tr.startsolid)	// can be "startsolid" even if "row"!=NULL
 		{
 			AddLight (axis, map.sunVec, map.sunLight, map.sunColor);

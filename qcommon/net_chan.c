@@ -93,7 +93,7 @@ void Netchan_Init (void)
 	int		port;
 
 	// pick a port value that should be nice and random
-	port = Sys_Milliseconds () & 0xffff;
+	port = Sys_Milliseconds () & 0xFFFF;
 
 	showpackets = Cvar_Get ("showpackets", "0", 0);
 	showdrop = Cvar_Get ("showdrop", "0", 0);
@@ -239,8 +239,8 @@ void Netchan_Transmit (netchan_t *chan, int length, byte *data)
 	// write the packet header
 	SZ_Init (&send, send_buf, sizeof(send_buf));
 
-	w1 = ( chan->outgoing_sequence & ~(1<<31) ) | (send_reliable<<31);
-	w2 = ( chan->incoming_sequence & ~(1<<31) ) | (chan->incoming_reliable_sequence<<31);
+	w1 = ( chan->outgoing_sequence & 0x7FFFFFFF ) | (send_reliable<<31);
+	w2 = ( chan->incoming_sequence & 0x7FFFFFFF ) | (chan->incoming_reliable_sequence<<31);
 
 	chan->outgoing_sequence++;
 	chan->last_sent = curtime;
@@ -312,8 +312,8 @@ qboolean Netchan_Process (netchan_t *chan, sizebuf_t *msg)
 	reliable_message = sequence >> 31;
 	reliable_ack = sequence_ack >> 31;
 
-	sequence &= ~(1<<31);
-	sequence_ack &= ~(1<<31);
+	sequence &= 0x7FFFFFFF;
+	sequence_ack &= 0x7FFFFFFF;
 
 	if (showpackets->integer)
 	{

@@ -60,14 +60,14 @@ void	QGL_InitExtensions (void);
 void	QGL_Shutdown (void);
 // logging
 void	QGL_EnableLogging (qboolean enable);
-void	QGL_LogMessage (char *text);
+void	QGL_LogMessage (const char *text);
 #define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
 
 #ifndef APIENTRY
 #  define APIENTRY
 #endif
 
-#include "../ref_gl/qgl_decl.h"
+#include "qgl_decl.h"
 
 
 #define	REF_VERSION	"GL 0.01"
@@ -139,7 +139,6 @@ void	QGL_LogMessage (char *text);
 #define R_DrawParticles		GLR_DrawParticles
 #define R_DrawAlphaSurfaces	GLR_DrawAlphaSurfaces
 #define R_TextureAnimation	GLR_TextureAnimation
-#define Vid_CreateWindow	GLVid_CreateWindow
 
 #define r_worldmodel		glr_worldmodel
 #define r_avertexnormals	glr_avertexnormals

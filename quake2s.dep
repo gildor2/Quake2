@@ -639,6 +639,20 @@
 	".\ref_gl\qgl_decl.h"\
 	
 
+.\ref_gl\gl_buffers.c : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
+	".\client\ref_defs.h"\
+	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
+	".\ref_gl\gl_backend.h"\
+	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_model.h"\
+	".\ref_gl\gl_shader.h"\
+	".\ref_gl\qgl_decl.h"\
+	
+
 .\ref_gl\gl_image.c : \
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
@@ -810,20 +824,6 @@
 	".\ref_gl\qgl_decl.h"\
 	".\ref_gl\qgl_impl.h"\
 	".\win32\glw_win.h"\
-	
-
-.\ref_gl\gl_buffers.c : \
-	".\client\ref.h"\
-	".\client\ref_decl.h"\
-	".\client\ref_defs.h"\
-	".\qcommon\q_shared2.h"\
-	".\qcommon\qcommon.h"\
-	".\qcommon\qfiles.h"\
-	".\ref_gl\gl_backend.h"\
-	".\ref_gl\gl_local.h"\
-	".\ref_gl\gl_model.h"\
-	".\ref_gl\gl_shader.h"\
-	".\ref_gl\qgl_decl.h"\
 	
 
 .\win32\q_shwin.c : \
@@ -1445,7 +1445,6 @@
 	".\jpeg\jerror.h"\
 	".\jpeg\jinclude.h"\
 	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
 	".\jpeg\jpeglib.h"\
 	
 

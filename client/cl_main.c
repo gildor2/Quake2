@@ -85,6 +85,7 @@ cvar_t  *cl_extProtocol;
 
 cvar_t	*cl_newfx;
 cvar_t	*cl_draw2d;
+cvar_t	*cl_showbboxes;
 cvar_t	*r_sfx_pause;
 
 client_static_t	cls;
@@ -398,7 +399,7 @@ CL_Pause_f
 void CL_Pause_f (void)
 {
 	// never pause in multiplayer
-	if (Cvar_VariableInt ("maxclients") > 1 || !Com_ServerState ())
+	if ((Cvar_VariableInt ("maxclients") > 1 && !cl_cheats) || !Com_ServerState ())
 	{
 		Cvar_SetInteger ("paused", 0);
 		return;
@@ -1567,7 +1568,8 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(cl_newfx, 1, CVAR_ARCHIVE),
 	CVAR_VAR(cl_draw2d, 1, 0),
-	CVAR_VAR(r_sfx_pause, 0, 0)
+	CVAR_VAR(r_sfx_pause, 0, 0),
+	CVAR_VAR(cl_showbboxes, 0, CVAR_CHEAT)
 CVAR_END
 
 	CVAR_GET_VARS(vars);
@@ -1698,7 +1700,7 @@ void CL_Frame (int msec)
 	{
 		if (cls.state == ca_connected && extratime < 100)
 			return;			// don't flood packets out while connecting
-		if (extratime < 1000 / cl_maxfps->value)
+		if (extratime < 1000 / cl_maxfps->value)		// NOTE: extratime <- msec is timescaled (cl_maxfps will not work with timescale)
 			return;			// framerate is too high
 	}
 

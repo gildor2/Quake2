@@ -291,6 +291,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\vid_dll.obj" \
 	"$(INTDIR)\vid_menu.obj" \
 	"$(INTDIR)\gl_backend.obj" \
+	"$(INTDIR)\gl_buffers.obj" \
 	"$(INTDIR)\gl_image.obj" \
 	"$(INTDIR)\gl_interface.obj" \
 	"$(INTDIR)\gl_light.obj" \
@@ -304,7 +305,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\gl_world.obj" \
 	"$(INTDIR)\glw_imp.obj" \
 	"$(INTDIR)\qgl_win.obj" \
-	"$(INTDIR)\gl_buffers.obj" \
 	".\release\q_shwin.obj" \
 	".\release\r_aclip.obj" \
 	".\release\r_alias.obj" \
@@ -818,6 +818,7 @@ BSC32_SBRS= \
 	"$(INTDIR)\vid_dll.sbr" \
 	"$(INTDIR)\vid_menu.sbr" \
 	"$(INTDIR)\gl_backend.sbr" \
+	"$(INTDIR)\gl_buffers.sbr" \
 	"$(INTDIR)\gl_image.sbr" \
 	"$(INTDIR)\gl_interface.sbr" \
 	"$(INTDIR)\gl_light.sbr" \
@@ -831,7 +832,6 @@ BSC32_SBRS= \
 	"$(INTDIR)\gl_world.sbr" \
 	"$(INTDIR)\glw_imp.sbr" \
 	"$(INTDIR)\qgl_win.sbr" \
-	"$(INTDIR)\gl_buffers.sbr" \
 	"$(INTDIR)\q_shwin.sbr" \
 	"$(INTDIR)\r_aclip.sbr" \
 	"$(INTDIR)\r_alias.sbr" \
@@ -979,6 +979,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\vid_dll.obj" \
 	"$(INTDIR)\vid_menu.obj" \
 	"$(INTDIR)\gl_backend.obj" \
+	"$(INTDIR)\gl_buffers.obj" \
 	"$(INTDIR)\gl_image.obj" \
 	"$(INTDIR)\gl_interface.obj" \
 	"$(INTDIR)\gl_light.obj" \
@@ -992,7 +993,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\gl_world.obj" \
 	"$(INTDIR)\glw_imp.obj" \
 	"$(INTDIR)\qgl_win.obj" \
-	"$(INTDIR)\gl_buffers.obj" \
 	"$(INTDIR)\q_shwin.obj" \
 	"$(INTDIR)\r_aclip.obj" \
 	"$(INTDIR)\r_alias.obj" \
@@ -2028,6 +2028,24 @@ SOURCE=.\ref_gl\gl_backend.c
 
 !ENDIF 
 
+SOURCE=.\ref_gl\gl_buffers.c
+
+!IF  "$(CFG)" == "quake2s - Win32 Release"
+
+
+"$(INTDIR)\gl_buffers.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
+
+
+"$(INTDIR)\gl_buffers.obj"	"$(INTDIR)\gl_buffers.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
 SOURCE=.\ref_gl\gl_image.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
@@ -2257,24 +2275,6 @@ SOURCE=.\win32\qgl_win.c
 
 
 "$(INTDIR)\qgl_win.obj"	"$(INTDIR)\qgl_win.sbr" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ENDIF 
-
-SOURCE=.\ref_gl\gl_buffers.c
-
-!IF  "$(CFG)" == "quake2s - Win32 Release"
-
-
-"$(INTDIR)\gl_buffers.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
-
-
-"$(INTDIR)\gl_buffers.obj"	"$(INTDIR)\gl_buffers.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 

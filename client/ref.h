@@ -58,6 +58,7 @@ typedef struct entity_s
 	int		oldframe;
 	float	backlerp;		// 0.0 = current, 1.0 = old
 	/*-------------- misc -------------*/
+	float	size[3];
 	int		skinnum;		// also used as RF_BEAM's palette index; if >= 256 - extended beam (beamType_t)
 	color_t	color;			// for extended beam
 	/*----------- color info ----------*/

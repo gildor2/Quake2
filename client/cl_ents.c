@@ -821,6 +821,59 @@ static void AddViewWeapon (int renderfx)
 }
 
 
+void CL_AddEntityBox (entityState_t *st, int rgba)
+{
+	entity_t	ent;
+	centity_t	*cent;
+
+	cent = &cl_entities[st->number];
+
+	memset (&ent, 0, sizeof(ent));
+	ent.flags = RF_BBOX;
+	ent.color.rgba = rgba;
+
+	VectorCopy (cent->current.angles, ent.angles);
+	VectorCopy (cent->prev.center, ent.oldorigin);
+	VectorCopy (cent->current.center, ent.origin);
+	ent.backlerp = 1.0f - cl.lerpfrac;
+
+	if (st->solid == 31)
+	{
+		cmodel_t	*cmodel;
+
+		cmodel = cl.model_clip[st->modelindex];
+		VectorSubtract (cmodel->maxs, cmodel->mins, ent.size);
+		VectorScale (ent.size, 0.5f, ent.size);
+	}
+	else
+	{
+		ent.angles[2] = -ent.angles[2];
+		VectorSubtract (st->maxs, st->mins, ent.size);
+		VectorScale (ent.size, 0.5f, ent.size);
+	}
+
+	V_AddEntity (&ent);
+}
+
+
+static void CL_AddDebugLines (void)
+{
+	int			pnum;
+	entityState_t *st;
+
+	if (!cls.newfx) return;					// current renderer cannot process this
+	if (!cl_showbboxes->integer) return;
+
+	for (pnum = 0; pnum < cl.frame.num_entities; pnum++)
+	{
+		st = &cl_parse_entities[(cl.frame.parse_entities+pnum)&(MAX_PARSE_ENTITIES-1)];
+		if (!st->solid) continue;
+
+		CL_AddEntityBox (st, 0xFF808000);
+	}
+}
+
+
 /*
 ===============
 CL_AddPacketEntities
@@ -1266,8 +1319,8 @@ void CL_OffsetThirdPersonView (void)
 	VectorMA(cl.refdef.vieworg, -camDist, forward, pos);
 	pos[2] += cl_cameraheight->value;
 
-	trace = CM_BoxTrace (cl.refdef.vieworg, pos, mins, maxs, 0, MASK_SHOT|MASK_WATER);
-	CL_ClipMoveToEntities (cl.refdef.vieworg, mins, maxs, pos, &trace);
+	CM_BoxTrace (&trace, cl.refdef.vieworg, pos, mins, maxs, 0, MASK_SHOT|MASK_WATER);
+	CL_ClipMoveToEntities (&trace, cl.refdef.vieworg, mins, maxs, pos);
 	if (trace.fraction < 1)
 		VectorCopy (trace.endpos, pos);
 /*	dist = VectorDistance (pos, cl.refdef.vieworg);
@@ -1332,7 +1385,8 @@ void CL_CalcViewValues (void)
 	lerp = cl.lerpfrac;
 
 	// calculate the origin
-	if ((cl_predict->integer) && !(cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION))
+	if ((cl_predict->integer) && !(cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION)
+		&& !cl.attractloop)	// demos have no movement prediction ability (client commands are not stored)
 	{	// use predicted values
 		unsigned	delta;
 
@@ -1340,7 +1394,7 @@ void CL_CalcViewValues (void)
 		for (i = 0; i < 3; i++)
 		{
 			cl.refdef.vieworg[i] = cl.predicted_origin[i] + ops->viewoffset[i]
-				+ cl.lerpfrac * (ps->viewoffset[i] - ops->viewoffset[i])
+				+ lerp * (ps->viewoffset[i] - ops->viewoffset[i])
 				- backlerp * cl.prediction_error[i];
 		}
 
@@ -1353,11 +1407,11 @@ void CL_CalcViewValues (void)
 	{	// just use interpolated values
 		for (i = 0; i < 3; i++)
 			cl.refdef.vieworg[i] = ops->pmove.origin[i] * 0.125f + ops->viewoffset[i]
-				+ lerp * (ps->pmove.origin[i] * 0.125f + ps->viewoffset[i] - (ops->pmove.origin[i] * 0.125f + ops->viewoffset[i]));
+				+ lerp * ((ps->pmove.origin[i] * 0.125f + ps->viewoffset[i]) - (ops->pmove.origin[i] * 0.125f + ops->viewoffset[i]));
 	}
 
 	// if not running a demo or on a locked frame, add the local angle movement
-	if ( cl.frame.playerstate.pmove.pm_type < PM_DEAD )
+	if (cl.frame.playerstate.pmove.pm_type < PM_DEAD)
 	{	// use predicted values
 		for (i = 0; i < 3; i++)
 			cl.refdef.viewangles[i] = cl.predicted_angles[i];
@@ -1428,6 +1482,7 @@ void CL_AddEntities (void)
 	CL_AddTEnts ();
 	CL_AddDLights ();
 	CL_RunLightStyles ();	// migrated here from CL_Frame() because of clump time
+	CL_AddDebugLines ();
 }
 
 

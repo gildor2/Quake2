@@ -21,6 +21,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 
 
+static float predictLerp;
+
+
 /*
 ===================
 CL_CheckPredictionError
@@ -32,7 +35,7 @@ void CL_CheckPredictionError (void)
 	int		delta[3];
 	int		i, len;
 
-	if (!cl_predict->integer || (cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION))
+	if (!cl_predict->integer || (cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION) || cl.attractloop)
 		return;
 
 	// calculate the last usercmd_t we sent that the server has processed
@@ -43,24 +46,23 @@ void CL_CheckPredictionError (void)
 	VectorSubtract (cl.frame.playerstate.pmove.origin, cl.predicted_origins[frame], delta);
 
 	// save the prediction error for interpolation
-	len = abs(delta[0]) + abs(delta[1]) + abs(delta[2]);
+	len = abs(delta[0]) + abs(delta[1]) + abs(delta[2]);	//?? VectorLength()
 	if (len > 640)	// 80 world units
 	{	// a teleport or something
 		VectorClear (cl.prediction_error);
 	}
 	else
 	{
-		if (cl_showmiss->integer && (delta[0] || delta[1] || delta[2]))
-			Com_WPrintf ("prediction miss on %d: %d\n", cl.frame.serverframe,
-				delta[0] + delta[1] + delta[2]);
+		// save for error itnerpolation
+		for (i = 0; i < 3; i++)
+			cl.prediction_error[i] = delta[i] * 0.125f;
+
+		if (cl_showmiss->integer && len)
+			Com_WPrintf ("prediction miss on %d: %g %g %g\n", cl.frame.serverframe, VECTOR_ARGS(cl.prediction_error));
 
 		cl.predicted_origins[frame][0] = cl.frame.playerstate.pmove.origin[0];
 		cl.predicted_origins[frame][1] = cl.frame.playerstate.pmove.origin[1];
 		cl.predicted_origins[frame][2] = cl.frame.playerstate.pmove.origin[2];
-
-		// save for error itnerpolation
-		for (i = 0; i < 3; i++)
-			cl.prediction_error[i] = delta[i] * 0.125f;
 	}
 }
 
@@ -71,12 +73,11 @@ CL_ClipMoveToEntities
 
 ====================
 */
-void CL_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, trace_t *tr)
+void CL_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 {
-	int		i;
-	entityState_t *ent;
+	int		i, j;
 	trace_t	trace;
-	float	t, traceLen, traceWidth, b1, b2;
+	float	t, traceLen, traceWidth, b1, b2, frac;
 	vec3_t	traceDir;
 
 	b1 = DotProduct (mins, mins);
@@ -88,23 +89,39 @@ void CL_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, 
 
 	for (i = 0; i < cl.frame.num_entities; i++)
 	{
+		entityState_t *ent;
+		centity_t *cent;
 		cmodel_t *cmodel;
-		vec3_t	center, tmp;
+		vec3_t	tmp, delta, eCenter, eOrigin;
 		float	entPos, dist2, dist0;
 
 		ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
 		if (!ent->solid) continue;
 		if (ent->number == cl.playernum+1) continue;	// no clip with player entity
 
-		VectorSubtract (ent->center, start, center);
+		// compute lerped entity position
+		cent = &cl_entities[ent->number];
+		frac = predictLerp;							// called CL_PredictMovement()
+		if (frac < 0) frac = cl.lerpfrac;			// called from any other place
+		for (j = 0; j < 3; j++)
+			delta[j] = (1.0f - frac) * (cent->current.origin[j] - cent->prev.origin[j]);
+
+		VectorSubtract (ent->center, start, eCenter);
+		VectorSubtract (eCenter, delta, eCenter);
+		VectorSubtract (ent->origin, delta, eOrigin);
+
+//if (delta[0]||delta[1]||delta[2])//!!
+//Com_Printf("(%g %g %g)->(%g %g %g) =(%g %g %g):%g\n",VECTOR_ARGS(cent->prev.origin),VECTOR_ARGS(cent->current.origin),VECTOR_ARGS(eOrigin),frac);//!!
+
 		// collision detection: line vs sphere
 		// check position of point projection on line
-		entPos = DotProduct (center, traceDir);
+		entPos = DotProduct (eCenter, traceDir);
 		if (entPos < -traceWidth - ent->radius || entPos > traceLen + ent->radius)
 			continue; // too near / too far
 
+		//!! if entity rotated from prev to current, should lerp angles and recompute ent->axis
 		// check distance between point and line
-		VectorMA (center, -entPos, traceDir, tmp);
+		VectorMA (eCenter, -entPos, traceDir, tmp);
 		dist2 = DotProduct (tmp, tmp);
 		dist0 = ent->radius + traceWidth;
 		if (dist2 >= dist0 * dist0) continue;
@@ -114,15 +131,15 @@ void CL_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, 
 			cmodel = cl.model_clip[ent->modelindex];
 			if (!cmodel) continue;
 
-			trace = CM_TransformedBoxTrace2 (start, end, mins, maxs, cmodel->headnode,  MASK_PLAYERSOLID, ent->origin, ent->axis);
+			CM_TransformedBoxTrace2 (&trace, start, end, mins, maxs, cmodel->headnode,  MASK_PLAYERSOLID, eOrigin, ent->axis);
 		}
 		else
-			trace = CM_TransformedBoxTrace (start, end, mins, maxs,
-				CM_HeadnodeForBox (ent->mins, ent->maxs), MASK_PLAYERSOLID, ent->origin, vec3_origin);
+			CM_TransformedBoxTrace (&trace, start, end, mins, maxs,
+				CM_HeadnodeForBox (ent->mins, ent->maxs), MASK_PLAYERSOLID, eOrigin, vec3_origin);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
 		{
-			trace.ent = (struct edict_s *)ent;
+			trace.ent = (struct edict_s *)ent;		// trace.ent is edict_t*, but ent is entityState_t*
 		 	if (tr->startsolid)
 			{
 				*tr = trace;
@@ -143,34 +160,38 @@ void CL_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, 
 CL_PMTrace
 ================
 */
+//?? same as void CL_PMTrace(&trace, start, ...) -- but called from PMove() ...
 trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 {
-	trace_t	t;
+	trace_t	trace;
 
 	// check against world
-	t = CM_BoxTrace (start, end, mins, maxs, 0, MASK_PLAYERSOLID);
-	if (t.fraction < 1.0)
-		t.ent = (struct edict_s *)1;
+	CM_BoxTrace (&trace, start, end, mins, maxs, 0, MASK_PLAYERSOLID);
+	if (trace.fraction < 1.0)
+		trace.ent = (struct edict_s *)1;	//??
 
 	// check all other solid models
-	CL_ClipMoveToEntities (start, mins, maxs, end, &t);
+	CL_ClipMoveToEntities (&trace, start, mins, maxs, end);
 
-	return t;
+	return trace;
 }
+
 
 int CL_PMpointcontents (vec3_t point)
 {
-	int		i;
-	entityState_t *ent;
+	int		i, j;
 	cmodel_t *cmodel;
 	int		contents;
-	vec3_t	delta;
 	float	dist2;
 
 	contents = CM_PointContents (point, 0);
 
 	for (i = 0; i < cl.frame.num_entities; i++)
 	{
+		entityState_t *ent;
+		centity_t *cent;
+		vec3_t	 tmp, delta, eCenter, eOrigin;
+
 		ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
 
 		if (ent->solid != 31)	// use pointcontents only for inline models
@@ -179,12 +200,22 @@ int CL_PMpointcontents (vec3_t point)
 		cmodel = cl.model_clip[ent->modelindex];
 		if (!cmodel) continue;
 
+		// compute lerped entity position
+		cent = &cl_entities[ent->number];
+		for (j = 0; j < 3; j++)
+			delta[j] = (1.0f - cl.lerpfrac) * (cent->current.origin[j] - cent->prev.origin[j]);
+		VectorSubtract (ent->center, delta, eCenter);
+		VectorSubtract (ent->origin, delta, eOrigin);
+
+//if (delta[0]||delta[1]||delta[2])//!!
+//Com_WPrintf("(%g %g %g)->(%g %g %g) =(%g %g %g):%g\n",VECTOR_ARGS(cent->prev.origin),VECTOR_ARGS(cent->current.origin),VECTOR_ARGS(eOrigin),cl.lerpfrac);//!!
+
 		// check entity bounding sphere
-		VectorSubtract (ent->center, point, delta);
-		dist2 = DotProduct (delta, delta);
+		VectorSubtract (eCenter, point, tmp);
+		dist2 = DotProduct (tmp, tmp);
 		if (dist2 > ent->radius * ent->radius) continue;
 		// accurate check with trace
-		contents |= CM_TransformedPointContents2 (point, cmodel->headnode, ent->origin, ent->axis);
+		contents |= CM_TransformedPointContents2 (point, cmodel->headnode, eOrigin, ent->axis);
 	}
 
 	return contents;
@@ -206,7 +237,7 @@ void CL_PredictMovement (void)
 	pmove_t	pm;
 	int		i, step, oldz;
 
-	if (cls.state != ca_active)
+	if (cls.state != ca_active || cl.attractloop)
 		return;
 
 	if (cl_paused->integer)
@@ -241,36 +272,38 @@ void CL_PredictMovement (void)
 
 //	SCR_DebugGraph (current - ack - 1, 0);
 
-	frame = 0;
-
-	// run frames
+	// immediately after server frame, there will be 1 Pmove() cycle; till next server frame this
+	// number will be incremented up to (FPS / sv_fps)
 	while (++ack < current)
 	{
 		frame = ack & (CMD_BACKUP-1);
 		cmd = &cl.cmds[frame];
 
 		pm.cmd = *cmd;
+		predictLerp = 1;
 		Pmove (&pm);
 
-		// save for debug checking
+		// save for error checking
 		cl.predicted_origins[frame][0] = pm.s.origin[0];
 		cl.predicted_origins[frame][1] = pm.s.origin[1];
 		cl.predicted_origins[frame][2] = pm.s.origin[2];
 	}
+	predictLerp = -1;			// flag to use cl.lerpfrac
 
+	//?? predict ladders
 	oldframe = (ack - 2) & (CMD_BACKUP - 1);
 	oldz = cl.predicted_origins[oldframe][2];
 	step = pm.s.origin[2] - oldz;
 	if (step > 63 && step < 160 && (pm.s.pm_flags & PMF_ON_GROUND))
 	{
-		cl.predicted_step = step * 0.125;
-		cl.predicted_step_time = cls.realtime - cls.frametime * 500;
+		cl.predicted_step = step * 0.125f;
+		cl.predicted_step_time = cls.realtime - cls.frametime * 500;	// back 1/2 frame ?
 	}
 
 	// copy results out for rendering
-	cl.predicted_origin[0] = pm.s.origin[0]*0.125;
-	cl.predicted_origin[1] = pm.s.origin[1]*0.125;
-	cl.predicted_origin[2] = pm.s.origin[2]*0.125;
+	cl.predicted_origin[0] = pm.s.origin[0]*0.125f;
+	cl.predicted_origin[1] = pm.s.origin[1]*0.125f;
+	cl.predicted_origin[2] = pm.s.origin[2]*0.125f;
 
 	VectorCopy (pm.viewangles, cl.predicted_angles);
 }

@@ -8,6 +8,7 @@ shader_t *gl_identityLightShader2;
 shader_t *gl_concharsShader;
 shader_t *gl_defaultSkyShader;		// default sky shader (black image)
 shader_t *gl_particleShader;
+shader_t *gl_entityShader;
 shader_t *gl_flareShader;
 shader_t *gl_colorShellShader;
 shader_t *gl_railSpiralShader, *gl_railRingsShader, *gl_railBeamShader;
@@ -900,6 +901,8 @@ void GL_ResetShaders (void)
 	// abstract shaders should be created in reverse (with relation to sortParam) order
 	gl_alphaShader2 = GL_FindShader ("*alpha2", SHADER_ABSTRACT);
 	gl_alphaShader2->sortParam = SORT_SEETHROUGH + 1;
+	gl_entityShader = GL_FindShader ("*entity", SHADER_ABSTRACT);
+	gl_entityShader->sortParam = SORT_SEETHROUGH;
 	gl_particleShader = GL_FindShader ("*particle", SHADER_ABSTRACT);	//!! NOCULL
 	gl_particleShader->sortParam = SORT_SEETHROUGH;
 	gl_alphaShader1 = GL_FindShader ("*alpha1", SHADER_ABSTRACT);

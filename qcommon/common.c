@@ -624,7 +624,7 @@ void MSG_WriteDeltaUsercmd (sizebuf_t *buf, usercmd_t *from, usercmd_t *cmd)
 	if (cmd->buttons != from->buttons)			bits |= CM_BUTTONS;
 	if (cmd->impulse != from->impulse)			bits |= CM_IMPULSE;
 
-    MSG_WriteByte (buf, bits);
+	MSG_WriteByte (buf, bits);
 
 	if (bits & CM_ANGLE1)	MSG_WriteShort (buf, cmd->angles[0]);
 	if (bits & CM_ANGLE2)	MSG_WriteShort (buf, cmd->angles[1]);
@@ -637,7 +637,7 @@ void MSG_WriteDeltaUsercmd (sizebuf_t *buf, usercmd_t *from, usercmd_t *cmd)
  	if (bits & CM_BUTTONS) 	MSG_WriteByte (buf, cmd->buttons);
  	if (bits & CM_IMPULSE)	MSG_WriteByte (buf, cmd->impulse);
 
-    MSG_WriteByte (buf, cmd->msec);
+	MSG_WriteByte (buf, cmd->msec);
 	MSG_WriteByte (buf, cmd->lightlevel);
 }
 

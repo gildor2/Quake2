@@ -1589,6 +1589,47 @@ static void DrawNormals (void)
 }
 
 
+static void TesselateEntitySurf (refEntity_t *e)
+{
+	if (e->flags & RF_BBOX)
+	{
+		int		i;
+		bufVertex_t v[8];
+		static int inds[24] = {
+			0,1, 1,3, 3,2, 2,0,	// rect1
+			4,5, 5,7, 7,6, 6,4,	// rect2
+			0,4, 1,5, 3,7, 2,6	// connectors
+		};
+
+		GL_SetMultitexture (0);		// disable texturing with all tmu's
+		qglDisableClientState (GL_COLOR_ARRAY);
+		qglColor4ubv (e->shaderColor.c);
+		GL_State (0);
+
+		// generate verts
+		for (i = 0; i < 8; i++)
+		{
+			float	x, y, z;
+			vec3_t	tmp;
+
+			x = (i & 1) ? e->boxSize[0] : -e->boxSize[0];
+			y = (i & 2) ? e->boxSize[1] : -e->boxSize[1];
+			z = (i & 4) ? e->boxSize[2] : -e->boxSize[2];
+
+			// project point to a world coordinate system (org + x*axis[0] + y*axis[1] + z*axis[2])
+			VectorMA (e->center, x, e->boxAxis[0], tmp);
+			VectorMA (tmp,		 y, e->boxAxis[1], tmp);
+			VectorMA (tmp,		 z, e->boxAxis[2], v[i].xyz);
+		}
+		// draw it
+		qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
+		qglDrawElements (GL_LINES, 24, GL_UNSIGNED_INT, inds);
+	}
+	else
+		DrawTextLeft (va("Unknown ent surf flags: %X", e->flags), 1, 0, 0);
+}
+
+
 /*---------- Fast drawing (without filling arrays) ----------*/
 //?? fast drawing may use global vertex/color/texcoord array (filled when map loaded) and just operate with indexes
 //!! In this case, indexes in surfaces must be global
@@ -1879,6 +1920,9 @@ static void DrawScene (void)
 				break;
 			case SURFACE_POLY:
 				TesselatePolySurf (surf->poly);
+				break;
+			case SURFACE_ENTITY:
+				TesselateEntitySurf (surf->ent);
 				break;
 			//!! other types
 			}

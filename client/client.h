@@ -323,6 +323,7 @@ extern  cvar_t  *cl_extProtocol;
 
 extern	cvar_t	*cl_newfx;
 extern	cvar_t	*cl_draw2d;
+extern	cvar_t	*cl_showbboxes;
 extern	cvar_t	*r_sfx_pause;
 
 extern	centity_t	cl_entities[MAX_EDICTS];
@@ -477,9 +478,11 @@ void IN_Accumulate (void);
 
 void CL_ParseLayout (void);
 
+void CL_AddEntityBox (entityState_t *st, int rgba);
+
 
 //
-// cl_main
+// cl_main.c
 //
 extern refExport_t re;			// interface to refresh .dll
 
@@ -494,7 +497,7 @@ void CL_Snd_Restart_f (void);
 void CL_RequestNextDownload (void);
 
 //
-// cl_input
+// cl_input.c
 //
 typedef struct
 {
@@ -612,15 +615,8 @@ void CL_DrawInventory (void);
 //
 // cl_pred.c
 //
-void CL_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, trace_t *tr);
+void CL_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);
 void CL_PredictMovement (void);
-
-#if id386
-void x86_TimerStart (void);
-void x86_TimerStop (void);
-void x86_TimerInit (unsigned long smallest, unsigned longest);
-unsigned long *x86_TimerGetHistogram (void);
-#endif
 
 //-------------------------------------------
 

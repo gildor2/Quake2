@@ -534,7 +534,7 @@ SV_ClipMoveToEntities
 
 ====================
 */
-void SV_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask, trace_t *tr)
+void SV_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
 {
 	int		i, num;
 	edict_t	*list[MAX_EDICTS], *edict;
@@ -599,9 +599,9 @@ void SV_ClipMoveToEntities (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, 
 		if (dist2 >= dist0 * dist0) continue;
 
 		if (ent->model)
-			trace = CM_TransformedBoxTrace2 (start, end, mins, maxs, ent->model->headnode, contentmask, edict->s.origin, ent->axis);
+			CM_TransformedBoxTrace2 (&trace, start, end, mins, maxs, ent->model->headnode, contentmask, edict->s.origin, ent->axis);
 		else
-			trace = CM_TransformedBoxTrace (start, end, mins, maxs,
+			CM_TransformedBoxTrace (&trace, start, end, mins, maxs,
 				CM_HeadnodeForBox (ent->mins, ent->maxs), contentmask, edict->s.origin, vec3_origin);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
@@ -632,6 +632,7 @@ Passedict and edicts owned by passedict are explicitly not checked.
 
 ==================
 */
+//?? used by PMove() and game, else - can do "void SV_Trace(&trace, start, ...)"
 trace_t SV_Trace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
 {
 	trace_t trace;
@@ -640,13 +641,13 @@ trace_t SV_Trace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *p
 	if (!maxs)	maxs = vec3_origin;
 
 	// clip to world
-	trace = CM_BoxTrace (start, end, mins, maxs, 0, contentmask);
+	CM_BoxTrace (&trace, start, end, mins, maxs, 0, contentmask);
 
 	trace.ent = ge->edicts;
 	if (!trace.fraction) return trace;		// blocked by the world
 
 	// clip to other solid entities
-	SV_ClipMoveToEntities (start, mins, maxs, end, passedict, contentmask, &trace);
+	SV_ClipMoveToEntities (&trace, start, mins, maxs, end, passedict, contentmask);
 
 	return trace;
 }

@@ -774,7 +774,7 @@ void CL_ParseServerMessage (void)
 
 		case svc_stufftext:
 			s = MSG_ReadString (&net_message);
-			if (Com_ServerState () == ss_demo && !Q_strncasecmp (s, "set ", 4))
+			if (cl.attractloop && Q_strncasecmp (s, "precache", 8))	// demo playback: allow "precache" stufftext only
 			{
 				Com_DPrintf ("stuff (disabled): %s\n", s);
 				break;

@@ -112,9 +112,9 @@ void	LoadJPG (char *name, byte **pic, int *width, int *height);
 qboolean	WriteTGA (char *name, byte *pic, int width, int height);
 qboolean	WriteJPG (char *name, byte *pic, int width, int height, qboolean highQuality);
 bspfile_t*	LoadBspFile (char *filename, qboolean clientload, unsigned *checksum);
-trace_t	CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
-trace_t	CM_TransformedBoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
-trace_t	CM_TransformedBoxTrace2 (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t *axis);
+void	CM_BoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
+void	CM_TransformedBoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
+void	CM_TransformedBoxTrace2 (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t *axis);
 #ifdef _WIN32
 void*	Vid_CreateWindow (int width, int height, qboolean fullscreen);
 void	Vid_DestroyWindow (qboolean force);

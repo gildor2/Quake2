@@ -577,7 +577,7 @@ typedef struct
 	byte	buttons;
 	short	angles[3];
 	short	forwardmove, sidemove, upmove;
-	byte	impulse;		// remove?
+	byte	impulse;		// remove? (unused !!)
 	byte	lightlevel;		// light level the player is standing on
 } usercmd_t;
 
@@ -650,7 +650,6 @@ typedef struct
 #define EF_TAGTRAIL			0x20000000
 #define EF_HALF_DAMAGE		0x40000000
 #define EF_TRACKERTRAIL		0x80000000
-//ROGUE
 
 // entity_state_t->renderfx flags
 #define	RF_MINLIGHT			0x00000001		// allways have some light (viewmodel)
@@ -672,9 +671,11 @@ typedef struct
 #define	RF_SHELL_DOUBLE		0x00010000		// 65536
 #define	RF_SHELL_HALF_DAM	0x00020000
 #define RF_USE_DISGUISE		0x00040000
-//ROGUE
 
-#define RF_BEAM_EXT			0x80000000
+// 4.00
+#define RF_BEAM_EXT			0x40000000
+#define RF_BBOX				0x80000000
+
 
 // player_state_t->refdef flags
 #define	RDF_UNDERWATER		1		// warp the screen as apropriate

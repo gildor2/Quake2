@@ -1,3 +1,32 @@
+sv_fps:
+~~~~~~~
+- sv_main.c
+
+- cl_ents.c
+  - CL_ParseFrame()  (look for const 100)
+  - CL_AddPacketEntities() (EF_ANIM_ALLFAST; not depends on sv_fps -- fixed 10Hz)
+  - CL_CalcViewValues() ("smooth out stair climbing" ??)
+  - CL_AddEntities() (computions of cl.lerpfrac etc.)
+- cl_pred.c ? (computions of predictLerp)
+? cl_input.c
+  - KeyDown()
+  - CL_FinishMove()
+- cl_newfx.c
+  - CL_Flashlight() (unused ??), CL_ColorFlash()
+- cl_tent.c
+  - CL_AllocExplosion() (starting time = -100ms ??)
+  ? CL_AddExplosions() (computing frac; BUT: frame rate is 10Hz - not depends on sv_fps)
+  - CL_ParsePlayerBeam() (beam life time)
+  - CL_ParseLaser() (lifetime)
+  ? CL_ParseSteam() (thinkinterval)
+
+-------------------------------
+
+usercmd_t.impulse is unused byte field
+
+-------------------------------
+
+
 Spawn entities:
 game\g_spawn.c   SpawnEntities() -> ED_CallSpawn (edict_t *ent)
      g_target.c  SP_target_spawner (...) -> use_target_spawner (...) -> ED_CallSpawn (...)

@@ -223,7 +223,7 @@ SOURCE=.\gl_warp.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\win32\glw_imp.c
+SOURCE=glw_imp.c
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -249,7 +249,7 @@ SOURCE=..\qcommon\q_shared2.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\win32\qgl_win.c
+SOURCE=.\qgl_win.c
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -298,15 +298,11 @@ SOURCE=..\qcommon\qfiles.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ref_gl\qgl_decl.h
+SOURCE=.\qgl_decl.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ref_gl\qgl_impl.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\qmenu.h
+SOURCE=.\qgl_impl.h
 # End Source File
 # Begin Source File
 

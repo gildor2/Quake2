@@ -1,3 +1,4 @@
+- after timedemo in game (in demo too ...), can receive "server is out" state
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
    but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?)

@@ -62,8 +62,6 @@ static kbutton_t	in_use, in_attack;
 static kbutton_t	in_up, in_down;
 kbutton_t	in_strafe, in_speed;
 
-static int			in_impulse;
-
 
 static void KeyDown (kbutton_t *b)
 {
@@ -175,9 +173,6 @@ void IN_AttackUp(void)		{KeyUp(&in_attack);}
 
 void IN_UseDown (void)		{KeyDown(&in_use);}
 void IN_UseUp (void)		{KeyUp(&in_use);}
-
-void IN_Impulse (void)		{in_impulse=atoi(Cmd_Argv(1));}
-
 
 /*
 ===============
@@ -355,8 +350,7 @@ void CL_FinishMove (usercmd_t *cmd)
 	for (i = 0; i < 3; i++)
 		cmd->angles[i] = ANGLE2SHORT(cl.viewangles[i]);
 
-	cmd->impulse = in_impulse;
-	in_impulse = 0;
+	cmd->impulse = 0;		//!! unused
 
 	// send the ambient light level at the player's current position
 	cmd->lightlevel = Q_ftol(re.GetClientLight ());
@@ -432,7 +426,6 @@ void CL_InitInput (void)
 	Cmd_AddCommand ("-attack", IN_AttackUp);
 	Cmd_AddCommand ("+use", IN_UseDown);
 	Cmd_AddCommand ("-use", IN_UseUp);
-	Cmd_AddCommand ("impulse", IN_Impulse);
 	Cmd_AddCommand ("+klook", IN_KLookDown);
 	Cmd_AddCommand ("-klook", IN_KLookUp);
 
@@ -472,12 +465,14 @@ void CL_SendCmd (void)
 	if (cls.state == ca_connected)
 	{
 		if (cls.netchan.message.cursize	|| curtime - cls.netchan.last_sent > 1000)
-			Netchan_Transmit (&cls.netchan, 0, NULL);//?? 10.07.2002: buf.data -> NULL
+			Netchan_Transmit (&cls.netchan, 0, NULL);
 		return;
 	}
 
 	// send a userinfo update if needed
-	if (userinfo_modified)
+	// disallow sending userinfo notification while playing demos
+	// (when enabled, one of demo' player will be re-skinned as local player)
+	if (userinfo_modified && !cl.attractloop)
 	{
 		CL_FixUpGender();
 		userinfo_modified = false;

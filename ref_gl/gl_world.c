@@ -284,7 +284,7 @@ static void SetupModelMatrix (refEntity_t *e)
 
 // Point trace to visible INLINE models; function based on CL_ClipMoveToEntities()
 // NOTE: can easily extend to any (invisible too) inline models (add flag "visibleOnly") ( can be useful for lighting ??)
-static void ClipTraceToEntities (vec3_t start, vec3_t end, int brushmask, trace_t *tr)
+static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brushmask)
 {
 	int		i;
 	refEntity_t *e;
@@ -321,9 +321,9 @@ static void ClipTraceToEntities (vec3_t start, vec3_t end, int brushmask, trace_
 //DrawTextLeft(va("clip: %s (dist2: %g)", e->model->name, dist2),1,1,1);//!!
 		// trace
 		if (!e->worldMatrix)
-			trace = CM_TransformedBoxTrace2 (start, end, zero, zero, im->headnode, brushmask, e->origin, e->axis);
+			CM_TransformedBoxTrace2 (&trace, start, end, zero, zero, im->headnode, brushmask, e->origin, e->axis);
 		else
-			trace = CM_BoxTrace (start, end, zero, zero, im->headnode, brushmask);
+			CM_BoxTrace (&trace, start, end, zero, zero, im->headnode, brushmask);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
 		{
@@ -1233,6 +1233,19 @@ static void DrawEntities (int firstEntity, int numEntities)
 			VectorScale (center, 0.5f, e->center);
 			leaf = AlphaSphereLeaf (e->center, VectorDistance (e->beamStart, e->center));
 		}
+		else if (e->flags & RF_BBOX)
+		{
+			surfaceCommon_t *surf;
+
+			// just add surface and continue
+			surf = GL_AddDynamicSurface (gl_entityShader, ENTITYNUM_WORLD);
+			if (surf)
+			{
+				surf->type = SURFACE_ENTITY;
+				surf->ent = e;
+			}
+			continue;
+		}
 		else
 		{
 			DrawTextLeft (va("NULL entity %d", i), 1, 0, 0);
@@ -1403,8 +1416,8 @@ static void DrawFlares (void)
 			// check visibility with trace
 			if (f->radius >= 0)
 			{
-				trace = CM_BoxTrace (vp.vieworg, flarePos, zero, zero, 0, CONTENTS_SOLID);
-				ClipTraceToEntities (vp.vieworg, flarePos, CONTENTS_SOLID, &trace);
+				CM_BoxTrace (&trace, vp.vieworg, flarePos, zero, zero, 0, CONTENTS_SOLID);
+				ClipTraceToEntities (&trace, vp.vieworg, flarePos, CONTENTS_SOLID);
 				if (trace.fraction < 1 && (f->radius <= 0 || (VectorDistance (trace.endpos, flarePos) > f->radius)))
 					cull = true;
 			}
@@ -1413,8 +1426,8 @@ static void DrawFlares (void)
 				vec3_t	tracePos;
 
 				VectorMA (vp.vieworg, 99999, f->origin, tracePos);
-				trace = CM_BoxTrace (vp.vieworg, tracePos, zero, zero, 0, CONTENTS_SOLID);
-				ClipTraceToEntities (vp.vieworg, tracePos, CONTENTS_SOLID, &trace);
+				CM_BoxTrace (&trace, vp.vieworg, tracePos, zero, zero, 0, CONTENTS_SOLID);
+				ClipTraceToEntities (&trace, vp.vieworg, tracePos, CONTENTS_SOLID);
 				if (!(trace.fraction < 1 && trace.surface->flags & SURF_SKY))
 					cull = true;
 			}
@@ -1753,6 +1766,14 @@ void GL_AddEntity (entity_t *ent)
 		default:
 			out->customShader = gl_defaultShader;
 		}
+		out->shaderColor.rgba = ent->color.rgba;
+	}
+	else if (ent->flags & RF_BBOX)
+	{
+		VectorSubtract (ent->oldorigin, ent->origin, v);
+		VectorMA (ent->origin, ent->backlerp, v, out->center);
+		VectorCopy (ent->size, out->boxSize);
+		AnglesToAxis (ent->angles, out->boxAxis);
 		out->shaderColor.rgba = ent->color.rgba;
 	}
 

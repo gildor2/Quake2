@@ -186,7 +186,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 			}
 		}
 
-		if ( qglLockArraysEXT != 0 )
+		if (GL_SUPPORT(QGL_EXT_COMPILED_VERTEX_ARRAY))
 			qglLockArraysEXT( 0, paliashdr->numXyz );
 
 		while (1)
@@ -236,7 +236,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 			qglEnd ();
 		}
 
-		if ( qglUnlockArraysEXT != 0 )
+		if (GL_SUPPORT(QGL_EXT_COMPILED_VERTEX_ARRAY))
 			qglUnlockArraysEXT();
 	}
 	else

@@ -528,7 +528,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=..\win32\glw_imp.c
+SOURCE=glw_imp.c
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 
@@ -576,7 +576,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=..\win32\qgl_win.c
+SOURCE=.\qgl_win.c
 
 !IF  "$(CFG)" == "ref_gl - Win32 Release"
 

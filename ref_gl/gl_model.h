@@ -55,7 +55,8 @@ typedef enum
 	SURFACE_TRISURF,			// surfaceTrisurf_t
 	SURFACE_MD3,				// surfaceMd3_t
 	SURFACE_POLY,				// surfacePoly_t
-	SURFACE_PARTICLE			// particle_t
+	SURFACE_PARTICLE,			// particle_t
+	SURFACE_ENTITY				// refEntity_t
 } surfaceType_t;
 
 // Planar surface: same normal for all vertexes
@@ -131,6 +132,7 @@ typedef struct surfaceCommon_s
 		surfaceMd3_t	*md3;	// type = SURFACE_MD3
 		surfacePoly_t	*poly;	// type = SURFACE_POLY
 		particle_t		*part;	// type = SURFACE_PARTICLE
+		refEntity_t		*ent;	// type = SURFACE_ENTITY
 	};
 } surfaceCommon_t;
 

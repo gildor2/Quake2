@@ -6,6 +6,7 @@ typedef union
 {
 	struct {
 		void	(APIENTRY * AlphaFunc) (GLenum func, GLclampf ref);
+		void	(APIENTRY * ArrayElement) (GLint i);
 		void	(APIENTRY * Begin) (GLenum mode);
 		void	(APIENTRY * BindTexture) (GLenum target, GLuint texture);
 		void	(APIENTRY * BlendFunc) (GLenum sfactor, GLenum dfactor);
@@ -25,16 +26,16 @@ typedef union
 		void	(APIENTRY * DepthMask) (GLboolean flag);
 		void	(APIENTRY * DepthRange) (GLclampd zNear, GLclampd zFar);
 		void	(APIENTRY * Disable) (GLenum cap);
-		void	(APIENTRY * DisableClientState) (GLenum array);
 		void	(APIENTRY * DrawBuffer) (GLenum mode);
-		void	(APIENTRY * DrawElements) (GLenum mode, GLsizei count, GLenum type, const GLvoid *indices);
 		void	(APIENTRY * Enable) (GLenum cap);
 		void	(APIENTRY * EnableClientState) (GLenum array);
 		void	(APIENTRY * End) (void);
 		void	(APIENTRY * Finish) (void);
 		void	(APIENTRY * Fogf) (GLenum pname, GLfloat param);
 		void	(APIENTRY * Fogfv) (GLenum pname, const GLfloat *params);
+		void	(APIENTRY * Frustum) (GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
 		GLenum	(APIENTRY * GetError) (void);
+		void	(APIENTRY * GetFloatv) (GLenum pname, GLfloat *params);
 		void	(APIENTRY * GetIntegerv) (GLenum pname, GLint *params);
 		const GLubyte *	(APIENTRY * GetString) (GLenum name);
 		void	(APIENTRY * LoadIdentity) (void);
@@ -42,11 +43,11 @@ typedef union
 		void	(APIENTRY * MatrixMode) (GLenum mode);
 		void	(APIENTRY * Ortho) (GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
 		void	(APIENTRY * PolygonMode) (GLenum face, GLenum mode);
-		void	(APIENTRY * PolygonOffset) (GLfloat factor, GLfloat units);
 		void	(APIENTRY * PopMatrix) (void);
 		void	(APIENTRY * PushMatrix) (void);
 		void	(APIENTRY * ReadPixels) (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
 		void	(APIENTRY * Rotatef) (GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
+		void	(APIENTRY * Scalef) (GLfloat x, GLfloat y, GLfloat z);
 		void	(APIENTRY * Scissor) (GLint x, GLint y, GLsizei width, GLsizei height);
 		void	(APIENTRY * ShadeModel) (GLenum mode);
 		void	(APIENTRY * TexCoord2f) (GLfloat s, GLfloat t);
@@ -75,9 +76,9 @@ typedef union
 		BOOL	(APIENTRY * wglMakeCurrent) (HDC hdc, HGLRC hglrc);
 #endif
 		void	(APIENTRY * SelectTextureSGIS) (GLenum target);
-		void	(APIENTRY * SelectTextureCoordSetSGIS) (GLenum target);
+		void	(APIENTRY * MultiTexCoord2fSGIS) (GLenum target, GLfloat s, GLfloat t);
 		void	(APIENTRY * ActiveTextureARB) (GLenum texture);
-		void	(APIENTRY * ClientActiveTextureARB) (GLenum texture);
+		void	(APIENTRY * MultiTexCoord2fARB) (GLenum target, GLfloat s, GLfloat t);
 		void	(APIENTRY * LockArraysEXT) (GLint first, GLint count);
 		void	(APIENTRY * UnlockArraysEXT) (void);
 
@@ -94,6 +95,7 @@ typedef union
 extern qgl_t qgl;
 
 #define qglAlphaFunc	qgl.AlphaFunc
+#define qglArrayElement	qgl.ArrayElement
 #define qglBegin	qgl.Begin
 #define qglBindTexture	qgl.BindTexture
 #define qglBlendFunc	qgl.BlendFunc
@@ -113,16 +115,16 @@ extern qgl_t qgl;
 #define qglDepthMask	qgl.DepthMask
 #define qglDepthRange	qgl.DepthRange
 #define qglDisable	qgl.Disable
-#define qglDisableClientState	qgl.DisableClientState
 #define qglDrawBuffer	qgl.DrawBuffer
-#define qglDrawElements	qgl.DrawElements
 #define qglEnable	qgl.Enable
 #define qglEnableClientState	qgl.EnableClientState
 #define qglEnd	qgl.End
 #define qglFinish	qgl.Finish
 #define qglFogf	qgl.Fogf
 #define qglFogfv	qgl.Fogfv
+#define qglFrustum	qgl.Frustum
 #define qglGetError	qgl.GetError
+#define qglGetFloatv	qgl.GetFloatv
 #define qglGetIntegerv	qgl.GetIntegerv
 #define qglGetString	qgl.GetString
 #define qglLoadIdentity	qgl.LoadIdentity
@@ -130,11 +132,11 @@ extern qgl_t qgl;
 #define qglMatrixMode	qgl.MatrixMode
 #define qglOrtho	qgl.Ortho
 #define qglPolygonMode	qgl.PolygonMode
-#define qglPolygonOffset	qgl.PolygonOffset
 #define qglPopMatrix	qgl.PopMatrix
 #define qglPushMatrix	qgl.PushMatrix
 #define qglReadPixels	qgl.ReadPixels
 #define qglRotatef	qgl.Rotatef
+#define qglScalef	qgl.Scalef
 #define qglScissor	qgl.Scissor
 #define qglShadeModel	qgl.ShadeModel
 #define qglTexCoord2f	qgl.TexCoord2f
@@ -163,9 +165,9 @@ extern qgl_t qgl;
 #define qwglMakeCurrent	qgl.wglMakeCurrent
 #endif
 #define qglSelectTextureSGIS	qgl.SelectTextureSGIS
-#define qglSelectTextureCoordSetSGIS	qgl.SelectTextureCoordSetSGIS
+#define qglMultiTexCoord2fSGIS	qgl.MultiTexCoord2fSGIS
 #define qglActiveTextureARB	qgl.ActiveTextureARB
-#define qglClientActiveTextureARB	qgl.ClientActiveTextureARB
+#define qglMultiTexCoord2fARB	qgl.MultiTexCoord2fARB
 #define qglLockArraysEXT	qgl.LockArraysEXT
 #define qglUnlockArraysEXT	qgl.UnlockArraysEXT
 
@@ -179,18 +181,10 @@ extern qgl_t qgl;
 
 #define QGL_SGIS_MULTITEXTURE	(1 << 0)
 #define QGL_ARB_MULTITEXTURE	(1 << 1)
-#define QGL_EXT_TEXTURE_ENV_ADD	(1 << 2)
-#define QGL_ARB_TEXTURE_ENV_ADD	(1 << 3)
-#define QGL_EXT_TEXTURE_ENV_COMBINE	(1 << 4)
-#define QGL_ARB_TEXTURE_ENV_COMBINE	(1 << 5)
-#define QGL_NV_TEXTURE_ENV_COMBINE4	(1 << 6)
-#define QGL_S3_S3TC	(1 << 7)
-#define QGL_ARB_TEXTURE_COMPRESSION	(1 << 8)
-#define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 9)
-#define QGL_NV_FOG_DISTANCE	(1 << 10)
+#define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 2)
 
 #ifdef _WIN32
-#define QWGL_EXT_SWAP_CONTROL	(1 << 11)
+#define QWGL_EXT_SWAP_CONTROL	(1 << 3)
 #endif
 
 #ifdef __linux__

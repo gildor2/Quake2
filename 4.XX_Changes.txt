@@ -66,6 +66,8 @@ Comments:
 - improved look of "player setup" menu
 - improved "set game directory"
 - ability to reverse sound channels; controllable with "s_reverse_stereo"
+- can use skins without icon ("*_i.???") file -- skin shound have name "skn_*.???"; side effect: even when
+  skin icon exists, it will be ignored
 
 4. FIXES
 ~~~~~~~~
@@ -203,6 +205,7 @@ Debugging
 - "r_playerpos" variable: when it is set to "1", player (spectator) world coordinates are shown
 - "r_sfx_pause 1" stops particles/fx; "r_sfx_pause 2" also disables particle/fx creation
 - "fs_debug" variable: when non-zero, most file system activity will be displayed on console
+- "cl_showbboxes 1" will display object bounding boxes from client info
 
 
 ?????????

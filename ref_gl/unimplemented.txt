@@ -4,6 +4,7 @@
     NOTE: ALPHA - rgb ignored in all TexEnv functions
   - dither 32->16 bit (when r_textureBits==16); dither mipmaps
   ? dither mipmaps
+  ? POSSIBLE BUG (feauture): Q3 uses alpha for specular lighting; check for problems with alpha-special Resample/MipMap
 
 - gl: HW lighting: do not require to rotate/remap grid lights to model axis
 !* check ATAN2/ACOS speed on normal building loading and remove #if/#else/#endif stuff from gl_model.c
