@@ -221,7 +221,7 @@ char *NET_AdrToString (netadr_t *a)
 
 /*
 =============
-NET_StringToAdr
+StringToSockaddr
 
 localhost
 idnewt
@@ -230,7 +230,7 @@ idnewt:28000
 192.246.40.70:28000
 =============
 */
-bool NET_StringToSockaddr (char *s, SOCKADDR *sadr)
+static bool StringToSockaddr (const char *s, SOCKADDR *sadr)
 {
 	struct hostent	*h;
 	char	*colon;
@@ -305,7 +305,7 @@ idnewt:28000
 192.246.40.70:28000
 =============
 */
-bool NET_StringToAdr (char *s, netadr_t *a)
+bool NET_StringToAdr (const char *s, netadr_t *a)
 {
 	SOCKADDR sadr;
 
@@ -316,7 +316,7 @@ bool NET_StringToAdr (char *s, netadr_t *a)
 		return true;
 	}
 
-	if (!NET_StringToSockaddr (s, &sadr))
+	if (!StringToSockaddr (s, &sadr))
 		return false;
 
 	SockadrToNetadr (&sadr, a);
@@ -515,7 +515,7 @@ int NET_IPSocket (char *net_interface, int port)
 	if (!net_interface || !net_interface[0] || !stricmp(net_interface, "localhost"))
 		address.sin_addr.s_addr = INADDR_ANY;
 	else
-		NET_StringToSockaddr (net_interface, (SOCKADDR *)&address);
+		StringToSockaddr (net_interface, (SOCKADDR *)&address);
 
 	if (port == PORT_ANY)
 		address.sin_port = 0;

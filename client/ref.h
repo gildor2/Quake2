@@ -20,6 +20,8 @@ typedef union
 
 #undef RGBA
 #undef RGB
+#undef RGB255
+#undef RGBA255
 
 // constant colors
 #define RGBA(r,g,b,a)		((int)((r)*255) | ((int)((g)*255)<<8) | ((int)((b)*255)<<16) | ((int)((a)*255)<<24))
@@ -33,7 +35,7 @@ typedef union
 
 
 //!!! clean beam comments
-typedef struct entity_s
+typedef struct
 {
 	struct model_s *model;	// opaque type outside refresh
 	float	angles[3];
@@ -120,8 +122,8 @@ typedef struct particle_s
 
 typedef struct
 {
-	int		length;
-	byte	value;					// 0 .. 255 -> 0.0 .. 2.0
+	byte	length;
+	byte	value;					// current lighting; monochrome; 0 .. 255 -> 0.0 .. 2.0
 	byte	map[MAX_QPATH];
 } lightstyle_t;
 
@@ -129,11 +131,11 @@ typedef struct
 {
 	int			x, y, width, height;// in virtual screen coordinates
 	float		fov_x, fov_y;
-	float		vieworg[3];
+	vec3_t		vieworg;
 	float		viewangles[3];
 	float		blend[4];			// rgba 0-1 full screen blend
 	float		time;				// time is used to auto animate
-	int			rdflags;			// RDF_UNDERWATER, etc
+	unsigned	rdflags;			// RDF_UNDERWATER, etc
 
 	byte		*areabits;			// if not NULL, only areas with set bits will be drawn
 
@@ -153,7 +155,8 @@ typedef struct
 #define REF_CONSOLE_ONLY	1		// if set -- no graphics output
 #define REF_NEW_FX			2		// if set, renderer supports sprite fx
 #define REF_USE_PALETTE		4		// if set, renderer cannot display DrawStretchRaw8 simultaneously with other objects
-									//?? NOTE: when removing paletted renderer (soft), search all sources for REF_USE_PALETTE
+		//?? NOTE: when removing paletted renderer (soft), search all sources for REF_USE_PALETTE
+		//??	  + pass palette with DrawStretchRaw8() (remove SetRawPalette() function)
 
 // screenshot flags
 #define SHOT_SMALL			1		// stretch screenshot to reduce its dimensions (levelshots, savegames etc.)
@@ -204,6 +207,7 @@ typedef struct
 	void	(*DrawGetPicSize) (int *w, int *h, const char *name);	// will return (0, 0) if not found
 	void	(*DrawPic) (int x, int y, const char *pic, int color = C_WHITE);
 	void	(*DrawStretchPic) (int x, int y, int w, int h, const char *name);
+	void	(*DrawDetailedPic) (int x, int y, int w, int h, const char *name);
 	void	(*DrawChar) (int x, int y, int c, int color = C_WHITE);
 	void	(*DrawTileClear) (int x, int y, int w, int h, const char *name);
 	void	(*DrawFill) (int x, int y, int w, int h, int c);
@@ -228,15 +232,12 @@ typedef struct
 	void	(*DrawConChar) (int x, int y, int c, int color = C_WHITE);
 
 	/*----------------- lighting -------------------*/
-	float	(*GetClientLight) (void);		// used by server to determine client visibility (AI)
+	float	(*GetClientLight) (void);		// used by server to determine client visibility (AI); change ??
 } refExport_t;
 
 
-/*-------- These are the functions imported by the refresh module --------*/
-//?? #include "ref_decl.h" -- included in "qcommon.h"
+/*----------- Functions exported by the refresh module -------------------*/
 
-
-// this is the only function actually exported at the linker level
 typedef	refExport_t	(*GetRefAPI_t) (const refImport_t *);
 
 

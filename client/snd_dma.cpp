@@ -1181,6 +1181,8 @@ void S_Update_(void)
 	if (!sound_started)
 		return;
 
+	guard(S_Update_);
+
 	SNDDMA_BeginPainting ();
 
 	if (!dma.buffer)
@@ -1208,6 +1210,7 @@ void S_Update_(void)
 	S_PaintChannels (endtime);
 
 	SNDDMA_Submit ();
+	unguard;
 }
 
 /*

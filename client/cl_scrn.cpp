@@ -1,36 +1,16 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-// cl_scrn.c -- master for refresh, status bar, console, chat, notify, etc
-
 #include "client.h"
 
-static bool		initialized;	// ready to draw
+static bool initialized;
 
 vrect_t		scr_vrect;			// position of render window on screen
 
 cvar_t		*crosshair;
 cvar_t		*crosshairColor;
 
-cvar_t		*scr_viewsize;
+cvar_t		*scr_viewsize;		// non-static for menu
 static cvar_t	*con_maxSize;
 static cvar_t	*scr_centertime;
+static cvar_t	*cl_draw2d;
 
 static cvar_t	*netgraph;
 static cvar_t	*timegraph;
@@ -68,43 +48,9 @@ void DrawString (int x, int y, const char *s)
 }
 
 
-/*
-===============================================================================
-
-BAR GRAPHS
-
-===============================================================================
-*/
-
-/*
-==============
-CL_AddNetgraph
-
-A new packet was just parsed
-==============
-*/
-void CL_AddNetgraph (void)
-{
-	int		i, in, ping;
-
-	// if using the debuggraph for something else, don't
-	// add the net lines
-	if (debuggraph->integer || timegraph->integer)
-		return;
-
-	for (i = 0; i < cls.netchan.dropped; i++)
-		SCR_DebugGraph (30, 0x40);
-
-	for (i = 0; i < cl.surpressCount ; i++)
-		SCR_DebugGraph (30, 0xDF);
-
-	// see what the latency was on this packet
-	in = cls.netchan.incoming_acknowledged & (CMD_BACKUP-1);
-	ping = (cls.realtime - cl.cmd_time[in]) / 30;
-	if (ping > 30) ping = 30;
-	SCR_DebugGraph (ping, 0xD0);
-}
-
+/*-----------------------------------------------------------------------------
+	Graphs (remove, or replace ??)
+-----------------------------------------------------------------------------*/
 
 typedef struct
 {
@@ -134,38 +80,29 @@ SCR_DrawDebugGraph
 */
 static void DrawDebugGraph (void)
 {
-	int		a, x, y, w, i, h;
-	float	v;
-	int		color;
-
-	// draw the graph
-	w = scr_vrect.width;
-
-	x = scr_vrect.x;
-	y = scr_vrect.y+scr_vrect.height;
+	int x = scr_vrect.x;
+	int y = scr_vrect.y + scr_vrect.height;
+	int w = min(scr_vrect.width, 1024);
 	re.DrawFill (x, y - graphheight->integer, w, graphheight->integer, 8);
 
-	for (a = 0; a < w; a++)
+	for (int a = 0; a < w; a++)
 	{
-		i = (current-1-a+1024) & 1023;
-		v = values[i].value;
-		color = values[i].color;
+		int i = (current-1-a+1024) & 1023;
+		float v = values[i].value;
+		int color = values[i].color;
 		v = v * graphscale->value + graphshift->value;
 
 		if (v < 0)
 			v += graphheight->integer * (1 + appRound (-v / graphheight->value));
-		h = appRound(v) % graphheight->integer;
+		int h = appRound(v) % graphheight->integer;
 		re.DrawFill (x+w-1-a, y - h, 1,	h, color);
 	}
 }
 
-/*
-===============================================================================
 
-CENTER PRINTING
-
-===============================================================================
-*/
+/*-----------------------------------------------------------------------------
+	Center print
+-----------------------------------------------------------------------------*/
 
 static char		scr_centerstring[1024];
 static float	scr_centertime_off;
@@ -231,13 +168,15 @@ void SCR_CenterPrint (char *str)
 }
 
 
-void SCR_DrawCenterString (void)
+static void DrawCenterString (void)
 {
 	char	*start;
 	int		l, j, x, y;
 	int		remaining;
 
-	if (!cl_draw2d->integer) return;
+	scr_centertime_off -= cls.frametime;
+
+	if (scr_centertime_off <= 0) return;
 
 	// the finale prints the characters one at a time
 	remaining = BIG_NUMBER;
@@ -275,78 +214,6 @@ void SCR_DrawCenterString (void)
 	} while (1);
 }
 
-void SCR_CheckDrawCenterString (void)
-{
-	scr_centertime_off -= cls.frametime;
-
-	if (scr_centertime_off <= 0)
-		return;
-
-	SCR_DrawCenterString ();
-}
-
-//=============================================================================
-
-/*
-=================
-SCR_CalcVrect
-
-Sets scr_vrect, the coordinates of the rendered window
-=================
-*/
-static void SCR_CalcVrect (void)
-{
-	float	frac;
-
-	frac = Cvar_Clamp (scr_viewsize, 40, 100) / 100.0f;
-
-	scr_vrect.width = appRound (viddef.width * frac);
-	scr_vrect.height = appRound (viddef.height * frac);
-
-	scr_vrect.width &= ~7;		// align(8)
-	scr_vrect.height &= ~1;		// align(2)
-
-	scr_vrect.x = (viddef.width - scr_vrect.width) / 2;
-	scr_vrect.y = (viddef.height - scr_vrect.height) / 2;
-}
-
-
-/*
-=================
-SCR_Sky_f
-
-Set a specific sky and rotation speed
-=================
-*/
-void SCR_Sky_f (bool usage, int argc, char **argv)
-{
-	float	rotate;
-	vec3_t	axis;
-
-	if (argc < 2 || usage)
-	{
-		Com_Printf ("Usage: sky <basename> <rotate> <axis x y z>\n");
-		return;
-	}
-	if (argc > 2)
-		rotate = atof (argv[2]);
-	else
-		rotate = 0;
-	if (argc == 6)
-	{
-		axis[0] = atof (argv[3]);
-		axis[1] = atof (argv[4]);
-		axis[2] = atof (argv[5]);
-	}
-	else
-	{
-		axis[0] = 0;
-		axis[1] = 0;
-		axis[2] = 1;
-	}
-
-	re.SetSky (argv[1], rotate, axis);
-}
 
 /*-----------------------------------------------------------------------------
 	Chat input
@@ -591,7 +458,7 @@ static void DrawGUI (bool allowNotifyArea)
 		if (developer->integer)
 		{
 			// draw full-screen console before loading plaque if in developer mode
-			re.DrawStretchPic (0, 0, viddef.width, viddef.height, "conback");
+			re.DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
 			Con_DrawConsole (1.0f);
 #define DEV_SHOT_FRAC	4		// part of screen for levelshot when loading in "developer" mode
 			if (map_levelshot)
@@ -601,16 +468,12 @@ static void DrawGUI (bool allowNotifyArea)
 		else
 		{
 			if (map_levelshot)
-			{
-				re.DrawStretchPic (0, 0, viddef.width, viddef.height, map_levelshot);
-				if (cls.newfx)
-					re.DrawStretchPic (0, 0, viddef.width, viddef.height, "/fx/detail");
-			}
+				re.DrawDetailedPic (0, 0, viddef.width, viddef.height, map_levelshot);
 			else
 			{
 				int		w, h;
 
-				re.DrawStretchPic (0, 0, viddef.width, viddef.height, "conback");
+				re.DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
 				re.DrawGetPicSize (&w, &h, "loading");
 				re.DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading");
 			}
@@ -621,7 +484,7 @@ static void DrawGUI (bool allowNotifyArea)
 	}
 
 	// draw downloading info
-	if (cls.download)
+	if (cls.download && !(developer->integer && cls.loading))
 	{
 		int w = viddef.width / 2;
 		int r = w * cls.downloadpercent / 100;
@@ -640,11 +503,8 @@ static void DrawGUI (bool allowNotifyArea)
 	if (!cls.loading || !developer->integer)
 		if (conCurrent)
 			Con_DrawConsole (conCurrent);
-		else if (allowNotifyArea)
-		{
-			if (cls.key_dest == key_game || cls.key_dest == key_message)
-				Con_DrawNotify (true);	// only draw notify in game
-		}
+		else if (allowNotifyArea && cl_draw2d->integer && (cls.key_dest == key_game || cls.key_dest == key_message))
+				Con_DrawNotify (true);
 }
 
 
@@ -652,7 +512,7 @@ void SCR_ShowConsole (bool show, bool noAnim)
 {
 	guard(SCR_ShowConsole);
 
-	if (!re.flags || *re.flags & REF_CONSOLE_ONLY)	// !re.flags -- when dedicated server started
+	if (*re.flags & REF_CONSOLE_ONLY)
 	{
 		// ignore "show" arg
 		cls.key_dest = key_console;
@@ -681,9 +541,83 @@ void SCR_ToggleConsole (void)
 {
 	if (cls.keep_console) return;
 
-	Key_ClearTyping ();
+	Con_ClearTyping ();
 	Con_ClearNotify ();
 	SCR_ShowConsole (cls.key_dest != key_console, false);
+}
+
+
+/*-----------------------------------------------------------------------------
+	Screenshots
+-----------------------------------------------------------------------------*/
+
+static void Screenshot_f (bool usage, int argc, char **argv)
+{
+	int		i, flags;
+	static char filename[MAX_OSPATH], tmpName[MAX_OSPATH];
+
+	filename[0] = 0;
+	flags = 0;
+
+	if (usage)
+	{
+		Com_Printf ("Usage: screenshot [-levelshot] [-no2d] [-nogamma] [-silent] [-jpeg] [<filename>]\n");
+		return;
+	}
+
+	for (i = 1; i < argc; i++)
+	{
+		char *opt = argv[i];
+		if (opt[0] == '-')
+		{
+			opt++;
+			if (!stricmp (opt, "levelshot"))
+			{
+				char	*tmp;
+
+				if (cls.state != ca_active)
+				{
+					Com_WPrintf ("No levelshots in disconnected state\n");
+					return;
+				}
+
+				if (!(tmp = strrchr (map_name, '/')))
+				{
+					Com_WPrintf ("Invalid map_name: %s\n", map_name);
+					return;
+				}
+				tmp++;	// skip '/'
+
+				flags |= SHOT_SMALL|SHOT_NO_2D|SHOT_NOGAMMA;
+				appSprintf (ARRAY_ARG(filename), "%s/levelshots/%s", FS_Gamedir (), tmp);
+				// cut extension
+				tmp = strrchr (filename, '.');
+				if (tmp) *tmp = 0;
+			}
+			else if (!stricmp (opt, "no2d"))
+				flags |= SHOT_NO_2D;
+			else if (!stricmp (opt, "nogamma"))
+				flags |= SHOT_NOGAMMA;
+			else if (!stricmp (opt, "silent"))
+				flags |= SHOT_SILENT;
+			else if (!stricmp (opt, "jpeg"))
+				flags |= SHOT_JPEG;
+			else
+			{
+				Com_WPrintf ("Unknown option: %s\n", opt);
+				return;
+			}
+		}
+		else
+		{
+			if (filename[0])
+				Com_WPrintf ("WARNING: name already specified (%s). Changed.\n", filename);
+			appSprintf (ARRAY_ARG(tmpName), "%s/screenshots/%s", FS_Gamedir (), opt);
+			Q_CopyFilename (filename, tmpName, sizeof(filename));
+		}
+	}
+
+	re.Screenshot (flags, filename);
 }
 
 
@@ -694,7 +628,7 @@ void SCR_ToggleConsole (void)
 SCR_TimeRefresh_f
 ================
 */
-void SCR_TimeRefresh_f (int argc, char **argv)
+static void TimeRefresh_f (void)
 {
 	int		i;
 	int		start, stop;
@@ -705,26 +639,13 @@ void SCR_TimeRefresh_f (int argc, char **argv)
 
 	start = Sys_Milliseconds ();
 
-	if (argc == 2)	//????
-	{	// run without page flipping
-		re.BeginFrame (0);
-		for (i = 0; i < 128; i++)
-		{
-			cl.refdef.viewangles[1] = i/128.0*360.0;
-			re.RenderFrame (&cl.refdef);
-		}
-		re.EndFrame();
-	}
-	else
+	for (i = 0; i < 128; i++)
 	{
-		for (i = 0; i < 128; i++)
-		{
-			cl.refdef.viewangles[1] = i/128.0*360.0;
+		cl.refdef.viewangles[1] = i/128.0*360.0;
 
-			re.BeginFrame (0);
-			re.RenderFrame (&cl.refdef);
-			re.EndFrame();
-		}
+		re.BeginFrame (0);
+		re.RenderFrame (&cl.refdef);
+		re.EndFrame();
 	}
 
 	stop = Sys_Milliseconds ();
@@ -735,12 +656,12 @@ void SCR_TimeRefresh_f (int argc, char **argv)
 
 /*
 ==============
-SCR_TileClear
+TileClear
 
 Clear any parts of the tiled background that were drawn on last frame
 ==============
 */
-void SCR_TileClear (void)
+static void TileClear (void)
 {
 	int		x1, x2, y1, y2;
 
@@ -759,7 +680,9 @@ void SCR_TileClear (void)
 }
 
 
-//===============================================================
+/*-----------------------------------------------------------------------------
+	Game HUD
+-----------------------------------------------------------------------------*/
 
 #define	ICON_WIDTH		24
 #define	ICON_HEIGHT		24
@@ -854,16 +777,71 @@ static void DrawField (int x, int y, int color, int width, int value)
 }
 
 
-/*
-=================
-SCR_DrawCrosshair
-=================
-*/
+#define	DISPLAY_ITEMS	17
+
+static void DrawInventory (void)
+{
+	int		i, index[MAX_ITEMS];
+
+	int num = 0;
+	int selected_num = 0;
+	int selected = cl.frame.playerstate.stats[STAT_SELECTED_ITEM];
+	for (i = 0; i < MAX_ITEMS; i++)
+	{
+		if (i == selected)
+			selected_num = num;
+		if (cl.inventory[i])
+		{
+			index[num] = i;
+			num++;
+		}
+	}
+
+	// determine scroll point
+	int top = selected_num - DISPLAY_ITEMS/2;
+	if (num - top < DISPLAY_ITEMS)
+		top = num - DISPLAY_ITEMS;
+	if (top < 0)
+		top = 0;
+
+	int x = (viddef.width-256)/2;
+	int y = (viddef.height-240)/2;
+
+	re.DrawPic (x, y+CHAR_HEIGHT, "inventory");
+
+	y += 3 * CHAR_HEIGHT;
+	x += 3 * CHAR_WIDTH;
+	DrawString (x, y,			  S_GREEN"hotkey ### item");
+	DrawString (x, y+CHAR_HEIGHT, S_GREEN"------ --- ----");
+	y += 2 * CHAR_HEIGHT;
+
+	for (i = top; i < num && i < top+DISPLAY_ITEMS; i++)
+	{
+		int		key;
+		char	binding[256];
+		const char *keyName;
+
+		int item = index[i];
+		appSprintf (ARRAY_ARG(binding), "use %s", cl.configstrings[CS_ITEMS+item]);
+		if (Key_FindBinding (binding, &key, 1))
+			keyName = Key_KeynumToString (key);
+		else
+			keyName = "";
+
+		if (item == selected)
+			re.DrawChar (x-CHAR_WIDTH, y, 13);	//?? original: 15 (but not displayed) anyway
+
+		DrawString (x, y, va("%s%6s %3i %s", (item == selected) ? S_GREEN: S_WHITE,
+			keyName, cl.inventory[item], cl.configstrings[CS_ITEMS+item]));
+		y += CHAR_HEIGHT;
+	}
+}
+
 
 static char	crosshair_pic[MAX_QPATH];
 static int	crosshair_width, crosshair_height;
 
-void SCR_DrawCrosshair (void)
+static void DrawCrosshair (void)
 {
 	if (!crosshair->integer || cl.refdef.rdflags & RDF_THIRD_PERSON)
 		return;
@@ -876,44 +854,8 @@ void SCR_DrawCrosshair (void)
 
 	if (!crosshair_pic[0]) return;
 
-	re_DrawPicColor (scr_vrect.x + ((scr_vrect.width - crosshair_width)>>1), scr_vrect.y + ((scr_vrect.height - crosshair_height)>>1),
+	re.DrawPic (scr_vrect.x + ((scr_vrect.width - crosshair_width)>>1), scr_vrect.y + ((scr_vrect.height - crosshair_height)>>1),
 		crosshair_pic, crosshairColor->integer);
-}
-
-/*
-===============
-SCR_TouchPics
-
-Allows rendering code to cache all needed sbar graphics
-===============
-*/
-void SCR_TouchPics (void)
-{
-	int		ch_num;
-
-	if (*re.flags & REF_CONSOLE_ONLY)
-		return;
-
-//	for (int i = 0; i < 2; i++)
-//		for (int j = 0 ; j < 11 ; j++)
-//			re.RegisterPic (sb_nums[i][j]);		// can remember image handles and use later (faster drawing, but need API extension ??)
-
-	ch_num = crosshair->integer;
-	if (ch_num)
-	{
-		if (ch_num > 0)
-		{
-			appSprintf (ARRAY_ARG(crosshair_pic), "ch%d", crosshair->integer);
-			re.DrawGetPicSize (&crosshair_width, &crosshair_height, crosshair_pic);
-			if (crosshair_width <= 0)
-				ch_num = -1;								// invalid value
-		}
-		if (ch_num <= 0)
-		{
-			crosshair_pic[0] = 0;
-			if (ch_num < 0) Cvar_Set ("crosshair", "0");	// invalid value becomes zero
-		}
-	}
 }
 
 /*
@@ -921,7 +863,7 @@ void SCR_TouchPics (void)
 SCR_ExecuteLayoutString
 ================
 */
-void SCR_ExecuteLayoutString (char *s)
+static void ExecuteLayoutString (const char *s)
 {
 	int		x, y;
 	int		value;
@@ -936,7 +878,6 @@ void SCR_ExecuteLayoutString (char *s)
 		return;
 
 	if (!s[0]) return;
-	if (!cl_draw2d->integer) return;		// HUD is disabled
 
 	x = y = 0;
 	width = 3;
@@ -978,11 +919,11 @@ void SCR_ExecuteLayoutString (char *s)
 			int ping = atoi (COM_Parse (s));
 			int time = atoi (COM_Parse (s));
 
-			DrawString (x+32, y, va(S_GREEN"%s", ci->name));
-			DrawString (x+32, y+8,  "Score: ");
-			DrawString (x+32+7*8, y+8,  va(S_GREEN"%i", score));
-			DrawString (x+32, y+16, va("Ping:  %i", ping));
-			DrawString (x+32, y+24, va("Time:  %i", time));
+			int x1 = x+32;
+			DrawString (x1, y,				va(S_GREEN"%s", ci->name));
+			DrawString (x1, y+CHAR_HEIGHT,	va("Score: "S_GREEN"%d", score));
+			DrawString (x1, y+CHAR_HEIGHT*2,va("Ping:  %d", ping));
+			DrawString (x1, y+CHAR_HEIGHT*3,va("Time:  %d", time));
 
 			if (!ci->icon)
 				ci = &cl.baseclientinfo;
@@ -1105,6 +1046,60 @@ void SCR_ExecuteLayoutString (char *s)
 //=======================================================
 
 /*
+===============
+SCR_TouchPics
+
+Allows rendering code to cache all needed sbar graphics
+===============
+*/
+void SCR_TouchPics (void)
+{
+	int		ch_num;
+
+	if (*re.flags & REF_CONSOLE_ONLY)
+		return;
+
+//	for (int i = 0; i < 2; i++)
+//		for (int j = 0 ; j < 11 ; j++)
+//			re.RegisterPic (sb_nums[i][j]);		// can remember image handles and use later (faster drawing, but need API extension ??)
+
+	ch_num = crosshair->integer;
+	if (ch_num)
+	{
+		if (ch_num > 0)
+		{
+			appSprintf (ARRAY_ARG(crosshair_pic), "ch%d", crosshair->integer);
+			re.DrawGetPicSize (&crosshair_width, &crosshair_height, crosshair_pic);
+			if (crosshair_width <= 0)
+				ch_num = -1;								// invalid value
+		}
+		if (ch_num <= 0)
+		{
+			crosshair_pic[0] = 0;
+			if (ch_num < 0) Cvar_Set ("crosshair", "0");	// invalid value becomes zero
+		}
+	}
+}
+
+
+static void CalcVrect (void)
+{
+	float	frac;
+
+	frac = Cvar_Clamp (scr_viewsize, 40, 100) / 100.0f;
+
+	scr_vrect.width = appRound (viddef.width * frac);
+	scr_vrect.height = appRound (viddef.height * frac);
+
+	scr_vrect.width &= ~7;		// align(8)
+	scr_vrect.height &= ~1;		// align(2)
+
+	scr_vrect.x = (viddef.width - scr_vrect.width) / 2;
+	scr_vrect.y = (viddef.height - scr_vrect.height) / 2;
+}
+
+
+/*
 ==================
 SCR_UpdateScreen
 
@@ -1114,8 +1109,6 @@ text to the screen.
 */
 void SCR_UpdateScreen (void)
 {
-	int numframes;
-	int i;
 	float separation[2] = {0, 0};
 
 	guard(SCR_UpdateScreen);
@@ -1125,6 +1118,7 @@ void SCR_UpdateScreen (void)
 	// range check cl_camera_separation so we don't inadvertently fry someone's brain
 	Cvar_Clamp (cl_stereo_separation, 0, 1);
 
+	int numframes;
 	if (cl_stereo->integer)
 	{
 		numframes = 2;
@@ -1138,7 +1132,7 @@ void SCR_UpdateScreen (void)
 		numframes = 1;
 	}
 
-	for (i = 0; i < numframes; i++)
+	for (int i = 0; i < numframes; i++)
 	{
 		re.BeginFrame (separation[i]);
 
@@ -1179,52 +1173,58 @@ void SCR_UpdateScreen (void)
 			}
 #endif
 
-			// do 3D refresh drawing, and then update the screen
-			SCR_CalcVrect ();
-			// clear any dirty part of the background
-			SCR_TileClear ();
+			CalcVrect ();
 
-			if (map_clientLoaded)
-				V_RenderView (separation[i]);
+			if (V_RenderView (separation[i]))
+			{
+				//------------------- HUD --------------------
+				if (cl_draw2d->integer)
+				{
+					DrawCrosshair ();
+					// SCR_DrawStats:
+					ExecuteLayoutString (cl.configstrings[CS_STATUSBAR]);
+					// SCR_DrawLayout:
+					if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 1)
+						ExecuteLayoutString (cl.layout);
+					// draw inventory
+					if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 2)
+						DrawInventory ();
+
+					// show disconnected icon when server is not responding
+					if (cl.overtime > 200)
+						re.DrawPic (scr_vrect.x+64, scr_vrect.y, "net");
+
+					DrawCenterString ();
+
+					// draw pause
+					if (cl_paused->integer)
+					{
+						int		w, h;
+						re.DrawGetPicSize (&w, &h, "pause");
+						re.DrawPic ((viddef.width-w)/2, viddef.height/2 + 8, "pause");
+					}
+
+					DrawChatInput ();
+				}
+
+				// clear any dirty part of the background
+				TileClear ();
+			}
 			else
-				re.DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
+			{
+				// 3D not rendered - draw background
+				if (!cls.loading || !map_levelshot)
+					re.DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
+				if (cls.state == ca_disconnected && !cls.loading)
+					M_ForceMenuOn ();
+			}
 
-			//------------------- HUD --------------------
-			// SCR_DrawStats:
-			SCR_ExecuteLayoutString (cl.configstrings[CS_STATUSBAR]);
-			// SCR_DrawLayout:
-			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 1)
-				SCR_ExecuteLayoutString (cl.layout);
-			// draw inventory
-			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 2)
-				CL_DrawInventory ();
-
-			// show disconnected icon when server is not responding
-			if (cl.overtime > 200)
-				re_DrawPic (scr_vrect.x+64, scr_vrect.y, "net");
-
-			SCR_CheckDrawCenterString ();
+			DrawGUI (true);
 
 			if (timegraph->integer)
 				SCR_DebugGraph (cls.frametime * 300, 0);
 			if (debuggraph->integer || timegraph->integer || netgraph->integer)
 				DrawDebugGraph ();
-
-			// draw pause
-			if (cl_paused->integer)
-			{
-				int		w, h;
-				re.DrawGetPicSize (&w, &h, "pause");
-				re_DrawPic ((viddef.width-w)/2, viddef.height/2 + 8, "pause");
-			}
-
-			if (cls.state == ca_disconnected && !cls.loading)
-			{
-				re.DrawStretchPic (0, 0, viddef.width, viddef.height, "conback");
-				M_ForceMenuOn ();
-			}
-			DrawGUI (true);
-			DrawChatInput ();
 		}
 	}
 	re.EndFrame();
@@ -1249,6 +1249,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(con_maxSize, 0.8, 0),
 	CVAR_VAR(scr_viewsize, 100, CVAR_ARCHIVE),
 	CVAR_VAR(scr_centertime, 2.5, 0),
+	CVAR_VAR(cl_draw2d, 1, 0),
 	CVAR_VAR(netgraph, 0, 0),
 	CVAR_VAR(timegraph, 0, 0),
 	CVAR_VAR(debuggraph, 0, 0),
@@ -1259,12 +1260,12 @@ CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 
-	RegisterCommand ("timerefresh", SCR_TimeRefresh_f);
+	RegisterCommand ("timerefresh", TimeRefresh_f);
 	RegisterCommand ("loading", SCR_BeginLoadingPlaque);
-	RegisterCommand ("sky", SCR_Sky_f);
 	RegisterCommand ("toggleconsole", SCR_ToggleConsole);
 	RegisterCommand ("messagemode", SCR_MessageMode_f);
 	RegisterCommand ("messagemode2", SCR_MessageMode2_f);
+	RegisterCommand ("screenshot", Screenshot_f);
 
 	initialized = true;
 }

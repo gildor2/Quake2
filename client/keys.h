@@ -4,6 +4,7 @@
 
 // Single keys: 32..127 -- printable keys (lowercased), 128..255 -- known other keys, 256..511 -- unknown (non-standard) keys
 #define NUM_KEYS		512
+#define KEYS_MASK		(NUM_KEYS-1)
 
 #define MOD_CTRL	(NUM_KEYS)
 #define	MOD_ALT		(NUM_KEYS*2)
@@ -11,10 +12,10 @@
 enum {
 	K_LEFTARROW = 1, K_UPARROW, K_RIGHTARROW, K_DOWNARROW,
 	K_BACKSPACE = 8,
-	K_TAB		= 9,
-	K_ENTER		= 0x0D,
+	K_TAB		= '\t',
+	K_ENTER		= '\r',
 	K_ESCAPE	= 0x1B,
-	K_SPACE		= 32,
+	K_SPACE		= ' ',
 
 	// shift modifiers
 	K_ALT = 128, K_RALT, K_CTRL, K_RCTRL, K_SHIFT,
@@ -22,12 +23,18 @@ enum {
 	K_INS, K_DEL, K_HOME, K_END, K_PGUP, K_PGDN,
 
 	// keypad
-	K_KP_HOME,	K_KP_UPARROW,	K_KP_PGUP,
-	K_KP_LEFTARROW,	K_KP_5,	K_KP_RIGHTARROW,
+	// NOTE: K_KP_INS .. K_KP_PGUP -- in order of their numeric values ('0'..'9')
+	// AND: all keypad keys go in special order, which used in line editor to
+	// convert K_KP... to ASCII code
+#define KEYPAD_STRING	"0123456789./*-+\r"
+#define KEYPAD_FIRST	K_KP_INS
+	K_KP_INS,
 	K_KP_END,	K_KP_DOWNARROW,	K_KP_PGDN,
-	K_KP_INS,	K_KP_DEL,
-	K_KP_SLASH,	K_KP_MINUS,
-	K_KP_PLUS,	K_KP_ENTER,
+	K_KP_LEFTARROW,	K_KP_5,	K_KP_RIGHTARROW,
+	K_KP_HOME,	K_KP_UPARROW,	K_KP_PGUP,
+	K_KP_DEL,	K_KP_SLASH,	K_KP_STAR,
+	K_KP_MINUS,	K_KP_PLUS,	K_KP_ENTER,
+#define KEYPAD_LAST		K_KP_ENTER
 
 	// mouse buttons
 	K_MOUSE1,	K_MOUSE2,	K_MOUSE3,
@@ -77,7 +84,6 @@ void Key_WriteBindings (FILE *f);
 void Key_Init (void);
 void Key_Event (int key, bool down, unsigned time);
 void Key_ClearStates (void);
-void Key_ClearTyping (void);				//?? move to console
 
 #define		MAXCMDLINE	256
 extern char		editLine[MAXCMDLINE];

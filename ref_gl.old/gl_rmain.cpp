@@ -1680,6 +1680,7 @@ refExport_t GetRefAPI (const refImport_t *rimp)
 	re.DrawGetPicSize = Draw_GetPicSize;
 	re.DrawPic = Draw_PicColor;
 	re.DrawStretchPic = Draw_StretchPic;
+	re.DrawDetailedPic = Draw_StretchPic;
 	re.DrawChar = Draw_CharColor;
 	re.DrawTileClear = Draw_TileClear;
 	re.DrawFill = Draw_Fill;

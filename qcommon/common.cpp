@@ -611,6 +611,20 @@ void Com_SetServerState (server_state_t state)
 }
 
 
+#if 1
+// 0 to 1
+float frand (void)
+{
+	return rand() * (1.0f/RAND_MAX);
+}
+
+// -1 to 1
+float crand (void)
+{
+	return rand() * (2.0f/RAND_MAX) - 1;
+}
+#endif
+
 /*
 ==============================================================================
 
@@ -703,19 +717,19 @@ void MSG_WriteString (sizebuf_t *sb, char *s)
 
 void MSG_WriteCoord (sizebuf_t *sb, float f)
 {
-	MSG_WriteShort (sb, appRound (f*8));	//??
+	MSG_WriteShort (sb, appRound (f*8));
 }
 
 void MSG_WritePos (sizebuf_t *sb, vec3_t pos)
 {
-	MSG_WriteShort (sb, appRound (pos[0]*8));	//??
-	MSG_WriteShort (sb, appRound (pos[1]*8));	//??
-	MSG_WriteShort (sb, appRound (pos[2]*8));	//??
+	MSG_WriteShort (sb, appRound (pos[0]*8));
+	MSG_WriteShort (sb, appRound (pos[1]*8));
+	MSG_WriteShort (sb, appRound (pos[2]*8));
 }
 
 void MSG_WriteAngle (sizebuf_t *sb, float f)
 {
-	MSG_WriteByte (sb, appRound (f*256.0f/360) & 255);	//??
+	MSG_WriteByte (sb, appRound (f*256.0f/360) & 255);
 }
 
 void MSG_WriteAngle16 (sizebuf_t *sb, float f)
@@ -749,8 +763,8 @@ void MSG_WriteDeltaUsercmd (sizebuf_t *buf, usercmd_t *from, usercmd_t *cmd)
 	if (bits & CM_SIDE)	  	MSG_WriteShort (buf, cmd->sidemove);
 	if (bits & CM_UP)		MSG_WriteShort (buf, cmd->upmove);
 
- 	if (bits & CM_BUTTONS) 	MSG_WriteByte (buf, cmd->buttons);
- 	if (bits & CM_IMPULSE)	MSG_WriteByte (buf, cmd->impulse);
+	if (bits & CM_BUTTONS) 	MSG_WriteByte (buf, cmd->buttons);
+	if (bits & CM_IMPULSE)	MSG_WriteByte (buf, cmd->impulse);
 
 	MSG_WriteByte (buf, cmd->msec);
 	MSG_WriteByte (buf, cmd->lightlevel);
@@ -1474,16 +1488,6 @@ byte COM_BlockSequenceCRCByte (byte *base, int length, int sequence)
 
 //========================================================
 
-float frand(void)
-{
-	return (rand()&32767) * (1.0f/32767);
-}
-
-float crand(void)
-{
-	return (rand()&32767) * (2.0f/32767) - 1;
-}
-
 void Key_Init (void);
 
 /*
@@ -1673,7 +1677,6 @@ CVAR_END
 
 	ParseCmdline (cmdline);			// should be executed before any cvar creation
 	Cvar_GetVars (ARRAY_ARG(vars));
-//	Cvar_Get ("version", va("%4.2f %s %s %s", VERSION, CPUSTRING, __DATE__, BUILDSTRING), CVAR_SERVERINFO|CVAR_NOSET);
 	Cvar_Get ("version", STR(VERSION) " " CPUSTRING " " __DATE__ " " BUILDSTRING, CVAR_SERVERINFO|CVAR_NOSET);
 
 	Cbuf_Init ();

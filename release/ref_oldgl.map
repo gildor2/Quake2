@@ -1,6 +1,6 @@
  ref_oldgl
 
- Timestamp is 420d115b (Fri Feb 11 23:11:07 2005)
+ Timestamp is 421311fb (Wed Feb 16 12:27:23 2005)
 
  Preferred load address is 10000000
 
@@ -18,7 +18,7 @@
  0003:00000008 00000004H .CRT$XIA                DATA
  0003:0000000c 00000004H .CRT$XIZ                DATA
  0003:00000010 00005710H .data                   DATA
- 0003:00005720 0015c394H .bss                    DATA
+ 0003:00005720 0015bd94H .bss                    DATA
 
   Address         Publics by Value              Rva+Base     Lib:Object
 
@@ -69,138 +69,138 @@
  0001:000028a9       ?R_LightPoint@@YAXQAM0@Z   100038a9 f   gl_light.obj
  0001:000029f6       ?R_AddDynamicLights@@YAXPAUmsurface_s@@@Z 100039f6 f   gl_light.obj
  0001:00002c50       ?R_SetCacheState@@YAXPAUmsurface_s@@@Z 10003c50 f   gl_light.obj
- 0001:00002c7b       ?R_BuildLightMap@@YAXPAUmsurface_s@@PAEH@Z 10003c7b f   gl_light.obj
- 0001:00003252       ?GL_LerpVerts@@YAXHPAUdTriVertx_t@@00PAMQAM22@Z 10004252 f   gl_mesh.obj
- 0001:000033dc       ?GL_DrawAliasFrameLerp@@YAXPAUdmdl_t@@M@Z 100043dc f   gl_mesh.obj
- 0001:000037c7       ?GL_DrawAliasShadow@@YAXPAUdmdl_t@@H@Z 100047c7 f   gl_mesh.obj
- 0001:0000386b       ?R_DrawAliasModel@@YAXPAUentity_s@@@Z 1000486b f   gl_mesh.obj
- 0001:00004173       ?Mod_PointInLeaf@@YAPAUmleaf_s@@PAMPAUmodel_s@@@Z 10005173 f   gl_model.obj
- 0001:000041d3       ?Mod_DecompressVis@@YAPAEPAEPAUmodel_s@@@Z 100051d3 f   gl_model.obj
- 0001:00004253       ?Mod_ClusterPVS@@YAPAEHPAUmodel_s@@@Z 10005253 f   gl_model.obj
- 0001:00004289       ?Mod_Modellist_f@@YAXXZ    10005289 f   gl_model.obj
- 0001:000042ea       ?Mod_Init@@YAXXZ           100052ea f   gl_model.obj
- 0001:000042fc       ?CreateSolarColor@@YAXMMMPAM@Z 100052fc f   gl_model.obj
- 0001:000043cf       ?Mod_LoadLighting@@YAXPAEH@Z 100053cf f   gl_model.obj
- 0001:00004611       ?Mod_LoadVisibility@@YAXPAUdvis_t@@H@Z 10005611 f   gl_model.obj
- 0001:00004636       ?Mod_LoadVertexes@@YAXPAUdvertex_t@@H@Z 10005636 f   gl_model.obj
- 0001:00004656       ?Mod_LoadSubmodels@@YAXPAUcmodel_t@@H@Z 10005656 f   gl_model.obj
- 0001:000046e9       ?Mod_LoadEdges@@YAXPAUdedge_t@@H@Z 100056e9 f   gl_model.obj
- 0001:00004738       ?Mod_LoadTexinfo@@YAXPAUtexinfo_s@@H@Z 10005738 f   gl_model.obj
- 0001:00004846       ?CalcSurfaceExtents@@YAXPAUmsurface_s@@@Z 10005846 f   gl_model.obj
- 0001:00004988       ?Mod_LoadFaces@@YAXPAUdface_t@@H@Z 10005988 f   gl_model.obj
- 0001:00004ae0       ?Mod_SetParent@@YAXPAUmnode_s@@0@Z 10005ae0 f   gl_model.obj
- 0001:00004b05       ?Mod_LoadNodes@@YAXPAUdnode_t@@H@Z 10005b05 f   gl_model.obj
- 0001:00004c03       ?Mod_LoadLeafs@@YAXPAUdleaf_t@@H@Z 10005c03 f   gl_model.obj
- 0001:00004ca6       ?Mod_LoadMarksurfaces@@YAXPAGH@Z 10005ca6 f   gl_model.obj
- 0001:00004d21       ?Mod_LoadSurfedges@@YAXPAHH@Z 10005d21 f   gl_model.obj
- 0001:00004d41       ?Mod_LoadPlanes@@YAXPAUdplane_t@@H@Z 10005d41 f   gl_model.obj
- 0001:00004dd6       ?PlaneTypeForNormal@@YAHQBM@Z 10005dd6 f i gl_model.obj
- 0001:00004e47       ?Mod_LoadBrushModel@@YAXPAUmodel_s@@PAUbspfile_t@@@Z 10005e47 f   gl_model.obj
- 0001:00004ff8       ?Mod_LoadAliasModel@@YAXPAUmodel_s@@PAX@Z 10005ff8 f   gl_model.obj
- 0001:000052b0       ?Mod_LoadSpriteModel@@YAXPAUmodel_s@@PAX@Z 100062b0 f   gl_model.obj
- 0001:000053b9       ?R_BeginRegistration@@YAXPBD@Z 100063b9 f   gl_model.obj
- 0001:00005662       ?R_RegisterModel@@YAPAUmodel_s@@PBD@Z 10006662 f   gl_model.obj
- 0001:0000575f       ?R_EndRegistration@@YAXXZ  1000675f f   gl_model.obj
- 0001:0000579e       ?Mod_Free@@YAXPAUmodel_s@@@Z 1000679e f   gl_model.obj
- 0001:000057b9       ?Mod_FreeAll@@YAXXZ        100067b9 f   gl_model.obj
- 0001:000057ec       ?R_CullBox@@YA_NQAM0@Z     100067ec f   gl_rmain.obj
- 0001:00005826       ?BOX_ON_PLANE_SIDE@@YAHQBM0PBUcplane_t@@@Z 10006826 f i gl_rmain.obj
- 0001:000058ab       ?R_RotateForEntity@@YAXPAUentity_s@@@Z 100068ab f   gl_rmain.obj
- 0001:0000592e       ?R_DrawSpriteModel@@YAXPAUentity_s@@@Z 1000692e f   gl_rmain.obj
- 0001:00005c30       ?R_DrawNullModel@@YAXXZ    10006c30 f   gl_rmain.obj
- 0001:00005dc3       ?R_DrawEntitiesOnList@@YAXXZ 10006dc3 f   gl_rmain.obj
- 0001:00005ef3       ?GL_DrawParticles@@YAXPAUparticle_s@@QBI@Z 10006ef3 f   gl_rmain.obj
- 0001:000060e0       ?R_DrawParticles@@YAXXZ    100070e0 f   gl_rmain.obj
- 0001:000060f3       ?R_PolyBlend@@YAXXZ        100070f3 f   gl_rmain.obj
- 0001:00006273       ?SignbitsForPlane@@YAHPAUcplane_t@@@Z 10007273 f   gl_rmain.obj
- 0001:0000629d       ?R_SetFrustum@@YAXXZ       1000729d f   gl_rmain.obj
- 0001:00006387       ?R_SetupFrame@@YAXXZ       10007387 f   gl_rmain.obj
- 0001:00006512       ?MYgluPerspective@@YAXNNNN@Z 10007512 f   gl_rmain.obj
- 0001:0000657e       ?R_SetupGL@@YAXXZ          1000757e f   gl_rmain.obj
- 0001:000067fe       ?R_Clear@@YAXXZ            100077fe f   gl_rmain.obj
- 0001:000068df       ?R_Flash@@YAXXZ            100078df f   gl_rmain.obj
- 0001:000068e4       ?R_RenderView@@YAXPAUrefdef_t@@@Z 100078e4 f   gl_rmain.obj
- 0001:000069f2       ?R_SetGL2D@@YAXXZ          100079f2 f   gl_rmain.obj
- 0001:00006ae3       ?R_SetLightLevel@@YAXXZ    10007ae3 f   gl_rmain.obj
- 0001:00006b3e       ?R_RenderFrame@@YAXPAUrefdef_t@@@Z 10007b3e f   gl_rmain.obj
- 0001:00006b57       ?R_Register@@YAXXZ         10007b57 f   gl_rmain.obj
- 0001:00006b9e       ?R_SetMode@@YA_NXZ         10007b9e f   gl_rmain.obj
- 0001:00006c90       ?R_Init@@YAHXZ             10007c90 f   gl_rmain.obj
- 0001:00007007       ?R_Shutdown@@YAXXZ         10008007 f   gl_rmain.obj
- 0001:00007041       ?R_BeginFrame@@YAXM@Z      10008041 f   gl_rmain.obj
- 0001:000072d3       ?R_SetPalette@@YAXPBE@Z    100082d3 f   gl_rmain.obj
- 0001:0000739e       ?R_DrawBeam@@YAXPAUbeam_s@@@Z 1000839e f   gl_rmain.obj
- 0001:000075a9       ?Draw_ConCharColor@@YAXHHHH@Z 100085a9 f   gl_rmain.obj
- 0001:000075ca       _GetRefAPI                 100085ca f   gl_rmain.obj
- 0001:000077d0       ?R_InitParticleTexture@@YAXXZ 100087d0 f   gl_rmisc.obj
- 0001:0000789f       ?GL_PerformScreenshot@@YAXXZ 1000889f f   gl_rmisc.obj
- 0001:00007ae0       ?GL_Strings_f@@YAXXZ       10008ae0 f   gl_rmisc.obj
- 0001:00007b34       ?GL_SetDefaultState@@YAXXZ 10008b34 f   gl_rmisc.obj
- 0001:00007c8f       ?GL_UpdateSwapInterval@@YAXXZ 10008c8f f   gl_rmisc.obj
- 0001:00007cc4       ?R_TextureAnimation@@YAPAUimage_s@@PAUmtexinfo_s@@@Z 10008cc4 f   gl_rsurf.obj
- 0001:00007ce8       ?DrawGLPoly@@YAXPAUglpoly_s@@@Z 10008ce8 f   gl_rsurf.obj
- 0001:00007d44       ?DrawGLFlowingPoly@@YAXPAUmsurface_s@@@Z 10008d44 f   gl_rsurf.obj
- 0001:00007dcc       ?R_DrawTriangleOutlines@@YAXXZ 10008dcc f   gl_rsurf.obj
- 0001:00007ec9       ?DrawGLPolyChain@@YAXPAUglpoly_s@@MM@Z 10008ec9 f   gl_rsurf.obj
- 0001:00007fa0       ?R_BlendLightmaps@@YAXXZ   10008fa0 f   gl_rsurf.obj
- 0001:0000828b       ?R_RenderBrushPoly@@YAXPAUmsurface_s@@@Z 1000928b f   gl_rsurf.obj
- 0001:0000845a       ?DrawReflectPoly3@@YAXPAUmsurface_s@@PAUimage_s@@@Z 1000945a f   gl_rsurf.obj
- 0001:0000852f       ?R_DrawAlphaSurfaces@@YAXXZ 1000952f f   gl_rsurf.obj
- 0001:00008954       ?DrawTextureChains@@YAXXZ  10009954 f   gl_rsurf.obj
- 0001:00008a82       ?R_DrawInlineBModel@@YAXXZ 10009a82 f   gl_rsurf.obj
- 0001:0000902a       ?R_DrawBrushModel@@YAXPAUentity_s@@@Z 1000a02a f   gl_rsurf.obj
- 0001:00009243       ?R_RecursiveWorldNode@@YAXPAUmnode_s@@@Z 1000a243 f   gl_rsurf.obj
- 0001:000093b7       ?DISTANCE_TO_PLANE@@YAMQBMPBUcplane_t@@@Z 1000a3b7 f i gl_rsurf.obj
- 0001:000093ff       ?R_DrawWorld@@YAXXZ        1000a3ff f   gl_rsurf.obj
- 0001:0000956b       ?R_MarkLeaves@@YAXXZ       1000a56b f   gl_rsurf.obj
- 0001:0000990c       ?GL_BuildPolygonFromSurface@@YAXPAUmsurface_s@@@Z 1000a90c f   gl_rsurf.obj
- 0001:00009aab       ?GL_CreateSurfaceLightmap@@YAXPAUmsurface_s@@@Z 1000aaab f   gl_rsurf.obj
- 0001:00009b47       ?GL_BeginBuildingLightmaps@@YAXPAUmodel_s@@@Z 1000ab47 f   gl_rsurf.obj
- 0001:00009c6a       ?GL_EndBuildingLightmaps@@YAXXZ 1000ac6a f   gl_rsurf.obj
- 0001:00009c7b       ?DrawColoredText@@YAXHHPADI@Z 1000ac7b f   gl_textout.obj
- 0001:00009e13       ?R_DrawTexts@@YAXXZ        1000ae13 f   gl_textout.obj
- 0001:00009e58       ?DrawTextPos@@YAXHHPBDI@Z  1000ae58 f   gl_textout.obj
- 0001:00009efa       ?DrawTextLeft@@YAXPBDI@Z   1000aefa f   gl_textout.obj
- 0001:00009f22       ?DrawTextRight@@YAXPBDI@Z  1000af22 f   gl_textout.obj
- 0001:00009f60       ?BoundPoly@@YAXHPAMQAM1@Z  1000af60 f   gl_warp.obj
- 0001:00009fde       ?SubdividePolygon@@YAXHPAM@Z 1000afde f   gl_warp.obj
- 0001:0000a2cd       ?GL_SubdivideSurface@@YAXPAUmsurface_s@@@Z 1000b2cd f   gl_warp.obj
- 0001:0000a35e       ?EmitWaterPolys@@YAXPAUmsurface_s@@@Z 1000b35e f   gl_warp.obj
- 0001:0000a454       ?DrawSkyPolygon@@YAXHQAM@Z 1000b454 f   gl_warp.obj
- 0001:0000a610       ?ClipSkyPolygon@@YAXHQAMH@Z 1000b610 f   gl_warp.obj
- 0001:0000a819       ?R_AddSkySurface@@YAXPAUmsurface_s@@@Z 1000b819 f   gl_warp.obj
- 0001:0000a886       ?R_ClearSkyBox@@YAXXZ      1000b886 f   gl_warp.obj
- 0001:0000a8bc       ?MakeSkyVec@@YAXMMH@Z      1000b8bc f   gl_warp.obj
- 0001:0000a9b8       ?R_DrawSkyBox@@YAXXZ       1000b9b8 f   gl_warp.obj
- 0001:0000ab77       ?R_SetSky@@YAXPBDMQAM@Z    1000bb77 f   gl_warp.obj
- 0001:0000ac86       ?GLimp_SetMode@@YA?AW4rserr_t@@PAI0H_N@Z 1000bc86 f   glw_imp.obj
- 0001:0000af35       ?GLimp_HasGamma@@YA_NXZ    1000bf35 f   glw_imp.obj
- 0001:0000af49       ?GLimp_SetGamma@@YAXMM@Z   1000bf49 f   glw_imp.obj
- 0001:0000b0df       ?GLimp_Init@@YAHXZ         1000c0df f   glw_imp.obj
- 0001:0000b47c       ?GLimp_Shutdown@@YAXXZ     1000c47c f   glw_imp.obj
- 0001:0000b527       ?GLimp_EndFrame@@YAXXZ     1000c527 f   glw_imp.obj
- 0001:0000b5a9       ?GLimp_BeginFrame@@YAXM@Z  1000c5a9 f   glw_imp.obj
- 0001:0000b5fc       ?GLimp_AppActivate@@YAX_N@Z 1000c5fc f   glw_imp.obj
- 0001:0000cbaf       ?QGL_Shutdown@@YAXXZ       1000dbaf f   qgl_win.obj
- 0001:0000cbed       ?QGL_Init@@YA_NPBD@Z       1000dbed f   qgl_win.obj
- 0001:0000cc72       ?QGL_InitExtensions@@YAXXZ 1000dc72 f   qgl_win.obj
- 0001:0000d177       ?QGL_PrintExtensionsString@@YAXPBD0@Z 1000e177 f   qgl_win.obj
- 0001:0000d2a6       ?QGL_EnableLogging@@YAX_N@Z 1000e2a6 f   qgl_win.obj
- 0001:0000d35f       ?QGL_LogMessage@@YAXPBD@Z  1000e35f f   qgl_win.obj
- 0001:0000d376       ?Q_rsqrt@@YAMM@Z           1000e376 f   q_shared2.obj
- 0001:0000d3a6       ?RotatePointAroundVector@@YAXQAMQBM1M@Z 1000e3a6 f   q_shared2.obj
- 0001:0000d50e       ?AngleVectors@@YAXQBMQAM11@Z 1000e50e f   q_shared2.obj
- 0001:0000d66f       ?ProjectPointOnPlane@@YAXQAMQBM1@Z 1000e66f f   q_shared2.obj
- 0001:0000d6ee       ?PerpendicularVector@@YAXQAMQBM@Z 1000e6ee f   q_shared2.obj
- 0001:0000d757       ?MatrixMultiply@@YAXQAY02M00@Z 1000e757 f   q_shared2.obj
- 0001:0000d83e       ?BoxOnPlaneSide@@YAHQBM0PBUcplane_t@@@Z 1000e83e f   q_shared2.obj
- 0001:0000d961       ?VectorNormalize@@YAMQAM@Z 1000e961 f   q_shared2.obj
- 0001:0000d9ba       ?VectorNormalizeFast@@YAMQAM@Z 1000e9ba f   q_shared2.obj
- 0001:0000da0d       ?CrossProduct@@YAXQBM0QAM@Z 1000ea0d f   q_shared2.obj
- 0001:0000da48       ?VectorLength@@YAMQBM@Z    1000ea48 f   q_shared2.obj
- 0001:0000da77       ?VectorScale@@YAXQBMMQAM@Z 1000ea77 f   q_shared2.obj
- 0001:0000da9b       ?Q_strncpylower@@YAXPADPBDH@Z 1000ea9b f   q_shared2.obj
- 0001:0000dad5       ?InitRendererVars@@YAXXZ   1000ead5 f   ref_vars.obj
+ 0001:00002c7c       ?R_BuildLightMap@@YAXPAUmsurface_s@@PAEH@Z 10003c7c f   gl_light.obj
+ 0001:00003253       ?GL_LerpVerts@@YAXHPAUdTriVertx_t@@00PAMQAM22@Z 10004253 f   gl_mesh.obj
+ 0001:000033dd       ?GL_DrawAliasFrameLerp@@YAXPAUdmdl_t@@M@Z 100043dd f   gl_mesh.obj
+ 0001:000037c8       ?GL_DrawAliasShadow@@YAXPAUdmdl_t@@H@Z 100047c8 f   gl_mesh.obj
+ 0001:0000386c       ?R_DrawAliasModel@@YAXPAUentity_t@@@Z 1000486c f   gl_mesh.obj
+ 0001:00004174       ?Mod_PointInLeaf@@YAPAUmleaf_s@@PAMPAUmodel_s@@@Z 10005174 f   gl_model.obj
+ 0001:000041d4       ?Mod_DecompressVis@@YAPAEPAEPAUmodel_s@@@Z 100051d4 f   gl_model.obj
+ 0001:00004254       ?Mod_ClusterPVS@@YAPAEHPAUmodel_s@@@Z 10005254 f   gl_model.obj
+ 0001:0000428a       ?Mod_Modellist_f@@YAXXZ    1000528a f   gl_model.obj
+ 0001:000042eb       ?Mod_Init@@YAXXZ           100052eb f   gl_model.obj
+ 0001:000042fd       ?CreateSolarColor@@YAXMMMPAM@Z 100052fd f   gl_model.obj
+ 0001:000043d0       ?Mod_LoadLighting@@YAXPAEH@Z 100053d0 f   gl_model.obj
+ 0001:00004612       ?Mod_LoadVisibility@@YAXPAUdvis_t@@H@Z 10005612 f   gl_model.obj
+ 0001:00004637       ?Mod_LoadVertexes@@YAXPAUdvertex_t@@H@Z 10005637 f   gl_model.obj
+ 0001:00004657       ?Mod_LoadSubmodels@@YAXPAUcmodel_t@@H@Z 10005657 f   gl_model.obj
+ 0001:000046ea       ?Mod_LoadEdges@@YAXPAUdedge_t@@H@Z 100056ea f   gl_model.obj
+ 0001:00004739       ?Mod_LoadTexinfo@@YAXPAUtexinfo_s@@H@Z 10005739 f   gl_model.obj
+ 0001:00004847       ?CalcSurfaceExtents@@YAXPAUmsurface_s@@@Z 10005847 f   gl_model.obj
+ 0001:00004989       ?Mod_LoadFaces@@YAXPAUdface_t@@H@Z 10005989 f   gl_model.obj
+ 0001:00004ae1       ?Mod_SetParent@@YAXPAUmnode_s@@0@Z 10005ae1 f   gl_model.obj
+ 0001:00004b06       ?Mod_LoadNodes@@YAXPAUdnode_t@@H@Z 10005b06 f   gl_model.obj
+ 0001:00004c04       ?Mod_LoadLeafs@@YAXPAUdleaf_t@@H@Z 10005c04 f   gl_model.obj
+ 0001:00004ca7       ?Mod_LoadMarksurfaces@@YAXPAGH@Z 10005ca7 f   gl_model.obj
+ 0001:00004d22       ?Mod_LoadSurfedges@@YAXPAHH@Z 10005d22 f   gl_model.obj
+ 0001:00004d42       ?Mod_LoadPlanes@@YAXPAUdplane_t@@H@Z 10005d42 f   gl_model.obj
+ 0001:00004dd7       ?PlaneTypeForNormal@@YAHQBM@Z 10005dd7 f i gl_model.obj
+ 0001:00004e48       ?Mod_LoadBrushModel@@YAXPAUmodel_s@@PAUbspfile_t@@@Z 10005e48 f   gl_model.obj
+ 0001:00004ff9       ?Mod_LoadAliasModel@@YAXPAUmodel_s@@PAX@Z 10005ff9 f   gl_model.obj
+ 0001:000052b1       ?Mod_LoadSpriteModel@@YAXPAUmodel_s@@PAX@Z 100062b1 f   gl_model.obj
+ 0001:000053ba       ?R_BeginRegistration@@YAXPBD@Z 100063ba f   gl_model.obj
+ 0001:00005663       ?R_RegisterModel@@YAPAUmodel_s@@PBD@Z 10006663 f   gl_model.obj
+ 0001:00005760       ?R_EndRegistration@@YAXXZ  10006760 f   gl_model.obj
+ 0001:0000579f       ?Mod_Free@@YAXPAUmodel_s@@@Z 1000679f f   gl_model.obj
+ 0001:000057ba       ?Mod_FreeAll@@YAXXZ        100067ba f   gl_model.obj
+ 0001:000057ed       ?R_CullBox@@YA_NQAM0@Z     100067ed f   gl_rmain.obj
+ 0001:00005827       ?BOX_ON_PLANE_SIDE@@YAHQBM0PBUcplane_t@@@Z 10006827 f i gl_rmain.obj
+ 0001:000058ac       ?R_RotateForEntity@@YAXPAUentity_t@@@Z 100068ac f   gl_rmain.obj
+ 0001:0000592f       ?R_DrawSpriteModel@@YAXPAUentity_t@@@Z 1000692f f   gl_rmain.obj
+ 0001:00005c31       ?R_DrawNullModel@@YAXXZ    10006c31 f   gl_rmain.obj
+ 0001:00005dc4       ?R_DrawEntitiesOnList@@YAXXZ 10006dc4 f   gl_rmain.obj
+ 0001:00005ef4       ?GL_DrawParticles@@YAXPAUparticle_s@@QBI@Z 10006ef4 f   gl_rmain.obj
+ 0001:000060e1       ?R_DrawParticles@@YAXXZ    100070e1 f   gl_rmain.obj
+ 0001:000060f4       ?R_PolyBlend@@YAXXZ        100070f4 f   gl_rmain.obj
+ 0001:00006274       ?SignbitsForPlane@@YAHPAUcplane_t@@@Z 10007274 f   gl_rmain.obj
+ 0001:0000629e       ?R_SetFrustum@@YAXXZ       1000729e f   gl_rmain.obj
+ 0001:00006388       ?R_SetupFrame@@YAXXZ       10007388 f   gl_rmain.obj
+ 0001:00006513       ?MYgluPerspective@@YAXNNNN@Z 10007513 f   gl_rmain.obj
+ 0001:0000657f       ?R_SetupGL@@YAXXZ          1000757f f   gl_rmain.obj
+ 0001:000067ff       ?R_Clear@@YAXXZ            100077ff f   gl_rmain.obj
+ 0001:000068e0       ?R_Flash@@YAXXZ            100078e0 f   gl_rmain.obj
+ 0001:000068e5       ?R_RenderView@@YAXPAUrefdef_t@@@Z 100078e5 f   gl_rmain.obj
+ 0001:000069f3       ?R_SetGL2D@@YAXXZ          100079f3 f   gl_rmain.obj
+ 0001:00006ae4       ?R_SetLightLevel@@YAXXZ    10007ae4 f   gl_rmain.obj
+ 0001:00006b3f       ?R_RenderFrame@@YAXPAUrefdef_t@@@Z 10007b3f f   gl_rmain.obj
+ 0001:00006b58       ?R_Register@@YAXXZ         10007b58 f   gl_rmain.obj
+ 0001:00006b9f       ?R_SetMode@@YA_NXZ         10007b9f f   gl_rmain.obj
+ 0001:00006c91       ?R_Init@@YAHXZ             10007c91 f   gl_rmain.obj
+ 0001:00007008       ?R_Shutdown@@YAXXZ         10008008 f   gl_rmain.obj
+ 0001:00007042       ?R_BeginFrame@@YAXM@Z      10008042 f   gl_rmain.obj
+ 0001:000072d4       ?R_SetPalette@@YAXPBE@Z    100082d4 f   gl_rmain.obj
+ 0001:0000739f       ?R_DrawBeam@@YAXPAUbeam_s@@@Z 1000839f f   gl_rmain.obj
+ 0001:000075aa       ?Draw_ConCharColor@@YAXHHHH@Z 100085aa f   gl_rmain.obj
+ 0001:000075cb       _GetRefAPI                 100085cb f   gl_rmain.obj
+ 0001:000077d5       ?R_InitParticleTexture@@YAXXZ 100087d5 f   gl_rmisc.obj
+ 0001:000078a4       ?GL_PerformScreenshot@@YAXXZ 100088a4 f   gl_rmisc.obj
+ 0001:00007ae5       ?GL_Strings_f@@YAXXZ       10008ae5 f   gl_rmisc.obj
+ 0001:00007b39       ?GL_SetDefaultState@@YAXXZ 10008b39 f   gl_rmisc.obj
+ 0001:00007c94       ?GL_UpdateSwapInterval@@YAXXZ 10008c94 f   gl_rmisc.obj
+ 0001:00007cc9       ?R_TextureAnimation@@YAPAUimage_s@@PAUmtexinfo_s@@@Z 10008cc9 f   gl_rsurf.obj
+ 0001:00007ced       ?DrawGLPoly@@YAXPAUglpoly_s@@@Z 10008ced f   gl_rsurf.obj
+ 0001:00007d49       ?DrawGLFlowingPoly@@YAXPAUmsurface_s@@@Z 10008d49 f   gl_rsurf.obj
+ 0001:00007dd1       ?R_DrawTriangleOutlines@@YAXXZ 10008dd1 f   gl_rsurf.obj
+ 0001:00007ece       ?DrawGLPolyChain@@YAXPAUglpoly_s@@MM@Z 10008ece f   gl_rsurf.obj
+ 0001:00007fa5       ?R_BlendLightmaps@@YAXXZ   10008fa5 f   gl_rsurf.obj
+ 0001:00008290       ?R_RenderBrushPoly@@YAXPAUmsurface_s@@@Z 10009290 f   gl_rsurf.obj
+ 0001:00008460       ?DrawReflectPoly3@@YAXPAUmsurface_s@@PAUimage_s@@@Z 10009460 f   gl_rsurf.obj
+ 0001:00008535       ?R_DrawAlphaSurfaces@@YAXXZ 10009535 f   gl_rsurf.obj
+ 0001:0000895a       ?DrawTextureChains@@YAXXZ  1000995a f   gl_rsurf.obj
+ 0001:00008a88       ?R_DrawInlineBModel@@YAXXZ 10009a88 f   gl_rsurf.obj
+ 0001:00009030       ?R_DrawBrushModel@@YAXPAUentity_t@@@Z 1000a030 f   gl_rsurf.obj
+ 0001:00009249       ?R_RecursiveWorldNode@@YAXPAUmnode_s@@@Z 1000a249 f   gl_rsurf.obj
+ 0001:000093bd       ?DISTANCE_TO_PLANE@@YAMQBMPBUcplane_t@@@Z 1000a3bd f i gl_rsurf.obj
+ 0001:00009405       ?R_DrawWorld@@YAXXZ        1000a405 f   gl_rsurf.obj
+ 0001:00009571       ?R_MarkLeaves@@YAXXZ       1000a571 f   gl_rsurf.obj
+ 0001:00009912       ?GL_BuildPolygonFromSurface@@YAXPAUmsurface_s@@@Z 1000a912 f   gl_rsurf.obj
+ 0001:00009ab1       ?GL_CreateSurfaceLightmap@@YAXPAUmsurface_s@@@Z 1000aab1 f   gl_rsurf.obj
+ 0001:00009b4d       ?GL_BeginBuildingLightmaps@@YAXPAUmodel_s@@@Z 1000ab4d f   gl_rsurf.obj
+ 0001:00009c70       ?GL_EndBuildingLightmaps@@YAXXZ 1000ac70 f   gl_rsurf.obj
+ 0001:00009c81       ?DrawColoredText@@YAXHHPADI@Z 1000ac81 f   gl_textout.obj
+ 0001:00009e19       ?R_DrawTexts@@YAXXZ        1000ae19 f   gl_textout.obj
+ 0001:00009e5e       ?DrawTextPos@@YAXHHPBDI@Z  1000ae5e f   gl_textout.obj
+ 0001:00009f00       ?DrawTextLeft@@YAXPBDI@Z   1000af00 f   gl_textout.obj
+ 0001:00009f28       ?DrawTextRight@@YAXPBDI@Z  1000af28 f   gl_textout.obj
+ 0001:00009f66       ?BoundPoly@@YAXHPAMQAM1@Z  1000af66 f   gl_warp.obj
+ 0001:00009fe4       ?SubdividePolygon@@YAXHPAM@Z 1000afe4 f   gl_warp.obj
+ 0001:0000a2d3       ?GL_SubdivideSurface@@YAXPAUmsurface_s@@@Z 1000b2d3 f   gl_warp.obj
+ 0001:0000a364       ?EmitWaterPolys@@YAXPAUmsurface_s@@@Z 1000b364 f   gl_warp.obj
+ 0001:0000a45a       ?DrawSkyPolygon@@YAXHQAM@Z 1000b45a f   gl_warp.obj
+ 0001:0000a616       ?ClipSkyPolygon@@YAXHQAMH@Z 1000b616 f   gl_warp.obj
+ 0001:0000a81f       ?R_AddSkySurface@@YAXPAUmsurface_s@@@Z 1000b81f f   gl_warp.obj
+ 0001:0000a88c       ?R_ClearSkyBox@@YAXXZ      1000b88c f   gl_warp.obj
+ 0001:0000a8c2       ?MakeSkyVec@@YAXMMH@Z      1000b8c2 f   gl_warp.obj
+ 0001:0000a9be       ?R_DrawSkyBox@@YAXXZ       1000b9be f   gl_warp.obj
+ 0001:0000ab7d       ?R_SetSky@@YAXPBDMQAM@Z    1000bb7d f   gl_warp.obj
+ 0001:0000ac8c       ?GLimp_SetMode@@YA?AW4rserr_t@@PAI0H_N@Z 1000bc8c f   glw_imp.obj
+ 0001:0000af3b       ?GLimp_HasGamma@@YA_NXZ    1000bf3b f   glw_imp.obj
+ 0001:0000af4f       ?GLimp_SetGamma@@YAXMM@Z   1000bf4f f   glw_imp.obj
+ 0001:0000b0e5       ?GLimp_Init@@YAHXZ         1000c0e5 f   glw_imp.obj
+ 0001:0000b482       ?GLimp_Shutdown@@YAXXZ     1000c482 f   glw_imp.obj
+ 0001:0000b52d       ?GLimp_EndFrame@@YAXXZ     1000c52d f   glw_imp.obj
+ 0001:0000b5af       ?GLimp_BeginFrame@@YAXM@Z  1000c5af f   glw_imp.obj
+ 0001:0000b602       ?GLimp_AppActivate@@YAX_N@Z 1000c602 f   glw_imp.obj
+ 0001:0000cbb5       ?QGL_Shutdown@@YAXXZ       1000dbb5 f   qgl_win.obj
+ 0001:0000cbf3       ?QGL_Init@@YA_NPBD@Z       1000dbf3 f   qgl_win.obj
+ 0001:0000cc78       ?QGL_InitExtensions@@YAXXZ 1000dc78 f   qgl_win.obj
+ 0001:0000d17d       ?QGL_PrintExtensionsString@@YAXPBD0@Z 1000e17d f   qgl_win.obj
+ 0001:0000d2ac       ?QGL_EnableLogging@@YAX_N@Z 1000e2ac f   qgl_win.obj
+ 0001:0000d365       ?QGL_LogMessage@@YAXPBD@Z  1000e365 f   qgl_win.obj
+ 0001:0000d37c       ?Q_rsqrt@@YAMM@Z           1000e37c f   q_shared2.obj
+ 0001:0000d3ac       ?RotatePointAroundVector@@YAXQAMQBM1M@Z 1000e3ac f   q_shared2.obj
+ 0001:0000d514       ?AngleVectors@@YAXQBMQAM11@Z 1000e514 f   q_shared2.obj
+ 0001:0000d675       ?ProjectPointOnPlane@@YAXQAMQBM1@Z 1000e675 f   q_shared2.obj
+ 0001:0000d6f4       ?PerpendicularVector@@YAXQAMQBM@Z 1000e6f4 f   q_shared2.obj
+ 0001:0000d75d       ?MatrixMultiply@@YAXQAY02M00@Z 1000e75d f   q_shared2.obj
+ 0001:0000d844       ?BoxOnPlaneSide@@YAHQBM0PBUcplane_t@@@Z 1000e844 f   q_shared2.obj
+ 0001:0000d967       ?VectorNormalize@@YAMQAM@Z 1000e967 f   q_shared2.obj
+ 0001:0000d9c0       ?VectorNormalizeFast@@YAMQAM@Z 1000e9c0 f   q_shared2.obj
+ 0001:0000da13       ?CrossProduct@@YAXQBM0QAM@Z 1000ea13 f   q_shared2.obj
+ 0001:0000da4e       ?VectorLength@@YAMQBM@Z    1000ea4e f   q_shared2.obj
+ 0001:0000da7d       ?VectorScale@@YAXQBMMQAM@Z 1000ea7d f   q_shared2.obj
+ 0001:0000daa1       ?Q_strncpylower@@YAXPADPBDH@Z 1000eaa1 f   q_shared2.obj
+ 0001:0000dadb       ?InitRendererVars@@YAXXZ   1000eadb f   ref_vars.obj
  0001:0000db00       __alloca_probe             1000eb00 f   MSVCRT:chkstk.obj
  0001:0000db00       __chkstk                   1000eb00 f   MSVCRT:chkstk.obj
  0001:0000db30       __ftol                     1000eb30 f   MSVCRT:MSVCRT.dll
@@ -263,8 +263,8 @@
  0002:000000a0       __imp__sqrt                1000f0a0     MSVCRT:MSVCRT.dll
  0002:000000a4       __imp__free                1000f0a4     MSVCRT:MSVCRT.dll
  0002:000000a8       __imp___initterm           1000f0a8     MSVCRT:MSVCRT.dll
- 0002:000000ac       __imp__putenv              1000f0ac     MSVCRT:MSVCRT.dll
  0002:000000ac       __imp___putenv             1000f0ac     MSVCRT:MSVCRT.dll
+ 0002:000000ac       __imp__putenv              1000f0ac     MSVCRT:MSVCRT.dll
  0002:000000b0       \177MSVCRT_NULL_THUNK_DATA 1000f0b0     MSVCRT:MSVCRT.dll
  0002:000000b4       __imp__SetForegroundWindow@4 1000f0b4     user32:USER32.dll
  0002:000000b8       __imp__ShowWindow@8        1000f0b8     user32:USER32.dll
@@ -960,7 +960,7 @@
  0003:0010afcc       ?gl_3dlabs_broken@@3PAUcvar_s@@A 1011afcc     gl_rmain.obj
  0003:0010afd0       ?gl_dlightBacks@@3PAUcvar_s@@A 1011afd0     gl_rmain.obj
  0003:0010afd4       ?r_origin@@3PAMA           1011afd4     gl_rmain.obj
- 0003:0010afe0       ?currententity@@3PAUentity_s@@A 1011afe0     gl_rmain.obj
+ 0003:0010afe0       ?currententity@@3PAUentity_t@@A 1011afe0     gl_rmain.obj
  0003:0010afe4       ?r_world_matrix@@3PAMA     1011afe4     gl_rmain.obj
  0003:0010b024       ?vright@@3PAMA             1011b024     gl_rmain.obj
  0003:0010b030       ?gl_mode@@3PAUcvar_s@@A    1011b030     gl_rmain.obj
@@ -980,140 +980,140 @@
  0003:0010b0d0       ?gl_screenshotName@@3PADA  1011b0d0     gl_rmisc.obj
  0003:0010b0e4       ?c_visibleleafs@@3HA       1011b0e4     gl_rsurf.obj
  0003:0014b6f0       ?r_alpha_surfaces@@3PAUmsurface_s@@A 1015b6f0     gl_rsurf.obj
- 0003:0014fef8       ?c_visible_textures@@3HA   1015fef8     gl_rsurf.obj
- 0003:0014fefc       ?c_visible_lightmaps@@3HA  1015fefc     gl_rsurf.obj
- 0003:0014ff00       ?c_leafsinfrustum@@3HA     1015ff00     gl_rsurf.obj
- 0003:0014ff04       ?gl_textbuf@@3PADA         1015ff04     gl_textout.obj
- 0003:0015ff04       ?gl_textbuf_count@@3HA     1016ff04     gl_textout.obj
- 0003:0015ff08       ?gl_last_rec@@3PAUtextrec_s@@A 1016ff08     gl_textout.obj
- 0003:0015ff0c       ?gl_textbuf_pos@@3HA       1016ff0c     gl_textout.obj
- 0003:0015ff10       ?skyaxis@@3PAMA            1016ff10     gl_warp.obj
- 0003:0015ff1c       ?skyrotate@@3MA            1016ff1c     gl_warp.obj
- 0003:0015ff20       ?reflect_img@@3PAUimage_s@@A 1016ff20     gl_warp.obj
- 0003:0015ff24       ?sky_images@@3PAPAUimage_s@@A 1016ff24     gl_warp.obj
- 0003:0015ff3c       ?r_turbsin@@3PAMA          1016ff3c     gl_warp.obj
- 0003:0016033c       ?skymaxs@@3PAY05MA         1017033c     gl_warp.obj
- 0003:0016036c       ?skyname@@3PADA            1017036c     gl_warp.obj
- 0003:001603ac       ?warpface@@3PAUmsurface_s@@A 101703ac     gl_warp.obj
- 0003:001603b0       ?skymins@@3PAY05MA         101703b0     gl_warp.obj
- 0003:001603e0       ?sky_max@@3MA              101703e0     gl_warp.obj
- 0003:001603e4       ?sky_min@@3MA              101703e4     gl_warp.obj
- 0003:001603e8       ?c_sky@@3HA                101703e8     gl_warp.obj
- 0003:001603f0       ?glw_state@@3Uglwstate_t@@A 101703f0     glw_imp.obj
- 0003:00161138       ?qgl@@3Tqgl_t@@A           10171138     qgl_win.obj
- 0003:00161a6c       ?paged_total@@3HA          10171a6c     q_shared2.obj
- 0003:00161a70       ?vec3_origin@@3PAMA        10171a70     q_shared2.obj
- 0003:00161a7c       ?vid_ref@@3PAUcvar_s@@A    10171a7c     ref_vars.obj
- 0003:00161a80       ?r_lightmap@@3PAUcvar_s@@A 10171a80     ref_vars.obj
- 0003:00161a84       ?r_gamma@@3PAUcvar_s@@A    10171a84     ref_vars.obj
- 0003:00161a88       ?r_contrast@@3PAUcvar_s@@A 10171a88     ref_vars.obj
- 0003:00161a8c       ?r_brightness@@3PAUcvar_s@@A 10171a8c     ref_vars.obj
- 0003:00161a90       ?r_fullscreen@@3PAUcvar_s@@A 10171a90     ref_vars.obj
- 0003:00161a94       ?r_saturation@@3PAUcvar_s@@A 10171a94     ref_vars.obj
- 0003:00161a98       ?r_fullbright@@3PAUcvar_s@@A 10171a98     ref_vars.obj
- 0003:00161aa4       __adjust_fdiv              10171aa4     <common>
- 0003:00161aa8       ___onexitend               10171aa8     <common>
- 0003:00161aac       ___onexitbegin             10171aac     <common>
- 0003:00161ab0       __pRawDllMain              10171ab0     <common>
+ 0003:0014f8f8       ?c_visible_textures@@3HA   1015f8f8     gl_rsurf.obj
+ 0003:0014f8fc       ?c_visible_lightmaps@@3HA  1015f8fc     gl_rsurf.obj
+ 0003:0014f900       ?c_leafsinfrustum@@3HA     1015f900     gl_rsurf.obj
+ 0003:0014f904       ?gl_textbuf@@3PADA         1015f904     gl_textout.obj
+ 0003:0015f904       ?gl_textbuf_count@@3HA     1016f904     gl_textout.obj
+ 0003:0015f908       ?gl_last_rec@@3PAUtextrec_s@@A 1016f908     gl_textout.obj
+ 0003:0015f90c       ?gl_textbuf_pos@@3HA       1016f90c     gl_textout.obj
+ 0003:0015f910       ?skyaxis@@3PAMA            1016f910     gl_warp.obj
+ 0003:0015f91c       ?skyrotate@@3MA            1016f91c     gl_warp.obj
+ 0003:0015f920       ?reflect_img@@3PAUimage_s@@A 1016f920     gl_warp.obj
+ 0003:0015f924       ?sky_images@@3PAPAUimage_s@@A 1016f924     gl_warp.obj
+ 0003:0015f93c       ?r_turbsin@@3PAMA          1016f93c     gl_warp.obj
+ 0003:0015fd3c       ?skymaxs@@3PAY05MA         1016fd3c     gl_warp.obj
+ 0003:0015fd6c       ?skyname@@3PADA            1016fd6c     gl_warp.obj
+ 0003:0015fdac       ?warpface@@3PAUmsurface_s@@A 1016fdac     gl_warp.obj
+ 0003:0015fdb0       ?skymins@@3PAY05MA         1016fdb0     gl_warp.obj
+ 0003:0015fde0       ?sky_max@@3MA              1016fde0     gl_warp.obj
+ 0003:0015fde4       ?sky_min@@3MA              1016fde4     gl_warp.obj
+ 0003:0015fde8       ?c_sky@@3HA                1016fde8     gl_warp.obj
+ 0003:0015fdf0       ?glw_state@@3Uglwstate_t@@A 1016fdf0     glw_imp.obj
+ 0003:00160b38       ?qgl@@3Tqgl_t@@A           10170b38     qgl_win.obj
+ 0003:0016146c       ?paged_total@@3HA          1017146c     q_shared2.obj
+ 0003:00161470       ?vec3_origin@@3PAMA        10171470     q_shared2.obj
+ 0003:0016147c       ?vid_ref@@3PAUcvar_s@@A    1017147c     ref_vars.obj
+ 0003:00161480       ?r_lightmap@@3PAUcvar_s@@A 10171480     ref_vars.obj
+ 0003:00161484       ?r_gamma@@3PAUcvar_s@@A    10171484     ref_vars.obj
+ 0003:00161488       ?r_contrast@@3PAUcvar_s@@A 10171488     ref_vars.obj
+ 0003:0016148c       ?r_brightness@@3PAUcvar_s@@A 1017148c     ref_vars.obj
+ 0003:00161490       ?r_fullscreen@@3PAUcvar_s@@A 10171490     ref_vars.obj
+ 0003:00161494       ?r_saturation@@3PAUcvar_s@@A 10171494     ref_vars.obj
+ 0003:00161498       ?r_fullbright@@3PAUcvar_s@@A 10171498     ref_vars.obj
+ 0003:001614a4       __adjust_fdiv              101714a4     <common>
+ 0003:001614a8       ___onexitend               101714a8     <common>
+ 0003:001614ac       ___onexitbegin             101714ac     <common>
+ 0003:001614b0       __pRawDllMain              101714b0     <common>
 
  entry point at        0001:0000dc1d
 
  Static symbols
 
- 0001:0000b66c       ?logAlphaFunc@@YGXIM@Z     1000c66c f   qgl_win.obj
- 0001:0000b6ad       ?EnumName@@YAPBDI@Z        1000c6ad f   qgl_win.obj
- 0001:0000bb26       ?logArrayElement@@YGXH@Z   1000cb26 f   qgl_win.obj
- 0001:0000bb50       ?logBegin@@YGXI@Z          1000cb50 f   qgl_win.obj
- 0001:0000bb80       ?logBindTexture@@YGXII@Z   1000cb80 f   qgl_win.obj
- 0001:0000bbb9       ?logBlendFunc@@YGXII@Z     1000cbb9 f   qgl_win.obj
- 0001:0000bbf9       ?logClear@@YGXI@Z          1000cbf9 f   qgl_win.obj
- 0001:0000bc1f       ?logClearColor@@YGXMMMM@Z  1000cc1f f   qgl_win.obj
- 0001:0000bc80       ?logClearDepth@@YGXN@Z     1000cc80 f   qgl_win.obj
- 0001:0000bcb2       ?logColor3f@@YGXMMM@Z      1000ccb2 f   qgl_win.obj
- 0001:0000bd04       ?logColor3fv@@YGXPBM@Z     1000cd04 f   qgl_win.obj
- 0001:0000bd2a       ?logColor4f@@YGXMMMM@Z     1000cd2a f   qgl_win.obj
- 0001:0000bd8b       ?logColor4fv@@YGXPBM@Z     1000cd8b f   qgl_win.obj
- 0001:0000bdb1       ?logColor4ub@@YGXEEEE@Z    1000cdb1 f   qgl_win.obj
- 0001:0000bdf7       ?logColor4ubv@@YGXPBE@Z    1000cdf7 f   qgl_win.obj
- 0001:0000be1d       ?logColorPointer@@YGXHIHPBX@Z 1000ce1d f   qgl_win.obj
- 0001:0000be62       ?logCullFace@@YGXI@Z       1000ce62 f   qgl_win.obj
- 0001:0000be92       ?logDeleteTextures@@YGXHPBI@Z 1000ce92 f   qgl_win.obj
- 0001:0000bec4       ?logDepthFunc@@YGXI@Z      1000cec4 f   qgl_win.obj
- 0001:0000bef4       ?logDepthMask@@YGXE@Z      1000cef4 f   qgl_win.obj
- 0001:0000bf20       ?logDepthRange@@YGXNN@Z    1000cf20 f   qgl_win.obj
- 0001:0000bf64       ?logDisable@@YGXI@Z        1000cf64 f   qgl_win.obj
- 0001:0000bf94       ?logEnable@@YGXI@Z         1000cf94 f   qgl_win.obj
- 0001:0000bfc4       ?logEnableClientState@@YGXI@Z 1000cfc4 f   qgl_win.obj
- 0001:0000bff4       ?logEnd@@YGXXZ             1000cff4 f   qgl_win.obj
- 0001:0000c013       ?logFinish@@YGXXZ          1000d013 f   qgl_win.obj
- 0001:0000c032       ?logFogf@@YGXIM@Z          1000d032 f   qgl_win.obj
- 0001:0000c073       ?logFogfv@@YGXIPBM@Z       1000d073 f   qgl_win.obj
- 0001:0000c0ac       ?logFrustum@@YGXNNNNNN@Z   1000d0ac f   qgl_win.obj
- 0001:0000c130       ?logGetError@@YGIXZ        1000d130 f   qgl_win.obj
- 0001:0000c14f       ?logGetFloatv@@YGXIPAM@Z   1000d14f f   qgl_win.obj
- 0001:0000c179       ?logGetIntegerv@@YGXIPAH@Z 1000d179 f   qgl_win.obj
- 0001:0000c1a3       ?logGetString@@YGPBEI@Z    1000d1a3 f   qgl_win.obj
- 0001:0000c1c9       ?logLoadIdentity@@YGXXZ    1000d1c9 f   qgl_win.obj
- 0001:0000c1e8       ?logLoadMatrixf@@YGXPBM@Z  1000d1e8 f   qgl_win.obj
- 0001:0000c20e       ?logMatrixMode@@YGXI@Z     1000d20e f   qgl_win.obj
- 0001:0000c23e       ?logOrtho@@YGXNNNNNN@Z     1000d23e f   qgl_win.obj
- 0001:0000c2c2       ?logPolygonMode@@YGXII@Z   1000d2c2 f   qgl_win.obj
- 0001:0000c302       ?logPopMatrix@@YGXXZ       1000d302 f   qgl_win.obj
- 0001:0000c321       ?logPushMatrix@@YGXXZ      1000d321 f   qgl_win.obj
- 0001:0000c340       ?logReadPixels@@YGXHHHHIIPAX@Z 1000d340 f   qgl_win.obj
- 0001:0000c39e       ?logRotatef@@YGXMMMM@Z     1000d39e f   qgl_win.obj
- 0001:0000c3ff       ?logScalef@@YGXMMM@Z       1000d3ff f   qgl_win.obj
- 0001:0000c451       ?logScissor@@YGXHHHH@Z     1000d451 f   qgl_win.obj
- 0001:0000c48f       ?logShadeModel@@YGXI@Z     1000d48f f   qgl_win.obj
- 0001:0000c4bf       ?logTexCoord2f@@YGXMM@Z    1000d4bf f   qgl_win.obj
- 0001:0000c502       ?logTexCoordPointer@@YGXHIHPBX@Z 1000d502 f   qgl_win.obj
- 0001:0000c547       ?logTexEnvf@@YGXIIM@Z      1000d547 f   qgl_win.obj
- 0001:0000c595       ?logTexEnvfv@@YGXIIPBM@Z   1000d595 f   qgl_win.obj
- 0001:0000c5db       ?logTexEnvi@@YGXIII@Z      1000d5db f   qgl_win.obj
- 0001:0000c628       ?logTexImage2D@@YGXIHHHHHIIPBX@Z 1000d628 f   qgl_win.obj
- 0001:0000c699       ?logTexParameterf@@YGXIIM@Z 1000d699 f   qgl_win.obj
- 0001:0000c6e7       ?logTexSubImage2D@@YGXIHHHHHIIPBX@Z 1000d6e7 f   qgl_win.obj
- 0001:0000c758       ?logTranslatef@@YGXMMM@Z   1000d758 f   qgl_win.obj
- 0001:0000c7aa       ?logVertex2f@@YGXMM@Z      1000d7aa f   qgl_win.obj
- 0001:0000c7ed       ?logVertex3f@@YGXMMM@Z     1000d7ed f   qgl_win.obj
- 0001:0000c83f       ?logVertex3fv@@YGXPBM@Z    1000d83f f   qgl_win.obj
- 0001:0000c865       ?logVertexPointer@@YGXHIHPBX@Z 1000d865 f   qgl_win.obj
- 0001:0000c8aa       ?logViewport@@YGXHHHH@Z    1000d8aa f   qgl_win.obj
- 0001:0000c8e8       ?logChoosePixelFormat@@YGHPAUHDC__@@PBUtagPIXELFORMATDESCRIPTOR@@@Z 1000d8e8 f   qgl_win.obj
- 0001:0000c912       ?logDescribePixelFormat@@YGHPAUHDC__@@HIPAUtagPIXELFORMATDESCRIPTOR@@@Z 1000d912 f   qgl_win.obj
- 0001:0000c944       ?logSetPixelFormat@@YGHPAUHDC__@@HPBUtagPIXELFORMATDESCRIPTOR@@@Z 1000d944 f   qgl_win.obj
- 0001:0000c972       ?logSwapBuffers@@YGHPAUHDC__@@@Z 1000d972 f   qgl_win.obj
- 0001:0000c998       ?logCreateContext@@YGPAUHGLRC__@@PAUHDC__@@@Z 1000d998 f   qgl_win.obj
- 0001:0000c9be       ?logDeleteContext@@YGHPAUHGLRC__@@@Z 1000d9be f   qgl_win.obj
- 0001:0000c9e4       ?logGetProcAddress@@YGP6GHXZPBD@Z 1000d9e4 f   qgl_win.obj
- 0001:0000ca0a       ?logMakeCurrent@@YGHPAUHDC__@@PAUHGLRC__@@@Z 1000da0a f   qgl_win.obj
- 0001:0000ca34       ?logSelectTextureSGIS@@YGXI@Z 1000da34 f   qgl_win.obj
- 0001:0000ca64       ?logMultiTexCoord2fSGIS@@YGXIMM@Z 1000da64 f   qgl_win.obj
- 0001:0000cab4       ?logActiveTextureARB@@YGXI@Z 1000dab4 f   qgl_win.obj
- 0001:0000cae4       ?logMultiTexCoord2fARB@@YGXIMM@Z 1000dae4 f   qgl_win.obj
- 0001:0000cb34       ?logLockArraysEXT@@YGXHH@Z 1000db34 f   qgl_win.obj
- 0001:0000cb66       ?logUnlockArraysEXT@@YGXXZ 1000db66 f   qgl_win.obj
- 0001:0000cb85       ?logSwapIntervalEXT@@YGHH@Z 1000db85 f   qgl_win.obj
- 0001:0000d09d       ?ExtensionSupported@@YA_NPAUextInfo_t@@PBD1@Z 1000e09d f   qgl_win.obj
- 0001:0000d117       ?ExtensionNameSupported@@YA_NPBD0@Z 1000e117 f   qgl_win.obj
- 0001:0000aefc       ?GLimp_CreateWindow@@YA_NHH_N@Z 1000befc f   glw_imp.obj
- 0001:0000b0c4       ?UpdateGamma@@YAXXZ        1000c0c4 f   glw_imp.obj
- 0001:0000b153       ?ReadGamma@@YAXXZ          1000c153 f   glw_imp.obj
- 0001:0000b19a       ?GLimp_InitGL@@YA_NXZ      1000c19a f   glw_imp.obj
- 0001:0000b240       ?DestoryGLcontext@@YA_NXZ  1000c240 f   glw_imp.obj
- 0001:0000b27b       ?DeactivateGLcontext@@YA_NXZ 1000c27b f   glw_imp.obj
- 0001:0000b2af       ?GLimp_SetPixelFormat@@YA_NXZ 1000c2af f   glw_imp.obj
- 0001:0000b416       ?CreateGLcontext@@YA_NXZ   1000c416 f   glw_imp.obj
- 0001:0000b444       ?ActivateGLcontext@@YA_NXZ 1000c444 f   glw_imp.obj
- 0001:0000b4f4       ?RestoreGamma@@YAXXZ       1000c4f4 f   glw_imp.obj
- 0001:000087ff       ?DrawReflectPoly@@YAXPAUmsurface_s@@PAUimage_s@@@Z 100097ff f   gl_rsurf.obj
- 0001:00008c85       ?GL_RenderLightmappedPoly@@YAXPAUmsurface_s@@@Z 10009c85 f   gl_rsurf.obj
- 0001:00009781       ?LM_InitBlock@@YAXXZ       1000a781 f   gl_rsurf.obj
- 0001:00009792       ?LM_UploadBlock@@YAX_N@Z   1000a792 f   gl_rsurf.obj
- 0001:00009870       ?LM_AllocBlock@@YA_NHHPAH0@Z 1000a870 f   gl_rsurf.obj
- 0001:00007708       ?R_EndFrame@@YAXXZ         10008708 f   gl_rmain.obj
- 0001:000077a5       ?Screenshot@@YAXHPBD@Z     100087a5 f   gl_rmain.obj
- 0001:000077c8       ?GetClientLight@@YAMXZ     100087c8 f   gl_rmain.obj
- 0001:000077cf       ?ReloadImage@@YAXPBD@Z     100087cf f   gl_rmain.obj
- 0001:0000543d       ?Mod_ForName@@YAPAUmodel_s@@PBD_N@Z 1000643d f   gl_model.obj
- 0001:00003ec8       ?R_CullAliasModel@@YA_NQAY02MPAUentity_s@@@Z 10004ec8 f   gl_mesh.obj
+ 0001:0000b672       ?logAlphaFunc@@YGXIM@Z     1000c672 f   qgl_win.obj
+ 0001:0000b6b3       ?EnumName@@YAPBDI@Z        1000c6b3 f   qgl_win.obj
+ 0001:0000bb2c       ?logArrayElement@@YGXH@Z   1000cb2c f   qgl_win.obj
+ 0001:0000bb56       ?logBegin@@YGXI@Z          1000cb56 f   qgl_win.obj
+ 0001:0000bb86       ?logBindTexture@@YGXII@Z   1000cb86 f   qgl_win.obj
+ 0001:0000bbbf       ?logBlendFunc@@YGXII@Z     1000cbbf f   qgl_win.obj
+ 0001:0000bbff       ?logClear@@YGXI@Z          1000cbff f   qgl_win.obj
+ 0001:0000bc25       ?logClearColor@@YGXMMMM@Z  1000cc25 f   qgl_win.obj
+ 0001:0000bc86       ?logClearDepth@@YGXN@Z     1000cc86 f   qgl_win.obj
+ 0001:0000bcb8       ?logColor3f@@YGXMMM@Z      1000ccb8 f   qgl_win.obj
+ 0001:0000bd0a       ?logColor3fv@@YGXPBM@Z     1000cd0a f   qgl_win.obj
+ 0001:0000bd30       ?logColor4f@@YGXMMMM@Z     1000cd30 f   qgl_win.obj
+ 0001:0000bd91       ?logColor4fv@@YGXPBM@Z     1000cd91 f   qgl_win.obj
+ 0001:0000bdb7       ?logColor4ub@@YGXEEEE@Z    1000cdb7 f   qgl_win.obj
+ 0001:0000bdfd       ?logColor4ubv@@YGXPBE@Z    1000cdfd f   qgl_win.obj
+ 0001:0000be23       ?logColorPointer@@YGXHIHPBX@Z 1000ce23 f   qgl_win.obj
+ 0001:0000be68       ?logCullFace@@YGXI@Z       1000ce68 f   qgl_win.obj
+ 0001:0000be98       ?logDeleteTextures@@YGXHPBI@Z 1000ce98 f   qgl_win.obj
+ 0001:0000beca       ?logDepthFunc@@YGXI@Z      1000ceca f   qgl_win.obj
+ 0001:0000befa       ?logDepthMask@@YGXE@Z      1000cefa f   qgl_win.obj
+ 0001:0000bf26       ?logDepthRange@@YGXNN@Z    1000cf26 f   qgl_win.obj
+ 0001:0000bf6a       ?logDisable@@YGXI@Z        1000cf6a f   qgl_win.obj
+ 0001:0000bf9a       ?logEnable@@YGXI@Z         1000cf9a f   qgl_win.obj
+ 0001:0000bfca       ?logEnableClientState@@YGXI@Z 1000cfca f   qgl_win.obj
+ 0001:0000bffa       ?logEnd@@YGXXZ             1000cffa f   qgl_win.obj
+ 0001:0000c019       ?logFinish@@YGXXZ          1000d019 f   qgl_win.obj
+ 0001:0000c038       ?logFogf@@YGXIM@Z          1000d038 f   qgl_win.obj
+ 0001:0000c079       ?logFogfv@@YGXIPBM@Z       1000d079 f   qgl_win.obj
+ 0001:0000c0b2       ?logFrustum@@YGXNNNNNN@Z   1000d0b2 f   qgl_win.obj
+ 0001:0000c136       ?logGetError@@YGIXZ        1000d136 f   qgl_win.obj
+ 0001:0000c155       ?logGetFloatv@@YGXIPAM@Z   1000d155 f   qgl_win.obj
+ 0001:0000c17f       ?logGetIntegerv@@YGXIPAH@Z 1000d17f f   qgl_win.obj
+ 0001:0000c1a9       ?logGetString@@YGPBEI@Z    1000d1a9 f   qgl_win.obj
+ 0001:0000c1cf       ?logLoadIdentity@@YGXXZ    1000d1cf f   qgl_win.obj
+ 0001:0000c1ee       ?logLoadMatrixf@@YGXPBM@Z  1000d1ee f   qgl_win.obj
+ 0001:0000c214       ?logMatrixMode@@YGXI@Z     1000d214 f   qgl_win.obj
+ 0001:0000c244       ?logOrtho@@YGXNNNNNN@Z     1000d244 f   qgl_win.obj
+ 0001:0000c2c8       ?logPolygonMode@@YGXII@Z   1000d2c8 f   qgl_win.obj
+ 0001:0000c308       ?logPopMatrix@@YGXXZ       1000d308 f   qgl_win.obj
+ 0001:0000c327       ?logPushMatrix@@YGXXZ      1000d327 f   qgl_win.obj
+ 0001:0000c346       ?logReadPixels@@YGXHHHHIIPAX@Z 1000d346 f   qgl_win.obj
+ 0001:0000c3a4       ?logRotatef@@YGXMMMM@Z     1000d3a4 f   qgl_win.obj
+ 0001:0000c405       ?logScalef@@YGXMMM@Z       1000d405 f   qgl_win.obj
+ 0001:0000c457       ?logScissor@@YGXHHHH@Z     1000d457 f   qgl_win.obj
+ 0001:0000c495       ?logShadeModel@@YGXI@Z     1000d495 f   qgl_win.obj
+ 0001:0000c4c5       ?logTexCoord2f@@YGXMM@Z    1000d4c5 f   qgl_win.obj
+ 0001:0000c508       ?logTexCoordPointer@@YGXHIHPBX@Z 1000d508 f   qgl_win.obj
+ 0001:0000c54d       ?logTexEnvf@@YGXIIM@Z      1000d54d f   qgl_win.obj
+ 0001:0000c59b       ?logTexEnvfv@@YGXIIPBM@Z   1000d59b f   qgl_win.obj
+ 0001:0000c5e1       ?logTexEnvi@@YGXIII@Z      1000d5e1 f   qgl_win.obj
+ 0001:0000c62e       ?logTexImage2D@@YGXIHHHHHIIPBX@Z 1000d62e f   qgl_win.obj
+ 0001:0000c69f       ?logTexParameterf@@YGXIIM@Z 1000d69f f   qgl_win.obj
+ 0001:0000c6ed       ?logTexSubImage2D@@YGXIHHHHHIIPBX@Z 1000d6ed f   qgl_win.obj
+ 0001:0000c75e       ?logTranslatef@@YGXMMM@Z   1000d75e f   qgl_win.obj
+ 0001:0000c7b0       ?logVertex2f@@YGXMM@Z      1000d7b0 f   qgl_win.obj
+ 0001:0000c7f3       ?logVertex3f@@YGXMMM@Z     1000d7f3 f   qgl_win.obj
+ 0001:0000c845       ?logVertex3fv@@YGXPBM@Z    1000d845 f   qgl_win.obj
+ 0001:0000c86b       ?logVertexPointer@@YGXHIHPBX@Z 1000d86b f   qgl_win.obj
+ 0001:0000c8b0       ?logViewport@@YGXHHHH@Z    1000d8b0 f   qgl_win.obj
+ 0001:0000c8ee       ?logChoosePixelFormat@@YGHPAUHDC__@@PBUtagPIXELFORMATDESCRIPTOR@@@Z 1000d8ee f   qgl_win.obj
+ 0001:0000c918       ?logDescribePixelFormat@@YGHPAUHDC__@@HIPAUtagPIXELFORMATDESCRIPTOR@@@Z 1000d918 f   qgl_win.obj
+ 0001:0000c94a       ?logSetPixelFormat@@YGHPAUHDC__@@HPBUtagPIXELFORMATDESCRIPTOR@@@Z 1000d94a f   qgl_win.obj
+ 0001:0000c978       ?logSwapBuffers@@YGHPAUHDC__@@@Z 1000d978 f   qgl_win.obj
+ 0001:0000c99e       ?logCreateContext@@YGPAUHGLRC__@@PAUHDC__@@@Z 1000d99e f   qgl_win.obj
+ 0001:0000c9c4       ?logDeleteContext@@YGHPAUHGLRC__@@@Z 1000d9c4 f   qgl_win.obj
+ 0001:0000c9ea       ?logGetProcAddress@@YGP6GHXZPBD@Z 1000d9ea f   qgl_win.obj
+ 0001:0000ca10       ?logMakeCurrent@@YGHPAUHDC__@@PAUHGLRC__@@@Z 1000da10 f   qgl_win.obj
+ 0001:0000ca3a       ?logSelectTextureSGIS@@YGXI@Z 1000da3a f   qgl_win.obj
+ 0001:0000ca6a       ?logMultiTexCoord2fSGIS@@YGXIMM@Z 1000da6a f   qgl_win.obj
+ 0001:0000caba       ?logActiveTextureARB@@YGXI@Z 1000daba f   qgl_win.obj
+ 0001:0000caea       ?logMultiTexCoord2fARB@@YGXIMM@Z 1000daea f   qgl_win.obj
+ 0001:0000cb3a       ?logLockArraysEXT@@YGXHH@Z 1000db3a f   qgl_win.obj
+ 0001:0000cb6c       ?logUnlockArraysEXT@@YGXXZ 1000db6c f   qgl_win.obj
+ 0001:0000cb8b       ?logSwapIntervalEXT@@YGHH@Z 1000db8b f   qgl_win.obj
+ 0001:0000d0a3       ?ExtensionSupported@@YA_NPAUextInfo_t@@PBD1@Z 1000e0a3 f   qgl_win.obj
+ 0001:0000d11d       ?ExtensionNameSupported@@YA_NPBD0@Z 1000e11d f   qgl_win.obj
+ 0001:0000af02       ?GLimp_CreateWindow@@YA_NHH_N@Z 1000bf02 f   glw_imp.obj
+ 0001:0000b0ca       ?UpdateGamma@@YAXXZ        1000c0ca f   glw_imp.obj
+ 0001:0000b159       ?ReadGamma@@YAXXZ          1000c159 f   glw_imp.obj
+ 0001:0000b1a0       ?GLimp_InitGL@@YA_NXZ      1000c1a0 f   glw_imp.obj
+ 0001:0000b246       ?DestoryGLcontext@@YA_NXZ  1000c246 f   glw_imp.obj
+ 0001:0000b281       ?DeactivateGLcontext@@YA_NXZ 1000c281 f   glw_imp.obj
+ 0001:0000b2b5       ?GLimp_SetPixelFormat@@YA_NXZ 1000c2b5 f   glw_imp.obj
+ 0001:0000b41c       ?CreateGLcontext@@YA_NXZ   1000c41c f   glw_imp.obj
+ 0001:0000b44a       ?ActivateGLcontext@@YA_NXZ 1000c44a f   glw_imp.obj
+ 0001:0000b4fa       ?RestoreGamma@@YAXXZ       1000c4fa f   glw_imp.obj
+ 0001:00008805       ?DrawReflectPoly@@YAXPAUmsurface_s@@PAUimage_s@@@Z 10009805 f   gl_rsurf.obj
+ 0001:00008c8b       ?GL_RenderLightmappedPoly@@YAXPAUmsurface_s@@@Z 10009c8b f   gl_rsurf.obj
+ 0001:00009787       ?LM_InitBlock@@YAXXZ       1000a787 f   gl_rsurf.obj
+ 0001:00009798       ?LM_UploadBlock@@YAX_N@Z   1000a798 f   gl_rsurf.obj
+ 0001:00009876       ?LM_AllocBlock@@YA_NHHPAH0@Z 1000a876 f   gl_rsurf.obj
+ 0001:0000770d       ?R_EndFrame@@YAXXZ         1000870d f   gl_rmain.obj
+ 0001:000077aa       ?Screenshot@@YAXHPBD@Z     100087aa f   gl_rmain.obj
+ 0001:000077cd       ?GetClientLight@@YAMXZ     100087cd f   gl_rmain.obj
+ 0001:000077d4       ?ReloadImage@@YAXPBD@Z     100087d4 f   gl_rmain.obj
+ 0001:0000543e       ?Mod_ForName@@YAPAUmodel_s@@PBD_N@Z 1000643e f   gl_model.obj
+ 0001:00003ec9       ?R_CullAliasModel@@YA_NQAY02MPAUentity_t@@@Z 10004ec9 f   gl_mesh.obj

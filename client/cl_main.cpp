@@ -23,8 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 cvar_t	*freelook;
 
-cvar_t	*adr0, *adr1, *adr2, *adr3, *adr4, *adr5, *adr6, *adr7, *adr8;
-
 cvar_t	*cl_stereo_separation;
 cvar_t	*cl_stereo;
 
@@ -82,7 +80,6 @@ cvar_t	*cl_cameraheight;
 cvar_t  *cl_extProtocol;
 
 cvar_t	*cl_newfx;
-cvar_t	*cl_draw2d;
 cvar_t	*cl_showbboxes;
 cvar_t	*r_sfx_pause;
 
@@ -771,37 +768,40 @@ CL_PingServers_f
 */
 void CL_PingServers_f (void)
 {
-	int			i;
-	netadr_t	adr;
-	char		*adrstring;
-	cvar_t		*noudp;
-	cvar_t		*noipx;
+	netadr_t adr;
+	const char *adrstring;
 
 	NET_Config (true);		// allow remote
 
 	// send a broadcast packet
 	Com_Printf ("pinging broadcast...\n");
+	const char *cmd = "info " STR(PROTOCOL_VERSION);
 
-	noudp = Cvar_Get ("noudp", "", CVAR_NODEFAULT);
-	if (!noudp->integer)
+	if (!Cvar_VariableInt ("noudp"))
 	{
 		adr.type = NA_BROADCAST;
 		adr.port = BigShort(PORT_SERVER);
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d", PROTOCOL_VERSION));
-//		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d\nUDP", PROTOCOL_VERSION));
+		Netchan_OutOfBandPrint (NS_CLIENT, adr, cmd);
+		// implicitly check localhost for local dedicated server
+		if (!Com_ServerState ())
+		{
+			NET_StringToAdr ("127.0.0.1", &adr);
+			adr.port = BigShort(PORT_SERVER);
+			Netchan_OutOfBandPrint (NS_CLIENT, adr, cmd);
+		}
 	}
 
-	noipx = Cvar_Get ("noipx", "", CVAR_NODEFAULT);
-	if (!noipx->integer)
+	if (!Cvar_VariableInt ("noipx"))
 	{
 		adr.type = NA_BROADCAST_IPX;
 		adr.port = BigShort(PORT_SERVER);
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d", PROTOCOL_VERSION));
-//		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d\nIPX", PROTOCOL_VERSION));
+		Netchan_OutOfBandPrint (NS_CLIENT, adr, cmd);
 	}
 
+
+
 	// send a packet to each address book entry
-	for (i = 0; i < 16; i++)
+	for (int i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
 	{
 		adrstring = Cvar_VariableString (va("adr%d", i));
 		if (!adrstring || !adrstring[0])
@@ -815,7 +815,7 @@ void CL_PingServers_f (void)
 		}
 		if (!adr.port)
 			adr.port = BigShort(PORT_SERVER);
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, va("info %d", PROTOCOL_VERSION));
+		Netchan_OutOfBandPrint (NS_CLIENT, adr, cmd);
 	}
 }
 
@@ -1079,6 +1079,26 @@ void CL_Userinfo_f (void)
 }
 
 /*
+======================
+CL_RegisterSounds
+======================
+*/
+void CL_RegisterSounds (void)
+{
+	S_BeginRegistration ();
+	CL_RegisterTEntSounds ();
+
+	for (int i = 1; i < MAX_SOUNDS; i++)
+	{
+		if (!cl.configstrings[CS_SOUNDS+i][0])
+			break;
+		cl.sound_precache[i] = S_RegisterSound (cl.configstrings[CS_SOUNDS+i]);
+		Sys_SendKeyEvents ();	// pump message loop
+	}
+	S_EndRegistration ();
+}
+
+/*
 =================
 CL_Snd_Restart_f
 
@@ -1153,18 +1173,7 @@ CL_InitLocal
 */
 static void CL_InitLocal (void)
 {
-#ifndef DEDICATED_ONLY
 CVAR_BEGIN(vars)
-	CVAR_FULL(&adr0, "adr0", "", CVAR_ARCHIVE),
-	CVAR_FULL(&adr1, "adr1", "", CVAR_ARCHIVE),
-	CVAR_FULL(&adr2, "adr2", "", CVAR_ARCHIVE),
-	CVAR_FULL(&adr3, "adr3", "", CVAR_ARCHIVE),
-	CVAR_FULL(&adr4, "adr4", "", CVAR_ARCHIVE),
-	CVAR_FULL(&adr5, "adr5", "", CVAR_ARCHIVE),
-	CVAR_FULL(&adr6, "adr6", "", CVAR_ARCHIVE),
-	CVAR_FULL(&adr7, "adr7", "", CVAR_ARCHIVE),
-	CVAR_FULL(&adr8, "adr8", "", CVAR_ARCHIVE),
-
 	CVAR_VAR(cl_stereo_separation, 0.4, CVAR_ARCHIVE),
 	CVAR_VAR(cl_stereo, 0, 0),
 
@@ -1228,13 +1237,15 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(cl_extProtocol, 1, CVAR_ARCHIVE),
 
 	CVAR_VAR(cl_newfx, 1, CVAR_ARCHIVE),
-	CVAR_VAR(cl_draw2d, 1, 0),
 	CVAR_VAR(r_sfx_pause, 0, 0),
 	CVAR_VAR(cl_infps, 80, 0),
 	CVAR_VAR(cl_showbboxes, 0, CVAR_CHEAT)
 CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
+	for (int i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
+		Cvar_Get (va("adr%d", i), "", CVAR_ARCHIVE);
+
 	cls.state = ca_disconnected;
 	cls.realtime = Sys_Milliseconds ();
 
@@ -1268,7 +1279,6 @@ CVAR_END
 	RegisterCommand ("download", CL_Download_f);
 
 	RegisterCommand ("writeconfig", CL_WriteConfig_f);
-#endif // DEDICATED_ONLY
 }
 
 
@@ -1309,7 +1319,6 @@ CL_Frame
 ==================
 */
 
-#ifndef DEDICATED_ONLY
 void CL_Frame (float msec, int realMsec)
 {
 	static int extratime_real;
@@ -1389,7 +1398,6 @@ void CL_Frame (float msec, int realMsec)
 
 	unguard;
 }
-#endif // DEDICATED_ONLY
 
 //============================================================================
 
@@ -1414,15 +1422,12 @@ void CL_Init (void)
 	net_message.data = net_message_buffer;
 	net_message.maxsize = sizeof(net_message_buffer);
 
-	if (!DEDICATED)
-	{
-		V_Init ();
-		M_Init ();
-		SCR_Init ();
-		CDAudio_Init ();
-		CL_InitLocal ();
-		IN_Init ();
-	}
+	V_Init ();
+	M_Init ();
+	SCR_Init ();
+	CDAudio_Init ();
+	CL_InitLocal ();
+	IN_Init ();
 
 	unguard;
 }
@@ -1440,11 +1445,10 @@ void CL_Shutdown (bool error)
 	if (isdown) return;
 	isdown = true;
 
-	if (!error)		// do not write configuration when error occured
-		CL_WriteConfiguration (Cvar_VariableString ("cfgfile"));
-
 	if (!DEDICATED)
 	{
+		if (!error)		// do not write configuration when error occured
+			CL_WriteConfiguration (Cvar_VariableString ("cfgfile"));
 		CDAudio_Shutdown ();
 		S_Shutdown();
 		IN_Shutdown ();

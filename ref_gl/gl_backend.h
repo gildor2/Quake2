@@ -117,6 +117,7 @@ typedef struct
 	shader_t *shader;
 	short	x, y, w, h;
 	float	s1, t1, s2, t2;
+	byte	flipMode;		// 1 = swap s1-s2; 2 = swap t1-t2; 4 = swap s-t
 	color_t	c;
 } bkDrawPic_t;
 

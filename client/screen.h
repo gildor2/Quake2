@@ -31,8 +31,8 @@ void	SCR_EndLoadingPlaque (bool force);	//?? is "force" needed ?
 void	SCR_DebugGraph (float value, int color);
 
 void	SCR_TouchPics (void);
-void	SCR_DrawCrosshair (void);
 
+// here for menu:
 extern	cvar_t	*crosshair;
 extern	cvar_t	*crosshairColor;
 

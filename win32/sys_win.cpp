@@ -23,8 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <excpt.h>
 #include "winquake.h"
 
-#include "../qcommon/qcommon.h"
-#include "../client/client.h"
+#include "../client/client.h"		//!! for editLine[] and CompleteCommand() only
 
 
 #define CRASH_LOG	"crash.log"
@@ -341,7 +340,7 @@ static void DumpMem (FILE *f, unsigned *data, CONTEXT *ctx)
 		unsigned ofs;
 		const char *name;
 	} regData[] = {
-#define F(r,n)	{ FIELD_OFS(CONTEXT,r), n }
+#define F(r,n)	{ FIELD2OFS(CONTEXT,r), n }
 		F(Eip, "EIP"), F(Esp, "ESP"), F(Ebp, "EBP"),
 		F(Eax, "EAX"), F(Ebx, "EBX"), F(Ecx, "ECX"), F(Edx, "EDX"),
 		F(Esi, "ESI"), F(Edi, "EDI")
@@ -364,7 +363,7 @@ static void DumpMem (FILE *f, unsigned *data, CONTEXT *ctx)
 
 		spaces = STAT_SPACES;
 		for (j = 0; j < ARRAY_COUNT(regData); j++)
-			if (OFS_FIELD(ctx, regData[j].ofs, unsigned*) == data)
+			if (OFS2FIELD(ctx, regData[j].ofs, unsigned*) == data)
 			{
 				if (n)
 				{

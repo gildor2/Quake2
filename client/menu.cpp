@@ -149,7 +149,6 @@ void M_PushMenu (void (*draw) (void), const char *(*key) (int k))
 
 void M_ForceMenuOff (void)
 {
-	if (DEDICATED) return;
 	m_drawfunc = 0;
 	m_keyfunc = 0;
 	cls.key_dest = key_game;
@@ -1369,7 +1368,7 @@ static void DrawSavegameShot (int index, int y)
 	re.DrawFill2 (x - 3, y - 3, w + 6, h + 6, RGB(0,0,0));
 
 	if (!m_shotvalid[index]) return;
-	re.DrawStretchPic (x, y, w, h, name);
+	re.DrawDetailedPic (x, y, w, h, name);
 }
 
 
@@ -2325,25 +2324,18 @@ ADDRESS BOOK MENU
 
 =============================================================================
 */
-#define NUM_ADDRESSBOOK_ENTRIES 9
 
 static menuFramework_t	s_addressbook_menu;
 static menuField_t		s_addressbook_fields[NUM_ADDRESSBOOK_ENTRIES];
 
 static void AddressBook_MenuInit( void )
 {
-	int i;
-
 	s_addressbook_menu.x = viddef.width / 2 - 142;
 	s_addressbook_menu.y = viddef.height / 2 - 58;
 	s_addressbook_menu.nitems = 0;
 
-	for (i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
+	for (int i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
 	{
-		cvar_t *adr;
-
-		adr = Cvar_Get (va("adr%d", i), "", CVAR_ARCHIVE);
-
 		s_addressbook_fields[i].generic.type = MTYPE_FIELD;
 		s_addressbook_fields[i].generic.name = 0;
 		s_addressbook_fields[i].generic.callback = 0;
@@ -2354,7 +2346,7 @@ static void AddressBook_MenuInit( void )
 		s_addressbook_fields[i].length		= 60;
 		s_addressbook_fields[i].visible_length = 30;
 
-		strcpy (s_addressbook_fields[i].buffer, adr->string);
+		strcpy (s_addressbook_fields[i].buffer, Cvar_VariableString (va("adr%d", i)));
 
 		Menu_AddItem (&s_addressbook_menu, &s_addressbook_fields[i]);
 	}
@@ -2362,13 +2354,9 @@ static void AddressBook_MenuInit( void )
 
 static const char *AddressBook_MenuKey( int key )
 {
-	if ( key == K_ESCAPE || key == K_MOUSE2 )
-	{
-		int i;
-
-		for (i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
-			Cvar_Set (va("adr%d", i), s_addressbook_fields[i].buffer );
-	}
+	if (key == K_ESCAPE || key == K_MOUSE2)
+		for (int i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
+			Cvar_Set (va("adr%d", i), s_addressbook_fields[i].buffer);
 	return Default_MenuKey( &s_addressbook_menu, key );
 }
 
@@ -2830,7 +2818,7 @@ static void PlayerConfig_MenuDraw (void)
 		icon = "/pics/default_icon.pcx";
 	else
 		icon = va("/players/%s/%s_i.pcx", model->name, skin->name);
-	re.DrawStretchPic (s_player_config_menu.x - 40, refdef.y,
+	re.DrawDetailedPic (s_player_config_menu.x - 40, refdef.y,
 		viddef.height * 32 / 240, viddef.height * 32 / 240, icon);
 }
 
@@ -3200,7 +3188,7 @@ static void M_Quit_Draw (void)
 
 	re.DrawGetPicSize (&w, &h, "quit");
 	if (w >= 320 && w * 3 / 4 == h)		// this pic is for fullscreen in mode 320x240
-		re.DrawStretchPic (0, 0, viddef.width, viddef.height, "quit");
+		re.DrawDetailedPic (0, 0, viddef.width, viddef.height, "quit");
 	else
 		re.DrawPic ((viddef.width-w)/2, (viddef.height-h)/2, "quit");
 }

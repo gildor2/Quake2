@@ -281,6 +281,7 @@ extern	shader_t	*gl_defaultSkyShader;
 extern	shader_t	*gl_particleShader;
 extern	shader_t	*gl_entityShader;
 extern	shader_t	*gl_flareShader;			// NULL if not found
+extern	shader_t	*gl_detailShader;			// NULL if not found
 extern	shader_t	*gl_colorShellShader;
 extern	shader_t	*gl_railSpiralShader, *gl_railRingsShader, *gl_railBeamShader;
 extern	shader_t	*gl_skyShader;

@@ -571,7 +571,7 @@ bool	NET_CompareAdr (netadr_t *a, netadr_t *b);
 bool	NET_CompareBaseAdr (netadr_t *a, netadr_t *b);
 bool	NET_IsLocalAddress (netadr_t *adr);
 char	*NET_AdrToString (netadr_t *a);
-bool	NET_StringToAdr (char *s, netadr_t *a);
+bool	NET_StringToAdr (const char *s, netadr_t *a);
 
 //============================================================================
 
@@ -620,7 +620,7 @@ void	Netchan_Setup (netsrc_t sock, netchan_t *chan, netadr_t adr, int qport);
 bool	Netchan_NeedReliable (netchan_t *chan);
 void	Netchan_Transmit (netchan_t *chan, int length, void *data);
 void	Netchan_OutOfBand (netsrc_t net_socket, netadr_t adr, int length, void *data);
-void	Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, char *format, ...);
+void	Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, const char *format, ...);
 bool	Netchan_Process (netchan_t *chan, sizebuf_t *msg);
 
 bool	Netchan_CanReliable (netchan_t *chan);
@@ -811,8 +811,24 @@ void	Com_SetServerState (server_state_t state);
 unsigned Com_BlockChecksum (void *buffer, int length);
 byte	COM_BlockSequenceCRCByte (byte *base, int length, int sequence);
 
-float	frand(void);	// 0 to 1
-float	crand(void);	// -1 to 1
+#if 0
+// Using inline version will grow executable with ~2Kb (cl_fx.cpp uses a lots of [c|f]rand() calls)
+// 0 to 1
+inline float frand (void)
+{
+	return rand() * (1.0f/RAND_MAX);
+}
+
+// -1 to 1
+inline float crand (void)
+{
+	return rand() * (2.0f/RAND_MAX) - 1;
+}
+#else
+float frand (void);
+float crand (void);
+#endif
+
 
 extern cvar_t	*developer;
 extern cvar_t	*dedicated;
@@ -1069,9 +1085,15 @@ template <class T> inline T OffsetPointer (const T ptr, int offset)
 	return (T) ((unsigned)ptr + offset);
 }
 
-#define FIELD_OFS(struc, field)		((unsigned) &((struc *)NULL)->field)		// get offset of the field in struc
-#define OFS_FIELD(struc, ofs, type)	(*(type*) ((byte*)(struc) + ofs))			// get field of type by offset inside struc
+#define FIELD2OFS(struc, field)		((unsigned) &((struc *)NULL)->field)		// get offset of the field in struc
+#define OFS2FIELD(struc, ofs, type)	(*(type*) ((byte*)(struc) + ofs))			// get field of type by offset inside struc
 
+#undef min
+#undef max
+
+#define min(a,b)  (((a) < (b)) ? (a) : (b))
+#define max(a,b)  (((a) > (b)) ? (a) : (b))
+#define bound(a,minval,maxval)  ( ((a) > (minval)) ? ( ((a) < (maxval)) ? (a) : (maxval) ) : (minval) )
 
 #define COMMAND_USAGE	1
 #define COMMAND_ARGS	2
@@ -1153,9 +1175,32 @@ void Com_ResetErrorState (void);	//?? Sys_ResetErrorState()
 #define GUARD_CATCH		__except (EXCEPT_FILTER)
 
 #else
-#	if DO_GUARD
-#		error gurads unsupported for current platform (requires C++)
-#	endif
+//#	if DO_GUARD
+//#		error gurads unsupported for current platform (requires C++)
+//#	endif
+//?? when execing "error -gpf" from console, error will be logged with "developer=1", but
+//?? execution will continue ?!
+#define guard(func)					\
+	{								\
+		static const char __FUNC__[] = #func; \
+		try {
+
+#define unguard						\
+		} catch (...) {				\
+			appUnwindThrow (__FUNC__); \
+		}							\
+	}
+
+#define unguardf(msg)				\
+		} catch (...) {				\
+			appUnwindPrefix (__FUNC__);	\
+			appUnwindThrow msg;		\
+		}							\
+	}
+
+#define GUARD_BEGIN	try
+#define GUARD_CATCH	catch (...)
+
 #endif
 
 #if !DO_GUARD

@@ -250,7 +250,7 @@ void SV_WriteServerFile (bool autosave, char *dir)
 	ge->WriteGame (name, autosave);
 
 	// perform screenshot
-	if (re.Screenshot)					// can be uninitialized when dedicated server
+	if (!DEDICATED)					// can be uninitialized when dedicated server
 	{
 		re.Screenshot (SHOT_SMALL|SHOT_NOGAMMA|SHOT_SILENT|SHOT_NO_2D|SHOT_WAIT_3D|SHOT_JPEG,
 			va("%s/" SAVEGAME_DIRECTORY "/%s/shot", FS_Gamedir(), dir));

@@ -409,7 +409,7 @@ void GL_EnableRendering (bool enable)
 
 /*---------------- Backend helpers ----------------------*/
 
-void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color)
+void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color, byte flipMode)
 {
 	PUT_BACKEND_COMMAND (bkDrawPic_t, p);
 	p->type = BACKEND_PIC;
@@ -432,6 +432,7 @@ void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, 
 	p->t1 = t1;
 	p->s2 = s2;
 	p->t2 = t2;
+	p->flipMode = flipMode;
 	p->c.rgba = color;
 }
 
@@ -936,7 +937,7 @@ static void DrawTileClear (int x, int y, int w, int h, const char *name)
 	shader_t *sh = GL_FindShader (s, SHADER_CHECK);
 	if (sh)
 		GL_DrawStretchPic (sh, x, y, w, h, (float)x / sh->width, (float)y / sh->height,
-			(float)(x + w) / sh->width, (float)(y + h) / sh->height, colorTable[7]);
+			(float)(x + w) / sh->width, (float)(y + h) / sh->height);
 	else
 		DrawFill2 (x, y, w, h, RGB(0,0,0));
 }
@@ -944,7 +945,18 @@ static void DrawTileClear (int x, int y, int w, int h, const char *name)
 
 static void DrawStretchPic (int x, int y, int w, int h, const char *name)
 {
-	GL_DrawStretchPic (FindPic (name, true), x, y, w, h, 0, 0, 1, 1, colorTable[7]);
+	GL_DrawStretchPic (FindPic (name, true), x, y, w, h);
+}
+
+
+static void DrawDetailedPic (int x, int y, int w, int h, const char *name)
+{
+	shader_t *sh = FindPic (name, true);
+	GL_DrawStretchPic (sh, x, y, w, h);
+	if (!gl_detailShader || sh->width * 2 > w) return;		// detail is not available or not needed
+//	if (!Cvar_VariableInt("detail")) return;
+	GL_DrawStretchPic (gl_detailShader, x, y, w, h, 0, 0,
+		w / gl_detailShader->width, h / gl_detailShader->height);
 }
 
 
@@ -1269,6 +1281,7 @@ refExport_t GetRefAPI (const refImport_t * rimp)
 	re.DrawGetPicSize =	GetPicSize;
 	re.DrawPic =		DrawPic;
 	re.DrawStretchPic =	DrawStretchPic;
+	re.DrawDetailedPic = DrawDetailedPic;
 	re.DrawChar =		DrawChar;
 	re.DrawTileClear =	DrawTileClear;
 	re.DrawFill =		DrawFill;

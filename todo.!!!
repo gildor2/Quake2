@@ -21,8 +21,16 @@ BUGS:
   (do not leave water; current: will not enter water, but can leave it)
 - "conchars.pcx": create drop-shadow effect (in pic; may be, require to cut (as grid) + grow image + different drawing code)
   for better reading (require MemBitmap fx code ...)
-- CVAR_LOG -- add to crash.log on fatal exit (vid_ref,developer,dedicated, {deathmatch,cheats,maxclients}==CVAR_SERVERINFO)
-- DirectX (Draw,Input,Sound): use via OLE (but: dynamic bind to ole32.dll ? DirectX is always used - static bind ?)
+- crash.log:
+  - CVAR_LOG -- add to crash.log on fatal exit (vid_ref,developer,dedicated,version,
+     + {game,mapname,deathmatch,cheats,maxclients}==CVAR_SERVERINFO)
+  - log OS version, app command line
+? DirectX (Draw,Input,Sound): use via OLE (but: dynamic bind to ole32.dll ? DirectX is always used - static bind ?)
+- intro playing: do not display "loading" for cinematics (wait a little before displaying splash?), + try to parse "nextserver"
+  in Demomap_f() to not launch demos (but keep current code just in case); disable "nointro" code in sv_cmds.cpp::SV_DemoMap_f()
+  when app command line contains "map"/"demomap" command (and automatically disable intro; change "4.XX_Changes.txt" about this)
+  Current: when specify "map", intro will be initialized + immediately server changed to map; when specify "demomap", server
+  will be killed as it was called from "d1" alias
   
 ! new pmove.c errors:
   - "ground3" cafe, on the street: cannot jump onto a corner column (horiz. speed set to 0 due to position snap)
@@ -270,8 +278,6 @@ BSP:
 
 - add marks: bulletholes (?), explosion marks, blood (!), "cheesy shadow" (!), water ripple
 
-- ref_console (Win32 console-mode application, no GDI/OpenGL) -- auto-use in dedicated server (should attach
-  dedicated server to ref)
 ? change "gl_console_only" and "sw_console_only" to "r_consoleOnly"
 
 - decompress visinfo for client (cmodel); share this with renderers (require to modify oldgl and soft)

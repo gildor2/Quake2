@@ -47,6 +47,7 @@ static char history[MAX_HISTORY][MAXCMDLINE];
 static int	historyLine, historyCount;
 
 // current line
+//?? public vars for command completion and for dedicated server
 char	editLine[MAXCMDLINE];
 int		editPos;
 
@@ -420,9 +421,6 @@ static void DrawInput (void)
 
 void Con_DrawNotify (bool drawBack)
 {
-	if (*re.flags & REF_CONSOLE_ONLY || !cl_draw2d->integer)
-		return;
-
 	int v = 0;
 	int pos = -1;
 	for (int i = con.current - NUM_CON_TIMES + 1; i <= con.current; i++)
@@ -524,10 +522,12 @@ void Con_DrawConsole (float frac)
 		y = rows - 1;
 	}
 
-	topline = con.current - con.totallines + 1; // number of top line in buffer
+	topline = con.current - con.totallines + 1;				// number of top line in buffer
 
 	// fix con.display if out of buffer
-	con.display = bound(con.display, topline, con.current);
+	if (con.display < topline+10)	con.display = topline+10;
+	// when console buffer contains leas than 10 lines, require next line ...
+	if (con.display > con.current)	con.display = con.current;
 
 	row = con.display - rows + 1; // top line to display
 
@@ -618,13 +618,26 @@ static bool iswordsym (char n)
 	return (n >= '0' && n <= '9') || (n >= 'A' && n <= 'Z') || (n >= 'a' && n <= 'z') || n == '_';
 }
 
+void Con_ClearTyping (void)
+{
+	editLine[0] = ']';
+	editLine[1] = 0;
+	editPos = 1;
+}
+
 void Key_Console (int key, int modKey)
 {
 	int		i;
 	char	*s;
 
-	if (modKey == K_INS && SHIFT_PRESSED)
-		modKey = 'v'+MOD_CTRL;			// Shift-Ins -> Ctrl-V (move to keys.c ??)
+	// numpad keys -> ASCII
+	static const char *kpString = KEYPAD_STRING;
+	if (key >= KEYPAD_FIRST && key <= KEYPAD_LAST)
+	{
+		key = kpString[key - KEYPAD_FIRST];
+		// fix modKey too
+		modKey = (modKey & ~KEYS_MASK) | key;
+	}
 
 	switch (modKey)
 	{
@@ -633,47 +646,46 @@ void Key_Console (int key, int modKey)
 		Con_Clear_f ();
 		return;
 
+	//------------- input line editing ------------------
 	case K_ENTER:
-	case K_KP_ENTER:
+#if 0
 		// trim spaces at line end
-/*		for (i = strlen (editLine) - 1; i >= 0; i--)
+		for (i = strlen (editLine) - 1; i >= 0; i--)
 			if (editLine[i] == ' ')
 				editLine[i] = 0;
 			else
-				break; */
+				break;
+#endif
 		// backslash text are commands, else chat
 		if (editLine[1] == '\\' || editLine[1] == '/')
 			Cbuf_AddText (editLine + 2);			// skip the prompt
 		else
 			Cbuf_AddText (editLine + 1);			// valid command
 		Cbuf_AddText ("\n");
-
 		Com_Printf ("%s\n", editLine);
-		if (!editLine[1])							// do not add empty line to history
+
+		if (editLine[1])							// editLine[0] is input prompt
 		{
-			Key_ClearTyping ();
-			return;
+			// find the same line in history and remove it
+			for (i = 0; i < historyCount; i++)
+				if (!strcmp (history[i], editLine))
+				{
+					if (i != historyCount - 1) memcpy (history[i], history[i+1], sizeof(history[0]) * (historyCount - 1 - i));
+					historyCount--;
+					break;
+				}
+
+			// add current line to history
+			if (historyCount < MAX_HISTORY)
+				historyCount++;
+			else
+				memcpy (history[0], history[1], sizeof(history[0]) * (MAX_HISTORY - 1));
+			memcpy (history[historyCount-1], editLine, sizeof(editLine));
+			historyLine = historyCount;
 		}
-
-		// find the same line in history and remove it
-		for (i = 0; i < historyCount; i++)
-			if (!strcmp (history[i], editLine))
-			{
-				if (i != historyCount - 1) memcpy (history[i], history[i+1], sizeof(history[0]) * (historyCount - 1 - i));
-				historyCount--;
-				break;
-			}
-
-		// add current line to history
-		if (historyCount < MAX_HISTORY)
-			historyCount++;
-		else
-			memcpy (history[0], history[1], sizeof(history[0]) * (MAX_HISTORY - 1));
-		memcpy (history[historyCount-1], editLine, sizeof(editLine));
-		historyLine = historyCount;
 		// prepare new line
-		Key_ClearTyping ();
-		if (cls.state == ca_disconnected)
+		Con_ClearTyping ();
+		if (cls.loading)
 			SCR_UpdateScreen ();					// force an update, because the command may take some time
 		return;
 
@@ -720,6 +732,15 @@ void Key_Console (int key, int modKey)
 		*s = 0;
 		return;
 
+	case K_HOME:
+		editPos = 1;
+		return;
+
+	case K_END:
+		editPos = strlen (editLine);
+		return;
+
+	//---------------- history -----------------------
 	case K_UPARROW:
 //	case MOD_CTRL+'p':
 		if (!historyLine) return;					// empty or top of history
@@ -734,7 +755,7 @@ void Key_Console (int key, int modKey)
 
 		historyLine++;
 		if (historyLine == historyCount)
-			Key_ClearTyping ();
+			Con_ClearTyping ();
 		else
 		{
 			strcpy (editLine, history[historyLine]);
@@ -742,6 +763,7 @@ void Key_Console (int key, int modKey)
 		}
 		return;
 
+	//-------------- console scrolling ---------------------
 	case MOD_CTRL+K_PGUP:
 	case K_MWHEELUP:
 		con.display -= 8;
@@ -755,8 +777,6 @@ void Key_Console (int key, int modKey)
 	case K_PGUP:
 	case MOD_CTRL+K_MWHEELUP:
 		con.display -= 2;
-		if (con.display < con.current - con.totallines + 10)
-			con.display = con.current - con.totallines + 10;
 		return;
 
 	case K_PGDN:
@@ -764,16 +784,8 @@ void Key_Console (int key, int modKey)
 		con.display += 2;
 		return;
 
-	case K_HOME:
-		editPos = 1;
-		return;
-
-	case K_END:
-		editPos = strlen (editLine);
-		return;
-
 	case MOD_CTRL+K_HOME:
-		con.display = con.current - con.totallines + 10;
+		con.display = con.current - con.totallines;
 		return;
 
 	case MOD_CTRL+K_END:
@@ -781,55 +793,8 @@ void Key_Console (int key, int modKey)
 		return;
 	}
 
-	if (modKey >= MOD_CTRL)
+	if (modKey >= NUM_KEYS)
 		return;					// do not allow CTRL/ALT+key to produce chars
-
-	// numpad keys -> ASCII
-	switch (key)
-	{
-	case K_KP_SLASH:
-		key = '/';
-		break;
-	case K_KP_MINUS:
-		key = '-';
-		break;
-	case K_KP_PLUS:
-		key = '+';
-		break;
-	case K_KP_HOME:
-		key = '7';
-		break;
-	case K_KP_UPARROW:
-		key = '8';
-		break;
-	case K_KP_PGUP:
-		key = '9';
-		break;
-	case K_KP_LEFTARROW:
-		key = '4';
-		break;
-	case K_KP_5:
-		key = '5';
-		break;
-	case K_KP_RIGHTARROW:
-		key = '6';
-		break;
-	case K_KP_END:
-		key = '1';
-		break;
-	case K_KP_DOWNARROW:
-		key = '2';
-		break;
-	case K_KP_PGDN:
-		key = '3';
-		break;
-	case K_KP_INS:
-		key = '0';
-		break;
-	case K_KP_DEL:
-		key = '.';
-		break;
-	}
 
 	if (key < 32 || key >= 128)
 		return;		// non printable
@@ -865,5 +830,6 @@ CVAR_END
 	RegisterCommand ("clear", Con_Clear_f);
 	RegisterCommand ("condump", Con_Dump_f);
 
+	Con_ClearTyping ();
 	initialized = true;
 }

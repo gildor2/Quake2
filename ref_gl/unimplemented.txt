@@ -1,5 +1,6 @@
 FAST TODO:
 ~~~~~~~~~~
+???!! flares: try to use flip mode (with limited fps ?!)
 1) 2x for vertex lighting (optimized lightmaps)
   AND for general vertex lighting (see (2))
 2) RGBGEN_VERTEX: when 2x available - use it (only when gl_vertexLight==0 !)

@@ -392,7 +392,7 @@ bool SCR_DrawCinematic (void)
 
 	if (cl.cinematicframe == CIN_PIC)
 	{	// static image
-		re.DrawStretchPic (0, 0, viddef.width, viddef.height, cin.imageName);
+		re.DrawDetailedPic (0, 0, viddef.width, viddef.height, cin.imageName);
 		return true;
 	}
 

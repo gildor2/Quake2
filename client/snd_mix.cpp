@@ -230,6 +230,8 @@ void S_PaintChannels(int endtime)
 	int		ltime, count;
 	playsound_t	*ps;
 
+	guard(S_PaintChannels);
+
 	snd_vol = appRound (s_volume->value * 255);
 
 //	Com_Printf ("%i to %i\n", paintedtime, endtime);
@@ -306,15 +308,16 @@ void S_PaintChannels(int endtime)
 					count = ch->end - ltime;
 
 				sc = S_LoadSound (ch->sfx);
-				if (!sc)
-					break;
+				if (!sc) break;
 
 				if (count > 0 && ch->sfx)
 				{
+					guard(PaintChannel);
 					if (sc->width == 1)// FIXME; 8 bit asm is wrong now
-						S_PaintChannelFrom8(ch, sc, count,  ltime - paintedtime);
+						S_PaintChannelFrom8 (ch, sc, count,  ltime - paintedtime);
 					else
-						S_PaintChannelFrom16(ch, sc, count, ltime - paintedtime);
+						S_PaintChannelFrom16 (ch, sc, count, ltime - paintedtime);
+					unguardf(("snd=%s", ch->sfx));
 
 					ltime += count;
 				}
@@ -345,18 +348,17 @@ void S_PaintChannels(int endtime)
 		S_TransferPaintBuffer(end);
 		paintedtime = end;
 	}
+
+	unguard;
 }
 
 void S_InitScaletable (void)
 {
-	int		i, j;
-	int		scale;
-
 	s_volume->modified = false;
-	for (i = 0; i < 32; i++)
+	for (int i = 0; i < 32; i++)
 	{
-		scale = appRound (i * 8 * 256 * s_volume->value);
-		for (j = 0; j < 256; j++)
+		int scale = appRound (i * 8 * 256 * s_volume->value);
+		for (int j = 0; j < 256; j++)
 			snd_scaletable[i][j] = ((signed char)j) * scale;
 	}
 }
@@ -365,28 +367,23 @@ void S_InitScaletable (void)
 #if !(defined __linux__ && defined __i386__)
 #if	!id386
 
-void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int count, int offset)
+static void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int count, int offset)
 {
-	int 	data;
 	int		*lscale, *rscale;
-	unsigned char *sfx;
-	int		i;
-	portable_samplepair_t	*samp;
 
 	if (ch->leftvol > 255)	ch->leftvol = 255;
 	if (ch->rightvol > 255)	ch->rightvol = 255;
 
 	//ZOID-- >>11 has been changed to >>3, >>11 didn't make much sense
 	//as it would always be zero.
-	lscale = snd_scaletable[ ch->leftvol >> 3];
-	rscale = snd_scaletable[ ch->rightvol >> 3];
-	sfx = (signed char *)sc->data + ch->pos;
+	lscale = snd_scaletable[ch->leftvol >> 3];
+	rscale = snd_scaletable[ch->rightvol >> 3];
+	byte *sfx = (signed char *)sc->data + ch->pos;
 
-	samp = &paintbuffer[offset];
-
-	for (i = 0; i < count; i++, samp++)
+	portable_samplepair_t *samp = &paintbuffer[offset];
+	for (int i = 0; i < count; i++, samp++)
 	{
-		data = sfx[i];
+		int data = *sfx++;
 		samp->left += lscale[data];
 		samp->right += rscale[data];
 	}
@@ -396,7 +393,7 @@ void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int count, int offset)
 
 #else
 
-__declspec( naked ) void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int count, int offset)
+static __declspec( naked ) void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int count, int offset)
 {
 	__asm {
 	push	esi
@@ -469,27 +466,18 @@ LDone:
 #endif
 #endif
 
-void S_PaintChannelFrom16 (channel_t *ch, sfxcache_t *sc, int count, int offset)
+static void S_PaintChannelFrom16 (channel_t *ch, sfxcache_t *sc, int count, int offset)
 {
-	int data;
-	int left, right;
-	int leftvol, rightvol;
-	signed short *sfx;
-	int	i;
-	portable_samplepair_t	*samp;
+	int leftvol = ch->leftvol * snd_vol;
+	int rightvol = ch->rightvol * snd_vol;
+	signed short *sfx = (signed short *)sc->data + ch->pos;
 
-	leftvol = ch->leftvol*snd_vol;
-	rightvol = ch->rightvol*snd_vol;
-	sfx = (signed short *)sc->data + ch->pos;
-
-	samp = &paintbuffer[offset];
-	for (i=0 ; i<count ; i++, samp++)
+	portable_samplepair_t *samp = &paintbuffer[offset];
+	for (int i = 0; i < count; i++, samp++)
 	{
-		data = sfx[i];
-		left = (data * leftvol)>>8;
-		right = (data * rightvol)>>8;
-		samp->left += left;
-		samp->right += right;
+		int data = *sfx++;
+		samp->left += (data * leftvol) >> 8;
+		samp->right += (data * rightvol) >> 8;
 	}
 
 	ch->pos += count;

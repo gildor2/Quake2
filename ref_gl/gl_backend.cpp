@@ -2137,12 +2137,35 @@ static void TesselateStretchPic (bkDrawPic_t *p)
 	// set vert.y
 	v[0].xyz[1] = v[1].xyz[1] = p->y;
 	v[2].xyz[1] = v[3].xyz[1] = p->y + p->h;
+
+	//?? make as function, use for sprites too
+	//?? make consts for flipMode (1,2,4)
+	// swap texture coords
+	float s1 = p->s1;
+	float s2 = p->s2;
+	float t1 = p->t1;
+	float t2 = p->t2;
+#define Swap(a,b) { float _tmp; _tmp = a; a = b; b = _tmp; }
+	if (p->flipMode & 1) Swap(s1, s2);
+	if (p->flipMode & 2) Swap(t1, t2);
 	// set s
-	t[0].tex[0] = t[3].tex[0] = p->s1;
-	t[1].tex[0] = t[2].tex[0] = p->s2;
+	t[0].tex[0] = t[3].tex[0] = s1;
+	t[1].tex[0] = t[2].tex[0] = s2;
 	// set t
-	t[0].tex[1] = t[1].tex[1] = p->t1;
-	t[2].tex[1] = t[3].tex[1] = p->t2;
+	t[0].tex[1] = t[1].tex[1] = t1;
+	t[2].tex[1] = t[3].tex[1] = t2;
+	// flip s and t
+	if (p->flipMode & 4)
+	{
+		/*
+		 *	0 1		==	s1,t1	s1,t2	>>		s1,t1	s2,t1
+		 *	3 2		==	s2,t1	s2,t2   >>		s1,t2	s2,t2
+		 */
+		// swap points 1 and 3
+		Swap(t[1].tex[0], t[3].tex[0]);
+		Swap(t[1].tex[1], t[3].tex[1]);
+	}
+#undef Swap
 	// store colors
 	c[0] = c[1] = c[2] = c[3] = p->c.rgba;
 

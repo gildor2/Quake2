@@ -31,10 +31,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../ref_soft/r_local.h"
 #include "rw_win.h"
 
-#ifndef _WIN32
-#  error You should not be trying to compile this file on this platform
-#endif
-
 static bool s_systemcolors_saved;
 
 static HGDIOBJ previously_selected_GDI_obj;

@@ -12,6 +12,7 @@ shader_t *gl_defaultSkyShader;		// default sky shader (black image)
 shader_t *gl_particleShader;
 shader_t *gl_entityShader;
 shader_t *gl_flareShader;
+shader_t *gl_detailShader;
 shader_t *gl_colorShellShader;
 shader_t *gl_railSpiralShader, *gl_railRingsShader, *gl_railBeamShader;
 shader_t *gl_skyShader;				// current sky shader (have mapped images)
@@ -1063,8 +1064,12 @@ void GL_ResetShaders (void)
 
 	gl_skyShader = gl_defaultSkyShader = GL_FindShader ("*sky", SHADER_SKY|SHADER_ABSTRACT);
 
-	shader_t *detail = GL_FindShader ("fx/detail", SHADER_ALPHA|SHADER_CLAMP);	//?? should be in a different place (as Q3?) and scripted
-	detail->stages[0]->glState = GLSTATE_NODEPTHTEST|GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR;
+	gl_detailShader = GL_FindShader ("*detail", SHADER_ALPHA|SHADER_WALL);
+	if (gl_detailShader)
+	{
+		gl_detailShader->cullMode = CULL_NONE;
+		gl_detailShader->stages[0]->glState = GLSTATE_NODEPTHTEST|GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR;
+	}
 
 #if 1
 	gl_concharsShader = GL_FindShader ("pics/conchars", SHADER_ALPHA);

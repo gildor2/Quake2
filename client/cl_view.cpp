@@ -332,9 +332,8 @@ void CL_PrepRefresh (void)
 
 	// the renderer can now free unneeded stuff
 	re.EndRegistration ();
-	Com_Printf (" \r");			// clear console notification about loading process
+	Com_Printf ("\r");			// clear console notification about loading process
 
-	// clear any lines of console text
 	Con_ClearNotify ();
 
 	SCR_UpdateScreen ();
@@ -398,6 +397,43 @@ void V_Gun_Model_f (int argc, char **argv)
 }
 
 #endif
+
+/*
+=================
+SCR_Sky_f
+
+Set a specific sky and rotation speed
+=================
+*/
+static void Sky_f (bool usage, int argc, char **argv)
+{
+	float	rotate;
+	vec3_t	axis;
+
+	if (argc < 2 || usage)
+	{
+		Com_Printf ("Usage: sky <basename> <rotate> <axis x y z>\n");
+		return;
+	}
+	if (argc > 2)
+		rotate = atof (argv[2]);
+	else
+		rotate = 0;
+	if (argc == 6)
+	{
+		axis[0] = atof (argv[3]);
+		axis[1] = atof (argv[4]);
+		axis[2] = atof (argv[5]);
+	}
+	else
+	{
+		axis[0] = 0;
+		axis[1] = 0;
+		axis[2] = 1;
+	}
+
+	re.SetSky (argv[1], rotate, axis);
+}
 
 //============================================================================
 
@@ -644,76 +680,6 @@ static void DrawFpsInfo (void)
 }
 
 
-static void Screenshot_f (bool usage, int argc, char **argv)
-{
-	int		i, flags;
-	static char filename[MAX_OSPATH], tmpName[MAX_OSPATH];
-
-	filename[0] = 0;
-	flags = 0;
-
-	if (usage)
-	{
-		Com_Printf ("Usage: screenshot [-levelshot] [-no2d] [-nogamma] [-silent] [-jpeg] [<filename>]\n");
-		return;
-	}
-
-	for (i = 1; i < argc; i++)
-	{
-		char *opt = argv[i];
-		if (opt[0] == '-')
-		{
-			opt++;
-			if (!stricmp (opt, "levelshot"))
-			{
-				char	*tmp;
-
-				if (cls.state != ca_active)
-				{
-					Com_WPrintf ("No levelshots in disconnected state\n");
-					return;
-				}
-
-				if (!(tmp = strrchr (map_name, '/')))
-				{
-					Com_WPrintf ("Invalid map_name: %s\n", map_name);
-					return;
-				}
-				tmp++;	// skip '/'
-
-				flags |= SHOT_SMALL|SHOT_NO_2D|SHOT_NOGAMMA;
-				appSprintf (ARRAY_ARG(filename), "%s/levelshots/%s", FS_Gamedir (), tmp);
-				// cut extension
-				tmp = strrchr (filename, '.');
-				if (tmp) *tmp = 0;
-			}
-			else if (!stricmp (opt, "no2d"))
-				flags |= SHOT_NO_2D;
-			else if (!stricmp (opt, "nogamma"))
-				flags |= SHOT_NOGAMMA;
-			else if (!stricmp (opt, "silent"))
-				flags |= SHOT_SILENT;
-			else if (!stricmp (opt, "jpeg"))
-				flags |= SHOT_JPEG;
-			else
-			{
-				Com_WPrintf ("Unknown option: %s\n", opt);
-				return;
-			}
-		}
-		else
-		{
-			if (filename[0])
-				Com_WPrintf ("WARNING: name already specified (%s). Changed.\n", filename);
-			appSprintf (ARRAY_ARG(tmpName), "%s/screenshots/%s", FS_Gamedir (), opt);
-			Q_CopyFilename (filename, tmpName, sizeof(filename));
-		}
-	}
-
-	re.Screenshot (flags, filename);
-}
-
-
 #define MIN_WATER_DISTANCE	4.5
 
 static void FixWaterVis (void)
@@ -781,22 +747,21 @@ static int entitycmpfnc (const entity_t *a, const entity_t *b)
 }
 
 
-void V_RenderView (float stereo_separation)
+bool V_RenderView (float stereo_separation)
 {
 	guard(V_RenderView);
 
 	if (cls.state != ca_active)
-		return;
+		return false;
 
 	if (!cl.refresh_prepped)
-		return;			// still loading
+		return false;			// still loading
 
 	if (timedemo->integer)
 	{
-		int		time, timeDelta;
-		static int lastTime;
+		static int lastTime = 0;
 
-		time = Sys_Milliseconds ();
+		int time = Sys_Milliseconds ();
 		if (!cl.timedemoStart)
 		{
 			cl.timedemoStart = time;
@@ -805,7 +770,7 @@ void V_RenderView (float stereo_separation)
 		}
 		else
 		{
-			timeDelta = time - lastTime;
+			int timeDelta = time - lastTime;
 			if (timeDelta > cl.timedemoLongestFrame && !fileFromPak)
 				cl.timedemoLongestFrame = timeDelta;
 		}
@@ -895,21 +860,18 @@ void V_RenderView (float stereo_separation)
 		}
 		FixWaterVis ();
 
-		// sort entities for better cache locality
+		// sort entities for better cache locality - ???
 		qsort (cl.refdef.entities, cl.refdef.num_entities, sizeof(cl.refdef.entities[0]),
 			(int (*)(const void *, const void *))entitycmpfnc);
 	}
 
-	guard(re_RenderFrame);
 	re.RenderFrame (&cl.refdef);
-	unguard;
 
 	// stats
 	if (r_drawfps->integer)
 		DrawFpsInfo ();
 
-	SCR_DrawCrosshair ();
-
+	return true;
 	unguard;
 }
 
@@ -939,5 +901,5 @@ CVAR_END
 	RegisterCommand ("gun_prev", V_Gun_Prev_f);
 	RegisterCommand ("gun_model", V_Gun_Model_f);
 #endif
-	RegisterCommand ("screenshot", Screenshot_f);
+	RegisterCommand ("sky", Sky_f);
 }

@@ -8,9 +8,6 @@
 		if (Cvar_VariableInt("r_profile2")) Com_Printf(S_MAGENTA"%s: %d ms\n", _name, _time);	\
 	}
 
-#define DELAYED_RAW_PAINT
-
-
 #include "gl_local.h"
 #include "gl_image.h"
 #include "gl_math.h"
@@ -48,7 +45,6 @@ static GLenum	gl_filter_max = GL_LINEAR;
 
 #define	MAX_TEXTURES	1024
 #define MAX_TEX_SIZE	2048				// max_size = min(MAX_TEX_SIZE,gl_config.maxTextureSize)
-#define MAX_VIDEO_SIZE	256
 
 static image_t	imagesArray[MAX_TEXTURES];	// no dynamic allocation (array size < 100K - small enough)
 static image_t	*hashTable[HASH_SIZE];
@@ -244,22 +240,16 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 }
 
 
-//#define INT_SATURATE		// should be disabled
 #define TBL_SATURATE		// should be enabled
 
 static void LightScaleTexture (unsigned *pic, int width, int height)
 {
-	float	sat;
-	int		i, c;
+	int		i;
 	byte	*p;
-#ifdef INT_SATURATE
-	int		isat = appRound (r_saturation->value * 255);
-#endif
 #ifdef TBL_SATURATE
 	static float lastSat = 1.0f;		// when sat. == 1 -- pic will not be changed
 	static int sat1[256 * 3];
 	static int sat2[256];
-	float	tmp;
 
 	if (r_saturation->value != lastSat)
 	{
@@ -271,7 +261,7 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 		*/
 		lastSat = r_saturation->value;
 		Com_DPrintf ("rebuilding saturation table for %g\n", lastSat);
-		tmp = (1.0f - lastSat) * 2 / 3;				// modulated by 2
+		float tmp = (1.0f - lastSat) * 2 / 3;				// modulated by 2
 		for (i = 0; i < ARRAY_COUNT(sat1); i++)
 			sat1[i] = appRound (i * tmp);
 		for (i = 0; i < ARRAY_COUNT(sat2); i++)
@@ -279,8 +269,8 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 	}
 #endif
 
-	sat = r_saturation->value;
-	c = width * height;
+	float sat = r_saturation->value;
+	int c = width * height;
 
 	if (sat != 1.0)
 	{
@@ -289,10 +279,9 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 		{
 #ifdef TBL_SATURATE
 			int		r, g, b;
-			int		s1;
 
 			r = p[0]; g = p[1]; b = p[2];
-			s1 = sat1[r + g + b];
+			int s1 = sat1[r + g + b];
 			r = (s1 + sat2[r]) >> 1;
 			p[0] = bound(r,0,255);
 			g = (s1 + sat2[g]) >> 1;
@@ -300,30 +289,17 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 			b = (s1 + sat2[b]) >> 1;
 			p[2] = bound(b,0,255);
 #else
-#	ifndef INT_SATURATE
-			float	r, g, b, light;
+			float	r, g, b;
 
 			// get color
 			r = p[0];  g = p[1];  b = p[2];
 			// change saturation
-			light = (r + g + b) / 3.0f;
+			float light = (r + g + b) / 3.0f;
 			SATURATE(r,light,sat);
 			SATURATE(g,light,sat);
 			SATURATE(b,light,sat);
 			// put color
 			p[0] = appRound (r);  p[1] = appRound (g);  p[2] = appRound (b);
-#	else
-			int		r, g, b, light;
-
-			r = p[0]; g = p[1]; b = p[2];
-			light = (r + g + b) / 3;
-			r = light + (((r - light) * isat) >> 8);
-			g = light + (((g - light) * isat) >> 8);
-			b = light + (((b - light) * isat) >> 8);
-			p[0] = bound(r,0,255);
-			p[1] = bound(g,0,255);
-			p[2] = bound(b,0,255);
-#	endif
 #endif
 		}
 	}
@@ -344,16 +320,13 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 // Scale lightmap; additional scaling data encoded in alpha-channel (0 - don't scale; 1 - /=2; -1==255 - *=2)
 static void LightScaleLightmap (unsigned *pic, int width, int height)
 {
-	byte	*p;
-	int		i, c, shift;
-
-	shift = gl_config.overbright;
+	int shift = gl_config.overbright;
 	if (!gl_config.doubleModulateLM)
 		shift--;
 
-	p = (byte *)pic;
-	c = width * height;
-	for (i = 0; i < c; i++, p += 4)
+	byte *p = (byte *)pic;
+	int c = width * height;
+	for (int i = 0; i < c; i++, p += 4)
 	{
 		int		r, g, b, sh;
 
@@ -383,15 +356,12 @@ static void LightScaleLightmap (unsigned *pic, int width, int height)
 
 static void MipMap (byte *in, int width, int height)
 {
-	int		i, j;
-	byte	*out;
-
 	width <<=2;
 	height >>= 1;
-	out = in;
-	for (i = 0; i < height; i++, in += width)
+	byte *out = in;
+	for (int i = 0; i < height; i++, in += width)
 	{
-		for (j = 0; j < width; j += 8, out += 4, in += 8)
+		for (int j = 0; j < width; j += 8, out += 4, in += 8)
 		{
 			int		r, g, b, a, am, n;
 
@@ -436,10 +406,8 @@ static void MipMap (byte *in, int width, int height)
 
 static void GetImageDimensions (int width, int height, int *scaledWidth, int *scaledHeight, bool picmip)
 {
-	int		sw, sh, maxSize;
-
-	for (sw = 1; sw < width; sw <<= 1) ;
-	for (sh = 1; sh < height; sh <<= 1) ;
+	for (int sw = 1; sw < width; sw <<= 1) ;
+	for (int sh = 1; sh < height; sh <<= 1) ;
 
 	if (gl_roundImagesDown->integer)
 	{	// scale down only when new image dimension is larger than 64 and
@@ -453,7 +421,7 @@ static void GetImageDimensions (int width, int height, int *scaledWidth, int *sc
 		sh >>= gl_picmip->integer;
 	}
 
-	maxSize = min(gl_config.maxTextureSize, MAX_TEX_SIZE);
+	int maxSize = min(gl_config.maxTextureSize, MAX_TEX_SIZE);
 	while (sw > maxSize) sw >>= 1;
 	while (sh > maxSize) sh >>= 1;
 
@@ -467,10 +435,10 @@ static void GetImageDimensions (int width, int height, int *scaledWidth, int *sc
 
 static void ComputeImageColor (void *pic, int width, int height, color_t *color)
 {
-	int		c[4], i, count;
+	int		c[4], i;
 	byte	*p;
 
-	count = width * height;
+	int count = width * height;
 	c[0] = c[1] = c[2] = c[3] = 0;
 	for (i = 0, p = (byte*)pic; i < count; i++, p += 4)
 	{
@@ -498,14 +466,10 @@ static void Upload (void *pic, int flags, image_t *image)
 	/*------------ Eliminate alpha-channel when needed---------------*/
 	if (flags & IMAGE_NOALPHA)
 	{
-		int		i;
-		byte	*p;
-		bool	alphaRemoved;
-
-		alphaRemoved = false;
+		bool alphaRemoved = false;
 		size = image->width * image->height;
-		p = (byte*)pic + 3;
-		for (i = 0; i < size; i++, p += 4)
+		byte *p = (byte*)pic + 3;
+		for (int i = 0; i < size; i++, p += 4)
 		{
 			if (*p != 255)
 			{
@@ -547,22 +511,24 @@ START_PROFILE(..up::lscale)
 END_PROFILE
 
 	/*------------- Determine texture format to upload --------------*/
+	//?? add GL_LUMINANCE and GL_ALPHA formats ?
+	//?? LUMINAMCE = (L,L,L,1); INTENSITY = (I,I,I,I); ALPHA = (0,0,0,A); RGB = (R,G,B,1); RGBA = (R,G,B,A)
+	//?? see OpenGL spec: "Rasterization/Texturing/Texture Environments ..."
 	if (flags & IMAGE_LIGHTMAP)
 		format = 3;
 	else if (flags & IMAGE_TRUECOLOR)
 		format = GL_RGBA8;
 	else
 	{
-		int		alpha, numAlpha0, i, n;
-		byte	*scan, a;
+		int		alpha, numAlpha0;
 
 		// Check for alpha channel in image
 		alpha = numAlpha0 = 0;
-		n = scaledWidth * scaledHeight;
-		scan = (byte *)scaledPic + 3;
-		for (i = 0; i < n; i++, scan += 4)
+		int n = scaledWidth * scaledHeight;
+		byte *scan = (byte *)scaledPic + 3;
+		for (int i = 0; i < n; i++, scan += 4)
 		{
-			a = *scan;
+			byte a = *scan;
 			if (a == 255) continue; // opaque
 			if (a == 0)
 			{
@@ -626,10 +592,8 @@ END_PROFILE
 	}
 	else
 	{
-		int		miplevel;
-
 START_PROFILE(..up::mip)
-		miplevel = 0;
+		int miplevel = 0;
 		while (scaledWidth > 1 || scaledHeight > 1)
 		{
 			MipMap ((byte *) scaledPic, scaledWidth, scaledHeight);
@@ -673,8 +637,7 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int
 {
 	char	name2[MAX_QPATH];
 	int		texnum;
-	image_t	*image, *freeSlot;
-	bool	reuse;
+	image_t	*image;
 
 	guard(GL_CreateImage);
 	if (!name[0]) Com_FatalError ("R_CreateImage: null name");
@@ -686,8 +649,8 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int
 	Q_CopyFilename (name2, name, sizeof(name2));
 
 	// find image with the same name
-	reuse = false;
-	freeSlot = NULL;
+	bool reuse = false;
+	image_t *freeSlot = NULL;
 	for (texnum = 0, image = &imagesArray[0]; texnum < MAX_TEXTURES; texnum++, image++)
 	{
 		if (!image->name[0])
@@ -732,25 +695,21 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int
 
 	if (gl_renderingEnabled)
 	{
-		GLenum	repMode;
-
 		// upload image
 		GL_SetMultitexture (1);
 		GL_BindForce (image);
 		Upload (pic, flags, image);
 
-		repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
+		GLenum repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
 		glTexParameteri (image->target, GL_TEXTURE_WRAP_S, repMode);
 		glTexParameteri (image->target, GL_TEXTURE_WRAP_T, repMode);
 	}
 	else
 	{
-		int		size;
-
 		// save image for later upload
 		if (image->pic)
 			appFree (image->pic);
-		size = width * height * 4;
+		int size = width * height * 4;
 		image->pic = (byte*)appMalloc (size);
 		image->internalFormat = 0;
 		memcpy (image->pic, pic, size);
@@ -758,10 +717,8 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int
 
 	if (!reuse)
 	{
-		int		hash;
-
 		// insert image into a hash table
-		hash = ComputeHash (name2);
+		int hash = ComputeHash (name2);
 		image->hashNext = hashTable[hash];
 		hashTable[hash] = image;
 	}
@@ -779,153 +736,113 @@ static unsigned rawPalette[256];
 
 void GL_SetRawPalette (const byte *palette)
 {
-	if (palette)
-	{
-		int		i;
-		byte	*src, *dst;
+	if (!palette) return;
 
-		src = (byte*) palette;
-		dst = (byte*) rawPalette;
-		for (i = 0; i < 256; i++)
-		{
-			*dst++ = *src++;
-			*dst++ = *src++;
-			*dst++ = *src++;
-			*dst++ = 255;
-		}
+	byte *src = (byte*) palette;
+	byte *dst = (byte*) rawPalette;
+	for (int i = 0; i < 256; i++)
+	{
+		*dst++ = *src++;
+		*dst++ = *src++;
+		*dst++ = *src++;
+		*dst++ = 255;
 	}
 }
 
 
 void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic)
 {
-	int		scaledWidth, scaledHeight, i;
-	unsigned scaledPic[MAX_VIDEO_SIZE*MAX_VIDEO_SIZE];
 	image_t	*image;
-	float	hScale;
+	byte	*pic32;
 
 	guard(GL_DrawStretchRaw8);
+
+	// prepare video image
+	image = gl_videoImage;		//?? to allow multiple videos in a screen, should use gl_videoImage[some_number]
+	GL_SetMultitexture (1);
+	GL_BindForce (image);
+	image->internalFormat = 3;
 
 	if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))	//?? check for max [rect] texture size
 	{
 		// convert 8->32 bit
-		byte *pic32 = Convert8to32bit (pic, width, height, rawPalette);
-		// upload texture
-		image = gl_videoImage;		//?? to allow multiple videos in a screen, should use gl_videoImage[some_number]
+		pic32 = Convert8to32bit (pic, width, height, rawPalette);
 		if (image->target != GL_TEXTURE_RECTANGLE_NV)
 			Com_DropError ("bad target");
-		GL_SetMultitexture (1);
-		GL_BindForce (image);
-
-		image->internalFormat = 3;
-		if (image->internalWidth == width && image->internalHeight == height)
-		{	// TexSubImage()
-			glTexSubImage2D (image->target, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pic32);
-		}
-		else
-		{	// TexImage()
-			image->internalWidth = width;
-			image->internalHeight = height;
-			glTexImage2D (image->target, 0, image->internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pic32);
-		}
-		// draw
-#ifndef DELAYED_RAW_PAINT
-//		GL_BackEnd ();		// need to perform begin_frame in a case of gl_clear!=0; or - enqueue draw command into backend command list
-		GL_Set2DMode ();
-		glColor3f (gl_config.identityLightValue_f, gl_config.identityLightValue_f, gl_config.identityLightValue_f);
-		glBegin (GL_QUADS);
-		glTexCoord2f (0.5f, 0.5f);
-		glVertex2f (x, y);
-		glTexCoord2f (width - 0.5f, 0.5f);
-		glVertex2f (x + w, y);
-		glTexCoord2f (width - 0.5f, height - 0.5f);
-		glVertex2f (x + w, y + h);
-		glTexCoord2f (0.5f, height - 0.5f);
-		glVertex2f (x, y + h);
-		glEnd ();
-#else
-		gl_videoShader->width = width;
-		gl_videoShader->height = height;
-		GL_DrawStretchPic (gl_videoShader, x, y, w, h, 0, 0, 1, 1, RGB(1,1,1));
-#endif
-		// free converted pic
-		appFree (pic32);
-		return;
 	}
-
-	/* we can do uploading pic without scaling using TexSubImage onto a large texture and using
-	 * (0..width/large_width) - (0..height/large_height) coords when drawing ?? (but needs palette conversion anyway)
-	 */
-	GetImageDimensions (width, height, &scaledWidth, &scaledHeight, false);
-	if (scaledWidth > MAX_VIDEO_SIZE) scaledWidth = MAX_VIDEO_SIZE;
-	if (scaledHeight > MAX_VIDEO_SIZE) scaledHeight = MAX_VIDEO_SIZE;
-
-	/*--- fast resampling with conversion 8->32 bit ---*/
-	hScale = (float) height / scaledHeight;
-	for (i = 0; i < scaledHeight; i++)
+	else
 	{
-		int		frac, fracStep, row, j;
-		byte	*src;
-		unsigned *dst;
+		int		scaledWidth, scaledHeight;
 
-		row = appFloor (hScale * i);
-		if (row > height) break;
+		// we can perform uploading pic without scaling using TexSubImage onto a large texture and using
+		// (0..width/large_width) - (0..height/large_height) coords when drawing ?? (but needs palette conversion anyway)
+		GetImageDimensions (width, height, &scaledWidth, &scaledHeight, false);
+		pic32 = (byte*) appMalloc (scaledWidth * scaledHeight * 4);
 
-		src = &pic[width * row];
-		dst = &scaledPic[scaledWidth * i];
-		fracStep = (width << 16) / scaledWidth;
-		frac = fracStep >> 1;
-		for (j = 0; j < scaledWidth; j++)
+		// fast resampling with conversion 8->32 bit
+		float hScale = (float) height / scaledHeight;
+		for (int i = 0; i < scaledHeight; i++)
 		{
-			*dst++ = rawPalette[src[frac >> 16]];
-			frac += fracStep;
+			int row = appFloor (hScale * i);
+			if (row > height) break;
+
+			byte *src = &pic[width * row];
+			unsigned *dst = (unsigned*)pic32 + scaledWidth * i;
+			int fracStep = (width << 16) / scaledWidth;
+			int frac = fracStep >> 1;
+			for (int j = 0; j < scaledWidth; j++)
+			{
+				*dst++ = rawPalette[src[frac >> 16]];
+				frac += fracStep;
+			}
 		}
+
+		// set texture parameters
+		glTexParameteri (image->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri (image->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		width = scaledWidth;
+		height = scaledHeight;
 	}
 
-	/*-------------------- upload ---------------------*/
-	image = gl_videoImage;		//?? to allow multiple videos in a screen, should use gl_videoImage[some_number]
-	GL_SetMultitexture (1);
-	GL_BindForce (image);
-
-	image->internalFormat = 3;
-	if (image->internalWidth == scaledWidth && image->internalHeight == scaledHeight)
+	// upload
+	if (image->internalWidth == width && image->internalHeight == height)
 	{	// TexSubImage()
-		glTexSubImage2D (image->target, 0, 0, 0, scaledWidth, scaledHeight, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
+		glTexSubImage2D (image->target, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pic32);
 	}
 	else
 	{	// TexImage()
-		image->internalWidth = scaledWidth;
-		image->internalHeight = scaledHeight;
-		glTexImage2D (image->target, 0, image->internalFormat, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
+		image->internalWidth = width;
+		image->internalHeight = height;
+		glTexImage2D (image->target, 0, image->internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pic32);
 	}
-	// set texture parameters
-	glTexParameteri (image->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri (image->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	gl_speeds.numUploads++;
+	// free converted pic
+	appFree (pic32);
 
-	width = scaledWidth;	//!!!
-	height = scaledHeight;
-
-	/*--------------------- draw ----------------------*/
-#ifndef DELAYED_RAW_PAINT
-//	GL_BackEnd ();		// need to perform begin_frame in a case of gl_clear!=0; or - enqueue draw command into backend command list
-	GL_Set2DMode ();
-	glColor3f (gl_config.identityLightValue_f, gl_config.identityLightValue_f, gl_config.identityLightValue_f);
-	glBegin (GL_QUADS);
-	glTexCoord2f (0.5f / width, 0.5f / height);
-	glVertex2f (x, y);
-	glTexCoord2f (1.0f - 0.5f / width, 0.5f / height);
-	glVertex2f (x + w, y);
-	glTexCoord2f (1.0f - 0.5f / width, 1.0f - 0.5f / height);
-	glVertex2f (x + w, y + h);
-	glTexCoord2f (0.5f / width, 1.0f - 0.5f / height);
-	glVertex2f (x, y + h);
-	glEnd ();
-#else
+	// draw
 	gl_videoShader->width = width;
 	gl_videoShader->height = height;
 	GL_DrawStretchPic (gl_videoShader, x, y, w, h, 0, 0, 1, 1, RGB(1,1,1));
-#endif
+	if (gl_detailShader && width*3/2 < w)		// detail is not available or not needed
+	{
+#define VIDEO_NOISE_FPS		20
+//		if (!Cvar_VariableInt("detail")) return;
+		static int lastNoiseTime;
+		static float dx, dy;
+		static int flipMode;
+
+		int time = Sys_Milliseconds ();
+		if (time - lastNoiseTime >= 1000/VIDEO_NOISE_FPS)
+		{
+			lastNoiseTime = time;
+			dx = frand() / 2;
+			dy = frand() / 2;
+			flipMode = rand() & 3;
+		}
+		GL_DrawStretchPic (gl_detailShader, x, y, w, h, dx, dy,
+			w / gl_detailShader->width + dx, h / gl_detailShader->height + dy, RGB(1,1,1), flipMode);
+	}
 
 	unguard;
 }
@@ -982,14 +899,10 @@ static void GL_FreeImage (image_t *image)	//?? unused function
 
 void GL_SetupGamma (void)
 {
-	unsigned	overbright;
-	int			i;
-	float		invGamma;
-
 	gl_config.vertexLight = gl_vertexLight->integer != 0;
 	gl_config.deviceSupportsGamma = GLimp_HasGamma ();
 
-	overbright = gl_overbright->integer;
+	unsigned overbright = gl_overbright->integer;
 	if (!gl_config.fullscreen || !gl_config.deviceSupportsGamma) overbright = 0;
 
 	if (overbright == 2 && gl_config.doubleModulateLM && !gl_config.vertexLight)	// auto
@@ -1005,12 +918,12 @@ void GL_SetupGamma (void)
 	gl_config.identityLightValue = 255 / (1 << overbright);
 	gl_config.identityLightValue_f = 1.0f / (float)(1 << overbright);
 
-	invGamma = 1.0 / Cvar_Clamp (r_gamma, 0.5, 3.0);
+	float invGamma = 1.0 / Cvar_Clamp (r_gamma, 0.5, 3.0);
 
 	if (gl_config.deviceSupportsGamma)
 		GLimp_SetGamma (r_gamma->value);
 
-	for (i = 0; i < 256; i++)
+	for (int i = 0; i < 256; i++)
 	{
 		int		v;
 
@@ -1073,11 +986,8 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 
 #else
 
-	int		texels, i, idx, n;
-	char	*mask;
-
-	static struct {
-		int		fmt;
+	static const struct {
+		GLenum	fmt;
 		char	*name;
 	} fmtInfo[] = {
 #define _STR(s) {s, #s}
@@ -1088,7 +998,7 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 		_STR(GL_RGBA4),
 		_STR(GL_RGBA8),
 		_STR(GL_RGB5_A1),
-		{GL_RGB4_S3TC,	"S3TC"}, //"RGB4_S3TC"},
+		{GL_RGB4_S3TC,	"S3TC"}, // RGB4_S3TC
 		{GL_RGBA_S3TC,	"RGBA_S3TC"},
 		{GL_RGBA4_S3TC,	"RGBA4_S3TC"},
 		{GL_COMPRESSED_RGB_S3TC_DXT1_EXT, "DXT1"},
@@ -1099,8 +1009,9 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 		{GL_COMPRESSED_RGBA_ARB, "RGBA_ARB"}
 #undef _STR
 	};
-	static char alphaTypes[3] = {' ', '1', '8'};
-	static char boolTypes[2] = {' ', '+'};
+	static const char alphaTypes[3] = {' ', '1', '8'};
+	static const char boolTypes[2] = {' ', '+'};
+	int		idx, texels, n;
 
 	if (argc > 2 || usage)
 	{
@@ -1108,21 +1019,14 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	if (argc == 2)
-		mask = argv[1];
-	else
-		mask = NULL;
+	const char *mask = (argc == 2) ? argv[1] : NULL;
 
 	Com_Printf ("----w----h----a-wr-m-fmt------name----------\n");
 	idx = texels = n = 0;
 
-	for (i = 0; i < MAX_TEXTURES; i++)
+	for (int i = 0; i < MAX_TEXTURES; i++)
 	{
-		char	*fmt, *color;
-		image_t	*img;
-		int		f, fi;
-
-		img = &imagesArray[i];
+		image_t *img = &imagesArray[i];
 		if (!img->name[0]) continue;	// free slot
 
 		idx++;
@@ -1131,20 +1035,19 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 
 		texels += img->internalWidth * img->internalHeight;
 
-		f = img->internalFormat;
-		fmt = S_RED"???"S_WHITE;
-		for (fi = 0; fi < ARRAY_COUNT(fmtInfo); fi++)
+		GLenum f = img->internalFormat;
+		const char *fmt = S_RED"???"S_WHITE;
+		for (int fi = 0; fi < ARRAY_COUNT(fmtInfo); fi++)
 			if (fmtInfo[fi].fmt == f)
 			{
 				fmt = fmtInfo[fi].name;
 				break;
 			}
+		const char *color = "";
 		if (img->flags & IMAGE_WORLD)
 			color = S_GREEN;
 		else if (img->flags & IMAGE_SKIN)
 			color = S_CYAN;
-		else
-			color = "";
 
 		Com_Printf ("%-3d %-4d %-4d %c %c  %c %-8s %s%s\n", idx, img->internalWidth, img->internalHeight,
 			img->flags & IMAGE_NOALPHA ? '-' : alphaTypes[img->alphaType],
@@ -1156,24 +1059,20 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 
 	if (mask && mask[0] == '*' && mask[1] == 0)	// mask = "*"
 	{
-		int		distr[HASH_SIZE], max;
+		int		distr[HASH_SIZE];
 
-		Com_Printf ("--------------\nHash distribution:\n");
-
-		max = 0;
+		int max = 0;
 		memset (distr, 0, sizeof(distr));
 
 		for (i = 0; i < HASH_SIZE; i++)
 		{
-			int		num;
-			image_t	*img;
-
-			num = 0;
-			for (img = hashTable[i]; img; img = img->hashNext) num++;
+			int num = 0;
+			for (image_t *img = hashTable[i]; img; img = img->hashNext) num++;
 			if (num > max) max = num;
 			distr[num]++;
 		}
-		for (i = 0; i <= max; i++)
+		Com_Printf ("--------------\nHash distribution:\n");
+		for (i = 1; i <= max; i++)
 			Com_Printf ("Chain %dx : %d\n", i, distr[i]);
 	}
 #endif
@@ -1220,10 +1119,9 @@ static void ImageReload_f (bool usage, int argc, char **argv)
 
 void GL_PerformScreenshot (void)
 {
-	byte	*buffer, *src, *dst;
-	char	name[MAX_OSPATH], *ext;
-	int		i, width, height, size;
-	bool	result;
+	byte	*src, *dst;
+	char	name[MAX_OSPATH];
+	int		i, width, height;
 	FILE	*f;
 
 	if (!gl_screenshotName ||
@@ -1232,7 +1130,7 @@ void GL_PerformScreenshot (void)
 
 	glFinish ();
 
-	ext = (gl_screenshotFlags & SHOT_JPEG ? ".jpg" : ".tga");
+	const char *ext = (gl_screenshotFlags & SHOT_JPEG ? ".jpg" : ".tga");
 	if (gl_screenshotName[0])
 	{
 		strcpy (name, gl_screenshotName);
@@ -1257,7 +1155,7 @@ void GL_PerformScreenshot (void)
 	FS_CreatePath (name);
 
 	// allocate buffer for 4 color components (required for ResampleTexture()
-	buffer = (byte*)appMalloc (vid_width * vid_height * 4);
+	byte *buffer = (byte*)appMalloc (vid_width * vid_height * 4);
 	// read frame buffer data
 	glReadPixels (0, 0, vid_width, vid_height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
@@ -1269,10 +1167,9 @@ void GL_PerformScreenshot (void)
 
 	if (gl_screenshotFlags & SHOT_SMALL)
 	{
-		byte *buffer2;
-
-		buffer2 = (byte*)appMalloc (LEVELSHOT_W * LEVELSHOT_H * 4);
+		byte *buffer2 = (byte*)appMalloc (LEVELSHOT_W * LEVELSHOT_H * 4);
 		ResampleTexture ((unsigned *)buffer, vid_width, vid_height, (unsigned *)buffer2, LEVELSHOT_W, LEVELSHOT_H);
+		// replace "buffer" pointer with a resampled image
 		appFree (buffer);
 		buffer = buffer2;
 		width = LEVELSHOT_W;
@@ -1283,7 +1180,7 @@ void GL_PerformScreenshot (void)
 		width = vid_width;
 		height = vid_height;
 	}
-	size = width * height;
+	int size = width * height;
 
 	// remove 4th color component and correct gamma
 	src = dst = buffer;
@@ -1316,6 +1213,7 @@ void GL_PerformScreenshot (void)
 		*dst++ = b;
 	}
 
+	bool result;
 	if (gl_screenshotFlags & SHOT_JPEG)
 		result = WriteJPG (name, buffer, width, height, (gl_screenshotFlags & SHOT_SMALL));
 	else
@@ -1343,7 +1241,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_roundImagesDown, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_textureBits, 0, CVAR_ARCHIVE|CVAR_NOUPDATE)
 CVAR_END
-	byte	tex[256*32*4], *p;
+	byte	tex[256*128*4], *p;
 	int		texnum, x, y;
 	image_t	*image;
 
@@ -1449,6 +1347,32 @@ CVAR_END
 		}
 	gl_particleImage = GL_CreateImage ("*particle", tex, 8, 8, IMAGE_CLAMP|IMAGE_MIPMAP);
 	gl_particleImage->flags |= IMAGE_SYSTEM;
+
+	/*--------- create detail texture ------------*/
+	// compute float intensity with avg=1
+#define DETAIL_SIDE		128
+#define DETAIL_DIFFUSE	0.1		// Cvar_VariableValue("det")
+	float ftex[DETAIL_SIDE*DETAIL_SIDE];
+	float *fp = ftex;
+	float fsum = 0;
+	for (x = 0; x < ARRAY_COUNT(ftex); x++)
+	{
+		float rnd = 1 + crand() * DETAIL_DIFFUSE;
+		*fp++ = rnd;
+		fsum += rnd;
+	}
+	// compute multiplier for adjusting average color to 1 + for converting to integer
+	fsum = 1.0f / (fsum / (DETAIL_SIDE*DETAIL_SIDE)) * 128;
+	fp = ftex;
+	p = tex;
+	for (x = 0; x < ARRAY_COUNT(ftex); x++)
+	{
+		byte b = appRound (*fp++ * fsum);
+		*p++ = b; *p++ = b; *p++ = b;		// rgb (use luminance or alpha only ?)
+		*p++ = 255;							// alpha
+	}
+	// fill tex
+	GL_CreateImage ("*detail", tex, DETAIL_SIDE, DETAIL_SIDE, IMAGE_MIPMAP);
 
 	/*------------ create fog image --------------*/
 /*	p = tex;

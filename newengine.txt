@@ -1,4 +1,4 @@
-- can use following modules:
+- ALREADY can use following modules:
   - CoreMain.cpp
   - Strings.cpp
   - Memory.cpp
@@ -8,3 +8,80 @@
 - can't use:
   - Commands.cpp -- require alias, cvar + command buffer support
   - FileSystem... -- unfinished
+
+---------- console cmdline / command system -----------
+- Cmd_ForwardToServer(): rename to CL_UnhandledCommand(), set as callback when initializing command system; should be implemented
+  as callback in CCommandBuffer (name?) class
+- CCmdLineEditor -> GConCmdLine
+  properties:
+    - editLine[]
+    - history[]
+    - cursorPos (for visualization)
+    - RegisterCompletion - for automated completion
+    - KeyEvent - edit line, browse history, call completion
+    ? command system
+    ? execution buffer (can add strings, exec files)
+! when implement new command completion system, can change public cmdAlias_t,cmdFunc_t declarations -> private for "cmd.cpp";
+  public "cvar_vars", "cmdAlias", "cmdFuncs" -> static
+- dedicated server, GConCmdLine:
+  - convert VK_KEY -> K_KEY and pass to GConCmdLine
+  - use cursorPos for cursor visualization
+
+-------------- WinMain() -------------------
+- WinMain():
+  appInit() -- pass NULL (==outputDevice) for GUI and OutputDeviceWin32Console for dedicated (cvar "dedicated" unknown here ?)
+- CL_Init: set (add) OutputDeviceConsole
+  ? func SetOutputDevice() - can add output devices
+- appPrintf() etc:
+  - should be able to use few output devices
+  - ability to hook output (for rcon etc)
+- COutputDevice:
+    bool useColors -- when "false" - UncolString before output (e.g. for file logging)
+- CErrorDevice:
+    bool fatalError
+    bool softError
+    char errorHistory[]
+    void Reset()
+- appPrintf, appWPrintf, appDPrintf, appError -> called via GLog, GErr etc.
+  Implement wrappers (appPrintf()==GLog->Printf() etc) in separate cpp file (CoreWrapper.cpp or CoreGlobal.cpp ...)
+- appInit():
+  - make GErr, GLog have default params == GErrDevice, GLogDevice (do not pass implicitly, create device var in
+    "OutputDeviceXxxx.h")
+  ?? may be, when STATIC_LINK -- try to avoid GLog, GErr etc (e.g. defaulted args) passing with appInit() -- use from
+    Core global variables (will not allow run-time overriding + tee-like functions !)
+
+------------------- Misc -------------------
+- math:
+  - WorldToModelCoord() etc.: make CWorldObject class with position+axis props + conversion funcs
+- network:
+  - make channel_t (different name ??) as class, TcpChannel+LoopbackChannel as childs
+  ? channel_t -> CNetStream
+
+------------ New renderer system -----------
+- make build target: "static build with single GL renderer" (to feel free for renderer API modification)
+- change GetRefAPI() -> something another (different method of renderer creation; can change backend only)
+- separate renderer (math only) and backend (OpenGL); call hierarchy: mainEngine->renderer->backend->gl
+- backend should provide "caps" field:
+  - rect textures (GL_NV_texture_rectangle: clamp, no mipmap)
+  - rect textures 2 (GL_ARB_texture_non_power_of_two: full-feautered textures)
+  - compressed textures (for disabling by menu)
+  - fast blend (for soft renderer: can draw console etc with opaque rects)
+  - fast culling (for soft: when "false" will try to cull everything before sending to backend)
+  - some lighting info (software, hardware with/without cubemaps etc)
+- images.cpp -> renderer (not backend)
+- (abstract) class CImage, wisible from GUI/client - implementation in renderer, some service funcs
+  (uploading, retreiving from screen, rendering to texture) - in backend
+? vid_restart: restart backend ? (renderer restarting - unneded ??); rename cmd ?
+? share model/map loading with cmodel (separate into own library, used by server/client/renderer)
+- CImage->CShader (CMaterial?); CImage->CGlImage; CMaterial->CGlMaterial
+- sky drawing: AddSkySurface() - during frontend pass (if r_fastSky==0); backend will only draw sky grid;
+  this will eliminate sky surfaces from sorted surfaces array
+- 2D-drawing (non-world, i.e. GUI/HUD): don't need to buffer everything, can draw immediately; buffer only
+  3D world surfaces for later sorting and drawing in preferred order (sort by light/model/model-bone/shader/BSP-order ...);
+  3D drawing: after RenderScene() call, will perform frontend -> buffer -> sorted buffer -> backend; not needed
+  backend command list ?
+  ! check speed changing after removing backend cmd buffer
+- client rendering:
+  - screen manager - top level, draw GUI and HUD; can draw 3D in GUI/HUD
+  - primary world 3D scene manager - entities, sprites/fx, dlights ...; will call renderer->DrawScene()
+- NullBackend (builtin?) - empty functions; may be useful for on-fly switching to dedicated server and to back GUI

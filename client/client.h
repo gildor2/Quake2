@@ -319,7 +319,6 @@ extern	cvar_t	*cl_cameraheight;
 extern  cvar_t  *cl_extProtocol;
 
 extern	cvar_t	*cl_newfx;
-extern	cvar_t	*cl_draw2d;
 extern	cvar_t	*cl_showbboxes;
 extern	cvar_t	*r_sfx_pause;
 
@@ -337,8 +336,6 @@ extern	entityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 
 extern	netadr_t	net_from;
 extern	sizebuf_t	net_message;
-
-void	CL_AddNetgraph (void);
 
 #define MAX_SUSTAINS		32
 //ROGUE
@@ -447,7 +444,6 @@ void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, int bits
 void CL_ParseFrame (void);
 
 void CL_ParseTEnt (void);
-void CL_ParseConfigString (void);
 void CL_ParseMuzzleFlash (void);
 void CL_ParseMuzzleFlash2 (void);
 void SmokeAndFlash(vec3_t origin);
@@ -457,7 +453,6 @@ void CL_AddTEnts (void);
 
 //=================================================
 
-void CL_PrepRefresh (void);
 void CL_RegisterSounds (void);
 
 void CL_Quit_f (void);
@@ -470,7 +465,7 @@ void CL_AddEntityBox (entityState_t *st, unsigned rgba);
 
 
 //
-// cl_main.c
+// cl_main.cpp
 //
 extern refExport_t re;			// interface to refresh .dll
 
@@ -481,14 +476,17 @@ void CL_FixUpGender(void);
 void CL_Disconnect (void);
 void CL_Disconnect_f (void);
 void CL_GetChallengePacket (void);
+
+#define NUM_ADDRESSBOOK_ENTRIES 9
 void CL_PingServers_f (void);
+
 void CL_Snd_Restart_f (void);
 
 void CL_WriteDemoMessage (void);
 
 
 //
-// cl_input.c
+// cl_input.cpp
 //
 typedef struct
 {
@@ -516,7 +514,7 @@ void CL_BaseMove (usercmd_t *cmd);
 void IN_CenterView (void);
 
 //
-// cl_parse.c
+// cl_parse.cpp
 //
 extern	char *svc_strings[svc_last];
 
@@ -529,7 +527,7 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s);
 void CL_ParseClientinfo (int player);
 
 //
-// cl_view.c
+// cl_view.cpp
 //
 #ifdef GUN_DEBUG
 extern	int			gun_frame;
@@ -537,27 +535,20 @@ extern	struct model_s	*gun_model;
 #endif
 
 void V_Init (void);
-void V_RenderView( float stereo_separation );
+void CL_PrepRefresh (void);
+bool V_RenderView (float stereo_separation);
 void V_AddEntity (entity_t *ent);
 void V_AddLight (vec3_t org, float intensity, float r, float g, float b);
 
 //
-// cl_tent.c
+// cl_tent.cpp
 //
 void CL_RegisterTEntSounds (void);
 void CL_RegisterTEntModels (void);
 void CL_SmokeAndFlash(vec3_t origin);
 
-
 //
-// cl_pred.c
-//
-void CL_InitPrediction (void);
-void CL_PredictMove (void);
-void CL_CheckPredictionError (void);
-
-//
-// cl_fx.c
+// cl_fx.cpp
 //
 void CL_BigTeleportParticles (vec3_t org);
 void CL_RocketTrail (vec3_t start, vec3_t end, centity_t *old);
@@ -583,32 +574,16 @@ void M_PopMenu (void);
 void M_AddToServerList (netadr_t adr, char *info);
 
 //
-// cl_inv.c
-//
-void CL_ParseInventory (void);
-void CL_KeyInventory (int key);
-void CL_DrawInventory (void);
-
-//
-// cl_pred.c
+// cl_pred.cpp
 //
 void CL_EntityTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents);
 void CL_Trace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents);
 void CL_PredictMovement (void);
+void CL_CheckPredictionError (void);
 
 //
 // cl_download.cpp
 //
-bool CL_CheckOrDownloadFile (char *filename);
 void CL_ParseDownload (void);
-void CL_RequestNextDownload (void);
-bool CL_CheckOrDownloadFile (char *filename);
 void CL_Download_f (bool usage, int argc, char **argv);
 void CL_Precache_f (int argc, char **argv);
-
-
-//-------------------------------------------
-
-// Macros for drawing HUD elements (console and menu should call re.DrawPic() immediately)
-#define re_DrawPic(x,y,name) {if (cl_draw2d->integer) re.DrawPic(x,y,name);}
-#define re_DrawPicColor(x,y,name,color) {if (cl_draw2d->integer) re.DrawPic(x,y,name,color);}

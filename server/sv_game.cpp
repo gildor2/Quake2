@@ -160,6 +160,7 @@ static void PF_setmodel (edict_t *ent, char *name)
 	unguard;
 }
 
+
 /*
 ===============
 PF_Configstring

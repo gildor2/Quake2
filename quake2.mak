@@ -19,7 +19,6 @@ STATIC = \
 	Release/obj/cl_ents.obj \
 	Release/obj/cl_fx.obj \
 	Release/obj/cl_input.obj \
-	Release/obj/cl_inv.obj \
 	Release/obj/cl_main.obj \
 	Release/obj/cl_newfx.obj \
 	Release/obj/cl_parse.obj \
@@ -119,7 +118,6 @@ DYN_EXE = \
 	Release/obj/dyn_exe/cl_ents.obj \
 	Release/obj/dyn_exe/cl_fx.obj \
 	Release/obj/dyn_exe/cl_input.obj \
-	Release/obj/dyn_exe/cl_inv.obj \
 	Release/obj/dyn_exe/cl_main.obj \
 	Release/obj/dyn_exe/cl_newfx.obj \
 	Release/obj/dyn_exe/cl_parse.obj \
@@ -271,28 +269,7 @@ Release/ref_oldgl.dll : DIRS $(DYN_OLDGL)
 #------------------------------------------------------------------------------
 
 DEDICATED = \
-	Release/obj/dedicated/cl_cin.obj \
-	Release/obj/dedicated/cl_download.obj \
-	Release/obj/dedicated/cl_ents.obj \
-	Release/obj/dedicated/cl_fx.obj \
-	Release/obj/dedicated/cl_input.obj \
-	Release/obj/dedicated/cl_inv.obj \
-	Release/obj/dedicated/cl_main.obj \
-	Release/obj/dedicated/cl_newfx.obj \
-	Release/obj/dedicated/cl_parse.obj \
-	Release/obj/dedicated/cl_pred.obj \
-	Release/obj/dedicated/cl_scrn.obj \
-	Release/obj/dedicated/cl_tent.obj \
-	Release/obj/dedicated/cl_view.obj \
-	Release/obj/dedicated/console.obj \
-	Release/obj/dedicated/keys.obj \
-	Release/obj/dedicated/menu.obj \
-	Release/obj/dedicated/qmenu.obj \
-	Release/obj/dedicated/ref_vars.obj \
-	Release/obj/dedicated/snd_dma.obj \
-	Release/obj/dedicated/snd_mem.obj \
-	Release/obj/dedicated/snd_mix.obj \
-	Release/obj/dedicated/m_flash.obj \
+	Release/obj/dedicated/sv_dedicated.obj \
 	Release/obj/dedicated/sv_ccmds.obj \
 	Release/obj/dedicated/sv_ents.obj \
 	Release/obj/dedicated/sv_game.obj \
@@ -316,15 +293,9 @@ DEDICATED = \
 	Release/obj/dedicated/pmove.obj \
 	Release/obj/dedicated/q_shared2.obj \
 	Release/obj/dedicated/zip.obj \
-	Release/obj/dedicated/cd_win.obj \
-	Release/obj/dedicated/in_win.obj \
 	Release/obj/dedicated/net_wins.obj \
 	Release/obj/dedicated/q_shwin.obj \
-	Release/obj/dedicated/snd_win.obj \
 	Release/obj/dedicated/sys_win.obj \
-	Release/obj/dedicated/vid_dll.obj \
-	Release/obj/dedicated/vid_menu.obj \
-	Release/obj/dedicated/q2.res \
 	Release/obj/dedicated/makeres.obj
 
 Release/q2ded.exe : DIRS $(DEDICATED)
@@ -347,9 +318,6 @@ OPTIONS = -W3 -O1 -D DEDICATED_ONLY
 
 Release/obj/dedicated/md4.obj : qcommon/md4.cpp
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/md4.obj" qcommon/md4.cpp
-
-Release/obj/dedicated/q2.res : win32/q2.rc
-	rc.exe -l 0x409 -i win32/ -fo"Release/obj/dedicated/q2.res" -dNDEBUG win32/q2.rc
 
 OPTIONS = -W3 -O1 -D REF_HARD_LINKED
 
@@ -390,20 +358,6 @@ Release/obj/dyn_exe/qmenu.obj : client/qmenu.cpp $(DEPENDS)
 Release/obj/dyn_exe/vid_menu.obj : win32/vid_menu.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/vid_menu.obj" win32/vid_menu.cpp
 
-OPTIONS = -W3 -O1 -D DEDICATED_ONLY
-
-Release/obj/dedicated/keys.obj : client/keys.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/keys.obj" client/keys.cpp
-
-Release/obj/dedicated/menu.obj : client/menu.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/menu.obj" client/menu.cpp
-
-Release/obj/dedicated/qmenu.obj : client/qmenu.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/qmenu.obj" client/qmenu.cpp
-
-Release/obj/dedicated/vid_menu.obj : win32/vid_menu.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/vid_menu.obj" win32/vid_menu.cpp
-
 OPTIONS = -W3 -O1 -D REF_HARD_LINKED
 
 Release/obj/keys.obj : client/keys.cpp $(DEPENDS)
@@ -442,11 +396,6 @@ DEPENDS = \
 Release/obj/dyn_exe/vid_dll.obj : win32/vid_dll.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/vid_dll.obj" win32/vid_dll.cpp
 
-OPTIONS = -W3 -O1 -D DEDICATED_ONLY
-
-Release/obj/dedicated/vid_dll.obj : win32/vid_dll.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/vid_dll.obj" win32/vid_dll.cpp
-
 OPTIONS = -W3 -O1 -D REF_HARD_LINKED
 
 Release/obj/vid_dll.obj : win32/vid_dll.cpp $(DEPENDS)
@@ -482,20 +431,6 @@ Release/obj/dyn_exe/snd_mem.obj : client/snd_mem.cpp $(DEPENDS)
 
 Release/obj/dyn_exe/snd_mix.obj : client/snd_mix.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/snd_mix.obj" client/snd_mix.cpp
-
-OPTIONS = -W3 -O1 -D DEDICATED_ONLY
-
-Release/obj/dedicated/cl_tent.obj : client/cl_tent.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_tent.obj" client/cl_tent.cpp
-
-Release/obj/dedicated/snd_dma.obj : client/snd_dma.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/snd_dma.obj" client/snd_dma.cpp
-
-Release/obj/dedicated/snd_mem.obj : client/snd_mem.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/snd_mem.obj" client/snd_mem.cpp
-
-Release/obj/dedicated/snd_mix.obj : client/snd_mix.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/snd_mix.obj" client/snd_mix.cpp
 
 OPTIONS = -W3 -O1 -D REF_HARD_LINKED
 
@@ -533,11 +468,6 @@ DEPENDS = \
 
 Release/obj/dyn_exe/snd_win.obj : win32/snd_win.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/snd_win.obj" win32/snd_win.cpp
-
-OPTIONS = -W3 -O1 -D DEDICATED_ONLY
-
-Release/obj/dedicated/snd_win.obj : win32/snd_win.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/snd_win.obj" win32/snd_win.cpp
 
 OPTIONS = -W3 -O1 -D REF_HARD_LINKED
 
@@ -577,9 +507,6 @@ Release/obj/dyn_exe/cl_fx.obj : client/cl_fx.cpp $(DEPENDS)
 Release/obj/dyn_exe/cl_input.obj : client/cl_input.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/cl_input.obj" client/cl_input.cpp
 
-Release/obj/dyn_exe/cl_inv.obj : client/cl_inv.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/cl_inv.obj" client/cl_inv.cpp
-
 Release/obj/dyn_exe/cl_main.obj : client/cl_main.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/cl_main.obj" client/cl_main.cpp
 
@@ -601,47 +528,6 @@ Release/obj/dyn_exe/cl_view.obj : client/cl_view.cpp $(DEPENDS)
 Release/obj/dyn_exe/console.obj : client/console.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/console.obj" client/console.cpp
 
-OPTIONS = -W3 -O1 -D DEDICATED_ONLY
-
-Release/obj/dedicated/cl_cin.obj : client/cl_cin.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_cin.obj" client/cl_cin.cpp
-
-Release/obj/dedicated/cl_download.obj : client/cl_download.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_download.obj" client/cl_download.cpp
-
-Release/obj/dedicated/cl_ents.obj : client/cl_ents.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_ents.obj" client/cl_ents.cpp
-
-Release/obj/dedicated/cl_fx.obj : client/cl_fx.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_fx.obj" client/cl_fx.cpp
-
-Release/obj/dedicated/cl_input.obj : client/cl_input.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_input.obj" client/cl_input.cpp
-
-Release/obj/dedicated/cl_inv.obj : client/cl_inv.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_inv.obj" client/cl_inv.cpp
-
-Release/obj/dedicated/cl_main.obj : client/cl_main.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_main.obj" client/cl_main.cpp
-
-Release/obj/dedicated/cl_newfx.obj : client/cl_newfx.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_newfx.obj" client/cl_newfx.cpp
-
-Release/obj/dedicated/cl_parse.obj : client/cl_parse.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_parse.obj" client/cl_parse.cpp
-
-Release/obj/dedicated/cl_pred.obj : client/cl_pred.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_pred.obj" client/cl_pred.cpp
-
-Release/obj/dedicated/cl_scrn.obj : client/cl_scrn.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_scrn.obj" client/cl_scrn.cpp
-
-Release/obj/dedicated/cl_view.obj : client/cl_view.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_view.obj" client/cl_view.cpp
-
-Release/obj/dedicated/console.obj : client/console.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/console.obj" client/console.cpp
-
 OPTIONS = -W3 -O1 -D REF_HARD_LINKED
 
 Release/obj/cl_cin.obj : client/cl_cin.cpp $(DEPENDS)
@@ -658,9 +544,6 @@ Release/obj/cl_fx.obj : client/cl_fx.cpp $(DEPENDS)
 
 Release/obj/cl_input.obj : client/cl_input.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/cl_input.obj" client/cl_input.cpp
-
-Release/obj/cl_inv.obj : client/cl_inv.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/cl_inv.obj" client/cl_inv.cpp
 
 Release/obj/cl_main.obj : client/cl_main.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/cl_main.obj" client/cl_main.cpp
@@ -712,12 +595,6 @@ Release/obj/dyn_exe/sys_win.obj : win32/sys_win.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/sys_win.obj" win32/sys_win.cpp
 
 OPTIONS = -W3 -O1 -D DEDICATED_ONLY
-
-Release/obj/dedicated/cd_win.obj : win32/cd_win.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cd_win.obj" win32/cd_win.cpp
-
-Release/obj/dedicated/in_win.obj : win32/in_win.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/in_win.obj" win32/in_win.cpp
 
 Release/obj/dedicated/sys_win.obj : win32/sys_win.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/sys_win.obj" win32/sys_win.cpp
@@ -807,11 +684,6 @@ DEPENDS = \
 
 Release/obj/dyn_exe/ref_vars.obj : client/ref_vars.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/ref_vars.obj" client/ref_vars.cpp
-
-OPTIONS = -W3 -O1 -D DEDICATED_ONLY
-
-Release/obj/dedicated/ref_vars.obj : client/ref_vars.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/ref_vars.obj" client/ref_vars.cpp
 
 OPTIONS = -W3 -O1 -D DYNAMIC_REF
 
@@ -1584,6 +1456,9 @@ Release/obj/dedicated/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
 Release/obj/dedicated/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/q_shared2.obj" qcommon/q_shared2.cpp
 
+Release/obj/dedicated/sv_dedicated.obj : server/sv_dedicated.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/sv_dedicated.obj" server/sv_dedicated.cpp
+
 Release/obj/dedicated/sv_tokenize.obj : server/sv_tokenize.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/sv_tokenize.obj" server/sv_tokenize.cpp
 
@@ -1724,11 +1599,6 @@ DEPENDS = \
 
 Release/obj/dyn_exe/m_flash.obj : game/m_flash.c $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/m_flash.obj" game/m_flash.c
-
-OPTIONS = -W3 -O1 -D DEDICATED_ONLY
-
-Release/obj/dedicated/m_flash.obj : game/m_flash.c $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/m_flash.obj" game/m_flash.c
 
 OPTIONS = -W3 -O1 -D REF_HARD_LINKED
 

@@ -653,7 +653,7 @@ void CL_TrackerTrail (vec3_t start, vec3_t end, int particleColor)
 {
 	vec3_t		move;
 	vec3_t		vec;
-	vec3_t		forward,right,up,angle_dir;
+	vec3_t		forward,right,up;
 	float		len;
 	int			j;
 	particle_t	*p;
@@ -665,8 +665,15 @@ void CL_TrackerTrail (vec3_t start, vec3_t end, int particleColor)
 	len = VectorNormalize (vec);
 
 	VectorCopy(vec, forward);
+#if 0
+	vec3_t		angle_dir;
+	//?? VERY silly way to get "right" and "up" vectors
+	//?? may check ref_gl tcGen environment for another sample
 	vectoangles2 (forward, angle_dir);
 	AngleVectors (angle_dir, forward, right, up);
+#else
+	MakeNormalVectors (forward, right, up);
+#endif
 
 	dec = 3;
 	VectorScale (vec, 3, vec);

@@ -146,7 +146,9 @@ extern glrefdef_t  gl_refdef;	//!! used from gl_frontend.c :: MarkLeaves() only 
 extern drawSpeeds_t gl_speeds;
 
 
-void	GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color);
+void	GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h,
+			float s1 = 0, float t1 = 0, float s2 = 1, float t2 = 1,
+			unsigned color = RGB(1,1,1), byte flipMode = 0);
 void	DrawTextPos (int x, int y, const char *text, unsigned rgba);
 void	DrawTextLeft (const char *text, unsigned rgba);
 void	DrawTextRight (const char *text, unsigned rgba);

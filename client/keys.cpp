@@ -59,21 +59,22 @@ static keyname_t keynames[] =
 	{"End",			K_END},
 
 	// keypad
-	{"KP_Home",		K_KP_HOME},
-	{"KP_UpArrow",	K_KP_UPARROW},
-	{"KP_PgUp",		K_KP_PGUP},
-	{"KP_LeftArrow",K_KP_LEFTARROW},
-	{"KP_5",		K_KP_5},
-	{"KP_RightArrow",K_KP_RIGHTARROW},
+	{"KP_Ins",		K_KP_INS},
 	{"KP_End",		K_KP_END},
 	{"KP_DownArrow",K_KP_DOWNARROW},
 	{"KP_PgDn",		K_KP_PGDN},
-	{"KP_Enter",	K_KP_ENTER},
-	{"KP_Ins",		K_KP_INS},
+	{"KP_LeftArrow",K_KP_LEFTARROW},
+	{"KP_5",		K_KP_5},
+	{"KP_RightArrow",K_KP_RIGHTARROW},
+	{"KP_Home",		K_KP_HOME},
+	{"KP_UpArrow",	K_KP_UPARROW},
+	{"KP_PgUp",		K_KP_PGUP},
 	{"KP_Del",		K_KP_DEL},
 	{"KP_Slash",	K_KP_SLASH},
+	{"KP_Star",		K_KP_STAR},
 	{"KP_Minus",	K_KP_MINUS},
 	{"KP_Plus",		K_KP_PLUS},
+	{"KP_Enter",	K_KP_ENTER},
 
 	// mouse
 	{"Mouse1",	K_MOUSE1},	{"Mouse2",	K_MOUSE2},	{"Mouse3",	K_MOUSE3},
@@ -97,7 +98,6 @@ static keyname_t keynames[] =
 	{"ScrLock",		K_SCRLOCK},
 	{"PrintScrn",	K_PRINTSCRN},	//?? sent only when key is up
 
-	{"KP_Star",		'*'},		// to resolve "unbind *" ambiguity
 	{"Comma",		','},		// because comma used for separating multiple wildcards
 	{"Period",		'.'},
 	{"Semicolon",	';'},		// because a raw semicolon separates commands
@@ -226,30 +226,26 @@ static int completed_count, partial_len;
 static char completeVariants[MAX_COMPLETE_ITEMS][256];
 
 
-// "display": 0 - complete+count, 1 - display
 static void TryComplete (const char *full, int display, char mark)
 {
-	if (!strnicmp (partial_name, full, partial_len))
+	if (strnicmp (partial_name, full, partial_len)) return;
+
+	if (display)
+		Com_Printf ("  "S_GREEN"%c"S_WHITE"  %s\n", mark, full);
+
+	if (!completed_count)	// have not yet completed - just copy string
+		strcpy (completed_name, full);
+	else					// already completed - refine string
 	{
-		if (display) Com_Printf ("  "S_GREEN"%c"S_WHITE"  %s\n", mark, full);
-
-		if (!completed_count)	// have not yet completed - just copy string
-			strcpy (completed_name, full);
-		else					// already completed - refine string
-		{
-			char *s;
-			const char *d;
-
-			s = completed_name;
-			d = full;
-			while (*s == *d++) s++;
-			*s = 0;				// limit with last matched char
-		}
-
-		if (completed_count < MAX_COMPLETE_ITEMS)
-			strcpy (completeVariants[completed_count], full);
-		completed_count++;
+		char *s = completed_name;
+		const char *d = full;
+		while (*s == *d++) s++;
+		*s = 0;				// limit with last matched char
 	}
+
+	if (completed_count < MAX_COMPLETE_ITEMS)
+		strcpy (completeVariants[completed_count], full);
+	completed_count++;
 }
 
 
@@ -260,7 +256,6 @@ static char *Do_CompleteCommand (char *partial)
 	char	*arg1s, arg1[256], *arg2s;	// arg1s -> "arg1 arg2 ..."; arg2s -> "arg2 arg3 ..."
 	char	*name, comp_type;
 	int		file_type;
-	cvar_t	*cvar;
 
 	complete_command[0] = 0;
 	completed_name[0] = 0;
@@ -294,8 +289,7 @@ static char *Do_CompleteCommand (char *partial)
 
 		if (arg2s)
 		{
-			if (strlen (arg2s))
-				return NULL;		// have non-zero 2nd argument
+			if (arg2s[0]) return NULL;		// have non-zero 2nd argument
 
 			// have "command arg1 " (space after arg1)
 
@@ -381,7 +375,7 @@ static char *Do_CompleteCommand (char *partial)
 			if (*arg1s)
 				return NULL;				// arg is not empty
 
-			for (cvar = cvar_vars; cvar; cvar = cvar->next)
+			for (cvar_t *cvar = cvar_vars; cvar; cvar = cvar->next)
 				if (!stricmp (cvar->name, complete_command))
 				{
 					strcpy (completed_name, partial); // "varname "
@@ -442,18 +436,15 @@ static char *Do_CompleteCommand (char *partial)
 
 	for (display = 0; display < 2; display++)
 	{
-		cmdFunc_t *cmd;
-		cmdAlias_t *a;
-
 		completed_count = 0;
 
 		// check for partial match
-		for (cmd = cmdFuncs; cmd; cmd = cmd->next)
+		for (cmdFunc_t *cmd = cmdFuncs; cmd; cmd = cmd->next)
 			TryComplete (cmd->name, display, 'c');
-		for (a = cmdAlias; a; a=a->next)
+		for (cmdAlias_t *a = cmdAlias; a; a = a->next)
 			TryComplete (a->name, display, 'a');
-		for (cvar = cvar_vars; cvar; cvar=cvar->next)
-			TryComplete (cvar->name, display, 'v');
+		for (cvar_t *var = cvar_vars; var; var = var->next)
+			TryComplete (var->name, display, 'v');
 
 		if (!completed_count) return NULL; // not completed
 
@@ -768,8 +759,6 @@ void Key_Init (void)
 		{'\\', '|'}
 	};
 
-	Key_ClearTyping ();
-
 	for (i = 0; i < ARRAY_COUNT(keyShifts); i++)
 		keyshift[i] = i;
 	for (i = 'a'; i <= 'z'; i++)
@@ -975,12 +964,4 @@ void Key_ClearStates (void)
 		key_repeats[key] = 0;
 	}
 	keysDown = 0;
-}
-
-
-void Key_ClearTyping (void)
-{
-	editLine[0] = ']';
-	editLine[1] = 0;
-	editPos = 1;
 }

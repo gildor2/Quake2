@@ -1,41 +1,36 @@
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
    (saved without shot) but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
-- explosions are invisible through non-transparent water (incorrect server-side PVS cull ?)
-- dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
-  (and add support for colors, scrolling etc.)
+- explosions are invisible through non-transparent water (incorrect server-side PVS cull ?) -- should be at least dlights ?? (or not?)
 
 - bugs with deathmatch mode
   - map "dm_dukecity_beta":
     - disco: neon lamp text should not disappear
   ? g_misc.c::SP_light() -- disabled lights with style>=32
 
-- filesystem:
-  - when q2 launched from "release" directory (w/o baseq2 subdir), FS "search paths" will be empty, "dir" command will not work at all
-
 - when sound is busy, error about "command already registered" appears for sound commands
-
-! cannot load map "dog..." in soft: "bad surface extents 272 x XXX" (but GL can ...; seems, ref_soft
-  can't render texture with larger than 256 size ...)
 
 ? game crush in msvcrt.dll (pak loading/unloading/download breaking/map not found)
 ? crush on map change/game load with Anachronox map : crush when door/elevator moving somewhere on level -- absolute pointers ?
 
-- z-buffer bugs with glass floor on omd_map1
-
-- ref_soft/r_poly.c "R_PolygonScanLeft(Right)Edge ()" should be rewritten
-  ("ground3": early - crash, now - lost polygons ...)
-- ref_soft hangs on map "japan" (from Kingpin)
-
 - bug: "game baseq2;unloadpak q2maps;game bad_dir(?);demomap demo1;game baseq2(?);demomap demo1"
   (1st demomap - "cannot load map (q2maps not loaded)", 2nd - "bad map contents (pak loaded, but name cached??)"
 
-ref_oldgl:
-  map passin;map passin (BUGS!!!); map rexro (CRUSH!!!)  (this bug found only for passin -- bad map? no bug when "flushmap 1")
-
-- map team_harbor: PF_SetModel() -- NULL name
-- once: tried to draw main menu cursor with a negative image number (should be 0..15): menu.c :: M_DrawCursor() (added "unsigned"
-  to resolve ?)
+- once: tried to draw main menu cursor with a negative image number (should be 0..15): menu.c :: M_DrawCursor()
 - menus: when renderer changed (with a different resolution!) - menus should be repositioned (fatal errors may appear)
+
+- REF_OLDGL: map passin;map passin (BUGS!!!); map rexro (CRUSH!!!)  (this bug found only for passin -- bad map? no bug when "flushmap 1")
+
+- z-buffer bugs with glass floor on "omd_map1"
+
+- ref_soft:
+  - r_poly.c "R_PolygonScanLeft(Right)Edge ()" should be rewritten ("ground3": early - crash, now - lost polygons ...)
+  - crash on map "japan" (from Kingpin)
+  - cannot load map "dog...": "bad surface extents 272 x XXX" (but GL can ...; seems, ref_soft can't render texture with larger
+    than 256 size ...)
+
+- filesystem:
+  - when q2 launched from "release" directory (w/o baseq2 subdir), FS "search paths" will be empty, "dir" command will not work at all
+
 
 
 UNRECOVARABLE:
@@ -51,8 +46,9 @@ BUGGY MAPS:
   gl and oldgl have different backface culling (gl -- DotProduct(videdir,normal); oldgl -- using BSP only, w/o DotProduct()), this
   map have incorrect normal info for this surface (if look at r_surfinfo, can see: incorrect brushes too - to simplify map navigation ?)
 - "winter" (AQ2) pos(-1023,463,55) dir(0,1,0) - incorrect backface culling in gl (OK in oldgl) (same as "reboot")
-- dirty, map mine4 (baseq2), laser cannon -- when shoot rock, invisible entity painted (should not be entity at all, "hall of mirrors"
+- game=dirty, map "mine4" (baseq2), laser cannon -- when shoot rock, invisible entity painted (should not be entity at all, "hall of mirrors"
   effect appears); check with baseq2 (sp+deathmatch); when do it 2nd time (wall respawned in DM) - all OK
+- "team_harbor" (KP, 3rd-party) - PF_SetModel() -- NULL name
 
 HARDWARE:
 ~~~~~~~~~

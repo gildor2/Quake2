@@ -24,7 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "winquake.h"
 #include "resource.h"
 
-#include "../qcommon/qcommon.h"
 #include "../client/client.h"
 
 // Structure containing functions exported from refresh DLL
@@ -129,7 +128,7 @@ static byte vkToKey[256] = {
 /*50*/		'p',		'q',		'r',		's',		't',		'u',		'v',		'w',
 /*58*/		'x',		'y',		'z',		UNK,		UNK,		UNK,		UNK,		UNK,
 /*60*/		K_KP_INS,	K_KP_END,	K_KP_DOWNARROW,K_KP_PGDN,K_KP_LEFTARROW,K_KP_5,	K_KP_RIGHTARROW,K_KP_HOME,
-/*68*/		K_KP_UPARROW,K_KP_PGUP,	'*',		K_KP_PLUS,	0,			K_KP_MINUS,	K_KP_DEL,	K_KP_SLASH,
+/*68*/		K_KP_UPARROW,K_KP_PGUP,	K_KP_STAR,	K_KP_PLUS,	0,			K_KP_MINUS,	K_KP_DEL,	K_KP_SLASH,
 /*70*/		K_F1,		K_F2,		K_F3,		K_F4,		K_F5,		K_F6,		K_F7,		K_F8,
 /*78*/		K_F9,		K_F10,		K_F11,		K_F12,		K_F13,		K_F14,		K_F15,		K_F16,
 /*80*/		K_F17,		K_F18,		K_F19,		K_F20,		K_F21,		K_F22,		K_F23,		K_F24,
@@ -770,6 +769,7 @@ static bool Vid_LoadRefresh (char *name)
 		re.DrawGetPicSize =	D_Draw_GetPicSize;
 		re.DrawPic =		D_Draw_Pic;
 		re.DrawStretchPic =	D_Draw_StretchPic;
+		re.DrawDetailedPic = D_Draw_StretchPic;
 		re.DrawChar =		D_Draw_Char;
 		re.DrawTileClear =	D_Draw_TileClear;
 		re.DrawFill =		D_Draw_Fill;

@@ -288,8 +288,6 @@ void CL_PredictMovement (void)
 
 	pm.s = cl.frame.playerstate.pmove;
 
-//	SCR_DebugGraph (current - ack - 1, 0);
-
 	// immediately after server frame, there will be 1 Pmove() cycle; till next server frame this
 	// number will be incremented up to (FPS / sv_fps)
 	predicted = false;

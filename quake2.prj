@@ -21,7 +21,6 @@ CLIENT = \
 	$D/cl_ents.cpp \
 	$D/cl_fx.cpp \
 	$D/cl_input.cpp \
-	$D/cl_inv.cpp \
 	$D/cl_main.cpp \
 	$D/cl_newfx.cpp \
 	$D/cl_parse.cpp \
@@ -51,6 +50,8 @@ SERVER = \
 	$D/sv_tokenize.cpp \
 	$D/sv_user.cpp \
 	$D/sv_world.cpp
+DED_CLIENT = \
+	$D/sv_dedicated.cpp
 
 D = qcommon
 COMMON = \
@@ -130,6 +131,10 @@ WIN32_FILES = \
 	$D/sys_win.cpp \
 	$D/vid_dll.cpp \
 	$D/vid_menu.cpp
+DED_WIN32 = \
+	$D/net_wins.cpp \
+	$D/q_shwin.cpp \
+	$D/sys_win.cpp
 
 # Win32 renderer files
 GL_RENDERER  +=  $D/qgl_win.cpp  $D/glw_imp.cpp
@@ -187,6 +192,6 @@ target(shared, $OUTDIR/ref_oldgl, DYN_OLDGL, STATIC DYNAMIC)
 DEFINES = DEDICATED_ONLY
 OBJDIR  = $OUTDIR/obj/dedicated
 
-sources(DEDICATED) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES
+sources(DEDICATED) = $DED_CLIENT $SERVER $COMMON $DED_WIN32 $RES_FILES
 LIBS = winmm wsock32 dinput lib/lib
 target(executable, $OUTDIR/q2ded, DEDICATED, DEDICATED)

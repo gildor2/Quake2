@@ -6,39 +6,46 @@ extern	cvar_t *allow_download_models;
 extern	cvar_t *allow_download_sounds;
 extern	cvar_t *allow_download_maps;
 
+static void RequestNextDownload (void);
 
-//?? players - from baseq2 only ????
-static void DownloadFileName (char *dest, int destlen, const char *fn)
+
+static void DownloadFileName (char *dest, int destlen, const char *filename)
 {
-	if (memcmp (fn, "players", 7) == 0)
-		appSprintf (dest, destlen, "%s/%s", BASEDIRNAME, fn);
+	if (memcmp (filename, "players", 7) == 0)	//?? players - downloaded to baseq2 only
+		appSprintf (dest, destlen, "%s/%s", BASEDIRNAME, filename);
 	else
-		appSprintf (dest, destlen, "%s/%s", FS_Gamedir(), fn);
+		appSprintf (dest, destlen, "%s/%s", FS_Gamedir(), filename);
 }
 
 /*
 ===============
-CL_CheckOrDownloadFile
+CheckOrDownloadFile
 
 Returns true if the file exists, otherwise it attempts
 to start a download from the server.
 ===============
 */
 
+// cache failed downloading names for preventing re-check/re-warning
 #define MAX_CHECK_CACHE		32768
 #define MAX_CHECK_NAMES		512
 static char *checkedNames[MAX_CHECK_NAMES], checkNameCache[MAX_CHECK_CACHE];
 static int numCheckedNames, nextCheckCachePos;
 
 
-bool CL_CheckOrDownloadFile (char *filename)
+static bool CheckOrDownloadFile (const char *fmt, ...)
 {
 	char	name[MAX_OSPATH], name2[MAX_OSPATH], *ext;
 
-	guard(CL_CheckOrDownloadFile);
+	guard(CheckOrDownloadFile);
 
-	Q_CopyFilename (name, filename, sizeof(name));
-	if (!memcmp (filename, "../", 3))
+	va_list	argptr;
+	va_start (argptr, fmt);
+	vsnprintf (ARRAY_ARG(name), fmt, argptr);
+	va_end (argptr);
+
+	Q_CopyFilename (name, name, sizeof(name));		// in-place
+	if (!memcmp (name, "../", 3))					// if trying to leave quake root dir, "../" will be at start
 	{
 		Com_Printf ("Refusing to download a path with ..\n");
 		return true;
@@ -53,17 +60,13 @@ bool CL_CheckOrDownloadFile (char *filename)
 	// prevent from checking the same file twice
 	for (int i = 0; i < numCheckedNames; i++)
 		if (!strcmp (name, checkedNames[i]))
-		{
-//			Com_Printf(S_RED"chk: %s\n", name);//!!
 			return true;	// already checked, return "found" even if not found
-		}
 	// register new name
 	if (numCheckedNames < MAX_CHECK_NAMES)
 	{
 		int len = strlen (name);
 		if (len + nextCheckCachePos + 1 < MAX_CHECK_CACHE)
 		{
-//			Com_Printf(S_GREEN"new: %s\n", name);//!!
 			char *s = checkedNames[numCheckedNames++] = &checkNameCache[nextCheckCachePos];
 			strcpy (s, name);
 			nextCheckCachePos += len + 1;
@@ -78,10 +81,8 @@ bool CL_CheckOrDownloadFile (char *filename)
 			return true;
 	}
 
-	if (FS_FileExists (name))
-	{	// it exists, no need to download
+	if (FS_FileExists (name))	// it exists, no need to download
 		return true;
-	}
 
 	strcpy (cls.downloadname, name);
 
@@ -90,12 +91,9 @@ bool CL_CheckOrDownloadFile (char *filename)
 	// a runt file wont be left
 	appSprintf (ARRAY_ARG(cls.downloadtempname), "%s.tmp", name);
 
-//ZOID
 	// check to see if we already have a tmp for this file, if so, try to resume
 	// open the file if not opened yet
 	DownloadFileName (ARRAY_ARG(name), cls.downloadtempname);
-
-//	FS_CreatePath (name);
 
 	FILE *fp = fopen (name, "r+b");
 	if (fp)
@@ -119,7 +117,7 @@ bool CL_CheckOrDownloadFile (char *filename)
 	cls.downloadnumber++;
 
 	return false;
-	unguardf(("file=%s", filename));
+	unguardf(("file=%s", name));
 }
 
 /*
@@ -153,7 +151,7 @@ void CL_Download_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	CL_CheckOrDownloadFile (filename);
+	CheckOrDownloadFile (filename);
 }
 
 /*
@@ -165,13 +163,11 @@ A download message has been received from the server
 */
 void CL_ParseDownload (void)
 {
-	int		size, percent;
 	char	name[MAX_OSPATH];
-	int		r;
 
 	// read the data
-	size = MSG_ReadShort (&net_message);
-	percent = MSG_ReadByte (&net_message);
+	int size = MSG_ReadShort (&net_message);
+	int percent = MSG_ReadByte (&net_message);
 	if (size == -1)
 	{
 		Com_WPrintf ("Server does not have this file.\n");
@@ -181,7 +177,7 @@ void CL_ParseDownload (void)
 			fclose (cls.download);
 			cls.download = NULL;
 		}
-		CL_RequestNextDownload ();
+		RequestNextDownload ();
 		return;
 	}
 
@@ -197,7 +193,7 @@ void CL_ParseDownload (void)
 		{
 			net_message.readcount += size;
 			Com_WPrintf ("Failed to open %s\n", cls.downloadtempname);
-			CL_RequestNextDownload ();
+			RequestNextDownload ();
 			return;
 		}
 	}
@@ -223,16 +219,15 @@ void CL_ParseDownload (void)
 		// rename the temp file to it's final name
 		DownloadFileName (ARRAY_ARG(oldn), cls.downloadtempname);
 		DownloadFileName (ARRAY_ARG(newn), cls.downloadname);
-		r = rename (oldn, newn);
-		if (r)
-			Com_WPrintf ("failed to rename.\n");
+		if (rename (oldn, newn))
+			Com_WPrintf ("failed to rename \"%s\" to \"%s\"\n", oldn, newn);
 
 		cls.download = NULL;
 		cls.downloadpercent = 0;
 
 		// get another file if needed
 		//?? Is it ALWAYS needed ? Downloading may be initiated with "download" console command
-		CL_RequestNextDownload ();
+		RequestNextDownload ();
 	}
 }
 
@@ -258,11 +253,11 @@ static byte *precache_model;	// used for skin checking in alias models
 
 //!! NOTE: when downloading one of wal/pcx/tga/jpg image formats, or downloading map patch, should
 //!!	   not display error when file absent on server (but texture: error when no image at all).
-//!!	   Make this as flag for CL_CheckOrDownloadFile()
+//!!	   Make this as flag for CheckOrDownloadFile()
 
-void CL_RequestNextDownload (void)
+static void RequestNextDownload (void)
 {
-	guard(CL_RequestNextDownload);
+	guard(RequestNextDownload);
 
 	if (cls.state != ca_connected)
 		return;
@@ -283,14 +278,14 @@ void CL_RequestNextDownload (void)
 			char mapname[MAX_QPATH];
 			strcpy (mapname, s+1);
 			if (s = strrchr (mapname, '.')) *s = 0;
-			if (!CL_CheckOrDownloadFile (va("levelshots/%s.jpg", mapname)))	//??? should download any image (not JPG only) !!
+			if (!CheckOrDownloadFile ("levelshots/%s.jpg", mapname))	//??? should download any image (not JPG only) !!
 				return;
 		}
 	}
 	if (precache_check == DCS_START + 1) {
 		// map patch
 		precache_check = CS_MODELS + 1;		// models[0] is not used
-		if (!CL_CheckOrDownloadFile (va("%s.add", cl.configstrings[CS_MODELS+1])))
+		if (!CheckOrDownloadFile ("%s.add", cl.configstrings[CS_MODELS+1]))
 			return;
 	}
 
@@ -299,7 +294,7 @@ void CL_RequestNextDownload (void)
 		precache_check = CS_MODELS + 2;
 		SCR_SetLevelshot ();
 		if (allow_download_maps->integer)
-			if (!CL_CheckOrDownloadFile(cl.configstrings[CS_MODELS+1]))
+			if (!CheckOrDownloadFile(cl.configstrings[CS_MODELS+1]))
 				return; // started a download
 	}
 
@@ -315,7 +310,7 @@ void CL_RequestNextDownload (void)
 					continue;
 				}
 				if (precache_model_skin == 0) {
-					if (!CL_CheckOrDownloadFile(cl.configstrings[precache_check])) {
+					if (!CheckOrDownloadFile(cl.configstrings[precache_check])) {
 						precache_model_skin = 1;
 						return; // started a download
 					}
@@ -348,7 +343,7 @@ void CL_RequestNextDownload (void)
 				pheader = (dmdl_t *)precache_model;
 
 				while (precache_model_skin - 1 < LittleLong(pheader->numSkins)) {
-					if (!CL_CheckOrDownloadFile((char *)precache_model + LittleLong(pheader->ofsSkins) +
+					if (!CheckOrDownloadFile((char *)precache_model + LittleLong(pheader->ofsSkins) +
 						(precache_model_skin - 1)*MD2_MAX_SKINNAME))
 					{
 						precache_model_skin++;
@@ -381,7 +376,7 @@ void CL_RequestNextDownload (void)
 					precache_check++;
 					continue;
 				}
-				if (!CL_CheckOrDownloadFile(va("sound/%s", cl.configstrings[precache_check++])))
+				if (!CheckOrDownloadFile("sound/%s", cl.configstrings[precache_check++]))
 					return; // started a download
 			}
 		}
@@ -392,7 +387,7 @@ void CL_RequestNextDownload (void)
 	{
 		if (precache_check == CS_IMAGES) precache_check++; // zero is blank
 		while (precache_check < CS_IMAGES+MAX_IMAGES && cl.configstrings[precache_check][0])
-			if (!CL_CheckOrDownloadFile(va("pics/%s.pcx", cl.configstrings[precache_check++])))	//??? not PCX only
+			if (!CheckOrDownloadFile("pics/%s.pcx", cl.configstrings[precache_check++]))	//??? not PCX only
 				return; // started a download
 		precache_check = CS_PLAYERSKINS;
 	}
@@ -434,27 +429,27 @@ void CL_RequestNextDownload (void)
 				{
 				case 0:		// player model
 					precache_check++;
-					if (!CL_CheckOrDownloadFile(va("players/%s/tris.md2", model)))
+					if (!CheckOrDownloadFile("players/%s/tris.md2", model))
 						return;
 					// FALL THROUGH
 				case 1:		// weapon model
 					precache_check++;
-					if (!CL_CheckOrDownloadFile(va("players/%s/weapon.md2", model)))
+					if (!CheckOrDownloadFile("players/%s/weapon.md2", model))
 						return;
 					// FALL THROUGH
 				case 2:		// weapon skin
 					precache_check++;
-					if (!CL_CheckOrDownloadFile(va("players/%s/weapon.pcx", model)))	//??? PCX
+					if (!CheckOrDownloadFile("players/%s/weapon.pcx", model))	//??? PCX
 						return;
 					// FALL THROUGH
 				case 3:		// player skin
 					precache_check++;
-					if (!CL_CheckOrDownloadFile(va("players/%s/%s.pcx", model, skin)))	//??? PCX
+					if (!CheckOrDownloadFile("players/%s/%s.pcx", model, skin))	//??? PCX
 						return;
 					// FALL THROUGH
 				case 4:		// skin_i
 					precache_check++;
-					if (!CL_CheckOrDownloadFile(va("players/%s/%s_i.pcx", model, skin)))	//??? PCX
+					if (!CheckOrDownloadFile("players/%s/%s_i.pcx", model, skin))	//??? PCX
 						return;
 				}
 				// move on to next model
@@ -483,8 +478,7 @@ void CL_RequestNextDownload (void)
 			{
 				static const char *env_suf[6] = {"rt", "bk", "lf", "ft", "up", "dn"};
 				precache_check++;
-				if (!CL_CheckOrDownloadFile(va("env/%s%s.pcx",
-					cl.configstrings[CS_SKY], env_suf[precache_check - DCS_SKY - 1])))	//??? PCX
+				if (!CheckOrDownloadFile("env/%s%s.pcx", cl.configstrings[CS_SKY], env_suf[precache_check - DCS_SKY - 1]))	//??? PCX
 					return; // started a download
 			}
 		precache_check = DCS_TEXTURE;
@@ -505,7 +499,7 @@ void CL_RequestNextDownload (void)
 
 		if (allow_download->integer && allow_download_maps->integer)
 			while (precache_tex < numtexinfo)
-				if (!CL_CheckOrDownloadFile(va("textures/%s.wal", map_surfaces[precache_tex++].rname)))	//??? WAL
+				if (!CheckOrDownloadFile("textures/%s.wal", map_surfaces[precache_tex++].rname))	//??? WAL
 					return; // started a download
 		precache_check = DCS_SKIP_ALL;
 	}
@@ -548,5 +542,5 @@ void CL_Precache_f (int argc, char **argv)
 	precache_model = 0;
 	precache_model_skin = 0;
 
-	CL_RequestNextDownload();
+	RequestNextDownload();
 }

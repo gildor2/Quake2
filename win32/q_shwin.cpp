@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define WIN32_LEAN_AND_MEAN			// exclude rarely-used services from windown headers
 #include <windows.h>
-#include <mmsystem.h>
+#include <mmsystem.h>				// for time services
 
 #include <direct.h>
 #include <io.h>
