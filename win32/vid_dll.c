@@ -831,11 +831,6 @@ void Vid_CheckChanges (void)
 		loaded = false;
 		if (Vid_LoadRefresh (vid_ref->string))
 			loaded = true;
-/*		else
-		{
-			// drop the console if we fail to load a refresh
-			if (cls.key_dest != key_console) Con_ToggleConsole_f ();
-		} */
 		if (!loaded && lastRenderer)
 		{
 			if (Vid_LoadRefresh (lastRenderer))

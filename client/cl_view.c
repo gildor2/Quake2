@@ -42,15 +42,15 @@ cvar_t		*r_drawfps;
 cvar_t		*r_surfinfo;
 
 
-int			r_numdlights;
-dlight_t	r_dlights[MAX_DLIGHTS];
+static int		r_numdlights;
+static dlight_t	r_dlights[MAX_DLIGHTS];
 
-int			r_numentities;
-entity_t	r_entities[MAX_ENTITIES];
+static int		r_numentities;
+static entity_t	r_entities[MAX_ENTITIES];
 
-particle_t	r_particles[MAX_PARTICLES];
+static particle_t	r_particles[MAX_PARTICLES];
 
-lightstyle_t	r_lightstyles[MAX_LIGHTSTYLES];
+static lightstyle_t	r_lightstyles[MAX_LIGHTSTYLES];
 
 char cl_weaponmodels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
 int num_cl_weaponmodels;
@@ -62,7 +62,7 @@ V_ClearScene
 Specifies the model that will be used as the world
 ====================
 */
-void V_ClearScene (void)
+static void V_ClearScene (void)
 {
 	r_numdlights = 0;
 	r_numentities = 0;
@@ -80,6 +80,7 @@ void V_AddEntity (entity_t *ent)
 	if (r_numentities >= MAX_ENTITIES)
 		return;
 	r_entities[r_numentities++] = *ent;
+//	if (!ent->model) re.DrawTextLeft (va("NULL model: %g %g %g from %X", VECTOR_ARG(ent->origin), GET_RETADDR(ent)), RGB(1,1,1));
 }
 
 

@@ -492,7 +492,7 @@ static void CompleteMenuCallback (void *item)
 	char	*s;
 
 	s = completeVariants[((menuAction_t*) item)->generic.localdata[0]];
-	M_ForceMenuOff ();
+	M_PopMenu ();
 
 	editLine[1] = '/';
 	if (complete_command[0])
@@ -527,13 +527,10 @@ static void CompleteMenu (void)
 		if (len > maxLen) maxLen = len;
 	}
 
-	i = viddef.height;
-	if (cls.state != ca_disconnected && cls.state != ca_connecting)
-		i = Q_round (i * scr_con_current);
 	complMenu_h = completed_count * 10 + 8;
 	complMenu_w = maxLen * 8 + 28;
 	completeMenu.x = editPos * 8 + 8;
-	completeMenu.y = i - 22;
+	completeMenu.y = con_height - 22;
 	if (completeMenu.x + complMenu_w > viddef.width)
 		completeMenu.x = viddef.width - complMenu_w;
 	if (completeMenu.y + complMenu_h > viddef.height)
@@ -845,8 +842,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 			M_Menu_Main_f ();
 			break;
 		case key_console:
-			M_Menu_Main_f ();
-			cls.key_dest = key_menu;
+			SCR_ShowConsole (false, false);
 			break;
 		default:
 			Com_FatalError ("Bad cls.key_dest %d", cls.key_dest);

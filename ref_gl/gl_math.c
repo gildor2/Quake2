@@ -231,3 +231,45 @@ bool ProjectToScreen (vec3_t pos, int *scr)
 
 	return true;
 }
+
+
+void SaturateColor3f (vec3_t color)
+{
+	float sat = r_saturation->value;
+	if (sat != 1.0f)
+	{
+		float	r, g, b, light;
+
+		r = color[0] * 255;
+		g = color[1] * 255;
+		b = color[2] * 255;
+		light = (r + g + b) / 3;
+		SATURATE(r,light,sat);
+		SATURATE(g,light,sat);
+		SATURATE(b,light,sat);
+		color[0] = r / 255;
+		color[1] = g / 255;
+		color[2] = b / 255;
+	}
+}
+
+
+void SaturateColor4b (color_t *c)
+{
+	float sat = r_saturation->value;
+	if (sat != 1.0f)
+	{
+		float	r, g, b, light;
+
+		r = c->c[0];
+		g = c->c[1];
+		b = c->c[2];
+		light = (r + g + b) / 3;
+		SATURATE(r,light,sat);
+		SATURATE(g,light,sat);
+		SATURATE(b,light,sat);
+		c->c[0] = Q_round (r);
+		c->c[1] = Q_round (g);
+		c->c[2] = Q_round (b);
+	}
+}

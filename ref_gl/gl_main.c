@@ -738,7 +738,6 @@ static void GL_RenderFrame (refdef_t *fd)
 	vp.lightStyles = fd->lightstyles;
 	vp.time = fd->time;
 
-//DrawTextLeft(va("begin scene: %d ents (%d+) %d dlights (%d+)",fd->num_entities,gl_numEntities,fd->num_dlights,gl_numDlights), RGB(1,0,0));
 	// add entities
 	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.cullEntsBox = gl_speeds.cullEnts2 = gl_speeds.ocullEnts = 0;
 	vp.firstEntity = gl_numEntities;

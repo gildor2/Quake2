@@ -34,9 +34,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "client.h"
 
-float		scr_con_current;	// aproaches scr_con_frac (NOTE: non-static var, used outside for completion menu only)
-static float scr_con_frac;		// 0.0 to 1.0 lines of console to display
-
 qboolean	scr_initialized;	// ready to draw
 
 vrect_t		scr_vrect;			// position of render window on screen
@@ -371,70 +368,8 @@ CVAR_END
 
 
 /*-----------------------------------------------------------------------------
-	Console
+	Console and loading plaque
 -----------------------------------------------------------------------------*/
-
-// Scroll console
-void SCR_RunConsole (void)
-{
-	static int lastConTime = 0;
-	int		currTime, timeDelta;
-
-	// decide on the height of the console
-	if (*re.flags & REF_CONSOLE_ONLY)
-	{
-		cls.key_dest = key_console;
-		scr_con_frac = 1.0;
-		return;
-	}
-
-	if (cls.key_dest == key_console || cls.keep_console)
-		scr_con_frac = bound(con_maxSize->value, 0.1, 1);
-	else
-		scr_con_frac = 0;		// none visible
-
-	currTime = Sys_Milliseconds ();
-	if (lastConTime)
-		timeDelta = currTime - lastConTime;
-	else
-		timeDelta = 0;
-	lastConTime = currTime;
-
-	if (scr_con_frac < scr_con_current)
-	{
-		scr_con_current -= 3 * timeDelta / 1000.0f;
-		if (scr_con_current < scr_con_frac)
-			scr_con_current = scr_con_frac;
-
-	}
-	else if (scr_con_frac > scr_con_current)
-	{
-		scr_con_current += 3 * timeDelta / 1000.0f;
-		if (scr_con_current > scr_con_frac)
-			scr_con_current = scr_con_frac;
-	}
-	else		// console in-place
-		lastConTime = 0;
-}
-
-
-static void DrawConsole (bool allowNotifyArea)
-{
-	if (cls.loading) return;
-
-	Con_CheckResize ();
-	if (scr_con_current)
-	{
-		Con_DrawConsole (scr_con_current);
-	}
-	else if (allowNotifyArea)
-	{
-		if (cls.key_dest == key_game || cls.key_dest == key_message)
-			Con_DrawNotify (true);	// only draw notify in game
-	}
-}
-
-//=============================================================================
 
 static int loadingScrTime;
 static char *map_levelshot;
@@ -485,55 +420,129 @@ void SCR_SetLevelshot2 (void)
 }
 
 
-/*
-==============
-DrawLoading
-==============
-*/
+static float conCurrent = 0;	// aproaches con_desired
 
-
-static void DrawLoading (void)
+static void DrawLoadingAndConsole (bool allowNotifyArea)
 {
-	int		w, h;
+	int		currTime, timeDelta;
+	static int lastConTime = 0;
+	static float conDesired = 0;	// 0.0 to 1.0 lines of console to display
 
-	if (!cls.loading) return;
+	Con_CheckResize ();
 
-	if ((cls.state == ca_active && cl.refresh_prepped) || cls.state == ca_disconnected || cls.key_dest == key_menu)
+	// draw full-screen console in "console-only" mode and exit
+	if (*re.flags & REF_CONSOLE_ONLY)
 	{
-		if (loadingScrTime + 500 < cls.realtime)
-		{
-			cls.loading = false;
-			return;
-		}
-	}
-	else
-		loadingScrTime = cls.realtime;
-
-#define DEV_SHOT_FRAC	4		// part of screen for levelshot when loading in "developer" mode
-	if (developer->integer)
-	{
-		re.DrawStretchPic (0, 0, viddef.width, viddef.height, "conback");
+		cls.key_dest = key_console;
 		Con_DrawConsole (1.0f);
-		if (map_levelshot)
-			re.DrawStretchPic (viddef.width * (DEV_SHOT_FRAC-1) / DEV_SHOT_FRAC, 0,
-				viddef.width / DEV_SHOT_FRAC, viddef.height / DEV_SHOT_FRAC, map_levelshot);
 		return;
 	}
 
-	if (map_levelshot)
+	// decide on the height of the console
+	if (cls.key_dest == key_console || cls.keep_console)
+		conDesired = bound(con_maxSize->value, 0.1, 1);
+	else
+		conDesired = 0;		// none visible
+
+	// scroll console
+	currTime = Sys_Milliseconds ();
+	timeDelta = lastConTime ? currTime - lastConTime : 0;
+	lastConTime = currTime;
+	if (conDesired < conCurrent)
 	{
-		re.DrawStretchPic (0, 0, viddef.width, viddef.height, map_levelshot);
-		//!! DrawLevelshotDetail for GL
-		Con_DrawNotify (false);
+		conCurrent -= 3 * timeDelta / 1000.0f;
+		if (conCurrent < conDesired)
+			conCurrent = conDesired;
+	}
+	else if (conDesired > conCurrent)
+	{
+		conCurrent += 3 * timeDelta / 1000.0f;
+		if (conCurrent > conDesired)
+			conCurrent = conDesired;
+	}
+	else					// console in-place
+		lastConTime = 0;
+
+	// check loading plaque timeout
+	if (cls.loading)
+	{
+		if ((cls.state == ca_active && cl.refresh_prepped) || cls.state == ca_disconnected || cls.key_dest == key_menu)
+		{
+			if (loadingScrTime + 500 < cls.realtime)
+				cls.loading = false;
+		}
+		else
+			loadingScrTime = cls.realtime;
+	}
+
+	if (cls.loading)
+	{
+		if (developer->integer)
+		{
+			// draw full-screen console before loading plaque if in developer mode
+			re.DrawStretchPic (0, 0, viddef.width, viddef.height, "conback");
+			Con_DrawConsole (1.0f);
+#define DEV_SHOT_FRAC	4		// part of screen for levelshot when loading in "developer" mode
+			if (map_levelshot)
+				re.DrawStretchPic (viddef.width * (DEV_SHOT_FRAC-1) / DEV_SHOT_FRAC, 0,
+					viddef.width / DEV_SHOT_FRAC, viddef.height / DEV_SHOT_FRAC, map_levelshot);
+		}
+		else
+		{
+			if (map_levelshot)
+			{
+				re.DrawStretchPic (0, 0, viddef.width, viddef.height, map_levelshot);
+				//!! DrawLevelshotDetail for GL
+				Con_DrawNotify (false);
+			}
+			else
+			{
+				int		w, h;
+
+				re.DrawStretchPic (0, 0, viddef.width, viddef.height, "conback");
+				re.DrawGetPicSize (&w, &h, "loading");
+				re_DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading");
+				Con_DrawNotify (false);
+			}
+		}
+	}
+
+	// draw console
+	if (!cls.loading || !developer->integer)
+		if (conCurrent)
+			Con_DrawConsole (conCurrent);
+		else if (allowNotifyArea)
+		{
+			if (cls.key_dest == key_game || cls.key_dest == key_message)
+				Con_DrawNotify (true);	// only draw notify in game
+		}
+}
+
+
+void SCR_ShowConsole (bool show, bool noAnim)
+{
+	if (*re.flags & REF_CONSOLE_ONLY)
+	{
+		// ignore "show" arg
+		cls.key_dest = key_console;
+		return;
+	}
+
+	if (!show)
+	{
+		cls.key_dest = m_menudepth > 0 ? key_menu : key_game;
+		if (noAnim) conCurrent = 0;
+		if (cls.key_dest != key_menu)
+			CL_Pause (false);
 	}
 	else
 	{
-		re.DrawStretchPic (0, 0, viddef.width, viddef.height, "conback");
-		re.DrawGetPicSize (&w, &h, "loading");
-		re_DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading");
-		Con_DrawNotify (false);
+		cls.key_dest = key_console;
+		if (noAnim) conCurrent = bound(con_maxSize->value, 0.1, 1);	//?? different (may be, not needed)
+		CL_Pause (true);
 	}
 }
+
 
 /*
 ================
@@ -550,6 +559,7 @@ void SCR_BeginLoadingPlaque (void)
 	cls.disable_servercount = cl.servercount;
 
 	M_ForceMenuOff ();
+	SCR_ShowConsole (false, true);
 	SCR_UpdateScreen ();
 }
 
@@ -566,6 +576,7 @@ void SCR_EndLoadingPlaque (bool force)
 		loadingScrTime = 0;
 		map_levelshot = NULL;
 		Con_ClearNotify ();
+		SCR_ShowConsole (false, true);
 	}
 }
 
@@ -634,7 +645,7 @@ void SCR_TileClear (void)
 {
 	int		x1, x2, y1, y2;
 
-	if (scr_con_current == 1.0f || scr_viewsize->integer == 100 || cl.cinematictime > 0) return;
+	if (con_height == viddef.height || scr_viewsize->integer == 100 || cl.cinematictime > 0) return;
 
 	y1 = scr_vrect.y;
 	y2 = y1 + scr_vrect.height;
@@ -1165,7 +1176,7 @@ void SCR_UpdateScreen (void)
 				//  loading plaque over black screen
 				re.SetRawPalette (NULL);
 				re.DrawFill (0, 0, viddef.width, viddef.height, 0);
-				DrawLoading ();
+				DrawLoadingAndConsole (false);
 			}
 			else if (cls.key_dest != key_game && (*re.flags & REF_USE_PALETTE))
 			{
@@ -1178,7 +1189,7 @@ void SCR_UpdateScreen (void)
 				}
 				re.DrawFill (0, 0, viddef.width, viddef.height, 0);
 				if (cls.key_dest == key_console)
-					DrawConsole (false);
+					DrawLoadingAndConsole (false);
 				else
 					M_Draw ();
 			}
@@ -1186,7 +1197,7 @@ void SCR_UpdateScreen (void)
 			{
 				SCR_DrawCinematic ();
 				M_Draw ();
-				DrawConsole (false);
+				DrawLoadingAndConsole (false);
 			}
 		}
 		else
@@ -1241,8 +1252,7 @@ void SCR_UpdateScreen (void)
 			}
 
 			M_Draw ();
-			DrawLoading ();
-			DrawConsole (true);		//!! sometimes console should be painted before menu! (when cls.keep_console)
+			DrawLoadingAndConsole (true);		//!! sometimes console should be painted before menu! (when cls.keep_console)
 		}
 	}
 	re.EndFrame();

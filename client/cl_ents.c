@@ -577,7 +577,7 @@ void CL_ParseFrame (void)
 		if (cls.state != ca_active)
 		{
 			cls.state = ca_active;
-			cls.key_dest = key_game;		// hide console
+			SCR_ShowConsole (false, true);	// hide console
 			M_ForceMenuOff ();				// hide menu
 			cl.force_refdef = true;
 			cl.predicted_origin[0] = cl.frame.playerstate.pmove.origin[0] * 0.125f;
@@ -585,7 +585,7 @@ void CL_ParseFrame (void)
 			cl.predicted_origin[2] = cl.frame.playerstate.pmove.origin[2] * 0.125f;
 			VectorCopy (cl.frame.playerstate.viewangles, cl.predicted_angles);
 			SCR_EndLoadingPlaque (false);	// get rid of loading plaque
-			Cvar_Set ("paused", "0");
+			CL_Pause (false);
 		}
 		cl.sound_prepped = true;			// can start mixing ambient sounds
 

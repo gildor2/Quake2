@@ -236,7 +236,7 @@ void SV_Begin_f (void)
 	Com_DPrintf ("Begin() from %s\n", sv_client->name);
 
 	// handle the case of a level changing while a client was connecting
-	if ( atoi(Cmd_Argv(1)) != svs.spawncount )
+	if (atoi(Cmd_Argv(1)) != svs.spawncount)
 	{
 		Com_Printf ("SV_Begin_f from different level\n");
 		SV_New_f ();
@@ -401,9 +401,8 @@ void SV_Nextserver (void)
 {
 	char	*v;
 
-	//ZOID, ss_pic can be nextserver'd in coop mode
-	if (sv.state == ss_game || (sv.state == ss_pic && !Cvar_VariableInt ("coop")))
-		return;		// can't nextserver while playing a normal game
+	if (sv.state == ss_game)
+		return;			// can't nextserver while playing a normal game
 
 	svs.spawncount++;	// make sure another doesn't sneak in
 	v = Cvar_VariableString ("nextserver");
@@ -473,21 +472,29 @@ SV_ExecuteUserCommand
 void SV_ExecuteUserCommand (char *s)
 {
 	ucmd_t	*u;
+	char	*cmd;
 
 	Cmd_TokenizeString (s, false);		//?? "false" -- disable macro expansion (anti-hack?); can use different TokenizeString()
 	sv_player = sv_client->edict;
 
 //	SV_BeginRedirect (RD_CLIENT);
 
+	cmd = Cmd_Argv(0);
 	for (u = ucmds; u->name ; u++)
-		if (!strcmp (Cmd_Argv(0), u->name))
+		if (!strcmp (cmd, u->name))
 		{
+			guard(SV_ExecuteUserCommand);
 			u->func ();
+			unguardf(("cmd=%s", cmd));
 			break;
 		}
 
 	if (!u->name && sv.state == ss_game)
+	{
+		guard(ge.ClientCommand);
 		ge->ClientCommand (sv_player);
+		unguardf(("cmd=%s", cmd));
+	}
 
 //	SV_EndRedirect ();
 }
@@ -503,7 +510,6 @@ USER CMD EXECUTION
 
 
 void SV_ClientThink (client_t *cl, usercmd_t *cmd)
-
 {
 	cl->commandMsec -= cmd->msec;
 
@@ -531,13 +537,11 @@ void SV_ExecuteClientMessage (client_t *cl)
 	int		c;
 	char	*s;
 
-	usercmd_t	nullcmd;
-	usercmd_t	oldest, oldcmd, newcmd;
-	int		net_drop;
-	int		stringCmdCount;
-	int		checksum, calculatedChecksum;
-	int		checksumIndex;
-	qboolean	move_issued;
+	static usercmd_t nullcmd;	// zero-filled
+	usercmd_t oldest, oldcmd, newcmd;
+	int		net_drop, stringCmdCount;
+	int		checksum, calculatedChecksum, checksumIndex;
+	qboolean move_issued;
 	int		lastframe;
 
 	sv_client = cl;
@@ -547,7 +551,7 @@ void SV_ExecuteClientMessage (client_t *cl)
 	move_issued = false;
 	stringCmdCount = 0;
 
-	while (1)
+	while (true)
 	{
 		if (net_message.readcount > net_message.cursize)
 		{
@@ -591,12 +595,11 @@ void SV_ExecuteClientMessage (client_t *cl)
 				}
 			}
 
-			memset (&nullcmd, 0, sizeof(nullcmd));
 			MSG_ReadDeltaUsercmd (&net_message, &nullcmd, &oldest);
 			MSG_ReadDeltaUsercmd (&net_message, &oldest, &oldcmd);
 			MSG_ReadDeltaUsercmd (&net_message, &oldcmd, &newcmd);
 
-			if ( cl->state != cs_spawned )
+			if (cl->state != cs_spawned)
 			{
 				cl->lastframe = -1;
 				break;

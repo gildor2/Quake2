@@ -365,6 +365,7 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 				dst++;
 			}
 		}
+		//!! WARNING: lightmap is not saturated here
 		GL_Bind (dl->block->image);
 		glTexSubImage2D (GL_TEXTURE_2D, 0, dl->s, dl->t, dl->w, dl->h, GL_RGBA, GL_UNSIGNED_BYTE, pic);
 		gl_speeds.numUploads++;
@@ -417,6 +418,7 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 			v->c.c[0] = r;
 			v->c.c[1] = g;
 			v->c.c[2] = b;
+			SaturateColor4b (&v->c);		//?? better - saturate "dl->source[]"
 		}
 		// apply vertex dlights
 		if (dlightMask)

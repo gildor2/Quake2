@@ -8,6 +8,12 @@ FAST TODO:
   (at least, try it !)
 4) try to use gl_ent.origin instead of gl_ent.center for lighting when out-of-world
   (may fix black dead bodies, black gun, zaero/lox positron explosion ...)
+- saturation: should saturate (or apply gl_lightmap==2) dynamicLightmap->source[] -- this will automatically saturate slow lightstyles
+  and vertex lights, but will require additional memory (currently: dl->source[] is a pointer to loaded bspfile)
+  - current bug: map "base1" - starting roo have 3+ "slow" lightstyles, which will produce incorrect lightmaps with saturation != 1
+  - when will be implemented, check all SaturateColor... in gl_lightmap.c (at least, remove from vertex lighting)
+  - saturate lightmap textures with tables (see gl_image.c::LightScaleTexture()) - separate TableSaturate() (name?) function in
+    gl_images.c (may be, move to gl_math.c)
 
 -------------------------------------------------------------------------------
 	new lightgrid:
@@ -98,8 +104,6 @@ lighting bugs:
   !? try vertex light on water
   ? minlight
   - R_LightPoint
-  - saturate lights (when r_lightmap==3 - with "-1" ?)
-    + check lighting with saturation == 0, == -1
   ? subdivide large surface lights (or trace additional points) when computing light (really, more complex task ...)
   ? weapon model for 3rd person entities: use light from main entity (compute 1 point instead of 2 -- ~2x speedup)
   - do not trace model->light when both placed in the same leaf: leafs are convex, so - no way to occlude by bsp object
@@ -160,8 +164,7 @@ lighting bugs:
 - flares:
   ! autoflares: should combine bsp-divided surfaces onto a single flare (combine by parent brush ?)
   ? correct fov
-  ? flare image have visible square (when its color is saturated)
-  - saturate flares
+  ?? flare image have visible square (when its color is saturated) -- not with ATI, check NV (GF5+TNT)
   - implement with GL_NV_occlusion_query (and flare option: off, software, hardware);
     test should be performed after whole 3D world is out from backend
 
@@ -183,7 +186,7 @@ Colors:
   ? need to modulate dlight color/alpha (check Q3)
   ! overbright particles (use identityLight) or particle color table
   - saturate particles
-  ? saturate beams, vertex light (envmaps ?), directional lights
+  ? saturate beams
   - saturate tbl_8to32 (and make separate color table for color >> overbright ??) -- and do not saturate .pcx and .wal
     textures (faster map loading ?)
 

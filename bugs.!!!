@@ -1,15 +1,14 @@
 ! map "urban_wreckage", {147, 1149, -66}: sky may be clipped by frustum incorrectly
 
-- after timedemo in game (in demo too ...), can receive "server is out" state
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
    (saved without shot) but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?)
-! sometimes key_up skipped (or key_down spontaneously pressed) (Win2K bug ?)
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
 - notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move crouched)
 - when gl_clear=1, cinematics is not displayed (requires GL_BeginFrame before DrawStretchRaw(); currently BeginFrame code executed
-  immediately after GL_EndFrame from backend command buffer)
+  immediately after GL_EndFrame from backend command buffer, but DrawStretchRaw() called BEFORE GL_EndFrame -- EndFrame will erase raw
+  drawings)
 
 - bugs with deathmatch mode
   - map "dm_dukecity_beta":
@@ -21,10 +20,10 @@
 ! cannot load map "dog..." in soft: "bad surface extents 272 x XXX" (but GL can ...; seems, ref_soft
   can't render texture with larger than 256 size ...)
 ! map "toomuchbloodv2": sound "dmg/TISM.wav" loaded twice (upper- and lowercase)
+  + add mask support for soundlist
 
 ? game crush in msvcrt.dll (pak loading/unloading/download breaking/map not found)
-? crush on map change/game load (cl_predict, CM_TransformedPointContents2(); bad leaf pointer ?)
-  (Anachronox: crush when door/elevator moving somewhere on level -- absolute pointers)
+? crush on map change/game load with Anachronox map : crush when door/elevator moving somewhere on level -- absolute pointers ?
 
 - z-buffer bugs with glass floor on omd_map1
 
@@ -32,7 +31,6 @@
   ("ground3": early - crash, now - lost polygons ...)
 - ref_soft hangs on map "japan" (from Kingpin)
 
-? once game was crushed (after singleplayer) with Z_FreeTags(TAG_LEVEL): zero in chain
 - bug: "game baseq2;unloadpak q2maps;game bad_dir(?);demomap demo1;game baseq2(?);demomap demo1"
   (1st demomap - "cannot load map (q2maps not loaded)", 2nd - "bad map contents (pak loaded, but name cached??)"
 
@@ -42,3 +40,10 @@ ref_oldgl:
 - map team_harbor: PF_SetModel() -- NULL name
 - once: tried to draw main menu cursor with a negative image number (should be 0..15): menu.c :: M_DrawCursor() (added "unsigned" to
   resolve ?)
+
+
+UNRECOVARABLE:
+~~~~~~~~~~~~~~
+- rogue demo3: ".../items/defender/tris..." - linked NULL-model entity (modelindex2 > max available model index)
+  reason: old rogue used linked model ".../shell/...", but link was created using "modelindex|0x80"; now rogue is new, but this
+  demo was recorded using this buggy game

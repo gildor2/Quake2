@@ -1430,6 +1430,10 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 			switch (e->model->type)
 			{
+			case MODEL_UNKNOWN:
+				if (developer->integer)
+					DrawText3D (e->origin, va("no model: %s", e->model->name), RGB(1,0,0));
+				break;
 			case MODEL_INLINE:
 				{
 					inlineModel_t *im;
@@ -1980,6 +1984,9 @@ void GL_AddEntity (entity_t *ent)
 		// model-specific code and calculate model center
 		switch (ent->model->type)
 		{
+		case MODEL_UNKNOWN:
+			VectorCopy (ent->origin, out->origin);
+			break;
 		case MODEL_INLINE:
 			{
 				inlineModel_t *im;
@@ -2056,6 +2063,11 @@ void GL_AddEntity (entity_t *ent)
 		VectorCopy (ent->size, out->boxSize);
 		AnglesToAxis (ent->angles, out->boxAxis);
 		out->shaderColor.rgba = ent->color.rgba;
+	}
+	else
+	{
+		// unknown entity type: copy origin for displaying warning in 3D
+		VectorCopy (ent->origin, out->origin);
 	}
 
 	gl_speeds.ents++;

@@ -479,6 +479,7 @@ extern refExport_t re;			// interface to refresh .dll
 
 void CL_Init (void);
 
+void CL_Pause (qboolean enable);
 void CL_FixUpGender(void);
 void CL_Disconnect (void);
 void CL_Disconnect_f (void);
@@ -541,6 +542,7 @@ void CL_Download_f (void);
 //
 void SCR_SetLevelshot (char *name);		// give exact levelshot name
 void SCR_SetLevelshot2 (void);			// compute name from map name
+void SCR_ShowConsole (bool show, bool noAnim);
 
 //
 // cl_view.c
@@ -591,6 +593,7 @@ void M_Draw (void);
 void M_Menu_Main_f (void);
 void M_ForceMenuOff (void);
 void M_ForceMenuOn (void);
+void M_PopMenu (void);
 void M_AddToServerList (netadr_t adr, char *info);
 
 //

@@ -78,4 +78,7 @@ bool GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2],
 bool ProjectToScreen (vec3_t pos, int *scr);
 
 
+void SaturateColor3f (vec3_t color);
+void SaturateColor4b (color_t *c);
+
 #endif

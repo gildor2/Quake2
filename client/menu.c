@@ -115,8 +115,7 @@ void M_PushMenu (void (*draw) (void), const char *(*key) (int k))
 {
 	int		i;
 
-	if (Cvar_VariableInt ("maxclients") == 1 && Com_ServerState ())
-		Cvar_Set ("paused", "1");
+	CL_Pause (true);
 
 	// if this menu is already present, drop back to that level
 	// to avoid stacking menus by hotkeys
@@ -153,7 +152,7 @@ void M_ForceMenuOff (void)
 	cls.key_dest = key_game;
 	m_menudepth = 0;
 	Key_ClearStates ();
-	Cvar_Set ("paused", "0");
+	CL_Pause (false);
 }
 
 void M_ForceMenuOn (void)
@@ -3313,7 +3312,7 @@ void M_Draw (void)
 	if (!cls.keep_console)	// do not blend whole screen when small menu painted
 	{
 		// dim everything behind it down
-		if (cl.cinematictime > 0)
+		if (cl.cinematictime > 0)	//?? no menus while cinematics
 			re.DrawFill (0, 0, viddef.width, viddef.height, 0);
 		else
 			re.DrawFill2 (0, 0, viddef.width, viddef.height, 0, 0, 0, 0.5);

@@ -76,7 +76,8 @@ START_PROFILE2(FindModel::Load, name)
 	len = FS_LoadFile (name2, (void**)&file);
 	if (!file)
 	{
-		modelCount--;	// free slot
+//		modelCount--;	// free slot
+		m->type = MODEL_UNKNOWN;
 		Com_DPrintf ("R_FindModel: %s not found\n", name2);
 		return NULL;	// file not found
 	}
@@ -149,6 +150,7 @@ static void LoadFlares (lightFlare_t *data, int count)
 		out->size = data->size;
 		out->radius = data->radius;
 		out->color.rgba = *((unsigned*)data->color) | RGBA(0,0,0,1);
+		SaturateColor4b (&out->color);
 		out->style = data->style;
 		out->leaf = GL_PointInLeaf (data->origin);
 		if (data->model)
@@ -189,7 +191,6 @@ static void BuildSurfFlare (surfaceCommon_t *surf, color_t *color, float intens)
 	f->leaf = NULL;
 	f->size = sqrt (intens) * 3;
 	f->radius = 0;
-	f->color.rgba = color->rgba | RGBA(0,0,0,1);
 	f->style = 0;
 
 	c[0] = color->c[0];
@@ -199,6 +200,8 @@ static void BuildSurfFlare (surfaceCommon_t *surf, color_t *color, float intens)
 	f->color.c[0] = Q_round (c[0]);
 	f->color.c[1] = Q_round (c[1]);
 	f->color.c[2] = Q_round (c[2]);
+	f->color.c[3] = 255;				// A
+	SaturateColor4b (&f->color);
 
 	f->next = map.flares;
 	map.flares = f;
@@ -226,6 +229,8 @@ static void LoadSlights (slight_t *data, int count)
 		out->spotDot = data->spotDot;
 		out->focus = data->focus;
 		out->fade = data->fade;
+
+		SaturateColor3f (out->color);
 
 		// move away lights from nearby surfaces to avoid precision errors during computation
 		for (j = 0; j < 3; j++)
@@ -291,6 +296,8 @@ static void BuildSurfLight (surfacePlanar_t *pl, color_t *color, float area, flo
 	sl->color[0] *= sl->color[0];
 	sl->color[1] *= sl->color[1];
 	sl->color[2] *= sl->color[2];
+
+	SaturateColor3f (sl->color);
 
 	pl->light = sl;
 }
@@ -1475,7 +1482,7 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 			if (index > 0)
 				shader = surf->shaders[0];		// better than default shader
 			else
-				shader = gl_defaultShader;
+				shader = GL_FindShader ("*identityLight", SHADER_SKIN); // white + diffuse lighting
 		}
 	}
 	// set the shader
@@ -1657,7 +1664,7 @@ static void Modellist_f (void)
 {
 	model_t	*m;
 	int		i;
-	static char *modelTypes[] = {"inl", "sp2", "md3"};	// see modelType_t
+	static char *modelTypes[] = {"^1unk", "inl", "^5sp2", "^2md3"};	// see modelType_t
 
 	Com_Printf ("-----type-name---------\n");
 	for (i = 0, m = modelsArray; i < modelCount; i++, m++)
@@ -1671,6 +1678,7 @@ static void FreeModel (model_t *m)
 {
 	switch (m->type)
 	{
+	case MODEL_UNKNOWN:
 	case MODEL_INLINE:
 		break;		// nothing to free
 	case MODEL_MD3:

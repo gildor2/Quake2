@@ -45,29 +45,6 @@ refImport_t ri;
 
 //============================================================================
 
-unsigned ColorBytes3 (float r, float g, float b)
-{
-	unsigned	i;
-
-	((byte *)&i)[0] = r * 255.0f;
-	((byte *)&i)[1] = g * 255.0f;
-	((byte *)&i)[2] = b * 255.0f;
-
-	return i;
-}
-
-unsigned ColorBytes4 (float r, float g, float b, float a)
-{
-	unsigned	i;
-
-	((byte *)&i)[0] = r * 255.0f;
-	((byte *)&i)[1] = g * 255.0f;
-	((byte *)&i)[2] = b * 255.0f;
-	((byte *)&i)[3] = a * 255.0f;
-
-	return i;
-}
-
 float NormalizeColor (const vec3_t in, vec3_t out)
 {
 	float	m, denom;

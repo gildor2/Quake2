@@ -113,7 +113,7 @@ MODEL SYSTEM:
 DINPUT MOUSE BUGS/NOTES:
 - add MOUSE4 ?
 - check DirectInput8
-! add mouse cursor hiding (not always disappear with DInput after deactivate+activate); now to hide cursor: "in_mouse 1;in_mouse 2"
+? add mouse cursor hiding (not always disappear with DInput after deactivate+activate); now to hide cursor: "in_mouse 1;in_mouse 2"
 
 ? command for hiding files from pak: "pakhide <pakname> <filemask>" - non-reversive command, changes (be sure non-destructive
   for alpha-sort names) files info so it will not found on next requests
@@ -136,7 +136,7 @@ BSP:
 - memory leak 4096 bytes (map rexro/discon/vid_res/STATS/beachassault/rexro/discon/vid_res/STATS)
 - script comments stripper: removes '//' and '/* ... */' comments from each line (should remove from script only) AND
   '/*' will work as '//' when no corresponding '*/' (for example, cmd "map /*lightmap1" will work as "map ", but when mapname
-  is quoted - works fine)
+  is quoted - works fine) -- do not remove comments from console command line ?
 
 ! add materials: glass, grass, sand
 ? make atmospheric effects (some maps in kingpin and halflife does, Q3F too ...)
@@ -181,6 +181,7 @@ BSP:
   be 125 (8ms) (really, 170 -- not 200!)); improve: move FPS control to CommonFrame(): we can know, how much can Sleep()
   (CHECK: may be, current implementation is correct -- can't get exact maxfps, when fps is large -- 1ms->1000fps, 2ms->500fsp:
   small difference in ms, large in fps)
+- server: when loading, ignore timescale (state is always ss_game, but clients are not spawned)
 
 --------- REF_GL (new) -----------
 
@@ -197,6 +198,8 @@ BSP:
 ? place LoadMd2 outside ref_xxx and perform lovercase for a skin names
 ! fog occlusion (for global fog) -- implement it like sky (occluded surface -> sky surface, sky -> fog color);
   may look at Alice (additional clip plane to 4 frustum planes)
+- detail textures + magnify filter (i.e. advmame2x -- check its name!) - use file "detail.lst" (?) wich will specify detail+filter
+  for Q2 (KP) textures
 
 ------------ SOUND ---------------
 
@@ -240,7 +243,6 @@ BSP:
 -------------- FS ----------------
 
 - "fs_debug 2": profile FS_LoadFile(), monitor cvar change and when set to 0 -> "loaded %d files %d bytes in %.2f seconds"
-??!! zipped (??) file cache (controlled with cvar "fs_cacheSize" [Mb]) (can attach buffer to packFile_t struc)
 - add FS_FOpenFileEx(name, mode), where mode is READ/WRITE/OSREAD (no PAK support)/ZWRITE (gzip compression)
 ? FILE2 -> STREAM, isZipped -> funcRead / funcWrite / funcClose / funcOpen (??)
 
@@ -253,7 +255,7 @@ BSP:
 *? Z_DEBUG: make following (#ifdef Z_DEBUG)
   - #define Z_BlockMalloc(size) Z_TagMalloc(size,0)
   - #define Z_Malloc(size) Z_TagMalloc(size,0)
-  - add "void *caller_addr" to zblock_t and fill it in Z_TagMalloc with a return address
+  * add "void *caller_addr" to zblock_t and fill it in Z_TagMalloc with a return address
     == "*((int*)first_param - 1)"
   - make checking memory in "z_stats" (show damaged block info's - size, caller address ...)
     anbd Z_Free()
@@ -262,7 +264,7 @@ BSP:
 
 ? make AllocChainBlock() will try to use free space of PREVIOUS blocks when current (last) is full
 
-- make zip/* big-endian compatible
+- make zip.c big-endian compatible
 ? update JPEG code (new version)
 
 !? add Python virtual machine (game library, inline map scripts)
@@ -270,10 +272,12 @@ BSP:
 ------------- CVARS --------------
 
 ? cvarclear - clear all archive flags from cvars, which was not created with quake2 (created with "set <var> <value> a" command)
-? cvar_mon varname [message]  - monitor cvar on screen (default message = varname)
-? cvar_unmon varname  - stop monitor for cvar
+?? cvar_mon varname [message]  - monitor cvar on screen (default message = varname)
+?? cvar_unmon varname  - stop monitor for cvar
 ? completion cvarnames after "set", "toggle", "add" (etc.) and "...$varname"
   (add flags for Cmd_AddCommand() - complete type: cvar, map, demo ... ???)
+  ? add special arg (or value for argv[1]) for command - to get completion type ("maps/*.bsp", "demos/*.dm*", "cvars:*", "bindings:*" ...)
+    ? check HL2 - how implemented there
 ? make completion "dir"-like formatting + colorizing against char-marks (types)
 
 ------------- LINUX --------------

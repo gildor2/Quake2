@@ -2182,7 +2182,7 @@ the female events are there for backwards compatability
 extern struct sfx_s	*cl_sfx_footsteps[4];
 extern struct sfx_s	*cl_sfx_footsteps2[9*4];
 extern struct sfx_s	*cl_sfx_fallshort2[9];
-extern struct sfx_s	*cl_sfx_spectator[4];
+//?? extern struct sfx_s	*cl_sfx_spectator[4];
 extern struct sfx_s	*cl_sfx_camper[9];
 
 

@@ -76,7 +76,7 @@ static void Shaderlist_f (void)
 	for (i = 0; i < shaderCount; i++)
 	{
 		shader_t *sh;
-		char	*lmInfo;
+		char	*lmInfo, *color;
 
 		sh = shadersArray[i];
 		if (mask && !MatchWildcard2 (sh->name, mask, true)) continue;
@@ -96,8 +96,15 @@ static void Shaderlist_f (void)
 		default:
 			lmInfo = va("%d", sh->lightmapNumber);
 		}
-		Com_Printf ("%-3d %d  %s %2s %-2g %3s  %s%s\n", i, sh->numStages, boolNames[sh->fast], lmInfo,
-			sh->sortParam, shTypes[sh->type], sh->name, badNames[sh->bad]);
+		if (sh->style & SHADER_WALL)
+			color = "^2";
+		else if (sh->style & SHADER_SKIN)
+			color = "^6";
+		else
+			color = "";
+
+		Com_Printf ("%-3d %d  %s %2s %-2g %3s  %s%s%s\n", i, sh->numStages, boolNames[sh->fast], lmInfo,
+			sh->sortParam, shTypes[sh->type], color, sh->name, badNames[sh->bad]);
 	}
 	Com_Printf ("Displayed %d/%d shaders\n", n, shaderCount);
 }
@@ -569,10 +576,16 @@ shader_t *GL_FindShader (char *name, int style)
 	if (style & SHADER_ENVMAP && !gl_reflImage)	// remove reflection if nothing to apply
 		style &= ~SHADER_ENVMAP;
 
-	if (style & SHADER_LIGHTMAP && gl_singleShader->integer && name[0] != '*')
+	// debug: gl_singleShader
+	if (gl_singleShader->integer && name[0] != '*')
 	{
-		style &= ~SHADER_ANIM;	// no animation in this mode
-		name = "*default";		// use this image
+		if (style & SHADER_LIGHTMAP)
+		{
+			style &= ~SHADER_ANIM;	// no animation in this mode
+			name = "*default";		// use this image
+		}
+		else if (style & SHADER_SKIN && gl_singleShader->integer == 2)
+			name = "*default";
 	}
 
 	Q_CopyFilename (name2, name, sizeof(name2));

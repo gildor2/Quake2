@@ -33,10 +33,6 @@ void	SCR_DebugGraph (float value, int color);
 
 void	SCR_TouchPics (void);
 
-void	SCR_RunConsole (void);
-
-extern	float		scr_con_current;
-
 extern	int			sb_lines;
 
 extern	cvar_t		*scr_viewsize;

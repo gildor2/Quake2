@@ -59,6 +59,7 @@ int		editPos;
 
 
 qboolean con_initialized;
+int		con_height;
 
 // WRAP_CHAR will be placed as "soft" line-feed instead of a space char
 #define		WRAP_CHAR	(' ' + 32)
@@ -108,25 +109,7 @@ void Con_ToggleConsole_f (void)
 
 	Key_ClearTyping ();
 	Con_ClearNotify ();
-
-	if (cls.key_dest == key_console)
-	{
-		// hide console
-		if (m_menudepth)
-			cls.key_dest = key_menu;		// switch back to menu
-		else
-		{
-			Cvar_Set ("paused", "0");		// switch to game
-			cls.key_dest = key_game;
-		}
-	}
-	else
-	{
-		// show console
-		cls.key_dest = key_console;
-		if ((Cvar_VariableInt ("maxclients") == 1 && Com_ServerState ()) || cl.attractloop)
-			Cvar_Set ("paused", "1");
-	}
+	SCR_ShowConsole ((bool)(cls.key_dest != key_console), false);
 }
 
 
@@ -653,14 +636,14 @@ void Con_DrawConsole (float frac)
 	static const char version[] = APPNAME " v" STR(VERSION);
 
 	lines = Q_round (viddef.height * frac);
-	if (lines <= 0)
-		return;
+	con_height = lines;
+	if (lines <= 0) return;
 
 	if (lines > viddef.height)
 		lines = viddef.height;
 
 	// draw the background
-	re.DrawFill2 (0, 0, viddef.width, lines, 0, 0, 0, 0.5);
+	re.DrawFill2 (0, 0, viddef.width, lines, 0, 0, 0.02, 0.5);
 
 	// Variables for console-only mode
 	dx = viddef.width >> 3;

@@ -178,8 +178,6 @@ typedef float vec3_t[3];
 
 extern vec3_t vec3_origin;
 
-unsigned ColorBytes3 (float r, float g, float b);
-unsigned ColorBytes4 (float r, float g, float b, float a);
 float NormalizeColor (const vec3_t in, vec3_t out);
 float NormalizeColor255 (const vec3_t in, vec3_t out);
 

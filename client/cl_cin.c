@@ -480,9 +480,9 @@ void SCR_PlayCinematic (char *arg)
 
 	Huff1TableInit ();
 
-	// switch up to 22 khz sound if necessary
+	// switch to cinematic sound rate if it is higher then current one
 	old_khz = Cvar_VariableInt ("s_khz");
-	if (old_khz != cin.s_rate / 1000)
+	if (old_khz < cin.s_rate / 1000)
 	{
 		cin.restart_sound = true;
 		Cvar_SetInteger ("s_khz", cin.s_rate / 1000);

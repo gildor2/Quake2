@@ -3,6 +3,7 @@
 
 
 extern qboolean con_initialized;
+extern int con_height;
 
 
 void Con_DrawCharacter (int cx, int line, int num);

@@ -395,16 +395,19 @@ void CL_ForwardToServer_f (void)
 CL_Pause_f
 ==================
 */
-void CL_Pause_f (void)
-{
-	// never pause in multiplayer
-	if ((Cvar_VariableInt ("maxclients") > 1 && !cl_cheats) || !Com_ServerState ())
-	{
-		Cvar_SetInteger ("paused", 0);
-		return;
-	}
 
-	Cvar_SetInteger ("paused", !cl_paused->integer);
+void CL_Pause (qboolean enable)
+{
+	if ((Cvar_VariableInt ("maxclients") == 1 || cl_cheats) && Com_ServerState () || cl.attractloop)
+		Cvar_SetInteger ("paused", enable);
+	else
+		Cvar_SetInteger ("paused", 0);
+}
+
+
+static void CL_Pause_f (void)
+{
+	CL_Pause (!cl_paused->integer);
 }
 
 /*
@@ -1671,10 +1674,13 @@ void CL_Frame (float msec, int realMsec)
 	if (!timedemo->integer)			// ignore cl_maxfps in timedemo
 	{
 		// here extratime can be accumulated between frames
-		if (cls.state == ca_connected && extratime < 0.1f)
-			return;					// don't flood packets out while connecting ??
 		if (cl_maxfps->integer > 0 && extratime_real < 1000.0f / cl_maxfps->value)	// ignore when cl_maxfps==0
 			return;					// framerate is too high
+		if (cls.state == ca_connected && extratime < 0.1f)
+		{
+			SCR_UpdateScreen ();
+			return;					// don't flood packets out while connecting
+		}
 	}
 
 	IN_Frame ();
@@ -1731,7 +1737,6 @@ void CL_Frame (float msec, int realMsec)
 
 	// advance local effects for next frame
 	SCR_RunCinematic ();
-	SCR_RunConsole ();
 
 	if (log_stats->integer && cls.state == ca_active)
 	{

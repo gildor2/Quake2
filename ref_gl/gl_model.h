@@ -270,6 +270,7 @@ typedef struct
 /*---------------- Models ------------------*/
 
 typedef enum {
+	MODEL_UNKNOWN,
 	MODEL_INLINE,
 	MODEL_SP2,
 	MODEL_MD3
@@ -282,7 +283,7 @@ typedef struct model_s
 	char	name[MAX_QPATH];
 
 	modelType_t	type;
-	union {
+	union {								// MODEL_UNKNOWN: NULL in this field
 		inlineModel_t	*inlineModel;	// MODEL_INLINE
 		sp2Model_t		*sp2;			// MODEL_SP2
 		md3Model_t		*md3;			// MODEL_MD3

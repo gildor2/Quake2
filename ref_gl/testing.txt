@@ -12,3 +12,4 @@
 - img_reload <mask> -- reload all matched images (system images and images, which names are started with '*', not reloaded)
 - gl_labels == 2 -> show occluded ent labels
 - gl_showLights == 2 -> display spotlight intensities
+- gl_singleShader == 1 -> default shader for world; == 2 -> for skins too
