@@ -490,7 +490,7 @@ static bool GLimp_SetPixelFormat (void)
 	if ( stereo->integer )
 	{
 		Com_Printf ("...attempting to use stereo\n");
-		pfd.dwFlags |= PFD_STEREO;
+		pfdBase.dwFlags |= PFD_STEREO;
 		gl_state.stereo_enabled = true;
 	}
 	else
@@ -499,33 +499,34 @@ static bool GLimp_SetPixelFormat (void)
 	}
 */
 
-	pfd = pfdBase;
 	if (glw_state.minidriver)
 	{
-		if ((pixelformat = wglChoosePixelFormat (glw_state.hDC, &pfd)) == 0)
+		if ((pixelformat = wglChoosePixelFormat (glw_state.hDC, &pfdBase)) == 0)
 		{
 			Com_WPrintf ("GLimp_Init() - wglChoosePixelFormat failed\n");
 			return false;
 		}
-		if (wglSetPixelFormat (glw_state.hDC, pixelformat, &pfd) == FALSE)
+		if (wglSetPixelFormat (glw_state.hDC, pixelformat, &pfdBase) == FALSE)
 		{
 			Com_WPrintf ("GLimp_Init() - wglSetPixelFormat failed\n");
 			return false;
 		}
+		wglDescribePixelFormat (glw_state.hDC, pixelformat, sizeof(pfd), &pfd);
 	}
 	else
 	{
-		if ((pixelformat = ChoosePixelFormat (glw_state.hDC, &pfd)) == 0)
+		if ((pixelformat = ChoosePixelFormat (glw_state.hDC, &pfdBase)) == 0)
 		{
 			Com_WPrintf ("GLimp_Init() - ChoosePixelFormat failed\n");
 			return false;
 		}
-		if (SetPixelFormat (glw_state.hDC, pixelformat, &pfd) == FALSE)
+		if (SetPixelFormat (glw_state.hDC, pixelformat, &pfdBase) == FALSE)
 		{
 			Com_WPrintf ("GLimp_Init() - SetPixelFormat failed\n");
 			return false;
 		}
 
+		DescribePixelFormat (glw_state.hDC, pixelformat, sizeof(pfd), &pfd);
 		if (!(pfd.dwFlags & PFD_GENERIC_ACCELERATED))
 		{
 			extern cvar_t *gl_allow_software;
@@ -558,7 +559,6 @@ static bool GLimp_SetPixelFormat (void)
 	}
 
 	// print out PFD specifics
-	DescribePixelFormat (glw_state.hDC, pixelformat, sizeof(pfd), &pfd);
 	Com_Printf ("GL PFD: color(%d-bits) Z(%d-bit)\n", pfd.cColorBits, pfd.cDepthBits);
 	return true;
 }

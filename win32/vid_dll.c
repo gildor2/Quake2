@@ -374,10 +374,13 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		break;
 
 	case WM_SYSCOMMAND:
-		if (wParam == SC_SCREENSAVE)
-			return 0;
-		if (wParam == SC_KEYMENU)	// disable activating window menu with keyboard
-			return 0;
+		switch (wParam)
+		{
+			case SC_SCREENSAVE:		// disable screensaver
+			case SC_MONITORPOWER:	// disable monitor power managemment
+			case SC_KEYMENU:		// disable activating window menu with keyboard
+				return 0;
+		}
 		break;
 
 	case WM_SYSKEYDOWN:
@@ -850,10 +853,13 @@ void Vid_CheckChanges (void)
 		}
 		if (!loaded)
 		{
+			// cannot load renderer - try software mode
 			if (!strcmp (vid_ref->string, "soft") || !Vid_LoadRefresh ("soft"))
 				Com_FatalError ("Couldn't fall back to software refresh");
+			// reverted to software renderer -- change cvar too
 			Cvar_Set ("vid_ref", "soft");
 		}
+
 		strcpy (lastRenderer, vid_ref->string);
 		vid_ref->modified = false;
 	}
@@ -914,7 +920,7 @@ CVAR_END
 	// Create invisible (fake) window to capture Win32 focus
 	Vid_CreateWindow (0, 0, false);
 
-	/* Start the graphics mode and load refresh DLL */
+	// Start the graphics mode and load refresh DLL
 	Vid_CheckChanges ();
 
 	unguard;
@@ -929,10 +935,11 @@ void Vid_Shutdown (void)
 {
 	if (refActive)
 	{
-		/* signal for ref_xx.dll to completely shutdown (Vid_Shutdown(); it is called after
+		/* signal for ref_xx.dll to completely shutdown; it is called after
 		 * CL_WriteConfiguration(), so we can safely change vid_ref value
 		 */
 		Cvar_Set ("vid_ref", "");
+		// perform shutdown
 		re.Shutdown ();
 		Vid_DestroyWindow (true);
 		Vid_FreeReflib ();

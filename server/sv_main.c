@@ -658,6 +658,7 @@ void SV_CheckTimeouts (void)
 	int			droppoint;
 	int			zombiepoint;
 
+	guard(SV_CheckTimeouts);
 	droppoint = svs.realtime - Q_round (timeout->value * 1000);
 	zombiepoint = svs.realtime - Q_round (zombietime->value * 1000);
 
@@ -678,6 +679,7 @@ void SV_CheckTimeouts (void)
 			cl->state = cs_free;	// don't bother with zombie state
 		}
 	}
+	unguard;
 }
 
 /*

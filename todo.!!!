@@ -29,7 +29,8 @@ BUGS:
   ext protocol for client
 ? check for hook ability of precicious PMove (more than 1/8) (2 non-spectators cannot be in the same quantized world point;
   every new player will be performed InitialSnapPosition()
-  - idea: save non-quantized+quantized positions (+velocity?); next time find non-quantized by quantized
+  - idea: save non-quantized+quantized positions (+velocity?); next time find non-quantized by quantized (save for few pmove types
+    only to avoid 2 ghosts in one quantized place); may be, if few players in one quantized place - ignore detailed info
   - problem: detect out-of-date positions (player was respawned and its position was changed+snapped))
 ! console: use "SetConsoleCtrlHandler()" to hook exit with "x" or Ctrl-C
 ! command "banchat": disable chat of concrete IP; implementation variants:
@@ -38,8 +39,6 @@ BUGS:
   3) (best?) hook ge->ClientCommand(from), and disable all PF_cprintf(to,PRINT_CHAT,"...") inside this call, when from!=to
 ?! remove IPX protocol from win32 code
 ? eliminate BigShort(MASTER|SERVER_PORT) (sv_cmds.c, cl_main.c) -- only one thing, for which BigXxx() is used (big-endian numbers)
-! check bug: dirty, map mine4, laser cannon -- when shoot rock, invisible entity painted (should not be entity at all,
-  "hall of mirrors" effect appears); check with baseq2 (sp+deathmatch); when do it 2nd time (wall respawned in DM) - all OK
 ! spec for map script
 - colorize server list (old/new-only/cheats/full) (make legend ? or make table with some attributes: server-name, map-name, players,
   cheats, protocol (old,both,new))
@@ -290,6 +289,7 @@ BSP:
 
 - make zip.c big-endian compatible
 ? update JPEG code (new version)
+- md4.c::Encode()/Decode() -- works exactly as memcpy() with little-endian platforms, memcpy()+LongSwapBuffer() with big-endian
 
 !? add Python virtual machine (game library, inline map scripts)
 

@@ -5,12 +5,15 @@
 #include <stdio.h>
 
 #ifdef _WIN32
-// need this include, because have wgl and GDI functions here
+// need this include, because have wgl and GDI functions in gl.h
 #	include <windows.h>
 #endif
 
 #include <GL/gl.h>
+#ifndef GL_GLEXT_VERSION
+// include glext.h only when its contents not in gl.h (warning: GL_GLEXT_VERSION may be too low)
 #include "glext.h"
+#endif
 
 // Obsolete (missing in standard headers), but still supported extensions
 /* SGIS_multitexture */
@@ -21,11 +24,6 @@
 #define GL_TEXTURE2_SGIS                  0x8360
 #define GL_TEXTURE3_SGIS                  0x8361
 
-
-#ifdef __linux__
-//#include <GL/fxmesa.h>
-#	include <GL/glx.h>
-#endif
 
 #include "qgl_decl.h"
 

@@ -411,7 +411,7 @@ Returns 1, 2, or 1 + 2
 */
 #if	1	//let compiler optimize this // !id386 || defined __linux__
 
-int BoxOnPlaneSide (vec3_t mins, vec3_t maxs, cplane_t *p)
+int BoxOnPlaneSide (const vec3_t mins, const vec3_t maxs, const cplane_t *p)
 {
 	float	dist1, dist2;
 	int		sides;
@@ -483,7 +483,7 @@ int BoxOnPlaneSide (vec3_t mins, vec3_t maxs, cplane_t *p)
 #else
 #pragma warning( disable: 4035 )
 
-__declspec (naked) int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, cplane_t *p)
+__declspec (naked) int BoxOnPlaneSide (const vec3_t emins, const vec3_t emaxs, const cplane_t *p)
 {
 	static int bops_initialized;
 	static int Ljmptab[8];
@@ -721,7 +721,7 @@ void ClearBounds (vec3_t mins, vec3_t maxs)
 	maxs[0] = maxs[1] = maxs[2] = -BIG_NUMBER;
 }
 
-void AddPointToBounds (vec3_t v, vec3_t mins, vec3_t maxs)
+void AddPointToBounds (const vec3_t v, vec3_t mins, vec3_t maxs)
 {
 	int		i;
 	float	val;
@@ -734,12 +734,12 @@ void AddPointToBounds (vec3_t v, vec3_t mins, vec3_t maxs)
 }
 
 
-int VectorCompare (vec3_t v1, vec3_t v2)
+qboolean VectorCompare (const vec3_t v1, const vec3_t v2)
 {
 	if (v1[0] != v2[0] || v1[1] != v2[1] || v1[2] != v2[2])
-		return 0;
+		return false;
 
-	return 1;
+	return true;
 }
 
 
@@ -759,7 +759,7 @@ float VectorNormalize (vec3_t v)
 	return length;
 }
 
-float VectorNormalize2 (vec3_t v, vec3_t out)
+float VectorNormalize2 (const vec3_t v, vec3_t out)
 {
 	float	length, ilength;
 
@@ -785,14 +785,6 @@ float VectorNormalizeFast (vec3_t v)
 
 	return len2 * denom;
 }
-
-void _VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc)
-{
-	vecc[0] = veca[0] + scale * vecb[0];
-	vecc[1] = veca[1] + scale * vecb[1];
-	vecc[2] = veca[2] + scale * vecb[2];
-}
-
 
 float _DotProduct (vec3_t v1, vec3_t v2)
 {
@@ -820,19 +812,19 @@ void _VectorCopy (vec3_t in, vec3_t out)
 	out[2] = in[2];
 }
 
-void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross)
+void CrossProduct (const vec3_t v1, const vec3_t v2, vec3_t cross)
 {
 	cross[0] = v1[1] * v2[2] - v1[2] * v2[1];
 	cross[1] = v1[2] * v2[0] - v1[0] * v2[2];
 	cross[2] = v1[0] * v2[1] - v1[1] * v2[0];
 }
 
-float VectorLength (vec3_t v)
+float VectorLength (const vec3_t v)
 {
 	return sqrt (v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 }
 
-float VectorDistance (vec3_t vec1, vec3_t vec2)
+float VectorDistance (const vec3_t vec1, const vec3_t vec2)
 {
 	vec3_t	vec;
 
@@ -847,7 +839,7 @@ void VectorInverse (vec3_t v)
 	v[2] = -v[2];
 }
 
-void VectorScale (vec3_t in, float scale, vec3_t out)
+void VectorScale (const vec3_t in, float scale, vec3_t out)
 {
 	out[0] = in[0]*scale;
 	out[1] = in[1]*scale;

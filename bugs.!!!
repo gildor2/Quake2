@@ -1,5 +1,3 @@
-! map "urban_wreckage", {147, 1149, -66}: sky may be clipped by frustum incorrectly
-
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
    (saved without shot) but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?)
@@ -57,6 +55,9 @@ BUGGY MAPS:
 - "reboot" (from KP, user-created) pos(-658,-242,-178) dir(-0.91,0.39,0) -- incorrect backface culling in gl (OK in oldgl); reason:
   gl and oldgl have different backface culling (gl -- DotProduct(videdir,normal); oldgl -- using BSP only, w/o DotProduct()), this
   map have incorrect normal info for this surface (if look at r_surfinfo, can see: incorrect brushes too - to simplify map navigation ?)
+- "winter" (AQ2) pos(-1023,463,55) dir(0,1,0) - incorrect backface culling in gl (OK in oldgl) (same as "reboot")
+- dirty, map mine4 (baseq2), laser cannon -- when shoot rock, invisible entity painted (should not be entity at all, "hall of mirrors"
+  effect appears); check with baseq2 (sp+deathmatch); when do it 2nd time (wall respawned in DM) - all OK
 
 HARDWARE:
 ~~~~~~~~~
@@ -64,6 +65,7 @@ HARDWARE:
   - when uploading rectangular texture (GL_TEXTURE_RECTANGLE_NV) with compressed internal format, app will crash in ICD GL dll
   - when game launched fullscreen, <Alt-Enter> will switch to windowed mode with incorrect viewport (visible region);
     vid_restart will not fix situation
+  - (Omega 2.5.76) GL_SGIS_multitexture: GL_MAX_TEXTURES_SGIS == 0
 - NV
   - (NV:bitdepth change, Blade3D:vid_restart): cannot restart GL with Vid_DestroyWindow(force=false) -- require to recreate window
   - screenshot is black after changing color depth, but all OK when make one more vid_restart (TNT2, Win2K, 41.09)

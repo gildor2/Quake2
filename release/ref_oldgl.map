@@ -1,6 +1,6 @@
  ref_oldgl
 
- Timestamp is 41976fb0 (Sun Nov 14 17:46:08 2004)
+ Timestamp is 41c856ad (Tue Dec 21 20:00:29 2004)
 
  Preferred load address is 10000000
 
@@ -258,15 +258,15 @@
  0002:00000098       __imp___winmajor           1000f098     MSVCRT:MSVCRT.dll
  0002:0000009c       __imp__sqrt                1000f09c     MSVCRT:MSVCRT.dll
  0002:000000a0       __imp___vsnprintf          1000f0a0     MSVCRT:MSVCRT.dll
- 0002:000000a4       __imp__stricmp             1000f0a4     MSVCRT:MSVCRT.dll
  0002:000000a4       __imp___stricmp            1000f0a4     MSVCRT:MSVCRT.dll
+ 0002:000000a4       __imp__stricmp             1000f0a4     MSVCRT:MSVCRT.dll
  0002:000000a8       __imp__fprintf             1000f0a8     MSVCRT:MSVCRT.dll
  0002:000000ac       __imp__asctime             1000f0ac     MSVCRT:MSVCRT.dll
  0002:000000b0       __imp__localtime           1000f0b0     MSVCRT:MSVCRT.dll
  0002:000000b4       __imp__time                1000f0b4     MSVCRT:MSVCRT.dll
  0002:000000b8       __imp__free                1000f0b8     MSVCRT:MSVCRT.dll
- 0002:000000bc       __imp__putenv              1000f0bc     MSVCRT:MSVCRT.dll
  0002:000000bc       __imp___putenv             1000f0bc     MSVCRT:MSVCRT.dll
+ 0002:000000bc       __imp__putenv              1000f0bc     MSVCRT:MSVCRT.dll
  0002:000000c0       \177MSVCRT_NULL_THUNK_DATA 1000f0c0     MSVCRT:MSVCRT.dll
  0002:000000c4       __imp__SetForegroundWindow@4 1000f0c4     user32:USER32.dll
  0002:000000c8       __imp__ShowWindow@8        1000f0c8     user32:USER32.dll

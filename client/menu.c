@@ -41,15 +41,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define DF_QUAD_DROP		0x00004000	// 16384
 #define DF_FIXED_FOV		0x00008000	// 32768
 
-// RAFAEL
+// XATRIX
 #define	DF_QUADFIRE_DROP	0x00010000	// 65536
 
-//ROGUE
+// ROGUE
 #define DF_NO_MINES			0x00020000
 #define DF_NO_STACK_DOUBLE	0x00040000
 #define DF_NO_NUKES			0x00080000
 #define DF_NO_SPHERES		0x00100000
-//ROGUE
 
 
 static int	m_main_cursor;
@@ -68,10 +67,10 @@ void M_Menu_Main_f (void);
 		void M_Menu_SaveGame_f (void);
 		void M_Menu_PlayerConfig_f (void);
 			void M_Menu_DownloadOptions_f (void);
-		void M_Menu_Credits_f( void );
-	void M_Menu_Multiplayer_f( void );
+		void M_Menu_Credits_f (void);
+	void M_Menu_Multiplayer_f (void);
 		void M_Menu_JoinServer_f (void);
-			void M_Menu_AddressBook_f( void );
+			void M_Menu_AddressBook_f (void);
 		void M_Menu_StartServer_f (void);
 			void M_Menu_DMOptions_f (void);
 			void M_Menu_DMBrowse_f (void);
@@ -80,7 +79,7 @@ void M_Menu_Main_f (void);
 		void M_Menu_Keys_f (void);
 	void M_Menu_Quit_f (void);
 
-	void M_Menu_Credits( void );
+	void M_Menu_Credits (void);
 
 static bool m_entersound;		// play after drawing a frame, so caching
 								// won't disrupt the sound
@@ -1019,7 +1018,7 @@ static void Options_MenuInit( void )
 	MENU_SPIN(s_options_joystick_box,y+=10,"use joystick",JoystickFunc,yesno_names)
 	y += 10;
 	MENU_ACTION(s_options_customize_options_action,y+=10,"customize controls",CustomizeControlsFunc)
-	MENU_ACTION(s_options_defaults_action,y+=10,"reset defaults",ControlsResetDefaultsFunc)
+	MENU_ACTION(s_options_defaults_action,y+=10,"^1reset defaults",ControlsResetDefaultsFunc)
 
 	Options_ScanCrosshairs ();
 	ControlsSetMenuItemValues ();

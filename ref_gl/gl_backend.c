@@ -319,6 +319,26 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 			dst->tex[1] = src->lm[1];
 		}
 		break;
+	case TCGEN_LIGHTMAP1:
+	case TCGEN_LIGHTMAP2:
+	case TCGEN_LIGHTMAP3:
+	case TCGEN_LIGHTMAP4:
+		{
+			float	shift, mul;
+			bufExtra_t *ex;
+
+			mul = (float)(st->tcGenType - TCGEN_LIGHTMAP1 + 1) / LIGHTMAP_SIZE;
+			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
+			{
+				shift = ex->lmWidth * mul;
+				for (k = 0; k < ex->numVerts; k++, src++, dst++)
+				{
+					dst->tex[0] = src->lm[0] + shift;
+					dst->tex[1] = src->lm[1];
+				}
+			}
+		}
+		break;
 	case TCGEN_ENVIRONMENT:
 		{
 			bufExtra_t *ex;
@@ -357,26 +377,6 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 						dst->tex[0] = (d * norm[1] * 2 - v[1] + 1) / 2.0f;
 						dst->tex[1] = (d * norm[2] * 2 - v[2] + 1) / 2.0f;
 					}
-				}
-			}
-		}
-		break;
-	case TCGEN_LIGHTMAP1:
-	case TCGEN_LIGHTMAP2:
-	case TCGEN_LIGHTMAP3:
-	case TCGEN_LIGHTMAP4:
-		{
-			float	shift, mul;
-			bufExtra_t *ex;
-
-			mul = (float)(st->tcGenType - TCGEN_LIGHTMAP1 + 1) / LIGHTMAP_SIZE;
-			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
-			{
-				shift = ex->lmWidth * mul;
-				for (k = 0; k < ex->numVerts; k++, src++, dst++)
-				{
-					dst->tex[0] = src->lm[0] + shift;
-					dst->tex[1] = src->lm[1];
 				}
 			}
 		}
@@ -495,7 +495,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 // should rename "temp", "tmp" ?? (rendererStage_t, combinedStage_t, texUnit_t ?)
 typedef struct
 {
-	unsigned texEnv;		// REPLACE/MODILATE/ADD or COMBINE/COMBINE_NV
+	unsigned texEnv;		// REPLACE/MODILATE/ADD or COMBINE/COMBINE_NV/COMBINE_ATI
 	byte	tmu;
 	bool	constRGBA;		//?? rename fields to bConstRGBA-like (bool-prefix)
 	bool	identityRGBA;
@@ -539,6 +539,7 @@ static int			numRenderPasses;
 #		define LOG_PP(x)	if (spy) DrawTextLeft(x,RGB(0.3,0.6,0.6))
 #	else
 #		define LOG_PP(x)
+#		define NO_LOG_PP
 #	endif
 #endif
 
@@ -919,9 +920,10 @@ static void PreprocessShader (shader_t *sh)
 			}
 		}
 
-		if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4) && st[1].constRGBA && (tmuUsed == 1 || st[0].constRGBA) &&
-			// This extension can perform A*T1+B*T2, where A/B is 1|0|prev|tex
-			// st[1] is B*T2, if rgba is not 1, rgbGen will eat B and we will not be able to use most of blends ...
+		if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4|QGL_ATI_TEXTURE_ENV_COMBINE3) && st[1].constRGBA && (tmuUsed == 1 || st[0].constRGBA) &&
+			// NV: This extension can perform A*T1+B*T2, where A/B is 1|0|prev|tex
+			//   st[1] is B*T2, if rgba is not 1, rgbGen will eat B and we will not be able to use most of blends ...
+			// ATI: can perform A*T1+T2 or T1+A*T2 (similar to NV, but either A or B should be 1)
 			(st[1].identityRGBA || (blend2 & GLSTATE_SRCMASK) == GLSTATE_SRC_ONE))
 		{
 			unsigned env, env1, env2, b1, b2;
@@ -958,18 +960,58 @@ static void PreprocessShader (shader_t *sh)
 			env2 = blendToEnv[(blend2 & GLSTATE_DSTMASK) >> GLSTATE_DSTSHIFT];
 			if (!(env1 && env2)) combine = false;
 
-			env = TEXENV_C4_ADD | (TEXENV_TEXTURE<<TEXENV_SRC1_SHIFT) | (TEXENV_PREVIOUS<<TEXENV_SRC3_SHIFT);
-			if (st[1].identityRGBA || env1 != TEXENV_ONE)
-				env |= env1 << TEXENV_SRC0_SHIFT;
-			else
-				env |= (TEXENV_CONSTANT << TEXENV_SRC0_SHIFT) | TEXENV_ENVCOLOR;
-			env |= env2 << TEXENV_SRC2_SHIFT;
+			if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4))
+			{
+				// src0*src1+src2*src3
+				env = TEXENV_C4_ADD | (TEXENV_TEXTURE<<TEXENV_SRC1_SHIFT) | (TEXENV_PREVIOUS<<TEXENV_SRC3_SHIFT);
+				if (st[1].identityRGBA || env1 != TEXENV_ONE)
+					env |= env1 << TEXENV_SRC0_SHIFT;
+				else
+					env |= (TEXENV_CONSTANT << TEXENV_SRC0_SHIFT) | TEXENV_ENVCOLOR;
+				env |= env2 << TEXENV_SRC2_SHIFT;
+			}
+			else // if (GL_SUPPORT(QGL_ATI_TEXTURE_ENV_COMBINE3))
+			{
+				// src0*src2+src1
+				if (env1 == TEXENV_ONE)
+				{	// TEXTURE mul is 1
+					if (st[1].identityRGBA)
+						env = TEXENV_C3_ADD | (TEXENV_TEXTURE<<TEXENV_SRC1_SHIFT) | (TEXENV_PREVIOUS<<TEXENV_SRC0_SHIFT) |
+							(env2<<TEXENV_SRC2_SHIFT);	// env2*PREVIOUS+TEXTURE
+					else if (env2 == TEXENV_ONE)
+						env = TEXENV_C3_ADD | (TEXENV_TEXTURE<<TEXENV_SRC0_SHIFT) | (TEXENV_PREVIOUS<<TEXENV_SRC1_SHIFT) |
+							(TEXENV_CONSTANT << TEXENV_SRC2_SHIFT) | TEXENV_ENVCOLOR;	// envColor*TEXTURE+PREVIOUS
+					else // 3 operands not enough
+						combine = false;
+				}
+				else if (env2 == TEXENV_ONE)
+				{	// PREVIOUS mul is 1
+					env = TEXENV_C3_ADD | (TEXENV_TEXTURE<<TEXENV_SRC0_SHIFT) | (TEXENV_PREVIOUS<<TEXENV_SRC1_SHIFT) |
+						(env1<<TEXENV_SRC2_SHIFT);	// env1*TEXTURE+PREVIOUS
+				}
+				else
+					combine = false;
+			}
 
 			// combine stages ...
 			if (combine)
 			{
+#ifndef NO_LOG_PP
+				//?? move to gl_interface.c for logging
+				static const char *envNames[] = {
+					// corresponds to TEXENV_XXX const (used with TEXENV_SRCx_SHIFT)
+					"", "T.c", "(1-T.c)", "T.a", "(1-T.a)", "P.c", "(1-P.c)", "P.a", "(1-P.a)",
+					"E.c", "(1-E.c)", "C", "(1-C)", "0", "1"
+				};
+#define ENV_NAME(x)		envNames[(env >> TEXENV_SRC##x##_SHIFT) & TEXENV_SRC_MASK]
+#endif
 				st[1].texEnv = env;
-				LOG_PP(va("  MT(NV): %X -> %08X\n", blend2, env));
+				if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4))
+					LOG_PP(va("  MT(NV): %X -> %08X == %s x %s + %s x %s\n", blend2, env,
+						ENV_NAME(0), ENV_NAME(1), ENV_NAME(2), ENV_NAME(3)));
+				else // if (GL_SUPPORT(QGL_ATI_TEXTURE_ENV_COMBINE3))
+					LOG_PP(va("  MT(ATI): %X -> %08X == %s x %s + %s\n", blend2, env,
+						ENV_NAME(0), ENV_NAME(2), ENV_NAME(1)));
 				pass->numStages++;
 				continue;
 			}
@@ -993,7 +1035,7 @@ static void PreprocessShader (shader_t *sh)
 				st[0].st.rgbaConst.c[k] = st[0].st.rgbaConst.c[k] * 255 / (255*2 - k2);
 				st[1].st.rgbaConst.c[k] = 255 - k2 / 2;
 			}
-			LOG_PP(va(" new rgba: %X %X)\n",  st[0].st.rgbaConst.rgba, st[1].st.rgbaConst.rgba));
+			LOG_PP(va("   new rgba: %X %X)\n",  st[0].st.rgbaConst.rgba, st[1].st.rgbaConst.rgba));
 			pass->numStages++;
 			continue;
 		}

@@ -124,11 +124,11 @@ void	LoadJPG (char *name, byte **pic, int *width, int *height);
 qboolean	WriteTGA (char *name, byte *pic, int width, int height);
 qboolean	WriteJPG (char *name, byte *pic, int width, int height, qboolean highQuality);
 bspfile_t*	LoadBspFile (char *filename, bool clientload, unsigned *checksum);
-void	CM_BoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
-void	CM_TransformedBoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
-void	CM_TransformedBoxTrace2 (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t *axis);
-int	CM_BrushTrace (vec3_t start, vec3_t end, int *brushes, int maxBrushes);
-int	CM_RefineBrushTrace (vec3_t start, vec3_t end, int *brushes, int numBrushes);
+void	CM_BoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask);
+void	CM_TransformedBoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles);
+void	CM_TransformedBoxTrace2 (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t *axis);
+int	CM_BrushTrace (const vec3_t start, const vec3_t end, int *brushes, int maxBrushes);
+int	CM_RefineBrushTrace (const vec3_t start, const vec3_t end, int *brushes, int numBrushes);
 #ifdef _WIN32
 void*	Vid_CreateWindow (int width, int height, qboolean fullscreen);
 void	Vid_DestroyWindow (qboolean force);

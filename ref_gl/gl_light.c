@@ -45,7 +45,7 @@ static vec3_t entityColorAxis[6];
 // array layout: back/front/right/left/bottom/top
 
 
-static void LightLine (vec3_t *axis, vec3_t from, vec3_t to, float *color, float lightScale)
+static void LightLine (const vec3_t *axis, const vec3_t from, const vec3_t to, const float *color, float lightScale)
 {
 	gl_depthMode_t prevDepth;
 	int		i, r, g, b;
@@ -189,7 +189,7 @@ void GL_ShowLights (void)
 }
 
 
-static void AddLight (vec3_t *axis, vec3_t dir, float scale, vec3_t color)
+static void AddLight (const vec3_t *axis, const vec3_t dir, float scale, const float *color)
 {
 	float	v, *vec;
 	int		i;
@@ -236,7 +236,7 @@ static void AddLight (vec3_t *axis, vec3_t dir, float scale, vec3_t color)
 static int traces, fasttraces, badtraces;
 
 
-static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *vis)
+static void AddPointLight (const gl_slight_t *sl, const vec3_t origin, const vec3_t *axis, const byte *vis)
 {
 	float	dist, scale;
 	vec3_t	dif;
@@ -312,7 +312,7 @@ static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *v
 
 static bool needSunAmbient;
 
-static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte *vis)
+static void AddSurfaceLight (const surfLight_t *rl, const vec3_t origin, const vec3_t *axis, const byte *vis)
 {
 	surfacePlanar_t *pl;
 	float	dist, distN, intens, x, y, dx, dy;
@@ -451,8 +451,8 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 	byte	*row;
 	float	*out, scale;
 	bool	hasLight;
-	vec3_t	*axis;
-	static vec3_t gridAxis[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+	const vec3_t *axis;
+	static const vec3_t gridAxis[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 
 	if (!ent)
 	{

@@ -104,6 +104,8 @@ static void Gfxinfo_f (void)
 			strcat (name, " +Combine");
 		if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4))
 			strcat (name, " +NV");
+		if (GL_SUPPORT(QGL_ATI_TEXTURE_ENV_COMBINE3))
+			strcat (name, " +ATI");
 
 		Com_Printf ("yes, %s, %d texture units\n", name, gl_config.maxActiveTextures);
 	}
@@ -171,6 +173,7 @@ CVAR_BEGIN(vars)
 	CVAR_NULL(gl_ext_texture_env_add, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_texture_env_combine, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_texture_env_combine_nv, 1, CVAR_ARCHIVE),
+	CVAR_NULL(gl_ext_texture_env_combine_ati, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_compiled_vertex_array, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_texture_rectangle, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_fog_distance_nv, 1, CVAR_ARCHIVE),
@@ -320,6 +323,11 @@ static int GL_Init (void)
 		glGetIntegerv (GL_MAX_TEXTURES_SGIS, &gl_config.maxActiveTextures);
 	else
 		gl_config.maxActiveTextures = 1;
+	if (!gl_config.maxActiveTextures)
+	{
+		Com_WPrintf ("Error in multitexture support\n");
+		gl_config.maxActiveTextures = 1;
+	}
 	if (gl_maxTextureUnits->integer > 0 && gl_config.maxActiveTextures > gl_maxTextureUnits->integer)
 	{
 		Com_Printf ("^6...multitexture limited by %d units\n", gl_maxTextureUnits->integer);
@@ -330,8 +338,6 @@ static int GL_Init (void)
 	if (!GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|QGL_NV_TEXTURE_ENV_COMBINE4))
 		gl_config.doubleModulateLM = false;
 
-
-	//?? place this decision to Upload() and remove formatSolid from gl_config?
 	if (GL_SUPPORT(QGL_ARB_TEXTURE_COMPRESSION))
 	{
 		gl_config.formatSolid = GL_COMPRESSED_RGB_ARB;
@@ -342,8 +348,14 @@ static int GL_Init (void)
 	else if (GL_SUPPORT(QGL_S3_S3TC))
 	{
 		gl_config.formatSolid = GL_RGB4_S3TC;
-		gl_config.formatAlpha = 0;
-		gl_config.formatAlpha1 = 0;
+		gl_config.formatAlpha = GL_RGBA4_S3TC;
+		gl_config.formatAlpha1 = GL_RGBA_S3TC;
+	}
+	else if (GL_SUPPORT(QGL_EXT_TEXTURE_COMPRESSION_S3TC))
+	{
+		gl_config.formatSolid = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+		gl_config.formatAlpha = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;	// DXT5 - compressed alpha; DXT3 - uncompressed alpha
+		gl_config.formatAlpha1 = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 	}
 
 	if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))

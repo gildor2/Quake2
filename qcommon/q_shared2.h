@@ -295,19 +295,19 @@ void _VectorAdd (vec3_t veca, vec3_t vecb, vec3_t out);
 void _VectorCopy (vec3_t in, vec3_t out);
 
 void ClearBounds (vec3_t mins, vec3_t maxs);
-void AddPointToBounds (vec3_t v, vec3_t mins, vec3_t maxs);
-int VectorCompare (vec3_t v1, vec3_t v2);
-float VectorLength (vec3_t v);
-float VectorDistance (vec3_t vec1, vec3_t vec2);
+void AddPointToBounds (const vec3_t v, vec3_t mins, vec3_t maxs);
+qboolean VectorCompare (const vec3_t v1, const vec3_t v2);
+float VectorLength (const vec3_t v);
+float VectorDistance (const vec3_t vec1, const vec3_t vec2);
 void AnglesToAxis (const vec3_t angles, vec3_t axis[3]);
 void AxisClear (vec3_t axis[3]);
 #define AxisCopy(i,o)			memcpy(o,i,sizeof(vec3_t)*3)
 void _AxisCopy (vec3_t in[3], vec3_t out[3]);
-void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross);
+void CrossProduct (const vec3_t v1, const vec3_t v2, vec3_t cross);
 float VectorNormalize (vec3_t v);		// returns vector length
-float VectorNormalize2 (vec3_t v, vec3_t out);
+float VectorNormalize2 (const vec3_t v, vec3_t out);
 void VectorInverse (vec3_t v);
-void VectorScale (vec3_t in, float scale, vec3_t out);
+void VectorScale (const vec3_t in, float scale, vec3_t out);
 int Q_log2(int val);
 
 void MatrixMultiply (float in1[3][3], float in2[3][3], float out[3][3]);
@@ -485,11 +485,11 @@ typedef struct
 
 void SetPlaneSignbits (cplane_t *out);
 
-int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, cplane_t *plane);
+int BoxOnPlaneSide (const vec3_t emins, const vec3_t emaxs, const cplane_t *plane);
 
 #if 1
 
-__inline int PlaneTypeForNormal (vec3_t p)
+__inline int PlaneTypeForNormal (const vec3_t p)
 {
 	if (p[0] == 1.0f) return PLANE_X;
 	else if (p[0] == -1.0f) return PLANE_MX;
@@ -500,7 +500,7 @@ __inline int PlaneTypeForNormal (vec3_t p)
 	else return PLANE_NON_AXIAL;
 }
 
-__inline int BOX_ON_PLANE_SIDE (vec3_t mins, vec3_t maxs, cplane_t *plane)
+__inline int BOX_ON_PLANE_SIDE (const vec3_t mins, const vec3_t maxs, const cplane_t *plane)
 {
 	if (plane->type <= PLANE_MZ)
 	{
@@ -526,7 +526,7 @@ __inline int BOX_ON_PLANE_SIDE (vec3_t mins, vec3_t maxs, cplane_t *plane)
 	return BoxOnPlaneSide (mins, maxs, plane);
 }
 
-__inline float DISTANCE_TO_PLANE (vec3_t vec, cplane_t *plane)
+__inline float DISTANCE_TO_PLANE (const vec3_t vec, const cplane_t *plane)
 {
 	if (plane->type <= PLANE_Z)
 		return vec[plane->type] - plane->dist;

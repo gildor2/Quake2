@@ -154,6 +154,8 @@ extern glstate_t   gl_state;
 #define TEXENV_C_INTERP				6
 // combine4_nv mode(s)
 #define TEXENV_C4_ADD				7
+// combine3_ati mode(s)
+#define TEXENV_C3_ADD				8
 
 #define TEXENV_FUNC_MASK			15		// 4 bits
 

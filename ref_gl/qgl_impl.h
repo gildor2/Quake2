@@ -3,15 +3,15 @@
 #if defined(_WIN32)
 #	define NUM_GLFUNCS	65
 #	define NUM_EXTFUNCS	7
-#	define NUM_EXTENSIONS	14
+#	define NUM_EXTENSIONS	16
 #elif defined(__linux__)
 #	define NUM_GLFUNCS	57
 #	define NUM_EXTFUNCS	6
-#	define NUM_EXTENSIONS	13
+#	define NUM_EXTENSIONS	15
 #else
 #	define NUM_GLFUNCS	57
 #	define NUM_EXTFUNCS	6
-#	define NUM_EXTENSIONS	13
+#	define NUM_EXTENSIONS	15
 #endif
 
 
@@ -210,6 +210,8 @@ static const char *EnumName (GLenum v)
 		return "OPERAND3_ALPHA_NV";
 	case GL_COMBINE4_NV:
 		return "COMBINE4_NV";
+	case GL_MODULATE_ADD_ATI:
+		return "MODULATE_ADD_ATI";
 	case GL_FRONT:
 		return "FRONT";
 	case GL_BACK:
@@ -298,6 +300,14 @@ static const char *EnumName (GLenum v)
 		return "COMPRESSED_RGB_ARB";
 	case GL_COMPRESSED_RGBA_ARB:
 		return "COMPRESSED_RGBA_ARB";
+	case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+		return "COMPRESSED_RGB_S3TC_DXT1_EXT";
+	case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+		return "COMPRESSED_RGBA_S3TC_DXT1_EXT";
+	case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+		return "COMPRESSED_RGBA_S3TC_DXT3_EXT";
+	case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+		return "COMPRESSED_RGBA_S3TC_DXT5_EXT";
 	case GL_ACTIVE_TEXTURE_ARB:
 		return "ACTIVE_TEXTURE_ARB";
 	case GL_CLIENT_ACTIVE_TEXTURE_ARB:
@@ -914,8 +924,10 @@ static extInfo_t extInfo[NUM_EXTENSIONS] = {
 	{"GL_ARB_texture_env_combine\0", NULL, "gl_ext_texture_env_combine", 0, 0, QGL_ARB_MULTITEXTURE, 0},
 	{"GL_ARB_texture_env_crossbar\0", NULL, NULL, 0, 0, 0, QGL_NV_TEXTURE_ENV_COMBINE4},
 	{"GL_NV_texture_env_combine4\0", NULL, "gl_ext_texture_env_combine_nv", 0, 0, QGL_ARB_MULTITEXTURE, 0},
-	{"GL_S3_s3tc\0", NULL, "gl_ext_compressed_textures", 0, 0, 0, QGL_ARB_TEXTURE_COMPRESSION},
-	{"GL_ARB_texture_compression\0", NULL, "gl_ext_compressed_textures", 0, 0, 0, 0},
+	{"GL_ATI_texture_env_combine3\0" "GL_ATIX_texture_env_combine3\0", NULL, "gl_ext_texture_env_combine_ati", 0, 0, QGL_ARB_MULTITEXTURE, 0},
+	{"GL_S3_s3tc\0", NULL, "gl_ext_compressed_textures", 0, 0, 0, QGL_ARB_TEXTURE_COMPRESSION | QGL_EXT_TEXTURE_COMPRESSION_S3TC},
+	{"GL_ARB_texture_compression\0", NULL, "gl_ext_compressed_textures", 0, 0, 0, QGL_EXT_TEXTURE_COMPRESSION_S3TC},
+	{"GL_EXT_texture_compression_s3tc\0", NULL, "gl_ext_compressed_textures", 0, 0, 0, 0},
 	{"GL_EXT_compiled_vertex_array\0", NULL, "gl_ext_compiled_vertex_array", NUM_GLFUNCS+4, 2, 0, 0},
 	{"GL_NV_texture_rectangle\0" "GL_EXT_texture_rectangle\0", NULL, "gl_ext_texture_rectangle", 0, 0, 0, 0},
 	{"GL_NV_fog_distance\0", NULL, "gl_ext_fog_distance_nv", 0, 0, 0, 0},

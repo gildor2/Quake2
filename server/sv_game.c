@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "server.h"
 
 game_export_t	*ge;
+static qboolean dummyGame;		// when demomap or cinematic loaded
 
 
 #define SV_Pmove Pmove
@@ -418,7 +419,17 @@ static void PZ_FreeTags (int tag)
 #endif // SV_PROFILE
 
 
-void SV_InitGameProgs (void)
+// dummy functions
+static void D_Func0 (void) {}
+static void D_Func1 (char *a) {}
+static void D_Func1A (edict_t *a) {}
+static void D_Func2A (char *a, qboolean b) {}
+static qboolean D_ClientConnect (edict_t *a, char *b) { return true; }
+static void D_Func2B (edict_t *a, char *b) {}
+static void D_Func2C (edict_t *a, usercmd_t *b) {}
+static void D_Func3 (char *a, char *b, char *c) {}
+
+void SV_InitGameProgs (qboolean dummy)
 {
 	game_import_t import;
 	static const game_import_t import2 = {
@@ -441,8 +452,32 @@ void SV_InitGameProgs (void)
 		Cbuf_AddText,
 		SCR_DebugGraph
 	};
+	static edict_t dedict[4];
+	static game_export_t dge = {
+		GAME_API_VERSION,
+		D_Func0, D_Func0,
+		D_Func3,
+		D_Func2A,
+		D_Func1, D_Func1, D_Func1,
+		D_ClientConnect,
+		D_Func1A,
+		D_Func2B,
+		D_Func1A, D_Func1A,
+		D_Func2C,
+		D_Func0, D_Func0,
+		dedict,
+		sizeof(edict_t),
+		0, 1
+	};
 
 	guard(SV_InitGameProgs);
+
+	dummyGame = dummy;
+	if (dummyGame)
+	{
+		ge = &dge;
+		return;
+	}
 
 	// unload anything we have now
 	if (ge) SV_ShutdownGameProgs ();
@@ -452,7 +487,7 @@ void SV_InitGameProgs (void)
 	ge = (game_export_t *)Sys_GetGameAPI (&import);
 
 	if (!ge)
-		Com_DropError ("failed to load game DLL");
+		Com_DropError ("failed to load game library");
 	if (ge->apiversion != GAME_API_VERSION)
 		Com_DropError ("game is version %d, not " STR(GAME_API_VERSION), ge->apiversion);
 
@@ -472,6 +507,11 @@ it is changing to a different game directory.
 void SV_ShutdownGameProgs (void)
 {
 	guard(SV_ShutdownGameProgs);
+	if (dummyGame)
+	{
+		ge = NULL;
+		return;
+	}
 	if (!ge) return;
 	ge->Shutdown ();
 	Sys_UnloadGame ();

@@ -1427,7 +1427,7 @@ static qboolean	trace_ispoint;		// optimized case
 ClipBoxToBrush
 ================
 */
-static void ClipBoxToBrush (cbrush_t *brush)
+static void ClipBoxToBrush (const cbrush_t *brush)
 {
 	int			i;
 	cplane_t	*clipplane;
@@ -1598,7 +1598,7 @@ if box inside this brush or intersects its brushsides:
 else trace is unchanged
 ================
 */
-static qboolean TestBoxInBrush (cbrush_t *brush)
+static qboolean TestBoxInBrush (const cbrush_t *brush)
 {
 	int		i, j;
 	cbrushside_t *side, *clipside;
@@ -1700,7 +1700,7 @@ RecursiveHullCheck
 
 ==================
 */
-static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, vec3_t p1, vec3_t p2)
+static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
 {
 	cnode_t		*node;
 	cplane_t	*plane;
@@ -1841,7 +1841,7 @@ When start==end:
 ==================
 */
 //?? check: can this be faster if trace with sphere
-void CM_BoxTrace (trace_t *trace, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask)
+void CM_BoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask)
 {
 	int		i;
 
@@ -1936,8 +1936,8 @@ rotating entities
 */
 
 
-void CM_TransformedBoxTrace (trace_t *trace, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,
-	int headnode, int brushmask, vec3_t origin, vec3_t angles)
+void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs,
+	int headnode, int brushmask, const vec3_t origin, const vec3_t angles)
 {
 	vec3_t		start1, end1, tmp;
 	vec3_t		axis[3];
@@ -1996,8 +1996,8 @@ void CM_TransformedBoxTrace (trace_t *trace, vec3_t start, vec3_t end, vec3_t mi
 }
 
 
-void CM_TransformedBoxTrace2 (trace_t *trace, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,
-	int headnode, int brushmask, vec3_t origin, vec3_t *axis)
+void CM_TransformedBoxTrace2 (trace_t *trace, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs,
+	int headnode, int brushmask, const vec3_t origin, const vec3_t *axis)
 {
 	vec3_t		start1, end1, tmp;
 
@@ -2042,7 +2042,7 @@ static int *trace_brushes;
 
 
 // returns true when start->end line intersects brush
-static qboolean TestBrush (vec3_t start, vec3_t end, cbrush_t *brush)
+static qboolean TestBrush (const vec3_t start, const vec3_t end, const cbrush_t *brush)
 {
 	int		i;
 	cbrushside_t *side;
@@ -2096,7 +2096,7 @@ static qboolean TestBrush (vec3_t start, vec3_t end, cbrush_t *brush)
 }
 
 
-static void RecursiveBrushTest (vec3_t start, vec3_t end, int nodeNum)
+static void RecursiveBrushTest (const vec3_t start, const vec3_t end, int nodeNum)
 {
 	cnode_t	*node;
 	cplane_t *plane;
@@ -2204,7 +2204,7 @@ static void RecursiveBrushTest (vec3_t start, vec3_t end, int nodeNum)
 
 
 // returns number of brushes, intersected with line
-int CM_BrushTrace (vec3_t start, vec3_t end, int *brushes, int maxBrushes)
+int CM_BrushTrace (const vec3_t start, const vec3_t end, int *brushes, int maxBrushes)
 {
 	guard(CM_BrushTrace);
 
@@ -2222,7 +2222,7 @@ int CM_BrushTrace (vec3_t start, vec3_t end, int *brushes, int maxBrushes)
 
 // gets list of brushes (taken from CM_BrushTrace() call) and removes brushes,
 // which are not intersected with line "start-end"
-int CM_RefineBrushTrace (vec3_t start, vec3_t end, int *brushes, int numBrushes)
+int CM_RefineBrushTrace (const vec3_t start, const vec3_t end, int *brushes, int numBrushes)
 {
 	int		i, b, newNum, *src, *dst;
 
@@ -2258,7 +2258,7 @@ PVS / PHS
 CM_DecompressVis
 ===================
 */
-void CM_DecompressVis (byte *in, byte *out)
+static void DecompressVis (const byte *in, byte *out)
 {
 	int		c;
 	byte	*out_p;
@@ -2309,9 +2309,9 @@ byte *CM_ClusterPVS (int cluster)
 	{
 		i = ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PVS];
 		if (i != -1)
-			CM_DecompressVis (map_visibility + i, pvsrow);
+			DecompressVis (map_visibility + i, pvsrow);
 		else
-			CM_DecompressVis (NULL, pvsrow);
+			DecompressVis (NULL, pvsrow);
 	}
 	return pvsrow;
 	unguard;
@@ -2329,9 +2329,9 @@ byte *CM_ClusterPHS (int cluster)
 	{
 		i = ((dvis_t *)map_visibility)->bitofs[cluster][DVIS_PHS];
 		if (i != -1)
-			CM_DecompressVis (map_visibility + i, phsrow);
+			DecompressVis (map_visibility + i, phsrow);
 		else
-			CM_DecompressVis (NULL, phsrow);
+			DecompressVis (NULL, phsrow);
 	}
 	return phsrow;
 	unguard;

@@ -360,7 +360,7 @@ void SV_InitGame (void)
 	NET_StringToAdr (va("192.246.40.37:%i", PORT_MASTER), &master_adr[0]);
 
 	// init game
-	SV_InitGameProgs ();		//?? not needed when "demomap" ??
+	SV_InitGameProgs (sv.attractloop);
 	for (i = 0; i < maxclients->integer; i++)
 	{
 		ent = EDICT_NUM(i+1);
