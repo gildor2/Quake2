@@ -23,21 +23,18 @@ void	SCR_Init (void);
 
 void	SCR_UpdateScreen (void);
 
-void	SCR_SizeUp (void);
-void	SCR_SizeDown (void);
 void	SCR_CenterPrint (char *str);
-void	SCR_BeginLoadingPlaque (void);
-void	SCR_EndLoadingPlaque (bool force);
+
+//void	SCR_BeginLoadingPlaque (void); -- declared in qcommon.h
+void	SCR_EndLoadingPlaque (bool force);	//?? is "force" needed ?
 
 void	SCR_DebugGraph (float value, int color);
 
 void	SCR_TouchPics (void);
+void	SCR_DrawCrosshair (void);
 
-extern	int			sb_lines;
-
-extern	cvar_t		*scr_viewsize;
-extern	cvar_t		*crosshair;
-extern	cvar_t		*crosshaircolor;
+extern	cvar_t	*crosshair;
+extern	cvar_t	*crosshairColor;
 
 typedef struct vrect_s
 {
@@ -46,8 +43,11 @@ typedef struct vrect_s
 
 extern	vrect_t		scr_vrect;		// position of render window
 
-extern	char		crosshair_pic[MAX_QPATH];
-extern	int			crosshair_width, crosshair_height;
+void DrawString (int x, int y, const char *s);	// draw colorized string; used by menus/console
+void SCR_SetLevelshot (char *name = NULL);		// give levelshot name (if name not specified - compute from map name)
+void SCR_ShowConsole (bool show, bool noAnim);
+void SCR_ToggleConsole (void);
+void Key_Message (int key);
 
 //
 // scr_cin.c

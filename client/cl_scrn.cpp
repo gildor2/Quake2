@@ -19,28 +19,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // cl_scrn.c -- master for refresh, status bar, console, chat, notify, etc
 
-/*
-
-  full screen console
-  put up loading plaque
-  blanked background with loading plaque
-  blanked background with menu
-  cinematics
-  full screen image for quit and victory
-
-  end of unit intermissions
-
-  */
-
 #include "client.h"
 
 static bool		initialized;	// ready to draw
 
 vrect_t		scr_vrect;			// position of render window on screen
 
+cvar_t		*crosshair;
+cvar_t		*crosshairColor;
 
-static cvar_t	*con_maxSize;
 cvar_t		*scr_viewsize;
+static cvar_t	*con_maxSize;
 static cvar_t	*scr_centertime;
 
 static cvar_t	*netgraph;
@@ -49,13 +38,6 @@ static cvar_t	*debuggraph;
 static cvar_t	*graphheight;
 static cvar_t	*graphscale;
 static cvar_t	*graphshift;
-
-
-char		crosshair_pic[MAX_QPATH];
-int			crosshair_width, crosshair_height;
-
-void SCR_TimeRefresh_f (int argc, char **argv);
-
 
 #define CHAR_WIDTH	8
 #define CHAR_HEIGHT	8
@@ -204,7 +186,7 @@ void SCR_CenterPrint (char *str)
 	char	line[64];
 	int		i, j, l;
 
-	Q_strncpyz (scr_centerstring, str, sizeof(scr_centerstring));
+	appStrncpyz (scr_centerstring, str, sizeof(scr_centerstring));
 	scr_centertime_off = scr_centertime->value;
 
 	// count the number of lines for centering
@@ -366,34 +348,104 @@ void SCR_Sky_f (bool usage, int argc, char **argv)
 	re.SetSky (argv[1], rotate, axis);
 }
 
-//============================================================================
+/*-----------------------------------------------------------------------------
+	Chat input
+-----------------------------------------------------------------------------*/
 
-/*
-==================
-SCR_Init
-==================
-*/
-void SCR_Init (void)
+static bool		chat_team;
+static char		chat_buffer[MAXCMDLINE];
+static int		chat_bufferlen = 0;
+
+
+static void DrawChatInput (void)
 {
-CVAR_BEGIN(vars)
-	CVAR_VAR(con_maxSize, 0.8, 0),
-	CVAR_VAR(scr_viewsize, 100, CVAR_ARCHIVE),
-	CVAR_VAR(scr_centertime, 2.5, 0),
-	CVAR_VAR(netgraph, 0, 0),
-	CVAR_VAR(timegraph, 0, 0),
-	CVAR_VAR(debuggraph, 0, 0),
-	CVAR_VAR(graphheight, 32, 0),
-	CVAR_VAR(graphscale, 1, 0),
-	CVAR_VAR(graphshift, 0, 0)
-CVAR_END
+	// edit current player message
+	if (*re.flags & REF_CONSOLE_ONLY) return;
+	if (cls.key_dest != key_message) return;
 
-	Cvar_GetVars (ARRAY_ARG(vars));
+	int x;
+	int v = CHAR_HEIGHT * 8;		//??
+	if (chat_team)
+	{
+		DrawString (8, v, "say_team:");
+		x = 11;
+	}
+	else
+	{
+		DrawString (8, v, "say:");
+		x = 5;
+	}
 
-	RegisterCommand ("timerefresh", SCR_TimeRefresh_f);
-	RegisterCommand ("loading", SCR_BeginLoadingPlaque);
-	RegisterCommand ("sky", SCR_Sky_f);
+	const char *s = chat_buffer;
+	if (chat_bufferlen > viddef.width/CHAR_WIDTH - (x + 1))
+		s += chat_bufferlen - (viddef.width/CHAR_WIDTH - (x + 1));
+	while (*s)
+	{
+		re.DrawChar (x * CHAR_WIDTH, v, *s++);
+		x++;
+	}
+	// draw cursor
+	re.DrawChar (x * CHAR_WIDTH, v, 10 + ((curtime >> 8) & 1));
+}
 
-	initialized = true;
+
+void Key_Message (int key)
+{
+	if (key == K_ENTER || key == K_KP_ENTER)
+	{
+		if (chat_team)
+			Cbuf_AddText ("say_team \"");
+		else
+			Cbuf_AddText ("say \"");
+		Cbuf_AddText (chat_buffer);
+		Cbuf_AddText ("\"\n");
+
+		cls.key_dest = key_game;
+		chat_bufferlen = 0;
+		chat_buffer[0] = 0;
+		return;
+	}
+
+	if (key == K_ESCAPE)
+	{
+		cls.key_dest = key_game;
+		chat_bufferlen = 0;
+		chat_buffer[0] = 0;
+		return;
+	}
+
+	if (key == K_BACKSPACE)
+	{
+		if (chat_bufferlen)
+		{
+			chat_bufferlen--;
+			chat_buffer[chat_bufferlen] = 0;
+		}
+		return;
+	}
+
+	if (key < 32 || key >= 128)
+		return;		// non printable
+
+	if (chat_bufferlen == sizeof(chat_buffer)-1)
+		return;		// buffer full
+
+	chat_buffer[chat_bufferlen++] = key;
+	chat_buffer[chat_bufferlen] = 0;
+}
+
+
+static void SCR_MessageMode_f (void)
+{
+	chat_team = false;
+	cls.key_dest = key_message;
+}
+
+
+static void SCR_MessageMode2_f (void)
+{
+	chat_team = true;
+	cls.key_dest = key_message;
 }
 
 
@@ -401,9 +453,7 @@ CVAR_END
 	Console and loading plaque
 -----------------------------------------------------------------------------*/
 
-static int loadingScrTime;
 static const char *map_levelshot;
-
 
 void SCR_SetLevelshot (char *name)
 {
@@ -425,8 +475,8 @@ void SCR_SetLevelshot (char *name)
 		name = va("/levelshots/%s", tmp);
 	}
 
-	if (map_levelshot && !stricmp (map_levelshot, name))
-		return;						// already set
+	if (map_levelshot && stricmp (map_levelshot, defLevelshot))
+		return;						// already set non-default levelshot
 
 	if (ImageExists (name))
 	{
@@ -464,7 +514,6 @@ void SCR_BeginLoadingPlaque (void)
 	cl.sound_prepped = false;		// don't play ambients
 	CDAudio_Stop ();
 	cls.loading = true;
-	loadingScrTime = cls.realtime;
 	cls.disable_servercount = cl.servercount;
 
 	M_ForceMenuOff ();
@@ -484,7 +533,6 @@ void SCR_EndLoadingPlaque (bool force)
 	if (force || (cls.disable_servercount != cl.servercount && cl.refresh_prepped))
 	{
 		cls.loading = false;
-		loadingScrTime = 0;
 		map_levelshot = NULL;
 		Con_ClearNotify ();
 		SCR_ShowConsole (false, true);
@@ -495,11 +543,12 @@ void SCR_EndLoadingPlaque (bool force)
 
 static float conCurrent = 0;	// aproaches con_desired
 
-static void DrawLoadingAndConsole (bool allowNotifyArea)
+//!! sometimes console should be painted before menu! (when cls.keep_console)
+static void DrawGUI (bool allowNotifyArea)
 {
 	int		currTime, timeDelta;
 	static int lastConTime = 0;
-	static float conDesired = 0;	// 0.0 to 1.0 lines of console to display
+	float conDesired = 0;		// 0.0 to 1.0 lines of console to display
 
 	Con_CheckResize ();
 
@@ -536,18 +585,7 @@ static void DrawLoadingAndConsole (bool allowNotifyArea)
 	else					// console in-place
 		lastConTime = 0;
 
-	// check loading plaque timeout
-	if (cls.loading)
-	{
-		if ((cls.state == ca_active && cl.refresh_prepped) || cls.state == ca_disconnected || cls.key_dest == key_menu)
-		{
-			if (loadingScrTime + 500 < cls.realtime)
-				cls.loading = false;
-		}
-		else
-			loadingScrTime = cls.realtime;
-	}
-
+	// draw loading splash
 	if (cls.loading)
 	{
 		if (developer->integer)
@@ -579,21 +617,24 @@ static void DrawLoadingAndConsole (bool allowNotifyArea)
 			if (!conCurrent)
 				Con_DrawNotify (false);		// do not draw notify area when console is visible too
 			allowNotifyArea = false;
-
-			// draw downloading info
-			if (cls.download)
-			{
-				int w = viddef.width / 2;
-				int r = w * cls.downloadpercent / 100;
-				int top = viddef.height - 3 * CHAR_HEIGHT - 2;
-				int height = 2 * CHAR_HEIGHT + 4;
-				re.DrawFill2 (6, top, r, height, RGB(0.5,0,0));
-				re.DrawFill2 (6 + r, top, w - r, height, RGB(0.1,0.1,0.1));
-				DrawString (8, viddef.height - 3 * CHAR_HEIGHT, va("Downloading: %s", cls.downloadname));
-				DrawString (8, viddef.height - 2 * CHAR_HEIGHT, va("%d%% complete", cls.downloadpercent));
-			}
 		}
 	}
+
+	// draw downloading info
+	if (cls.download)
+	{
+		int w = viddef.width / 2;
+		int r = w * cls.downloadpercent / 100;
+		int top = viddef.height - 3 * CHAR_HEIGHT - 2;
+		int height = 2 * CHAR_HEIGHT + 4;
+		re.DrawFill2 (6, top, r, height, RGB(0.5,0,0));
+		re.DrawFill2 (6 + r, top, w - r, height, RGB(0.1,0.1,0.1));
+		DrawString (8, viddef.height - 3 * CHAR_HEIGHT, va("Downloading: %s", cls.downloadname));
+		DrawString (8, viddef.height - 2 * CHAR_HEIGHT, va("%d%% complete", cls.downloadpercent));
+	}
+
+	// draw menu
+	M_Draw ();
 
 	// draw console
 	if (!cls.loading || !developer->integer)
@@ -633,6 +674,16 @@ void SCR_ShowConsole (bool show, bool noAnim)
 	}
 
 	unguard;
+}
+
+
+void SCR_ToggleConsole (void)
+{
+	if (cls.keep_console) return;
+
+	Key_ClearTyping ();
+	Con_ClearNotify ();
+	SCR_ShowConsole (cls.key_dest != key_console, false);
 }
 
 
@@ -783,7 +834,7 @@ static void DrawField (int x, int y, int color, int width, int value)
 		return;
 
 	// draw number string
-	int len = Com_sprintf (ARRAY_ARG(num), "%d", value);
+	int len = appSprintf (ARRAY_ARG(num), "%d", value);
 	if (width > 5) width = 5;
 	if (len > width) len = width;
 
@@ -802,6 +853,32 @@ static void DrawField (int x, int y, int color, int width, int value)
 	}
 }
 
+
+/*
+=================
+SCR_DrawCrosshair
+=================
+*/
+
+static char	crosshair_pic[MAX_QPATH];
+static int	crosshair_width, crosshair_height;
+
+void SCR_DrawCrosshair (void)
+{
+	if (!crosshair->integer || cl.refdef.rdflags & RDF_THIRD_PERSON)
+		return;
+
+	if (crosshair->modified)
+	{
+		crosshair->modified = false;
+		SCR_TouchPics ();
+	}
+
+	if (!crosshair_pic[0]) return;
+
+	re_DrawPicColor (scr_vrect.x + ((scr_vrect.width - crosshair_width)>>1), scr_vrect.y + ((scr_vrect.height - crosshair_height)>>1),
+		crosshair_pic, crosshairColor->integer);
+}
 
 /*
 ===============
@@ -826,7 +903,7 @@ void SCR_TouchPics (void)
 	{
 		if (ch_num > 0)
 		{
-			Com_sprintf (ARRAY_ARG(crosshair_pic), "ch%d", crosshair->integer);
+			appSprintf (ARRAY_ARG(crosshair_pic), "ch%d", crosshair->integer);
 			re.DrawGetPicSize (&crosshair_width, &crosshair_height, crosshair_pic);
 			if (crosshair_width <= 0)
 				ch_num = -1;								// invalid value
@@ -889,8 +966,6 @@ void SCR_ExecuteLayoutString (char *s)
 		}
 		else if (!strcmp (token, "client"))
 		{	// draw a deathmatch client block
-			int		score, ping, time;
-
 			x = viddef.width/2 - 160 + atoi (COM_Parse (s));
 			y = viddef.height/2 - 120 + atoi (COM_Parse (s));
 
@@ -899,9 +974,9 @@ void SCR_ExecuteLayoutString (char *s)
 				Com_DropError ("client >= MAX_CLIENTS");
 			ci = &cl.clientinfo[value];
 
-			score = atoi (COM_Parse (s));
-			ping = atoi (COM_Parse (s));
-			time = atoi (COM_Parse (s));
+			int score = atoi (COM_Parse (s));
+			int ping = atoi (COM_Parse (s));
+			int time = atoi (COM_Parse (s));
 
 			DrawString (x+32, y, va(S_GREEN"%s", ci->name));
 			DrawString (x+32, y+8,  "Score: ");
@@ -915,7 +990,6 @@ void SCR_ExecuteLayoutString (char *s)
 		}
 		else if (!strcmp (token, "ctf"))
 		{	// draw a ctf client block
-			int		score, ping;
 			char	block[80];
 
 			x = viddef.width/2 - 160 + atoi (COM_Parse (s));
@@ -926,11 +1000,11 @@ void SCR_ExecuteLayoutString (char *s)
 				Com_DropError ("client >= MAX_CLIENTS");
 			ci = &cl.clientinfo[value];
 
-			score = atoi (COM_Parse (s));
-			ping = atoi (COM_Parse (s));
+			int score = atoi (COM_Parse (s));
+			int ping = atoi (COM_Parse (s));
 			if (ping > 999) ping = 999;
 
-			Com_sprintf (ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, ci->name);
+			appSprintf (ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, ci->name);
 
 			if (value == cl.playernum)
 				DrawString (x, y, va(S_RED"%s", block));
@@ -1000,10 +1074,7 @@ void SCR_ExecuteLayoutString (char *s)
 		}
 		else if (!strcmp (token, "stat_string"))
 		{
-			index = atoi (COM_Parse (s));
-			if (index < 0 || index >= MAX_CONFIGSTRINGS)
-				Com_DropError ("Bad stat_string index");
-			index = cl.frame.playerstate.stats[index];
+			index = cl.frame.playerstate.stats[atoi (COM_Parse (s))];
 			if (index < 0 || index >= MAX_CONFIGSTRINGS)
 				Com_DropError ("Bad stat_string index");
 			DrawString (x, y, cl.configstrings[index]);
@@ -1022,9 +1093,7 @@ void SCR_ExecuteLayoutString (char *s)
 			if (!value)
 			{	// skip to endif
 				while (s && strcmp (token, "endif"))
-				{
 					token = COM_Parse (s);
-				}
 			}
 		}
 	}
@@ -1032,32 +1101,6 @@ void SCR_ExecuteLayoutString (char *s)
 	unguard;
 }
 
-
-/*
-================
-SCR_DrawStats
-
-The status bar is a small layout program that
-is based on the stats array
-================
-*/
-void SCR_DrawStats (void)
-{
-	SCR_ExecuteLayoutString (cl.configstrings[CS_STATUSBAR]);
-}
-
-
-/*
-================
-SCR_DrawLayout
-================
-*/
-void SCR_DrawLayout (void)
-{
-	if (!cl.frame.playerstate.stats[STAT_LAYOUTS])
-		return;
-	SCR_ExecuteLayoutString (cl.layout);
-}
 
 //=======================================================
 
@@ -1106,8 +1149,8 @@ void SCR_UpdateScreen (void)
 				// loading plaque over black screen
 				re.SetRawPalette (NULL);
 				re.DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
-				DrawLoadingAndConsole (false);
 			}
+#ifdef REF_USE_PALETTE
 			else if (cls.key_dest != key_game && (*re.flags & REF_USE_PALETTE))
 			{
 				// handle menus and console specially
@@ -1118,26 +1161,23 @@ void SCR_UpdateScreen (void)
 					cl.cinematicpalette_active = false;
 				}
 				re.DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
-				if (cls.key_dest == key_console)
-					DrawLoadingAndConsole (false);
-				else
-					M_Draw ();
 			}
+#endif
 			else
-			{
 				SCR_DrawCinematic ();
-				M_Draw ();
-				DrawLoadingAndConsole (false);
-			}
+
+			DrawGUI (false);
 		}
 		else
 		{
+#ifdef REF_USE_PALETTE
 			// make sure the game palette is active
 			if (cl.cinematicpalette_active)
 			{
 				re.SetRawPalette(NULL);
 				cl.cinematicpalette_active = false;
 			}
+#endif
 
 			// do 3D refresh drawing, and then update the screen
 			SCR_CalcVrect ();
@@ -1149,9 +1189,13 @@ void SCR_UpdateScreen (void)
 			else
 				re.DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
 
-			SCR_DrawStats ();
+			//------------------- HUD --------------------
+			// SCR_DrawStats:
+			SCR_ExecuteLayoutString (cl.configstrings[CS_STATUSBAR]);
+			// SCR_DrawLayout:
 			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 1)
-				SCR_DrawLayout ();
+				SCR_ExecuteLayoutString (cl.layout);
+			// draw inventory
 			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 2)
 				CL_DrawInventory ();
 
@@ -1163,7 +1207,6 @@ void SCR_UpdateScreen (void)
 
 			if (timegraph->integer)
 				SCR_DebugGraph (cls.frametime * 300, 0);
-
 			if (debuggraph->integer || timegraph->integer || netgraph->integer)
 				DrawDebugGraph ();
 
@@ -1180,12 +1223,48 @@ void SCR_UpdateScreen (void)
 				re.DrawStretchPic (0, 0, viddef.width, viddef.height, "conback");
 				M_ForceMenuOn ();
 			}
-
-			M_Draw ();
-			DrawLoadingAndConsole (true);		//!! sometimes console should be painted before menu! (when cls.keep_console)
+			DrawGUI (true);
+			DrawChatInput ();
 		}
 	}
 	re.EndFrame();
 
 	unguard;
+}
+
+
+//============================================================================
+
+/*
+==================
+SCR_Init
+==================
+*/
+void SCR_Init (void)
+{
+CVAR_BEGIN(vars)
+	CVAR_VAR(crosshair, 0, CVAR_ARCHIVE),
+	CVAR_FULL(&crosshairColor, "crosshairColor", STR(C_WHITE), CVAR_ARCHIVE),
+
+	CVAR_VAR(con_maxSize, 0.8, 0),
+	CVAR_VAR(scr_viewsize, 100, CVAR_ARCHIVE),
+	CVAR_VAR(scr_centertime, 2.5, 0),
+	CVAR_VAR(netgraph, 0, 0),
+	CVAR_VAR(timegraph, 0, 0),
+	CVAR_VAR(debuggraph, 0, 0),
+	CVAR_VAR(graphheight, 32, 0),
+	CVAR_VAR(graphscale, 1, 0),
+	CVAR_VAR(graphshift, 0, 0)
+CVAR_END
+
+	Cvar_GetVars (ARRAY_ARG(vars));
+
+	RegisterCommand ("timerefresh", SCR_TimeRefresh_f);
+	RegisterCommand ("loading", SCR_BeginLoadingPlaque);
+	RegisterCommand ("sky", SCR_Sky_f);
+	RegisterCommand ("toggleconsole", SCR_ToggleConsole);
+	RegisterCommand ("messagemode", SCR_MessageMode_f);
+	RegisterCommand ("messagemode2", SCR_MessageMode2_f);
+
+	initialized = true;
 }

@@ -125,7 +125,7 @@ void GL_PerformScreenshot (void)
 		// autogenerate name
 		for (i = 0; i < 10000; i++)
 		{	// check for a free filename
-			Com_sprintf (name, sizeof(name), "%s/screenshots/quake%04d%s", FS_Gamedir (), i, ext);
+			appSprintf (name, sizeof(name), "%s/screenshots/quake%04d%s", FS_Gamedir (), i, ext);
 			if (!(f = fopen (name, "rb")))
 				break;	// file doesn't exist
 			fclose (f);

@@ -50,180 +50,6 @@ char *svc_strings[svc_last] =
 
 //=============================================================================
 
-static void DownloadFileName (char *dest, int destlen, char *fn)	//?? players - from baseq2 only ??
-{
-	if (memcmp (fn, "players", 7) == 0)
-		Com_sprintf (dest, destlen, "%s/%s", BASEDIRNAME, fn);
-	else
-		Com_sprintf (dest, destlen, "%s/%s", FS_Gamedir(), fn);
-}
-
-/*
-===============
-CL_CheckOrDownloadFile
-
-Returns true if the file exists, otherwise it attempts
-to start a download from the server.
-===============
-*/
-
-#define MAX_CHECK_CACHE		32768
-#define MAX_CHECK_NAMES		512
-static char *checkedNames[MAX_CHECK_NAMES], checkNameCache[MAX_CHECK_CACHE];
-static int numCheckedNames, nextCheckCachePos;
-
-
-bool CL_CheckOrDownloadFile (char *filename)
-{
-	FILE	*fp;
-	char	name[MAX_OSPATH], name2[MAX_OSPATH], *ext;
-	int		i;
-
-	Q_CopyFilename (name, filename, sizeof(name));
-	if (strstr (name, ".."))
-	{
-		Com_Printf ("Refusing to download a path with ..\n");
-		return true;
-	}
-
-	strcpy (name2, name);
-	ext = strrchr (name2, '.');
-
-	// checking map - this should be a first precache request, so - clear name cache
-	if (ext && !strcmp (ext, ".bsp"))
-		numCheckedNames = nextCheckCachePos = 0;
-	// prevent from checking the same file twice
-	for (i = 0; i < numCheckedNames; i++)
-		if (!strcmp (name, checkedNames[i]))
-		{
-//			Com_Printf(S_RED"chk: %s\n", name);//!!
-			return true;	// already checked, return "found" even if not found
-		}
-	// register new name
-	if (numCheckedNames < MAX_CHECK_NAMES)
-	{
-		int		len;
-
-		len = strlen (name);
-		if (len + nextCheckCachePos + 1 < MAX_CHECK_CACHE)
-		{
-			char	*s;
-
-//			Com_Printf(S_GREEN"new: %s\n", name);//!!
-			s = checkedNames[numCheckedNames++] = &checkNameCache[nextCheckCachePos];
-			strcpy (s, name);
-			nextCheckCachePos += len + 1;
-		}
-	}
-
-	// check all image format for .PCX and .WAL extension
-	if (ext && (!strcmp (ext, ".pcx") || !strcmp (ext, ".wal")))
-	{
-		*ext = 0; // strip extension
-		if (ImageExists (name2, IMAGE_ANY))
-			return true;
-	}
-
-	if (FS_FileExists (name))
-	{	// it exists, no need to download
-		return true;
-	}
-
-	strcpy (cls.downloadname, name);
-
-	// download to a temp name, and only rename
-	// to the real name when done, so if interrupted
-	// a runt file wont be left
-#if 0
-	COM_StripExtension (cls.downloadname, cls.downloadtempname);
-#else
-	strcpy (cls.downloadtempname, name);
-#endif
-	strcat (cls.downloadtempname, ".tmp");
-
-//ZOID
-	// check to see if we already have a tmp for this file, if so, try to resume
-	// open the file if not opened yet
-	DownloadFileName (name, sizeof(name), cls.downloadtempname);
-
-//	FS_CreatePath (name);
-
-	fp = fopen (name, "r+b");
-	if (fp)
-	{ // it exists
-		int		len;
-
-		fseek (fp, 0, SEEK_END);
-		len = ftell (fp);
-		cls.download = fp;
-
-		// give the server an offset to start the download
-		Com_Printf ("Resuming %s\n", cls.downloadname);
-		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString (&cls.netchan.message, va("download %s %i", cls.downloadname, len));
-	}
-	else
-	{
-		Com_Printf ("Downloading %s\n", cls.downloadname);
-		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString (&cls.netchan.message, va("download %s", cls.downloadname));
-	}
-
-	cls.downloadnumber++;
-
-	return false;
-}
-
-/*
-===============
-CL_Download_f
-
-Request a download from the server
-===============
-*/
-void CL_Download_f (bool usage, int argc, char **argv)
-{
-	char filename[MAX_OSPATH];
-
-	if (argc != 2 || usage)
-	{
-		Com_Printf("Usage: download <filename>\n");
-		return;
-	}
-
-	Q_CopyFilename (filename, argv[1], sizeof(filename));
-
-	if (strstr (filename, ".."))
-	{
-		Com_Printf ("Refusing to download a path with ..\n");
-		return;
-	}
-
-	if (FS_FileExists (filename))
-	{	// it exists, no need to download
-		Com_Printf("File already exists.\n");
-		return;
-	}
-
-	strcpy (cls.downloadname, filename);
-	Com_Printf ("Downloading %s\n", cls.downloadname);
-
-	// download to a temp name, and only rename
-	// to the real name when done, so if interrupted
-	// a runt file wont be left
-#if 0
-	COM_StripExtension (cls.downloadname, cls.downloadtempname);
-#else
-	strcpy (cls.downloadtempname, filename);
-#endif
-	strcat (cls.downloadtempname, ".tmp");
-
-	MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-	MSG_WriteString (&cls.netchan.message, va("download %s", cls.downloadname));
-
-	cls.downloadnumber++;
-}
-
 /*
 ======================
 CL_RegisterSounds
@@ -244,97 +70,6 @@ void CL_RegisterSounds (void)
 		Sys_SendKeyEvents ();	// pump message loop
 	}
 	S_EndRegistration ();
-}
-
-
-/*
-=====================
-CL_ParseDownload
-
-A download message has been received from the server
-=====================
-*/
-void CL_ParseDownload (void)
-{
-	int		size, percent;
-	char	name[MAX_OSPATH];
-	int		r;
-
-	// read the data
-	size = MSG_ReadShort (&net_message);
-	percent = MSG_ReadByte (&net_message);
-	if (size == -1)
-	{
-		Com_WPrintf ("Server does not have this file.\n");
-		if (cls.download)
-		{
-			// if here, we tried to resume a file but the server said no
-			fclose (cls.download);
-			cls.download = NULL;
-		}
-		CL_RequestNextDownload ();
-		return;
-	}
-
-	// open the file if not opened yet
-	if (!cls.download)
-	{
-		DownloadFileName (name, sizeof(name), cls.downloadtempname);
-
-		FS_CreatePath (name);
-
-		cls.download = fopen (name, "wb");
-		if (!cls.download)
-		{
-			net_message.readcount += size;
-			Com_WPrintf ("Failed to open %s\n", cls.downloadtempname);
-			CL_RequestNextDownload ();
-			return;
-		}
-	}
-
-	fwrite (net_message.data + net_message.readcount, 1, size, cls.download);
-	net_message.readcount += size;
-
-	if (percent != 100)
-	{
-		// request next block
-// change display routines by zoid
-#if 0
-		Com_Printf (".");
-		if (10*(percent/10) != cls.downloadpercent)
-		{
-			cls.downloadpercent = 10*(percent/10);
-			Com_Printf ("%i%%", cls.downloadpercent);
-		}
-#endif
-		cls.downloadpercent = percent;
-
-		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-		SZ_Print (&cls.netchan.message, "nextdl");
-	}
-	else
-	{
-		char	oldn[MAX_OSPATH];
-		char	newn[MAX_OSPATH];
-
-//		Com_Printf ("100%%\n");
-
-		fclose (cls.download);
-
-		// rename the temp file to it's final name
-		DownloadFileName (oldn, sizeof(oldn), cls.downloadtempname);
-		DownloadFileName (newn, sizeof(newn), cls.downloadname);
-		r = rename (oldn, newn);
-		if (r)
-			Com_WPrintf ("failed to rename.\n");
-
-		cls.download = NULL;
-		cls.downloadpercent = 0;
-
-		// get another file if needed
-		CL_RequestNextDownload ();
-	}
 }
 
 
@@ -388,7 +123,7 @@ void CL_ParseServerData (void)
 
 	// game directory
 	str = MSG_ReadString (&net_message);
-	Q_strncpyz (cl.gamedir, str, sizeof(cl.gamedir));
+	appStrncpyz (cl.gamedir, str, sizeof(cl.gamedir));
 	Cvar_Set ("game", str);
 
 	// parse player entity number
@@ -441,10 +176,10 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 	int		i;
 	char	*t, model_name[MAX_QPATH], skin_name[MAX_QPATH];
 
-	Q_strncpyz (ci->cinfo, s, sizeof(ci->cinfo));
+	appStrncpyz (ci->cinfo, s, sizeof(ci->cinfo));
 
 	// isolate the player's name
-	Q_strncpyz (ci->name, s, sizeof(ci->name));
+	appStrncpyz (ci->name, s, sizeof(ci->name));
 	t = strchr (s, '\\');
 	if (t)
 	{
@@ -523,7 +258,7 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 		if (!memcmp (skin_name, "skn_", 4))
 			strcpy (ci->iconname, "/pics/default_icon.pcx");
 		else
-			Com_sprintf (ci->iconname, sizeof(ci->iconname), "/players/%s/%s_i.pcx", model_name, skin_name);
+			appSprintf (ci->iconname, sizeof(ci->iconname), "/players/%s/%s_i.pcx", model_name, skin_name);
 		ci->icon = re.RegisterPic (ci->iconname);
 	}
 
@@ -566,7 +301,7 @@ void CL_ParseConfigString (void)
 		Com_DropError ("configstring > MAX_CONFIGSTRINGS");
 	s = MSG_ReadString(&net_message);
 
-	Q_strncpyz (olds, cl.configstrings[i], sizeof(olds));
+	appStrncpyz (olds, cl.configstrings[i], sizeof(olds));
 
 	strcpy (cl.configstrings[i], s);
 
@@ -703,7 +438,7 @@ void CL_ParseServerMessage (void)
 		Com_Printf ("------------------\n");
 
 	// parse the message
-	while (1)
+	while (true)
 	{
 		if (net_message.readcount > net_message.cursize)
 		{
@@ -825,7 +560,7 @@ void CL_ParseServerMessage (void)
 
 		case svc_layout:
 			s = MSG_ReadString (&net_message);
-			Q_strncpyz (cl.layout, s, sizeof(cl.layout));
+			appStrncpyz (cl.layout, s, sizeof(cl.layout));
 			break;
 
 		case svc_playerinfo:

@@ -17,7 +17,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-#include <ctype.h>
 #include "client.h"
 #include "../client/qmenu.h"
 
@@ -51,15 +50,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define DF_NO_SPHERES		0x00100000
 
 
+#define CHAR_WIDTH	8
+#define CHAR_HEIGHT	8
+
+
 static int	m_main_cursor;
 
 #define NUM_CURSOR_FRAMES 15
 
 #define MENU_CHECK	if (*re.flags & REF_CONSOLE_ONLY) return;
 
-static char *menu_in_sound		= "misc/menu1.wav";
-static char *menu_move_sound	= "misc/menu2.wav";
-static char *menu_out_sound		= "misc/menu3.wav";
+static const char *menu_in_sound   = "misc/menu1.wav";
+static const char *menu_move_sound = "misc/menu2.wav";
+static const char *menu_out_sound  = "misc/menu3.wav";
 
 void M_Menu_Main_f (void);
 	void M_Menu_Game_f (void);
@@ -287,7 +290,7 @@ void M_Print (int cx, int cy, char *str)
 	while (*str)
 	{
 		re.DrawChar (cx + ((viddef.width - 320)>>1), cy + ((viddef.height - 240)>>1), *str++, C_RED);
-		cx += 8;
+		cx += CHAR_WIDTH;
 	}
 }
 
@@ -334,25 +337,25 @@ void M_DrawTextBox (int x, int y, int width, int lines)
 	M_DrawCharacter (cx, cy, 1);
 	for (n = 0; n < lines; n++)
 	{
-		cy += 8;
+		cy += CHAR_HEIGHT;
 		M_DrawCharacter (cx, cy, 4);
 	}
-	M_DrawCharacter (cx, cy+8, 7);
+	M_DrawCharacter (cx, cy+CHAR_HEIGHT, 7);
 
 	// draw middle
-	cx += 8;
+	cx += CHAR_WIDTH;
 	while (width > 0)
 	{
 		cy = y;
 		M_DrawCharacter (cx, cy, 2);
 		for (n = 0; n < lines; n++)
 		{
-			cy += 8;
+			cy += CHAR_HEIGHT;
 			M_DrawCharacter (cx, cy, 5);
 		}
-		M_DrawCharacter (cx, cy+8, 8);
+		M_DrawCharacter (cx, cy+CHAR_HEIGHT, 8);
 		width -= 1;
-		cx += 8;
+		cx += CHAR_WIDTH;
 	}
 
 	// draw right side
@@ -360,10 +363,10 @@ void M_DrawTextBox (int x, int y, int width, int lines)
 	M_DrawCharacter (cx, cy, 3);
 	for (n = 0; n < lines; n++)
 	{
-		cy += 8;
+		cy += CHAR_HEIGHT;
 		M_DrawCharacter (cx, cy, 6);
 	}
-	M_DrawCharacter (cx, cy+8, 9);
+	M_DrawCharacter (cx, cy+CHAR_WIDTH, 9);
 }
 
 
@@ -519,7 +522,7 @@ static void Multiplayer_MenuDraw (void)
 
 static void Multiplayer_Disconnect (void)
 {
-	if (Com_ServerState())
+	if (cls.state != ca_disconnected)
 		Cbuf_AddText ("disconnect\n");
 	M_ForceMenuOff ();
 }
@@ -619,10 +622,10 @@ static void DrawKeyBindingFunc (void *self)
 		if (numKeys == 1)
 			strcpy (text, Key_KeynumToString (keys[0]));
 		else
-			Com_sprintf (ARRAY_ARG(text), "%s or %s%s",
+			appSprintf (ARRAY_ARG(text), "%s or %s%s",
 				Key_KeynumToString (keys[0]), Key_KeynumToString (keys[1]), numKeys > 2 ? " ..." : "");
 	}
-	Menu_DrawString (a->generic.x + a->generic.parent->x + 16, a->generic.y + a->generic.parent->y, text);
+	DrawString (a->generic.x + a->generic.parent->x + 16, a->generic.y + a->generic.parent->y, text);
 }
 
 static void SeekLine (const char *&s)
@@ -816,7 +819,7 @@ static int crosshairs_count;
 static void CrosshairFunc( void *unused )
 {
 	Cvar_SetInteger ("crosshair", s_options_crosshair_box.curvalue);
-	Cvar_SetInteger ("crosshaircolor", s_options_crosshair_color_box.curvalue);
+	Cvar_SetInteger ("crosshairColor", s_options_crosshair_color_box.curvalue);
 }
 
 static void JoystickFunc (void *unused)
@@ -881,8 +884,8 @@ static void ControlsSetMenuItemValues (void)
 	Cvar_Clamp (crosshair, 0, crosshairs_count);
 	s_options_crosshair_box.curvalue		= crosshair->integer;
 
-	Cvar_Clamp (crosshaircolor, 0, 7);
-	s_options_crosshair_color_box.curvalue	= crosshaircolor->integer;
+	Cvar_Clamp (crosshairColor, 0, 7);
+	s_options_crosshair_color_box.curvalue	= crosshairColor->integer;
 
 	Cvar_Clamp (in_joystick, 0, 1);
 	s_options_joystick_box.curvalue			= in_joystick->integer;
@@ -1050,10 +1053,10 @@ static void Options_CrosshairDraw (void)
 	if (!crosshair->integer)
 		return;
 
-	Com_sprintf (ARRAY_ARG(name), "ch%d", crosshair->integer);
+	appSprintf (ARRAY_ARG(name), "ch%d", crosshair->integer);
 	re.DrawGetPicSize (&w, &h, name);
 	re.DrawPic ((viddef.width - w) / 2 + 32, s_options_crosshair_box.generic.y + s_options_menu.y + 10 - h / 2,
-		name, crosshaircolor->integer);
+		name, crosshairColor->integer);
 }
 
 static void Options_MenuDraw (void)
@@ -1102,37 +1105,28 @@ static int credits_start_time;
 static char *credits[256];
 static char *creditsBuffer;
 
-
 static void M_Credits_MenuDraw (void)
 {
-	int		i, y;
-
-	y = viddef.height - (cls.realtime - credits_start_time) / 40;
-	for (i = 0; credits[i] && y < viddef.height; y += 10, i++)
+	int y = viddef.height - (cls.realtime - credits_start_time) / 40;
+	for (int i = 0; credits[i] && y < viddef.height; y += CHAR_HEIGHT+2, i++)
 	{
-		int		j, stringoffset;
-		bool	bold;
-
-		if (y <= -8)
+		if (y <= -CHAR_HEIGHT)
 			continue;
 
-		if (credits[i][0] == '+')
+		int color = C_WHITE;
+		const char *s = credits[i];
+		if (s[0] == '+')
 		{
-			bold = true;
-			stringoffset = 1;
-		}
-		else
-		{
-			bold = false;
-			stringoffset = 0;
+			color = C_GREEN;
+			s++;
 		}
 
-		for (j = 0; credits[i][j+stringoffset]; j++)
+		int x = (viddef.width - strlen (s) * CHAR_WIDTH) / 2;
+		while (*s)
 		{
-			int		x;
-
-			x = (viddef.width - strlen (credits[i]) * 8 - stringoffset * 8) / 2 + (j + stringoffset) * 8;
-			re.DrawChar (x, y, credits[i][j+stringoffset], bold ? C_GREEN : C_WHITE);
+			re.DrawChar (x, y, *s, color);
+			x += CHAR_WIDTH;
+			s++;
 		}
 	}
 
@@ -1154,7 +1148,6 @@ static const char *M_Credits_Key (int key)
 	}
 
 	return menu_out_sound;
-
 }
 
 
@@ -1179,7 +1172,7 @@ void M_Menu_Credits_f (void)
 	creditsBuffer = (char*) FS_LoadFile (filename, &count);
 	// file always present - have inline file
 	p = creditsBuffer;
-	for (n = 0; n < 255; n++)
+	for (n = 0; n < ARRAY_COUNT(credits)-1; n++)
 	{
 		credits[n] = p;
 		while (*p != '\r' && *p != '\n')
@@ -1560,7 +1553,7 @@ void M_AddToServerList (netadr_t adr, char *info)
 			return;
 
 	local_server_netadr[m_num_servers] = adr;
-	Q_strncpyz (local_server_names[m_num_servers], info, sizeof(local_server_names[0]));
+	appStrncpyz (local_server_names[m_num_servers], info, sizeof(local_server_names[0]));
 	m_num_servers++;
 }
 
@@ -2122,7 +2115,7 @@ static void DMFlagCallback (void *self)
 
 	Cvar_SetInteger ("dmflags", flags);
 
-	Com_sprintf (ARRAY_ARG(dmoptions_statusbar), "dmflags = %d", flags);
+	appSprintf (ARRAY_ARG(dmoptions_statusbar), "dmflags = %d", flags);
 }
 
 static void DMOptions_MenuInit (void)
@@ -2910,7 +2903,7 @@ BROWSE FOR MAP
 
 #define MAX_BROWSE_MAPS		1024
 #define THUMBNAIL_BORDER	4
-#define THUMBNAIL_TEXT		10
+#define THUMBNAIL_TEXT		(CHAR_HEIGHT + 2)
 
 typedef struct
 {
@@ -2951,23 +2944,17 @@ static thumbLayout_t thumbLayout[] =
  */
 static bool DMBrowse_MenuInit ()
 {
-	basenamed_t *item;
-	char	*name, *ext, *path;
-	int		i, x, y, oldcount;
-
 	// free previous levelshots list
 	if (browse_list)
 		FreeNamedList (browse_list);
 
-	oldcount = thumbs.count;
+	int oldcount = thumbs.count;
 	thumbs.count = 0;
 
-	x = viddef.width;
-	y = viddef.height;
-	i = 0;
-	while (1)
+	int i = 0;
+	while (true)
 	{
-		if (x <= thumbLayout[i].width)
+		if (viddef.width <= thumbLayout[i].width)
 		{
 			thumbs.cx = thumbLayout[i].cx;
 			thumbs.cy = thumbLayout[i].cy;
@@ -2980,22 +2967,22 @@ static bool DMBrowse_MenuInit ()
 
 	thumbs.dx = thumbs.w + THUMBNAIL_BORDER * 4;
 	thumbs.dy = thumbs.h + THUMBNAIL_BORDER * 4 + THUMBNAIL_TEXT;
-	thumbs.x0 = (x - thumbs.cx * thumbs.dx + thumbs.dx - thumbs.w) / 2;	// (x-cx*dx)/2 + (dx-w)/2
-	thumbs.y0 = (y - thumbs.cy * thumbs.dy + thumbs.dy - thumbs.h) / 2 - 8;
+	thumbs.x0 = (viddef.width - thumbs.cx * thumbs.dx + thumbs.dx - thumbs.w) / 2;	// (x-cx*dx)/2 + (dx-w)/2
+	thumbs.y0 = (viddef.height - thumbs.cy * thumbs.dy + thumbs.dy - thumbs.h) / 2 - CHAR_HEIGHT;
 
-	path = NULL;
+	const char *path = NULL;
 	while (path = FS_NextPath (path))
 	{
 		if (browse_list = FS_ListFiles (va("%s/levelshots/*.*", path), NULL, LIST_FILES)) break;
 	}
-	for (item = browse_list; item; item = item->next)
+	for (basenamed_t *item = browse_list; item; item = item->next)
 	{
-		name = strrchr (item->name, '/');
+		char *name = strrchr (item->name, '/');
 		if (!name)
 			name = item->name;
 		else
 			name++;
-		ext = strrchr (name, '.');
+		char *ext = strrchr (name, '.');
 		if (ext && (!strcmp (ext, ".jpg") || !strcmp (ext, ".tga") || !strcmp (ext, ".pcx")))
 		{	// screenshot found - check map presence
 			*ext = 0;	// cut extension
@@ -3123,14 +3110,14 @@ static void DrawThumbnail (int x, int y, int w, int h, char *name, bool selected
 		strcpy (&name2[max_width - 3], "...");		// make long names ends with "..."
 		text_width = max_width;
 	}
-	Menu_DrawString (x + (w-8*text_width) / 2, y + h + (THUMBNAIL_TEXT + THUMBNAIL_BORDER - 8) / 2, name2);
+	DrawString (x + (w-8*text_width) / 2, y + h + (THUMBNAIL_TEXT + THUMBNAIL_BORDER - 8) / 2, name2);
 }
 
 static void DMBrowse_DrawScroller (int x0, int y0, int w)
 {
 	int x;
 
-	for (x = x0; x < x0 + w; x += 8)
+	for (x = x0; x < x0 + w; x += CHAR_WIDTH)
 		re.DrawChar (x, y0, 0, C_GREEN);
 }
 
@@ -3294,5 +3281,5 @@ void M_Keydown (int key)
 
 	if (m_keyfunc)
 		if ((s = m_keyfunc (key)) != NULL)
-			S_StartLocalSound ((char *) s);
+			S_StartLocalSound (s);
 }

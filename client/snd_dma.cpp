@@ -279,7 +279,7 @@ S_FindName
 
 ==================
 */
-sfx_t *S_FindName (char *name, bool create)
+static sfx_t *S_FindName (const char *name, bool create)
 {
 	int		i;
 	sfx_t	*sfx;
@@ -353,7 +353,7 @@ sfx_t *S_AliasName (char *aliasname, char *truename)
 
 	memset (sfx, 0, sizeof(*sfx));
 	Q_CopyFilename (sfx->name, aliasname, sizeof(*sfx->name));
-	Q_strncpyz (sfx->truename, truename, sizeof(sfx->truename));
+	appStrncpyz (sfx->truename, truename, sizeof(sfx->truename));
 	sfx->registration_sequence = s_registration_sequence;
 
 	unguard;
@@ -379,7 +379,7 @@ S_RegisterSound
 
 ==================
 */
-sfx_t *S_RegisterSound (char *name)
+sfx_t *S_RegisterSound (const char *name)
 {
 	sfx_t	*sfx;
 
@@ -694,7 +694,7 @@ static sfx_t *GetSexedSound (entityState_t *ent, char *base)
 		strcpy (model, "male");
 
 	// see if we already know of the model specific sound
-	Com_sprintf (ARRAY_ARG(sexedFilename), "#players/%s/%s", model, base+1);
+	appSprintf (ARRAY_ARG(sexedFilename), "#players/%s/%s", model, base+1);
 	sfx = S_FindName (sexedFilename, false);
 
 	if (!sfx)
@@ -817,14 +817,12 @@ void S_StartSound (vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float 
 S_StartLocalSound
 ==================
 */
-void S_StartLocalSound (char *sound)
+void S_StartLocalSound (const char *sound)
 {
-	sfx_t	*sfx;
-
 	if (!sound_started)
 		return;
 
-	sfx = S_RegisterSound (sound);
+	sfx_t *sfx = S_RegisterSound (sound);
 	if (!sfx)
 	{
 		Com_Printf ("S_StartLocalSound: can't cache %s\n", sound);

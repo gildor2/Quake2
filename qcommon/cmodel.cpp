@@ -161,12 +161,11 @@ static void CMod_ReadSurfMaterials (char *filename)
 
 	while (s = COM_Parse (in), in)
 	{
-		char		c;
 		material_t	m;
 		surfMaterial_t *sm;
 
 		// s points to material name string
-		c = s[0];
+		char c = s[0];
 		if (c >= 'A' && c <= 'Z') c += 32;		// lowercase
 		switch (c)
 		{
@@ -279,6 +278,8 @@ static void CMod_LoadSubmodels (cmodel_t *data, int count)
 {
 	map_cmodels = data;
 	numcmodels = count;
+	if (map_cmodels[0].headnode)
+		Com_DropError ("map has invalid headnode = %d", map_cmodels[0].headnode);
 }
 
 
@@ -310,8 +311,8 @@ static void CMod_LoadSurfaces (texinfo_t *data, int size)
 	{
 		int		f, m;
 
-		Q_strncpyz (out->name, in->texture, sizeof(out->name));		// texture name limited to 16 chars (compatibility with older mods?)
-		Q_strncpyz (out->rname, in->texture, sizeof(out->rname));	// name limited to 32 chars (full?)
+		appStrncpyz (out->name, in->texture, sizeof(out->name));		// texture name limited to 16 chars (compatibility with older mods?)
+		appStrncpyz (out->rname, in->texture, sizeof(out->rname));	// name limited to 32 chars (full?)
 		f = in->flags;
 		out->flags = f & ~SURF_KP_MATERIAL;
 		out->value = in->value;
@@ -603,7 +604,7 @@ void CMod_LoadHLSurfaces (lump_t *l)
 	for ( i=0 ; i<count ; i++, in++, out++)
 	{
 		char buf[32];//!!
-		Com_sprintf(ARRAY_ARG(buf),"surf_%x",i);
+		appSprintf(ARRAY_ARG(buf),"surf_%x",i);
 		strcpy (out->name, buf); //!!
 		strcpy (out->rname, buf);  //!!
 //??		strncpy (out->name, in->texture, sizeof(out->name)-1);
@@ -1098,7 +1099,6 @@ cmodel_t *CM_LoadMap (char *name, bool clientload, unsigned *checksum)
 	FloodAreaConnections ();
 
 	strcpy (map_name, name);
-
 	return &map_cmodels[0];
 }
 
@@ -1258,8 +1258,10 @@ int	CM_HeadnodeForBox (vec3_t mins, vec3_t maxs)
 	Point info
 -----------------------------------------------------------------------------*/
 
-static int PointLeafnum (vec3_t p, int num)
+int CM_PointLeafnum (vec3_t p, int num)
 {
+	guard(CM_PointLeafnum);
+	if (!numplanes) return 0;			// map is not yet loaded
 	while (num >= 0)
 	{
 		cnode_t	*node;
@@ -1271,29 +1273,17 @@ static int PointLeafnum (vec3_t p, int num)
 	}
 
 	c_pointcontents++;					// stats
-	return -1 - num;
-}
-
-
-int CM_PointLeafnum (vec3_t p)
-{
-	guard(CM_PointLeafnum);
-	if (!numplanes) return 0;			// map is not yet loaded
-	//?? (need another way -- what will be, when loading DIFFERENT map, and trying to trace OLD map ?)
-	return PointLeafnum (p, 0);
 	unguard;
+	return -1 - num;
 }
 
 
 int CM_PointContents (vec3_t p, int headnode)
 {
-	int		l;
-
-	if (!numnodes) return 0;	// map not loaded
+	if (!numnodes) return 0;			// map not loaded
 
 	guard(CM_PointContents);
-	l = PointLeafnum (p, headnode);
-	return map_leafs[l].contents;
+	return map_leafs[CM_PointLeafnum (p, headnode)].contents;
 	unguard;
 }
 
@@ -1301,7 +1291,6 @@ int CM_PointContents (vec3_t p, int headnode)
 int	CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t angles)
 {
 	vec3_t	p1, tmp, axis[3];
-	int		l;
 
 	guard(CM_TransformedPointContents);
 	if (headnode != box_headnode && (angles[0] || angles[1] || angles[2]))
@@ -1315,15 +1304,13 @@ int	CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t a
 	else
 		VectorSubtract (p, origin, p1);
 
-	l = PointLeafnum (p1, headnode);
-	return map_leafs[l].contents;
+	return map_leafs[CM_PointLeafnum (p1, headnode)].contents;
 	unguard;
 }
 
 int	CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t *axis)
 {
 	vec3_t	p1, tmp;
-	int		l;
 
 	guard(CM_TransformedPointContents2);
 	if (headnode != box_headnode)
@@ -1336,9 +1323,7 @@ int	CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t 
 	else
 		VectorSubtract (p, origin, p1);
 
-	l = PointLeafnum (p1, headnode);
-
-	return map_leafs[l].contents;
+	return map_leafs[CM_PointLeafnum (p1, headnode)].contents;
 	unguard;
 }
 
@@ -1347,18 +1332,19 @@ int	CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t 
 	Box info
 -----------------------------------------------------------------------------*/
 
-static int BoxLeafnums_headnode (vec3_t mins, vec3_t maxs, int *list, int listsize, int headnode, int *topnode)
+int CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topnode, int headnode)
 {
-	cnode_t	*node;
 	int		count, _topnode, nodenum;
 	int		stack[MAX_TREE_DEPTH], sptr;		// stack
+
+	guard(CM_BoxLeafnums);
 
 	count = 0;
 	_topnode = -1;
 	nodenum = headnode;
 
 	sptr = 0;
-	while (1)
+	while (true)
 	{
 		if (nodenum < 0)
 		{
@@ -1375,7 +1361,7 @@ static int BoxLeafnums_headnode (vec3_t mins, vec3_t maxs, int *list, int listsi
 			}
 		}
 
-		node = &map_nodes[nodenum];
+		cnode_t *node = &map_nodes[nodenum];
 		switch (BOX_ON_PLANE_SIDE(mins, maxs, node->plane))
 		{
 		case 1:
@@ -1394,18 +1380,10 @@ static int BoxLeafnums_headnode (vec3_t mins, vec3_t maxs, int *list, int listsi
 	}
 
 	if (topnode) *topnode = _topnode;
+	unguard;
+
 	return count;
 }
-
-
-//?? can this function return few leafnums with repeats of a single leaf ?
-int	CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topnode)
-{
-	guard(CM_BoxLeafnums);
-	return BoxLeafnums_headnode (mins, maxs, list, listsize, map_cmodels[0].headnode, topnode);
-	unguard;
-}
-
 
 
 /*-----------------------------------------------------------------------------
@@ -1562,17 +1540,13 @@ static int traceFrame;
 
 static void TraceToLeaf (int leafnum)
 {
-	int		i;
-	dleaf_t *leaf;
-	cbrush_t *b;
-
-	leaf = &map_leafs[leafnum];
+	dleaf_t *leaf = &map_leafs[leafnum];
 	if (!(leaf->contents & trace_contents))
 		return;
 	// trace line against all brushes in the leaf
-	for (i = 0; i < leaf->numleafbrushes; i++)
+	for (int i = 0; i < leaf->numleafbrushes; i++)
 	{
-		b = map_brushes + map_leafbrushes[leaf->firstleafbrush + i];
+		cbrush_t *b = map_brushes + map_leafbrushes[leaf->firstleafbrush + i];
 		if (b->traceFrame == traceFrame)
 			continue;					// already checked this brush in another leaf
 		b->traceFrame = traceFrame;
@@ -1671,19 +1645,14 @@ When first intersection found (trace.fraction == 0) - return
 */
 static void TestInLeaf (int leafnum)
 {
-	int			i;
-	dleaf_t		*leaf;
-
-	leaf = &map_leafs[leafnum];
+	dleaf_t *leaf = &map_leafs[leafnum];
 	if (!(leaf->contents & trace_contents))
 		return;
 
 	// trace line against all brushes in the leaf
-	for (i = 0; i < leaf->numleafbrushes; i++)
+	for (int i = 0; i < leaf->numleafbrushes; i++)
 	{
-		cbrush_t	*b;
-
-		b = map_brushes + map_leafbrushes[leaf->firstleafbrush + i];
+		cbrush_t *b = map_brushes + map_leafbrushes[leaf->firstleafbrush + i];
 		if (b->traceFrame == traceFrame)
 			continue;	// already checked this brush in another leaf
 		b->traceFrame = traceFrame;
@@ -1797,7 +1766,7 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const vec3_t 
 
 /*	{//!!!!
 		char buf[256];
-		Com_sprintf(ARRAY_ARG(buf),"RHC: divide (%d): t1=%g t2=%g offs=%g {N:%d %g-%g} {N:%d %g-%g} plane(d:%g %g,%g,%g)",num,t1,t2,offset,
+		appSprintf(ARRAY_ARG(buf),"RHC: divide (%d): t1=%g t2=%g offs=%g {N:%d %g-%g} {N:%d %g-%g} plane(d:%g %g,%g,%g)",num,t1,t2,offset,
 			node->children[side], p1f, p1f + (p2f - p1f)*frac,
                         node->children[side^1], midf = p1f + (p2f - p1f)*frac2, p2f,
                         plane->dist,plane->normal[0],plane->normal[1],plane->normal[2]);
@@ -1871,8 +1840,7 @@ void CM_BoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const ve
 	// check for "position test" special case
 	if (start[0] == end[0] && start[1] == end[1] && start[2] == end[2])
 	{
-		int		leafs[1024];
-		int		i, numleafs;
+		int		leafs[1024], numleafs;
 		vec3_t	c1, c2;
 
 		for (i = 0; i < 3; i++)
@@ -1881,8 +1849,8 @@ void CM_BoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const ve
 			c2[i] = start[i] + maxs[i] + 1;
 		}
 
-		numleafs = BoxLeafnums_headnode (c1, c2, leafs, 1024, headnode, NULL);
-		for (i = 0; i < numleafs; i++)
+		numleafs = CM_BoxLeafnums (c1, c2, ARRAY_ARG(leafs), NULL, headnode);
+		for (int i = 0; i < numleafs; i++)
 		{
 			TestInLeaf (leafs[i]);
 			if (trace_trace.allsolid)	// always set when 1st intersection by CM_TestBoxInBrush()
@@ -2047,16 +2015,14 @@ static bool TestBrush (const vec3_t start, const vec3_t end, const cbrush_t *bru
 {
 	int		i;
 	cbrushside_t *side;
-	float	ef, lf;
 
-	ef = -1;
-	lf = 1;
+	float ef = -1;					// enterfrac
+	float lf = 1;					// leavefrac
 	for (i = 0, side = &map_brushsides[brush->firstbrushside]; i < brush->numsides; i++, side++)
 	{
-		cplane_t *plane;
 		float	d1, d2, f;
 
-		plane = side->plane;
+		cplane_t *plane = side->plane;
 		if (plane->type <= PLANE_Z)
 		{
 			d1 = start[plane->type] - plane->dist;

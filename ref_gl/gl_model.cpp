@@ -602,7 +602,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		{
 			int		n;
 
-			pname += Com_sprintf (pname, MAX_QPATH, "textures/%s", ptex->texture) + 1;	// length(format)+1
+			pname += appSprintf (pname, MAX_QPATH, "textures/%s", ptex->texture) + 1;	// length(format)+1
 			numTextures++;
 
 			n = ptex->nexttexinfo;
@@ -1239,6 +1239,7 @@ void GL_LoadWorldMap (const char *name)
 }
 
 
+//?? can use cmodel.cpp function
 node_t *GL_PointInLeaf (vec3_t p)
 {
 	node_t		*node;
@@ -1509,6 +1510,112 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 
 #define MAX_XYZ_INDEXES		4096	// maximum number of verts in loaded md3 model
 
+#if 0
+#define BUILD_SCELETON
+//???? rename, may be remove
+static void CheckTrisSizes (surfaceMd3_t *surf, dAliasFrame_t *md2Frame = NULL, int md2FrameSize = 0)
+{
+	int		tri, *inds;
+	bool	fixed[MAX_XYZ_INDEXES];
+
+	//!! special cases:
+	//!!	1. numFrames == 1 -- static model
+	//!!	2. numFixed == numTris: model -> static + info about placement relative to model axis
+	//!!		BUT: require to check presence of a SINGLE skeleton (model can have few parts, which are
+	//!!		moved one along/around another)
+	//!! TODO:
+	//!!		- optimization: build list of adjancent tris, list of same verts (doubled on skin seams)
+	//!!		- may be, check not tris -- check edges -- for building skeleton
+
+	int numFixed = surf->numTris;
+	memset (&fixed, 1, sizeof(fixed));	// fill by "true" ?????
+
+	// compute max md2 frame scale (int * scale = float, so "scale" can be used as possible error)
+	vec3_t scale;
+	if (md2Frame)
+	{
+		VectorClear (scale);
+		for (int frame = 0; frame < surf->numFrames; frame++, md2Frame = OffsetPointer (md2Frame, md2FrameSize))
+		{
+			if (md2Frame->scale[0] > scale[0]) scale[0] = md2Frame->scale[0];
+			if (md2Frame->scale[1] > scale[1]) scale[1] = md2Frame->scale[1];
+			if (md2Frame->scale[2] > scale[2]) scale[2] = md2Frame->scale[2];
+		}
+	}
+	else
+	{
+		//?? for real md3 model can pass NULL instead of md2Frame and use constant scale[]
+		scale[0] = scale[1] = scale[2] = 1.0f / MD3_XYZ_SCALE;
+	}
+
+	for (tri = 0, inds = surf->indexes; tri < surf->numTris; tri++, inds += 3)
+	{
+		int		i, j;
+
+		// integer bounds
+		int	deltaMin[3], deltaMax[3];
+		// set deltaMin/deltaMax[i] bounds to a maximum diapason
+		for (i = 0; i < 3; i++)
+		{
+			deltaMin[i] = -BIG_NUMBER;
+			deltaMax[i] = BIG_NUMBER;
+		}
+//		float maxError2 = 0;
+		float errorConst = DotProduct (scale, scale);
+
+		vertexMd3_t *verts = surf->verts;
+		for (int frame = 0; frame < surf->numFrames; frame++, verts += surf->numVerts)
+		{
+			vec3_t d;
+
+			// compute distance between 2 verts from triangle separately by each coord
+			for (i = 0; i < 3; i++)
+			{
+				int k = (i == 2) ? 0 : i + 1;
+				for (j = 0; j < 3; j++)
+					d[j] = abs(verts[inds[i]].xyz[j] - verts[inds[k]].xyz[j]) * MD3_XYZ_SCALE;
+				// squared distance
+				float dist2 = DotProduct(d, d);
+				// quant-based error
+				float error2 = (2 * DotProduct(d, scale) + errorConst);	//!!!
+				// distance-based error
+				float dist = SQRTFAST(dist2);
+				float err = dist * Cvar_VariableValue("err") / 100;	//!! percent from distance; make const
+				// shrink deltaMin[i]/deltaMax[i] bounds to dist2 +/- error2
+				float min = dist2 - error2;
+				float min2 = (dist - err); min2 *= min2;
+				if (min2 < min) min = min2;			// use maximum range: [min..max] or [min2..max2]
+				if (deltaMin[i] < min)				// shrink deltaMin
+					deltaMin[i] = min;
+				float max = dist2 + error2;
+				float max2 = (dist + err); max2 *= max2;
+				if (max2 > max) max = max2;			// use maximum range
+				if (deltaMax[i] > max)				// shrink deltaMax
+					deltaMax[i] = max;
+				if (deltaMin[i] > deltaMax[i])		// empty range
+				{
+					fixed[tri] = false;
+					numFixed--;
+					break;
+				}
+			}
+
+			if (!fixed[tri]) break;
+		}
+
+		//?? can make indexes[tri] = 0 (exclude tri from drawing)
+		if (!fixed[tri])
+			inds[0] = inds[1] = inds[2] = 0;
+
+		//???
+//		Com_Printf ("%s%3d\n", fixed[tri] ? S_GREEN : "", tri);
+	}
+	Com_Printf (S_CYAN"FIXED: %d / %d\n", numFixed, surf->numTris);	//??
+}
+
+#endif
+
+
 static bool LoadMd2 (model_t *m, byte *buf, unsigned len)
 {
 	dmdl_t	*hdr;
@@ -1606,6 +1713,10 @@ END_PROFILE
 START_PROFILE(..Md2::Normals)
 	BuildMd2Normals (surf, xyzIndexes, hdr->numXyz);
 END_PROFILE
+
+#ifdef BUILD_SCELETON	//????
+	CheckTrisSizes (surf, (dAliasFrame_t*)(buf + hdr->ofsFrames), hdr->frameSize);
+#endif
 
 START_PROFILE(..Md2::Skin)
 	/*---------- load skins --------------*/
@@ -1761,7 +1872,7 @@ void GL_ResetModels (void)
 		im = map.models;
 		for (i = 0; i < map.numModels; i++, m++, im++)
 		{	// inline model #i -> model #i (same index)
-			Com_sprintf (m->name, sizeof(m->name), "*%d", i);
+			appSprintf (m->name, sizeof(m->name), "*%d", i);
 			m->type = MODEL_INLINE;
 			m->inlineModel = im;
 			m->size = 0;

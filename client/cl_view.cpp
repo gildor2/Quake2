@@ -27,8 +27,6 @@ int			gun_frame;
 struct model_s	*gun_model;
 #endif
 
-cvar_t		*crosshair;
-cvar_t		*crosshaircolor;
 cvar_t		*cl_testparticles;
 cvar_t		*cl_testentities;
 cvar_t		*cl_testlights;
@@ -404,30 +402,6 @@ void V_Gun_Model_f (int argc, char **argv)
 //============================================================================
 
 
-/*
-=================
-SCR_DrawCrosshair
-=================
-*/
-void SCR_DrawCrosshair (void)
-{
-	if (!crosshair->integer || cl.refdef.rdflags & RDF_THIRD_PERSON)
-		return;
-
-	if (crosshair->modified)
-	{
-		crosshair->modified = false;
-		SCR_TouchPics ();
-	}
-
-	if (!crosshair_pic[0])
-		return;
-
-	re_DrawPicColor (scr_vrect.x + ((scr_vrect.width - crosshair_width)>>1), scr_vrect.y + ((scr_vrect.height - crosshair_height)>>1),
-		crosshair_pic, crosshaircolor->integer);
-}
-
-
 typedef struct
 {
 	int		code;
@@ -453,7 +427,7 @@ static void DrawFlag (int flag, flagInfo_t *info, int numFlags, char *prefix)
 			if (buf[0])
 				strncat (buf, va(" %s%s", prefix, info->name), sizeof(buf));
 			else
-				Com_sprintf (ARRAY_ARG(buf), "%s%s", prefix, info->name);
+				appSprintf (ARRAY_ARG(buf), "%s%s", prefix, info->name);
 			if (strlen (buf) > 40)
 			{
 				re.DrawTextLeft (buf, RGB(0.3, 0.6, 0.4));
@@ -708,7 +682,7 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 				tmp++;	// skip '/'
 
 				flags |= SHOT_SMALL|SHOT_NO_2D|SHOT_NOGAMMA;
-				Com_sprintf (ARRAY_ARG(filename), "%s/levelshots/%s", FS_Gamedir (), tmp);
+				appSprintf (ARRAY_ARG(filename), "%s/levelshots/%s", FS_Gamedir (), tmp);
 				// cut extension
 				tmp = strrchr (filename, '.');
 				if (tmp) *tmp = 0;
@@ -731,7 +705,7 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 		{
 			if (filename[0])
 				Com_WPrintf ("WARNING: name already specified (%s). Changed.\n", filename);
-			Com_sprintf (ARRAY_ARG(tmpName), "%s/screenshots/%s", FS_Gamedir (), opt);
+			appSprintf (ARRAY_ARG(tmpName), "%s/screenshots/%s", FS_Gamedir (), opt);
 			Q_CopyFilename (filename, tmpName, sizeof(filename));
 		}
 	}
@@ -948,9 +922,6 @@ V_Init
 void V_Init (void)
 {
 CVAR_BEGIN(vars)
-	CVAR_VAR(crosshair, 0, CVAR_ARCHIVE),
-	CVAR_VAR(crosshaircolor, 7, CVAR_ARCHIVE),
-
 	CVAR_VAR(cl_testblend, 0, 0),
 	CVAR_VAR(cl_testparticles, 0, 0),
 	CVAR_VAR(cl_testentities, 0, 0),

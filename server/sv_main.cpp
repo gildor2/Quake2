@@ -133,13 +133,13 @@ char *SV_StatusString (void)
 
 	if (sv.attractloop) return "";
 
-	statusLength = Com_sprintf (ARRAY_ARG(status), "%s\n", Cvar_Serverinfo ());
+	statusLength = appSprintf (ARRAY_ARG(status), "%s\n", Cvar_Serverinfo ());
 	for (int i = 0; i < maxclients->integer; i++)
 	{
 		cl = &svs.clients[i];
 		if (cl->state == cs_connected || cl->state == cs_spawned)
 		{
-			Com_sprintf (ARRAY_ARG(player), "%d %d \"%s\"\n",
+			appSprintf (ARRAY_ARG(player), "%d %d \"%s\"\n",
 				cl->edict->client->ps.stats[STAT_FRAGS], cl->ping, cl->name);
 			playerLength = strlen(player);
 			if (statusLength + playerLength >= sizeof(status))
@@ -184,7 +184,7 @@ static void cInfo (int argc, char **argv)
 	}
 
 	if (version != PROTOCOL_VERSION)
-		Com_sprintf (ARRAY_ARG(string), "%s: wrong version %d\n", hostname->string, version);
+		appSprintf (ARRAY_ARG(string), "%s: wrong version %d\n", hostname->string, version);
 	else
 	{
 		int		i, count;
@@ -194,7 +194,7 @@ static void cInfo (int argc, char **argv)
 			if (svs.clients[i].state >= cs_connected)
 				count++;
 
-		Com_sprintf (ARRAY_ARG(string), "%16s %8s %2d/%2d\n", hostname->string, sv.name, count, maxclients->integer);
+		appSprintf (ARRAY_ARG(string), "%16s %8s %2d/%2d\n", hostname->string, sv.name, count, maxclients->integer);
 	}
 	Netchan_OutOfBandPrint (NS_SERVER, net_from, "info\n%s", string);
 }
@@ -275,7 +275,7 @@ static void cDirectConnect (int argc, char **argv)
 	port = atoi (argv[2]);
 	challenge = atoi (argv[3]);
 
-	Q_strncpyz (userinfo, argv[4], sizeof(userinfo));
+	appStrncpyz (userinfo, argv[4], sizeof(userinfo));
 
 	// force the IP key/value pair so the game can filter based on ip
 	Info_SetValueForKey (userinfo, "ip", NET_AdrToString(&net_from));
@@ -375,7 +375,7 @@ static void cDirectConnect (int argc, char **argv)
 	}
 
 	// parse some info from the info strings
-	Q_strncpyz (newcl->userinfo, userinfo, sizeof(newcl->userinfo));
+	appStrncpyz (newcl->userinfo, userinfo, sizeof(newcl->userinfo));
 	SV_UserinfoChanged (newcl);
 
 	// check if client trying to connect with a new protocol
@@ -1286,7 +1286,7 @@ void SV_UserinfoChanged (client_t *cl)
 	ge->ClientUserinfoChanged (cl->edict, cl->userinfo);
 
 	// name for C code
-	Q_strncpyz (cl->name, Info_ValueForKey (cl->userinfo, "name"), sizeof(cl->name));
+	appStrncpyz (cl->name, Info_ValueForKey (cl->userinfo, "name"), sizeof(cl->name));
 	// mask off high bit
 	for (i = 0; i < sizeof(cl->name); i++)
 		cl->name[i] &= 127;

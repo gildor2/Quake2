@@ -138,7 +138,7 @@ int		Menu_TallySlots (menuFramework_t *menu);
 int		strlen_color (const char *s);
 
 
-#define Menu_DrawString(x,y,s)				DrawString(x,y,s)
+//!! CHAR_WIDTH/CHAR_HEIGHT used here:
 #define Menu_DrawStringR2L(x,y,s)			DrawString(x-(strlen_color(s)-1)*8,y,s)
 #define Menu_DrawStringCenter(x,y,s)		DrawString(x-(strlen_color(s)-1)*4,y,s)
 

@@ -340,6 +340,17 @@ void SV_Trace (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, 
 
 // passedict is explicitly excluded from clipping checks (normally NULL)
 
+
+//===================================================================
+//
+// sv_tokenize.cpp
+//
+void	SV_TokenizeString (const char *text);
+int		SV_Argc (void);
+char *	SV_Argv (int arg);
+char *	SV_Args (void);
+
+
 //------------- Constants for new protocol ---------------------
 
 // Camper sounds: value = [CAMPER_XXX, CAMPER_XXX+CAMPER_XXX_DELTA]

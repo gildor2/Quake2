@@ -141,7 +141,7 @@ void R_PrintTimes (void)
 
 	ms = r_time2 - r_time1;
 
-	Com_sprintf (buf, sizeof(buf), "%5i ms %3i/%3i/%3i poly %3i surf",
+	appSprintf (buf, sizeof(buf), "%5i ms %3i/%3i/%3i poly %3i surf",
 				ms, c_faceclip, r_polycount, r_drawnpolycount, c_surf);
 	DrawText_Right (buf, RGB(1, 1, 1));
 	c_surf = 0;
@@ -168,7 +168,7 @@ void R_PrintDSpeeds (void)
 	de_time = (de_time2 - de_time1);
 	ms = (r_time2 - r_time1);
 
-	Com_sprintf (buf, sizeof(buf), "%3i %2ip %2iw %2ib %2is %2ie %2ia",
+	appSprintf (buf, sizeof(buf), "%3i %2ip %2iw %2ib %2is %2ie %2ia",
 				ms, dp_time, rw_time, db_time, se_time, de_time, da_time);
 	DrawText_Right (buf, RGB(1, 1, 1));
 }
@@ -658,7 +658,7 @@ void R_ScreenShot (void)
 		// autogenerate name
 		for (i = 0; i < 10000; i++)
 		{	// check for a free filename
-			Com_sprintf (name, sizeof(name), "%s/screenshots/shot%04d.pcx", FS_Gamedir (), i);
+			appSprintf (name, sizeof(name), "%s/screenshots/shot%04d.pcx", FS_Gamedir (), i);
 			if (!(f = fopen (name, "rb")))
 				break;	// file doesn't exist
 			fclose (f);

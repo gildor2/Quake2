@@ -353,14 +353,11 @@ const char *COM_QuoteString (const char *str, bool alwaysQuote);
 // data is an in/out parm, returns a parsed out token
 void SkipRestOfLine (char **data);
 
-// format arguments with fmt and put result to dest with a maximum size of size; return strlen(dest)
-int Com_sprintf (char *dest, int size, const char *fmt, ...);
-
 void Com_PageInMemory (void *buffer, int size);
 
 //=============================================
 
-void	Q_strncpyz (char *dest, const char *src, int destsize);
+void	appStrncpyz (char *dest, const char *src, int destsize);
 void	Q_strncpylower (char *dest, const char *src, int len);
 void	Q_CopyFilename (char *dest, const char *src, int len);
 
@@ -390,8 +387,6 @@ float	LittleFloat (float l);
 void	Swap_Init (void);
 
 #endif
-
-char	*va(char *format, ...);
 
 //=============================================
 

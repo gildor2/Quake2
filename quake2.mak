@@ -15,6 +15,7 @@ DYNAMIC : Release/quake2_dyn.exe Release/ref_gl.dll Release/ref_soft.dll Release
 
 STATIC = \
 	Release/obj/cl_cin.obj \
+	Release/obj/cl_download.obj \
 	Release/obj/cl_ents.obj \
 	Release/obj/cl_fx.obj \
 	Release/obj/cl_input.obj \
@@ -41,6 +42,7 @@ STATIC = \
 	Release/obj/sv_init.obj \
 	Release/obj/sv_main.obj \
 	Release/obj/sv_send.obj \
+	Release/obj/sv_tokenize.obj \
 	Release/obj/sv_user.obj \
 	Release/obj/sv_world.obj \
 	Release/obj/cmd.obj \
@@ -113,6 +115,7 @@ Release/quake2.exe : DIRS $(STATIC)
 
 DYN_EXE = \
 	Release/obj/dyn_exe/cl_cin.obj \
+	Release/obj/dyn_exe/cl_download.obj \
 	Release/obj/dyn_exe/cl_ents.obj \
 	Release/obj/dyn_exe/cl_fx.obj \
 	Release/obj/dyn_exe/cl_input.obj \
@@ -139,6 +142,7 @@ DYN_EXE = \
 	Release/obj/dyn_exe/sv_init.obj \
 	Release/obj/dyn_exe/sv_main.obj \
 	Release/obj/dyn_exe/sv_send.obj \
+	Release/obj/dyn_exe/sv_tokenize.obj \
 	Release/obj/dyn_exe/sv_user.obj \
 	Release/obj/dyn_exe/sv_world.obj \
 	Release/obj/dyn_exe/cmd.obj \
@@ -268,6 +272,7 @@ Release/ref_oldgl.dll : DIRS $(DYN_OLDGL)
 
 DEDICATED = \
 	Release/obj/dedicated/cl_cin.obj \
+	Release/obj/dedicated/cl_download.obj \
 	Release/obj/dedicated/cl_ents.obj \
 	Release/obj/dedicated/cl_fx.obj \
 	Release/obj/dedicated/cl_input.obj \
@@ -294,6 +299,7 @@ DEDICATED = \
 	Release/obj/dedicated/sv_init.obj \
 	Release/obj/dedicated/sv_main.obj \
 	Release/obj/dedicated/sv_send.obj \
+	Release/obj/dedicated/sv_tokenize.obj \
 	Release/obj/dedicated/sv_user.obj \
 	Release/obj/dedicated/sv_world.obj \
 	Release/obj/dedicated/cmd.obj \
@@ -559,6 +565,9 @@ DEPENDS = \
 Release/obj/dyn_exe/cl_cin.obj : client/cl_cin.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/cl_cin.obj" client/cl_cin.cpp
 
+Release/obj/dyn_exe/cl_download.obj : client/cl_download.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/cl_download.obj" client/cl_download.cpp
+
 Release/obj/dyn_exe/cl_ents.obj : client/cl_ents.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/cl_ents.obj" client/cl_ents.cpp
 
@@ -597,6 +606,9 @@ OPTIONS = -W3 -O1 -D DEDICATED_ONLY
 Release/obj/dedicated/cl_cin.obj : client/cl_cin.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_cin.obj" client/cl_cin.cpp
 
+Release/obj/dedicated/cl_download.obj : client/cl_download.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_download.obj" client/cl_download.cpp
+
 Release/obj/dedicated/cl_ents.obj : client/cl_ents.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/cl_ents.obj" client/cl_ents.cpp
 
@@ -634,6 +646,9 @@ OPTIONS = -W3 -O1 -D REF_HARD_LINKED
 
 Release/obj/cl_cin.obj : client/cl_cin.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/cl_cin.obj" client/cl_cin.cpp
+
+Release/obj/cl_download.obj : client/cl_download.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/cl_download.obj" client/cl_download.cpp
 
 Release/obj/cl_ents.obj : client/cl_ents.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/cl_ents.obj" client/cl_ents.cpp
@@ -793,16 +808,10 @@ DEPENDS = \
 Release/obj/dyn_exe/ref_vars.obj : client/ref_vars.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/ref_vars.obj" client/ref_vars.cpp
 
-Release/obj/dyn_exe/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/q_shared2.obj" qcommon/q_shared2.cpp
-
 OPTIONS = -W3 -O1 -D DEDICATED_ONLY
 
 Release/obj/dedicated/ref_vars.obj : client/ref_vars.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/ref_vars.obj" client/ref_vars.cpp
-
-Release/obj/dedicated/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/q_shared2.obj" qcommon/q_shared2.cpp
 
 OPTIONS = -W3 -O1 -D DYNAMIC_REF
 
@@ -812,19 +821,10 @@ Release/obj/dyn_ref/ref_vars.obj : client/ref_vars.cpp $(DEPENDS)
 Release/obj/oldgl/ref_vars.obj : client/ref_vars.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/oldgl/ref_vars.obj" client/ref_vars.cpp
 
-Release/obj/dyn_ref/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_ref/q_shared2.obj" qcommon/q_shared2.cpp
-
-Release/obj/oldgl/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/oldgl/q_shared2.obj" qcommon/q_shared2.cpp
-
 OPTIONS = -W3 -O1 -D REF_HARD_LINKED
 
 Release/obj/ref_vars.obj : client/ref_vars.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/ref_vars.obj" client/ref_vars.cpp
-
-Release/obj/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
-	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/q_shared2.obj" qcommon/q_shared2.cpp
 
 OPTIONS = -W3 -O1 -D DYNAMIC_REF
 
@@ -1543,6 +1543,12 @@ Release/obj/dyn_exe/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 Release/obj/dyn_exe/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/pmove.obj" qcommon/pmove.cpp
 
+Release/obj/dyn_exe/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/q_shared2.obj" qcommon/q_shared2.cpp
+
+Release/obj/dyn_exe/sv_tokenize.obj : server/sv_tokenize.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/sv_tokenize.obj" server/sv_tokenize.cpp
+
 Release/obj/dyn_exe/net_wins.obj : win32/net_wins.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_exe/net_wins.obj" win32/net_wins.cpp
 
@@ -1575,11 +1581,25 @@ Release/obj/dedicated/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 Release/obj/dedicated/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/pmove.obj" qcommon/pmove.cpp
 
+Release/obj/dedicated/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/q_shared2.obj" qcommon/q_shared2.cpp
+
+Release/obj/dedicated/sv_tokenize.obj : server/sv_tokenize.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/sv_tokenize.obj" server/sv_tokenize.cpp
+
 Release/obj/dedicated/net_wins.obj : win32/net_wins.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/net_wins.obj" win32/net_wins.cpp
 
 Release/obj/dedicated/q_shwin.obj : win32/q_shwin.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dedicated/q_shwin.obj" win32/q_shwin.cpp
+
+OPTIONS = -W3 -O1 -D DYNAMIC_REF
+
+Release/obj/dyn_ref/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/dyn_ref/q_shared2.obj" qcommon/q_shared2.cpp
+
+Release/obj/oldgl/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/oldgl/q_shared2.obj" qcommon/q_shared2.cpp
 
 OPTIONS = -W3 -O1 -D REF_HARD_LINKED
 
@@ -1606,6 +1626,12 @@ Release/obj/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 
 Release/obj/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/pmove.obj" qcommon/pmove.cpp
+
+Release/obj/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/q_shared2.obj" qcommon/q_shared2.cpp
+
+Release/obj/sv_tokenize.obj : server/sv_tokenize.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/sv_tokenize.obj" server/sv_tokenize.cpp
 
 Release/obj/net_wins.obj : win32/net_wins.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/net_wins.obj" win32/net_wins.cpp

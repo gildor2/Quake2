@@ -1308,7 +1308,7 @@ static void R_SetSky (const char *name, float rotate, vec3_t axis)
 
 	for (i=0 ; i<6 ; i++)
 	{
-		Com_sprintf (pathname, sizeof(pathname), "env/%s%s.pcx", skyname, suf[r_skysideimage[i]]);
+		appSprintf (pathname, sizeof(pathname), "env/%s%s.pcx", skyname, suf[r_skysideimage[i]]);
 		r_skytexinfo[i].image = R_FindImage (pathname, it_sky);
 	}
 }

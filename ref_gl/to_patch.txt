@@ -3,3 +3,7 @@
 - tequila
 - townv2
 - plaza, plaza2
+
+- marics maps
+- rogue, xatrix maps
+- make levelshots for baseq2/rogue/xatrix dm maps

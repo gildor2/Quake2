@@ -516,7 +516,7 @@ static void WriteEntity (char **dst)
 	strcpy (*dst, "{\n"); (*dst) += 2;
 	for (i = 0; i < numEntFields; i++)
 		if (entity[i].name[0])	// may be removed field
-			(*dst) += Com_sprintf (*dst, 1024, "\"%s\" \"%s\"\n", entity[i].name, entity[i].value);
+			(*dst) += appSprintf (*dst, 1024, "\"%s\" \"%s\"\n", entity[i].name, entity[i].value);
 	strcpy (*dst, "}\n"); (*dst) += 2;
 #ifdef SHOW_WRITE
 	Com_Printf (S_CYAN"%s", txt);
@@ -593,7 +593,7 @@ static bool ProcessEntity ()
 	if (Cvar_VariableInt("keep_sp") && (spawnflags & SPAWNFLAG_NOT_DEATHMATCH))//!!
 	{
 		spawnflags &= ~SPAWNFLAG_NOT_DEATHMATCH;
-		Com_sprintf (f->value, sizeof(f->value), "%d", spawnflags);
+		appSprintf (f->value, sizeof(f->value), "%d", spawnflags);
 	}
 #endif
 	// get origin

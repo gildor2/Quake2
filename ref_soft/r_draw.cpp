@@ -43,7 +43,7 @@ image_t *Draw_FindPic (const char *name)
 
 	if (name[0] != '/' && name[0] != '\\')
 	{
-		Com_sprintf (fullname, sizeof(fullname), "pics/%s.pcx", name);
+		appSprintf (fullname, sizeof(fullname), "pics/%s.pcx", name);
 		image = R_FindImage (fullname, it_pic);
 	}
 	else

@@ -201,7 +201,7 @@ static basenamed_t *AddDirFilesToList (char *findname, basenamed_t *list, int fl
 {
 	char	*s, *mask, pattern[MAX_OSPATH], wildcard[MAX_OSPATH];
 
-	Q_strncpyz (pattern, findname, sizeof(pattern));
+	appStrncpyz (pattern, findname, sizeof(pattern));
 	mask = strrchr (pattern, '/');
 	if (mask)
 	{
@@ -250,7 +250,7 @@ static packDir_t *FindPakDirectory (pack_t *pak, char *name)
 		rest = strchr (s, '/');
 		if (!rest)	len = strlen (s);
 		else		len = rest - s;
-		Q_strncpyz (dirname, s, len+1);
+		appStrncpyz (dirname, s, len+1);
 
 		if (!dir->cDir)
 			return NULL;				// current directory have no childs
@@ -284,7 +284,7 @@ static packFile_t *FindPakFile (pack_t *pak, char *name)
 	{
 		char	dirname[MAX_OSPATH], *dirname2;
 
-		Q_strncpyz (dirname, name, filename - name + 1);
+		appStrncpyz (dirname, name, filename - name + 1);
 		// process "./directory/file" names
 		dirname2 = dirname;
 		if (dirname[0] == '.' && dirname[1] == '/') dirname2 += 2;
@@ -699,7 +699,7 @@ int FS_FOpenFile (const char *filename2, FILE **file)
 	{
 		if (!memcmp (filename, link->from, link->fromlength))
 		{
-			Com_sprintf (ARRAY_ARG(netpath), "%s%s", link->to, filename + link->fromlength);
+			appSprintf (ARRAY_ARG(netpath), "%s%s", link->to, filename + link->fromlength);
 			if (f = fopen (netpath, "rb"))
 			{
 				*file = AllocFileInternal (netpath, f, FT_NORMAL);
@@ -741,7 +741,7 @@ int FS_FOpenFile (const char *filename2, FILE **file)
 		{
 			pakname++;		// skip '/'
 			gamelen = pakname - filename;
-			Q_strncpyz (game, filename, strrchr (filename, '/') - filename + 2);	// include "/" and space for zero
+			appStrncpyz (game, filename, strrchr (filename, '/') - filename + 2);	// include "/" and space for zero
 		}
 		else
 			pakname = filename;
@@ -776,7 +776,7 @@ int FS_FOpenFile (const char *filename2, FILE **file)
 			if (!gamelen)
 			{
 				// check a file in the directory tree (only for game-relative path)
-				Com_sprintf (ARRAY_ARG(netpath), "%s/%s", search->filename, filename);
+				appSprintf (ARRAY_ARG(netpath), "%s/%s", search->filename, filename);
 
 				if (!(f = fopen (netpath, "rb"))) continue;
 				*file = AllocFileInternal (netpath, f, FT_NORMAL);
@@ -877,7 +877,7 @@ bool FS_FileExists (char *filename)
 		{
 			pakname++;		// skip '/'
 			gamelen = pakname - filename;
-			Q_strncpyz (game, filename, strrchr (filename, '/') - filename + 2);
+			appStrncpyz (game, filename, strrchr (filename, '/') - filename + 2);
 		}
 		else
 			pakname = filename;
@@ -1261,7 +1261,7 @@ void FS_LoadGameConfig (void)
 
 	gdir = Cvar_VariableString ("gamedir");
 	// game = "" => gdir = "baseq2"
-	Com_sprintf (ARRAY_ARG(dir), "%s/%s", fs_basedir->string, *gdir ? gdir : BASEDIRNAME);
+	appSprintf (ARRAY_ARG(dir), "%s/%s", fs_basedir->string, *gdir ? gdir : BASEDIRNAME);
 
 	if (f = fopen (va("%s/%s", dir, fs_configfile->string), "r"))
 	{
@@ -1311,7 +1311,7 @@ bool FS_SetGamedir (const char *dir)
 	}
 
 	// check for game directory change
-	Com_sprintf (ARRAY_ARG(path), "%s/%s", fs_basedir->string, dir);
+	appSprintf (ARRAY_ARG(path), "%s/%s", fs_basedir->string, dir);
 	if (!strcmp (path, fs_gamedir))
 		return true;		// directory is not changed (should return something another to avoid FS_Restart ??)
 
@@ -1408,7 +1408,7 @@ static void FS_LoadPak_f (bool usage, int argc, char **argv)
 					"  or   loadpak <wildcard>\n");
 		return;
 	}
-	Com_sprintf (ARRAY_ARG(pakname), "%s/%s", fs_gamedir, argv[1]);
+	appSprintf (ARRAY_ARG(pakname), "%s/%s", fs_gamedir, argv[1]);
 
 	if (strchr (pakname, '*'))
 	{	// name is a wildcard
@@ -1457,7 +1457,7 @@ static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 
 		prev = NULL;
 		found = false;
-		Com_sprintf (ARRAY_ARG(pakname), "%s/%s", fs_gamedir, argv[1]);
+		appSprintf (ARRAY_ARG(pakname), "%s/%s", fs_gamedir, argv[1]);
 
 		for (item = fs_searchpaths; item; item = next)
 		{
@@ -1487,7 +1487,7 @@ static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	Com_sprintf (ARRAY_ARG(pakname), "/%s", argv[1]);
+	appSprintf (ARRAY_ARG(pakname), "/%s", argv[1]);
 
 	if (!(search = FindPakStruc (pakname)))
 	{
@@ -1611,7 +1611,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 		{
 			pakname++;
 			gamelen = pakname - name;
-			Q_strncpyz (game, name, strrchr (name, '/') - name + 2);
+			appStrncpyz (game, name, strrchr (name, '/') - name + 2);
 		}
 		else
 			pakname = name;		// shouldn't happens
@@ -1630,7 +1630,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 	}
 	else
 	{	// extract path
-		Q_strncpyz (path, pakname, mask - pakname + 1);
+		appStrncpyz (path, pakname, mask - pakname + 1);
 		mask++; // skip '/'
 	}
 
@@ -1716,7 +1716,7 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 
 	while (path = FS_NextPath (path))
 	{
-		Com_sprintf (ARRAY_ARG(findname), "%s/%s", path, wildcard);
+		appSprintf (ARRAY_ARG(findname), "%s/%s", path, wildcard);
 		Q_CopyFilename (findname, findname, sizeof(findname));	// in-place compact filename
 		Com_Printf (S_GREEN"Directory of %s\n-------------------\n", findname);
 
@@ -1865,7 +1865,7 @@ FS_NextPath
 Allows enumerating all of the directories in the search path
 ================
 */
-char *FS_NextPath (char *prevpath)
+char *FS_NextPath (const char *prevpath)
 {
 	searchPath_t *s;
 	char *prev;

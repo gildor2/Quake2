@@ -12,7 +12,6 @@ static int	aliasCount;		// for detecting runaway loops
 static cvar_t *cmd_debug;
 
 
-static char	cmd_args[MAX_STRING_CHARS];
 static char	*_argv[MAX_STRING_TOKENS];
 static int	_argc;
 
@@ -385,41 +384,6 @@ void Cmd_WriteAliases (FILE *f)
 */
 
 /*
-============
-Cmd_Argc
-============
-*/
-int Cmd_Argc (void)
-{
-	return _argc;
-}
-
-/*
-============
-Cmd_Argv
-============
-*/
-char *Cmd_Argv (int arg)
-{
-	if (arg >= _argc)
-		return "";
-	return _argv[arg];
-}
-
-/*
-============
-Cmd_Args
-
-Returns a single string containing argv(1) to argv(argc()-1)
-============
-*/
-char *Cmd_Args (void)
-{
-	return cmd_args;
-}
-
-
-/*
 ======================
 Cmd_MacroExpandString
 ======================
@@ -442,9 +406,9 @@ static char *MacroExpandString (const char *text)
 	{
 		// convert to "set a b"
 		strcpy (buf, "set ");
-		Q_strncpyz (buf + 4, text, s1 - text + 1);	// copy "a"
+		appStrncpyz (buf + 4, text, s1 - text + 1);	// copy "a"
 		int i = strlen (buf);
-		Com_sprintf (buf + i, sizeof(buf) - i,
+		appSprintf (buf + i, sizeof(buf) - i,
 			s1[1] != '\"' ? " \"%s\"\n" : " %s\n",
 			s1 + 1);
 	}
@@ -519,34 +483,28 @@ static void TokenizeString (const char *text)
 	for (i = 0; i < _argc; i++)
 		appFree (_argv[i]);
 	_argc = 0;
-	cmd_args[0] = 0;
 
 	if (!text) return;
 
-	while (1)
+	// split command line
+	while (true)
 	{
 		// skip spaces and tabs (char in [1..32]); stop on non-space, null or '\n'
 		while (*text && *text <= ' ' && *text != '\n') text++;
 
 		if (!text[0] || text[0] == '\n')
-			return;
-
-		// set cmd_args to everything after the first arg
-		if (_argc == 1)
-		{
-			strcpy (cmd_args, text);
-			// cut trailing spaces
-			int len = strlen (cmd_args) - 1;
-			while (len >= 0 && cmd_args[len] <= ' ')
-				cmd_args[len--] = 0;
-		}
+			break;
 
 		com_token = COM_Parse (text);
-		if (!text) return;
+		if (!text) break;
 
-		if (_argc < MAX_STRING_TOKENS)
+		if (_argc < ARRAY_COUNT(_argv))
 			_argv[_argc++] = CopyString (com_token);
 	}
+
+	// set rest of argv[] array to ""
+	for (i = _argc; i < ARRAY_COUNT(_argv); i++)
+		_argv[i] = "";
 }
 
 

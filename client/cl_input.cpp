@@ -67,9 +67,8 @@ kbutton_t	in_Strafe, in_Speed;
 static void KeyDown (kbutton_t *b, char **argv)
 {
 	int		k;
-	char	*c;
 
-	c = argv[1];
+	char *c = argv[1];
 	if (c[0])
 		k = atoi(c);
 	else

@@ -23,9 +23,28 @@
   - should be able to use few output devices
   - ability to hook output (for rcon etc)
 - COutputDevice:
-    bool useColors -- when "false" - UncolString before output
+    bool useColors -- when "false" - UncolString before output (e.g. for file logging)
 - CErrorDevice:
     bool fatalError
     bool softError
     char errorHistory[]
     void Reset()
+
+-------------------------------------------------------------------------------
+
+- Changing renderer system:
+  - make build target: "static build with single renderer"
+  - change GetRefAPI() -> something another
+  - separate renderer (math only) and backend (OpenGL)
+  - backend should provide "caps" field:
+    - rect textures (GL_NV_texture_rectangle: clamp, no mipmap)
+    - rect textures 2 (GL_ARB_texture_non_power_of_two: full-feautered textures)
+    - compressed textures (for disabling by menu)
+    - fast blend (for soft renderer: can draw console etc with opaque rects)
+    - fast culling (for soft: when "false" will try to cull everything before sending to backend)
+    - some lighting info (software, hardware with/without cubemaps etc)
+  - images.cpp -> renderer (not backend)
+  - (abstract) class CImage, wisible from GUI/client - implementation in renderer, some service funcs
+    (uploading, retreiving from screen, rendering to texture) - in backend
+  ? vid_restart: restart backend ? (renderer restarting - unneded ??); rename cmd ?
+  ? share model/map loading with cmodel (separate into own library, used by server/client/renderer)

@@ -291,7 +291,7 @@ void Cvar_GetVars (const cvarInfo_t *vars, int count)
 		else
 		{
 			// copy var name till delimiter
-			Q_strncpyz (name, vars->string, value - vars->string + 1);
+			appStrncpyz (name, vars->string, value - vars->string + 1);
 			// skip delimiter
 			value++;
 		}

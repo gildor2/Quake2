@@ -27,8 +27,8 @@ typedef struct {
 	void	(*_Com_Printf) (const char *str, ...);
 	void	(*_Com_DPrintf) (const char *str, ...);
 	void	(*_Com_WPrintf) (const char *str, ...);
-	void	(*_Com_FatalError) (const char *fmt, ...);
-	void	(*_Com_DropError) (const char *fmt, ...);
+	void	NORETURN	(*_Com_FatalError) (const char *fmt, ...);
+	void 	NORETURN	(*_Com_DropError) (const char *fmt, ...);
 #ifdef _WIN32
 	int	(*_win32ExceptFilter2) (void);
 #endif
@@ -44,6 +44,8 @@ typedef struct {
 	void	(*_FS_CopyFiles) (char *srcMask, char *dstDir);
 	void	(*_FS_RemoveFiles) (char *mask);
 	bool	(*_MatchWildcard) (const char *name, const char *mask, bool ignoreCase = false);
+	char*	(*_va) (const char *format, ...);
+	int	(*_appSprintf) (char *dest, int size, const char *fmt, ...);
 	bool	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
 	int	(*_ImageExists) (const char *name, int stop_mask = IMAGE_ANY);
 	void	(*_LoadPCX) (const char *name, byte **pic, byte **palette, int *width, int *height);

@@ -1244,7 +1244,7 @@ void GL_PerformScreenshot (void)
 		//?? should ListFiles(..."shot*") in current mod (OS FS) and find unused name in this list
 		for (i = 0; i < 10000; i++)
 		{	// check for a free filename
-			Com_sprintf (ARRAY_ARG(name), "%s/screenshots/shot%04d%s", FS_Gamedir (), i, ext);
+			appSprintf (ARRAY_ARG(name), "%s/screenshots/shot%04d%s", FS_Gamedir (), i, ext);
 			if (!(f = fopen (name, "rb")))
 				break;	// file doesn't exist
 			fclose (f);
@@ -1409,7 +1409,7 @@ CVAR_END
 
 			xv = (x - DLIGHT_SIZE/2 + 0.5f); xv *= xv;
 #if 1
-			v = 255 * (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2));		// linear
+			v = appRound (255 * (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2)));		// linear
 //			xv = (1 - (sqrt (xv + yv) + 1) / (DLIGHT_SIZE/2)); xv = bound(xv, 0, 1); v = xv * xv * 255;	// square
 			v = bound(v, 0, 255);
 #else

@@ -801,7 +801,7 @@ void Key_Event (int key, bool down, unsigned time)
 	// '~' ('`') key is hardcoded
 	if (key == '`')
 	{
-		if (rep == 1) Con_ToggleConsole_f ();
+		if (rep == 1) SCR_ToggleConsole ();
 		return;
 	}
 

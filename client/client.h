@@ -338,10 +338,6 @@ extern	entityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 extern	netadr_t	net_from;
 extern	sizebuf_t	net_message;
 
-// Draw colorized strings
-void	DrawString (int x, int y, const char *s);				// draw string; used by menus/console
-bool	CL_CheckOrDownloadFile (char *filename);
-
 void	CL_AddNetgraph (void);
 
 #define MAX_SUSTAINS		32
@@ -487,7 +483,6 @@ void CL_Disconnect_f (void);
 void CL_GetChallengePacket (void);
 void CL_PingServers_f (void);
 void CL_Snd_Restart_f (void);
-void CL_RequestNextDownload (void);
 
 void CL_WriteDemoMessage (void);
 
@@ -532,13 +527,6 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s);
 	if (cl_shownet->integer >= 2) Com_Printf ("%3d:%s\n", net_message.readcount-1, s);
 
 void CL_ParseClientinfo (int player);
-void CL_Download_f (bool usage, int argc, char **argv);
-
-//
-// cl_scrn.c
-//
-void SCR_SetLevelshot (char *name = NULL);		// give levelshot name (if name not specified - compute from map name)
-void SCR_ShowConsole (bool show, bool noAnim);
 
 //
 // cl_view.c
@@ -607,6 +595,17 @@ void CL_DrawInventory (void);
 void CL_EntityTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents);
 void CL_Trace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents);
 void CL_PredictMovement (void);
+
+//
+// cl_download.cpp
+//
+bool CL_CheckOrDownloadFile (char *filename);
+void CL_ParseDownload (void);
+void CL_RequestNextDownload (void);
+bool CL_CheckOrDownloadFile (char *filename);
+void CL_Download_f (bool usage, int argc, char **argv);
+void CL_Precache_f (int argc, char **argv);
+
 
 //-------------------------------------------
 

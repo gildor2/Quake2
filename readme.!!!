@@ -74,7 +74,7 @@ server\sv_init.c  SV_SpawnServer () -> ge->SpawnEntities (...)
 New server:
 ~~~~~~~~~~~
   we can detect new server by parsing response on "info" command. Response have following format:
-    Com_sprintf (string, sizeof(string), "%16s %8s %2i/%2i\n", hostname->string, sv.name, count, (int)maxclients->value);
+    appSprintf (string, sizeof(string), "%16s %8s %2i/%2i\n", hostname->string, sv.name, count, (int)maxclients->value);
     (server/sv_main.c :: SVC_Info())
   Command is send in menu system and only when connecting within menu; when "connect <addr>" used, "info" is not sending!
     (we can do it manually)

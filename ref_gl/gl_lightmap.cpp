@@ -246,23 +246,25 @@ static void CopyLightmap (byte *dst, byte *src, int w, int h, int stride, byte a
 		{
 			for (x = 0; x < w; x++)
 			{
-				float	r, g, b, light;
-
-				// get color
-				r = *src++;  g = *src++;  b = *src++;
 				if (sat != 1.0f)
 				{
+					float	r, g, b, light;
+					// get color
+					r = *src++;  g = *src++;  b = *src++;
 					// change saturation
 					light = (r + g + b) / 3.0f;
 					SATURATE(r,light,sat);
 					SATURATE(g,light,sat);
 					SATURATE(b,light,sat);
 					// put color
-					*dst++ = appRound (r);  *dst++ = appRound (g);  *dst++ = appRound (b);
+					*dst++ = appRound(r); *dst++ = appRound(g); *dst++ = appRound(b);
 				}
 				else
 				{
-					*dst++ = r; *dst++ = g; *dst++ = b;
+					// copy color
+					*dst++ = *src++;
+					*dst++ = *src++;
+					*dst++ = *src++;
 				}
 				*dst++ = a;
 			}

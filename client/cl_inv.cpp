@@ -21,6 +21,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "client.h"
 
+#define CHAR_WIDTH	8
+#define CHAR_HEIGHT	8
+
 /*
 ================
 CL_ParseInventory
@@ -28,22 +31,10 @@ CL_ParseInventory
 */
 void CL_ParseInventory (void)
 {
-	int		i;
-
-	for (i = 0; i < MAX_ITEMS; i++)
+	for (int i = 0; i < MAX_ITEMS; i++)
 		cl.inventory[i] = MSG_ReadShort (&net_message);
 }
 
-
-static void DrawString (int x, int y, char *string, bool hgl)
-{
-	int color = hgl ? C_GREEN : C_WHITE;
-	while (char c = *string++)
-	{
-		re.DrawChar (x, y, c, color);
-		x += 8;
-	}
-}
 
 /*
 ================
@@ -86,13 +77,13 @@ void CL_DrawInventory (void)
 	x = (viddef.width-256)/2;
 	y = (viddef.height-240)/2;
 
-	re.DrawPic (x, y+8, "inventory");
+	re.DrawPic (x, y+CHAR_HEIGHT, "inventory");
 
-	y += 24;
-	x += 24;
-	DrawString (x, y,   "hotkey ### item", true);
-	DrawString (x, y+8, "------ --- ----", true);
-	y += 16;
+	y += 3 * CHAR_HEIGHT;
+	x += 3 * CHAR_WIDTH;
+	DrawString (x, y,			  S_GREEN"hotkey ### item");
+	DrawString (x, y+CHAR_HEIGHT, S_GREEN"------ --- ----");
+	y += 2 * CHAR_HEIGHT;
 	for (i = top; i < num && i < top+DISPLAY_ITEMS; i++)
 	{
 		int		key;
@@ -100,17 +91,17 @@ void CL_DrawInventory (void)
 		const char *keyName;
 
 		item = index[i];
-		Com_sprintf (ARRAY_ARG(binding), "use %s", cl.configstrings[CS_ITEMS+item]);
+		appSprintf (ARRAY_ARG(binding), "use %s", cl.configstrings[CS_ITEMS+item]);
 		if (Key_FindBinding (binding, &key, 1))
 			keyName = Key_KeynumToString (key);
 		else
 			keyName = "";
 
-		Com_sprintf (ARRAY_ARG(string), "%6s %3i %s", keyName, cl.inventory[item], cl.configstrings[CS_ITEMS+item]);
+		appSprintf (ARRAY_ARG(string), "%6s %3i %s", keyName, cl.inventory[item], cl.configstrings[CS_ITEMS+item]);
 		if (item == selected)
-			re.DrawChar (x-8, y, 13);	//?? original: 15 (but not displayed) anyway
+			re.DrawChar (x-CHAR_WIDTH, y, 13);	//?? original: 15 (but not displayed) anyway
 
-		DrawString (x, y, string, item == selected);
-		y += 8;
+		DrawString (x, y, va("%s%s", (item == selected) ? S_GREEN: S_WHITE, string));
+		y += CHAR_HEIGHT;
 	}
 }

@@ -29,8 +29,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define CRASH_LOG	"crash.log"
 
-bool		s_win95;
-
 int			starttime;
 bool		ActiveApp, Minimized;
 
@@ -52,14 +50,9 @@ SYSTEM IO
 void Sys_Quit (void)
 {
 	timeEndPeriod (1);
-
-	CL_Shutdown (false);
-	QCommon_Shutdown ();
 #ifndef DEDICATED_ONLY
-	if (DEDICATED)
-		FreeConsole ();
+	if (DEDICATED) FreeConsole ();
 #endif
-
 	exit (0);
 }
 
@@ -75,37 +68,31 @@ Sys_ScanForCD
 */
 static char *Sys_ScanForCD (void)
 {
-	static char cddir[MAX_OSPATH];
-	static bool done;
 #ifdef CD_PATH
+	static char cddir2[MAX_OSPATH], *cddir;
+	static bool done = false;
 	static char drive[4] = "c:/";
-	FILE		*f;
 
-	if (done)		// don't re-check
-		return cddir;
+	if (done) return cddir;		// don't re-check
+	done = true;
 
 	// no abort/retry/fail errors
 	SetErrorMode (SEM_FAILCRITICALERRORS);
-
-	done = true;
 
 	// scan the drives
 	for (drive[0] = 'c'; drive[0] <= 'z'; drive[0]++)
 	{
 		if (GetDriveType (drive) != DRIVE_CDROM) continue;
-
-		Q_CopyFilename (cddir, va("%s"CD_PATH, drive), sizeof(cddir));
-		f = fopen (va("%s"CD_CHECK, drive), "r");
-		if (f)
+		if (FILE *f = fopen (va("%s"CD_CHECK, drive), "r"))
 		{
 			fclose (f);
+			Q_CopyFilename (cddir2, va("%s"CD_PATH, drive), sizeof(cddir));
+			cddir = cddir2;
 			return cddir;
 		}
 	}
 #endif
-
-	cddir[0] = 0;
-	return cddir;
+	return NULL;
 }
 
 /*
@@ -117,20 +104,14 @@ Sys_CopyProtect
 void Sys_CopyProtect (void)
 {
 #ifdef CD_PATH
-	char	*cddir;
-
-	cddir = Sys_ScanForCD ();
-	if (!cddir[0])
+	if (!Sys_ScanForCD ())
+		// FUNNY NOTE: FatalError() will provide ErrorHistory with path to Sys_CopyProtect()
 		Com_FatalError ("You must have the "APPNAME" CD in the drive to play.");
 #endif
 }
 
 
 //================================================================
-
-/* NOTE: If error happens in ref_xxx.dll, error message will contain reference to
- * <not available> module (check this ??)
- */
 
 typedef unsigned address_t;
 
@@ -145,17 +126,13 @@ void Sys_Error (const char *error, ...)
 	va_end (argptr);
 
 	GErr.isSoftError = true;
-	Com_sprintf (ARRAY_ARG(GErr.history), "Error: %s\n\nHistory: ", text);
+	appSprintf (ARRAY_ARG(GErr.history), "Error: %s\n\nHistory: ", text);
 
 	throw 1;
 }
 
 
-// from new Macro.h
-#define FIELD_OFS(struc, field)		((unsigned) &((struc *)NULL)->field)		// get offset of the field in struc
-#define OFS_FIELD(struc, ofs, type)	(*(type*) ((byte*)(struc) + ofs))			// get field of type by offset inside struc
-
-// from DbgSymbols[Win32].cpp (slightly modified)
+// from DbgSymbolsWin32.cpp
 
 static char		module[256];
 static HMODULE	hModule;
@@ -180,12 +157,11 @@ bool osAddressInfo (address_t address, char *pkgName, int bufSize, int *offset)
 		strcpy (module, s+1);	// remove "path\" part
 
 	*offset = address - (unsigned)hModule;
-	Q_strncpyz (pkgName, module, bufSize);
+	appStrncpyz (pkgName, module, bufSize);
 
 	return true;
 }
 
-#define OffsetPointer(p, expr)  ((int)(p) + expr)
 
 bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset)
 {
@@ -195,28 +171,22 @@ bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset
 
 	__try
 	{
-		WORD	*tmp;
-		DWORD	*addrTbl, *nameTbl;
-		IMAGE_OPTIONAL_HEADER32 *hdr;
-		IMAGE_EXPORT_DIRECTORY* exp;
-		int		i;
-		unsigned bestRVA = 0;
-		int		bestIndex = -1;
-		unsigned RVA = address - (unsigned)hModule;
-
 		// we want to walk system memory -- not very safe action
 		if (*(WORD*)hModule != 'M'+('Z'<<8)) return false;		// bad MZ header
-		tmp = (WORD*) (*(DWORD*) OffsetPointer (hModule, 0x3C) + (char*)hModule);
+		WORD* tmp = (WORD*) (*(DWORD*) OffsetPointer (hModule, 0x3C) + (char*)hModule);
 		if (*tmp != 'P'+('E'<<8)) return false;					// non-PE executable
-		hdr = (IMAGE_OPTIONAL_HEADER32*) OffsetPointer (tmp, 4 + sizeof(IMAGE_FILE_HEADER));
+		IMAGE_OPTIONAL_HEADER32 *hdr = (IMAGE_OPTIONAL_HEADER32*) OffsetPointer (tmp, 4 + sizeof(IMAGE_FILE_HEADER));
 		// check export directory
 		if (hdr->DataDirectory[0].VirtualAddress == 0 || hdr->DataDirectory[0].Size == 0)
 			return false;
-		exp = (IMAGE_EXPORT_DIRECTORY*) OffsetPointer (hModule, hdr->DataDirectory[0].VirtualAddress);
+		IMAGE_EXPORT_DIRECTORY* exp = (IMAGE_EXPORT_DIRECTORY*) OffsetPointer (hModule, hdr->DataDirectory[0].VirtualAddress);
 
-		addrTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfFunctions);
-		nameTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfNames);
-		for (i = 0; i < exp->NumberOfFunctions; i++)
+		DWORD* addrTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfFunctions);
+		DWORD* nameTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfNames);
+		unsigned bestRVA = 0;
+		int		bestIndex = -1;
+		unsigned RVA = address - (unsigned)hModule;
+		for (int i = 0; i < exp->NumberOfFunctions; i++)
 		{
 			if (addrTbl[i] <= RVA && addrTbl[i] > bestRVA)
 			{
@@ -227,9 +197,9 @@ bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset
 		if (bestIndex >= 0)
 		{
 			if (nameTbl[bestIndex])
-				Q_strncpyz (func, (char*) OffsetPointer (hModule, nameTbl[bestIndex]), sizeof(func));
+				appStrncpyz (func, (char*) OffsetPointer (hModule, nameTbl[bestIndex]), sizeof(func));
 			else
-				Com_sprintf (ARRAY_ARG(func), "#%d", exp->Base +		// ordinal base
+				appSprintf (ARRAY_ARG(func), "#%d", exp->Base +		// ordinal base
 					((WORD*) OffsetPointer (hModule, exp->AddressOfNameOrdinals))[bestIndex]);
 			*offset = RVA - bestRVA;
 		}
@@ -241,13 +211,16 @@ bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset
 		return false;
 	}
 
-	Com_sprintf (exportName, bufSize, "%s!%s", module, func);
+	appSprintf (exportName, bufSize, "%s!%s", module, func);
 
-	hModule = NULL;					// disallow second subsequentioal call
+	hModule = NULL;					// disallow second subsequentional call
 	return true;
 }
 
-bool appSymbolName2 (address_t addr, char *buffer, int size)
+// from DbgSymbols.cpp
+
+// removed package symbols
+bool appSymbolName (address_t addr, char *buffer, int size)
 {
 	char	package[256], *name;
 	int		offset;
@@ -262,18 +235,19 @@ bool appSymbolName2 (address_t addr, char *buffer, int size)
 	name = package;
 
 	if (offset)
-		Com_sprintf (buffer, size, "%s+%X", name, offset);
+		appSprintf (buffer, size, "%s+%X", name, offset);
 	else
-		Q_strncpyz (buffer, name, size);
+		appStrncpyz (buffer, name, size);
 
 	return true;
 }
 
+// exact version
 char *appSymbolName (address_t addr)
 {
 	static char	buf[256];
 
-	if (appSymbolName2 (addr, ARRAY_ARG(buf)))
+	if (appSymbolName (addr, ARRAY_ARG(buf)))
 		return buf;
 	else
 		return va("%08X", addr);
@@ -402,7 +376,7 @@ static void DumpMem (FILE *f, unsigned *data, CONTEXT *ctx)
 				break;
 			}
 
-		if (appSymbolName2 (*data, ARRAY_ARG(symbol)))
+		if (appSymbolName (*data, ARRAY_ARG(symbol)))
 #ifdef LOG_FUNCS_ONLY
 			if (strchr (symbol, '('))
 #endif
@@ -493,7 +467,7 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			time_t	itime;
 			char	ctime[256];
 
-			Com_sprintf (ARRAY_ARG(GErr.history), "%s at \"%s\"\n", excName, appSymbolName (ctx->Eip));
+			appSprintf (ARRAY_ARG(GErr.history), "%s at \"%s\"\n", excName, appSymbolName (ctx->Eip));
 
 			time (&itime);
 			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
@@ -712,18 +686,7 @@ Sys_Init
 */
 void Sys_Init (void)
 {
-	OSVERSIONINFO	vinfo;
-
 	guard(Sys_Init);
-
-	vinfo.dwOSVersionInfoSize = sizeof(vinfo);
-
-	GetVersionEx (&vinfo);
-
-	if (vinfo.dwMajorVersion < 4)
-		Sys_Error ("Requires Windows version 4 or greater");
-	if (vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
-		s_win95 = true;
 
 	if (DEDICATED)
 	{
@@ -819,7 +782,7 @@ char *Sys_ConsoleInput (void)
 					break;
 
 				case '\t':		// TAB
-					Com_sprintf (ARRAY_ARG(editLine), "]%s", console_text);
+					appSprintf (ARRAY_ARG(editLine), "]%s", console_text);
 					CompleteCommand ();
 					s = editLine;
 					if (s[0] == ']') s++;
@@ -828,7 +791,7 @@ char *Sys_ConsoleInput (void)
 					if (len > 0)
 					{
 						console_textlen = min(len, sizeof(console_text)-2);
-						Q_strncpyz (console_text, s, console_textlen+1);
+						appStrncpyz (console_text, s, console_textlen+1);
 						Sys_ConsoleOutput ("");		// update line
 					}
 					break;
@@ -936,35 +899,6 @@ void Sys_SendKeyEvents (void)
 
 
 /*
-================
-Sys_GetClipboardData
-
-================
-*/
-char *Sys_GetClipboardData (void)
-{
-	char *data = NULL;
-	char *cliptext;
-
-	if (OpenClipboard (NULL))
-	{
-		HANDLE	hClipboardData;
-
-		if (hClipboardData = GetClipboardData (CF_TEXT))
-		{
-			if (cliptext = (char*)GlobalLock (hClipboardData))
-			{
-				data = (char*)malloc (GlobalSize (hClipboardData) + 1);
-				strcpy (data, cliptext);
-				GlobalUnlock (hClipboardData);
-			}
-		}
-		CloseClipboard ();
-	}
-	return data;
-}
-
-/*
 ========================================================================
 
 GAME DLL
@@ -1016,7 +950,7 @@ void *Sys_GetGameAPI (void *parms)
 	path = NULL;
 	while (path = FS_NextPath (path))
 	{
-		Com_sprintf (ARRAY_ARG(name), "%s/%s", path, gamename);
+		appSprintf (ARRAY_ARG(name), "%s/%s", path, gamename);
 		if (FILE *f = fopen (name, "rb"))	// check file presence
 		{
 			fclose (f);
@@ -1069,7 +1003,7 @@ int main (int argc, const char **argv)
 	int		time, oldtime, newtime;
 	char	*cmdline;
 #ifdef CD_PATH
-	char	*cddir, cmdline2[1024];
+	char	cmdline2[1024];
 #endif
 
 	GUARD_BEGIN
@@ -1084,11 +1018,10 @@ int main (int argc, const char **argv)
 
 #ifdef CD_PATH
 		// if we find the CD, add a "-cddir=xxx" command line
-		cddir = Sys_ScanForCD ();
-		if (cddir && cddir[0])
+		if (char *cddir = Sys_ScanForCD ())
 		{
 			// add to the end of cmdline, so, if already specified - will not override option
-			Com_sprintf (ARRAY_ARG(cmdline2), "%s -cddir=\"%s\"", cmdline, cddir);
+			appSprintf (ARRAY_ARG(cmdline2), "%s -cddir=\"%s\"", cmdline, cddir);
 			cmdline = cmdline2;
 		}
 #endif
@@ -1178,6 +1111,8 @@ int main (int argc, const char **argv)
 		Sys_ConsoleOutput (GErr.history);
 #endif
 	}
-	// never gets here
-	return TRUE;
+	// will get here only when fatal error happens
+	Sys_Quit ();
+	// and will neverget here ... (NORETURN Sys_Quit())
+	return 0;
 }

@@ -167,7 +167,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_znear, 4, 0),
 	CVAR_VAR(gl_swapinterval, 0, CVAR_ARCHIVE|CVAR_UPDATE),
 
-	CVAR_VAR(gl_driver, opengl32, CVAR_ARCHIVE),			//?? use different gl_driver default value for Linux
+	CVAR_VAR(gl_driver, opengl32, CVAR_ARCHIVE),			//?? use different gl_driver default value for Linux, or use different cvar ?
 	CVAR_VAR(gl_mode, 3, CVAR_ARCHIVE),
 
 	CVAR_VAR(gl_maxTextureUnits, 0, CVAR_ARCHIVE),

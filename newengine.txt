@@ -1,0 +1,10 @@
+- can use following modules:
+  - CoreMain.cpp
+  - Strings.cpp
+  - Memory.cpp
+  - DbgSymbols[Win32].cpp
+  - ExceptFilterWin32.cpp
+
+- can't use:
+  - Commands.cpp -- require alias, cvar + command buffer support
+  - FileSystem... -- unfinished

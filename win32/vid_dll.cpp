@@ -60,7 +60,7 @@ extern unsigned sys_msg_time;
 /*
 ** WIN32 helper functions
 */
-extern bool s_win95;
+static bool s_win95;
 
 static void WIN_DisableAltTab (void)
 {
@@ -720,7 +720,7 @@ static bool Vid_LoadRefresh (char *name)
 		Vid_FreeReflib ();
 	}
 
-	Com_sprintf (ARRAY_ARG(dllName), "ref_%s.dll", name);
+	appSprintf (ARRAY_ARG(dllName), "ref_%s.dll", name);
 	Com_Printf ("Loading %s\n", name);
 
 #ifdef REF_HARD_LINKED
@@ -898,6 +898,14 @@ CVAR_END
 	// Add some console commands that we want to handle
 	RegisterCommand ("vid_restart", Vid_Restart_f);
 	RegisterCommand ("vid_front", Vid_Front_f);
+
+	OSVERSIONINFO vinfo;
+	vinfo.dwOSVersionInfoSize = sizeof(vinfo);
+	GetVersionEx (&vinfo);
+//	if (vinfo.dwMajorVersion < 4)
+//		Com_FatalError ("Requires Windows version 4 or greater");
+	if (vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
+		s_win95 = true;
 
 #if 0
 	// this is a gross hack but necessary to clamp the mode for 3Dfx

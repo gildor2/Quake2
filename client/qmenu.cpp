@@ -23,6 +23,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "qmenu.h"
 
+#define CHAR_WIDTH	8
+#define CHAR_HEIGHT	8
+
 static void	 Action_DoEnter (menuAction_t *a);
 static void	 Action_Draw (menuAction_t *a);
 static void  Menu_DrawStatusBar (const char *string);
@@ -72,7 +75,7 @@ static void Action_DoEnter (menuAction_t *a)
 static void Action_Draw (menuAction_t *a)
 {
 	if (a->generic.flags & QMF_LEFT_JUSTIFY)
-		Menu_DrawString (a->generic.x + a->generic.parent->x + LCOLUMN_OFFSET, a->generic.y + a->generic.parent->y,
+		DrawString (a->generic.x + a->generic.parent->x + LCOLUMN_OFFSET, a->generic.y + a->generic.parent->y,
 			va("%s%s", a->generic.flags & QMF_GRAYED ? S_GREEN : "", a->generic.name));
 	else
 		Menu_DrawStringR2L (a->generic.x + a->generic.parent->x + LCOLUMN_OFFSET, a->generic.y + a->generic.parent->y,
@@ -91,9 +94,6 @@ static bool Field_DoEnter (menuField_t *f)
 	return false;
 }
 
-// Draws uncolorized string
-void Menu_DrawStringCommon (int x, int y, const char *string, int shift);
-
 static void Field_Draw (menuField_t *f)
 {
 	int		i;
@@ -105,19 +105,26 @@ static void Field_Draw (menuField_t *f)
 			va(S_GREEN"%s", f->generic.name));
 
 	// draw border
-	re.DrawChar (f->generic.x + f->generic.parent->x + 16, f->generic.y + f->generic.parent->y - 4, 18);
-	re.DrawChar (f->generic.x + f->generic.parent->x + 16, f->generic.y + f->generic.parent->y + 4, 24);
-	re.DrawChar (f->generic.x + f->generic.parent->x + 24 + f->visible_length * 8, f->generic.y + f->generic.parent->y - 4, 20);
-	re.DrawChar (f->generic.x + f->generic.parent->x + 24 + f->visible_length * 8, f->generic.y + f->generic.parent->y + 4, 26);
+	re.DrawChar (f->generic.x + f->generic.parent->x + CHAR_WIDTH * 2, f->generic.y + f->generic.parent->y - CHAR_HEIGHT/2, 18);
+	re.DrawChar (f->generic.x + f->generic.parent->x + CHAR_WIDTH * 2, f->generic.y + f->generic.parent->y + CHAR_HEIGHT/2, 24);
+	re.DrawChar (f->generic.x + f->generic.parent->x + (f->visible_length + 3) * CHAR_WIDTH, f->generic.y + f->generic.parent->y - CHAR_HEIGHT/2, 20);
+	re.DrawChar (f->generic.x + f->generic.parent->x + (f->visible_length + 3) * CHAR_WIDTH, f->generic.y + f->generic.parent->y + CHAR_HEIGHT/2, 26);
 	for (i = 0; i < f->visible_length; i++)
 	{
-		re.DrawChar (f->generic.x + f->generic.parent->x + 24 + i * 8, f->generic.y + f->generic.parent->y - 4, 19);
-		re.DrawChar (f->generic.x + f->generic.parent->x + 24 + i * 8, f->generic.y + f->generic.parent->y + 4, 25);
+		re.DrawChar (f->generic.x + f->generic.parent->x + (i + 3) * CHAR_WIDTH, f->generic.y + f->generic.parent->y - CHAR_HEIGHT/2, 19);
+		re.DrawChar (f->generic.x + f->generic.parent->x + (i + 3) * CHAR_WIDTH, f->generic.y + f->generic.parent->y + CHAR_HEIGHT/2, 25);
 	}
 
-	// perform string drawing with Menu_DrawStringConmmon() to disable text coloring
-	Q_strncpyz (tempbuffer, f->buffer + f->visible_offset, max(f->visible_length, sizeof(tempbuffer)));
-	Menu_DrawStringCommon (f->generic.x + f->generic.parent->x + 24, f->generic.y + f->generic.parent->y, tempbuffer, 0);
+	// perform string drawing without text coloring
+	appStrncpyz (tempbuffer, f->buffer + f->visible_offset, max(f->visible_length, sizeof(tempbuffer)));
+	const char *s = tempbuffer;
+	int x = f->generic.x + f->generic.parent->x + 3 * CHAR_WIDTH;
+	int y = f->generic.y + f->generic.parent->y;
+	while (char c = *s++)
+	{
+		re.DrawChar (x, y, c);
+		x += CHAR_WIDTH;
+	}
 
 	if (Menu_ItemAtCursor (f->generic.parent ) == (menuCommon_t*)f)
 	{
@@ -129,18 +136,8 @@ static void Field_Draw (menuField_t *f)
 			offset = f->cursor;
 
 		// show cursor
-		if ((Sys_Milliseconds() / 250) & 1)
-		{
-			re.DrawChar (f->generic.x + f->generic.parent->x + ( offset + 2) * 8 + 8,
-					   f->generic.y + f->generic.parent->y,
-					   11);
-		}
-		else
-		{
-			re.DrawChar (f->generic.x + f->generic.parent->x + ( offset + 2) * 8 + 8,
-					   f->generic.y + f->generic.parent->y,
-					   ' ');
-		}
+		re.DrawChar (f->generic.x + f->generic.parent->x + (offset + 3) * CHAR_WIDTH,
+					 f->generic.y + f->generic.parent->y, ((Sys_Milliseconds() / 250) & 1) ? 11 : ' ');
 	}
 }
 
@@ -190,26 +187,6 @@ bool Field_Key (menuField_t *f, int key)
 	case K_KP_DEL:
 		key = '.';
 		break;
-	}
-
-	/*-------- support pasting from the clipboard ------------*/
-	if ((key == 'v' && CTRL_PRESSED) || (key == K_INS && SHIFT_PRESSED))
-	{
-		char *cbd;
-
-		if ( ( cbd = Sys_GetClipboardData() ) != 0 )
-		{
-			strtok( cbd, "\n\r\b" );
-
-			strncpy (f->buffer, cbd, f->length - 1);
-			f->cursor = strlen (f->buffer);
-			f->visible_offset = f->cursor - f->visible_length;
-			if (f->visible_offset < 0)
-				f->visible_offset = 0;
-
-			free (cbd);
-		}
-		return true;
 	}
 
 	switch (key)
@@ -265,6 +242,7 @@ void Menu_AddItem (menuFramework_t *menu, void *item)
 	menuCommon_t *last, *p, *c;
 	int		i;
 
+	guard(Menu_AddItem);
 	// NOTE: menu without items will have nitems==0, but itemList will not be NULL !
 	c = (menuCommon_t*) item;
 	// find last item
@@ -272,11 +250,11 @@ void Menu_AddItem (menuFramework_t *menu, void *item)
 	for (i = 0, p = menu->itemList; i < menu->nitems; i++, p = p->next)
 	{
 		if (p == c)					// item already present in list -- fatal (circular linked list)
-			Com_FatalError ("Menu_AddItem: double item \"%s\" in menu, index=%d, count=%d", c->name, i, menu->nitems);
+			Com_FatalError ("double item \"%s\" in menu, index=%d, count=%d", c->name, i, menu->nitems);
 		last = p;
 	}
 	if (last && last->next)			// last item (with index == menu->nitem) have next != NULL
-		Com_FatalError ("Menu_AddItem: invalid item list");
+		Com_FatalError ("invalid item list");
 	// add to list
 	if (i > 0)	last->next = c;		// append to list tail
 	else		menu->itemList = c;	// first in list
@@ -284,15 +262,14 @@ void Menu_AddItem (menuFramework_t *menu, void *item)
 	// setup new item
 	c->parent = menu;
 	c->next = NULL;
+	unguard;
 }
 
 
 static bool Menu_CompletelyVisible (menuFramework_t *menu)
 {
-	int		y0, y1;
-
-	y0 = menu->itemList->y + menu->y;					// 1st item
-	y1 = GetItem (menu, menu->nitems - 1)->y + menu->y;	// last item
+	int y0 = menu->itemList->y + menu->y;					// 1st item
+	int y1 = GetItem (menu, menu->nitems - 1)->y + menu->y;	// last item
 	if (y0 >= 0 && y1 < VID_HEIGHT - 10) return true;
 	return false;
 }
@@ -300,8 +277,6 @@ static bool Menu_CompletelyVisible (menuFramework_t *menu)
 
 static bool Menu_ItemVisible (menuFramework_t *menu, int i)
 {
-	int		y;
-
 	if (Menu_CompletelyVisible (menu))
 		return true;
 
@@ -310,19 +285,17 @@ static bool Menu_ItemVisible (menuFramework_t *menu, int i)
 
 	if (i < 0 || i >= menu->nitems)
 		return false;
-	y = GetItem (menu, i)->y + menu->y;
+	int y = GetItem (menu, i)->y + menu->y;
 	return (y >= MENU_SCROLL_BORDER && y <= VID_HEIGHT - MENU_SCROLL_BORDER);
 }
 
 
 static void Menu_MakeVisible (menuFramework_t *menu, int i)
 {
-	int		y, y0, y1;
-
 	if (Menu_CompletelyVisible (menu)) return;
 
-	y0 = menu->itemList->y;						// 1st item
-	y1 = GetItem (menu, menu->nitems - 1)->y;	// last item
+	int y0 = menu->itemList->y;						// 1st item
+	int y1 = GetItem (menu, menu->nitems - 1)->y;	// last item
 	if (y0 + menu->y > MENU_SCROLL_BORDER)
 	{
 		menu->y = MENU_SCROLL_BORDER - y0;
@@ -335,7 +308,7 @@ static void Menu_MakeVisible (menuFramework_t *menu, int i)
 	}
 
 	i = bound (i, 0, menu->nitems-1);
-	y = GetItem (menu, i)->y + menu->y;
+	int y = GetItem (menu, i)->y + menu->y;
 
 	if (y < MENU_SCROLL_BORDER)
 		menu->y += MENU_SCROLL_BORDER - y;
@@ -360,7 +333,7 @@ void Menu_AdjustCursor (menuFramework_t *m, int dir)
 	 */
 	if (dir == 1)
 	{
-		while (1)
+		while (true)
 		{
 			citem = Menu_ItemAtCursor (m);
 			if (citem)
@@ -374,7 +347,7 @@ void Menu_AdjustCursor (menuFramework_t *m, int dir)
 	}
 	else
 	{
-		while (1)
+		while (true)
 		{
 			citem = Menu_ItemAtCursor (m);
 			if (citem)
@@ -394,9 +367,7 @@ void Menu_AdjustCursor (menuFramework_t *m, int dir)
 
 void Menu_Center (menuFramework_t *menu)
 {
-	int		height;
-
-	height = GetItem (menu, menu->nitems-1)->y + 10;	// last item
+	int height = GetItem (menu, menu->nitems-1)->y + 10;	// last item
 	menu->y = (VID_HEIGHT - height) / 2;
 	if (menu->y < MENU_SCROLL_BORDER && !Menu_CompletelyVisible (menu))
 		menu->y = MENU_SCROLL_BORDER;
@@ -405,21 +376,17 @@ void Menu_Center (menuFramework_t *menu)
 
 static void Menu_DrawDotsItem (menuCommon_t *item)
 {
-	int		x, y, center;
-
-	center = VID_WIDTH / 2;
-	y = item->y + item->parent->y;
-	for (x = center - 128; x < center + 128; x += 8)
+	int center = VID_WIDTH / 2;
+	int y = item->y + item->parent->y;
+	for (int x = center - 128; x < center + 128; x += CHAR_WIDTH)
 		re.DrawChar (x, y, 0, C_RED);
 }
 
 
 static int strlen_color (const char *s)
 {
-	int		i, c;
-
-	i = 0;
-	while (c = *s++)
+	int i = 0;
+	while (char c = *s++)
 	{
 		if (c == COLOR_ESCAPE)
 		{
@@ -532,30 +499,16 @@ void Menu_DrawStatusBar (const char *string)
 		int		l, maxrow, maxcol, col;
 
 		l = strlen_color (string);
-		maxrow = VID_HEIGHT / 8;
-		maxcol = VID_WIDTH / 8;
+		maxrow = VID_HEIGHT / CHAR_HEIGHT;
+		maxcol = VID_WIDTH / CHAR_WIDTH;
 		col = maxcol / 2 - l / 2;
 
-		re.DrawFill (0, VID_HEIGHT-8, VID_WIDTH, 8, 4);
-		Menu_DrawString (col*8, VID_HEIGHT - 8, string);
+		re.DrawFill (0, VID_HEIGHT - CHAR_HEIGHT, VID_WIDTH, CHAR_HEIGHT, 4);
+		DrawString (col * CHAR_WIDTH, VID_HEIGHT - CHAR_WIDTH, string);
 	}
 //	else
 //		re.DrawFill (0, VID_HEIGHT-8, VID_WIDTH, 8, 0);
 }
-
-void Menu_DrawStringCommon (int x, int y, const char *string, int shift)
-{
-	char	c;
-	const char *s;
-
-	s = string;
-	while (c = *s++)
-	{
-		re.DrawChar (x, y, c + shift);
-		x += 8;
-	}
-}
-
 
 bool Menu_SelectItem (menuFramework_t *s)
 {
@@ -616,32 +569,29 @@ static void DrawCaption (menuCommon_t *m)
 static void MenuList_Draw (menuList_t *l)
 {
 	const char **n;
-	int y = 0;
 
 	DrawCaption (&l->generic);
-
 	n = l->itemnames;
+  	re.DrawFill (l->generic.x - 112 + l->generic.parent->x, l->generic.parent->y + l->generic.y + l->curvalue*10 + 10,
+  		128, CHAR_HEIGHT+2, 16);
 
-  	re.DrawFill (l->generic.x - 112 + l->generic.parent->x, l->generic.parent->y + l->generic.y + l->curvalue*10 + 10, 128, 10, 16);
+	int y = 0;
 	while (*n)
 	{
-		Menu_DrawStringR2L (l->generic.x + l->generic.parent->x + LCOLUMN_OFFSET, l->generic.y + l->generic.parent->y + y + 10,
+		Menu_DrawStringR2L (l->generic.x + l->generic.parent->x + LCOLUMN_OFFSET, l->generic.y + l->generic.parent->y + y + CHAR_HEIGHT+2,
 			va(S_GREEN"%s", *n));
 
 		n++;
-		y += 10;
+		y += CHAR_HEIGHT + 2;
 	}
 }
 
 static void Separator_Draw (menuSeparator_t *s)
 {
-	int x, y;
-	const char *name;
-
-	x = s->generic.x + s->generic.parent->x;
-	y = s->generic.y + s->generic.parent->y;
-	name = s->generic.name;
-	if ( !name ) return;
+	int x = s->generic.x + s->generic.parent->x;
+	int y = s->generic.y + s->generic.parent->y;
+	const char *name = s->generic.name;
+	if (!name) return;
 	if (s->generic.flags & QMF_CENTER)
 		Menu_DrawStringCenter (x, y, va(S_GREEN"%s", name));
 	else
@@ -665,15 +615,13 @@ static void Slider_DoSlide (menuSlider_t *s, int dir)
 
 static void Slider_Draw (menuSlider_t *s)
 {
-	int		i;
-
 	DrawCaption (&s->generic);
 
 	s->range = (s->curvalue - s->minvalue) / (float)(s->maxvalue - s->minvalue);
 	s->range = bound(s->range, 0, 1);
 
 	re.DrawChar (s->generic.x + s->generic.parent->x + RCOLUMN_OFFSET, s->generic.y + s->generic.parent->y, 128);
-	for (i = 0; i < SLIDER_RANGE; i++)
+	for (int i = 0; i < SLIDER_RANGE; i++)
 		re.DrawChar (RCOLUMN_OFFSET + s->generic.x + i*8 + s->generic.parent->x + 8, s->generic.y + s->generic.parent->y, 129);
 	re.DrawChar (RCOLUMN_OFFSET + s->generic.x + i*8 + s->generic.parent->x + 8, s->generic.y + s->generic.parent->y, 130);
 	re.DrawChar (appRound (8 + RCOLUMN_OFFSET + s->generic.parent->x + s->generic.x + (SLIDER_RANGE-1)*8 * s->range),
@@ -711,15 +659,14 @@ static void SpinControl_Draw (menuList_t *s)
 	// draw value
 	text = s->itemnames[s->curvalue];
 	if (!(newline = strchr (text, '\n')))
-		Menu_DrawString (RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y, text);
+		DrawString (RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y, text);
 	else
 	{
 		char	buffer[256];
 
-		Q_strncpyz (buffer, text, newline - text + 1);	// copy text till '\n' and put zero to its place
-		Menu_DrawString (RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y, buffer);
-		strcpy (buffer, newline + 1);
-		Menu_DrawString (RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y + 10, buffer);
+		appStrncpyz (buffer, text, newline - text + 1);	// copy text till '\n' and put zero to its place
+		DrawString (RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y, buffer);
+		DrawString (RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y + 10, newline+1);
 	}
 }
 
@@ -765,14 +712,13 @@ static void SpinControl2_Draw (menuList2_t *s)
 	// draw value
 	text = item->name;
 	if (!(newline = strchr (text, '\n')))
-		Menu_DrawString (RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y, text);
+		DrawString (RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y, text);
 	else
 	{
 		char	buffer[256];
 
-		Q_strncpyz (buffer, text, newline - text + 1);	// copy text till '\n' and put zero to its place
-		Menu_DrawString (RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y, buffer);
-		strcpy (buffer, newline + 1);
-		Menu_DrawString (RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y + 10, buffer);
+		appStrncpyz (buffer, text, newline - text + 1);	// copy text till '\n' and put zero to its place
+		DrawString (RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y, buffer);
+		DrawString (RCOLUMN_OFFSET + s->generic.x + s->generic.parent->x, s->generic.y + s->generic.parent->y + 10, newline+1);
 	}
 }

@@ -1,9 +1,9 @@
-# script file
+# script file; perl highlighting
 
 #!! should be specified with cmdline
 COMPILER = VisualC
 
-!if $COMPILER eq VisualC
+!if $COMPILER eq "VisualC"
 	WARNLEVEL = 3
 	OPTIMIZE  = size
 	STDLIBS   = kernel32 user32 gdi32
@@ -17,6 +17,7 @@ MAPFILES = 1
 D = client
 CLIENT = \
 	$D/cl_cin.cpp \
+	$D/cl_download.cpp \
 	$D/cl_ents.cpp \
 	$D/cl_fx.cpp \
 	$D/cl_input.cpp \
@@ -47,6 +48,7 @@ SERVER = \
 	$D/sv_init.cpp \
 	$D/sv_main.cpp \
 	$D/sv_send.cpp \
+	$D/sv_tokenize.cpp \
 	$D/sv_user.cpp \
 	$D/sv_world.cpp
 

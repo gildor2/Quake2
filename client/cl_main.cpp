@@ -95,12 +95,6 @@ centity_t		cl_entities[MAX_EDICTS];
 
 entityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 
-extern	cvar_t *allow_download;
-extern	cvar_t *allow_download_players;
-extern	cvar_t *allow_download_models;
-extern	cvar_t *allow_download_sounds;
-extern	cvar_t *allow_download_maps;
-
 //======================================================================
 
 
@@ -115,7 +109,7 @@ static bool TryParseStatus (char *str)
 
 	if (!statusRequest) return false;
 
-	Q_strncpyz (buf, str, sizeof(buf));
+	appStrncpyz (buf, str, sizeof(buf));
 	// remove players info
 	s = strchr (buf, '\n');
 	if (!s) return false;
@@ -222,7 +216,7 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 	}
 
 	// open the demo file
-	Com_sprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
+	appSprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
 	Com_Printf ("recording to %s.\n", name);
 	FS_CreatePath (name);
@@ -306,6 +300,15 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 
 //======================================================================
 
+static void NetchanAppendArgs (char **argv, int first, int last)
+{
+	for (int i = first; i < last; i++)
+	{
+		if (i > first) SZ_Print (&cls.netchan.message, " ");
+		SZ_Print (&cls.netchan.message, argv[i]);
+	}
+}
+
 /*
 ===================
 Cmd_ForwardToServer
@@ -327,12 +330,7 @@ void Cmd_ForwardToServer (int argc, char **argv)
 	}
 
 	MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-	SZ_Print (&cls.netchan.message, cmd);
-	if (argc > 1)
-	{
-		SZ_Print (&cls.netchan.message, " ");
-		SZ_Print (&cls.netchan.message, Cmd_Args());
-	}
+	NetchanAppendArgs (argv, 0, argc);
 }
 
 /*
@@ -344,7 +342,7 @@ void CL_ForwardToServer_f (int argc, char **argv)
 {
 	if (cls.state != ca_connected && cls.state != ca_active)
 	{
-		Com_WPrintf ("Can't \"%s\", not connected\n", argv[0]);
+		Com_WPrintf ("Can't \"%s\", not connected\n", argv[0]);	// argv[0] == "cmd"
 		return;
 	}
 
@@ -352,7 +350,7 @@ void CL_ForwardToServer_f (int argc, char **argv)
 	if (argc > 1)
 	{
 		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-		SZ_Print (&cls.netchan.message, Cmd_Args());
+		NetchanAppendArgs (argv, 1, argc);
 	}
 }
 
@@ -395,13 +393,11 @@ CL_Drop
 Called after an Com_DropError() was thrown
 ================
 */
-void CL_Drop (void)
+void CL_Drop (bool fromError)
 {
-	if (cls.state == ca_uninitialized || cls.state == ca_disconnected)
-		return;
-
-	CL_Disconnect ();
-	SCR_EndLoadingPlaque (true);	// get rid of loading plaque
+	if (fromError) SCR_EndLoadingPlaque (true);
+	if (cls.state != ca_uninitialized && cls.state != ca_disconnected)
+		CL_Disconnect ();
 }
 
 
@@ -519,7 +515,7 @@ void CL_Connect_f (bool usage, int argc, char **argv)
 	CL_Disconnect ();
 
 	cls.state = ca_connecting;
-	Q_strncpyz (cls.servername, server, sizeof(cls.servername));
+	appStrncpyz (cls.servername, server, sizeof(cls.servername));
 	cls.connect_time = -BIG_NUMBER;	// CL_CheckForResend() will fire immediately
 }
 
@@ -546,7 +542,7 @@ void CL_Rcon_f (int argc, char **argv)
 
 	NET_Config (true);		// allow remote
 
-	Com_sprintf (ARRAY_ARG(message), "\xFF\xFF\xFF\xFFrcon %s ", rcon_client_password->string);
+	appSprintf (ARRAY_ARG(message), "\xFF\xFF\xFF\xFFrcon %s ", rcon_client_password->string);
 	for (i = 1; i < argc; i++)
 	{
 		strcat (message, argv[i]);
@@ -962,7 +958,7 @@ void CL_ConnectionlessPacket (void)
 	if (cnstr)
 	{
 		cnstr++;
-		Q_strncpyz (cmd, s, cnstr - s);
+		appStrncpyz (cmd, s, cnstr - s);
 	}
 	else
 	{
@@ -1058,7 +1054,7 @@ void CL_FixUpGender(void)
 			return;
 		}
 
-		Q_strncpyz (sk, skin->string, sizeof(sk));
+		appStrncpyz (sk, skin->string, sizeof(sk));
 		if ((p = strchr(sk, '/')) != NULL)
 			*p = 0;
 		if (!stricmp(sk, "male") || !stricmp(sk, "cyborg"))
@@ -1097,333 +1093,8 @@ void CL_Snd_Restart_f (void)
 	CL_RegisterSounds ();
 }
 
-static int precache_check;		// for autodownload of precache items
-static int precache_spawncount;
-static int precache_tex;
-static int precache_model_skin;
 
-byte *precache_model;			// used for skin checking in alias models
-
-#define PLAYER_MULT 5
-
-// ENV_CNT is map load, ENV_CNT+1 is first env map
-#define ENV_CNT (CS_PLAYERSKINS + MAX_CLIENTS * PLAYER_MULT)
-#define TEXTURE_CNT (ENV_CNT+13)
-
-void CL_RequestNextDownload (void)
-{
-	unsigned	map_checksum;		// for detecting cheater maps
-	dmdl_t *pheader;
-
-	if (cls.state != ca_connected)
-		return;
-
-	if (cls.netchan.remote_address.type == NA_LOOPBACK)
-		precache_check = TEXTURE_CNT+999;	// local server: download is nonsense (skip this phase)
-
-
-	if (!allow_download->integer && precache_check < ENV_CNT)
-		precache_check = ENV_CNT;
-
-#if 0
-//ZOID
-	if (precache_check == CS_MODELS) {	// confirm map
-		precache_check = CS_MODELS+2;	// 0 isn't used
-		if (allow_download_maps->integer)
-			if (!CL_CheckOrDownloadFile(cl.configstrings[CS_MODELS+1]))
-				return; // started a download
-	}
-#else
-	if (precache_check == CS_MODELS) {	// confirm map
-		char *s = strrchr (cl.configstrings[CS_MODELS+1], '/');
-		if (s) {
-			char mapname[MAX_QPATH];
-			strcpy (mapname, s+1);
-			s = strrchr (mapname, '.');
-			if (s) *s = 0;
-			precache_check++;	// 0 isn't used
-			if (!CL_CheckOrDownloadFile (va("levelshots/%s.jpg", mapname)))	//??? should download any image (not JPG only) !!
-				return;
-		}
-	}
-	if (precache_check == CS_MODELS+1) {
-		SCR_SetLevelshot ();
-		precache_check++;
-		if (allow_download_maps->integer)
-			if (!CL_CheckOrDownloadFile(cl.configstrings[CS_MODELS+1]))
-				return; // started a download
-	}
-#endif
-	if (precache_check >= CS_MODELS && precache_check < CS_MODELS+MAX_MODELS) {
-		if (allow_download_models->integer) {
-			while (precache_check < CS_MODELS+MAX_MODELS &&
-				cl.configstrings[precache_check][0]) {
-				if (cl.configstrings[precache_check][0] == '*' ||
-					cl.configstrings[precache_check][0] == '#') {
-					precache_check++;
-					continue;
-				}
-				if (precache_model_skin == 0) {
-					if (!CL_CheckOrDownloadFile(cl.configstrings[precache_check])) {
-						precache_model_skin = 1;
-						return; // started a download
-					}
-					precache_model_skin = 1;
-				}
-
-				// checking for skins in the model
-				if (!precache_model) {
-
-					if (!(precache_model = (byte*) FS_LoadFile (cl.configstrings[precache_check]))) {
-						precache_model_skin = 0;
-						precache_check++;
-						continue; // couldn't load it
-					}
-					if (LittleLong(*(unsigned *)precache_model) != MD2_IDENT) {
-						// not an alias model
-						FS_FreeFile (precache_model);
-						precache_model = 0;
-						precache_model_skin = 0;
-						precache_check++;
-						continue;
-					}
-					pheader = (dmdl_t *)precache_model;
-					if (LittleLong (pheader->version) != MD2_VERSION) {
-						precache_check++;
-						precache_model_skin = 0;
-						continue; // couldn't load it
-					}
-				}
-
-				pheader = (dmdl_t *)precache_model;
-
-				while (precache_model_skin - 1 < LittleLong(pheader->numSkins)) {
-					if (!CL_CheckOrDownloadFile((char *)precache_model + LittleLong(pheader->ofsSkins) +
-						(precache_model_skin - 1)*MD2_MAX_SKINNAME))
-					{
-						precache_model_skin++;
-						return; // started a download
-					}
-					precache_model_skin++;
-				}
-				if (precache_model)
-				{
-					FS_FreeFile(precache_model);
-					precache_model = 0;
-				}
-				precache_model_skin = 0;
-				precache_check++;
-			}
-		}
-		precache_check = CS_SOUNDS;
-	}
-	if (precache_check >= CS_SOUNDS && precache_check < CS_SOUNDS+MAX_SOUNDS)
-	{
-		if (allow_download_sounds->integer)
-		{
-			if (precache_check == CS_SOUNDS)
-				precache_check++; // zero is blank
-			while (precache_check < CS_SOUNDS+MAX_SOUNDS && cl.configstrings[precache_check][0])
-			{
-				if (cl.configstrings[precache_check][0] == '*')
-				{
-					precache_check++;
-					continue;
-				}
-				if (!CL_CheckOrDownloadFile(va("sound/%s", cl.configstrings[precache_check++])))
-					return; // started a download
-			}
-		}
-		precache_check = CS_IMAGES;
-	}
-	if (precache_check >= CS_IMAGES && precache_check < CS_IMAGES+MAX_IMAGES)
-	{
-		if (precache_check == CS_IMAGES) precache_check++; // zero is blank
-		while (precache_check < CS_IMAGES+MAX_IMAGES && cl.configstrings[precache_check][0])
-		{
-			if (!CL_CheckOrDownloadFile(va("pics/%s.pcx", cl.configstrings[precache_check++])))	//??? not PCX only
-				return; // started a download
-		}
-		precache_check = CS_PLAYERSKINS;
-	}
-	// skins are special, since a player has three things to download:
-	// model, weapon model and skin
-	// so precache_check is now *3
-	if (precache_check >= CS_PLAYERSKINS && precache_check < CS_PLAYERSKINS + MAX_CLIENTS * PLAYER_MULT) {
-		if (allow_download_players->integer) {
-			while (precache_check < CS_PLAYERSKINS + MAX_CLIENTS * PLAYER_MULT) {
-				int		i, n;
-				char model[MAX_QPATH], skin[MAX_QPATH], *p;
-
-				i = (precache_check - CS_PLAYERSKINS)/PLAYER_MULT;
-				n = (precache_check - CS_PLAYERSKINS)%PLAYER_MULT;
-
-				if (!cl.configstrings[CS_PLAYERSKINS+i][0]) {
-					precache_check = CS_PLAYERSKINS + (i + 1) * PLAYER_MULT;
-					continue;
-				}
-
-				if ((p = strchr(cl.configstrings[CS_PLAYERSKINS+i], '\\')) != NULL)
-					p++;
-				else
-					p = cl.configstrings[CS_PLAYERSKINS+i];
-				strcpy(model, p);
-				p = strchr(model, '/');
-				if (!p)
-					p = strchr(model, '\\');
-				if (p)
-				{
-					*p++ = 0;
-					strcpy(skin, p);
-				}
-				else
-					*skin = 0;
-
-				switch (n) {
-				case 0: // model
-					if (!CL_CheckOrDownloadFile(va("players/%s/tris.md2", model)))
-					{
-						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 1;
-						return; // started a download
-					}
-					n++;
-					/*FALL THROUGH*/
-
-				case 1: // weapon model
-					if (!CL_CheckOrDownloadFile(va("players/%s/weapon.md2", model)))
-					{
-						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 2;
-						return; // started a download
-					}
-					n++;
-					/*FALL THROUGH*/
-
-				case 2: // weapon skin
-					if (!CL_CheckOrDownloadFile(va("players/%s/weapon.pcx", model)))	//??? PCX
-					{
-						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 3;
-						return; // started a download
-					}
-					n++;
-					/*FALL THROUGH*/
-
-				case 3: // skin
-					if (!CL_CheckOrDownloadFile(va("players/%s/%s.pcx", model, skin)))	//??? PCX
-					{
-						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 4;
-						return; // started a download
-					}
-					n++;
-					/*FALL THROUGH*/
-
-				case 4: // skin_i
-					if (!CL_CheckOrDownloadFile(va("players/%s/%s_i.pcx", model, skin)))	//??? PCX
-					{
-						precache_check = CS_PLAYERSKINS + i * PLAYER_MULT + 5;
-						return; // started a download
-					}
-					// move on to next model
-					precache_check = CS_PLAYERSKINS + (i + 1) * PLAYER_MULT;
-				}
-			}
-		}
-		// precache phase completed
-		precache_check = ENV_CNT;
-	}
-
-	if (precache_check == ENV_CNT)
-	{
-		precache_check = ENV_CNT + 1;
-
-		CM_LoadMap (cl.configstrings[CS_MODELS+1], true, &map_checksum);
-
-		if (map_checksum != atoi(cl.configstrings[CS_MAPCHECKSUM]))
-		{
-			Com_DropError ("Local map version differs from server: %i != '%s'\n",
-				map_checksum, cl.configstrings[CS_MAPCHECKSUM]);
-			return;
-		}
-	}
-
-	if (precache_check > ENV_CNT && precache_check < TEXTURE_CNT)
-	{
-		if (allow_download->integer && allow_download_maps->integer)
-		{
-			while (precache_check < TEXTURE_CNT)
-			{
-				static char *env_suf[6] = {"rt", "bk", "lf", "ft", "up", "dn"};
-				int n = precache_check++ - ENV_CNT - 1;
-
-				if (!CL_CheckOrDownloadFile(va("env/%s%s.pcx", cl.configstrings[CS_SKY], env_suf[n/2])))	//??? PCX
-					return; // started a download
-			}
-		}
-		precache_check = TEXTURE_CNT;
-	}
-
-	if (precache_check == TEXTURE_CNT)
-	{
-		precache_check = TEXTURE_CNT+1;
-		precache_tex = 0;
-	}
-
-	// confirm existance of textures, download any that don't exist
-	if (precache_check == TEXTURE_CNT+1)
-	{
-		// from qcommon/cmodel.c
-		extern int			numtexinfo;
-		extern csurface_t	map_surfaces[];
-
-		if (allow_download->integer && allow_download_maps->integer)
-		{
-			while (precache_tex < numtexinfo)
-			{
-				if (!CL_CheckOrDownloadFile(va("textures/%s.wal", map_surfaces[precache_tex++].rname)))	//??? WAL
-					return; // started a download
-			}
-		}
-		precache_check = TEXTURE_CNT+999;
-	}
-
-	//ZOID
-	CL_RegisterSounds ();
-	CL_PrepRefresh ();
-
-	MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-	MSG_WriteString (&cls.netchan.message, va("begin %d\n", precache_spawncount));
-}
-
-/*
-=================
-CL_Precache_f
-
-The server will send this command right
-before allowing the client into the server
-=================
-*/
-void CL_Precache_f (int argc, char **argv)
-{
-	SCR_SetLevelshot ();
-	//Yet another hack to let old demos work
-	//the old precache sequence
-	if (argc < 2)
-	{
-		unsigned map_checksum;		// for detecting cheater maps
-
-		CM_LoadMap (cl.configstrings[CS_MODELS+1], true, &map_checksum);
-		CL_RegisterSounds ();
-		CL_PrepRefresh ();
-		return;
-	}
-
-	precache_check = CS_MODELS;
-	precache_spawncount = atoi (argv[1]);
-	precache_model = 0;
-	precache_model_skin = 0;
-
-	CL_RequestNextDownload();
-}
-
+//-----------------------------------------------------------------------------
 
 /*
 ===============

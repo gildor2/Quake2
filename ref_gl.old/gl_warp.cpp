@@ -613,9 +613,9 @@ void R_SetSky (const char *name, float rotate, vec3_t axis)
 			gl_picmip->integer++;	// hack (stage1)
 
 //		if ( glColorTableEXT && gl_ext_palettedtexture->value )
-			Com_sprintf (pathname, sizeof(pathname), "env/%s%s.pcx", skyname, suf[i]);
+			appSprintf (pathname, sizeof(pathname), "env/%s%s.pcx", skyname, suf[i]);
 //		else
-//??			Com_sprintf (pathname, sizeof(pathname), "env/%s%s.???", skyname, suf[i]);
+//??			appSprintf (pathname, sizeof(pathname), "env/%s%s.???", skyname, suf[i]);
 
 		sky_images[i] = GL_FindImage (pathname, it_sky);
 		if (!sky_images[i])
@@ -633,7 +633,7 @@ void R_SetSky (const char *name, float rotate, vec3_t axis)
 			sky_max = 511.0/512;
 		}
 	}
-//	Com_sprintf (pathname, sizeof(pathname), "env/%swinrefl.tga", skyname);
+//	appSprintf (pathname, sizeof(pathname), "env/%swinrefl.tga", skyname);
 //	reflect_img = GL_FindImage (pathname, it_sky);
 	/*if (!reflect_img)*/ reflect_img = GL_FindImage ("fx/specular.???", it_sky);
 	if (!reflect_img) reflect_img = sky_images[4]; // "...up.tga"

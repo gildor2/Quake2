@@ -516,7 +516,7 @@ void SV_InitGameLibrary (bool dummy)
 		PF_WriteString, PF_WritePos, PF_WriteDir, PF_WriteAngle,
 		Z_TagMalloc, Z_Free, Z_FreeTags,
 		PF_Cvar_Get, Cvar_Set, Cvar_ForceSet,
-		Cmd_Argc, Cmd_Argv, Cmd_Args,
+		SV_Argc, SV_Argv, SV_Args,
 		Cbuf_AddText,
 		SCR_DebugGraph
 	};

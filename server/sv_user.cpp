@@ -59,7 +59,7 @@ static void SV_New_f (int argc, char **argv)
 	{
 		char		name[MAX_OSPATH];
 
-		Com_sprintf (ARRAY_ARG(name), "demos/%s", sv.name);
+		appSprintf (ARRAY_ARG(name), "demos/%s", sv.name);
 		FS_FOpenFile (name, &sv.demofile);
 		if (!sv.demofile)
 			Com_DropError ("Couldn't open %s\n", name);
@@ -462,6 +462,7 @@ void SV_ExecuteUserCommand (char *s)
 	if (!ExecuteCommand (s, ARRAY_ARG(ucmds)) && sv.state == ss_game)
 	{
 		guard(ge.ClientCommand);
+		SV_TokenizeString (s);
 		ge->ClientCommand (sv_player);
 		unguardf(("cmd=%s", s));
 	}
@@ -545,7 +546,7 @@ void SV_ExecuteClientMessage (client_t *cl)
 			break;
 
 		case clc_userinfo:
-			Q_strncpyz (cl->userinfo, MSG_ReadString (&net_message), sizeof(cl->userinfo));
+			appStrncpyz (cl->userinfo, MSG_ReadString (&net_message), sizeof(cl->userinfo));
 			SV_UserinfoChanged (cl);
 			break;
 

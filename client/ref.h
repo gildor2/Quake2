@@ -153,6 +153,7 @@ typedef struct
 #define REF_CONSOLE_ONLY	1		// if set -- no graphics output
 #define REF_NEW_FX			2		// if set, renderer supports sprite fx
 #define REF_USE_PALETTE		4		// if set, renderer cannot display DrawStretchRaw8 simultaneously with other objects
+									//?? NOTE: when removing paletted renderer (soft), search all sources for REF_USE_PALETTE
 
 // screenshot flags
 #define SHOT_SMALL			1		// stretch screenshot to reduce its dimensions (levelshots, savegames etc.)

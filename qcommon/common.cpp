@@ -142,16 +142,13 @@ void Com_Printf (const char *fmt, ...)
 	// logfile
 	if (logfile_active && logfile_active->integer)
 	{
+		const char *s = strchr (msg, '\r');		// find line-feed
+		if (s)	s++;
+		else	s = msg;
+		if (!s[0]) return;						// nothing to print
 		if (!logfile)
-		{
-			if (!console_logged)
-				Com_sprintf (ARRAY_ARG(log_name), "%s/console.log", FS_Gamedir ());
+			logfile = fopen ("./console.log", logfile_active->integer > 2 || console_logged ? "a" : "w");
 
-			if (logfile_active->integer > 2 || console_logged)
-				logfile = fopen (log_name, "a");
-			else
-				logfile = fopen (log_name, "w");
-		}
 		if (logfile)
 		{
 			appUncolorizeString (msg, msg);
@@ -302,7 +299,7 @@ void Com_DropError (const char *fmt, ...)
 	}
 	else
 		SV_Shutdown ("", false);
-	if (!DEDICATED) CL_Drop ();
+	if (!DEDICATED) CL_Drop (true);
 	throw 1;
 }
 
@@ -314,9 +311,9 @@ void appUnwindPrefix (const char *fmt)
 	char	buf[512];
 
 	if (GErr.wasError)
-		Com_sprintf (buf, sizeof(buf), " <- %s:", fmt);
+		appSprintf (buf, sizeof(buf), " <- %s:", fmt);
 	else
-		Com_sprintf (buf, sizeof(buf), "%s:", fmt);
+		appSprintf (buf, sizeof(buf), "%s:", fmt);
 
 	GErr.wasError = false;		// will not insert "<-" next appUnwindThrow()
 	strncat (GErr.history, buf, sizeof(GErr.history));
@@ -367,13 +364,7 @@ void Com_Quit (void)
 {
 	SV_Shutdown ("Server quit\n", false);
 	CL_Shutdown (false);
-
-	if (logfile)
-	{
-		fclose (logfile);
-		logfile = NULL;
-	}
-
+	QCommon_Shutdown ();
 	Sys_Quit ();
 }
 
@@ -398,7 +389,7 @@ bool MatchWildcard (const char *name, const char *mask, bool ignoreCase)
 		Q_strncpylower (maskCopy, mask, sizeof(maskCopy));
 	}
 	else
-		Q_strncpyz (maskCopy, mask, sizeof(maskCopy));
+		appStrncpyz (maskCopy, mask, sizeof(maskCopy));
 	namelen = strlen (name);
 
 	for (mask = maskCopy; mask; mask = next)
@@ -468,6 +459,68 @@ bool MatchWildcard (const char *name, const char *mask, bool ignoreCase)
 	}
 
 	return false;
+}
+
+
+/*
+============
+va
+
+does a varargs printf into a temp buffer, so I don't need to have
+varargs versions of all text functions.
+============
+*/
+
+#define VA_GOODSIZE		1024
+#define VA_BUFSIZE		2048
+
+char *va (const char *format, ...)
+{
+	va_list argptr;
+	static char buf[VA_BUFSIZE];
+	static int bufPos = 0;
+	int		len;
+	char	*str;
+
+	str = &buf[bufPos];
+	va_start (argptr, format);
+	len = vsnprintf (str, VA_GOODSIZE, format, argptr);
+	va_end (argptr);
+
+	if (len < 0)
+		return NULL;	// error (may be, overflow)
+
+	bufPos += len + 1;
+	if (bufPos > VA_BUFSIZE - VA_GOODSIZE)
+		bufPos = 0;		// cycle buffer
+
+	return str;
+}
+
+
+int appSprintf (char *dest, int size, const char *fmt, ...)
+{
+	int		len;
+	va_list	argptr;
+#if 1
+
+	va_start (argptr, fmt);
+	len = vsnprintf (dest, size, fmt, argptr);
+	va_end (argptr);
+	if (len < 0 || len > size - 1)
+		Com_WPrintf ("appSprintf: overflow %d > %d" RETADDR_STR "\n", len, size, GET_RETADDR(dest));
+#else
+	char	bigbuffer[0x10000];
+
+	va_start (argptr, fmt);
+	len = vsprintf (bigbuffer, fmt, argptr);
+	va_end (argptr);
+	if (len >= size)
+		Com_WPrintf ("appSprintf: overflow %d > %d\n", len, size);
+	strncpy (dest, bigbuffer, size-1);
+#endif
+
+	return len;
 }
 
 
@@ -1432,7 +1485,6 @@ float crand(void)
 }
 
 void Key_Init (void);
-void SCR_EndLoadingPlaque (void);
 
 /*
 =============
@@ -1531,8 +1583,8 @@ static void ParseCmdline (const char *cmdline)
 			cvar_t	*var;
 
 			// convert to "set a b"
-			Q_strncpyz (varName, cmd, s1 - cmd + 1);	// copy "a"
-			Q_strncpyz (varValue, s1 + 1, sizeof(varValue));
+			appStrncpyz (varName, cmd, s1 - cmd + 1);	// copy "a"
+			appStrncpyz (varValue, s1 + 1, sizeof(varValue));
 			len = strlen (varValue);
 			if (varValue[0] == '\"' && varValue[len-1] == '\"')
 			{
@@ -1817,4 +1869,9 @@ void QCommon_Frame (int msec)
 
 void QCommon_Shutdown (void)
 {
+	if (logfile)
+	{
+		fclose (logfile);
+		logfile = NULL;
+	}
 }

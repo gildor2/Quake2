@@ -434,11 +434,6 @@ void	Cmd_Init (void);
 // as a clc_stringcmd instead of executed locally
 //--void	UnregisterCommand (const char *cmd_name);
 
-//?? remove later
-int		Cmd_Argc (void);
-char*	Cmd_Argv (int i);
-
-char	*Cmd_Args (void);
 // The functions that execute commands get their parameters with these
 // functions. Cmd_Argv () will return an empty string, not a NULL
 // if arg > argc, so string operations are always safe.
@@ -678,11 +673,11 @@ int		CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t
 byte	*CM_ClusterPVS (int cluster);
 byte	*CM_ClusterPHS (int cluster);
 
-int		CM_PointLeafnum (vec3_t p);
+int		CM_PointLeafnum (vec3_t p, int num = 0);
 
 // call with topnode set to the headnode, returns with topnode
 // set to the first node that splits the box
-int		CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topnode);
+int		CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topnode = NULL, int headnode = 0);
 
 int		CM_LeafContents (int leafnum);
 int		CM_LeafCluster (int leafnum);
@@ -773,7 +768,7 @@ extern cvar_t	*fs_gamedirvar;
 void	FS_InitFilesystem (void);
 bool	FS_SetGamedir (const char *dir);
 //--char	*FS_Gamedir (void);
-char	*FS_NextPath (char *prevpath);
+char	*FS_NextPath (const char *prevpath);
 void	FS_LoadGameConfig (void);
 
 int		FS_FOpenFile (const char *filename, FILE **file);
@@ -806,7 +801,7 @@ void	Mem_Init (void);
 void	Com_BeginRedirect (char *buffer, int buffersize, void (*flush)(char*));
 void	Com_EndRedirect (void);
 
-void 	Com_Quit (void);
+void	NORETURN Com_Quit (void);
 
 //--bool MatchWildcard (char *name, char *mask, bool ignoreCase = false);
 
@@ -857,9 +852,8 @@ void	*Sys_GetGameAPI (void *parms);
 char	*Sys_ConsoleInput (void);
 void	Sys_ConsoleOutput (char *string);
 void	Sys_SendKeyEvents (void);
-void	Sys_Error (const char *error, ...);
-void	Sys_Quit (void);
-char	*Sys_GetClipboardData( void );
+void	NORETURN Sys_Error (const char *error, ...);
+void	NORETURN Sys_Quit (void);
 void	Sys_CopyProtect (void);
 
 
@@ -867,10 +861,10 @@ void	Sys_CopyProtect (void);
 
 
 void	CL_Init (void);
-void	CL_Drop (void);
+void	CL_Drop (bool fromError = false);
 void	CL_Shutdown (bool error);
 void	CL_Frame (float msec, int realMsec);
-void	Con_Print (char *text);
+void	Con_Print (const char *text);
 void	SCR_BeginLoadingPlaque (void);
 
 void	SV_Init (void);
@@ -1068,6 +1062,15 @@ inline void operator delete (void *ptr)
 {
 	appFree (ptr);
 }
+
+// from new Macro.h
+template <class T> inline T OffsetPointer (const T ptr, int offset)
+{
+	return (T) ((unsigned)ptr + offset);
+}
+
+#define FIELD_OFS(struc, field)		((unsigned) &((struc *)NULL)->field)		// get offset of the field in struc
+#define OFS_FIELD(struc, ofs, type)	(*(type*) ((byte*)(struc) + ofs))			// get field of type by offset inside struc
 
 
 #define COMMAND_USAGE	1

@@ -17,31 +17,13 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-#include "q_shared2.h"
+//#include "q_shared2.h"
+// we require some ri.func() declarations => some type defines etc
+#include "qcommon.h"
 
 #define DEG2RAD(a) ((a*M_PI)/180.0f)
 
 vec3_t vec3_origin = {0, 0, 0};
-
-// partial declarations from client/ref
-#ifndef DYNAMIC_REF
-
-void 	Com_Printf (const char *fmt, ...);
-void 	Com_DPrintf (const char *fmt, ...);
-void	Com_WPrintf (const char *fmt, ...);
-
-#else
-
-#include "../client/ref.h"
-
-extern refImport_t ri;
-
-#  define Com_Printf		ri._Com_Printf
-#  define Com_DPrintf		ri._Com_DPrintf
-#  define Com_WPrintf		ri._Com_WPrintf
-
-#endif
-
 
 //============================================================================
 
@@ -723,12 +705,9 @@ void ClearBounds (vec3_t mins, vec3_t maxs)
 
 void AddPointToBounds (const vec3_t v, vec3_t mins, vec3_t maxs)
 {
-	int		i;
-	float	val;
-
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 	{
-		val = v[i];
+		float val = v[i];
 		EXPAND_BOUNDS(val, mins[i], maxs[i]);
 	}
 }
@@ -1120,42 +1099,6 @@ void Swap_Init (void)
 
 #endif
 
-/*
-============
-va
-
-does a varargs printf into a temp buffer, so I don't need to have
-varargs versions of all text functions.
-============
-*/
-
-#define VA_GOODSIZE		1024
-#define VA_BUFSIZE		2048
-
-char *va (char *format, ...)
-{
-	va_list argptr;
-	static char buf[VA_BUFSIZE];
-	static int bufPos = 0;
-	int		len;
-	char	*str;
-
-	str = &buf[bufPos];
-	va_start (argptr, format);
-	len = vsnprintf (str, VA_GOODSIZE, format, argptr);
-	va_end (argptr);
-
-	if (len < 0)
-		return NULL;	// error (may be, overflow)
-
-	bufPos += len + 1;
-	if (bufPos > VA_BUFSIZE - VA_GOODSIZE)
-		bufPos = 0;		// cycle buffer
-
-	return str;
-}
-
-
 static char com_token[MAX_STRING_CHARS];
 static int	com_lines;
 
@@ -1361,7 +1304,7 @@ void Com_PageInMemory (void *buffer, int size)
 
 //============================================================================
 
-void Q_strncpyz (char *dest, const char *src, int destsize)
+void appStrncpyz (char *dest, const char *src, int destsize)
 {
 	strncpy (dest, src, destsize-1);
 	dest[destsize-1] = 0;
@@ -1436,31 +1379,6 @@ void Q_CopyFilename (char *dest, const char *src, int len)
 	} while (c);
 }
 
-
-int Com_sprintf (char *dest, int size, const char *fmt, ...)
-{
-	int		len;
-	va_list		argptr;
-#if 1
-
-	va_start (argptr, fmt);
-	len = vsnprintf (dest, size, fmt, argptr);
-	va_end (argptr);
-	if (len < 0 || len > size - 1)
-		Com_WPrintf ("Com_sprintf: overflow %d > %d" RETADDR_STR "\n", len, size, GET_RETADDR(dest));
-#else
-	char	bigbuffer[0x10000];
-
-	va_start (argptr, fmt);
-	len = vsprintf (bigbuffer, fmt, argptr);
-	va_end (argptr);
-	if (len >= size)
-		Com_WPrintf ("Com_sprintf: overflow %d > %d\n", len, size);
-	strncpy (dest, bigbuffer, size-1);
-#endif
-
-	return len;
-}
 
 /*
 =====================================================================
@@ -1619,7 +1537,7 @@ void Info_SetValueForKey (char *s, char *key, char *value)
 	if (!value || !value[0])
 		return;
 
-	Com_sprintf (ARRAY_ARG(newi), "\\%s\\%s", key, value);
+	appSprintf (ARRAY_ARG(newi), "\\%s\\%s", key, value);
 
 	if (strlen (newi) + strlen (s) > maxsize)
 	{

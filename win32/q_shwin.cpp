@@ -67,11 +67,7 @@ void *Hunk_Alloc (int size)
 //	buf = VirtualAlloc (membase+cursize, size, MEM_COMMIT, PAGE_READWRITE);
 	buf = VirtualAlloc (membase, cursize+size, MEM_COMMIT, PAGE_READWRITE);
 	if (!buf)
-	{
-		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
-			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &buf, 0, NULL);
 		Sys_Error ("VirtualAlloc commit failed.");
-	}
 #endif
 	cursize += size;
 	if (cursize > hunkmaxsize)
@@ -169,7 +165,7 @@ char *Sys_FindFirst (char *path, int flags)
 	if (!CheckAttributes (findinfo.attrib))
 		return Sys_FindNext ();
 
-	Com_sprintf (ARRAY_ARG(findPath), "%s/%s", findBase, findinfo.name);
+	appSprintf (ARRAY_ARG(findPath), "%s/%s", findBase, findinfo.name);
 	return findPath;
 }
 
@@ -185,7 +181,7 @@ char *Sys_FindNext (void)
 		if (!CheckAttributes (findinfo.attrib))
 			continue;
 
-		Com_sprintf (ARRAY_ARG(findPath), "%s/%s", findBase, findinfo.name);
+		appSprintf (ARRAY_ARG(findPath), "%s/%s", findBase, findinfo.name);
 		return findPath;
 	}
 	return NULL;

@@ -577,7 +577,7 @@ void Mod_LoadTexinfo (texinfo_t *data, int size)
 		else
 			out->next = NULL;
 
-		Com_sprintf (name, sizeof(name), "textures/%s.wal", in->texture);
+		appSprintf (name, sizeof(name), "textures/%s.wal", in->texture);
 		out->image = GL_FindImage (name, it_wall);
 		if (!out->image)
 		{
@@ -1028,7 +1028,7 @@ void Mod_LoadHLTexinfo (lump_t *l)
 //		else
 			out->next = NULL;
 
-//		Com_sprintf (name, sizeof(name), "textures/%s.wal", in->texture);
+//		appSprintf (name, sizeof(name), "textures/%s.wal", in->texture);
 //		out->image = GL_FindImage (name, it_wall);
 //		if (!out->image)
 //		{
@@ -1502,7 +1502,7 @@ void R_BeginRegistration (const char *model)
 	r_viewcluster = -2;
 	r_oldviewcluster = -2;		// force markleafs
 
-	Com_sprintf (fullname, sizeof(fullname), "maps/%s.bsp", model);
+	appSprintf (fullname, sizeof(fullname), "maps/%s.bsp", model);
 
 	// explicitly free the old map if different
 	// this guarantees that gl_mod_known[0] is the world map

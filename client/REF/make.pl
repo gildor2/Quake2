@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 #------------------------------------------------------------------------------
 #	Defines
@@ -59,15 +59,17 @@ sub EmitDefine1 {
 		printf (DEFS "#define %s\t$strucname._%s\n", $func, $func);
 	} else {
 		# regular function, may be overloaded - so make inline code
-		print (DEFS "inline $type $func ($args)\n{\n\t");
-		print (DEFS "return ") if ($type ne "void");
-		print (DEFS "$strucname._$func (");
+		print DEFS "inline $type $func ($args)\n{\n\t";
+		print DEFS "return " if $type ne "void";
+		print DEFS "$strucname._$func (";
 		# args
 		my $i = 0;
 		for $arg (@args) {
 			my (undef, $param, undef) = $arg =~ / \s* (\S+ .* [\*\s]) (\w+) (\[.*\])? /x;
-			print (DEFS ", ") if $i > 0;
-			print (DEFS $param);
+			if (defined($param)) {
+				print (DEFS ", ") if $i > 0;
+				print (DEFS $param);
+			}
 			$i++;
 		}
 		# finish
@@ -112,7 +114,7 @@ sub Parse {
 		if ($line =~ /\# .+/x) {
 			&$subPreproc () if defined $subPreproc;
 		} else {
-			($type, $func, $args, $end) = $line =~ / \s* (\S+ .* [\*\s]) (\w+) \s+ \( (.*) \) \s* (\S*) /x;
+			($type, $func, $args) = $line =~ /^ \s* (\S+ [^(]* [\*\s]) (\w+) \s* \( (.*) \) \s* ; $/x;
 			($type) = $type =~ /\s*(\S.*\S)\s*/;	# truncate leading and trailing spaces
 
 			&$subBegin () if defined $subBegin;
@@ -144,20 +146,20 @@ printf ("Found %d functions ...\n", $numFuncs);
 #	Creating header part
 #------------------------------------------------------------------------------
 
-print (HDR <<EOF
+print HDR <<EOF
 typedef struct {
 	int		struc_size;
 EOF
-);
+;
 Parse ("EmitStruc", "EmitHdrPrep");
 
-print (HDR <<EOF
+print HDR <<EOF
 } $typename;
 
 extern $typename $strucname;
 
 EOF
-);
+;
 #------------------------------------------------------------------------------
 #	Creating defines
 #------------------------------------------------------------------------------
@@ -175,21 +177,21 @@ print (DEFS "\n#endif\n\n");
 #	Creating code part
 #------------------------------------------------------------------------------
 
-print (CODE <<EOF
+print CODE <<EOF
 static $typename $strucname = {
 	sizeof($typename),
 #ifndef DEDICATED_ONLY
 EOF
-);
+;
 Parse ("EmitImpl", "EmitCodePrep");
 
-print (CODE <<EOF
+print CODE <<EOF
 
 #endif // DEDICATED_ONLY
 };
 
 EOF
-);
+;
 # close files
 close (HDR);
 close (CODE);

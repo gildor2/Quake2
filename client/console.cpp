@@ -8,20 +8,12 @@
 #define CHAR_WIDTH	8
 #define CHAR_HEIGHT	8
 
-
-typedef struct
-{
-	int		line;
-	int		pos;
-} con_cache_t;
-
 typedef struct
 {
 	bool	wrapped;		// will be set to true after 1st buffer wrap
 	bool	started;		// "false" if was no access to console
 	bool	wordwrap;
 
-	char	text[CON_TEXTSIZE * 2];	// first half - text, second - color
 	int		current;		// line where next message will be printed
 	int		x;				// offset in current line for next print
 	int		display;		// bottom of console displays this line
@@ -33,10 +25,12 @@ typedef struct
 
 	int		vislines;
 
-	con_cache_t	disp;
-	con_cache_t	notif;
+	struct {
+		int line, pos;
+	} disp, notif;
 
 	int		times[NUM_CON_TIMES];	// cls.realtime time the line was generated
+	char	text[CON_TEXTSIZE * 2];	// first half - text, second - color
 } console_t;
 
 
@@ -45,11 +39,6 @@ static console_t con;
 static cvar_t	*con_notifyTime;
 static cvar_t	*con_wordWrap;
 static cvar_t	*con_colorText;
-
-
-static bool		chat_team;
-static char		chat_buffer[MAXCMDLINE];
-static int		chat_bufferlen = 0;
 
 
 #define MAX_HISTORY	32
@@ -62,28 +51,13 @@ char	editLine[MAXCMDLINE];
 int		editPos;
 
 
-static bool con_initialized;
+static bool initialized;
 int		con_height;
 
 // WRAP_CHAR will be placed as "soft" line-feed instead of a space char
 #define		WRAP_CHAR	(char)(' ' + 128)
 
 
-void Con_ToggleConsole_f (void)
-{
-	if (cls.keep_console) return;
-
-	Key_ClearTyping ();
-	Con_ClearNotify ();
-	SCR_ShowConsole (cls.key_dest != key_console, false);
-}
-
-
-/*
-================
-Con_Clear_f
-================
-*/
 static void Con_Clear_f (void)
 {
 	con.totallines = 1;		// current line, even if empty, encounted
@@ -105,13 +79,6 @@ static void Con_Clear_f (void)
 }
 
 
-/*
-================
-Con_Dump_f
-
-Save the console contents out to a file
-================
-*/
 static void Con_Dump_f (bool usage, int argc, char **argv)
 {
 	int		pos, size, out;
@@ -125,7 +92,7 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	Com_sprintf (ARRAY_ARG(name), "%s/%s.txt", FS_Gamedir(), argv[1]);
+	appSprintf (ARRAY_ARG(name), "%s/%s.txt", FS_Gamedir(), argv[1]);
 
 	FS_CreatePath (name);
 	f = fopen (name, "w");
@@ -161,38 +128,22 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 }
 
 
-/*
-================
-Con_ClearNotify
-================
-*/
 void Con_ClearNotify (void)
 {
 	memset (con.times, 0, sizeof(con.times));
 }
 
 
-/*
-================
-Con_CheckResize
-
-If the line width has changed, reformat the buffer.
-================
-*/
 void Con_CheckResize (void)
 {
-	int		width, size, line, i, x;
-	char	c;
-	bool	w;
-
-	w = (con_wordWrap && con_wordWrap->integer);
+	bool w = (con_wordWrap && con_wordWrap->integer);
 	if (w != con.wordwrap)
 	{
 		linewidth = -1;					// force resize
 		con.wordwrap = con_wordWrap->integer != 0;
 	}
 
-	width = (viddef.width / CHAR_WIDTH) - 2;
+	int width = (viddef.width / CHAR_WIDTH) - 2;
 	if (width < 1) width = 38;			// wideo hash't initialized
 
 	if (width == linewidth)
@@ -200,15 +151,15 @@ void Con_CheckResize (void)
 
 	linewidth = width;
 
-	size = con.endpos - con.startpos;	// size of data in buffer
+	int size = con.endpos - con.startpos; // size of data in buffer
 	if (size < 0) size+= CON_TEXTSIZE;	// wrap buffer: endpos < startpos
 
-	i = con.startpos;
-	x = 0;
-	line = 0;
+	int i = con.startpos;
+	int x = 0;
+	int line = 0;
 	while (size--)
 	{
-		c = con.text[i];
+		char c = con.text[i];
 		if (c == WRAP_CHAR) c = ' ';	// ignore old WRAP_CHARs
 		con.text[i] = c;
 		if (++i >= CON_TEXTSIZE) i -= CON_TEXTSIZE;
@@ -221,15 +172,12 @@ void Con_CheckResize (void)
 			if (con.wordwrap && c != '\n')
 			{
 				// make a word wrap
-				char c1;
-				int i1, x1;
-
-				i1 = i;					// seek back to find a space char
-				x1 = -1;
+				int i1 = i;					// seek back to find a space char
+				int x1 = -1;
 				while (++x1 < width)
 				{
 					if (--i1 < 0) i1 += CON_TEXTSIZE;
-					c1 = con.text[i1];
+					char c1 = con.text[i1];
 
 					if (c1 == '\n' || c1 == WRAP_CHAR) break; // wrap found - word is too long
 					if (c1 == ' ')
@@ -249,6 +197,10 @@ void Con_CheckResize (void)
 	con.disp.line = con.notif.line = -1;
 }
 
+
+/*-----------------------------------------------------------------------------
+	Printing text to console
+-----------------------------------------------------------------------------*/
 
 static int FindLine (int lineno)
 {
@@ -369,12 +321,7 @@ static void PlaceChar (char c, byte color)
 }
 
 
-/*
-================
-Con_Print
-================
-*/
-void Con_Print (char *txt)
+void Con_Print (const char *txt)
 {
 	byte	color;
 	char	c;
@@ -410,18 +357,15 @@ void Con_Print (char *txt)
 }
 
 
-/*
-================
-DrawInput
-================
-*/
+/*-----------------------------------------------------------------------------
+	Drawing console
+-----------------------------------------------------------------------------*/
+
 static void DrawInput (void)
 {
-	int		y, i, shift;
-	char	*text, c, color;
-	bool	eoln;
+	int		y, shift;
 
-	text = editLine;
+	const char *text = editLine;
 
 	// prestep if horizontally scrolling
 	if (editPos >= linewidth)
@@ -438,9 +382,12 @@ static void DrawInput (void)
 	else
 		y = (viddef.height / CHAR_HEIGHT) - 2;
 
-	eoln = false;
-	for (i = 0; i < linewidth; i++, text++)
+	bool eoln = false;
+	for (int i = 0; i < linewidth; i++, text++)
 	{
+		char	c;
+		int		color;
+
 		int x = (i+1) * CHAR_WIDTH;
 		if (!eoln)
 		{
@@ -471,30 +418,18 @@ static void DrawInput (void)
 }
 
 
-/*
-================
-Con_DrawNotify
-
-Draws the last few lines of output transparently over the game top
-================
-*/
 void Con_DrawNotify (bool drawBack)
 {
-	int		x, v, i, pos;
-	char	*s;
-
 	if (*re.flags & REF_CONSOLE_ONLY || !cl_draw2d->integer)
 		return;
 
-	v = 0;
-	pos = -1;
-	for (i = con.current - NUM_CON_TIMES + 1; i <= con.current; i++)
+	int v = 0;
+	int pos = -1;
+	for (int i = con.current - NUM_CON_TIMES + 1; i <= con.current; i++)
 	{
-		int		time;
-
 		if (i < 0) continue;
 
-		time = con.times[i % NUM_CON_TIMES];
+		int time = con.times[i % NUM_CON_TIMES];
 		if (time == 0) continue;
 
 		time = cls.realtime - time;
@@ -515,7 +450,7 @@ void Con_DrawNotify (bool drawBack)
 			re.DrawFill2 (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, RGBA(1,0,0,0.3));
 			drawBack = false;
 		}
-		for (x = 0; x < linewidth; x++)
+		for (int x = 0; x < linewidth; x++)
 		{
 			char c = con.text[pos];
 			int color = con.text[pos + CON_TEXTSIZE];
@@ -527,42 +462,8 @@ void Con_DrawNotify (bool drawBack)
 
 		v += CHAR_HEIGHT;
 	}
-
-
-	if (cls.key_dest == key_message)	// edit current player message
-	{
-		if (chat_team)
-		{
-			DrawString (8, v, "say_team:");
-			x = 11;
-		}
-		else
-		{
-			DrawString (8, v, "say:");
-			x = 5;
-		}
-
-		s = chat_buffer;
-		if (chat_bufferlen > viddef.width/CHAR_WIDTH - (x + 1))
-			s += chat_bufferlen - (viddef.width/CHAR_WIDTH - (x + 1));
-		while(*s)
-		{
-			re.DrawChar (x * CHAR_WIDTH, v, *s++);
-			x++;
-		}
-		// draw cursor
-		re.DrawChar (x * CHAR_WIDTH, v, 10 + ((curtime >> 8) & 1));
-	}
 }
 
-
-/*
-================
-Con_DrawConsole
-
-Draws the console with the solid background
-================
-*/
 
 //#define DEBUG_CONSOLE
 
@@ -580,7 +481,6 @@ void Con_DrawConsole (float frac)
 #else
 #define CON_DBG(x)
 #endif
-
 
 	lines = appRound (viddef.height * frac);
 	con_height = lines;
@@ -728,25 +628,9 @@ void Key_Console (int key, int modKey)
 
 	switch (modKey)
 	{
-	case MOD_CTRL+'v':		//?? is it really needed ?
-		if (s = Sys_GetClipboardData ())
-		{
-			i = strlen (s);
-			if (i + editPos > MAXCMDLINE - 1)
-				i = MAXCMDLINE - editPos - 1;
-
-   			if (i > 0)
-			{
-				s[i] = 0;
-				strcat (editLine, s);
-				editPos += i;
-			}
-			free (s);
-		}
-		return;
-
 	case MOD_CTRL+'l':
-		Cbuf_AddText ("clear\n");
+//		Cbuf_AddText ("clear\n");
+		Con_Clear_f ();
 		return;
 
 	case K_ENTER:
@@ -957,71 +841,6 @@ void Key_Console (int key, int modKey)
 	}
 }
 
-
-/*-----------------------------------------------------------------------------
-	Chat input
------------------------------------------------------------------------------*/
-
-void Key_Message (int key)
-{
-	if (key == K_ENTER || key == K_KP_ENTER)
-	{
-		if (chat_team)
-			Cbuf_AddText ("say_team \"");
-		else
-			Cbuf_AddText ("say \"");
-		Cbuf_AddText (chat_buffer);
-		Cbuf_AddText ("\"\n");
-
-		cls.key_dest = key_game;
-		chat_bufferlen = 0;
-		chat_buffer[0] = 0;
-		return;
-	}
-
-	if (key == K_ESCAPE)
-	{
-		cls.key_dest = key_game;
-		chat_bufferlen = 0;
-		chat_buffer[0] = 0;
-		return;
-	}
-
-	if (key == K_BACKSPACE)
-	{
-		if (chat_bufferlen)
-		{
-			chat_bufferlen--;
-			chat_buffer[chat_bufferlen] = 0;
-		}
-		return;
-	}
-
-	if (key < 32 || key >= 128)
-		return;		// non printable
-
-	if (chat_bufferlen == sizeof(chat_buffer)-1)
-		return;		// buffer full
-
-	chat_buffer[chat_bufferlen++] = key;
-	chat_buffer[chat_bufferlen] = 0;
-}
-
-
-static void Con_MessageMode_f (void)
-{
-	chat_team = false;
-	cls.key_dest = key_message;
-}
-
-
-static void Con_MessageMode2_f (void)
-{
-	chat_team = true;
-	cls.key_dest = key_message;
-}
-
-
 /*-----------------------------------------------------------------------------
 	Initialization
 -----------------------------------------------------------------------------*/
@@ -1034,7 +853,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(con_colorText, 1, CVAR_ARCHIVE)
 CVAR_END
 
-	if (con_initialized) return;
+	if (initialized) return;
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 	linewidth = -1;		// force Con_CheckResize()
@@ -1043,11 +862,8 @@ CVAR_END
 
 	Con_CheckResize ();
 
-	RegisterCommand ("toggleconsole", Con_ToggleConsole_f);
-	RegisterCommand ("messagemode", Con_MessageMode_f);
-	RegisterCommand ("messagemode2", Con_MessageMode2_f);
 	RegisterCommand ("clear", Con_Clear_f);
 	RegisterCommand ("condump", Con_Dump_f);
 
-	con_initialized = true;
+	initialized = true;
 }

@@ -96,6 +96,8 @@ Comments:
   - ability to stop with any key (old: incorrect when playing sequence of few cinematics)
 - menu: allowed binds to all keys (except ESC and "~")
 - better work with large FPS
+- cvar "logfile": "console.log" placed in quake root directory (not in game directory) + removed lines, finished
+  with LF ('\r')
 
 5. ADDONS
 ~~~~~~~~~
@@ -254,7 +256,7 @@ GUI
 - crosshairs:
   - unlimited number of crosshairs; must be named "pics/ch%d.???"; when trying to set crosshair,
     that does not exist, crosshair will be set to 0 (no crosshair)
-  - added cvar "crosshaircolor"; value = [0..7] (0 - black, 1 - red, 2 - green, 4 - blue, 7 - white)
+  - added cvar "crosshairColor"; value = [0..7] (0 - black, 1 - red, 2 - green, 4 - blue, 7 - white)
   - changing crosshair shape and color from the options menu
 
 Network
