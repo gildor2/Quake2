@@ -3,7 +3,7 @@
 #include "gl_backend.h"
 #include "gl_model.h"
 
-#define SWAP_ON_BEGIN		// call GLimp_EndFrame() with SwapBuffers() on frame begin (or frame end if not defined)
+//#define SWAP_ON_BEGIN		// call GLimp_EndFrame() with SwapBuffers() on frame begin (or frame end if not defined)
 
 /* LATER: replace (almost) all ap.time -> shader.time (or global "shaderTime") ??
  * (because time may be take (if engine will be extended) from entity)
@@ -1599,9 +1599,79 @@ static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 
 /*------------------- Drawing the scene ---------------------*/
 
+static void DrawParticles (void)
+{
+	vec3_t	up, right;
+	particle_t *p;
+	int		i;
+	byte	c[4];
+
+	//!! oprimize this (vertex arrays, etc.)
+	DrawTextLeft(va("particles: %d", ap.numParticles),1,1,1);//!!
+
+	GL_Bind (gl_particleImage);
+	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA);
+	VectorScale (ap.viewaxis[1], 1.5, up);
+	VectorScale (ap.viewaxis[2], 1.5, right);
+
+	qglBegin (GL_TRIANGLES);
+	for (p = ap.particles, i = 0; i < ap.numParticles; i++, p++)
+	{
+		float	scale;
+
+		scale = (p->origin[0] - ap.vieworg[0]) * ap.viewaxis[0][0] +
+				(p->origin[1] - ap.vieworg[1]) * ap.viewaxis[0][1] +
+				(p->origin[2] - ap.vieworg[2]) * ap.viewaxis[0][2];
+		if (scale < 20.0f)
+			scale = 1;
+		else
+			scale = scale / 500.0f + 1.0f;
+
+		switch (p->type)
+		{
+		case PT_SPARKLE:
+			if (p->alpha < 64)
+			{
+				c[0] = 255;
+				c[1] = 128 + 2 * p->alpha;
+				c[2] = 144;
+			}
+			else
+			{
+				c[0] = c[1] = 255;
+				c[2] = (p->alpha - 64) * 4 / 3 * 111 / 256 + 144;
+			}
+			break;
+		default:
+			*(int*)c = gl_config.tbl_8to32[p->color];
+		}
+		c[3] = p->alpha;
+		qglColor4ubv (c);
+
+		qglTexCoord2f (0.0625, 0.0625);
+		qglVertex3fv (p->origin);
+
+		qglTexCoord2f (1.0625, 0.0625);
+		qglVertex3f (p->origin[0] + up[0] * scale, p->origin[1] + up[1] * scale, p->origin[2] + up[2] * scale);
+
+		qglTexCoord2f (0.0625, 1.0625);
+		qglVertex3f (p->origin[0] + right[0] * scale, p->origin[1] + right[1] * scale, p->origin[2] + right[2] * scale);
+	}
+	qglEnd ();
+}
+
+
 // Macro for determining fast-draw ability
 #define IS_FAST(shader,surf)	(shader->fast && surf->type == SURFACE_PLANAR)
 
+#define FLUSH()				\
+	if (numFastSurfs)		\
+	{						\
+		DrawFastSurfaces (fastSurf, numFastSurfs);	\
+		numFastSurfs = 0;	\
+	}						\
+	else					\
+		RB_EndSurface ();
 
 // Draw scene, specified in "ap"
 static void RB_DrawScene (void)
@@ -1610,6 +1680,7 @@ static void RB_DrawScene (void)
 	surfaceInfo_t	**si, **si2, **fastSurf;
 	shader_t		*shader;
 	surfaceCommon_t	*surf;
+	int				alpha1;
 	// current state
 	int		currentShaderNum, currentEntityNum;
 	qboolean currentDepthHack, depthHack;
@@ -1652,9 +1723,11 @@ static void RB_DrawScene (void)
 	for (index2 = index, si2 = si; index2 < ap.numSurfaces; index2++, si2++)
 	{
 		surf = (*si2)->surf;
-		if (surf->type == SURFACE_PLANAR)
+		if (surf && surf->type == SURFACE_PLANAR)
 			CheckDynamicLightmap (surf);
 	}
+
+	alpha1 = gl_alphaShader1->sortIndex;
 
 	/*-------- draw world/models ---------*/
 	numFastSurfs = 0;
@@ -1673,13 +1746,7 @@ static void RB_DrawScene (void)
 		if (shNum != currentShaderNum || entNum != currentEntityNum)
 		{
 			// flush data for the previous shader
-			if (numFastSurfs)
-			{
-				DrawFastSurfaces (fastSurf, numFastSurfs);
-				numFastSurfs = 0;
-			}
-			else
-				RB_EndSurface ();
+			FLUSH();
 
 			// change shader
 			shader = GL_GetShaderByNum (shNum);
@@ -1720,7 +1787,9 @@ static void RB_DrawScene (void)
 			}
 		}
 
-		if (IS_FAST(currentShader, surf))
+		if (shader == gl_alphaShader1)
+			DrawParticles ();
+		else if (IS_FAST(shader, surf))
 			numFastSurfs++;
 		else
 		{
@@ -1737,10 +1806,7 @@ static void RB_DrawScene (void)
 		}
 	}
 	/*--------- finilize/debug -----------*/
-	if (numFastSurfs)
-		DrawFastSurfaces (fastSurf, numFastSurfs);
-	else
-		RB_EndSurface ();
+	FLUSH();
 
 	if (currentDepthHack)
 		qglDepthRange (0, 1);

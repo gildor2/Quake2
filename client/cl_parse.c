@@ -571,7 +571,8 @@ void CL_ParseConfigString (void)
 	}
 	else if (i >= CS_SOUNDS && i < CS_SOUNDS+MAX_MODELS)
 	{
-		if (re.console_only) return;
+		if (re.flags & REF_CONSOLE_ONLY)
+			return;
 
 		if (cl.refresh_prepped)
 			cl.sound_precache[i-CS_SOUNDS] = S_RegisterSound (cl.configstrings[i]);

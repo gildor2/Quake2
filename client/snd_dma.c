@@ -743,7 +743,8 @@ void S_StartSound(vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float f
 	playsound_t	*ps, *sort;
 	int			start;
 
-	if (re.console_only) return;
+	if (re.flags & REF_CONSOLE_ONLY)
+		return;
 
 	if (!sound_started)
 		return;
@@ -1099,7 +1100,8 @@ void S_Update(vec3_t origin, vec3_t forward, vec3_t right, vec3_t up)
 	channel_t	*ch;
 	channel_t	*combine;
 
-	if (re.console_only) return;
+	if (re.flags & REF_CONSOLE_ONLY)
+		return;
 
 	if (!sound_started)
 		return;

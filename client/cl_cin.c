@@ -483,7 +483,7 @@ void SCR_PlayCinematic (char *arg)
 	// make sure CD isn't playing music
 	CDAudio_Stop();
 
-	if (re.console_only)
+	if (re.flags & REF_CONSOLE_ONLY)
 	{	// no cinematic for text-only mode
 		SCR_FinishCinematic ();
 		cl.cinematictime = 0;

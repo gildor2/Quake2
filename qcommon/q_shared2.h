@@ -180,6 +180,7 @@ void ClearBounds (vec3_t mins, vec3_t maxs);
 void AddPointToBounds (vec3_t v, vec3_t mins, vec3_t maxs);
 int VectorCompare (vec3_t v1, vec3_t v2);
 vec_t VectorLength (vec3_t v);
+float VectorDistance (vec3_t vec1, vec3_t vec2);
 void AnglesToAxis (const vec3_t angles, vec3_t axis[3]);
 void AxisClear (vec3_t axis[3]);
 void AxisCopy (vec3_t in[3], vec3_t out[3]);
@@ -340,6 +341,7 @@ CVARS (console variables)
 #define CVAR_GAME_CREATED	0x40	// created from game library
 // not stored flags:
 #define CVAR_NODEFAULT		0x10000	// do not store "default" value from this Cvar_Get() call
+#define CVAR_UPDATE			0x20000	// set "modified" field after Cvar_Get() call
 
 #define CVAR_FLAG_MASK		0x0FFFF	// mask of stored cvar flags
 

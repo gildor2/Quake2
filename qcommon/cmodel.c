@@ -2075,7 +2075,7 @@ void CM_RecursiveHLHullCheck (int num, float p1f, float p2f, vec3_t p1, vec3_t p
 
 	// go past the node
 	midf = p1f + (p2f - p1f)*frac2;
-	for (i=0 ; i<3 ; i++)
+	for (i = 0; i < 3; i++)
 		mid[i] = p1[i] + frac2*(p2[i] - p1[i]);
 
 	CM_RecursiveHLHullCheck (node->children[side^1], midf, p2f, mid, p2);
@@ -2090,15 +2090,11 @@ CM_ClipBoxToBrush
 void CM_ClipBoxToBrush (vec3_t mins, vec3_t maxs, vec3_t p1, vec3_t p2,
 					  trace_t *trace, cbrush_t *brush)
 {
-	int			i, j;
-	cplane_t	*plane, *clipplane;
-	float		dist;
+	int			i;
+	cplane_t	*clipplane;
 	float		enterfrac, leavefrac;
-	vec3_t		ofs;
-	float		d1, d2;
 	qboolean	getout, startout;
-	float		f;
-	cbrushside_t	*side, *leadside;
+	cbrushside_t *leadside;
 
 	enterfrac = -1;
 	leavefrac = 1;
@@ -2113,9 +2109,20 @@ void CM_ClipBoxToBrush (vec3_t mins, vec3_t maxs, vec3_t p1, vec3_t p2,
 	startout = false;
 	leadside = NULL;
 
-	for (i=0 ; i<brush->numsides ; i++)
+	for (i = 0; i < brush->numsides; i++)
 	{
+		cbrushside_t *side;
+		cplane_t *plane;
+		int		j;
+		float	d1, d2, dist, f;
+		vec3_t	ofs;
+
 		side = &map_brushsides[brush->firstbrushside+i];
+
+//		if (Cvar_VariableInt ("test") && //!!
+//			trace_ispoint && side->surface && side->surface->flags & SURF_ALPHA)		//?? shooting through SURF_ALPHA
+//			continue;
+
 		plane = side->plane;
 		// FIXME: special case for axial
 
@@ -2125,7 +2132,7 @@ void CM_ClipBoxToBrush (vec3_t mins, vec3_t maxs, vec3_t p1, vec3_t p2,
 			// push the plane out apropriately for mins/maxs
 
 			// FIXME: use signbits into 8 way lookup for each mins/maxs
-			for (j=0 ; j<3 ; j++)
+			for (j = 0; j < 3; j++)
 			{
 				if (plane->normal[j] < 0)
 					ofs[j] = maxs[j];
@@ -2234,7 +2241,7 @@ void CM_TestBoxInBrush (vec3_t mins, vec3_t maxs, vec3_t p1,
 	if (!brush->numsides)
 		return;
 
-	for (i=0 ; i<brush->numsides ; i++)
+	for (i = 0; i < brush->numsides; i++)
 	{
 		side = &map_brushsides[brush->firstbrushside+i];
 		plane = side->plane;
@@ -2246,7 +2253,7 @@ void CM_TestBoxInBrush (vec3_t mins, vec3_t maxs, vec3_t p1,
 		// push the plane out apropriately for mins/maxs
 
 		// FIXME: use signbits into 8 way lookup for each mins/maxs
-		for (j=0 ; j<3 ; j++)
+		for (j = 0; j < 3; j++)
 		{
 			if (plane->normal[j] < 0)
 				ofs[j] = maxs[j];
@@ -2286,8 +2293,10 @@ void CM_TraceToLeaf (int leafnum)
 	if ( !(leaf->contents & trace_contents))
 		return;
 	// trace line against all brushes in the leaf
-	for (k=0 ; k<leaf->numleafbrushes ; k++)
+	for (k = 0; k < leaf->numleafbrushes; k++)
 	{
+		trace_t save_trace;
+
 		brushnum = map_leafbrushes[leaf->firstleafbrush+k];
 		b = &map_brushes[brushnum];
 		if (b->checkcount == checkcount)
@@ -2295,7 +2304,15 @@ void CM_TraceToLeaf (int leafnum)
 		b->checkcount = checkcount;
 		if (!(b->contents & trace_contents))
 			continue;
+
+		save_trace = trace_trace;
 		CM_ClipBoxToBrush (trace_mins, trace_maxs, trace_start, trace_end, &trace_trace, b);
+		if (trace_ispoint && trace_trace.surface && trace_trace.surface->flags & SURF_ALPHA)	//?? shooting through SURF_ALPHA
+		{
+			trace_trace = save_trace;
+			continue;
+		}
+
 		if (!trace_trace.fraction) // when startsolid && allsolid
 			return;
 	}
@@ -2322,7 +2339,7 @@ void CM_TestInLeaf (int leafnum)
 		return;
 
 	// trace line against all brushes in the leaf
-	for (k=0 ; k<leaf->numleafbrushes ; k++)
+	for (k = 0; k < leaf->numleafbrushes; k++)
 	{
 		brushnum = map_leafbrushes[leaf->firstleafbrush+k];
 		b = &map_brushes[brushnum];
@@ -2367,10 +2384,8 @@ void CM_RecursiveHullCheck (int num, float p1f, float p2f, vec3_t p1, vec3_t p2)
 		return;
 	}
 
-	//
 	// find the point distances to the separating plane
 	// and the offset for the size of the box
-	//
 	node = map_nodes + num;
 	plane = node->plane;
 
@@ -2447,7 +2462,7 @@ void CM_RecursiveHullCheck (int num, float p1f, float p2f, vec3_t p1, vec3_t p2)
 
 	// move up to the node
 	midf = p1f + (p2f - p1f)*frac;
-	for (i=0 ; i<3 ; i++)
+	for (i = 0; i < 3; i++)
 		mid[i] = p1[i] + frac*(p2[i] - p1[i]);
 
 	CM_RecursiveHullCheck (node->children[side], p1f, midf, p1, mid);
@@ -2455,7 +2470,7 @@ void CM_RecursiveHullCheck (int num, float p1f, float p2f, vec3_t p1, vec3_t p2)
 
 	// go past the node
 	midf = p1f + (p2f - p1f)*frac2;
-	for (i=0 ; i<3 ; i++)
+	for (i = 0; i < 3; i++)
 		mid[i] = p1[i] + frac2*(p2[i] - p1[i]);
 
 	CM_RecursiveHullCheck (node->children[side^1], midf, p2f, mid, p2);
@@ -2479,13 +2494,12 @@ When start==end:
 ==================
 */
 trace_t		CM_BoxTrace (vec3_t start, vec3_t end,
-						  vec3_t mins, vec3_t maxs,
-						  int headnode, int brushmask)
+						vec3_t mins, vec3_t maxs,
+						int headnode, int brushmask)
 {
 	int		i;
 
 	checkcount++;		// for multi-check avoidance
-
 	c_traces++;			// for statistics, may be zeroed
 
 	// fill in a default trace
@@ -2536,9 +2550,7 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end,
 	VectorCopy (mins, trace_mins);
 	VectorCopy (maxs, trace_maxs);
 
-	//
-	// check for position test special case
-	//
+	// check for "position test" special case
 	if (start[0] == end[0] && start[1] == end[1] && start[2] == end[2])
 	{
 		int		leafs[1024];
@@ -2555,13 +2567,6 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end,
 			c1[i] = start[i] + mins[i] - 1;
 			c2[i] = start[i] + maxs[i] + 1;
 		}
-//		VectorAdd (start, mins, c1);
-//		VectorAdd (start, maxs, c2);
-//		for (i=0 ; i<3 ; i++)
-//		{
-//			c1[i] -= 1;
-//			c2[i] += 1;
-//		}
 
 		numleafs = CM_BoxLeafnums_headnode (c1, c2, leafs, 1024, headnode, &topnode);
 		for (i=0 ; i<numleafs ; i++)
@@ -2586,10 +2591,17 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end,
 		return trace_trace;
 	}
 
-	//
-	// check for point special case
-	//
-	if (mins[0] == 0 && mins[1] == 0 && mins[2] == 0
+	// our "clip to all" special case (mins > maxs) -- point trace, but not go through SURF_ALPHA
+	if (mins[0] > maxs[0] && mins[1] > maxs[1] && mins[2] > maxs[2])
+	{
+		static vec3_t zero_vec = {0, 0, 0};
+
+		trace_ispoint = false;	//??
+		mins = maxs = zero_vec;
+		VectorClear (trace_extents);
+	}
+	// check for "point" special case
+	else if (mins[0] == 0 && mins[1] == 0 && mins[2] == 0
 		&& maxs[0] == 0 && maxs[1] == 0 && maxs[2] == 0)
 	{
 		trace_ispoint = true;
@@ -2603,9 +2615,7 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end,
 		trace_extents[2] = -mins[2] > maxs[2] ? -mins[2] : maxs[2];
 	}
 
-	//
 	// general sweeping through world
-	//
 	if (maptype == map_hl)
 	{
 		TraceBuf_Init ();
@@ -2626,7 +2636,7 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end,
 	}
 
 	if (maptype == map_hl)
-	{//!!!!
+	{//!!
 		char buf[256];
 		Com_sprintf (buf,sizeof(buf),"  *** CM_BoxTrace_End: startsolid=%d  allsolid=%d  frac=%g  cont=%X  surf=%s",
 			trace_trace.startsolid,trace_trace.allsolid,trace_trace.fraction,trace_trace.contents,trace_trace.surface->name);
@@ -2634,6 +2644,13 @@ trace_t		CM_BoxTrace (vec3_t start, vec3_t end,
 		re.DrawTextRight ("====================", 0.5,0,0.5);
 	}//===*/
 
+/*	//!!
+	if (trace_trace.fraction < 1 && trace_trace.surface && trace_trace.surface->flags & SURF_ALPHA)
+	{
+		Com_Printf ("%s  min={%g %g %g} max={%g %g %g}\n", trace_trace.surface->name,
+			mins[0], mins[1], mins[2], maxs[0], maxs[1], maxs[2]);
+	}
+*/
 	return trace_trace;
 }
 
@@ -2646,9 +2663,6 @@ Handles offseting and rotation of the end points for moving and
 rotating entities
 ==================
 */
-//#ifdef _WIN32
-//#pragma optimize( "", off )
-//#endif
 
 
 trace_t		CM_TransformedBoxTrace (vec3_t start, vec3_t end,
@@ -2709,10 +2723,6 @@ trace_t		CM_TransformedBoxTrace (vec3_t start, vec3_t end,
 
 	return trace;
 }
-
-//#ifdef _WIN32
-//#pragma optimize( "", on )
-//#endif
 
 
 

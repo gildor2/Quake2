@@ -1,10 +1,17 @@
 *** Ideas from HL (may be unimplementable) ***
 // from pm_shader.c
-- step sound: volume = 0.2/0.5 (walk/run)
+- step sound: volume = 0.2/0.5 (walk/run) (+ add slowwalk -- crouched)
 - if moving slow - no step sounds
 - walking/running: step sound length = 400/300; water = 600; ladder = 350
-- stop when |velocity| less than STOP_EPSILON==0.1
+- stop when |velocity| less than STOP_EPSILON==0.1 (friction)
 
+DINPUT MOUSE BUGS/NOTES:
+- in_initmouse -- needed?
+- check behaviour when no DirectX installed (where ?)
+- add MOUSE4 ?
+- check DirectInput8
+
+? make lower r_saturation limit -X (not 0) (limited by video menu init proc)
 
 Q3A:
 - added mousewheel support in the console:
@@ -19,7 +26,14 @@ Q3A:
 ? improve camper detection: track player position every ... 5 sec (??) for a 1+n minute period and set "camper" to true
   if current player position is near (tune this distance !) to history[now-1min .. now-2min]
 - menu option: priority (win_priorityBoost) -- for Win2K
-? screenshots for savegames
+? savegames: add screenshot, gzip file
+
+BSP:
+- KP map scaling (auto)
+? mirrored maps
+- commands spmap, devmap etc.
+- advanced "map" command syntax: add scaling and mirroring (separate scale each axis, mirror - X *= -1 ?)
+  "map [--dev] [--sp] [--mirror] [--scale] <name>" (?!)
 
 *** BUGS ***
 - map "temple2", "lavatube" -- waterfall: bullet sounds (change sound for water sparks, change place for water bullet sounds
@@ -29,7 +43,7 @@ Q3A:
 - Sys_Error(ERR_FATAL): will not restore mouse (not always ??!)
 - dedicated server: work without ref, so - crush when try some things (i.e. "com_speeds 1") --> make fake ref
   (and add support for colors, scrolling etc.)
-- Win2K (home, no IPX protocol) - menu|join_server -- fatal error in user32.dll (should be ERR_DROP)
+- Win2K (at home, where no IPX protocol) - menu|join_server -- fatal error in user32.dll (should be ERR_DROP)
   (no crush when launched with "noudp 1" -- R/O cvar)
 
 ? menu interface: appearing/disappearing fx (see itmastio etc.)
@@ -39,14 +53,15 @@ Q3A:
   door whith moving (trying to move))
 ? eliminate all qsort's
 
-- bindtmp, alias[perm??], aliaslist (now it is "alias <no-args>")
+- bindtmp, aliastmp, aliaslist (now it is "alias <no-args>")
 
 - fix loading "sounds/[.]/path/name" (kill leading "/"?) in LoadBspFile
 
 ! remove auto-demo start on quake loading (option?)
 
 ! add materials: glass, grass, sand
-- SURF_ALPHA, RF2_SURF_ALPHA: must be transparent for bullets (CONTENTS_WINDOW+SURF_ALPHA, mins=maxs={0,0,0})
+*? SURF_ALPHA, RF2_SURF_ALPHA: must be transparent for bullets (CONTENTS_WINDOW+SURF_ALPHA, mins=maxs={0,0,0})
+  (make transparency parameter for bullets, depends on surface alpha percent; make panetration semi-random)
 - RF2_SURF_ALPHA, RF_TRANSLUCENT (for inline models): preprocess entstring and mark inline model surfaces with required flags
 ? make atmospheric effects (some maps in kingpin and halflife does, Q3F too ...)
   (make surface-dependent raindrop sounds? (KP:main/sound/world/rain*.wav))
@@ -56,7 +71,7 @@ Q3A:
 
 ------------- API ----------------------------
 
-- convert all "sprintf" -> "Com_sprintf" etc. (need regexp search)
+?(fixed?) convert all "sprintf" -> "Com_sprintf" etc. (need regexp search)
 - add Cmd_AddCommands(list,num), Cmd_RemoveCommands(list,num)
   - Cmd_AddCommands() may be implemented WITHOUT copying name, or just with using static cmdFunc_t for list
     (just insert into list, but add flags "do not free on remove")
@@ -68,7 +83,7 @@ Q3A:
 
 ------------- MENUS --------------------------
 
-- MTYPE_BITMAP + ownerdraw (see q3_ui/...)
+? MTYPE_BITMAP + ownerdraw (see q3_ui/...)
 - place "download options" to another place (not "player setup", or to upper level: where model selection performed);
   make download options to be a bitfield
 - when menu script will be implemented:
@@ -79,7 +94,7 @@ Q3A:
 
 - record demos: make .dm2 file to be gzipped (produce with command other than "record"?)
   (may use old command too: who wants to send demo to other players, may just un-gzip it)
-- demos with full list of events (already: serverrecord),
+? demos with full list of events (already: serverrecord),
   player for this demos (total control over movement: move, chase, eye etc.)
 - improve movement prediction:
   ? collide with entities
@@ -93,16 +108,15 @@ Q3A:
   server: sv_user.c :: SV_NextDownload_f() - write_size=r (1024 max < MAX_MSGLEN)
 ? perform extended protocol checking by adding "[cl_]extprotocol" to userinfo
 ? make pmove player bounds be taken from the actual player model
-? devmap <mapname>
 ? improve model precaching in cl_mail.c::CL_RequestNextDownload() (find FS_LoadFile) - make it with global
   LoadMd2() and global model list ??
 ? SV_FindIndex() -- use hash tables ?
 
 ------------ REF_GL (new) --------------
 
-? zFar: round zFar/zNear to a power of 2 (??) for better depth precision
+?? zFar: round zFar/zNear to a power of 2 (??) for better depth precision
 
-- sort shaders with sortParam + textureNum + lightmapNum (in that order)
+* sort shaders with sortParam + textureNum + lightmapNum (in that order)
 - R_RecursiveWorldNode():
   1) surface visibility determination (already implemented in Q2/3)
   2) dlight-in-leaf (Q3)
@@ -118,15 +132,18 @@ Q3A:
   - auto-coronas for Q2 maps (scripted or with shader) - surfaces with certain shader will give corona in its center
     (often in Q2 DM maps)
 - add SURF_WATER (or just disable auto-envmap when shaders will be implemented)
-- place LoadMd2 outside ref_xxx and perform lovercase for a skin names
+? place LoadMd2 outside ref_xxx and perform lovercase for a skin names
 - use GL_NV_fog_distance (?) / GL_EXT_fog_coord, GL_EXT_env_combiner (!), GL_EXT_texture_filter_anisotropic (?)
-? Q3: fog occlusion
+! fog occlusion (for global fog) -- implement it like sky (occluded surface -> sky surface, sky -> fog color);
+  may look at Alice ...
 
 BUGS:
 ? GL: looking through window to a dark wall will make wall brighter (use other blend mode?)
 ? vertexArrayRange not works (require (almost) complete rewritting)
 
 ------------ SOUND ---------------------
+
+? make ladder sounds (if it is possible) - depends on ladder surface type (wood creak etc.)
 
 ? add hardware mixing (DirectSound), try DirectSound3D (or OpenAL, or own implementation ??)
   Maps with slow sound fx: beachassault (multiple barrel blast)
@@ -138,16 +155,16 @@ BUGS:
 ? spectator sounds (windy)
 ? try to move surface bullet sounds from client to server
 
-* disable extra sounds (or replace with original) when it is not found
-
 ----------- VIDEO --------------
+
+? remove non-transparent water vis bugfix from oldgl
 
 - add WriteTGA compression
 - PCX: own palette for each file (??)
 ? h/w gamma: check for valid gamma when read
 - video config menu: make "reset to defaults" works correctly (Cvar_Reset() ??)
 
-- add bulletholes
+- add bulletholes, explosion marks and (??) blood marks
 ? add kingpin default sky ("sr")
 
 - ref_console (Win32 console-mode application, no GDI/OpenGL) -- auto-use in dedicated server (should attach
@@ -170,10 +187,10 @@ BUGS:
   - make checking memory in "z_stats" (show damaged block info's - size, caller address ...)
     anbd Z_Free()
 
-? command line parsing: add special chars ('\"' etc.)
+? console command line parsing: add special chars ('\"' etc.)
 
 ? implement FS_ListFiles() / FreeNamedList() within a memory chains (not just linked list)
-? make AllocChainBlock() will try to use free space of PREVIOUS blocks when current is full
+? make AllocChainBlock() will try to use free space of PREVIOUS blocks when current (last) is full
 
 - add cvar "log_texts" -- log text, which was output with DrawText[Left|Right|Pos]();
   value of "2" - log 1 frame and disable
@@ -185,15 +202,8 @@ BUGS:
 ? cvarclear - clear all archive flags from cvars, which was not created with quake2 (created with "set <var> <value> a" command)
 ? cvar_mon varname [message]  - monitor cvar on screen (default message = varname)
 ? cvar_unmon varname  - stop monitor for cvar
-? "cvar_restart" (== "reset *" ??)
 ? completion cvarnames after "set", "toggle", "add" (etc.) and "...$varname"
   (add flags for Cmd_AddCommand() - complete type: cvar, map, demo ... ???)
-
-?? CVAR_VAR (name,val,flags):
-  - CVAR_VARA(name,val): flags = archive
-  - CVAR_GET(name,val) : flags = 0
-  - old CVAR_GET(n) -> CVAR_FIND(n)
-  - CVAR_NULL(n,v,f) -> CVAR_CREATE(n,v,f)
 
 ------------- LINUX --------------------
 

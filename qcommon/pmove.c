@@ -946,13 +946,13 @@ static void CheckDuck (void)
 
 	if (pm->s.pm_flags & PMF_DUCKED)
 	{
-		pm->maxs[2] = 4;
-		pm->viewheight = -2;
+		pm->maxs[2] = 4;		// KP: 24, Q2: 4
+		pm->viewheight = -2;	// KP: 18, Q2: -2
 	}
 	else
 	{
-		pm->maxs[2] = 32;
-		pm->viewheight = 22;
+		pm->maxs[2] = 32;		// KP: 48, Q2: 32
+		pm->viewheight = 22;	// KP: 36, Q2: 22
 	}
 }
 

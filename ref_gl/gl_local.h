@@ -101,6 +101,7 @@ extern	image_t		*gl_defaultImage;
 extern	image_t		*gl_whiteImage;
 extern	image_t		*gl_identityLightImage;
 extern	image_t		*gl_dlightImage;
+extern	image_t		*gl_particleImage;
 extern	image_t		*gl_fogImage;
 
 // mode changing
@@ -309,6 +310,7 @@ typedef struct
 	int		colorBits;				//?? 0 == 16, 32
 } glstate_t;
 
+//!! clean this structure: most fields used from viewPortal_t; or -- eliminate at all
 typedef struct
 {
 	int		flags;
@@ -343,7 +345,7 @@ typedef struct
 	vec3_t	viewaxis[3];
 	lightstyle_t *lightStyles;
 	float	time;
-	// model params
+	// modelview params (unused now, required for portals (??))
 	vec3_t	modelorg;		// {0 0 0} for world model (for non-portal view)
 	vec3_t	modelaxis[3];	// {1 0 0}, {0 1 0}, {0 0 1} for world model
 	vec3_t	modelvieworg;	// coords of vieworg in modelaxis coord system (same as vieworg for world model)
@@ -358,6 +360,9 @@ typedef struct
 	// surfaces
 	surfaceInfo_t *surfaces;
 	int		numSurfaces;
+	// particles
+	particle_t *particles;
+	int		numParticles;
 } viewPortal_t;
 
 typedef struct

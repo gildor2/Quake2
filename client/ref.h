@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	MAX_DLIGHTS			32
 #define	MAX_ENTITIES		128
 #define	MAX_PARTICLES		4096
+#define MAX_PARTICLE_TRACES	256
 #define	MAX_LIGHTSTYLES		256
 
 #define POWERSUIT_SCALE		4.0f
@@ -79,12 +80,19 @@ typedef struct
 	float	intensity;
 } dlight_t;
 
+
+typedef enum
+{
+	PT_DEFAULT,
+	PT_SPARKLE
+} particleType_t;
+
 typedef struct
 {
 	vec3_t	origin;
-	int		color;
-	float	alpha;
-	vec3_t	prev;
+	byte	color;
+	byte	alpha;
+	particleType_t type;
 } particle_t;
 
 typedef struct
@@ -121,6 +129,9 @@ typedef struct
 
 #define	API_VERSION		4
 
+#define REF_CONSOLE_ONLY	1		// if set -- no graphics output
+#define REF_NEW_FX			2		// if set, renderer supports sprite fx
+
 /*-------- These are the functions exported by the refresh module --------*/
 typedef struct
 {
@@ -129,7 +140,7 @@ typedef struct
 	// if api_version is different, the dll cannot be used
 	int		api_version;
 	// if console_only is true, no graphical information will be displayed and no mouse input performed
-	qboolean console_only;
+	int		flags;
 
 	// called when the library is loaded
 	qboolean (*Init) (void *hinstance, void *wndproc);

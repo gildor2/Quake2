@@ -25,7 +25,7 @@ static int	m_main_cursor;
 
 #define NUM_CURSOR_FRAMES 15
 
-#define MENU_CHECK	if (re.console_only) return;
+#define MENU_CHECK	if (re.flags & REF_CONSOLE_ONLY) return;
 
 static char *menu_in_sound		= "misc/menu1.wav";
 static char *menu_move_sound	= "misc/menu2.wav";
@@ -2510,7 +2510,7 @@ static menuAction_t		s_player_download_action;
 #define MAX_DISPLAYNAME 16
 
 typedef struct playerModelInfo_s
-{	// descended from basenamed_t
+{	// derived from basenamed_t
 	char	*name;
 	struct playerModelInfo_s *next;
 	int		numSkins;

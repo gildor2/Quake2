@@ -265,6 +265,8 @@ void Cvar_GetVars (cvarInfo_t *vars, int count)
 		cvar_t	*var;
 
 		var = Cvar_Get (vars->name, vars->value, vars->flags);
+		if (var && vars->flags & CVAR_UPDATE)
+			var->modified = true;
 		if (vars->var)
 			*vars->var = var;
 	}

@@ -20,7 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 /*
 ** RW_DDRAW.C
 **
-** This handles DirecTDraw management under Windows.
+** This handles DirectDraw management under Windows.
 */
 #ifndef _WIN32
 #  error You should not be compiling this file on this platform
@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <float.h>
 
 #include "../ref_soft/r_local.h"
-#define INITGUID
+//-- (see in_win.c) #define INITGUID
 #include "rw_win.h"
 
 static const char *DDrawError( int code );

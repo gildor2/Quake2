@@ -78,7 +78,7 @@ static LPDIRECTSOUNDBUFFER pDSBuf, pDSPBuf;
 static HINSTANCE hInstDS;
 static HRESULT (WINAPI *pDirectSoundCreate)(GUID FAR *lpGUID, LPDIRECTSOUND FAR *lplpDS, IUnknown FAR *pUnkOuter);
 
-qboolean SNDDMA_InitDirect (void);
+int SNDDMA_InitDirect (void);
 
 // common ...
 
@@ -372,7 +372,7 @@ SNDDMA_InitDirect
 Direct-Sound support
 ==================
 */
-qboolean SNDDMA_InitDirect (void)
+int SNDDMA_InitDirect (void)
 {
 //	DSCAPS	dscaps;
 	int		i;
@@ -406,14 +406,14 @@ qboolean SNDDMA_InitDirect (void)
 
 		if (!pDirectSoundCreate)
 		{
-			Com_Printf ("*** couldn't get DS proc addr ***\n");
+			Com_WPrintf ("*** couldn't get DS proc addr ***\n");
 			return SIS_FAILURE;
 		}
 	}
 
 
 	Com_DPrintf ("...creating DS object: ");
-	for (i = 0; ; i++)
+	for (i = 0; /* have condition inside loop */; i++)
 	{
 		HRESULT	hresult;
 
@@ -424,7 +424,7 @@ qboolean SNDDMA_InitDirect (void)
 		{
 			if (hresult != DSERR_ALLOCATED)
 			{
-				Com_WPrintf ("failed\n");
+				Com_DPrintf ("failed\n");
 				return SIS_FAILURE;
 			}
 
@@ -439,7 +439,7 @@ qboolean SNDDMA_InitDirect (void)
 				Com_WPrintf ("failed, hardware already in use\n");
 				return SIS_NOTAVAIL;
 			}
-			Com_Printf ("retrying...\n");
+			Com_DPrintf ("retrying...\n");
 			Sleep (2000);
 		}
 	}

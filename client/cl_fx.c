@@ -272,7 +272,8 @@ void CL_ParseMuzzleFlash (void)
 	else
 		volume = 1;
 
-	if (re.console_only) return;
+	if (re.flags & REF_CONSOLE_ONLY)
+		return;
 
 	switch (weapon)
 	{
@@ -455,7 +456,8 @@ void CL_ParseMuzzleFlash2 (void)
 	dl->minlight = 32;
 	dl->die = cl.time;	// + 0.1;
 
-	if (re.console_only) return;
+	if (re.flags & REF_CONSOLE_ONLY)
+		return;
 
 	switch (flash_number)
 	{
@@ -822,7 +824,7 @@ void CL_AddDLights (void)
 
 //=====
 //PGM
-	if(vidref_val == VIDREF_GL)
+	if(vidref_val == VIDREF_GL)		//???
 	{
 		for (i=0 ; i<MAX_DLIGHTS ; i++, dl++)
 		{
@@ -865,31 +867,12 @@ PARTICLE MANAGEMENT
 ==============================================================
 */
 
-/*
-// THIS HAS BEEN RELOCATED TO CLIENT.H
-typedef struct particle_s
-{
-	struct particle_s	*next;
-
-	float		time;
-
-	vec3_t		org;
-	vec3_t		vel;
-	vec3_t		accel;
-	float		color;
-	float		colorvel;
-	float		alpha;
-	float		alphavel;
-} cparticle_t;
-
-
-#define	PARTICLE_GRAVITY	40
-*/
-
 cparticle_t	*active_particles, *free_particles;
 
 cparticle_t	particles[MAX_PARTICLES];
 int			cl_numparticles = MAX_PARTICLES;
+
+particleTrace_t particleTraces[MAX_PARTICLE_TRACES];
 
 
 /*
@@ -904,9 +887,11 @@ void CL_ClearParticles (void)
 	free_particles = &particles[0];
 	active_particles = NULL;
 
-	for (i=0 ;i<cl_numparticles ; i++)
+	for (i = 0; i < cl_numparticles; i++)
 		particles[i].next = &particles[i+1];
 	particles[cl_numparticles-1].next = NULL;
+
+	memset (particleTraces, 0, sizeof(particleTraces));
 }
 
 
@@ -923,7 +908,7 @@ void CL_ParticleEffect (vec3_t org, vec3_t dir, int color, int count)
 	cparticle_t	*p;
 	float		d;
 
-	for (i=0 ; i<count ; i++)
+	for (i = 0; i < count; i++)
 	{
 		if (!free_particles)
 			return;
@@ -945,6 +930,7 @@ void CL_ParticleEffect (vec3_t org, vec3_t dir, int color, int count)
 		p->accel[0] = p->accel[1] = 0;
 		p->accel[2] = -PARTICLE_GRAVITY;
 		p->alpha = 1.0;
+		p->type = PT_DEFAULT;
 
 		p->alphavel = -1.0 / (0.5 + frand()*0.3);
 	}
@@ -984,6 +970,7 @@ void CL_ParticleEffect2 (vec3_t org, vec3_t dir, int color, int count)
 		p->accel[0] = p->accel[1] = 0;
 		p->accel[2] = -PARTICLE_GRAVITY;
 		p->alpha = 1.0;
+		p->type = PT_DEFAULT;
 
 		p->alphavel = -1.0 / (0.5 + frand()*0.3);
 	}
@@ -1024,6 +1011,7 @@ void CL_ParticleEffect3 (vec3_t org, vec3_t dir, int color, int count)
 		p->accel[0] = p->accel[1] = 0;
 		p->accel[2] = PARTICLE_GRAVITY;
 		p->alpha = 1.0;
+		p->type = PT_DEFAULT;
 
 		p->alphavel = -1.0 / (0.5 + frand()*0.3);
 	}
@@ -1063,6 +1051,7 @@ void CL_TeleporterParticles (entity_state_t *ent)
 		p->accel[0] = p->accel[1] = 0;
 		p->accel[2] = -PARTICLE_GRAVITY;
 		p->alpha = 1.0;
+		p->type = PT_DEFAULT;
 
 		p->alphavel = -0.5;
 	}
@@ -1108,6 +1097,7 @@ void CL_LogoutEffect (vec3_t org, int type)
 		p->accel[0] = p->accel[1] = 0;
 		p->accel[2] = -PARTICLE_GRAVITY;
 		p->alpha = 1.0;
+		p->type = PT_DEFAULT;
 
 		p->alphavel = -1.0 / (1.0 + frand()*0.3);
 	}
@@ -1148,6 +1138,7 @@ void CL_ItemRespawnParticles (vec3_t org)
 		p->accel[0] = p->accel[1] = 0;
 		p->accel[2] = -PARTICLE_GRAVITY*0.2;
 		p->alpha = 1.0;
+		p->type = PT_DEFAULT;
 
 		p->alphavel = -1.0 / (1.0 + frand()*0.3);
 	}
@@ -1185,6 +1176,7 @@ void CL_ExplosionParticles (vec3_t org)
 		p->accel[0] = p->accel[1] = 0;
 		p->accel[2] = -PARTICLE_GRAVITY;
 		p->alpha = 1.0;
+		p->type = PT_DEFAULT;
 
 		p->alphavel = -0.8 / (0.5 + frand()*0.3);
 	}
@@ -1230,6 +1222,7 @@ void CL_BigTeleportParticles (vec3_t org)
 		p->vel[2] = -100 + (rand()&31);
 		p->accel[2] = PARTICLE_GRAVITY*4;
 		p->alpha = 1.0;
+		p->type = PT_DEFAULT;
 
 		p->alphavel = -0.3 / (0.5 + frand()*0.3);
 	}
@@ -1273,6 +1266,7 @@ void CL_BlasterParticles (vec3_t org, vec3_t dir)
 		p->accel[0] = p->accel[1] = 0;
 		p->accel[2] = -PARTICLE_GRAVITY;
 		p->alpha = 1.0;
+		p->type = PT_DEFAULT;
 
 		p->alphavel = -1.0 / (0.5 + frand()*0.3);
 	}
@@ -1325,6 +1319,7 @@ void CL_BlasterTrail (vec3_t start, vec3_t end)
 			p->vel[j] = crand()*5;
 			p->accel[j] = 0;
 		}
+		p->type = PT_DEFAULT;
 
 		VectorAdd (move, vec, move);
 	}
@@ -1375,6 +1370,7 @@ void CL_QuadTrail (vec3_t start, vec3_t end)
 			p->vel[j] = crand()*5;
 			p->accel[j] = 0;
 		}
+		p->type = PT_DEFAULT;
 
 		VectorAdd (move, vec, move);
 	}
@@ -1425,6 +1421,7 @@ void CL_FlagTrail (vec3_t start, vec3_t end, float color)
 			p->vel[j] = crand()*5;
 			p->accel[j] = 0;
 		}
+		p->type = PT_DEFAULT;
 
 		VectorAdd (move, vec, move);
 	}
@@ -1527,6 +1524,7 @@ void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags)
 				p->accel[2] = 20;
 			}
 		}
+		p->type = PT_DEFAULT;
 
 		old->trailcount -= 5;
 		if (old->trailcount < 100)
@@ -1539,7 +1537,7 @@ void MakeNormalVectors (vec3_t forward, vec3_t right, vec3_t up)
 {
 	float		d;
 
-	// this rotate and negat guarantees a vector
+	// this rotate and negate guarantees a vector
 	// not colinear with the original
 	right[1] = -forward[0];
 	right[2] = forward[1];
@@ -1603,6 +1601,7 @@ void CL_RocketTrail (vec3_t start, vec3_t end, centity_t *old)
 				p->vel[j] = crand()*20;
 			}
 			p->accel[2] = -PARTICLE_GRAVITY;
+			p->type = PT_DEFAULT;
 		}
 		VectorAdd (move, vec, move);
 	}
@@ -1662,6 +1661,7 @@ void CL_RailTrail (vec3_t start, vec3_t end)
 			p->org[j] = move[j] + dir[j]*3;
 			p->vel[j] = dir[j]*6;
 		}
+		p->type = PT_DEFAULT;
 
 		VectorAdd (move, vec, move);
 	}
@@ -1694,6 +1694,7 @@ void CL_RailTrail (vec3_t start, vec3_t end)
 			p->vel[j] = crand()*3;
 			p->accel[j] = 0;
 		}
+		p->type = PT_DEFAULT;
 
 		VectorAdd (move, vec, move);
 	}
@@ -1758,6 +1759,8 @@ void CL_IonripperTrail (vec3_t start, vec3_t ent)
 		p->vel[1] = 0;
 		p->vel[2] = 0;
 
+		p->type = PT_DEFAULT;
+
 		VectorAdd (move, vec, move);
 	}
 }
@@ -1807,6 +1810,7 @@ void CL_BubbleTrail (vec3_t start, vec3_t end)
 			p->vel[j] = crand()*5;
 		}
 		p->vel[2] += 6;
+		p->type = PT_DEFAULT;
 
 		VectorAdd (move, vec, move);
 	}
@@ -1876,10 +1880,10 @@ void CL_FlyParticles (vec3_t origin, int count)
 		VectorClear (p->accel);
 
 		p->color = 0;
-		p->colorvel = 0;
 
 		p->alpha = 1;
 		p->alphavel = -100;
+		p->type = PT_DEFAULT;
 	}
 }
 
@@ -1977,10 +1981,10 @@ void CL_BfgParticles (entity_t *ent)
 		VectorSubtract (p->org, ent->origin, v);
 		dist = VectorLength(v) / 90.0;
 		p->color = floor (0xd0 + dist * 7);
-		p->colorvel = 0;
 
 		p->alpha = 1.0 - dist;
 		p->alphavel = -100;
+		p->type = PT_DEFAULT;
 	}
 }
 
@@ -2038,6 +2042,7 @@ void CL_TrapParticles (entity_t *ent)
 			p->accel[j] = 0;
 		}
 		p->accel[2] = PARTICLE_GRAVITY;
+		p->type = PT_DEFAULT;
 
 		VectorAdd (move, vec, move);
 	}
@@ -2087,6 +2092,7 @@ void CL_TrapParticles (entity_t *ent)
 
 				p->accel[0] = p->accel[1] = 0;
 				p->accel[2] = -PARTICLE_GRAVITY;
+				p->type = PT_DEFAULT;
 			}
 	}
 }
@@ -2124,6 +2130,7 @@ void CL_BFGExplosionParticles (vec3_t org)
 		p->accel[0] = p->accel[1] = 0;
 		p->accel[2] = -PARTICLE_GRAVITY;
 		p->alpha = 1.0;
+		p->type = PT_DEFAULT;
 
 		p->alphavel = -0.8 / (0.5 + frand()*0.3);
 	}
@@ -2174,7 +2181,180 @@ void CL_TeleportParticles (vec3_t org)
 
 				p->accel[0] = p->accel[1] = 0;
 				p->accel[2] = -PARTICLE_GRAVITY;
+				p->type = PT_DEFAULT;
 			}
+}
+
+
+static void CL_AddParticleTraces (void)
+{
+	float	timeDelta;
+	static int oldTime;
+	int		i;
+	particleTrace_t *p;
+
+	/*------------- check/update time ------------*/
+	if (cl.time <= oldTime)	// bad or unchanged value
+	{
+		oldTime = cl.time;
+		return;
+	}
+
+	timeDelta = (cl.time - oldTime) / 1000.0f;
+	oldTime = cl.time;
+
+	for (p = particleTraces, i = 0; i < MAX_PARTICLE_TRACES; p++, i++)
+	{
+		vec3_t	dir, pos, oldpos;
+		float	speed, dist, distDelta, pos1;
+		float	viewDist, t;
+
+		if (!p->allocated)
+			continue;
+
+//Com_Printf("fx(%d): {%g, %g, %g} v={%g, %g, %g}\n", i, p->pos[0], p->pos[1], p->pos[2], p->vel[0], p->vel[1], p->vel[2]);
+
+		VectorCopy (p->pos, oldpos);
+		// apply gravity
+		if (p->gravity)
+			p->vel[2] -= timeDelta * p->gravity;
+		// get direction vector and speed
+		speed = VectorNormalize2 (p->vel, dir);
+		// update pos
+		VectorMA (p->pos, timeDelta, p->vel, p->pos);
+
+		//!! do trace
+
+		// calculate loop parameters
+		dist = VectorDistance (p->pos, oldpos);		// this is not timeDelta*speed (because pos may be changed)
+		viewDist = VectorDistance (p->pos, cl.refdef.vieworg);
+		if (viewDist > 128)
+		{
+			if (viewDist > 1024)
+				t = 4.5;
+			else
+				t = (viewDist - 128) / (2048.0f - 128.0f) * 4.5f + 0.3f;
+		}
+		else
+			t = 0.003f;
+		distDelta = t * p->radius;
+		// at least 600 particles per second
+		t = viewDist / (600.0f * timeDelta);
+		if (distDelta > t)
+			distDelta = t;
+		// but no more than 20 particles per frame
+		t = dist / 20.0f;
+		if (distDelta < t)
+			distDelta = t;
+		// and no longer than whole distance
+		if (distDelta > dist)
+			distDelta = dist;
+		if (!distDelta)
+			distDelta = 1;
+
+		VectorCopy (oldpos, pos);
+		for (pos1 = distDelta; pos1 <= dist; pos1 += distDelta)
+		{
+			cparticle_t *cp;
+
+			VectorMA (pos, distDelta, dir, pos);
+			//?? move this inside "switch"
+			cp = free_particles;
+			if (!cp)
+			{
+				pos1 = dist;
+				break;
+			}
+
+			switch (p->type)
+			{
+			case PT_SPARKLE:
+				free_particles = cp->next;
+				cp->next = active_particles;
+				active_particles = cp;
+
+				t = pos1 / dist * timeDelta;	// time offset
+
+				cp->type = p->type;
+				cp->color = 0;					// any -- ignored
+				cp->time = (p->time + t) * 1000.0f + p->createTime;
+				cp->alpha = (p->lifeTime - (t + p->time)) / p->lifeTime *
+					(p->maxAlpha - p->minAlpha) + p->minAlpha;
+				VectorClear (cp->accel);
+				VectorClear (cp->vel);
+				cp->alphavel = -1.0f / p->fadeTime;
+				VectorCopy (pos, cp->org);
+				break;
+			}
+		}
+
+		// update p->pos again (remove previous updates??)
+		VectorMA (oldpos, pos1 - distDelta, dir, p->pos);
+		p->time += timeDelta;
+		if (p->time > p->lifeTime)
+			p->allocated = false;
+	}
+}
+
+
+particleTrace_t *CL_AllocParticleTrace (vec3_t pos, vec3_t vel, float lifeTime, float fadeTime)
+{
+	int		i;
+	particleTrace_t *p;
+
+	for (p = particleTraces, i = 0; i < MAX_PARTICLE_TRACES; p++, i++)
+	{
+		if (!p->allocated)
+		{
+			vec3_t	dir;
+
+			p->allocated = true;
+			VectorCopy (pos, p->pos);
+			VectorCopy (vel, p->vel);
+			p->lifeTime = lifeTime;
+			p->fadeTime = fadeTime;
+
+			VectorNormalize2 (vel, dir);
+			MakeNormalVectors (dir, p->right, p->up);
+
+			p->createTime = cl.time;
+			p->time = 0;
+
+			p->minAlpha = 0;
+			p->maxAlpha = 1;
+
+			p->gravity = 400;
+			p->elasticy = 1.9;
+
+			p->type = PT_SPARKLE;
+			return p;
+		}
+	}
+	return NULL;
+}
+
+
+void CL_MetalSparks (vec3_t pos, vec3_t dir, int count)
+{
+	vec3_t	vel, pos2;
+	int		i, n;
+
+	for (n = 0; n < count; n++)
+	{
+		particleTrace_t *p;
+
+		for (i = 0; i < 3; i++)
+			vel[i] = (frand () * 150.0f + 100.0f) * dir[i];
+		// do not start inside wall
+		VectorAdd (pos, dir, pos2);
+
+		p = CL_AllocParticleTrace (pos2, vel, frand () * 0.64f, 0.1f);
+		if (!p)
+			return;
+		//!! p->brightness = 32;
+		if (!CL_AllocParticleTrace (pos2, vel, 0.2f, 0.005f)) return;
+		if (!CL_AllocParticleTrace (pos2, vel, 0.2f, 0.005f)) return;	//?? same
+	}
 }
 
 
@@ -2188,22 +2368,24 @@ void CL_AddParticles (void)
 	cparticle_t		*p, *next;
 	float			alpha;
 	float			time, time2;
-	vec3_t			org, prev;
-	int				color;
+	vec3_t			org;
+	byte			color;
 	cparticle_t		*active, *tail;
+
+	CL_AddParticleTraces ();
 
 	active = NULL;
 	tail = NULL;
 
-	for (p=active_particles ; p ; p=next)
+	for (p = active_particles; p; p=next)
 	{
 		next = p->next;
+		time = (cl.time - p->time) / 1000.0f;
 
 		// PMM - added INSTANT_PARTICLE handling for heat beam
 		if (p->alphavel != INSTANT_PARTICLE)
 		{
-			time = (cl.time - p->time)*0.001;
-			alpha = p->alpha + time*p->alphavel;
+			alpha = p->alpha + time * p->alphavel;
 			if (alpha <= 0)
 			{	// faded out
 				p->next = free_particles;
@@ -2225,23 +2407,17 @@ void CL_AddParticles (void)
 			tail = p;
 		}
 
-		if (alpha > 1.0)
+		if (alpha > 1.0f)
 			alpha = 1;
 		color = p->color;
 
-		time2 = time*time;
+		time2 = time * time;		//?? may be uninitialized
 
-		org[0] = p->org[0] + p->vel[0]*time + p->accel[0]*time2;
-		org[1] = p->org[1] + p->vel[1]*time + p->accel[1]*time2;
-		org[2] = p->org[2] + p->vel[2]*time + p->accel[2]*time2;
+		org[0] = p->org[0] + p->vel[0] * time + p->accel[0] * time2;
+		org[1] = p->org[1] + p->vel[1] * time + p->accel[1] * time2;
+		org[2] = p->org[2] + p->vel[2] * time + p->accel[2] * time2;
 
-		time *= 0.8;
-//		time2 *= 0.64;
-		prev[0] = p->org[0] + p->vel[0]*time + p->accel[0]*time2;
-		prev[1] = p->org[1] + p->vel[1]*time + p->accel[1]*time2;
-		prev[2] = p->org[2] + p->vel[2]*time + p->accel[2]*time2;
-
-		V_AddParticle (org, prev, color, alpha);
+		V_AddParticle (org, color, alpha, p->type);
 		// PMM
 		if (p->alphavel == INSTANT_PARTICLE)
 		{
@@ -2272,7 +2448,8 @@ extern struct sfx_s	*cl_sfx_camper[9];
 
 void CL_EntityEvent (entity_state_t *ent)
 {
-	if (re.console_only) return;
+	if (re.flags & REF_CONSOLE_ONLY)
+		return;
 
 	if (ent->event >= EV_FOOTSTEP0 && ent->event < EV_FOOTSTEP0 + MATERIAL_COUNT)
 	{

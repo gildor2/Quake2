@@ -833,7 +833,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 	int	rep;
 	static char plus_cmd_fired[256];
 
-	if (re.console_only && key >= 200) // no mouse & joystick in console-only mode
+	if (re.flags & REF_CONSOLE_ONLY && key >= 200) // no mouse & joystick in console-only mode (??)
 		return;
 
 	// hack for modal presses

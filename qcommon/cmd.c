@@ -23,12 +23,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 void Cmd_ForwardToServer (void);
 
-#define	MAX_ALIAS_NAME	32
 
 typedef struct cmdAlias_s
-{
+{	// derived from basenamed_t
+	char	*name;
 	struct cmdAlias_s *next;
-	char	name[MAX_ALIAS_NAME];
 	char	*value;
 } cmdAlias_t;
 
@@ -417,7 +416,7 @@ void Cmd_Echo_f (void)
 ===============
 Cmd_Alias_f
 
-Creates a new command that executes a command string (possibly ; seperated)
+Creates a new command that executes a command string (possibly ";"-separated)
 ===============
 */
 void Cmd_Alias_f (void)
@@ -425,27 +424,28 @@ void Cmd_Alias_f (void)
 	cmdAlias_t	*a;
 	char	cmd[1024];
 	int		i, c;
-	char	*s;
+	char	*name;
+
+	if (Cmd_Argc() == 2)
+	{
+		Com_Printf ("Usage: alias <name> <value>\n");
+		return;
+	}
 
 	if (Cmd_Argc() == 1)
 	{
 		Com_Printf ("Current alias commands:\n");
 		for (a = cmdAlias; a; a = a->next)
-			Com_Printf ("%s : %s\n", a->name, a->value);
+			Com_Printf ("%s \"%s\"\n", a->name, a->value);
 		return;
 	}
 
-	s = Cmd_Argv(1);
-	if (strlen(s) >= MAX_ALIAS_NAME)
-	{
-		Com_Printf ("Alias name is too long\n");
-		return;
-	}
+	name = Cmd_Argv(1);
 
 	// if the alias already exists, reuse it
 	for (a = cmdAlias; a; a = a->next)
 	{
-		if (!strcmp (s, a->name))
+		if (!strcmp (name, a->name))
 		{
 			Z_Free (a->value);
 			break;
@@ -454,11 +454,10 @@ void Cmd_Alias_f (void)
 
 	if (!a)
 	{
-		a = Z_Malloc (sizeof(cmdAlias_t));
+		a = (cmdAlias_t*) AllocNamedStruc (sizeof(cmdAlias_t), name);
 		a->next = cmdAlias;
 		cmdAlias = a;
 	}
-	strcpy (a->name, s);
 
 	// copy the rest of the command line
 	cmd[0] = 0;		// start out with a null string
@@ -469,10 +468,52 @@ void Cmd_Alias_f (void)
 		if (i != (c - 1))
 			strcat (cmd, " ");
 	}
-	strcat (cmd, "\n");
 
 	a->value = CopyString (cmd);
 }
+
+
+void Cmd_Unalias_f (void)
+{
+	cmdAlias_t *alias, *prev, *next;
+	int		n;
+
+	if (Cmd_Argc() != 2)
+	{
+		Com_Printf ("Usage: unalias <mask>\n");
+		return;
+	}
+
+	prev = NULL;
+	n = 0;
+	for (alias = cmdAlias; alias; alias = next)
+	{
+		next = alias->next;
+		if (MatchWildcard (alias->name, Cmd_Argv(1)))
+		{
+			if (prev)
+				prev->next = alias->next;
+			else
+				cmdAlias = alias->next;
+			Z_Free (alias->value);
+			FreeNamedStruc (alias);
+			n++;
+		}
+		else
+			prev = alias;
+	}
+	Com_Printf ("%d aliases removed\n", n);
+}
+
+
+void Cmd_WriteAliases (FILE *f)
+{
+	cmdAlias_t *alias;
+
+	for (alias = cmdAlias; alias; alias = alias->next)
+		fprintf (f, "alias %s \"%s\"\n", alias->name, alias->value);
+}
+
 
 /*
 =============================================================================
@@ -774,40 +815,125 @@ static void TryComplete (char *full, int display, char mark)
 	if (!Q_strncasecmp (partial_name, full, partial_len))
 	{
 		if (display) Com_Printf ("  %c  %s\n", mark + 128, full);
-		if (!completed_count) // have not yet completed - just copy string
+
+		if (!completed_count)	// have not yet completed - just copy string
 			strcpy (completed_name, full);
-		else // already completed - refine string
+		else					// already completed - refine string
 		{
 			char *s, *d;
 
 			s = completed_name;
 			d = full;
 			while (*s == *d++) s++;
-			*s = 0; // limit with last matched char
+			*s = 0;				// limit with last matched char
 		}
+
 		completed_count++;
 	}
 }
 
+// declarations from keys.c
+extern char	*keybindings[256];
+int Key_StringToKeynum (char *str);
+
 char *Cmd_CompleteCommand (char *partial)
 {
 	int		display, len;
-	char	*arg, *path, *ext, command[256], findname[MAX_OSPATH], *name, comp_type;
+	char	*path, *ext;
+	char	command[256], *arg1s, arg1[256], *arg2s;	// arg1s -> "arg1 arg2 ..."; arg2s -> "arg2 arg3 ..."
+	char	*name, comp_type;
 	cvar_t	*cvar;
 
 	completed_name[0] = 0;
 
 	/*------ complete argument for variable/map/demomap -------*/
-	if (arg = strchr (partial, ' '))
+
+	if (arg1s = strchr (partial, ' '))
 	{
 		basenamed_t	*filelist, *fileitem;
 
-		if (arg == partial) return NULL;	// space is first line char!
-		len = arg - partial;
+		if (arg1s == partial)
+			return NULL;	// space is first line char!
+
+		len = arg1s - partial;
 		strncpy (command, partial, len);
 		command[len] = 0;
-		arg++;								// skip ' '
-		if (strchr (arg, ' ')) return NULL; // string have at least two spaces
+		arg1s++;							// skip ' '
+
+		if (arg2s = strchr (arg1s, ' '))
+		{
+			len = arg2s - arg1s;
+			strncpy (arg1, arg1s, len);
+			arg1[len] = 0;
+			arg2s++;
+		}
+		else
+			strcpy (arg1, arg1s);
+
+//		Com_Printf ("cmd: \"%s\"  arg1s: \"%s\"  arg2s: \"%s\"  arg1: \"%s\"\n",command, arg1s, arg2s, arg1);
+
+		if (arg2s)
+		{
+			if (strlen (arg2s))
+				return NULL;		// have non-zero 2nd argument
+
+			// have "command arg1 " (space after arg1)
+
+			// complete "alias name "
+			if (!Q_strcasecmp (command, "alias"))
+			{
+				cmdAlias_t *alias;
+
+				for (alias = cmdAlias; alias; alias = alias->next)
+					if (!Q_strcasecmp (alias->name, arg1))
+					{
+						strcpy (completed_name, va("alias %s \"%s\"", arg1, alias->value));
+						return completed_name;
+					}
+				return NULL;
+			}
+			// complete "bind key "
+			else if (!Q_strcasecmp (command, "bind"))
+			{
+				int		key;
+
+				key = Key_StringToKeynum (arg1);
+				if (key < 0 || !keybindings[key])
+					return NULL;
+
+				strcpy (completed_name, va("bind %s \"%s\"", arg1, keybindings[key]));
+				return completed_name;
+			}
+		}
+
+		if (!Q_strcasecmp (command, "alias"))
+		{
+			// complete alias name
+			for (display = 0; display < 2; display++)
+			{
+				cmdAlias_t *alias;
+
+				partial_name = arg1s;
+				partial_len = strlen (arg1s);
+				completed_count = 0;
+				for (alias = cmdAlias; alias; alias = alias->next)
+					TryComplete (alias->name, display, 'a');
+				if (!completed_count)
+					return NULL;
+
+				if (completed_count == 1)
+				{
+					strcat (completed_name, " ");
+					break;
+				}
+				if (!display)
+					Com_Printf ("]/%s\n", partial);
+			}
+
+			strcpy (completed_name, va("%s %s", command, completed_name));
+			return completed_name;
+		}
+
 		if (!Q_strcasecmp (command, "map"))
 		{
 			path = "maps";
@@ -822,7 +948,9 @@ char *Cmd_CompleteCommand (char *partial)
 		}
 		else // try to complete varname with its value
 		{
-			if (*arg) return NULL; // arg is not empty
+			if (*arg1s)
+				return NULL;				// arg is not empty
+
 			for (cvar = cvar_vars; cvar; cvar = cvar->next)
 				if (!Q_strcasecmp (cvar->name, command))
 				{
@@ -832,9 +960,9 @@ char *Cmd_CompleteCommand (char *partial)
 				}
 			return NULL;
 		}
+
 		// complete "map" or "demomap" with mask/arg*
-		Com_sprintf (findname, sizeof(findname), "%s/*%s", path, ext);
-		filelist = FS_ListFiles (findname, NULL, 0, SFF_SUBDIR);
+		filelist = FS_ListFiles (va("%s/*%s", path, ext), NULL, 0, SFF_SUBDIR);
 		if (filelist)
 		{
 			for (fileitem = filelist; fileitem; fileitem = fileitem->next)
@@ -848,14 +976,16 @@ char *Cmd_CompleteCommand (char *partial)
 				else
 					*fileitem->name = 0;	// cut whole filename - refined by ext
 			}
-			partial_name = arg;
-			partial_len = strlen (arg);
+			partial_name = arg1;
+			partial_len = strlen (arg1);
 			for (display = 0; display < 2; display++)
 			{
 				completed_count = 0;
 				for (fileitem = filelist; fileitem; fileitem = fileitem->next)
 					TryComplete (fileitem->name, display, comp_type);
-				if (!completed_count) return NULL; // not completed
+				if (!completed_count)
+					return NULL;			// not completed
+
 				if (completed_count == 1)
 				{
 					strcat (completed_name, " ");
@@ -866,8 +996,7 @@ char *Cmd_CompleteCommand (char *partial)
 					Com_Printf ("]/%s\n", partial);
 				}
 			}
-			Com_sprintf (findname, sizeof (findname), "%s %s", command, completed_name);
-			strcpy (completed_name, findname);
+			strcpy (completed_name, va("%s %s", command, completed_name));
 			FreeNamedList (filelist);
 			return completed_name;
 		}
@@ -875,6 +1004,7 @@ char *Cmd_CompleteCommand (char *partial)
 	}
 
 	/*--------- complete command/variable/alias name ------------*/
+
 	partial_len = strlen (partial);
 	if (!partial_len) return NULL;
 	partial_name = partial;
@@ -958,6 +1088,7 @@ void Cmd_ExecuteString (char *text)
 				return;
 			}
 			Cbuf_InsertText (a->value);
+			Cbuf_InsertText ("\n");
 			return;
 		}
 	}
@@ -1013,5 +1144,6 @@ void Cmd_Init (void)
 	Cmd_AddCommand ("exec", Cmd_Exec_f);
 	Cmd_AddCommand ("echo", Cmd_Echo_f);
 	Cmd_AddCommand ("alias", Cmd_Alias_f);
+	Cmd_AddCommand ("unalias", Cmd_Unalias_f);
 	Cmd_AddCommand ("wait", Cmd_Wait_f);
 }

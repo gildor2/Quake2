@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	VERSION		4.00	// 3.21
 
+#define APPNAME		"Quake2"
 #define	BASEDIRNAME	"baseq2"
 #define CONFIGNAME	"config.cfg"
 
@@ -92,38 +93,38 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef struct sizebuf_s
 {
-	qboolean	allowoverflow;	// if false, do a Com_Error
-	qboolean	overflowed;		// set to true if the buffer size failed
+	qboolean allowoverflow;		// if false, do a Com_Error
+	qboolean overflowed;		// set to true if the buffer size failed
 	byte	*data;
 	int		maxsize;
 	int		cursize;
 	int		readcount;
 } sizebuf_t;
 
-void SZ_Init (sizebuf_t *buf, byte *data, int length);
-void SZ_Clear (sizebuf_t *buf);
-void *SZ_GetSpace (sizebuf_t *buf, int length);
-void SZ_Write (sizebuf_t *buf, void *data, int length);
-void SZ_Print (sizebuf_t *buf, char *data);	// strcats onto the sizebuf
+void	SZ_Init (sizebuf_t *buf, byte *data, int length);
+void	SZ_Clear (sizebuf_t *buf);
+void	*SZ_GetSpace (sizebuf_t *buf, int length);
+void	SZ_Write (sizebuf_t *buf, void *data, int length);
+void	SZ_Print (sizebuf_t *buf, char *data);	// strcats onto the sizebuf
 
 //============================================================================
 
 struct usercmd_s;
 struct entity_state_s;
 
-void MSG_WriteChar (sizebuf_t *sb, int c);
-void MSG_WriteByte (sizebuf_t *sb, int c);
-void MSG_WriteShort (sizebuf_t *sb, int c);
-void MSG_WriteLong (sizebuf_t *sb, int c);
-void MSG_WriteFloat (sizebuf_t *sb, float f);
-void MSG_WriteString (sizebuf_t *sb, char *s);
-void MSG_WriteCoord (sizebuf_t *sb, float f);
-void MSG_WritePos (sizebuf_t *sb, vec3_t pos);
-void MSG_WriteAngle (sizebuf_t *sb, float f);
-void MSG_WriteAngle16 (sizebuf_t *sb, float f);
-void MSG_WriteDeltaUsercmd (sizebuf_t *sb, struct usercmd_s *from, struct usercmd_s *cmd);
-void MSG_WriteDeltaEntity (struct entity_state_s *from, struct entity_state_s *to, sizebuf_t *msg, qboolean force, qboolean newentity);
-void MSG_WriteDir (sizebuf_t *sb, vec3_t vector);
+void	MSG_WriteChar (sizebuf_t *sb, int c);
+void	MSG_WriteByte (sizebuf_t *sb, int c);
+void	MSG_WriteShort (sizebuf_t *sb, int c);
+void	MSG_WriteLong (sizebuf_t *sb, int c);
+void	MSG_WriteFloat (sizebuf_t *sb, float f);
+void	MSG_WriteString (sizebuf_t *sb, char *s);
+void	MSG_WriteCoord (sizebuf_t *sb, float f);
+void	MSG_WritePos (sizebuf_t *sb, vec3_t pos);
+void	MSG_WriteAngle (sizebuf_t *sb, float f);
+void	MSG_WriteAngle16 (sizebuf_t *sb, float f);
+void	MSG_WriteDeltaUsercmd (sizebuf_t *sb, struct usercmd_s *from, struct usercmd_s *cmd);
+void	MSG_WriteDeltaEntity (struct entity_state_s *from, struct entity_state_s *to, sizebuf_t *msg, qboolean force, qboolean newentity);
+void	MSG_WriteDir (sizebuf_t *sb, vec3_t vector);
 
 
 void	MSG_BeginReading (sizebuf_t *sb);
@@ -162,24 +163,24 @@ extern	float	LittleFloat (float l);
 //============================================================================
 
 
-int	COM_Argc (void);
-char *COM_Argv (int arg);	// range and null checked
-void COM_ClearArgv (int arg);
-int COM_CheckParm (char *parm);
-void COM_AddParm (char *parm);
+int		COM_Argc (void);
+char	*COM_Argv (int arg);	// range and null checked
+void	COM_ClearArgv (int arg);
+int		COM_CheckParm (char *parm);
+void	COM_AddParm (char *parm);
 
-void COM_Init (void);
-void COM_InitArgv (int argc, char **argv);
+void	COM_Init (void);
+void	COM_InitArgv (int argc, char **argv);
 
 //============================================================================
 
-void Info_Print (char *s);
+void	Info_Print (char *s);
 
 
 /* crc.h */
 
-void CRC_Init(unsigned short *crcvalue);
-void CRC_ProcessByte(unsigned short *crcvalue, byte data);
+void	CRC_Init(unsigned short *crcvalue);
+void	CRC_ProcessByte(unsigned short *crcvalue, byte data);
 unsigned short CRC_Value(unsigned short crcvalue);
 unsigned short CRC_Block (byte *start, int count);
 
@@ -379,22 +380,20 @@ servers can also send across commands and entire text files can be execed.
 
 The + command line options are also added to the command buffer.
 
-The game starts with a Cbuf_AddText ("exec quake.rc\n"); Cbuf_Execute ();
-
 */
 
 #define	EXEC_NOW	0		// don't return until completed
 #define	EXEC_INSERT	1		// insert at current position, but don't run yet
 #define	EXEC_APPEND	2		// add to end of the command buffer
 
-void Cbuf_Init (void);
+void	Cbuf_Init (void);
 // allocates an initial text buffer that will grow as needed
 
-void Cbuf_AddText (char *text);
+void	Cbuf_AddText (char *text);
 // as new commands are generated from the console or keybindings,
 // the text is added to the end of the command buffer.
 
-void Cbuf_InsertText (char *text);
+void	Cbuf_InsertText (char *text);
 // when a command wants to issue other commands immediately, the text is
 // inserted at the beginning of the buffer, before any remaining unexecuted
 // commands.
@@ -402,7 +401,7 @@ void Cbuf_InsertText (char *text);
 //--void Cbuf_ExecuteText (int exec_when, char *text);
 // this can be used in place of either Cbuf_AddText or Cbuf_InsertText
 
-void Cbuf_AddEarlyCommands (qboolean clear);
+void	Cbuf_AddEarlyCommands (qboolean clear);
 // adds all the +set commands from the command line
 
 qboolean Cbuf_AddLateCommands (void);
@@ -410,14 +409,14 @@ qboolean Cbuf_AddLateCommands (void);
 // Returns true if any late commands were added, which
 // will keep the demoloop from immediately starting
 
-void Cbuf_Execute (void);
+void	Cbuf_Execute (void);
 // Pulls off \n terminated lines of text from the command buffer and sends
 // them through Cmd_ExecuteString.  Stops when the buffer is empty.
 // Normally called once per frame, but may be explicitly invoked.
 // Do not call inside a command function!
 
-void Cbuf_CopyToDefer (void);
-void Cbuf_InsertFromDefer (void);
+void	Cbuf_CopyToDefer (void);
+void	Cbuf_InsertFromDefer (void);
 // These two functions are used to defer any pending commands while a map
 // is being loaded
 
@@ -467,6 +466,7 @@ void	Cmd_ForwardToServer (void);
 // things like godmode, noclip, etc, are commands directed to the server,
 // so when they are typed in at the console, they will need to be forwarded.
 
+void	Cmd_WriteAliases (FILE *f);
 
 /*
 ==============================================================
@@ -505,7 +505,7 @@ Cvars are restricted from having the same names as commands to keep this
 interface from being ambiguous.
 */
 
-extern	cvar_t	*cvar_vars;
+extern cvar_t *cvar_vars;
 
 //--cvar_t *Cvar_Get (char *var_name, char *value, int flags);
 // creates the variable if it doesn't exist, or returns the existing one
@@ -550,7 +550,7 @@ char	*Cvar_Userinfo (void);
 char	*Cvar_Serverinfo (void);
 // returns an info string containing all the CVAR_SERVERINFO cvars
 
-extern	qboolean	userinfo_modified;
+extern qboolean userinfo_modified;
 // this is set each time a CVAR_USERINFO variable is changed
 // so that the client knows to send it to the server
 
@@ -575,28 +575,26 @@ typedef enum {NS_CLIENT, NS_SERVER} netsrc_t;
 
 typedef struct
 {
-	netadrtype_t	type;
-
+	netadrtype_t type;
 	byte	ip[4];
 	byte	ipx[10];
-
-	unsigned short	port;
+	unsigned short port;
 } netadr_t;
 
-void		NET_Init (void);
-void		NET_Shutdown (void);
+void	NET_Init (void);
+void	NET_Shutdown (void);
 
-void		NET_Config (qboolean multiplayer);
+void	NET_Config (qboolean multiplayer);
 
-qboolean	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message);
-void		NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to);
+qboolean NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message);
+void	NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to);
 
-qboolean	NET_CompareAdr (netadr_t a, netadr_t b);
-qboolean	NET_CompareBaseAdr (netadr_t a, netadr_t b);
-qboolean	NET_IsLocalAddress (netadr_t adr);
-char		*NET_AdrToString (netadr_t a);
-qboolean	NET_StringToAdr (char *s, netadr_t *a);
-void		NET_Sleep(int msec);
+qboolean NET_CompareAdr (netadr_t a, netadr_t b);
+qboolean NET_CompareBaseAdr (netadr_t a, netadr_t b);
+qboolean NET_IsLocalAddress (netadr_t adr);
+char	*NET_AdrToString (netadr_t a);
+qboolean NET_StringToAdr (char *s, netadr_t *a);
+void	NET_Sleep(int msec);
 
 //============================================================================
 
@@ -606,50 +604,50 @@ void		NET_Sleep(int msec);
 
 typedef struct
 {
-	qboolean	fatal_error;
+	qboolean fatal_error;
 
-	netsrc_t	sock;
+	netsrc_t sock;
 
-	int			dropped;			// between last packet and previous
+	int		dropped;			// between last packet and previous
 
-	int			last_received;		// for timeouts
-	int			last_sent;			// for retransmits
+	int		last_received;		// for timeouts
+	int		last_sent;			// for retransmits
 
-	netadr_t	remote_address;
-	int			qport;				// qport value to write when transmitting
+	netadr_t remote_address;
+	int		qport;				// qport value to write when transmitting
 
 	// sequencing variables
-	int			incoming_sequence;
-	int			incoming_acknowledged;
-	int			incoming_reliable_acknowledged;	// single bit
+	int		incoming_sequence;
+	int		incoming_acknowledged;
+	int		incoming_reliable_acknowledged;	// single bit
 
-	int			incoming_reliable_sequence;		// single bit, maintained local
+	int		incoming_reliable_sequence;		// single bit, maintained local
 
-	int			outgoing_sequence;
-	int			reliable_sequence;			// single bit
-	int			last_reliable_sequence;		// sequence number of last send
+	int		outgoing_sequence;
+	int		reliable_sequence;				// single bit
+	int		last_reliable_sequence;			// sequence number of last send
 
 	// reliable staging and holding areas
-	sizebuf_t	message;		// writing buffer to send to server
-	byte		message_buf[MAX_MSGLEN-16];		// leave space for header
+	sizebuf_t message;		// writing buffer to send to server
+	byte	message_buf[MAX_MSGLEN-16];		// leave space for header
 
 	// message is copied to this buffer when it is first transfered
-	int			reliable_length;
-	byte		reliable_buf[MAX_MSGLEN-16];	// unacked reliable message
+	int		reliable_length;
+	byte	reliable_buf[MAX_MSGLEN-16];	// unacked reliable message
 } netchan_t;
 
-extern	netadr_t	net_from;
-extern	sizebuf_t	net_message;
-extern	byte		net_message_buffer[MAX_MSGLEN];
+extern netadr_t	net_from;
+extern sizebuf_t net_message;
+extern byte		net_message_buffer[MAX_MSGLEN];
 
 
-void Netchan_Init (void);
-void Netchan_Setup (netsrc_t sock, netchan_t *chan, netadr_t adr, int qport);
+void	Netchan_Init (void);
+void	Netchan_Setup (netsrc_t sock, netchan_t *chan, netadr_t adr, int qport);
 
 qboolean Netchan_NeedReliable (netchan_t *chan);
-void Netchan_Transmit (netchan_t *chan, int length, byte *data);
-void Netchan_OutOfBand (int net_socket, netadr_t adr, int length, byte *data);
-void Netchan_OutOfBandPrint (int net_socket, netadr_t adr, char *format, ...);
+void	Netchan_Transmit (netchan_t *chan, int length, byte *data);
+void	Netchan_OutOfBand (int net_socket, netadr_t adr, int length, byte *data);
+void	Netchan_OutOfBandPrint (int net_socket, netadr_t adr, char *format, ...);
 qboolean Netchan_Process (netchan_t *chan, sizebuf_t *msg);
 
 qboolean Netchan_CanReliable (netchan_t *chan);
@@ -666,51 +664,50 @@ CMODEL
 
 #include "../qcommon/qfiles.h"
 
-cmodel_t	*CM_LoadMap (char *name, qboolean clientload, unsigned *checksum);
-cmodel_t	*CM_InlineModel (char *name);	// *1, *2, etc
+cmodel_t *CM_LoadMap (char *name, qboolean clientload, unsigned *checksum);
+cmodel_t *CM_InlineModel (char *name);	// *1, *2, etc
 
-int			CM_NumClusters (void);
-int			CM_NumInlineModels (void);
-char		*CM_EntityString (void);
+int		CM_NumClusters (void);
+int		CM_NumInlineModels (void);
+char	*CM_EntityString (void);
 
 // creates a clipping hull for an arbitrary box
-int			CM_HeadnodeForBox (vec3_t mins, vec3_t maxs);
+int		CM_HeadnodeForBox (vec3_t mins, vec3_t maxs);
 
 
 // returns an ORed contents mask
-int			CM_PointContents (vec3_t p, int headnode);
-int			CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t angles);
+int		CM_PointContents (vec3_t p, int headnode);
+int		CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t angles);
 
 trace_t		CM_BoxTrace (vec3_t start, vec3_t end,
-						  vec3_t mins, vec3_t maxs,
-						  int headnode, int brushmask);
+					  vec3_t mins, vec3_t maxs,
+					  int headnode, int brushmask);
 trace_t		CM_TransformedBoxTrace (vec3_t start, vec3_t end,
-						  vec3_t mins, vec3_t maxs,
-						  int headnode, int brushmask,
-						  vec3_t origin, vec3_t angles);
+					  vec3_t mins, vec3_t maxs,
+					  int headnode, int brushmask,
+					  vec3_t origin, vec3_t angles);
 
-byte		*CM_ClusterPVS (int cluster);
-byte		*CM_ClusterPHS (int cluster);
+byte	*CM_ClusterPVS (int cluster);
+byte	*CM_ClusterPHS (int cluster);
 
-int			CM_PointLeafnum (vec3_t p);
+int		CM_PointLeafnum (vec3_t p);
 
 // call with topnode set to the headnode, returns with topnode
 // set to the first node that splits the box
-int			CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list,
-							int listsize, int *topnode);
+int		CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topnode);
 
-int			CM_LeafContents (int leafnum);
-int			CM_LeafCluster (int leafnum);
-int			CM_LeafArea (int leafnum);
+int		CM_LeafContents (int leafnum);
+int		CM_LeafCluster (int leafnum);
+int		CM_LeafArea (int leafnum);
 
-void		CM_SetAreaPortalState (int portalnum, qboolean open);
+void	CM_SetAreaPortalState (int portalnum, qboolean open);
 qboolean	CM_AreasConnected (int area1, int area2);
 
-int			CM_WriteAreaBits (byte *buffer, int area);
+int		CM_WriteAreaBits (byte *buffer, int area);
 qboolean	CM_HeadnodeVisible (int headnode, byte *visbits);
 
-void		CM_WritePortalState (FILE *f);
-void		CM_ReadPortalState (FILE *f);
+void	CM_WritePortalState (FILE *f);
+void	CM_ReadPortalState (FILE *f);
 
 /*
 ==============================================================
@@ -724,13 +721,13 @@ Common between server and client so prediction matches
 
 extern float pm_airaccelerate;
 
-void Pmove (pmove_t *pmove);
+void	Pmove (pmove_t *pmove);
 
 
 /*----------------- Debugging ------------------*/
 
 
-void DebugPrintf (char *fmt, ...);
+void	DebugPrintf (char *fmt, ...);
 
 
 /*-------------- Memory management -------------*/
@@ -831,29 +828,29 @@ byte	COM_BlockSequenceCRCByte (byte *base, int length, int sequence);
 float	frand(void);	// 0 to 1
 float	crand(void);	// -1 to 1
 
-extern	cvar_t	*developer;
-extern	cvar_t	*dedicated;
-extern	cvar_t	*com_speeds;
-extern	cvar_t	*log_stats;
+extern cvar_t	*developer;
+extern cvar_t	*dedicated;
+extern cvar_t	*com_speeds;
+extern cvar_t	*log_stats;
 
 extern	FILE *log_stats_file;
 
 // com_speeds times
-extern	int		time_before_game;
-extern	int		time_after_game;
-extern	int		time_before_ref;
-extern	int		time_after_ref;
+extern int	time_before_game;
+extern int	time_after_game;
+extern int	time_before_ref;
+extern int	time_after_ref;
 
 
-void Qcommon_Init (int argc, char **argv);
-void Qcommon_Frame (int msec);
-void Qcommon_Shutdown (void);
+void	Qcommon_Init (int argc, char **argv);
+void	Qcommon_Frame (int msec);
+void	Qcommon_Shutdown (void);
 
 #define NUMVERTEXNORMALS	162
 extern	vec3_t	bytedirs[NUMVERTEXNORMALS];
 
 // this is in the client code, but can be used for debugging from server
-void SCR_DebugGraph (float value, int color);
+void	SCR_DebugGraph (float value, int color);
 
 
 /*-------- Non-portable system services --------*/
@@ -879,19 +876,16 @@ void	Sys_CopyProtect (void);
 /*------- Client / server systems ---------*/
 
 
-void CL_Init (void);
-void CL_Drop (void);
-void CL_Shutdown (void);
-void CL_Frame (int msec);
-void Con_Print (char *text);
-void SCR_BeginLoadingPlaque (void);
+void	CL_Init (void);
+void	CL_Drop (void);
+void	CL_Shutdown (void);
+void	CL_Frame (int msec);
+void	Con_Print (char *text);
+void	SCR_BeginLoadingPlaque (void);
 
-void SV_Init (void);
-void SV_Shutdown (char *finalmsg, qboolean reconnect);
-void SV_Frame (int msec);
-
-
-void DebugPrintf (char *fmt, ...);
+void	SV_Init (void);
+void	SV_Shutdown (char *finalmsg, qboolean reconnect);
+void	SV_Frame (int msec);
 
 
 /*------------- Image loading -------------*/

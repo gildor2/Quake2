@@ -31,7 +31,7 @@ VISIBLE:
 - rail fx
 - screen blending (underwater etc.)
 - shadows
-- non-transparent water vis bug (merge clusters on map loading? if so, may be useful for water bulge)
+* non-transparent water vis bug (merge clusters on map loading? if so, may be useful for water bulge)
 INVISIBLE:
 - multitexturing (with lightmap lightscale when have multitex. and no env_combine)
 ! freeing of old images (and "bool temp" or "int usage" flag)
@@ -79,4 +79,4 @@ DEBUG:
 ---------------------------
 - inlineModels: RF_TRANSLUCENT/RF2_ALPHA: qglColor4f (1,1,1,0.25)/qglColor4f(1,1,1,1) + blend + no lightmap
   (require entstring preprocessing?)
-? what to do with "intens" param in GLimp_SetGamma() ??
+? what to do with "intens" param in GLimp_SetGamma() ? remove ??

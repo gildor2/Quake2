@@ -92,7 +92,7 @@ void Sys_Quit (void)
 {
 	timeEndPeriod( 1 );
 
-	CL_Shutdown();
+	CL_Shutdown ();
 	Qcommon_Shutdown ();
 	CloseHandle (qwclsemaphore);
 	if (dedicated && dedicated->integer)
@@ -190,7 +190,7 @@ void	Sys_CopyProtect (void)
 #ifndef DEMO
 	char	*cddir;
 
-	cddir = Sys_ScanForCD();
+	cddir = Sys_ScanForCD ();
 	if (!cddir[0])
 		Com_Error (ERR_FATAL, "You must have the Quake2 CD in the drive to play.");
 #endif
@@ -199,14 +199,13 @@ void	Sys_CopyProtect (void)
 
 //================================================================
 
-/* If error happens in ref_xxx.dll, error message will contain reference to
- * <not available> module
+/* NOTE: If error happens in ref_xxx.dll, error message will contain reference to
+ * <not available> module (check this ??)
  */
 
 static void DumpReg4 (FILE *f, char *name, DWORD value)
 {
-	int i;
-	char *data;
+	char	*data;
 
 	data = (char*) value;
 	fprintf (f, "  %s: %08X  ", name, value);
@@ -214,6 +213,8 @@ static void DumpReg4 (FILE *f, char *name, DWORD value)
 		fprintf (f, " <N/A>");
 	else
 	{
+		int		i;
+
 		for (i = 0; i < 16; i++)
 			fprintf (f, " %02X", data[i] & 0xFF);
 
@@ -238,7 +239,7 @@ static void DumpReg2 (FILE *f, char *name, DWORD value)
 
 static int DumpMem (FILE *f, int *data)
 {
-	int i;
+	int		i;
 
 	if (IsBadReadPtr (data, 32)) return 0;
 	for (i = 0; i < 8; i++)
@@ -252,17 +253,15 @@ extern qboolean debugLogged;
 
 static LONG WINAPI ExceptionFilter(struct _EXCEPTION_POINTERS *ExceptionInfo)
 {
-	FILE *f;
+	FILE	*f;
 	CONTEXT *ctx;
 	EXCEPTION_RECORD *rec;
-	char ctime[256];
-	char module[MAX_OSPATH];
-	time_t itime;
+	char	ctime[256], module[MAX_OSPATH];
+	time_t	itime;
 	MEMORY_BASIC_INFORMATION mbi;
-	int i;
-	int *stack;
+	int		i, *stack;
 
-	if (exception_count++ > 0) return 0; // nested exception
+	if (exception_count++ > 0) return 0;	// nested exception
 
 	// make a log in "crush.log"
 	if (f = fopen ("crush.log", "a+"))
@@ -710,7 +709,6 @@ HINSTANCE	global_hInstance;
 
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	MSG		msg;
 	int		time, oldtime, newtime;
 	char	*cddir;
 
@@ -741,6 +739,8 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	/*--------- main window message loop ------------*/
 	while (1)
 	{
+		MSG		msg;
+
 		// if at a full screen console, don't update unless needed
 		if (Minimized || (dedicated && dedicated->integer))
 			Sleep (1);
@@ -754,11 +754,23 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
    			DispatchMessage (&msg);
 		}
 
-		do
+		// do not allow Qcommon_Frame(0)  (?)
+#if 1
+		while (1)
 		{
 			newtime = Sys_Milliseconds ();
 			time = newtime - oldtime;
+			if (time >= 1) break;
+			Sleep (1);
+		}
+#else
+		do
+		{	// original code -- eats CPU time
+			newtime = Sys_Milliseconds ();
+			time = newtime - oldtime;
 		} while (time < 1);
+#endif
+
 //		Com_Printf ("time:%5.2f - %5.2f = %5.2f\n", newtime, oldtime, time);
 
 //		_controlfp (~( _EM_ZERODIVIDE /*| _EM_INVALID*/ ), _MCW_EM);

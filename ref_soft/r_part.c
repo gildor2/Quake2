@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -187,7 +187,7 @@ __declspec(naked) void R_DrawParticle( void )
 
 	/*
 	** make sure that the transformed particle is not in front of
-	** the particle Z clip plane.  We can do the comparison in 
+	** the particle Z clip plane.  We can do the comparison in
 	** integer space since we know the sign of one of the inputs
 	** and can figure out the sign of the other easily enough.
 	*/
@@ -215,7 +215,7 @@ __declspec(naked) void R_DrawParticle( void )
 	//	blendparticle = BlendParticle33;
 	//else if ( level == PARTICLE_66 )
 	//	blendparticle = BlendParticle66;
-	//else 
+	//else
 	//	blendparticle = BlendParticle100;
 
 	__asm cmp partparms.level, PARTICLE_66
@@ -251,8 +251,8 @@ done_selecting_blend_func:
     __asm fsubrp st(1), st(0)                ; ycenter - zi * transformed[1] | xcenter + zi * transformed[0]
   	__asm fxch  st(1)                        ; xcenter + zi * transformed[0] | ycenter + zi * transformed[1]
   	__asm fadd  point_five                   ; xcenter + zi * transformed[0] + 0.5 | ycenter - zi * transformed[1]
-  	__asm fxch  st(1)                        ; ycenter - zi * transformed[1] | xcenter + zi * transformed[0] + 0.5 
-  	__asm fadd  point_five                   ; ycenter - zi * transformed[1] + 0.5 | xcenter + zi * transformed[0] + 0.5 
+  	__asm fxch  st(1)                        ; ycenter - zi * transformed[1] | xcenter + zi * transformed[0] + 0.5
+  	__asm fadd  point_five                   ; ycenter - zi * transformed[1] + 0.5 | xcenter + zi * transformed[0] + 0.5
   	__asm fxch  st(1)                        ; u | v
   	__asm fistp dword ptr [u]                ; v
   	__asm fistp dword ptr [v]                ; (empty)
@@ -261,7 +261,7 @@ done_selecting_blend_func:
 	** clip out the particle
 	*/
 
-	//	if ((v > d_vrectbottom_particle) || 
+	//	if ((v > d_vrectbottom_particle) ||
 	//		(u > d_vrectright_particle) ||
 	//		(v < d_vrecty) ||
 	//		(u < d_vrectx))
@@ -281,7 +281,7 @@ done_selecting_blend_func:
 	__asm jl  end
 
 	/*
-	** compute addresses of zbuffer, framebuffer, and 
+	** compute addresses of zbuffer, framebuffer, and
 	** compute the Z-buffer reference value.
 	**
 	** EBX      = U
@@ -460,7 +460,7 @@ static byte BlendParticle100( int pcolor, int dstcolor )
 ** executed is if we're debugging on x86 or if we're
 ** recompiling and deploying on a non-x86 platform.
 **
-** To minimize error and improve readability I went the 
+** To minimize error and improve readability I went the
 ** function pointer route.  This exacts some overhead, but
 ** it pays off in clean and easy to understand code.
 */
@@ -472,7 +472,7 @@ void R_DrawParticle( void )
 	float	zi;
 	byte	*pdest;
 	short	*pz;
-	int      color = pparticle->color;
+	byte	color = pparticle->color;
 	int		i, izi, pix, count, u, v;
 	byte  (*blendparticle)( int, int );
 
@@ -483,7 +483,7 @@ void R_DrawParticle( void )
 
 	transformed[0] = DotProduct(local, r_pright);
 	transformed[1] = DotProduct(local, r_pup);
-	transformed[2] = DotProduct(local, r_ppn);		
+	transformed[2] = DotProduct(local, r_ppn);
 
 	if (transformed[2] < PARTICLE_Z_CLIP)
 		return;
@@ -495,7 +495,7 @@ void R_DrawParticle( void )
 		blendparticle = BlendParticle33;
 	else if ( level == PARTICLE_66 )
 		blendparticle = BlendParticle66;
-	else 
+	else
 		blendparticle = BlendParticle100;
 
 	/*
@@ -506,7 +506,7 @@ void R_DrawParticle( void )
 	u = (int)(xcenter + zi * transformed[0] + 0.5);
 	v = (int)(ycenter - zi * transformed[1] + 0.5);
 
-	if ((v > d_vrectbottom_particle) || 
+	if ((v > d_vrectbottom_particle) ||
 		(u > d_vrectright_particle) ||
 		(v < d_vrecty) ||
 		(u < d_vrectx))
@@ -515,7 +515,7 @@ void R_DrawParticle( void )
 	}
 
 	/*
-	** compute addresses of zbuffer, framebuffer, and 
+	** compute addresses of zbuffer, framebuffer, and
 	** compute the Z-buffer reference value.
 	*/
 	pz = d_pzbuffer + (d_zwidth * v) + u;
@@ -610,9 +610,9 @@ void R_DrawParticles (void)
 	for (p=r_newrefdef.particles, i=0 ; i<r_newrefdef.num_particles ; i++,p++)
 	{
 
-		if ( p->alpha > 0.66 )
+		if (p->alpha > 255 * 2 / 3)
 			partparms.level = PARTICLE_OPAQUE;
-		else if ( p->alpha > 0.33 )
+		else if (p->alpha > 255 / 3)
 			partparms.level = PARTICLE_66;
 		else
 			partparms.level = PARTICLE_33;
@@ -635,4 +635,3 @@ void R_DrawParticles (void)
 #endif
 
 }
-

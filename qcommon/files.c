@@ -7,7 +7,7 @@
 /*------------ In memory -----------------*/
 
 typedef struct packFile_s
-{	// descended from basenamed_t, so: 1st field is "char *name", 2nd - "selfType_t *next"
+{	// derived from basenamed_t, so: 1st field is "char *name", 2nd - "selfType_t *next"
 	char	*name;
 	struct packFile_s *next;// next file in the same directory
 	int		method; 		// 0-store, 8-deflate
@@ -18,7 +18,7 @@ typedef struct packFile_s
 } packFile_t;
 
 typedef struct packDir_s
-{	// descended from basenamed_t
+{	// derived from basenamed_t
 	char	*name;
 	struct packDir_s *next;	// next directory in the same directory
 	struct packDir_s *cDir;	// 1st subdirectory (child subdirectory)
@@ -36,7 +36,7 @@ typedef struct
 
 typedef struct resFile_s
 {
-	char	*name;			// descend on basenamed_t
+	char	*name;			// derived on basenamed_t
 	struct resFile_s *next;
 	int		pos;
 	int		size;
@@ -642,7 +642,7 @@ static FILE *AllocFileInternal (char *name, FILE *file, fileType_t type)
 }
 
 
-int fileFromPak = 0;		// used for precaching
+int fileFromPak;		// used for precaching
 
 // WARNING: FS_FOpenFile, FS_Read and FS_FCloseFile works with FILE2* (not with FILE*) structure.
 
@@ -1249,18 +1249,26 @@ FS_LoadGameConfig
 */
 void FS_LoadGameConfig (void)
 {
-	char *dir;
-	char name [MAX_QPATH];
+	char	*gdir, dir[MAX_QPATH];
+	FILE	*f;
 
-	Cbuf_AddText (va("unbindall\nreset *\nexec %s\n", fs_configfile->string));
-	dir = Cvar_VariableString ("gamedir");
-	if (*dir)		// game = "" (baseq2)
-		Com_sprintf (name, sizeof(name), "%s/%s/autoexec.cfg", fs_basedir->string, dir);
-	else			// different game
-		Com_sprintf (name, sizeof(name), "%s/%s/autoexec.cfg", fs_basedir->string, BASEDIRNAME);
-	if (Sys_FindFirst (name, 0, SFF_SUBDIR|SFF_HIDDEN|SFF_SYSTEM))
+	gdir = Cvar_VariableString ("gamedir");
+	// game = "" => gdir = "baseq2"
+	Com_sprintf (dir, sizeof(dir), "%s/%s", fs_basedir->string, *gdir ? gdir : BASEDIRNAME);
+
+	if (f = fopen (va("%s/%s", dir, fs_configfile->string), "r"))
+	{
+		fclose (f);
+		Cbuf_AddText (va("unbindall\nreset *\nunalias *\nexec %s\n", fs_configfile->string));
+	}
+	else
+		Cbuf_AddText ("exec default.cfg\n");
+
+	if (f = fopen (va("%s/autoexec.cfg", gdir, dir), "r"))
+	{
+		fclose (f);
 		Cbuf_AddText ("exec autoexec.cfg\n");
-	Sys_FindClose ();
+	}
 }
 
 
@@ -1673,7 +1681,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, unsigned musthave, unsigne
 FS_Dir_f
 ===============
 */
-void FS_Dir_f (void)
+static void FS_Dir_f (void)
 {
 	char	*path = NULL;
 	char	findname[1024];
@@ -1755,7 +1763,7 @@ void FS_Dir_f (void)
 FS_Path_f
 ============
 */
-void FS_Path_f (void)
+static void FS_Path_f (void)
 {
 	searchPath_t	*s;
 	fileLink_t		*l;
@@ -1780,7 +1788,7 @@ void FS_Path_f (void)
 }
 
 
-void FS_Cat_f (void)
+static void FS_Cat_f (void)
 {
 	FILE	*f;
 	int		len;
@@ -1817,6 +1825,33 @@ void FS_Cat_f (void)
 	}
 	FS_FCloseFile (f);
 	Com_Printf ("\n--------\n");
+}
+
+
+static void FS_Type_f (void)
+{
+	FILE	*f;
+	int		len, oldDev;
+	char	*name;
+
+	if (Cmd_Argc() != 2)
+	{
+		Com_Printf ("Usage: type <filename>\n");
+		return;
+	}
+	name = Cmd_Argv(1);
+	oldDev = developer->integer;
+	Cvar_SetInteger ("developer", 256);	// hack? or feature?
+	len = FS_FOpenFile (name, &f);
+	Cvar_SetInteger ("developer", oldDev);
+	if (!f)
+	{
+		Com_Printf ("File \"%s\" is not found\n", name);
+		return;
+	}
+	// display info about file
+	Com_Printf ("length: %d bytes\n", len);
+	FS_FCloseFile (f);
 }
 
 
@@ -1869,6 +1904,7 @@ CVAR_END
 	Cmd_AddCommand ("loadpak", FS_LoadPak_f);
 	Cmd_AddCommand ("unloadpak", FS_UnloadPak_f);
 	Cmd_AddCommand ("cat", FS_Cat_f);
+	Cmd_AddCommand ("type", FS_Type_f);
 
 	InitResFiles ();
 

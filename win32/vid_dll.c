@@ -517,6 +517,34 @@ Vid_LoadRefresh
 ==============
 */
 
+/*-------- Dummy functions for console-only mode ---------*/
+
+static void	D_RenderFrame (refdef_t *fd) {}
+static void	D_BeginRegistration (char *map) {}
+static struct model_s *D_RegisterModel (char *name) { return NULL; }
+static struct image_s *D_RegisterSkin (char *name) { return NULL; }
+static struct image_s *D_FindPic (char *name) { return NULL; }
+static void D_SetSky (char *name, float rotate, vec3_t axis) {}
+static void	D_EndRegistration (void) {}
+
+static void	D_Draw_GetPicSize (int *w, int *h, char *pic)
+{
+	if (w) *w = 0;
+	if (h) *h = 0;
+}
+
+static void	D_Draw_PicColor (int x, int y, char *name, int color) {}
+static void	D_Draw_StretchPic (int x, int y, int w, int h, char *pic) {}
+static void	D_Draw_CharColor (int x, int y, int c, int color) {}
+static void	D_Draw_TileClear (int x, int y, int w, int h, char *name) {}
+static void	D_Draw_Fill (int x, int y, int w, int h, int c) {}
+static void	D_Draw_FadeScreen (void) {}
+static void	D_DrawTextPos (int x, int y, char *text, float r, float g, float b) {}
+static void	D_DrawTextSide (char *text, float r, float g, float b) {}
+static void	D_Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data) {}
+static void	D_SetPalette (const unsigned char *palette) {}
+
+
 #ifdef REF_HARD_LINKED
 extern refExport_t GL_GetRefAPI (refImport_t rimp);		// ref_gl
 extern refExport_t GetRefAPI (refImport_t rimp);		// ref_soft
@@ -558,6 +586,32 @@ qboolean Vid_LoadRefresh (char *name)
 		Com_Error (ERR_FATAL, "%s has incompatible api_version", name);
 	}
 
+	if (re.flags & REF_CONSOLE_ONLY)
+	{
+		re.RenderFrame =	D_RenderFrame;
+		re.BeginRegistration = D_BeginRegistration;
+		re.RegisterModel =	D_RegisterModel;
+		re.RegisterSkin =	D_RegisterSkin;
+		re.RegisterPic =	D_FindPic;
+		re.SetSky =			D_SetSky;
+		re.EndRegistration = D_EndRegistration;
+
+		re.DrawGetPicSize =	D_Draw_GetPicSize;
+		re.DrawPicColor =	D_Draw_PicColor;
+		re.DrawStretchPic =	D_Draw_StretchPic;
+		re.DrawCharColor =	D_Draw_CharColor;
+		re.DrawTileClear =	D_Draw_TileClear;
+		re.DrawFill =		D_Draw_Fill;
+		re.DrawFadeScreen =	D_Draw_FadeScreen;
+
+		re.DrawStretchRaw =	D_Draw_StretchRaw;
+		re.CinematicSetPalette = D_SetPalette;
+
+		re.DrawTextPos =	D_DrawTextPos;
+		re.DrawTextLeft =	D_DrawTextSide;
+		re.DrawTextRight =	D_DrawTextSide;
+	}
+
 	if (re.Init (global_hInstance, MainWndProc) == -1)
 	{
 		re.Shutdown();
@@ -565,7 +619,7 @@ qboolean Vid_LoadRefresh (char *name)
 		return false;
 	}
 
-	Com_Printf( "------------------------------------\n");
+	Com_Printf ("------------------------------------\n");
 	refActive = true;
 
 	vidref_val = VIDREF_OTHER;

@@ -1,6 +1,6 @@
 What needed:
 ~~~~~~~~~~~~
-- if (): platform, game, any cvar
+- global scripting: if (): platform, game, any cvar
   comparision: float (<,>,<=,>=,!=,==) or string (ne,eq etc. -- see Perl)
 - menu params (change defaults):
   - item spacing

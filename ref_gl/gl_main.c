@@ -16,7 +16,6 @@ refImport_t	ri;
 //??void GL_Strings_f (void); --> gfxInfo
 
 //------------- Cvars -----------------
-cvar_t	*gl_console_only;
 
 // initialization/GLimp
 cvar_t	*r_fullscreen;
@@ -82,7 +81,7 @@ CVAR_BEGIN(vars)
 //	CVAR_VAR(gl_shadows, 0, CVAR_ARCHIVE ),
 	CVAR_VAR(r_gamma, 1, CVAR_ARCHIVE),
 	CVAR_VAR(r_saturation, 1, CVAR_ARCHIVE),
-	CVAR_VAR(r_intensity, 1, CVAR_ARCHIVE),
+	CVAR_VAR(r_intensity, 1, CVAR_ARCHIVE),		//?? remove ?!
 	CVAR_VAR(r_ignorehwgamma, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_overBrightBits, 1, CVAR_ARCHIVE),
 	CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE),
@@ -97,7 +96,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_clear, 0, 0),
 	CVAR_VAR(gl_znear, 4, 0),
-	CVAR_VAR(gl_swapinterval, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_swapinterval, 0, CVAR_ARCHIVE|CVAR_UPDATE),
 
 	CVAR_VAR(gl_driver, opengl32, CVAR_ARCHIVE),			//?? use different gl_driver default value for Linux
 	CVAR_VAR(gl_mode, 3, CVAR_ARCHIVE),
@@ -701,38 +700,6 @@ static void SetPerspective (void)
 
 void DrawTexts (void);
 
-// Called from GL_RenderFrame() only
-static void RenderView (void)
-{
-	// setup viewPortal structure
-	memset (&vp, 0, sizeof(vp));
-	vp.x = gl_refdef.x;
-	vp.y = vid.height - (gl_refdef.y + gl_refdef.height);
-	vp.w = gl_refdef.width;
-	vp.h = gl_refdef.height;
-	vp.fov_x = gl_refdef.fov_x;
-	vp.fov_y = gl_refdef.fov_y;
-
-	vp.lightStyles = gl_refdef.lightStyles;
-	vp.time = gl_refdef.time;
-
-	VectorCopy (gl_refdef.vieworg, vp.vieworg);
-	vp.vieworg[0] = gl_refdef.vieworg[0];
-	vp.vieworg[1] = gl_refdef.vieworg[1];
-	vp.vieworg[2] = gl_refdef.vieworg[2];
-	AxisCopy (gl_refdef.viewaxis, vp.viewaxis);
-	GL_ClearPortal ();
-	PrepareWorldModel ();
-	SetFrustum ();
-	GL_DrawWorld ();
-	SetPerspective ();
-	//?? GL_AddGameSurfacesToBuffer ();
-	GL_DrawEntities (gl_refdef.firstEntity, gl_refdef.numEntities);
-	//?? draw portals here (if buffer has shader.sort == SORT_PORTAL)
-	GL_FinishPortal ();
-	DrawTexts ();
-}
-
 
 // Can be called few RenderFrame() between BeginFrame() and EndFrame()
 static void GL_RenderFrame (refdef_t *fd)
@@ -797,7 +764,45 @@ static void GL_RenderFrame (refdef_t *fd)
 
 	/*------------ rendering -------------*/
 
-	RenderView ();
+	// setup viewPortal structure
+	memset (&vp, 0, sizeof(vp));
+	vp.x = gl_refdef.x;
+	vp.y = vid.height - (gl_refdef.y + gl_refdef.height);
+	vp.w = gl_refdef.width;
+	vp.h = gl_refdef.height;
+	vp.fov_x = gl_refdef.fov_x;
+	vp.fov_y = gl_refdef.fov_y;
+
+	vp.lightStyles = gl_refdef.lightStyles;
+	vp.time = gl_refdef.time;
+
+	VectorCopy (gl_refdef.vieworg, vp.vieworg);
+	vp.vieworg[0] = gl_refdef.vieworg[0];
+	vp.vieworg[1] = gl_refdef.vieworg[1];
+	vp.vieworg[2] = gl_refdef.vieworg[2];
+	AxisCopy (gl_refdef.viewaxis, vp.viewaxis);
+	GL_ClearPortal ();
+	PrepareWorldModel ();
+	SetFrustum ();
+	GL_DrawWorld ();
+	SetPerspective ();
+	//?? GL_AddGameSurfacesToBuffer ();
+	GL_DrawEntities (gl_refdef.firstEntity, gl_refdef.numEntities);
+	//?? draw portals here (if buffer has shader.sort == SORT_PORTAL)
+
+	// add particles
+	if (fd->num_particles)
+	{
+		vp.numParticles = fd->num_particles;
+		vp.particles = fd->particles;
+		// use "*alpha1" shader - this lets us to draw particles before 1st alpha surface drawn
+		GL_AddSurfaceToPortal (NULL, gl_alphaShader1, ENTITYNUM_WORLD);
+	}
+
+	GL_FinishPortal ();
+	DrawTexts ();
+
+	/*------------ debug info ------------*/
 
 	if (r_speeds->integer)
 	{
@@ -820,34 +825,6 @@ static void GL_RenderFrame (refdef_t *fd)
 		gl_speeds.numIterators = 0;
 	}
 }
-
-
-/*-------- Dummy functions for console-only mode ---------*/
-
-static void	D_RenderFrame (refdef_t *fd) {}
-static void	D_BeginRegistration (char *map) {}
-static struct model_s *D_RegisterModel (char *name) { return NULL; }
-static struct image_s *D_RegisterSkin (char *name) { return NULL; }
-static struct image_s *D_FindPic (char *name) { return NULL; }
-static void D_SetSky (char *name, float rotate, vec3_t axis) {}
-static void	D_EndRegistration (void) {}
-
-static void	D_Draw_GetPicSize (int *w, int *h, char *pic)
-{
-	if (w) *w = 0;
-	if (h) *h = 0;
-}
-
-static void	D_Draw_PicColor (int x, int y, char *name, int color) {}
-static void	D_Draw_StretchPic (int x, int y, int w, int h, char *pic) {}
-static void	D_Draw_CharColor (int x, int y, int c, int color) {}
-static void	D_Draw_TileClear (int x, int y, int w, int h, char *name) {}
-static void	D_Draw_Fill (int x, int y, int w, int h, int c) {}
-static void	D_Draw_FadeScreen (void) {}
-static void	D_DrawTextPos (int x, int y, char *text, float r, float g, float b) {}
-static void	D_DrawTextSide (char *text, float r, float g, float b) {}
-static void	D_Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data) {}
-static void	D_SetPalette (const unsigned char *palette) {}
 
 
 /*--------------------- Text output ---------------------*/
@@ -1111,6 +1088,12 @@ static void BeginRegistration (char *mapname)
 }
 
 
+static void EndRegistration (void)
+{
+	//?? empty
+}
+
+
 static shader_t *RegisterPic (char *name)
 {
 	return FindPic (name, false);
@@ -1170,12 +1153,13 @@ refExport_t GetRefAPI (refImport_t rimp)
 	memset (&gl_config, 0, sizeof(gl_config));
 	memset (&gl_state, 0, sizeof(gl_state));
 
-	gl_console_only = Cvar_Get ("gl_console_only", "0", 0);
-	gl_config.consoleOnly = gl_console_only->integer;
+	gl_config.consoleOnly = Cvar_Get ("gl_console_only", "0", 0)->integer;
 
 	re.struc_size = sizeof(re);
 	re.api_version = API_VERSION;
-	re.console_only = gl_config.consoleOnly;
+	re.flags = REF_NEW_FX;
+	if (gl_config.consoleOnly)
+		re.flags |= REF_CONSOLE_ONLY;
 
 	re.Init =			GL_Init;
 	re.Shutdown =		GL_Shutdown;
@@ -1184,56 +1168,28 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.AppActivate =	GLimp_AppActivate;
 	re.DrawConCharColor = DrawConCharColor;
 
-	if (!gl_config.consoleOnly)
-	{
-		re.RenderFrame =	GL_RenderFrame;
-		re.BeginRegistration = BeginRegistration;
-		re.RegisterModel =	GL_FindModel;
-		re.RegisterSkin =	(image_t* (*)(char *)) GL_FindSkin;
-		re.RegisterPic =	(image_t* (*)(char *)) RegisterPic;
-		re.SetSky =			SetSky;
-		re.EndRegistration = D_EndRegistration;	//GL_EndRegistration;
+	re.RenderFrame =	GL_RenderFrame;
+	re.BeginRegistration = BeginRegistration;
+	re.RegisterModel =	GL_FindModel;
+	re.RegisterSkin =	(image_t* (*)(char *)) GL_FindSkin;
+	re.RegisterPic =	(image_t* (*)(char *)) RegisterPic;
+	re.SetSky =			SetSky;
+	re.EndRegistration = EndRegistration;
 
-		re.DrawGetPicSize =	GetPicSize;
-		re.DrawPicColor =	DrawPicColor;
-		re.DrawStretchPic =	DrawStretchPic;
-		re.DrawCharColor =	DrawCharColor;
-		re.DrawTileClear =	DrawTileClear;
-		re.DrawFill =		DrawFill;
-		re.DrawFadeScreen =	FadeScreen;
+	re.DrawGetPicSize =	GetPicSize;
+	re.DrawPicColor =	DrawPicColor;
+	re.DrawStretchPic =	DrawStretchPic;
+	re.DrawCharColor =	DrawCharColor;
+	re.DrawTileClear =	DrawTileClear;
+	re.DrawFill =		DrawFill;
+	re.DrawFadeScreen =	FadeScreen;
 
-		re.DrawStretchRaw =	GL_DrawStretchRaw;
-		re.CinematicSetPalette = GL_SetRawPalette;
+	re.DrawStretchRaw =	GL_DrawStretchRaw;
+	re.CinematicSetPalette = GL_SetRawPalette;
 
-		re.DrawTextPos =	DrawTextPos;
-		re.DrawTextLeft =	DrawTextLeft;
-		re.DrawTextRight =	DrawTextRight;
-	}
-	else
-	{
-		re.RenderFrame =	D_RenderFrame;
-		re.BeginRegistration = D_BeginRegistration;
-		re.RegisterModel =	D_RegisterModel;
-		re.RegisterSkin =	D_RegisterSkin;
-		re.RegisterPic =	D_FindPic;
-		re.SetSky =			D_SetSky;
-		re.EndRegistration = D_EndRegistration;
-
-		re.DrawGetPicSize =	D_Draw_GetPicSize;
-		re.DrawPicColor =	D_Draw_PicColor;
-		re.DrawStretchPic =	D_Draw_StretchPic;
-		re.DrawCharColor =	D_Draw_CharColor;
-		re.DrawTileClear =	D_Draw_TileClear;
-		re.DrawFill =		D_Draw_Fill;
-		re.DrawFadeScreen =	D_Draw_FadeScreen;
-
-		re.DrawStretchRaw =	D_Draw_StretchRaw;
-		re.CinematicSetPalette = D_SetPalette;
-
-		re.DrawTextPos =	D_DrawTextPos;
-		re.DrawTextLeft =	D_DrawTextSide;
-		re.DrawTextRight =	D_DrawTextSide;
-	}
+	re.DrawTextPos =	DrawTextPos;
+	re.DrawTextLeft =	DrawTextLeft;
+	re.DrawTextRight =	DrawTextRight;
 
 	Swap_Init ();
 

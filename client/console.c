@@ -603,7 +603,7 @@ static void Con_DrawInput (void)
 		text += 1 + key_linepos - con.linewidth;
 
 	// draw it
-	if (!re.console_only)
+	if (!(re.flags & REF_CONSOLE_ONLY))
 		y = con.vislines-22;
 	else
 		y = (viddef.height >> 3) - 2;
@@ -620,7 +620,7 @@ static void Con_DrawInput (void)
 		if (i == key_linepos && (cls.realtime >> 8) & 1)
 			c = 11 + 128;		// cursor char
 
-		if (!re.console_only)
+		if (!(re.flags & REF_CONSOLE_ONLY))
 			re.DrawCharColor ((i+1)<<3, y, c, 7);	// do not colorize input
 		else
 			re.DrawConCharColor (i+1, y, c, 7);
@@ -640,7 +640,8 @@ void Con_DrawNotify (void)
 	int		x, v, i, pos;
 	char	*s;
 
-	if (re.console_only) return;
+	if (re.flags & REF_CONSOLE_ONLY)
+		return;
 
 	v = 0;
 	pos = -1;
@@ -754,7 +755,7 @@ void Con_DrawConsole (float frac)
 	/*------------ draw version info ---------------*/
 	Com_sprintf (version, sizeof(version), "v%4.2f", VERSION);
 	for (x = 0; x < 5; x++)
-		if (!re.console_only)
+		if (!(re.flags & REF_CONSOLE_ONLY))
 			re.DrawCharColor (viddef.width - 44 + x * 8, lines - 12, 128 + version[x], 7);
 		else
 			re.DrawConCharColor (dx - 6 + x, dy - 1, 128 + version[x], 7);
@@ -762,7 +763,7 @@ void Con_DrawConsole (float frac)
 	// draw the text
 	con.vislines = lines;
 
-	if (!re.console_only)
+	if (!(re.flags & REF_CONSOLE_ONLY))
 	{
 #if 0
 		rows = (lines - 8) >> 3;		// rows of text to draw
@@ -789,7 +790,7 @@ void Con_DrawConsole (float frac)
 	if (con.totallines && con.display != con.current)
 	{
 		/*------ draw arrows to show the buffer is backscrolled -------*/
-		if (!re.console_only)
+		if (!(re.flags & REF_CONSOLE_ONLY))
 		{
 			y = (rows - 1) * 8;
 			for (x = 0; x < con.linewidth; x += 4)
@@ -828,7 +829,7 @@ void Con_DrawConsole (float frac)
 	con.disp.line = row;
 	con.disp.pos = i;
 
-	if (!re.console_only)
+	if (!(re.flags & REF_CONSOLE_ONLY))
 		y -= (rows - 1) * 8;
 	else
 		y -= rows - 1;
@@ -844,12 +845,12 @@ void Con_DrawConsole (float frac)
 
 				if (c == '\n' || c == WRAP_CHAR) break;
 
-				if (!re.console_only)
+				if (!(re.flags & REF_CONSOLE_ONLY))
 					re.DrawCharColor ((x + 1) * 8, y, c, color);
 				else
 					re.DrawConCharColor (x + 1, y, c, color);
 			}
-			if (!re.console_only)
+			if (!(re.flags & REF_CONSOLE_ONLY))
 				y += 8;
 			else
 				y++;
@@ -859,7 +860,7 @@ void Con_DrawConsole (float frac)
 	//ZOID
 	// draw the download bar
 	// figure out width
-	if (!re.console_only && cls.download)
+	if (!(re.flags & REF_CONSOLE_ONLY) && cls.download)
 	{
 		if ((text = strrchr (cls.downloadname, '/')) != NULL)
 			text++;

@@ -1,4 +1,3 @@
-- KP ref disasm
 - shader scripts
 - entity parser
 
@@ -9,3 +8,4 @@ Savage3d (check):
 - gl_ignoreFastPath
 - rename exe
 - different drivers
+- may be, works after swapinterval fix

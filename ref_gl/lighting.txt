@@ -75,7 +75,7 @@ LightPoint(point)
         else if angle == -2 (ANGLE_DOWN)
           normal = (0, 0, -1)
         else
-          normal = (cos(angle), size(angle), 0)
+          normal = (cos(angle), sin(angle), 0)
       }
   - dl.color = "_color"
     dl.intens = "light"

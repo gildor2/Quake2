@@ -144,7 +144,7 @@ qboolean Vid_CreateWindow (int width, int height, qboolean fullscreen)
 	}
 
 	SetForegroundWindow (glw_state.hWnd);
-	SetFocus (glw_state.hWnd);
+//	SetFocus (glw_state.hWnd);
 
 	// let the sound and input subsystems know about the new window
 	Vid_NewWindow (width, height);
@@ -336,9 +336,10 @@ static void RestoreGamma (void)
 	if (!gammaStored) return;
 	hwnd = GetDesktopWindow ();
 	hdc = GetDC (hwnd);
+//	DebugPrintf("restore gamma\n");//!!
 	SetDeviceGammaRamp (hdc, gammaRamp);
 //	if (!SetDeviceGammaRamp (hdc, gammaRamp))
-//		Com_WPrintf ("Cannot restore gamma!\n");
+//		DebugPrintf ("Cannot restore gamma!\n");//!!
 	ReleaseDC (hwnd, hdc);
 }
 
@@ -358,10 +359,11 @@ static void UpdateGamma (void)
 		Com_WPrintf ("Cannot update gamma!\n");
 	ReleaseDC (hwnd, hdc);
 #else
+//	DebugPrintf("updata gamma\n");//!!
 	if (!gammaValid) return;
 	SetDeviceGammaRamp (glw_state.hDC, newGamma);
 //	if (!SetDeviceGammaRamp (glw_state.hDC, newGamma))
-//		Com_WPrintf ("Cannot update gamma!\n");
+//		DebugPrintf ("Cannot update gamma!\n");	//!!
 #endif
 }
 
@@ -374,11 +376,13 @@ void GLimp_SetGamma (float gamma, float intens)
 	if (!gammaStored) return;
 
 	if (gamma < 0.5f)
-		gamma = 0.1f;
+		gamma = 0.5f;
 	else if (gamma > 3.0f)
 		gamma = 3.0f;
 	if (intens < 0.1f)
 		intens = 0.1f;
+
+//	DebugPrintf("set gamma %g, %g\n", gamma, intens);//!!
 
 	invGamma = 1.0 / gamma;
 	overbright = (float) (1 << gl_config.overbrightBits);
@@ -660,8 +664,9 @@ fail:
 /*
  * GLimp_BeginFrame
  */
-void GLimp_BeginFrame( float camera_separation )
+void GLimp_BeginFrame (float camera_separation)
 {
+	LOG_STRING("GLimp_BeginFrame()\n");
 	if (gl_bitdepth->modified)
 	{
 		if (gl_bitdepth->integer && !glw_state.allowdisplaydepthchange)
@@ -697,6 +702,7 @@ void GLimp_BeginFrame( float camera_separation )
  */
 void GLimp_EndFrame (void)
 {
+	LOG_STRING("GLimp_EndFrame()\n");
 	// swapinterval stuff
 	if (gl_swapinterval->modified)
 	{
@@ -708,7 +714,10 @@ void GLimp_EndFrame (void)
 	if (stricmp (gl_drawbuffer->string, "GL_FRONT"))
 	{	// draw buffer = GL_BACK
 		if (!glw_state.minidriver)
+		{
+			LOG_STRING("SwapBuffers()\n");
 			SwapBuffers (glw_state.hDC);
+		}
 		else
 		{
 			// use wglSwapBuffers() for miniGL and Voodoo

@@ -1,7 +1,6 @@
 # Microsoft Developer Studio Generated Dependency File, included by ref_gl.mak
 
 .\gl_draw.c : \
-	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -15,7 +14,6 @@
 	
 
 .\gl_image.c : \
-	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -29,7 +27,6 @@
 	
 
 .\gl_light.c : \
-	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -43,7 +40,6 @@
 	
 
 .\gl_mesh.c : \
-	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -58,7 +54,6 @@
 	
 
 .\gl_model.c : \
-	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -72,7 +67,6 @@
 	
 
 .\gl_rmain.c : \
-	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -86,7 +80,6 @@
 	
 
 .\gl_rmisc.c : \
-	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -100,7 +93,6 @@
 	
 
 .\gl_rsurf.c : \
-	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -114,7 +106,6 @@
 	
 
 .\gl_textout.c : \
-	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -128,7 +119,6 @@
 	
 
 .\gl_warp.c : \
-	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -142,7 +132,6 @@
 	
 
 ..\win32\glw_imp.c : \
-	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\
@@ -166,7 +155,6 @@
 	
 
 ..\win32\qgl_win.c : \
-	"..\..\progra~1\msvs\vc98\include\basetsd.h"\
 	"..\client\ref.h"\
 	"..\client\ref_decl.h"\
 	"..\client\ref_defs.h"\

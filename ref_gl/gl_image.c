@@ -5,6 +5,7 @@ image_t		*gl_defaultImage;
 image_t		*gl_whiteImage;
 image_t		*gl_identityLightImage;
 image_t		*gl_dlightImage;
+image_t		*gl_particleImage;
 image_t		*gl_fogImage;
 image_t		*gl_scratchImage;
 
@@ -1364,7 +1365,7 @@ void GL_InitImages (void)
 	gl_identityLightImage = GL_CreateImage ("*identityLight", tex, 8, 8, 0);
 	gl_identityLightImage->flags |= IMAGE_SYSTEM;
 	/*----------- create dlight image ------------*/
-	p = &tex[0];
+	p = tex;
 	for (y = 0; y < 16; y++)
 	{
 		float	yv;
@@ -1384,10 +1385,31 @@ void GL_InitImages (void)
 			p += 4;
 		}
 	}
-	gl_dlightImage = GL_CreateImage ("*dlight", tex, 16, 16, IMAGE_CLAMP|IMAGE_TRUECOLOR);
+	gl_dlightImage = GL_CreateImage ("*dlight", tex, 16, 16, IMAGE_CLAMP|IMAGE_TRUECOLOR|IMAGE_MIPMAP);
 	gl_dlightImage->flags |= IMAGE_SYSTEM;
+	/*----------- create particle image ----------*/
+	p = tex;
+	for (y = 0; y < 8; y++)
+	{
+		for (x = 0; x < 8; x++)
+		{
+			if (y >= 1 && y <= 4 && x >= 1 && x <= 4)
+			{
+				p[0] = p[1] = p[2] = 255;
+				if ((y == 1 || y == 4) && (x == 1 || x == 4))
+					p[3] = 64;
+				else
+					p[3] = 255;
+			}
+			else
+				p[0] = p[1] = p[2] = p[3] = 0;
+			p += 4;
+		}
+	}
+	gl_particleImage = GL_CreateImage ("*particle", tex, 8, 8, IMAGE_CLAMP|IMAGE_MIPMAP);
+	gl_particleImage->flags |= IMAGE_SYSTEM;
 	/*------------ create fog image --------------*/
-	p = &tex[0];
+	p = tex;
 	for (y = 0; y < 32; y++)
 	{
 		float	yf;
@@ -1417,7 +1439,7 @@ void GL_InitImages (void)
 			p += 4;
 		}
 	}
-	gl_fogImage = GL_CreateImage ("*fog", tex, 256, 32, IMAGE_CLAMP|IMAGE_TRUECOLOR);
+	gl_fogImage = GL_CreateImage ("*fog", tex, 256, 32, IMAGE_CLAMP|IMAGE_TRUECOLOR);	//?? mipmap
 	gl_fogImage->flags |= IMAGE_SYSTEM;
 }
 

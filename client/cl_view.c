@@ -93,7 +93,7 @@ V_AddParticle
 
 =====================
 */
-void V_AddParticle (vec3_t org, vec3_t prev, int color, float alpha)
+void V_AddParticle (vec3_t org, byte color, float alpha, particleType_t type)
 {
 	particle_t	*p;
 
@@ -101,9 +101,9 @@ void V_AddParticle (vec3_t org, vec3_t prev, int color, float alpha)
 		return;
 	p = &r_particles[r_numparticles++];
 	VectorCopy (org, p->origin);
-	VectorCopy (prev, p->prev);
 	p->color = color;
-	p->alpha = alpha;
+	p->alpha = alpha * 255;
+	p->type = type;
 }
 
 /*
@@ -173,7 +173,8 @@ void V_TestParticles (void)
 			cl.v_right[j]*r + cl.v_up[j]*u;
 
 		p->color = 8;
-		p->alpha = cl_testparticles->value;
+		p->alpha = cl_testparticles->value * 255;
+		p->type = PT_DEFAULT;
 	}
 }
 
@@ -490,7 +491,7 @@ static void DrawSurfInfo (void)
 {
 	vec3_t	start, end;
 	trace_t	trace;
-	vec3_t	zero = {0, 0, 0};
+	vec3_t	v1 = {1, 1, 1}, v2 = {-1, -1, -1}, zero = {0, 0, 0};
 	csurface_t	*surf;
 	vec3_t	norm;
 	char	*s;
@@ -526,7 +527,7 @@ static void DrawSurfInfo (void)
 	VectorScale (end, 500, end);
 	VectorAdd (start, end, end);
 
-	trace = CM_BoxTrace (start, end, zero, zero, 0, MASK_ALL);
+	trace = CM_BoxTrace (start, end, v1, v2, 0, MASK_SHOT|MASK_WATER);
 	if (r_surfinfo->integer != 2)
 		CL_ClipMoveToEntities (start, zero, zero, end, &trace);
 
@@ -613,7 +614,7 @@ static void DrawFpsInfo (void)
 		if (tmpFps < minFps) minFps = tmpFps;
 	}
 	else
-		fileFromPak = false;
+		fileFromPak = 0;
 
 	lastFrameTime = time;
 
@@ -632,6 +633,55 @@ static void DrawFpsInfo (void)
 }
 
 
+#define MIN_WATER_DISTANCE	4.5
+
+static void FixWaterVis (void)
+{
+	vec3_t		p;			// point
+	int			cont;		// its contents
+	qboolean	w, w1;		// "in water" flag
+	trace_t		trace;
+	static vec3_t zero = {0, 0, 0};
+
+	w1 = (cl.refdef.rdflags & RDF_UNDERWATER) != 0;
+	p[0] = cl.refdef.vieworg[0];
+	p[1] = cl.refdef.vieworg[1];
+
+	// check point below
+	p[2] = cl.refdef.vieworg[2] - MIN_WATER_DISTANCE;
+	cont = CM_PointContents (p, 0);
+	w = (cont & MASK_WATER) != 0;
+
+	if (w1 == w || cont & MASK_SOLID)
+	{
+		// check point above
+		p[2] += 2 * MIN_WATER_DISTANCE;
+		cont = CM_PointContents (p, 0);
+		w = (cont & MASK_WATER) != 0;
+	}
+
+	// do not require to fix position
+	if (w1 == w || cont & MASK_SOLID)
+		return;
+
+	//?? improve by disabling this trick for correct maps
+
+	// trace from air to water
+	if (!w1)
+		trace = CM_BoxTrace (cl.refdef.vieworg, p, zero, zero, 0, MASK_WATER);
+	else
+		trace = CM_BoxTrace (p, cl.refdef.vieworg, zero, zero, 0, MASK_WATER);
+	if (trace.fraction < 1.0f && trace.surface && !(trace.surface->flags & (SURF_TRANS33|SURF_TRANS66)))
+	{
+//		re.DrawTextLeft("WATER FIX!", 1, 1, 1);
+		if (cl.refdef.vieworg[2] < trace.endpos[2])
+			cl.refdef.vieworg[2] = trace.endpos[2] - MIN_WATER_DISTANCE;
+		else
+			cl.refdef.vieworg[2] = trace.endpos[2] + MIN_WATER_DISTANCE;
+	}
+}
+
+
 /*
 ==================
 V_RenderView
@@ -640,15 +690,12 @@ V_RenderView
 */
 static int entitycmpfnc (const entity_t *a, const entity_t *b)
 {
-	if ( a->model == b->model )
-	{
-		return ( ( int ) a->skin - ( int ) b->skin );
-	}
+	if (a->model == b->model)
+		return ((int) a->skin - (int) b->skin);
 	else
-	{
-		return ( ( int ) a->model - ( int ) b->model );
-	}
+		return ((int) a->model - (int) b->model);
 }
+
 
 void V_RenderView( float stereo_separation )
 {
@@ -693,12 +740,12 @@ void V_RenderView( float stereo_separation )
 		}
 
 		// offset vieworg appropriately if we're doing stereo separation
-		if ( stereo_separation != 0 )
+		if (stereo_separation)
 		{
 			vec3_t tmp;
 
-			VectorScale( cl.v_right, stereo_separation, tmp );
-			VectorAdd( cl.refdef.vieworg, tmp, cl.refdef.vieworg );
+			VectorScale (cl.v_right, stereo_separation, tmp);
+			VectorAdd (cl.refdef.vieworg, tmp, cl.refdef.vieworg);
 		}
 
 		// never let it sit exactly on a node line, because a water plane can
@@ -748,8 +795,10 @@ void V_RenderView( float stereo_separation )
 			cl.refdef.fov_y -= v;
 		}
 
+		FixWaterVis ();
+
 		// sort entities for better cache locality
-		qsort( cl.refdef.entities, cl.refdef.num_entities, sizeof( cl.refdef.entities[0] ), (int (*)(const void *, const void *))entitycmpfnc );
+		qsort (cl.refdef.entities, cl.refdef.num_entities, sizeof( cl.refdef.entities[0] ), (int (*)(const void *, const void *))entitycmpfnc);
 	}
 
 	re.RenderFrame (&cl.refdef);
@@ -760,13 +809,13 @@ void V_RenderView( float stereo_separation )
 
 	if (cl_stats->integer)
 	{
-		re.DrawTextLeft (va("ent:%i  lt:%i  part:%i",
+		re.DrawTextLeft (va("ent:%d  lt:%d  part:%d",
 			r_numentities, r_numdlights, r_numparticles),
 			1, 1, 1);
 	}
 
 	if (log_stats->integer && (log_stats_file != 0))
-		fprintf (log_stats_file, "%i,%i,%i,", r_numentities, r_numdlights, r_numparticles);
+		fprintf (log_stats_file, "%d,%d,%d,", r_numentities, r_numdlights, r_numparticles);
 
 
 	SCR_AddDirtyPoint (scr_vrect.x, scr_vrect.y);
@@ -784,7 +833,7 @@ V_Viewpos_f
 */
 void V_Viewpos_f (void)
 {
-	Com_Printf ("(%i %i %i) : %i\n", (int)cl.refdef.vieworg[0],
+	Com_Printf ("(%d %d %d) : %d\n", (int)cl.refdef.vieworg[0],
 		(int)cl.refdef.vieworg[1], (int)cl.refdef.vieworg[2],
 		(int)cl.refdef.viewangles[YAW]);
 }

@@ -1,7 +1,6 @@
 # Microsoft Developer Studio Generated Dependency File, included by quake2s.mak
 
 .\win32\cd_win.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -250,7 +249,6 @@
 	
 
 .\win32\conproc.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\win32\conproc.h"\
 	
 
@@ -307,7 +305,6 @@
 	
 
 .\win32\in_win.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -386,7 +383,6 @@
 	
 
 .\win32\net_wins.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -477,7 +473,6 @@
 	
 
 .\win32\snd_win.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -569,7 +564,6 @@
 	
 
 .\win32\sys_win.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -589,7 +583,6 @@
 	
 
 .\win32\vid_dll.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\cdaudio.h"\
 	".\client\client.h"\
 	".\client\console.h"\
@@ -644,7 +637,6 @@
 	
 
 .\ref_gl\gl_backend.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -660,7 +652,6 @@
 	
 
 .\ref_gl\gl_image.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -674,7 +665,6 @@
 	
 
 .\ref_gl\gl_main.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -690,7 +680,6 @@
 	
 
 .\ref_gl\gl_model.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -705,7 +694,6 @@
 	
 
 .\ref_gl\gl_shader.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -719,7 +707,6 @@
 	
 
 .\ref_gl\gl_world.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -735,7 +722,6 @@
 	
 
 .\win32\glw_imp.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -750,7 +736,6 @@
 	
 
 .\win32\qgl_win.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -765,7 +750,6 @@
 	
 
 .\win32\q_shwin.c : \
-	"..\progra~1\msvs\vc98\include\basetsd.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -963,7 +947,6 @@
 	
 
 .\win32\rw_ddraw.c : \
-	"..\program files\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -976,7 +959,6 @@
 	
 
 .\win32\rw_dib.c : \
-	"..\program files\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\
@@ -989,7 +971,6 @@
 	
 
 .\win32\rw_imp.c : \
-	"..\program files\msvs\vc98\include\basetsd.h"\
 	".\client\ref.h"\
 	".\client\ref_decl.h"\
 	".\client\ref_defs.h"\

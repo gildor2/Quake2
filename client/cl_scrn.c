@@ -474,8 +474,8 @@ Scroll it up or down
 */
 void SCR_RunConsole (void)
 {
-// decide on the height of the console
-	if (re.console_only)
+	// decide on the height of the console
+	if (re.flags & REF_CONSOLE_ONLY)
 	{
 		cls.key_dest = key_console;
 		scr_conlines = 1.0;
@@ -512,7 +512,7 @@ void SCR_DrawConsole (void)
 {
 	Con_CheckResize ();
 
-	if (re.console_only || cls.state == ca_disconnected || cls.state == ca_connecting)
+	if (re.flags & REF_CONSOLE_ONLY || cls.state == ca_disconnected || cls.state == ca_connecting)
 	{	// forced full screen console
 		Con_DrawConsole (1.0);
 		return;
@@ -945,7 +945,8 @@ void SCR_TouchPics (void)
 {
 	int		i, j, ch_num;
 
-	if (re.console_only) return;
+	if (re.flags & REF_CONSOLE_ONLY)
+		return;
 
 	for (i=0 ; i<2 ; i++)
 		for (j=0 ; j<11 ; j++)

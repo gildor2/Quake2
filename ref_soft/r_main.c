@@ -110,8 +110,6 @@ float	se_time1, se_time2, de_time1, de_time2;
 
 void R_MarkLeaves (void);
 
-cvar_t  *sw_console_only;
-
 cvar_t	*r_lefthand;
 cvar_t	*sw_aliasstats;
 cvar_t	*sw_allow_modex;
@@ -1378,88 +1376,6 @@ void Draw_GetPalette (void)
 
 struct image_s *R_RegisterSkin (char *name);
 
-/*
-=====================
-Dummy functions for console-only mode
-=====================
-*/
-
-void	D_R_RenderFrame (refdef_t *fd)
-{
-}
-
-void	D_R_BeginRegistration (char *map)
-{
-}
-
-struct model_s	*D_R_RegisterModel (char *name)
-{
-	return NULL;
-}
-
-struct image_s	*D_R_RegisterSkin (char *name)
-{
-	return NULL;
-}
-
-struct image_s	*D_Draw_FindPic (char *name)
-{
-	return NULL;
-}
-
-void D_R_SetSky (char *name, float rotate, vec3_t axis)
-{
-}
-
-void	D_R_EndRegistration (void)
-{
-}
-
-void	D_Draw_GetPicSize (int *w, int *h, char *pic)
-{
-	if (w) *w = 0;
-	if (h) *h = 0;
-}
-
-void	D_Draw_PicColor (int x, int y, char *name, int color)
-{
-}
-
-void	D_Draw_StretchPic (int x, int y, int w, int h, char *pic)
-{
-}
-
-void	D_Draw_CharColor (int x, int y, int c, int color)
-{
-}
-
-void	D_Draw_TileClear (int x, int y, int w, int h, char *name)
-{
-}
-
-void	D_Draw_Fill (int x, int y, int w, int h, int c)
-{
-}
-
-void	D_Draw_FadeScreen (void)
-{
-}
-
-void	D_DrawTextPos (int x, int y, char *text, float r, float g, float b)
-{
-}
-
-void	D_DrawTextSide (char *text, float r, float g, float b)
-{
-}
-
-void	D_Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data)
-{
-}
-
-void	D_R_SetPalette (const unsigned char *palette)
-{
-}
 
 void	Draw_ConCharColor (int x, int y, int c, int color)
 {
@@ -1488,12 +1404,13 @@ refExport_t GetRefAPI (refImport_t rimp)
 	}
 #endif
 
-	sw_console_only = Cvar_Get ("sw_console_only", "0", 0);
-	con_only = sw_console_only->integer;
+	con_only = Cvar_Get ("sw_console_only", "0", 0)->integer;
 
 	re.struc_size = sizeof(re);
 	re.api_version = API_VERSION;
-	re.console_only = con_only;
+	re.flags = 0;
+	if (con_only)
+		re.flags |= REF_CONSOLE_ONLY;
 
 	re.Init = R_Init;
 	re.Shutdown = R_Shutdown;
@@ -1502,56 +1419,28 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.AppActivate = SWimp_AppActivate;
 	re.DrawConCharColor = Draw_ConCharColor;
 
-	if (!con_only)
-	{
-		re.RenderFrame = R_RenderFrame;
-		re.BeginRegistration = R_BeginRegistration;
-		re.RegisterModel = R_RegisterModel;
-		re.RegisterSkin = R_RegisterSkin;
-		re.RegisterPic = Draw_FindPic;
-		re.SetSky = R_SetSky;
-		re.EndRegistration = R_EndRegistration;
+	re.RenderFrame = R_RenderFrame;
+	re.BeginRegistration = R_BeginRegistration;
+	re.RegisterModel = R_RegisterModel;
+	re.RegisterSkin = R_RegisterSkin;
+	re.RegisterPic = Draw_FindPic;
+	re.SetSky = R_SetSky;
+	re.EndRegistration = R_EndRegistration;
 
-		re.DrawGetPicSize = Draw_GetPicSize;
-		re.DrawPicColor = Draw_PicColor;
-		re.DrawStretchPic = Draw_StretchPic;
-		re.DrawCharColor = Draw_CharColor;
-		re.DrawTileClear = Draw_TileClear;
-		re.DrawFill = Draw_Fill;
-		re.DrawFadeScreen= Draw_FadeScreen;
+	re.DrawGetPicSize = Draw_GetPicSize;
+	re.DrawPicColor = Draw_PicColor;
+	re.DrawStretchPic = Draw_StretchPic;
+	re.DrawCharColor = Draw_CharColor;
+	re.DrawTileClear = Draw_TileClear;
+	re.DrawFill = Draw_Fill;
+	re.DrawFadeScreen= Draw_FadeScreen;
 
-		re.DrawStretchRaw = Draw_StretchRaw;
-		re.CinematicSetPalette = R_CinematicSetPalette;
+	re.DrawStretchRaw = Draw_StretchRaw;
+	re.CinematicSetPalette = R_CinematicSetPalette;
 
-		re.DrawTextPos = DrawText_Pos;
-		re.DrawTextLeft = DrawText_Left;
-		re.DrawTextRight = DrawText_Right;
-	}
-	else
-	{
-		re.RenderFrame = D_R_RenderFrame;
-		re.BeginRegistration = D_R_BeginRegistration;
-		re.RegisterModel = D_R_RegisterModel;
-		re.RegisterSkin = D_R_RegisterSkin;
-		re.RegisterPic = D_Draw_FindPic;
-		re.SetSky = D_R_SetSky;
-		re.EndRegistration = D_R_EndRegistration;
-
-		re.DrawGetPicSize = D_Draw_GetPicSize;
-		re.DrawPicColor = D_Draw_PicColor;
-		re.DrawStretchPic = D_Draw_StretchPic;
-		re.DrawCharColor = D_Draw_CharColor;
-		re.DrawTileClear = D_Draw_TileClear;
-		re.DrawFill = D_Draw_Fill;
-		re.DrawFadeScreen= D_Draw_FadeScreen;
-
-		re.DrawStretchRaw = D_Draw_StretchRaw;
-		re.CinematicSetPalette = D_R_SetPalette;
-
-		re.DrawTextPos = D_DrawTextPos;
-		re.DrawTextLeft = D_DrawTextSide;
-		re.DrawTextRight = D_DrawTextSide;
-	}
+	re.DrawTextPos = DrawText_Pos;
+	re.DrawTextLeft = DrawText_Left;
+	re.DrawTextRight = DrawText_Right;
 
 	Swap_Init ();
 

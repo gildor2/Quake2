@@ -21,7 +21,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #pragma warning( disable : 4229 )  // mgraph gets this
 
+//#define WINVER 0x0500				// to allow some additional stuff in windows headers
 #include <windows.h>
+// stuff from Win98+ and Win2000+
+#define SPI_GETMOUSESPEED         112
+#define SPI_SETMOUSESPEED         113
 
 #include <dsound.h>
 
@@ -34,8 +38,8 @@ extern LPDIRECTSOUNDBUFFER pDSBuf;
 
 extern DWORD gSndBufSize;
 
-extern HWND			cl_hwnd;
-extern qboolean		ActiveApp, Minimized;
+extern HWND		cl_hwnd;
+extern qboolean	ActiveApp, Minimized;
 
 void IN_Activate (qboolean active);
 void IN_MouseEvent (int mstate);

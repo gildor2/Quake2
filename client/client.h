@@ -357,6 +357,7 @@ void CL_ParticleEffect2 (vec3_t org, vec3_t dir, int color, int count);
 void CL_ParticleEffect3 (vec3_t org, vec3_t dir, int color, int count);
 
 
+
 //=================================================
 
 // ========
@@ -370,11 +371,28 @@ typedef struct particle_s
 	vec3_t		org;
 	vec3_t		vel;
 	vec3_t		accel;
-	float		color;
-	float		colorvel;
+	byte		color;
 	float		alpha;
 	float		alphavel;
+	particleType_t type;
 } cparticle_t;
+
+typedef struct
+{
+	qboolean	allocated;
+	particleType_t type;
+	float		time;					// in sec
+	int			createTime;				// in ms
+	float		lifeTime, fadeTime;		// in sec
+	float		gravity, elasticy;
+	byte		minAlpha, maxAlpha;
+	vec3_t		vel, pos, oldpos;	//?? oldpos unneeded (?)
+	vec3_t		up, right;	//??
+	float		radius;
+} particleTrace_t;
+
+particleTrace_t *CL_AllocParticleTrace (vec3_t pos, vec3_t vel, float lifeTime, float fadeTime);
+void CL_MetalSparks (vec3_t pos, vec3_t dir, int count);
 
 
 #define	PARTICLE_GRAVITY	40
@@ -434,7 +452,6 @@ void SmokeAndFlash(vec3_t origin);
 
 void CL_SetLightstyle (int i);
 
-void CL_RunParticles (void);
 void CL_RunDLights (void);
 void CL_RunLightStyles (void);
 
@@ -534,7 +551,7 @@ extern	struct model_s	*gun_model;
 void V_Init (void);
 void V_RenderView( float stereo_separation );
 void V_AddEntity (entity_t *ent);
-void V_AddParticle (vec3_t org, vec3_t prev, int color, float alpha);
+void V_AddParticle (vec3_t org, byte color, float alpha, particleType_t type);
 void V_AddLight (vec3_t org, float intensity, float r, float g, float b);
 void V_AddLightStyle (int style, float r, float g, float b);
 

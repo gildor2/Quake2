@@ -166,7 +166,8 @@ Com_DPrintf
 
 A Com_Printf that only shows up if the "developer" cvar is set
 (prints on a screen with a different color)
-When developer is set to 2, logging the message
+When developer is set to 2, logging the message.
+When developer is set to 256, do not colorize message.
 ================
 */
 void Com_DPrintf (char *fmt, ...)
@@ -181,7 +182,10 @@ void Com_DPrintf (char *fmt, ...)
 	vsprintf (msg,fmt,argptr);
 	va_end (argptr);
 
-	Com_Printf ("^4%s", msg);
+	if (developer->integer == 256)
+		Com_Printf ("%s", msg);
+	else
+		Com_Printf ("^4%s", msg);
 	if (developer->integer == 2) DebugPrintf ("%s", msg);
 }
 
@@ -204,7 +208,7 @@ void DebugPrintf (char *fmt, ...)
 	{
 		time (&itime);
 		strftime (ctime, sizeof(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
-		fprintf (log, "\n\n----- Quake2 debug log on %s -----\n", ctime);
+		fprintf (log, "\n\n----- " APPNAME " debug log on %s -----\n", ctime);
 		debugLogged = true;
 	}
 	fprintf (log, "%s", msg);
@@ -1402,15 +1406,12 @@ CVAR_END
 
 	FS_InitFilesystem ();
 
-	Cbuf_AddText ("exec default.cfg\n");
 	FS_LoadGameConfig ();
 
 	Cbuf_AddEarlyCommands (true);
 	Cbuf_Execute ();
 
-	//
 	// init commands and vars
-	//
 	Cmd_AddCommand ("error", Com_Error_f);
 
 	CVAR_GET_VARS(vars);
@@ -1443,7 +1444,7 @@ CVAR_END
 		SCR_EndLoadingPlaque ();
 	}
 
-	Com_Printf ("====== Quake2 Initialized ======\n\n");
+	Com_Printf ("====== " APPNAME " Initialized ======\n\n");
 }
 
 /*

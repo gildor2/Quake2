@@ -817,10 +817,13 @@ void CL_ParseTEnt (void)
 	case TE_BULLET_SPARKS:
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
-		if (type == TE_GUNSHOT)
-			CL_ParticleEffect (pos, dir, 0, 40);
-		else
-			CL_ParticleEffect (pos, dir, 0xE0, 6);
+
+//		CL_AllocParticleTrace (pos, dir, 2, 0.2);
+		CL_MetalSparks (pos, dir, 3); //!! random count
+//!!		if (type == TE_GUNSHOT)
+//			CL_ParticleEffect (pos, dir, 0, 40);
+//		else
+//			CL_ParticleEffect (pos, dir, 0xE0, 6);
 
 		if (type != TE_SPARKS)
 		{
@@ -845,22 +848,7 @@ void CL_ParseTEnt (void)
 					CL_SmokeAndFlash (pos);
 					S_StartSound (pos, 0, 0, cl_sfx_bullethits[impactType*3 + rand()%3], 1, ATTN_NORM, 0);
 					break;
-
-/*					if (surf->material == MATERIAL_WOOD)
-					{
-						CL_SmokeAndFlash (pos);
-						S_StartSound (pos, 0, 0, cl_sfx_bulletwood[rand()%3], 1, ATTN_NORM, 0);
-						break;
-					}
-					else if (surf->material == MATERIAL_METAL || surf->material == MATERIAL_METAL_L)
-					{
-						CL_SmokeAndFlash (pos);
-						S_StartSound (pos, 0, 0, cl_sfx_bullettin[rand()%3], 1, ATTN_NORM, 0);
-						break;
-					}
-					else if (surf->material == MATERIAL_SNOW)
-						break; // no bullet sounds and smoke/flash
-*/				}
+				}
 			}
 
 			CL_SmokeAndFlash(pos);
@@ -1854,7 +1842,7 @@ void CL_ProcessSustain ()
 	cl_sustain_t	*s;
 	int				i;
 
-	for (i=0, s=cl_sustains; i< MAX_SUSTAINS; i++, s++)
+	for (i = 0, s = cl_sustains; i < MAX_SUSTAINS; i++, s++)
 	{
 		if (s->id)
 			if ((s->endtime >= cl.time) && (cl.time >= s->nextthink))

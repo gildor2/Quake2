@@ -6,33 +6,15 @@
 --------------------Configuration: quake2s - Win32 Release--------------------
 </h3>
 <h3>Command Lines</h3>
-Creating temporary file "F:\DOCUME~1\Root\LOCALS~1\Temp\RSP24.tmp" with contents
+Creating temporary file "F:\DOCUME~1\Root\LOCALS~1\Temp\RSP57.tmp" with contents
 [
 /nologo /G5 /MD /W3 /GX /Zd /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "REF_HARD_LINKED" /Fp".\release/quake2s.pch" /YX /Fo".\release/" /Fd".\release/" /FD /c 
-"C:\7\ref_soft\r_aclip.c"
-"C:\7\ref_soft\r_alias.c"
-"C:\7\ref_soft\r_bsp.c"
-"C:\7\ref_soft\r_draw.c"
-"C:\7\ref_soft\r_edge.c"
-"C:\7\ref_soft\r_image.c"
-"C:\7\ref_soft\r_light.c"
-"C:\7\ref_soft\r_main.c"
-"C:\7\ref_soft\r_misc.c"
-"C:\7\ref_soft\r_model.c"
-"C:\7\ref_soft\r_part.c"
-"C:\7\ref_soft\r_poly.c"
-"C:\7\ref_soft\r_rast.c"
-"C:\7\ref_soft\r_scan.c"
-"C:\7\ref_soft\r_sprite.c"
-"C:\7\ref_soft\r_surf.c"
-"C:\7\win32\rw_ddraw.c"
-"C:\7\win32\rw_dib.c"
-"C:\7\win32\rw_imp.c"
+"C:\7\game\m_flash.c"
 ]
-Creating command line "cl.exe @F:\DOCUME~1\Root\LOCALS~1\Temp\RSP24.tmp" 
-Creating temporary file "F:\DOCUME~1\Root\LOCALS~1\Temp\RSP25.tmp" with contents
+Creating command line "cl.exe @F:\DOCUME~1\Root\LOCALS~1\Temp\RSP57.tmp" 
+Creating temporary file "F:\DOCUME~1\Root\LOCALS~1\Temp\RSP58.tmp" with contents
 [
-winmm.lib wsock32.lib kernel32.lib user32.lib gdi32.lib /nologo /subsystem:windows /pdb:none /map:".\release/quake2.map" /machine:I386 /out:".\release/quake2.exe" /heap:16740352,524288 /filealign:512 
+winmm.lib wsock32.lib kernel32.lib user32.lib gdi32.lib dinput.lib /nologo /subsystem:windows /pdb:none /map:".\release/quake2.map" /machine:I386 /out:".\release/quake2.exe" /heap:16740352,524288 /filealign:512 
 .\release\cd_win.obj
 .\release\cl_cin.obj
 .\release\cl_ents.obj
@@ -182,28 +164,10 @@ winmm.lib wsock32.lib kernel32.lib user32.lib gdi32.lib /nologo /subsystem:windo
 .\release\q2.res
 .\release\resources.obj
 ]
-Creating command line "link.exe @F:\DOCUME~1\Root\LOCALS~1\Temp\RSP25.tmp"
+Creating command line "link.exe @F:\DOCUME~1\Root\LOCALS~1\Temp\RSP58.tmp"
 <h3>Output Window</h3>
 Compiling...
-r_aclip.c
-r_alias.c
-r_bsp.c
-r_draw.c
-r_edge.c
-r_image.c
-r_light.c
-r_main.c
-r_misc.c
-r_model.c
-r_part.c
-r_poly.c
-r_rast.c
-r_scan.c
-r_sprite.c
-r_surf.c
-rw_ddraw.c
-rw_dib.c
-rw_imp.c
+m_flash.c
 Linking...
 
 

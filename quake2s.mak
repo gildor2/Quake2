@@ -233,7 +233,7 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\quake2s.bsc"
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=winmm.lib wsock32.lib kernel32.lib user32.lib gdi32.lib /nologo /subsystem:windows /pdb:none /map:"$(INTDIR)\quake2.map" /machine:I386 /out:"$(OUTDIR)\quake2.exe" /heap:16740352,524288 /filealign:512 
+LINK32_FLAGS=winmm.lib wsock32.lib kernel32.lib user32.lib gdi32.lib dinput.lib /nologo /subsystem:windows /pdb:none /map:"$(INTDIR)\quake2.map" /machine:I386 /out:"$(OUTDIR)\quake2.exe" /heap:16740352,524288 /filealign:512 
 LINK32_OBJS= \
 	"$(INTDIR)\cd_win.obj" \
 	"$(INTDIR)\cl_cin.obj" \

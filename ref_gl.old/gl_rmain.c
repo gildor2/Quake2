@@ -80,8 +80,6 @@ refdef_t	r_newrefdef;
 
 int		r_viewcluster, r_viewcluster2, r_oldviewcluster, r_oldviewcluster2;
 
-cvar_t  *gl_console_only;
-
 cvar_t	*r_norefresh;
 cvar_t	*r_drawentities;
 cvar_t	*r_drawworld;
@@ -439,23 +437,20 @@ void GL_DrawParticles( int num_particles, const particle_t particles[], const un
 		else
 			scale = 1 + scale * 0.004;
 
-		*(int *)color = colortable[p->color];
-		color[3] = p->alpha*255;
-
-		qglColor4ubv( color );
+		qglColor4ubv (color);
 
 		qglTexCoord2f (0.0625, 0.0625);
 		qglVertex3fv (p->origin);
 
 		qglTexCoord2f (1.0625, 0.0625);
-		qglVertex3f (p->origin[0] + up[0]*scale,
-			         p->origin[1] + up[1]*scale,
-					 p->origin[2] + up[2]*scale);
+		qglVertex3f (p->origin[0] + up[0] * scale,
+			         p->origin[1] + up[1] * scale,
+					 p->origin[2] + up[2] * scale);
 
 		qglTexCoord2f (0.0625, 1.0625);
-		qglVertex3f (p->origin[0] + right[0]*scale,
-			         p->origin[1] + right[1]*scale,
-					 p->origin[2] + right[2]*scale);
+		qglVertex3f (p->origin[0] + right[0] * scale,
+			         p->origin[1] + right[1] * scale,
+					 p->origin[2] + right[2] * scale);
 	}
 
 	qglEnd ();
@@ -1676,89 +1671,6 @@ void	Draw_Fill (int x, int y, int w, int h, int c);
 void	Draw_FadeScreen (void);
 
 /*
-=====================
-Dummy functions for console-only mode
-=====================
-*/
-
-void	GLD_R_RenderFrame (refdef_t *fd)
-{
-}
-
-void	GLD_R_BeginRegistration (char *map)
-{
-}
-
-struct model_s	*GLD_R_RegisterModel (char *name)
-{
-	return NULL;
-}
-
-struct image_s	*GLD_R_RegisterSkin (char *name)
-{
-	return NULL;
-}
-
-struct image_s	*GLD_Draw_FindPic (char *name)
-{
-	return NULL;
-}
-
-void GLD_R_SetSky (char *name, float rotate, vec3_t axis)
-{
-}
-
-void	GLD_R_EndRegistration (void)
-{
-}
-
-void	GLD_Draw_GetPicSize (int *w, int *h, char *pic)
-{
-	if (w) *w = 0;
-	if (h) *h = 0;
-}
-
-void	GLD_Draw_PicColor (int x, int y, char *name, int color)
-{
-}
-
-void	GLD_Draw_StretchPic (int x, int y, int w, int h, char *pic)
-{
-}
-
-void	GLD_Draw_CharColor (int x, int y, int c, int color)
-{
-}
-
-void	GLD_Draw_TileClear (int x, int y, int w, int h, char *name)
-{
-}
-
-void	GLD_Draw_Fill (int x, int y, int w, int h, int c)
-{
-}
-
-void	GLD_Draw_FadeScreen (void)
-{
-}
-
-void	GLD_DrawTextPos (int x, int y, char *text, float r, float g, float b)
-{
-}
-
-void	GLD_DrawTextSide (char *text, float r, float g, float b)
-{
-}
-
-void	GLD_Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data)
-{
-}
-
-void	GLD_R_SetPalette (const unsigned char *palette)
-{
-}
-
-/*
 Draw_ConCharColor
 */
 void	Draw_ConCharColor (int x, int y, int c, int color)
@@ -1788,12 +1700,13 @@ refExport_t GetRefAPI (refImport_t rimp )
 	}
 #endif
 
-	gl_console_only = Cvar_Get ("gl_console_only", "0", 0);
-	con_only = gl_console_only->integer;
+	con_only = Cvar_Get ("gl_console_only", "0", 0)->integer;
 
 	re.struc_size = sizeof(re);
 	re.api_version = API_VERSION;
-	re.console_only = con_only;
+	re.flags = 0;
+	if (con_only)
+		re.flags |= REF_CONSOLE_ONLY;
 
 	re.Init = R_Init;
 	re.Shutdown = R_Shutdown;
@@ -1802,56 +1715,28 @@ refExport_t GetRefAPI (refImport_t rimp )
 	re.AppActivate = GLimp_AppActivate;
 	re.DrawConCharColor = Draw_ConCharColor;
 
-	if (!con_only)
-	{
-		re.RenderFrame = R_RenderFrame;
-		re.BeginRegistration = R_BeginRegistration;
-		re.RegisterModel = R_RegisterModel;
-		re.RegisterSkin = R_RegisterSkin;
-		re.RegisterPic = Draw_FindPic;
-		re.SetSky = R_SetSky;
-		re.EndRegistration = R_EndRegistration;
+	re.RenderFrame = R_RenderFrame;
+	re.BeginRegistration = R_BeginRegistration;
+	re.RegisterModel = R_RegisterModel;
+	re.RegisterSkin = R_RegisterSkin;
+	re.RegisterPic = Draw_FindPic;
+	re.SetSky = R_SetSky;
+	re.EndRegistration = R_EndRegistration;
 
-		re.DrawGetPicSize = Draw_GetPicSize;
-		re.DrawPicColor = Draw_PicColor;
-		re.DrawStretchPic = Draw_StretchPic;
-		re.DrawCharColor = Draw_CharColor;
-		re.DrawTileClear = Draw_TileClear;
-		re.DrawFill = Draw_Fill;
-		re.DrawFadeScreen= Draw_FadeScreen;
+	re.DrawGetPicSize = Draw_GetPicSize;
+	re.DrawPicColor = Draw_PicColor;
+	re.DrawStretchPic = Draw_StretchPic;
+	re.DrawCharColor = Draw_CharColor;
+	re.DrawTileClear = Draw_TileClear;
+	re.DrawFill = Draw_Fill;
+	re.DrawFadeScreen= Draw_FadeScreen;
 
-		re.DrawStretchRaw = Draw_StretchRaw;
-		re.CinematicSetPalette = R_SetPalette;
+	re.DrawStretchRaw = Draw_StretchRaw;
+	re.CinematicSetPalette = R_SetPalette;
 
-		re.DrawTextPos = DrawTextPos;
-		re.DrawTextLeft = DrawTextLeft;
-		re.DrawTextRight = DrawTextRight;
-	}
-	else
-	{
-		re.RenderFrame = GLD_R_RenderFrame;
-		re.BeginRegistration = GLD_R_BeginRegistration;
-		re.RegisterModel = GLD_R_RegisterModel;
-		re.RegisterSkin = GLD_R_RegisterSkin;
-		re.RegisterPic = GLD_Draw_FindPic;
-		re.SetSky = GLD_R_SetSky;
-		re.EndRegistration = GLD_R_EndRegistration;
-
-		re.DrawGetPicSize = GLD_Draw_GetPicSize;
-		re.DrawPicColor = GLD_Draw_PicColor;
-		re.DrawStretchPic = GLD_Draw_StretchPic;
-		re.DrawCharColor = GLD_Draw_CharColor;
-		re.DrawTileClear = GLD_Draw_TileClear;
-		re.DrawFill = GLD_Draw_Fill;
-		re.DrawFadeScreen= GLD_Draw_FadeScreen;
-
-		re.DrawStretchRaw = GLD_Draw_StretchRaw;
-		re.CinematicSetPalette = GLD_R_SetPalette;
-
-		re.DrawTextPos = GLD_DrawTextPos;
-		re.DrawTextLeft = GLD_DrawTextSide;
-		re.DrawTextRight = GLD_DrawTextSide;
-	}
+	re.DrawTextPos = DrawTextPos;
+	re.DrawTextLeft = DrawTextLeft;
+	re.DrawTextRight = DrawTextRight;
 
 	Swap_Init ();
 
