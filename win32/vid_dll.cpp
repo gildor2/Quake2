@@ -229,6 +229,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 	LONG	lRet = 0;
 
+//	DebugPrintf("msg=%X\n",uMsg);//!!
 	if (uMsg == MSH_MOUSEWHEEL)
 	{
 		if ((int)wParam > 0)
@@ -407,9 +408,16 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		}
 		return 0;
 
+#if 0
+	case WM_POWERBROADCAST:
+		if (wParam == PBT_APMSUSPEND)	// insufficient result
+			re.AppActivate (false);
+		break;
+#endif
+
 	case WM_CLOSE:
 		Com_Quit ();
-		break;						// should not return here
+		break;							// should not return here
 
 	case MM_MCINOTIFY:
 		{

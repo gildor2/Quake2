@@ -93,7 +93,7 @@ void Netchan_Init (void)
 	int		port;
 
 	// pick a port value that should be nice and random
-	port = Sys_Milliseconds () & 0xFFFF;
+	port = appMilliseconds () & 0xFFFF;
 
 	showpackets = Cvar_Get ("showpackets", "0", 0);
 	showdrop = Cvar_Get ("showdrop", "0", 0);
@@ -156,7 +156,7 @@ void Netchan_Setup (netsrc_t sock, netchan_t *chan, netadr_t adr, int qport)
 	chan->sock = sock;
 	chan->remote_address = adr;
 	chan->qport = qport;
-	chan->last_received = curtime;
+	chan->last_received = appMilliseconds ();
 	chan->incoming_sequence = 0;
 	chan->outgoing_sequence = 1;
 
@@ -243,7 +243,7 @@ void Netchan_Transmit (netchan_t *chan, int length, void *data)
 	w2 = ( chan->incoming_sequence & 0x7FFFFFFF ) | (chan->incoming_reliable_sequence<<31);
 
 	chan->outgoing_sequence++;
-	chan->last_sent = curtime;
+	chan->last_sent = appMilliseconds ();
 
 	MSG_WriteLong (&send, w1);
 	MSG_WriteLong (&send, w2);
@@ -379,7 +379,7 @@ bool Netchan_Process (netchan_t *chan, sizebuf_t *msg)
 //
 // the message can now be read from the current message pointer
 //
-	chan->last_received = curtime;
+	chan->last_received = appMilliseconds ();
 
 	return true;
 }

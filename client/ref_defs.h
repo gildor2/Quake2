@@ -42,10 +42,6 @@ inline float Cvar_ClampName (const char *name, float low, float high)
 {
 	return ri._Cvar_ClampName (name, low, high);
 }
-inline int Sys_Milliseconds (void)
-{
-	return ri._Sys_Milliseconds ();
-}
 #define Com_Printf	ri._Com_Printf
 #define Com_DPrintf	ri._Com_DPrintf
 #define Com_WPrintf	ri._Com_WPrintf
@@ -165,7 +161,6 @@ float	Cvar_VariableValue (const char *name);
 int	Cvar_VariableInt (const char *name);
 float	Cvar_Clamp (cvar_t *cvar, float low, float high);
 float	Cvar_ClampName (const char *name, float low, float high);
-int	Sys_Milliseconds (void);
 void	Com_Printf (const char *str, ...);
 void	Com_DPrintf (const char *str, ...);
 void	Com_WPrintf (const char *str, ...);

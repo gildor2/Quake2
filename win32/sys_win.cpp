@@ -47,10 +47,10 @@ SYSTEM IO
 
 void Sys_Quit (void)
 {
-	timeEndPeriod (1);
 #ifndef DEDICATED_ONLY
 	if (DEDICATED) FreeConsole ();
 #endif
+	appExit ();
 	exit (0);
 }
 
@@ -109,178 +109,6 @@ void Sys_CopyProtect (void)
 }
 
 
-//================================================================
-
-/*
-================
-CPUID
-================
-*/
-
-static bool IsMMX, IsSSE, IsRDTSC, Is3DNow;
-
-static bool cpuid (unsigned _in, unsigned regs[4])
-{
-	bool	isOK;
-
-	isOK = true;
-	__asm pushad;		// save all regs
-	__try
-	{
-		__asm {
-			mov		eax,_in
-			cpuid
-			mov		esi,regs
-			mov		[esi],eax
-			mov		[esi+4],ebx
-			mov		[esi+8],ecx
-			mov		[esi+12],edx
-		}
-	}
-	__except(EXCEPTION_EXECUTE_HANDLER)
-	{
-		isOK = false;
-	}
-	__asm popad;
-	return isOK;
-}
-
-
-static void CheckCpuName (void)
-{
-#define MAX_CPU_NAME_PARTS	12	// 3 times of 4 regs
-	union {
-		unsigned reg[MAX_CPU_NAME_PARTS];
-		char	name[MAX_CPU_NAME_PARTS*4+1];
-	} t;
-	unsigned r[4];
-
-	if (!cpuid (0x80000000, r))
-	{
-		// no CPUID available
-		Com_Printf ("Unknown 386/486 CPU\n");
-		return;
-	}
-	if (r[0] >= 0x80000004)		// extended vendor string available
-	{
-		unsigned fn;
-		int		i = 0;
-		char	*s;
-		for (fn = 0x80000002; fn <= 0x80000004; fn++)
-		{
-			cpuid (fn, r);
-			t.reg[i++] = r[0];
-			t.reg[i++] = r[1];
-			t.reg[i++] = r[2];
-			t.reg[i++] = r[3];
-		}
-		t.name[i*4] = 0;
-		s = t.name;
-		while (*s == ' ') s++;
-		Com_Printf ("CPU name: %s\n", s);
-	}
-	else
-	{
-		cpuid (0, r);
-		t.reg[0] = r[1];
-		t.reg[1] = r[3];
-		t.reg[2] = r[2];
-		t.name[12] = 0;		// ASCIIZ
-		Com_Printf ("CPU name: %s\n", t.name);
-	}
-}
-
-
-static void CheckCpuCaps (void)
-{
-	unsigned r[4];
-
-	if (!cpuid (1, r)) return;
-
-	Com_Printf ("CPU caps: [ ");
-
-	if (r[3] & 0x00000001)	Com_Printf ("FPU ");
-	if (r[3] & 0x00800000)
-	{
-		Com_Printf ("MMX ");
-		IsMMX = true;
-	}
-	if (r[3] & 0x02000000)
-	{
-		Com_Printf ("SSE ");
-		IsSSE = true;
-	}
-	if (r[3] & 0x04000000)	Com_Printf ("SSE2 ");
-	if (r[3] & 0x00000010)
-	{
-		Com_Printf ("RDTSC ");
-		IsRDTSC = true;
-	}
-
-	// check extended features
-	cpuid (0x80000000, r);
-	if (r[0] >= 0x80000001)		// largest recognized extended function
-	{
-		cpuid (0x80000001, r);
-		if (r[3] & 0x80000000)
-		{
-			Com_Printf ("3DNow! ");
-			Is3DNow = true;
-		}
-	}
-
-	Com_Printf ("]\n");
-}
-
-
-#pragma warning (push)
-#pragma warning (disable : 4035)
-#pragma warning (disable : 4715)
-inline __int64 cycles ()
-{
-	__asm
-	{
-		rdtsc
-	}
-}
-#pragma warning (pop)
-
-
-static void CheckCpuSpeed (void)
-{
-	int		tries;
-	unsigned time1, time2;
-	__int64	stamp1, stamp2;
-	double secPerCycle, secPerCycle1;
-
-	if (!IsRDTSC) return;
-
-	timeBeginPeriod (1);
-
-	secPerCycle = 1.0;							// initial value
-	for (tries = 0; tries < 4; tries++)
-	{
-		stamp1 = cycles ();
-		time1 = timeGetTime ();
-		while (true)
-		{
-			time2 = timeGetTime ();
-			if (time2 - time1 > 200) break;		// 200ms enough to compute CPU speed
-		}
-		stamp2 = cycles ();
-		secPerCycle1 = (time2 - time1) / (((double)stamp2 - (double)stamp1) * 1000);
-		if (secPerCycle1 < secPerCycle) secPerCycle = secPerCycle1;
-
-//		Com_Printf ("try #%d\n", tries);
-//		Com_Printf ("stampd: %u %u   timed: %d\n", stamp2 - stamp1, time2 - time1);
-//		Com_Printf ("CPU speed: %g MHz\n", 1e-6 / secPerCycle1);
-	}
-	Com_Printf ("CPU speed: %g MHz\n", 1e-6 / secPerCycle);
-
-	timeEndPeriod (1);
-}
-
-
 /*
 ================
 Sys_Init
@@ -298,13 +126,6 @@ void Sys_Init (void)
 		hinput = GetStdHandle (STD_INPUT_HANDLE);
 		houtput = GetStdHandle (STD_OUTPUT_HANDLE);
 	}
-
-	CheckCpuName ();
-	CheckCpuCaps ();
-	CheckCpuSpeed ();
-
-	//??
-	timeBeginPeriod (1);
 
 	unguard;
 }
@@ -481,7 +302,7 @@ void Sys_SendKeyEvents (void)
 	{
 		if (msg.message == WM_QUIT)
 			Com_Quit ();
-		sys_msg_time = msg.time;
+		sys_msg_time = appMilliseconds ();	//?? msg.time;
 
 		guard(TranslateMessage);
 		TranslateMessage (&msg);
@@ -493,7 +314,7 @@ void Sys_SendKeyEvents (void)
 	}
 
 	// grab frame time
-	sys_frame_time = timeGetTime();	// FIXME: should this be at start?
+	sys_frame_time = appMilliseconds ();	// FIXME: should this be at start?
 	unguard;
 #endif
 }
@@ -602,23 +423,18 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 int main (int argc, const char **argv)
 #endif
 {
-	int		time, oldtime, newtime;
-	char	*cmdline;
-#ifdef CD_PATH
-	char	cmdline2[1024];
-#endif
-
 	GUARD_BEGIN
 	{
 #ifndef DEDICATED_ONLY
 		global_hInstance = hInstance;
-		cmdline = lpCmdLine;
+		const char *cmdline = lpCmdLine;
 #else
 		global_hInstance = GetModuleHandle (NULL);
-		cmdline = GetCommandLine ();
+		const char *cmdline = GetCommandLine ();
 #endif
 
 #ifdef CD_PATH
+		char cmdline2[1024];
 		// if we find the CD, add a "-cddir=xxx" command line
 		if (char *cddir = Sys_ScanForCD ())
 		{
@@ -630,23 +446,22 @@ int main (int argc, const char **argv)
 
 		appInit ();		//!!!!
 		QCommon_Init (cmdline);
-		oldtime = Sys_Milliseconds ();
+
+		double oldtime = appMillisecondsf ();
 
 		/*--------- main window message loop ------------*/
 		guard(MainLoop);
 		while (true)
 		{
 #ifndef DEDICATED_ONLY
-			MSG		msg;
-
 			if (!ActiveApp || DEDICATED)
 				Sleep (10);		//?? what about client and server in one place: will server become slower ?
 
+			MSG		msg;
 			while (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
 			{
-				if (msg.message == WM_QUIT)
-					Com_Quit ();
-				sys_msg_time = msg.time;
+				if (msg.message == WM_QUIT) Com_Quit ();
+				sys_msg_time = appMilliseconds ();	//?? msg.time;
 
 				guard(TranslateMessage);
 				TranslateMessage (&msg);
@@ -661,16 +476,17 @@ int main (int argc, const char **argv)
 #endif
 
 			// do not allow Qcommon_Frame(0)
+			double timeDelta, newtime;
 			while (true)
 			{
-				newtime = Sys_Milliseconds ();
-				time = newtime - oldtime;
-				if (time >= 1) break;
-				Sleep (1);
+				newtime = appMillisecondsf ();	//?? can use appCycles() for measuring time delta, but (currently) this is Pentium-only
+				timeDelta = newtime - oldtime;
+				if (timeDelta > 1) break;		//?? client (or server?) time bugs with ">0" condition & cl_maxfps!=0 -- net/prediction errors
+				Sleep (0);
 			}
 			GUARD_BEGIN
 			{
-				QCommon_Frame (time);
+				QCommon_Frame (timeDelta);
 			}
 			GUARD_CATCH
 			{

@@ -398,39 +398,24 @@ static cvar_t *PF_Cvar_Get (char *name, char *value, int flags)
 
 #ifdef SV_PROFILE
 
-int prof_times[256];
-int prof_counts[256];
+unsigned prof_times[256];
+unsigned prof_counts[256];
 
-
-#pragma warning (push)
-#pragma warning (disable : 4035)
-#pragma warning (disable : 4715)
-inline unsigned cycles (void)	  // taken from UT
-{
-	__asm
-	{
-		xor   eax,eax	          // Required so that VC++ realizes EAX is modified.
-		_emit 0x0F		          // RDTSC  -  Pentium+ time stamp register to EDX:EAX.
-		_emit 0x31		          // Use only 32 bits in EAX - even a Ghz cpu would have a 4+ sec period.
-		xor   edx,edx	          // Required so that VC++ realizes EDX is modified.
-	}
-}
-#pragma warning (pop)
 
 #define PROF						\
-	int	st_t = cycles();
+	unsigned st_t = appCycles();
 
 #define PROF2(type)					\
 	type res;						\
-	int st_t = cycles();			\
+	unsigned st_t = appCycles();	\
 	res =
 
 #define EPROF(n) 					\
-	prof_times[n] += cycles()-st_t;	\
+	prof_times[n] += appCycles()-st_t; \
 	prof_counts[n]++;
 
 #define EPROF2(n) 					\
-	prof_times[n] += cycles()-st_t;	\
+	prof_times[n] += appCycles()-st_t; \
 	prof_counts[n]++;				\
 	return res;
 

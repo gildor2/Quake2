@@ -21,12 +21,11 @@
 //?? DumpMem(): CONTEXT-staff -> inline function
 
 //?? should change FILE to local file system (not required) (may be, avoid local FS usage when crashed ...)
-static void DumpReg4 (FILE *f, char *name, unsigned value)
+static void DumpReg4 (FILE *f, const char *name, unsigned value)
 {
-	char	*data;
 	int		i;
 
-	data = (char*) value;
+	const char *data = (char*) value;
 	fprintf (f, "  %s: %08X  ", name, value);
 	if (IsBadReadPtr (data, 16))
 		fprintf (f, " <N/A>");
@@ -50,7 +49,7 @@ static void DumpReg4 (FILE *f, char *name, unsigned value)
 }
 
 
-static void DumpReg2 (FILE *f, char *name, DWORD value)
+static void DumpReg2 (FILE *f, const char *name, DWORD value)
 {
 	fprintf (f, "  %s: %04X", name, value);
 }
@@ -58,7 +57,7 @@ static void DumpReg2 (FILE *f, char *name, DWORD value)
 
 #ifdef LOG_STRINGS
 
-static bool IsString (char *str)
+static bool IsString (const char *str)
 {
 	for (int i = 0; i < MAX_STRING_WIDTH; i++, str++)
 	{
@@ -72,7 +71,7 @@ static bool IsString (char *str)
 }
 
 
-static bool DumpString (FILE *f, char *str)
+static bool DumpString (FILE *f, const char *str)
 {
 	fprintf (f, " = \"");
 	for (int i = 0; i < MAX_STRING_WIDTH && *str; i++, str++)
@@ -89,24 +88,24 @@ static bool DumpString (FILE *f, char *str)
 #endif
 
 
-static void DumpMem (FILE *f, unsigned *data, CONTEXT *ctx)
-{
-	static const struct {
-		unsigned ofs;
-		const char *name;
-	} regData[] = {
+static const struct {
+	unsigned ofs;
+	const char *name;
+} regData[] = {
 #define F(r,n)	{ FIELD2OFS(CONTEXT,r), n }
-		F(Eip, "EIP"), F(Esp, "ESP"), F(Ebp, "EBP"),
-		F(Eax, "EAX"), F(Ebx, "EBX"), F(Ecx, "ECX"), F(Edx, "EDX"),
-		F(Esi, "ESI"), F(Edi, "EDI")
+	F(Eax, "EAX"), F(Ebx, "EBX"), F(Ecx, "ECX"), F(Edx, "EDX"),
+	F(Esi, "ESI"), F(Edi, "EDI"),
+	F(Esp, "ESP"), F(Ebp, "EBP"), F(Eip, "EIP")
 #undef F
-	};
-#define STAT_SPACES		"     "
-	int		i, j, n;
+};
 
+
+static void DumpMem (FILE *f, const unsigned *data, CONTEXT *ctx)
+{
+#define STAT_SPACES		"     "
 	//!! should try to use address as a symbol
-	n = 0;
-	for (i = 0; i < STACK_UNWIND_DEPTH; i++, data++)
+	int n = 0;
+	for (int i = 0; i < STACK_UNWIND_DEPTH; i++, data++)
 	{
 		char	symbol[256], *spaces;
 
@@ -117,7 +116,7 @@ static void DumpMem (FILE *f, unsigned *data, CONTEXT *ctx)
 		}
 
 		spaces = STAT_SPACES;
-		for (j = 0; j < ARRAY_COUNT(regData); j++)
+		for (int j = 0; j < ARRAY_COUNT(regData); j++)
 			if (OFS2FIELD(ctx, regData[j].ofs, unsigned*) == data)
 			{
 				if (n)
@@ -226,9 +225,8 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			fprintf (f, "----- "APPNAME" crash at %s -----\n", ctime);		//!! should use main_package name instead of APPNAME
 			fprintf (f, "%s\n\n", GErr.message);
 
-			DumpReg4 (f, "EAX", ctx->Eax); DumpReg4 (f, "EBX", ctx->Ebx); DumpReg4 (f, "ECX", ctx->Ecx); DumpReg4 (f, "EDX", ctx->Edx);
-			DumpReg4 (f, "ESI", ctx->Esi); DumpReg4 (f, "EDI", ctx->Edi); DumpReg4 (f, "EBP", ctx->Ebp); DumpReg4 (f, "ESP", ctx->Esp);
-			DumpReg4 (f, "EIP", ctx->Eip);
+			for (int j = 0; j < ARRAY_COUNT(regData); j++)
+				DumpReg4 (f, regData[j].name, OFS2FIELD(ctx, regData[j].ofs, unsigned));
 			DumpReg2 (f, "CS", ctx->SegCs); DumpReg2 (f, "SS", ctx->SegSs);
 			DumpReg2 (f, "DS", ctx->SegDs); DumpReg2 (f, "ES", ctx->SegEs);
 			DumpReg2 (f, "FS", ctx->SegFs); DumpReg2 (f, "GS", ctx->SegGs);
@@ -236,7 +234,6 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 
 			fprintf (f, "\nStack frame:\n");
 			DumpMem (f, (unsigned*) ctx->Esp, ctx);
-			//!! should log call history too !! (here?)
 			fprintf (f, "\n");
 			fclose (f);
 		}

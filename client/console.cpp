@@ -383,7 +383,7 @@ static void DrawInput (void)
 		}
 		if (eoln) c = ' ';
 		// draw blinking cursor
-		if ((i == editPos  - shift) && (curtime >> 8) & 1 && cls.key_dest != key_menu)
+		if ((i == editPos  - shift) && (cls.realtime >> 8) & 1 && cls.key_dest != key_menu)
 		{
 #define CURSOR_HEIGHT	(CHAR_HEIGHT/4)
 			if (!(*re.flags & REF_CONSOLE_ONLY))

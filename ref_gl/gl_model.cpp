@@ -7,25 +7,28 @@
 
 //#define TEST_LOAD	// will add command "loadmodel <filename>"; may implement this in client (not renderer)
 
-#define PROFILE_LOADING
+//#define PROFILE_LOADING
 
 #ifdef PROFILE_LOADING
 #define START_PROFILE(name)			\
 	{								\
 		static const char _name[] = #name;\
-		const char *_arg = "";			\
-		int	_time = Sys_Milliseconds();
+		const char *_arg = "";		\
+		unsigned _time = appCycles();
 #define START_PROFILE2(name,arg)	\
 	{								\
 		static const char _name[] = #name;\
-		const char *_arg = arg;			\
-		int	_time = Sys_Milliseconds();
+		const char *_arg = arg;		\
+		unsigned _time = appCycles();
 #define END_PROFILE	\
-		_time = Sys_Milliseconds() - _time;	\
-		if (Cvar_VariableInt("r_profile")) Com_Printf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %d ms\n", _name, _arg, _time);	\
+		_time = appCycles() - _time;\
+		if (Cvar_VariableInt("r_profile")) \
+			Com_Printf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %.2f ms\n", _name, _arg,\
+			appDeltaCyclesToMsecf(_time));	\
 	}
 #else
 #define START_PROFILE(name)
+#define START_PROFILE2(name,arg)
 #define END_PROFILE
 #endif
 

@@ -10,9 +10,6 @@ int	Cvar_VariableInt (const char *name);
 float	Cvar_Clamp (cvar_t *cvar, float low, float high);
 float	Cvar_ClampName (const char *name, float low, float high);
 
-//--- system-dependent ?? ---
-int	Sys_Milliseconds (void);
-
 //--------- console ---------
 void	Com_Printf (const char *str, ...);
 void	Com_DPrintf (const char *str, ...);

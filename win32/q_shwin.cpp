@@ -3,35 +3,11 @@
 #include <direct.h>
 #include <io.h>
 
-/*
-================
-Sys_Milliseconds
-================
-*/
-int	curtime;
-
-int Sys_Milliseconds (void)
-{
-	static int	base;
-	static bool	initialized = false;
-
-	if (!initialized)
-	{	// let base retain 16 bits of effectively random data
-		base = timeGetTime() & 0xFFFF0000;
-		initialized = true;
-	}
-	curtime = timeGetTime() - base;
-
-	return curtime;
-}
-
 void Sys_Mkdir (char *path)
 {
 	_mkdir (path);
 }
 
-
-//============================================
 
 static char	findBase[MAX_OSPATH];
 static char	findPath[MAX_OSPATH];

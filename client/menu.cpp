@@ -600,7 +600,7 @@ static void M_UnbindCommand (char *command)
 static void KeyCursorDrawFunc (menuFramework_t *menu)
 {
 	re.DrawChar (menu->x, menu->y + menu->cursor * BIND_LINE_HEIGHT,
-		cls.key_dest == key_bindingMenu ? '=' : 12 + (Sys_Milliseconds() / 250 & 1));
+		cls.key_dest == key_bindingMenu ? '=' : 12 + ((cls.realtime >> 8) & 1));
 }
 
 static void DrawKeyBindingFunc (void *self)
@@ -2430,7 +2430,7 @@ static void ModelCallback (void *unused)
 	playerModelInfo_t *info = &pmiList[s_player_model_box.curvalue];
 	s_player_skin_box.itemnames = info->skins.First();
 	s_player_skin_box.curvalue = 0;
-	modelChangeTime = Sys_Milliseconds ();
+	modelChangeTime = appMilliseconds ();
 }
 
 //!! place skin functions to a separate unit
@@ -2717,7 +2717,7 @@ static void PlayerConfig_MenuDraw (void)
 //	sscanf(Cvar_VariableString("dl0"), "%g %g %g %g", VECTOR_ARG(&dl[0].origin), &dl[0].intensity);
 //	sscanf(Cvar_VariableString("dl1"), "%g %g %g %g", VECTOR_ARG(&dl[1].origin), &dl[1].intensity);
 
-	showModels = Sys_Milliseconds () - modelChangeTime > MODEL_DELAY;
+	showModels = appMilliseconds () - modelChangeTime > MODEL_DELAY;
 
 	playerModelInfo_t *model = &pmiList[s_player_model_box.curvalue];
 	if (!model) return;
@@ -3099,7 +3099,7 @@ static void M_Menu_DMBrowse_f (void)
 	MENU_CHECK
 	if (!DMBrowse_MenuInit ())
 	{
-		Menu_SetStatusBar (&s_startserver_menu, "No levelshots found");
+		Menu_SetStatusBar (&s_startserver_menu, S_YELLOW"No levelshots found");
 		return;
 	}
 	Menu_SetStatusBar (&s_startserver_menu, NULL);	//?? "ESC to quit, ENTER to select ..."

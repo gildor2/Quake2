@@ -18,7 +18,7 @@ void appInit (/*?? const char *_cmdLine, COutputDevice *_log */)
 
 	//!!
 //??	GLog = _log;
-
+	appInitPlatform ();
 	appInitMemory ();
 //!!	appInitCommands ();
 	appInitError ();
@@ -33,5 +33,5 @@ void appInit (/*?? const char *_cmdLine, COutputDevice *_log */)
 
 void appExit (void)
 {
-	//!!
+	appShutdownPlatform ();
 }

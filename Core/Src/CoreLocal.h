@@ -1,4 +1,7 @@
 
-void appInitMemory (void);
-void appInitCommands (void);
-void appInitError (void);
+void appInitMemory ();
+void appInitCommands ();
+void appInitError ();
+void appInitPlatform ();
+
+void appShutdownPlatform ();

@@ -52,7 +52,7 @@ static FILE	*logfile;
 static server_state_t server_state;
 
 // com_speeds times
-int		time_before_game, time_after_game, time_before_ref, time_after_ref;
+unsigned time_before_game, time_after_game, time_before_ref, time_after_ref;
 
 int		linewidth = 80;
 
@@ -1240,7 +1240,7 @@ static void PushCmdline (void)
 static cvar_t	*nointro;
 
 
-void QCommon_Init (char *cmdline)
+void QCommon_Init (const char *cmdline)
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(com_speeds, 0, 0),
@@ -1293,7 +1293,7 @@ CVAR_END
 	if (!DEDICATED) CL_Init ();
 
 	// initialize rand() functions
-	srand (Sys_Milliseconds ());
+	srand (appMilliseconds ());
 
 	if (nointro->integer == 0)
 	{	// if the user didn't give any commands, run default action
@@ -1321,131 +1321,105 @@ CVAR_END
 
 extern	int	c_traces, c_pointcontents;
 
-//??
-#define SV_PROFILE
 
-#ifdef SV_PROFILE
+#define SV_PROFILE		//?????
 
-#pragma warning (push)
-#pragma warning (disable : 4035)
-#pragma warning (disable : 4715)
-inline unsigned cycles (void)	  // taken from UT
+void QCommon_Frame (float msec)
 {
-	__asm
-	{
-#if 0
-		xor   eax,eax	          // Required so that VC++ realizes EAX is modified.
-		_emit 0x0F		          // RDTSC  -  Pentium+ time stamp register to EDX:EAX.
-		_emit 0x31		          // Use only 32 bits in EAX - even a Ghz cpu would have a 4+ sec period.
-		xor   edx,edx	          // Required so that VC++ realizes EDX is modified.
-#else
-		rdtsc
-#endif
-	}
-}
-#pragma warning (pop)
-
-#endif
-
-
-void QCommon_Frame (int msec)
-{
-	char	*s;
-	int		time_before, time_between, time_after;
-	int		realMsec;
-	float	msecf;
+	unsigned time_before, time_between, time_after;
 
 	guard(QCommon_Frame);
 
-	realMsec = msec;
 	//?? ignore timescale in multiplayer and timedemo in non-demo mode
+	float smsec;								// scaled msec (for timescale or timedemo)
 	if (timedemo->integer)
-		msecf = 100.0f / timedemo->integer;		// sv_fps ?
+		smsec = 100.0f / timedemo->integer;		// sv_fps ?
 	else // if (timescale->value)
-		msecf = msec * timescale->value;
-	if (msecf < 0) msecf = 0;					// no reverse time
+		smsec = msec * timescale->value;
+	if (smsec < 0) smsec = 0;					// no reverse time
 
 	c_traces = 0;
 	c_pointcontents = 0;
 
 	if (DEDICATED)
+	{
+		const char *s;
 		do
 		{
 			s = Sys_ConsoleInput ();
 			if (s) Cbuf_AddText (va("%s\n",s));
 		} while (s);
+	}
 	Cbuf_Execute ();
 
 	if (com_speeds->integer)
 	{
-		time_before = Sys_Milliseconds ();
-		time_before_game = -1;
+		time_before = appCycles ();
+		time_before_game = 0;				// for detection of frames with game frame
 	}
 
 //if (!Cvar_VariableInt("sv_block"))
-	SV_Frame (msecf);
-
-	if (com_speeds->integer)
-		time_between = Sys_Milliseconds ();
+	SV_Frame (smsec);
 
 	if (!DEDICATED)
 	{
-		CL_Frame (msecf, realMsec);
+		if (com_speeds->integer)
+		{
+			time_between = appCycles ();
+			time_before_ref = 0;			// for detection of frames with renderer frame (may be dropped with cl_maxfps)
+		}
+
+		CL_Frame (smsec, msec);
 
 		if (com_speeds->integer)
 		{
-			int		all, sv, gm, cl, rf;
-			static int old_gm, old_tr, old_pc;
+			static float old_gm;
+			static int old_tr, old_pc;
 
-			time_after = Sys_Milliseconds ();
-			all = time_after - time_before;
-			sv = time_between - time_before;
-			cl = time_after - time_between;
-			gm = time_after_game - time_before_game;
-			if (time_before_game > 0)	// have a valid game frame
+			time_after = appCycles ();
+
+			float rf = (time_before_ref) ? appDeltaCyclesToMsecf (time_after_ref - time_before_ref) : 0;
+			float gm = (time_before_game) ? appDeltaCyclesToMsecf (time_after_game - time_before_game) : 0;
+			float sv = appDeltaCyclesToMsecf (time_between - time_before) - gm;
+			float cl = appDeltaCyclesToMsecf (time_after - time_between) - rf;
+			float all = appDeltaCyclesToMsecf (time_after - time_before);
+			if (time_before_game)			// have a valid game frame
 			{
 				old_gm = gm;
 				old_tr = c_traces;
 				old_pc = c_pointcontents;
 			}
-			rf = time_after_ref - time_before_ref;
-			sv -= gm;
-			cl -= rf;
-			re.DrawTextRight (va("sv:%2d gm:%2d (%2d) cl:%2d rf:%2d all:%2d",
-					sv, gm, old_gm, cl, rf, all), RGB(1, 0.8, 0.3));
-			re.DrawTextRight (va("tr: %4d (%4d) pt: %4d (%4d)",
-					c_traces, old_tr, c_pointcontents, old_pc), RGB(1, 0.8, 0.3));
+			if (time_before_ref)
+				re.DrawTextRight (va("sv:%.2f gm:%.2f (%.2f) cl:%.2f rf:%.2f all:%.2f\n"
+									 "tr: %4d (%4d) pt: %4d (%4d)",
+									sv, gm, old_gm, cl, rf, all,
+									c_traces, old_tr, c_pointcontents, old_pc),
+									RGB(1, 0.8, 0.3));
 
 #ifdef SV_PROFILE
-			if (1)	//?? cvar
+			if (1)	//?? cvar; com_speeds==2 ? g_speeds ?
 			{
-				extern int prof_times[256];
-				extern int prof_counts[256];
+				extern unsigned prof_times[256];
+				extern unsigned prof_counts[256];
 				static char *names[] = {"LinkEdict", "UnlinkEdict", "AreaEdicts", "Trace",
 					"PtContents", "Pmove", "ModIndex", "ImgIndex", "SndIndex",
 					"Malloc", "Free", "FreeTags"};
 				static unsigned counts[12], times[12];
 				static unsigned cyc, lastCycles, lastMsec;
-				int		i, msec;		// NOTE: msec overrided
-				float	scale;
 
-				cyc = cycles (); msec = Sys_Milliseconds ();
-				if (msec != lastMsec)
-					scale = (cyc - lastCycles) / (msec - lastMsec);
-				else
-					scale = 1e10;
-				if (!scale) scale = 1;
-				for (i = 0; i < ARRAY_COUNT(names); i++)
+				cyc = appCycles ();
+				for (int i = 0; i < ARRAY_COUNT(names); i++)
 				{
-					re.DrawTextLeft (va("%s: %3d %4f", names[i], counts[i], times[i]/scale), RGB(1, 0.8, 0.3));
-					if (time_before_game > 0)
+					if (time_before_ref)
+						re.DrawTextLeft (va("%11s: %3d %.3f", names[i], counts[i], appDeltaCyclesToMsecf (times[i])), RGB(1, 0.8, 0.3));
+					if (time_before_game)
 					{
 						counts[i] = prof_counts[i];
 						times[i] = prof_times[i];
 						prof_counts[i] = prof_times[i] = 0;
 					}
 				}
-				lastCycles = cyc; lastMsec = msec;
+				lastCycles = cyc;
 			}
 #endif
 		}

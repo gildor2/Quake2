@@ -14,7 +14,6 @@ static refImport_t ri = {
 	Cvar_VariableInt,
 	Cvar_Clamp,
 	Cvar_ClampName,
-	Sys_Milliseconds,
 	Com_Printf,
 	Com_DPrintf,
 	Com_WPrintf,

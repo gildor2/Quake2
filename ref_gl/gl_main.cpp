@@ -465,7 +465,7 @@ static void GL_BeginFrame (float camera_separation)
 	LOG_STRING ("\n---------- Begin Frame ----------\n\n");
 
 	if (gl_finish->integer == 2) glFinish ();
-	gl_speeds.beginFrame = Sys_Milliseconds ();
+	gl_speeds.beginFrame = appCycles ();
 
 	//?? what to do with the camera_separation ?
 
@@ -520,16 +520,16 @@ static void GL_EndFrame (void)
 
 
 	if (gl_finish->integer == 2) glFinish ();
-	gl_speeds.endFrame = Sys_Milliseconds ();
+	gl_speeds.endFrame = appCycles ();
 	if (r_speeds->integer && gl_state.have3d)	// draw only when have 3D on screen
 	{
 #define S gl_speeds
-		DrawTextRight (va("fe: %2d bk: %2d (srt: %2d 3d: %2d 2d: %2d)",
-			S.beginSort - S.beginFrame,
-			S.endFrame - S.beginSort,
-			S.begin3D - S.beginSort,
-			S.begin2D - S.begin3D,
-			S.endFrame - S.begin2D
+		DrawTextRight (va("fe: %.2f bk: %.2f (srt: %.2f 3d: %.2f 2d: %.2f)",
+			appDeltaCyclesToMsecf (S.beginSort - S.beginFrame),
+			appDeltaCyclesToMsecf (S.endFrame - S.beginSort),
+			appDeltaCyclesToMsecf (S.begin3D - S.beginSort),
+			appDeltaCyclesToMsecf (S.begin2D - S.begin3D),
+			appDeltaCyclesToMsecf (S.endFrame - S.begin2D)
 #undef S
 			), RGB(1,0.5,0));
 	}

@@ -133,8 +133,8 @@ typedef struct
 
 	int		time;				// this is the time value that the client
 								// is rendering at, in msec; always <= cls.realtime
+	double	ftime;				// same as "time/1000", in sec; more precisious than "time"
 	int		overtime;			// amount of time clamped (used for detection of hang server); ms
-	float	ftime;				// same as "time/1000", in sec; more precisious than "time"
 	float	lerpfrac;			// between oldframe and frame
 
 	refdef_t refdef;

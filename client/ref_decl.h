@@ -12,7 +12,6 @@ typedef struct {
 	int	(*_Cvar_VariableInt) (const char *name);
 	float	(*_Cvar_Clamp) (cvar_t *cvar, float low, float high);
 	float	(*_Cvar_ClampName) (const char *name, float low, float high);
-	int	(*_Sys_Milliseconds) (void);
 	void	(*_Com_Printf) (const char *str, ...);
 	void	(*_Com_DPrintf) (const char *str, ...);
 	void	(*_Com_WPrintf) (const char *str, ...);

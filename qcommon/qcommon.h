@@ -713,7 +713,6 @@ void		Sys_FindClose (void);
 
 /*------------- Miscellaneous -----------------*/
 
-extern	int	curtime;		// time returned by last Sys_Milliseconds; remove ??
 extern	int linewidth;		// for functions, which wants to perform advanced output formatting
 
 void	Mem_Init (void);
@@ -757,15 +756,12 @@ extern cvar_t	*timescale;
 extern cvar_t	*sv_cheats;
 
 // com_speeds times
-extern int	time_before_game;
-extern int	time_after_game;
-extern int	time_before_ref;
-extern int	time_after_ref;
+extern unsigned time_before_game, time_after_game, time_before_ref, time_after_ref;
 
 bool	COM_CheckCmdlineVar (const char *name);
 
-void	QCommon_Init (char *cmdline);
-void	QCommon_Frame (int msec);
+void	QCommon_Init (const char *cmdline);
+void	QCommon_Frame (float msec);
 void	QCommon_Shutdown (void);
 
 #define NUMVERTEXNORMALS	162
@@ -800,7 +796,7 @@ void	Sys_CopyProtect (void);
 void	CL_Init (void);
 void	CL_Drop (bool fromError = false);
 void	CL_Shutdown (bool error);
-void	CL_Frame (float msec, int realMsec);
+void	CL_Frame (float msec, float realMsec);
 
 void	Con_Print (const char *text);
 void	SCR_BeginLoadingPlaque (void);

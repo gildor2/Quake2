@@ -233,7 +233,7 @@ static void DrawChatInput (void)
 		x++;
 	}
 	// draw cursor
-	re.DrawChar (x * CHAR_WIDTH, v, 10 + ((curtime >> 8) & 1));
+	re.DrawChar (x * CHAR_WIDTH, v, 10 + ((cls.realtime >> 8) & 1));
 }
 
 
@@ -415,7 +415,7 @@ static void DrawGUI (bool allowNotifyArea)
 		conDesired = 0;		// none visible
 
 	// scroll console
-	currTime = Sys_Milliseconds ();
+	currTime = appMilliseconds ();
 	timeDelta = lastConTime ? currTime - lastConTime : 0;
 	lastConTime = currTime;
 	if (conDesired < conCurrent)
@@ -618,19 +618,19 @@ static void TimeRefresh_f (void)
 	if ( cls.state != ca_active )
 		return;
 
-	start = Sys_Milliseconds ();
+	start = appMilliseconds ();
 
 	for (i = 0; i < 128; i++)
 	{
-		cl.refdef.viewangles[1] = i/128.0*360.0;
+		cl.refdef.viewangles[1] = i*360/128.0f;
 
 		re.BeginFrame (0);
 		re.RenderFrame (&cl.refdef);
 		re.EndFrame();
 	}
 
-	stop = Sys_Milliseconds ();
-	time = (stop-start)/1000.0;
+	stop = appMilliseconds ();
+	time = (stop-start)/1000.0f;
 	Com_Printf ("%f seconds (%f fps)\n", time, 128/time);
 }
 

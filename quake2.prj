@@ -28,6 +28,7 @@ CORE = \
 #	$D/Commands.cpp
 #	$D/Core.cpp
 CORE_WIN32 = \
+	$D/CoreWin32.cpp \
 	$D/DbgSymbolsWin32.cpp \
 	$D/ExceptFilterWin32.cpp
 #	$D/FileSystemWin32.cpp

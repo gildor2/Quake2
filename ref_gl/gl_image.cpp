@@ -1,12 +1,27 @@
-//??
-#define START_PROFILE(name)	\
-	{	\
-		static const char _name[] = #name;	\
-		int	_time = Sys_Milliseconds();
+//#define PROFILE_LOADING
+
+#ifdef PROFILE_LOADING
+#define START_PROFILE(name)			\
+	{								\
+		static const char _name[] = #name;\
+		const char *_arg = "";		\
+		unsigned _time = appCycles();
+#define START_PROFILE2(name,arg)	\
+	{								\
+		static const char _name[] = #name;\
+		const char *_arg = arg;		\
+		unsigned _time = appCycles();
 #define END_PROFILE	\
-		_time = Sys_Milliseconds() - _time;	\
-		if (Cvar_VariableInt("r_profile2")) Com_Printf(S_MAGENTA"%s: %d ms\n", _name, _time);	\
+		_time = appCycles() - _time;\
+		if (Cvar_VariableInt("r_profile2")) \
+			Com_Printf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %.2f ms\n", _name, _arg, \
+			appDeltaCyclesToMsecf(_time));	\
 	}
+#else
+#define START_PROFILE(name)
+#define START_PROFILE2(name,arg)
+#define END_PROFILE
+#endif
 
 #include "gl_local.h"
 #include "gl_image.h"
@@ -745,7 +760,7 @@ void GL_LoadDelayedImages (void)
 	int		i;
 	image_t	*img;
 
-	int time = Sys_Milliseconds ();
+	unsigned time = appCycles();
 	int num = 0;
 	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
@@ -764,7 +779,7 @@ void GL_LoadDelayedImages (void)
 
 		num++;
 	}
-	Com_DPrintf ("%d images uploaded in %g sec\n", num, (Sys_Milliseconds () - time) / 1000.0f);
+	Com_DPrintf ("%d images uploaded in %g sec\n", num, appDeltaCyclesToMsecf(appCycles() - time) / 1000.0f);
 }
 
 
@@ -853,7 +868,7 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 		static float dx, dy;
 		static int flipMode;
 
-		int time = Sys_Milliseconds ();
+		int time = appMilliseconds ();
 		if (time - lastNoiseTime >= 1000/VIDEO_NOISE_FPS)
 		{
 			lastNoiseTime = time;
@@ -1102,8 +1117,7 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 
 static void ImageReload_f (bool usage, int argc, char **argv)
 {
-	char	*mask;
-	int		i, num, time;
+	int		i;
 	image_t	*img;
 
 	if (argc != 2 || usage)
@@ -1112,9 +1126,9 @@ static void ImageReload_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	time = Sys_Milliseconds ();
-	mask = argv[1];
-	num = 0;
+	unsigned time = appCycles();
+	const char *mask = argv[1];
+	int num = 0;
 	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
 		if (!img->name[0]) continue;	// free slot
@@ -1127,7 +1141,7 @@ static void ImageReload_f (bool usage, int argc, char **argv)
 			num++;
 		}
 	}
-	Com_DPrintf ("%d images reloaded in %g sec\n", num, (Sys_Milliseconds () - time) / 1000.0f);
+	Com_DPrintf ("%d images reloaded in %g sec\n", num, appDeltaCyclesToMsecf(appCycles() - time) / 1000.0f);
 }
 
 
@@ -1643,14 +1657,14 @@ image_t *GL_FindImage (const char *name, unsigned flags)
 	if (fmt & IMAGE_TGA)
 	{
 		strcpy (s, ".tga");
-START_PROFILE(..img::tga)
+START_PROFILE2(img::tga, name)
 		LoadTGA (name2, &pic, &width, &height);
 END_PROFILE
 	}
 	else if (fmt & IMAGE_JPG)
 	{
 		strcpy (s, ".jpg");
-START_PROFILE(..img::jpg)
+START_PROFILE2(img::jpg, name)
 		LoadJPG (name2, &pic, &width, &height);
 END_PROFILE
 	}
@@ -1659,7 +1673,7 @@ END_PROFILE
 		byte	*pic8, *palette;
 
 		strcpy (s, ".pcx");
-START_PROFILE(..img::pcx)
+START_PROFILE2(img::pcx, name)
 		LoadPCX (name2, &pic8, &palette, &width, &height);
 		if (pic8)
 		{
@@ -1693,7 +1707,7 @@ END_PROFILE
 		miptex_t	*mt;
 
 		strcpy (s, ".wal");
-START_PROFILE(..img::wal)
+START_PROFILE2(img::wal, name)
 		if (mt = (miptex_t*) FS_LoadFile (name2))
 		{
 			width = LittleLong(mt->width);

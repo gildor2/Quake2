@@ -234,7 +234,7 @@ static void cGetChallenge (int argc, char **argv)
 		// overwrite the oldest
 		svs.challenges[oldest].challenge = rand() & 0x7FFF;
 		svs.challenges[oldest].adr = net_from;
-		svs.challenges[oldest].time = curtime;
+		svs.challenges[oldest].time = appMilliseconds ();
 		i = oldest;
 	}
 
@@ -745,7 +745,7 @@ void SV_PostprocessFrame (void)
 	// work only in network game, not single-player
 	if (maxclients->integer > 1) //!! should be another variable; campersounds - below!! && sv_campersounds->integer)
 	{
-		t = Sys_Milliseconds ();
+		t = appMilliseconds ();
 		for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 		{
 			pmove_state_t *pm;
@@ -1152,7 +1152,7 @@ void SV_Frame (float msec)
 	if (!sv_paused->integer || maxclients->integer > 1)
 	{
 		if (com_speeds->integer)
-			time_before_game = Sys_Milliseconds ();
+			time_before_game = appCycles();
 
 		guard(ge.RunFrame);
 		ge->RunFrame ();
@@ -1167,7 +1167,7 @@ void SV_Frame (float msec)
 			svs.realtimef = sv.time;
 		}
 		if (com_speeds->integer)
-			time_after_game = Sys_Milliseconds ();
+			time_after_game = appCycles();
 	}
 
 	// if extended protocol used, recalculate footstep sounds, mdx/mdl/md3 frames etc.

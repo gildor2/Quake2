@@ -139,12 +139,12 @@ typedef struct
 	int		flares, testFlares, cullFlares;
 	// OpenGL statistics
 	int		numBinds, numUploads, numIterators;
-	// pefromance measuring
-	int		beginFrame;			// front-end
-	int		beginSort;			// sorting
-	int		begin3D;			// back-end (3D)
-	int		begin2D;			// back-end (2D)
-	int		endFrame;
+	// pefromance measuring (appCycles())
+	unsigned beginFrame;		// front-end
+	unsigned beginSort;			// sorting
+	unsigned begin3D;			// back-end (3D)
+	unsigned begin2D;			// back-end (2D)
+	unsigned endFrame;
 } drawSpeeds_t;
 
 

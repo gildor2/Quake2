@@ -103,6 +103,27 @@ inline int appCeil (float f)
 
 
 /*-----------------------------------------------------------------------------
+	Win32 timing
+-----------------------------------------------------------------------------*/
+
+#pragma warning(push)
+#pragma warning(disable : 4035)		// "no return value"
+
+inline unsigned appCycles ()
+{
+//	__asm push edx
+	__asm rdtsc
+//	__asm pop edx
+}
+
+inline __int64 appCycles64 ()
+{
+	__asm rdtsc
+}
+#pragma warning(pop)
+
+
+/*-----------------------------------------------------------------------------
 	guard/unguard macros
 -----------------------------------------------------------------------------*/
 

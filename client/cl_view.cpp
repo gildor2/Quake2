@@ -671,11 +671,11 @@ extern int fileFromPak;
 
 static void DrawFpsInfo (void)
 {
-	static int startSecTime, lastFrameTime, frames;
+	static float startSecTime, lastFrameTime;
 	static float avgFps, minFps, maxFps;
-	int		delta, time, color;
+	static int frames;
 
-	time = Sys_Milliseconds ();
+	float time = appMillisecondsf ();
 
 	if (cls.key_dest != key_game || (time - lastFrameTime > 2000))
 	{	// reinitialize counters
@@ -689,12 +689,10 @@ static void DrawFpsInfo (void)
 	// update min/max stats
 	if (!fileFromPak)					// ignore frame if packfile was read
 	{
-		float	tmpFps;
-
-		if (time == lastFrameTime)
-			tmpFps = 1000;				// avoid zero-divide
-		else
-			tmpFps = 1000.0f / (time - lastFrameTime);
+		// avoid zero-divide
+		float tmpFps = (time == lastFrameTime) ? 1000 : 1000.0f / (time - lastFrameTime);
+		//?? should smooth tmpFps
+		//?? may be, draw FPS graph on screen (to detect min/max FPS spikes reason)
 		EXPAND_BOUNDS(tmpFps, minFps, maxFps);
 	}
 	else
@@ -703,7 +701,7 @@ static void DrawFpsInfo (void)
 	lastFrameTime = time;
 
 	// update avg stats
-	delta = time - startSecTime;
+	float delta = time - startSecTime;
 	frames++;
 	if (delta >= 500)					// update 2 times per second
 	{
@@ -713,6 +711,7 @@ static void DrawFpsInfo (void)
 	}
 
 	// draw info
+	unsigned color;
 	if (avgFps < 15) color = RGB(1,0,0);
 	else if (avgFps < 30) color = RGB(1,0,1);
 	else if (avgFps < 60) color = RGB(1,1,0);
@@ -803,7 +802,7 @@ bool V_RenderView (float stereo_separation)
 	{
 		static int lastTime = 0;
 
-		int time = Sys_Milliseconds ();
+		int time = appMilliseconds ();
 		if (!cl.timedemoStart)
 		{
 			cl.timedemoStart = time;

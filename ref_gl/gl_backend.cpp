@@ -1956,9 +1956,9 @@ static void DrawScene (void)
 
 	// sort surfaces
 	if (gl_finish->integer == 2) glFinish ();
-	gl_speeds.beginSort = Sys_Milliseconds ();
+	gl_speeds.beginSort = appCycles ();
 	GL_SortSurfaces (&vp, sortedSurfaces);
-	gl_speeds.begin3D = Sys_Milliseconds ();
+	gl_speeds.begin3D = appCycles ();
 
 	currentDlightMask = 0;
 
@@ -2090,7 +2090,7 @@ static void DrawScene (void)
 		GL_ShowLights ();
 
 	if (gl_finish->integer == 2) glFinish ();
-	gl_speeds.begin2D = Sys_Milliseconds ();
+	gl_speeds.begin2D = appCycles ();
 
 	unguard;
 }

@@ -585,7 +585,7 @@ void CL_Disconnect (void)
 	{
 		int	time;
 
-		time = Sys_Milliseconds () - cl.timedemoStart;
+		time = appMilliseconds () - cl.timedemoStart;
 		if (time > 0)
 			Com_Printf (S_GREEN"Total %d frames, %3.1f seconds: %3.1f avg fps %3.1f min fps\n", cl.timedemoFrames, time / 1000.0f,
 				1000.0f * cl.timedemoFrames / time, 1000.0f / cl.timedemoLongestFrame);
@@ -1226,7 +1226,7 @@ CVAR_END
 		Cvar_Get (va("adr%d", i), "", CVAR_ARCHIVE);
 
 	cls.state = ca_disconnected;
-	cls.realtime = Sys_Milliseconds ();
+	cls.realtime = appMilliseconds ();
 
 	CL_InitInput ();
 
@@ -1298,10 +1298,10 @@ CL_Frame
 ==================
 */
 
-void CL_Frame (float msec, int realMsec)
+void CL_Frame (float msec, float realMsec)
 {
-	static int extratime_real;
-	static float extratime;
+	static double extratime_real;	// real frame time, msec
+	static double extratime;		// scaled frame time, sec
 
 	guard(CL_Frame);
 
@@ -1329,14 +1329,14 @@ void CL_Frame (float msec, int realMsec)
 	extratime = 0;
 	extratime_real = 0;
 
-	cls.realtime = curtime;
+	cls.realtime = appMilliseconds ();
 
 	if (cls.frametime > (1.0f / 5))	// low FPS fix ?? (cannot send user commands with frame time > 255ms)
 		cls.frametime = (1.0f / 5);
 
 	// if in the debugger last frame, don't timeout
 	if (msec > 5000)
-		cls.netchan.last_received = Sys_Milliseconds ();
+		cls.netchan.last_received = appMilliseconds ();
 
 	// fetch results from server
 	CL_ReadPackets ();
@@ -1359,11 +1359,9 @@ void CL_Frame (float msec, int realMsec)
 		CL_PrepRefresh ();
 
 	// update the screen
-	if (com_speeds->integer)
-		time_before_ref = Sys_Milliseconds ();
+	if (com_speeds->integer) time_before_ref = appCycles ();
 	SCR_UpdateScreen ();
-	if (com_speeds->integer)
-		time_after_ref = Sys_Milliseconds ();
+	if (com_speeds->integer) time_after_ref = appCycles ();
 
 	// update audio
 	S_Update (cl.refdef.vieworg, cl.v_forward, cl.v_right, cl.v_up);

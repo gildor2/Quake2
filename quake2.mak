@@ -19,6 +19,7 @@ STATIC = \
 	Release/obj/CoreStatic/OutputDevice.obj \
 	Release/obj/CoreStatic/ErrorMgr.obj \
 	Release/obj/CoreStatic/Strings.obj \
+	Release/obj/CoreStatic/CoreWin32.obj \
 	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj/CoreStatic/ExceptFilterWin32.obj \
 	Release/obj/q2stat/cl_cin.obj \
@@ -105,6 +106,7 @@ DEDICATED = \
 	Release/obj/CoreStatic/OutputDevice.obj \
 	Release/obj/CoreStatic/ErrorMgr.obj \
 	Release/obj/CoreStatic/Strings.obj \
+	Release/obj/CoreStatic/CoreWin32.obj \
 	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj/CoreStatic/ExceptFilterWin32.obj \
 	Release/obj/dedstat/sv_dedicated.obj \
@@ -172,6 +174,9 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h
+
+Release/obj/CoreStatic/CoreWin32.obj : Core/Src/CoreWin32.cpp $(DEPENDS)
+	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/CoreStatic/CoreWin32.obj" Core/Src/CoreWin32.cpp
 
 Release/obj/CoreStatic/DbgSymbols.obj : Core/Src/DbgSymbols.cpp $(DEPENDS)
 	cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS $(OPTIONS) -Fo"Release/obj/CoreStatic/DbgSymbols.obj" Core/Src/DbgSymbols.cpp

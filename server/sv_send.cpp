@@ -565,6 +565,7 @@ void SV_SendClientMessages (void)
 	}
 
 	// send a message to each connected client
+	int curtime = appMilliseconds ();
 	for (i = 0, c = svs.clients ; i < maxclients->integer; i++, c++)
 	{
 		if (!c->state) continue;

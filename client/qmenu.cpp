@@ -134,7 +134,7 @@ static void Field_Draw (menuField_t *f)
 
 		// show cursor
 		re.DrawChar (f->generic.x + f->generic.parent->x + (offset + 3) * CHAR_WIDTH,
-					 f->generic.y + f->generic.parent->y, ((Sys_Milliseconds() / 250) & 1) ? 11 : ' ');
+					 f->generic.y + f->generic.parent->y, ((cls.realtime >> 8) & 1) ? 11 : ' ');
 	}
 }
 
@@ -449,11 +449,11 @@ void Menu_Draw (menuFramework_t *menu)
 	{
 		if (item->flags & QMF_LEFT_JUSTIFY)
 		{
-			re.DrawChar (menu->x + item->x - 24 + item->cursor_offset, menu->y + item->y, 12 + (Sys_Milliseconds()/250 & 1));
+			re.DrawChar (menu->x + item->x - 24 + item->cursor_offset, menu->y + item->y, 12 + ((cls.realtime >> 8) & 1));
 		}
 		else
 		{
-			re.DrawChar (menu->x + item->cursor_offset, menu->y + item->y, 12 + (Sys_Milliseconds()/250 & 1));
+			re.DrawChar (menu->x + item->cursor_offset, menu->y + item->y, 12 + ((cls.realtime >> 8) & 1));
 		}
 	}
 

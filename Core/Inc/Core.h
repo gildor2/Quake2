@@ -156,7 +156,25 @@ CORE_API NORETURN void appUnwindThrow (const char *fmt, ...);
 
 // Initialize core
 CORE_API void appInit (/*?? const char *_cmdLine, COutputDevice *_log */);
-CORE_API void appExit (void);
+CORE_API void appExit ();
+
+
+/*-----------------------------------------------------------------------------
+	Timing functions
+-----------------------------------------------------------------------------*/
+
+CORE_API double appSeconds ();
+CORE_API double appMillisecondsf ();
+CORE_API unsigned appMilliseconds ();
+
+
+extern CORE_API double GMSecondsPerCycle;
+
+inline float appDeltaCyclesToMsecf (unsigned timeDelta)
+{
+	double v = timeDelta;
+	return v * GMSecondsPerCycle;
+}
 
 
 /*-----------------------------------------------------------------------------

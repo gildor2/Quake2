@@ -1,8 +1,7 @@
-- replace Sys_Find() and Sys_MkDir() with FileSystemWin32.cpp, and move Sys_Milliseconds()
-  to something another, then can remove q_shwin.cpp ...
+- replace Sys_Find() and Sys_MkDir() with FileSystemWin32.cpp, then can remove q_shwin.cpp ...
 =============
 - cmd.cpp -> Commands.cpp (Core) & cbuf.cpp (qcommon)
-  - SplitCmdline == TokenizeString, diff is 1. delim = '-', 2. delim = ';'
+  - SplitCmdline == TokenizeString, diff is 1. delim = '-', 2. delim = ';' (or ' ' ??!)
   - MacroExpand(), cmd_debug, CL_ForwardToServer() -> cbuf code; should parse comments in cfg files here
      too (remove them after FS_LoadFile(cfgfile) !?)
 - DeltaEntity():
