@@ -1048,7 +1048,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(r_gamma, 1, CVAR_ARCHIVE),
 	CVAR_VAR(r_brightness, 1, CVAR_ARCHIVE),
 	CVAR_VAR(r_contrast, 1, CVAR_ARCHIVE),
-	CVAR_VAR(vid_ref, soft, CVAR_ARCHIVE)
+	CVAR_GET(vid_ref)
 CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));

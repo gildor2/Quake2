@@ -212,7 +212,7 @@ void	GL_DisableTexCoordArrays (void);
 
 void	GL_CullFace (gl_cullMode_t mode);
 void	GL_DepthRange (gl_depthMode_t mode);
-void	GL_State (int state);
+void	GL_State (unsigned state);
 void	GL_EnableFog (bool enable);
 
 void	GL_SetDefaultState (void);

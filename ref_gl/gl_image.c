@@ -804,13 +804,14 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 
 	guard(GL_DrawStretchRaw8);
 
-	if (GL_SUPPORT(QGL_EXT_TEXTURE_RECTANGLE))	//?? check for max [rect] texture size
+	if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))	//?? check for max [rect] texture size
 	{
 		// convert 8->32 bit
 		byte *pic32 = Convert8to32bit (pic, width, height, rawPalette);
 		// upload texture
 		image = gl_videoImage;		//?? to allow multiple videos in a screen, should use gl_videoImage[some_number]
-		image->target = GL_TEXTURE_RECTANGLE_NV;
+		if (image->target != GL_TEXTURE_RECTANGLE_NV)
+			Com_DropError ("bad target");
 		GL_SetMultitexture (1);
 		GL_BindForce (image);
 
@@ -1350,19 +1351,17 @@ CVAR_END
 	gl_defaultImage = GL_CreateImage ("*default", tex, DEF_IMG_SIZE, DEF_IMG_SIZE, IMAGE_MIPMAP);
 	gl_defaultImage->flags |= IMAGE_SYSTEM;
 
-	/*----------- create white image -------------*/
-/*	memset (tex, 255, 8*8*4);
-	gl_whiteImage = GL_CreateImage ("*white", tex, 8, 8, 0);
-	gl_whiteImage->flags |= IMAGE_SYSTEM; */
-
 	/*---------- create video image ------------*/
 	memset (tex, 255, 16*16*4);
-	gl_videoImage = GL_CreateImage ("*video", tex, 16, 16, 0);
+	if (!GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))
+		gl_videoImage = GL_CreateImage ("*video", tex, 16, 16, IMAGE_CLAMP);
+	else	// without this, uploading video as rect texture will damage other texture:
+		gl_videoImage = GL_CreateImage ("*video", tex, 10, 5, IMAGE_CLAMP);
 	gl_videoImage->flags |= IMAGE_SYSTEM;
 
 	/*------ create identity light image ---------*/
-	y = gl_config.identityLightValue;
 #if 0
+	y = gl_config.identityLightValue;
 	for (x = 0, p = &tex[0]; x < 8*8; x++, p += 4)
 	{
 		p[0] = p[1] = p[2] = y;

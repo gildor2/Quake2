@@ -37,10 +37,10 @@ typedef enum {SIS_SUCCESS, SIS_FAILURE, SIS_NOTAVAIL} sndinitstat;
 cvar_t	*s_wavonly;
 #endif
 
-static qboolean	dsound_init;
-static qboolean	wav_init;
-static qboolean	snd_firsttime = true, snd_isdirect, snd_iswave;
-static qboolean	primary_format_set;
+static bool	dsound_init;
+static bool	wav_init;
+static bool	snd_firsttime = true, snd_isdirect, snd_iswave;
+static bool	primary_format_set;
 
 // starts at 0 for disabled
 static int	snd_buffer_count = 0;

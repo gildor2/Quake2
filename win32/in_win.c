@@ -55,10 +55,10 @@ static DWORD	dwAxisMap[JOY_MAX_AXES];
 static DWORD	dwControlMap[JOY_MAX_AXES];
 static PDWORD	pdwRawValue[JOY_MAX_AXES];
 
-static cvar_t *in_mouse;
+static cvar_t	*in_mouse;
 qboolean in_needRestart;
 
-cvar_t	*in_joystick;
+cvar_t	*in_joystick;	// non-static: used in menus
 
 // none of these cvars are saved over a session
 // this means that advanced controller configuration needs to be executed
@@ -340,12 +340,6 @@ IN_StartupMouse
 
 static void IN_StartupMouse (void)
 {
-	cvar_t		*cv;
-
-	cv = Cvar_Get ("in_initmouse", "1", CVAR_NOSET);
-	if (!cv->integer)
-		return;
-
 	haveSpiMouse = SystemParametersInfo (SPI_GETMOUSE, 0, originalMouseParms, 0);
 	haveSpiMouseSpeed = SystemParametersInfo (SPI_GETMOUSESPEED, 0, &originalMouseSpeed, 0);	// Win98+, Win2K+
 }
@@ -474,15 +468,9 @@ static void IN_StartupJoystick (void)
 	int			numdevs;
 	JOYCAPS		jc;
 	MMRESULT	mmr;
-	cvar_t		*cv;
 
  	// assume no joystick
 	joy_avail = false;
-
-	// abort startup if user requests no joystick
-	cv = Cvar_Get ("in_initjoy", "1", CVAR_NOSET);
-	if ( !cv->integer )
-		return;
 
 	// verify joystick driver is present
 	if ((numdevs = joyGetNumDevs ()) == 0)

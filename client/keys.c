@@ -547,11 +547,13 @@ void CompleteCommand (void)
 {
 	char	*cmd, *s;
 
+	guard(CompleteCommand);
+
 	s = &editLine[1];
 	if (*s == '\\' || *s == '/')
 		s++;
 
-	if (!strcmp (completed_name, s) && completed_count > 1 && completed_count <= MAX_COMPLETE_ITEMS)
+	if (!strcmp (completed_name, s) && completed_count > 1 && completed_count <= MAX_COMPLETE_ITEMS && !DEDICATED)
 	{
 		CompleteMenu ();
 		return;
@@ -565,6 +567,8 @@ void CompleteCommand (void)
 		editPos = strlen (cmd) + 2;
 		editLine[editPos] = 0;
 	}
+
+	unguard;
 }
 
 

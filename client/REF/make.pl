@@ -56,7 +56,7 @@ sub EmitDefine1 {
 	printf (DEFS "#define %s\t$strucname._%s\n", $func, $func);
 }
 
-sub EmitDefine2 {
+sub EmitDefine2 {	#?? unused
 	printf (DEFS "//#define %s\t%s_\n", $func, $func);	#??
 }
 
@@ -125,15 +125,21 @@ printf ("Found %d functions ...\n", $numFuncs);
 #	Creating header part
 #------------------------------------------------------------------------------
 
-print (HDR "typedef struct {\n");
-
-print (HDR "\tint\t\tstruc_size;\n");
-print (HDR "\tint\t\tapi_version;\n");
-
+print (HDR <<EOF
+typedef struct {
+	int		struc_size;
+	int		api_version;
+EOF
+);
 Parse ("EmitStruc", "EmitHdrPrep");
-print (HDR "} $typename;\n\n");
-print (HDR "extern $typename $strucname;\n\n");
 
+print (HDR <<EOF
+} $typename;
+
+extern $typename $strucname;
+
+EOF
+);
 #------------------------------------------------------------------------------
 #	Creating defines
 #------------------------------------------------------------------------------
@@ -151,12 +157,22 @@ print (DEFS "\n#endif\n\n");
 #	Creating code part
 #------------------------------------------------------------------------------
 
-print (CODE "static $typename $strucname = {\n");
-print (CODE "\tsizeof($typename),\n");
-print (CODE "\tAPI_VERSION,");
+print (CODE <<EOF
+static $typename $strucname = {
+	sizeof($typename),
+	API_VERSION,
+#ifndef DEDICATED_ONLY
+EOF
+);
 Parse ("EmitImpl", "EmitCodePrep");
-print (CODE "\n};\n\n");
 
+print (CODE <<EOF
+
+#endif // DEDICATED_ONLY
+};
+
+EOF
+);
 # close files
 close (HDR);
 close (CODE);

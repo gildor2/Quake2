@@ -47,7 +47,7 @@ void SV_SetMaster_f (void)
 	int		i, slot;
 
 	// only dedicated servers send heartbeats
-	if (!dedicated->integer)
+	if (!DEDICATED)
 	{
 		Com_Printf ("Only dedicated servers use masters.\n");
 		return;
@@ -273,7 +273,7 @@ void SV_ReadServerFile (void)
 	char	mapcmd[128];
 
 	Com_DPrintf("SV_ReadServerFile()\n");
-	SCR_SetLevelshot ("/" SAVEGAME_DIRECTORY "/current/shot.pcx");
+	if (!DEDICATED) SCR_SetLevelshot ("/" SAVEGAME_DIRECTORY "/current/shot.pcx");
 
 	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
 	f = fopen (name, "rb");
@@ -417,7 +417,7 @@ void SV_GameMap_f (void)
 	Q_strncpyz (svs.mapcmd, map, sizeof(svs.mapcmd));
 
 	// copy off the level to the autosave slot
-	if (!dedicated->integer && !Cvar_VariableInt ("deathmatch"))
+	if (!DEDICATED && !Cvar_VariableInt ("deathmatch"))
 	{
 		FS_CreatePath (va("%s/" SAVEGAME_DIRECTORY "/current/", FS_Gamedir()));
 		SV_CopySaveGame ("current", "save0");
@@ -910,7 +910,7 @@ static void SV_ConSay_f (void)
 		p[strlen(p)-1] = 0;
 	}
 
-	strcat(text, p);
+	strcat (text, p);
 
 	for (j = 0, client = svs.clients; j < maxclients->integer; j++, client++)
 	{
@@ -1108,7 +1108,7 @@ void SV_InitOperatorCommands (void)
 	Cmd_AddCommand ("gamemap", SV_GameMap_f);
 	Cmd_AddCommand ("setmaster", SV_SetMaster_f);
 
-	if (dedicated->integer)
+	if (DEDICATED)
 		Cmd_AddCommand ("say", SV_ConSay_f);
 
 	Cmd_AddCommand ("serverrecord", SV_ServerRecord_f);

@@ -47,14 +47,6 @@ glwstate_t glw_state;
 extern cvar_t *r_fullscreen;
 extern cvar_t *vid_ref;
 
-static bool VerifyDriver (void)
-{
-	if (!stricmp (qglGetString (GL_RENDERER), "gdi generic") &&
-		!glw_state.mcd_accelerated)
-			return false;
-	return true;
-}
-
 
 static bool GLimp_CreateWindow (int width, int height, bool fullscreen)
 {
@@ -486,7 +478,8 @@ static bool GLimp_SetPixelFormat (void)
 		0,								// reserved
 		0, 0, 0							// layer masks ignored
 	};
-	int  pixelformat;
+	int		pixelformat;
+	bool	mcd_accelerated;
 /* ??	cvar_t *stereo;
 
 	stereo = Cvar_Get( "cl_stereo", "0", 0 );
@@ -535,12 +528,12 @@ static bool GLimp_SetPixelFormat (void)
 			extern cvar_t *gl_allow_software;
 
 			if (gl_allow_software->integer)
-				glw_state.mcd_accelerated = true;
+				mcd_accelerated = true;
 			else
-				glw_state.mcd_accelerated = false;
+				mcd_accelerated = false;
 		}
 		else
-			glw_state.mcd_accelerated = true;
+			mcd_accelerated = true;
 	}
 
 /* ??	// report if stereo is desired but unavailable
@@ -555,7 +548,7 @@ static bool GLimp_SetPixelFormat (void)
 	if (!CreateGLcontext ()) return false;
 	if (!ActivateGLcontext ()) return false;
 
-	if (!VerifyDriver ())
+	if (!stricmp (qglGetString (GL_RENDERER), "gdi generic") && !mcd_accelerated)
 	{
 		Com_WPrintf ("...no hardware acceleration detected\n");
 		return false;

@@ -21,18 +21,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "winquake.h"
 #include "../client/client.h"
 
-extern	HWND	cl_hwnd;
+extern HWND cl_hwnd;
 
-static qboolean cdValid = false;
-static qboolean	playing = false;
-static qboolean	wasPlaying = false;
-static qboolean	initialized = false;
-static qboolean	enabled = false;
-static qboolean playLooping = false;
-static byte 	remap[100];
-static byte		cdrom;
-static byte		playTrack;
-static byte		maxTrack;
+static bool cdValid = false;
+static bool	playing = false;
+static bool	wasPlaying = false;
+static bool	initialized = false;
+static bool	enabled = false;
+static bool playLooping = false;
+static byte remap[100];
+static byte	cdrom;
+static byte	playTrack;
+static byte	maxTrack;
 
 static cvar_t *cd_nocd;
 static cvar_t *cd_loopcount;
@@ -436,7 +436,7 @@ CVAR_END
 	mciOpenParms.lpstrDeviceType = "cdaudio";
 	if (dwReturn = mciSendCommand (0, MCI_OPEN, MCI_OPEN_TYPE | MCI_OPEN_SHAREABLE, (DWORD) (LPVOID) &mciOpenParms))
 	{
-		Com_WPrintf ("CDAudio_Init: MCI_OPEN failed (%i)\n", dwReturn);
+		Com_DPrintf ("CDAudio_Init: MCI_OPEN failed (%i)\n", dwReturn);
 		return -1;
 	}
 	wDeviceID = mciOpenParms.wDeviceID;
@@ -445,7 +445,7 @@ CVAR_END
 	mciSetParms.dwTimeFormat = MCI_FORMAT_TMSF;
 	if (dwReturn = mciSendCommand (wDeviceID, MCI_SET, MCI_SET_TIME_FORMAT, (DWORD)(LPVOID) &mciSetParms))
 	{
-		Com_WPrintf ("MCI_SET_TIME_FORMAT failed (%i)\n", dwReturn);
+		Com_DPrintf ("MCI_SET_TIME_FORMAT failed (%i)\n", dwReturn);
 		mciSendCommand (wDeviceID, MCI_CLOSE, 0, (DWORD)NULL);
 		return -1;
 	}

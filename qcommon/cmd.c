@@ -622,7 +622,7 @@ void Cmd_RemoveCommand (char *cmd_name)
 		cmd = *back;
 		if (!cmd)
 		{
-			Com_WPrintf ("Cmd_RemoveCommand: %s not found\n", cmd_name);
+			Com_DPrintf ("Cmd_RemoveCommand: %s not found\n", cmd_name);
 			return;
 		}
 		if (!strcmp (cmd_name, cmd->name))

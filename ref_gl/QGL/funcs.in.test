@@ -32,6 +32,9 @@ int glxTestFunc (int tst) ARGS
 void TestExtensionLaunchEXT (int tmp, GLenum werr) ARGS
 void TestExtensionStopEXT (void);
 
+#name GL_EXT_EXTENSION
+#alias GL_ARB_EXTENSION
+
 #platform win32
 
 #name WGL_ANOTHER_TEST

@@ -1335,7 +1335,7 @@ FS_SetGamedir
 Sets the gamedir and path to a different directory.
 ================
 */
-bool FS_SetGamedir (char *dir)
+bool FS_SetGamedir (const char *dir)
 {
 	searchPath_t *next;
 	char	path[MAX_OSPATH];
@@ -1374,7 +1374,7 @@ bool FS_SetGamedir (char *dir)
 	}
 
 	// flush all data, so it will be forced to reload
-	if (dedicated && !dedicated->integer && initialized)
+	if (!DEDICATED && initialized)
 		Cbuf_AddText ("vid_restart\nsnd_restart\n");
 
 	// setup gamedir vars

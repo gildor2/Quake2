@@ -58,7 +58,7 @@ char	editLine[MAXCMDLINE];
 int		editPos;
 
 
-qboolean con_initialized;
+static bool con_initialized;
 int		con_height;
 
 // WRAP_CHAR will be placed as "soft" line-feed instead of a space char
@@ -1141,5 +1141,4 @@ CVAR_END
 	Cmd_AddCommand ("condump", Con_Dump_f);
 
 	con_initialized = true;
-	Com_Printf ("Console initialized.\n");
 }

@@ -29,7 +29,7 @@ typedef struct
 
 
 // Used fields for TexEnv for each function
-static texEnvInfo_t texEnvInfo[] = {
+static const texEnvInfo_t texEnvInfo[] = {
 	{-1, 0, 0},
 	{STD_MASK, GL_REPLACE, 0},
 	{STD_MASK, GL_MODULATE, 0},
@@ -40,7 +40,7 @@ static texEnvInfo_t texEnvInfo[] = {
 	{ARB_MASK|TEXENV_SRC2_MASK|TEXENV_SRC3_MASK, GL_COMBINE4_NV, GL_ADD}
 };
 
-static texEnvSource_t texEnvSource[] = {
+static const texEnvSource_t texEnvSource[] = {
 	{-1, -1, -1},		// "-1" is differs from "GL_ZERO"
 	// texture
 	{GL_TEXTURE, GL_SRC_COLOR, GL_SRC_ALPHA},
@@ -253,7 +253,7 @@ void GL_TexEnv (unsigned env)
 {
 	int		tmu, func;
 	unsigned i, diff, mask, shift;
-	texEnvInfo_t *info;
+	const texEnvInfo_t *info;
 
 	static GLenum sourceRgb[4] = {GL_SOURCE0_RGB_ARB, GL_SOURCE1_RGB_ARB, GL_SOURCE2_RGB_ARB, GL_SOURCE3_RGB_NV};
 	static GLenum sourceAlpha[4] = {GL_SOURCE0_ALPHA_ARB, GL_SOURCE1_ALPHA_ARB, GL_SOURCE2_ALPHA_ARB, GL_SOURCE3_ALPHA_NV};
@@ -298,7 +298,7 @@ void GL_TexEnv (unsigned env)
 //LOG_STRING(va("i: %d  mask: %08X  shift: %d\n", i, mask, shift));//!!
 		if (diff & mask)
 		{
-			texEnvSource_t	*src, *prevSrc;
+			const texEnvSource_t *src, *prevSrc;
 
 			src = &texEnvSource[(env & mask) >> shift];
 			prevSrc = &texEnvSource[((env ^ diff) & mask) >> shift];
@@ -509,11 +509,11 @@ void GL_DepthRange (gl_depthMode_t mode)
 }
 
 
-void GL_State (int state)
+void GL_State (unsigned state)
 {
-	unsigned	diff;
+	unsigned diff;
 
-	static GLenum blends[] = {
+	static const GLenum blends[] = {
 		GL_ZERO, GL_ONE,
 		GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR,
 		GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
@@ -548,7 +548,7 @@ void GL_State (int state)
 
 	if (diff & GLSTATE_ALPHAMASK)
 	{
-		int		m;
+		unsigned m;
 
 		m = state & GLSTATE_ALPHAMASK;
 		if (!m)
@@ -589,10 +589,11 @@ void GL_State (int state)
 
 void GL_EnableFog (bool enable)
 {
+	if (!gl_fogMode || !gl_fog->integer) enable = false;
 	if (enable == gl_state.fogEnabled)
 		return;
 
-	if (enable && gl_fogMode && gl_fog->integer)
+	if (enable)
 	{
 		glEnable (GL_FOG);
 //		glHint (GL_FOG_HINT, GL_NICEST);
@@ -636,14 +637,14 @@ void GL_SetDefaultState (void)
 	{
 		GL_SelectTexture (i);
 		glDisable (GL_TEXTURE_2D);
-		if (GL_SUPPORT(QGL_EXT_TEXTURE_RECTANGLE))
+		if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))
 			glDisable (GL_TEXTURE_RECTANGLE_NV);
 		gl_state.currentEnv[i] = 0;
 		GL_TexEnv (TEXENV_REPLACE);
 	}
 	if (gl_config.maxActiveTextures > 1) GL_SelectTexture (0);
 	glDisable (GL_TEXTURE_2D);
-	if (GL_SUPPORT(QGL_EXT_TEXTURE_RECTANGLE))
+	if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))
 		glDisable (GL_TEXTURE_RECTANGLE_NV);
 	gl_state.currentEnv[0] = 0;
 	GL_TexEnv (TEXENV_MODULATE);

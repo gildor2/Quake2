@@ -304,6 +304,8 @@ R_Init
 */
 qboolean R_Init (void)
 {
+	guard(R_Init);
+
 	R_InitImages ();
 	Mod_Init ();
 	Draw_InitLocal ();
@@ -341,6 +343,8 @@ qboolean R_Init (void)
 	Com_Printf ("ref_soft version: "REF_VERSION"\n");
 
 	return true;
+
+	unguard;
 }
 
 /*
@@ -350,6 +354,8 @@ R_Shutdown
 */
 void R_Shutdown (void)
 {
+	guard(R_Shutdown);
+
 	// free z buffer
 	if (d_pzbuffer)
 	{
@@ -375,6 +381,8 @@ void R_Shutdown (void)
 	R_ShutdownImages ();
 
 	SWimp_Shutdown();
+
+	unguard;
 }
 
 /*
@@ -984,6 +992,8 @@ R_RenderFrame
 */
 void R_RenderFrame (refdef_t *fd)
 {
+	guard(R_RenderFrame);
+
 	r_newrefdef = *fd;
 
 	if (!r_worldmodel && !( r_newrefdef.rdflags & RDF_NOWORLDMODEL ) )
@@ -1057,6 +1067,7 @@ void R_RenderFrame (refdef_t *fd)
 	if (sw_reportedgeout->integer && r_outofedges)
 		Com_Printf ("Short roughly %d edges\n", r_outofedges * 2 / 3);
 
+	unguard;
 }
 
 /*
@@ -1095,6 +1106,8 @@ void R_InitGraphics( int width, int height )
 void R_BeginFrame( float camera_separation )
 {
 	extern void Draw_BuildGammaTable( void );
+
+	guard(R_BeginFrame);
 
 	/*
 	** rebuild the gamma correction palette if necessary
@@ -1149,6 +1162,8 @@ void R_BeginFrame( float camera_separation )
 
 	if (con_only)
 		Draw_Fill (0, 0, vid.width, vid.height, 0);
+
+	unguard;
 }
 
 /*
@@ -1386,9 +1401,13 @@ static float GetClientLight (void)
 
 static void R_EndFrame (void)
 {
+	guard(R_EndFrame);
+
 	if (r_screenshotName)
 		R_ScreenShot ();
 	SWimp_EndFrame ();
+
+	unguard;
 }
 
 extern unsigned char d_16to8table[65536];

@@ -82,7 +82,7 @@ void M_Menu_Main_f (void);
 
 	void M_Menu_Credits( void );
 
-qboolean	m_entersound;		// play after drawing a frame, so caching
+static bool m_entersound;		// play after drawing a frame, so caching
 								// won't disrupt the sound
 
 static void	(*m_drawfunc) (void);
@@ -147,6 +147,7 @@ void M_PushMenu (void (*draw) (void), const char *(*key) (int k))
 
 void M_ForceMenuOff (void)
 {
+	if (DEDICATED) return;
 	m_drawfunc = 0;
 	m_keyfunc = 0;
 	cls.key_dest = key_game;
@@ -3325,7 +3326,7 @@ void M_Draw (void)
 	// caching images
 	if (m_entersound)
 	{
-		S_StartLocalSound( menu_in_sound );
+		S_StartLocalSound (menu_in_sound);
 		m_entersound = false;
 	}
 }

@@ -34,7 +34,6 @@ typedef union
 		void	(APIENTRY * Finish) (void);
 		void	(APIENTRY * Fogf) (GLenum pname, GLfloat param);
 		void	(APIENTRY * Fogfv) (GLenum pname, const GLfloat *params);
-		GLenum	(APIENTRY * GetError) (void);
 		void	(APIENTRY * GetIntegerv) (GLenum pname, GLint *params);
 		const GLubyte *	(APIENTRY * GetString) (GLenum name);
 		void	(APIENTRY * LoadIdentity) (void);
@@ -93,6 +92,7 @@ typedef union
 
 extern qgl_t qgl;
 
+
 #define glAlphaFunc	qgl.AlphaFunc
 #define glBegin	qgl.Begin
 #define glBindTexture	qgl.BindTexture
@@ -122,7 +122,6 @@ extern qgl_t qgl;
 #define glFinish	qgl.Finish
 #define glFogf	qgl.Fogf
 #define glFogfv	qgl.Fogfv
-#define glGetError	qgl.GetError
 #define glGetIntegerv	qgl.GetIntegerv
 #define glGetString	qgl.GetString
 #define glLoadIdentity	qgl.LoadIdentity
@@ -179,21 +178,20 @@ extern qgl_t qgl;
 
 #define QGL_SGIS_MULTITEXTURE	(1 << 0)
 #define QGL_ARB_MULTITEXTURE	(1 << 1)
-#define QGL_EXT_TEXTURE_ENV_ADD	(1 << 2)
-#define QGL_ARB_TEXTURE_ENV_ADD	(1 << 3)
-#define QGL_EXT_TEXTURE_ENV_COMBINE	(1 << 4)
-#define QGL_ARB_TEXTURE_ENV_COMBINE	(1 << 5)
-#define QGL_ARB_TEXTURE_ENV_CROSSBAR	(1 << 6)
-#define QGL_NV_TEXTURE_ENV_COMBINE4	(1 << 7)
-#define QGL_S3_S3TC	(1 << 8)
-#define QGL_ARB_TEXTURE_COMPRESSION	(1 << 9)
-#define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 10)
-#define QGL_EXT_TEXTURE_RECTANGLE	(1 << 11)
-#define QGL_NV_FOG_DISTANCE	(1 << 12)
-#define QGL_EXT_TEXTURE_LOD_BIAS	(1 << 13)
+#define QGL_ARB_TEXTURE_ENV_ADD	(1 << 2)
+#define QGL_EXT_TEXTURE_ENV_COMBINE	(1 << 3)
+#define QGL_ARB_TEXTURE_ENV_COMBINE	(1 << 4)
+#define QGL_ARB_TEXTURE_ENV_CROSSBAR	(1 << 5)
+#define QGL_NV_TEXTURE_ENV_COMBINE4	(1 << 6)
+#define QGL_S3_S3TC	(1 << 7)
+#define QGL_ARB_TEXTURE_COMPRESSION	(1 << 8)
+#define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 9)
+#define QGL_NV_TEXTURE_RECTANGLE	(1 << 10)
+#define QGL_NV_FOG_DISTANCE	(1 << 11)
+#define QGL_EXT_TEXTURE_LOD_BIAS	(1 << 12)
 
 #ifdef _WIN32
-#define QWGL_EXT_SWAP_CONTROL	(1 << 14)
+#define QWGL_EXT_SWAP_CONTROL	(1 << 13)
 #endif
 
 #ifdef __linux__

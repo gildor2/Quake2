@@ -15,8 +15,6 @@ static FILE *logFile;
 
 void QGL_Shutdown (void)
 {
-//	int		i;
-
 	if (logFile)
 	{
 		fclose (logFile);
@@ -25,42 +23,40 @@ void QGL_Shutdown (void)
 
 	if (glw_state.hinstOpenGL)
 	{
-		FreeLibrary (glw_state.hinstOpenGL);
+		FreeLibrary (glw_state.hinstOpenGL);	//!! win32
 		glw_state.hinstOpenGL = NULL;
 	}
 
 	glw_state.hinstOpenGL = NULL;
 
 	memset (&qgl, 0, sizeof(qgl));
-//	for (i = 0; i < NUM_GLFUNCS; i++)
-//		qgl.funcs[i] = NULL;
 }
 
 
 /*----------------- QGL_Init ---------------------*/
 
 
-bool QGL_Init (const char *dllname)
+bool QGL_Init (const char *libName)
 {
 	int		i;
 	dummyFunc_t func;
 
-	if (!(glw_state.hinstOpenGL = LoadLibrary (dllname)))
+	if (!(glw_state.hinstOpenGL = LoadLibrary (libName)))	//!! win32
 	{
-		Com_WPrintf ("QGL_Init: LoadLibrary (%s) failed\n", dllname);
+		Com_WPrintf ("QGL_Init: LoadLibrary (%s) failed\n", libName);
 		return false;
 	}
 
 	for (i = 0; i < NUM_GLFUNCS; i++)
 	{
-		func = qgl.funcs[i] = lib.funcs[i] = (dummyFunc_t) (GetProcAddress (glw_state.hinstOpenGL, qglNames[i]));
+		func = qgl.funcs[i] = lib.funcs[i] = (dummyFunc_t) (GetProcAddress (glw_state.hinstOpenGL, qglNames[i]));	//!! win32
 		if (!func)
 		{
 			// free library
-			FreeLibrary (glw_state.hinstOpenGL);
+			FreeLibrary (glw_state.hinstOpenGL);	//!! win32
 			glw_state.hinstOpenGL = NULL;
 
-			Com_WPrintf ("QGL_Init: inconsistent OpenGL library %s - function %s is not found\n", dllname, qglNames[i]);
+			Com_WPrintf ("QGL_Init: inconsistent OpenGL library %s: function %s is not found\n", libName, qglNames[i]);
 			return false;
 		}
 	}
@@ -68,7 +64,7 @@ bool QGL_Init (const char *dllname)
 }
 
 
-static bool ExtensionSupported (const char *name, const char *extString)
+static bool ExtensionNameSupported (const char *name, const char *extString)
 {
 	int		len;
 	const char *s;
@@ -89,9 +85,30 @@ static bool ExtensionSupported (const char *name, const char *extString)
 }
 
 
+static bool ExtensionSupported (extInfo_t *ext, const char *extStr1, const char *extStr2)
+{
+	const char *s;
+
+	ext->name = ext->names;		// 1st alias
+	if (ExtensionNameSupported (ext->name, extStr1) || ExtensionNameSupported (ext->name, extStr2))
+		return true;
+	s = strchr (ext->names, '\0');
+	s++;
+	if (!s[0]) return false;	// no another aliases
+	Com_DPrintf ("%s is not found - try alias %s\n", ext->names, s);
+	if (ExtensionNameSupported (s, extStr1) || ExtensionNameSupported (s, extStr2))
+	{
+		ext->name = s;
+		return true;
+	}
+	return false;
+}
+
+
 void QGL_InitExtensions (void)
 {
-	int		i, notFoundExt, disabledExt;
+	int		i;
+	unsigned notFoundExt, disabledExt;
 	extInfo_t *ext;
 	dummyFunc_t func;
 	const char *ext1, *ext2;
@@ -100,6 +117,7 @@ void QGL_InitExtensions (void)
 	notFoundExt = disabledExt = 0;
 	gl_config.extensions = ext1 = glGetString (GL_EXTENSIONS);
 
+	ext2 = NULL;
 #if 1		//!! win32
 	{
 		const char * (APIENTRY *wglGetExtensionsStringARB) (HDC hdc);
@@ -108,8 +126,6 @@ void QGL_InitExtensions (void)
 		if (wglGetExtensionsStringARB)
 			ext2 = wglGetExtensionsStringARB (glw_state.hDC);
 	}
-#else
-	ext2 = NULL;
 #endif
 	gl_config.extensions2 = ext2;
 
@@ -119,7 +135,7 @@ void QGL_InitExtensions (void)
 		int		j;
 
 		enable = false;
-		if (ExtensionSupported (ext->name, ext1) || ExtensionSupported (ext->name, ext2))
+		if (ExtensionSupported (ext, ext1, ext2))
 		{
 			if (!ext->cvar || Cvar_VariableInt (ext->cvar))
 				enable = true;
@@ -137,7 +153,7 @@ void QGL_InitExtensions (void)
 				func = qgl.funcs[j] = lib.funcs[j] = (dummyFunc_t) (wglGetProcAddress (qglNames[j]));	//!! win32
 				if (!func)
 				{
-					Com_WPrintf ("Inconsistent extension %s - function %s is not found\n", ext->name, qglNames[j]);
+					Com_WPrintf ("Inconsistent extension %s: function %s is not found\n", ext->name, qglNames[j]);
 					enable = false;
 					break;
 				}
@@ -253,8 +269,6 @@ void QGL_InitExtensions (void)
 
 void QGL_EnableLogging (qboolean enable)
 {
-//	int		i;
-
 	if (enable)
 	{
 		if (!logFile)
@@ -270,11 +284,6 @@ void QGL_EnableLogging (qboolean enable)
 		}
 
 		qgl = logFuncs;
-//		for (i = 0; i < NUM_GLFUNCS; i++)					//?? memcpy()
-//			qgl.funcs[i] = logFuncs.funcs[i];
-//		for ( ; i < NUM_GLFUNCS + NUM_EXTFUNCS; i++)		//?? ... ???
-//			if (lib.funcs[i])		// enable logging only when extension is active
-//				qgl.funcs[i] = logFuncs.funcs[i];
 	}
 	else
 	{
@@ -285,8 +294,6 @@ void QGL_EnableLogging (qboolean enable)
 		}
 
 		qgl = lib;
-//		for (i = 0; i < NUM_GLFUNCS + NUM_EXTFUNCS; i++)	//?? ...
-//			qgl.funcs[i] = lib.funcs[i];
 	}
 }
 

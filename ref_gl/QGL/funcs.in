@@ -100,7 +100,7 @@ void Fogfv (GLenum pname, const GLfloat *params) ARGS
 //void GetBooleanv (GLenum pname, GLboolean *params);
 //void GetClipPlane (GLenum plane, GLdouble *equation);
 //void GetDoublev (GLenum pname, GLdouble *params);
-GLenum GetError (void);
+//GLenum GetError (void);
 //void GetFloatv (GLenum pname, GLfloat *params);
 void GetIntegerv (GLenum pname, GLint *params);
 //void GetLightfv (GLenum light, GLenum pname, GLfloat *params);
@@ -376,12 +376,8 @@ void ActiveTextureARB (GLenum texture) ARGS
 void ClientActiveTextureARB (GLenum texture) ARGS
 //void MultiTexCoord2fARB (GLenum target, GLfloat s, GLfloat t) ARGS
 
-// ?? alias ARB
-#name GL_EXT_texture_env_add
-#cvar gl_ext_texture_env_add
-#prefer GL_ARB_texture_env_add
-
 #name GL_ARB_texture_env_add
+#alias GL_EXT_texture_env_add
 #cvar gl_ext_texture_env_add
 
 #name GL_EXT_texture_env_combine
@@ -415,8 +411,8 @@ void ClientActiveTextureARB (GLenum texture) ARGS
 void LockArraysEXT (GLint first, GLint count) ARGS
 void UnlockArraysEXT (void);
 
-#name GL_EXT_texture_rectangle
-// exact alias: GL_NV_texture_rectangle
+#name GL_NV_texture_rectangle
+#alias GL_EXT_texture_rectangle
 #cvar gl_ext_texture_rectangle
 
 //?? unused

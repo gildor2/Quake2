@@ -169,6 +169,10 @@ Console/Menu
   - added menu navigation and console scrolling with mouse
   - added support of home/end keys; disabled menu auto-wrapping
   - scrolling of long menus
+- dedicated server console:
+  - command completion
+  - autorepeat
+  - colorized output
 
 Keyboard
 --------

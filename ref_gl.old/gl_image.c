@@ -1488,7 +1488,7 @@ int Draw_GetPalette (void)
 GL_InitImages
 ===============
 */
-void	GL_InitImages (void)
+void GL_InitImages (void)
 {
 	int		i, j;
 	float	g = 1.0f / r_gamma->value;

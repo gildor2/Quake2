@@ -98,14 +98,14 @@ void SV_BroadcastPrintf (int level, char *fmt, ...)
 	va_end (argptr);
 
 	// echo to console
-	if (dedicated->integer)
+	if (DEDICATED)
 	{
 		char	copy[1024];
 		int		i;
 
 		// mask off high bits
-		for (i=0 ; i<1023 && string[i] ; i++)
-			copy[i] = string[i]&127;
+		for (i = 0; i < sizeof(copy)-1 && string[i] ; i++)
+			copy[i] = string[i] & 127;
 		copy[i] = 0;
 		Com_Printf ("%s", copy);
 	}

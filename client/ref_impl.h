@@ -3,6 +3,8 @@
 static refImport_t ri = {
 	sizeof(refImport_t),
 	API_VERSION,
+#ifndef DEDICATED_ONLY
+
 	Cmd_AddCommand,
 	Cmd_RemoveCommand,
 	Cmd_Argc,
@@ -74,5 +76,6 @@ static refImport_t ri = {
 	Vid_NewWindow
 #endif
 
+#endif // DEDICATED_ONLY
 };
 

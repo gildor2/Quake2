@@ -1215,12 +1215,10 @@ static void Master_Heartbeat (void)
 	char		*string;
 	int			i;
 
-	// pgm post3.19 change, cvar pointer not validated before dereferencing
-	if (!dedicated || !dedicated->integer)
+	if (!DEDICATED)
 		return;		// only dedicated servers send heartbeats
 
-	// pgm post3.19 change, cvar pointer not validated before dereferencing
-	if (!public_server || !public_server->integer)
+	if (!public_server->integer)
 		return;		// a private dedicated game
 
 	// check for time wraparound
@@ -1255,10 +1253,10 @@ static void Master_Shutdown (void)
 {
 	int			i;
 
-	if (!dedicated || !dedicated->integer)
+	if (!DEDICATED)
 		return;		// only dedicated servers send heartbeats
 
-	if (!public_server || !public_server->integer)
+	if (!public_server->integer)
 		return;		// a private dedicated game
 
 	// send to group master
@@ -1357,7 +1355,7 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(sv_extProtocol, 1, CVAR_SERVERINFO|CVAR_LATCH|CVAR_ARCHIVE),
 	CVAR_VAR(sv_camperSounds, 1, CVAR_SERVERINFO|CVAR_ARCHIVE),
-	CVAR_NULL(dmflags, 0, CVAR_SERVERINFO)			// old default value: 0 for game, DF_INSTANT_ITEMS (16) for server ?!
+	CVAR_NULL(dmflags, 16, CVAR_SERVERINFO)			//?? old default value: 0 for game, DF_INSTANT_ITEMS (16) for server
 //	CVAR_VAR(sv_fps, 20, 0)	// archive/serverinfo ??
 CVAR_END
 

@@ -19,7 +19,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // winquake.h: Win32-specific Quake header file
 
-#pragma warning( disable : 4229 )  // mgraph gets this
 
 //#define WINVER 0x0500				// to allow some additional stuff in windows headers
 #include <windows.h>

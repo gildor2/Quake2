@@ -10,10 +10,11 @@ FAST TODO:
   (may fix black dead bodies, black gun, zaero/lox positron explosion ...)
 - saturation: should saturate (or apply gl_lightmap==2) dynamicLightmap->source[] -- this will automatically saturate slow lightstyles
   and vertex lights, but will require additional memory (currently: dl->source[] is a pointer to loaded bspfile)
-  - current bug: map "base1" - starting roo have 3+ "slow" lightstyles, which will produce incorrect lightmaps with saturation != 1
+  - current bug: map "base1" - starting room have 3+ "slow" lightstyles, which will produce incorrect lightmaps with saturation != 1
   - when will be implemented, check all SaturateColor... in gl_lightmap.c (at least, remove from vertex lighting)
   - saturate lightmap textures with tables (see gl_image.c::LightScaleTexture()) - separate TableSaturate() (name?) function in
     gl_images.c (may be, move to gl_math.c)
+? alias for [NV|EXT]_texture_rectangle: ARB_texture_rectangle (OpenGL 2.0)
 
 -------------------------------------------------------------------------------
 	new lightgrid:
@@ -173,7 +174,7 @@ lighting bugs:
   ? reading parms from file (model.c)
   - gl_fog cvar
   ? controlling from console
-  ? should not be affected by fog (check it!)
+  ? should not be affected by fog (check it!) -- flares
   ! if fogDens > LIMIT -> sky = defaultSky, its color = fogColor
 
 ? gl_state:
@@ -265,11 +266,6 @@ HW occlusion:
   ? for details and other ideas, see GL_NV_occlusion_query spec
 
 QGL system:
-  ? implement extension aliasing (EXT -> ARB) with aliases for extension/function names (constants are the same)
-    (texture_env_combine (slightly different!), texture_env_add etc. -- mark extension as aliased and auto-replace ARB<->EXT in
-    ext (GL_[ARB|EXT]_EXTENSION)/func (glFunction[ARB|EXT]) names)
-    ? may be, implement universal subst: for NV->ARB, SGI->EXT etc. (specify alternatives in decrease priority form + place where
-      to put prefix/suffix "GL_._MULTITEXTURE/EXT/ARB/SGI" + names for QGL_CONSTANT qgl.FuncName() !!)
   - gl_logFile:
     ? remove "GL_" and "gl" prefixes (to look like OpenGL spec)
     ? add error checking after commands (qgl.in: ERROR)

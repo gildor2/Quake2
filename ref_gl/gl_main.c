@@ -92,13 +92,14 @@ static void Gfxinfo_f (void)
 	if (gl_config.extensions2)
 		Com_Printf ("^1Platform extensions:^7 %s\n", gl_config.extensions2);
 	Com_Printf ("^1---------------------------------\n");
+	// multitexturing
 	Com_Printf ("Multitexturing: ");
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
 	{
 		char	name[256];
 
 		strcpy (name, GL_SUPPORT(QGL_ARB_MULTITEXTURE) ? "ARB" : "SGIS");
-		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_ADD|QGL_EXT_TEXTURE_ENV_ADD))
+		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_ADD))
 			strcat (name, " +Add");
 		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE|QGL_EXT_TEXTURE_ENV_COMBINE))
 			strcat (name, " +Combine");
@@ -109,11 +110,14 @@ static void Gfxinfo_f (void)
 	}
 	else
 		Com_Printf ("no\n");
+	// texturing
+	Com_Printf ("Max texture size: %d\n", gl_config.maxTextureSize);
 	Com_Printf ("Texture rectangle: ");
-	if (GL_SUPPORT(QGL_EXT_TEXTURE_RECTANGLE))
+	if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))
 		Com_Printf ("max size is %d\n", gl_config.maxRectTextureSize);
 	else
 		Com_Printf ("unsupported\n");
+	// gamma info
 	Com_Printf ("Lighting: %s\n", gl_config.vertexLight ? "vertex" : "lightmap");
 	Com_Printf ("Gamma: ");
 	if (gl_config.deviceSupportsGamma)
@@ -227,7 +231,7 @@ static bool GL_SetMode (void)
 	}
 	else
 	{
-		if  (err == rserr_invalid_fullscreen)
+		if (err == rserr_invalid_fullscreen)
 		{
 			Cvar_SetInteger ("r_fullscreen", 0);
 			r_fullscreen->modified = false;
@@ -256,6 +260,8 @@ static bool GL_SetMode (void)
 
 static int GL_Init (void)
 {
+	guard(GL_Init);
+
 	Com_Printf ("--- Initializing OpenGL renderer ---\n");
 
 	Com_Printf ("ref_gl version: "REF_VERSION"\n");		//?? remove
@@ -330,8 +336,7 @@ static int GL_Init (void)
 	}
 
 	gl_config.doubleModulateLM = true;			// no multitexture or env_combine
-	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE) &&
-		!GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|QGL_NV_TEXTURE_ENV_COMBINE4))
+	if (!GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|QGL_NV_TEXTURE_ENV_COMBINE4))
 		gl_config.doubleModulateLM = false;
 
 
@@ -350,7 +355,7 @@ static int GL_Init (void)
 		gl_config.formatAlpha1 = 0;
 	}
 
-	if (GL_SUPPORT(QGL_EXT_TEXTURE_RECTANGLE))
+	if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))
 		glGetIntegerv (GL_MAX_RECTANGLE_TEXTURE_SIZE_NV, &gl_config.maxRectTextureSize);
 
 	glGetIntegerv (GL_MAX_TEXTURE_SIZE, &gl_config.maxTextureSize);
@@ -375,11 +380,15 @@ static int GL_Init (void)
 				// -1 is "no visinfo", >= 0 -- visinfo, so, -2 is unused (not reserved)
 
 	return 0;	// all OK
+
+	unguard;
 }
 
 
 static void GL_Shutdown (void)
 {
+	guard(GL_Shutdown);
+
 	Cmd_RemoveCommand ("gfxinfo");
 
 	GL_ShutdownBackend ();
@@ -394,6 +403,8 @@ static void GL_Shutdown (void)
 
 	// shutdown our QGL subsystem
 	QGL_Shutdown ();
+
+	unguard;
 }
 
 

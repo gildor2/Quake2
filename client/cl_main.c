@@ -415,7 +415,7 @@ static void CL_Pause_f (void)
 CL_Quit_f
 ==================
 */
-void CL_Quit_f (void)
+void CL_Quit_f (void)	//?? do we need 2 quit commands (in cl_main.c and common.c) ??
 {
 	CL_Disconnect ();
 	Com_Quit ();
@@ -1663,9 +1663,6 @@ void CL_Frame (float msec, int realMsec)
 	static int extratime_real;
 	static float extratime;
 
-	if (dedicated->integer)
-		return;
-
 	guard(CL_Frame);
 
 	extratime += msec / 1000.0f;
@@ -1773,11 +1770,6 @@ void CL_Init (void)
 {
 	guard(CL_Init);
 
-	if (dedicated->integer)
-		return;		// nothing running on the client
-
-	// all archived variables will now be loaded
-
 	Con_Init ();
 #if defined __linux__ || defined __sgi
 	S_Init ();
@@ -1813,18 +1805,17 @@ void CL_Shutdown (bool error)
 {
 	static bool isdown = false;
 
-	if (isdown)
-	{
-//		printf ("recursive shutdown\n");
-		return;
-	}
+	if (isdown) return;
 	isdown = true;
 
 	if (!error)		// do not write configuration when error occured
 		CL_WriteConfiguration (Cvar_VariableString ("cfgfile"));
 
-	CDAudio_Shutdown ();
-	S_Shutdown();
-	IN_Shutdown ();
-	Vid_Shutdown();
+	if (!DEDICATED)
+	{
+		CDAudio_Shutdown ();
+		S_Shutdown();
+		IN_Shutdown ();
+		Vid_Shutdown();
+	}
 }

@@ -91,6 +91,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define SAVEGAME_VARS_EXTENSION		"ssv"
 
 
+#ifndef DEDICATED_ONLY
+#define DEDICATED	dedicated->integer
+#else
+#define DEDICATED	1
+#endif
+
 //============================================================================
 
 typedef struct sizebuf_s
@@ -481,12 +487,12 @@ extern int	cvar_initialized;
 // if it exists, the value will not be changed, but flags will be ORed in
 // that allows variables to be unarchived without needing bitflags
 
-cvar_t 	*Cvar_FullSet (char *var_name, char *value, int flags);
+cvar_t 	*Cvar_FullSet (const char *var_name, const char *value, int flags);
 
 //--cvar_t	*Cvar_SetValue (char *var_name, float value);
 //--cvar_t	*Cvar_SetInteger (char *var_name, int value);
-//--cvar_t 	*Cvar_Set (char *var_name, char *value);		// will create the variable if it doesn't exist
-cvar_t	*Cvar_ForceSet (char *var_name, char *value);	// will set the variable even if NOSET or LATCH
+//--cvar_t 	*Cvar_Set (char *var_name, char *value);				// will create the variable if it doesn't exist
+cvar_t	*Cvar_ForceSet (const char *var_name, const char *value);	// will set the variable even if NOSET or LATCH
 
 // expands value to a string and calls Cvar_Set
 //--float	Cvar_Clamp (cvar_t *cvar, float low, float high);
@@ -761,7 +767,7 @@ void	FreeNamedList (basenamed_t *list);
 //--basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags);
 
 void	FS_InitFilesystem (void);
-bool	FS_SetGamedir (char *dir);
+bool	FS_SetGamedir (const char *dir);
 //--char	*FS_Gamedir (void);
 char	*FS_NextPath (char *prevpath);
 void	FS_LoadGameConfig (void);
@@ -825,7 +831,7 @@ extern int	time_after_game;
 extern int	time_before_ref;
 extern int	time_after_ref;
 
-qboolean COM_CheckCmdlineVar (char *name);
+qboolean COM_CheckCmdlineVar (const char *name);
 
 void	QCommon_Init (char *cmdline);
 void	QCommon_Frame (int msec);

@@ -295,7 +295,7 @@ void SV_InitGame (void)
 		// cause any connected clients to reconnect
 		SV_Shutdown ("Server restarted\n", true);
 	}
-	else
+	else if (!DEDICATED)
 	{
 		// make sure the client is down
 		CL_Drop ();
@@ -315,7 +315,7 @@ void SV_InitGame (void)
 
 	// dedicated servers are can't be single player and are usually DM
 	// so unless they explicity set coop, force it to deathmatch
-	if (dedicated->integer)
+	if (DEDICATED)
 	{
 		if (!Cvar_VariableInt ("coop"))
 			Cvar_FullSet ("deathmatch", "1", CVAR_SERVERINFO|CVAR_LATCH);
@@ -334,7 +334,7 @@ void SV_InitGame (void)
 		if (maxclients->integer <= 1 || maxclients->integer > 4)
 			Cvar_FullSet ("maxclients", "4", CVAR_SERVERINFO|CVAR_LATCH);
 #ifdef COPYPROTECT
-		if (!sv.attractloop && !dedicated->integer)
+		if (!sv.attractloop && !DEDICATED)
 			Sys_CopyProtect ();
 #endif
 	}
@@ -353,7 +353,7 @@ void SV_InitGame (void)
 	svs.client_entities = Z_Malloc (sizeof(entity_state_t)*svs.num_client_entities);
 
 	// init network stuff
-	NET_Config ( (maxclients->integer > 1) );
+	NET_Config (maxclients->integer > 1);
 
 	// heartbeats will always be sent to the id master
 	svs.last_heartbeat = -BIG_NUMBER;		// send immediately
@@ -445,7 +445,7 @@ void SV_Map (qboolean attractloop, char *levelstring, qboolean loadgame)
 			newState = ss_pic;
 	}
 
-	SCR_BeginLoadingPlaque ();			// for local system
+	if (!DEDICATED) SCR_BeginLoadingPlaque ();		// for local system
 	SV_BroadcastCommand ("changing\n");
 	if (newState == ss_game)
 	{

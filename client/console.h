@@ -2,7 +2,6 @@
 #define __CONSOLE_INCLUDED__
 
 
-extern qboolean con_initialized;
 extern int con_height;
 
 

@@ -249,7 +249,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	switch (uMsg)
 	{
 	case WM_MOUSEWHEEL:
-		// this chunk of code theoretically only works under NT4 and Win98
+		// this chunk of code theoretically only works under NT4+ and Win98+
 		// since this message doesn't exist under Win95
 		if ((short) HIWORD(wParam) > 0)
 		{
@@ -379,6 +379,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		if (wParam == SC_KEYMENU)	// disable activating window menu with keyboard
 			return 0;
 		break;
+
 	case WM_SYSKEYDOWN:
 		if (wParam == 13) 			// Alt+Enter
 		{
@@ -407,11 +408,11 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 	case WM_CLOSE:
 		Com_Quit ();
-		break;		// should not happens (?)
+		break;						// should not return here
 
 	case MM_MCINOTIFY:
 		{
-			LONG CDAudio_MessageHandler (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+			LONG CDAudio_MessageHandler (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);	//??
 
 			lRet = CDAudio_MessageHandler (hWnd, uMsg, wParam, lParam);
 		}
@@ -447,6 +448,8 @@ void *Vid_CreateWindow (int width, int height, qboolean fullscreen)
 	int		stylebits;
 	int		x, y, w, h;
 	int		exstyle;
+
+	guard(Vid_CreateWindow);
 
 	if (fullscreen)
 	{
@@ -512,7 +515,7 @@ void *Vid_CreateWindow (int width, int height, qboolean fullscreen)
 	wc.lpszClassName	= APPNAME;
 
 	if (!RegisterClass (&wc))
-		Com_FatalError ("Vid_CreateWindow: couldn't register window class");
+		Com_FatalError ("Couldn't register window class");
 
 	mainHwnd = CreateWindowEx (
 		exstyle,
@@ -522,7 +525,7 @@ void *Vid_CreateWindow (int width, int height, qboolean fullscreen)
 		NULL, NULL,
 		global_hInstance, NULL);
 
-	if (!mainHwnd) Com_FatalError ("Vid_CreateWindow: couldn't create window");
+	if (!mainHwnd) Com_FatalError ("Couldn't create window");
 
 	if (width || height)
 		ShowWindow (mainHwnd, SW_SHOW);
@@ -535,6 +538,8 @@ void *Vid_CreateWindow (int width, int height, qboolean fullscreen)
 	Vid_NewWindow (width, height);
 
 	return mainHwnd;
+
+	unguard;
 }
 
 /*
@@ -703,6 +708,8 @@ static qboolean Vid_LoadRefresh (char *name)
 	GetRefAPI_t	LibGetRefAPI;
 	char	dllName[MAX_OSPATH];
 
+	guard(Vid_LoadRefresh);
+
 	if (refActive)
 	{
 		re.Shutdown ();
@@ -785,6 +792,8 @@ static qboolean Vid_LoadRefresh (char *name)
 	refActive = true;
 
 	return true;
+
+	unguard;
 }
 
 /*
@@ -831,7 +840,7 @@ void Vid_CheckChanges (void)
 		loaded = false;
 		if (Vid_LoadRefresh (vid_ref->string))
 			loaded = true;
-		if (!loaded && lastRenderer)
+		if (!loaded && lastRenderer[0])
 		{
 			if (Vid_LoadRefresh (lastRenderer))
 			{
@@ -868,7 +877,7 @@ Vid_Init
 void Vid_Init (void)
 {
 CVAR_BEGIN(vars)
-	CVAR_VAR(vid_ref, soft, CVAR_ARCHIVE),
+	CVAR_VAR(vid_ref, gl, CVAR_ARCHIVE),
 	CVAR_VAR(vid_xpos, 0, CVAR_ARCHIVE),
 	CVAR_VAR(vid_ypos, 0, CVAR_ARCHIVE),
 	CVAR_VAR(r_fullscreen, 1, CVAR_ARCHIVE),
@@ -876,6 +885,8 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(win_noalttab, 0, CVAR_ARCHIVE),
 	CVAR_VAR(win_priorityBoost, 0, CVAR_ARCHIVE)
 CVAR_END
+
+	guard(Vid_Init);
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 
@@ -905,6 +916,8 @@ CVAR_END
 
 	/* Start the graphics mode and load refresh DLL */
 	Vid_CheckChanges ();
+
+	unguard;
 }
 
 /*

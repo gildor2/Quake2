@@ -28,6 +28,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../client/client.h"
 
 
+#define CRASH_LOG	"crash.log"
+
 qboolean s_win95;
 
 int			starttime;
@@ -54,8 +56,10 @@ void Sys_Quit (void)
 
 	CL_Shutdown (false);
 	QCommon_Shutdown ();
-	if (dedicated && dedicated->integer)
+#ifndef DEDICATED_ONLY
+	if (DEDICATED)
 		FreeConsole ();
+#endif
 
 	// shut down QHOST hooks if necessary
 //??	DeinitConProc ();
@@ -63,27 +67,6 @@ void Sys_Quit (void)
 	exit (0);
 }
 
-
-void WinError (void)
-{
-	LPVOID lpMsgBuf;
-
-	FormatMessage (
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-		NULL,
-		GetLastError (),
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-		(LPTSTR) &lpMsgBuf,
-		0,
-		NULL
-	);
-
-	// Display the string.
-	MessageBox (NULL, lpMsgBuf, "GetLastError", MB_OK|MB_ICONINFORMATION);
-
-	// Free the buffer.
-	LocalFree (lpMsgBuf);
-}
 
 //================================================================
 
@@ -152,8 +135,6 @@ void Sys_CopyProtect (void)
 /* NOTE: If error happens in ref_xxx.dll, error message will contain reference to
  * <not available> module (check this ??)
  */
-
-extern qboolean debugLogged;
 
 typedef unsigned address_t;
 
@@ -509,7 +490,7 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 
 		//?? should make logging a global class (implements opening/logging date/closing)
 		// make a log in "crash.log"
-		if (f = fopen ("crash.log", "a+"))
+		if (f = fopen (CRASH_LOG, "a+"))
 		{
 			CONTEXT* ctx = info->ContextRecord;
 //			EXCEPTION_RECORD* rec = info->ExceptionRecord;
@@ -537,9 +518,6 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			fprintf (f, "\n");
 			fclose (f);
 		}
-		if (debugLogged)
-			DebugPrintf ("***** CRUSH *****\n");
-
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
 	{
@@ -597,16 +575,40 @@ static bool cpuid (unsigned _in, unsigned regs[4])
 
 static void CheckCpuName (void)
 {
+#define MAX_CPU_NAME_PARTS	12	// 3 times of 4 regs
 	union {
-		unsigned reg[3];
-		char	name[3*4+1];
+		unsigned reg[MAX_CPU_NAME_PARTS];
+		char	name[MAX_CPU_NAME_PARTS*4+1];
 	} t;
 	unsigned r[4];
 
-	if (!cpuid (0, r))
+	if (!cpuid (0x80000000, r))
+	{
+		// no CPUID available
 		Com_Printf ("Unknown 386/486 CPU\n");
+		return;
+	}
+	if (r[0] >= 0x80000004)		// extended vendor string available
+	{
+		unsigned fn;
+		int		i = 0;
+		char	*s;
+		for (fn = 0x80000002; fn <= 0x80000004; fn++)
+		{
+			cpuid (fn, r);
+			t.reg[i++] = r[0];
+			t.reg[i++] = r[1];
+			t.reg[i++] = r[2];
+			t.reg[i++] = r[3];
+		}
+		t.name[i*4] = 0;
+		s = t.name;
+		while (*s == ' ') s++;
+		Com_Printf ("CPU: %s\n", s);
+	}
 	else
 	{
+		cpuid (0, r);
 		t.reg[0] = r[1];
 		t.reg[1] = r[3];
 		t.reg[2] = r[2];
@@ -643,13 +645,16 @@ static void CheckCpuCaps (void)
 	}
 
 	// check extended features
-	if (cpuid (0x80000000, r))
-		if (r[0] >= 0x80000001)		// largest recognized extended function
-			if (cpuid (0x80000001, r) && r[3] & 0x80000000)
-			{
-				Com_Printf ("3DNow! ");
-				Is3DNow = true;
-			}
+	cpuid (0x80000000, r);
+	if (r[0] >= 0x80000001)		// largest recognized extended function
+	{
+		cpuid (0x80000001, r);
+		if (r[3] & 0x80000000)
+		{
+			Com_Printf ("3DNow! ");
+			Is3DNow = true;
+		}
+	}
 
 	Com_Printf ("]\n");
 }
@@ -668,7 +673,6 @@ static void CheckCpuSpeed (void)
 {
 	int		tries;
 	unsigned time1, time2;
-//	float	tmp;
 	__int64	stamp1, stamp2;
 	double secPerCycle, secPerCycle1;
 
@@ -681,12 +685,10 @@ static void CheckCpuSpeed (void)
 	{
 		stamp1 = cycles ();
 		time1 = timeGetTime ();
-//		tmp = 0;
 		while (true)
 		{
 			time2 = timeGetTime ();
 			if (time2 - time1 > 200) break;		// 200ms enough to compute CPU speed
-//			tmp = tmp + sin (time2);			//?? just waste CPU time
 		}
 		stamp2 = cycles ();
 		secPerCycle1 = (time2 - time1) / (((double)stamp2 - (double)stamp1) * 1000);
@@ -711,39 +713,60 @@ void Sys_Init (void)
 {
 	OSVERSIONINFO	vinfo;
 
+	guard(Sys_Init);
+
 	vinfo.dwOSVersionInfoSize = sizeof(vinfo);
 
-	if (!GetVersionEx (&vinfo))
-		Sys_Error ("Couldn't get OS info");
+	GetVersionEx (&vinfo);
 
 	if (vinfo.dwMajorVersion < 4)
-		Sys_Error (APPNAME" requires Windows version 4 or greater");
-	if (vinfo.dwPlatformId == VER_PLATFORM_WIN32s)
-		Sys_Error (APPNAME" doesn't run on Win32s");
-	else if (vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
+		Sys_Error ("Requires Windows version 4 or greater");
+	if (vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
 		s_win95 = true;
 
-	CheckCpuName ();
-	CheckCpuCaps ();
-	CheckCpuSpeed ();
-
-	if (dedicated->integer)
+	if (DEDICATED)
 	{
-		if (!AllocConsole ())
-			Sys_Error ("Couldn't create dedicated server console");
+#ifndef DEDICATED_ONLY
+		AllocConsole ();
+#endif
 		hinput = GetStdHandle (STD_INPUT_HANDLE);
 		houtput = GetStdHandle (STD_OUTPUT_HANDLE);
 
 		// let QHOST hook in
 //??		InitConProc (argc, argv);
 	}
+
+	CheckCpuName ();
+	CheckCpuCaps ();
+	CheckCpuSpeed ();
+
 	//??
 	timeBeginPeriod (1);
+
+	unguard;
 }
 
 
-static char	console_text[256];
-static int	console_textlen;
+#define MAX_CMDLINE		256		//?? same as in client/keys.h
+
+static char	console_text[MAX_CMDLINE];
+static int	console_textlen = 0;
+static bool console_drawInput = true;
+
+static void EraseConInput (void)
+{
+	if (!console_drawInput)
+	{
+		char	text[MAX_CMDLINE+2];
+		int		dummy;
+
+		text[0] = '\r';
+		memset (&text[1], ' ', console_textlen+1);
+		text[console_textlen+2] = '\r';
+		text[console_textlen+3] = 0;
+		WriteFile (houtput, text, console_textlen+3, &dummy, NULL);
+	}
+}
 
 /*
 ================
@@ -752,73 +775,91 @@ Sys_ConsoleInput
 */
 char *Sys_ConsoleInput (void)
 {
-	INPUT_RECORD	recs[1024];
-	int		dummy;
-	int		ch, numread, numevents;
+	INPUT_RECORD rec;
+	int		dummy, ch, numread, numevents, len;
+	char	*s;
 
-	if (!dedicated || !dedicated->integer)
-		return NULL;
+	guard(Sys_ConsoleInput);
 
-	for ( ;; )
+	if (console_drawInput)
 	{
-		if (!GetNumberOfConsoleInputEvents (hinput, &numevents))
-			Sys_Error ("Error getting # of console events");
+		// display input line
+		WriteFile (houtput, "]", 1, &dummy, NULL);
+		if (console_textlen)
+			WriteFile (houtput, console_text, console_textlen, &dummy, NULL);
+		console_drawInput = false;
+	}
 
-		if (numevents <= 0)
-			break;
+	while (true)
+	{
+		GetNumberOfConsoleInputEvents (hinput, &numevents);
+		if (numevents <= 0) break;
+		ReadConsoleInput (hinput, &rec, 1, &numread);
 
-		if (!ReadConsoleInput(hinput, recs, 1, &numread))
-			Sys_Error ("Error reading console input");
-
-		if (numread != 1)
-			Sys_Error ("Couldn't read console input");
-
-		if (recs[0].EventType == KEY_EVENT)
+		if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown)
 		{
-			if (!recs[0].Event.KeyEvent.bKeyDown)
+			ch = rec.Event.KeyEvent.uChar.AsciiChar;
+			switch (ch)
 			{
-				ch = recs[0].Event.KeyEvent.uChar.AsciiChar;
+				case '\r':		// ENTER
+					WriteFile (houtput, "\r\n", 2, &dummy, NULL);
+					console_drawInput = true;
+					if (console_textlen)
+					{
+						console_textlen = 0;
+						return console_text;
+					}
+					break;
 
-				switch (ch)
-				{
-					case '\r':
-						WriteFile(houtput, "\r\n", 2, &dummy, NULL);
+				case '\b':		// BACKSPACE
+					if (console_textlen)
+					{
+						console_text[--console_textlen] = 0;
+						WriteFile (houtput, "\b \b", 3, &dummy, NULL);
+					}
+					break;
 
-						if (console_textlen)
+				case '\t':		// TAB
+					Com_sprintf (ARRAY_ARG(editLine), "]%s", console_text);
+					CompleteCommand ();
+					s = editLine;
+					if (s[0] == ']') s++;
+					if (s[0] == '/') s++;
+					len = strlen (s);
+					if (len > 0)
+					{
+						console_textlen = min(len, sizeof(console_text)-2);
+						Q_strncpyz (console_text, s, console_textlen+1);
+						Sys_ConsoleOutput ("");		// update line
+					}
+					break;
+
+				case '\x1B':	// ESC
+					EraseConInput ();
+					console_textlen = 0;
+					console_text[0] = 0;
+					break;
+
+				default:
+					if (ch >= ' ')
+					{
+						if (console_textlen < sizeof(console_text)-2)
 						{
+							WriteFile(houtput, &ch, 1, &dummy, NULL);
+							console_text[console_textlen++] = ch;
 							console_text[console_textlen] = 0;
-							console_textlen = 0;
-							return console_text;
 						}
-						break;
-
-					case '\b':
-						if (console_textlen)
-						{
-							console_textlen--;
-							WriteFile(houtput, "\b \b", 3, &dummy, NULL);
-						}
-						break;
-
-					default:
-						if (ch >= ' ')
-						{
-							if (console_textlen < sizeof(console_text)-2)
-							{
-								WriteFile(houtput, &ch, 1, &dummy, NULL);
-								console_text[console_textlen] = ch;
-								console_textlen++;
-							}
-						}
-
-						break;
-
-				}
+					}
+//					else
+//						Com_Printf ("%2X\n",ch);
+					break;
 			}
 		}
 	}
 
 	return NULL;
+
+	unguard;
 }
 
 
@@ -832,24 +873,30 @@ Print text to the dedicated console
 void Sys_ConsoleOutput (char *string)
 {
 	int		dummy;
-	char	text[256];
+	char	c;
 
-	if (!dedicated || !dedicated->integer)
-		return;
+	if (!DEDICATED) return;
 
-	if (console_textlen)
+	EraseConInput ();
+
+	// draw message
+	while (c = string[0])
 	{
-		text[0] = '\r';
-		memset(&text[1], ' ', console_textlen);
-		text[console_textlen+1] = '\r';
-		text[console_textlen+2] = 0;
-		WriteFile(houtput, text, console_textlen+2, &dummy, NULL);
+		// parse color info
+		if (c == '^' && string[1] >= '0' && string[1] <= '7')
+		{
+			static const byte colorTable[8] = {0, 4, 2, 6, 1, 5, 3, 7};
+			SetConsoleTextAttribute (houtput, colorTable[string[1] - '0']);
+			string += 2;
+			continue;
+		}
+		c &= 0x7F;		// clear 7th bit
+		WriteFile (houtput, &c, 1, &dummy, NULL);
+		string++;
 	}
+	SetConsoleTextAttribute (houtput, 7);
 
-	WriteFile(houtput, string, strlen(string), &dummy, NULL);
-
-	if (console_textlen)
-		WriteFile(houtput, console_text, console_textlen, &dummy, NULL);
+	console_drawInput = true;
 }
 
 
@@ -885,7 +932,7 @@ Sys_GetClipboardData
 
 ================
 */
-char *Sys_GetClipboardData( void )
+char *Sys_GetClipboardData (void)
 {
 	char *data = NULL;
 	char *cliptext;
@@ -1036,6 +1083,7 @@ void *Sys_GetGameAPI (void *parms)
 
 //=======================================================================
 
+extern qboolean debugLogged;
 
 /*
 ==================
@@ -1076,9 +1124,10 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 		guard(MainLoop);
 		while (true)
 		{
+#ifndef DEDICATED_ONLY
 			MSG		msg;
 
-			if (!ActiveApp || dedicated->integer)
+			if (!ActiveApp || DEDICATED)
 				Sleep (10);		//?? what about client and server in one place: will server become slower ?
 
 			while (PeekMessage (&msg, NULL, 0, 0, PM_NOREMOVE))
@@ -1089,6 +1138,9 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 				TranslateMessage (&msg);
 				DispatchMessage (&msg);
 			}
+#else
+			Sleep (10);
+#endif
 
 			// do not allow Qcommon_Frame(0)
 			while (true)
@@ -1118,10 +1170,31 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	}
 	GUARD_CATCH
 	{
+		FILE *f;
+		// log error
+		if (f = fopen (CRASH_LOG, "a+"))
+		{
+			if (!GErr.contextDumped)
+				fprintf (f, "----- " APPNAME " software exception -----\n%s\n\n", GErr.history);
+			else
+				fprintf (f, "%s\n\n", strrchr (GErr.history, '\n') + 1);
+			fclose (f);
+		}
+		if (debugLogged)
+			DebugPrintf ("***** CRASH *****\n%s\n*****************\n", GErr.history);
+
+		// shutdown all subsystems
 		//?? SV_Shutdown()
 		CL_Shutdown (true);
 		QCommon_Shutdown ();
-		MessageBox(NULL, GErr.history, APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
+
+		// display error
+#ifndef DEDICATED_ONLY
+		MessageBox (NULL, GErr.history, APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
+#else
+		Sys_ConsoleOutput ("\n\n^1--------------------\n" APPNAME " fatal error\n");
+		Sys_ConsoleOutput (GErr.history);
+#endif
 		// shut down QHOST hooks if necessary
 //??		DeinitConProc ();
 	}

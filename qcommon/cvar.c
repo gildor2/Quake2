@@ -17,10 +17,11 @@ static bool cheats = true;				// will be disabled on multiplayer game start
 static cvar_t	*hashTable[HASH_SIZE];
 
 
-static int ComputeHash (char *name)
+static int ComputeHash (const char *name)
 {
 	int		h;
-	char	*s, c;
+	const char *s;
+	char	c;
 
 	h = 0;
 	s = name;
@@ -30,7 +31,7 @@ static int ComputeHash (char *name)
 }
 
 
-static void Cvar_SetString (cvar_t *var, char *str)
+static void Cvar_SetString (cvar_t *var, const char *str)
 {
 	int		len;
 
@@ -72,7 +73,7 @@ static void Cvar_SetString (cvar_t *var, char *str)
 Cvar_InfoValidate
 ============
 */
-static bool Cvar_InfoValidate (char *s)
+static bool Cvar_InfoValidate (const char *s)
 {
 	if (strchr (s, '\\') || strchr (s, '\"') || strchr (s, ';'))
 		return false;
@@ -85,7 +86,7 @@ static bool Cvar_InfoValidate (char *s)
 Cvar_FindVar
 ============
 */
-static cvar_t *Cvar_FindVar (char *var_name)
+static cvar_t *Cvar_FindVar (const char *var_name)
 {
 	cvar_t	*var;
 	int		hash;
@@ -105,7 +106,7 @@ static cvar_t *Cvar_FindVar (char *var_name)
 Cvar_VariableValue
 ============
 */
-float Cvar_VariableValue (char *var_name)
+float Cvar_VariableValue (const char *var_name)
 {
 	cvar_t	*var;
 
@@ -120,7 +121,7 @@ float Cvar_VariableValue (char *var_name)
 Cvar_VariableValue
 ============
 */
-int Cvar_VariableInt (char *var_name)
+int Cvar_VariableInt (const char *var_name)
 {
 	cvar_t	*var;
 
@@ -135,7 +136,7 @@ int Cvar_VariableInt (char *var_name)
 Cvar_VariableString
 ============
 */
-char *Cvar_VariableString (char *var_name)
+char *Cvar_VariableString (const char *var_name)
 {
 	cvar_t *var;
 
@@ -148,7 +149,7 @@ char *Cvar_VariableString (char *var_name)
 
 void CL_WriteConfiguration (char *filename);
 
-static void Cvar_SetHardcoded (cvar_t *var, char *value)
+static void Cvar_SetHardcoded (cvar_t *var, const char *value)
 {
 	if (!stricmp (var->name, "game"))
 	{
@@ -164,7 +165,7 @@ static void Cvar_SetHardcoded (cvar_t *var, char *value)
 		Cvar_SetString (var, value);
 }
 
-static void FilterValue (cvar_t *var, char **value)
+static void FilterValue (cvar_t *var, const char **value)
 {
 	if (!stricmp (var->name, "game") && !strcmp (*value, BASEDIRNAME))
 		*value = "";
@@ -179,7 +180,7 @@ If the variable already exists, the value will not be set
 The flags will be or'ed in if the variable exists.
 ============
 */
-cvar_t *Cvar_Get (char *var_name, char *var_value, int flags)
+cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 {
 	cvar_t	*var;
 	int		hash;
@@ -303,7 +304,7 @@ void Cvar_GetVars (const cvarInfo_t *vars, int count)
 Cvar_Set2
 ============
 */
-static cvar_t *Cvar_Set2 (char *var_name, char *value, int flags, bool force)
+static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bool force)
 {
 	cvar_t	*var;
 
@@ -410,7 +411,7 @@ static cvar_t *Cvar_Set2 (char *var_name, char *value, int flags, bool force)
 Cvar_FullSet
 ============
 */
-cvar_t *Cvar_FullSet (char *var_name, char *value, int flags)
+cvar_t *Cvar_FullSet (const char *var_name, const char *value, int flags)
 {
 	cvar_t	*var;
 
@@ -434,22 +435,22 @@ cvar_t *Cvar_FullSet (char *var_name, char *value, int flags)
 Cvar_SetXXX
 ============
 */
-cvar_t *Cvar_SetValue (char *var_name, float value)
+cvar_t *Cvar_SetValue (const char *var_name, float value)
 {
 	return Cvar_Set2 (var_name, va("%g",value), 0, false);	// old: %f (will add trailing zeros: 1.000000)
 }
 
-cvar_t *Cvar_SetInteger (char *var_name, int value)
+cvar_t *Cvar_SetInteger (const char *var_name, int value)
 {
 	return Cvar_Set2 (var_name, va("%d", value), 0, false);
 }
 
-cvar_t *Cvar_Set (char *var_name, char *value)
+cvar_t *Cvar_Set (const char *var_name, const char *value)
 {
 	return Cvar_Set2 (var_name, value, 0, false);
 }
 
-cvar_t *Cvar_ForceSet (char *var_name, char *value)
+cvar_t *Cvar_ForceSet (const char *var_name, const char *value)
 {
 	return Cvar_Set2 (var_name, value, 0, true);
 }
@@ -472,7 +473,7 @@ float Cvar_Clamp (cvar_t *cvar, float low, float high)
 	return cvar->value;
 }
 
-float Cvar_ClampName (char *name, float low, float high)
+float Cvar_ClampName (const char *name, float low, float high)
 {
 	cvar_t	*var;
 

@@ -32,7 +32,7 @@
 #include "../client/ref.h"
 
 
-bool	QGL_Init (const char *dllname);
+bool	QGL_Init (const char *libName);
 void	QGL_InitExtensions (void);
 void	QGL_Shutdown (void);
 // logging
@@ -86,7 +86,7 @@ void GL_EnableRendering (bool enable);
  * - so, we need some structure with a static, cross-frame fields (now: glrefdef_t, rudimental structure)
  * 1) make client's refdef static, and add a link from portal to it
  * 2) eliminate refdef fields from portal
- * 3) client should establish mare control under refdef (detect viewcluster changes, areamask changes etc)
+ * 3) client should establish more control under refdef (detect viewcluster changes, areamask changes etc)
  * 4) portals/mirrors: we needs a way to keep few visibility marks for leafs ? (useless -- can't find a point
  *    of view source in common case (all reflections), when it will come from "inside wall" ?)
  *    -- use occlusion culling for mirrors ? (OR in most cases of Q3 portals (not mirrors), can use PVS - portals

@@ -33,7 +33,6 @@ typedef struct
 
 	qboolean minidriver;
 	qboolean allowdisplaydepthchange;
-	qboolean mcd_accelerated;
 } glwstate_t;
 
 extern glwstate_t glw_state;

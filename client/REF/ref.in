@@ -6,16 +6,16 @@ char*	Cmd_Argv (int i);
 char*	Cmd_Args (void);
 
 //--------- cvars -----------
-cvar_t*	Cvar_Get (char *name, char *value, int flags);
+cvar_t*	Cvar_Get (const char *name, const char *value, int flags);
 void	Cvar_GetVars (const cvarInfo_t *vars, int count);
-cvar_t*	Cvar_Set (char *name, char *value);
-cvar_t*	Cvar_SetValue (char *name, float value);
-cvar_t*	Cvar_SetInteger (char *name, int value);
-char*	Cvar_VariableString (char *name);
-float	Cvar_VariableValue (char *name);
-int	Cvar_VariableInt (char *name);
+cvar_t*	Cvar_Set (const char *name, const char *value);
+cvar_t*	Cvar_SetValue (const char *name, float value);
+cvar_t*	Cvar_SetInteger (const char *name, int value);
+char*	Cvar_VariableString (const char *name);
+float	Cvar_VariableValue (const char *name);
+int	Cvar_VariableInt (const char *name);
 float	Cvar_Clamp (cvar_t *cvar, float low, float high);
-float	Cvar_ClampName (char *name, float low, float high);
+float	Cvar_ClampName (const char *name, float low, float high);
 
 //--- memory management -----
 void*	Z_Malloc (int size);

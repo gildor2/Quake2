@@ -521,7 +521,9 @@ static void DrawLoadingAndConsole (bool allowNotifyArea)
 
 void SCR_ShowConsole (bool show, bool noAnim)
 {
-	if (*re.flags & REF_CONSOLE_ONLY)
+	guard(SCR_ShowConsole);
+
+	if (!re.flags || *re.flags & REF_CONSOLE_ONLY)	// !re.flags -- when dedicated server started
 	{
 		// ignore "show" arg
 		cls.key_dest = key_console;
@@ -541,6 +543,8 @@ void SCR_ShowConsole (bool show, bool noAnim)
 		if (noAnim) conCurrent = bound(con_maxSize->value, 0.1, 1);	//?? different (may be, not needed)
 		CL_Pause (true);
 	}
+
+	unguard;
 }
 
 
@@ -551,6 +555,7 @@ SCR_BeginLoadingPlaque
 */
 void SCR_BeginLoadingPlaque (void)
 {
+	guard(SCR_BeginLoadingPlaque);
 	S_StopAllSounds ();
 	cl.sound_prepped = false;		// don't play ambients
 	CDAudio_Stop ();
@@ -561,6 +566,7 @@ void SCR_BeginLoadingPlaque (void)
 	M_ForceMenuOff ();
 	SCR_ShowConsole (false, true);
 	SCR_UpdateScreen ();
+	unguard;
 }
 
 /*
@@ -570,6 +576,7 @@ SCR_EndLoadingPlaque
 */
 void SCR_EndLoadingPlaque (bool force)
 {
+	guard(SCR_EndLoadingPlaque);
 	if (force || (cls.disable_servercount != cl.servercount && cl.refresh_prepped))
 	{
 		cls.loading = false;
@@ -578,6 +585,7 @@ void SCR_EndLoadingPlaque (bool force)
 		Con_ClearNotify ();
 		SCR_ShowConsole (false, true);
 	}
+	unguard;
 }
 
 /*
@@ -1146,8 +1154,7 @@ void SCR_UpdateScreen (void)
 
 	guard(SCR_UpdateScreen);
 
-	if (!scr_initialized || !con_initialized)
-		return;				// not initialized yet
+	if (!scr_initialized) return;		// not initialized yet
 
 	// range check cl_camera_separation so we don't inadvertently fry someone's brain
 	Cvar_Clamp (cl_stereo_separation, 0, 1);

@@ -59,5 +59,7 @@ HARDWARE:
   - screenshot is black after changing color depth, but all OK when make one more vid_restart (TNT2, Win2K, 41.09)
   - GF FX5200 + det.56.72, compiled_vertex_array: have geometry bugs when mixing non-CVA & CVA rendering (disappear with
     gl_showtris=1); workaround: CVA is ALWAYS used (i.e. for 1-pass rendering too); ATI have no this bug
+? texture rectangle (ATI; NV untested): when "*video" created as regular texture and uploaded as rect texture, after displaying
+  video (exec alias "d1" -- video+demo) when level loading, displayed black rect instead of "loading" banner
 - notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move
   crouched)

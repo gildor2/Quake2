@@ -117,9 +117,10 @@ void Com_Printf (const char *fmt, ...)
 		return;
 	}
 
-	Con_Print (msg);
+	if (!DEDICATED)
+		Con_Print (msg);
 
-	// also echo to debugging console
+	// also echo to debugging console (in dedicated server mode only, when win32)
 	Sys_ConsoleOutput (msg);
 
 	// logfile
@@ -281,7 +282,7 @@ void Com_DropError (const char *fmt, ...)
 	}
 	else
 		SV_Shutdown ("", false);
-	CL_Drop ();
+	if (!DEDICATED) CL_Drop ();
 	throw;
 }
 
@@ -1540,7 +1541,7 @@ static void ParseCmdline (char *cmdline)
 }
 
 
-qboolean COM_CheckCmdlineVar (char *name)
+qboolean COM_CheckCmdlineVar (const char *name)
 {
 	int		i;
 	char	*cmd;
@@ -1616,6 +1617,8 @@ CVAR_END
 	Cmd_Init ();
 	Key_Init ();
 
+	Sys_Init ();
+
 	FS_InitFilesystem ();
 
 	FS_LoadGameConfig ();
@@ -1625,26 +1628,24 @@ CVAR_END
 	// init commands and vars
 	Cmd_AddCommand ("error", Com_Error_f);
 
-	if (dedicated->integer)
+	if (DEDICATED)
 	{
 		Cmd_AddCommand ("quit", Com_Quit);
 		linewidth = 80;
 	}
 
-	Sys_Init ();
-
 	NET_Init ();
 	Netchan_Init ();
 
 	SV_Init ();
-	CL_Init ();
+	if (!DEDICATED) CL_Init ();
 
 	// initialize rand() functions
 	srand (Sys_Milliseconds ());
 
 	if (nointro->integer == 0)
 	{	// if the user didn't give any commands, run default action
-		if (!dedicated->integer)
+		if (!DEDICATED)
 		{
 			Cbuf_AddText ("d1\n");
 			Cbuf_Execute ();
@@ -1732,11 +1733,12 @@ void QCommon_Frame (int msec)
 	c_traces = 0;
 	c_pointcontents = 0;
 
-	do
-	{
-		s = Sys_ConsoleInput ();
-		if (s) Cbuf_AddText (va("%s\n",s));
-	} while (s);
+	if (DEDICATED)
+		do
+		{
+			s = Sys_ConsoleInput ();
+			if (s) Cbuf_AddText (va("%s\n",s));
+		} while (s);
 	Cbuf_Execute ();
 
 	if (com_speeds->integer)
@@ -1751,64 +1753,67 @@ void QCommon_Frame (int msec)
 	if (com_speeds->integer)
 		time_between = Sys_Milliseconds ();
 
-	CL_Frame (msecf, realMsec);
-
-	if (com_speeds->integer)
+	if (!DEDICATED)
 	{
-		int		all, sv, gm, cl, rf;
-		static int old_gm, old_tr, old_pc;
+		CL_Frame (msecf, realMsec);
 
-		time_after = Sys_Milliseconds ();
-		all = time_after - time_before;
-		sv = time_between - time_before;
-		cl = time_after - time_between;
-		gm = time_after_game - time_before_game;
-		if (time_before_game > 0)	// have a valid game frame
+		if (com_speeds->integer)
 		{
-			old_gm = gm;
-			old_tr = c_traces;
-			old_pc = c_pointcontents;
-		}
-		rf = time_after_ref - time_before_ref;
-		sv -= gm;
-		cl -= rf;
-		re.DrawTextRight (va("sv:%2d gm:%2d (%2d) cl:%2d rf:%2d all:%2d",
-				sv, gm, old_gm, cl, rf, all), RGB(1, 0.8, 0.3));
-		re.DrawTextRight (va("tr: %4d (%4d) pt: %4d (%4d)",
-				c_traces, old_tr, c_pointcontents, old_pc), RGB(1, 0.8, 0.3));
+			int		all, sv, gm, cl, rf;
+			static int old_gm, old_tr, old_pc;
+
+			time_after = Sys_Milliseconds ();
+			all = time_after - time_before;
+			sv = time_between - time_before;
+			cl = time_after - time_between;
+			gm = time_after_game - time_before_game;
+			if (time_before_game > 0)	// have a valid game frame
+			{
+				old_gm = gm;
+				old_tr = c_traces;
+				old_pc = c_pointcontents;
+			}
+			rf = time_after_ref - time_before_ref;
+			sv -= gm;
+			cl -= rf;
+			re.DrawTextRight (va("sv:%2d gm:%2d (%2d) cl:%2d rf:%2d all:%2d",
+					sv, gm, old_gm, cl, rf, all), RGB(1, 0.8, 0.3));
+			re.DrawTextRight (va("tr: %4d (%4d) pt: %4d (%4d)",
+					c_traces, old_tr, c_pointcontents, old_pc), RGB(1, 0.8, 0.3));
 
 #ifdef SV_PROFILE
-		if (1)	//?? cvar
-		{
-			extern int prof_times[256];
-			extern int prof_counts[256];
-			static char *names[] = {"LinkEdict", "UnlinkEdict", "AreaEdicts", "Trace",
-				"PtContents", "Pmove", "ModIndex", "ImgIndex", "SndIndex",
-				"Malloc", "Free", "FreeTags"};
-			static unsigned counts[12], times[12];
-			static unsigned cyc, lastCycles, lastMsec;
-			int		i, msec;		// NOTE: msec overrided
-			float	scale;
-
-			cyc = cycles (); msec = Sys_Milliseconds ();
-			if (msec != lastMsec)
-				scale = (cyc - lastCycles) / (msec - lastMsec);
-			else
-				scale = 1e10;
-			if (!scale) scale = 1;
-			for (i = 0; i < ARRAY_COUNT(names); i++)
+			if (1)	//?? cvar
 			{
-				re.DrawTextLeft (va("%s: %3d %4f", names[i], counts[i], times[i]/scale), RGB(1, 0.8, 0.3));
-				if (time_before_game > 0)
+				extern int prof_times[256];
+				extern int prof_counts[256];
+				static char *names[] = {"LinkEdict", "UnlinkEdict", "AreaEdicts", "Trace",
+					"PtContents", "Pmove", "ModIndex", "ImgIndex", "SndIndex",
+					"Malloc", "Free", "FreeTags"};
+				static unsigned counts[12], times[12];
+				static unsigned cyc, lastCycles, lastMsec;
+				int		i, msec;		// NOTE: msec overrided
+				float	scale;
+
+				cyc = cycles (); msec = Sys_Milliseconds ();
+				if (msec != lastMsec)
+					scale = (cyc - lastCycles) / (msec - lastMsec);
+				else
+					scale = 1e10;
+				if (!scale) scale = 1;
+				for (i = 0; i < ARRAY_COUNT(names); i++)
 				{
-					counts[i] = prof_counts[i];
-					times[i] = prof_times[i];
-					prof_counts[i] = prof_times[i] = 0;
+					re.DrawTextLeft (va("%s: %3d %4f", names[i], counts[i], times[i]/scale), RGB(1, 0.8, 0.3));
+					if (time_before_game > 0)
+					{
+						counts[i] = prof_counts[i];
+						times[i] = prof_times[i];
+						prof_counts[i] = prof_times[i] = 0;
+					}
 				}
+				lastCycles = cyc; lastMsec = msec;
 			}
-			lastCycles = cyc; lastMsec = msec;
-		}
 #endif
+		}
 	}
 
 	unguard;

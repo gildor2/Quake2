@@ -39,6 +39,8 @@ image_t *Draw_FindPic (char *name)
 	image_t	*image;
 	char	fullname[MAX_QPATH];
 
+	guard(Draw_FindPic);
+
 	if (name[0] != '/' && name[0] != '\\')
 	{
 		Com_sprintf (fullname, sizeof(fullname), "pics/%s.pcx", name);
@@ -48,6 +50,8 @@ image_t *Draw_FindPic (char *name)
 		image = R_FindImage (name+1, it_pic);
 
 	return image;
+
+	unguardf(("%s", name));
 }
 
 
@@ -79,6 +83,8 @@ void Draw_Char (int x, int y, int num)
 	byte			*source;
 	int				drawline;
 	int				row, col;
+
+	guard(Draw_Char);
 
 	num &= 255;
 
@@ -124,6 +130,8 @@ void Draw_Char (int x, int y, int num)
 		source += 128;
 		dest += vid.rowbytes;
 	}
+
+	unguard;
 }
 
 /*
@@ -139,6 +147,8 @@ void Draw_CharColor (int x, int y, int num, int color)
 	byte			*source;
 	int				drawline;
 	int				row, col, c;
+
+	guard(Draw_CharColor);
 
 	num &= 255;
 
@@ -184,6 +194,8 @@ void Draw_CharColor (int x, int y, int num, int color)
 		source += 128;
 		dest += vid.rowbytes;
 	}
+
+	unguard;
 }
 
 
@@ -231,6 +243,8 @@ void R_DrawTexts (void)
 {
 	textrec_t *rec;
 
+	guard(R_DrawTexts);
+
 	next_left_y = next_right_y = TOP_TEXT_POS;
 	if (!textbuf_count) return;
 
@@ -242,6 +256,8 @@ void R_DrawTexts (void)
 	}
 
 	textbuf_count = 0;
+
+	unguard;
 }
 
 extern unsigned char d_16to8table[65536];
@@ -387,6 +403,8 @@ void Draw_StretchPic (int x, int y, int w, int h, char *name)
 {
 	image_t	*pic;
 
+	guard(Draw_StretchPic);
+
 	pic = Draw_FindPic (name);
 	if (!pic)
 	{
@@ -394,6 +412,8 @@ void Draw_StretchPic (int x, int y, int w, int h, char *name)
 		return;
 	}
 	Draw_StretchPicImplementation (x, y, w, h, pic);
+
+	unguardf(("%s", name));
 }
 
 /*
@@ -405,10 +425,14 @@ void Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *dat
 {
 	image_t	pic;
 
+	guard(Draw_StretchRaw8);
+
 	pic.pixels[0] = data;
 	pic.width = cols;
 	pic.height = rows;
 	Draw_StretchPicImplementation (x, y, w, h, &pic);
+
+	unguard;
 }
 
 /*
@@ -423,6 +447,8 @@ void Draw_Pic (int x, int y, char *name)
 	int				v, u;
 	int				tbyte;
 	int				height;
+
+	guard(Draw_Pic);
 
 	pic = Draw_FindPic (name);
 	if (!pic)
@@ -485,6 +511,8 @@ void Draw_Pic (int x, int y, char *name)
 			}
 		}
 	}
+
+	unguardf(("%s", name));
 }
 
 /*
@@ -588,6 +616,8 @@ void Draw_TileClear (int x, int y, int w, int h, char *name)
 	image_t		*pic;
 	int			x2;
 
+	guard(Draw_TileClear);
+
 	if (x < 0)
 	{
 		w += x;
@@ -619,6 +649,8 @@ void Draw_TileClear (int x, int y, int w, int h, char *name)
 		for (j=x ; j<x2 ; j++)
 			pdest[j] = psrc[j&63];
 	}
+
+	unguard;
 }
 
 
@@ -633,6 +665,8 @@ void Draw_Fill (int x, int y, int w, int h, int c)
 {
 	byte			*dest;
 	int				u, v;
+
+	guard(Draw_Fill);
 
 	if (x+w > vid.width)
 		w = vid.width - x;
@@ -654,6 +688,8 @@ void Draw_Fill (int x, int y, int w, int h, int c)
 	for (v=0 ; v<h ; v++, dest += vid.rowbytes)
 		for (u=0 ; u<w ; u++)
 			dest[u] = c;
+
+	unguard;
 }
 //=============================================================================
 
@@ -669,6 +705,8 @@ void Draw_Fade (int x, int y, int w, int h, int c)
 	byte	*pbuf;
 	int		t;
 
+	guard(Draw_Fade);
+
 	x2 = x + w;
 	y2 = y + h;
 	for (y1 = y; y1 < y2; y1++)
@@ -682,4 +720,6 @@ void Draw_Fade (int x, int y, int w, int h, int c)
 				pbuf[x1] = c;
 		}
 	}
+
+	unguard;//f(("%d,%d,%d,%d",x,y,w,h));
 }
