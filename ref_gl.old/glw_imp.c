@@ -298,7 +298,7 @@ static void UpdateGamma (void)
 void GLimp_SetGamma (float gamma, float intens)
 {
 	int		i, v;
-	float	invGamma, overbright;
+	float	invGamma;
 
 	if (!gammaStored) return;
 
@@ -309,7 +309,6 @@ void GLimp_SetGamma (float gamma, float intens)
 //	DebugPrintf("set gamma %g, %g\n", gamma, intens);//!!
 
 	invGamma = 1.0f / gamma;
-	overbright = (float) (1 << gl_config.overbrightBits);
 	for (i = 0; i < 256; i++)
 	{
 		float	tmp;
@@ -319,7 +318,7 @@ void GLimp_SetGamma (float gamma, float intens)
 		bright = r_brightness->value;
 		contr = bound(contr, 0.3, 1.8);
 		bright = bound(bright, 0.3, 1.8);
-		tmp = (((i << 8) * overbright - 32768) * contr + 32768) * bright;
+		tmp = (((i << 8) - 32768) * contr + 32768) * bright;
 		if (invGamma == 1.0)
 			v = tmp;
 		else

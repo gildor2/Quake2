@@ -97,9 +97,6 @@ void CL_DrawInventory (void)
 	x = (viddef.width-256)/2;
 	y = (viddef.height-240)/2;
 
-	// repaint everything next frame
-	SCR_DirtyScreen ();
-
 	re_DrawPic (x, y+8, "inventory");
 
 	y += 24;
@@ -111,7 +108,7 @@ void CL_DrawInventory (void)
 	{
 		item = index[i];
 		// search for a binding
-		Com_sprintf (binding, sizeof(binding), "use %s", cl.configstrings[CS_ITEMS+item]);
+		Com_sprintf (ARRAY_ARG(binding), "use %s", cl.configstrings[CS_ITEMS+item]);
 		bind = "";
 		for (j = 0; j < 256; j++)
 			if (keybindings[j] && !Q_stricmp (keybindings[j], binding))
@@ -120,8 +117,7 @@ void CL_DrawInventory (void)
 				break;
 			}
 
-		Com_sprintf (string, sizeof(string), "%6s %3i %s", bind, cl.inventory[item],
-			cl.configstrings[CS_ITEMS+item]);
+		Com_sprintf (ARRAY_ARG(string), "%6s %3i %s", bind, cl.inventory[item], cl.configstrings[CS_ITEMS+item]);
 		if (item == selected)
 			re_DrawChar (x-8, y, 13);	//?? original: 15 (but not displayed) anyway
 

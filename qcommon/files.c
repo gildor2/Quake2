@@ -1,7 +1,6 @@
 #include "qcommon.h"
 
 #include "../zip/zip.h"
-#include "../client/console.h"		//?? dependency on client code
 
 
 /*------------ In memory -----------------*/
@@ -198,7 +197,7 @@ static basenamed_t *AddDirFilesToList (char *findname, basenamed_t *list, int fl
 {
 	char	*s, *mask, pattern[MAX_OSPATH], wildcard[MAX_OSPATH];
 
-	strncpy (pattern, findname, sizeof(pattern)-1);
+	Q_strncpyz (pattern, findname, sizeof(pattern));
 	mask = strrchr (pattern, '/');
 	if (mask)
 	{
@@ -539,7 +538,7 @@ void FS_CopyFiles (char *srcMask, char *dstDir)
 	pos1 = found - srcMask + 1;
 
 	// prepare dst string
-	Q_CopyFilename (pattern, dstDir, sizeof(pattern)-1);
+	Q_CopyFilename (pattern, dstDir, sizeof(pattern));
 	pos2 = strlen (pattern);
 	if (!pos2 || pattern[pos2 - 1] != '/')
 	{
@@ -730,7 +729,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 	FILE			*f;
 
 	fileFromPak = 0;
-	Q_CopyFilename (buf, filename, sizeof(buf)-1);
+	Q_CopyFilename (buf, filename, sizeof(buf));
 	filename = buf;
 
 	/*-------------- check for links first ---------------------*/
@@ -738,7 +737,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 	{
 		if (!strncmp (filename, link->from, link->fromlength))
 		{
-			Com_sprintf (netpath, sizeof(netpath), "%s%s", link->to, filename + link->fromlength);
+			Com_sprintf (ARRAY_ARG(netpath), "%s%s", link->to, filename + link->fromlength);
 			if (f = fopen (netpath, "rb"))
 			{
 				*file = AllocFileInternal (netpath, f, FT_NORMAL);
@@ -815,7 +814,7 @@ int FS_FOpenFile (char *filename, FILE **file)
 			if (!gamelen)
 			{
 				// check a file in the directory tree (only for game-relative path)
-				Com_sprintf (netpath, sizeof(netpath), "%s/%s", search->filename, filename);
+				Com_sprintf (ARRAY_ARG(netpath), "%s/%s", search->filename, filename);
 
 				if (!(f = fopen (netpath, "rb"))) continue;
 				*file = AllocFileInternal (netpath, f, FT_NORMAL);
@@ -870,7 +869,7 @@ qboolean FS_FileExists (char *filename)
 	FILE			*f;
 
 	fileFromPak = 0;
-	Q_CopyFilename (buf, filename, sizeof(buf)-1);
+	Q_CopyFilename (buf, filename, sizeof(buf));
 	filename = buf;
 	DEBUG_LOG(va("check: %s\n", filename));
 
@@ -1307,7 +1306,7 @@ void FS_LoadGameConfig (void)
 
 	gdir = Cvar_VariableString ("gamedir");
 	// game = "" => gdir = "baseq2"
-	Com_sprintf (dir, sizeof(dir), "%s/%s", fs_basedir->string, *gdir ? gdir : BASEDIRNAME);
+	Com_sprintf (ARRAY_ARG(dir), "%s/%s", fs_basedir->string, *gdir ? gdir : BASEDIRNAME);
 
 	if (f = fopen (va("%s/%s", dir, fs_configfile->string), "r"))
 	{
@@ -1357,7 +1356,7 @@ qboolean FS_SetGamedir (char *dir)
 	}
 
 	// check for game directory change
-	Com_sprintf (path, sizeof(path), "%s/%s", fs_basedir->string, dir);
+	Com_sprintf (ARRAY_ARG(path), "%s/%s", fs_basedir->string, dir);
 	if (!strcmp (path, fs_gamedir))
 		return true;		// directory is not changed (should return something another to avoid FS_Restart ??)
 
@@ -1454,7 +1453,7 @@ static void FS_LoadPak_f (void)
 					"  or   loadpak <wildcard>\n");
 		return;
 	}
-	Com_sprintf (pakname, sizeof(pakname), "%s/%s", fs_gamedir, Cmd_Argv(1));
+	Com_sprintf (ARRAY_ARG(pakname), "%s/%s", fs_gamedir, Cmd_Argv(1));
 
 	if (strchr (pakname, '*'))
 	{	// name is a wildcard
@@ -1503,7 +1502,7 @@ static void FS_UnloadPak_f (void)
 
 		prev = NULL;
 		found = false;
-		Com_sprintf (pakname, sizeof(pakname), "%s/%s", fs_gamedir, Cmd_Argv(1));
+		Com_sprintf (ARRAY_ARG(pakname), "%s/%s", fs_gamedir, Cmd_Argv(1));
 
 		for (item = fs_searchpaths; item; item = next)
 		{
@@ -1533,7 +1532,7 @@ static void FS_UnloadPak_f (void)
 		return;
 	}
 
-	Com_sprintf (pakname, sizeof(pakname), "/%s", Cmd_Argv(1));
+	Com_sprintf (ARRAY_ARG(pakname), "/%s", Cmd_Argv(1));
 
 	if (!(search = FindPakStruc (pakname)))
 	{
@@ -1623,7 +1622,7 @@ basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags)
 	basenamed_t *list;
 	int		gamePos;
 
-	Q_CopyFilename (buf, name, sizeof(buf)-1);
+	Q_CopyFilename (buf, name, sizeof(buf));
 	DEBUG_LOG(va("list: %s\n", name));
 	name = buf;
 
@@ -1765,7 +1764,7 @@ static void FS_Dir_f (void)
 	{
 		char *tmp = findname;
 
-		Com_sprintf (findname, sizeof(findname), "%s/%s", path, wildcard);
+		Com_sprintf (ARRAY_ARG(findname), "%s/%s", path, wildcard);
 
 		while (*tmp)
 		{
@@ -1785,7 +1784,7 @@ static void FS_Dir_f (void)
 			}
 
 #define SPACING 6
-			colcount = (con.linewidth - 2 + SPACING) / (maxlen + SPACING);
+			colcount = (linewidth - 2 + SPACING) / (maxlen + SPACING);
 			if (!colcount) colcount = 1;
 
 			colwidth = maxlen + SPACING;
@@ -1955,7 +1954,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(fs_debug, 0, 0)
 CVAR_END
 
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 
 	Cmd_AddCommand ("path", FS_Path_f);
 	Cmd_AddCommand ("link", FS_Link_f);

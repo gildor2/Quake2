@@ -229,7 +229,7 @@ static void FreeCinematic (void)
 	}
 	if (cl.cinematicpalette_active)
 	{
-		re.CinematicSetPalette (NULL);
+		re.SetRawPalette (NULL);
 		cl.cinematicpalette_active = false;
 	}
 }
@@ -350,7 +350,7 @@ void SCR_RunCinematic (void)
 		return;
 	}
 
-	frame = Q_ftol ((cls.realtime - cl.cinematictime) * CIN_SPEED / 1000.0f);
+	frame = Q_round ((cls.realtime - cl.cinematictime) * CIN_SPEED / 1000.0f);
 	if (frame <= cl.cinematicframe)
 		return;
 	if (frame > cl.cinematicframe+1)
@@ -391,7 +391,7 @@ qboolean SCR_DrawCinematic (void)
 
 	if (cls.key_dest == key_menu)
 	{	// blank screen and pause if menu is up
-		re.CinematicSetPalette (NULL);
+		re.SetRawPalette (NULL);
 		cl.cinematicpalette_active = false;
 		S_StopAllSounds ();
 		return true;
@@ -405,7 +405,7 @@ qboolean SCR_DrawCinematic (void)
 
 	if (!cl.cinematicpalette_active)
 	{
-		re.CinematicSetPalette (cl.cinematicpalette);
+		re.SetRawPalette (cl.cinematicpalette);
 		cl.cinematicpalette_active = true;
 	}
 
@@ -445,7 +445,7 @@ void SCR_PlayCinematic (char *arg)
 
 	if (ext && (!strcmp (ext, ".pcx") || !strcmp (ext, ".jpg") || !strcmp (ext, ".tga")))
 	{	// static image
-		Q_CopyFilename (cin.imageName, arg, sizeof(cin.imageName)-1);
+		Q_CopyFilename (cin.imageName, arg, sizeof(cin.imageName));
 		cin.imageName[ext - arg] = 0;		// cut extension
 		re.DrawGetPicSize (&cin.width, &cin.height, cin.imageName);
 		cl.cinematicframe = CIN_PIC;		// flag signalling "draw pic"

@@ -1,11 +1,69 @@
 #include "client.h"
 
+#define	NUM_CON_TIMES 4
 
-console_t	con;
+#define	CON_TEXTSIZE 32768
+
+
+typedef struct
+{
+	int		line;
+	int		pos;
+} con_cache_t;
+
+typedef struct
+{
+	qboolean wrapped;		// will be set to true after 1st buffer wrap
+	qboolean started;		// "false" if was no access to console
+	qboolean wordwrap;
+
+	char	text[CON_TEXTSIZE * 2];	// first half - text, second - color
+	int		current;		// line where next message will be printed
+	int		x;				// offset in current line for next print
+	int		display;		// bottom of console displays this line
+
+	int		ormask;			// high bit mask for colored characters
+
+	int		totallines;		// total lines in console scrollback
+
+	int		startpos;		// points to begin of text buffer
+	int		endpos;			// text will be placed to endpos
+
+	float	cursorspeed;
+
+	int		vislines;
+
+	con_cache_t	disp;
+	con_cache_t	notif;
+
+	float	times[NUM_CON_TIMES];	// cls.realtime time the line was generated
+									// for transparent notify lines
+} console_t;
+
+
+static console_t con;
 
 static cvar_t	*con_notifytime;
 static cvar_t	*con_wordwrap;
 static cvar_t	*con_colortext;
+
+
+static qboolean chat_team;
+static char		chat_buffer[MAXCMDLINE];
+static int		chat_bufferlen = 0;
+
+
+#define MAX_HISTORY	32
+
+static char history[MAX_HISTORY][MAXCMDLINE];
+static int	historyLine, historyCount;
+
+// current line
+char	editLine[MAXCMDLINE];
+int		editPos;
+
+
+qboolean con_initialized;
 
 // WRAP_CHAR will be placed as "soft" line-feed instead of a space char
 #define		WRAP_CHAR	(' ' + 32)
@@ -95,28 +153,6 @@ void Con_ToggleConsole_f (void)
 	}
 }
 
-/*
-================
-Con_ToggleChat_f
-================
-*/
-static void Con_ToggleChat_f (void)
-{
-	Key_ClearTyping ();
-
-	if (cls.key_dest == key_console)
-	{
-		if (cls.state == ca_active)
-		{
-			M_ForceMenuOff ();
-			cls.key_dest = key_game;
-		}
-	}
-	else
-		cls.key_dest = key_console;
-
-	Con_ClearNotify ();
-}
 
 /*
 ================
@@ -135,7 +171,7 @@ static void Con_Clear_f (void)
 
 	if (!con.started)
 	{
-		con.linewidth = 38;
+		linewidth = 38;
 		con.started = true;
 	}
 	// clear line position cache
@@ -164,7 +200,7 @@ static void Con_Dump_f (void)
 		return;
 	}
 
-	Com_sprintf (name, sizeof(name), "%s/%s.txt", FS_Gamedir(), Cmd_Argv(1));
+	Com_sprintf (ARRAY_ARG(name), "%s/%s.txt", FS_Gamedir(), Cmd_Argv(1));
 
 	Com_Printf ("Dumped console text to %s.\n", name);
 	FS_CreatePath (name);
@@ -207,34 +243,9 @@ Con_ClearNotify
 */
 void Con_ClearNotify (void)
 {
-	int		i;
-
-	for (i = 0; i < NUM_CON_TIMES ; i++)
-		con.times[i] = 0;
+	memset (con.times, 0, sizeof(con.times));
 }
 
-
-/*
-================
-Con_MessageMode_f
-================
-*/
-static void Con_MessageMode_f (void)
-{
-	chat_team = false;
-	cls.key_dest = key_message;
-}
-
-/*
-================
-Con_MessageMode2_f
-================
-*/
-static void Con_MessageMode2_f (void)
-{
-	chat_team = true;
-	cls.key_dest = key_message;
-}
 
 /*
 ================
@@ -252,17 +263,17 @@ void Con_CheckResize (void)
 	w = (con_wordwrap && con_wordwrap->integer);
 	if (w != con.wordwrap)
 	{
-		con.linewidth = -1;				// force resize
+		linewidth = -1;					// force resize
 		con.wordwrap = w;
 	}
 
 	width = (viddef.width >> 3) - 2;
 	if (width < 1) width = 38;			// wideo hash't initialized
 
-	if (width == con.linewidth)
+	if (width == linewidth)
 		return;
 
-	con.linewidth = width;
+	linewidth = width;
 
 	size = con.endpos - con.startpos;	// size of data in buffer
 	if (size < 0) size+= CON_TEXTSIZE;	// wrap buffer: endpos < startpos
@@ -316,45 +327,6 @@ void Con_CheckResize (void)
 }
 
 
-/*
-================
-Con_Init
-================
-*/
-void Con_Init (void)
-{
-CVAR_BEGIN(vars)
-	CVAR_VAR(con_notifytime, 3, 0),
-	CVAR_VAR(con_wordwrap, 1, CVAR_ARCHIVE),
-	CVAR_VAR(con_colortext, 1, CVAR_ARCHIVE)
-CVAR_END
-
-	if (con.initialized) return;
-
-	con.linewidth = -1;		// force Con_CheckResize()
-
-	if (!con.started) Con_Clear_f ();
-
-	Con_CheckResize ();
-
-	Com_Printf ("Console initialized.\n");
-
-	//-------- register our commands/cvars ----------
-	con_notifytime = Cvar_Get ("con_notifytime", "3", 0);
-	con_wordwrap = Cvar_Get ("con_wordwrap", "1", CVAR_ARCHIVE);
-	con_colortext = Cvar_Get ("con_colortext", "1", CVAR_ARCHIVE);
-
-	Cmd_AddCommand ("toggleconsole", Con_ToggleConsole_f);
-	Cmd_AddCommand ("togglechat", Con_ToggleChat_f);
-	Cmd_AddCommand ("messagemode", Con_MessageMode_f);
-	Cmd_AddCommand ("messagemode2", Con_MessageMode2_f);
-	Cmd_AddCommand ("clear", Con_Clear_f);
-	Cmd_AddCommand ("condump", Con_Dump_f);
-
-	con.initialized = true;
-}
-
-
 static int FindLine (int lineno)
 {
 	int		i, size, line, x;
@@ -390,7 +362,7 @@ static int FindLine (int lineno)
 		c = con.text[i++];
 		if (i >= CON_TEXTSIZE) i -= CON_TEXTSIZE;
 
-		if (c == '\n' || c == WRAP_CHAR || ++x >= con.linewidth)
+		if (c == '\n' || c == WRAP_CHAR || ++x >= linewidth)
 		{
 			x = 0;
 			line++;
@@ -422,7 +394,7 @@ static void PlaceChar (char c, int color)
 			t = con.text[con.startpos++];
 			if (con.startpos >= CON_TEXTSIZE) con.startpos -= CON_TEXTSIZE;
 
-			if (t == '\n' || t == WRAP_CHAR || ++x >= con.linewidth) break; // killed
+			if (t == '\n' || t == WRAP_CHAR || ++x >= linewidth) break; // killed
 		}
 		con.totallines--;
 	}
@@ -447,14 +419,14 @@ static void PlaceChar (char c, int color)
 	}
 	con.text[con.endpos] = '\n';	// mark (temporary) end of line
 
-	if (c == '\n' || ++con.x >= con.linewidth)
+	if (c == '\n' || ++con.x >= linewidth)
 	{	// new line
 		con.x = 0;
 		if (con.wordwrap && c != '\n')
 		{	// make a word wrap
 			i = con.endpos;	// seek back to find space
 			x = -1;
-			while (++x < con.linewidth)
+			while (++x < linewidth)
 			{
 				if (--i < 0) i += CON_TEXTSIZE;
 				c = con.text[i];
@@ -538,7 +510,7 @@ void Con_CenteredPrint (char *text)
 	char	buffer[1024];
 
 	l = strlen (text);
-	l = (con.linewidth - l) / 2;
+	l = (linewidth - l) / 2;
 	if (l < 0)
 		l = 0;
 	memset (buffer, ' ', l);
@@ -546,14 +518,6 @@ void Con_CenteredPrint (char *text)
 	strcat (buffer, "\n");
 	Con_Print (buffer);
 }
-
-/*
-==============================================================================
-
-DRAWING
-
-==============================================================================
-*/
 
 
 /*
@@ -576,9 +540,9 @@ static void Con_DrawInput (void)
 	text = editLine;
 
 	// prestep if horizontally scrolling
-	if (editPos >= con.linewidth)
+	if (editPos >= linewidth)
 	{
-		shift = 1 + editPos - con.linewidth;
+		shift = 1 + editPos - linewidth;
 		text += shift;
 	}
 	else
@@ -591,7 +555,7 @@ static void Con_DrawInput (void)
 		y = (viddef.height >> 3) - 2;
 
 	eoln = false;
-	for (i = 0; i < con.linewidth; i++, text++)
+	for (i = 0; i < linewidth; i++, text++)
 	{
 		if (!eoln)
 		{
@@ -631,7 +595,7 @@ void Con_DrawNotify (qboolean drawBack)
 	v = 0;
 	pos = -1;
 	bgPaint = !drawBack;
-	for (i = con.current - NUM_CON_TIMES; i <= con.current; i++)
+	for (i = con.current - NUM_CON_TIMES + 1; i <= con.current; i++)
 	{
 		int		time;
 
@@ -658,7 +622,7 @@ void Con_DrawNotify (qboolean drawBack)
 			re.DrawFill2 (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * 8 + 4, 1, 0, 0, 0.3);
 			bgPaint = true;
 		}
-		for (x = 0; x < con.linewidth; x++)
+		for (x = 0; x < linewidth; x++)
 		{
 			int		color;
 			char	c;
@@ -700,12 +664,6 @@ void Con_DrawNotify (qboolean drawBack)
 		re_DrawCharColor (x << 3, v, 10 + ((curtime >> 8) & 1), 7);
 		v += 8;
 	}
-
-	if (v)
-	{
-		SCR_AddDirtyPoint (0, 0);
-		SCR_AddDirtyPoint (viddef.width - 1, v);
-	}
 }
 
 
@@ -732,11 +690,15 @@ void Con_DrawConsole (float frac)
 		lines = viddef.height;
 
 	/*---------- draw the background ---------------*/
+#if 0
 //	re.DrawStretchPic (0, -viddef.height+lines, viddef.width, viddef.height, "conback");
 	re.DrawStretchPic (0, 0, viddef.width, lines, "conback");
-	SCR_AddDirtyPoint (0, 0);
-	SCR_AddDirtyPoint (viddef.width - 1, lines - 1);
-
+#else
+	if (frac == 1)
+		re.DrawStretchPic (0, 0, viddef.width, lines, "conback");
+	else
+		re.DrawFill2 (0, 0, viddef.width, lines, 0, 0, 0, 0.5);
+#endif
 	// Variables for console-only mode
 	dx = viddef.width >> 3;
 	dy = viddef.height >> 3;
@@ -777,14 +739,14 @@ void Con_DrawConsole (float frac)
 		if (!(*re.flags & REF_CONSOLE_ONLY))
 		{
 			y = (rows - 1) * 8;
-			for (x = 0; x < con.linewidth; x += 4)
+			for (x = 0; x < linewidth; x += 4)
 				re.DrawCharColor ((x + 1) * 8, y, '^', 7);
 			y -= 8;
 		}
 		else
 		{
 			y = rows - 1;
-			for (x = 0; x < con.linewidth; x += 4)
+			for (x = 0; x < linewidth; x += 4)
 				re.DrawConCharColor (x + 1, y, '^', 7);
 			y--;
 		}
@@ -815,7 +777,7 @@ void Con_DrawConsole (float frac)
 	{
 		while (rows--)
 		{
-			for (x = 0; x < con.linewidth; x++)
+			for (x = 0; x < linewidth; x++)
 			{
 				c = con.text[i];
 				color = con.text[i + CON_TEXTSIZE];
@@ -846,9 +808,9 @@ void Con_DrawConsole (float frac)
 		else
 			text = cls.downloadname;
 
-		x = con.linewidth - ((con.linewidth * 7) / 40);
+		x = linewidth - ((linewidth * 7) / 40);
 		y = x - strlen (text) - 8;
-		i = con.linewidth / 3;
+		i = linewidth / 3;
 		if (strlen (text) > i)
 		{
 			y = x - i - 11;
@@ -874,7 +836,7 @@ void Con_DrawConsole (float frac)
 		dlbar[i++] = '\x82';
 		dlbar[i] = 0;
 
-		Com_sprintf (dlbar + strlen (dlbar), sizeof(dlbar), " %02d%%", cls.downloadpercent);
+		Com_sprintf (dlbar+i, sizeof(dlbar)-i, " %02d%%", cls.downloadpercent);
 
 		// draw it
 		y = con.vislines - 12;
@@ -885,4 +847,369 @@ void Con_DrawConsole (float frac)
 
 	// draw the input prompt, user text, and cursor if desired
 	Con_DrawInput ();
+}
+
+
+/*-----------------------------------------------------------------------------
+	Keyboard handling
+-----------------------------------------------------------------------------*/
+
+
+static qboolean iswordsym(char n)
+{
+	return (n >= '0' && n <= '9') || (n >= 'A' && n <= 'Z') || (n >= 'a' && n <= 'z') || n == '_';
+}
+
+void Key_Console (int key)
+{
+	int		i, KEY;
+
+	switch (key)
+	{
+	case K_KP_SLASH:
+		key = '/';
+		break;
+	case K_KP_MINUS:
+		key = '-';
+		break;
+	case K_KP_PLUS:
+		key = '+';
+		break;
+	case K_KP_HOME:
+		key = '7';
+		break;
+	case K_KP_UPARROW:
+		key = '8';
+		break;
+	case K_KP_PGUP:
+		key = '9';
+		break;
+	case K_KP_LEFTARROW:
+		key = '4';
+		break;
+	case K_KP_5:
+		key = '5';
+		break;
+	case K_KP_RIGHTARROW:
+		key = '6';
+		break;
+	case K_KP_END:
+		key = '1';
+		break;
+	case K_KP_DOWNARROW:
+		key = '2';
+		break;
+	case K_KP_PGDN:
+		key = '3';
+		break;
+	case K_KP_INS:
+		key = '0';
+		break;
+	case K_KP_DEL:
+		key = '.';
+		break;
+	}
+
+	KEY = toupper (key);
+	if (KEY == 'V' && keydown[K_CTRL] || key == K_INS && keydown[K_SHIFT])	// Ctrl-V or Shift-Ins
+	{
+		char	*cbd;
+
+		if (cbd = Sys_GetClipboardData ())
+		{
+//			strtok (cbd, "\n\r\b");
+			i = strlen (cbd);
+			if (i + editPos > MAXCMDLINE - 1)
+				i = MAXCMDLINE - editPos - 1;
+
+			if (i > 0)
+			{
+				cbd[i] = 0;
+				strcat (editLine, cbd);
+				editPos += i;
+			}
+			free (cbd);
+		}
+
+		return;
+	}
+
+	if (KEY == 'L' && keydown[K_CTRL])		// Ctrl-L
+	{
+		Cbuf_AddText ("clear\n");
+		return;
+	}
+
+	if (key == K_ENTER || key == K_KP_ENTER)
+	{
+		// trim spaces at line end
+/*		for (i = strlen (editLine) - 1; i >= 0; i--)
+			if (editLine[i] == ' ')
+				editLine[i] = 0;
+			else
+				break; */
+		// backslash text are commands, else chat
+		if (editLine[1] == '\\' || editLine[1] == '/')
+			Cbuf_AddText (editLine + 2);			// skip the prompt
+		else
+			Cbuf_AddText (editLine + 1);			// valid command
+		Cbuf_AddText ("\n");
+
+		Com_Printf ("%s\n", editLine);
+		if (!editLine[1])							// do not add empty line to history
+		{
+			Key_ClearTyping ();
+			return;
+		}
+
+		// find the same line in history and remove it
+		for (i = 0; i < historyCount; i++)
+			if (!strcmp (history[i], editLine))
+			{
+				if (i != historyCount - 1) memcpy (history[i], history[i+1], sizeof(history[0]) * (historyCount - 1 - i));
+				historyCount--;
+				break;
+			}
+
+		// add current line to history
+		if (historyCount < MAX_HISTORY)
+			historyCount++;
+		else
+			memcpy (history[0], history[1], sizeof(history[0]) * (MAX_HISTORY - 1));
+		memcpy (history[historyCount-1], editLine, sizeof(editLine));
+		historyLine = historyCount;
+		// prepare new line
+		Key_ClearTyping ();
+		if (cls.state == ca_disconnected)
+			SCR_UpdateScreen ();					// force an update, because the command may take some time
+		return;
+	}
+
+	if (key == K_TAB)
+	{	// command completion
+		CompleteCommand ();
+		return;
+	}
+
+	if (key == K_LEFTARROW || key == K_BACKSPACE)
+	{
+		if (editPos <= 1) return;
+		i = editPos;
+		if (keydown[K_CTRL])
+		{
+			while (editPos > 1 && !iswordsym (editLine[--editPos]));
+			while (editPos > 0 && iswordsym (editLine[--editPos]));
+			editPos++;
+		}
+		else
+			editPos--;
+
+		if (key == K_BACKSPACE)
+			strcpy (&editLine[editPos], &editLine[i]);
+		return;
+	}
+
+	if (key == K_RIGHTARROW)
+	{
+		if (keydown[K_CTRL])
+		{
+			while (editLine[editPos] && iswordsym (editLine[editPos])) editPos++;
+			while (editLine[editPos] && !iswordsym (editLine[editPos])) editPos++;
+		}
+		else
+			if (editLine[editPos]) editPos++;
+		return;
+	}
+
+	if (key == K_DEL)
+	{
+		char	*s;
+
+		s = &editLine[editPos];
+		if (keydown[K_CTRL])
+			*s = 0;
+		else
+			strcpy (s, s + 1);
+		return;
+	}
+
+	if (key == K_UPARROW || (KEY == 'P' && keydown[K_CTRL]))
+	{
+		if (!historyLine) return;					// empty or top of history
+
+		strcpy (editLine, history[--historyLine]);
+		editPos = strlen (editLine);
+		return;
+	}
+
+	if (key == K_DOWNARROW || (KEY == 'N' && keydown[K_CTRL]))
+	{
+		if (historyLine >= historyCount) return;	// bottom of history
+
+		historyLine++;
+		if (historyLine == historyCount)
+			Key_ClearTyping ();
+		else
+		{
+			strcpy (editLine, history[historyLine]);
+			editPos = strlen (editLine);
+		}
+		return;
+	}
+
+	if (key == K_MWHEELUP)
+	{
+		con.display -= 8;
+		return;
+	}
+
+	if (key == K_MWHEELDOWN)
+	{
+		con.display += 8;
+		return;
+	}
+
+	if (key == K_PGUP)
+	{
+		con.display -= 2;
+		if (con.display < con.current - con.totallines + 10)
+			con.display = con.current - con.totallines + 10;
+		return;
+	}
+
+	if (key == K_PGDN)
+	{
+		con.display += 2;
+		return;
+	}
+
+	if (key == K_HOME)
+	{
+		if (keydown[K_CTRL])
+			con.display = con.current - con.totallines + 10;
+		else
+			editPos = 1;
+		return;
+
+	}
+
+	if (key == K_END)
+	{
+		if (keydown[K_CTRL])
+			con.display = con.current;
+		else
+			editPos = strlen (editLine);
+		return;
+	}
+
+	if (key < 32 || key > 127)
+		return;	// non printable
+
+	if (editPos < MAXCMDLINE - 2)
+	{
+		for (i = MAXCMDLINE - 1; i > editPos; i--) editLine[i] = editLine[i - 1];
+		editLine[editPos++] = key;
+	}
+}
+
+
+/*-----------------------------------------------------------------------------
+	Chat input
+-----------------------------------------------------------------------------*/
+
+void Key_Message (int key)
+{
+
+	if (key == K_ENTER || key == K_KP_ENTER)
+	{
+		if (chat_team)
+			Cbuf_AddText ("say_team \"");
+		else
+			Cbuf_AddText ("say \"");
+		Cbuf_AddText (chat_buffer);
+		Cbuf_AddText ("\"\n");
+
+		cls.key_dest = key_game;
+		chat_bufferlen = 0;
+		chat_buffer[0] = 0;
+		return;
+	}
+
+	if (key == K_ESCAPE)
+	{
+		cls.key_dest = key_game;
+		chat_bufferlen = 0;
+		chat_buffer[0] = 0;
+		return;
+	}
+
+	if (key < 32 || key > 127)
+		return;		// non printable
+
+	if (key == K_BACKSPACE)
+	{
+		if (chat_bufferlen)
+		{
+			chat_bufferlen--;
+			chat_buffer[chat_bufferlen] = 0;
+		}
+		return;
+	}
+
+	if (chat_bufferlen == sizeof(chat_buffer)-1)
+		return;		// all full
+
+	chat_buffer[chat_bufferlen++] = key;
+	chat_buffer[chat_bufferlen] = 0;
+}
+
+
+static void Con_MessageMode_f (void)
+{
+	chat_team = false;
+	cls.key_dest = key_message;
+}
+
+
+static void Con_MessageMode2_f (void)
+{
+	chat_team = true;
+	cls.key_dest = key_message;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Initialization
+-----------------------------------------------------------------------------*/
+
+void Con_Init (void)
+{
+CVAR_BEGIN(vars)
+	CVAR_VAR(con_notifytime, 3, 0),
+	CVAR_VAR(con_wordwrap, 1, CVAR_ARCHIVE),
+	CVAR_VAR(con_colortext, 1, CVAR_ARCHIVE)
+CVAR_END
+
+	if (con_initialized) return;
+
+	linewidth = -1;		// force Con_CheckResize()
+
+	if (!con.started) Con_Clear_f ();
+
+	Con_CheckResize ();
+
+	Com_Printf ("Console initialized.\n");
+
+	//-------- register our commands/cvars ----------
+	con_notifytime = Cvar_Get ("con_notifytime", "3", 0);
+	con_wordwrap = Cvar_Get ("con_wordwrap", "1", CVAR_ARCHIVE);
+	con_colortext = Cvar_Get ("con_colortext", "1", CVAR_ARCHIVE);
+
+	Cmd_AddCommand ("toggleconsole", Con_ToggleConsole_f);
+	Cmd_AddCommand ("messagemode", Con_MessageMode_f);
+	Cmd_AddCommand ("messagemode2", Con_MessageMode2_f);
+	Cmd_AddCommand ("clear", Con_Clear_f);
+	Cmd_AddCommand ("condump", Con_Dump_f);
+
+	con_initialized = true;
 }

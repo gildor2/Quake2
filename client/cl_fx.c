@@ -94,7 +94,7 @@ void CL_RunLightStyles (void)
 			pos1 = pos + 1;
 			if (pos1 >= ls->length) pos1 = 0;
 
-			ls->value = Q_ftol (ls->map[pos] * frac + ls->map[pos1] * frac1);
+			ls->value = Q_round (ls->map[pos] * frac + ls->map[pos1] * frac1);
 		}
 	}
 }
@@ -305,7 +305,7 @@ static void CL_AddParticleTraces (float timeDelta)
 			if (trace.startsolid || trace.allsolid || trace.fraction < 1.0f)
 			{
 //Com_Printf("tr: st=%d all=%d f=%g / %g %g %g = %d\n",
-//trace.startsolid, trace.allsolid, trace.fraction, VECTOR_ARGS(trace.endpos), trace.contents);//!!
+//trace.startsolid, trace.allsolid, trace.fraction, VECTOR_ARG(trace.endpos), trace.contents);//!!
 				p->allocated = false;
 				continue;
 			}
@@ -440,7 +440,7 @@ static void CL_AddParticleBeams (float timeDelta)
 			ent.flags = RF_BEAM_EXT;
 
 			b->alpha -= alphaDelta;
-			b->color.c[3] = Q_ftol (b->alpha * 255);
+			b->color.c[3] = Q_round (b->alpha * 255);
 			b->radius += radiusDelta;
 			VectorCopy (b->start, ent.origin);
 			VectorCopy (b->end, ent.oldorigin);

@@ -410,24 +410,6 @@ float Q_fabs (float f)
 
 
 /*
-#if defined _M_IX86 && !defined C_ONLY
-#pragma warning (disable:4035)
-__declspec (naked) long Q_ftol (float f)
-{
-	static int tmp;
-
-	__asm {
-		fld		dword ptr [esp+4]
-		fistp	tmp
-		mov		eax,tmp
-		ret
-	}
-}
-#pragma warning (default:4035)
-#endif
-*/
-
-/*
 =================
 SetPlaneSignbits
 
@@ -524,17 +506,6 @@ int BoxOnPlaneSide (vec3_t mins, vec3_t maxs, cplane_t *p)
 {
 	float	dist1, dist2;
 	int		sides;
-
-	// fast axial cases -- use BOX_ON_PLANE_SIDE for this
-/*	if (p->type < 3)
-	{
-		if (p->dist <= emins[p->type])
-			return 1;
-		if (p->dist >= emaxs[p->type])
-			return 2;
-		return 3;
-	} */
-
 	float	i0, i1, i2, a0, a1, a2;
 
 	i0 = p->normal[0] * mins[0];
@@ -1588,7 +1559,7 @@ void Q_CopyFilename (char *dest, char *src, int len)
 		*d++ = c;
 		if (!c) break;
 	}
-	*d = 0;
+	if (len < 0) *(--d) = 0;
 
 	s = d = dest;
 	len = 0;
@@ -1804,7 +1775,7 @@ void Info_SetValueForKey (char *s, char *key, char *value)
 	if (!value || !strlen (value))
 		return;
 
-	Com_sprintf (newi, sizeof(newi), "\\%s\\%s", key, value);
+	Com_sprintf (ARRAY_ARG(newi), "\\%s\\%s", key, value);
 
 	if (strlen (newi) + strlen (s) > maxsize)
 	{

@@ -431,7 +431,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(cd_looptrack, 11, 0)
 CVAR_END
 
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 	if (cd_nocd->integer)
 		return -1;
 

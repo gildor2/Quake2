@@ -240,13 +240,13 @@ void SV_LinkEdict (edict_t *ent)
 	if (ent->solid == SOLID_BBOX)
 	{
 		// assume that x/y are equal and symetric
-		i = Q_ftol ((ent->maxs[0] + 4) / 8);
+		i = Q_round (ent->maxs[0] / 8);
 		i = bound(i, 1, 31);
 		// z is not symetric
-		j = Q_ftol ((-ent->mins[2] + 4) / 8);
+		j = Q_round (-ent->mins[2] / 8);
 		j = bound(j, 1, 31);
 		// and z maxs can be negative...
-		k = Q_ftol ((ent->maxs[2] + 32 + 4) / 8);
+		k = Q_round ((ent->maxs[2] + 32) / 8);
 		k = bound(k, 1, 63);
 
 		// if SVF_DEADMONSTER, s.solid should be 0

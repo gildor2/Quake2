@@ -77,7 +77,7 @@ typedef enum
 	RGBGEN_VERTEX,				// vertex lighting (overbrighted)
 	RGBGEN_EXACT_VERTEX,		// not affected by overbrighting
 	RGBGEN_ONE_MINUS_VERTEX,
-	RGBGEN_BOOST_VERTEX,		// vertex color with boosted
+	RGBGEN_BOOST_VERTEX,		// vertex color with boosted value to avoid black
 	RGBGEN_ENTITY,
 	RGBGEN_ONE_MINUS_ENTITY,
 	RGBGEN_WAVE,
@@ -89,7 +89,6 @@ typedef enum
 {
 	ALPHAGEN_IDENTITY,			// => alphaGen const 1
 	ALPHAGEN_CONST,
-//	ALPHAGEN_NONE,				//?? use const (is it needed?)
 	ALPHAGEN_ENTITY,
 	ALPHAGEN_ONE_MINUS_ENTITY,
 	ALPHAGEN_VERTEX,

@@ -124,8 +124,7 @@ static void GenerateColorArray (shaderStage_t *st)
 			dst->rgba = rgba;
 		break;
 	case RGBGEN_EXACT_VERTEX:
-		for (i = 0; i < gl_numVerts; i++, src++, dst++)	//?? memcpy()
-			dst->rgba = src->rgba;
+		memcpy (dst, src, gl_numVerts * sizeof(color_t));
 		break;
 	case RGBGEN_VERTEX:
 		for (i = 0; i < gl_numVerts; i++, src++, dst++)
@@ -184,6 +183,7 @@ static void GenerateColorArray (shaderStage_t *st)
 		return;	// alpha is already set
 
 	/*--------- alphaGen ----------*/
+	src = srcVertexColor;
 	dst = vb->color;
 	switch (st->alphaGenType)
 	{
@@ -193,12 +193,12 @@ static void GenerateColorArray (shaderStage_t *st)
 			dst->c[3] = a;
 		break;
 	case ALPHAGEN_VERTEX:
-		for (i = 0; i < gl_numVerts; i++, dst++)
-			dst->c[3] = srcVertexColor[i].c[3];
+		for (i = 0; i < gl_numVerts; i++, src++, dst++)
+			dst->c[3] = src->c[3];
 		break;
 	case ALPHAGEN_ONE_MINUS_VERTEX:
-		for (i = 0; i < gl_numVerts; i++, dst++)
-			dst->c[3] = 255 - srcVertexColor[i].c[3];
+		for (i = 0; i < gl_numVerts; i++, src++, dst++)
+			dst->c[3] = 255 - src->c[3];
 		break;
 	case ALPHAGEN_DOT:
 	case ALPHAGEN_ONE_MINUS_DOT:
@@ -466,7 +466,7 @@ static tempStage_t	tmpSt[MAX_TMP_STAGES];
 static int			numTmpStages;
 static renderPass_t renderPasses[MAX_TMP_STAGES];
 static int			numRenderPasses;
-//?? move "currentShader here
+//?? move currentShader here
 
 
 #define BLEND_UNKNOWN			0
@@ -586,7 +586,7 @@ static void PreprocessShader (shader_t *sh)
 		if (debugMode == DEBUG_LIGHTMAP && currentShader->lightmapNumber >= 0 && !stage->isLightmap) break;
 
 		/*--------------- copy stage -------------------*/
-		memcpy (&st->st, stage, sizeof(shaderStage_t));
+		st->st = *stage;
 		// select stage image from animation
 		if (stage->numAnimTextures > 1)
 		{
@@ -805,7 +805,7 @@ static void PreprocessShader (shader_t *sh)
 			}
 
 			if (GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE)
-				&& blend2 == (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR)
+				&& blend2 == (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR)		// src*dst + dst*src
 				&& passStyle & BLEND_MULTIPLICATIVE)
 			{
 				LOG_PP(va("  MT(MUL2): with \"%s\"\n", st[1].st.mapImage[0]->name));
@@ -871,7 +871,7 @@ static void PreprocessShader (shader_t *sh)
 			}
 		}
 
-		// GL_EXT_TEXTURE_ENV_COMBINE is unsupported here (no INTERP in this extension)
+		// GL_EXT_TEXTURE_ENV_COMBINE is unsupported here (this extension supports INTERP with SRC_ALPHA only)
 		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE) && blend2 == (GLSTATE_SRC_ONE|GLSTATE_DST_ONE)
 			&& passStyle & BLEND_ADDITIVE && st[0].constRGBA && st[1].constRGBA && tmuUsed == 1)
 		{
@@ -1107,7 +1107,7 @@ static void DrawSkyBox (void)
 	GL_State (gl_showsky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
 	GL_SetMultitexture (1);
 	// change modelview matrix
-	qglTranslatef (VECTOR_ARGS(vp.vieworg));
+	qglTranslatef (VECTOR_ARG(vp.vieworg));
 	if (currentShader->skyRotate)
 	{
 		qglRotatef (vp.time * currentShader->skyRotate,
@@ -2165,7 +2165,7 @@ void GL_BackEnd (void)
 				bkDrawFrame_t *p1;
 
 				p1 = (bkDrawFrame_t *) p;
-				memcpy (&vp, &p1->portal, sizeof(viewPortal_t));
+				vp = p1->portal;
 				DrawScene ();
 				p = (int *) ++p1;
 			}

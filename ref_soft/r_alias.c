@@ -1031,7 +1031,7 @@ void R_AliasSetUpLerpData( dmdl_t *pmdl, float backlerp )
 	/*
 	** convert entity's angles into discrete vectors for R, U, and F
 	*/
-	AngleVectors (currententity->angles, VECTOR_ARGS(vectors));
+	AngleVectors (currententity->angles, VECTOR_ARG(vectors));
 
 	/*
 	** translation is the vector from last position to this position

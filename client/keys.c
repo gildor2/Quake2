@@ -27,15 +27,6 @@ key up events are sent even if in console mode
 */
 
 
-#define MAX_HISTORY	32
-
-static char history[MAX_HISTORY][MAXCMDLINE];
-static int	historyLine, historyCount;
-
-// current line
-char	editLine[MAXCMDLINE];
-int		editPos;
-
 int		anykeydown;
 
 char	*keybindings[256];
@@ -241,12 +232,8 @@ char *Key_KeynumToString (int keynum)
 ==============================================================================
 */
 
-/*
-============
-Cmd_CompleteCommand
-============
-*/
-static char complete_command[256], completed_name[256], *partial_name;
+//!! check for overflow of this buffers
+static char complete_command[256], completed_name[512], *partial_name;
 static int completed_count, partial_len;
 
 #define MAX_COMPLETE_ITEMS	16
@@ -401,7 +388,10 @@ static char *Do_CompleteCommand (char *partial)
 				if (!Q_strcasecmp (cvar->name, complete_command))
 				{
 					strcpy (completed_name, partial); // "varname "
-					strcat (completed_name, cvar->string);
+					if (strchr (cvar->string, ' '))
+						strcat (completed_name, va("\"%s\"", cvar->string));
+					else
+						strcat (completed_name, cvar->string);
 					return completed_name;
 				}
 			return NULL;
@@ -577,7 +567,7 @@ static void CompleteMenu (void)
 }
 
 
-static void CompleteCommand (void)
+void CompleteCommand (void)
 {
 	char	*cmd, *s;
 
@@ -600,327 +590,6 @@ static void CompleteCommand (void)
 		editLine[editPos] = 0;
 	}
 }
-
-/*
-====================
-Key_Console
-
-Interactive line editing and console scrollback
-====================
-*/
-
-static qboolean iswordsym(char n)
-{
-	return (n >= '0' && n <= '9') || (n >= 'A' && n <= 'Z') || (n >= 'a' && n <= 'z') || n == '_';
-}
-
-void Key_Console (int key)
-{
-	int		i, KEY;
-
-	switch (key)
-	{
-	case K_KP_SLASH:
-		key = '/';
-		break;
-	case K_KP_MINUS:
-		key = '-';
-		break;
-	case K_KP_PLUS:
-		key = '+';
-		break;
-	case K_KP_HOME:
-		key = '7';
-		break;
-	case K_KP_UPARROW:
-		key = '8';
-		break;
-	case K_KP_PGUP:
-		key = '9';
-		break;
-	case K_KP_LEFTARROW:
-		key = '4';
-		break;
-	case K_KP_5:
-		key = '5';
-		break;
-	case K_KP_RIGHTARROW:
-		key = '6';
-		break;
-	case K_KP_END:
-		key = '1';
-		break;
-	case K_KP_DOWNARROW:
-		key = '2';
-		break;
-	case K_KP_PGDN:
-		key = '3';
-		break;
-	case K_KP_INS:
-		key = '0';
-		break;
-	case K_KP_DEL:
-		key = '.';
-		break;
-	}
-
-	KEY = toupper (key);
-	if (KEY == 'V' && keydown[K_CTRL] || key == K_INS && keydown[K_SHIFT])	// Ctrl-V or Shift-Ins
-	{
-		char	*cbd;
-
-		if (cbd = Sys_GetClipboardData ())
-		{
-//			strtok (cbd, "\n\r\b");
-			i = strlen (cbd);
-			if (i + editPos > MAXCMDLINE - 1)
-				i = MAXCMDLINE - editPos - 1;
-
-			if (i > 0)
-			{
-				cbd[i] = 0;
-				strcat (editLine, cbd);
-				editPos += i;
-			}
-			free (cbd);
-		}
-
-		return;
-	}
-
-	if (KEY == 'L' && keydown[K_CTRL])		// Ctrl-L
-	{
-		Cbuf_AddText ("clear\n");
-		return;
-	}
-
-	if (key == K_ENTER || key == K_KP_ENTER)
-	{
-		// trim spaces at line end
-/*		for (i = strlen (editLine) - 1; i >= 0; i--)
-			if (editLine[i] == ' ')
-				editLine[i] = 0;
-			else
-				break; */
-		// backslash text are commands, else chat
-		if (editLine[1] == '\\' || editLine[1] == '/')
-			Cbuf_AddText (editLine + 2);			// skip the prompt
-		else
-			Cbuf_AddText (editLine + 1);			// valid command
-		Cbuf_AddText ("\n");
-
-		Com_Printf ("%s\n", editLine);
-		if (!editLine[1])							// do not add empty line to history
-		{
-			Key_ClearTyping ();
-			return;
-		}
-
-		// find the same line in history and remove it
-		for (i = 0; i < historyCount; i++)
-			if (!strcmp (history[i], editLine))
-			{
-				if (i != historyCount - 1) memcpy (history[i], history[i+1], sizeof(history[0]) * (historyCount - 1 - i));
-				historyCount--;
-				break;
-			}
-
-		// add current line to history
-		if (historyCount < MAX_HISTORY)
-			historyCount++;
-		else
-			memcpy (history[0], history[1], sizeof(history[0]) * (MAX_HISTORY - 1));
-		memcpy (history[historyCount-1], editLine, sizeof(editLine));
-		historyLine = historyCount;
-		// prepare new line
-		Key_ClearTyping ();
-		if (cls.state == ca_disconnected)
-			SCR_UpdateScreen ();					// force an update, because the command may take some time
-		return;
-	}
-
-	if (key == K_TAB)
-	{	// command completion
-		CompleteCommand ();
-		return;
-	}
-
-	if (key == K_LEFTARROW || key == K_BACKSPACE)
-	{
-		if (editPos <= 1) return;
-		i = editPos;
-		if (keydown[K_CTRL])
-		{
-			while (editPos > 1 && !iswordsym (editLine[--editPos]));
-			while (editPos > 0 && iswordsym (editLine[--editPos]));
-			editPos++;
-		}
-		else
-			editPos--;
-
-		if (key == K_BACKSPACE)
-			strcpy (&editLine[editPos], &editLine[i]);
-		return;
-	}
-
-	if (key == K_RIGHTARROW)
-	{
-		if (keydown[K_CTRL])
-		{
-			while (editLine[editPos] && iswordsym (editLine[editPos])) editPos++;
-			while (editLine[editPos] && !iswordsym (editLine[editPos])) editPos++;
-		}
-		else
-			if (editLine[editPos]) editPos++;
-		return;
-	}
-
-	if (key == K_DEL)
-	{
-		char	*s;
-
-		s = &editLine[editPos];
-		if (keydown[K_CTRL])
-			*s = 0;
-		else
-			strcpy (s, s + 1);
-		return;
-	}
-
-	if (key == K_UPARROW || (KEY == 'P' && keydown[K_CTRL]))
-	{
-		if (!historyLine) return;					// empty or top of history
-
-		strcpy (editLine, history[--historyLine]);
-		editPos = strlen (editLine);
-		return;
-	}
-
-	if (key == K_DOWNARROW || (KEY == 'N' && keydown[K_CTRL]))
-	{
-		if (historyLine >= historyCount) return;	// bottom of history
-
-		historyLine++;
-		if (historyLine == historyCount)
-			Key_ClearTyping ();
-		else
-		{
-			strcpy (editLine, history[historyLine]);
-			editPos = strlen (editLine);
-		}
-		return;
-	}
-
-	if (key == K_MWHEELUP)
-	{
-		con.display -= 8;
-		return;
-	}
-
-	if (key == K_MWHEELDOWN)
-	{
-		con.display += 8;
-		return;
-	}
-
-	if (key == K_PGUP)
-	{
-		con.display -= 2;
-		if (con.display < con.current - con.totallines + 10)
-			con.display = con.current - con.totallines + 10;
-		return;
-	}
-
-	if (key == K_PGDN)
-	{
-		con.display += 2;
-		return;
-	}
-
-	if (key == K_HOME)
-	{
-		if (keydown[K_CTRL])
-			con.display = con.current - con.totallines + 10;
-		else
-			editPos = 1;
-		return;
-
-	}
-
-	if (key == K_END)
-	{
-		if (keydown[K_CTRL])
-			con.display = con.current;
-		else
-			editPos = strlen (editLine);
-		return;
-	}
-
-	if (key < 32 || key > 127)
-		return;	// non printable
-
-	if (editPos < MAXCMDLINE - 2)
-	{
-		for (i = MAXCMDLINE - 1; i > editPos; i--) editLine[i] = editLine[i - 1];
-		editLine[editPos++] = key;
-	}
-}
-
-
-//============================================================================
-
-qboolean chat_team;
-char	chat_buffer[MAXCMDLINE];
-int		chat_bufferlen = 0;
-
-void Key_Message (int key)
-{
-
-	if (key == K_ENTER || key == K_KP_ENTER)
-	{
-		if (chat_team)
-			Cbuf_AddText ("say_team \"");
-		else
-			Cbuf_AddText ("say \"");
-		Cbuf_AddText(chat_buffer);
-		Cbuf_AddText("\"\n");
-
-		cls.key_dest = key_game;
-		chat_bufferlen = 0;
-		chat_buffer[0] = 0;
-		return;
-	}
-
-	if (key == K_ESCAPE)
-	{
-		cls.key_dest = key_game;
-		chat_bufferlen = 0;
-		chat_buffer[0] = 0;
-		return;
-	}
-
-	if (key < 32 || key > 127)
-		return;		// non printable
-
-	if (key == K_BACKSPACE)
-	{
-		if (chat_bufferlen)
-		{
-			chat_bufferlen--;
-			chat_buffer[chat_bufferlen] = 0;
-		}
-		return;
-	}
-
-	if (chat_bufferlen == sizeof(chat_buffer)-1)
-		return;		// all full
-
-	chat_buffer[chat_bufferlen++] = key;
-	chat_buffer[chat_bufferlen] = 0;
-}
-
-
-//============================================================================
 
 
 /*

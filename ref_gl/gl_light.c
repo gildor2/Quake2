@@ -17,7 +17,7 @@
  *    overbright!=0 or modulate2x available
  *    (should store double-light * identityLight clamped by 255, and scale it after requesting
  *    255 -> 2.0, 128 -> 1.0; if lighting cannot be performed src*light*2 -- modulate by 2 HERE;
- *    - divide XXXX_SCALE by 2 (+ambient!) -OR- "lightStyles[i].value/255"->lightScales[i]/512
+ *    - divide XXXX_SCALE by 2 (+ambient!) -OR- "lightStyles[i].value/255"->lightStyles[i]/512
  *      (needs ambient to be scaled by style 0!), modulate light in GL_ApplyEntitySpherelights()
  *      by 2 when needed (add arg to function: "bool scale")
  */
@@ -34,7 +34,7 @@ static void LightLine (vec3_t *axis, vec3_t from, vec3_t to, float *color, float
 	color_t	c;
 
 	if (lightScale < gl_lightLines->value) return;
-	if (vp.flags & RDF_NOWORLDMODEL) return;				// no matrix to load
+	if (vp.flags & RDF_NOWORLDMODEL) return;
 
 	prevDepth = gl_state.currentDepthMode;
 
@@ -134,6 +134,8 @@ void GL_ShowLights (void)
 			}
 			qglEnd ();
 		}
+		if (gl_showLights->integer == 2)
+			DrawText3D (sl->origin, va("%g", sl->intens), VECTOR_ARG(sl->color));
 	}
 
 	for (i = 0, rl = map.surfLights; i < map.numSurfLights; i++, rl = rl->next)
@@ -245,7 +247,7 @@ static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *v
 	case sl_linear:
 		scale = (sl->intens - dist * sl->fade) * linearScale;
 //if (sl->spot) DrawTextLeft(va("org: %g %g %g -> obj: %g %g %g dist: %g int: %g scale: %g fade: %g",
-//VECTOR_ARGS(sl->origin),VECTOR_ARGS(origin),dist,sl->intens,scale,sl->fade),1,1,1);
+//VECTOR_ARG(sl->origin),VECTOR_ARG(origin),dist,sl->intens,scale,sl->fade),1,1,1);
 		break;
 	case sl_inverse:
 		if (dist < 16) dist = 16;
@@ -289,7 +291,7 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 			return;										// light is culled with PVS
 	}
 
-	ambient = rl->sky && needSunAmbient;
+	ambient = rl->sky && needSunAmbient;				// sun ambient requirement
 	if (!rl->intens && !ambient) return;				// ambient-only surface
 
 	pl = rl->pl;
@@ -371,10 +373,12 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 	{
 		int		i;
 		vec3_t	c;
+		float	scale;
 
-		c[0] = map.sunColor[0] * map.sunAmbient[0];		//?? * style[0]
-		c[1] = map.sunColor[1] * map.sunAmbient[1];
-		c[2] = map.sunColor[2] * map.sunAmbient[2];
+		scale = vp.lightStyles[0].value / 255.0f;
+		c[0] = map.sunColor[0] * map.sunAmbient[0] * scale;
+		c[1] = map.sunColor[1] * map.sunAmbient[1] * scale;
+		c[2] = map.sunColor[2] * map.sunAmbient[2] * scale;
 		for (i = 0; i < 6; i++)
 			VectorAdd (entityColorAxis[i], c, entityColorAxis[i]);
 		needSunAmbient = false;
@@ -399,7 +403,7 @@ static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 	trace_t	tr;
 	int		i;
 	byte	*row;
-	float	*out;
+	float	*out, scale;
 	qboolean hasLight;
 	vec3_t	*axis;
 	static vec3_t gridAxis[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
@@ -435,8 +439,9 @@ static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 	i = GL_PointInLeaf (origin)->cluster;
 	row = i < 0 ? NULL : map.visInfo + i * map.visRowSize;
 
+	scale = vp.lightStyles[0].value / 512.0f;
 	for (i = 0; i < 6; i++)
-		VectorCopy(map.ambientLight, entityColorAxis[i]);		//?? * style[0]
+		VectorScale (map.ambientLight, scale, entityColorAxis[i]);
 
 	if (!row && map.visInfo)
 	{
@@ -565,7 +570,7 @@ void GL_LightForEntity (refEntity_t *ent)
 
 			if (gl_showgrid->integer)
 			{
-//				DrawTextLeft (va("pos: %g %g %g frac: %g %g %g", VECTOR_ARGS(pos), VECTOR_ARGS(frac)), 1, 1, 1);
+//				DrawTextLeft (va("pos: %g %g %g frac: %g %g %g", VECTOR_ARG(pos), VECTOR_ARG(frac)), 1, 1, 1);
 				prevDepth = gl_state.currentDepthMode;
 				GL_DepthRange (DEPTH_NEAR);
 				qglPushMatrix ();
@@ -751,7 +756,7 @@ void GL_ApplyEntitySpherelights (color_t *dst)
 
 		VectorClear (color);
 #define STEP(n)		\
-		axis = &entityColorAxis[(norm[n] < 0 ? (n * 2) : (n * 2 + 1))][0];	\
+		axis = entityColorAxis[(norm[n] < 0 ? (n * 2) : (n * 2 + 1))];	\
 		val = fabs (norm[n]) * light;
 		STEP(0);
 		VectorScale (axis, val, color);

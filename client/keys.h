@@ -143,9 +143,6 @@ extern byte		keydown[256];
 extern int		key_repeats[256];
 
 extern int		anykeydown;
-extern char		chat_buffer[];
-extern int		chat_bufferlen;
-extern qboolean chat_team;
 
 void Key_Event (int key, qboolean down, unsigned time);
 void Key_Init (void);
@@ -158,3 +155,5 @@ int Key_GetKey (void);
 #define		MAXCMDLINE	256
 extern char		editLine[MAXCMDLINE];
 extern int		editPos;
+
+void CompleteCommand (void);

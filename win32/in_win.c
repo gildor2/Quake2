@@ -513,7 +513,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(v_centerspeed, 500, 0)
 CVAR_END
 
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 
 	Cmd_AddCommand ("+mlook", IN_MLookDown);
 	Cmd_AddCommand ("-mlook", IN_MLookUp);

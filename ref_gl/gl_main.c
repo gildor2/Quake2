@@ -186,7 +186,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_drawbuffer, GL_BACK, 0)
 CVAR_END
 
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 
 	Cmd_AddCommand ("gfxinfo", Gfxinfo_f);
 }
@@ -302,25 +302,22 @@ static int GL_Init (void)
 	Q_strncpyz (gl_config.versionString, qglGetString (GL_VERSION), sizeof(gl_config.versionString));
 
 	/*------------------ Grab extensions ----------------------*/
+	//?? move this part to gl_interface.c ??
 	QGL_InitExtensions ();
 
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
-	{
 		qglGetIntegerv (GL_MAX_TEXTURE_UNITS_ARB, &gl_config.maxActiveTextures);
-//			Com_Printf ("...using GL_ARB_multitexture with %d texture units\n", gl_config.maxActiveTextures);
-	}
 	else if (GL_SUPPORT(QGL_SGIS_MULTITEXTURE))
-	{
 		qglGetIntegerv (GL_MAX_TEXTURES_SGIS, &gl_config.maxActiveTextures);
-	}
 	else
 		gl_config.maxActiveTextures = 1;
+
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE) &&
 		!GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|QGL_NV_TEXTURE_ENV_COMBINE4))
 		gl_config.lightmapOverbright = true;
 
 
-	//?? place this decision to Upload() and remove formatSolid from gl_config? (and update oldgl if needed)
+	//?? place this decision to Upload() and remove formatSolid from gl_config?
 	if (GL_SUPPORT(QGL_ARB_TEXTURE_COMPRESSION))
 	{
 		gl_config.formatSolid = GL_COMPRESSED_RGB_ARB;
@@ -345,7 +342,7 @@ static int GL_Init (void)
 	qglClear (GL_COLOR_BUFFER_BIT);
 	GLimp_EndFrame ();
 
-	GL_SetDefaultState();
+	GL_SetDefaultState ();
 
 	GL_InitFuncTables ();
 	GL_InitImages ();
@@ -539,11 +536,11 @@ static void SetWorldModelview (void)
 		}
 #if 0
 #define m vp.vieworg
-	DrawTextLeft (va("Org: %9.4g, %9.4g %9.4g", VECTOR_ARGS(m)), 0.6, 1, 0.2);
+	DrawTextLeft (va("Org: %9.4g, %9.4g %9.4g", VECTOR_ARG(m)), 0.6, 1, 0.2);
 #undef m
 #define m vp.viewaxis
 	for (i = 0; i < 3; i++)
-		DrawTextLeft (va("ax[%d] = {%9.4g, %9.4g %9.4g}", i, VECTOR_ARGS(m[i])), 0.4, 0.8, 1);
+		DrawTextLeft (va("ax[%d] = {%9.4g, %9.4g %9.4g}", i, VECTOR_ARG(m[i])), 0.4, 0.8, 1);
 #undef m
 #define m vp.modelMatrix
 	DrawTextLeft (va("----- modelview matrix -----"), 1, 0.2, 0.2);
@@ -747,7 +744,7 @@ static void GL_RenderFrame (refdef_t *fd)
 	{
 		color_t		c;
 
-//		DrawTextLeft(va("blend: %f %f %f %f",VECTOR_ARGS(fd->blend),fd->blend[3]),1,1,1);
+//		DrawTextLeft(va("blend: %f %f %f %f",VECTOR_ARG(fd->blend),fd->blend[3]),1,1,1);
 		// standard Quake2 blending
 		c.c[0] = Q_round (fd->blend[0] * 255);
 		c.c[1] = Q_round (fd->blend[1] * 255);
@@ -1227,7 +1224,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.DrawFill2 =		DrawFill2;
 
 	re.DrawStretchRaw =	GL_DrawStretchRaw;
-	re.CinematicSetPalette = GL_SetRawPalette;
+	re.SetRawPalette = GL_SetRawPalette;
 
 	re.DrawTextPos =	DrawTextPos;
 	re.DrawTextLeft =	DrawTextLeft;

@@ -149,8 +149,6 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 	mid[0] = start[0] + (end[0] - start[0])*frac;
 	mid[1] = start[1] + (end[1] - start[1])*frac;
 	mid[2] = start[2] + (end[2] - start[2])*frac;
-	if (plane->type < 3)	// axial planes
-		mid[plane->type] = plane->dist;
 
 	// go down front side
 	r = RecursiveLightPoint (node->children[side], start, mid);
@@ -191,7 +189,7 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 		dt >>= 4;
 
 		lightmap = surf->samples;
-		VectorCopy (vec3_origin, pointcolor);
+		VectorClear (pointcolor);
 		if (lightmap)
 		{
 			lightmap += dt * ((surf->extents[0]>>4)+1) + ds;
@@ -244,7 +242,7 @@ void R_LightPoint (vec3_t p, vec3_t color)
 
 	if (r == -1)
 	{
-		VectorCopy (vec3_origin, color);
+		VectorClear (color);
 	}
 	else
 	{

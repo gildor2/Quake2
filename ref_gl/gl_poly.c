@@ -135,7 +135,7 @@ static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis,
 				VectorSubtract ((*v2), (*v1), mid);
 				VectorScale (mid, frac, mid);
 				VectorAdd (mid, (*v1), mid);
-				idx1 = NewVert (VECTOR_ARGS(mid));
+				idx1 = NewVert (VECTOR_ARG(mid));
 				// add it to both polys
 				AddPointToPoly (poly1, idx1);
 				AddPointToPoly (poly2, idx1);
@@ -198,7 +198,7 @@ int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
 			ClearBounds (mins, maxs);
 			for (i = 0; i < numIndexes; i++)
 				AddPointToBounds (*psubdivVerts[poly->indexes[i]], mins, maxs);
-//			DebugPrintf ("bounds: (%g, %g, %g) - (%g, %g, %g)\n", VECTOR_ARGS(mins), VECTOR_ARGS(maxs));
+//			DebugPrintf ("bounds: (%g, %g, %g) - (%g, %g, %g)\n", VECTOR_ARG(mins), VECTOR_ARG(maxs));
 
 			// mins/maxs, aligned to tessSize grid and shifted to the poly center by tessSize
 			min = Q_floor((mins[axis] + tessSize + tessError) / tessSize) * tessSize;

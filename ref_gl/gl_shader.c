@@ -569,7 +569,7 @@ shader_t *GL_FindShader (char *name, int style)
 		name = "*default";		// use this image
 	}
 
-	Q_CopyFilename (name2, name, sizeof(name2)-1);
+	Q_CopyFilename (name2, name, sizeof(name2));
 	if (s = strrchr (name2, '.')) *s = 0;		// cut extension
 
 	if (style & SHADER_LIGHTMAP)

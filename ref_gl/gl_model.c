@@ -47,7 +47,7 @@ model_t	*GL_FindModel (char *name)
 	if (!name[0])
 		Com_Error (ERR_FATAL, "R_FindModel: NULL name");
 
-	Q_CopyFilename (name2, name, sizeof(name2)-1);
+	Q_CopyFilename (name2, name, sizeof(name2));
 
 	// search already loaded models
 	for (i = 0, m = modelsArray; i < modelCount; i++, m++)
@@ -202,7 +202,7 @@ static void BuildSurfFlare (surfaceCommon_t *surf, color_t *color, float intens)
 
 static void LoadSlights (slight_t *data, int count)
 {
-	int		i;
+	int		i, j;
 	gl_slight_t *out;
 
 	map.numSlights = count;
@@ -223,6 +223,19 @@ static void LoadSlights (slight_t *data, int count)
 		out->cluster = GL_PointInLeaf (data->origin)->cluster;
 		if (out->cluster < 0) continue;
 
+		// move away lights from nearby surfaces to avoid precision errors during computation
+		for (j = 0; j < 3; j++)
+		{
+			static vec3_t mins = {-0.3, -0.3, -0.3}, maxs = {0.3, 0.3, 0.3};
+			trace_t	tr;
+
+			CM_BoxTrace (&tr, out->origin, out->origin, mins, maxs, 0, CONTENTS_SOLID);
+			if (tr.allsolid)
+				VectorMA (out->origin, 0.5f, tr.plane.normal, out->origin);
+			else
+				break;
+		}
+
 		out++;
 	}
 }
@@ -232,7 +245,6 @@ static void BuildSurfLight (surfacePlanar_t *pl, color_t *color, float area, flo
 {
 	surfLight_t *sl;
 	vec3_t	c;
-	float	m;
 
 	c[0] = color->c[0] / 255.0f;
 	c[1] = color->c[1] / 255.0f;
@@ -240,10 +252,13 @@ static void BuildSurfLight (surfacePlanar_t *pl, color_t *color, float area, flo
 
 	if (bspfile->sunLight && sky)
 	{	// have sun -- params may be changed
+		float	m;
+
 		m = max(bspfile->sunSurface[0], bspfile->sunSurface[1]);
 		m = max(m, bspfile->sunSurface[2]);
 		if (m == 0 && !map.haveSunAmbient)
 			return;									// no light from sky surfaces
+
 		if (m > 0 && m <= 1)
 			VectorCopy (bspfile->sunSurface, c);	// sun_surface specified a color
 		else if (m > 1)
@@ -667,7 +682,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			float	scale, *norm;
 			trace_t	trace;
 			int		headnode;
-			static vec3_t v1 = {1, 1, 1}, v2 = {-1, -1, -1};
+			static vec3_t zero = {0, 0, 0};
 
 			headnode = owner->headnode;
 			// find middle point
@@ -683,10 +698,10 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			VectorMA (mid, -2, norm, p2);
 			// perform trace
 			if (!surfs->side)
-				CM_BoxTrace (&trace, p1, p2, v1, v2, headnode, MASK_SOLID);
+				CM_BoxTrace (&trace, p1, p2, zero, zero, headnode, MASK_SOLID);
 			else
-				CM_BoxTrace (&trace, p2, p1, v1, v2, headnode, MASK_SOLID);
-			if (trace.fraction < 1 && !(trace.contents & CONTENTS_MIST))
+				CM_BoxTrace (&trace, p2, p1, zero, zero, headnode, MASK_SOLID);
+			if (trace.fraction < 1 && !(trace.contents & CONTENTS_MIST))	//?? make MYST to be non-"alpha=f(angle)"-dependent
 				sflags |= SHADER_ENVMAP;
 		}
 
@@ -780,7 +795,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			VectorNegate (s->plane.normal, s->plane.normal);
 			s->plane.dist = -s->plane.dist;
 			//?? set signbits
-			s->plane.type = PLANE_NON_AXIAL;	//?? extend plane.type for xyz[i] == -1
+			s->plane.type = PlaneTypeForNormal (s->plane.normal);
 		}
 		s->numVerts = numVerts;
 		s->verts = (vertex_t *) (s+1);	//!!! allocate verts separately (for fast draw - in AGP memory)
@@ -1365,7 +1380,7 @@ void GL_LoadWorldMap (char *name)
 	if (!name[0])
 		Com_Error (ERR_FATAL, "R_LoadWorldMap: NULL name");
 
-	Q_CopyFilename (name2, name, sizeof(name2)-1);
+	Q_CopyFilename (name2, name, sizeof(name2));
 
 	// map must be reloaded to update shaders (which are restarted every BeginRegistration())
 //	if (!strcmp (name2, map.name))
@@ -1398,10 +1413,10 @@ void GL_LoadWorldMap (char *name)
 		// get ambient light from lightmaps (place to all map types ??)
 		if (map.ambientLight[0] + map.ambientLight[1] + map.ambientLight[2] == 0)
 		{
-			map.ambientLight[0] = lmMinlight.c[0];
-			map.ambientLight[1] = lmMinlight.c[1];
-			map.ambientLight[2] = lmMinlight.c[2];
-			Com_DPrintf ("Used minlight from lightmap {%d, %d, %d}\n", VECTOR_ARGS(lmMinlight.c));
+			map.ambientLight[0] = lmMinlight.c[0] * 2;
+			map.ambientLight[1] = lmMinlight.c[1] * 2;
+			map.ambientLight[2] = lmMinlight.c[2] * 2;
+			Com_DPrintf ("Used minlight from lightmap {%d, %d, %d}\n", VECTOR_ARG(lmMinlight.c));
 		}
 		break;
 	default:
@@ -1646,12 +1661,12 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 	shader = GL_FindShader (skin, SHADER_CHECK|SHADER_SKIN);
 	if (!shader)
 	{	// try to find skin forcing model directory
-		Q_CopyFilename (mName, m->name, sizeof(mName) - 1);
+		Q_CopyFilename (mName, m->name, sizeof(mName));
 		mPtr = strrchr (mName, '/');
 		if (mPtr)	mPtr++;			// skip '/'
 		else		mPtr = mName;
 
-		Q_CopyFilename (sName, skin, sizeof(sName) - 1);
+		Q_CopyFilename (sName, skin, sizeof(sName));
 		sPtr = strrchr (sName, '/');
 		if (sPtr)	sPtr++;			// skip '/'
 		else		sPtr = sName;

@@ -23,22 +23,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef struct
 {
-	cplane_t	*plane;
-	int			children[2];		// negative numbers are leafs
+	cplane_t *plane;
+	int		children[2];		// negative numbers are leafs
 } cnode_t;
 
 typedef struct
 {
-	cplane_t	*plane;
-	csurface_t	*surface;
+	cplane_t *plane;
+	csurface_t *surface;
 } cbrushside_t;
 
 typedef struct
 {
-	int			contents;
-	int			numsides;
-	int			firstbrushside;
-	int			checkcount;		// to avoid repeated testings
+	int		contents;
+	int		numsides;
+	int		firstbrushside;
+	int		checkcount;		// to avoid repeated testings
 } cbrush_t;
 
 typedef struct
@@ -54,13 +54,13 @@ static int	checkcount;			// trace var
 char		map_name[MAX_QPATH];
 
 static int			numbrushsides;
-static cbrushside_t map_brushsides[MAX_MAP_BRUSHSIDES];
+static cbrushside_t map_brushsides[MAX_MAP_BRUSHSIDES+6];	// extra for box hull
 
 int			numtexinfo;								// global (for precache)
 csurface_t	map_surfaces[MAX_MAP_TEXINFO];			// global (for precache)
 
 static int			numplanes;
-static cplane_t	map_planes[MAX_MAP_PLANES+6];		// extra for box hull
+static cplane_t	map_planes[MAX_MAP_PLANES+12];		// extra for box hull
 
 static int			numnodes;
 static cnode_t		map_nodes[MAX_MAP_NODES+6];		// extra for box hull
@@ -71,13 +71,13 @@ static dleaf_t		map_leafs[MAX_MAP_LEAFS];
 static int			emptyleaf, solidleaf;
 
 static int			numleafbrushes;
-static unsigned short map_leafbrushes[MAX_MAP_LEAFBRUSHES];
+static unsigned short map_leafbrushes[MAX_MAP_LEAFBRUSHES+1];	// extra for box hull
 
 static int			numcmodels;
 static cmodel_t	*map_cmodels;
 
 static int			numbrushes;
-static cbrush_t	map_brushes[MAX_MAP_BRUSHES];
+static cbrush_t	map_brushes[MAX_MAP_BRUSHES+1];		// extra for box hull
 
 static int			numvisibility;
 static byte		*map_visibility;
@@ -312,35 +312,23 @@ static void CMod_LoadSurfaces (texinfo_t *data, int size)
 	{
 		int		f, m;
 
-		strncpy (out->name, in->texture, sizeof(out->name)-1);		// texture name limited to 16 chars (compatibility with older mods?)
-		strncpy (out->rname, in->texture, sizeof(out->rname)-1);	// name limited to 32 chars (full?)
+		Q_strncpyz (out->name, in->texture, sizeof(out->name));		// texture name limited to 16 chars (compatibility with older mods?)
+		Q_strncpyz (out->rname, in->texture, sizeof(out->rname));	// name limited to 32 chars (full?)
 		f = in->flags;
 		out->flags = f & ~SURF_KP_MATERIAL;
 		out->value = in->value;
-		if (f & SURF_CONCRETE)
-			m = MATERIAL_CONCRETE;
-		else if (f & SURF_FABRIC)
-			m = MATERIAL_FABRIC;
-		else if (f & SURF_GRAVEL)
-			m = MATERIAL_GRAVEL;
-		else if (f & SURF_METAL)
-			m = MATERIAL_METAL;
-		else if (f & SURF_METAL_L)
-			m = MATERIAL_METAL_L;
-		else if (f & SURF_SNOW)
-			m = MATERIAL_TIN;		//?? MATERIAL_SNOW;
-		else if (f & SURF_TILE)
-			m = MATERIAL_TILE;
-		else if (f & SURF_WOOD)
-			m = MATERIAL_WOOD;
-		else if (f & SURF_WATER)
-			m = MATERIAL_WATER;
-		else
-			m = CMod_GetSurfMaterial (in->texture);
-//			m = MATERIAL_CONCRETE;	// default (Q2)
+
+		if (f & SURF_CONCRETE)		m = MATERIAL_CONCRETE;
+		else if (f & SURF_FABRIC)	m = MATERIAL_FABRIC;
+		else if (f & SURF_GRAVEL)	m = MATERIAL_GRAVEL;
+		else if (f & SURF_METAL) 	m = MATERIAL_METAL;
+		else if (f & SURF_METAL_L)	m = MATERIAL_METAL_L;
+		else if (f & SURF_SNOW)		m = MATERIAL_TIN;		//?? MATERIAL_SNOW;
+		else if (f & SURF_TILE)		m = MATERIAL_TILE;
+		else if (f & SURF_WOOD)		m = MATERIAL_WOOD;
+		else if (f & SURF_WATER)	m = MATERIAL_WATER;
+		else						m = CMod_GetSurfMaterial (in->texture);
 		out->material = m;
-		if (m > 100)
-			Com_Printf("Surf %s have material %d\n",in->texture,m);
 	}
 }
 
@@ -374,7 +362,6 @@ static void CMod_LoadNodes (dnode_t *data, int size)
 		out->children[0] = in->children[0];
 		out->children[1] = in->children[1];
 	}
-
 }
 
 /*
@@ -558,9 +545,6 @@ CMod_LoadAreaPortals
 */
 static void CMod_LoadAreaPortals (dareaportal_t *data, int size)
 {
-//	if (count > MAX_MAP_AREAPORTALS)
-//		Com_Error (ERR_DROP, "Map has too many areaportals");
-
 	numareaportals = size;
 	map_areaportals = data;
 }
@@ -585,10 +569,7 @@ CMod_LoadEntityString
 static void CMod_LoadEntityString (byte *data, int size)
 {
 	numentitychars = size;
-//	if (l->filelen > MAX_MAP_ENTSTRING)
-//		Com_Error (ERR_DROP, "Map has too large entity lump");
 	map_entitystring = data;
-//?? can't do it now (should copy entstring with ASCIIZ in LoadBspFile()):	map_entitystring[l->filelen] = 0; // ASCIIZ
 }
 
 
@@ -623,7 +604,7 @@ void CMod_LoadHLSurfaces (lump_t *l)
 	for ( i=0 ; i<count ; i++, in++, out++)
 	{
 		char buf[32];//!!
-		Com_sprintf(buf,sizeof(buf),"surf_%x",i);
+		Com_sprintf(ARRAY_ARG(buf),"surf_%x",i);
 		strcpy (out->name, buf); //!!
 		strcpy (out->rname, buf);  //!!
 //??		strncpy (out->name, in->texture, sizeof(out->name)-1);
@@ -1173,10 +1154,10 @@ int CM_LeafArea (int leafnum)
 //=======================================================================
 
 
-cplane_t	*box_planes;
-int			box_headnode;
-cbrush_t	*box_brush;
-dleaf_t		*box_leaf;
+static cplane_t	*box_planes;
+static int		box_headnode;
+static cbrush_t	*box_brush;
+static dleaf_t	*box_leaf;
 
 /*
 ===================
@@ -1196,12 +1177,6 @@ void CM_InitBoxHull (void)
 
 	box_headnode = numnodes;
 	box_planes = &map_planes[numplanes];
-	if (numnodes+6 > MAX_MAP_NODES
-		|| numbrushes+1 > MAX_MAP_BRUSHES
-		|| numleafbrushes+1 > MAX_MAP_LEAFBRUSHES
-		|| numbrushsides+6 > MAX_MAP_BRUSHSIDES
-		|| numplanes+12 > MAX_MAP_PLANES)
-		Com_Error (ERR_DROP, "Not enough room for box tree");
 
 	box_brush = &map_brushes[numbrushes];
 	box_brush->numsides = 6;
@@ -1215,7 +1190,7 @@ void CM_InitBoxHull (void)
 
 	map_leafbrushes[numleafbrushes] = numbrushes;
 
-	for (i=0 ; i<6 ; i++)
+	for (i = 0; i < 6; i++)
 	{
 		side = i&1;
 
@@ -1235,13 +1210,13 @@ void CM_InitBoxHull (void)
 
 		// planes
 		p = &box_planes[i*2];
-		p->type = i>>1;
+		p->type = PLANE_X + (i>>1);
 		VectorClear (p->normal);
 		p->normal[i>>1] = 1;
 		SetPlaneSignbits (p);
 
 		p = &box_planes[i*2+1];
-		p->type = 3 + (i>>1);
+		p->type = PLANE_MX + (i>>1);
 		VectorClear (p->normal);
 		p->normal[i>>1] = -1;
 		SetPlaneSignbits (p);
@@ -1513,10 +1488,15 @@ static void ClipBoxToBrush (cbrush_t *brush)
 			vec3_t	ofs;
 			int		j;
 
-			if (plane->type < 3)
+			if (plane->type <= PLANE_Z)
 			{
-				// HERE: plane.normal[i] == 0 || 1 for i==type; 50% of axial planes
+				// HERE: plane.normal[i] == 0 || 1 for i==type
 				dist = plane->dist - trace_mins[plane->type];
+			}
+			else if (plane->type <= PLANE_MZ)
+			{
+				// HERE: plane.normal[i] == 0 || -1 for i==type-3
+				dist = plane->dist + trace_maxs[plane->type-3];
 			}
 			else
 			{
@@ -1530,10 +1510,15 @@ static void ClipBoxToBrush (cbrush_t *brush)
 			dist = plane->dist;
 		}
 
-		if (plane->type < 3)
+		if (plane->type <= PLANE_Z)
 		{
 			d1 = trace_start[plane->type] - dist;
 			d2 = trace_end[plane->type] - dist;
+		}
+		else if (plane->type <= PLANE_MZ)
+		{
+			d1 = -trace_start[plane->type-3] - dist;
+			d2 = -trace_end[plane->type-3] - dist;
 		}
 		else
 		{
@@ -1628,7 +1613,7 @@ static void TraceToLeaf (int leafnum)
 		save_trace = trace_trace;
 		ClipBoxToBrush (b);
 		if (trace_skipAlpha && trace_trace.contents & CONTENTS_ALPHA)		// shooting through CONTENTS_ALPHA
-		{
+		{	//?? can do this without hack: just add "nocontents" -- if ((cont & br.contents) && !(nocont & br.contents))
 			trace_trace = save_trace;
 			continue;
 		}
@@ -1649,44 +1634,65 @@ if box inside this brush or intersects its brushsides:
 else trace is unchanged
 ================
 */
-static void TestBoxInBrush (cbrush_t *brush)
+static qboolean TestBoxInBrush (cbrush_t *brush)
 {
 	int		i, j;
-	cbrushside_t *side;
+	cbrushside_t *side, *clipside;
+	cplane_t *clipplane;
+	float	clipdist;
 
 	if (!brush->numsides)
-		return;
+		return false;
 
+	clipdist = -999999;
+	clipside = NULL;
+	clipplane = NULL;
 	for (i = 0, side = &map_brushsides[brush->firstbrushside]; i < brush->numsides; i++, side++)
 	{
-		vec3_t	ofs;
 		cplane_t *plane;
-		float	dist, d1;
+		float	dist, d;
 
 		plane = side->plane;
 
-		// FIXME: special case for axial
-
-		// general box case
-
-		// push the plane out apropriately for mins/maxs
-
 		// FIXME: use signbits into 8 way lookup for each mins/maxs
-		for (j = 0; j < 3; j++)
-			ofs[j] = (plane->normal[j] < 0) ? trace_maxs[j] : trace_mins[j];
-		dist = plane->dist - DotProduct (ofs, plane->normal);
+		if (plane->type <= PLANE_Z)
+			dist = plane->dist - trace_mins[plane->type];
+		else if (plane->type <= PLANE_MZ)
+			dist = plane->dist + trace_maxs[plane->type-3];
+		else
+		{
+			vec3_t	ofs;
 
-		d1 = DotProduct (trace_start, plane->normal) - dist;
+			for (j = 0; j < 3; j++)
+				ofs[j] = (plane->normal[j] < 0) ? trace_maxs[j] : trace_mins[j];
+			dist = plane->dist - DotProduct (plane->normal, ofs);
+		}
+
+		if (plane->type <= PLANE_Z)
+			d = trace_start[plane->type] - dist;
+		else if (plane->type <= PLANE_MZ)
+			d = -trace_start[plane->type-3] - dist;
+		else
+			d = DotProduct (plane->normal, trace_start) - dist;
 
 		// if completely in front of face, no intersection
-		if (d1 > 0)
-			return;
+		if (d > 0) return false;
+		if (d > clipdist)
+		{
+			clipdist = d;
+			clipplane = plane;
+			clipside = side;
+		}
 	}
 
 	// inside this brush
 	trace_trace.startsolid = trace_trace.allsolid = true;
 	trace_trace.fraction = 0;
 	trace_trace.contents = brush->contents;
+	trace_trace.plane = *clipplane;
+	trace_trace.surface = clipside->surface;
+
+	return true;
 }
 
 
@@ -1719,9 +1725,7 @@ static void TestInLeaf (int leafnum)
 
 		if (!(b->contents & trace_contents))
 			continue;
-		TestBoxInBrush (b);
-		if (!trace_trace.fraction)
-			return;
+		if (TestBoxInBrush (b)) return;
 	}
 }
 
@@ -1759,11 +1763,17 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, vec3_t p1, ve
 		node = map_nodes + nodeNum;
 		plane = node->plane;
 
-		if (plane->type < 3)
+		if (plane->type <= PLANE_Z)
 		{
 			t1 = p1[plane->type] - plane->dist;
 			t2 = p2[plane->type] - plane->dist;
 			offset = trace_extents[plane->type];
+		}
+		else if (plane->type <= PLANE_MZ)
+		{
+			t1 = -p1[plane->type-3] - plane->dist;
+			t2 = -p2[plane->type-3] - plane->dist;
+			offset = trace_extents[plane->type-3];
 		}
 		else
 		{
@@ -1822,7 +1832,7 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, vec3_t p1, ve
 
 /*	{//!!!!
 		char buf[256];
-		Com_sprintf(buf,sizeof(buf),"RHC: divide (%d): t1=%g t2=%g offs=%g {N:%d %g-%g} {N:%d %g-%g} plane(d:%g %g,%g,%g)",num,t1,t2,offset,
+		Com_sprintf(ARRAY_ARG(buf),"RHC: divide (%d): t1=%g t2=%g offs=%g {N:%d %g-%g} {N:%d %g-%g} plane(d:%g %g,%g,%g)",num,t1,t2,offset,
 			node->children[side], p1f, p1f + (p2f - p1f)*frac,
                         node->children[side^1], midf = p1f + (p2f - p1f)*frac2, p2f,
                         plane->dist,plane->normal[0],plane->normal[1],plane->normal[2]);
@@ -2071,10 +2081,15 @@ static qboolean TestBrush (vec3_t start, vec3_t end, cbrush_t *brush)
 		float	d1, d2, f;
 
 		plane = side->plane;
-		if (plane->type < 3)
+		if (plane->type <= PLANE_Z)
 		{
 			d1 = start[plane->type] - plane->dist;
 			d2 = end[plane->type] - plane->dist;
+		}
+		else if (plane->type <= PLANE_MZ)
+		{
+			d1 = -start[plane->type-3] - plane->dist;
+			d2 = -end[plane->type-3] - plane->dist;
 		}
 		else
 		{
@@ -2151,10 +2166,15 @@ static void RecursiveBrushTest (vec3_t start, vec3_t end, int nodeNum)
 		node = map_nodes + nodeNum;
 		plane = node->plane;
 
-		if (plane->type < 3)
+		if (plane->type <= PLANE_Z)
 		{
 			t1 = start[plane->type] - plane->dist;
 			t2 = end[plane->type] - plane->dist;
+		}
+		else if (plane->type <= PLANE_MZ)
+		{
+			t1 = -start[plane->type-3] - plane->dist;
+			t2 = -end[plane->type-3] - plane->dist;
 		}
 		else
 		{

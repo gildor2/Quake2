@@ -144,6 +144,7 @@ void	QGL_LogMessage (const char *text);
 #define r_avertexnormals	glr_avertexnormals
 #define suf	glsuf
 #define con_only			glcon_only
+#define gammatable			glgammatable
 
 #define Draw_ConCharColor	GLDraw_ConCharColor
 #define GetRefAPI			GL_GetRefAPI
@@ -170,6 +171,7 @@ typedef struct
 
 extern	viddef_t	vid;
 
+extern byte	gammatable[256];
 
 /*
 
@@ -512,7 +514,6 @@ void GL_DrawParticles (particle_t *particles, const unsigned colortable[768]);
 
 typedef struct
 {
-	//--- copy of glstate from NEW ref_gl ----
 	// (required for GLimp_... functions)
 	char	rendererString[256];
 	char	vendorString[256];
@@ -523,9 +524,7 @@ typedef struct
 	int		extensionMask;
 
 	// multitexturing
-	int		maxActiveTextures;		// == 1 if no multitexturing
-	qboolean lightmapOverbright;
-	qboolean multiPassLM;
+//	int		maxActiveTextures;		// == 1 if no multitexturing
 
 	// texture compression formats (0 if unavailable)
 	int		formatSolid;			// RGB (no alpha)
@@ -539,13 +538,6 @@ typedef struct
 	byte	prevFS;
 
 	byte	consoleOnly;			// true if graphics disabled (can use ref_flags & REF_CONSOLE_ONLY !!)
-
-	// gamma
-	qboolean deviceSupportsGamma;
-	int		overbrightBits;			// gl_overBrightBits->integer
-	int		identityLightValue;		// 255/(1<<overbrightBits)
-	float	identityLightValue_f;	// 1.0/(1<<overbrightBits)
-	qboolean vertexLight;
 
 	// tables
 	unsigned tbl_8to32[256];		// palette->RGBA
@@ -575,10 +567,6 @@ typedef struct
 	int texture_format_solid;
 	int texture_format_alpha;
 	int texture_format_alpha1;
-
-//	unsigned char originalRedGammaTable[256];
-//	unsigned char originalGreenGammaTable[256];
-//	unsigned char originalBlueGammaTable[256];
 } glstate_t;
 
 typedef struct

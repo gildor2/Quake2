@@ -801,7 +801,7 @@ void Mod_LoadPlanes (dplane_t *data, int size)
 	{
 		VectorCopy (in->normal, out->normal);
 		out->dist = in->dist;
-		out->type = in->type;
+		out->type = PlaneTypeForNormal (out->normal);
 		SetPlaneSignbits (out);
 	}
 }

@@ -540,22 +540,6 @@ c_drawnode++;
 		plane = node->plane;
 
 		dot = DISTANCE_TO_PLANE(modelorg,plane);
-/*		switch (plane->type)
-		{
-		case PLANE_X:
-			dot = modelorg[0] - plane->dist;
-			break;
-		case PLANE_Y:
-			dot = modelorg[1] - plane->dist;
-			break;
-		case PLANE_Z:
-			dot = modelorg[2] - plane->dist;
-			break;
-		default:
-			dot = DotProduct (modelorg, plane->normal) - plane->dist;
-			break;
-		}
-*/
 		if (dot >= 0)
 			side = 0;
 		else

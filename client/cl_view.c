@@ -232,9 +232,6 @@ void CL_PrepRefresh (void)
 
 	CL_ClearTEnts ();		// temp entities linked to models, which are invalid after vid_restart
 
-	SCR_AddDirtyPoint (0, 0);
-	SCR_AddDirtyPoint (viddef.width-1, viddef.height-1);
-
 	// let the render dll load the map
 	strcpy (mapname, cl.configstrings[CS_MODELS+1] + 5);	// skip "maps/"
 	mapname[strlen(mapname)-4] = 0;		// cut off ".bsp"
@@ -243,13 +240,11 @@ void CL_PrepRefresh (void)
 	Com_Printf ("Map: %s\r", mapname);
 	SCR_UpdateScreen ();
 	re.BeginRegistration (mapname);
-	Com_Printf ("                                     \r");
 
 	// precache status bar pics
 	Com_Printf ("pics\r");
 	SCR_UpdateScreen ();
 	SCR_TouchPics ();
-	Com_Printf ("                                     \r");
 
 	CL_RegisterTEntModels ();
 
@@ -289,8 +284,6 @@ void CL_PrepRefresh (void)
 			else
 				cl.model_clip[i] = NULL;
 		}
-		if (name[0] != '*')
-			Com_Printf ("                                     \r");
 	}
 
 	Com_Printf ("images\r", i);
@@ -301,7 +294,6 @@ void CL_PrepRefresh (void)
 		Sys_SendKeyEvents ();	// pump message loop
 	}
 
-	Com_Printf ("                                     \r");
 	for (i = 0; i < MAX_CLIENTS; i++)
 	{
 		if (!cl.configstrings[CS_PLAYERSKINS+i][0])
@@ -310,7 +302,6 @@ void CL_PrepRefresh (void)
 		SCR_UpdateScreen ();
 		Sys_SendKeyEvents ();	// pump message loop
 		CL_ParseClientinfo (i);
-		Com_Printf ("                                     \r");
 	}
 
 	CL_LoadClientinfo (&cl.baseclientinfo, "unnamed\\male/grunt");
@@ -321,7 +312,6 @@ void CL_PrepRefresh (void)
 	rotate = atof (cl.configstrings[CS_SKYROTATE]);
 	sscanf (cl.configstrings[CS_SKYAXIS], "%f %f %f", &axis[0], &axis[1], &axis[2]);
 	re.SetSky (cl.configstrings[CS_SKY], rotate, axis);
-	Com_Printf ("                                     \r");
 
 	// the renderer can now free unneeded stuff
 	re.EndRegistration ();
@@ -438,7 +428,7 @@ static void DrawFlag (int flag, flagInfo_t *info, int numFlags, char *prefix)
 			if (buf[0])
 				strncat (buf, va(" %s%s", prefix, info->name), sizeof(buf));
 			else
-				Com_sprintf (buf, sizeof(buf), "%s%s", prefix, info->name);
+				Com_sprintf (ARRAY_ARG(buf), "%s%s", prefix, info->name);
 			if (strlen (buf) > 40)
 			{
 				re.DrawTextLeft (buf, 0.3, 0.6, 0.4);
@@ -471,7 +461,7 @@ static void DecodeContents (int i)
 	if (!i)
 		re.DrawTextLeft ("CONTENTS_EMPTY", 0.3, 0.6, 0.4);
 	else
-		DrawFlag (i, contentsNames, sizeof(contentsNames)/sizeof(flagInfo_t), "CONTENTS_");
+		DrawFlag (i, ARRAY_ARG(contentsNames), "CONTENTS_");
 }
 
 
@@ -534,17 +524,17 @@ static void DrawSurfInfo (void)
 	{
 		re.DrawTextLeft ("Surface info:", 0.4, 0.4, 0.6);
 		re.DrawTextLeft ("-------------", 0.4, 0.4, 0.6);
-		re.DrawTextLeft (va("Point: %g  %g  %g", VECTOR_ARGS(trace.endpos)),
+		re.DrawTextLeft (va("Point: %g  %g  %g", VECTOR_ARG(trace.endpos)),
 			0.2, 0.4, 1);
 		surf = trace.surface;
 		if (surf->rname[0])		// non-null surface
 		{
 			re.DrawTextLeft (va("Texture: %s", surf->rname), 0.2, 0.4, 1);
 			VectorCopy (trace.plane.normal, norm);
-			re.DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARGS(norm)), 0.2, 0.4, 1);
+			re.DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARG(norm)), 0.2, 0.4, 1);
 			if (surf->value)
 				re.DrawTextLeft (va("Value: %d", surf->value), 0.2, 0.4, 1);
-			DrawFlag (surf->flags, surfNames, sizeof(surfNames)/sizeof(flagInfo_t), "SURF_");
+			DrawFlag (surf->flags, ARRAY_ARG(surfNames), "SURF_");
 //#define SURF_KNOWN	(0xFF|SURF_ALPHA|SURF_DIFFUSE|SURF_SPECULAR|SURF_AUTOFLARE)
 //			if (surf->flags & ~SURF_KNOWN) // unknown flags
 //				re.DrawTextLeft (va("SURF_UNK_%X", surf->flags & ~SURF_KNOWN), 0.6, 0.3, 0.4);
@@ -563,7 +553,7 @@ static void DrawSurfInfo (void)
 			ent = (entityState_t*)trace.ent;
 			re.DrawTextLeft ("Entity:", 0.4, 0.4, 0.6);
 			re.DrawTextLeft ("-------", 0.4, 0.4, 0.6);
-			re.DrawTextLeft (va("Origin: %g %g %g", VECTOR_ARGS(ent->origin)), 0.4, 0.4, 0.6);
+			re.DrawTextLeft (va("Origin: %g %g %g", VECTOR_ARG(ent->origin)), 0.4, 0.4, 0.6);
 			re.DrawTextLeft (va("fx: %X  rfx: %X", ent->effects, ent->renderfx), 0.2, 0.4, 1);
 			if (ent->modelindex)	re.DrawTextLeft (va("model: %s", ModelName (ent->modelindex)), 0.2, 0.4, 1);
 			if (ent->modelindex2)	re.DrawTextLeft (va("model2: %s", ModelName (ent->modelindex2)), 0.2, 0.4, 1);
@@ -585,10 +575,10 @@ static void DrawOriginInfo (void)
 
 	re.DrawTextLeft ("Player position:", 0.4, 0.4, 0.6);
 	re.DrawTextLeft ("----------------", 0.4, 0.4, 0.6);
-	re.DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARGS(cl.refdef.vieworg)), 0.2, 0.4, 0.1);
+	re.DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), 0.2, 0.4, 0.1);
 
 	AngleVectors (cl.refdef.viewangles, view, NULL, NULL);
-	re.DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARGS(view)), 0.2, 0.4, 0.1);
+	re.DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARG(view)), 0.2, 0.4, 0.1);
 
 	i = CM_PointLeafnum (cl.refdef.vieworg);
 	re.DrawTextLeft (va("Leaf number: %d, cluster: %i, area: %i",
@@ -657,7 +647,7 @@ static void Screenshot_f (void)
 
 	if (Cmd_Argc() == 2 && !strcmp(Cmd_Argv(1), "/?"))
 	{
-		Com_Printf ("Usage: screenshot [-levelshot] [-no2d] [-silent] [-jpeg] [<filename>]\n");
+		Com_Printf ("Usage: screenshot [-levelshot] [-no2d] [-nogamma] [-silent] [-jpeg] [<filename>]\n");
 		return;
 	}
 
@@ -686,14 +676,16 @@ static void Screenshot_f (void)
 				}
 				tmp++;	// skip '/'
 
-				flags |= SHOT_SMALL|SHOT_NO_2D;
-				Com_sprintf (filename, sizeof(filename), "%s/levelshots/%s", FS_Gamedir (), tmp);
+				flags |= SHOT_SMALL|SHOT_NO_2D|SHOT_NOGAMMA;
+				Com_sprintf (ARRAY_ARG(filename), "%s/levelshots/%s", FS_Gamedir (), tmp);
 				// cut extension
 				tmp = strrchr (filename, '.');
 				if (tmp) *tmp = 0;
 			}
 			else if (!stricmp (opt, "no2d"))
 				flags |= SHOT_NO_2D;
+			else if (!stricmp (opt, "nogamma"))
+				flags |= SHOT_NOGAMMA;
 			else if (!stricmp (opt, "silent"))
 				flags |= SHOT_SILENT;
 			else if (!stricmp (opt, "jpeg"))
@@ -708,8 +700,8 @@ static void Screenshot_f (void)
 		{
 			if (filename[0])
 				Com_WPrintf ("WARNING: name already specified (%s). Changed.\n", filename);
-			Com_sprintf (tmpName, sizeof(tmpName), "%s/screenshots/%s", FS_Gamedir (), opt);
-			Q_CopyFilename (filename, tmpName, sizeof(filename)-1);
+			Com_sprintf (ARRAY_ARG(tmpName), "%s/screenshots/%s", FS_Gamedir (), opt);
+			Q_CopyFilename (filename, tmpName, sizeof(filename));
 		}
 	}
 
@@ -896,7 +888,8 @@ void V_RenderView (float stereo_separation)
 		FixWaterVis ();
 
 		// sort entities for better cache locality
-		qsort (cl.refdef.entities, cl.refdef.num_entities, sizeof( cl.refdef.entities[0] ), (int (*)(const void *, const void *))entitycmpfnc);
+		qsort (cl.refdef.entities, cl.refdef.num_entities, sizeof(cl.refdef.entities[0]),
+			(int (*)(const void *, const void *))entitycmpfnc);
 	}
 
 	re.RenderFrame (&cl.refdef);
@@ -913,11 +906,6 @@ void V_RenderView (float stereo_separation)
 
 	if (log_stats->integer && (log_stats_file != 0))
 		fprintf (log_stats_file, "%d,%d,", r_numentities, r_numdlights);	//?? particle stats (remove)
-
-
-	SCR_AddDirtyPoint (scr_vrect.x, scr_vrect.y);
-	SCR_AddDirtyPoint (scr_vrect.x+scr_vrect.width-1,
-		scr_vrect.y+scr_vrect.height-1);
 
 	SCR_DrawCrosshair ();
 }
@@ -946,7 +934,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(r_surfinfo, 0, CVAR_CHEAT)
 CVAR_END
 
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 
 	Cmd_AddCommand ("gun_next", V_Gun_Next_f);
 	Cmd_AddCommand ("gun_prev", V_Gun_Prev_f);

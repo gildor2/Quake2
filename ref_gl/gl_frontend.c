@@ -110,7 +110,6 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 		pl.normal[0] = DotProduct (fr->normal, e->axis[0]);
 		pl.normal[1] = DotProduct (fr->normal, e->axis[1]);
 		pl.normal[2] = DotProduct (fr->normal, e->axis[2]);
-//		pl.type = PLANE_NON_AXIAL;
 		SetPlaneSignbits (&pl);
 
 		switch (BoxOnPlaneSide (mins, maxs, &pl))	// do not use BOX_ON_PLANE_SIDE -- useless
@@ -289,8 +288,8 @@ static qboolean WorldBoxOccluded (vec3_t mins, vec3_t maxs)
 //	static cvar_t *test;
 
 //	if (!test) test=Cvar_Get("test","32",0);
-	//!! optimize: 8 -> 4 points; change trace order in a case of fast non-occluded test: up-left,down-right,others ...)
-	//!! do not try to cull weapon model (this check should be outside)
+	// optimize !!: 8 -> 4 points (find contour -- fast for axial boxes); change trace order
+	// in a case of fast non-occluded test: top-left, bottom-right, other 2 points
 	for (i = 0; i < 8; i++)
 	{
 		v[0] = (i & 1) ? maxs[0] : mins[0];
@@ -696,7 +695,7 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 	unsigned dlightMask, mask;
 
 	im = e->model->inlineModel;
-//	DrawTextLeft (va("%s {%g,%g,%g}", e->model->name, VECTOR_ARGS(e->center)), 1, 0.2, 0.2);
+//	DrawTextLeft (va("%s {%g,%g,%g}", e->model->name, VECTOR_ARG(e->center)), 1, 0.2, 0.2);
 	// check dlights
 	dlightMask = 0;
 	for (i = 0, dl = vp.dlights, mask = 1; i < vp.numDlights; i++, dl++, mask <<= 1)
@@ -722,7 +721,7 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 			surf->dlightMask = dlightMask;
 		}
 //	if (dlightMask) DrawTextLeft(va("dl_ent %d(%g,%g,%g) %08X", currentEntity,
-//		VECTOR_ARGS(e->center),dlightMask),1,1,0);//!!!! REMOVE
+//		VECTOR_ARG(e->center),dlightMask),1,1,0);//!!!! REMOVE
 	AddBspSurfaces (im->faces, im->numFaces, e->frustumMask, e);
 }
 
@@ -1383,7 +1382,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 		if (!leaf) CULL_ENT;			// entity do not occupy any visible leafs
 
 		// occlusion culling
-		if (e->model && gl_oCull->integer)
+		if (e->model && gl_oCull->integer && !(e->flags & RF_DEPTHHACK))
 		{
 			if (BoxOccluded (e, e->size2))
 			{
@@ -1400,11 +1399,11 @@ static void DrawEntities (int firstEntity, int numEntities)
 			{
 			case MODEL_INLINE:
 				DrawText3D (e->center, va("origin: %g %g %g\nbmodel: %s\nflags: $%X",
-					VECTOR_ARGS(e->origin), e->model->name, e->flags), 0.1, 0.4, 0.2);
+					VECTOR_ARG(e->origin), e->model->name, e->flags), 0.1, 0.4, 0.2);
 				break;
 			case MODEL_MD3:
 				DrawText3D (e->center, va("origin: %g %g %g\nmd3: %s\nskin: %s\nflags: $%X",
-					VECTOR_ARGS(e->origin), e->model->name, e->customShader ? e->customShader->name : "(default)", e->flags), 0.1, 0.4, 0.2);
+					VECTOR_ARG(e->origin), e->model->name, e->customShader ? e->customShader->name : "(default)", e->flags), 0.1, 0.4, 0.2);
 				break;
 			}
 		}
@@ -1520,7 +1519,7 @@ static void DrawFlares (void)
 				VectorAdd (im->mins, im->maxs, tmp);
 				VectorMA (e->center, -0.5f, tmp, tmp);
 				VectorAdd (flarePos, tmp, flarePos);
-//				DrawTextLeft (va("flare shift: %g %g %g -> flarePos: %g %g %g", VECTOR_ARGS(tmp), VECTOR_ARGS(flarePos)),1,1,1);
+//				DrawTextLeft (va("flare shift: %g %g %g -> flarePos: %g %g %g", VECTOR_ARG(tmp), VECTOR_ARG(flarePos)),1,1,1);
 			}
 			// perform PVS cull for flares with radius 0 (if flare have radius > 0
 			// it (mostly) will be placed inside invisible (solid) leaf)

@@ -41,7 +41,7 @@ void SV_BeginDemoserver (void)
 {
 	char		name[MAX_OSPATH];
 
-	Com_sprintf (name, sizeof(name), "demos/%s", sv.name);
+	Com_sprintf (ARRAY_ARG(name), "demos/%s", sv.name);
 	FS_FOpenFile (name, &sv.demofile);
 	if (!sv.demofile)
 		Com_Error (ERR_DROP, "Couldn't open %s\n", name);
@@ -571,7 +571,7 @@ void SV_ExecuteClientMessage (client_t *cl)
 			break;
 
 		case clc_userinfo:
-			strncpy (cl->userinfo, MSG_ReadString (&net_message), sizeof(cl->userinfo)-1);
+			Q_strncpyz (cl->userinfo, MSG_ReadString (&net_message), sizeof(cl->userinfo));
 			SV_UserinfoChanged (cl);
 			break;
 

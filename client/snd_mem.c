@@ -126,7 +126,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	if (name[0] == '#')
 		strcpy(namebuffer, &name[1]);
 	else
-		Com_sprintf (namebuffer, sizeof(namebuffer), "sound/%s", name);
+		Com_sprintf (ARRAY_ARG(namebuffer), "sound/%s", name);
 
 //	Com_Printf ("loading %s\n",namebuffer);
 

@@ -1,3 +1,5 @@
+GRAPHICS
+~~~~~~~~
 - map "resort": have too dark sun light (very dark map itself; lightmaps looks buggy)
 - map "mxcity": have "_sun_surface" (different from sky surf->value)
 - map "tacoma": whole map lighted with spotlights (cone=2000, i.e. pointlight; style=32 - not cached; lightmaps saturated with blue color)
@@ -22,9 +24,15 @@
 - "darkalley": have too dark places (but walls are lighted)
 - "kumanru": very bright sky (SURF_LIGHT), secondary light sources (too dark shadows)
 - "underrain": have caves with SURF_SKY lighting (without drawing sky)
-* "stdm1": minlight (cmdline)
+??* "stdm1": minlight (cmdline)
 - "bluskys": have "light" with "spawnflags"=2 (lightflare+light)
 * "pier2": minlight (cmdline)
 * "ruins3": minlight
+- "urban": have "light" in entstring, but, seems, no ambient while radiocity
 ------------------------------
 - "tchurch-beta3": too many dynamic lightmaps (slower than oldgl; oldgl is slow)
+------------------------------
+
+PHYSICS
+~~~~~~~
+- "japan" - underwater have brush sides between 2 water brushes; clipped on this sides (3rd person, r_surfinfo etc.)

@@ -25,7 +25,7 @@ int			numgltextures;
 int			base_textureid;		// gltextures[i] = base_textureid+i
 
 static byte intensitytable[256];
-static byte gammatable[256];
+byte	gammatable[256];
 
 cvar_t		*intensity;
 cvar_t		*saturation;

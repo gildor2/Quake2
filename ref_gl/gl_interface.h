@@ -4,7 +4,6 @@
 
 typedef struct
 {
-	//?? NOTE: when changed, need to syncronize with OLD ref_gl
 	char	rendererString[256];
 	char	vendorString[256];
 	char	versionString[256];

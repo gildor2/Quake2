@@ -71,7 +71,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	if (a < minval) minval = a;			\
 	if (a > maxval) maxval = a;
 
-#define VECTOR_ARGS(name)	name[0],name[1],name[2]
+#define VECTOR_ARG(name)	name[0],name[1],name[2]
+#define ARRAY_ARG(array)	array, sizeof(array)/sizeof(array[0])
 
 typedef unsigned char 		byte;
 typedef enum {false, true}	qboolean;
@@ -198,15 +199,6 @@ float Q_rsqrt (float number);
 #define SQRTFAST(x)		(x * Q_rsqrt(x))
 
 #if !defined C_ONLY && !defined __linux__ && !defined __sgi
-//extern long Q_ftol (float f);
-
-__inline long Q_ftol (float val)
-{
-	// WARNING: this function works correct only with numbers -32768..32767
-	// result is ceil(val)
-    double v = (double)val + (68719476736.0*1.5);
-    return ((long*)&v)[0] >> 16;
-}
 
 __inline int Q_round (float f)
 {
@@ -441,51 +433,109 @@ COLLISION DETECTION
 #define	AREA_SOLID		1
 #define	AREA_TRIGGERS	2
 
-
-// 0-2 are axial planes
-#define	PLANE_X			0
-#define	PLANE_Y			1
-#define	PLANE_Z			2
-#define	PLANE_NON_AXIAL	3
+// normal type for plane
+#define	PLANE_X			0			// { 1, 0, 0}
+#define	PLANE_Y			1			// { 0, 1, 0}
+#define	PLANE_Z			2			// { 0, 0, 1}
+#define PLANE_MX		3			// {-1, 0, 0}
+#define PLANE_MY		4			// { 0,-1, 0}
+#define PLANE_MZ		5			// { 0, 0,-1}
+#define	PLANE_NON_AXIAL	6			// any another type
 
 // plane_t structure (the same as Q2 dplane_t, but "int type" -> "byte type,signbits,pad[2]")
 typedef struct
 {
 	vec3_t	normal;
 	float	dist;
-	byte	type;			// for fast side tests
+	byte	type;			// for fast side tests; PLANE_[M]X|Y|Z
 	byte	signbits;		// signx + (signy<<1) + (signz<<2)
 	byte	pad[2];
 } cplane_t;
 
 void SetPlaneSignbits (cplane_t *out);
-#define PlaneTypeForNormal(x) (x[0] == 1.0 ? PLANE_X : (x[1] == 1.0 ? PLANE_Y : (x[2] == 1.0 ? PLANE_Z : PLANE_NON_AXIAL) ) )
 
 int BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, cplane_t *plane);
-#define BOX_ON_PLANE_SIDE(emins, emaxs, p)	\
-	(((p)->type < 3)?						\
+
+#if 1
+
+__inline int PlaneTypeForNormal (vec3_t p)
+{
+	if (p[0] == 1.0f) return PLANE_X;
+	else if (p[0] == -1.0f) return PLANE_MX;
+	else if (p[1] == 1.0f) return PLANE_Y;
+	else if (p[1] == -1.0f) return PLANE_MY;
+	else if (p[2] == 1.0f) return PLANE_Z;
+	else if (p[2] == -1.0f) return PLANE_MZ;
+	else return PLANE_NON_AXIAL;
+}
+
+__inline int BOX_ON_PLANE_SIDE (vec3_t mins, vec3_t maxs, cplane_t *plane)
+{
+	if (plane->type <= PLANE_MZ)
+	{
+		int		type;
+		float	dist;
+
+		if (plane->type <= PLANE_Z)
+		{
+			type = plane->type;
+			dist = plane->dist;
+			if (dist <= mins[type])			return 1;
+			else if (dist >= maxs[type])	return 2;
+		}
+		else
+		{
+			type = plane->type - 3;
+			dist = -plane->dist;
+			if (dist <= mins[type])			return 2;
+			else if (dist >= maxs[type])	return 1;
+		}
+		return 3;
+	}
+	return BoxOnPlaneSide (mins, maxs, plane);
+}
+
+__inline float DISTANCE_TO_PLANE (vec3_t vec, cplane_t *plane)
+{
+	if (plane->type <= PLANE_Z)
+		return vec[plane->type] - plane->dist;
+	else if (plane->type <= PLANE_MZ)
+		return -vec[plane->type - 3] - plane->dist;
+	else
+		return DotProduct (plane->normal, vec) - plane->dist;
+}
+
+#else
+
+#define PlaneTypeForNormal(x) (x[0] == 1.0 ? PLANE_X : (x[1] == 1.0 ? PLANE_Y : (x[2] == 1.0 ? PLANE_Z : PLANE_NON_AXIAL) ) )
+#define BOX_ON_PLANE_SIDE(mins, maxs, p)	\
+	(((p)->type <= PLANE_Z) ?				\
 	(										\
-		((p)->dist <= (emins)[(p)->type])?	\
+		((p)->dist <= (mins)[(p)->type]) ?	\
 			1								\
 		:									\
 		(									\
-			((p)->dist >= (emaxs)[(p)->type])?\
+			((p)->dist >= (maxs)[(p)->type]) ?\
 				2							\
 			:								\
 				3							\
 		)									\
 	)										\
 	:										\
-		BoxOnPlaneSide( (emins), (emaxs), (p)))
+		BoxOnPlaneSide ((mins), (maxs), (p)))
 
 #define DISTANCE_TO_PLANE(vec,plane)		\
-	(((plane)->type < 3)?					\
+	(										\
+		((plane)->type <= PLANE_Z) ?		\
 		(vec)[(plane)->type] - (plane)->dist\
 	:										\
 		DotProduct((plane)->normal,(vec)) - (plane)->dist\
 	)
 
+#endif
+
 // structure offset for asm code
+//?? remove
 #define CPLANE_NORMAL_X			0
 #define CPLANE_NORMAL_Y			4
 #define CPLANE_NORMAL_Z			8
@@ -1162,7 +1212,7 @@ ROGUE - VERSIONS
 ==========================================================
 */
 
-#define	ANGLE2SHORT(x)	(Q_ftol ((x)*65536.0f/360) & 65535)
+#define	ANGLE2SHORT(x)	(Q_round ((x)*65535.0f/360) & 65535)
 #define	SHORT2ANGLE(x)	((x)*(360.0f/65536))
 
 

@@ -266,7 +266,7 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 		dt >>= 4;
 
 		lightmap = surf->samples;
-		VectorCopy (vec3_origin, pointcolor);
+		VectorClear (pointcolor);
 		if (lightmap)
 		{
 			float	scale;
@@ -319,7 +319,7 @@ void R_LightPoint (vec3_t p, vec3_t color)
 	r = RecursiveLightPoint (r_worldmodel->nodes, p, end);
 
 	if (r == -1)
-		VectorCopy (vec3_origin, color);	// black
+		VectorClear (color);	// black
 	else
 		VectorCopy (pointcolor, color);
 
@@ -415,7 +415,7 @@ void R_AddDynamicLights (msurface_t *surf)
 
 			for ( s=0, fsacc = 0 ; s<smax ; s++, fsacc += 16, pfBL += 3)
 			{
-				sd = Q_ftol( local[0] - fsacc );
+				sd = Q_round ( local[0] - fsacc );
 
 				if ( sd < 0 )
 					sd = -sd;
@@ -598,9 +598,9 @@ store:
 			for (j=0 ; j<smax ; j++)
 			{
 
-				r = Q_ftol( bl[0] );
-				g = Q_ftol( bl[1] );
-				b = Q_ftol( bl[2] );
+				r = Q_round( bl[0] );
+				g = Q_round( bl[1] );
+				b = Q_round( bl[2] );
 
 				// catch negative lights
 				if (r < 0)
@@ -658,9 +658,9 @@ store:
 			for (j=0 ; j<smax ; j++)
 			{
 
-				r = Q_ftol( bl[0] );
-				g = Q_ftol( bl[1] );
-				b = Q_ftol( bl[2] );
+				r = Q_round( bl[0] );
+				g = Q_round( bl[1] );
+				b = Q_round( bl[2] );
 
 				// catch negative lights
 				if (r < 0)

@@ -608,6 +608,7 @@ void CL_ParseFrame (void)
 			VectorCopy (cl.frame.playerstate.viewangles, cl.predicted_angles);
 			if (cls.disable_servercount != cl.servercount && cl.refresh_prepped)
 				SCR_EndLoadingPlaque ();	// get rid of loading plaque
+			Cvar_Set ("paused", "0");
 		}
 		cl.sound_prepped = true;			// can start mixing ambient sounds
 
@@ -1327,7 +1328,7 @@ void CL_OffsetThirdPersonView (void)
 	// algorithm was taken from FAKK2
 	camDist = max(cl_cameradist->value, CAMERA_MINIMUM_DISTANCE);
 #ifdef FIXED_VIEW
-	sscanf (Cvar_VariableString("3rd"), "%g %g %g", VECTOR_ARGS(&cl.refdef.viewangles));
+	sscanf (Cvar_VariableString("3rd"), "%g %g %g", VECTOR_ARG(&cl.refdef.viewangles));
 #endif
 	AngleVectors (cl.refdef.viewangles, forward, NULL, NULL);
 	VectorMA(cl.refdef.vieworg, -camDist, forward, pos);

@@ -123,7 +123,7 @@ void GL_FinishPortal (void)
 	{
 		PUT_BACKEND_COMMAND (bkDrawFrame_t, c);
 		c->type = BACKEND_DRAW_FRAME;
-		memcpy (&c->portal, &vp, sizeof(vp));
+		c->portal = vp;
 	}
 }
 

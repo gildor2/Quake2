@@ -41,8 +41,10 @@ typedef struct
 	cplane_t	groundplane;
 	int			groundcontents;
 
-	vec3_t		previous_origin;
+	short		previous_origin[3];
+
 	qboolean	ladder;
+	cplane_t	ladderPlane;
 } pml_t;
 
 static pmove_t		*pm;
@@ -74,18 +76,14 @@ returns the blocked flags (1 = floor, 2 = step / wall)
 static void ClipVelocity (vec3_t in, vec3_t normal, vec3_t out, float overbounce)
 {
 	float	backoff;
-	float	change;
 	int		i;
 
 	backoff = DotProduct (in, normal) * overbounce;
+	VectorMA (in, -backoff, normal, out);
 
 	for (i = 0; i < 3; i++)
-	{
-		change = normal[i]*backoff;
-		out[i] = in[i] - change;
 		if (out[i] > -STOP_EPSILON && out[i] < STOP_EPSILON)
 			out[i] = 0;
-	}
 }
 
 
@@ -104,8 +102,9 @@ Does not modify any world state?
 */
 #define	MIN_STEP_NORMAL	0.7		// can't step up onto very steep slopes
 #define	MAX_CLIP_PLANES	5
+#define OVERBOUNCE		1.01
 
-static void StepSlideMove_ (void)
+static qboolean SlideMove (void)
 {
 	int			bumpcount, numbumps;
 	vec3_t		dir;
@@ -114,58 +113,91 @@ static void StepSlideMove_ (void)
 	vec3_t		planes[MAX_CLIP_PLANES];
 	vec3_t		primal_velocity;
 	int			i, j;
-	trace_t	trace;
+	trace_t		trace;
 	vec3_t		end;
 	float		time_left;
 
 	numbumps = 4;
 
 	VectorCopy (pml.velocity, primal_velocity);
+#if 0
+	//!! OLD
 	numplanes = 0;
+#else
+	if (pm->s.pm_flags & PMF_ON_GROUND)
+	{
+		VectorCopy (pml.groundplane.normal, planes[0]);
+		numplanes = 1;
+	}
+	else
+		numplanes = 0;
+#endif
 
 	time_left = pml.frametime;
 
 	for (bumpcount = 0; bumpcount < numbumps; bumpcount++)
 	{
-		for (i = 0; i < 3; i++)
-			end[i] = pml.origin[i] + time_left * pml.velocity[i];
-
+		VectorMA (pml.origin, time_left, pml.velocity, end);
 		trace = pm->trace (pml.origin, pm->mins, pm->maxs, end);
 
 		if (trace.allsolid)
 		{	// entity is trapped in another solid
 			pml.velocity[2] = 0;	// don't build up falling damage
-			return;
+			return true;
 		}
 
 		if (trace.fraction > 0)
 		{	// actually covered some distance
 			VectorCopy (trace.endpos, pml.origin);
-			numplanes = 0;
+			numplanes = 0;			//??
 		}
 
 		if (trace.fraction == 1)
-			 break;		// moved the entire distance
+			break;		// moved the entire distance
 
 		// save entity for contact
 		if (pm->numtouch < MAXTOUCH && trace.ent)
-		{
-			pm->touchents[pm->numtouch] = trace.ent;
-			pm->numtouch++;
-		}
+			pm->touchents[pm->numtouch++] = trace.ent;
 
-		time_left -= time_left * trace.fraction;
+		time_left *= 1 - trace.fraction;
 
 		// slide along this plane
 		if (numplanes >= MAX_CLIP_PLANES)
 		{	// this shouldn't really happen
-			VectorCopy (vec3_origin, pml.velocity);
-			break;
+			VectorClear (pml.velocity);
+			return true;
 		}
 
 		VectorCopy (trace.plane.normal, planes[numplanes]);
 		numplanes++;
 
+#if 1
+		// modify original velocity so it parallels all of the clip planes
+		for (i = 0; i < numplanes; i++)
+		{
+			if (DotProduct (pml.velocity, planes[i]) >= 0) continue;
+			ClipVelocity (pml.velocity, planes[i], pml.velocity, OVERBOUNCE);
+
+			for (j = 0; j < numplanes; j++)
+			{
+				if (j == i) continue;
+				if (DotProduct (pml.velocity, planes[j]) >= 0) continue;
+
+				ClipVelocity (pml.velocity, planes[j], pml.velocity, OVERBOUNCE);
+				// check for reentering plane[i] after clip against plane[j]
+				if (DotProduct (pml.velocity, planes[i]) >= 0) continue;
+
+				// go along the crease
+				CrossProduct (planes[i], planes[j], dir);
+				VectorNormalizeFast (dir);
+				d = DotProduct (dir, pml.velocity);
+				VectorScale (dir, d, pml.velocity);
+			}
+
+			break;
+		}
+#else
+		//!! OLD
 		// modify original_velocity so it parallels all of the clip planes
 		for (i = 0; i < numplanes; i++)
 		{
@@ -195,18 +227,21 @@ static void StepSlideMove_ (void)
 			d = DotProduct (dir, pml.velocity);
 			VectorScale (dir, d, pml.velocity);
 		}
+#endif
 
 		// if velocity is against the original velocity, stop dead
 		// to avoid tiny occilations in sloping corners
 		if (DotProduct (pml.velocity, primal_velocity) <= 0)
 		{
-			VectorCopy (vec3_origin, pml.velocity);
+			VectorClear (pml.velocity);
 			break;
 		}
 	}
 
 	if (pm->s.pm_time)
 		VectorCopy (primal_velocity, pml.velocity);
+
+	return (bumpcount > 0) || trace.fraction < 1;
 }
 
 
@@ -220,13 +255,17 @@ static void StepSlideMove (void)
 	vec3_t		start_o, start_v;
 	vec3_t		down_o, down_v;
 	trace_t		trace;
-	float		down_dist, up_dist;
+	float		stepHeight, down_dist, up_dist;
 	vec3_t		up, down;
 
 	VectorCopy (pml.origin, start_o);
 	VectorCopy (pml.velocity, start_v);
 
-	StepSlideMove_ ();
+#if 0
+	if (!SlideMove ()) return;
+#else
+	SlideMove ();
+#endif
 
 	VectorCopy (pml.origin, down_o);
 	VectorCopy (pml.velocity, down_v);
@@ -234,19 +273,35 @@ static void StepSlideMove (void)
 	VectorCopy (start_o, up);
 	up[2] += STEPSIZE;
 
+#if 1
+	trace = pm->trace (start_o, pm->mins, pm->maxs, up);
+	if (trace.allsolid)
+	{
+//		Com_Printf("no up\n");//!!
+		return;		// can't step up
+	}
+
+	// try sliding above
+	stepHeight = trace.endpos[2] - start_o[2];
+	VectorCopy (trace.endpos, pml.origin);
+	VectorCopy (start_v, pml.velocity);
+#else
+	//!! OLD
 	trace = pm->trace (up, pm->mins, pm->maxs, up);
 	if (trace.allsolid)
 		return;		// can't step up
 
-	// try sliding above
+	stepHeight = STEPSIZE;
 	VectorCopy (up, pml.origin);
 	VectorCopy (start_v, pml.velocity);
+#endif
 
-	StepSlideMove_ ();
+//Com_Printf("^2 up ");//!!
+	SlideMove ();
 
 	// push down the final amount
 	VectorCopy (pml.origin, down);
-	down[2] -= STEPSIZE;
+	down[2] -= stepHeight;
 	trace = pm->trace (pml.origin, pm->mins, pm->maxs, down);
 	if (!trace.allsolid)
 		VectorCopy (trace.endpos, pml.origin);
@@ -261,6 +316,7 @@ static void StepSlideMove (void)
 
 	if (down_dist > up_dist || trace.plane.normal[2] < MIN_STEP_NORMAL)
 	{
+//		Com_Printf("down: d_d=%g u_d=%g n2=%g\n", down_dist, up_dist, trace.plane.normal[2]);//!!
 		VectorCopy (down_o, pml.origin);
 		VectorCopy (down_v, pml.velocity);
 		return;
@@ -377,21 +433,18 @@ AddCurrents
 static void AddCurrents (vec3_t wishvel)
 {
 	vec3_t	v;
-	float	s;
+	float	f;
 
 	// account for ladders
-	if (pml.ladder && fabs(pml.velocity[2]) <= 200)
+	if (pml.ladder && pml.velocity[2] >= -200 && pml.velocity[2] <= 200)
 	{
-		if (fabs (s = pm->viewangles[PITCH]) >= 15 && pm->cmd.forwardmove > 0)
+		if ((pm->viewangles[PITCH] >= 15 || pm->viewangles[PITCH] <= -15) && pm->cmd.forwardmove > 0)
 		{
 			float	y;
 
-			y = -400 / 90 * s;		// full speed when pitch angle is 45 grad.
+			y = -400 / 90 * pm->viewangles[PITCH];	// full speed when pitch angle is 45 grad.
 
-			if (y < -200)
-				y = -200;
-			else if (y > 200)
-				y = 200;
+			y = bound(y, -200, 200);
 			wishvel[2] = y;
 		}
 		else if (pm->cmd.upmove > 0)
@@ -401,58 +454,66 @@ static void AddCurrents (vec3_t wishvel)
 		else
 			wishvel[2] = 0;
 
-#define LADDER_SIDE_SPEED	50
+#define LADDER_SIDE_SPEED	70
 		// limit horizontal speed when on a ladder
 		if (!(pm->s.pm_flags & PMF_ON_GROUND))		// full speed when hit ladder while stand on ground
 		{
-			if (pm->cmd.sidemove == 0)
-				wishvel[0] = wishvel[1] = 0;		// side move on ladders only with keys (no sliding)
-			else
+			if (pml.ladderPlane.normal[2] != 1 && pml.ladderPlane.normal[2] != -1)
 			{
-				if (wishvel[0] < -LADDER_SIDE_SPEED)
-					wishvel[0] = -LADDER_SIDE_SPEED;
-				else if (wishvel[0] > LADDER_SIDE_SPEED)
-					wishvel[0] = LADDER_SIDE_SPEED;
+				static vec3_t up = {0, 0, 1};
+				vec3_t	axis[2], vel_vert;
 
-				if (wishvel[1] < -LADDER_SIDE_SPEED)
-					wishvel[1] = -LADDER_SIDE_SPEED;
-				else if (wishvel[1] > LADDER_SIDE_SPEED)
-					wishvel[1] = LADDER_SIDE_SPEED;
+				// compute projections of velocity onto ladder plane axis
+				CrossProduct (pml.ladderPlane.normal, up, axis[0]);
+				VectorNormalizeFast (axis[0]);
+				CrossProduct (pml.ladderPlane.normal, axis[0], axis[1]);
+
+				f = DotProduct (wishvel, axis[1]);
+				VectorScale (axis[1], f, vel_vert);
+
+				// limit horizontal component of speed
+				//!! NOTE: SlideMove() may add its own horizontal speed
+				if (pm->cmd.sidemove == 0)
+					f = 0;
+				else
+				{
+					f = DotProduct (wishvel, axis[0]);
+					f = bound(f, -LADDER_SIDE_SPEED, LADDER_SIDE_SPEED);
+				}
+
+				VectorMA (vel_vert, f, axis[0], wishvel);
 			}
 		}
 	}
-
 
 	// add water currents
 	if (pm->watertype & MASK_CURRENT)
 	{
 		VectorClear (v);
+		if (pm->watertype & CONTENTS_CURRENT_0)		v[0] = 1;
+		if (pm->watertype & CONTENTS_CURRENT_180)	v[0] = -1;
+		if (pm->watertype & CONTENTS_CURRENT_90)	v[1] = 1;
+		if (pm->watertype & CONTENTS_CURRENT_270)	v[1] = -1;
+		if (pm->watertype & CONTENTS_CURRENT_UP) 	v[2] = 1;
+		if (pm->watertype & CONTENTS_CURRENT_DOWN)	v[2] = -1;
 
-		if (pm->watertype & CONTENTS_CURRENT_0)		v[0] += 1;
-		if (pm->watertype & CONTENTS_CURRENT_180)	v[0] -= 1;
-		if (pm->watertype & CONTENTS_CURRENT_90)	v[1] += 1;
-		if (pm->watertype & CONTENTS_CURRENT_270)	v[1] -= 1;
-		if (pm->watertype & CONTENTS_CURRENT_UP) 	v[2] += 1;
-		if (pm->watertype & CONTENTS_CURRENT_DOWN)	v[2] -= 1;
-
-		s = pm_waterspeed;
+		f = pm_waterspeed;
 		if ((pm->waterlevel == 1) && (pm->groundentity))
-			s /= 2;
+			f /= 2;
 
-		VectorMA (wishvel, s, v, wishvel);
+		VectorMA (wishvel, f, v, wishvel);
 	}
 
 	// add conveyor belt velocities
-	if (pm->groundentity)
+	if (pm->groundentity && (pml.groundcontents & MASK_CURRENT))
 	{
 		VectorClear (v);
-
-		if (pml.groundcontents & CONTENTS_CURRENT_0)	v[0] += 1;
-		if (pml.groundcontents & CONTENTS_CURRENT_180)	v[0] -= 1;
-		if (pml.groundcontents & CONTENTS_CURRENT_90)	v[1] += 1;
-		if (pml.groundcontents & CONTENTS_CURRENT_270)	v[1] -= 1;
-		if (pml.groundcontents & CONTENTS_CURRENT_UP) 	v[2] += 1;
-		if (pml.groundcontents & CONTENTS_CURRENT_DOWN)	v[2] -= 1;
+		if (pml.groundcontents & CONTENTS_CURRENT_0)	v[0] = 1;
+		if (pml.groundcontents & CONTENTS_CURRENT_180)	v[0] = -1;
+		if (pml.groundcontents & CONTENTS_CURRENT_90)	v[1] = 1;
+		if (pml.groundcontents & CONTENTS_CURRENT_270)	v[1] = -1;
+		if (pml.groundcontents & CONTENTS_CURRENT_UP) 	v[2] = 1;
+		if (pml.groundcontents & CONTENTS_CURRENT_DOWN)	v[2] = -1;
 
 		VectorMA (wishvel, 100 /* pm->groundentity->speed */, v, wishvel);
 	}
@@ -472,7 +533,7 @@ static void WaterMove (void)
 	vec3_t	wishdir;
 
 	// user intentions
-	for (i=0 ; i<3 ; i++)
+	for (i = 0; i < 3; i++)
 		wishvel[i] = pml.forward[i]*pm->cmd.forwardmove + pml.right[i]*pm->cmd.sidemove;
 
 	if (!pm->cmd.forwardmove && !pm->cmd.sidemove && !pm->cmd.upmove)
@@ -505,17 +566,15 @@ AirMove
 */
 static void AirMove (void)
 {
-	int			i;
-	vec3_t		wishvel;
-	float		fmove, smove;
-	vec3_t		wishdir;
-	float		wishspeed;
-	float		maxspeed;
+	int		i;
+	float	fmove, smove;
+	vec3_t	wishvel, wishdir;
+	float	wishspeed, maxspeed;
 
 	fmove = pm->cmd.forwardmove;
 	smove = pm->cmd.sidemove;
 	if (pml.ladder && fmove < 0 && !(pm->s.pm_flags & PMF_ON_GROUND))
-		fmove = 0; // disable backward move when on a ladder
+		fmove = 0;			// disable backward move when on a ladder
 
 //!!!!! pitch should be 1/3 so this isn't needed??!
 #if 0
@@ -525,14 +584,13 @@ static void AirMove (void)
 	VectorNormalize (pml.right);
 #endif
 
-	for (i=0 ; i<2 ; i++)
+	for (i = 0; i < 2; i++)
 		wishvel[i] = pml.forward[i]*fmove + pml.right[i]*smove;
 	wishvel[2] = 0;
+//Com_Printf("v1(%g|%g|%g)",VECTOR_ARG(wishvel));//!!
 
 	AddCurrents (wishvel);
-
-	VectorCopy (wishvel, wishdir);
-	wishspeed = VectorNormalize(wishdir);
+	wishspeed = VectorNormalize2 (wishvel, wishdir);
 
 	// clamp to server defined max speed
 	maxspeed = (pm->s.pm_flags & PMF_DUCKED) ? pm_duckspeed : pm_maxspeed;
@@ -546,7 +604,7 @@ static void AirMove (void)
 	if (pml.ladder)
 	{
 		Accelerate (wishdir, wishspeed, pm_accelerate);
-		if (wishvel[2] == 0)
+		if (wishvel[2] == 0)		// stop moving on ladder
 		{
 			if (pml.velocity[2] > 0)
 			{
@@ -579,14 +637,18 @@ static void AirMove (void)
 	}
 	else
 	{	// not on ground, so little effect on velocity
+//Com_Printf("v2(%g|%g|%g)*%g ",VECTOR_ARG(wishdir),wishspeed);//!!
 		if (pm_airaccelerate)
 			AirAccelerate (wishdir, wishspeed, pm_accelerate);
 		else
 			Accelerate (wishdir, wishspeed, 1);
+//Com_Printf("vel0(%g|%g|%g) o0(%g|%g|%g)\n",VECTOR_ARG(pml.velocity),VECTOR_ARG(pml.origin));//!!
 		// add gravity
 		pml.velocity[2] -= pm->s.gravity * pml.frametime;
 		StepSlideMove ();
+//Com_Printf("tm=%g vel1(%g|%g|%g) o1(%g|%g|%g)\n",pml.frametime, VECTOR_ARG(pml.velocity),VECTOR_ARG(pml.origin));//!!
 	}
+//Com_Printf("\n");//!!
 }
 
 
@@ -624,7 +686,8 @@ static void CatagorizePosition (void)
 		pml.groundsurface = trace.surface;
 		pml.groundcontents = trace.contents;
 
-//		if (trace.allsolid) Com_WPrintf("locked: %g %g %g\n", VECTOR_ARGS(point));
+//		Com_Printf("gr: n2=%g frac=%g sol=%d\n", trace.plane.normal[2], trace.fraction, trace.allsolid);//!!
+//		if (trace.allsolid) Com_WPrintf("locked: %g %g %g\n", VECTOR_ARG(point));
 		if (!trace.ent || (trace.plane.normal[2] < 0.7 && !trace.startsolid))
 		{
 			pm->groundentity = NULL;
@@ -694,7 +757,6 @@ static void CatagorizePosition (void)
 				pm->waterlevel = 3;
 		}
 	}
-
 }
 
 
@@ -740,7 +802,9 @@ static void CheckJump (void)
 	}
 
 	if (pm->groundentity == NULL)
+	{
 		return;		// in air, so no effect
+	}
 
 	pm->s.pm_flags |= PMF_JUMP_HELD;
 
@@ -759,13 +823,11 @@ CheckSpecialMovement
 static void CheckSpecialMovement (void)
 {
 	vec3_t	spot;
-	int		cont;
 	vec3_t	flatforward;
 	trace_t	trace;
 	float	dist;
 
-	if (pm->s.pm_time)
-		return;
+	if (pm->s.pm_time) return;
 
 	pml.ladder = false;
 
@@ -782,7 +844,11 @@ static void CheckSpecialMovement (void)
 	VectorMA (pml.origin, dist, flatforward, spot);
 	trace = pm->trace (pml.origin, pm->mins, pm->maxs, spot);
 	if ((trace.fraction < 1) && (trace.contents & CONTENTS_LADDER))
+	{
 		pml.ladder = true;
+		pml.ladderPlane = trace.plane;
+//		pm->groundentity = trace.ent;	// -- allows to move with entities, having CONTENTS_LADDER; requires some game changes
+	}
 
 	// check for water jump
 	if (pm->waterlevel != 2)
@@ -790,14 +856,11 @@ static void CheckSpecialMovement (void)
 
 	VectorMA (pml.origin, 30, flatforward, spot);
 	spot[2] += 4;
-	cont = pm->pointcontents (spot);
-	if (!(cont & CONTENTS_SOLID))
-		return;
+	if (!(pm->pointcontents (spot) & CONTENTS_SOLID)) return;
 
 	spot[2] += 16;
-	cont = pm->pointcontents (spot);
-	if (cont)
-		return;
+	if (pm->pointcontents (spot)) return;			// CONTENTS_EMPTY
+
 	// jump out of water
 	VectorScale (flatforward, 50, pml.velocity);
 	pml.velocity[2] = 350;
@@ -829,7 +892,7 @@ static void FlyMove (qboolean doclip)
 	// friction
 	speed = VectorLength (pml.velocity);
 	if (speed < 1)
-		VectorCopy (vec3_origin, pml.velocity);
+		VectorClear (pml.velocity);
 	else
 	{
 		drop = 0;
@@ -988,7 +1051,7 @@ static void DeadMove (void)
 
 static qboolean GoodPosition (void)
 {
-	trace_t	trace;
+	trace_t	tr;
 	vec3_t	v;
 	int		i;
 
@@ -997,9 +1060,9 @@ static qboolean GoodPosition (void)
 
 	for (i = 0; i < 3; i++)
 		v[i] = pm->s.origin[i] / 8.0f;
-	trace = pm->trace (v, pm->mins, pm->maxs, v);
+	tr = pm->trace (v, pm->mins, pm->maxs, v);
 
-	return !trace.allsolid;
+	return !tr.allsolid;
 }
 
 /*
@@ -1012,39 +1075,94 @@ precision of the network channel and in a valid position.
 */
 static void SnapPosition (void)
 {
-	qboolean exact[3];
-	int		i, i1, i2, i3;
-	short	base[3];
-	static int offset[3] = {0, 1, -1};
+#if 1
+	int		i, j;
+	vec3_t	v;
+	int		delta[3];
 
 	for (i = 0; i < 3; i++)
 	{
 		pm->s.origin[i] = Q_round (pml.origin[i] * 8);
 		pm->s.velocity[i] = Q_round (pml.velocity[i] * 8);
-		exact[i] = (pm->s.origin[i] / 8.0f == pml.origin[i]);
-		base[i] = pm->s.origin[i];
 	}
+	if (pm->s.pm_type == PM_SPECTATOR) return;
 
-	if (exact[0] && exact[1] && exact[2]) return;
+//if (pml.velocity[0] || pml.velocity[1] || pml.velocity[2])//!!
+//Com_Printf("g:%d org: %g %g %g (pr: %d %d %d)  sp: %g %g %g\n", (pm->s.pm_flags & PMF_ON_GROUND) != 0,
+//VECTOR_ARG(pml.origin),VECTOR_ARG(pml.previous_origin),VECTOR_ARG(pml.velocity));//!!
 
-	// jitter a quantized position to find a correct one
-#define COMP(idx,var)	\
-	pm->s.origin[idx] = base[idx];	\
-	if (!exact[idx]) pm->s.origin[idx] += offset[var];
-	for (i1 = 0; i1 < 3; i1++)
+	delta[0] = delta[1] = delta[2] = 0;
+	for (i = 0; i < 5; i++)
 	{
-		COMP(0,i1);
-		for (i2 = 0; i2 < 3; i2++)
+		trace_t tr;
+
+		for (j = 0; j < 3; j++) v[j] = pm->s.origin[j] / 8.0f;
+		tr = pm->trace (v, pm->mins, pm->maxs, v);
+		if (!tr.allsolid)
 		{
-			COMP(1,i2);
-			for (i3 = 0; i3 < 3; i3++)
+			for (j = 0; j < 3; j++)
 			{
-				COMP(2,i3);
-				if (GoodPosition ()) return;
+				if (!delta[j]) continue;
+				if (pm->s.origin[j] != pml.previous_origin[j]) continue;
+				if ((delta[j] > 0 && pm->s.velocity[j] > 0) ||
+					(delta[j] < 0 && pm->s.velocity[j] < 0)) continue;
+				pm->s.velocity[j] = 0;
 			}
+			return;
 		}
+#define STEP(n)								\
+		if (tr.plane.normal[n] < -0.2) {	\
+			pm->s.origin[n]--;				\
+			delta[n]--;						\
+		} else if (tr.plane.normal[n] > 0.2) {\
+			pm->s.origin[n]++;				\
+			delta[n]++;						\
+		}
+		STEP(0); STEP(1); STEP(2);
+//		Com_Printf("#%d(%g %g %g)->(%d %d %d)\n",i,VECTOR_ARG(tr.plane.normal),VECTOR_ARG(pm->s.origin));//!!
 	}
-#undef COMP
+//	Com_Printf("^1***\n");//!!
+
+#else
+	//!! OLD
+	int		sign[3];
+	int		i, j, bits;
+	short	base[3];
+	// try all single bits first
+	static int jitterbits[8] = {0,4,1,2,3,5,6,7};
+
+	// snap velocity to eigths
+	for (i = 0; i < 3; i++)
+		pm->s.velocity[i] = (int)(pml.velocity[i] * 8);
+
+	for (i = 0; i < 3; i++)
+	{
+		if (pml.origin[i] >= 0)
+			sign[i] = 1;
+		else
+			sign[i] = -1;
+		pm->s.origin[i] = (int)(pml.origin[i] * 8);
+		if (pm->s.origin[i] / 8.0f == pml.origin[i])
+			sign[i] = 0;
+	}
+	base[0] = pm->s.origin[0];
+	base[1] = pm->s.origin[1];
+	base[2] = pm->s.origin[2];
+
+	// try all combinations
+	for (j = 0; j < 8; j++)
+	{
+		bits = jitterbits[j];
+		for (i = 0; i < 3; i++)
+			if (bits & (1<<i))
+				pm->s.origin[i] = base[i] + sign[i];
+			else
+				pm->s.origin[i] = base[i];
+
+		if (GoodPosition ())
+			return;
+	}
+#endif
 
 //	Com_Printf("BAD!\n");//!!
 	// go back to the last position

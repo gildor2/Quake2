@@ -8,7 +8,7 @@ static float skyMins[2][6], skyMaxs[2][6];
 #define	ON_EPSILON		0.1f			// point on plane side epsilon
 #define	MAX_CLIP_VERTS	64
 
-typedef enum {SIDE_FRONT, SIDE_BACK, SIDE_ON};
+enum {SIDE_FRONT, SIDE_BACK, SIDE_ON};
 
 static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 {
@@ -30,7 +30,7 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 		{-1, 0, 1}
 	};
 
-	static int vecToSt[6][3] = {	// s = [0]/[2], t = [1]/[2]
+	static int vecToSt[6][3] = {		// s = [0]/[2], t = [1]/[2]
 		{-2, 3, 1},
 		{ 2, 3,-1},
 		{ 1, 3, 2},
@@ -40,7 +40,7 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 	};
 
 
-	if (!numVerts) return;			// empty polygon
+	if (!numVerts) return;				// empty polygon
 
 	if (numVerts > MAX_CLIP_VERTS - 2)
 		Com_Error (ERR_DROP, "ClipSkyPolygon: MAX_CLIP_VERTS hit");
@@ -135,7 +135,7 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 		{
 		case SIDE_FRONT:
 			VectorCopy (vec, newv[0][newc[0]]);
-			newc[0]++;	// cannot insert this command to VectorCopy(), because it is a macro ...
+			newc[0]++;	// cannot insert this into VectorCopy(), because it is a macro ...
 			break;
 		case SIDE_BACK:
 			VectorCopy (vec, newv[1][newc[1]]);
@@ -312,7 +312,7 @@ static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec
 	}
 #endif
 	(*tex)->tex[0] = s;
-	(*tex)->tex[1] = 1.0 - t;
+	(*tex)->tex[1] = 1.0f - t;
 	(*tex)++;
 
 	return gl_numVerts++;
@@ -345,7 +345,7 @@ int GL_TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float z
 
 	// generate side vertexes
 	gl_numVerts = 0;
-	scale = zFar / 3;				// any non-zero value not works no TNT2 (but works with GeForce2)
+	scale = zFar / 3;				// any non-zero value not works on TNT2 (but works with GeForce2)
 	memset (grid, 0, sizeof(grid));	// "0" is valid, because index=0 only for upper-left vertex, which is used only for 1 cell ...
 	ptr = skyVis[side];
 	grid1 = grid;

@@ -1,5 +1,6 @@
 FAST TODO:
 ~~~~~~~~~~
+0) check dlight diffuse lighting
 1) 2x for models
 1a) (similar) 2x for vertex lighting (optimized lightmaps)
   AND for general vertex lighting (see (2))
@@ -19,7 +20,6 @@ FAST TODO:
 
 - gl: HW lighting: do not require to rotate/remap grid lights to model axis
 !* check ATAN2/ACOS speed on normal building loading and remove #if/#else/#endif stuff from gl_model.c
-?* demo "tower": too slow loading >32 clients (in comparision with oldgl)
 ! add gl_depthBits: without it 32-bit mode works with 16-bit depth buffer; when depthbits = 0 - use 24-bit for 32-bit color
   (as in Q3)
 
@@ -120,7 +120,7 @@ Colors:
 
 - gl_overbright:
   - 0-none (force off), 1-"1bit" (force on), 2-"auto" (ON when (vertexLight | (multitex. && !(combine|combine4))) && fullscreen (??))
-    auto-on for 32-bit modes ?
+    auto-on for 32-bit modes (seems, prefer 2x ENV_COMBINE, overbright looks ugly with dark scenes - "beachassault") ?
   - remove gl_overbrightBits
   - menu selectable
   ? lightscale lightmaps with rounding UP (avoid dark lightmaps become darker)
@@ -193,7 +193,7 @@ BUGS:
 ! map "underrain": have sky brushes (MYST) for cave lighting; when vieworg is inside such brush - only sky painted
   (oldgl: same as non-transparent water, combines 2 clusters vis)
 - Com_Error(ERR_DROP, ...) can cause "halt" renderer (will in loop display "red" message without screen update,
-  can switch to "oldgl" (to see this messages), but will crush when switch back to "gl" (if SrtageIterator() ?))
+  can switch to "oldgl" (to see this messages), but will crush when switch back to "gl" (if StageIterator() ?))
 ? map "terrain", light cone from helicopter: too opaque when overbright is 1 (invalid lightmap on alpha-surf ?)
 ? check demo "massive1": have error "frame #46 not found"
 - screenshot is black after changing color depth, but all OK when make one more vid_restart (TNT2, Win2K, 41.09)

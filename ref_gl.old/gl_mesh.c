@@ -131,7 +131,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 
 	// move should be the delta back to the previous frame * backlerp
 	VectorSubtract (currententity->oldorigin, currententity->origin, delta);
-	AngleVectors (currententity->angles, VECTOR_ARGS(vectors));
+	AngleVectors (currententity->angles, VECTOR_ARG(vectors));
 
 	move[0] = DotProduct (delta, vectors[0]);	// forward
 	move[1] = -DotProduct (delta, vectors[1]);	// left
@@ -160,7 +160,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 		qglVertexPointer( 3, GL_FLOAT, sizeof(s_lerped[0]), s_lerped);
 
 		if (currententity->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
-			qglColor4f (VECTOR_ARGS(shadelight), alpha);
+			qglColor4f (VECTOR_ARG(shadelight), alpha);
 		else
 		{
 			qglEnableClientState( GL_COLOR_ARRAY );
@@ -262,7 +262,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 					index_xyz = order[2];
 					order += 3;
 
-					qglColor4f( VECTOR_ARGS(shadelight), alpha);
+					qglColor4f( VECTOR_ARG(shadelight), alpha);
 					qglVertex3fv (s_lerped[index_xyz]);
 
 				} while (--count);
@@ -286,7 +286,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 
 					qglColor4f (l*shadelight[0], l*shadelight[1], l*shadelight[2], alpha);
 #else
-					qglColor4f (VECTOR_ARGS(shadelight), alpha);
+					qglColor4f (VECTOR_ARG(shadelight), alpha);
 #endif
 					qglVertex3fv (s_lerped[index_xyz]);
 				} while (--count);
@@ -457,7 +457,7 @@ static qboolean R_CullAliasModel( vec3_t bbox[8], entity_t *e )
 	*/
 	VectorCopy( e->angles, angles );
 	angles[YAW] = -angles[YAW];
-	AngleVectors( angles, VECTOR_ARGS(vectors) );
+	AngleVectors( angles, VECTOR_ARG(vectors) );
 
 	for ( i = 0; i < 8; i++ )
 	{

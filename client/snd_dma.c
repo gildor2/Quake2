@@ -212,7 +212,7 @@ CVAR_BEGIN(vars)
 		CVAR_VAR(s_primary, 0, CVAR_ARCHIVE)		//?? win32 specific
 CVAR_END
 
-		CVAR_GET_VARS(vars);
+		Cvar_GetVars (ARRAY_ARG(vars));
 
 		Cmd_AddCommand ("play", S_Play);
 		Cmd_AddCommand ("stopsound", S_StopAllSounds);
@@ -701,7 +701,7 @@ struct sfx_s *S_RegisterSexedSound (entityState_t *ent, char *base)
 		strcpy(model, "male");
 
 	// see if we already know of the model specific sound
-	Com_sprintf (sexedFilename, sizeof(sexedFilename), "#players/%s/%s", model, base+1);
+	Com_sprintf (ARRAY_ARG(sexedFilename), "#players/%s/%s", model, base+1);
 	sfx = S_FindName (sexedFilename, false);
 
 	if (!sfx)

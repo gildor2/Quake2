@@ -392,7 +392,7 @@ void M_Main_Draw (void)
 	strcat (litname, "_sel");
 	re.DrawPicColor (xoffset, ystart + m_main_cursor * 40 + 13, litname, 7);
 
-	M_DrawCursor (xoffset - 25, ystart + m_main_cursor * 40 + 11, (unsigned)Q_ftol (cls.realtime / 100) % NUM_CURSOR_FRAMES);
+	M_DrawCursor (xoffset - 25, ystart + m_main_cursor * 40 + 11, (unsigned)Q_round (cls.realtime / 100) % NUM_CURSOR_FRAMES);
 
 	re.DrawGetPicSize (&w, &h, "m_main_plaque");
 	re.DrawPicColor (xoffset - 30 - w, ystart, "m_main_plaque", 7);
@@ -1069,7 +1069,7 @@ static void Options_CrosshairDraw (void)
 	if (!crosshair->integer)
 		return;
 
-	Com_sprintf (name, sizeof(name), "ch%d", crosshair->integer);
+	Com_sprintf (ARRAY_ARG(name), "ch%d", crosshair->integer);
 	re.DrawGetPicSize (&w, &h, name);
 	re.DrawPicColor ((viddef.width - w) / 2 + 32, s_options_crosshair_box.generic.y + s_options_menu.y + 10 - h / 2,
 		name, crosshaircolor->integer);
@@ -1592,7 +1592,7 @@ void M_AddToServerList (netadr_t adr, char *info)
 			return;
 
 	local_server_netadr[m_num_servers] = adr;
-	strncpy (local_server_names[m_num_servers], info, sizeof(local_server_names[0])-1);
+	Q_strncpyz (local_server_names[m_num_servers], info, sizeof(local_server_names[0]));
 	m_num_servers++;
 }
 
@@ -2169,7 +2169,7 @@ static void DMFlagCallback (void *self)
 
 	Cvar_SetInteger ("dmflags", flags);
 
-	Com_sprintf (dmoptions_statusbar, sizeof(dmoptions_statusbar), "dmflags = %d", flags);
+	Com_sprintf (ARRAY_ARG(dmoptions_statusbar), "dmflags = %d", flags);
 }
 
 static void DMOptions_MenuInit (void)
@@ -2823,16 +2823,14 @@ static void PlayerConfig_MenuDraw (void)
 	playerModelInfo_t *model;
 	basenamed_t	*skin;
 	static dlight_t	dl[] = {
-		{{50, 100, -150}, {0.5, 0, 0}, 250},
-		{{-50, 50, 150}, {0.8, 0.8, 0.8}, 300},
-		{{-50, -100, -150}, {0, 0.5, 0}, 250}
+		{{0, 100, 100}, {0.8, 0.8, 1}, 300},
+		{{90, -100, 10}, {0.2, 0.2, 0.2}, 200}
 	};
 	qboolean	showModels;
 	char	*icon;
 
-//	sscanf(Cvar_VariableString("dl0"), "%g %g %g %g", VECTOR_ARGS(&dl[0].origin), &dl[0].intensity);
-//	sscanf(Cvar_VariableString("dl1"), "%g %g %g %g", VECTOR_ARGS(&dl[1].origin), &dl[1].intensity);
-//	sscanf(Cvar_VariableString("dl2"), "%g %g %g %g", VECTOR_ARGS(&dl[2].origin), &dl[2].intensity);
+//	sscanf(Cvar_VariableString("dl0"), "%g %g %g %g", VECTOR_ARG(&dl[0].origin), &dl[0].intensity);
+//	sscanf(Cvar_VariableString("dl1"), "%g %g %g %g", VECTOR_ARG(&dl[1].origin), &dl[1].intensity);
 
 	showModels = Sys_Milliseconds () - modelChangeTime > MODEL_DELAY;
 
@@ -2883,7 +2881,7 @@ static void PlayerConfig_MenuDraw (void)
 		refdef.entities = e;
 //		refdef.lightstyles = NULL;
 		refdef.dlights = dl;
-		refdef.num_dlights = 3;
+		refdef.num_dlights = sizeof(dl) / sizeof(dlight_t);
 	}
 	refdef.rdflags = RDF_NOWORLDMODEL;
 
@@ -3254,7 +3252,7 @@ static const char *M_Quit_Key (int key)
 	case 'Y':
 	case 'y':
 	case K_MOUSE1:
-		cls.key_dest = key_console;
+		cls.key_dest = key_console;		//??
 		CL_Quit_f ();
 		break;
 
@@ -3323,9 +3321,6 @@ void M_Draw (void)
 {
 	if (cls.key_dest != key_menu && cls.key_dest != key_forcemenu)
 		return;
-
-	// repaint everything next frame
-	SCR_DirtyScreen ();
 
 	if (!cls.keep_console)	// do not blend whole screen when small menu painted
 	{

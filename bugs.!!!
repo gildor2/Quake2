@@ -41,9 +41,6 @@
 - bug: "game baseq2;unloadpak q2maps;game bad_dir(?);demomap demo1;game baseq2(?);demomap demo1"
   (1st demomap - "cannot load map (q2maps not loaded)", 2nd - "bad map contents (pak loaded, but name cached??)"
 
-ref_gl:
-  DrawTile(): when viewport is small and gl_clear=1 - bugs on a left screen part
-
 ref_oldgl:
   map passin;map passin (BUGS!!!); map rexro (CRUSH!!!)  (this bug found only for passin -- bad map? no bug when "flushmap 1")
 

@@ -453,13 +453,13 @@ void CL_AddExplosions (void)
 		}
 
 //re.DrawTextLeft(va("[%d / %g * %g] o(%g %g %g) c(%g %g %g)", i, ex->light, ent->alpha,
-//VECTOR_ARGS(ent->origin), VECTOR_ARGS(ex->lightcolor)),1,1,1);//!!
+//VECTOR_ARG(ent->origin), VECTOR_ARG(ex->lightcolor)),1,1,1);//!!
 		if (ex->light)
 		{
-//			V_AddLight (ent->origin, ex->light * ent->alpha, VECTOR_ARGS(ex->lightcolor));
+//			V_AddLight (ent->origin, ex->light * ent->alpha, VECTOR_ARG(ex->lightcolor));
 			V_AddLight (ent->origin, ex->light * ent->alpha,
 				ex->lightcolor[0] * ent->alpha, ex->lightcolor[1] * ent->alpha, ex->lightcolor[2] * ent->alpha);
-//			re.DrawTextLeft(va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARGS(ent->origin), ent->alpha, VECTOR_ARGS(ex->lightcolor)),1,1,1);
+//			re.DrawTextLeft(va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARG(ent->origin), ent->alpha, VECTOR_ARG(ex->lightcolor)),1,1,1);
 		}
 
 		VectorCopy (ent->origin, ent->oldorigin);
@@ -579,7 +579,7 @@ int CL_ParseBeam2 (struct model_s *model)
 	MSG_ReadPos (&net_message, end);
 	MSG_ReadPos (&net_message, offset);
 
-//	Com_Printf ("end- %f %f %f\n", VECTOR_ARGS(end));
+//	Com_Printf ("end- %f %f %f\n", VECTOR_ARG(end));
 
 // override any beam with the same entity
 
@@ -642,7 +642,7 @@ int CL_ParsePlayerBeam (struct model_s *model)
 	else
 		MSG_ReadPos (&net_message, offset);
 
-//	Com_Printf ("end- %f %f %f\n", VECTOR_ARGS(end));
+//	Com_Printf ("end- %f %f %f\n", VECTOR_ARG(end));
 
 // override any beam with the same entity
 // PMM - For player beams, we only want one per player (entity) so..
@@ -1562,8 +1562,8 @@ void CL_AddBeams (void)
 
 /*
 //				Com_Printf ("Endpoint:  %f %f %f\n", b->end[0], b->end[1], b->end[2]);
-//				Com_Printf ("Pred View Angles:  %f %f %f\n", VECTOR_ARGS(cl.predicted_angles));
-//				Com_Printf ("Act View Angles: %f %f %f\n", VECTOR_ARGS(cl.refdef.viewangles));
+//				Com_Printf ("Pred View Angles:  %f %f %f\n", VECTOR_ARG(cl.predicted_angles));
+//				Com_Printf ("Act View Angles: %f %f %f\n", VECTOR_ARG(cl.refdef.viewangles));
 //				VectorCopy (cl.predicted_origin, b->start);
 //				b->start[2] += 22;	// adjust for view height
 //				if (fabs(cl.refdef.vieworg[2] - b->start[2]) >= 10) {

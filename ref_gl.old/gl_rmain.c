@@ -1064,7 +1064,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(vid_ref, soft, CVAR_ARCHIVE)
 CVAR_END
 
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 
 	Cmd_AddCommand ("imagelist", GL_ImageList_f);
 	Cmd_AddCommand ("modellist", Mod_Modellist_f);
@@ -1328,7 +1328,7 @@ int R_Init( void )
 	}
 */
 
-	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
+/*	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
 	{
 		qglGetIntegerv (GL_MAX_TEXTURE_UNITS_ARB, &gl_config.maxActiveTextures);
 //			Com_Printf ("...using GL_ARB_multitexture with %d texture units\n", gl_config.maxActiveTextures);
@@ -1339,7 +1339,7 @@ int R_Init( void )
 	}
 	else
 		gl_config.maxActiveTextures = 1;
-
+*/
 	gl_state.texture_format_solid = 0;
 	gl_state.texture_format_alpha = 0;
 	gl_state.texture_format_alpha1 = 0;
@@ -1759,7 +1759,7 @@ refExport_t GetRefAPI (refImport_t rimp )
 	re.DrawFill2 = Draw_Fill2;
 
 	re.DrawStretchRaw = Draw_StretchRaw;
-	re.CinematicSetPalette = R_SetPalette;
+	re.SetRawPalette = R_SetPalette;
 
 	re.DrawTextPos = DrawTextPos;
 	re.DrawTextLeft = DrawTextLeft;

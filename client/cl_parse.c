@@ -389,7 +389,7 @@ void CL_ParseServerData (void)
 
 	// game directory
 	str = MSG_ReadString (&net_message);
-	strncpy (cl.gamedir, str, sizeof(cl.gamedir)-1);
+	Q_strncpyz (cl.gamedir, str, sizeof(cl.gamedir));
 	Cvar_Set ("game", str);
 
 	// parse player entity number
@@ -442,8 +442,7 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 	int		i;
 	char	*t, model_name[MAX_QPATH], skin_name[MAX_QPATH];
 
-	strncpy (ci->cinfo, s, sizeof(ci->cinfo));
-	ci->cinfo[sizeof(ci->cinfo)-1] = 0;
+	Q_strncpyz (ci->cinfo, s, sizeof(ci->cinfo));
 
 	// isolate the player's name
 	Q_strncpyz (ci->name, s, sizeof(ci->name));
@@ -568,8 +567,7 @@ void CL_ParseConfigString (void)
 		Com_Error (ERR_DROP, "configstring > MAX_CONFIGSTRINGS");
 	s = MSG_ReadString(&net_message);
 
-	strncpy (olds, cl.configstrings[i], sizeof(olds));
-	olds[sizeof(olds) - 1] = 0;
+	Q_strncpyz (olds, cl.configstrings[i], sizeof(olds));
 
 	strcpy (cl.configstrings[i], s);
 
@@ -694,9 +692,8 @@ CL_ParseServerMessage
 */
 void CL_ParseServerMessage (void)
 {
-	int			cmd;
-	char		*s;
-	int			i;
+	int		cmd;
+	char	*s;
 
 	// if recording demos, copy the message out
 	if (cl_shownet->integer == 1)
@@ -758,14 +755,14 @@ void CL_ParseServerMessage (void)
 			break;
 
 		case svc_print:
-			i = MSG_ReadByte (&net_message);
-			if (i == PRINT_CHAT)
+			if (MSG_ReadByte (&net_message) == PRINT_CHAT)
 			{
 				S_StartLocalSound ("misc/talk.wav");
-				con.ormask = 128;
+				s = "^2";
 			}
-			Com_Printf ("%s", MSG_ReadString (&net_message));
-			con.ormask = 0;
+			else
+				s = "";
+			Com_Printf ("%s%s", s, MSG_ReadString (&net_message));
 			break;
 
 		case svc_centerprint:
@@ -827,7 +824,7 @@ void CL_ParseServerMessage (void)
 
 		case svc_layout:
 			s = MSG_ReadString (&net_message);
-			strncpy (cl.layout, s, sizeof(cl.layout)-1);
+			Q_strncpyz (cl.layout, s, sizeof(cl.layout));
 			break;
 
 		case svc_playerinfo:

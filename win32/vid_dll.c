@@ -285,10 +285,6 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		MSH_MOUSEWHEEL = RegisterWindowMessage ("MSWHEEL_ROLLMSG");
 		break;
 
-	case WM_PAINT:
-		SCR_DirtyScreen ();	// force entire screen to update next frame
-		break;
-
 	case WM_DESTROY:
 		// let sound and input know about this?
 		cl_hwnd = NULL;
@@ -696,7 +692,7 @@ static qboolean Vid_LoadRefresh (char *name)
 		Vid_FreeReflib ();
 	}
 
-	Com_sprintf (dllName, sizeof(dllName), "ref_%s.dll", name);
+	Com_sprintf (ARRAY_ARG(dllName), "ref_%s.dll", name);
 	Com_Printf ("------- Loading %s -------\n", name);
 
 #ifdef REF_HARD_LINKED
@@ -752,7 +748,7 @@ static qboolean Vid_LoadRefresh (char *name)
 		re.DrawFill2 =		D_Draw_Fill2;
 
 		re.DrawStretchRaw =	D_Draw_StretchRaw;
-		re.CinematicSetPalette = D_SetPalette;
+		re.SetRawPalette = D_SetPalette;
 
 		re.DrawTextPos =	D_DrawTextPos;
 		re.DrawTextLeft =	D_DrawTextSide;
@@ -871,7 +867,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(win_priorityBoost, 0, CVAR_ARCHIVE)
 CVAR_END
 
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 
 	// Add some console commands that we want to handle
 	Cmd_AddCommand ("vid_restart", Vid_Restart_f);

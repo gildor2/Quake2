@@ -209,11 +209,11 @@ char *NET_AdrToString (netadr_t *a)
 	static	char	s[64];
 
 	if (a->type == NA_LOOPBACK)
-		Com_sprintf (s, sizeof(s), "loopback");
+		Com_sprintf (ARRAY_ARG(s), "loopback");
 	else if (a->type == NA_IP)
-		Com_sprintf (s, sizeof(s), "%d.%d.%d.%d:%d", a->ip[0], a->ip[1], a->ip[2], a->ip[3], ntohs(a->port));
+		Com_sprintf (ARRAY_ARG(s), "%d.%d.%d.%d:%d", a->ip[0], a->ip[1], a->ip[2], a->ip[3], ntohs(a->port));
 	else
-		Com_sprintf (s, sizeof(s), "%02x%02x%02x%02x:%02x%02x%02x%02x%02x%02x:%i", a->ipx[0], a->ipx[1], a->ipx[2], a->ipx[3], a->ipx[4], a->ipx[5], a->ipx[6], a->ipx[7], a->ipx[8], a->ipx[9], ntohs(a->port));
+		Com_sprintf (ARRAY_ARG(s), "%02x%02x%02x%02x:%02x%02x%02x%02x%02x%02x:%i", a->ipx[0], a->ipx[1], a->ipx[2], a->ipx[3], a->ipx[4], a->ipx[5], a->ipx[6], a->ipx[7], a->ipx[8], a->ipx[9], ntohs(a->port));
 
 	return s;
 }
@@ -708,7 +708,7 @@ CVAR_BEGIN(vars)
 CVAR_END
 
 	Cmd_AddCommand ("net_restart", Cmd_NetRestart_f);
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 
 	r = WSAStartup (MAKEWORD(1, 1), &winsockdata);
 	if (r) Com_Error (ERR_FATAL, "Winsock initialization failed.");

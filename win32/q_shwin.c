@@ -163,7 +163,7 @@ char *Sys_FindFirst (char *path, int flags)
 	if (!CheckAttributes (findinfo.attrib))
 		return Sys_FindNext ();
 
-	Com_sprintf (findPath, sizeof(findPath), "%s/%s", findBase, findinfo.name);
+	Com_sprintf (ARRAY_ARG(findPath), "%s/%s", findBase, findinfo.name);
 	return findPath;
 }
 
@@ -179,7 +179,7 @@ char *Sys_FindNext (void)
 		if (!CheckAttributes (findinfo.attrib))
 			continue;
 
-		Com_sprintf (findPath, sizeof(findPath), "%s/%s", findBase, findinfo.name);
+		Com_sprintf (ARRAY_ARG(findPath), "%s/%s", findBase, findinfo.name);
 		return findPath;
 	}
 	return NULL;

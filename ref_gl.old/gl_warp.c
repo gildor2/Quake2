@@ -308,7 +308,7 @@ void DrawSkyPolygon (int nump, vec3_t vecs)
 
 	c_sky++;		//?? unused
 	// decide which face it maps to
-	VectorCopy (vec3_origin, v);
+	VectorClear (v);
 	for (i=0, vp=vecs ; i<nump ; i++, vp+=3)
 	{
 		VectorAdd (vp, v, v);
@@ -560,8 +560,8 @@ void R_DrawSkyBox (void)
 	}
 
 	qglPushMatrix ();
-	qglTranslatef (VECTOR_ARGS(r_origin));
-	qglRotatef (r_newrefdef.time * skyrotate, VECTOR_ARGS(skyaxis));
+	qglTranslatef (VECTOR_ARG(r_origin));
+	qglRotatef (r_newrefdef.time * skyrotate, VECTOR_ARG(skyaxis));
 
 	for (i=0 ; i<6 ; i++)
 	{

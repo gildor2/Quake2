@@ -906,7 +906,7 @@ void Mod_LoadPlanes (dplane_t *data, int size)
 		}
 
 		out->dist = in->dist;
-		out->type = in->type;
+		out->type = PlaneTypeForNormal (in->normal);
 		out->signbits = bits;
 	}
 }

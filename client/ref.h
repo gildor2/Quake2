@@ -146,6 +146,7 @@ typedef struct
 #define SHOT_NO_2D			2		// perform screenshot before switching to 2D mode
 #define SHOT_WAIT_3D		4		// perform screenshot with first available frame with 3D output
 #define SHOT_SILENT			8		// do not write "wrote shotxxx.jpg" to console
+#define SHOT_NOGAMMA		16		// do not perform gamma correction for image (when hardware gamma available)
 #define SHOT_JPEG			0x8000	// can be unsupported
 
 
@@ -197,11 +198,11 @@ typedef struct
 	void	(*DrawFill) (int x, int y, int w, int h, int c);
 	void	(*DrawFill2) (int x, int y, int w, int h, float r, float g, float b, float a);
 
-	// Draw images for cinematic rendering (which can have a different palette). Note that calls
+	// Draw images for cinematic rendering (which can have a different palette)
 	void	(*DrawStretchRaw) (int x, int y, int w, int h, int cols, int rows, byte *data);
+	void	(*SetRawPalette) (const unsigned char *palette);	// NULL = game palette
 
 	/*---- video mode and refresh state management entry points ----*/
-	void	(*CinematicSetPalette) (const unsigned char *palette);	// NULL = game palette
 	void	(*BeginFrame) (float camera_separation);
 	void	(*EndFrame) (void);
 

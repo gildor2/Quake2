@@ -1,0 +1,35 @@
+- menu.c
+  - M_Draw(): skip when != key_menu|key_forcemenu
+  - M_PushMenu(): set to key_menu to show it
+- in_win.c
+  - IN_Frame(): checks for key_console and [de]activates mouse when changed
+- cl_ents.c
+  - CL_ParseFrame() - set to key_game to hide console
+- cl_scrn.c
+  - SCR_RunConsole() - set to key_console to show it
+  - SCR_DrawConsole() - DrawNotify() when key_game or key_message
+  - SCR_UpdateScreen() - check for menu|forcemenu|console while cin playback to hide cin
+- console.c
+  - Con_ToggleConsole_f() - calls M_ForceMenuOff() and (?) set to key_console to show
+- keys.c
+  - CompleteMenuKey() - set to key_console when menu disappeared
+  - CompleteMenuCallback() - similar
+  - Key_Event() - check var for determining message destination
+
+- M_ForceMenuOff() calls:
+  - vid_menu.c
+  - menu.c :: M_PopMenu() - when menu level = 0
+  - menu.c :: ConsoleFunc() - remove this!
+  - menu.c :: StartGame(); LoadGameCallback(); SaveGameCallback(); JoinServerFunc();
+    StartServerFunc() - keep ?
+  - keys.c :: CompleteMenuCallback()
+    !! PROBLEM: what to draw before - menu or console ?
+  - console.c :: Con_ToggleConsole_f()
+  - cl_main.c :: CL_Disconnect() - shows console for looking at disconnect message ?
+
+REQUIREMENTS
+~~~~~~~~~~~~
+- message box functionality for disconnect_message displaying (ERR_DROP, ERR_DISCONNECT)
+- ability to draw menu before (ordinary menus) or after console (completion menu,
+  cls.keep_console=true)
+? console during cinematics (can't in soft - different palette; can in oldgl and gl)

@@ -152,7 +152,7 @@ static char *Sys_ScanForCD (void)
 	{
 		if (GetDriveType (drive) != DRIVE_CDROM) continue;
 
-		Q_CopyFilename (cddir, va("%s"CD_PATH, drive), sizeof(cddir) - 1);
+		Q_CopyFilename (cddir, va("%s"CD_PATH, drive), sizeof(cddir));
 		f = fopen (va("%s"CD_CHECK, drive), "r");
 		if (f)
 		{
@@ -604,7 +604,7 @@ void *Sys_GetGameAPI (void *parms)
 
 	// check the current debug directory first for development purposes
 	_getcwd (cwd, sizeof(cwd));
-	Com_sprintf (name, sizeof(name), "%s/%s/%s", cwd, debugdir, gamename);
+	Com_sprintf (ARRAY_ARG(name), "%s/%s/%s", cwd, debugdir, gamename);
 	game_library = LoadLibrary (name);
 	if (game_library)
 	{
@@ -614,7 +614,7 @@ void *Sys_GetGameAPI (void *parms)
 	{
 #ifdef DEBUG
 		// check the current directory for other development purposes
-		Com_sprintf (name, sizeof(name), "%s/%s", cwd, gamename);
+		Com_sprintf (ARRAY_ARG(name), "%s/%s", cwd, gamename);
 		game_library = LoadLibrary (name);
 		if (game_library)
 		{
@@ -630,7 +630,7 @@ void *Sys_GetGameAPI (void *parms)
 				path = FS_NextPath (path);
 				if (!path)
 					return NULL;		// couldn't find one anywhere
-				Com_sprintf (name, sizeof(name), "%s/%s", path, gamename);
+				Com_sprintf (ARRAY_ARG(name), "%s/%s", path, gamename);
 				game_library = LoadLibrary (name);
 				if (game_library)
 				{
@@ -679,7 +679,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	if (cddir && cddir[0])
 	{
 		// add to the end of cmdline, so, if already specified - will not override option
-		Com_sprintf (cmdline2, sizeof(cmdline2), "%s -cddir=\"%s\"", lpCmdLine, cddir);
+		Com_sprintf (ARRAY_ARG(cmdline2), "%s -cddir=\"%s\"", lpCmdLine, cddir);
 		cmdline = cmdline2;
 	}
 #endif

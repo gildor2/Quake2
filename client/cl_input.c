@@ -306,7 +306,7 @@ static void FinishMove (usercmd_t *cmd)
 	int		i, ms;
 
 	// figure button bits
-	if ( in_Attack.state & 3 )
+	if (in_Attack.state & 3)
 		cmd->buttons |= BUTTON_ATTACK;
 	in_Attack.state &= ~2;
 
@@ -318,8 +318,8 @@ static void FinishMove (usercmd_t *cmd)
 		cmd->buttons |= BUTTON_ANY;
 
 	// send milliseconds of time to apply the move
-	ms = Q_round ((cls.frametime + accum_frame_time) * 1000);
-	if (ms > 250) ms = 100;		// time was unreasonable
+	ms = Q_round (accum_frame_time * 1000);
+	if (ms > 250) ms = 250;
 
 	cmd->msec = ms;
 
@@ -330,7 +330,7 @@ static void FinishMove (usercmd_t *cmd)
 	cmd->impulse = 0;		//!! unused
 
 	// send the ambient light level at the player's current position
-	cmd->lightlevel = Q_ftol (re.GetClientLight ());
+	cmd->lightlevel = Q_round (re.GetClientLight ());
 }
 
 /*
@@ -353,7 +353,7 @@ static void CreateCmd (usercmd_t *cmd)
 
 	old_sys_frame_time = sys_frame_time;
 
-//??	cmd->impulse = cls.framecount;
+//??	cmd->impulse = ??? ; -- unused in server now
 }
 
 
@@ -447,6 +447,8 @@ void CL_SendCmd (void)
 	usercmd_t	nullcmd;
 	int			checksumIndex;
 
+	accum_frame_time += cls.frametime;
+
 	// build a command even if not connected
 	// save this command off for prediction
 	i = cls.netchan.outgoing_sequence & (CMD_BACKUP-1);
@@ -455,7 +457,9 @@ void CL_SendCmd (void)
 
 	CreateCmd (cmd);
 
-	cl.cmd = *cmd;
+	cls.netFrameDropped = true;		// will be set to false after sending command to server
+	if (cl_infps->integer && accum_frame_time < 1.0f / cl_infps->value)
+		return;
 
 	if (cls.state == ca_disconnected || cls.state == ca_connecting)
 		return;
@@ -470,19 +474,11 @@ void CL_SendCmd (void)
 	// restrict outgoing commands to avoid CMD_BACKUP overflow when cl.fps/sv.fps is too
 	// large (fast system or small timescale)
 	fillness = cls.netchan.outgoing_sequence - cls.netchan.incoming_acknowledged;
-	if (fillness > CMD_BACKUP/10 && (float)fillness / CMD_BACKUP > cl.lerpfrac * 0.9f)
-	{
-		accum_frame_time += cls.frametime;
+	if (fillness > CMD_BACKUP/10 && (float)fillness / CMD_BACKUP > cl.lerpfrac * 0.9f) //!! restrict FPS: || accum_frame_time < 0.005)
 		return;
-	}
 
 	if (cmd->msec == 0)
-	{
-		accum_frame_time += cls.frametime;
 		return;
-	}
-	else
-		accum_frame_time = 0;
 
 	// send a userinfo update if needed
 	// disallow sending userinfo notification while playing demos
@@ -538,4 +534,8 @@ void CL_SendCmd (void)
 
 	// deliver the message
 	Netchan_Transmit (&cls.netchan, buf.cursize, buf.data);
+
+	// prepare for next frame
+	cls.netFrameDropped = false;
+	accum_frame_time = 0;
 }

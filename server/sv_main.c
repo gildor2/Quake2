@@ -120,13 +120,13 @@ char *SV_StatusString (void)
 	client_t *cl;
 	int		i, statusLength, playerLength;
 
-	statusLength = Com_sprintf (status, sizeof(status), "%s\n", Cvar_Serverinfo ());
+	statusLength = Com_sprintf (ARRAY_ARG(status), "%s\n", Cvar_Serverinfo ());
 	for (i = 0; i < maxclients->integer; i++)
 	{
 		cl = &svs.clients[i];
 		if (cl->state == cs_connected || cl->state == cs_spawned)
 		{
-			Com_sprintf (player, sizeof(player), "%d %d \"%s\"\n",
+			Com_sprintf (ARRAY_ARG(player), "%d %d \"%s\"\n",
 				cl->edict->client->ps.stats[STAT_FRAGS], cl->ping, cl->name);
 			playerLength = strlen(player);
 			if (statusLength + playerLength >= sizeof(status))
@@ -165,7 +165,7 @@ void SVC_Info (void)
 	}
 
 	if (version != PROTOCOL_VERSION)
-		Com_sprintf (string, sizeof(string), "%s: wrong version %d\n", hostname->string, version);
+		Com_sprintf (ARRAY_ARG(string), "%s: wrong version %d\n", hostname->string, version);
 	else
 	{
 		int		i, count;
@@ -175,7 +175,7 @@ void SVC_Info (void)
 			if (svs.clients[i].state >= cs_connected)
 				count++;
 
-		Com_sprintf (string, sizeof(string), "%16s %8s %2d/%2d\n", hostname->string, sv.name, count, maxclients->integer);
+		Com_sprintf (ARRAY_ARG(string), "%16s %8s %2d/%2d\n", hostname->string, sv.name, count, maxclients->integer);
 	}
 	Netchan_OutOfBandPrint (NS_SERVER, net_from, "info\n%s", string);
 }
@@ -356,7 +356,7 @@ void SVC_DirectConnect (void)
 	}
 
 	// parse some info from the info strings
-	strncpy (newcl->userinfo, userinfo, sizeof(newcl->userinfo)-1);
+	Q_strncpyz (newcl->userinfo, userinfo, sizeof(newcl->userinfo));
 	SV_UserinfoChanged (newcl);
 
 	// check if client trying to connect with a new protocol
@@ -974,7 +974,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 			MSG_ReadDir (original, v2);
 
 			// compute reflection vector
-//			Com_Printf("sp: (%g %g %g) -> (%g %g %g)\n",VECTOR_ARGS(v1),VECTOR_ARGS(v2));//!!
+//			Com_Printf("sp: (%g %g %g) -> (%g %g %g)\n",VECTOR_ARG(v1),VECTOR_ARG(v2));//!!
 			VectorSubtract (shotStart, shotEnd, d);
 			VectorNormalizeFast (d);
 			back = DotProduct (d, v2);
@@ -1235,7 +1235,7 @@ void SV_UserinfoChanged (client_t *cl)
 	ge->ClientUserinfoChanged (cl->edict, cl->userinfo);
 
 	// name for C code
-	strncpy (cl->name, Info_ValueForKey (cl->userinfo, "name"), sizeof(cl->name)-1);
+	Q_strncpyz (cl->name, Info_ValueForKey (cl->userinfo, "name"), sizeof(cl->name));
 	// mask off high bit
 	for (i = 0; i < sizeof(cl->name); i++)
 		cl->name[i] &= 127;
@@ -1306,7 +1306,7 @@ CVAR_END
 
 	SV_InitOperatorCommands	();
 
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 	Cvar_Get ("dmflags", va("%d", DF_INSTANT_ITEMS), CVAR_SERVERINFO);
 	Cvar_Get ("protocol", va("%d", PROTOCOL_VERSION), CVAR_SERVERINFO|CVAR_NOSET);
 

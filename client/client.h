@@ -125,7 +125,6 @@ typedef struct
 
 	int		parse_entities;		// index (not anded off) into cl_parse_entities[]
 
-	usercmd_t cmd;
 	usercmd_t cmds[CMD_BACKUP];	// each mesage will send several old cmds
 	int		cmd_time[CMD_BACKUP];	// time sent, for calculating pings
 	short	predicted_origins[CMD_BACKUP][3];	// for debug comparing against server
@@ -231,9 +230,9 @@ typedef struct
 	keydest_t	key_dest;
 	qboolean	keep_console;	// do not hide console even if menu active
 
-	int			framecount;
 	int			realtime;		// always increasing, no clamping, etc
 	float		frametime;		// seconds since last frame
+	qboolean	netFrameDropped;
 
 	/*----- screen rendering information -----*/
 	float		disable_screen;	// showing loading plaque between levels
@@ -326,6 +325,8 @@ extern	cvar_t	*cl_newfx;
 extern	cvar_t	*cl_draw2d;
 extern	cvar_t	*cl_showbboxes;
 extern	cvar_t	*r_sfx_pause;
+
+extern	cvar_t	*cl_infps;
 
 extern	centity_t	cl_entities[MAX_EDICTS];
 

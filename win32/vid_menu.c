@@ -237,7 +237,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE)
 CVAR_END
 
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 
 	s_mode_list[SOFTWARE_MENU].curvalue = Cvar_Get ("sw_mode", "0", CVAR_ARCHIVE)->integer;
 	s_mode_list[OPENGL_MENU].curvalue = Cvar_Get ("gl_mode", "3", CVAR_ARCHIVE)->integer;

@@ -110,8 +110,7 @@ void Field_Draw (menuField_t *f)
 //		f->visible_length * 8 + 16, 16, 0x78);
 
 	// perform string drawing with Menu_DrawStringConmmon() to disable text coloring
-	memset (tempbuffer, 0, sizeof(tempbuffer));
-	strncpy (tempbuffer, f->buffer + f->visible_offset, f->visible_length);
+	Q_strncpyz (tempbuffer, f->buffer + f->visible_offset, max(f->visible_length, sizeof(tempbuffer)));
 	Menu_DrawStringCommon (f->generic.x + f->generic.parent->x + 24, f->generic.y + f->generic.parent->y, tempbuffer, 0);
 
 	if (Menu_ItemAtCursor (f->generic.parent ) == f)

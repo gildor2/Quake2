@@ -87,6 +87,8 @@ cvar_t	*cl_draw2d;
 cvar_t	*cl_showbboxes;
 cvar_t	*r_sfx_pause;
 
+cvar_t	*cl_infps;
+
 client_static_t	cls;
 client_state_t	cl;
 
@@ -115,7 +117,7 @@ static qboolean TryParseStatus (char *str)
 
 	if (!statusRequest) return false;
 
-	Q_strncpyz (buf, str, sizeof(buf)-1);
+	Q_strncpyz (buf, str, sizeof(buf));
 	// remove players info
 	s = strchr (buf, '\n');
 	if (!s) return false;
@@ -222,7 +224,7 @@ void CL_Record_f (void)
 	}
 
 	// open the demo file
-	Com_sprintf (name, sizeof(name), "%s/demos/%s.dm2", FS_Gamedir(), Cmd_Argv(1));
+	Com_sprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), Cmd_Argv(1));
 
 	Com_Printf ("recording to %s.\n", name);
 	FS_CreatePath (name);
@@ -552,7 +554,7 @@ void CL_Connect_f (void)
 	CL_Disconnect ();
 
 	cls.state = ca_connecting;
-	strncpy (cls.servername, server, sizeof(cls.servername)-1);
+	Q_strncpyz (cls.servername, server, sizeof(cls.servername));
 	cls.connect_time = -99999;	// CL_CheckForResend() will fire immediately
 }
 
@@ -579,7 +581,7 @@ void CL_Rcon_f (void)
 
 	NET_Config (true);		// allow remote
 
-	Com_sprintf (message, sizeof(message), "\xFF\xFF\xFF\xFFrcon %s ", rcon_client_password->string);
+	Com_sprintf (ARRAY_ARG(message), "\xFF\xFF\xFF\xFFrcon %s ", rcon_client_password->string);
 	for (i = 1; i < Cmd_Argc(); i++)
 	{
 		strcat (message, Cmd_Argv(i));
@@ -649,7 +651,7 @@ void CL_Disconnect (void)
 	}
 
 	VectorClear (cl.refdef.blend);
-	re.CinematicSetPalette(NULL);
+	re.SetRawPalette(NULL);
 
 	M_ForceMenuOff ();
 
@@ -1032,7 +1034,9 @@ void CL_ReadPackets (void)
 	}
 
 	// check timeout
-	if (cls.state >= ca_connected && cls.realtime - cls.netchan.last_received > cl_timeout->integer * 1000)
+	if (cls.state >= ca_connected &&
+		cls.realtime - cls.netchan.last_received > cl_timeout->integer * 1000 &&		//?? realtime is not correct for timescale
+		cls.netchan.remote_address.type != NA_LOOPBACK)		// check for multiplayer only
 	{
 		if (++cl.timeoutcount > 5)	// timeoutcount saves debugger
 		{
@@ -1067,7 +1071,7 @@ void CL_FixUpGender(void)
 			return;
 		}
 
-		strncpy(sk, skin->string, sizeof(sk) - 1);
+		Q_strncpyz (sk, skin->string, sizeof(sk));
 		if ((p = strchr(sk, '/')) != NULL)
 			*p = 0;
 		if (!Q_stricmp(sk, "male") || !Q_stricmp(sk, "cyborg"))
@@ -1394,7 +1398,7 @@ void CL_Precache_f (void)
 	char	mapname[MAX_QPATH], levelshot[MAX_QPATH], *tmp;
 
 	// set levelshot
-	Q_CopyFilename (mapname, cl.configstrings[CS_MODELS+1], sizeof(levelshot) - 1);
+	Q_CopyFilename (mapname, cl.configstrings[CS_MODELS+1], sizeof(levelshot));
 	tmp = strchr (mapname, '.');
 	if (tmp) tmp[0] = 0;
 	tmp = strrchr (mapname, '/');
@@ -1402,7 +1406,7 @@ void CL_Precache_f (void)
 		tmp = mapname;
 	else
 		tmp++;				// skip '/'
-	Com_sprintf (levelshot, sizeof(levelshot), "/levelshots/%s.pcx", tmp);
+	Com_sprintf (ARRAY_ARG(levelshot), "/levelshots/%s.pcx", tmp);
 	SCR_SetLevelshot (levelshot);
 
 	//Yet another hack to let old demos work
@@ -1560,10 +1564,11 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(cl_newfx, 1, CVAR_ARCHIVE),
 	CVAR_VAR(cl_draw2d, 1, 0),
 	CVAR_VAR(r_sfx_pause, 0, 0),
+	CVAR_VAR(cl_infps, 80, 0),
 	CVAR_VAR(cl_showbboxes, 0, CVAR_CHEAT)
 CVAR_END
 
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 	cls.state = ca_disconnected;
 	cls.realtime = Sys_Milliseconds ();
 
@@ -1695,13 +1700,8 @@ void CL_Frame (float msec, int realMsec)
 
 	cls.newfx = cl_newfx->integer && (*re.flags & REF_NEW_FX);
 
-#if 0
-	if (cls.frametime > (1.0f / cl_minfps->value))
-		cls.frametime = (1.0f / cl_minfps->value);
-#else
-	if (cls.frametime > (1.0f / 5))
+	if (cls.frametime > (1.0f / 5))	// low FPS fix ?? (cannot send user commands with frame time > 255ms)
 		cls.frametime = (1.0f / 5);
-#endif
 
 	// if in the debugger last frame, don't timeout
 	if (msec > 5000)
@@ -1710,14 +1710,14 @@ void CL_Frame (float msec, int realMsec)
 	// fetch results from server
 	CL_ReadPackets ();
 
-	Sys_SendKeyEvents ();		// get OS events
-	IN_Commands ();				// allow mice or other external controllers to add commands
-	Cbuf_Execute ();			// process console commands
-	CL_FixCvarCheats ();		// fix any cheating cvars
+	Sys_SendKeyEvents ();			// get OS events
+	IN_Commands ();					// allow mice or other external controllers to add commands
+	Cbuf_Execute ();				// process console commands
+	CL_FixCvarCheats ();			// fix any cheating cvars
 
 	// send a new command message to the server
-	CL_SendCmd ();				// send intentions now
-	CL_CheckForResend ();		// resend a connection request if necessary
+	CL_SendCmd ();					// send intentions now
+	CL_CheckForResend ();			// resend a connection request if necessary
 
 	// predict all unacknowledged movements
 	CL_PredictMovement ();
@@ -1742,8 +1742,6 @@ void CL_Frame (float msec, int realMsec)
 	// advance local effects for next frame
 	SCR_RunCinematic ();
 	SCR_RunConsole ();
-
-	cls.framecount++;
 
 	if (log_stats->integer && cls.state == ca_active)
 	{

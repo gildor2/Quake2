@@ -622,7 +622,7 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 
 //	if (strlen (name) >= MAX_QPATH)
 //		Com_Error (ERR_FATAL, "R_CreateImage: name \"%s\" is too long", name);
-	Q_CopyFilename (name2, name, sizeof(name2)-1);
+	Q_CopyFilename (name2, name, sizeof(name2));
 
 	// find image with the same name
 	reuse = false;
@@ -1101,7 +1101,7 @@ void GL_PerformScreenshot (void)
 		//?? should ListFiles(..."shot*") in current mod (OS FS) and find unused name in this list
 		for (i = 0; i < 10000; i++)
 		{	// check for a free filename
-			Com_sprintf (name, sizeof(name), "%s/screenshots/shot%04d%s", FS_Gamedir (), i, ext);
+			Com_sprintf (ARRAY_ARG(name), "%s/screenshots/shot%04d%s", FS_Gamedir (), i, ext);
 			if (!(f = fopen (name, "rb")))
 				break;	// file doesn't exist
 			fclose (f);
@@ -1146,16 +1146,26 @@ void GL_PerformScreenshot (void)
 	src = dst = buffer;
 	for (i = 0; i < size; i++)
 	{
-		byte	r, g, b;
+		unsigned	r, g, b;
 
 		r = *src++; g = *src++; b = *src++;
 		src++;	// skip alpha
 		// correct gamma
 		if (gl_config.deviceSupportsGamma)
 		{
-			r = gammaTable[r];
-			g = gammaTable[g];
-			b = gammaTable[b];
+			if (gl_screenshotFlags & SHOT_NOGAMMA)
+			{
+				// we need to correct overbright
+				r <<= gl_config.overbrightBits; r = bound(r, 0, 255);
+				g <<= gl_config.overbrightBits; g = bound(g, 0, 255);
+				b <<= gl_config.overbrightBits; b = bound(b, 0, 255);
+			}
+			else
+			{
+				r = gammaTable[r];
+				g = gammaTable[g];
+				b = gammaTable[b];
+			}
 		}
 		// put new values back
 		*dst++ = r;
@@ -1438,7 +1448,7 @@ image_t *GL_FindImage (char *name, int flags)
 	if (!name[0])
 		return gl_defaultImage;		// NULL name -- NULL image
 
-	Q_CopyFilename (name2, name, sizeof(name2)-1);
+	Q_CopyFilename (name2, name, sizeof(name2));
 
 	/*------- find image using hash table --------*/
 	hash = ComputeHash (name2);

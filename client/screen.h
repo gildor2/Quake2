@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -44,13 +44,15 @@ extern	cvar_t		*scr_viewsize;
 extern	cvar_t		*crosshair;
 extern	cvar_t		*crosshaircolor;
 
+typedef struct vrect_s
+{
+	int		x, y, width, height;
+} vrect_t;
+
 extern	vrect_t		scr_vrect;		// position of render window
 
 extern	char		crosshair_pic[MAX_QPATH];
 extern	int			crosshair_width, crosshair_height;
-
-void SCR_AddDirtyPoint (int x, int y);
-void SCR_DirtyScreen (void);
 
 //
 // scr_cin.c
@@ -60,4 +62,3 @@ qboolean SCR_DrawCinematic (void);
 void SCR_RunCinematic (void);
 void SCR_StopCinematic (void);
 void SCR_FinishCinematic (void);
-

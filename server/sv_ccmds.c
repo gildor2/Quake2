@@ -136,7 +136,7 @@ void SV_WriteLevelFile (void)
 
 	Com_DPrintf("SV_WriteLevelFile()\n");
 
-	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
+	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
 	f = fopen (name, "wb");
 	if (!f)
 	{
@@ -147,7 +147,7 @@ void SV_WriteLevelFile (void)
 	CM_WritePortalState (f);
 	fclose (f);
 
-	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
+	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
 	ge->WriteLevel (name);
 }
 
@@ -165,7 +165,7 @@ void SV_ReadLevelFile (void)
 
 	Com_DPrintf ("SV_ReadLevelFile()\n");
 
-	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
+	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
 	f = fopen(name, "rb");
 	if (!f)
 	{
@@ -176,7 +176,7 @@ void SV_ReadLevelFile (void)
 	CM_ReadPortalState (f);
 	fclose (f);
 
-	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
+	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
 	ge->ReadLevel (name);
 }
 
@@ -197,7 +197,7 @@ void SV_WriteServerFile (qboolean autosave, char *dir)
 
 	Com_DPrintf("SV_WriteServerFile(%s, %s)\n", autosave ? "true" : "false", dir);
 
-	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
+	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
 	f = fopen (name, "wb");
 	if (!f)
 	{
@@ -211,13 +211,12 @@ void SV_WriteServerFile (qboolean autosave, char *dir)
 	{
 		time (&aclock);
 		newtime = localtime (&aclock);
-		Com_sprintf (comment,sizeof(comment), "%2d:%d%d %2d/%2d  ", newtime->tm_hour,
-			newtime->tm_min/10, newtime->tm_min%10, newtime->tm_mon+1, newtime->tm_mday);
-		strncat (comment, sv.configstrings[CS_NAME], sizeof(comment)-1-strlen(comment));
+		Com_sprintf (ARRAY_ARG(comment), "%2d:%d%d %2d/%2d  %s", newtime->tm_hour, newtime->tm_min/10,
+			newtime->tm_min%10, newtime->tm_mon+1, newtime->tm_mday, sv.configstrings[CS_NAME]);
 	}
 	else
 	{	// autosaved
-		Com_sprintf (comment, sizeof(comment), "ENTERING %s", sv.configstrings[CS_NAME]);
+		Com_sprintf (ARRAY_ARG(comment), "ENTERING %s", sv.configstrings[CS_NAME]);
 	}
 
 	fwrite (comment, 1, 32, f);
@@ -247,13 +246,13 @@ void SV_WriteServerFile (qboolean autosave, char *dir)
 	fclose (f);
 
 	// write game state
-	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/%s/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
+	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/%s/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
 	ge->WriteGame (name, autosave);
 
 	// perform screenshot
 	if (re.Screenshot)					// can be uninitialized when dedicated server
 	{
-		re.Screenshot (SHOT_SMALL|SHOT_SILENT|SHOT_NO_2D|SHOT_WAIT_3D|SHOT_JPEG,
+		re.Screenshot (SHOT_SMALL|SHOT_NOGAMMA|SHOT_SILENT|SHOT_NO_2D|SHOT_WAIT_3D|SHOT_JPEG,
 			va("%s/" SAVEGAME_DIRECTORY "/%s/shot", FS_Gamedir(), dir));
 //--		SCR_UpdateScreen ();			// required for screenshot performing
 			// BUT: here we must wait for NEXT map, and if performing shot immediately, it can be from PREVIOUS map
@@ -276,7 +275,7 @@ void SV_ReadServerFile (void)
 	Com_DPrintf("SV_ReadServerFile()\n");
 	SCR_SetLevelshot ("/" SAVEGAME_DIRECTORY "/current/shot.pcx");
 
-	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/current/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
+	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
 	f = fopen (name, "rb");
 	if (!f)
 	{
@@ -308,7 +307,7 @@ void SV_ReadServerFile (void)
 	strcpy (svs.mapcmd, mapcmd);
 
 	// read game state
-	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/current/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
+	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
 	ge->ReadGame (name);
 }
 
@@ -414,7 +413,7 @@ void SV_GameMap_f (void)
 	SV_Map (false, map, false );
 
 	// archive server state
-	strncpy (svs.mapcmd, map, sizeof(svs.mapcmd)-1);
+	Q_strncpyz (svs.mapcmd, map, sizeof(svs.mapcmd));
 
 	// copy off the level to the autosave slot
 	if (!dedicated->integer && !Cvar_VariableInt ("deathmatch"))
@@ -443,7 +442,7 @@ void SV_Map_f (void)
 	{
 		char	expanded[MAX_QPATH];
 
-		Com_sprintf (expanded, sizeof(expanded), "maps/%s.bsp", map);
+		Com_sprintf (ARRAY_ARG(expanded), "maps/%s.bsp", map);
 		if (!FS_FileExists (expanded))
 		{
 			Com_WPrintf ("Can't find %s\n", expanded);
@@ -493,7 +492,7 @@ void SV_Loadgame_f (void)
 	}
 
 	// make sure the server.ssv file exists
-	Com_sprintf (name, sizeof(name), "%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), Cmd_Argv(1));
+	Com_sprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), Cmd_Argv(1));
 	f = fopen (name, "rb");
 	if (!f)
 	{
@@ -730,7 +729,7 @@ static void SV_Ban_f (void)
 
 	// add to ban list
 	ip = sv_client->netchan.remote_address.ip;
-	Com_sprintf (ban, sizeof(ban), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+	Com_sprintf (ARRAY_ARG(ban), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
 	AddBanString (ban);
 
 	SV_DropClient (sv_client, "was banned");
@@ -983,7 +982,7 @@ static void SV_ServerRecord_f (void)
 	}
 
 	// open the demo file
-	Com_sprintf (name, sizeof(name), "%s/demos/%s.dm2", FS_Gamedir(), Cmd_Argv(1));
+	Com_sprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), Cmd_Argv(1));
 
 	Com_Printf ("recording to %s\n", name);
 	FS_CreatePath (name);

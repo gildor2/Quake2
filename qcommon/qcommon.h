@@ -468,8 +468,6 @@ typedef struct
 #define CVAR_NULL(name,value,flags)		{NULL, #name, #value, flags}
 #define CVAR_END					};
 
-#define CVAR_GET_VARS(array)	Cvar_GetVars(array, sizeof(array)/sizeof(cvarInfo_t))
-
 
 extern cvar_t *cvar_vars;
 extern int	cvar_initialized;
@@ -787,7 +785,7 @@ void	Sys_FindClose (void);
 /*------------- Miscellaneous -----------------*/
 
 extern	int	curtime;		// time returned by last Sys_Milliseconds
-
+extern	int linewidth;		// for functions, which wants to perform advanced output formatting
 
 #define	ERR_FATAL	0		// exit the entire game with a popup window
 #define	ERR_DROP	1		// print to console and disconnect from game

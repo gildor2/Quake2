@@ -19,11 +19,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // vid.h -- video driver defs
 
-typedef struct vrect_s
-{
-	int		x, y, width, height;
-} vrect_t;
-
 typedef struct
 {
 	int		width, height;			// coordinates from main game

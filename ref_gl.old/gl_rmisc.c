@@ -169,13 +169,13 @@ void GL_PerformScreenshot (void)
 
 		r = *src++; g = *src++; b = *src++;
 		src++;	// skip alpha
-/*		// correct gamma (disabled: too lazy to implement !!)
-		if (gl_config.deviceSupportsGamma)
+		// correct gamma (disabled: too lazy to implement !!)
+		if (GLimp_HasGamma () && !(gl_screenshotFlags & SHOT_NOGAMMA))
 		{
-			r = gammaTable[r];
-			g = gammaTable[g];
-			b = gammaTable[b];
-		} */
+			r = gammatable[r];
+			g = gammatable[g];
+			b = gammatable[b];
+		}
 		// put new values back
 		*dst++ = r;
 		*dst++ = g;

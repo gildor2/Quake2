@@ -5,9 +5,10 @@
 - "imagelist *" - show hash distribution (collisions)
 - gl_logFile == 2 -> log only 1 frame
 - gl_logTexts == 2 -> log only 1 frame
-- r_surfinfo == 2 -> do not trace entities
+- r_surfinfo = +2 -- do not trace entities, +4 -- clip to all brushes
 - gl_showImages <mask> | 1==* | 0
 - r_lightmap && r_fullbright -> wireframe drawing (within a lightmap and texture); hint: use gl_fastsky or gl_clear
 - gl_dynamic == 2 -> uploadable dynamic lightmaps (restart required)
 - img_reload <mask> -- reload all matched images (non-system images and which names are not started with '*')
 - gl_labels == 2 -> show occluded ent labels
+- gl_showLights == 2 -> display spotlight intensities

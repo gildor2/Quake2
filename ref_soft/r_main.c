@@ -279,7 +279,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(r_saturation, 1, CVAR_ARCHIVE),
 CVAR_END
 
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 	sw_maxedges = Cvar_Get ("sw_maxedges", va("%d", NUMSTACKEDGES), 0);	//?? MAXSTACKSURFACES
 
 	Cmd_AddCommand ("modellist", Mod_Modellist_f);
@@ -1487,7 +1487,7 @@ refExport_t GetRefAPI (refImport_t rimp)
 	re.DrawFill2 = Draw_Fill2;
 
 	re.DrawStretchRaw = Draw_StretchRaw;
-	re.CinematicSetPalette = R_CinematicSetPalette;
+	re.SetRawPalette = R_CinematicSetPalette;
 
 	re.DrawTextPos = DrawText_Pos;
 	re.DrawTextLeft = DrawText_Left;

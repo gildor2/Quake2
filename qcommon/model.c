@@ -723,7 +723,7 @@ static qboolean ProcessEntity ()
 				// remove from list
 				bspfile.slights = slight->next;
 				bspfile.numSlights--;
-//Com_Printf("^1sun: %g %g %g (dst: %g %g %g, org: %g %g %g)\n",VECTOR_ARGS(bspfile.sunVec),VECTOR_ARGS(dst),VECTOR_ARGS(slight->spotDir));
+//Com_Printf("^1sun: %g %g %g (dst: %g %g %g, org: %g %g %g)\n",VECTOR_ARG(bspfile.sunVec),VECTOR_ARG(dst),VECTOR_ARG(slight->spotDir));
 			}
 		}
 		if (!strcmp (class + 5, "_spot") || FindField ("_spotvector,_spotpoint,_mangle,_spotangle"))
@@ -872,8 +872,8 @@ static qboolean ProcessEntity ()
 				bspfile.fogMode = fog_exp;
 			}
 		}
-		if (f = FindField ("_ambient,light,_minlight"))
-			GetVector (f->value, bspfile.ambientLight);
+//		if (f = FindField ("_ambient,light,_minlight")) -- it seems, this is not always true ... detect ambient by outselves (in renderer)
+//			GetVector (f->value, bspfile.ambientLight);
 		if (f = FindField ("_sun*"))
 		{
 			// have ArghRad sun

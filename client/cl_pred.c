@@ -58,7 +58,7 @@ void CL_CheckPredictionError (void)
 			cl.prediction_error[i] = delta[i] * 0.125f;
 
 		if (cl_showmiss->integer && len)
-			Com_WPrintf ("prediction miss on %d: %g %g %g\n", cl.frame.serverframe, VECTOR_ARGS(cl.prediction_error));
+			Com_WPrintf ("prediction miss on %d: %g %g %g\n", cl.frame.serverframe, VECTOR_ARG(cl.prediction_error));
 
 		cl.predicted_origins[frame][0] = cl.frame.playerstate.pmove.origin[0];
 		cl.predicted_origins[frame][1] = cl.frame.playerstate.pmove.origin[1];
@@ -118,7 +118,7 @@ void CL_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs,
 		VectorSubtract (ent->origin, delta, eOrigin);
 
 //if (delta[0]||delta[1]||delta[2])//!!
-//Com_Printf("(%g %g %g)->(%g %g %g) =(%g %g %g):%g\n",VECTOR_ARGS(cent->prev.origin),VECTOR_ARGS(cent->current.origin),VECTOR_ARGS(eOrigin),frac);//!!
+//Com_Printf("(%g %g %g)->(%g %g %g) =(%g %g %g):%g\n",VECTOR_ARG(cent->prev.origin),VECTOR_ARG(cent->current.origin),VECTOR_ARG(eOrigin),frac);//!!
 
 		// collision detection: line vs sphere
 		// check position of point projection on line
@@ -219,7 +219,7 @@ int CL_PMpointcontents (vec3_t point)
 		VectorSubtract (ent->origin, delta, eOrigin);
 
 //if (delta[0]||delta[1]||delta[2])//!!
-//Com_WPrintf("(%g %g %g)->(%g %g %g) =(%g %g %g):%g\n",VECTOR_ARGS(cent->prev.origin),VECTOR_ARGS(cent->current.origin),VECTOR_ARGS(eOrigin),cl.lerpfrac);//!!
+//Com_WPrintf("(%g %g %g)->(%g %g %g) =(%g %g %g):%g\n",VECTOR_ARG(cent->prev.origin),VECTOR_ARG(cent->current.origin),VECTOR_ARG(eOrigin),cl.lerpfrac);//!!
 
 		// check entity bounding sphere
 		VectorSubtract (eCenter, point, tmp);
@@ -264,6 +264,7 @@ void CL_PredictMovement (void)
 
 	ack = cls.netchan.incoming_acknowledged;
 	current = cls.netchan.outgoing_sequence;
+	if (cls.netFrameDropped) current++;
 
 	// if we are too far out of date, just freeze
 	if (current - ack >= CMD_BACKUP)

@@ -831,7 +831,7 @@ void CL_WidowSplash (vec3_t org)
 		dir[2] = crand();
 		VectorNormalize(dir);
 		VectorMA(org, 45.0, dir, p->org);
-		VectorMA(vec3_origin, 40.0, dir, p->vel);
+		VectorScale(dir, 40.0, p->vel);
 
 //??		p->accel[2] = (originally -- undefined) ??
 		p->alpha = 1.0;

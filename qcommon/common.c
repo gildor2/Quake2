@@ -50,6 +50,8 @@ static int	server_state;
 // com_speeds times
 int		time_before_game, time_after_game, time_before_ref, time_after_ref;
 
+int		linewidth = 80;
+
 /*
 ============================================================================
 
@@ -130,7 +132,7 @@ void Com_Printf (char *fmt, ...)
 		if (!logfile)
 		{
 			if (!console_logged)
-				Com_sprintf (log_name, sizeof(log_name), "%s/console.log", FS_Gamedir ());
+				Com_sprintf (ARRAY_ARG(log_name), "%s/console.log", FS_Gamedir ());
 
 			if (logfile_active->integer > 2 || console_logged)
 				logfile = fopen (log_name, "a");
@@ -195,7 +197,7 @@ void DebugPrintf (char *fmt, ...)
 	if (!debugLogged)
 	{
 		time (&itime);
-		strftime (ctime, sizeof(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
+		strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
 		fprintf (log, "\n\n----- " APPNAME " debug log on %s -----\n", ctime);
 		debugLogged = true;
 	}
@@ -679,13 +681,13 @@ static int GetDirCell (vec3_t dir)
 	switch (base)
 	{
 	case 0:
-		base2 = (Q_ftol (adir[1] * m) << 3) + Q_ftol (adir[2] * m);
+		base2 = (Q_floor (adir[1] * m) << 3) + Q_floor (adir[2] * m);
 		break;
 	case 1:
-		base2 = (Q_ftol (adir[0] * m) << 3) + Q_ftol (adir[2] * m);
+		base2 = (Q_floor (adir[0] * m) << 3) + Q_floor (adir[2] * m);
 		break;
 	case 2:
-		base2 = (Q_ftol (adir[0] * m) << 3) + Q_ftol (adir[1] * m);
+		base2 = (Q_floor (adir[0] * m) << 3) + Q_floor (adir[1] * m);
 		break;
 	}
 	return (base << 9) + (sign << 6) + base2;
@@ -1550,12 +1552,15 @@ CVAR_END
 	// init commands and vars
 	Cmd_AddCommand ("error", Com_Error_f);
 
-	CVAR_GET_VARS(vars);
+	Cvar_GetVars (ARRAY_ARG(vars));
 	Cvar_Get ("version", va("%4.2f %s %s %s", VERSION, CPUSTRING, __DATE__, BUILDSTRING), CVAR_SERVERINFO|CVAR_NOSET);
 
 
 	if (dedicated->integer)
+	{
 		Cmd_AddCommand ("quit", Com_Quit);
+		linewidth = 80;
+	}
 
 	Sys_Init ();
 
