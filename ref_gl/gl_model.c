@@ -864,8 +864,12 @@ static void LoadInlineModels2 (dmodel_t *data, int count)
 
 	for (i = 0; i < count; i++, data++, out++)
 	{
+		vec3_t	tmp;
+
 		VectorCopy (data->mins, out->mins);
 		VectorCopy (data->maxs, out->maxs);
+		VectorSubtract (out->maxs, out->mins, tmp);
+		out->radius = VectorLength (tmp) / 2;
 		out->faces = &map.faces[data->firstface];
 		out->numFaces = data->numfaces;
 	}
@@ -1527,7 +1531,7 @@ void GL_LoadWorldMap (char *name)
 }
 
 
-node_t *GL_PointInLeaf (vec3_t p)
+node_t *GL_PointInLeaf (vec3_t p)	//?? move to gl_world.c
 {
 	node_t		*node;
 	cplane_t	*plane;

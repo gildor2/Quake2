@@ -1346,14 +1346,17 @@ void GL_InitImages (void)
 				p[0] = p[1] = p[2] = p[3] = 255;
 	gl_defaultImage = GL_CreateImage ("*default", tex, 16, 16, IMAGE_MIPMAP);
 	gl_defaultImage->flags |= IMAGE_SYSTEM;
+
 	/*----------- create white image -------------*/
 	memset (tex, 255, 8*8*4);
 	gl_whiteImage = GL_CreateImage ("*white", tex, 8, 8, 0);
 	gl_whiteImage->flags |= IMAGE_SYSTEM;
+
 	/*---------- create scratch image ------------*/
 	memset (tex, 255, 16*16*4);
 	gl_scratchImage = GL_CreateImage ("*scratch", tex, 16, 16, 0);
 	gl_scratchImage->flags |= IMAGE_SYSTEM;
+
 	/*------ create identity light image ---------*/
 	y = gl_config.identityLightValue;
 	for (x = 0, p = &tex[0]; x < 8*8; x++, p += 4)
@@ -1363,6 +1366,7 @@ void GL_InitImages (void)
 	}
 	gl_identityLightImage = GL_CreateImage ("*identityLight", tex, 8, 8, 0);
 	gl_identityLightImage->flags |= IMAGE_SYSTEM;
+
 	/*----------- create dlight image ------------*/
 	p = tex;
 	for (y = 0; y < 16; y++)
@@ -1386,10 +1390,10 @@ void GL_InitImages (void)
 	}
 	gl_dlightImage = GL_CreateImage ("*dlight", tex, 16, 16, IMAGE_CLAMP|IMAGE_TRUECOLOR|IMAGE_MIPMAP);
 	gl_dlightImage->flags |= IMAGE_SYSTEM;
+
 	/*----------- create particle image ----------*/
 	p = tex;
 	for (y = 0; y < 8; y++)
-	{
 		for (x = 0; x < 8; x++)
 		{
 			if (y >= 1 && y <= 4 && x >= 1 && x <= 4)
@@ -1397,9 +1401,7 @@ void GL_InitImages (void)
 				p[0] = p[1] = p[2] = 255;
 
 				if (y == 1 || y == 4 || x == 1 || x == 4)
-				{
 					p[3] = 128;
-				}
 
 				if ((y == 1 || y == 4) && (x == 1 || x == 4))
 					p[3] = 64;
@@ -1410,9 +1412,9 @@ void GL_InitImages (void)
 				p[0] = p[1] = p[2] = p[3] = 0;
 			p += 4;
 		}
-	}
 	gl_particleImage = GL_CreateImage ("*particle", tex, 8, 8, IMAGE_CLAMP|IMAGE_MIPMAP);
 	gl_particleImage->flags |= IMAGE_SYSTEM;
+
 	/*------------ create fog image --------------*/
 	p = tex;
 	for (y = 0; y < 32; y++)

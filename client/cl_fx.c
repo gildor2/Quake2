@@ -2174,9 +2174,13 @@ void CL_UpdateParticles (void)
 
 	timeDelta = (cl.time - oldTime) / 1000.0f;
 	oldTime = cl.time;
-	if (timeDelta < 0 || r_sfx_pause->integer)
+	if (timeDelta <= 0)
 		return;
+
+	if (r_sfx_pause->integer) timeDelta = 0;
 	time2 = timeDelta * timeDelta;
+
+	CL_AddParticleTraces (timeDelta);
 
 	prev = NULL;
 	for (p = active_particles; p; p = next)
@@ -2222,8 +2226,6 @@ void CL_UpdateParticles (void)
 
 		prev = p;
 	}
-
-	CL_AddParticleTraces (timeDelta);
 }
 
 

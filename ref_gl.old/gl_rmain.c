@@ -1049,7 +1049,7 @@ CVAR_BEGIN(vars)
 	CVAR_NULL(gl_ext_compiled_vertex_array, 1, CVAR_ARCHIVE),
 
 	CVAR_VAR(gl_drawbuffer, GL_BACK, 0),
-	CVAR_VAR(gl_swapinterval, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_swapinterval, 0, CVAR_ARCHIVE|CVAR_UPDATE),
 
 	CVAR_VAR(gl_saturatelighting, 0, 0),
 

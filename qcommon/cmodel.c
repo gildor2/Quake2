@@ -1320,7 +1320,7 @@ CM_PointLeafnum_r
 
 ==================
 */
-int CM_PointLeafnum_r (vec3_t p, int num)
+static int CM_PointLeafnum_r (vec3_t p, int num)
 {
 	float		d;
 	cnode_t		*node;
@@ -1365,7 +1365,7 @@ int		*leaf_list;
 float	*leaf_mins, *leaf_maxs;
 int		leaf_topnode;
 
-void CM_BoxLeafnums_r (int nodenum)
+static void CM_BoxLeafnums_r (int nodenum)
 {
 	cplane_t	*plane;
 	cnode_t		*node;
@@ -1402,7 +1402,7 @@ void CM_BoxLeafnums_r (int nodenum)
 	}
 }
 
-int	CM_BoxLeafnums_headnode (vec3_t mins, vec3_t maxs, int *list, int listsize, int headnode, int *topnode)
+static int	CM_BoxLeafnums_headnode (vec3_t mins, vec3_t maxs, int *list, int listsize, int headnode, int *topnode)
 {
 	leaf_list = list;
 	leaf_count = 0;
@@ -1548,7 +1548,7 @@ static void TraceBuf_Dump (char *name)
 }
 //!!-----------END-------------
 
-void TraceBuf_Init ()
+static void TraceBuf_Init ()
 {
 	int i;
 	{
@@ -1564,7 +1564,7 @@ void TraceBuf_Init ()
 }
 
 
-void TraceBuf_LimitFrac (float max_frac)
+static void TraceBuf_LimitFrac (float max_frac)
 {
 	int i, found;
 	trace_part_t *p;
@@ -1597,7 +1597,7 @@ void TraceBuf_LimitFrac (float max_frac)
 }
 
 
-void TraceBuf_AddLeaf (int leafnum, float p1f, float p2f)
+static void TraceBuf_AddLeaf (int leafnum, float p1f, float p2f)
 {
 	int i, prev, next;
 	trace_part_t *p, *pn;
@@ -1681,7 +1681,7 @@ void TraceBuf_AddLeaf (int leafnum, float p1f, float p2f)
 }
 
 
-trace_part_t *TraceBuf_FindPart (float frac)
+static trace_part_t *TraceBuf_FindPart (float frac)
 {
 	int i;
 	trace_part_t *p;
@@ -1699,7 +1699,7 @@ trace_part_t *TraceBuf_FindPart (float frac)
 
 
 // Finds trace->plane & trace->surface
-void CM_ClipBoxToHLLeaf (vec3_t mins, vec3_t maxs, vec3_t p1, vec3_t p2, int leafnum)
+static void CM_ClipBoxToHLLeaf (vec3_t mins, vec3_t maxs, vec3_t p1, vec3_t p2, int leafnum)
 {
 	int			i, j;
 	cplane_t	*plane, *clipplane;
@@ -1870,7 +1870,7 @@ void CM_ClipBoxToHLLeaf (vec3_t mins, vec3_t maxs, vec3_t p1, vec3_t p2, int lea
 }
 
 
-void CM_TraceToHLLeaf (int leafnum, float p1f, float p2f)
+static void CM_TraceToHLLeaf (int leafnum, float p1f, float p2f)
 {
 	dleaf_t		*leaf;
 
@@ -1897,7 +1897,7 @@ void CM_TraceToHLLeaf (int leafnum, float p1f, float p2f)
 }
 
 
-void CM_TestInHLLeaf (int leafnum)
+static void CM_TestInHLLeaf (int leafnum)
 {
 	int			k;
 	int			brushnum;
@@ -1917,7 +1917,7 @@ void CM_TestInHLLeaf (int leafnum)
 }
 
 
-void CM_FinishHLTrace ()
+static void CM_FinishHLTrace (void)
 {
 	trace_part_t	*p;
 	vec3_t	mid;//, end;
@@ -1959,7 +1959,7 @@ void CM_FinishHLTrace ()
 }
 
 
-void CM_RecursiveHLHullCheck (int num, float p1f, float p2f, vec3_t p1, vec3_t p2)
+static void CM_RecursiveHLHullCheck (int num, float p1f, float p2f, vec3_t p1, vec3_t p2)
 {
 	cnode_t		*node;
 	cplane_t	*plane;
@@ -2081,8 +2081,7 @@ void CM_RecursiveHLHullCheck (int num, float p1f, float p2f, vec3_t p1, vec3_t p
 CM_ClipBoxToBrush
 ================
 */
-void CM_ClipBoxToBrush (vec3_t mins, vec3_t maxs, vec3_t p1, vec3_t p2,
-					  trace_t *trace, cbrush_t *brush)
+static void CM_ClipBoxToBrush (vec3_t mins, vec3_t maxs, vec3_t p1, vec3_t p2, trace_t *trace, cbrush_t *brush)
 {
 	int			i;
 	cplane_t	*clipplane;
@@ -2222,8 +2221,7 @@ if box inside this brush or intersects its brushsides:
 else trace is unchanged
 ================
 */
-void CM_TestBoxInBrush (vec3_t mins, vec3_t maxs, vec3_t p1,
-					  trace_t *trace, cbrush_t *brush)
+static void CM_TestBoxInBrush (vec3_t mins, vec3_t maxs, vec3_t p1, trace_t *trace, cbrush_t *brush)
 {
 	int			i, j;
 	cplane_t	*plane;
@@ -2276,7 +2274,7 @@ void CM_TestBoxInBrush (vec3_t mins, vec3_t maxs, vec3_t p1,
 CM_TraceToLeaf
 ================
 */
-void CM_TraceToLeaf (int leafnum)
+static void CM_TraceToLeaf (int leafnum)
 {
 	int			k;
 	int			brushnum;
@@ -2321,7 +2319,7 @@ Call CM_TestBoxInBrush for each leafbrush.
 When first intersection found (trace.fraction == 0) - return
 ================
 */
-void CM_TestInLeaf (int leafnum)
+static void CM_TestInLeaf (int leafnum)
 {
 	int			k;
 	int			brushnum;
@@ -2356,7 +2354,7 @@ CM_RecursiveHullCheck
 
 ==================
 */
-void CM_RecursiveHullCheck (int num, float p1f, float p2f, vec3_t p1, vec3_t p2)
+static void CM_RecursiveHullCheck (int num, float p1f, float p2f, vec3_t p1, vec3_t p2)
 {
 	cnode_t		*node;
 	cplane_t	*plane;
@@ -2483,9 +2481,7 @@ When start==end:
   6) trace.ent & trace.plane are unchanged
 ==================
 */
-trace_t		CM_BoxTrace (vec3_t start, vec3_t end,
-						vec3_t mins, vec3_t maxs,
-						int headnode, int brushmask)
+trace_t		CM_BoxTrace (vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask)
 {
 	int		i;
 
@@ -2655,10 +2651,9 @@ rotating entities
 */
 
 
-trace_t		CM_TransformedBoxTrace (vec3_t start, vec3_t end,
-						  vec3_t mins, vec3_t maxs,
-						  int headnode, int brushmask,
-						  vec3_t origin, vec3_t angles)
+trace_t CM_TransformedBoxTrace (vec3_t start, vec3_t end,
+				vec3_t mins, vec3_t maxs, int headnode, int brushmask,
+				vec3_t origin, vec3_t angles)
 {
 	trace_t		trace;
 	vec3_t		start_l, end_l;
@@ -2817,7 +2812,7 @@ AREAPORTALS
 ===============================================================================
 */
 
-void FloodArea_r (carea_t *area, int floodnum)
+static void FloodArea_r (carea_t *area, int floodnum)
 {
 	int		i;
 	dareaportal_t	*p;
@@ -2846,7 +2841,7 @@ FloodAreaConnections
 
 ====================
 */
-void	FloodAreaConnections (void)
+void FloodAreaConnections (void)
 {
 	int		i;
 	carea_t	*area;
@@ -2868,7 +2863,7 @@ void	FloodAreaConnections (void)
 
 }
 
-void	CM_SetAreaPortalState (int portalnum, qboolean open)
+void CM_SetAreaPortalState (int portalnum, qboolean open)
 {
 	if (portalnum > numareaportals)
 		Com_Error (ERR_DROP, "areaportal > numareaportals");
@@ -2877,7 +2872,7 @@ void	CM_SetAreaPortalState (int portalnum, qboolean open)
 	FloodAreaConnections ();
 }
 
-qboolean	CM_AreasConnected (int area1, int area2)
+qboolean CM_AreasConnected (int area1, int area2)
 {
 	if (map_noareas->integer)
 		return true;
@@ -2936,7 +2931,7 @@ CM_WritePortalState
 Writes the portal state to a savegame file
 ===================
 */
-void	CM_WritePortalState (FILE *f)
+void CM_WritePortalState (FILE *f)
 {
 	fwrite (portalopen, sizeof(portalopen), 1, f);
 }
@@ -2949,7 +2944,7 @@ Reads the portal state from a savegame file
 and recalculates the area connections
 ===================
 */
-void	CM_ReadPortalState (FILE *f)
+void CM_ReadPortalState (FILE *f)
 {
 //--	FS_Read (portalopen, sizeof(portalopen), f);
 	fread (portalopen, sizeof(portalopen), 1, f);

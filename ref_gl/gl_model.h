@@ -68,7 +68,8 @@ typedef enum
 {
 	SURFACE_PLANAR,			// surfacePlanar_t
 	SURFACE_TRISURF,		// surfaceTrisurf_t
-	SURFACE_MD3				// surfaceMd3_t
+	SURFACE_MD3,			// surfaceMd3_t
+	SURFACE_PARTICLE
 } surfaceType_t;
 
 // Planar surface: same normal for all vertexes
@@ -127,6 +128,7 @@ typedef struct surfaceCommon_s
 		surfaceTrisurf_t *tri;	// type = SURFACE_PLANAR
 		surfacePlanar_t *pl;	// type = SURFACE_TRISURF
 		surfaceMd3_t	*md3;	// type = SURFACE_MD3
+		particle_t		*part;	// type = SURFACE_PARTICLE
 	};
 } surfaceCommon_t;
 
@@ -135,10 +137,18 @@ typedef struct surfaceCommon_s
 typedef struct node_s
 {
 	qboolean isNode;
+	byte	frustumMask;
 	int		frame;
+	// leaf geometry
 	float	mins[3], maxs[3];
 	cplane_t *plane;
+	// tree structure
 	struct node_s *parent, *children[2];
+	// BSP draw sequence (dynamic)
+	struct node_s *drawNext;
+	refEntity_t *drawEntity;
+	particle_t *drawParticle;
+	// visibility params
 	int		cluster, area;
 	// surfaces (only if isNode==false)
 	surfaceCommon_t **leafFaces;
@@ -149,6 +159,8 @@ typedef struct node_s
 typedef struct
 {
 	float	mins[3], maxs[3];
+	vec3_t	center;
+	float	radius;
 	surfaceCommon_t *faces;
 	int		numFaces;
 } inlineModel_t;

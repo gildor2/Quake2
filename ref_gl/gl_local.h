@@ -137,6 +137,7 @@ extern	shader_t	*gl_defaultShader;
 extern	shader_t	*gl_identityLightShader;
 extern	shader_t	*gl_concharsShader;
 extern	shader_t	*gl_defaultSkyShader;
+extern	shader_t	*gl_particleShader;
 extern	shader_t	*gl_skyShader;
 extern	shader_t	*gl_alphaShader1, *gl_alphaShader2;
 
@@ -194,7 +195,7 @@ void	GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, lightsty
 
 /*------------ gl_world.c -------------------*/
 
-typedef struct
+typedef struct refEntity_s
 {
 	int		flags;
 	// position info
@@ -203,7 +204,6 @@ typedef struct
 	int		frustumMask;		//?? remove
 	vec3_t	modelvieworg;		// vieworg in model coordinate system
 	float	modelMatrix[4][4];	// modelview matrix
-	int		dist2;				// used for depth sorting entities
 	// info for frame lerping
 	int		frame, oldFrame;
 	float	backLerp;
@@ -214,14 +214,15 @@ typedef struct
 	//?? skin_t *customSkin;	// multiple shaders (1 per surface)
 	int		skinNum;			// number of default (inline) skin
 	byte	shaderRGBA[4];		// for "rgbGen/alphaGen entity"
+	// draw sequence
+	struct refEntity_s *drawNext;
 } refEntity_t;
 
 extern refEntity_t	gl_entities[];
 extern int			gl_numEntities;
 
 
-void	GL_DrawWorld (void);
-void	GL_DrawEntities (int firstEntity, int numEntities);
+void	GL_DrawPortal (void);
 void	GL_AddEntity (entity_t *ent);
 
 
@@ -243,6 +244,7 @@ void	GL_ClearBuffers (void);
 // works with "vp" (current view portal)
 void	GL_ClearPortal (void);
 void	GL_AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityNum);
+surfaceCommon_t *GL_AddDynamicSurface (shader_t *shader, int entityNum);
 void	GL_InsertShaderIndex (int index);
 void	GL_FinishPortal (void);
 
@@ -305,7 +307,7 @@ typedef struct
 	qboolean finished;	//?? remove
 	qboolean is2dMode;
 
-	int		prevMode;				// last valid video mode
+	int		prevMode;			// last valid video mode
 	qboolean fullscreen;
 	int		colorBits;				//?? 0 == 16, 32
 } glstate_t;
@@ -327,8 +329,6 @@ typedef struct
 	// map areas
 	byte	areaMask[MAX_MAP_AREAS/8];
 	qboolean areaMaskChanged;
-	// entities
-	int		firstEntity, numEntities;
 } glrefdef_t;
 
 typedef struct surfaceInfo_s
@@ -346,20 +346,22 @@ typedef struct
 	lightstyle_t *lightStyles;
 	float	time;
 	// modelview params (unused now, required for portals (??))
-	vec3_t	modelorg;		// {0 0 0} for world model (for non-portal view)
-	vec3_t	modelaxis[3];	// {1 0 0}, {0 1 0}, {0 0 1} for world model
-	vec3_t	modelvieworg;	// coords of vieworg in modelaxis coord system (same as vieworg for world model)
+	vec3_t	modelorg;			// {0 0 0} for world model (for non-portal view)
+	vec3_t	modelaxis[3];		// {1 0 0}, {0 1 0}, {0 0 1} for world model
+	vec3_t	modelvieworg;		// coords of vieworg in modelaxis coord system (same as vieworg for world model)
 	float	modelMatrix[4][4];
 	// projection params
-	float	x, y, w, h;		// viewport
+	float	x, y, w, h;			// viewport
 	float	fov_x, fov_y;
-	cplane_t frustum[4];	// used for frustum culling
+	cplane_t frustum[4];		// used for frustum culling
 	float	projectionMatrix[4][4];
-	vec3_t	mins, maxs;		// bounding box of all visible leafs
-	float	zFar;			// maximim distance from vieworg to mins/maxs vertexes
+	vec3_t	mins, maxs;			// bounding box of all visible leafs
+	float	zFar;				// maximim distance from vieworg to mins/maxs vertexes
 	// surfaces
 	surfaceInfo_t *surfaces;
 	int		numSurfaces;
+	// entities
+	int		firstEntity, numEntities;
 	// particles
 	particle_t *particles;
 } viewPortal_t;
@@ -369,14 +371,15 @@ typedef struct
 	// geometry complexity
 	int		leafs, visLeafs, frustLeafs;	//?? frustLeafs -> ~cullLeafs
 	int		surfs, cullSurfs;
-	int		ents, cullEnts;
+	int		ents, cullEnts, cullEnts2;
+	int		parts, cullParts;	// particles
 	// OpenGL statistics
 	int		numBinds, numUploads, numIterators;
 	// pefromance measuring
-	int		beginFrame;		// front-end
-	int		beginSort;		// sorting
-	int		begin3D;		// back-end (3D)
-	int		begin2D;		// back-end (2D)
+	int		beginFrame;			// front-end
+	int		beginSort;			// sorting
+	int		begin3D;			// back-end (3D)
+	int		begin2D;			// back-end (2D)
 	int		endFrame;
 } drawSpeeds_t;
 

@@ -90,19 +90,20 @@ typedef enum
 typedef struct particle_s
 {
 	// appearance
-	vec3_t		org;
-	byte		color;
-	qboolean	_new;
-	float		alpha;
+	vec3_t	org;
+	byte	color;
+	qboolean _new;
+	float	alpha;
 	particleType_t type;
-	int			leafNum;	// -1 -- uninitialized
+	int		leafNum;				// -1 -- uninitialized
 	// some physics
-	int			startTime;
-	vec3_t		vel;		// org += vel * time
-	vec3_t		accel;		// vel += accel * time
-	float		alphavel;
+	int		startTime;
+	vec3_t	vel;					// org += vel * time
+	vec3_t	accel;					// vel += accel * time
+	float	alphavel;
 
-	struct particle_s	*next;
+	struct particle_s *next;
+	struct particle_s *drawNext;
 } particle_t;
 
 typedef struct

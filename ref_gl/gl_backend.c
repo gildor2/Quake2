@@ -46,6 +46,13 @@ shader_t	*currentShader;
 refEntity_t *currentEntity;
 
 
+/*---------- Dynamic surface buffer ----------*/
+
+#define MAX_DYNAMIC_BUFFER		(128 * 1024)
+byte	dynamicBuffer[MAX_DYNAMIC_BUFFER];
+int		dynamicBufferSize;
+
+
 /*-------------- Vertex arrays ---------------*/
 
 
@@ -1241,7 +1248,7 @@ static void SortSurfaces (void)
 		alpha2 = gl_alphaShader2->sortIndex << SHADERNUM_SHIFT;
 	}
 	else
-	{	// debug mode
+	{	// debug mode (make alpha1 > alpha2)
 		alpha1 = 1 << 14;
 		alpha2 = 0;
 	}
@@ -1251,7 +1258,7 @@ static void SortSurfaces (void)
 		int		tmp;			\
 		tmp = value & (SHADERNUM_MASK << SHADERNUM_SHIFT);	\
 		if (tmp > alpha1 && tmp < alpha2)	\
-			result = value & ~(SHADERNUM_MASK << SHADERNUM_SHIFT) | alpha2;	\
+			result = value & ~(SHADERNUM_MASK << SHADERNUM_SHIFT | ENTITYNUM_MASK << ENTITYNUM_SHIFT) | alpha2;	\
 		else					\
 			result = tmp;		\
 	}
@@ -1596,10 +1603,9 @@ static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 
 /*------------------- Drawing the scene ---------------------*/
 
-static void DrawParticles (void)
+static void DrawParticles (particle_t *p)
 {
 	vec3_t	up, right;
-	particle_t *p;
 	byte	c[4];
 
 	//!! oprimize this (vertex arrays, etc.)
@@ -1610,7 +1616,7 @@ static void DrawParticles (void)
 	VectorScale (ap.viewaxis[2], 1.5, right);
 
 	qglBegin (GL_TRIANGLES);
-	for (p = ap.particles; p; p = p->next)
+	for ( ; p; p = p->drawNext)
 	{
 		float	scale;
 		int		alpha;
@@ -1682,7 +1688,6 @@ static void RB_DrawScene (void)
 	surfaceInfo_t	**si, **si2, **fastSurf;
 	shader_t		*shader;
 	surfaceCommon_t	*surf;
-	int				alpha1;
 	// current state
 	int		currentShaderNum, currentEntityNum;
 	qboolean currentDepthHack, depthHack;
@@ -1730,8 +1735,6 @@ static void RB_DrawScene (void)
 		if (surf && surf->type == SURFACE_PLANAR)
 			CheckDynamicLightmap (surf);
 	}
-
-	alpha1 = gl_alphaShader1->sortIndex;
 
 	/*-------- draw world/models ---------*/
 	numFastSurfs = 0;
@@ -1791,9 +1794,7 @@ static void RB_DrawScene (void)
 			}
 		}
 
-		if (shader == gl_alphaShader1)
-			DrawParticles ();
-		else if (IS_FAST(shader, surf))
+		if (IS_FAST(shader, surf))
 			numFastSurfs++;
 		else
 		{
@@ -1804,6 +1805,9 @@ static void RB_DrawScene (void)
 				break;
 			case SURFACE_MD3:
 				TesselateMd3Surf (surf->md3);
+				break;
+			case SURFACE_PARTICLE:
+				DrawParticles (surf->part);
 				break;
 			//!! other types
 			}
@@ -1830,6 +1834,7 @@ void GL_ClearBuffers (void)
 {
 	numSurfacesTotal = 0;
 	gl_numEntities = 0;
+	dynamicBufferSize = 0;
 	//?? clear dlights etc.
 }
 
@@ -1854,6 +1859,21 @@ void GL_AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityN
 	// update maxUsedShaderIndex
 	if (shader->sortIndex > gl_state.maxUsedShaderIndex)
 		gl_state.maxUsedShaderIndex = shader->sortIndex;
+}
+
+
+surfaceCommon_t *GL_AddDynamicSurface (shader_t *shader, int entityNum)
+{
+	surfaceCommon_t *surf;
+
+	if (dynamicBufferSize + sizeof(surfaceCommon_t) > MAX_DYNAMIC_BUFFER)
+		return NULL;
+
+	surf = (surfaceCommon_t*) &dynamicBuffer[dynamicBufferSize];
+	dynamicBufferSize += sizeof(surfaceCommon_t);
+
+	GL_AddSurfaceToPortal (surf, shader, entityNum);
+	return surf;
 }
 
 

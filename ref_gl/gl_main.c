@@ -754,14 +754,6 @@ static void GL_RenderFrame (refdef_t *fd)
 		gl_refdef.areaMaskChanged = areaSum;
 	}
 
-	/*----------- add entities -----------*/
-
-	gl_speeds.ents = gl_speeds.cullEnts = 0;
-	gl_refdef.firstEntity = gl_numEntities;
-	gl_refdef.numEntities = fd->num_entities;
-	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
-		GL_AddEntity (ent);
-
 	/*------------ rendering -------------*/
 
 	// setup viewPortal structure
@@ -776,27 +768,30 @@ static void GL_RenderFrame (refdef_t *fd)
 	vp.lightStyles = gl_refdef.lightStyles;
 	vp.time = gl_refdef.time;
 
+	// add entities
+	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.cullEnts2 = 0;
+	vp.firstEntity = gl_numEntities;
+	vp.numEntities = fd->num_entities;
+	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
+		GL_AddEntity (ent);
+
+	gl_speeds.parts = gl_speeds.cullParts = 0;
+	vp.particles = fd->particles;
+
 	VectorCopy (gl_refdef.vieworg, vp.vieworg);
 	vp.vieworg[0] = gl_refdef.vieworg[0];
 	vp.vieworg[1] = gl_refdef.vieworg[1];
 	vp.vieworg[2] = gl_refdef.vieworg[2];
 	AxisCopy (gl_refdef.viewaxis, vp.viewaxis);
+
 	GL_ClearPortal ();
 	PrepareWorldModel ();
 	SetFrustum ();
-	GL_DrawWorld ();
-	SetPerspective ();
-	//?? GL_AddGameSurfacesToBuffer ();
-	GL_DrawEntities (gl_refdef.firstEntity, gl_refdef.numEntities);
-	//?? draw portals here (if buffer has shader.sort == SORT_PORTAL)
 
-	// add particles (*** needs other way *** !!!!)
-	if (fd->particles)
-	{
-		vp.particles = fd->particles;
-		// use "*alpha1" shader - this lets us to draw particles before 1st alpha surface drawn
-		GL_AddSurfaceToPortal (NULL, gl_alphaShader1, ENTITYNUM_WORLD);
-	}
+	GL_DrawPortal ();
+
+	SetPerspective ();
+	//?? draw portals here (if buffer has shader.sort == SORT_PORTAL)
 
 	GL_FinishPortal ();
 	DrawTexts ();
@@ -809,8 +804,10 @@ static void GL_RenderFrame (refdef_t *fd)
 			gl_speeds.visLeafs, gl_speeds.frustLeafs, gl_speeds.leafs), 1, 0.5, 0);
 		DrawTextRight (va("surfs: %d culled: %d",
 			gl_speeds.surfs, gl_speeds.cullSurfs), 1, 0.5, 0);
-		DrawTextRight (va("ents: %d culled: %d",
-			gl_speeds.ents, gl_speeds.cullEnts), 1, 0.5, 0);
+		DrawTextRight (va("ents: %d fcull: %d cull: %d",
+			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEnts2), 1, 0.5, 0);
+		DrawTextRight (va("particles: %d cull: %d",
+			gl_speeds.parts, gl_speeds.cullParts), 1, 0.5, 0);
 		DrawTextRight (va("binds: %d uploads: %2d draws: %d",
 			gl_speeds.numBinds, gl_speeds.numUploads, gl_speeds.numIterators), 1, 0.5, 0);
 

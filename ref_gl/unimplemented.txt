@@ -1,10 +1,6 @@
-!! particles should be drawn in BSP order (after opaque surfaces, but before SOME alpha-surfaces)
-   (current bug: particles, which are nearer to viewer than some SURF_ALPHA, will be overlapped bu this surface)
 ?? add mean filter for DrawFPS() (ignore dropped frames and long (with FS access) frames)
-?! insert entities into BSP draw order (this will remove sorting by entity index and imprive quality of alpha-blended
-   entity/world drawing; also: can improve culling -- when occlision will be implemented -- func InEntityVisible() -
-   do SphereTrace until any of occupied leafs visible)
 ! do not render while window is minimized (less CPU usage)
+- r_nocull works only with frustum culling (extend cvar or add another ...)
 
 - shaders:
   ! any number of animated textures (see Q2 SP map "lab") -- dynamic allocation, boost MAX_STAGE_TEXTURES
@@ -29,7 +25,7 @@ VISIBLE:
     - flashing fx (sometimes rgbGen entity, or 2 shaders: with/without flashing ?)
     - lefthand (weapon model)
     - dynamic lighting (RecursiveLightPoint)
-? rail fx
+? rail fx (change)
 - screen blending (underwater etc.)
 - shadows
 INVISIBLE:
@@ -60,7 +56,7 @@ DEBUG:
 - gl_model:
   - add surfaceFast_t (for use with FastIterator())
 - dynamic lightmaps:
-  1) upload all at once
+  1) upload all at once (??)
   2) make multi-pass shaders (no uploads, RGBGEN_LIGHTSTYLE)
      - lightstyle value is 0..2 (up to double brightness)
      - maps with slow dynamic lightmaps: market, alley1 (look outside world), rc4 (at start point)
@@ -69,7 +65,7 @@ DEBUG:
 - triangle models: build lods
 ? profile uploading (r_speeds, gl_finish 2)
 ? "screenshort levelshot" -> "levelshot"
-? "gl_forceLightmap" (arc, def: "1") -- can disable lighting of alpha/warp surfaces; add option to menu
+? "gl_alphaLightmap" (arc, def: "1") -- can disable lighting of alpha/warp surfaces; add option to menu
   (easy implement, but naming problems ...)
 - water lightmaps:
   ? try to GENERATE vertex light for water/windows ??
