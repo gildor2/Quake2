@@ -518,7 +518,7 @@ close (IN);
 
 print (CODE <<EOF
 	default:
-		return "???";
+		return va("UNK_%X", v);
 	}
 }
 

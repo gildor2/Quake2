@@ -455,31 +455,12 @@ static void ComputeImageColor (void *pic, int width, int height, color_t *color)
 
 
 // We need to pass "flags" because image->flags is masked with IMAGE_FLAGMASK
-static void Upload (void *pic, int flags, image_t *image)
+static void Upload (void *pic, unsigned flags, image_t *image)
 {
 	int		scaledWidth, scaledHeight;
 	int		format, size;
-	unsigned *scaledPic;
 
 	LOG_STRING(va("// Upload(%s)\n", image->name));
-
-	/*------------ Eliminate alpha-channel when needed---------------*/
-	if (flags & IMAGE_NOALPHA)
-	{
-		bool alphaRemoved = false;
-		size = image->width * image->height;
-		byte *p = (byte*)pic + 3;
-		for (int i = 0; i < size; i++, p += 4)
-		{
-			if (*p != 255)
-			{
-				alphaRemoved = true;
-				*p = 255;
-			}
-		}
-		if (!alphaRemoved)
-			image->flags &= ~IMAGE_NOALPHA;		// original image have no alpha-channel -- reset NOALPHA flag
-	}
 
 	/*----- Calculate internal dimensions of the new texture --------*/
 	if (image->target != GL_TEXTURE_RECTANGLE_NV)
@@ -493,10 +474,10 @@ static void Upload (void *pic, int flags, image_t *image)
 	image->internalWidth = scaledWidth;
 	image->internalHeight = scaledHeight;
 
-START_PROFILE(..up::scale)
 	/*---------------- Resample/lightscale texture ------------------*/
 	size = scaledWidth * scaledHeight * 4;
-	scaledPic = (unsigned*)appMalloc (size);
+	unsigned *scaledPic = (unsigned*)appMalloc (size);
+START_PROFILE(..up::scale)
 	if (image->width != scaledWidth || image->height != scaledHeight)
 		ResampleTexture ((unsigned*)pic, image->width, image->height, scaledPic, scaledWidth, scaledHeight);
 	else
@@ -514,38 +495,16 @@ END_PROFILE
 	//?? add GL_LUMINANCE and GL_ALPHA formats ?
 	//?? LUMINAMCE = (L,L,L,1); INTENSITY = (I,I,I,I); ALPHA = (0,0,0,A); RGB = (R,G,B,1); RGBA = (R,G,B,A)
 	//?? see OpenGL spec: "Rasterization/Texturing/Texture Environments ..."
+
 	if (flags & IMAGE_LIGHTMAP)
 		format = 3;
 	else if (flags & IMAGE_TRUECOLOR)
 		format = GL_RGBA8;
 	else
 	{
-		int		alpha, numAlpha0;
+		int alpha = image->alphaType;
 
-		// Check for alpha channel in image
-		alpha = numAlpha0 = 0;
-		int n = scaledWidth * scaledHeight;
-		byte *scan = (byte *)scaledPic + 3;
-		for (int i = 0; i < n; i++, scan += 4)
-		{
-			byte a = *scan;
-			if (a == 255) continue; // opaque
-			if (a == 0)
-			{
-				alpha = 1;	// have alpha == 0 (1 bit alpha)
-				numAlpha0++;
-				continue;
-			}
-			alpha = 2;		// have alpha == [1..254] (8 bit alpha)
-			break;
-		}
-
-		// select texture format
 		format = 0;
-		if (alpha == 1 && numAlpha0 > (n / 100) && (flags & IMAGE_MIPMAP))
-			alpha = 2;		// mipmaps will create middle alpha's
-		image->alphaType = alpha;
-
 		// select compressed format
 		if (alpha)
 		{
@@ -587,6 +546,7 @@ START_PROFILE(..up::gl)
 END_PROFILE
 	if (!(flags & IMAGE_MIPMAP))
 	{
+		// setup min/max filter
 		glTexParameteri (image->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri (image->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
@@ -624,16 +584,22 @@ START_PROFILE(..up::mip)
 			}
 			glTexImage2D (image->target, miplevel, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 		}
+		// setup min/max filter
 		glTexParameteri (image->target, GL_TEXTURE_MIN_FILTER, gl_filter_min);
 		glTexParameteri (image->target, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 END_PROFILE
 	}
 
+	// setup wrap flags
+    GLenum repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
+	glTexParameteri (image->target, GL_TEXTURE_WRAP_S, repMode);
+	glTexParameteri (image->target, GL_TEXTURE_WRAP_T, repMode);
+
 	appFree (scaledPic);
 }
 
 
-image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int flags)
+image_t *GL_CreateImage (const char *name, void *pic, int width, int height, unsigned flags)
 {
 	char	name2[MAX_QPATH];
 	int		texnum;
@@ -677,6 +643,49 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int
 		imageCount++;
 	}
 
+	int size = width * height;
+	int alpha = 0;
+
+	// eliminate the alpha channel when needed
+	if (flags & IMAGE_NOALPHA)
+	{
+		bool alphaRemoved = false;
+		byte *p = (byte*)pic + 3;
+		for (int i = 0; i < size; i++, p += 4)
+		{
+			if (*p != 255)
+			{
+				alphaRemoved = true;
+				*p = 255;
+			}
+		}
+		if (!alphaRemoved)
+			flags &= ~IMAGE_NOALPHA;		// original image have no alpha-channel -- reset NOALPHA flag
+	}
+	else
+	{
+		// check for alpha channel in image
+		int numAlpha0 = 0;
+		byte *p = (byte*)pic + 3;
+		for (int i = 0; i < size; i++, p += 4)
+		{
+			byte a = *p;
+			if (a == 255) continue; // opaque
+			if (a == 0)
+			{
+				alpha = 1;			// have alpha == 0 (1 bit alpha)
+				numAlpha0++;
+				continue;
+			}
+			alpha = 2;				// have alpha == [1..254] (8 bit alpha)
+			break;
+		}
+
+		if (alpha == 1 && numAlpha0 > (size / 100) && (flags & IMAGE_MIPMAP))
+			alpha = 2;				// mipmaps will create middle alpha's
+	}
+	image->alphaType = alpha;
+
 	// setup image_t fields
 	strcpy (image->name, name2);
 	image->width = width;
@@ -684,12 +693,17 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int
 	image->flags = flags & IMAGE_FLAGMASK;
 	image->target = GL_TEXTURE_2D;
 
-	// choose TEXTURE_RECTANGLE target when possible
-	if ((flags & (IMAGE_CLAMP|IMAGE_MIPMAP|IMAGE_PICMIP)) == IMAGE_CLAMP &&	// !wrap, !mipmap, !picmip
-		width  <= gl_config.maxRectTextureSize	&&				// suitable size (when extensions is disabled, maxRectTextureSize==0)
-		height <= gl_config.maxRectTextureSize	&&
-		(width & (width-1) | height & (height-1)))				// non power-of-2 dimensions
-		image->target = GL_TEXTURE_RECTANGLE_NV;
+	if (width & (width-1) | height & (height-1))
+	{
+		// non power-of-two sized texture
+		// choose TEXTURE_RECTANGLE target when possible
+		if ((flags & (IMAGE_CLAMP|IMAGE_MIPMAP|IMAGE_PICMIP)) == IMAGE_CLAMP &&	// !wrap, !mipmap, !picmip
+			width  <= gl_config.maxRectTextureSize	&&		// suitable size (when extensions is disabled, maxRectTextureSize==0)
+			height <= gl_config.maxRectTextureSize)
+			image->target = GL_TEXTURE_RECTANGLE_NV;
+		else if (alpha)
+			image->alphaType = 2;	// image will be resampled, and it has alpha channel, so cannot use 1-bit alpha channel
+	}
 
 	ComputeImageColor (pic, width, height, &image->color);
 
@@ -699,18 +713,14 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int
 		GL_SetMultitexture (1);
 		GL_BindForce (image);
 		Upload (pic, flags, image);
-
-		GLenum repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
-		glTexParameteri (image->target, GL_TEXTURE_WRAP_S, repMode);
-		glTexParameteri (image->target, GL_TEXTURE_WRAP_T, repMode);
 	}
 	else
 	{
 		// save image for later upload
 		if (image->pic)
 			appFree (image->pic);
-		int size = width * height * 4;
-		image->pic = (byte*)appMalloc (size);
+		size *= 4;
+		image->pic = new byte [size];
 		memcpy (image->pic, pic, size);
 		image->flags = flags;			//?? without IMAGE_FLAGMASK
 		image->internalFormat = 0;		//??
@@ -743,9 +753,15 @@ void GL_LoadDelayedImages (void)
 		if (!(img->pic)) continue;
 
 //		Com_Printf ("up: %s\n", img->name);
-		GL_CreateImage (img->name, img->pic, img->width, img->height, img->flags);
-		appFree (img->pic);
+		// upload image
+		GL_SetMultitexture (1);
+		GL_BindForce (img);
+		Upload (img->pic, img->flags, img);
+
+		delete img->pic;
 		img->pic = NULL;
+		img->flags &= IMAGE_FLAGMASK;
+
 		num++;
 	}
 	Com_DPrintf ("%d images uploaded in %g sec\n", num, (Sys_Milliseconds () - time) / 1000.0f);
@@ -1543,7 +1559,7 @@ void GL_ShowImages (void)
 //------------- Loading images --------------------------
 
 // GL_FindImage -- main image creating/loading function
-image_t *GL_FindImage (const char *name, int flags)
+image_t *GL_FindImage (const char *name, unsigned flags)
 {
 	char	name2[MAX_QPATH], *s;
 	int		hash, flags2, fmt, prefFmt, width, height, len;

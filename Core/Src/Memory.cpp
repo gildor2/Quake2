@@ -274,7 +274,7 @@ struct FAllocatorInfo
 	unsigned short count;
 };
 
-static int CompareAllocators (FAllocatorInfo *a1, FAllocatorInfo *a2)
+static int CompareAllocators (const FAllocatorInfo *a1, const FAllocatorInfo *a2)
 {
 	return a1->address - a2->address;
 }
@@ -370,6 +370,8 @@ static void Cmd_DumpAllocs (void)
 	//?? can split by packages and dump per-package info too (requires appSymbolName() returns package info)
 	//?? (in this case, should display "/?" help for command)
 	int i;
+	int totalSize = 0;
+	int totalCount = 0;
 	for (i = 0, p = info; i < numAllocators; i++, p++)
 	{
 		char	symbol[256];
@@ -378,8 +380,10 @@ static void Cmd_DumpAllocs (void)
 			appPrintf ("%8d/%-4d  %s%08X\n", p->total, p->count, color, p->address);
 		else
 			appPrintf ("%8d/%-4d  %s%s\n", p->total, p->count, color, symbol);
+		totalSize += p->total;
+		totalCount += p->count;
 	}
-	appPrintf ("Displayed %d points\n", numAllocators);
+	appPrintf ("Displayed %d points, %d/%d bytes\n", numAllocators, totalSize, totalCount);
 }
 
 

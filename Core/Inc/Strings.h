@@ -29,7 +29,7 @@ CORE_API void appStrcpy (char *dst, const char *src);
 // Copy src to dst; dst string will be no longer than count chars.
 // If buffer is overflowed, dst string is not null-terminated
 CORE_API void appStrncpy (char *dst, const char *src, int count);
-// Same as appStrncpy, but destination string will be lowercased
+// Same as appStrncpyz, but destination string will be lowercased
 CORE_API void appStrncpylwr (char *dst, const char *src, int count);
 // Same as appStrncpy, but when dst buffer is overflowed, it will be null-terminated
 // (0 at [count-1] position)

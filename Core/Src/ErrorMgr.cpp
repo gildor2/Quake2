@@ -1,5 +1,10 @@
 #include "Core.h"
 
+#if !DO_GUARD
+//?? may be, can do NonFatalError() without DO_GUARD ? (to be exact, without GUARD_BEGIN/GUARD_CATCH)
+#error Current implementation not allow appNonFatalError() without DO_GUARD
+#endif
+
 
 CErrorHandler GErr;
 

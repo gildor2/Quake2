@@ -527,32 +527,6 @@ float VectorNormalizeFast (vec3_t v)
 	return len2 * denom;
 }
 
-float _DotProduct (vec3_t v1, vec3_t v2)
-{
-	return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
-}
-
-void _VectorSubtract (vec3_t veca, vec3_t vecb, vec3_t out)
-{
-	out[0] = veca[0]-vecb[0];
-	out[1] = veca[1]-vecb[1];
-	out[2] = veca[2]-vecb[2];
-}
-
-void _VectorAdd (vec3_t veca, vec3_t vecb, vec3_t out)
-{
-	out[0] = veca[0]+vecb[0];
-	out[1] = veca[1]+vecb[1];
-	out[2] = veca[2]+vecb[2];
-}
-
-void _VectorCopy (vec3_t in, vec3_t out)
-{
-	out[0] = in[0];
-	out[1] = in[1];
-	out[2] = in[2];
-}
-
 void CrossProduct (const vec3_t v1, const vec3_t v2, vec3_t cross)
 {
 	cross[0] = v1[1] * v2[2] - v1[2] * v2[1];
@@ -609,14 +583,6 @@ void AxisClear (vec3_t axis[3])
 	axis[2][2] = 1;
 }
 
-void _AxisCopy (vec3_t in[3], vec3_t out[3])
-{
-	VectorCopy (in[0], out[0]);
-	VectorCopy (in[1], out[1]);
-	VectorCopy (in[2], out[2]);
-}
-
-
 /*
 ============================================================================
 
@@ -627,10 +593,8 @@ void _AxisCopy (vec3_t in[3], vec3_t out[3])
 
 short ShortSwap (short l)
 {
-	byte    b1,b2;
-
-	b1 = l & 255;
-	b2 = (l>>8) & 255;
+	byte b1 = l & 255;
+	byte b2 = (l>>8) & 255;
 
 	return (b1<<8) + b2;
 }
@@ -642,12 +606,10 @@ short ShortNoSwap (short l)
 
 int LongSwap (int l)
 {
-	byte    b1,b2,b3,b4;
-
-	b1 = l & 255;
-	b2 = (l>>8) & 255;
-	b3 = (l>>16) & 255;
-	b4 = (l>>24) & 255;
+	byte b1 = l & 255;
+	byte b2 = (l>>8) & 255;
+	byte b3 = (l>>16) & 255;
+	byte b4 = (l>>24) & 255;
 
 	return ((int)b1<<24) + ((int)b2<<16) + ((int)b3<<8) + b4;
 }
@@ -892,11 +854,8 @@ SkipRestOfLine
 */
 void SkipRestOfLine (char **data)
 {
-	char	*p;
-	int		c;
-
-	p = *data;
-	while (c = *p++)
+	char *p = *data;
+	while (char c = *p++)
 	{
 		if (c == '\n')
 		{
@@ -920,30 +879,7 @@ int	paged_total;
 
 void Com_PageInMemory (void *buffer, int size)
 {
-	int		i;
 	byte	*buf = (byte*)buffer;
-
-	for (i=size-1 ; i>0 ; i-=4096)
+	for (int i=size-1 ; i>0 ; i-=4096)
 		paged_total += buf[i];
-}
-
-
-
-//============================================================================
-
-// if "len" limit will be reached, dest[len]=0 (total length = len+1 !)
-//!! not same as appStrncpylwr()
-void Q_strncpylower (char *dest, const char *src, int len)
-{
-	char c;
-
-	while (len--)
-	{
-		c = *src++;
-		if (c >= 'A' && c <= 'Z') c += 32;
-		*dest++ = c;
-		if (!c) return;	// copied
-	}
-	// length limit - make string ASCIIZ
-	*dest = 0;
 }

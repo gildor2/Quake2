@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-// sv_main.c -- server main program
+// sv_main.cpp -- server main program
 
 #include "server.h"
 
@@ -71,7 +71,7 @@ SV_ClientPrintf
 Sends text across to be displayed if the level passes
 =================
 */
-void SV_ClientPrintf (client_t *cl, int level, char *fmt, ...)
+void SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...)
 {
 	va_list		argptr;
 	char		string[1024];
@@ -80,7 +80,7 @@ void SV_ClientPrintf (client_t *cl, int level, char *fmt, ...)
 		return;
 
 	va_start (argptr,fmt);
-	vsnprintf (ARRAY_ARG(string), fmt,argptr);
+	vsnprintf (ARRAY_ARG(string), fmt, argptr);
 	va_end (argptr);
 
 	MSG_WriteByte (&cl->netchan.message, svc_print);
@@ -95,7 +95,7 @@ SV_BroadcastPrintf
 Sends text to all active clients
 =================
 */
-void SV_BroadcastPrintf (int level, char *fmt, ...)
+void SV_BroadcastPrintf (int level, const char *fmt, ...)
 {
 	va_list		argptr;
 	char		string[2048];
@@ -103,17 +103,16 @@ void SV_BroadcastPrintf (int level, char *fmt, ...)
 	int			i;
 
 	va_start (argptr,fmt);
-	vsnprintf (ARRAY_ARG(string), fmt,argptr);
+	vsnprintf (ARRAY_ARG(string), fmt, argptr);
 	va_end (argptr);
 
 	// echo to console
 	if (DEDICATED)
 	{
 		char	copy[1024];
-		int		i;
 
 		// mask off high bits
-		for (i = 0; i < sizeof(copy)-1 && string[i] ; i++)
+		for (int i = 0; i < sizeof(copy)-1 && string[i] ; i++)
 			copy[i] = string[i] & 127;
 		copy[i] = 0;
 		Com_Printf ("%s", copy);
@@ -138,7 +137,7 @@ SV_BroadcastCommand
 Sends text to all active clients
 =================
 */
-void SV_BroadcastCommand (char *fmt, ...)
+void SV_BroadcastCommand (const char *fmt, ...)
 {
 	va_list		argptr;
 	char		string[1024];
@@ -146,7 +145,7 @@ void SV_BroadcastCommand (char *fmt, ...)
 	if (!sv.state)
 		return;
 	va_start (argptr,fmt);
-	vsnprintf (ARRAY_ARG(string), fmt,argptr);
+	vsnprintf (ARRAY_ARG(string), fmt, argptr);
 	va_end (argptr);
 
 	MSG_WriteByte (&sv.multicast, svc_stufftext);

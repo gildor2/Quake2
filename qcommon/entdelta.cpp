@@ -1,51 +1,309 @@
 #include "qcommon.h"
 
 
+#define NET_POS_SCALER	8	// float pos * SCALER -> int pos
+
+
+/*-----------------------------------------------------------------------------
+	Debug tools
+-----------------------------------------------------------------------------*/
+
+#if 0
+
+#define TEMPLATE(Name,type,fmt)						\
+static void M_Write##Name (sizebuf_t *m, type c)	\
+{													\
+	Com_Printf (S_GREEN"w" fmt "\n", c);			\
+	MSG_Write##Name (m, c);							\
+}													\
+static type M_Read##Name (sizebuf_t *m)				\
+{													\
+	type c = MSG_Read##Name (m);					\
+	Com_Printf (S_RED"r" fmt "\n", c);				\
+	return c;										\
+}
+
+TEMPLATE(Char,char,"c %02X")
+TEMPLATE(Byte,byte,"b %02X")
+TEMPLATE(Short,short,"w %04X")
+TEMPLATE(Long,int,"d %08X")
+TEMPLATE(Float,float,"f %g")
+TEMPLATE(Angle,float,"c %g")
+TEMPLATE(Angle16,float,"c %g")
+
+#undef TEMPLATE
+
+#define MSG_WriteChar		M_WriteChar
+#define MSG_WriteByte		M_WriteByte
+#define MSG_WriteShort		M_WriteShort
+#define MSG_WriteLong		M_WriteLong
+#define MSG_WriteFloat		M_WriteFloat
+#define MSG_WriteAngle		M_WriteAngle
+#define MSG_WriteAngle16	M_WriteAngle16
+
+#define MSG_ReadChar		M_ReadChar
+#define MSG_ReadByte		M_ReadByte
+#define MSG_ReadShort		M_ReadShort
+#define MSG_ReadLong		M_ReadLong
+#define MSG_ReadFloat		M_ReadFloat
+#define MSG_ReadAngle		M_ReadAngle
+#define MSG_ReadAngle16		M_ReadAngle16
+
+#define LOG(str)	Com_Printf(str)
+
+#else
+#define LOG(str)
+#endif
+
+/*-----------------------------------------------------------------------------
+	Processing delta from different structures
+-----------------------------------------------------------------------------*/
+
+// type information
+
+//!! NOTE: scaled float values can be compared as scaled ints (i.e. with scale precision)
+
+enum {
+	// simple types
+	CHAR, BYTE, SHORT,
+	ANGLE, ANGLE16,			// float->byte/short; uses MSG_WriteAngle/MSG_WriteAngle16
+	FCHAR, FBYTE, FSHORT,	// float * extra2 -> char/byte/short + extra1
+	// complex types
+	PSHORT,					// 0..0xFF - byte + extra1, >=0x100 - short + extra2
+	PINT,					// 0..0xFF - byte + extra1, 0x100..0xFFFF - short + extra2, >=0x10000 - long + extra1+extra2
+	PINT2					// 0..0xFF - byte + extra1, 0x100..0x7FFF - short + extra2, >=0x8000 - long + extra1+extra2;
+							//   != PINT, required to avoid MSG_ReadShort() sign extension when number is 0x8000..0xFFFF
+};
+
+static const byte typeSize[] = {
+	1, 1, 2,
+	4, 4,
+	4, 4, 4,
+	2,
+	4, 4
+};
+
+// delta info
+typedef struct
+{
+	byte	offset;
+	byte	type;
+	byte	extra1;
+	byte	extra2;
+} deltaInfo_t;
+#define N(field, type, extra1, extra2)	\
+	{ FIELD2OFS(STRUC,field), type, extra1, extra2 }
+
+
+// parsing delta
+//!! function will be smaller, if use msg->Serialize(&data) -- single function for reading/writting
+static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *info, int count, unsigned bits, sizebuf_t *w, sizebuf_t *r)
+{
+	unsigned ret = 0;
+
+	guard(ParseDelta);
+
+	for ( ; count; count--, info++)
+	{
+		void *field = (byte*)next + info->offset; // OffsetPointer (next, info->offset);
+		if (!w && !r && !memcmp ((byte*)prev + info->offset, field, typeSize[info->type])) continue;
+
+#define F(type)		*((type*)field)
+		unsigned m = 0;
+		switch (info->type)
+		{
+		case CHAR:
+		case BYTE:
+		case SHORT:
+		case ANGLE:
+		case ANGLE16:
+		case FCHAR:
+		case FBYTE:
+		case FSHORT:
+			m = 1 << info->extra1;
+			if (bits & m)
+			{
+				switch (info->type)
+				{
+				case CHAR:
+					if (w) MSG_WriteChar (w, F(char));
+					if (r) F(char) = MSG_ReadChar (r);
+					break;
+				case BYTE:
+					if (w) MSG_WriteByte (w, F(byte));
+					if (r) F(byte) = MSG_ReadByte (r);
+					break;
+				case SHORT:
+					if (w) MSG_WriteShort (w, F(short));
+					if (r) F(short) = MSG_ReadShort (r);
+					break;
+				case ANGLE:
+					if (w) MSG_WriteAngle (w, F(float));
+					if (r) F(float) = MSG_ReadAngle (r);
+					break;
+				case ANGLE16:
+					if (w) MSG_WriteAngle16 (w, F(float));
+					if (r) F(float) = MSG_ReadAngle16 (r);
+					break;
+				case FCHAR:
+					if (w) MSG_WriteChar (w, appRound (F(float) * info->extra2));
+					if (r) F(float) = (float) MSG_ReadChar (r) / info->extra2;
+					break;
+				case FBYTE:
+					if (w) MSG_WriteByte (w, appRound (F(float) * info->extra2));
+					if (r) F(float) = (float) MSG_ReadByte (r) / info->extra2;
+					break;
+				case FSHORT:
+					if (w) MSG_WriteShort (w, appRound (F(float) * info->extra2));
+					if (r) F(float) = (float) MSG_ReadShort (r) / info->extra2;
+					break;
+				}
+			}
+			break;
+
+		case PSHORT:
+			{
+				// NOTE: PSHORT code is VERY similar to PINT, but using F(short) instead of F(int) ...
+				unsigned short d = F(unsigned short);
+				int e1 = 1<<info->extra1;
+				int e2 = 1<<info->extra2;
+				m = (d < 256) ? e1 : e2;
+
+				if (bits & e1)
+				{
+					if (w) MSG_WriteByte (w, d);
+					if (r) F(short) = MSG_ReadByte (r);
+				}
+				else if (bits & e2)
+				{
+					if (w) MSG_WriteShort (w, d);
+					if (r) F(short) = MSG_ReadShort (r);
+				}
+			}
+			break;
+
+		case PINT:
+		case PINT2:
+			{
+				unsigned d = F(unsigned);
+				int e1 = 1<<info->extra1;
+				int e2 = 1<<info->extra2;
+				if (d < 0x100)
+					m = e1;
+				else if ((d < 0x10000 && info->type == PINT) || (d < 0x8000 && info->type == PINT2))
+					m = e2;
+				else
+					m = e1 | e2;
+
+				int chk = bits & (e1|e2);
+				if (chk == e1) {
+					if (w) MSG_WriteByte (w, d);
+					if (r) F(unsigned) = MSG_ReadByte (r);
+				} else if (chk == e2) {
+					if (w) MSG_WriteShort (w, d);
+					if (r) F(unsigned) = (unsigned short)MSG_ReadShort (r);	// without "unsigned short"
+				} else if (chk == (e1|e2)) {
+					if (w) MSG_WriteLong (w, d);
+					if (r) F(unsigned) = MSG_ReadLong (r);
+				}
+			}
+			break;
+		}
+		ret |= m;
+	}
+#undef F
+
+	unguard;
+
+	return ret;
+}
+
+
+inline unsigned ComputeDeltaBits (const void *prev, void *next, const deltaInfo_t *info, int count)
+{
+	return ParseDelta (prev, next, info, count, 0, NULL, NULL);
+}
+
+inline void WriteDelta (const void *prev, void *next, const deltaInfo_t *info, int count, unsigned bits, sizebuf_t *msg)
+{
+	// NOTE: "prev" unused
+	ParseDelta (NULL, next, info, count, bits, msg, NULL);
+}
+
+inline void ReadDelta (const void *prev, void *next, const deltaInfo_t *info, int count, unsigned bits, sizebuf_t *msg)
+{
+	ParseDelta (NULL, next, info, count, bits, NULL, msg);
+}
+
+
 /*-----------------------------------------------------------------------------
 	entity_state_t communication
 -----------------------------------------------------------------------------*/
 
-#define U_MODEL_N	(U_MODEL|U_MODEL2|U_MODEL3|U_MODEL4)
-#define U_ORIGIN_N	(U_ORIGIN1|U_ORIGIN2|U_ORIGIN3)
-#define U_ANGLE_N	(U_ANGLE1|U_ANGLE2|U_ANGLE3)
-
-// try to pack the common update flags into the first byte
-#define	U_ORIGIN1			(1<<0)
-#define	U_ORIGIN2			(1<<1)
-#define	U_ANGLE2			(1<<2)
-#define	U_ANGLE3			(1<<3)
-#define	U_FRAME8			(1<<4)		// frame is a byte
-#define	U_EVENT				(1<<5)
-#define	U_REMOVE			(1<<6)		// REMOVE this entity, don't add it
-#define	U_MOREBITS1			(1<<7)		// read one additional byte
+//?? can make as enum
+// first byte
+#define	U_ORIGIN1			0
+#define	U_ORIGIN2			1
+#define	U_ANGLE2			2
+#define	U_ANGLE3			3
+#define	U_FRAME8			4		// frame is a byte
+#define	U_EVENT				5
+#define	U_REMOVE			6		// REMOVE this entity, don't add it
+#define	U_MOREBITS1			7		// read one additional byte
 
 // second byte
-#define	U_NUMBER16			(1<<8)		// NUMBER8 is implicit if not set
-#define	U_ORIGIN3			(1<<9)
-#define	U_ANGLE1			(1<<10)
-#define	U_MODEL				(1<<11)
-#define U_RENDERFX8			(1<<12)		// fullbright, etc
-#define	U_EFFECTS8			(1<<14)		// autorotate, trails, etc
-#define	U_MOREBITS2			(1<<15)		// read one additional byte
+#define	U_NUMBER16			8		// NUMBER8 is implicit if not set
+#define	U_ORIGIN3			9
+#define	U_ANGLE1			10
+#define	U_MODEL				11
+#define U_RENDERFX8			12		// fullbright, etc
+#define	U_EFFECTS8			14		// autorotate, trails, etc
+#define	U_MOREBITS2			15		// read one additional byte
 
 // third byte
-#define	U_SKIN8				(1<<16)
-#define	U_FRAME16			(1<<17)		// frame is a short
-#define	U_RENDERFX16		(1<<18)		// 8 + 16 = 32
-#define	U_EFFECTS16			(1<<19)		// 8 + 16 = 32
-#define	U_MODEL2			(1<<20)		// weapons, flags, etc
-#define	U_MODEL3			(1<<21)
-#define	U_MODEL4			(1<<22)
-#define	U_MOREBITS3			(1<<23)		// read one additional byte
+#define	U_SKIN8				16
+#define	U_FRAME16			17		// frame is a short
+#define	U_RENDERFX16		18		// 8 + 16 = 32
+#define	U_EFFECTS16			19		// 8 + 16 = 32
+#define	U_MODEL2			20		// weapons, flags, etc
+#define	U_MODEL3			21
+#define	U_MODEL4			22
+#define	U_MOREBITS3			23		// read one additional byte
 
 // fourth byte
-#define	U_OLDORIGIN			(1<<24)		// FIXME: get rid of this ??
-#define	U_SKIN16			(1<<25)
-#define	U_SOUND				(1<<26)
-#define	U_SOLID				(1<<27)
+#define	U_OLDORIGIN			24		// FIXME: get rid of this ??
+#define	U_SKIN16			25
+#define	U_SOUND				26
+#define	U_SOLID				27
 
 
-void MSG_WriteDeltaEntity (sizebuf_t *msg, entity_state_t *from, entity_state_t *to, bool force, bool newentity)
+#define STRUC	entity_state_t
+static const deltaInfo_t entityStateDelta [] = {
+N(	modelindex,		BYTE,	U_MODEL, 0  ),
+N(	modelindex2,	BYTE,	U_MODEL2, 0  ),
+N(	modelindex3,	BYTE,	U_MODEL3, 0  ),
+N(	modelindex4,	BYTE,	U_MODEL4, 0  ),
+N(	frame,			PSHORT,	U_FRAME8, U_FRAME16  ),
+N(	skinnum,		PINT,	U_SKIN8, U_SKIN16  ),
+N(	effects,		PINT2,	U_EFFECTS8, U_EFFECTS16  ),
+N(	renderfx,		PINT2,	U_RENDERFX8, U_RENDERFX16  ),
+N(	origin[0],		FSHORT, U_ORIGIN1, NET_POS_SCALER  ),
+N(	origin[1],		FSHORT, U_ORIGIN2, NET_POS_SCALER  ),
+N(	origin[2],		FSHORT, U_ORIGIN3, NET_POS_SCALER  ),
+N(	angles[0],		ANGLE,	U_ANGLE1, 0  ),
+N(	angles[1],		ANGLE,	U_ANGLE2, 0  ),
+N(	angles[2],		ANGLE,	U_ANGLE3, 0  ),
+N(	old_origin[0],	FSHORT, U_OLDORIGIN, NET_POS_SCALER  ),	// special
+N(	old_origin[1],	FSHORT, U_OLDORIGIN, NET_POS_SCALER  ),
+N(	old_origin[2],	FSHORT, U_OLDORIGIN, NET_POS_SCALER  ),
+N(	sound,			BYTE,	U_SOUND, 0  ),
+N(	event,			BYTE,	U_EVENT, 0  ),					// special: delta from 0
+N(	solid,			SHORT,	U_SOLID, 0  )
+};
+#undef STRUC
+
+
+void MSG_WriteDeltaEntity (sizebuf_t *msg, const entity_state_t *from, entity_state_t *to, bool force, bool newentity)
 {
 	guard(MSG_WriteDeltaEntity);
 
@@ -54,70 +312,19 @@ void MSG_WriteDeltaEntity (sizebuf_t *msg, entity_state_t *from, entity_state_t 
 	if (to->number >= MAX_EDICTS)
 		Com_FatalError ("Entity number >= MAX_EDICTS");
 
-	unsigned bits = 0;
+	LOG("write delta entity\n");
 
-	if (to->number >= 256)
-		bits |= U_NUMBER16;		// number8 is implicit otherwise
+	unsigned bits = ComputeDeltaBits (from, to, ARRAY_ARG(entityStateDelta));
+	if (to->number >= 256) bits |= 1<<U_NUMBER16;
 
-	if (to->origin[0] != from->origin[0])	bits |= U_ORIGIN1;
-	if (to->origin[1] != from->origin[1])	bits |= U_ORIGIN2;
-	if (to->origin[2] != from->origin[2])	bits |= U_ORIGIN3;
-
-	if (to->angles[0] != from->angles[0])	bits |= U_ANGLE1;
-	if (to->angles[1] != from->angles[1])	bits |= U_ANGLE2;
-	if (to->angles[2] != from->angles[2])	bits |= U_ANGLE3;
-
-	if (to->skinnum != from->skinnum)
-	{
-		if ((unsigned)to->skinnum < 256)
-			bits |= U_SKIN8;
-		else if ((unsigned)to->skinnum < 0x10000)
-			bits |= U_SKIN16;
-		else
-			bits |= (U_SKIN8|U_SKIN16);
-	}
-
-	if (to->frame != from->frame)
-	{
-		if (to->frame < 256)
-			bits |= U_FRAME8;
-		else
-			bits |= U_FRAME16;
-	}
-
-	if (to->effects != from->effects)
-	{
-		if (to->effects < 256)
-			bits |= U_EFFECTS8;
-		else if (to->effects < 0x8000)
-			bits |= U_EFFECTS16;
-		else
-			bits |= U_EFFECTS8|U_EFFECTS16;
-	}
-
-	if (to->renderfx != from->renderfx)
-	{
-		if (to->renderfx < 256)
-			bits |= U_RENDERFX8;
-		else if (to->renderfx < 0x8000)
-			bits |= U_RENDERFX16;
-		else
-			bits |= U_RENDERFX8|U_RENDERFX16;
-	}
-
-	if (to->solid != from->solid)		bits |= U_SOLID;
-
+	// HACKS:
+	bits &= ~((1<<U_OLDORIGIN)|(1<<U_EVENT));
 	// event is not delta compressed, just 0 compressed
-	if (to->event)						bits |= U_EVENT;
-
-	if (to->modelindex != from->modelindex)		bits |= U_MODEL;
-	if (to->modelindex2 != from->modelindex2)	bits |= U_MODEL2;
-	if (to->modelindex3 != from->modelindex3)	bits |= U_MODEL3;
-	if (to->modelindex4 != from->modelindex4)	bits |= U_MODEL4;
-
-	if (to->sound != from->sound)		bits |= U_SOUND;
-
-	if (newentity || (to->renderfx & RF_BEAM))	bits |= U_OLDORIGIN;
+	if (to->event)
+		bits |= 1<<U_EVENT;
+	// send old_origin for beams and for new entities only
+	if (newentity || (to->renderfx & RF_BEAM))
+		bits |= 1<<U_OLDORIGIN;
 
 	//----------------------------------------------------
 	// write the message
@@ -126,79 +333,25 @@ void MSG_WriteDeltaEntity (sizebuf_t *msg, entity_state_t *from, entity_state_t 
 	// write ent->num
 
 	if (bits & 0xFF000000)
-	{
-		bits |= U_MOREBITS3 | U_MOREBITS2 | U_MOREBITS1;
-		MSG_WriteLong (msg, bits);
-	}
+		MSG_WriteLong (msg, bits | 0x808080);
 	else if (bits & 0x00FF0000)
 	{
-		bits |= U_MOREBITS2 | U_MOREBITS1;
-		MSG_WriteShort (msg, bits);
+		MSG_WriteShort (msg, bits | 0x8080);
 		MSG_WriteByte (msg, bits >> 16);
 	}
 	else if (bits & 0x0000FF00)
-	{
-		bits |= U_MOREBITS1;
-		MSG_WriteShort (msg, bits);
-	}
+		MSG_WriteShort (msg, bits | 0x80);
 	else
 		MSG_WriteByte (msg, bits);
 
-	//----------
-
-	if (bits & U_NUMBER16)
+	if (bits & (1<<U_NUMBER16))
 		MSG_WriteShort (msg, to->number);
 	else
-		MSG_WriteByte (msg,	to->number);
+		MSG_WriteByte (msg, to->number);
 
-	if (bits & U_MODEL)		MSG_WriteByte (msg,	to->modelindex);
-	if (bits & U_MODEL2)	MSG_WriteByte (msg,	to->modelindex2);
-	if (bits & U_MODEL3)	MSG_WriteByte (msg,	to->modelindex3);
-	if (bits & U_MODEL4)	MSG_WriteByte (msg,	to->modelindex4);
+	WriteDelta (from, to, ARRAY_ARG(entityStateDelta), bits, msg);
 
-	if (bits & U_FRAME8)	MSG_WriteByte (msg, to->frame);
-	if (bits & U_FRAME16)	MSG_WriteShort (msg, to->frame);
-
-	if ((bits & U_SKIN8) && (bits & U_SKIN16))		//used for laser colors
-		MSG_WriteLong (msg, to->skinnum);
-	else if (bits & U_SKIN8)
-		MSG_WriteByte (msg, to->skinnum);
-	else if (bits & U_SKIN16)
-		MSG_WriteShort (msg, to->skinnum);
-
-
-	if ((bits & (U_EFFECTS8|U_EFFECTS16)) == (U_EFFECTS8|U_EFFECTS16))
-		MSG_WriteLong (msg, to->effects);
-	else if (bits & U_EFFECTS8)
-		MSG_WriteByte (msg, to->effects);
-	else if (bits & U_EFFECTS16)
-		MSG_WriteShort (msg, to->effects);
-
-	if ((bits & (U_RENDERFX8|U_RENDERFX16)) == (U_RENDERFX8|U_RENDERFX16))
-		MSG_WriteLong (msg, to->renderfx);
-	else if (bits & U_RENDERFX8)
-		MSG_WriteByte (msg, to->renderfx);
-	else if (bits & U_RENDERFX16)
-		MSG_WriteShort (msg, to->renderfx);
-
-	if (bits & U_ORIGIN1)	MSG_WriteCoord (msg, to->origin[0]);
-	if (bits & U_ORIGIN2)	MSG_WriteCoord (msg, to->origin[1]);
-	if (bits & U_ORIGIN3)	MSG_WriteCoord (msg, to->origin[2]);
-
-	if (bits & U_ANGLE1) 	MSG_WriteAngle(msg, to->angles[0]);
-	if (bits & U_ANGLE2) 	MSG_WriteAngle(msg, to->angles[1]);
-	if (bits & U_ANGLE3) 	MSG_WriteAngle(msg, to->angles[2]);
-
-	if (bits & U_OLDORIGIN)
-	{
-		MSG_WriteCoord (msg, to->old_origin[0]);
-		MSG_WriteCoord (msg, to->old_origin[1]);
-		MSG_WriteCoord (msg, to->old_origin[2]);
-	}
-
-	if (bits & U_SOUND)  	MSG_WriteByte (msg, to->sound);
-	if (bits & U_EVENT)  	MSG_WriteByte (msg, to->event);
-	if (bits & U_SOLID)  	MSG_WriteShort (msg, to->solid);
+	LOG("----------\n");
 
 	unguard;
 }
@@ -208,12 +361,12 @@ void MSG_WriteRemoveEntity (sizebuf_t *msg, int num)
 {
 	if (num >= 256)
 	{
-		MSG_WriteShort (msg, U_REMOVE|U_NUMBER16|U_MOREBITS1);	// U_NUMBER16 is bit[8], => U_MOREBITS1
+		MSG_WriteShort (msg, (1<<U_REMOVE)|(1<<U_NUMBER16)|(1<<U_MOREBITS1));	// U_NUMBER16 is bit[8], => U_MOREBITS1
 		MSG_WriteShort (msg, num);
 	}
 	else
 	{
-		MSG_WriteByte (msg, U_REMOVE);
+		MSG_WriteByte (msg, (1<<U_REMOVE));
 		MSG_WriteByte (msg, num);
 	}
 }
@@ -224,77 +377,48 @@ int MSG_ReadEntityBits (sizebuf_t *msg, unsigned *bits, bool *remove)
 {
 	unsigned b;
 
+	LOG("read entity bits\n");
+
 	unsigned total = MSG_ReadByte (msg);
-	if (total & U_MOREBITS1)
+	if (total & 0x80)
 	{
 		b = MSG_ReadByte (msg);
 		total |= b<<8;
 	}
-	if (total & U_MOREBITS2)
+	if (total & 0x8000)
 	{
 		b = MSG_ReadByte (msg);
 		total |= b<<16;
 	}
-	if (total & U_MOREBITS3)
+	if (total & 0x800000)
 	{
 		b = MSG_ReadByte (msg);
 		total |= b<<24;
 	}
 
-	int number = (total & U_NUMBER16) ?  MSG_ReadShort (msg) : MSG_ReadByte (msg);
+	int number = (total & (1<<U_NUMBER16)) ?  MSG_ReadShort (msg) : MSG_ReadByte (msg);
 
 	*bits = total;
-	if (remove) *remove = (total & U_REMOVE) != 0;
+	if (remove) *remove = (total & (1<<U_REMOVE)) != 0;
+
+	LOG("----------\n");
 
 	return number;
 }
 
 
-void MSG_ReadDeltaEntity (sizebuf_t *msg, entity_state_t *from, entity_state_t *to, unsigned bits)
+void MSG_ReadDeltaEntity (sizebuf_t *msg, const entity_state_t *from, entity_state_t *to, unsigned bits)
 {
 	guard(MSG_ReadDeltaEntity);
 
-	if (bits & U_MODEL)		to->modelindex = MSG_ReadByte (msg);
-	if (bits & U_MODEL2)	to->modelindex2 = MSG_ReadByte (msg);
-	if (bits & U_MODEL3)	to->modelindex3 = MSG_ReadByte (msg);
-	if (bits & U_MODEL4)	to->modelindex4 = MSG_ReadByte (msg);
+	LOG("read delta entity\n");
+	*to = *from;
+	VectorCopy (from->origin, to->old_origin);
+	to->event = 0;		// dalta from zero
 
-	if (bits & U_FRAME8)	to->frame = MSG_ReadByte (msg);
-	if (bits & U_FRAME16)	to->frame = MSG_ReadShort (msg);
+	ReadDelta (from, to, ARRAY_ARG(entityStateDelta), bits, msg);
 
-	if ((bits & U_SKIN8) && (bits & U_SKIN16))		//used for laser colors
-		to->skinnum = MSG_ReadLong (msg);
-	else if (bits & U_SKIN8)
-		to->skinnum = MSG_ReadByte (msg);
-	else if (bits & U_SKIN16)
-		to->skinnum = MSG_ReadShort (msg);
-
-	if ((bits & (U_EFFECTS8|U_EFFECTS16)) == (U_EFFECTS8|U_EFFECTS16))
-		to->effects = MSG_ReadLong (msg);
-	else if (bits & U_EFFECTS8)
-		to->effects = MSG_ReadByte (msg);
-	else if (bits & U_EFFECTS16)
-		to->effects = MSG_ReadShort (msg);
-
-	if ((bits & (U_RENDERFX8|U_RENDERFX16)) == (U_RENDERFX8|U_RENDERFX16))
-		to->renderfx = MSG_ReadLong (msg);
-	else if (bits & U_RENDERFX8)
-		to->renderfx = MSG_ReadByte (msg);
-	else if (bits & U_RENDERFX16)
-		to->renderfx = MSG_ReadShort (msg);
-
-	if (bits & U_ORIGIN1)	to->origin[0] = MSG_ReadCoord (msg);
-	if (bits & U_ORIGIN2)	to->origin[1] = MSG_ReadCoord (msg);
-	if (bits & U_ORIGIN3)	to->origin[2] = MSG_ReadCoord (msg);
-
-	if (bits & U_ANGLE1)	to->angles[0] = MSG_ReadAngle (msg);
-	if (bits & U_ANGLE2)	to->angles[1] = MSG_ReadAngle (msg);
-	if (bits & U_ANGLE3)	to->angles[2] = MSG_ReadAngle (msg);
-
-	if (bits & U_OLDORIGIN)	MSG_ReadPos (msg, to->old_origin);
-	if (bits & U_SOUND)		to->sound = MSG_ReadByte (msg);
-	to->event = bits & U_EVENT ? MSG_ReadByte (msg) : 0;
-	if (bits & U_SOLID)		to->solid = MSG_ReadShort (msg);
+	LOG("----------\n");
 
 	unguard;
 }
@@ -304,81 +428,59 @@ void MSG_ReadDeltaEntity (sizebuf_t *msg, entity_state_t *from, entity_state_t *
 	usercmd_t communication
 -----------------------------------------------------------------------------*/
 
-#define	CM_ANGLE1 			(1<<0)
-#define	CM_ANGLE2		 	(1<<1)
-#define	CM_ANGLE3 			(1<<2)
-#define	CM_FORWARD			(1<<3)
-#define	CM_SIDE				(1<<4)
-#define	CM_UP				(1<<5)
-#define	CM_BUTTONS			(1<<6)
-#define	CM_IMPULSE			(1<<7)
+#define	CM_ANGLE1 			0
+#define	CM_ANGLE2		 	1
+#define	CM_ANGLE3 			2
+#define	CM_FORWARD			3
+#define	CM_SIDE				4
+#define	CM_UP				5
+#define	CM_BUTTONS			6
+#define	CM_IMPULSE			7
+
+#define STRUC	usercmd_t
+static const deltaInfo_t userCmdDelta [] = {
+N(	angles[0],		SHORT,	CM_ANGLE1, 0  ),
+N(	angles[1],		SHORT,	CM_ANGLE2, 0  ),
+N(	angles[2],		SHORT,	CM_ANGLE3, 0  ),
+N(	forwardmove,	SHORT,	CM_FORWARD, 0  ),
+N(	sidemove,		SHORT,	CM_SIDE, 0  ),
+N(	upmove,			SHORT,	CM_UP, 0  ),
+N(	buttons,		BYTE,	CM_BUTTONS, 0  ),
+N(	impulse,		BYTE,	CM_IMPULSE, 0  ),
+N(	msec,			BYTE,	31, 0  ),			// always
+N(	lightlevel,		BYTE,	31, 0  )			// always
+};
+#undef STRUC
 
 
-void MSG_WriteDeltaUsercmd (sizebuf_t *buf, usercmd_t *from, usercmd_t *cmd)
+void MSG_WriteDeltaUsercmd (sizebuf_t *msg, const usercmd_t *from, usercmd_t *to)
 {
-	int		bits;
-
 	guard(MSG_WriteDeltaUsercmd);
 
-	// send the movement message
-	bits = 0;
-	if (cmd->angles[0] != from->angles[0])		bits |= CM_ANGLE1;
-	if (cmd->angles[1] != from->angles[1])		bits |= CM_ANGLE2;
-	if (cmd->angles[2] != from->angles[2])		bits |= CM_ANGLE3;
-	if (cmd->forwardmove != from->forwardmove)	bits |= CM_FORWARD;
-	if (cmd->sidemove != from->sidemove)		bits |= CM_SIDE;
-	if (cmd->upmove != from->upmove)			bits |= CM_UP;
-	if (cmd->buttons != from->buttons)			bits |= CM_BUTTONS;
-	if (cmd->impulse != from->impulse)			bits |= CM_IMPULSE;
+	LOG("write delta usercmd\n");
 
-	MSG_WriteByte (buf, bits);
+	unsigned bits = ComputeDeltaBits (from, to, ARRAY_ARG(userCmdDelta));
+	MSG_WriteByte (msg, bits);
+	WriteDelta (from, to, ARRAY_ARG(userCmdDelta), bits | (1<<31), msg);	// 31 bit - for msec and lightlevel
 
-	if (bits & CM_ANGLE1)	MSG_WriteShort (buf, cmd->angles[0]);
-	if (bits & CM_ANGLE2)	MSG_WriteShort (buf, cmd->angles[1]);
-	if (bits & CM_ANGLE3)	MSG_WriteShort (buf, cmd->angles[2]);
-
-	if (bits & CM_FORWARD)	MSG_WriteShort (buf, cmd->forwardmove);
-	if (bits & CM_SIDE)	  	MSG_WriteShort (buf, cmd->sidemove);
-	if (bits & CM_UP)		MSG_WriteShort (buf, cmd->upmove);
-
-	if (bits & CM_BUTTONS) 	MSG_WriteByte (buf, cmd->buttons);
-	if (bits & CM_IMPULSE)	MSG_WriteByte (buf, cmd->impulse);
-
-	MSG_WriteByte (buf, cmd->msec);
-	MSG_WriteByte (buf, cmd->lightlevel);
+	LOG("----------\n");
 
 	unguard;
 }
 
 
-void MSG_ReadDeltaUsercmd (sizebuf_t *msg_read, usercmd_t *from, usercmd_t *move)
+void MSG_ReadDeltaUsercmd (sizebuf_t *msg, const usercmd_t *from, usercmd_t *to)
 {
 	guard(MSG_ReadDeltaUsercmd);
 
-	memcpy (move, from, sizeof(*move));
+	LOG("read delta usercmd\n");
 
-	unsigned bits = MSG_ReadByte (msg_read);
+	*to = *from;
 
-	// read current angles
-	if (bits & CM_ANGLE1)	move->angles[0] = MSG_ReadShort (msg_read);
-	if (bits & CM_ANGLE2)	move->angles[1] = MSG_ReadShort (msg_read);
-	if (bits & CM_ANGLE3)	move->angles[2] = MSG_ReadShort (msg_read);
+	unsigned bits = MSG_ReadByte (msg);
+	ReadDelta (from, to, ARRAY_ARG(userCmdDelta), bits | (1<<31), msg);
 
-	// read movement
-	if (bits & CM_FORWARD)	move->forwardmove = MSG_ReadShort (msg_read);
-	if (bits & CM_SIDE)   	move->sidemove = MSG_ReadShort (msg_read);
-	if (bits & CM_UP)     	move->upmove = MSG_ReadShort (msg_read);
-
-	// read buttons
-	if (bits & CM_BUTTONS)	move->buttons = MSG_ReadByte (msg_read);
-
-	if (bits & CM_IMPULSE)	move->impulse = MSG_ReadByte (msg_read);
-
-	// read time to run command
-	move->msec = MSG_ReadByte (msg_read);
-
-	// read the light level
-	move->lightlevel = MSG_ReadByte (msg_read);
+	LOG("----------\n");
 
 	unguard;
 }
@@ -388,125 +490,72 @@ void MSG_ReadDeltaUsercmd (sizebuf_t *msg_read, usercmd_t *from, usercmd_t *move
 	player_state_t communication
 -----------------------------------------------------------------------------*/
 
-#define	PS_M_TYPE			(1<<0)
-#define	PS_M_ORIGIN			(1<<1)
-#define	PS_M_VELOCITY		(1<<2)
-#define	PS_M_TIME			(1<<3)
-#define	PS_M_FLAGS			(1<<4)
-#define	PS_M_GRAVITY		(1<<5)
-#define	PS_M_DELTA_ANGLES	(1<<6)
+#define	PS_M_TYPE			0
+#define	PS_M_ORIGIN			1
+#define	PS_M_VELOCITY		2
+#define	PS_M_TIME			3
+#define	PS_M_FLAGS			4
+#define	PS_M_GRAVITY		5
+#define	PS_M_DELTA_ANGLES	6
 
-#define	PS_VIEWOFFSET		(1<<7)
-#define	PS_VIEWANGLES		(1<<8)
-#define	PS_KICKANGLES		(1<<9)
-#define	PS_BLEND			(1<<10)
-#define	PS_FOV				(1<<11)
-#define	PS_WEAPONINDEX		(1<<12)
-#define	PS_WEAPONFRAME		(1<<13)
-#define	PS_RDFLAGS			(1<<14)
+#define	PS_VIEWOFFSET		7
+#define	PS_VIEWANGLES		8
+#define	PS_KICKANGLES		9
+#define	PS_BLEND			10
+#define	PS_FOV				11
+#define	PS_WEAPONINDEX		12
+#define	PS_WEAPONFRAME		13
+#define	PS_RDFLAGS			14
 
-
-void MSG_ReadDeltaPlayerstate (sizebuf_t *msg, player_state_t *oldState, player_state_t *newState)
-{
-	guard(MSG_ReadDeltaPlayerstate);
-
-	// clear to old value before delta parsing
-	if (oldState)
-		*newState = *oldState;
-	else
-		memset (newState, 0, sizeof(player_state_t));
-
-	unsigned flags = MSG_ReadShort (msg);
-
-	// parse the pmove_state_t
-	if (flags & PS_M_TYPE)		newState->pmove.pm_type = (pmtype_t) MSG_ReadByte (msg);
-
-	if (flags & PS_M_ORIGIN)
-	{
-		newState->pmove.origin[0] = MSG_ReadShort (msg);
-		newState->pmove.origin[1] = MSG_ReadShort (msg);
-		newState->pmove.origin[2] = MSG_ReadShort (msg);
-	}
-
-	if (flags & PS_M_VELOCITY)
-	{
-		newState->pmove.velocity[0] = MSG_ReadShort (msg);
-		newState->pmove.velocity[1] = MSG_ReadShort (msg);
-		newState->pmove.velocity[2] = MSG_ReadShort (msg);
-	}
-
-	if (flags & PS_M_TIME)		newState->pmove.pm_time = MSG_ReadByte (msg);
-	if (flags & PS_M_FLAGS)		newState->pmove.pm_flags = MSG_ReadByte (msg);
-	if (flags & PS_M_GRAVITY)	newState->pmove.gravity = MSG_ReadShort (msg);
-
-	if (flags & PS_M_DELTA_ANGLES)
-	{
-		newState->pmove.delta_angles[0] = MSG_ReadShort (msg);
-		newState->pmove.delta_angles[1] = MSG_ReadShort (msg);
-		newState->pmove.delta_angles[2] = MSG_ReadShort (msg);
-	}
-
-	// parse the rest of the player_state_t
-	if (flags & PS_VIEWOFFSET)
-	{
-		newState->viewoffset[0] = MSG_ReadChar (msg) * 0.25f;
-		newState->viewoffset[1] = MSG_ReadChar (msg) * 0.25f;
-		newState->viewoffset[2] = MSG_ReadChar (msg) * 0.25f;
-	}
-
-	if (flags & PS_VIEWANGLES)
-	{
-		newState->viewangles[0] = MSG_ReadAngle16 (msg);
-		newState->viewangles[1] = MSG_ReadAngle16 (msg);
-		newState->viewangles[2] = MSG_ReadAngle16 (msg);
-	}
-
-	if (flags & PS_KICKANGLES)
-	{
-		newState->kick_angles[0] = MSG_ReadChar (msg) * 0.25f;
-		newState->kick_angles[1] = MSG_ReadChar (msg) * 0.25f;
-		newState->kick_angles[2] = MSG_ReadChar (msg) * 0.25f;
-	}
-
-	if (flags & PS_WEAPONINDEX)
-		newState->gunindex = MSG_ReadByte (msg);
-
-	if (flags & PS_WEAPONFRAME)
-	{
-		newState->gunframe = MSG_ReadByte (msg);
-		newState->gunoffset[0] = MSG_ReadChar (msg) * 0.25f;
-		newState->gunoffset[1] = MSG_ReadChar (msg) * 0.25f;
-		newState->gunoffset[2] = MSG_ReadChar (msg) * 0.25f;
-		newState->gunangles[0] = MSG_ReadChar (msg) * 0.25f;
-		newState->gunangles[1] = MSG_ReadChar (msg) * 0.25f;
-		newState->gunangles[2] = MSG_ReadChar (msg) * 0.25f;
-	}
-
-	if (flags & PS_BLEND)
-	{
-		newState->blend[0] = MSG_ReadByte (msg) / 255.0f;
-		newState->blend[1] = MSG_ReadByte (msg) / 255.0f;
-		newState->blend[2] = MSG_ReadByte (msg) / 255.0f;
-		newState->blend[3] = MSG_ReadByte (msg) / 255.0f;
-	}
-
-	if (flags & PS_FOV)		newState->fov = MSG_ReadByte (msg);
-	if (flags & PS_RDFLAGS)	newState->rdflags = MSG_ReadByte (msg);
-
-	// parse stats
-	unsigned statbits = MSG_ReadLong (msg);
-	int		i;
-	for (i = 0; statbits; i++, statbits >>= 1)
-		if (statbits & 1)
-			newState->stats[i] = MSG_ReadShort (msg);
-
-	unguard;
-}
+#define STRUC player_state_t
+static const deltaInfo_t playerStateDelta [] = {
+// pmove_state_t
+N(	pmove.pm_type,	BYTE,	PS_M_TYPE, 0  ),
+N(	pmove.origin[0],SHORT,	PS_M_ORIGIN, 0  ),
+N(	pmove.origin[1],SHORT,	PS_M_ORIGIN, 0  ),
+N(	pmove.origin[2],SHORT,	PS_M_ORIGIN, 0  ),
+N(	pmove.velocity[0], SHORT,	PS_M_VELOCITY, 0  ),
+N(	pmove.velocity[1], SHORT,	PS_M_VELOCITY, 0  ),
+N(	pmove.velocity[2], SHORT,	PS_M_VELOCITY, 0  ),
+N(	pmove.pm_time,	BYTE,	PS_M_TIME, 0  ),
+N(	pmove.pm_flags,	BYTE,	PS_M_FLAGS, 0  ),
+N(	pmove.gravity,	SHORT,	PS_M_GRAVITY, 0  ),
+N(	pmove.delta_angles[0], SHORT, PS_M_DELTA_ANGLES, 0  ),
+N(	pmove.delta_angles[1], SHORT, PS_M_DELTA_ANGLES, 0  ),
+N(	pmove.delta_angles[2], SHORT, PS_M_DELTA_ANGLES, 0  ),
+// rest of the player_state_t
+N(	viewoffset[0],	FCHAR,	PS_VIEWOFFSET, 4  ),
+N(	viewoffset[1],	FCHAR,	PS_VIEWOFFSET, 4  ),
+N(	viewoffset[2],	FCHAR,	PS_VIEWOFFSET, 4  ),
+N(	viewangles[0],	ANGLE16, PS_VIEWANGLES, 0  ),
+N(	viewangles[1],	ANGLE16, PS_VIEWANGLES, 0  ),
+N(	viewangles[2],	ANGLE16, PS_VIEWANGLES, 0  ),
+N(	kick_angles[0],	FCHAR,	PS_KICKANGLES, 4  ),
+N(	kick_angles[1],	FCHAR,	PS_KICKANGLES, 4  ),
+N(	kick_angles[2],	FCHAR,	PS_KICKANGLES, 4  ),
+N(	gunindex,		BYTE,	PS_WEAPONINDEX, 0  ),
+N(	gunframe,		BYTE,	PS_WEAPONFRAME, 0  ),
+N(	gunoffset[0],	FCHAR,	PS_WEAPONFRAME, 4  ),
+N(	gunoffset[1],	FCHAR,	PS_WEAPONFRAME, 4  ),
+N(	gunoffset[2],	FCHAR,	PS_WEAPONFRAME, 4  ),
+N(	gunangles[0],	FCHAR,	PS_WEAPONFRAME, 4  ),
+N(	gunangles[1],	FCHAR,	PS_WEAPONFRAME, 4  ),
+N(	gunangles[2],	FCHAR,	PS_WEAPONFRAME, 4  ),
+N(	blend[0],		FBYTE,	PS_BLEND, 255  ),
+N(	blend[1],		FBYTE,	PS_BLEND, 255  ),
+N(	blend[2],		FBYTE,	PS_BLEND, 255  ),
+N(	blend[3],		FBYTE,	PS_BLEND, 255  ),
+N(	fov,			FBYTE,	PS_FOV, 1  ),
+N(	rdflags,		BYTE,	PS_RDFLAGS, 0  )
+};
+#undef STRUC
 
 
-void MSG_WriteDeltaPlayerstate (sizebuf_t *msg, player_state_t *oldState, player_state_t *newState)
+void MSG_WriteDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState)
 {
 	guard(MSG_WriteDeltaPlayerstate);
+
+	LOG("write delta playerstate\n");
 
 	player_state_t nullState;
 	if (!oldState)
@@ -515,148 +564,14 @@ void MSG_WriteDeltaPlayerstate (sizebuf_t *msg, player_state_t *oldState, player
 		oldState = &nullState;
 	}
 
-	// determine what needs to be sent
-	unsigned flags = 0;
-
-	if (newState->pmove.pm_type != oldState->pmove.pm_type)
-		flags |= PS_M_TYPE;
-
-	if (newState->pmove.origin[0] != oldState->pmove.origin[0] ||
-		newState->pmove.origin[1] != oldState->pmove.origin[1] ||
-		newState->pmove.origin[2] != oldState->pmove.origin[2])
-		flags |= PS_M_ORIGIN;
-
-	if (newState->pmove.velocity[0] != oldState->pmove.velocity[0] ||
-		newState->pmove.velocity[1] != oldState->pmove.velocity[1] ||
-		newState->pmove.velocity[2] != oldState->pmove.velocity[2])
-		flags |= PS_M_VELOCITY;
-
-	if (newState->pmove.pm_time != oldState->pmove.pm_time)
-		flags |= PS_M_TIME;
-
-	if (newState->pmove.pm_flags != oldState->pmove.pm_flags)
-		flags |= PS_M_FLAGS;
-
-	if (newState->pmove.gravity != oldState->pmove.gravity)
-		flags |= PS_M_GRAVITY;
-
-	if (newState->pmove.delta_angles[0] != oldState->pmove.delta_angles[0] ||
-		newState->pmove.delta_angles[1] != oldState->pmove.delta_angles[1] ||
-		newState->pmove.delta_angles[2] != oldState->pmove.delta_angles[2])
-		flags |= PS_M_DELTA_ANGLES;
-
-	if (newState->viewoffset[0] != oldState->viewoffset[0] ||
-		newState->viewoffset[1] != oldState->viewoffset[1] ||
-		newState->viewoffset[2] != oldState->viewoffset[2])
-		flags |= PS_VIEWOFFSET;
-
-	if (newState->viewangles[0] != oldState->viewangles[0] ||
-		newState->viewangles[1] != oldState->viewangles[1] ||
-		newState->viewangles[2] != oldState->viewangles[2])
-		flags |= PS_VIEWANGLES;
-
-	if (newState->kick_angles[0] != oldState->kick_angles[0] ||
-		newState->kick_angles[1] != oldState->kick_angles[1] ||
-		newState->kick_angles[2] != oldState->kick_angles[2])
-		flags |= PS_KICKANGLES;
-
-	if (newState->blend[0] != oldState->blend[0] ||
-		newState->blend[1] != oldState->blend[1] ||
-		newState->blend[2] != oldState->blend[2] ||
-		newState->blend[3] != oldState->blend[3])
-		flags |= PS_BLEND;
-
-	if (newState->fov != oldState->fov)			flags |= PS_FOV;
-	if (newState->rdflags != oldState->rdflags)	flags |= PS_RDFLAGS;
-	if (newState->gunframe != oldState->gunframe) flags |= PS_WEAPONFRAME;
-
-	flags |= PS_WEAPONINDEX;		//?? always sent
+	unsigned bits = ComputeDeltaBits (oldState, newState, ARRAY_ARG(playerStateDelta));
+	bits |= 1<<PS_WEAPONINDEX;		//?? always sent
 
 	//------------------------------
 	// write it
-	MSG_WriteShort (msg, flags);
+	MSG_WriteShort (msg, bits);
 
-	// write the pmove_state_t
-	if (flags & PS_M_TYPE)
-		MSG_WriteByte (msg, newState->pmove.pm_type);
-
-	if (flags & PS_M_ORIGIN)
-	{
-		MSG_WriteShort (msg, newState->pmove.origin[0]);
-		MSG_WriteShort (msg, newState->pmove.origin[1]);
-		MSG_WriteShort (msg, newState->pmove.origin[2]);
-	}
-
-	if (flags & PS_M_VELOCITY)
-	{
-		MSG_WriteShort (msg, newState->pmove.velocity[0]);
-		MSG_WriteShort (msg, newState->pmove.velocity[1]);
-		MSG_WriteShort (msg, newState->pmove.velocity[2]);
-	}
-
-	if (flags & PS_M_TIME)
-		MSG_WriteByte (msg, newState->pmove.pm_time);
-
-	if (flags & PS_M_FLAGS)
-		MSG_WriteByte (msg, newState->pmove.pm_flags);
-
-	if (flags & PS_M_GRAVITY)
-		MSG_WriteShort (msg, newState->pmove.gravity);
-
-	if (flags & PS_M_DELTA_ANGLES)
-	{
-		MSG_WriteShort (msg, newState->pmove.delta_angles[0]);
-		MSG_WriteShort (msg, newState->pmove.delta_angles[1]);
-		MSG_WriteShort (msg, newState->pmove.delta_angles[2]);
-	}
-
-	// write the rest of the player_state_t
-	if (flags & PS_VIEWOFFSET)
-	{
-		MSG_WriteChar (msg, appRound (newState->viewoffset[0]*4));
-		MSG_WriteChar (msg, appRound (newState->viewoffset[1]*4));
-		MSG_WriteChar (msg, appRound (newState->viewoffset[2]*4));
-	}
-
-	if (flags & PS_VIEWANGLES)
-	{
-		MSG_WriteAngle16 (msg, newState->viewangles[0]);
-		MSG_WriteAngle16 (msg, newState->viewangles[1]);
-		MSG_WriteAngle16 (msg, newState->viewangles[2]);
-	}
-
-	if (flags & PS_KICKANGLES)
-	{
-		MSG_WriteChar (msg, appRound (newState->kick_angles[0]*4));
-		MSG_WriteChar (msg, appRound (newState->kick_angles[1]*4));
-		MSG_WriteChar (msg, appRound (newState->kick_angles[2]*4));
-	}
-
-	if (flags & PS_WEAPONINDEX)
-	{
-		MSG_WriteByte (msg, newState->gunindex);
-	}
-
-	if (flags & PS_WEAPONFRAME)
-	{
-		MSG_WriteByte (msg, newState->gunframe);
-		MSG_WriteChar (msg, appRound (newState->gunoffset[0]*4));
-		MSG_WriteChar (msg, appRound (newState->gunoffset[1]*4));
-		MSG_WriteChar (msg, appRound (newState->gunoffset[2]*4));
-		MSG_WriteChar (msg, appRound (newState->gunangles[0]*4));
-		MSG_WriteChar (msg, appRound (newState->gunangles[1]*4));
-		MSG_WriteChar (msg, appRound (newState->gunangles[2]*4));
-	}
-
-	if (flags & PS_BLEND)
-	{
-		MSG_WriteByte (msg, appRound (newState->blend[0]*255));
-		MSG_WriteByte (msg, appRound (newState->blend[1]*255));
-		MSG_WriteByte (msg, appRound (newState->blend[2]*255));
-		MSG_WriteByte (msg, appRound (newState->blend[3]*255));
-	}
-	if (flags & PS_FOV)		MSG_WriteByte (msg, appRound (newState->fov));
-	if (flags & PS_RDFLAGS) MSG_WriteByte (msg, newState->rdflags);
+	WriteDelta (oldState, newState, ARRAY_ARG(playerStateDelta), bits, msg);
 
 	// send stats
 	unsigned statbits = 0;
@@ -668,6 +583,36 @@ void MSG_WriteDeltaPlayerstate (sizebuf_t *msg, player_state_t *oldState, player
 	for (i = 0; statbits; i++, statbits >>= 1)
 		if (statbits & 1)
 			MSG_WriteShort (msg, newState->stats[i]);
+
+	LOG("----------\n");
+
+	unguard;
+}
+
+
+void MSG_ReadDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState)
+{
+	guard(MSG_ReadDeltaPlayerstate);
+
+	LOG("read delta playerstate\n");
+
+	// clear to old value before delta parsing
+	if (oldState)
+		*newState = *oldState;
+	else
+		memset (newState, 0, sizeof(player_state_t));
+
+	unsigned bits = MSG_ReadShort (msg);
+	ReadDelta (oldState, newState, ARRAY_ARG(playerStateDelta), bits, msg);
+
+	// parse stats
+	unsigned statbits = MSG_ReadLong (msg);
+	int		i;
+	for (i = 0; statbits; i++, statbits >>= 1)
+		if (statbits & 1)
+			newState->stats[i] = MSG_ReadShort (msg);
+
+	LOG("----------\n");
 
 	unguard;
 }

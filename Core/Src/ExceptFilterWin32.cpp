@@ -91,7 +91,7 @@ static bool DumpString (FILE *f, char *str)
 
 static void DumpMem (FILE *f, unsigned *data, CONTEXT *ctx)
 {
-	static struct {
+	static const struct {
 		unsigned ofs;
 		const char *name;
 	} regData[] = {

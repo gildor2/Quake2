@@ -223,7 +223,7 @@ typedef struct shader_s
 	int		sortParam2;		// secondary sort values (main image, lightmap num etc.)
 	short	width, height;	// required due to Q2 architecture; if contains default image, both are zero
 
-	int		style;			// SHADER_XXX
+	unsigned style;			// SHADER_XXX
 	float	tessSize;		// used for warp surface subdivision
 
 	gl_cullMode_t cullMode;
@@ -324,9 +324,9 @@ void	GL_ResetShaders (void);	// should be called every time before loading a new
 #define SHADER_CHECK		0x40000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error
 #define SHADER_CHECKLOADED	0x80000000	// if shader loaded, return it, else - NULL
 
-shader_t *GL_FindShader (const char *name, int style);
+shader_t *GL_FindShader (const char *name, unsigned style);
 shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber);
-shader_t *GL_SetShaderLightstyles (shader_t *shader, int styles);
+shader_t *GL_SetShaderLightstyles (shader_t *shader, unsigned styles);
 shader_t *GL_GetAlphaShader (shader_t *shader);
 shader_t *GL_GetShaderByNum (int num);
 

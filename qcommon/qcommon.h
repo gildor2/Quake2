@@ -28,7 +28,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //!!!! temp:
 #define Com_FatalError	appFatalError
 #define Com_DropError	appNonFatalError
-#define Sys_Error		appFatalError
 
 #include "q_shared2.h"
 #include "qfiles.h"
@@ -130,7 +129,6 @@ void	MSG_WriteShort (sizebuf_t *sb, int c);
 void	MSG_WriteLong (sizebuf_t *sb, int c);
 void	MSG_WriteFloat (sizebuf_t *sb, float f);
 void	MSG_WriteString (sizebuf_t *sb, const char *s);
-void	MSG_WriteCoord (sizebuf_t *sb, float f);
 void	MSG_WritePos (sizebuf_t *sb, vec3_t pos);
 void	MSG_WriteAngle (sizebuf_t *sb, float f);
 void	MSG_WriteAngle16 (sizebuf_t *sb, float f);
@@ -146,7 +144,6 @@ int		MSG_ReadLong (sizebuf_t *sb);
 float	MSG_ReadFloat (sizebuf_t *sb);
 char	*MSG_ReadString (sizebuf_t *sb);
 
-float	MSG_ReadCoord (sizebuf_t *sb);
 void	MSG_ReadPos (sizebuf_t *sb, vec3_t pos);
 float	MSG_ReadAngle (sizebuf_t *sb);
 float	MSG_ReadAngle16 (sizebuf_t *sb);
@@ -162,17 +159,17 @@ void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
 
 // entity_state_t communication
 
-void	MSG_WriteDeltaEntity (sizebuf_t *msg, entity_state_t *from, entity_state_t *to, bool force, bool newentity);
+void	MSG_WriteDeltaEntity (sizebuf_t *msg, const entity_state_t *from, entity_state_t *to, bool force, bool newentity);
 void	MSG_WriteRemoveEntity (sizebuf_t *msg, int num);
 
-void	MSG_ReadDeltaUsercmd (sizebuf_t *sb, usercmd_t *from, usercmd_t *cmd);
-void	MSG_WriteDeltaUsercmd (sizebuf_t *sb, usercmd_t *from, usercmd_t *cmd);
-
 int		MSG_ReadEntityBits (sizebuf_t *msg, unsigned *bits, bool *remove);
-void	MSG_ReadDeltaEntity (sizebuf_t *msg, entity_state_t *from, entity_state_t *to, unsigned bits);
+void	MSG_ReadDeltaEntity (sizebuf_t *msg, const entity_state_t *from, entity_state_t *to, unsigned bits);
 
-void	MSG_ReadDeltaPlayerstate (sizebuf_t *msg, player_state_t *oldState, player_state_t *newState);
-void	MSG_WriteDeltaPlayerstate (sizebuf_t *msg, player_state_t *oldState, player_state_t *newState);
+void	MSG_ReadDeltaUsercmd (sizebuf_t *smg, const usercmd_t *from, usercmd_t *to);
+void	MSG_WriteDeltaUsercmd (sizebuf_t *msg, const usercmd_t *from, usercmd_t *to);
+
+void	MSG_ReadDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState);
+void	MSG_WriteDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, player_state_t *newState);
 
 
 //============================================================================
@@ -769,7 +766,6 @@ void	*Sys_GetGameAPI (void *parms);
 char	*Sys_ConsoleInput (void);
 void	Sys_ConsoleOutput (const char *string);
 void	Sys_SendKeyEvents (void);
-void	NORETURN Sys_Error (const char *error, ...);
 void	NORETURN Sys_Quit (void);
 void	Sys_CopyProtect (void);
 

@@ -469,7 +469,7 @@ shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber)
 }
 
 
-shader_t *GL_SetShaderLightstyles (shader_t *shader, int styles)
+shader_t *GL_SetShaderLightstyles (shader_t *shader, unsigned styles)
 {
 	char	newname[MAX_QPATH], *s;
 	shader_t *newshader;
@@ -547,7 +547,7 @@ shader_t *GL_GetAlphaShader (shader_t *shader)
 
 
 // "mipmap" is used only for auto-generated shaders
-shader_t *GL_FindShader (const char *name, int style)
+shader_t *GL_FindShader (const char *name, unsigned style)
 {
 	char	name2[MAX_QPATH], *s;
 	int		hash, lightmapNumber, imgFlags;
@@ -631,14 +631,12 @@ shader_t *GL_FindShader (const char *name, int style)
 
 		if (style & SHADER_SKY)
 		{
-			int		i;
-
 			sh.type = SHADERTYPE_SKY;
 
 			if (style & SHADER_ABSTRACT)
 				return FinishShader ();
 
-			for (i = 0; i < 6; i++)
+			for (int i = 0; i < 6; i++)
 			{
 				static char *suff[6] = {"rt", "lf", "bk", "ft", "up", "dn"};
 
@@ -711,13 +709,10 @@ shader_t *GL_FindShader (const char *name, int style)
 			shaderImages[stageIdx * MAX_STAGE_TEXTURES] = img;
 			if (style & SHADER_ANIM)
 			{
-				int		i;
-				char	*pname;
-
-				pname = strchr (name, 0) + 1;
+				char *pname = strchr (name, 0) + 1;
 				stage->animMapFreq = 2;			// standard Quake2 animation frequency
 				stage->frameFromEntity = true;	// entities can animate with a different frames than world
-				for (i = 1; *pname && i < MAX_STAGE_TEXTURES; i++, pname = strchr(pname, 0)+1)
+				for (int i = 1; *pname && i < MAX_STAGE_TEXTURES; i++, pname = strchr(pname, 0)+1)
 				{
 					img = GL_FindImage (pname, imgFlags);
 					if (!img)

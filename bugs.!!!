@@ -34,6 +34,7 @@
 - filesystem:
   - when q2 launched from "release" directory (w/o baseq2 subdir), FS "search paths" will be empty, "dir" command will not work at all
 
+- without WIN32_USE_SEH, crash log will contain error history only
 
 
 UNRECOVARABLE:

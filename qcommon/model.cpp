@@ -184,16 +184,10 @@ static void ProcessQ2BspFile (bspfile_t *f)
 	// texinfo: lowercase all filenames and remove leading "." and "/"
 	for (i = 0; i < f->numTexinfo; i++)
 	{
-		texinfo_t *d;
-		char *s, c;
-
-		d = &f->texinfo[i];
-		s = d->texture;
+		texinfo_t *d = &f->texinfo[i];
+		char *s = d->texture;
 		for (j = 0; j < sizeof(d->texture); j++, s++)
-		{
-			c = *s;
-			if (c >= 'A' && c <= 'Z') *s = c + 32;
-		}
+			*s = toLower (*s);
 		s = d->texture;
 		if (s[0] == '.') s++;
 		if (s[0] == '/') s++;
@@ -555,9 +549,7 @@ static void ProcessEntityTarget ()
 
 static float *FindEntityTarget (char *name)
 {
-	int		i;
-
-	for (i = 0; i < numTargets; i++)
+	for (int i = 0; i < numTargets; i++)
 		if (!strcmp (targets[i].name, name))
 			return targets[i].origin;
 

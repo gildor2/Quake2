@@ -21,12 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef QSHARED_H
 #define QSHARED_H
 
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <string.h>
-//#include <stdarg.h>
-
-//#include <math.h>
 #include <time.h>
 
 
@@ -76,7 +70,7 @@ enum {
 #define MAX_GENERAL			(MAX_CLIENTS*2)	// general config strings
 
 
-// game print flags
+// game print flags; for svc_print command; client system uses PRINT_CHAT only; server - PRINT_HIGH
 enum {
 	PRINT_LOW,						// pickup messages
 	PRINT_MEDIUM,					// death messages
@@ -112,7 +106,7 @@ typedef float vec3_t[3];
 #define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
 #endif
 
-extern vec3_t vec3_origin;
+extern vec3_t vec3_origin;	// really, should be "const", but LOTS of functions uses this without "const" specifier ...
 
 float NormalizeColor (const vec3_t in, vec3_t out);
 float NormalizeColor255 (const vec3_t in, vec3_t out);
@@ -187,12 +181,6 @@ typedef struct	// hack for VectorCopy
 #define	VectorMA(v, s, b, o)	((o)[0]=(v)[0]+(b)[0]*(s),(o)[1]=(v)[1]+(b)[1]*(s),(o)[2]=(v)[2]+(b)[2]*(s))
 //void VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc);
 
-// just in case you do't want to use the macros
-float _DotProduct (vec3_t v1, vec3_t v2);
-void _VectorSubtract (vec3_t veca, vec3_t vecb, vec3_t out);
-void _VectorAdd (vec3_t veca, vec3_t vecb, vec3_t out);
-void _VectorCopy (vec3_t in, vec3_t out);
-
 void ClearBounds (vec3_t mins, vec3_t maxs);
 void AddPointToBounds (const vec3_t v, vec3_t mins, vec3_t maxs);
 bool VectorCompare (const vec3_t v1, const vec3_t v2);
@@ -201,7 +189,6 @@ float VectorDistance (const vec3_t vec1, const vec3_t vec2);
 void AnglesToAxis (const vec3_t angles, vec3_t axis[3]);
 void AxisClear (vec3_t axis[3]);
 #define AxisCopy(i,o)			memcpy(o,i,sizeof(vec3_t)*3)
-void _AxisCopy (vec3_t in[3], vec3_t out[3]);
 void CrossProduct (const vec3_t v1, const vec3_t v2, vec3_t cross);
 float VectorNormalize (vec3_t v);		// returns vector length
 float VectorNormalize2 (const vec3_t v, vec3_t out);
@@ -211,7 +198,7 @@ void VectorScale (const vec3_t in, float scale, vec3_t out);
 void MatrixMultiply (float in1[3][3], float in2[3][3], float out[3][3]);
 
 void AngleVectors (const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
-float	anglemod(float a);
+float anglemod(float a);
 float LerpAngle (float a1, float a2, float frac);
 
 void ProjectPointOnPlane( vec3_t dst, const vec3_t p, const vec3_t normal );
@@ -228,10 +215,6 @@ const char *COM_QuoteString (const char *str, bool alwaysQuote);
 void SkipRestOfLine (char **data);
 
 void Com_PageInMemory (void *buffer, int size);
-
-//=============================================
-
-void	Q_strncpylower (char *dest, const char *src, int len);
 
 //=============================================
 
@@ -338,7 +321,7 @@ typedef struct
 	vec3_t	normal;
 	float	dist;
 	byte	type;			// for fast side tests; PLANE_[M]X|Y|Z
-	byte	signbits;		// signx + (signy<<1) + (signz<<2)
+	byte	signbits;		// sign(x) + (sign(y)<<1) + (sign(z)<<2)
 	byte	pad[2];
 } cplane_t;
 
@@ -401,7 +384,7 @@ typedef struct
 	int		flags;
 	int		value;
 	// field from mapsurface_t (so, csurface_t now contains old csurface_t and mapsurface_t)
-	char	rname[32];		// used internally due to name len probs: ZOID (used only for precaching?)
+	char	rname[32];		// used internally due to name len probs: ZOID (used only for precaching??)
 	// fields added since 4.00
 	int		material;
 } csurface_t;
@@ -486,8 +469,8 @@ typedef struct
 	byte	buttons;
 	short	angles[3];
 	short	forwardmove, sidemove, upmove;
-	byte	impulse;		// remove? (unused !!)
-	byte	lightlevel;		// light level the player is standing on
+	byte	impulse;			// remove? (unused !!)
+	byte	lightlevel;			// light level the player is standing on
 } usercmd_t;
 
 
@@ -879,7 +862,7 @@ enum {
 	STAT_SPECTATOR
 };
 
-#define	MAX_STATS				32
+#define	MAX_STATS				32	// limited by protocol: 1 bit of int32 for each stats
 
 
 /*

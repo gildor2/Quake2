@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-// common.c -- misc functions used in client and server
+// common.cpp -- misc functions used in client and server
 #include "qcommon.h"
 #include "../client/ref.h"
 
@@ -100,27 +100,6 @@ to the apropriate place.
 static bool console_logged = false;
 static char log_name[MAX_OSPATH];
 
-// from new engine strings.cpp
-static void appUncolorizeString (char *dst, const char *src)
-{
-	char	c, c1;
-
-	if (!src) src = dst;
-	do
-	{
-		c = *src++;
-		if (c == COLOR_ESCAPE)
-		{
-			c1 = *src;
-			if (c1 < '0' || c1 > '7')
-				*dst++ = c;
-			else
-				src++;
-		}
-		else
-			*dst++ = c;
-	} while (c);
-}
 
 void Com_Printf (const char *fmt, ...)
 {
@@ -463,11 +442,6 @@ void MSG_WriteString (sizebuf_t *sb, const char *s)
 	else	SZ_Write (sb, s, strlen(s)+1);
 }
 
-void MSG_WriteCoord (sizebuf_t *sb, float f)
-{
-	MSG_WriteShort (sb, appRound (f*8));
-}
-
 void MSG_WritePos (sizebuf_t *sb, vec3_t pos)
 {
 	MSG_WriteShort (sb, appRound (pos[0]*8));
@@ -728,11 +702,6 @@ char *MSG_ReadString (sizebuf_t *msg_read)
 	string[l] = 0;
 
 	return string;
-}
-
-float MSG_ReadCoord (sizebuf_t *msg_read)
-{
-	return MSG_ReadShort(msg_read) * (1.0f/8);
 }
 
 void MSG_ReadPos (sizebuf_t *msg_read, vec3_t pos)
@@ -1047,7 +1016,7 @@ void Info_Print (char *s)
 
 //------------------------------------------------------------
 
-static byte chktbl[1024] = {
+static const byte chktbl[1024] = {
 0x84, 0x47, 0x51, 0xc1, 0x93, 0x22, 0x21, 0x24, 0x2f, 0x66, 0x60, 0x4d, 0xb0, 0x7c, 0xda,
 0x88, 0x54, 0x15, 0x2b, 0xc6, 0x6c, 0x89, 0xc5, 0x9d, 0x48, 0xee, 0xe6, 0x8a, 0xb5, 0xf4,
 0xcb, 0xfb, 0xf1, 0x0c, 0x2e, 0xa0, 0xd7, 0xc9, 0x1f, 0xd6, 0x06, 0x9a, 0x09, 0x41, 0x54,
@@ -1124,14 +1093,14 @@ For proxy protecting
 byte COM_BlockSequenceCRCByte (byte *base, int length, int sequence)
 {
 	int		n;
-	byte	*p;
+	const byte *p;
 	int		x;
 	byte chkb[60 + 4];
 	unsigned short crc;
 
 
 	if (sequence < 0)
-		Sys_Error ("BlockCRC: sequence < 0");
+		Com_FatalError ("BlockCRC: sequence < 0");
 
 	p = chktbl + (sequence % (sizeof(chktbl) - 4));
 

@@ -32,9 +32,7 @@ void DrawString (int x, int y, const char *s)
 	{
 		if (c == COLOR_ESCAPE)
 		{
-			int col;
-
-			col = *s - '0';
+			int col = *s - '0';
 			if (col >= 0 && col <= 7)
 			{
 				color = col;

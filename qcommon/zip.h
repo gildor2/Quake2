@@ -1,7 +1,7 @@
 #ifndef __ZIP_INCLUDED__
 #define __ZIP_INCLUDED__
 
-#include "../qcommon/qcommon.h"
+#include "qcommon.h"
 #include "../lib/zlib/zlib.h"
 
 

@@ -1,5 +1,4 @@
 #include "qcommon.h"
-
 #include "zip.h"
 
 
@@ -298,7 +297,6 @@ static packFile_t *FindPakFile (pack_t *pak, const char *name)
 static packDir_t *AddPakDirectory (pack_t *pak, const char *name)
 {
 	char	dirname[MAX_OSPATH], *rest;
-	int		len;
 
 	packDir_t *dir = pak->root;
 	const char *s = name;
@@ -308,9 +306,8 @@ static packDir_t *AddPakDirectory (pack_t *pak, const char *name)
 	{
 		// get name of the next directory into dirname
 		rest = strchr (s, '/');
-		if (!rest) len = strlen (s);
-		else len = rest - s;
-		Q_strncpylower (dirname, s, len);
+		int len = (rest) ? rest - s : strlen (s);
+		appStrncpylwr (dirname, s, len+1);	// +1 for zero byte
 
 		packDir_t *insdir;
 		packDir_t *newdir = dir->cDir.Find (dirname, &insdir);
@@ -333,27 +330,30 @@ static packFile_t *AddPakFile (pack_t *pak, char *name)
 {
 	char	dirname[MAX_OSPATH];
 	packDir_t *dir;
-	packFile_t *file, *insfile;
 
-	char *filename = strrchr (name, '/');
+	const char *filename = strrchr (name, '/');
+	// get/create file directory
 	if (!filename)
-	{	// root directory
+	{
+		// root directory
 		filename = name;
 		dir = pak->root;
 	}
 	else
 	{
-		Q_strncpylower (dirname, name, filename - name);
+		appStrncpyz (dirname, name, filename - name + 1);		// +1 for zero char
 		filename++;						// skip '/'
 		if (!*filename) return NULL;	// empty name
 		dir = AddPakDirectory (pak, dirname);
 	}
+	// create file
+	packFile_t *file, *insfile;
 	file = dir->cFile.Find (filename, &insfile);
 	if (!file)
 	{
 		// normally (if correct .PAK/.ZIP), should newer be found - always create
 		file = new (filename, pak->chain) packFile_t;
-		appStrncpylwr (file->name, file->name, BIG_NUMBER);		// lowercase the name !!
+		appStrncpylwr (file->name, file->name, BIG_NUMBER);		// lowercase the name
 		dir->cFile.InsertAfter (file, insfile);
 
 		pak->numFiles++;

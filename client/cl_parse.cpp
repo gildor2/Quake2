@@ -17,11 +17,11 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-// cl_parse.c  -- parse a message received from the server
+// cl_parse.cpp  -- parse a message received from the server
 
 #include "client.h"
 
-char *svc_strings[svc_last] =
+const char *svc_strings[svc_last] =
 {
 	"svc_bad",
 
@@ -329,33 +329,14 @@ ParseStartSoundPacket
 */
 static void ParseStartSoundPacket(void)
 {
-	vec3_t  pos_v;
-	float	*pos;
+	int flags = MSG_ReadByte (&net_message);
+	int sound_num = MSG_ReadByte (&net_message);
+
+	float volume = (flags & SND_VOLUME) ? MSG_ReadByte (&net_message) / 255.0 : DEFAULT_SOUND_PACKET_VOLUME;
+	float attenuation = (flags & SND_ATTENUATION) ? MSG_ReadByte (&net_message) / 64.0 : DEFAULT_SOUND_PACKET_ATTENUATION;
+	float ofs = (flags & SND_OFFSET) ? MSG_ReadByte (&net_message) / 1000.0 : 0;
+
 	int 	channel, ent;
-	int 	sound_num;
-	float 	volume;
-	float 	attenuation;
-	int		flags;
-	float	ofs;
-
-	flags = MSG_ReadByte (&net_message);
-	sound_num = MSG_ReadByte (&net_message);
-
-	if (flags & SND_VOLUME)
-		volume = MSG_ReadByte (&net_message) / 255.0;
-	else
-		volume = DEFAULT_SOUND_PACKET_VOLUME;
-
-	if (flags & SND_ATTENUATION)
-		attenuation = MSG_ReadByte (&net_message) / 64.0;
-	else
-		attenuation = DEFAULT_SOUND_PACKET_ATTENUATION;
-
-	if (flags & SND_OFFSET)
-		ofs = MSG_ReadByte (&net_message) / 1000.0;
-	else
-		ofs = 0;
-
 	if (flags & SND_ENT)
 	{	// entity reletive
 		channel = MSG_ReadShort(&net_message);
@@ -371,10 +352,11 @@ static void ParseStartSoundPacket(void)
 		channel = 0;
 	}
 
+	vec3_t  pos_v;
+	float	*pos;
 	if (flags & SND_POS)
 	{	// positioned in space
 		MSG_ReadPos (&net_message, pos_v);
-
 		pos = pos_v;
 	}
 	else	// use entity number
@@ -420,7 +402,7 @@ CL_ParseServerMessage
 void CL_ParseServerMessage (void)
 {
 	int		cmd;
-	char	*s;
+	const char *s;
 
 	guard(CL_ParseServerMessage);
 

@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-// cl_ents.c -- entity parsing and management
+// cl_ents.cpp -- entity parsing and management
 
 #include "client.h"
 
@@ -44,14 +44,8 @@ void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, unsigned
 {
 	guard(CL_ParseDelta);
 
-	// set everything to the state we are delta'ing from
-	*to = *from;
-
-	VectorCopy (from->origin, to->old_origin);				// before MSG_ReadDeltaEntity()
-
 	MSG_ReadDeltaEntity (&net_message, from, to, bits);
-
-	to->number = number;
+	to->number = number;		//?? is it needed ?
 
 	//!! if remove line "if (bits & (...) || baseline) ...", can remove "baseline" arg and "ent->valid" field
 //	if (bits & (U_ANGLE_N|U_MODEL_N) || baseline)

@@ -29,7 +29,7 @@ typedef struct image_s
 	int		internalWidth, internalHeight;	// statistics
 	int		internalFormat;				// statistics (for imagelist)
 	unsigned texnum;					// gl texture binding
-	int		flags;
+	unsigned flags;
 	byte	*pic;						// when non NULL, image was not uploaded
 	color_t	color;
 	struct image_s *hashNext;
@@ -59,8 +59,8 @@ void	GL_ShutdownImages (void);
 void	GL_LoadDelayedImages (void);
 
 // creating images
-image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int flags);
-image_t *GL_FindImage (const char *name, int flags);
+image_t *GL_CreateImage (const char *name, void *pic, int width, int height, unsigned flags);
+image_t *GL_FindImage (const char *name, unsigned flags);
 
 // video support
 void	GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette);

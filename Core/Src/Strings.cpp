@@ -70,7 +70,6 @@ int appStrnicmp (const char *s1, const char *s2, int count)
 void appStrcpy (char *dst, const char *src)
 {
 	char	c;
-
 	do
 	{
 		c = *src++;
@@ -82,7 +81,6 @@ void appStrcpy (char *dst, const char *src)
 void appStrncpy (char *dst, const char *src, int count)
 {
 	char	c;
-
 	do
 	{
 		if (!count--) return;
@@ -94,11 +92,17 @@ void appStrncpy (char *dst, const char *src, int count)
 
 void appStrncpylwr (char *dst, const char *src, int count)
 {
-	char	c;
+	if (count <= 0) return;
 
+	char	c;
 	do
 	{
-		if (!count--) return;
+		if (!--count)
+		{
+			// out of dst space -- add zero to the string end
+			*dst = 0;
+			return;
+		}
 		c = toLower (*src++);
 		*dst++ = c;
 	} while (c);
@@ -107,19 +111,21 @@ void appStrncpylwr (char *dst, const char *src, int count)
 
 void appStrncpyz (char *dst, const char *src, int count)
 {
-	char	c;
 
 	if (count <= 0) return;	// zero-length string
 
+	char	c;
 	do
 	{
-		if (!count--) break;
+		if (!--count)
+		{
+			// out of dst space -- add zero to the string end
+			*dst = 0;
+			return;
+		}
 		c = *src++;
 		*dst++ = c;
 	} while (c);
-
-	if (count < 0)			// out of dst space -- add zero to the string end
-		*(--dst) = 0;
 }
 
 
@@ -197,21 +203,19 @@ void appCopyFilename (char *dest, const char *src, int len)
 
 int appCStrlen (const char *str)
 {
-	char	c, c1;
-
 	int len = 0;
-	while (c = *str++)
+	while (char c = *str++)
 	{
-		if (c == '^')
+		if (c == COLOR_ESCAPE)
 		{
-			c1 = *str;
-			if (c1 < '0' || c1 > '7')
-				len++;
-			else
+			char c1 = *str;
+			if (c1 >= '0' && c1 <= '7')
+			{
 				str++;
+				continue;
+			}
 		}
-		else
-			len++;
+		len++;
 	}
 
 	return len;
@@ -226,7 +230,7 @@ void appUncolorizeString (char *dst, const char *src)
 	do
 	{
 		c = *src++;
-		if (c == '^')
+		if (c == COLOR_ESCAPE)
 		{
 			c1 = *src;
 			if (c1 < '0' || c1 > '7')

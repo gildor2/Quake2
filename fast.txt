@@ -1,6 +1,3 @@
-- when rendering disabled, img will be uploaded later w/o alpha-channel (when texture_rectangle==1 only; NV
-  untested?!); to test: "t.bat", switch to q2ded, "error", switch to quake2
-=============
 - replace Sys_Find() and Sys_MkDir() with FileSystemWin32.cpp, and move Sys_Milliseconds()
   to something another, then can remove q_shwin.cpp ...
 =============

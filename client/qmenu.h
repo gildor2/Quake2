@@ -135,11 +135,8 @@ void	Menu_SetStatusBar (menuFramework_t *s, const char *string);
 void	Menu_SlideItem (menuFramework_t *s, int dir);
 int		Menu_TallySlots (menuFramework_t *menu);
 
-int		strlen_color (const char *s);
-
-
-#define Menu_DrawStringR2L(x,y,s)			DrawString(x-(strlen_color(s)-1)*CHAR_WIDTH,y,s)
-#define Menu_DrawStringCenter(x,y,s)		DrawString(x-(strlen_color(s)-1)*CHAR_WIDTH/2,y,s)
+#define Menu_DrawStringR2L(x,y,s)			DrawString(x-(appCStrlen(s)-1)*CHAR_WIDTH,y,s)
+#define Menu_DrawStringCenter(x,y,s)		DrawString(x-(appCStrlen(s)-1)*CHAR_WIDTH/2,y,s)
 
 
 #define MENU_ACTION(var,ypos,text,call)	\

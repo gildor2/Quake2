@@ -120,7 +120,7 @@ static int HexDigit (char c)
 }
 
 
-static int Key_StringToKeynum (char *str)
+static int Key_StringToKeynum (const char *str)
 {
 	int		i, mod;
 	keyname_t *kn;
@@ -128,7 +128,7 @@ static int Key_StringToKeynum (char *str)
 
 	if (!str || !str[0]) return -1;			// bad string
 
-	Q_strncpylower (name, str, sizeof(name)-1);
+	appStrncpylwr (name, str, sizeof(name));
 	if (!memcmp (name, "alt+", 4))
 	{
 		key = name + 4;
@@ -191,7 +191,7 @@ const char *Key_KeynumToString (int keynum)
 		pref = "";
 
 	// alphanumeric keys
-	if (keynum >= '0' && keynum <= '9' || keynum >= 'A' && keynum <= 'Z' || keynum >= 'a' && keynum <= 'z')
+	if (keynum >= '0' && keynum <= '9' || keynum >= 'a' && keynum <= 'z' || keynum >= 'A' && keynum <= 'Z')
 		return va("%s%c", pref, keynum);
 
 	// unknown keys

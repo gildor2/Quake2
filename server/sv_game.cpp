@@ -44,7 +44,7 @@ PF_dprintf
 Debug print to server console
 ===============
 */
-static void PF_dprintf (char *fmt, ...)
+static void PF_dprintf (const char *fmt, ...)
 {
 	char	msg[1024];
 	va_list	argptr;
@@ -64,7 +64,7 @@ PF_cprintf
 Print to a single client
 ===============
 */
-static void PF_cprintf (edict_t *ent, int level, char *fmt, ...)
+static void PF_cprintf (edict_t *ent, int level, const char *fmt, ...)
 {
 	char	msg[1024];
 	va_list	argptr;
@@ -94,7 +94,7 @@ PF_centerprintf
 centerprint to a single client
 ===============
 */
-static void PF_centerprintf (edict_t *ent, char *fmt, ...)
+static void PF_centerprintf (edict_t *ent, const char *fmt, ...)
 {
 	char	msg[1024];
 	va_list	argptr;
@@ -122,7 +122,7 @@ PF_error
 Abort the server with a game error
 ===============
 */
-static void PF_error (char *fmt, ...)
+static void PF_error (const char *fmt, ...)
 {
 	char	msg[1024];
 	va_list	argptr;

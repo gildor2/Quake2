@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 /*
- * GLW_IMP.C
+ * glw_imp.cpp
  *
  * This file contains ALL Win32 specific stuff having to do with the
  * OpenGL refresh.  When a port is being made the following functions

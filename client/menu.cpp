@@ -1844,7 +1844,7 @@ static void StartServer_MenuInit( void )
 		{
 			char	name[256];
 
-			Q_strncpylower (name, COM_Parse (s, true), sizeof(name)-1);
+			appStrncpylwr (name, COM_Parse (s, true), sizeof(name));
 			if (!name[0]) break;
 			CStringItem *item = mapNames.CreateAndInsert (va("%s\n%s", COM_Parse (s, false), name), mapNamesChain);
 
@@ -2832,7 +2832,7 @@ static void M_Menu_PlayerConfig_f (void)
 	if (!PlayerConfig_MenuInit ())
 	{
 		delete pmiChain;
-		Menu_SetStatusBar (&s_multiplayer_menu, S_RED"No valid player models found");
+		Menu_SetStatusBar (&s_multiplayer_menu, S_YELLOW"No valid player models found");
 		return;
 	}
 	Menu_SetStatusBar (&s_multiplayer_menu, NULL);

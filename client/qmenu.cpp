@@ -380,26 +380,6 @@ static void Menu_DrawDotsItem (menuCommon_t *item)
 }
 
 
-static int strlen_color (const char *s)
-{
-	int i = 0;
-	while (char c = *s++)
-	{
-		if (c == COLOR_ESCAPE)
-		{
-			if (*s >= '0' && *s <= '7')
-			{
-				s++;
-				continue;
-			}
-		}
-		i++;
-	}
-
-	return i;
-}
-
-
 void Menu_Draw (menuFramework_t *menu)
 {
 	int		i, vis;
@@ -495,7 +475,7 @@ void Menu_DrawStatusBar (const char *string)
 	{
 		int		l, maxrow, maxcol, col;
 
-		l = strlen_color (string);
+		l = appCStrlen (string);
 		maxrow = VID_HEIGHT / CHAR_HEIGHT;
 		maxcol = VID_WIDTH / CHAR_WIDTH;
 		col = maxcol / 2 - l / 2;

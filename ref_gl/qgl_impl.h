@@ -364,7 +364,7 @@ static const char *EnumName (GLenum v)
 	case GL_DOUBLE:
 		return "DOUBLE";
 	default:
-		return "???";
+		return va("UNK_%X", v);
 	}
 }
 

@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-// snd_mem.c: sound caching
+// snd_mem.cpp -- sound caching
 
 #include "client.h"
 #include "snd_loc.h"
@@ -225,7 +225,7 @@ static void FindNextChunk (char *name)
 			return;
 		}
 //		if (iff_chunk_len > 1024*1024)
-//			Sys_Error ("FindNextChunk: %i length is past the 1 meg sanity limit", iff_chunk_len);
+//			Com_FatalError ("FindNextChunk: %i length is past the 1 meg sanity limit", iff_chunk_len);
 		data_p -= 8;
 		last_chunk = data_p + 8 + ( (iff_chunk_len + 1) & ~1 );
 		if (!memcmp (data_p, name, 4))

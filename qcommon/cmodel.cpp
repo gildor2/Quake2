@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-// cmodel.c -- model loading
+// cmodel.cpp -- collision model loading
 
 #include "qcommon.h"
 
@@ -164,8 +164,7 @@ static void ReadSurfMaterials (char *filename)
 		surfMaterial_t *sm;
 
 		// s points to material name string
-		char c = s[0];
-		if (c >= 'A' && c <= 'Z') c += 32;		// lowercase
+		char c = toLower (s[0]);
 		switch (c)
 		{
 		case 'm':

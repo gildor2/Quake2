@@ -495,7 +495,7 @@ void IN_CenterView (void);
 //
 // cl_parse.cpp
 //
-extern	char *svc_strings[svc_last];
+extern	const char *svc_strings[svc_last];
 
 void CL_ParseServerMessage (void);
 void CL_LoadClientinfo (clientinfo_t *ci, char *s);

@@ -1368,7 +1368,7 @@ CVAR_END
 SV_Shutdown
 
 Called when each game quits,
-before Sys_Quit or Sys_Error
+before Sys_Quit() or FatalError()
 ================
 */
 void SV_Shutdown (const char *finalmsg, bool reconnect)

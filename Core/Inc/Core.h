@@ -41,9 +41,13 @@
 #	undef guard
 #	undef unguard
 #	undef unguardf
+#	undef GUARD_BEGIN
+#	undef GUARD_CATCH
 #	define guard(func)
 #	define unguard
 #	define unguardf(msg)
+#	define GUARD_BEGIN
+#	define GUARD_CATCH			if (0)
 #endif
 
 #if DO_GUARD_SLOW
