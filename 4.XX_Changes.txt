@@ -54,11 +54,9 @@ Comments:
 - added support of reading/listing player models from pak files
 - improved a ladder descending
 - added unhandled exception filter, which will restore screen/mouse/sound parameters if game crashes and logs error ("crush.log")
-- makes "crush.log" when game crushes (Win32)
 - logging developer messages to "debug.log" when "developer" is set to 2
 - changed appearance of "cl_stats" output
 - "host_speeds" -> "com_speeds", better output
-- allowed cheatvars (timedemo, r_lightmap ...) for demos, recorded from deathmatch
 - added "timedemo" min_fps
 - ref_gl and ref_soft are now statically linked with quake2
 - no autosaves in deathmatch mode
@@ -84,6 +82,9 @@ Comments:
 - disabled mouse acceleration
 - fixed collision detection code to prevent from "blocked inside the opening door" and some other bugs
 - fixed "WSAECONRESET" error for Win2K (server was crushed when one client exits game)
+- demos:
+  - allowed cheatvars (timedemo, r_lightmap ...) for demos, recorded from deathmatch
+  - disabled "set var" commands from recorded demos
 
 5. ADDONS
 ~~~~~~~~~
