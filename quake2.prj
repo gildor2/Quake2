@@ -36,8 +36,6 @@ CLIENT = \
 	$D/snd_dma.cpp \
 	$D/snd_mem.cpp \
 	$D/snd_mix.cpp
-# client fx system requires this:
-CLIENT += game/m_flash.c
 
 D = server
 SERVER = \
@@ -86,41 +84,6 @@ GL_RENDERER = \
 	$D/gl_shader.cpp \
 	$D/gl_sky.cpp
 
-D = ref_soft
-SOFT_RENDERER = \
-	$D/r_aclip.cpp \
-	$D/r_alias.cpp \
-	$D/r_bsp.cpp \
-	$D/r_draw.cpp \
-	$D/r_edge.cpp \
-	$D/r_image.cpp \
-	$D/r_light.cpp \
-	$D/r_main.cpp \
-	$D/r_misc.cpp \
-	$D/r_model.cpp \
-	$D/r_part.cpp \
-	$D/r_poly.cpp \
-	$D/r_polyse.cpp \
-	$D/r_rast.cpp \
-	$D/r_scan.cpp \
-	$D/r_sprite.cpp \
-	$D/r_surf.cpp
-
-D = ref_gl.old
-OLDGL_RENDERER = \
-	$D/gl_draw.cpp \
-	$D/gl_image.cpp \
-	$D/gl_light.cpp \
-	$D/gl_mesh.cpp \
-	$D/gl_model.cpp \
-	$D/gl_rmain.cpp \
-	$D/gl_rmisc.cpp \
-	$D/gl_rsurf.cpp \
-	$D/gl_textout.cpp \
-	$D/gl_warp.cpp \
-	$D/glw_imp.cpp \
-	$D/qgl_win.cpp
-
 D = win32
 WIN32_FILES = \
 	$D/cd_win.cpp \
@@ -138,7 +101,6 @@ DED_WIN32 = \
 
 # Win32 renderer files
 GL_RENDERER  +=  $D/qgl_win.cpp  $D/glw_imp.cpp
-SOFT_RENDERER += $D/rw_ddraw.cpp  $D/rw_dib.cpp  $D/rw_imp.cpp
 
 # Win32 resources
 WIN32_FILES += $D/q2.rc
@@ -151,10 +113,10 @@ RES_FILES = \
 #------------------------------------------------------------------------------
 # static build
 
-DEFINES = REF_HARD_LINKED 
+DEFINES = STATIC_BUILD
 OBJDIR  = $OUTDIR/obj
 
-sources(STATIC) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER $SOFT_RENDERER
+sources(STATIC) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER
 LIBS = winmm wsock32 dinput lib/lib
 target(executable, $OUTDIR/quake2, STATIC, STATIC)
 
@@ -168,23 +130,12 @@ sources(DYN_EXE) = $CLIENT $SERVER $COMMON $RES_FILES $WIN32_FILES
 LIBS = winmm wsock32 dinput lib/lib
 target(executable, $OUTDIR/quake2_dyn, DYN_EXE, DYNAMIC)
 
+#?? we should define DYNAMIC_REF to allow link from renderer to engine functions
 DEFINES = DYNAMIC_REF
 OBJDIR  = $OUTDIR/obj/dyn_ref
 
 sources(DYN_GL) = $GL_RENDERER qcommon/q_shared2.cpp client/ref_vars.cpp
 target(shared, $OUTDIR/ref_gl, DYN_GL, DYNAMIC)
-
-sources(DYN_SOFT) = $SOFT_RENDERER qcommon/q_shared2.cpp client/ref_vars.cpp
-target(shared, $OUTDIR/ref_soft, DYN_SOFT, DYNAMIC)
-
-#------------------------------------------------------------------------------
-# oldgl driver
-
-DEFINES = DYNAMIC_REF
-OBJDIR  = $OUTDIR/obj/oldgl
-
-sources(DYN_OLDGL) = $OLDGL_RENDERER qcommon/q_shared2.cpp client/ref_vars.cpp
-target(shared, $OUTDIR/ref_oldgl, DYN_OLDGL, STATIC DYNAMIC)
 
 #------------------------------------------------------------------------------
 # dedicated server
@@ -193,5 +144,5 @@ DEFINES = DEDICATED_ONLY
 OBJDIR  = $OUTDIR/obj/dedicated
 
 sources(DEDICATED) = $DED_CLIENT $SERVER $COMMON $DED_WIN32 $RES_FILES
-LIBS = winmm wsock32 dinput lib/lib
+LIBS = winmm wsock32 lib/lib
 target(executable, $OUTDIR/q2ded, DEDICATED, DEDICATED)

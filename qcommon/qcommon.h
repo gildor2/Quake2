@@ -157,6 +157,16 @@ void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
 //============================================================================
 
 
+//
+// key / value info strings
+//
+#define	MAX_INFO_KEY		64
+#define	MAX_INFO_VALUE		64
+#define	MAX_INFO_STRING		512
+
+char*	Info_ValueForKey (char *s, char *key);
+void	Info_RemoveKey (char *s, char *key);
+void	Info_SetValueForKey (char *s, char *key, char *value);
 void	Info_Print (char *s);
 
 
@@ -811,8 +821,9 @@ void	Com_SetServerState (server_state_t state);
 unsigned Com_BlockChecksum (void *buffer, int length);
 byte	COM_BlockSequenceCRCByte (byte *base, int length, int sequence);
 
-#if 0
+#ifdef DYNAMIC_REF
 // Using inline version will grow executable with ~2Kb (cl_fx.cpp uses a lots of [c|f]rand() calls)
+// BUT: require this for dynamic renderer (or move to ref/ref.in)
 // 0 to 1
 inline float frand (void)
 {

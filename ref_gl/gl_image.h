@@ -63,8 +63,7 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int
 image_t *GL_FindImage (const char *name, int flags);
 
 // video support
-void	GL_SetRawPalette (const byte *palette);
-void	GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic);
+void	GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette);
 
 void GL_ShowImages (void);
 

@@ -47,7 +47,7 @@
 - appInit():
   - make GErr, GLog have default params == GErrDevice, GLogDevice (do not pass implicitly, create device var in
     "OutputDeviceXxxx.h")
-  ?? may be, when STATIC_LINK -- try to avoid GLog, GErr etc (e.g. defaulted args) passing with appInit() -- use from
+  ?? may be, when STATIC_BUILD -- try to avoid GLog, GErr etc (e.g. defaulted args) passing with appInit() -- use from
     Core global variables (will not allow run-time overriding + tee-like functions !)
 
 ------------------- Misc -------------------

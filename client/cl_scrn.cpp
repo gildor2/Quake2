@@ -665,7 +665,7 @@ static void TileClear (void)
 {
 	int		x1, x2, y1, y2;
 
-	if (con_height == viddef.height || scr_viewsize->integer == 100 || cl.cinematictime > 0) return;
+	if (con_height == viddef.height || scr_viewsize->integer == 100 || cl.cinematicTime > 0) return;
 
 	y1 = scr_vrect.y;
 	y2 = y1 + scr_vrect.height;
@@ -1136,27 +1136,11 @@ void SCR_UpdateScreen (void)
 	{
 		re.BeginFrame (separation[i]);
 
-		if (cl.cinematictime > 0)
+		if (cl.cinematicTime > 0)
 		{
 			if (cls.loading)
-			{
 				// loading plaque over black screen
-				re.SetRawPalette (NULL);
 				re.DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
-			}
-#ifdef REF_USE_PALETTE
-			else if (cls.key_dest != key_game && (*re.flags & REF_USE_PALETTE))
-			{
-				// handle menus and console specially
-				//?? is it possible to open menu while cinematic is active ? (if no - remove menu handling code)
-				if (cl.cinematicpalette_active)
-				{
-					re.SetRawPalette (NULL);
-					cl.cinematicpalette_active = false;
-				}
-				re.DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
-			}
-#endif
 			else
 				SCR_DrawCinematic ();
 
@@ -1164,15 +1148,6 @@ void SCR_UpdateScreen (void)
 		}
 		else
 		{
-#ifdef REF_USE_PALETTE
-			// make sure the game palette is active
-			if (cl.cinematicpalette_active)
-			{
-				re.SetRawPalette(NULL);
-				cl.cinematicpalette_active = false;
-			}
-#endif
-
 			CalcVrect ();
 
 			if (V_RenderView (separation[i]))

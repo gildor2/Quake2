@@ -42,8 +42,6 @@ static cvar_t *gl_textureBits;
 static cvar_t *gl_vertexLight;
 static cvar_t *gl_overbright;
 
-extern void M_ForceMenuOff (void);
-
 
 /*----------------- Menu interaction -----------------------*/
 
@@ -198,7 +196,7 @@ static void ApplyChanges (void *unused)
 	}
 
 	if (vid_ref->modified || quit)
-		M_ForceMenuOff ();
+		M_ForceMenuOff ();		//?? when renderer changed, menu may be repositioned
 	else
 		M_PopMenu ();
 }

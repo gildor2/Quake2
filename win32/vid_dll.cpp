@@ -696,14 +696,12 @@ static void	D_Draw_Fill (int x, int y, int w, int h, int c) {}
 static void D_Draw_Fill2 (int x, int y, int w, int h, unsigned rgba) {}
 static void	D_DrawTextPos (int x, int y, const char *text, unsigned rgba) {}
 static void	D_DrawTextSide (const char *text, unsigned rgba) {}
-static void	D_Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data) {}
-static void	D_SetPalette (const unsigned char *palette) {}
+static void	D_Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data, unsigned *palette) {}
 static float D_GetClientLight (void) { return 0; }		// normal value is 150
 
 
-#ifdef REF_HARD_LINKED
+#ifdef STATIC_BUILD
 extern "C" refExport_t GL_GetRefAPI (const refImport_t *);		// ref_gl
-extern "C" refExport_t GetRefAPI (const refImport_t *);			// ref_soft
 #endif
 
 static bool Vid_LoadRefresh (char *name)
@@ -722,13 +720,11 @@ static bool Vid_LoadRefresh (char *name)
 	appSprintf (ARRAY_ARG(dllName), "ref_%s.dll", name);
 	Com_Printf ("Loading %s\n", name);
 
-#ifdef REF_HARD_LINKED
+#ifdef STATIC_BUILD
 	refLibrary = NULL;
 
 	if (!strcmp (name, "gl"))
 		pGetRefAPI = GL_GetRefAPI;
-	else if (!strcmp (name, "soft"))
-		pGetRefAPI = GetRefAPI;
 	else
 #endif
 	{
@@ -774,9 +770,7 @@ static bool Vid_LoadRefresh (char *name)
 		re.DrawTileClear =	D_Draw_TileClear;
 		re.DrawFill =		D_Draw_Fill;
 		re.DrawFill2 =		D_Draw_Fill2;
-
 		re.DrawStretchRaw8 = D_Draw_StretchRaw8;
-		re.SetRawPalette = D_SetPalette;
 
 		re.DrawTextPos =	D_DrawTextPos;
 		re.DrawTextLeft =	D_DrawTextSide;
@@ -853,13 +847,7 @@ void Vid_CheckChanges (void)
 			}
 		}
 		if (!loaded)
-		{
-			// cannot load renderer - try software mode
-			if (!strcmp (vid_ref->string, "soft") || !Vid_LoadRefresh ("soft"))
-				Com_FatalError ("Couldn't fall back to software refresh");
-			// reverted to software renderer -- change cvar too
-			Cvar_Set ("vid_ref", "soft");
-		}
+			Com_FatalError ("Couldn't load renderer");
 
 		strcpy (lastRenderer, vid_ref->string);
 		vid_ref->modified = false;

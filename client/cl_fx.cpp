@@ -648,6 +648,14 @@ void CL_ParseMuzzleFlash (void)
 	if (*re.flags & REF_CONSOLE_ONLY)
 		return;
 
+	//?? try to implement with tables:
+	//??	1. dl->color -- RGB(n,n,n)
+	//??	2. snd_name -- if not NULL:
+	//??		sound(NULL,i,CHAN_WEAPON,S_RegisterSound(snd_name),vol:full/silenced, ATTN_NORM, 0)
+	//??		snd_name may be %d:rand()%5+1 -- may always pass for sprintf()
+	//??		snd_name is "weapons/%s.wav"
+	//??	3. sound(NULL,i,CHAN_AUTO,<snd_name>,vol,ATTN_NORM,0.1)
+
 	switch (weapon)
 	{
 	case MZ_BLASTER:
@@ -683,14 +691,12 @@ void CL_ParseMuzzleFlash (void)
 	case MZ_CHAINGUN2:
 		dl->radius = 225 + (rand()&31);
 		dl->color[0] = 1;dl->color[1] = 0.5;dl->color[2] = 0;
-		dl->die = cl.time  + 10;	// long delay
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound(va("weapons/machgf%ib.wav", (rand() % 5) + 1)), volume, ATTN_NORM, 0);
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound(va("weapons/machgf%ib.wav", (rand() % 5) + 1)), volume, ATTN_NORM, 0.05);
 		break;
 	case MZ_CHAINGUN3:
 		dl->radius = 250 + (rand()&31);
 		dl->color[0] = 1;dl->color[1] = 1;dl->color[2] = 0;
-		dl->die = cl.time  + 10;	// long delay
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound(va("weapons/machgf%ib.wav", (rand() % 5) + 1)), volume, ATTN_NORM, 0);
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound(va("weapons/machgf%ib.wav", (rand() % 5) + 1)), volume, ATTN_NORM, 0.033);
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound(va("weapons/machgf%ib.wav", (rand() % 5) + 1)), volume, ATTN_NORM, 0.066);
@@ -716,19 +722,16 @@ void CL_ParseMuzzleFlash (void)
 
 	case MZ_LOGIN:
 		dl->color[0] = 0;dl->color[1] = 1; dl->color[2] = 0;
-		dl->die = cl.time + 10;
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
 		CL_LogoutEffect (pl->current.origin, weapon);
 		break;
 	case MZ_LOGOUT:
 		dl->color[0] = 1;dl->color[1] = 0; dl->color[2] = 0;
-		dl->die = cl.time + 10;
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
 		CL_LogoutEffect (pl->current.origin, weapon);
 		break;
 	case MZ_RESPAWN:
 		dl->color[0] = 1;dl->color[1] = 1; dl->color[2] = 0;
-		dl->die = cl.time + 10;
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
 		CL_LogoutEffect (pl->current.origin, weapon);
 		break;
@@ -789,6 +792,8 @@ void CL_ParseMuzzleFlash (void)
 	}
 }
 
+
+#include "m_flash.h"
 
 /*
 ==============

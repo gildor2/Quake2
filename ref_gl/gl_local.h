@@ -50,7 +50,21 @@
 
 #include "qgl_decl.h"
 
+//#ifndef STATIC_BUILD
+// engine functions will be accessed via function table
+//#	define DYNAMIC_REF
+//#endif
 #include "../client/ref.h"
+
+
+#ifdef STATIC_BUILD
+#	define GetRefAPI			GL_GetRefAPI
+extern "C" refExport_t GetRefAPI (const refImport_t *);
+extern	refImport_t	ri;
+#else
+//?? make common declaration
+extern "C" DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
+#endif
 
 
 bool	QGL_Init (const char *libName);
@@ -62,14 +76,6 @@ void	QGL_EnableLogging (bool enable);
 void	QGL_LogMessage (const char *text);
 #define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
 
-
-#ifdef REF_HARD_LINKED
-#	define GetRefAPI			GL_GetRefAPI
-extern "C" refExport_t GetRefAPI (const refImport_t *);
-#else
-//?? make common declaration
-extern "C" DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
-#endif
 
 //??
 extern unsigned vid_width, vid_height;
@@ -153,13 +159,6 @@ void	DrawTextPos (int x, int y, const char *text, unsigned rgba);
 void	DrawTextLeft (const char *text, unsigned rgba);
 void	DrawTextRight (const char *text, unsigned rgba);
 void	DrawText3D (vec3_t pos, const char *text, unsigned rgba);
-
-
-/*----------- Imported functions ------------*/
-
-#ifdef DYNAMIC_REF
-extern	refImport_t	ri;
-#endif
 
 
 /*---- Implementation-specific functions ----*/

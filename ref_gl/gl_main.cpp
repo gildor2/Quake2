@@ -11,7 +11,7 @@ glrefdef_t	gl_refdef;
 drawSpeeds_t gl_speeds;
 
 static int ref_flags;
-#ifdef DYNAMIC_REF
+#ifndef STATIC_BUILD
 refImport_t	ri;
 #endif
 
@@ -1240,7 +1240,7 @@ refExport_t GetRefAPI (const refImport_t * rimp)
 
 	gl_renderingEnabled = true;
 
-#ifdef DYNAMIC_REF
+#ifndef STATIC_BUILD
 	ri = *rimp;
 	if (ri.struc_size != sizeof(refImport_t))
 	{
@@ -1286,9 +1286,7 @@ refExport_t GetRefAPI (const refImport_t * rimp)
 	re.DrawTileClear =	DrawTileClear;
 	re.DrawFill =		DrawFill;
 	re.DrawFill2 =		DrawFill2;
-
 	re.DrawStretchRaw8 = GL_DrawStretchRaw8;
-	re.SetRawPalette = GL_SetRawPalette;
 
 	re.DrawTextPos =	DrawTextPos;
 	re.DrawTextLeft =	DrawTextLeft;

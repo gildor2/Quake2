@@ -794,7 +794,7 @@ void Key_Event (int key, bool down, unsigned time)
 		return;
 	}
 
-	// any key during the demoplay mode will bring up the menu
+	// any key during the demoplay mode will act as ESC
 	if (cl.attractloop && cls.key_dest == key_game && !(key >= K_F1 && key <= K_F24 || key == K_PAUSE))
 		key = K_ESCAPE;
 
@@ -809,9 +809,9 @@ void Key_Event (int key, bool down, unsigned time)
 			Cbuf_AddText ("cmd putaway\n");
 			return;
 		}
-		if (/* cl.attractloop && */ cl.cinematictime > 0)
+		if (/* cl.attractloop && */ cl.cinematicTime > 0)
 		{
-			SCR_FinishCinematic ();		// stop cinematic
+			SCR_FinishCinematic ();		// stop cinematic with ESC while playing game or with any key when playing demo
 			return;
 		}
 		switch (cls.key_dest)

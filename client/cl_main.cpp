@@ -610,9 +610,6 @@ void CL_Disconnect (void)
 	}
 
 	VectorClear (cl.refdef.blend);
-	re.SetRawPalette(NULL);
-
-	M_ForceMenuOff ();
 
 	cls.connect_time = 0;
 

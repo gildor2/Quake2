@@ -154,9 +154,6 @@ typedef struct
 // renderer flags (capabilities)
 #define REF_CONSOLE_ONLY	1		// if set -- no graphics output
 #define REF_NEW_FX			2		// if set, renderer supports sprite fx
-#define REF_USE_PALETTE		4		// if set, renderer cannot display DrawStretchRaw8 simultaneously with other objects
-		//?? NOTE: when removing paletted renderer (soft), search all sources for REF_USE_PALETTE
-		//??	  + pass palette with DrawStretchRaw8() (remove SetRawPalette() function)
 
 // screenshot flags
 #define SHOT_SMALL			1		// stretch screenshot to reduce its dimensions (levelshots, savegames etc.)
@@ -212,10 +209,7 @@ typedef struct
 	void	(*DrawTileClear) (int x, int y, int w, int h, const char *name);
 	void	(*DrawFill) (int x, int y, int w, int h, int c);
 	void	(*DrawFill2) (int x, int y, int w, int h, unsigned rgba);
-
-	// Draw images for cinematic rendering (which can have a different palette)
-	void	(*SetRawPalette) (const byte *palette);	// NULL = game palette
-	void	(*DrawStretchRaw8) (int x, int y, int w, int h, int cols, int rows, byte *data);
+	void	(*DrawStretchRaw8) (int x, int y, int w, int h, int cols, int rows, byte *data, unsigned *palette);
 
 	/*---- video mode and refresh state management entry points ----*/
 	void	(*BeginFrame) (float camera_separation);

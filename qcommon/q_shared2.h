@@ -380,21 +380,6 @@ void	Swap_Init (void);
 
 #endif
 
-//=============================================
-
-//
-// key / value info strings
-//
-#define	MAX_INFO_KEY		64
-#define	MAX_INFO_VALUE		64
-#define	MAX_INFO_STRING		512
-
-char *Info_ValueForKey (char *s, char *key);
-void Info_RemoveKey (char *s, char *key);
-void Info_SetValueForKey (char *s, char *key, char *value);
-bool Info_Validate (char *s);
-
-
 /*
 ==========================================================
 
@@ -883,9 +868,6 @@ enum {
 
 
 // ROGUE
-
-extern "C" vec3_t monster_flash_offset [];
-
 
 // temp entity events
 //

@@ -16,41 +16,7 @@ Comments:
   - "*" - any number (same as "0-255")
   All-IP mask is "*.*.*.*" or "0-255.0-255.0-255.0-255"
 
-1. REF_GL (old !!)
-~~~~~~~~~~~~~~~~~~
-- extended view area for working with large maps (variable "gl_zmax" controls clipping of view range)
-- improved vid_restart performance (Win32)
-- fixed cursor appearance when in fullscreen mode (Win32)
-- fixed crash of using sprite models when one frame is not found
-- implemented environment mapping simulation on transparent objects (can be disabled with "gl_winrefl 0";
-  reflection taken from /* "env/<skyname>winrefl.???" or */ "env/defrefl.???")
-- changed appearance of "r_speeds" output
-- support of the Kingpin SURF_ALPHA surface flag
-- hardware gamma control (can be disabled with "set r_ignorehwgamma 1"); changes applied without "vid_restart" (Win32)
-- support for texture compression (can be disabled with "set gl_ext_compressed_textures 0")
-# improved "imagelist" command: now it shows texture internal formats and info about scrap
-- "gl_console_only" variable: when "1", no graphical information displayed and display forced to full console
-  (needs "vid_restart" to activate)
-- support of loading 8(grayscale)/24/32-bit tga and 24-bit jpg textures instead of 8-bit wal or pcx files
-# support for semi-transparent (has alpha >0 and <1) HUD images (e.g. Quake3 crosshairs)
-# improved speed in "r_lightmap=1" mode; side effect: r_fullbright and gl_showtris are now
-  works with multitexturing enabled (gl_showtris requires either r_lightmap or r_fullbright enabled)
-# "r_showtris 2" will shows triangles with enabled Z-buffer
-- "r_lightmap 2" solarizes lightmaps (as in Quake3)
-  "r_lightmap 3" inverses saturation of lightmaps on map loading
-  (both requires "vid_restart" to activate)
-
-2. REF_SOFT
-~~~~~~~~~~~
-- changed appearance of "r_speeds" and "r_dspeeds" output
-- fixed crash of using sprite models when one of frame images is not found
-- "sw_console_only" variable (see "gl_console_only" comments for details)
-- support of loading 24/32-bit tga and 24-bit jpg textures instead of 8-bit wal or pcx files (use
-    "set sw_prefer8bittex 1" if you want to load TGA/JPG only when 8-bit texture is not found; WARNING: when
-    playing Kingpin maps, you should set sw_prefer8bittex to 0 or erase Kingpin env/*.pcx files (different palette!))
-- support (visually buggy?) for Kingpin SURF_ALPHA surface flag
-
-3. IMPROVEMENTS
+1. IMPROVEMENTS
 ~~~~~~~~~~~~~~~
 - demomap can be called without ".dm2" extension (added by default)
 - added support of reading/listing player models from pak files
@@ -71,7 +37,7 @@ Comments:
   skin icon exists, it will be ignored
 - added "disconnect" menu item into "multiplayer" menu
 
-4. FIXES
+2. FIXES
 ~~~~~~~~
 - on game change:
   - saving current config
@@ -99,7 +65,7 @@ Comments:
 - cvar "logfile": "console.log" placed in quake root directory (not in game directory) + removed lines, finished
   with LF ('\r')
 
-5. ADDONS
+3. ADDONS
 ~~~~~~~~~
 Cvar system
 -----------
@@ -293,11 +259,11 @@ Network
   - to disable auto-startup of "dedicated_start" alias, use "nointro 1"
 - commands "lookdown <angle>" and "lookup <angle>"
 
-6. MISFEATURES
+4. MISFEATURES
 ~~~~~~~~~~~~~~
 - no negative dlights in renderer (can be emulated with multiplicative dlights ?)
 
-7. API (internals)
+5. API (internals)
 ~~~~~~~~~~~~~~~~~~
 Memory management
 -----------------

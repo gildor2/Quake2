@@ -732,25 +732,7 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, int
 /*-------------------- Video support ----------------------*/
 
 
-static unsigned rawPalette[256];
-
-void GL_SetRawPalette (const byte *palette)
-{
-	if (!palette) return;
-
-	byte *src = (byte*) palette;
-	byte *dst = (byte*) rawPalette;
-	for (int i = 0; i < 256; i++)
-	{
-		*dst++ = *src++;
-		*dst++ = *src++;
-		*dst++ = *src++;
-		*dst++ = 255;
-	}
-}
-
-
-void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic)
+void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette)
 {
 	image_t	*image;
 	byte	*pic32;
@@ -766,7 +748,7 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 	if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))	//?? check for max [rect] texture size
 	{
 		// convert 8->32 bit
-		pic32 = Convert8to32bit (pic, width, height, rawPalette);
+		pic32 = Convert8to32bit (pic, width, height, palette);
 		if (image->target != GL_TEXTURE_RECTANGLE_NV)
 			Com_DropError ("bad target");
 	}
@@ -792,7 +774,7 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 			int frac = fracStep >> 1;
 			for (int j = 0; j < scaledWidth; j++)
 			{
-				*dst++ = rawPalette[src[frac >> 16]];
+				*dst++ = palette[src[frac >> 16]];
 				frac += fracStep;
 			}
 		}

@@ -164,11 +164,10 @@ typedef struct
 	//
 	// non-gameserver infornamtion
 	// FIXME: move this cinematic stuff into the cin_t structure
-	FILE	*cinematic_file;
-	int		cinematictime;		// cls.realtime for first cinematic frame
-	int		cinematicframe;
-	byte	cinematicpalette[768];
-	bool	cinematicpalette_active;
+	FILE	*cinematicFile;
+	int		cinematicTime;		// cls.realtime for first cinematic frame
+	int		cinematicFrame;
+	unsigned cinematicPalette[256];
 
 	//
 	// server state information

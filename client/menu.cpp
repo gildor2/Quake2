@@ -494,7 +494,7 @@ const char *M_Main_Key (int key)
 void M_Menu_Main_f (void)
 {
 	MENU_CHECK
-	M_ForceMenuOff ();
+	M_ForceMenuOff ();		// pop all opened menus
 	M_PushMenu (M_Main_Draw, M_Main_Key);
 }
 
@@ -523,7 +523,7 @@ static void Multiplayer_Disconnect (void)
 {
 	if (cls.state != ca_disconnected)
 		Cbuf_AddText ("disconnect\n");
-	M_ForceMenuOff ();
+	M_ForceMenuOff ();		// actually, will drop to a top menu level
 }
 
 static void Multiplayer_MenuInit (void)
