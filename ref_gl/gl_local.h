@@ -432,7 +432,7 @@ typedef struct refEntity_s
 	float	dist2;						// Z-coordinate of model
 	qboolean visible;					// valid for current frame
 
-	vec3_t	center;
+	vec3_t	center, mins, maxs;			// bounding box
 	float	radius;
 	union {
 		struct {
@@ -524,7 +524,7 @@ typedef struct viewPortal_s
 	float	modelMatrix[4][4];
 	// projection params
 	float	x, y, w, h;			// viewport
-	float	fov_x, fov_y, fov_scale;
+	float	fov_x, fov_y, t_fov_x, t_fov_y, fov_scale;
 	cplane_t frustum[NUM_FRUSTUM_PLANES];	// used for frustum culling
 	float	projectionMatrix[4][4];
 	vec3_t	mins, maxs;			// bounding box of all visible leafs
@@ -604,6 +604,7 @@ extern drawSpeeds_t gl_speeds;
 void	DrawTextPos (int x, int y, char *text, float r, float g, float b);
 void	DrawTextLeft (char *text, float r, float g, float b);
 void	DrawTextRight (char *text, float r, float g, float b);
+void	DrawText3D (vec3_t pos, char *text, float r, float g, float b);
 
 
 /*----------- gl_backend.c ------------------*/
@@ -683,7 +684,7 @@ extern cvar_t	*gl_showsky;
 extern cvar_t	*r_drawworld;
 extern cvar_t	*r_drawentities;
 
-extern cvar_t	*gl_showbboxes, *gl_showtris, *gl_shownormals;
+extern cvar_t	*gl_showbboxes, *gl_showtris, *gl_shownormals, *gl_labels;
 extern cvar_t	*gl_lightLines;
 extern cvar_t	*gl_showLights;
 extern cvar_t	*gl_singleShader;

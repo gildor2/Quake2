@@ -165,7 +165,6 @@ typedef struct node_s
 typedef struct inlineModel_s	//?? replace this structure with extended cmodel_t
 {
 	vec3_t	mins, maxs;
-	vec3_t	center;				// model center (in world coordinate system)
 	float	radius;
 	int		headnode;			//?? is Q3 inline models have this ?
 	surfaceCommon_t **faces;

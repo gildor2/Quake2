@@ -550,7 +550,8 @@ void Cmd_TokenizeString (char *text, qboolean macroExpand)
 
 	s1 = strchr (text, '=');
 	s2 = strchr (text, '\"');
-	if (s1 && (!s2 || s2 > s1))		// a=b, but '=' not inside quotes
+	if (s1 && (!s2 || s2 > s1) &&							// a=b, but '=' not inside quotes
+		(s1 > text && s1[-1] != ' ' && s1[1] != ' '))		// ingnore "a = b"
 	{
 		// convert to "set a b"
 		strcpy (set_string, "set ");

@@ -65,6 +65,7 @@ extern float noiseTablef[];
 void GL_InitFuncTables (void);
 void ModelToWorldCoord (vec3_t localOrigin, refEntity_t *e, vec3_t center);
 void WorldToModelCoord (vec3_t world, refEntity_t *e, vec3_t local);
+qboolean GetBoxRect (refEntity_t *ent, vec3_t mins, vec3_t maxs, float mins2[2], float maxs2[2]);
 
 
 #endif

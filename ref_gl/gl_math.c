@@ -77,3 +77,51 @@ void WorldToModelCoord (vec3_t world, refEntity_t *e, vec3_t local)
 	for (i = 0; i < 3; i++)
 		local[i] = DotProduct (v, e->axis[i]);
 }
+
+
+// 12 + 8 * 4 = 44 dots
+// mins/maxs should be center-related (symmetric ?? -- replace with maxs only?)
+qboolean GetBoxRect (refEntity_t *ent, vec3_t mins, vec3_t maxs, float mins2[2], float maxs2[2])
+{
+	vec3_t	axis[3], tmp;
+	float	viewdist, x0, y0;
+	int		i;
+
+	// rotate screen axis
+	for (i = 0; i < 3; i++)
+	{
+		axis[i][0] = DotProduct (vp.viewaxis[i], ent->axis[0]);
+		axis[i][1] = DotProduct (vp.viewaxis[i], ent->axis[1]);
+		axis[i][2] = DotProduct (vp.viewaxis[i], ent->axis[2]);
+	}
+	VectorSubtract (ent->center, vp.vieworg, tmp);
+	x0 = DotProduct (tmp, vp.viewaxis[1]);
+	y0 = DotProduct (tmp, vp.viewaxis[2]);
+	viewdist = DotProduct (tmp, vp.viewaxis[0]);
+
+	if (viewdist < 4) return false;
+
+	// ClearBounds2D(mins2, maxs2)
+	mins2[0] = mins2[1] = 999999;
+	maxs2[0] = maxs2[1] = -999999;
+	// enumerate all box points (can try to optimize: find contour ??)
+	for (i = 0; i < 8; i++)
+	{
+		vec3_t	v;
+		float	proj, x, y, scale;
+
+		v[0] = (i & 1) ? maxs[0] : mins[0];
+		v[1] = (i & 2) ? maxs[1] : mins[1];
+		v[2] = (i & 4) ? maxs[2] : mins[2];
+
+		proj = -DotProduct (v, axis[0]);
+		if (proj >= viewdist) return false;			// this box vertex have negative z-coord
+		VectorMA (v, -proj, axis[0], v);
+		scale = viewdist / (viewdist - proj);
+		x = (DotProduct (v, axis[1]) + x0) * scale - x0;
+		y = (DotProduct (v, axis[2]) + y0) * scale - y0;
+		EXPAND_BOUNDS(x, mins2[0], maxs2[0]);
+		EXPAND_BOUNDS(y, mins2[1], maxs2[1]);
+	}
+	return true;
+}

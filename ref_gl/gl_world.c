@@ -245,36 +245,33 @@ static int PointCull (vec3_t point, int frustumMask)
 
 static qboolean BoxOccluded (refEntity_t *e, vec3_t mins, vec3_t maxs)
 {
-	int		i;
-	float	x, y, z;
-	vec3_t	v;
+	float	mins2[2], maxs2[2];
+	vec3_t	v, left, right;
 	int		n, brushes[NUM_TEST_BRUSHES];
 
-	//!! optimize: 8 -> 4 points; change trace order in a case of fast non-occluded test: up-left,down-right,others ...)
-	//!! do not try to cull weapon model (this check should be outside)
-	for (i = 0; i < 8; i++)
-	{
-		x = (i & 1) ? maxs[0] : mins[0];
-		y = (i & 2) ? maxs[1] : mins[1];
-		z = (i & 4) ? maxs[2] : mins[2];
+	if (!GetBoxRect (e, mins, maxs, mins2, maxs2)) return false;
 
-		if (!e->worldMatrix)
-		{
-			VectorMA (e->origin, x, e->axis[0], v);
-			VectorMA (v,		 y, e->axis[1], v);
-			VectorMA (v,		 z, e->axis[2], v);
-		}
-		else
-		{
-			v[0] = x; v[1] = y; v[2] = z;
-		}
+	// top-left
+	VectorMA (e->center, mins2[0], vp.viewaxis[1], left);
+	VectorMA (left, mins2[1], vp.viewaxis[2], v);
+	n = CM_BrushTrace (vp.vieworg, v, brushes, NUM_TEST_BRUSHES);
+	if (!n) return false;
 
-		if (i == 0)
-			n = CM_BrushTrace (vp.vieworg, v, brushes, NUM_TEST_BRUSHES);
-		else
-			n = CM_RefineBrushTrace (vp.vieworg, v, brushes, n);
-		if (!n) return false;
-	}
+	// bottom-right (diagonal with 1st point)
+	VectorMA (e->center, maxs2[0], vp.viewaxis[1], right);
+	VectorMA (right, maxs2[1], vp.viewaxis[2], v);
+	n = CM_RefineBrushTrace (vp.vieworg, v, brushes, n);
+	if (!n) return false;
+
+	// bottom-left
+	VectorMA (left, maxs2[1], vp.viewaxis[2], v);
+	n = CM_RefineBrushTrace (vp.vieworg, v, brushes, n);
+	if (!n) return false;
+
+	// top-right
+	VectorMA (right, mins2[1], vp.viewaxis[2], v);
+	n = CM_RefineBrushTrace (vp.vieworg, v, brushes, n);
+	if (!n) return false;
 
 	return true;
 }
@@ -345,7 +342,7 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 			continue;
 
 		im = e->model->inlineModel;
-		VectorSubtract (im->center, start, center2);
+		VectorSubtract (e->center, start, center2);
 
 		// collision detection: line vs sphere
 		entPos = DotProduct (center2, traceDir);
@@ -668,7 +665,7 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 	unsigned dlightMask, mask;
 
 	im = e->model->inlineModel;
-//	DrawTextLeft (va("%s {%g,%g,%g}", e->model->name, im->center[0], im->center[1], im->center[2]), 1, 0.2, 0.2);
+//	DrawTextLeft (va("%s {%g,%g,%g}", e->model->name, VECTOR_ARGS(e->center)), 1, 0.2, 0.2);
 	// check dlights
 	dlightMask = 0;
 	for (i = 0, dl = vp.dlights, mask = 1; i < vp.numDlights; i++, dl++, mask <<= 1)
@@ -676,7 +673,7 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 		vec3_t	tmp;
 		float	dist2, dist2min;
 
-		VectorSubtract (im->center, dl->origin, tmp);
+		VectorSubtract (e->center, dl->origin, tmp);
 		dist2 = DotProduct (tmp, tmp);
 		dist2min = im->radius + dl->intensity;
 		dist2min = dist2min * dist2min;
@@ -694,7 +691,7 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 			surf->dlightMask = dlightMask;
 		}
 //	if (dlightMask) DrawTextLeft(va("dl_ent %d(%g,%g,%g) %08X", currentEntity,
-//		im->center[0],im->center[1],im->center[2],dlightMask),1,1,0);//!!!! REMOVE
+//		VECTOR_ARGS(e->center),dlightMask),1,1,0);//!!!! REMOVE
 	AddBspSurfaces (im->faces, im->numFaces, e->frustumMask, e);
 }
 
@@ -1287,7 +1284,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 		}
 		else
 		{
-			DrawTextLeft (va("NULL entity %d: flags=%X origin=(%g %g %g), ", i, e->flags, VECTOR_ARGS(e->origin)), 1, 0, 0);
+			DrawText3D (e->origin, va("* bad ent %d: f=%X", i, e->flags), 1, 0, 0);
 			continue;
 		}
 
@@ -1298,26 +1295,29 @@ static void DrawEntities (int firstEntity, int numEntities)
 		{
 			float	*mins, *maxs;
 
-			mins = NULL;
+			mins = e->mins;
+			maxs = e->maxs;
+			if (BoxOccluded (e, mins, maxs))
+			{
+				if (gl_labels->integer == 2)
+					DrawText3D (e->center, va("occluded\n%s", e->model->name), 0.1, 0.2, 0.4);
+				gl_speeds.ocullEnts++;
+				continue;
+			}
+		}
+
+		if (e->model && gl_labels->integer)
+		{
 			switch (e->model->type)
 			{
 			case MODEL_INLINE:
-				//?? test distance/complexity
-				mins = e->model->inlineModel->mins;
-				maxs = e->model->inlineModel->maxs;
+				DrawText3D (e->center, va("origin: %g %g %g\nbmodel: %s\nflags: $%X",
+					VECTOR_ARGS(e->origin), e->model->name, e->flags), 0.1, 0.4, 0.2);
 				break;
 			case MODEL_MD3:
-				//?? check numtris
-				if (e->flags & (RF_WEAPONMODEL|RF_DEPTHHACK))
-					break;		// should not be occluded
-				mins = e->model->md3->frames[e->frame].mins;
-				maxs = e->model->md3->frames[e->frame].maxs;
+				DrawText3D (e->center, va("origin: %g %g %g\nmd3: %s\nskin: %s\nflags: $%X",
+					VECTOR_ARGS(e->origin), e->model->name, e->customShader ? e->customShader->name : "(default)", e->flags), 0.1, 0.4, 0.2);
 				break;
-			}
-			if (mins && BoxOccluded (e, mins, maxs))
-			{
-				gl_speeds.ocullEnts++;
-				continue;
 			}
 		}
 
@@ -1408,19 +1408,29 @@ static void DrawFlares (void)
 			if (im = f->owner)
 			{	// flare linked to entity - shift it with entity origin
 				vec3_t	tmp;
+				refEntity_t *e;
+				int		i;
 
 				// check entity visibility (can add entity origin only when it is valid for current frame)
-				if (!f->surf || cull)
+				if (!f->surf || cull)					// culled/fading flare
 				{
 					surfaceCommon_t **s;
-					int		i;
 
 					for (i = 0, s = im->faces; i < im->numFaces; i++, s++)
 						if ((*s)->frame == drawFrame) break;
-					if (i == im->numFaces) continue;		// no visible faces - skip flare
+					if (i == im->numFaces) continue;	// no visible faces - skip flare
 				}
+				// find entity
+				for (i = 0, e = gl_entities + vp.firstEntity; i < vp.numEntities; i++, e++)
+					if (e->model && e->model->type == MODEL_INLINE && e->model->inlineModel == im)
+					{
+						i = -1;
+						break;
+					}
+				if (i > 0) continue;					// should not happens ...
+				// compute flare origin
 				VectorAdd (im->mins, im->maxs, tmp);
-				VectorMA (im->center, -0.5f, tmp, tmp);
+				VectorMA (e->center, -0.5f, tmp, tmp);
 				VectorAdd (flarePos, tmp, flarePos);
 //				DrawTextLeft (va("flare shift: %g %g %g -> flarePos: %g %g %g", VECTOR_ARGS(tmp), VECTOR_ARGS(flarePos)),1,1,1);
 			}
@@ -1746,8 +1756,9 @@ void GL_AddEntity (entity_t *ent)
 				im = ent->model->inlineModel;
 				VectorAdd (im->mins, im->maxs, v);
 				VectorScale (v, 0.5f, v);
-				ModelToWorldCoord (v, out, im->center);
-				VectorCopy (im->center, out->center);
+				VectorSubtract (im->mins, v, out->mins);
+				VectorSubtract (im->maxs, v, out->maxs);
+				ModelToWorldCoord (v, out, out->center);
 				out->radius = im->radius;
 			}
 			break;
@@ -1781,6 +1792,9 @@ void GL_AddEntity (entity_t *ent)
 				VectorMA (center1, out->backLerp, center2, out->center);
 				// lerp radius
 				out->radius = (frame2->radius - frame1->radius) * out->backLerp + frame1->radius;
+				// compute mins/maxs (lerp ??)
+				VectorSubtract (frame1->mins, frame1->localOrigin, out->mins);
+				VectorSubtract (frame1->maxs, frame1->localOrigin, out->maxs);
 				// check for COLOR_SHELL
 				if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_HALF_DAM|RF_SHELL_DOUBLE))
 				{

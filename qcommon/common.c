@@ -38,10 +38,10 @@ cvar_t	*com_speeds;
 cvar_t	*log_stats;
 cvar_t	*developer;
 cvar_t	*timescale;
-cvar_t	*fixedtime;
-cvar_t	*logfile_active;	// 1 = buffer log, 2 = flush after each print
+cvar_t	*timedemo;
 cvar_t	*sv_cheats;
 cvar_t	*dedicated;
+static cvar_t	*logfile_active;	// 1 = buffer log, 2 = flush after each print
 
 static FILE	*logfile;
 
@@ -1519,7 +1519,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(log_stats, 0, 0),
 	CVAR_VAR(developer, 0, 0),
 	CVAR_VAR(timescale, 1, CVAR_CHEAT),
-	CVAR_VAR(fixedtime, 0, CVAR_CHEAT),
+	CVAR_VAR(timedemo, 0, CVAR_CHEAT),
 	CVAR_VAR(nointro, 0, CVAR_NOSET),
 	{&logfile_active, "logfile", "0", 0},
 	{&sv_cheats, "cheats", "0", CVAR_SERVERINFO|CVAR_LATCH},
@@ -1645,11 +1645,12 @@ void QCommon_Frame (int msec)
 	}
 
 	realMsec = msec;
-	if (fixedtime->value)
-		msecf = fixedtime->value;
+	//?? ignore timescale in multiplayer and timedemo in non-demo mode
+	if (timedemo->integer)
+		msecf = 100.0f / timedemo->integer;		// sv_fps ?
 	else // if (timescale->value)
 		msecf = msec * timescale->value;
-	if (msecf < 0) msecf = 0;		// no reverse time
+	if (msecf < 0) msecf = 0;					// no reverse time
 
 	c_traces = 0;
 	c_pointcontents = 0;

@@ -1491,8 +1491,8 @@ void CL_AddEntities (void)
 	else
 		cl.lerpfrac = 1.0f - (cl.frame.servertime - cl.time) / 100.0f;
 
-	if (cl_timedemo->integer)
-		cl.lerpfrac = 1.0;
+//	if (timedemo->integer)
+//		cl.lerpfrac = 1.0;
 
 	CL_CalcViewValues ();
 	// PMM - moved this here so the heat beam has the right values for the vieworg, and can lock the beam to the gun

@@ -391,9 +391,9 @@ static void CopyLightmap (byte *dst, byte *src, int samples)
 				light = 1.0f / light;
 
 			CreateSolarColor (light, 1, 0.5, vec);
-			*dst++ = vec[0] * 255;
-			*dst++ = vec[1] * 255;
-			*dst++ = vec[2] * 255;
+			*dst++ = Q_floor (vec[0] * 255);
+			*dst++ = Q_floor (vec[1] * 255);
+			*dst++ = Q_floor (vec[2] * 255);
 		}
 	}
 	else
@@ -415,12 +415,13 @@ static void CopyLightmap (byte *dst, byte *src, int samples)
 				// get color
 				r = *src++;  g = *src++;  b = *src++;
 				// change saturation
-				light = (r + g + b) / 3.0;
+				light = (r + g + b) / 3.0f;
 				SATURATE(r,light,sat);
 				SATURATE(g,light,sat);
 				SATURATE(b,light,sat);
 				// put color
-				*dst++ = Q_round (r);  *dst++ = Q_round (g);  *dst++ = Q_round (b);
+				*dst++ = Q_floor (r);  *dst++ = Q_floor (g);  *dst++ = Q_floor (b);
+//				*dst++ = Q_round (r);  *dst++ = Q_round (g);  *dst++ = Q_round (b);		-- can produce bugs (beachassault,heli)
 			}
 		}
 	}

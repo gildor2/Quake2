@@ -50,7 +50,6 @@ cvar_t	*cl_showmiss;
 cvar_t	*cl_showclamp;
 
 cvar_t	*cl_paused;
-cvar_t	*cl_timedemo;
 
 cvar_t	*lookspring;
 cvar_t	*lookstrafe;
@@ -639,7 +638,7 @@ void CL_Disconnect (void)
 	if (cls.state == ca_disconnected)
 		return;
 
-	if (cl_timedemo && cl_timedemo->integer)
+	if (timedemo->integer)
 	{
 		int	time;
 
@@ -1533,7 +1532,6 @@ CVAR_BEGIN(vars)
 	{&cl_showclamp, "showclamp", "0", 0},
 	CVAR_VAR(cl_timeout, 120, 0),
 	{&cl_paused, "paused", "0", CVAR_CHEAT},
-	{&cl_timedemo, "timedemo", "0", CVAR_CHEAT},
 
 	{&rcon_client_password, "rcon_password", "", 0},
 	{&rcon_address, "rcon_address", "", 0},
@@ -1675,13 +1673,13 @@ void CL_Frame (float msec, int realMsec)
 	extratime += msec / 1000.0f;
 	extratime_real += realMsec;
 
-	if (!cl_timedemo->integer)
+	if (!timedemo->integer)			// ignore cl_maxfps in timedemo
 	{
 		// here extratime can be accumulated between frames
 		if (cls.state == ca_connected && extratime < 0.1f)
-			return;			// don't flood packets out while connecting
+			return;					// don't flood packets out while connecting
 		if (extratime_real < 1000.0f / cl_maxfps->value)
-			return;			// framerate is too high
+			return;					// framerate is too high
 	}
 
 	IN_Frame ();

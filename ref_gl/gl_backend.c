@@ -60,8 +60,6 @@ int gl_numVerts, gl_numIndexes, gl_numExtra;
 // surfaces
 static surfaceInfo_t *sortedSurfaces[MAX_SCENE_SURFACES];
 
-viewPortal_t ap;		// active portal
-
 
 /*----- Process deforms, ...gens etc. ------*/
 
@@ -84,7 +82,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 		{
 		case DEFORM_WAVE:
 			table = mathFuncs[deform->wave.type];
-			t = deform->wave.freq * ap.time + deform->wave.phase;
+			t = deform->wave.freq * vp.time + deform->wave.phase;
 
 			vec = vb->verts;
 			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
@@ -372,9 +370,9 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 		switch (tcmod->type)
 		{
 		case TCMOD_SCROLL:
-			f1 = tcmod->sSpeed * ap.time;
+			f1 = tcmod->sSpeed * vp.time;
 			f1 = f1 - floor (f1);
-			f2 = tcmod->tSpeed * ap.time;
+			f2 = tcmod->tSpeed * vp.time;
 			f2 = f2 - floor (f2);
 			for (k = 0; k < gl_numVerts; k++, dst++)
 			{
@@ -383,7 +381,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 			}
 			break;
 		case TCMOD_TURB:
-			f1 = tcmod->wave.freq * ap.time + tcmod->wave.phase;
+			f1 = tcmod->wave.freq * vp.time + tcmod->wave.phase;
 			f2 = tcmod->wave.amp;
 			for (k = 0; k < gl_numVerts; k++, dst++)
 			{
@@ -402,8 +400,8 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 			{
 				f1 = dst->tex[0];
 				f2 = dst->tex[1];
-				dst->tex[0] = f1 / 64.0f + SIN_FUNC((f2 / 16.0f + ap.time) / (2.0f * M_PI)) / 16.0f;
-				dst->tex[1] = f2 / 64.0f + SIN_FUNC((f1 / 16.0f + ap.time) / (2.0f * M_PI)) / 16.0f;
+				dst->tex[0] = f1 / 64.0f + SIN_FUNC((f2 / 16.0f + vp.time) / (2.0f * M_PI)) / 16.0f;
+				dst->tex[1] = f2 / 64.0f + SIN_FUNC((f1 / 16.0f + vp.time) / (2.0f * M_PI)) / 16.0f;
 			}
 			break;
 		case TCMOD_SCALE:
@@ -419,7 +417,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 			{
 				float	f, c1, c2;
 
-				f = - tcmod->rotateSpeed * ap.time / 180 * M_PI;	// angle
+				f = - tcmod->rotateSpeed * vp.time / 180 * M_PI;	// angle
 				f1 = SIN_FUNC(f);
 				f2 = COS_FUNC(f);
 				c1 = 0.5f * (1 - f1 - f2);
@@ -521,7 +519,7 @@ static void PreprocessShader (shader_t *sh)
 				// set rgba
 				st->st.alphaGenType = ALPHAGEN_CONST;
 				st->st.rgbGenType = RGBGEN_CONST;
-				st->st.rgbaConst.rgba = ap.dlights[i].c.rgba;
+				st->st.rgbaConst.rgba = vp.dlights[i].c.rgba;
 				// set tcGen
 				st->st.tcGenType = TCGEN_DLIGHT0 + num;
 				st->st.numTcMods = 0;
@@ -556,7 +554,7 @@ static void PreprocessShader (shader_t *sh)
 				{
 					byte	c;
 
-					c = ap.lightStyles[style].value;
+					c = vp.lightStyles[style].value;
 					st->st.rgbaConst.rgba = (255 << 24) | (c << 16) | (c << 8) | c;
 				}
 				else
@@ -593,7 +591,7 @@ static void PreprocessShader (shader_t *sh)
 			int		n;
 
 			if (currentEntity == &gl_entities[ENTITYNUM_WORLD] || !stage->frameFromEntity)
-				n = Q_round (ap.time * stage->animMapFreq);
+				n = Q_round (vp.time * stage->animMapFreq);
 			else
 				n = currentEntity->frame;
 			st->st.mapImage[0] = stage->mapImage[n % stage->numAnimTextures];
@@ -650,7 +648,7 @@ static void PreprocessShader (shader_t *sh)
 
 				//?? function may be NOISE
 #define P stage->rgbGenWave
-				c1 = PERIODIC_FUNC(mathFuncs[stage->rgbGenWave.type], P.freq * ap.time + P.phase) * P.amp + P.base;
+				c1 = PERIODIC_FUNC(mathFuncs[stage->rgbGenWave.type], P.freq * vp.time + P.phase) * P.amp + P.base;
 #undef P
 				c2 = Q_round (c1 * 255);
 				c2 = bound(c2, 0, 255);
@@ -1014,7 +1012,7 @@ static void StageIterator (void)
 		GL_Unlock ();
 
 		//!! don't works
-		if (i == numRenderPasses - 1 && !(ap.flags & RDF_NOWORLDMODEL)
+		if (i == numRenderPasses - 1 && !(vp.flags & RDF_NOWORLDMODEL)
 			&& currentShader->type == SHADERTYPE_NORMAL && !gl_state.is2dMode)
 			GL_EnableFog (true);
 //		else if (Cvar_VariableInt("test"))//??
@@ -1113,10 +1111,10 @@ static void DrawSkyBox (void)
 	GL_State (gl_showsky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
 	GL_SetMultitexture (1);
 	// change modelview matrix
-	qglTranslatef (VECTOR_ARGS(ap.vieworg));
+	qglTranslatef (VECTOR_ARGS(vp.vieworg));
 	if (currentShader->skyRotate)
 	{
-		qglRotatef (ap.time * currentShader->skyRotate,
+		qglRotatef (vp.time * currentShader->skyRotate,
 			currentShader->skyAxis[0],
 			currentShader->skyAxis[1],
 			currentShader->skyAxis[2]);
@@ -1128,7 +1126,7 @@ static void DrawSkyBox (void)
 
 	for (side = 0; side < 6; side++)
 	{
-		gl_numIndexes = GL_TesselateSkySide (side, vb->verts, vb->texCoord[0], ap.zFar);
+		gl_numIndexes = GL_TesselateSkySide (side, vb->verts, vb->texCoord[0], vp.zFar);
 		if (!gl_numIndexes) continue;	// no surfaces on this side
 
 		if (currentShader != gl_defaultSkyShader)
@@ -1192,7 +1190,7 @@ static void CheckDynamicLightmap (surfaceCommon_t *s)
 			updateType = 1;		// vertex color
 			continue;
 		}
-		if (dl->modulate[i] != ap.lightStyles[style].value)
+		if (dl->modulate[i] != vp.lightStyles[style].value)
 		{
 			updateType = 2;		// lightmap
 			break;
@@ -1205,7 +1203,7 @@ static void CheckDynamicLightmap (surfaceCommon_t *s)
 	{
 		// require to update lightmap
 		for (i = 0; i < dl->numStyles; i++)
-			dl->modulate[i] = ap.lightStyles[dl->style[i]].value;
+			dl->modulate[i] = vp.lightStyles[dl->style[i]].value;
 		if (dlightUpdate) dl->modulate[0]--;	// force to update vertex lightmap when dlight disappear
 
 		GL_UpdateDynamicLightmap (s->shader, surf, updateType == 1, s->dlightMask);
@@ -1415,7 +1413,7 @@ static void FlashColor (void)
 {
 	int		i;
 
-	i = Q_round (ap.time / 3 * TABLE_SIZE);
+	i = Q_round (vp.time / 3 * TABLE_SIZE);
 	qglColor3f (sinTable[i & TABLE_MASK] / 2 + 0.5,
 				sinTable[i + 100 & TABLE_MASK] / 2 + 0.5,
 				sinTable[600 - i & TABLE_MASK] / 2 + 0.5);
@@ -1431,7 +1429,7 @@ static void DrawBBoxes (void)
 
 	// common GL setup
 #ifdef BBOX_WORLD
-	qglLoadMatrixf (&ap.modelMatrix[0][0]);		// world matrix
+	qglLoadMatrixf (&vp.modelMatrix[0][0]);		// world matrix
 #endif
 	GL_SetMultitexture (0);		// disable texturing with all tmu's
 	qglDisableClientState (GL_COLOR_ARRAY);
@@ -1443,10 +1441,9 @@ static void DrawBBoxes (void)
 	GL_State (0);
 
 	/*-------- draw bounding boxes --------*/
-	for (i = 0, ent = gl_entities + ap.firstEntity; i < ap.numEntities; i++, ent++)
+	for (i = 0, ent = gl_entities + vp.firstEntity; i < vp.numEntities; i++, ent++)
 	{
 		model_t		*m;
-		float		*mins, *maxs;
 		int			j;
 		bufVertex_t v[8];
 		static int inds[24] = {
@@ -1460,36 +1457,52 @@ static void DrawBBoxes (void)
 
 		if (!(m = ent->model)) continue;	// no bbox info
 
-		// get bbox data
-		switch (m->type)
+#if 0
 		{
-		case MODEL_INLINE:
-			mins = m->inlineModel->mins;
-			maxs = m->inlineModel->maxs;
-			break;
-		case MODEL_MD3:
-			mins = m->md3->frames[ent->frame].mins;
-			maxs = m->md3->frames[ent->frame].maxs;
-			break;
-		default:
-			continue;	// do not draw
-		}
+			float	mins2[2], maxs2[2];
 
+			if (GetBoxRect (ent, ent->mins, ent->maxs, mins2, maxs2))
+			{
+				vec3_t	h;
+				static int idx2[4] = {0, 2, 3, 1};
+
+				VectorMA (ent->center, mins2[0], vp.viewaxis[1], h);
+				VectorMA (h, mins2[1], vp.viewaxis[2], v[0].xyz);
+				VectorMA (h, maxs2[1], vp.viewaxis[2], v[1].xyz);
+				VectorMA (ent->center, maxs2[0], vp.viewaxis[1], h);
+				VectorMA (h, mins2[1], vp.viewaxis[2], v[2].xyz);
+				VectorMA (h, maxs2[1], vp.viewaxis[2], v[3].xyz);
+
+				GL_State (GLSTATE_POLYGON_LINE);
+				GL_DepthRange (DEPTH_NEAR);
+				qglVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
+				qglColor3f (0.5, 0.1, 0.1);
+				qglDrawElements (GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
+
+				GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA);
+				GL_DepthRange (DEPTH_NORMAL);
+				qglColor4f (0.1, 0.1, 0.3, 0.4);
+				qglDrawElements (GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
+
+				qglColor3f (0.6, 0.6, 0.2);
+			}
+		}
+#endif
 		// generate verts
 		for (j = 0; j < 8; j++)
 		{
 			float	x, y, z;
 			vec3_t	tmp;
 
-			x = (j & 1) ? maxs[0] : mins[0];
-			y = (j & 2) ? maxs[1] : mins[1];
-			z = (j & 4) ? maxs[2] : mins[2];
+			x = (j & 1) ? ent->maxs[0] : ent->mins[0];
+			y = (j & 2) ? ent->maxs[1] : ent->mins[1];
+			z = (j & 4) ? ent->maxs[2] : ent->mins[2];
 
 #ifdef BBOX_WORLD
 			// project point to a world coordinate system (org + x*axis[0] + y*axis[1] + z*axis[2])
 			if (!ent->worldMatrix)
 			{
-				VectorMA (ent->origin, x, ent->axis[0], tmp);
+				VectorMA (ent->center, x, ent->axis[0], tmp);
 				VectorMA (tmp,		   y, ent->axis[1], tmp);
 				VectorMA (tmp,		   z, ent->axis[2], v[j].xyz);
 			}
@@ -1662,7 +1675,7 @@ static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 		if (stage->numAnimTextures == 1)
 			GL_Bind (stage->mapImage[0]);
 		else
-			GL_Bind (stage->mapImage[Q_round(ap.time * stage->animMapFreq) % stage->numAnimTextures]);
+			GL_Bind (stage->mapImage[Q_round(vp.time * stage->animMapFreq) % stage->numAnimTextures]);
 
 		for (j = 0, psurf = surfs; j < numSurfs; j++, psurf++)
 		{
@@ -1707,8 +1720,8 @@ static void DrawParticles (particle_t *p)
 	GL_Bind (gl_particleImage);
 
 	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|/*GLSTATE_DEPTHWRITE|*/GLSTATE_ALPHA_GT0);
-	VectorScale (ap.viewaxis[1], 1.5, up);
-	VectorScale (ap.viewaxis[2], 1.5, right);
+	VectorScale (vp.viewaxis[1], 1.5, up);
+	VectorScale (vp.viewaxis[2], 1.5, right);
 
 	qglBegin (GL_TRIANGLES);
 	for ( ; p; p = p->drawNext)
@@ -1716,10 +1729,10 @@ static void DrawParticles (particle_t *p)
 		float	scale;
 		int		alpha;
 
-		scale = (p->org[0] - ap.vieworg[0]) * ap.viewaxis[0][0] +
-				(p->org[1] - ap.vieworg[1]) * ap.viewaxis[0][1] +
-				(p->org[2] - ap.vieworg[2]) * ap.viewaxis[0][2];		// get Z-coordinate
-		scale *= ap.fov_scale;
+		scale = (p->org[0] - vp.vieworg[0]) * vp.viewaxis[0][0] +
+				(p->org[1] - vp.vieworg[1]) * vp.viewaxis[0][1] +
+				(p->org[2] - vp.vieworg[2]) * vp.viewaxis[0][2];		// get Z-coordinate
+		scale *= vp.fov_scale;
 		if (scale < 10)
 			continue;		// too near
 		if (scale < 20.0f)
@@ -1787,15 +1800,15 @@ static void DrawScene (void)
 	int		currentShaderNum, currentEntityNum;
 	qboolean currentWorld, isWorld;
 
-	LOG_STRING (va("******** R_DrawScene: (%g, %g) - (%g, %g) ********\n", ap.x, ap.y, ap.x+ap.w, ap.y+ap.h));
+	LOG_STRING (va("******** R_DrawScene: (%g, %g) - (%g, %g) ********\n", vp.x, vp.y, vp.x+vp.w, vp.y+vp.h));
 
 	if (gl_numVerts) FlushArrays ();
-	GL_Setup (&ap);
+	GL_Setup (&vp);
 
 	// sort surfaces
 	if (gl_finish->integer == 2) qglFinish ();
 	gl_speeds.beginSort = Sys_Milliseconds ();
-	GL_SortSurfaces (&ap, sortedSurfaces);
+	GL_SortSurfaces (&vp, sortedSurfaces);
 	gl_speeds.begin3D = Sys_Milliseconds ();
 
 	currentDlightMask = 0;
@@ -1806,7 +1819,7 @@ static void DrawScene (void)
 	numSkySurfs = 0;
 
 	si = sortedSurfaces;
-	for (index = 0; index < ap.numSurfaces; index++, si++)
+	for (index = 0; index < vp.numSurfaces; index++, si++)
 	{
 		surf = (*si)->surf;
 		shader = GL_GetShaderByNum (((*si)->sort >> SHADERNUM_SHIFT) & SHADERNUM_MASK);
@@ -1815,18 +1828,18 @@ static void DrawScene (void)
 		if (!index) SetCurrentShader (shader);
 
 		if (!shader->skyRotate)
-			GL_AddSkySurface (surf->pl, ap.vieworg);	//?? may be another types
+			GL_AddSkySurface (surf->pl, vp.vieworg);	//?? may be another types
 		numSkySurfs++;
 	}
 	//?? may be, require to set dlightMask, currentShader, currentEntity etc.
 	if (numSkySurfs) DrawSkyBox ();
 
 	// update r_speeds values
-	gl_speeds.surfs += ap.numSurfaces - index;	// numSurfaces - numSkySurfaces
+	gl_speeds.surfs += vp.numSurfaces - index;	// numSurfaces - numSkySurfaces
 
 	/*--- update all dynamic lightmaps ---*/
 
-	for (index2 = index, si2 = si; index2 < ap.numSurfaces; index2++, si2++)
+	for (index2 = index, si2 = si; index2 < vp.numSurfaces; index2++, si2++)
 	{
 		surf = (*si2)->surf;
 		if (surf && surf->type == SURFACE_PLANAR)
@@ -1835,12 +1848,12 @@ static void DrawScene (void)
 
 	/*-------- draw world/models ---------*/
 
-//??	if (!(ap.flags & RDF_NOWORLDMODEL))	GL_EnableFog (true);
+//??	if (!(vp.flags & RDF_NOWORLDMODEL))	GL_EnableFog (true);
 
 	numFastSurfs = 0;
 	currentShaderNum = currentEntityNum = -1;
 	currentWorld = false;
-	for (/* continue */; index < ap.numSurfaces; index++, si++)
+	for (/* continue */; index < vp.numSurfaces; index++, si++)
 	{
 		int		shNum, entNum;
 		int		code;
@@ -1885,16 +1898,16 @@ static void DrawScene (void)
 			{
 				if (!currentWorld)		// previous entity was not world
 				{
-					//?? set shader.time to ap.time
+					//?? set shader.time to vp.time
 					LOG_STRING (va("******** Change entity to WORLD ********\n"));
-					qglLoadMatrixf (&ap.modelMatrix[0][0]);
+					qglLoadMatrixf (&vp.modelMatrix[0][0]);
 				}
 				gl_state.inverseCull = false;
 				GL_DepthRange (DEPTH_NORMAL);
 			}
 			else
 			{
-				//?? set shader.time to ap.time - entity.time
+				//?? set shader.time to vp.time - entity.time
 				LOG_STRING (va("******** Change entity to %s ********\n", currentEntity->model->name));
 				qglLoadMatrixf (&currentEntity->modelMatrix[0][0]);
 				gl_state.inverseCull = currentEntity->mirror;
@@ -2153,7 +2166,7 @@ void GL_BackEnd (void)
 				bkDrawFrame_t *p1;
 
 				p1 = (bkDrawFrame_t *) p;
-				memcpy (&ap, &p1->portal, sizeof(viewPortal_t));
+				memcpy (&vp, &p1->portal, sizeof(viewPortal_t));
 				DrawScene ();
 				p = (int *) ++p1;
 			}

@@ -792,7 +792,7 @@ void V_RenderView (float stereo_separation)
 	if (!cl.refresh_prepped)
 		return;			// still loading
 
-	if (cl_timedemo->integer)
+	if (timedemo->integer)
 	{
 		int		time, timeDelta;
 		static int lastTime;

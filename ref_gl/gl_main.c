@@ -74,7 +74,7 @@ cvar_t	*gl_showsky;
 cvar_t	*r_drawworld;
 cvar_t	*r_drawentities;
 
-cvar_t	*gl_showbboxes, *gl_showtris, *gl_shownormals;
+cvar_t	*gl_showbboxes, *gl_showtris, *gl_shownormals, *gl_labels;
 cvar_t	*gl_lightLines;
 cvar_t	*gl_showLights;
 cvar_t	*gl_singleShader;
@@ -173,6 +173,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_showbboxes, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showtris, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_shownormals, 0, CVAR_CHEAT),
+	CVAR_VAR(gl_labels, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_lightLines, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showLights, 0, 0),
 	CVAR_VAR(gl_singleShader, 0, CVAR_CHEAT),
@@ -496,7 +497,7 @@ static void GL_EndFrame (void)
 
 /*----------------- Rendering ---------------------*/
 
-static void PrepareWorldModel (void)
+static void SetWorldModelview (void)
 {
 	float	matrix[4][4];
 	int		i, j, k;
@@ -590,7 +591,7 @@ static void SetFrustum (void)
 static void SetPerspective (void)
 {
 #define m	vp.projectionMatrix
-	float	xmax, xmin, ymax, ymin, zmin, zmax, tfx, tfy;
+	float	xmax, xmin, ymax, ymin, zmin, zmax;
 
 	if (vp.flags & RDF_NOWORLDMODEL)
 		vp.zFar = 1024;
@@ -621,14 +622,12 @@ static void SetPerspective (void)
 		vp.zFar = sqrt (d);
 	}
 	//-------------
-	tfx = tan (vp.fov_x * M_PI / 360.0f);
-	tfy = tan (vp.fov_y * M_PI / 360.0f);
 	zmin = gl_znear->value;
 	zmax = vp.zFar;
-	xmin = -zmin * tfx;
-	xmax = zmin * tfx;
-	ymin = -zmin * tfy;
-	ymax = zmin * tfy;
+	xmin = -zmin * vp.t_fov_x;
+	xmax = zmin * vp.t_fov_x;
+	ymin = -zmin * vp.t_fov_y;
+	ymax = zmin * vp.t_fov_y;
 	/* Matrix contents:
 	 *  |   0    1    2    3
 	 * -+-------------------
@@ -703,8 +702,14 @@ static void GL_RenderFrame (refdef_t *fd)
 	vp.h = fd->height;
 	vp.fov_x = fd->fov_x;
 	vp.fov_y = fd->fov_y;
+	vp.t_fov_x = tan (vp.fov_x * M_PI / 360.0f);
+	vp.t_fov_y = tan (vp.fov_y * M_PI / 360.0f);
 	vp.fov_scale = tan (fd->fov_x / 2.0f / 180.0f * M_PI);
 	if (vp.fov_scale < 0.01) vp.fov_scale = 0.01;
+
+	// set vieworg/viewaxis before all to allow 3D text output
+	VectorCopy (fd->vieworg, vp.vieworg);
+	AnglesToAxis (fd->viewangles, vp.viewaxis);
 
 	vp.lightStyles = fd->lightstyles;
 	vp.time = fd->time;
@@ -727,11 +732,8 @@ static void GL_RenderFrame (refdef_t *fd)
 	gl_speeds.parts = gl_speeds.cullParts = 0;
 	vp.particles = fd->particles;
 
-	VectorCopy (fd->vieworg, vp.vieworg);
-	AnglesToAxis (fd->viewangles, vp.viewaxis);
-
 	GL_ClearPortal ();
-	PrepareWorldModel ();
+	SetWorldModelview ();
 	SetFrustum ();
 
 	GL_DrawPortal ();
@@ -1044,6 +1046,47 @@ void DrawTextRight (char *text, float r, float g, float b)
 	if (nextRight_y >= vid.height) return;	// out of screen
 	DrawTextPos (vid.width - strlen(text) * CHARSIZE_X, nextRight_y, text, r, g, b);
 	nextRight_y += CHARSIZE_Y;
+}
+
+
+void DrawText3D (vec3_t pos, char *text, float r, float g, float b)
+{
+	vec3_t	vec;
+	float	x, y, z;
+	int		scrX, scrY;
+
+	VectorSubtract (pos, vp.vieworg, vec);
+
+	z = DotProduct (vec, vp.viewaxis[0]);
+	if (z <= gl_znear->value) return;			// not visible
+
+	x = DotProduct (vec, vp.viewaxis[1]) / z / vp.t_fov_x;
+	if (x < -1 || x > 1) return;
+
+	y = DotProduct (vec, vp.viewaxis[2]) / z / vp.t_fov_y;
+	if (y < -1 || y > 1) return;
+
+	scrX = Q_round (vp.x + vp.w * (0.5 - x / 2));
+	scrY = Q_round (vp.y + vp.h * (0.5 - y / 2));
+
+	do
+	{
+		char	buf[256], *next;
+		int		len;
+
+		next = strchr (text, '\n');
+		if (next)
+		{
+			len = next - text + 1;
+			if (len > sizeof(buf)) len = sizeof(buf);
+			Q_strncpyz (buf, text, len);
+			text = buf;
+			next++;		// skip '\n'
+		}
+		DrawTextPos (scrX, scrY, text, r, g, b);
+		text = next;
+		scrY += CHARSIZE_Y;
+	} while (text);
 }
 
 

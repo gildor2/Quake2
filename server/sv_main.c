@@ -25,7 +25,6 @@ netadr_t	master_adr[MAX_MASTERS];	// address of group servers
 client_t	*sv_client;					// current client
 
 cvar_t	*sv_paused;
-static cvar_t	*sv_timedemo;
 
 cvar_t	*sv_enforcetime;
 
@@ -1079,7 +1078,7 @@ void SV_Frame (float msec)
 	frameTime = 100;	// (sv_fps->integer > 10) ? (1000 / sv_fps->integer) : 100;
 
 	// move autonomous things around if enough time has passed
-	if (!sv_timedemo->integer && svs.realtime < sv.time)
+	if (svs.realtime < sv.time)
 	{
 		// never let the time get too far off
 		if (sv.time - svs.realtime > frameTime)
@@ -1285,7 +1284,6 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(zombietime, 2, 0),
 	{&sv_showclamp, "showclamp", "0", 0},
 	{&sv_paused, "paused", "0", CVAR_CHEAT},
-	{&sv_timedemo, "timedemo", "0", CVAR_CHEAT},
 	{&sv_enforcetime, "sv_enforcetime", "0", 0},
 	CVAR_VAR(allow_download, 1, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_players, 0, CVAR_ARCHIVE),

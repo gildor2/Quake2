@@ -14,13 +14,13 @@ static void LightLine (vec3_t *axis, vec3_t from, vec3_t to, float *color, float
 	color_t	c;
 
 	if (lightScale < gl_lightLines->value) return;
-	if (ap.flags & RDF_NOWORLDMODEL) return;				// no matrix to load
+	if (vp.flags & RDF_NOWORLDMODEL) return;				// no matrix to load
 
 	prevDepth = gl_state.currentDepthMode;
 
 
 	qglPushMatrix ();
-	qglLoadMatrixf (&ap.modelMatrix[0][0]);
+	qglLoadMatrixf (&vp.modelMatrix[0][0]);
 	GL_SetMultitexture (0);		// disable texturing
 	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 	GL_DepthRange (DEPTH_NEAR);
@@ -63,10 +63,10 @@ void GL_ShowLights (void)
 	surfLight_t *rl;
 	int		i, j;
 
-	if (ap.flags & RDF_NOWORLDMODEL) return;
+	if (vp.flags & RDF_NOWORLDMODEL) return;
 
 	qglPushMatrix ();
-	qglLoadMatrixf (&ap.modelMatrix[0][0]);
+	qglLoadMatrixf (&vp.modelMatrix[0][0]);
 	GL_SetMultitexture (0);		// disable texturing
 	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 	qglDisableClientState (GL_COLOR_ARRAY);
@@ -238,7 +238,7 @@ static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *v
 		DrawTextLeft ("unknown point sl.type", 1, 0, 0);
 	}
 
-	scale = scale * ap.lightStyles[sl->style].value / 255.0f;
+	scale = scale * vp.lightStyles[sl->style].value / 255.0f;
 //if (sl->spot) DrawTextLeft(va("  scale=%g",scale),1,1,0);
 	if (scale < 1) return;							// "scale" will convert 0..1 range to 0..255
 
@@ -517,7 +517,7 @@ void GL_LightForEntity (refEntity_t *ent)
 
 	memset (entityColorAxis, 0, sizeof(entityColorAxis));
 
-	if (!(ap.flags & RDF_NOWORLDMODEL))
+	if (!(vp.flags & RDF_NOWORLDMODEL))
 	{
 		if (!gl_nogrid->integer)
 		{
@@ -544,7 +544,7 @@ void GL_LightForEntity (refEntity_t *ent)
 				prevDepth = gl_state.currentDepthMode;
 				GL_DepthRange (DEPTH_NEAR);
 				qglPushMatrix ();
-				qglLoadMatrixf (&ap.modelMatrix[0][0]);
+				qglLoadMatrixf (&vp.modelMatrix[0][0]);
 				GL_SetMultitexture (0);		// disable texturing
 				GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 				qglDisableClientState (GL_COLOR_ARRAY);
@@ -633,7 +633,7 @@ void GL_LightForEntity (refEntity_t *ent)
 
 	/*---------------------- dlights ------------------------*/
 
-	for (i = 0, dl = ap.dlights; i < ap.numDlights; i++, dl++)
+	for (i = 0, dl = vp.dlights; i < vp.numDlights; i++, dl++)
 	{
 		vec3_t	dst, color;
 		float	dist, denom;
@@ -670,7 +670,7 @@ void GL_LightForEntity (refEntity_t *ent)
 		float	glow;
 
 #define MAX_GLOW	0.2		// Cvar_VariableValue("glow");
-		glow = (SIN_FUNC(ap.time / 1.5f) + 1) / 2 * MAX_GLOW;	// 0..MAX_GLOW
+		glow = (SIN_FUNC(vp.time / 1.5f) + 1) / 2 * MAX_GLOW;	// 0..MAX_GLOW
 		// lerp colors between color and 255 with glow
 		for (i = 0; i < 6; i++)
 		{

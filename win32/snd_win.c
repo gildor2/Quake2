@@ -35,7 +35,6 @@ typedef enum {SIS_SUCCESS, SIS_FAILURE, SIS_NOTAVAIL} sndinitstat;
 #ifdef WAVEOUT_DRV
 cvar_t	*s_wavonly;
 #endif
-extern cvar_t	*timescale;
 
 static qboolean	dsound_init;
 static qboolean	wav_init;

@@ -234,6 +234,7 @@ Debugging
 - timescale:
   - sound pitch affected by timescale (DirectSound only, restart required)
   - fixed low timescale (was not able to perform frames with scaled time less than 1 ms)
+- timedemo <n> -- gather timing statistics with rendering <n> frames per (demo-)server frame
 - added mouse support via DirectInput (activated with "set in_mouse 2", default)
 - third-person view: activated with "cl_3rd_person 1"
 - intro playback:

@@ -314,7 +314,6 @@ extern	cvar_t	*m_side;
 extern	cvar_t	*freelook;
 
 extern	cvar_t	*cl_paused;
-extern	cvar_t	*cl_timedemo;
 
 extern	cvar_t	*cl_vwep;
 extern	cvar_t	*cl_3rd_person;

@@ -182,8 +182,8 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 	f = (float)inheight / outheight;
 	for (i = 0, f1 = 0.25f * f, f2 = 0.75f * f; i < outheight; i++, out += outwidth, f1 += f, f2 += f)
 	{
-		inrow = in + inwidth * Q_round (f1);
-		inrow2 = in + inwidth * Q_round (f2);
+		inrow = in + inwidth * Q_floor (f1);
+		inrow2 = in + inwidth * Q_floor (f2);
 		for (j = 0; j < outwidth; j++)
 		{
 			int		n, r, g, b, a;
@@ -254,7 +254,8 @@ static void LightScaleTexture (unsigned *pic, int width, int height, qboolean on
 			SATURATE(g,light,sat);
 			SATURATE(b,light,sat);
 			// put color
-			p[0] = Q_round (r);  p[1] = Q_round (g);  p[2] = Q_round (b);
+//			p[0] = Q_round (r);  p[1] = Q_round (g);  p[2] = Q_round (b);
+			p[0] = Q_floor (r);  p[1] = Q_floor (g);  p[2] = Q_floor (b);
 		}
 	}
 
@@ -736,7 +737,7 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 		byte	*src;
 		unsigned *dst;
 
-		row = Q_round (hScale * i);
+		row = Q_floor (hScale * i);
 		if (row > height) break;
 
 		src = &pic[width * row];
