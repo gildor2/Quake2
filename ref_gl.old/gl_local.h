@@ -424,7 +424,7 @@ void	Draw_Char (int x, int y, int c);
 void	Draw_CharColor (int x, int y, int num, int color);
 void	Draw_TileClear (int x, int y, int w, int h, char *name);
 void	Draw_Fill (int x, int y, int w, int h, int c);
-void	Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, float a);
+void	Draw_Fill2 (int x, int y, int w, int h, unsigned rgba);
 void	Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data);
 
 void	R_BeginFrame( float camera_separation );

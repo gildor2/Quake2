@@ -1045,7 +1045,7 @@ void CL_FixUpGender(void)
 		Q_strncpyz (sk, skin->string, sizeof(sk));
 		if ((p = strchr(sk, '/')) != NULL)
 			*p = 0;
-		if (!Q_stricmp(sk, "male") || !Q_stricmp(sk, "cyborg"))
+		if (!stricmp(sk, "male") || !stricmp(sk, "cyborg"))
 			Cvar_Set ("gender", "male");
 		else if (S_IsFemale (sk))
 			Cvar_Set ("gender", "female");

@@ -1414,16 +1414,18 @@ static void R_EndFrame (void)
 
 extern unsigned char d_16to8table[65536];
 
-static void Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, float a)
+static void Draw_Fill2 (int x, int y, int w, int h, unsigned rgba)
 {
 	int ri, gi, bi, color;
+	color_t c;
 
-	ri = Q_floor(r * 31.9);
-	gi = Q_floor(g * 63.9);
-	bi = Q_floor(b * 31.9);
+	c.rgba = rgba;
+	ri = Q_floor(c.c[0] / 255.0f * 31.9f);
+	gi = Q_floor(c.c[1] / 255.0f * 63.9f);
+	bi = Q_floor(c.c[2] / 255.0f * 31.9f);
 	color = d_16to8table[ri | (gi << 5) | (bi << 11)];
 
-	if (a == 1)
+	if (c.c[3] == 255)
 	{
 		// convert to DrawFill()
 		Draw_Fill (x, y, w, h, color);

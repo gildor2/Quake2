@@ -117,9 +117,6 @@ static void Field_Draw (menuField_t *f)
 		Draw_Char (f->generic.x + f->generic.parent->x + 24 + i * 8, f->generic.y + f->generic.parent->y + 4, 25);
 	}
 
-//	re.DrawFill (f->generic.x + f->generic.parent->x + 24 - 8, f->generic.y + f->generic.parent->y - 3,
-//		f->visible_length * 8 + 16, 16, 0x78);
-
 	// perform string drawing with Menu_DrawStringConmmon() to disable text coloring
 	Q_strncpyz (tempbuffer, f->buffer + f->visible_offset, max(f->visible_length, sizeof(tempbuffer)));
 	Menu_DrawStringCommon (f->generic.x + f->generic.parent->x + 24, f->generic.y + f->generic.parent->y, tempbuffer, 0);

@@ -222,7 +222,7 @@ static char completeVariants[MAX_COMPLETE_ITEMS][256];
 // "display": 0 - complete+count, 1 - display
 static void TryComplete (const char *full, int display, char mark)
 {
-	if (!Q_strncasecmp (partial_name, full, partial_len))
+	if (!strnicmp (partial_name, full, partial_len))
 	{
 		if (display) Com_Printf ("  ^2%c^7  %s\n", mark, full);
 
@@ -292,12 +292,12 @@ static char *Do_CompleteCommand (char *partial)
 			// have "command arg1 " (space after arg1)
 
 			// complete "alias name "
-			if (!Q_strcasecmp (complete_command, "alias"))
+			if (!stricmp (complete_command, "alias"))
 			{
 				cmdAlias_t *alias;
 
 				for (alias = cmdAlias; alias; alias = alias->next)
-					if (!Q_strcasecmp (alias->name, arg1))
+					if (!stricmp (alias->name, arg1))
 					{
 						strcpy (completed_name, va("alias %s %s", arg1, COM_QuoteString (alias->value, false)));
 						return completed_name;
@@ -305,7 +305,7 @@ static char *Do_CompleteCommand (char *partial)
 				return NULL;
 			}
 			// complete "bind key "
-			else if (!Q_strcasecmp (complete_command, "bind"))
+			else if (!stricmp (complete_command, "bind"))
 			{
 				int		key;
 
@@ -318,7 +318,7 @@ static char *Do_CompleteCommand (char *partial)
 			}
 		}
 
-		if (!Q_strcasecmp (complete_command, "alias"))
+		if (!stricmp (complete_command, "alias"))
 		{
 			// complete alias name
 			strcpy (complete_command, "alias");
@@ -347,13 +347,13 @@ static char *Do_CompleteCommand (char *partial)
 			return completed_name;
 		}
 
-		if (!Q_strcasecmp (complete_command, "map"))
+		if (!stricmp (complete_command, "map"))
 		{
 			path = "maps";
 			ext = ".bsp";
 			comp_type = 'm';
 		}
-		else if (!Q_strcasecmp (complete_command, "demomap"))
+		else if (!stricmp (complete_command, "demomap"))
 		{
 			path = "demos";
 			ext = ".dm2";
@@ -365,7 +365,7 @@ static char *Do_CompleteCommand (char *partial)
 				return NULL;				// arg is not empty
 
 			for (cvar = cvar_vars; cvar; cvar = cvar->next)
-				if (!Q_strcasecmp (cvar->name, complete_command))
+				if (!stricmp (cvar->name, complete_command))
 				{
 					strcpy (completed_name, partial); // "varname "
 					if (strchr (cvar->string, ' '))
@@ -387,7 +387,7 @@ static char *Do_CompleteCommand (char *partial)
 				if (name = strrchr (fileitem->name, '/'))
 					fileitem->name = name + 1;
 				// refine/remove file extension
-				if ((name = strrchr (fileitem->name, '.')) && !Q_strcasecmp (name, ext))
+				if ((name = strrchr (fileitem->name, '.')) && !stricmp (name, ext))
 					*name = 0;				// cut extension
 				else
 					*fileitem->name = 0;	// cut whole filename - refined by ext
@@ -466,7 +466,7 @@ static int	complMenu_x, complMenu_y, complMenu_w, complMenu_h;
 
 static void CompleteMenuDraw (void)
 {
-	re.DrawFill2 (complMenu_x, complMenu_y, complMenu_w, complMenu_h, 0.1, 0.5, 0.5, 0.8);
+	re.DrawFill2 (complMenu_x, complMenu_y, complMenu_w, complMenu_h, RGBA(0.1,0.5,0.5,0.8));
 	Menu_AdjustCursor (&completeMenu, 1);
 	Menu_Draw (&completeMenu);
 }

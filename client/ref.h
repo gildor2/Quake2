@@ -206,7 +206,7 @@ typedef struct
 	void	(*DrawCharColor) (int x, int y, int c, int color);
 	void	(*DrawTileClear) (int x, int y, int w, int h, char *name);
 	void	(*DrawFill) (int x, int y, int w, int h, int c);
-	void	(*DrawFill2) (int x, int y, int w, int h, float r, float g, float b, float a);
+	void	(*DrawFill2) (int x, int y, int w, int h, unsigned rgba);
 
 	// Draw images for cinematic rendering (which can have a different palette)
 	void	(*SetRawPalette) (const unsigned char *palette);	// NULL = game palette

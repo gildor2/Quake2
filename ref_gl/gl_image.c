@@ -145,7 +145,7 @@ void GL_TextureMode (char *name)
 	GL_SetMultitexture (1);
 	for (i = 0; i < ARRAY_COUNT(texModes); i++)
 	{
-		if (!Q_stricmp (texModes[i].name, name))
+		if (!stricmp (texModes[i].name, name))
 		{
 			gl_filter_min = texModes[i].minimize;
 			gl_filter_max = texModes[i].maximize;
@@ -721,7 +721,7 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 
 	// choose TEXTURE_RECTANGLE target when possible
 	if ((flags & (IMAGE_CLAMP|IMAGE_MIPMAP|IMAGE_PICMIP)) == IMAGE_CLAMP &&	// !wrap, !mipmap, !picmip
-		width  <= gl_config.maxRectTextureSize	&&				// suitable size
+		width  <= gl_config.maxRectTextureSize	&&				// suitable size (when extensions is disabled, maxRectTextureSize==0)
 		height <= gl_config.maxRectTextureSize	&&
 		(width & (width-1) | height & (height-1)))				// non power-of-2 dimensions
 		image->target = GL_TEXTURE_RECTANGLE_NV;
@@ -1644,7 +1644,7 @@ image_t *GL_FindImage (char *name, int flags)
 	if (!(flags & IMAGE_RELOAD))
 	{
 		for (img = hashTable[hash]; img; img = img->hashNext)
-			if (!Q_strncasecmp (img->name, name2, len) &&		// len chars matched
+			if (!strnicmp (img->name, name2, len) &&			// len chars matched
 				(!img->name[len] || img->name[len] == '.'))		// rest of img->name if null or extension
 			{
 				// found a name ...

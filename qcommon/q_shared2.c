@@ -1401,53 +1401,7 @@ void Com_PageInMemory (byte *buffer, int size)
 
 
 
-/*
-============================================================================
-
-					LIBRARY REPLACEMENT FUNCTIONS
-
-============================================================================
-*/
-
-// FIXME: replace all Q_stricmp with Q_strcasecmp
-int Q_stricmp (const char *s1, const char *s2)
-{
-#if defined(WIN32)
-	return _stricmp (s1, s2);
-#else
-	return strcasecmp (s1, s2);
-#endif
-}
-
-
-int Q_strncasecmp (const char *s1, const char *s2, int n)
-{
-	int		c1, c2;
-
-	do
-	{
-		c1 = *s1++;
-		c2 = *s2++;
-
-		if (!n--)
-			return 0;		// strings are equal until end point
-
-		if (c1 != c2)
-		{
-			if (c1 >= 'a' && c1 <= 'z')
-				c1 -= ('a' - 'A');
-			if (c2 >= 'a' && c2 <= 'z')
-				c2 -= ('a' - 'A');
-		}
-	} while (c1 && (c1 == c2));
-
-	return c1 - c2;
-}
-
-int Q_strcasecmp (const char *s1, const char *s2)
-{
-	return Q_strncasecmp (s1, s2, BIG_NUMBER);
-}
+//============================================================================
 
 void Q_strncpyz (char *dest, const char *src, int destsize)
 {

@@ -904,17 +904,25 @@ void Sys_SendKeyEvents (void)
 {
 	MSG		msg;
 
-	while (PeekMessage (&msg, NULL, 0, 0, PM_NOREMOVE))
+	guard(Sys_SendKeyEvents);
+	while (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
 	{
-		if (!GetMessage (&msg, NULL, 0, 0))
-			Sys_Quit ();
+		if (msg.message == WM_QUIT)
+			Com_Quit ();
 		sys_msg_time = msg.time;
+
+		guard(TranslateMessage);
 		TranslateMessage (&msg);
+		unguardf(("msg=%X", msg.message));
+
+		guard(DispatchMessage);
 		DispatchMessage (&msg);
+		unguardf(("msg=%X", msg.message));
 	}
 
 	// grab frame time
 	sys_frame_time = timeGetTime();	// FIXME: should this be at start?
+	unguard;
 }
 
 
@@ -956,7 +964,7 @@ GAME DLL
 ========================================================================
 */
 
-static HINSTANCE	game_library;
+static HINSTANCE game_library;
 
 /*
 =================
@@ -965,9 +973,11 @@ Sys_UnloadGame
 */
 void Sys_UnloadGame (void)
 {
+	guard(Sys_UnloadGame);
 	if (!FreeLibrary (game_library))
-		Com_FatalError ("FreeLibrary failed for game library");
+		Com_FatalError ("Cannot unload game library");
 	game_library = NULL;
+	unguard;
 }
 
 /*
@@ -980,70 +990,31 @@ Loads the game dll
 void *Sys_GetGameAPI (void *parms)
 {
 	void	*(*GetGameAPI) (void *);
-	char	name[MAX_OSPATH];
-	char	*path;
-	char	cwd[MAX_OSPATH];
+	char	name[MAX_OSPATH], *path;
 #if defined _M_IX86
 	const char *gamename = "gamex86.dll";
-
-#ifdef NDEBUG
-	const char *debugdir = "release";
-#else
-	const char *debugdir = "debug";
-#endif
-
 #elif defined _M_ALPHA
 	const char *gamename = "gameaxp.dll";
-
-#ifdef NDEBUG
-	const char *debugdir = "releaseaxp";
-#else
-	const char *debugdir = "debugaxp";
 #endif
 
-#endif
+	guard(Sys_GetGameAPI);
 
 	if (game_library)
 		Com_FatalError ("Sys_GetGameAPI() without Sys_UnloadGame()");
 
-	// check the current debug directory first for development purposes
-	_getcwd (cwd, sizeof(cwd));
-	Com_sprintf (ARRAY_ARG(name), "%s/%s/%s", cwd, debugdir, gamename);
-	game_library = LoadLibrary (name);
-	if (game_library)
+	// run through the search paths
+	path = NULL;
+	while (path = FS_NextPath (path))
 	{
-		Com_DPrintf ("LoadLibrary (%s)\n", name);
-	}
-	else
-	{
-#ifdef DEBUG
-		// check the current directory for other development purposes
-		Com_sprintf (ARRAY_ARG(name), "%s/%s", cwd, gamename);
-		game_library = LoadLibrary (name);
-		if (game_library)
+		Com_sprintf (ARRAY_ARG(name), "%s/%s", path, gamename);
+		if (game_library = LoadLibrary (name))
 		{
-			Com_DPrintf ("LoadLibrary (%s)\n", name);
-		}
-		else
-#endif
-		{
-			// now run through the search paths
-			path = NULL;
-			while (1)
-			{
-				path = FS_NextPath (path);
-				if (!path)
-					return NULL;		// couldn't find one anywhere
-				Com_sprintf (ARRAY_ARG(name), "%s/%s", path, gamename);
-				game_library = LoadLibrary (name);
-				if (game_library)
-				{
-					Com_DPrintf ("LoadLibrary (%s)\n",name);
-					break;
-				}
-			}
+			Com_DPrintf ("LoadLibrary (%s)\n",name);
+			break;
 		}
 	}
+	if (!game_library)
+		return NULL;		// couldn't find one anywhere
 
 	GetGameAPI = (void *)GetProcAddress (game_library, "GetGameAPI");
 	if (!GetGameAPI)
@@ -1053,6 +1024,8 @@ void *Sys_GetGameAPI (void *parms)
 	}
 
 	return GetGameAPI (parms);
+
+	unguard;
 }
 
 //=======================================================================
@@ -1104,13 +1077,19 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 			if (!ActiveApp || DEDICATED)
 				Sleep (10);		//?? what about client and server in one place: will server become slower ?
 
-			while (PeekMessage (&msg, NULL, 0, 0, PM_NOREMOVE))
+			while (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
 			{
-				if (!GetMessage (&msg, NULL, 0, 0))
+				if (msg.message == WM_QUIT)
 					Com_Quit ();
 				sys_msg_time = msg.time;
+
+				guard(TranslateMessage);
 				TranslateMessage (&msg);
+				unguardf(("msg=%X", msg.message));
+
+				guard(DispatchMessage);
 				DispatchMessage (&msg);
+				unguardf(("msg=%X", msg.message));
 			}
 #else
 			Sleep (10);

@@ -186,7 +186,7 @@ typedef struct
 	int		numTcMods;
 	tcModParms_t *tcModParms;
 	// images: variable length
-	int		numAnimTextures;		// in range [1..MAX_STAGE_TEXTURES]; if 0 -- ignore stage (and treat previous as last)
+	int		numAnimTextures;		// in range [1..MAX_STAGE_TEXTURES]; FinishShader(): if 0 -- ignore stage (and treat previous as last)
 	float	animMapFreq;			// valid only when numAnimTextures > 1 && (frameFromEntity == false || model = WORLD)
 	bool	frameFromEntity;
 	image_t	*mapImage[1];

@@ -1474,7 +1474,7 @@ void R_BeginFrame( float camera_separation )
 
 		if ( gl_state.camera_separation == 0 || !gl_state.stereo_enabled )
 		{
-			if ( Q_stricmp( gl_drawbuffer->string, "GL_FRONT" ) == 0 )
+			if ( stricmp( gl_drawbuffer->string, "GL_FRONT" ) == 0 )
 				glDrawBuffer( GL_FRONT );
 			else
 				glDrawBuffer( GL_BACK );

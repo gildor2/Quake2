@@ -488,7 +488,7 @@ void CL_LoadClientinfo (clientinfo_t *ci, char *s)
 
 		// if we don't have the skin and the model wasn't male,
 		// see if the male has it (this is for CTF's skins)
- 		if (!ci->skin && Q_stricmp(model_name, "male"))
+ 		if (!ci->skin && stricmp(model_name, "male"))
 		{
 			// change model to male
 			strcpy(model_name, "male");

@@ -1570,7 +1570,7 @@ qboolean COM_CheckCmdlineVar (const char *name)
 	{
 		cmd = cmdlineParts[i];
 		if (!cmd || strchr (cmd, ' ')) continue;	// already removed or contains arguments
-		if (!Q_stricmp (name, cmd))
+		if (!stricmp (name, cmd))
 		{
 			cmdlineParts[i] = NULL;
 			return true;

@@ -693,7 +693,7 @@ static void	D_Draw_StretchPic (int x, int y, int w, int h, char *pic) {}
 static void	D_Draw_CharColor (int x, int y, int c, int color) {}
 static void	D_Draw_TileClear (int x, int y, int w, int h, char *name) {}
 static void	D_Draw_Fill (int x, int y, int w, int h, int c) {}
-static void D_Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, float a) {}
+static void D_Draw_Fill2 (int x, int y, int w, int h, unsigned rgba) {}
 static void	D_DrawTextPos (int x, int y, char *text, unsigned rgba) {}
 static void	D_DrawTextSide (char *text, unsigned rgba) {}
 static void	D_Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data) {}

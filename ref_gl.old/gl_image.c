@@ -228,7 +228,7 @@ void GL_TextureMode( char *string )
 
 	for (i=0 ; i< ARRAY_COUNT(modes) ; i++)
 	{
-		if ( !Q_stricmp( modes[i].name, string ) )
+		if ( !stricmp( modes[i].name, string ) )
 			break;
 	}
 
@@ -264,7 +264,7 @@ void GL_TextureAlphaMode( char *string )
 
 	for (i=0 ; i< ARRAY_COUNT(gl_alpha_modes) ; i++)
 	{
-		if ( !Q_stricmp( gl_alpha_modes[i].name, string ) )
+		if ( !stricmp( gl_alpha_modes[i].name, string ) )
 			break;
 	}
 
@@ -288,7 +288,7 @@ void GL_TextureSolidMode( char *string )
 
 	for (i=0 ; i< ARRAY_COUNT(gl_solid_modes) ; i++)
 	{
-		if ( !Q_stricmp( gl_solid_modes[i].name, string ) )
+		if ( !stricmp( gl_solid_modes[i].name, string ) )
 			break;
 	}
 

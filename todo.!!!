@@ -186,8 +186,13 @@ BSP:
   (seems, this is game code ...)
 ? downloading:
   - sv_user.c :: SV_NextDownload_f() -- should limit downloading speed when server is on modem
-  - download paks (when not very large)
-  - menu: place "download options" to another place (not "player setup", or to upper level: where model selection performed)
+  - ext protocol:
+    - allow downloading of jpg/tga instead of pcx/wal
+    - download paks (when not very large)
+    - download map levelshot
+    - download player models/skins at game time (and allow download indicator during game)
+  - menu: move "download options" to another place (not "player setup", or to upper level: where model selection performed)
+    (separate for server/client)
   - make download options:
     a) to be a bitfield (and make additional options: download paks etc); separate sv and cl download options
     b) remove client-side options, make menu: "file absent - can download" with options: disconnect, download as separate files,

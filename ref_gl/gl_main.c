@@ -925,15 +925,9 @@ static void DrawFill (int x, int y, int w, int h, int c)
 	GL_DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, gl_config.tbl_8to32[c]);
 }
 
-static void DrawFill2 (int x, int y, int w, int h, float r, float g, float b, float a)
+static void DrawFill2 (int x, int y, int w, int h, unsigned rgba)
 {
-	color_t	c;
-
-	c.c[0] = Q_round (r * 255);
-	c.c[1] = Q_round (g * 255);
-	c.c[2] = Q_round (b * 255);
-	c.c[3] = Q_round (a * 255);
-	GL_DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, c.rgba);
+	GL_DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, rgba);
 }
 
 static void DrawTileClear (int x, int y, int w, int h, char *name)
@@ -952,7 +946,7 @@ static void DrawTileClear (int x, int y, int w, int h, char *name)
 		GL_DrawStretchPic (sh, x, y, w, h, (float)x / sh->width, (float)y / sh->height,
 			(float)(x + w) / sh->width, (float)(y + h) / sh->height, colorTable[7]);
 	else
-		DrawFill2 (x, y, w, h, 0, 0, 0, 1);
+		DrawFill2 (x, y, w, h, RGB(0,0,0));
 }
 
 
@@ -1164,9 +1158,14 @@ static void ReloadImage (char *name)
 {
 	shader_t *sh;
 
+	//?? place into gl_shader.c as ReloadShaderImages() (no needs to reload shader script -- for debug only)
 	sh = FindPic (name, false);
 	// NOTE: this function will not work with shaders, whose names are differs from image name
-	if (sh) GL_FindImage (sh->name, IMAGE_RELOAD);
+	if (sh && sh->numStages && sh->stages[0]->numAnimTextures)
+	{
+		image_t *img = sh->stages[0]->mapImage[0];	//?? all images (non-system, not "*name" etc), all stages
+		GL_FindImage (img->name, img->flags | IMAGE_RELOAD);
+	}
 }
 
 

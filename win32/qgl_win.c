@@ -346,14 +346,14 @@ void QGL_EnableLogging (qboolean enable)
 	{
 		if (!logFile)
 		{
-			struct tm	*newtime;
-			time_t		aclock;
+			time_t	itime;
+			char	ctime[256];
+
+			time (&itime);
+			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
 
 			logFile = fopen (va("%s/gl.log", FS_Gamedir ()), "a+");
-
-			time (&aclock);
-			newtime = localtime (&aclock);
-			fprintf (logFile, "\n------------------------\n%s------------------------\n", asctime (newtime));
+			fprintf (logFile, "\n------------------------\n%s------------------------\n", ctime);
 		}
 
 		qgl = logFuncs;

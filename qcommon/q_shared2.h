@@ -345,11 +345,6 @@ void Com_PageInMemory (byte *buffer, int size);
 
 //=============================================
 
-// portable case insensitive compare
-int		Q_stricmp (const char *s1, const char *s2);
-int		Q_strcasecmp (const char *s1, const char *s2);
-int		Q_strncasecmp (const char *s1, const char *s2, int n);
-
 void	Q_strncpyz (char *dest, const char *src, int destsize);
 void	Q_strncpylower (char *dest, const char *src, int len);
 void	Q_CopyFilename (char *dest, const char *src, int len);

@@ -544,8 +544,8 @@ static void DrawLoadingAndConsole (bool allowNotifyArea)
 				int r = w * cls.downloadpercent / 100;
 				int top = viddef.height - 3 * CHAR_HEIGHT - 2;
 				int height = 2 * CHAR_HEIGHT + 4;
-				re.DrawFill2 (6, top, r, height, 0.5, 0, 0, 1);
-				re.DrawFill2 (6 + r, top, w - r, height, 0.1, 0.1, 0.1, 1);
+				re.DrawFill2 (6, top, r, height, RGB(0.5,0,0));
+				re.DrawFill2 (6 + r, top, w - r, height, RGB(0.1,0.1,0.1));
 				DrawString (8, viddef.height - 3 * CHAR_HEIGHT, va("Downloading: %s", cls.downloadname));
 				DrawString (8, viddef.height - 2 * CHAR_HEIGHT, va("%d%% complete", cls.downloadpercent));
 			}
@@ -871,6 +871,8 @@ void SCR_ExecuteLayoutString (char *s)
 	int		index;
 	clientinfo_t	*ci;
 
+	guard(SCR_ExecuteLayoutString);
+
 	if (cls.state != ca_active || !cl.refresh_prepped)
 		return;
 
@@ -884,39 +886,20 @@ void SCR_ExecuteLayoutString (char *s)
 	{
 		token = COM_Parse (&s);
 		if (!strcmp (token, "xl"))
-		{
-			token = COM_Parse (&s);
-			x = atoi (token);
-		}
+			x = atoi (COM_Parse (&s));
 		else if (!strcmp (token, "xr"))
-		{
-			token = COM_Parse (&s);
-			x = viddef.width + atoi (token);
-		}
+			x = viddef.width + atoi (COM_Parse (&s));
 		else if (!strcmp (token, "xv"))
-		{
-			token = COM_Parse (&s);
-			x = viddef.width/2 - 160 + atoi (token);
-		}
+			x = viddef.width/2 - 160 + atoi (COM_Parse (&s));
 		else if (!strcmp (token, "yt"))
-		{
-			token = COM_Parse (&s);
-			y = atoi (token);
-		}
+			y = atoi (COM_Parse (&s));
 		else if (!strcmp (token, "yb"))
-		{
-			token = COM_Parse (&s);
-			y = viddef.height + atoi (token);
-		}
+			y = viddef.height + atoi (COM_Parse (&s));
 		else if (!strcmp (token, "yv"))
-		{
-			token = COM_Parse (&s);
-			y = viddef.height/2 - 120 + atoi (token);
-		}
+			y = viddef.height/2 - 120 + atoi (COM_Parse (&s));
 		else if (!strcmp (token, "pic"))
 		{	// draw a pic from a stat number
-			token = COM_Parse (&s);
-			value = cl.frame.playerstate.stats[atoi (token)];
+			value = cl.frame.playerstate.stats[atoi (COM_Parse (&s))];
 			if (value >= MAX_IMAGES)
 				Com_DropError ("Pic >= MAX_IMAGES");
 			if (cl.configstrings[CS_IMAGES+value])
@@ -926,25 +909,17 @@ void SCR_ExecuteLayoutString (char *s)
 		{	// draw a deathmatch client block
 			int		score, ping, time;
 
-			token = COM_Parse (&s);
-			x = viddef.width/2 - 160 + atoi (token);
-			token = COM_Parse (&s);
-			y = viddef.height/2 - 120 + atoi (token);
+			x = viddef.width/2 - 160 + atoi (COM_Parse (&s));
+			y = viddef.height/2 - 120 + atoi (COM_Parse (&s));
 
-			token = COM_Parse (&s);
-			value = atoi (token);
+			value = atoi (COM_Parse (&s));
 			if (value >= MAX_CLIENTS || value < 0)
 				Com_DropError ("client >= MAX_CLIENTS");
 			ci = &cl.clientinfo[value];
 
-			token = COM_Parse (&s);
-			score = atoi (token);
-
-			token = COM_Parse (&s);
-			ping = atoi (token);
-
-			token = COM_Parse (&s);
-			time = atoi (token);
+			score = atoi (COM_Parse (&s));
+			ping = atoi (COM_Parse (&s));
+			time = atoi (COM_Parse (&s));
 
 			DrawString (x+32, y, va("^2%s", ci->name));
 			DrawString (x+32, y+8,  "Score: ");
@@ -961,24 +936,17 @@ void SCR_ExecuteLayoutString (char *s)
 			int		score, ping;
 			char	block[80];
 
-			token = COM_Parse (&s);
-			x = viddef.width/2 - 160 + atoi(token);
-			token = COM_Parse (&s);
-			y = viddef.height/2 - 120 + atoi(token);
+			x = viddef.width/2 - 160 + atoi (COM_Parse (&s));
+			y = viddef.height/2 - 120 + atoi (COM_Parse (&s));
 
-			token = COM_Parse (&s);
-			value = atoi (token);
+			value = atoi (COM_Parse (&s));
 			if (value >= MAX_CLIENTS || value < 0)
 				Com_DropError ("client >= MAX_CLIENTS");
 			ci = &cl.clientinfo[value];
 
-			token = COM_Parse (&s);
-			score = atoi (token);
-
-			token = COM_Parse (&s);
-			ping = atoi (token);
-			if (ping > 999)
-				ping = 999;
+			score = atoi (COM_Parse (&s));
+			ping = atoi (COM_Parse (&s));
+			if (ping > 999) ping = 999;
 
 			Com_sprintf (ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, ci->name);
 
@@ -989,15 +957,12 @@ void SCR_ExecuteLayoutString (char *s)
 		}
 		else if (!strcmp (token, "picn"))
 		{	// draw a pic from a name
-			token = COM_Parse (&s);
-			re.DrawPicColor (x, y, token, 7);
+			re.DrawPicColor (x, y, COM_Parse (&s), 7);
 		}
 		else if (!strcmp (token, "num"))
 		{	// draw a number
-			token = COM_Parse (&s);
-			width = atoi (token);
-			token = COM_Parse (&s);
-			value = cl.frame.playerstate.stats[atoi(token)];
+			width = atoi (COM_Parse (&s));
+			value = cl.frame.playerstate.stats[atoi (COM_Parse (&s))];
 			DrawField (x, y, 0, width, value);
 		}
 		else if (!strcmp (token, "hnum"))
@@ -1053,8 +1018,7 @@ void SCR_ExecuteLayoutString (char *s)
 		}
 		else if (!strcmp (token, "stat_string"))
 		{
-			token = COM_Parse (&s);
-			index = atoi (token);
+			index = atoi (COM_Parse (&s));
 			if (index < 0 || index >= MAX_CONFIGSTRINGS)
 				Com_DropError ("Bad stat_string index");
 			index = cl.frame.playerstate.stats[index];
@@ -1063,38 +1027,27 @@ void SCR_ExecuteLayoutString (char *s)
 			DrawString (x, y, cl.configstrings[index]);
 		}
 		else if (!strcmp (token, "cstring"))
-		{
-			token = COM_Parse (&s);
-			DrawHUDString (token, x, y, 320, 7);
-		}
+			DrawHUDString (COM_Parse (&s), x, y, 320, 7);
 		else if (!strcmp (token, "cstring2"))
-		{
-			token = COM_Parse (&s);
-			DrawHUDString (token, x, y, 320, 2);
-		}
+			DrawHUDString (COM_Parse (&s), x, y, 320, 2);
 		else if (!strcmp (token, "string"))
-		{
-			token = COM_Parse (&s);
-			DrawString (x, y, token);
-		}
+			DrawString (x, y, COM_Parse (&s));
 		else if (!strcmp (token, "string2"))
-		{
-			token = COM_Parse (&s);
-			DrawString (x, y, va("^2%s", token));
-		}
+			DrawString (x, y, va("^2%s", COM_Parse (&s)));
 		else if (!strcmp (token, "if"))
 		{	// draw a number
-			token = COM_Parse (&s);
-			value = cl.frame.playerstate.stats[atoi (token)];
+			value = cl.frame.playerstate.stats[atoi (COM_Parse (&s))];
 			if (!value)
 			{	// skip to endif
-				while (s && strcmp(token, "endif") )
+				while (s && strcmp (token, "endif"))
 				{
 					token = COM_Parse (&s);
 				}
 			}
 		}
 	}
+
+	unguard;
 }
 
 
@@ -1170,7 +1123,7 @@ void SCR_UpdateScreen (void)
 			{
 				// loading plaque over black screen
 				re.SetRawPalette (NULL);
-				re.DrawFill (0, 0, viddef.width, viddef.height, 0);
+				re.DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
 				DrawLoadingAndConsole (false);
 			}
 			else if (cls.key_dest != key_game && (*re.flags & REF_USE_PALETTE))
@@ -1182,7 +1135,7 @@ void SCR_UpdateScreen (void)
 					re.SetRawPalette (NULL);
 					cl.cinematicpalette_active = false;
 				}
-				re.DrawFill (0, 0, viddef.width, viddef.height, 0);
+				re.DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
 				if (cls.key_dest == key_console)
 					DrawLoadingAndConsole (false);
 				else
@@ -1212,7 +1165,7 @@ void SCR_UpdateScreen (void)
 			if (map_clientLoaded)
 				V_RenderView (separation[i]);
 			else
-				re.DrawFill (0, 0, viddef.width, viddef.height, 0);
+				re.DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
 
 			SCR_DrawStats ();
 			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 1)

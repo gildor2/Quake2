@@ -1,24 +1,24 @@
  ref_oldgl
 
- Timestamp is 41db00e9 (Tue Jan 04 23:47:37 2005)
+ Timestamp is 41deafb0 (Fri Jan 07 18:50:08 2005)
 
  Preferred load address is 10000000
 
  Start         Length     Name                   Class
- 0001:00000000 0000de10H .text                   CODE
+ 0001:00000000 0000ddf0H .text                   CODE
  0002:00000000 000000ecH .idata$5                DATA
- 0002:000000f0 00000770H .rdata                  DATA
- 0002:00000860 00000050H .idata$2                DATA
- 0002:000008b0 00000014H .idata$3                DATA
- 0002:000008c4 000000ecH .idata$4                DATA
- 0002:000009b0 000002e4H .idata$6                DATA
- 0002:00000ca0 0000004aH .edata                  DATA
+ 0002:000000f0 00000768H .rdata                  DATA
+ 0002:00000858 00000050H .idata$2                DATA
+ 0002:000008a8 00000014H .idata$3                DATA
+ 0002:000008bc 000000ecH .idata$4                DATA
+ 0002:000009a8 000002e6H .idata$6                DATA
+ 0002:00000c90 0000004aH .edata                  DATA
  0003:00000000 00000004H .CRT$XCA                DATA
  0003:00000004 00000004H .CRT$XCZ                DATA
  0003:00000008 00000004H .CRT$XIA                DATA
  0003:0000000c 00000004H .CRT$XIZ                DATA
- 0003:00000010 000056c0H .data                   DATA
- 0003:000056d0 0015dd10H .bss                    DATA
+ 0003:00000010 000056e0H .data                   DATA
+ 0003:000056f0 0015dd10H .bss                    DATA
 
   Address         Publics by Value              Rva+Base     Lib:Object
 
@@ -33,190 +33,189 @@
  0001:00000613       _Draw_TileClear            10001613 f   gl_draw.obj
  0001:0000079a       _Draw_Fill                 1000179a f   gl_draw.obj
  0001:000008b3       _Draw_Fill2                100018b3 f   gl_draw.obj
- 0001:000009c0       _Draw_StretchRaw8          100019c0 f   gl_draw.obj
- 0001:00000bd5       _GL_SetTexturePalette      10001bd5 f   gl_image.obj
- 0001:00000bd6       _GL_EnableMultitexture     10001bd6 f   gl_image.obj
- 0001:00000c2e       _GL_SelectTexture          10001c2e f   gl_image.obj
- 0001:00000c78       _qglMTexCoord2f            10001c78 f   gl_image.obj
- 0001:00000cd3       _GL_TexEnv                 10001cd3 f   gl_image.obj
- 0001:00000d05       _GL_Bind                   10001d05 f   gl_image.obj
- 0001:00000d5c       _GL_MBind                  10001d5c f   gl_image.obj
- 0001:00000d7e       _GL_TextureMode            10001d7e f   gl_image.obj
- 0001:00000e3d       _GL_TextureAlphaMode       10001e3d f   gl_image.obj
- 0001:00000e85       _GL_TextureSolidMode       10001e85 f   gl_image.obj
- 0001:00000ecd       _GL_ImageList_f            10001ecd f   gl_image.obj
- 0001:00000fe0       _Scrap_AllocBlock          10001fe0 f   gl_image.obj
- 0001:0000109c       _Scrap_Upload              1000209c f   gl_image.obj
- 0001:000010cc       _R_FloodFillSkin           100020cc f   gl_image.obj
- 0001:0000125f       _GL_ResampleTexture        1000225f f   gl_image.obj
- 0001:000013fa       _GL_LightScaleTexture      100023fa f   gl_image.obj
- 0001:000015b7       _GL_MipMap                 100025b7 f   gl_image.obj
- 0001:0000170e       _GL_Upload32               1000270e f   gl_image.obj
- 0001:000019cf       _GL_Upload8                100029cf f   gl_image.obj
- 0001:00001ab7       _GL_LoadPic                10002ab7 f   gl_image.obj
- 0001:00001d26       _GL_LoadWal                10002d26 f   gl_image.obj
- 0001:00001d85       _GL_FindImage              10002d85 f   gl_image.obj
- 0001:000020c7       _R_RegisterSkin            100030c7 f   gl_image.obj
- 0001:000020d5       _GL_FreeUnusedImages       100030d5 f   gl_image.obj
- 0001:00002147       _Draw_GetPalette           10003147 f   gl_image.obj
- 0001:000021d2       _GL_InitImages             100031d2 f   gl_image.obj
- 0001:00002306       _GL_ShutdownImages         10003306 f   gl_image.obj
- 0001:00002345       _R_RenderDlight            10003345 f   gl_light.obj
- 0001:00002462       _R_RenderDlights           10003462 f   gl_light.obj
- 0001:00002519       _R_MarkLights              10003519 f   gl_light.obj
- 0001:000025d8       _R_PushDlights             100035d8 f   gl_light.obj
- 0001:00002633       _RecursiveLightPoint       10003633 f   gl_light.obj
- 0001:000028dd       _R_LightPoint              100038dd f   gl_light.obj
- 0001:00002a2a       _R_AddDynamicLights        10003a2a f   gl_light.obj
- 0001:00002c92       _R_SetCacheState           10003c92 f   gl_light.obj
- 0001:00002cbd       _R_BuildLightMap           10003cbd f   gl_light.obj
- 0001:0000328b       _GL_LerpVerts              1000428b f   gl_mesh.obj
- 0001:00003415       _GL_DrawAliasFrameLerp     10004415 f   gl_mesh.obj
- 0001:00003800       _GL_DrawAliasShadow        10004800 f   gl_mesh.obj
- 0001:000038a2       _R_DrawAliasModel          100048a2 f   gl_mesh.obj
- 0001:000041ab       _Mod_PointInLeaf           100051ab f   gl_model.obj
- 0001:0000420b       _Mod_DecompressVis         1000520b f   gl_model.obj
- 0001:0000428b       _Mod_ClusterPVS            1000528b f   gl_model.obj
- 0001:000042c1       _Mod_Modellist_f           100052c1 f   gl_model.obj
- 0001:00004322       _Mod_Init                  10005322 f   gl_model.obj
- 0001:0000433a       _Mod_ForName               1000533a f   gl_model.obj
- 0001:00004576       _CreateSolarColor          10005576 f   gl_model.obj
- 0001:00004649       _Mod_LoadLighting          10005649 f   gl_model.obj
- 0001:00004884       _Mod_LoadSubmodels         10005884 f   gl_model.obj
- 0001:00004917       _Mod_LoadEdges             10005917 f   gl_model.obj
- 0001:00004966       _Mod_LoadTexinfo           10005966 f   gl_model.obj
- 0001:00004a73       _CalcSurfaceExtents        10005a73 f   gl_model.obj
- 0001:00004bb5       _Mod_LoadFaces             10005bb5 f   gl_model.obj
- 0001:00004d0d       _Mod_SetParent             10005d0d f   gl_model.obj
- 0001:00004d32       _Mod_LoadNodes             10005d32 f   gl_model.obj
- 0001:00004e30       _Mod_LoadLeafs             10005e30 f   gl_model.obj
- 0001:00004ed3       _Mod_LoadMarksurfaces      10005ed3 f   gl_model.obj
- 0001:00004f4e       _Mod_LoadPlanes            10005f4e f   gl_model.obj
- 0001:00004fe3       _PlaneTypeForNormal        10005fe3 f i gl_model.obj
- 0001:00005054       _Mod_LoadBrushModel        10006054 f   gl_model.obj
- 0001:00005243       _Mod_LoadAliasModel        10006243 f   gl_model.obj
- 0001:0000550b       _Mod_LoadSpriteModel       1000650b f   gl_model.obj
- 0001:0000560e       _R_BeginRegistration       1000660e f   gl_model.obj
- 0001:000056a8       _R_RegisterModel           100066a8 f   gl_model.obj
- 0001:000057a5       _R_EndRegistration         100067a5 f   gl_model.obj
- 0001:000057f8       _Mod_FreeAll               100067f8 f   gl_model.obj
- 0001:0000583e       _R_CullBox                 1000683e f   gl_rmain.obj
- 0001:00005879       _BOX_ON_PLANE_SIDE         10006879 f i gl_rmain.obj
- 0001:000058fe       _R_RotateForEntity         100068fe f   gl_rmain.obj
- 0001:00005981       _R_DrawSpriteModel         10006981 f   gl_rmain.obj
- 0001:00005c83       _R_DrawNullModel           10006c83 f   gl_rmain.obj
- 0001:00005e16       _R_DrawEntitiesOnList      10006e16 f   gl_rmain.obj
- 0001:00005f46       _GL_DrawParticles          10006f46 f   gl_rmain.obj
- 0001:00006133       _R_PolyBlend               10007133 f   gl_rmain.obj
- 0001:000062b3       _SignbitsForPlane          100072b3 f   gl_rmain.obj
- 0001:000062dd       _R_SetFrustum              100072dd f   gl_rmain.obj
- 0001:000063c7       _R_SetupFrame              100073c7 f   gl_rmain.obj
- 0001:00006552       _MYgluPerspective          10007552 f   gl_rmain.obj
- 0001:000065be       _R_SetupGL                 100075be f   gl_rmain.obj
- 0001:0000683e       _R_Clear                   1000783e f   gl_rmain.obj
- 0001:0000691f       _R_RenderView              1000791f f   gl_rmain.obj
- 0001:00006a2e       _R_SetGL2D                 10007a2e f   gl_rmain.obj
- 0001:00006b1f       _R_SetLightLevel           10007b1f f   gl_rmain.obj
- 0001:00006b7a       _R_RenderFrame             10007b7a f   gl_rmain.obj
- 0001:00006b93       _R_Register                10007b93 f   gl_rmain.obj
- 0001:00006bd4       _R_SetMode                 10007bd4 f   gl_rmain.obj
- 0001:00006cc4       _R_Init                    10007cc4 f   gl_rmain.obj
- 0001:00007069       _R_Shutdown                10008069 f   gl_rmain.obj
- 0001:000070a3       _R_BeginFrame              100080a3 f   gl_rmain.obj
- 0001:000073ba       _R_SetPalette              100083ba f   gl_rmain.obj
- 0001:00007485       _R_DrawBeam                10008485 f   gl_rmain.obj
- 0001:00007690       _Draw_ConCharColor         10008690 f   gl_rmain.obj
- 0001:000076b1       _GetRefAPI                 100086b1 f   gl_rmain.obj
- 0001:000078b0       _R_InitParticleTexture     100088b0 f   gl_rmisc.obj
- 0001:0000797f       _GL_PerformScreenshot      1000897f f   gl_rmisc.obj
- 0001:00007bb4       _GL_Strings_f              10008bb4 f   gl_rmisc.obj
- 0001:00007c08       _GL_SetDefaultState        10008c08 f   gl_rmisc.obj
- 0001:00007d63       _GL_UpdateSwapInterval     10008d63 f   gl_rmisc.obj
- 0001:00007d98       _R_TextureAnimation        10008d98 f   gl_rsurf.obj
- 0001:00007dbc       _DrawGLPoly                10008dbc f   gl_rsurf.obj
- 0001:00007e18       _DrawGLFlowingPoly         10008e18 f   gl_rsurf.obj
- 0001:00007ea0       _R_DrawTriangleOutlines    10008ea0 f   gl_rsurf.obj
- 0001:00007f9d       _DrawGLPolyChain           10008f9d f   gl_rsurf.obj
- 0001:00008074       _R_BlendLightmaps          10009074 f   gl_rsurf.obj
- 0001:00008379       _R_RenderBrushPoly         10009379 f   gl_rsurf.obj
- 0001:00008548       _DrawReflectPoly3          10009548 f   gl_rsurf.obj
- 0001:0000861d       _R_DrawAlphaSurfaces       1000961d f   gl_rsurf.obj
- 0001:00008a42       _DrawTextureChains         10009a42 f   gl_rsurf.obj
- 0001:00008b70       _R_DrawInlineBModel        10009b70 f   gl_rsurf.obj
- 0001:00009118       _R_DrawBrushModel          1000a118 f   gl_rsurf.obj
- 0001:00009332       _R_RecursiveWorldNode      1000a332 f   gl_rsurf.obj
- 0001:000094a6       _DISTANCE_TO_PLANE         1000a4a6 f i gl_rsurf.obj
- 0001:000094ee       _R_DrawWorld               1000a4ee f   gl_rsurf.obj
- 0001:00009673       _R_MarkLeaves              1000a673 f   gl_rsurf.obj
- 0001:00009a02       _GL_BuildPolygonFromSurface 1000aa02 f   gl_rsurf.obj
- 0001:00009ba1       _GL_CreateSurfaceLightmap  1000aba1 f   gl_rsurf.obj
- 0001:00009c4a       _GL_BeginBuildingLightmaps 1000ac4a f   gl_rsurf.obj
- 0001:00009d9c       _GL_EndBuildingLightmaps   1000ad9c f   gl_rsurf.obj
- 0001:00009dad       _DrawColoredText           1000adad f   gl_textout.obj
- 0001:00009f45       _R_DrawTexts               1000af45 f   gl_textout.obj
- 0001:00009f8a       _DrawTextPos               1000af8a f   gl_textout.obj
- 0001:0000a02c       _DrawTextLeft              1000b02c f   gl_textout.obj
- 0001:0000a054       _DrawTextRight             1000b054 f   gl_textout.obj
- 0001:0000a092       _BoundPoly                 1000b092 f   gl_warp.obj
- 0001:0000a110       _SubdividePolygon          1000b110 f   gl_warp.obj
- 0001:0000a405       _GL_SubdivideSurface       1000b405 f   gl_warp.obj
- 0001:0000a496       _EmitWaterPolys            1000b496 f   gl_warp.obj
- 0001:0000a58c       _DrawSkyPolygon            1000b58c f   gl_warp.obj
- 0001:0000a768       _ClipSkyPolygon            1000b768 f   gl_warp.obj
- 0001:0000a973       _R_AddSkySurface           1000b973 f   gl_warp.obj
- 0001:0000a9e0       _R_ClearSkyBox             1000b9e0 f   gl_warp.obj
- 0001:0000aa16       _MakeSkyVec                1000ba16 f   gl_warp.obj
- 0001:0000ab12       _R_DrawSkyBox              1000bb12 f   gl_warp.obj
- 0001:0000acd1       _R_SetSky                  1000bcd1 f   gl_warp.obj
- 0001:0000addf       _GLimp_SetMode             1000bddf f   glw_imp.obj
- 0001:0000b094       _GLimp_HasGamma            1000c094 f   glw_imp.obj
- 0001:0000b0a8       _GLimp_SetGamma            1000c0a8 f   glw_imp.obj
- 0001:0000b22f       _GLimp_Init                1000c22f f   glw_imp.obj
- 0001:0000b5c8       _GLimp_Shutdown            1000c5c8 f   glw_imp.obj
- 0001:0000b673       _GLimp_EndFrame            1000c673 f   glw_imp.obj
- 0001:0000b70e       _GLimp_BeginFrame          1000c70e f   glw_imp.obj
- 0001:0000b761       _GLimp_AppActivate         1000c761 f   glw_imp.obj
- 0001:0000b7e5       _Q_rsqrt                   1000c7e5 f   q_shared2.obj
- 0001:0000b815       _RotatePointAroundVector   1000c815 f   q_shared2.obj
- 0001:0000b985       _AngleVectors              1000c985 f   q_shared2.obj
- 0001:0000bae6       _ProjectPointOnPlane       1000cae6 f   q_shared2.obj
- 0001:0000bb65       _PerpendicularVector       1000cb65 f   q_shared2.obj
- 0001:0000bbe4       _MatrixMultiply            1000cbe4 f   q_shared2.obj
- 0001:0000bccb       _BoxOnPlaneSide            1000cccb f   q_shared2.obj
- 0001:0000bdee       _VectorNormalize           1000cdee f   q_shared2.obj
- 0001:0000be42       _VectorNormalizeFast       1000ce42 f   q_shared2.obj
- 0001:0000be93       _CrossProduct              1000ce93 f   q_shared2.obj
- 0001:0000bece       _VectorLength              1000cece f   q_shared2.obj
- 0001:0000befd       _VectorScale               1000cefd f   q_shared2.obj
- 0001:0000bf21       _va                        1000cf21 f   q_shared2.obj
- 0001:0000bf6e       _Q_stricmp                 1000cf6e f   q_shared2.obj
- 0001:0000bf7f       _Com_sprintf               1000cf7f f   q_shared2.obj
- 0001:0000d542       _QGL_Shutdown              1000e542 f   qgl_win.obj
- 0001:0000d586       _QGL_Init                  1000e586 f   qgl_win.obj
- 0001:0000d60b       _QGL_InitExtensions        1000e60b f   qgl_win.obj
- 0001:0000da2d       _QGL_PrintExtensionsString 1000ea2d f   qgl_win.obj
- 0001:0000db5c       _QGL_EnableLogging         1000eb5c f   qgl_win.obj
- 0001:0000dbf8       _QGL_LogMessage            1000ebf8 f   qgl_win.obj
- 0001:0000dc10       __alloca_probe             1000ec10 f   MSVCRT:chkstk.obj
- 0001:0000dc10       __chkstk                   1000ec10 f   MSVCRT:chkstk.obj
- 0001:0000dc40       __ftol                     1000ec40 f   MSVCRT:MSVCRT.dll
- 0001:0000dc46       _memcpy                    1000ec46 f   MSVCRT:MSVCRT.dll
- 0001:0000dc4c       _strcpy                    1000ec4c f   MSVCRT:MSVCRT.dll
- 0001:0000dc52       _strlen                    1000ec52 f   MSVCRT:MSVCRT.dll
- 0001:0000dc58       _strcmp                    1000ec58 f   MSVCRT:MSVCRT.dll
- 0001:0000dc5e       _memset                    1000ec5e f   MSVCRT:MSVCRT.dll
- 0001:0000dc64       _pow                       1000ec64 f   MSVCRT:MSVCRT.dll
- 0001:0000dc6a       _cos                       1000ec6a f   MSVCRT:MSVCRT.dll
- 0001:0000dc70       _sin                       1000ec70 f   MSVCRT:MSVCRT.dll
- 0001:0000dc76       _fabs                      1000ec76 f   MSVCRT:MSVCRT.dll
- 0001:0000dc7c       _tan                       1000ec7c f   MSVCRT:MSVCRT.dll
- 0001:0000dc82       _strcat                    1000ec82 f   MSVCRT:MSVCRT.dll
- 0001:0000dc88       _sqrt                      1000ec88 f   MSVCRT:MSVCRT.dll
- 0001:0000dc8e       _memcmp                    1000ec8e f   MSVCRT:MSVCRT.dll
- 0001:0000dc94       __CRT_INIT@12              1000ec94 f   MSVCRT:crtdll.obj
- 0001:0000dd3f       __DllMainCRTStartup@12     1000ed3f f   MSVCRT:crtdll.obj
- 0001:0000dddc       __initterm                 1000eddc f   MSVCRT:MSVCRT.dll
- 0001:0000dde2       _DllMain@12                1000ede2 f   MSVCRT:dllmain.obj
+ 0001:000009a5       _Draw_StretchRaw8          100019a5 f   gl_draw.obj
+ 0001:00000bba       _GL_SetTexturePalette      10001bba f   gl_image.obj
+ 0001:00000bbb       _GL_EnableMultitexture     10001bbb f   gl_image.obj
+ 0001:00000c13       _GL_SelectTexture          10001c13 f   gl_image.obj
+ 0001:00000c5d       _qglMTexCoord2f            10001c5d f   gl_image.obj
+ 0001:00000cb8       _GL_TexEnv                 10001cb8 f   gl_image.obj
+ 0001:00000cea       _GL_Bind                   10001cea f   gl_image.obj
+ 0001:00000d41       _GL_MBind                  10001d41 f   gl_image.obj
+ 0001:00000d63       _GL_TextureMode            10001d63 f   gl_image.obj
+ 0001:00000e23       _GL_TextureAlphaMode       10001e23 f   gl_image.obj
+ 0001:00000e6c       _GL_TextureSolidMode       10001e6c f   gl_image.obj
+ 0001:00000eb5       _GL_ImageList_f            10001eb5 f   gl_image.obj
+ 0001:00000fc8       _Scrap_AllocBlock          10001fc8 f   gl_image.obj
+ 0001:00001084       _Scrap_Upload              10002084 f   gl_image.obj
+ 0001:000010b4       _R_FloodFillSkin           100020b4 f   gl_image.obj
+ 0001:00001247       _GL_ResampleTexture        10002247 f   gl_image.obj
+ 0001:000013e2       _GL_LightScaleTexture      100023e2 f   gl_image.obj
+ 0001:0000159f       _GL_MipMap                 1000259f f   gl_image.obj
+ 0001:000016f6       _GL_Upload32               100026f6 f   gl_image.obj
+ 0001:000019b7       _GL_Upload8                100029b7 f   gl_image.obj
+ 0001:00001a9f       _GL_LoadPic                10002a9f f   gl_image.obj
+ 0001:00001d0e       _GL_LoadWal                10002d0e f   gl_image.obj
+ 0001:00001d6d       _GL_FindImage              10002d6d f   gl_image.obj
+ 0001:000020af       _R_RegisterSkin            100030af f   gl_image.obj
+ 0001:000020bd       _GL_FreeUnusedImages       100030bd f   gl_image.obj
+ 0001:0000212f       _Draw_GetPalette           1000312f f   gl_image.obj
+ 0001:000021ba       _GL_InitImages             100031ba f   gl_image.obj
+ 0001:000022ee       _GL_ShutdownImages         100032ee f   gl_image.obj
+ 0001:0000232d       _R_RenderDlight            1000332d f   gl_light.obj
+ 0001:0000244a       _R_RenderDlights           1000344a f   gl_light.obj
+ 0001:00002501       _R_MarkLights              10003501 f   gl_light.obj
+ 0001:000025c0       _R_PushDlights             100035c0 f   gl_light.obj
+ 0001:0000261b       _RecursiveLightPoint       1000361b f   gl_light.obj
+ 0001:000028c5       _R_LightPoint              100038c5 f   gl_light.obj
+ 0001:00002a12       _R_AddDynamicLights        10003a12 f   gl_light.obj
+ 0001:00002c7a       _R_SetCacheState           10003c7a f   gl_light.obj
+ 0001:00002ca5       _R_BuildLightMap           10003ca5 f   gl_light.obj
+ 0001:00003273       _GL_LerpVerts              10004273 f   gl_mesh.obj
+ 0001:000033fd       _GL_DrawAliasFrameLerp     100043fd f   gl_mesh.obj
+ 0001:000037e8       _GL_DrawAliasShadow        100047e8 f   gl_mesh.obj
+ 0001:0000388a       _R_DrawAliasModel          1000488a f   gl_mesh.obj
+ 0001:00004193       _Mod_PointInLeaf           10005193 f   gl_model.obj
+ 0001:000041f3       _Mod_DecompressVis         100051f3 f   gl_model.obj
+ 0001:00004273       _Mod_ClusterPVS            10005273 f   gl_model.obj
+ 0001:000042a9       _Mod_Modellist_f           100052a9 f   gl_model.obj
+ 0001:0000430a       _Mod_Init                  1000530a f   gl_model.obj
+ 0001:00004322       _Mod_ForName               10005322 f   gl_model.obj
+ 0001:0000455e       _CreateSolarColor          1000555e f   gl_model.obj
+ 0001:00004631       _Mod_LoadLighting          10005631 f   gl_model.obj
+ 0001:0000486c       _Mod_LoadSubmodels         1000586c f   gl_model.obj
+ 0001:000048ff       _Mod_LoadEdges             100058ff f   gl_model.obj
+ 0001:0000494e       _Mod_LoadTexinfo           1000594e f   gl_model.obj
+ 0001:00004a5b       _CalcSurfaceExtents        10005a5b f   gl_model.obj
+ 0001:00004b9d       _Mod_LoadFaces             10005b9d f   gl_model.obj
+ 0001:00004cf5       _Mod_SetParent             10005cf5 f   gl_model.obj
+ 0001:00004d1a       _Mod_LoadNodes             10005d1a f   gl_model.obj
+ 0001:00004e18       _Mod_LoadLeafs             10005e18 f   gl_model.obj
+ 0001:00004ebb       _Mod_LoadMarksurfaces      10005ebb f   gl_model.obj
+ 0001:00004f36       _Mod_LoadPlanes            10005f36 f   gl_model.obj
+ 0001:00004fcb       _PlaneTypeForNormal        10005fcb f i gl_model.obj
+ 0001:0000503c       _Mod_LoadBrushModel        1000603c f   gl_model.obj
+ 0001:0000522b       _Mod_LoadAliasModel        1000622b f   gl_model.obj
+ 0001:000054f3       _Mod_LoadSpriteModel       100064f3 f   gl_model.obj
+ 0001:000055f6       _R_BeginRegistration       100065f6 f   gl_model.obj
+ 0001:00005690       _R_RegisterModel           10006690 f   gl_model.obj
+ 0001:0000578d       _R_EndRegistration         1000678d f   gl_model.obj
+ 0001:000057e0       _Mod_FreeAll               100067e0 f   gl_model.obj
+ 0001:00005826       _R_CullBox                 10006826 f   gl_rmain.obj
+ 0001:00005861       _BOX_ON_PLANE_SIDE         10006861 f i gl_rmain.obj
+ 0001:000058e6       _R_RotateForEntity         100068e6 f   gl_rmain.obj
+ 0001:00005969       _R_DrawSpriteModel         10006969 f   gl_rmain.obj
+ 0001:00005c6b       _R_DrawNullModel           10006c6b f   gl_rmain.obj
+ 0001:00005dfe       _R_DrawEntitiesOnList      10006dfe f   gl_rmain.obj
+ 0001:00005f2e       _GL_DrawParticles          10006f2e f   gl_rmain.obj
+ 0001:0000611b       _R_PolyBlend               1000711b f   gl_rmain.obj
+ 0001:0000629b       _SignbitsForPlane          1000729b f   gl_rmain.obj
+ 0001:000062c5       _R_SetFrustum              100072c5 f   gl_rmain.obj
+ 0001:000063af       _R_SetupFrame              100073af f   gl_rmain.obj
+ 0001:0000653a       _MYgluPerspective          1000753a f   gl_rmain.obj
+ 0001:000065a6       _R_SetupGL                 100075a6 f   gl_rmain.obj
+ 0001:00006826       _R_Clear                   10007826 f   gl_rmain.obj
+ 0001:00006907       _R_RenderView              10007907 f   gl_rmain.obj
+ 0001:00006a16       _R_SetGL2D                 10007a16 f   gl_rmain.obj
+ 0001:00006b07       _R_SetLightLevel           10007b07 f   gl_rmain.obj
+ 0001:00006b62       _R_RenderFrame             10007b62 f   gl_rmain.obj
+ 0001:00006b7b       _R_Register                10007b7b f   gl_rmain.obj
+ 0001:00006bbc       _R_SetMode                 10007bbc f   gl_rmain.obj
+ 0001:00006cac       _R_Init                    10007cac f   gl_rmain.obj
+ 0001:00007051       _R_Shutdown                10008051 f   gl_rmain.obj
+ 0001:0000708b       _R_BeginFrame              1000808b f   gl_rmain.obj
+ 0001:000073a3       _R_SetPalette              100083a3 f   gl_rmain.obj
+ 0001:0000746e       _R_DrawBeam                1000846e f   gl_rmain.obj
+ 0001:00007679       _Draw_ConCharColor         10008679 f   gl_rmain.obj
+ 0001:0000769a       _GetRefAPI                 1000869a f   gl_rmain.obj
+ 0001:00007899       _R_InitParticleTexture     10008899 f   gl_rmisc.obj
+ 0001:00007968       _GL_PerformScreenshot      10008968 f   gl_rmisc.obj
+ 0001:00007b9d       _GL_Strings_f              10008b9d f   gl_rmisc.obj
+ 0001:00007bf1       _GL_SetDefaultState        10008bf1 f   gl_rmisc.obj
+ 0001:00007d4c       _GL_UpdateSwapInterval     10008d4c f   gl_rmisc.obj
+ 0001:00007d81       _R_TextureAnimation        10008d81 f   gl_rsurf.obj
+ 0001:00007da5       _DrawGLPoly                10008da5 f   gl_rsurf.obj
+ 0001:00007e01       _DrawGLFlowingPoly         10008e01 f   gl_rsurf.obj
+ 0001:00007e89       _R_DrawTriangleOutlines    10008e89 f   gl_rsurf.obj
+ 0001:00007f86       _DrawGLPolyChain           10008f86 f   gl_rsurf.obj
+ 0001:0000805d       _R_BlendLightmaps          1000905d f   gl_rsurf.obj
+ 0001:00008362       _R_RenderBrushPoly         10009362 f   gl_rsurf.obj
+ 0001:00008531       _DrawReflectPoly3          10009531 f   gl_rsurf.obj
+ 0001:00008606       _R_DrawAlphaSurfaces       10009606 f   gl_rsurf.obj
+ 0001:00008a2b       _DrawTextureChains         10009a2b f   gl_rsurf.obj
+ 0001:00008b59       _R_DrawInlineBModel        10009b59 f   gl_rsurf.obj
+ 0001:00009101       _R_DrawBrushModel          1000a101 f   gl_rsurf.obj
+ 0001:0000931b       _R_RecursiveWorldNode      1000a31b f   gl_rsurf.obj
+ 0001:0000948f       _DISTANCE_TO_PLANE         1000a48f f i gl_rsurf.obj
+ 0001:000094d7       _R_DrawWorld               1000a4d7 f   gl_rsurf.obj
+ 0001:0000965c       _R_MarkLeaves              1000a65c f   gl_rsurf.obj
+ 0001:000099eb       _GL_BuildPolygonFromSurface 1000a9eb f   gl_rsurf.obj
+ 0001:00009b8a       _GL_CreateSurfaceLightmap  1000ab8a f   gl_rsurf.obj
+ 0001:00009c33       _GL_BeginBuildingLightmaps 1000ac33 f   gl_rsurf.obj
+ 0001:00009d85       _GL_EndBuildingLightmaps   1000ad85 f   gl_rsurf.obj
+ 0001:00009d96       _DrawColoredText           1000ad96 f   gl_textout.obj
+ 0001:00009f2e       _R_DrawTexts               1000af2e f   gl_textout.obj
+ 0001:00009f73       _DrawTextPos               1000af73 f   gl_textout.obj
+ 0001:0000a015       _DrawTextLeft              1000b015 f   gl_textout.obj
+ 0001:0000a03d       _DrawTextRight             1000b03d f   gl_textout.obj
+ 0001:0000a07b       _BoundPoly                 1000b07b f   gl_warp.obj
+ 0001:0000a0f9       _SubdividePolygon          1000b0f9 f   gl_warp.obj
+ 0001:0000a3ee       _GL_SubdivideSurface       1000b3ee f   gl_warp.obj
+ 0001:0000a47f       _EmitWaterPolys            1000b47f f   gl_warp.obj
+ 0001:0000a575       _DrawSkyPolygon            1000b575 f   gl_warp.obj
+ 0001:0000a751       _ClipSkyPolygon            1000b751 f   gl_warp.obj
+ 0001:0000a95c       _R_AddSkySurface           1000b95c f   gl_warp.obj
+ 0001:0000a9c9       _R_ClearSkyBox             1000b9c9 f   gl_warp.obj
+ 0001:0000a9ff       _MakeSkyVec                1000b9ff f   gl_warp.obj
+ 0001:0000aafb       _R_DrawSkyBox              1000bafb f   gl_warp.obj
+ 0001:0000acba       _R_SetSky                  1000bcba f   gl_warp.obj
+ 0001:0000adc8       _GLimp_SetMode             1000bdc8 f   glw_imp.obj
+ 0001:0000b07d       _GLimp_HasGamma            1000c07d f   glw_imp.obj
+ 0001:0000b091       _GLimp_SetGamma            1000c091 f   glw_imp.obj
+ 0001:0000b218       _GLimp_Init                1000c218 f   glw_imp.obj
+ 0001:0000b5b1       _GLimp_Shutdown            1000c5b1 f   glw_imp.obj
+ 0001:0000b65c       _GLimp_EndFrame            1000c65c f   glw_imp.obj
+ 0001:0000b6f7       _GLimp_BeginFrame          1000c6f7 f   glw_imp.obj
+ 0001:0000b74a       _GLimp_AppActivate         1000c74a f   glw_imp.obj
+ 0001:0000b7ce       _Q_rsqrt                   1000c7ce f   q_shared2.obj
+ 0001:0000b7fe       _RotatePointAroundVector   1000c7fe f   q_shared2.obj
+ 0001:0000b96e       _AngleVectors              1000c96e f   q_shared2.obj
+ 0001:0000bacf       _ProjectPointOnPlane       1000cacf f   q_shared2.obj
+ 0001:0000bb4e       _PerpendicularVector       1000cb4e f   q_shared2.obj
+ 0001:0000bbcd       _MatrixMultiply            1000cbcd f   q_shared2.obj
+ 0001:0000bcb4       _BoxOnPlaneSide            1000ccb4 f   q_shared2.obj
+ 0001:0000bdd7       _VectorNormalize           1000cdd7 f   q_shared2.obj
+ 0001:0000be2b       _VectorNormalizeFast       1000ce2b f   q_shared2.obj
+ 0001:0000be7c       _CrossProduct              1000ce7c f   q_shared2.obj
+ 0001:0000beb7       _VectorLength              1000ceb7 f   q_shared2.obj
+ 0001:0000bee6       _VectorScale               1000cee6 f   q_shared2.obj
+ 0001:0000bf0a       _va                        1000cf0a f   q_shared2.obj
+ 0001:0000bf57       _Com_sprintf               1000cf57 f   q_shared2.obj
+ 0001:0000d51a       _QGL_Shutdown              1000e51a f   qgl_win.obj
+ 0001:0000d55e       _QGL_Init                  1000e55e f   qgl_win.obj
+ 0001:0000d5e3       _QGL_InitExtensions        1000e5e3 f   qgl_win.obj
+ 0001:0000d9ea       _QGL_PrintExtensionsString 1000e9ea f   qgl_win.obj
+ 0001:0000db19       _QGL_EnableLogging         1000eb19 f   qgl_win.obj
+ 0001:0000dbd0       _QGL_LogMessage            1000ebd0 f   qgl_win.obj
+ 0001:0000dbf0       __alloca_probe             1000ebf0 f   MSVCRT:chkstk.obj
+ 0001:0000dbf0       __chkstk                   1000ebf0 f   MSVCRT:chkstk.obj
+ 0001:0000dc20       __ftol                     1000ec20 f   MSVCRT:MSVCRT.dll
+ 0001:0000dc26       _memcpy                    1000ec26 f   MSVCRT:MSVCRT.dll
+ 0001:0000dc2c       _strcpy                    1000ec2c f   MSVCRT:MSVCRT.dll
+ 0001:0000dc32       _strlen                    1000ec32 f   MSVCRT:MSVCRT.dll
+ 0001:0000dc38       _strcmp                    1000ec38 f   MSVCRT:MSVCRT.dll
+ 0001:0000dc3e       _memset                    1000ec3e f   MSVCRT:MSVCRT.dll
+ 0001:0000dc44       _pow                       1000ec44 f   MSVCRT:MSVCRT.dll
+ 0001:0000dc4a       _cos                       1000ec4a f   MSVCRT:MSVCRT.dll
+ 0001:0000dc50       _sin                       1000ec50 f   MSVCRT:MSVCRT.dll
+ 0001:0000dc56       _fabs                      1000ec56 f   MSVCRT:MSVCRT.dll
+ 0001:0000dc5c       _tan                       1000ec5c f   MSVCRT:MSVCRT.dll
+ 0001:0000dc62       _strcat                    1000ec62 f   MSVCRT:MSVCRT.dll
+ 0001:0000dc68       _sqrt                      1000ec68 f   MSVCRT:MSVCRT.dll
+ 0001:0000dc6e       _memcmp                    1000ec6e f   MSVCRT:MSVCRT.dll
+ 0001:0000dc74       __CRT_INIT@12              1000ec74 f   MSVCRT:crtdll.obj
+ 0001:0000dd1f       __DllMainCRTStartup@12     1000ed1f f   MSVCRT:crtdll.obj
+ 0001:0000ddbc       __initterm                 1000edbc f   MSVCRT:MSVCRT.dll
+ 0001:0000ddc2       _DllMain@12                1000edc2 f   MSVCRT:dllmain.obj
  0002:00000000       __imp__SetDeviceGammaRamp@8 1000f000     gdi32:GDI32.dll
  0002:00000004       __imp__GetDeviceGammaRamp@8 1000f004     gdi32:GDI32.dll
  0002:00000008       __imp__DescribePixelFormat@16 1000f008     gdi32:GDI32.dll
@@ -231,11 +230,12 @@
  0002:0000002c       __imp__FreeLibrary@4       1000f02c     kernel32:KERNEL32.dll
  0002:00000030       __imp__DisableThreadLibraryCalls@4 1000f030     kernel32:KERNEL32.dll
  0002:00000034       \177KERNEL32_NULL_THUNK_DATA 1000f034     kernel32:KERNEL32.dll
- 0002:00000038       __imp__malloc              1000f038     MSVCRT:MSVCRT.dll
- 0002:0000003c       __imp___strlwr             1000f03c     MSVCRT:MSVCRT.dll
- 0002:0000003c       __imp__strlwr              1000f03c     MSVCRT:MSVCRT.dll
- 0002:00000040       __imp___adjust_fdiv        1000f040     MSVCRT:MSVCRT.dll
- 0002:00000044       __imp___initterm           1000f044     MSVCRT:MSVCRT.dll
+ 0002:00000038       __imp___adjust_fdiv        1000f038     MSVCRT:MSVCRT.dll
+ 0002:0000003c       __imp___stricmp            1000f03c     MSVCRT:MSVCRT.dll
+ 0002:0000003c       __imp__stricmp             1000f03c     MSVCRT:MSVCRT.dll
+ 0002:00000040       __imp__strlwr              1000f040     MSVCRT:MSVCRT.dll
+ 0002:00000040       __imp___strlwr             1000f040     MSVCRT:MSVCRT.dll
+ 0002:00000044       __imp__malloc              1000f044     MSVCRT:MSVCRT.dll
  0002:00000048       __imp___ftol               1000f048     MSVCRT:MSVCRT.dll
  0002:0000004c       __imp__memcpy              1000f04c     MSVCRT:MSVCRT.dll
  0002:00000050       __imp__strcpy              1000f050     MSVCRT:MSVCRT.dll
@@ -259,15 +259,14 @@
  0002:00000098       __imp___winmajor           1000f098     MSVCRT:MSVCRT.dll
  0002:0000009c       __imp__sqrt                1000f09c     MSVCRT:MSVCRT.dll
  0002:000000a0       __imp___vsnprintf          1000f0a0     MSVCRT:MSVCRT.dll
- 0002:000000a4       __imp__stricmp             1000f0a4     MSVCRT:MSVCRT.dll
- 0002:000000a4       __imp___stricmp            1000f0a4     MSVCRT:MSVCRT.dll
- 0002:000000a8       __imp__strchr              1000f0a8     MSVCRT:MSVCRT.dll
- 0002:000000ac       __imp__fprintf             1000f0ac     MSVCRT:MSVCRT.dll
- 0002:000000b0       __imp__memcmp              1000f0b0     MSVCRT:MSVCRT.dll
- 0002:000000b4       __imp__asctime             1000f0b4     MSVCRT:MSVCRT.dll
- 0002:000000b8       __imp__localtime           1000f0b8     MSVCRT:MSVCRT.dll
- 0002:000000bc       __imp__time                1000f0bc     MSVCRT:MSVCRT.dll
- 0002:000000c0       __imp__free                1000f0c0     MSVCRT:MSVCRT.dll
+ 0002:000000a4       __imp__strchr              1000f0a4     MSVCRT:MSVCRT.dll
+ 0002:000000a8       __imp__fprintf             1000f0a8     MSVCRT:MSVCRT.dll
+ 0002:000000ac       __imp__memcmp              1000f0ac     MSVCRT:MSVCRT.dll
+ 0002:000000b0       __imp__strftime            1000f0b0     MSVCRT:MSVCRT.dll
+ 0002:000000b4       __imp__localtime           1000f0b4     MSVCRT:MSVCRT.dll
+ 0002:000000b8       __imp__time                1000f0b8     MSVCRT:MSVCRT.dll
+ 0002:000000bc       __imp__free                1000f0bc     MSVCRT:MSVCRT.dll
+ 0002:000000c0       __imp___initterm           1000f0c0     MSVCRT:MSVCRT.dll
  0002:000000c4       __imp__putenv              1000f0c4     MSVCRT:MSVCRT.dll
  0002:000000c4       __imp___putenv             1000f0c4     MSVCRT:MSVCRT.dll
  0002:000000c8       \177MSVCRT_NULL_THUNK_DATA 1000f0c8     MSVCRT:MSVCRT.dll
@@ -284,103 +283,102 @@
  0002:000000f8       __real@8@3ffb8000000000000000 1000f0f8     gl_draw.obj
  0002:00000100       __real@8@3ff98000000000000000 1000f100     gl_draw.obj
  0002:00000108       __real@8@3ff78080808080808000 1000f108     gl_draw.obj
- 0002:00000110       __real@8@3ffeb333333333333000 1000f110     gl_draw.obj
- 0002:00000118       __real@4@400c9804000000000000 1000f118     gl_draw.obj
- 0002:0000011c       __real@4@3ff78000000000000000 1000f11c     gl_draw.obj
- 0002:00000120       __real@8@3ff78000000000000000 1000f120     gl_draw.obj
- 0002:00000128       _fmt_names                 1000f128     gl_image.obj
- 0002:000001c8       __real@8@3ffec000000000000000 1000f1c8     gl_image.obj
- 0002:000001d0       __real@8@3ffd8000000000000000 1000f1d0     gl_image.obj
- 0002:000001d8       __real@8@3ffdaaaaaaaaaaaaa800 1000f1d8     gl_image.obj
- 0002:000001e0       __real@4@4006ff00000000000000 1000f1e0     gl_image.obj
- 0002:000001e4       __real@4@00000000000000000000 1000f1e4     gl_image.obj
- 0002:000001e8       __real@8@3ffe8000000000000000 1000f1e8     gl_image.obj
- 0002:000001f0       __real@8@3fff8000000000000000 1000f1f0     gl_image.obj
- 0002:000001f8       __real@8@3ff8a3d70a3d70a3d800 1000f1f8     gl_image.obj
- 0002:00000200       __real@8@4006ff00000000000000 1000f200     gl_image.obj
- 0002:00000208       __real@8@3ff78040201008040000 1000f208     gl_image.obj
- 0002:00000210       __real@4@3fff8000000000000000 1000f210     gl_image.obj
- 0002:00000218       __real@8@3ffdc90fdaa22168c000 1000f218     gl_light.obj
- 0002:00000220       __real@8@3ffcccccccccccccd000 1000f220     gl_light.obj
- 0002:00000228       __real@8@3ffdb333333333333000 1000f228     gl_light.obj
- 0002:00000230       __real@4@40048000000000000000 1000f230     gl_light.obj
- 0002:00000234       __real@4@3ff88000000000000000 1000f234     gl_light.obj
- 0002:00000238       __real@4@3ff78080808080808000 1000f238     gl_light.obj
- 0002:0000023c       __real@4@bfff8000000000000000 1000f23c     gl_light.obj
- 0002:00000240       __real@4@400a8000000000000000 1000f240     gl_light.obj
- 0002:00000244       __real@4@40038000000000000000 1000f244     gl_light.obj
- 0002:00000248       __real@8@40088000000000000000 1000f248     gl_light.obj
- 0002:00000250       __real@4@4002c000000000000000 1000f250     gl_light.obj
- 0002:00000254       __real@4@40028000000000000000 1000f254     gl_light.obj
- 0002:00000258       __real@4@40018000000000000000 1000f258     gl_mesh.obj
- 0002:0000025c       __real@4@3ffe8000000000000000 1000f25c     gl_mesh.obj
- 0002:00000260       __real@8@40018000000000000000 1000f260     gl_mesh.obj
- 0002:00000268       __real@8@400b8000000000000000 1000f268     gl_mesh.obj
- 0002:00000270       __real@8@3ffd9999999999999800 1000f270     gl_mesh.obj
- 0002:00000278       __real@8@4000c90fdaa22168c000 1000f278     gl_mesh.obj
- 0002:00000280       __real@4@3ff7b60b60b60b60b800 1000f280     gl_mesh.obj
- 0002:00000288       __real@8@3ffab60b60b60b60b800 1000f288     gl_mesh.obj
- 0002:00000290       __real@4@40008000000000000000 1000f290     gl_mesh.obj
- 0002:00000298       __real@8@3ffeccccccccccccd000 1000f298     gl_mesh.obj
- 0002:000002a0       __real@4@4001e000000000000000 1000f2a0     gl_mesh.obj
- 0002:000002a4       __real@4@3ffbccccccccccccd000 1000f2a4     gl_mesh.obj
- 0002:000002a8       __real@8@3ffbccccccccccccd000 1000f2a8     gl_mesh.obj
- 0002:000002b0       __real@4@40069600000000000000 1000f2b0     gl_mesh.obj
- 0002:000002b4       __real@4@4001a000000000000000 1000f2b4     gl_model.obj
- 0002:000002b8       __real@8@3ffda8f5c28f5c28f800 1000f2b8     gl_model.obj
- 0002:000002c0       __real@8@3ffab0c34c1a8ac5c800 1000f2c0     gl_model.obj
- 0002:000002c8       ?h@?1??Q_ceil@@9@9         1000f2c8     gl_model.obj
- 0002:000002cc       ?h@?1??Q_floor@@9@9        1000f2cc     gl_model.obj
- 0002:000002d0       __real@4@c0178000000000000000 1000f2d0     gl_model.obj
- 0002:000002d4       __real@4@40178000000000000000 1000f2d4     gl_model.obj
- 0002:000002d8       __real@4@c0048000000000000000 1000f2d8     gl_model.obj
- 0002:00000630       __real@4@3ffeaa7ef9db22d0e800 1000f630     gl_rmain.obj
- 0002:00000634       __real@4@3ffaccccccccccccd000 1000f634     gl_rmain.obj
- 0002:00000638       __real@8@40038000000000000000 1000f638     gl_rmain.obj
- 0002:00000640       __real@8@3fffc90fdaa22168c000 1000f640     gl_rmain.obj
- 0002:00000648       __real@4@c0038000000000000000 1000f648     gl_rmain.obj
- 0002:0000064c       __real@4@3fff8800000000000000 1000f64c     gl_rmain.obj
- 0002:00000650       __real@8@3ff783126e978d4fe000 1000f650     gl_rmain.obj
- 0002:00000658       __real@4@4003a000000000000000 1000f658     gl_rmain.obj
- 0002:0000065c       __real@4@3fffc000000000000000 1000f65c     gl_rmain.obj
- 0002:00000660       __real@4@c005c800000000000000 1000f660     gl_rmain.obj
- 0002:00000664       __real@4@4002a000000000000000 1000f664     gl_rmain.obj
- 0002:00000668       __real@4@4005c800000000000000 1000f668     gl_rmain.obj
- 0002:0000066c       __real@4@4005b400000000000000 1000f66c     gl_rmain.obj
- 0002:00000670       __real@4@c005b400000000000000 1000f670     gl_rmain.obj
- 0002:00000674       __real@4@3ffd9999999999999800 1000f674     gl_rmain.obj
- 0002:00000678       __real@8@3ff88efa351294e9c800 1000f678     gl_rmain.obj
- 0002:00000680       __real@8@4000a000000000000000 1000f680     gl_rmain.obj
- 0002:00000688       __real@8@c0178000000000000000 1000f688     gl_rmain.obj
- 0002:00000690       __real@8@40178000000000000000 1000f690     gl_rmain.obj
- 0002:00000698       __real@8@4004f000000000000000 1000f698     gl_rmain.obj
- 0002:000006a0       __real@4@400ca404000000000000 1000f6a0     gl_rmisc.obj
- 0002:000006a8       __real@8@00000000000000000000 1000f6a8     gl_rsurf.obj
- 0002:000006b0       __real@8@c0058000000000000000 1000f6b0     gl_rsurf.obj
- 0002:000006b8       __real@8@3ff9ccccccccccccd000 1000f6b8     gl_rsurf.obj
- 0002:000006c0       __real@4@3ffea8f5c28f5c28f800 1000f6c0     gl_rsurf.obj
- 0002:000006c4       __real@4@3ffda8f5c28f5c28f800 1000f6c4     gl_rsurf.obj
- 0002:000006c8       __real@4@3ffce147ae147ae14800 1000f6c8     gl_rsurf.obj
- 0002:000006d0       __real@8@bff8a3d70a3d70a3d800 1000f6d0     gl_rsurf.obj
- 0002:000006d8       __real@4@3ffd8000000000000000 1000f6d8     gl_rsurf.obj
- 0002:000006dc       __real@4@3ff38000000000000000 1000f6dc     gl_rsurf.obj
- 0002:000006e0       __real@4@3ff98000000000000000 1000f6e0     gl_warp.obj
- 0002:000006e8       __real@8@4004a2f9836e4e441800 1000f6e8     gl_warp.obj
- 0002:000006f0       __real@8@3ffc8000000000000000 1000f6f0     gl_warp.obj
- 0002:000006f8       __real@8@3ff583126e978d4fe000 1000f6f8     gl_warp.obj
- 0002:00000700       __real@8@bffbccccccccccccd000 1000f700     gl_warp.obj
- 0002:00000708       __real@8@400d8000000000000000 1000f708     glw_imp.obj
- 0002:00000710       __real@8@400effff000000000000 1000f710     glw_imp.obj
- 0002:00000718       __real@8@400e8000000000000000 1000f718     glw_imp.obj
- 0002:00000720       __real@4@400e8000000000000000 1000f720     glw_imp.obj
- 0002:00000724       __real@4@4000c000000000000000 1000f724     glw_imp.obj
- 0002:00000728       __real@8@3ff7b60b60b60b60b800 1000f728     q_shared2.obj
- 0002:00000730       __real@8@3ff98efa351294e9c800 1000f730     q_shared2.obj
- 0002:00000860       __IMPORT_DESCRIPTOR_KERNEL32 1000f860     kernel32:KERNEL32.dll
- 0002:00000874       __IMPORT_DESCRIPTOR_USER32 1000f874     user32:USER32.dll
- 0002:00000888       __IMPORT_DESCRIPTOR_GDI32  1000f888     gdi32:GDI32.dll
- 0002:0000089c       __IMPORT_DESCRIPTOR_MSVCRT 1000f89c     MSVCRT:MSVCRT.dll
- 0002:000008b0       __NULL_IMPORT_DESCRIPTOR   1000f8b0     kernel32:KERNEL32.dll
+ 0002:00000110       __real@4@400c9804000000000000 1000f110     gl_draw.obj
+ 0002:00000114       __real@4@3ff78000000000000000 1000f114     gl_draw.obj
+ 0002:00000118       __real@8@3ff78000000000000000 1000f118     gl_draw.obj
+ 0002:00000120       _fmt_names                 1000f120     gl_image.obj
+ 0002:000001c0       __real@8@3ffec000000000000000 1000f1c0     gl_image.obj
+ 0002:000001c8       __real@8@3ffd8000000000000000 1000f1c8     gl_image.obj
+ 0002:000001d0       __real@8@3ffdaaaaaaaaaaaaa800 1000f1d0     gl_image.obj
+ 0002:000001d8       __real@4@4006ff00000000000000 1000f1d8     gl_image.obj
+ 0002:000001dc       __real@4@00000000000000000000 1000f1dc     gl_image.obj
+ 0002:000001e0       __real@8@3ffe8000000000000000 1000f1e0     gl_image.obj
+ 0002:000001e8       __real@8@3fff8000000000000000 1000f1e8     gl_image.obj
+ 0002:000001f0       __real@8@3ff8a3d70a3d70a3d800 1000f1f0     gl_image.obj
+ 0002:000001f8       __real@8@4006ff00000000000000 1000f1f8     gl_image.obj
+ 0002:00000200       __real@8@3ff78040201008040000 1000f200     gl_image.obj
+ 0002:00000208       __real@4@3fff8000000000000000 1000f208     gl_image.obj
+ 0002:00000210       __real@8@3ffdc90fdaa22168c000 1000f210     gl_light.obj
+ 0002:00000218       __real@8@3ffcccccccccccccd000 1000f218     gl_light.obj
+ 0002:00000220       __real@8@3ffdb333333333333000 1000f220     gl_light.obj
+ 0002:00000228       __real@4@40048000000000000000 1000f228     gl_light.obj
+ 0002:0000022c       __real@4@3ff88000000000000000 1000f22c     gl_light.obj
+ 0002:00000230       __real@4@3ff78080808080808000 1000f230     gl_light.obj
+ 0002:00000234       __real@4@bfff8000000000000000 1000f234     gl_light.obj
+ 0002:00000238       __real@4@400a8000000000000000 1000f238     gl_light.obj
+ 0002:0000023c       __real@4@40038000000000000000 1000f23c     gl_light.obj
+ 0002:00000240       __real@8@40088000000000000000 1000f240     gl_light.obj
+ 0002:00000248       __real@4@4002c000000000000000 1000f248     gl_light.obj
+ 0002:0000024c       __real@4@40028000000000000000 1000f24c     gl_light.obj
+ 0002:00000250       __real@4@40018000000000000000 1000f250     gl_mesh.obj
+ 0002:00000254       __real@4@3ffe8000000000000000 1000f254     gl_mesh.obj
+ 0002:00000258       __real@8@40018000000000000000 1000f258     gl_mesh.obj
+ 0002:00000260       __real@8@400b8000000000000000 1000f260     gl_mesh.obj
+ 0002:00000268       __real@8@3ffd9999999999999800 1000f268     gl_mesh.obj
+ 0002:00000270       __real@8@4000c90fdaa22168c000 1000f270     gl_mesh.obj
+ 0002:00000278       __real@4@3ff7b60b60b60b60b800 1000f278     gl_mesh.obj
+ 0002:00000280       __real@8@3ffab60b60b60b60b800 1000f280     gl_mesh.obj
+ 0002:00000288       __real@4@40008000000000000000 1000f288     gl_mesh.obj
+ 0002:00000290       __real@8@3ffeccccccccccccd000 1000f290     gl_mesh.obj
+ 0002:00000298       __real@4@4001e000000000000000 1000f298     gl_mesh.obj
+ 0002:0000029c       __real@4@3ffbccccccccccccd000 1000f29c     gl_mesh.obj
+ 0002:000002a0       __real@8@3ffbccccccccccccd000 1000f2a0     gl_mesh.obj
+ 0002:000002a8       __real@4@40069600000000000000 1000f2a8     gl_mesh.obj
+ 0002:000002ac       __real@4@4001a000000000000000 1000f2ac     gl_model.obj
+ 0002:000002b0       __real@8@3ffda8f5c28f5c28f800 1000f2b0     gl_model.obj
+ 0002:000002b8       __real@8@3ffab0c34c1a8ac5c800 1000f2b8     gl_model.obj
+ 0002:000002c0       ?h@?1??Q_ceil@@9@9         1000f2c0     gl_model.obj
+ 0002:000002c4       ?h@?1??Q_floor@@9@9        1000f2c4     gl_model.obj
+ 0002:000002c8       __real@4@c0178000000000000000 1000f2c8     gl_model.obj
+ 0002:000002cc       __real@4@40178000000000000000 1000f2cc     gl_model.obj
+ 0002:000002d0       __real@4@c0048000000000000000 1000f2d0     gl_model.obj
+ 0002:00000628       __real@4@3ffeaa7ef9db22d0e800 1000f628     gl_rmain.obj
+ 0002:0000062c       __real@4@3ffaccccccccccccd000 1000f62c     gl_rmain.obj
+ 0002:00000630       __real@8@40038000000000000000 1000f630     gl_rmain.obj
+ 0002:00000638       __real@8@3fffc90fdaa22168c000 1000f638     gl_rmain.obj
+ 0002:00000640       __real@4@c0038000000000000000 1000f640     gl_rmain.obj
+ 0002:00000644       __real@4@3fff8800000000000000 1000f644     gl_rmain.obj
+ 0002:00000648       __real@8@3ff783126e978d4fe000 1000f648     gl_rmain.obj
+ 0002:00000650       __real@4@4003a000000000000000 1000f650     gl_rmain.obj
+ 0002:00000654       __real@4@3fffc000000000000000 1000f654     gl_rmain.obj
+ 0002:00000658       __real@4@c005c800000000000000 1000f658     gl_rmain.obj
+ 0002:0000065c       __real@4@4002a000000000000000 1000f65c     gl_rmain.obj
+ 0002:00000660       __real@4@4005c800000000000000 1000f660     gl_rmain.obj
+ 0002:00000664       __real@4@4005b400000000000000 1000f664     gl_rmain.obj
+ 0002:00000668       __real@4@c005b400000000000000 1000f668     gl_rmain.obj
+ 0002:0000066c       __real@4@3ffd9999999999999800 1000f66c     gl_rmain.obj
+ 0002:00000670       __real@8@3ff88efa351294e9c800 1000f670     gl_rmain.obj
+ 0002:00000678       __real@8@4000a000000000000000 1000f678     gl_rmain.obj
+ 0002:00000680       __real@8@c0178000000000000000 1000f680     gl_rmain.obj
+ 0002:00000688       __real@8@40178000000000000000 1000f688     gl_rmain.obj
+ 0002:00000690       __real@8@4004f000000000000000 1000f690     gl_rmain.obj
+ 0002:00000698       __real@4@400ca404000000000000 1000f698     gl_rmisc.obj
+ 0002:000006a0       __real@8@00000000000000000000 1000f6a0     gl_rsurf.obj
+ 0002:000006a8       __real@8@c0058000000000000000 1000f6a8     gl_rsurf.obj
+ 0002:000006b0       __real@8@3ff9ccccccccccccd000 1000f6b0     gl_rsurf.obj
+ 0002:000006b8       __real@4@3ffea8f5c28f5c28f800 1000f6b8     gl_rsurf.obj
+ 0002:000006bc       __real@4@3ffda8f5c28f5c28f800 1000f6bc     gl_rsurf.obj
+ 0002:000006c0       __real@4@3ffce147ae147ae14800 1000f6c0     gl_rsurf.obj
+ 0002:000006c8       __real@8@bff8a3d70a3d70a3d800 1000f6c8     gl_rsurf.obj
+ 0002:000006d0       __real@4@3ffd8000000000000000 1000f6d0     gl_rsurf.obj
+ 0002:000006d4       __real@4@3ff38000000000000000 1000f6d4     gl_rsurf.obj
+ 0002:000006d8       __real@4@3ff98000000000000000 1000f6d8     gl_warp.obj
+ 0002:000006e0       __real@8@4004a2f9836e4e441800 1000f6e0     gl_warp.obj
+ 0002:000006e8       __real@8@3ffc8000000000000000 1000f6e8     gl_warp.obj
+ 0002:000006f0       __real@8@3ff583126e978d4fe000 1000f6f0     gl_warp.obj
+ 0002:000006f8       __real@8@bffbccccccccccccd000 1000f6f8     gl_warp.obj
+ 0002:00000700       __real@8@400d8000000000000000 1000f700     glw_imp.obj
+ 0002:00000708       __real@8@400effff000000000000 1000f708     glw_imp.obj
+ 0002:00000710       __real@8@400e8000000000000000 1000f710     glw_imp.obj
+ 0002:00000718       __real@4@400e8000000000000000 1000f718     glw_imp.obj
+ 0002:0000071c       __real@4@4000c000000000000000 1000f71c     glw_imp.obj
+ 0002:00000720       __real@8@3ff7b60b60b60b60b800 1000f720     q_shared2.obj
+ 0002:00000728       __real@8@3ff98efa351294e9c800 1000f728     q_shared2.obj
+ 0002:00000858       __IMPORT_DESCRIPTOR_KERNEL32 1000f858     kernel32:KERNEL32.dll
+ 0002:0000086c       __IMPORT_DESCRIPTOR_USER32 1000f86c     user32:USER32.dll
+ 0002:00000880       __IMPORT_DESCRIPTOR_GDI32  1000f880     gdi32:GDI32.dll
+ 0002:00000894       __IMPORT_DESCRIPTOR_MSVCRT 1000f894     MSVCRT:MSVCRT.dll
+ 0002:000008a8       __NULL_IMPORT_DESCRIPTOR   1000f8a8     kernel32:KERNEL32.dll
  0003:00000000       ___xc_a                    10010000     MSVCRT:cinitexe.obj
  0003:00000004       ___xc_z                    10010004     MSVCRT:cinitexe.obj
  0003:00000008       ___xi_a                    10010008     MSVCRT:cinitexe.obj
@@ -885,238 +883,239 @@
  0003:00005684       ??_C@_0DG@BHLE@?6?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?6?$CFs?9?9?9?9@ 10015684     qgl_win.obj
  0003:000056bc       ??_C@_09EIMA@?$CFs?1gl?4log?$AA@ 100156bc     qgl_win.obj
  0003:000056c8       ??_C@_02JALM@a?$CL?$AA@    100156c8     qgl_win.obj
- 0003:0007b7e8       ??_C@_00A@?$AA@            1008b7e8     gl_rmain.obj
- 0003:000c226c       _vec3_origin               100d226c     q_shared2.obj
- 0003:000c23c0       _qgl                       100d23c0     <common>
- 0003:000c2500       _glw_state                 100d2500     <common>
- 0003:000c2520       _skyaxis                   100d2520     <common>
- 0003:000c252c       _skyrotate                 100d252c     <common>
- 0003:000c2530       _reflect_img               100d2530     <common>
- 0003:000c2540       _sky_images                100d2540     <common>
- 0003:000c2560       _r_turbsin                 100d2560     <common>
- 0003:000c2960       _skymaxs                   100d2960     <common>
- 0003:000c29a0       _skyname                   100d29a0     <common>
- 0003:000c29e0       _warpface                  100d29e0     <common>
- 0003:000c2a00       _skymins                   100d2a00     <common>
- 0003:000c2a30       _sky_max                   100d2a30     <common>
- 0003:000c2a34       _sky_min                   100d2a34     <common>
- 0003:000c2a38       _c_sky                     100d2a38     <common>
- 0003:000c2a40       _gl_textbuf                100d2a40     <common>
- 0003:000d2a40       _gl_textbuf_count          100e2a40     <common>
- 0003:000d2a44       _gl_last_rec               100e2a44     <common>
- 0003:000d2a48       _gl_textbuf_pos            100e2a48     <common>
- 0003:000d2a4c       _c_visibleleafs            100e2a4c     <common>
- 0003:000d2a50       _r_alpha_surfaces          100e2a50     <common>
- 0003:000d2a54       _c_visible_textures        100e2a54     <common>
- 0003:000d2a58       _c_visible_lightmaps       100e2a58     <common>
- 0003:000d2a5c       _c_leafsinfrustum          100e2a5c     <common>
- 0003:000d2a60       _gl_screenshotFlags        100e2a60     <common>
- 0003:000d2a64       _gl_screenshotName         100e2a64     <common>
- 0003:000d2a68       _gl_lockpvs                100e2a68     <common>
- 0003:000d2a80       _gl_speeds                 100e2a80     <common>
- 0003:000d2a9c       _r_norefresh               100e2a9c     <common>
- 0003:000d2aa0       _vid_ref                   100e2aa0     <common>
- 0003:000d2ac0       _gl_config                 100e2ac0     <common>
- 0003:000d31f8       _r_oldviewcluster2         100e31f8     <common>
- 0003:000d31fc       _gl_drawbuffer             100e31fc     <common>
- 0003:000d3200       _r_notexture               100e3200     <common>
- 0003:000d3204       _gl_monolightmap           100e3204     <common>
- 0003:000d3208       _r_worldmodel              100e3208     <common>
- 0003:000d320c       _r_ignorehwgamma           100e320c     <common>
- 0003:000d3210       _gl_showtris               100e3210     <common>
- 0003:000d3214       _currentmodel              100e3214     <common>
- 0003:000d3218       _gl_winrefl                100e3218     <common>
- 0003:000d321c       _gl_vertex_arrays          100e321c     <common>
- 0003:000d3220       _gl_texturealphamode       100e3220     <common>
- 0003:000d3224       _r_speeds                  100e3224     <common>
- 0003:000d3228       _gl_clear                  100e3228     <common>
- 0003:000d322c       _gl_picmip                 100e322c     <common>
- 0003:000d3240       _r_rawpalette              100e3240     <common>
- 0003:000d3640       _v_blend                   100e3640     <common>
- 0003:000d3650       _gl_allow_software         100e3650     <common>
- 0003:000d3654       _gl_bitdepth               100e3654     <common>
- 0003:000d3658       _gl_cull                   100e3658     <common>
- 0003:000d365c       _r_lightmap                100e365c     <common>
- 0003:000d3660       _gl_nobind                 100e3660     <common>
- 0003:000d3664       _gl_nosubimage             100e3664     <common>
- 0003:000d3680       _r_newrefdef               100e3680     <common>
- 0003:000d36e8       _r_oldviewcluster          100e36e8     <common>
- 0003:000d36f0       _vid                       100e36f0     <common>
- 0003:000d36f8       _gl_skymip                 100e36f8     <common>
- 0003:000d36fc       _gl_texturesolidmode       100e36fc     <common>
- 0003:000d3700       _vpn                       100e3700     <common>
- 0003:000d370c       _gl_modulate               100e370c     <common>
- 0003:000d3710       _r_framecount              100e3710     <common>
- 0003:000d3720       _vup                       100e3720     <common>
- 0003:000d372c       _c_brush_polys             100e372c     <common>
- 0003:000d3730       _gl_flashblend             100e3730     <common>
- 0003:000d3734       _r_lefthand                100e3734     <common>
- 0003:000d3738       _gl_saturatelighting       100e3738     <common>
- 0003:000d373c       _gl_frustumCull            100e373c     <common>
- 0003:000d3740       _r_viewcluster2            100e3740     <common>
- 0003:000d3744       _gl_logFile                100e3744     <common>
- 0003:000d3748       _gl_texturemode            100e3748     <common>
- 0003:000d3760       _ri                        100e3760     <common>
- 0003:000d3850       _gl_dynamic                100e3850     <common>
- 0003:000d3854       _gldepthmin                100e3854     <common>
- 0003:000d3858       _gl_round_down             100e3858     <common>
- 0003:000d385c       _r_viewcluster             100e385c     <common>
- 0003:000d3860       _gldepthmax                100e3860     <common>
- 0003:000d3864       _gl_swapinterval           100e3864     <common>
- 0003:000d3880       _frustum                   100e3880     <common>
- 0003:000d38d0       _gl_zmax                   100e38d0     <common>
- 0003:000d38d4       _r_visframecount           100e38d4     <common>
- 0003:000d38d8       _r_novis                   100e38d8     <common>
- 0003:000d38dc       _gl_shadows                100e38dc     <common>
- 0003:000d38e0       _gl_playermip              100e38e0     <common>
- 0003:000d38e4       _gl_3dlabs_broken          100e38e4     <common>
- 0003:000d38e8       _r_gamma                   100e38e8     <common>
- 0003:000d38ec       _gl_dlightBacks            100e38ec     <common>
- 0003:000d38f0       _r_origin                  100e38f0     <common>
- 0003:000d38fc       _currententity             100e38fc     <common>
- 0003:000d3900       _r_world_matrix            100e3900     <common>
- 0003:000d3940       _vright                    100e3940     <common>
- 0003:000d394c       _r_contrast                100e394c     <common>
- 0003:000d3950       _gl_mode                   100e3950     <common>
- 0003:000d3954       _r_lerpmodels              100e3954     <common>
- 0003:000d3958       _gl_driver                 100e3958     <common>
- 0003:000d395c       _r_brightness              100e395c     <common>
- 0003:000d3960       _r_fullscreen              100e3960     <common>
- 0003:000d3964       _r_drawentities            100e3964     <common>
- 0003:000d3968       _gl_ztrick                 100e3968     <common>
- 0003:000d396c       _gl_lightlevel             100e396c     <common>
- 0003:000d3970       _c_alias_polys             100e3970     <common>
- 0003:000d3974       _gl_polyblend              100e3974     <common>
- 0003:000d3978       _r_particletexture         100e3978     <common>
- 0003:000d397c       _r_fullbright              100e397c     <common>
- 0003:000d3980       _r_drawworld               100e3980     <common>
- 0003:000d3984       _gl_finish                 100e3984     <common>
- 0003:000d39a0       _gl_state                  100e39a0     <common>
- 0003:000d39e0       _mod_inline                100e39e0     <common>
- 0003:001029e0       _gl_mod_numknown           101129e0     <common>
- 0003:001029e4       _loadmodel                 101129e4     <common>
- 0003:001029e8       _modfilelen                101129e8     <common>
- 0003:001029ec       _registration_sequence     101129ec     <common>
- 0003:00102a00       _mod_novis                 10112a00     <common>
- 0003:00104a20       _gl_mod_known              10114a20     <common>
- 0003:00133a20       _pointcolor                10143a20     <common>
- 0003:00133a30       _lightspot                 10143a30     <common>
- 0003:00133a3c       _r_dlightframecount        10143a3c     <common>
- 0003:00133a40       _lightplane                10143a40     <common>
- 0003:00133a60       _scrap_texels              10143a60     <common>
- 0003:00143a80       _gltextures                10153a80     <common>
- 0003:00162a80       _upload_height             10172a80     <common>
- 0003:00162a84       _upload_width              10172a84     <common>
- 0003:00162a88       _upload_format             10172a88     <common>
- 0003:00162a8c       _numgltextures             10172a8c     <common>
- 0003:00162aa0       _gammatable                10172aa0     <common>
- 0003:00162ba0       _r_saturation              10172ba0     <common>
- 0003:00162bc0       _scrap_allocated           10172bc0     <common>
- 0003:00162fc0       _d_8to24table              10172fc0     <common>
- 0003:001633c0       _scrap_uploads             101733c0     <common>
- 0003:001633c4       _scrap_dirty               101733c4     <common>
- 0003:001633c8       _intensity                 101733c8     <common>
- 0003:001633cc       _draw_chars                101733cc     <common>
- 0003:001633d0       __adjust_fdiv              101733d0     <common>
- 0003:001633d4       ___onexitend               101733d4     <common>
- 0003:001633d8       ___onexitbegin             101733d8     <common>
- 0003:001633dc       __pRawDllMain              101733dc     <common>
+ 0003:000056cc       ??_C@_0BI@HGMM@?$CFa?5?$CFb?5?$CFd?0?5?$CFY?5?$CI?$CFH?3?$CFM?3?$CFS?$CJ?$AA@ 100156cc     qgl_win.obj
+ 0003:0007b808       ??_C@_00A@?$AA@            1008b808     gl_rmain.obj
+ 0003:000c228c       _vec3_origin               100d228c     q_shared2.obj
+ 0003:000c23e0       _qgl                       100d23e0     <common>
+ 0003:000c2520       _glw_state                 100d2520     <common>
+ 0003:000c2540       _skyaxis                   100d2540     <common>
+ 0003:000c254c       _skyrotate                 100d254c     <common>
+ 0003:000c2550       _reflect_img               100d2550     <common>
+ 0003:000c2560       _sky_images                100d2560     <common>
+ 0003:000c2580       _r_turbsin                 100d2580     <common>
+ 0003:000c2980       _skymaxs                   100d2980     <common>
+ 0003:000c29c0       _skyname                   100d29c0     <common>
+ 0003:000c2a00       _warpface                  100d2a00     <common>
+ 0003:000c2a20       _skymins                   100d2a20     <common>
+ 0003:000c2a50       _sky_max                   100d2a50     <common>
+ 0003:000c2a54       _sky_min                   100d2a54     <common>
+ 0003:000c2a58       _c_sky                     100d2a58     <common>
+ 0003:000c2a60       _gl_textbuf                100d2a60     <common>
+ 0003:000d2a60       _gl_textbuf_count          100e2a60     <common>
+ 0003:000d2a64       _gl_last_rec               100e2a64     <common>
+ 0003:000d2a68       _gl_textbuf_pos            100e2a68     <common>
+ 0003:000d2a6c       _c_visibleleafs            100e2a6c     <common>
+ 0003:000d2a70       _r_alpha_surfaces          100e2a70     <common>
+ 0003:000d2a74       _c_visible_textures        100e2a74     <common>
+ 0003:000d2a78       _c_visible_lightmaps       100e2a78     <common>
+ 0003:000d2a7c       _c_leafsinfrustum          100e2a7c     <common>
+ 0003:000d2a80       _gl_screenshotFlags        100e2a80     <common>
+ 0003:000d2a84       _gl_screenshotName         100e2a84     <common>
+ 0003:000d2a88       _gl_lockpvs                100e2a88     <common>
+ 0003:000d2aa0       _gl_speeds                 100e2aa0     <common>
+ 0003:000d2abc       _r_norefresh               100e2abc     <common>
+ 0003:000d2ac0       _vid_ref                   100e2ac0     <common>
+ 0003:000d2ae0       _gl_config                 100e2ae0     <common>
+ 0003:000d3218       _r_oldviewcluster2         100e3218     <common>
+ 0003:000d321c       _gl_drawbuffer             100e321c     <common>
+ 0003:000d3220       _r_notexture               100e3220     <common>
+ 0003:000d3224       _gl_monolightmap           100e3224     <common>
+ 0003:000d3228       _r_worldmodel              100e3228     <common>
+ 0003:000d322c       _r_ignorehwgamma           100e322c     <common>
+ 0003:000d3230       _gl_showtris               100e3230     <common>
+ 0003:000d3234       _currentmodel              100e3234     <common>
+ 0003:000d3238       _gl_winrefl                100e3238     <common>
+ 0003:000d323c       _gl_vertex_arrays          100e323c     <common>
+ 0003:000d3240       _gl_texturealphamode       100e3240     <common>
+ 0003:000d3244       _r_speeds                  100e3244     <common>
+ 0003:000d3248       _gl_clear                  100e3248     <common>
+ 0003:000d324c       _gl_picmip                 100e324c     <common>
+ 0003:000d3260       _r_rawpalette              100e3260     <common>
+ 0003:000d3660       _v_blend                   100e3660     <common>
+ 0003:000d3670       _gl_allow_software         100e3670     <common>
+ 0003:000d3674       _gl_bitdepth               100e3674     <common>
+ 0003:000d3678       _gl_cull                   100e3678     <common>
+ 0003:000d367c       _r_lightmap                100e367c     <common>
+ 0003:000d3680       _gl_nobind                 100e3680     <common>
+ 0003:000d3684       _gl_nosubimage             100e3684     <common>
+ 0003:000d36a0       _r_newrefdef               100e36a0     <common>
+ 0003:000d3708       _r_oldviewcluster          100e3708     <common>
+ 0003:000d3710       _vid                       100e3710     <common>
+ 0003:000d3718       _gl_skymip                 100e3718     <common>
+ 0003:000d371c       _gl_texturesolidmode       100e371c     <common>
+ 0003:000d3720       _vpn                       100e3720     <common>
+ 0003:000d372c       _gl_modulate               100e372c     <common>
+ 0003:000d3730       _r_framecount              100e3730     <common>
+ 0003:000d3740       _vup                       100e3740     <common>
+ 0003:000d374c       _c_brush_polys             100e374c     <common>
+ 0003:000d3750       _gl_flashblend             100e3750     <common>
+ 0003:000d3754       _r_lefthand                100e3754     <common>
+ 0003:000d3758       _gl_saturatelighting       100e3758     <common>
+ 0003:000d375c       _gl_frustumCull            100e375c     <common>
+ 0003:000d3760       _r_viewcluster2            100e3760     <common>
+ 0003:000d3764       _gl_logFile                100e3764     <common>
+ 0003:000d3768       _gl_texturemode            100e3768     <common>
+ 0003:000d3780       _ri                        100e3780     <common>
+ 0003:000d3870       _gl_dynamic                100e3870     <common>
+ 0003:000d3874       _gldepthmin                100e3874     <common>
+ 0003:000d3878       _gl_round_down             100e3878     <common>
+ 0003:000d387c       _r_viewcluster             100e387c     <common>
+ 0003:000d3880       _gldepthmax                100e3880     <common>
+ 0003:000d3884       _gl_swapinterval           100e3884     <common>
+ 0003:000d38a0       _frustum                   100e38a0     <common>
+ 0003:000d38f0       _gl_zmax                   100e38f0     <common>
+ 0003:000d38f4       _r_visframecount           100e38f4     <common>
+ 0003:000d38f8       _r_novis                   100e38f8     <common>
+ 0003:000d38fc       _gl_shadows                100e38fc     <common>
+ 0003:000d3900       _gl_playermip              100e3900     <common>
+ 0003:000d3904       _gl_3dlabs_broken          100e3904     <common>
+ 0003:000d3908       _r_gamma                   100e3908     <common>
+ 0003:000d390c       _gl_dlightBacks            100e390c     <common>
+ 0003:000d3910       _r_origin                  100e3910     <common>
+ 0003:000d391c       _currententity             100e391c     <common>
+ 0003:000d3920       _r_world_matrix            100e3920     <common>
+ 0003:000d3960       _vright                    100e3960     <common>
+ 0003:000d396c       _r_contrast                100e396c     <common>
+ 0003:000d3970       _gl_mode                   100e3970     <common>
+ 0003:000d3974       _r_lerpmodels              100e3974     <common>
+ 0003:000d3978       _gl_driver                 100e3978     <common>
+ 0003:000d397c       _r_brightness              100e397c     <common>
+ 0003:000d3980       _r_fullscreen              100e3980     <common>
+ 0003:000d3984       _r_drawentities            100e3984     <common>
+ 0003:000d3988       _gl_ztrick                 100e3988     <common>
+ 0003:000d398c       _gl_lightlevel             100e398c     <common>
+ 0003:000d3990       _c_alias_polys             100e3990     <common>
+ 0003:000d3994       _gl_polyblend              100e3994     <common>
+ 0003:000d3998       _r_particletexture         100e3998     <common>
+ 0003:000d399c       _r_fullbright              100e399c     <common>
+ 0003:000d39a0       _r_drawworld               100e39a0     <common>
+ 0003:000d39a4       _gl_finish                 100e39a4     <common>
+ 0003:000d39c0       _gl_state                  100e39c0     <common>
+ 0003:000d3a00       _mod_inline                100e3a00     <common>
+ 0003:00102a00       _gl_mod_numknown           10112a00     <common>
+ 0003:00102a04       _loadmodel                 10112a04     <common>
+ 0003:00102a08       _modfilelen                10112a08     <common>
+ 0003:00102a0c       _registration_sequence     10112a0c     <common>
+ 0003:00102a20       _mod_novis                 10112a20     <common>
+ 0003:00104a40       _gl_mod_known              10114a40     <common>
+ 0003:00133a40       _pointcolor                10143a40     <common>
+ 0003:00133a50       _lightspot                 10143a50     <common>
+ 0003:00133a5c       _r_dlightframecount        10143a5c     <common>
+ 0003:00133a60       _lightplane                10143a60     <common>
+ 0003:00133a80       _scrap_texels              10143a80     <common>
+ 0003:00143aa0       _gltextures                10153aa0     <common>
+ 0003:00162aa0       _upload_height             10172aa0     <common>
+ 0003:00162aa4       _upload_width              10172aa4     <common>
+ 0003:00162aa8       _upload_format             10172aa8     <common>
+ 0003:00162aac       _numgltextures             10172aac     <common>
+ 0003:00162ac0       _gammatable                10172ac0     <common>
+ 0003:00162bc0       _r_saturation              10172bc0     <common>
+ 0003:00162be0       _scrap_allocated           10172be0     <common>
+ 0003:00162fe0       _d_8to24table              10172fe0     <common>
+ 0003:001633e0       _scrap_uploads             101733e0     <common>
+ 0003:001633e4       _scrap_dirty               101733e4     <common>
+ 0003:001633e8       _intensity                 101733e8     <common>
+ 0003:001633ec       _draw_chars                101733ec     <common>
+ 0003:001633f0       __adjust_fdiv              101733f0     <common>
+ 0003:001633f4       ___onexitend               101733f4     <common>
+ 0003:001633f8       ___onexitbegin             101733f8     <common>
+ 0003:001633fc       __pRawDllMain              101733fc     <common>
 
- entry point at        0001:0000dd3f
+ entry point at        0001:0000dd1f
 
  Static symbols
 
- 0001:0000bfc6       _logAlphaFunc@8            1000cfc6 f   qgl_win.obj
- 0001:0000c007       _EnumName                  1000d007 f   qgl_win.obj
- 0001:0000c489       _logArrayElement@4         1000d489 f   qgl_win.obj
- 0001:0000c4b3       _logBegin@4                1000d4b3 f   qgl_win.obj
- 0001:0000c4e3       _logBindTexture@8          1000d4e3 f   qgl_win.obj
- 0001:0000c51c       _logBlendFunc@8            1000d51c f   qgl_win.obj
- 0001:0000c55c       _logClear@4                1000d55c f   qgl_win.obj
- 0001:0000c582       _logClearColor@16          1000d582 f   qgl_win.obj
- 0001:0000c5e3       _logClearDepth@8           1000d5e3 f   qgl_win.obj
- 0001:0000c615       _logColor3f@12             1000d615 f   qgl_win.obj
- 0001:0000c667       _logColor3fv@4             1000d667 f   qgl_win.obj
- 0001:0000c68d       _logColor4f@16             1000d68d f   qgl_win.obj
- 0001:0000c6ee       _logColor4fv@4             1000d6ee f   qgl_win.obj
- 0001:0000c714       _logColor4ub@16            1000d714 f   qgl_win.obj
- 0001:0000c75a       _logColor4ubv@4            1000d75a f   qgl_win.obj
- 0001:0000c780       _logColorPointer@16        1000d780 f   qgl_win.obj
- 0001:0000c7c5       _logCullFace@4             1000d7c5 f   qgl_win.obj
- 0001:0000c7f5       _logDeleteTextures@8       1000d7f5 f   qgl_win.obj
- 0001:0000c827       _logDepthFunc@4            1000d827 f   qgl_win.obj
- 0001:0000c857       _logDepthMask@4            1000d857 f   qgl_win.obj
- 0001:0000c883       _logDepthRange@16          1000d883 f   qgl_win.obj
- 0001:0000c8c7       _logDisable@4              1000d8c7 f   qgl_win.obj
- 0001:0000c8f7       _logDrawBuffer@4           1000d8f7 f   qgl_win.obj
- 0001:0000c927       _logEnable@4               1000d927 f   qgl_win.obj
- 0001:0000c957       _logEnableClientState@4    1000d957 f   qgl_win.obj
- 0001:0000c987       _logEnd@0                  1000d987 f   qgl_win.obj
- 0001:0000c9a6       _logFinish@0               1000d9a6 f   qgl_win.obj
- 0001:0000c9c5       _logFogf@8                 1000d9c5 f   qgl_win.obj
- 0001:0000ca06       _logFogfv@8                1000da06 f   qgl_win.obj
- 0001:0000ca3f       _logFrustum@48             1000da3f f   qgl_win.obj
- 0001:0000cac3       _logGetError@0             1000dac3 f   qgl_win.obj
- 0001:0000cae2       _logGetFloatv@8            1000dae2 f   qgl_win.obj
- 0001:0000cb0c       _logGetIntegerv@8          1000db0c f   qgl_win.obj
- 0001:0000cb36       _logGetString@4            1000db36 f   qgl_win.obj
- 0001:0000cb5c       _logLoadIdentity@0         1000db5c f   qgl_win.obj
- 0001:0000cb7b       _logLoadMatrixf@4          1000db7b f   qgl_win.obj
- 0001:0000cba1       _logMatrixMode@4           1000dba1 f   qgl_win.obj
- 0001:0000cbd1       _logOrtho@48               1000dbd1 f   qgl_win.obj
- 0001:0000cc55       _logPolygonMode@8          1000dc55 f   qgl_win.obj
- 0001:0000cc95       _logPopMatrix@0            1000dc95 f   qgl_win.obj
- 0001:0000ccb4       _logPushMatrix@0           1000dcb4 f   qgl_win.obj
- 0001:0000ccd3       _logReadPixels@28          1000dcd3 f   qgl_win.obj
- 0001:0000cd31       _logRotatef@16             1000dd31 f   qgl_win.obj
- 0001:0000cd92       _logScalef@12              1000dd92 f   qgl_win.obj
- 0001:0000cde4       _logScissor@16             1000dde4 f   qgl_win.obj
- 0001:0000ce22       _logShadeModel@4           1000de22 f   qgl_win.obj
- 0001:0000ce52       _logTexCoord2f@8           1000de52 f   qgl_win.obj
- 0001:0000ce95       _logTexCoordPointer@16     1000de95 f   qgl_win.obj
- 0001:0000ceda       _logTexEnvf@12             1000deda f   qgl_win.obj
- 0001:0000cf28       _logTexEnvfv@12            1000df28 f   qgl_win.obj
- 0001:0000cf6e       _logTexEnvi@12             1000df6e f   qgl_win.obj
- 0001:0000cfbb       _logTexImage2D@36          1000dfbb f   qgl_win.obj
- 0001:0000d02c       _logTexParameterf@12       1000e02c f   qgl_win.obj
- 0001:0000d07a       _logTexSubImage2D@36       1000e07a f   qgl_win.obj
- 0001:0000d0eb       _logTranslatef@12          1000e0eb f   qgl_win.obj
- 0001:0000d13d       _logVertex2f@8             1000e13d f   qgl_win.obj
- 0001:0000d180       _logVertex3f@12            1000e180 f   qgl_win.obj
- 0001:0000d1d2       _logVertex3fv@4            1000e1d2 f   qgl_win.obj
- 0001:0000d1f8       _logVertexPointer@16       1000e1f8 f   qgl_win.obj
- 0001:0000d23d       _logViewport@16            1000e23d f   qgl_win.obj
- 0001:0000d27b       _logChoosePixelFormat@8    1000e27b f   qgl_win.obj
- 0001:0000d2a5       _logDescribePixelFormat@16 1000e2a5 f   qgl_win.obj
- 0001:0000d2d7       _logSetPixelFormat@12      1000e2d7 f   qgl_win.obj
- 0001:0000d305       _logSwapBuffers@4          1000e305 f   qgl_win.obj
- 0001:0000d32b       _logCreateContext@4        1000e32b f   qgl_win.obj
- 0001:0000d351       _logDeleteContext@4        1000e351 f   qgl_win.obj
- 0001:0000d377       _logGetProcAddress@4       1000e377 f   qgl_win.obj
- 0001:0000d39d       _logMakeCurrent@8          1000e39d f   qgl_win.obj
- 0001:0000d3c7       _logSelectTextureSGIS@4    1000e3c7 f   qgl_win.obj
- 0001:0000d3f7       _logMultiTexCoord2fSGIS@12 1000e3f7 f   qgl_win.obj
- 0001:0000d447       _logActiveTextureARB@4     1000e447 f   qgl_win.obj
- 0001:0000d477       _logMultiTexCoord2fARB@12  1000e477 f   qgl_win.obj
- 0001:0000d4c7       _logLockArraysEXT@8        1000e4c7 f   qgl_win.obj
- 0001:0000d4f9       _logUnlockArraysEXT@0      1000e4f9 f   qgl_win.obj
- 0001:0000d518       _logSwapIntervalEXT@4      1000e518 f   qgl_win.obj
- 0001:0000d95d       _ExtensionSupported        1000e95d f   qgl_win.obj
- 0001:0000d9d7       _ExtensionNameSupported    1000e9d7 f   qgl_win.obj
- 0001:0000b2a5       _ReadGamma                 1000c2a5 f   glw_imp.obj
- 0001:0000b2e7       _GLimp_InitGL              1000c2e7 f   glw_imp.obj
- 0001:0000b38c       _DestoryGLcontext          1000c38c f   glw_imp.obj
- 0001:0000b3c7       _DeactivateGLcontext       1000c3c7 f   glw_imp.obj
- 0001:0000b3fb       _GLimp_SetPixelFormat      1000c3fb f   glw_imp.obj
- 0001:0000b562       _CreateGLcontext           1000c562 f   glw_imp.obj
- 0001:0000b590       _ActivateGLcontext         1000c590 f   glw_imp.obj
- 0001:0000b640       _RestoreGamma              1000c640 f   glw_imp.obj
- 0001:000088ed       _DrawReflectPoly           100098ed f   gl_rsurf.obj
- 0001:00008d73       _GL_RenderLightmappedPoly  10009d73 f   gl_rsurf.obj
- 0001:00009887       _LM_UploadBlock            1000a887 f   gl_rsurf.obj
- 0001:00009965       _LM_AllocBlock             1000a965 f   gl_rsurf.obj
- 0001:000077ea       _R_EndFrame                100087ea f   gl_rmain.obj
- 0001:00007885       _Screenshot                10008885 f   gl_rmain.obj
- 0001:000078a8       _GetClientLight            100088a8 f   gl_rmain.obj
- 0001:000078af       _ReloadImage               100088af f   gl_rmain.obj
- 0001:00003eff       _R_CullAliasModel          10004eff f   gl_mesh.obj
+ 0001:0000bf9e       _logAlphaFunc@8            1000cf9e f   qgl_win.obj
+ 0001:0000bfdf       _EnumName                  1000cfdf f   qgl_win.obj
+ 0001:0000c461       _logArrayElement@4         1000d461 f   qgl_win.obj
+ 0001:0000c48b       _logBegin@4                1000d48b f   qgl_win.obj
+ 0001:0000c4bb       _logBindTexture@8          1000d4bb f   qgl_win.obj
+ 0001:0000c4f4       _logBlendFunc@8            1000d4f4 f   qgl_win.obj
+ 0001:0000c534       _logClear@4                1000d534 f   qgl_win.obj
+ 0001:0000c55a       _logClearColor@16          1000d55a f   qgl_win.obj
+ 0001:0000c5bb       _logClearDepth@8           1000d5bb f   qgl_win.obj
+ 0001:0000c5ed       _logColor3f@12             1000d5ed f   qgl_win.obj
+ 0001:0000c63f       _logColor3fv@4             1000d63f f   qgl_win.obj
+ 0001:0000c665       _logColor4f@16             1000d665 f   qgl_win.obj
+ 0001:0000c6c6       _logColor4fv@4             1000d6c6 f   qgl_win.obj
+ 0001:0000c6ec       _logColor4ub@16            1000d6ec f   qgl_win.obj
+ 0001:0000c732       _logColor4ubv@4            1000d732 f   qgl_win.obj
+ 0001:0000c758       _logColorPointer@16        1000d758 f   qgl_win.obj
+ 0001:0000c79d       _logCullFace@4             1000d79d f   qgl_win.obj
+ 0001:0000c7cd       _logDeleteTextures@8       1000d7cd f   qgl_win.obj
+ 0001:0000c7ff       _logDepthFunc@4            1000d7ff f   qgl_win.obj
+ 0001:0000c82f       _logDepthMask@4            1000d82f f   qgl_win.obj
+ 0001:0000c85b       _logDepthRange@16          1000d85b f   qgl_win.obj
+ 0001:0000c89f       _logDisable@4              1000d89f f   qgl_win.obj
+ 0001:0000c8cf       _logDrawBuffer@4           1000d8cf f   qgl_win.obj
+ 0001:0000c8ff       _logEnable@4               1000d8ff f   qgl_win.obj
+ 0001:0000c92f       _logEnableClientState@4    1000d92f f   qgl_win.obj
+ 0001:0000c95f       _logEnd@0                  1000d95f f   qgl_win.obj
+ 0001:0000c97e       _logFinish@0               1000d97e f   qgl_win.obj
+ 0001:0000c99d       _logFogf@8                 1000d99d f   qgl_win.obj
+ 0001:0000c9de       _logFogfv@8                1000d9de f   qgl_win.obj
+ 0001:0000ca17       _logFrustum@48             1000da17 f   qgl_win.obj
+ 0001:0000ca9b       _logGetError@0             1000da9b f   qgl_win.obj
+ 0001:0000caba       _logGetFloatv@8            1000daba f   qgl_win.obj
+ 0001:0000cae4       _logGetIntegerv@8          1000dae4 f   qgl_win.obj
+ 0001:0000cb0e       _logGetString@4            1000db0e f   qgl_win.obj
+ 0001:0000cb34       _logLoadIdentity@0         1000db34 f   qgl_win.obj
+ 0001:0000cb53       _logLoadMatrixf@4          1000db53 f   qgl_win.obj
+ 0001:0000cb79       _logMatrixMode@4           1000db79 f   qgl_win.obj
+ 0001:0000cba9       _logOrtho@48               1000dba9 f   qgl_win.obj
+ 0001:0000cc2d       _logPolygonMode@8          1000dc2d f   qgl_win.obj
+ 0001:0000cc6d       _logPopMatrix@0            1000dc6d f   qgl_win.obj
+ 0001:0000cc8c       _logPushMatrix@0           1000dc8c f   qgl_win.obj
+ 0001:0000ccab       _logReadPixels@28          1000dcab f   qgl_win.obj
+ 0001:0000cd09       _logRotatef@16             1000dd09 f   qgl_win.obj
+ 0001:0000cd6a       _logScalef@12              1000dd6a f   qgl_win.obj
+ 0001:0000cdbc       _logScissor@16             1000ddbc f   qgl_win.obj
+ 0001:0000cdfa       _logShadeModel@4           1000ddfa f   qgl_win.obj
+ 0001:0000ce2a       _logTexCoord2f@8           1000de2a f   qgl_win.obj
+ 0001:0000ce6d       _logTexCoordPointer@16     1000de6d f   qgl_win.obj
+ 0001:0000ceb2       _logTexEnvf@12             1000deb2 f   qgl_win.obj
+ 0001:0000cf00       _logTexEnvfv@12            1000df00 f   qgl_win.obj
+ 0001:0000cf46       _logTexEnvi@12             1000df46 f   qgl_win.obj
+ 0001:0000cf93       _logTexImage2D@36          1000df93 f   qgl_win.obj
+ 0001:0000d004       _logTexParameterf@12       1000e004 f   qgl_win.obj
+ 0001:0000d052       _logTexSubImage2D@36       1000e052 f   qgl_win.obj
+ 0001:0000d0c3       _logTranslatef@12          1000e0c3 f   qgl_win.obj
+ 0001:0000d115       _logVertex2f@8             1000e115 f   qgl_win.obj
+ 0001:0000d158       _logVertex3f@12            1000e158 f   qgl_win.obj
+ 0001:0000d1aa       _logVertex3fv@4            1000e1aa f   qgl_win.obj
+ 0001:0000d1d0       _logVertexPointer@16       1000e1d0 f   qgl_win.obj
+ 0001:0000d215       _logViewport@16            1000e215 f   qgl_win.obj
+ 0001:0000d253       _logChoosePixelFormat@8    1000e253 f   qgl_win.obj
+ 0001:0000d27d       _logDescribePixelFormat@16 1000e27d f   qgl_win.obj
+ 0001:0000d2af       _logSetPixelFormat@12      1000e2af f   qgl_win.obj
+ 0001:0000d2dd       _logSwapBuffers@4          1000e2dd f   qgl_win.obj
+ 0001:0000d303       _logCreateContext@4        1000e303 f   qgl_win.obj
+ 0001:0000d329       _logDeleteContext@4        1000e329 f   qgl_win.obj
+ 0001:0000d34f       _logGetProcAddress@4       1000e34f f   qgl_win.obj
+ 0001:0000d375       _logMakeCurrent@8          1000e375 f   qgl_win.obj
+ 0001:0000d39f       _logSelectTextureSGIS@4    1000e39f f   qgl_win.obj
+ 0001:0000d3cf       _logMultiTexCoord2fSGIS@12 1000e3cf f   qgl_win.obj
+ 0001:0000d41f       _logActiveTextureARB@4     1000e41f f   qgl_win.obj
+ 0001:0000d44f       _logMultiTexCoord2fARB@12  1000e44f f   qgl_win.obj
+ 0001:0000d49f       _logLockArraysEXT@8        1000e49f f   qgl_win.obj
+ 0001:0000d4d1       _logUnlockArraysEXT@0      1000e4d1 f   qgl_win.obj
+ 0001:0000d4f0       _logSwapIntervalEXT@4      1000e4f0 f   qgl_win.obj
+ 0001:0000d935       _ExtensionSupported        1000e935 f   qgl_win.obj
+ 0001:0000d994       _ExtensionNameSupported    1000e994 f   qgl_win.obj
+ 0001:0000b28e       _ReadGamma                 1000c28e f   glw_imp.obj
+ 0001:0000b2d0       _GLimp_InitGL              1000c2d0 f   glw_imp.obj
+ 0001:0000b375       _DestoryGLcontext          1000c375 f   glw_imp.obj
+ 0001:0000b3b0       _DeactivateGLcontext       1000c3b0 f   glw_imp.obj
+ 0001:0000b3e4       _GLimp_SetPixelFormat      1000c3e4 f   glw_imp.obj
+ 0001:0000b54b       _CreateGLcontext           1000c54b f   glw_imp.obj
+ 0001:0000b579       _ActivateGLcontext         1000c579 f   glw_imp.obj
+ 0001:0000b629       _RestoreGamma              1000c629 f   glw_imp.obj
+ 0001:000088d6       _DrawReflectPoly           100098d6 f   gl_rsurf.obj
+ 0001:00008d5c       _GL_RenderLightmappedPoly  10009d5c f   gl_rsurf.obj
+ 0001:00009870       _LM_UploadBlock            1000a870 f   gl_rsurf.obj
+ 0001:0000994e       _LM_AllocBlock             1000a94e f   gl_rsurf.obj
+ 0001:000077d3       _R_EndFrame                100087d3 f   gl_rmain.obj
+ 0001:0000786e       _Screenshot                1000886e f   gl_rmain.obj
+ 0001:00007891       _GetClientLight            10008891 f   gl_rmain.obj
+ 0001:00007898       _ReloadImage               10008898 f   gl_rmain.obj
+ 0001:00003ee7       _R_CullAliasModel          10004ee7 f   gl_mesh.obj

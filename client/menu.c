@@ -1373,7 +1373,7 @@ static void DrawSavegameShot (int index, int y)
 		h = w * 3 / 4;
 		y = (viddef.height - h) / 2;
 	}
-	re.DrawFill (x - 3, y - 3, w + 6, h + 6, 0);
+	re.DrawFill2 (x - 3, y - 3, w + 6, h + 6, RGB(0,0,0));
 
 	if (!m_shotvalid[index]) return;
 	re.DrawStretchPic (x, y, w, h, name);
@@ -1571,7 +1571,7 @@ static void JoinServerFunc( void *self )
 
 	index = ( menuAction_t * ) self - s_joinserver_server_actions;
 
-	if (!Q_stricmp (local_server_names[index], NO_SERVER_STRING))
+	if (!stricmp (local_server_names[index], NO_SERVER_STRING))
 		return;
 
 	if (index >= m_num_servers)
@@ -1762,17 +1762,17 @@ static void StartServerFunc (char *map)
 	spot = NULL;
 	if (s_rules_box.curvalue == 1)		// PGM
 	{
-		if (!Q_stricmp (startmap, "bunk1")  ||
-			!Q_stricmp (startmap, "mintro") ||
-			!Q_stricmp (startmap, "fact1"))
+		if (!stricmp (startmap, "bunk1")  ||
+			!stricmp (startmap, "mintro") ||
+			!stricmp (startmap, "fact1"))
 			spot = "start";
-		else if (!Q_stricmp (startmap, "power1"))
+		else if (!stricmp (startmap, "power1"))
 			spot = "pstart";
-		else if (!Q_stricmp (startmap, "biggun"))
+		else if (!stricmp (startmap, "biggun"))
 			spot = "bstart";
-		else if (!Q_stricmp (startmap, "hangar1") || !Q_stricmp (startmap, "city1"))
+		else if (!stricmp (startmap, "hangar1") || !stricmp (startmap, "city1"))
 			spot = "unitstart";
-		else if (!Q_stricmp (startmap, "boss1"))
+		else if (!stricmp (startmap, "boss1"))
 			spot = "bosstart";
 	}
 
@@ -2512,12 +2512,10 @@ static qboolean PlayerConfig_ScanDirectories (void)
 
 	/*----- get a list of directories -----*/
 	path = NULL;
-	do
+	while (path = FS_NextPath (path))
 	{
-		path = FS_NextPath (path);
 		if (dirnames = FS_ListFiles (va("%s/players/*.*", path), &numModelDirs, LIST_DIRS)) break;
-	} while (path);
-
+	}
 	if (!dirnames) return false;
 
 	/*--- go through the subdirectories ---*/
@@ -2985,11 +2983,10 @@ static qboolean DMBrowse_MenuInit ()
 	thumbs.y0 = (y - thumbs.cy * thumbs.dy + thumbs.dy - thumbs.h) / 2 - 8;
 
 	path = NULL;
-	do
+	while (path = FS_NextPath (path))
 	{
-		path = FS_NextPath (path);
 		if (browse_list = FS_ListFiles (va("%s/levelshots/*.*", path), NULL, LIST_FILES)) break;
-	} while (path);
+	}
 	for (item = browse_list; item; item = item->next)
 	{
 		name = strrchr (item->name, '/');
@@ -3113,8 +3110,8 @@ static void DrawThumbnail (int x, int y, int w, int h, char *name, qboolean sele
 	char	name2[256];
 	int		max_width, text_width;
 
-	re.DrawFill (x - THUMBNAIL_BORDER, y - THUMBNAIL_BORDER, w + THUMBNAIL_BORDER * 2,
-				h + THUMBNAIL_BORDER * 2 + THUMBNAIL_TEXT, selected ? 0x78 : 0 /* blue/black */);
+	re.DrawFill2 (x - THUMBNAIL_BORDER, y - THUMBNAIL_BORDER, w + THUMBNAIL_BORDER * 2,
+			h + THUMBNAIL_BORDER * 2 + THUMBNAIL_TEXT, selected ? RGB(0,0.1,0.2) : RGB(0,0,0) /* blue/black */);
 
 	re.DrawStretchPic (x, y, w, h, va("/levelshots/%s.pcx", name));
 	max_width = w / 8;
@@ -3270,13 +3267,7 @@ void M_Draw (void)
 	if (!m_menudepth) return;
 
 	if (!cls.keep_console)	// do not blend whole screen when small menu painted
-	{
-		// dim everything behind it down
-		if (cl.cinematictime > 0)	//?? no menus while cinematics
-			re.DrawFill (0, 0, viddef.width, viddef.height, 0);
-		else
-			re.DrawFill2 (0, 0, viddef.width, viddef.height, 0, 0, 0, 0.5);
-	}
+		re.DrawFill2 (0, 0, viddef.width, viddef.height, RGBA(0,0,0,0.5));
 
 	m_drawfunc ();
 

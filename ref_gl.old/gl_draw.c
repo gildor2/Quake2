@@ -369,13 +369,15 @@ void Draw_Fill (int x, int y, int w, int h, int c)
 	glEnable (GL_TEXTURE_2D);
 }
 
-void Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, float a)
+void Draw_Fill2 (int x, int y, int w, int h, unsigned rgba)
 {
-	if (a < 0.7) a = 0.7;	// because of alpha-test ...
+	color_t	c;
+	c.rgba = rgba;
+	if (c.c[3] < 179) c.c[3] = 179;	// 179 == 0.7*255; because of alpha-test ...
 
 	glEnable (GL_BLEND);
 	glDisable (GL_TEXTURE_2D);
-	glColor4f (r, g, b, a);
+	glColor4ubv (c.c);
 	glBegin (GL_QUADS);
 
 	glVertex2f (x,y);

@@ -92,21 +92,21 @@ static bool ExtensionNameSupported (const char *name, const char *extString)
 
 static bool ExtensionSupported (extInfo_t *ext, const char *extStr1, const char *extStr2)
 {
-	const char *s;
-
-	s = ext->name = ext->names;		// 1st alias
-	if (ExtensionNameSupported (s, extStr1) || ExtensionNameSupported (s, extStr2))
-		return true;
+	const char *s = ext->names;					// 1st alias
 	while (true)
 	{
-		s = strchr (s, '\0') + 1;
-		if (!s[0]) return false;	// no another aliases
-		Com_DPrintf ("%s not found - try alias %s\n", ext->names, s);
 		if (ExtensionNameSupported (s, extStr1) || ExtensionNameSupported (s, extStr2))
 		{
 			ext->name = s;
 			return true;
 		}
+		s = strchr (s, '\0') + 1;
+		if (!s[0])								// no another aliases, extension is unsupported
+		{
+			ext->name = ext->names;				// point to 1st alias (just in case)
+			return false;
+		}
+		Com_DPrintf ("%s not found - try alias %s\n", ext->names, s);
 	}
 }
 
@@ -349,14 +349,14 @@ void QGL_EnableLogging (qboolean enable)
 	{
 		if (!logFile)
 		{
-			struct tm	*newtime;
-			time_t		aclock;
+			time_t	itime;
+			char	ctime[256];
+
+			time (&itime);
+			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
 
 			logFile = fopen (va("%s/gl.log", FS_Gamedir ()), "a+");
-
-			time (&aclock);
-			newtime = localtime (&aclock);
-			fprintf (logFile, "\n------------------------\n%s------------------------\n", asctime (newtime));
+			fprintf (logFile, "\n------------------------\n%s------------------------\n", ctime);
 		}
 
 		qgl = logFuncs;

@@ -454,7 +454,7 @@ static void DrawInput (void)
 			if (!(*re.flags & REF_CONSOLE_ONLY))
 			{
 				re.DrawCharColor (x, y, c, 7);
-				re.DrawFill2 (x, y+CHAR_HEIGHT/2, CHAR_WIDTH, CHAR_HEIGHT/2, 0.2, 1, 0.3, 0.5);
+				re.DrawFill2 (x, y+CHAR_HEIGHT/2, CHAR_WIDTH, CHAR_HEIGHT/2, RGBA(0.2,1,0.3,0.5));
 				continue;
 			}
 			c = 11;									// cursor char
@@ -512,7 +512,7 @@ void Con_DrawNotify (bool drawBack)
 
 		if (drawBack)
 		{
-			re.DrawFill2 (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, 1, 0, 0, 0.3);
+			re.DrawFill2 (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, RGBA(1,0,0,0.3));
 			drawBack = false;
 		}
 		for (x = 0; x < linewidth; x++)
@@ -595,9 +595,9 @@ void Con_DrawConsole (float frac)
 	// draw the background
 	if (!(*re.flags & REF_CONSOLE_ONLY))
 	{
-		re.DrawFill2 (0, 0, viddef.width, lines, 0, 0, 0.02, 0.5);
+		re.DrawFill2 (0, 0, viddef.width, lines, RGBA(0,0,0.02,0.5));
 		if (lines < viddef.height)
-			re.DrawFill2 (0, lines - 1, viddef.width, 1, 0.2, 0.2, 0.2, 0.8);
+			re.DrawFill2 (0, lines - 1, viddef.width, 1, RGBA(0.2,0.2,0.2,0.8));
 	}
 
 	// Variables for console-only mode

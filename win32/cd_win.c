@@ -247,13 +247,13 @@ static void CD_f (void)
 
 	command = Cmd_Argv (1);
 
-	if (Q_strcasecmp (command, "on") == 0)
+	if (!stricmp (command, "on"))
 	{
 		enabled = true;
 		return;
 	}
 
-	if (Q_strcasecmp (command, "off") == 0)
+	if (!stricmp (command, "off"))
 	{
 		if (playing)
 			CDAudio_Stop();
@@ -261,7 +261,7 @@ static void CD_f (void)
 		return;
 	}
 
-	if (Q_strcasecmp (command, "reset") == 0)
+	if (!stricmp (command, "reset"))
 	{
 		enabled = true;
 		if (playing)
@@ -272,7 +272,7 @@ static void CD_f (void)
 		return;
 	}
 
-	if (Q_strcasecmp (command, "remap") == 0)
+	if (!stricmp (command, "remap"))
 	{
 		ret = Cmd_Argc() - 2;
 		if (ret <= 0)
@@ -287,7 +287,7 @@ static void CD_f (void)
 		return;
 	}
 
-	if (Q_strcasecmp (command, "close") == 0)
+	if (!strcmp (command, "close"))
 	{
 		CDAudio_CloseDoor ();
 		return;
@@ -303,37 +303,37 @@ static void CD_f (void)
 		}
 	}
 
-	if (!Q_strcasecmp (command, "play"))
+	if (!stricmp (command, "play"))
 	{
 		CDAudio_Play (atoi (Cmd_Argv (2)), false);
 		return;
 	}
 
-	if (!Q_strcasecmp (command, "loop"))
+	if (!stricmp (command, "loop"))
 	{
 		CDAudio_Play (atoi (Cmd_Argv (2)), true);
 		return;
 	}
 
-	if (!Q_strcasecmp (command, "stop"))
+	if (!stricmp (command, "stop"))
 	{
 		CDAudio_Stop ();
 		return;
 	}
 
-	if (!Q_strcasecmp (command, "pause"))
+	if (!stricmp (command, "pause"))
 	{
 		CDAudio_Pause ();
 		return;
 	}
 
-	if (!Q_strcasecmp (command, "resume"))
+	if (!stricmp (command, "resume"))
 	{
 		CDAudio_Resume ();
 		return;
 	}
 
-	if (!Q_strcasecmp (command, "eject"))
+	if (!stricmp (command, "eject"))
 	{
 		if (playing)
 			CDAudio_Stop ();
@@ -342,7 +342,7 @@ static void CD_f (void)
 		return;
 	}
 
-	if (!Q_strcasecmp (command, "info"))
+	if (!stricmp (command, "info"))
 	{
 		Com_Printf ("%u tracks\n", maxTrack);
 		if (playing)
