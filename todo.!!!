@@ -256,7 +256,7 @@ BSP:
 
 ? make AllocChainBlock() will try to use free space of PREVIOUS blocks when current (last) is full
 
-- make zip/* big-endian compatible; update to "zlib1.1.4"
+- make zip/* big-endian compatible
 ? update JPEG code (new version)
 
 !? add Python virtual machine (game library, inline map scripts)

@@ -25,10 +25,6 @@ NULL=
 NULL=nul
 !ENDIF 
 
-CPP=cl.exe
-MTL=midl.exe
-RSC=rc.exe
-
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
 OUTDIR=.\release
@@ -80,12 +76,9 @@ CLEAN :
 	-@erase "$(INTDIR)\glw_imp.obj"
 	-@erase "$(INTDIR)\images.obj"
 	-@erase "$(INTDIR)\in_win.obj"
-	-@erase "$(INTDIR)\infblock.obj"
-	-@erase "$(INTDIR)\infcodes.obj"
 	-@erase "$(INTDIR)\inffast.obj"
 	-@erase "$(INTDIR)\inflate.obj"
 	-@erase "$(INTDIR)\inftrees.obj"
-	-@erase "$(INTDIR)\infutil.obj"
 	-@erase "$(INTDIR)\jcapimin.obj"
 	-@erase "$(INTDIR)\jcapistd.obj"
 	-@erase "$(INTDIR)\jccoefct.obj"
@@ -201,8 +194,42 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
+CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MD /W3 /GX /Zd /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "REF_HARD_LINKED" /Fp"$(INTDIR)\quake2s.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+.c{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.c{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+MTL=midl.exe
 MTL_PROJ=/nologo /D "NDEBUG" /mktyplib203 /win32 
+RSC=rc.exe
 RSC_PROJ=/l 0x409 /fo"$(INTDIR)\q2.res" /d "NDEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\quake2s.bsc" 
@@ -260,6 +287,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\sys_win.obj" \
 	"$(INTDIR)\vid_dll.obj" \
 	"$(INTDIR)\vid_menu.obj" \
+	"$(INTDIR)\zip.obj" \
 	"$(INTDIR)\gl_backend.obj" \
 	"$(INTDIR)\gl_buffers.obj" \
 	"$(INTDIR)\gl_frontend.obj" \
@@ -296,8 +324,6 @@ LINK32_OBJS= \
 	".\release\rw_ddraw.obj" \
 	".\release\rw_dib.obj" \
 	".\release\rw_imp.obj" \
-	"$(INTDIR)\q2.res" \
-	"$(INTDIR)\resources.obj" \
 	"$(INTDIR)\jcapimin.obj" \
 	"$(INTDIR)\jcapistd.obj" \
 	"$(INTDIR)\jccoefct.obj" \
@@ -355,16 +381,14 @@ LINK32_OBJS= \
 	"$(INTDIR)\jquant1.obj" \
 	"$(INTDIR)\jquant2.obj" \
 	"$(INTDIR)\jutils.obj" \
-	"$(INTDIR)\adler32.obj" \
-	"$(INTDIR)\crc32.obj" \
-	"$(INTDIR)\infblock.obj" \
-	"$(INTDIR)\infcodes.obj" \
-	"$(INTDIR)\inffast.obj" \
+	"$(INTDIR)\q2.res" \
+	"$(INTDIR)\resources.obj" \
 	"$(INTDIR)\inflate.obj" \
-	"$(INTDIR)\inftrees.obj" \
-	"$(INTDIR)\infutil.obj" \
+	"$(INTDIR)\crc32.obj" \
+	"$(INTDIR)\inffast.obj" \
+	"$(INTDIR)\adler32.obj" \
 	"$(INTDIR)\zutil.obj" \
-	"$(INTDIR)\zip.obj"
+	"$(INTDIR)\inftrees.obj"
 
 "$(OUTDIR)\quake2.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -461,18 +485,12 @@ CLEAN :
 	-@erase "$(INTDIR)\images.sbr"
 	-@erase "$(INTDIR)\in_win.obj"
 	-@erase "$(INTDIR)\in_win.sbr"
-	-@erase "$(INTDIR)\infblock.obj"
-	-@erase "$(INTDIR)\infblock.sbr"
-	-@erase "$(INTDIR)\infcodes.obj"
-	-@erase "$(INTDIR)\infcodes.sbr"
 	-@erase "$(INTDIR)\inffast.obj"
 	-@erase "$(INTDIR)\inffast.sbr"
 	-@erase "$(INTDIR)\inflate.obj"
 	-@erase "$(INTDIR)\inflate.sbr"
 	-@erase "$(INTDIR)\inftrees.obj"
 	-@erase "$(INTDIR)\inftrees.sbr"
-	-@erase "$(INTDIR)\infutil.obj"
-	-@erase "$(INTDIR)\infutil.sbr"
 	-@erase "$(INTDIR)\jcapimin.obj"
 	-@erase "$(INTDIR)\jcapimin.sbr"
 	-@erase "$(INTDIR)\jcapistd.obj"
@@ -698,8 +716,42 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
+CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\quake2s.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+
+.c{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.c{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+MTL=midl.exe
 MTL_PROJ=/nologo /D "_DEBUG" /mktyplib203 /win32 
+RSC=rc.exe
 RSC_PROJ=/l 0x409 /fo"$(INTDIR)\q2.res" /d "_DEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\quake2s.bsc" 
@@ -753,6 +805,7 @@ BSC32_SBRS= \
 	"$(INTDIR)\sys_win.sbr" \
 	"$(INTDIR)\vid_dll.sbr" \
 	"$(INTDIR)\vid_menu.sbr" \
+	"$(INTDIR)\zip.sbr" \
 	"$(INTDIR)\gl_backend.sbr" \
 	"$(INTDIR)\gl_buffers.sbr" \
 	"$(INTDIR)\gl_frontend.sbr" \
@@ -846,16 +899,12 @@ BSC32_SBRS= \
 	"$(INTDIR)\jquant1.sbr" \
 	"$(INTDIR)\jquant2.sbr" \
 	"$(INTDIR)\jutils.sbr" \
-	"$(INTDIR)\adler32.sbr" \
-	"$(INTDIR)\crc32.sbr" \
-	"$(INTDIR)\infblock.sbr" \
-	"$(INTDIR)\infcodes.sbr" \
-	"$(INTDIR)\inffast.sbr" \
 	"$(INTDIR)\inflate.sbr" \
-	"$(INTDIR)\inftrees.sbr" \
-	"$(INTDIR)\infutil.sbr" \
+	"$(INTDIR)\crc32.sbr" \
+	"$(INTDIR)\inffast.sbr" \
+	"$(INTDIR)\adler32.sbr" \
 	"$(INTDIR)\zutil.sbr" \
-	"$(INTDIR)\zip.sbr"
+	"$(INTDIR)\inftrees.sbr"
 
 "$(OUTDIR)\quake2s.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
     $(BSC32) @<<
@@ -914,6 +963,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\sys_win.obj" \
 	"$(INTDIR)\vid_dll.obj" \
 	"$(INTDIR)\vid_menu.obj" \
+	"$(INTDIR)\zip.obj" \
 	"$(INTDIR)\gl_backend.obj" \
 	"$(INTDIR)\gl_buffers.obj" \
 	"$(INTDIR)\gl_frontend.obj" \
@@ -950,16 +1000,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\rw_ddraw.obj" \
 	"$(INTDIR)\rw_dib.obj" \
 	"$(INTDIR)\rw_imp.obj" \
-	"$(INTDIR)\q2.res" \
-	"$(INTDIR)\r_aclipa.obj" \
-	"$(INTDIR)\r_draw16.obj" \
-	"$(INTDIR)\r_drawa.obj" \
-	"$(INTDIR)\r_edgea.obj" \
-	"$(INTDIR)\r_polysa.obj" \
-	"$(INTDIR)\r_scana.obj" \
-	"$(INTDIR)\r_spr8.obj" \
-	"$(INTDIR)\r_surf8.obj" \
-	"$(INTDIR)\r_varsa.obj" \
 	"$(INTDIR)\jcapimin.obj" \
 	"$(INTDIR)\jcapistd.obj" \
 	"$(INTDIR)\jccoefct.obj" \
@@ -1017,16 +1057,22 @@ LINK32_OBJS= \
 	"$(INTDIR)\jquant1.obj" \
 	"$(INTDIR)\jquant2.obj" \
 	"$(INTDIR)\jutils.obj" \
-	"$(INTDIR)\adler32.obj" \
-	"$(INTDIR)\crc32.obj" \
-	"$(INTDIR)\infblock.obj" \
-	"$(INTDIR)\infcodes.obj" \
-	"$(INTDIR)\inffast.obj" \
+	"$(INTDIR)\q2.res" \
+	"$(INTDIR)\r_aclipa.obj" \
+	"$(INTDIR)\r_draw16.obj" \
+	"$(INTDIR)\r_drawa.obj" \
+	"$(INTDIR)\r_edgea.obj" \
+	"$(INTDIR)\r_polysa.obj" \
+	"$(INTDIR)\r_scana.obj" \
+	"$(INTDIR)\r_spr8.obj" \
+	"$(INTDIR)\r_surf8.obj" \
+	"$(INTDIR)\r_varsa.obj" \
 	"$(INTDIR)\inflate.obj" \
-	"$(INTDIR)\inftrees.obj" \
-	"$(INTDIR)\infutil.obj" \
+	"$(INTDIR)\crc32.obj" \
+	"$(INTDIR)\inffast.obj" \
+	"$(INTDIR)\adler32.obj" \
 	"$(INTDIR)\zutil.obj" \
-	"$(INTDIR)\zip.obj"
+	"$(INTDIR)\inftrees.obj"
 
 "$(OUTDIR)\quake2.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -1034,36 +1080,6 @@ LINK32_OBJS= \
 <<
 
 !ENDIF 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
 
 
 !IF "$(NO_EXTERNAL_DEPS)" != "1"
@@ -2975,42 +2991,6 @@ SOURCE=.\lib\zlib\crc32.c
 
 !ENDIF 
 
-SOURCE=.\lib\zlib\infblock.c
-
-!IF  "$(CFG)" == "quake2s - Win32 Release"
-
-
-"$(INTDIR)\infblock.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
-
-
-"$(INTDIR)\infblock.obj"	"$(INTDIR)\infblock.sbr" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ENDIF 
-
-SOURCE=.\lib\zlib\infcodes.c
-
-!IF  "$(CFG)" == "quake2s - Win32 Release"
-
-
-"$(INTDIR)\infcodes.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
-
-
-"$(INTDIR)\infcodes.obj"	"$(INTDIR)\infcodes.sbr" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ENDIF 
-
 SOURCE=.\lib\zlib\inffast.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
@@ -3060,24 +3040,6 @@ SOURCE=.\lib\zlib\inftrees.c
 
 
 "$(INTDIR)\inftrees.obj"	"$(INTDIR)\inftrees.sbr" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ENDIF 
-
-SOURCE=.\lib\zlib\infutil.c
-
-!IF  "$(CFG)" == "quake2s - Win32 Release"
-
-
-"$(INTDIR)\infutil.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
-
-
-"$(INTDIR)\infutil.obj"	"$(INTDIR)\infutil.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
