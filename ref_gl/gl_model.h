@@ -5,6 +5,7 @@
 #define map gl_worldModel		// short alias
 
 #include "gl_frontend.h"
+#include "gl_light.h"
 
 /*--------------------- Lighting --------------------------*/
 
@@ -48,7 +49,7 @@ typedef struct
 typedef struct
 {
 	short	xyz[3];
-	short	normal;			//?? unused now; byte[2] -- angles
+	short	normal;
 } vertexMd3_t;	//?? == md3XyzNormal_t
 
 typedef enum
@@ -192,42 +193,6 @@ typedef struct gl_flare_s
 } gl_flare_t;
 
 
-// point light / spot light
-typedef struct
-{
-	slightType_t type;
-	byte	spot;				// bool
-	byte	style;
-	vec3_t	origin;
-	vec3_t	color;
-	float	intens;
-	int		cluster;
-	vec3_t	spotDir;
-	float	spotDot;
-	float	focus;
-	float	fade;
-} gl_slight_t;
-
-
-typedef struct surfLight_s
-{
-	qboolean sky;
-	vec3_t	color;
-	float	intens;
-	int		cluster;
-	surfacePlanar_t *pl;		// used for normal/axis/bounds
-	struct surfLight_s *next;
-} surfLight_t;
-
-
-#define LIGHTGRID_STEP	32
-
-typedef struct
-{
-	byte	c[6][3];
-} lightCell_t;
-
-
 typedef struct
 {
 	char	name[MAX_QPATH];
@@ -268,7 +233,7 @@ typedef struct
 	float	sunLight;			// intensity; 0 if no sun
 	vec3_t	sunColor;
 	vec3_t	sunVec;
-	qboolean haveSunAmbient;
+	bool	haveSunAmbient;
 	vec3_t	sunAmbient;
 	vec3_t	ambientLight;
 } bspModel_t;
@@ -340,8 +305,6 @@ void	GL_ResetModels (void);
 model_t	*GL_FindModel (char *name);
 shader_t *GL_FindSkin (char *name);
 void	GL_LoadWorldMap (char *name);
-
-void	GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean vertexOnly, unsigned dlightMask);
 
 
 #endif

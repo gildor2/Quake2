@@ -34,7 +34,8 @@ cvar_t	*gl_overbright;
 cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
 cvar_t	*r_intensity;		//??
 
-cvar_t	*gl_picmip, *gl_textureBits, *gl_roundImagesDown, *gl_texturemode;
+cvar_t	*gl_picmip, *gl_roundImagesDown, *gl_texMipBias, *gl_skinMipBias;
+cvar_t	*gl_textureBits, *gl_texturemode;
 
 // rendering speed/quality settings
 cvar_t	*gl_fastsky;		// do not draw skybox
@@ -118,7 +119,8 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_texturemode, GL_LINEAR_MIPMAP_NEAREST, CVAR_ARCHIVE),
 	CVAR_VAR(gl_picmip, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gl_roundImagesDown, 0, CVAR_ARCHIVE),
-
+	CVAR_VAR(gl_texMipBias, -0.5, CVAR_ARCHIVE),
+	CVAR_VAR(gl_skinMipBias, -1, CVAR_ARCHIVE),
 //	CVAR_VAR(gl_shadows, 0, CVAR_ARCHIVE ),
 	CVAR_VAR(r_gamma, 1, CVAR_ARCHIVE),
 	CVAR_VAR(r_brightness, 1, CVAR_ARCHIVE),
@@ -200,10 +202,10 @@ CVAR_END
 }
 
 
-static qboolean GL_SetMode (void)
+static bool GL_SetMode (void)
 {
 	rserr_t err;
-	qboolean fullscreen;
+	bool	fullscreen;
 
 	fullscreen = r_fullscreen->integer;
 
@@ -389,7 +391,7 @@ static void GL_Shutdown (void)
 
 /*---------------- Backend helpers ----------------------*/
 
-void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, int color)
+static void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color)
 {
 	PUT_BACKEND_COMMAND (bkDrawPic_t, p);
 	p->type = BACKEND_PIC;
@@ -432,7 +434,7 @@ static void GL_BeginFrame (float camera_separation)
 		Cvar_SetInteger ("gl_logFile", 0);
 	}
 
-//	DrawTextRight ("---------BeginFrame---------\n", 1,0,0);
+//	DrawTextRight ("---------BeginFrame---------\n", RGB(1,0,0));
 	LOG_STRING ("\n---------- Begin Frame ----------\n\n");
 
 	if (gl_finish->integer == 2) glFinish ();
@@ -476,7 +478,7 @@ static void GL_EndFrame (void)
 {
 	if (!gl_speeds.numFrames) ClearTexts ();
 
-//	DrawTextRight ("---------EndFrame---------\n", 1,0,0);
+//	DrawTextRight ("---------EndFrame---------\n", RGB(1,0,0));
 	{
 		PUT_BACKEND_COMMAND (int, p);
 		*p = BACKEND_END_FRAME;
@@ -496,7 +498,7 @@ static void GL_EndFrame (void)
 			gl_speeds.begin3D - gl_speeds.beginSort,
 			gl_speeds.begin2D - gl_speeds.begin3D,
 			gl_speeds.endFrame - gl_speeds.begin2D
-			), 1, 0.5, 0);
+			), RGB(1,0.5,0));
 	}
 }
 
@@ -545,16 +547,16 @@ static void SetWorldModelview (void)
 		}
 #if 0
 #define m vp.vieworg
-	DrawTextLeft (va("Org: %9.4g, %9.4g %9.4g", VECTOR_ARG(m)), 0.6, 1, 0.2);
+	DrawTextLeft (va("Org: %9.4g, %9.4g %9.4g", VECTOR_ARG(m)), RGB(0.6,1,0.2));
 #undef m
 #define m vp.viewaxis
 	for (i = 0; i < 3; i++)
-		DrawTextLeft (va("ax[%d] = {%9.4g, %9.4g %9.4g}", i, VECTOR_ARG(m[i])), 0.4, 0.8, 1);
+		DrawTextLeft (va("ax[%d] = {%9.4g, %9.4g %9.4g}", i, VECTOR_ARG(m[i])), RGB(0.4,0.8,1));
 #undef m
 #define m vp.modelMatrix
-	DrawTextLeft (va("----- modelview matrix -----"), 1, 0.2, 0.2);
+	DrawTextLeft (va("----- modelview matrix -----"), RGB(1,0.2,0.2));
 	for (i = 0; i < 4; i++)
-		DrawTextLeft (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][i], m[1][i], m[2][i], m[3][i]), 0.8, 0.3, 0.3);
+		DrawTextLeft (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][i], m[1][i], m[2][i], m[3][i]), RGB(0.8,0.3,0.3));
 #undef m
 #endif
 }
@@ -653,13 +655,13 @@ static void SetPerspective (void)
 #undef m
 #if 0
 #define dr DrawTextRight
-	dr (va("zFar: %g;  frustum: x[%g, %g] y[%g, %g]", vp.zFar, xmin, xmax, ymin, ymax), 1, 0.1, 0.2);
+	dr (va("zFar: %g;  frustum: x[%g, %g] y[%g, %g]", vp.zFar, xmin, xmax, ymin, ymax), RGB(1,0.1,0.2));
 #define m vp.projectionMatrix
-	dr (va("----- projection matrix -----"), 1, 0.2, 0.2);
-	dr (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][0], m[1][0], m[2][0], m[3][0]), 0.8, 0.3, 0.3);
-	dr (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][1], m[1][1], m[2][1], m[3][1]), 0.8, 0.3, 0.3);
-	dr (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][2], m[1][2], m[2][2], m[3][2]), 0.8, 0.3, 0.3);
-	dr (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][3], m[1][3], m[2][3], m[3][3]), 0.8, 0.3, 0.3);
+	dr (va("----- projection matrix -----"), RGB(1,0.2,0.2));
+	dr (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][0], m[1][0], m[2][0], m[3][0]), RGB(0.8,0.3,0.3));
+	dr (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][1], m[1][1], m[2][1], m[3][1]), RGB(0.8,0.3,0.3));
+	dr (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][2], m[1][2], m[2][2], m[3][2]), RGB(0.8,0.3,0.3));
+	dr (va("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][3], m[1][3], m[2][3], m[3][3]), RGB(0.8,0.3,0.3));
 #undef m
 #undef dr
 #endif
@@ -678,7 +680,7 @@ static void GL_RenderFrame (refdef_t *fd)
 	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !map.name)
 		Com_Error (ERR_FATAL, "R_RenderFrame: NULL worldModel");
 
-//	DrawTextRight ("---------RenderFrame---------\n", 1,0,0);
+//	DrawTextRight ("---------RenderFrame---------\n", RGB(1,0,0));
 
 	/*----------- prepare data ------------*/
 
@@ -721,7 +723,7 @@ static void GL_RenderFrame (refdef_t *fd)
 	vp.lightStyles = fd->lightstyles;
 	vp.time = fd->time;
 
-//DrawTextLeft(va("begin scene: %d ents (%d+) %d dlights (%d+)",fd->num_entities,gl_numEntities,fd->num_dlights,gl_numDlights),1,0,0);
+//DrawTextLeft(va("begin scene: %d ents (%d+) %d dlights (%d+)",fd->num_entities,gl_numEntities,fd->num_dlights,gl_numDlights), RGB(1,0,0));
 	// add entities
 	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.cullEntsBox = gl_speeds.cullEnts2 = gl_speeds.ocullEnts = 0;
 	vp.firstEntity = gl_numEntities;
@@ -753,7 +755,7 @@ static void GL_RenderFrame (refdef_t *fd)
 	{
 		color_t		c;
 
-//		DrawTextLeft(va("blend: %f %f %f %f",VECTOR_ARG(fd->blend),fd->blend[3]),1,1,1);
+//		DrawTextLeft(va("blend: %f %f %f %f",VECTOR_ARG(fd->blend),fd->blend[3]), RGB(1,1,1));
 		// standard Quake2 blending
 		c.c[0] = Q_round (fd->blend[0] * 255);
 		c.c[1] = Q_round (fd->blend[1] * 255);
@@ -768,22 +770,22 @@ static void GL_RenderFrame (refdef_t *fd)
 	if (r_speeds->integer)
 	{
 		DrawTextRight (va("visLeafs: %d frLeafs: %d total: %d",
-			gl_speeds.visLeafs, gl_speeds.frustLeafs, gl_speeds.leafs), 1, 0.5, 0);
+			gl_speeds.visLeafs, gl_speeds.frustLeafs, gl_speeds.leafs), RGB(1,0.5,0));
 		DrawTextRight (va("surfs: %d culled: %d",
-			gl_speeds.surfs, gl_speeds.cullSurfs), 1, 0.5, 0);
+			gl_speeds.surfs, gl_speeds.cullSurfs), RGB(1,0.5,0));
 		DrawTextRight (va("tris: %d (+%d) mtex: %1.2f",
-			gl_speeds.trisMT, gl_speeds.tris2D, gl_speeds.trisMT ? (float)gl_speeds.tris / gl_speeds.trisMT : 0), 1, 0.5, 0);
+			gl_speeds.trisMT, gl_speeds.tris2D, gl_speeds.trisMT ? (float)gl_speeds.tris / gl_speeds.trisMT : 0), RGB(1,0.5,0));
 		DrawTextRight (va("ents: %d fcull: %d+%d cull: %d ocull: %d",
-			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEntsBox, gl_speeds.cullEnts2, gl_speeds.ocullEnts), 1, 0.5, 0);
+			gl_speeds.ents, gl_speeds.cullEnts, gl_speeds.cullEntsBox, gl_speeds.cullEnts2, gl_speeds.ocullEnts), RGB(1,0.5,0));
 		DrawTextRight (va("particles: %d cull: %d",
-			gl_speeds.parts, gl_speeds.cullParts), 1, 0.5, 0);
+			gl_speeds.parts, gl_speeds.cullParts), RGB(1,0.5,0));
 		DrawTextRight (va("dlights: %d surfs: %d verts: %d",
-			gl_numDlights, gl_speeds.dlightSurfs, gl_speeds.dlightVerts), 1, 0.5, 0);
+			gl_numDlights, gl_speeds.dlightSurfs, gl_speeds.dlightVerts), RGB(1,0.5,0));
 		DrawTextRight (va("flares: %d test: %d cull: %d lgrid: %d/%d",
 			gl_speeds.flares, gl_speeds.testFlares, gl_speeds.cullFlares,
-			map.numLightCells, map.mapGrid[0]*map.mapGrid[1]*map.mapGrid[2]), 1, 0.5, 0);
+			map.numLightCells, map.mapGrid[0]*map.mapGrid[1]*map.mapGrid[2]), RGB(1,0.5,0));
 		DrawTextRight (va("binds: %d uploads: %2d draws: %d",
-			gl_speeds.numBinds, gl_speeds.numUploads, gl_speeds.numIterators), 1, 0.5, 0);
+			gl_speeds.numBinds, gl_speeds.numUploads, gl_speeds.numIterators), RGB(1,0.5,0));
 
 		/* perform clearing after displaying, so, we will see speeds of previous frame
 		 * (some data will be set up in EndFrame()->BackEnd())
@@ -802,25 +804,23 @@ static void GL_RenderFrame (refdef_t *fd)
 
 #define I 255
 #define o 51
-#define c(r,g,b)	(r + (g<<8) + (b<<16) + (255<<24))
-static int colorTable[8] = {
-	c(0, 0, 0),
-	c(I, o, o),
-	c(o, I, o),
-	c(I, I, o),
-	c(o, o, I),
-	c(I, o, I),
-	c(o, I, I),
-	c(I, I, I)
+static unsigned colorTable[8] = {
+	RGB255(0, 0, 0),
+	RGB255(I, o, o),
+	RGB255(o, I, o),
+	RGB255(I, I, o),
+	RGB255(o, o, I),
+	RGB255(I, o, I),
+	RGB255(o, I, I),
+	RGB255(I, I, I)
 };
 #undef I
 #undef o
-#undef c
 
 static void DrawCharColor (int x, int y, int c, int color)
 {
 	bkDrawText_t *p;
-	int		col;
+	unsigned col;
 
 	if (c == ' ') return;
 
@@ -861,7 +861,7 @@ static void	DrawConCharColor (int x, int y, int c, int color)
 
 /*--------------------- 2D picture output ---------------------*/
 
-static shader_t *FindPic (char *name, qboolean force)
+static shader_t *FindPic (char *name, bool force)
 {
 	char	*s;
 	int		flags;
@@ -1003,7 +1003,7 @@ static void DrawTexts (void)
 }
 
 
-static void DrawTextPos (int x, int y, char *text, float r, float g, float b)
+static void DrawTextPos (int x, int y, char *text, unsigned rgba)
 {
 	int size;
 	char *textCopy;
@@ -1027,10 +1027,7 @@ static void DrawTextPos (int x, int y, char *text, float r, float g, float b)
 	rec->x = x;
 	rec->y = y;
 	rec->text = textCopy;
-	rec->c.c[0] = Q_round (r * 255);
-	rec->c.c[1] = Q_round (g * 255);
-	rec->c.c[2] = Q_round (b * 255);
-	rec->c.c[3] = 255;
+	rec->c.rgba = rgba;
 	rec->next = NULL;
 
 	if (lastTextRec) lastTextRec->next = rec;
@@ -1040,23 +1037,23 @@ static void DrawTextPos (int x, int y, char *text, float r, float g, float b)
 }
 
 
-void DrawTextLeft (char *text, float r, float g, float b)
+void DrawTextLeft (char *text, unsigned rgba)
 {
 	if (nextLeft_y >= vid.height) return;	// out of screen
-	DrawTextPos (0, nextLeft_y, text, r, g, b);
+	DrawTextPos (0, nextLeft_y, text, rgba);
 	nextLeft_y += CHARSIZE_Y;
 }
 
 
-void DrawTextRight (char *text, float r, float g, float b)
+void DrawTextRight (char *text, unsigned rgba)
 {
 	if (nextRight_y >= vid.height) return;	// out of screen
-	DrawTextPos (vid.width - strlen(text) * CHARSIZE_X, nextRight_y, text, r, g, b);
+	DrawTextPos (vid.width - strlen(text) * CHARSIZE_X, nextRight_y, text, rgba);
 	nextRight_y += CHARSIZE_Y;
 }
 
 
-void DrawText3D (vec3_t pos, char *text, float r, float g, float b)
+void DrawText3D (vec3_t pos, char *text, unsigned rgba)
 {
 	vec3_t	vec;
 	float	x, y, z;
@@ -1090,7 +1087,7 @@ void DrawText3D (vec3_t pos, char *text, float r, float g, float b)
 			text = buf;
 			next++;		// skip '\n'
 		}
-		DrawTextPos (scrX, scrY, text, r, g, b);
+		DrawTextPos (scrX, scrY, text, rgba);
 		text = next;
 		scrY += CHARSIZE_Y;
 	} while (text);

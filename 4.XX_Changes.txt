@@ -103,12 +103,12 @@ Comments:
 Cvar system
 -----------
 - command "add":
-  add <var_name> <inc> [<min> <max> [r][f]]
+  add <var_name> <inc> [<min> <max> [w][f]]
     - var_name must exists and be writeable
     - inc may be >0 or <0
     - min<max
-    - if "r" is specified, when dest>max it will =min, if dest<min it =max (rotating)
-    - if "r" is NOT specified, when dest>max dest=max, when dest<min dest=min (limit)
+    - if "w" is specified, when dest>max it will =min, if dest<min it =max (wrapping)
+    - if "w" is NOT specified, when dest>max dest=max, when dest<min dest=min (limit)
     - if "f" ("force") specified and variable is not found, it will be created (error message otherwise)
 - command "scale <varname> <scale>" will multiply variable value by scale
 - command "toggle <varname>" will set variable to 0 if var != 0 or set to 1 otherwise

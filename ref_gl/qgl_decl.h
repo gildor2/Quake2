@@ -55,7 +55,7 @@ typedef union
 		void	(APIENTRY * TexEnvfv) (GLenum target, GLenum pname, const GLfloat *params);
 		void	(APIENTRY * TexEnvi) (GLenum target, GLenum pname, GLenum param);
 		void	(APIENTRY * TexImage2D) (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
-		void	(APIENTRY * TexParameterf) (GLenum target, GLenum pname, GLfloat param);
+		void	(APIENTRY * TexParameteri) (GLenum target, GLenum pname, GLint param);
 		void	(APIENTRY * TexSubImage2D) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
 		void	(APIENTRY * Translatef) (GLfloat x, GLfloat y, GLfloat z);
 		void	(APIENTRY * Vertex2f) (GLfloat x, GLfloat y);
@@ -143,7 +143,7 @@ extern qgl_t qgl;
 #define glTexEnvfv	qgl.TexEnvfv
 #define glTexEnvi	qgl.TexEnvi
 #define glTexImage2D	qgl.TexImage2D
-#define glTexParameterf	qgl.TexParameterf
+#define glTexParameteri	qgl.TexParameteri
 #define glTexSubImage2D	qgl.TexSubImage2D
 #define glTranslatef	qgl.Translatef
 #define glVertex2f	qgl.Vertex2f
@@ -188,9 +188,10 @@ extern qgl_t qgl;
 #define QGL_ARB_TEXTURE_COMPRESSION	(1 << 8)
 #define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 9)
 #define QGL_NV_FOG_DISTANCE	(1 << 10)
+#define QGL_EXT_TEXTURE_LOD_BIAS	(1 << 11)
 
 #ifdef _WIN32
-#define QWGL_EXT_SWAP_CONTROL	(1 << 11)
+#define QWGL_EXT_SWAP_CONTROL	(1 << 12)
 #endif
 
 #ifdef __linux__

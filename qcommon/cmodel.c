@@ -38,7 +38,7 @@ typedef struct
 	int		contents;
 	int		numsides;
 	int		firstbrushside;
-	int		checkcount;		// to avoid repeated testings
+	int		checkcount;			// to avoid repeated testings
 } cbrush_t;
 
 typedef struct
@@ -97,7 +97,7 @@ static csurface_t	nullsurface;
 
 static int			floodvalid;
 
-static qboolean portalopen[MAX_MAP_AREAPORTALS];
+static bool portalopen[MAX_MAP_AREAPORTALS];
 
 
 static cvar_t		*map_noareas;
@@ -1836,7 +1836,7 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, vec3_t p1, ve
 			node->children[side], p1f, p1f + (p2f - p1f)*frac,
                         node->children[side^1], midf = p1f + (p2f - p1f)*frac2, p2f,
                         plane->dist,plane->normal[0],plane->normal[1],plane->normal[2]);
-		re.DrawTextRight(buf,1,0.3,0.3);
+		re.DrawTextRight(buf,RGB(1,0.3,0.3));
 	}//===*/
 
 		// move up to the node

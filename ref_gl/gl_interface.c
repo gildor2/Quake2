@@ -79,6 +79,7 @@ void GL_Lock (void)
 	COPY(newTexCoordEnabled, texCoordEnabled);
 	COPY(newTextureEnabled, textureEnabled);
 	COPY(newEnvColor, texEnvColor);
+	COPY(newMipBias, mipBias);
 	memset (gl_state.newTCPointer, 0, sizeof(gl_state.newTCPointer));
 #undef COPY
 
@@ -89,8 +90,9 @@ void GL_Lock (void)
 void GL_Unlock (void)
 {
 	int		startTmu, tmu, i, n;
-	qboolean f;
+	bool	f;
 	color_t	c;
+	float	v;
 
 	if (!gl_state.locked) return;
 	gl_state.locked = false;
@@ -117,6 +119,12 @@ void GL_Unlock (void)
 				GL_SelectTexture (tmu);
 				GL_TexEnv (n);
 			}
+		}
+		if ((v = gl_state.newMipBias[tmu]) != gl_state.mipBias[tmu])
+		{
+			GL_SelectTexture (tmu);
+			gl_state.mipBias[tmu] = v;
+			glTexEnvf (GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, v);
 		}
 		if ((f = gl_state.newTexCoordEnabled[tmu]) != gl_state.texCoordEnabled[tmu])
 		{
@@ -152,6 +160,19 @@ void GL_Unlock (void)
 void GL_Bind (image_t *tex)
 {
 	int		tmu;
+
+	if (tex && tex->flags & IMAGE_MIPMAP)	//?? remove GL_TexMipBias() ?
+	{
+		float	f;
+
+		if (tex->flags & IMAGE_WORLD)
+			f = gl_texMipBias->value;
+		else if (tex->flags & IMAGE_SKIN)
+			f = gl_skinMipBias->value;
+		else
+			f = 0;							//?? gl_defMipBias
+		GL_TexMipBias (f);
+	}
 
 	if (tex && gl_nobind->integer && (gl_nobind->integer != 2 || strcmp (tex->name, "pics/conchars.pcx")))
 		tex = gl_dlightImage;		//?? need a better way to detect force-bind images
@@ -290,6 +311,22 @@ void GL_TexEnv (unsigned env)
 		mask >>= TEXENV_SRC_BITS;
 		shift -= TEXENV_SRC_BITS;
 	}
+}
+
+
+void GL_TexMipBias (float f)
+{
+	if (!GL_SUPPORT(QGL_EXT_TEXTURE_LOD_BIAS))
+		return;
+
+	if (gl_state.locked)
+	{
+		gl_state.newMipBias[gl_state.newTmu] = f;
+		return;
+	}
+	if (gl_state.mipBias[gl_state.newTmu] == f) return;
+	gl_state.mipBias[gl_state.newTmu] = f;
+	glTexEnvf (GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, f);
 }
 
 
@@ -543,7 +580,7 @@ void GL_State (int state)
 }
 
 
-void GL_EnableFog (qboolean enable)
+void GL_EnableFog (bool enable)
 {
 	if (enable == gl_state.fogEnabled)
 		return;

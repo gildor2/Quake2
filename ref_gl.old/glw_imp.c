@@ -298,6 +298,7 @@ static void UpdateGamma (void)
 void GLimp_SetGamma (float gamma, float intens)
 {
 	int		i, v;
+	float	contr, bright;
 	float	invGamma;
 
 	if (!gammaStored) return;
@@ -305,6 +306,10 @@ void GLimp_SetGamma (float gamma, float intens)
 	gamma = bound(gamma, 0.5, 3);
 	if (intens < 0.1f)	//?? remove
 		intens = 0.1f;
+	contr = r_contrast->value;
+	bright = r_brightness->value;
+	contr = bound(contr, 0.3, 1.8);
+	bright = bound(bright, 0.3, 1.8);
 
 //	DebugPrintf("set gamma %g, %g\n", gamma, intens);//!!
 
@@ -312,17 +317,18 @@ void GLimp_SetGamma (float gamma, float intens)
 	for (i = 0; i < 256; i++)
 	{
 		float	tmp;
-		float	contr, bright;
 
-		contr = r_contrast->value;
-		bright = r_brightness->value;
-		contr = bound(contr, 0.3, 1.8);
-		bright = bound(bright, 0.3, 1.8);
-		tmp = (((i << 8) - 32768) * contr + 32768) * bright;
-		if (invGamma == 1.0)
-			v = tmp;
-		else
-			v = 65535.0f * pow (tmp / 65535.5f, invGamma);
+#if 0
+		tmp = (i / 255.0f * overbright - 0.5f) * contr + 0.5f;
+		if (tmp < 0) tmp = 0;					// without this, can get semi-negative picture when r_gamma=0.5 (invGamma=2)
+		v = Q_round (65535.0f * (pow (tmp, invGamma) + bright - 1));
+#else
+		// taken from UT2003
+		// note: ut_br = br-0.5, ut_contr = contr-0.5 (replace later: norm. bright=0.5, contr=0.5) !!
+		tmp = pow (i / 255.0f, invGamma) * contr * 65535;
+		tmp = tmp + (bright - 1) * 32768 - (contr - 0.5) * 32768 + 16384;
+		v = Q_round (tmp);
+#endif
 
 		if (_winmajor >= 5)
 		{

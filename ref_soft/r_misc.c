@@ -143,7 +143,7 @@ void R_PrintTimes (void)
 
 	Com_sprintf (buf, sizeof(buf), "%5i ms %3i/%3i/%3i poly %3i surf",
 				ms, c_faceclip, r_polycount, r_drawnpolycount, c_surf);
-	DrawText_Right (buf, 1, 1, 1);
+	DrawText_Right (buf, RGB(1, 1, 1));
 	c_surf = 0;
 }
 
@@ -170,7 +170,7 @@ void R_PrintDSpeeds (void)
 
 	Com_sprintf (buf, sizeof(buf), "%3i %2ip %2iw %2ib %2is %2ie %2ia",
 				ms, dp_time, rw_time, db_time, se_time, de_time, da_time);
-	DrawText_Right (buf, 1, 1, 1);
+	DrawText_Right (buf, RGB(1, 1, 1));
 }
 
 

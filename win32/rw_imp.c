@@ -29,9 +29,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ** SWimp_SetPalette
 ** SWimp_Shutdown
 */
+#include "winquake.h"
+
 #include "../ref_soft/r_local.h"
 #include "rw_win.h"
-#include "winquake.h"
 
 
 swwstate_t sww_state;

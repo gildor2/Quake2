@@ -3,13 +3,13 @@
 #ifdef _WIN32
 #  define NUM_GLFUNCS	66
 #  define NUM_EXTFUNCS	7
-#  define NUM_EXTENSIONS	12
+#  define NUM_EXTENSIONS	13
 #endif
 
 #ifdef __linux__
 #  define NUM_GLFUNCS	58
 #  define NUM_EXTFUNCS	6
-#  define NUM_EXTENSIONS	11
+#  define NUM_EXTENSIONS	12
 #endif
 
 static char *qglNames[NUM_GLFUNCS + NUM_EXTFUNCS] = {
@@ -63,7 +63,7 @@ static char *qglNames[NUM_GLFUNCS + NUM_EXTFUNCS] = {
 	"glTexEnvfv",
 	"glTexEnvi",
 	"glTexImage2D",
-	"glTexParameterf",
+	"glTexParameteri",
 	"glTexSubImage2D",
 	"glTranslatef",
 	"glVertex2f",
@@ -236,6 +236,10 @@ static char *EnumName (GLenum v)
 		return "TEXTURE_MAG_FILTER";
 	case GL_TEXTURE_MIN_FILTER:
 		return "TEXTURE_MIN_FILTER";
+	case GL_TEXTURE_FILTER_CONTROL_EXT:
+		return "TEXTURE_FILTER_CONTROL_EXT";
+	case GL_TEXTURE_LOD_BIAS_EXT:
+		return "TEXTURE_LOD_BIAS_EXT";
 	case GL_TEXTURE_WRAP_S:
 		return "TEXTURE_WRAP_S";
 	case GL_TEXTURE_WRAP_T:
@@ -651,10 +655,10 @@ static void APIENTRY logTexImage2D (GLenum target, GLint level, GLint internalfo
 	lib.TexImage2D (target, level, internalformat, width, height, border, format, type, pixels);
 }
 
-static void APIENTRY logTexParameterf (GLenum target, GLenum pname, GLfloat param)
+static void APIENTRY logTexParameteri (GLenum target, GLenum pname, GLint param)
 {
-	fprintf (glw_state.log_fp, "%s (GL_%s, GL_%s, %g)\n", "glTexParameterf", EnumName(target), EnumName(pname), param);
-	lib.TexParameterf (target, pname, param);
+	fprintf (glw_state.log_fp, "%s (GL_%s, GL_%s, %d)\n", "glTexParameteri", EnumName(target), EnumName(pname), param);
+	lib.TexParameteri (target, pname, param);
 }
 
 static void APIENTRY logTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels)
@@ -858,7 +862,7 @@ static qgl_t logFuncs = {
 	logTexEnvfv,
 	logTexEnvi,
 	logTexImage2D,
-	logTexParameterf,
+	logTexParameteri,
 	logTexSubImage2D,
 	logTranslatef,
 	logVertex2f,
@@ -907,13 +911,14 @@ static extInfo_t extInfo[NUM_EXTENSIONS] = {
 	{"GL_ARB_multitexture", "gl_ext_multitexture", NUM_GLFUNCS+2, 2, 0, 0},
 	{"GL_EXT_texture_env_add", "gl_ext_texture_env_add", 0, 0, 0, QGL_ARB_TEXTURE_ENV_ADD},
 	{"GL_ARB_texture_env_add", "gl_ext_texture_env_add", 0, 0, 0, 0},
-	{"GL_EXT_texture_env_combine", "gl_ext_texture_env_combine", 0, 0, QGL_ARB_MULTITEXTURE, QGL_NV_TEXTURE_ENV_COMBINE4},
-	{"GL_ARB_texture_env_combine", "gl_ext_texture_env_combine", 0, 0, QGL_ARB_MULTITEXTURE, QGL_NV_TEXTURE_ENV_COMBINE4},
+	{"GL_EXT_texture_env_combine", "gl_ext_texture_env_combine", 0, 0, QGL_ARB_MULTITEXTURE, QGL_ARB_TEXTURE_ENV_COMBINE},
+	{"GL_ARB_texture_env_combine", "gl_ext_texture_env_combine", 0, 0, QGL_ARB_MULTITEXTURE, 0},
 	{"GL_NV_texture_env_combine4", "gl_ext_texture_env_combine_nv", 0, 0, QGL_ARB_MULTITEXTURE, 0},
 	{"GL_S3_s3tc", "gl_ext_compressed_textures", 0, 0, 0, QGL_ARB_TEXTURE_COMPRESSION},
 	{"GL_ARB_texture_compression", "gl_ext_compressed_textures", 0, 0, 0, 0},
 	{"GL_EXT_compiled_vertex_array", "gl_ext_compiled_vertex_array", NUM_GLFUNCS+4, 2, 0, 0},
-	{"GL_NV_fog_distance", "gl_ext_fog_distance_nv", 0, 0, 0, 0}
+	{"GL_NV_fog_distance", "gl_ext_fog_distance_nv", 0, 0, 0, 0},
+	{"GL_EXT_texture_lod_bias", NULL, 0, 0, 0, 0}
 #ifdef _WIN32
 ,
 	{"WGL_EXT_swap_control", NULL, NUM_GLFUNCS+6, 1, 0, 0}

@@ -94,7 +94,7 @@ void	Com_Printf (char *str, ...);
 void	Com_DPrintf (char *str, ...);
 void	Com_WPrintf (char *str, ...);
 void	Com_Error (int err_level, char *str, ...);
-qboolean	FS_FileExists (char *filename);
+bool	FS_FileExists (char *filename);
 basenamed_t*	FS_ListFiles (char *name, int *numfiles, int flags);
 int	FS_LoadFile (char *name, void **buf);
 void	FS_FreeFile (void *buf);

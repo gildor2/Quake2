@@ -1,26 +1,41 @@
 #include "gl_local.h"
+#include "gl_light.h"
 #include "gl_backend.h"
 #include "gl_math.h"
 
 
 /* NOTES:
- *  - we have used lightstyle 0 for sun and surface light
- *  - !! cached only style 0, in prescaled by style form; if style was changed before
- *    requesting light from grid, we will receive OLD light value (whould scale AFTER
- *    taking light from grid)
- *  - ambient light not scaled !
- *  - lightstyles used in a way, which provides double scale of computed light
- *    (which is used for model lighting src*color, allows double lighting)
- *  - now XXXX_SCALE==2 and lightstyle_scale==0.5
- *  - !! but color stored in a byte form (clamped before), which restricts us in max
- *    double-light == 255 (1.0f -- keep texture lights, no brighten texture!) even when
- *    overbright!=0 or modulate2x available
- *    (should store double-light * identityLight clamped by 255, and scale it after requesting
- *    255 -> 2.0, 128 -> 1.0; if lighting cannot be performed src*light*2 -- modulate by 2 HERE;
- *    - divide XXXX_SCALE by 2 (+ambient!) -OR- "lightStyles[i].value/255"->lightStyles[i]/512
- *      (needs ambient to be scaled by style 0!), modulate light in GL_ApplyEntitySpherelights()
- *      by 2 when needed (add arg to function: "bool scale")
+ *  - we have used lightstyle 0 for sun, ambient and surface light
  */
+
+#define LINEAR_SCALE		1.0f	// */ Cvar_VariableValue("lscale")
+#define INV_SCALE			1.0f	// */ Cvar_VariableValue("iscale")
+#define SURF_SCALE			1.0f	// */ Cvar_VariableValue("sscale")
+#define SUN_SCALE			1.0f	// */ Cvar_VariableValue("sscale") // directional light from sun
+#define SUN_AMBIENT_SCALE	0.75f	// */ Cvar_VariableValue("ascale") // ambient from sky surfaces
+#define AMBIENT_SCALE		0.25f	// */ Cvar_VariableValue("ascale") // global ambient
+
+#define MIN_POINT_LIGHT		2
+#define MIN_SURF_LIGHT		2
+
+#define CACHE_LIGHT_SCALE	2
+
+
+// lighting equations
+#define LIGHT_LINEAR_POINTLIGHT(intens,fade,dist,scale)		\
+	( ((intens) - (dist) * (fade)) * scale )
+#define DISTANCE_LINEAR_POINTLIGHT(intens,fade,light,scale)	\
+	( ((intens) - (light) / (scale)) / (fade) )
+
+#define LIGHT_INVERSE_POINTLIGHT(intens,dist,scale)		\
+	( (intens) / (dist) * (scale) )
+#define DISTANCE_INVERSE_POINTLIGHT(intens,light,scale)	\
+	( (intens) * (scale) / (light) )
+
+#define LIGHT_INV2_POINTLIGHT(intens,dist,scale)		\
+	( (intens) * (scale) / ((dist) * (dist)) )
+#define DISTANCE_INV2_POINTLIGHT(intens,light,scale)	\
+	( SQRTFAST((intens) * (scale) / (light)) )
 
 
 //#define TEST 1				//!!!!! REMOVE THIS
@@ -112,7 +127,7 @@ void GL_ShowLights (void)
 			else
 				dot = sl->spotDot;
 
-			scale = sqrt (1.0f - dot * dot) * DEBUG_SPOT_SIZE;
+			scale = SQRTFAST(1.0f - dot * dot) * DEBUG_SPOT_SIZE;
 			dot *= DEBUG_SPOT_SIZE;
 			MakeNormalVectors (sl->spotDir, right, up);
 			VectorMA (sl->origin, dot, sl->spotDir, forward);
@@ -138,7 +153,7 @@ void GL_ShowLights (void)
 			glEnd ();
 		}
 		if (gl_showLights->integer == 2)
-			DrawText3D (sl->origin, va("%g", sl->intens), VECTOR_ARG(sl->color));
+			DrawText3D (sl->origin, va("%g", sl->intens), RGBS(sl->color[0], sl->color[1], sl->color[2]));
 	}
 
 	for (i = 0, rl = map.surfLights; i < map.numSurfLights; i++, rl = rl->next)
@@ -163,6 +178,9 @@ void GL_ShowLights (void)
 
 		glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vecs);
 		glDrawElements (GL_LINES, 8, GL_UNSIGNED_INT, indexes);
+
+		if (gl_showLights->integer == 2)
+			DrawText3D (rl->center, va("%g\n%g", rl->intens, SQRTFAST(rl->maxDist2)), RGBS(rl->color[0], rl->color[1], rl->color[2]));
 	}
 
 	//?? show dlights
@@ -173,11 +191,9 @@ void GL_ShowLights (void)
 
 static void AddLight (vec3_t *axis, vec3_t dir, float scale, vec3_t color)
 {
-	float	v;
+	float	v, *vec;
+	int		i;
 
-#ifdef TEST	//!! del
-	if (test->integer & 1) return;//!!
-#endif
 #if 0
 	// light for sphere (will not work for sunlight! need correct dist); NOT WORKS NOW AT ALL
 	{
@@ -190,7 +206,7 @@ static void AddLight (vec3_t *axis, vec3_t dir, float scale, vec3_t color)
 	VectorNormalizeFast(dir2);					\
 	v = DotProduct (dir2, axis[n>>1]) * scale;	\
 	if (n&1) v = -v;							\
-	if (v > 0)	VectorMA (entityColorAxis[n], v, color, entityColorAxis[n]);
+	if (!IsNegative(v))	VectorMA (entityColorAxis[n], v, color, entityColorAxis[n]);
 		STEP(0); STEP(1); STEP(2); STEP(3); STEP(4); STEP(5);
 #undef STEP
 	}
@@ -198,10 +214,18 @@ static void AddLight (vec3_t *axis, vec3_t dir, float scale, vec3_t color)
 #else
 
 	// light for point
+#if 1
+#define STEP(n)								\
+	v = DotProduct (dir, axis[n]) * scale;	\
+	FAbsSign(v,v,i);						\
+	vec = entityColorAxis[n*2+i];			\
+	VectorMA (vec, v, color, vec);
+#else
 #define STEP(n)								\
 	v = DotProduct (dir, axis[n]) * scale;	\
 	if (v < 0)	VectorMA (entityColorAxis[n*2+1], -v, color, entityColorAxis[n*2+1]);	\
 	else		VectorMA (entityColorAxis[n * 2],  v, color, entityColorAxis[n * 2]);
+#endif
 	STEP(0); STEP(1); STEP(2);
 #undef STEP
 
@@ -209,10 +233,7 @@ static void AddLight (vec3_t *axis, vec3_t dir, float scale, vec3_t color)
 }
 
 
-#define LINEAR_SCALE	2.0f	// */ Cvar_VariableValue("lscale")
-#define INV_SCALE		4.0f	// ??2.0f  */ Cvar_VariableValue("iscale")
-#define SURF_SCALE		2.0f	// */ Cvar_VariableValue("sscale")
-#define SUN_SCALE		2.0f
+static int traces, fasttraces, badtraces;
 
 
 static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *vis)
@@ -229,7 +250,20 @@ static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *v
 	}
 
 	VectorSubtract (origin, sl->origin, dif);
-	dist = VectorNormalizeFast (dif);
+	dist = DotProduct (dif, dif);						// dist*dist
+	if (dist > sl->maxDist2) return;					// too far
+
+	if (sl->spot)
+	{
+		dist = sqrt (dist);								// should be more precisious
+		scale = 1.0f / dist;
+	}
+	else
+	{
+		scale = Q_rsqrt (dist);
+		dist = 1.0f / scale;
+	}
+	VectorScale (dif, scale, dif);
 
 	linearScale = LINEAR_SCALE;
 	invScale = INV_SCALE;
@@ -251,32 +285,24 @@ static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *v
 	switch (sl->type)
 	{
 	case sl_linear:
-		scale = (sl->intens - dist * sl->fade) * linearScale;
-//if (sl->spot) DrawTextLeft(va("org: %g %g %g -> obj: %g %g %g dist: %g int: %g scale: %g fade: %g",
-//VECTOR_ARG(sl->origin),VECTOR_ARG(origin),dist,sl->intens,scale,sl->fade),1,1,1);
+		scale = LIGHT_LINEAR_POINTLIGHT(sl->intens, sl->fade, dist, linearScale);
 		break;
 	case sl_inverse:
-		if (dist < 16) dist = 16;
-		scale = sl->intens / dist * invScale;
+		if (dist < 1) dist = 1;
+		scale = LIGHT_INVERSE_POINTLIGHT(sl->intens, dist, invScale);
 		break;
 	case sl_inverse2:
-		scale = sl->intens / (dist * dist);
-		DrawTextLeft ("inv2 slight",1, 0, 0);//!!
+		if (dist < 1) dist = 1;
+		scale = LIGHT_INV2_POINTLIGHT(sl->intens, dist, invScale);
 		break;
 	default:
-		DrawTextLeft ("unknown point sl.type", 1, 0, 0);
+		scale = 0;									// unknown type
 	}
 
-	scale = scale * vp.lightStyles[sl->style].value / 255.0f;		// 0--0.0, 128--1.0, 256--2.0
-//if (sl->spot) DrawTextLeft(va("  scale=%g",scale),1,1,0);
-	if (scale < 1) return;							// "scale" will convert 0..1 range to 0..255
+	scale = scale * vp.lightStyles[sl->style].value / 128.0f;		// 0--0.0, 128--1.0, 256--2.0
+	if (scale < MIN_POINT_LIGHT) return;							// "scale" will convert 0..1 range to 0..255
 
-#ifdef TEST //!! del
-	if (!(test->integer & 2))
-		CM_BrushTrace (sl->origin, origin, &br, 1);
-#else
 	if (CM_BrushTrace (sl->origin, origin, &br, 1)) return;
-#endif
 
 	AddLight (axis, dif, scale, sl->color);
 	if (gl_lightLines->value)
@@ -284,17 +310,16 @@ static void AddPointLight (gl_slight_t *sl, vec3_t origin, vec3_t *axis, byte *v
 }
 
 
-static qboolean needSunAmbient;
+static bool needSunAmbient;
 
 static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte *vis)
 {
 	surfacePlanar_t *pl;
 	float	dist, distN, intens, x, y, dx, dy;
 	float	w, h, w0, h0;
-	qboolean slope, ambient;
-	trace_t	tr;
+	bool	slope, ambient;
 	vec3_t	dir, dst;
-	int		br;
+	int		br[2], numBr;
 
 	if (vis && rl->cluster >= 0)
 	{
@@ -302,9 +327,6 @@ static void AddSurfaceLight (surfLight_t *rl, vec3_t origin, vec3_t *axis, byte 
 			return;										// light is culled with PVS
 	}
 
-#ifdef TEST //!!!
-if (test->integer & 64) return;
-#endif
 	ambient = rl->sky && needSunAmbient;				// sun ambient requirement
 	if (!rl->intens && !ambient) return;				// ambient-only surface
 
@@ -312,6 +334,20 @@ if (test->integer & 64) return;
 	distN = DISTANCE_TO_PLANE(origin, &pl->plane);
 	if (distN < 0.001f) return;							// backface culled
 
+	// fast distance culling
+#ifdef TEST	//!!
+	if (!ambient && !(test->integer & 1))
+#else
+	if (!ambient)
+#endif
+	{	// cull surface only if it is not for ambient sunlight
+		if (distN * distN > rl->maxDist2) return;		// too far from plane
+		VectorSubtract (origin, rl->center, dir);
+		dist = DotProduct (dir, dir);
+		if (dist > rl->maxDist2) return;				// too far from center
+	}
+
+	// determine nearest point on light surface rect
 	x = DotProduct (origin, pl->axis[0]);
 	y = DotProduct (origin, pl->axis[1]);
 	slope = false;
@@ -337,9 +373,6 @@ if (test->integer & 64) return;
 		dy = y - pl->maxs2[1];
 	}
 
-#ifdef TEST //!!!
-if (test->integer & 32) return;
-#endif
 	if (slope)
 	{
 		VectorScale (pl->axis[0], dx, dir);
@@ -354,13 +387,11 @@ if (test->integer & 32) return;
 		dist = distN;
 		intens = rl->intens / (distN * distN) * SURF_SCALE;
 	}
-#ifdef TEST //!!!
-if (test->integer & 16) return;
-#endif
 
-	intens *= vp.lightStyles[0].value / 255.0f;		// surface lights have style=0
-	if (intens < 1 && !ambient) return;
+	intens *= vp.lightStyles[0].value / 128.0f;			// surface lights have style=0
+	if (intens < MIN_SURF_LIGHT && !ambient) return;
 
+	// compensate short distances
 	w0 = pl->maxs2[0] - pl->mins2[0];
 	h0 = pl->maxs2[1] - pl->mins2[1];
 	w = min(w0, dist);
@@ -368,35 +399,19 @@ if (test->integer & 16) return;
 	if (w != w0 || h != h0)
 	{
 		intens *= w * h / (w0 * h0);
-		if (intens < 1 && !ambient) return;
+		if (intens < MIN_SURF_LIGHT && !ambient) return;
 	}
 
 	VectorMA (origin, -dist + 1, dir, dst);				// need to shift in light direction because of trace bugs with non-axial planes
-#ifdef TEST	//!!
-	if (!(test->integer & 2))
-		CM_BoxTrace (&tr, dst, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
-#else
-	CM_BoxTrace (&tr, dst, origin, vec3_origin, vec3_origin, 0, CONTENTS_SOLID);
-	if (tr.fraction < 1) return;
-#endif
+	numBr = CM_BrushTrace (origin, dst, br, 2);
+	if (numBr > 1) return;		// allow 0 or 1 brush intersection
 
-	if (tr.startsolid)		//?? may be, light source is placed in niche -- check the center of surface
+	if (numBr)					// may be, light source is placed in niche -- check the center of surface
 	{
 		if (intens < 10 || !slope) return;
-
-		//?? can optimize by checking niche while loading; or -- trace (size/distance < threshold) lights into center
-		// try to trace into surface center
-		x = (pl->mins2[0] + pl->maxs2[0]) / 2;
-		y = (pl->mins2[1] + pl->maxs2[1]) / 2;
-		VectorScale (pl->axis[0], x, dst);
-		VectorMA (dst, y, pl->axis[1], dst);
-		VectorMA (dst, pl->plane.dist + 1, pl->plane.normal, dst);
-#ifdef TEST	//!!
-		if (!(test->integer & 2))
-			CM_BrushTrace (dst, origin, &br, 1);
-#else
-		if (CM_BrushTrace (dst, origin, &br, 1)) return;
-#endif
+		VectorCopy (rl->center, dst);
+		if (CM_RefineBrushTrace (origin, dst, br, numBr)) return;	// 1st -- try to clip against previous brush
+		if (CM_BrushTrace (dst, origin, br, 1)) return;				// not clipped -- try other brushes too
 	}
 
 	if (ambient)
@@ -405,7 +420,7 @@ if (test->integer & 16) return;
 		vec3_t	c;
 		float	scale;
 
-		scale = vp.lightStyles[0].value / 255.0f;
+		scale = vp.lightStyles[0].value * SUN_AMBIENT_SCALE / 128.0f;
 		c[0] = map.sunColor[0] * map.sunAmbient[0] * scale;
 		c[1] = map.sunColor[1] * map.sunAmbient[1] * scale;
 		c[2] = map.sunColor[2] * map.sunAmbient[2] * scale;
@@ -425,16 +440,17 @@ static lightCell_t darkCell, outCell;	// zero-initialized
 
 #define NORMALIZE_AXIS
 
-static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
+static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 {
 	lightCell_t	**pcell, *cell;
 	gl_slight_t *sl;
 	surfLight_t *rl;
 	trace_t	tr;
 	int		i;
+	node_t	*leaf;
 	byte	*row;
 	float	*out, scale;
-	qboolean hasLight;
+	bool	hasLight;
 	vec3_t	*axis;
 	static vec3_t gridAxis[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 
@@ -454,7 +470,7 @@ static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 			byte	*src;
 
 			for (i = 0, src = cell->c[0], out = entityColorAxis[0]; i < 6*3; i++, src++, out++)
-				*out = *src;
+				*out = *src * CACHE_LIGHT_SCALE;
 			return cell != &outCell;
 		}
 		axis = gridAxis;
@@ -466,10 +482,10 @@ static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 		axis = ent->axis;
 	}
 
-	i = GL_PointInLeaf (origin)->cluster;
-	row = i < 0 ? NULL : map.visInfo + i * map.visRowSize;
+	leaf = GL_PointInLeaf (origin);
+	row = leaf->cluster < 0 ? NULL : map.visInfo + leaf->cluster * map.visRowSize;
 
-	scale = vp.lightStyles[0].value / 512.0f;
+	scale = vp.lightStyles[0].value * AMBIENT_SCALE / 128.0f;
 	for (i = 0; i < 6; i++)
 		VectorScale (map.ambientLight, scale, entityColorAxis[i]);
 
@@ -492,10 +508,10 @@ static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 		{
 			float	intens;
 
-			intens = map.sunLight * SUN_SCALE * vp.lightStyles[0].value / 255.0f;	// sun light have style=0
-			AddLight (axis, map.sunVec, map.sunLight, map.sunColor);
+			intens = map.sunLight * SUN_SCALE * vp.lightStyles[0].value / 128.0f;	// sun light have style=0
+			AddLight (axis, map.sunVec, intens, map.sunColor);
 			if (gl_lightLines->value)
-				LightLine (axis, tr.endpos, origin, map.sunColor, map.sunLight);
+				LightLine (axis, tr.endpos, origin, map.sunColor, intens);
 		}
 	}
 
@@ -537,10 +553,10 @@ static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 		for (i = 0, out = entityColorAxis[0]; i < 6*3; i++, out++)
 			if (*out > m) m = *out;
 		// normalize color axis and copy to grid
-		if (m > 255)
-			m = 255.0f / m;
+		if (m > 255 * CACHE_LIGHT_SCALE)
+			m = 255.0f / CACHE_LIGHT_SCALE / m;
 		else
-			m = 1;
+			m = 1.0f / CACHE_LIGHT_SCALE;
 		for (i = 0, out = entityColorAxis[0], dst = cell->c[0]; i < 6*3; i++, out++, dst++)
 			*dst = Q_round (*out * m);
 #else
@@ -548,9 +564,9 @@ static qboolean GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 		{
 			int		r, g, b;
 
-			r = Q_round (*out++);
-			g = Q_round (*out++);
-			b = Q_round (*out++);
+			r = Q_round (*out++ / CACHE_LIGHT_SCALE);
+			g = Q_round (*out++ / CACHE_LIGHT_SCALE);
+			b = Q_round (*out++ / CACHE_LIGHT_SCALE);
 			NORMALIZE_COLOR255(r, g, b);
 			*dst++ = r;
 			*dst++ = g;
@@ -604,7 +620,7 @@ void GL_LightForEntity (refEntity_t *ent)
 
 			if (gl_showgrid->integer)
 			{
-//				DrawTextLeft (va("pos: %g %g %g frac: %g %g %g", VECTOR_ARG(pos), VECTOR_ARG(frac)), 1, 1, 1);
+//				DrawTextLeft (va("pos: %g %g %g frac: %g %g %g", VECTOR_ARG(pos), VECTOR_ARG(frac)), RGB(1,1,1));
 				prevDepth = gl_state.currentDepthMode;
 				GL_DepthRange (DEPTH_NEAR);
 				glPushMatrix ();
@@ -636,7 +652,7 @@ void GL_LightForEntity (refEntity_t *ent)
 						c[j] = coord[j] + 1;
 						f *= frac[j];
 					}
-				if (!f) continue;			// will not add light anyway
+				if (!f) continue;			// will not add light from this cell
 				if (GetCellLight (origin, c, NULL))
 				{
 					totalFrac += f;
@@ -674,13 +690,23 @@ void GL_LightForEntity (refEntity_t *ent)
 			memset (entityColorAxis, 0, sizeof(entityColorAxis));
 			for (i = 0; i < 6; i++)
 			{
-				float	v;
+				float	v, *dst;
+				int		side;
 
-#define STEP(n)						\
+#if 1
+#define STEP(n)							\
+				v = ent->axis[n][i>>1];	\
+				FAbsSign(v,v,side);		\
+				side ^= i & 1;			\
+				dst = entityColorAxis[n*2+side]; \
+				VectorMA(dst, v, accum[i], dst);
+#else
+#define STEP(n)							\
 				v = ent->axis[n][i>>1];	\
 				if (i & 1) v = -v;		\
-				if (v < 0)	VectorMA (entityColorAxis[n*2+1], -v, accum[i], entityColorAxis[n*2+1]);	\
+				if (v < 0)	VectorMA (entityColorAxis[n*2+1], -v, accum[i], entityColorAxis[n*2+1]); \
 				else		VectorMA (entityColorAxis[n * 2],  v, accum[i], entityColorAxis[n * 2]);
+#endif
 				STEP(0); STEP(1); STEP(2);
 #undef STEP
 			}
@@ -768,8 +794,7 @@ void GL_LightForEntity (refEntity_t *ent)
 }
 
 
-//!! rename; + bool arg: "modulate by 2"
-void GL_ApplyEntitySpherelights (color_t *dst)
+void GL_DiffuseLight (color_t *dst, float lightScale)
 {
 	int		i, j;
 	bufExtra_t *ex;
@@ -778,7 +803,7 @@ void GL_ApplyEntitySpherelights (color_t *dst)
 #ifdef TEST	//!!!
 	if (test->integer & 4) return;
 #endif
-	light = gl_config.identityLightValue_f * 2;			// *2 -- because 1 == double light (similar to lightmaps)
+	light = lightScale * 2 * gl_config.identityLightValue_f;	// *2 -- because 1 == double light (similar to lightmaps)
 	for (i = 0, ex = gl_extra; i < gl_numExtra; i++, ex++)
 	{
 		float	*norm, *axis, val;
@@ -819,5 +844,108 @@ void GL_ApplyEntitySpherelights (color_t *dst)
 
 		for (j = 0; j < ex->numVerts; j++, dst++)		// normally, here will be only 1 iteration ...
 			dst->rgba = c.rgba;							// just put computed color
+	}
+}
+
+
+/*-----------------------------------------------------------------------------
+	Initialization
+-----------------------------------------------------------------------------*/
+
+void GL_InitLightGrid (void)
+{
+	int		i;
+
+	for (i = 0; i < 3; i++)
+	{
+		map.gridMins[i] = Q_floor (map.nodes[0].mins[i] / LIGHTGRID_STEP);
+		map.mapGrid[i] = Q_ceil (map.nodes[0].maxs[i] / LIGHTGRID_STEP) - map.gridMins[i];
+	}
+	map.numLightCells = 0;
+	map.lightGridChain = CreateMemoryChain ();
+	map.lightGrid = AllocChainBlock (map.lightGridChain, sizeof(lightCell_t*) * map.mapGrid[0] * map.mapGrid[1] * map.mapGrid[2]);
+}
+
+
+static void GetSurfLightCluster (void)
+{
+	node_t	*n;
+	surfLight_t *sl;
+	surfaceCommon_t **s;
+	surfacePlanar_t *pl;
+	int		i, j, cl;
+
+	for (i = 0, sl = map.surfLights; i < map.numSurfLights; i++, sl = sl->next)
+		sl->cluster = -2;							// uninitialized
+
+	for (i = 0, n = map.nodes + map.numNodes; i < map.numLeafNodes - map.numNodes; i++, n++)
+	{
+		cl = n->cluster;
+		for (j = 0, s = n->leafFaces; j < n->numLeafFaces; j++, s++)
+			if ((*s)->type == SURFACE_PLANAR && !(*s)->owner)		//?? other types
+			{
+				pl = (*s)->pl;
+				if (pl->light)
+				{
+					if (pl->light->cluster == -2)	// uninitialized
+						pl->light->cluster = cl;
+					else if (pl->light->cluster != cl)
+						pl->light->cluster = -1;	// single surface in few clusters
+				}
+			}
+	}
+}
+
+
+void GL_PostLoadLights (void)
+{
+	int		i;
+	gl_slight_t *sl;
+	surfLight_t *rl;
+	float	f;
+
+	for (i = 0, sl = map.slights; i < map.numSlights; i++, sl++)
+	{
+		sl->cluster = GL_PointInLeaf (sl->origin)->cluster;
+
+		switch (sl->type)
+		{
+		case sl_linear:
+			if (sl->fade < 0.01f) sl->fade = 0.01f;
+			f = DISTANCE_LINEAR_POINTLIGHT(sl->intens, sl->fade, MIN_POINT_LIGHT, LINEAR_SCALE);
+			sl->maxDist2 = f * f;
+			break;
+		case sl_inverse:
+			f = DISTANCE_INVERSE_POINTLIGHT(sl->intens, MIN_POINT_LIGHT, INV_SCALE);
+			sl->maxDist2 = f * f;
+			break;
+		case sl_inverse2:
+			f = DISTANCE_INV2_POINTLIGHT(sl->intens, MIN_POINT_LIGHT, INV_SCALE);
+			sl->maxDist2 = f * f;
+			Com_Printf ("inv2 slight at %g %g %g\n", VECTOR_ARG(sl->origin));
+			break;
+		default:
+			Com_Printf ("unknown point sl.type at %g %g %g\n", VECTOR_ARG(sl->origin));
+		}
+	}
+
+	GetSurfLightCluster ();
+	for (i = 0, rl = map.surfLights; i < map.numSurfLights; i++, rl = rl->next)
+	{
+		float	x, y;
+		surfacePlanar_t *pl;
+		vec3_t	center;
+
+		pl = rl->pl;
+		x = (pl->mins2[0] + pl->maxs2[0]) / 2;
+		y = (pl->mins2[1] + pl->maxs2[1]) / 2;
+		VectorScale (pl->axis[0], x, center);
+		VectorMA (center, y, pl->axis[1], center);
+		VectorMA (center, pl->plane.dist + 1, pl->plane.normal, rl->center);
+
+		f = DISTANCE_INV2_POINTLIGHT(rl->intens, MIN_SURF_LIGHT, SURF_SCALE);	// max distance by normal
+		x = (pl->maxs2[0] - pl->mins2[0]) / 2;		// max distance from center to be at normal
+		y = (pl->maxs2[1] - pl->mins2[1]) / 2;
+		rl->maxDist2 = f*f + x*x + y*y;
 	}
 }

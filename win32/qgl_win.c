@@ -32,7 +32,7 @@ void QGL_Shutdown (void)
 /*----------------- QGL_Init ---------------------*/
 
 
-qboolean QGL_Init (const char *dllname)
+bool QGL_Init (const char *dllname)
 {
 	int		i;
 	dummyFunc_t func;
@@ -60,7 +60,7 @@ qboolean QGL_Init (const char *dllname)
 }
 
 
-static qboolean ExtensionSupported (const char *name)
+static bool ExtensionSupported (const char *name)
 {
 	int		len;
 	const char *s;
@@ -112,7 +112,7 @@ void QGL_InitExtensions (void)
 
 	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 	{
-		qboolean enable;
+		bool	enable;
 		int		j;
 
 		enable = false;

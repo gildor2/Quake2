@@ -300,9 +300,9 @@ void TexEnvi (GLenum target, GLenum pname, GLenum param) ARGS	// really, param i
 //void TexGeniv (GLenum coord, GLenum pname, const GLint *params);
 //void TexImage1D (GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
 void TexImage2D (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) ARGS
-void TexParameterf (GLenum target, GLenum pname, GLfloat param) ARGS
+//void TexParameterf (GLenum target, GLenum pname, GLfloat param) ARGS
 //void TexParameterfv (GLenum target, GLenum pname, const GLfloat *params);
-//void TexParameteri (GLenum target, GLenum pname, GLint param) ARGS
+void TexParameteri (GLenum target, GLenum pname, GLint param) ARGS
 //void TexParameteriv (GLenum target, GLenum pname, const GLint *params);
 //void TexSubImage1D (GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels);
 void TexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) ARGS
@@ -388,12 +388,12 @@ void ClientActiveTextureARB (GLenum texture) ARGS
 #cvar gl_ext_texture_env_combine
 #require GL_ARB_multitexture
 #prefer GL_ARB_texture_env_combine
-#prefer GL_NV_texture_env_combine4
+//?? #prefer GL_NV_texture_env_combine4
 
 #name GL_ARB_texture_env_combine
 #cvar gl_ext_texture_env_combine
 #require GL_ARB_multitexture
-#prefer GL_NV_texture_env_combine4
+//?? #prefer GL_NV_texture_env_combine4
 
 #name GL_NV_texture_env_combine4
 #cvar gl_ext_texture_env_combine_nv
@@ -414,6 +414,8 @@ void UnlockArraysEXT (void);
 
 #name GL_NV_fog_distance
 #cvar gl_ext_fog_distance_nv
+
+#name GL_EXT_texture_lod_bias
 
 #platform win32
 

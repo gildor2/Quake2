@@ -19,7 +19,7 @@ typedef struct refEntity_s
 	int		flags;
 	model_t	*model;
 	float	dist2;						// Z-coordinate of model
-	qboolean visible;					// valid for current frame
+	bool	visible;					// valid for current frame
 
 	vec3_t	center, size2;				// bounding box: center and (mins-maxs)/2
 	float	radius;
@@ -29,8 +29,8 @@ typedef struct refEntity_s
 			// position info
 			vec3_t	origin;
 			vec3_t	axis[3];
-			byte	worldMatrix;		// bool
-			byte	mirror;				// bool
+			bool	worldMatrix;
+			bool	mirror;
 			byte	frustumMask;		//?? remove
 			vec3_t	modelvieworg;		// vieworg in model coordinate system
 			float	modelMatrix[4][4];	// modelview matrix

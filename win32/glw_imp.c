@@ -39,15 +39,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "glw_win.h"
 #include "winquake.h"
 
-static qboolean GLimp_SwitchFullscreen( int width, int height );
-qboolean GLimp_InitGL (void);
+static bool GLimp_SwitchFullscreen (int width, int height);
+bool GLimp_InitGL (void);
 
 glwstate_t glw_state;
 
 extern cvar_t *r_fullscreen;
 extern cvar_t *vid_ref;
 
-static qboolean VerifyDriver (void)
+static bool VerifyDriver (void)
 {
 	char buffer[1024];
 
@@ -60,7 +60,7 @@ static qboolean VerifyDriver (void)
 }
 
 
-static qboolean GLimp_CreateWindow (int width, int height, qboolean fullscreen)
+static bool GLimp_CreateWindow (int width, int height, bool fullscreen)
 {
 	glw_state.hWnd = (HWND) Vid_CreateWindow (width, height, fullscreen);
 	if (!glw_state.hWnd)
@@ -79,7 +79,7 @@ static qboolean GLimp_CreateWindow (int width, int height, qboolean fullscreen)
 /*
  * GLimp_SetMode
  */
-int GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen)
+int GLimp_SetMode (int *pwidth, int *pheight, int mode, bool fullscreen)
 {
 	int		width, height, colorBits;
 
@@ -218,13 +218,13 @@ GLimp_Gamma
 =============
 */
 
-static qboolean gammaStored, gammaValid;
-static unsigned short gammaRamp[3*256], newGamma[3*256];
+static bool gammaStored, gammaValid;
+static WORD gammaRamp[3*256], newGamma[3*256];
 
 extern cvar_t *r_ignorehwgamma;
 
 
-qboolean GLimp_HasGamma (void)
+bool GLimp_HasGamma (void)
 {
 	if (r_ignorehwgamma->integer) return false;
 
@@ -291,46 +291,63 @@ static void UpdateGamma (void)
 }
 
 
+//#define FIND_GAMMA			// define for replace GAMMA_ANGLE and GAMMA_OFFSET with 'a' and 'b' cvars
+
 void GLimp_SetGamma (float gamma, float intens)
 {
 	int		i, v;
 	float	invGamma, overbright;
 	float	contr, bright;
+#ifdef FIND_GAMMA
+	float	a, b;			// y = ax + b
+
+	a = Cvar_Get("a","1",0)->value;
+	b = Cvar_Get("b","0.5",0)->value;
+#endif
 
 	if (!gammaStored) return;
 
 	gamma = bound(gamma, 0.5, 3);
-	if (intens < 0.1f)	//?? remove
-		intens = 0.1f;
-	contr = bound(r_contrast->value, 0.3, 1.8);
-	bright = bound(r_brightness->value, 0.3, 1.8);
+	contr = bound(r_contrast->value, 0.5, 1.5);
+	bright = bound(r_brightness->value, 0.5, 1.5);
 
 //	DebugPrintf("set gamma %g, %g\n", gamma, intens);//!!
 
 	invGamma = 1.0f / gamma;
-	overbright = (float) (1 << gl_config.overbright);
+	overbright = gl_config.overbright + 1;
 	for (i = 0; i < 256; i++)
 	{
 		float	tmp;
 
-		tmp = (((i << 8) * overbright - 32768) * contr + 32768) * bright;
-		if (invGamma == 1.0)
-			v = Q_round (tmp);
-		else
-			v = Q_round (65535.0f * pow (tmp / 65535.5f, invGamma));
+#if 0
+		tmp = (i / 255.0f * overbright - 0.5f) * contr + 0.5f;
+		if (tmp < 0) tmp = 0;					// without this, can get semi-negative picture when r_gamma=0.5 (invGamma=2)
+		v = Q_round (65535.0f * (pow (tmp, invGamma) + bright - 1));
+#else
+		// taken from UT2003
+		// note: ut_br = br-0.5, ut_contr = contr-0.5 (replace later: norm. bright=0.5, contr=0.5) !!
+		tmp = pow (i * overbright / 255.0f, invGamma) * contr * 65535;
+		tmp = tmp + (bright - 1) * 32768 - (contr - 0.5) * 32768 + 16384;
+		v = Q_round (tmp);
+#endif
 
 		if (_winmajor >= 5)						//?? may not work in DLL
 		{
 			int		m;
 
 			// Win2K/XP performs checking of gamma ramp and may reject it (clamp with (0,MAX_GAMMA)-(255,FFFF) line)
-#define MAX_GAMMA		0x8000					// don't works with higher values
-#define GAMMA_STEP		((0x10000 - MAX_GAMMA) / 256)
-			m = i * GAMMA_STEP + MAX_GAMMA;
-			v = bound(v, 0, m);
+#ifndef FIND_GAMMA
+			// clamp gamma curve with line 'y=x*GAMMA_ANGLE+GAMMA_OFFSET'
+#define GAMMA_ANGLE		1
+#define GAMMA_OFFSET	0.5
+			m = i * (GAMMA_ANGLE*256) + (int)(GAMMA_OFFSET*65536);
+			if (v > m) v = m;
+#else
+			m = Q_round (i * a * 256 + b * 65535);
+			if (v > m) v = m;
+#endif
 		}
-		else
-			v = bound(v, 0, 65535);
+		v = bound(v, 0, 65535);
 
 		newGamma[i] = newGamma[i+256] = newGamma[i+512] = v;
 	}
@@ -431,7 +448,7 @@ int GLimp_Init (void)
 	return true;
 }
 
-static qboolean GLimp_SetPixelFormat (void)
+static bool GLimp_SetPixelFormat (void)
 {
 	PIXELFORMATDESCRIPTOR pfd =			// non-static var
 	{
@@ -545,7 +562,7 @@ static qboolean GLimp_SetPixelFormat (void)
 }
 
 
-static qboolean GLimp_InitGL (void)
+static bool GLimp_InitGL (void)
 {
 	// figure out if we're running on a minidriver or not
 	if (strstr (gl_driver->string, "opengl32"))

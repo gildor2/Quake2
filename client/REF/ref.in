@@ -41,7 +41,7 @@ void	Com_Error (int err_level, char *str, ...);
 //?? unused now:	void	KeyEvent (int key, qboolean down, unsigned time);
 
 //---------- files ----------
-qboolean FS_FileExists (char *filename);
+bool	FS_FileExists (char *filename);
 basenamed_t* FS_ListFiles (char *name, int *numfiles, int flags);
 int	FS_LoadFile (char *name, void **buf);
 void	FS_FreeFile (void *buf);

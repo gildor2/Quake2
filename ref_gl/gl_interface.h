@@ -10,13 +10,13 @@ typedef struct
 	char	*extensionsString;
 
 	int		maxTextureSize;
-	int		extensionMask;
+	unsigned extensionMask;
 
 	// multitexturing
 	int		maxActiveTextures;		// == 1 if no multitexturing
 
-	qboolean doubleModulateLM;		// when false, lightmaps lightscaled by 2 (hardware unable to perform src*dst*2 blend)
-	qboolean multiPassLM;			// when false, upload dynamic lightmaps
+	bool	doubleModulateLM;		// when false, lightmaps lightscaled by 2 (hardware unable to perform src*dst*2 blend)
+	bool	multiPassLM;			// when false, upload dynamic lightmaps
 
 	// texture compression formats (0 if unavailable)
 	int		formatSolid;			// RGB (no alpha)
@@ -24,19 +24,19 @@ typedef struct
 	int		formatAlpha1;			// RGB_A1 (1 bit for alpha)
 
 	int		colorBits;
-	byte	fullscreen;
+	bool	fullscreen;
 	byte	prevMode;				// last valid video mode
 	byte	prevBPP;
-	byte	prevFS;
+	bool	prevFS;
 
-	byte	consoleOnly;			// true if graphics disabled (can use ref_flags & REF_CONSOLE_ONLY !!)
+	bool	consoleOnly;			// true if graphics disabled (can use ref_flags & REF_CONSOLE_ONLY !!)
 
 	// gamma
-	qboolean deviceSupportsGamma;
+	bool	deviceSupportsGamma;
 	int		overbright;				// 0 - normal, 1 - double gamma
 	int		identityLightValue;		// 255/(1<<overbright)
 	float	identityLightValue_f;	// 1.0/(1<<overbright)
-	qboolean vertexLight;
+	bool	vertexLight;
 
 	// tables
 	unsigned tbl_8to32[256];		// palette->RGBA
@@ -63,34 +63,39 @@ typedef enum
 } gl_depthMode_t;
 
 
+//!! make struc tmuState_t, gl_state_t will have 'tmuState_t _old[32], _new[32]'; GL_SelectTexture() will set
+//!! 'tmuState_t *currTmu'; faster copying old->new for GL_Lock, faster GL_Unlock and other funcs ?
+
 typedef struct
 {
-	qboolean locked;
+	bool	locked;
 	// up to 32 texture units supports by OpenGL 1.3
-	int		currentTmu;
+	byte	currentTmu;
 	image_t	*currentBinds[32];
 	unsigned currentEnv[32];
-	byte	texCoordEnabled[32];
-	byte	textureEnabled[32];
+	bool	texCoordEnabled[32];
+	bool	textureEnabled[32];
 	color_t	texEnvColor[32];
+	float	mipBias[32];
 	// fields for locked state
-	int		newTmu;
+	byte	newTmu;
 	image_t	*newBinds[32];
 	unsigned newEnv[32];
-	byte	newTexCoordEnabled[32];
-	byte	newTextureEnabled[32];
+	bool	newTexCoordEnabled[32];
+	bool	newTextureEnabled[32];
 	void	*newTCPointer[32];
 	color_t	newEnvColor[32];
+	float	newMipBias[32];
 
-	int		currentState;
+	unsigned currentState;
 	gl_cullMode_t currentCullMode;
 	gl_depthMode_t currentDepthMode;
-	qboolean inverseCull;
-	qboolean fogEnabled;
+	bool	inverseCull;
+	bool	fogEnabled;
 
 	int		maxUsedShaderIndex;
-	qboolean is2dMode;
-	qboolean have3d;
+	bool	is2dMode;
+	bool	have3d;
 } glstate_t;
 
 extern glconfig_t  gl_config;
@@ -169,7 +174,7 @@ extern glstate_t   gl_state;
 #define TEXENV_ONE_MINUS_PREVALPHA	8
 #define TEXENV_CONSTANT				9		// environment color
 #define TEXENV_ONE_MINUS_CONSTANT	10
-#define TEXENV_COLOR2				11		// primary color     !!! rename to _COLOR (temporary name to remove old name usage)
+#define TEXENV_COLOR				11		// primary color
 #define TEXENV_ONE_MINUS_COLOR		12
 // combine4_nv:
 #define TEXENV_ZERO					13
@@ -202,6 +207,7 @@ void	GL_BindForce (image_t *tex);
 void	GL_SelectTexture (int tmu);
 void	GL_TexCoordPointer (void *ptr);
 void	GL_TexEnv (unsigned env);
+void	GL_TexMipBias (float f);
 void	GL_TexEnvColor (color_t *c);
 void	GL_SetMultitexture (int level);
 void	GL_DisableTexCoordArrays (void);
@@ -209,7 +215,7 @@ void	GL_DisableTexCoordArrays (void);
 void	GL_CullFace (gl_cullMode_t mode);
 void	GL_DepthRange (gl_depthMode_t mode);
 void	GL_State (int state);
-void	GL_EnableFog (qboolean enable);
+void	GL_EnableFog (bool enable);
 
 void	GL_SetDefaultState (void);
 void	GL_Set2DMode (void);

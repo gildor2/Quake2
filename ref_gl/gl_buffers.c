@@ -20,7 +20,7 @@ void *GL_AllocDynamicMemory (int size)
 
 	if (dynamicBufferSize + size > MAX_DYNAMIC_BUFFER)
 	{
-		DrawTextLeft (va("R_AllocDynamicMemory(%d) failed\n", size), 1, 0, 0);
+		DrawTextLeft (va("R_AllocDynamicMemory(%d) failed\n", size), RGB(1, 0, 0));
 //		Com_Error (ERR_FATAL, "R_AllocDynamicMemory(%d) failed\n", size);
 		lastDynamicPtr = NULL;
 		return NULL;

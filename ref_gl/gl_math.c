@@ -82,7 +82,7 @@ void WorldToModelCoord (vec3_t world, refEntity_t *e, vec3_t local)
 
 // 3/12 + 4 * 3 = 15/24 dots (worldMatrix/non-worldMatrix)
 // In: ent -- axis + center, center+size2 = maxs, center-size2 = mins
-qboolean GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2], qboolean clamp)
+bool GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2], bool clamp)
 {
 	vec3_t	axis[3], tmp, v;
 	float	x0, y0, z0;

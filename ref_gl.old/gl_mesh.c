@@ -556,7 +556,7 @@ void R_DrawAliasModel (entity_t *e)
 		if (currententity->flags & RF_SHELL_BLUE)
 			shadelight[2] = 1.0;
 	}
-	else if (currententity->flags & RF_FULLBRIGHT)
+	else if (currententity->flags & RF_FULLBRIGHT || r_fullbright->integer)
 	{
 		for (i=0 ; i<3 ; i++)
 			shadelight[i] = 1.0;

@@ -6,7 +6,7 @@ static void *cvar_chain;
 
 qboolean userinfo_modified;
 
-static qboolean cheats = true;			// will be disabled on multiplayer game start
+static bool cheats = true;				// will be disabled on multiplayer game start
 	// NOTE: this is CVAR cheats, not server cheats
 
 
@@ -72,7 +72,7 @@ static void Cvar_SetString (cvar_t *var, char *str)
 Cvar_InfoValidate
 ============
 */
-static qboolean Cvar_InfoValidate (char *s)
+static bool Cvar_InfoValidate (char *s)
 {
 	if (strchr (s, '\\') || strchr (s, '\"') || strchr (s, ';'))
 		return false;
@@ -298,7 +298,7 @@ void Cvar_GetVars (cvarInfo_t *vars, int count)
 Cvar_Set2
 ============
 */
-static cvar_t *Cvar_Set2 (char *var_name, char *value, int flags, qboolean force)
+static cvar_t *Cvar_Set2 (char *var_name, char *value, int flags, bool force)
 {
 	cvar_t	*var;
 
@@ -458,13 +458,13 @@ float Cvar_Clamp (cvar_t *cvar, float low, float high)
 	{
 		Cvar_SetValue (cvar->name, low);
 		return low;
-    }
-    if (cvar->value > high)
-    {
-    	Cvar_SetValue (cvar->name, high);
-    	return high;
-    }
-    return cvar->value;
+	}
+	if (cvar->value > high)
+	{
+		Cvar_SetValue (cvar->name, high);
+		return high;
+	}
+	return cvar->value;
 }
 
 float Cvar_ClampName (char *name, float low, float high)
@@ -809,16 +809,16 @@ static void Cvar_Add_f (void)
 	cvar_t	*var;
 	char	*varName, *flags, flag;
 	float	min, max, value;
-	qboolean rot, force;
+	bool	wrap, force;							//?? rot[ate] -> wr[ap]
 
 	c = Cmd_Argc();
 	if (c != 3 && c != 5 && c != 6)
 	{
-		Com_Printf ("Usage: add <variable> <increment> [<min> <max> [r][f]]\n");
+		Com_Printf ("Usage: add <variable> <increment> [<min> <max> [w][f]]\n");
 		return;
 	}
 
-	rot = force = false;
+	wrap = force = false;
 	if (c == 6)
 	{
 		flags = Cmd_Argv(5);
@@ -826,8 +826,8 @@ static void Cvar_Add_f (void)
 		{
 			switch (flag = *flags++)
 			{
-			case 'r':
-				rot = true;
+			case 'w':
+				wrap = true;
 				break;
 			case 'f':
 				force = true;
@@ -862,18 +862,19 @@ static void Cvar_Add_f (void)
 			Com_WPrintf ("add: MIN >= MAX\n");
 			return;
 		}
-		if (rot)
+		// check bounds with a small epsilon to avoid FP precision bugs with small numbers
+		if (wrap)
 		{	// rotate value
-			if (value > max)
+			if (value > max + 0.0001f)
 				value = min;
-			else if (value < min)
+			else if (value < min - 0.0001f)
 				value = max;
 		}
 		else
 		{	// limit value
-			if (value > max)
+			if (value > max + 0.0001f)
 				value = max;
-			else if (value < min)
+			else if (value < min - 0.0001f)
 				value = min;
 		}
 	}

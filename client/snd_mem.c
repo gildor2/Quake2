@@ -109,19 +109,14 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 
 	// see if still in memory
 	sc = s->cache;
-	if (sc)
-		return sc;
+	if (sc) return sc;
 
 	// see if already tryed to load, but file not found
-	if (s->absent)
-		return NULL;
+	if (s->absent) return NULL;
 
 //	Com_Printf ("S_LoadSound: %x\n", (int)stackbuf);
 	// load it in
-	if (s->truename)
-		name = s->truename;
-	else
-		name = s->name;
+	name = s->truename ? s->truename : s->name;
 
 	if (name[0] == '#')
 		strcpy(namebuffer, &name[1]);
@@ -148,7 +143,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	}
 
 	stepscale = (float)info.rate / dma.speed;
-	len = info.samples / stepscale;
+	len = Q_round (info.samples / stepscale);
 
 	len = len * info.width * info.channels;
 

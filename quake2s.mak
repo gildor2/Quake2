@@ -292,6 +292,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\vid_menu.obj" \
 	"$(INTDIR)\gl_backend.obj" \
 	"$(INTDIR)\gl_buffers.obj" \
+	"$(INTDIR)\gl_frontend.obj" \
 	"$(INTDIR)\gl_image.obj" \
 	"$(INTDIR)\gl_interface.obj" \
 	"$(INTDIR)\gl_light.obj" \
@@ -302,7 +303,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\gl_poly.obj" \
 	"$(INTDIR)\gl_shader.obj" \
 	"$(INTDIR)\gl_sky.obj" \
-	"$(INTDIR)\gl_frontend.obj" \
 	"$(INTDIR)\glw_imp.obj" \
 	"$(INTDIR)\qgl_win.obj" \
 	".\release\q_shwin.obj" \
@@ -819,6 +819,7 @@ BSC32_SBRS= \
 	"$(INTDIR)\vid_menu.sbr" \
 	"$(INTDIR)\gl_backend.sbr" \
 	"$(INTDIR)\gl_buffers.sbr" \
+	"$(INTDIR)\gl_frontend.sbr" \
 	"$(INTDIR)\gl_image.sbr" \
 	"$(INTDIR)\gl_interface.sbr" \
 	"$(INTDIR)\gl_light.sbr" \
@@ -829,7 +830,6 @@ BSC32_SBRS= \
 	"$(INTDIR)\gl_poly.sbr" \
 	"$(INTDIR)\gl_shader.sbr" \
 	"$(INTDIR)\gl_sky.sbr" \
-	"$(INTDIR)\gl_frontend.sbr" \
 	"$(INTDIR)\glw_imp.sbr" \
 	"$(INTDIR)\qgl_win.sbr" \
 	"$(INTDIR)\q_shwin.sbr" \
@@ -980,6 +980,7 @@ LINK32_OBJS= \
 	"$(INTDIR)\vid_menu.obj" \
 	"$(INTDIR)\gl_backend.obj" \
 	"$(INTDIR)\gl_buffers.obj" \
+	"$(INTDIR)\gl_frontend.obj" \
 	"$(INTDIR)\gl_image.obj" \
 	"$(INTDIR)\gl_interface.obj" \
 	"$(INTDIR)\gl_light.obj" \
@@ -990,7 +991,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\gl_poly.obj" \
 	"$(INTDIR)\gl_shader.obj" \
 	"$(INTDIR)\gl_sky.obj" \
-	"$(INTDIR)\gl_frontend.obj" \
 	"$(INTDIR)\glw_imp.obj" \
 	"$(INTDIR)\qgl_win.obj" \
 	"$(INTDIR)\q_shwin.obj" \

@@ -416,7 +416,7 @@ static void DrawFlag (int flag, flagInfo_t *info, int numFlags, char *prefix)
 
 	for (i = 0; i < numFlags; i++, info++)
 		if (flag & info->code)
-			re.DrawTextLeft (va("%s%s", prefix, info->name), 0.3, 0.6, 0.4);
+			re.DrawTextLeft (va("%s%s", prefix, info->name), RGB(0.3, 0.6, 0.4));
 #else
 	char	buf[256];
 	int		i;
@@ -431,15 +431,15 @@ static void DrawFlag (int flag, flagInfo_t *info, int numFlags, char *prefix)
 				Com_sprintf (ARRAY_ARG(buf), "%s%s", prefix, info->name);
 			if (strlen (buf) > 40)
 			{
-				re.DrawTextLeft (buf, 0.3, 0.6, 0.4);
+				re.DrawTextLeft (buf, RGB(0.3, 0.6, 0.4));
 				buf[0] = 0;
 			}
 			flag &= ~info->code;
 		}
 	if (buf[0])
-		re.DrawTextLeft (buf, 0.3, 0.6, 0.4);
+		re.DrawTextLeft (buf, RGB(0.3, 0.6, 0.4));
 	if (flag)
-		re.DrawTextLeft (va("%sUNK_%X", prefix, flag), 0.6, 0.3, 0.4);
+		re.DrawTextLeft (va("%sUNK_%X", prefix, flag), RGB(0.6, 0.3, 0.4));
 #endif
 }
 
@@ -456,10 +456,10 @@ static void DecodeContents (int i)
 #undef T
 	};
 
-//	re.DrawTextLeft ("Contents:", 0.4, 0.4, 0.6);
-//	re.DrawTextLeft ("---------", 0.4, 0.4, 0.6);
+//	re.DrawTextLeft ("Contents:", RGB(0.4, 0.4, 0.6));
+//	re.DrawTextLeft ("---------", RGB(0.4, 0.4, 0.6));
 	if (!i)
-		re.DrawTextLeft ("CONTENTS_EMPTY", 0.3, 0.6, 0.4);
+		re.DrawTextLeft ("CONTENTS_EMPTY", RGB(0.3, 0.6, 0.4));
 	else
 		DrawFlag (i, ARRAY_ARG(contentsNames), "CONTENTS_");
 }
@@ -524,28 +524,28 @@ static void DrawSurfInfo (void)
 
 	if (trace.fraction < 1.0)
 	{
-		re.DrawTextLeft ("Surface info:", 0.4, 0.4, 0.6);
-		re.DrawTextLeft ("-------------", 0.4, 0.4, 0.6);
+		re.DrawTextLeft ("Surface info:", RGB(0.4, 0.4, 0.6));
+		re.DrawTextLeft ("-------------", RGB(0.4, 0.4, 0.6));
 		re.DrawTextLeft (va("Point: %g  %g  %g", VECTOR_ARG(trace.endpos)),
-			0.2, 0.4, 1);
+			RGBA(0.2, 0.4, 1, 1));
 		surf = trace.surface;
 		if (surf->rname[0])		// non-null surface
 		{
-			re.DrawTextLeft (va("Texture: %s", surf->rname), 0.2, 0.4, 1);
+			re.DrawTextLeft (va("Texture: %s", surf->rname), RGB(0.2, 0.4, 1));
 			VectorCopy (trace.plane.normal, norm);
-			re.DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARG(norm)), 0.2, 0.4, 1);
+			re.DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARG(norm)), RGB(0.2, 0.4, 1));
 			if (surf->value)
-				re.DrawTextLeft (va("Value: %d", surf->value), 0.2, 0.4, 1);
+				re.DrawTextLeft (va("Value: %d", surf->value), RGB(0.2, 0.4, 1));
 			DrawFlag (surf->flags, ARRAY_ARG(surfNames), "SURF_");
 //#define SURF_KNOWN	(0xFF|SURF_ALPHA|SURF_DIFFUSE|SURF_SPECULAR|SURF_AUTOFLARE)
 //			if (surf->flags & ~SURF_KNOWN) // unknown flags
-//				re.DrawTextLeft (va("SURF_UNK_%X", surf->flags & ~SURF_KNOWN), 0.6, 0.3, 0.4);
+//				re.DrawTextLeft (va("SURF_UNK_%X", surf->flags & ~SURF_KNOWN), RGB(0.6, 0.3, 0.4));
 			// material
 			if (surf->material >= MATERIAL_FIRST && surf->material <= MATERIAL_LAST)
 				s = materialNames[surf->material];
 			else
 				s = "?? bad ??";
-			re.DrawTextLeft (va("Material: %s", s), 0.3, 0.6, 0.4);
+			re.DrawTextLeft (va("Material: %s", s), RGB(0.3, 0.6, 0.4));
 		}
 		DecodeContents (trace.contents);
 		if (trace.ent)
@@ -553,18 +553,18 @@ static void DrawSurfInfo (void)
 			entityState_t *ent;
 
 			ent = (entityState_t*)trace.ent;
-			re.DrawTextLeft ("Entity:", 0.4, 0.4, 0.6);
-			re.DrawTextLeft ("-------", 0.4, 0.4, 0.6);
-			re.DrawTextLeft (va("Origin: %g %g %g", VECTOR_ARG(ent->origin)), 0.4, 0.4, 0.6);
-			re.DrawTextLeft (va("fx: %X  rfx: %X", ent->effects, ent->renderfx), 0.2, 0.4, 1);
-			if (ent->modelindex)	re.DrawTextLeft (va("model: %s", ModelName (ent->modelindex)), 0.2, 0.4, 1);
-			if (ent->modelindex2)	re.DrawTextLeft (va("model2: %s", ModelName (ent->modelindex2)), 0.2, 0.4, 1);
-			if (ent->modelindex3)	re.DrawTextLeft (va("model3: %s", ModelName (ent->modelindex3)), 0.2, 0.4, 1);
-			if (ent->modelindex4)	re.DrawTextLeft (va("model4: %s", ModelName (ent->modelindex4)), 0.2, 0.4, 1);
+			re.DrawTextLeft ("Entity:", RGB(0.4, 0.4, 0.6));
+			re.DrawTextLeft ("-------", RGB(0.4, 0.4, 0.6));
+			re.DrawTextLeft (va("Origin: %g %g %g", VECTOR_ARG(ent->origin)), RGB(0.4, 0.4, 0.6));
+			re.DrawTextLeft (va("fx: %X  rfx: %X", ent->effects, ent->renderfx), RGB(0.2, 0.4, 1));
+			if (ent->modelindex)	re.DrawTextLeft (va("model: %s", ModelName (ent->modelindex)), RGB(0.2, 0.4, 1));
+			if (ent->modelindex2)	re.DrawTextLeft (va("model2: %s", ModelName (ent->modelindex2)), RGB(0.2, 0.4, 1));
+			if (ent->modelindex3)	re.DrawTextLeft (va("model3: %s", ModelName (ent->modelindex3)), RGB(0.2, 0.4, 1));
+			if (ent->modelindex4)	re.DrawTextLeft (va("model4: %s", ModelName (ent->modelindex4)), RGB(0.2, 0.4, 1));
 
 			CL_AddEntityBox (ent, 0xFF2020FF);
 		}
-		re.DrawTextLeft ("", 0, 0, 0);
+		re.DrawTextLeft ("", RGB(0, 0, 0));
 	}
 }
 
@@ -575,19 +575,19 @@ static void DrawOriginInfo (void)
 	vec3_t zero = {0, 0, 0};
 	int i;
 
-	re.DrawTextLeft ("Player position:", 0.4, 0.4, 0.6);
-	re.DrawTextLeft ("----------------", 0.4, 0.4, 0.6);
-	re.DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), 0.2, 0.4, 0.1);
+	re.DrawTextLeft ("Player position:", RGB(0.4, 0.4, 0.6));
+	re.DrawTextLeft ("----------------", RGB(0.4, 0.4, 0.6));
+	re.DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2, 0.4, 0.1));
 
 	AngleVectors (cl.refdef.viewangles, view, NULL, NULL);
-	re.DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARG(view)), 0.2, 0.4, 0.1);
+	re.DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARG(view)), RGB(0.2, 0.4, 0.1));
 
 	i = CM_PointLeafnum (cl.refdef.vieworg);
 	re.DrawTextLeft (va("Leaf number: %d, cluster: %i, area: %i",
 		i, CM_LeafCluster (i), CM_LeafArea (i)),
-		0.1, 0.2, 1);
+		RGB(0.1, 0.2, 1));
 	DecodeContents (CM_PointContents (cl.refdef.vieworg, 0));
-	re.DrawTextLeft ("", 0, 0, 0);	// empty line
+	re.DrawTextLeft ("", RGB(0, 0, 0));	// empty line
 }
 
 
@@ -635,7 +635,7 @@ static void DrawFpsInfo (void)
 	}
 
 	// draw info
-	re.DrawTextRight (va("FPS: %.2f  min: %.2f  max: %.2f", avgFps, minFps, maxFps), 0.8, 1, 0);
+	re.DrawTextRight (va("FPS: %.2f  min: %.2f  max: %.2f", avgFps, minFps, maxFps), RGB(0.8, 1, 0));
 }
 
 
@@ -903,7 +903,7 @@ void V_RenderView (float stereo_separation)
 	{
 		re.DrawTextLeft (va("ent:%d  lt:%d",	//?? particle stats (remove)
 			r_numentities, r_numdlights),
-			1, 1, 1);
+			RGB(1, 1, 1));
 	}
 
 	if (log_stats->integer && (log_stats_file != 0))

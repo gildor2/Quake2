@@ -470,7 +470,7 @@ particleBeam_t *CL_AllocParticleBeam (vec3_t start, vec3_t end, float radius, fl
 			b->radius = radius;
 			b->fadeTime = fadeTime;
 
-			b->color.rgba = 0xFFFFFFFF;
+			b->color.rgba = RGBA(1,1,1,1);
 			b->alpha = 1;
 			b->type = BEAM_RAILBEAM;
 			b->growSpeed = 0;
@@ -1745,25 +1745,19 @@ void CL_RailTrail (vec3_t start, vec3_t end)
 void CL_RailTrailExt (vec3_t start, vec3_t end, byte rType, byte rColor)
 {
 	particleBeam_t *b;
-#define c(r,g,b)	(r + (g<<8) + (b<<16) + (255<<24))
-#	define I 255
-#	define o 0
-static int colorTable[8] = {
-	c(23, 83, 111),	c(I, o, o),	c(o, I, o),	c(I, I, o),
-	c(o, o, I),	c(I, o, I),	c(o, I, I),	c(I, I, I)
+static unsigned colorTable[8] = {
+	RGB255(23, 83, 111), RGB(1,0,0), RGB(0,1,0), RGB(1,1,0),
+	RGB(0,0,1), RGB(1,0,1), RGB(0,1,1), RGB(1,1,1)
 };
-#	undef I
-#	undef o
 
 #	define I 255
 #	define o 128
-static int colorTable2[8] = {
-	c(I, I, I),	c(I, o, o),	c(o, I, o),	c(I, I, o),
-	c(o, o, I),	c(I, o, I),	c(o, I, I),	c(I, I, I)
+static unsigned colorTable2[8] = {
+	RGB255(I, I, I), RGB255(I, o, o), RGB255(o, I, o), RGB255(I, I, o),
+	RGB255(o, o, I), RGB255(I, o, I), RGB255(o, I, I), RGB255(I, I, I)
 };
 #	undef I
 #	undef o
-#undef c
 
 	if (!rType || !cls.newfx)
 	{

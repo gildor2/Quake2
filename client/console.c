@@ -13,31 +13,26 @@ typedef struct
 
 typedef struct
 {
-	qboolean wrapped;		// will be set to true after 1st buffer wrap
-	qboolean started;		// "false" if was no access to console
-	qboolean wordwrap;
+	bool	wrapped;		// will be set to true after 1st buffer wrap
+	bool	started;		// "false" if was no access to console
+	bool	wordwrap;
 
 	char	text[CON_TEXTSIZE * 2];	// first half - text, second - color
 	int		current;		// line where next message will be printed
 	int		x;				// offset in current line for next print
 	int		display;		// bottom of console displays this line
 
-	int		ormask;			// high bit mask for colored characters
-
 	int		totallines;		// total lines in console scrollback
 
 	int		startpos;		// points to begin of text buffer
 	int		endpos;			// text will be placed to endpos
-
-	float	cursorspeed;
 
 	int		vislines;
 
 	con_cache_t	disp;
 	con_cache_t	notif;
 
-	float	times[NUM_CON_TIMES];	// cls.realtime time the line was generated
-									// for transparent notify lines
+	int		times[NUM_CON_TIMES];	// cls.realtime time the line was generated
 } console_t;
 
 
@@ -48,7 +43,7 @@ static cvar_t	*con_wordwrap;
 static cvar_t	*con_colortext;
 
 
-static qboolean chat_team;
+static bool		chat_team;
 static char		chat_buffer[MAXCMDLINE];
 static int		chat_bufferlen = 0;
 
@@ -69,8 +64,8 @@ qboolean con_initialized;
 #define		WRAP_CHAR	(' ' + 32)
 
 
-// Functions DrawString/DrawAltString used for painting HUD
-void DrawStringCommon (int x, int y, const char *s, int mask)
+// Functions DrawString used for painting HUD
+void DrawStringCommon (int x, int y, const char *s)
 {
 	int color, c;
 
@@ -90,28 +85,20 @@ void DrawStringCommon (int x, int y, const char *s, int mask)
 			}
 		}
 		if (color != 7 && con_colortext->integer)
-			re.DrawCharColor (x, y, c, color);	// no mask if text colorized
+			re.DrawCharColor (x, y, c, color);
 		else
-			re.DrawCharColor (x, y, c ^ mask, 7);
+			re.DrawCharColor (x, y, c, 7);
 		x += 8;
 	}
 }
 
 
-// DrawString() and DrawAltString() used by HUD routines
+// DrawString() used by HUD routines
 void DrawString (int x, int y, const char *s)
 {
 	if (!cl_draw2d->integer)
 		return;
-	DrawStringCommon (x, y, s, 0);
-}
-
-
-void DrawAltString (int x, int y, const char *s)
-{
-	if (!cl_draw2d->integer)
-		return;
-	DrawStringCommon (x, y, s, 0x80);
+	DrawStringCommon (x, y, s);
 }
 
 
@@ -196,7 +183,7 @@ static void Con_Dump_f (void)
 
 	if (Cmd_Argc() != 2)
 	{
-		Com_Printf ("usage: condump <filename>\n");
+		Com_Printf ("Usage: condump <filename>\n");
 		return;
 	}
 
@@ -258,13 +245,13 @@ void Con_CheckResize (void)
 {
 	int		width, size, line, i, x;
 	char	c;
-	qboolean w;
+	bool	w;
 
 	w = (con_wordwrap && con_wordwrap->integer);
 	if (w != con.wordwrap)
 	{
 		linewidth = -1;					// force resize
-		con.wordwrap = w;
+		con.wordwrap = con_wordwrap->integer != 0;
 	}
 
 	width = (viddef.width >> 3) - 2;
@@ -277,8 +264,6 @@ void Con_CheckResize (void)
 
 	size = con.endpos - con.startpos;	// size of data in buffer
 	if (size < 0) size+= CON_TEXTSIZE;	// wrap buffer: endpos < startpos
-
-//	if (!size) return;					// no text in buffer
 
 	i = con.startpos;
 	x = 0;
@@ -373,11 +358,9 @@ static int FindLine (int lineno)
 }
 
 
-static void PlaceChar (char c, int color)
+static void PlaceChar (char c, byte color)
 {
 	int		size, i, x;
-
-	if (color != 7) c &= 127;			// disable mask for colorized text
 
 	// calculate free space in buffer
 	size = con.startpos - con.endpos;
@@ -455,20 +438,12 @@ Con_Print
 */
 void Con_Print (char *txt)
 {
-	int		mask, color;
+	byte	color;
 	char	c;
 
 	if (!con.started) Con_Clear_f ();
 
 	color = 7;
-
-	if (txt[0] == 1 || txt[0] == 2)
-	{
-		mask = 128;
-		txt++;
-	}
-	else
-		mask = 0;
 
 	while (c = *txt++)
 	{
@@ -490,9 +465,7 @@ void Con_Print (char *txt)
 			txt++;
 		}
 		else if (c == WRAP_CHAR)
-			c = ' '; // force WRAP_CHAR (or'ed space) to be a space
-		else if (c != '\r' && c != '\n' && c != ' ')	// do not OR this chars
-			c = c|mask|con.ormask;
+			c = ' ';									// force WRAP_CHAR (or'ed space) to be a space
 
 		PlaceChar (c, color);
 	}
@@ -531,7 +504,7 @@ static void Con_DrawInput (void)
 {
 	int		y, i, shift;
 	char	*text, c;
-	qboolean eoln;
+	bool	eoln;
 
 //	if (cls.key_dest == key_menu) return;
 //	if (cls.key_dest != key_console && cls.state == ca_active)
@@ -550,7 +523,7 @@ static void Con_DrawInput (void)
 
 	// draw it
 	if (!(*re.flags & REF_CONSOLE_ONLY))
-		y = con.vislines-22;
+		y = con.vislines - 22;
 	else
 		y = (viddef.height >> 3) - 2;
 
@@ -566,10 +539,18 @@ static void Con_DrawInput (void)
 		if ((i == editPos  - shift) && (curtime >> 8) & 1 &&
 //??			(cls.key_dest == key_console || cls.state != ca_active))
 			cls.key_dest != key_menu)
-			c = 11 + 128;		// cursor char
+		{
+			if (!(*re.flags & REF_CONSOLE_ONLY))
+			{
+				re.DrawCharColor ((i+1)<<3, y, c, 7);
+				re.DrawFill2 ((i+1)<<3, y+4, 8, 4, 0.2, 1, 0.3, 0.5);
+				continue;
+			}
+			c = 11 + 128;								// cursor char
+		}
 
 		if (!(*re.flags & REF_CONSOLE_ONLY))
-			re.DrawCharColor ((i+1)<<3, y, c, 7);	// do not colorize input
+			re.DrawCharColor ((i+1)<<3, y, c, 7);		// do not colorize input
 		else
 			re.DrawConCharColor (i+1, y, c, 7);
 	}
@@ -587,7 +568,7 @@ void Con_DrawNotify (qboolean drawBack)
 {
 	int		x, v, i, pos;
 	char	*s;
-	qboolean bgPaint;
+	bool	bgPaint;
 
 	if (*re.flags & REF_CONSOLE_ONLY || !cl_draw2d->integer)
 		return;
@@ -682,7 +663,7 @@ void Con_DrawConsole (float frac)
 	char	*text, c, dlbar[1024];
 	const char version[] = APPNAME " v" STR(VERSION);
 
-	lines = viddef.height * frac;
+	lines = Q_round (viddef.height * frac);
 	if (lines <= 0)
 		return;
 
@@ -855,7 +836,7 @@ void Con_DrawConsole (float frac)
 -----------------------------------------------------------------------------*/
 
 
-static qboolean iswordsym(char n)
+static bool iswordsym (char n)
 {
 	return (n >= '0' && n <= '9') || (n >= 'A' && n <= 'Z') || (n >= 'a' && n <= 'z') || n == '_';
 }

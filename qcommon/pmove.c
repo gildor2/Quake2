@@ -663,8 +663,7 @@ static void CatagorizePosition (void)
 	vec3_t		point;
 	int			cont;
 	trace_t		trace;
-	int			sample1;
-	int			sample2;
+	float		sample1, sample2;
 
 	// if the player hull point one unit down is solid, the player
 	// is on ground
@@ -672,7 +671,7 @@ static void CatagorizePosition (void)
 	// see if standing on something solid
 	point[0] = pml.origin[0];
 	point[1] = pml.origin[1];
-	point[2] = pml.origin[2] - 0.25;
+	point[2] = pml.origin[2] - 0.25f;
 
 	if (pml.velocity[2] > 180) //ZOID changed from 100 to 180 (ramp accel)
 	{	// NOTE: if disable this code, jumppads will be VERY buggy; and waterjump will be very high
@@ -741,7 +740,6 @@ static void CatagorizePosition (void)
 
 	point[2] = pml.origin[2] + pm->mins[2] + 1;
 	cont = pm->pointcontents (point);
-
 	if (cont & MASK_WATER)
 	{
 		pm->watertype = cont;

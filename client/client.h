@@ -342,9 +342,8 @@ extern	netadr_t	net_from;
 extern	sizebuf_t	net_message;
 
 // Draw colorized strings
-void	DrawStringCommon (int x, int y, const char *s, int mask);	// draw in any mode (used by menus/console)
+void	DrawStringCommon (int x, int y, const char *s);				// draw in any mode (used by menus/console)
 void	DrawString (int x, int y, const char *s);					// draw in 2d-enabled mode only (used for HUD)
-void	DrawAltString (int x, int y, const char *s);				// toggle high bit, draw in 2d-enabled mode donly
 qboolean CL_CheckOrDownloadFile (char *filename);
 
 void	CL_AddNetgraph (void);
@@ -475,7 +474,7 @@ void IN_Accumulate (void);
 
 void CL_ParseLayout (void);
 
-void CL_AddEntityBox (entityState_t *st, int rgba);
+void CL_AddEntityBox (entityState_t *st, unsigned rgba);
 
 
 //

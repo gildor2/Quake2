@@ -2,6 +2,7 @@
 #include "gl_model.h"
 #include "gl_lightmap.h"
 #include "gl_image.h"
+#include "gl_math.h"
 
 
 static int lightmapsNum, currentLightmapNum;
@@ -15,7 +16,7 @@ color_t lmMinlight;
 void LM_Init (void)
 {
 	lightmapsNum = currentLightmapNum = 0;
-	lmMinlight.rgba = 0xFFFFFFFF;
+	lmMinlight.rgba = RGBA(1,1,1,1);
 }
 
 
@@ -104,7 +105,28 @@ lightmapBlock_t *LM_NextBlock (void)
 }
 
 
-qboolean LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl)
+void LM_CheckMinlight (dynamicLightmap_t *dl)
+{
+	int		i, r, g, b, m;
+	byte	*src;
+
+	src = dl->source[0];
+	for (i = 0; i < dl->w * dl->h; i++)
+	{
+		r = *src++; g = *src++; b = *src++;
+		m = max(r, g);
+		m = max(m, b);
+		if (m < 192)	// can get ~(0,0,255) etc. after normalization of (min,min,10000) etc.; 192 is a default maxlight for qrad3
+		{
+			if (lmMinlight.c[0] > r) lmMinlight.c[0] = r;
+			if (lmMinlight.c[1] > g) lmMinlight.c[1] = g;
+			if (lmMinlight.c[2] > b) lmMinlight.c[2] = b;
+		}
+	}
+}
+
+
+bool LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl)
 {
 	int		i, j, w, h;
 	int		best, best2;
@@ -144,45 +166,124 @@ qboolean LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl)
 }
 
 
+// Helper function for creating lightmaps with r_lightmap=2 (taken from Q3)
+// Converts brightness to color
+static void CreateSolarColor (float light, float x, float y, float *vec)
+{
+	float	f, a0, s, t;
+	int		i;
+
+	f = light * 5;
+	i = Q_ceil (f);
+	f = f - i;				// frac part
+
+	s = (1.0f - x) * y;
+	t = (1.0f - f * x) * y;
+	a0 = y * (1.0f - x * (1.0f - f));
+	switch (i)
+	{
+		case 0:
+			vec[0] = y; vec[1] = a0; vec[2] = s;
+			break;
+		case 1:
+			vec[0] = t; vec[1] = y; vec[2] = s;
+			break;
+		case 2:
+			vec[0] = s; vec[1] = y; vec[2] = a0;
+			break;
+		case 3:
+			vec[0] = s; vec[1] = t; vec[2] = y;
+			break;
+		case 4:
+			vec[0] = a0; vec[1] = s; vec[2] = y;
+			break;
+		case 5:
+			vec[0] = y; vec[1] = s; vec[2] = t;
+			break;
+	}
+}
+
+
+// Copy (and light/color scale) lightmaps from src to dst (samples*3 bytes)
+static void CopyLightmap (byte *dst, byte *src, int w, int h, int stride, byte a)
+{
+	int		x, y;
+
+	if (r_lightmap->integer == 2)
+	{
+		for (y = 0; y < h; y++)
+		{
+			for (x = 0; x < w; x++)
+			{
+				float vec[3], r, g, b, light;
+
+				r = *src++; g = *src++; b = *src++;
+
+				light = r * 0.33f + g * 0.685f + b * 0.063f;
+				if (light > 255)
+					light = 1;
+				else
+					light = 1.0f / light;
+
+				CreateSolarColor (light, 1, 0.5, vec);
+				*dst++ = Q_floor (vec[0] * 255);
+				*dst++ = Q_floor (vec[1] * 255);
+				*dst++ = Q_floor (vec[2] * 255);
+				*dst++ = a;
+			}
+			dst += stride;
+		}
+	}
+	else
+	{
+		float	sat;
+
+		sat = r_saturation->value;
+		if (r_lightmap->integer == 3)
+			sat = -sat;
+
+		for (y = 0; y < h; y++)
+		{
+			for (x = 0; x < w; x++)
+			{
+				float	r, g, b, light;
+
+				// get color
+				r = *src++;  g = *src++;  b = *src++;
+				if (sat != 1.0f)
+				{
+					// change saturation
+					light = (r + g + b) / 3.0f;
+					SATURATE(r,light,sat);
+					SATURATE(g,light,sat);
+					SATURATE(b,light,sat);
+					// put color
+					*dst++ = Q_round (r);  *dst++ = Q_round (g);  *dst++ = Q_round (b);
+				}
+				else
+				{
+					*dst++ = r; *dst++ = g; *dst++ = b;
+				}
+				*dst++ = a;
+			}
+			dst += stride;
+		}
+	}
+}
+
+
 void LM_PutBlock (dynamicLightmap_t *dl)
 {
-	byte	*dst, *src;
-	int		x, y, stride, i, numFast;
+	byte	*dst;
+	int		stride, i, numFast;
 
 	stride = (LIGHTMAP_SIZE - dl->w) * 4;
 
-	/*------------- put main lightmap -------------*/
-
+	// put main lightmap (style 0, slow)
 	dst = dl->block->pic + (dl->t * LIGHTMAP_SIZE + dl->s) * 4;
-	src = dl->source[0];
+	CopyLightmap (dst, dl->source[0], dl->w, dl->h, stride, 0);		// alpha (flag: no additional scale)
 
-	for (y = 0; y < dl->h; y++)
-	{
-		for (x = 0; x < dl->w; x++)
-		{
-			int		r, g, b, m;
-
-			// copy lightmap
-			r = *dst++ = *src++;
-			g = *dst++ = *src++;
-			b = *dst++ = *src++;
-			// check minlight
-			m = max(r, g);
-			m = max(m, b);
-			if (m < 192)	// can get ~(0,0,255) etc. after normalization of (min,min,10000) etc.; 192 is a default maxlight for qrad3
-			{
-				if (lmMinlight.c[0] > r) lmMinlight.c[0] = r;
-				if (lmMinlight.c[1] > g) lmMinlight.c[1] = g;
-				if (lmMinlight.c[2] > b) lmMinlight.c[2] = b;
-			}
-			// alpha (flag: no additional scale)
-			*dst++ = 0;
-		}
-		dst += stride;
-	}
-
-	/*----------- put dynamic lightmaps -----------*/
-
+	// put fast dynamic lightmaps
 	numFast = 0;
 	for (i = 0; i < dl->numStyles; i++)
 	{
@@ -190,21 +291,9 @@ void LM_PutBlock (dynamicLightmap_t *dl)
 
 		numFast++;
 		dst = dl->block->pic + (dl->t * LIGHTMAP_SIZE + dl->s + dl->w * numFast) * 4;
-		src = dl->source[i];
-
-		for (y = 0; y < dl->h; y++)
-		{
-			for (x = 0; x < dl->w; x++)
-			{
-				*dst++ = *src++;
-				*dst++ = *src++;
-				*dst++ = *src++;
-				// alpha (flag: modulate by 2)
-				// required, because backend will modulate texture by 0..1, which corresponds lightstyle=0..2
-				*dst++ = 255;
-			}
-			dst += stride;
-		}
+		// alpha (flag: modulate by 2)
+		// required, because backend will modulate texture by 0..1, which corresponds lightstyle=0..2
+		CopyLightmap (dst, dl->source[i], dl->w, dl->h, stride, 255);
 	}
 
 	// mark lightmap block as used
@@ -300,8 +389,7 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 
 				// calculate vertex color as weighted average of 4 points
 				scale = dl->modulate[z] * 2 >> gl_config.overbright;
-//				point = dl->source[z] + ((int)v->lm2[1] * dl->w + (int)v->lm2[0]) * 3;
-				point = dl->source[z] + (Q_round (v->lm2[1]) * dl->w + Q_floor (v->lm2[0])) * 3;
+				point = dl->source[z] + (Q_floor (v->lm2[1]) * dl->w + Q_floor (v->lm2[0])) * 3;
 				// calculate s/t weights
 				frac_s = Q_round (v->lm2[0] * 128) & 127;
 				frac_t = Q_round (v->lm2[1] * 128) & 127;
@@ -365,4 +453,57 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 			}
 		}
 	}
+}
+
+
+// check for single-color lightmap block
+bool LM_IsMonotone (dynamicLightmap_t *lm, color_t *avg)
+{
+	byte	*p;
+	byte	min[3], max[3];
+	int		i;
+
+	if (lm->numStyles != 1) return false;
+
+#define MAX_DEV		4		// maximal deviation of texture color (4 looks bad with 1-texel lm, but good with vertex lighting)
+	//?? MAX_DEV should depend on value ( fabs(v1-v2)/(v1+v2) < MAX_DEV , MAX_DEV--float )
+
+	p = lm->source[0];
+	min[0] = max[0] = *p++;
+	min[1] = max[1] = *p++;
+	min[2] = max[2] = *p++;
+
+	for (i = 1; i < lm->w * lm->h; i++, p += 3)
+	{
+		byte	c;
+		bool	m;
+
+		m = false;
+#define STEP(n)	\
+		c = p[n];		\
+		if (c < min[n])	\
+		{				\
+			min[n] = c;	\
+			m = true;	\
+		}				\
+		if (c > max[n])	\
+		{				\
+			max[n] = c;	\
+			m = true;	\
+		}
+
+		STEP(0); STEP(1); STEP(2);
+#undef STEP
+		if (m && ((max[0] - min[0] > MAX_DEV) || (max[1] - min[1] > MAX_DEV) || (max[2] - min[2] > MAX_DEV)))
+			return false;
+	}
+
+	if (avg)
+	{
+		avg->c[0] = (min[0] + max[0]) / 2;
+		avg->c[1] = (min[1] + max[1]) / 2;
+		avg->c[2] = (min[2] + max[2]) / 2;
+	}
+
+	return true;
 }

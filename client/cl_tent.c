@@ -453,13 +453,13 @@ void CL_AddExplosions (void)
 		}
 
 //re.DrawTextLeft(va("[%d / %g * %g] o(%g %g %g) c(%g %g %g)", i, ex->light, ent->alpha,
-//VECTOR_ARG(ent->origin), VECTOR_ARG(ex->lightcolor)),1,1,1);//!!
+//VECTOR_ARG(ent->origin), VECTOR_ARG(ex->lightcolor)),RGB(1,1,1));//!!
 		if (ex->light)
 		{
 //			V_AddLight (ent->origin, ex->light * ent->alpha, VECTOR_ARG(ex->lightcolor));
 			V_AddLight (ent->origin, ex->light * ent->alpha,
 				ex->lightcolor[0] * ent->alpha, ex->lightcolor[1] * ent->alpha, ex->lightcolor[2] * ent->alpha);
-//			re.DrawTextLeft(va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARG(ent->origin), ent->alpha, VECTOR_ARG(ex->lightcolor)),1,1,1);
+//			re.DrawTextLeft(va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARG(ent->origin), ent->alpha, VECTOR_ARG(ex->lightcolor)),RGB(1,1,1));
 		}
 
 		VectorCopy (ent->origin, ent->oldorigin);

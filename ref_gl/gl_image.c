@@ -28,8 +28,8 @@ int 	gl_screenshotFlags;
 char	*gl_screenshotName;
 
 
-static int	gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
-static int	gl_filter_max = GL_LINEAR;
+static GLenum	gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
+static GLenum	gl_filter_max = GL_LINEAR;
 
 #define HASH_BITS		8
 #define HASH_SIZE		(1 << HASH_BITS)
@@ -80,7 +80,7 @@ static void GetPalette (void)
 	{
 		unsigned	v;
 
-		v = (p[0]<<0) + (p[1]<<8) + (p[2]<<16) + (255<<24);	// R G B A
+		v = RGB255(p[0], p[1], p[2]);
 		gl_config.tbl_8to32[i] = LittleLong(v);
 	}
 	gl_config.tbl_8to32[255] &= LittleLong(0x00FFFFFF);		// #255 is transparent (alpha = 0)
@@ -120,7 +120,7 @@ void GL_TextureMode (char *name)
 
 	static struct {
 		char	*name;
-		float	minimize, maximize;
+		GLenum	minimize, maximize;
 	} texModes[] = {
 		{"GL_NEAREST", GL_NEAREST, GL_NEAREST},
 		{"GL_LINEAR", GL_LINEAR, GL_LINEAR},
@@ -143,8 +143,8 @@ void GL_TextureMode (char *name)
 				if (!img->name[0]) continue;	// free slot
 				if (!(img->flags & IMAGE_MIPMAP)) continue;
 				GL_Bind (img);
-				glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-				glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+				glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 			}
 			return;
 		}
@@ -233,19 +233,22 @@ static void LightScaleTexture (unsigned *pic, int width, int height, qboolean on
 {
 	float	sat;
 	int		i, c;
+	int		isat;		//??
 	byte	*p;
 
 	sat = r_saturation->value;
 	c = width * height;
+	isat = Q_round (r_saturation->value * 255);	//??
 
 	if (sat != 1.0)
 	{
-		float	r, g, b;
-		float	light;
-
 		p = (byte *)pic;
 		for (i = 0; i < c; i++, p+=4)
 		{
+#if 1
+			float	r, g, b;
+			float	light;
+
 			// get color
 			r = p[0];  g = p[1];  b = p[2];
 			// change saturation
@@ -254,8 +257,19 @@ static void LightScaleTexture (unsigned *pic, int width, int height, qboolean on
 			SATURATE(g,light,sat);
 			SATURATE(b,light,sat);
 			// put color
-//			p[0] = Q_round (r);  p[1] = Q_round (g);  p[2] = Q_round (b);
-			p[0] = Q_floor (r);  p[1] = Q_floor (g);  p[2] = Q_floor (b);
+			p[0] = Q_round (r);  p[1] = Q_round (g);  p[2] = Q_round (b);
+#else
+			int		r, g, b, light;
+
+			r = p[0]; g = p[1]; b = p[2];
+			light = (r + g + b) / 3;
+			r = light + (((r - light) * isat) >> 8);
+			g = light + (((g - light) * isat) >> 8);
+			b = light + (((b - light) * isat) >> 8);
+			p[0] = bound(r,0,255);
+			p[1] = bound(g,0,255);
+			p[2] = bound(b,0,255);
+#endif
 		}
 	}
 
@@ -413,7 +427,7 @@ static void GetImageDimensions (int width, int height, int *scaledWidth, int *sc
 
 static void ComputeImageColor (void *pic, int width, int height, color_t *color)
 {
-	int		c[4], i, count;
+	int		c[4], m[3], i, count;
 	byte	*p;
 
 	count = width * height;
@@ -444,7 +458,7 @@ static void Upload (void *pic, int flags, image_t *image)
 	{
 		int		i;
 		byte	*p;
-		qboolean alphaRemoved;
+		bool	alphaRemoved;
 
 		alphaRemoved = false;
 		size = image->width * image->height;
@@ -555,13 +569,13 @@ END_PROFILE
 	image->internalFormat = format;
 
 	/*------------------ Upload the image ---------------------------*/
-START_PROFILE(..up::1)
+START_PROFILE(..up::gl)
 	glTexImage2D (GL_TEXTURE_2D, 0, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 END_PROFILE
 	if (!(flags & IMAGE_MIPMAP))
 	{
-		glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 	else
 	{
@@ -599,8 +613,8 @@ START_PROFILE(..up::mip)
 			}
 			glTexImage2D (GL_TEXTURE_2D, miplevel, format, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 		}
-		glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-		glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 END_PROFILE
 	}
 
@@ -614,7 +628,7 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 	int		texnum, hash;
 	image_t	*image;
 	GLenum	repMode;
-	qboolean reuse;
+	bool	reuse;
 
 	if (!name[0]) Com_Error (ERR_FATAL, "R_CreateImage: null name");
 
@@ -665,8 +679,8 @@ image_t *GL_CreateImage (char *name, void *pic, int width, int height, int flags
 	Upload (pic, flags, image);
 
 	repMode = flags & IMAGE_CLAMP ? GL_CLAMP : GL_REPEAT;
-	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repMode);
-	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repMode);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repMode);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repMode);
 
 	if (!reuse)
 	{
@@ -768,10 +782,10 @@ void GL_DrawStretchRaw (int x, int y, int w, int h, int width, int height, byte 
 		glTexImage2D (GL_TEXTURE_2D, 0, image->internalFormat, scaledWidth, scaledHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaledPic);
 	}
 	// set texture parameters
-	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameterf (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	gl_speeds.numUploads++;
 
 	width = scaledWidth;	//!!!
@@ -996,7 +1010,7 @@ static void Imagelist_f (void)
 
 	for (i = 0; i < MAX_TEXTURES; i++)
 	{
-		char	*fmt;
+		char	*fmt, *color;
 		image_t	*img;
 		int		f, fi;
 
@@ -1017,11 +1031,17 @@ static void Imagelist_f (void)
 				fmt = fmtInfo[fi].name;
 				break;
 			}
+		if (img->flags & IMAGE_WORLD)
+			color = "^2";
+		else if (img->flags & IMAGE_SKIN)
+			color = "^6";
+		else
+			color = "";
 
-		Com_Printf ("%-3d %-4d %-4d %c %c  %c %-8s %s\n", idx, img->internalWidth, img->internalHeight,
+		Com_Printf ("%-3d %-4d %-4d %c %c  %c %-8s %s%s\n", idx, img->internalWidth, img->internalHeight,
 			img->flags & IMAGE_NOALPHA ? '-' : alphaTypes[img->alphaType],
 			boolTypes[(img->flags & IMAGE_CLAMP) == 0], boolTypes[(img->flags & IMAGE_MIPMAP) != 0],
-			fmt, img->name);
+			fmt, color, img->name);
 	}
 
 	Com_Printf ("Total %d images with texel count (not counting mipmaps) %d\n", n, texels);
@@ -1055,7 +1075,7 @@ static void Imagelist_f (void)
 static void ImageReload_f (void)
 {
 	char	*mask;
-	int		i;
+	int		i, num, time;
 
 	if (Cmd_Argc () != 2)
 	{
@@ -1063,7 +1083,9 @@ static void ImageReload_f (void)
 		return;
 	}
 
+	time = Sys_Milliseconds ();
 	mask = Cmd_Argv (1);
+	num = 0;
 	for (i = 0; i < MAX_TEXTURES; i++)
 	{
 		image_t	*img;
@@ -1074,8 +1096,12 @@ static void ImageReload_f (void)
 
 		if (img->name[0] == '*' || img->flags & IMAGE_SYSTEM) continue;
 		if (GL_FindImage (img->name, img->flags | IMAGE_RELOAD))
-			Com_DPrintf ("%s reloaded\n", img->name);
+		{
+//			Com_DPrintf ("%s reloaded\n", img->name);
+			num++;
+		}
 	}
+	Com_DPrintf ("%d images reloaded in %g sec\n", num, (Sys_Milliseconds () - time) / 1000.0f);
 }
 
 
@@ -1091,7 +1117,7 @@ void GL_PerformScreenshot (void)
 	byte	*buffer, *src, *dst;
 	char	name[MAX_OSPATH], *ext;
 	int		i, width, height, size;
-	qboolean result;
+	bool	result;
 	FILE	*f;
 
 	if (!gl_screenshotName ||
@@ -1565,7 +1591,7 @@ START_PROFILE(..img::pcx)
 			{
 				unsigned	v;
 
-				v = (p[0]<<0) + (p[1]<<8) + (p[2]<<16) + (255<<24);	// R G B A
+				v = RGB255(p[0], p[1], p[2]);
 				pal[i] = LittleLong(v);
 			}
 			pal[255] &= LittleLong(0x00FFFFFF);						// #255 is transparent (alpha = 0)

@@ -1704,9 +1704,9 @@ void QCommon_Frame (int msec)
 		sv -= gm;
 		cl -= rf;
 		re.DrawTextRight (va("sv:%2d gm:%2d (%2d) cl:%2d rf:%2d all:%2d",
-				sv, gm, old_gm, cl, rf, all), 1, 0.8, 0.3);
+				sv, gm, old_gm, cl, rf, all), RGB(1, 0.8, 0.3));
 		re.DrawTextRight (va("tr: %4d (%4d) pt: %4d (%4d)",
-				c_traces, old_tr, c_pointcontents, old_pc), 1, 0.8, 0.3);
+				c_traces, old_tr, c_pointcontents, old_pc), RGB(1, 0.8, 0.3));
 
 #ifdef SV_PROFILE
 		if (1)	//??
@@ -1729,8 +1729,7 @@ void QCommon_Frame (int msec)
 			if (!scale) scale = 1;
 			for (i = 0; i < 12; i++)
 			{
-				re.DrawTextLeft (va("%s: %3d %4f", names[i], counts[i], times[i]/scale),
-					1, 0.8, 0.3);
+				re.DrawTextLeft (va("%s: %3d %4f", names[i], counts[i], times[i]/scale), RGB(1, 0.8, 0.3));
 				if (time_before_game > 0)
 				{
 					counts[i] = prof_counts[i];

@@ -1238,11 +1238,9 @@ void Draw_BuildGammaTable (void)
 	{
 		float	tmp;
 
-		tmp = ((i - 128) * contr + 128) * bright;
-		if (invGamma == 1.0)
-			v = Q_round (tmp);
-		else
-			v = Q_round (255.0f * pow (tmp / 255.5f, invGamma));
+		tmp = pow (i / 255.0f, invGamma) * contr * 255;
+		tmp = tmp + (bright - 1) * 128 - (contr - 0.5) * 128 + 64;
+		v = Q_round (tmp);
 		sw_state.gammatable[i] = v;
 	}
 }

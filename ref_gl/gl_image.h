@@ -6,8 +6,12 @@
 #define IMAGE_CLAMP			1			// 0 -- repeat
 #define	IMAGE_MIPMAP		2
 #define IMAGE_PICMIP		4
-#define IMAGE_SYSTEM		8			// auto-generated image (default, fog, dlight etc.)
-#define IMAGE_NOALPHA		0x10		// original image have alpha-channel, but it was removed
+#define IMAGE_NOALPHA		8			// original image have alpha-channel, but it was removed
+// image type
+#define IMAGE_SYSTEM		0x10		// auto-generated image (default, fog, dlight etc.)
+#define IMAGE_WORLD			0x20
+#define IMAGE_SKIN			0x40
+//?? #define IMAGE_GUI			0x80
 // hints for image creating
 #define IMAGE_TRUECOLOR		0x80000000	// hint for GL_CreateImage: force to upload image in 32 bit
 #define IMAGE_LIGHTMAP		0x40000000

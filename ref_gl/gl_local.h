@@ -22,7 +22,7 @@
 #include "../client/ref.h"
 
 
-qboolean QGL_Init (const char *dllname);
+bool	QGL_Init (const char *dllname);
 void	QGL_InitExtensions (void);
 void	QGL_Shutdown (void);
 // logging
@@ -59,19 +59,11 @@ typedef struct refEntity_s	refEntity_t;
 typedef struct image_s		image_t;
 typedef struct model_s		model_t;
 typedef struct surfaceCommon_s surfaceCommon_t;
+typedef struct surfacePlanar_s surfacePlanar_t;
 typedef struct dynamicLightmap_s dynamicLightmap_t;
 
 
 #include "gl_interface.h"
-
-
-/*------------- gl_light.c ------------------*/
-
-
-void GL_ShowLights (void);
-
-void GL_LightForEntity (refEntity_t *ent);
-void GL_ApplyEntitySpherelights (color_t *dst);
 
 
 /*------------- gl_main.c -------------------*/
@@ -98,7 +90,7 @@ typedef struct
 	int		viewCluster;		//?? place to portal
 	// map areas
 	byte	areaMask[MAX_MAP_AREAS/8];
-	qboolean areaMaskChanged;
+	bool	areaMaskChanged;
 } glrefdef_t;
 
 
@@ -130,10 +122,10 @@ extern glrefdef_t  gl_refdef;	//!! used from gl_frontend.c :: MarkLeaves() only 
 extern drawSpeeds_t gl_speeds;
 
 
-void	DrawTextPos (int x, int y, char *text, float r, float g, float b);
-void	DrawTextLeft (char *text, float r, float g, float b);
-void	DrawTextRight (char *text, float r, float g, float b);
-void	DrawText3D (vec3_t pos, char *text, float r, float g, float b);
+void	DrawTextPos (int x, int y, char *text, unsigned rgba);
+void	DrawTextLeft (char *text, unsigned rgba);
+void	DrawTextRight (char *text, unsigned rgba);
+void	DrawText3D (vec3_t pos, char *text, unsigned rgba);
 
 
 /*----------- Imported functions ------------*/
@@ -155,16 +147,17 @@ void	GLimp_BeginFrame (float camera_separation);
 void	GLimp_EndFrame (void);
 int 	GLimp_Init (void);
 void	GLimp_Shutdown (void);
-int     GLimp_SetMode (int *pwidth, int *pheight, int mode, qboolean fullscreen);
+int     GLimp_SetMode (int *pwidth, int *pheight, int mode, bool fullscreen);
 void	GLimp_AppActivate (qboolean active);
 
-qboolean GLimp_HasGamma (void);
+bool	GLimp_HasGamma (void);
 void	GLimp_SetGamma (float gamma, float intens);
 
 
 /*----------------- Cvars -------------------*/
 
-extern cvar_t	*gl_picmip, *gl_textureBits, *gl_roundImagesDown, *gl_texturemode;
+extern cvar_t	*gl_picmip, *gl_roundImagesDown, *gl_texMipBias, *gl_skinMipBias;
+extern cvar_t	*gl_textureBits, *gl_texturemode;
 
 extern cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
 extern cvar_t	*r_intensity;		//?? remove (or "r_brightness")

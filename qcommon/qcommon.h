@@ -757,7 +757,7 @@ void	FreeNamedList (basenamed_t *list);
 //--basenamed_t *FS_ListFiles (char *name, int *numfiles, int flags);
 
 void	FS_InitFilesystem (void);
-qboolean FS_SetGamedir (char *dir);
+bool	FS_SetGamedir (char *dir);
 //--char	*FS_Gamedir (void);
 char	*FS_NextPath (char *prevpath);
 void	FS_LoadGameConfig (void);

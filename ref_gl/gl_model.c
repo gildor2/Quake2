@@ -33,8 +33,8 @@ static int	modelCount;
 
 /*---------------- Loading models: common ----------------*/
 
-static qboolean LoadMd2 (model_t *m, byte *buf, int len);
-static qboolean LoadSp2 (model_t *m, byte *buf, int len);
+static bool LoadMd2 (model_t *m, byte *buf, int len);
+static bool LoadSp2 (model_t *m, byte *buf, int len);
 
 
 model_t	*GL_FindModel (char *name)
@@ -142,7 +142,7 @@ static void LoadFlares (lightFlare_t *data, int count)
 		VectorCopy (data->origin, out->origin);
 		out->size = data->size;
 		out->radius = data->radius;
-		out->color.rgba = *((int*)data->color) | 0xFF000000;
+		out->color.rgba = *((unsigned*)data->color) | RGBA(0,0,0,1);
 		out->style = data->style;
 		out->leaf = GL_PointInLeaf (data->origin);
 		if (data->model)
@@ -183,7 +183,7 @@ static void BuildSurfFlare (surfaceCommon_t *surf, color_t *color, float intens)
 	f->leaf = NULL;
 	f->size = sqrt (intens) * 3;
 	f->radius = 0;
-	f->color.rgba = color->rgba | 0xFF000000;
+	f->color.rgba = color->rgba | RGBA(0,0,0,1);
 	f->style = 0;
 
 	c[0] = color->c[0];
@@ -220,8 +220,6 @@ static void LoadSlights (slight_t *data, int count)
 		out->spotDot = data->spotDot;
 		out->focus = data->focus;
 		out->fade = data->fade;
-		out->cluster = GL_PointInLeaf (data->origin)->cluster;
-		if (out->cluster < 0) continue;
 
 		// move away lights from nearby surfaces to avoid precision errors during computation
 		for (j = 0; j < 3; j++)
@@ -292,51 +290,6 @@ static void BuildSurfLight (surfacePlanar_t *pl, color_t *color, float area, flo
 }
 
 
-static void GetSurfLightCluster (void)
-{
-	node_t	*n;
-	surfLight_t *sl;
-	surfaceCommon_t **s;
-	surfacePlanar_t *pl;
-	int		i, j, cl;
-
-	for (i = 0, sl = map.surfLights; i < map.numSurfLights; i++, sl = sl->next)
-		sl->cluster = -2;							// uninitialized
-
-	for (i = 0, n = map.nodes + map.numNodes; i < map.numLeafNodes - map.numNodes; i++, n++)
-	{
-		cl = n->cluster;
-		for (j = 0, s = n->leafFaces; j < n->numLeafFaces; j++, s++)
-			if ((*s)->type == SURFACE_PLANAR && !(*s)->owner)		//?? other types
-			{
-				pl = (*s)->pl;
-				if (pl->light)
-				{
-					if (pl->light->cluster == -2)	// uninitialized
-						pl->light->cluster = cl;
-					else if (pl->light->cluster != cl)
-						pl->light->cluster = -1;	// single surface in few clusters
-				}
-			}
-	}
-}
-
-
-static void InitLightGrid (void)
-{
-	int		i;
-
-	for (i = 0; i < 3; i++)
-	{
-		map.gridMins[i] = Q_floor (map.nodes[0].mins[i] / LIGHTGRID_STEP);
-		map.mapGrid[i] = Q_ceil (map.nodes[0].maxs[i] / LIGHTGRID_STEP) - map.gridMins[i];
-	}
-	map.numLightCells = 0;
-	map.lightGridChain = CreateMemoryChain ();
-	map.lightGrid = AllocChainBlock (map.lightGridChain, sizeof(lightCell_t*) * map.mapGrid[0] * map.mapGrid[1] * map.mapGrid[2]);
-}
-
-
 static void SetNodeParent (node_t *node, node_t *parent)
 {
 	node->parent = parent;
@@ -345,100 +298,6 @@ static void SetNodeParent (node_t *node, node_t *parent)
 	{
 		SetNodeParent (node->children[0], node);
 		SetNodeParent (node->children[1], node);
-	}
-}
-
-
-// Helper function for creating lightmaps with r_lightmap=2 (taken from Q3)
-// Converts brightness to color
-static void CreateSolarColor (float a, float x, float y, float *vec)
-{
-	float	a0, s, t;
-	int		i;
-
-	a0 = a * 5;
-	i = Q_ceil (a0);
-	a0 = a0 - i;	// frac part
-	s = (1.0f - x) * y;
-	t = (1.0f - a0 * x) * y;
-	a0 = y * (1.0f - x * (1.0f - a0));
-	switch (i)
-	{
-		case 0:
-			vec[0] = y; vec[1] = a0; vec[2] = s;
-			break;
-		case 1:
-			vec[0] = t; vec[1] = y; vec[2] = s;
-			break;
-		case 2:
-			vec[0] = s; vec[1] = y; vec[2] = a0;
-			break;
-		case 3:
-			vec[0] = s; vec[1] = t; vec[2] = y;
-			break;
-		case 4:
-			vec[0] = a0; vec[1] = s; vec[2] = y;
-			break;
-		case 5:
-			vec[0] = y; vec[1] = s; vec[2] = t;
-			break;
-	}
-}
-
-
-// Copy (and light/color scale) lightmaps from src to dst (samples*3 bytes)
-static void CopyLightmap (byte *dst, byte *src, int samples)
-{
-	int		i;
-
-	if (r_lightmap->integer == 2)
-	{
-		for (i = 0; i < samples; i++)
-		{
-			float vec[3], r, g, b, light;
-
-			r = *src++; g = *src++; b = *src++;
-
-			light = r * 0.33f + g * 0.685f * b * 0.063f;
-			if (light > 255)
-				light = 1;
-			else
-				light = 1.0f / light;
-
-			CreateSolarColor (light, 1, 0.5, vec);
-			*dst++ = Q_floor (vec[0] * 255);
-			*dst++ = Q_floor (vec[1] * 255);
-			*dst++ = Q_floor (vec[2] * 255);
-		}
-	}
-	else
-	{
-		float	sat;
-
-		sat = r_saturation->value;
-		if (r_lightmap->integer == 3)
-			sat = -sat;
-
-		if (sat == 1.0f)
-			memcpy (dst, src, samples * 3);
-		else
-		{
-			for (i = 0; i < samples; i++)
-			{
-				float	r, g, b, light;
-
-				// get color
-				r = *src++;  g = *src++;  b = *src++;
-				// change saturation
-				light = (r + g + b) / 3.0f;
-				SATURATE(r,light,sat);
-				SATURATE(g,light,sat);
-				SATURATE(b,light,sat);
-				// put color
-				*dst++ = Q_floor (r);  *dst++ = Q_floor (g);  *dst++ = Q_floor (b);
-//				*dst++ = Q_round (r);  *dst++ = Q_round (g);  *dst++ = Q_round (b);		-- can produce bugs (beachassault,heli)
-			}
-		}
 	}
 }
 
@@ -505,23 +364,6 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 
 
 /*------------------ Loading Quake2 BSP file --------------------*/
-
-
-static byte *lightData;
-static int lightDataSize;
-
-static void LoadLighting2 (byte *data, int size)
-{
-	if (!size)
-	{
-		lightData = NULL;
-		return;
-	}
-
-	lightData = Hunk_Alloc (size);
-	lightDataSize = size;
-	CopyLightmap (lightData, data, size / 3);
-}
 
 
 static void LoadLeafsNodes2 (dnode_t *nodes, int numNodes, dleaf_t *leafs, int numLeafs)
@@ -614,10 +456,9 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedge_t *edges,
 	dvertex_t *verts, texinfo_t *tex, cmodel_t *models, int numModels)
 {
-	int		i, j, optLmTexels;
+	int		i, j;
 	surfaceCommon_t *out;
 
-	optLmTexels = 0;
 	map.numFaces = numSurfaces;
 	map.faces = out = Hunk_Alloc (numSurfaces * sizeof(*out));
 	for (i = 0; i < numSurfaces; i++, surfs++, out++)
@@ -630,7 +471,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		texinfo_t	*stex, *ptex;
 		shader_t	*shader;
 		float		mins[2], maxs[2];	// surface extents
-		qboolean	needLightmap;
+		bool		needLightmap;
 		vec3_t		*pverts[MAX_POLYVERTS];
 		char		textures[MAX_QPATH * MAX_STAGE_TEXTURES], *pname;
 
@@ -854,7 +695,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 				v->lm[0] = v1;
 				v->lm[1] = v2;
 				/*---------- Vertex color ----------------*/
-				v->c.rgba = 0xFFFFFFFF;
+				v->c.rgba = RGBA(1,1,1,1);
 			}
 		}
 
@@ -892,106 +733,11 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 				if (st == 255) break;
 				lm->style[j] = st;
 				lm->modulate[j] = (j == 0 ? 128 : 0);			// initial state
-				lm->source[j] = lightData + surfs->lightofs + j * size[0] * size[1] * 3;
+				lm->source[j] = (byte*)NULL + surfs->lightofs + j * size[0] * size[1] * 3;	// just offset in map lightData
 			}
 			lm->numStyles = j;
 			lm->w = size[0];
 			lm->h = size[1];
-
-			// check for single-color lightmap block
-			if (lm->numStyles == 1)
-			{
-#define MAX_DEV		4		// maximal deviation of texture color (4 looks bad with 1-texel lm, but good with vertex lighting)
-				//?? MAX_DEV should depend on value ( fabs(v1-v2)/(v1+v2) < MAX_DEV , MAX_DEV--float )
-				byte	*p;
-				byte	min[3], max[3];
-
-				p = lm->source[0];
-				min[0] = max[0] = *p++;
-				min[1] = max[1] = *p++;
-				min[2] = max[2] = *p++;
-				for (j = 1; j < lm->w * lm->h; j++, p += 3)
-				{
-					byte	c;
-					qboolean m;
-
-					m = false;
-#define STEP(n)	\
-					c = p[n];		\
-					if (c < min[n])	\
-					{				\
-						min[n] = c;	\
-						m = true;	\
-					}				\
-					if (c > max[n])	\
-					{				\
-						max[n] = c;	\
-						m = true;	\
-					}
-
-					STEP(0); STEP(1); STEP(2);
-#undef STEP
-					if (m && ((max[0] - min[0] > MAX_DEV) || (max[1] - min[1] > MAX_DEV) || (max[2] - min[2] > MAX_DEV)))
-					{
-						p = NULL;
-						break;
-					}
-				}
-
-				if (p)
-				{
-					p = lm->source[0];
-#if 1
-//!! if no mtex+env_add/env_combine -- use 1-pixel lm; otherwise -- vertex lm
-					if (1)
-					{
-						// replace lightmap block with a single texel
-						p[0] = (max[0] + min[0]) / 2;		// use average color
-						p[1] = (max[1] + min[1]) / 2;
-						p[2] = (max[2] + min[2]) / 2;
-						for (j = 0, v = s->verts; j < numVerts; j++, v++)
-							v->lm[0] = v->lm[1] = 0.5;		// all verts should point to a middle of lightmap texel
-						optLmTexels += lm->w * lm->h - 1;
-						lm->w = lm->h = 1;
-					}
-					else
-					{
-						// convert to a vertex lightmap
-						//!! UNFINISHED: need SPECIAL vertex lm, which will be combined with dyn. lm with ENV_ADD
-						out->shader = GL_FindShader (textures, sflags | SHADER_TRYLIGHTMAP);
-						optLmTexels += lm->w * lm->h;
-					}
-#else
-					// show optimized lightmap zones
-					p[0] = 192; p[1] = 32; p[2] = 32; //??
-#endif
-				}
-			}
-
-			//?? test
-/*			for (j = 0, v = s->verts; j < numVerts; j++, v++)
-				if (v->xyz[0] > -2155 && v->xyz[0] < -2150 &&
-					v->xyz[1] > -355 && v->xyz[1] < -350 &&
-					v->xyz[2] > 172 && v->xyz[2] < 180 && lm->numStyles == 1)
-			{
-				int		k, x;
-				byte	*p;
-
-				p = lm->source[0];
-				Com_Printf ("surf #%d : %d x %d\n", i, lm->w, lm->h);
-				for (k = 0, x = 0; k < lm->w * lm->h; k++, p += 3)
-				{
-					Com_Printf ("^2%d-%d-%d ", p[0], p[1], p[2]);
-					if (++x == lm->w)
-					{
-						Com_Printf ("\n");
-						x = 0;
-					}
-				}
-				Com_Printf ("---------\n");
-				p = lm->source[0];
-			} */
-
 		}
 		else
 			s->lightmap = NULL;
@@ -1010,7 +756,6 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 				BuildSurfFlare (out, img ? &img->color : &defColor, area);
 		}
 	}
-	Com_DPrintf ("removed %d lm texels (%.3f blocks)\n", optLmTexels, (float)optLmTexels / (LIGHTMAP_SIZE * LIGHTMAP_SIZE));
 }
 
 
@@ -1041,19 +786,68 @@ static int ShaderCompare (const void *s1, const void *s2)
 	return surf1->shader->sortIndex - surf2->shader->sortIndex;
 }
 
-static void GenerateLightmaps2 (void)
+static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 {
-	int		i;
+	int		i, k, optLmTexels;
 	byte	*ptr;
 	lightmapBlock_t *bl;
 	surfaceCommon_t *s;
 	dynamicLightmap_t *dl;
 	surfaceCommon_t *sortedSurfaces[MAX_MAP_FACES];
 
+	LM_Init ();		// reset lightmap status (even when vertex lighting used)
+
+	optLmTexels = 0;
+
+	for (i = 0; i < map.numFaces; i++)
+	{
+		s = &map.faces[i];
+		sortedSurfaces[i] = s;		// prepare for sorting
+
+		if (dl = s->pl->lightmap)
+		{
+			color_t avg;
+
+			// convert lightmap offset to pointer
+			for (k = 0; k < dl->numStyles; k++)
+				dl->source[k] = lightData + (dl->source[k] - (byte*)NULL);
+
+			// optimize lightmaps
+			if (LM_IsMonotone (dl, &avg))
+			{
+				//!! if no mtex (+env_add/env_combine) -- use 1-pixel lm; otherwise -- vertex lm
+				//?? can check avg color too: if c[i] < 128 -- can be doubled, so -- vertex light
+				if (1)
+				{
+					vertex_t *v;
+					byte	*p;
+
+					// replace lightmap block with a single texel
+					//!! WARNING: this will modify lightmap in bsp_t (will be affect map reloads)
+					//?? -OR- use pixel from center instead (modify dl->source[0]) ?
+					p = dl->source[0];
+					p[0] = avg.c[0];
+					p[1] = avg.c[1];
+					p[2] = avg.c[2];
+					for (k = 0, v = s->pl->verts; k < s->pl->numVerts; k++, v++)
+						v->lm[0] = v->lm[1] = 0.5;		// all verts should point to a middle of lightmap texel
+					optLmTexels += dl->w * dl->h - 1;
+					dl->w = dl->h = 1;
+				}
+				else
+				{
+					// convert to a vertex lightmap
+					//!! UNFINISHED: need SPECIAL vertex lm, which will be combined with dyn. lm with ENV_ADD
+					s->shader = GL_FindShader (s->shader->name, s->shader->style | SHADER_TRYLIGHTMAP);
+					optLmTexels += dl->w * dl->h;
+				}
+			}
+		}
+	}
+	Com_DPrintf ("removed %d lm texels (%.3f blocks)\n", optLmTexels, (float)optLmTexels / (LIGHTMAP_SIZE * LIGHTMAP_SIZE));
+
 	/*------------ find invalid lightmaps -------------*/
 	// sort surfaces by lightmap data pointer
-	for (i = 0; i < map.numFaces; i++)
-		sortedSurfaces[i] = &map.faces[i];
 	qsort (sortedSurfaces, map.numFaces, sizeof(surfaceCommon_t*), LightmapCompare);
 
 	// check for lightmap intersection
@@ -1061,20 +855,19 @@ static void GenerateLightmaps2 (void)
 	ptr = NULL;
 	for (i = 0; i < map.numFaces; i++)
 	{
-		qboolean	bad;
-		int			lmSize, k;
+		bool	bad;
+		int		lmSize;
 
 		s = sortedSurfaces[i];
 		dl = s->pl->lightmap;
 		if (!dl) continue;
 
+		bad = false;
 		lmSize = dl->w * dl->h * dl->numStyles * 3;
 		if (dl->source[0] + lmSize > lightData + lightDataSize)
 			bad = true;		// out of bsp file
 		else if (ptr && ptr > dl->source[0] && (s->shader->style & SHADER_TRYLIGHTMAP))
 			bad = true;		// erased by previous block
-		else
-			bad = false;
 
 		//?? add check: if current is "try" interlaced with next "not try (normal)" - current is "bad"
 
@@ -1085,11 +878,11 @@ static void GenerateLightmaps2 (void)
 			{
 				s->shader->lightmapNumber = LIGHTMAP_NONE;
 				// later (in this function), just don't create vertex colors for this surface
-				//?? or compute light from scene ?
 				Com_DPrintf ("Disable lm for %s\n", s->shader->name);
 //				Com_Printf ("  diff: %d\n", ptr - lm->source);
 //				Com_Printf ("  w: %d  h: %d  st: %d\n", lm->w, lm->h, lm->numStyles);
 			}
+			continue;
 		}
 		else
 		{	// advance pointer
@@ -1098,6 +891,7 @@ static void GenerateLightmaps2 (void)
 
 		// after this examination. we can resort lightstyles (cannot do this earlier because used source[0])
 		LM_SortLightStyles (dl);
+		LM_CheckMinlight (dl);
 		// set shader lightstyles
 		if (s->shader->lightmapNumber >= 0)
 		{
@@ -1138,21 +932,19 @@ static void GenerateLightmaps2 (void)
 		GL_UpdateDynamicLightmap (s->shader, s->pl, true, 0);
 	}
 
-
 	/*----------- allocate lightmaps for surfaces -----------*/
 	if (!gl_config.vertexLight)
 	{
 		// resort surfaces by shader
 		qsort (sortedSurfaces, map.numFaces, sizeof(surfaceCommon_t*), ShaderCompare);
 
-		LM_Init ();
 		bl = NULL;
 		i = 0;
 		while (i < map.numFaces)
 		{
 			shader_t *shader;
 			int		numShaderSurfs, i2, nextIndex;
-			qboolean fit;
+			bool	fit;
 
 			s = sortedSurfaces[i];
 			dl = s->pl->lightmap;
@@ -1311,22 +1103,15 @@ static void LoadVisinfo2 (dvis_t *data, int size)
 
 static void LoadBsp2 (bspfile_t *bsp)
 {
-START_PROFILE(LoadLighting2)
-	LoadLighting2 (bsp->lighting, bsp->lightDataSize);
-END_PROFILE
-START_PROFILE(LoadPlanes)
 	// Load planes
 	LoadPlanes (bsp->planes, bsp->numPlanes, sizeof(dplane_t));
-END_PROFILE
 	// Load surfaces
 START_PROFILE(LoadSurfaces2)
 	LoadSurfaces2 (bsp->faces, bsp->numFaces, bsp->surfedges, bsp->edges, bsp->vertexes, bsp->texinfo, bsp->models, bsp->numModels);
 END_PROFILE
-START_PROFILE(LoadLeafSurfaces2)
 	LoadLeafSurfaces2 (bsp->leaffaces, bsp->numLeaffaces);
-END_PROFILE
 START_PROFILE(GenerateLightmaps2)
-	GenerateLightmaps2 ();
+	GenerateLightmaps2 (bsp->lighting, bsp->lightDataSize);
 END_PROFILE
 	// Load bsp (leafs and nodes)
 START_PROFILE(LoadLeafsNodes2)
@@ -1425,10 +1210,14 @@ void GL_LoadWorldMap (char *name)
 	}
 	LoadFlares (bspfile->flares, bspfile->numFlares);
 	LoadSlights (bspfile->slights, bspfile->numSlights);
-	GetSurfLightCluster ();
-	InitLightGrid ();
+	GL_PostLoadLights ();
+	GL_InitLightGrid ();
 
+#if 0
+	Com_Printf ("used %d hunk bytes\n", Hunk_End ());
+#else
 	Hunk_End ();
+#endif
 }
 
 
@@ -1473,7 +1262,7 @@ static int ParseGlCmds (char *name, surfaceMd3_t *surf, int *cmds, int *xyzIndex
 	idx = surf->indexes;
 	while (count = *cmds++)
 	{
-		qboolean strip;
+		bool	strip;
 		int		i, i1, i2, i3;
 
 		// cmds -> s1, t1, idx1, s2, t2, idx2 ...
@@ -1690,7 +1479,7 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 
 #define MAX_XYZ_INDEXES		4096
 
-static qboolean LoadMd2 (model_t *m, byte *buf, int len)
+static bool LoadMd2 (model_t *m, byte *buf, int len)
 {
 	dmdl_t	*hdr;
 	md3Model_t *md3;
@@ -1804,7 +1593,7 @@ shader_t *GL_FindSkin (char *name)
 /*-------------- Sprite models  ----------------*/
 
 
-static qboolean LoadSp2 (model_t *m, byte *buf, int len)
+static bool LoadSp2 (model_t *m, byte *buf, int len)
 {
 	dsprite_t *hdr;
 	dsprframe_t *in;

@@ -319,7 +319,7 @@ void CL_PredictMovement (void)
 	if (step > 63 && step < 160 && (pm.s.pm_flags & PMF_ON_GROUND))
 	{
 		cl.predicted_step = step * 0.125f;
-		cl.predicted_step_time = cls.realtime - cls.frametime * 500;	// back 1/2 frame ?
+		cl.predicted_step_time = cls.realtime - Q_round (cls.frametime * 500);	// back 1/2 frame ?
 	}
 
 	// copy results out for rendering

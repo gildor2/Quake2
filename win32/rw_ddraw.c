@@ -28,9 +28,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <float.h>
 
+#include "winquake.h"
+#include "rw_win.h"
+
 #include "../ref_soft/r_local.h"
 //-- (see in_win.c) #define INITGUID
-#include "rw_win.h"
 
 static const char *DDrawError( int code );
 

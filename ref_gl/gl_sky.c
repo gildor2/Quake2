@@ -14,7 +14,7 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 {
 	float	*norm;
 	float	*vec;
-	qboolean	front, back;
+	bool	front, back;
 	float	dists[MAX_CLIP_VERTS];
 	int		sides[MAX_CLIP_VERTS];
 	vec3_t	newv[2][MAX_CLIP_VERTS];	// new polys
@@ -60,11 +60,11 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 		av[2] = fabs(v[2]);
 		// Here: v = sum vector, av = abs(v)
 		if (av[0] > av[1] && av[0] > av[2])
-			axis = (v[0] < 0) ? 1 : 0;
+			axis = IsNegative (v[0]);
 		else if (av[1] > av[2] && av[1] > av[0])
-			axis = (v[1] < 0) ? 3 : 2;
+			axis = IsNegative (v[1]) + 2;
 		else
-			axis = (v[2] < 0) ? 5 : 4;
+			axis = IsNegative (v[2]) + 4;
 
 		// project new texture coords
 		for (i = 0; i < numVerts; i++, verts += 3)
@@ -328,14 +328,14 @@ int GL_TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float z
 	byte	*ptr;
 
 #if 0
-	DrawTextLeft(va("side %d:", side),1,1,1);
+	DrawTextLeft(va("side %d:", side),RGB(1,1,1));
 	for (numIndexes = 0; numIndexes < SKY_CELLS; numIndexes++)
 	{
 		byte	*p;
 
 		p = skyVis[side] + numIndexes * SKY_CELLS;
 #define C(x) p[x] ? 'X' : ' '
-		DrawTextLeft(va("[ %c %c %c %c %c %c %c %c ]", C(0),C(1),C(2),C(3),C(4),C(5),C(6),C(7)), 1, 0.5, 0.5);
+		DrawTextLeft(va("[ %c %c %c %c %c %c %c %c ]", C(0),C(1),C(2),C(3),C(4),C(5),C(6),C(7)), RGB(1, 0.5, 0.5));
 #undef C
 		p += SKY_CELLS;
 	}
@@ -377,7 +377,7 @@ int GL_TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float z
 		grid1++;
 		grid2++;
 	}
-//	DrawTextLeft(va("side %d:  %d verts  %d idx", side, gl_numVerts, numIndexes),1,1,1);
+//	DrawTextLeft(va("side %d:  %d verts  %d idx", side, gl_numVerts, numIndexes),RGB(1,1,1));
 
 	return numIndexes;
 }

@@ -3,7 +3,7 @@
 #include "../zip/zip.h"
 
 
-static qboolean initialized;
+static bool initialized;
 
 /*------------ In memory -----------------*/
 
@@ -31,7 +31,7 @@ typedef struct
 	char	*filename;		// .PAK filename (statistics)
 	packDir_t *root;		// root directory of .PAK file
 	int		numFiles;		// number of files in .PAK (statistics)
-	qboolean isZip;			// TRUE if PKWare ZIP file (statistics)
+	bool	isZip;			// TRUE if PKWare ZIP file (statistics)
 	void	*chain;			// chain of memory blocks (freed all at once)
 } pack_t;
 
@@ -860,7 +860,7 @@ Will not check inline files (only filesystem or paks)
 =================
 */
 
-qboolean FS_FileExists (char *filename)
+bool FS_FileExists (char *filename)
 {
 	searchPath_t	*search;
 	char			*pakname, game[MAX_OSPATH], buf[MAX_OSPATH];
@@ -1128,7 +1128,7 @@ of the list so they override previous pack files.
 
 static pack_t *createdPak;
 
-static qboolean EnumZippedPak (zip_file *file)
+static bool EnumZippedPak (zip_file *file)
 {
 	int		len;
 	packFile_t *newfile;
@@ -1333,7 +1333,7 @@ FS_SetGamedir
 Sets the gamedir and path to a different directory.
 ================
 */
-qboolean FS_SetGamedir (char *dir)
+bool FS_SetGamedir (char *dir)
 {
 	searchPath_t *next;
 	char	path[MAX_OSPATH];
@@ -1418,7 +1418,7 @@ FS_LoadPak_f
 ================
 */
 
-static 	qboolean TryLoadPak (char *pakname)
+static bool TryLoadPak (char *pakname)
 {
 	FILE	*f;
 
@@ -1499,8 +1499,8 @@ static void FS_UnloadPak_f (void)
 	}
 	if (strchr (Cmd_Argv(1), '*'))
 	{	// name is a wildcard
-		pack_t *pak;
-		qboolean found;
+		pack_t	*pak;
+		bool	found;
 
 		prev = NULL;
 		found = false;

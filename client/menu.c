@@ -808,7 +808,6 @@ static menuList_t		s_options_s_khz;
 static menuList_t		s_options_s_8bit;
 static menuList_t		s_options_s_reverse;
 static menuList_t		s_options_compatibility_list;
-static menuList_t		s_options_console_action;
 
 static int crosshairs_count;
 
@@ -922,22 +921,6 @@ static void UpdateCDVolumeFunc (void *unused)
 	Cvar_SetInteger ("cd_nocd", !s_options_cdvolume_box.curvalue);
 }
 
-static void ConsoleFunc (void *unused)
-{
-	// the proper way to do this is probably to have ToggleConsole_f accept a parameter
-	if (cl.attractloop)
-	{
-		Cbuf_AddText ("killserver\n");
-		return;
-	}
-
-	Key_ClearTyping ();
-	Con_ClearNotify ();
-
-	M_ForceMenuOff ();
-	cls.key_dest = key_console;
-}
-
 static void UpdateSoundFunc (void *unused)
 {
 	int		khz[] = {11, 22, 44};
@@ -1036,7 +1019,6 @@ static void Options_MenuInit( void )
 	y += 10;
 	MENU_ACTION(s_options_customize_options_action,y+=10,"customize controls",CustomizeControlsFunc)
 	MENU_ACTION(s_options_defaults_action,y+=10,"reset defaults",ControlsResetDefaultsFunc)
-	MENU_ACTION(s_options_console_action,y+=10,"go to console",ConsoleFunc)
 
 	Options_ScanCrosshairs ();
 	ControlsSetMenuItemValues ();
@@ -1058,7 +1040,6 @@ static void Options_MenuInit( void )
 	Menu_AddItem( &s_options_menu, ( void * ) &s_options_joystick_box );
 	Menu_AddItem( &s_options_menu, ( void * ) &s_options_customize_options_action );
 	Menu_AddItem( &s_options_menu, ( void * ) &s_options_defaults_action );
-	Menu_AddItem( &s_options_menu, ( void * ) &s_options_console_action );
 }
 
 static void Options_CrosshairDraw (void)
@@ -1126,7 +1107,7 @@ static void M_Credits_MenuDraw (void)
 {
 	int		i, y;
 
-	y = viddef.height - (cls.realtime - credits_start_time) / 40.0f;
+	y = viddef.height - (cls.realtime - credits_start_time) / 40;
 	for (i = 0; credits[i] && y < viddef.height; y += 10, i++)
 	{
 		int		j, stringoffset;
@@ -1355,8 +1336,8 @@ static menuFramework_t	s_loadgame_menu;
 static menuAction_t		s_loadgame_actions[MAX_SAVEGAMES];
 
 static char		m_savestrings[MAX_SAVEGAMES][32+1];	// reserve 1 byte for 0 (for overflowed names)
-static qboolean	m_savevalid[MAX_SAVEGAMES];
-static qboolean m_shotvalid[MAX_SAVEGAMES];
+static bool		m_savevalid[MAX_SAVEGAMES];
+static bool		m_shotvalid[MAX_SAVEGAMES];
 
 static void Create_Savestrings (void)
 {
@@ -2823,8 +2804,8 @@ static void PlayerConfig_MenuDraw (void)
 	playerModelInfo_t *model;
 	basenamed_t	*skin;
 	static dlight_t	dl[] = {
-		{{0, 100, 100}, {0.8, 0.8, 1}, 300},
-		{{90, -100, 10}, {0.2, 0.2, 0.2}, 200}
+		{{30, 100, 100}, {1, 1, 1}, 400},
+		{{90, -100, 10}, {0.4, 0.2, 0.2}, 200}
 	};
 	qboolean	showModels;
 	char	*icon;

@@ -246,16 +246,16 @@ void R_DrawTexts (void)
 
 extern unsigned char d_16to8table[65536];
 
-void DrawText_Pos (int x, int y, char *text, float r, float g, float b)
+void DrawText_Pos (int x, int y, char *text, unsigned rgba)
 {
 	int size;
 	char *text_copy;
 	textrec_t *rec;
 	int ri, gi, bi, color;
 
-	ri = Q_floor(r * 31.9);
-	gi = Q_floor(g * 63.9);
-	bi = Q_floor(b * 31.9);
+	ri = (rgba >> 3) & 31;			// 5 bits
+	gi = (rgba >> (8+2)) & 63;		// 6 bits
+	bi = (rgba >> (16+3)) & 31;		// 5 bits
 	color = d_16to8table[ri | (gi << 5) | (bi << 11)] | MARK_COLOR_8BIT;
 
 	if (!text || !*text) return; // empty text
@@ -285,17 +285,17 @@ void DrawText_Pos (int x, int y, char *text, float r, float g, float b)
 	textbuf_count++;
 }
 
-void DrawText_Left (char *text, float r, float g, float b)
+void DrawText_Left (char *text, unsigned rgba)
 {
 	if (next_left_y >= vid.height) return; // out of screen
-	DrawText_Pos (0, next_left_y, text, r, g, b);
+	DrawText_Pos (0, next_left_y, text, rgba);
 	next_left_y += 8;
 }
 
-void DrawText_Right (char *text, float r, float g, float b)
+void DrawText_Right (char *text, unsigned rgba)
 {
 	if (next_right_y >= vid.height) return; // out of screen
-	DrawText_Pos (vid.width - strlen(text) * 8, next_right_y, text, r, g, b);
+	DrawText_Pos (vid.width - strlen(text) * 8, next_right_y, text, rgba);
 	next_right_y += 8;
 }
 

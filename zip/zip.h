@@ -46,7 +46,7 @@ typedef struct
 } ZBUF;
 
 
-typedef int (*enum_zip_func) (zip_file *file);
+typedef bool (*enum_zip_func) (zip_file *file);
 
 // Opens archive. Return NULL if file not found or bad archive.
 // Remark: we can use simple fopen(name) for this operation, but

@@ -174,6 +174,9 @@ BSP:
   4) leaf-use-detailTex
 - portals:
   - try software clipplane (1. add to frustum; 2. clip triangles)
+  - use GetBoxRect(surfBBox) to help computing portal frustum
+  - use 'Oblique Frustum Clipping' (NV demos) for free clip plane (aligns near clip plane to user clip plane, this
+    will modify Z coord, but allows clipping using 'Z<0')
   - add 2nd {viewcluster, leaf[].frame} set (1st for main scene, 2nd for portal) -- Q3 has recalculation of leaf visibility
     every frame twice, and without portal - once per few frames.
 ? place LoadMd2 outside ref_xxx and perform lovercase for a skin names

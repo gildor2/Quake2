@@ -23,7 +23,7 @@ GRAPHICS
 * "ckcomp1": have minlight, specified from command line (can be taken from map's readme)
 - "darkalley": have too dark places (but walls are lighted)
 - "kumanru": very bright sky (SURF_LIGHT), secondary light sources (too dark shadows)
-- "underrain": have caves with SURF_SKY lighting (without drawing sky)
+- "underrain": have caves with SURF_SKY lighting (without drawing sky); and: sky is invisible, but eats fillrate
 ??* "stdm1": minlight (cmdline)
 - "bluskys": have "light" with "spawnflags"=2 (lightflare+light)
 * "pier2": minlight (cmdline)
@@ -32,6 +32,11 @@ GRAPHICS
 ------------------------------
 - "tchurch-beta3": too many dynamic lightmaps (slower than oldgl; oldgl is slow)
 ------------------------------
+
+MISC
+~~~~
+- "beachassault": when standing on wall (upstairs) inside ship projector cone, lighting may be incorrect when AddPointLight()
+  uses VectorNormalizeFast() instead of VectorNormalize() to detect distance/direction
 
 PHYSICS
 ~~~~~~~

@@ -32,7 +32,7 @@ typedef struct {
 	void	(*_Com_DPrintf) (char *str, ...);
 	void	(*_Com_WPrintf) (char *str, ...);
 	void	(*_Com_Error) (int err_level, char *str, ...);
-	qboolean	(*_FS_FileExists) (char *filename);
+	bool	(*_FS_FileExists) (char *filename);
 	basenamed_t*	(*_FS_ListFiles) (char *name, int *numfiles, int flags);
 	int	(*_FS_LoadFile) (char *name, void **buf);
 	void	(*_FS_FreeFile) (void *buf);

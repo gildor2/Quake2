@@ -47,7 +47,7 @@ void Inv_DrawString (int x, int y, char *string, qboolean hgl)
 
 	while (c = *string++)
 	{
-		color = hgl ? 7 : 6;
+		color = hgl ? 2 : 7;
 		re_DrawCharColor (x, y, c, color);
 		x += 8;
 	}
@@ -124,6 +124,4 @@ void CL_DrawInventory (void)
 		Inv_DrawString (x, y, string, item == selected);
 		y += 8;
 	}
-
-
 }

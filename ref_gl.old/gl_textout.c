@@ -11,12 +11,10 @@
 typedef struct textrec_s
 {
 	// screen position
-	int	x;
-	int	y;
+	int		x;
+	int		y;
 	// color
-	float	r;
-	float	g;
-	float	b;
+	unsigned rgba;
 	// text
 	char	*text;
 	// other
@@ -34,14 +32,14 @@ int gl_next_right_y = TOP_TEXT_POS;
 extern	image_t	*draw_chars;
 
 
-void DrawColoredText (int x, int y, char *text, float r, float g, float b)
+void DrawColoredText (int x, int y, char *text, unsigned rgba)
 {
 	char	c;
 	float	frow, fcol, size;
 
-	if (!text || !*text) return; // nothing to out
+	if (!text || !*text) return;	// nothing to out
 	GL_Bind (draw_chars->texnum);
-	qglColor3f (r, g, b);	// make colored chars
+	qglColor4ubv ((byte*)&rgba);	// make colored chars
 	GL_TexEnv(GL_MODULATE);
 	qglBegin (GL_QUADS);
 
@@ -78,7 +76,7 @@ void R_DrawTexts (void)
 	rec = (textrec_t*)gl_textbuf;
 	while (rec)
 	{
-		DrawColoredText (rec->x, rec->y, rec->text, rec->r, rec->g, rec->b);
+		DrawColoredText (rec->x, rec->y, rec->text, rec->rgba);
 		rec = rec->next;
 	}
 
@@ -86,7 +84,7 @@ void R_DrawTexts (void)
 }
 
 
-void DrawTextPos (int x, int y, char *text, float r, float g, float b)
+void DrawTextPos (int x, int y, char *text, unsigned rgba)
 {
 	int size;
 	char *text_copy;
@@ -110,9 +108,7 @@ void DrawTextPos (int x, int y, char *text, float r, float g, float b)
 	rec->x = x;
 	rec->y = y;
 	rec->text = text_copy;
-	rec->r = r;
-	rec->g = g;
-	rec->b = b;
+	rec->rgba= rgba;
 	rec->next = NULL;
 
 	if (gl_last_rec) gl_last_rec->next = rec;
@@ -122,17 +118,17 @@ void DrawTextPos (int x, int y, char *text, float r, float g, float b)
 }
 
 
-void DrawTextLeft (char *text, float r, float g, float b)
+void DrawTextLeft (char *text, unsigned rgba)
 {
 	if (gl_next_left_y >= vid.height) return; // out of screen
-	DrawTextPos (0, gl_next_left_y, text, r, g, b);
+	DrawTextPos (0, gl_next_left_y, text, rgba);
 	gl_next_left_y += CHARSIZE_Y;
 }
 
 
-void DrawTextRight (char *text, float r, float g, float b)
+void DrawTextRight (char *text, unsigned rgba)
 {
 	if (gl_next_right_y >= vid.height) return; // out of screen
-	DrawTextPos (vid.width - strlen(text) * CHARSIZE_X, gl_next_right_y, text, r, g, b);
+	DrawTextPos (vid.width - strlen(text) * CHARSIZE_X, gl_next_right_y, text, rgba);
 	gl_next_right_y += CHARSIZE_Y;
 }

@@ -864,6 +864,6 @@ rserr_t		SWimp_SetMode( int *pwidth, int *pheight, int mode, qboolean fullscreen
 void		SWimp_AppActivate( qboolean active );
 
 void R_DrawTexts (void);
-void DrawText_Pos (int x, int y, char *text, float r, float g, float b);
-void DrawText_Left (char *text, float r, float g, float b);
-void DrawText_Right (char *text, float r, float g, float b);
+void DrawText_Pos (int x, int y, char *text, unsigned rgba);
+void DrawText_Left (char *text, unsigned rgba);
+void DrawText_Right (char *text, unsigned rgba);

@@ -159,7 +159,7 @@ void S_TransferPaintBuffer(int endtime)
 
 		// write a fixed sine wave
 		count = (endtime - paintedtime);
-		for (i=0 ; i<count ; i++)
+		for (i = 0; i < count; i++)
 			paintbuffer[i].left = paintbuffer[i].right = sin((paintedtime+i)*0.1)*20000*256;
 	}
 
@@ -230,9 +230,9 @@ void S_PaintChannels(int endtime)
 	int		ltime, count;
 	playsound_t	*ps;
 
-	snd_vol = s_volume->value*256;
+	snd_vol = Q_round (s_volume->value * 255);
 
-//Com_Printf ("%i to %i\n", paintedtime, endtime);
+//	Com_Printf ("%i to %i\n", paintedtime, endtime);
 	while (paintedtime < endtime)
 	{
 		// if paintbuffer is smaller than DMA buffer
@@ -275,10 +275,10 @@ void S_PaintChannels(int endtime)
 				s = i&(MAX_RAW_SAMPLES-1);
 				paintbuffer[i-paintedtime] = s_rawsamples[s];
 			}
-//		if (i != end)
-//			Com_Printf ("partial stream\n");
-//		else
-//			Com_Printf ("full stream\n");
+//			if (i != end)
+//				Com_Printf ("partial stream\n");
+//			else
+//				Com_Printf ("full stream\n");
 			for ( ; i<end ; i++)
 			{
 				paintbuffer[i-paintedtime].left =
@@ -353,10 +353,10 @@ void S_InitScaletable (void)
 	int		scale;
 
 	s_volume->modified = false;
-	for (i=0 ; i<32 ; i++)
+	for (i = 0; i < 32; i++)
 	{
-		scale = i * 8 * 256 * s_volume->value;
-		for (j=0 ; j<256 ; j++)
+		scale = Q_round (i * 8 * 256 * s_volume->value);
+		for (j = 0; j < 256; j++)
 			snd_scaletable[i][j] = ((signed char)j) * scale;
 	}
 }
@@ -373,10 +373,8 @@ void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int count, int offset)
 	int		i;
 	portable_samplepair_t	*samp;
 
-	if (ch->leftvol > 255)
-		ch->leftvol = 255;
-	if (ch->rightvol > 255)
-		ch->rightvol = 255;
+	if (ch->leftvol > 255)	ch->leftvol = 255;
+	if (ch->rightvol > 255)	ch->rightvol = 255;
 
 	//ZOID-- >>11 has been changed to >>3, >>11 didn't make much sense
 	//as it would always be zero.
@@ -386,7 +384,7 @@ void S_PaintChannelFrom8 (channel_t *ch, sfxcache_t *sc, int count, int offset)
 
 	samp = &paintbuffer[offset];
 
-	for (i=0 ; i<count ; i++, samp++)
+	for (i = 0; i < count; i++, samp++)
 	{
 		data = sfx[i];
 		samp->left += lscale[data];

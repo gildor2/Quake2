@@ -32,15 +32,12 @@ float		gl_fogStart, gl_fogEnd;
  *   2. frustum cull leafs
  *   3. backface/frustum cull leaffaces
  * Culling on inline models:
- *   1. frustum cull entire model
- *   2. backface/frustum cull model surfaces
+ *   1. frustum cull (entire model)
+ *   2. occlusion cull (entire model)
+ *   3. backface/frustum cull model surfaces
  * Culling triangle models:
- *   1. frustum cull entire model
- *
- * TODO: ??
- *   - oclusion culling (leafs, models, surfaces)
- *   - trisurfs backface culling
- *   ? weapon model tris frustum culling (with lower plane)
+ *   1. frustum cull (entire model)
+ *   2. occlusion cull (entire model)
  */
 
 /*------------------- Frustum culling -------------------*/
@@ -81,9 +78,11 @@ static int BoxCull (vec3_t mins, vec3_t maxs, int frustumMask)
 static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 {
 	int		i, res, frustumMask, mask;
-//	float	*v;
 	cplane_t *fr;
-//	vec3_t	box[8];
+#if 0
+	float	*v;
+	vec3_t	box[8];
+#endif
 
 	if (r_nocull->integer)
 		return FRUSTUM_ON;
@@ -244,7 +243,7 @@ static int PointCull (vec3_t point, int frustumMask)
 
 #define NUM_TEST_BRUSHES	2 // 32
 
-static qboolean BoxOccluded (refEntity_t *e, vec3_t size2)
+static bool BoxOccluded (refEntity_t *e, vec3_t size2)
 {
 	float	mins2[2], maxs2[2];
 	vec3_t	v, left, right;
@@ -280,7 +279,7 @@ static qboolean BoxOccluded (refEntity_t *e, vec3_t size2)
 }
 
 
-static qboolean WorldBoxOccluded (vec3_t mins, vec3_t maxs)
+static bool WorldBoxOccluded (vec3_t mins, vec3_t maxs)
 {
 	int		i;
 	vec3_t	v;
@@ -379,12 +378,10 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 		if (entPos < -im->radius || entPos > traceLen + im->radius)
 			continue;		// too near / too far
 
-//DrawTextLeft(va("clip: %s (pos: %g)", e->model->name, entPos),0,1,1);//!!
 		VectorMA (center2, -entPos, traceDir, tmp);
 		dist2 = DotProduct (tmp, tmp);
 		if (dist2 >= im->radius * im->radius) continue;
 
-//DrawTextLeft(va("clip: %s (dist2: %g)", e->model->name, dist2),1,1,1);//!!
 		// trace
 		if (!e->worldMatrix)
 			CM_TransformedBoxTrace2 (&trace, start, end, zero, zero, im->headnode, brushmask, e->origin, e->axis);
@@ -412,9 +409,9 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 /*-------------- BSP object insertion ----------------*/
 
 /* NOTE:
-  ?? required for ents with shader->sort > OPAQUE (sort alpha-ents)
-  - useful for other entity types when occlusion culling will be imlemented
-    (insert ents AFTER world culling)
+  - required for ents with shader->sort > OPAQUE (sort alpha-ents)
+  - useful for other entity types if world occlusion culling will be
+    imlemented (insert ents AFTER world culling)
 */
 
 // Find nearest to sphere center visible leaf, occupied by entity bounding sphere
@@ -634,23 +631,16 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 						else
 							dl_org = dl->modelOrg;
 						dist = DISTANCE_TO_PLANE(dl_org, &pl->plane);
-//if (currentEntity != ENTITYNUM_WORLD)//!!
-//	DrawTextLeft(va("dl: dist=%g :: surf=(%g,%g)-(%g,%g)",dist,pl->mins2[0],pl->maxs2[0],pl->mins2[1],pl->maxs2[1]),1,0,1);
 						if (!gl_dlightBacks->integer && dist < -8) CULL_DLIGHT;
 						if (dist < 0) dist = -dist;
 
 						if (dist >= dl->intensity) CULL_DLIGHT;
-						rad = sqrt (dl->intensity * dl->intensity - dist * dist);	//!! use tables
+						rad = dl->intensity * dl->intensity - dist * dist;
+						rad = SQRTFAST(rad);
 						org0 = DotProduct (dl_org, pl->axis[0]);
-//if (currentEntity != ENTITYNUM_WORLD)//!!
-//	DrawTextLeft(va("    rad=%g :: org0=%g",rad,org0),1,0,1);
 						if (org0 < pl->mins2[0] - rad || org0 > pl->maxs2[0] + rad) CULL_DLIGHT;
 						org1 = DotProduct (dl_org, pl->axis[1]);
-//if (currentEntity != ENTITYNUM_WORLD)//!!
-//	DrawTextLeft(va("    org1=%g",org1),1,0,1);
 						if (org1 < pl->mins2[1] - rad || org1 > pl->maxs2[1] + rad) CULL_DLIGHT;
-//if (currentEntity != ENTITYNUM_WORLD)//!!
-//	DrawTextLeft(va("    org=(%g,%g)",org0,org1),1,0,1);
 						// save dlight info
 						sdl->pos[0] = org0;
 						sdl->pos[1] = org1;
@@ -674,7 +664,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 				surf->dlightMask = 0;
 			break;
 		default:
-			DrawTextLeft ("unknows surface type", 1, 0, 0);
+			DrawTextLeft ("unknows surface type", RGB(1, 0, 0));
 			continue;
 		}
 		//!! apply fog
@@ -695,7 +685,6 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 	unsigned dlightMask, mask;
 
 	im = e->model->inlineModel;
-//	DrawTextLeft (va("%s {%g,%g,%g}", e->model->name, VECTOR_ARG(e->center)), 1, 0.2, 0.2);
 	// check dlights
 	dlightMask = 0;
 	for (i = 0, dl = vp.dlights, mask = 1; i < vp.numDlights; i++, dl++, mask <<= 1)
@@ -720,8 +709,6 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 			surf->dlightFrame = drawFrame;
 			surf->dlightMask = dlightMask;
 		}
-//	if (dlightMask) DrawTextLeft(va("dl_ent %d(%g,%g,%g) %08X", currentEntity,
-//		VECTOR_ARG(e->center),dlightMask),1,1,0);//!!!! REMOVE
 	AddBspSurfaces (im->faces, im->numFaces, e->frustumMask, e);
 }
 
@@ -789,7 +776,7 @@ static void AddSp2Surface (refEntity_t *e)
 	// setup color
 	color = e->shaderColor.rgba;
 	if (!(e->flags & RF_TRANSLUCENT))
-		color |= 0xFF000000;		// make it non-transparent
+		color |= RGBA(0,0,0,1);						// make it non-transparent
 	p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color;
 
 	surf = GL_AddDynamicSurface (frame->shader, ENTITYNUM_WORLD);
@@ -937,11 +924,11 @@ static void AddCylinderSurfaces (refEntity_t *e)
 		switch (i)
 		{
 		case 0:										// starting
-			angle = -0.25;
+			angle = -0.25f;
 			angleStep = 1.0f / CYLINDER_PARTS;
 			break;
 		case CYLINDER_PARTS/2:
-			angle = 0.75;
+			angle = 0.75f;
 			angleStep = -1.0f / CYLINDER_PARTS;
 			break;
 		}
@@ -954,7 +941,7 @@ static void AddCylinderSurfaces (refEntity_t *e)
 		// rotate dir1 & dir2 vectors
 		anglePrev = angle;
 		if (i == CYLINDER_PARTS/2-1 || i == CYLINDER_PARTS-1)
-			angle = 0.25;
+			angle = 0.25f;
 		else
 			angle += angleStep;
 
@@ -994,11 +981,11 @@ static void AddCylinderSurfaces (refEntity_t *e)
 			}
 			else
 			{	// angles in 0.25..0.72 range
-				a1 = fabs (anglePrev - 0.5 + fixAngle);
-				a2 = fabs (angle - 0.5 + fixAngle);
+				a1 = fabs (anglePrev - 0.5f + fixAngle);
+				a2 = fabs (angle - 0.5f + fixAngle);
 			}
-			if (a1 > 0.25) a1 = 0.25;
-			if (a2 > 0.25) a2 = 0.25;
+			if (a1 > 0.25f) a1 = 0.25f;
+			if (a2 > 0.25f) a2 = 0.25f;
 			a1 = a1 * 4 * (1 - MIN_FIXED_ALPHA) + MIN_FIXED_ALPHA;
 			a2 = a2 * 4 * (1 - MIN_FIXED_ALPHA) + MIN_FIXED_ALPHA;
 
@@ -1159,7 +1146,7 @@ static node_t *WalkBspTree (void)
 		{
 			static int tests;
 			static int frm;
-			qboolean occl;
+			bool	occl;
 
 			/* NOTES:
 			 *   1. 1st version mostly faster (sometimes reverse !)
@@ -1185,16 +1172,16 @@ static node_t *WalkBspTree (void)
 					VectorMA (ent.center, mins2[0], vp.viewaxis[1], h);
 					VectorMA (h, mins2[1], vp.viewaxis[2], v);
 #if 1
-					DrawText3D(v, "*", 0.2, 0.6, 0.1);
+					DrawText3D(v, "*", RGB(0.2,0.6,0.1));
 					VectorMA (h, maxs2[1], vp.viewaxis[2], v);
-					DrawText3D(v, "*", 0.2, 0.6, 0.1);
+					DrawText3D(v, "*", RGB(0.2,0.6,0.1));
 					VectorMA (ent.center, maxs2[0], vp.viewaxis[1], h);
 					VectorMA (h, mins2[1], vp.viewaxis[2], v);
-					DrawText3D(v, "*", 0.2, 0.6, 0.1);
+					DrawText3D(v, "*", RGB(0.2,0.6,0.1));
 					VectorMA (h, maxs2[1], vp.viewaxis[2], v);
-					DrawText3D(v, "*", 0.2, 0.6, 0.1);
+					DrawText3D(v, "*", RGB(0.2,0.6,0.1));
 #else
-					DrawText3D(v, va("(%d: %gx%gx%g)", sptr, ent.maxs[0]*2,ent.maxs[1]*2,ent.maxs[2]*2), 0.3, 0.9, 0.2);
+					DrawText3D(v, va("(%d: %gx%gx%g)", sptr, ent.maxs[0]*2,ent.maxs[1]*2,ent.maxs[2]*2), RGB(0.3,0.9,0.2));
 #endif
 				}
 			}
@@ -1207,7 +1194,7 @@ static node_t *WalkBspTree (void)
 			// stats
 			if (frm != drawFrame)
 			{
-				DrawTextLeft (va("occl: %d", tests),1,1,1);
+				DrawTextLeft (va("occl: %d", tests),RGB(1,1,1));
 				frm = drawFrame;
 				tests = 0;
 			}
@@ -1350,7 +1337,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 				leaf = AlphaSphereLeaf (e->origin, e->radius);
 				break;
 			default:
-				DrawTextLeft (va("DrawEntities: bad model type %d", e->model->type), 1, 0, 0);
+				DrawTextLeft (va("DrawEntities: bad model type %d", e->model->type), RGB(1, 0, 0));
 				continue;
 			}
 		}
@@ -1375,19 +1362,21 @@ static void DrawEntities (int firstEntity, int numEntities)
 		}
 		else
 		{
-			DrawText3D (e->origin, va("* bad ent %d: f=%X", i, e->flags), 1, 0, 0);
+			DrawText3D (e->origin, va("* bad ent %d: f=%X", i, e->flags), RGB(1,0,0));
 			continue;
 		}
 
 		if (!leaf) CULL_ENT;			// entity do not occupy any visible leafs
 
 		// occlusion culling
-		if (e->model && gl_oCull->integer && !(e->flags & RF_DEPTHHACK))
+		if (e->model && gl_oCull->integer && !(e->flags & RF_DEPTHHACK) &&
+			(e->model->type == MODEL_INLINE || e->model->type == MODEL_MD3))
+			//?? sprites too (depend on size/dist; use 4 its points to cull)
 		{
 			if (BoxOccluded (e, e->size2))
 			{
 				if (gl_labels->integer == 2)
-					DrawText3D (e->center, va("occluded\n%s", e->model->name), 0.1, 0.2, 0.4);
+					DrawText3D (e->center, va("occluded\n%s", e->model->name), RGB(0.1,0.2,0.4));
 				gl_speeds.ocullEnts++;
 				continue;
 			}
@@ -1399,12 +1388,15 @@ static void DrawEntities (int firstEntity, int numEntities)
 			{
 			case MODEL_INLINE:
 				DrawText3D (e->center, va("origin: %g %g %g\nbmodel: %s\nflags: $%X",
-					VECTOR_ARG(e->origin), e->model->name, e->flags), 0.1, 0.4, 0.2);
+					VECTOR_ARG(e->origin), e->model->name, e->flags), RGB(0.1,0.4,0.2));
 				break;
 			case MODEL_MD3:
 				DrawText3D (e->center, va("origin: %g %g %g\nmd3: %s\nskin: %s\nflags: $%X",
-					VECTOR_ARG(e->origin), e->model->name, e->customShader ? e->customShader->name : "(default)", e->flags), 0.1, 0.4, 0.2);
+					VECTOR_ARG(e->origin), e->model->name, e->customShader ? e->customShader->name : "(default)", e->flags), RGB(0.1,0.4,0.2));
 				break;
+//			default:
+//				DrawText3D (e->center, va("origin: %g %g %g\nmodel: %s",
+//					VECTOR_ARG(e->origin), e->model->name), RGB(0.4,0.1,0.2));
 			}
 		}
 
@@ -1476,7 +1468,7 @@ static void DrawFlares (void)
 
 	for (f = map.flares; f ; f = f->next)
 	{
-		qboolean cull;
+		bool	cull;
 		surfaceCommon_t *surf;
 		surfacePoly_t *p;
 		float	scale;
@@ -1519,7 +1511,7 @@ static void DrawFlares (void)
 				VectorAdd (im->mins, im->maxs, tmp);
 				VectorMA (e->center, -0.5f, tmp, tmp);
 				VectorAdd (flarePos, tmp, flarePos);
-//				DrawTextLeft (va("flare shift: %g %g %g -> flarePos: %g %g %g", VECTOR_ARG(tmp), VECTOR_ARG(flarePos)),1,1,1);
+//				DrawTextLeft (va("flare shift: %g %g %g -> flarePos: %g %g %g", VECTOR_ARG(tmp), VECTOR_ARG(flarePos)),RGB(1,1,1));
 			}
 			// perform PVS cull for flares with radius 0 (if flare have radius > 0
 			// it (mostly) will be placed inside invisible (solid) leaf)
@@ -1782,7 +1774,7 @@ void GL_AddEntity (entity_t *ent)
 {
 	refEntity_t	*out;
 	vec3_t	v;
-	qboolean mirror;
+	bool	mirror;
 
 	if (gl_numEntities >= MAX_GLENTITIES)
 	{
@@ -1830,7 +1822,7 @@ void GL_AddEntity (entity_t *ent)
 
 		out->customShader = (shader_t*) ent->skin;	//!! should use customSkin
 		out->skinNum = ent->skinnum;				//?? check skinnum in [0..model.numSkins]
-		out->shaderColor.rgba = 0xFFFFFF;
+		out->shaderColor.rgba = RGB(1,1,1);
 		out->shaderColor.c[3] = Q_round (ent->alpha * 255);
 
 		// model-specific code and calculate model center
@@ -1858,12 +1850,12 @@ void GL_AddEntity (entity_t *ent)
 				// sanity check
 				if (out->frame >= md3->numFrames || out->frame < 0)
 				{
-					DrawTextLeft (va("R_AddEntity: no frame %d in %s\n", out->frame, out->model->name), 1,0,0);
+					DrawTextLeft (va("R_AddEntity: no frame %d in %s\n", out->frame, out->model->name), RGB(1,0,0));
 					out->frame = out->oldFrame = 0;
 				}
 				if (out->oldFrame >= md3->numFrames || out->oldFrame < 0)
 				{
-					DrawTextLeft (va("R_AddEntity: no frame %d in %s\n", out->oldFrame, out->model->name), 1,0,0);
+					DrawTextLeft (va("R_AddEntity: no frame %d in %s\n", out->oldFrame, out->model->name), RGB(1,0,0));
 					out->frame = out->oldFrame = 0;
 				}
 				frame1 = md3->frames + out->frame;
@@ -1886,9 +1878,9 @@ void GL_AddEntity (entity_t *ent)
 					out->customShader = gl_colorShellShader;
 					out->shaderColor.rgba = 0x202020;			// required for RED/GREEN/BLUE
 					if (ent->flags & RF_SHELL_HALF_DAM)
-						out->shaderColor.rgba = 0x73968F;
+						out->shaderColor.rgba = RGB(0.56, 0.59, 0.45);
 					if (ent->flags & RF_SHELL_DOUBLE)
-						out->shaderColor.rgba = 0x00B2E5;
+						out->shaderColor.rgba = RGB(0.9, 0.7 ,0);
 					if (ent->flags & RF_SHELL_RED)
 						out->shaderColor.c[0] = 255;
 					if (ent->flags & RF_SHELL_GREEN)

@@ -332,18 +332,18 @@ void R_DrawEntitiesOnList (void)
 
 		if ( currententity->flags & RF_BEAM )
 		{
-//			DrawTextLeft("beam",1,1,1);//!!
+//			DrawTextLeft("beam", RGB(1,1,1));//!!
 			R_DrawBeam( currententity );
 		}
 		else
 		{
 			if (!currentmodel)
 			{
-//				DrawTextLeft("NULL",1,1,1);//!!
+//				DrawTextLeft("NULL", RGB(1,1,1));//!!
 				R_DrawNullModel ();
 				continue;
 			}
-//			DrawTextLeft(va("\"%s\"",currentmodel->name),1,1,1);//!!
+//			DrawTextLeft(va("\"%s\"",currentmodel->name), RGB(1,1,1));//!!
 			switch (currentmodel->type)
 			{
 			case mod_alias:
@@ -376,18 +376,18 @@ void R_DrawEntitiesOnList (void)
 
 		if ( currententity->flags & RF_BEAM )
 		{
-//			DrawTextLeft("beam2",1,1,1);//!!
+//			DrawTextLeft("beam2", RGB(1,1,1));//!!
 			R_DrawBeam( currententity );
 		}
 		else
 		{
 			if (!currentmodel)
 			{
-//				DrawTextLeft("NULL2",1,1,1);//!!
+//				DrawTextLeft("NULL2", RGB(1,1,1));//!!
 				R_DrawNullModel ();
 				continue;
 			}
-//			DrawTextLeft(va("\"%s\"2",currentmodel->name),1,1,1);//!!
+//			DrawTextLeft(va("\"%s\"2",currentmodel->name), RGB(1,1,1));//!!
 			switch (currentmodel->type)
 			{
 			case mod_alias:
@@ -867,11 +867,11 @@ void R_RenderView (refdef_t *fd)
 	{
 		DrawTextRight (va("%4i wpoly %4i epoly %i tex %i lmaps",
 			c_brush_polys, c_alias_polys, c_visible_textures, c_visible_lightmaps),
-			1, 0.5, 0);
+			RGB(1, 0.5, 0));
 		if (!(r_newrefdef.rdflags & RDF_NOWORLDMODEL))
 			DrawTextRight (va("%4i visleafs %4i frustleafs of %4i total",
 				c_visibleleafs, c_leafsinfrustum, r_worldmodel->numleafs),
-				1, 0.5, 0);
+				RGB(1, 0.5, 0));
 	}
 }
 
@@ -1544,10 +1544,10 @@ static void R_EndFrame (void)
 			gl_speeds.beginBk - gl_speeds.beginWorld,
 			gl_speeds.endBk - gl_speeds.beginBk,
 			gl_speeds.endFrame - gl_speeds.endBk
-			), 1, 0.5, 0);
+			), RGB(1, 0.5, 0));
 		DrawTextRight (va("binds: %2d uploads: %2d",
 			gl_speeds.numBinds, gl_speeds.numUploads
-			), 1, 0.5, 0);
+			), RGB(1, 0.5, 0));
 	}
 }
 

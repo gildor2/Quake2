@@ -15,8 +15,21 @@
 typedef union
 {
 	byte	c[4];
-	int		rgba;
+	unsigned rgba;
 } color_t;
+
+#undef RGBA
+#undef RGB
+
+// constant colors
+#define RGBA(r,g,b,a)		((int)((r)*255) | ((int)((g)*255)<<8) | ((int)((b)*255)<<16) | ((int)((a)*255)<<24))
+#define RGB(r,g,b)			RGBA(r,g,b,1)
+#define RGB255(r,g,b)		((r) | ((g)<<8) | ((b)<<16) | (255<<24))
+#define RGBA255(r,g,b,a)	((r) | ((g)<<8) | ((b)<<16) | ((a)<<24))
+
+// computed colors
+#define RGBAS(r,g,b,a)		(Q_round((r)*255) | (Q_round((g)*255)<<8) | (Q_round((b)*255)<<16) | (Q_round((a)*255)<<24))
+#define RGBS(r,g,b)			(Q_round((r)*255) | (Q_round((g)*255)<<8) | (Q_round((b)*255)<<16) | (255<<24))
 
 
 typedef enum
@@ -188,9 +201,9 @@ typedef struct
 	void	(*AppActivate) (qboolean activate);
 
 	/*---- drawing colored text in any screen position ----*/
-	void	(*DrawTextPos) (int x, int y, char *text, float r, float g, float b);
-	void	(*DrawTextLeft) (char *text, float r, float g, float b);
-	void	(*DrawTextRight) (char *text, float r, float g, float b);
+	void	(*DrawTextPos) (int x, int y, char *text, unsigned rgba);
+	void	(*DrawTextLeft) (char *text, unsigned rgba);
+	void	(*DrawTextRight) (char *text, unsigned rgba);
 
 	/*---- draw char at (x,y) (char-related coordinates) ----*/
 	void	(*DrawConCharColor) (int x, int y, int c, int color);

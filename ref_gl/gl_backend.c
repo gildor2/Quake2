@@ -1,6 +1,7 @@
 #include "gl_local.h"
 #include "gl_backend.h"
 #include "gl_image.h"
+#include "gl_light.h"
 #include "gl_lightmap.h"
 #include "gl_sky.h"
 #include "gl_math.h"
@@ -10,7 +11,7 @@
 //#define SWAP_ON_BEGIN		// call GLimp_EndFrame() with SwapBuffers() on frame begin (or frame end if not defined)
 
 /* LATER: replace (almost) all ap.time -> shader.time (or global "shaderTime") ??
- * (because time may be take (if engine will be extended) from entity)
+ * (because time may be taken (if engine will be extended) from entity)
  */
 
 
@@ -109,7 +110,8 @@ static void ProcessShaderDeforms (shader_t *sh)
 
 static void GenerateColorArray (shaderStage_t *st)
 {
-	int		i, rgba;
+	int		i;
+	unsigned rgba;
 	byte	a;
 	color_t	*src, *dst;
 
@@ -173,8 +175,11 @@ static void GenerateColorArray (shaderStage_t *st)
 			dst->c[2] = (255 - src->c[2]) >> gl_config.overbright;
 		}
 		break;
-	case RGBGEN_LIGHTING_DIFFUSE:
-		GL_ApplyEntitySpherelights (dst);
+	case RGBGEN_DIFFUSE:
+		GL_DiffuseLight (dst, 1);
+		break;
+	case RGBGEN_HALF_DIFFUSE:
+		GL_DiffuseLight (dst, 0.5f);
 		break;
 	// other types: FOG
 	}
@@ -383,18 +388,20 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 			}
 			break;
 		case TCMOD_TURB:
-			f1 = tcmod->wave.freq * vp.time + tcmod->wave.phase;
-			f2 = tcmod->wave.amp;
-			for (k = 0; k < gl_numVerts; k++, dst++)
 			{
-				float	*vec, f;
+				bufVertex_t *vec;
+				float	f;
 
-				vec = &vb->verts[k].xyz[0];	//?? optimize (vec++, but with different type)
-				f = SIN_FUNC((vec[0] + vec[1] + vec[2]) / TABLE_SIZE + f1) * f2;
-				dst->tex[0] += f;
-				dst->tex[1] += f;
-//				dst->tex[0] += PERIODIC_FUNC(sinTable, (vec[0] + vec[2]) / TABLE_SIZE + f1) * f2;	// Q3: vec[0] + vec[2]
-//				dst->tex[1] += PERIODIC_FUNC(sinTable, (vec[1] + vec[2]) / TABLE_SIZE + f1) * f2;	// Q3: vec[1]
+				f1 = tcmod->wave.freq * vp.time + tcmod->wave.phase;
+				f2 = tcmod->wave.amp;
+				for (k = 0, vec = vb->verts; k < gl_numVerts; k++, dst++, vec++)
+				{
+					f = SIN_FUNC((vec->xyz[0] + vec->xyz[1] + vec->xyz[2]) / TABLE_SIZE + f1) * f2;
+					dst->tex[0] += f;
+					dst->tex[1] += f;
+//					dst->tex[0] += PERIODIC_FUNC(sinTable, (vec->xyz[0] + vec->xyz[2]) / TABLE_SIZE + f1) * f2;	// Q3: vec[0] + vec[2]
+//					dst->tex[1] += PERIODIC_FUNC(sinTable, (vec->xyz[1] + vec->xyz[2]) / TABLE_SIZE + f1) * f2;	// Q3: vec[1]
+				}
 			}
 			break;
 		case TCMOD_WARP:
@@ -444,10 +451,11 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 // should rename "temp", "tmp" ?? (rendererStage_t ?)
 typedef struct
 {
-	unsigned texEnv;		// REPLACE/MODILATE/ADD or COMBINE/COMBINE_NV (uses st.glState.blend ??)
+	unsigned texEnv;		// REPLACE/MODILATE/ADD or COMBINE/COMBINE_NV
 	byte	tmu;
-	byte	constRGBA;		// bool
-	byte	identityRGBA;	// bool
+	bool	constRGBA;
+	bool	identityRGBA;
+	bool	doubleRGBA;
 	shaderStage_t st;		// modified copy of original stage (or auto-generated stage)
 } tempStage_t;
 
@@ -488,7 +496,7 @@ static void PreprocessShader (shader_t *sh)
 	tempStage_t *st;
 	renderPass_t *pass;
 	int		tmuUsed, tmuLeft, passStyle;
-	qboolean entityLightingDone;
+	bool	entityLightingDone;
 
 	debugMode = 0;
 	if (r_fullbright->integer) debugMode |= DEBUG_FULLBRIGHT;
@@ -496,6 +504,7 @@ static void PreprocessShader (shader_t *sh)
 
 	st = tmpSt;
 	numTmpStages = 0;
+	memset (tmpSt, 0, sizeof(tmpSt));			// initialize all fields with zeros
 
 	// get lightmap stage (should be first ??)
 	lmStage = NULL;
@@ -557,10 +566,10 @@ static void PreprocessShader (shader_t *sh)
 					byte	c;
 
 					c = vp.lightStyles[style].value;
-					st->st.rgbaConst.rgba = (255 << 24) | (c << 16) | (c << 8) | c;
+					st->st.rgbaConst.rgba = RGB255(c,c,c);
 				}
 				else
-					st->st.rgbaConst.rgba = 0xFFFFFFFF;
+					st->st.rgbaConst.rgba = RGBA(1,1,1,1);
 				// set tcGen
 				st->st.tcGenType = style ? TCGEN_LIGHTMAP1 + i : TCGEN_LIGHTMAP;
 				st->st.numTcMods = 0;
@@ -608,14 +617,14 @@ static void PreprocessShader (shader_t *sh)
 		}
 		if (debugMode == (DEBUG_LIGHTMAP|DEBUG_FULLBRIGHT) && !gl_state.is2dMode)
 			st->st.glState |= GLSTATE_POLYGON_LINE;
-		if (!i && (currentShader->lightmapNumber == LIGHTMAP_VERTEX || stage->rgbGenType == RGBGEN_LIGHTING_DIFFUSE))
+		if (!i && (currentShader->lightmapNumber == LIGHTMAP_VERTEX || stage->rgbGenType == RGBGEN_DIFFUSE))
 		{
 			if (debugMode == DEBUG_LIGHTMAP)
 				st->st.mapImage[0] = NULL;
 			else if (debugMode == DEBUG_FULLBRIGHT)
 			{
 				st->st.rgbGenType = RGBGEN_CONST;
-				st->st.rgbaConst.rgba |= 0xFFFFFF;
+				st->st.rgbaConst.rgba |= RGBA(1,1,1,0);
 			}
 		}
 
@@ -630,7 +639,6 @@ static void PreprocessShader (shader_t *sh)
 		switch (st->st.rgbGenType)
 		{
 		// NONE, IDENTITY, IDENTITY_LIGHTING: already converted to CONST (on shader loading)
-		//?? check later for "entity >> overbright" validness
 		case RGBGEN_ENTITY:
 			st->st.rgbaConst.c[0] = currentEntity->shaderColor.c[0] >> gl_config.overbright;
 			st->st.rgbaConst.c[1] = currentEntity->shaderColor.c[1] >> gl_config.overbright;
@@ -658,7 +666,7 @@ static void PreprocessShader (shader_t *sh)
 				st->st.rgbGenType = RGBGEN_CONST;
 			}
 			break;
-		case RGBGEN_LIGHTING_DIFFUSE:
+		case RGBGEN_DIFFUSE:
 			if (!entityLightingDone)
 			{
 				if (currentEntity->flags & RF_FULLBRIGHT)
@@ -667,7 +675,16 @@ static void PreprocessShader (shader_t *sh)
 					st->st.rgbGenType = RGBGEN_CONST;
 				}
 				else
+				{
 					GL_LightForEntity (currentEntity);
+					if (GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE) &&		//?? NV_COMBINE4
+						!gl_config.overbright &&		// allows double brightness by itself
+						i == 0)			//?? should analyze blend: can be 'src'=='no blend' or 'src*dst'
+					{
+						st->st.rgbGenType = RGBGEN_HALF_DIFFUSE;
+						st->doubleRGBA = true;
+					}
+				}
 				entityLightingDone = true;
 			}
 			break;
@@ -687,11 +704,11 @@ static void PreprocessShader (shader_t *sh)
 		}
 
 		st->constRGBA = (st->st.rgbGenType == RGBGEN_CONST && st->st.alphaGenType == ALPHAGEN_CONST);
-		st->identityRGBA = (st->constRGBA && st->st.rgbaConst.rgba == 0xFFFFFFFF);
+		st->identityRGBA = (st->constRGBA && st->st.rgbaConst.rgba == RGBA(1,1,1,1));
 	}
 
 	if (!numTmpStages)
-		DrawTextLeft (va("R_PreprocessShader(%s): 0 stages", currentShader->name), 1, 0, 0);
+		DrawTextLeft (va("R_PreprocessShader(%s): 0 stages", currentShader->name), RGB(1,0,0));
 
 	if (numTmpStages > MAX_TMP_STAGES)
 		Com_Error (ERR_FATAL, "R_PreprocessShader: numStages is too big (%d)", numTmpStages);
@@ -710,7 +727,9 @@ static void PreprocessShader (shader_t *sh)
 			pass->stages = st;
 			pass->colorStage = &st->st;
 			st->tmu = 0;
-			st->texEnv = TEXENV_MODULATE;
+			st->texEnv = st->doubleRGBA ?
+				TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX :
+				TEXENV_MODULATE;
 		}
 		numRenderPasses = numTmpStages;
 		return;
@@ -737,7 +756,9 @@ static void PreprocessShader (shader_t *sh)
 			pass->numStages = 1;
 			pass->stages = st;
 			pass->colorStage = &st->st;
-			st[0].texEnv = TEXENV_MODULATE;		// modulate with rgbaGen
+			st[0].texEnv = st->doubleRGBA ?
+				TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX :
+				TEXENV_MODULATE;			// modulate with rgbaGen
 
 			switch (pass->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
 			{
@@ -821,7 +842,7 @@ static void PreprocessShader (shader_t *sh)
 			(st[1].identityRGBA || (blend2 & GLSTATE_SRCMASK) == GLSTATE_SRC_ONE))
 		{
 			unsigned env, env1, env2, b1, b2;
-			qboolean combine;
+			bool	combine;
 			static unsigned blendToEnv[] = {	// this table is corresponding to GLSTATE_[SRC|DST]_XXX
 				0,
 				TEXENV_ZERO, TEXENV_ONE,
@@ -902,32 +923,6 @@ static void PreprocessShader (shader_t *sh)
 #undef LOG_PP
 
 
-//?? remove function
-static void DrawArrays (int *indexes, int numIndexes)
-{
-/*	if (!strcmp (currentShader->name, "*default"))	//!!
-	{
-		int *idx, i;
-		bufVertex_t *v;
-		bufTexCoord_t *t;
-
-		DrawTextLeft (va("--- draw arrays (%d, %d) ---", numVerts, numIndexes), 0,1,1);
-		v = &vb->verts[0];
-		t = &vb->texCoord0[0];
-		for (i = 0; i < numVerts; i++, v++, t++)
-		{
-			DrawTextLeft(va("%d.  v={%g,%g,%g} st={%g,%g}",i,v->xyz[0],v->xyz[1],v->xyz[2],t->tex[0],t->tex[1]), 0,1,0.5);
-		}
-		for (i = 0, idx = indexes; i < numIndexes; i += 6, idx += 6)
-		{
-			DrawTextLeft (va("  i = %d,%d,%d,%d,%d,%d",idx[0],idx[1],idx[2],idx[3],idx[4],idx[5]), 0,1,0.5);
-		}
-	}
-*/
-	glDrawElements (GL_TRIANGLES, numIndexes, GL_UNSIGNED_INT, indexes);
-}
-
-
 // forwards
 void DrawTriangles (void);
 void DrawNormals (void);
@@ -938,7 +933,7 @@ static void StageIterator (void)
 	int		i;
 	renderPass_t *pass;
 
-//	DrawTextLeft (va("StageIterator(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes),1,1,1);//!!!
+//	DrawTextLeft (va("StageIterator(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes), RGB(1,1,1));//!!!
 	LOG_STRING (va("*** StageIterator(%s, %d, %d) ***\n", currentShader->name, gl_numVerts, gl_numIndexes));
 
 	if (!currentShader->numStages)
@@ -1011,10 +1006,8 @@ static void StageIterator (void)
 		if (i == numRenderPasses - 1 && !(vp.flags & RDF_NOWORLDMODEL)
 			&& currentShader->type == SHADERTYPE_NORMAL && !gl_state.is2dMode)
 			GL_EnableFog (true);
-//		else if (Cvar_VariableInt("test"))//??
-//			GL_EnableFog (false);
 
-		DrawArrays (gl_indexesArray, gl_numIndexes);
+		glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 	}
 
 	/*----------------- finalize ------------------*/
@@ -1049,7 +1042,7 @@ static void SetCurrentShader (shader_t *shader)
 		// we can get situation, when verts==2 and inds==0 due to geometry simplification -- this is OK (??)
 		// sample: map "actmet", inside building with rotating glass doors, floor 2: exotic lamp (nested cilinders with alpha)
 	{
-		DrawTextLeft ("SetCurrentShader() without flush!",1,0,0);
+		DrawTextLeft ("SetCurrentShader() without flush!", RGB(1,0,0));
 		Com_WPrintf ("SetCurrentShader(%s) without flush (old: %s, %d verts, %d inds)\n",
 			shader->name, currentShader->name, gl_numVerts, gl_numIndexes);
 	}
@@ -1061,7 +1054,7 @@ static void SetCurrentShader (shader_t *shader)
 
 static void FlushArrays (void)
 {
-//	DrawTextLeft(va("FlushArrays(%s,%d,%d)\n",currentShader->name,numVerts,numIndexes),1,1,1);
+//	DrawTextLeft(va("FlushArrays(%s,%d,%d)\n",currentShader->name,numVerts,numIndexes), RGB(1,1,1));
 	if (!gl_numIndexes) return;	// buffer is empty
 
 	StageIterator ();
@@ -1109,12 +1102,7 @@ static void DrawSkyBox (void)
 	// change modelview matrix
 	glTranslatef (VECTOR_ARG(vp.vieworg));
 	if (currentShader->skyRotate)
-	{
-		glRotatef (vp.time * currentShader->skyRotate,
-			currentShader->skyAxis[0],
-			currentShader->skyAxis[1],
-			currentShader->skyAxis[2]);
-	}
+		glRotatef (vp.time * currentShader->skyRotate, VECTOR_ARG(currentShader->skyAxis));
 
 	GL_TexEnv (TEXENV_MODULATE);
 	glTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord[0]);
@@ -1130,7 +1118,7 @@ static void DrawSkyBox (void)
 		else
 			GL_Bind (NULL);			// disable texturing
 
-		DrawArrays (gl_indexesArray, gl_numIndexes);
+		glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 
 		//?? some debug stuff from StageIterator()
 		if (gl_showtris->integer)
@@ -1165,7 +1153,7 @@ static void CheckDynamicLightmap (surfaceCommon_t *s)
 	int		i, updateType;
 	surfacePlanar_t *surf;
 	dynamicLightmap_t *dl;
-	qboolean dlightUpdate;
+	bool	dlightUpdate;
 
 	if (!gl_dynamic->integer)
 		return;
@@ -1213,7 +1201,7 @@ static void TesselatePlanarSurf (surfacePlanar_t *surf)
 	bufExtra_t	*ex;
 	bufTexCoordSrc_t *t;
 	int			*idx, *idxSrc, i, firstVert, firstIndex;
-	int			*c;
+	unsigned	*c;
 	vertex_t	*vs;
 
 	ReserveVerts (surf->numVerts, surf->numIndexes);
@@ -1260,7 +1248,7 @@ static void TesselatePolySurf (surfacePoly_t *surf)
 	bufExtra_t	*ex;
 	bufTexCoordSrc_t *t;
 	int			*idx, i, firstVert, firstIndex;
-	int			*c;
+	unsigned	*c;
 	int			numIdx;
 	vertexPoly_t *vs;
 
@@ -1274,7 +1262,7 @@ static void TesselatePolySurf (surfacePoly_t *surf)
 
 	ex = &gl_extra[gl_numExtra++];
 	ex->numVerts = surf->numVerts;
-	// setup normal ??
+	// setup normal ?? -- depends on shader
 	ex->axis = NULL;
 	ex->dlight = NULL;
 
@@ -1289,9 +1277,9 @@ static void TesselatePolySurf (surfacePoly_t *surf)
 		VectorCopy (vs->xyz, v->xyz);		// copy vertex
 		t->tex[0] = vs->st[0];		// copy texture coords
 		t->tex[1] = vs->st[1];
-//	??	t->lm[0] = 0;				// copy lightmap coords
+//		t->lm[0] = 0;				// lightmap coords are undefined
 //		t->lm[1] = 0;
-		*c = vs->c.rgba;			// copy vertex color (sometimes may be ignored??)
+		*c = vs->c.rgba;			// copy vertex color (sometimes may be ignored ?)
 	}
 
 	// copy indexes
@@ -1312,7 +1300,7 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 	bufExtra_t	*ex;
 	bufTexCoordSrc_t *t;
 	int			*idx, *idxSrc, i, firstVert, firstIndex;
-	int			*c;
+	unsigned	*c;
 	vertexMd3_t	*vs1, *vs2;
 	float		*ts;
 	int		numIdx;
@@ -1334,7 +1322,6 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 	if (currentEntity->backLerp != 0.0f && currentEntity->frame != currentEntity->oldFrame)
 	{
 		float	frontScale, backScale, frontLerp;
-		float	a1, sa1, b1, a2, sa2, b2, *norm;
 
 		vs2 = surf->verts + surf->numVerts * currentEntity->oldFrame;
 		backScale = currentEntity->backLerp * MD3_XYZ_SCALE;
@@ -1342,20 +1329,23 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 		frontScale = frontLerp * MD3_XYZ_SCALE;
 		for (i = 0; i < surf->numVerts; i++, vs1++, vs2++, v++, ex++)
 		{
+			float	sa1, sa2, *norm;
+			int		a1, b1, a2, b2;
+
 			v->xyz[0] = vs1->xyz[0] * frontScale + vs2->xyz[0] * backScale;
 			v->xyz[1] = vs1->xyz[1] * frontScale + vs2->xyz[1] * backScale;
 			v->xyz[2] = vs1->xyz[2] * frontScale + vs2->xyz[2] * backScale;
 			norm = ex->normal;
 			// lerp normal
-			a1 = (vs1->normal & 255) / 255.0f;
-			b1 = ((vs1->normal >> 8) & 255) / 255.0f;
-			sa1 = SIN_FUNC(a1) * frontLerp;
-			a2 = (vs2->normal & 255) / 255.0f;
-			b2 = ((vs2->normal >> 8) & 255) / 255.0f;
-			sa2 = SIN_FUNC(a2) * currentEntity->backLerp;
-			norm[0] = sa1 * COS_FUNC(b1) + sa2 * COS_FUNC(b2);
-			norm[1] = sa1 * SIN_FUNC(b1) + sa2 * SIN_FUNC(b2);
-			norm[2] = COS_FUNC(a1) * frontLerp + COS_FUNC(a2) * currentEntity->backLerp;
+			a1 = vs1->normal & 255;
+			b1 = (vs1->normal >> 8) & 255;
+			sa1 = SIN_FUNC2(a1,256) * frontLerp;
+			a2 = vs2->normal & 255;
+			b2 = (vs2->normal >> 8) & 255;
+			sa2 = SIN_FUNC2(a2,256) * currentEntity->backLerp;
+			norm[0] = sa1 * COS_FUNC2(b1,256) + sa2 * COS_FUNC2(b2,256);
+			norm[1] = sa1 * SIN_FUNC2(b1,256) + sa2 * SIN_FUNC2(b2,256);
+			norm[2] = COS_FUNC2(a1,256) * frontLerp + COS_FUNC2(a2,256) * currentEntity->backLerp;
 			ex->numVerts = 1;
 			ex->axis = NULL;
 			ex->dlight = NULL;
@@ -1364,18 +1354,19 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 	else
 		for (i = 0; i < surf->numVerts; i++, vs1++, v++, ex++)
 		{
-			float	a, sa, b, *norm;
+			float	sa, *norm;
+			int		a, b;
 
 			v->xyz[0] = vs1->xyz[0] * MD3_XYZ_SCALE;
 			v->xyz[1] = vs1->xyz[1] * MD3_XYZ_SCALE;
 			v->xyz[2] = vs1->xyz[2] * MD3_XYZ_SCALE;
 			norm = ex->normal;
-			a = (vs1->normal & 255) / 255.0f;
-			b = ((vs1->normal >> 8) & 255) / 255.0f;
-			sa = SIN_FUNC(a);
-			norm[0] = sa * COS_FUNC(b);			// sin(a)*cos(b)
-			norm[1] = sa * SIN_FUNC(b);			// sin(a)*sin(b)
-			norm[2] = COS_FUNC(a);				// cos(a)
+			a = vs1->normal & 255;
+			b = (vs1->normal >> 8) & 255;
+			sa = SIN_FUNC2(a,256);
+			norm[0] = sa * COS_FUNC2(b,256);	// sin(a)*cos(b)
+			norm[1] = sa * SIN_FUNC2(b,256);	// sin(a)*sin(b)
+			norm[2] = COS_FUNC2(a,256);			// cos(a)
 			ex->numVerts = 1;
 			ex->axis = NULL;
 			ex->dlight = NULL;
@@ -1551,7 +1542,7 @@ static void DrawTriangles (void)
 		glColor3f (0, 0, 0);
 	glDisableClientState (GL_COLOR_ARRAY);
 	// draw
-	DrawArrays (gl_indexesArray, gl_numIndexes);
+	glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 	// restore state
 	GL_DepthRange (prevDepth);
 }
@@ -1638,7 +1629,7 @@ static void TesselateEntitySurf (refEntity_t *e)
 		glDrawElements (GL_LINES, 24, GL_UNSIGNED_INT, inds);
 	}
 	else
-		DrawTextLeft (va("Unknown ent surf flags: %X", e->flags), 1, 0, 0);
+		DrawTextLeft (va("Unknown ent surf flags: %X", e->flags), RGB(1,0,0));
 }
 
 
@@ -1763,13 +1754,13 @@ static void DrawParticles (particle_t *p)
 		c[3] = alpha;
 		glColor4ubv (c);
 
-		glTexCoord2f (0.0625, 0.0625);
+		glTexCoord2f (0.0625f, 0.0625f);
 		glVertex3fv (p->org);
 
-		glTexCoord2f (1.0625, 0.0625);
+		glTexCoord2f (1.0625f, 0.0625f);
 		glVertex3f (p->org[0] + up[0] * scale, p->org[1] + up[1] * scale, p->org[2] + up[2] * scale);
 
-		glTexCoord2f (0.0625, 1.0625);
+		glTexCoord2f (0.0625f, 1.0625f);
 		glVertex3f (p->org[0] + right[0] * scale, p->org[1] + right[1] * scale, p->org[2] + right[2] * scale);
 	}
 	glEnd ();
@@ -1797,7 +1788,7 @@ static void DrawScene (void)
 	surfaceCommon_t	*surf;
 	// current state
 	int		currentShaderNum, currentEntityNum;
-	qboolean currentWorld, isWorld;
+	bool	currentWorld, isWorld;
 
 	LOG_STRING (va("******** R_DrawScene: (%g, %g) - (%g, %g) ********\n", vp.x, vp.y, vp.x+vp.w, vp.y+vp.h));
 
@@ -1846,8 +1837,6 @@ static void DrawScene (void)
 	}
 
 	/*-------- draw world/models ---------*/
-
-//??	if (!(vp.flags & RDF_NOWORLDMODEL))	GL_EnableFog (true);
 
 	numFastSurfs = 0;
 	currentShaderNum = currentEntityNum = -1;
@@ -1944,7 +1933,6 @@ static void DrawScene (void)
 	/*--------- finilize/debug -----------*/
 	FLUSH();
 
-	GL_EnableFog (false);	//??
 	GL_DepthRange (DEPTH_NORMAL);
 
 	if (gl_showbboxes->integer)
@@ -1963,7 +1951,7 @@ static void TesselateStretchPic (bkDrawPic_t *p)
 	bufVertex_t	*v;
 	bufTexCoordSrc_t *t;
 	int			*idx, idx0;
-	int			*c;
+	unsigned	*c;
 
 	if (currentShader != p->shader)
 	{
@@ -2015,7 +2003,7 @@ static void TesselateText (bkDrawText_t *p)
 {
 	bufVertex_t	*v;
 	bufTexCoordSrc_t *t;
-	int		*c;
+	unsigned *c;
 	int		i, *idx, idx0;
 	float	x, xp, size;
 	char	*s, chr;
@@ -2183,7 +2171,7 @@ void GL_InitBackend (void)
 
 	vbSize = sizeof(vertexBuffer_t) + gl_config.maxActiveTextures * sizeof(bufTexCoord_t) * MAX_VERTEXES;
 	vb = Z_Malloc (vbSize);
-	Com_Printf("^1 **** buf: %08X (%d bytes) ****\n", vb, vbSize);//!!
+	Com_Printf("^1 **** buf: %08X (%d bytes) ****\n", vb, vbSize);//?? should be 16-byte aligned
 }
 
 

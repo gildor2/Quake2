@@ -830,7 +830,7 @@ static void AddViewWeapon (int renderfx)
 }
 
 
-void CL_AddEntityBox (entityState_t *st, int rgba)
+void CL_AddEntityBox (entityState_t *st, unsigned rgba)
 {
 	entity_t	ent;
 	centity_t	*cent;
@@ -1231,7 +1231,7 @@ static void CL_AddPacketEntities (void)
 					bright = s1->frame > 2 ? (5.0f - s1->frame) / (5 - 2) : 1;
 					V_AddLight (ent.origin, intens, 0, bright, 0);
 				}
-//				re.DrawTextLeft(va("bfg: %d (%c) [%3.1f]", s1->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac),1,1,1);//!!
+//				re.DrawTextLeft(va("bfg: %d (%c) [%3.1f]", s1->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac),RGB(1,1,1));//!!
 			}
 			// RAFAEL
 			else if (effects & EF_TRAP)
@@ -1441,9 +1441,9 @@ void CL_CalcViewValues (void)
 	// interpolate field of view
 	cl.refdef.fov_x = ops->fov + lerp * (ps->fov - ops->fov);
 
-	// don't interpolate blend color
 	for (i = 0; i < 4; i++)
-		cl.refdef.blend[i] = ps->blend[i];
+//		cl.refdef.blend[i] = ps->blend[i]; // originally: no blend ??
+		cl.refdef.blend[i] = ops->blend[i] + lerp * (ps->blend[i] - ops->blend[i]);
 
 	if ((cl_3rd_person->integer || cl.frame.playerstate.stats[STAT_HEALTH] <= 0) &&
 		cl.frame.playerstate.pmove.pm_type != PM_SPECTATOR)

@@ -50,54 +50,54 @@ typedef struct sfx_s
 // be assigned to a channel
 typedef struct playsound_s
 {
-	struct playsound_s	*prev, *next;
-	sfx_t		*sfx;
-	float		volume;
-	float		attenuation;
-	int			entnum;
-	int			entchannel;
-	qboolean	fixed_origin;	// use origin field instead of entnum's origin
-	vec3_t		origin;
-	unsigned	begin;			// begin on this sample
+	struct playsound_s *prev, *next;
+	sfx_t	*sfx;
+	byte	volume;
+	int		fixed_origin:1;		// use origin field instead of entnum's origin
+	float	attenuation;
+	int		entnum;
+	int		entchannel;
+	vec3_t	origin;
+	unsigned begin;				// begin on this sample
 } playsound_t;
 
 typedef struct
 {
-	int			channels;
-	int			samples;				// mono samples in buffer
-	int			submission_chunk;		// don't mix less than this #
-	int			samplepos;				// in mono samples
-	int			samplebits;
-	int			speed;
-	byte		*buffer;
+	int		channels;
+	int		samples;			// mono samples in buffer
+	int		submission_chunk;	// don't mix less than this #
+	int		samplepos;			// in mono samples
+	int		samplebits;
+	int		speed;
+	byte	*buffer;
 } dma_t;
 
 // !!! if this is changed, the asm code must change !!!
 typedef struct
 {
-	sfx_t		*sfx;			// sfx number
-	int			leftvol;		// 0-255 volume
-	int			rightvol;		// 0-255 volume
-	int			end;			// end time in global paintsamples
-	int 		pos;			// sample position in sfx
-	int			looping;		// where to loop, -1 = no looping OBSOLETE?
-	int			entnum;			// to allow overriding a specific sound
-	int			entchannel;		//
-	vec3_t		origin;			// only use if fixed_origin is set
-	float		dist_mult;		// distance multiplier (attenuation/clipK)
-	int			master_vol;		// 0-255 master volume
-	qboolean	fixed_origin;	// use origin instead of fetching entnum's origin
-	qboolean	autosound;		// from an entity->sound, cleared each frame
+	sfx_t	*sfx;				// sfx number
+	int		leftvol;			// 0-255 volume
+	int		rightvol;			// 0-255 volume
+	int		end;				// end time in global paintsamples
+	int 	pos;				// sample position in sfx
+	int		looping;			// where to loop, -1 = no looping OBSOLETE?
+	int		entnum;				// to allow overriding a specific sound
+	int		entchannel;
+	vec3_t	origin;				// only use if fixed_origin is set
+	float	dist_mult;			// distance multiplier (attenuation/clipK)
+	byte	master_vol;			// 0-255 master volume
+	int		fixed_origin:1;		// use origin instead of fetching entnum's origin
+	int		autosound:1;		// from an entity->sound, cleared each frame
 } channel_t;
 
 typedef struct
 {
-	int			rate;
-	int			width;
-	int			channels;
-	int			loopstart;
-	int			samples;
-	int			dataofs;		// chunk starts this many bytes from file start
+	int		rate;
+	int		width;
+	int		channels;
+	int		loopstart;
+	int		samples;
+	int		dataofs;			// chunk starts this many bytes from file start
 } wavinfo_t;
 
 

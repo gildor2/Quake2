@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "client.h"
 
-float		scr_con_current;	// aproaches scr_conlines at scr_conspeed
+float		scr_con_current;	// aproaches scr_conlines
 float		scr_conlines;		// 0.0 to 1.0 lines of console to display
 
 qboolean	scr_initialized;	// ready to draw
@@ -47,7 +47,6 @@ vrect_t		scr_vrect;			// position of render window on screen
 
 cvar_t		*scr_viewsize;
 cvar_t		*scr_centertime;
-cvar_t		*scr_printspeed;
 
 cvar_t		*scr_netgraph;
 cvar_t		*scr_timegraph;
@@ -170,11 +169,10 @@ CENTER PRINTING
 ===============================================================================
 */
 
-char		scr_centerstring[1024];
-float		scr_centertime_start;	// for slow victory printing
-float		scr_centertime_off;
-int			scr_center_lines;
-int			scr_erase_center;
+static char		scr_centerstring[1024];
+static float	scr_centertime_off;
+static int		scr_center_lines;
+static int		scr_erase_center;
 
 /*
 ==============
@@ -191,8 +189,7 @@ void SCR_CenterPrint (char *str)
 	int		i, j, l;
 
 	Q_strncpyz (scr_centerstring, str, sizeof(scr_centerstring));
-	scr_centertime_off = scr_centertime->value;		//?? int?
-	scr_centertime_start = cl.time;					//?? int?
+	scr_centertime_off = scr_centertime->value;
 
 	// count the number of lines for centering
 	scr_center_lines = 1;
@@ -254,7 +251,7 @@ void SCR_DrawCenterString (void)
 	start = scr_centerstring;
 
 	if (scr_center_lines <= 4)
-		y = viddef.height*0.35;
+		y = Q_round (viddef.height * 0.35f);
 	else
 		y = 48;
 
@@ -304,45 +301,20 @@ Sets scr_vrect, the coordinates of the rendered window
 */
 static void SCR_CalcVrect (void)
 {
-	int		size;
+	float	frac;
 
-	size = Cvar_Clamp (scr_viewsize, 40, 100);
+	frac = Cvar_Clamp (scr_viewsize, 40, 100) / 100.0f;
 
-	scr_vrect.width = viddef.width * size/100;
-	scr_vrect.width &= ~7;
+	scr_vrect.width = Q_round (viddef.width * frac);
+	scr_vrect.height = Q_round (viddef.height * frac);
 
-	scr_vrect.height = viddef.height * size/100;
-	scr_vrect.height &= ~1;
+	scr_vrect.width &= ~7;		// align(8)
+	scr_vrect.height &= ~1;		// align(2)
 
 	scr_vrect.x = (viddef.width - scr_vrect.width) / 2;
 	scr_vrect.y = (viddef.height - scr_vrect.height) / 2;
 }
 
-
-/*
-=================
-SCR_SizeUp_f
-
-Keybinding command
-=================
-*/
-void SCR_SizeUp_f (void)
-{
-	Cvar_SetInteger ("viewsize", scr_viewsize->integer + 10);
-}
-
-
-/*
-=================
-SCR_SizeDown_f
-
-Keybinding command
-=================
-*/
-void SCR_SizeDown_f (void)
-{
-	Cvar_SetInteger ("viewsize",scr_viewsize->value-10);
-}
 
 /*
 =================
@@ -391,9 +363,8 @@ SCR_Init
 void SCR_Init (void)
 {
 CVAR_BEGIN(vars)
-	{&scr_viewsize, "viewsize", "100", CVAR_ARCHIVE},
-	{&scr_centertime, "scr_centertime", "2.5", 0},
-	{&scr_printspeed, "scr_printspeed", "8", 0},
+	CVAR_VAR(scr_viewsize, 100, CVAR_ARCHIVE),
+	CVAR_VAR(scr_centertime, 2.5, 0),
 	{&scr_netgraph, "netgraph", "0", 0},
 	{&scr_timegraph, "timegraph", "0", 0},
 	{&scr_debuggraph, "debuggraph", "0", 0},
@@ -406,8 +377,6 @@ CVAR_END
 
 	Cmd_AddCommand ("timerefresh",SCR_TimeRefresh_f);
 	Cmd_AddCommand ("loading",SCR_Loading_f);
-	Cmd_AddCommand ("sizeup",SCR_SizeUp_f);
-	Cmd_AddCommand ("sizedown",SCR_SizeDown_f);
 	Cmd_AddCommand ("sky",SCR_Sky_f);
 
 	scr_initialized = true;
@@ -969,9 +938,9 @@ void SCR_ExecuteLayoutString (char *s)
 			token = COM_Parse (&s);
 			time = atoi(token);
 
-			DrawAltString (x+32, y, ci->name);
+			DrawString (x+32, y, va("^2%s", ci->name));
 			DrawString (x+32, y+8,  "Score: ");
-			DrawAltString (x+32+7*8, y+8,  va("%i", score));
+			DrawString (x+32+7*8, y+8,  va("^2%i", score));
 			DrawString (x+32, y+16, va("Ping:  %i", ping));
 			DrawString (x+32, y+24, va("Time:  %i", time));
 
@@ -1008,7 +977,7 @@ void SCR_ExecuteLayoutString (char *s)
 			Com_sprintf (ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, ci->name);
 
 			if (value == cl.playernum)
-				DrawAltString (x, y, block);
+				DrawString (x, y, va("^1%s", block));
 			else
 				DrawString (x, y, block);
 			continue;
@@ -1127,7 +1096,7 @@ void SCR_ExecuteLayoutString (char *s)
 		if (!strcmp(token, "string2"))
 		{
 			token = COM_Parse (&s);
-			DrawAltString (x, y, token);
+			DrawString (x, y, va("^2%s", token));
 			continue;
 		}
 

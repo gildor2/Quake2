@@ -152,12 +152,9 @@ int		Menu_TallySlots (menuFramework_t *menu);
 int		strlen_color (const char *s);
 
 
-#define Menu_DrawString(x,y,s)				DrawStringCommon(x,y,s,0)
-#define Menu_DrawStringDark(x,y,s)			DrawStringCommon(x,y,s,128)
-#define Menu_DrawStringR2L(x,y,s)			DrawStringCommon(x-(strlen_color(s)-1)*8,y,s,0)
-#define Menu_DrawStringR2LDark(x,y,s)		DrawStringCommon(x-(strlen_color(s)-1)*8,y,s,128)
-#define Menu_DrawStringCenter(x,y,s)		DrawStringCommon(x-(strlen_color(s)-1)*4,y,s,0)
-#define Menu_DrawStringCenterDark(x,y,s)	DrawStringCommon(x-(strlen_color(s)-1)*4,y,s,128)
+#define Menu_DrawString(x,y,s)				DrawStringCommon(x,y,s)
+#define Menu_DrawStringR2L(x,y,s)			DrawStringCommon(x-(strlen_color(s)-1)*8,y,s)
+#define Menu_DrawStringCenter(x,y,s)		DrawStringCommon(x-(strlen_color(s)-1)*4,y,s)
 
 
 #define MENU_ACTION(var,ypos,text,call)	\

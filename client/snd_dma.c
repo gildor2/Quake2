@@ -650,9 +650,9 @@ void S_IssuePlaysound (playsound_t *ps)
 
 	// spatialize
 	if (ps->attenuation == ATTN_STATIC)
-		ch->dist_mult = ps->attenuation * 0.001;
+		ch->dist_mult = ps->attenuation * 0.001f;
 	else
-		ch->dist_mult = ps->attenuation * 0.0005;
+		ch->dist_mult = ps->attenuation * 0.0005f;
 	ch->master_vol = ps->volume;
 	ch->entnum = ps->entnum;
 	ch->entchannel = ps->entchannel;
@@ -1188,8 +1188,8 @@ void GetSoundtime(void)
 
 void S_Update_(void)
 {
-	unsigned        endtime;
-	int				samps;
+	unsigned endtime;
+	int		samps;
 
 	if (!sound_started)
 		return;
@@ -1199,23 +1199,21 @@ void S_Update_(void)
 	if (!dma.buffer)
 		return;
 
-// Updates DMA time
+	// Updates DMA time
 	GetSoundtime();
 
-// check to make sure that we haven't overshot
+	// check to make sure that we haven't overshot
 	if (paintedtime < soundtime)
 	{
 		Com_DPrintf ("S_Update_ : overflow\n");
 		paintedtime = soundtime;
 	}
 
-// mix ahead of current position
-	endtime = soundtime + s_mixahead->value * dma.speed;
-//endtime = (soundtime + 4096) & ~4095;
+	// mix ahead of current position
+	endtime = soundtime + Q_round (s_mixahead->value * dma.speed);
 
 	// mix to an even submission block size
-	endtime = (endtime + dma.submission_chunk-1)
-		& ~(dma.submission_chunk-1);
+	endtime = (endtime + dma.submission_chunk-1) & ~(dma.submission_chunk-1);
 	samps = dma.samples >> (dma.channels-1);
 	if (endtime - soundtime > samps)
 		endtime = soundtime + samps;

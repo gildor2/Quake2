@@ -74,8 +74,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define VECTOR_ARG(name)	name[0],name[1],name[2]
 #define ARRAY_ARG(array)	array, sizeof(array)/sizeof(array[0])
 
-typedef unsigned char 		byte;
-typedef enum {false, true}	qboolean;
+typedef unsigned char		byte;
+//typedef enum {false, true}	qboolean;
+enum {false, true};
+typedef unsigned int		qboolean;
+typedef unsigned char		bool;			// C++ equalent
 
 
 #ifndef NULL
@@ -242,6 +245,10 @@ __inline int Q_ceil (float f)
 		uint_cast(d) = uint_cast(f) ^ mask;			\
 		s = mask >> 31;			\
 	}
+#define FNegate(f,d)			\
+	{							\
+		uint_cast(d) = uint_cast(f) ^ 0x80000000;	\
+	}
 
 #else
 #define Q_ftol(f)	(long) (f)
@@ -250,11 +257,13 @@ __inline int Q_ceil (float f)
 #define Q_ceil(f)	((int)ceil(f))
 
 #define IsNegative(f)	(f<0)
-#define FAbsSign(f,d,s)	\
+#define FAbsSign(f,d,s)			\
 	{							\
 		s = IsNegative(f);		\
 		d = s ? -f : f;			\
 	}
+#define FNegate(f,d)			\
+	{	d = -f;		}
 
 #endif
 
@@ -271,7 +280,8 @@ typedef struct	// hack for VectorCopy
 #define VectorCopy(a,b)			(*(vec3a_t*)(b)=*(vec3a_t*)(a))
 #define VectorClear(a)			(a[0]=a[1]=a[2]=0)
 //#define VectorClear(a)			memset(a, 0, sizeof(vec3_t))
-#define VectorNegate(a,b)		(b[0]=-a[0],b[1]=-a[1],b[2]=-a[2])
+//#define VectorNegate(a,b)		(b[0]=-a[0],b[1]=-a[1],b[2]=-a[2])
+#define VectorNegate(a,b)		{FNegate(a[0],b[0]);FNegate(a[1],b[1]);FNegate(a[2],b[2])}
 #define VectorSet(v, x, y, z)	(v[0]=(x), v[1]=(y), v[2]=(z))
 #define	VectorMA(v, s, b, o)	((o)[0]=(v)[0]+(b)[0]*(s),(o)[1]=(v)[1]+(b)[1]*(s),(o)[2]=(v)[2]+(b)[2]*(s))
 //void VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc);

@@ -28,6 +28,7 @@ fi
 PATH="$workpath/bin:$workpath/shared~1/bin:$workpath/../common/msdev98/bin:$PATH"
 typeset -x INCLUDE="$workpath2/INCLUDE;$workpath2/MFC/INCLUDE"
 typeset -x LIB="$workpath2/LIB"
+rm -f *.pch
 cd ..
 
 echo "----- Building Quake2 -----"

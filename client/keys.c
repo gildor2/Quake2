@@ -550,7 +550,7 @@ static void CompleteMenu (void)
 
 	i = viddef.height;
 	if (cls.state != ca_disconnected && cls.state != ca_connecting)
-		i *= scr_con_current;
+		i = Q_round (i * scr_con_current);
 	complMenu_h = completed_count * 10 + 8;
 	complMenu_w = maxLen * 8 + 28;
 	completeMenu.x = editPos * 8 + 8;

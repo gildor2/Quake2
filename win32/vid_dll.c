@@ -24,9 +24,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <float.h>
 
 #include "../qcommon/qcommon.h"
+#include "winquake.h"
 
 #include "../client/client.h"
-#include "winquake.h"
 #include "resource.h"
 
 // Structure containing functions exported from refresh DLL
@@ -669,8 +669,8 @@ static void	D_Draw_CharColor (int x, int y, int c, int color) {}
 static void	D_Draw_TileClear (int x, int y, int w, int h, char *name) {}
 static void	D_Draw_Fill (int x, int y, int w, int h, int c) {}
 static void D_Draw_Fill2 (int x, int y, int w, int h, float r, float g, float b, float a) {}
-static void	D_DrawTextPos (int x, int y, char *text, float r, float g, float b) {}
-static void	D_DrawTextSide (char *text, float r, float g, float b) {}
+static void	D_DrawTextPos (int x, int y, char *text, unsigned rgba) {}
+static void	D_DrawTextSide (char *text, unsigned rgba) {}
 static void	D_Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data) {}
 static void	D_SetPalette (const unsigned char *palette) {}
 static float D_GetClientLight (void) { return 0; }		// normal value is 150

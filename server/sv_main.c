@@ -654,8 +654,8 @@ void SV_CheckTimeouts (void)
 	int			droppoint;
 	int			zombiepoint;
 
-	droppoint = svs.realtime - 1000 * timeout->value;
-	zombiepoint = svs.realtime - 1000 * zombietime->value;
+	droppoint = svs.realtime - Q_round (timeout->value * 1000);
+	zombiepoint = svs.realtime - Q_round (zombietime->value * 1000);
 
 	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 	{

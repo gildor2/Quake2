@@ -320,7 +320,7 @@ static shader_t *FinishShader (void)
 		{
 		case RGBGEN_NONE:	// rgbGen is not set
 		case RGBGEN_IDENTITY:
-			s->rgbaConst.rgba |= 0xFFFFFF;			// RGB = 255, alpha - unchanged
+			s->rgbaConst.rgba |= RGBA(1,1,1,0);		// RGB = 255, alpha - unchanged
 			s->rgbGenType = RGBGEN_CONST;
 			break;
 		case RGBGEN_IDENTITY_LIGHTING:
@@ -395,7 +395,7 @@ static shader_t *FinishShader (void)
 			sh.fast = false;
 
 		// check entity dependence
-		if (s->rgbGenType == RGBGEN_ENTITY || s->rgbGenType == RGBGEN_ONE_MINUS_ENTITY || s->rgbGenType == RGBGEN_LIGHTING_DIFFUSE ||
+		if (s->rgbGenType == RGBGEN_ENTITY || s->rgbGenType == RGBGEN_ONE_MINUS_ENTITY || s->rgbGenType == RGBGEN_DIFFUSE ||
 			s->alphaGenType == ALPHAGEN_ENTITY || s->alphaGenType == ALPHAGEN_ONE_MINUS_ENTITY ||
 			s->frameFromEntity)
 			sh.dependOnEntity = true;
@@ -556,9 +556,12 @@ shader_t *GL_FindShader (char *name, int style)
 	int		hash, lightmapNumber, imgFlags;
 	shader_t *shader;
 
+	// compute image flags
 	imgFlags = (style & (SHADER_WALL|SHADER_SKIN)) ? (IMAGE_PICMIP|IMAGE_MIPMAP) : 0;
 	if (!(style & (SHADER_ALPHA|SHADER_FORCEALPHA|SHADER_TRANS33|SHADER_TRANS66)))
 		imgFlags |= IMAGE_NOALPHA;
+	if (style & SHADER_WALL) imgFlags |= IMAGE_WORLD;
+	if (style & SHADER_SKIN) imgFlags |= IMAGE_SKIN;
 
 	if (style & SHADER_ENVMAP && !gl_reflImage)	// remove reflection if nothing to apply
 		style &= ~SHADER_ENVMAP;
@@ -835,7 +838,7 @@ shader_t *GL_FindShader (char *name, int style)
 				if (style & SHADER_WALL)
 					stage->rgbGenType = RGBGEN_IDENTITY_LIGHTING;	// world surface, not lightmapped
 				else if (style & SHADER_SKIN)
-					stage->rgbGenType = RGBGEN_LIGHTING_DIFFUSE;
+					stage->rgbGenType = RGBGEN_DIFFUSE;
 				else
 					stage->rgbGenType = RGBGEN_VERTEX;				// HUD image
 			}
@@ -867,8 +870,8 @@ shader_t *GL_FindShader (char *name, int style)
 #endif
 				stage->tcGenType = TCGEN_ENVIRONMENT;
 			}
-			if (style & (SHADER_ENVMAP|SHADER_ENVMAP2) && style & (SHADER_TRANS33|SHADER_TRANS66))
-				sh.tessSize = 64;		//?? add cvar to disable this
+			if (/* style & (SHADER_ENVMAP|SHADER_ENVMAP2) && */ style & (SHADER_TRANS33|SHADER_TRANS66))
+				sh.tessSize = 64;		//!! add cvar to enable/disable this (high-quality alpha (lighting/envmapping))
 		}
 	}
 	return FinishShader ();

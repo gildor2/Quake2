@@ -81,7 +81,8 @@ typedef enum
 	RGBGEN_ENTITY,
 	RGBGEN_ONE_MINUS_ENTITY,
 	RGBGEN_WAVE,
-	RGBGEN_LIGHTING_DIFFUSE,
+	RGBGEN_DIFFUSE,				// internally replaced with HALF_DIFFUSE when color*tex*2 available
+	RGBGEN_HALF_DIFFUSE,		// more color range (available double brightness)
 	RGBGEN_FOG					//??
 } rgbGenType_t;
 
@@ -165,8 +166,8 @@ typedef struct
 	// GL_State ...
 	unsigned glState;
 
-	int		isLightmap:1;
-	int		detail:1;				//?? true is stage is detail (unused ??)
+	bool	isLightmap:1;
+	bool	detail:1;				//?? true is stage is detail (unused ??)
 
 	/*---------------- RGBA params ----------------*/
 	color_t	rgbaConst;				// if RGBGEN_CONST or ALPHAGEN_CONST
@@ -187,7 +188,7 @@ typedef struct
 	// images: variable length
 	int		numAnimTextures;		// in range [1..MAX_STAGE_TEXTURES]; if 0 -- ignore stage (and treat previous as last)
 	float	animMapFreq;			// valid only when numAnimTextures > 1 && (frameFromEntity == false || model = WORLD)
-	byte	frameFromEntity;		// bool
+	bool	frameFromEntity;
 	image_t	*mapImage[1];
 } shaderStage_t;
 
@@ -222,13 +223,12 @@ typedef struct shader_s
 
 	gl_cullMode_t cullMode;
 
-	//!! make bitfield (bool)
-	int		scripted:1;
-	int		bad:1;			// errors in script or no map image found (for auto-generated shader)
-	int		fast:1;			// have no deforms, tcGen/tcMod, rgb/alpha-gen (remove ??)
-	int		dependOnEntity:1; // when false, surface may be mixed with surfaces from different entities
+	bool	scripted:1;
+	bool	bad:1;			// errors in script or no map image found (for auto-generated shader)
+	bool	fast:1;			// have no deforms, tcGen/tcMod, rgb/alpha-gen (remove ??)
+	bool	dependOnEntity:1; // when false, surface may be mixed with surfaces from different entities
 
-	int		usePolygonOffset:1;
+	bool	usePolygonOffset:1;
 
 	byte	numDeforms;
 	deformParms_t deforms[MAX_SHADER_DEFORMS];

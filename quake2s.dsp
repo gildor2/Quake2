@@ -481,6 +481,10 @@ SOURCE=.\ref_gl\gl_interface.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ref_gl\gl_light.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ref_gl\gl_lightmap.h
 # End Source File
 # Begin Source File
@@ -510,14 +514,6 @@ SOURCE=.\ref_gl\gl_sky.h
 # Begin Source File
 
 SOURCE=.\win32\glw_win.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\ref_gl\qgl_decl.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\ref_gl\qgl_impl.h
 # End Source File
 # End Group
 # End Group

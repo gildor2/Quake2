@@ -614,8 +614,8 @@ void		GLimp_SetGamma (float gamma, float intens);
 
 
 void	R_DrawTexts (void);
-void	DrawTextPos (int x, int y, char *text, float r, float g, float b);
-void	DrawTextLeft (char *text, float r, float g, float b);
-void	DrawTextRight (char *text, float r, float g, float b);
+void	DrawTextPos (int x, int y, char *text, unsigned rgba);
+void	DrawTextLeft (char *text, unsigned rgba);
+void	DrawTextRight (char *text, unsigned rgba);
 
 extern qboolean con_only;

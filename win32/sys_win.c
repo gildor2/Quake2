@@ -19,8 +19,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // sys_win.h
 
-#include "../qcommon/qcommon.h"
-#include "../client/client.h"
 #include "winquake.h"
 #include <errno.h>
 #include <float.h>
@@ -30,6 +28,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <io.h>
 #include <conio.h>
 #include "conproc.h"
+
+#include "../qcommon/qcommon.h"
+#include "../client/client.h"
 
 #define MINIMUM_WIN_MEMORY	0x0a00000
 #define MAXIMUM_WIN_MEMORY	0x1000000

@@ -282,7 +282,6 @@
 	
 
 .\qcommon\files.c : \
-	".\client\console.h"\
 	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
@@ -632,6 +631,7 @@
 	".\ref_gl\gl_frontend.h"\
 	".\ref_gl\gl_image.h"\
 	".\ref_gl\gl_interface.h"\
+	".\ref_gl\gl_light.h"\
 	".\ref_gl\gl_lightmap.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_math.h"\
@@ -652,6 +652,7 @@
 	".\ref_gl\gl_frontend.h"\
 	".\ref_gl\gl_image.h"\
 	".\ref_gl\gl_interface.h"\
+	".\ref_gl\gl_light.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
@@ -670,6 +671,7 @@
 	".\ref_gl\gl_frontend.h"\
 	".\ref_gl\gl_image.h"\
 	".\ref_gl\gl_interface.h"\
+	".\ref_gl\gl_light.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
@@ -719,6 +721,7 @@
 	".\ref_gl\gl_frontend.h"\
 	".\ref_gl\gl_image.h"\
 	".\ref_gl\gl_interface.h"\
+	".\ref_gl\gl_light.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
@@ -736,6 +739,7 @@
 	".\ref_gl\gl_frontend.h"\
 	".\ref_gl\gl_image.h"\
 	".\ref_gl\gl_interface.h"\
+	".\ref_gl\gl_light.h"\
 	".\ref_gl\gl_lightmap.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_model.h"\
@@ -755,6 +759,7 @@
 	".\ref_gl\gl_frontend.h"\
 	".\ref_gl\gl_image.h"\
 	".\ref_gl\gl_interface.h"\
+	".\ref_gl\gl_light.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
@@ -788,6 +793,7 @@
 	".\ref_gl\gl_frontend.h"\
 	".\ref_gl\gl_image.h"\
 	".\ref_gl\gl_interface.h"\
+	".\ref_gl\gl_light.h"\
 	".\ref_gl\gl_lightmap.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_math.h"\
@@ -837,6 +843,7 @@
 	".\ref_gl\gl_frontend.h"\
 	".\ref_gl\gl_image.h"\
 	".\ref_gl\gl_interface.h"\
+	".\ref_gl\gl_light.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
@@ -1079,6 +1086,7 @@
 	".\ref_soft\r_local.h"\
 	".\ref_soft\r_model.h"\
 	".\win32\rw_win.h"\
+	".\win32\winquake.h"\
 	
 
 .\win32\rw_dib.c : \
