@@ -206,3 +206,4 @@ FOR GAME:
     as window and as wall) -- IMAGE_ALPHA flag (use different resampling techniques)
   ? adjust alpha-test const for surface in accordance to its average alpha (but: what to do with mipmaps code (it modifies avg alpha))
 - screen blending: move this outside renderer, make with DrawFill2 (ref_soft: cannot do this, because of paletted implementation)
+? gl_extensions: 0 - disable, 1 - standard only (ARB), 2 - +vendor-specific, i.e. all (NV)
