@@ -1,6 +1,8 @@
 #include "../ref_gl/gl_local.h"
 #include "glw_win.h"
 
+//!! make this file multi-platform (and move from /win32)
+
 qgl_t			qgl;
 static qgl_t	lib;
 
@@ -95,7 +97,7 @@ void QGL_InitExtensions (void)
 
 	gl_config.extensionMask = 0;
 	notFoundExt = disabledExt = 0;
-	ext1 = glGetString (GL_EXTENSIONS);
+	gl_config.extensions = ext1 = glGetString (GL_EXTENSIONS);
 
 #if 1		//!! win32
 	{
@@ -108,6 +110,7 @@ void QGL_InitExtensions (void)
 #else
 	ext2 = NULL;
 #endif
+	gl_config.extensions2 = ext2;
 
 	for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 	{
@@ -194,7 +197,7 @@ void QGL_InitExtensions (void)
 				for (j = 0; j < NUM_EXTENSIONS; j++)
 				{
 					if ((1 << j) & tmp)
-						Com_DPrintf ("   %s deprecated in favor of %s\n", ext->name, extInfo[j].name);
+						Com_DPrintf ("   %s ignored in favor of %s\n", ext->name, extInfo[j].name);
 				}
 				// disable extension
 				gl_config.extensionMask &= ~(1 << i);
@@ -262,7 +265,7 @@ void QGL_EnableLogging (qboolean enable)
 
 			time (&aclock);
 			newtime = localtime (&aclock);
-			fprintf (logFile, "%s\n", asctime (newtime));
+			fprintf (logFile, "\n------------------------\n%s------------------------\n", asctime (newtime));
 		}
 
 		for (i = 0; i < NUM_GLFUNCS; i++)					//?? memcpy()

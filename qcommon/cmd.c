@@ -46,10 +46,12 @@ static void Cmd_Wait_f (void)
 =============================================================================
 */
 
-static sizebuf_t cmd_text;
-static byte cmd_text_buf[8192];
+#define CBUF_MAXSIZE	8192
 
-static byte defer_text_buf[8192];
+static sizebuf_t cmd_text;
+static byte cmd_text_buf[CBUF_MAXSIZE];
+
+static byte defer_text_buf[CBUF_MAXSIZE];
 
 /*
 ============
@@ -70,23 +72,23 @@ Adds command text at the end of the buffer
 */
 void Cbuf_AddText (char *text)
 {
-	int		l;
+	int		len;
 
-	l = strlen (text);
+	len = strlen (text);
 
-	if (cmd_text.cursize + l >= cmd_text.maxsize)
+	if (cmd_text.cursize + len >= cmd_text.maxsize)
 	{
-		Com_Printf ("Cbuf_AddText: overflow\n");
+		Com_WPrintf ("Cbuf_AddText: overflow\n");
 		return;
 	}
 	if (cmd_debug->integer & 2)
 	{
-		if (l > 256)
-			Com_DPrintf ("Cbuf_AddText: %d chars\n", l);
+		if (len > 256)
+			Com_Printf ("^4AddText: %d chars\n", len);
 		else
-			Com_DPrintf ("Cbuf_AddText: \"%s\"\n", text);
+			Com_Printf ("^4AddText: \"%s\"\n", text);
 	}
-	SZ_Write (&cmd_text, text, strlen (text));
+	SZ_Write (&cmd_text, text, len);
 }
 
 
@@ -101,29 +103,23 @@ FIXME: actually change the command buffer to do less copying
 */
 void Cbuf_InsertText (char *text)
 {
-	char	*temp;
-	int		templen;
+	int		len;
 
-	// copy off any commands still remaining in the exec buffer
-	templen = cmd_text.cursize;
-	if (templen)
+	len = strlen (text);
+
+	if (cmd_text.cursize + len >= cmd_text.maxsize)
 	{
-		temp = Z_Malloc (templen);
-		memcpy (temp, cmd_text.data, templen);
-		SZ_Clear (&cmd_text);
+		Com_WPrintf ("Cbuf_InsertText: overflow\n");
+		return;
 	}
-	else
-		temp = NULL;	// shut up compiler
-
-	// add the entire text of the file
-	Cbuf_AddText (text);
-
-	// add the copied off data
-	if (templen)
+	if (cmd_debug->integer & 2)
 	{
-		SZ_Write (&cmd_text, temp, templen);
-		Z_Free (temp);
+		if (len > 256)
+			Com_Printf ("^4InsText: %d chars\n", len);
+		else
+			Com_Printf ("^4InsText: \"%s\"\n", text);
 	}
+	SZ_Insert (&cmd_text, text, len, 0);
 }
 
 
@@ -546,7 +542,7 @@ void Cmd_TokenizeString (char *text, qboolean macroExpand)
 
 	while (1)
 	{
-		// skip whitespace up to a /n
+		// skip spaces and tabs (char in [1..32]); stop on non-space, null or '\n'
 		while (*text && *text <= ' ' && *text != '\n') text++;
 
 		if (!text[0] || text[0] == '\n')
@@ -555,14 +551,14 @@ void Cmd_TokenizeString (char *text, qboolean macroExpand)
 		// set cmd_args to everything after the first arg
 		if (cmd_argc == 1)
 		{
-			int		l;
+			int		len;
 
 			strcpy (cmd_args, text);
 
-			// strip off any trailing whitespace
-			l = strlen (cmd_args) - 1;
-			while (l >= 0 && cmd_args[l] <= ' ')
-				cmd_args[l--] = 0;
+			// cut trailing spaces
+			len = strlen (cmd_args) - 1;
+			while (len >= 0 && cmd_args[len] <= ' ')
+				cmd_args[len--] = 0;
 		}
 
 		com_token = COM_Parse (&text);
@@ -588,7 +584,7 @@ void Cmd_AddCommand (char *cmd_name, void (*func) (void))
 	cmdFunc_t *cmd;
 
 	// fail if the command is a variable name
-	if (Cvar_VariableString (cmd_name)[0])
+	if (Cvar_VariableString (cmd_name)[0])		//?? need a different way
 	{
 		Com_WPrintf ("Cmd_AddCommand: %s already defined as a var\n", cmd_name);
 		return;
@@ -642,9 +638,6 @@ void Cmd_RemoveCommand (char *cmd_name)
 /*
 ============
 Cmd_ExecuteString
-
-A complete command line has been parsed, so try to execute it
-FIXME: lookupnoadd the token to speed search?
 ============
 */
 void Cmd_ExecuteString (char *text)

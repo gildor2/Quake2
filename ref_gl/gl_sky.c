@@ -1,6 +1,6 @@
 #include "gl_local.h"
 #include "gl_sky.h"
-
+#include "gl_math.h"
 
 static float skyMins[2][6], skyMaxs[2][6];
 
@@ -73,18 +73,14 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 			float	s, t, dv;
 
 			j = vecToSt[axis][2];
-			if (j < 0)	dv = -verts[-j - 1];
-			else		dv = verts[j - 1];
-
+			dv = (j < 0) ? -verts[-j - 1] : verts[j - 1];
 			if (dv < 0.001f) continue;	// don't divide by zero
 
 			j = vecToSt[axis][0];
-			if (j < 0)	s = -verts[-j - 1] / dv;
-			else		s = verts[j - 1] / dv;
+			s = (j < 0) ? -verts[-j - 1] / dv : verts[j - 1] / dv;
 
 			j = vecToSt[axis][1];
-			if (j < 0)	t = -verts[-j - 1] / dv;
-			else		t = verts[j - 1] / dv;
+			t = (j < 0) ? -verts[-j - 1] / dv : verts[j - 1] / dv;
 
 			EXPAND_BOUNDS(s, skyMins[0][axis], skyMaxs[0][axis]);
 			EXPAND_BOUNDS(t, skyMins[1][axis], skyMaxs[1][axis]);
@@ -180,13 +176,15 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 #define SKY_VERTS		(SKY_TESS_SIZE*2+1)
 
 #if SKY_VERTS * SKY_VERTS > MAX_VERTEXES
-#  error Not enough vertex buffer size: cannot tesselate sky surface
+#	error Not enough vertex buffer size: cannot tesselate sky surface
 #endif
 
 
 static byte skySideVisible[6];
 static byte skyVis[6][SKY_CELLS*SKY_CELLS];
 
+static bool skyRotated;
+static float rotAxis[3][3];
 
 void GL_ClearSkyBox (void)
 {
@@ -195,70 +193,96 @@ void GL_ClearSkyBox (void)
 }
 
 
-void GL_ShowWholeSky (void)
+void GL_SetSkyRotate (float angle, vec3_t axis)
 {
-	memset (skyVis, 0xFF, sizeof(skyVis));
-	memset (skySideVisible, 0xFF, sizeof(skySideVisible));
+	if (angle)
+	{
+		skyRotated = true;
+		BuildRotationMatrix (rotAxis, axis, angle);
+	}
+	else
+		skyRotated = false;
 }
 
 
-void GL_AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg)
+bool GL_SkyVisible (void)
+{
+	int		i;
+	byte	*p;
+
+	for (i = 0, p = skyVis[0]; i < sizeof(skyVis); i++, p++)
+		if (*p == (SKY_FRUSTUM|SKY_SURF)) return true;
+	return false;
+}
+
+
+void GL_AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
 {
 	vec3_t	verts[MAX_CLIP_VERTS];
 	int		i, side;
 	vertex_t *v;
 
-	if (gl_fastsky->integer)
-		return;
+	if (gl_fastsky->integer) return;
 
 	// clear bounds for all sky box planes
 	for (side = 0; side < 6; side++)
 	{
-		skyMins[0][side] = skyMins[1][side] = 999999;
-		skyMaxs[0][side] = skyMaxs[1][side] = -999999;
+		skyMins[0][side] = skyMins[1][side] = BIG_NUMBER;
+		skyMaxs[0][side] = skyMaxs[1][side] = -BIG_NUMBER;
 	}
 	// add verts to bounds
 	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
-		VectorSubtract (v->xyz, vieworg, verts[i]);
+	{
+		if (skyRotated)
+		{
+			vec3_t	tmp, tmp2;
+
+			VectorSubtract (v->xyz, vieworg, tmp);
+			VectorScale (rotAxis[0], tmp[0], tmp2);
+			VectorMA (tmp2, tmp[1], rotAxis[1], tmp2);
+			VectorMA (tmp2, tmp[2], rotAxis[2], verts[i]);
+		}
+		else
+			VectorSubtract (v->xyz, vieworg, verts[i]);
+	}
 	ClipSkyPolygon (pl->numVerts, verts[0], 0);
 
-	// analyse skyMins/skyMaxs, detect visible cells
+	// analyse skyMins/skyMaxs, detect occupied cells
 	for (side = 0; side < 6; side++)
 	{
-		float	v, f;
 		int		x, y, w, h, j, stride;
 		byte	*ptr;
 
-		if (skyMins[0][side] > skyMaxs[0][side]) continue;	// not appied to this side
+		if (skyMins[0][side] > skyMaxs[0][side]) continue;		// not appied to this side
 
-		skySideVisible[side] = true;
+		skySideVisible[side] |= flag;
 		// get cell's "x" and "w"
-		v = skyMins[0][side];
-		for (f = -1, x = -1; x < SKY_CELLS; f += 1.0f / SKY_TESS_SIZE, x++)
-			if (v < f) break;
-		v = skyMaxs[0][side];
-		for (w = x; w < SKY_CELLS; f += 1.0f / SKY_TESS_SIZE, w++)
-			if (v < f) break;
-		if (x < 0) x = 0;
-		if (w == SKY_CELLS) w--;
-		w = w - x + 1;
+		x = Q_floor ((skyMins[0][side] + 1) * SKY_TESS_SIZE);	// left
+		w = Q_ceil ((skyMaxs[0][side] + 1) * SKY_TESS_SIZE);	// right
 		// get cell's "y" and "h"
-		v = skyMins[1][side];
-		for (f = -1, y = -1; y < SKY_CELLS; f += 1.0f / SKY_TESS_SIZE, y++)
-			if (v < f) break;
-		v = skyMaxs[1][side];
-		for (h = y; h < SKY_CELLS; f += 1.0f / SKY_TESS_SIZE, h++)
-			if (v < f) break;
-		if (y < 0) y = 0;
-		if (h == SKY_CELLS) h--;
-		h = h - y + 1;
+		y = Q_floor ((skyMins[1][side] + 1) * SKY_TESS_SIZE);	// bottom (or top ?)
+		h = Q_ceil ((skyMaxs[1][side] + 1) * SKY_TESS_SIZE);	// top (or bottom)
+#if 1
+		x = bound(x, 0, SKY_CELLS);		// avoid precision errors: when we can get floor((mins==-1 + 1)*SIZE) -> -1 (should be 0)
+		w = bound(w, 0, SKY_CELLS);
+		y = bound(y, 0, SKY_CELLS);
+		h = bound(h, 0, SKY_CELLS);
+#else
+		if (x < 0 || w < 0 || y < 0 || h < 0 ||
+			x > SKY_CELLS || y > SKY_CELLS || w > SKY_CELLS || h > SKY_CELLS)
+			Com_Error (ERR_FATAL, "x/y/w/h: %d %d %d %d\n"
+			"mins[%g %g] maxs[%g %g]", x, y, w, h,
+			skyMins[0][side], skyMins[1][side], skyMaxs[0][side], skyMaxs[1][side]);
+#endif
+		w -= x;							// w and h will be always > 0, bacause skyMins[] < skyMaxs[]
+		h -= y;
 		// fill skyVis rect (x, y, w, h)
 		ptr = skyVis[side] + y * SKY_CELLS + x;
 		stride = SKY_CELLS - w;
 		for (i = 0; i < h; i++)
 		{
 			for (j = 0; j < w; j++)
-				*ptr++ = 0xFF;
+				*ptr++ |= flag;
 			ptr += stride;
 		}
 	}
@@ -297,14 +321,13 @@ static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec
 	(*vec)++;
 
 	fix = 1.0f - 1.0f / gl_skyShader->width;		// fix sky side seams
-	// convert range [-1, 1] to [0, 1]
-	s = (s * fix + 1) / 2;
+	s = (s * fix + 1) / 2;							// [-1,1] -> [0,1]
 	s = bound(s, 0, 1);
-	t = (t * fix + 1) / 2;
+	t = (1 - t * fix) / 2;							// [-1,1] -> [1,0]
 	t = bound(t, 0, 1);
 
 	(*tex)->tex[0] = s;
-	(*tex)->tex[1] = 1.0f - t;
+	(*tex)->tex[1] = t;
 	(*tex)++;
 
 	return gl_numVerts++;
@@ -324,16 +347,17 @@ int GL_TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float z
 	for (numIndexes = 0; numIndexes < SKY_CELLS; numIndexes++)
 	{
 		byte	*p;
+		static const char f[4] = {' ', '.', 'O', 'X'};
 
 		p = skyVis[side] + numIndexes * SKY_CELLS;
-#define C(x) p[x] ? 'X' : ' '
-		DrawTextLeft(va("[ %c %c %c %c %c %c %c %c ]", C(0),C(1),C(2),C(3),C(4),C(5),C(6),C(7)), RGB(1, 0.5, 0.5));
+#define C(x) f[p[x]]
+		DrawTextLeft(va("[ %c %c %c %c %c %c %c %c ]", C(0),C(1),C(2),C(3),C(4),C(5),C(6),C(7)), RGB(1,0.5,0.5));
 #undef C
 		p += SKY_CELLS;
 	}
 #endif
 
-	if (!skySideVisible[side]) return 0;
+	if (skySideVisible[side] != (SKY_FRUSTUM|SKY_SURF)) return 0;
 
 	// generate side vertexes
 	gl_numVerts = 0;
@@ -348,7 +372,7 @@ int GL_TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float z
 	{
 		for (s = -1; s < 1; s += 1.0f / SKY_TESS_SIZE, ptr++, grid1++, grid2++)
 		{
-			if (!*ptr) continue;		// this cell is not visible
+			if (*ptr != (SKY_FRUSTUM|SKY_SURF)) continue;		// this cell is not visible
 			// this 2 verts can be filled by previous line
 			if (!grid1[0])	grid1[0] = AddSkyVec (s, t, side, scale, &vec, &tex);
 			if (!grid1[1])	grid1[1] = AddSkyVec (s + 1.0f / SKY_TESS_SIZE, t, side, scale, &vec, &tex);
@@ -363,7 +387,7 @@ int GL_TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float z
 			// g2(3) ----- g2+1(4)
 			*idx++ = grid1[0]; *idx++ = grid2[0]; *idx++ = grid1[1];	// triangle 1 (1-3-2)
 			*idx++ = grid2[0]; *idx++ = grid2[1]; *idx++ = grid1[1];	// triangle 2 (3-4-2)
-			numIndexes += 6;
+			numIndexes += 6;		// overflow is compile-time checked (see "#error" ...)
 		}
 		// sky verts are not wrapped -- skip seam
 		grid1++;

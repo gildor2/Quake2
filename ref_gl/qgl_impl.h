@@ -3,13 +3,13 @@
 #ifdef _WIN32
 #  define NUM_GLFUNCS	66
 #  define NUM_EXTFUNCS	7
-#  define NUM_EXTENSIONS	13
+#  define NUM_EXTENSIONS	14
 #endif
 
 #ifdef __linux__
 #  define NUM_GLFUNCS	58
 #  define NUM_EXTFUNCS	6
-#  define NUM_EXTENSIONS	12
+#  define NUM_EXTENSIONS	13
 #endif
 
 static char *qglNames[NUM_GLFUNCS + NUM_EXTFUNCS] = {
@@ -913,6 +913,7 @@ static extInfo_t extInfo[NUM_EXTENSIONS] = {
 	{"GL_ARB_texture_env_add", "gl_ext_texture_env_add", 0, 0, 0, 0},
 	{"GL_EXT_texture_env_combine", "gl_ext_texture_env_combine", 0, 0, QGL_ARB_MULTITEXTURE, QGL_ARB_TEXTURE_ENV_COMBINE},
 	{"GL_ARB_texture_env_combine", "gl_ext_texture_env_combine", 0, 0, QGL_ARB_MULTITEXTURE, 0},
+	{"GL_ARB_texture_env_crossbar", NULL, 0, 0, 0, QGL_NV_TEXTURE_ENV_COMBINE4},
 	{"GL_NV_texture_env_combine4", "gl_ext_texture_env_combine_nv", 0, 0, QGL_ARB_MULTITEXTURE, 0},
 	{"GL_S3_s3tc", "gl_ext_compressed_textures", 0, 0, 0, QGL_ARB_TEXTURE_COMPRESSION},
 	{"GL_ARB_texture_compression", "gl_ext_compressed_textures", 0, 0, 0, 0},

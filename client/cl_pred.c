@@ -24,11 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 static float predictLerp = -1;		// >= 0 -- use this value for prediction; if < 0 -- use cl.lerpfrac
 
 
-/*
-===================
-CL_CheckPredictionError
-===================
-*/
 void CL_CheckPredictionError (void)
 {
 	int		frame;
@@ -58,7 +53,7 @@ void CL_CheckPredictionError (void)
 			cl.prediction_error[i] = delta[i] * 0.125f;
 
 		if (cl_showmiss->integer && len)
-			Com_WPrintf ("prediction miss on %d: %g %g %g\n", cl.frame.serverframe, VECTOR_ARG(cl.prediction_error));
+			Com_DPrintf ("prediction miss on %d: %g %g %g\n", cl.frame.serverframe, VECTOR_ARG(cl.prediction_error));
 
 		cl.predicted_origins[frame][0] = cl.frame.playerstate.pmove.origin[0];
 		cl.predicted_origins[frame][1] = cl.frame.playerstate.pmove.origin[1];
@@ -67,14 +62,7 @@ void CL_CheckPredictionError (void)
 }
 
 
-/*
-====================
-CL_ClipMoveToEntities
-
-====================
-*/
-
-//#define NO_PREDICT_LERP
+//#define NO_PREDICT_LERP	// debug
 
 void CL_EntityTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents)
 {
@@ -169,11 +157,6 @@ void CL_Trace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, 
 }
 
 
-/*
-================
-CL_PMTrace
-================
-*/
 //?? same as void CL_PMTrace(&trace, start, ...) -- but called from PMove() ...
 static trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 {
@@ -197,8 +180,12 @@ int CL_PMpointcontents (vec3_t point)
 	cmodel_t *cmodel;
 	int		contents;
 	float	dist2;
+#ifndef NO_PREDICT_LERP
+	float	backlerp;
+#endif
 
 	contents = CM_PointContents (point, 0);
+	backlerp = 1.0f - cl.lerpfrac;
 
 	for (i = 0; i < cl.frame.num_entities; i++)
 	{
@@ -218,7 +205,7 @@ int CL_PMpointcontents (vec3_t point)
 		cent = &cl_entities[ent->number];
 #ifndef NO_PREDICT_LERP
 		for (j = 0; j < 3; j++)
-			delta[j] = (1.0f - cl.lerpfrac) * (cent->current.origin[j] - cent->prev.origin[j]);
+			delta[j] = backlerp * (cent->current.origin[j] - cent->prev.origin[j]);
 #else
 		VectorClear (delta);
 #endif
@@ -240,13 +227,8 @@ int CL_PMpointcontents (vec3_t point)
 }
 
 
-/*
-=================
-CL_PredictMovement
+// Sets cl.predicted_origin and cl.predicted_angles
 
-Sets cl.predicted_origin and cl.predicted_angles
-=================
-*/
 void CL_PredictMovement (void)
 {
 	int		ack, current;

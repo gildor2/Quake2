@@ -59,7 +59,7 @@ static int SmallestNode1 (int numhnodes)
 {
 	int		i, best, bestnode;
 
-	best = 99999999;
+	best = BIG_NUMBER;
 	bestnode = -1;
 	for (i = 0; i < numhnodes; i++)
 	{

@@ -15,6 +15,23 @@
  */
 
 
+//#define SPY_SHADER		// comment line to disable gl_spyShader staff
+
+/*-----------------------------------------------------------------------------
+	Local cvars
+-----------------------------------------------------------------------------*/
+
+static cvar_t	*gl_clear;
+static cvar_t	*gl_showbboxes, *gl_showtris, *gl_shownormals;
+#ifdef SPY_SHADER
+static cvar_t	*gl_spyShader;
+#endif
+
+
+/*-----------------------------------------------------------------------------
+	Data
+-----------------------------------------------------------------------------*/
+
 typedef struct
 {
 	float	tex[2];
@@ -64,7 +81,9 @@ int gl_numVerts, gl_numIndexes, gl_numExtra;
 static surfaceInfo_t *sortedSurfaces[MAX_SCENE_SURFACES];
 
 
-/*----- Process deforms, ...gens etc. ------*/
+/*-----------------------------------------------------------------------------
+	Process deforms, ...gens etc.
+-----------------------------------------------------------------------------*/
 
 
 static void ProcessShaderDeforms (shader_t *sh)
@@ -141,8 +160,8 @@ static void GenerateColorArray (shaderStage_t *st)
 			int		ka, kb;
 
 #define MIN_BOOST_BRIGHT		48
-			ka = (256 - MIN_BOOST_BRIGHT) >> gl_config.overbright;
-			kb = (MIN_BOOST_BRIGHT * 256) >> gl_config.overbright;
+			ka = (256 - MIN_BOOST_BRIGHT);							// do not lightscale multiplier
+			kb = (MIN_BOOST_BRIGHT * 256) >> gl_config.overbright;	// but lightscale bias
 			for (i = 0; i < gl_numVerts; i++, src++, dst++)
 			{
 				int		r, g, b, oldbr, newbr, scale;
@@ -237,10 +256,11 @@ static void GenerateColorArray (shaderStage_t *st)
 					d = DotProduct (v, norm);
 #if 0
 					d = d * d;
-#else
-					if (d < 0) d = 0;
-#endif
 					dst->c[3] = Q_round (d * scale) + min;
+#else
+					if (d < 0)	dst->c[3] = 0;
+					else		dst->c[3] = Q_round (d * scale) + min;
+#endif
 				}
 			}
 		}
@@ -445,17 +465,20 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu)
 }
 
 
-/*----------------- Shader visualization -------------------*/
+/*-----------------------------------------------------------------------------
+	Shader visualization
+-----------------------------------------------------------------------------*/
 
 
-// should rename "temp", "tmp" ?? (rendererStage_t ?)
+// should rename "temp", "tmp" ?? (rendererStage_t, combinedStage_t, texUnit_t ?)
 typedef struct
 {
 	unsigned texEnv;		// REPLACE/MODILATE/ADD or COMBINE/COMBINE_NV
 	byte	tmu;
-	bool	constRGBA;
+	bool	constRGBA;		//?? rename fields to bConstRGBA-like (bool-prefix)
 	bool	identityRGBA;
 	bool	doubleRGBA;
+	bool	imgNoAlpha;
 	shaderStage_t st;		// modified copy of original stage (or auto-generated stage)
 } tempStage_t;
 
@@ -487,17 +510,39 @@ static int			numRenderPasses;
 #define DEBUG_LIGHTMAP		2
 
 //#define LOG_PP(x)	LOG_STRING(x)
-#define LOG_PP(x)
+//#define LOG_PP(x) DrawTextLeft(x,RGB(0.3,0.6,0.6))
+
+#ifndef LOG_PP
+#	ifdef SPY_SHADER
+#		define LOG_PP(x)	if (spy) DrawTextLeft(x,RGB(0.3,0.6,0.6))
+#	else
+#		define LOG_PP(x)
+#	endif
+#endif
 
 //!! separate copy-stages and combine-with-multitexture to different funcs (make few mtex funcs for different extensions ?)
+//?? and: rename this func
 static void PreprocessShader (shader_t *sh)
 {
 	int		firstStage, i, debugMode, glState;
 	shaderStage_t *stage, **pstage, *lmStage;
 	tempStage_t *st;
 	renderPass_t *pass;
-	int		tmuUsed, tmuLeft, passStyle;
+	int		tmuUsed, tmuLeft;
+	unsigned passStyle;
 	bool	entityLightingDone;
+#ifdef SPY_SHADER
+	bool	spy;
+
+	{
+		char	*mask;
+
+		spy = false;
+		mask = gl_spyShader->string;
+		if (mask[0] && !(mask[0] == '0' && mask[1] == 0))
+			spy = MatchWildcard2 (sh->name, mask, false);
+	}
+#endif
 
 	debugMode = 0;
 	if (r_fullbright->integer) debugMode |= DEBUG_FULLBRIGHT;
@@ -601,12 +646,18 @@ static void PreprocessShader (shader_t *sh)
 		if (stage->numAnimTextures > 1)
 		{
 			int		n;
+			image_t	*img;
 
 			if (currentEntity == &gl_entities[ENTITYNUM_WORLD] || !stage->frameFromEntity)
 				n = Q_round (vp.time * stage->animMapFreq);
 			else
 				n = currentEntity->frame;
-			st->st.mapImage[0] = stage->mapImage[n % stage->numAnimTextures];
+			img = st->st.mapImage[0] = stage->mapImage[n % stage->numAnimTextures];
+			// determine: whether image have alpha-channel
+			if (img && img->alphaType)
+				st->imgNoAlpha = false;
+			else
+				st->imgNoAlpha = true;
 		}
 
 		/*---------- fullbright/lightmap ---------------*/
@@ -639,7 +690,15 @@ static void PreprocessShader (shader_t *sh)
 		/*------- convert some rgbaGen to CONST --------*/
 		switch (st->st.rgbGenType)
 		{
-		// NONE, IDENTITY, IDENTITY_LIGHTING: already converted to CONST (on shader loading)
+		case RGBGEN_NONE:
+		case RGBGEN_IDENTITY:
+			st->st.rgbaConst.rgba |= RGBA(1,1,1,0);	// RGB = 255, alpha - unchanged
+			st->st.rgbGenType = RGBGEN_CONST;
+			break;
+		case RGBGEN_IDENTITY_LIGHTING:
+			st->st.rgbaConst.c[0] = st->st.rgbaConst.c[1] = st->st.rgbaConst.c[2] = gl_config.identityLightValue;
+			st->st.rgbGenType = RGBGEN_CONST;
+			break;
 		case RGBGEN_ENTITY:
 			st->st.rgbaConst.c[0] = currentEntity->shaderColor.c[0] >> gl_config.overbright;
 			st->st.rgbaConst.c[1] = currentEntity->shaderColor.c[1] >> gl_config.overbright;
@@ -804,8 +863,9 @@ static void PreprocessShader (shader_t *sh)
 		// now, we can check blendmode and rgbaGen
 		blend2 = st[1].st.glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK);
 
-		// pure multitexture: any rgba for 1st TMU, identity for others
-		if (st[1].identityRGBA && (tmuUsed == 1 || st[0].identityRGBA))
+		// pure multitexture: PREV+T2 or PREV+T2, no multipliers
+		// any rgba for current TMU, identity for next
+		if (st[1].identityRGBA)
 		{
 			// pure multitexture can emulate only 2 blendmodes: "src*dst" and "src+dst" (when texenv_add)
 			if (blend2 == (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO) && passStyle & BLEND_MULTIPLICATIVE)
@@ -866,7 +926,7 @@ static void PreprocessShader (shader_t *sh)
 				if (b2 != GLSTATE_DST_ONE && b2 != GLSTATE_DST_DSTALPHA && b2 != GLSTATE_DST_ONEMINUSDSTALPHA)
 					combine = false;
 			}
-			if (combine && passStyle == BLEND_MULTIPLICATIVE)
+			else if (passStyle == BLEND_MULTIPLICATIVE)
 			{
 				if (b1 != GLSTATE_SRC_ZERO && b2 != GLSTATE_DST_ZERO && blend2 != (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR))
 					combine = false;
@@ -917,6 +977,7 @@ static void PreprocessShader (shader_t *sh)
 		}
 
 		// not combined - begin new pass
+		LOG_PP("  not combined\n");
 		tmuLeft = 0;
 	}
 	LOG_PP("-----------------\n");
@@ -1073,19 +1134,41 @@ static void ReserveVerts (int verts, int inds)
 }
 
 
-/*---------------- Skybox ------------------*/
+/*-----------------------------------------------------------------------------
+	Skybox
+-----------------------------------------------------------------------------*/
 
+#define SKY_FRUST_DIST	1
 
 static void DrawSkyBox (void)
 {
 	int		side;
+	surfacePlanar_t pl;
+	vertex_t fv[4];
+	vec3_t	tmp, tmp1, up, right;
 
 	LOG_STRING ("*** DrawSkyBox() ***\n");
 	if (gl_fastsky->integer) return;
 
-	if (currentShader->skyRotate) GL_ShowWholeSky ();
+	// build frustum cover
+	VectorMA (vp.vieworg, SKY_FRUST_DIST, vp.viewaxis[0], tmp);
+	VectorScale (vp.viewaxis[1], SKY_FRUST_DIST * vp.t_fov_x, right);
+	VectorScale (vp.viewaxis[2], SKY_FRUST_DIST * vp.t_fov_y, up);
+	VectorAdd (tmp, up, tmp1);				// up
+	VectorAdd (tmp1, right, fv[0].xyz);
+	VectorSubtract (tmp1, right, fv[1].xyz);
+	VectorSubtract (tmp, up, tmp1);			// down
+	VectorSubtract (tmp1, right, fv[2].xyz);
+	VectorAdd (tmp1, right, fv[3].xyz);
+	// rasterize frustum
+	pl.numVerts = 4;
+	pl.verts = fv;
+	GL_AddSkySurface (&pl, vp.vieworg, SKY_FRUSTUM);
+	if (!GL_SkyVisible ()) return;			// all sky surfaces are outside frustum
 
+	// draw sky
 	GL_DepthRange (gl_showsky->integer ? DEPTH_NEAR : DEPTH_FAR);
+	GL_EnableFog (false);
 
 	glDisableClientState (GL_COLOR_ARRAY);
 	if (currentShader != gl_defaultSkyShader)
@@ -1093,7 +1176,7 @@ static void DrawSkyBox (void)
 					gl_config.identityLightValue_f,
 					gl_config.identityLightValue_f); // avoid overbright
 	else
-//		glColor3f (0, 0, 0);	// bad sky -- make it black (almost as gl_fastsky)
+//		glColor3f (0, 0, 0);			// bad sky -- make it black (almost as gl_fastsky)
 		glColor3fv (gl_fogColor);
 
 	glPushMatrix ();
@@ -1117,7 +1200,7 @@ static void DrawSkyBox (void)
 		if (currentShader != gl_defaultSkyShader)
 			GL_Bind (currentShader->skyFarBox[side]);
 		else
-			GL_Bind (NULL);			// disable texturing
+			GL_Bind (NULL);				// disable texturing
 
 		glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 
@@ -1147,7 +1230,9 @@ static void DrawSkyBox (void)
 }
 
 
-/*----------------- Scene ------------------*/
+/*-----------------------------------------------------------------------------
+	Scene
+-----------------------------------------------------------------------------*/
 
 static void CheckDynamicLightmap (surfaceCommon_t *s)
 {
@@ -1195,6 +1280,10 @@ static void CheckDynamicLightmap (surfaceCommon_t *s)
 	}
 }
 
+
+/*-----------------------------------------------------------------------------
+	3D tesselators
+-----------------------------------------------------------------------------*/
 
 static void TesselatePlanarSurf (surfacePlanar_t *surf)
 {
@@ -1394,7 +1483,9 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 }
 
 
-/*-------------- Debug output ----------------*/
+/*-----------------------------------------------------------------------------
+	Debug output
+-----------------------------------------------------------------------------*/
 
 
 static void FlashColor (void)
@@ -1531,8 +1622,9 @@ static void DrawTriangles (void)
 	GL_SetMultitexture (0);		// disable texturing
 	if (gl_showtris->integer - 1 & 1)
 		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);	// use depth test
-	else	// no depth test
+	else
 	{
+		// no depth test
 		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 		GL_DepthRange (DEPTH_NEAR);
 	}
@@ -1561,8 +1653,9 @@ static void DrawNormals (void)
 	GL_SetMultitexture (0);		// disable texturing
 	if (gl_shownormals->integer - 1 & 1)
 		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);	// use depth test
-	else	// no depth test
+	else
 	{
+		// no depth test
 		GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
 		GL_DepthRange (DEPTH_NEAR);
 	}
@@ -1591,6 +1684,7 @@ static void DrawNormals (void)
 	// restore state
 	GL_DepthRange (prevDepth);
 }
+
 
 
 static void TesselateEntitySurf (refEntity_t *e)
@@ -1634,11 +1728,14 @@ static void TesselateEntitySurf (refEntity_t *e)
 }
 
 
-/*---------- Fast drawing (without filling arrays) ----------*/
+
+/*-----------------------------------------------------------------------------
+	Fast drawing (without filling arrays)
+	REMOVE THIS ??
+-----------------------------------------------------------------------------*/
+
 //?? fast drawing may use global vertex/color/texcoord array (filled when map loaded) and just operate with indexes
 //!! In this case, indexes in surfaces must be global
-
-//?? REMOVE THIS ??
 
 static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 {
@@ -1698,7 +1795,10 @@ static void DrawFastSurfaces (surfaceInfo_t **surfs, int numSurfs)
 }
 
 
-/*------------------- Drawing the scene ---------------------*/
+
+/*-----------------------------------------------------------------------------
+	Drawing the scene
+-----------------------------------------------------------------------------*/
 
 static void DrawParticles (particle_t *p)
 {
@@ -1711,8 +1811,8 @@ static void DrawParticles (particle_t *p)
 	GL_Bind (gl_particleImage);
 
 	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|/*GLSTATE_DEPTHWRITE|*/GLSTATE_ALPHA_GT0);
-	VectorScale (vp.viewaxis[1], 1.5, up);
-	VectorScale (vp.viewaxis[2], 1.5, right);
+	VectorScale (vp.viewaxis[1], 1.5f, up);
+	VectorScale (vp.viewaxis[2], 1.5f, right);
 
 	glBegin (GL_TRIANGLES);
 	for ( ; p; p = p->drawNext)
@@ -1791,7 +1891,7 @@ static void DrawScene (void)
 	int		currentShaderNum, currentEntityNum;
 	bool	currentWorld, isWorld;
 
-	LOG_STRING (va("******** R_DrawScene: (%g, %g) - (%g, %g) ********\n", vp.x, vp.y, vp.x+vp.w, vp.y+vp.h));
+	LOG_STRING (va("******** R_DrawScene: (%d, %d) - (%d, %d) ********\n", vp.x, vp.y, vp.x+vp.w, vp.y+vp.h));
 
 	if (gl_numVerts) FlushArrays ();
 	GL_Setup (&vp);
@@ -1807,6 +1907,7 @@ static void DrawScene (void)
 	/*------------ draw sky --------------*/
 
 	GL_ClearSkyBox ();
+	GL_SetSkyRotate (vp.time * gl_skyShader->skyRotate, gl_skyShader->skyAxis);
 	numSkySurfs = 0;
 
 	si = sortedSurfaces;
@@ -1818,8 +1919,7 @@ static void DrawScene (void)
 
 		if (!index) SetCurrentShader (shader);
 
-		if (!shader->skyRotate)
-			GL_AddSkySurface (surf->pl, vp.vieworg);	//?? may be another types
+		GL_AddSkySurface (surf->pl, vp.vieworg, SKY_SURF);	//?? may be another types
 		numSkySurfs++;
 	}
 	//?? may be, require to set dlightMask, currentShader, currentEntity etc.
@@ -1946,6 +2046,11 @@ static void DrawScene (void)
 	gl_speeds.begin2D = Sys_Milliseconds ();
 }
 
+
+
+/*-----------------------------------------------------------------------------
+	2D tesselators
+-----------------------------------------------------------------------------*/
 
 static void TesselateStretchPic (bkDrawPic_t *p)
 {
@@ -2075,6 +2180,8 @@ static void TesselateText (bkDrawText_t *p)
 }
 
 
+/*---------------------------------------------------------------------------*/
+
 void GL_BackEnd (void)
 {
 	int		*p;
@@ -2138,8 +2245,7 @@ void GL_BackEnd (void)
 			FlushArrays ();
 			if (gl_screenshotName)
 				GL_PerformScreenshot ();
-			if (strcmp (gl_showImages->string, "0"))
-				GL_ShowImages ();
+			GL_ShowImages ();			// debug
 
 #ifndef SWAP_ON_BEGIN
 			if (gl_finish->integer) glFinish ();
@@ -2164,10 +2270,22 @@ void GL_BackEnd (void)
 }
 
 
-/*--------------- Init/shutdown --------------*/
+/*-----------------------------------------------------------------------------
+	Init/shutdown
+-----------------------------------------------------------------------------*/
 
 void GL_InitBackend (void)
 {
+CVAR_BEGIN(vars)
+	CVAR_VAR(gl_clear, 0, 0),
+#ifdef SPY_SHADER
+	CVAR_VAR(gl_spyShader, 0, 0),
+#endif
+	CVAR_VAR(gl_showbboxes, 0, CVAR_CHEAT),
+	CVAR_VAR(gl_showtris, 0, CVAR_CHEAT),
+	CVAR_VAR(gl_shownormals, 0, CVAR_CHEAT)
+CVAR_END
+	Cvar_GetVars (ARRAY_ARG(vars));
 	GL_ClearBuffers ();
 
 	vbSize = sizeof(vertexBuffer_t) + gl_config.maxActiveTextures * sizeof(bufTexCoord_t) * MAX_VERTEXES;

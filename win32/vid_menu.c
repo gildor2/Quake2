@@ -133,6 +133,7 @@ static void ContrastCallback (void *s)
 		s_contrast_slider[0].curvalue = s_contrast_slider[1].curvalue;
 
 	Cvar_SetValue ("r_contrast", slider->curvalue / (MAX_CONTRAST - MIN_CONTRAST));
+	Cvar_SetValue ("r_brightness", slider->curvalue / (MAX_CONTRAST - MIN_CONTRAST));
 }
 
 

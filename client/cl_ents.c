@@ -146,7 +146,7 @@ void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, int bits
 			VectorSet (to->maxs, x, x, zu);
 			VectorAdd (to->maxs, to->mins, d);
 			VectorMA (to->origin, 0.5f, d, to->center);
-			to->radius = VectorDistance (to->maxs, to->center);
+			to->radius = VectorDistance (to->maxs, to->mins) / 2;
 			to->valid = true;
 		}
 		else
@@ -240,55 +240,50 @@ rest of the data stream.
 */
 void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 {
-	int			newnum;
-	int			bits;
-	entityState_t	*oldstate;
-	int			oldindex, oldnum;
+	entityState_t *oldstate;
+	int		oldindex, oldnum, old_num_entities;
 
 	newframe->parse_entities = cl.parse_entities;
 	newframe->num_entities = 0;
 
-	// delta from the entities present in oldframe
 	oldindex = 0;
-	if (!oldframe)
-		oldnum = 99999;
-	else
+	old_num_entities = oldframe ? oldframe->num_entities : 0;
+
+	while (1)
 	{
-		if (oldindex >= oldframe->num_entities)
-			oldnum = 99999;
+		int		newnum;
+		int		bits;
+
+		newnum = CL_ParseEntityBits (&bits);
+		if (net_message.readcount > net_message.cursize)
+			Com_Error (ERR_DROP,"CL_ParsePacketEntities: end of message");
+		if (newnum >= MAX_EDICTS)
+			Com_Error (ERR_DROP,"CL_ParsePacketEntities: bad number: %d", newnum);
+
+		if (!newnum) break;				// received end of packet entities (bits=0, entNum=0)
+
+		if (oldindex >= old_num_entities)
+			oldnum = BIG_NUMBER;
 		else
 		{
 			oldstate = &cl_parse_entities[(oldframe->parse_entities+oldindex) & (MAX_PARSE_ENTITIES-1)];
 			oldnum = oldstate->number;
 		}
-	}
-
-	while (1)
-	{
-		newnum = CL_ParseEntityBits (&bits);
-		if (newnum >= MAX_EDICTS)
-			Com_Error (ERR_DROP,"CL_ParsePacketEntities: bad number: %d", newnum);
-
-		if (net_message.readcount > net_message.cursize)
-			Com_Error (ERR_DROP,"CL_ParsePacketEntities: end of message");
-
-		if (!newnum) break;
 
 		while (oldnum < newnum)
-		{	// one or more entities from the old packet are unchanged
+		{
+			// one or more entities from the old packet are unchanged
 			if (cl_shownet->integer == 3)
 				Com_Printf ("   unchanged: %d\n", oldnum);
 			CL_DeltaEntity (newframe, oldnum, oldstate, 0);
 
-			oldindex++;
-
-			if (oldindex >= oldframe->num_entities)
-				oldnum = 99999;
-			else
+			if (++oldindex >= old_num_entities)
 			{
-				oldstate = &cl_parse_entities[(oldframe->parse_entities+oldindex) & (MAX_PARSE_ENTITIES-1)];
-				oldnum = oldstate->number;
+				oldnum = BIG_NUMBER;
+				break;
 			}
+			oldstate = &cl_parse_entities[(oldframe->parse_entities+oldindex) & (MAX_PARSE_ENTITIES-1)];
+			oldnum = oldstate->number;
 		}
 
 		if (bits & U_REMOVE)
@@ -299,37 +294,23 @@ void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 				Com_Printf ("U_REMOVE: oldnum != newnum\n");
 
 			oldindex++;
-
-			if (oldindex >= oldframe->num_entities)
-				oldnum = 99999;
-			else
-			{
-				oldstate = &cl_parse_entities[(oldframe->parse_entities+oldindex) & (MAX_PARSE_ENTITIES-1)];
-				oldnum = oldstate->number;
-			}
 			continue;
 		}
 
 		if (oldnum == newnum)
-		{	// delta from previous state
+		{
+			// delta from previous state
 			if (cl_shownet->integer == 3)
 				Com_Printf ("   delta: %d\n", newnum);
 			CL_DeltaEntity (newframe, newnum, oldstate, bits);
 
 			oldindex++;
-
-			if (oldindex >= oldframe->num_entities)
-				oldnum = 99999;
-			else
-			{
-				oldstate = &cl_parse_entities[(oldframe->parse_entities+oldindex) & (MAX_PARSE_ENTITIES-1)];
-				oldnum = oldstate->number;
-			}
 			continue;
 		}
 
 		if (oldnum > newnum)
-		{	// delta from baseline
+		{
+			// delta from baseline
 			if (cl_shownet->integer == 3)
 				Com_Printf ("   baseline: %d\n", newnum);
 			CL_DeltaEntity (newframe, newnum, &cl_entities[newnum].baseline, bits);
@@ -338,21 +319,17 @@ void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 	}
 
 	// any remaining entities in the old frame are copied over
-	while (oldnum != 99999)
-	{	// one or more entities from the old packet are unchanged
+	while (oldindex < old_num_entities)
+	{
+		// one or more entities from the old packet are unchanged
+		oldstate = &cl_parse_entities[(oldframe->parse_entities+oldindex) & (MAX_PARSE_ENTITIES-1)];
+		oldnum = oldstate->number;
+
 		if (cl_shownet->integer == 3)
 			Com_Printf ("   unchanged: %d\n", oldnum);
 		CL_DeltaEntity (newframe, oldnum, oldstate, 0);
 
 		oldindex++;
-
-		if (oldindex >= oldframe->num_entities)
-			oldnum = 99999;
-		else
-		{
-			oldstate = &cl_parse_entities[(oldframe->parse_entities+oldindex) & (MAX_PARSE_ENTITIES-1)];
-			oldnum = oldstate->number;
-		}
 	}
 }
 
@@ -616,6 +593,10 @@ void CL_ParseFrame (void)
 		CL_FireEntityEvents (&cl.frame);
 		CL_CheckPredictionError ();
 	}
+	// get oldFrame
+	cl.oldFrame = &cl.frames[(cl.frame.serverframe - 1) & UPDATE_MASK];
+	if (cl.oldFrame->serverframe != cl.frame.serverframe-1 || !cl.oldFrame->valid)
+		cl.oldFrame = &cl.frame;			// previous frame was dropped or invalid
 }
 
 /*
@@ -777,12 +758,10 @@ static void AddViewWeapon (int renderfx)
 {
 	entity_t	gun;		// view model
 	int			i;
-	frame_t		*oldframe;
 	player_state_t *ps, *ops;
 
 	ps = &cl.frame.playerstate;
-	oldframe = &cl.frames[(cl.frame.serverframe - 1) & UPDATE_MASK];
-	ops = &oldframe->playerstate;
+	ops = &cl.oldFrame->playerstate;
 
 	// allow the gun to be completely removed
 	if (!cl_gun->integer)
@@ -795,7 +774,7 @@ static void AddViewWeapon (int renderfx)
 	memset (&gun, 0, sizeof(gun));
 
 	if (gun_model)
-		gun.model = gun_model;	// development tool
+		gun.model = gun_model;			// development tool
 	else
 		gun.model = cl.model_draw[ps->gunindex];
 	if (!gun.model)
@@ -810,14 +789,14 @@ static void AddViewWeapon (int renderfx)
 
 	if (gun_frame)
 	{
-		gun.frame = gun_frame;	// development tool
-		gun.oldframe = gun_frame;	// development tool
+		gun.frame = gun_frame;			// development tool
+		gun.oldframe = gun_frame;		// development tool
 	}
 	else
 	{
 		gun.frame = ps->gunframe;
 		if (gun.frame == 0)
-			gun.oldframe = 0;	// just changed weapons, don't lerp from old
+			gun.oldframe = 0;			// just changed weapons, don't lerp from old
 		else
 			gun.oldframe = ops->gunframe;
 	}
@@ -826,7 +805,6 @@ static void AddViewWeapon (int renderfx)
 	gun.backlerp = 1.0 - cl.lerpfrac;
 	VectorCopy (gun.origin, gun.oldorigin);	// don't lerp at all
 	AddEntityWithEffects (&gun, renderfx);
-//	V_AddEntity (&gun);
 }
 
 
@@ -1335,7 +1313,7 @@ void CL_OffsetThirdPersonView (void)
 	sscanf (Cvar_VariableString("3rd"), "%g %g %g", VECTOR_ARG(&cl.refdef.viewangles));
 #endif
 	AngleVectors (cl.refdef.viewangles, forward, NULL, NULL);
-	VectorMA(cl.refdef.vieworg, -camDist, forward, pos);
+	VectorMA (cl.refdef.vieworg, -camDist, forward, pos);
 	pos[2] += cl_cameraheight->value;
 
 	CL_Trace (&trace, cl.refdef.vieworg, pos, mins, maxs, MASK_SHOT|MASK_WATER);
@@ -1382,15 +1360,11 @@ void CL_CalcViewValues (void)
 	int			i;
 	float		lerp, backlerp;
 	centity_t	*ent;
-	frame_t		*oldframe;
 	player_state_t	*ps, *ops;
 
 	// find the previous frame to interpolate from
 	ps = &cl.frame.playerstate;
-	oldframe = &cl.frames[(cl.frame.serverframe - 1) & UPDATE_MASK];
-	if (oldframe->serverframe != cl.frame.serverframe-1 || !oldframe->valid)
-		oldframe = &cl.frame;		// previous frame was dropped or involid
-	ops = &oldframe->playerstate;
+	ops = &cl.oldFrame->playerstate;
 
 	// see if the player entity was teleported this frame
 	if (abs(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256*8 ||
@@ -1410,9 +1384,8 @@ void CL_CalcViewValues (void)
 		backlerp = 1.0 - lerp;
 		for (i = 0; i < 3; i++)
 		{
-			cl.refdef.vieworg[i] = cl.predicted_origin[i] + ops->viewoffset[i]
-				+ lerp * (ps->viewoffset[i] - ops->viewoffset[i])
-				- backlerp * cl.prediction_error[i];
+			cl.modelorg[i] = cl.predicted_origin[i] - backlerp * cl.prediction_error[i];
+			cl.refdef.vieworg[i] = cl.modelorg[i] + ops->viewoffset[i] + lerp * (ps->viewoffset[i] - ops->viewoffset[i]);
 		}
 
 		// smooth out stair climbing
@@ -1423,8 +1396,10 @@ void CL_CalcViewValues (void)
 	else
 	{	// just use interpolated values
 		for (i = 0; i < 3; i++)
-			cl.refdef.vieworg[i] = ops->pmove.origin[i] * 0.125f + ops->viewoffset[i]
-				+ lerp * ((ps->pmove.origin[i] * 0.125f + ps->viewoffset[i]) - (ops->pmove.origin[i] * 0.125f + ops->viewoffset[i]));
+		{
+			cl.modelorg[i] = ops->pmove.origin[i] * 0.125f + lerp * (ps->pmove.origin[i] - ops->pmove.origin[i]) * 0.125f;
+			cl.refdef.vieworg[i] = cl.modelorg[i] + ops->viewoffset[i] + lerp * (ps->viewoffset[i] - ops->viewoffset[i]);
+		}
 	}
 
 	// if not running a demo or on a locked frame, add the local angle movement
@@ -1454,8 +1429,12 @@ void CL_CalcViewValues (void)
 	{
 		cl.refdef.rdflags |= RDF_THIRD_PERSON;
 		CL_OffsetThirdPersonView ();
-		if (CM_PointContents (cl.refdef.vieworg, 0) & MASK_WATER)
+		if (CM_PointContents (cl.refdef.vieworg, 0) & MASK_WATER)		//?? use different point
 			cl.refdef.rdflags |= RDF_UNDERWATER;
+		// compute cl.modelorg for 3rd person view from client entity
+		ent = &cl_entities[cl.playernum+1];
+		for (i = 0; i < 3; i++)
+			cl.modelorg[i] = ent->prev.origin[i] + cl.lerpfrac * (ent->current.origin[i] - ent->prev.origin[i]);
 	}
 
 	AngleVectors (cl.refdef.viewangles, cl.v_forward, cl.v_right, cl.v_up);

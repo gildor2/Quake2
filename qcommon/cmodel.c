@@ -38,7 +38,7 @@ typedef struct
 	int		contents;
 	int		numsides;
 	int		firstbrushside;
-	int		checkcount;			// to avoid repeated testings
+	int		traceFrame;			// to avoid repeated testings
 } cbrush_t;
 
 typedef struct
@@ -48,8 +48,6 @@ typedef struct
 	int		floodnum;			// if two areas have equal floodnums, they are connected
 	int		floodvalid;
 } carea_t;
-
-static int	checkcount;			// trace var
 
 char		map_name[MAX_QPATH];
 
@@ -1253,144 +1251,46 @@ int	CM_HeadnodeForBox (vec3_t mins, vec3_t maxs)
 }
 
 
-/*
-==================
-CM_PointLeafnum_r
+/*-----------------------------------------------------------------------------
+	Point info
+-----------------------------------------------------------------------------*/
 
-==================
-*/
-static int PointLeafnum_r (vec3_t p, int num)
+static int PointLeafnum (vec3_t p, int num)
 {
-	float		d;
-	cnode_t		*node;
-	cplane_t	*plane;
-
 	while (num >= 0)
 	{
-		node = map_nodes + num;
-		plane = node->plane;
+		cnode_t	*node;
+		float	d;
 
-		d = DISTANCE_TO_PLANE(p,plane);
+		node = map_nodes + num;
+		d = DISTANCE_TO_PLANE(p, node->plane);
 		num = node->children[IsNegative(d)];
 	}
 
-	c_pointcontents++;		// optimize counter
-
+	c_pointcontents++;					// stats
 	return -1 - num;
 }
 
+
 int CM_PointLeafnum (vec3_t p)
 {
-	if (!numplanes)
-		return 0;			// sound may call this without map loaded
-	return PointLeafnum_r (p, 0);
+	if (!numplanes) return 0;			// map is not yet loaded
+	//?? (need another way -- what will be, when loading DIFFERENT map, and trying to trace OLD map ?)
+	return PointLeafnum (p, 0);
 }
 
 
-
-/*
-=============
-CM_BoxLeafnums
-
-Fills in a list of all the leafs touched
-=============
-*/
-int		leaf_count, leaf_maxcount;
-int		*leaf_list;
-float	*leaf_mins, *leaf_maxs;
-int		leaf_topnode;
-
-static void BoxLeafnums_r (int nodenum)
-{
-	cplane_t	*plane;
-	cnode_t		*node;
-	int		s;
-
-	while (1)
-	{
-		if (nodenum < 0)
-		{
-			if (leaf_count >= leaf_maxcount)
-			{
-//				Com_Printf ("CM_BoxLeafnums_r: overflow\n");
-				return;
-			}
-			leaf_list[leaf_count++] = -1 - nodenum;
-			return;
-		}
-
-		node = &map_nodes[nodenum];
-		plane = node->plane;
-		s = BOX_ON_PLANE_SIDE(leaf_mins, leaf_maxs, plane);
-		switch (s)
-		{
-		case 1:
-			nodenum = node->children[0];
-			break;
-		case 2:
-			nodenum = node->children[1];
-			break;
-		default:
-			// go down both
-			if (leaf_topnode == -1)
-				leaf_topnode = nodenum;
-			BoxLeafnums_r (node->children[0]);
-			nodenum = node->children[1];
-		}
-	}
-}
-
-static int BoxLeafnums_headnode (vec3_t mins, vec3_t maxs, int *list, int listsize, int headnode, int *topnode)
-{
-	leaf_list = list;
-	leaf_count = 0;
-	leaf_maxcount = listsize;
-	leaf_mins = mins;
-	leaf_maxs = maxs;
-
-	leaf_topnode = -1;
-
-	BoxLeafnums_r (headnode);
-
-	if (topnode) *topnode = leaf_topnode;
-
-	return leaf_count;
-}
-
-int	CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topnode)
-{
-	return BoxLeafnums_headnode (mins, maxs, list,
-		listsize, map_cmodels[0].headnode, topnode);
-}
-
-
-
-/*
-==================
-CM_PointContents
-
-==================
-*/
 int CM_PointContents (vec3_t p, int headnode)
 {
 	int		l;
 
-	if (!numnodes)	// map not loaded
-		return 0;
+	if (!numnodes) return 0;	// map not loaded
 
-	l = PointLeafnum_r (p, headnode);
-
+	l = PointLeafnum (p, headnode);
 	return map_leafs[l].contents;
 }
 
-/*
-==================
-CM_TransformedPointContents
 
-Handles offseting and rotation of the end points for moving and
-rotating entities
-==================
-*/
 int	CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t angles)
 {
 	vec3_t	p1, tmp, axis[3];
@@ -1407,7 +1307,7 @@ int	CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t a
 	else
 		VectorSubtract (p, origin, p1);
 
-	l = PointLeafnum_r (p1, headnode);
+	l = PointLeafnum (p1, headnode);
 	return map_leafs[l].contents;
 }
 
@@ -1426,19 +1326,77 @@ int	CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t 
 	else
 		VectorSubtract (p, origin, p1);
 
-	l = PointLeafnum_r (p1, headnode);
+	l = PointLeafnum (p1, headnode);
 
 	return map_leafs[l].contents;
 }
 
 
-/*
-===============================================================================
+/*-----------------------------------------------------------------------------
+	Box info
+-----------------------------------------------------------------------------*/
 
-BOX TRACING
+static int BoxLeafnums_headnode (vec3_t mins, vec3_t maxs, int *list, int listsize, int headnode, int *topnode)
+{
+	cnode_t	*node;
+	int		count, _topnode, nodenum;
+	int		stack[MAX_TREE_DEPTH], sptr;		// stack
 
-===============================================================================
-*/
+	count = 0;
+	_topnode = -1;
+	nodenum = headnode;
+
+	sptr = 0;
+	while (1)
+	{
+		if (nodenum < 0)
+		{
+			if (count >= listsize) break;		// list is full
+
+			list[count++] = -1 - nodenum;
+
+			if (!sptr)
+				break;							// whole tree visited
+			else
+			{
+				nodenum = stack[--sptr];
+				continue;
+			}
+		}
+
+		node = &map_nodes[nodenum];
+		switch (BOX_ON_PLANE_SIDE(mins, maxs, node->plane))
+		{
+		case 1:
+			nodenum = node->children[0];
+			break;
+		case 2:
+			nodenum = node->children[1];
+			break;
+		default:
+			// go down both
+			if (_topnode == -1)
+				_topnode = nodenum;				// remember top node, which subdivides box
+			nodenum = node->children[0];
+			stack[sptr++] = node->children[1];
+		}
+	}
+
+	if (topnode) *topnode = _topnode;
+	return count;
+}
+
+
+int	CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topnode)
+{
+	return BoxLeafnums_headnode (mins, maxs, list, listsize, map_cmodels[0].headnode, topnode);
+}
+
+
+
+/*-----------------------------------------------------------------------------
+	Box trace
+-----------------------------------------------------------------------------*/
 
 #define	DIST_EPSILON	(1.0f/32)
 
@@ -1585,7 +1543,8 @@ static void ClipBoxToBrush (cbrush_t *brush)
 TraceToLeaf
 ================
 */
-qboolean trace_skipAlpha;		//!! need another way to pass through SURF_ALPHA (callbacks??); used in SV_TraceHook()
+bool trace_skipAlpha;		//!! need another way to pass through SURF_ALPHA (callbacks??); used in SV_TraceHook()
+static int traceFrame;
 
 static void TraceToLeaf (int leafnum)
 {
@@ -1599,22 +1558,16 @@ static void TraceToLeaf (int leafnum)
 	// trace line against all brushes in the leaf
 	for (i = 0; i < leaf->numleafbrushes; i++)
 	{
-		trace_t save_trace;
-
 		b = map_brushes + map_leafbrushes[leaf->firstleafbrush + i];
-		if (b->checkcount == checkcount)
+		if (b->traceFrame == traceFrame)
 			continue;					// already checked this brush in another leaf
-		b->checkcount = checkcount;
+		b->traceFrame = traceFrame;
 		if (!(b->contents & trace_contents))
 			continue;
-
-		save_trace = trace_trace;
-		ClipBoxToBrush (b);
-		if (trace_skipAlpha && trace_trace.contents & CONTENTS_ALPHA)		// shooting through CONTENTS_ALPHA
-		{	//?? can do this without hack: just add "nocontents" -- if ((cont & br.contents) && !(nocont & br.contents))
-			trace_trace = save_trace;
+		if (trace_skipAlpha && b->contents & CONTENTS_ALPHA)
 			continue;
-		}
+
+		ClipBoxToBrush (b);
 		if (!trace_trace.fraction)		// when startsolid && allsolid
 			return;
 	}
@@ -1717,9 +1670,9 @@ static void TestInLeaf (int leafnum)
 		cbrush_t	*b;
 
 		b = map_brushes + map_leafbrushes[leaf->firstleafbrush + i];
-		if (b->checkcount == checkcount)
+		if (b->traceFrame == traceFrame)
 			continue;	// already checked this brush in another leaf
-		b->checkcount = checkcount;
+		b->traceFrame = traceFrame;
 
 		if (!(b->contents & trace_contents))
 			continue;
@@ -1745,7 +1698,7 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, vec3_t p1, ve
 	int			side;
 
 	if (trace_trace.fraction <= p1f)
-		return;		// already hit something nearer
+		return;		// already hit something nearer (??)
 
 	while (true)
 	{
@@ -1879,7 +1832,7 @@ void CM_BoxTrace (trace_t *trace, vec3_t start, vec3_t end, vec3_t mins, vec3_t 
 {
 	int		i;
 
-	checkcount++;						// for multi-check avoidance
+	traceFrame++;						// for multi-check avoidance
 	c_traces++;
 
 	// fill in a default trace
@@ -2123,7 +2076,7 @@ static void RecursiveBrushTest (vec3_t start, vec3_t end, int nodeNum)
 {
 	cnode_t	*node;
 	cplane_t *plane;
-	float	frac1, frac2, t1, t2;
+	float	frac1, frac2, t1, t2, idist;
 	int		i, side, s1, s2;
 	vec3_t	mid, start1;
 
@@ -2147,9 +2100,9 @@ static void RecursiveBrushTest (vec3_t start, vec3_t end, int nodeNum)
 				//-------------- test brush --------------------
 				brushNum = map_leafbrushes[leaf->firstleafbrush + i];
 				b = map_brushes + brushNum;
-				if (b->checkcount != checkcount && (b->contents & CONTENTS_SOLID))
+				if (b->traceFrame != traceFrame && (b->contents & CONTENTS_SOLID))
 				{
-					b->checkcount = checkcount;
+					b->traceFrame = traceFrame;
 					if (TestBrush (start, end, b))
 					{
 						trace_brushes[trace_numBrushes++] = brushNum;
@@ -2192,32 +2145,22 @@ static void RecursiveBrushTest (vec3_t start, vec3_t end, int nodeNum)
 			continue;
 		}
 
-		if (t1 == t2)
+		// here: sign(t1) != sign(t2)
+		idist = 1.0f / (t1 - t2);	// "t1 == t2" should not happen: different signs but same numbers
+		if (t1 < t2)
 		{
-			side = 0;
-			frac1 = 1;
-			frac2 = 0;
+			frac1 = (t1 - DIST_EPSILON) * idist;
+			frac2 = (t1 + DIST_EPSILON) * idist;
+			side = 1;
 		}
 		else
 		{
-			float	idist;
-
-			idist = 1.0f / (t1 - t2);
-			if (t1 < t2)
-			{
-				frac1 = (t1 - DIST_EPSILON) * idist;
-				frac2 = (t1 + DIST_EPSILON) * idist;
-				side = 1;
-			}
-			else
-			{
-				frac1 = (t1 + DIST_EPSILON) * idist;
-				frac2 = (t1 - DIST_EPSILON) * idist;
-				side = 0;
-			}
-			frac1 = bound(frac1, 0, 1);
-			frac2 = bound(frac2, 0, 1);
+			frac1 = (t1 + DIST_EPSILON) * idist;
+			frac2 = (t1 - DIST_EPSILON) * idist;
+			side = 0;
 		}
+		frac1 = bound(frac1, 0, 1);
+		frac2 = bound(frac2, 0, 1);
 
 		// move up to the node
 		for (i = 0; i < 3; i++)
@@ -2242,7 +2185,7 @@ int CM_BrushTrace (vec3_t start, vec3_t end, int *brushes, int maxBrushes)
 	trace_numBrushes = 0;
 	trace_brushes = brushes;
 	trace_maxBrushes = maxBrushes;
-	checkcount++;
+	traceFrame++;
 
 	RecursiveBrushTest (start, end, 0);
 
@@ -2405,7 +2348,7 @@ void FloodAreaConnections (void)
 	floodnum = 0;
 
 	// area 0 is not used
-	for (i=1 ; i<numareas ; i++)
+	for (i = 1; i < numareas; i++)
 	{
 		area = &map_areas[i];
 		if (area->floodvalid == floodvalid)
@@ -2425,6 +2368,7 @@ void CM_SetAreaPortalState (int portalnum, qboolean open)
 	FloodAreaConnections ();
 }
 
+// used by game dll
 qboolean CM_AreasConnected (int area1, int area2)
 {
 	if (map_noareas->integer)
@@ -2510,25 +2454,30 @@ is potentially visible
 =============
 */
 // This function used only from sv_ents.c :: SV_BuildClientFrame()
-qboolean CM_HeadnodeVisible (int nodenum, byte *visbits)
+bool CM_HeadnodeVisible (int nodenum, byte *visbits)
 {
-	int		leafnum;
-	int		cluster;
 	cnode_t	*node;
+	int		stack[MAX_TREE_DEPTH], sptr;
 
-	if (nodenum < 0)
+	sptr = 0;
+	while (true)
 	{
-		leafnum = -1-nodenum;
-		cluster = map_leafs[leafnum].cluster;
-		if (cluster == -1)
-			return false;
-		if (visbits[cluster>>3] & (1<<(cluster&7)))
-			return true;
-		return false;
-	}
+		if (nodenum < 0)
+		{
+			int		cluster;
 
-	node = &map_nodes[nodenum];
-	if (CM_HeadnodeVisible(node->children[0], visbits))
-		return true;
-	return CM_HeadnodeVisible(node->children[1], visbits);
+			cluster = map_leafs[-1-nodenum].cluster;
+			if (cluster == -1 || !(visbits[cluster>>3] & (1<<(cluster&7))))
+			{
+				if (!sptr) return false;		// whole tree visited
+				nodenum = stack[--sptr];
+				continue;
+			}
+			return true;
+		}
+
+		node = &map_nodes[nodenum];
+		stack[sptr++] = node->children[0];
+		nodenum = node->children[1];
+	}
 }

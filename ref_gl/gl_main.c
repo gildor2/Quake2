@@ -19,10 +19,8 @@ bool gl_renderingEnabled;
 //------------- Cvars -----------------
 
 // initialization/GLimp
-cvar_t	*r_fullscreen;
 cvar_t	*vid_ref;
-cvar_t	*gl_mode;
-cvar_t	*gl_bitdepth;
+cvar_t	*gl_mode, *gl_bitdepth, *r_fullscreen;
 cvar_t	*gl_driver;
 // GLimp
 cvar_t	*gl_allow_software;	//??
@@ -31,17 +29,16 @@ cvar_t	*gl_drawbuffer;
 // image-specific
 cvar_t	*gl_nobind;
 
-cvar_t	*r_ignorehwgamma;	// make "gl_" ??
+cvar_t	*r_ignorehwgamma;	// rename ??
 cvar_t	*gl_overbright;
 cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
-cvar_t	*r_intensity;		//??
 
-cvar_t	*gl_picmip, *gl_roundImagesDown, *gl_texMipBias, *gl_skinMipBias;
-cvar_t	*gl_textureBits, *gl_texturemode;
+cvar_t	*gl_texMipBias, *gl_skinMipBias;
+cvar_t	*gl_texturemode;
 
 // rendering speed/quality settings
 cvar_t	*gl_fastsky;		// do not draw skybox
-cvar_t	*gl_fog;
+cvar_t	*gl_fog;			//??
 
 cvar_t	*gl_flares;
 cvar_t	*gl_dynamic;		// enable dynamic lightmaps for Q2/HL maps
@@ -50,38 +47,31 @@ cvar_t	*gl_vertexLight;	// use glColor() against lightmaps
 cvar_t	*gl_nogrid;
 cvar_t	*gl_showgrid;
 
-cvar_t	*gl_ignoreFastPath;	// do not use GenericStageIterator() when possible
+cvar_t	*gl_ignoreFastPath;	// do not use GenericStageIterator() when possible (remove ???)
 
 // game settings
 cvar_t	*gl_hand;			// for weapon model
 
 // renderer settings
-cvar_t	*gl_clear;
-cvar_t	*gl_finish;
 cvar_t	*gl_znear;
 cvar_t	*gl_swapinterval;
+cvar_t	*gl_maxTextureUnits;
+cvar_t	*gl_finish;			// debug ? (can be a situation, when gl_finish==1 is necessary ? (linux))
 
 // debugging
-cvar_t	*r_colorMipLevels;
-cvar_t	*gl_showImages;
 cvar_t	*gl_logFile;
-cvar_t	*r_novis;
-cvar_t	*r_nocull;
-cvar_t	*gl_oCull;
-cvar_t	*gl_facePlaneCull;
-cvar_t	*gl_sortAlpha;
+cvar_t	*r_novis, *r_nocull, *gl_oCull, *gl_facePlaneCull;
 cvar_t	*r_speeds;
-cvar_t	*r_fullbright;
-cvar_t	*r_lightmap;
+cvar_t	*r_fullbright, *r_lightmap;
 cvar_t	*gl_showsky;
-cvar_t	*r_drawworld;
-cvar_t	*r_drawentities;
+cvar_t	*r_drawworld, *r_drawentities;
+cvar_t	*gl_sortAlpha;
 
-cvar_t	*gl_showbboxes, *gl_showtris, *gl_shownormals, *gl_labels;
-cvar_t	*gl_lightLines;
-cvar_t	*gl_showLights;
+cvar_t	*gl_labels;
+cvar_t	*gl_lightLines, *gl_showLights;
 cvar_t	*gl_singleShader;
-cvar_t	*gl_logTexts;
+
+static cvar_t	*gl_logTexts;
 
 
 static void ClearTexts (void);
@@ -90,22 +80,42 @@ void DrawTexts (void);
 
 static void Gfxinfo_f (void)
 {
-	static char *boolNames[] = {"no", "yes"};
+	static const char *boolNames[] = {"no", "yes"};
+	static const char *overbrNames[2][2] = {"disabled", "forced", "unneeded", "required"};
 
-	Com_Printf ("GL_VENDOR: %s\n", glGetString (GL_VENDOR));
-	Com_Printf ("GL_RENDERER: %s\n", glGetString (GL_RENDERER));
-	Com_Printf ("GL_VERSION: %s\n", glGetString (GL_VERSION));
-	Com_Printf ("GL_EXTENSIONS: %s\n", glGetString (GL_EXTENSIONS));		//?? colorize used/disabled extensions
+	Com_Printf ("^1---------- OpenGL info ----------\n");
+	Com_Printf ("^1Vendor:^7 %s\n", glGetString (GL_VENDOR));
+	Com_Printf ("^1Renderer:^7 %s\n", glGetString (GL_RENDERER));
+	Com_Printf ("^1Version:^7 %s\n", glGetString (GL_VERSION));
+	//?? colorize used/disabled extensions
+	Com_Printf ("^1Base extensions:^7 %s\n", gl_config.extensions);
+	if (gl_config.extensions2)
+		Com_Printf ("^1Platform extensions:^7 %s\n", gl_config.extensions2);
+	Com_Printf ("^1---------------------------------\n");
 	Com_Printf ("Multitexturing: ");
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
-		Com_Printf ("yes, %d texture units\n", gl_config.maxActiveTextures);
+	{
+		char	name[256];
+
+		strcpy (name, GL_SUPPORT(QGL_ARB_MULTITEXTURE) ? "ARB" : "SGIS");
+		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_ADD|QGL_EXT_TEXTURE_ENV_ADD))
+			strcat (name, " +Add");
+		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE|QGL_EXT_TEXTURE_ENV_COMBINE))
+			strcat (name, " +Combine");
+		if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4))
+			strcat (name, " +NV");
+
+		Com_Printf ("yes, %s, %d texture units\n", name, gl_config.maxActiveTextures);
+	}
 	else
 		Com_Printf ("no\n");
 	Com_Printf ("Lighting: %s\n", gl_config.vertexLight ? "vertex" : "lightmap");
 	Com_Printf ("Gamma: ");
 	if (gl_config.deviceSupportsGamma)
-		Com_Printf ("hardware, overbright: %s, lightmap overbright: %s\n",
-			boolNames[gl_config.overbright], boolNames[!gl_config.doubleModulateLM]);
+		Com_Printf ("hardware, overbright: %s (%s), lightmap overbright: %s\n",
+			//?? NOTE: here used gl_overbright->integer, which can be modified after vid_restart (can be incorrect note)
+			boolNames[gl_config.overbright], overbrNames[gl_overbright->integer == 2][gl_config.overbright],
+			boolNames[!gl_config.doubleModulateLM]);
 	else
 		Com_Printf ("software\n");
 }
@@ -119,20 +129,15 @@ static void GL_Register (void)
  */
 CVAR_BEGIN(vars)
 	CVAR_VAR(gl_texturemode, GL_LINEAR_MIPMAP_NEAREST, CVAR_ARCHIVE),
-	CVAR_VAR(gl_picmip, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
-	CVAR_VAR(gl_roundImagesDown, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_texMipBias, -0.5, CVAR_ARCHIVE),
 	CVAR_VAR(gl_skinMipBias, -1, CVAR_ARCHIVE),
-//	CVAR_VAR(gl_shadows, 0, CVAR_ARCHIVE ),
 	CVAR_VAR(r_gamma, 1, CVAR_ARCHIVE),
 	CVAR_VAR(r_brightness, 1, CVAR_ARCHIVE),
 	CVAR_VAR(r_contrast, 1, CVAR_ARCHIVE),
 	CVAR_VAR(r_saturation, 1, CVAR_ARCHIVE|CVAR_NOUPDATE),
-	CVAR_VAR(r_intensity, 1, CVAR_ARCHIVE),		//?? remove ?!
 	CVAR_VAR(r_ignorehwgamma, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_overbright, 2, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
-	CVAR_VAR(gl_textureBits, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	//!! add gl_depthBits
 
 	CVAR_VAR(gl_fastsky, 0, CVAR_ARCHIVE),
@@ -149,8 +154,6 @@ CVAR_BEGIN(vars)
 
 	{&gl_hand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE},
 
-	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE),
-	CVAR_VAR(gl_clear, 0, 0),
 	CVAR_VAR(gl_znear, 4, 0),
 	CVAR_VAR(gl_swapinterval, 0, CVAR_ARCHIVE|CVAR_UPDATE),
 
@@ -158,6 +161,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_mode, 3, CVAR_ARCHIVE),
 
 	CVAR_NULL(gl_ext_multitexture, 1, CVAR_ARCHIVE),
+	CVAR_VAR(gl_maxTextureUnits, 0, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_texture_env_add, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_texture_env_combine, 1, CVAR_ARCHIVE),
 	CVAR_NULL(gl_ext_texture_env_combine_nv, 1, CVAR_ARCHIVE),
@@ -167,29 +171,24 @@ CVAR_BEGIN(vars)
 	CVAR_NULL(gl_ext_compressed_textures, 1, CVAR_ARCHIVE),
 
 	CVAR_VAR(gl_nobind, 0, 0),
-	CVAR_VAR(r_colorMipLevels, 0, 0),
-	CVAR_VAR(gl_showImages, 0, 0),
 	CVAR_VAR(gl_logFile, 0, 0),
 	CVAR_VAR(r_novis, 0, 0),
 	CVAR_VAR(r_nocull, 0, 0),
 	CVAR_VAR(gl_oCull, 1, 0),
 	CVAR_VAR(gl_facePlaneCull, 1, 0),
-	CVAR_VAR(gl_sortAlpha, 0, 0),
 	CVAR_VAR(r_speeds, 0, 0),
-//	CVAR_VAR(gl_lockpvs, 0, 0), ????
 	CVAR_VAR(r_fullbright, 0, CVAR_CHEAT),
 	CVAR_VAR(r_lightmap, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showsky, 0, 0),
 	CVAR_VAR(r_drawworld, 1, CVAR_CHEAT),
 	CVAR_VAR(r_drawentities, 1, 0),
-	CVAR_VAR(gl_showbboxes, 0, CVAR_CHEAT),
-	CVAR_VAR(gl_showtris, 0, CVAR_CHEAT),
-	CVAR_VAR(gl_shownormals, 0, CVAR_CHEAT),
+	CVAR_VAR(gl_sortAlpha, 0, 0),
 	CVAR_VAR(gl_labels, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_lightLines, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showLights, 0, 0),
 	CVAR_VAR(gl_singleShader, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_logTexts, 0, 0),
+	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE),
 
 	CVAR_VAR(r_fullscreen, 1, CVAR_ARCHIVE),
 	CVAR_GET(vid_ref),
@@ -251,7 +250,7 @@ static bool GL_SetMode (void)
 
 static int GL_Init (void)
 {
-	Com_Printf ("------- R_Init -------\n");
+	Com_Printf ("--- Initializing OpenGL renderer ---\n");
 
 	Com_Printf ("ref_gl version: "REF_VERSION"\n");		//?? remove
 
@@ -318,6 +317,11 @@ static int GL_Init (void)
 		glGetIntegerv (GL_MAX_TEXTURES_SGIS, &gl_config.maxActiveTextures);
 	else
 		gl_config.maxActiveTextures = 1;
+	if (gl_maxTextureUnits->integer > 0 && gl_config.maxActiveTextures > gl_maxTextureUnits->integer)
+	{
+		Com_Printf ("^6...multitexture limited by %d units\n", gl_maxTextureUnits->integer);
+		gl_config.maxActiveTextures = gl_maxTextureUnits->integer;
+	}
 
 	gl_config.doubleModulateLM = true;			// no multitexture or env_combine
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE) &&
@@ -360,8 +364,6 @@ static int GL_Init (void)
 
 	gl_refdef.viewCluster = -2;		// force update visinfo for map:
 				// -1 is "no visinfo", >= 0 -- visinfo, so, -2 is unused (not reserved)
-
-	Com_Printf ("------- finished R_Init -------\n");
 
 	return 0;	// all OK
 }
@@ -630,20 +632,15 @@ static void SetPerspective (void)
 			vec3_t	v;
 			float	d1;
 
-			if (i & 1)	v[0] = vp.maxs[0];
-			else		v[0] = vp.mins[0];
-
-			if (i & 2)	v[1] = vp.maxs[1];
-			else		v[1] = vp.mins[1];
-
-			if (i & 4)	v[2] = vp.maxs[2];
-			else		v[2] = vp.mins[2];
+			v[0] = (i & 1) ? vp.maxs[0] : vp.mins[0];
+			v[1] = (i & 2) ? vp.maxs[1] : vp.mins[1];
+			v[2] = (i & 4) ? vp.maxs[2] : vp.mins[2];
 
 			VectorSubtract (v, vp.vieworg, v);
-			d1 = DotProduct (v, v);	// square of vector length
+			d1 = DotProduct (v, v);		// square of vector length
 			if (d1 > d) d = d1;
 		}
-		vp.zFar = sqrt (d);
+		vp.zFar = SQRTFAST(d) + 100;	// avoid precision errors
 	}
 	//-------------
 	zmin = gl_znear->value;
@@ -1074,23 +1071,9 @@ void DrawTextRight (char *text, unsigned rgba)
 
 void DrawText3D (vec3_t pos, char *text, unsigned rgba)
 {
-	vec3_t	vec;
-	float	x, y, z;
-	int		scrX, scrY;
+	int		coords[2];
 
-	VectorSubtract (pos, vp.vieworg, vec);
-
-	z = DotProduct (vec, vp.viewaxis[0]);
-	if (z <= gl_znear->value) return;			// not visible
-
-	x = DotProduct (vec, vp.viewaxis[1]) / z / vp.t_fov_x;
-	if (x < -1 || x > 1) return;
-
-	y = DotProduct (vec, vp.viewaxis[2]) / z / vp.t_fov_y;
-	if (y < -1 || y > 1) return;
-
-	scrX = Q_round (vp.x + vp.w * (0.5 - x / 2));
-	scrY = Q_round (vp.y + vp.h * (0.5 - y / 2));
+	if (!ProjectToScreen (pos, coords)) return;
 
 	do
 	{
@@ -1106,9 +1089,9 @@ void DrawText3D (vec3_t pos, char *text, unsigned rgba)
 			text = buf;
 			next++;		// skip '\n'
 		}
-		DrawTextPos (scrX, scrY, text, rgba);
+		DrawTextPos (coords[0], coords[1], text, rgba);
 		text = next;
-		scrY += CHARSIZE_Y;
+		coords[1] += CHARSIZE_Y;
 	} while (text);
 }
 

@@ -715,8 +715,8 @@ void RotatedBBox (vec3_t mins, vec3_t maxs, vec3_t angles, vec3_t tmins, vec3_t 
 
 	for (i=0 ; i<3 ; i++)
 	{
-		tmins[i] = 99999;
-		tmaxs[i] = -99999;
+		tmins[i] = BIG_NUMBER;
+		tmaxs[i] = -BIG_NUMBER;
 	}
 
 	AngleVectors (angles, forward, right, up);
@@ -1218,8 +1218,8 @@ void Draw_BuildGammaTable (void)
 
 	gamma = r_gamma->value;
 	if (gamma < 0.1) gamma = 0.1;
-	contr = bound(r_contrast->value, 0.3, 1.8);
-	bright = bound(r_brightness->value, 0.3, 1.8);
+	contr = bound(r_contrast->value, 0.5, 2);
+	bright = bound(r_brightness->value, 0.5, 2);
 
 	invGamma = 1.0f / gamma;
 	for (i = 0; i < 256; i++)

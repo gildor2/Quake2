@@ -609,8 +609,8 @@ void CalcSurfaceExtents (msurface_t *s)
 	mtexinfo_t	*tex;
 	int		bmins[2], bmaxs[2];
 
-	mins[0] = mins[1] = 999999;
-	maxs[0] = maxs[1] = -99999;
+	mins[0] = mins[1] = BIG_NUMBER;
+	maxs[0] = maxs[1] = -BIG_NUMBER;
 
 	tex = s->texinfo;
 

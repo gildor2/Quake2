@@ -337,58 +337,15 @@ MatrixMultiply
 */
 void MatrixMultiply (float in1[3][3], float in2[3][3], float out[3][3])
 {
-	out[0][0] = in1[0][0] * in2[0][0] + in1[0][1] * in2[1][0] +
-				in1[0][2] * in2[2][0];
-	out[0][1] = in1[0][0] * in2[0][1] + in1[0][1] * in2[1][1] +
-				in1[0][2] * in2[2][1];
-	out[0][2] = in1[0][0] * in2[0][2] + in1[0][1] * in2[1][2] +
-				in1[0][2] * in2[2][2];
-	out[1][0] = in1[1][0] * in2[0][0] + in1[1][1] * in2[1][0] +
-				in1[1][2] * in2[2][0];
-	out[1][1] = in1[1][0] * in2[0][1] + in1[1][1] * in2[1][1] +
-				in1[1][2] * in2[2][1];
-	out[1][2] = in1[1][0] * in2[0][2] + in1[1][1] * in2[1][2] +
-				in1[1][2] * in2[2][2];
-	out[2][0] = in1[2][0] * in2[0][0] + in1[2][1] * in2[1][0] +
-				in1[2][2] * in2[2][0];
-	out[2][1] = in1[2][0] * in2[0][1] + in1[2][1] * in2[1][1] +
-				in1[2][2] * in2[2][1];
-	out[2][2] = in1[2][0] * in2[0][2] + in1[2][1] * in2[1][2] +
-				in1[2][2] * in2[2][2];
-}
-
-
-/*
-================
-R_ConcatTransforms
-================
-*/
-void R_ConcatTransforms (float in1[3][4], float in2[3][4], float out[3][4])
-{
-	out[0][0] = in1[0][0] * in2[0][0] + in1[0][1] * in2[1][0] +
-				in1[0][2] * in2[2][0];
-	out[0][1] = in1[0][0] * in2[0][1] + in1[0][1] * in2[1][1] +
-				in1[0][2] * in2[2][1];
-	out[0][2] = in1[0][0] * in2[0][2] + in1[0][1] * in2[1][2] +
-				in1[0][2] * in2[2][2];
-	out[0][3] = in1[0][0] * in2[0][3] + in1[0][1] * in2[1][3] +
-				in1[0][2] * in2[2][3] + in1[0][3];
-	out[1][0] = in1[1][0] * in2[0][0] + in1[1][1] * in2[1][0] +
-				in1[1][2] * in2[2][0];
-	out[1][1] = in1[1][0] * in2[0][1] + in1[1][1] * in2[1][1] +
-				in1[1][2] * in2[2][1];
-	out[1][2] = in1[1][0] * in2[0][2] + in1[1][1] * in2[1][2] +
-				in1[1][2] * in2[2][2];
-	out[1][3] = in1[1][0] * in2[0][3] + in1[1][1] * in2[1][3] +
-				in1[1][2] * in2[2][3] + in1[1][3];
-	out[2][0] = in1[2][0] * in2[0][0] + in1[2][1] * in2[1][0] +
-				in1[2][2] * in2[2][0];
-	out[2][1] = in1[2][0] * in2[0][1] + in1[2][1] * in2[1][1] +
-				in1[2][2] * in2[2][1];
-	out[2][2] = in1[2][0] * in2[0][2] + in1[2][1] * in2[1][2] +
-				in1[2][2] * in2[2][2];
-	out[2][3] = in1[2][0] * in2[0][3] + in1[2][1] * in2[1][3] +
-				in1[2][2] * in2[2][3] + in1[2][3];
+	out[0][0] = in1[0][0] * in2[0][0] + in1[0][1] * in2[1][0] + in1[0][2] * in2[2][0];
+	out[0][1] = in1[0][0] * in2[0][1] + in1[0][1] * in2[1][1] + in1[0][2] * in2[2][1];
+	out[0][2] = in1[0][0] * in2[0][2] + in1[0][1] * in2[1][2] + in1[0][2] * in2[2][2];
+	out[1][0] = in1[1][0] * in2[0][0] + in1[1][1] * in2[1][0] + in1[1][2] * in2[2][0];
+	out[1][1] = in1[1][0] * in2[0][1] + in1[1][1] * in2[1][1] + in1[1][2] * in2[2][1];
+	out[1][2] = in1[1][0] * in2[0][2] + in1[1][1] * in2[1][2] + in1[1][2] * in2[2][2];
+	out[2][0] = in1[2][0] * in2[0][0] + in1[2][1] * in2[1][0] + in1[2][2] * in2[2][0];
+	out[2][1] = in1[2][0] * in2[0][1] + in1[2][1] * in2[1][1] + in1[2][2] * in2[2][1];
+	out[2][2] = in1[2][0] * in2[0][2] + in1[2][1] * in2[1][2] + in1[2][2] * in2[2][2];
 }
 
 
@@ -401,13 +358,7 @@ for fast BoxOnPlaneSide() test
 */
 void SetPlaneSignbits (cplane_t *out)
 {
-	int	bits;
-
-	bits = 0;
-	if (out->normal[0] < 0) bits = 1;
-	if (out->normal[1] < 0) bits |= 2;
-	if (out->normal[2] < 0) bits |= 4;
-	out->signbits = bits;
+	out->signbits = IsNegative (out->normal[0]) + (IsNegative (out->normal[1]) << 1) + (IsNegative (out->normal[2]) << 2);
 }
 
 
@@ -540,10 +491,17 @@ int BoxOnPlaneSide (vec3_t mins, vec3_t maxs, cplane_t *p)
 	}
 
 	sides = 0;
+#if 0
 	if (dist1 >= p->dist)
 		sides = 1;
 	if (dist2 < p->dist)
 		sides |= 2;
+#else
+	//?? faster
+	dist1 = p->dist - dist1;
+	dist2 = dist2 - p->dist;
+	sides = IsNegative (dist1) + (IsNegative (dist2) << 1);
+#endif
 
 	return sides;
 }
@@ -784,8 +742,8 @@ Lerror:
 
 void ClearBounds (vec3_t mins, vec3_t maxs)
 {
-	mins[0] = mins[1] = mins[2] = 999999;
-	maxs[0] = maxs[1] = maxs[2] = -999999;
+	mins[0] = mins[1] = mins[2] = BIG_NUMBER;
+	maxs[0] = maxs[1] = maxs[2] = -BIG_NUMBER;
 }
 
 void AddPointToBounds (vec3_t v, vec3_t mins, vec3_t maxs)
@@ -925,12 +883,12 @@ void AnglesToAxis (const vec3_t angles, vec3_t axis[3])
 {
 	vec3_t	right;
 
-	// angle vectors returns "right" instead of "y axis"
+	// AngleVectors() returns "right" instead of "y axis"
 	AngleVectors (angles, axis[0], right, axis[2]);
 	VectorNegate (right, axis[1]);
 }
 
-void _AxisClear (vec3_t axis[3])
+void AxisClear (vec3_t axis[3])
 {
 	axis[0][0] = 1;
 	axis[0][1] = 0;
@@ -1485,7 +1443,7 @@ void Com_PageInMemory (byte *buffer, int size)
 */
 
 // FIXME: replace all Q_stricmp with Q_strcasecmp
-int Q_stricmp (char *s1, char *s2)
+int Q_stricmp (const char *s1, const char *s2)
 {
 #if defined(WIN32)
 	return _stricmp (s1, s2);
@@ -1495,7 +1453,7 @@ int Q_stricmp (char *s1, char *s2)
 }
 
 
-int Q_strncasecmp (char *s1, char *s2, int n)
+int Q_strncasecmp (const char *s1, const char *s2, int n)
 {
 	int		c1, c2;
 
@@ -1519,9 +1477,9 @@ int Q_strncasecmp (char *s1, char *s2, int n)
 	return c1 - c2;
 }
 
-int Q_strcasecmp (char *s1, char *s2)
+int Q_strcasecmp (const char *s1, const char *s2)
 {
-	return Q_strncasecmp (s1, s2, 99999);
+	return Q_strncasecmp (s1, s2, BIG_NUMBER);
 }
 
 void Q_strncpyz (char *dest, const char *src, int destsize)
@@ -1532,7 +1490,7 @@ void Q_strncpyz (char *dest, const char *src, int destsize)
 
 
 // if "len" limit will be reached, dest[len]=0 (total length = len+1 !)
-void Q_strncpylower (char *dest, char *src, int len)
+void Q_strncpylower (char *dest, const char *src, int len)
 {
 	char c;
 
@@ -1548,9 +1506,10 @@ void Q_strncpylower (char *dest, char *src, int len)
 }
 
 
-void Q_CopyFilename (char *dest, char *src, int len)
+void Q_CopyFilename (char *dest, const char *src, int len)
 {
-	char	c, *s, *d;
+	char	c, *d;
+	const char *s;
 
 	// copy name with replacing '\' -> '/' and lowercasing
 	s = src;
@@ -1599,7 +1558,7 @@ void Q_CopyFilename (char *dest, char *src, int len)
 }
 
 
-int Com_sprintf (char *dest, int size, char *fmt, ...)
+int Com_sprintf (char *dest, int size, const char *fmt, ...)
 {
 	int		len;
 	va_list		argptr;

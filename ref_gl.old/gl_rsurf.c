@@ -796,8 +796,8 @@ void R_DrawAlphaSurfaces (void)
 		// draw reflections on all surfaces
 //		qglColor3f (0.4, 0.4, 0.5);
 //		intens /= 2;
-		qglColor3f (intens,intens,intens);
-		qglBlendFunc (GL_ONE, GL_ONE);
+		qglColor4f (intens,intens,intens,0.5);
+		qglBlendFunc (GL_SRC_ALPHA, GL_ONE);
 		for (s = r_alpha_surfaces; s; s = s->texturechain)
 		{
 			f = s->texinfo->flags;
@@ -862,10 +862,10 @@ void R_DrawAlphaSurfaces (void)
 		// draw reflections on all surfaces
 //		qglColor3f (0.4, 0.4, 0.5);
 		intens /= 2;
-		qglColor3f (intens,intens,intens);
-		qglBlendFunc (GL_SRC_COLOR, GL_ONE);	// dst + src^2
+		qglColor4f (intens,intens,intens,0.5);
+//		qglBlendFunc (GL_SRC_COLOR, GL_ONE);	// dst + src^2   NOTE: src^2 requires NV_blend_square
 //		qglBlendFunc (GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
-//		qglBlendFunc (GL_ONE_MINUS_DST_COLOR, GL_DST_COLOR);
+		qglBlendFunc (GL_SRC_ALPHA, GL_ONE);
 		for (s = r_alpha_surfaces; s; s = s->texturechain)
 		{
 			f = s->texinfo->flags;

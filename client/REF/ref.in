@@ -51,8 +51,8 @@ void	FS_CopyFile (char *src, char *dst);
 void	FS_CopyFiles (char *srcMask, char *dstDir);
 void	FS_RemoveFiles (char *mask);
 
-qboolean MatchWildcard (char *name, char *mask);
-qboolean MatchWildcard2 (char *name, char *mask, qboolean ignoreCase);
+bool MatchWildcard (const char *name, const char *mask);
+bool MatchWildcard2 (const char *name, const char *mask, qboolean ignoreCase);
 
 //----- video mode/menu -----
 qboolean Vid_GetModeInfo (int *width, int *height, int mode);

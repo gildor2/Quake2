@@ -1724,27 +1724,29 @@ void CL_RailTrailExt (vec3_t start, vec3_t end, byte rType, byte rColor)
 		return;
 	}
 
-	b = CL_AllocParticleBeam (start, end, 5, 0.6);
+	b = CL_AllocParticleBeam (start, end, 3, 0.6);
 	if (!b) return;
 	b->type = BEAM_RAILBEAM;
 	b->color.rgba = colorTable2[rColor];
-	b->alpha = 0.8f;
+//	b->alpha = 1.0f;
+	b->growSpeed = 6;
 
 	switch (rType)
 	{
 	case 1:
-		b = CL_AllocParticleBeam (start, end, 5, 0.8);
+		b = CL_AllocParticleBeam (start, end, 1, 0.8);
 		if (!b) return;
 		b->type = BEAM_RAILSPIRAL;
 		b->color.rgba = colorTable[rColor];
-		b->alpha = 1;
+		b->growSpeed = 6;
 		break;
 	case 2:
-		b = CL_AllocParticleBeam (start, end, 5, 0.8);
+		b = CL_AllocParticleBeam (start, end, 2, 0.8);
 		if (!b) return;
 		b->type = BEAM_RAILRINGS;
 		b->color.rgba = colorTable[rColor];
-		b->alpha = 1;
+		b->alpha = 0.5f;
+		b->growSpeed = 2;
 		break;
 	}
 }

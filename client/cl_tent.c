@@ -524,7 +524,7 @@ int CL_ParseBeam (struct model_s *model)
 	MSG_ReadPos (&net_message, end);
 
 	// override any beam with the same entity
-	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
+	for (i = 0, b = cl_mBeams; i < MAX_BEAMS ; i++, b++)
 		if (b->entity == ent)
 		{
 			b->entity = ent;
@@ -537,7 +537,7 @@ int CL_ParseBeam (struct model_s *model)
 		}
 
 	// find a free beam
-	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
+	for (i = 0, b = cl_mBeams; i < MAX_BEAMS ; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
 		{
@@ -574,9 +574,8 @@ int CL_ParseBeam2 (struct model_s *model)
 
 //	Com_Printf ("end- %f %f %f\n", VECTOR_ARG(end));
 
-// override any beam with the same entity
-
-	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
+	// override any beam with the same entity
+	for (i = 0, b = cl_mBeams; i < MAX_BEAMS; i++, b++)
 		if (b->entity == ent)
 		{
 			b->entity = ent;
@@ -588,8 +587,8 @@ int CL_ParseBeam2 (struct model_s *model)
 			return ent;
 		}
 
-// find a free beam
-	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
+	// find a free beam
+	for (i = 0, b = cl_mBeams; i < MAX_BEAMS ; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
 		{
@@ -637,9 +636,9 @@ int CL_ParsePlayerBeam (struct model_s *model)
 
 //	Com_Printf ("end- %f %f %f\n", VECTOR_ARG(end));
 
-// override any beam with the same entity
-// PMM - For player beams, we only want one per player (entity) so..
-	for (i=0, b=cl_mPlayerbeams ; i< MAX_BEAMS ; i++, b++)
+	// override any beam with the same entity
+	// PMM - For player beams, we only want one per player (entity) so..
+	for (i = 0, b = cl_mPlayerbeams; i < MAX_BEAMS ; i++, b++)
 	{
 		if (b->entity == ent)
 		{
@@ -653,8 +652,8 @@ int CL_ParsePlayerBeam (struct model_s *model)
 		}
 	}
 
-// find a free beam
-	for (i=0, b=cl_mPlayerbeams ; i< MAX_BEAMS ; i++, b++)
+	// find a free beam
+	for (i = 0, b = cl_mPlayerbeams; i < MAX_BEAMS ; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
 		{
@@ -690,8 +689,8 @@ int CL_ParseLightning (struct model_s *model)
 	MSG_ReadPos (&net_message, start);
 	MSG_ReadPos (&net_message, end);
 
-// override any beam with the same source AND destination entities
-	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
+	// override any beam with the same source AND destination entities
+	for (i = 0, b = cl_mBeams; i < MAX_BEAMS ; i++, b++)
 		if (b->entity == srcEnt && b->dest_entity == destEnt)
 		{
 //			Com_Printf("%d: OVERRIDE  %d -> %d\n", cl.time, srcEnt, destEnt);
@@ -705,8 +704,8 @@ int CL_ParseLightning (struct model_s *model)
 			return srcEnt;
 		}
 
-// find a free beam
-	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
+	// find a free beam
+	for (i = 0, b = cl_mBeams; i < MAX_BEAMS ; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
 		{
@@ -1441,21 +1440,18 @@ void CL_AddBeams (void)
 	float		len, steps;
 	float		model_length;
 
-// update beams
-	for (i=0, b=cl_mBeams ; i< MAX_BEAMS ; i++, b++)
+	// update beams
+	for (i = 0, b = cl_mBeams; i < MAX_BEAMS ; i++, b++)
 	{
 		if (!b->model || b->endtime < cl.time)
 			continue;
 
 		// if coming from the player, update the start position
 		if (b->entity == cl.playernum+1)	// entity 0 is the world
-		{
-			VectorCopy (cl.refdef.vieworg, b->start);
-			b->start[2] -= 22;	// adjust for view height
-		}
+			VectorCopy (cl.modelorg, b->start);
 		VectorAdd (b->start, b->offset, org);
 
-	// calculate pitch and yaw
+		// calculate pitch and yaw
 		VectorSubtract (b->end, org, dist);
 
 		if (dist[1] == 0 && dist[0] == 0)
@@ -1468,23 +1464,21 @@ void CL_AddBeams (void)
 		}
 		else
 		{
-	// PMM - fixed to correct for pitch of 0
+			// PMM - fixed to correct for pitch of 0
 			if (dist[0])
 				yaw = (atan2(dist[1], dist[0]) * 180 / M_PI);
 			else if (dist[1] > 0)
 				yaw = 90;
 			else
 				yaw = 270;
-			if (yaw < 0)
-				yaw += 360;
+			if (yaw < 0) yaw += 360;
 
-			forward = sqrt (dist[0]*dist[0] + dist[1]*dist[1]);
-			pitch = (atan2(dist[2], forward) * -180.0 / M_PI);
-			if (pitch < 0)
-				pitch += 360.0;
+			forward = sqrt (dist[0]*dist[0] + dist[1]*dist[1]);	//!! slow
+			pitch = (atan2(dist[2], forward) * -180.0 / M_PI);	//
+			if (pitch < 0) pitch += 360.0;
 		}
 
-	// add new entities for the beams
+		// add new entities for the beams
 		d = VectorNormalize(dist);
 
 		memset (&ent, 0, sizeof(ent));
@@ -1497,7 +1491,7 @@ void CL_AddBeams (void)
 		{
 			model_length = 30.0;
 		}
-		steps = Q_ceil(d/model_length);
+		steps = Q_ceil (d/model_length);
 		len = (d-model_length)/(steps-1);
 
 		// PMM - special case for lightning model .. if the real length is shorter than the model,
@@ -1509,7 +1503,7 @@ void CL_AddBeams (void)
 			VectorCopy (b->end, ent.origin);
 			// offset to push beam outside of tesla model (negative because dist is from end to start
 			// for this beam)
-//			for (j=0 ; j<3 ; j++)
+//			for (j = 0; j < 3 ; j++)
 //				ent.origin[j] -= dist[j]*10.0;
 			ent.model = b->model;
 			ent.flags = RF_FULLBRIGHT;
@@ -1519,6 +1513,7 @@ void CL_AddBeams (void)
 			V_AddEntity (&ent);
 			return;
 		}
+
 		while (d > 0)
 		{
 			VectorCopy (org, ent.origin);
@@ -1540,26 +1535,13 @@ void CL_AddBeams (void)
 //			Com_Printf("B: %d -> %d\n", b->entity, b->dest_entity);
 			V_AddEntity (&ent);
 
-			for (j=0 ; j<3 ; j++)
+			for (j = 0; j < 3; j++)
 				org[j] += dist[j]*len;
 			d -= model_length;
 		}
 	}
 }
 
-
-/*
-//				Com_Printf ("Endpoint:  %f %f %f\n", b->end[0], b->end[1], b->end[2]);
-//				Com_Printf ("Pred View Angles:  %f %f %f\n", VECTOR_ARG(cl.predicted_angles));
-//				Com_Printf ("Act View Angles: %f %f %f\n", VECTOR_ARG(cl.refdef.viewangles));
-//				VectorCopy (cl.predicted_origin, b->start);
-//				b->start[2] += 22;	// adjust for view height
-//				if (fabs(cl.refdef.vieworg[2] - b->start[2]) >= 10) {
-//					b->start[2] = cl.refdef.vieworg[2];
-//				}
-
-//				Com_Printf ("Time:  %d %d %f\n", cl.time, cls.realtime, cls.frametime);
-*/
 
 extern cvar_t *hand;
 
@@ -1571,73 +1553,59 @@ CL_AddPlayerBeams
 */
 void CL_AddPlayerBeams (void)
 {
-	int			i,j;
-	mBeam_t		*b;
+	int		i, j;
+	mBeam_t	*b;
 	vec3_t		dist, org;
 	float		d;
 	entity_t	ent;
 	float		yaw, pitch;
 	float		forward;
 	float		len, steps;
-	int			framenum;
 	float		model_length;
-
 	float		hand_multiplier;
-	frame_t		*oldframe;
-	player_state_t	*ps, *ops;
 
 //PMM
-	if (hand)
-	{
-		if (hand->integer == 2)
-			hand_multiplier = 0;
-		else if (hand->integer == 1)
-			hand_multiplier = -1;
-		else
-			hand_multiplier = 1;
-	}
+	if (hand->integer == 2)
+		hand_multiplier = 0;
+	else if (hand->integer == 1)
+		hand_multiplier = -1;
 	else
-	{
 		hand_multiplier = 1;
-	}
 //PMM
 
-// update beams
+	// update beams
 	for (i = 0, b = cl_mPlayerbeams; i < MAX_BEAMS; i++, b++)
 	{
-		vec3_t		f,r,u;
+		bool	isHeatbeam, isPlayer;
+		player_state_t *ps, *ops;
+		int		framenum;
+
 		if (!b->model || b->endtime < cl.time)
 			continue;
 
-		if(cl_mod_heatbeam && (b->model == cl_mod_heatbeam))
+		isHeatbeam = cl_mod_heatbeam && (b->model == cl_mod_heatbeam);
+		isPlayer = b->entity == cl.playernum + 1;
+
+		if (isHeatbeam)
 		{
 
 			// if coming from the player, update the start position
-			if (b->entity == cl.playernum+1)	// entity 0 is the world
+			if (isPlayer)
 			{
 				// set up gun position
 				// code straight out of CL_AddViewWeapon
 				ps = &cl.frame.playerstate;
-				j = (cl.frame.serverframe - 1) & UPDATE_MASK;
-				oldframe = &cl.frames[j];
-				if (oldframe->serverframe != cl.frame.serverframe-1 || !oldframe->valid)
-					oldframe = &cl.frame;		// previous frame was dropped or invalid
-				ops = &oldframe->playerstate;
-				for (j=0 ; j<3 ; j++)
+				ops = &cl.oldFrame->playerstate;
+				for (j = 0; j < 3; j++)
 				{
-					b->start[j] = cl.refdef.vieworg[j] + ops->gunoffset[j]
+					b->start[j] = cl.modelorg[j] + ops->gunoffset[j]
 						+ cl.lerpfrac * (ps->gunoffset[j] - ops->gunoffset[j]);
 				}
 				VectorMA (b->start, (hand_multiplier * b->offset[0]), cl.v_right, org);
-				VectorMA (     org, b->offset[1], cl.v_forward, org);
-				VectorMA (     org, b->offset[2], cl.v_up, org);
-				if (hand && (hand->integer == 2))
+				VectorMA (org, b->offset[1], cl.v_forward, org);
+				VectorMA (org, b->offset[2], cl.v_up, org);
+				if (hand->integer == 2)
 					VectorMA (org, -1, cl.v_up, org);
-				// FIXME - take these out when final
-				VectorCopy (cl.v_right, r);
-				VectorCopy (cl.v_forward, f);
-				VectorCopy (cl.v_up, u);
-
 			}
 			else
 				VectorCopy (b->start, org);
@@ -1645,30 +1613,26 @@ void CL_AddPlayerBeams (void)
 		else
 		{
 			// if coming from the player, update the start position
-			if (b->entity == cl.playernum+1)	// entity 0 is the world
-			{
-				VectorCopy (cl.refdef.vieworg, b->start);
-				b->start[2] -= 22;	// adjust for view height
-			}
+			if (isPlayer)
+				VectorCopy (cl.modelorg, b->start);
 			VectorAdd (b->start, b->offset, org);
 		}
 
-	// calculate pitch and yaw
+		// calculate pitch and yaw
 		VectorSubtract (b->end, org, dist);
 
 //PMM
-		if(cl_mod_heatbeam && (b->model == cl_mod_heatbeam) && (b->entity == cl.playernum+1))
+		if (isHeatbeam && isPlayer)
 		{
 			float	len;
 
 			len = VectorLength (dist);
-			VectorScale (f, len, dist);
-			VectorMA (dist, (hand_multiplier * b->offset[0]), r, dist);
-			VectorMA (dist, b->offset[1], f, dist);
-			VectorMA (dist, b->offset[2], u, dist);
-			if ((hand) && (hand->integer == 2)) {
+			VectorScale (cl.v_forward, len, dist);
+			VectorMA (dist, (hand_multiplier * b->offset[0]), cl.v_right, dist);
+			VectorMA (dist, b->offset[1], cl.v_forward, dist);
+			VectorMA (dist, b->offset[2], cl.v_up, dist);
+			if (hand->integer == 2)
 				VectorMA (org, -1, cl.v_up, org);
-			}
 		}
 //PMM
 
@@ -1682,36 +1646,36 @@ void CL_AddPlayerBeams (void)
 		}
 		else
 		{
-	// PMM - fixed to correct for pitch of 0
+			// PMM - fixed to correct for pitch of 0
 			if (dist[0])
 				yaw = (atan2(dist[1], dist[0]) * 180 / M_PI);
 			else if (dist[1] > 0)
 				yaw = 90;
 			else
 				yaw = 270;
-			if (yaw < 0)
-				yaw += 360;
+			if (yaw < 0) yaw += 360.0f;
 
-			forward = sqrt (dist[0]*dist[0] + dist[1]*dist[1]);
+			forward = sqrt (dist[0]*dist[0] + dist[1]*dist[1]);	//!! slow
 			pitch = (atan2(dist[2], forward) * -180.0 / M_PI);
-			if (pitch < 0)
-				pitch += 360.0;
+			if (pitch < 0) pitch += 360.0f;
 		}
 
-		if (cl_mod_heatbeam && (b->model == cl_mod_heatbeam))
+		if (isHeatbeam)
 		{
-			if (b->entity != cl.playernum+1)
+			if (!isPlayer)
 			{
+				vec3_t	u, f, r;
+
+				// third person
 				framenum = 2;
-//				Com_Printf ("Third person\n");
 				ent.angles[0] = -pitch;
-				ent.angles[1] = yaw + 180.0;
+				ent.angles[1] = yaw + 180.0f;
 				ent.angles[2] = 0;
 //				Com_Printf ("%f %f - %f %f %f\n", -pitch, yaw+180.0, b->offset[0], b->offset[1], b->offset[2]);
 				AngleVectors(ent.angles, f, r, u);
 
 				// if it's a non-origin offset, it's a player, so use the hardcoded player offset
-				if (!VectorCompare (b->offset, vec3_origin))
+				if (b->offset[0] || b->offset[1] || b->offset[2])
 				{
 					VectorMA (org, -(b->offset[0])+1, r, org);
 					VectorMA (org, -(b->offset[1]), f, org);
@@ -1730,12 +1694,12 @@ void CL_AddPlayerBeams (void)
 		}
 
 		// if it's the heatbeam, draw the particle effect
-		if ((cl_mod_heatbeam && (b->model == cl_mod_heatbeam) && (b->entity == cl.playernum+1)))
+		if (isHeatbeam && isPlayer)
 		{
 			CL_Heatbeam (org, dist);
 		}
 
-	// add new entities for the beams
+		// add new entities for the beams
 		d = VectorNormalize(dist);
 
 		memset (&ent, 0, sizeof(ent));
@@ -1753,7 +1717,7 @@ void CL_AddPlayerBeams (void)
 			model_length = 30.0;
 		}
 		steps = Q_ceil(d/model_length);
-		len = (d-model_length)/(steps-1);
+		len = (d-model_length) / (steps-1);
 
 		// PMM - special case for lightning model .. if the real length is shorter than the model,
 		// flip it around & draw it from the end to the start.  This prevents the model from going
@@ -1778,7 +1742,7 @@ void CL_AddPlayerBeams (void)
 		{
 			VectorCopy (org, ent.origin);
 			ent.model = b->model;
-			if(cl_mod_heatbeam && (b->model == cl_mod_heatbeam))
+			if (isHeatbeam)
 			{
 //				ent.flags = RF_FULLBRIGHT|RF_TRANSLUCENT;
 //				ent.alpha = 0.3;
@@ -1806,7 +1770,7 @@ void CL_AddPlayerBeams (void)
 //			Com_Printf("B: %d -> %d\n", b->entity, b->dest_entity);
 			V_AddEntity (&ent);
 
-			for (j=0 ; j<3 ; j++)
+			for (j = 0; j < 3; j++)
 				org[j] += dist[j]*len;
 			d -= model_length;
 		}

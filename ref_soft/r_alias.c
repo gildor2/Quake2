@@ -95,6 +95,40 @@ void R_AliasLerpFrames( dmdl_t *paliashdr, float backlerp );
 
 /*
 ================
+R_ConcatTransforms
+================
+*/
+static void R_ConcatTransforms (float in1[3][4], float in2[3][4], float out[3][4])
+{
+	out[0][0] = in1[0][0] * in2[0][0] + in1[0][1] * in2[1][0] +
+				in1[0][2] * in2[2][0];
+	out[0][1] = in1[0][0] * in2[0][1] + in1[0][1] * in2[1][1] +
+				in1[0][2] * in2[2][1];
+	out[0][2] = in1[0][0] * in2[0][2] + in1[0][1] * in2[1][2] +
+				in1[0][2] * in2[2][2];
+	out[0][3] = in1[0][0] * in2[0][3] + in1[0][1] * in2[1][3] +
+				in1[0][2] * in2[2][3] + in1[0][3];
+	out[1][0] = in1[1][0] * in2[0][0] + in1[1][1] * in2[1][0] +
+				in1[1][2] * in2[2][0];
+	out[1][1] = in1[1][0] * in2[0][1] + in1[1][1] * in2[1][1] +
+				in1[1][2] * in2[2][1];
+	out[1][2] = in1[1][0] * in2[0][2] + in1[1][1] * in2[1][2] +
+				in1[1][2] * in2[2][2];
+	out[1][3] = in1[1][0] * in2[0][3] + in1[1][1] * in2[1][3] +
+				in1[1][2] * in2[2][3] + in1[1][3];
+	out[2][0] = in1[2][0] * in2[0][0] + in1[2][1] * in2[1][0] +
+				in1[2][2] * in2[2][0];
+	out[2][1] = in1[2][0] * in2[0][1] + in1[2][1] * in2[1][1] +
+				in1[2][2] * in2[2][1];
+	out[2][2] = in1[2][0] * in2[0][2] + in1[2][1] * in2[1][2] +
+				in1[2][2] * in2[2][2];
+	out[2][3] = in1[2][0] * in2[0][3] + in1[2][1] * in2[1][3] +
+				in1[2][2] * in2[2][3] + in1[2][3];
+}
+
+
+/*
+================
 R_AliasCheckBBox
 ================
 */
@@ -127,7 +161,7 @@ unsigned long R_AliasCheckFrameBBox (dAliasFrame_t *frame, float worldxf[3][4])
 	vec3_t        mins, maxs;
 	vec3_t        transformed_min, transformed_max;
 	qboolean      zclipped = false, zfullyclipped = true;
-	float         minz = 9999.0F;
+	float         minz = BIG_NUMBER;
 
 	/*
 	** get the exact frame bounding box
@@ -1104,9 +1138,9 @@ void R_AliasDrawModel (void)
 	}
 
 	// set up the skin and verify it exists
-	if ( !R_AliasSetupSkin () )
+	if (!R_AliasSetupSkin ())
 	{
-		Com_Printf ("R_AliasDrawModel %s: NULL skin found\n", currentmodel->name);
+		DrawText_Left (va("R_AliasDrawModel %s: NULL skin found\n", currentmodel->name), RGB(1,0,0));
 		return;
 	}
 

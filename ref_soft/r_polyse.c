@@ -822,7 +822,7 @@ void R_PolysetDrawThreshSpans8 (spanpackage_t *pspanpackage)
 		}
 
 		pspanpackage++;
-	} while (pspanpackage->count != -999999);
+	} while (pspanpackage->count != -BIG_NUMBER);
 }
 
 
@@ -892,7 +892,7 @@ void R_PolysetDrawSpans8_33( spanpackage_t *pspanpackage)
 		}
 
 		pspanpackage++;
-	} while (pspanpackage->count != -999999);
+	} while (pspanpackage->count != -BIG_NUMBER);
 }
 
 void R_PolysetDrawSpansConstant8_33( spanpackage_t *pspanpackage)
@@ -936,7 +936,7 @@ void R_PolysetDrawSpansConstant8_33( spanpackage_t *pspanpackage)
 		}
 
 		pspanpackage++;
-	} while (pspanpackage->count != -999999);
+	} while (pspanpackage->count != -BIG_NUMBER);
 }
 
 void R_PolysetDrawSpans8_66(spanpackage_t *pspanpackage)
@@ -1001,7 +1001,7 @@ void R_PolysetDrawSpans8_66(spanpackage_t *pspanpackage)
 		}
 
 		pspanpackage++;
-	} while (pspanpackage->count != -999999);
+	} while (pspanpackage->count != -BIG_NUMBER);
 }
 
 void R_PolysetDrawSpansConstant8_66( spanpackage_t *pspanpackage)
@@ -1045,7 +1045,7 @@ void R_PolysetDrawSpansConstant8_66( spanpackage_t *pspanpackage)
 		}
 
 		pspanpackage++;
-	} while (pspanpackage->count != -999999);
+	} while (pspanpackage->count != -BIG_NUMBER);
 }
 
 #if !id386
@@ -1115,7 +1115,7 @@ void R_PolysetDrawSpans8_Opaque (spanpackage_t *pspanpackage)
 		}
 
 		pspanpackage++;
-	} while (pspanpackage->count != -999999);
+	} while (pspanpackage->count != -BIG_NUMBER);
 }
 #endif
 
@@ -1459,7 +1459,7 @@ void R_RasterizeAliasPolySmooth (void)
 	d_aspancount = 0;
 	d_countextrastep = ubasestep + 1;
 	originalcount = a_spans[initialrightheight].count;
-	a_spans[initialrightheight].count = -999999; // mark end of the spanpackages
+	a_spans[initialrightheight].count = -BIG_NUMBER; // mark end of the spanpackages
 	(*d_pdrawspans) (a_spans);
 
 // scan out the bottom part of the right edge, if it exists
@@ -1482,7 +1482,7 @@ void R_RasterizeAliasPolySmooth (void)
 							  prightbottom[0], prightbottom[1]);
 
 		d_countextrastep = ubasestep + 1;
-		a_spans[initialrightheight + height].count = -999999;
+		a_spans[initialrightheight + height].count = -BIG_NUMBER;
 											// mark end of the spanpackages
 		(*d_pdrawspans) (pstart);
 	}

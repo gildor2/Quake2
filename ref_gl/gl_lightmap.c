@@ -393,16 +393,19 @@ void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, qboolean
 				// calculate s/t weights
 				frac_s = Q_round (v->lm2[0] * 128) & 127;
 				frac_t = Q_round (v->lm2[1] * 128) & 127;
-#define STEP(c,n)	c += point[n] * frac;
+#define STEP(n)	\
+		r += point[n] * frac;	\
+		g += point[n+1] * frac;	\
+		b += point[n+2] * frac;
 				frac = (128 - frac_s) * (128 - frac_t) * scale;
-				STEP(r, 0); STEP(g, 1); STEP(b, 2);
+				STEP(0);
 				frac = frac_s * (128 - frac_t) * scale;
-				STEP(r, 3); STEP(g, 4); STEP(b, 5);
+				STEP(3);
 				point += dl->w * 3;		// next line
 				frac = (128 - frac_s) * frac_t * scale;
-				STEP(r, 0); STEP(g, 1); STEP(b, 2);
+				STEP(0);
 				frac = frac_s * frac_t * scale;
-				STEP(r, 3); STEP(g, 4); STEP(b, 5);
+				STEP(3);
 #undef STEP
 			}
 			// "fixed" -> int

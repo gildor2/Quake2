@@ -1,0 +1,52 @@
+before:
+~~~~~~~
+blend = dst*(1-a) + src*a  (src=T1)
+blend2 = dst + src*w       (src=T2)
+alpha = const
++ new rgbGen: VERTEX_ALPHA: c[0,1,2]*=c[3]
+  C1 -> C1' is VERTEX -> VERTEX_ALPHA
++ TexEnv() needs support for crossbar:
+  in addition to TEXENV_TEXTURE, needs at least
+  TEXENV_NEXT_TEXTURE (cannot be implemented
+  with tables: needs code to make TEXTURE0+tmu)
+
+after (ARB):
+~~~~~~~~~~~~
+1) rgb1 & rgb2 is same and vertex-based
+(w = vertex), a1=const,a2=const
+dst.C = (T1*a'+T2*(1-a')) * C1' * 2
+ tmu1: INTERP(TEX1,TEX2,alpha)
+ tmu2: c: C_Modulate(PREV,color), 2x
+  color:
+   - PRIMARY (array) for rgb Vertex
+   - ENV_COLOR for rgb Const
+  a: PRIMARY_A
+2-) rgb1 is vertex-based, rgb2 is const
+(w = const)
+dst.C = T1*C1' + T2*C2
+ tmu1: MODULATE
+ tmu2: Can't !!!
+3?) rgb1 and rgb2 is const
+ similar to C1*T1+C2*T2
+
+dst.A = a
+dst.Blend = dst*(1-a) + src
+  (blend -- additive)
+passStyle: ADDITIVE, but needs ...
+  ?????
+
+after (NV):
+~~~~~~~~~~~
+1) rgb1 and rgb2 vertex, a1=const, a2=const
+dst.C = (T1*PRIMARY_A + T2*ENV) * PRIMARY_C
+ tmu1: NV_ADD(PRIMARY_A,ENV_A)
+ tmu2: c:MODULATE(PRIMARY_C) a:PRIMARY_A
+primary color: [boost]vertex color
+env_color for tmu1: x,x,x,a2
+dst.A = PRIMARY_A
+
+check:
+~~~~~~
+can combine blend =
+ dst: a, (1-a)
+ src: 1, a, (1-a)

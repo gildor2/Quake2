@@ -183,15 +183,16 @@ extern qgl_t qgl;
 #define QGL_ARB_TEXTURE_ENV_ADD	(1 << 3)
 #define QGL_EXT_TEXTURE_ENV_COMBINE	(1 << 4)
 #define QGL_ARB_TEXTURE_ENV_COMBINE	(1 << 5)
-#define QGL_NV_TEXTURE_ENV_COMBINE4	(1 << 6)
-#define QGL_S3_S3TC	(1 << 7)
-#define QGL_ARB_TEXTURE_COMPRESSION	(1 << 8)
-#define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 9)
-#define QGL_NV_FOG_DISTANCE	(1 << 10)
-#define QGL_EXT_TEXTURE_LOD_BIAS	(1 << 11)
+#define QGL_ARB_TEXTURE_ENV_CROSSBAR	(1 << 6)
+#define QGL_NV_TEXTURE_ENV_COMBINE4	(1 << 7)
+#define QGL_S3_S3TC	(1 << 8)
+#define QGL_ARB_TEXTURE_COMPRESSION	(1 << 9)
+#define QGL_EXT_COMPILED_VERTEX_ARRAY	(1 << 10)
+#define QGL_NV_FOG_DISTANCE	(1 << 11)
+#define QGL_EXT_TEXTURE_LOD_BIAS	(1 << 12)
 
 #ifdef _WIN32
-#define QWGL_EXT_SWAP_CONTROL	(1 << 12)
+#define QWGL_EXT_SWAP_CONTROL	(1 << 13)
 #endif
 
 #ifdef __linux__

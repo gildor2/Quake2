@@ -751,7 +751,7 @@ void CL_ParseServerMessage (void)
 				cls.download = NULL;
 			}
 			cls.state = ca_connecting;
-			cls.connect_time = -99999;	// CL_CheckForResend() will fire immediately
+			cls.connect_time = -BIG_NUMBER;	// CL_CheckForResend() will fire immediately
 			break;
 
 		case svc_print:

@@ -73,7 +73,9 @@ extern float noiseTablef[];
 void GL_InitFuncTables (void);
 void ModelToWorldCoord (vec3_t localOrigin, refEntity_t *e, vec3_t center);
 void WorldToModelCoord (vec3_t world, refEntity_t *e, vec3_t local);
+void BuildRotationMatrix (float r[3][3], vec3_t axis, float angle);
 bool GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2], bool clamp);
+bool ProjectToScreen (vec3_t pos, int *scr);
 
 
 #endif

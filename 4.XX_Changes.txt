@@ -57,7 +57,6 @@ Comments:
 - improved a ladder descending
 - added unhandled exception filter, which will restore screen/mouse/sound parameters if game crashes and logs error ("crush.log")
 - logging developer messages to "debug.log" when "developer" is set to 2
-- changed appearance of "cl_stats" output
 - "host_speeds" -> "com_speeds", better output
 - timedemo:
   - timedemo <n> -- gather timing statistics with rendering <n> frames per (demo-)server frame
@@ -169,10 +168,10 @@ Console/Menu
 Keyboard
 --------
 - new keys:
-  - UnkXX
   - right-side keys RAlt and RCtrl (Alt and Ctrl are left-side)
   - F13-F24
   - CapsLock, NumLock, ScrLock
+  - UnkXX (most other keys)
 - added names for keys:
   - ';' is Semicolon
   - ',' is Comma
@@ -223,6 +222,7 @@ Debugging
 - "r_playerpos" variable: when it is set to "1", player (spectator) world coordinates are shown
 - "r_sfx_pause 1" stops particles/fx; "r_sfx_pause 2" also disables particle/fx creation
 - "fs_debug" variable: when non-zero, most file system activity will be displayed on console
+- "cmd_debug" var: &1 - display ExecString, &2 - display AddText
 - "cl_showbboxes 1" will display object bounding boxes from client info
 
 

@@ -9,10 +9,3 @@
 ! C-style preprocessor (#include, at least) -- may be, inside COM_Parse?
 ! entity editor (not convert, just "add"/"remove" for entire entities or fields)
 - shader manipulations (FAKK2, "fromEntity")
-
------------------------- Shader extensions ---------------------------
-
-- shader templates: specify name mask instead of exact shader name before {script}
-- map $texture     -- map image with the same name as shader name (useful for shader templates)
-- map size <w> <h> -- change image sizes (for Q2 maps: allows to replace texture without resampling to original size)
-- map color        -- change color of SURF_LIGHT source

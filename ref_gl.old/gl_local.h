@@ -18,39 +18,33 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#ifdef _WIN32
-#  include <windows.h>
-#endif
-
 #include <stdio.h>
-
-//#include <GL/gl.h>
-//#include <GL/glu.h>
-
 #include <math.h>
-
-/*
-#ifndef __linux__
-#ifndef GL_COLOR_INDEX8_EXT
-#define GL_COLOR_INDEX8_EXT GL_COLOR_INDEX
-#endif
-#endif
-*/
-
-#include "../client/ref.h"
 
 #ifdef _WIN32
 // need this include, because have wgl and GDI functions here
-#  include <windows.h>
+#	include <windows.h>
 #endif
 
-#include "../ref_gl/gl.h"
+#include <GL/gl.h>
+#include "../ref_gl/glext.h"		//?? do not duplicate file
+
+// Obsolete (missing in standard headers), but still supported extensions
+/* SGIS_multitexture */
+#define GL_SELECTED_TEXTURE_SGIS          0x835C
+#define GL_MAX_TEXTURES_SGIS              0x835D
+#define GL_TEXTURE0_SGIS                  0x835E
+#define GL_TEXTURE1_SGIS                  0x835F
+#define GL_TEXTURE2_SGIS                  0x8360
+#define GL_TEXTURE3_SGIS                  0x8361
+
 
 #ifdef __linux__
 //#include <GL/fxmesa.h>
-#include <GL/glx.h>
+#	include <GL/glx.h>
 #endif
 
+#include "qgl_decl.h"
 
 #include "../client/ref.h"
 
@@ -62,12 +56,6 @@ void	QGL_Shutdown (void);
 void	QGL_EnableLogging (qboolean enable);
 void	QGL_LogMessage (const char *text);
 #define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
-
-#ifndef APIENTRY
-#  define APIENTRY
-#endif
-
-#include "qgl_decl.h"
 
 
 #define	REF_VERSION	"GL 0.01"

@@ -189,12 +189,11 @@ static void Con_Dump_f (void)
 
 	Com_sprintf (ARRAY_ARG(name), "%s/%s.txt", FS_Gamedir(), Cmd_Argv(1));
 
-	Com_Printf ("Dumped console text to %s.\n", name);
 	FS_CreatePath (name);
 	f = fopen (name, "w");
 	if (!f)
 	{
-		Com_Printf ("ERROR: couldn't open.\n");
+		Com_WPrintf ("ERROR: couldn't open %s\n", name);
 		return;
 	}
 
@@ -210,7 +209,7 @@ static void Con_Dump_f (void)
 		size--;
 
 		if (c == WRAP_CHAR) c = ' ';	// unwrap words
-		c &= 0x7F;						// reset color bit
+		c &= 0x7F;						// reset color bit (??)
 		buffer[out++] = c;
 		if (c == '\n' || out >= sizeof(buffer) - 1 || !size)
 		{
@@ -220,6 +219,7 @@ static void Con_Dump_f (void)
 		}
 	}
 	fclose (f);
+	Com_Printf ("Console text was dumped to %s\n", name);
 }
 
 

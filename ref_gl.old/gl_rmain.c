@@ -872,7 +872,7 @@ void	R_SetGL2D (void)
 	qglViewport (0,0, vid.width, vid.height);
 	qglMatrixMode(GL_PROJECTION);
 	qglLoadIdentity ();
-	qglOrtho  (0, vid.width, vid.height, 0, -99999, 99999);
+	qglOrtho  (0, vid.width, vid.height, 0, -BIG_NUMBER, BIG_NUMBER);
 	qglMatrixMode(GL_MODELVIEW);
 	qglLoadIdentity ();
 	qglDisable (GL_DEPTH_TEST);
@@ -1456,7 +1456,7 @@ void R_BeginFrame( float camera_separation )
 	qglViewport (0,0, vid.width, vid.height);
 	qglMatrixMode(GL_PROJECTION);
 	qglLoadIdentity ();
-	qglOrtho  (0, vid.width, vid.height, 0, -99999, 99999);
+	qglOrtho  (0, vid.width, vid.height, 0, -BIG_NUMBER, BIG_NUMBER);
 	qglMatrixMode(GL_MODELVIEW);
 	qglLoadIdentity ();
 	qglDisable (GL_DEPTH_TEST);

@@ -402,7 +402,7 @@ static const char *DDrawError (int code)
 		int		i;
 
 		s = NULL;
-		for (i = 0; i < sizeof(info) / sizeof(info[0]); i++)
+		for (i = 0; i < ARRAY_COUNT(info); i++)
 			if (info[i].code == code)
 			{
 				s = info[i].str;

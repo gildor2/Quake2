@@ -28,6 +28,16 @@ int 	gl_screenshotFlags;
 char	*gl_screenshotName;
 
 
+/*-----------------------------------------------------------------------------
+	Local cvars
+-----------------------------------------------------------------------------*/
+
+static cvar_t	*gl_showImages;
+static cvar_t	*r_colorMipLevels;	//?? can we implement colorized mips in software? (if no, rename to "gl_")
+static cvar_t	*gl_picmip, *gl_roundImagesDown;
+static cvar_t	*gl_textureBits;
+
+//??
 static GLenum	gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
 static GLenum	gl_filter_max = GL_LINEAR;
 
@@ -48,7 +58,7 @@ static int		imageCount;
  *  1. when gamma is hardware -- for lightscaling screenshots
  *  2. when gamma is software -- for lightscaling uploadable textures
  */
-static byte		gammaTable[256], intensGammaTable[256];
+static byte		gammaTable[256];
 
 // name should be in a lower case
 static int ComputeHash (char *name)
@@ -130,7 +140,7 @@ void GL_TextureMode (char *name)
 		{"GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR}
 	};
 
-	for (i = 0; i < sizeof(texModes)/sizeof(texModes[0]); i++)
+	for (i = 0; i < ARRAY_COUNT(texModes); i++)
 	{
 		if (!Q_stricmp (texModes[i].name, name))
 		{
@@ -229,23 +239,26 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 }
 
 
-static void LightScaleTexture (unsigned *pic, int width, int height, qboolean only_gamma)
+//#define INT_SATURATE
+
+static void LightScaleTexture (unsigned *pic, int width, int height)
 {
 	float	sat;
 	int		i, c;
-	int		isat;		//??
+#ifdef INT_SATURATE
+	int		isat = Q_round (r_saturation->value * 255);
+#endif
 	byte	*p;
 
 	sat = r_saturation->value;
 	c = width * height;
-	isat = Q_round (r_saturation->value * 255);	//??
 
 	if (sat != 1.0)
 	{
 		p = (byte *)pic;
 		for (i = 0; i < c; i++, p+=4)
 		{
-#if 1
+#ifndef INT_SATURATE
 			float	r, g, b;
 			float	light;
 
@@ -273,30 +286,15 @@ static void LightScaleTexture (unsigned *pic, int width, int height, qboolean on
 		}
 	}
 
-	if (only_gamma)
+	if (gl_config.deviceSupportsGamma)
+		return;
+
+	p = (byte *)pic;
+	for (i = 0; i < c; i++, p+=4)
 	{
-		if (gl_config.deviceSupportsGamma)
-			return;
-		else
-		{
-			p = (byte *)pic;
-			for (i = 0; i < c; i++, p+=4)
-			{
-				p[0] = gammaTable[p[0]];
-				p[1] = gammaTable[p[1]];
-				p[2] = gammaTable[p[2]];
-			}
-		}
-	}
-	else
-	{
-		p = (byte *)pic;
-		for (i = 0; i < c; i++, p+=4)
-		{
-			p[0] = intensGammaTable[p[0]];
-			p[1] = intensGammaTable[p[1]];
-			p[2] = intensGammaTable[p[2]];
-		}
+		p[0] = gammaTable[p[0]];
+		p[1] = gammaTable[p[1]];
+		p[2] = gammaTable[p[2]];
 	}
 }
 
@@ -493,8 +491,7 @@ END_PROFILE
 
 START_PROFILE(..up::lscale)
 	if (!(flags & IMAGE_LIGHTMAP))
-		// scale gamma only for non-wall textures
-		LightScaleTexture (scaledPic, scaledWidth, scaledHeight, !(flags & IMAGE_MIPMAP));
+		LightScaleTexture (scaledPic, scaledWidth, scaledHeight);
 	else
 		LightScaleLightmap (scaledPic, scaledWidth, scaledHeight);			// lightmap overbright
 END_PROFILE
@@ -878,7 +875,7 @@ void GL_SetupGamma (void)
 {
 	unsigned	overbright;
 	int			i;
-	float		invGamma, intens;
+	float		invGamma;
 
 	gl_config.vertexLight = gl_vertexLight->integer;
 	gl_config.deviceSupportsGamma = GLimp_HasGamma ();
@@ -886,35 +883,23 @@ void GL_SetupGamma (void)
 	overbright = gl_overbright->integer;
 	if (!gl_config.fullscreen || !gl_config.deviceSupportsGamma) overbright = 0;
 
-	if (overbright == 2)						// auto
-	{
-		if (gl_config.doubleModulateLM)
-			overbright = 0;
-	}
-	else
-		if (overbright) overbright = 1;			// 0 or 1 only!
-
-	if (gl_config.colorBits <= 16)
-	{
-		if (overbright > 1)
-			overbright = 1;
-	}
-	else
-		if (overbright > 2)
-			overbright = 2;
+	if (overbright == 2 && gl_config.doubleModulateLM && !gl_config.vertexLight)	// auto
+		overbright = 0;
 
 	if (overbright)
+	{
 		gl_config.doubleModulateLM = false;		// when gamma overbrighted, use 'src*dst' instead of 'src*dst*2 with lm /= 2'
+		overbright = 1;							// 0 or 1 only!
+	}
 
 	gl_config.overbright = overbright;
 	gl_config.identityLightValue = 255 / (1 << overbright);
 	gl_config.identityLightValue_f = 1.0f / (float)(1 << overbright);
 
 	invGamma = 1.0 / Cvar_Clamp (r_gamma, 0.5, 3.0);
-	intens = Cvar_Clamp (r_intensity, 0, 1);
 
 	if (gl_config.deviceSupportsGamma)
-		GLimp_SetGamma (r_gamma->value, 1);
+		GLimp_SetGamma (r_gamma->value);
 
 	for (i = 0; i < 256; i++)
 	{
@@ -927,19 +912,6 @@ void GL_SetupGamma (void)
 
 		v <<= overbright;
 		gammaTable[i] = bound(v, 0, 255);
-	}
-
-	for (i = 0; i < 256; i++)
-	{
-		int		v;
-
-		v = Q_round (intens * i);
-		v = bound(v, 0, 255);
-
-		if (!gl_config.deviceSupportsGamma)
-			v = gammaTable[v];
-
-		intensGammaTable[i] = v;
 	}
 }
 
@@ -1048,7 +1020,7 @@ static void Imagelist_f (void)
 
 		f = img->internalFormat;
 		fmt = "^1???^7";
-		for (fi = 0; fi < sizeof(fmtInfo)/sizeof(fmtInfo[0]); fi++)
+		for (fi = 0; fi < ARRAY_COUNT(fmtInfo); fi++)
 			if (fmtInfo[fi].fmt == f)
 			{
 				fmt = fmtInfo[fi].name;
@@ -1246,13 +1218,22 @@ void GL_PerformScreenshot (void)
 /*------------------ Init/shutdown --------------------*/
 
 
+#define DEF_IMG_SIZE	16
 #define DLIGHT_SIZE		16
 
 void GL_InitImages (void)
 {
+CVAR_BEGIN(vars)
+	CVAR_VAR(gl_showImages, 0, 0),
+	CVAR_VAR(r_colorMipLevels, 0, 0),
+	CVAR_VAR(gl_picmip, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
+	CVAR_VAR(gl_roundImagesDown, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_textureBits, 0, CVAR_ARCHIVE|CVAR_NOUPDATE)
+CVAR_END
 	byte	tex[256*32*4], *p;
 	int		x, y;
 
+	Cvar_GetVars (ARRAY_ARG(vars));
 	imageCount = 0;
 	memset (hashTable, 0, sizeof(hashTable));
 	memset (imagesArray, 0, sizeof(imagesArray));
@@ -1264,12 +1245,12 @@ void GL_InitImages (void)
 	Cmd_AddCommand ("img_reload", ImageReload_f);
 
 	/*--------- create default texture -----------*/
-	memset (tex, 0, 16*16*4);
-	for (y = 0, p = &tex[0]; y < 16; y++)
-		for (x = 0; x < 16; x++, p += 4)
-			if (x < 2 || x >= 14 || y < 2 || y >= 14)
+	memset (tex, 0, DEF_IMG_SIZE*DEF_IMG_SIZE*4);
+	for (y = 0, p = &tex[0]; y < DEF_IMG_SIZE; y++)
+		for (x = 0; x < DEF_IMG_SIZE; x++, p += 4)
+			if (x < 2 || x >= DEF_IMG_SIZE-2 || y < 2 || y >= DEF_IMG_SIZE-2)
 				p[0] = p[1] = p[2] = p[3] = 255;
-	gl_defaultImage = GL_CreateImage ("*default", tex, 16, 16, IMAGE_MIPMAP);
+	gl_defaultImage = GL_CreateImage ("*default", tex, DEF_IMG_SIZE, DEF_IMG_SIZE, IMAGE_MIPMAP);
 	gl_defaultImage->flags |= IMAGE_SYSTEM;
 
 	/*----------- create white image -------------*/
@@ -1284,12 +1265,18 @@ void GL_InitImages (void)
 
 	/*------ create identity light image ---------*/
 	y = gl_config.identityLightValue;
+#if 0
 	for (x = 0, p = &tex[0]; x < 8*8; x++, p += 4)
 	{
 		p[0] = p[1] = p[2] = y;
 		p[3] = 255;
 	}
 	gl_identityLightImage = GL_CreateImage ("*identityLight", tex, 8, 8, IMAGE_MIPMAP);
+#else
+	tex[0] = tex[1] = tex[2] = gl_config.identityLightValue;
+	tex[3] = 255;
+	gl_identityLightImage = GL_CreateImage ("*identityLight", tex, 1, 1, IMAGE_MIPMAP);
+#endif
 	gl_identityLightImage->flags |= IMAGE_SYSTEM;
 
 	/*----------- create dlight image ------------*/
@@ -1448,13 +1435,13 @@ void GL_ShowImages (void)
 	int		i, nx, ny, x, y, num, numImg;
 	image_t	*img;
 	float	dx, dy;
-	char	*mask, *name;
+	char	*name, *mask;
+
+	mask = gl_showImages->string;
+	if (!mask[0] || (!mask[1] && mask[0] == '0')) return;	// "" or "0"
+	if (mask[0] == '1' && mask[1] == 0) mask = "*";			// "1" -> "*"
 
 	// count matches
-	if (!stricmp (gl_showImages->string, "1"))
-		mask = "*";
-	else
-		mask = gl_showImages->string;
 	numImg = 0;
 	for (i = 0; i < MAX_TEXTURES; i++)
 	{

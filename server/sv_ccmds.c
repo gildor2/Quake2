@@ -82,7 +82,7 @@ void SV_SetMaster_f (void)
 		slot++;
 	}
 
-	svs.last_heartbeat = -9999999;
+	svs.last_heartbeat = -BIG_NUMBER;
 }
 
 
@@ -857,7 +857,6 @@ static void SV_Status_f (void)
 {
 	int		i;
 	client_t *cl;
-	int		ping;
 
 	if (!svs.clients)
 	{
@@ -879,10 +878,7 @@ static void SV_Status_f (void)
 		else if (cl->state == cs_zombie)
 			Com_Printf ("^1ZMBI ");
 		else
-		{
-			ping = cl->ping < 9999 ? cl->ping : 9999;
-			Com_Printf ("%4d ", ping);
-		}
+			Com_Printf ("%4d ", min (cl->ping, 9999));
 
 		Com_Printf ("%-15s %7d %-21s %5d\n", cl->name, svs.realtime - cl->lastmessage,
 			NET_AdrToString (&cl->netchan.remote_address), cl->netchan.qport);
@@ -932,7 +928,7 @@ SV_Heartbeat_f
 */
 static void SV_Heartbeat_f (void)
 {
-	svs.last_heartbeat = -9999999;
+	svs.last_heartbeat = -BIG_NUMBER;
 }
 
 

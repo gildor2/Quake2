@@ -36,7 +36,6 @@ cvar_t	*cl_autoskins;
 cvar_t	*cl_footsteps;
 cvar_t	*cl_timeout;
 cvar_t	*cl_predict;
-//cvar_t	*cl_minfps;
 cvar_t	*cl_maxfps;
 cvar_t	*cl_gun;
 
@@ -494,7 +493,7 @@ void CL_CheckForResend (void)
 		// we don't need a challenge on the localhost
 		CL_SendConnectPacket ();
 		return;
-//		cls.connect_time = -99999;	// CL_CheckForResend() will fire immediately
+//		cls.connect_time = -BIG_NUMBER;	// CL_CheckForResend() will fire immediately
 	}
 
 	// resend if we haven't gotten a reply yet
@@ -555,7 +554,7 @@ void CL_Connect_f (void)
 
 	cls.state = ca_connecting;
 	Q_strncpyz (cls.servername, server, sizeof(cls.servername));
-	cls.connect_time = -99999;	// CL_CheckForResend() will fire immediately
+	cls.connect_time = -BIG_NUMBER;	// CL_CheckForResend() will fire immediately
 }
 
 
@@ -791,7 +790,7 @@ void CL_Reconnect_f (void)
 			cls.connect_time = cls.realtime - 1500;
 		}
 		else
-			cls.connect_time = -99999; // fire immediately
+			cls.connect_time = -BIG_NUMBER; // fire immediately
 
 		cls.state = ca_connecting;
 		Com_Printf ("reconnecting...\n");
@@ -1455,9 +1454,9 @@ void CL_WriteConfiguration (char *filename)
 	fprintf (f, "//\n// Key bindings\n//\n");
 	Key_WriteBindings (f);
 	fprintf (f, "//\n// Cvars\n//\n");
-	Cvar_WriteVariables (f, false);
-	fprintf (f, "// user created variables\n");
-	Cvar_WriteVariables (f, true);
+	Cvar_WriteVariables (f, 0xFFFFFFFF, CVAR_USER_CREATED|CVAR_GAME_CREATED, "");
+	Cvar_WriteVariables (f, CVAR_USER_CREATED, CVAR_GAME_CREATED, "// user created variables\n");
+	Cvar_WriteVariables (f, CVAR_GAME_CREATED, CVAR_USER_CREATED, "// game created variables\n");
 	fprintf (f, "//\n// Aliases\n//\n");
 	Cmd_WriteAliases (f);
 	fclose (f);
@@ -1510,8 +1509,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(cl_noskins, 0, 0),
 	CVAR_VAR(cl_autoskins, 0, 0),
 	CVAR_VAR(cl_predict, 1, 0),
-//	CVAR_VAR(cl_minfps, 5, 0),
-	CVAR_VAR(cl_maxfps, 90, CVAR_ARCHIVE),
+	CVAR_VAR(cl_maxfps, 0, CVAR_ARCHIVE),		// ignored by default
 
 	CVAR_VAR(cl_upspeed, 200, 0),
 	CVAR_VAR(cl_forwardspeed, 200, 0),
@@ -1682,8 +1680,8 @@ void CL_Frame (float msec, int realMsec)
 	{
 		// here extratime can be accumulated between frames
 		if (cls.state == ca_connected && extratime < 0.1f)
-			return;					// don't flood packets out while connecting
-		if (extratime_real < 1000.0f / cl_maxfps->value)
+			return;					// don't flood packets out while connecting ??
+		if (cl_maxfps->integer > 0 && extratime_real < 1000.0f / cl_maxfps->value)	// ignore when cl_maxfps==0
 			return;					// framerate is too high
 	}
 

@@ -139,6 +139,7 @@ typedef struct
 	frame_t	frame;				// received from server
 	int		surpressCount;		// number of messages rate supressed
 	frame_t	frames[UPDATE_BACKUP];
+	frame_t	*oldFrame;			// points to previous frame; used for interpolation
 
 	// the client maintains its own idea of view angles, which are
 	// sent to the server each frame.  It is cleared to 0 upon entering each level.
@@ -155,6 +156,7 @@ typedef struct
 
 	refdef_t refdef;
 
+	vec3_t	modelorg;			// center of client entity (used prediction for 1st person and server data for 3rd person)
 	vec3_t	v_forward, v_right, v_up; // set when refdef.angles is set
 
 	//

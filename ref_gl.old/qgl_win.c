@@ -248,7 +248,7 @@ void QGL_EnableLogging (qboolean enable)
 
 			time (&aclock);
 			newtime = localtime (&aclock);
-			fprintf (logFile, "%s\n", asctime (newtime));
+			fprintf (logFile, "\n------------------------\n%s------------------------\n", asctime (newtime));
 		}
 
 		for (i = 0; i < NUM_GLFUNCS; i++)

@@ -900,10 +900,8 @@ void Key_Event (int key, qboolean down, unsigned time)
 		if (key == K_CTRL || key == K_RCTRL || key == K_ALT || key == K_RALT)
 			needDown = false;
 		if (down == needDown)
-		{
 			M_Keydown (modKey);
-			skip = true;								// cls.key_dest was modified in M_Keydown() - so, store internal flag
-		}
+		skip = true;									// cls.key_dest was modified in M_Keydown() - so, store internal flag
 	}
 
 	// key up events only generate commands if the game key binding is
@@ -974,7 +972,7 @@ void Key_ClearStates (void)
 
 	for (key = 0; key < NUM_KEYS; key++)
 	{
-		if (key == '`' || key == K_ESCAPE) continue;	// hardcoded keys - do not clear states
+//		if (key == '`' || key == K_ESCAPE) continue;	// hardcoded keys - do not clear states
 		if (keydown[key])
 			Key_Event (key, false, 0);
 		key_repeats[key] = 0;

@@ -105,6 +105,8 @@ typedef unsigned char		bool;			// C++ equalent
 #define STR(s) STR2(s)
 
 
+#define BIG_NUMBER			0x1000000
+
 //============================================================================
 
 
@@ -298,8 +300,7 @@ int VectorCompare (vec3_t v1, vec3_t v2);
 float VectorLength (vec3_t v);
 float VectorDistance (vec3_t vec1, vec3_t vec2);
 void AnglesToAxis (const vec3_t angles, vec3_t axis[3]);
-#define AxisClear(a)			memset(a, 0, sizeof(vec3_t)*3)
-void _AxisClear (vec3_t axis[3]);
+void AxisClear (vec3_t axis[3]);
 #define AxisCopy(i,o)			memcpy(o,i,sizeof(vec3_t)*3)
 void _AxisCopy (vec3_t in[3], vec3_t out[3]);
 void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross);
@@ -310,7 +311,6 @@ void VectorScale (vec3_t in, float scale, vec3_t out);
 int Q_log2(int val);
 
 void MatrixMultiply (float in1[3][3], float in2[3][3], float out[3][3]);
-void R_ConcatTransforms (float in1[3][4], float in2[3][4], float out[3][4]);
 
 void AngleVectors (const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
 float	anglemod(float a);
@@ -339,20 +339,20 @@ void SkipBracedSection (char **program);
 void SkipRestOfLine (char **data);
 
 // format arguments with fmt and put result to dest with a maximum size of size; return strlen(dest)
-int Com_sprintf (char *dest, int size, char *fmt, ...);
+int Com_sprintf (char *dest, int size, const char *fmt, ...);
 
 void Com_PageInMemory (byte *buffer, int size);
 
 //=============================================
 
 // portable case insensitive compare
-int		Q_stricmp (char *s1, char *s2);
-int		Q_strcasecmp (char *s1, char *s2);
-int		Q_strncasecmp (char *s1, char *s2, int n);
+int		Q_stricmp (const char *s1, const char *s2);
+int		Q_strcasecmp (const char *s1, const char *s2);
+int		Q_strncasecmp (const char *s1, const char *s2, int n);
 
 void	Q_strncpyz (char *dest, const char *src, int destsize);
-void	Q_strncpylower (char *dest, char *src, int len);
-void	Q_CopyFilename (char *dest, char *src, int len);
+void	Q_strncpylower (char *dest, const char *src, int len);
+void	Q_CopyFilename (char *dest, const char *src, int len);
 
 //=============================================
 

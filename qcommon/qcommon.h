@@ -92,8 +92,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef struct sizebuf_s
 {
-	qboolean allowoverflow;		// if false, do a Com_Error
-	qboolean overflowed;		// set to true if the buffer size failed
+	bool	allowoverflow;		// if false, do a Com_Error when overflowed
+	bool	overflowed;			// set to true if the buffer size failed
 	byte	*data;
 	int		maxsize;
 	int		cursize;
@@ -104,6 +104,7 @@ void	SZ_Init (sizebuf_t *buf, byte *data, int length);
 void	SZ_Clear (sizebuf_t *buf);
 void	*SZ_GetSpace (sizebuf_t *buf, int length);
 void	SZ_Write (sizebuf_t *buf, void *data, int length);
+void	SZ_Insert (sizebuf_t *buf, void *data, int length, int pos);
 void	SZ_Print (sizebuf_t *buf, char *data);	// strcats onto the sizebuf
 
 //============================================================================
@@ -503,9 +504,8 @@ qboolean Cvar_Command (void);
 // command.  Returns true if the command was a variable reference that
 // was handled. (print or change)
 
-void 	Cvar_WriteVariables (FILE *f, qboolean userVars);
-// appends lines containing "set variable value" for all variables
-// with the archive flag set to true.
+void	Cvar_WriteVariables (FILE *f, int includeMask, int excludeMask, const char *header);
+// appends lines containing "set variable value" for all variables with the archive flag set.
 
 void	Cvar_Cheats (qboolean enable);
 void	Cvar_Init (void);
@@ -673,10 +673,10 @@ int		CM_LeafCluster (int leafnum);
 int		CM_LeafArea (int leafnum);
 
 void	CM_SetAreaPortalState (int portalnum, qboolean open);
-qboolean	CM_AreasConnected (int area1, int area2);
+qboolean CM_AreasConnected (int area1, int area2);
 
 int		CM_WriteAreaBits (byte *buffer, int area);
-qboolean	CM_HeadnodeVisible (int headnode, byte *visbits);
+bool	CM_HeadnodeVisible (int headnode, byte *visbits);
 
 void	CM_WritePortalState (FILE *f);
 void	CM_ReadPortalState (FILE *f);

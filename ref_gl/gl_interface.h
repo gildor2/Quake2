@@ -6,6 +6,8 @@ typedef struct
 {
 	int		maxTextureSize;
 	unsigned extensionMask;
+	// fields for gfxinfo
+	const char	*extensions, *extensions2;
 
 	// multitexturing
 	int		maxActiveTextures;		// == 1 if no multitexturing

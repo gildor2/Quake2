@@ -80,6 +80,49 @@ void WorldToModelCoord (vec3_t world, refEntity_t *e, vec3_t local)
 }
 
 
+/* Rotate basis counter-clockwise around 'axis' by 'angle' degrees
+ *
+ * Method (details can be found in OpenGL Rotate{T}() documentation):
+ *
+ *  u = VectorNormalize(v) = (x y z)'
+ *
+ *      |  0   -z    y  |            | xx  xy  xz |
+ *  S = |  z    0   -x  |      uu' = | xy  yy  yz |
+ *      | -y    x    0  |            | xz  yz  zz |
+ *
+ *  R = uu' + cosQ*(I - uu') + sinQ*S
+ *
+ *      | xx+(1-xx)cosQ        xy(1-cosQ)-z*sinQ    xz(1-cosQ)+y*sinQ |
+ *  R = | xy(1-cosQ)+z*sinQ    yy+(1-yy)cosQ        yz(1-cosQ)-x*sinQ |
+ *      | xz(1-cosQ)-y*sinQ    yz(1-cosQ)+x*sinQ    zz+(1-zz)cosQ     |
+ */
+
+void BuildRotationMatrix (float r[3][3], vec3_t axis, float angle)
+{
+	float	xx, xy, xz, yy, yz, zz;
+	float	q, sq, cq, ncq;
+	vec3_t	axisn;
+#define x axisn[0]
+#define y axisn[1]
+#define z axisn[2]
+
+	q = angle / 180 * M_PI;
+	VectorNormalize2 (axis, axisn);
+	sq = sin(q);
+	cq = cos(q); ncq = 1 - cq;
+	// compute uu'
+	xx = x * x; xy = x * y; xz = x * z;
+	yy = y * y; yz = y * z; zz = z * z;
+	// compute R
+	r[0][0] = xx + (1 - xx) * cq;    r[0][1] = xy * ncq - z * sq;    r[0][2] = xz * ncq + y * sq;
+	r[1][0] = xy * ncq + z * sq;     r[1][1] = yy + (1 - yy) * cq;   r[1][2] = yz * ncq - x * sq;
+	r[2][0] = xz * ncq - y * sq;     r[2][1] = yz * ncq + x * sq;    r[2][2] = zz + (1 - zz) * cq;
+#undef x
+#undef y
+#undef z
+}
+
+
 // 3/12 + 4 * 3 = 15/24 dots (worldMatrix/non-worldMatrix)
 // In: ent -- axis + center, center+size2 = maxs, center-size2 = mins
 bool GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2], bool clamp)
@@ -112,8 +155,8 @@ bool GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2],
 	y0 = DotProduct (tmp, vp.viewaxis[2]);
 
 	// ClearBounds2D(mins2, maxs2)
-	mins2[0] = mins2[1] = 999999;
-	maxs2[0] = maxs2[1] = -999999;
+	mins2[0] = mins2[1] = BIG_NUMBER;
+	maxs2[0] = maxs2[1] = -BIG_NUMBER;
 
 	// enumerate all box points (can try to optimize: find contour ??)
 	v[2] = size2[2];									// constant for all iterations
@@ -161,6 +204,30 @@ bool GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2],
 		if (mins2[1] + y0 < -f) mins2[1] = -f - y0;
 		if (mins2[1] >= maxs2[1]) return false;
 	}
+
+	return true;
+}
+
+
+// Project 3D point to screen coordinates; return false when not in view frustum
+bool ProjectToScreen (vec3_t pos, int *scr)
+{
+	vec3_t	vec;
+	float	x, y, z;
+
+	VectorSubtract (pos, vp.vieworg, vec);
+
+	z = DotProduct (vec, vp.viewaxis[0]);
+	if (z <= gl_znear->value) return false;			// not visible
+
+	x = DotProduct (vec, vp.viewaxis[1]) / z / vp.t_fov_x;
+	if (x < -1 || x > 1) return false;
+
+	y = DotProduct (vec, vp.viewaxis[2]) / z / vp.t_fov_y;
+	if (y < -1 || y > 1) return false;
+
+	scr[0] = Q_round (vp.x + vp.w * (0.5 - x / 2));
+	scr[1] = Q_round (vp.y + vp.h * (0.5 - y / 2));
 
 	return true;
 }

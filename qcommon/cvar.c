@@ -210,7 +210,12 @@ cvar_t *Cvar_Get (char *var_name, char *var_value, int flags)
 			if (flags & CVAR_CHEAT && !cheats)					// reset cheatvar
 				Cvar_SetString (var, var_value);
 
-			var->flags &= ~CVAR_USER_CREATED;
+			if (var->flags & CVAR_USER_CREATED)
+			{
+				if (flags & CVAR_GAME_CREATED)
+					var->flags |= CVAR_GAME_CREATED;			// user->game
+				var->flags &= ~CVAR_USER_CREATED;				// reset user flag
+			}
 			strcpy (var->name, var_name);						// update name (may be different case)
 		}
 
@@ -219,8 +224,8 @@ cvar_t *Cvar_Get (char *var_name, char *var_value, int flags)
 			flags &= ~(CVAR_USER_CREATED|CVAR_GAME_CREATED);	// cvar WAS engine-created (keep this flags)
 
 		// user or game -> engine
-		if (!(flags & (CVAR_USER_CREATED|CVAR_GAME_CREATED)))
-			flags &= ~(CVAR_USER_CREATED|CVAR_GAME_CREATED);	// cvar BECOMES engine-created (reset flags and keep it later)
+//		if (!(flags & (CVAR_USER_CREATED|CVAR_GAME_CREATED)))
+//			var->flags &= ~(CVAR_USER_CREATED|CVAR_GAME_CREATED); // cvar BECOMES engine-created (reset flags and keep it later)
 
 		var->flags |= flags & CVAR_FLAG_MASK;
 		return var;
@@ -678,35 +683,35 @@ Appends lines containing "set variable value" for all variables
 with the archive flag set to true.
 ============
 */
-void Cvar_WriteVariables (FILE *f, qboolean userVars)
+void Cvar_WriteVariables (FILE *f, int includeMask, int excludeMask, const char *header)
 {
 	cvar_t	*var;
 	char	type;
+	bool	logged;
 
+	logged = false;
 	for (var = cvar_vars; var; var = var->next)
 	{
-		if (var->flags & CVAR_USER_CREATED)
-		{
-			if (!userVars) continue;
-		}
+		if (!(var->flags & CVAR_ARCHIVE))
+			continue;
+		if (!(var->flags & includeMask) || (var->flags & excludeMask))
+			continue;
+
+		if (var->reset_string && !(var->flags & CVAR_GAME_CREATED) && !strcmp (var->string, var->reset_string))
+			continue;		// holds default value
+
+		if (!(var->flags & (CVAR_SERVERINFO|CVAR_USERINFO)))
+			type = 'a';
+		else if (var->flags & CVAR_SERVERINFO)
+			type = 's';
 		else
+			type = 'u';
+		if (!logged)
 		{
-			if (userVars) continue;
+			fprintf (f, header);
+			logged = true;
 		}
-
-		if (var->flags & CVAR_ARCHIVE)
-		{
-			if (var->reset_string && !(var->flags & CVAR_GAME_CREATED) && !strcmp (var->string, var->reset_string))
-				continue;		// holds default value
-
-			if (!(var->flags & (CVAR_SERVERINFO|CVAR_USERINFO)))
-				type = 'a';
-			else if (var->flags & CVAR_SERVERINFO)
-				type = 's';
-			else
-				type = 'u';
-			fprintf (f, "set%c %s \"%s\"\n", type, var->name, var->string);
-		}
+		fprintf (f, "set%c %s \"%s\"\n", type, var->name, var->string);
 	}
 }
 

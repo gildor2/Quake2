@@ -287,8 +287,9 @@ static void UpdateGamma (void)
 
 
 //#define FIND_GAMMA			// define for replace GAMMA_ANGLE and GAMMA_OFFSET with 'a' and 'b' cvars
+//#define FIND_GAMMA2
 
-void GLimp_SetGamma (float gamma, float intens)
+void GLimp_SetGamma (float gamma)
 {
 	int		i, v;
 	float	invGamma, overbright;
@@ -297,16 +298,18 @@ void GLimp_SetGamma (float gamma, float intens)
 	float	a, b;			// y = ax + b
 
 	a = Cvar_Get("a","1",0)->value;
+#	ifndef FIND_GAMMA2
 	b = Cvar_Get("b","0.5",0)->value;
+#	else
+	b = Cvar_Get("b","-0.5",0)->value;
+#	endif
 #endif
 
 	if (!gammaStored) return;
 
 	gamma = bound(gamma, 0.5, 3);
-	contr = bound(r_contrast->value, 0.5, 1.5);
-	bright = bound(r_brightness->value, 0.5, 1.5);
-
-//	DebugPrintf("set gamma %g, %g\n", gamma, intens);//!!
+	contr = bound(r_contrast->value, 0.1, 2);
+	bright = bound(r_brightness->value, 0.1, 2);
 
 	invGamma = 1.0f / gamma;
 	overbright = gl_config.overbright + 1;
@@ -316,7 +319,7 @@ void GLimp_SetGamma (float gamma, float intens)
 
 #if 0
 		tmp = (i / 255.0f * overbright - 0.5f) * contr + 0.5f;
-		if (tmp < 0) tmp = 0;					// without this, can get semi-negative picture when r_gamma=0.5 (invGamma=2)
+		if (tmp < 0) tmp = 0;					// without this, can get semi-negative picture when r_gamma=0.5 (invGamma=2, sqr func)
 		v = Q_round (65535.0f * (pow (tmp, invGamma) + bright - 1));
 #else
 		// taken from UT2003
@@ -330,20 +333,28 @@ void GLimp_SetGamma (float gamma, float intens)
 		{
 			int		m;
 
-			// Win2K/XP performs checking of gamma ramp and may reject it (clamp with (0,MAX_GAMMA)-(255,FFFF) line)
+			// Win2K/XP performs checking of gamma ramp and may reject it
 #ifndef FIND_GAMMA
 			// clamp gamma curve with line 'y=x*GAMMA_ANGLE+GAMMA_OFFSET'
 #define GAMMA_ANGLE		1
 #define GAMMA_OFFSET	0.5
 			m = i * (GAMMA_ANGLE*256) + (int)(GAMMA_OFFSET*65536);
 			if (v > m) v = m;
+#define GAMMA_ANGLE2	1
+#define GAMMA_OFFSET2	-0.5
+			m = i * (GAMMA_ANGLE2*256) + (int)(GAMMA_OFFSET2*65536);
+			if (v < m) v = m;
 #else
+#	ifndef FIND_GAMMA2
 			m = Q_round (i * a * 256 + b * 65535);
 			if (v > m) v = m;
+#	else
+			m = Q_round (i * a * 256 + b * 65535);
+			if (v < m) v = m;
+#	endif
 #endif
 		}
 		v = bound(v, 0, 65535);
-
 		newGamma[i] = newGamma[i+256] = newGamma[i+512] = v;
 	}
 

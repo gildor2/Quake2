@@ -41,8 +41,8 @@ typedef struct {
 	void	(*_FS_CopyFile) (char *src, char *dst);
 	void	(*_FS_CopyFiles) (char *srcMask, char *dstDir);
 	void	(*_FS_RemoveFiles) (char *mask);
-	qboolean	(*_MatchWildcard) (char *name, char *mask);
-	qboolean	(*_MatchWildcard2) (char *name, char *mask, qboolean ignoreCase);
+	bool	(*_MatchWildcard) (const char *name, const char *mask);
+	bool	(*_MatchWildcard2) (const char *name, const char *mask, qboolean ignoreCase);
 	qboolean	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
 	void	(*_Vid_MenuInit) (void);
 	int	(*_ImageExists) (char *name, int stop_mask);

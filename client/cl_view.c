@@ -37,8 +37,6 @@ cvar_t		*cl_testentities;
 cvar_t		*cl_testlights;
 cvar_t		*cl_testblend;
 
-cvar_t		*cl_stats;
-
 cvar_t		*r_playerpos;
 cvar_t		*r_drawfps;
 cvar_t		*r_surfinfo;
@@ -163,9 +161,8 @@ void V_TestEntities (void)
 		r = 64 * ( (i%4) - 1.5 );
 		f = 64 * (i/4) + 128;
 
-		for (j=0 ; j<3 ; j++)
-			ent->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j]*f +
-			cl.v_right[j]*r;
+		for (j = 0; j < 3; j++)
+			ent->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j]*f + cl.v_right[j]*r;
 
 		ent->model = cl.baseclientinfo.model;
 		ent->skin = cl.baseclientinfo.skin;
@@ -598,7 +595,7 @@ static void DrawFpsInfo (void)
 {
 	static int startSecTime, lastFrameTime, frames;
 	static float avgFps, minFps, maxFps;
-	int		delta, time;
+	int		delta, time, color;
 
 	time = Sys_Milliseconds ();
 
@@ -607,7 +604,7 @@ static void DrawFpsInfo (void)
 		startSecTime = lastFrameTime = time;
 		frames = 0;
 		maxFps = avgFps = 0;
-		minFps = 9999;
+		minFps = BIG_NUMBER;
 		return;
 	}
 
@@ -617,11 +614,10 @@ static void DrawFpsInfo (void)
 		float	tmpFps;
 
 		if (time == lastFrameTime)
-			tmpFps = 1000;	// avoid zero-divide
+			tmpFps = 1000;				// avoid zero-divide
 		else
 			tmpFps = 1000.0f / (time - lastFrameTime);
-		if (tmpFps > maxFps) maxFps = tmpFps;
-		if (tmpFps < minFps) minFps = tmpFps;
+		EXPAND_BOUNDS(tmpFps, minFps, maxFps);
 	}
 	else
 		fileFromPak = 0;
@@ -639,7 +635,11 @@ static void DrawFpsInfo (void)
 	}
 
 	// draw info
-	re.DrawTextRight (va("FPS: %.2f  min: %.2f  max: %.2f", avgFps, minFps, maxFps), RGB(0.8, 1, 0));
+	if (avgFps < 10) color = RGB(1,0,0);
+	else if (avgFps < 30) color = RGB(1,0,1);
+	else if (avgFps < 60) color = RGB(1,1,0);
+	else color = RGB(0,1,0);
+	re.DrawTextRight (va("FPS: %.2f  min: %.2f  max: %.2f", avgFps, minFps, maxFps), color);
 }
 
 
@@ -857,7 +857,7 @@ void V_RenderView (float stereo_separation)
 		// never let it sit exactly on a node line, because a water plane can
 		// dissapear when viewed with the eye exactly on it.
 		// the server protocol only specifies to 1/8 pixel, so add 1/16 in each axis
-		cl.refdef.vieworg[0] += 1.0f/16;
+		cl.refdef.vieworg[0] += 1.0f/16;	//??
 		cl.refdef.vieworg[1] += 1.0f/16;
 		cl.refdef.vieworg[2] += 1.0f/16;
 
@@ -902,14 +902,8 @@ void V_RenderView (float stereo_separation)
 	re.RenderFrame (&cl.refdef);
 
 	// stats
-	if (r_drawfps->integer)		DrawFpsInfo ();
-
-	if (cl_stats->integer)
-	{
-		re.DrawTextLeft (va("ent:%d  lt:%d",	//?? particle stats (remove)
-			r_numentities, r_numdlights),
-			RGB(1, 1, 1));
-	}
+	if (r_drawfps->integer)
+		DrawFpsInfo ();
 
 	if (log_stats->integer && (log_stats_file != 0))
 		fprintf (log_stats_file, "%d,%d,", r_numentities, r_numdlights);	//?? particle stats (remove)
@@ -933,8 +927,6 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(cl_testparticles, 0, 0),
 	CVAR_VAR(cl_testentities, 0, 0),
 	CVAR_VAR(cl_testlights, 0, CVAR_CHEAT),
-
-	CVAR_VAR(cl_stats, 0, 0),
 
 	CVAR_VAR(r_drawfps, 0, 0),
 	CVAR_VAR(r_playerpos, 0, CVAR_CHEAT),

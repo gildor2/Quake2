@@ -177,7 +177,7 @@ typedef struct
 	int	minimize, maximize;
 } glmode_t;
 
-glmode_t modes[] = {
+static glmode_t modes[] = {
 	{"GL_NEAREST", GL_NEAREST, GL_NEAREST},
 	{"GL_LINEAR", GL_LINEAR, GL_LINEAR},
 	{"GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},
@@ -185,8 +185,6 @@ glmode_t modes[] = {
 	{"GL_NEAREST_MIPMAP_LINEAR", GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST},
 	{"GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR}
 };
-
-#define NUM_GL_MODES (sizeof(modes) / sizeof (glmode_t))
 
 typedef struct
 {
@@ -196,7 +194,7 @@ typedef struct
 
 #define _STR(s) {s, #s}
 
-gltmode_t gl_alpha_modes[] = {
+static gltmode_t gl_alpha_modes[] = {
 	{4, "default"},
 	_STR(GL_RGBA),
 	_STR(GL_RGBA8),
@@ -205,7 +203,6 @@ gltmode_t gl_alpha_modes[] = {
 	_STR(GL_RGBA2),
 };
 
-#define NUM_GL_ALPHA_MODES (sizeof(gl_alpha_modes) / sizeof (gltmode_t))
 
 gltmode_t gl_solid_modes[] = {
 	{3, "default"},
@@ -219,8 +216,6 @@ gltmode_t gl_solid_modes[] = {
 #endif
 };
 
-#define NUM_GL_SOLID_MODES (sizeof(gl_solid_modes) / sizeof (gltmode_t))
-
 /*
 ===============
 GL_TextureMode
@@ -231,13 +226,13 @@ void GL_TextureMode( char *string )
 	int		i;
 	image_t	*glt;
 
-	for (i=0 ; i< NUM_GL_MODES ; i++)
+	for (i=0 ; i< ARRAY_COUNT(modes) ; i++)
 	{
 		if ( !Q_stricmp( modes[i].name, string ) )
 			break;
 	}
 
-	if (i == NUM_GL_MODES)
+	if (i == ARRAY_COUNT(modes))
 	{
 		Com_Printf ("bad filter name\n");
 		return;
@@ -267,13 +262,13 @@ void GL_TextureAlphaMode( char *string )
 {
 	int		i;
 
-	for (i=0 ; i< NUM_GL_ALPHA_MODES ; i++)
+	for (i=0 ; i< ARRAY_COUNT(gl_alpha_modes) ; i++)
 	{
 		if ( !Q_stricmp( gl_alpha_modes[i].name, string ) )
 			break;
 	}
 
-	if (i == NUM_GL_ALPHA_MODES)
+	if (i == ARRAY_COUNT(gl_alpha_modes))
 	{
 		Com_Printf ("bad alpha texture mode name\n");
 		return;
@@ -291,13 +286,13 @@ void GL_TextureSolidMode( char *string )
 {
 	int		i;
 
-	for (i=0 ; i< NUM_GL_SOLID_MODES ; i++)
+	for (i=0 ; i< ARRAY_COUNT(gl_solid_modes) ; i++)
 	{
 		if ( !Q_stricmp( gl_solid_modes[i].name, string ) )
 			break;
 	}
 
-	if (i == NUM_GL_SOLID_MODES)
+	if (i == ARRAY_COUNT(gl_solid_modes))
 	{
 		Com_Printf ("bad solid texture mode name\n");
 		return;

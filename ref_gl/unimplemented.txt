@@ -6,6 +6,8 @@ FAST TODO:
   -- check all places, when VERTEX->EXACT_VERTEX
 3) ? overbright for coronas (color *= 2) -- center will be white
   (at least, try it !)
+4) try to use gl_ent.origin instead of gl_ent.center for lighting when out-of-world
+  (may fix black dead bodies, black gun, zaero/lox positron explosion ...)
 
 -------------------------------------------------------------------------------
 	new lightgrid:
@@ -40,17 +42,18 @@ filling grid:
 ~~~~~~~~~~~~~
   - save entity lighting between frames
   - compute 1 from 8 cells per frame; use old light until all computed; when computed -- lerp during few frames to a value from grid
-  - check entity speed: if new position is completely not intersected with cells from previous frame, and new position have
+  - check entity moving speed: if new position is completely not intersected with cells from previous frame, and new position have
     incomplete (or not computed at all) cells:
     a) compute light for entity (not for grid)
     b) compute light for nearest cell, asign it to entity, and complete cells starting from next frame
   - can compute few cells per frame, when this computation is not too complex (gather stats while computation: num_traces,
-    may be -- num point lights, num surf lights, etc.)
+    may be -- num point lights, num surf lights, etc.; use this stats for CPU usage control: when too much required, use blended prev.
+    frame lights, can sort entities for lighting with size/distance criterion -- nearest have better quality)
   - can precompute cells for spawnpoints (add renderer exported function for this); compute NxNxN cells (not just 2x2x2)
 determine/evaluate:
 ~~~~~~~~~~~~~~~~~~~
   - how much lights to store implicitly (1 light axis == 6*3 == 18b == 9 lights !)
-  - with error allow for adjancent cell matching (than more error, than more compact will be filled grid)
+  - wich error allow for adjancent cell matching (than more error, than more compact will be filled grid)
 cell format:
 ~~~~~~~~~~~~
   - flags:
@@ -78,11 +81,6 @@ cell format:
 
 ! add gl_depthBits: without it 32-bit mode works with 16-bit depth buffer; when depthbits = 0 - use 24-bit for 32-bit color (as in Q3)
 
-!!! autoflares:
-  - should combine bsp-divided surfaces onto a single flare (combine by parent brush ?)
-? try vertex light on water
-
-
 lighting bugs:
   - map "ktdm1", {64,0,144} - teleporter model is too black (lightgrid bugs); same bug with "q2dm1"
   - "winter": too dark inside shadows (and: inside caverns should be "area lights" (check arghrad tutorial for understanding ...))
@@ -91,6 +89,7 @@ lighting bugs:
     -OR- perform trace to detect nearest non-inside-wall grid point)
 
 - lighting:
+  !? try vertex light on water
   ? minlight
   - R_LightPoint
   - saturate lights (when r_lightmap==3 - with "-1" ?)
@@ -110,14 +109,21 @@ lighting bugs:
      ? cache lighting when entity in a stopped state (cache will require separate holding of fast lightstyles)
      info: "rc1" escalator looking good
      each_surface: check "teehc2" with crane enabled
+  - zaero, demo4, kamikaze: too dark explosion (should get lighting for LARGE objects in a different way)
+    same: 1st map, beginning, give EMP grenade, throw (best viewed from 3rd person) -- can be bad lighting
+    (can use sphereLighting (FAKK-style) for large models; requires new lightgrid)
 
 - vis bugs: use BoxLeafs() + LeafVis() to get combined vis without checking "near-nontrans-water" (of course, ignore
   non-world invisible leafs) - will fix water vis bug and, may be, some other vis bugs too (map "ground3", "actmet" have some ...)
+  - example bugs:
+    - map "underrain": have sky brushes (MYST) for cave lighting; when vieworg is inside such brush - only sky painted
+      (oldgl: same as non-transparent water, combines 2 clusters vis)
+  - require to perform MarkLeafs() every frame (can replace node.vidFrame and node.frame with a single one); check MarkLeafs() speed --
+    may be, speedup this process
 
 - gamma:
   - correct screenshots with contrast/intens (fill gammaTable in GLimp or send this table to SetGamma())
   ? what to do with "intens" param in GLimp_SetGamma() ? remove ??
-  ? remove "r_intensity"
   - document this cvars
   - move gamma computations to renderer, send computed table to SetGamma() (but with more precition ? WHO WILL COMPUTE TABLE ??)
   - update software gamma code
@@ -128,12 +134,14 @@ lighting bugs:
 ? remove gl_fog stuff
 
 - color shell: should use size=0.5 for weapons and =3 for main model (use "fromEntity" ?)
+
 - reflections:
   - small bugs when one can see througs another (for example, lift on map "japan"; "ground3") - unstable draw order
     (or not enough vertex buffer size -- in this case, multitexturing for envmaps will help)
   - adjust ALPHAGEN_DOT consts (+ compensate near distances -- too opaque)
   - should add reflections on SURF_ALPHA with minAlpha > 0 (require to check image)
-  - map "ground3": invalid reflections on smoke - should not be (used tex with maxAlpha=0)
+  - map "ground3": invalid reflections on smoke bottom - should not be (used tex with maxAlpha=0; trace tells "solid" -- but different
+    texture ?!)
   - try another texture
   - try cvar (temp) for envmap_scale and envmap_alpha_const
   - cvar for disabling envmaps
@@ -141,6 +149,7 @@ lighting bugs:
   - needs to remove extra.plane.axis when shader have deformVertexes
 
 - flares:
+  ! autoflares: should combine bsp-divided surfaces onto a single flare (combine by parent brush ?)
   ? correct fov
   ? flare image have visible square (when its color is saturated)
   - saturate flares
@@ -176,9 +185,8 @@ PreprocessShader():
 - shaders:
   ? make shader_t.name dynamically allocated (~ basenamed_t)
   ? sky shader: specify color for "gl_fastSky"
-  - backend GeterateColors (and other?): for multipass rendering can save "current
-    type of data in buffer" and use it later (example: 1st pass - rgbGen_vertex, 2nd -
-    same -- do not update)
+  - backend GenerateColors (and other?): for multipass rendering can save "current type of data in buffer" and use it
+    later (example: 1st pass - rgbGen_vertex, 2nd - same -- do not update)
 
 - dynamic lightmaps:
   ? option (menu): dynamic lightmap type - uploadable/multipass/auto
@@ -189,11 +197,10 @@ PreprocessShader():
 ! rename "gl_local.h" to something another (and change "#ifndef __GL_LOCAL_...")
 - SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
 - add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
-? don't need shader->sortParam other than sky/opaque/seethrough (may be, +coronas +hud)
+? don't need shader->sortParam other than sky/opaque/seethrough (may be, +coronas (already painted after all) +hud (2D ? already separate))
 ? disable REF_NEWFX when necessary image files absent
 
-- r_nocull works only with frustum culling (extend cvar or add another ...)
-!! vertex arrays are not 16-byte aligned
+! vertex arrays are not 16-byte aligned
 ? reimplement (remove?) fast drawing
 
 - dlights:
@@ -226,6 +233,15 @@ Screenshots:
   	else				side1 = 3;
      to detect side[1|2] (no error when used "<=" and ">=" instead of "<" and ">")
 
+- Shaders:
+  ! should load scripts (scripts/*.shader); replace system shaders with script
+  ? may use separate file for each shader (use the same name as texture, but with different extension)
+  - shader templates (in scripts/*.shader, use mask instead of shader name; use "map $texture" for image specification)
+  - need ability to get shader script from memory (map script with builtin shaders)
+  - map $texture     -- map image with the same name as shader name (useful for shader templates)
+  - map size <w> <h> -- change image size (for Q2 maps: allows to replace texture without resampling to original size)
+  ? map color        -- change color of SURF_LIGHT source (see Q3/FAKK q3map_color etc. -- different name)
+
 HW occlusion:
   - model culling: use hw occlusion test (HP or NV), if NV -- can use LOD when model partially visible
   - correctly use with near/far (and side ?) clipplanes (do not try to cull when object is VERY near, it
@@ -235,15 +251,13 @@ HW occlusion:
   ? for details and other ideas, see GL_NV_occlusion_query spec
 
 BUGS:
-! map "underrain": have sky brushes (MYST) for cave lighting; when vieworg is inside such brush - only sky painted
-  (oldgl: same as non-transparent water, combines 2 clusters vis)
 - Com_Error(ERR_DROP, ...) can cause "halt" renderer (will in loop display "red" message without screen update,
   can switch to "oldgl" (to see this messages), but will crush when switch back to "gl" (if StageIterator() ?))
 ? map "terrain", light cone from helicopter: too opaque when overbright is 1 (invalid lightmap on alpha-surf ?)
 ? check demo "massive1": have error "frame #46 not found"
-! zaero, demo4, kamikaze: too dark explosion (should get lighting for LARGE objects in a different way)
-  same: 1st map, beginning, give EMP grenade, throw (best viewed from 3rd person) -- can be bad lighting
 - can't use alpha test for SHADER_WALL (dm_duke... have assault/glass texture, which is SURF_ALPHA with alpha < 0.5)
+- lightmap optimization bugs: beachassault, rhstation (should use adaptive threshold: depends on light intensity? (0 for dark,
+  16 (?) for bright))
 
 HARDWARE BUGS:
 - NV (bitdepth change ?), Blade3D (vid_restart): cannot restart GL with Vid_DestroyWindow(force=false) -- require to recreate window
@@ -269,7 +283,7 @@ FOR GAME:
   (texture_env_combine (slightly different!), texture_env_add etc.)
 - optimize sky box drawing:
   ? can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs) (problems when surf can be placed on few box sides)
-  - find fast cases, when surface placed only on one plane (use surface bounds ?)
+    ? find fast cases, when surface placed only on one plane (use surface bounds ?)
 - vertex lighting:
   - surface simplification (?) + subdivision (!) for complex lightmaps (non-gradient color change) - as option
     (lighting = "lightmap", "vertex", "hq vertex")

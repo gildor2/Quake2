@@ -395,6 +395,9 @@ void ClientActiveTextureARB (GLenum texture) ARGS
 #require GL_ARB_multitexture
 //?? #prefer GL_NV_texture_env_combine4
 
+#name GL_ARB_texture_env_crossbar
+#prefer GL_NV_texture_env_combine4
+
 #name GL_NV_texture_env_combine4
 #cvar gl_ext_texture_env_combine_nv
 #require GL_ARB_multitexture

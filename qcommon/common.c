@@ -313,7 +313,7 @@ void Com_Quit (void)
 // 4) start* - name starts with "start"
 // 4) text   - name equals "text"
 // Comparision is case-sensitive.
-qboolean MatchWildcard (char *name, char *mask)
+bool MatchWildcard (const char *name, const char *mask)
 {
 	int		masklen, namelen;
 	char	maskCopy[MAX_QPATH], *next;
@@ -393,16 +393,16 @@ qboolean MatchWildcard (char *name, char *mask)
 
 
 // Variant of MatchWildcard(), where we can choose, whether it will be case-sensitive, or case-insensitive
-qboolean MatchWildcard2 (char *name, char *mask, qboolean ignoreCase)
+bool MatchWildcard2 (const char *name, const char *mask, qboolean ignoreCase)
 {
 	if (!ignoreCase)
 		return MatchWildcard (name, mask);
 	else
 	{
-		char	_name[MAX_QPATH], _mask[MAX_QPATH];
+		char	_name[MAX_STRING_CHARS], _mask[MAX_QPATH];
 
-		Q_strncpylower (_name, name, sizeof(_name));
-		Q_strncpylower (_mask, mask, sizeof(_mask));
+		Q_strncpylower (_name, name, sizeof(_name)-1);
+		Q_strncpylower (_mask, mask, sizeof(_mask)-1);
 		return MatchWildcard (_name, _mask);
 	}
 }
@@ -1124,7 +1124,7 @@ void MSG_ReadData (sizebuf_t *msg_read, void *data, int len)
 
 void SZ_Init (sizebuf_t *buf, byte *data, int length)
 {
-	memset (buf, 0, sizeof(*buf));
+	memset (buf, 0, sizeof(sizebuf_t));
 	buf->data = data;
 	buf->maxsize = length;
 }
@@ -1162,7 +1162,23 @@ void *SZ_GetSpace (sizebuf_t *buf, int length)
 
 void SZ_Write (sizebuf_t *buf, void *data, int length)
 {
-	memcpy (SZ_GetSpace(buf,length),data,length);
+	memcpy (SZ_GetSpace (buf,length), data, length);
+}
+
+void SZ_Insert (sizebuf_t *buf, void *data, int length, int pos)
+{
+	int		len;
+	byte	*from, *to;
+
+	if (pos > buf->cursize) pos = buf->cursize;
+	SZ_GetSpace (buf, length);
+	// shift old data
+	from = buf->data + pos;
+	to = from + length;
+	len = buf->cursize - pos - length;
+	if (len > 0) memmove (to, from, len);
+	// insert new data
+	memcpy (from, data, length);
 }
 
 void SZ_Print (sizebuf_t *buf, char *data)
@@ -1174,9 +1190,9 @@ void SZ_Print (sizebuf_t *buf, char *data)
 	if (buf->cursize)
 	{
 		if (buf->data[buf->cursize-1])
-			memcpy ((byte *)SZ_GetSpace(buf, len),data,len); // no trailing 0
+			memcpy ((byte *)SZ_GetSpace(buf, len),data,len);		// no trailing 0
 		else
-			memcpy ((byte *)SZ_GetSpace(buf, len-1)-1,data,len); // write over trailing 0
+			memcpy ((byte *)SZ_GetSpace(buf, len-1)-1,data,len);	// write over trailing 0
 	}
 	else
 		memcpy ((byte *)SZ_GetSpace(buf, len),data,len);

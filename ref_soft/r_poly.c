@@ -1168,8 +1168,8 @@ static void R_DrawPoly( int iswater )
 	memset (spans, 0xE0, MAXHEIGHT * sizeof(espan_t)); //!! debug
 // find the top and bottom vertices, and make sure there's at least one scan to
 // draw
-	ymin = 999999.9;
-	ymax = -999999.9;
+	ymin = BIG_NUMBER;
+	ymax = -BIG_NUMBER;
 	pverts = r_polydesc.pverts;
 
 	for (i=0 ; i<r_polydesc.nump ; i++)

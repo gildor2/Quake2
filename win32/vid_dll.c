@@ -284,6 +284,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		{
 			static DEVMODE dm;
 
+//			Com_Printf("WM_SIZE: %d (act=%d min=%d)\n",wParam, ActiveApp, Minimized);//!!
 			if (wParam == SIZE_MINIMIZED)
 			{
 				HDC		dc;
@@ -311,6 +312,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		{
 			bool		fActive;
 
+//			Com_Printf("WM_ACTIVATE: a=%d m=%d (act=%d min=%d)\n",LOWORD(wParam), HIWORD(wParam),ActiveApp, Minimized);//!!
 			fActive = LOWORD(wParam) != WA_INACTIVE;
 			AppActivate (fActive, (bool)HIWORD(wParam));
 
@@ -604,12 +606,11 @@ static vidMode_t vid_modes[] =
 	{1600,	1200},
 	{2048,	1536}
 };
-#define VID_NUM_MODES (sizeof(vid_modes) / sizeof(vid_modes[0]))
 
 
 qboolean Vid_GetModeInfo (int *width, int *height, int mode)
 {
-	if (mode < 0 || mode >= VID_NUM_MODES)
+	if (mode < 0 || mode >= ARRAY_COUNT(vid_modes))
 		return false;
 
 	*width  = vid_modes[mode].width;

@@ -7,14 +7,25 @@
 
 #ifdef _WIN32
 // need this include, because have wgl and GDI functions here
-#  include <windows.h>
+#	include <windows.h>
 #endif
 
-#include "gl.h"
+#include <GL/gl.h>
+#include "glext.h"
+
+// Obsolete (missing in standard headers), but still supported extensions
+/* SGIS_multitexture */
+#define GL_SELECTED_TEXTURE_SGIS          0x835C
+#define GL_MAX_TEXTURES_SGIS              0x835D
+#define GL_TEXTURE0_SGIS                  0x835E
+#define GL_TEXTURE1_SGIS                  0x835F
+#define GL_TEXTURE2_SGIS                  0x8360
+#define GL_TEXTURE3_SGIS                  0x8361
+
 
 #ifdef __linux__
 //#include <GL/fxmesa.h>
-#include <GL/glx.h>
+#	include <GL/glx.h>
 #endif
 
 #include "qgl_decl.h"
@@ -30,17 +41,11 @@ void	QGL_EnableLogging (qboolean enable);
 void	QGL_LogMessage (const char *text);
 #define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
 
-#ifndef APIENTRY
-#  define APIENTRY
-#endif
-
 
 #define	REF_VERSION	"GL 0.99"	//!! will be 1.00 when I'll finish ...
 
 #ifdef REF_HARD_LINKED
-
-#define GetRefAPI			GL_GetRefAPI
-
+#	define GetRefAPI			GL_GetRefAPI
 #endif
 
 
@@ -154,16 +159,15 @@ int     GLimp_SetMode (int *pwidth, int *pheight, int mode, bool fullscreen);
 void	GLimp_AppActivate (qboolean active);
 
 bool	GLimp_HasGamma (void);
-void	GLimp_SetGamma (float gamma, float intens);
+void	GLimp_SetGamma (float gamma);
 
 
 /*----------------- Cvars -------------------*/
 
-extern cvar_t	*gl_picmip, *gl_roundImagesDown, *gl_texMipBias, *gl_skinMipBias;
-extern cvar_t	*gl_textureBits, *gl_texturemode;
+extern cvar_t	*gl_texMipBias, *gl_skinMipBias;
+extern cvar_t	*gl_texturemode;
 
 extern cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
-extern cvar_t	*r_intensity;		//?? remove (or "r_brightness")
 
 extern cvar_t	*gl_overbright;
 
@@ -177,7 +181,7 @@ extern cvar_t	*gl_vertexLight;
 extern cvar_t	*gl_nogrid;
 extern cvar_t	*gl_showgrid;
 
-extern cvar_t	*gl_ignoreFastPath;
+extern cvar_t	*gl_ignoreFastPath;	//??
 
 extern cvar_t	*gl_driver;
 extern cvar_t	*gl_bitdepth;
@@ -185,28 +189,23 @@ extern cvar_t	*gl_bitdepth;
 extern cvar_t	*gl_hand;
 
 extern cvar_t	*gl_nobind;
-extern cvar_t	*r_colorMipLevels;	//?? can we implement colorized mips in software? (if no, rename to "gl_")
 extern cvar_t	*gl_logFile;
-extern cvar_t	*gl_showImages;
 extern cvar_t	*r_novis;			//?? ~gl_pvsCull ?
 extern cvar_t	*r_nocull;			//?? ~gl_frustumCull ?
 extern cvar_t	*gl_oCull;
 extern cvar_t	*gl_facePlaneCull;	//?? gl_backfaceCull ?
-extern cvar_t	*gl_sortAlpha;
 extern cvar_t	*r_speeds;
-extern cvar_t	*r_fullbright;
-extern cvar_t	*r_lightmap;
+extern cvar_t	*r_fullbright, *r_lightmap;
 extern cvar_t	*gl_showsky;
-extern cvar_t	*r_drawworld;
-extern cvar_t	*r_drawentities;
+extern cvar_t	*r_drawworld, *r_drawentities;
+extern cvar_t	*gl_sortAlpha;
+extern cvar_t	*gl_finish;
 
-extern cvar_t	*gl_showbboxes, *gl_showtris, *gl_shownormals, *gl_labels;
-extern cvar_t	*gl_lightLines;
-extern cvar_t	*gl_showLights;
+extern cvar_t	*gl_labels;
+extern cvar_t	*gl_lightLines, *gl_showLights;
 extern cvar_t	*gl_singleShader;
 
-extern cvar_t	*gl_clear;
-extern cvar_t	*gl_finish;
+extern cvar_t	*gl_znear;
 extern cvar_t	*gl_swapinterval;
 extern cvar_t	*gl_drawbuffer;
 

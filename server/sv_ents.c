@@ -35,27 +35,23 @@ SV_EmitPacketEntities
 Writes a delta update of an entity_state_t list to the message.
 =============
 */
-void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t *msg)
+static void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t *msg)
 {
-	entity_state_t	*oldent, *newent;
 	int		oldindex, newindex;
-	int		oldnum, newnum;
 	int		from_num_entities;
-	int		bits;
 
 	MSG_WriteByte (msg, svc_packetentities);
 
-	if (!from)
-		from_num_entities = 0;
-	else
-		from_num_entities = from->num_entities;
+	from_num_entities = from ? from->num_entities : 0;
 
-	newindex = 0;
-	oldindex = 0;
+	newindex = oldindex = 0;
 	while (newindex < to->num_entities || oldindex < from_num_entities)
 	{
+		int		oldnum, newnum;
+		entity_state_t *oldent, *newent;
+
 		if (newindex >= to->num_entities)
-			newnum = 9999;
+			newnum = BIG_NUMBER;
 		else
 		{
 			newent = &svs.client_entities[(to->first_entity + newindex) % svs.num_client_entities];
@@ -63,7 +59,7 @@ void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t 
 		}
 
 		if (oldindex >= from_num_entities)
-			oldnum = 9999;
+			oldnum = BIG_NUMBER;
 		else
 		{
 			oldent = &svs.client_entities[(from->first_entity + oldindex) % svs.num_client_entities];
@@ -71,11 +67,10 @@ void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t 
 		}
 
 		if (newnum == oldnum)
-		{	// delta update from old position
-			// because the force parm is false, this will not result
-			// in any bytes being emited if the entity has not changed at all
-			// note that players are always 'newentities', this updates their oldorigin always
-			// and prevents warping
+		{
+			// delta update from old position
+			// note that players are always 'newentities', this updates their oldorigin always and prevents warping
+			// NOTE: it's impossible to get newindex AND oldindex both overflowed (> num_entities), because of while() condition
 			MSG_WriteDeltaEntity (oldent, newent, msg, false, newent->number <= maxclients->integer);
 			oldindex++;
 			newindex++;
@@ -83,14 +78,18 @@ void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t 
 		}
 
 		if (newnum < oldnum)
-		{	// this is a new entity, send it from the baseline
+		{
+			// this is a new entity, send it from the baseline
 			MSG_WriteDeltaEntity (&sv.baselines[newnum], newent, msg, true, true);
 			newindex++;
 			continue;
 		}
 
 		if (newnum > oldnum)
-		{	// the old entity isn't present in the new message
+		{
+			int		bits;
+
+			// the old entity isn't present in the new message
 			bits = U_REMOVE;
 			if (oldnum >= 256)
 				bits |= U_NUMBER16 | U_MOREBITS1;
@@ -109,7 +108,7 @@ void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t 
 		}
 	}
 
-	MSG_WriteShort (msg, 0);	// end of packetentities
+	MSG_WriteShort (msg, 0);	// end of packetentities; corresponds to bits(byte)=0,entNum(byte)=0
 }
 
 
@@ -377,7 +376,7 @@ void SV_FatPVS (vec3_t org)
 
 	for (i = 0; i < 3; i++)
 	{
-		mins[i] = org[i] - 8;
+		mins[i] = org[i] - 8;		// box should be greater, when client in 3rd person ??
 		maxs[i] = org[i] + 8;
 	}
 

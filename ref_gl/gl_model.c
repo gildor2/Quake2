@@ -343,8 +343,8 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 		CrossProduct (pl->plane.normal, pl->axis[0], pl->axis[1]);
 	}
 	// compute 2D bounds
-	min1 = min2 = 999999;
-	max1 = max2 = -999999;
+	min1 = min2 = BIG_NUMBER;
+	max1 = max2 = -BIG_NUMBER;
 	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
 	{
 		float	p1, p2;
@@ -663,8 +663,8 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		/*----------- Create surface vertexes ------------------*/
 		v = s->verts;
 		// ClearBounds2D (mins, maxs)
-		mins[0] = mins[1] = 999999;
-		maxs[0] = maxs[1] = -999999;
+		mins[0] = mins[1] = BIG_NUMBER;
+		maxs[0] = maxs[1] = -BIG_NUMBER;
 		ClearBounds (s->mins, s->maxs);
 		// Enumerate vertexes
 		for (j = 0; j < numVerts; j++, pedge++, v++)
@@ -876,9 +876,9 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			// remove lightmap info from the shader
 			if (s->shader->lightmapNumber != LIGHTMAP_NONE)
 			{
-				s->shader->lightmapNumber = LIGHTMAP_NONE;
 				// later (in this function), just don't create vertex colors for this surface
 				Com_DPrintf ("Disable lm for %s\n", s->shader->name);
+				GL_SetShaderLightmap (s->shader, LIGHTMAP_NONE);
 //				Com_Printf ("  diff: %d\n", ptr - lm->source);
 //				Com_Printf ("  w: %d  h: %d  st: %d\n", lm->w, lm->h, lm->numStyles);
 			}

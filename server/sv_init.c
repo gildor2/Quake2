@@ -300,7 +300,7 @@ void SV_InitGame (void)
 
 	if (Cvar_VariableInt ("coop") && Cvar_VariableInt ("deathmatch"))
 	{
-		Com_Printf ("Deathmatch and Coop both set, disabling Coop\n");
+		Com_WPrintf ("Deathmatch and Coop both set, disabling Coop\n");
 		Cvar_FullSet ("coop", "0", CVAR_SERVERINFO|CVAR_LATCH);
 	}
 
@@ -340,14 +340,14 @@ void SV_InitGame (void)
 
 	svs.spawncount = rand();
 	svs.clients = Z_Malloc (sizeof(client_t)*maxclients->integer);
-	svs.num_client_entities = maxclients->integer*UPDATE_BACKUP*64;
+	svs.num_client_entities = maxclients->integer*UPDATE_BACKUP*64;		//?? what is "64" (MAX_PACKET_ENTITIES, undefined const?)
 	svs.client_entities = Z_Malloc (sizeof(entity_state_t)*svs.num_client_entities);
 
 	// init network stuff
 	NET_Config ( (maxclients->integer > 1) );
 
 	// heartbeats will always be sent to the id master
-	svs.last_heartbeat = -99999;		// send immediately
+	svs.last_heartbeat = -BIG_NUMBER;		// send immediately
 	NET_StringToAdr (va("192.246.40.37:%i", PORT_MASTER), &master_adr[0]);
 
 	// init game

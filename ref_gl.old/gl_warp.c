@@ -39,8 +39,8 @@ void BoundPoly (int numverts, float *verts, vec3_t mins, vec3_t maxs)
 	int		i, j;
 	float	*v;
 
-	mins[0] = mins[1] = mins[2] = 9999;
-	maxs[0] = maxs[1] = maxs[2] = -9999;
+	mins[0] = mins[1] = mins[2] = BIG_NUMBER;
+	maxs[0] = maxs[1] = maxs[2] = -BIG_NUMBER;
 	v = verts;
 	for (i=0 ; i<numverts ; i++)
 		for (j=0 ; j<3 ; j++, v++)
@@ -497,8 +497,8 @@ void R_ClearSkyBox (void)
 
 	for (i=0 ; i<6 ; i++)
 	{
-		skymins[0][i] = skymins[1][i] = 9999;
-		skymaxs[0][i] = skymaxs[1][i] = -9999;
+		skymins[0][i] = skymins[1][i] = BIG_NUMBER;
+		skymaxs[0][i] = skymaxs[1][i] = -BIG_NUMBER;
 	}
 }
 

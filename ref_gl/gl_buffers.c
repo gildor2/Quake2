@@ -6,7 +6,7 @@
 
 /*---------- Dynamic surface buffer ----------*/
 
-#define MAX_DYNAMIC_BUFFER		(128 * 1024)
+#define MAX_DYNAMIC_BUFFER		(384 * 1024)
 static byte	dynamicBuffer[MAX_DYNAMIC_BUFFER];
 static int	dynamicBufferSize;
 
@@ -20,6 +20,7 @@ void *GL_AllocDynamicMemory (int size)
 
 	if (dynamicBufferSize + size > MAX_DYNAMIC_BUFFER)
 	{
+		//?? make this message developer-only
 		DrawTextLeft (va("R_AllocDynamicMemory(%d) failed\n", size), RGB(1, 0, 0));
 //		Com_Error (ERR_FATAL, "R_AllocDynamicMemory(%d) failed\n", size);
 		lastDynamicPtr = NULL;
@@ -103,7 +104,7 @@ void GL_InsertShaderIndex (int index)
 			n++;
 		}
 	}
-	Com_DPrintf ("R_InsertShaderIndex(%d): changed %d indexes\n", index, n);
+//	Com_DPrintf ("R_InsertShaderIndex(%d): changed %d indexes\n", index, n);
 }
 
 
@@ -179,9 +180,9 @@ void GL_SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 		GET_SORT(s->sort,b);
 		b &= SORT_MASK;
 		if (!sortFirst[b])
-			sortFirst[b] = s;			// insert it first
+			sortFirst[b] = s;					// insert it first
 		else
-			sortLast[b]->sortNext = s;	// insert to the chain end
+			sortLast[b]->sortNext = s;			// insert to the chain end
 		s->sortNext = NULL;
 		sortLast[b] = s;
 	}
@@ -195,16 +196,16 @@ void GL_SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 	{
 		src = src1;
 		dst = dst1;
-		src1 = dst1; dst1 = src;			// swap src1 and dst1 (for next loop)
+		src1 = dst1; dst1 = src;				// swap src1 and dst1 (for next loop)
 
-		memset (dst, 0, sizeof(sortFirst));	// clear dst heads
+		memset (dst, 0, sizeof(sortFirst));		// clear dst heads
 		for (i = 0; i < SORT_SIZE; i++)
 		{
-			s = *src++;		// next chain
-			while (s)
+			surfaceInfo_t *next;
+
+			for (s = *src++; s; s = next)		// next chain
 			{
 				int		b;
-				surfaceInfo_t *next;
 
 				next = s->sortNext;				// s->sortNext will be set to NULL below
 				GET_SORT(s->sort,b);
@@ -215,8 +216,6 @@ void GL_SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 					sortLast[b]->sortNext = s;	// add to the chain end
 				s->sortNext = NULL;				// no next element
 				sortLast[b] = s;
-
-				s = next;
 			}
 		}
 	}

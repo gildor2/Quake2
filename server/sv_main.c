@@ -997,12 +997,12 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 
 	case TE_SPLASH:
 		{
-			int		i, count, type;
+			int		i, count, type, tmp;
 			splash_t *spl;
 
 			count = MSG_ReadByte (original);
 			MSG_ReadPos (original, v1);		// pos
-			MSG_ReadDir (original, v2);		// dir
+			tmp = MSG_ReadByte (original);	// dir
 			type = MSG_ReadByte (original);
 			if (type != SPLASH_BLUE_WATER && type != SPLASH_BROWN_WATER)
 				return original;			// not bullet effect
@@ -1010,8 +1010,9 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 			// find splash origin in static map splashes to avoid bullethit sounds for waterfalls etc.
 			for (i = 0, spl = map_bspfile->splashes; i < map_bspfile->numSplashes; i++, spl = spl->next)
 			{
-				//?? may be, compare with quantized spl->origin ?
-				if (spl->origin[0] == v1[0] && spl->origin[1] == v1[1] && spl->origin[2] == v1[2])
+				if (fabs (spl->origin[0] - v1[0]) < 1 &&
+					fabs (spl->origin[1] - v1[1]) < 1 &&
+					fabs (spl->origin[2] - v1[2]) < 1)		// dir is quantized, so - make inprecisious compare
 					return original;
 			}
 
@@ -1020,7 +1021,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 			MSG_WriteByte (ext, TE_SPLASH);
 			MSG_WriteByte (ext, count);
 			MSG_WritePos (ext, v1);
-			MSG_WriteDir (ext, v2);
+			MSG_WriteByte (ext, tmp);
 			MSG_WriteByte (ext, type - SPLASH_BLUE_WATER + SPLASH_BULLET_BLUE_WATER);
 		}
 		return ext;

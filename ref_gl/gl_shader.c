@@ -316,18 +316,6 @@ static shader_t *FinishShader (void)
 		// process rgbGen
 		if (s->rgbGenType == RGBGEN_VERTEX && gl_config.identityLightValue_f == 1.0f)
 			s->rgbGenType = RGBGEN_EXACT_VERTEX;	// faster to fill
-		switch (s->rgbGenType)
-		{
-		case RGBGEN_NONE:	// rgbGen is not set
-		case RGBGEN_IDENTITY:
-			s->rgbaConst.rgba |= RGBA(1,1,1,0);		// RGB = 255, alpha - unchanged
-			s->rgbGenType = RGBGEN_CONST;
-			break;
-		case RGBGEN_IDENTITY_LIGHTING:
-			s->rgbaConst.c[0] = s->rgbaConst.c[1] = s->rgbaConst.c[2] = gl_config.identityLightValue;
-			s->rgbGenType = RGBGEN_CONST;
-			break;
-		}
 
 		// process alphaGen
 		if (s->alphaGenType == ALPHAGEN_IDENTITY)
@@ -425,6 +413,21 @@ shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber)
 	int			hash, i;
 	shader_t	*s, *dest;
 	shaderStage_t *stage, **pstages;
+
+	if (lightmapNumber == LIGHTMAP_NONE)
+	{
+		if (shader->lightmapNumber != LIGHTMAP_VERTEX || shader->numStages != 1)
+		{
+			Com_DPrintf ("SetLM(NONE) for non-vertexLM shader %s\n", shader->name);
+			shader->lightmapNumber = LIGHTMAP_NONE;		// bad situation, but ...
+		}
+		else
+		{
+			shader->lightmapNumber = LIGHTMAP_NONE;
+			shader->stages[0]->rgbGenType = RGBGEN_IDENTITY_LIGHTING;
+		}
+		return shader;
+	}
 
 	if (shader->lightmapNumber == LIGHTMAP_VERTEX)
 		return shader;
@@ -858,16 +861,14 @@ shader_t *GL_FindShader (char *name, int style)
 				stageIdx++;
 				stage->numAnimTextures = 1;
 				shaderImages[stageIdx * MAX_STAGE_TEXTURES] = style & SHADER_ENVMAP ? gl_reflImage : gl_reflImage2;
-#if 1
 				stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONE;
-				stage->rgbGenType = RGBGEN_VERTEX;
+				stage->rgbGenType = RGBGEN_EXACT_VERTEX;
+				// ?? should be VERTEX for non-[vertex-]lightmapped surfs, EXACT_VERTEX for LM
+				//    Why: vertex color computed already lightscaled (for Q2 maps, at least) -- EXACT_VERTEX; when
+				//    using VERTEX in backend, it will be lightscaled again -- darker when overbright>0.
+				//    SHADER_ENVMAP[2] is always for this sort of surfaces ? (always world, Q2 (non-Q3))
 				stage->alphaGenType = ALPHAGEN_CONST;
 				stage->rgbaConst.c[3] = 128;
-#else
-				stage->glState = GLSTATE_SRC_SRCCOLOR|GLSTATE_DST_ONEMINUSSRCCOLOR;
-				stage->rgbGenType = RGBGEN_VERTEX;
-				stage->alphaGenType = ALPHAGEN_IDENTITY;
-#endif
 				stage->tcGenType = TCGEN_ENVIRONMENT;
 			}
 			if (/* style & (SHADER_ENVMAP|SHADER_ENVMAP2) && */ style & (SHADER_TRANS33|SHADER_TRANS66))
@@ -989,6 +990,11 @@ void GL_ResetShaders (void)
 	st[0].alphaGenType = ALPHAGEN_VERTEX;
 	st[0].glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONE;//MINUSSRCALPHA/*|GLSTATE_DEPTHWRITE|GLSTATE_ALPHA_GT0*/;
 	st[0].tcGenType = TCGEN_TEXTURE;
+	// scale
+	tcmod = NewTcModStage (st);
+	tcmod->type = TCMOD_SCALE;
+	tcmod->tScale = 1.0f / 12;
+	tcmod->sScale = 1;
 	shaderImages[0] = GL_FindImage ("fx/rail2", 0);		// no mipmaps here
 	sh.lightmapNumber = LIGHTMAP_NONE;
 	st[0].numAnimTextures = 1;
@@ -1006,7 +1012,7 @@ void GL_ResetShaders (void)
 	// scale
 	tcmod = NewTcModStage (st);
 	tcmod->type = TCMOD_SCALE;
-	tcmod->tScale = 0.25;
+	tcmod->tScale = 1.0f / 63;
 	tcmod->sScale = 1;
 	// scroll
 	tcmod = NewTcModStage (st);
@@ -1030,7 +1036,7 @@ void GL_ResetShaders (void)
 	tcmod = NewTcModStage (st);
 	tcmod->type = TCMOD_SCALE;
 	tcmod->sScale = 0;
-	tcmod->tScale = 1;
+	tcmod->tScale = 1.0f / 35;
 	// scroll
 	tcmod = NewTcModStage (st);
 	tcmod->type = TCMOD_SCROLL;

@@ -490,7 +490,7 @@ static node_t *SphereLeaf (vec3_t origin, float radius)
 		{
 			// both sides -- go origin's side first
 			// (what this will do: if localOrigin point is visible, return PointLeaf(org))
-			if (dist > 0)
+			if (!IsNegative (dist))
 			{
 				stack[sptr++] = node->children[1];
 				node = node->children[0];
@@ -505,7 +505,7 @@ static node_t *SphereLeaf (vec3_t origin, float radius)
 }
 
 
-// Find nearest visible by draw order leaf, occupied by entity sphere,
+// Find nearest (by draw order) visible leaf, occupied by entity sphere,
 // or nearest to a sphere center leaf with alpha surfaces (if one)
 static node_t *AlphaSphereLeaf (vec3_t origin, float radius)
 {
@@ -552,13 +552,13 @@ static node_t *AlphaSphereLeaf (vec3_t origin, float radius)
 		dist = DISTANCE_TO_PLANE(origin, node->plane);
 		if (dist > radius)
 			node = node->children[0];	// side 1
-		else if (dist < -radius)		// use mradius = -radius for speedup ??
+		else if (dist < -radius)
 			node = node->children[1];	// side 2
 		else
 		{
 			// both sides -- go origin's side first
 			// (what this will do: if localOrigin point is visible, return PointLeaf(org))
-			if (dist > 0)
+			if (!IsNegative (dist))
 			{
 				stack[sptr++] = node->children[1];
 				node = node->children[0];
@@ -570,6 +570,99 @@ static node_t *AlphaSphereLeaf (vec3_t origin, float radius)
 			}
 		}
 	}
+}
+
+
+// Find nearest (by draw order) visible leaf, occupied by beam
+static node_t *BeamLeaf (vec3_t v1, vec3_t v2)
+{
+	int		sptr, drawOrder;
+	node_t	*node, *drawNode;
+	vec3_t	v1a, v2a;
+	struct {
+		node_t	*node;
+		vec3_t	v1, v2;
+	} stack[MAX_TREE_DEPTH], *st;
+
+	sptr = 0;
+	node = map.nodes;
+	drawOrder = 0;
+	drawNode = NULL;
+	VectorCopy (v1, v1a);
+	VectorCopy (v2, v2a);
+
+#define PUSH_NODE(n, start, end) \
+	st = &stack[sptr++]; \
+	st->node = n;		\
+	VectorCopy (start, st->v1); \
+	VectorCopy (end, st->v2);
+
+#define POP_NODE()		\
+	if (!sptr)			\
+		node = NULL;	\
+	else				\
+	{					\
+		st = &stack[--sptr]; \
+		node = st->node; \
+		VectorCopy (st->v1, v1a); \
+		VectorCopy (st->v2, v2a); \
+	}
+
+	while (node)
+	{
+		float	t1, t2, frac;
+		int		s1, s2, side, i;
+		vec3_t	mid;
+
+		if (node->visFrame != visFrame)
+		{
+			POP_NODE();
+			continue;
+		}
+		if (!node->isNode)
+		{
+			// leaf found
+			if (node->frame != drawFrame)
+			{
+				POP_NODE();
+				continue;
+			}
+
+			if (node->drawOrder > drawOrder)
+			{
+				drawOrder = node->drawOrder;
+				drawNode = node;
+			}
+			POP_NODE();
+			continue;
+		}
+
+		// node
+		t1 = DISTANCE_TO_PLANE(v1a, node->plane);
+		t2 = DISTANCE_TO_PLANE(v2a, node->plane);
+		s1 = IsNegative (t1); s2 = IsNegative (t2);
+		if (!(s1 | s2))
+			node = node->children[0];		// side 1
+		else if (s1 & s2)
+			node = node->children[1];		// side 2
+		else
+		{
+			// both sides
+			frac = t1 / (t1 - t2);			// t1 and t2 have different signs, so - |t1-t2| > |t1|, frac in [0..1] range
+			side = t1 < t2;					// which side v1 on (child index)
+			for (i = 0; i < 3; i++)
+				mid[i] = v1a[i] + frac * (v2a[i] - v1a[i]);
+			// Recurse(node->children[side^1],mid,v2a)  -- later
+			PUSH_NODE(node->children[side^1], mid, v2a);
+			// Recurse(node->children[side],v1a,mid)
+			VectorCopy (mid, v2a);
+			node = node->children[side];
+		}
+	}
+#undef PUSH_NODE
+#undef POP_NODE
+
+	return drawNode;
 }
 
 
@@ -617,11 +710,11 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 					dist = DISTANCE_TO_PLANE(vieworg, &pl->plane);
 					if (cull == CULL_FRONT)
 					{
-						if (dist < -8) CULL_SURF;
+						if (dist < -8) CULL_SURF;		//?? 8 (try different, make "const")
 					}
 					else
 					{
-						if (dist > 8) CULL_SURF;
+						if (dist > 8) CULL_SURF;		//??
 					}
 				}
 			}
@@ -649,7 +742,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 				unsigned mask;
 
 				sdl = pl->dlights = GL_AllocDynamicMemory (sizeof(surfDlight_t) * MAX_DLIGHTS);
-				if (!sdl) surf->dlightMask = 0;		// easiest way to break the loop below
+				if (!sdl) surf->dlightMask = 0;		// easiest way to break the loop below; speed does not matter here
 				for (j = 0, mask = 1, dl = vp.dlights; j < vp.numDlights; j++, dl++, mask <<= 1)
 					if (surf->dlightMask & mask)
 					{
@@ -897,12 +990,13 @@ static void AddBeamSurfaces (beam_t *b)
 
 #define CYLINDER_PARTS	16		// should be even number
 #define CYLINDER_FIX_ALPHA
+#define MIN_FIXED_ALPHA			0.2f
 
 static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 {
 	vec3_t	viewDir;
 	vec3_t	axis[3];		// length, width, depth
-	float	len, angle, anglePrev, angleStep;
+	float	len, st0, angle, anglePrev, angleStep;
 	int		i;
 #ifdef CYLINDER_FIX_ALPHA
 	vec3_t	v;
@@ -918,6 +1012,8 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 	CrossProduct (axis[0], viewDir, axis[1]);
 	VectorNormalizeFast (axis[1]);
 	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
+
+	st0 = VectorDistance (b->drawEnd, b->end);
 
 #ifdef CYLINDER_FIX_ALPHA
 	// compute minimal distance to beam
@@ -986,14 +1082,13 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 		VectorAdd (b->drawStart, dir2, p->verts[3].xyz);
 		VectorAdd (b->drawEnd, dir2, p->verts[2].xyz);
 
-		p->verts[0].st[1] = p->verts[3].st[1] = len / (b->radius * 2 * M_PI);
-		p->verts[1].st[1] = p->verts[2].st[1] = 0;
+		p->verts[0].st[1] = p->verts[3].st[1] = len + st0;
+		p->verts[1].st[1] = p->verts[2].st[1] = st0;
 		p->verts[0].st[0] = p->verts[1].st[0] = anglePrev;
 		p->verts[2].st[0] = p->verts[3].st[0] = angle;
 
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = b->color.rgba;
 #ifdef CYLINDER_FIX_ALPHA
-#define MIN_FIXED_ALPHA			0.1f
 		// fix alpha: make it depends on angle (better image quality)
 		if (fixAngle >= 0)
 		{
@@ -1033,7 +1128,7 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 {
 	vec3_t	viewDir;
 	vec3_t	axis[3];		// length, width, depth
-	float	len, angle;
+	float	len, st0, angle;
 	int		i;
 
 	VectorSubtract (b->drawStart, vp.vieworg, viewDir);
@@ -1043,6 +1138,8 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 	CrossProduct (axis[0], viewDir, axis[1]);
 	VectorNormalizeFast (axis[1]);
 	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
+
+	st0 = VectorDistance (b->drawEnd, b->end);
 
 	angle = 0;
 	for (i = 0; i < BEAM_PARTS; i++)
@@ -1071,8 +1168,8 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 		VectorAdd (b->drawStart, dir2, p->verts[3].xyz);
 		VectorAdd (b->drawEnd, dir2, p->verts[2].xyz);
 
-		p->verts[0].st[1] = p->verts[3].st[1] = len / (b->radius * 2 * M_PI);
-		p->verts[1].st[1] = p->verts[2].st[1] = 0;
+		p->verts[0].st[1] = p->verts[3].st[1] = len + st0;
+		p->verts[1].st[1] = p->verts[2].st[1] = st0;
 		p->verts[0].st[0] = p->verts[1].st[0] = 0;
 		p->verts[2].st[0] = p->verts[3].st[0] = 1;
 
@@ -1484,10 +1581,10 @@ static void DrawParticles (void)
 
 			VectorAdd (b->drawStart, b->drawEnd, center);
 			VectorScale (center, 0.5f, center);
-			leaf = AlphaSphereLeaf (center, VectorDistance (b->drawStart, center));
+			leaf = BeamLeaf (b->drawStart, b->drawEnd);
 		}
 
-		if (leaf && leaf->frame == drawFrame)
+		if (leaf)
 		{
 			b->drawNext = leaf->drawBeam;
 			leaf->drawBeam = b;
@@ -1624,7 +1721,7 @@ static void DrawFlares (void)
 			{	// sun flare
 				vec3_t	tracePos;
 
-				VectorMA (vp.vieworg, 99999, f->origin, tracePos);
+				VectorMA (vp.vieworg, BIG_NUMBER, f->origin, tracePos);
 				CM_BoxTrace (&trace, vp.vieworg, tracePos, zero, zero, 0, CONTENTS_SOLID);
 				ClipTraceToEntities (&trace, vp.vieworg, tracePos, CONTENTS_SOLID);
 				if (!(trace.fraction < 1 && trace.surface->flags & SURF_SKY))

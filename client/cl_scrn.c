@@ -245,7 +245,7 @@ void SCR_DrawCenterString (void)
 	int		remaining;
 
 	// the finale prints the characters one at a time
-	remaining = 9999;
+	remaining = BIG_NUMBER;
 
 	scr_erase_center = 0;
 	start = scr_centerstring;

@@ -38,13 +38,13 @@ BUGS:
 ! map "trainstation": very slow (10-20ms) server (AMD K6-2+) (slow SV_AreaEdicts(), >800 times/sv_frame)
 ! unpack PVS in LoadBsp(); use unpacked version in renderer and CM_InPVS() etc.
 - option "Screen Flashes" (flash scale ? -- 0 - invisible, 1 - as is)
-? multibind (cycle few binds when bind activated) -- UT2003 after patch have this (or use 'bind xx "cycle ww w1 w2 w3;use $ww"' ?)
 
 - if Win32 can't get keyboard focus, "set r_fullscreen 0" (as Unreal2)
 BINDS:
   - bind key "action1"|onrelease "action2" (Unreal-like)
-  ? bindtmp, aliastmp (not stered in config ?)
+  ? bindtmp, aliastmp (not stered in config ?) ("bind [-temp] <key> <action>", "alias ...")
 SAVEGAMES:
+  - check compatibility with original Q2 savegames
   ? show game time (like Anachronox)
   - quicksave: save to a few (4?) slots
   - sort savegames by time, ignore slots; any number of savegames (?)
@@ -166,6 +166,10 @@ BSP:
 ? server: if game_time is comparable (or greater than ?) with ref_time, need to Sleep(game_time) every frame between game
   frames (smooth FPS)
 ? CHECK: sv_user.c :: SV_ExecuteUserCmd() ("false")
+?? cl_maxfps: can better control max FPS (currently: if non-limited fps is 250 (4ms) and set limit to 200 (5ms), real fps will
+  be 125 (8ms) (really, 170 -- not 200!)); improve: move FPS control to CommonFrame(): we can know, how much can Sleep()
+  (CHECK: may be, current implementation is correct -- can't get exact maxfps, when fps is large -- 1ms->1000fps, 2ms->500fsp:
+  small difference in ms, large in fps)
 
 --------- REF_GL (new) -----------
 

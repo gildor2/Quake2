@@ -15,6 +15,7 @@
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
+	".\win32\winquake.h"\
 	
 
 .\client\cl_cin.c : \
@@ -638,6 +639,7 @@
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
 	".\ref_gl\gl_sky.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -656,6 +658,7 @@
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -676,6 +679,7 @@
 	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -692,6 +696,7 @@
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -707,6 +712,7 @@
 	".\ref_gl\gl_interface.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -726,6 +732,7 @@
 	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -742,8 +749,10 @@
 	".\ref_gl\gl_light.h"\
 	".\ref_gl\gl_lightmap.h"\
 	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -764,6 +773,7 @@
 	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -780,6 +790,7 @@
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -800,6 +811,7 @@
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_poly.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -813,6 +825,7 @@
 	".\ref_gl\gl_interface.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_poly.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -829,6 +842,7 @@
 	".\ref_gl\gl_interface.h"\
 	".\ref_gl\gl_local.h"\
 	".\ref_gl\gl_shader.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -845,9 +859,11 @@
 	".\ref_gl\gl_interface.h"\
 	".\ref_gl\gl_light.h"\
 	".\ref_gl\gl_local.h"\
+	".\ref_gl\gl_math.h"\
 	".\ref_gl\gl_model.h"\
 	".\ref_gl\gl_shader.h"\
 	".\ref_gl\gl_sky.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	
 
@@ -860,6 +876,7 @@
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_interface.h"\
 	".\ref_gl\gl_local.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	".\win32\glw_win.h"\
 	".\win32\winquake.h"\
@@ -874,6 +891,7 @@
 	".\qcommon\qfiles.h"\
 	".\ref_gl\gl_interface.h"\
 	".\ref_gl\gl_local.h"\
+	".\ref_gl\glext.h"\
 	".\ref_gl\qgl_decl.h"\
 	".\ref_gl\qgl_impl.h"\
 	".\win32\glw_win.h"\

@@ -303,8 +303,8 @@ void GLimp_SetGamma (float gamma, float intens)
 	if (!gammaStored) return;
 
 	gamma = bound(gamma, 0.5, 3);
-	contr = bound(r_contrast->value, 0.5, 1.5);
-	bright = bound(r_brightness->value, 0.5, 1.5);
+	contr = bound(r_contrast->value, 0.1, 2);
+	bright = bound(r_brightness->value, 0.1, 2);
 
 //	DebugPrintf("set gamma %g, %g\n", gamma, intens);//!!
 
@@ -336,6 +336,10 @@ void GLimp_SetGamma (float gamma, float intens)
 #define GAMMA_OFFSET	0.5
 			m = i * (GAMMA_ANGLE*256) + (int)(GAMMA_OFFSET*65536);
 			if (v > m) v = m;
+#define GAMMA_ANGLE2	1
+#define GAMMA_OFFSET2	-0.5
+			m = i * (GAMMA_ANGLE2*256) + (int)(GAMMA_OFFSET2*65536);
+			if (v < m) v = m;
 #else
 			m = Q_round (i * a * 256 + b * 65535);
 			if (v > m) v = m;

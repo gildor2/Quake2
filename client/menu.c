@@ -1843,7 +1843,7 @@ static void StartServer_MenuInit( void )
 		{
 			char	name[256];
 
-			Q_strncpylower (name, COM_ParseExt (&s, true), sizeof(name));
+			Q_strncpylower (name, COM_ParseExt (&s, true), sizeof(name)-1);
 			if (!name[0]) break;
 			item = AllocChainBlock (mapNamesChain, sizeof(basenamed_t));
 			item->name = ChainCopyString (va("%s\n%s", COM_ParseExt (&s, false), name), mapNamesChain);
@@ -2451,7 +2451,7 @@ static void RColorCallback (void *unused)
 
 static void RateCallback (void *unused)
 {
-	if (s_player_rate_box.curvalue != sizeof(rate_tbl) / sizeof(*rate_tbl) - 1)
+	if (s_player_rate_box.curvalue != ARRAY_COUNT(rate_tbl) - 1)
 		Cvar_SetInteger ("rate", rate_tbl[s_player_rate_box.curvalue]);
 }
 
@@ -2703,7 +2703,7 @@ static qboolean PlayerConfig_MenuInit (void)
 	s_player_handedness_box.curvalue = Cvar_VariableInt ("hand");
 	s_player_handedness_box.itemnames = handedness;
 
-	for (i = 0; i < sizeof(rate_tbl) / sizeof(*rate_tbl) - 1; i++)
+	for (i = 0; i < ARRAY_COUNT(rate_tbl) - 1; i++)
 		if (Cvar_VariableInt ("rate") == rate_tbl[i])
 			break;
 
@@ -2821,7 +2821,7 @@ static void PlayerConfig_MenuDraw (void)
 		refdef.entities = e;
 //		refdef.lightstyles = NULL;
 		refdef.dlights = dl;
-		refdef.num_dlights = sizeof(dl) / sizeof(dlight_t);
+		refdef.num_dlights = ARRAY_COUNT(dl);
 	}
 	refdef.rdflags = RDF_NOWORLDMODEL;
 
@@ -2937,7 +2937,7 @@ static thumbLayout_t thumbLayout[] =
 	{640, 2, 2, 192, 144},
 	{800, 3, 3, 192, 144},
 	{1024, 3, 3, 256, 192},
-	{99999, 4, 4, 256, 192}
+	{BIG_NUMBER, 4, 4, 256, 192}
 };
 
 /*
