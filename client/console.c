@@ -38,9 +38,9 @@ typedef struct
 
 static console_t con;
 
-static cvar_t	*con_notifytime;
-static cvar_t	*con_wordwrap;
-static cvar_t	*con_colortext;
+static cvar_t	*con_notifyTime;
+static cvar_t	*con_wordWrap;
+static cvar_t	*con_colorText;
 
 
 static bool		chat_team;
@@ -84,7 +84,7 @@ void DrawStringCommon (int x, int y, const char *s)
 				continue;
 			}
 		}
-		if (color != 7 && con_colortext->integer)
+		if (color != 7 && con_colorText->integer)
 			re.DrawCharColor (x, y, c, color);
 		else
 			re.DrawCharColor (x, y, c, 7);
@@ -107,20 +107,6 @@ void Con_ToggleConsole_f (void)
 	if (cls.keep_console) return;
 
 	SCR_EndLoadingPlaque ();	// get rid of loading plaque
-
-#if 0
-	if (cl.attractloop)
-	{
-		Cbuf_AddText ("killserver\n");
-		return;
-	}
-
-	if (cls.state == ca_disconnected)
-	{	// start the demo loop again
-		Cbuf_AddText ("d1\n");
-		return;
-	}
-#endif
 
 	Key_ClearTyping ();
 	Con_ClearNotify ();
@@ -247,11 +233,11 @@ void Con_CheckResize (void)
 	char	c;
 	bool	w;
 
-	w = (con_wordwrap && con_wordwrap->integer);
+	w = (con_wordWrap && con_wordWrap->integer);
 	if (w != con.wordwrap)
 	{
 		linewidth = -1;					// force resize
-		con.wordwrap = con_wordwrap->integer != 0;
+		con.wordwrap = con_wordWrap->integer != 0;
 	}
 
 	width = (viddef.width >> 3) - 2;
@@ -586,7 +572,7 @@ void Con_DrawNotify (qboolean drawBack)
 		if (time == 0) continue;
 
 		time = cls.realtime - time;
-		if (time > con_notifytime->value * 1000) continue;
+		if (time > con_notifyTime->value * 1000) continue;
 
 		if (pos == -1)
 		{
@@ -708,11 +694,8 @@ void Con_DrawConsole (float frac)
 
 	topline = con.current - con.totallines + 1; // number of top line in buffer
 
-	/*----------- fix con.display if out of buffer -------------*/
-	if (con.display < topline)
-		con.display = topline;
-	else if (con.display > con.current)
-		con.display = con.current;
+	// fix con.display if out of buffer
+	con.display = bound(con.display, topline, con.current);
 
 	if (con.totallines && con.display != con.current)
 	{
@@ -766,7 +749,7 @@ void Con_DrawConsole (float frac)
 
 				if (c == '\n' || c == WRAP_CHAR) break;
 
-				if (!con_colortext->integer) color = 7;
+				if (!con_colorText->integer) color = 7;
 				if (!(*re.flags & REF_CONSOLE_ONLY))
 					re.DrawCharColor ((x + 1) * 8, y, c, color);
 				else
@@ -841,10 +824,190 @@ static bool iswordsym (char n)
 	return (n >= '0' && n <= '9') || (n >= 'A' && n <= 'Z') || (n >= 'a' && n <= 'z') || n == '_';
 }
 
-void Key_Console (int key)
+void Key_Console (int key, int modKey)
 {
-	int		i, KEY;
+	int		i;
+	char	*s;
 
+	if (modKey == K_INS && SHIFT_PRESSED)
+		modKey = 'v'+MOD_CTRL;			// Shift-Ins -> Ctrl-V (move to keys.c ??)
+
+	switch (modKey)
+	{
+	case MOD_CTRL+'v':
+		if (s = Sys_GetClipboardData ())
+		{
+//			strtok (s, "\n\r\b");
+			i = strlen (s);
+			if (i + editPos > MAXCMDLINE - 1)
+				i = MAXCMDLINE - editPos - 1;
+
+   			if (i > 0)
+			{
+				s[i] = 0;
+				strcat (editLine, s);
+				editPos += i;
+			}
+			free (s);
+		}
+		return;
+
+	case MOD_CTRL+'l':
+		Cbuf_AddText ("clear\n");
+		return;
+
+	case K_ENTER:
+	case K_KP_ENTER:
+		// trim spaces at line end
+/*		for (i = strlen (editLine) - 1; i >= 0; i--)
+			if (editLine[i] == ' ')
+				editLine[i] = 0;
+			else
+				break; */
+		// backslash text are commands, else chat
+		if (editLine[1] == '\\' || editLine[1] == '/')
+			Cbuf_AddText (editLine + 2);			// skip the prompt
+		else
+			Cbuf_AddText (editLine + 1);			// valid command
+		Cbuf_AddText ("\n");
+
+		Com_Printf ("%s\n", editLine);
+		if (!editLine[1])							// do not add empty line to history
+		{
+			Key_ClearTyping ();
+			return;
+		}
+
+		// find the same line in history and remove it
+		for (i = 0; i < historyCount; i++)
+			if (!strcmp (history[i], editLine))
+			{
+				if (i != historyCount - 1) memcpy (history[i], history[i+1], sizeof(history[0]) * (historyCount - 1 - i));
+				historyCount--;
+				break;
+			}
+
+		// add current line to history
+		if (historyCount < MAX_HISTORY)
+			historyCount++;
+		else
+			memcpy (history[0], history[1], sizeof(history[0]) * (MAX_HISTORY - 1));
+		memcpy (history[historyCount-1], editLine, sizeof(editLine));
+		historyLine = historyCount;
+		// prepare new line
+		Key_ClearTyping ();
+		if (cls.state == ca_disconnected)
+			SCR_UpdateScreen ();					// force an update, because the command may take some time
+		return;
+
+	case K_TAB:
+		// command completion
+		CompleteCommand ();
+		return;
+
+	case K_LEFTARROW:
+	case K_BACKSPACE:
+	case MOD_CTRL+K_LEFTARROW:
+	case MOD_CTRL+K_BACKSPACE:
+		if (editPos <= 1) return;
+		i = editPos;
+		if (modKey >= MOD_CTRL)			// CTRL_PRESSED
+		{
+			while (editPos > 1 && !iswordsym (editLine[--editPos]));
+			while (editPos > 0 && iswordsym (editLine[--editPos]));
+			editPos++;
+		}
+		else
+			editPos--;
+
+		if (key == K_BACKSPACE)		// not modKey ! (i.e. without modifier)
+			strcpy (&editLine[editPos], &editLine[i]);
+		return;
+
+	case K_RIGHTARROW:
+		if (editLine[editPos]) editPos++;
+		return;
+
+	case MOD_CTRL+K_RIGHTARROW:
+		while (editLine[editPos] && iswordsym (editLine[editPos])) editPos++;
+		while (editLine[editPos] && !iswordsym (editLine[editPos])) editPos++;
+		return;
+
+	case K_DEL:
+		s = &editLine[editPos];
+		strcpy (s, s + 1);
+		return;
+
+	case MOD_CTRL+K_DEL:
+		s = &editLine[editPos];
+		*s = 0;
+		return;
+
+	case K_UPARROW:
+//	case MOD_CTRL+'p':
+		if (!historyLine) return;					// empty or top of history
+
+		strcpy (editLine, history[--historyLine]);
+		editPos = strlen (editLine);
+		return;
+
+	case K_DOWNARROW:
+//	case MOD_CTRL+'n':
+		if (historyLine >= historyCount) return;	// bottom of history
+
+		historyLine++;
+		if (historyLine == historyCount)
+			Key_ClearTyping ();
+		else
+		{
+			strcpy (editLine, history[historyLine]);
+			editPos = strlen (editLine);
+		}
+		return;
+
+	case MOD_CTRL+K_PGUP:
+	case K_MWHEELUP:
+		con.display -= 8;
+		return;
+
+	case MOD_CTRL+K_PGDN:
+	case K_MWHEELDOWN:
+		con.display += 8;
+		return;
+
+	case K_PGUP:
+	case MOD_CTRL+K_MWHEELUP:
+		con.display -= 2;
+		if (con.display < con.current - con.totallines + 10)
+			con.display = con.current - con.totallines + 10;
+		return;
+
+	case K_PGDN:
+	case MOD_CTRL+K_MWHEELDOWN:
+		con.display += 2;
+		return;
+
+	case K_HOME:
+		editPos = 1;
+		return;
+
+	case K_END:
+		editPos = strlen (editLine);
+		return;
+
+	case MOD_CTRL+K_HOME:
+		con.display = con.current - con.totallines + 10;
+		return;
+
+	case MOD_CTRL+K_END:
+		con.display = con.current;
+		return;
+	}
+
+	if (modKey >= MOD_CTRL)
+		return;					// do not allow CTRL/ALT+key to produce chars
+
+	// numpad keys -> ASCII
 	switch (key)
 	{
 	case K_KP_SLASH:
@@ -889,198 +1052,6 @@ void Key_Console (int key)
 	case K_KP_DEL:
 		key = '.';
 		break;
-	}
-
-	KEY = toupper (key);
-	if (KEY == 'V' && CTRL_PRESSED || key == K_INS && SHIFT_PRESSED)	// Ctrl-V or Shift-Ins
-	{
-		char	*cbd;
-
-		if (cbd = Sys_GetClipboardData ())
-		{
-//			strtok (cbd, "\n\r\b");
-			i = strlen (cbd);
-			if (i + editPos > MAXCMDLINE - 1)
-				i = MAXCMDLINE - editPos - 1;
-
-			if (i > 0)
-			{
-				cbd[i] = 0;
-				strcat (editLine, cbd);
-				editPos += i;
-			}
-			free (cbd);
-		}
-
-		return;
-	}
-
-	if (KEY == 'L' && CTRL_PRESSED)		// Ctrl-L
-	{
-		Cbuf_AddText ("clear\n");
-		return;
-	}
-
-	if (key == K_ENTER || key == K_KP_ENTER)
-	{
-		// trim spaces at line end
-/*		for (i = strlen (editLine) - 1; i >= 0; i--)
-			if (editLine[i] == ' ')
-				editLine[i] = 0;
-			else
-				break; */
-		// backslash text are commands, else chat
-		if (editLine[1] == '\\' || editLine[1] == '/')
-			Cbuf_AddText (editLine + 2);			// skip the prompt
-		else
-			Cbuf_AddText (editLine + 1);			// valid command
-		Cbuf_AddText ("\n");
-
-		Com_Printf ("%s\n", editLine);
-		if (!editLine[1])							// do not add empty line to history
-		{
-			Key_ClearTyping ();
-			return;
-		}
-
-		// find the same line in history and remove it
-		for (i = 0; i < historyCount; i++)
-			if (!strcmp (history[i], editLine))
-			{
-				if (i != historyCount - 1) memcpy (history[i], history[i+1], sizeof(history[0]) * (historyCount - 1 - i));
-				historyCount--;
-				break;
-			}
-
-		// add current line to history
-		if (historyCount < MAX_HISTORY)
-			historyCount++;
-		else
-			memcpy (history[0], history[1], sizeof(history[0]) * (MAX_HISTORY - 1));
-		memcpy (history[historyCount-1], editLine, sizeof(editLine));
-		historyLine = historyCount;
-		// prepare new line
-		Key_ClearTyping ();
-		if (cls.state == ca_disconnected)
-			SCR_UpdateScreen ();					// force an update, because the command may take some time
-		return;
-	}
-
-	if (key == K_TAB)
-	{	// command completion
-		CompleteCommand ();
-		return;
-	}
-
-	if (key == K_LEFTARROW || key == K_BACKSPACE)
-	{
-		if (editPos <= 1) return;
-		i = editPos;
-		if (CTRL_PRESSED)
-		{
-			while (editPos > 1 && !iswordsym (editLine[--editPos]));
-			while (editPos > 0 && iswordsym (editLine[--editPos]));
-			editPos++;
-		}
-		else
-			editPos--;
-
-		if (key == K_BACKSPACE)
-			strcpy (&editLine[editPos], &editLine[i]);
-		return;
-	}
-
-	if (key == K_RIGHTARROW)
-	{
-		if (CTRL_PRESSED)
-		{
-			while (editLine[editPos] && iswordsym (editLine[editPos])) editPos++;
-			while (editLine[editPos] && !iswordsym (editLine[editPos])) editPos++;
-		}
-		else
-			if (editLine[editPos]) editPos++;
-		return;
-	}
-
-	if (key == K_DEL)
-	{
-		char	*s;
-
-		s = &editLine[editPos];
-		if (CTRL_PRESSED)
-			*s = 0;
-		else
-			strcpy (s, s + 1);
-		return;
-	}
-
-	if (key == K_UPARROW || (KEY == 'P' && CTRL_PRESSED))
-	{
-		if (!historyLine) return;					// empty or top of history
-
-		strcpy (editLine, history[--historyLine]);
-		editPos = strlen (editLine);
-		return;
-	}
-
-	if (key == K_DOWNARROW || (KEY == 'N' && CTRL_PRESSED))
-	{
-		if (historyLine >= historyCount) return;	// bottom of history
-
-		historyLine++;
-		if (historyLine == historyCount)
-			Key_ClearTyping ();
-		else
-		{
-			strcpy (editLine, history[historyLine]);
-			editPos = strlen (editLine);
-		}
-		return;
-	}
-
-	if (key == K_MWHEELUP)
-	{
-		con.display -= 8;
-		return;
-	}
-
-	if (key == K_MWHEELDOWN)
-	{
-		con.display += 8;
-		return;
-	}
-
-	if (key == K_PGUP)
-	{
-		con.display -= 2;
-		if (con.display < con.current - con.totallines + 10)
-			con.display = con.current - con.totallines + 10;
-		return;
-	}
-
-	if (key == K_PGDN)
-	{
-		con.display += 2;
-		return;
-	}
-
-	if (key == K_HOME)
-	{
-		if (CTRL_PRESSED)
-			con.display = con.current - con.totallines + 10;
-		else
-			editPos = 1;
-		return;
-
-	}
-
-	if (key == K_END)
-	{
-		if (CTRL_PRESSED)
-			con.display = con.current;
-		else
-			editPos = strlen (editLine);
-		return;
 	}
 
 	if (key < 32 || key >= 128)
@@ -1165,25 +1136,19 @@ static void Con_MessageMode2_f (void)
 void Con_Init (void)
 {
 CVAR_BEGIN(vars)
-	CVAR_VAR(con_notifytime, 3, 0),
-	CVAR_VAR(con_wordwrap, 1, CVAR_ARCHIVE),
-	CVAR_VAR(con_colortext, 1, CVAR_ARCHIVE)
+	CVAR_VAR(con_notifyTime, 3, 0),
+	CVAR_VAR(con_wordWrap, 1, CVAR_ARCHIVE),
+	CVAR_VAR(con_colorText, 1, CVAR_ARCHIVE)
 CVAR_END
 
 	if (con_initialized) return;
 
+	Cvar_GetVars (ARRAY_ARG(vars));
 	linewidth = -1;		// force Con_CheckResize()
 
 	if (!con.started) Con_Clear_f ();
 
 	Con_CheckResize ();
-
-	Com_Printf ("Console initialized.\n");
-
-	//-------- register our commands/cvars ----------
-	con_notifytime = Cvar_Get ("con_notifytime", "3", 0);
-	con_wordwrap = Cvar_Get ("con_wordwrap", "1", CVAR_ARCHIVE);
-	con_colortext = Cvar_Get ("con_colortext", "1", CVAR_ARCHIVE);
 
 	Cmd_AddCommand ("toggleconsole", Con_ToggleConsole_f);
 	Cmd_AddCommand ("messagemode", Con_MessageMode_f);
@@ -1192,4 +1157,5 @@ CVAR_END
 	Cmd_AddCommand ("condump", Con_Dump_f);
 
 	con_initialized = true;
+	Com_Printf ("Console initialized.\n");
 }

@@ -99,7 +99,7 @@ static void Shaderlist_f (void)
 		Com_Printf ("%-3d %d  %s %2s %-2g %3s  %s%s\n", i, sh->numStages, boolNames[sh->fast], lmInfo,
 			sh->sortParam, shTypes[sh->type], sh->name, badNames[sh->bad]);
 	}
-	Com_Printf ("  %d shaders\n", n);
+	Com_Printf ("Displayed %d/%d shaders\n", n, shaderCount);
 }
 
 

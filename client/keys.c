@@ -9,9 +9,6 @@ static int		key_repeats[NUM_KEYS];	// if > 1, it is autorepeating
 
 //------------- bindings ------------------
 // each part is NUM_KEYS size: 1) normal keys 2) Ctrl+Key 3) Alt+Key
-#define MOD_CTRL	(NUM_KEYS)
-#define	MOD_ALT		(NUM_KEYS*2)
-
 #define NUM_BINDINGS	(NUM_KEYS*3)
 static char		*keybindings[NUM_BINDINGS];
 
@@ -718,7 +715,7 @@ static void Key_Bind_f (void)
 }
 
 
-void Key_Bindlist_f (void)
+static void Key_Bindlist_f (void)
 {
 	int		i, n;
 	char	*mask;
@@ -828,6 +825,11 @@ void Key_Event (int key, qboolean down, unsigned time)
 		{
 			// put away help computer / inventory (need another way ??)
 			Cbuf_AddText ("cmd putaway\n");
+			return;
+		}
+		if (/* cl.attractloop && */ cl.cinematictime > 0)
+		{
+			SCR_FinishCinematic ();		// stop cinematic
 			return;
 		}
 		switch (cls.key_dest)
@@ -958,7 +960,7 @@ void Key_Event (int key, qboolean down, unsigned time)
 		break;
 	case key_game:
 	case key_console:
-		Key_Console (key);
+		Key_Console (key, modKey);
 		break;
 	default:
 		Com_Error (ERR_FATAL, "Bad cls.key_dest %d", cls.key_dest);

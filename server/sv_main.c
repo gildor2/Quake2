@@ -1292,7 +1292,6 @@ void SV_UserinfoChanged (client_t *cl)
 	{
 		cl->messagelevel = atoi(val);
 	}
-
 }
 
 
@@ -1320,12 +1319,13 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(zombietime, 2, 0),
 	{&sv_showclamp, "showclamp", "0", 0},
 	{&sv_paused, "paused", "0", CVAR_CHEAT},
-	{&sv_enforcetime, "sv_enforcetime", "0", 0},
+	CVAR_VAR(sv_enforcetime, 0, 0),
 	CVAR_VAR(allow_download, 1, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_players, 0, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_models, 1, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_sounds, 1, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_maps, 1, CVAR_ARCHIVE),
+	{NULL, "protocol", STR(PROTOCOL_VERSION), CVAR_SERVERINFO|CVAR_NOSET},
 
 	CVAR_VAR(sv_noreload, 0, 0),
 
@@ -1336,16 +1336,13 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(sv_reconnect_limit, 3, CVAR_ARCHIVE),
 
 	CVAR_VAR(sv_extProtocol, 1, CVAR_SERVERINFO|CVAR_LATCH|CVAR_ARCHIVE),
-	CVAR_VAR(sv_camperSounds, 1, CVAR_SERVERINFO|CVAR_ARCHIVE)
+	CVAR_VAR(sv_camperSounds, 1, CVAR_SERVERINFO|CVAR_ARCHIVE),
+	CVAR_NULL(dmflags, 0, CVAR_SERVERINFO)			// old default value: 0 for game, DF_INSTANT_ITEMS (16) for server ?!
 //	CVAR_VAR(sv_fps, 20, 0)	// archive/serverinfo ??
 CVAR_END
 
-	SV_InitOperatorCommands	();
-
 	Cvar_GetVars (ARRAY_ARG(vars));
-	Cvar_Get ("dmflags", va("%d", DF_INSTANT_ITEMS), CVAR_SERVERINFO);
-	Cvar_Get ("protocol", va("%d", PROTOCOL_VERSION), CVAR_SERVERINFO|CVAR_NOSET);
-
+	SV_InitOperatorCommands	();
 	SZ_Init (&net_message, net_message_buffer, sizeof(net_message_buffer));
 }
 

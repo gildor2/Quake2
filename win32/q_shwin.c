@@ -189,5 +189,5 @@ void Sys_FindClose (void)
 {
 	if (findHandle != -1)
 		_findclose (findHandle);
-	findHandle = 0;
+	findHandle = -1;
 }

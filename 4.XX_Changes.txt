@@ -91,7 +91,9 @@ Comments:
   - disabled "set <var> <value>" commands from recorded demos
 - allowed cheatvars when server started with "cheats 1"
 - commandline: removed '-' parsing, added support for quotes
-- cinematic: ability to stop with any key (was incorrect when playing sequence of few cinematics)
+- cinematic:
+  - stopped with ESC (old: open menu)
+  - ability to stop with any key (old: incorrect when playing sequence of few cinematics)
 - menu: allowed binds to all keys (except ESC and "~")
 - better work with large FPS
 
@@ -147,8 +149,6 @@ Console/Menu
   - when pressing TAB twice (complete same thing twice), will appear popup with variants (if no more than 16 selections)
 - console edit:
   - Home / End - move cursor to the line start/end
-  - Crtl-Home / Ctrl-End will rewind console to begin/end of buffer
-    (old behaviour - same, but without Ctrl)
   - Left / Right - move cursor one char left/right
   - Ctrl-Left / Ctrl-Right - move cursor one word left/right
   - Del - delete char under cursor
@@ -156,6 +156,10 @@ Console/Menu
   - Backspace - delete char before cursor
   - Ctrl-Backspace - delete word before cursor
   - any char - insert text
+- history navigation:
+  - Crtl-Home / Ctrl-End will rewind console to begin/end of buffer (old behaviour: same, but without Ctrl)
+  - PgUp / PgDn will scroll history up/down (hold Ctrl to scroll faster)
+  - mouse wheel scroll history (hold Ctrl to scroll slower)
 - changed command history code to prevent appearing of empty lines and duplicates
 - console text colorizing in Q3-manner: ^0-^7 will change color (black-white); colored output can be disabled
     with "set con_colortext 0"

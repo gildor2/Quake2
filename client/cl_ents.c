@@ -1000,17 +1000,14 @@ static void CL_AddPacketEntities (void)
 		// RAFAEL
 		else if (effects & EF_SPINNINGLIGHTS)
 		{
+			vec3_t forward, start;
+
 			ent.angles[0] = 0;
 			ent.angles[1] = anglemod(cl.time/2) + s1->angles[1];
 			ent.angles[2] = 180;
-			{
-				vec3_t forward;
-				vec3_t start;
-
-				AngleVectors (ent.angles, forward, NULL, NULL);
-				VectorMA (ent.origin, 64, forward, start);
-				V_AddLight (start, 100, 1, 0, 0);
-			}
+			AngleVectors (ent.angles, forward, NULL, NULL);
+			VectorMA (ent.origin, 64, forward, start);
+			V_AddLight (start, 100, 1, 0, 0);
 		}
 		else
 		{	// interpolate angles
@@ -1026,33 +1023,35 @@ static void CL_AddPacketEntities (void)
 
 		if (s1->number == cl.playernum+1)
 		{
-			// add glow around player with COLOR_SHELL
+/*			Why disabled: works only for CURRENT player (not for others)
+			And: some mods creates many color shells -- glow should be a server-side decision ...
+			// add glow around player with COLOR_SHELL (have active powerups)
 			if (renderfx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE))
 			{
 				float	r, g, b;
 
-				r = g = b = frand () * 0.4;
+				r = g = b = frand () * 0.2f;
 				if (renderfx & RF_SHELL_RED)	r = 1;
 				if (renderfx & RF_SHELL_GREEN)	g = 1;
 				if (renderfx & RF_SHELL_BLUE)	b = 1;
-				V_AddLight (ent.origin, 96 + (frand() * 15), r, g, b);
-			}
+				V_AddLight (ent.origin, 96 + (frand() * 10), r, g, b);
+			} */
 
 			ent.flags |= RF_VIEWERMODEL;	// only draw from mirrors
 
-			if (effects & EF_FLAG1)
-				V_AddLight (ent.origin, 225, 1.0, 0.1, 0.1);
-			else if (effects & EF_FLAG2)
-				V_AddLight (ent.origin, 225, 0.1, 0.1, 1.0);
-			else if (effects & EF_TAGTRAIL)						//PGM
-				V_AddLight (ent.origin, 225, 1.0, 1.0, 0.0);	//PGM
-			else if (effects & EF_TRACKERTRAIL)					//PGM
-				V_AddLight (ent.origin, 225, -1.0, -1.0, -1.0);	//PGM
-
 			if (!(cl.refdef.rdflags & RDF_THIRD_PERSON))
 			{
+				if (effects & EF_FLAG1)
+					V_AddLight (ent.origin, 100, 1.0, 0.1, 0.1);
+				else if (effects & EF_FLAG2)
+					V_AddLight (ent.origin, 100, 0.1, 0.1, 1.0);
+				else if (effects & EF_TAGTRAIL)						//PGM
+					V_AddLight (ent.origin, 100, 1.0, 1.0, 0.0);	//PGM
+				else if (effects & EF_TRACKERTRAIL)					//PGM
+					V_AddLight (ent.origin, 100, -1.0, -1.0, -1.0);	//PGM
+
 				AddViewWeapon (renderfx);
-				continue;		//?? extend when implement mirrors (with renderfx!)
+				continue;		//?? extend when implement mirrors (with renderfx!); attention: be sure not to add effects later (i.e. twice)
 			}
 		}
 
@@ -1226,19 +1225,19 @@ static void CL_AddPacketEntities (void)
 			else if (effects & EF_FLAG1)
 			{
 				CL_FlagTrail (cent->lerp_origin, ent.origin, 242);
-				V_AddLight (ent.origin, 225, 1, 0.1, 0.1);
+				V_AddLight (ent.origin, 100, 1, 0.1, 0.1);
 			}
 			else if (effects & EF_FLAG2)
 			{
 				CL_FlagTrail (cent->lerp_origin, ent.origin, 115);
-				V_AddLight (ent.origin, 225, 0.1, 0.1, 1);
+				V_AddLight (ent.origin, 100, 0.1, 0.1, 1);
 			}
 //======
 //ROGUE
 			else if (effects & EF_TAGTRAIL)
 			{
 				CL_TagTrail (cent->lerp_origin, ent.origin, 220);
-				V_AddLight (ent.origin, 225, 1.0, 1.0, 0.0);
+				V_AddLight (ent.origin, 100, 1.0, 1.0, 0.0);
 			}
 			else if (effects & EF_TRACKERTRAIL)
 			{

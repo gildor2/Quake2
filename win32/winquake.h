@@ -53,3 +53,4 @@ extern qboolean in_needRestart;
 -----------------------------------------------------------------------------*/
 
 #undef SHIFT_PRESSED
+#undef MOD_ALT

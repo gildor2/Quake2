@@ -284,7 +284,7 @@ extern	cvar_t	*r_speeds;
 
 extern	cvar_t	*r_fullbright;
 extern	cvar_t	*r_novis;
-extern	cvar_t	*r_nocull;
+extern	cvar_t	*gl_frustumCull;
 extern	cvar_t	*r_lerpmodels;
 
 extern	float	gl_lightlevel;

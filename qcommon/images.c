@@ -1,5 +1,5 @@
 #include "qcommon.h"
-#include "../jpeg/jpeglib.h"
+#include "../lib/jpeglib/jpeglib.h"
 
 
 #define MAX_IMG_SIZE	2048

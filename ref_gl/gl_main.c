@@ -60,7 +60,7 @@ cvar_t	*gl_finish;			// debug ? (can be a situation, when gl_finish==1 is necess
 
 // debugging
 cvar_t	*gl_logFile;
-cvar_t	*r_novis, *r_nocull, *gl_oCull, *gl_facePlaneCull;
+cvar_t	*r_novis, *gl_frustumCull, *gl_oCull, *gl_backfaceCull;
 cvar_t	*r_speeds;
 cvar_t	*r_fullbright, *r_lightmap;
 cvar_t	*gl_showsky;
@@ -173,9 +173,9 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_nobind, 0, 0),
 	CVAR_VAR(gl_logFile, 0, 0),
 	CVAR_VAR(r_novis, 0, 0),
-	CVAR_VAR(r_nocull, 0, 0),
+	CVAR_VAR(gl_frustumCull, 1, 0),
 	CVAR_VAR(gl_oCull, 1, 0),
-	CVAR_VAR(gl_facePlaneCull, 1, 0),
+	CVAR_VAR(gl_backfaceCull, 1, 0),
 	CVAR_VAR(r_speeds, 0, 0),
 	CVAR_VAR(r_fullbright, 0, CVAR_CHEAT),
 	CVAR_VAR(r_lightmap, 0, CVAR_CHEAT),

@@ -723,7 +723,7 @@ Cvar_List_f
 static void Cvar_List_f (void)
 {
 	cvar_t	*var;
-	int		i;
+	int		n, total;
 	char	*mask;
 
 	if (Cmd_Argc() > 2)
@@ -737,14 +737,15 @@ static void Cvar_List_f (void)
 	else
 		mask = NULL;
 
-	i = 0;
+	n = total = 0;
 	for (var = cvar_vars; var; var = var->next)
 	{
 		char	s[6], *color;
 		int		flags;
 
+		total++;
 		if (mask && !MatchWildcard2 (var->name, mask, true)) continue;
-		i++;
+		n++;
 		flags = var->flags;
 		strcpy (s, "      ");
 		color = "";
@@ -772,7 +773,7 @@ static void Cvar_List_f (void)
 			s[5] = 'C';
 		Com_Printf ("%s %s%s \"%s\"\n", s, color, var->name, var->string);
 	}
-	Com_Printf ("    %d cvars\n", i);
+	Com_Printf ("Displayed %d/%d cvars\n", n, total);
 }
 
 

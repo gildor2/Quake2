@@ -18,6 +18,11 @@ properties:
   - nearby lights and strong lights should be stored implicitly (attention to surf_light: is it needed to specify, which
     point on surface is nearest, with ability to trace)
   ! should be useful when hardware lights will be implemented
+entity system:
+~~~~~~~~~~~~~~
+  - ability to cache entity lighting between frames
+  - ability to use light, computed for different entity (for example, player's light -> weapon model)
+    (BUT: do not use light values/directions -- use visibility info only ?!)
 implementation:
 ~~~~~~~~~~~~~~~
   1) gather all lights, potentially affected point (do not trace, but cull with distance/PVS)
@@ -96,6 +101,8 @@ lighting bugs:
     + check lighting with saturation == 0, == -1
   ? subdivide large surface lights (or trace additional points) when computing light (really, more complex task ...)
   ? weapon model for 3rd person entities: use light from main entity (compute 1 point instead of 2 -- ~2x speedup)
+  - do not trace model->light when both placed in the same leaf: leafs are convex, so - no way to occlude by bsp object
+    (may be, do not trace, when in the same CLUSTER ?)
   - movable inline model lighting (disabled now):
      ? incorrect intensity ("actcity2" - rotating gate) -- may be, for frame models too
      - make it with entity script only -- lightmaps by default (or reject by size)
@@ -118,6 +125,7 @@ lighting bugs:
   - example bugs:
     - map "underrain": have sky brushes (MYST) for cave lighting; when vieworg is inside such brush - only sky painted
       (oldgl: same as non-transparent water, combines 2 clusters vis)
+    - "ground" (not #3!): pos=(347,-755,318), dir=(1,0,0) -- vis bug
   - require to perform MarkLeafs() every frame (can replace node.vidFrame and node.frame with a single one); check MarkLeafs() speed --
     may be, speedup this process
 
@@ -241,6 +249,8 @@ Screenshots:
   - map $texture     -- map image with the same name as shader name (useful for shader templates)
   - map size <w> <h> -- change image size (for Q2 maps: allows to replace texture without resampling to original size)
   ? map color        -- change color of SURF_LIGHT source (see Q3/FAKK q3map_color etc. -- different name)
+  ? implement SHADER_ENVMAP[2]/SHADER_TRANS[33|66] etc. with templates (script, uses "if ... / else ... endif" with analyzing
+    shader flags -- whole GL_FindShader() default_shader part as script ?!!)
 
 HW occlusion:
   - model culling: use hw occlusion test (HP or NV), if NV -- can use LOD when model partially visible
@@ -306,3 +316,7 @@ FOR GAME:
   - should restart shaders: remove unnecessary shaders
 - make refEntity_t (rename it!), particle_t, beam_t to be derived from a single structure: { strucType, next, drawNext }, node_t (leaf)
   should have a single pointer to this list, not separate pointers to entities, particles, beams (sprites too ??)
+? CL_Cull() --(insert)-> GL_State()
+? RGBGEN_SPECULAR (rgb depends on viewer direction and light positions)
+? reflect flares from water/windows (see Raiman3)
+- shaders (load-time): when texture have no alpha-channel, but alpha-channel used as specular mask, remove specular mask

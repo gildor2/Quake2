@@ -635,7 +635,7 @@ static void DrawFpsInfo (void)
 	}
 
 	// draw info
-	if (avgFps < 10) color = RGB(1,0,0);
+	if (avgFps < 15) color = RGB(1,0,0);
 	else if (avgFps < 30) color = RGB(1,0,1);
 	else if (avgFps < 60) color = RGB(1,1,0);
 	else color = RGB(0,1,0);

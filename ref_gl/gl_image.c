@@ -239,16 +239,40 @@ static void ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *
 }
 
 
-//#define INT_SATURATE
+//#define INT_SATURATE		// should be disabled
+#define TBL_SATURATE		// should be enabled
 
 static void LightScaleTexture (unsigned *pic, int width, int height)
 {
 	float	sat;
 	int		i, c;
+	byte	*p;
 #ifdef INT_SATURATE
 	int		isat = Q_round (r_saturation->value * 255);
 #endif
-	byte	*p;
+#ifdef TBL_SATURATE
+	static float lastSat = 1.0f;		// when sat. == 1 -- pic will not be changed
+	static int sat1[256 * 3];
+	static int sat2[256];
+	float	tmp;
+
+	if (r_saturation->value != lastSat)
+	{
+		/*
+			l = (r+g+b)/3
+			c' = l + (c-l)*s = l*(1-s) + c*s = sat1(r,g,b) + sat2(c)
+			sat1(r,g,b) = (r+g+b)/3 * (1-s)
+			sat2(c) = c*s
+		*/
+		lastSat = r_saturation->value;
+		Com_DPrintf ("rebuilding saturation table for %g\n", lastSat);
+		tmp = (1.0f - lastSat) * 2 / 3;				// modulated by 2
+		for (i = 0; i < ARRAY_COUNT(sat1); i++)
+			sat1[i] = Q_round (i * tmp);
+		for (i = 0; i < ARRAY_COUNT(sat2); i++)
+			sat2[i] = Q_round (i * lastSat * 2);	// modulated by 2
+	}
+#endif
 
 	sat = r_saturation->value;
 	c = width * height;
@@ -258,9 +282,21 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 		p = (byte *)pic;
 		for (i = 0; i < c; i++, p+=4)
 		{
-#ifndef INT_SATURATE
-			float	r, g, b;
-			float	light;
+#ifdef TBL_SATURATE
+			int		r, g, b;
+			int		s1;
+
+			r = p[0]; g = p[1]; b = p[2];
+			s1 = sat1[r + g + b];
+			r = (s1 + sat2[r]) >> 1;
+			p[0] = bound(r,0,255);
+			g = (s1 + sat2[g]) >> 1;
+			p[1] = bound(g,0,255);
+			b = (s1 + sat2[b]) >> 1;
+			p[2] = bound(b,0,255);
+#else
+#	ifndef INT_SATURATE
+			float	r, g, b, light;
 
 			// get color
 			r = p[0];  g = p[1];  b = p[2];
@@ -271,7 +307,7 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 			SATURATE(b,light,sat);
 			// put color
 			p[0] = Q_round (r);  p[1] = Q_round (g);  p[2] = Q_round (b);
-#else
+#	else
 			int		r, g, b, light;
 
 			r = p[0]; g = p[1]; b = p[2];
@@ -282,6 +318,7 @@ static void LightScaleTexture (unsigned *pic, int width, int height)
 			p[0] = bound(r,0,255);
 			p[1] = bound(g,0,255);
 			p[2] = bound(b,0,255);
+#	endif
 #endif
 		}
 	}
@@ -1039,7 +1076,7 @@ static void Imagelist_f (void)
 			fmt, color, img->name);
 	}
 
-	Com_Printf ("Total %d images with texel count (not counting mipmaps) %d\n", n, texels);
+	Com_Printf ("Displayed %d/%d images; texel count (no mipmaps) %d\n", n, idx, texels);
 
 	if (mask && mask[0] == '*' && mask[1] == 0)	// mask = "*"
 	{
@@ -1420,7 +1457,7 @@ void GL_LoadDelayedImages (void)
 		if (!img->name[0]) continue;	// free slot
 		if (!(img->pic)) continue;
 
-		Com_Printf ("up: %s\n", img->name);//!!
+//		Com_Printf ("up: %s\n", img->name);
 		GL_CreateImage (img->name, img->pic, img->width, img->height, img->flags);
 		Z_Free (img->pic);
 		img->pic = NULL;

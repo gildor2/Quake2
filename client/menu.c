@@ -21,6 +21,37 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "../client/qmenu.h"
 
+// dmflags->integer flags
+//!! NOTE: all DF_XXX... values used in engine for dmflags edit menu only
+// should remove this consts (place into a separate script for dmflags editor !!)
+#define	DF_NO_HEALTH		0x00000001	// 1
+#define	DF_NO_ITEMS			0x00000002	// 2
+#define	DF_WEAPONS_STAY		0x00000004	// 4
+#define	DF_NO_FALLING		0x00000008	// 8
+#define	DF_INSTANT_ITEMS	0x00000010	// 16
+#define	DF_SAME_LEVEL		0x00000020	// 32
+#define DF_SKINTEAMS		0x00000040	// 64
+#define DF_MODELTEAMS		0x00000080	// 128
+#define DF_NO_FRIENDLY_FIRE	0x00000100	// 256
+#define	DF_SPAWN_FARTHEST	0x00000200	// 512
+#define DF_FORCE_RESPAWN	0x00000400	// 1024
+#define DF_NO_ARMOR			0x00000800	// 2048
+#define DF_ALLOW_EXIT		0x00001000	// 4096
+#define DF_INFINITE_AMMO	0x00002000	// 8192
+#define DF_QUAD_DROP		0x00004000	// 16384
+#define DF_FIXED_FOV		0x00008000	// 32768
+
+// RAFAEL
+#define	DF_QUADFIRE_DROP	0x00010000	// 65536
+
+//ROGUE
+#define DF_NO_MINES			0x00020000
+#define DF_NO_STACK_DOUBLE	0x00040000
+#define DF_NO_NUKES			0x00080000
+#define DF_NO_SPHERES		0x00100000
+//ROGUE
+
+
 static int	m_main_cursor;
 
 #define NUM_CURSOR_FRAMES 15
@@ -536,8 +567,8 @@ static int	keys_cursor;
 
 static menuFramework_t	s_keys_menu;
 
-#define MAX_KEYS_MENU 64
-#define MAX_KEYS_BUF  4096
+#define MAX_KEYS_MENU 128
+#define MAX_KEYS_BUF  16384
 
 #define BIND_LINE_HEIGHT	10
 
@@ -1188,7 +1219,6 @@ static menuAction_t		s_hard_game_action;
 static menuAction_t		s_load_game_action;
 static menuAction_t		s_save_game_action;
 static menuAction_t		s_credits_action;
-static menuSeparator_t	s_blankline;
 
 static void StartGame (void)
 {
@@ -1238,8 +1268,6 @@ static void Game_MenuInit( void )
 	MENU_ACTION(s_hard_game_action,20,"hard",HardGameFunc)
 	s_hard_game_action.generic.flags  = QMF_LEFT_JUSTIFY;
 
-	s_blankline.generic.type = MTYPE_SEPARATOR;
-
 	MENU_ACTION(s_load_game_action,40,"load game",M_Menu_LoadGame_f)
 	s_load_game_action.generic.flags  = QMF_LEFT_JUSTIFY;
 	MENU_ACTION(s_save_game_action,50,"save game",M_Menu_SaveGame_f)
@@ -1250,10 +1278,8 @@ static void Game_MenuInit( void )
 	Menu_AddItem( &s_game_menu, ( void * ) &s_easy_game_action );
 	Menu_AddItem( &s_game_menu, ( void * ) &s_medium_game_action );
 	Menu_AddItem( &s_game_menu, ( void * ) &s_hard_game_action );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_blankline );
 	Menu_AddItem( &s_game_menu, ( void * ) &s_load_game_action );
 	Menu_AddItem( &s_game_menu, ( void * ) &s_save_game_action );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_blankline );
 	Menu_AddItem( &s_game_menu, ( void * ) &s_credits_action );
 
 	Menu_Center( &s_game_menu );

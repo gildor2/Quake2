@@ -1,5 +1,6 @@
 #!/bin/bash
 
+rm -rf ../*.ncb
 rm -rf ../ref_{gl,soft,gl.old}/{release,debug}/*
 rm -rf ../debug
 

@@ -17,7 +17,7 @@ void Con_DrawNotify (qboolean drawBack);
 void Con_ClearNotify (void);
 void Con_ToggleConsole_f (void);
 
-void Key_Console (int key);
+void Key_Console (int key, int modKey);
 void Key_Message (int key);
 
 

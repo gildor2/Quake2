@@ -94,7 +94,7 @@ void Sys_Quit (void)
 		FreeConsole ();
 
 	// shut down QHOST hooks if necessary
-	DeinitConProc ();
+//??	DeinitConProc ();
 
 	exit (0);
 }
@@ -251,20 +251,20 @@ static LONG WINAPI ExceptionFilter(struct _EXCEPTION_POINTERS *ExceptionInfo)
 	MEMORY_BASIC_INFORMATION mbi;
 	int		i, *stack;
 
-	if (exception_count++ > 0) return 0;	// nested exception
+	if (exception_count++) return 0;	// nested (recursive) exception
 
-	// make a log in "crush.log"
-	if (f = fopen ("crush.log", "a+"))
+	// make a log in "crash.log"
+	if (f = fopen ("crash.log", "a+"))
 	{
 		time (&itime);
-		strftime (ctime, sizeof(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
-		fprintf (f, "----- "APPNAME" crush log on %s -----\n", ctime);
+		strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
+		fprintf (f, "----- "APPNAME" crash log on %s -----\n", ctime);
 		ctx = ExceptionInfo->ContextRecord;
 		rec = ExceptionInfo->ExceptionRecord;
 		strcpy (module, "<N/A>");
 		if (VirtualQuery ((void*)ctx->Eip, &mbi, sizeof(mbi)))
 		{
-			if (mbi.State != MEM_COMMIT || !GetModuleFileName (mbi.AllocationBase, module, sizeof(module)));	//??
+			if (mbi.State != MEM_COMMIT || !GetModuleFileName (mbi.AllocationBase, ARRAY_ARG(module)));	//??
 		}
 		fprintf (f, "Exception %08X at address %08X in module %s\n", rec->ExceptionCode, rec->ExceptionAddress, module);
 //		fprintf (f, "Base registers:\n");
@@ -302,6 +302,149 @@ static LONG WINAPI ExceptionFilter(struct _EXCEPTION_POINTERS *ExceptionInfo)
 	return 0;
 }
 
+
+/*
+================
+CPUID
+================
+*/
+
+static bool IsMMX, IsSSE, IsRDTSC, Is3DNow;
+
+static bool cpuid (unsigned _in, unsigned regs[4])
+{
+	bool	isOK;
+
+	isOK = true;
+	__asm pushad;		// save all regs
+	__try
+	{
+		__asm {
+			mov		eax,_in
+			cpuid
+			mov		esi,regs
+			mov		[esi],eax
+			mov		[esi+4],ebx
+			mov		[esi+8],ecx
+			mov		[esi+12],edx
+		}
+	}
+	__except(EXCEPTION_EXECUTE_HANDLER)
+	{
+		isOK = false;
+	}
+	__asm popad;
+	return isOK;
+}
+
+
+static void CheckCpuName (void)
+{
+	union {
+		unsigned reg[3];
+		char	name[3*4+1];
+	} t;
+	unsigned r[4];
+
+	if (!cpuid (0, r))
+		Com_Printf ("Unknown 386/486 CPU\n");
+	else
+	{
+		t.reg[0] = r[1];
+		t.reg[1] = r[3];
+		t.reg[2] = r[2];
+		t.name[12] = 0;		// ASCIIZ
+		Com_Printf ("CPU: %s\n", t.name);
+	}
+}
+
+
+static void CheckCpuCaps (void)
+{
+	unsigned r[4];
+
+	if (!cpuid (1, r)) return;
+
+	Com_Printf ("CPU caps: [ ");
+
+	if (r[3] & 0x00000001)	Com_Printf ("FPU ");
+	if (r[3] & 0x00800000)
+	{
+		Com_Printf ("MMX ");
+		IsMMX = true;
+	}
+	if (r[3] & 0x02000000)
+	{
+		Com_Printf ("SSE ");
+		IsSSE = true;
+	}
+	if (r[3] & 0x04000000)	Com_Printf ("SSE2 ");
+	if (r[3] & 0x00000010)
+	{
+		Com_Printf ("RDTSC ");
+		IsRDTSC = true;
+	}
+
+	// check extended features
+	if (cpuid (0x80000000, r))
+		if (r[0] >= 0x80000001)		// largest recognized extended function
+			if (cpuid (0x80000001, r) && r[3] & 0x80000000)
+			{
+				Com_Printf ("3DNow! ");
+				Is3DNow = true;
+			}
+
+	Com_Printf ("]\n");
+}
+
+
+__inline __int64 cycles ()
+{
+	__asm
+	{
+		rdtsc
+	}
+}
+
+
+static void CheckCpuSpeed (void)
+{
+	int		tries;
+	unsigned time1, time2;
+//	float	tmp;
+	__int64	stamp1, stamp2;
+	double secPerCycle, secPerCycle1;
+
+	if (!IsRDTSC) return;
+
+	timeBeginPeriod (1);
+
+	secPerCycle = 1.0;							// initial value
+	for (tries = 0; tries < 4; tries++)
+	{
+		stamp1 = cycles ();
+		time1 = timeGetTime ();
+//		tmp = 0;
+		while (true)
+		{
+			time2 = timeGetTime ();
+			if (time2 - time1 > 200) break;		// 200ms enough to compute CPU speed
+//			tmp = tmp + sin (time2);			//?? just waste CPU time
+		}
+		stamp2 = cycles ();
+		secPerCycle1 = (time2 - time1) / (((double)stamp2 - (double)stamp1) * 1000);
+		if (secPerCycle1 < secPerCycle) secPerCycle = secPerCycle1;
+
+//		Com_Printf ("try #%d\n", tries);
+//		Com_Printf ("stampd: %u %u   timed: %d\n", stamp2 - stamp1, time2 - time1);
+//		Com_Printf ("CPU speed: %g MHz\n", 1e-6 / secPerCycle1);
+	}
+	Com_Printf ("CPU speed: %g MHz\n", 1e-6 / secPerCycle);
+
+	timeEndPeriod (1);
+}
+
+
 /*
 ================
 Sys_Init
@@ -316,22 +459,20 @@ void Sys_Init (void)
 	// front end can tell if it is alive
 
 	// mutex will fail if semephore already exists
-    qwclsemaphore = CreateMutex(
-        NULL,         /* Security attributes */
-        0,            /* owner       */
-        "qwcl"); /* Semaphore name      */
+	qwclsemaphore = CreateMutex(
+		NULL,		/* Security attributes */
+		0,			/* owner       */
+		"qwcl");	/* Semaphore name      */
 	if (!qwclsemaphore)
 		Sys_Error ("QWCL is already running on this system");
 	CloseHandle (qwclsemaphore);
 
-    qwclsemaphore = CreateSemaphore(
-        NULL,         /* Security attributes */
-        0,            /* Initial count       */
-        1,            /* Maximum count       */
-        "qwcl"); /* Semaphore name      */
+	qwclsemaphore = CreateSemaphore(
+		NULL,		/* Security attributes */
+		0,			/* Initial count       */
+		1,			/* Maximum count       */
+		"qwcl");	/* Semaphore name      */
 #endif
-
-	timeBeginPeriod( 1 );
 
 	vinfo.dwOSVersionInfoSize = sizeof(vinfo);
 
@@ -342,8 +483,12 @@ void Sys_Init (void)
 		Sys_Error (APPNAME" requires windows version 4 or greater");
 	if (vinfo.dwPlatformId == VER_PLATFORM_WIN32s)
 		Sys_Error (APPNAME" doesn't run on Win32s");
-	else if ( vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS )
+	else if (vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
 		s_win95 = true;
+
+	CheckCpuName ();
+	CheckCpuCaps ();
+	CheckCpuSpeed ();
 
 	if (dedicated->integer)
 	{
@@ -356,6 +501,8 @@ void Sys_Init (void)
 //??		InitConProc (argc, argv);
 	}
 	SetUnhandledExceptionFilter (ExceptionFilter);
+	//??
+	timeBeginPeriod (1);
 }
 
 

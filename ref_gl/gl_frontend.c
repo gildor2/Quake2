@@ -26,6 +26,8 @@ float		gl_fogColor[4];
 float		gl_fogDensity;
 float		gl_fogStart, gl_fogEnd;
 
+#define BACKFACE_EPSILON	1						// Q2: 0.01, Q3: 8
+
 
 /* Culling on BSP:
  *   1. PVS
@@ -53,7 +55,7 @@ static int BoxCull (vec3_t mins, vec3_t maxs, int frustumMask)
 	int		i, res;
 	cplane_t *pl;
 
-	if (r_nocull->integer)
+	if (!gl_frustumCull->integer)
 		return FRUSTUM_ON;
 
 	if (!frustumMask)
@@ -84,7 +86,7 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 	vec3_t	box[8];
 #endif
 
-	if (r_nocull->integer)
+	if (!gl_frustumCull->integer)
 		return FRUSTUM_ON;
 
 	frustumMask = e->frustumMask;	//?? get this as OR(all_occupied_leafs->frustumMask) or remove
@@ -186,7 +188,7 @@ static int SphereCull (vec3_t origin, float radius, byte *frustumMask)
 	int		i, ret, mask, m;
 	cplane_t *pl;
 
-	if (r_nocull->integer)
+	if (!gl_frustumCull->integer)
 	{
 		if (frustumMask)
 			*frustumMask = MAX_FRUSTUM_MASK;
@@ -225,7 +227,7 @@ static int PointCull (vec3_t point, int frustumMask)
 	int		i;
 	cplane_t *pl;
 
-	if (r_nocull->integer)
+	if (!gl_frustumCull->integer)
 		return FRUSTUM_INSIDE;
 
 	if (!frustumMask)
@@ -468,7 +470,7 @@ static node_t *SphereLeaf (vec3_t origin, float radius)
 				return node;			// visible => mision complete
 
 			if (!sptr)
-				return NULL;	// whole tree visited, but not leaf found (may happens when r_nocull & ent outside frustum)
+				return NULL;	// whole tree visited, but not leaf found (may happens when !gl_frustumCull & ent outside frustum)
 
 			node = stack[--sptr];
 			continue;
@@ -693,7 +695,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 			pl = surf->pl;
 
 			// backface culling
-			if (gl_facePlaneCull->integer)
+			if (gl_backfaceCull->integer)
 			{
 				float	dist;
 				gl_cullMode_t cull;
@@ -710,11 +712,11 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 					dist = DISTANCE_TO_PLANE(vieworg, &pl->plane);
 					if (cull == CULL_FRONT)
 					{
-						if (dist < -8) CULL_SURF;		//?? 8 (try different, make "const")
+						if (dist < -BACKFACE_EPSILON) CULL_SURF;
 					}
 					else
 					{
-						if (dist > 8) CULL_SURF;		//??
+						if (dist > BACKFACE_EPSILON) CULL_SURF;
 					}
 				}
 			}
@@ -1232,7 +1234,7 @@ static node_t *WalkBspTree (void)
 			continue;
 		}
 
-		if (!r_nocull->integer)
+		if (gl_frustumCull->integer)
 		{
 			/*-------- frustum culling ----------*/
 #define CULL_NODE(bit)	\
@@ -1409,8 +1411,6 @@ static void DrawEntities (int firstEntity, int numEntities)
 	vec3_t	delta;
 	float	dist2;
 
-	if (!numEntities || !r_drawentities->integer) return;
-
 	for (i = 0, e = gl_entities + firstEntity; i < numEntities; i++, e++)
 	{
 		e->visible = false;
@@ -1426,6 +1426,8 @@ static void DrawEntities (int firstEntity, int numEntities)
 	}
 		if (e->model)
 		{
+			if (!r_drawentities->integer) continue;		// do not draw entities with model in this mode
+
 			switch (e->model->type)
 			{
 			case MODEL_INLINE:

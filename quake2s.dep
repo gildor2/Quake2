@@ -287,16 +287,11 @@
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
-	".\zip\zconf.h"\
-	".\zip\zip.h"\
-	".\zip\zlib.h"\
+	".\qcommon\zip.h"\
 	
 
 .\qcommon\images.c : \
 	".\client\ref_defs.h"\
-	".\jpeg\jconfig.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpeglib.h"\
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
@@ -396,7 +391,12 @@
 	
 
 .\qcommon\q_shared2.c : \
+	".\client\ref.h"\
+	".\client\ref_decl.h"\
+	".\client\ref_defs.h"\
 	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
 	
 
 .\client\qmenu.c : \
@@ -618,6 +618,14 @@
 	".\qcommon\q_shared2.h"\
 	".\qcommon\qcommon.h"\
 	".\qcommon\qfiles.h"\
+	
+
+.\qcommon\zip.c : \
+	".\client\ref_defs.h"\
+	".\qcommon\q_shared2.h"\
+	".\qcommon\qcommon.h"\
+	".\qcommon\qfiles.h"\
+	".\qcommon\zip.h"\
 	
 
 .\ref_gl\gl_backend.c : \
@@ -1186,643 +1194,634 @@
 
 !ENDIF 
 
-.\zip\adler32.c : \
-	".\zip\zconf.h"\
-	".\zip\zlib.h"\
-	
-
-.\zip\crc32.c : \
-	".\zip\zconf.h"\
-	".\zip\zlib.h"\
-	
-
-.\zip\infblock.c : \
-	".\zip\infblock.h"\
-	".\zip\infcodes.h"\
-	".\zip\inftrees.h"\
-	".\zip\infutil.h"\
-	".\zip\zconf.h"\
-	".\zip\zlib.h"\
-	".\zip\zutil.h"\
-	
-
-.\zip\infcodes.c : \
-	".\zip\infblock.h"\
-	".\zip\infcodes.h"\
-	".\zip\inffast.h"\
-	".\zip\inftrees.h"\
-	".\zip\infutil.h"\
-	".\zip\zconf.h"\
-	".\zip\zlib.h"\
-	".\zip\zutil.h"\
-	
-
-.\zip\inffast.c : \
-	".\zip\infblock.h"\
-	".\zip\infcodes.h"\
-	".\zip\inffast.h"\
-	".\zip\inftrees.h"\
-	".\zip\infutil.h"\
-	".\zip\zconf.h"\
-	".\zip\zlib.h"\
-	".\zip\zutil.h"\
-	
-
-.\zip\inflate.c : \
-	".\zip\infblock.h"\
-	".\zip\zconf.h"\
-	".\zip\zlib.h"\
-	".\zip\zutil.h"\
-	
-
-.\zip\inftrees.c : \
-	".\zip\inffixed.h"\
-	".\zip\inftrees.h"\
-	".\zip\zconf.h"\
-	".\zip\zlib.h"\
-	".\zip\zutil.h"\
-	
-
-.\zip\infutil.c : \
-	".\zip\infblock.h"\
-	".\zip\infcodes.h"\
-	".\zip\inftrees.h"\
-	".\zip\infutil.h"\
-	".\zip\zconf.h"\
-	".\zip\zlib.h"\
-	".\zip\zutil.h"\
-	
-
-.\zip\zip.c : \
-	".\client\ref_defs.h"\
-	".\qcommon\q_shared2.h"\
-	".\qcommon\qcommon.h"\
-	".\qcommon\qfiles.h"\
-	".\zip\zconf.h"\
-	".\zip\zip.h"\
-	".\zip\zlib.h"\
-	
-
-.\zip\zutil.c : \
-	".\zip\zconf.h"\
-	".\zip\zlib.h"\
-	".\zip\zutil.h"\
-	
-
-.\jpeg\jcapimin.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcapistd.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jccoefct.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jccolor.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcdctmgr.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdct.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcdiffct.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossls.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jchuff.c : \
-	".\jpeg\jchuff.h"\
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcinit.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jclhuff.c : \
-	".\jpeg\jchuff.h"\
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossls.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jclossls.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossls.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jclossy.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcmainct.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcmarker.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcmaster.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcodec.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossls.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcomapi.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcparam.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcphuff.c : \
-	".\jpeg\jchuff.h"\
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcpred.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossls.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcprepct.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcsample.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcscale.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossls.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jcshuff.c : \
-	".\jpeg\jchuff.h"\
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdapimin.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdapistd.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdatadst.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdcoefct.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdcolor.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jddctmgr.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdct.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jddiffct.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossls.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdhuff.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdhuff.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossls.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdinput.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdlhuff.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdhuff.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossls.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdlossls.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossls.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdlossy.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdmainct.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdmarker.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdmaster.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdmerge.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdphuff.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdhuff.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdpostct.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdpred.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossls.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdsample.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdscale.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossls.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jdshuff.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdhuff.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jlossy.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jfdctflt.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdct.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jfdctfst.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdct.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jfdctint.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdct.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jidctflt.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdct.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jidctfst.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdct.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jidctint.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdct.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jidctred.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jdct.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jmemansi.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmemsys.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jmemmgr.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmemsys.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jquant1.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jquant2.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
-	
-
-.\jpeg\jutils.c : \
-	".\jpeg\jconfig.h"\
-	".\jpeg\jerror.h"\
-	".\jpeg\jinclude.h"\
-	".\jpeg\jmorecfg.h"\
-	".\jpeg\jpegint.h"\
-	".\jpeg\jpeglib.h"\
+.\lib\zlib\adler32.c : \
+	".\lib\zlib\zconf.h"\
+	".\lib\zlib\zlib.h"\
+	
+
+.\lib\zlib\crc32.c : \
+	".\lib\zlib\zconf.h"\
+	".\lib\zlib\zlib.h"\
+	
+
+.\lib\zlib\infblock.c : \
+	".\lib\zlib\infblock.h"\
+	".\lib\zlib\infcodes.h"\
+	".\lib\zlib\inftrees.h"\
+	".\lib\zlib\infutil.h"\
+	".\lib\zlib\zconf.h"\
+	".\lib\zlib\zlib.h"\
+	".\lib\zlib\zutil.h"\
+	
+
+.\lib\zlib\infcodes.c : \
+	".\lib\zlib\infblock.h"\
+	".\lib\zlib\infcodes.h"\
+	".\lib\zlib\inffast.h"\
+	".\lib\zlib\inftrees.h"\
+	".\lib\zlib\infutil.h"\
+	".\lib\zlib\zconf.h"\
+	".\lib\zlib\zlib.h"\
+	".\lib\zlib\zutil.h"\
+	
+
+.\lib\zlib\inffast.c : \
+	".\lib\zlib\infblock.h"\
+	".\lib\zlib\infcodes.h"\
+	".\lib\zlib\inffast.h"\
+	".\lib\zlib\inftrees.h"\
+	".\lib\zlib\infutil.h"\
+	".\lib\zlib\zconf.h"\
+	".\lib\zlib\zlib.h"\
+	".\lib\zlib\zutil.h"\
+	
+
+.\lib\zlib\inflate.c : \
+	".\lib\zlib\infblock.h"\
+	".\lib\zlib\zconf.h"\
+	".\lib\zlib\zlib.h"\
+	".\lib\zlib\zutil.h"\
+	
+
+.\lib\zlib\inftrees.c : \
+	".\lib\zlib\inffixed.h"\
+	".\lib\zlib\inftrees.h"\
+	".\lib\zlib\zconf.h"\
+	".\lib\zlib\zlib.h"\
+	".\lib\zlib\zutil.h"\
+	
+
+.\lib\zlib\infutil.c : \
+	".\lib\zlib\infblock.h"\
+	".\lib\zlib\infcodes.h"\
+	".\lib\zlib\inftrees.h"\
+	".\lib\zlib\infutil.h"\
+	".\lib\zlib\zconf.h"\
+	".\lib\zlib\zlib.h"\
+	".\lib\zlib\zutil.h"\
+	
+
+.\lib\zlib\zutil.c : \
+	".\lib\zlib\zconf.h"\
+	".\lib\zlib\zlib.h"\
+	".\lib\zlib\zutil.h"\
+	
+
+.\lib\jpeglib\jcapimin.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcapistd.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jccoefct.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jccolor.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcdctmgr.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdct.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcdiffct.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossls.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jchuff.c : \
+	".\lib\jpeglib\jchuff.h"\
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcinit.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jclhuff.c : \
+	".\lib\jpeglib\jchuff.h"\
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossls.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jclossls.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossls.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jclossy.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcmainct.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcmarker.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcmaster.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcodec.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossls.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcomapi.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcparam.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcphuff.c : \
+	".\lib\jpeglib\jchuff.h"\
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcpred.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossls.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcprepct.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcsample.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcscale.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossls.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jcshuff.c : \
+	".\lib\jpeglib\jchuff.h"\
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdapimin.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdapistd.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdatadst.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdcoefct.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdcolor.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jddctmgr.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdct.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jddiffct.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossls.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdhuff.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdhuff.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossls.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdinput.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdlhuff.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdhuff.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossls.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdlossls.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossls.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdlossy.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdmainct.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdmarker.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdmaster.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdmerge.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdphuff.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdhuff.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdpostct.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdpred.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossls.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdsample.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdscale.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossls.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jdshuff.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdhuff.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jlossy.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jfdctflt.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdct.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jfdctfst.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdct.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jfdctint.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdct.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jidctflt.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdct.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jidctfst.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdct.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jidctint.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdct.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jidctred.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jdct.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jmemansi.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmemsys.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jmemmgr.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmemsys.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jquant1.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jquant2.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
+	
+
+.\lib\jpeglib\jutils.c : \
+	".\lib\jpeglib\jconfig.h"\
+	".\lib\jpeglib\jerror.h"\
+	".\lib\jpeglib\jinclude.h"\
+	".\lib\jpeglib\jmorecfg.h"\
+	".\lib\jpeglib\jpegint.h"\
+	".\lib\jpeglib\jpeglib.h"\
 	
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"

@@ -1253,7 +1253,7 @@ void S_Play(void)
 	}
 }
 
-void S_SoundList(void)
+static void S_SoundList(void)
 {
 	int		i;
 	sfx_t	*sfx;

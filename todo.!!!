@@ -15,7 +15,10 @@ BUGS:
   - idea: save non-quantized+quantized positions (+velocity?); next time find non-quantized by quantized
   - problem: detect out-of-date positions (player was respawned and its position was changed+snapped))
 ! console: use "SetConsoleCtrlHandler()" to hook exit with "x" or Ctrl-C
-! command "banchat": disable chat of concrete IP
+! command "banchat": disable chat of concrete IP; implementation variants:
+  1) disable "cmd say[_team]" etc. for client (will not disable non-"say" chat, when message typed in console)
+  2) disable PRINT_CHAT with text "Player: message"
+  3) (best?) hook ge->ClientCommand(from), and disable all PF_cprintf(to,PRINT_CHAT,"...") inside this call, when from!=to
 ?! remove IPX protocol from win32 code
 ? eliminate BigShort(MASTER|SERVER_PORT) (sv_cmds.c, cl_main.c) -- only one thing, for which BigXxx() is used (big-endian numbers)
 ! check bug: dirty, map mine4, laser cannon -- when shoot rock, invisible entity painted (should not be entity at all,
@@ -57,22 +60,28 @@ HALFLIFE:
   - step sound: volume = 0.2/0.5 (walk/run) (+ add slowwalk -- crouched)
   - if moving slow - no step sounds
   - walking/running: step sound length = 400/300; water = 600; ladder = 350
+HALFLIFE2:
+  - see measure fillrate (add surfaces -> additive, no tex, color - signal depthwrite on/off)
 
 CAMERA:
   - interpolate camera 1st/3rd person change
 
 TRACE:
-  ? speedup ClipToEntities() (client/server/ref_gl): COMPARE only with entities in range (start - trace.endpos)
-    (trace.endpos frequently updated); can sort ents by distance (find a list of potentially collided ents, sort
-    by coord and collide + update collision limits with additional refining following traces)
-    SUMMARY:
-    1) sort potentially touchable entities with MIN distance (dist(ent,start)-ent.rad (rad??)): 1st -- nearest
-       end=max_dist
-    2) loop: if (dist(ent)>end) break; Trace(ent); if (collide) end=dist(ent);
-    NOTE: cannot TRACE to (start - trace.endpos) - will produce different trace.frac
-    +) add something like ent.worldMatrix in client/server prediction, call BoxTrace() instead of TransformedBoxTrace() when true;
-       for alias models: make origin=0,angles=0,box=mins+origin,maxs+origin (make separate "trace" function for this (clip line
-       with AABB) ?)
+  ? speedup ClipToEntities() (client/server/ref_gl):
+    - COMPARE only with entities in range (start - trace.endpos) (trace.endpos frequently updated); can sort ents by
+      distance (find a list of potentially collided ents, sort by coord and collide + update collision limits with additional
+      refining following traces)
+      1) sort potentially touchable entities with MIN distance (dist(ent,start)-ent.rad (rad??)): 1st -- nearest
+         end=max_dist
+      2) loop: if (dist(ent)>end) break; Trace(ent); if (collide) end=dist(ent);
+      NOTE: cannot TRACE to (start - trace.endpos) - will produce different trace.frac
+      +) add something like ent.worldMatrix in client/server prediction, call BoxTrace() instead of TransformedBoxTrace() when true;
+         for alias models: make origin=0,angles=0,box=mins+origin,maxs+origin (make separate "trace" function for this (clip line
+         with AABB) ?)
+    - test:
+      1) compare trace bounds with ent bbox (very fast; like AreaEdicts())
+      2) compare ent sphere with trace cylinder  (already implemented ?)
+      3) TransformedTrace()  (already ?)
   - speedup detection of "tr.fraction != 1" - stop on 1st collision
   - TransformedBoxTrace: replace (headnode,origin,angles) with entity; make HeadnodeForBox() -> tempEntity;
     cache/update ent.angles->ent.axis ! (in renderer: ClipToEntities() -- use TransformedBoxTrace; send to renderer axis, not angles

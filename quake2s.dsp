@@ -288,6 +288,10 @@ SOURCE=.\win32\vid_dll.c
 
 SOURCE=.\win32\vid_menu.c
 # End Source File
+# Begin Source File
+
+SOURCE=.\qcommon\zip.c
+# End Source File
 # End Group
 # Begin Group "Header Files"
 
@@ -375,6 +379,10 @@ SOURCE=.\client\vid.h
 # Begin Source File
 
 SOURCE=.\win32\winquake.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\qcommon\zip.h
 # End Source File
 # End Group
 # Begin Group "Resource Files"
@@ -1074,83 +1082,75 @@ InputName=r_varsa
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\zip\adler32.c
+SOURCE=.\lib\zlib\adler32.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\crc32.c
+SOURCE=.\lib\zlib\crc32.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\infblock.c
+SOURCE=.\lib\zlib\infblock.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\infblock.h
+SOURCE=.\lib\zlib\infblock.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\infcodes.c
+SOURCE=.\lib\zlib\infcodes.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\infcodes.h
+SOURCE=.\lib\zlib\infcodes.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\inffast.c
+SOURCE=.\lib\zlib\inffast.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\inffast.h
+SOURCE=.\lib\zlib\inffast.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\inffixed.h
+SOURCE=.\lib\zlib\inffixed.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\inflate.c
+SOURCE=.\lib\zlib\inflate.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\inftrees.c
+SOURCE=.\lib\zlib\inftrees.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\inftrees.h
+SOURCE=.\lib\zlib\inftrees.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\infutil.c
+SOURCE=.\lib\zlib\infutil.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\infutil.h
+SOURCE=.\lib\zlib\infutil.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\zconf.h
+SOURCE=.\lib\zlib\zconf.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\zip.c
+SOURCE=.\lib\zlib\zlib.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\zip.h
+SOURCE=.\lib\zlib\zutil.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\zip\zlib.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\zip\zutil.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\zip\zutil.h
+SOURCE=.\lib\zlib\zutil.h
 # End Source File
 # End Group
 # Begin Group "JPEG files"
@@ -1158,7 +1158,7 @@ SOURCE=.\zip\zutil.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\jpeg\jcapimin.c
+SOURCE=.\lib\jpeglib\jcapimin.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1171,7 +1171,7 @@ SOURCE=.\jpeg\jcapimin.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcapistd.c
+SOURCE=.\lib\jpeglib\jcapistd.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1184,7 +1184,7 @@ SOURCE=.\jpeg\jcapistd.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jccoefct.c
+SOURCE=.\lib\jpeglib\jccoefct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1197,7 +1197,7 @@ SOURCE=.\jpeg\jccoefct.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jccolor.c
+SOURCE=.\lib\jpeglib\jccolor.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1210,7 +1210,7 @@ SOURCE=.\jpeg\jccolor.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcdctmgr.c
+SOURCE=.\lib\jpeglib\jcdctmgr.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1223,7 +1223,7 @@ SOURCE=.\jpeg\jcdctmgr.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcdiffct.c
+SOURCE=.\lib\jpeglib\jcdiffct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1236,7 +1236,7 @@ SOURCE=.\jpeg\jcdiffct.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jchuff.c
+SOURCE=.\lib\jpeglib\jchuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1249,11 +1249,11 @@ SOURCE=.\jpeg\jchuff.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jchuff.h
+SOURCE=.\lib\jpeglib\jchuff.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcinit.c
+SOURCE=.\lib\jpeglib\jcinit.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1266,7 +1266,7 @@ SOURCE=.\jpeg\jcinit.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jclhuff.c
+SOURCE=.\lib\jpeglib\jclhuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1279,7 +1279,7 @@ SOURCE=.\jpeg\jclhuff.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jclossls.c
+SOURCE=.\lib\jpeglib\jclossls.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1292,7 +1292,7 @@ SOURCE=.\jpeg\jclossls.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jclossy.c
+SOURCE=.\lib\jpeglib\jclossy.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1305,7 +1305,7 @@ SOURCE=.\jpeg\jclossy.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcmainct.c
+SOURCE=.\lib\jpeglib\jcmainct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1318,7 +1318,7 @@ SOURCE=.\jpeg\jcmainct.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcmarker.c
+SOURCE=.\lib\jpeglib\jcmarker.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1331,7 +1331,7 @@ SOURCE=.\jpeg\jcmarker.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcmaster.c
+SOURCE=.\lib\jpeglib\jcmaster.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1344,7 +1344,7 @@ SOURCE=.\jpeg\jcmaster.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcodec.c
+SOURCE=.\lib\jpeglib\jcodec.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1357,7 +1357,7 @@ SOURCE=.\jpeg\jcodec.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcomapi.c
+SOURCE=.\lib\jpeglib\jcomapi.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1370,11 +1370,11 @@ SOURCE=.\jpeg\jcomapi.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jconfig.h
+SOURCE=.\lib\jpeglib\jconfig.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcparam.c
+SOURCE=.\lib\jpeglib\jcparam.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1387,7 +1387,7 @@ SOURCE=.\jpeg\jcparam.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcphuff.c
+SOURCE=.\lib\jpeglib\jcphuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1400,7 +1400,7 @@ SOURCE=.\jpeg\jcphuff.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcpred.c
+SOURCE=.\lib\jpeglib\jcpred.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1413,7 +1413,7 @@ SOURCE=.\jpeg\jcpred.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcprepct.c
+SOURCE=.\lib\jpeglib\jcprepct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1426,7 +1426,7 @@ SOURCE=.\jpeg\jcprepct.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcsample.c
+SOURCE=.\lib\jpeglib\jcsample.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1439,7 +1439,7 @@ SOURCE=.\jpeg\jcsample.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcscale.c
+SOURCE=.\lib\jpeglib\jcscale.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1452,7 +1452,7 @@ SOURCE=.\jpeg\jcscale.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jcshuff.c
+SOURCE=.\lib\jpeglib\jcshuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1465,7 +1465,7 @@ SOURCE=.\jpeg\jcshuff.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdapimin.c
+SOURCE=.\lib\jpeglib\jdapimin.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1478,7 +1478,7 @@ SOURCE=.\jpeg\jdapimin.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdapistd.c
+SOURCE=.\lib\jpeglib\jdapistd.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1491,7 +1491,7 @@ SOURCE=.\jpeg\jdapistd.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdatadst.c
+SOURCE=.\lib\jpeglib\jdatadst.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1504,7 +1504,7 @@ SOURCE=.\jpeg\jdatadst.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdcoefct.c
+SOURCE=.\lib\jpeglib\jdcoefct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1517,7 +1517,7 @@ SOURCE=.\jpeg\jdcoefct.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdcolor.c
+SOURCE=.\lib\jpeglib\jdcolor.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1530,11 +1530,11 @@ SOURCE=.\jpeg\jdcolor.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdct.h
+SOURCE=.\lib\jpeglib\jdct.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jddctmgr.c
+SOURCE=.\lib\jpeglib\jddctmgr.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1547,7 +1547,7 @@ SOURCE=.\jpeg\jddctmgr.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jddiffct.c
+SOURCE=.\lib\jpeglib\jddiffct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1560,7 +1560,7 @@ SOURCE=.\jpeg\jddiffct.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdhuff.c
+SOURCE=.\lib\jpeglib\jdhuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1573,11 +1573,11 @@ SOURCE=.\jpeg\jdhuff.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdhuff.h
+SOURCE=.\lib\jpeglib\jdhuff.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdinput.c
+SOURCE=.\lib\jpeglib\jdinput.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1590,7 +1590,7 @@ SOURCE=.\jpeg\jdinput.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdlhuff.c
+SOURCE=.\lib\jpeglib\jdlhuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1603,7 +1603,7 @@ SOURCE=.\jpeg\jdlhuff.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdlossls.c
+SOURCE=.\lib\jpeglib\jdlossls.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1616,7 +1616,7 @@ SOURCE=.\jpeg\jdlossls.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdlossy.c
+SOURCE=.\lib\jpeglib\jdlossy.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1629,7 +1629,7 @@ SOURCE=.\jpeg\jdlossy.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdmainct.c
+SOURCE=.\lib\jpeglib\jdmainct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1642,7 +1642,7 @@ SOURCE=.\jpeg\jdmainct.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdmarker.c
+SOURCE=.\lib\jpeglib\jdmarker.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1655,7 +1655,7 @@ SOURCE=.\jpeg\jdmarker.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdmaster.c
+SOURCE=.\lib\jpeglib\jdmaster.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1668,7 +1668,7 @@ SOURCE=.\jpeg\jdmaster.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdmerge.c
+SOURCE=.\lib\jpeglib\jdmerge.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1681,7 +1681,7 @@ SOURCE=.\jpeg\jdmerge.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdphuff.c
+SOURCE=.\lib\jpeglib\jdphuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1694,7 +1694,7 @@ SOURCE=.\jpeg\jdphuff.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdpostct.c
+SOURCE=.\lib\jpeglib\jdpostct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1707,7 +1707,7 @@ SOURCE=.\jpeg\jdpostct.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdpred.c
+SOURCE=.\lib\jpeglib\jdpred.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1720,7 +1720,7 @@ SOURCE=.\jpeg\jdpred.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdsample.c
+SOURCE=.\lib\jpeglib\jdsample.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1733,7 +1733,7 @@ SOURCE=.\jpeg\jdsample.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdscale.c
+SOURCE=.\lib\jpeglib\jdscale.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1746,7 +1746,7 @@ SOURCE=.\jpeg\jdscale.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jdshuff.c
+SOURCE=.\lib\jpeglib\jdshuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1759,11 +1759,11 @@ SOURCE=.\jpeg\jdshuff.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jerror.h
+SOURCE=.\lib\jpeglib\jerror.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jfdctflt.c
+SOURCE=.\lib\jpeglib\jfdctflt.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1776,7 +1776,7 @@ SOURCE=.\jpeg\jfdctflt.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jfdctfst.c
+SOURCE=.\lib\jpeglib\jfdctfst.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1789,7 +1789,7 @@ SOURCE=.\jpeg\jfdctfst.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jfdctint.c
+SOURCE=.\lib\jpeglib\jfdctint.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1802,7 +1802,7 @@ SOURCE=.\jpeg\jfdctint.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jidctflt.c
+SOURCE=.\lib\jpeglib\jidctflt.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1815,7 +1815,7 @@ SOURCE=.\jpeg\jidctflt.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jidctfst.c
+SOURCE=.\lib\jpeglib\jidctfst.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1828,7 +1828,7 @@ SOURCE=.\jpeg\jidctfst.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jidctint.c
+SOURCE=.\lib\jpeglib\jidctint.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1841,7 +1841,7 @@ SOURCE=.\jpeg\jidctint.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jidctred.c
+SOURCE=.\lib\jpeglib\jidctred.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1854,19 +1854,19 @@ SOURCE=.\jpeg\jidctred.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jinclude.h
+SOURCE=.\lib\jpeglib\jinclude.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jlossls.h
+SOURCE=.\lib\jpeglib\jlossls.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jlossy.h
+SOURCE=.\lib\jpeglib\jlossy.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jmemansi.c
+SOURCE=.\lib\jpeglib\jmemansi.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1879,7 +1879,7 @@ SOURCE=.\jpeg\jmemansi.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jmemmgr.c
+SOURCE=.\lib\jpeglib\jmemmgr.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1892,23 +1892,23 @@ SOURCE=.\jpeg\jmemmgr.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jmemsys.h
+SOURCE=.\lib\jpeglib\jmemsys.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jmorecfg.h
+SOURCE=.\lib\jpeglib\jmorecfg.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jpegint.h
+SOURCE=.\lib\jpeglib\jpegint.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jpeglib.h
+SOURCE=.\lib\jpeglib\jpeglib.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jquant1.c
+SOURCE=.\lib\jpeglib\jquant1.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1921,7 +1921,7 @@ SOURCE=.\jpeg\jquant1.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jquant2.c
+SOURCE=.\lib\jpeglib\jquant2.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1934,7 +1934,7 @@ SOURCE=.\jpeg\jquant2.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jutils.c
+SOURCE=.\lib\jpeglib\jutils.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -1947,7 +1947,7 @@ SOURCE=.\jpeg\jutils.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\jpeg\jversion.h
+SOURCE=.\lib\jpeglib\jversion.h
 # End Source File
 # End Group
 # Begin Group "Misc Files"

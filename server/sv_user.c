@@ -474,7 +474,7 @@ void SV_ExecuteUserCommand (char *s)
 {
 	ucmd_t	*u;
 
-	Cmd_TokenizeString (s, false);		//?? "false" -- disable macro expansion (anti-hack?)
+	Cmd_TokenizeString (s, false);		//?? "false" -- disable macro expansion (anti-hack?); can use different TokenizeString()
 	sv_player = sv_client->edict;
 
 //	SV_BeginRedirect (RD_CLIENT);

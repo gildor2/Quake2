@@ -259,7 +259,7 @@ void Com_Error (int code, char *fmt, ...)
 	}
 	else if (code == ERR_DROP && insideFrame)	// ERR_DROP->ERR_FATAL until not initialized
 	{
-		Com_Printf ("^1********************\nERROR: %s\n********************\n", msg);
+		Com_Printf ("^1ERROR: %s\n", msg);
 		SV_Shutdown (va("Server crashed: %s\n", msg), false);
 		CL_Drop ();
 		recursive = false;
@@ -1623,15 +1623,13 @@ __inline unsigned cycles (void)	  // taken from UT
 {
 	__asm
 	{
-#if 1
+#if 0
 		xor   eax,eax	          // Required so that VC++ realizes EAX is modified.
 		_emit 0x0F		          // RDTSC  -  Pentium+ time stamp register to EDX:EAX.
 		_emit 0x31		          // Use only 32 bits in EAX - even a Ghz cpu would have a 4+ sec period.
 		xor   edx,edx	          // Required so that VC++ realizes EDX is modified.
 #else
-//		xor		eax,eax
 		rdtsc
-//		xor		edx,edx
 #endif
 	}
 }

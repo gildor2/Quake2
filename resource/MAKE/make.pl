@@ -37,8 +37,7 @@ while (getline())
 	# write file length
 	syswrite (ARC, pack ("l", tell (F)));
 	# write filename (ASCIIZ)
-	syswrite (ARC, $line);
-	syswrite (ARC, "\0");
+	syswrite (ARC, "$line\0");
 	close (F);
 }
 

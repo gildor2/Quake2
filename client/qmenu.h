@@ -24,8 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MENU_CHECK	if (*re.flags & REF_CONSOLE_ONLY) return;
 
 
-#define MAXMENUITEMS		64
-
 #define MENU_SCROLL_BORDER	32
 #define MENU_SCROLL_AHEAD	3
 
@@ -44,23 +42,25 @@ typedef enum {
 #define QMF_NUMBERSONLY		0x00000004
 #define QMF_CENTER			0x00000008
 
+struct menuCommon_s;
+
 typedef struct menuFramework_s
 {
 	int		x, y;
 	int		cursor;
 
 	int		nitems;
-	int		nslots;
-	void	*items[64];
+	struct menuCommon_s *itemList;
 
 	const char *statusbar;
 
 	void (*cursordraw) (struct menuFramework_s *m);
 } menuFramework_t;
 
-typedef struct
+typedef struct menuCommon_s
 {
 	menuItemType_t type;
+	struct menuCommon_s *next;
 	char	*name;
 	int		x, y;
 	menuFramework_t *parent;
@@ -130,7 +130,7 @@ void	Menu_AddItem (menuFramework_t *menu, void *item);
 void	Menu_AdjustCursor (menuFramework_t *menu, int dir);
 void	Menu_Center (menuFramework_t *menu);
 void	Menu_Draw (menuFramework_t *menu);
-void	*Menu_ItemAtCursor (menuFramework_t *m);
+menuCommon_t *Menu_ItemAtCursor (menuFramework_t *m);
 qboolean Menu_SelectItem (menuFramework_t *s);
 void	Menu_SetStatusBar (menuFramework_t *s, const char *string);
 void	Menu_SlideItem (menuFramework_t *s, int dir);

@@ -88,7 +88,7 @@ cvar_t	*r_ignorehwgamma;
 
 cvar_t	*r_fullbright;
 cvar_t	*r_novis;
-cvar_t	*r_nocull;
+cvar_t	*gl_frustumCull;
 cvar_t	*r_lerpmodels;
 cvar_t	*r_lefthand;
 
@@ -160,7 +160,7 @@ qboolean R_CullBox (vec3_t mins, vec3_t maxs)
 {
 	int		i;
 
-	if (r_nocull->integer)
+	if (!gl_frustumCull->integer)
 		return false;
 
 	for (i=0 ; i<4 ; i++)
@@ -984,7 +984,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(r_drawentities, 1, 0),
 	CVAR_VAR(r_drawworld, 1, CVAR_CHEAT),
 	CVAR_VAR(r_novis, 0, 0),
-	CVAR_VAR(r_nocull, 0, 0),
+	CVAR_VAR(gl_frustumCull, 1, 0),
 	CVAR_VAR(r_lerpmodels, 1, 0),
 
 	CVAR_VAR(r_speeds, 0, 0),

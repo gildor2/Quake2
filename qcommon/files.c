@@ -1,6 +1,6 @@
 #include "qcommon.h"
 
-#include "../zip/zip.h"
+#include "zip.h"
 
 
 static bool initialized;
@@ -31,7 +31,7 @@ typedef struct
 	char	*filename;		// .PAK filename (statistics)
 	packDir_t *root;		// root directory of .PAK file
 	int		numFiles;		// number of files in .PAK (statistics)
-	bool	isZip;			// TRUE if PKWare ZIP file (statistics)
+	bool	isZip;			// true if PKWare ZIP file (statistics)
 	void	*chain;			// chain of memory blocks (freed all at once)
 } pack_t;
 
@@ -45,6 +45,7 @@ typedef struct resFile_s
 
 
 /*..............................................................
+
 Internal representation of FILE
 for FS_FOpenFile,FS_CloseFile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,6 +63,7 @@ Details (filled fields):
  4) io: +file -> pak
  5) za: name -> pak name, pfile, zipped=1
  6) zo: +file -> pak, +zfile -> zip file (?? update this comment for "zipped"->"type")
+
 ..............................................................*/
 
 typedef enum
@@ -513,9 +515,9 @@ void FS_CopyFile (char *src, char *dst)
 		int		len;
 		byte	buffer[65536];
 
-		len = fread (buffer, 1, sizeof(buffer), f1);
+		len = fread (buffer, 1, sizeof(buffer), f1);	// here: rec.size=1, num_recs=buf_size
 		if (!len) break;
-		fwrite (buffer, 1, len, f2);
+		fwrite (buffer, len, 1, f2);
 	}
 
 	fclose (f1);
@@ -1055,8 +1057,8 @@ void FS_Read (void *buffer, int len, FILE *f)
 		int		read;
 
 		buf = (byte *)buffer;
-		read = fread (buf, 1, len, f2->file);
-		if (read == -1)
+		read = fread (buf, len, 1, f2->file);
+		if (read != 1)
 			Com_Error (ERR_FATAL, "FS_Read: cannot read file");
 	}
 }

@@ -517,7 +517,7 @@ void Cmd_TokenizeString (char *text, qboolean macroExpand)
 		Z_Free (cmd_argv[i]);
 
 	cmd_argc = 0;
-//	cmd_args[0] = NULL;
+	cmd_args[0] = 0;
 
 	// macro expand the text
 	if (macroExpand)
@@ -700,7 +700,7 @@ Cmd_List_f
 static void Cmd_List_f (void)
 {
 	cmdFunc_t *cmd;
-	int		num;
+	int		n, total;
 	char	*mask;
 
 	if (Cmd_Argc () > 2)
@@ -714,14 +714,15 @@ static void Cmd_List_f (void)
 	else
 		mask = NULL;
 
-	num = 0;
+	n = total = 0;
 	for (cmd = cmdFuncs; cmd; cmd = cmd->next)
 	{
+		total++;
 		if (mask && !MatchWildcard2 (cmd->name, mask, true)) continue;
-		num++;
+		n++;
 		Com_Printf ("%s\n", cmd->name);
 	}
-	Com_Printf ("%d commands\n", num);
+	Com_Printf ("Displayed %d/%d commands\n", n, total);
 }
 
 /*

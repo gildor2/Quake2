@@ -5,6 +5,9 @@
 // Single keys: 32..127 -- printable keys (lowercased), 128..255 -- known other keys, 256..511 -- unknown (non-standard) keys
 #define NUM_KEYS		512
 
+#define MOD_CTRL	(NUM_KEYS)
+#define	MOD_ALT		(NUM_KEYS*2)
+
 enum {
 	K_LEFTARROW = 1, K_UPARROW, K_RIGHTARROW, K_DOWNARROW,
 	K_BACKSPACE = 8,

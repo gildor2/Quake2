@@ -38,19 +38,37 @@ static void	 SpinControl2_DoSlide (menuList2_t *s, int dir);
 #define RCOLUMN_OFFSET  16
 #define LCOLUMN_OFFSET -16
 
-extern refExport_t re;
-extern viddef_t viddef;
 
-#define VID_WIDTH viddef.width
-#define VID_HEIGHT viddef.height
+#define VID_WIDTH		viddef.width
+#define VID_HEIGHT		viddef.height
 
 #define Draw_Char(x,y,c) re.DrawCharColor(x,y,c,7)
-#define Draw_Fill re.DrawFill
+#define Draw_Fill		re.DrawFill
+
+static menuCommon_t *GetItem (menuFramework_t *menu, int index)
+{
+	int		i;
+	menuCommon_t *item;
+
+	for (i = 0, item = menu->itemList; i < index && item; i++, item = item->next) ;
+
+	if (!item)
+		Com_Error (ERR_FATAL, "GetMenuItem: item index %d is out of bounds %d\n", index, menu->nitems);
+
+	return item;
+}
+
+menuCommon_t *Menu_ItemAtCursor (menuFramework_t *m)
+{
+	if (m->cursor < 0 || m->cursor >= m->nitems)
+		return NULL;
+
+	return GetItem (m, m->cursor);
+}
 
 static void Action_DoEnter (menuAction_t *a)
 {
-	if (a->generic.callback)
-		a->generic.callback( a );
+	if (a->generic.callback) a->generic.callback (a);
 }
 
 static void Action_Draw (menuAction_t *a)
@@ -106,7 +124,7 @@ static void Field_Draw (menuField_t *f)
 	Q_strncpyz (tempbuffer, f->buffer + f->visible_offset, max(f->visible_length, sizeof(tempbuffer)));
 	Menu_DrawStringCommon (f->generic.x + f->generic.parent->x + 24, f->generic.y + f->generic.parent->y, tempbuffer, 0);
 
-	if (Menu_ItemAtCursor (f->generic.parent ) == f)
+	if (Menu_ItemAtCursor (f->generic.parent ) == (menuCommon_t*)f)
 	{
 		int offset;
 
@@ -249,32 +267,43 @@ qboolean Field_Key (menuField_t *f, int key)
 
 void Menu_AddItem (menuFramework_t *menu, void *item)
 {
-	if (menu->nitems == 0)
-		menu->nslots = 0;
+	menuCommon_t *last, *p, *c;
+	int		i;
 
-	if (menu->nitems < MAXMENUITEMS)
+	// NOTE: menu without items will have nitems==0, but itemList will not be NULL !
+	c = (menuCommon_t*) item;
+	// find last item
+	last = NULL;
+	for (i = 0, p = menu->itemList; i < menu->nitems; i++, p = p->next)
 	{
-		menu->items[menu->nitems] = item;
-		( ( menuCommon_t * ) menu->items[menu->nitems] )->parent = menu;
-		menu->nitems++;
+		if (p == c)					// item already present in list -- fatal (circular linked list)
+			Com_Error (ERR_FATAL, "Menu_AddItem: double item \"%s\" in menu, index=%d, count=%d", c->name, i, menu->nitems);
+		last = p;
 	}
-
-	menu->nslots = Menu_TallySlots (menu);
+	if (last && last->next)			// last item (with index == menu->nitem) have next != NULL
+		Com_Error (ERR_FATAL, "Menu_AddItem: invalid item list");
+	// add to list
+	if (i > 0)	last->next = c;		// append to list tail
+	else		menu->itemList = c;	// first in list
+	menu->nitems++;
+	// setup new item
+	c->parent = menu;
+	c->next = NULL;
 }
 
 
-static qboolean Menu_CompletelyVisible (menuFramework_t *menu)
+static bool Menu_CompletelyVisible (menuFramework_t *menu)
 {
 	int		y0, y1;
 
-	y0 = ((menuCommon_t*)menu->items[0])->y + menu->y;
-	y1 = ((menuCommon_t*)menu->items[menu->nitems - 1])->y + menu->y;
+	y0 = menu->itemList->y + menu->y;					// 1st item
+	y1 = GetItem (menu, menu->nitems - 1)->y + menu->y;	// last item
 	if (y0 >= 0 && y1 < VID_HEIGHT - 10) return true;
 	return false;
 }
 
 
-static qboolean Menu_ItemVisible (menuFramework_t *menu, int i)
+static bool Menu_ItemVisible (menuFramework_t *menu, int i)
 {
 	int		y;
 
@@ -286,7 +315,7 @@ static qboolean Menu_ItemVisible (menuFramework_t *menu, int i)
 
 	if (i < 0 || i >= menu->nitems)
 		return false;
-	y = ((menuCommon_t*)menu->items[i])->y + menu->y;
+	y = GetItem (menu, i)->y + menu->y;
 	return (y >= MENU_SCROLL_BORDER && y <= VID_HEIGHT - MENU_SCROLL_BORDER);
 }
 
@@ -295,18 +324,10 @@ static void Menu_MakeVisible (menuFramework_t *menu, int i)
 {
 	int		y, y0, y1;
 
-	y0 = ((menuCommon_t*)menu->items[0])->y;
-	y1 = ((menuCommon_t*)menu->items[menu->nitems - 1])->y;
-#if 1
 	if (Menu_CompletelyVisible (menu)) return;
-#else
-	int		h;
 
-	h = y1 - y0;
-	if (h < VID_HEIGHT - 2 * MENU_SCROLL_BORDER)
-		return;		// menu must be totally visible
-#endif
-
+	y0 = menu->itemList->y;						// 1st item
+	y1 = GetItem (menu, menu->nitems - 1)->y;	// last item
 	if (y0 + menu->y > MENU_SCROLL_BORDER)
 	{
 		menu->y = MENU_SCROLL_BORDER - y0;
@@ -318,12 +339,8 @@ static void Menu_MakeVisible (menuFramework_t *menu, int i)
 		return;
 	}
 
-	if (i < 0)
-		i = 0;
-	else if (i >= menu->nitems)
-		i = menu->nitems - 1;
-
-	y = ((menuCommon_t*)menu->items[i])->y + menu->y;
+	i = bound (i, 0, menu->nitems-1);
+	y = GetItem (menu, i)->y + menu->y;
 
 	if (y < MENU_SCROLL_BORDER)
 		menu->y += MENU_SCROLL_BORDER - y;
@@ -384,9 +401,7 @@ void Menu_Center (menuFramework_t *menu)
 {
 	int		height;
 
-	height = ((menuCommon_t*) menu->items[menu->nitems-1])->y;
-	height += 10;
-
+	height = GetItem (menu, menu->nitems-1)->y + 10;	// last item
 	menu->y = (VID_HEIGHT - height) / 2;
 	if (menu->y < MENU_SCROLL_BORDER && !Menu_CompletelyVisible (menu))
 		menu->y = MENU_SCROLL_BORDER;
@@ -433,7 +448,7 @@ void Menu_Draw (menuFramework_t *menu)
 
 	/*------- draw contents -------*/
 	vis = -1;
-	for (i = 0; i < menu->nitems; i++)
+	for (i = 0, item = menu->itemList; i < menu->nitems; i++, item = item->next)
 	{
 		if (Menu_ItemVisible (menu, i))
 		{
@@ -442,41 +457,41 @@ void Menu_Draw (menuFramework_t *menu)
 				vis = 0;
 				if (i > 0)	// it is not a first item
 				{
-					Menu_DrawDotsItem ((menuCommon_t*)menu->items[i]);
+					Menu_DrawDotsItem (item);
 					continue;
 				}
 			}
 			else if (i < menu->nitems - 1 && !Menu_ItemVisible (menu, i + 1))
 			{
-				Menu_DrawDotsItem ((menuCommon_t*)menu->items[i]);
+				Menu_DrawDotsItem (item);
 				break;	// no more visible items
 			}
 		}
 		else
 			continue;
 
-		switch (((menuCommon_t*)menu->items[i])->type)
+		switch (item->type)
 		{
 		case MTYPE_FIELD:
-			Field_Draw ((menuField_t*)menu->items[i]);
+			Field_Draw ((menuField_t*)item);
 			break;
 		case MTYPE_SLIDER:
-			Slider_Draw ((menuSlider_t*) menu->items[i]);
+			Slider_Draw ((menuSlider_t*)item);
 			break;
 		case MTYPE_LIST:
-			MenuList_Draw ((menuList_t*) menu->items[i]);
+			MenuList_Draw ((menuList_t*)item);
 			break;
 		case MTYPE_SPINCONTROL:
-			SpinControl_Draw ((menuList_t*) menu->items[i]);
+			SpinControl_Draw ((menuList_t*)item);
 			break;
 		case MTYPE_SPINCONTROL2:
-			SpinControl2_Draw ((menuList2_t*) menu->items[i]);
+			SpinControl2_Draw ((menuList2_t*)item);
 			break;
 		case MTYPE_ACTION:
-			Action_Draw ((menuAction_t*)menu->items[i]);
+			Action_Draw ((menuAction_t*)item);
 			break;
 		case MTYPE_SEPARATOR:
-			Separator_Draw ((menuSeparator_t*)menu->items[i]);
+			Separator_Draw ((menuSeparator_t*)item);
 			break;
 		}
 	}
@@ -548,18 +563,12 @@ void Menu_DrawStringCommon (int x, int y, const char *string, int shift)
 	}
 }
 
-void *Menu_ItemAtCursor (menuFramework_t *m)
-{
-	if (m->cursor < 0 || m->cursor >= m->nitems)
-		return 0;
-
-	return m->items[m->cursor];
-}
 
 qboolean Menu_SelectItem (menuFramework_t *s)
 {
-	menuCommon_t *item = ( menuCommon_t * ) Menu_ItemAtCursor( s );
+	menuCommon_t *item;
 
+	item = Menu_ItemAtCursor (s);
 	if (item)
 	{
 		switch (item->type)
@@ -585,7 +594,7 @@ void Menu_SetStatusBar (menuFramework_t *m, const char *string)
 
 void Menu_SlideItem (menuFramework_t *s, int dir)
 {
-	menuCommon_t *item = (menuCommon_t *) Menu_ItemAtCursor (s);
+	menuCommon_t *item = Menu_ItemAtCursor (s);
 
 	if (item)
 	{
@@ -602,32 +611,6 @@ void Menu_SlideItem (menuFramework_t *s, int dir)
 			break;
 		}
 	}
-}
-
-static int Menu_TallySlots (menuFramework_t *menu)
-{
-	int i;
-	int total = 0;
-
-	for ( i = 0; i < menu->nitems; i++ )
-	{
-		if ( ( ( menuCommon_t * ) menu->items[i] )->type == MTYPE_LIST )
-		{
-			int nitems = 0;
-			const char **n = ( ( menuList_t * ) menu->items[i] )->itemnames;
-
-			while (*n)
-				nitems++, n++;
-
-			total += nitems;
-		}
-		else
-		{
-			total++;
-		}
-	}
-
-	return total;
 }
 
 

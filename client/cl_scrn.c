@@ -89,19 +89,17 @@ void CL_AddNetgraph (void)
 	if (scr_debuggraph->integer || scr_timegraph->integer)
 		return;
 
-	for (i=0 ; i<cls.netchan.dropped ; i++)
+	for (i = 0; i < cls.netchan.dropped; i++)
 		SCR_DebugGraph (30, 0x40);
 
-	for (i=0 ; i<cl.surpressCount ; i++)
-		SCR_DebugGraph (30, 0xdf);
+	for (i = 0; i < cl.surpressCount ; i++)
+		SCR_DebugGraph (30, 0xDF);
 
 	// see what the latency was on this packet
 	in = cls.netchan.incoming_acknowledged & (CMD_BACKUP-1);
-	ping = cls.realtime - cl.cmd_time[in];
-	ping /= 30;
-	if (ping > 30)
-		ping = 30;
-	SCR_DebugGraph (ping, 0xd0);
+	ping = (cls.realtime - cl.cmd_time[in]) / 30;
+	if (ping > 30) ping = 30;
+	SCR_DebugGraph (ping, 0xD0);
 }
 
 
@@ -147,7 +145,7 @@ void SCR_DrawDebugGraph (void)
 	re.DrawFill (x, y-scr_graphheight->integer,
 		w, scr_graphheight->integer, 8);
 
-	for (a=0 ; a<w ; a++)
+	for (a = 0; a < w; a++)
 	{
 		i = (current-1-a+1024) & 1023;
 		v = values[i].value;
@@ -207,17 +205,15 @@ void SCR_CenterPrint (char *str)
 	s = str;
 	do
 	{
-	// scan the width of the line
-		for (l=0 ; l<40 ; l++)
+		// scan the width of the line
+		for (l = 0; l < 40; l++)
 			if (s[l] == '\n' || !s[l])
 				break;
-		for (i=0 ; i<(40-l)/2 ; i++)
+		for (i = 0; i < (40-l)/2; i++)
 			line[i] = ' ';
 
-		for (j=0 ; j<l ; j++)
-		{
+		for (j = 0; j < l; j++)
 			line[i++] = s[j];
-		}
 
 		line[i] = '\n';
 		line[i+1] = 0;
@@ -227,8 +223,7 @@ void SCR_CenterPrint (char *str)
 		while (*s && *s != '\n')
 			s++;
 
-		if (!*s)
-			break;
+		if (!*s) break;
 		s++;		// skip the \n
 	} while (1);
 	Com_Printf("\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
@@ -239,9 +234,7 @@ void SCR_CenterPrint (char *str)
 void SCR_DrawCenterString (void)
 {
 	char	*start;
-	int		l;
-	int		j;
-	int		x, y;
+	int		l, j, x, y;
 	int		remaining;
 
 	// the finale prints the characters one at a time
@@ -375,9 +368,9 @@ CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 
-	Cmd_AddCommand ("timerefresh",SCR_TimeRefresh_f);
-	Cmd_AddCommand ("loading",SCR_Loading_f);
-	Cmd_AddCommand ("sky",SCR_Sky_f);
+	Cmd_AddCommand ("timerefresh", SCR_TimeRefresh_f);
+	Cmd_AddCommand ("loading", SCR_Loading_f);
+	Cmd_AddCommand ("sky", SCR_Sky_f);
 
 	scr_initialized = true;
 }
@@ -392,8 +385,7 @@ void SCR_DrawPause (void)
 {
 	int		w, h;
 
-	if (!cl_paused->integer)
-		return;
+	if (!cl_paused->integer) return;
 
 	re.DrawGetPicSize (&w, &h, "pause");
 	re_DrawPic ((viddef.width-w)/2, viddef.height/2 + 8, "pause");

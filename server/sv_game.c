@@ -93,7 +93,7 @@ static void PF_cprintf (edict_t *ent, int level, char *fmt, ...)
 	{
 		n = NUM_FOR_EDICT(ent);
 		if (n < 1 || n > maxclients->integer)
-			Com_Error (ERR_DROP, "cprintf to a non-client");
+			Com_Error (ERR_DROP, "cprintf to a non-client");		// game library error
 	}
 
 	va_start (argptr,fmt);

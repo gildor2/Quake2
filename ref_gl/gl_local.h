@@ -191,9 +191,9 @@ extern cvar_t	*gl_hand;
 extern cvar_t	*gl_nobind;
 extern cvar_t	*gl_logFile;
 extern cvar_t	*r_novis;			//?? ~gl_pvsCull ?
-extern cvar_t	*r_nocull;			//?? ~gl_frustumCull ?
+extern cvar_t	*gl_frustumCull;
 extern cvar_t	*gl_oCull;
-extern cvar_t	*gl_facePlaneCull;	//?? gl_backfaceCull ?
+extern cvar_t	*gl_backfaceCull;
 extern cvar_t	*r_speeds;
 extern cvar_t	*r_fullbright, *r_lightmap;
 extern cvar_t	*gl_showsky;

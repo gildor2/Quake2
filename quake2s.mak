@@ -25,6 +25,10 @@ NULL=
 NULL=nul
 !ENDIF 
 
+CPP=cl.exe
+MTL=midl.exe
+RSC=rc.exe
+
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
 OUTDIR=.\release
@@ -197,42 +201,8 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MD /W3 /GX /Zd /O1 /Ob2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "REF_HARD_LINKED" /Fp"$(INTDIR)\quake2s.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-MTL=midl.exe
 MTL_PROJ=/nologo /D "NDEBUG" /mktyplib203 /win32 
-RSC=rc.exe
 RSC_PROJ=/l 0x409 /fo"$(INTDIR)\q2.res" /d "NDEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\quake2s.bsc" 
@@ -326,16 +296,8 @@ LINK32_OBJS= \
 	".\release\rw_ddraw.obj" \
 	".\release\rw_dib.obj" \
 	".\release\rw_imp.obj" \
-	"$(INTDIR)\adler32.obj" \
-	"$(INTDIR)\crc32.obj" \
-	"$(INTDIR)\infblock.obj" \
-	"$(INTDIR)\infcodes.obj" \
-	"$(INTDIR)\inffast.obj" \
-	"$(INTDIR)\inflate.obj" \
-	"$(INTDIR)\inftrees.obj" \
-	"$(INTDIR)\infutil.obj" \
-	"$(INTDIR)\zip.obj" \
-	"$(INTDIR)\zutil.obj" \
+	"$(INTDIR)\q2.res" \
+	"$(INTDIR)\resources.obj" \
 	"$(INTDIR)\jcapimin.obj" \
 	"$(INTDIR)\jcapistd.obj" \
 	"$(INTDIR)\jccoefct.obj" \
@@ -393,8 +355,16 @@ LINK32_OBJS= \
 	"$(INTDIR)\jquant1.obj" \
 	"$(INTDIR)\jquant2.obj" \
 	"$(INTDIR)\jutils.obj" \
-	"$(INTDIR)\q2.res" \
-	"$(INTDIR)\resources.obj"
+	"$(INTDIR)\adler32.obj" \
+	"$(INTDIR)\crc32.obj" \
+	"$(INTDIR)\infblock.obj" \
+	"$(INTDIR)\infcodes.obj" \
+	"$(INTDIR)\inffast.obj" \
+	"$(INTDIR)\inflate.obj" \
+	"$(INTDIR)\inftrees.obj" \
+	"$(INTDIR)\infutil.obj" \
+	"$(INTDIR)\zutil.obj" \
+	"$(INTDIR)\zip.obj"
 
 "$(OUTDIR)\quake2.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -728,42 +698,8 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP=cl.exe
 CPP_PROJ=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\quake2s.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
-
-.c{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.obj::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.c{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cpp{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-.cxx{$(INTDIR)}.sbr::
-   $(CPP) @<<
-   $(CPP_PROJ) $< 
-<<
-
-MTL=midl.exe
 MTL_PROJ=/nologo /D "_DEBUG" /mktyplib203 /win32 
-RSC=rc.exe
 RSC_PROJ=/l 0x409 /fo"$(INTDIR)\q2.res" /d "_DEBUG" 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\quake2s.bsc" 
@@ -853,16 +789,6 @@ BSC32_SBRS= \
 	"$(INTDIR)\rw_ddraw.sbr" \
 	"$(INTDIR)\rw_dib.sbr" \
 	"$(INTDIR)\rw_imp.sbr" \
-	"$(INTDIR)\adler32.sbr" \
-	"$(INTDIR)\crc32.sbr" \
-	"$(INTDIR)\infblock.sbr" \
-	"$(INTDIR)\infcodes.sbr" \
-	"$(INTDIR)\inffast.sbr" \
-	"$(INTDIR)\inflate.sbr" \
-	"$(INTDIR)\inftrees.sbr" \
-	"$(INTDIR)\infutil.sbr" \
-	"$(INTDIR)\zip.sbr" \
-	"$(INTDIR)\zutil.sbr" \
 	"$(INTDIR)\jcapimin.sbr" \
 	"$(INTDIR)\jcapistd.sbr" \
 	"$(INTDIR)\jccoefct.sbr" \
@@ -919,7 +845,17 @@ BSC32_SBRS= \
 	"$(INTDIR)\jmemmgr.sbr" \
 	"$(INTDIR)\jquant1.sbr" \
 	"$(INTDIR)\jquant2.sbr" \
-	"$(INTDIR)\jutils.sbr"
+	"$(INTDIR)\jutils.sbr" \
+	"$(INTDIR)\adler32.sbr" \
+	"$(INTDIR)\crc32.sbr" \
+	"$(INTDIR)\infblock.sbr" \
+	"$(INTDIR)\infcodes.sbr" \
+	"$(INTDIR)\inffast.sbr" \
+	"$(INTDIR)\inflate.sbr" \
+	"$(INTDIR)\inftrees.sbr" \
+	"$(INTDIR)\infutil.sbr" \
+	"$(INTDIR)\zutil.sbr" \
+	"$(INTDIR)\zip.sbr"
 
 "$(OUTDIR)\quake2s.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
     $(BSC32) @<<
@@ -1014,16 +950,16 @@ LINK32_OBJS= \
 	"$(INTDIR)\rw_ddraw.obj" \
 	"$(INTDIR)\rw_dib.obj" \
 	"$(INTDIR)\rw_imp.obj" \
-	"$(INTDIR)\adler32.obj" \
-	"$(INTDIR)\crc32.obj" \
-	"$(INTDIR)\infblock.obj" \
-	"$(INTDIR)\infcodes.obj" \
-	"$(INTDIR)\inffast.obj" \
-	"$(INTDIR)\inflate.obj" \
-	"$(INTDIR)\inftrees.obj" \
-	"$(INTDIR)\infutil.obj" \
-	"$(INTDIR)\zip.obj" \
-	"$(INTDIR)\zutil.obj" \
+	"$(INTDIR)\q2.res" \
+	"$(INTDIR)\r_aclipa.obj" \
+	"$(INTDIR)\r_draw16.obj" \
+	"$(INTDIR)\r_drawa.obj" \
+	"$(INTDIR)\r_edgea.obj" \
+	"$(INTDIR)\r_polysa.obj" \
+	"$(INTDIR)\r_scana.obj" \
+	"$(INTDIR)\r_spr8.obj" \
+	"$(INTDIR)\r_surf8.obj" \
+	"$(INTDIR)\r_varsa.obj" \
 	"$(INTDIR)\jcapimin.obj" \
 	"$(INTDIR)\jcapistd.obj" \
 	"$(INTDIR)\jccoefct.obj" \
@@ -1081,16 +1017,16 @@ LINK32_OBJS= \
 	"$(INTDIR)\jquant1.obj" \
 	"$(INTDIR)\jquant2.obj" \
 	"$(INTDIR)\jutils.obj" \
-	"$(INTDIR)\q2.res" \
-	"$(INTDIR)\r_aclipa.obj" \
-	"$(INTDIR)\r_draw16.obj" \
-	"$(INTDIR)\r_drawa.obj" \
-	"$(INTDIR)\r_edgea.obj" \
-	"$(INTDIR)\r_polysa.obj" \
-	"$(INTDIR)\r_scana.obj" \
-	"$(INTDIR)\r_spr8.obj" \
-	"$(INTDIR)\r_surf8.obj" \
-	"$(INTDIR)\r_varsa.obj"
+	"$(INTDIR)\adler32.obj" \
+	"$(INTDIR)\crc32.obj" \
+	"$(INTDIR)\infblock.obj" \
+	"$(INTDIR)\infcodes.obj" \
+	"$(INTDIR)\inffast.obj" \
+	"$(INTDIR)\inflate.obj" \
+	"$(INTDIR)\inftrees.obj" \
+	"$(INTDIR)\infutil.obj" \
+	"$(INTDIR)\zutil.obj" \
+	"$(INTDIR)\zip.obj"
 
 "$(OUTDIR)\quake2.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -1098,6 +1034,36 @@ LINK32_OBJS= \
 <<
 
 !ENDIF 
+
+.c{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.obj::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.c{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cpp{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
+
+.cxx{$(INTDIR)}.sbr::
+   $(CPP) @<<
+   $(CPP_PROJ) $< 
+<<
 
 
 !IF "$(NO_EXTERNAL_DEPS)" != "1"
@@ -1987,6 +1953,24 @@ SOURCE=.\win32\vid_menu.c
 
 
 "$(INTDIR)\vid_menu.obj"	"$(INTDIR)\vid_menu.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
+SOURCE=.\qcommon\zip.c
+
+!IF  "$(CFG)" == "quake2s - Win32 Release"
+
+
+"$(INTDIR)\zip.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
+
+
+"$(INTDIR)\zip.obj"	"$(INTDIR)\zip.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
@@ -2955,7 +2939,7 @@ InputName=r_varsa
 
 !ENDIF 
 
-SOURCE=.\zip\adler32.c
+SOURCE=.\lib\zlib\adler32.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2973,7 +2957,7 @@ SOURCE=.\zip\adler32.c
 
 !ENDIF 
 
-SOURCE=.\zip\crc32.c
+SOURCE=.\lib\zlib\crc32.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -2991,7 +2975,7 @@ SOURCE=.\zip\crc32.c
 
 !ENDIF 
 
-SOURCE=.\zip\infblock.c
+SOURCE=.\lib\zlib\infblock.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3009,7 +2993,7 @@ SOURCE=.\zip\infblock.c
 
 !ENDIF 
 
-SOURCE=.\zip\infcodes.c
+SOURCE=.\lib\zlib\infcodes.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3027,7 +3011,7 @@ SOURCE=.\zip\infcodes.c
 
 !ENDIF 
 
-SOURCE=.\zip\inffast.c
+SOURCE=.\lib\zlib\inffast.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3045,7 +3029,7 @@ SOURCE=.\zip\inffast.c
 
 !ENDIF 
 
-SOURCE=.\zip\inflate.c
+SOURCE=.\lib\zlib\inflate.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3063,7 +3047,7 @@ SOURCE=.\zip\inflate.c
 
 !ENDIF 
 
-SOURCE=.\zip\inftrees.c
+SOURCE=.\lib\zlib\inftrees.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3081,7 +3065,7 @@ SOURCE=.\zip\inftrees.c
 
 !ENDIF 
 
-SOURCE=.\zip\infutil.c
+SOURCE=.\lib\zlib\infutil.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3099,25 +3083,7 @@ SOURCE=.\zip\infutil.c
 
 !ENDIF 
 
-SOURCE=.\zip\zip.c
-
-!IF  "$(CFG)" == "quake2s - Win32 Release"
-
-
-"$(INTDIR)\zip.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ELSEIF  "$(CFG)" == "quake2s - Win32 Debug"
-
-
-"$(INTDIR)\zip.obj"	"$(INTDIR)\zip.sbr" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ENDIF 
-
-SOURCE=.\zip\zutil.c
+SOURCE=.\lib\zlib\zutil.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3135,7 +3101,7 @@ SOURCE=.\zip\zutil.c
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcapimin.c
+SOURCE=.\lib\jpeglib\jcapimin.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3159,7 +3125,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcapistd.c
+SOURCE=.\lib\jpeglib\jcapistd.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3183,7 +3149,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jccoefct.c
+SOURCE=.\lib\jpeglib\jccoefct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3207,7 +3173,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jccolor.c
+SOURCE=.\lib\jpeglib\jccolor.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3231,7 +3197,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcdctmgr.c
+SOURCE=.\lib\jpeglib\jcdctmgr.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3255,7 +3221,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcdiffct.c
+SOURCE=.\lib\jpeglib\jcdiffct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3279,7 +3245,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jchuff.c
+SOURCE=.\lib\jpeglib\jchuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3303,7 +3269,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcinit.c
+SOURCE=.\lib\jpeglib\jcinit.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3327,7 +3293,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jclhuff.c
+SOURCE=.\lib\jpeglib\jclhuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3351,7 +3317,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jclossls.c
+SOURCE=.\lib\jpeglib\jclossls.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3375,7 +3341,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jclossy.c
+SOURCE=.\lib\jpeglib\jclossy.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3399,7 +3365,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcmainct.c
+SOURCE=.\lib\jpeglib\jcmainct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3423,7 +3389,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcmarker.c
+SOURCE=.\lib\jpeglib\jcmarker.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3447,7 +3413,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcmaster.c
+SOURCE=.\lib\jpeglib\jcmaster.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3471,7 +3437,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcodec.c
+SOURCE=.\lib\jpeglib\jcodec.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3495,7 +3461,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcomapi.c
+SOURCE=.\lib\jpeglib\jcomapi.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3519,7 +3485,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcparam.c
+SOURCE=.\lib\jpeglib\jcparam.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3543,7 +3509,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcphuff.c
+SOURCE=.\lib\jpeglib\jcphuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3567,7 +3533,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcpred.c
+SOURCE=.\lib\jpeglib\jcpred.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3591,7 +3557,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcprepct.c
+SOURCE=.\lib\jpeglib\jcprepct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3615,7 +3581,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcsample.c
+SOURCE=.\lib\jpeglib\jcsample.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3639,7 +3605,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcscale.c
+SOURCE=.\lib\jpeglib\jcscale.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3663,7 +3629,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jcshuff.c
+SOURCE=.\lib\jpeglib\jcshuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3687,7 +3653,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdapimin.c
+SOURCE=.\lib\jpeglib\jdapimin.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3711,7 +3677,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdapistd.c
+SOURCE=.\lib\jpeglib\jdapistd.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3735,7 +3701,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdatadst.c
+SOURCE=.\lib\jpeglib\jdatadst.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3759,7 +3725,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdcoefct.c
+SOURCE=.\lib\jpeglib\jdcoefct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3783,7 +3749,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdcolor.c
+SOURCE=.\lib\jpeglib\jdcolor.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3807,7 +3773,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jddctmgr.c
+SOURCE=.\lib\jpeglib\jddctmgr.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3831,7 +3797,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jddiffct.c
+SOURCE=.\lib\jpeglib\jddiffct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3855,7 +3821,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdhuff.c
+SOURCE=.\lib\jpeglib\jdhuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3879,7 +3845,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdinput.c
+SOURCE=.\lib\jpeglib\jdinput.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3903,7 +3869,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdlhuff.c
+SOURCE=.\lib\jpeglib\jdlhuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3927,7 +3893,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdlossls.c
+SOURCE=.\lib\jpeglib\jdlossls.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3951,7 +3917,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdlossy.c
+SOURCE=.\lib\jpeglib\jdlossy.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3975,7 +3941,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdmainct.c
+SOURCE=.\lib\jpeglib\jdmainct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -3999,7 +3965,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdmarker.c
+SOURCE=.\lib\jpeglib\jdmarker.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4023,7 +3989,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdmaster.c
+SOURCE=.\lib\jpeglib\jdmaster.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4047,7 +4013,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdmerge.c
+SOURCE=.\lib\jpeglib\jdmerge.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4071,7 +4037,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdphuff.c
+SOURCE=.\lib\jpeglib\jdphuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4095,7 +4061,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdpostct.c
+SOURCE=.\lib\jpeglib\jdpostct.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4119,7 +4085,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdpred.c
+SOURCE=.\lib\jpeglib\jdpred.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4143,7 +4109,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdsample.c
+SOURCE=.\lib\jpeglib\jdsample.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4167,7 +4133,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdscale.c
+SOURCE=.\lib\jpeglib\jdscale.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4191,7 +4157,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jdshuff.c
+SOURCE=.\lib\jpeglib\jdshuff.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4215,7 +4181,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jfdctflt.c
+SOURCE=.\lib\jpeglib\jfdctflt.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4239,7 +4205,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jfdctfst.c
+SOURCE=.\lib\jpeglib\jfdctfst.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4263,7 +4229,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jfdctint.c
+SOURCE=.\lib\jpeglib\jfdctint.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4287,7 +4253,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jidctflt.c
+SOURCE=.\lib\jpeglib\jidctflt.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4311,7 +4277,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jidctfst.c
+SOURCE=.\lib\jpeglib\jidctfst.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4335,7 +4301,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jidctint.c
+SOURCE=.\lib\jpeglib\jidctint.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4359,7 +4325,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jidctred.c
+SOURCE=.\lib\jpeglib\jidctred.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4383,7 +4349,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jmemansi.c
+SOURCE=.\lib\jpeglib\jmemansi.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4407,7 +4373,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jmemmgr.c
+SOURCE=.\lib\jpeglib\jmemmgr.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4431,7 +4397,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jquant1.c
+SOURCE=.\lib\jpeglib\jquant1.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4455,7 +4421,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jquant2.c
+SOURCE=.\lib\jpeglib\jquant2.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 
@@ -4479,7 +4445,7 @@ CPP_SWITCHES=/nologo /G5 /MDd /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOW
 
 !ENDIF 
 
-SOURCE=.\jpeg\jutils.c
+SOURCE=.\lib\jpeglib\jutils.c
 
 !IF  "$(CFG)" == "quake2s - Win32 Release"
 

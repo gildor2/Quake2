@@ -9,13 +9,19 @@
 #define PROFILE_LOADING
 
 #ifdef PROFILE_LOADING
-#define START_PROFILE(name)	\
-	{	\
-		static char _name[] = #name;	\
+#define START_PROFILE(name)			\
+	{								\
+		static char _name[] = #name;\
+		char *_arg = "";			\
+		int	_time = Sys_Milliseconds();
+#define START_PROFILE2(name,arg)	\
+	{								\
+		static char _name[] = #name;\
+		char *_arg = arg;			\
 		int	_time = Sys_Milliseconds();
 #define END_PROFILE	\
 		_time = Sys_Milliseconds() - _time;	\
-		if (Cvar_VariableInt("r_profile")) Com_Printf("^5%s: %d ms\n", _name, _time);	\
+		if (Cvar_VariableInt("r_profile")) Com_Printf("^5%s ^2%s^5: %d ms\n", _name, _arg, _time);	\
 	}
 #else
 #define START_PROFILE(name)
@@ -65,7 +71,7 @@ model_t	*GL_FindModel (char *name)
 	modelCount++;		// reserve slot
 	strcpy (m->name, name2);
 
-START_PROFILE(FindModel::Load)
+START_PROFILE2(FindModel::Load, name)
 	/*----- not found -- load model ------*/
 	len = FS_LoadFile (name2, (void**)&file);
 	if (!file)
