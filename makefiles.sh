@@ -1,1 +1,1 @@
-./genmake quake2.prj > quake2.mak
+Tools/GenMake/genmake quake2.prj > quake2.mak

@@ -414,29 +414,21 @@ void	Cbuf_InsertFromDefer (void);
 
 //===========================================================================
 
-/*
-
-Command execution takes a null terminated string, breaks it into tokens,
-then searches for a command or variable that matches the first token.
-
-*/
-
-class cmdAlias_t : public CStringItem
+//!! here for command completion (current version) only
+class CAlias : public CStringItem
 {
 public:
 	char	*value;
 };
-extern TList<cmdAlias_t> cmdAlias;
+extern TList<CAlias> AliasList;
 
-typedef struct cmdFunc_s
+class CCommand : public CStringItem
 {
-	struct cmdFunc_s *next;
-	const char	*name;
+public:
 	int		flags;
 	void (*func) ();
-} cmdFunc_t;
-
-extern cmdFunc_t *cmdFuncs;
+};
+extern TList<CCommand> CmdList;
 
 
 void	Cmd_Init (void);

@@ -296,7 +296,7 @@ static char *Do_CompleteCommand (char *partial)
 			// complete "alias name "
 			if (!stricmp (complete_command, "alias"))
 			{
-				for (cmdAlias_t *alias = cmdAlias.First(); alias; alias = cmdAlias.Next(alias))
+				for (CAlias *alias = AliasList.First(); alias; alias = AliasList.Next(alias))
 					if (!stricmp (alias->name, arg1))
 					{
 						strcpy (completed_name, va("alias %s %s", arg1, COM_QuoteString (alias->value, false)));
@@ -327,7 +327,7 @@ static char *Do_CompleteCommand (char *partial)
 				partial_name = arg1s;
 				partial_len = strlen (arg1s);
 				completed_count = 0;
-				for (cmdAlias_t *alias = cmdAlias.First(); alias; alias = cmdAlias.Next(alias))
+				for (CAlias *alias = AliasList.First(); alias; alias = AliasList.Next(alias))
 					TryComplete (alias->name, display, 'a');
 				if (!completed_count)
 					return NULL;
@@ -435,9 +435,9 @@ static char *Do_CompleteCommand (char *partial)
 		completed_count = 0;
 
 		// check for partial match
-		for (cmdFunc_t *cmd = cmdFuncs; cmd; cmd = cmd->next)
+		for (CCommand *cmd = CmdList.First(); cmd; cmd = CmdList.Next(cmd))
 			TryComplete (cmd->name, display, 'c');
-		for (cmdAlias_t *a = cmdAlias.First(); a; a = cmdAlias.Next(a))
+		for (CAlias *a = AliasList.First(); a; a = AliasList.Next(a))
 			TryComplete (a->name, display, 'a');
 		for (cvar_t *var = cvar_vars; var; var = var->next)
 			TryComplete (var->name, display, 'v');
