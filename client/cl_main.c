@@ -1522,7 +1522,7 @@ CVAR_BEGIN(vars)
 	{&rcon_client_password, "rcon_password", "", 0},
 	{&rcon_address, "rcon_address", "", 0},
 
-	{&cl_lightlevel, "r_lightlevel", "0", 0},		//?? this is a JC's hack; replace this with a new refresh func.
+	{&cl_lightlevel, "r_lightlevel", "0", 0},		//?? this is a JC's hack; replace this with a new refresh func. and remove cvar
 
 	// userinfo
 	{&info_password, "password", "", CVAR_USERINFO},

@@ -1,5 +1,9 @@
-!! improve dropFrame (ResortShader() and AddSurfaceToScene())
+? improve dropFrame: change sorting for sprites (will not work when sprites used within a scene)
 ?? add mean filter for DrawFPS() (ignore dropped frames and long (with FS access) frames)
+?! insert entities into BSP draw order (this will remove sorting by entity index and imprive quality of alpha-blended
+   entity/world drawing; also: can improve culling -- when occlision will be implemented -- func InEntityVisible() -
+   do SphereTrace until any of occupied leafs visible)
+! do not render while window is minimized (less CPU usage)
 
 - shaders:
   ! any number of animated textures (see Q2 SP map "lab") -- dynamic allocation, boost MAX_STAGE_TEXTURES

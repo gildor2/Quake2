@@ -60,11 +60,7 @@ void GL_SetTexturePalette( unsigned palette[256] )
 		}
 
 		qglColorTableEXT( GL_SHARED_TEXTURE_PALETTE_EXT,
-						   GL_RGB,
-						   256,
-						   GL_RGB,
-						   GL_UNSIGNED_BYTE,
-						   temptable );
+		   GL_RGB, 256, GL_RGB, GL_UNSIGNED_BYTE, temptable );
 	}
 */
 }

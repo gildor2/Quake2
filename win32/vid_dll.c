@@ -35,6 +35,7 @@ refExport_t	re;
 #include "../client/ref_impl.h"
 
 cvar_t *win_noalttab;
+cvar_t *win_priorityBoost;
 
 #ifndef WM_MOUSEWHEEL
 #define WM_MOUSEWHEEL (WM_MOUSELAST+1)  // message that will be supported by the OS
@@ -67,43 +68,50 @@ extern unsigned sys_msg_time;
 */
 extern qboolean s_win95;
 
-static void WIN_DisableAltTab( void )
+static void WIN_DisableAltTab (void)
 {
-	if ( s_alttab_disabled )
+	if (s_alttab_disabled)
 		return;
 
-	if ( s_win95 )
+	if (s_win95)
 	{
 		BOOL old;
 
-		SystemParametersInfo( SPI_SCREENSAVERRUNNING, 1, &old, 0 );
+		SystemParametersInfo (SPI_SCREENSAVERRUNNING, 1, &old, 0);
 	}
 	else
 	{
-		RegisterHotKey( 0, 0, MOD_ALT, VK_TAB );
-		RegisterHotKey( 0, 1, MOD_ALT, VK_RETURN );
+		RegisterHotKey (0, 0, MOD_ALT, VK_TAB);
+		RegisterHotKey (0, 1, MOD_ALT, VK_RETURN);
 	}
 	s_alttab_disabled = true;
 }
 
-static void WIN_EnableAltTab( void )
+static void WIN_EnableAltTab (void)
 {
-	if ( s_alttab_disabled )
+	if (s_alttab_disabled)
 	{
-		if ( s_win95 )
+		if (s_win95)
 		{
 			BOOL old;
 
-			SystemParametersInfo( SPI_SCREENSAVERRUNNING, 0, &old, 0 );
+			SystemParametersInfo (SPI_SCREENSAVERRUNNING, 0, &old, 0);
 		}
 		else
 		{
-			UnregisterHotKey( 0, 0 );
-			UnregisterHotKey( 0, 1 );
+			UnregisterHotKey (0, 0);
+			UnregisterHotKey (0, 1);
 		}
-
 		s_alttab_disabled = false;
 	}
+}
+
+static void WIN_HighPriority (qboolean enable)
+{
+	HANDLE	hProcess;
+
+	hProcess = GetCurrentProcess ();
+	SetPriorityClass (hProcess, enable ? HIGH_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS);
 }
 
 
@@ -215,9 +223,9 @@ void AppActivate (BOOL fActive, BOOL minimize)
 		S_Activate (false);
 
 		if (win_noalttab->integer)
-		{
 			WIN_EnableAltTab ();
-		}
+		if (win_priorityBoost->integer)
+			WIN_HighPriority (false);
 	}
 	else
 	{
@@ -225,9 +233,9 @@ void AppActivate (BOOL fActive, BOOL minimize)
 		CDAudio_Activate (true);
 		S_Activate (true);
 		if (win_noalttab->integer)
-		{
 			WIN_DisableAltTab ();
-		}
+		if (win_priorityBoost->integer)
+			WIN_HighPriority (true);
 	}
 }
 
@@ -260,10 +268,8 @@ LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	switch (uMsg)
 	{
 	case WM_MOUSEWHEEL:
-		/*
-		** this chunk of code theoretically only works under NT4 and Win98
-		** since this message doesn't exist under Win95
-		*/
+		// this chunk of code theoretically only works under NT4 and Win98
+		// since this message doesn't exist under Win95
 		if ((short) HIWORD(wParam) > 0)
 		{
 			Key_Event (K_MWHEELUP, true, sys_msg_time);
@@ -597,6 +603,12 @@ void Vid_CheckChanges (void)
 		win_noalttab->modified = false;
 	}
 
+	if (win_priorityBoost->modified)
+	{
+		WIN_HighPriority (win_priorityBoost->integer);
+		win_priorityBoost->modified = false;
+	}
+
 	if (vid_ref->modified)
 	{
 		cl.force_refdef = true;		// can't use a paused refdef
@@ -648,7 +660,8 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(vid_ypos, 0, CVAR_ARCHIVE),
 	CVAR_VAR(r_fullscreen, 1, CVAR_ARCHIVE),
 	CVAR_VAR(r_gamma, 1, CVAR_ARCHIVE),
-	CVAR_VAR(win_noalttab, 0, CVAR_ARCHIVE)
+	CVAR_VAR(win_noalttab, 0, CVAR_ARCHIVE),
+	CVAR_VAR(win_priorityBoost, 0, CVAR_ARCHIVE)
 CVAR_END
 
 	CVAR_GET_VARS(vars);

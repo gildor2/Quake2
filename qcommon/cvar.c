@@ -149,8 +149,6 @@ static void Cvar_SetHardcoded (cvar_t *var, char *value)
 	if (!stricmp (var->name, "game"))
 	{
 		CL_WriteConfiguration (Cvar_VariableString ("cfgfile"));
-		if (!strcmp (value, BASEDIRNAME))
-			value = "";
 		if (FS_SetGamedir (value))
 		{
 			Cvar_SetString (var, value);
@@ -160,6 +158,12 @@ static void Cvar_SetHardcoded (cvar_t *var, char *value)
 	// add another vars here
 	else
 		Cvar_SetString (var, value);
+}
+
+static void FilterValue (cvar_t *var, char **value)
+{
+	if (!stricmp (var->name, "game") && !strcmp (*value, BASEDIRNAME))
+		*value = "";
 }
 
 
@@ -231,6 +235,7 @@ cvar_t *Cvar_Get (char *var_name, char *var_value, int flags)
 	var->name = AllocChainBlock (cvar_chain, strlen (var_name) + 1);
 	strcpy (var->name, var_name);
 
+	FilterValue (var, &var_name);
 	Cvar_SetString (var, var_value);
 
 	// link the variable in
@@ -290,6 +295,7 @@ static cvar_t *Cvar_Set2 (char *var_name, char *value, int flags, qboolean force
 		}
 	}
 
+	FilterValue (var, &value);
 	if (!force)
 	{
 		if (var->flags & CVAR_NOSET)

@@ -77,7 +77,7 @@ FILE* ZipOpen (char *name)
 		|| (fread (&hdr, sizeof(hdr), 1, F) != 1)
 		|| (hdr.compression_method >= 9))
 	{
-		fclose(F);
+		fclose (F);
 		return NULL;
 	}
 	return F;

@@ -522,6 +522,8 @@ typedef struct
 
 typedef struct
 {
+	//--- copy of glstate from NEW ref_gl ----
+	// (required for GLimp_... functions)
 	int		currentBinds[2];
 	int		currentEnv[2];
 	int		currentTmu;
@@ -529,13 +531,15 @@ typedef struct
 	int		currentCullMode;
 	int		currentColor;
 
+	int		maxUsedShaderIndex;
+	int		minNewShaderIndex;
 	qboolean finished;	//?? remove
 	qboolean is2dMode;
 
 	int		prevMode;	// last valid video mode
 	qboolean fullscreen;
 	int		colorBits;	// 0 == 16, 32
-	//------------------------
+	//--------------- end --------------------
 	float inverse_intensity;
 
 	unsigned char *d_16to8table;

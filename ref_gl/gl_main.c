@@ -229,8 +229,6 @@ static int GL_Init (void *hinstance, void *hWnd)
 
 	Com_Printf ("ref_gl version: "REF_VERSION"\n");
 
-//??	Draw_GetPalette ();
-
 	GL_Register ();
 
 	// initialize our QGL dynamic bindings
@@ -306,6 +304,7 @@ static int GL_Init (void *hinstance, void *hWnd)
 
 	QGL_InitExtensions ();
 
+	//?? is maxActiveTextures needed?
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
 	{
 		qglGetIntegerv (GL_MAX_TEXTURE_UNITS_ARB, &gl_config.maxActiveTextures);
@@ -318,6 +317,7 @@ static int GL_Init (void *hinstance, void *hWnd)
 	else
 		gl_config.maxActiveTextures = 1;
 
+	//?? place this decision to Upload() and remove formatSolid from gl_config? (and update oldgl if needed)
 	if (GL_SUPPORT(QGL_ARB_TEXTURE_COMPRESSION))
 	{
 		gl_config.formatSolid = GL_COMPRESSED_RGB_ARB;
@@ -479,9 +479,8 @@ static void GL_BeginFrame (float camera_separation)
 	//?? what to do with the camera_separation ?
 
 	gl_state.finished = false;
-	gl_state.dropFrame = false;
-
-	//?? make GL_FlushBuffers() between all parts below? (Q3)
+	gl_state.maxUsedShaderIndex = -1;
+	gl_state.minNewShaderIndex = 65536;	// MAX_SHADERS, to be exact
 
 	if (gl_texturemode->modified)
 	{

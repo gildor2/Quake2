@@ -205,11 +205,8 @@ static void ResortShader (shader_t *shader, int startIndex)
 			break;
 		}
 	}
-	if (i != startIndex && !gl_state.dropFrame)
-	{
-		Com_DPrintf ("ResortShader(%s): drop frame\n", shader->name);
-		gl_state.dropFrame = true;		// shaders are reordered -- do not draw frame
-	}
+	if (i != startIndex && i < gl_state.minNewShaderIndex)
+		gl_state.minNewShaderIndex = i;
 	if (i < 0) i = 0;	// will be first (for example, when shaderCount == 0)
 	shadersArray[i] = shader;
 	shader->sortIndex = i;

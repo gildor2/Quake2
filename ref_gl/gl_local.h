@@ -291,6 +291,7 @@ typedef struct
 
 typedef struct
 {
+	//?? NOTE: when changed, need to syncronize with OLD ref_gl
 	int		currentBinds[2];
 	int		currentEnv[2];
 	int		currentTmu;
@@ -298,7 +299,8 @@ typedef struct
 	int		currentCullMode;
 	int		currentColor;
 
-	qboolean dropFrame;				// when true, do not send frame to BackEnd
+	int		maxUsedShaderIndex;
+	int		minNewShaderIndex;
 	qboolean finished;	//?? remove
 	qboolean is2dMode;
 
@@ -367,11 +369,11 @@ typedef struct
 	// OpenGL statistics
 	int		numBinds, numUploads, numIterators;
 	// pefromance measuring
-	int		beginFrame,		// front-end
-			beginSort,		// sorting
-			begin3D,		// back-end (3D)
-			begin2D,		// back-end (2D)
-			endFrame;
+	int		beginFrame;		// front-end
+	int		beginSort;		// sorting
+	int		begin3D;		// back-end (3D)
+	int		begin2D;		// back-end (2D)
+	int		endFrame;
 } drawSpeeds_t;
 
 

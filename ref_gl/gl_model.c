@@ -781,6 +781,7 @@ static void GetSubdivideIndexes (int *pindex)
 
 
 static byte *lightData;
+static int lightDataSize;
 
 static void LoadLighting2 (byte *data, int size)
 {
@@ -791,6 +792,7 @@ static void LoadLighting2 (byte *data, int size)
 	}
 
 	lightData = Hunk_Alloc (size);
+	lightDataSize = size;
 	CopyLightmap (lightData, data, size / 3);
 }
 
@@ -1193,17 +1195,22 @@ static void GenerateLightmaps2 (void)
 	{
 		dynamicLightmap_t *lm;
 		qboolean	bad;
+		int			lmSize;
 
 		s = sortedSurfaces[i];
 		lm = s->pl->lightmap;
 		if (!lm)
 			continue;
 
-		// check
-		if (ptr && ptr > lm->source)
-			bad = true;
+		lmSize = lm->w * lm->h * lm->numStyles * 3;
+		if (lm->source + lmSize > lightData + lightDataSize)
+			bad = true;		// out of bsp file
+		else if (ptr && ptr > lm->source && (s->shader->style & SHADER_TRYLIGHTMAP))
+			bad = true;		// erased by previous block
 		else
 			bad = false;
+
+		//?? add check: if current is "try" interlaced with next "not try (normal)" - current is "bad"
 
 		if (bad)
 		{
@@ -1212,11 +1219,13 @@ static void GenerateLightmaps2 (void)
 			{
 				s->shader->lightmapNumber = LIGHTMAP_NONE;
 				Com_DPrintf ("Disable lm for %s\n", s->shader->name);
+//				Com_Printf ("  diff: %d\n", ptr - lm->source);
+//				Com_Printf ("  w: %d  h: %d  st: %d\n", lm->w, lm->h, lm->numStyles);
 			}
 		}
 		else
 		{	// advance pointer
-			ptr = lm->source + lm->w * lm->h * lm->numStyles * 3;
+			ptr = lm->source + lmSize;
 		}
 	}
 

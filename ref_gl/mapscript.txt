@@ -7,6 +7,7 @@
 - coronas (size, color, lightstyle, position, radius (for placing inside objects, e.g. lamp))
 - inline shaders
 - surface sounds (local materials.lst)
+- C-style preprocessor (#include, at least) -- may be, inside COM_Parse?
 
 ------------------------ Shader extensions ---------------------------
 

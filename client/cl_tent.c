@@ -820,7 +820,7 @@ void CL_ParseTEnt (void)
 		if (type == TE_GUNSHOT)
 			CL_ParticleEffect (pos, dir, 0, 40);
 		else
-			CL_ParticleEffect (pos, dir, 0xe0, 6);
+			CL_ParticleEffect (pos, dir, 0xE0, 6);
 
 		if (type != TE_SPARKS)
 		{
@@ -836,6 +836,7 @@ void CL_ParseTEnt (void)
 				VectorAdd (pos, dir, start);
 				VectorMA (start, -2, dir, end);
 				trace = CM_BoxTrace (start, end, zero, zero, 0, MASK_ALL);
+				CL_ClipMoveToEntities (start, zero, zero, end, &trace);
 				if (trace.fraction < 1.0 && (surf = trace.surface))
 				{
 					impactType = materialImpacts[surf->material];

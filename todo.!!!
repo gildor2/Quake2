@@ -1,4 +1,4 @@
-*** Ideas from HL (may be inimplementable) ***
+*** Ideas from HL (may be unimplementable) ***
 // from pm_shader.c
 - step sound: volume = 0.2/0.5 (walk/run)
 - if moving slow - no step sounds
@@ -6,6 +6,11 @@
 - stop when |velocity| less than STOP_EPSILON==0.1
 
 
+- stop animation with mouse click (and something another?)
+? improve camper detection: track player position every ... 5 sec (??) for a 1+n minute period and set "camper" to true
+  if current player position is near (tune this distance !) to history[now-1min .. now-2min]
+- menu option: priority (win_priorityBoost) -- for Win2K
+? screenshots for savegames
 
 
 *** BUGS ***
@@ -107,6 +112,9 @@ BUGS:
 ? vertexArrayRange not works (require (almost) complete rewritting)
 
 ------------ SOUND ---------------------
+
+? add hardware mixing (DirectSound), try DirectSound3D (or OpenAL, or own implementation ??)
+  Maps with slow sound fx: beachassault (multiple barrel blast)
 
 - fix stereo sound rotation (bad positioning)
 
