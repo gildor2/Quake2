@@ -16,7 +16,7 @@ extern float	gl_fogStart, gl_fogEnd;
 //?? rename (gl_entity_t ? entity_t) and separate beam
 struct refEntity_t
 {
-	int		flags;
+	unsigned flags;
 	model_t	*model;
 	float	dist2;						// Z-coordinate of model
 	bool	visible;					// valid for current frame
@@ -87,7 +87,7 @@ struct surfaceInfo_t
 
 struct viewPortal_t
 {
-	int		flags;
+	unsigned flags;
 	float	time;				// time in seconds (for shader effects etc)
 	lightstyle_t *lightStyles;	// light styles for Q2/HL dynamic lightmaps
 	refDlight_t *dlights;

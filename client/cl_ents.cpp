@@ -616,14 +616,11 @@ void CL_AddEntityBox (entityState_t *st, unsigned rgba)
 
 static void CL_AddDebugLines (void)
 {
-	int			pnum;
-	entityState_t *st;
-
 	if (!cl_showbboxes->integer) return;
 
-	for (pnum = 0; pnum < cl.frame.num_entities; pnum++)
+	for (int pnum = 0; pnum < cl.frame.num_entities; pnum++)
 	{
-		st = &cl_parse_entities[(cl.frame.parse_entities+pnum)&(MAX_PARSE_ENTITIES-1)];
+		entityState_t *st = &cl_parse_entities[(cl.frame.parse_entities+pnum)&(MAX_PARSE_ENTITIES-1)];
 		if (!st->solid) continue;			// no collision with this entity
 
 		CL_AddEntityBox (st, 0xFF808000);
@@ -641,21 +638,18 @@ static void CL_AddPacketEntities (void)
 {
 	entity_t	ent;
 	entityState_t *s1;
-	float		autorotate;
-	int			i, pnum;
+	int			i;
 	centity_t	*cent;
-	clientinfo_t *ci;
-	int			autoanim;
 	unsigned 	effects, renderfx;
 
 	// bonus items rotate at a fixed rate
-	autorotate = anglemod(cl.ftime * 100);
+	float autorotate = anglemod(cl.ftime * 100);
 	// brush models can auto animate their frames
-	autoanim = 2 * cl.time / 1000;
+	int autoanim = 2 * cl.time / 1000;
 
 	memset (&ent, 0, sizeof(ent));
 
-	for (pnum = 0; pnum < cl.frame.num_entities; pnum++)
+	for (int pnum = 0; pnum < cl.frame.num_entities; pnum++)
 	{
 		GetEntityInfo (pnum, &s1, &effects, &renderfx);
 		s1 = &cl_parse_entities[(cl.frame.parse_entities+pnum)&(MAX_PARSE_ENTITIES-1)];
@@ -711,7 +705,7 @@ static void CL_AddPacketEntities (void)
 		if (s1->modelindex == 255)
 		{	// use custom player skin
 			ent.skinnum = 0;
-			ci = &cl.clientinfo[s1->skinnum & 0xFF];
+			clientinfo_t *ci = &cl.clientinfo[s1->skinnum & 0xFF];
 			ent.skin = ci->skin;
 			ent.model = ci->model;
 			if (!ent.skin || !ent.model)
@@ -720,8 +714,7 @@ static void CL_AddPacketEntities (void)
 				ent.model = cl.baseclientinfo.model;
 			}
 
-//============
-//PGM
+			// ROGUE
 			if (renderfx & RF_USE_DISGUISE)
 			{
 				if(!memcmp((char *)ent.skin, "players/male", 12))
@@ -740,8 +733,6 @@ static void CL_AddPacketEntities (void)
 					ent.model = re.RegisterModel ("players/cyborg/tris.md2");
 				}
 			}
-//PGM
-//============
 		}
 		else
 		{
@@ -755,7 +746,7 @@ static void CL_AddPacketEntities (void)
 			ent.alpha = 0.70;
 
 		// render effects (fullbright, translucent, etc)
-		if ((effects & EF_COLOR_SHELL))
+		if (effects & EF_COLOR_SHELL)
 			ent.flags = 0;	// renderfx go on color shell entity
 		else
 			ent.flags = renderfx;
@@ -767,7 +758,7 @@ static void CL_AddPacketEntities (void)
 			ent.angles[1] = autorotate;
 			ent.angles[2] = 0;
 		}
-		// RAFAEL
+		// XATRIX
 		else if (effects & EF_SPINNINGLIGHTS)
 		{
 			vec3_t forward, start;
@@ -781,20 +772,19 @@ static void CL_AddPacketEntities (void)
 		}
 		else
 		{	// interpolate angles
-			float	a1, a2;
-
-			for (i=0 ; i<3 ; i++)
+			for (i = 0; i < 3; i++)
 			{
-				a1 = cent->current.angles[i];
-				a2 = cent->prev.angles[i];
+				float a1 = cent->current.angles[i];
+				float a2 = cent->prev.angles[i];
 				ent.angles[i] = LerpAngle (a2, a1, cl.lerpfrac);
 			}
 		}
 
 		if (s1->number == cl.playernum+1)
 		{
-/*			Why disabled: works only for CURRENT player (not for others)
-			And: some mods creates many color shells -- glow should be a server-side decision ...
+#if 0
+			-- Why disabled: works only for CURRENT player (not for others)
+			-- And: some mods creates many color shells -- glow should be a server-side decision ...
 			// add glow around player with COLOR_SHELL (have active powerups)
 			if (renderfx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE))
 			{
@@ -805,7 +795,8 @@ static void CL_AddPacketEntities (void)
 				if (renderfx & RF_SHELL_GREEN)	g = 1;
 				if (renderfx & RF_SHELL_BLUE)	b = 1;
 				V_AddLight (ent.origin, 96 + (frand() * 10), r, g, b);
-			} */
+			}
+#endif
 
 			ent.flags |= RF_VIEWERMODEL;	// only draw from mirrors
 
@@ -835,7 +826,7 @@ static void CL_AddPacketEntities (void)
 			ent.alpha = 0.30;
 		}
 
-		// RAFAEL
+		// XATRIX
 		if (effects & EF_PLASMA)
 		{
 			ent.flags |= RF_TRANSLUCENT;
@@ -848,7 +839,7 @@ static void CL_AddPacketEntities (void)
 			// PMM - *sigh*  yet more EF overloading
 			ent.alpha = (effects & EF_TRACKERTRAIL) ? 0.6 : 0.3;
 		}
-//pmm
+
 		// add to refresh list
 		AddEntityWithEffects (&ent, renderfx);
 
@@ -862,7 +853,7 @@ static void CL_AddPacketEntities (void)
 		{
 			if (s1->modelindex2 == 255)
 			{	// custom weapon
-				ci = &cl.clientinfo[s1->skinnum & 0xff];
+				clientinfo_t *ci = &cl.clientinfo[s1->skinnum & 0xff];
 				i = (s1->skinnum >> 8);
 				if (!cl_vwep->integer || i > MAX_CLIENTWEAPONMODELS - 1)
 					i = 0;		// 0 is default weapon model
@@ -883,27 +874,22 @@ static void CL_AddPacketEntities (void)
 				ent.alpha = 0.32;
 				ent.flags = RF_TRANSLUCENT;
 			}
-			// pmm
 
 			AddEntityWithEffects (&ent, renderfx);
-//			V_AddEntity (&ent);
 
 			//PGM - make sure these get reset.
 			ent.flags = 0;
 			ent.alpha = 0;
-			//PGM
 		}
 		if (s1->modelindex3)
 		{
 			ent.model = cl.model_draw[s1->modelindex3];
 			AddEntityWithEffects (&ent, renderfx);
-//			V_AddEntity (&ent);
 		}
 		if (s1->modelindex4)
 		{
 			ent.model = cl.model_draw[s1->modelindex4];
 			AddEntityWithEffects (&ent, renderfx);
-//			V_AddEntity (&ent);
 		}
 
 		if (effects & EF_POWERSCREEN)
@@ -919,17 +905,13 @@ static void CL_AddPacketEntities (void)
 		// add automatic particle trails
 		if (effects & ~EF_ROTATE)
 		{
-			if (effects & EF_ROCKET)
-			{
+			if (effects & EF_ROCKET) {
 				CL_RocketTrail (cent->lerp_origin, ent.origin, cent);
 				V_AddLight (ent.origin, 200, 1, 1, 0);
 			}
 			// PGM - Do not reorder EF_BLASTER and EF_HYPERBLASTER.
 			// EF_BLASTER | EF_TRACKER is a special case for EF_BLASTER2... Cheese!
-			else if (effects & EF_BLASTER)
-			{
-//				CL_BlasterTrail (cent->lerp_origin, ent.origin);
-//PGM
+			else if (effects & EF_BLASTER) {
 				if (effects & EF_TRACKER)	// lame... problematic?
 				{
 					CL_BlasterTrail2 (cent->lerp_origin, ent.origin);
@@ -940,83 +922,57 @@ static void CL_AddPacketEntities (void)
 					CL_BlasterTrail (cent->lerp_origin, ent.origin);
 					V_AddLight (ent.origin, 200, 1, 1, 0);
 				}
-//PGM
-			}
-			else if (effects & EF_HYPERBLASTER)
-			{
+			} else if (effects & EF_HYPERBLASTER) {
 				if (effects & EF_TRACKER)						// PGM	overloaded for blaster2.
 					V_AddLight (ent.origin, 200, 0, 1, 0);		// PGM
 				else											// PGM
 					V_AddLight (ent.origin, 200, 1, 1, 0);
-			}
-			else if (effects & EF_GIB)
-			{
+			} else if (effects & EF_GIB) {
 				CL_DiminishingTrail (cent->lerp_origin, ent.origin, cent, effects);
-			}
-			else if (effects & EF_GRENADE)
-			{
+			} else if (effects & EF_GRENADE) {
 				CL_DiminishingTrail (cent->lerp_origin, ent.origin, cent, effects);
-			}
-			else if (effects & EF_FLIES)
-			{
+			} else if (effects & EF_FLIES) {
 				CL_FlyEffect (cent, ent.origin);
-			}
-			else if (effects & EF_BFG)
-			{
+			} else if (effects & EF_BFG) {
 				if (effects & EF_ANIM_ALLFAST)
 				{
-					float	extra;
-
 					CL_BfgParticles (&ent);
-					extra = frand () * 0.5;
+					float extra = frand () * 0.5;
 					V_AddLight (ent.origin, 200, extra, 1, extra);
 				}
 				else
 				{
 					static float bfg_lightramp[7] = {200, 300, 400, 600, 300, 150, 75};
-					float	intens, prev, bright;
 
-					intens = bfg_lightramp[s1->frame + 1];
-					prev = bfg_lightramp[s1->frame];
+					float intens = bfg_lightramp[s1->frame + 1];
+					float prev = bfg_lightramp[s1->frame];
 					intens = prev * (1.0f - cl.lerpfrac) + intens * cl.lerpfrac;
-					bright = s1->frame > 2 ? (5.0f - s1->frame) / (5 - 2) : 1;
+					float bright = s1->frame > 2 ? (5.0f - s1->frame) / (5 - 2) : 1;
 					V_AddLight (ent.origin, intens, 0, bright, 0);
 				}
 //				re.DrawTextLeft(va("bfg: %d (%c) [%3.1f]", s1->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac),RGB(1,1,1));//!!
 			}
-			// RAFAEL
-			else if (effects & EF_TRAP)
-			{
+			// XATRIX
+			else if (effects & EF_TRAP) {
 				ent.origin[2] += 32;
 				CL_TrapParticles (&ent);
 				i = (rand()%100) + 100;
 				V_AddLight (ent.origin, i, 1, 0.8, 0.1);
-			}
-			else if (effects & EF_FLAG1)
-			{
+			} else if (effects & EF_FLAG1) {
 				CL_FlagTrail (cent->lerp_origin, ent.origin, 242);
 				V_AddLight (ent.origin, 100, 1, 0.1, 0.1);
-			}
-			else if (effects & EF_FLAG2)
-			{
+			} else if (effects & EF_FLAG2) {
 				CL_FlagTrail (cent->lerp_origin, ent.origin, 115);
 				V_AddLight (ent.origin, 100, 0.1, 0.1, 1);
 			}
-//======
-//ROGUE
-			else if (effects & EF_TAGTRAIL)
-			{
+			//ROGUE
+			else if (effects & EF_TAGTRAIL) {
 				CL_TagTrail (cent->lerp_origin, ent.origin, 220);
 				V_AddLight (ent.origin, 100, 1.0, 1.0, 0.0);
-			}
-			else if (effects & EF_TRACKERTRAIL)
-			{
+			} else if (effects & EF_TRACKERTRAIL) {
 				if (effects & EF_TRACKER)
 				{
-					float intensity;
-
-					intensity = 50 + (500 * (sin(cl.time/500.0) + 1.0));
-					// FIXME - check out this effect in rendition
+					float intensity = 50 + (500 * (sin(cl.time/500.0f) + 1.0f));
 					V_AddLight (ent.origin, intensity, -1.0, -1.0, -1.0);	//?? neg light
 				}
 				else
@@ -1024,38 +980,21 @@ static void CL_AddPacketEntities (void)
 					CL_Tracker_Shell (cent->lerp_origin);
 					V_AddLight (ent.origin, 155, -1.0, -1.0, -1.0);	//?? neg light
 				}
-			}
-			else if (effects & EF_TRACKER)
-			{
+			} else if (effects & EF_TRACKER) {
 				CL_TrackerTrail (cent->lerp_origin, ent.origin, 0);
-				// FIXME - check out this effect in rendition
 				V_AddLight (ent.origin, 200, -1, -1, -1);	//?? neg light
 			}
-//ROGUE
-//======
-			// RAFAEL
-			else if (effects & EF_GREENGIB)
-			{
+			// XATRIX
+			else if (effects & EF_GREENGIB) {
 				CL_DiminishingTrail (cent->lerp_origin, ent.origin, cent, effects);
-			}
-			// RAFAEL
-			else if (effects & EF_IONRIPPER)
-			{
+			} else if (effects & EF_IONRIPPER) {
 				CL_IonripperTrail (cent->lerp_origin, ent.origin);
 				V_AddLight (ent.origin, 100, 1, 0.5, 0.5);
-			}
-			// RAFAEL
-			else if (effects & EF_BLUEHYPERBLASTER)
-			{
+			} else if (effects & EF_BLUEHYPERBLASTER) {
 				V_AddLight (ent.origin, 200, 0, 0, 1);
-			}
-			// RAFAEL
-			else if (effects & EF_PLASMA)
-			{
+			} else if (effects & EF_PLASMA) {
 				if (effects & EF_ANIM_ALLFAST)
-				{
 					CL_BlasterTrail (cent->lerp_origin, ent.origin);
-				}
 				V_AddLight (ent.origin, 130, 1, 0.5, 0.5);
 			}
 		}
@@ -1074,7 +1013,7 @@ void CL_OffsetThirdPersonView (void)
 	vec3_t	forward, pos;
 	trace_t	trace;
 	float	camDist;//, dist;
-	static vec3_t mins = {-5, -5, -5}, maxs = {5, 5, 5};
+	static const vec3_t mins = {-5, -5, -5}, maxs = {5, 5, 5};
 
 	// algorithm was taken from FAKK2
 	camDist = max(cl_cameradist->value, CAMERA_MINIMUM_DISTANCE);
@@ -1243,9 +1182,6 @@ void CL_AddEntities (void)
 	}
 	else
 		cl.lerpfrac = 1.0f - (cl.frame.servertime - cl.time) / 100.0f;
-
-//	if (timedemo->integer)
-//		cl.lerpfrac = 1.0;
 
 	CL_CalcViewValues ();
 	// PMM - moved this here so the heat beam has the right values for the vieworg, and can lock the beam to the gun

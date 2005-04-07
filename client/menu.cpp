@@ -901,7 +901,7 @@ struct gameMenu_t : menuFramework_t
 		Cvar_SetInteger ("deathmatch", 0);
 		Cvar_SetInteger ("coop", 0);
 
-		Cvar_SetInteger ("gamerules", 0);		//PGM
+		Cvar_SetInteger ("gamerules", 0);		// ROGUE
 
 		Cbuf_AddText ("killserver\nloading\nwait\nnewgame\n");
 		cls.key_dest = key_game;
@@ -1321,7 +1321,7 @@ struct startserverMenu_t : menuFramework_t
 		}
 
 		const char *spot = NULL;
-		if (rules_box.curvalue == 1)		// PGM
+		if (rules_box.curvalue == 1)		// ROGUE
 		{
 			if (!stricmp (startmap, "bunk1")  ||
 				!stricmp (startmap, "mintro") ||
@@ -2774,7 +2774,7 @@ struct videoMenu_t : menuFramework_t
 
 		if (modeChanded)
 		{
-			vid_ref->modified = true;
+			Vid_Restart ();
 			M_ForceMenuOff ();
 		}
 		else

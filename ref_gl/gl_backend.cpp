@@ -9,7 +9,7 @@
 #include "protocol.h"		//!! for RF_XXX consts only !
 
 
-//#define SWAP_ON_BEGIN		// call GLimp_EndFrame() with SwapBuffers() on frame begin (or frame end if not defined)
+//#define SWAP_ON_BEGIN		// call GLimp_SwapBuffers() on frame begin (or frame end if not defined)
 
 /* LATER: replace (almost) all ap.time -> shader.time (or global "shaderTime") ??
  * (because time may be taken (if engine will be extended) from entity)
@@ -1260,7 +1260,7 @@ static void DrawSkyBox (void)
 	vertex_t fv[4];
 	vec3_t	tmp, tmp1, up, right;
 
-	LOG_STRING ("*** DrawSkyBox() ***\n");
+	LOG_STRING ("***** DrawSkyBox() *****\n");
 	if (gl_state.useFastSky) return;
 
 	// build frustum cover
@@ -2296,7 +2296,7 @@ void GL_BackEnd (void)
 
 		case BACKEND_BEGIN_FRAME:
 #ifdef SWAP_ON_BEGIN
-			GLimp_EndFrame ();
+			GLimp_SwapBuffers ();
 			if (gl_finish->integer) glFinish ();
 #endif
 
@@ -2326,7 +2326,7 @@ void GL_BackEnd (void)
 
 #ifndef SWAP_ON_BEGIN
 			if (gl_finish->integer) glFinish ();
-			GLimp_EndFrame ();
+			GLimp_SwapBuffers ();
 #endif
 			gl_state.is2dMode = false;	// invalidate 2D mode, because of buffer switching
 			p++;

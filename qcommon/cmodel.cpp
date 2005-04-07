@@ -87,7 +87,7 @@ static int		numvisibility;
 static byte		*map_visibility;
 
 static int		numentitychars;
-static char		*map_entitystring;
+static const char *map_entitystring;
 
 static int		numAreas;
 static carea_t	*map_areas;
@@ -137,7 +137,7 @@ static CMemoryChain *surfMaterialChain;
 static TList<surfMaterial_t> surfMaterialList;
 
 
-static void ReadSurfMaterials (char *filename)
+static void ReadSurfMaterials (const char *filename)
 {
 	if (surfMaterialChain)
 	{
@@ -219,11 +219,9 @@ static void ReadSurfMaterials (char *filename)
 }
 
 // name must be without "textures/" prefix and without extension
-material_t CMod_GetSurfMaterial (char *name)
+static material_t CMod_GetSurfMaterial (const char *name)
 {
-	char	*checkname;		// points to a name without path
-
-	checkname = strrchr (name, '/');
+	const char *checkname = strrchr (name, '/');		// points to a name without path
 	if (checkname)
 		checkname++;
 	else
@@ -513,7 +511,7 @@ static void CMod_LoadVisibility (dvis_t *data, int size)
 CMod_LoadEntityString
 =================
 */
-static void CMod_LoadEntityString (char *data, int size)
+static void CMod_LoadEntityString (const char *data, int size)
 {
 	numentitychars = size;
 	map_entitystring = data;
@@ -984,7 +982,7 @@ CM_LoadMap
 Loads in the map and all submodels
 ==================
 */
-cmodel_t *CM_LoadMap (char *name, bool clientload, unsigned *checksum)
+cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 {
 	static unsigned	last_checksum;
 	bspfile_t	*bsp;
@@ -1062,7 +1060,7 @@ cmodel_t *CM_LoadMap (char *name, bool clientload, unsigned *checksum)
 CM_InlineModel
 ==================
 */
-cmodel_t *CM_InlineModel (char *name)
+cmodel_t *CM_InlineModel (const char *name)
 {
 	if (!name || name[0] != '*') Com_DropError ("CM_InlineModel: bad name");
 
@@ -1082,7 +1080,7 @@ int CM_NumInlineModels (void)
 	return numcmodels;
 }
 
-char *CM_EntityString (void)
+const char *CM_EntityString (void)
 {
 	return map_entitystring;
 }
@@ -1205,7 +1203,7 @@ int	CM_HeadnodeForBox (vec3_t mins, vec3_t maxs)
 	Point info
 -----------------------------------------------------------------------------*/
 
-int CM_PointLeafnum (vec3_t p, int num)
+int CM_PointLeafnum (const vec3_t p, int num)
 {
 	guard(CM_PointLeafnum);
 	if (!numNodes) return 0;			// map is not yet loaded
@@ -1222,7 +1220,7 @@ int CM_PointLeafnum (vec3_t p, int num)
 }
 
 
-int CM_PointContents (vec3_t p, int headnode)
+int CM_PointContents (const vec3_t p, int headnode)
 {
 	if (!numNodes) return 0;			// map not loaded
 
@@ -1232,7 +1230,7 @@ int CM_PointContents (vec3_t p, int headnode)
 }
 
 
-int	CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t angles)
+int	CM_TransformedPointContents (const vec3_t p, int headnode, vec3_t origin, vec3_t angles)
 {
 	vec3_t	p1, tmp, axis[3];
 
@@ -1252,7 +1250,7 @@ int	CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t a
 	unguard;
 }
 
-int	CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t *axis)
+int	CM_TransformedPointContents2 (const vec3_t p, int headnode, vec3_t origin, vec3_t *axis)
 {
 	vec3_t	p1, tmp;
 
@@ -1276,7 +1274,7 @@ int	CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t 
 	Box info
 -----------------------------------------------------------------------------*/
 
-int CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topnode, int headnode)
+int CM_BoxLeafnums (const vec3_t mins, const vec3_t maxs, int *list, int listsize, int *topnode, int headnode)
 {
 	guard(CM_BoxLeafnums);
 

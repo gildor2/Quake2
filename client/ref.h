@@ -70,7 +70,7 @@ typedef enum
 } beamType_t;
 
 
-typedef struct beam_s
+struct beam_t
 {
 	vec3_t	start;
 	vec3_t	end;
@@ -86,9 +86,9 @@ typedef struct beam_s
 	// temporary fields
 	vec3_t	drawStart, drawEnd;
 
-	struct beam_s *next;
-	struct beam_s *drawNext;
-} beam_t;
+	beam_t *next;
+	beam_t *drawNext;
+};
 
 
 typedef struct
@@ -105,7 +105,7 @@ typedef enum
 	PT_SPARKLE
 } particleType_t;
 
-typedef struct particle_s
+struct particle_t
 {
 	// appearance
 	vec3_t	org;
@@ -119,9 +119,9 @@ typedef struct particle_s
 	vec3_t	accel;					// vel += accel * time
 	float	alphavel;
 
-	struct particle_s *next;
-	struct particle_s *drawNext;
-} particle_t;
+	particle_t *next;
+	particle_t *drawNext;
+};
 
 typedef struct
 {
@@ -132,25 +132,25 @@ typedef struct
 
 typedef struct
 {
-	int			x, y, width, height;// in virtual screen coordinates
-	float		fov_x, fov_y;
-	vec3_t		vieworg;
-	float		viewangles[3];
-	float		blend[4];			// rgba 0-1 full screen blend
-	float		time;				// time is used to auto animate
-	unsigned	rdflags;			// RDF_UNDERWATER, etc
+	int		x, y, width, height;	// in virtual screen coordinates
+	float	fov_x, fov_y;
+	vec3_t	vieworg;
+	float	viewangles[3];
+	float	blend[4];				// rgba 0-1 full screen blend
+	float	time;					// time is used to auto animate
+	unsigned rdflags;				// RDF_UNDERWATER, etc
 
-	byte		*areabits;			// if not NULL, only areas with set bits will be drawn
+	byte	*areabits;				// if not NULL, only areas with set bits will be drawn
 
-	int			num_entities;
-	entity_t	*entities;
+	int		num_entities;
+	entity_t *entities;
 
-	int			num_dlights;
-	dlight_t	*dlights;
+	int		num_dlights;
+	dlight_t *dlights;
 
 	lightstyle_t *lightstyles;		// [MAX_LIGHTSTYLES]
-	particle_t	*particles;
-	beam_t		*beams;
+	particle_t *particles;
+	beam_t	 *beams;
 } refdef_t;
 
 
@@ -174,7 +174,7 @@ typedef struct
 	int		*flags;
 
 	// called when the library is loaded
-	int		(*Init) (void);
+	bool	(*Init) (void);
 
 	// called before the library is unloaded
 	void	(*Shutdown) (bool complete = false);
@@ -240,9 +240,35 @@ typedef	refExport_t	(*GetRefAPI_t) (const refImport_t *);
 
 void InitRendererVars (void);
 
-extern	cvar_t	*vid_ref, *r_fullscreen;
+extern	cvar_t	*r_fullscreen;
 extern	cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;
 extern	cvar_t	*r_fullbright, *r_lightmap;
 
+
+/*------------------- Static/dynamic renderer ----------------------------*/
+
+#define STATIC_RENDERER(name)	name##_GetRefAPI()
+
+#ifndef STATIC_BUILD
+#define RENDERER_EXPORT(name)	\
+	extern "C" DLL_EXPORT refExport_t GetRefAPI(const refImport_t *) \
+	refExport_t GetRefAPI(const refImport_t *rimp)
+#else
+#define RENDERER_EXPORT(name)	\
+	refExport_t STATIC_RENDERER(name)
+#endif
+
+#ifndef STATIC_BUILD
+#define RENDERER_INIT			\
+	ri = *rimp;					\
+	if (ri.struc_size != sizeof(refImport_t))	\
+	{							\
+		re.struc_size = 0;		\
+		return re;				\
+	}							\
+	InitRendererVars ();
+#else
+#define RENDERER_INIT
+#endif
 
 #endif

@@ -1,7 +1,7 @@
 #ifndef __WINQUAKE_INCLUDED__
 #define __WINQUAKE_INCLUDED__
 
-//#define WINVER 0x0500				// to allow some additional stuff in windows headers
+//#define WINVER 0x0500				// to allow some additional stuff in windows headers (current: will display "beta headers" msg)
 #define WIN32_LEAN_AND_MEAN			// exclude rarely-used services from windown headers
 #include <windows.h>
 #include <mmsystem.h>
@@ -10,6 +10,7 @@
 
 #define SPI_GETMOUSESPEED         112
 #define SPI_SETMOUSESPEED         113
+#define WM_MOUSEWHEEL             0x020A
 
 
 extern	HINSTANCE	global_hInstance;
@@ -22,7 +23,7 @@ extern	HINSTANCE	global_hInstance;
 #include "qcommon.h"
 
 extern HWND cl_hwnd;
-extern bool	ActiveApp, Minimized;
+extern bool	ActiveApp, MinimizedApp, FullscreenApp;
 
 // in_win.c
 void IN_Activate (bool active);	//?? declared in cl_input.h too

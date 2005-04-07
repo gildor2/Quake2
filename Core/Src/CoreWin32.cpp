@@ -50,58 +50,86 @@ unsigned appMilliseconds ()
 }
 
 
-static bool cpuid (unsigned _in, unsigned regs[4])
-{
-	bool	isOK;
+static unsigned cpuidRegs[4];
 
-	isOK = true;
-	__asm pushad;		// save all regs
-	__try
-	{
-		__asm {
-			mov		eax,_in
-			cpuid
-			mov		esi,regs
-			mov		[esi],eax
-			mov		[esi+4],ebx
-			mov		[esi+8],ecx
-			mov		[esi+12],edx
-		}
+void cpuid (unsigned code)
+{
+	__asm {
+		mov		eax,code
+		cpuid
+		mov		cpuidRegs,eax
+		mov		cpuidRegs+4,ebx
+		mov		cpuidRegs+8,ecx
+		mov		cpuidRegs+12,edx
 	}
-	__except(EXCEPTION_EXECUTE_HANDLER)
-	{
-		isOK = false;
-	}
-	__asm popad;
-	return isOK;
 }
 
+#if 1
 
-static void CheckCpuName (void)
+#pragma warning(push)
+#pragma warning(disable : 4035)		// "no return value"
+inline unsigned cpuid0 (unsigned code)
+{
+	__asm {
+		mov		eax,code
+		cpuid
+	}
+}
+
+inline unsigned cpuid3 (unsigned code)
+{
+	__asm {
+		mov		eax,code
+		cpuid
+		mov		eax,edx
+	}
+}
+#pragma warning(pop)
+
+#else
+
+inline unsigned cpuid0 (unsigned code)
+{
+	cpuid (code);
+	return cpuidRegs[0];
+}
+inline unsigned cpuid3 (unsigned code)
+{
+	cpuid (code);
+	return cpuidRegs[3];
+}
+#endif
+
+static void CheckCpuModel (void)
 {
 #define MAX_CPU_NAME_PARTS	12	// 3 times of 4 regs
 	union {
 		unsigned reg[MAX_CPU_NAME_PARTS];
 		char	name[MAX_CPU_NAME_PARTS*4+1];
 	} t;
-	unsigned r[4];
 
-	if (!cpuid (0x80000000, r))
+	// cpuid presence
+	unsigned cpu0;
+	__try
+	{
+		cpu0 = cpuid0 (0x80000000);
+	}
+	__except(EXCEPTION_EXECUTE_HANDLER)
 	{
 		// no CPUID available
 		appPrintf ("Unknown 386/486 CPU\n");
 		return;
 	}
-	if (r[0] >= 0x80000004)		// extended vendor string available
+
+	// CPU name
+	if (cpu0 >= 0x80000004)		// extended vendor string available
 	{
 		int i = 0;
 		for (unsigned fn = 0x80000002; fn <= 0x80000004; fn++)
 		{
-			cpuid (fn, r);
-			t.reg[i++] = r[0];
-			t.reg[i++] = r[1];
-			t.reg[i++] = r[2];
-			t.reg[i++] = r[3];
+			cpuid (fn);
+			memcpy (t.reg+i, cpuidRegs, sizeof(cpuidRegs));
+			i += 4;
 		}
 		t.name[i*4] = 0;
 		const char *s = t.name;
@@ -110,48 +138,42 @@ static void CheckCpuName (void)
 	}
 	else
 	{
-		cpuid (0, r);
-		t.reg[0] = r[1];
-		t.reg[1] = r[3];
-		t.reg[2] = r[2];
+		cpuid (0);
+		t.reg[0] = cpuidRegs[1];
+		t.reg[1] = cpuidRegs[3];
+		t.reg[2] = cpuidRegs[2];
 		t.name[12] = 0;		// ASCIIZ
 		appPrintf ("CPU name: %s\n", t.name);
 	}
-}
 
-
-static void CheckCpuCaps (void)
-{
-	unsigned r[4];
-
-	if (!cpuid (1, r)) return;
-
+	// caps
 	appPrintf ("CPU caps: [ ");
 
-	if (r[3] & 0x00000001)	Com_Printf ("FPU ");
-	if (r[3] & 0x00800000)
+	unsigned tmp = cpuid3 (1);
+	if (tmp & 0x00000001)	Com_Printf ("FPU ");
+	//!! NOTE: if planning to use MMX/SSE/SSE2/3DNow! - should check OS support for this tech
+	if (tmp & 0x00800000)
 	{
 		appPrintf ("MMX ");
 		IsMMX = true;
 	}
-	if (r[3] & 0x02000000)
+	if (tmp & 0x02000000)
 	{
 		appPrintf ("SSE ");
 		IsSSE = true;
 	}
-	if (r[3] & 0x04000000)	Com_Printf ("SSE2 ");
-	if (r[3] & 0x00000010)
+	if (tmp & 0x04000000)	Com_Printf ("SSE2 ");
+	if (tmp & 0x00000010)
 	{
 		appPrintf ("RDTSC ");
 		IsRDTSC = true;
 	}
 
 	// check extended features
-	cpuid (0x80000000, r);
-	if (r[0] >= 0x80000001)		// largest recognized extended function
+	if (cpu0 >= 0x80000001)		// largest recognized extended function
 	{
-		cpuid (0x80000001, r);
-		if (r[3] & 0x80000000)
+		tmp = cpuid3 (0x80000001);
+		if (tmp & 0x80000000)
 		{
 			appPrintf ("3DNow! ");
 			Is3DNow = true;
@@ -196,8 +218,7 @@ static void CheckCpuSpeed (void)
 
 void appInitPlatform ()
 {
-	CheckCpuName ();
-	CheckCpuCaps ();
+	CheckCpuModel ();
 	CheckCpuSpeed ();
 #if 0
 	// DEBUG: force mmsystem timing functions

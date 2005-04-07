@@ -72,6 +72,8 @@ BUGS:
 - "client" source dir: split game-related stuff (effects, particles, prediction etc) and sound/console/keyboard/menu into separate
   dirs (choose 2 names from: cgame, client, ui ... etc)
 - game/m_flash.c : convert float[][3] -> short[][3]  (2.5 Kb -> 2 times smaller ...)
+? effects::dlights: may be, when fading dlight, modulate its color, not intensity -- this will allow to combine few dlights from
+  the same position, but with different color, into a single one
 
 ----------------------------------------
 

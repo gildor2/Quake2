@@ -247,6 +247,9 @@ Network
   - timedemo <n> -- gather timing statistics with rendering <n> frames per (demo-)server frame
   - when displaying cinematics, will be played with a maximal speed
   - added min_fps stats
+- timerefresh:
+  - timerefresh <n> -- display n frames (default=256)
+  - long measuring may be finished with activating menu or console (i.e. using ESC or ~ key)
 - added mouse support via DirectInput (activated with "in_mouse 2", default)
 - third-person view: activated with "cl_3rd_person 1"
 - intro playback:

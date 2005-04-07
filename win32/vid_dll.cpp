@@ -1,58 +1,41 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-// Main windowed and fullscreen graphics interface module. This module
-// is used for both the software and OpenGL rendering versions of the
-// Quake refresh engine.
-
 #include "winquake.h"
 #include "resource.h"
 
 #include "../client/client.h"
 
-// Structure containing functions exported from refresh DLL
-refExport_t	re;
 
-// Imports from main engine for renderer DLL
-#include "../client/ref_impl.h"
+#define SINGLE_RENDERER
+#define DEFAULT_RENDERER	"gl"
 
 cvar_t *win_noalttab;
 cvar_t *win_priorityBoost;
 
-#ifndef WM_MOUSEWHEEL
-#define WM_MOUSEWHEEL (WM_MOUSELAST+1)  	// message that will be supported by the OS
-#endif
 
-static UINT MSH_MOUSEWHEEL = 0xDEAD0000;	// initialized to something unused
+static UINT MSH_MOUSEWHEEL = 0xDEAD0000; // initialized to something unused
 
 // Console variables that we need to access from this module
-static cvar_t	*vid_xpos;			// X coordinate of window position
-static cvar_t	*vid_ypos;			// Y coordinate of window position
+static cvar_t	*vid_xpos;				// X coordinate of window position
+static cvar_t	*vid_ypos;				// Y coordinate of window position
+
+#ifndef SINGLE_RENDERER
+static cvar_t	*vid_ref;
+static HINSTANCE refLibrary;			// Handle to refresh DLL
+// Imports from main engine for renderer DLL
+#include "../client/ref_impl.h"
+#endif
+
+// Structure containing functions exported from renderer DLL
+refExport_t	re;
 
 // Global variables used internally by this module
-viddef_t viddef;					// global video state; used by other modules
-static HINSTANCE refLibrary;		// Handle to refresh DLL
+viddef_t viddef;						// global video state; used by other modules
 static bool refActive = false;
 
-HWND	cl_hwnd;			// Main window handle for life of program
+static bool needRestart;
 
-static bool s_alttab_disabled;
+HWND	cl_hwnd;						// Main window handle for life of program
+
+static bool alttab_disabled;
 
 extern unsigned sys_msg_time;
 
@@ -63,8 +46,8 @@ static bool s_win95;
 
 static void DisableAltTab (bool enable)
 {
-	if (s_alttab_disabled == enable) return;
-	s_alttab_disabled = enable;
+	if (alttab_disabled == enable) return;
+	alttab_disabled = enable;
 
 	if (s_win95)
 	{
@@ -175,8 +158,8 @@ static int MapKey (int vkCode, bool extended)
 
 static void AppActivate (bool active, bool minimized)
 {
-//	Com_DPrintf("act:%d min:%d\n", active, minimized);//!!
-	Minimized = minimized;
+//	Com_Printf("act:%d min:%d\n", active, minimized);//!!
+	MinimizedApp = minimized;
 	if (ActiveApp != active)
 	{
 		ActiveApp = active;
@@ -227,12 +210,12 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		return 0;
 
 	case WM_SIZE:
-		if (r_fullscreen->integer)
+		if (FullscreenApp)
 		{
 			static DEVMODE dm;
 			static bool desktopMode = false;
 
-//			Com_Printf("WM_SIZE: %d (act=%d min=%d)\n",wParam, ActiveApp, Minimized);//!!
+//			Com_Printf("WM_SIZE: %d (act=%d min=%d)\n",wParam, ActiveApp, MinimizedApp);//!!
 			if (wParam == SIZE_MINIMIZED && !desktopMode)
 			{
 				Com_DPrintf ("Setting desktop resolution\n");
@@ -247,7 +230,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				ChangeDisplaySettings (NULL, 0);
 				desktopMode = true;
 			}
-			else if (wParam == SIZE_RESTORED && Minimized && desktopMode)
+			else if (wParam == SIZE_RESTORED && MinimizedApp && desktopMode)
 			{
 				Com_DPrintf ("Setting game resolution\n");
 				ChangeDisplaySettings (&dm, CDS_FULLSCREEN);
@@ -262,13 +245,13 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		{
 			bool active = LOWORD(wParam) != WA_INACTIVE;
 			bool minimized = HIWORD(wParam) != 0;
-//			Com_Printf("WM_ACTIVATE: a=%d m=%d (act=%d min=%d)\n",active, minimized, ActiveApp, Minimized);//!!
+//			Com_Printf("WM_ACTIVATE: a=%d m=%d (act=%d min=%d)\n",active, minimized, ActiveApp, MinimizedApp);//!!
 			AppActivate (active, minimized);
 		}
 		break;
 
 	case WM_MOVE:
-		if (!r_fullscreen->integer)
+		if (!FullscreenApp)
 		{
 			int xPos = (short) LOWORD(lParam);    // horizontal position
 			int yPos = (short) HIWORD(lParam);    // vertical position
@@ -286,8 +269,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			Cvar_SetInteger ("vid_ypos", yPos + r.top);
 			vid_xpos->modified = false;
 			vid_ypos->modified = false;
-			if (ActiveApp)
-				IN_Activate (true);
+			if (ActiveApp) IN_Activate (true);
 		}
 		break;
 
@@ -320,9 +302,9 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		break;
 
 	case WM_SYSKEYDOWN:
-		if (wParam == 13) 			// Alt+Enter
+		if (wParam == VK_RETURN)	// Alt+Enter
 		{
-			if (r_fullscreen) Cvar_SetInteger ("r_fullscreen", !r_fullscreen->integer);
+			Cvar_SetInteger ("r_fullscreen", !FullscreenApp);
 			return 0;
 		}
 		// fall through
@@ -365,18 +347,6 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 
 /*
- * Vid_NewWindow
- */
-static void Vid_NewWindow (int width, int height)
-{
-	viddef.width  = width;
-	viddef.height = height;
-
-	cl.force_refdef = true;		// can't use a paused refdef
-	in_needRestart = true;
-}
-
-/*
  * Vid_CreateWindow
  */
 
@@ -415,6 +385,7 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 	w = r.right - r.left;
 	h = r.bottom - r.top;
 
+	FullscreenApp = fullscreen;
 	if (fullscreen)
 	{
 		x = 0;
@@ -452,14 +423,17 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 		if (!cl_hwnd) Com_FatalError ("Couldn't create window");
 
 		if (width || height) ShowWindow (cl_hwnd, SW_SHOW);
+		// let the sound and input subsystems know about the new window
+		cl.force_refdef = true;		// can't use a paused refdef
+		in_needRestart = true;
 	}
+
+	viddef.width  = width;
+	viddef.height = height;
 
 	UpdateWindow (cl_hwnd);
 	SetForegroundWindow (cl_hwnd);
 	SetFocus (cl_hwnd);
-
-	// let the sound and input subsystems know about the new window
-	Vid_NewWindow (width, height);
 
 	return cl_hwnd;
 
@@ -491,24 +465,9 @@ void Vid_DestroyWindow (bool force)
 }
 
 
-/*
-============
-Vid_Restart_f
-
-Console command to re-start the video mode and refresh DLL. We do this
-simply by setting the modified flag for the vid_ref variable, which will
-cause the entire video mode and refresh DLL to be reset on the next frame.
-============
-*/
-static void Vid_Restart_f (void)
+void Vid_Restart (void)
 {
-	vid_ref->modified = true;
-}
-
-static void Vid_Front_f (void)
-{
-	SetWindowLong (cl_hwnd, GWL_EXSTYLE, WS_EX_TOPMOST);
-	SetForegroundWindow (cl_hwnd);
+	needRestart = true;
 }
 
 
@@ -565,24 +524,6 @@ static void Vid_UpdateWindowPosAndSize (int x, int y)
 }
 
 
-static void Vid_FreeReflib (void)
-{
-	refActive = false;
-
-	if (refLibrary)		// if false - sattically linked
-	{
-		if (!FreeLibrary (refLibrary))
-			Com_FatalError ("Reflib FreeLibrary() failed");
-		refLibrary = NULL;
-	}
-	memset (&re, 0, sizeof(re));
-}
-
-/*
-==============
-Vid_LoadRefresh
-==============
-*/
 
 /*-------- Dummy functions for console-only mode ---------*/
 
@@ -618,19 +559,42 @@ static void	D_Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, 
 static float D_GetClientLight (void) { return 0; }		// normal value is 150
 
 
+static void FreeRenderer (void)
+{
+	refActive = false;
+
+#ifndef SINGLE_RENDERER
+	if (refLibrary)		// if false - sattically linked
+	{
+		if (!FreeLibrary (refLibrary))
+			Com_FatalError ("Reflib FreeLibrary() failed");
+		refLibrary = NULL;
+	}
+#endif
+	memset (&re, 0, sizeof(re));
+}
+
+
 #ifdef STATIC_BUILD
-extern "C" refExport_t GL_GetRefAPI (const refImport_t *);		// ref_gl
+// externs
+refExport_t STATIC_RENDERER(GL);
 #endif
 
-static bool Vid_LoadRefresh (char *name)
+#ifndef SINGLE_RENDERER
+static bool LoadRenderer (const char *name)
+#else
+static bool LoadRenderer (void)
+#endif
 {
-	guard(Vid_LoadRefresh);
+	guard(LoadRenderer);
 
 	if (refActive)
 	{
 		re.Shutdown ();
-		Vid_FreeReflib ();
+		FreeRenderer ();
 	}
+
+#ifndef SINGLE_RENDERER
 
 	char	dllName[MAX_OSPATH];
 	appSprintf (ARRAY_ARG(dllName), "ref_%s.dll", name);
@@ -640,7 +604,7 @@ static bool Vid_LoadRefresh (char *name)
 	refLibrary = NULL;
 
 	if (!strcmp (name, "gl"))
-		re = GL_GetRefAPI (&ri);
+		re = STATIC_RENDERER(GL);
 	else
 #endif
 	{
@@ -653,7 +617,7 @@ static bool Vid_LoadRefresh (char *name)
 		if (!(pGetRefAPI = (GetRefAPI_t) GetProcAddress (refLibrary, "GetRefAPI")))
 		{
 			Com_WPrintf ("GetProcAddress() failed on %s\n", dllName);
-			Vid_FreeReflib ();
+			FreeRenderer ();
 			return false;
 		}
 
@@ -661,10 +625,14 @@ static bool Vid_LoadRefresh (char *name)
 		if (re.struc_size != sizeof(refExport_t))
 		{
 			Com_WPrintf ("%s has incompatible renderer\n", dllName);
-			Vid_FreeReflib ();
+			FreeRenderer ();
 			return false;
 		}
 	}
+
+#else // SINGLE_RENDERER
+	re = STATIC_RENDERER(GL);
+#endif
 
 	if (*re.flags & REF_CONSOLE_ONLY)
 	{
@@ -695,10 +663,10 @@ static bool Vid_LoadRefresh (char *name)
 		re.GetClientLight = D_GetClientLight;
 	}
 
-	if (re.Init () == -1)
+	if (!re.Init ())
 	{
 		re.Shutdown ();
-		Vid_FreeReflib ();
+		FreeRenderer ();
 		return false;
 	}
 
@@ -720,8 +688,6 @@ update the rendering DLL and/or video mode to match.
 ============
 */
 
-static char lastRenderer[MAX_QPATH];
-
 void Vid_CheckChanges (void)
 {
 	if (win_noalttab->modified)
@@ -736,34 +702,46 @@ void Vid_CheckChanges (void)
 		win_priorityBoost->modified = false;
 	}
 
+#ifndef SINGLE_RENDERER
 	if (vid_ref->modified)
+	{
+		needRestart = true;
+		vid_ref->modified = false;
+	}
+#endif
+
+	if (needRestart)
 	{
 		// refresh has changed
 		cl.force_refdef = true;		// can't use a paused refdef
 		S_StopAllSounds_f ();
-
 		cl.refresh_prepped = false;
 
-		bool loaded = Vid_LoadRefresh (vid_ref->string);
+#ifndef SINGLE_RENDERER
+		static char lastRenderer[MAX_QPATH];
+
+		bool loaded = LoadRenderer (vid_ref->string);
 		if (!loaded && lastRenderer[0])
 		{
-			if (Vid_LoadRefresh (lastRenderer))
+			if (LoadRenderer (lastRenderer))
 			{
 				Cvar_Set ("vid_ref", lastRenderer);
+				vid_ref->modified = false;
 				loaded = true;
 			}
 		}
-		if (!loaded)
-			Com_FatalError ("Couldn't load renderer");
-
+		if (!loaded) Com_FatalError ("Couldn't load renderer");
 		strcpy (lastRenderer, vid_ref->string);
-		vid_ref->modified = false;
+#else
+		if (!LoadRenderer ()) Com_FatalError ("Couldn't load renderer");
+#endif
+		needRestart = false;
 	}
 
 	// update our window position
 	if (vid_xpos->modified || vid_ypos->modified)
 	{
-		if (!r_fullscreen->integer)
+		if (!FullscreenApp)
 			Vid_UpdateWindowPosAndSize (vid_xpos->integer, vid_ypos->integer);
 
 		vid_xpos->modified = false;
@@ -779,6 +757,9 @@ Vid_Init
 void Vid_Init (void)
 {
 CVAR_BEGIN(vars)
+#ifndef SINGLE_RENDERER
+	CVAR_FULL(&vid_ref, "vid_ref", DEFAULT_RENDERER, CVAR_ARCHIVE),
+#endif
 	CVAR_VAR(vid_xpos, 0, CVAR_ARCHIVE),
 	CVAR_VAR(vid_ypos, 0, CVAR_ARCHIVE),
 	CVAR_VAR(win_noalttab, 0, CVAR_ARCHIVE),
@@ -787,12 +768,12 @@ CVAR_END
 
 	guard(Vid_Init);
 
+	needRestart = true;		// should init renderer on startup
 	Cvar_GetVars (ARRAY_ARG(vars));
 	InitRendererVars ();
 
 	// Add some console commands that we want to handle
-	RegisterCommand ("vid_restart", Vid_Restart_f);
-	RegisterCommand ("vid_front", Vid_Front_f);
+	RegisterCommand ("vid_restart", Vid_Restart);
 
 	OSVERSIONINFO vinfo;
 	vinfo.dwOSVersionInfoSize = sizeof(vinfo);
@@ -843,6 +824,6 @@ void Vid_Shutdown (void)
 		// perform shutdown
 		re.Shutdown (true);
 		Vid_DestroyWindow (true);
-		Vid_FreeReflib ();
+		FreeRenderer ();
 	}
 }

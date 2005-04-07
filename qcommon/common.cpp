@@ -138,7 +138,14 @@ void Com_Printf (const char *fmt, ...)
 		else	s = msg;
 		if (!s[0]) return;						// nothing to print
 		if (!logfile)
-			logfile = fopen ("./console.log", logfile_active->integer > 2 || console_logged ? "a" : "w");
+		{
+			logfile = fopen ("console.log", logfile_active->integer > 2 || console_logged ? "a" : "w");
+			if (!logfile)
+			{
+				Cvar_SetInteger ("logfile", 0);
+				Com_WPrintf ("Unable to create console.log\n");
+			}
+		}
 
 		if (logfile)
 		{
@@ -689,7 +696,6 @@ CVAR_END
 	guard(Com_Init);
 
 	Swap_Init ();
-//!!	Mem_Init ();
 	Cvar_Init ();
 
 	ParseCmdline (cmdline);			// should be executed before any cvar creation
@@ -772,12 +778,12 @@ void Com_Frame (float msec)
 
 	if (DEDICATED)
 	{
-		const char *s;
-		do
+		while (true)
 		{
-			s = Sys_ConsoleInput ();
-			if (s) Cbuf_AddText (va("%s\n",s));
-		} while (s);
+			const char *s = Sys_ConsoleInput ();
+			if (!s) break;
+			Cbuf_AddText (va("%s\n",s));
+		}
 	}
 	Cbuf_Execute ();
 

@@ -41,6 +41,7 @@ global:
 	COMPILER	= VisualC | other
 	MAPFILES	= 1 | 0 == undef
 	STDLIBS		= list of used libraries
+	LIBC		= static | dynamic == undef
 
 per-target:
 //	CONSOLE		= 1 | 0 == undef		useless for Visual C++ - automatically detected by presence of main() or WinMain()
@@ -640,7 +641,15 @@ sub FlushObjectFile {
 		} elsif ($srcType eq "rc") {
 			$line = "rc.exe -l 0x409 -i $srcDir -fo\"$objFile\" -dNDEBUG";
 		} else {
-			$line = "cl.exe -nologo -MD -c -D WIN32 -D _WINDOWS";
+			my $crt = GetSrcOption ("LIBC");
+			$line = "cl.exe -nologo -c -D WIN32 -D _WINDOWS";
+			if ($crt eq "static") {
+				$line .= " -MT";	# static multithreaded CRT; use -ML for single-threaded ?
+			} elsif ($crt eq "dynamic" || $crt eq "") {
+				$line .= " -MD";
+			} else {
+				Error ("unknown LIBC type: $crt");
+			}
 			#?? VC std defines: _LIB, NDEBUG, _DEBUG
 			$line .= " \$(OPTIONS)" if $options ne "";
 			$line .= " -Fo\"$objFile\"";

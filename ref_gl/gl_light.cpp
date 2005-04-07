@@ -157,13 +157,12 @@ void GL_ShowLights (void)
 	surfLight_t *rl;
 	for (i = 0, rl = map.surfLights; i < map.numSurfLights; i++, rl = rl->next)
 	{
-		int		j;
 		bufVertex_t	vecs[4];
-		static int	indexes[8] = {0, 1, 1, 3, 3, 2, 2, 0};
+		static const int indexes[8] = {0, 1, 1, 3, 3, 2, 2, 0};
 
 		glColor3fv (rl->color);
 
-		for (j = 0; j < 4; j++)
+		for (int j = 0; j < 4; j++)
 		{
 			float	v[2];
 			vec3_t	tmp;
@@ -496,15 +495,13 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 	if (map.sunLight)
 	{
 		vec3_t	dst;
-		static vec3_t zero = {0, 0, 0};
+		static const vec3_t zero = {0, 0, 0};
 
 		VectorMA (origin, -16384, map.sunVec, dst);
 		CM_BoxTrace (&tr, origin, dst, zero, zero, 0, CONTENTS_SOLID);
 		if (tr.surface->flags & SURF_SKY && !tr.startsolid)		// can be "startsolid" even if "row"!=NULL
 		{
-			float	intens;
-
-			intens = map.sunLight * SUN_SCALE * vp.lightStyles[0].value / 128.0f;	// sun light have style=0
+			float intens = map.sunLight * SUN_SCALE * vp.lightStyles[0].value / 128.0f;	// sun light have style=0
 			AddLight (axis, map.sunVec, intens, map.sunColor);
 			if (gl_lightLines->value)
 				LightLine (axis, tr.endpos, origin, map.sunColor, intens);
@@ -594,14 +591,12 @@ void GL_LightForEntity (refEntity_t *ent)
 	{
 		if (!gl_noGrid->integer)
 		{
-			byte	*row;
 			vec3_t	accum[6];
 			vec3_t	pos, frac;
 			int		coord[3];
-			float	totalFrac;
 
 			i = GL_PointInLeaf (ent->center)->cluster;
-			row = i < 0 ? NULL : map.visInfo + i * map.visRowSize;
+			byte *row = i < 0 ? NULL : map.visInfo + i * map.visRowSize;
 
 			for (i = 0; i < 3; i++)
 			{
@@ -624,14 +619,13 @@ void GL_LightForEntity (refEntity_t *ent)
 			}
 
 			memset (accum, 0, sizeof(accum));
-			totalFrac = 0;
+			float totalFrac = 0;
 			for (i = 0; i < 8; i++)
 			{
 				vec3_t	origin;
 				int		c[3], j;
-				float	f;
 
-				f = 1;
+				float f = 1;
 				for (j = 0; j < 3; j++)
 					if (i & (1<<j))
 					{
@@ -719,12 +713,11 @@ void GL_LightForEntity (refEntity_t *ent)
 	for (i = 0, dl = vp.dlights; i < vp.numDlights; i++, dl++)
 	{
 		vec3_t	dst, color;
-		float	dist, denom;
 
 		VectorSubtract (ent->center, dl->origin, dst);
-		dist = DotProduct (dst, dst);						// dist*dist
+		float dist = DotProduct (dst, dst);					// dist*dist
 		if (dist > dl->intensity * dl->intensity) continue;	// dlight is too far
-		denom = Q_rsqrt (dist);								// 1/sqrt(dist)
+		float denom = Q_rsqrt (dist);						// 1/sqrt(dist)
 		dist = 1.0f / denom;
 		VectorScale (dst, denom, dst);
 
@@ -750,26 +743,19 @@ void GL_LightForEntity (refEntity_t *ent)
 
 	if (ent->flags & RF_GLOW)
 	{
-		float	glow;
-
 #define MAX_GLOW	0.2		// Cvar_VariableValue("glow");
-		glow = (SIN_FUNC(vp.time / 1.5f) + 1) / 2 * MAX_GLOW;	// 0..MAX_GLOW
+		float glow = (SIN_FUNC(vp.time / 1.5f) + 1) / 2 * MAX_GLOW;	// 0..MAX_GLOW
 		// lerp colors between color and 255 with glow
 		for (i = 0; i < 6; i++)
-		{
-			int		j;
-
-			for (j = 0; j < 3; j++)
+			for (int j = 0; j < 3; j++)
 				entityColorAxis[i][j] = (1 - glow) * entityColorAxis[i][j] + glow * 255;
-		}
 	}
 
 #ifdef NORMALIZE_AXIS
 	{
-		float	m, *out;
-
 		// find maximal color
-		m = 0;
+		float m = 0;
+		float *out;
 		for (i = 0, out = entityColorAxis[0]; i < 6*3; i++, out++)
 			if (*out > m) m = *out;
 		// normalize color axis and copy to grid

@@ -556,7 +556,7 @@ static void DrawSurfInfo (void)
 {
 	vec3_t	start, end;
 	trace_t	trace;
-	static vec3_t zero = {0, 0, 0};
+	static const vec3_t zero = {0, 0, 0};
 	csurface_t	*surf;
 	vec3_t	norm;
 	const char *s;
@@ -754,7 +754,7 @@ static void FixWaterVis (void)
 	int			cont;		// its contents
 	int			w, w1;		// "in water" flag
 	trace_t		trace;
-	static vec3_t zero = {0, 0, 0};
+	static const vec3_t zero = {0, 0, 0};
 
 	if (cl.refdef.rdflags & RDF_THIRD_PERSON)
 		w1 = CM_PointContents (cl.refdef.vieworg, 0) & MASK_WATER;	// need to recompute UNDERWATER flag

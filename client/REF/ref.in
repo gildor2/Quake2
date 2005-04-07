@@ -27,6 +27,7 @@ void	FS_CopyFiles (const char *srcMask, const char *dstDir);
 void	FS_RemoveFiles (const char *mask);
 
 //------- video mode --------
+void	Vid_Restart (void);
 bool	Vid_GetModeInfo (int *width, int *height, int mode);
 
 //--------- images ----------
@@ -49,6 +50,4 @@ int CM_RefineBrushTrace (const vec3_t start, const vec3_t end, int *brushes, int
 #ifdef _WIN32
 void*	Vid_CreateWindow (int width, int height, bool fullscreen);
 void	Vid_DestroyWindow (bool force);
-#else
-void	Vid_NewWindow (int width, int height);
 #endif

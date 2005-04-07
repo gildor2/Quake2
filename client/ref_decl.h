@@ -17,15 +17,16 @@ typedef struct {
 	void	(*_Com_WPrintf) (const char *str, ...);
 	bool	(*_FS_FileExists) (const char *filename);
 	TList<CStringItem>	(*_FS_ListFiles) (const char *name, int *numfiles, int flags);
-	void*	(*_FS_LoadFile) (const char *name, unsigned *size = NULL);
+	void*	(*_FS_LoadFile) (const char *name, unsigned *size);
 	void	(*_FS_FreeFile) (void *buf);
 	char*	(*_FS_Gamedir) (void);
 	void	(*_FS_CreatePath) (const char *path);
 	void	(*_FS_CopyFile) (const char *src, const char *dst);
 	void	(*_FS_CopyFiles) (const char *srcMask, const char *dstDir);
 	void	(*_FS_RemoveFiles) (const char *mask);
+	void	(*_Vid_Restart) (void);
 	bool	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
-	int	(*_ImageExists) (const char *name, int stop_mask = IMAGE_ANY);
+	int	(*_ImageExists) (const char *name, int stop_mask);
 	void	(*_LoadPCX) (const char *name, byte **pic, byte **palette, int *width, int *height);
 	void	(*_LoadTGA) (const char *name, byte **pic, int *width, int *height);
 	void	(*_LoadJPG) (const char *name, byte **pic, int *width, int *height);
@@ -40,8 +41,6 @@ typedef struct {
 #ifdef _WIN32
 	void*	(*_Vid_CreateWindow) (int width, int height, bool fullscreen);
 	void	(*_Vid_DestroyWindow) (bool force);
-#else
-	void	(*_Vid_NewWindow) (int width, int height);
 #endif
 } refImport_t;
 

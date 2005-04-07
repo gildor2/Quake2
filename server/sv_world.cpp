@@ -467,7 +467,7 @@ static void SV_AreaEdicts_r (areanode_t *node)
 }
 
 
-int SV_AreaEdicts (vec3_t mins, vec3_t maxs, edict_t **list, int maxcount, int areatype)
+int SV_AreaEdicts (const vec3_t mins, const vec3_t maxs, edict_t **list, int maxcount, int areatype)
 {
 	guard(SV_AreaEdicts);
 	VectorCopy (mins, area_mins);
@@ -491,7 +491,7 @@ int SV_AreaEdicts (vec3_t mins, vec3_t maxs, edict_t **list, int maxcount, int a
 SV_PointContents
 =============
 */
-int SV_PointContents (vec3_t p)
+int SV_PointContents (const vec3_t p)
 {
 	edict_t	*list[MAX_EDICTS], *edict;
 	int		i, num, contents, c2;
@@ -549,7 +549,7 @@ SV_ClipMoveToEntities
 
 ====================
 */
-void SV_ClipMoveToEntities (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
+void SV_ClipMoveToEntities (trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *passedict, int contentmask)
 {
 	int		i, num;
 	edict_t	*list[MAX_EDICTS], *edict;
@@ -653,7 +653,7 @@ Passedict and edicts owned by passedict are explicitly not checked.
 
 ==================
 */
-void SV_Trace (trace_t *tr, vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
+void SV_Trace (trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *passedict, int contentmask)
 {
 	guard(SV_Trace);
 

@@ -167,11 +167,11 @@ typedef struct
 	model_t	*model_draw[MAX_MODELS];
 	cmodel_t *model_clip[MAX_MODELS];
 
-	struct sfx_s	*sound_precache[MAX_SOUNDS];
+	sfx_t	*sound_precache[MAX_SOUNDS];
 	image_t	*image_precache[MAX_IMAGES];
 
-	clientinfo_t	clientinfo[MAX_CLIENTS];
-	clientinfo_t	baseclientinfo;
+	clientinfo_t clientinfo[MAX_CLIENTS];
+	clientinfo_t baseclientinfo;
 } client_state_t;
 
 extern	client_state_t	cl;
@@ -384,7 +384,7 @@ void CL_RailTrailExt (vec3_t start, vec3_t end, byte rType, byte rColor);
 void CL_BubbleTrail (vec3_t start, vec3_t end);
 void CL_FlagTrail (vec3_t start, vec3_t end, int color);
 
-// RAFAEL
+// XATRIX
 void CL_IonripperTrail (vec3_t start, vec3_t end);
 
 
@@ -394,8 +394,7 @@ void CL_ParticleEffect (vec3_t org, vec3_t dir, int color, int count);
 void CL_ParticleEffect2 (vec3_t org, vec3_t dir, int color, int count);
 void CL_ParticleEffect3 (vec3_t org, vec3_t dir, int color, int count);
 
-// ========
-// PGM
+// ROGUE
 void CL_BlasterParticles2 (vec3_t org, vec3_t dir, unsigned int color);
 void CL_BlasterTrail2 (vec3_t start, vec3_t end);
 void CL_DebugTrail (vec3_t start, vec3_t end);
@@ -416,8 +415,6 @@ void CL_ParticleSmokeEffect (vec3_t org, vec3_t dir, int color, int count, int m
 void CL_Widowbeamout (cl_sustain_t *self);
 void CL_Nukeblast (cl_sustain_t *self);
 void CL_WidowSplash (vec3_t org);
-// PGM
-// ========
 
 void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, unsigned bits, bool baseline);
 void CL_ParseFrame (void);
@@ -536,7 +533,7 @@ void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags);
 void CL_FlyEffect (centity_t *ent, vec3_t origin);
 void CL_BfgParticles (entity_t *ent);
 void CL_EntityEvent (entityState_t *ent);
-// RAFAEL
+// XATRIX
 void CL_TrapParticles (entity_t *ent);
 
 //
@@ -557,8 +554,8 @@ extern menuFramework_t *m_current;
 //
 // cl_pred.cpp
 //
-void CL_EntityTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents);
-void CL_Trace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents);
+void CL_EntityTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int contents);
+void CL_Trace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int contents);
 void CL_PredictMovement (void);
 void CL_CheckPredictionError (void);
 

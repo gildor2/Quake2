@@ -129,7 +129,7 @@ static byte *Convert8to32bit (byte *in, int width, int height, unsigned *palette
 
 //----------------------------------------------------------------------
 
-void GL_TextureMode (char *name)	//?? change (not strings; use enum {none,bilinear,trilinear,anysotropic})
+void GL_TextureMode (const char *name)	//?? change (not strings; use enum {none,bilinear,trilinear,anysotropic})
 {
 	static struct {
 		char	*name;
@@ -364,7 +364,7 @@ static void LightScaleLightmap (unsigned *pic, int width, int height)
 
 static void MipMap (byte *in, int width, int height)
 {
-	width <<=2;
+	width *= 4;		// sizeof(rgba)
 	height >>= 1;
 	byte *out = in;
 	for (int i = 0; i < height; i++, in += width)

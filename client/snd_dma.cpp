@@ -153,11 +153,8 @@ void S_ReadModelsSex (void)
 	FS_FreeFile (buf);
 }
 
-bool S_IsFemale (char *model)
+bool S_IsFemale (const char *model)
 {
-	int		i;
-	char	*s;
-
 //	Com_DPrintf ("Checking %s gender...\n",model);
 
 	if (!stricmp(model, "female") || !stricmp(model, "crakhor"))
@@ -165,8 +162,8 @@ bool S_IsFemale (char *model)
 //		Com_DPrintf ("...hardcoded female\n");
 		return true;
 	}
-	i = 0;
-	while (s = female_models[i++])
+	int i = 0;
+	while (const char *s = female_models[i++])
 	{
 //		Com_DPrintf ("%s ...\n",s);
 		if (!stricmp (s, model))
@@ -504,7 +501,7 @@ S_SpatializeOrigin
 Used for spatializing channels and autosounds
 =================
 */
-void S_SpatializeOrigin (vec3_t origin, float master_vol, float dist_mult, int *left_vol, int *right_vol)
+static void S_SpatializeOrigin (const vec3_t origin, float master_vol, float dist_mult, int *left_vol, int *right_vol)
 {
     float		dot, dist, lscale, rscale, scale;
     vec3_t		source_vec;
@@ -673,15 +670,14 @@ void S_IssuePlaysound (playsound_t *ps)
 
 static sfx_t *GetSexedSound (entityState_t *ent, char *base)
 {
-	struct sfx_s *sfx;
-	char	*s, *p, model[MAX_QPATH], sexedFilename[MAX_QPATH];
+	char	model[MAX_QPATH], sexedFilename[MAX_QPATH];
 
 	// determine what model the client is using
 	model[0] = 0;
-	s = cl.configstrings[CS_PLAYERSKINS + ent->number - 1];
+	const char *s = cl.configstrings[CS_PLAYERSKINS + ent->number - 1];
 	if (s[0])
 	{
-		p = strchr (s, '\\');
+		char *p = strchr (s, '\\');
 		if (p)
 		{
 			strcpy (model, p+1);
@@ -695,7 +691,7 @@ static sfx_t *GetSexedSound (entityState_t *ent, char *base)
 
 	// see if we already know of the model specific sound
 	appSprintf (ARRAY_ARG(sexedFilename), "#players/%s/%s", model, base+1);
-	sfx = S_FindName (sexedFilename, false);
+	sfx_t *sfx = S_FindName (sexedFilename, false);
 
 	if (!sfx)
 	{
@@ -731,7 +727,7 @@ if pos is NULL, the sound will be dynamically sourced from the entity
 Entchannel 0 will never override a playing sound
 ====================
 */
-void S_StartSound (vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float fvol, float attenuation, float timeofs)
+void S_StartSound (const vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float fvol, float attenuation, float timeofs)
 {
 	sfxcache_t	*sc;
 	int			vol;
@@ -1077,7 +1073,7 @@ S_Update
 Called once each time through the main loop
 ============
 */
-void S_Update(vec3_t origin, vec3_t forward, vec3_t right, vec3_t up)
+void S_Update(const vec3_t origin, const vec3_t forward, const vec3_t right, const vec3_t up)
 {
 	int			i;
 	int			total;

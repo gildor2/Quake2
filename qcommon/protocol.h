@@ -24,14 +24,14 @@
 #define	EF_TELEPORTER		0x00020000		// particle fountain
 #define EF_FLAG1			0x00040000		// red flag: red light + trail
 #define EF_FLAG2			0x00080000		// blue flag: blue light + trail
-// RAFAEL
+// XATRIX
 #define EF_IONRIPPER		0x00100000		// light + trail
 #define EF_GREENGIB			0x00200000		// green blood trail
 #define	EF_BLUEHYPERBLASTER 0x00400000		// blue light
 #define EF_SPINNINGLIGHTS	0x00800000		// red light, rotating around entity origin
 #define EF_PLASMA			0x01000000		// light + (if EF_ANIM_ALLFAST set) blaster trail
 #define EF_TRAP				0x02000000		// light + trail
-//ROGUE
+// ROGUE
 #define EF_TRACKER			0x04000000		// trail + neg. light ; see EF_BLASTER too
 #define	EF_DOUBLE			0x08000000		// color shell
 #define	EF_SPHERETRANS		0x10000000		// special (+ EF_TRACKERTRAIL flag usage for alpha control)
@@ -79,12 +79,12 @@ enum {
 	MZ_SSHOTGUN,
 	MZ_HYPERBLASTER,
 	MZ_ITEMRESPAWN,
-	// RAFAEL
+	// XATRIX
 	MZ_IONRIPPER,
 	MZ_BLUEHYPERBLASTER,
 	MZ_PHALANX,
 	MZ_SILENCED =128,		// bit flag OR'ed with one of the above numbers
-	//ROGUE
+	// ROGUE
 	MZ_ETF_RIFLE = 30,
 	MZ_UNUSED,
 	MZ_SHOTGUN2,
@@ -240,7 +240,7 @@ enum
 	TE_MEDIC_CABLE_ATTACK,
 	TE_BFG_EXPLOSION,
 	TE_BFG_BIGEXPLOSION,
-	TE_BOSSTPORT,			// used as '22' in a map, so DON'T RENUMBER!!!
+	TE_BOSSTPORT,			// used as '22' in a map, so DON'T RENUMBER !
 	TE_BFG_LASER,
 	TE_GRAPPLE_CABLE,
 	TE_WELDING_SPARKS,
@@ -248,7 +248,7 @@ enum
 	TE_BLUEHYPERBLASTER,
 	TE_PLASMA_EXPLOSION,
 	TE_TUNNEL_SPARKS,
-	//ROGUE
+	// ROGUE
 	TE_BLASTER2,
 	TE_RAILTRAIL2,
 	TE_FLAME,

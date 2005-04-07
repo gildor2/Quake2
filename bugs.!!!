@@ -78,3 +78,6 @@ SOURCE FILES (COMPILER):
     and will display warning C4715 (not all control paths return value)
   - FS_LoadFile(filename, &len) have arg "unsigned *len"; using this via structure will produce warning C4700
     (local variable used without having been initialized)
+- (VisualC++ 7) -- cannot use default arguments for functions, which are part of structure (client/ref.h :: refExport_t have few one)
+  May be fixed: should use RE_Func() inline (with default args) instead of re.Func() call; this will allow to not use refExport_t
+  at all when compiled with SINGLE_RENDERER (should make #define to convert RE_Func() to R_Func() ...)

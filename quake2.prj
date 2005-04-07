@@ -9,6 +9,7 @@ COMPILER = VisualC
 	WARNLEVEL = 3
 	OPTIMIZE  = size
 	STDLIBS   = kernel32 user32 gdi32
+#	LIBC      = static
 !endif
 
 OUT = Release

@@ -48,7 +48,7 @@ extern	image_t		*gl_reflImage2;		// NULL if not found
 extern int 	gl_screenshotFlags;
 extern char	*gl_screenshotName;
 
-void	GL_TextureMode (char *name);
+void	GL_TextureMode (const char *name);
 
 void	GL_PerformScreenshot (void);
 
@@ -65,7 +65,7 @@ image_t *GL_FindImage (const char *name, unsigned flags);
 // video support
 void	GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette);
 
-void GL_ShowImages (void);
+void	GL_ShowImages (void);
 
 
 #endif

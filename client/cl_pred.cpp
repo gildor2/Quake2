@@ -68,7 +68,7 @@ void CL_CheckPredictionError (void)
 
 //#define NO_PREDICT_LERP	// debug
 
-void CL_EntityTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents)
+void CL_EntityTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int contents)
 {
 	int		i, j;
 	trace_t	trace;
@@ -157,7 +157,7 @@ void CL_EntityTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t 
 }
 
 
-void CL_Trace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int contents)
+void CL_Trace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int contents)
 {
 	guard(CL_Trace);
 	CM_BoxTrace (tr, start, end, mins, maxs, 0, contents);

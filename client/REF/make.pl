@@ -49,7 +49,10 @@ sub getline {
 
 
 sub EmitStruc {
-	printf (HDR "\t%s\t(*_%s) (%s);\n", $type, $func, $args);
+	my $str = $args;
+	# remove default arguments from structure declaration
+	$str =~ s/\s*=\s*\w+\s*//g;
+	printf (HDR "\t%s\t(*_%s) (%s);\n", $type, $func, $str);
 }
 
 sub EmitDefine1 {
@@ -75,10 +78,6 @@ sub EmitDefine1 {
 		# finish
 		print (DEFS ");\n}\n");
 	}
-}
-
-sub EmitDefine2 {	#?? unused
-	printf (DEFS "//#define %s\t%s_\n", $func, $func);	#??
 }
 
 sub EmitDecl {
@@ -167,8 +166,6 @@ EOF
 print (DEFS "#ifdef DYNAMIC_REF\n\n");
 Parse ("EmitDefine1", "EmitDefsPrep");
 print (DEFS "\n#else\n\n");
-#Parse ("EmitDefine2");
-#print (DEFS "\n\n");
 Parse ("EmitDecl", "EmitDefsPrep");
 print (DEFS "\n#endif\n\n");
 

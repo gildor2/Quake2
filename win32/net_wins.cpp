@@ -37,13 +37,12 @@ typedef struct
 } loopback_t;
 
 
-cvar_t		*net_shownet;
+cvar_t			*net_shownet;
 static cvar_t	*noudp;
 static cvar_t	*noipx;
 
-static loopback_t	loopbacks[2];
-static int			ip_socket;
-static int			ipx_socket;
+static loopback_t loopbacks[2];
+static int		ip_socket, ipx_socket;
 
 
 /*
@@ -161,13 +160,9 @@ bool NET_CompareAdr (netadr_t *a, netadr_t *b)
 	case NA_LOOPBACK:
 		return true;
 	case NA_IP:
-		if (a->ip[0] == b->ip[0] && a->ip[1] == b->ip[1] && a->ip[2] == b->ip[2] && a->ip[3] == b->ip[3] && a->port == b->port)
-			return true;
-		break;
+		return (memcmp (a->ip, b->ip, 4) == 0) && (a->port == b->port);
 	case NA_IPX:
-		if ((memcmp(a->ipx, b->ipx, 10) == 0) && a->port == b->port)
-			return true;
-		break;
+		return (memcmp(a->ipx, b->ipx, 10) == 0) && (a->port == b->port);
 	}
 
 	return false;
@@ -185,17 +180,14 @@ bool NET_CompareBaseAdr (netadr_t *a, netadr_t *b)
 	if (a->type != b->type)
 		return false;
 
-	if (a->type == NA_LOOPBACK)
+	switch (a->type)
+	{
+	case NA_LOOPBACK:		// no other address parts
 		return true;
-	else if (a->type == NA_IP)
-	{
-		if (a->ip[0] == b->ip[0] && a->ip[1] == b->ip[1] && a->ip[2] == b->ip[2] && a->ip[3] == b->ip[3])
-			return true;
-	}
-	else if (a->type == NA_IPX)
-	{
-		if ((memcmp(a->ipx, b->ipx, 10) == 0))
-			return true;
+	case NA_IP:
+		return memcmp (a->ip, b->ip, 4) == 0;
+	case NA_IPX:
+		return memcmp(a->ipx, b->ipx, 10) == 0;
 	}
 
 	return false;
@@ -230,7 +222,6 @@ idnewt:28000
 static bool StringToSockaddr (const char *s, SOCKADDR *sadr)
 {
 	struct hostent	*h;
-	char	*colon;
 	int		val;
 	char	copy[128];
 
@@ -269,7 +260,7 @@ static bool StringToSockaddr (const char *s, SOCKADDR *sadr)
 
 		strcpy (copy, s);
 		// strip off a trailing :port if present
-		for (colon = copy ; *colon ; colon++)
+		for (char *colon = copy; *colon ; colon++)
 			if (*colon == ':')
 			{
 				*colon = 0;
@@ -304,8 +295,6 @@ idnewt:28000
 */
 bool NET_StringToAdr (const char *s, netadr_t *a)
 {
-	SOCKADDR sadr;
-
 	if (!strcmp (s, "localhost"))
 	{
 		memset (a, 0, sizeof(*a));
@@ -313,8 +302,8 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
 		return true;
 	}
 
-	if (!StringToSockaddr (s, &sadr))
-		return false;
+	SOCKADDR sadr;
+	if (!StringToSockaddr (s, &sadr)) return false;
 
 	SockadrToNetadr (&sadr, a);
 
@@ -337,10 +326,7 @@ LOOPBACK BUFFERS FOR LOCAL PLAYER
 
 bool NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 {
-	int		i;
-	loopback_t	*loop;
-
-	loop = &loopbacks[sock];
+	loopback_t *loop = &loopbacks[sock];
 
 	if (loop->send - loop->get > MAX_LOOPBACK)
 		loop->get = loop->send - MAX_LOOPBACK;
@@ -348,7 +334,7 @@ bool NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_messag
 	if (loop->get >= loop->send)
 		return false;
 
-	i = loop->get & (MAX_LOOPBACK-1);
+	int i = loop->get & (MAX_LOOPBACK-1);
 	loop->get++;
 
 	memcpy (net_message->data, loop->msgs[i].data, loop->msgs[i].datalen);
@@ -362,12 +348,9 @@ bool NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_messag
 
 void NET_SendLoopPacket (netsrc_t sock, int length, void *data, netadr_t to)
 {
-	int		i;
-	loopback_t	*loop;
+	loopback_t *loop = &loopbacks[sock^1];
 
-	loop = &loopbacks[sock^1];
-
-	i = loop->send & (MAX_LOOPBACK-1);
+	int i = loop->send & (MAX_LOOPBACK-1);
 	loop->send++;
 
 	memcpy (loop->msgs[i].data, data, length);
@@ -378,26 +361,23 @@ void NET_SendLoopPacket (netsrc_t sock, int length, void *data, netadr_t to)
 
 bool NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 {
-	int 	ret, fromlen;
-	SOCKADDR from;
-	int		net_socket, protocol, err;
-
 	if (NET_GetLoopPacket (sock, net_from, net_message))
 		return true;
 
-	for (protocol = 0 ; protocol < 2 ; protocol++)
+	for (int protocol = 0; protocol < 2; protocol++)
 	{
-		net_socket = protocol == 0 ? ip_socket : ipx_socket;
+		int net_socket = protocol == 0 ? ip_socket : ipx_socket;
 		if (!net_socket) continue;
 
-		fromlen = sizeof(from);
-		ret = recvfrom (net_socket, (char*)net_message->data, net_message->maxsize, 0, (SOCKADDR *)&from, &fromlen);
+		SOCKADDR from;
+		int fromlen = sizeof(from);
+		int ret = recvfrom (net_socket, (char*)net_message->data, net_message->maxsize, 0, (SOCKADDR *)&from, &fromlen);
 
 		SockadrToNetadr (&from, net_from);
 
 		if (ret == SOCKET_ERROR)
 		{
-			err = WSAGetLastError();
+			int err = WSAGetLastError();
 
 			if (err == WSAEWOULDBLOCK || err == WSAECONNRESET)	// WSAECONNRESET: see Q263823 in MSDN (applies to Win2k)
 				continue;
@@ -425,10 +405,7 @@ bool NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 
 void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
 {
-	int		ret;
-	SOCKADDR addr;
 	int		net_socket;
-
 	switch (to.type)
 	{
 	case NA_LOOPBACK:
@@ -451,10 +428,10 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
 	}
 	if (!net_socket) return;
 
+	SOCKADDR addr;
 	NetadrToSockadr (&to, &addr);
 
-	ret = sendto (net_socket, (char*)data, length, 0, &addr, sizeof(addr) );
-	if (ret == SOCKET_ERROR)
+	if (sendto (net_socket, (char*)data, length, 0, &addr, sizeof(addr)) == SOCKET_ERROR)
 	{
 		int err = WSAGetLastError();
 
@@ -479,18 +456,16 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
 NET_Socket
 ====================
 */
-int NET_IPSocket (char *net_interface, int port)
+static int NET_IPSocket (char *net_interface, int port)
 {
 	int		newsocket;
 	SOCKADDR_IN address;
 	static unsigned long _true = 1;
-	int		i, err;
 
-	i = 1;
+	int i = 1;
 	if ((newsocket = socket (PF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
 	{
-		err = WSAGetLastError();
-		if (err != WSAEAFNOSUPPORT)
+		if (WSAGetLastError() != WSAEAFNOSUPPORT)
 			Com_WPrintf ("UDP_OpenSocket: socket: %s", NET_ErrorString());
 		return 0;
 	}
@@ -540,17 +515,14 @@ NET_OpenIP
 
 #define NUM_TRIES	10
 
-void NET_OpenIP (void)
+static void NET_OpenIP (void)
 {
-	cvar_t	*ip;
-	int		port, tries;
-
-	ip = Cvar_Get ("ip", "localhost", CVAR_NOSET);
-	port = Cvar_Get ("port", va("%d", PORT_SERVER), CVAR_NOSET)->integer;
+	cvar_t *ip = Cvar_Get ("ip", "localhost", CVAR_NOSET);
+	int port = Cvar_Get ("port", va("%d", PORT_SERVER), CVAR_NOSET)->integer;
 
 	ip_socket = NET_IPSocket (ip->string, port);
 
-	for (tries = 0; !ip_socket && tries < NUM_TRIES; tries++)
+	for (int tries = 0; !ip_socket && tries < NUM_TRIES; tries++)
 		ip_socket = NET_IPSocket (ip->string, PORT_ANY);
 	if (!ip_socket)
 		Com_WPrintf ("OpenIP: Unable to allocate IP socket\n");
@@ -567,12 +539,10 @@ static int NET_IPXSocket (int port)
 	int		newsocket;
 	SOCKADDR_IPX address;
 	static unsigned long _true = 1;
-	int		err;
 
 	if ((newsocket = socket (PF_IPX, SOCK_DGRAM, NSPROTO_IPX)) == INVALID_SOCKET)
 	{
-		err = WSAGetLastError();
-		if (err != WSAEAFNOSUPPORT)
+		if (WSAGetLastError() != WSAEAFNOSUPPORT)
 			Com_WPrintf ("IPX_Socket: socket: %s\n", NET_ErrorString());
 		return 0;
 	}
@@ -617,11 +587,9 @@ static int NET_IPXSocket (int port)
 NET_OpenIPX
 ====================
 */
-void NET_OpenIPX (void)
+static void NET_OpenIPX (void)
 {
-	int		port;
-
-	port = Cvar_Get ("port", va("%i", PORT_SERVER), CVAR_NOSET)->integer;
+	int port = Cvar_Get ("port", va("%d", PORT_SERVER), CVAR_NOSET)->integer;
 	ipx_socket = NET_IPXSocket (port);
 	if (!ipx_socket)
 	{
@@ -666,10 +634,8 @@ void NET_Config (bool multiplayer)
 
 	if (multiplayer)
 	{	// open sockets
-		if (!noudp->integer)
-			NET_OpenIP ();
-		if (!noipx->integer)
-			NET_OpenIPX ();
+		if (!noudp->integer) NET_OpenIP ();
+		if (!noipx->integer) NET_OpenIPX ();
 	}
 
 	noipx->modified = noudp->modified = false;
@@ -698,7 +664,7 @@ NET_Init
 */
 void NET_Init (void)
 {
-	int		r;
+	guard(NET_Init);
 
 CVAR_BEGIN(vars)
 	CVAR_VAR(noudp, 0, 0),
@@ -709,10 +675,12 @@ CVAR_END
 	RegisterCommand ("net_restart", Cmd_NetRestart_f);
 	Cvar_GetVars (ARRAY_ARG(vars));
 
-	r = WSAStartup (MAKEWORD(1, 1), &winsockdata);
-	if (r) Com_FatalError ("Winsock initialization failed.");
+	if (WSAStartup (MAKEWORD(1, 1), &winsockdata))
+		Com_FatalError ("Winsock initialization failed");
 
-	Com_Printf("Winsock Initialized\n");
+	Com_Printf ("Winsock Initialized\n");
+
+	unguard;
 }
 
 

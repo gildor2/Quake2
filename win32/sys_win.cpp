@@ -1,23 +1,3 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-
 #include "winquake.h"
 #include "Core.h"
 
@@ -28,7 +8,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define CRASH_LOG	"crash.log"		//!! required for history logging (should move to Core ??!)
 
 int			starttime;
-bool		ActiveApp, Minimized;
+bool		ActiveApp, MinimizedApp, FullscreenApp;
 
 static HANDLE hinput, houtput;
 
@@ -159,10 +139,7 @@ Sys_ConsoleInput
 */
 char *Sys_ConsoleInput (void)
 {
-	INPUT_RECORD rec;
-	int		ch, len;
-	DWORD	numevents, dummy, numread;
-	char	*s;
+	DWORD	dummy;
 
 	guard(Sys_ConsoleInput);
 
@@ -177,13 +154,15 @@ char *Sys_ConsoleInput (void)
 
 	while (true)
 	{
+		DWORD	numevents, numread;
 		GetNumberOfConsoleInputEvents (hinput, &numevents);
 		if (numevents <= 0) break;
-		ReadConsoleInput (hinput, &rec, 1, &numread);
 
+		INPUT_RECORD rec;
+		ReadConsoleInput (hinput, &rec, 1, &numread);
 		if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown)
 		{
-			ch = rec.Event.KeyEvent.uChar.AsciiChar;
+			int ch = rec.Event.KeyEvent.uChar.AsciiChar;
 			switch (ch)
 			{
 				case '\r':		// ENTER
@@ -205,17 +184,19 @@ char *Sys_ConsoleInput (void)
 					break;
 
 				case '\t':		// TAB
-					appSprintf (ARRAY_ARG(editLine), "]%s", console_text);
-					CompleteCommand ();
-					s = editLine;
-					if (s[0] == ']') s++;
-					if (s[0] == '/') s++;
-					len = strlen (s);
-					if (len > 0)
 					{
-						console_textlen = min(len, sizeof(console_text)-2);
-						appStrncpyz (console_text, s, console_textlen+1);
-						Sys_ConsoleOutput ("");		// update line
+						appSprintf (ARRAY_ARG(editLine), "]%s", console_text);
+						CompleteCommand ();
+						const char *s = editLine;
+						if (s[0] == ']') s++;
+						if (s[0] == '/') s++;
+						int len = strlen (s);
+						if (len > 0)
+						{
+							console_textlen = min(len, sizeof(console_text)-2);
+							appStrncpyz (console_text, s, console_textlen+1);
+							Sys_ConsoleOutput ("");		// update line
+						}
 					}
 					break;
 
@@ -257,15 +238,12 @@ Print text to the dedicated console
 */
 void Sys_ConsoleOutput (const char *string)
 {
-	DWORD	dummy;
-	char	c;
-
 	if (!DEDICATED) return;
 
 	EraseConInput ();
 
 	// draw message
-	while (c = string[0])
+	while (char c = string[0])
 	{
 		// parse color info
 		if (c == COLOR_ESCAPE && string[1] >= '0' && string[1] <= '7')
@@ -276,6 +254,7 @@ void Sys_ConsoleOutput (const char *string)
 			continue;
 		}
 		c &= 0x7F;		// clear 7th bit
+		DWORD	dummy;
 		WriteFile (houtput, &c, 1, &dummy, NULL);
 		string++;
 	}
@@ -295,18 +274,18 @@ Send Key_Event calls
 void Sys_SendKeyEvents (void)
 {
 #ifndef DEDICATED_ONLY
-	MSG		msg;
-
 	guard(Sys_SendKeyEvents);
+	MSG		msg;
 	while (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
 	{
-		if (msg.message == WM_QUIT)
-			Com_Quit ();
+		if (msg.message == WM_QUIT) Com_Quit ();
 		sys_msg_time = appMilliseconds ();	//?? msg.time;
 
-		guard(TranslateMessage);
+		// TranslateMessage() used for convert VK_XXX messages to WM_CHAR-like
+		// We don't need this, but keep TranslateMessage() just in case of compatibility
+		// with future Windows versions (at least in Win2K MS implemented "some feature",
+		// which requires to call this function -- what feature - they don't tell)
 		TranslateMessage (&msg);
-		unguardf(("msg=%X", msg.message));
 
 		guard(DispatchMessage);
 		DispatchMessage (&msg);
@@ -457,6 +436,7 @@ int main (int argc, const char **argv)
 			if (!ActiveApp || DEDICATED)
 				Sleep (10);		//?? what about client and server in one place: will server become slower ?
 
+#if 0
 			MSG		msg;
 			while (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
 			{
@@ -471,6 +451,9 @@ int main (int argc, const char **argv)
 				DispatchMessage (&msg);
 				unguardf(("msg=%X", msg.message));
 			}
+#else
+			Sys_SendKeyEvents ();
+#endif
 #else
 			Sleep (10);
 #endif
@@ -489,15 +472,12 @@ int main (int argc, const char **argv)
 					timeDelta = 100;
 					break;
 				}
-				if (timeDelta > 1) break;		//?? client (or server?) time bugs with ">0" condition & cl_maxfps < realFPS -- net/prediction errors
+				if (timeDelta > 1.0f) break;	//?? client (or server?) time bugs with ">0" condition & cl_maxfps < realFPS -- net/prediction errors
 				Sleep (0);
 			}
-			GUARD_BEGIN
-			{
+			GUARD_BEGIN {
 				Com_Frame (timeDelta);
-			}
-			GUARD_CATCH
-			{
+			} GUARD_CATCH {
 				if (GErr.nonFatalError)
 				{
 					//!! TEST: dedicated: error -drop, error -gpf, error "msg"
@@ -513,9 +493,7 @@ int main (int argc, const char **argv)
 			oldtime = newtime;
 		}
 		unguard;
-	}
-	GUARD_CATCH
-	{
+	} GUARD_CATCH {
 		//?? should move softError and history logging to Core
 		// log error
 		if (FILE *f = fopen (CRASH_LOG, "a+"))

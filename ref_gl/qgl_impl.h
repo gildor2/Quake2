@@ -905,8 +905,7 @@ typedef struct {
 	const char *cvar;				// name of cvar to disable extension
 	short	first, count;			// positions of provided functions in name table
 	unsigned require, deprecate;	// dependent extensions
-}
-extInfo_t;
+} extInfo_t;
 
 static extInfo_t extInfo[NUM_EXTENSIONS] = {
 	{"GL_SGIS_multitexture\0", NULL, "gl_ext_multitexture", NUM_GLFUNCS+0, 2, 0, QGL_ARB_MULTITEXTURE},

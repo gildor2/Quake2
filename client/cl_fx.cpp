@@ -267,7 +267,7 @@ static void CL_AddParticleTraces (float timeDelta)
 		float	speed, dist, distDelta, pos1;
 		float	viewDist, t;
 		trace_t	trace;
-		static vec3_t zero = {0, 0, 0};
+		static const vec3_t zero = {0, 0, 0};
 
 		if (!p->allocated)
 			continue;
@@ -675,14 +675,14 @@ void CL_ParseMuzzleFlash (void)
 	F(1,1,0,	true,	"sshotf1b", NULL),			// MZ_SSHOTGUN
 	F(1,1,0,	true,	"hyprbf1a", NULL),			// MZ_HYPERBLASTER
 	F(0,0,0,	false,	NULL, NULL),				// MZ_ITEMRESPAWN -- empty
-	// RAFAEL
+	// XATRIX
 	F(1,0.5, 0.5, true,	"rippfire", NULL),			// MZ_IONRIPPER
 	F(0,0,1,	true,	"hyprbf1a", NULL),			// MZ_BLUEHYPERBLASTER
 	F(1,0.5, 0.5, true,	"plasshot", NULL),			// MZ_PHALANX
 	//-------------------------------------------
 	// MZ_PHALANX == 18 ... MZ_ETF_RIFLE == 30
 	//-------------------------------------------
-	// PGM
+	// ROGUE
 	F(0.9,0.7,0, true,	"nail1", NULL),				// MZ_ETF_RIFLE
 	F(0,0,0,	false,	NULL, NULL),				// MZ_UNUSED -- empty
 	F(1,1,0,	true,	"shotg2", NULL),			// MZ_SHOTGUN2
@@ -1685,7 +1685,7 @@ void CL_RailTrailExt (vec3_t start, vec3_t end, byte rType, byte rColor)
 }
 
 
-// RAFAEL
+// XATRIX
 /*
 ===============
 CL_IonripperTrail
@@ -1940,7 +1940,7 @@ void CL_BfgParticles (entity_t *ent)
 CL_TrapParticles
 ===============
 */
-// RAFAEL
+// XATRIX
 void CL_TrapParticles (entity_t *ent)
 {
 	vec3_t		move;
@@ -2105,11 +2105,11 @@ An entity has just been parsed that has an event value
 the female events are there for backwards compatability
 ==============
 */
-extern struct sfx_s	*cl_sfx_footsteps[4];
-extern struct sfx_s	*cl_sfx_footsteps2[9*4];
-extern struct sfx_s	*cl_sfx_fallshort2[9];
-//?? extern struct sfx_s	*cl_sfx_spectator[4];
-extern struct sfx_s	*cl_sfx_camper[9];
+extern sfx_t *cl_sfx_footsteps[4];
+extern sfx_t *cl_sfx_footsteps2[9*4];
+extern sfx_t *cl_sfx_fallshort2[9];
+//?? extern sfx_t *cl_sfx_spectator[4];
+extern sfx_t *cl_sfx_camper[9];
 
 
 void CL_EntityEvent (entityState_t *ent)

@@ -81,6 +81,10 @@ inline void FS_RemoveFiles (const char *mask)
 {
 	ri._FS_RemoveFiles (mask);
 }
+inline void Vid_Restart (void)
+{
+	ri._Vid_Restart ();
+}
 inline bool Vid_GetModeInfo (int *width, int *height, int mode)
 {
 	return ri._Vid_GetModeInfo (width, height, mode);
@@ -142,11 +146,6 @@ inline void Vid_DestroyWindow (bool force)
 {
 	ri._Vid_DestroyWindow (force);
 }
-#else
-inline void Vid_NewWindow (int width, int height)
-{
-	ri._Vid_NewWindow (width, height);
-}
 #endif
 
 #else
@@ -173,6 +172,7 @@ void	FS_CreatePath (const char *path);
 void	FS_CopyFile (const char *src, const char *dst);
 void	FS_CopyFiles (const char *srcMask, const char *dstDir);
 void	FS_RemoveFiles (const char *mask);
+void	Vid_Restart (void);
 bool	Vid_GetModeInfo (int *width, int *height, int mode);
 int	ImageExists (const char *name, int stop_mask = IMAGE_ANY);
 void	LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *height);
@@ -189,8 +189,6 @@ int	CM_RefineBrushTrace (const vec3_t start, const vec3_t end, int *brushes, int
 #ifdef _WIN32
 void*	Vid_CreateWindow (int width, int height, bool fullscreen);
 void	Vid_DestroyWindow (bool force);
-#else
-void	Vid_NewWindow (int width, int height);
 #endif
 
 #endif

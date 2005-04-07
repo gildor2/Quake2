@@ -1299,6 +1299,8 @@ CL_Frame
 ==================
 */
 
+#define MAX_GUI_FPS		60
+
 void CL_Frame (float msec, float realMsec)
 {
 	static double extratime_real;	// real frame time, msec
@@ -1311,8 +1313,9 @@ void CL_Frame (float msec, float realMsec)
 
 	if (!timedemo->integer)			// ignore cl_maxfps in timedemo
 	{
+		int maxFps = (cls.key_dest == key_game) ? cl_maxfps->integer : MAX_GUI_FPS;
 		// here extratime can be accumulated between frames
-		if (cl_maxfps->integer > 0 && extratime_real < 1000.0f / cl_maxfps->value)	// ignore when cl_maxfps==0
+		if (maxFps > 0 && extratime_real < 1000.0f / maxFps)	// ignore when cl_maxfps==0
 			return;					// framerate is too high
 		if (cls.state == ca_connected && extratime < 0.1f)
 		{

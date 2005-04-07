@@ -241,24 +241,24 @@ void QGL_InitExtensions (void)
 	{
 		Com_Printf ("...undetected extensions:\n");
 		for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
-			if (notFoundExt & (1 << i))
+		{
+			if (!(notFoundExt & (1 << i))) continue;
+			unsigned tmp = gl_config.extensionMask & ext->deprecate;
+			if (tmp)
 			{
-				unsigned tmp = gl_config.extensionMask & ext->deprecate;
-				if (tmp)
+				// display error
+				for (j = 0; j < NUM_EXTENSIONS; j++)
 				{
-					// display error
-					for (j = 0; j < NUM_EXTENSIONS; j++)
+					if ((1 << j) & tmp)
 					{
-						if ((1 << j) & tmp)
-						{
-							Com_DPrintf ("   %s is covered by %s\n", ext->name, extInfo[j].name);
-							break;		// ignore other exteensions
-						}
+						Com_DPrintf ("   %s is covered by %s\n", ext->name, extInfo[j].name);
+						break;		// ignore other exteensions
 					}
 				}
-				else
-					Com_Printf ("   %s\n", ext->name);
 			}
+			else
+				Com_Printf ("   %s\n", ext->name);
+		}
 		Com_Printf ("\n");
 	}
 
@@ -277,43 +277,40 @@ void QGL_PrintExtensionsString (const char *label, const char *str, const char *
 	while (true)
 	{
 		char c = *str++;
-		if (c == ' ' || c == 0)
+		if ((c == ' ' || c == 0) && i)
 		{
-			if (i)
+			name[i] = 0;
+			i = 0;
+			// name[] now contains current extension name
+			// check display mask
+			if (mask && !appMatchWildcard (name, mask, true)) continue;
+			// determine color for name display
+			const char *color = NULL;
+			int j;
+			unsigned m;
+			extInfo_t *ext;
+			for (j = 0, m = 1, ext = extInfo; j < NUM_EXTENSIONS; j++, ext++, m <<= 1)
 			{
-				name[i] = 0;
-				i = 0;
-				// name[] now contains current extension name
-				// check display mask
-				if (mask && !appMatchWildcard (name, mask, true)) continue;
-				// determine color for name display
-				const char *color = NULL;
-				int j;
-				unsigned m;
-				extInfo_t *ext;
-				for (j = 0, m = 1, ext = extInfo; j < NUM_EXTENSIONS; j++, ext++, m <<= 1)
+				const char *s = ext->names;
+				while (s[0])	// while aliases present
 				{
-					const char *s = ext->names;
-					while (s[0])	// while aliases present
-					{
-						if (!strcmp (s, name)) break;
-						s = strchr (s, '\0') + 1;
-					}
-					if (!s[0]) continue;
-					// here: current name is one of aliases of extInfo[j]
-					if (gl_config.disabledExt & m)
-						color = S_CYAN;			// disabled by cvar
-					else if (gl_config.ignoredExt & m)
-						color = S_BLUE;			// ignored in a favor of different extension
-					else if (gl_config.extensionMask & m)
-						color = S_GREEN;		// used
-					else
-						color = S_RED;			// switched off by another reason
-					Com_Printf ("%s%s "S_WHITE, color, name);
-					break;
+					if (!strcmp (s, name)) break;
+					s = strchr (s, '\0') + 1;
 				}
-				if (!color) Com_Printf ("%s ", name);		// unsupported extension
+				if (!s[0]) continue;
+				// here: current name is one of aliases of extInfo[j]
+				if (gl_config.disabledExt & m)
+					color = S_CYAN;			// disabled by cvar
+				else if (gl_config.ignoredExt & m)
+					color = S_BLUE;			// ignored in a favor of different extension
+				else if (gl_config.extensionMask & m)
+					color = S_GREEN;		// used
+				else
+					color = S_RED;			// switched off by another reason
+				Com_Printf ("%s%s "S_WHITE, color, name);
+				break;
 			}
+			if (!color) Com_Printf ("%s ", name);		// unsupported extension
 		}
 		else
 		{
@@ -345,8 +342,13 @@ void QGL_EnableLogging (bool enable)
 			time (&itime);
 			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
 
-			logFile = fopen (va("%s/gl.log", FS_Gamedir ()), "a+");
-			fprintf (logFile, "\n------------------------\n%s------------------------\n", ctime);
+			logFile = fopen ("gl.log", "a+");
+			if (!logFile)
+			{
+				Com_WPrintf ("QGL_EnableLogging(): unable to create file\n");
+				return;
+			}
+			fprintf (logFile, "\n---------------------------\n%s\n---------------------------\n", ctime);
 		}
 
 		qgl = logFuncs;

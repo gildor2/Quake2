@@ -3,8 +3,8 @@
 
 typedef struct
 {
-	HDC     hDC;		// handle to device context
 	HWND    hWnd;		// handle to window
+	HDC     hDC;		// handle to device context
 } glwstate_t;
 
 extern glwstate_t glw_state;

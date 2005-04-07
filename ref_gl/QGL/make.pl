@@ -447,16 +447,16 @@ typedef union
 EOF
 );
 Parse ("EmitStruc", "EmitPlatformHDR");
-printf (HDR <<EOF
+print (HDR <<EOF
 	};
 	dummyFunc_t funcs[1];
-} %s_t;
+} ${strucname}_t;
 
-extern %s_t %s;
+extern ${strucname}_t $strucname;
 
 
 EOF
-, $strucname, $strucname, $strucname);
+);
 
 Parse ("EmitDefine", "EmitPlatformHDR");
 
@@ -548,10 +548,10 @@ typedef struct {
 	const char *cvar;				// name of cvar to disable extension
 	short	first, count;			// positions of provided functions in name table
 	unsigned require, deprecate;	// dependent extensions
-}
+} ${extArrName}_t;
+
 EOF
 );
-print (CODE $extArrName, "_t;\n\n");
 
 printf (CODE "static %s_t %s[%s] = {\n", $extArrName, $extArrName, $constname3);
 Parse (undef, "EmitPlatformCODE_EXT", "EmitExtensionCODE");

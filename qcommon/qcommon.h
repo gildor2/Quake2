@@ -224,12 +224,11 @@ extern	/*const*/ vec3_t bytedirs[NUMVERTEXNORMALS];
 
 void	InitByteDirs ();
 
-//============================================================================
 
+/*-----------------------------------------------------------------------------
+	key/value info strings
+-----------------------------------------------------------------------------*/
 
-//
-// key / value info strings
-//
 #define	MAX_INFO_KEY		64
 #define	MAX_INFO_VALUE		64
 #define	MAX_INFO_STRING		512
@@ -286,13 +285,8 @@ typedef enum {
 
 
 
-//==================
-// the svc_strings[] array in cl_parse.c should mirror this
-//==================
-
-//
+// the svc_strings[] array in cl_parse.cpp should mirror this
 // server to client
-//
 enum
 {
 	svc_bad,
@@ -324,21 +318,16 @@ enum
 	svc_last					// number of commands
 };
 
-//==============================================
-
-//
 // client to server
-//
 enum
 {
 	clc_bad,
 	clc_nop,
-	clc_move,					// [[usercmd_t]
-	clc_userinfo,				// [[userinfo string]
-	clc_stringcmd				// [string] message
+	clc_move,					// [usercmd_t]
+	clc_userinfo,				// [userinfo string]
+	clc_stringcmd				// [string message]
 };
 
-//==============================================
 
 // a sound without an ent or pos will be a local only sound
 #define	SND_VOLUME			(1<<0)		// a byte
@@ -350,7 +339,7 @@ enum
 #define DEFAULT_SOUND_PACKET_VOLUME			1.0
 #define DEFAULT_SOUND_PACKET_ATTENUATION	1.0
 
-//==============================================
+
 
 /*-----------------------------------------------------------------------------
 	Command text buffering and command execution (cmd.cpp)
@@ -616,21 +605,21 @@ typedef struct
 extern char map_name[];
 extern bool map_clientLoaded;
 
-cmodel_t *CM_LoadMap (char *name, bool clientload, unsigned *checksum);
-cmodel_t *CM_InlineModel (char *name);	// *1, *2, etc
+cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum);
+cmodel_t *CM_InlineModel (const char *name);	// *1, *2, etc
 
 int		CM_NumClusters (void);
 int		CM_NumInlineModels (void);
-char	*CM_EntityString (void);
+const char *CM_EntityString (void);
 
 // creates a clipping hull for an arbitrary box
 int		CM_HeadnodeForBox (vec3_t mins, vec3_t maxs);
 
 
 // returns an ORed contents mask
-int		CM_PointContents (vec3_t p, int headnode);
-int		CM_TransformedPointContents (vec3_t p, int headnode, vec3_t origin, vec3_t angles);
-int		CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t *axis);
+int		CM_PointContents (const vec3_t p, int headnode);
+int		CM_TransformedPointContents (const vec3_t p, int headnode, vec3_t origin, vec3_t angles);
+int		CM_TransformedPointContents2 (const vec3_t p, int headnode, vec3_t origin, vec3_t *axis);
 
 //--void	CM_BoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
 //--void	CM_TransformedBoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,	int headnode, int brushmask, vec3_t origin, vec3_t angles);
@@ -638,11 +627,11 @@ int		CM_TransformedPointContents2 (vec3_t p, int headnode, vec3_t origin, vec3_t
 byte	*CM_ClusterPVS (int cluster);
 byte	*CM_ClusterPHS (int cluster);
 
-int		CM_PointLeafnum (vec3_t p, int num = 0);
+int		CM_PointLeafnum (const vec3_t p, int num = 0);
 
 // call with topnode set to the headnode, returns with topnode
 // set to the first node that splits the box
-int		CM_BoxLeafnums (vec3_t mins, vec3_t maxs, int *list, int listsize, int *topnode = NULL, int headnode = 0);
+int		CM_BoxLeafnums (const vec3_t mins, const vec3_t maxs, int *list, int listsize, int *topnode = NULL, int headnode = 0);
 
 int		CM_LeafContents (int leafnum);
 int		CM_LeafCluster (int leafnum);
@@ -710,8 +699,6 @@ void	DebugPrintf (const char *fmt, ...);
 
 
 extern	int linewidth;		// for functions, which wants to perform advanced output formatting
-
-void	Mem_Init (void);
 
 void	Com_BeginRedirect (char *buffer, int buffersize, void (*flush)(char*));
 void	Com_EndRedirect (void);

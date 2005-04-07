@@ -54,16 +54,6 @@
 #include "../client/ref.h"
 
 
-#ifdef STATIC_BUILD
-#	define GetRefAPI			GL_GetRefAPI
-extern "C" refExport_t GetRefAPI (const refImport_t *);
-extern	refImport_t	ri;
-#else
-//?? make common declaration
-extern "C" DLL_EXPORT refExport_t GetRefAPI (const refImport_t *);
-#endif
-
-
 bool	QGL_Init (const char *libName);
 void	QGL_InitExtensions (void);
 void	QGL_PrintExtensionsString (const char *label, const char *str, const char *mask = NULL);
@@ -160,18 +150,9 @@ void	DrawText3D (vec3_t pos, const char *text, unsigned rgba);
 
 /*---- Implementation-specific functions ----*/
 
-typedef enum
-{	//?? remove
-	rserr_ok,
-	rserr_invalid_fullscreen,
-	rserr_invalid_mode
-} rserr_t;
-
-void	GLimp_BeginFrame (float camera_separation);
-void	GLimp_EndFrame (void);
-int 	GLimp_Init (void);
+void	GLimp_SwapBuffers (void);
+bool	GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscreen);
 void	GLimp_Shutdown (bool complete);
-rserr_t GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscreen);
 void	GLimp_AppActivate (bool active);
 
 bool	GLimp_HasGamma (void);

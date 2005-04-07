@@ -12,16 +12,14 @@ enum {SIDE_FRONT, SIDE_BACK, SIDE_ON};
 
 static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 {
-	float	*norm;
 	float	*vec;
-	bool	front, back;
 	float	dists[MAX_CLIP_VERTS];
 	int		sides[MAX_CLIP_VERTS];
 	vec3_t	newv[2][MAX_CLIP_VERTS];	// new polys
 	int		newc[2];					// number of verts in new polys
 	int		i;
 
-	static vec3_t skyClip[6] = {
+	static const vec3_t skyClip[6] = {
 		{ 1, 1, 0},
 		{ 1,-1, 0},
 		{ 0,-1, 1},
@@ -30,7 +28,7 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 		{-1, 0, 1}
 	};
 
-	static int vecToSt[6][3] = {		// s = [0]/[2], t = [1]/[2]
+	static const int vecToSt[6][3] = {	// s = [0]/[2], t = [1]/[2]
 		{-2, 3, 1},
 		{ 2, 3,-1},
 		{ 1, 3, 2},
@@ -47,7 +45,6 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 
 	if (stage == 6)
 	{	// fully clipped -- update skymins/skymaxs
-		int		axis;
 		vec3_t	av, v;
 		float	*vp;
 
@@ -59,6 +56,7 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 		av[1] = fabs(v[1]);
 		av[2] = fabs(v[2]);
 		// Here: v = sum vector, av = abs(v)
+		int		axis;
 		if (av[0] > av[1] && av[0] > av[2])
 			axis = IsNegative (v[0]);
 		else if (av[1] > av[2] && av[1] > av[0])
@@ -70,17 +68,16 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 		for (i = 0; i < numVerts; i++, verts += 3)
 		{
 			int		j;
-			float	s, t, dv;
 
 			j = vecToSt[axis][2];
-			dv = (j < 0) ? -verts[-j - 1] : verts[j - 1];
+			float dv = (j < 0) ? -verts[-j - 1] : verts[j - 1];
 			if (dv < 0.001f) continue;	// don't divide by zero
 
 			j = vecToSt[axis][0];
-			s = (j < 0) ? -verts[-j - 1] / dv : verts[j - 1] / dv;
+			float s = (j < 0) ? -verts[-j - 1] / dv : verts[j - 1] / dv;
 
 			j = vecToSt[axis][1];
-			t = (j < 0) ? -verts[-j - 1] / dv : verts[j - 1] / dv;
+			float t = (j < 0) ? -verts[-j - 1] / dv : verts[j - 1] / dv;
 
 			EXPAND_BOUNDS(s, skyMins[0][axis], skyMaxs[0][axis]);
 			EXPAND_BOUNDS(t, skyMins[1][axis], skyMaxs[1][axis]);
@@ -88,13 +85,11 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 		return;
 	}
 
-	front = back = false;
-	norm = skyClip[stage];
+	bool front = false, back = false;
+	const float *norm = skyClip[stage];
 	for (i = 0, vec = verts; i < numVerts; i++, vec += 3)
 	{
-		float	d;
-
-		d = DotProduct (vec, norm);
+		float d = DotProduct (vec, norm);
 		if (d > ON_EPSILON)
 		{
 			front = true;
@@ -124,9 +119,6 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 
 	for (i = 0, vec = verts; i < numVerts; i++, vec += 3)
 	{
-		int		j;
-		float	d;
-
 		switch (sides[i])
 		{
 		case SIDE_FRONT:
@@ -149,12 +141,10 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 			continue;		// line placed on one side of clip plane
 
 		// line intersects clip plane: split line to 2 parts by adding new point
-		d = dists[i] / (dists[i] - dists[i+1]);
-		for (j = 0; j < 3; j++)
+		float d = dists[i] / (dists[i] - dists[i+1]);
+		for (int j = 0; j < 3; j++)
 		{
-			float	e;
-
-			e = vec[j] + d * (vec[j + 3] - vec[j]);
+			float e = vec[j] + d * (vec[j + 3] - vec[j]);
 			newv[0][newc[0]][j] = e;
 			newv[1][newc[1]][j] = e;
 		}
@@ -250,18 +240,15 @@ void GL_AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
 	// analyse skyMins/skyMaxs, detect occupied cells
 	for (side = 0; side < 6; side++)
 	{
-		int		x, y, w, h, j, stride;
-		byte	*ptr;
-
 		if (skyMins[0][side] > skyMaxs[0][side]) continue;		// not appied to this side
 
 		skySideVisible[side] |= flag;
 		// get cell's "x" and "w"
-		x = appFloor ((skyMins[0][side] + 1) * SKY_TESS_SIZE);	// left
-		w = appCeil ((skyMaxs[0][side] + 1) * SKY_TESS_SIZE);	// right
+		int x = appFloor ((skyMins[0][side] + 1) * SKY_TESS_SIZE);	// left
+		int w = appCeil ((skyMaxs[0][side] + 1) * SKY_TESS_SIZE);	// right
 		// get cell's "y" and "h"
-		y = appFloor ((skyMins[1][side] + 1) * SKY_TESS_SIZE);	// bottom (or top ?)
-		h = appCeil ((skyMaxs[1][side] + 1) * SKY_TESS_SIZE);	// top (or bottom)
+		int y = appFloor ((skyMins[1][side] + 1) * SKY_TESS_SIZE);	// bottom (or top ?)
+		int h = appCeil ((skyMaxs[1][side] + 1) * SKY_TESS_SIZE);	// top (or bottom)
 #if 1
 		x = bound(x, 0, SKY_CELLS);		// avoid precision errors: when we can get floor((mins==-1 + 1)*SIZE) -> -1 (should be 0)
 		w = bound(w, 0, SKY_CELLS);
@@ -277,11 +264,11 @@ void GL_AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
 		w -= x;							// w and h will be always > 0, bacause skyMins[] < skyMaxs[]
 		h -= y;
 		// fill skyVis rect (x, y, w, h)
-		ptr = skyVis[side] + y * SKY_CELLS + x;
-		stride = SKY_CELLS - w;
-		for (i = 0; i < h; i++)
+		byte *ptr = skyVis[side] + y * SKY_CELLS + x;
+		int stride = SKY_CELLS - w;
+		for (int i = 0; i < h; i++)
 		{
-			for (j = 0; j < w; j++)
+			for (int j = 0; j < w; j++)
 				*ptr++ |= flag;
 			ptr += stride;
 		}
@@ -295,10 +282,8 @@ void GL_AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
 static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec, bufTexCoord_t **tex)
 {
 	vec3_t		b;
-	int			i;
-	float		fix;
 
-	static int stToVec[6][3] = {	// 1 = s, 2 = t, 3 = zFar
+	static const int stToVec[6][3] = {	// 1 = s, 2 = t, 3 = zFar
 		{ 3,-1, 2},
 		{-3, 1, 2},
 		{ 1, 3, 2},
@@ -311,16 +296,14 @@ static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec
 	b[1] = t * scale;
 	b[2] = scale;
 
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 	{
-		int		tmp;
-
-		tmp = stToVec[axis][i];
+		int tmp = stToVec[axis][i];
 		(*vec)->xyz[i] = tmp < 0 ? -b[-tmp - 1] : b[tmp - 1];
 	}
 	(*vec)++;
 
-	fix = 1.0f - 1.0f / gl_skyShader->width;		// fix sky side seams
+	float fix = 1.0f - 1.0f / gl_skyShader->width;	// fix sky side seams
 	s = (s * fix + 1) / 2;							// [-1,1] -> [0,1]
 	s = bound(s, 0, 1);
 	t = (1 - t * fix) / 2;							// [-1,1] -> [1,0]

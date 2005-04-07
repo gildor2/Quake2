@@ -1,6 +1,5 @@
 #include "qcommon.h"
 
-cvar_t	*vid_ref;
 cvar_t	*r_fullscreen;
 
 cvar_t	*r_gamma;
@@ -16,7 +15,6 @@ void InitRendererVars (void)
 {
 	static bool initialized = false;
 CVAR_BEGIN(vars)
-	CVAR_VAR(vid_ref, gl, CVAR_ARCHIVE),
 	CVAR_VAR(r_fullscreen, 1, CVAR_ARCHIVE),
 
 	CVAR_VAR(r_gamma, 1, CVAR_ARCHIVE),

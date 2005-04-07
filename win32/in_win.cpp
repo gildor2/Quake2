@@ -29,68 +29,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *   After this, can change "in_mouse==0|1|2" to "nomouse" cvar + can remove mouse/keyboard code from MainWndProc()
  */
 
-#define NUM_MOUSE_BUTTONS	3
-
 extern	unsigned	sys_msg_time;
 
-// joystick defines and variables
-// where should defines be moved?
-#define JOY_ABSOLUTE_AXIS	0x00000000		// control like a joystick
-#define JOY_RELATIVE_AXIS	0x00000010		// control like a mouse, spinner, trackball
-
-enum _JoyAxes
-{
-	JOY_AXIS_X, JOY_AXIS_Y, JOY_AXIS_Z, JOY_AXIS_R, JOY_AXIS_U, JOY_AXIS_V,
-	JOY_MAX_AXES
-};
-
-enum _ControlList
-{
-	AxisNada = 0, AxisForward, AxisLook, AxisSide, AxisTurn, AxisUp
-};
-
-static DWORD	dwAxisFlags[JOY_MAX_AXES] =
-{
-	JOY_RETURNX, JOY_RETURNY, JOY_RETURNZ, JOY_RETURNR, JOY_RETURNU, JOY_RETURNV
-};
-
-static DWORD	dwAxisMap[JOY_MAX_AXES];
-static DWORD	dwControlMap[JOY_MAX_AXES];
-static PDWORD	pdwRawValue[JOY_MAX_AXES];
-
-static cvar_t	*in_mouse;
 bool in_needRestart;
 
-cvar_t	*in_joystick;	// non-static: used in menus
-
-// none of these cvars are saved over a session
-// this means that advanced controller configuration needs to be executed
-// each time.  this avoids any problems with getting back to a default usage
-// or when changing from one controller to another.  this way at least something
-// works.
-static cvar_t	*joy_name;
-static cvar_t	*joy_advanced;
-static cvar_t	*joy_advaxisx, *joy_advaxisy, *joy_advaxisz;
-static cvar_t	*joy_advaxisr, *joy_advaxisu, *joy_advaxisv;
-static cvar_t	*joy_forwardthreshold;
-static cvar_t	*joy_sidethreshold;
-static cvar_t	*joy_pitchthreshold;
-static cvar_t	*joy_yawthreshold;
-static cvar_t	*joy_forwardsensitivity;
-static cvar_t	*joy_sidesensitivity;
-static cvar_t	*joy_pitchsensitivity;
-static cvar_t	*joy_yawsensitivity;
-static cvar_t	*joy_upthreshold;
-static cvar_t	*joy_upsensitivity;
-
-static bool		joy_avail, joy_advancedinit, joy_haspov;
-static DWORD	joy_oldbuttonstate, joy_oldpovstate;
-
-static int		joy_id;
-static DWORD	joy_flags;
-static DWORD	joy_numbuttons;
-
-static JOYINFOEX ji;
 
 /*
 ============================================================
@@ -100,8 +42,12 @@ static JOYINFOEX ji;
 ============================================================
 */
 
+#define NUM_MOUSE_BUTTONS	3
+
 // mouse variables
+static cvar_t	*in_mouse;
 static cvar_t	*m_filter;
+
 
 static bool mlooking;
 
@@ -127,7 +73,9 @@ static int	window_center_x, window_center_y;
 static RECT	window_rect;
 
 
-//-------------------- DirectInput --------------------------
+static int move_x, move_y;
+
+//----------------- DirectInput mouse -----------------------
 
 typedef HRESULT (WINAPI * pDirectInputCreate_t) (HINSTANCE, DWORD, LPDIRECTINPUT *, LPUNKNOWN);
 static pDirectInputCreate_t pDirectInputCreate;
@@ -215,6 +163,43 @@ static bool IN_InitDirect (void)
 	ShowCursor (FALSE);
 	SetCursor (NULL);		// DirectX manual says: "cursor will disappear"; but, in some circusmances it appears ...
 	return true;
+}
+
+
+static void IN_DirectMouseFrame (void)
+{
+	DIMOUSESTATE ms;
+
+	// poll DirectInput mouse
+	HRESULT hresult = pDID->GetDeviceState (sizeof(ms), &ms);
+	if (hresult == DIERR_INPUTLOST)
+	{
+		// try to acquire mouse
+		pDID->Acquire ();
+		return;
+	}
+	if FAILED(hresult)
+	{
+		Com_WPrintf ("error on DI mouse GetState()\n");
+		return;
+	}
+	// process mouse wheel
+	if (ms.lZ)
+	{
+		int msg = (ms.lZ > 0) ? K_MWHEELUP : K_MWHEELDOWN;
+		Key_Event (msg, true, sys_msg_time);	//!! check for correct sys_msg_time
+		Key_Event (msg, false, sys_msg_time);
+	}
+	// process X and Y axes
+	move_x = ms.lX;
+	move_y = ms.lY;
+	// process buttons
+	int tmp = 0;
+	if (ms.rgbButtons[0]) tmp |= 1;
+	if (ms.rgbButtons[1]) tmp |= 2;
+	if (ms.rgbButtons[2]) tmp |= 4;
+	IN_MouseEvent (tmp);			// call this always - to detect button on/off
+	//?? can access 4 (and more?) buttons
 }
 
 
@@ -348,10 +333,8 @@ IN_MouseEvent
 */
 void IN_MouseEvent (int mstate)
 {
-	int		i;
-
 	// perform button actions
-	for (i = 0; i < NUM_MOUSE_BUTTONS; i++)
+	for (int i = 0; i < NUM_MOUSE_BUTTONS; i++)
 	{
 		if ((mstate & (1<<i)) && !(mouse_oldbuttonstate & (1<<i)))
 			Key_Event (K_MOUSE1 + i, true, sys_msg_time);
@@ -370,9 +353,6 @@ IN_MouseMove
 ===========
 */
 
-static int move_x, move_y;
-
-
 static void IN_MouseMove (usercmd_t *cmd)
 {
 	int		mx, my;
@@ -387,12 +367,13 @@ static void IN_MouseMove (usercmd_t *cmd)
 	}
 	else
 	{
-		// find mouse movement
-		if (!GetCursorPos (&current_pos))
-			return;
-
+		// get mouse position
+		if (!GetCursorPos (&current_pos)) return;
+		// compute movement
 		mx = current_pos.x - window_center_x;
 		my = current_pos.y - window_center_y;
+		// force the mouse to the center, so there's room to move
+		SetCursorPos (window_center_x, window_center_y);
 	}
 
 #if 0
@@ -417,20 +398,18 @@ static void IN_MouseMove (usercmd_t *cmd)
 	mouse_x = appRound (mouse_x * sensitivity->value * 1.5f);
 	mouse_y = appRound (mouse_y * sensitivity->value * 1.5f);
 
+	//!! NOTE: following code is the same on all platforms (can be migrated to cl_input.cpp)
+	//!! If do the same with joystick code, we can set in_Strafe, m_pitch etc to static
 	// add mouse X/Y movement to cmd
 	if ((in_Strafe.state & 1) || (lookstrafe->integer && mlooking))
 		cmd->sidemove += appRound (m_side->value * mouse_x);
 	else
 		cl.viewangles[YAW] -= m_yaw->value * mouse_x;
 
-	if ((mlooking || freelook->value) && !(in_Strafe.state & 1))
+	if ((mlooking || freelook->integer) && !(in_Strafe.state & 1))
 		cl.viewangles[PITCH] += m_pitch->value * mouse_y;
 	else
 		cmd->forwardmove -= appRound (m_forward->value * mouse_y);
-
-	// force the mouse to the center, so there's room to move
-	if (mouseType != 2)
-		SetCursorPos (window_center_x, window_center_y);
 }
 
 
@@ -454,6 +433,61 @@ JOYSTICK
 
 =========================================================================
 */
+
+#define JOY_ABSOLUTE_AXIS	0x00000000		// control like a joystick
+#define JOY_RELATIVE_AXIS	0x00000010		// control like a mouse, spinner, trackball
+
+enum {
+	JOY_AXIS_X, JOY_AXIS_Y, JOY_AXIS_Z, JOY_AXIS_R, JOY_AXIS_U, JOY_AXIS_V,
+	JOY_MAX_AXES
+};
+
+enum {
+	AxisNada = 0, AxisForward, AxisLook, AxisSide, AxisTurn, AxisUp
+};
+
+static DWORD	dwAxisFlags[JOY_MAX_AXES] =
+{
+	JOY_RETURNX, JOY_RETURNY, JOY_RETURNZ, JOY_RETURNR, JOY_RETURNU, JOY_RETURNV
+};
+
+static DWORD	dwAxisMap[JOY_MAX_AXES];
+static DWORD	dwControlMap[JOY_MAX_AXES];
+static PDWORD	pdwRawValue[JOY_MAX_AXES];
+
+static bool		joy_avail, joy_advancedinit, joy_haspov;
+static DWORD	joy_oldbuttonstate, joy_oldpovstate;
+
+static int		joy_id;
+static DWORD	joy_flags;
+static DWORD	joy_numbuttons;
+
+static JOYINFOEX ji;
+
+
+// cvars
+cvar_t	*in_joystick;	// non-static: used in menus
+
+// none of these cvars are saved over a session
+// this means that advanced controller configuration needs to be executed
+// each time.  this avoids any problems with getting back to a default usage
+// or when changing from one controller to another.  this way at least something
+// works.
+static cvar_t	*joy_name;
+static cvar_t	*joy_advanced;
+static cvar_t	*joy_advaxisx, *joy_advaxisy, *joy_advaxisz;
+static cvar_t	*joy_advaxisr, *joy_advaxisu, *joy_advaxisv;
+static cvar_t	*joy_forwardthreshold;
+static cvar_t	*joy_sidethreshold;
+static cvar_t	*joy_pitchthreshold;
+static cvar_t	*joy_yawthreshold;
+static cvar_t	*joy_forwardsensitivity;
+static cvar_t	*joy_sidesensitivity;
+static cvar_t	*joy_pitchsensitivity;
+static cvar_t	*joy_yawsensitivity;
+static cvar_t	*joy_upthreshold;
+static cvar_t	*joy_upsensitivity;
+
 
 /*
 ===============
@@ -591,29 +625,25 @@ static void Joy_AdvancedUpdate_f (void)
 
 		// advanced initialization here
 		// data supplied by user via joy_axisn cvars
-		dwAxisMap[JOY_AXIS_X] = joy_advaxisx->integer & 0x0000000f;
+		dwAxisMap[JOY_AXIS_X] =    joy_advaxisx->integer & 0xF;
 		dwControlMap[JOY_AXIS_X] = joy_advaxisx->integer & JOY_RELATIVE_AXIS;
-		dwAxisMap[JOY_AXIS_Y] = joy_advaxisy->integer & 0x0000000f;
+		dwAxisMap[JOY_AXIS_Y] =    joy_advaxisy->integer & 0xF;
 		dwControlMap[JOY_AXIS_Y] = joy_advaxisy->integer & JOY_RELATIVE_AXIS;
-		dwAxisMap[JOY_AXIS_Z] = joy_advaxisz->integer & 0x0000000f;
+		dwAxisMap[JOY_AXIS_Z] =    joy_advaxisz->integer & 0xF;
 		dwControlMap[JOY_AXIS_Z] = joy_advaxisz->integer & JOY_RELATIVE_AXIS;
-		dwAxisMap[JOY_AXIS_R] = joy_advaxisr->integer & 0x0000000f;
+		dwAxisMap[JOY_AXIS_R] =    joy_advaxisr->integer & 0xF;
 		dwControlMap[JOY_AXIS_R] = joy_advaxisr->integer & JOY_RELATIVE_AXIS;
-		dwAxisMap[JOY_AXIS_U] = joy_advaxisu->integer & 0x0000000f;
+		dwAxisMap[JOY_AXIS_U] =    joy_advaxisu->integer & 0xF;
 		dwControlMap[JOY_AXIS_U] = joy_advaxisu->integer & JOY_RELATIVE_AXIS;
-		dwAxisMap[JOY_AXIS_V] = joy_advaxisv->integer & 0x0000000f;
+		dwAxisMap[JOY_AXIS_V] =    joy_advaxisv->integer & 0xF;
 		dwControlMap[JOY_AXIS_V] = joy_advaxisv->integer & JOY_RELATIVE_AXIS;
 	}
 
 	// compute the axes to collect from DirectInput
 	joy_flags = JOY_RETURNCENTERED | JOY_RETURNBUTTONS | JOY_RETURNPOV;
 	for (i = 0; i < JOY_MAX_AXES; i++)
-	{
 		if (dwAxisMap[i] != AxisNada)
-		{
 			joy_flags |= dwAxisFlags[i];
-		}
-	}
 }
 
 
@@ -710,7 +740,6 @@ static void IN_JoyMove (usercmd_t *cmd)
 {
 	float	speed, aspeed;
 	float	fAxisValue;
-	int		i;
 
 	// complete initialization if first time in
 	// this is needed as cvars are not available at initialization time
@@ -735,7 +764,7 @@ static void IN_JoyMove (usercmd_t *cmd)
 	aspeed = speed * cls.frametime;
 
 	// loop through the axes
-	for (i = 0; i < JOY_MAX_AXES; i++)
+	for (int i = 0; i < JOY_MAX_AXES; i++)
 	{
 		// get the floating point zero-centered, potentially-inverted data for the current axis
 		fAxisValue = (float) *pdwRawValue[i];
@@ -859,7 +888,7 @@ CVAR_END
 	RegisterCommand ("+mlook", IN_MLookDown);
 	RegisterCommand ("-mlook", IN_MLookUp);
 
-	RegisterCommand ("joy_advancedupdate", Joy_AdvancedUpdate_f);
+	RegisterCommand ("joy_advancedUpdate", Joy_AdvancedUpdate_f);
 
 	IN_StartupMouse ();
 	IN_StartupJoystick ();
@@ -875,9 +904,7 @@ void IN_Shutdown (void)
 void IN_Move (usercmd_t *cmd)
 {
 	IN_MouseMove (cmd);
-
-	if (ActiveApp)
-		IN_JoyMove (cmd);
+	if (ActiveApp) IN_JoyMove (cmd);
 }
 
 /*
@@ -914,7 +941,7 @@ void IN_Frame (void)
 {
 	guard(IN_Frame);
 
-	if ((!cl.refresh_prepped || cls.key_dest == key_console || cls.key_dest == key_menu) && !r_fullscreen->integer)
+	if ((!cl.refresh_prepped || cls.key_dest == key_console || cls.key_dest == key_menu) && !FullscreenApp)
 	{
 		// temporarily deactivate if not in fullscreen
 		IN_DeactivateMouse ();
@@ -949,40 +976,7 @@ void IN_Frame (void)
 
 	// DirectInput mouse frame
 	if (mouseType == 2)
-	{
-		DIMOUSESTATE ms;
-
-		// poll DirectInput mouse
-		HRESULT hresult = pDID->GetDeviceState (sizeof(ms), &ms);
-		if (hresult == DIERR_INPUTLOST)
-		{
-			// try to acquire mouse
-			pDID->Acquire ();
-			return;
-		}
-		if FAILED(hresult)
-		{
-			Com_WPrintf ("error on DI mouse GetState()\n");
-			return;
-		}
-		// process mouse wheel
-		if (ms.lZ)
-		{
-			int msg = (ms.lZ > 0) ? K_MWHEELUP : K_MWHEELDOWN;
-			Key_Event (msg, true, sys_msg_time);	//!! check for correct sys_msg_time
-			Key_Event (msg, false, sys_msg_time);
-		}
-		// process X and Y axes
-		move_x = ms.lX;
-		move_y = ms.lY;
-		// process buttons
-		int tmp = 0;
-		if (ms.rgbButtons[0]) tmp |= 1;
-		if (ms.rgbButtons[1]) tmp |= 2;
-		if (ms.rgbButtons[2]) tmp |= 4;
-		IN_MouseEvent (tmp);			// call this always - to detect button on/off
-		//?? can access 4 (and more?) buttons
-	}
+		IN_DirectMouseFrame ();
 
 	unguard;
 }

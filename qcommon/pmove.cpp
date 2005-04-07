@@ -460,7 +460,7 @@ static void AddCurrents (vec3_t wishvel)
 		{
 			if (pml.ladderPlane.normal[2] != 1 && pml.ladderPlane.normal[2] != -1)
 			{
-				static vec3_t up = {0, 0, 1};
+				static const vec3_t up = {0, 0, 1};
 				vec3_t	axis[2], vel_vert;
 
 				// compute projections of velocity onto ladder plane axis

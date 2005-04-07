@@ -4,6 +4,7 @@
 	WARNLEVEL = 2		# JPEGLIB will produce lots of warnings with level=3
 	OPTIMIZE  = size
 	INLINES   = all
+#	LIBC      = static	# WARNING: should be synced with main project LIBC
 !endif
 
 OBJDIR = obj

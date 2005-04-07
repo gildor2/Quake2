@@ -26,6 +26,7 @@ static refImport_t ri = {
 	FS_CopyFile,
 	FS_CopyFiles,
 	FS_RemoveFiles,
+	Vid_Restart,
 	Vid_GetModeInfo,
 	ImageExists,
 	LoadPCX,
@@ -43,9 +44,6 @@ static refImport_t ri = {
 ,
 	Vid_CreateWindow,
 	Vid_DestroyWindow
-#else
-,
-	Vid_NewWindow
 #endif
 
 #endif // DEDICATED_ONLY

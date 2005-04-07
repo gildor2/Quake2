@@ -25,8 +25,6 @@ unsigned vid_width, vid_height;	//?? remove; move to gl_config
 // initialization/GLimp
 cvar_t	*gl_mode, *gl_bitdepth;
 cvar_t	*gl_driver;
-// GLimp
-cvar_t	*gl_allow_software;	//??
 
 // image-specific
 cvar_t	*gl_nobind;
@@ -190,8 +188,6 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_showFillRate, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_logTexts, 0, 0),
 	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE),
-
-	CVAR_VAR(gl_allow_software, 0, 0),
 CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
@@ -202,47 +198,35 @@ CVAR_END
 
 static bool GL_SetMode (void)
 {
-	bool	fullscreen;
-
-	fullscreen = r_fullscreen->integer != 0;
-
 	r_fullscreen->modified = false;
 	gl_mode->modified = false;
 
-	switch (GLimp_SetMode (&vid_width, &vid_height, gl_mode->integer, fullscreen))
+	if (GLimp_SetMode (&vid_width, &vid_height, gl_mode->integer, r_fullscreen->integer != 0))
 	{
-	case rserr_ok:
 		gl_config.prevMode = gl_mode->integer;
 		gl_config.prevBPP = gl_bitdepth->integer;
 		gl_config.prevFS = gl_config.fullscreen;
 		return true;
-
-	case rserr_invalid_fullscreen:
-		Cvar_SetInteger ("r_fullscreen", 0);
-		r_fullscreen->modified = false;
-		Com_WPrintf ("R_SetMode() - fullscreen unavailable in this mode\n");
-		if (GLimp_SetMode (&vid_width, &vid_height, gl_mode->integer, false) == rserr_ok)
-			return true;
-		break;
-
-	case rserr_invalid_mode:
-		Cvar_SetInteger ("gl_mode", gl_config.prevMode);
-		Cvar_SetInteger ("gl_bitdepth", gl_config.prevBPP);
-		gl_mode->modified = false;
-		Com_WPrintf ("R_SetMode() - invalid mode\n");
 	}
 
+	Com_WPrintf ("R_SetMode() - invalid mode\n");
+
+	Cvar_SetInteger ("gl_mode", gl_config.prevMode);
+	gl_mode->modified = false;
+	Cvar_SetInteger ("gl_bitdepth", gl_config.prevBPP);
+
 	// try setting it back to something safe
-	if (GLimp_SetMode (&vid_width, &vid_height, gl_config.prevMode, gl_config.prevFS) != rserr_ok)
+	if (!GLimp_SetMode (&vid_width, &vid_height, gl_config.prevMode, gl_config.prevFS))
 	{
 		Com_WPrintf ("R_SetMode() - could not revert to safe mode\n");	//?? "to previous mode" ? (but, here will be mode "3")
 		return false;
 	}
+	// initialize OS-specific parts of OpenGL
 	return true;
 }
 
 
-static int GL_Init (void)
+static bool GL_Init (void)
 {
 	guard(GL_Init);
 
@@ -265,14 +249,14 @@ static int GL_Init (void)
 			{
         		Com_Printf (S_RED"failed\n");
 				QGL_Shutdown ();
-				return -1;
+				return false;
 			}
 		}
 		else
 		{
 			Com_WPrintf ("Cannot load %s\n", gl_driver->string);
 			QGL_Shutdown ();
-			return -1;
+			return false;
 		}
 	}
 
@@ -282,16 +266,9 @@ static int GL_Init (void)
 	/*----- create the window and set up the context -----*/
 	if (!GL_SetMode ())
 	{
+		GLimp_Shutdown (true);
 		QGL_Shutdown ();
-        Com_WPrintf ("ref_gl::R_Init() - could not R_SetMode()\n");
-		return -1;
-	}
-
-	// initialize OS-specific parts of OpenGL
-	if (!GLimp_Init ())
-	{
-		QGL_Shutdown ();
-		return -1;
+		return false;
 	}
 
 #ifdef __linux__
@@ -354,21 +331,30 @@ static int GL_Init (void)
 	// set screen to particular color while initializing
 	glClearColor (0.1, 0, 0, 1);
 	glClear (GL_COLOR_BUFFER_BIT);
-	GLimp_EndFrame ();
+	GLimp_SwapBuffers ();
 
 	GL_SetDefaultState ();
 
-	GL_InitFuncTables ();
-	GL_InitImages ();
-	GL_InitShaders ();
-	GL_InitModels ();
-	GL_InitBackend ();
-	GL_CreateBuffers ();
+	GUARD_BEGIN						// needs GUARD() in a case of error in some of following functions
+	{
+		GL_InitFuncTables ();
+		GL_InitImages ();
+		GL_InitShaders ();
+		GL_InitModels ();
+		GL_InitBackend ();
+		GL_CreateBuffers ();
+	}
+	GUARD_CATCH
+	{
+		GLimp_Shutdown (true);
+		QGL_Shutdown ();
+		throw;
+	}
 
 	gl_refdef.viewCluster = -2;		// force update visinfo for map:
 				// -1 is "no visinfo", >= 0 -- visinfo, so, -2 is unused (not reserved)
 
-	return 0;	// all OK
+	return true;
 
 	unguard;
 }
@@ -492,14 +478,25 @@ static void GL_BeginFrame (float camera_separation)
 
 	/*------ change modes if necessary ---------*/
 	if (gl_mode->modified || r_fullscreen->modified)
-		vid_ref->modified = true;
+		Vid_Restart ();
 
+	PUT_BACKEND_COMMAND (int, p);
+	*p = BACKEND_BEGIN_FRAME;
+
+#if 0
+	if (camera_separation < 0 && gl_state.stereo_enabled)
 	{
-		PUT_BACKEND_COMMAND (int, p);
-		*p = BACKEND_BEGIN_FRAME;
+		glDrawBuffer (GL_BACK_LEFT);
 	}
-
-//?	GLimp_BeginFrame (camera_separation); -- do (almost in Win32, totally in Linux) nothing
+	else if (camera_separation > 0 && gl_state.stereo_enabled)
+	{
+		glDrawBuffer (GL_BACK_RIGHT);
+	}
+	else
+	{
+		glDrawBuffer (GL_BACK);
+	}
+#endif
 }
 
 
@@ -697,9 +694,8 @@ static void SetPerspective (void)
 
 
 
-// Can be called few RenderFrame() between BeginFrame() and EndFrame()
-//?? so: rename - RenderPortal ?
-static void GL_RenderFrame (refdef_t *fd)
+// Can be called few RenderScene() between BeginFrame() and EndFrame()
+static void GL_RenderScene (refdef_t *fd)
 {
 	entity_t *ent;
 	dlight_t *dl;
@@ -708,9 +704,9 @@ static void GL_RenderFrame (refdef_t *fd)
 	if (!gl_renderingEnabled) return;
 
 	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !map.name)
-		Com_FatalError ("R_RenderFrame: NULL worldModel");
+		Com_FatalError ("R_RenderScene: NULL worldModel");
 
-//	DrawTextRight ("---------RenderFrame---------\n", RGB(1,0,0));
+//	DrawTextRight ("---------RenderScene---------\n", RGB(1,0,0));
 
 	/*----------- prepare data ------------*/
 
@@ -1234,23 +1230,17 @@ static float GetClientLight (void)
 }
 
 
-/*--------------------- GetRefAPI ---------------------*/
+/*-----------------------------------------------------------------------------
+	Renderer interface
+-----------------------------------------------------------------------------*/
 
-refExport_t GetRefAPI (const refImport_t * rimp)
+RENDERER_EXPORT(GL)
 {
 	refExport_t	re;
 
-	gl_renderingEnabled = true;
+	RENDERER_INIT;
 
-#ifndef STATIC_BUILD
-	ri = *rimp;
-	if (ri.struc_size != sizeof(refImport_t))
-	{
-		re.struc_size = 0;
-		return re;
-	}
-	InitRendererVars ();
-#endif
+	gl_renderingEnabled = true;
 
 	memset (&gl_config, 0, sizeof(gl_config));
 	memset (&gl_state, 0, sizeof(gl_state));
@@ -1271,7 +1261,7 @@ refExport_t GetRefAPI (const refImport_t * rimp)
 	re.DrawConChar =	DrawConChar;
 	re.Screenshot =		Screenshot;
 
-	re.RenderFrame =	GL_RenderFrame;
+	re.RenderFrame =	GL_RenderScene;
 	re.BeginRegistration = BeginRegistration;
 	re.RegisterModel =	GL_FindModel;
 	re.RegisterSkin =	(image_t* (*)(const char *)) GL_FindSkin;	//?? conversion
@@ -1296,7 +1286,9 @@ refExport_t GetRefAPI (const refImport_t * rimp)
 
 	re.GetClientLight = GetClientLight;
 
+#ifndef STATIC_BUILD
 	Swap_Init ();
+#endif
 
 	return re;
 }

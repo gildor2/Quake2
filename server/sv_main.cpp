@@ -804,8 +804,7 @@ void SV_PostprocessFrame (void)
 					{
 						trace_t	trace;
 						vec3_t	end;
-						static vec3_t mins = {-20, -20, -10};
-						static vec3_t maxs = {20, 20, 10};
+						static const vec3_t mins = {-20, -20, -10}, maxs = {20, 20, 10};
 
 						end[0] = pm_origin[0];
 						end[1] = pm_origin[1];

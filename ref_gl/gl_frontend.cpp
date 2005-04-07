@@ -368,7 +368,7 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 		inlineModel_t *im;
 		float	entPos, dist2;
 		vec3_t	tmp, center2;
-		static vec3_t zero = {0, 0, 0};
+		static const vec3_t zero = {0, 0, 0};
 
 		if (!e->visible || !e->model || e->model->type != MODEL_INLINE)
 			continue;
@@ -1713,7 +1713,7 @@ static void DrawFlares (void)
 		if (!cull)
 		{
 			trace_t	trace;
-			static vec3_t zero = {0, 0, 0};
+			static const vec3_t zero = {0, 0, 0};
 
 			gl_speeds.testFlares++;
 			// check visibility with trace

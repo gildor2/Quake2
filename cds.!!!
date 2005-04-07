@@ -8,9 +8,12 @@ SOMETHING WAS CHANGED, SO NEEDS TO CHECK THIS:
   prevent from appearing empty button on taskbar (Win9x), but will deactivate
   window when Vid_DestroyWindow(force=false) because of hiding
 - when recreating glContext on the same window (force=false), some videocards
-  (at least, Blade3D) will not be able to create new context -- should destroy
-  window + create new window + create context on a new window
-  (try GetLastError() -- what is it ??!!)
+  (at least, Blade3D) will not be able to create new context (try GetLastError()
+   -- what is it ??!!)
+  TO FIX: try to create context; when failed, and window has context before
+    (Vid_DestroyWindow(false) -> wnd.isLazy=true) -- DestroyWindow(true)+
+     CreateWindow() -- i.e. completely recreate window; then - try to create
+     context again
 - WIn9x: vid_restart will restore resolution (via WM_SIZE+MINIMIZE)
 ! should centralize resolution changes: do not restore desktop res when not
   minimized (check WM_SIZE correctness ?)

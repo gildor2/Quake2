@@ -236,7 +236,7 @@ static void LoadSlights (slight_t *data, int count)
 		// move away lights from nearby surfaces to avoid precision errors during computation
 		for (int j = 0; j < 3; j++)
 		{
-			static vec3_t mins = {-0.3, -0.3, -0.3}, maxs = {0.3, 0.3, 0.3};
+			static const vec3_t mins = {-0.3, -0.3, -0.3}, maxs = {0.3, 0.3, 0.3};
 			trace_t	tr;
 
 			CM_BoxTrace (&tr, out->origin, out->origin, mins, maxs, 0, CONTENTS_SOLID);
@@ -348,7 +348,7 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	}
 	else
 	{
-		static vec3_t up = {0, 0, 1};
+		static const vec3_t up = {0, 0, 1};
 
 		CrossProduct (pl->plane.normal, up, pl->axis[0]);
 		VectorNormalize (pl->axis[0]);
@@ -534,7 +534,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			float	scale, *norm;
 			trace_t	trace;
 			int		headnode;
-			static vec3_t zero = {0, 0, 0};
+			static const vec3_t zero = {0, 0, 0};
 
 			headnode = owner->headnode;
 			// find middle point

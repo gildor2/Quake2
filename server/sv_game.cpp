@@ -480,7 +480,7 @@ static void D_Func2A (char *a, qboolean b) {}
 static qboolean D_ClientConnect (edict_t *a, char *b) { return true; }
 static void D_Func2B (edict_t *a, char *b) {}
 static void D_Func2C (edict_t *a, usercmd_t *b) {}
-static void D_Func3 (char *a, char *b, char *c) {}
+static void D_Func3 (const char *a, const char *b, const char *c) {}
 
 
 static const char *gameCommands[] = {"wave", "inven", "kill", "use",

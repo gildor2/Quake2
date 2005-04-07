@@ -35,37 +35,34 @@ typedef struct
 } mBeam_t;		// beam with model
 
 static mBeam_t	cl_mBeams[MAX_BEAMS];
+
 //PMM - added this for player-linked beams.  Currently only used by the plasma beam
 static mBeam_t	cl_mPlayerbeams[MAX_BEAMS];
 
 //ROGUE
 cl_sustain_t	cl_sustains[MAX_SUSTAINS];
-//ROGUE
-
-//PGM
 extern void CL_TeleportParticles (vec3_t org);
-//PGM
 
 void CL_BlasterParticles (vec3_t org, vec3_t dir);
 void CL_ExplosionParticles (vec3_t org);
 void CL_BFGExplosionParticles (vec3_t org);
-// RAFAEL
+// XATRIX
 void CL_BlueBlasterParticles (vec3_t org, vec3_t dir);
 
-struct sfx_s	*cl_sfx_ric[3];
-struct sfx_s	*cl_sfx_lashit;
-struct sfx_s	*cl_sfx_spark5;
-struct sfx_s	*cl_sfx_spark6;
-struct sfx_s	*cl_sfx_spark7;
-struct sfx_s	*cl_sfx_railg;
-struct sfx_s	*cl_sfx_rockexp;
-struct sfx_s	*cl_sfx_grenexp;
-struct sfx_s	*cl_sfx_watrexp;
-// RAFAEL
-struct sfx_s	*cl_sfx_plasexp;
+sfx_t *cl_sfx_ric[3];
+sfx_t *cl_sfx_lashit;
+sfx_t *cl_sfx_spark5;
+sfx_t *cl_sfx_spark6;
+sfx_t *cl_sfx_spark7;
+sfx_t *cl_sfx_railg;
+sfx_t *cl_sfx_rockexp;
+sfx_t *cl_sfx_grenexp;
+sfx_t *cl_sfx_watrexp;
+// XATRIX
+sfx_t *cl_sfx_plasexp;
 
-struct sfx_s	*cl_sfx_fallshort;
-struct sfx_s	*cl_sfx_footsteps[4];
+sfx_t *cl_sfx_fallshort;
+sfx_t *cl_sfx_footsteps[4];
 
 model_t	*cl_mod_explode;
 model_t	*cl_mod_smoke;
@@ -76,18 +73,17 @@ model_t	*cl_mod_parasite_tip;
 model_t	*cl_mod_explo4;
 model_t	*cl_mod_bfg_explo;
 model_t	*cl_mod_powerscreen;
-// RAFAEL
+// XATRIX
 model_t	*cl_mod_plasmaexplo;
 
-//ROGUE
-struct sfx_s	*cl_sfx_lightning;
-struct sfx_s	*cl_sfx_disrexp;
+// ROGUE
+sfx_t *cl_sfx_lightning;
+sfx_t *cl_sfx_disrexp;
 model_t	*cl_mod_lightning;
 model_t	*cl_mod_heatbeam;
 model_t	*cl_mod_monster_heatbeam;
 model_t	*cl_mod_explo4_big;
 
-//ROGUE
 
 //--------------- Extended protocol -------------------
 
@@ -121,12 +117,12 @@ static const impactType_t materialImpacts[NUM_STEP_MATERIALS + 1] = {
 	IMPACT_DIRT
 };
 
-struct sfx_s *cl_sfx_footsteps2[NUM_STEP_MATERIALS*4];
-struct sfx_s *cl_sfx_fallshort2[NUM_STEP_MATERIALS];
-static struct sfx_s *cl_sfx_bullethits[IMPACT_COUNT * 3];
+sfx_t *cl_sfx_footsteps2[NUM_STEP_MATERIALS*4];
+sfx_t *cl_sfx_fallshort2[NUM_STEP_MATERIALS];
+static sfx_t *cl_sfx_bullethits[IMPACT_COUNT * 3];
 
-//?? static struct sfx_s *cl_sfx_spectator[4];
-struct sfx_s *cl_sfx_camper[9];
+//?? static sfx_t *cl_sfx_spectator[4];
+sfx_t *cl_sfx_camper[9];
 
 static const char *footstepTypes[NUM_STEP_MATERIALS] = {
 	"pavement",
@@ -186,7 +182,7 @@ void CL_RegisterTEntSounds (void)
 	cl_sfx_rockexp = S_RegisterSound ("weapons/rocklx1a.wav");
 	cl_sfx_grenexp = S_RegisterSound ("weapons/grenlx1a.wav");
 	cl_sfx_watrexp = S_RegisterSound ("weapons/xpld_wat.wav");
-	// RAFAEL
+	// XATRIX
 	// cl_sfx_plasexp = S_RegisterSound ("weapons/plasexpl.wav");
 
 	cl_sfx_fallshort = S_RegisterSound ("player/land1.wav");
@@ -270,7 +266,7 @@ void CL_RegisterTEntModels (void)
 
 	for (int i = 0; i < ARRAY_COUNT(modelNames); i++)
 		RegModel (modelNames[i]);
-	// RAFAEL
+	// XARRIX
 	// RegModel ("objects/blaser");
 
 	//??
@@ -1042,7 +1038,7 @@ void CL_ParseTEnt (void)
 
 		ex = CL_AllocExplosion (pos, ex_misc);
 		ex->ent.angles[0] = acos(dir[2])/M_PI*180;
-	// PMM - fixed to correct for pitch of 0
+		// PMM - fixed to correct for pitch of 0
 		if (dir[0])
 			ex->ent.angles[1] = atan2(dir[1], dir[0])/M_PI*180;
 		else if (dir[1] > 0)
@@ -1104,7 +1100,7 @@ void CL_ParseTEnt (void)
 			S_StartSound (pos, 0, 0, cl_sfx_grenexp, 1, ATTN_NORM, 0);
 		break;
 
-	// RAFAEL
+	// XATRIX
 	case TE_PLASMA_EXPLOSION:
 		MSG_ReadPos (&net_message, pos);
 		ex = CL_AllocExplosion (pos, ex_poly);
@@ -1190,7 +1186,7 @@ void CL_ParseTEnt (void)
 		ent = CL_ParseBeam2 (cl_mod_grapple_cable);
 		break;
 
-	// RAFAEL
+	// XATRIX
 	case TE_WELDING_SPARKS:
 		cnt = MSG_ReadByte (&net_message);
 		MSG_ReadPos (&net_message, pos);
@@ -1213,7 +1209,7 @@ void CL_ParseTEnt (void)
 		CL_ParticleEffect2 (pos, dir, 0xDF, 30);
 		break;
 
-	// RAFAEL
+	// XATRIX
 	case TE_TUNNEL_SPARKS:
 		cnt = MSG_ReadByte (&net_message);
 		MSG_ReadPos (&net_message, pos);
@@ -1222,20 +1218,18 @@ void CL_ParseTEnt (void)
 		CL_ParticleEffect3 (pos, dir, color, cnt);
 		break;
 
-//=============
-//PGM
-		// PMM -following code integrated for flechette (different color)
+	// ROGUE
+	// PMM - following code integrated for flechette (different color)
 	case TE_BLASTER2:			// green blaster hitting wall
 	case TE_FLECHETTE:			// flechette
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
 
-		// PMM
 		CL_BlasterParticles2 (pos, dir, (type == TE_BLASTER2) ? 0xD0 : 0x6F);
 
 		ex = CL_AllocExplosion (pos, ex_misc);
 		ex->ent.angles[0] = acos(dir[2])/M_PI*180;
-	// PMM - fixed to correct for pitch of 0
+		// PMM - fixed to correct for pitch of 0
 		if (dir[0])
 			ex->ent.angles[1] = atan2(dir[1], dir[0])/M_PI*180;
 		else if (dir[1] > 0)
@@ -1246,12 +1240,8 @@ void CL_ParseTEnt (void)
 			ex->ent.angles[1] = 0;
 
 		ex->ent.flags = RF_FULLBRIGHT|RF_TRANSLUCENT;
-
-		// PMM
 		ex->ent.skinnum = (type == TE_BLASTER2) ? 1 : 2;
-
 		ex->light = 150;
-		// PMM
 		if (type == TE_BLASTER2)
 			ex->lightcolor[1] = 1;
 		else // flechette
@@ -1393,8 +1383,6 @@ void CL_ParseTEnt (void)
 		MSG_ReadPos (&net_message, pos);
 		CL_WidowSplash (pos);
 		break;
-//PGM
-//==============
 
 	default:
 		Com_DropError ("CL_ParseTEnt: bad type");

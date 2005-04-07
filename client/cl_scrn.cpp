@@ -534,11 +534,7 @@ void SCR_ToggleConsole (void)
 
 static void Screenshot_f (bool usage, int argc, char **argv)
 {
-	int		i, flags;
 	static char filename[MAX_OSPATH], tmpName[MAX_OSPATH];
-
-	filename[0] = 0;
-	flags = 0;
 
 	if (usage)
 	{
@@ -546,7 +542,9 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	for (i = 1; i < argc; i++)
+	filename[0] = 0;
+	int flags = 0;
+	for (int i = 1; i < argc; i++)
 	{
 		char *opt = argv[i];
 		if (opt[0] == '-')
@@ -554,14 +552,13 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 			opt++;
 			if (!stricmp (opt, "levelshot"))
 			{
-				char	*tmp;
-
 				if (cls.state != ca_active)
 				{
 					Com_WPrintf ("No levelshots in disconnected state\n");
 					return;
 				}
 
+				char *tmp;
 				if (!(tmp = strrchr (map_name, '/')))
 				{
 					Com_WPrintf ("Invalid map_name: %s\n", map_name);
@@ -602,36 +599,39 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 }
 
 
-//-----------------------------------------------------------------------------
-
-/*
-================
-SCR_TimeRefresh_f
-================
-*/
-static void TimeRefresh_f (void)
+static void TimeRefresh_f (bool usage, int argc, char **argv)
 {
-	int		i;
-	int		start, stop;
-	float	time;
-
-	if ( cls.state != ca_active )
-		return;
-
-	start = appMilliseconds ();
-
-	for (i = 0; i < 128; i++)
+	if (usage || argc > 2)
 	{
-		cl.refdef.viewangles[1] = i*360/128.0f;
+		Com_Printf ("Usage: timerefresh [steps=256]\n");
+		return;
+	}
+	if (cls.state != ca_active) return;
+
+	keydest_t keyDest = cls.key_dest;
+
+	double start = appMillisecondsf ();
+	double time = 0;
+
+	int steps = (argc == 2) ? atoi (argv[1]) : 256;
+	for (int i = 0; i < steps; i++)
+	{
+		cl.refdef.viewangles[1] = (float)i * 360 / steps;
 
 		re.BeginFrame (0);
 		re.RenderFrame (&cl.refdef);
-		re.EndFrame();
+		re.EndFrame ();
+		time = (appMillisecondsf () - start) / 1000;
+		// prevent too long measuring
+		Sys_SendKeyEvents ();			// poll keyboard
+		if (cls.key_dest != keyDest)	// console or menu was activated or deactivated
+		{
+			steps = i;
+			break;
+		}
 	}
 
-	stop = appMilliseconds ();
-	time = (stop-start)/1000.0f;
-	Com_Printf ("%f seconds (%f fps)\n", time, 128/time);
+	Com_Printf ("%d frames/%g seconds (%g fps)\n", steps, time, steps / time);
 }
 
 
@@ -706,12 +706,10 @@ static void DrawHUDString (char *string, int x0, int y, int centerwidth, int col
 
 static void DrawField (int x, int y, int color, int width, int value)
 {
-	char	num[16], *ptr;
-
-	if (width < 1)
-		return;
+	if (width < 1) return;
 
 	// draw number string
+	char	num[16];
 	int len = appSprintf (ARRAY_ARG(num), "%d", value);
 	if (width > 5) width = 5;
 	if (len > width) len = width;
@@ -719,7 +717,7 @@ static void DrawField (int x, int y, int color, int width, int value)
 	// align number to right
 	x += 2 + HUDCHAR_WIDTH * (width - len);
 
-	ptr = num;
+	const char *ptr = num;
 	while (*ptr && len--)
 	{
 		if (*ptr == '-')
