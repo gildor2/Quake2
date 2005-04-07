@@ -440,11 +440,12 @@ void CL_ParseLayout (void);
 void CL_AddEntityBox (entityState_t *st, unsigned rgba);
 
 
+extern refExport_t re;			// interface to refresh .dll
+#include "rexp_defs.h"
+
 //
 // cl_main.cpp
 //
-extern refExport_t re;			// interface to refresh .dll
-
 void CL_Init (void);
 
 void CL_Pause (bool enable);

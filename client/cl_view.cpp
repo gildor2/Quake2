@@ -74,7 +74,7 @@ void V_AddEntity (entity_t *ent)
 	if (r_numentities >= MAX_ENTITIES)
 		return;
 	r_entities[r_numentities++] = *ent;
-//	if (!ent->model) re.DrawTextLeft (va("NULL model: %g %g %g from %X", VECTOR_ARG(ent->origin), GET_RETADDR(ent)), RGB(1,1,1));
+//	if (!ent->model) RE_DrawTextLeft (va("NULL model: %g %g %g from %X", VECTOR_ARG(ent->origin), GET_RETADDR(ent)), RGB(1,1,1));
 }
 
 
@@ -256,7 +256,7 @@ void CL_PrepRefresh (void)
 	// register models, pics, and skins
 	Com_Printf ("Map: %s\r", mapname);
 	SCR_UpdateScreen ();
-	re.BeginRegistration (mapname);
+	RE_BeginRegistration (mapname);
 
 	// precache status bar pics
 	Com_Printf ("pics\r");
@@ -293,7 +293,7 @@ void CL_PrepRefresh (void)
 			mdl = cl.configstrings[CS_MODELS + i];
 			ext = strrchr (name, '.');
 			if (!ext || stricmp (ext, ".bsp"))
-				cl.model_draw[i] = re.RegisterModel (cl.configstrings[CS_MODELS+i]);
+				cl.model_draw[i] = RE_RegisterModel (cl.configstrings[CS_MODELS+i]);
 			else
 				cl.model_draw[i] = NULL;	// do not reload BSP file
 			if (name[0] == '*')
@@ -307,7 +307,7 @@ void CL_PrepRefresh (void)
 	SCR_UpdateScreen ();
 	for (i = 1; i < MAX_IMAGES && cl.configstrings[CS_IMAGES+i][0]; i++)
 	{
-		cl.image_precache[i] = re.RegisterPic (cl.configstrings[CS_IMAGES+i]);
+		cl.image_precache[i] = RE_RegisterPic (cl.configstrings[CS_IMAGES+i]);
 		Sys_SendKeyEvents ();	// pump message loop
 	}
 
@@ -328,10 +328,10 @@ void CL_PrepRefresh (void)
 	SCR_UpdateScreen ();
 	rotate = atof (cl.configstrings[CS_SKYROTATE]);
 	sscanf (cl.configstrings[CS_SKYAXIS], "%f %f %f", &axis[0], &axis[1], &axis[2]);
-	re.SetSky (cl.configstrings[CS_SKY], rotate, axis);
+	RE_SetSky (cl.configstrings[CS_SKY], rotate, axis);
 
 	// the renderer can now free unneeded stuff
-	re.EndRegistration ();
+	RE_EndRegistration ();
 	Com_Printf (" \r");			// clear console notification about loading process; require to send space char !
 
 	Con_ClearNotify ();
@@ -378,12 +378,12 @@ static void TileClear (void)
 
 	int y1 = scr_vrect.y;
 	int y2 = y1 + scr_vrect.height;
-	re.DrawTileClear (0, 0, viddef.width, y1, tileName);
-	re.DrawTileClear (0, y2, viddef.width, viddef.height - y2, tileName);
+	RE_DrawTileClear (0, 0, viddef.width, y1, tileName);
+	RE_DrawTileClear (0, y2, viddef.width, viddef.height - y2, tileName);
 	int x1 = scr_vrect.x;
 	int x2 = x1 + scr_vrect.width;
-	re.DrawTileClear (0, y1, x1, scr_vrect.height, tileName);
-	re.DrawTileClear (x2, y1, viddef.width - x2, scr_vrect.height, tileName);
+	RE_DrawTileClear (0, y1, x1, scr_vrect.height, tileName);
+	RE_DrawTileClear (x2, y1, viddef.width - x2, scr_vrect.height, tileName);
 
 	return;
 }
@@ -437,7 +437,7 @@ void V_Gun_Model_f (int argc, char **argv)
 		gun_model = NULL;
 		return;
 	}
-	gun_model = re.RegisterModel (va("models/%s/tris.md2", argv[1]));
+	gun_model = RE_RegisterModel (va("models/%s/tris.md2", argv[1]));
 }
 
 #endif
@@ -476,7 +476,7 @@ static void Sky_f (bool usage, int argc, char **argv)
 		axis[2] = 1;
 	}
 
-	re.SetSky (argv[1], rotate, axis);
+	RE_SetSky (argv[1], rotate, axis);
 }
 
 //============================================================================
@@ -494,7 +494,7 @@ static void DrawFlag (int flag, const flagInfo_t *info, int numFlags, char *pref
 
 	for (i = 0; i < numFlags; i++, info++)
 		if (flag & info->code)
-			re.DrawTextLeft (va("%s%s", prefix, info->name), RGB(0.3, 0.6, 0.4));
+			RE_DrawTextLeft (va("%s%s", prefix, info->name), RGB(0.3, 0.6, 0.4));
 #else
 	char	buf[256];
 
@@ -508,15 +508,15 @@ static void DrawFlag (int flag, const flagInfo_t *info, int numFlags, char *pref
 				appSprintf (ARRAY_ARG(buf), "%s%s", prefix, info->name);
 			if (strlen (buf) > 40)
 			{
-				re.DrawTextLeft (buf, RGB(0.3, 0.6, 0.4));
+				RE_DrawTextLeft (buf, RGB(0.3, 0.6, 0.4));
 				buf[0] = 0;
 			}
 			flag &= ~info->code;
 		}
 	if (buf[0])
-		re.DrawTextLeft (buf, RGB(0.3, 0.6, 0.4));
+		RE_DrawTextLeft (buf, RGB(0.3, 0.6, 0.4));
 	if (flag)
-		re.DrawTextLeft (va("%sUNK_%X", prefix, flag), RGB(0.6, 0.3, 0.4));
+		RE_DrawTextLeft (va("%sUNK_%X", prefix, flag), RGB(0.6, 0.3, 0.4));
 #endif
 }
 
@@ -533,10 +533,10 @@ static void DecodeContents (int i)
 #undef T
 	};
 
-//	re.DrawTextLeft ("Contents:", RGB(0.4, 0.4, 0.6));
-//	re.DrawTextLeft ("---------", RGB(0.4, 0.4, 0.6));
+//	RE_DrawTextLeft ("Contents:", RGB(0.4, 0.4, 0.6));
+//	RE_DrawTextLeft ("---------", RGB(0.4, 0.4, 0.6));
 	if (!i)
-		re.DrawTextLeft ("CONTENTS_EMPTY", RGB(0.3, 0.6, 0.4));
+		RE_DrawTextLeft ("CONTENTS_EMPTY", RGB(0.3, 0.6, 0.4));
 	else
 		DrawFlag (i, ARRAY_ARG(contentsNames), "CONTENTS_");
 }
@@ -601,28 +601,28 @@ static void DrawSurfInfo (void)
 
 	if (trace.fraction < 1.0)
 	{
-		re.DrawTextLeft ("Surface info:", RGB(0.4, 0.4, 0.6));
-		re.DrawTextLeft ("-------------", RGB(0.4, 0.4, 0.6));
-		re.DrawTextLeft (va("Point: %g  %g  %g", VECTOR_ARG(trace.endpos)),
+		RE_DrawTextLeft ("Surface info:", RGB(0.4, 0.4, 0.6));
+		RE_DrawTextLeft ("-------------", RGB(0.4, 0.4, 0.6));
+		RE_DrawTextLeft (va("Point: %g  %g  %g", VECTOR_ARG(trace.endpos)),
 			RGBA(0.2, 0.4, 1, 1));
 		surf = trace.surface;
 		if (surf->rname[0])		// non-null surface
 		{
-			re.DrawTextLeft (va("Texture: %s", surf->rname), RGB(0.2, 0.4, 1));
+			RE_DrawTextLeft (va("Texture: %s", surf->rname), RGB(0.2, 0.4, 1));
 			VectorCopy (trace.plane.normal, norm);
-			re.DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARG(norm)), RGB(0.2, 0.4, 1));
+			RE_DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARG(norm)), RGB(0.2, 0.4, 1));
 			if (surf->value)
-				re.DrawTextLeft (va("Value: %d", surf->value), RGB(0.2, 0.4, 1));
+				RE_DrawTextLeft (va("Value: %d", surf->value), RGB(0.2, 0.4, 1));
 			DrawFlag (surf->flags, ARRAY_ARG(surfNames), "SURF_");
 //#define SURF_KNOWN	(0xFF|SURF_ALPHA|SURF_DIFFUSE|SURF_SPECULAR|SURF_AUTOFLARE)
 //			if (surf->flags & ~SURF_KNOWN) // unknown flags
-//				re.DrawTextLeft (va("SURF_UNK_%X", surf->flags & ~SURF_KNOWN), RGB(0.6, 0.3, 0.4));
+//				RE_DrawTextLeft (va("SURF_UNK_%X", surf->flags & ~SURF_KNOWN), RGB(0.6, 0.3, 0.4));
 			// material
 			if (surf->material >= MATERIAL_FIRST && surf->material <= MATERIAL_LAST)
 				s = materialNames[surf->material];
 			else
 				s = "?? bad ??";
-			re.DrawTextLeft (va("Material: %s", s), RGB(0.3, 0.6, 0.4));
+			RE_DrawTextLeft (va("Material: %s", s), RGB(0.3, 0.6, 0.4));
 		}
 		DecodeContents (trace.contents);
 		if (trace.ent)
@@ -630,18 +630,18 @@ static void DrawSurfInfo (void)
 			entityState_t *ent;
 
 			ent = (entityState_t*)trace.ent;
-			re.DrawTextLeft ("Entity:", RGB(0.4, 0.4, 0.6));
-			re.DrawTextLeft ("-------", RGB(0.4, 0.4, 0.6));
-			re.DrawTextLeft (va("Origin: %g %g %g", VECTOR_ARG(ent->origin)), RGB(0.4, 0.4, 0.6));
-			re.DrawTextLeft (va("fx: %X  rfx: %X", ent->effects, ent->renderfx), RGB(0.2, 0.4, 1));
-			if (ent->modelindex)	re.DrawTextLeft (va("model: %s", ModelName (ent->modelindex)), RGB(0.2, 0.4, 1));
-			if (ent->modelindex2)	re.DrawTextLeft (va("model2: %s", ModelName (ent->modelindex2)), RGB(0.2, 0.4, 1));
-			if (ent->modelindex3)	re.DrawTextLeft (va("model3: %s", ModelName (ent->modelindex3)), RGB(0.2, 0.4, 1));
-			if (ent->modelindex4)	re.DrawTextLeft (va("model4: %s", ModelName (ent->modelindex4)), RGB(0.2, 0.4, 1));
+			RE_DrawTextLeft ("Entity:", RGB(0.4, 0.4, 0.6));
+			RE_DrawTextLeft ("-------", RGB(0.4, 0.4, 0.6));
+			RE_DrawTextLeft (va("Origin: %g %g %g", VECTOR_ARG(ent->origin)), RGB(0.4, 0.4, 0.6));
+			RE_DrawTextLeft (va("fx: %X  rfx: %X", ent->effects, ent->renderfx), RGB(0.2, 0.4, 1));
+			if (ent->modelindex)	RE_DrawTextLeft (va("model: %s", ModelName (ent->modelindex)), RGB(0.2, 0.4, 1));
+			if (ent->modelindex2)	RE_DrawTextLeft (va("model2: %s", ModelName (ent->modelindex2)), RGB(0.2, 0.4, 1));
+			if (ent->modelindex3)	RE_DrawTextLeft (va("model3: %s", ModelName (ent->modelindex3)), RGB(0.2, 0.4, 1));
+			if (ent->modelindex4)	RE_DrawTextLeft (va("model4: %s", ModelName (ent->modelindex4)), RGB(0.2, 0.4, 1));
 
 			CL_AddEntityBox (ent, 0xFF2020FF);
 		}
-		re.DrawTextLeft ("", RGB(0, 0, 0));
+		RE_DrawTextLeft ("", RGB(0, 0, 0));
 	}
 }
 
@@ -651,19 +651,19 @@ static void DrawOriginInfo (void)
 	vec3_t zero = {0, 0, 0};
 	int i;
 
-	re.DrawTextLeft ("Player position:", RGB(0.4, 0.4, 0.6));
-	re.DrawTextLeft ("----------------", RGB(0.4, 0.4, 0.6));
-	re.DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2, 0.4, 0.1));
+	RE_DrawTextLeft ("Player position:", RGB(0.4, 0.4, 0.6));
+	RE_DrawTextLeft ("----------------", RGB(0.4, 0.4, 0.6));
+	RE_DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2, 0.4, 0.1));
 
 	AngleVectors (cl.refdef.viewangles, view, NULL, NULL);
-	re.DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARG(view)), RGB(0.2, 0.4, 0.1));
+	RE_DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARG(view)), RGB(0.2, 0.4, 0.1));
 
 	i = CM_PointLeafnum (cl.refdef.vieworg);
-	re.DrawTextLeft (va("Leaf number: %d, cluster: %i, area: %i",
+	RE_DrawTextLeft (va("Leaf number: %d, cluster: %i, area: %i",
 		i, CM_LeafCluster (i), CM_LeafArea (i)),
 		RGB(0.1, 0.2, 1));
 	DecodeContents (CM_PointContents (cl.refdef.vieworg, 0));
-	re.DrawTextLeft ("", RGB(0, 0, 0));	// empty line
+	RE_DrawTextLeft ("", RGB(0, 0, 0));	// empty line
 }
 
 
@@ -742,7 +742,7 @@ static void DrawFpsInfo (void)
 	else if (avgFps < 30) color = RGB(1,0,1);
 	else if (avgFps < 60) color = RGB(1,1,0);
 	else color = RGB(0,1,0);
-	re.DrawTextRight (va("FPS: %.2f  min: %.2f  max: %.2f", avgFps, minFps, maxFps), color);
+	RE_DrawTextRight (va("FPS: %.2f  min: %.2f  max: %.2f", avgFps, minFps, maxFps), color);
 }
 
 
@@ -789,7 +789,7 @@ static void FixWaterVis (void)
 		CM_BoxTrace (&trace, p, cl.refdef.vieworg, zero, zero, 0, MASK_WATER);
 	if (trace.fraction < 1.0f && !(trace.surface->flags & (SURF_TRANS33|SURF_TRANS66)))
 	{
-//		re.DrawTextLeft("WATER FIX!", 1, 1, 1);
+//		RE_DrawTextLeft ("WATER FIX!", 1, 1, 1);
 		if (cl.refdef.vieworg[2] < trace.endpos[2])
 			cl.refdef.vieworg[2] = trace.endpos[2] - MIN_WATER_DISTANCE;
 		else
@@ -935,7 +935,7 @@ bool V_RenderView (float stereo_separation)
 			(int (*)(const void *, const void *))entitycmpfnc);
 	}
 
-	re.RenderFrame (&cl.refdef);
+	RE_RenderFrame (&cl.refdef);
 
 	// stats
 	if (r_drawfps->integer)

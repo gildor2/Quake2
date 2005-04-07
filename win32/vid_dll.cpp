@@ -19,7 +19,7 @@ static cvar_t	*vid_ypos;				// Y coordinate of window position
 
 #ifndef SINGLE_RENDERER
 static cvar_t	*vid_ref;
-static HINSTANCE refLibrary;			// Handle to refresh DLL
+static HINSTANCE refLibrary;			// handle to renderer DLL
 // Imports from main engine for renderer DLL
 #include "../client/ref_impl.h"
 #endif
@@ -33,7 +33,7 @@ static bool refActive = false;
 
 static bool needRestart;
 
-HWND	cl_hwnd;						// Main window handle for life of program
+HWND	cl_hwnd;						// main window handle
 
 static bool alttab_disabled;
 
@@ -168,7 +168,7 @@ static void AppActivate (bool active, bool minimized)
 		IN_Activate (active);
 		CDAudio_Activate (active);
 		S_Activate (active);
-		if (refActive) re.AppActivate (active);
+		if (refActive) RE_AppActivate (active);
 
 		if (win_noalttab->integer)		DisableAltTab (active);
 		if (win_priorityBoost->integer)	SetHighPriority (active);
@@ -325,7 +325,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 	case WM_POWERBROADCAST:
 		if (wParam == PBT_APMSUSPEND)	// will minimize window when in fullscreen mode
-			re.AppActivate (false);
+			RE_AppActivate (false);
 		break;
 
 	case WM_CLOSE:
@@ -577,7 +577,7 @@ static void FreeRenderer (void)
 
 #ifdef STATIC_BUILD
 // externs
-refExport_t STATIC_RENDERER(GL);
+bool STATIC_RENDERER(GL) (refExport_t *);
 #endif
 
 #ifndef SINGLE_RENDERER
@@ -590,39 +590,39 @@ static bool LoadRenderer (void)
 
 	if (refActive)
 	{
-		re.Shutdown ();
+		RE_Shutdown ();
 		FreeRenderer ();
 	}
 
 #ifndef SINGLE_RENDERER
 
-	char	dllName[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(dllName), "ref_%s.dll", name);
 	Com_Printf ("Loading %s\n", name);
 
 #ifdef STATIC_BUILD
 	refLibrary = NULL;
 
 	if (!strcmp (name, "gl"))
-		re = STATIC_RENDERER(GL);
+		STATIC_RENDERER(GL) (&re);
 	else
 #endif
 	{
+		char	dllName[MAX_OSPATH];
+		appSprintf (ARRAY_ARG(dllName), "ref_%s.dll", name);
 		if (!(refLibrary = LoadLibrary (dllName)))
 		{
 			Com_WPrintf ("LoadLibrary(\"%s\") failed\n", dllName);
 			return false;
 		}
-		GetRefAPI_t	pGetRefAPI;
-		if (!(pGetRefAPI = (GetRefAPI_t) GetProcAddress (refLibrary, "GetRefAPI")))
+		CreateDynRenderer_t pCreateRenderer;
+		if (!(pCreateRenderer = (CreateDynRenderer_t) GetProcAddress (refLibrary, "CreateRenderer")))
 		{
 			Com_WPrintf ("GetProcAddress() failed on %s\n", dllName);
 			FreeRenderer ();
 			return false;
 		}
 
-		re = pGetRefAPI (&ri);
-		if (re.struc_size != sizeof(refExport_t))
+		re.struc_size = sizeof(refExport_t);
+		if (!pCreateRenderer (&ri, &re))
 		{
 			Com_WPrintf ("%s has incompatible renderer\n", dllName);
 			FreeRenderer ();
@@ -631,7 +631,7 @@ static bool LoadRenderer (void)
 	}
 
 #else // SINGLE_RENDERER
-	re = STATIC_RENDERER(GL);
+	STATIC_RENDERER(GL) (&re);
 #endif
 
 	if (*re.flags & REF_CONSOLE_ONLY)
@@ -663,9 +663,9 @@ static bool LoadRenderer (void)
 		re.GetClientLight = D_GetClientLight;
 	}
 
-	if (!re.Init ())
+	if (!RE_Init ())
 	{
-		re.Shutdown ();
+		RE_Shutdown ();
 		FreeRenderer ();
 		return false;
 	}
@@ -778,8 +778,6 @@ CVAR_END
 	OSVERSIONINFO vinfo;
 	vinfo.dwOSVersionInfoSize = sizeof(vinfo);
 	GetVersionEx (&vinfo);
-//	if (vinfo.dwMajorVersion < 4)
-//		Com_FatalError ("Requires Windows version 4 or greater");
 	if (vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
 	{
 		s_win95 = true;
@@ -822,7 +820,7 @@ void Vid_Shutdown (void)
 	if (refActive)
 	{
 		// perform shutdown
-		re.Shutdown (true);
+		RE_Shutdown (true);
 		Vid_DestroyWindow (true);
 		FreeRenderer ();
 	}

@@ -228,6 +228,8 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
+	client/rexp_defs.h \
 	client/screen.h \
 	client/sound.h \
 	client/vid.h \
@@ -257,6 +259,8 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
+	client/rexp_defs.h \
 	client/screen.h \
 	client/sound.h \
 	client/vid.h \
@@ -292,6 +296,8 @@ DEPENDS = \
 	client/ref_decl.h \
 	client/ref_defs.h \
 	client/ref_impl.h \
+	client/rexp_decl.h \
+	client/rexp_defs.h \
 	client/screen.h \
 	client/sound.h \
 	client/vid.h \
@@ -322,6 +328,8 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
+	client/rexp_defs.h \
 	client/screen.h \
 	client/snd_loc.h \
 	client/sound.h \
@@ -360,6 +368,8 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
+	client/rexp_defs.h \
 	client/screen.h \
 	client/snd_loc.h \
 	client/sound.h \
@@ -390,6 +400,8 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
+	client/rexp_defs.h \
 	client/screen.h \
 	client/sound.h \
 	client/vid.h \
@@ -450,6 +462,8 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
+	client/rexp_defs.h \
 	client/screen.h \
 	client/sound.h \
 	client/vid.h \
@@ -473,6 +487,8 @@ Release/obj/q2stat/in_win.obj : win32/in_win.cpp $(DEPENDS)
 Release/obj/q2stat/sys_win.obj : win32/sys_win.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/sys_win.obj" win32/sys_win.cpp
 
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I Core/Inc -I qcommon
+
 DEPENDS = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
@@ -485,6 +501,64 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
+	client/rexp_defs.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	server/game.h \
+	server/server.h
+
+Release/obj/dedstat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/sv_ccmds.obj" server/sv_ccmds.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I Core/Inc -I qcommon
+
+Release/obj/q2stat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/sv_ccmds.obj" server/sv_ccmds.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I Core/Inc -I qcommon
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/Strings.h \
+	Core/Inc/VcWin32.h \
+	client/ref.h \
+	client/ref_decl.h \
+	client/ref_defs.h \
+	client/rexp_decl.h \
+	client/rexp_defs.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h
+
+Release/obj/dedstat/common.obj : qcommon/common.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/common.obj" qcommon/common.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I Core/Inc -I qcommon
+
+Release/obj/q2stat/common.obj : qcommon/common.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/common.obj" qcommon/common.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/Strings.h \
+	Core/Inc/VcWin32.h \
+	client/ref.h \
+	client/ref_decl.h \
+	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
@@ -519,6 +593,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
@@ -551,6 +626,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
@@ -570,8 +646,6 @@ DEPENDS = \
 Release/obj/q2stat/gl_light.obj : ref_gl/gl_light.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_light.obj" ref_gl/gl_light.cpp
 
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I Core/Inc -I qcommon
-
 DEPENDS = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
@@ -584,59 +658,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
-	qcommon/protocol.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h \
-	server/game.h \
-	server/server.h
-
-Release/obj/dedstat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/sv_ccmds.obj" server/sv_ccmds.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I Core/Inc -I qcommon
-
-Release/obj/q2stat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/sv_ccmds.obj" server/sv_ccmds.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I Core/Inc -I qcommon
-
-DEPENDS = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/Strings.h \
-	Core/Inc/VcWin32.h \
-	client/ref.h \
-	client/ref_decl.h \
-	client/ref_defs.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	qcommon/qfiles.h
-
-Release/obj/dedstat/common.obj : qcommon/common.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/common.obj" qcommon/common.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I Core/Inc -I qcommon
-
-Release/obj/q2stat/common.obj : qcommon/common.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/common.obj" qcommon/common.cpp
-
-DEPENDS = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/Strings.h \
-	Core/Inc/VcWin32.h \
-	client/ref.h \
-	client/ref_decl.h \
-	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
@@ -668,6 +690,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
@@ -699,6 +722,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
@@ -728,6 +752,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
@@ -755,6 +780,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
@@ -786,6 +812,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
@@ -816,6 +843,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
@@ -846,6 +874,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
@@ -872,6 +901,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
@@ -896,6 +926,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
@@ -921,6 +952,7 @@ DEPENDS = \
 	client/ref.h \
 	client/ref_decl.h \
 	client/ref_defs.h \
+	client/rexp_decl.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \

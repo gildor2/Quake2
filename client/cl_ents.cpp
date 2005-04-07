@@ -428,19 +428,19 @@ model_t *S_RegisterSexedModel (entityState_t *ent, char *base)
 	if (!model[0])
 		strcpy(model, "male");
 
-	mdl = re.RegisterModel (va("players/%s/%s", model, base+1));
+	mdl = RE_RegisterModel (va("players/%s/%s", model, base+1));
 	if (!mdl)
 	{
 		// not found, try default weapon model
-		mdl = re.RegisterModel (va("players/%s/weapon.md2", model));
+		mdl = RE_RegisterModel (va("players/%s/weapon.md2", model));
 		if (!mdl)
 		{
 			// no, revert to the male model
-			mdl = re.RegisterModel (va("players/%s/%s", "male", base+1));
+			mdl = RE_RegisterModel (va("players/%s/%s", "male", base+1));
 			if (!mdl)
 			{
 				// last try, default male weapon.md2
-				mdl = re.RegisterModel ("players/male/weapon.md2");
+				mdl = RE_RegisterModel ("players/male/weapon.md2");
 			}
 		}
 	}
@@ -719,18 +719,18 @@ static void CL_AddPacketEntities (void)
 			{
 				if(!memcmp((char *)ent.skin, "players/male", 12))
 				{
-					ent.skin = re.RegisterSkin ("players/male/disguise.pcx");
-					ent.model = re.RegisterModel ("players/male/tris.md2");
+					ent.skin = RE_RegisterSkin ("players/male/disguise.pcx");
+					ent.model = RE_RegisterModel ("players/male/tris.md2");
 				}
 				else if(!memcmp((char *)ent.skin, "players/female", 14))
 				{
-					ent.skin = re.RegisterSkin ("players/female/disguise.pcx");
-					ent.model = re.RegisterModel ("players/female/tris.md2");
+					ent.skin = RE_RegisterSkin ("players/female/disguise.pcx");
+					ent.model = RE_RegisterModel ("players/female/tris.md2");
 				}
 				else if(!memcmp((char *)ent.skin, "players/cyborg", 14))
 				{
-					ent.skin = re.RegisterSkin ("players/cyborg/disguise.pcx");
-					ent.model = re.RegisterModel ("players/cyborg/tris.md2");
+					ent.skin = RE_RegisterSkin ("players/cyborg/disguise.pcx");
+					ent.model = RE_RegisterModel ("players/cyborg/tris.md2");
 				}
 			}
 		}
@@ -950,7 +950,7 @@ static void CL_AddPacketEntities (void)
 					float bright = s1->frame > 2 ? (5.0f - s1->frame) / (5 - 2) : 1;
 					V_AddLight (ent.origin, intens, 0, bright, 0);
 				}
-//				re.DrawTextLeft(va("bfg: %d (%c) [%3.1f]", s1->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac),RGB(1,1,1));//!!
+//				RE_DrawTextLeft (va("bfg: %d (%c) [%3.1f]", s1->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac),RGB(1,1,1));//!!
 			}
 			// XATRIX
 			else if (effects & EF_TRAP) {

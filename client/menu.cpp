@@ -79,14 +79,14 @@ static void M_Print (int cx, int cy, const char *str)
 {
 	while (*str)
 	{
-		re.DrawChar (cx + ((viddef.width - 320)/2), cy + ((viddef.height - 240)/2), *str++, C_RED);
+		RE_DrawChar (cx + ((viddef.width - 320)/2), cy + ((viddef.height - 240)/2), *str++, C_RED);
 		cx += CHAR_WIDTH;
 	}
 }
 
 static void DrawCharacter (int cx, int cy, int num)
 {
-	re.DrawChar (cx + ((viddef.width - 320)/2), cy + ((viddef.height - 240)/2), num);
+	RE_DrawChar (cx + ((viddef.width - 320)/2), cy + ((viddef.height - 240)/2), num);
 }
 
 static void M_DrawTextBox (int x, int y, int width, int lines)
@@ -155,7 +155,7 @@ struct menuMain_t : menuFramework_t
 		int		totalheight = 0;
 		for (i = 0; i < MAIN_ITEMS; i++)
 		{
-			re.DrawGetPicSize (&w, &h, va("m_main_%s", menuNames[i]));
+			RE_DrawGetPicSize (&w, &h, va("m_main_%s", menuNames[i]));
 
 			if (w > widest) widest = w;
 			totalheight += (h + 12);
@@ -167,17 +167,17 @@ struct menuMain_t : menuFramework_t
 		// draw non-current items
 		for (i = 0; i < MAIN_ITEMS; i++)
 		{
-			re.DrawPic (xoffset, ystart + i * 40 + 13,
+			RE_DrawPic (xoffset, ystart + i * 40 + 13,
 				va((i != cursor) ? "m_main_%s" : "m_main_%s_sel", menuNames[i])
 			);
 		}
 		// draw animated cursor
-		re.DrawPic (xoffset - 25, ystart + cursor * 40 + 11,
+		RE_DrawPic (xoffset - 25, ystart + cursor * 40 + 11,
 			va("m_cursor%d", (unsigned)appRound (cls.realtime / 100) % NUM_CURSOR_FRAMES));
 
-		re.DrawGetPicSize (&w, &h, "m_main_plaque");
-		re.DrawPic (xoffset - 30 - w, ystart, "m_main_plaque");
-		re.DrawPic (xoffset - 30 - w, ystart + h + 5, "m_main_logo");
+		RE_DrawGetPicSize (&w, &h, "m_main_plaque");
+		RE_DrawPic (xoffset - 30 - w, ystart, "m_main_plaque");
+		RE_DrawPic (xoffset - 30 - w, ystart + h + 5, "m_main_logo");
 	}
 
 	const char * KeyDown (int key)
@@ -336,7 +336,7 @@ struct keysMenu_t : menuFramework_t
 
 	static void KeyCursorDrawFunc (menuFramework_t *menu)
 	{
-		re.DrawChar (menu->x, menu->y + menu->cursor * BIND_LINE_HEIGHT,
+		RE_DrawChar (menu->x, menu->y + menu->cursor * BIND_LINE_HEIGHT,
 			cls.key_dest == key_bindingMenu ? '=' : 12 + ((cls.realtime >> 8) & 1));
 	}
 
@@ -647,7 +647,7 @@ struct optionsMenu_t : menuFramework_t
 		M_Print (16 + 16, 120 - 48 + 24, "please be patient.");
 
 		// the text box won't show up unless we do a buffer swap
-		re.EndFrame ();
+		RE_EndFrame ();
 
 		CL_Snd_Restart_f ();
 	}
@@ -746,8 +746,8 @@ struct optionsMenu_t : menuFramework_t
 
 		if (!crosshair->integer) return;
 		appSprintf (ARRAY_ARG(name), "ch%d", crosshair->integer);
-		re.DrawGetPicSize (&w, &h, name);
-		re.DrawPic ((viddef.width - w) / 2 + 32, crosshair_box.y + y + 10 - h / 2, name, crosshairColor->integer);
+		RE_DrawGetPicSize (&w, &h, name);
+		RE_DrawPic ((viddef.width - w) / 2 + 32, crosshair_box.y + y + 10 - h / 2, name, crosshairColor->integer);
 	}
 };
 static optionsMenu_t optionsMenu;
@@ -806,7 +806,7 @@ struct creditsMenu_t : menuFramework_t
 			int x = (viddef.width - strlen (s) * CHAR_WIDTH) / 2;
 			while (*s)
 			{
-				re.DrawChar (x, y, *s, color);
+				RE_DrawChar (x, y, *s, color);
 				x += CHAR_WIDTH;
 				s++;
 			}
@@ -996,9 +996,9 @@ struct savegameMenu_t : menuFramework_t
 				fclose (f);
 				m_savevalid[i] = true;
 				const char *name = va("/" SAVEGAME_DIRECTORY "/save%d/shot.pcx", i);
-				re.ReloadImage (name);		// force renderer to refresh image
+				RE_ReloadImage (name);		// force renderer to refresh image
 				int		width;
-				re.DrawGetPicSize (&width, NULL, name);
+				RE_DrawGetPicSize (&width, NULL, name);
 				if (width) m_shotvalid[i] = true;
 			}
 		}
@@ -1022,10 +1022,10 @@ struct savegameMenu_t : menuFramework_t
 			h = w * 3 / 4;
 			y = (viddef.height - h) / 2;
 		}
-		re.DrawFill2 (x - 3, y - 3, w + 6, h + 6, RGB(0,0,0));
+		RE_DrawFill2 (x - 3, y - 3, w + 6, h + 6, RGB(0,0,0));
 
 		if (!m_shotvalid[index]) return;
-		re.DrawDetailedPic (x, y, w, h, name);
+		RE_DrawDetailedPic (x, y, w, h, name);
 	}
 
 	static void LoadGameCallback (void *self)
@@ -1156,7 +1156,7 @@ struct joinserverMenu_t : menuFramework_t
 		M_Print (16 + 16, 120 - 48 + 24, "please be patient.");
 
 		// the text box won't show up unless we do a buffer swap
-		re.EndFrame ();
+		RE_EndFrame ();
 
 		// send out info packets
 		CL_PingServers_f ();
@@ -2307,8 +2307,8 @@ struct playerConfigMenu_t : menuFramework_t
 		if (showModels)
 		{
 			// add player model
-			e[0].model = re.RegisterModel (va("players/%s/tris.md2", model->name));
-			e[0].skin = re.RegisterSkin (va("players/%s/%s.pcx", model->name, skin->name));
+			e[0].model = RE_RegisterModel (va("players/%s/tris.md2", model->name));
+			e[0].skin = RE_RegisterSkin (va("players/%s/%s.pcx", model->name, skin->name));
 //			e[0].flags = 0;
 			e[0].origin[0] = 90;
 //			e[0].origin[1] = 0;
@@ -2326,7 +2326,7 @@ struct playerConfigMenu_t : menuFramework_t
 
 			// add weapon model
 			memcpy (&e[1], &e[0], sizeof (e[0]));		// fill angles, lerp and more ...
-			e[1].model = re.RegisterModel (va("players/%s/weapon.md2", model->name));
+			e[1].model = RE_RegisterModel (va("players/%s/weapon.md2", model->name));
 			e[1].skin = NULL;
 
 //			refdef.areabits = NULL;
@@ -2340,15 +2340,15 @@ struct playerConfigMenu_t : menuFramework_t
 
 		menuFramework_t::Draw ();
 
-		re.DrawFill2 (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
-		re.RenderFrame (&refdef);
+		RE_DrawFill2 (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
+		RE_RenderFrame (&refdef);
 
 		const char *icon;
 		if (!memcmp (skin->name, "skn_", 4))
 			icon = "/pics/default_icon.pcx";
 		else
 			icon = va("/players/%s/%s_i.pcx", model->name, skin->name);
-		re.DrawDetailedPic (x - 40, refdef.y, viddef.height * 32 / 240, viddef.height * 32 / 240, icon);
+		RE_DrawDetailedPic (x - 40, refdef.y, viddef.height * 32 / 240, viddef.height * 32 / 240, icon);
 	}
 
 	const char * KeyDown (int key)
@@ -2610,10 +2610,10 @@ struct dmbrowseMenu_t : menuFramework_t
 	{
 		char	name2[256];
 
-		re.DrawFill2 (x - THUMBNAIL_BORDER, y - THUMBNAIL_BORDER, w + THUMBNAIL_BORDER * 2,
+		RE_DrawFill2 (x - THUMBNAIL_BORDER, y - THUMBNAIL_BORDER, w + THUMBNAIL_BORDER * 2,
 				h + THUMBNAIL_BORDER * 2 + THUMBNAIL_TEXT, selected ? RGB(0,0.1,0.2) : RGB(0,0,0) /* blue/black */);
 
-		re.DrawStretchPic (x, y, w, h, va("/levelshots/%s.pcx", name));
+		RE_DrawStretchPic (x, y, w, h, va("/levelshots/%s.pcx", name));
 		int max_width = w / 8;
 		strcpy (name2, name);
 		int text_width = strlen (name2);
@@ -2630,7 +2630,7 @@ struct dmbrowseMenu_t : menuFramework_t
 		int x;
 
 		for (x = x0; x < x0 + w; x += CHAR_WIDTH)
-			re.DrawChar (x, y0, 0, C_GREEN);
+			RE_DrawChar (x, y0, 0, C_GREEN);
 	}
 
 	void Draw ()
@@ -2967,11 +2967,11 @@ struct quitMenu_t : menuFramework_t
 	{
 		int		w, h;
 
-		re.DrawGetPicSize (&w, &h, "quit");
+		RE_DrawGetPicSize (&w, &h, "quit");
 		if (w >= 320 && w * 3 / 4 == h)		// this pic is for fullscreen in mode 320x240
-			re.DrawDetailedPic (0, 0, viddef.width, viddef.height, "quit");
+			RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "quit");
 		else
-			re.DrawPic ((viddef.width-w)/2, (viddef.height-h)/2, "quit");
+			RE_DrawPic ((viddef.width-w)/2, (viddef.height-h)/2, "quit");
 	}
 };
 static quitMenu_t quitMenu;

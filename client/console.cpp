@@ -388,8 +388,8 @@ static void DrawInput (void)
 #define CURSOR_HEIGHT	(CHAR_HEIGHT/4)
 			if (!(*re.flags & REF_CONSOLE_ONLY))
 			{
-				re.DrawChar (x, y, c);
-				re.DrawFill2 (x, y+CHAR_HEIGHT-CURSOR_HEIGHT, CHAR_WIDTH, CURSOR_HEIGHT, RGBA(1,0.2,0.3,0.8));
+				RE_DrawChar (x, y, c);
+				RE_DrawFill2 (x, y+CHAR_HEIGHT-CURSOR_HEIGHT, CHAR_WIDTH, CURSOR_HEIGHT, RGBA(1,0.2,0.3,0.8));
 				continue;
 			}
 			c = 11;									// cursor char
@@ -399,9 +399,9 @@ static void DrawInput (void)
 			color = C_WHITE;						// do not colorize input
 		// draw char
 		if (!(*re.flags & REF_CONSOLE_ONLY))
-			re.DrawChar (x, y, c, color);
+			RE_DrawChar (x, y, c, color);
 		else
-			re.DrawConChar (i+1, y, c, color);
+			RE_DrawConChar (i+1, y, c, color);
 	}
 }
 
@@ -432,7 +432,7 @@ void Con_DrawNotify (bool drawBack)
 
 		if (drawBack)
 		{
-			re.DrawFill2 (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, RGBA(1,0,0,0.3));
+			RE_DrawFill2 (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, RGBA(1,0,0,0.3));
 			drawBack = false;
 		}
 		for (int x = 0; x < linewidth; x++)
@@ -442,7 +442,7 @@ void Con_DrawNotify (bool drawBack)
 			if (++pos >= CON_TEXTSIZE) pos -= CON_TEXTSIZE;
 
 			if (c == '\n' || c == WRAP_CHAR) break;
-			re.DrawChar ((x + 1) * CHAR_WIDTH, v, c, color);
+			RE_DrawChar ((x + 1) * CHAR_WIDTH, v, c, color);
 		}
 
 		v += CHAR_HEIGHT;
@@ -475,10 +475,10 @@ void Con_DrawConsole (float frac)
 	// draw the background
 	if (!(*re.flags & REF_CONSOLE_ONLY))
 	{
-//		re.DrawFill2 (0, 0, viddef.width, lines, RGBA(0,0,0.02,Cvar_VariableValue("con_alpha")));
-		re.DrawFill2 (0, 0, viddef.width, lines, RGBA(0,0,0.02,0.75));
+//		RE_DrawFill2 (0, 0, viddef.width, lines, RGBA(0,0,0.02,Cvar_VariableValue("con_alpha")));
+		RE_DrawFill2 (0, 0, viddef.width, lines, RGBA(0,0,0.02,0.75));
 		if (lines < viddef.height)
-			re.DrawFill2 (0, lines - 1, viddef.width, 1, RGBA(0.2,0.2,0.2,0.8));
+			RE_DrawFill2 (0, lines - 1, viddef.width, 1, RGBA(0.2,0.2,0.2,0.8));
 	}
 
 	// Variables for console-only mode
@@ -489,9 +489,9 @@ void Con_DrawConsole (float frac)
 	i = sizeof(version) - 1;
 	for (x = 0; x < i; x++)
 		if (!(*re.flags & REF_CONSOLE_ONLY))
-			re.DrawChar (viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, version[x], C_GREEN);
+			RE_DrawChar (viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, version[x], C_GREEN);
 		else
-			re.DrawConChar (dx - i - 1 + x, dy - 1, version[x], C_GREEN);
+			RE_DrawConChar (dx - i - 1 + x, dy - 1, version[x], C_GREEN);
 
 	// draw the text
 	con.vislines = lines;
@@ -544,12 +544,12 @@ void Con_DrawConsole (float frac)
 		if (!(*re.flags & REF_CONSOLE_ONLY))
 		{
 			for (x = 0; x < linewidth; x += 4)
-				re.DrawChar ((x + 1) * CHAR_WIDTH, y0, '^');
+				RE_DrawChar ((x + 1) * CHAR_WIDTH, y0, '^');
 		}
 		else
 		{
 			for (x = 0; x < linewidth; x += 4)
-				re.DrawConChar (x + 1, y0, '^');
+				RE_DrawConChar (x + 1, y0, '^');
 		}
 		rows--;
 	}
@@ -569,9 +569,9 @@ void Con_DrawConsole (float frac)
 
 				if (!con_colorText->integer) color = C_WHITE;
 				if (!(*re.flags & REF_CONSOLE_ONLY))
-					re.DrawChar ((x + 1) * CHAR_WIDTH, y, c, color);
+					RE_DrawChar ((x + 1) * CHAR_WIDTH, y, c, color);
 				else
-					re.DrawConChar (x + 1, y, c, color);
+					RE_DrawConChar (x + 1, y, c, color);
 			}
 			if (!(*re.flags & REF_CONSOLE_ONLY))
 				y += CHAR_HEIGHT;
@@ -584,9 +584,9 @@ void Con_DrawConsole (float frac)
 	i = strlen (dbgBuf);
 	for (x = 0; x < i; x++)
 		if (!(*re.flags & REF_CONSOLE_ONLY))
-			re.DrawChar (x*CHAR_WIDTH, lines - 12, dbgBuf[x], C_BLUE);
+			RE_DrawChar (x*CHAR_WIDTH, lines - 12, dbgBuf[x], C_BLUE);
 		else
-			re.DrawConChar (x, dy - 1, dbgBuf[x], C_BLUE);
+			RE_DrawConChar (x, dy - 1, dbgBuf[x], C_BLUE);
 #endif
 	// draw the input prompt, user text, and cursor
 	DrawInput ();

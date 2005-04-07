@@ -323,10 +323,10 @@ bool SCR_DrawCinematic (void)
 
 	if (cin.imageName[0]) {
 		// static image
-		re.DrawDetailedPic (0, 0, viddef.width, viddef.height, cin.imageName);
+		RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, cin.imageName);
 	} else if (cin.file) {
 		// cinematic frame
-		re.DrawStretchRaw8 (0, 0, viddef.width, viddef.height, cin.width, cin.height, cin.buf[cin.activeBuf], cin.palette);
+		RE_DrawStretchRaw8 (0, 0, viddef.width, viddef.height, cin.width, cin.height, cin.buf[cin.activeBuf], cin.palette);
 		RunCinematic ();
 	} else
 		return false;
@@ -356,7 +356,7 @@ void SCR_PlayCinematic (char *filename)
 		// not ".cin" extension - try static image
 		appCopyFilename (cin.imageName, filename, sizeof(cin.imageName));
 		cin.imageName[ext - filename] = 0;	// cut extension
-		re.DrawGetPicSize (&cin.width, &cin.height, cin.imageName);
+		RE_DrawGetPicSize (&cin.width, &cin.height, cin.imageName);
 		if (!cin.width)
 		{
 			Com_WPrintf ("%s not found.\n", filename);

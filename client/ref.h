@@ -166,76 +166,6 @@ typedef struct
 #define SHOT_JPEG			0x8000	// can be unsupported
 
 
-typedef struct
-{
-	// verification field, cb = sizeof(refExport_t)
-	int		struc_size;
-	// set of REF_XXX flags
-	int		*flags;
-
-	// called when the library is loaded
-	bool	(*Init) (void);
-
-	// called before the library is unloaded
-	void	(*Shutdown) (bool complete = false);
-
-	// All data that will be used in a level should be
-	// registered before rendering any frames to prevent disk hits,
-	// but they can still be registered at a later time
-	// if necessary.
-	//
-	// EndRegistration will free any remaining data that wasn't registered.
-	// Any model_t or image_t pointers from before the BeginRegistration
-	// are no longer valid after EndRegistration.
-	//
-	// Skins and images need to be differentiated, because skins
-	// are flood filled to eliminate mip map edge errors, and pics have
-	// an implicit "pics/" prepended to the name. (a pic name that starts with a
-	// slash will not use the "pics/" prefix or the ".pcx" postfix)
-	void	(*BeginRegistration) (const char *map);
-	model_t* (*RegisterModel) (const char *name);
-	image_t* (*RegisterSkin) (const char *name);
-	image_t* (*RegisterPic) (const char *name);
-	void	(*SetSky) (const char *name, float rotate, vec3_t axis);
-	void	(*EndRegistration) (void);
-
-	void	(*BeginFrame) (float camera_separation);
-	void	(*RenderFrame) (refdef_t *fd);
-	void	(*EndFrame) (void);
-
-	// drawing
-	void	(*DrawGetPicSize) (int *w, int *h, const char *name);	// will return (0, 0) if not found
-	void	(*DrawPic) (int x, int y, const char *pic, int color = C_WHITE);
-	void	(*DrawStretchPic) (int x, int y, int w, int h, const char *name);
-	void	(*DrawDetailedPic) (int x, int y, int w, int h, const char *name);
-	void	(*DrawChar) (int x, int y, int c, int color = C_WHITE);
-	void	(*DrawTileClear) (int x, int y, int w, int h, const char *name);
-	void	(*DrawFill) (int x, int y, int w, int h, int c);
-	void	(*DrawFill2) (int x, int y, int w, int h, unsigned rgba);
-	void	(*DrawStretchRaw8) (int x, int y, int w, int h, int cols, int rows, byte *data, unsigned *palette);
-
-	void	(*AppActivate) (bool activate);
-	void	(*Screenshot) (int flags, const char *name);
-	void	(*ReloadImage) (const char *name);
-
-	/*---- drawing colored text in any screen position ----*/
-	void	(*DrawTextPos) (int x, int y, const char *text, unsigned rgba);
-	void	(*DrawTextLeft) (const char *text, unsigned rgba);
-	void	(*DrawTextRight) (const char *text, unsigned rgba);
-
-	/*---- draw char at (x,y) (char-related coordinates) ----*/
-	void	(*DrawConChar) (int x, int y, int c, int color = C_WHITE);
-
-	/*----------------- lighting -------------------*/
-	float	(*GetClientLight) (void);		// used by server to determine client visibility (AI); change ??
-} refExport_t;
-
-
-/*----------- Functions exported by the refresh module -------------------*/
-
-typedef	refExport_t	(*GetRefAPI_t) (const refImport_t *);
-
-
 /*-------------------- Common renderer cvars -----------------------------*/
 
 void InitRendererVars (void);
@@ -247,28 +177,32 @@ extern	cvar_t	*r_fullbright, *r_lightmap;
 
 /*------------------- Static/dynamic renderer ----------------------------*/
 
-#define STATIC_RENDERER(name)	name##_GetRefAPI()
+#include "rexp_decl.h"
+
+//?? rename refImport_t, refExport_t to something another ...
+
+typedef	bool (*CreateDynRenderer_t) (const refImport_t *, refExport_t *);
+
+#define STATIC_RENDERER(name)	name##_CreateRenderer
 
 #ifndef STATIC_BUILD
 #define RENDERER_EXPORT(name)	\
-	extern "C" DLL_EXPORT refExport_t GetRefAPI(const refImport_t *) \
-	refExport_t GetRefAPI(const refImport_t *rimp)
+	extern "C" DLL_EXPORT bool CreateRenderer(const refImport_t *, refExport_t *) \
+	bool CreateRenderer (const refImport_t *rimp, refExport_t *rexp)
 #else
 #define RENDERER_EXPORT(name)	\
-	refExport_t STATIC_RENDERER(name)
+	bool STATIC_RENDERER(name) (refExport_t *rexp)
 #endif
 
 #ifndef STATIC_BUILD
 #define RENDERER_INIT			\
+	if (rimp.struc_size != sizeof(refImport_t) || \
+		rexp->struc_size != sizeof(refExport_t)) \
+		return false;			\
 	ri = *rimp;					\
-	if (ri.struc_size != sizeof(refImport_t))	\
-	{							\
-		re.struc_size = 0;		\
-		return re;				\
-	}							\
 	InitRendererVars ();
 #else
-#define RENDERER_INIT
+#define RENDERER_INIT		// don't need this check - module is correct by compilation
 #endif
 
 #endif

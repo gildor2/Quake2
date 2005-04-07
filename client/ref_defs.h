@@ -55,7 +55,7 @@ inline TList<CStringItem> FS_ListFiles (const char *name, int *numfiles, int fla
 }
 inline void* FS_LoadFile (const char *name, unsigned *size = NULL)
 {
-	return ri._FS_LoadFile (name, NULL);
+	return ri._FS_LoadFile (name, size);
 }
 inline void FS_FreeFile (void *buf)
 {
@@ -91,7 +91,7 @@ inline bool Vid_GetModeInfo (int *width, int *height, int mode)
 }
 inline int ImageExists (const char *name, int stop_mask = IMAGE_ANY)
 {
-	return ri._ImageExists (name, IMAGE_ANY);
+	return ri._ImageExists (name, stop_mask);
 }
 inline void LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *height)
 {

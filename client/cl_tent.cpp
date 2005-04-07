@@ -238,7 +238,7 @@ CL_RegisterTEntModels
 
 static model_t *RegModel (const char *name)
 {
-	return re.RegisterModel (va("models/%s/tris.md2", name));
+	return RE_RegisterModel (va("models/%s/tris.md2", name));
 }
 
 void CL_RegisterTEntModels (void)
@@ -261,7 +261,7 @@ void CL_RegisterTEntModels (void)
 	cl_mod_grapple_cable = RegModel ("ctf/segment");
 	cl_mod_parasite_tip = RegModel ("monsters/parasite/tip");
 	cl_mod_explo4 = RegModel ("objects/r_explode");
-	cl_mod_bfg_explo = re.RegisterModel ("sprites/s_bfg2.sp2");
+	cl_mod_bfg_explo = RE_RegisterModel ("sprites/s_bfg2.sp2");
 	cl_mod_powerscreen = RegModel ("items/armor/effect");
 
 	for (int i = 0; i < ARRAY_COUNT(modelNames); i++)
@@ -270,10 +270,10 @@ void CL_RegisterTEntModels (void)
 	// RegModel ("objects/blaser");
 
 	//??
-	re.RegisterPic ("w_machinegun");
-	re.RegisterPic ("a_bullets");
-	re.RegisterPic ("i_health");
-	re.RegisterPic ("a_grenades");
+	RE_RegisterPic ("w_machinegun");
+	RE_RegisterPic ("a_bullets");
+	RE_RegisterPic ("i_health");
+	RE_RegisterPic ("a_grenades");
 
 	//ROGUE
 	cl_mod_explo4_big = RegModel ("objects/r_explode2");
@@ -449,14 +449,14 @@ void CL_AddExplosions (void)
 			break;
 		}
 
-//re.DrawTextLeft(va("[%d / %g * %g] o(%g %g %g) c(%g %g %g)", i, ex->light, ent->alpha,
+//RE_DrawTextLeft (va("[%d / %g * %g] o(%g %g %g) c(%g %g %g)", i, ex->light, ent->alpha,
 //VECTOR_ARG(ent->origin), VECTOR_ARG(ex->lightcolor)),RGB(1,1,1));//!!
 		if (ex->light)
 		{
 //			V_AddLight (ent->origin, ex->light * ent->alpha, VECTOR_ARG(ex->lightcolor));
 			V_AddLight (ent->origin, ex->light * ent->alpha,
 				ex->lightcolor[0] * ent->alpha, ex->lightcolor[1] * ent->alpha, ex->lightcolor[2] * ent->alpha);
-//			re.DrawTextLeft(va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARG(ent->origin), ent->alpha, VECTOR_ARG(ex->lightcolor)),RGB(1,1,1));
+//			RE_DrawTextLeft (va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARG(ent->origin), ent->alpha, VECTOR_ARG(ex->lightcolor)),RGB(1,1,1));
 		}
 
 		if (!ent->model) continue;		// flash only

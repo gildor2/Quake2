@@ -329,7 +329,7 @@ static void FinishMove (usercmd_t *cmd)
 	cmd->impulse = 0;		//!! unused
 
 	// send the ambient light level at the player's current position
-	cmd->lightlevel = appRound (re.GetClientLight ());
+	cmd->lightlevel = appRound (RE_GetClientLight ());
 }
 
 /*

@@ -21,13 +21,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "qcommon.h"
 #include <time.h>
 
-#include "../client/ref.h"	// using re.DrawTextXxx() for com_speeds
-
 #define	MAXPRINTMSG	4096
 
 int		realtime;
 
-extern	refExport_t	re;		// interface to refresh .dll
+#include "../client/ref.h"	// using RE_DrawTextXxx () for com_speeds
+extern	refExport_t	re;
+#include "../client/rexp_defs.h"
 
 
 cvar_t	*com_speeds;
@@ -825,7 +825,7 @@ void Com_Frame (float msec)
 				old_pc = c_pointcontents;
 			}
 			if (time_before_ref)
-				re.DrawTextRight (va("sv:%.2f gm:%.2f (%.2f) cl:%.2f rf:%.2f all:%.2f\n"
+				RE_DrawTextRight (va("sv:%.2f gm:%.2f (%.2f) cl:%.2f rf:%.2f all:%.2f\n"
 									 "tr: %4d (%4d) pt: %4d (%4d)",
 									sv, gm, old_gm, cl, rf, all,
 									c_traces, old_tr, c_pointcontents, old_pc),
@@ -846,7 +846,7 @@ void Com_Frame (float msec)
 				for (int i = 0; i < ARRAY_COUNT(names); i++)
 				{
 					if (time_before_ref)
-						re.DrawTextLeft (va("%11s: %3d %.3f", names[i], counts[i], appDeltaCyclesToMsecf (times[i])), RGB(1, 0.8, 0.3));
+						RE_DrawTextLeft (va("%11s: %3d %.3f", names[i], counts[i], appDeltaCyclesToMsecf (times[i])), RGB(1, 0.8, 0.3));
 					if (time_before_game)
 					{
 						counts[i] = prof_counts[i];

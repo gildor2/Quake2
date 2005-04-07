@@ -1702,7 +1702,7 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const vec3_t 
 			node->children[side], p1f, p1f + (p2f - p1f)*frac,
                         node->children[side^1], midf = p1f + (p2f - p1f)*frac2, p2f,
                         plane->dist,plane->normal[0],plane->normal[1],plane->normal[2]);
-		re.DrawTextRight(buf,RGB(1,0.3,0.3));
+		RE_DrawTextRight (buf,RGB(1,0.3,0.3));
 	}//===*/
 
 		float midf;

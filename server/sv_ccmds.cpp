@@ -23,7 +23,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //?? only for screenshot
 #include "../client/ref.h"
-extern refExport_t re;
+extern	refExport_t	re;
+#include "../client/rexp_defs.h"
+
 //void SCR_UpdateScreen (void);		//?? remove
 void SCR_SetLevelshot (const char *name);
 
@@ -253,7 +255,7 @@ void SV_WriteServerFile (bool autosave, char *dir)
 	// perform screenshot
 	if (!DEDICATED)					// can be uninitialized when dedicated server
 	{
-		re.Screenshot (SHOT_SMALL|SHOT_NOGAMMA|SHOT_SILENT|SHOT_NO_2D|SHOT_WAIT_3D|SHOT_JPEG,
+		RE_Screenshot (SHOT_SMALL|SHOT_NOGAMMA|SHOT_SILENT|SHOT_NO_2D|SHOT_WAIT_3D|SHOT_JPEG,
 			va("%s/" SAVEGAME_DIRECTORY "/%s/shot", FS_Gamedir(), dir));
 //--		SCR_UpdateScreen ();			// required for screenshot performing
 			// BUT: here we must wait for NEXT map, and if performing shot immediately, it can be from PREVIOUS map

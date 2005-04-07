@@ -10,7 +10,7 @@ glrefdef_t	gl_refdef;
 
 drawSpeeds_t gl_speeds;
 
-static int ref_flags;
+static unsigned ref_flags;
 #ifndef STATIC_BUILD
 refImport_t	ri;
 #endif
@@ -1236,8 +1236,6 @@ static float GetClientLight (void)
 
 RENDERER_EXPORT(GL)
 {
-	refExport_t	re;
-
 	RENDERER_INIT;
 
 	gl_renderingEnabled = true;
@@ -1247,48 +1245,46 @@ RENDERER_EXPORT(GL)
 
 	gl_config.consoleOnly = Cvar_Get ("gl_console_only", "0", 0)->integer != 0;
 
-	re.struc_size = sizeof(re);
-	re.flags = &ref_flags;
+	rexp->flags = &ref_flags;
 	ref_flags = 0;
-	if (gl_config.consoleOnly)
-		ref_flags |= REF_CONSOLE_ONLY;
+	if (gl_config.consoleOnly) ref_flags |= REF_CONSOLE_ONLY;
 
-	re.Init =			GL_Init;
-	re.Shutdown =		GL_Shutdown;
-	re.BeginFrame =		GL_BeginFrame;
-	re.EndFrame =		GL_EndFrame;
-	re.AppActivate =	GLimp_AppActivate;
-	re.DrawConChar =	DrawConChar;
-	re.Screenshot =		Screenshot;
+	rexp->Init =			GL_Init;
+	rexp->Shutdown =		GL_Shutdown;
+	rexp->BeginFrame =		GL_BeginFrame;
+	rexp->EndFrame =		GL_EndFrame;
+	rexp->AppActivate =		GLimp_AppActivate;
+	rexp->DrawConChar =		DrawConChar;
+	rexp->Screenshot =		Screenshot;
 
-	re.RenderFrame =	GL_RenderScene;
-	re.BeginRegistration = BeginRegistration;
-	re.RegisterModel =	GL_FindModel;
-	re.RegisterSkin =	(image_t* (*)(const char *)) GL_FindSkin;	//?? conversion
-	re.RegisterPic =	(image_t* (*)(const char *)) RegisterPic;	//?? conversion
-	re.SetSky =			SetSky;
-	re.EndRegistration = EndRegistration;
+	rexp->RenderFrame =		GL_RenderScene;
+	rexp->BeginRegistration = BeginRegistration;
+	rexp->RegisterModel =	GL_FindModel;
+	rexp->RegisterSkin =	(image_t* (*)(const char *)) GL_FindSkin;	//?? conversion
+	rexp->RegisterPic =		(image_t* (*)(const char *)) RegisterPic;	//?? conversion
+	rexp->SetSky =			SetSky;
+	rexp->EndRegistration = EndRegistration;
 
-	re.ReloadImage =    ReloadImage;
-	re.DrawGetPicSize =	GetPicSize;
-	re.DrawPic =		DrawPic;
-	re.DrawStretchPic =	DrawStretchPic;
-	re.DrawDetailedPic = DrawDetailedPic;
-	re.DrawChar =		DrawChar;
-	re.DrawTileClear =	DrawTileClear;
-	re.DrawFill =		DrawFill;
-	re.DrawFill2 =		DrawFill2;
-	re.DrawStretchRaw8 = GL_DrawStretchRaw8;
+	rexp->ReloadImage =		ReloadImage;
+	rexp->DrawGetPicSize =	GetPicSize;
+	rexp->DrawPic =			DrawPic;
+	rexp->DrawStretchPic =	DrawStretchPic;
+	rexp->DrawDetailedPic = DrawDetailedPic;
+	rexp->DrawChar =		DrawChar;
+	rexp->DrawTileClear =	DrawTileClear;
+	rexp->DrawFill =		DrawFill;
+	rexp->DrawFill2 =		DrawFill2;
+	rexp->DrawStretchRaw8 = GL_DrawStretchRaw8;
 
-	re.DrawTextPos =	DrawTextPos;
-	re.DrawTextLeft =	DrawTextLeft;
-	re.DrawTextRight =	DrawTextRight;
+	rexp->DrawTextPos =		DrawTextPos;
+	rexp->DrawTextLeft =	DrawTextLeft;
+	rexp->DrawTextRight =	DrawTextRight;
 
-	re.GetClientLight = GetClientLight;
+	rexp->GetClientLight = GetClientLight;
 
 #ifndef STATIC_BUILD
 	Swap_Init ();
 #endif
 
-	return re;
+	return true;
 }

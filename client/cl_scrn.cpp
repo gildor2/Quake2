@@ -40,7 +40,7 @@ void DrawString (int x, int y, const char *s)
 				continue;
 			}
 		}
-		re.DrawChar (x, y, c, color);
+		RE_DrawChar (x, y, c, color);
 		x += CHAR_WIDTH;
 	}
 }
@@ -79,7 +79,7 @@ SCR_DrawDebugGraph
 static void DrawDebugGraph (void)
 {
 	int w = min(viddef.width, 1024);
-	re.DrawFill (0, viddef.height - graphheight->integer, w, graphheight->integer, 8);
+	RE_DrawFill (0, viddef.height - graphheight->integer, w, graphheight->integer, 8);
 
 	for (int a = 0; a < w; a++)
 	{
@@ -91,7 +91,7 @@ static void DrawDebugGraph (void)
 		if (v < 0)
 			v += graphheight->integer * (1 + appRound (-v / graphheight->value));
 		int h = appRound(v) % graphheight->integer;
-		re.DrawFill (w-1-a, viddef.height - h, 1, h, color);
+		RE_DrawFill (w-1-a, viddef.height - h, 1, h, color);
 	}
 }
 
@@ -182,7 +182,7 @@ static void DrawCenterString (void)
 				break;
 		int x = (viddef.width - l * CHAR_WIDTH) / 2;
 		for (int j = 0; j < l; j++, x += CHAR_WIDTH)
-			re.DrawChar (x, y, start[j]);
+			RE_DrawChar (x, y, start[j]);
 
 		y += CHAR_HEIGHT;
 
@@ -229,11 +229,11 @@ static void DrawChatInput (void)
 		s += chat_bufferlen - (viddef.width/CHAR_WIDTH - (x + 1));
 	while (*s)
 	{
-		re.DrawChar (x * CHAR_WIDTH, v, *s++);
+		RE_DrawChar (x * CHAR_WIDTH, v, *s++);
 		x++;
 	}
 	// draw cursor
-	re.DrawChar (x * CHAR_WIDTH, v, 10 + ((cls.realtime >> 8) & 1));
+	RE_DrawChar (x * CHAR_WIDTH, v, 10 + ((cls.realtime >> 8) & 1));
 }
 
 
@@ -332,7 +332,7 @@ void SCR_SetLevelshot (const char *name)
 
 		Com_DPrintf ("SetLevelshot: %s\n", name);
 		strcpy (levelshot, name);
-		re.ReloadImage (name);		// force renderer to refresh image
+		RE_ReloadImage (name);		// force renderer to refresh image
 		map_levelshot = levelshot;
 	}
 	else if (ImageExists (defLevelshot))
@@ -439,24 +439,24 @@ static void DrawGUI (bool allowNotifyArea)
 		if (developer->integer)
 		{
 			// draw full-screen console before loading plaque if in developer mode
-			re.DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
+			RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
 			Con_DrawConsole (1.0f);
 #define DEV_SHOT_FRAC	4		// part of screen for levelshot when loading in "developer" mode
 			if (map_levelshot)
-				re.DrawStretchPic (viddef.width * (DEV_SHOT_FRAC-1) / DEV_SHOT_FRAC, 0,
+				RE_DrawStretchPic (viddef.width * (DEV_SHOT_FRAC-1) / DEV_SHOT_FRAC, 0,
 					viddef.width / DEV_SHOT_FRAC, viddef.height / DEV_SHOT_FRAC, map_levelshot);
 		}
 		else
 		{
 			if (map_levelshot)
-				re.DrawDetailedPic (0, 0, viddef.width, viddef.height, map_levelshot);
+				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, map_levelshot);
 			else
 			{
 				int		w, h;
 
-				re.DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
-				re.DrawGetPicSize (&w, &h, "loading");
-				re.DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading");
+				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
+				RE_DrawGetPicSize (&w, &h, "loading");
+				RE_DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading");
 			}
 			if (!conCurrent)
 				Con_DrawNotify (false);		// do not draw notify area when console is visible too
@@ -471,8 +471,8 @@ static void DrawGUI (bool allowNotifyArea)
 		int r = w * cls.downloadpercent / 100;
 		int top = viddef.height - 3 * CHAR_HEIGHT - 2;
 		int height = 2 * CHAR_HEIGHT + 4;
-		re.DrawFill2 (6, top, r, height, RGB(0.5,0,0));
-		re.DrawFill2 (6 + r, top, w - r, height, RGB(0.1,0.1,0.1));
+		RE_DrawFill2 (6, top, r, height, RGB(0.5,0,0));
+		RE_DrawFill2 (6 + r, top, w - r, height, RGB(0.1,0.1,0.1));
 		DrawString (8, viddef.height - 3 * CHAR_HEIGHT, va("Downloading: %s", cls.downloadname));
 		DrawString (8, viddef.height - 2 * CHAR_HEIGHT, va("%d%% complete", cls.downloadpercent));
 	}
@@ -595,7 +595,7 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 		}
 	}
 
-	re.Screenshot (flags, filename);
+	RE_Screenshot (flags, filename);
 }
 
 
@@ -618,9 +618,9 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 	{
 		cl.refdef.viewangles[1] = (float)i * 360 / steps;
 
-		re.BeginFrame (0);
-		re.RenderFrame (&cl.refdef);
-		re.EndFrame ();
+		RE_BeginFrame (0);
+		RE_RenderFrame (&cl.refdef);
+		RE_EndFrame ();
 		time = (appMillisecondsf () - start) / 1000;
 		// prevent too long measuring
 		Sys_SendKeyEvents ();			// poll keyboard
@@ -692,7 +692,7 @@ static void DrawHUDString (char *string, int x0, int y, int centerwidth, int col
 		x = centerwidth ? x0 + (centerwidth - width * CHAR_WIDTH) / 2 : x0;
 		for (i = 0; i < width; i++)
 		{
-			re.DrawChar (x, y, *string++, color);
+			RE_DrawChar (x, y, *string++, color);
 			x += CHAR_WIDTH;
 		}
 		if (*string)
@@ -721,9 +721,9 @@ static void DrawField (int x, int y, int color, int width, int value)
 	while (*ptr && len--)
 	{
 		if (*ptr == '-')
-			re.DrawPic (x, y, va("%snum_minus", color ? "a" : ""));
+			RE_DrawPic (x, y, va("%snum_minus", color ? "a" : ""));
 		else
-			re.DrawPic (x, y, va("%snum_%c", color ? "a" : "", *ptr));
+			RE_DrawPic (x, y, va("%snum_%c", color ? "a" : "", *ptr));
 		x += HUDCHAR_WIDTH;
 		ptr++;
 	}
@@ -760,7 +760,7 @@ static void DrawInventory (void)
 	int x = (viddef.width-256)/2;
 	int y = (viddef.height-240)/2;
 
-	re.DrawPic (x, y+CHAR_HEIGHT, "inventory");
+	RE_DrawPic (x, y+CHAR_HEIGHT, "inventory");
 
 	y += 3 * CHAR_HEIGHT;
 	x += 3 * CHAR_WIDTH;
@@ -782,7 +782,7 @@ static void DrawInventory (void)
 			keyName = "";
 
 		if (item == selected)
-			re.DrawChar (x-CHAR_WIDTH, y, 13);	//?? original: 15 (but not displayed) anyway
+			RE_DrawChar (x-CHAR_WIDTH, y, 13);	//?? original: 15 (but not displayed) anyway
 
 		DrawString (x, y, va("%s%6s %3i %s", (item == selected) ? S_GREEN: S_WHITE,
 			keyName, cl.inventory[item], cl.configstrings[CS_ITEMS+item]));
@@ -807,7 +807,7 @@ static void DrawCrosshair (void)
 
 	if (!crosshair_pic[0]) return;
 
-	re.DrawPic ((viddef.width - crosshair_width) / 2, (viddef.height - crosshair_height) / 2,
+	RE_DrawPic ((viddef.width - crosshair_width) / 2, (viddef.height - crosshair_height) / 2,
 		crosshair_pic, crosshairColor->integer);
 }
 
@@ -856,7 +856,7 @@ static void ExecuteLayoutString (const char *s)
 			if (value >= MAX_IMAGES)
 				Com_DropError ("Pic >= MAX_IMAGES");
 			if (cl.configstrings[CS_IMAGES+value])
-				re.DrawPic (x, y, cl.configstrings[CS_IMAGES+value]);
+				RE_DrawPic (x, y, cl.configstrings[CS_IMAGES+value]);
 		}
 		else if (!strcmp (token, "client"))
 		{	// draw a deathmatch client block
@@ -880,7 +880,7 @@ static void ExecuteLayoutString (const char *s)
 
 			if (!ci->icon)
 				ci = &cl.baseclientinfo;
-			re.DrawPic (x, y, ci->iconname);
+			RE_DrawPic (x, y, ci->iconname);
 		}
 		else if (!strcmp (token, "ctf"))
 		{	// draw a ctf client block
@@ -907,7 +907,7 @@ static void ExecuteLayoutString (const char *s)
 		}
 		else if (!strcmp (token, "picn"))
 		{	// draw a pic from a name
-			re.DrawPic (x, y, COM_Parse (s));
+			RE_DrawPic (x, y, COM_Parse (s));
 		}
 		else if (!strcmp (token, "num"))
 		{	// draw a number
@@ -929,7 +929,7 @@ static void ExecuteLayoutString (const char *s)
 				color = 1;
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 1)
-				re.DrawPic (x, y, "field_3");
+				RE_DrawPic (x, y, "field_3");
 
 			DrawField (x, y, color, width, value);
 		}
@@ -947,7 +947,7 @@ static void ExecuteLayoutString (const char *s)
 				continue;	// negative number = don't show
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 4)
-				re.DrawPic (x, y, "field_3");
+				RE_DrawPic (x, y, "field_3");
 
 			DrawField (x, y, color, width, value);
 		}
@@ -962,7 +962,7 @@ static void ExecuteLayoutString (const char *s)
 			color = 0;	// green
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 2)
-				re.DrawPic (x, y, "field_3");
+				RE_DrawPic (x, y, "field_3");
 
 			DrawField (x, y, color, width, value);
 		}
@@ -1014,7 +1014,7 @@ void SCR_TouchPics (void)
 
 //	for (int i = 0; i < 2; i++)
 //		for (int j = 0 ; j < 11 ; j++)
-//			re.RegisterPic (sb_nums[i][j]);		// can remember image handles and use later (faster drawing, but need API extension ??)
+//			RE_RegisterPic (sb_nums[i][j]);		// can remember image handles and use later (faster drawing, but need API extension ??)
 
 	ch_num = crosshair->integer;
 	if (ch_num)
@@ -1022,7 +1022,7 @@ void SCR_TouchPics (void)
 		if (ch_num > 0)
 		{
 			appSprintf (ARRAY_ARG(crosshair_pic), "ch%d", crosshair->integer);
-			re.DrawGetPicSize (&crosshair_width, &crosshair_height, crosshair_pic);
+			RE_DrawGetPicSize (&crosshair_width, &crosshair_height, crosshair_pic);
 			if (crosshair_width <= 0)
 				ch_num = -1;								// invalid value
 		}
@@ -1070,12 +1070,12 @@ void SCR_UpdateScreen (void)
 
 	for (int i = 0; i < numframes; i++)
 	{
-		re.BeginFrame (separation[i]);
+		RE_BeginFrame (separation[i]);
 
 		if (cl.cinematicActive)
 		{
 			if (!SCR_DrawCinematic ())
-				re.DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
+				RE_DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
 			DrawGUI (false);
 		}
 		else
@@ -1097,7 +1097,7 @@ void SCR_UpdateScreen (void)
 
 					// show disconnected icon when server is not responding
 					if (cl.overtime > 200)
-						re.DrawPic (64, 0, "net");
+						RE_DrawPic (64, 0, "net");
 
 					DrawCenterString ();
 
@@ -1105,8 +1105,8 @@ void SCR_UpdateScreen (void)
 					if (cl_paused->integer)
 					{
 						int		w, h;
-						re.DrawGetPicSize (&w, &h, "pause");
-						re.DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "pause");
+						RE_DrawGetPicSize (&w, &h, "pause");
+						RE_DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "pause");
 					}
 
 					DrawChatInput ();
@@ -1116,7 +1116,7 @@ void SCR_UpdateScreen (void)
 			{
 				// 3D not rendered - draw background
 				if (!cls.loading || !map_levelshot)
-					re.DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
+					RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
 				if (cls.state == ca_disconnected && !cls.loading)
 					M_ForceMenuOn ();
 			}
@@ -1129,7 +1129,7 @@ void SCR_UpdateScreen (void)
 				DrawDebugGraph ();
 		}
 	}
-	re.EndFrame();
+	RE_EndFrame ();
 
 	unguard;
 }

@@ -318,7 +318,7 @@ VISIBLE:
 - shadows
 ? inlineModels: RF_TRANSLUCENT: glColor4f (1,1,1,0.25) + blend + no lightmap (vertex light ?)
 FOR GAME:
-- re.GetClientLight()
+- RE_GetClientLight ()
 
 
 -------------------------------------------------------------------------------

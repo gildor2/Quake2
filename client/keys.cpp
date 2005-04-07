@@ -466,7 +466,7 @@ struct completeMenu_t : menuFramework_t
 
 	void Draw ()
 	{
-		re.DrawFill2 (complMenu_x, complMenu_y, complMenu_w, complMenu_h, RGBA(0.1,0.5,0.5,0.8));
+		RE_DrawFill2 (complMenu_x, complMenu_y, complMenu_w, complMenu_h, RGBA(0.1,0.5,0.5,0.8));
 		menuFramework_t::Draw ();
 	}
 

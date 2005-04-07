@@ -103,14 +103,14 @@ static void Field_Draw (menuField_t *f)
 			va(S_GREEN"%s", f->name));
 
 	// draw border
-	re.DrawChar (f->x + f->parent->x + CHAR_WIDTH * 2, f->y + f->parent->y - CHAR_HEIGHT/2, 18);
-	re.DrawChar (f->x + f->parent->x + CHAR_WIDTH * 2, f->y + f->parent->y + CHAR_HEIGHT/2, 24);
-	re.DrawChar (f->x + f->parent->x + (f->visible_length + 3) * CHAR_WIDTH, f->y + f->parent->y - CHAR_HEIGHT/2, 20);
-	re.DrawChar (f->x + f->parent->x + (f->visible_length + 3) * CHAR_WIDTH, f->y + f->parent->y + CHAR_HEIGHT/2, 26);
+	RE_DrawChar (f->x + f->parent->x + CHAR_WIDTH * 2, f->y + f->parent->y - CHAR_HEIGHT/2, 18);
+	RE_DrawChar (f->x + f->parent->x + CHAR_WIDTH * 2, f->y + f->parent->y + CHAR_HEIGHT/2, 24);
+	RE_DrawChar (f->x + f->parent->x + (f->visible_length + 3) * CHAR_WIDTH, f->y + f->parent->y - CHAR_HEIGHT/2, 20);
+	RE_DrawChar (f->x + f->parent->x + (f->visible_length + 3) * CHAR_WIDTH, f->y + f->parent->y + CHAR_HEIGHT/2, 26);
 	for (i = 0; i < f->visible_length; i++)
 	{
-		re.DrawChar (f->x + f->parent->x + (i + 3) * CHAR_WIDTH, f->y + f->parent->y - CHAR_HEIGHT/2, 19);
-		re.DrawChar (f->x + f->parent->x + (i + 3) * CHAR_WIDTH, f->y + f->parent->y + CHAR_HEIGHT/2, 25);
+		RE_DrawChar (f->x + f->parent->x + (i + 3) * CHAR_WIDTH, f->y + f->parent->y - CHAR_HEIGHT/2, 19);
+		RE_DrawChar (f->x + f->parent->x + (i + 3) * CHAR_WIDTH, f->y + f->parent->y + CHAR_HEIGHT/2, 25);
 	}
 
 	// perform string drawing without text coloring
@@ -120,7 +120,7 @@ static void Field_Draw (menuField_t *f)
 	int y = f->y + f->parent->y;
 	while (char c = *s++)
 	{
-		re.DrawChar (x, y, c);
+		RE_DrawChar (x, y, c);
 		x += CHAR_WIDTH;
 	}
 
@@ -134,7 +134,7 @@ static void Field_Draw (menuField_t *f)
 			offset = f->cursor;
 
 		// show cursor
-		re.DrawChar (f->x + f->parent->x + (offset + 3) * CHAR_WIDTH,
+		RE_DrawChar (f->x + f->parent->x + (offset + 3) * CHAR_WIDTH,
 					 f->y + f->parent->y, ((cls.realtime >> 8) & 1) ? 11 : ' ');
 	}
 }
@@ -335,7 +335,7 @@ static void Menu_DrawDotsItem (menuCommon_t *item)
 	int center = VID_WIDTH / 2;
 	int y = item->y + item->parent->y;
 	for (int x = center - 128; x < center + 128; x += CHAR_WIDTH)
-		re.DrawChar (x, y, 0, C_RED);
+		RE_DrawChar (x, y, 0, C_RED);
 }
 
 
@@ -348,8 +348,8 @@ void menuFramework_t::Draw ()
 	if (banner)
 	{
 		int w, h;
-		re.DrawGetPicSize (&w, &h, banner);
-		re.DrawPic ((viddef.width - w) / 2, viddef.height / 2 - 110, banner);
+		RE_DrawGetPicSize (&w, &h, banner);
+		RE_DrawPic ((viddef.width - w) / 2, viddef.height / 2 - 110, banner);
 	}
 
 	/*------- draw contents -------*/
@@ -416,11 +416,11 @@ void menuFramework_t::Draw ()
 	{
 		if (item->flags & QMF_LEFT_JUSTIFY)
 		{
-			re.DrawChar (x + item->x - 3*CHAR_WIDTH + item->cursor_offset, y + item->y, 12 + ((cls.realtime >> 8) & 1));
+			RE_DrawChar (x + item->x - 3*CHAR_WIDTH + item->cursor_offset, y + item->y, 12 + ((cls.realtime >> 8) & 1));
 		}
 		else
 		{
-			re.DrawChar (x + item->cursor_offset, y + item->y, 12 + ((cls.realtime >> 8) & 1));
+			RE_DrawChar (x + item->cursor_offset, y + item->y, 12 + ((cls.realtime >> 8) & 1));
 		}
 	}
 
@@ -447,11 +447,11 @@ void Menu_DrawStatusBar (const char *string)
 		maxcol = VID_WIDTH / CHAR_WIDTH;
 		col = maxcol / 2 - l / 2;
 
-		re.DrawFill (0, VID_HEIGHT - CHAR_HEIGHT, VID_WIDTH, CHAR_HEIGHT, 4);
+		RE_DrawFill (0, VID_HEIGHT - CHAR_HEIGHT, VID_WIDTH, CHAR_HEIGHT, 4);
 		DrawString (col * CHAR_WIDTH, VID_HEIGHT - CHAR_WIDTH, string);
 	}
 //	else
-//		re.DrawFill (0, VID_HEIGHT-8, VID_WIDTH, 8, 0);
+//		RE_DrawFill (0, VID_HEIGHT-8, VID_WIDTH, 8, 0);
 }
 
 bool menuFramework_t::SelectItem ()
@@ -513,7 +513,7 @@ static void MenuList_Draw (menuList_t *l)
 
 	DrawCaption (l);
 	n = l->itemnames;
-  	re.DrawFill (l->x - 112 + l->parent->x, l->parent->y + l->y + l->curvalue*10 + 10, 128, CHAR_HEIGHT+2, 16);
+  	RE_DrawFill (l->x - 112 + l->parent->x, l->parent->y + l->y + l->curvalue*10 + 10, 128, CHAR_HEIGHT+2, 16);
 
 	int y = 0;
 	while (*n)
@@ -558,11 +558,11 @@ static void Slider_Draw (menuSlider_t *s)
 	s->range = (s->curvalue - s->minvalue) / (float)(s->maxvalue - s->minvalue);
 	s->range = bound(s->range, 0, 1);
 
-	re.DrawChar (s->x + s->parent->x + RCOLUMN_OFFSET, s->y + s->parent->y, 128);
+	RE_DrawChar (s->x + s->parent->x + RCOLUMN_OFFSET, s->y + s->parent->y, 128);
 	for (int i = 0; i < SLIDER_RANGE; i++)
-		re.DrawChar (RCOLUMN_OFFSET + s->x + i*8 + s->parent->x + 8, s->y + s->parent->y, 129);
-	re.DrawChar (RCOLUMN_OFFSET + s->x + i*8 + s->parent->x + 8, s->y + s->parent->y, 130);
-	re.DrawChar (appRound (8 + RCOLUMN_OFFSET + s->parent->x + s->x + (SLIDER_RANGE-1)*8 * s->range),
+		RE_DrawChar (RCOLUMN_OFFSET + s->x + i*8 + s->parent->x + 8, s->y + s->parent->y, 129);
+	RE_DrawChar (RCOLUMN_OFFSET + s->x + i*8 + s->parent->x + 8, s->y + s->parent->y, 130);
+	RE_DrawChar (appRound (8 + RCOLUMN_OFFSET + s->parent->x + s->x + (SLIDER_RANGE-1)*8 * s->range),
 		s->y + s->parent->y, 131);
 }
 
@@ -800,7 +800,7 @@ void M_Draw (void)
 	if (!m_current) return;
 
 	if (!cls.keep_console)	// do not blend whole screen when small menu painted
-		re.DrawFill2 (0, 0, viddef.width, viddef.height, RGBA(0,0,0,0.5));
+		RE_DrawFill2 (0, 0, viddef.width, viddef.height, RGBA(0,0,0,0.5));
 
 	m_current->Draw ();
 }
