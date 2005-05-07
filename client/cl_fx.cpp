@@ -643,7 +643,7 @@ void CL_ParseMuzzleFlash (void)
 	else
 		volume = 1;
 
-	if (*re.flags & REF_CONSOLE_ONLY)
+	if (RE_GetCaps() & REF_CONSOLE_ONLY)
 		return;
 
 	//	1. snd_name -- if not NULL:
@@ -784,7 +784,7 @@ void CL_ParseMuzzleFlash2 (void)
 	dl->color[1] = 1;
 	dl->color[2] = 0;
 
-	if (*re.flags & REF_CONSOLE_ONLY)
+	if (RE_GetCaps() & REF_CONSOLE_ONLY)
 		return;
 
 	switch (flash_number)
@@ -2114,7 +2114,7 @@ extern sfx_t *cl_sfx_camper[9];
 
 void CL_EntityEvent (entityState_t *ent)
 {
-	if (*re.flags & REF_CONSOLE_ONLY)
+	if (RE_GetCaps() & REF_CONSOLE_ONLY)
 		return;
 
 	if (ent->event >= EV_FOOTSTEP0 && ent->event < EV_FOOTSTEP0 + MATERIAL_COUNT)

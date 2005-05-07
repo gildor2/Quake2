@@ -3,6 +3,7 @@
 - tequila
 - townv2
 - plaza, plaza2
+- temple2
 
 - marics maps
 - rogue, xatrix maps

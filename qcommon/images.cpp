@@ -8,7 +8,9 @@ extern "C" {
 
 #define MAX_IMG_SIZE	2048
 
-/*-------------------------- PCX loading --------------------------*/
+/*-----------------------------------------------------------------------------
+	PCX loading
+-----------------------------------------------------------------------------*/
 
 
 typedef struct
@@ -106,7 +108,9 @@ void LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *hei
 }
 
 
-/*-------------------------- TGA loading --------------------------*/
+/*-----------------------------------------------------------------------------
+	TGA loading
+-----------------------------------------------------------------------------*/
 
 #define TGA_ORIGIN_MASK		0x30
 #define TGA_BOTLEFT			0x00
@@ -261,19 +265,14 @@ void LoadTGA (const char *name, byte **pic, int *width, int *height)
 }
 
 
-/*-------------------------- JPG loading --------------------------*/
+/*-----------------------------------------------------------------------------
+	JPG loading
+-----------------------------------------------------------------------------*/
 
 
 static const char *jpegname;
 static bool jpegerror;
 
-static void JpegError ()
-{
-	if (jpegerror) return;
-	Com_WPrintf ("LoadJPG(%s): damaged file\n", jpegname);
-//	Com_DropError ("Bad JPEG");
-	jpegerror = true;
-}
 
 METHODDEF(void) J_InitSource (j_decompress_ptr cinfo)
 {
@@ -282,7 +281,12 @@ METHODDEF(void) J_InitSource (j_decompress_ptr cinfo)
 
 METHODDEF(boolean) J_FillInputBuffer (j_decompress_ptr cinfo)
 {
-	JpegError ();
+	if (!jpegerror)
+	{
+		Com_WPrintf ("LoadJPG(%s): damaged file\n", jpegname);
+//		Com_DropError ("Bad JPEG");
+		jpegerror = true;
+	}
 	return true;
 }
 
@@ -346,22 +350,20 @@ static struct jpeg_error_mgr *InitJpegError (struct jpeg_error_mgr *err)
 
 void LoadJPG (const char *name, byte **pic, int *width, int *height)
 {
-	int		i, columns, rows;
-	unsigned length;
-	byte	*buffer, *decompr, *scanline, *in, *out;
 	struct jpeg_decompress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 	byte	line[MAX_IMG_SIZE*3];
-	char	*errMsg;
 
 	*pic = NULL;
 
 	jpegerror = false;
 
+	unsigned length;
+	byte *buffer;
 	if (!(buffer = (byte*) FS_LoadFile (name, &length))) return;
 
 	jpegname = name;
-	errMsg = NULL;
+	const char *errMsg = NULL;
 
 	cinfo.err = InitJpegError (&jerr);
 	jpeg_create_decompress (&cinfo);
@@ -380,8 +382,8 @@ void LoadJPG (const char *name, byte **pic, int *width, int *height)
 	jpeg_read_header (&cinfo, true);
 	jpeg_start_decompress (&cinfo);
 
-	columns = cinfo.output_width;
-	rows = cinfo.output_height;
+	int columns = cinfo.output_width;
+	int rows = cinfo.output_height;
 
 	if (cinfo.output_components != 3)
 		errMsg = "LoadJPG(%s): color components not equal 3\n";
@@ -395,17 +397,17 @@ void LoadJPG (const char *name, byte **pic, int *width, int *height)
 		Com_DropError (errMsg, name);
 	}
 
-	decompr = (byte*)appMalloc (columns * rows * 4);
+	byte *decompr = (byte*)appMalloc (columns * rows * 4);
 
-	scanline = line;
-	out = decompr;
+	byte *scanline = line;
+	byte *out = decompr;
 
 	while (cinfo.output_scanline < rows)
 	{
 		jpeg_read_scanlines (&cinfo, &scanline, 1);
 
-		in = line;
-		for (i = 0; i < columns; i++)
+		byte *in = line;
+		for (int i = 0; i < columns; i++)
 		{
 			*out++ = *in++;	// r
 			*out++ = *in++;	// g
@@ -441,7 +443,7 @@ int ImageExists (const char *name, int stop_mask)
 	while (path = FS_NextPath (path))
 	{
 		TList<CStringItem> list;
-		list = FS_ListFiles (va("%s/%s.*", path, name), NULL, LIST_FILES);
+		list = FS_ListFiles (va("%s/%s.*", path, name), LIST_FILES);
 		for (CStringItem *item = list.First(); item; item = list.Next(item))
 		{
 			char *ext = strrchr (item->name, '/'); // find filename
@@ -464,17 +466,16 @@ int ImageExists (const char *name, int stop_mask)
 }
 
 
-/*------------------------- Image writting ------------------------*/
-
-// All functions receive data in RGB format; data may be damaged while writting.
+/*-----------------------------------------------------------------------------
+	Image writting
+-----------------------------------------------------------------------------*/
+// All functions receive data in RGB format; data may be modified while writting.
 
 bool WriteTGA (const char *name, byte *pic, int width, int height)
 {
 	FILE	*f;
 	tgaHdr_t header;
-	int		size, i, column;
-	byte	*src, *dst, *packed, *flag, *threshold;
-	bool	rle, done;
+	int		i, column;
 
 	if (!(f = fopen (name, "wb")))
 	{
@@ -482,40 +483,37 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 		return false;
 	}
 
-	size = width * height;
+	byte *src;
+	int size = width * height;
 	// convert RGB to BGR (inplace conversion !)
 	for (i = 0, src = pic; i < size; i++, src += 3)
 	{
-		byte	tmp;
-
-		tmp = src[2];		// B
-		src[2] = src[0];	// R
+		byte tmp = src[2];		// B
+		src[2] = src[0];		// R
 		src[0] = tmp;
 	}
 
-	packed = (byte*)appMalloc (width * height * 3);
-	threshold = packed + width * height * 3 - 16;			// threshold for "dst"
+	byte *packed = (byte*)appMalloc (width * height * 3);
+	byte *threshold = packed + width * height * 3 - 16;		// threshold for "dst"
 
 	src = pic;
-	dst = packed;
+	byte *dst = packed;
 	i = column = 0;
-	flag = NULL;
-	rle = false;
+	byte *flag = NULL;
+	bool rle = false;
 
-	done = true;
+	bool done = true;
 	for (i = 0; i < size; i++)
 	{
-		byte	r, g, b;
-
 		if (dst >= threshold)								// when compressed is too large, same uncompressed
 		{
 			done = false;
 			break;
 		}
 
-		b = *src++;
-		g = *src++;
-		r = *src++;
+		byte b = *src++;
+		byte g = *src++;
+		byte r = *src++;
 
 		if (column < width - 1 &&							// not on screen edge; NOTE: when i == size-1, col==width-1
 			b == src[0] && g == src[1] && r == src[2] &&	// next byte will be the same
@@ -592,8 +590,6 @@ bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQual
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 	JSAMPROW row[1];
-	int		stride;
-
 
 	if (!(f = fopen (name, "wb")))
 	{
@@ -615,7 +611,7 @@ bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQual
 		jpeg_set_quality (&cinfo, 100, TRUE);
 
 	jpeg_start_compress (&cinfo, TRUE);
-	stride = 3 * width;
+	int stride = 3 * width;
 	while (cinfo.next_scanline < height)
 	{
 		row[0] = pic + stride * (height - 1 - cinfo.next_scanline);	// top-to-bottom?

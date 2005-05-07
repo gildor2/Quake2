@@ -134,7 +134,7 @@ class CORE_API CErrorHandler
 public:
 	bool	swError;			// true when error was thrown by appError() call; will not dump CPU context
 	bool	wasError;			// used for error history formatting
-	char	message[128];		// error message
+	char	message[256];		// error message
 	char	history[2048];		// call history
 	void	Reset ();
 	// fields for non-fatal error

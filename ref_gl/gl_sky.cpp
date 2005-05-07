@@ -2,6 +2,9 @@
 #include "gl_sky.h"
 #include "gl_math.h"
 
+
+namespace OpenGLDrv {
+
 static float skyMins[2][6], skyMaxs[2][6];
 
 
@@ -176,14 +179,14 @@ static byte skyVis[6][SKY_CELLS*SKY_CELLS];
 static bool skyRotated;
 static float rotAxis[3][3];
 
-void GL_ClearSkyBox (void)
+void ClearSkyBox (void)
 {
 	memset (skyVis, 0, sizeof(skyVis));
 	memset (skySideVisible, 0, sizeof(skySideVisible));
 }
 
 
-void GL_SetSkyRotate (float angle, vec3_t axis)
+void SetSkyRotate (float angle, vec3_t axis)
 {
 	if (angle)
 	{
@@ -195,7 +198,7 @@ void GL_SetSkyRotate (float angle, vec3_t axis)
 }
 
 
-bool GL_SkyVisible (void)
+bool SkyVisible (void)
 {
 	int		i;
 	byte	*p;
@@ -206,7 +209,7 @@ bool GL_SkyVisible (void)
 }
 
 
-void GL_AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
+void AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
 {
 	vec3_t	verts[MAX_CLIP_VERTS];
 	int		i, side;
@@ -317,7 +320,7 @@ static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec
 }
 
 
-int GL_TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float zFar)
+int TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float zFar)
 {
 	float	s, t, scale;
 	int		numIndexes;
@@ -380,3 +383,6 @@ int GL_TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float z
 
 	return numIndexes;
 }
+
+
+} // namespace

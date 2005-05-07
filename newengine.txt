@@ -2,6 +2,24 @@
   - Commands.cpp -- require alias, cvar + command buffer support
   - FileSystem... -- unfinished
 
+--------------- image/shader usage --------------------
+- CBasicImage:
+  - name, width, height, alphaBits
+  - virtual: Draw(), StretchDraw(), [Stretch]DrawNoAlpha() (or [Stretch]DrawAlpha() ?)
+  ? virtual Reload()
+- CImage:CBasicImage (-> CTexture, CGLTexture, ... (other name?))
+- CShader:CBasicImage (-> CGLShader?):
+
+- drawing:
+  - 3D: shaders only, accumulate scene, sort and draw
+  - 2D **: images and shaders; draw immediately; for drawing image, can use static temp shader with 1 stage -- insert image here;
+    because of immediate drawing, 1 temp shader is enough; can accumulate few subsequental Draw() calls (for shaders too) for
+    the same image (shader) and draw when EndFrame() or when image (shader) changed
+  - temp shaders (templates):
+    - GUI picture with/without alpha
+    - skin
+- creating 2D image/shader: when have script - create shader; when no script - use image itself (see **)
+
 ---------- console cmdline / command system -----------
 - Cmd_ForwardToServer(): rename to CL_UnhandledCommand(), set as callback when initializing command system; should be implemented
   as callback in CCommandBuffer (name?) class
@@ -19,6 +37,7 @@
 - dedicated server, GConCmdLine:
   - convert VK_KEY -> K_KEY and pass to GConCmdLine
   - use cursorPos for cursor visualization
+- should have capabilities of parsing of quake config files (but store configuration in INI ...)
 
 -------------- WinMain() -------------------
 - WinMain():
@@ -80,9 +99,12 @@
   - CFile (opened file object) - add "bool errorOnEof" - DropError() (FatalError?) when trying to read beyond EOF
   - stream helpers: ReadInt(), ReadFloat(), ReadByte(), ReadShort() -- with BIG_ENDIAN support (for Float/Int/Short)
   ? stream helpers: ReadInts(), ReadFloats() ... -- read array of data, with BIG_ENDIAN support
+  ? stream readers: reading struc of data, little<->big endian; stream layout should be specified in format,
+    similar to my "entdelta.cpp" processing (struc offset + data format); may be useful for reading model/map/other data
 
 ------------ New renderer system -----------
 - separate renderer (math only) and backend (OpenGL); call hierarchy: mainEngine->renderer->backend->gl
+  names: ref_gl -> SceneGraph + OpenGLDrv
 - backend should provide "caps" field:
   - rect textures (GL_NV_texture_rectangle: clamp, no mipmap)
   - rect textures 2 (GL_ARB_texture_non_power_of_two: full-feautured textures)
@@ -90,7 +112,7 @@
   - fast blend (for soft renderer: can draw console etc with opaque rects)
   - fast culling (for soft: when "false" will try to cull everything before sending to backend)
   - some lighting info (software, hardware with/without cubemaps etc)
-- images.cpp -> renderer (not backend)
+- images.cpp -> renderer (not backend); backend - uploading only
 - (abstract) class CImage, wisible from GUI/client - implementation in renderer, some service funcs
   (uploading, retreiving from screen, rendering to texture) - in backend
 ? vid_restart: restart backend ? (renderer restarting - unneded ??); rename cmd ?
@@ -107,6 +129,22 @@
   - screen manager - top level, draw GUI and HUD; can draw 3D in GUI/HUD
   - primary world 3D scene manager - entities, sprites/fx, dlights ...; will call renderer->DrawScene()
 - NullBackend (builtin?) - empty functions; may be useful for on-fly switching to dedicated server and to back GUI
+- BSP: class CBspNode -> class CBspLeaf (some additional fields)
+- model:
+  - remove (or relax usage) of "model->type" field (MODEL_INLINE, MODEL_MD3 etc values), replace its behaviour
+    with virtual functions:
+    - Free()
+    - DrawLabel()
+    - Cull()
+    - Draw() or AddSurfaces()
+    ...
+  - same for surfaceCommon_t.type (rename to CDrawSurface?)
+    - Tesselate()
+    - UpdateDynamicLightmap() -- for planar only?
+    - Cull() -- forntend.cpp
+    - ApplyDlights() -- frontend.cpp
+    - GetCluster() -- light.cpp
+    - BuildFlare() -- model.cpp -- for planar only?
 
 --------------- Memory manager -------------
 - meminfo: implement subsystems (gl, game etc)

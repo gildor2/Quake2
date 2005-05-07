@@ -79,7 +79,7 @@ SCR_DrawDebugGraph
 static void DrawDebugGraph (void)
 {
 	int w = min(viddef.width, 1024);
-	RE_DrawFill (0, viddef.height - graphheight->integer, w, graphheight->integer, 8);
+	RE_Fill8 (0, viddef.height - graphheight->integer, w, graphheight->integer, 8);
 
 	for (int a = 0; a < w; a++)
 	{
@@ -91,7 +91,7 @@ static void DrawDebugGraph (void)
 		if (v < 0)
 			v += graphheight->integer * (1 + appRound (-v / graphheight->value));
 		int h = appRound(v) % graphheight->integer;
-		RE_DrawFill (w-1-a, viddef.height - h, 1, h, color);
+		RE_Fill8 (w-1-a, viddef.height - h, 1, h, color);
 	}
 }
 
@@ -208,7 +208,7 @@ static int		chat_bufferlen = 0;
 static void DrawChatInput (void)
 {
 	// edit current player message
-	if (*re.flags & REF_CONSOLE_ONLY) return;
+	if (RE_GetCaps() & REF_CONSOLE_ONLY) return;
 	if (cls.key_dest != key_message) return;
 
 	int x;
@@ -332,8 +332,10 @@ void SCR_SetLevelshot (const char *name)
 
 		Com_DPrintf ("SetLevelshot: %s\n", name);
 		strcpy (levelshot, name);
-		RE_ReloadImage (name);		// force renderer to refresh image
 		map_levelshot = levelshot;
+		// force renderer to refresh image
+		CBasicImage *img = RE_RegisterPic (name);
+		if (img) img->Reload ();
 	}
 	else if (ImageExists (defLevelshot))
 	{
@@ -401,7 +403,7 @@ static void DrawGUI (bool allowNotifyArea)
 	Con_CheckResize ();
 
 	// draw full-screen console in "console-only" mode and exit
-	if (*re.flags & REF_CONSOLE_ONLY)
+	if (RE_GetCaps() & REF_CONSOLE_ONLY)
 	{
 		cls.key_dest = key_console;
 		Con_DrawConsole (1.0f);
@@ -452,11 +454,8 @@ static void DrawGUI (bool allowNotifyArea)
 				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, map_levelshot);
 			else
 			{
-				int		w, h;
-
 				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
-				RE_DrawGetPicSize (&w, &h, "loading");
-				RE_DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "loading");
+				RE_DrawPic (viddef.width / 2, viddef.height / 2, "loading", ANCHOR_CENTER);
 			}
 			if (!conCurrent)
 				Con_DrawNotify (false);		// do not draw notify area when console is visible too
@@ -471,8 +470,8 @@ static void DrawGUI (bool allowNotifyArea)
 		int r = w * cls.downloadpercent / 100;
 		int top = viddef.height - 3 * CHAR_HEIGHT - 2;
 		int height = 2 * CHAR_HEIGHT + 4;
-		RE_DrawFill2 (6, top, r, height, RGB(0.5,0,0));
-		RE_DrawFill2 (6 + r, top, w - r, height, RGB(0.1,0.1,0.1));
+		RE_Fill (6, top, r, height, RGB(0.5,0,0));
+		RE_Fill (6 + r, top, w - r, height, RGB(0.1,0.1,0.1));
 		DrawString (8, viddef.height - 3 * CHAR_HEIGHT, va("Downloading: %s", cls.downloadname));
 		DrawString (8, viddef.height - 2 * CHAR_HEIGHT, va("%d%% complete", cls.downloadpercent));
 	}
@@ -493,7 +492,7 @@ void SCR_ShowConsole (bool show, bool noAnim)
 {
 	guard(SCR_ShowConsole);
 
-	if (*re.flags & REF_CONSOLE_ONLY)
+	if (RE_GetCaps() & REF_CONSOLE_ONLY)
 	{
 		// ignore "show" arg
 		cls.key_dest = key_console;
@@ -618,7 +617,7 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 	{
 		cl.refdef.viewangles[1] = (float)i * 360 / steps;
 
-		RE_BeginFrame (0);
+		RE_BeginFrame ();
 		RE_RenderFrame (&cl.refdef);
 		RE_EndFrame ();
 		time = (appMillisecondsf () - start) / 1000;
@@ -792,7 +791,6 @@ static void DrawInventory (void)
 
 
 static char	crosshair_pic[MAX_QPATH];
-static int	crosshair_width, crosshair_height;
 
 static void DrawCrosshair (void)
 {
@@ -807,8 +805,7 @@ static void DrawCrosshair (void)
 
 	if (!crosshair_pic[0]) return;
 
-	RE_DrawPic ((viddef.width - crosshair_width) / 2, (viddef.height - crosshair_height) / 2,
-		crosshair_pic, crosshairColor->integer);
+	RE_DrawPic (viddef.width / 2, viddef.height / 2, crosshair_pic, ANCHOR_CENTER, crosshairColor->integer);
 }
 
 /*
@@ -1007,23 +1004,20 @@ Allows rendering code to cache all needed sbar graphics
 */
 void SCR_TouchPics (void)
 {
-	int		ch_num;
-
-	if (*re.flags & REF_CONSOLE_ONLY)
+	if (RE_GetCaps() & REF_CONSOLE_ONLY)
 		return;
 
 //	for (int i = 0; i < 2; i++)
 //		for (int j = 0 ; j < 11 ; j++)
 //			RE_RegisterPic (sb_nums[i][j]);		// can remember image handles and use later (faster drawing, but need API extension ??)
 
-	ch_num = crosshair->integer;
+	int ch_num = crosshair->integer;
 	if (ch_num)
 	{
 		if (ch_num > 0)
 		{
 			appSprintf (ARRAY_ARG(crosshair_pic), "ch%d", crosshair->integer);
-			RE_DrawGetPicSize (&crosshair_width, &crosshair_height, crosshair_pic);
-			if (crosshair_width <= 0)
+			if (!RE_RegisterPic (crosshair_pic))
 				ch_num = -1;								// invalid value
 		}
 		if (ch_num <= 0)
@@ -1045,90 +1039,65 @@ text to the screen.
 */
 void SCR_UpdateScreen (void)
 {
-	float separation[2] = {0, 0};
-
 	guard(SCR_UpdateScreen);
 
 	if (!initialized) return;		// not initialized yet
 
-	// range check cl_camera_separation so we don't inadvertently fry someone's brain
-	cl_stereo_separation->Clamp (0, 1);
+	RE_BeginFrame ();
 
-	int numframes;
-	if (cl_stereo->integer)
+	if (cl.cinematicActive)
 	{
-		numframes = 2;
-		separation[0] = -cl_stereo_separation->value / 2;
-		separation[1] =  cl_stereo_separation->value / 2;
+		if (!SCR_DrawCinematic ())
+			RE_Fill (0, 0, viddef.width, viddef.height, RGB(0,0,0));
+		DrawGUI (false);
 	}
 	else
 	{
-		separation[0] = 0;
-		separation[1] = 0;
-		numframes = 1;
-	}
-
-	for (int i = 0; i < numframes; i++)
-	{
-		RE_BeginFrame (separation[i]);
-
-		if (cl.cinematicActive)
+		if (V_RenderView ())
 		{
-			if (!SCR_DrawCinematic ())
-				RE_DrawFill2 (0, 0, viddef.width, viddef.height, RGB(0,0,0));
-			DrawGUI (false);
+			//------------------- HUD --------------------
+			if (cl_draw2d->integer)
+			{
+				DrawCrosshair ();
+				// SCR_DrawStats:
+				ExecuteLayoutString (cl.configstrings[CS_STATUSBAR]);
+				// SCR_DrawLayout:
+				if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 1)
+					ExecuteLayoutString (cl.layout);
+				// draw inventory
+				if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 2)
+					DrawInventory ();
+
+				// show disconnected icon when server is not responding
+				if (cl.overtime > 200)
+					RE_DrawPic (64, 0, "net");
+
+				DrawCenterString ();
+
+				// draw pause
+				if (cl_paused->integer)
+					RE_DrawPic (viddef.width / 2, viddef.height / 2, "pause", ANCHOR_CENTER);
+
+				DrawChatInput ();
+			}
 		}
 		else
 		{
-			if (V_RenderView (separation[i]))
-			{
-				//------------------- HUD --------------------
-				if (cl_draw2d->integer)
-				{
-					DrawCrosshair ();
-					// SCR_DrawStats:
-					ExecuteLayoutString (cl.configstrings[CS_STATUSBAR]);
-					// SCR_DrawLayout:
-					if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 1)
-						ExecuteLayoutString (cl.layout);
-					// draw inventory
-					if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 2)
-						DrawInventory ();
-
-					// show disconnected icon when server is not responding
-					if (cl.overtime > 200)
-						RE_DrawPic (64, 0, "net");
-
-					DrawCenterString ();
-
-					// draw pause
-					if (cl_paused->integer)
-					{
-						int		w, h;
-						RE_DrawGetPicSize (&w, &h, "pause");
-						RE_DrawPic ((viddef.width - w) / 2, (viddef.height - h) / 2, "pause");
-					}
-
-					DrawChatInput ();
-				}
-			}
-			else
-			{
-				// 3D not rendered - draw background
-				if (!cls.loading || !map_levelshot)
-					RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
-				if (cls.state == ca_disconnected && !cls.loading)
-					M_ForceMenuOn ();
-			}
-
-			DrawGUI (true);
-
-			if (timegraph->integer)
-				SCR_DebugGraph (cls.frametime * 300, 0);
-			if (debuggraph->integer || timegraph->integer || netgraph->integer)
-				DrawDebugGraph ();
+			// 3D not rendered - draw background
+			if (!cls.loading || !map_levelshot)
+				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
+			if (cls.state == ca_disconnected && !cls.loading)
+				M_ForceMenuOn ();
 		}
+
+		DrawGUI (true);
+
+		if (timegraph->integer)
+			SCR_DebugGraph (cls.frametime * 300, 0);
+		if (debuggraph->integer || timegraph->integer || netgraph->integer)
+			DrawDebugGraph ();
 	}
+
 	RE_EndFrame ();
 
 	unguard;

@@ -6,7 +6,8 @@ SOMETHING WAS CHANGED, SO NEEDS TO CHECK THIS:
   2) Blade3D - same + sometimes cannot restore res (CDS(game) + CDS(0) -!)
 - Vid_DestroyWindow(): ShowWindow(wnd,SW_HIDE) before destroying will
   prevent from appearing empty button on taskbar (Win9x), but will deactivate
-  window when Vid_DestroyWindow(force=false) because of hiding
+  window when Vid_DestroyWindow(force=false) because of hiding (and GL will call
+  CDS(0))
 - when recreating glContext on the same window (force=false), some videocards
   (at least, Blade3D) will not be able to create new context (try GetLastError()
    -- what is it ??!!)
@@ -14,7 +15,7 @@ SOMETHING WAS CHANGED, SO NEEDS TO CHECK THIS:
     (Vid_DestroyWindow(false) -> wnd.isLazy=true) -- DestroyWindow(true)+
      CreateWindow() -- i.e. completely recreate window; then - try to create
      context again
-- WIn9x: vid_restart will restore resolution (via WM_SIZE+MINIMIZE)
+- Win9x: vid_restart will restore resolution (via WM_SIZE+MINIMIZE)
 ! should centralize resolution changes: do not restore desktop res when not
   minimized (check WM_SIZE correctness ?)
   ? place to GLimp_Activate(), call CDS simputaneously with minimize/restore

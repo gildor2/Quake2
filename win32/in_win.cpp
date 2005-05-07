@@ -18,18 +18,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+//#define DIRECTINPUT_VERSION  0x0700
+#define DIRECTINPUT_VERSION  0x0800
+
 #define INITGUID
 #include "winquake.h"
 #include <dinput.h>
+
+#if DIRECTINPUT_VERSION < 0x0800
+#pragma comment (lib, "dinput.lib")
+#else
+#pragma comment (lib, "dinput8.lib")
+#endif
 
 #include "../client/client.h"
 
 
 /*!! Add DirectInput keyboard support, remove win32 mouse/keyboard support; joystick - DirectInput only;
  *   After this, can change "in_mouse==0|1|2" to "nomouse" cvar + can remove mouse/keyboard code from MainWndProc()
+ *   NOTE: this will require at least DirectX 7/8 ... May be, keep Win32 mouse/keyboard (just in case - its code not too large)?
  */
-
-extern	unsigned	sys_msg_time;
 
 bool in_needRestart;
 
@@ -42,7 +50,7 @@ bool in_needRestart;
 ============================================================
 */
 
-#define NUM_MOUSE_BUTTONS	3
+#define BUFFERED_MOUSE
 
 // mouse variables
 static cvar_t	*in_mouse;
@@ -63,27 +71,27 @@ static void IN_MLookUp (void)
 		IN_CenterView ();
 }
 
-static int	mouse_oldbuttonstate;
-static POINT current_pos;
 static int	mouse_x, mouse_y, old_mouse_x, old_mouse_y, mx_accum, my_accum;
 
 static int	old_x, old_y;
 
 static int	window_center_x, window_center_y;
-static RECT	window_rect;
 
 
 static int move_x, move_y;
 
-//----------------- DirectInput mouse -----------------------
 
-typedef HRESULT (WINAPI * pDirectInputCreate_t) (HINSTANCE, DWORD, LPDIRECTINPUT *, LPUNKNOWN);
-static pDirectInputCreate_t pDirectInputCreate;
+//----------------- DirectInput mouse -----------------------
 
 static HINSTANCE hInstDI;
 
+#if DIRECTINPUT_VERSION < 0x0800
 static IDirectInput *pDI;
-static IDirectInputDevice *pDID;
+static IDirectInputDevice *pMouse;
+#else
+static IDirectInput8 *pDI;
+static IDirectInputDevice8 *pMouse;
+#endif
 static int mouseType;		// copy of in_mouse
 
 
@@ -92,11 +100,11 @@ static void IN_FreeDirect (void)
 	Com_DPrintf ("Shutdown DirectInput mouse\n");
 	if (pDI)
 	{
-		if (pDID)
+		if (pMouse)
 		{
-			pDID->Unacquire ();
-			pDID->Release ();
-			pDID = NULL;
+			pMouse->Unacquire ();
+			pMouse->Release ();
+			pMouse = NULL;
 		}
 		pDI->Release ();
 		pDI = NULL;
@@ -113,6 +121,9 @@ static void IN_FreeDirect (void)
 static bool IN_InitDirect (void)
 {
 	Com_Printf ("Initializing DirectInput\n");
+#if DIRECTINPUT_VERSION < 0x0800
+	typedef HRESULT (WINAPI * pDirectInputCreate_t) (HINSTANCE, DWORD, LPDIRECTINPUT *, LPUNKNOWN);
+	static pDirectInputCreate_t pDirectInputCreate;
 	if (!hInstDI)
 	{
 		if (!(hInstDI = LoadLibrary ("dinput.dll")))
@@ -123,10 +134,10 @@ static bool IN_InitDirect (void)
 		if (!(pDirectInputCreate = (pDirectInputCreate_t) GetProcAddress (hInstDI, "DirectInputCreateA")))
 		{
 			Com_WPrintf ("... couldn't get DI proc address\n");
+			IN_FreeDirect ();
 			return false;
 		}
 	}
-
 	if FAILED(pDirectInputCreate (global_hInstance, DIRECTINPUT_VERSION, &pDI, NULL))
 	{
 		Com_DPrintf ("... cannot create DirectInput object\n");
@@ -134,15 +145,51 @@ static bool IN_InitDirect (void)
 		return false;
 	}
 
-	if FAILED(pDI->CreateDevice (GUID_SysMouse, &pDID, NULL))
+#else
+	typedef HRESULT (WINAPI * pDirectInput8Create_t) (HINSTANCE, DWORD, REFIID, LPVOID *, LPUNKNOWN);
+	static pDirectInput8Create_t pDirectInput8Create;
+	if (!hInstDI)
+	{
+		if (!(hInstDI = LoadLibrary ("dinput8.dll")))
+		{
+			Com_WPrintf ("... loading dinput8.dll failed\n");
+			return false;
+		}
+		if (!(pDirectInput8Create = (pDirectInput8Create_t) GetProcAddress (hInstDI, "DirectInput8Create")))
+		{
+			Com_WPrintf ("... couldn't get DI proc address\n");
+			IN_FreeDirect ();
+			return false;
+		}
+	}
+	if FAILED(pDirectInput8Create (global_hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&pDI, NULL))
+	{
+		Com_DPrintf ("... cannot create DirectInput object\n");
+		IN_FreeDirect ();
+		return false;
+	}
+
+#endif
+
+	if FAILED(pDI->CreateDevice (GUID_SysMouse, &pMouse, NULL))
 	{
 		Com_DPrintf ("... cannot create DirectInput mouse\n");
 		IN_FreeDirect ();
 		return false;
 	}
 
-	pDID->SetDataFormat (&c_dfDIMouse);	// may fail
-	if FAILED(pDID->SetCooperativeLevel (cl_hwnd, DISCL_EXCLUSIVE|DISCL_FOREGROUND))
+#if DIRECTINPUT_VERSION >= 0x0700
+	HRESULT res = pMouse->SetDataFormat (&c_dfDIMouse2);		// up to 8 mouse buttons
+#else
+	HRESULT res = pMouse->SetDataFormat (&c_dfDIMouse);		// up to 4 mouse buttons
+#endif
+	if FAILED(res)
+	{
+		Com_Printf ("... cannot set data format\n");
+		IN_FreeDirect ();
+		return false;
+	}
+	if FAILED(pMouse->SetCooperativeLevel (cl_hwnd, DISCL_EXCLUSIVE|DISCL_FOREGROUND))
 	{
 		//?? set fullscreen to 0 -- if cannot capture mouse in fullscreen mode
 		//?? (if fullscreen is already 0, it will not be changed)
@@ -150,13 +197,32 @@ static bool IN_InitDirect (void)
 		IN_FreeDirect ();
 		return false;
 	}
-	if FAILED(pDID->Acquire ())
+#ifdef BUFFERED_MOUSE
+	DIPROPDWORD dipdw;
+	// the header
+	dipdw.diph.dwSize		= sizeof(DIPROPDWORD);
+	dipdw.diph.dwHeaderSize	= sizeof(DIPROPHEADER);
+	dipdw.diph.dwObj		= 0;
+	dipdw.diph.dwHow		= DIPH_DEVICE;
+	// the data
+	dipdw.dwData			= 16;							// size of buffer
+	if FAILED(pMouse->SetProperty (DIPROP_BUFFERSIZE, &dipdw.diph))
 	{
-		//?? fullscreen <- 0
-		Com_Printf ("... cannot acquire mouse\n");
+		Com_Printf ("... cannot set mouse buffered mode\n");
 		IN_FreeDirect ();
 		return false;
 	}
+#endif
+#if 0
+	if FAILED(pMouse->Acquire ())
+	{
+		//?? fullscreen <- 0
+		Com_Printf ("... cannot acquire mouse\n");
+		//?? do not Free() -- just keep mouse unacquired; when window will be activated -- acquire mouse
+		IN_FreeDirect ();
+		return false;
+	}
+#endif
 
 	old_x = old_y = 0;
 
@@ -168,38 +234,85 @@ static bool IN_InitDirect (void)
 
 static void IN_DirectMouseFrame (void)
 {
-	DIMOUSESTATE ms;
-
 	// poll DirectInput mouse
-	HRESULT hresult = pDID->GetDeviceState (sizeof(ms), &ms);
-	if (hresult == DIERR_INPUTLOST)
+#ifdef BUFFERED_MOUSE
+	move_x = move_y = 0;
+	while (true)
+	{
+		DIDEVICEOBJECTDATA od;
+		DWORD	dwElements = 1;			// number of items to be retreived
+		HRESULT res = pMouse->GetDeviceData (sizeof(od), &od, &dwElements, 0);
+		if (res == DIERR_INPUTLOST || res == DIERR_NOTACQUIRED)
+		{
+			// try to acquire mouse
+			pMouse->Acquire ();
+			return;
+		}
+		if FAILED(res)
+		{
+			Com_WPrintf ("Error on DI mouse.GetData(): err = %X\n", res);
+			return;
+		}
+		if (dwElements == 0) return;	// no data available
+#if DIRECTINPUT_VERSION >= 0x0700
+		if (od.dwOfs >= DIMOFS_BUTTON0 && od.dwOfs <= DIMOFS_BUTTON7)
+#else
+		if (od.dwOfs >= DIMOFS_BUTTON0 && od.dwOfs <= DIMOFS_BUTTON3)
+#endif
+		{
+			Key_Event (K_MOUSE1 + od.dwOfs - DIMOFS_BUTTON0, (od.dwData & 0x80) != 0);	//?? can use od.dwTimeStamp for timing
+			continue;
+		}
+
+		switch (od.dwOfs)
+		{
+		case DIMOFS_X:
+			move_x += od.dwData;
+			break;
+		case DIMOFS_Y:
+			move_y += od.dwData;
+			break;
+		case DIMOFS_Z:
+			int msg = ((int)od.dwData > 0 ) ? K_MWHEELUP : K_MWHEELDOWN;
+			Key_Event (msg, true);
+			Key_Event (msg, false);
+			break;
+		}
+	}
+#else
+#if DIRECTINPUT_VERSION >= 0x0700
+	DIMOUSESTATE2 ms;
+#else
+	DIMOUSESTATE ms;
+#endif
+	HRESULT res = pMouse->GetDeviceState (sizeof(ms), &ms);
+	if (res == DIERR_INPUTLOST || res == DIERR_NOTACQUIRED)
 	{
 		// try to acquire mouse
-		pDID->Acquire ();
+		pMouse->Acquire ();
 		return;
 	}
-	if FAILED(hresult)
+	if FAILED(res)
 	{
-		Com_WPrintf ("error on DI mouse GetState()\n");
+		Com_WPrintf ("error on DI mouse.GetState()\n");
 		return;
 	}
 	// process mouse wheel
 	if (ms.lZ)
 	{
 		int msg = (ms.lZ > 0) ? K_MWHEELUP : K_MWHEELDOWN;
-		Key_Event (msg, true, sys_msg_time);	//!! check for correct sys_msg_time
-		Key_Event (msg, false, sys_msg_time);
+		Key_Event (msg, true);
+		Key_Event (msg, false);
 	}
 	// process X and Y axes
 	move_x = ms.lX;
 	move_y = ms.lY;
 	// process buttons
 	int tmp = 0;
-	if (ms.rgbButtons[0]) tmp |= 1;
-	if (ms.rgbButtons[1]) tmp |= 2;
-	if (ms.rgbButtons[2]) tmp |= 4;
+	for (int i = 0; i < ARRAY_COUNT(ms.rgbButtons); i++)
+		if (ms.rgbButtons[i]) tmp |= 1 << i;
 	IN_MouseEvent (tmp);			// call this always - to detect button on/off
-	//?? can access 4 (and more?) buttons
+#endif
 }
 
 
@@ -225,6 +338,7 @@ static void IN_InitWin32 (void)
 	width = GetSystemMetrics (SM_CXSCREEN);
 	height = GetSystemMetrics (SM_CYSCREEN);
 
+	RECT window_rect;
 	GetWindowRect (cl_hwnd, &window_rect);
 	if (window_rect.left < 0)	window_rect.left = 0;
 	if (window_rect.top < 0) 	window_rect.top = 0;
@@ -270,14 +384,23 @@ IN_DeactivateMouse
 Called when the window loses focus
 ===========
 */
-static void IN_DeactivateMouse (void)
+static void IN_DeactivateMouse (bool complete)
 {
 	if (mouseType == 2)
-		IN_FreeDirect ();
+	{
+		if (complete)
+			IN_FreeDirect ();
+		else
+			pMouse->Unacquire ();
+	}
 	else if (mouseType == 1)
+	{
 		IN_FreeWin32 ();
+		complete = true;		// required
+	}
 
-	mouseType = 0;
+	if (complete)
+		mouseType = 0;
 }
 
 
@@ -291,13 +414,16 @@ Called when the window gains focus or changes in some way
 
 static void IN_ActivateMouse (void)
 {
+	in_mouse->modified = false;
+	if (mouseType == in_mouse->integer) return;
+
 	if (mouseType)
 	{
 		if (!in_mouse->modified)
 			return;
 		Com_DPrintf ("Changing mouse type\n");
 		// deactivate then reactivate mouse
-		IN_DeactivateMouse ();
+		IN_DeactivateMouse (true);
 	}
 
 	if (in_mouse->integer == 2 && IN_InitDirect ())
@@ -309,8 +435,6 @@ static void IN_ActivateMouse (void)
 	}
 	else
 		mouseType = 0;
-
-	in_mouse->modified = false;
 }
 
 
@@ -331,19 +455,23 @@ static void IN_StartupMouse (void)
 IN_MouseEvent
 ===========
 */
-void IN_MouseEvent (int mstate)
+static int	mouse_oldButtons;
+
+void IN_MouseEvent (unsigned buttons)
 {
 	// perform button actions
-	for (int i = 0; i < NUM_MOUSE_BUTTONS; i++)
+	unsigned old = mouse_oldButtons;
+	mouse_oldButtons = buttons;
+	int key = K_MOUSE1;
+	while (buttons || old)
 	{
-		if ((mstate & (1<<i)) && !(mouse_oldbuttonstate & (1<<i)))
-			Key_Event (K_MOUSE1 + i, true, sys_msg_time);
+		if ((buttons ^ old) & 1)
+			Key_Event (key, buttons & 1);
 
-		if (!(mstate & (1<<i)) && (mouse_oldbuttonstate & (1<<i)))
-			Key_Event (K_MOUSE1 + i, false, sys_msg_time);
+		buttons >>= 1;
+		old >>= 1;
+		key++;
 	}
-
-	mouse_oldbuttonstate = mstate;
 }
 
 
@@ -368,6 +496,7 @@ static void IN_MouseMove (usercmd_t *cmd)
 	else
 	{
 		// get mouse position
+		POINT current_pos;
 		if (!GetCursorPos (&current_pos)) return;
 		// compute movement
 		mx = current_pos.x - window_center_x;
@@ -422,7 +551,7 @@ static void IN_ClearStates (void)
 {
 	mx_accum = 0;
 	my_accum = 0;
-	mouse_oldbuttonstate = 0;
+	mouse_oldButtons = 0;
 }
 
 
@@ -442,6 +571,12 @@ enum {
 	JOY_MAX_AXES
 };
 
+#define F(name)		FIELD2OFS(JOYINFOEX,name)
+static const byte joyOffsets[] = {
+	F(dwXpos), F(dwYpos), F(dwZpos), F(dwRpos), F(dwUpos), F(dwVpos)
+};
+#undef F
+
 enum {
 	AxisNada = 0, AxisForward, AxisLook, AxisSide, AxisTurn, AxisUp
 };
@@ -453,7 +588,6 @@ static DWORD	dwAxisFlags[JOY_MAX_AXES] =
 
 static DWORD	dwAxisMap[JOY_MAX_AXES];
 static DWORD	dwControlMap[JOY_MAX_AXES];
-static PDWORD	pdwRawValue[JOY_MAX_AXES];
 
 static bool		joy_avail, joy_advancedinit, joy_haspov;
 static DWORD	joy_oldbuttonstate, joy_oldpovstate;
@@ -562,32 +696,6 @@ static void IN_StartupJoystick (void)
 
 /*
 ===========
-RawValuePointer
-===========
-*/
-static PDWORD RawValuePointer (int axis)
-{
-	switch (axis)
-	{
-	case JOY_AXIS_X:
-		return &ji.dwXpos;
-	case JOY_AXIS_Y:
-		return &ji.dwYpos;
-	case JOY_AXIS_Z:
-		return &ji.dwZpos;
-	case JOY_AXIS_R:
-		return &ji.dwRpos;
-	case JOY_AXIS_U:
-		return &ji.dwUpos;
-	case JOY_AXIS_V:
-		return &ji.dwVpos;
-	}
-	return NULL;	// make compiler happy
-}
-
-
-/*
-===========
 Joy_AdvancedUpdate_f
 ===========
 */
@@ -603,7 +711,6 @@ static void Joy_AdvancedUpdate_f (void)
 	{
 		dwAxisMap[i] = AxisNada;
 		dwControlMap[i] = JOY_ABSOLUTE_AXIS;
-		pdwRawValue[i] = RawValuePointer(i);
 	}
 
 	if (!joy_advanced->integer)
@@ -667,13 +774,13 @@ void IN_Commands (void)
 		if ( (buttonstate & (1<<i)) && !(joy_oldbuttonstate & (1<<i)) )
 		{
 			key_index = (i < 4) ? K_JOY1 : K_AUX1;
-			Key_Event (key_index + i, true, 0);
+			Key_Event (key_index + i, true);
 		}
 
 		if ( !(buttonstate & (1<<i)) && (joy_oldbuttonstate & (1<<i)) )
 		{
 			key_index = (i < 4) ? K_JOY1 : K_AUX1;
-			Key_Event (key_index + i, false, 0);
+			Key_Event (key_index + i, false);
 		}
 	}
 	joy_oldbuttonstate = buttonstate;
@@ -695,10 +802,10 @@ void IN_Commands (void)
 		for (i=0 ; i < 4 ; i++)
 		{
 			if ((povstate & (1<<i)) && !(joy_oldpovstate & (1<<i)))
-				Key_Event (K_AUX29 + i, true, 0);
+				Key_Event (K_AUX29 + i, true);
 
 			if (!(povstate & (1<<i)) && (joy_oldpovstate & (1<<i)))
-				Key_Event (K_AUX29 + i, false, 0);
+				Key_Event (K_AUX29 + i, false);
 		}
 		joy_oldpovstate = povstate;
 	}
@@ -767,11 +874,9 @@ static void IN_JoyMove (usercmd_t *cmd)
 	for (int i = 0; i < JOY_MAX_AXES; i++)
 	{
 		// get the floating point zero-centered, potentially-inverted data for the current axis
-		fAxisValue = (float) *pdwRawValue[i];
 		// move centerpoint to zero
-		fAxisValue -= 32768.0f;
 		// convert range from -32768..32767 to -1..1
-		fAxisValue /= 32768.0f;
+		fAxisValue = (OFS2FIELD(&ji, joyOffsets[i], unsigned) - 32768) / 32768.0f;
 
 		switch (dwAxisMap[i])
 		{
@@ -897,7 +1002,7 @@ CVAR_END
 
 void IN_Shutdown (void)
 {
-	IN_DeactivateMouse ();
+	IN_DeactivateMouse (true);
 }
 
 
@@ -943,14 +1048,15 @@ void IN_Frame (void)
 
 	if ((!cl.refresh_prepped || cls.key_dest == key_console || cls.key_dest == key_menu) && !FullscreenApp)
 	{
+		//?? deactivate for console only (when GUI mouse will be implemented)
 		// temporarily deactivate if not in fullscreen
-		IN_DeactivateMouse ();
+		IN_DeactivateMouse (false);
 		return;
 	}
 
 	if (!in_active)
 	{
-		if (mouseType) IN_DeactivateMouse ();
+		if (mouseType) IN_DeactivateMouse (false);
 		return;
 	}
 	if (in_active && !mouseType)
@@ -963,7 +1069,7 @@ void IN_Frame (void)
 	if (in_needRestart)
 	{
 		in_needRestart = false;
-		IN_DeactivateMouse ();
+		IN_DeactivateMouse (true);
 		IN_ActivateMouse ();
 		return;
 	}

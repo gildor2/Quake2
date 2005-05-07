@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifdef GUN_DEBUG
 // development tools for weapons
 int		gun_frame;
-model_t	*gun_model;
+CRenderModel *gun_model;
 #endif
 
 static cvar_t	*cl_testparticles;
@@ -378,12 +378,12 @@ static void TileClear (void)
 
 	int y1 = scr_vrect.y;
 	int y2 = y1 + scr_vrect.height;
-	RE_DrawTileClear (0, 0, viddef.width, y1, tileName);
-	RE_DrawTileClear (0, y2, viddef.width, viddef.height - y2, tileName);
+	RE_TileClear (0, 0, viddef.width, y1, tileName);
+	RE_TileClear (0, y2, viddef.width, viddef.height - y2, tileName);
 	int x1 = scr_vrect.x;
 	int x2 = x1 + scr_vrect.width;
-	RE_DrawTileClear (0, y1, x1, scr_vrect.height, tileName);
-	RE_DrawTileClear (x2, y1, viddef.width - x2, scr_vrect.height, tileName);
+	RE_TileClear (0, y1, x1, scr_vrect.height, tileName);
+	RE_TileClear (x2, y1, viddef.width - x2, scr_vrect.height, tileName);
 
 	return;
 }
@@ -595,7 +595,7 @@ static void DrawSurfInfo (void)
 	VectorAdd (start, end, end);
 
 	cont = r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER;
-	CM_BoxTrace (&trace, start, end, zero, zero, 0, cont);
+	CM_BoxTrace (&trace, start, end, NULL, NULL, 0, cont);
 	if (!(r_surfinfo->integer & 2))
 		CL_EntityTrace (&trace, start, end, zero, zero, cont);
 
@@ -667,7 +667,7 @@ static void DrawOriginInfo (void)
 }
 
 
-extern int fileFromPak;
+extern bool fileFromPak;
 
 //#define SMOOTH_FPS_COUNTER
 
@@ -722,7 +722,7 @@ static void DrawFpsInfo (void)
 #endif
 	}
 	else
-		fileFromPak = 0;
+		fileFromPak = false;
 
 	lastFrameTime = time;
 
@@ -754,7 +754,6 @@ static void FixWaterVis (void)
 	int			cont;		// its contents
 	int			w, w1;		// "in water" flag
 	trace_t		trace;
-	static const vec3_t zero = {0, 0, 0};
 
 	if (cl.refdef.rdflags & RDF_THIRD_PERSON)
 		w1 = CM_PointContents (cl.refdef.vieworg, 0) & MASK_WATER;	// need to recompute UNDERWATER flag
@@ -784,9 +783,9 @@ static void FixWaterVis (void)
 
 	// trace from air to water
 	if (!w1)
-		CM_BoxTrace (&trace, cl.refdef.vieworg, p, zero, zero, 0, MASK_WATER);
+		CM_BoxTrace (&trace, cl.refdef.vieworg, p, NULL, NULL, 0, MASK_WATER);
 	else
-		CM_BoxTrace (&trace, p, cl.refdef.vieworg, zero, zero, 0, MASK_WATER);
+		CM_BoxTrace (&trace, p, cl.refdef.vieworg, NULL, NULL, 0, MASK_WATER);
 	if (trace.fraction < 1.0f && !(trace.surface->flags & (SURF_TRANS33|SURF_TRANS66)))
 	{
 //		RE_DrawTextLeft ("WATER FIX!", 1, 1, 1);
@@ -813,7 +812,7 @@ static int entitycmpfnc (const entity_t *a, const entity_t *b)
 }
 
 
-bool V_RenderView (float stereo_separation)
+bool V_RenderView (void)
 {
 	guard(V_RenderView);
 
@@ -877,15 +876,6 @@ bool V_RenderView (float stereo_separation)
 			cl.refdef.blend[3] = 0.5;
 		}
 
-		// offset vieworg appropriately if we're doing stereo separation
-		if (stereo_separation)
-		{
-			vec3_t tmp;
-
-			VectorScale (cl.v_right, stereo_separation, tmp);
-			VectorAdd (cl.refdef.vieworg, tmp, cl.refdef.vieworg);
-		}
-
 		// debug output
 		if (r_playerpos->integer)	DrawOriginInfo ();
 		if (r_surfinfo->integer)	DrawSurfInfo ();
@@ -936,6 +926,9 @@ bool V_RenderView (float stereo_separation)
 	}
 
 	RE_RenderFrame (&cl.refdef);
+	if (cl.refdef.blend[3])
+		RE_Fill (cl.refdef.x, cl.refdef.y, cl.refdef.width, cl.refdef.height,
+			RGBAS(cl.refdef.blend[0], cl.refdef.blend[1], cl.refdef.blend[2], cl.refdef.blend[3]));
 
 	// stats
 	if (r_drawfps->integer)

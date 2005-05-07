@@ -23,9 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 cvar_t	*freelook;
 
-cvar_t	*cl_stereo_separation;
-cvar_t	*cl_stereo;
-
 cvar_t	*rcon_client_password;
 cvar_t	*rcon_address;
 
@@ -1105,12 +1102,10 @@ Writes key bindings and archived cvars to config.cfg
 */
 void CL_WriteConfiguration (char *filename)
 {
-	FILE	*f;
-
 	if (cls.state == ca_uninitialized)
 		return;
 
-	f = fopen (va("%s/%s", FS_Gamedir(), filename), "w");
+	FILE *f = fopen (va("%s/%s", FS_Gamedir(), filename), "w");
 	if (!f)
 	{
 		Com_Printf ("Couldn't write %s.\n", filename);
@@ -1154,9 +1149,6 @@ CL_InitLocal
 static void CL_InitLocal (void)
 {
 CVAR_BEGIN(vars)
-	CVAR_VAR(cl_stereo_separation, 0.4, CVAR_ARCHIVE),
-	CVAR_VAR(cl_stereo, 0, 0),
-
 	CVAR_FULL(&cl_add_blend, "cl_blend", "1", 0),
 	CVAR_FULL(&cl_add_lights, "cl_lights", "1", 0),
 	CVAR_FULL(&cl_add_particles, "cl_particles", "1", 0),
@@ -1313,7 +1305,10 @@ void CL_Frame (float msec, float realMsec)
 
 	if (!timedemo->integer)			// ignore cl_maxfps in timedemo
 	{
-		int maxFps = (cls.key_dest == key_game) ? cl_maxfps->integer : MAX_GUI_FPS;
+		int maxFps = cl_maxfps->integer;
+		if (cls.key_dest != key_game &&	// GUI is active
+			(!cl_maxfps->integer || cl_maxfps->integer > MAX_GUI_FPS))
+			maxFps = MAX_GUI_FPS;
 		// here extratime can be accumulated between frames
 		if (maxFps > 0 && extratime_real < 1000.0f / maxFps)	// ignore when cl_maxfps==0
 			return;					// framerate is too high
@@ -1358,7 +1353,7 @@ void CL_Frame (float msec, float realMsec)
 	CL_PredictMovement ();
 
 	// allow rendering DLL change
-	Vid_CheckChanges ();
+	Vid_Tick ();
 	if (!cl.refresh_prepped && cls.state == ca_active)
 		CL_PrepRefresh ();
 

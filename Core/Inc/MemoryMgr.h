@@ -45,11 +45,6 @@ public:
 	void *operator new (size_t size, int dataSize = MEM_CHUNK_SIZE);
 	// deleting chain
 	void operator delete (void *ptr);
-	// allocating block from chain
-	friend void *operator new (size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
-	{
-		return chain->Alloc (size, alignment);
-	};
 #if MEM_DEBUG
 	friend int BuildAllocatorsTable (void *info, int maxCount);
 #endif
@@ -63,17 +58,26 @@ inline void *operator new (size_t size)
 	return appMalloc (size, 1);
 }
 
-
 inline void *operator new (size_t size, int alignment)
 {
 	return appMalloc (size, alignment);
 }
-
 
 inline void operator delete (void *ptr)
 {
 	appFree (ptr);
 }
 
+// allocating block from chain
+inline void *operator new (size_t size, CMemoryChain *chain, int alignment = DEFAULT_ALIGNMENT)
+{
+	return chain->Alloc (size, alignment);
+};
 
-//!! add templates for any-type new() + new(chain)
+
+// hack to initialize VMT for objects, created without using "operator new"
+inline void *operator new (unsigned size, char *buffer)
+{
+	return buffer;
+}
+#define CALL_CONSTRUCTOR(obj,type)		obj = new ((char*)obj) type

@@ -290,12 +290,12 @@ static qboolean PF_AreasConnected (int area1, int area2)
 	Support for tagged memory
 -----------------------------------------------------------------------------*/
 
-typedef struct zhead_s
+struct zhead_t
 {
-	struct zhead_s *prev, *next;
+	zhead_t	*prev, *next;
 	short	tag;
 	int		size;		// for stats only
-} zhead_t;
+};
 
 static zhead_t	z_chain = {&z_chain, &z_chain};
 static int		z_count, z_bytes;

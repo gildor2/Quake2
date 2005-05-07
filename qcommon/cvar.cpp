@@ -464,18 +464,6 @@ float Cvar_Clamp (cvar_t *cvar, float low, float high)
 	return cvar->value;
 }
 
-//?? used from menu.cpp only
-float Cvar_ClampName (const char *name, float low, float high)
-{
-	cvar_t	*var = Cvar_FindVar (name);
-	if (!var)
-	{
-		Cvar_SetValue (name, low);
-		return low;
-	}
-	return Cvar_Clamp (var, low, high);
-}
-
 /*
 ============
 Cvar_GetLatchedVars

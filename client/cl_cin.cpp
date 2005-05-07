@@ -27,7 +27,7 @@ typedef struct
 	unsigned palette[256];
 
 	// file data
-	FILE	*file;						// if NULL, display pic
+	QFILE	*file;						// if NULL, display pic
 	char	imageName[MAX_OSPATH];		// used for "map image.pcx"
 
 	int		frame;
@@ -88,7 +88,7 @@ static int SmallestNode1 (int numhnodes, bool *h_used, int *h_count)
 static void InitHuffTable (void)
 {
 	//?? if make cin dynamically allocated, can place huffNodes[] as static
-	cin.huffNodes = (int*) appMalloc (256*256*2*sizeof(int));		// 128K integers
+	cin.huffNodes = new int [256*256*2];		// 128K integers
 	memset (cin.huffNodes, 0, 256*256*2*sizeof(int));
 
 	for (int prev = 0; prev < 256; prev++)
@@ -174,10 +174,10 @@ static void HuffDecompress (cblock_t *in, cblock_t *out, byte *buffer, int count
 
 static void FreeCinematic (void)
 {
-	if (cin.buf[0])		appFree (cin.buf[0]);
-	if (cin.buf[1])		appFree (cin.buf[1]);
+	if (cin.buf[0])		delete cin.buf[0];
+	if (cin.buf[1])		delete cin.buf[1];
 	if (cin.file)		FS_FCloseFile (cin.file);
-	if (cin.huffNodes)	appFree (cin.huffNodes);
+	if (cin.huffNodes)	delete cin.huffNodes;
 	if (cin.restartSound) CL_Snd_Restart_f ();
 	memset (&cin, 0, sizeof(cin));
 
@@ -341,7 +341,7 @@ void SCR_PlayCinematic (char *filename)
 	// make sure CD isn't playing music
 	CDAudio_Stop ();
 
-	if (*re.flags & REF_CONSOLE_ONLY)
+	if (RE_GetCaps() & REF_CONSOLE_ONLY)
 	{
 		// no cinematic for text-only mode
 		SCR_StopCinematic ();
@@ -356,10 +356,15 @@ void SCR_PlayCinematic (char *filename)
 		// not ".cin" extension - try static image
 		appCopyFilename (cin.imageName, filename, sizeof(cin.imageName));
 		cin.imageName[ext - filename] = 0;	// cut extension
-		RE_DrawGetPicSize (&cin.width, &cin.height, cin.imageName);
-		if (!cin.width)
+		CBasicImage *img = RE_RegisterPic (cin.imageName);
+		if (img)
 		{
-			Com_WPrintf ("%s not found.\n", filename);
+			cin.width = img->width;
+			cin.height = img->height;
+		}
+		else
+		{
+			Com_WPrintf ("%s not found\n", filename);
 			SCR_StopCinematic ();			// launch next server
 			return;
 		}
@@ -367,7 +372,7 @@ void SCR_PlayCinematic (char *filename)
 	else
 	{
 		// .cin file
-		FS_FOpenFile (va("video/%s", filename), &cin.file);
+		cin.file = FS_FOpenFile (va("video/%s", filename));
 		if (!cin.file)
 		{
 			Com_DPrintf ("Cinematic %s not found\n", filename);
@@ -382,8 +387,8 @@ void SCR_PlayCinematic (char *filename)
 		cin.s_channels = ReadCinInt ();
 
 		cin.frameSize = cin.width * cin.height;
-		cin.buf[0] = (byte*) appMalloc (cin.frameSize);
-		cin.buf[1] = (byte*) appMalloc (cin.frameSize);
+		cin.buf[0] = new byte [cin.frameSize];
+		cin.buf[1] = new byte [cin.frameSize];
 		cin.activeBuf = 0;
 
 		InitHuffTable ();

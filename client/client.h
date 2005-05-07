@@ -79,11 +79,11 @@ typedef struct
 {
 	char	name[MAX_QPATH];
 	char	cinfo[MAX_QPATH];
-	image_t	*skin;
-	image_t	*icon;
+	CBasicImage	*skin;
+	CBasicImage	*icon;
 	char	iconname[MAX_QPATH];
-	model_t	*model;
-	model_t	*weaponmodel[MAX_CLIENTWEAPONMODELS];
+	CRenderModel *model;
+	CRenderModel *weaponmodel[MAX_CLIENTWEAPONMODELS];
 } clientinfo_t;
 
 extern char cl_weaponmodels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
@@ -164,11 +164,11 @@ typedef struct
 	//
 	// locally derived information from server state
 	//
-	model_t	*model_draw[MAX_MODELS];
+	CRenderModel	*model_draw[MAX_MODELS];
 	cmodel_t *model_clip[MAX_MODELS];
 
 	sfx_t	*sound_precache[MAX_SOUNDS];
-	image_t	*image_precache[MAX_IMAGES];
+	CBasicImage	*image_precache[MAX_IMAGES];
 
 	clientinfo_t clientinfo[MAX_CLIENTS];
 	clientinfo_t baseclientinfo;
@@ -250,9 +250,6 @@ extern client_static_t	cls;
 //
 // cvars
 //
-extern	cvar_t	*cl_stereo_separation;
-extern	cvar_t	*cl_stereo;
-
 extern	cvar_t	*cl_gun;
 extern	cvar_t	*cl_add_blend;
 extern	cvar_t	*cl_add_lights;
@@ -319,7 +316,7 @@ extern	sizebuf_t	net_message;
 
 #define MAX_SUSTAINS		32
 //ROGUE
-typedef struct cl_sustain_s
+struct cl_sustain_t
 {
 	int		id;
 	int		type;
@@ -331,8 +328,8 @@ typedef struct cl_sustain_s
 	int		color;
 	int		count;
 	int		magnitude;
-	void	(*think)(struct cl_sustain_s *self);
-} cl_sustain_t;
+	void	(*think)(cl_sustain_t *self);
+};
 
 
 //---------------- particles ---------------------
@@ -440,9 +437,6 @@ void CL_ParseLayout (void);
 void CL_AddEntityBox (entityState_t *st, unsigned rgba);
 
 
-extern refExport_t re;			// interface to refresh .dll
-#include "rexp_defs.h"
-
 //
 // cl_main.cpp
 //
@@ -509,12 +503,12 @@ void CL_ParseClientinfo (int player);
 //
 #ifdef GUN_DEBUG
 extern	int		gun_frame;
-extern	model_t	*gun_model;
+extern	CRenderModel *gun_model;
 #endif
 
 void V_Init (void);
 void CL_PrepRefresh (void);
-bool V_RenderView (float stereo_separation);
+bool V_RenderView (void);
 void V_AddEntity (entity_t *ent);
 void V_AddLight (vec3_t org, float intensity, float r, float g, float b);
 

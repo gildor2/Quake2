@@ -1,9 +1,19 @@
+- "dirty": "newgame" from menu: "loading" will appear, but new game not started (no alias)
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
    (saved without shot) but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?) -- should be at least dlights ?? (or not?)
 - baseq2, "rhino" model, singleplayer (multiplayer not tested): when changing rhino skin, in 3rd person will appear "(no model)" 3D-label
   for weapon (have no VWEP, have minimal "weapon.md2" only) -- Q2 analyzes VWEP presence on game initialization only, and don't recheck
   on model/skin change ?!
+- when game paused: moving mouse will not rotate view, but when game unpaused -- will rotate to moved amount (should not rotate)
+
+- timing:
+  - after power sleep/resume FPS counter will be incorrect
+  - drizzle of movement (for example, "jump" action, 3rd person) with timescale=0.01
+  ? may be, use appCycles() in most places (at least, in WinMain()::MainLoop) instead of appMilliseconds() -- will require to implement
+    this for non-Pentium (RDTSC) platforms
+  ? check sync of float/int versions of appMilliseconds
+  ? for testing: may set small timescale, and display graph of local time (frame frac) -- should be smooth (not ladder/sawtooth)
 
 - bugs with deathmatch mode
   - map "dm_dukecity_beta":
@@ -68,7 +78,7 @@ HARDWARE:
     letters); no bug with DXT5
 ? texture rectangle (ATI; NV untested): when "*video" created as regular texture and uploaded as rect texture, after displaying
   video (exec alias "d1" -- video+demo) when level loading, displayed black rect instead of "loading" banner
-- notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move
+? notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move
   crouched)
 
 SOURCE FILES (COMPILER):
@@ -78,6 +88,5 @@ SOURCE FILES (COMPILER):
     and will display warning C4715 (not all control paths return value)
   - FS_LoadFile(filename, &len) have arg "unsigned *len"; using this via structure will produce warning C4700
     (local variable used without having been initialized)
-- (VisualC++ 7) -- cannot use default arguments for functions, which are part of structure (client/ref.h :: refExport_t have few one)
-  May be fixed: should use RE_Func() inline (with default args) instead of re.Func() call; this will allow to not use refExport_t
-  at all when compiled with SINGLE_RENDERER (should make #define to convert RE_Func() to R_Func() ...)
+- (VisualC++ 7) -- cannot use default arguments for functions, which are part of structure
+  Workaround: should use Struc_Func() inline (with default args) instead of struc.Func() call

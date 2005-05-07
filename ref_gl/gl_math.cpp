@@ -2,6 +2,9 @@
 #include "gl_math.h"
 
 
+namespace OpenGLDrv {
+
+
 /*----- Tables for fast periodic function computation -----*/
 
 float sinTable[TABLE_SIZE], squareTable[TABLE_SIZE], triangleTable[TABLE_SIZE],
@@ -23,7 +26,7 @@ int   noiseTablei[256];
 float noiseTablef[256];
 
 
-void GL_InitFuncTables (void)
+void InitFuncTables (void)
 {
 	int		i, n;
 
@@ -273,3 +276,6 @@ void SaturateColor4b (color_t *c)
 		c->c[2] = appRound (b);
 	}
 }
+
+
+} // namespace

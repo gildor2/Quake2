@@ -16,15 +16,15 @@
 #	endif
 #	ifndef WINGDIAPI
 #		define WINGDIAPI
-		typedef unsigned HDC;
-		typedef unsigned HGLRC;
-		typedef const char * LPCSTR;
-		typedef int BOOL;
-		typedef unsigned char BYTE;
-		typedef unsigned short WORD;
-		typedef unsigned int UINT;
+		typedef unsigned		HDC;
+		typedef unsigned		HGLRC;
+		typedef const char *	LPCSTR;
+		typedef int				BOOL;
+		typedef unsigned char	BYTE;
+		typedef unsigned short	WORD;
+		typedef unsigned int	UINT;
 		typedef int (APIENTRY *PROC)();
-		typedef void PIXELFORMATDESCRIPTOR;	// structure
+		typedef void PIXELFORMATDESCRIPTOR;		// structure
 		typedef PIXELFORMATDESCRIPTOR * LPPIXELFORMATDESCRIPTOR;
 #	endif // WINGDIAPI
 #	ifndef CONST
@@ -40,25 +40,30 @@
 
 // Obsolete (missing in standard headers), but still supported extensions
 /* SGIS_multitexture */
-#define GL_SELECTED_TEXTURE_SGIS          0x835C
-#define GL_MAX_TEXTURES_SGIS              0x835D
-#define GL_TEXTURE0_SGIS                  0x835E
-#define GL_TEXTURE1_SGIS                  0x835F
-#define GL_TEXTURE2_SGIS                  0x8360
-#define GL_TEXTURE3_SGIS                  0x8361
+#define GL_SELECTED_TEXTURE_SGIS	0x835C
+#define GL_MAX_TEXTURES_SGIS		0x835D
+#define GL_TEXTURE0_SGIS			0x835E
+#define GL_TEXTURE1_SGIS			0x835F
+#define GL_TEXTURE2_SGIS			0x8360
+#define GL_TEXTURE3_SGIS			0x8361
 
-
-#include "qgl_decl.h"
 
 #include "qcommon.h"
 #include "../client/ref.h"
 
 
+namespace OpenGLDrv {
+
+#include "qgl_decl.h"
+
 bool	QGL_Init (const char *libName);
+void	QGL_Shutdown (void);
+
 void	QGL_InitExtensions (void);
 void	QGL_PrintExtensionsString (const char *label, const char *str, const char *mask = NULL);
-void	QGL_Shutdown (void);
-// logging
+
+void	QGL_SwapBuffers (void);
+
 void	QGL_EnableLogging (bool enable);
 void	QGL_LogMessage (const char *text);
 #define LOG_STRING(str)		if (gl_logFile->integer) QGL_LogMessage (str);
@@ -68,22 +73,22 @@ void	QGL_LogMessage (const char *text);
 extern unsigned vid_width, vid_height;
 
 // forwards
-struct viewPortal_t;
-struct refEntity_t;
-struct image_t;
-struct shader_t;
-struct model_t;
+class image_t;
+class model_t;
 struct surfaceCommon_t;
 struct surfacePlanar_t;
 struct dynamicLightmap_t;
+struct viewPortal_t;
+struct refEntity_t;
+class shader_t;
 
 
 #include "gl_interface.h"
 
 
-/*------------- gl_main.c -------------------*/
+/*----------------- gl_main.c -------------------*/
 
-extern bool gl_renderingEnabled;
+extern bool renderingEnabled;
 void GL_EnableRendering (bool enable);
 
 
@@ -112,7 +117,7 @@ typedef struct
 } glrefdef_t;
 
 
-//!! need to perform clearing this struc with "memset()" (clear all fields in one place)
+//!! need to perform clearing this struc with "memset()" (clear all fields at once)
 typedef struct
 {
 	// geometry complexity
@@ -139,7 +144,7 @@ extern glrefdef_t  gl_refdef;	//!! used from gl_frontend.c :: MarkLeaves() only 
 extern drawSpeeds_t gl_speeds;
 
 
-void	GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h,
+void	DrawStretchPic (shader_t *shader, int x, int y, int w, int h,
 			float s1 = 0, float t1 = 0, float s2 = 1, float t2 = 1,
 			unsigned color = RGB(1,1,1), byte flipMode = 0);
 void	DrawTextPos (int x, int y, const char *text, unsigned rgba);
@@ -150,10 +155,9 @@ void	DrawText3D (vec3_t pos, const char *text, unsigned rgba);
 
 /*---- Implementation-specific functions ----*/
 
-void	GLimp_SwapBuffers (void);
 bool	GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscreen);
 void	GLimp_Shutdown (bool complete);
-void	GLimp_AppActivate (bool active);
+void	AppActivate (bool active);
 
 bool	GLimp_HasGamma (void);
 void	GLimp_SetGamma (float gamma);
@@ -199,5 +203,7 @@ extern cvar_t	*gl_showFillRate;
 extern cvar_t	*gl_znear;
 extern cvar_t	*gl_swapinterval;
 
+
+} // namespace
 
 #endif

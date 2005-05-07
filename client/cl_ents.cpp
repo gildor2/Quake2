@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 
 
-extern	model_t	*cl_mod_powerscreen;
+extern	CRenderModel	*cl_mod_powerscreen;
 
 /*
 =========================================================================
@@ -403,11 +403,11 @@ INTERPOLATE BETWEEN FRAMES TO GET RENDERING PARMS
 ==========================================================================
 */
 
-model_t *S_RegisterSexedModel (entityState_t *ent, char *base)
+CRenderModel *S_RegisterSexedModel (entityState_t *ent, char *base)
 {
 	int		n;
 	char	*p, model[MAX_QPATH];
-	model_t *mdl;
+	CRenderModel *mdl;
 
 	// determine what model the client is using
 	model[0] = 0;

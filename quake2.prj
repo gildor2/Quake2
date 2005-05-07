@@ -10,6 +10,7 @@ COMPILER = VisualC
 	OPTIMIZE  = size
 	STDLIBS   = kernel32 user32 gdi32
 #	LIBC      = static
+#	PDB       = 1
 !endif
 
 OUT = Release
@@ -121,7 +122,7 @@ DED_WIN32 = \
 	$D/sys_win.cpp
 
 # Win32 renderer files
-GL_RENDERER  +=  $D/qgl_win.cpp  $D/glw_imp.cpp
+GL_RENDERER  +=  $D/qgl_win.cpp  $D/gl_win.cpp
 
 # Win32 resources
 WIN32_FILES += $D/q2.rc
@@ -132,7 +133,8 @@ RES_FILES = \
 	resource/makeres.asm
 
 
-INCLUDES = Core/Inc qcommon
+INCLUDES  = SDK/include Core/Inc qcommon
+LIBRARIES = SDK/lib
 
 #------------------------------------------------------------------------------
 # static build
@@ -141,11 +143,11 @@ DEFINES = STATIC_BUILD CORE_API=
 OBJDIR  = $OUT/obj/CoreStatic
 sources(STATIC) = $CORE $CORE_WIN32
 
-DEFINES = STATIC_BUILD CORE_API=
+DEFINES = STATIC_BUILD CORE_API= SINGLE_RENDERER	#?? SINGLE_RENDERER -- check when will be 2+ renderers
 OBJDIR  = $OUT/obj/q2stat
 sources(STATIC) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER
 
-LIBS = winmm wsock32 dinput lib/lib
+LIBS = winmm lib/lib
 target(executable, $OUT/quake2, STATIC, STATIC)
 
 #------------------------------------------------------------------------------
@@ -163,7 +165,7 @@ target(shared, $OUT/Core, CORE, DYNAMIC)
 
 #----------------------------
 
-LIBS = winmm wsock32 dinput lib/lib $OUT/Core
+LIBS = winmm lib/lib $OUT/Core
 
 DEFINES = CORE_API=DLL_IMPORT
 OBJDIR  = $OUT/obj/q2dyn
@@ -182,6 +184,8 @@ sources(DYN_GL) = $GL_RENDERER qcommon/q_shared2.cpp client/ref_vars.cpp
 
 target(shared, $OUT/ref_gl, DYN_GL, DYNAMIC)
 
+#!! + dedicated
+
 !endif				#!!!! shared
 
 #------------------------------------------------------------------------------
@@ -195,5 +199,5 @@ DEFINES = STATIC_BUILD CORE_API= DEDICATED_ONLY
 OBJDIR  = $OUT/obj/dedstat
 sources(DEDICATED) = $DED_CLIENT $SERVER $COMMON $DED_WIN32 $RES_FILES
 
-LIBS = winmm wsock32 lib/lib
+LIBS = winmm lib/lib
 target(executable, $OUT/q2ded, DEDICATED, DEDICATED)

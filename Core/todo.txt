@@ -1,0 +1,20 @@
+SOURCE CODE
+~~~~~~~~~~~
+- APPNAME: replace with func appName() -- get info from argv[0] (or GAppName -- name of primary package; init with IMPLEMENT_PRIMARY_PACKAGE()) or appInit()
+- Core/Build.h contains non-core consts (game-related stuff)
+- Little/Big-Endian
+  - use LITTLE_ENDIAN/BIG_ENDIAN defines (not run-time detection !)
+  - use inline overloaded functions: LITTLE(short|ushort|int|uint|float), BIG(...)
+- appStrcpy, strncpy, strcmp, stricmp -> CRT functions (when required, can make #define strcpy appStrcpy ...)
+
+COMPILER BUGS
+~~~~~~~~~~~~~
+- guard/unguard [Slow] not always added: not works for strings.cpp :: appStrcmp(), appStrcpy() etc. (small functions)
+
+TOOL:
+~~~~~
+? LockVer/UnlockVer - will disable/enable version increment (should display warning during building with disabled version) -
+  - OR:
+  ! check current date/time, and disable version increment when distance between builds smaller than N minutes
+    - always update build date/time, but update version only when time from previous build is large enough (but: do
+      not update when building from empty dirs - not rebuilding)

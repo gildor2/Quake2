@@ -1,20 +1,18 @@
-/*!! TODO:
- *	- Linux: if gl_finish!=0 required (see gl_main.cpp::GL_Init() -- can force
- *		glFinish() on begin or end of frame (check this!))
- *  - UT BeginFrame / EndFrame (SwapBuffers) -- Lock / Unlock
- */
-
 #define WIN32_LEAN_AND_MEAN			// exclude rarely-used services from windown headers
 #include <windows.h>				// need this include, because have wgl and GDI functions in gl.h
 
 #include "../ref_gl/gl_local.h"
-#include "glw_win.h"
+#include "gl_win.h"
 
-glwstate_t glw_state;
-
-static bool minidriver;
 
 extern bool FullscreenApp;	//!! cannot be accessed when !STATIC_BUILD
+
+
+namespace OpenGLDrv {
+
+
+static HWND gl_hWnd;
+HDC			gl_hDC;
 
 
 /*-----------------------------------------------------------------------------
@@ -49,7 +47,7 @@ static void ReadGamma (void)
 }
 
 
-// Called from GLimp_Shutdown() and GLimp_AppActivate()
+// Called from GLimp_Shutdown() and AppActivate()
 static void RestoreGamma (void)
 {
 	if (!gammaStored) return;
@@ -63,13 +61,13 @@ static void RestoreGamma (void)
 }
 
 
-// Called from GLimp_SetGamma() and GLimp_AppActivate()
+// Called from GLimp_SetGamma() and AppActivate()
 static void UpdateGamma (void)
 {
 //	DebugPrintf("updata gamma\n");//!!
 	if (!gammaValid) return;
-	SetDeviceGammaRamp (glw_state.hDC, newGamma);
-//	if (!SetDeviceGammaRamp (glw_state.hDC, newGamma))
+	SetDeviceGammaRamp (gl_hDC, newGamma);
+//	if (!SetDeviceGammaRamp (gl_hDC, newGamma))
 //		DebugPrintf ("Cannot update gamma!\n");	//!!
 }
 
@@ -156,7 +154,7 @@ static bool		contextActive;
 static bool CreateGLcontext (void)
 {
 	contextActive = false;
-	if (!(contextHandle = wglCreateContext (glw_state.hDC)))
+	if (!(contextHandle = wglCreateContext (gl_hDC)))
 	{
 		Com_WPrintf ("...CreateGLcontext() failed\n");
 		return false;
@@ -169,7 +167,7 @@ static bool ActivateGLcontext (void)
 {
 	if (contextActive) return true;
 	// 1st - activate context, 2nd - enable rendering
-	if (!wglMakeCurrent (glw_state.hDC, contextHandle))
+	if (!wglMakeCurrent (gl_hDC, contextHandle))
 	{
 		Com_WPrintf ("...ActivateGLcontext() failed\n");
 		return false;
@@ -184,7 +182,7 @@ static bool DeactivateGLcontext (void)
 {
 	if (!contextActive) return true;
 	GL_EnableRendering (false);
-	if (!wglMakeCurrent (glw_state.hDC, NULL))
+	if (!wglMakeCurrent (gl_hDC, NULL))
 	{
 		Com_WPrintf ("...DeactivateGLcontext() failed\n");
 		return false;
@@ -237,61 +235,19 @@ static bool GLimp_SetPixelFormat (void)
 	};
 	PIXELFORMATDESCRIPTOR pfd;
 	int		pixelformat;
-/* ??	cvar_t *stereo;
 
-	stereo = Cvar_Get( "cl_stereo", "0", 0 );
+	if ((pixelformat = wglChoosePixelFormat (gl_hDC, &pfdBase)) == 0)
+	{
+		Com_WPrintf ("(wgl)ChoosePixelFormat() failed\n");
+		return false;
+	}
+	if (wglSetPixelFormat (gl_hDC, pixelformat, &pfdBase) == FALSE)
+	{
+		Com_WPrintf ("(wgl)SetPixelFormat() failed\n");
+		return false;
+	}
+	wglDescribePixelFormat (gl_hDC, pixelformat, sizeof(pfd), &pfd);
 
-	// set PFD_STEREO if necessary
-	if ( stereo->integer )
-	{
-		Com_Printf ("...attempting to use stereo\n");
-		pfdBase.dwFlags |= PFD_STEREO;
-		gl_state.stereo_enabled = true;
-	}
-	else
-	{
-		gl_state.stereo_enabled = false;
-	}
-*/
-
-	if (minidriver)
-	{
-		if ((pixelformat = wglChoosePixelFormat (glw_state.hDC, &pfdBase)) == 0)
-		{
-			Com_WPrintf ("wglChoosePixelFormat() failed\n");
-			return false;
-		}
-		if (wglSetPixelFormat (glw_state.hDC, pixelformat, &pfdBase) == FALSE)
-		{
-			Com_WPrintf ("wglSetPixelFormat() failed\n");
-			return false;
-		}
-		wglDescribePixelFormat (glw_state.hDC, pixelformat, sizeof(pfd), &pfd);
-	}
-	else
-	{
-		if ((pixelformat = ChoosePixelFormat (glw_state.hDC, &pfdBase)) == 0)
-		{
-			Com_WPrintf ("ChoosePixelFormat() failed\n");
-			return false;
-		}
-		if (SetPixelFormat (glw_state.hDC, pixelformat, &pfdBase) == FALSE)
-		{
-			Com_WPrintf ("SetPixelFormat() failed\n");
-			return false;
-		}
-
-		DescribePixelFormat (glw_state.hDC, pixelformat, sizeof(pfd), &pfd);
-	}
-
-/* ??	// report if stereo is desired but unavailable
-	if (!(pfd.dwFlags & PFD_STEREO) && stereo->integer)
-	{
-		Com_WPrintf ("...failed to select stereo pixel format\n");
-		Cvar_SetInteger ("cl_stereo", 0);
-		gl_state.stereo_enabled = false;
-	}
-*/
 	// startup the OpenGL subsystem by creating a context and making it current
 	if (!CreateGLcontext ()) return false;
 	if (!ActivateGLcontext ()) return false;
@@ -310,27 +266,19 @@ static bool GLimp_SetPixelFormat (void)
 
 static bool GLimp_InitGL (void)
 {
-	// figure out if we're running on a minidriver or not
-	if (gl_driver->IsDefault())				// compare with opengl32.dll
-		minidriver = false;
-	else
-	{
-		Com_Printf ("...minidriver detected\n");
-		minidriver = true;
-	}
-
-	// Get a DC for the specified window
-	if ((glw_state.hDC = GetDC (glw_state.hWnd)) == NULL)
+	// get a DC for the specified window
+	if ((gl_hDC = GetDC (gl_hWnd)) == NULL)
 	{
 		Com_WPrintf ("...GetDC() failed\n");
 		return false;
 	}
 
+	// set pixel format and create GL context
 	if (!GLimp_SetPixelFormat ())
 	{
 		DestoryGLcontext ();
-		ReleaseDC (glw_state.hWnd, glw_state.hDC);
-		glw_state.hDC = NULL;
+		ReleaseDC (gl_hWnd, gl_hDC);
+		gl_hDC = NULL;
 		return false;
 	}
 
@@ -351,7 +299,7 @@ bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 	Com_Printf ("Mode %d: %dx%d (%s)\n", mode, width, height, fullscreen ? "fullscreen" : "windowed");
 
 	// destroy the existing window
-	if (glw_state.hWnd)
+	if (gl_hWnd)
 		GLimp_Shutdown (false);
 
 	colorBits = gl_bitdepth->integer;
@@ -415,8 +363,8 @@ bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 	*pheight = height;
 	gl_config.fullscreen = fullscreen;
 
-	glw_state.hWnd = (HWND) Vid_CreateWindow (width, height, fullscreen);
-	if (!glw_state.hWnd) return false;
+	gl_hWnd = (HWND) Vid_CreateWindow (width, height, fullscreen);
+	if (!gl_hWnd) return false;
 	if (!GLimp_InitGL ()) return false;	//?? may try to DestroyWindow(force) + CreateWindow() again
 
 	// init gamma
@@ -431,17 +379,17 @@ void GLimp_Shutdown (bool complete)
 {
 	RestoreGamma ();
 
-	Com_Printf ("...performing shutdown\n");
+	Com_Printf ("Performing GL shutdown\n");
 	DestoryGLcontext ();
-	if (glw_state.hDC)
+	if (gl_hDC)
 	{
-		if (!ReleaseDC (glw_state.hWnd, glw_state.hDC))
+		if (!ReleaseDC (gl_hWnd, gl_hDC))
 			Com_WPrintf ("...ReleaseDC() failed\n");
-		glw_state.hDC = NULL;
+		gl_hDC = NULL;
 	}
 
 	Vid_DestroyWindow (true); //?? (gl_bitdepth->modified);
-	glw_state.hWnd = NULL;
+	gl_hWnd = NULL;
 
 	if (gl_config.fullscreen)
 	{
@@ -456,45 +404,19 @@ void GLimp_Shutdown (bool complete)
 
 
 /*-----------------------------------------------------------------------------
-	Miscellaneous
+	Activation/deactivation of application
 -----------------------------------------------------------------------------*/
 
-void GLimp_SwapBuffers (void)
-{
-	LOG_STRING("// GLimp_SwapBuffers()\n");
-	// swapinterval stuff
-	int ret;
-	if (gl_swapinterval->modified)
-	{
-		gl_swapinterval->modified = false;
-		if (/*?? !gl_state.stereoEnabled &&*/ GL_SUPPORT(QWGL_EXT_SWAP_CONTROL))
-			wglSwapIntervalEXT (gl_swapinterval->integer);
-	}
-
-	if (!minidriver)
-	{
-		LOG_STRING("SwapBuffers()\n");
-		ret = SwapBuffers (glw_state.hDC);
-	}
-	else
-	{
-		// use wglSwapBuffers() for miniGL and Voodoo
-		ret = wglSwapBuffers (glw_state.hDC);
-	}
-	if (!ret) Com_FatalError ("GLimp_SwapBuffers(): SwapBuffers() failed!\n");
-}
-
-
-void GLimp_AppActivate (bool active)
+void AppActivate (bool active)
 {
 	if (active)
 	{
-		SetForegroundWindow (glw_state.hWnd);
-		ShowWindow (glw_state.hWnd, SW_RESTORE);
+		SetForegroundWindow (gl_hWnd);
+		ShowWindow (gl_hWnd, SW_RESTORE);
 		if (FullscreenApp)
 		{
 			ActivateGLcontext ();
-			SetWindowPos (glw_state.hWnd, 0, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
+			SetWindowPos (gl_hWnd, 0, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
 		}
 		// update gamma
 #if 0
@@ -507,9 +429,12 @@ void GLimp_AppActivate (bool active)
 	{
 		if (FullscreenApp)
 		{
-			ShowWindow (glw_state.hWnd, SW_MINIMIZE);
+			ShowWindow (gl_hWnd, SW_MINIMIZE);
 			DeactivateGLcontext ();
 		}
 		RestoreGamma ();
 	}
 }
+
+
+} // namespace

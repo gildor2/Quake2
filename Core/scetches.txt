@@ -1,0 +1,143 @@
+? #define for_each(var,list)		for (var=list->First(); var; var=list->Next(var))
+          for_each2(type,var,list)	for (type *var=list->First(); var; var=list->Next(var))
+
+FILE SYSTEM
+~~~~~~~~~~~
+? special syntax: "pakname:path/filename.ext" -- ability to access explicit pak file
+   ?? need to distinguish files, which are REPLACED with another paks, or which will be added to list with unique name
+      (example: extensions to shader scripts ?) -- may be, unneeded, because we can make files with more complex names
+      ("path/pakname_name" etc)
+- CFileList *ListFiles(pattern,flags)
+   - flags: PAK,OS,FILES,DIRS  (PAK|OS <> 0 && DIRS|FILES <> 0 ! will return empty list otherwise)
+      ? NO_PREV_MODS     - list current mod only (ignored for basedir)
+      ? BASE_MOD         - list basedir only
+      - FULL_NAMES       - path + name  (PATH_NAMES ??)
+      ? NO_EXTENSION     - name without extension
+      ? RECURSE_SUBDIRS  - look in subdirectories; +special case for !FULL_NAMES - keep relative path
+      ?? KEEP_DUPLICATES - name = "pak:path/name" (incompatible with !FULL_NAMES)
+      - STOP_ON_ANY_FILE - for testing of file existance (use in wrapper func -- "bool FS_FileExists(name, flags)")
+   - skip all files, which names are started with '.' (this will remove "." and ".." dirs, and allows behaviour of
+     Unix-like hidden files)
+      ? char *shortName (or SHORT_NAMES flag)
+   ? another "operator new"
+   ?? class CFileList : public CMemoryChain, public TList<CFileItem> (but: how to pass self as chain to alloc functions ?)
+   - CFileItem = class(CStringItem):
+      1) IsFile:1 (else dir), IsPak:1 (else OS)
+      2) CFileContainer *container -- can get any file info
+- CFileContainer *FileExists(name,flags) (NULL if not found)
+- MakeDirectory(name)
+   ? DeleteDirectory()
+      ? with files
+   ? should process directory trees
+- CopyFiles()
+- DeleteFiles()
+? filesystem: use TAGS instead of MOD DIRS; all functions -- supply tag: TAG_BASE, TAG_MOD, TAG_ALL
+   - this should be a bitfield, which can be passed with "flags" for CFileList creation; if no tags passed - list any tags
+   - func AddPath(path, tag)       -- will add paks too ?
+   ? func AddPaks(path/mask, tag)  -- not needed ?
+   - func DelPath(tag)
+   ?? if tags will be used for changing q2 game, can remove them at all: register function (trigger) on game changing, which will
+     enumerate all registered file containers and remove non-baseq2 (should be implemented outside Core); note: should take into
+     account CD-ROM directory (if one)
+- flag "bool fs_modified": when user was unlinked some TAG_BASE paks, this flag is set to true and when game is changed, should
+  completely unlink all files and relink base files again
+- "[un]loadpak" -> "[u]mount"; "path" -> "mount" without args; "dir" -> "ls"
+- reading files:
+   - GZip files (can auto-detect); can create such files too (special flag for FS_CreateFile() function)
+   - text files (remove CR ('\r') from stream)
+
+PACKAGE SYSTEM
+~~~~~~~~~~~~~~
+Info per package:
+* predefined (compile-time)
+   - name
+   - version information
+   ? resources (inline files)
+   ? configuration info
+      - menu items (in resources ?) -- package configuration
+      - information about package purpose (video/audio driver etc.) -- can be used for auto-registered (in config menu) drivers
+* filled during program run
+   ? allocated memory
+      - automatically released when package is unloaded
+      ? leak detection
+      - stats
+   ? opened files (mostly, unneeded)
+   - registered commands (auto-free)
+   ? cvars (free/unlink when package unloaded ?  Freeing will require config system reorganization (in comparision to Q2/Q3 etc),
+     because we must poll vars to config file and remove from memory; when package loaded -- needs to read corresponding cfg part.)
+- may be, declare stdcall DllMain() function for renderer dlls (for package) - this will
+  remove kernel::DisableThreadLibraryCalls() import
+- may be, decalre own malloc() for dll == appMalloc() (only for non-core packages + VisualC !!!) - will remove
+  malloc() call (useful only for static link of package dll with msvcrt.lib)
+- IMPLEMENT_PACKAGE() with static pkg should create dummy class with constructor ...
+   ? provide importTable[] -- name+func to replace GetProcAddress() with dynamic->static build
+   - for static build: use namespaces for package-local variables (GPackage, may be other ...); example for Core:
+     - GPackage -> Core.cpp :: namespace Core
+     - all cpp files in Core: include "CoreLocal.h" instead of "Core.h"
+     - in "CoreLocal.h": declaration of namespace Core + use namespace Core
+     ? remove GPackage at all (useless ?)
+
+SUBSYSTEMS
+~~~~~~~~~~
+? part of package (can have separate cvars)
+- register all subsystems within a global list
+- purpose: notifications:
+  - unloading package (free package core resources ?)
+  ? loading package
+  - system crush
+  - system exit (automatically deactivate all subsystems; order-dependent ??)
+
+CONFIG SYSTEM
+~~~~~~~~~~~~~
+? share cvars between packages
+   - can cache cvars: keep in memory when package unloaded (or: load all cvars on engine init.)
+   - if cached, can allow access to config of unloaded package ("set pkgname.cvarname value")
+   ? user cvars -- pkg "user"
+      - not linked to any code (created with console/script command)
+   ! should not be cvars with the same name in 2 simultaneously loaded packages (user cvars will be copied to pkg var
+     (preinitialized) and removed)
+      - need mechanism to get cvars, owned by different package (global (engine ?) cvars ??)
+   - access by simple (without "pkgname." part) name: scan packages for cvar, scan user cvars
+- storage (variants):
+   1) UT-like config with section-per-package
+      - requires to change file extension from .cfg to another (.ini) -- this is not a script file
+   2) standard quake config with names in form "pkgname.cvarname"
+   - problem: user cvars -- in which section (package) to store ?
+
+
+OPENGL (UPDATED) RENDERER
+~~~~~~~~~~~~~~~~~~~~~~~~~
+- use GL_ALPHA[xx], GL_LUMINANCE[xx] (?) texture formats for some textures (auto-detect format)
+- add GL_ARB_vertex_buffer_object extension (at least for model tex coords)
+
+
+COMMAND SYSTEM
+~~~~~~~~~~~~~~
+- aliases: add support for bash_function-like arguments (bash have no args for aliases, but our command system have no functions ...)
+? make separate command system for each subsystem (+ global ?)
+
+
+COMMON
+~~~~~~
+- extend TList with item count (different base class + new InsertItem(), change constructor)
+- exit/quit cmd: add "bool GRequestingExit" and use it in a main app loop
+- main loop + error handling: implement as #define in VcWin32.h (or in Core.h as generic case)
+
+
+MEMORY
+~~~~~~
+- when package unloaded - notify memory manager (can make memmgr as subsystem ?!); memmgr will enumerate
+  all allocated blocks and display (or, at least, free) blocks, allocated, but not free'ed from unloaded package
+- memory stats: with MEM_STATS implement API for registering status func; will display:
+  - subsystem name (game, renderer + subsystems (images, models, bsp, lightgrid ...), etc) + info (bytes/blocks ...)
+  - memory usage
+  - percent of total memory usage
+
+MATH
+~~~~
+- add to Core:
+  - table-driven trigonometric functions
+  - fast sqrt
+- add to Engine:
+  - vectors
+  - _some_ matrix functions (required functions only!)

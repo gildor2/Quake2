@@ -4,8 +4,7 @@
 #include "../client/client.h"
 
 
-#define SINGLE_RENDERER
-#define DEFAULT_RENDERER	"gl"
+#define DEFAULT_RENDERER	"gl"		// for vid_ref cvar
 
 cvar_t *win_noalttab;
 cvar_t *win_priorityBoost;
@@ -18,14 +17,16 @@ static cvar_t	*vid_xpos;				// X coordinate of window position
 static cvar_t	*vid_ypos;				// Y coordinate of window position
 
 #ifndef SINGLE_RENDERER
+
 static cvar_t	*vid_ref;
 static HINSTANCE refLibrary;			// handle to renderer DLL
 // Imports from main engine for renderer DLL
-#include "../client/ref_impl.h"
-#endif
+#include "../client/engine_exp.h"
 
 // Structure containing functions exported from renderer DLL
 refExport_t	re;
+
+#endif // SINGLE_RENDERER
 
 // Global variables used internally by this module
 viddef_t viddef;						// global video state; used by other modules
@@ -36,8 +37,6 @@ static bool needRestart;
 HWND	cl_hwnd;						// main window handle
 
 static bool alttab_disabled;
-
-extern unsigned sys_msg_time;
 
 /*
 ** WIN32 helper functions
@@ -175,13 +174,7 @@ static void AppActivate (bool active, bool minimized)
 	}
 }
 
-/*
-====================
-MainWndProc
 
-main window procedure
-====================
-*/
 static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	guard(MainWndProc);
@@ -194,15 +187,15 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_MOUSEWHEEL:
 		// this chunk of code theoretically only works under NT4+ and Win98+
 		// since this message doesn't exist under Win95
-		if (wParam > 0)	// really, HIWORD(wParam) should be checked, but LOWORD() does not affects the sign of result
+		if (wParam >> 31)	// really, HIWORD(wParam) should be checked, but LOWORD() does not affects the sign of result
 		{
-			Key_Event (K_MWHEELUP, true, sys_msg_time);
-			Key_Event (K_MWHEELUP, false, sys_msg_time);
+			Key_Event (K_MWHEELDOWN, true);
+			Key_Event (K_MWHEELDOWN, false);
 		}
 		else
 		{
-			Key_Event (K_MWHEELDOWN, true, sys_msg_time);
-			Key_Event (K_MWHEELDOWN, false, sys_msg_time);
+			Key_Event (K_MWHEELUP, true);
+			Key_Event (K_MWHEELUP, false);
 		}
 		break;
 
@@ -311,7 +304,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_KEYDOWN:
 		{
 			int k = MapKey (wParam, (lParam >> 24) & 1);
-			if (k) Key_Event (k, true, sys_msg_time);
+			if (k) Key_Event (k, true);
 		}
 		return 0;
 
@@ -319,13 +312,14 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_KEYUP:
 		{
 			int k = MapKey (wParam, (lParam >> 24) & 1);
-			if (k) Key_Event (k, false, sys_msg_time);
+			if (k) Key_Event (k, false);
 		}
 		return 0;
 
 	case WM_POWERBROADCAST:
 		if (wParam == PBT_APMSUSPEND)	// will minimize window when in fullscreen mode
 			RE_AppActivate (false);
+		//?? can also disconnect all remote (not local) clients from server (if one)
 		break;
 
 	case WM_CLOSE:
@@ -338,6 +332,9 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			CDAudio_MessageHandler (hWnd, uMsg, wParam, lParam);
 		}
 		break;
+
+	case WM_ERASEBKGND:
+		return 1;
 	}
 
 	return DefWindowProc (hWnd, uMsg, wParam, lParam);
@@ -345,10 +342,6 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	unguardf(("msg=%X", uMsg));
 }
 
-
-/*
- * Vid_CreateWindow
- */
 
 void *Vid_CreateWindow (int width, int height, bool fullscreen)
 {
@@ -414,7 +407,8 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 		wc.hInstance		= global_hInstance;
 		wc.hIcon			= LoadIcon (global_hInstance, MAKEINTRESOURCE(IDI_ICON1));
 		wc.hCursor			= LoadCursor (NULL,IDC_ARROW);
-		wc.hbrBackground	= (HBRUSH) COLOR_GRAYTEXT;
+//		wc.hbrBackground	= (HBRUSH) COLOR_GRAYTEXT;
+		wc.hbrBackground	= NULL;
 		wc.lpszMenuName 	= NULL;
 		wc.lpszClassName	= APPNAME;
 		if (!RegisterClass (&wc)) Com_FatalError ("Couldn't register window class");
@@ -433,16 +427,13 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 
 	UpdateWindow (cl_hwnd);
 	SetForegroundWindow (cl_hwnd);
-	SetFocus (cl_hwnd);
+	SetFocus (cl_hwnd);		//?? capture keyboard; is it really necessary ?
 
 	return cl_hwnd;
 
 	unguard;
 }
 
-/*
- * Vid_DestroyWindow
- */
 
 void Vid_DestroyWindow (bool force)
 {
@@ -473,13 +464,9 @@ void Vid_Restart (void)
 
 /*------------- Vid_GetModeInfo -------------*/
 
-typedef struct
-{
-	short	width, height;
-} vidMode_t;
-
-static const vidMode_t vid_modes[] =
-{
+static const struct {
+	short width, height;
+} vid_modes[] = {
 	{320,	240},
 	{400,	300},
 	{512,	384},
@@ -529,33 +516,26 @@ static void Vid_UpdateWindowPosAndSize (int x, int y)
 
 static void	D_RenderFrame (refdef_t *fd) {}
 static void	D_BeginRegistration (const char *map) {}
-static model_t *D_RegisterModel (const char *name) { return NULL; }
-static image_t *D_RegisterSkin (const char *name) { return NULL; }
-static void D_ReloadImage (const char *name) {}
-static image_t *D_FindPic (const char *name) { return NULL; }
+static CRenderModel *D_RegisterModel (const char *name) { return NULL; }
+static CBasicImage *D_RegisterSkin (const char *name) { return NULL; }
+static CBasicImage *D_FindPic (const char *name) { return NULL; }
 static void D_SetSky (const char *name, float rotate, vec3_t axis) {}
 static void	D_EndRegistration (void) {}
-
-static void	D_Draw_GetPicSize (int *w, int *h, const char *pic)
-{
-	if (w) *w = 0;
-	if (h) *h = 0;
-}
 
 static void D_Screenshot (int flags, const char *name)
 {
 	Com_WPrintf ("Screenshots are unsupported by this renderer\n");
 }
 
-static void	D_Draw_Pic (int x, int y, const char *name, int color) {}
-static void	D_Draw_StretchPic (int x, int y, int w, int h, const char *pic) {}
-static void	D_Draw_Char (int x, int y, int c, int color) {}
-static void	D_Draw_TileClear (int x, int y, int w, int h, const char *name) {}
-static void	D_Draw_Fill (int x, int y, int w, int h, int c) {}
-static void D_Draw_Fill2 (int x, int y, int w, int h, unsigned rgba) {}
+static void	D_DrawPic (int x, int y, const char *name, int anchor, int color) {}
+static void	D_DrawStretchPic (int x, int y, int w, int h, const char *pic) {}
+static void	D_DrawChar (int x, int y, int c, int color) {}
+static void	D_TileClear (int x, int y, int w, int h, const char *name) {}
+static void	D_Fill8 (int x, int y, int w, int h, int c) {}
+static void D_Fill (int x, int y, int w, int h, unsigned rgba) {}
 static void	D_DrawTextPos (int x, int y, const char *text, unsigned rgba) {}
 static void	D_DrawTextSide (const char *text, unsigned rgba) {}
-static void	D_Draw_StretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data, unsigned *palette) {}
+static void	D_DrawStretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data, unsigned *palette) {}
 static float D_GetClientLight (void) { return 0; }		// normal value is 150
 
 
@@ -564,20 +544,22 @@ static void FreeRenderer (void)
 	refActive = false;
 
 #ifndef SINGLE_RENDERER
-	if (refLibrary)		// if false - sattically linked
+	if (refLibrary)		// if false - statically linked
 	{
 		if (!FreeLibrary (refLibrary))
 			Com_FatalError ("Reflib FreeLibrary() failed");
 		refLibrary = NULL;
 	}
-#endif
 	memset (&re, 0, sizeof(re));
+#endif
 }
 
 
-#ifdef STATIC_BUILD
+#if defined(STATIC_BUILD) && !defined(SINGLE_RENDERER)
 // externs
-bool STATIC_RENDERER(GL) (refExport_t *);
+namespace OpenGLDrv {
+	extern const refExport_t re;
+}
 #endif
 
 #ifndef SINGLE_RENDERER
@@ -602,7 +584,7 @@ static bool LoadRenderer (void)
 	refLibrary = NULL;
 
 	if (!strcmp (name, "gl"))
-		STATIC_RENDERER(GL) (&re);
+		re = OpenGLDrv::re;
 	else
 #endif
 	{
@@ -629,12 +611,18 @@ static bool LoadRenderer (void)
 			return false;
 		}
 	}
+#endif // SINGLE_RENDERER
 
-#else // SINGLE_RENDERER
-	STATIC_RENDERER(GL) (&re);
-#endif
+	if (!RE_Init ())
+	{
+		RE_Shutdown ();
+		FreeRenderer ();
+		return false;
+	}
 
-	if (*re.flags & REF_CONSOLE_ONLY)
+#if 0
+	//!! not works with SINGLE_RENDERER
+	if (RE_GetCaps() & REF_CONSOLE_ONLY)
 	{
 		re.RenderFrame =	D_RenderFrame;
 		re.Screenshot =		D_Screenshot;
@@ -645,16 +633,14 @@ static bool LoadRenderer (void)
 		re.SetSky =			D_SetSky;
 		re.EndRegistration = D_EndRegistration;
 
-		re.ReloadImage =    D_ReloadImage;
-		re.DrawGetPicSize =	D_Draw_GetPicSize;
-		re.DrawPic =		D_Draw_Pic;
-		re.DrawStretchPic =	D_Draw_StretchPic;
-		re.DrawDetailedPic = D_Draw_StretchPic;
-		re.DrawChar =		D_Draw_Char;
-		re.DrawTileClear =	D_Draw_TileClear;
-		re.DrawFill =		D_Draw_Fill;
-		re.DrawFill2 =		D_Draw_Fill2;
-		re.DrawStretchRaw8 = D_Draw_StretchRaw8;
+		re.DrawPic =		D_DrawPic;
+		re.DrawStretchPic =	D_DrawStretchPic;
+		re.DrawDetailedPic = D_DrawStretchPic;
+		re.DrawChar =		D_DrawChar;
+		re.TileClear =		D_TileClear;
+		re.Fill8 =			D_Fill8;
+		re.Fill =			D_Fill;
+		re.DrawStretchRaw8 = D_DrawStretchRaw8;
 
 		re.DrawTextPos =	D_DrawTextPos;
 		re.DrawTextLeft =	D_DrawTextSide;
@@ -662,13 +648,7 @@ static bool LoadRenderer (void)
 
 		re.GetClientLight = D_GetClientLight;
 	}
-
-	if (!RE_Init ())
-	{
-		RE_Shutdown ();
-		FreeRenderer ();
-		return false;
-	}
+#endif
 
 	Com_Printf ("------------------------------------\n");
 	refActive = true;
@@ -678,17 +658,8 @@ static bool LoadRenderer (void)
 	unguard;
 }
 
-/*
-============
-Vid_CheckChanges
 
-This function gets called once just before drawing each frame, and it's sole purpose in life
-is to check to see if any of the video mode parameters have changed, and if they have to
-update the rendering DLL and/or video mode to match.
-============
-*/
-
-void Vid_CheckChanges (void)
+void Vid_Tick (void)
 {
 	if (win_noalttab->modified)
 	{
@@ -749,11 +720,7 @@ void Vid_CheckChanges (void)
 	}
 }
 
-/*
-============
-Vid_Init
-============
-*/
+
 void Vid_Init (void)
 {
 CVAR_BEGIN(vars)
@@ -772,7 +739,7 @@ CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
 	InitRendererVars ();
 
-	// Add some console commands that we want to handle
+	// add some console commands that we want to handle
 	RegisterCommand ("vid_restart", Vid_Restart);
 
 	OSVERSIONINFO vinfo;
@@ -798,14 +765,14 @@ CVAR_END
 		}
 	}
 #endif
-	// Disable the 3Dfx splash screen
+	// disable the 3Dfx splash screen
 	putenv ("FX_GLIDE_NO_SPLASH=0");
 
-	// Create invisible (fake) window to capture Win32 focus
+	// create invisible (fake) window to capture Win32 focus
 	Vid_CreateWindow (0, 0, false);
 
-	// Start the graphics mode and load refresh DLL
-	Vid_CheckChanges ();
+	// start the graphics mode and load refresh DLL
+	Vid_Tick ();
 
 	unguard;
 }

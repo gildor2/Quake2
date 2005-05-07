@@ -2,6 +2,8 @@
 #include "gl_poly.h"
 
 
+namespace OpenGLDrv {
+
 //#define POLY_DEBUG
 #define SUBDIV_ERROR	0.2		// max deviation from splitting plane
 
@@ -330,3 +332,6 @@ float GetPolyArea (vec3_t **pverts, int numVerts)
 	}
 	return area;
 }
+
+
+} // namespace

@@ -5,6 +5,9 @@
 #include "protocol.h"		//!! for RF_XXX consts only !
 
 
+namespace OpenGLDrv {
+
+
 /* NOTES:
  *  - we have used lightstyle 0 for sun, ambient and surface light
  */
@@ -94,7 +97,7 @@ static void LightLine (const vec3_t *axis, const vec3_t from, const vec3_t to, c
 #define DEBUG_POINT_SIZE	16
 #define DEBUG_SPOT_SIZE		40
 
-void GL_ShowLights (void)
+void ShowLights (void)
 {
 	int		i, j;
 
@@ -477,7 +480,7 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 		axis = ent->axis;
 	}
 
-	leaf = GL_PointInLeaf (origin);
+	leaf = PointInLeaf (origin);
 	row = leaf->cluster < 0 ? NULL : map.visInfo + leaf->cluster * map.visRowSize;
 
 	scale = vp.lightStyles[0].value * AMBIENT_SCALE / 128.0f;
@@ -495,10 +498,9 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 	if (map.sunLight)
 	{
 		vec3_t	dst;
-		static const vec3_t zero = {0, 0, 0};
 
 		VectorMA (origin, -16384, map.sunVec, dst);
-		CM_BoxTrace (&tr, origin, dst, zero, zero, 0, CONTENTS_SOLID);
+		CM_BoxTrace (&tr, origin, dst, NULL, NULL, 0, CONTENTS_SOLID);
 		if (tr.surface->flags & SURF_SKY && !tr.startsolid)		// can be "startsolid" even if "row"!=NULL
 		{
 			float intens = map.sunLight * SUN_SCALE * vp.lightStyles[0].value / 128.0f;	// sun light have style=0
@@ -571,7 +573,7 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 }
 
 
-void GL_LightForEntity (refEntity_t *ent)
+void LightForEntity (refEntity_t *ent)
 {
 	int		i;
 	gl_slight_t *sl;
@@ -595,7 +597,7 @@ void GL_LightForEntity (refEntity_t *ent)
 			vec3_t	pos, frac;
 			int		coord[3];
 
-			i = GL_PointInLeaf (ent->center)->cluster;
+			i = PointInLeaf (ent->center)->cluster;
 			byte *row = i < 0 ? NULL : map.visInfo + i * map.visRowSize;
 
 			for (i = 0; i < 3; i++)
@@ -773,7 +775,7 @@ void GL_LightForEntity (refEntity_t *ent)
 }
 
 
-void GL_DiffuseLight (color_t *dst, float lightScale)
+void DiffuseLight (color_t *dst, float lightScale)
 {
 	int		i, j;
 	bufExtra_t *ex;
@@ -831,7 +833,7 @@ void GL_DiffuseLight (color_t *dst, float lightScale)
 	Initialization
 -----------------------------------------------------------------------------*/
 
-void GL_InitLightGrid (void)
+void InitLightGrid (void)
 {
 	for (int i = 0; i < 3; i++)
 	{
@@ -873,7 +875,7 @@ static void GetSurfLightCluster (void)
 }
 
 
-void GL_PostLoadLights (void)
+void PostLoadLights (void)
 {
 	float	f;
 	int		i;
@@ -881,7 +883,7 @@ void GL_PostLoadLights (void)
 	gl_slight_t *sl;
 	for (i = 0, sl = map.slights; i < map.numSlights; i++, sl++)
 	{
-		sl->cluster = GL_PointInLeaf (sl->origin)->cluster;
+		sl->cluster = PointInLeaf (sl->origin)->cluster;
 
 		switch (sl->type)
 		{
@@ -925,3 +927,6 @@ void GL_PostLoadLights (void)
 		rl->maxDist2 = f*f + x*x + y*y;
 	}
 }
+
+
+} // namespace

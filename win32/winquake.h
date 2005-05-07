@@ -8,8 +8,8 @@
 
 // stuff from Win98+ and Win2000+
 
-#define SPI_GETMOUSESPEED         112
-#define SPI_SETMOUSESPEED         113
+#define SPI_GETMOUSESPEED         0x0070
+#define SPI_SETMOUSESPEED         0x0071
 #define WM_MOUSEWHEEL             0x020A
 
 
@@ -27,7 +27,7 @@ extern bool	ActiveApp, MinimizedApp, FullscreenApp;
 
 // in_win.c
 void IN_Activate (bool active);	//?? declared in cl_input.h too
-void IN_MouseEvent (int mstate);
+void IN_MouseEvent (unsigned buttons);
 extern bool in_needRestart;		//?? used from vid_dll.c::Vid_NewVindow()
 
 

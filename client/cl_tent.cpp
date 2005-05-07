@@ -28,7 +28,7 @@ typedef struct
 {
 	int		entity;
 	int		dest_entity;
-	model_t	*model;
+	CRenderModel *model;
 	int		endtime;
 	vec3_t	offset;
 	vec3_t	start, end;
@@ -64,25 +64,25 @@ sfx_t *cl_sfx_plasexp;
 sfx_t *cl_sfx_fallshort;
 sfx_t *cl_sfx_footsteps[4];
 
-model_t	*cl_mod_explode;
-model_t	*cl_mod_smoke;
-model_t	*cl_mod_flash;
-model_t	*cl_mod_parasite_segment;
-model_t	*cl_mod_grapple_cable;
-model_t	*cl_mod_parasite_tip;
-model_t	*cl_mod_explo4;
-model_t	*cl_mod_bfg_explo;
-model_t	*cl_mod_powerscreen;
+CRenderModel *cl_mod_explode;
+CRenderModel *cl_mod_smoke;
+CRenderModel *cl_mod_flash;
+CRenderModel *cl_mod_parasite_segment;
+CRenderModel *cl_mod_grapple_cable;
+CRenderModel *cl_mod_parasite_tip;
+CRenderModel *cl_mod_explo4;
+CRenderModel *cl_mod_bfg_explo;
+CRenderModel *cl_mod_powerscreen;
 // XATRIX
-model_t	*cl_mod_plasmaexplo;
+CRenderModel *cl_mod_plasmaexplo;
 
 // ROGUE
 sfx_t *cl_sfx_lightning;
 sfx_t *cl_sfx_disrexp;
-model_t	*cl_mod_lightning;
-model_t	*cl_mod_heatbeam;
-model_t	*cl_mod_monster_heatbeam;
-model_t	*cl_mod_explo4_big;
+CRenderModel *cl_mod_lightning;
+CRenderModel *cl_mod_heatbeam;
+CRenderModel *cl_mod_monster_heatbeam;
+CRenderModel *cl_mod_explo4_big;
 
 
 //--------------- Extended protocol -------------------
@@ -236,7 +236,7 @@ CL_RegisterTEntModels
 =================
 */
 
-static model_t *RegModel (const char *name)
+static CRenderModel *RegModel (const char *name)
 {
 	return RE_RegisterModel (va("models/%s/tris.md2", name));
 }
@@ -517,7 +517,7 @@ void CL_ParseParticles (void)
 CL_ParseBeam
 =================
 */
-int CL_ParseBeam (model_t *model)
+int CL_ParseBeam (CRenderModel *model)
 {
 	int		ent;
 	vec3_t	start, end;
@@ -565,7 +565,7 @@ int CL_ParseBeam (model_t *model)
 CL_ParseBeam2
 =================
 */
-int CL_ParseBeam2 (model_t *model)
+int CL_ParseBeam2 (CRenderModel *model)
 {
 	int		ent;
 	vec3_t	start, end, offset;
@@ -618,7 +618,7 @@ CL_ParsePlayerBeam
   - adds to the cl_mPlayerbeam array instead of the cl_mBeams array
 =================
 */
-int CL_ParsePlayerBeam (model_t *model)
+int CL_ParsePlayerBeam (CRenderModel *model)
 {
 	int		ent;
 	vec3_t	start, end, offset;
@@ -682,7 +682,7 @@ int CL_ParsePlayerBeam (model_t *model)
 CL_ParseLightning
 =================
 */
-int CL_ParseLightning (model_t *model)
+int CL_ParseLightning (CRenderModel *model)
 {
 	int		srcEnt, destEnt;
 	vec3_t	start, end;

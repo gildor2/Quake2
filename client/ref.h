@@ -2,9 +2,21 @@
 #define __REF_INCLUDED__
 
 
-// forward declarations (renderer types)
-struct model_t;
-struct image_t;
+// interfaces to some renderer types
+class CRenderModel
+{
+public:
+	char	name[MAX_QPATH];
+};
+
+
+class CBasicImage
+{
+public:
+	char	name[MAX_QPATH];
+	short	width, height;
+	virtual void Reload (void) = NULL;
+};
 
 
 #define	MAX_DLIGHTS			32
@@ -40,7 +52,7 @@ typedef union
 //!!! clean beam comments
 typedef struct
 {
-	model_t	*model;			// opaque type outside renderer
+	CRenderModel *model;
 	float	angles[3];
 	/*------- most recent data --------*/
 	float	origin[3];
@@ -56,7 +68,7 @@ typedef struct
 	/*----------- color info ----------*/
 	float	alpha;			// ignore if RF_TRANSLUCENT isn't set
 
-	image_t	*skin;			// NULL for inline skin
+	CBasicImage	*skin;		// NULL for inline skin
 	int		flags;
 } entity_t;
 
@@ -165,6 +177,17 @@ typedef struct
 #define SHOT_NOGAMMA		16		// do not perform gamma correction for image (when hardware gamma available)
 #define SHOT_JPEG			0x8000	// can be unsupported
 
+// DrawPic() anchors
+#define ANCHOR_TOP_LEFT		0x00
+#define ANCHOR_TOP			0x01
+#define ANCHOR_TOP_RIGHT	0x02
+#define ANCHOR_LEFT			0x10
+#define ANCHOR_CENTER		0x11
+#define ANCHOR_RIGHT		0x12
+#define ANCHOR_BOTTOM_LEFT	0x20
+#define ANCHOR_BOTTOM		0x21
+#define ANCHOR_BOTTOM_RIGHT	0x22
+
 
 /*-------------------- Common renderer cvars -----------------------------*/
 
@@ -177,32 +200,32 @@ extern	cvar_t	*r_fullbright, *r_lightmap;
 
 /*------------------- Static/dynamic renderer ----------------------------*/
 
-#include "rexp_decl.h"
+#include "rexp_intf.h"
 
 //?? rename refImport_t, refExport_t to something another ...
 
 typedef	bool (*CreateDynRenderer_t) (const refImport_t *, refExport_t *);
 
-#define STATIC_RENDERER(name)	name##_CreateRenderer
-
 #ifndef STATIC_BUILD
-#define RENDERER_EXPORT(name)	\
+
+#define RENDERER_EXPORT		\
 	extern "C" DLL_EXPORT bool CreateRenderer(const refImport_t *, refExport_t *) \
-	bool CreateRenderer (const refImport_t *rimp, refExport_t *rexp)
+	bool CreateRenderer (const refImport_t *rimp, refExport_t *rexp) \
+	{						\
+		if (rimp.struc_size != sizeof(refImport_t) || \
+			rexp->struc_size != sizeof(refExport_t)) \
+			return false;	\
+		ri = *rimp;			\
+		InitRendererVars ();\
+		*rexp = re;			\
+		return true;		\
+	}
+
 #else
-#define RENDERER_EXPORT(name)	\
-	bool STATIC_RENDERER(name) (refExport_t *rexp)
+
+#define RENDERER_EXPORT			// empty for STATIC_BUILD
+
 #endif
 
-#ifndef STATIC_BUILD
-#define RENDERER_INIT			\
-	if (rimp.struc_size != sizeof(refImport_t) || \
-		rexp->struc_size != sizeof(refExport_t)) \
-		return false;			\
-	ri = *rimp;					\
-	InitRendererVars ();
-#else
-#define RENDERER_INIT		// don't need this check - module is correct by compilation
-#endif
 
 #endif

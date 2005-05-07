@@ -1,37 +1,12 @@
 /*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-
-//
-// qfiles.h: quake file formats
-// This file must be identical in the quake and utils directories
-//
-
-/*
 ========================================================================
 
-The .pak files are just a linear collapse of a directory tree
+.PAK file format
 
 ========================================================================
 */
 
-#define IDPAKHEADER		('P'+('A'<<8)+('C'<<16)+('K'<<24))
+#define IDPAKHEADER		BYTES4('P','A','C','K')
 
 typedef struct
 {
@@ -46,8 +21,6 @@ typedef struct
 	int		dirlen;
 } dPackHeader_t;
 
-//#define	MAX_FILES_IN_PACK	4096	// unlimited now
-
 
 /*
 ========================================================================
@@ -57,7 +30,7 @@ typedef struct
 ========================================================================
 */
 
-#define MD2_IDENT			('I'+('D'<<8)+('P'<<16)+('2'<<24))
+#define MD2_IDENT			BYTES4('I','D','P','2')
 #define MD2_VERSION			8
 
 /*
@@ -136,7 +109,7 @@ typedef struct
 ========================================================================
 */
 
-#define MD3_IDENT			(('3'<<24)+('P'<<16)+('D'<<8)+'I')
+#define MD3_IDENT			BYTES4('I','D','P','3')
 #define MD3_VERSION			15
 
 #define	MD3_XYZ_SCALE		(1.0f/64)	// vertex scales
@@ -154,7 +127,7 @@ typedef struct
 ========================================================================
 */
 
-#define SP2_IDENT			('I'+('D'<<8)+('S'<<16)+('2'<<24))
+#define SP2_IDENT			BYTES4('I','D','S','2')
 #define SP2_VERSION			2
 
 typedef struct
@@ -181,7 +154,7 @@ typedef struct {
 
 
 #define	MIPLEVELS	4
-typedef struct miptex_s
+typedef struct
 {
 	char	name[32];
 	unsigned width, height;
@@ -202,7 +175,7 @@ typedef struct miptex_s
 ==============================================================================
 */
 
-#define BSP2_IDENT			('I'+('B'<<8)+('S'<<16)+('P'<<24))
+#define BSP2_IDENT			BYTES4('I','B','S','P')
 #define BSP2_VERSION		38
 
 
@@ -388,7 +361,7 @@ typedef struct
 } dnode_t;
 
 
-typedef struct texinfo_s
+typedef struct
 {
 	float	vecs[2][4];			// [s/t][xyz offset]
 	int		flags;				// miptex flags + overrides

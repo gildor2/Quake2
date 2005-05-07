@@ -37,7 +37,7 @@ enum {
 #define KEYPAD_LAST		K_KP_ENTER
 
 	// mouse buttons
-	K_MOUSE1,	K_MOUSE2,	K_MOUSE3,
+	K_MOUSE1, K_MOUSE2, K_MOUSE3, K_MOUSE4, K_MOUSE5, K_MOUSE6, K_MOUSE7, K_MOUSE8,
 	K_MWHEELDOWN,	K_MWHEELUP,
 
 	// functional keys
@@ -82,7 +82,7 @@ int Key_FindBinding (const char *str, int *keys, int maxKeys);
 void Key_WriteBindings (FILE *f);
 
 void Key_Init (void);
-void Key_Event (int key, bool down, unsigned time);
+void Key_Event (int key, bool down);
 void Key_ClearStates (void);
 
 #define		MAXCMDLINE	256

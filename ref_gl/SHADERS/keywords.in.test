@@ -1,8 +1,0 @@
-// map types
-map
-clampmap
-animMap
-
-// blends
-GL_ONE		// comment
-GL_ZERO

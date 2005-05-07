@@ -2,6 +2,9 @@
 #define __GL_LIGHT_INCLUDED__
 
 
+namespace OpenGLDrv {
+
+
 // point light / spot light
 struct gl_slight_t
 {
@@ -45,13 +48,15 @@ typedef struct
 } lightCell_t;
 
 
-void GL_ShowLights (void);
+void ShowLights (void);
 
-void GL_LightForEntity (refEntity_t *ent);
-void GL_DiffuseLight (color_t *dst, float lightScale);
+void LightForEntity (refEntity_t *ent);
+void DiffuseLight (color_t *dst, float lightScale);
 
-void GL_InitLightGrid (void);
-void GL_PostLoadLights (void);
+void InitLightGrid (void);
+void PostLoadLights (void);
 
+
+} // namespace
 
 #endif

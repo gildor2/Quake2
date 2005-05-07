@@ -5,6 +5,9 @@
 #include "gl_shader.h"
 
 
+namespace OpenGLDrv {
+
+
 //?? move to gl_state/gl_config ??
 //?? remove ?
 extern GLenum	gl_fogMode;
@@ -70,9 +73,9 @@ extern refDlight_t	gl_dlights[];
 extern int			gl_numDlights;
 
 
-void	GL_DrawPortal (void);
-void	GL_AddEntity (entity_t *ent);
-void	GL_AddDlight (dlight_t *dl);
+void	DrawPortal (void);
+void	AddEntity (entity_t *ent);
+void	AddDlight (dlight_t *dl);
 
 struct surfaceInfo_t
 {
@@ -121,5 +124,7 @@ struct viewPortal_t
 
 extern viewPortal_t	vp;
 
+
+} // namespace
 
 #endif

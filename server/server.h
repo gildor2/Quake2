@@ -55,7 +55,7 @@ typedef struct
 	byte		multicast_bufNew[MAX_MSGLEN];
 
 	// demo server information
-	FILE		*demofile;
+	QFILE		*rdemofile;				// reading demos
 } server_t;
 
 #define EDICT_NUM(n) ((edict_t *)((byte *)ge->edicts + ge->edict_size*(n)))
@@ -84,7 +84,7 @@ typedef struct
 #define	LATENCY_COUNTS	16
 #define	RATE_MESSAGES	10
 
-typedef struct client_s
+typedef struct
 {
 	client_state_t state;
 
@@ -179,7 +179,7 @@ typedef struct
 	challenge_t	challenges[MAX_CHALLENGES];	// to prevent invalid IPs from connecting
 
 	// serverrecord values
-	FILE		*demofile;
+	FILE		*wdemofile;					// writting demos
 	sizebuf_t	demo_multicast;
 	byte		demo_multicast_buf[MAX_MSGLEN];
 } server_static_t;

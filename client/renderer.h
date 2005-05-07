@@ -1,35 +1,36 @@
-// called when the library is loaded
-bool	Init (void);
+//!! I don't like "Pic" suffix: replace with "Image" ?
 
+unsigned GetCaps ();
+
+// called when the library is loaded
+bool	Init ();
 // called before the library is unloaded
 void	Shutdown (bool complete = false);
 
-void	BeginRegistration (const char *map);
-model_t* RegisterModel (const char *name);
-image_t* RegisterSkin (const char *name);
-image_t* RegisterPic (const char *name);
+void	BeginRegistration (const char *map);	//?? rename
+CRenderModel* RegisterModel (const char *name);
+CBasicImage* RegisterSkin (const char *name);
+CBasicImage* RegisterPic (const char *name);	//?? rename (GetPic() etc)
 void	SetSky (const char *name, float rotate, vec3_t axis);
-void	EndRegistration (void);
+void	EndRegistration ();						//?? remove
 
-// frame
-void	BeginFrame (float camera_separation);
+// frame; rename!!
+void	BeginFrame ();
 void	RenderFrame (refdef_t *fd);
-void	EndFrame (void);
+void	EndFrame ();
 
 // drawing
-void	DrawGetPicSize (int *w, int *h, const char *name);	// will return (0, 0) if not found
-void	DrawPic (int x, int y, const char *pic, int color = C_WHITE);
+void	DrawPic (int x, int y, const char *pic, int anchor = ANCHOR_TOP_LEFT, int color = C_WHITE);
 void	DrawStretchPic (int x, int y, int w, int h, const char *name);
 void	DrawDetailedPic (int x, int y, int w, int h, const char *name);
 void	DrawChar (int x, int y, int c, int color = C_WHITE);
-void	DrawTileClear (int x, int y, int w, int h, const char *name);
-void	DrawFill (int x, int y, int w, int h, int c);
-void	DrawFill2 (int x, int y, int w, int h, unsigned rgba);
+void	TileClear (int x, int y, int w, int h, const char *name);
+void	Fill (int x, int y, int w, int h, unsigned rgba);
+void	Fill8 (int x, int y, int w, int h, int c);
 void	DrawStretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data, unsigned *palette);
 
 void	AppActivate (bool activate);
 void	Screenshot (int flags, const char *name);
-void	ReloadImage (const char *name);
 
 // drawing colored text in any screen position
 void	DrawTextPos (int x, int y, const char *text, unsigned rgba);
@@ -40,4 +41,4 @@ void	DrawTextRight (const char *text, unsigned rgba);
 void	DrawConChar (int x, int y, int c, int color = C_WHITE);
 
 // lighting
-float	GetClientLight (void);		// used by server to determine client visibility (AI); change ??
+float	GetClientLight ();			// used by server to determine client visibility (AI); change ??

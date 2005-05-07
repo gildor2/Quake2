@@ -2,6 +2,9 @@
 #define __GL_INTERFACE_INCLUDED__
 
 
+// -- namespace declared in "gl_local.h" -- namespace OpenGLDrv {
+
+
 struct glconfig_t
 {
 	int		maxTextureSize;
@@ -223,5 +226,7 @@ void	GL_SetDefaultState (void);
 void	GL_Set2DMode (void);
 void	GL_Setup (viewPortal_t *port);
 
+
+//} // namespace
 
 #endif

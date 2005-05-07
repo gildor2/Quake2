@@ -3,8 +3,12 @@
 #include "gl_model.h"
 #include "gl_backend.h"
 
+namespace OpenGLDrv {
 
-/*---------- Dynamic surface buffer ----------*/
+
+/*-----------------------------------------------------------------------------
+	Dynamic surface buffer
+-----------------------------------------------------------------------------*/
 
 #define MAX_DYNAMIC_BUFFER		(384 * 1024)
 static byte	*dynamicBuffer;		// [MAX_DYNAMIC_BUFFER]
@@ -14,7 +18,7 @@ static void *lastDynamicPtr;
 static int	lastDynamicSize;
 
 
-void *GL_AllocDynamicMemory (int size)
+void *AllocDynamicMemory (int size)
 {
 	void	*ptr;
 
@@ -37,7 +41,7 @@ void *GL_AllocDynamicMemory (int size)
 
 
 // This function should be called only for REDUCING size of allocated block
-void GL_ResizeDynamicMemory (void *ptr, int newSize)
+void ResizeDynamicMemory (void *ptr, int newSize)
 {
 	int		n;
 
@@ -50,7 +54,9 @@ void GL_ResizeDynamicMemory (void *ptr, int newSize)
 }
 
 
-/*----------- Surface arrays --------------*/
+/*-----------------------------------------------------------------------------
+	Surface arrays
+-----------------------------------------------------------------------------*/
 
 
 static surfaceInfo_t *surfaceBuffer;	// [MAX_SCENE_SURFACES]
@@ -58,7 +64,7 @@ static int numSurfacesTotal;
 
 
 // Add surface to a current scene (to a "vp" structure)
-void GL_AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityNum, int numDlights)
+void AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityNum, int numDlights)
 {
 	surfaceInfo_t *si;
 
@@ -75,29 +81,27 @@ void GL_AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityN
 }
 
 
-surfaceCommon_t *GL_AddDynamicSurface (shader_t *shader, int entityNum)
+surfaceCommon_t *AddDynamicSurface (shader_t *shader, int entityNum)
 {
 	surfaceCommon_t *surf;
 
-	surf = (surfaceCommon_t*) GL_AllocDynamicMemory (sizeof(surfaceCommon_t));
+	surf = (surfaceCommon_t*) AllocDynamicMemory (sizeof(surfaceCommon_t));
 	if (!surf) return NULL;
 
-	GL_AddSurfaceToPortal (surf, shader, entityNum, 0);
+	AddSurfaceToPortal (surf, shader, entityNum, 0);
 	return surf;
 }
 
 
-void GL_InsertShaderIndex (int index)
+void InsertShaderIndex (int index)
 {
-	int		i, n;
+	int		i;
 	surfaceInfo_t *si;
 
-	n = 0;
+	int n = 0;
 	for (i = 0, si = surfaceBuffer; i < numSurfacesTotal; i++, si++)
 	{
-		int		s;
-
-		s = (si->sort >> SHADERNUM_SHIFT) & SHADERNUM_MASK;
+		int s = (si->sort >> SHADERNUM_SHIFT) & SHADERNUM_MASK;
 		if (s >= index)	// shader index incremented
 		{
 			si->sort += (1 << SHADERNUM_SHIFT);		// increment shader index field
@@ -108,17 +112,18 @@ void GL_InsertShaderIndex (int index)
 }
 
 
-/*----------- Work with "vp" --------------*/
+/*-----------------------------------------------------------------------------
+	Work with "vp"
+-----------------------------------------------------------------------------*/
 
-
-void GL_ClearPortal (void)
+void ClearPortal (void)
 {
 	vp.surfaces = &surfaceBuffer[numSurfacesTotal];
 	vp.numSurfaces = 0;
 }
 
 
-void GL_FinishPortal (void)
+void FinishPortal (void)
 {
 	if (!vp.numSurfaces) return;
 	{
@@ -129,14 +134,15 @@ void GL_FinishPortal (void)
 }
 
 
-/*-------- Radix sort surfaces ----------*/
-
+/*-----------------------------------------------------------------------------
+	Radix sort surfaces
+-----------------------------------------------------------------------------*/
 
 #define SORT_BITS	8	// 11
 #define SORT_SIZE	(1 << SORT_BITS)
 #define SORT_MASK	(SORT_SIZE - 1)
 
-void GL_SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
+void SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 {
 	int		i, k;
 	surfaceInfo_t *s, **src1, **dst1;
@@ -234,7 +240,7 @@ void GL_SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 /*-----------------------------------------*/
 
 // prepare buffers for new scene
-void GL_ClearBuffers (void)
+void ClearBuffers (void)
 {
 	numSurfacesTotal = 0;
 	gl_numEntities = 0;
@@ -247,13 +253,13 @@ void GL_ClearBuffers (void)
 	Initialization/finalization
 -----------------------------------------------------------------------------*/
 
-void GL_CreateBuffers (void)
+void CreateBuffers (void)
 {
 	dynamicBuffer = new byte [MAX_DYNAMIC_BUFFER];
 	surfaceBuffer = new surfaceInfo_t [MAX_SCENE_SURFACES];
 }
 
-void GL_FreeBuffers (void)
+void FreeBuffers (void)
 {
 	if (!dynamicBuffer) return;
 	delete dynamicBuffer;
@@ -261,3 +267,6 @@ void GL_FreeBuffers (void)
 
 	delete surfaceBuffer;
 }
+
+
+} // namespace

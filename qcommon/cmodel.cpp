@@ -1767,8 +1767,14 @@ void CM_BoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const ve
 	trace_contents = brushmask;
 	VectorCopy (start, trace_start);
 	VectorCopy (end, trace_end);
-	VectorCopy (mins, trace_mins);
-	VectorCopy (maxs, trace_maxs);
+	if (mins)
+		VectorCopy (mins, trace_mins);
+	else
+		VectorClear (trace_mins);
+	if (maxs)
+		VectorCopy (maxs, trace_maxs);
+	else
+		VectorClear (trace_maxs);
 
 	// check for "position test" special case
 	if (start[0] == end[0] && start[1] == end[1] && start[2] == end[2])
@@ -1777,8 +1783,8 @@ void CM_BoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const ve
 
 		for (i = 0; i < 3; i++)
 		{
-			c1[i] = start[i] + mins[i] - 1;
-			c2[i] = start[i] + maxs[i] + 1;
+			c1[i] = start[i] + trace_mins[i] - 1;
+			c2[i] = start[i] + trace_maxs[i] + 1;
 		}
 
 		int leafs[1024];
@@ -1795,8 +1801,8 @@ void CM_BoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const ve
 	}
 
 	// check for "point" special case
-	if (mins[0] == 0 && mins[1] == 0 && mins[2] == 0 &&
-		maxs[0] == 0 && maxs[1] == 0 && maxs[2] == 0)
+	if (trace_mins[0] == 0 && trace_mins[1] == 0 && trace_mins[2] == 0 &&
+		trace_maxs[0] == 0 && trace_maxs[1] == 0 && trace_maxs[2] == 0)
 	{
 		trace_ispoint = true;
 		VectorClear (trace_extents);
@@ -1804,9 +1810,9 @@ void CM_BoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const ve
 	else
 	{
 		trace_ispoint = false;
-		trace_extents[0] = -mins[0] > maxs[0] ? -mins[0] : maxs[0];
-		trace_extents[1] = -mins[1] > maxs[1] ? -mins[1] : maxs[1];
-		trace_extents[2] = -mins[2] > maxs[2] ? -mins[2] : maxs[2];
+		trace_extents[0] = -trace_mins[0] > trace_maxs[0] ? -trace_mins[0] : trace_maxs[0];
+		trace_extents[1] = -trace_mins[1] > trace_maxs[1] ? -trace_mins[1] : trace_maxs[1];
+		trace_extents[2] = -trace_mins[2] > trace_maxs[2] ? -trace_mins[2] : trace_maxs[2];
 	}
 
 	// general sweeping through world

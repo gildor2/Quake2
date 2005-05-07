@@ -212,6 +212,10 @@ void Com_PageInMemory (void *buffer, int size);
 
 //=============================================
 
+#define BYTES4(a,b,c,d)	((a) | ((b)<<8) | ((c)<<16) | ((d)<<24))
+
+//=============================================
+
 #ifdef LITTLE_ENDIAN
 
 // functions for big-endian numbers
@@ -396,13 +400,6 @@ typedef struct
 	// fields added since 4.00
 	int		material;
 } csurface_t;
-
-/* -- now this structure is csurface_t
-typedef struct mapsurface_s
-{
-	csurface_t	c;
-} mapsurface_t;
-*/
 
 // a trace is returned when a box is swept through the world
 struct trace_t

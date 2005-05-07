@@ -9,7 +9,9 @@
 #include "protocol.h"		//!! for RF_XXX consts only !
 
 
-//#define SWAP_ON_BEGIN		// call GLimp_SwapBuffers() on frame begin (or frame end if not defined)
+namespace OpenGLDrv {
+
+//#define SWAP_ON_BEGIN		// call QGL_SwapBuffers() on frame begin (or frame end if not defined)
 
 /* LATER: replace (almost) all ap.time -> shader.time (or global "shaderTime") ??
  * (because time may be taken (if engine will be extended) from entity)
@@ -198,10 +200,10 @@ static void GenerateColorArray (shaderStage_t *st)
 		}
 		break;
 	case RGBGEN_DIFFUSE:
-		GL_DiffuseLight (dst, 1);
+		DiffuseLight (dst, 1);
 		break;
 	case RGBGEN_HALF_DIFFUSE:
-		GL_DiffuseLight (dst, 0.5f);
+		DiffuseLight (dst, 0.5f);
 		break;
 	// other types: FOG
 	}
@@ -512,7 +514,7 @@ typedef struct
 	bool	doubleRGBA;
 	bool	imgNoAlpha;
 	shaderStage_t st;		// modified copy of original stage (or auto-generated stage)
-} tempStage_t;
+} tempStage_t;		//?? : shaderStage_t
 
 
 typedef struct
@@ -801,7 +803,7 @@ static void PreprocessShader (shader_t *sh)
 				}
 				else
 				{
-					GL_LightForEntity (currentEntity);
+					LightForEntity (currentEntity);
 					if (GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE) &&		//?? NV_COMBINE4
 						!gl_config.overbright &&		// allows double brightness by itself
 						i == 0)			//?? should analyze blend: can be 'src'=='no blend' or 'src*dst'
@@ -1280,9 +1282,9 @@ static void DrawSkyBox (void)
 	// rasterize frustum
 	pl.numVerts = 4;
 	pl.verts = fv;
-	GL_AddSkySurface (&pl, vp.vieworg, SKY_FRUSTUM);
+	AddSkySurface (&pl, vp.vieworg, SKY_FRUSTUM);
 
-	if (!GL_SkyVisible ()) return;			// all sky surfaces are outside frustum
+	if (!SkyVisible ()) return;				// all sky surfaces are outside frustum
 
 	// draw sky
 	GL_DepthRange (gl_showSky->integer ? DEPTH_NEAR : DEPTH_FAR);
@@ -1312,7 +1314,7 @@ static void DrawSkyBox (void)
 
 	for (side = 0; side < 6; side++)
 	{
-		gl_numIndexes = GL_TesselateSkySide (side, vb->verts, vb->texCoord[0], vp.zFar);
+		gl_numIndexes = TesselateSkySide (side, vb->verts, vb->texCoord[0], vp.zFar);
 		if (!gl_numIndexes) continue;	// no surfaces on this side
 
 		if (currentShader != gl_defaultSkyShader)
@@ -1412,7 +1414,7 @@ static void CheckDynamicLightmap (surfaceCommon_t *s)
 			dl->modulate[i] = vp.lightStyles[dl->style[i]].value;
 		if (dlightUpdate) dl->modulate[0]--;	// force to update vertex lightmap when dlight disappear
 
-		GL_UpdateDynamicLightmap (s->shader, surf, updateType == 1, s->dlightMask);
+		UpdateDynamicLightmap (s->shader, surf, updateType == 1, s->dlightMask);
 	}
 }
 
@@ -1869,7 +1871,7 @@ static void TesselateEntitySurf (refEntity_t *e)
 	Drawing the scene
 -----------------------------------------------------------------------------*/
 
-static void DrawParticles (particle_t *p)
+static void DrawDotParticles (particle_t *p)
 {
 	vec3_t	up, right;
 	byte	c[4];
@@ -1887,7 +1889,6 @@ static void DrawParticles (particle_t *p)
 	for ( ; p; p = p->drawNext)
 	{
 		float	scale;
-		int		alpha;
 
 		scale = (p->org[0] - vp.vieworg[0]) * vp.viewaxis[0][0] +
 				(p->org[1] - vp.vieworg[1]) * vp.viewaxis[0][1] +
@@ -1900,7 +1901,7 @@ static void DrawParticles (particle_t *p)
 		else
 			scale = scale / 500.0f + 1.0f;
 
-		alpha = appRound (p->alpha * 255);
+		int alpha = appRound (p->alpha * 255);
 		alpha = bound(alpha, 0, 255);
 
 		switch (p->type)
@@ -1958,27 +1959,27 @@ static void DrawScene (void)
 	// sort surfaces
 	if (gl_finish->integer == 2) glFinish ();
 	gl_speeds.beginSort = appCycles ();
-	GL_SortSurfaces (&vp, sortedSurfaces);
+	SortSurfaces (&vp, sortedSurfaces);
 	gl_speeds.begin3D = appCycles ();
 
 	currentDlightMask = 0;
 
 	/*------------ draw sky --------------*/
 
-	GL_ClearSkyBox ();
-	GL_SetSkyRotate (vp.time * gl_skyShader->skyRotate, gl_skyShader->skyAxis);
+	ClearSkyBox ();
+	SetSkyRotate (vp.time * gl_skyShader->skyRotate, gl_skyShader->skyAxis);
 	numSkySurfs = 0;
 
 	si = sortedSurfaces;
 	for (index = 0; index < vp.numSurfaces; index++, si++)
 	{
 		surf = (*si)->surf;
-		shader = GL_GetShaderByNum (((*si)->sort >> SHADERNUM_SHIFT) & SHADERNUM_MASK);
+		shader = GetShaderByNum (((*si)->sort >> SHADERNUM_SHIFT) & SHADERNUM_MASK);
 		if (shader->type != SHADERTYPE_SKY) break;
 
 		if (!index) SetCurrentShader (shader);
 
-		GL_AddSkySurface (surf->pl, vp.vieworg, SKY_SURF);	//?? may be another types
+		AddSkySurface (surf->pl, vp.vieworg, SKY_SURF);	//?? may be another types
 		numSkySurfs++;
 	}
 	//?? may be, require to set dlightMask, currentShader, currentEntity etc.
@@ -2022,10 +2023,10 @@ static void DrawScene (void)
 			FlushArrays ();
 
 			// change shader
-			shader = GL_GetShaderByNum (shNum);
+			shader = GetShaderByNum (shNum);
 			SetCurrentShader (shader);
 			currentDlightMask = dlightMask;
-			LOG_STRING (va("******** Change shader to %s ********\n", shader->name));
+			LOG_STRING (va("******** shader = %s ********\n", shader->name));
 			currentShaderNum = shNum;
 		}
 
@@ -2041,7 +2042,7 @@ static void DrawScene (void)
 				if (!currentWorld)		// previous entity was not world
 				{
 					//?? set shader.time to vp.time
-					LOG_STRING (va("******** Change entity to WORLD ********\n"));
+					LOG_STRING (va("******** entity = WORLD ********\n"));
 					glLoadMatrixf (&vp.modelMatrix[0][0]);
 				}
 				gl_state.inverseCull = false;
@@ -2050,7 +2051,7 @@ static void DrawScene (void)
 			else
 			{
 				//?? set shader.time to vp.time - entity.time
-				LOG_STRING (va("******** Change entity to %s ********\n", currentEntity->model->name));
+				LOG_STRING (va("******** entity = %s ********\n", currentEntity->model->name));
 				glLoadMatrixf (&currentEntity->modelMatrix[0][0]);
 				gl_state.inverseCull = currentEntity->mirror;
 				GL_DepthRange (currentEntity->flags & RF_DEPTHHACK ? DEPTH_HACK : DEPTH_NORMAL);
@@ -2067,7 +2068,7 @@ static void DrawScene (void)
 			TesselateMd3Surf (surf->md3);
 			break;
 		case SURFACE_PARTICLE:
-			DrawParticles (surf->part);
+			DrawDotParticles (surf->part);
 			break;
 		case SURFACE_POLY:
 			TesselatePolySurf (surf->poly);
@@ -2088,7 +2089,7 @@ static void DrawScene (void)
 		DrawBBoxes ();
 
 	if (gl_showLights->integer)
-		GL_ShowLights ();
+		ShowLights ();
 
 	if (gl_finish->integer == 2) glFinish ();
 	gl_speeds.begin2D = appCycles ();
@@ -2255,7 +2256,7 @@ static void TesselateText (bkDrawText_t *p)
 
 /*---------------------------------------------------------------------------*/
 
-void GL_BackEnd (void)
+void BackEnd (void)
 {
 	int		*p;
 #if 0
@@ -2296,7 +2297,7 @@ void GL_BackEnd (void)
 
 		case BACKEND_BEGIN_FRAME:
 #ifdef SWAP_ON_BEGIN
-			GLimp_SwapBuffers ();
+			QGL_SwapBuffers ();
 			if (gl_finish->integer) glFinish ();
 #endif
 
@@ -2321,12 +2322,12 @@ void GL_BackEnd (void)
 		case BACKEND_END_FRAME:
 			FlushArrays ();
 			if (gl_screenshotName)
-				GL_PerformScreenshot ();
-			GL_ShowImages ();			// debug
+				PerformScreenshot ();
+			ShowImages ();				// debug
 
 #ifndef SWAP_ON_BEGIN
 			if (gl_finish->integer) glFinish ();
-			GLimp_SwapBuffers ();
+			QGL_SwapBuffers ();
 #endif
 			gl_state.is2dMode = false;	// invalidate 2D mode, because of buffer switching
 			p++;
@@ -2351,7 +2352,7 @@ void GL_BackEnd (void)
 	Init/shutdown
 -----------------------------------------------------------------------------*/
 
-void GL_InitBackend (void)
+void InitBackend (void)
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(gl_clear, 0, 0),
@@ -2363,15 +2364,19 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_showNormals, 0, CVAR_CHEAT)
 CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
-	GL_ClearBuffers ();
+	ClearBuffers ();
 
 	vbSize = sizeof(vertexBuffer_t) + (gl_config.maxActiveTextures-1) * sizeof(bufTexCoord_t) * MAX_VERTEXES;	// space for 1 texcoord already reserved
 	vb = (vertexBuffer_t*)appMalloc (vbSize, 16);
 }
 
 
-void GL_ShutdownBackend (void)
+void ShutdownBackend (void)
 {
+	if (!vb) return;	// not initialized
 	appFree (vb);
 	vb = NULL;
 }
+
+
+} // namespace

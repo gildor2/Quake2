@@ -5,6 +5,9 @@
 #include "gl_image.h"
 
 
+namespace OpenGLDrv {
+
+
 /*---------------- Shader parameters --------------*/
 
 //?? useless
@@ -209,10 +212,9 @@ typedef enum
 } shaderType_t;
 
 
-struct shader_t
+class shader_t : public CBasicImage
 {
-	char	name[MAX_QPATH];
-
+public:
 	int		lightmapNumber;
 	union {
 		byte	lightStyles[4];	// 0 - unused; can be 1..31
@@ -221,7 +223,6 @@ struct shader_t
 	int		sortIndex;
 	float	sortParam;		// values from sortParam_t, but in float representation
 	int		sortParam2;		// secondary sort values (main image, lightmap num etc.)
-	short	width, height;	// required due to Q2 architecture; if contains default image, both are zero
 
 	unsigned style;			// SHADER_XXX
 	float	tessSize;		// used for warp surface subdivision
@@ -267,6 +268,8 @@ struct shader_t
 	// stages: variable length
 	int		numStages;
 	shaderStage_t *stages[1];
+
+	virtual void Reload ();
 };
 
 
@@ -290,9 +293,9 @@ extern	shader_t	*gl_alphaShader1, *gl_alphaShader2;
 
 /*------------------- Functions -------------------*/
 
-void	GL_InitShaders (void);
-void	GL_ShutdownShaders (void);
-void	GL_ResetShaders (void);	// should be called every time before loading a new map
+void	InitShaders (void);
+void	ShutdownShaders (void);
+void	ResetShaders (void);			// should be called every time before loading a new map
 
 // lightmap types (negative numbers -- no lightmap stage, >= 0 -- has lightmap stage)
 #define LIGHTMAP_NONE		(-1)
@@ -324,11 +327,13 @@ void	GL_ResetShaders (void);	// should be called every time before loading a new
 #define SHADER_CHECK		0x40000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error
 #define SHADER_CHECKLOADED	0x80000000	// if shader loaded, return it, else - NULL
 
-shader_t *GL_FindShader (const char *name, unsigned style);
-shader_t *GL_SetShaderLightmap (shader_t *shader, int lightmapNumber);
-shader_t *GL_SetShaderLightstyles (shader_t *shader, unsigned styles);
-shader_t *GL_GetAlphaShader (shader_t *shader);
-shader_t *GL_GetShaderByNum (int num);
+shader_t *FindShader (const char *name, unsigned style);
+shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber);
+shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles);
+shader_t *GetAlphaShader (shader_t *shader);
+shader_t *GetShaderByNum (int num);
 
+
+} // namespace
 
 #endif

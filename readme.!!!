@@ -13,7 +13,7 @@ bullet trace hook:
 		gi.trace(water_start, NULL, NULL, end2, self%, MASK_SHOT)
 	}
 	may_be: Multicast(impact) -- sparks
-	,,,
+	...
 
 NOTES:
   - &self->s.origin == self + 4
@@ -131,3 +131,16 @@ entity_state_t filled in server/sv_ents.c::SV_BuildClientFrame(client)
 
 Basic animations and frame inc/dec are set in game/p_view.c::Q_SetClientFrame()
   Note: anim_end is inaccessible!
+
+----------------------------------------
+
+Trace(mins=NULL,maxs=NULL):
+~~~~~~~~~~~~~~~~~~~~~~~
+CM_BoxTrace(), CM_TransformedBoxTrace[2]() - already implemented
+CL_Trace() -> CL_EntityTrace
+CL_PMTrace() -> CL_EntityTrace
+SV_Trace() -> SV_ClipMoveToEntities
+CL_EntityTrace() *
+SV_ClipMoveToEntities() *
+
+* - attention on mins/maxs usage

@@ -307,18 +307,19 @@ BUGS:
 
 
 -------------------------------------------------------------------------------
-	Mandatory
+	Mandatory (for Q2 games)
 -------------------------------------------------------------------------------
 
 VISIBLE:
 - models (entities)
   - md2
-    - IR-vision fx (can force different (special) shader (skin) for IR-visible model)
-    - check all RF_XXX flags from q_shared2.h
+    - IR-vision fx (can force different (special) shader (skin) for IR-visible model -- make this in client, not in renderer; same for
+      power shells?; can parse RF_XXX consts in client and send as special flags to renderer - this will remove "protocol.h" dependency)
+    - check all RF_XXX flags from protocol.h
 - shadows
 ? inlineModels: RF_TRANSLUCENT: glColor4f (1,1,1,0.25) + blend + no lightmap (vertex light ?)
 FOR GAME:
-- RE_GetClientLight ()
+- RE_GetClientLight () - really, should change this API completely
 
 
 -------------------------------------------------------------------------------
@@ -333,7 +334,7 @@ FOR GAME:
   - surface simplification (?) + subdivision (!) for complex lightmaps (non-gradient color change) - as option
     (lighting = "lightmap", "vertex", "hq vertex")
 ?? make area_t, cluster_t, area.clusterList, cluster.leafList (faster MarkLeafs()/LightPoint())
-! triangle models: build lods
+! triangle models: build LODs
 ? "gl_alphaLightmap" (arc, def: "1") -- can disable lighting of alpha/warp surfaces; add option to menu
   (easy implement, but naming problems ...)
 - improve SURF_ALPHA quality on near distances (determine const for checking this requirement?):
@@ -351,4 +352,3 @@ FOR GAME:
   specular mask
 - support ARB_texture_non_power_of_two (GeForce6+)
 ? text (Draw[Con]CharColor()) - ability to draw strings (smaller memory usage of BackendCommandBuffer)
-? use namespaces for renderers

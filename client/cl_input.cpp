@@ -34,24 +34,6 @@ static float accum_frame_time;
 
 KEY BUTTONS
 
-Continuous button event tracking is complicated by the fact that two different
-input sources (say, mouse button 1 and the control key) can both press the
-same button, but the button should only be released when both of the
-pressing key have been released.
-
-When a key event issues a button command (+forward, +attack, etc), it appends
-its key number as a parameter to the command so it can be matched up with
-the release.
-
-state bit 0 is the current state of the key
-state bit 1 is edge triggered on the up to down transition
-state bit 2 is edge triggered on the down to up transition
-
-
-Key_Event (int key, bool down, unsigned time);
-
-  +mlook src time
-
 ===============================================================================
 */
 
@@ -165,12 +147,9 @@ Returns the fraction of the frame that the key was down
 */
 static float KeyState (kbutton_t *key)
 {
-	float		val;
-	int			msec;
-
 	key->state &= 1;			// clear impulses
 
-	msec = key->msec;
+	int msec = key->msec;
 	key->msec = 0;
 
 	if (key->state)
@@ -179,7 +158,7 @@ static float KeyState (kbutton_t *key)
 		key->downtime = sys_frame_time;
 	}
 
-	val = (float)msec / frame_msec;
+	float val = (float)msec / frame_msec;
 	val = bound(val, 0, 1);
 
 	return val;
@@ -212,7 +191,6 @@ Moves the local angle positions
 static void AdjustAngles (void)
 {
 	float	speed;
-	float	up, down;
 
 	if (in_Speed.state & 1)
 		speed = cls.frametime * cl_anglespeedkey->value;
@@ -230,8 +208,8 @@ static void AdjustAngles (void)
 		cl.viewangles[PITCH] += speed * cl_pitchspeed->value * KeyState (&in_Back);
 	}
 
-	up = KeyState (&in_Lookup);
-	down = KeyState(&in_Lookdown);
+	float up = KeyState (&in_Lookup);
+	float down = KeyState (&in_Lookdown);
 
 	cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * up;
 	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * down;

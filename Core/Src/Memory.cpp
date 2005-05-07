@@ -118,6 +118,7 @@ void appFree (void *ptr)
 	void	*block;
 
 	guardSlow(appFree);
+//	if (!ptr) return;		// ignore NULL pointers
 	// get pointers
 	hdr = (FMemHeader *)ptr - 1;
 	block = OffsetPointer (hdr, -hdr->offset);

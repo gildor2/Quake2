@@ -11,12 +11,9 @@ typedef union
 		void	(APIENTRY * BlendFunc) (GLenum sfactor, GLenum dfactor);
 		void	(APIENTRY * Clear) (GLbitfield mask);
 		void	(APIENTRY * ClearColor) (GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
-		void	(APIENTRY * ClearDepth) (GLclampd depth);
 		void	(APIENTRY * Color3f) (GLfloat red, GLfloat green, GLfloat blue);
 		void	(APIENTRY * Color3fv) (const GLfloat *v);
 		void	(APIENTRY * Color4f) (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
-		void	(APIENTRY * Color4fv) (const GLfloat *v);
-		void	(APIENTRY * Color4ub) (GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
 		void	(APIENTRY * Color4ubv) (const GLubyte *v);
 		void	(APIENTRY * ColorPointer) (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 		void	(APIENTRY * CullFace) (GLenum mode);
@@ -98,12 +95,9 @@ extern qgl_t qgl;
 #define glBlendFunc	qgl.BlendFunc
 #define glClear	qgl.Clear
 #define glClearColor	qgl.ClearColor
-#define glClearDepth	qgl.ClearDepth
 #define glColor3f	qgl.Color3f
 #define glColor3fv	qgl.Color3fv
 #define glColor4f	qgl.Color4f
-#define glColor4fv	qgl.Color4fv
-#define glColor4ub	qgl.Color4ub
 #define glColor4ubv	qgl.Color4ubv
 #define glColorPointer	qgl.ColorPointer
 #define glCullFace	qgl.CullFace

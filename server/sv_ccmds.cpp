@@ -23,8 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //?? only for screenshot
 #include "../client/ref.h"
-extern	refExport_t	re;
-#include "../client/rexp_defs.h"
 
 //void SCR_UpdateScreen (void);		//?? remove
 void SCR_SetLevelshot (const char *name);
@@ -958,7 +956,7 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	if (svs.demofile)
+	if (svs.wdemofile)
 	{
 		Com_WPrintf ("Already recording\n");
 		return;
@@ -975,8 +973,8 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 
 	Com_Printf ("recording to %s\n", name);
 	FS_CreatePath (name);
-	svs.demofile = fopen (name, "wb");
-	if (!svs.demofile)
+	svs.wdemofile = fopen (name, "wb");
+	if (!svs.wdemofile)
 	{
 		Com_WPrintf ("ERROR: couldn't open\n");
 		return;
@@ -1012,8 +1010,8 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 
 	// write it to the demo file
 	len = LittleLong (buf.cursize);
-	fwrite (&len, 4, 1, svs.demofile);
-	fwrite (buf.data, buf.cursize, 1, svs.demofile);
+	fwrite (&len, 4, 1, svs.wdemofile);
+	fwrite (buf.data, buf.cursize, 1, svs.wdemofile);
 
 	// the rest of the demo file will be individual frames
 }
@@ -1028,13 +1026,13 @@ Ends server demo recording
 */
 static void SV_ServerStop_f (void)
 {
-	if (!svs.demofile)
+	if (!svs.wdemofile)
 	{
 		Com_Printf ("Not doing a serverrecord.\n");
 		return;
 	}
-	fclose (svs.demofile);
-	svs.demofile = NULL;
+	fclose (svs.wdemofile);
+	svs.wdemofile = NULL;
 	Com_Printf ("Recording completed.\n");
 }
 

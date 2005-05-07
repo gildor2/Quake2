@@ -29,4 +29,4 @@ extern	viddef_t	viddef;			// global video state
 // Video module initialisation etc
 void	Vid_Init (void);
 void	Vid_Shutdown (void);
-void	Vid_CheckChanges (void);
+void	Vid_Tick (void);

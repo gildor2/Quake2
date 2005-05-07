@@ -12,10 +12,9 @@
 		const char *_arg = arg;		\
 		unsigned _time = appCycles();
 #define END_PROFILE	\
-		_time = appCycles() - _time;\
 		if (Cvar_VariableInt("r_profile2")) \
 			Com_Printf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %.2f ms\n", _name, _arg, \
-			appDeltaCyclesToMsecf(_time));	\
+			appDeltaCyclesToMsecf(appCycles() - _time)); \
 	}
 #else
 #define START_PROFILE(name)
@@ -26,6 +25,9 @@
 #include "gl_local.h"
 #include "gl_image.h"
 #include "gl_math.h"
+
+namespace OpenGLDrv {
+
 
 image_t	*gl_defaultImage;
 //image_t	*gl_whiteImage;		//?? unneeded: can use "image = NULL" for this (CHECK THIS WITH MTEX!)
@@ -607,13 +609,13 @@ END_PROFILE
 }
 
 
-image_t *GL_CreateImage (const char *name, void *pic, int width, int height, unsigned flags)
+image_t *CreateImage (const char *name, void *pic, int width, int height, unsigned flags)
 {
 	char	name2[MAX_QPATH];
 	int		texnum;
 	image_t	*image;
 
-	guard(GL_CreateImage);
+	guard(CreateImage);
 	if (!name[0]) Com_FatalError ("R_CreateImage: null name");
 
 //	Com_Printf ("CreateImage(%s)\n", name);//!!!!
@@ -715,7 +717,7 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, uns
 
 	ComputeImageColor (pic, width, height, &image->color);
 
-	if (gl_renderingEnabled)
+	if (renderingEnabled)
 	{
 		// upload image
 		GL_SetMultitexture (1);
@@ -748,7 +750,7 @@ image_t *GL_CreateImage (const char *name, void *pic, int width, int height, uns
 }
 
 
-void GL_LoadDelayedImages (void)
+void LoadDelayedImages (void)
 {
 	int		i;
 	image_t	*img;
@@ -779,12 +781,12 @@ void GL_LoadDelayedImages (void)
 /*-------------------- Video support ----------------------*/
 
 
-void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette)
+void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette)
 {
 	image_t	*image;
 	byte	*pic32;
 
-	guard(GL_DrawStretchRaw8);
+	guard(DrawStretchRaw8);
 
 	// prepare video image
 	image = gl_videoImage;		//?? to allow multiple videos in a screen, should use gl_videoImage[some_number]
@@ -858,7 +860,7 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 	// draw
 	gl_videoShader->width = width;
 	gl_videoShader->height = height;
-	GL_DrawStretchPic (gl_videoShader, x, y, w, h, 0, 0, 1, 1, RGB(1,1,1));
+	DrawStretchPic (gl_videoShader, x, y, w, h, 0, 0, 1, 1, RGB(1,1,1));
 	if (gl_detailShader && width*3/2 < w)		// detail is not available or not needed
 	{
 #define VIDEO_NOISE_FPS		20
@@ -875,7 +877,7 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 			dy = frand() / 2;
 			flipMode = rand() & 3;
 		}
-		GL_DrawStretchPic (gl_detailShader, x, y, w, h, dx, dy,
+		DrawStretchPic (gl_detailShader, x, y, w, h, dx, dy,
 			w / gl_detailShader->width + dx, h / gl_detailShader->height + dy, RGB(1,1,1), flipMode);
 	}
 
@@ -883,7 +885,7 @@ void GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte
 }
 
 
-static void GL_FreeImage (image_t *image)	//?? unused function
+static void FreeImage (image_t *image)	//?? unused function
 {
 	int		hash;
 	image_t	*img;
@@ -932,7 +934,7 @@ static void GL_FreeImage (image_t *image)	//?? unused function
 //-------------------------------------------------------------------
 
 
-void GL_SetupGamma (void)
+void SetupGamma (void)
 {
 	gl_config.vertexLight = gl_vertexLight->integer != 0;
 	gl_config.deviceSupportsGamma = GLimp_HasGamma ();
@@ -1134,7 +1136,7 @@ static void ImageReload_f (bool usage, int argc, char **argv)
 		if (!appMatchWildcard (img->name, mask, true)) continue;
 
 		if (img->name[0] == '*' || img->flags & IMAGE_SYSTEM) continue;
-		if (GL_FindImage (img->name, img->flags | IMAGE_RELOAD))
+		if (FindImage (img->name, img->flags | IMAGE_RELOAD))
 		{
 //			Com_DPrintf ("%s reloaded\n", img->name);
 			num++;
@@ -1151,7 +1153,7 @@ static void ImageReload_f (bool usage, int argc, char **argv)
 #define LEVELSHOT_H		256
 
 
-void GL_PerformScreenshot (void)
+void PerformScreenshot (void)
 {
 	byte	*src, *dst;
 	char	name[MAX_OSPATH];
@@ -1266,7 +1268,7 @@ void GL_PerformScreenshot (void)
 #define DEF_IMG_SIZE	16
 #define DLIGHT_SIZE		16
 
-void GL_InitImages (void)
+void InitImages (void)
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(gl_showImages, 0, 0),
@@ -1279,7 +1281,7 @@ CVAR_END
 	int		texnum, x, y;
 	image_t	*image;
 
-	guard(GL_InitImages);
+	guard(InitImages);
 
 	Cvar_GetVars (ARRAY_ARG(vars));
 	imageCount = 0;
@@ -1288,7 +1290,7 @@ CVAR_END
 	for (texnum = 0, image = &imagesArray[0]; texnum < MAX_TEXTURES; texnum++, image++)
 		image->texnum = texnum;
 
-	GL_SetupGamma ();	// before texture creation
+	SetupGamma ();		// before texture creation
 	GetPalette ();		// read palette for 8-bit WAL textures
 
 	RegisterCommand ("imagelist", Imagelist_f);
@@ -1300,15 +1302,15 @@ CVAR_END
 		for (x = 0; x < DEF_IMG_SIZE; x++, p += 4)
 			if (x < 2 || x >= DEF_IMG_SIZE-2 || y < 2 || y >= DEF_IMG_SIZE-2)
 				p[0] = p[1] = p[2] = p[3] = 255;
-	gl_defaultImage = GL_CreateImage ("*default", tex, DEF_IMG_SIZE, DEF_IMG_SIZE, IMAGE_MIPMAP);
+	gl_defaultImage = CreateImage ("*default", tex, DEF_IMG_SIZE, DEF_IMG_SIZE, IMAGE_MIPMAP);
 	gl_defaultImage->flags |= IMAGE_SYSTEM;
 
 	/*---------- create video image ------------*/
 	memset (tex, 255, 16*16*4);
 	if (!GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))
-		gl_videoImage = GL_CreateImage ("*video", tex, 16, 16, IMAGE_CLAMP);
+		gl_videoImage = CreateImage ("*video", tex, 16, 16, IMAGE_CLAMP);
 	else	// without this, uploading video as rect texture will damage other texture:
-		gl_videoImage = GL_CreateImage ("*video", tex, 10, 5, IMAGE_CLAMP);
+		gl_videoImage = CreateImage ("*video", tex, 10, 5, IMAGE_CLAMP);
 	gl_videoImage->flags |= IMAGE_SYSTEM;
 
 	/*------ create identity light image ---------*/
@@ -1319,11 +1321,11 @@ CVAR_END
 		p[0] = p[1] = p[2] = y;
 		p[3] = 255;
 	}
-	gl_identityLightImage = GL_CreateImage ("*identityLight", tex, 8, 8, IMAGE_MIPMAP);
+	gl_identityLightImage = CreateImage ("*identityLight", tex, 8, 8, IMAGE_MIPMAP);
 #else
 	tex[0] = tex[1] = tex[2] = gl_config.identityLightValue;
 	tex[3] = 255;
-	gl_identityLightImage = GL_CreateImage ("*identityLight", tex, 1, 1, IMAGE_MIPMAP);
+	gl_identityLightImage = CreateImage ("*identityLight", tex, 1, 1, IMAGE_MIPMAP);
 #endif
 	gl_identityLightImage->flags |= IMAGE_SYSTEM;
 
@@ -1355,7 +1357,7 @@ CVAR_END
 		}
 	}
 	// NOTE: be sure image border is black and do not create mipmaps (this will change border)
-	gl_dlightImage = GL_CreateImage ("*dlight", tex, 16, 16, IMAGE_CLAMP|IMAGE_TRUECOLOR);
+	gl_dlightImage = CreateImage ("*dlight", tex, 16, 16, IMAGE_CLAMP|IMAGE_TRUECOLOR);
 	gl_dlightImage->flags |= IMAGE_SYSTEM;
 
 	/*----------- create particle image ----------*/
@@ -1379,7 +1381,7 @@ CVAR_END
 				p[0] = p[1] = p[2] = p[3] = 0;
 			p += 4;
 		}
-	gl_particleImage = GL_CreateImage ("*particle", tex, 8, 8, IMAGE_CLAMP|IMAGE_MIPMAP);
+	gl_particleImage = CreateImage ("*particle", tex, 8, 8, IMAGE_CLAMP|IMAGE_MIPMAP);
 	gl_particleImage->flags |= IMAGE_SYSTEM;
 
 	/*--------- create detail texture ------------*/
@@ -1406,7 +1408,7 @@ CVAR_END
 		*p++ = 255;							// alpha
 	}
 	// fill tex
-	GL_CreateImage ("*detail", tex, DETAIL_SIDE, DETAIL_SIDE, IMAGE_MIPMAP);
+	CreateImage ("*detail", tex, DETAIL_SIDE, DETAIL_SIDE, IMAGE_MIPMAP);
 
 	/*------------ create fog image --------------*/
 /*	p = tex;
@@ -1439,17 +1441,17 @@ CVAR_END
 			p += 4;
 		}
 	}
-	gl_fogImage = GL_CreateImage ("*fog", tex, 256, 32, IMAGE_CLAMP|IMAGE_TRUECOLOR);	//?? mipmap
+	gl_fogImage = CreateImage ("*fog", tex, 256, 32, IMAGE_CLAMP|IMAGE_TRUECOLOR);	//?? mipmap
 	gl_fogImage->flags |= IMAGE_SYSTEM; */
 
-	gl_reflImage = GL_FindImage ("fx/specular", IMAGE_MIPMAP|IMAGE_TRUECOLOR);	//!! move reflection images to a different place
-	gl_reflImage2 = GL_FindImage ("fx/diffuse", IMAGE_MIPMAP|IMAGE_TRUECOLOR);
+	gl_reflImage = FindImage ("fx/specular", IMAGE_MIPMAP|IMAGE_TRUECOLOR);	//!! move reflection images to a different place
+	gl_reflImage2 = FindImage ("fx/diffuse", IMAGE_MIPMAP|IMAGE_TRUECOLOR);
 
 	unguard;
 }
 
 
-void GL_ShutdownImages (void)
+void ShutdownImages (void)
 {
 	int		i;
 	image_t	*img;
@@ -1481,7 +1483,7 @@ void GL_ShutdownImages (void)
 }
 
 
-void GL_ShowImages (void)
+void ShowImages (void)
 {
 	int		i, nx, ny, x, y, num, numImg;
 	image_t	*img;
@@ -1571,8 +1573,8 @@ void GL_ShowImages (void)
 
 //------------- Loading images --------------------------
 
-// GL_FindImage -- main image creating/loading function
-image_t *GL_FindImage (const char *name, unsigned flags)
+// FindImage -- main image creating/loading function
+image_t *FindImage (const char *name, unsigned flags)
 {
 	char	name2[MAX_QPATH], *s;
 	int		hash, flags2, fmt, prefFmt, width, height, len;
@@ -1728,7 +1730,7 @@ END_PROFILE
 	if (pic)
 	{
 START_PROFILE(..img::up)
-		img = GL_CreateImage (name2, pic, width, height, flags);
+		img = CreateImage (name2, pic, width, height, flags);
 		appFree (pic);
 END_PROFILE
 		return img;
@@ -1739,3 +1741,6 @@ END_PROFILE
 		return NULL;
 	}
 }
+
+
+} // namespace

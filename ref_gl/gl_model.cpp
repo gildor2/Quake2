@@ -21,16 +21,19 @@
 		const char *_arg = arg;		\
 		unsigned _time = appCycles();
 #define END_PROFILE	\
-		_time = appCycles() - _time;\
 		if (Cvar_VariableInt("r_profile")) \
 			Com_Printf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %.2f ms\n", _name, _arg,\
-			appDeltaCyclesToMsecf(_time));	\
+			appDeltaCyclesToMsecf(appCycles() - _time)); \
 	}
 #else
 #define START_PROFILE(name)
 #define START_PROFILE2(name,arg)
 #define END_PROFILE
 #endif
+
+
+namespace OpenGLDrv {
+
 
 bspModel_t gl_worldModel;
 static bspfile_t	*bspfile;
@@ -47,20 +50,17 @@ static bool LoadMd2 (model_t *m, byte *buf, unsigned len);
 static bool LoadSp2 (model_t *m, byte *buf, unsigned len);
 
 
-model_t	*GL_FindModel (const char *name)
+model_t	*FindModel (const char *name)
 {
-	char	name2[MAX_QPATH];
-	int		i;
-	unsigned len;
-	model_t	*m;
-	unsigned *file;
-
 	if (!name[0])
 		Com_FatalError ("R_FindModel: NULL name");
 
+	char	name2[MAX_QPATH];
 	appCopyFilename (name2, name, sizeof(name2));
 
 	// search already loaded models
+	int		i;
+	model_t	*m;
 	for (i = 0, m = modelsArray; i < modelCount; i++, m++)
 		if (!strcmp (name2, m->name))
 			return m;
@@ -78,6 +78,8 @@ model_t	*GL_FindModel (const char *name)
 
 START_PROFILE2(FindModel::Load, name)
 	/*----- not found -- load model ------*/
+	unsigned len;
+	unsigned *file;
 	if (!(file = (unsigned*) FS_LoadFile (name2, &len)))
 	{
 //		modelCount--;	// free slot
@@ -140,7 +142,7 @@ static void LoadFlares (lightFlare_t *data, int count)
 	// get leafs/owner for already built flares (from SURF_AUTOFLARE)
 	for (out = map.flares; out; out = out->next)
 	{
-		out->leaf = GL_PointInLeaf (out->origin);
+		out->leaf = PointInLeaf (out->origin);
 		if (out->surf) out->owner = out->surf->owner;
 	}
 
@@ -154,7 +156,7 @@ static void LoadFlares (lightFlare_t *data, int count)
 		out->color.rgba = *((unsigned*)data->color) | RGBA(0,0,0,1);
 		SaturateColor4b (&out->color);
 		out->style = data->style;
-		out->leaf = GL_PointInLeaf (data->origin);
+		out->leaf = PointInLeaf (data->origin);
 		if (data->model)
 			out->owner = map.models + data->model;
 
@@ -420,7 +422,7 @@ static void LoadLeafsNodes2 (dnode_t *nodes, int numNodes, dleaf_t *leafs, int n
 			map.numClusters = p + 1;
 		out->area = leafs->area;
 		// copy/convert mins/maxs
-		for (int j = 0; j < 3; j++)
+		for (j = 0; j < 3; j++)
 		{
 			out->mins[j] = leafs->mins[j];
 			out->maxs[j] = leafs->maxs[j];
@@ -491,9 +493,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		pedge = surfedges + surfs->firstedge;
 		for (j = 0; j < numVerts; j++, pedge++)
 		{
-			int		idx;
-
-			idx = *pedge;
+			int idx = *pedge;
 			if (idx > 0)
 				pverts[j] = &(verts + (edges+idx)->v[0])->point;
 			else
@@ -531,28 +531,25 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			(SURF_SPECULAR|SURF_DIFFUSE|SURF_WARP|SURF_FLOWING)))		// && gl_autoReflect ??
 		{
 			vec3_t	mid, p1, p2;
-			float	scale, *norm;
 			trace_t	trace;
-			int		headnode;
-			static const vec3_t zero = {0, 0, 0};
 
-			headnode = owner->headnode;
+			int headnode = owner->headnode;
 			// find middle point
 			VectorClear (mid);
 			for (j = 0; j < numVerts; j++)
 				VectorAdd (mid, (*pverts[j]), mid);
-			scale = 1.0f / numVerts;
+			float scale = 1.0f / numVerts;
 			VectorScale (mid, scale, mid);
 			// get trace points
-			norm = (map.planes + surfs->planenum)->normal;
+			float *norm = (map.planes + surfs->planenum)->normal;
 			// vector with length 1 is not enough for non-axial surfaces
 			VectorMA (mid, 2, norm, p1);
 			VectorMA (mid, -2, norm, p2);
 			// perform trace
 			if (!surfs->side)
-				CM_BoxTrace (&trace, p1, p2, zero, zero, headnode, MASK_SOLID);
+				CM_BoxTrace (&trace, p1, p2, NULL, NULL, headnode, MASK_SOLID);
 			else
-				CM_BoxTrace (&trace, p2, p1, zero, zero, headnode, MASK_SOLID);
+				CM_BoxTrace (&trace, p2, p1, NULL, NULL, headnode, MASK_SOLID);
 			if (trace.fraction < 1 && !(trace.contents & CONTENTS_MIST))	//?? make MYST to be non-"alpha=f(angle)"-dependent
 				sflags |= SHADER_ENVMAP;
 		}
@@ -563,13 +560,11 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		{
 			if (sflags & SHADER_SKY)
 			{
-				image_t	*img;
-
 				//!! change this code (or update comment above)
 				needLightmap = false;
 				if (map.sunColor[0] + map.sunColor[1] + map.sunColor[2] == 0)
 				{
-					img = GL_FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP|IMAGE_PICMIP);	// find sky image only for taking its color
+					image_t *img = FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP|IMAGE_PICMIP);	// find sky image only for taking its color
 					if (img)
 					{
 						map.sunColor[0] = img->color.c[0];		// do not require to divide by 255: will be normalized anyway
@@ -597,12 +592,10 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		numTextures = 0;
 		while (true)
 		{
-			int		n;
-
 			pname += appSprintf (pname, MAX_QPATH, "textures/%s", ptex->texture) + 1;	// length(format)+1
 			numTextures++;
 
-			n = ptex->nexttexinfo;
+			int n = ptex->nexttexinfo;
 			if (n < 0) break;			// no animations
 			ptex = tex + n;
 			if (ptex == stex) break;	// loop
@@ -617,7 +610,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (needLightmap)
 			sflags |= SHADER_LIGHTMAP;
 
-		out->shader = shader = (sflags & SHADER_SKY) ? gl_skyShader : GL_FindShader (textures, sflags);
+		out->shader = shader = (sflags & SHADER_SKY) ? gl_skyShader : FindShader (textures, sflags);
 		//!! update sflags from this (created) shader -- it may be scripted (with different flags)
 
 		if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA|SHADER_TURB|SHADER_SKY))
@@ -761,7 +754,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			static color_t	defColor = {96, 96, 96, 255};// {255, 255, 255, 255};
 
 			area = GetPolyArea (pverts, numVerts);
-			img = GL_FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP);
+			img = FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP);
 			BuildSurfLight (s, img ? &img->color : &defColor, area, stex->value, (stex->flags & SURF_SKY) != 0);
 			if (stex->flags & SURF_AUTOFLARE && !(stex->flags & SURF_SKY))
 				BuildSurfFlare (out, img ? &img->color : &defColor, area);
@@ -849,7 +842,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 				{
 					// convert to a vertex lightmap
 					//!! UNFINISHED: need SPECIAL vertex lm, which will be combined with dyn. lm with ENV_ADD
-					s->shader = GL_FindShader (s->shader->name, s->shader->style | SHADER_TRYLIGHTMAP);
+					s->shader = FindShader (s->shader->name, s->shader->style | SHADER_TRYLIGHTMAP);
 					optLmTexels += dl->w * dl->h;
 				}
 			}
@@ -889,7 +882,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			{
 				// later (in this function), just don't create vertex colors for this surface
 				Com_DPrintf ("Disable lm for %s\n", s->shader->name);
-				GL_SetShaderLightmap (s->shader, LIGHTMAP_NONE);
+				SetShaderLightmap (s->shader, LIGHTMAP_NONE);
 //				Com_Printf ("  diff: %d\n", ptr - lm->source);
 //				Com_Printf ("  w: %d  h: %d  st: %d\n", lm->w, lm->h, lm->numStyles);
 			}
@@ -923,7 +916,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 					dl->numFastStyles++;
 				}
 			}
-			if (styles) s->shader = GL_SetShaderLightstyles (s->shader, styles);
+			if (styles) s->shader = SetShaderLightstyles (s->shader, styles);
 		}
 	}
 
@@ -940,7 +933,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			continue;
 		}
 
-		GL_UpdateDynamicLightmap (s->shader, s->pl, true, 0);
+		UpdateDynamicLightmap (s->shader, s->pl, true, 0);
 	}
 
 	/*----------- allocate lightmaps for surfaces -----------*/
@@ -1032,7 +1025,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			if (!dl || !dl->block) continue;
 
 			// set lightmap for shader
-			s->shader = GL_SetShaderLightmap (s->shader, dl->block->index);
+			s->shader = SetShaderLightmap (s->shader, dl->block->index);
 
 			// update vertex lightmap coords
 			s0 = (float)dl->s / LIGHTMAP_SIZE;
@@ -1153,7 +1146,7 @@ END_PROFILE
 }
 
 
-/*--------------- GL_LoadWorldMap --------------------*/
+/*--------------- LoadWorldMap --------------------*/
 
 static void FreeMapData (void)
 {
@@ -1161,14 +1154,14 @@ static void FreeMapData (void)
 	if (map.lightGridChain) delete map.lightGridChain;
 }
 
-void GL_LoadWorldMap (const char *name)
+void LoadWorldMap (const char *name)
 {
 	char	name2[MAX_QPATH];
 
 	if (!name[0])
 		Com_FatalError ("R_LoadWorldMap: NULL name");
 
-	guard(GL_LoadWorldMap);
+	guard(LoadWorldMap);
 
 	appCopyFilename (name2, name, sizeof(name2));
 
@@ -1214,15 +1207,15 @@ void GL_LoadWorldMap (const char *name)
 	}
 	LoadFlares (bspfile->flares, bspfile->numFlares);
 	LoadSlights (bspfile->slights, bspfile->numSlights);
-	GL_PostLoadLights ();
-	GL_InitLightGrid ();
+	PostLoadLights ();
+	InitLightGrid ();
 
 	unguard;
 }
 
 
 //?? can use cmodel.cpp function
-node_t *GL_PointInLeaf (vec3_t p)
+node_t *PointInLeaf (vec3_t p)
 {
 	node_t		*node;
 	cplane_t	*plane;
@@ -1461,7 +1454,7 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 	shader_t *shader;
 
 	// try specified shader
-	shader = GL_FindShader (skin, SHADER_CHECK|SHADER_SKIN);
+	shader = FindShader (skin, SHADER_CHECK|SHADER_SKIN);
 	if (!shader)
 	{	// try to find skin forcing model directory
 		appCopyFilename (mName, m->name, sizeof(mName));
@@ -1475,14 +1468,14 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 		else		sPtr = sName;
 
 		strcpy (mPtr, sPtr);		// make "modelpath/skinname"
-		shader = GL_FindShader (mName, SHADER_CHECK|SHADER_SKIN);
+		shader = FindShader (mName, SHADER_CHECK|SHADER_SKIN);
 		if (!shader)
 		{	// not found
 			Com_DPrintf ("LoadMD2(%s): %s or %s is not found\n", m->name, skin, mName);
 			if (index > 0)
 				shader = surf->shaders[0];		// better than default shader
 			else
-				shader = GL_FindShader ("*identityLight", SHADER_SKIN); // white + diffuse lighting
+				shader = FindShader ("*identityLight", SHADER_SKIN); // white + diffuse lighting
 		}
 	}
 	// set the shader
@@ -1715,9 +1708,9 @@ END_PROFILE
 }
 
 
-shader_t *GL_FindSkin (const char *name)
+shader_t *FindSkin (const char *name)
 {
-	return GL_FindShader (name, SHADER_CHECK|SHADER_SKIN);
+	return FindShader (name, SHADER_CHECK|SHADER_SKIN);
 	//?? do we need to disable mipmapping for skins ?
 }
 
@@ -1763,7 +1756,7 @@ static bool LoadSp2 (model_t *m, byte *buf, unsigned len)
 		radius = sqrt (s * s + t * t);
 		sp2->radius = max (sp2->radius, radius);
 
-		out->shader = GL_FindShader (in->name, SHADER_CHECK|SHADER_WALL|SHADER_FORCEALPHA);
+		out->shader = FindShader (in->name, SHADER_CHECK|SHADER_WALL|SHADER_FORCEALPHA);
 		if (!out->shader)
 		{
 			Com_DPrintf ("R_LoadSp2(%s): %s is not found\n", m->name, in->name);
@@ -1836,7 +1829,7 @@ static void FreeModels (void)
 }
 
 
-void GL_ResetModels (void)
+void ResetModels (void)
 {
 	FreeModels ();
 
@@ -1869,15 +1862,15 @@ static void LoadModel_f (bool usage, int argc, char **argv)
 		Com_Printf ("Usage: loadmodel <filename>\n");
 		return;
 	}
-	GL_FindModel (argv[1]);
+	FindModel (argv[1]);
 }
 #endif
 
 
-void GL_InitModels (void)
+void InitModels (void)
 {
 	memset (&map, 0, sizeof(map));
-	GL_ResetModels ();
+	ResetModels ();
 
 	RegisterCommand ("modellist", Modellist_f);
 #ifdef TEST_LOAD
@@ -1886,7 +1879,7 @@ void GL_InitModels (void)
 }
 
 
-void GL_ShutdownModels (void)
+void ShutdownModels (void)
 {
 	FreeModels ();
 	FreeMapData ();
@@ -1896,3 +1889,6 @@ void GL_ShutdownModels (void)
 	UnregisterCommand ("loadmodel");
 #endif
 }
+
+
+} // namespace

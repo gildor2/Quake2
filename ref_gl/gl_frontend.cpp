@@ -6,6 +6,8 @@
 #include "protocol.h"		//!! for RF_XXX consts only !
 
 
+namespace OpenGLDrv {
+
 static int visFrame, drawFrame;
 static int currentEntity;
 
@@ -368,7 +370,6 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 		inlineModel_t *im;
 		float	entPos, dist2;
 		vec3_t	tmp, center2;
-		static const vec3_t zero = {0, 0, 0};
 
 		if (!e->visible || !e->model || e->model->type != MODEL_INLINE)
 			continue;
@@ -387,9 +388,9 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 
 		// trace
 		if (!e->worldMatrix)
-			CM_TransformedBoxTrace2 (&trace, start, end, zero, zero, im->headnode, brushmask, e->origin, e->axis);
+			CM_TransformedBoxTrace2 (&trace, start, end, NULL, NULL, im->headnode, brushmask, e->origin, e->axis);
 		else
-			CM_BoxTrace (&trace, start, end, zero, zero, im->headnode, brushmask);
+			CM_BoxTrace (&trace, start, end, NULL, NULL, im->headnode, brushmask);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
 		{
@@ -744,7 +745,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 				surfDlight_t *sdl;
 				unsigned mask;
 
-				sdl = pl->dlights = (surfDlight_t*)GL_AllocDynamicMemory (sizeof(surfDlight_t) * MAX_DLIGHTS);
+				sdl = pl->dlights = (surfDlight_t*)AllocDynamicMemory (sizeof(surfDlight_t) * MAX_DLIGHTS);
 				if (!sdl) surf->dlightMask = 0;		// easiest way to break the loop below; speed does not matter here
 				for (j = 0, mask = 1, dl = vp.dlights; j < vp.numDlights; j++, dl++, mask <<= 1)
 					if (surf->dlightMask & mask)
@@ -784,7 +785,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 					}
 #undef CULL_DLIGHT
 				if (pl->dlights)
-					GL_ResizeDynamicMemory (pl->dlights, sizeof(surfDlight_t) * numDlights);
+					ResizeDynamicMemory (pl->dlights, sizeof(surfDlight_t) * numDlights);
 				if (numDlights)
 				{
 					gl_speeds.dlightSurfs++;
@@ -803,7 +804,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 		entNum = currentEntity;
 		if (entNum != ENTITYNUM_WORLD && e->worldMatrix && !surf->shader->dependOnEntity)
 			entNum = ENTITYNUM_WORLD;
-		GL_AddSurfaceToPortal (surf, surf->shader, entNum, numDlights);
+		AddSurfaceToPortal (surf, surf->shader, entNum, numDlights);
 	}
 }
 
@@ -867,9 +868,9 @@ static void AddMd3Surfaces (refEntity_t *e)
 				shader = gl_defaultShader;
 		}
 		if (e->flags & RF_TRANSLUCENT)
-			shader = GL_GetAlphaShader (shader);
+			shader = GetAlphaShader (shader);
 		// draw surface
-		GL_AddSurfaceToPortal (surf, shader, currentEntity, 0);
+		AddSurfaceToPortal (surf, shader, currentEntity, 0);
 	}
 }
 
@@ -884,7 +885,7 @@ static void AddSp2Surface (refEntity_t *e)
 	int		color;
 
 	sp2 = e->model->sp2;
-	p = (surfacePoly_t*)GL_AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+	p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 	if (!p)		// out of dynamic memory
 		return;
 
@@ -910,7 +911,7 @@ static void AddSp2Surface (refEntity_t *e)
 		color |= RGBA(0,0,0,1);						// make it non-transparent
 	p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color;
 
-	surf = GL_AddDynamicSurface (frame->shader, ENTITYNUM_WORLD);
+	surf = AddDynamicSurface (frame->shader, ENTITYNUM_WORLD);
 	surf->poly = p;
 	surf->type = SURFACE_POLY;
 }
@@ -955,7 +956,7 @@ static void AddBeamSurfaces (beam_t *b)
 		float	sx, cx;
 
 		//!! use SURF_TRISURF to allocate all parts in one surface with shared verts
-		p = (surfacePoly_t*)GL_AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+		p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p)		// out of dynamic memory
 			return;
 		p->numVerts = 4;
@@ -983,7 +984,7 @@ static void AddBeamSurfaces (beam_t *b)
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color.rgba;
 
 		//!! can be different shader to provide any types of lined particles
-		surf = GL_AddDynamicSurface (gl_identityLightShader2, ENTITYNUM_WORLD);
+		surf = AddDynamicSurface (gl_identityLightShader2, ENTITYNUM_WORLD);
 		if (!surf) return;
 		surf->poly = p;
 		surf->type = SURFACE_POLY;
@@ -1057,7 +1058,7 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 			break;
 		}
 
-		p = (surfacePoly_t*)GL_AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+		p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p)		// out of dynamic memory
 			return;
 		p->numVerts = 4;
@@ -1117,7 +1118,7 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 		}
 #endif
 
-		surf = GL_AddDynamicSurface (shader, ENTITYNUM_WORLD);
+		surf = AddDynamicSurface (shader, ENTITYNUM_WORLD);
 		if (!surf) return;
 		surf->poly = p;
 		surf->type = SURFACE_POLY;
@@ -1152,7 +1153,7 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 		float	sx, cx;
 		vec3_t	dir1, dir2;
 
-		p = (surfacePoly_t*)GL_AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+		p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p)		// out of dynamic memory
 			return;
 		p->numVerts = 4;
@@ -1178,7 +1179,7 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = b->color.rgba;
 
-		surf = GL_AddDynamicSurface (shader, ENTITYNUM_WORLD);
+		surf = AddDynamicSurface (shader, ENTITYNUM_WORLD);
 		if (!surf) return;
 		surf->poly = p;
 		surf->type = SURFACE_POLY;
@@ -1469,7 +1470,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 			surfaceCommon_t *surf;
 
 			// just add surface and continue
-			surf = GL_AddDynamicSurface (gl_entityShader, ENTITYNUM_WORLD);
+			surf = AddDynamicSurface (gl_entityShader, ENTITYNUM_WORLD);
 			if (surf)
 			{
 				surf->type = SURFACE_ENTITY;
@@ -1713,13 +1714,12 @@ static void DrawFlares (void)
 		if (!cull)
 		{
 			trace_t	trace;
-			static const vec3_t zero = {0, 0, 0};
 
 			gl_speeds.testFlares++;
 			// check visibility with trace
 			if (f->radius >= 0)
 			{
-				CM_BoxTrace (&trace, vp.vieworg, flarePos, zero, zero, 0, CONTENTS_SOLID);
+				CM_BoxTrace (&trace, vp.vieworg, flarePos, NULL, NULL, 0, CONTENTS_SOLID);
 				ClipTraceToEntities (&trace, vp.vieworg, flarePos, CONTENTS_SOLID);
 				if (trace.fraction < 1 && (f->radius <= 0 || (VectorDistance (trace.endpos, flarePos) > f->radius)))
 					cull = true;
@@ -1729,7 +1729,7 @@ static void DrawFlares (void)
 				vec3_t	tracePos;
 
 				VectorMA (vp.vieworg, BIG_NUMBER, f->origin, tracePos);
-				CM_BoxTrace (&trace, vp.vieworg, tracePos, zero, zero, 0, CONTENTS_SOLID);
+				CM_BoxTrace (&trace, vp.vieworg, tracePos, NULL, NULL, 0, CONTENTS_SOLID);
 				ClipTraceToEntities (&trace, vp.vieworg, tracePos, CONTENTS_SOLID);
 				if (!(trace.fraction < 1 && trace.surface->flags & SURF_SKY))
 					cull = true;
@@ -1754,7 +1754,7 @@ static void DrawFlares (void)
 		}
 
 		// alloc surface
-		p = (surfacePoly_t*)GL_AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+		p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p) return;
 		p->numVerts = 4;
 
@@ -1787,7 +1787,7 @@ static void DrawFlares (void)
 		}
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color.rgba;
 
-		surf = GL_AddDynamicSurface (gl_flareShader, ENTITYNUM_WORLD);
+		surf = AddDynamicSurface (gl_flareShader, ENTITYNUM_WORLD);
 		if (!surf) return;
 		surf->poly = p;
 		surf->type = SURFACE_POLY;
@@ -1850,7 +1850,7 @@ static void DrawBspSequence (node_t *leaf)
 		{
 			surfaceCommon_t *surf;
 
-			surf = GL_AddDynamicSurface (gl_particleShader, ENTITYNUM_WORLD);
+			surf = AddDynamicSurface (gl_particleShader, ENTITYNUM_WORLD);
 			if (surf)
 			{
 				surf->type = SURFACE_PARTICLE;
@@ -1888,7 +1888,7 @@ static void MarkLeaves (void)
 	gl_speeds.leafs = map.numLeafNodes - map.numNodes;
 
 	// determine the vieworg cluster
-	cluster = GL_PointInLeaf (vp.vieworg)->cluster;
+	cluster = PointInLeaf (vp.vieworg)->cluster;
 	// if cluster or areamask changed -- re-mark visible leaves
 	if (gl_refdef.viewCluster != cluster || gl_refdef.areaMaskChanged)
 	{
@@ -1927,7 +1927,7 @@ static void MarkLeaves (void)
 }
 
 
-void GL_AddEntity (entity_t *ent)
+void AddEntity (entity_t *ent)
 {
 	refEntity_t	*out;
 	vec3_t	v;
@@ -1953,12 +1953,12 @@ void GL_AddEntity (entity_t *ent)
 
 	// common fields
 	out->flags = ent->flags;
-	out->model = ent->model;
+	out->model = (model_t*)ent->model;		//!! namespace conversion (:: -> OpenGLDrv)
 
 	if (ent->model)
 	{
 		VectorCopy (ent->origin, out->origin);
-		if (ent->model->type == MODEL_MD3)
+		if (out->model->type == MODEL_MD3)
 		{	// need to negate angles[2]
 			ent->angles[2] = -ent->angles[2];
 			AnglesToAxis (ent->angles, out->axis);
@@ -1983,7 +1983,7 @@ void GL_AddEntity (entity_t *ent)
 		out->shaderColor.c[3] = appRound (ent->alpha * 255);
 
 		// model-specific code and calculate model center
-		switch (ent->model->type)
+		switch (out->model->type)
 		{
 		case MODEL_UNKNOWN:
 			VectorCopy (ent->origin, out->origin);
@@ -1992,7 +1992,7 @@ void GL_AddEntity (entity_t *ent)
 			{
 				inlineModel_t *im;
 
-				im = ent->model->inlineModel;
+				im = out->model->inlineModel;
 				VectorAdd (im->mins, im->maxs, v);
 				VectorScale (v, 0.5f, v);
 				VectorSubtract (im->maxs, v, out->size2);
@@ -2006,7 +2006,7 @@ void GL_AddEntity (entity_t *ent)
 				md3Frame_t	*frame1, *frame2;
 				vec3_t	center1, center2;
 
-				md3 = ent->model->md3;
+				md3 = out->model->md3;
 				// sanity check
 				if (out->frame >= md3->numFrames || out->frame < 0)
 				{
@@ -2075,32 +2075,30 @@ void GL_AddEntity (entity_t *ent)
 }
 
 
-void GL_AddDlight (dlight_t *dl)
+void AddDlight (dlight_t *dl)
 {
-	refDlight_t	*out;
-	float	r, g, b, l, sat;
-	int		r1, g1, b1;
-
 	if (gl_numDlights >= MAX_GLDLIGHTS)
 	{
 		Com_WPrintf ("R_AddDlight: MAX_GLDLIGHTS hit\n");
 		return;
 	}
-	out = &gl_dlights[gl_numDlights++];
+	refDlight_t *out = &gl_dlights[gl_numDlights++];
 	VectorCopy (dl->origin, out->origin);
 	out->intensity = dl->intensity;
-	r = dl->color[0] * gl_config.identityLightValue;
-	g = dl->color[1] * gl_config.identityLightValue;
-	b = dl->color[2] * gl_config.identityLightValue;
-	sat = r_saturation->value;
+	float r = dl->color[0] * gl_config.identityLightValue;
+	float g = dl->color[1] * gl_config.identityLightValue;
+	float b = dl->color[2] * gl_config.identityLightValue;
+	float sat = r_saturation->value;
 	if (sat != 1.0f)
 	{
-		l = (r + g + b) / 3.0f;
+		float l = (r + g + b) / 3.0f;
 		SATURATE(r,l,sat);
 		SATURATE(g,l,sat);
 		SATURATE(b,l,sat);
 	}
-	r1 = appRound(r); g1 = appRound(g); b1 = appRound(b);
+	int r1 = appRound(r);
+	int g1 = appRound(g);
+	int b1 = appRound(b);
 	if (!gl_config.doubleModulateLM)
 	{
 		r1 <<= 1;
@@ -2119,7 +2117,7 @@ void GL_AddDlight (dlight_t *dl)
 /*--------------------------------------------------------------*/
 
 
-void GL_DrawPortal (void)
+void DrawPortal (void)
 {
 	node_t	*firstLeaf;
 	int		i;
@@ -2151,8 +2149,7 @@ void GL_DrawPortal (void)
 	else
 		for (i = 0, e = gl_entities + vp.firstEntity; i < vp.numEntities; i++, e++)
 		{
-			if (!e->model)
-				continue;
+			if (!e->model) continue;
 
 			SetupModelMatrix (e);
 
@@ -2175,3 +2172,6 @@ void GL_DrawPortal (void)
 			}
 		}
 }
+
+
+} // namespace

@@ -382,7 +382,7 @@ Used for recording footage for merged or assembled demos
 */
 void SV_RecordDemoMessage (void)
 {
-	if (!svs.demofile) return;
+	if (!svs.wdemofile) return;
 
 	entity_state_t	nostate;
 	memset (&nostate, 0, sizeof(nostate));
@@ -414,6 +414,6 @@ void SV_RecordDemoMessage (void)
 
 	// now write the entire message to the file, prefixed by the length
 	int len = LittleLong (buf.cursize);
-	fwrite (&len, 4, 1, svs.demofile);
-	fwrite (buf.data, buf.cursize, 1, svs.demofile);
+	fwrite (&len, 4, 1, svs.wdemofile);
+	fwrite (buf.data, buf.cursize, 1, svs.wdemofile);
 }

@@ -40,16 +40,16 @@ typedef bool (*enumZipFunc_t) (zipFile_t *file);
 // Opens archive. Return NULL if file not found or bad archive.
 // Remark: we can use simple fopen(name) for this operation, but
 // this will skip some structure checks.
-FILE*	Zip_OpenArchive (char *name);
-void	Zip_CloseArchive (FILE *F);
-bool	Zip_EnumArchive (FILE *F, enumZipFunc_t enum_func);
+FILE*	Zip_OpenArchive (const char *name);
+void	Zip_CloseArchive (FILE *f);
+bool	Zip_EnumArchive (FILE *f, enumZipFunc_t enum_func);
 
 // Extract file to memory from archive F
 // Fields in zip_file, that must be set: ucsize, csize, method, pos
 // Size of buf must be at least file->ucsize
-bool	Zip_ExtractFileMem (FILE *F, zipFile_t *file, void *buf);
+bool	Zip_ExtractFileMem (FILE *f, zipFile_t *file, void *buf);
 
-ZFILE	*Zip_OpenFile (FILE *F, zipFile_t *file);
+ZFILE	*Zip_OpenFile (FILE *f, zipFile_t *file);
 int		Zip_ReadFile (ZFILE *z, void *buf, int size);
 bool	Zip_CloseFile (ZFILE *z);
 

@@ -70,38 +70,34 @@ void CL_CheckPredictionError (void)
 
 void CL_EntityTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int contents)
 {
-	int		i, j;
 	trace_t	trace;
-	float	t, traceLen, traceWidth, b1, b2, frac;
+	float	traceLen;
 	vec3_t	traceDir;
 
 	guard(CL_EntityTrace);
 
-	b1 = DotProduct (mins, mins);
-	b2 = DotProduct (maxs, maxs);
-	t = b1 > b2 ? b1 : b2;
-	traceWidth = SQRTFAST(t);
+	float b1 = DotProduct (mins, mins);
+	float b2 = DotProduct (maxs, maxs);
+	float t = max(b1, b2);
+	float traceWidth = SQRTFAST(t);
 	VectorSubtract (end, start, traceDir);
 	traceLen = VectorNormalize (traceDir) + traceWidth;
 
-	for (i = 0; i < cl.frame.num_entities; i++)
+	for (int i = 0; i < cl.frame.num_entities; i++)
 	{
-		entityState_t *ent;
-		centity_t *cent;
 		cmodel_t *cmodel;
 		vec3_t	tmp, delta, eCenter, eOrigin;
-		float	entPos, dist2, dist0;
 
-		ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
+		entityState_t *ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
 		if (!ent->solid) continue;
 		if (ent->number == cl.playernum+1) continue;	// no clip with player entity
 
 		// compute lerped entity position
-		cent = &cl_entities[ent->number];
-		frac = predictLerp;							// called CL_PredictMovement()
-		if (frac < 0) frac = cl.lerpfrac;			// called from any other place
+		centity_t *cent = &cl_entities[ent->number];
+		float frac = predictLerp;						// called CL_PredictMovement()
+		if (frac < 0) frac = cl.lerpfrac;				// called from any other place
 #ifndef NO_PREDICT_LERP
-		for (j = 0; j < 3; j++)
+		for (int j = 0; j < 3; j++)
 			delta[j] = (1.0f - frac) * (cent->current.origin[j] - cent->prev.origin[j]);
 #else
 		VectorClear (delta);
@@ -116,15 +112,15 @@ void CL_EntityTrace (trace_t *tr, const vec3_t start, const vec3_t end, const ve
 
 		// collision detection: line vs sphere
 		// check position of point projection on line
-		entPos = DotProduct (eCenter, traceDir);
+		float entPos = DotProduct (eCenter, traceDir);
 		if (entPos < -traceWidth - ent->radius || entPos > traceLen + ent->radius)
 			continue; // too near / too far
 
 		//!! if entity rotated from prev to current, should lerp angles and recompute ent->axis
 		// check distance between point and line
 		VectorMA (eCenter, -entPos, traceDir, tmp);
-		dist2 = DotProduct (tmp, tmp);
-		dist0 = ent->radius + traceWidth;
+		float dist2 = DotProduct (tmp, tmp);
+		float dist0 = ent->radius + traceWidth;
 		if (dist2 >= dist0 * dist0) continue;
 
 		if (ent->solid == 31)

@@ -60,8 +60,8 @@ static void SV_New_f (int argc, char **argv)
 		char		name[MAX_OSPATH];
 
 		appSprintf (ARRAY_ARG(name), "demos/%s", sv.name);
-		FS_FOpenFile (name, &sv.demofile);
-		if (!sv.demofile)
+		sv.rdemofile = FS_FOpenFile (name);
+		if (!sv.rdemofile)
 			Com_DropError ("Couldn't open %s\n", name);
 		return;
 	}
@@ -295,7 +295,6 @@ static void SV_BeginDownload_f (int argc, char **argv)
 	extern	cvar_t *allow_download_models;
 	extern	cvar_t *allow_download_sounds;
 	extern	cvar_t *allow_download_maps;
-	extern	int		fileFromPak; // ZOID did file come from pak?
 	int offset = 0;
 
 	name = argv[1];			//?? name = CopyFilename(name)
@@ -337,9 +336,7 @@ static void SV_BeginDownload_f (int argc, char **argv)
 	if (offset > sv_client->downloadsize)
 		sv_client->downloadcount = sv_client->downloadsize;
 
-	if (!sv_client->download
-	/*	// special check for maps, if it came from a pak file, don't allow download  (ZOID) ??
-		|| (memcmp (name, "maps/", 5) == 0 && fileFromPak) */)
+	if (!sv_client->download)
 	{
 		Com_DPrintf ("Couldn't download %s to %s\n", name, sv_client->name);
 		if (sv_client->download) {

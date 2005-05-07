@@ -1,5 +1,5 @@
+#include <winnt.h>	// for LANG_XXX codes
 #include "resource.h"
-#include "afxres.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // English (U.S.) resources

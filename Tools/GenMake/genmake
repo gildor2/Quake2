@@ -40,7 +40,9 @@ defined(var)         will be replaced with 0 or 1
 global:
 	COMPILER	= VisualC | other
 	MAPFILES	= 1 | 0 == undef
+	PDB			= 1 | 0 == undef (VisualC only)
 	STDLIBS		= list of used libraries
+	LIBRARIES   = path to additional library files
 	LIBC		= static | dynamic == undef
 
 per-target:
@@ -726,7 +728,9 @@ sub RememberTarget {
 	}
 	# remember options
 	SetTargetOption ($n, "MAPFILES");
+	SetTargetOption ($n, "PDB");
 	SetTargetOption ($n, "STDLIBS", 0, $LibFileExt);
+	SetTargetOption ($n, "LIBRARIES");
 	# some options will be cleared after checking
 #	SetTargetOption ($n, "CONSOLE", 1);
 	SetTargetOption ($n, "IMAGEBASE", 1);
@@ -747,6 +751,7 @@ sub FlushTargetText {
 	# get used libraries
 	my $libs = GetTargetOption ($n, "LIBS");
 	my $stdlibs = GetTargetOption ($n, "STDLIBS");
+	my $libpath = GetTargetOption ($n, "LIBRARIES");
 
 	my $baseaddr = GetTargetOption ($n, "IMAGEBASE");
 
@@ -772,11 +777,12 @@ sub FlushTargetText {
 	if ($COMPILER eq "VisualC") {
 		$prefix .= "\techo Creating $target \"$n\" ...\n";
 		$line = "\tlink.exe -nologo -filealign:512 -incremental:no -out:\"$n\"";
+		$line .= " -libpath:\"$libpath\"" if $libpath ne "";
 		$line .= " $stdlibs" if $stdlibs ne "";
 		$line .= " $libs" if $libs ne "";
 		$line .= " -base:0x$baseaddr" if $baseaddr ne "";
 		$line .= " -map:\"$shortOutName.map\"" if GetTargetOption ($n, "MAPFILES") eq "1";
-		$line .= " -pdb:none"; #?? options for pdb (easier debugging ?)
+		$line .= " -debug -pdb:\"$shortOutName.pdb\" -pdbtype:sept -opt:ref -opt:icf" if GetTargetOption ($n, "PDB") eq "1";
 		$line .= " \$($objListName)";
 #		if (GetTargetOption ($n, "CONSOLE") == 1) {
 #			$line .= " -subsystem:console";

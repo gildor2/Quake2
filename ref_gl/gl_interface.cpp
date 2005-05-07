@@ -3,6 +3,9 @@
 #include "gl_frontend.h"		//?? for fog params only ?
 
 
+namespace OpenGLDrv {
+
+
 glconfig_t	gl_config;
 glstate_t	gl_state;
 
@@ -85,6 +88,7 @@ void GL_Lock (void)
 	COPY(newTextureTarget, textureTarget);
 	COPY(newEnvColor, texEnvColor);
 	COPY(newMipBias, mipBias);
+
 	memset (gl_state.newTCPointer, 0, sizeof(gl_state.newTCPointer));
 #undef COPY
 
@@ -94,18 +98,18 @@ void GL_Lock (void)
 
 void GL_Unlock (void)
 {
-	int		startTmu, tmu, i, n;
-	bool	f;
-	color_t	c;
-	float	v;
-	GLenum	tgt;
-
 	if (!gl_state.locked) return;
 	gl_state.locked = false;
 
-	startTmu = gl_state.currentTmu;
-	for (i = -1; i < gl_config.maxActiveTextures; i++)
+	int startTmu = gl_state.currentTmu;
+	for (int i = -1; i < gl_config.maxActiveTextures; i++)
 	{
+		int		tmu, n;
+		bool	f;
+		color_t	c;
+		float	v;
+		GLenum	tgt;
+
 		if (i == -1)
 			tmu = startTmu;		// process current TMU first (iteration "-1")
 		else if (i == startTmu)
@@ -233,8 +237,7 @@ void GL_Bind (image_t *tex)
 // Bind image even if nobind active (i.e. for uploading image)
 void GL_BindForce (image_t *tex)
 {
-	int		tmu;
-	tmu = gl_state.currentTmu;
+	int tmu = gl_state.currentTmu;
 
 	if (gl_state.textureTarget[tmu] != tex->target)
 	{
@@ -260,10 +263,6 @@ void GL_BindForce (image_t *tex)
 
 void GL_TexEnv (unsigned env)
 {
-	int		tmu, func;
-	unsigned i, diff, mask, shift;
-	const texEnvInfo_t *info;
-
 	static const GLenum sourceRgb[4] = {GL_SOURCE0_RGB_ARB, GL_SOURCE1_RGB_ARB, GL_SOURCE2_RGB_ARB, GL_SOURCE3_RGB_NV};
 	static const GLenum sourceAlpha[4] = {GL_SOURCE0_ALPHA_ARB, GL_SOURCE1_ALPHA_ARB, GL_SOURCE2_ALPHA_ARB, GL_SOURCE3_ALPHA_NV};
 	static const GLenum operandRgb[4] = {GL_OPERAND0_RGB_ARB, GL_OPERAND1_RGB_ARB, GL_OPERAND2_RGB_ARB, GL_OPERAND3_RGB_NV};
@@ -275,10 +274,10 @@ void GL_TexEnv (unsigned env)
 		return;
 	}
 
-	tmu = gl_state.currentTmu;
-	func = env & TEXENV_FUNC_MASK;
-	info = &texEnvInfo[func];
-	diff = (env ^ gl_state.currentEnv[tmu]) & info->mask;
+	int tmu = gl_state.currentTmu;
+	int func = env & TEXENV_FUNC_MASK;
+	const texEnvInfo_t *info = &texEnvInfo[func];
+	unsigned diff = (env ^ gl_state.currentEnv[tmu]) & info->mask;
 	if (!diff) return;
 
 	gl_state.currentEnv[tmu] ^= diff;		// this will not update fields, which can be unchanged
@@ -298,9 +297,9 @@ void GL_TexEnv (unsigned env)
 	if (diff & TEXENV_MUL2)
 		glTexEnvf (GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, (env & TEXENV_MUL2 ? 2 : 1));
 
-	mask = TEXENV_SRC0_MASK;
-	shift = TEXENV_SRC0_SHIFT;
-	for (i = 0; i < 4; i++)
+	unsigned mask = TEXENV_SRC0_MASK;
+	int shift = TEXENV_SRC0_SHIFT;
+	for (int i = 0; i < 4; i++)
 	{
 		if (diff & mask)
 		{
@@ -343,23 +342,20 @@ void GL_TexMipBias (float f)
 
 void GL_TexEnvColor (color_t *c)
 {
-	int		tmu;
-	float	color[4];
-
 	if (gl_state.locked)
 	{
-		tmu = gl_state.newTmu;
-		if (gl_state.newEnv[tmu] & TEXENV_ENVCOLOR)
+		if (gl_state.newEnv[gl_state.newTmu] & TEXENV_ENVCOLOR)
 			gl_state.newEnvColor[gl_state.newTmu].rgba = c->rgba;
 		return;
 	}
 
-	tmu = gl_state.currentTmu;
+	int tmu = gl_state.currentTmu;
 	if (!(gl_state.newEnv[tmu] & TEXENV_ENVCOLOR) || gl_state.texEnvColor[tmu].rgba == c->rgba)
 		return;
 
 //	LOG_STRING(va("// GL_TexEnvColor(%d, %d, %d, %d)\n", c->c[0], c->c[1], c->c[2], c->c[3]));
 	gl_state.texEnvColor[tmu].rgba = c->rgba;
+	float	color[4];
 	color[0] = c->c[0] / 255.0f;
 	color[1] = c->c[1] / 255.0f;
 	color[2] = c->c[2] / 255.0f;
@@ -458,15 +454,13 @@ void GL_SetMultitexture (int level)
 
 void GL_DisableTexCoordArrays (void)
 {
-	int		i;
-
 	if (gl_state.locked)
 	{
 		memset (gl_state.newTexCoordEnabled, 0, sizeof(gl_state.newTexCoordEnabled));
 		return;
 	}
 
-	for (i = 0; i < gl_config.maxActiveTextures; i++)
+	for (int i = 0; i < gl_config.maxActiveTextures; i++)
 		if (gl_state.texCoordEnabled[i])
 		{
 			GL_SelectTexture (i);
@@ -503,8 +497,8 @@ void GL_CullFace (gl_cullMode_t mode)
 
 void GL_DepthRange (gl_depthMode_t mode)
 {
-	static float n[] = {0, 0, 0, 1};
-	static float f[] = {0, 1.0f/3, 1, 1};
+	static const float n[] = {0,	0,		0,		1};
+	static const float f[] = {0,  1.0/3,	1,		1};
 
 	if (gl_state.currentDepthMode == mode)
 		return;
@@ -517,8 +511,6 @@ void GL_DepthRange (gl_depthMode_t mode)
 
 void GL_State (unsigned state)
 {
-	unsigned diff;
-
 	static const GLenum blends[] = {
 		GL_ZERO, GL_ONE,
 		GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR,
@@ -528,7 +520,7 @@ void GL_State (unsigned state)
 		GL_SRC_ALPHA_SATURATE
 	};
 
-	diff = state ^ gl_state.currentState;
+	unsigned diff = state ^ gl_state.currentState;
 	if (!diff)
 		return;
 
@@ -536,12 +528,10 @@ void GL_State (unsigned state)
 	{
 		if (state & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
 		{
-			unsigned src, dst;
-
-			src = ((state & GLSTATE_SRCMASK) - GLSTATE_SRC_ZERO) >> GLSTATE_SRCSHIFT;
+			unsigned src = ((state & GLSTATE_SRCMASK) - GLSTATE_SRC_ZERO) >> GLSTATE_SRCSHIFT;
 			src = blends[src];
 
-			dst = ((state & GLSTATE_DSTMASK) - GLSTATE_DST_ZERO) >> GLSTATE_DSTSHIFT;
+			unsigned dst = ((state & GLSTATE_DSTMASK) - GLSTATE_DST_ZERO) >> GLSTATE_DSTSHIFT;
 			dst = blends[dst];
 
 			if (!(gl_state.currentState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK)))
@@ -554,9 +544,7 @@ void GL_State (unsigned state)
 
 	if (diff & GLSTATE_ALPHAMASK)
 	{
-		unsigned m;
-
-		m = state & GLSTATE_ALPHAMASK;
+		unsigned m = state & GLSTATE_ALPHAMASK;
 		if (!m)
 			glDisable (GL_ALPHA_TEST);
 		else
@@ -631,15 +619,13 @@ void GL_EnableFog (bool enable)
 
 void GL_SetDefaultState (void)
 {
-	int		i;
-
 	glDisable (GL_CULL_FACE);
 	glDepthRange (0, 1);
 	gl_state.currentDepthMode = DEPTH_NORMAL;
 	glColor4f (1, 1, 1, 1);
 
 	// setup texturing
-	for (i = 1; i < gl_config.maxActiveTextures; i++)
+	for (int i = 1; i < gl_config.maxActiveTextures; i++)
 	{
 		GL_SelectTexture (i);
 		glDisable (GL_TEXTURE_2D);
@@ -678,7 +664,7 @@ void GL_Set2DMode (void)
 		return;
 
 	if (gl_screenshotName && gl_screenshotFlags & SHOT_NO_2D)
-		GL_PerformScreenshot ();
+		PerformScreenshot ();
 
 	LOG_STRING ("***** Set2DMode() *****\n");
 	glViewport (0, 0, vid_width, vid_height);
@@ -700,8 +686,6 @@ void GL_Set2DMode (void)
 // Setup OpenGL as specified in active portal
 void GL_Setup (viewPortal_t *port)
 {
-	GLbitfield	bits;
-
 	LOG_STRING ("*** GL_Setup() ***\n");
 	gl_state.is2dMode = false;
 	glMatrixMode (GL_PROJECTION);
@@ -713,19 +697,17 @@ void GL_Setup (viewPortal_t *port)
 	glScissor (port->x, port->y, port->w, port->h);
 	GL_State(GLSTATE_DEPTHWRITE);					// affects glClear(DEPTH)
 
-	bits = GL_DEPTH_BUFFER_BIT;
+	GLbitfield bits = GL_DEPTH_BUFFER_BIT;
 	if (gl_state.useFastSky && !(port->flags & RDF_NOWORLDMODEL))
 	{
 		bits |= GL_COLOR_BUFFER_BIT;
 		glClearColor (0, 0, 0, 1);
 	}
-/*	else if (port->flags & RDF_NOWORLDMODEL)
-	{
-		bits |= GL_COLOR_BUFFER_BIT;
-		glClearColor (0, 0.03, 0.03, 1);
-	} */
 	glClear (bits);
 
 	gl_state.inverseCull = false;
 	GL_CullFace (CULL_FRONT);
 }
+
+
+} // namespace

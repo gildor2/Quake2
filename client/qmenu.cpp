@@ -346,11 +346,7 @@ void menuFramework_t::Draw ()
 
 	/*------- draw banner ---------*/
 	if (banner)
-	{
-		int w, h;
-		RE_DrawGetPicSize (&w, &h, banner);
-		RE_DrawPic ((viddef.width - w) / 2, viddef.height / 2 - 110, banner);
-	}
+		RE_DrawPic (viddef.width / 2, viddef.height / 2 - 110, banner, ANCHOR_TOP);
 
 	/*------- draw contents -------*/
 	vis = -1;
@@ -447,11 +443,11 @@ void Menu_DrawStatusBar (const char *string)
 		maxcol = VID_WIDTH / CHAR_WIDTH;
 		col = maxcol / 2 - l / 2;
 
-		RE_DrawFill (0, VID_HEIGHT - CHAR_HEIGHT, VID_WIDTH, CHAR_HEIGHT, 4);
+		RE_Fill8 (0, VID_HEIGHT - CHAR_HEIGHT, VID_WIDTH, CHAR_HEIGHT, 4);
 		DrawString (col * CHAR_WIDTH, VID_HEIGHT - CHAR_WIDTH, string);
 	}
 //	else
-//		RE_DrawFill (0, VID_HEIGHT-8, VID_WIDTH, 8, 0);
+//		RE_Fill8 (0, VID_HEIGHT-8, VID_WIDTH, 8, 0);
 }
 
 bool menuFramework_t::SelectItem ()
@@ -513,7 +509,7 @@ static void MenuList_Draw (menuList_t *l)
 
 	DrawCaption (l);
 	n = l->itemnames;
-  	RE_DrawFill (l->x - 112 + l->parent->x, l->parent->y + l->y + l->curvalue*10 + 10, 128, CHAR_HEIGHT+2, 16);
+  	RE_Fill8 (l->x - 112 + l->parent->x, l->parent->y + l->y + l->curvalue*10 + 10, 128, CHAR_HEIGHT+2, 16);
 
 	int y = 0;
 	while (*n)
@@ -672,12 +668,11 @@ static int		m_menudepth;
 
 void menuFramework_t::Push ()
 {
-	if (*re.flags & REF_CONSOLE_ONLY) return;	// no menus in this mode
-
-	if (!m_current) CL_Pause (true);
+	if (RE_GetCaps() & REF_CONSOLE_ONLY) return;	// no menus in this mode
 
 	// if this menu is already present, drop back to that level
 	// to avoid stacking menus by hotkeys
+//	if (m_menudepth == 0) CL_Pause (true);
 	int i;
 	for (i = 0; i < m_menudepth; i++)
 		if (m_layers[i] == this)
@@ -694,6 +689,8 @@ void menuFramework_t::Push ()
 		if (!Init ()) return;
 		m_layers[m_menudepth++] = this;
 	}
+	if (m_menudepth == 1) CL_Pause (true);
+
 	m_current = this;
 	AdjustCursor (1);
 	cls.key_dest = key_menu;
@@ -800,7 +797,7 @@ void M_Draw (void)
 	if (!m_current) return;
 
 	if (!cls.keep_console)	// do not blend whole screen when small menu painted
-		RE_DrawFill2 (0, 0, viddef.width, viddef.height, RGBA(0,0,0,0.5));
+		RE_Fill (0, 0, viddef.width, viddef.height, RGBA(0,0,0,0.5));
 
 	m_current->Draw ();
 }

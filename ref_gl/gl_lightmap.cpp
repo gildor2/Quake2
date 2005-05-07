@@ -5,6 +5,9 @@
 #include "gl_math.h"
 
 
+namespace OpenGLDrv {
+
+
 static int lightmapsNum, currentLightmapNum;
 static lightmapBlock_t lmBlocks[MAX_LIGHTMAPS];
 
@@ -25,7 +28,7 @@ void LM_Flush (lightmapBlock_t *lm)
 	if (!lm->empty && !lm->filled)
 	{
 		// have valid not stored lightmap -- upload it
-		lm->image = GL_CreateImage (va("*lightmap%d", lm->index), lm->pic, LIGHTMAP_SIZE, LIGHTMAP_SIZE,
+		lm->image = CreateImage (va("*lightmap%d", lm->index), lm->pic, LIGHTMAP_SIZE, LIGHTMAP_SIZE,
 			IMAGE_CLAMP|IMAGE_LIGHTMAP);
 		lm->filled = true;
 	}
@@ -330,7 +333,7 @@ void LM_SortLightStyles (dynamicLightmap_t *dl)
 }
 
 
-void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, bool vertexOnly, unsigned dlightMask)
+void UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, bool vertexOnly, unsigned dlightMask)
 {
 	byte	pic[LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4];
 	int		x, z;
@@ -514,3 +517,6 @@ bool LM_IsMonotone (dynamicLightmap_t *lm, color_t *avg)
 
 	return true;
 }
+
+
+} // namespace

@@ -77,7 +77,8 @@ static const keyname_t keynames[] =
 	{"KP_Enter",	K_KP_ENTER},
 
 	// mouse
-	{"Mouse1",	K_MOUSE1},	{"Mouse2",	K_MOUSE2},	{"Mouse3",	K_MOUSE3},
+	{"Mouse1",	K_MOUSE1},	{"Mouse2",	K_MOUSE2},	{"Mouse3",	K_MOUSE3},	{"Mouse4",	K_MOUSE4},
+	{"Mouse5",	K_MOUSE5},	{"Mouse6",	K_MOUSE6},	{"Mouse7",	K_MOUSE7},	{"Mouse8",	K_MOUSE8},
 	{"MWheelUp",	K_MWHEELUP},	{"MWheelDown",	K_MWHEELDOWN},
 
 	// joystick
@@ -379,7 +380,7 @@ static char *Do_CompleteCommand (char *partial)
 		}
 
 		// complete "map" or "demomap" with mask/arg*
-		TList<CStringItem> filelist = FS_ListFiles (va("%s/*%s", path, ext), NULL, file_type);
+		TList<CStringItem> filelist = FS_ListFiles (va("%s/*%s", path, ext), file_type);
 		if (filelist.First())
 		{
 			for (CStringItem *fileitem = filelist.First(); fileitem; fileitem = filelist.Next(fileitem))
@@ -466,7 +467,7 @@ struct completeMenu_t : menuFramework_t
 
 	void Draw ()
 	{
-		RE_DrawFill2 (complMenu_x, complMenu_y, complMenu_w, complMenu_h, RGBA(0.1,0.5,0.5,0.8));
+		RE_Fill (complMenu_x, complMenu_y, complMenu_w, complMenu_h, RGBA(0.1,0.5,0.5,0.8));
 		menuFramework_t::Draw ();
 	}
 
@@ -739,7 +740,7 @@ void Key_Init (void)
 }
 
 
-void Key_Event (int key, bool down, unsigned time)
+void Key_Event (int key, bool down)
 {
 	int		modKey, bindKey, rep;
 	char	*kb;
@@ -846,9 +847,7 @@ void Key_Event (int key, bool down, unsigned time)
 	skip = false;
 	if (cls.key_dest == key_bindingMenu)
 	{
-		bool	needDown;
-
-		needDown = true;
+		bool needDown = true;
 		if (key == K_CTRL || key == K_RCTRL || key == K_ALT || key == K_RALT)
 			needDown = false;
 		if (down == needDown)
@@ -861,6 +860,8 @@ void Key_Event (int key, bool down, unsigned time)
 	// to keep the character from continuing an action started before a console
 	// switch.  Button commands include the kenum as a parameter, so multiple
 	// downs can be matched with ups
+	unsigned time = appMilliseconds ();
+
 	if (!down)
 	{
 		if (!plus_cmd_fired[bindKey])
@@ -924,7 +925,7 @@ void Key_ClearStates (void)
 	{
 //		if (key == '`' || key == K_ESCAPE) continue;	// hardcoded keys - do not clear states
 		if (keydown[key])
-			Key_Event (key, false, 0);
+			Key_Event (key, false);
 		key_repeats[key] = 0;
 	}
 	keysDown = 0;

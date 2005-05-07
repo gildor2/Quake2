@@ -8,7 +8,6 @@ char*	Cvar_VariableString (const char *name);
 float	Cvar_VariableValue (const char *name);
 int	Cvar_VariableInt (const char *name);
 float	Cvar_Clamp (cvar_t *cvar, float low, float high);
-float	Cvar_ClampName (const char *name, float low, float high);
 
 //--------- console ---------
 void	Com_Printf (const char *str, ...);
@@ -17,7 +16,7 @@ void	Com_WPrintf (const char *str, ...);
 
 //---------- files ----------
 bool	FS_FileExists (const char *filename);
-TList<CStringItem> FS_ListFiles (const char *name, int *numfiles, int flags);
+TList<CStringItem> FS_ListFiles (const char *name, int flags);
 void*	FS_LoadFile (const char *name, unsigned *size = NULL);
 void	FS_FreeFile (void *buf);
 char*	FS_Gamedir (void);
@@ -40,6 +39,7 @@ bool	WriteJPG (const char *name, byte *pic, int width, int height, bool highQual
 
 //--------- models ----------
 bspfile_t* LoadBspFile (const char *filename, bool clientload, unsigned *checksum);
+// mins/maxs may be NULL for {0,0,0}
 void CM_BoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask);
 void CM_TransformedBoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles);
 void CM_TransformedBoxTrace2 (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t *axis);

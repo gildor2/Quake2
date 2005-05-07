@@ -30,7 +30,7 @@ static bool CheckAttributes (unsigned attrs)
 
 const char *Sys_FindFirst (const char *path, int flags)
 {
-	struct _finddata_t findinfo;
+	_finddata_t findinfo;
 
 	if (const char *s = strrchr (path, '/'))
 		appStrncpyz (findBase, path, s - path + 2);	// +1 for '/' char and +1 for zero
@@ -49,7 +49,7 @@ const char *Sys_FindFirst (const char *path, int flags)
 
 const char *Sys_FindNext (void)
 {
-	struct _finddata_t findinfo;
+	_finddata_t findinfo;
 
 	while (findHandle != -1)
 	{
@@ -70,4 +70,14 @@ void Sys_FindClose (void)
 	if (findHandle != -1)
 		_findclose (findHandle);
 	findHandle = -1;
+}
+
+bool Sys_FileExists (const char *path, int flags)
+{
+	if (Sys_FindFirst (path, flags))
+	{
+		Sys_FindClose ();
+		return true;
+	}
+	return false;
 }

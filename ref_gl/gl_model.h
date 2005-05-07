@@ -7,6 +7,10 @@
 #include "gl_frontend.h"
 #include "gl_light.h"
 
+
+namespace OpenGLDrv {
+
+
 /*--------------------- Lighting --------------------------*/
 
 struct surfDlight_t
@@ -55,7 +59,7 @@ struct vertexMd3_t	//?? == md3XyzNormal_t
 typedef enum
 {
 	SURFACE_PLANAR,				// surfacePlanar_t
-	SURFACE_TRISURF,			// surfaceTrisurf_t
+	SURFACE_TRISURF,			// surfaceTrisurf_t (unused??)
 	SURFACE_MD3,				// surfaceMd3_t
 	SURFACE_POLY,				// surfacePoly_t
 	SURFACE_PARTICLE,			// particle_t
@@ -130,8 +134,8 @@ struct surfaceCommon_t
 	int		type;
 	inlineModel_t *owner;
 	union {
-		surfaceTrisurf_t *tri;	// type = SURFACE_PLANAR
-		surfacePlanar_t *pl;	// type = SURFACE_TRISURF
+		surfaceTrisurf_t *tri;	// type = SURFACE_TRISURF
+		surfacePlanar_t *pl;	// type = SURFACE_PLANAR
 		surfaceMd3_t	*md3;	// type = SURFACE_MD3
 		surfacePoly_t	*poly;	// type = SURFACE_POLY
 		particle_t		*part;	// type = SURFACE_PARTICLE
@@ -278,9 +282,9 @@ typedef enum {
 
 
 // Common struct for all model types
-struct model_t
+class model_t : public CRenderModel
 {
-	char	name[MAX_QPATH];
+public:
 	int		size;
 
 	modelType_t	type;
@@ -299,15 +303,17 @@ extern bspModel_t	gl_worldModel;
 
 /*---------------- Functions ---------------*/
 
-node_t *GL_PointInLeaf (vec3_t p);
+node_t *PointInLeaf (vec3_t p);
 
-void	GL_InitModels (void);
-void	GL_ShutdownModels (void);
-void	GL_ResetModels (void);
+void	InitModels (void);
+void	ShutdownModels (void);
+void	ResetModels (void);
 
-model_t	*GL_FindModel (const char *name);
-shader_t *GL_FindSkin (const char *name);
-void	GL_LoadWorldMap (const char *name);
+model_t	*FindModel (const char *name);
+shader_t *FindSkin (const char *name);
+void	LoadWorldMap (const char *name);
 
+
+} // namespace
 
 #endif

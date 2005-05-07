@@ -48,8 +48,7 @@ typedef float vec3_t[3];
 #define IMAGE_ANY	(IMAGE_8BIT|IMAGE_32BIT)
 
 // exports for renderer
-#include "../client/ref_decl.h"
-#include "../client/ref_defs.h"
+#include "../client/engine_intf.h"
 
 // declarations for game system (!!)
 #include "q_shared2.h"
@@ -460,7 +459,6 @@ cvar_t	*Cvar_ForceSet (const char *var_name, const char *value);	// will set the
 
 // expands value to a string and calls Cvar_Set
 //--float	Cvar_Clamp (cvar_t *cvar, float low, float high);
-//--float	Cvar_ClampName (char *name, float low, float high);
 
 //--float	Cvar_VariableValue (char *var_name);
 //--int		Cvar_VariableInt (char *var_name);
@@ -666,16 +664,18 @@ extern cvar_t	*fs_gamedirvar;
 #define LIST_FILES	1
 #define LIST_DIRS	2
 
+class QFILE;		// empty declaration
+
 void	FS_InitFilesystem (void);
 bool	FS_SetGamedir (const char *dir);
 //--char	*FS_Gamedir (void);
 char	*FS_NextPath (const char *prevpath);
 void	FS_LoadGameConfig (void);
 
-int		FS_FOpenFile (const char *filename, FILE **file);
+QFILE	*FS_FOpenFile (const char *filename, int *plen = NULL);
 //--bool FS_FileExists (char *filename);
-void	FS_FCloseFile (FILE *f);
-void	FS_Read (void *buffer, int len, FILE *f);
+void	FS_FCloseFile (QFILE *f);
+void	FS_Read (void *buffer, int len, QFILE *f);
 // properly handles partial reads
 
 //--void*	FS_LoadFile (const char *path, unsigned *len = NULL);
@@ -690,6 +690,7 @@ void	Sys_Mkdir (char *path);
 const char	*Sys_FindFirst (const char *path, int flags);
 const char	*Sys_FindNext (void);
 void		Sys_FindClose (void);
+bool		Sys_FileExists (const char *path, int flags);
 
 
 /*------------- Miscellaneous -----------------*/
@@ -712,8 +713,8 @@ void	Com_SetServerState (server_state_t state);
 unsigned Com_BlockChecksum (void *buffer, int length);
 
 #ifdef DYNAMIC_REF
-// Using inline version will grow executable with ~2Kb (cl_fx.cpp uses a lots of [c|f]rand() calls)
-// BUT: require this for dynamic renderer (or move to ref/ref.in)
+// Using inline version will grow executable by ~2Kb (cl_fx.cpp uses a lots of [c|f]rand() calls)
+// BUT: require this for dynamic renderer (or move to "engine.h" or to Core)
 // 0 to 1
 inline float frand (void)
 {
@@ -757,8 +758,8 @@ void	SCR_DebugGraph (float value, int color);
 
 void	Sys_Init (void);
 
-void	Sys_UnloadGame (void);
 void	*Sys_GetGameAPI (void *parms);
+void	Sys_UnloadGame (void);
 // loads the game dll and calls the api init function
 
 char	*Sys_ConsoleInput (void);

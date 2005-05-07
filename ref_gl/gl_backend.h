@@ -4,6 +4,9 @@
 
 #include "gl_model.h"
 
+namespace OpenGLDrv {
+
+
 // per-shader limits
 #define MAX_VERTEXES	4096		// 1024 in Q3, 2048 in Q2, but have VALID model with more than 2048 verts
 #define MAX_INDEXES		(MAX_VERTEXES*6)
@@ -47,10 +50,10 @@ extern byte *lastBackendCommand;
 
 /*-------------------- Functions -------------------------------*/
 
-void	GL_BackEnd (void);
+void	BackEnd (void);
 
-void	GL_InitBackend (void);
-void	GL_ShutdownBackend (void);
+void	InitBackend (void);
+void	ShutdownBackend (void);
 
 
 /*-------- Macro for easy generating backend commands ----------*/
@@ -71,7 +74,7 @@ void	GL_ShutdownBackend (void);
 #define PUT_BACKEND_COMMAND(type,varname) \
 	type *varname;	\
 	if (backendCmdSize+sizeof(type)+4 > MAX_BACKEND_COMMANDS)	\
-		GL_BackEnd ();	\
+		BackEnd ();	\
 	varname = (type *) &backendCommands[backendCmdSize];	\
 	lastBackendCommand = (byte*) varname;	\
 	backendCmdSize += sizeof(type);
@@ -80,7 +83,7 @@ void	GL_ShutdownBackend (void);
 #define PUT_BACKEND_COMMAND2(type,varname,size) \
 	type *varname;	\
 	if (backendCmdSize+sizeof(type)+size+4 > MAX_BACKEND_COMMANDS)	\
-		GL_BackEnd ();	\
+		BackEnd ();	\
 	varname = (type *) &backendCommands[backendCmdSize];	\
 	lastBackendCommand = (byte*) varname;	\
 	backendCmdSize += sizeof(type) + size;
@@ -89,7 +92,7 @@ inline bool GET_BACKEND_SPACE (int size)
 {
 	if (backendCmdSize+size+4 > MAX_BACKEND_COMMANDS)
 	{
-		GL_BackEnd ();
+		BackEnd ();
 		return false;
 	}
 	backendCmdSize += size;
@@ -163,5 +166,7 @@ typedef struct
 #define ENTITYNUM_SHIFT		(DLIGHTNUM_SHIFT+DLIGHTNUM_BITS)
 #define SHADERNUM_SHIFT		(ENTITYNUM_SHIFT+ENTITYNUM_BITS)
 
+
+} // namespace
 
 #endif

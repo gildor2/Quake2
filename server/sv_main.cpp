@@ -1391,16 +1391,16 @@ void SV_Shutdown (const char *finalmsg, bool reconnect)
 	SV_ShutdownGameLibrary ();
 
 	// free current level
-	if (sv.demofile)
-		FS_FCloseFile (sv.demofile);
+	if (sv.rdemofile)
+		FS_FCloseFile (sv.rdemofile);
 	memset (&sv, 0, sizeof(sv));
 	Com_SetServerState (sv.state);
 
 	// free server static data
 	if (svs.clients) delete svs.clients;
 	if (svs.client_entities) delete svs.client_entities;
-	if (svs.demofile)
-		fclose (svs.demofile);
+	if (svs.wdemofile)
+		fclose (svs.wdemofile);
 	memset (&svs, 0, sizeof(svs));
 
 	Cvar_GetLatchedVars ();

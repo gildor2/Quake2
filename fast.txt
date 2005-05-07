@@ -11,10 +11,7 @@
   - if upgrade compression, should parse demos with
     a) original protocol b)ext protocol, but old-style delta
     c) ext protocol and new-style delta;  may be, change EXT_PROTOCOL_ID too (add version number)
-- move 8/TestApp to this project (choose dir for it!), remove C:/8 and unlink from FAR menu
 - Q2 menu system: have a LOTS of menu items with callbacks == direct linking to cvar: on Init() reads value
   from cvar, on Modify() write value back to cvar; uses cvar->Clamp() on init
   ! can add text field, and flags QMF_CVAR -- will init menu item from cvar, update
     cvar when item changed (for slider - should specify base + scale)
-- screen blending: move this outside renderer, make with DrawFill2 (REF_SOFT: cannot do this, because of paletted implementation,
-  but this renderer is already gone ...)

@@ -12,8 +12,7 @@ bool		ActiveApp, MinimizedApp, FullscreenApp;
 
 static HANDLE hinput, houtput;
 
-unsigned	sys_msg_time;
-unsigned	sys_frame_time;
+unsigned	sys_frame_time;			//?? used in cl_input.cpp only
 
 
 /*
@@ -279,7 +278,6 @@ void Sys_SendKeyEvents (void)
 	while (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
 	{
 		if (msg.message == WM_QUIT) Com_Quit ();
-		sys_msg_time = appMilliseconds ();	//?? msg.time;
 
 		// TranslateMessage() used for convert VK_XXX messages to WM_CHAR-like
 		// We don't need this, but keep TranslateMessage() just in case of compatibility
@@ -435,25 +433,7 @@ int main (int argc, const char **argv)
 #ifndef DEDICATED_ONLY
 			if (!ActiveApp || DEDICATED)
 				Sleep (10);		//?? what about client and server in one place: will server become slower ?
-
-#if 0
-			MSG		msg;
-			while (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
-			{
-				if (msg.message == WM_QUIT) Com_Quit ();
-				sys_msg_time = appMilliseconds ();	//?? msg.time;
-
-				guard(TranslateMessage);
-				TranslateMessage (&msg);
-				unguardf(("msg=%X", msg.message));
-
-				guard(DispatchMessage);
-				DispatchMessage (&msg);
-				unguardf(("msg=%X", msg.message));
-			}
-#else
 			Sys_SendKeyEvents ();
-#endif
 #else
 			Sleep (10);
 #endif

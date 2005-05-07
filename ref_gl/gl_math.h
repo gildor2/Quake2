@@ -5,6 +5,9 @@
 #include "gl_frontend.h"
 
 
+namespace OpenGLDrv {
+
+
 #define TABLE_SIZE	1024
 #define TABLE_MASK	(TABLE_SIZE-1)
 
@@ -70,7 +73,7 @@ extern int   noiseTablei[];
 extern float noiseTablef[];
 
 
-void GL_InitFuncTables (void);
+void InitFuncTables (void);
 void ModelToWorldCoord (vec3_t localOrigin, refEntity_t *e, vec3_t center);
 void WorldToModelCoord (vec3_t world, refEntity_t *e, vec3_t local);
 void BuildRotationMatrix (float r[3][3], vec3_t axis, float angle);
@@ -80,5 +83,8 @@ bool ProjectToScreen (vec3_t pos, int *scr);
 
 void SaturateColor3f (vec3_t color);
 void SaturateColor4b (color_t *c);
+
+
+} // namespace
 
 #endif

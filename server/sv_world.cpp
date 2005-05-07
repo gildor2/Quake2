@@ -33,17 +33,17 @@ FIXME: this use of "area" is different from the bsp file use
 
 #define EDICT_FROM_AREA(a)		((edict_t*) ( (byte*)a - (int)&((edict_t*)NULL) ->area ) )
 
-typedef struct areanode_s
+struct areanode_t
 {
 	int		axis;				// -1 = leaf node
 	float	dist;
-	struct areanode_s *children[2];
-	struct areanode_s *parent;
+	areanode_t *children[2];
+	areanode_t *parent;
 	int		numTrigEdicts;
 	link_t	trigEdicts;
 	int		numSolidEdicts;
 	link_t	solidEdicts;
-} areanode_t;
+};
 
 #define	AREA_DEPTH	6
 #define	AREA_NODES	(1 << (AREA_DEPTH + 1))		// (1<<AREA_DEPTH) for nodes and same count for leafs
@@ -551,11 +551,10 @@ SV_ClipMoveToEntities
 */
 void SV_ClipMoveToEntities (trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *passedict, int contentmask)
 {
-	int		i, num;
+	int		i;
 	edict_t	*list[MAX_EDICTS], *edict;
 	entityHull_t *ent;
 	trace_t	trace;
-	float	t, traceLen, traceWidth, b1, b2;
 	vec3_t	amins, amaxs, traceDir;
 
 	guard(SV_ClipMoveToEntities);
@@ -575,15 +574,15 @@ void SV_ClipMoveToEntities (trace_t *tr, const vec3_t start, const vec3_t mins, 
 			amaxs[i] = start[i] + maxs[i];
 		}
 	}
-	num = SV_AreaEdicts (amins, amaxs, list, MAX_EDICTS, AREA_SOLID);
+	int num = SV_AreaEdicts (amins, amaxs, list, MAX_EDICTS, AREA_SOLID);
 	if (!num) return;
 
-	b1 = DotProduct (mins, mins);
-	b2 = DotProduct (maxs, maxs);
-	t = max(b1, b2);
-	traceWidth = SQRTFAST(t);
+	float b1 = DotProduct (mins, mins);
+	float b2 = DotProduct (maxs, maxs);
+	float t = max(b1, b2);
+	float traceWidth = SQRTFAST(t);
 	VectorSubtract (end, start, traceDir);
-	traceLen = VectorNormalize (traceDir) + traceWidth;
+	float traceLen = VectorNormalize (traceDir) + traceWidth;
 
 	for (i = 0; i < num; i++)
 	{

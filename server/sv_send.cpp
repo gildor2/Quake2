@@ -112,7 +112,7 @@ void SV_BroadcastPrintf (int level, const char *fmt, ...)
 		char	copy[1024];
 
 		// mask off high bits
-		for (int i = 0; i < sizeof(copy)-1 && string[i] ; i++)
+		for (i = 0; i < sizeof(copy)-1 && string[i] ; i++)
 			copy[i] = string[i] & 127;
 		copy[i] = 0;
 		Com_Printf ("%s", copy);
@@ -191,7 +191,7 @@ void SV_Multicast (vec3_t origin, multicast_t to, bool oldclients)
 	}
 
 	// if doing a serverrecord, store everything
-	if (svs.demofile)
+	if (svs.wdemofile)
 		svs.demo_multicast.Write (sv.multicast);
 
 	switch (to)
@@ -489,10 +489,10 @@ SV_DemoCompleted
 */
 void SV_DemoCompleted (void)
 {
-	if (sv.demofile)
+	if (sv.rdemofile)
 	{
-		FS_FCloseFile (sv.demofile);
-		sv.demofile = NULL;
+		FS_FCloseFile (sv.rdemofile);
+		sv.rdemofile = NULL;
 	}
 	SV_Nextserver ();
 }
@@ -544,14 +544,14 @@ void SV_SendClientMessages (void)
 	msglen = 0;
 
 	// read the next demo message if needed
-	if (sv.state == ss_demo && sv.demofile)
+	if (sv.state == ss_demo && sv.rdemofile)
 	{
 		if (sv_paused->integer)
 			msglen = 0;
 		else
 		{
 			// get the next message
-			FS_Read (&msglen, 4, sv.demofile);
+			FS_Read (&msglen, 4, sv.rdemofile);
 			msglen = LittleLong (msglen);
 			if (msglen == -1)
 			{
@@ -560,7 +560,7 @@ void SV_SendClientMessages (void)
 			}
 			if (msglen > MAX_MSGLEN)
 				Com_DropError ("SV_SendClientMessages: msglen > MAX_MSGLEN");
-			FS_Read (msgbuf, msglen, sv.demofile);
+			FS_Read (msgbuf, msglen, sv.rdemofile);
 		}
 	}
 

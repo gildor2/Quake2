@@ -148,36 +148,43 @@ struct menuMain_t : menuFramework_t
 	static const char *menuNames[MAIN_ITEMS];
 	void Draw ()
 	{
-		int		i, w, h;
+		int		i;
 
 		// compute menu size
 		int		widest = -1;
 		int		totalheight = 0;
 		for (i = 0; i < MAIN_ITEMS; i++)
 		{
-			RE_DrawGetPicSize (&w, &h, va("m_main_%s", menuNames[i]));
-
-			if (w > widest) widest = w;
-			totalheight += (h + 12);
+			CBasicImage *img = RE_RegisterPic (va("m_main_%s", menuNames[i]));
+			if (!img) continue;		//?? error
+			if (img->width > widest) widest = img->width;
+			totalheight += img->height + 12;
 		}
 
 		int ystart = (viddef.height - totalheight) / 2;
 		int xoffset = (viddef.width - widest + 70) / 2;
 
-		// draw non-current items
+		// draw items
 		for (i = 0; i < MAIN_ITEMS; i++)
 		{
+			//?? can use img->Draw()
 			RE_DrawPic (xoffset, ystart + i * 40 + 13,
 				va((i != cursor) ? "m_main_%s" : "m_main_%s_sel", menuNames[i])
 			);
 		}
 		// draw animated cursor
+		//?? shader: can use animmap instead of programming
 		RE_DrawPic (xoffset - 25, ystart + cursor * 40 + 11,
 			va("m_cursor%d", (unsigned)appRound (cls.realtime / 100) % NUM_CURSOR_FRAMES));
 
-		RE_DrawGetPicSize (&w, &h, "m_main_plaque");
-		RE_DrawPic (xoffset - 30 - w, ystart, "m_main_plaque");
-		RE_DrawPic (xoffset - 30 - w, ystart + h + 5, "m_main_logo");
+		CBasicImage *img = RE_RegisterPic ("m_main_plaque");
+		if (img)
+		{
+			//!! can use img->Draw()
+			// NOTE: size of this image used for 2 image placement
+			RE_DrawPic (xoffset - 30 - img->width, ystart, "m_main_plaque");					// "QUAKE2" vertical text
+			RE_DrawPic (xoffset - 30 - img->width, ystart + img->height + 5, "m_main_logo");	// id logo
+		}
 	}
 
 	const char * KeyDown (int key)
@@ -739,15 +746,9 @@ struct optionsMenu_t : menuFramework_t
 	void Draw ()
 	{
 		menuFramework_t::Draw ();
-
 		// draw crosshair
-		int		w, h;
-		char	name[32];
-
 		if (!crosshair->integer) return;
-		appSprintf (ARRAY_ARG(name), "ch%d", crosshair->integer);
-		RE_DrawGetPicSize (&w, &h, name);
-		RE_DrawPic ((viddef.width - w) / 2 + 32, crosshair_box.y + y + 10 - h / 2, name, crosshairColor->integer);
+		RE_DrawPic (viddef.width / 2 + 32, crosshair_box.y + y + 10, va("ch%d", crosshair->integer), ANCHOR_CENTER, crosshairColor->integer);
 	}
 };
 static optionsMenu_t optionsMenu;
@@ -974,7 +975,7 @@ LOADGAME/SAVEGAME MENU
 
 struct savegameMenu_t : menuFramework_t
 {
-	bool	saveMenu;
+	static bool saveMenu;
 	menuAction_t actions[MAX_SAVEGAMES];
 
 	char	m_savestrings[MAX_SAVEGAMES][32+1];	// reserve 1 byte for 0 (for overflowed names)
@@ -996,10 +997,13 @@ struct savegameMenu_t : menuFramework_t
 				fclose (f);
 				m_savevalid[i] = true;
 				const char *name = va("/" SAVEGAME_DIRECTORY "/save%d/shot.pcx", i);
-				RE_ReloadImage (name);		// force renderer to refresh image
-				int		width;
-				RE_DrawGetPicSize (&width, NULL, name);
-				if (width) m_shotvalid[i] = true;
+				if (RE_RegisterPic (name))
+				{
+					m_shotvalid[i] = true;
+					// force renderer to refresh image
+					CBasicImage *img = RE_RegisterPic (name);
+					if (img) img->Reload ();
+				}
 			}
 		}
 	}
@@ -1008,6 +1012,7 @@ struct savegameMenu_t : menuFramework_t
 	{
 		int		x, w, h;
 
+		if (saveMenu) index++;
 		const char *name = va("/" SAVEGAME_DIRECTORY "/save%d/shot.pcx", index);
 		if (viddef.width >= 320)
 		{
@@ -1022,7 +1027,7 @@ struct savegameMenu_t : menuFramework_t
 			h = w * 3 / 4;
 			y = (viddef.height - h) / 2;
 		}
-		RE_DrawFill2 (x - 3, y - 3, w + 6, h + 6, RGB(0,0,0));
+		RE_Fill (x - 3, y - 3, w + 6, h + 6, RGB(0,0,0));
 
 		if (!m_shotvalid[index]) return;
 		RE_DrawDetailedPic (x, y, w, h, name);
@@ -1058,7 +1063,7 @@ struct savegameMenu_t : menuFramework_t
 
 		int d = 0;
 		int i = 0;
-		if (saveMenu) d++;	// don't include autosave slot
+		if (saveMenu) d++;			// don't include autosave slot
 		for ( ; d < MAX_SAVEGAMES; d++, i++)
 		{
 			actions[i].name		= m_savestrings[d];
@@ -1068,7 +1073,7 @@ struct savegameMenu_t : menuFramework_t
 
 			actions[i].x = 0;
 			actions[i].y = i * 10;
-			if (i > 0)	// separate from autosave
+			if (i > 0 && !saveMenu)	// separate from autosave
 				actions[i].y += 10;
 
 			actions[i].type = MTYPE_ACTION;
@@ -1086,16 +1091,19 @@ struct savegameMenu_t : menuFramework_t
 static savegameMenu_t savegameMenu;
 
 // static members
+bool savegameMenu_t::saveMenu;
 bool savegameMenu_t::m_savevalid[MAX_SAVEGAMES];
 
 static void Menu_LoadGame_f (void)
 {
+	if (savegameMenu.saveMenu) savegameMenu.cursor++;	// save->load
 	savegameMenu.saveMenu = false;
 	savegameMenu.Push ();
 }
 
 static void Menu_SaveGame_f (void)
 {
+	if (!savegameMenu.saveMenu) savegameMenu.cursor--;	// load->save
 	savegameMenu.saveMenu = true;
 	savegameMenu.Push ();
 }
@@ -1292,18 +1300,23 @@ struct startserverMenu_t : menuFramework_t
 
 	static void StartServerFunc (char *map)
 	{
+		int		v;
 		char	startmap[1024];
 		strcpy (startmap, map);
 
-		int maxclients  = atoi (maxclients_field.buffer);
-		int timelimit	= atoi (timelimit_field.buffer);
-		int fraglimit	= atoi (fraglimit_field.buffer);
-
 		//?? low limit is 0, upper limit - unlimited ?
-		Cvar_ClampName ("maxclients", 0, maxclients);
-		Cvar_ClampName ("timelimit", 0, timelimit);
-		Cvar_ClampName ("fraglimit", 0, fraglimit);
-		Cvar_Set ("hostname", hostname_field.buffer);
+		v = atoi (maxclients_field.buffer);
+		if (v < 0) v = 0;
+		Cvar_SetInteger ("maxclients", v);
+
+		v = atoi (timelimit_field.buffer);
+		if (v < 0) v = 0;
+		Cvar_SetInteger ("timelimit", v);
+
+		v = atoi (fraglimit_field.buffer);
+		if (v < 0) v = 0;
+		Cvar_SetInteger ("fraglimit", v);
+
 //		Cvar_SetValue ("deathmatch", !rules_box.curvalue);
 //		Cvar_SetValue ("coop", rules_box.curvalue);
 
@@ -2002,44 +2015,40 @@ struct playerConfigMenu_t : menuFramework_t
 	//!! place skin functions to a separate unit
 	static bool IsValidSkin (char *skin, CStringItem *pcxfiles)
 	{
-		char	scratch[MAX_OSPATH], *ext, *name;
+		char	scratch[MAX_OSPATH];
 
-		ext = strrchr (skin, '.');
+		const char *ext = strrchr (skin, '.');
 		if (!ext) return false;
 
 		if (stricmp (ext, ".pcx") && stricmp (ext, ".tga") && stricmp (ext, ".jpg"))
 			return false;		// not image
 
 		// modelname/skn_* have no icon
-		name = strrchr (skin, '/');
+		const char *name = strrchr (skin, '/');
 		if (!name) return false;
 		else name++;			// skip '/'
 
 		if (!memcmp (name, "skn_", 4))
 			return true;
 		strcpy (scratch, skin);
-		*strrchr (scratch, '.') = 0;
-		strcat (scratch, "_i.pcx");
+		strcpy (strrchr (scratch, '.'), "_i.pcx");
 
 		for (CStringItem *item = pcxfiles; item; item = item->next)
 			if (!strcmp (item->name, scratch)) return true;
 		return false;
 	}
 
-	static bool PlayerConfig_ScanDirectories (void)
+	static bool ScanDirectories (void)
 	{
-		char	*path;
-		int		numModelDirs;
-
 		numPlayerModels = 0;
 		pmiList.Reset();
 
 		/*----- get a list of directories -----*/
-		path = NULL;
+		const char *path = NULL;
 		TList<CStringItem> dirnames;
 		while (path = FS_NextPath (path))
 		{
-			dirnames = FS_ListFiles (va("%s/players/*.*", path), &numModelDirs, LIST_DIRS);
+			dirnames = FS_ListFiles (va("%s/players/*.*", path), LIST_DIRS);
 			if (dirnames.First()) break;
 		}
 		if (!dirnames.First()) return false;
@@ -2052,29 +2061,28 @@ struct playerConfigMenu_t : menuFramework_t
 
 			// verify the existence of at least one pcx skin
 			// "/*.pcx" -> pcx,tga,jpg (see IsValidSkin())
-			TList<CStringItem> pcxnames = FS_ListFiles (va("%s/*.*", diritem->name), NULL, LIST_FILES);
-			if (!pcxnames.First()) continue;
+			TList<CStringItem> skinNames = FS_ListFiles (va("%s/*.*", diritem->name), LIST_FILES);
+			if (!skinNames.First()) continue;
 
 			// count valid skins, which consist of a skin with a matching "_i" icon
 			TList<CStringItem> skins;
 			int numSkins = 0;
-			for (CStringItem *pcxitem = pcxnames.First(); pcxitem; pcxitem = pcxnames.Next(pcxitem))
-				if (IsValidSkin (pcxitem->name, pcxnames.First()))
+			for (CStringItem *skinItem = skinNames.First(); skinItem; skinItem = skinNames.Next(skinItem))
+				if (IsValidSkin (skinItem->name, skinNames.First()))
 				{
-					char *str = strrchr (pcxitem->name, '/') + 1;
+					char *str = strrchr (skinItem->name, '/') + 1;
 					char *ext = strrchr (str, '.');
 					ext[0] = 0;
 					skins.CreateAndInsert (str, pmiChain);
 					numSkins++;
 				}
-			pcxnames.Free();
+			skinNames.Free();
 			if (!numSkins) continue;
 
 			// create model info
 			playerModelInfo_t *info = new (strrchr (diritem->name, '/')+1, pmiChain) playerModelInfo_t;
 			info->numSkins = numSkins;
 			info->skins = skins;
-
 			// add model info to pmi
 			pmiList.Insert (info);
 
@@ -2097,7 +2105,7 @@ struct playerConfigMenu_t : menuFramework_t
 		static const char *railTypes[]  = {"original", "spiral", "rings", "beam", NULL};
 
 		pmiChain = new CMemoryChain;
-		PlayerConfig_ScanDirectories ();
+		ScanDirectories ();
 
 		if (!numPlayerModels)
 		{
@@ -2339,8 +2347,7 @@ struct playerConfigMenu_t : menuFramework_t
 		refdef.rdflags = RDF_NOWORLDMODEL;
 
 		menuFramework_t::Draw ();
-
-		RE_DrawFill2 (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
+		RE_Fill (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
 		RE_RenderFrame (&refdef);
 
 		const char *icon;
@@ -2490,7 +2497,7 @@ struct dmbrowseMenu_t : menuFramework_t
 		const char *path = NULL;
 		while (path = FS_NextPath (path))
 		{
-			browse_list = FS_ListFiles (va("%s/levelshots/*.*", path), NULL, LIST_FILES);
+			browse_list = FS_ListFiles (va("%s/levelshots/*.*", path), LIST_FILES);
 			if (browse_list.First()) break;
 		}
 		for (CStringItem *item = browse_list.First(); item; item = browse_list.Next(item))
@@ -2585,7 +2592,7 @@ struct dmbrowseMenu_t : menuFramework_t
 		case K_KP_ENTER:
 		case K_ENTER:
 		case K_MOUSE1:
-            startserverMenu.StartServerFunc (browse_map_names[thumbs.current]);
+			startserverMenu.StartServerFunc (browse_map_names[thumbs.current]);
 			return NULL;
 		}
 
@@ -2610,11 +2617,11 @@ struct dmbrowseMenu_t : menuFramework_t
 	{
 		char	name2[256];
 
-		RE_DrawFill2 (x - THUMBNAIL_BORDER, y - THUMBNAIL_BORDER, w + THUMBNAIL_BORDER * 2,
+		RE_Fill (x - THUMBNAIL_BORDER, y - THUMBNAIL_BORDER, w + THUMBNAIL_BORDER * 2,
 				h + THUMBNAIL_BORDER * 2 + THUMBNAIL_TEXT, selected ? RGB(0,0.1,0.2) : RGB(0,0,0) /* blue/black */);
 
 		RE_DrawStretchPic (x, y, w, h, va("/levelshots/%s.pcx", name));
-		int max_width = w / 8;
+		int max_width = w / CHAR_WIDTH;
 		strcpy (name2, name);
 		int text_width = strlen (name2);
 		if (text_width > max_width)
@@ -2622,14 +2629,12 @@ struct dmbrowseMenu_t : menuFramework_t
 			strcpy (&name2[max_width - 3], "...");		// make long names ends with "..."
 			text_width = max_width;
 		}
-		DrawString (x + (w-8*text_width) / 2, y + h + (THUMBNAIL_TEXT + THUMBNAIL_BORDER - 8) / 2, name2);
+		DrawString (x + (w-CHAR_WIDTH*text_width) / 2, y + h + (THUMBNAIL_TEXT + THUMBNAIL_BORDER - 8) / 2, name2);
 	}
 
-	static void DMBrowse_DrawScroller (int x0, int y0, int w)
+	static void DrawScroller (int x0, int y0, int w)
 	{
-		int x;
-
-		for (x = x0; x < x0 + w; x += CHAR_WIDTH)
+		for (int x = x0; x < x0 + w; x += CHAR_WIDTH)
 			RE_DrawChar (x, y0, 0, C_GREEN);
 	}
 
@@ -2649,9 +2654,9 @@ struct dmbrowseMenu_t : menuFramework_t
 		int w = thumbs.w * thumbs.cx;
 		int x = (viddef.width - w) / 2;
 		if (thumbs.top > 0)
-			DMBrowse_DrawScroller (x, thumbs.y0 - 8 - THUMBNAIL_BORDER, w);
+			DrawScroller (x, thumbs.y0 - CHAR_HEIGHT - THUMBNAIL_BORDER, w);
 		if (thumbs.top + thumbs.cx * thumbs.cy < thumbs.count)
-			DMBrowse_DrawScroller (x, thumbs.y0 + thumbs.cy * thumbs.dy - THUMBNAIL_BORDER * 2, w);
+			DrawScroller (x, thumbs.y0 + thumbs.cy * thumbs.dy - THUMBNAIL_BORDER * 2, w);
 	}
 };
 static dmbrowseMenu_t dmbrowseMenu;
@@ -2784,7 +2789,7 @@ struct videoMenu_t : menuFramework_t
 	static void CancelChanges (void *)
 	{
 		Cvar_SetValue ("r_gamma", old_gamma);
-		//!! restore contrast too
+		//!! restore contrast+brightness too
 		m_current->Pop ();
 	}
 
@@ -2965,13 +2970,13 @@ struct quitMenu_t : menuFramework_t
 
 	void Draw ()
 	{
-		int		w, h;
-
-		RE_DrawGetPicSize (&w, &h, "quit");
-		if (w >= 320 && w * 3 / 4 == h)		// this pic is for fullscreen in mode 320x240
+		CBasicImage *img = RE_RegisterPic ("quit");
+		if (!img) return;
+		//!! can use img->Draw()
+		if (img->width >= 320 && img->width * 3 / 4 == img->height)		// this pic is for fullscreen in mode 320x240
 			RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "quit");
 		else
-			RE_DrawPic ((viddef.width-w)/2, (viddef.height-h)/2, "quit");
+			RE_DrawPic (viddef.width / 2, viddef.height / 2, "quit", ANCHOR_CENTER);
 	}
 };
 static quitMenu_t quitMenu;

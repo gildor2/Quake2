@@ -2,6 +2,9 @@
 #define __GL_LIGHTMAP_INCLUDED__
 
 
+namespace OpenGLDrv {
+
+
 #define MAX_LIGHTMAPS	64		// max lightmap textures
 #define LIGHTMAP_SIZE	256		// width and height of the lightmap texture (square)
 
@@ -47,11 +50,13 @@ void LM_CheckMinlight (dynamicLightmap_t *dl);
 bool LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl);
 void LM_PutBlock (dynamicLightmap_t *dl);
 void LM_SortLightStyles (dynamicLightmap_t *dl);
-void GL_UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, bool vertexOnly, unsigned dlightMask);
+void UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, bool vertexOnly, unsigned dlightMask);
 bool LM_IsMonotone (dynamicLightmap_t *lm, color_t *avg);
 
 
 extern color_t lmMinlight;
 
+
+} // namespace
 
 #endif

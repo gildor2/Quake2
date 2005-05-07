@@ -5,6 +5,16 @@
 #include "gl_image.h"
 #include "gl_buffers.h"
 
+/*!! TODO:
+ *	- Linux: if gl_finish!=0 required (see gl_main.cpp::GL_Init() -- can force
+ *		glFinish() on begin or end of frame (check this!))
+ *  - UT BeginFrame / EndFrame (SwapBuffers) -- Lock / Unlock
+ */
+
+
+namespace OpenGLDrv {
+
+
 
 glrefdef_t	gl_refdef;
 
@@ -15,7 +25,7 @@ static unsigned ref_flags;
 refImport_t	ri;
 #endif
 
-bool gl_renderingEnabled;
+bool renderingEnabled;
 
 unsigned vid_width, vid_height;	//?? remove; move to gl_config
 
@@ -135,7 +145,7 @@ static void Gfxinfo_f (bool usage, int argc, char **argv)
 }
 
 
-static void GL_Register (void)
+static void RegisterCvars (void)
 {
 /* NOTE: some cvars have "CVAR_NOUPDATE" flag -- for correct video-config-menu work (to detect changes)
  * Every cvar here can have this flag (?) (but only few of them REQUIRE it)
@@ -196,7 +206,7 @@ CVAR_END
 }
 
 
-static bool GL_SetMode (void)
+static bool SetMode (void)
 {
 	r_fullscreen->modified = false;
 	gl_mode->modified = false;
@@ -209,7 +219,7 @@ static bool GL_SetMode (void)
 		return true;
 	}
 
-	Com_WPrintf ("R_SetMode() - invalid mode\n");
+	Com_WPrintf ("SetMode() - invalid mode\n");
 
 	Cvar_SetInteger ("gl_mode", gl_config.prevMode);
 	gl_mode->modified = false;
@@ -218,7 +228,7 @@ static bool GL_SetMode (void)
 	// try setting it back to something safe
 	if (!GLimp_SetMode (&vid_width, &vid_height, gl_config.prevMode, gl_config.prevFS))
 	{
-		Com_WPrintf ("R_SetMode() - could not revert to safe mode\n");	//?? "to previous mode" ? (but, here will be mode "3")
+		Com_WPrintf ("SetMode() - could not revert to safe mode\n");	//?? "to previous mode" ? (but, here will be mode "3")
 		return false;
 	}
 	// initialize OS-specific parts of OpenGL
@@ -226,13 +236,24 @@ static bool GL_SetMode (void)
 }
 
 
-static bool GL_Init (void)
+bool Init (void)
 {
-	guard(GL_Init);
+	guard(OpenGLDrv::Init);
 
 	Com_Printf ("\n--- Initializing OpenGL renderer ---\n");
 
-	GL_Register ();
+	renderingEnabled = true;
+
+	memset (&gl_config, 0, sizeof(gl_config));
+	memset (&gl_state, 0, sizeof(gl_state));
+
+	gl_config.consoleOnly = Cvar_Get ("gl_console_only", "0", 0)->integer != 0;
+	ref_flags = 0;
+	if (gl_config.consoleOnly) ref_flags |= REF_CONSOLE_ONLY;
+#ifndef STATIC_BUILD
+	Swap_Init ();
+#endif
+	RegisterCvars ();
 
 	// initialize our QGL dynamic bindings
 	if (!QGL_Init (gl_driver->string))
@@ -247,7 +268,7 @@ static bool GL_Init (void)
 			}
 			else
 			{
-        		Com_Printf (S_RED"failed\n");
+				Com_Printf (S_RED"failed\n");
 				QGL_Shutdown ();
 				return false;
 			}
@@ -264,7 +285,7 @@ static bool GL_Init (void)
 	gl_config.prevMode = 3;				//??
 
 	/*----- create the window and set up the context -----*/
-	if (!GL_SetMode ())
+	if (!SetMode ())
 	{
 		GLimp_Shutdown (true);
 		QGL_Shutdown ();
@@ -275,8 +296,8 @@ static bool GL_Init (void)
 	Cvar_SetInteger ("gl_finish", 1);	//??
 #endif
 
-	/*------------------ Grab extensions ----------------------*/
-	//?? move this part to gl_interface.c ??
+	/*------------------ Check extensions ----------------------*/
+	//?? move this part to gl_interface.cpp ??
 	QGL_InitExtensions ();
 
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
@@ -331,24 +352,24 @@ static bool GL_Init (void)
 	// set screen to particular color while initializing
 	glClearColor (0.1, 0, 0, 1);
 	glClear (GL_COLOR_BUFFER_BIT);
-	GLimp_SwapBuffers ();
+	QGL_SwapBuffers ();
 
 	GL_SetDefaultState ();
 
 	GUARD_BEGIN						// needs GUARD() in a case of error in some of following functions
 	{
-		GL_InitFuncTables ();
-		GL_InitImages ();
-		GL_InitShaders ();
-		GL_InitModels ();
-		GL_InitBackend ();
-		GL_CreateBuffers ();
+		InitFuncTables ();
+		InitImages ();
+		InitShaders ();
+		InitModels ();
+		InitBackend ();
+		CreateBuffers ();
 	}
 	GUARD_CATCH
 	{
 		GLimp_Shutdown (true);
 		QGL_Shutdown ();
-		throw;
+		throw;	//?? or return "false" ?
 	}
 
 	gl_refdef.viewCluster = -2;		// force update visinfo for map:
@@ -360,17 +381,17 @@ static bool GL_Init (void)
 }
 
 
-static void GL_Shutdown (bool complete)
+void Shutdown (bool complete)
 {
-	guard(GL_Shutdown);
+	guard(OpenGLDrv::Shutdown);
 
 	UnregisterCommand ("gfxinfo");
 
-	GL_FreeBuffers ();
-	GL_ShutdownBackend ();
-	GL_ShutdownModels ();
-	GL_ShutdownShaders ();
-	GL_ShutdownImages ();
+	FreeBuffers ();
+	ShutdownBackend ();
+	ShutdownModels ();
+	ShutdownShaders ();
+	ShutdownImages ();
 
 	GL_SetMultitexture (0);
 
@@ -386,18 +407,18 @@ static void GL_Shutdown (bool complete)
 
 void GL_EnableRendering (bool enable)
 {
-	if (gl_renderingEnabled == enable) return;
-	gl_renderingEnabled = enable;
+	if (renderingEnabled == enable) return;
+	renderingEnabled = enable;
 	if (enable)
 	{
-		GL_LoadDelayedImages ();
+		LoadDelayedImages ();
 	}
 }
 
 
 /*---------------- Backend helpers ----------------------*/
 
-void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color, byte flipMode)
+void DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color, byte flipMode)
 {
 	PUT_BACKEND_COMMAND (bkDrawPic_t, p);
 	p->type = BACKEND_PIC;
@@ -428,9 +449,9 @@ void GL_DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, 
 /*--------------------- Frame ---------------------------*/
 
 
-static void GL_BeginFrame (float camera_separation)
+void BeginFrame (void)
 {
-	if (!gl_renderingEnabled)
+	if (!renderingEnabled)
 	{
 		backendCmdSize = 0;				// avoid overflow
 		return;
@@ -453,8 +474,6 @@ static void GL_BeginFrame (float camera_separation)
 	if (gl_finish->integer == 2) glFinish ();
 	gl_speeds.beginFrame = appCycles ();
 
-	//?? what to do with the camera_separation ?
-
 	gl_state.have3d = gl_state.haveFullScreen3d = false;
 	gl_state.maxUsedShaderIndex = -1;
 	//?? useFastSky: when gl_fastSky!=0 - should clear screen only when at least one of sky surfaces visible
@@ -470,7 +489,7 @@ static void GL_BeginFrame (float camera_separation)
 	/*----- update hardware gamma (if present) ------*/
 	if ((r_gamma->modified || r_contrast->modified || r_brightness->modified) && gl_config.deviceSupportsGamma)
 	{
-		GL_SetupGamma ();
+		SetupGamma ();
 		r_gamma->modified = false;
 		r_contrast->modified = false;
 		r_brightness->modified = false;
@@ -482,27 +501,12 @@ static void GL_BeginFrame (float camera_separation)
 
 	PUT_BACKEND_COMMAND (int, p);
 	*p = BACKEND_BEGIN_FRAME;
-
-#if 0
-	if (camera_separation < 0 && gl_state.stereo_enabled)
-	{
-		glDrawBuffer (GL_BACK_LEFT);
-	}
-	else if (camera_separation > 0 && gl_state.stereo_enabled)
-	{
-		glDrawBuffer (GL_BACK_RIGHT);
-	}
-	else
-	{
-		glDrawBuffer (GL_BACK);
-	}
-#endif
 }
 
 
-static void GL_EndFrame (void)
+void EndFrame (void)
 {
-	if (!gl_renderingEnabled) return;
+	if (!renderingEnabled) return;
 
 	if (!gl_state.have3d) ClearTexts ();
 
@@ -512,8 +516,8 @@ static void GL_EndFrame (void)
 		*p = BACKEND_END_FRAME;
 	}
 
-	GL_BackEnd ();
-	GL_ClearBuffers ();
+	BackEnd ();
+	ClearBuffers ();
 
 
 	if (gl_finish->integer == 2) glFinish ();
@@ -594,17 +598,16 @@ static void SetWorldModelview (void)
 
 static void SetFrustum (void)
 {
-	float	sx, sy, cx, cy;
 	int		i;
 
 	// setup plane [0]: view direction + znear
 	VectorCopy (vp.viewaxis[0], vp.frustum[0].normal);
 
 #define SCALE	(0.5/360.0f)
-	sx = SIN_FUNC(vp.fov_x * SCALE);	// fov/2 * pi/180
-	sy = SIN_FUNC(vp.fov_y * SCALE);
-	cx = COS_FUNC(vp.fov_x * SCALE);
-	cy = COS_FUNC(vp.fov_y * SCALE);
+	float sx = SIN_FUNC(vp.fov_x * SCALE);	// fov/2 * pi/180
+	float sy = SIN_FUNC(vp.fov_y * SCALE);
+	float cx = COS_FUNC(vp.fov_x * SCALE);
+	float cy = COS_FUNC(vp.fov_y * SCALE);
 #undef SCALE
 	// calculate normals
 	for (i = 0; i < 3; i++)
@@ -629,38 +632,33 @@ static void SetFrustum (void)
 static void SetPerspective (void)
 {
 #define m	vp.projectionMatrix
-	float	xmax, xmin, ymax, ymin, zmin, zmax;
-
 	if (vp.flags & RDF_NOWORLDMODEL)
 		vp.zFar = 1024;
 	else
-	{	// calculate zFar depends on visible bounding box size
-		int		i;
-		float	d;
-
-		d = 0;
-		for (i = 0; i < 8; i++)	// check all 8 verts of bounding box
+	{
+		// calculate zFar depends on visible bounding box size
+		float d = 0;
+		for (int i = 0; i < 8; i++)			// check all 8 verts of bounding box
 		{
 			vec3_t	v;
-			float	d1;
 
 			v[0] = (i & 1) ? vp.maxs[0] : vp.mins[0];
 			v[1] = (i & 2) ? vp.maxs[1] : vp.mins[1];
 			v[2] = (i & 4) ? vp.maxs[2] : vp.mins[2];
 
 			VectorSubtract (v, vp.vieworg, v);
-			d1 = DotProduct (v, v);		// square of vector length
+			float d1 = DotProduct (v, v);	// square of vector length
 			if (d1 > d) d = d1;
 		}
-		vp.zFar = SQRTFAST(d) + 100;	// avoid precision errors
+		vp.zFar = SQRTFAST(d) + 100;		// avoid precision errors
 	}
 	//-------------
-	zmin = gl_znear->value;
-	zmax = vp.zFar;
-	xmin = -zmin * vp.t_fov_x;
-	xmax = zmin * vp.t_fov_x;
-	ymin = -zmin * vp.t_fov_y;
-	ymax = zmin * vp.t_fov_y;
+	float zmin = gl_znear->value;
+	float zmax = vp.zFar;
+	float xmin = -zmin * vp.t_fov_x;
+	float xmax = zmin * vp.t_fov_x;
+	float ymin = -zmin * vp.t_fov_y;
+	float ymax = zmin * vp.t_fov_y;
 	/* Matrix contents:
 	 *  |   0    1    2    3
 	 * -+-------------------
@@ -694,19 +692,19 @@ static void SetPerspective (void)
 
 
 
-// Can be called few RenderScene() between BeginFrame() and EndFrame()
-static void GL_RenderScene (refdef_t *fd)
+// Can be called few RenderFrame() between BeginFrame() and EndFrame()
+void RenderFrame (refdef_t *fd)
 {
 	entity_t *ent;
 	dlight_t *dl;
 	int		i;
 
-	if (!gl_renderingEnabled) return;
+	if (!renderingEnabled) return;
 
 	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !map.name)
-		Com_FatalError ("R_RenderScene: NULL worldModel");
+		Com_FatalError ("R_RenderFrame: NULL worldModel");
 
-//	DrawTextRight ("---------RenderScene---------\n", RGB(1,0,0));
+//	DrawTextRight ("---------RenderFrame---------\n", RGB(1,0,0));
 
 	/*----------- prepare data ------------*/
 
@@ -722,8 +720,8 @@ static void GL_RenderScene (refdef_t *fd)
 			memset (floodArea, 0xFF, sizeof(floodArea));
 			areas = &floodArea[0];
 		}
-		gl_refdef.areaMaskChanged = memcmp (gl_refdef.areaMask, fd->areabits, sizeof(gl_refdef.areaMask)) != 0;
-		memcpy (gl_refdef.areaMask, fd->areabits, sizeof(floodArea));
+		gl_refdef.areaMaskChanged = memcmp (gl_refdef.areaMask, areas, sizeof(gl_refdef.areaMask)) != 0;
+		memcpy (gl_refdef.areaMask, areas, sizeof(floodArea));
 	}
 
 	/*------------ rendering -------------*/
@@ -755,13 +753,13 @@ static void GL_RenderScene (refdef_t *fd)
 	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.cullEntsBox = gl_speeds.cullEnts2 = gl_speeds.ocullEnts = 0;
 	vp.firstEntity = gl_numEntities;
 	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
-		GL_AddEntity (ent);
+		AddEntity (ent);
 
 	// add dlights
 	vp.dlights = &gl_dlights[gl_numDlights];
 	vp.numDlights = fd->num_dlights;
 	for (i = 0, dl = fd->dlights; i < fd->num_dlights; i++, dl++)
-		GL_AddDlight (dl);
+		AddDlight (dl);
 
 	gl_speeds.dlightSurfs = gl_speeds.dlightVerts = 0;
 	gl_speeds.flares = gl_speeds.testFlares = gl_speeds.cullFlares = 0;
@@ -769,28 +767,15 @@ static void GL_RenderScene (refdef_t *fd)
 	vp.particles = fd->particles;
 	vp.beams = fd->beams;
 
-	GL_ClearPortal ();
+	ClearPortal ();
 	SetWorldModelview ();
 	SetFrustum ();
 
-	GL_DrawPortal ();
+	DrawPortal ();
 
 	SetPerspective ();
 
-	GL_FinishPortal ();
-
-	if (fd->blend[3])
-	{
-		color_t		c;
-
-//		DrawTextLeft(va("blend: %f %f %f %f",VECTOR_ARG(fd->blend),fd->blend[3]), RGB(1,1,1));
-		// standard Quake2 blending
-		c.c[0] = appRound (fd->blend[0] * 255);
-		c.c[1] = appRound (fd->blend[1] * 255);
-		c.c[2] = appRound (fd->blend[2] * 255);
-		c.c[3] = appRound (fd->blend[3] * 255);
-		GL_DrawStretchPic (gl_identityLightShader, 0, 0, vid_width, vid_height, 0, 0, 0, 0, c.rgba);
-	}
+	FinishPortal ();
 
 	/*------------ debug info ------------*/
 
@@ -855,7 +840,7 @@ static unsigned colorTable[8] = {
 #define CHAR_WIDTH	8
 #define CHAR_HEIGHT	8
 
-static void DrawChar (int x, int y, int c, int color)
+void DrawChar (int x, int y, int c, int color)
 {
 	if (c == ' ') return;
 
@@ -888,7 +873,7 @@ static void DrawChar (int x, int y, int c, int color)
 }
 
 
-static void	DrawConChar (int x, int y, int c, int color)
+void DrawConChar (int x, int y, int c, int color)
 {
 	if (c == ' ') return;
 	DrawChar (x * CHAR_WIDTH, y * CHAR_HEIGHT, c, color);
@@ -897,6 +882,7 @@ static void	DrawConChar (int x, int y, int c, int color)
 
 /*--------------------- 2D picture output ---------------------*/
 
+//?? place renderer-> client (or, at least, name parsing: if not started with '/' - add "pics/")
 static shader_t *FindPic (const char *name, bool force)
 {
 	const char *s;
@@ -908,81 +894,72 @@ static shader_t *FindPic (const char *name, bool force)
 
 	int flags = SHADER_ALPHA|SHADER_CLAMP;
 	if (!force) flags |= SHADER_CHECK;
-	return GL_FindShader (s, flags);
+	return FindShader (s, flags);
 }
 
-
-static void DrawFill (int x, int y, int w, int h, int c)
+void Fill8 (int x, int y, int w, int h, int c)
 {
-	GL_DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, gl_config.tbl_8to32[c]);
+	DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, gl_config.tbl_8to32[c]);
 }
 
-static void DrawFill2 (int x, int y, int w, int h, unsigned rgba)
+void Fill (int x, int y, int w, int h, unsigned rgba)
 {
-	GL_DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, rgba);
+	DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, rgba);
 }
 
-static void DrawTileClear (int x, int y, int w, int h, const char *name)
+//?? see comment for FindPic()
+void TileClear (int x, int y, int w, int h, const char *name)
 {
 	const char *s;
 
 	// FindPic() without SHADER_CLAMP
-	if (name[0] != '/' && name[0] != '\\')
+	if (name[0] != '/')
 		s = va("pics/%s.pcx", name);
 	else
 		s = name+1;		// skip '/'
 
-	shader_t *sh = GL_FindShader (s, SHADER_CHECK);
+	shader_t *sh = FindShader (s, SHADER_CHECK);
 	if (sh)
-		GL_DrawStretchPic (sh, x, y, w, h, (float)x / sh->width, (float)y / sh->height,
+		DrawStretchPic (sh, x, y, w, h, (float)x / sh->width, (float)y / sh->height,
 			(float)(x + w) / sh->width, (float)(y + h) / sh->height);
 	else
-		DrawFill2 (x, y, w, h, RGB(0,0,0));
+		Fill (x, y, w, h, RGB(0,0,0));
 }
 
-
-static void DrawStretchPic (int x, int y, int w, int h, const char *name)
+void DrawStretchPic (int x, int y, int w, int h, const char *name)	//!! overload
 {
-	GL_DrawStretchPic (FindPic (name, true), x, y, w, h);
+	DrawStretchPic (FindPic (name, true), x, y, w, h);
 }
 
 
-static void DrawDetailedPic (int x, int y, int w, int h, const char *name)
+void DrawDetailedPic (int x, int y, int w, int h, const char *name)
 {
 	shader_t *sh = FindPic (name, true);
-	GL_DrawStretchPic (sh, x, y, w, h);
+	DrawStretchPic (sh, x, y, w, h);
 	if (!gl_detailShader || sh->width * 2 > w) return;		// detail is not available or not needed
 //	if (!Cvar_VariableInt("detail")) return;
-	GL_DrawStretchPic (gl_detailShader, x, y, w, h, 0, 0,
+	DrawStretchPic (gl_detailShader, x, y, w, h, 0, 0,
 		w / gl_detailShader->width, h / gl_detailShader->height);
 }
 
 
-static void DrawPic (int x, int y, const char *name, int color)
+void DrawPic (int x, int y, const char *name, int anchor, int color)
 {
 	shader_t *sh = FindPic (name, true);
-	if (color < 0 || color > 7) color = 7;
-	GL_DrawStretchPic (sh, x, y, sh->width, sh->height, 0, 0, 1, 1, colorTable[color]);
-}
-
-
-static void GetPicSize (int *w, int *h, const char *name)
-{
-	shader_t *sh = FindPic (name, false);
-	if (sh)
-	{
-		if (w) *w = sh->width;
-		if (h) *h = sh->height;
-	}
-	else
-	{
-		if (w) *w = 0;
-		if (h) *h = 0;
-	}
+	// invalid color -> white
+	if (color < 0 || color > 7) color = C_WHITE;
+	// apply anchor displacement
+	x -= (anchor & 0xF) * sh->width / 2;			// 0x00 -- keep X; 0x01 -- x-=w/2; 0x02 -- x-=w
+	y -= (anchor & 0xF0) * sh->height / (2 * 16);	// 0x00 -- keep Y; 0x10 -- y-=h/2; 0x20 -- y-=h
+	// draw
+	DrawStretchPic (sh, x, y, sh->width, sh->height, 0, 0, 1, 1, colorTable[color]);
 }
 
 
 /*------------------- Static text output ----------------------*/
+
+//!! separate to a different cpp and (nested) namespace (OpenGLDrv::Text)
+//!! + add normal (not screen-static, 8x8-sized) text functions into such module
 
 #define TEXTBUF_SIZE 65536
 
@@ -991,13 +968,13 @@ static void GetPicSize (int *w, int *h, const char *name)
 #define CHARSIZE_Y 8
 
 
-typedef struct textRec_s
+struct textRec_t
 {
 	short	x, y;
 	color_t	c;
 	char	*text;
-	struct textRec_s *next;
-} textRec_t;
+	textRec_t *next;
+};
 
 
 static char	textbuf[TEXTBUF_SIZE];
@@ -1147,41 +1124,38 @@ void DrawText3D (vec3_t pos, const char *text, unsigned rgba)
 
 /*------------------- Model registration ----------------------*/
 
-static void BeginRegistration (const char *mapname)
+void BeginRegistration (const char *mapname)
 {
-	GL_ResetShaders ();				// delete all shaders and re-create auto-shaders
-	GL_LoadWorldMap (va("maps/%s.bsp", mapname));
-	GL_ResetModels();				// delete all models and create inline models
+	ResetShaders ();				// delete all shaders and re-create auto-shaders
+	LoadWorldMap (va("maps/%s.bsp", mapname));
+	ResetModels();					// delete all models and create inline models
 	gl_refdef.viewCluster = -2;
 }
 
 
-static void EndRegistration (void)
+void EndRegistration (void)
 {
 	//?? empty
 }
 
 
-static shader_t *RegisterPic (const char *name)
+CBasicImage *RegisterPic (const char *name)
 {
 	return FindPic (name, false);
 }
 
-// Reload shader image
-static void ReloadImage (const char *name)
+CBasicImage *RegisterSkin (const char *name)
 {
-	//?? place into gl_shader.c as ReloadShaderImages() (no needs to reload shader script -- for debug only)
-	shader_t *sh = FindPic (name, false);
-	// NOTE: this function will not work with shaders, whose names are differs from image name
-	if (sh && sh->numStages && sh->stages[0]->numAnimTextures)
-	{
-		image_t *img = sh->stages[0]->mapImage[0];	//?? all images (non-system, not "*name" etc), all stages
-		GL_FindImage (img->name, img->flags | IMAGE_RELOAD);
-	}
+	return FindSkin (name);
+}
+
+CRenderModel *RegisterModel (const char *name)
+{
+	return FindModel (name);
 }
 
 
-static void SetSky (const char *name, float rotate, vec3_t axis)
+void SetSky (const char *name, float rotate, vec3_t axis)
 {
 	int		i;
 	shader_t *shader, *old;
@@ -1191,7 +1165,7 @@ static void SetSky (const char *name, float rotate, vec3_t axis)
 	old = gl_skyShader;
 	// find sky shader
 	strcpy (&name2[4], name);
-	shader = GL_FindShader (name2, SHADER_SKY);
+	shader = FindShader (name2, SHADER_SKY);
 	if (shader->type != SHADERTYPE_SKY)
 	{
 		Com_WPrintf ("%s is not a sky shader\n", name2);
@@ -1214,7 +1188,7 @@ static void SetSky (const char *name, float rotate, vec3_t axis)
 		if (surf->shader == old) surf->shader = shader;
 }
 
-static void Screenshot (int flags, const char *name)
+void Screenshot (int flags, const char *name)
 {
 	static char shotName[MAX_QPATH];
 
@@ -1224,67 +1198,25 @@ static void Screenshot (int flags, const char *name)
 }
 
 
-static float GetClientLight (void)
+float GetClientLight ()
 {
 	return 150;		//!! need to implement (outside renderer !!)
 }
 
 
+unsigned GetCaps ()
+{
+	return ref_flags;
+}
+
 /*-----------------------------------------------------------------------------
 	Renderer interface
 -----------------------------------------------------------------------------*/
 
-RENDERER_EXPORT(GL)
-{
-	RENDERER_INIT;
-
-	gl_renderingEnabled = true;
-
-	memset (&gl_config, 0, sizeof(gl_config));
-	memset (&gl_state, 0, sizeof(gl_state));
-
-	gl_config.consoleOnly = Cvar_Get ("gl_console_only", "0", 0)->integer != 0;
-
-	rexp->flags = &ref_flags;
-	ref_flags = 0;
-	if (gl_config.consoleOnly) ref_flags |= REF_CONSOLE_ONLY;
-
-	rexp->Init =			GL_Init;
-	rexp->Shutdown =		GL_Shutdown;
-	rexp->BeginFrame =		GL_BeginFrame;
-	rexp->EndFrame =		GL_EndFrame;
-	rexp->AppActivate =		GLimp_AppActivate;
-	rexp->DrawConChar =		DrawConChar;
-	rexp->Screenshot =		Screenshot;
-
-	rexp->RenderFrame =		GL_RenderScene;
-	rexp->BeginRegistration = BeginRegistration;
-	rexp->RegisterModel =	GL_FindModel;
-	rexp->RegisterSkin =	(image_t* (*)(const char *)) GL_FindSkin;	//?? conversion
-	rexp->RegisterPic =		(image_t* (*)(const char *)) RegisterPic;	//?? conversion
-	rexp->SetSky =			SetSky;
-	rexp->EndRegistration = EndRegistration;
-
-	rexp->ReloadImage =		ReloadImage;
-	rexp->DrawGetPicSize =	GetPicSize;
-	rexp->DrawPic =			DrawPic;
-	rexp->DrawStretchPic =	DrawStretchPic;
-	rexp->DrawDetailedPic = DrawDetailedPic;
-	rexp->DrawChar =		DrawChar;
-	rexp->DrawTileClear =	DrawTileClear;
-	rexp->DrawFill =		DrawFill;
-	rexp->DrawFill2 =		DrawFill2;
-	rexp->DrawStretchRaw8 = GL_DrawStretchRaw8;
-
-	rexp->DrawTextPos =		DrawTextPos;
-	rexp->DrawTextLeft =	DrawTextLeft;
-	rexp->DrawTextRight =	DrawTextRight;
-
-	rexp->GetClientLight = GetClientLight;
-
-#ifndef STATIC_BUILD
-	Swap_Init ();
+#ifndef SINGLE_RENDERER
+#	include "../client/rexp_exp.h"
 #endif
+RENDERER_EXPORT
 
-	return true;
-}
+
+} // namespace

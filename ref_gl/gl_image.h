@@ -2,6 +2,9 @@
 #define __GL_IMAGE_INCLUDED__
 
 
+namespace OpenGLDrv {
+
+
 // consts for image_t.flags
 #define IMAGE_CLAMP			1			// 0 -- repeat
 #define	IMAGE_MIPMAP		2
@@ -20,8 +23,9 @@
 // mask of flags, stored in image (exclude hints)
 #define IMAGE_FLAGMASK		0x0000FFFF
 
-struct image_t
+class image_t //?? : public CBasicImage
 {
+public:
 	char	name[MAX_QPATH];			// lowercased game-relative image name (system images started with "*")
 	int		width, height;
 	byte	alphaType;					// 0 - none, 1 - 1-bit alpha, 2 - 8-bit alpha
@@ -50,22 +54,25 @@ extern char	*gl_screenshotName;
 
 void	GL_TextureMode (const char *name);
 
-void	GL_PerformScreenshot (void);
+void	PerformScreenshot (void);
 
 // setup
-void	GL_SetupGamma (void);
-void	GL_InitImages (void);
-void	GL_ShutdownImages (void);
-void	GL_LoadDelayedImages (void);
+void	SetupGamma (void);
+void	InitImages (void);
+void	ShutdownImages (void);
+void	LoadDelayedImages (void);
 
 // creating images
-image_t *GL_CreateImage (const char *name, void *pic, int width, int height, unsigned flags);
-image_t *GL_FindImage (const char *name, unsigned flags);
+image_t *CreateImage (const char *name, void *pic, int width, int height, unsigned flags);
+image_t *FindImage (const char *name, unsigned flags);
 
 // video support
-void	GL_DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette);
+void	DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette);
 
-void	GL_ShowImages (void);
+void	ShowImages (void);
+
+
+} // namespace
 
 
 #endif

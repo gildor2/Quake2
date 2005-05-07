@@ -4,7 +4,9 @@
 
 static bool initialized;
 
-/*------------ In memory -----------------*/
+/*-----------------------------------------------------------------------------
+	In memory
+-----------------------------------------------------------------------------*/
 
 class packFile_t : public CStringItem
 {
@@ -41,9 +43,9 @@ public:
 };
 
 
-/*..............................................................
+/*.............................................................................
 
-Internal representation of FILE
+Internal representation of QFILE
 for FS_FOpenFile,FS_CloseFile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 It can be used to point to
@@ -61,7 +63,7 @@ Details (filled fields):
  5) za: name -> pak name, pfile, zipped=1
  6) zo: +file -> pak, +zfile -> zip file (?? update this comment for "zipped"->"type")
 
-..............................................................*/
+.............................................................................*/
 
 typedef enum
 {
@@ -72,12 +74,12 @@ typedef enum
 } fileType_t;
 
 
-class FILE2 : public CStringItem
+class QFILE : public CStringItem
 {
 	// used CStringItem::name for info
 public:
 	fileType_t type;
-	FILE	*file;		// handle of file (if non-zipped) or .PAK
+	FILE	*file;				// handle of file (if non-zipped) or .PAK
 	union {
 		struct {
 			ZFILE	*zFile;		// handle of zipped file (or 0 if non-zipped)
@@ -104,13 +106,13 @@ static cvar_t	*fs_cddir;
 #endif
 static char	fs_gamedir[MAX_OSPATH];
 
-typedef struct fileLink_s
+struct fileLink_t
 {
-	struct fileLink_s *next;
+	fileLink_t *next;
 	char	*from;
 	int		fromlength;
 	char	*to;
-} fileLink_t;
+};
 
 static fileLink_t *fs_links;
 
@@ -127,7 +129,9 @@ static searchPath_t *fs_base_searchpaths;	// without gamedirs
 static const char *is_zip_str[2] = {"", " [zip]"};
 
 
-/*------------------ Resources ----------------------------*/
+/*-----------------------------------------------------------------------------
+	Resources
+-----------------------------------------------------------------------------*/
 
 #define MAX_RES_FILES	64
 
@@ -143,17 +147,16 @@ static int resFileCount;
 
 static void InitResFiles (void)
 {
-	ZBUF	*z;
-	char	c, name[MAX_OSPATH], *s;
-	int		fsize, offs;
-	resFile_t *f, *last;
+	int		fsize;
 
 	resChain = new CMemoryChain;
-	z = OpenZRes();
+	ZBUF *z = OpenZRes();
 
-	last = NULL;
-	while (Zip_ReadBuf (z, &fsize, sizeof(int))/* && fsize*/)
+	resFile_t *last = NULL;
+	while (Zip_ReadBuf (z, &fsize, sizeof(int)))
 	{
+		char	c, name[MAX_OSPATH], *s;
+
 		if (!fsize) break;
 		s = name;
 		// get filename
@@ -163,7 +166,7 @@ static void InitResFiles (void)
 			*s++ = c;
 		} while (c);
 		// create file struc
-		f = new (name, resChain) resFile_t;
+		resFile_t *f = new (name, resChain) resFile_t;
 		f->size = fsize;
 		// add to chain
 		resFiles.InsertAfter (f, last);
@@ -172,8 +175,8 @@ static void InitResFiles (void)
 		last = f;
 	}
 	// now zstream points to begin of 1st file data - need to calculate file offsets
-	offs = z->readed;
-	for (f = resFiles.First(); f; f = resFiles.Next(f))
+	int offs = z->readed;
+	for (resFile_t *f = resFiles.First(); f; f = resFiles.Next(f))
 	{
 		f->pos = offs;
 		offs += f->size;
@@ -203,22 +206,23 @@ static void AddDirFilesToList (const char *findname, TList<CStringItem> *List, i
 		strcpy (mask+1, "*");			// wildcard -> "*" -- list all files
 	}
 	else
-		wildcard[0] = 0;				// no path in filename ? (should not happens)
+		return;							// no path in filename ? (should not happens)
 
+	// HERE: Sys_FindFirst() used with short file names (without path) (path part removed)
 	for (const char *s = Sys_FindFirst (pattern, flags); s; s = Sys_FindNext ())
 	{
-		if (!wildcard[0] || s[strlen (s)-1] != '.')	// ignore "." and ".." directory items
+		const char *name = strrchr (s, '/');	// should always be not NULL
+		if (!name) continue;			// just in case ...
+		name++;
+		if (name[0] == '.') continue;	// ignore "." and ".." dirs (any dir, started with '.' -- Unix-like hidden files)
+		if (appMatchWildcard (name, wildcard, true))
 		{
-			const char *name = strrchr (s, '/');	// should always be not NULL
-			if (name && appMatchWildcard (name+1, wildcard, true))
+			CStringItem *item, *place;
+			if (!(item = List->Find (s, &place)))
 			{
-				CStringItem *item, *place;
-				if (!(item = List->Find (s, &place)))
-				{
-					item = new (s) CStringItem;
-					appStrncpylwr (item->name, item->name, BIG_NUMBER);		//!! lowercase the name
-					List->InsertAfter (item, place);
-				}
+				item = new (s) CStringItem;
+				appStrncpylwr (item->name, item->name, BIG_NUMBER);		//!! lowercase the name
+				List->InsertAfter (item, place);
 			}
 		}
 	}
@@ -476,12 +480,11 @@ void FS_CopyFile (const char *src, const char *dst)
 	}
 
 	DEBUG_LOG("\n");
-	while (1)
+	while (true)
 	{
-		int		len;
 		byte	buffer[65536];
 
-		len = fread (buffer, 1, sizeof(buffer), f1);	// here: rec.size=1, num_recs=buf_size
+		int len = fread (buffer, 1, sizeof(buffer), f1);	// here: rec.size=1, num_recs=buf_size
 		if (!len) break;
 		fwrite (buffer, len, 1, f2);
 	}
@@ -518,6 +521,7 @@ void FS_CopyFiles (const char *srcMask, const char *dstDir)
 	// create destination directory
 	FS_CreatePath (pattern);
 	// copy files
+	// HERE: Sys_FindFirst() uses fill path names
 	for (found = Sys_FindFirst (srcMask, LIST_FILES); found; found = Sys_FindNext ())
 	{
 		strcpy (pattern + pos2, found + pos1);
@@ -530,6 +534,7 @@ void FS_CopyFiles (const char *srcMask, const char *dstDir)
 void FS_RemoveFiles (const char *mask)
 {
 	DEBUG_LOG(va("RemoveFiles(%s)\n", mask));
+	// HERE: Sys_FindFirst() uses full path names
 	for (const char *found = Sys_FindFirst (mask, LIST_FILES); found; found = Sys_FindNext ())
 	{
 		DEBUG_LOG(va("del(%s)\n", found));
@@ -584,33 +589,29 @@ static void FCloseCached (FILE *f)
 }
 
 
-void FS_FCloseFile (FILE *f)
+void FS_FCloseFile (QFILE *f)
 {
-	FILE2*	f2;
-	int		rest;
-
 	if (!f) return;
-	f2 = (FILE2*)f;
 
 	// simple validation of FILE2 structure
-	if ((char *)f2->name - (char *)f2 != sizeof(FILE2))
+	if ((char *)f->name - (char *)f != sizeof(QFILE))
 		Com_FatalError ("FS_FCloseFile: invalid file handle (called by %s)", appSymbolName (GET_RETADDR(f)));
 
-	if (f2->type == FT_NORMAL || f2->type == FT_ZPAK || f2->type == FT_PAK)
+	if (f->type == FT_NORMAL || f->type == FT_ZPAK || f->type == FT_PAK)
 	{
-		if (f2->zFile)
+		if (f->zFile)
 		{
-			rest = f2->zFile->rest_write;
-			if (!Zip_CloseFile (f2->zFile) && !rest)
+			int rest = f->zFile->rest_write;
+			if (!Zip_CloseFile (f->zFile) && !rest)
 			{	// file readed completely, but bad checksum
-				Com_FatalError ("FS_FCloseFile: damaged zip file %s %s", f2->name, f2->pFile->name);
+				Com_FatalError ("FS_FCloseFile: damaged zip file %s %s", f->name, f->pFile->name);
 			}
 		}
-		if (f2->file)
-			FCloseCached (f2->file);		// fclose (f2->file) or ZipClose (f2->file);
+		if (f->file)
+			FCloseCached (f->file);		// fclose (f->file) or ZipClose (f->file);
 	}
-	else if (f2->type == FT_ZPAK)
-		Zip_CloseBuf (f2->zBuf);
+	else if (f->type == FT_ZPAK)
+		Zip_CloseBuf (f->zBuf);
 //	else Com_FatalError ("FS_FCloseFile: invalid handle type");
 
 	delete f;
@@ -629,54 +630,51 @@ a seperate file.
 */
 
 
-// Allocates FILE2 structure
-static FILE *AllocFileInternal (char *name, FILE *file, fileType_t type)
+// Allocates QFILE structure
+static QFILE *AllocFileInternal (const char *name, FILE *file, fileType_t type)
 {
-	FILE2* f2;
-
-	f2 = new (name) FILE2;
+	QFILE *f2 = new (name) QFILE;
 	f2->file = file;
 	f2->type = type;
-	return (FILE*) f2;
+	return f2;
 }
 
 
-int fileFromPak;		// used for precaching
+bool fileFromPak;		// used for precaching
 
 // WARNING: FS_FOpenFile, FS_Read and FS_FCloseFile works with FILE2* (not with FILE*) structure.
 
-int FS_FOpenFile (const char *filename2, FILE **file)
+QFILE *FS_FOpenFile (const char *filename2, int *plen)
 {
 	char			netpath[MAX_OSPATH], *pakname, game[MAX_OSPATH], filename[MAX_OSPATH];
 	pack_t			*pak;
 	packFile_t		*pfile;
-	int				gamelen, gamePos;
-	fileLink_t		*link;
 	FILE			*f;
 
-	fileFromPak = 0;
+	fileFromPak = false;
 	appCopyFilename (filename, filename2, sizeof(filename));
 
 	/*-------------- check for links first ---------------------*/
-	for (link = fs_links; link; link = link->next)
+	for (fileLink_t *link = fs_links; link; link = link->next)
 	{
 		if (!memcmp (filename, link->from, link->fromlength))
 		{
 			appSprintf (ARRAY_ARG(netpath), "%s%s", link->to, filename + link->fromlength);
 			if (f = fopen (netpath, "rb"))
 			{
-				*file = AllocFileInternal (netpath, f, FT_NORMAL);
 				DEBUG_LOG(va("link: %s\n", netpath));
-				return FileLength (f);
+				QFILE *file = AllocFileInternal (netpath, f, FT_NORMAL);
+				if (plen) *plen = FileLength (f);
+				return file;
 			}
-			*file = NULL;
-			return -1;
+			if (plen) *plen = -1;
+			return NULL;
 		}
 	}
 
 	/*----- search through the path, one element at a time -----*/
-	gamelen = 0;
-	gamePos = 0;
+	int gamelen = 0;
+	int gamePos = 0;
 	if (filename[1] == ':' && filename[2] == '/')	// CD path?
 	{
 #ifdef CD_PATH
@@ -684,14 +682,14 @@ int FS_FOpenFile (const char *filename2, FILE **file)
 		if (memcmp (filename, fs_cddir->string, gamePos))
 		{
 			Com_DPrintf ("FS_FOpenFile: bad path %s\n", filename);
-			*file = NULL;
-			return -1;
+			if (plen) *plen = -1;
+			return NULL;
 		}
 		gamePos++;			// skip '/'
 #else
 		Com_DPrintf ("FS_FOpenFile: bad path %s\n", filename);
-		*file = NULL;
-		return -1;
+		if (plen) *plen = -1;
+		return NULL;
 #endif
 	}
 	else if (filename[0] == '.' && filename[1] == '/')
@@ -726,12 +724,13 @@ int FS_FOpenFile (const char *filename2, FILE **file)
 			if (pfile = FindPakFile (pak, pakname)) // found
 			{
 //				DebugPrintf ("\nAllocPakfile(\"%s\" in \"%s\")%s\n", pakname, pak->filename, is_zip_str[pak->isZip]);
-				fileFromPak = 1;
+				fileFromPak = true;
 				DEBUG_LOG(va("pfile: %s (%s)\n", pakname, pak->filename));
 				// open a new file on the pakfile
-				*file = AllocFileInternal (pak->filename, NULL, pak->isZip ? FT_ZPAK : FT_PAK);
-				(*(FILE2**)file)->pFile = pfile;
-				return pfile->ucSize;
+				QFILE *file = AllocFileInternal (pak->filename, NULL, pak->isZip ? FT_ZPAK : FT_PAK);
+				file->pFile = pfile;
+				if (plen) *plen = pfile->ucSize;
+				return file;
 			}
 		}
 		else
@@ -742,9 +741,10 @@ int FS_FOpenFile (const char *filename2, FILE **file)
 				appSprintf (ARRAY_ARG(netpath), "%s/%s", search->name, filename);
 
 				if (!(f = fopen (netpath, "rb"))) continue;
-				*file = AllocFileInternal (netpath, f, FT_NORMAL);
 				DEBUG_LOG(va("file: %s\n", netpath));
-				return FileLength (f);
+				QFILE *file = AllocFileInternal (netpath, f, FT_NORMAL);
+				if (plen) *plen = FileLength (f);
+				return file;
 			}
 		}
 	}
@@ -752,25 +752,27 @@ int FS_FOpenFile (const char *filename2, FILE **file)
 	// check a file in the directory tree for base-relative path
 	if (gamelen && (f = fopen (filename, "rb")))
 	{
-		*file = AllocFileInternal (filename, f, FT_NORMAL);
 		DEBUG_LOG(va("file: %s\n", filename));
-		return FileLength (f);
+		QFILE *file = AllocFileInternal (filename, f, FT_NORMAL);
+		if (plen) *plen = FileLength (f);
+		return file;
 	}
 
 	// check for a resource (inline) file
 	resFile_t *rf = resFiles.Find (filename);
 	if (rf)
 	{
-		*file = AllocFileInternal (filename, NULL, FT_ZMEM);
-		(*(FILE2**)file)->rFile = rf;
 		DEBUG_LOG(va("rfile: %s\n", filename));
-		return rf->size;
+		QFILE *file = AllocFileInternal (filename, NULL, FT_ZMEM);
+		file->rFile = rf;
+		if (plen) *plen = rf->size;
+		return file;
 	}
 
 	DEBUG_LOG(va("no file %s\n", filename));
 
-	*file = NULL;
-	return -1;
+	if (plen) *plen = -1;
+	return NULL;
 }
 
 
@@ -788,7 +790,7 @@ bool FS_FileExists (const char *filename)
 	char		game[MAX_OSPATH], buf[MAX_OSPATH];
 	FILE		*f;
 
-	fileFromPak = 0;
+	fileFromPak = false;
 	appCopyFilename (buf, filename, sizeof(buf));
 	filename = buf;
 	DEBUG_LOG(va("check: %s\n", filename));
@@ -858,7 +860,7 @@ bool FS_FileExists (const char *filename)
 			// look through all the pak file elements
 			if (FindPakFile (pak, pakname))			// found
 			{
-				fileFromPak = 1;
+				fileFromPak = true;
 				return true;
 			}
 		}
@@ -895,87 +897,80 @@ Properly handles partial reads
 =================
 */
 
-void FS_Read (void *buffer, int len, FILE *f)
+void FS_Read (void *buffer, int len, QFILE *f)
 {
-	FILE2	*f2;
 	zipFile_t zfs;
 
 	guard(FS_Read);
 
 	if (!f) return;
-	f2 = (FILE2*)f;
 
-	// simple validation of FILE2 structure (don't let to pass FILE structure, allocated without FS_FOpenFile())
-	if (f2->name - (char *)f2 != sizeof(FILE2))
-		Com_FatalError ("FS_Read: invalid file handle (called by %s)", appSymbolName (GET_RETADDR(buffer)));
+//	// simple validation of FILE2 structure (don't let to pass FILE structure, allocated without FS_FOpenFile())
+//	if (f->name - (char *)f != sizeof(QFILE))
+//		Com_FatalError ("FS_Read: invalid file handle (called by %s)", appSymbolName (GET_RETADDR(buffer)));
 
-	if (f2->type == FT_ZMEM)
+	if (f->type == FT_ZMEM)
 	{
-		if (!f2->zBuf)
+		if (!f->zBuf)
 		{
-			int		rem;
-
 			// open and seek ZBUF
-			f2->zBuf = OpenZRes ();
-			rem = f2->rFile->pos;
+			f->zBuf = OpenZRes ();
+			int rem = f->rFile->pos;
 			while (rem)
 			{
 				char	tmpbuf[4096];	// buffer for seeking
 
 				int tmp = min(rem, sizeof(tmpbuf));
-				Zip_ReadBuf (f2->zBuf, tmpbuf, tmp);
+				Zip_ReadBuf (f->zBuf, tmpbuf, tmp);
 				rem -= tmp;
 			}
 		}
-		Zip_ReadBuf (f2->zBuf, buffer, len);
+		Zip_ReadBuf (f->zBuf, buffer, len);
 		return;
 	}
 
-	if (!f2->file)
+	if (!f->file)
 	{	// file is only allocated - open it
-		if (!f2->pFile)
+		if (!f->pFile)
 		{	// regular file
-			f2->file = fopen (f2->name, "rb");
-			if (!f2->file) Com_FatalError ("cannot open file %s", f2->name);
+			f->file = fopen (f->name, "rb");
+			if (!f->file) Com_FatalError ("cannot open file %s", f->name);
 		}
 		else
 		{	// pak file
-			if (f2->type == FT_PAK)
+			if (f->type == FT_PAK)
 			{	// id pak file
-				f2->file = FOpenCached (f2->name);		// fopen (f2->name, "rb");
-				if (!f2->file)
-					Com_FatalError ("couldn't reopen %s", f2->name);
-				if (fseek (f2->file, f2->pFile->pos, SEEK_SET))
-					Com_FatalError ("Cannot seek %s", f2->name);
+				f->file = FOpenCached (f->name);		// fopen (f->name, "rb");
+				if (!f->file)
+					Com_FatalError ("couldn't reopen %s", f->name);
+				if (fseek (f->file, f->pFile->pos, SEEK_SET))
+					Com_FatalError ("Cannot seek %s", f->name);
 			}
 			else
 			{	// zipped pak file
-				f2->file = FOpenCached (f2->name);		// ZipOpen (f2->name);
-				if (!f2->file)
-					Com_FatalError ("couldn't reopen zip %s", f2->name);
-				zfs.csize  = f2->pFile->cSize;
-				zfs.ucsize = f2->pFile->ucSize;
-				zfs.pos    = f2->pFile->pos;
-				zfs.method = f2->pFile->method;
-				zfs.crc32  = f2->pFile->crc;
-				f2->zFile = Zip_OpenFile (f2->file, &zfs);
-				if (!f2->zFile)
-					Com_FatalError ("cannot open file %s in zip %s", f2->pFile->name, f2->name);
+				f->file = FOpenCached (f->name);		// ZipOpen (f->name);
+				if (!f->file)
+					Com_FatalError ("couldn't reopen zip %s", f->name);
+				zfs.csize  = f->pFile->cSize;
+				zfs.ucsize = f->pFile->ucSize;
+				zfs.pos    = f->pFile->pos;
+				zfs.method = f->pFile->method;
+				zfs.crc32  = f->pFile->crc;
+				f->zFile = Zip_OpenFile (f->file, &zfs);
+				if (!f->zFile)
+					Com_FatalError ("cannot open file %s in zip %s", f->pFile->name, f->name);
 			}
 		}
 	}
 
-	if (f2->zFile)
+	if (f->zFile)
 	{
-		if (Zip_ReadFile (f2->zFile, buffer, len) != len)
+		if (Zip_ReadFile (f->zFile, buffer, len) != len)
 			Com_FatalError ("error reading zip file");
 	}
 	else
 	{
-		byte	*buf;
-
-		buf = (byte *)buffer;
-		int read = fread (buf, len, 1, f2->file);
+		int read = fread (buffer, len, 1, f->file);
 		if (read != 1)
 			Com_FatalError ("cannot read file");
 	}
@@ -994,10 +989,9 @@ When file is loaded, it contained in buffer with added trailing zero
 */
 void* FS_LoadFile (const char *path, unsigned *len)
 {
-	FILE2	*h;
-
 	// look for it in the filesystem or pack files
-	unsigned len2 = FS_FOpenFile (path, (FILE **)&h);
+	int len2;
+	QFILE *h = FS_FOpenFile (path, &len2);
 	if (!h)
 	{
 		if (len) *len = 0;
@@ -1008,8 +1002,8 @@ void* FS_LoadFile (const char *path, unsigned *len)
 
 //	MEM_ALLOCATOR(path);	//!!
 	byte *buf = (byte*)appMalloc (len2 + 1); // adds 1 for trailing zero
-	FS_Read (buf, len2, (FILE*)h);
-	FS_FCloseFile ((FILE*)h);
+	FS_Read (buf, len2, h);
+	FS_FCloseFile (h);
 	// not needed: appMalloc returns zero-filled block:	buffer[len] = 0; // trailing zero
 
 	return buf;
@@ -1056,7 +1050,7 @@ static bool EnumZippedPak (zipFile_t *file)
 }
 
 
-static pack_t *LoadPackFile (char *packfile)
+static pack_t *LoadPackFile (const char *packfile)
 {
 	bool	is_zip;
 
@@ -1124,11 +1118,12 @@ static pack_t *LoadPackFile (char *packfile)
 
 	Com_DPrintf ("Added packfile%s %s (%d files)\n", is_zip_str[pack->isZip], packfile, pack->numFiles);
 
-	/* debug:
+#if 0
+	// debug:
 	packhandle = fopen("pakfiles.log", "a+");
 	DumpPakContents(pack, packhandle);
 	fclose(packhandle);
-	*/
+#endif
 
 	return pack;
 }
@@ -1155,12 +1150,8 @@ static void AddGameDirectory (const char *dir)
 	strcpy (fs_gamedir, dir);
 
 	/*-------- check for valid game directory -----------------*/
-//??	if (Sys_FindFirst (va("%s/%s/*.*", fs_basedir->string, dir), 0, 0))  -- not works with CD
-	if (Sys_FindFirst (va("%s/*", dir), LIST_FILES|LIST_DIRS))
-		Sys_FindClose ();
-	else
+	if (!Sys_FileExists (va("%s/*", dir), LIST_FILES|LIST_DIRS))
 	{
-		Sys_FindClose ();
 		Com_WPrintf ("AddGameDirectory: path \"%s\" is not found\n", dir);
 		return;
 	}
@@ -1203,12 +1194,12 @@ FS_LoadGameConfig
 void FS_LoadGameConfig (void)
 {
 	char	dir[MAX_QPATH];
-	FILE	*f;
 
 	char *gdir = Cvar_VariableString ("gamedir");
 	// game = "" => gdir = "baseq2"
 	appSprintf (ARRAY_ARG(dir), "%s/%s", fs_basedir->string, *gdir ? gdir : BASEDIRNAME);
 
+	FILE	*f;
 	if (f = fopen (va("%s/%s", dir, fs_configfile->string), "r"))
 	{
 		fclose (f);
@@ -1246,11 +1237,8 @@ bool FS_SetGamedir (const char *dir)
 		dir = BASEDIRNAME;
 
 	// check for valid game directory
-	if (Sys_FindFirst (va("%s/%s/*", fs_basedir->string, dir), LIST_FILES|LIST_DIRS))
-		Sys_FindClose ();
-	else
+	if (!Sys_FileExists (va("%s/%s/*", fs_basedir->string, dir), LIST_FILES|LIST_DIRS))
 	{
-		Sys_FindClose ();
 		Com_WPrintf ("Invalid game directory: %s\n", dir);
 		return false;
 	}
@@ -1492,7 +1480,7 @@ FS_ListFiles
 ================
 */
 
-TList<CStringItem> FS_ListFiles (const char *name, int *numfiles, int flags)
+TList<CStringItem> FS_ListFiles (const char *name, int flags)
 {
 	char	buf[MAX_OSPATH], game[MAX_OSPATH], path[MAX_OSPATH];
 
@@ -1587,14 +1575,6 @@ TList<CStringItem> FS_ListFiles (const char *name, int *numfiles, int flags)
 			AddDirFilesToList (va("%s/%s", path2, name), &List, flags);
 	}
 
-	/*----------- count number of files ----------------*/
-	if (numfiles)
-	{
-		*numfiles = 0;
-		for (CStringItem *item = List.First(); item; item = List.Next(item))
-			(*numfiles)++;
-	}
-
 	return List;
 }
 
@@ -1635,7 +1615,7 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 		appCopyFilename (findname, findname, sizeof(findname));	// in-place compact filename
 		Com_Printf (S_GREEN"Directory of %s\n-------------------\n", findname);
 
-		TList<CStringItem> dirnames = FS_ListFiles (findname, NULL, LIST_FILES|LIST_DIRS);
+		TList<CStringItem> dirnames = FS_ListFiles (findname, LIST_FILES|LIST_DIRS);
 		if (dirnames.First())
 		{
 			maxlen = 0;
@@ -1707,7 +1687,6 @@ static void FS_Path_f (void)
 
 static void FS_Cat_f (bool usage, int argc, char **argv)
 {
-	FILE	*f;
 	int		len;
 	char	buf[64];
 
@@ -1716,7 +1695,7 @@ static void FS_Cat_f (bool usage, int argc, char **argv)
 		Com_Printf ("Usage: cat <filename>\n");
 		return;
 	}
-	len = FS_FOpenFile (argv[1], &f);
+	QFILE *f = FS_FOpenFile (argv[1], &len);
 	if (!f)
 	{
 		Com_Printf ("File %s is not found\n", argv[1]);
@@ -1748,19 +1727,16 @@ static void FS_Cat_f (bool usage, int argc, char **argv)
 
 static void FS_Type_f (bool usage, int argc, char **argv)
 {
-	FILE	*f;
-	int		len, oldDev;
-	char	*name;
-
 	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: type <filename>\n");
 		return;
 	}
-	name = argv[1];
-	oldDev = fs_debug->integer;
+	const char *name = argv[1];
+	int oldDev = fs_debug->integer;
 	Cvar_SetInteger ("fs_debug", 1);	//?? another way
-	len = FS_FOpenFile (name, &f);
+	int len;
+	QFILE *f = FS_FOpenFile (name, &len);
 	Cvar_SetInteger ("fs_debug", oldDev);
 	if (!f)
 	{
@@ -1782,9 +1758,7 @@ Allows enumerating all of the directories in the search path
 */
 char *FS_NextPath (const char *prevpath)
 {
-	const char *prev;
-
-	prev = NULL;
+	const char *prev = NULL;
 	for (searchPath_t *s = fs_searchpaths.First(); s; s = fs_searchpaths.Next(s))
 	{
 		if (s->pack) continue;

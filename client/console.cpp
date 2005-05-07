@@ -158,33 +158,31 @@ void Con_CheckResize (void)
 	while (size--)
 	{
 		char c = con.text[i];
-		if (c == WRAP_CHAR) c = ' ';	// ignore old WRAP_CHARs
+		if (c == WRAP_CHAR) c = ' ';				// ignore old WRAP_CHARs
 		con.text[i] = c;
 		if (++i >= CON_TEXTSIZE) i -= CON_TEXTSIZE;
 
-		if (c == '\n' || ++x >= width)	// line feed or line wrap
+		if (c != '\n' && ++x < width) continue;		// no line feed or line wrap
+
+		x = 0;
+		line++;
+
+		if (!con.wordwrap || c == '\n') continue;	// no word wrap here
+
+		// make a word wrap
+		int i1 = i;									// seek back to find a space char
+		int x1 = -1;
+		while (++x1 < width)
 		{
-			x = 0;
-			line++;
+			if (--i1 < 0) i1 += CON_TEXTSIZE;
+			char c1 = con.text[i1];
 
-			if (con.wordwrap && c != '\n')
+			if (c1 == '\n' || c1 == WRAP_CHAR) break; // wrap found - word is too long
+			if (c1 == ' ')
 			{
-				// make a word wrap
-				int i1 = i;					// seek back to find a space char
-				int x1 = -1;
-				while (++x1 < width)
-				{
-					if (--i1 < 0) i1 += CON_TEXTSIZE;
-					char c1 = con.text[i1];
-
-					if (c1 == '\n' || c1 == WRAP_CHAR) break; // wrap found - word is too long
-					if (c1 == ' ')
-					{
-						con.text[i1] = WRAP_CHAR;
-						x = x1;
-						break;
-					}
-				}
+				con.text[i1] = WRAP_CHAR;
+				x = x1;
+				break;
 			}
 		}
 	}
@@ -364,7 +362,7 @@ static void DrawInput (void)
 		shift = 0;
 
 	// draw it
-	if (!(*re.flags & REF_CONSOLE_ONLY))
+	if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
 		y = con.vislines - CHAR_HEIGHT - 14;
 	else
 		y = (viddef.height / CHAR_HEIGHT) - 2;
@@ -386,10 +384,10 @@ static void DrawInput (void)
 		if ((i == editPos  - shift) && (cls.realtime >> 8) & 1 && cls.key_dest != key_menu)
 		{
 #define CURSOR_HEIGHT	(CHAR_HEIGHT/4)
-			if (!(*re.flags & REF_CONSOLE_ONLY))
+			if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
 			{
 				RE_DrawChar (x, y, c);
-				RE_DrawFill2 (x, y+CHAR_HEIGHT-CURSOR_HEIGHT, CHAR_WIDTH, CURSOR_HEIGHT, RGBA(1,0.2,0.3,0.8));
+				RE_Fill (x, y+CHAR_HEIGHT-CURSOR_HEIGHT, CHAR_WIDTH, CURSOR_HEIGHT, RGBA(1,0.2,0.3,0.8));
 				continue;
 			}
 			c = 11;									// cursor char
@@ -398,7 +396,7 @@ static void DrawInput (void)
 		else
 			color = C_WHITE;						// do not colorize input
 		// draw char
-		if (!(*re.flags & REF_CONSOLE_ONLY))
+		if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
 			RE_DrawChar (x, y, c, color);
 		else
 			RE_DrawConChar (i+1, y, c, color);
@@ -432,7 +430,7 @@ void Con_DrawNotify (bool drawBack)
 
 		if (drawBack)
 		{
-			RE_DrawFill2 (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, RGBA(1,0,0,0.3));
+			RE_Fill (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, RGBA(1,0,0,0.3));
 			drawBack = false;
 		}
 		for (int x = 0; x < linewidth; x++)
@@ -473,12 +471,12 @@ void Con_DrawConsole (float frac)
 		lines = viddef.height;
 
 	// draw the background
-	if (!(*re.flags & REF_CONSOLE_ONLY))
+	if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
 	{
-//		RE_DrawFill2 (0, 0, viddef.width, lines, RGBA(0,0,0.02,Cvar_VariableValue("con_alpha")));
-		RE_DrawFill2 (0, 0, viddef.width, lines, RGBA(0,0,0.02,0.75));
+//		RE_Fill (0, 0, viddef.width, lines, RGBA(0,0,0.02,Cvar_VariableValue("con_alpha")));
+		RE_Fill (0, 0, viddef.width, lines, RGBA(0,0,0.02,0.75));
 		if (lines < viddef.height)
-			RE_DrawFill2 (0, lines - 1, viddef.width, 1, RGBA(0.2,0.2,0.2,0.8));
+			RE_Fill (0, lines - 1, viddef.width, 1, RGBA(0.2,0.2,0.2,0.8));
 	}
 
 	// Variables for console-only mode
@@ -488,7 +486,7 @@ void Con_DrawConsole (float frac)
 	// draw version info
 	i = sizeof(version) - 1;
 	for (x = 0; x < i; x++)
-		if (!(*re.flags & REF_CONSOLE_ONLY))
+		if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
 			RE_DrawChar (viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, version[x], C_GREEN);
 		else
 			RE_DrawConChar (dx - i - 1 + x, dy - 1, version[x], C_GREEN);
@@ -496,7 +494,7 @@ void Con_DrawConsole (float frac)
 	// draw the text
 	con.vislines = lines;
 
-	if (!(*re.flags & REF_CONSOLE_ONLY))
+	if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
 	{
 		rows = (lines - CHAR_HEIGHT/2) / CHAR_HEIGHT - 2;	// rows of text to draw
 		y = lines - 30;
@@ -534,14 +532,14 @@ void Con_DrawConsole (float frac)
 	con.disp.pos = i;
 
 	int y0 = y;												// last console text line
-	if (!(*re.flags & REF_CONSOLE_ONLY))
+	if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
 		y -= (rows - 1) * CHAR_HEIGHT;
 	else
 		y -= rows - 1;
 	if (con.totallines && con.display != con.current)
 	{
 		/*------ draw arrows to show the buffer is backscrolled -------*/
-		if (!(*re.flags & REF_CONSOLE_ONLY))
+		if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
 		{
 			for (x = 0; x < linewidth; x += 4)
 				RE_DrawChar ((x + 1) * CHAR_WIDTH, y0, '^');
@@ -568,12 +566,12 @@ void Con_DrawConsole (float frac)
 				if (c == '\n' || c == WRAP_CHAR) break;
 
 				if (!con_colorText->integer) color = C_WHITE;
-				if (!(*re.flags & REF_CONSOLE_ONLY))
+				if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
 					RE_DrawChar ((x + 1) * CHAR_WIDTH, y, c, color);
 				else
 					RE_DrawConChar (x + 1, y, c, color);
 			}
-			if (!(*re.flags & REF_CONSOLE_ONLY))
+			if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
 				y += CHAR_HEIGHT;
 			else
 				y++;
@@ -583,7 +581,7 @@ void Con_DrawConsole (float frac)
 #ifdef DEBUG_CONSOLE
 	i = strlen (dbgBuf);
 	for (x = 0; x < i; x++)
-		if (!(*re.flags & REF_CONSOLE_ONLY))
+		if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
 			RE_DrawChar (x*CHAR_WIDTH, lines - 12, dbgBuf[x], C_BLUE);
 		else
 			RE_DrawConChar (x, dy - 1, dbgBuf[x], C_BLUE);

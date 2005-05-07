@@ -26,8 +26,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 int		realtime;
 
 #include "../client/ref.h"	// using RE_DrawTextXxx () for com_speeds
-extern	refExport_t	re;
-#include "../client/rexp_defs.h"
 
 
 cvar_t	*com_speeds;

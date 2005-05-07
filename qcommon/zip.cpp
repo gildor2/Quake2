@@ -1,6 +1,8 @@
 #include "qcommon.h"
 #include "zip.h"
 
+//?? implement as classes (1 reason why not: CZipArchive will have only 1 field of FILE* type)
+
 /*
  *  When ZIP_USE_CENTRAL_DIRECTORY is defined, ZipEnum, ZipOpenFile and
  *  ZipExtractFileMem will use central zip directory to get info (faster zip file scan)
@@ -12,6 +14,11 @@
 typedef unsigned char   uch;	// 1-byte unsigned
 typedef unsigned short  ush;	// 2-byte unsigned
 typedef unsigned long   ulg;	// 4-byte unsigned
+
+
+#define LOCAL_HDR_MAGIC		BYTES4('P','K',3,4)
+#define CENTRAL_HDR_MAGIC	BYTES4('P','K',1,2)
+#define END_HDR_MAGIC		BYTES4('P','K',5,6)
 
 
 #ifdef _WIN32
@@ -66,24 +73,23 @@ typedef struct
 #endif
 
 
-FILE* Zip_OpenArchive (char *name)
+FILE* Zip_OpenArchive (const char *name)
 {
-	FILE	*F;
+	FILE	*f;
 	localFileHdr_t hdr;
 	unsigned signature;
 
-	F = fopen (name, "rb");
-	if (!F) return NULL; // file not found
+	if (!(f = fopen (name, "rb"))) return NULL;
 
-	if ((fread (&signature, 4, 1, F) != 1) ||
-		(signature != 0x04034B50) ||
-		(fread (&hdr, sizeof(hdr), 1, F) != 1) ||
-		(hdr.compressionMethod >= 9))
+	if (fread (&signature, 4, 1, f) != 1 ||
+		signature != LOCAL_HDR_MAGIC ||
+		fread (&hdr, sizeof(hdr), 1, f) != 1 ||
+		hdr.compressionMethod >= 9)
 	{
-		fclose (F);
+		fclose (f);
 		return NULL;
 	}
-	return F;
+	return f;
 }
 
 
@@ -96,7 +102,7 @@ void Zip_CloseArchive (FILE *F)
 #ifndef ZIP_USE_CENTRAL_DIRECTORY
 
 // Enumerate zip files
-bool Zip_EnumArchive (FILE *F, enumZipFunc_t enum_func)
+bool Zip_EnumArchive (FILE *f, enumZipFunc_t enum_func)
 {
 	localFileHdr_t hdr;
 	char	buf[512];
@@ -104,20 +110,20 @@ bool Zip_EnumArchive (FILE *F, enumZipFunc_t enum_func)
 
 	if (!enum_func) return false;
 
-	fseek(F, 0, SEEK_SET);									// rewind archive
+	fseek(f, 0, SEEK_SET);									// rewind archive
 	while (!feof(F))
 	{
 		unsigned signature;
 
-		if (fread (&signature, 4, 1, F) != 1) return false;	// cannot read signature
+		if (fread (&signature, 4, 1, f) != 1) return false;	// cannot read signature
 
-		if (signature == 0x02014B50 || signature == 0x06054B50)
+		if (signature == CENTRAL_HDR_MAGIC || signature == END_HDR_MAGIC)
 			return true;									// central directory structure - not interesting
 
-		if (signature != 0x04034B50) return false;			// MUST be local file header
-		if (fread (&hdr, sizeof(hdr), 1, F) != 1) return false;
+		if (signature != LOCAL_HDR_MAGIC) return false;	// MUST be local file header
+		if (fread (&hdr, sizeof(hdr), 1, f) != 1) return false;
 		unsigned name_len = hdr.filenameLength;
-		if (fread (&buf[0], name_len, 1, F) != 1) return false;
+		if (fread (&buf[0], name_len, 1, f) != 1) return false;
 
 		buf[name_len] = 0;
 		// fill zip_file structure
@@ -126,9 +132,9 @@ bool Zip_EnumArchive (FILE *F, enumZipFunc_t enum_func)
 		file.ucsize = hdr.ucsize;
 		file.crc32 = hdr.crc32;
 		file.method = hdr.compression_method;
-		file.pos = ftell (F) + hdr.extraFieldLength;
+		file.pos = ftell (f) + hdr.extraFieldLength;
 		// seek to next file
-		if (fseek (F, hdr.extraFieldLength + hdr.csize, SEEK_CUR)) return false;
+		if (fseek (f, hdr.extraFieldLength + hdr.csize, SEEK_CUR)) return false;
 		// if OK - make a callback
 		if (!enum_func (&file)) return true;				// break on "false"
 		//printf("%10d < %10d  [%1d]  %s\n", hdr.csize, hdr.ucsize, hdr.compression_method, buf);
@@ -142,7 +148,7 @@ bool Zip_EnumArchive (FILE *F, enumZipFunc_t enum_func)
 
 
 // Enumerate zip central directory (faster)
-bool Zip_EnumArchive (FILE *F, enumZipFunc_t enum_func)
+bool Zip_EnumArchive (FILE *f, enumZipFunc_t enum_func)
 {
 	unsigned pos;
 	cdirFileHdr_t hdr;										// central directory record
@@ -152,8 +158,8 @@ bool Zip_EnumArchive (FILE *F, enumZipFunc_t enum_func)
 	if (!enum_func) return false;
 
 	// Find end of central directory record (by signature)
-	if (fseek (F, 0, SEEK_END)) return false;				// rewind to the archive end
-	if ((pos = ftell (F)) < 22) return false;				// file too small to be a zip-archive
+	if (fseek (f, 0, SEEK_END)) return false;				// rewind to the archive end
+	if ((pos = ftell (f)) < 22) return false;				// file too small to be a zip-archive
 	// here: 18 = sizeof(ecdir_rec_ehdr) - sizeof(signature)
 	if (pos < sizeof(buf) - 18)
 		pos = 0;											// small file
@@ -164,10 +170,10 @@ bool Zip_EnumArchive (FILE *F, enumZipFunc_t enum_func)
 	bool found = false;
 	for (int i = 0; i < 128; i++)
 	{
-		if (fseek (F, pos, SEEK_SET)) return false;
-		unsigned rs = fread (buf, 1, sizeof(buf), F);		// rs = read size
+		if (fseek (f, pos, SEEK_SET)) return false;
+		unsigned rs = fread (buf, 1, sizeof(buf), f);		// rs = read size
 		for (buf_ptr = buf + rs - 4; buf_ptr >= buf; buf_ptr--)
-			if (*(unsigned*)buf_ptr == 0x06054B50)
+			if (*(unsigned*)buf_ptr == END_HDR_MAGIC)
 			{
 				pos += buf_ptr - buf + 16;					// 16 - offset to a central dir ptr in cdir_end struc
 				found = true;
@@ -181,22 +187,22 @@ bool Zip_EnumArchive (FILE *F, enumZipFunc_t enum_func)
 	if (!found) return false;
 
 	// get pointer to a central directory
-	fseek(F, pos, SEEK_SET);
-	if (fread (&pos, 4, 1, F) != 1) return false;
+	fseek(f, pos, SEEK_SET);
+	if (fread (&pos, 4, 1, f) != 1) return false;
 	// seek to a central directory
-	if (fseek (F, pos, SEEK_SET)) return false;
+	if (fseek (f, pos, SEEK_SET)) return false;
 
-	while (!feof(F))
+	while (!feof(f))
 	{
 		unsigned signature;
 
-		if (fread (&signature, 4, 1, F) != 1) return false;	// cannot read signature
-		if (signature == 0x06054B50)
+		if (fread (&signature, 4, 1, f) != 1) return false;	// cannot read signature
+		if (signature == END_HDR_MAGIC)
 			return true;									// end of central directory structure - finish
-		if (signature != 0x02014B50) return false;			// MUST be a central directory file header
-		if (fread (&hdr, sizeof(hdr), 1, F) != 1) return false;
+		if (signature != CENTRAL_HDR_MAGIC) return false;	// MUST be a central directory file header
+		if (fread (&hdr, sizeof(hdr), 1, f) != 1) return false;
 		unsigned name_len = hdr.filenameLength;
-		if (fread (&buf[0], name_len, 1, F) != 1) return false;
+		if (fread (&buf[0], name_len, 1, f) != 1) return false;
 		buf[name_len] = 0;
 		// fille zip_file structure
 		file.name = buf;
@@ -206,7 +212,7 @@ bool Zip_EnumArchive (FILE *F, enumZipFunc_t enum_func)
 		file.method = hdr.compressionMethod;
 		file.pos = hdr.relativeOffsetLocalHeader;
 		// seek to next file
-		if (fseek (F, hdr.extraFieldLength + hdr.fileCommentLength, SEEK_CUR)) return false;
+		if (fseek (f, hdr.extraFieldLength + hdr.fileCommentLength, SEEK_CUR)) return false;
 		// if OK - make a callback
 		if (!enum_func (&file)) return false;				// break on "false"
 		//printf("%10d < %10d  [%1d]  %s\n", hdr.csize, hdr.ucsize, hdr.compression_method, buf);
@@ -219,7 +225,7 @@ bool Zip_EnumArchive (FILE *F, enumZipFunc_t enum_func)
 #endif // ZIP_USE_CENTRAL_DIRECTORY
 
 
-bool Zip_ExtractFileMem (FILE *F, zipFile_t *file, void *buf)
+bool Zip_ExtractFileMem (FILE *f, zipFile_t *file, void *buf)
 {
 #ifdef ZIP_USE_CENTRAL_DIRECTORY
 	localFileHdr_t hdr;
@@ -227,16 +233,16 @@ bool Zip_ExtractFileMem (FILE *F, zipFile_t *file, void *buf)
 
 	if (file->method != 0 && file->method != Z_DEFLATED)
 		return false;										// unknown method
-	if (fseek (F, file->pos, SEEK_SET))
+	if (fseek (f, file->pos, SEEK_SET))
 		return false;
 
 #ifdef ZIP_USE_CENTRAL_DIRECTORY
 	unsigned signature;
 	// file->pos points to a local file header, we must skip it
-	if (fread (&signature, 4, 1, F) != 1) return false;
-	if (signature != 0x04034B50) return false;
-	if (fread (&hdr, sizeof(hdr), 1, F) != 1) return false;
-	if (fseek (F, hdr.filenameLength + hdr.extraFieldLength, SEEK_CUR)) return false;
+	if (fread (&signature, 4, 1, f) != 1) return false;
+	if (signature != LOCAL_HDR_MAGIC) return false;
+	if (fread (&hdr, sizeof(hdr), 1, f) != 1) return false;
+	if (fseek (f, hdr.filenameLength + hdr.extraFieldLength, SEEK_CUR)) return false;
 #endif
 
 	// init z_stream
@@ -262,7 +268,7 @@ bool Zip_ExtractFileMem (FILE *F, zipFile_t *file, void *buf)
 			{
 				// fill read buffer
 				unsigned read_size = min(rest_read, sizeof(read_buf));
-				if (fread (read_buf, read_size, 1, F) != 1)
+				if (fread (read_buf, read_size, 1, f) != 1)
 				{
 					inflateEnd (&s);
 					return false;							// cannot read zip
@@ -287,7 +293,7 @@ bool Zip_ExtractFileMem (FILE *F, zipFile_t *file, void *buf)
 	else
 	{
 		// unstore file
-		if (fread (buf, file->ucsize, 1, F) != 1)
+		if (fread (buf, file->ucsize, 1, f) != 1)
 			return false;
 	}
 	// check CRC (if provided)
@@ -298,9 +304,8 @@ bool Zip_ExtractFileMem (FILE *F, zipFile_t *file, void *buf)
 }
 
 
-ZFILE *Zip_OpenFile (FILE *F, zipFile_t *file)
+ZFILE *Zip_OpenFile (FILE *f, zipFile_t *file)
 {
-	ZFILE	*z;
 #ifdef ZIP_USE_CENTRAL_DIRECTORY
 	ulg		signature;
 	localFileHdr_t hdr;
@@ -308,14 +313,14 @@ ZFILE *Zip_OpenFile (FILE *F, zipFile_t *file)
 
 	if (file->method != 0 && file->method != Z_DEFLATED)
 		return NULL;										// unknown method
-	z = (ZFILE*) appMalloc (sizeof(ZFILE));
+	ZFILE *z = new ZFILE;
 
 #ifdef ZIP_USE_CENTRAL_DIRECTORY
 	// file->pos points to a local file header, we must skip it
-	if (fseek (F, file->pos, SEEK_SET)) return NULL;
-	if (fread (&signature, 4, 1, F) != 1) return NULL;
-	if (signature != 0x04034B50) return NULL;
-	if (fread (&hdr, sizeof(hdr), 1, F) != 1) return NULL;
+	if (fseek (f, file->pos, SEEK_SET)) return NULL;
+	if (fread (&signature, 4, 1, f) != 1) return NULL;
+	if (signature != LOCAL_HDR_MAGIC) return NULL;
+	if (fread (&hdr, sizeof(hdr), 1, f) != 1) return NULL;
 	z->zpos = file->pos + 4 + sizeof(hdr) + hdr.filenameLength + hdr.extraFieldLength;
 #else
 	z->zpos = file->pos;
@@ -328,17 +333,17 @@ ZFILE *Zip_OpenFile (FILE *F, zipFile_t *file)
 //		z->s.opaque = NULL;
 		if (inflateInit2 (&z->s, -MAX_WBITS) != Z_OK)
 		{
-			appFree (z);
+			delete z;
 			return NULL;									// not initialized
 		}
 //		z->s.avail_in = 0;
-		z->buf = (char*) appMalloc (READ_BUF_SIZE);
+		z->buf = new char [READ_BUF_SIZE];
 	}
 //	z->crc32 = 0;
-	memcpy (&z->file, file, sizeof(zipFile_t));
+	z->file = *file;
 	z->rest_read = file->csize;
 	z->rest_write = file->ucsize;
-	z->arc = F;
+	z->arc = f;
 
 	return z;
 }
@@ -402,11 +407,11 @@ bool Zip_CloseFile (ZFILE *z)
 	if (z->file.method == Z_DEFLATED)
 	{
 		inflateEnd (&z->s);
-		appFree (z->buf);
+		delete z->buf;
 	}
 	if (z->rest_read || z->rest_write) res = false;			// bad sizes
 	if (z->crc32 != z->file.crc32) res = false;				// bad CRC
-	appFree (z);
+	delete z;
 
 	return res;
 }
@@ -414,13 +419,13 @@ bool Zip_CloseFile (ZFILE *z)
 
 ZBUF *Zip_OpenBuf (void *data, int size)
 {
-	ZBUF *z = (ZBUF*) appMalloc (sizeof(ZBUF));
+	ZBUF *z = new ZBUF;
 //	z->s.zalloc = NULL;
 //	z->s.zfree = NULL;
 //	z->s.opaque = NULL;
 	if (inflateInit2 (&z->s, -MAX_WBITS) != Z_OK)
 	{
-		appFree (z);
+		delete z;
 		return NULL;										// not initialized
 	}
 	z->s.avail_in = size;
@@ -454,7 +459,7 @@ int Zip_ReadBuf (ZBUF *z, void *buf, int size)
 void Zip_CloseBuf (ZBUF *z)
 {
 	inflateEnd (&z->s);
-	appFree (z);
+	delete z;
 }
 
 
