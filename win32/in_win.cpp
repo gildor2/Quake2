@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define INITGUID
 #include "winquake.h"
-#include <dinput.h>
+#include "dinput.h"
 
 #if DIRECTINPUT_VERSION < 0x0800
 #pragma comment (lib, "dinput.lib")

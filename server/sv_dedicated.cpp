@@ -27,7 +27,7 @@ void Cmd_ForwardToServer (int argc, char **argv)
 	Com_WPrintf ("Unknown command \"%s\"\n", cmd);
 }
 
-void CL_WriteConfiguration (char *filename)
+void CL_WriteConfiguration (const char *filename)
 {
 }
 

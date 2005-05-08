@@ -20,8 +20,7 @@ static cvar_t	*hashTable[HASH_SIZE];
 static int ComputeHash (const char *name)
 {
 	int h = 0;
-	char c;
-	while (c = *name++)
+	while (char c = *name++)
 		h = (h ^ 0x25) + (c & 0xDF);	// ignore case for hash computation
 	return h & HASH_MASK;
 }
@@ -29,8 +28,6 @@ static int ComputeHash (const char *name)
 
 static void Cvar_SetString (cvar_t *var, const char *str)
 {
-	int		len;
-
 	if (var->string && !strcmp (var->string, str))
 		return;		// not changed
 
@@ -42,7 +39,7 @@ static void Cvar_SetString (cvar_t *var, const char *str)
 	var->modified = true;
 
 	// update "string" field
-	len = strlen (str) + 1;
+	int len = strlen (str) + 1;
 
 	if (!var->stringLength && len <= CVAR_BUFFER_SIZE)
 	{	// buffer is not allocated and cvar_t.buf is enough for holding str
@@ -104,11 +101,8 @@ Cvar_VariableValue
 */
 float Cvar_VariableValue (const char *var_name)
 {
-	cvar_t	*var;
-
-	var = Cvar_FindVar (var_name);
-	if (!var)
-		return 0;
+	cvar_t *var = Cvar_FindVar (var_name);
+	if (!var) return 0;
 	return var->value;
 }
 
@@ -119,11 +113,8 @@ Cvar_VariableValue
 */
 int Cvar_VariableInt (const char *var_name)
 {
-	cvar_t	*var;
-
-	var = Cvar_FindVar (var_name);
-	if (!var)
-		return 0;
+	cvar_t *var = Cvar_FindVar (var_name);
+	if (!var) return 0;
 	return var->integer;
 }
 
@@ -132,7 +123,7 @@ int Cvar_VariableInt (const char *var_name)
 Cvar_VariableString
 ============
 */
-char *Cvar_VariableString (const char *var_name)
+const char *Cvar_VariableString (const char *var_name)
 {
 	cvar_t *var = Cvar_FindVar (var_name);
 	if (!var) return "";
@@ -140,7 +131,7 @@ char *Cvar_VariableString (const char *var_name)
 }
 
 
-void CL_WriteConfiguration (char *filename);
+void CL_WriteConfiguration (const char *filename);
 
 static void Cvar_SetHardcoded (cvar_t *var, const char *value)
 {
@@ -493,10 +484,9 @@ Handles variable inspection and changing from the console
 */
 bool Cvar_Command (int argc, char **argv)
 {
-	cvar_t	*var;
-
 	// check variables
-	if (!(var = Cvar_FindVar (argv[0]))) return false;
+	cvar_t *var = Cvar_FindVar (argv[0]);
+	if (!var) return false;
 
 	// perform a variable print or set
 	if (argc == 1)

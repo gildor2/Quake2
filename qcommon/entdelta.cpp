@@ -28,8 +28,8 @@ TEMPLATE(Byte,byte,"b %02X")
 TEMPLATE(Short,short,"w %04X")
 TEMPLATE(Long,int,"d %08X")
 TEMPLATE(Float,float,"f %g")
-TEMPLATE(Angle,float,"c %g")
-TEMPLATE(Angle16,float,"c %g")
+TEMPLATE(Angle,float,"a %g")
+TEMPLATE(Angle16,float,"A %g")
 
 #undef TEMPLATE
 

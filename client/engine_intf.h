@@ -7,7 +7,7 @@ typedef struct {
 	cvar_t*	(*_Cvar_Set) (const char *name, const char *value);
 	cvar_t*	(*_Cvar_SetValue) (const char *name, float value);
 	cvar_t*	(*_Cvar_SetInteger) (const char *name, int value);
-	char*	(*_Cvar_VariableString) (const char *name);
+	const char*	(*_Cvar_VariableString) (const char *name);
 	float	(*_Cvar_VariableValue) (const char *name);
 	int	(*_Cvar_VariableInt) (const char *name);
 	float	(*_Cvar_Clamp) (cvar_t *cvar, float low, float high);
@@ -69,7 +69,7 @@ inline cvar_t* Cvar_SetInteger (const char *name, int value)
 {
 	return ri._Cvar_SetInteger (name, value);
 }
-inline char* Cvar_VariableString (const char *name)
+inline const char* Cvar_VariableString (const char *name)
 {
 	return ri._Cvar_VariableString (name);
 }

@@ -1195,7 +1195,7 @@ void FS_LoadGameConfig (void)
 {
 	char	dir[MAX_QPATH];
 
-	char *gdir = Cvar_VariableString ("gamedir");
+	const char *gdir = Cvar_VariableString ("gamedir");
 	// game = "" => gdir = "baseq2"
 	appSprintf (ARRAY_ARG(dir), "%s/%s", fs_basedir->string, *gdir ? gdir : BASEDIRNAME);
 

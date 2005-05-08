@@ -374,7 +374,8 @@ static char *MacroExpandString (const char *text)
 
 	for (char *s = buf; *s; s++)
 	{
-		char	*data, *token;
+		char	*data;
+		const char *token;
 		char	tmp[MAX_STRING_CHARS];
 		int		varLen;
 

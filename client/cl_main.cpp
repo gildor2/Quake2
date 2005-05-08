@@ -1100,7 +1100,7 @@ CL_WriteConfiguration
 Writes key bindings and archived cvars to config.cfg
 ===============
 */
-void CL_WriteConfiguration (char *filename)
+void CL_WriteConfiguration (const char *filename)
 {
 	if (cls.state == ca_uninitialized)
 		return;

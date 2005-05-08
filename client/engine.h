@@ -4,7 +4,7 @@ void	Cvar_GetVars (const cvarInfo_t *vars, int count);
 cvar_t*	Cvar_Set (const char *name, const char *value);
 cvar_t*	Cvar_SetValue (const char *name, float value);
 cvar_t*	Cvar_SetInteger (const char *name, int value);
-char*	Cvar_VariableString (const char *name);
+const char* Cvar_VariableString (const char *name);
 float	Cvar_VariableValue (const char *name);
 int	Cvar_VariableInt (const char *name);
 float	Cvar_Clamp (cvar_t *cvar, float low, float high);

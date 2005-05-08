@@ -42,9 +42,8 @@ This will be sent on the initial connection and upon each server load.
 */
 static void SV_New_f (int argc, char **argv)
 {
-	char		*gamedir;
-	int			playernum;
-	edict_t		*ent;
+	int		playernum;
+	edict_t	*ent;
 
 	Com_DPrintf ("New() from %s\n", sv_client->name);
 
@@ -70,7 +69,7 @@ static void SV_New_f (int argc, char **argv)
 	// serverdata needs to go over for all types of servers
 	// to make sure the protocol is right, and to set the gamedir
 	//
-	gamedir = Cvar_VariableString ("gamedir");
+	const char *gamedir = Cvar_VariableString ("gamedir");
 
 	// send the serverdata
 	MSG_WriteByte (&sv_client->netchan.message, svc_serverdata);
@@ -388,13 +387,11 @@ static void SV_ShowServerinfo_f (int argc, char **argv)
 
 void SV_Nextserver (void)
 {
-	char	*v;
-
 	if (sv.state == ss_game)
 		return;			// can't nextserver while playing a normal game
 
 	svs.spawncount++;	// make sure another doesn't sneak in
-	v = Cvar_VariableString ("nextserver");
+	const char *v = Cvar_VariableString ("nextserver");
 	if (!v[0])
 		Cbuf_AddText ("killserver\n");
 	else

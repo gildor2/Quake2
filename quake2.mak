@@ -223,6 +223,38 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
+	SDK/include/dinput.h \
+	client/cdaudio.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/input.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	win32/winquake.h
+
+Release/obj/q2stat/in_win.obj : win32/in_win.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/in_win.obj" win32/in_win.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/Strings.h \
+	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
 	client/engine_intf.h \
@@ -918,9 +950,6 @@ OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include
 
 Release/obj/q2stat/cd_win.obj : win32/cd_win.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/cd_win.obj" win32/cd_win.cpp
-
-Release/obj/q2stat/in_win.obj : win32/in_win.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/in_win.obj" win32/in_win.cpp
 
 Release/obj/q2stat/sys_win.obj : win32/sys_win.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/sys_win.obj" win32/sys_win.cpp

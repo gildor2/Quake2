@@ -847,11 +847,10 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 
 static void AddMd3Surfaces (refEntity_t *e)
 {
-	md3Model_t	*md3;
 	surfaceCommon_t *surf;
 	int		i;
 
-	md3 = e->model->md3;
+	md3Model_t *md3 = e->model->md3;
 
 	for (i = 0, surf = md3->surf; i < md3->numSurfaces; i++, surf++)
 	{
@@ -877,22 +876,16 @@ static void AddMd3Surfaces (refEntity_t *e)
 
 static void AddSp2Surface (refEntity_t *e)
 {
-	sp2Model_t		*sp2;
-	sp2Frame_t		*frame;
-	surfacePoly_t	*p;
-	surfaceCommon_t *surf;
-	vec3_t			down, up2;
-	int		color;
-
-	sp2 = e->model->sp2;
-	p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+	sp2Model_t *sp2 = e->model->sp2;
+	surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 	if (!p)		// out of dynamic memory
 		return;
 
-	frame = &sp2->frames[e->frame % sp2->numFrames];
+	sp2Frame_t *frame = &sp2->frames[e->frame % sp2->numFrames];
 	p->numVerts = 4;
 
 	// setup xyz
+	vec3_t	down, up2;
 	VectorMA (e->origin, -frame->localOrigin[1], vp.viewaxis[2], down);
 	VectorMA (down, -frame->localOrigin[0], vp.viewaxis[1], p->verts[0].xyz);	// 0
 	VectorMA (down, frame->width - frame->localOrigin[0], vp.viewaxis[1], p->verts[1].xyz);	// 1
@@ -906,12 +899,12 @@ static void AddSp2Surface (refEntity_t *e)
 	p->verts[0].st[1] = p->verts[1].st[1] = 1;
 	p->verts[2].st[1] = p->verts[3].st[1] = 0;
 	// setup color
-	color = e->shaderColor.rgba;
+	unsigned color = e->shaderColor.rgba;
 	if (!(e->flags & RF_TRANSLUCENT))
 		color |= RGBA(0,0,0,1);						// make it non-transparent
 	p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color;
 
-	surf = AddDynamicSurface (frame->shader, ENTITYNUM_WORLD);
+	surfaceCommon_t *surf = AddDynamicSurface (frame->shader, ENTITYNUM_WORLD);
 	surf->poly = p;
 	surf->type = SURFACE_POLY;
 }

@@ -464,7 +464,7 @@ cvar_t	*Cvar_ForceSet (const char *var_name, const char *value);	// will set the
 //--int		Cvar_VariableInt (char *var_name);
 // returns 0 if not defined or non numeric
 
-//--char	*Cvar_VariableString (char *var_name);
+//--const char	*Cvar_VariableString (char *var_name);
 // returns an empty string if not defined
 
 void	Cvar_GetLatchedVars (void);
