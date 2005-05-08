@@ -1128,7 +1128,6 @@ void BeginRegistration (const char *mapname)
 {
 	ResetShaders ();				// delete all shaders and re-create auto-shaders
 	LoadWorldMap (va("maps/%s.bsp", mapname));
-	ResetModels();					// delete all models and create inline models
 	gl_refdef.viewCluster = -2;
 }
 

@@ -68,7 +68,7 @@ typedef enum
 
 // Planar surface: same normal for all vertexes
 struct surfLight_t;				// forward declaration
-struct inlineModel_t;
+class inlineModel_t;
 
 struct surfacePlanar_t
 {
@@ -93,14 +93,6 @@ struct surfaceTrisurf_t
 	int		numVerts, numIndexes;
 	vertexNormal_t *verts;
 	int		*indexes;
-};
-
-// frame bounding volume (for culling)
-struct md3Frame_t
-{
-	vec3_t	mins, maxs;
-	vec3_t	localOrigin;		// origin for bounding sphere in model coords
-	float	radius;				// radius of the bounding sphere
 };
 
 struct surfaceMd3_t
@@ -170,16 +162,6 @@ struct node_t
 };
 
 
-struct inlineModel_t			//?? replace this structure with extended cmodel_t
-{
-	vec3_t	mins, maxs;
-	float	radius;
-	int		headnode;			//?? is Q3 inline models have this ?
-	surfaceCommon_t **faces;
-	int		numFaces;
-};
-
-
 struct gl_flare_t
 {
 	// position
@@ -244,36 +226,11 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 };
 
 
-/*------------- Triangle models ------------*/
+/*-----------------------------------------------------------------------------
+	Models
+-----------------------------------------------------------------------------*/
 
-struct md3Model_t
-{
-	int		numSurfaces;		// for MD2 = 1
-	surfaceCommon_t *surf;		// [numSurfaces];  ->surfaceCommon_t->surfaceMd3_t
-	int		numFrames;
-	md3Frame_t *frames;			// for culling
-};
-
-
-/*------------ Sprite models ---------------*/
-
-struct sp2Frame_t
-{
-	float	width, height;
-	float	localOrigin[2];
-	shader_t *shader;
-};
-
-struct sp2Model_t
-{
-	int		numFrames;
-	float	radius;
-	sp2Frame_t frames[1];		// [numFrames]
-};
-
-/*---------------- Models ------------------*/
-
-typedef enum {
+typedef enum {	//?? eliminate
 	MODEL_UNKNOWN,
 	MODEL_INLINE,
 	MODEL_SP2,
@@ -285,14 +242,53 @@ typedef enum {
 class model_t : public CRenderModel
 {
 public:
-	int		size;
-
+	int		size;				// in memory
 	modelType_t	type;
-	union {								// MODEL_UNKNOWN: NULL in this field
-		inlineModel_t	*inlineModel;	// MODEL_INLINE
-		sp2Model_t		*sp2;			// MODEL_SP2
-		md3Model_t		*md3;			// MODEL_MD3
-	};
+};
+
+
+class inlineModel_t : public model_t	//?? replace this structure with extended cmodel_t
+{
+public:
+	vec3_t	mins, maxs;
+	float	radius;
+	int		headnode;			//?? is Q3 inline models have this ?
+	surfaceCommon_t **faces;
+	int		numFaces;
+};
+
+
+// frame bounding volume (for culling)
+struct md3Frame_t
+{
+	vec3_t	mins, maxs;
+	vec3_t	localOrigin;		// origin for bounding sphere in model coords
+	float	radius;				// radius of the bounding sphere
+};
+
+class md3Model_t : public model_t
+{
+public:
+	int		numSurfaces;		// for MD2 = 1
+	surfaceCommon_t *surf;		// [numSurfaces];  ->surfaceCommon_t->surfaceMd3_t
+	int		numFrames;
+	md3Frame_t *frames;			// for culling
+};
+
+
+struct sp2Frame_t
+{
+	float	width, height;
+	float	localOrigin[2];
+	shader_t *shader;
+};
+
+class sp2Model_t : public model_t
+{
+public:
+	int		numFrames;
+	float	radius;
+	sp2Frame_t frames[1];		// [numFrames]
 };
 
 
@@ -307,7 +303,6 @@ node_t *PointInLeaf (vec3_t p);
 
 void	InitModels (void);
 void	ShutdownModels (void);
-void	ResetModels (void);
 
 model_t	*FindModel (const char *name);
 shader_t *FindSkin (const char *name);

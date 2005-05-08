@@ -374,7 +374,7 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 		if (!e->visible || !e->model || e->model->type != MODEL_INLINE)
 			continue;
 
-		im = e->model->inlineModel;
+		im = static_cast<inlineModel_t*>(e->model);
 		VectorSubtract (e->center, start, center2);
 
 		// collision detection: line vs sphere
@@ -810,23 +810,20 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 
 static void AddInlineModelSurfaces (refEntity_t *e)
 {
-	inlineModel_t	*im;
-	surfaceCommon_t	*surf, **psurf;
 	int		i;
 	refDlight_t *dl;
-	unsigned dlightMask, mask;
+	unsigned mask;
 
-	im = e->model->inlineModel;
+	inlineModel_t *im = static_cast<inlineModel_t*>(e->model);
 	// check dlights
-	dlightMask = 0;
+	unsigned dlightMask = 0;
 	for (i = 0, dl = vp.dlights, mask = 1; i < vp.numDlights; i++, dl++, mask <<= 1)
 	{
 		vec3_t	tmp;
-		float	dist2, dist2min;
 
 		VectorSubtract (e->center, dl->origin, tmp);
-		dist2 = DotProduct (tmp, tmp);
-		dist2min = im->radius + dl->intensity;
+		float dist2 = DotProduct (tmp, tmp);
+		float dist2min = im->radius + dl->intensity;
 		dist2min = dist2min * dist2min;
 		if (dist2 >= dist2min) continue;	// too far
 
@@ -834,6 +831,7 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 		dlightMask |= mask;
 	}
 	// mark surfaces
+	surfaceCommon_t	*surf, **psurf;
 	if (dlightMask)
 		for (i = 0, psurf = im->faces; i < im->numFaces; i++, psurf++)
 		{
@@ -847,11 +845,10 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 
 static void AddMd3Surfaces (refEntity_t *e)
 {
-	surfaceCommon_t *surf;
+	md3Model_t *md3 = static_cast<md3Model_t*>(e->model);
+
 	int		i;
-
-	md3Model_t *md3 = e->model->md3;
-
+	surfaceCommon_t *surf;
 	for (i = 0, surf = md3->surf; i < md3->numSurfaces; i++, surf++)
 	{
 		shader_t *shader;
@@ -876,7 +873,7 @@ static void AddMd3Surfaces (refEntity_t *e)
 
 static void AddSp2Surface (refEntity_t *e)
 {
-	sp2Model_t *sp2 = e->model->sp2;
+	sp2Model_t *sp2 = static_cast<sp2Model_t*>(e->model);
 	surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 	if (!p)		// out of dynamic memory
 		return;
@@ -1431,9 +1428,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 				break;
 			case MODEL_INLINE:
 				{
-					inlineModel_t *im;
-
-					im = e->model->inlineModel;
+					inlineModel_t *im = static_cast<inlineModel_t*>(e->model);
 					e->frustumMask = 0xFF;		// for updating
 					ret = SphereCull (e->center, e->radius, &e->frustumMask);
 					// try to cull bounding sphere (faster than box cull)
@@ -1642,7 +1637,7 @@ static void DrawFlares (void)
 				}
 				// find entity
 				for (i = 0, e = gl_entities + vp.firstEntity; i < vp.numEntities; i++, e++)
-					if (e->model && e->model->type == MODEL_INLINE && e->model->inlineModel == im)
+					if (e->model == im)
 					{
 						i = -1;
 						break;
@@ -1983,9 +1978,7 @@ void AddEntity (entity_t *ent)
 			break;
 		case MODEL_INLINE:
 			{
-				inlineModel_t *im;
-
-				im = out->model->inlineModel;
+				inlineModel_t *im = static_cast<inlineModel_t*>(out->model);
 				VectorAdd (im->mins, im->maxs, v);
 				VectorScale (v, 0.5f, v);
 				VectorSubtract (im->maxs, v, out->size2);
@@ -1995,11 +1988,9 @@ void AddEntity (entity_t *ent)
 			break;
 		case MODEL_MD3:
 			{
-				md3Model_t	*md3;
-				md3Frame_t	*frame1, *frame2;
 				vec3_t	center1, center2;
 
-				md3 = out->model->md3;
+				md3Model_t *md3 = static_cast<md3Model_t*>(out->model);
 				// sanity check
 				if (out->frame >= md3->numFrames || out->frame < 0)
 				{
@@ -2011,8 +2002,8 @@ void AddEntity (entity_t *ent)
 					DrawTextLeft (va("R_AddEntity: no frame %d in %s\n", out->oldFrame, out->model->name), RGB(1,0,0));
 					out->frame = out->oldFrame = 0;
 				}
-				frame1 = md3->frames + out->frame;
-				frame2 = md3->frames + out->oldFrame;
+				md3Frame_t *frame1 = md3->frames + out->frame;
+				md3Frame_t *frame2 = md3->frames + out->oldFrame;
 				// lerp origin
 				VectorSubtract (ent->oldorigin, ent->origin, v);
 				VectorMA (ent->origin, out->backLerp, v, out->origin);
@@ -2046,7 +2037,7 @@ void AddEntity (entity_t *ent)
 			break;
 		case MODEL_SP2:
 			VectorCopy (out->origin, out->center);
-			out->radius = out->model->sp2->radius;
+			out->radius = static_cast<sp2Model_t*>(out->model)->radius;
 			break;
 		}
 	}

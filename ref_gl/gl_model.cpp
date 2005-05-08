@@ -40,41 +40,36 @@ static bspfile_t	*bspfile;
 
 #define MAX_GLMODELS	1024
 
-static model_t modelsArray[MAX_GLMODELS];
+static model_t *modelsArray[MAX_GLMODELS];
 static int	modelCount;
 
 
 /*---------------- Loading models: common ----------------*/
 
-static bool LoadMd2 (model_t *m, byte *buf, unsigned len);
-static bool LoadSp2 (model_t *m, byte *buf, unsigned len);
+static md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len);
+static sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len);
+static void FreeModels (void);
 
 
 model_t	*FindModel (const char *name)
 {
-	if (!name[0])
-		Com_FatalError ("R_FindModel: NULL name");
-
 	char	name2[MAX_QPATH];
 	appCopyFilename (name2, name, sizeof(name2));
 
+	model_t *m;
 	// search already loaded models
-	int		i;
-	model_t	*m;
-	for (i = 0, m = modelsArray; i < modelCount; i++, m++)
-		if (!strcmp (name2, m->name))
-			return m;
+	for (int i = 0; i < modelCount; i++)
+	{
+		m = modelsArray[i];
+		if (!m) continue;
+		if (!strcmp (name2, m->name)) return m;
+	}
 
-	if (i == MAX_GLMODELS)
+	if (modelCount == MAX_GLMODELS)
 	{
 		Com_WPrintf ("R_FindModel: MAX_GLMODELS\n");
 		return NULL;
 	}
-
-	// prepare slot
-//	m = modelsArray[modelCount]; -- already
-	modelCount++;		// reserve slot
-	strcpy (m->name, name2);
 
 START_PROFILE2(FindModel::Load, name)
 	/*----- not found -- load model ------*/
@@ -82,8 +77,10 @@ START_PROFILE2(FindModel::Load, name)
 	unsigned *file;
 	if (!(file = (unsigned*) FS_LoadFile (name2, &len)))
 	{
-//		modelCount--;	// free slot
+		m = new model_t;
+		strcpy (m->name, name2);
 		m->type = MODEL_UNKNOWN;
+		modelsArray[modelCount++] = m;
 		Com_DPrintf ("R_FindModel: %s not found\n", name2);
 		return NULL;	// file not found
 	}
@@ -93,18 +90,17 @@ START_PROFILE(FindModel::Process)
 	switch (LittleLong(*file))
 	{
 	case MD2_IDENT:
-		if (!LoadMd2 (m, (byte*)file, len)) m = NULL;
+		m = LoadMd2 (name2, (byte*)file, len);
 		break;
 	case SP2_IDENT:
-		if (!LoadSp2 (m, (byte*)file, len)) m = NULL;
+		m = LoadSp2 (name2, (byte*)file, len);
 		break;
 	default:
 		// no error here: simply ignore unknown model formats
 		Com_WPrintf ("R_FindModel: unknown ID 0x%X in %s", LittleLong (*file), name);
 		m = NULL;
 	}
-	if (!m)
-		modelCount--;	// model was not loaded - free slot back
+	if (m) modelsArray[modelCount++] = m;
 
 END_PROFILE
 	FS_FreeFile (file);
@@ -447,6 +443,12 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 
 	for (int i = 0; i < count; i++, data++, out++)
 	{
+		CALL_CONSTRUCTOR(out, inlineModel_t);
+		appSprintf (ARRAY_ARG(out->name), "*%d", i);
+		out->type = MODEL_INLINE;
+		out->size = -1;							// do not delete in FreeModels()
+		modelsArray[modelCount++] = out;
+
 		VectorCopy (data->mins, out->mins);
 		VectorCopy (data->maxs, out->maxs);
 		out->radius = data->radius;
@@ -1148,12 +1150,6 @@ END_PROFILE
 
 /*--------------- LoadWorldMap --------------------*/
 
-static void FreeMapData (void)
-{
-	if (map.dataChain) delete map.dataChain;
-	if (map.lightGridChain) delete map.lightGridChain;
-}
-
 void LoadWorldMap (const char *name)
 {
 	char	name2[MAX_QPATH];
@@ -1169,8 +1165,7 @@ void LoadWorldMap (const char *name)
 //	if (!strcmp (name2, map.name))
 //		return;		// map is not changed
 
-	FreeMapData ();
-	memset (&map, 0, sizeof(map));
+	FreeModels ();
 	strcpy (map.name, name2);
 	map.dataChain = new CMemoryChain;
 
@@ -1246,7 +1241,7 @@ node_t *PointInLeaf (vec3_t p)
 // Find xyz_index for each "st" (st have unique xyz, but xyz may have few st on texture seams)
 // and fill "st" list.
 // This function may be used for Q2 and KP models
-static int ParseGlCmds (char *name, surfaceMd3_t *surf, int *cmds, int *xyzIndexes)
+static int ParseGlCmds (const char *name, surfaceMd3_t *surf, int *cmds, int *xyzIndexes)
 {
 	int		count, numTris, *idx, allocatedVerts;
 	int		vertsIndexes[1024];		// verts per triangle strip/fan
@@ -1448,7 +1443,7 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 }
 
 
-static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
+static void SetMd3Skin (const char *name, surfaceMd3_t *surf, int index, char *skin)
 {
 	char	mName[MAX_QPATH], *mPtr, sName[MAX_QPATH], *sPtr;	// model/skin
 	shader_t *shader;
@@ -1457,7 +1452,7 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 	shader = FindShader (skin, SHADER_CHECK|SHADER_SKIN);
 	if (!shader)
 	{	// try to find skin forcing model directory
-		appCopyFilename (mName, m->name, sizeof(mName));
+		appCopyFilename (mName, name, sizeof(mName));
 		mPtr = strrchr (mName, '/');
 		if (mPtr)	mPtr++;			// skip '/'
 		else		mPtr = mName;
@@ -1471,7 +1466,7 @@ static void SetMd3Skin (model_t *m, surfaceMd3_t *surf, int index, char *skin)
 		shader = FindShader (mName, SHADER_CHECK|SHADER_SKIN);
 		if (!shader)
 		{	// not found
-			Com_DPrintf ("LoadMD2(%s): %s or %s is not found\n", m->name, skin, mName);
+			Com_DPrintf ("LoadMD2(%s): %s or %s is not found\n", name, skin, mName);
 			if (index > 0)
 				shader = surf->shaders[0];		// better than default shader
 			else
@@ -1591,9 +1586,8 @@ static void CheckTrisSizes (surfaceMd3_t *surf, dAliasFrame_t *md2Frame = NULL, 
 #endif
 
 
-static bool LoadMd2 (model_t *m, byte *buf, unsigned len)
+md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 {
-	dmdl_t	*hdr;
 	md3Model_t *md3;
 	surfaceCommon_t *cs;
 	surfaceMd3_t *surf;
@@ -1604,17 +1598,17 @@ static bool LoadMd2 (model_t *m, byte *buf, unsigned len)
 	guard(LoadMd2);
 
 	//?? should add ri.LoadMd2 (buf, size) -- sanity check + swap bytes for big-endian machines
-	hdr = (dmdl_t*)buf;
+	dmdl_t *hdr = (dmdl_t*)buf;
 	if (hdr->version != MD2_VERSION)
 	{
-		Com_WPrintf ("R_LoadMd2: %s has wrong version %d\n", m->name, hdr->version);
-		return false;
+		Com_WPrintf ("R_LoadMd2: %s has wrong version %d\n", name, hdr->version);
+		return NULL;
 	}
 
 	if (hdr->numXyz <= 0 || hdr->numTris <= 0 || hdr->numFrames <= 0)
 	{
-		Com_WPrintf ("R_LoadMd2: %s has incorrect triangle count\n", m->name);
-		return false;
+		Com_WPrintf ("R_LoadMd2: %s has incorrect triangle count\n", name);
+		return NULL;
 	}
 
 	/* We should determine number of vertexes for conversion of md2 model into md3 format, because
@@ -1625,11 +1619,11 @@ static bool LoadMd2 (model_t *m, byte *buf, unsigned len)
 	surf->texCoords = (float*)(surf+1);
 	surf->numVerts = MAX_XYZ_INDEXES;
 	surf->numTris = MAX_XYZ_INDEXES - 2;
-	numVerts = ParseGlCmds (m->name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes);
+	numVerts = ParseGlCmds (name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes);
 	numTris = surf->numTris;		// just computed
-	if (numTris != hdr->numTris) Com_WPrintf ("LoadMd2(%s): computed numTris %d != %d\n", m->name, numTris, hdr->numTris);
+	if (numTris != hdr->numTris) Com_WPrintf ("LoadMd2(%s): computed numTris %d != %d\n", name, numTris, hdr->numTris);
 	appFree (surf);
-	Com_DPrintf ("LoadMD2(%s): %d xyz  %d st  %d verts  %d tris\n", m->name, hdr->numXyz, hdr->numSt, numVerts, numTris);
+	Com_DPrintf ("LoadMD2(%s): %d xyz  %d st  %d verts  %d tris\n", name, hdr->numXyz, hdr->numSt, numVerts, numTris);
 
 	/* Allocate memory:
 		md3Model_t		[1]
@@ -1641,11 +1635,15 @@ static bool LoadMd2 (model_t *m, byte *buf, unsigned len)
 		vertexMd3_t		verts[numVerts*numFrames]
 		shader_t*		shaders[numShaders == numSkins]
 	 */
-	m->size = sizeof(md3Model_t) + hdr->numFrames*sizeof(md3Frame_t) +
+	int size = sizeof(md3Model_t) + hdr->numFrames*sizeof(md3Frame_t) +
 		sizeof(surfaceCommon_t) + sizeof(surfaceMd3_t) +
 		numVerts*2*sizeof(float) + 3*hdr->numTris*sizeof(int)
 		+ numVerts*hdr->numFrames*sizeof(vertexMd3_t) + hdr->numSkins*sizeof(shader_t*);
-	md3 = (md3Model_t*)appMalloc (m->size);
+	md3 = (md3Model_t*)appMalloc (size);
+	CALL_CONSTRUCTOR(md3, md3Model_t);
+	strcpy (md3->name, name);
+	md3->type = MODEL_MD3;
+	md3->size = size;
 
 	/*-------- fill md3 structure --------*/
 	md3->numSurfaces = 1;
@@ -1671,7 +1669,7 @@ static bool LoadMd2 (model_t *m, byte *buf, unsigned len)
 
 START_PROFILE(..Md2::Parse)
 	/*--- build texcoords and indexes ----*/
-	if (!ParseGlCmds (m->name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes))
+	if (!ParseGlCmds (name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes))
 	{
 		appFree (md3);
 		return false;
@@ -1697,14 +1695,12 @@ START_PROFILE(..Md2::Skin)
 	/*---------- load skins --------------*/
 	surf->numShaders = hdr->numSkins;
 	for (i = 0, skin = (char*)(buf + hdr->ofsSkins); i < surf->numShaders; i++, skin += MD2_MAX_SKINNAME)
-		SetMd3Skin (m, surf, i, skin);
+		SetMd3Skin (name, surf, i, skin);
 END_PROFILE
 
-	m->type = MODEL_MD3;
-	m->md3 = md3;
-	return true;
+	return md3;
 
-	unguardf(("%s", m->name));
+	unguardf(("%s", name));
 }
 
 
@@ -1718,55 +1714,54 @@ shader_t *FindSkin (const char *name)
 /*-------------- Sprite models  ----------------*/
 
 
-static bool LoadSp2 (model_t *m, byte *buf, unsigned len)
+static sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len)
 {
-	dsprite_t *hdr;
-	dsprframe_t *in;
-	sp2Model_t *sp2;
-	sp2Frame_t *out;
-	int		i;
-
-	hdr = (dsprite_t*)buf;
+	dsprite_t *hdr = (dsprite_t*)buf;
 	if (hdr->version != SP2_VERSION)
 	{
-		Com_WPrintf ("R_LoadSp2: %s has wrong version %d\n", m->name, hdr->version);
-		return false;
+		Com_WPrintf ("R_LoadSp2: %s has wrong version %d\n", name, hdr->version);
+		return NULL;
 	}
 	if (hdr->numframes < 0)
 	{
-		Com_WPrintf ("R_LoadSp2: %s has incorrect frame count %d\n", m->name, hdr->numframes);
-		return false;
+		Com_WPrintf ("R_LoadSp2: %s has incorrect frame count %d\n", name, hdr->numframes);
+		return NULL;
 	}
 
-	m->size = sizeof(sp2Model_t) + (hdr->numframes-1) * sizeof(sp2Frame_t);
-	sp2 = (sp2Model_t*)appMalloc (m->size);
+	int size = sizeof(sp2Model_t) + (hdr->numframes-1) * sizeof(sp2Frame_t);
+	sp2Model_t *sp2 = (sp2Model_t*)appMalloc (size);
+	CALL_CONSTRUCTOR(sp2, sp2Model_t);
+	strcpy (sp2->name, name);
+	sp2->type = MODEL_SP2;
+	sp2->size = size;
+
 	sp2->numFrames = hdr->numframes;
 	sp2->radius = 0;
+	// parse frames
+	int		i;
+	dsprframe_t *in;
+	sp2Frame_t *out;
 	for (i = 0, in = hdr->frames, out = sp2->frames; i < hdr->numframes; i++, in++, out++)
 	{
-		float	s, t, radius;
-
 		out->width = in->width;
 		out->height = in->height;
 		out->localOrigin[0] = in->origin_x;
 		out->localOrigin[1] = in->origin_y;
 
-		s = max (out->localOrigin[0], out->width - out->localOrigin[0]);
-		t = max (out->localOrigin[1], out->height - out->localOrigin[1]);
-		radius = sqrt (s * s + t * t);
+		float s = max (out->localOrigin[0], out->width - out->localOrigin[0]);
+		float t = max (out->localOrigin[1], out->height - out->localOrigin[1]);
+		float radius = sqrt (s * s + t * t);
 		sp2->radius = max (sp2->radius, radius);
 
 		out->shader = FindShader (in->name, SHADER_CHECK|SHADER_WALL|SHADER_FORCEALPHA);
 		if (!out->shader)
 		{
-			Com_DPrintf ("R_LoadSp2(%s): %s is not found\n", m->name, in->name);
+			Com_DPrintf ("R_LoadSp2(%s): %s is not found\n", name, in->name);
 			out->shader = gl_defaultShader;
 		}
 	}
 
-	m->type = MODEL_SP2;
-	m->sp2 = sp2;
-	return true;
+	return sp2;
 }
 
 
@@ -1775,10 +1770,8 @@ static bool LoadSp2 (model_t *m, byte *buf, unsigned len)
 
 static void Modellist_f (bool usage, int argc, char **argv)
 {
-	int		i, totalSize;
-	model_t	*m;
-	static char *types[] = {"unk",	"inl",	"sp2",		"md3"};	// see modelType_t
-	static char *colors[] = {S_RED,	"",		S_MAGENTA, S_GREEN};			// ...
+	static const char *types[] = {"unk",	"inl",	"sp2",		"md3"};		// see modelType_t
+	static const char *colors[] = {S_RED,	"",		S_MAGENTA, S_GREEN};	// ...
 
 	if (argc > 2 || usage)
 	{
@@ -1787,34 +1780,18 @@ static void Modellist_f (bool usage, int argc, char **argv)
 	}
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 
-	totalSize = 0;
+	int totalSize = 0;
+	int totalCount = 0;
 	Com_Printf ("-----type-size----name---------\n");
-	for (i = 0, m = modelsArray; i < modelCount; i++, m++)
+	for (int i = 0; i < modelCount; i++)
 	{
+		model_t *m = modelsArray[i];
 		if (mask && !appMatchWildcard (m->name, mask, true)) continue;
+		totalCount++;
 		Com_Printf ("%-3d  %3s  %-7d %s%s\n", i, types[m->type], m->size, colors[m->type], m->name);
 		totalSize += m->size;
 	}
-	Com_Printf ("Displayed %d models, used %d bytes\n", modelCount, totalSize);
-}
-
-
-static void FreeModel (model_t *m)
-{
-	switch (m->type)
-	{
-	case MODEL_UNKNOWN:
-	case MODEL_INLINE:
-		break;		// nothing to free
-	case MODEL_MD3:
-		appFree (m->md3);
-		break;
-	case MODEL_SP2:
-		appFree (m->sp2);
-		break;
-	default:
-		Com_FatalError ("R_FreeModel: unknown model type %d", m->type);
-	}
+	Com_Printf ("Displayed %d/%d models, used %d bytes\n", totalCount, modelCount, totalSize);
 }
 
 
@@ -1822,35 +1799,18 @@ static void FreeModels (void)
 {
 	// free non-inline models
 	for (int i = 0; i < modelCount; i++)
-		FreeModel (&modelsArray[i]);
+	{
+		model_t *m = modelsArray[i];
+		if (m && m->size >= 0) delete m;		// when size < 0 -- not allocated directly, used from different place
+	}
 
 	memset (modelsArray, 0, sizeof(modelsArray));
 	modelCount = 0;
-}
 
-
-void ResetModels (void)
-{
-	FreeModels ();
-
-	// create inline models
-	if (map.name[0])
-	{	// init inline models
-		int		i;
-		model_t	*m;
-		inlineModel_t *im;
-
-		modelCount = map.numModels;
-		m = modelsArray;
-		im = map.models;
-		for (i = 0; i < map.numModels; i++, m++, im++)
-		{	// inline model #i -> model #i (same index)
-			appSprintf (m->name, sizeof(m->name), "*%d", i);
-			m->type = MODEL_INLINE;
-			m->inlineModel = im;
-			m->size = 0;
-		}
-	}
+	// free map data
+	if (map.dataChain) delete map.dataChain;
+	if (map.lightGridChain) delete map.lightGridChain;
+	memset (&map, 0, sizeof(map));
 }
 
 
@@ -1870,7 +1830,6 @@ static void LoadModel_f (bool usage, int argc, char **argv)
 void InitModels (void)
 {
 	memset (&map, 0, sizeof(map));
-	ResetModels ();
 
 	RegisterCommand ("modellist", Modellist_f);
 #ifdef TEST_LOAD
@@ -1882,7 +1841,6 @@ void InitModels (void)
 void ShutdownModels (void)
 {
 	FreeModels ();
-	FreeMapData ();
 
 	UnregisterCommand ("modellist");
 #ifdef TEST_LOAD
