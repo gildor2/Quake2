@@ -691,18 +691,16 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 		surf->frame = drawFrame;
 		if (surf->dlightFrame != drawFrame) surf->dlightMask = 0;
 
+		//!! implement with virtual methods
 		switch (surf->type)
 		{
 		case SURFACE_PLANAR:
-			pl = surf->pl;
+			pl = static_cast<surfacePlanar_t*>(surf);
 
 			// backface culling
 			if (gl_backfaceCull->integer)
 			{
-				float	dist;
-				gl_cullMode_t cull;
-
-				cull = surf->shader->cullMode;
+				gl_cullMode_t cull = pl->shader->cullMode;
 #define CULL_SURF	\
 	{				\
 		gl_speeds.cullSurfs++;	\
@@ -711,7 +709,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 
 				if (cull != CULL_NONE)
 				{
-					dist = DISTANCE_TO_PLANE(vieworg, &pl->plane);
+					float dist = DISTANCE_TO_PLANE(vieworg, &pl->plane);
 					if (cull == CULL_FRONT)
 					{
 						if (dist < -BACKFACE_EPSILON) CULL_SURF;
@@ -740,38 +738,32 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 			// dlights
 			numDlights = 0;
 			pl->dlights = NULL;
-			if (surf->dlightMask && surf->shader->lightmapNumber != LIGHTMAP_NONE)
+			if (pl->dlightMask && pl->shader->lightmapNumber != LIGHTMAP_NONE)
 			{
 				surfDlight_t *sdl;
 				unsigned mask;
 
 				sdl = pl->dlights = (surfDlight_t*)AllocDynamicMemory (sizeof(surfDlight_t) * MAX_DLIGHTS);
-				if (!sdl) surf->dlightMask = 0;		// easiest way to break the loop below; speed does not matter here
+				if (!sdl) pl->dlightMask = 0;		// easiest way to break the loop below; speed does not matter here
 				for (j = 0, mask = 1, dl = vp.dlights; j < vp.numDlights; j++, dl++, mask <<= 1)
-					if (surf->dlightMask & mask)
+					if (pl->dlightMask & mask)
 					{
-						float	org0, org1, dist, rad;
-						float	*dl_org;
-
 #define CULL_DLIGHT	\
 	{				\
-		surf->dlightMask &= ~mask;	\
+		pl->dlightMask &= ~mask;	\
 		continue;	\
 	}
-						if (e->worldMatrix)
-							dl_org = dl->origin;
-						else
-							dl_org = dl->modelOrg;
-						dist = DISTANCE_TO_PLANE(dl_org, &pl->plane);
+						float *dl_org = (e->worldMatrix) ? dl->origin : dl->modelOrg;
+						float dist = DISTANCE_TO_PLANE(dl_org, &pl->plane);
 						if (!gl_dlightBacks->integer && dist < -8) CULL_DLIGHT;
 						if (dist < 0) dist = -dist;
 
 						if (dist >= dl->intensity) CULL_DLIGHT;
-						rad = dl->intensity * dl->intensity - dist * dist;
+						float rad = dl->intensity * dl->intensity - dist * dist;
 						rad = SQRTFAST(rad);
-						org0 = DotProduct (dl_org, pl->axis[0]);
+						float org0 = DotProduct (dl_org, pl->axis[0]);
 						if (org0 < pl->mins2[0] - rad || org0 > pl->maxs2[0] + rad) CULL_DLIGHT;
-						org1 = DotProduct (dl_org, pl->axis[1]);
+						float org1 = DotProduct (dl_org, pl->axis[1]);
 						if (org1 < pl->mins2[1] - rad || org1 > pl->maxs2[1] + rad) CULL_DLIGHT;
 						// save dlight info
 						sdl->pos[0] = org0;
@@ -793,7 +785,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 				}
 			}
 			else
-				surf->dlightMask = 0;
+				pl->dlightMask = 0;
 			break;
 		default:
 			DrawTextLeft ("unknows surface type", RGB(1, 0, 0));
@@ -808,13 +800,50 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 	}
 }
 
-static void AddInlineModelSurfaces (refEntity_t *e)
+
+void model_t::InitEntity (entity_t *ent, refEntity_t *out)
+{
+	VectorCopy (ent->origin, out->origin);
+}
+
+
+void model_t::AddSurfaces (refEntity_t *e)
+{
+//??	if (developer->integer) -- cvar is not in renderer
+		DrawText3D (e->origin, va("no model: %s", e->model->name), RGB(1,0,0));
+}
+
+
+node_t *model_t::GetLeaf (refEntity_t *e)
+{
+	return PointInLeaf (e->origin);
+}
+
+
+void model_t::DrawLabel (refEntity_t *e)
+{
+//	DrawText3D (e->center, va("origin: %g %g %g\nmodel: %s",
+//		VECTOR_ARG(e->origin), name), RGB(0.4,0.1,0.2));
+}
+
+
+void inlineModel_t::InitEntity (entity_t *ent, refEntity_t *out)
+{
+	vec3_t v;
+	VectorAdd (mins, maxs, v);
+	VectorScale (v, 0.5f, v);
+	VectorSubtract (maxs, v, out->size2);
+	ModelToWorldCoord (v, out, out->center);
+	out->radius = radius;
+}
+
+
+void inlineModel_t::AddSurfaces (refEntity_t *e)
 {
 	int		i;
 	refDlight_t *dl;
 	unsigned mask;
 
-	inlineModel_t *im = static_cast<inlineModel_t*>(e->model);
 	// check dlights
 	unsigned dlightMask = 0;
 	for (i = 0, dl = vp.dlights, mask = 1; i < vp.numDlights; i++, dl++, mask <<= 1)
@@ -823,7 +852,7 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 
 		VectorSubtract (e->center, dl->origin, tmp);
 		float dist2 = DotProduct (tmp, tmp);
-		float dist2min = im->radius + dl->intensity;
+		float dist2min = radius + dl->intensity;
 		dist2min = dist2min * dist2min;
 		if (dist2 >= dist2min) continue;	// too far
 
@@ -833,23 +862,93 @@ static void AddInlineModelSurfaces (refEntity_t *e)
 	// mark surfaces
 	surfaceCommon_t	*surf, **psurf;
 	if (dlightMask)
-		for (i = 0, psurf = im->faces; i < im->numFaces; i++, psurf++)
+		for (i = 0, psurf = faces; i < numFaces; i++, psurf++)
 		{
 			surf = *psurf;
 			surf->dlightFrame = drawFrame;
 			surf->dlightMask = dlightMask;
 		}
-	AddBspSurfaces (im->faces, im->numFaces, e->frustumMask, e);
+	AddBspSurfaces (faces, numFaces, e->frustumMask, e);
 }
 
 
-static void AddMd3Surfaces (refEntity_t *e)
+node_t *inlineModel_t::GetLeaf (refEntity_t *e)
 {
-	md3Model_t *md3 = static_cast<md3Model_t*>(e->model);
+	e->frustumMask = 0xFF;		// for updating
+	int ret = SphereCull (e->center, e->radius, &e->frustumMask);
+	// try to cull bounding sphere (faster than box cull)
+	if (ret == FRUSTUM_OUTSIDE)
+		return NULL;
+	// frustum culling (entire model)
+	if (ret & FRUSTUM_CENTER_OUTSIDE)
+		if (TransformedBoxCull (mins, maxs, e) == FRUSTUM_OUTSIDE)
+			return NULL;
 
-	int		i;
-	surfaceCommon_t *surf;
-	for (i = 0, surf = md3->surf; i < md3->numSurfaces; i++, surf++)
+	return SphereLeaf (e->center, e->radius);
+}
+
+
+void inlineModel_t::DrawLabel (refEntity_t *e)
+{
+	DrawText3D (e->center, va("origin: %g %g %g\nbmodel: %s\nflags: $%X",
+		VECTOR_ARG(e->origin), name, e->flags), RGB(0.1,0.4,0.2));
+}
+
+
+void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
+{
+	vec3_t	center1, center2;
+
+	// sanity check
+	if (out->frame >= numFrames || out->frame < 0)
+	{
+		DrawTextLeft (va("md3Model_t::InitEntity: no frame %d in %s\n", out->frame, name), RGB(1,0,0));
+		out->frame = out->oldFrame = 0;
+	}
+	if (out->oldFrame >= numFrames || out->oldFrame < 0)
+	{
+		DrawTextLeft (va("md3Model_t::InitEntity: no frame %d in %s\n", out->oldFrame, name), RGB(1,0,0));
+		out->frame = out->oldFrame = 0;
+	}
+	md3Frame_t *frame1 = frames + out->frame;
+	md3Frame_t *frame2 = frames + out->oldFrame;
+	// lerp origin
+	vec3_t v;
+	VectorSubtract (ent->oldorigin, ent->origin, v);
+	VectorMA (ent->origin, out->backLerp, v, out->origin);
+	// lerp center
+	ModelToWorldCoord (frame1->localOrigin, out, center1);
+	ModelToWorldCoord (frame2->localOrigin, out, center2);
+	VectorSubtract (center2, center1, center2);				// delta
+	VectorMA (center1, out->backLerp, center2, out->center);
+	// lerp radius
+	out->radius = (frame2->radius - frame1->radius) * out->backLerp + frame1->radius;
+	// compute mins/maxs (lerp ??)
+	VectorSubtract (frame1->maxs, frame1->localOrigin, out->size2);
+	// check for COLOR_SHELL
+	if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_HALF_DAM|RF_SHELL_DOUBLE))
+	{
+		out->customShader = gl_colorShellShader;
+		out->shaderColor.rgba = 0x202020;			// required for RED/GREEN/BLUE
+		if (ent->flags & RF_SHELL_HALF_DAM)
+			out->shaderColor.rgba = RGB(0.56, 0.59, 0.45);
+		if (ent->flags & RF_SHELL_DOUBLE)
+			out->shaderColor.rgba = RGB(0.9, 0.7 ,0);
+		if (ent->flags & RF_SHELL_RED)
+			out->shaderColor.c[0] = 255;
+		if (ent->flags & RF_SHELL_GREEN)
+			out->shaderColor.c[1] = 255;
+		if (ent->flags & RF_SHELL_BLUE)
+			out->shaderColor.c[2] = 255;
+		out->shaderColor.c[3] = 255;
+	}
+}
+
+
+void md3Model_t::AddSurfaces (refEntity_t *e)
+{
+	surfaceMd3_t *s = surf;
+	for (int i = 0; i < numSurfaces; i++, s++)
 	{
 		shader_t *shader;
 		//!! fog
@@ -858,29 +957,52 @@ static void AddMd3Surfaces (refEntity_t *e)
 			shader = e->customShader;
 		else
 		{
-			if (e->skinNum >= 0 && e->skinNum < surf->md3->numShaders)
-				shader = surf->md3->shaders[e->skinNum];
+			if (e->skinNum >= 0 && e->skinNum < s->numShaders)
+				shader = s->shaders[e->skinNum];
 			else
 				shader = gl_defaultShader;
 		}
 		if (e->flags & RF_TRANSLUCENT)
 			shader = GetAlphaShader (shader);
 		// draw surface
-		AddSurfaceToPortal (surf, shader, currentEntity, 0);
+		AddSurfaceToPortal (s, shader, currentEntity);
 	}
 }
 
 
-static void AddSp2Surface (refEntity_t *e)
+node_t *md3Model_t::GetLeaf (refEntity_t *e)
 {
-	sp2Model_t *sp2 = static_cast<sp2Model_t*>(e->model);
+	if (SphereCull (e->center, e->radius, NULL) == FRUSTUM_OUTSIDE)
+		return NULL;
+	return SphereLeaf (e->center, e->radius);
+}
+
+
+void md3Model_t::DrawLabel (refEntity_t *e)
+{
+	DrawText3D (e->center, va("origin: %g %g %g\nmd3: %s\nskin: %s\nflags: $%X",
+		VECTOR_ARG(e->origin), name, e->customShader ? e->customShader->name : "(default)", e->flags), RGB(0.1,0.4,0.2));
+}
+
+
+void sp2Model_t::InitEntity (entity_t *ent, refEntity_t *out)
+{
+	VectorCopy (out->origin, out->center);
+	out->radius = radius;
+}
+
+
+void sp2Model_t::AddSurfaces (refEntity_t *e)
+{
 	surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 	if (!p)		// out of dynamic memory
 		return;
+	CALL_CONSTRUCTOR(p);
+	p->type = SURFACE_POLY;
 
-	sp2Frame_t *frame = &sp2->frames[e->frame % sp2->numFrames];
 	p->numVerts = 4;
 
+	sp2Frame_t *frame = &frames[e->frame % numFrames];
 	// setup xyz
 	vec3_t	down, up2;
 	VectorMA (e->origin, -frame->localOrigin[1], vp.viewaxis[2], down);
@@ -901,9 +1023,13 @@ static void AddSp2Surface (refEntity_t *e)
 		color |= RGBA(0,0,0,1);						// make it non-transparent
 	p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color;
 
-	surfaceCommon_t *surf = AddDynamicSurface (frame->shader, ENTITYNUM_WORLD);
-	surf->poly = p;
-	surf->type = SURFACE_POLY;
+	AddSurfaceToPortal (p, frame->shader, ENTITYNUM_WORLD);
+}
+
+
+node_t *sp2Model_t::GetLeaf (refEntity_t *e)
+{
+	return AlphaSphereLeaf (e->origin, e->radius);
 }
 
 
@@ -912,19 +1038,17 @@ static void AddBeamSurfaces (beam_t *b)
 	vec3_t	viewDir, tmp;
 	vec3_t	axis[3];		// length, width, depth
 	vec3_t	dir1, dir2;
-	float	z1, z2, size, angle, angleStep;
-	int		i, numParts;
 	color_t	color;
 
 	// compute level of detail
 	VectorSubtract (b->drawStart, vp.vieworg, viewDir);
-	z1 = DotProduct (viewDir, vp.viewaxis[0]);		// beamStart.Z
+	float z1 = DotProduct (viewDir, vp.viewaxis[0]);// beamStart.Z
 	VectorSubtract (b->drawEnd, vp.vieworg, tmp);
-	z2 = DotProduct (tmp, vp.viewaxis[0]);			// beamEnd.Z
-	size = min(z1, z2);
+	float z2 = DotProduct (tmp, vp.viewaxis[0]);	// beamEnd.Z
+	float size = min(z1, z2);
 
 	size = b->radius * 200 / (size * vp.fov_scale);
-	numParts = appRound(size);
+	int numParts = appRound(size);
 	numParts = bound(numParts, 1, 6);
 
 	// compute beam axis
@@ -935,27 +1059,26 @@ static void AddBeamSurfaces (beam_t *b)
 	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
 
 	VectorScale (axis[1], b->radius, dir2);
-	angle = 0;
-	angleStep = 0.5f / numParts;					// 0.5 -- PI/2
+	float angle = 0;
+	float angleStep = 0.5f / numParts;				// 0.5 -- PI/2
 	color.rgba = gl_config.tbl_8to32[b->color.c[0]];
 	color.c[3] = b->color.c[3];
-	for (i = 0; i < numParts; i++)
+	for (int i = 0; i < numParts; i++)
 	{
-		surfacePoly_t *p;
-		surfaceCommon_t *surf;
-		float	sx, cx;
-
 		//!! use SURF_TRISURF to allocate all parts in one surface with shared verts
-		p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p)		// out of dynamic memory
 			return;
+		CALL_CONSTRUCTOR(p);
+		p->type = SURFACE_POLY;
+
 		p->numVerts = 4;
 
 		// rotate dir1 & dir2 vectors
 		VectorCopy (dir2, dir1);
 		angle += angleStep;
-		sx = SIN_FUNC(angle) * b->radius;
-		cx = COS_FUNC(angle) * b->radius;
+		float sx = SIN_FUNC(angle) * b->radius;
+		float cx = COS_FUNC(angle) * b->radius;
 		VectorScale (axis[1], cx, dir2);
 		VectorMA (dir2, sx, axis[2], dir2);
 
@@ -974,10 +1097,7 @@ static void AddBeamSurfaces (beam_t *b)
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color.rgba;
 
 		//!! can be different shader to provide any types of lined particles
-		surf = AddDynamicSurface (gl_identityLightShader2, ENTITYNUM_WORLD);
-		if (!surf) return;
-		surf->poly = p;
-		surf->type = SURFACE_POLY;
+		AddSurfaceToPortal (p, gl_identityLightShader2, ENTITYNUM_WORLD);
 	}
 }
 
@@ -990,32 +1110,27 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 {
 	vec3_t	viewDir;
 	vec3_t	axis[3];		// length, width, depth
-	float	len, st0, angle, anglePrev, angleStep;
-	int		i;
-#ifdef CYLINDER_FIX_ALPHA
-	vec3_t	v;
-	float	f, fixAngle;
-#endif
 
 	//?? cumpute LOD
-
 	VectorSubtract (b->drawStart, vp.vieworg, viewDir);
 	// compute beam axis
 	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
-	len = VectorNormalizeFast (axis[0]);
+	float len = VectorNormalizeFast (axis[0]);
 	CrossProduct (axis[0], viewDir, axis[1]);
 	VectorNormalizeFast (axis[1]);
 	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
 
-	st0 = VectorDistance (b->drawEnd, b->end);
+	float st0 = VectorDistance (b->drawEnd, b->end);
 
 #ifdef CYLINDER_FIX_ALPHA
 	// compute minimal distance to beam
-	f = DotProduct (viewDir, axis[0]);
+	float f = DotProduct (viewDir, axis[0]);
+	vec3_t v;
 	VectorMA (b->drawStart, -f, axis[0], v);		// v is a nearest point on beam line
 	VectorSubtract (v, vp.vieworg, v);
 	f = DotProduct (v, v);
 	f = SQRTFAST(f);								// distance to line
+	float fixAngle;
 	if (f <= b->radius)
 		fixAngle = -1;
 	else
@@ -1027,10 +1142,9 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 
 #endif
 
-	for (i = 0; i < CYLINDER_PARTS; i++)
+	float	angle, anglePrev, angleStep;
+	for (int i = 0; i < CYLINDER_PARTS; i++)
 	{
-		surfacePoly_t *p;
-		surfaceCommon_t *surf;
 		float	sx, cx;
 		vec3_t	dir1, dir2;
 
@@ -1048,9 +1162,12 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 			break;
 		}
 
-		p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p)		// out of dynamic memory
 			return;
+		CALL_CONSTRUCTOR(p);
+		p->type = SURFACE_POLY;
+
 		p->numVerts = 4;
 
 		// rotate dir1 & dir2 vectors
@@ -1108,10 +1225,7 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 		}
 #endif
 
-		surf = AddDynamicSurface (shader, ENTITYNUM_WORLD);
-		if (!surf) return;
-		surf->poly = p;
-		surf->type = SURFACE_POLY;
+		AddSurfaceToPortal (p, shader, ENTITYNUM_WORLD);
 	}
 }
 
@@ -1138,18 +1252,18 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 	angle = 0;
 	for (i = 0; i < BEAM_PARTS; i++)
 	{
-		surfacePoly_t *p;
-		surfaceCommon_t *surf;
-		float	sx, cx;
 		vec3_t	dir1, dir2;
 
-		p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p)		// out of dynamic memory
 			return;
+		CALL_CONSTRUCTOR(p);
+		p->type = SURFACE_POLY;
+
 		p->numVerts = 4;
 
-		sx = SIN_FUNC(angle) * b->radius;
-		cx = COS_FUNC(angle) * b->radius;
+		float sx = SIN_FUNC(angle) * b->radius;
+		float cx = COS_FUNC(angle) * b->radius;
 		VectorScale (axis[1], cx, dir1);
 		VectorMA (dir1, sx, axis[2], dir1);
 		VectorNegate (dir1, dir2);
@@ -1169,10 +1283,7 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = b->color.rgba;
 
-		surf = AddDynamicSurface (shader, ENTITYNUM_WORLD);
-		if (!surf) return;
-		surf->poly = p;
-		surf->type = SURFACE_POLY;
+		AddSurfaceToPortal (p, shader, ENTITYNUM_WORLD);
 	}
 }
 
@@ -1397,82 +1508,39 @@ static node_t *WalkBspTree (void)
 
 static void DrawEntities (int firstEntity, int numEntities)
 {
-	int		i, ret;
+	int		i;
 	refEntity_t	*e;
-	node_t	*leaf;
-	vec3_t	delta;
-	float	dist2;
-
 	for (i = 0, e = gl_entities + firstEntity; i < numEntities; i++, e++)
 	{
 		e->visible = false;
-#define CULL_ENT	\
-	{				\
-		gl_speeds.cullEnts++;	\
-		continue;	\
-	}
-#define CULL_ENT2	\
-	{				\
-		gl_speeds.cullEntsBox++;	\
-		continue;	\
-	}
-		if (e->model)
+		if (!e->model)
 		{
-			if (!r_drawentities->integer) continue;		// do not draw entities with model in this mode
-
-			switch (e->model->type)
+			if (e->flags & RF_BBOX)
 			{
-			case MODEL_UNKNOWN:
-//??				if (developer->integer) -- cvar is not in renderer
-					DrawText3D (e->origin, va("no model: %s", e->model->name), RGB(1,0,0));
-				break;
-			case MODEL_INLINE:
+				// just add surface and continue
+				surfaceEntity_t *surf = (surfaceEntity_t*)AllocDynamicMemory (sizeof(surfaceEntity_t));
+				if (surf)
 				{
-					inlineModel_t *im = static_cast<inlineModel_t*>(e->model);
-					e->frustumMask = 0xFF;		// for updating
-					ret = SphereCull (e->center, e->radius, &e->frustumMask);
-					// try to cull bounding sphere (faster than box cull)
-					if (ret == FRUSTUM_OUTSIDE) CULL_ENT;
-					// frustum culling (entire model)
-					if (ret & FRUSTUM_CENTER_OUTSIDE)
-						if (TransformedBoxCull (im->mins, im->maxs, e) == FRUSTUM_OUTSIDE) CULL_ENT2;
-
-					leaf = SphereLeaf (e->center, e->radius);
+					CALL_CONSTRUCTOR(surf);
+					surf->type = SURFACE_ENTITY;
+					surf->ent = e;
+					AddSurfaceToPortal (surf, gl_entityShader, ENTITYNUM_WORLD);
 				}
-				break;
-			case MODEL_MD3:
-				// frustum culling
-				if (SphereCull (e->center, e->radius, NULL) == FRUSTUM_OUTSIDE) CULL_ENT;
-				leaf = SphereLeaf (e->center, e->radius);
-				break;
-			case MODEL_SP2:
-				leaf = AlphaSphereLeaf (e->origin, e->radius);
-				break;
-			default:
-				DrawTextLeft (va("DrawEntities: bad model type %d", e->model->type), RGB(1, 0, 0));
-				continue;
 			}
-		}
-		else if (e->flags & RF_BBOX)
-		{
-			surfaceCommon_t *surf;
-
-			// just add surface and continue
-			surf = AddDynamicSurface (gl_entityShader, ENTITYNUM_WORLD);
-			if (surf)
-			{
-				surf->type = SURFACE_ENTITY;
-				surf->ent = e;
-			}
-			continue;
-		}
-		else
-		{
-			DrawText3D (e->origin, va("* bad ent %d: f=%X", i, e->flags), RGB(1,0,0));
+			else
+				DrawText3D (e->origin, va("* bad ent %d: f=%X", i, e->flags), RGB(1,0,0));
 			continue;
 		}
 
-		if (!leaf) CULL_ENT;			// entity do not occupy any visible leafs
+		if (!r_drawentities->integer) continue;		// do not draw entities with model in this mode
+
+		node_t *leaf = e->model->GetLeaf (e);
+		if (!leaf)
+		{
+			// entity do not occupy any visible leafs
+			gl_speeds.cullEnts++;
+			continue;
+		}
 
 		// occlusion culling
 		if (e->model && gl_oCull->integer && !(e->flags & RF_DEPTHHACK) &&
@@ -1489,27 +1557,13 @@ static void DrawEntities (int firstEntity, int numEntities)
 		}
 
 		if (e->model && gl_labels->integer)
-		{
-			switch (e->model->type)
-			{
-			case MODEL_INLINE:
-				DrawText3D (e->center, va("origin: %g %g %g\nbmodel: %s\nflags: $%X",
-					VECTOR_ARG(e->origin), e->model->name, e->flags), RGB(0.1,0.4,0.2));
-				break;
-			case MODEL_MD3:
-				DrawText3D (e->center, va("origin: %g %g %g\nmd3: %s\nskin: %s\nflags: $%X",
-					VECTOR_ARG(e->origin), e->model->name, e->customShader ? e->customShader->name : "(default)", e->flags), RGB(0.1,0.4,0.2));
-				break;
-//			default:
-//				DrawText3D (e->center, va("origin: %g %g %g\nmodel: %s",
-//					VECTOR_ARG(e->origin), e->model->name), RGB(0.4,0.1,0.2));
-			}
-		}
+			e->model->DrawLabel (e);
 
 		e->visible = true;
 		// calc model distance
+		vec3_t delta;
 		VectorSubtract (e->center, vp.vieworg, delta);
-		dist2 = e->dist2 = DotProduct (delta, vp.viewaxis[0]);
+		float dist2 = e->dist2 = DotProduct (delta, vp.viewaxis[0]);
 		// add entity to leaf's entity list
 		if (leaf->drawEntity)
 		{
@@ -1537,8 +1591,6 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 		if (e->model) SetupModelMatrix (e);
 	}
-#undef CULL_ENT
-#undef CULL_ENT2
 }
 
 
@@ -1604,15 +1656,11 @@ static void DrawFlares (void)
 
 	for (f = map.flares; f ; f = f->next)
 	{
-		bool	cull;
-		surfaceCommon_t *surf;
-		surfacePoly_t *p;
 		float	scale;
 		vec3_t	tmp, flarePos;
 		color_t	color;
-		int		style;
 
-		cull = false;
+		bool cull = false;
 
 		if (f->radius >= 0)
 		{
@@ -1675,7 +1723,7 @@ static void DrawFlares (void)
 		}
 
 		color.rgba = f->color.rgba;
-		style = vp.lightStyles[f->style].value;
+		int style = vp.lightStyles[f->style].value;
 
 		// get viewsize
 		if (f->radius >= 0)
@@ -1729,10 +1777,8 @@ static void DrawFlares (void)
 
 		if (cull)
 		{
-			float	timeDelta;
-
 			// fade flare
-			timeDelta = (vp.time - f->lastTime) / FLARE_FADE;
+			float timeDelta = (vp.time - f->lastTime) / FLARE_FADE;
 			if (timeDelta >= 1)
 			{
 				gl_speeds.cullFlares++;
@@ -1742,8 +1788,11 @@ static void DrawFlares (void)
 		}
 
 		// alloc surface
-		p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
+		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p) return;
+		CALL_CONSTRUCTOR(p);
+		p->type = SURFACE_POLY;
+
 		p->numVerts = 4;
 
 		// setup xyz
@@ -1775,10 +1824,7 @@ static void DrawFlares (void)
 		}
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color.rgba;
 
-		surf = AddDynamicSurface (gl_flareShader, ENTITYNUM_WORLD);
-		if (!surf) return;
-		surf->poly = p;
-		surf->type = SURFACE_POLY;
+		AddSurfaceToPortal (p, gl_flareShader, ENTITYNUM_WORLD);
 	}
 
 	gl_speeds.flares = map.numFlares;
@@ -1787,9 +1833,6 @@ static void DrawFlares (void)
 
 static void DrawBspSequence (node_t *leaf)
 {
-	refEntity_t *e;
-	beam_t	*b;
-
 	for ( ; leaf; leaf = leaf->drawNext)
 	{
 		/*------- update world bounding box -------*/
@@ -1814,39 +1857,27 @@ static void DrawBspSequence (node_t *leaf)
 
 		/*---------- draw leaf entities -----------*/
 
-		for (e = leaf->drawEntity; e; e = e->drawNext)
+		for (refEntity_t *e = leaf->drawEntity; e; e = e->drawNext)
 		{
 			currentEntity = e - gl_entities;
-			if (e->model)
-				switch (e->model->type)
-				{
-				case MODEL_INLINE:
-					AddInlineModelSurfaces (e);
-					break;
-				case MODEL_MD3:
-					AddMd3Surfaces (e);
-					break;
-				case MODEL_SP2:
-					AddSp2Surface (e);
-					break;
-				}
+			if (e->model) e->model->AddSurfaces (e);
 		}
 
 		/*------------ draw particles -------------*/
 
 		if (leaf->drawParticle)
 		{
-			surfaceCommon_t *surf;
-
-			surf = AddDynamicSurface (gl_particleShader, ENTITYNUM_WORLD);
+			surfaceParticle_t *surf = (surfaceParticle_t*) AllocDynamicMemory (sizeof(surfaceParticle_t));
 			if (surf)
 			{
+				CALL_CONSTRUCTOR(surf);
 				surf->type = SURFACE_PARTICLE;
 				surf->part = leaf->drawParticle;
+				AddSurfaceToPortal (surf, gl_particleShader, ENTITYNUM_WORLD);
 			}
 		}
 
-		for (b = leaf->drawBeam; b; b = b->drawNext)
+		for (beam_t *b = leaf->drawBeam; b; b = b->drawNext)
 		{
 			switch (b->type)
 			{
@@ -1947,7 +1978,10 @@ void AddEntity (entity_t *ent)
 	{
 		VectorCopy (ent->origin, out->origin);
 		if (out->model->type == MODEL_MD3)
-		{	// need to negate angles[2]
+		{
+			//!! need to negate angles[2] -- move outside renderer
+			//!! check: why this for MD2 only? (where error have place?!)
+			//!! best: send client->renderer not angles, but axis
 			ent->angles[2] = -ent->angles[2];
 			AnglesToAxis (ent->angles, out->axis);
 			ent->angles[2] = -ent->angles[2];
@@ -1971,75 +2005,7 @@ void AddEntity (entity_t *ent)
 		out->shaderColor.c[3] = appRound (ent->alpha * 255);
 
 		// model-specific code and calculate model center
-		switch (out->model->type)
-		{
-		case MODEL_UNKNOWN:
-			VectorCopy (ent->origin, out->origin);
-			break;
-		case MODEL_INLINE:
-			{
-				inlineModel_t *im = static_cast<inlineModel_t*>(out->model);
-				VectorAdd (im->mins, im->maxs, v);
-				VectorScale (v, 0.5f, v);
-				VectorSubtract (im->maxs, v, out->size2);
-				ModelToWorldCoord (v, out, out->center);
-				out->radius = im->radius;
-			}
-			break;
-		case MODEL_MD3:
-			{
-				vec3_t	center1, center2;
-
-				md3Model_t *md3 = static_cast<md3Model_t*>(out->model);
-				// sanity check
-				if (out->frame >= md3->numFrames || out->frame < 0)
-				{
-					DrawTextLeft (va("R_AddEntity: no frame %d in %s\n", out->frame, out->model->name), RGB(1,0,0));
-					out->frame = out->oldFrame = 0;
-				}
-				if (out->oldFrame >= md3->numFrames || out->oldFrame < 0)
-				{
-					DrawTextLeft (va("R_AddEntity: no frame %d in %s\n", out->oldFrame, out->model->name), RGB(1,0,0));
-					out->frame = out->oldFrame = 0;
-				}
-				md3Frame_t *frame1 = md3->frames + out->frame;
-				md3Frame_t *frame2 = md3->frames + out->oldFrame;
-				// lerp origin
-				VectorSubtract (ent->oldorigin, ent->origin, v);
-				VectorMA (ent->origin, out->backLerp, v, out->origin);
-				// lerp center
-				ModelToWorldCoord (frame1->localOrigin, out, center1);
-				ModelToWorldCoord (frame2->localOrigin, out, center2);
-				VectorSubtract (center2, center1, center2);				// delta
-				VectorMA (center1, out->backLerp, center2, out->center);
-				// lerp radius
-				out->radius = (frame2->radius - frame1->radius) * out->backLerp + frame1->radius;
-				// compute mins/maxs (lerp ??)
-				VectorSubtract (frame1->maxs, frame1->localOrigin, out->size2);
-				// check for COLOR_SHELL
-				if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_HALF_DAM|RF_SHELL_DOUBLE))
-				{
-					out->customShader = gl_colorShellShader;
-					out->shaderColor.rgba = 0x202020;			// required for RED/GREEN/BLUE
-					if (ent->flags & RF_SHELL_HALF_DAM)
-						out->shaderColor.rgba = RGB(0.56, 0.59, 0.45);
-					if (ent->flags & RF_SHELL_DOUBLE)
-						out->shaderColor.rgba = RGB(0.9, 0.7 ,0);
-					if (ent->flags & RF_SHELL_RED)
-						out->shaderColor.c[0] = 255;
-					if (ent->flags & RF_SHELL_GREEN)
-						out->shaderColor.c[1] = 255;
-					if (ent->flags & RF_SHELL_BLUE)
-						out->shaderColor.c[2] = 255;
-					out->shaderColor.c[3] = 255;
-				}
-			}
-			break;
-		case MODEL_SP2:
-			VectorCopy (out->origin, out->center);
-			out->radius = static_cast<sp2Model_t*>(out->model)->radius;
-			break;
-		}
+		out->model->InitEntity (ent, out);
 	}
 	else if (ent->flags & RF_BBOX)
 	{
@@ -2141,18 +2107,7 @@ void DrawPortal (void)
 			if (e->model)
 			{
 				e->visible = true;
-				switch (e->model->type)
-				{
-				case MODEL_INLINE:
-					AddInlineModelSurfaces (e);
-					break;
-				case MODEL_MD3:
-					AddMd3Surfaces (e);
-					break;
-				case MODEL_SP2:
-					AddSp2Surface (e);
-					break;
-				}
+				e->model->AddSurfaces (e);
 			}
 		}
 }

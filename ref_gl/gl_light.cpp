@@ -42,8 +42,11 @@ namespace OpenGLDrv {
 	( SQRTFAST((intens) * (scale) / (light)) )
 
 
-//#define TEST 1				//!!!!! REMOVE THIS
-static cvar_t *test;		//!!!!!
+#if 0	//!!!
+// REMOVE THIS:
+#define TEST
+static cvar_t *test;
+#endif
 
 static vec3_t entityColorAxis[6];
 // array layout: back/front/right/left/bottom/top
@@ -197,11 +200,9 @@ static void AddLight (const vec3_t *axis, const vec3_t dir, float scale, const f
 
 #if 0
 	// light for sphere (will not work for sunlight! need correct dist); NOT WORKS NOW AT ALL
-	{
-		vec3_t	dir2;
-		float	rad;
+	vec3_t	dir2;
 
-		rad = ent->radius / dist;
+	float rad = ent->radius / dist;
 #define STEP(n)									\
 	VectorMA (dir, n&1 ? rad : -rad, axis[n>>1], dir2);	\
 	VectorNormalizeFast(dir2);					\
@@ -210,7 +211,6 @@ static void AddLight (const vec3_t *axis, const vec3_t dir, float scale, const f
 	if (!IsNegative(v))	VectorMA (entityColorAxis[n], v, color, entityColorAxis[n]);
 		STEP(0); STEP(1); STEP(2); STEP(3); STEP(4); STEP(5);
 #undef STEP
-	}
 
 #else
 
@@ -414,15 +414,13 @@ static void AddSurfaceLight (const surfLight_t *rl, const vec3_t origin, const v
 
 	if (ambient)
 	{
-		int		i;
 		vec3_t	c;
-		float	scale;
 
-		scale = vp.lightStyles[0].value * SUN_AMBIENT_SCALE / 128.0f;
+		float scale = vp.lightStyles[0].value * SUN_AMBIENT_SCALE / 128.0f;
 		c[0] = map.sunColor[0] * map.sunAmbient[0] * scale;
 		c[1] = map.sunColor[1] * map.sunAmbient[1] * scale;
 		c[2] = map.sunColor[2] * map.sunAmbient[2] * scale;
-		for (i = 0; i < 6; i++)
+		for (int i = 0; i < 6; i++)
 			VectorAdd (entityColorAxis[i], c, entityColorAxis[i]);
 		needSunAmbient = false;
 	}
@@ -445,10 +443,7 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 	surfLight_t *rl;
 	trace_t	tr;
 	int		i;
-	node_t	*leaf;
-	byte	*row;
-	float	*out, scale;
-	bool	hasLight;
+	float	*out;
 	const vec3_t *axis;
 	static const vec3_t gridAxis[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 
@@ -480,10 +475,10 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 		axis = ent->axis;
 	}
 
-	leaf = PointInLeaf (origin);
-	row = leaf->cluster < 0 ? NULL : map.visInfo + leaf->cluster * map.visRowSize;
+	node_t *leaf = PointInLeaf (origin);
+	byte *row = leaf->cluster < 0 ? NULL : map.visInfo + leaf->cluster * map.visRowSize;
 
-	scale = vp.lightStyles[0].value * AMBIENT_SCALE / 128.0f;
+	float scale = vp.lightStyles[0].value * AMBIENT_SCALE / 128.0f;
 	for (i = 0; i < 6; i++)
 		VectorScale (map.ambientLight, scale, entityColorAxis[i]);
 
@@ -524,7 +519,7 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 
 	// store computed light
 
-	hasLight = false;
+	bool hasLight = false;
 	for (i = 0, out = entityColorAxis[0]; i < 6 * 3; i++, out++)
 		if (*out)
 		{	// have a non-zero color
@@ -862,7 +857,7 @@ static void GetSurfLightCluster (void)
 		for (j = 0, s = n->leafFaces; j < n->numLeafFaces; j++, s++)
 			if ((*s)->type == SURFACE_PLANAR && !(*s)->owner)		//?? other types
 			{
-				surfacePlanar_t *pl = (*s)->pl;
+				surfacePlanar_t *pl = static_cast<surfacePlanar_t*>(*s);
 				if (pl->light)
 				{
 					if (pl->light->cluster == -2)	// uninitialized
@@ -910,13 +905,11 @@ void PostLoadLights (void)
 	surfLight_t *rl;
 	for (i = 0, rl = map.surfLights; i < map.numSurfLights; i++, rl = rl->next)
 	{
-		float	x, y;
-		surfacePlanar_t *pl;
 		vec3_t	center;
 
-		pl = rl->pl;
-		x = (pl->mins2[0] + pl->maxs2[0]) / 2;
-		y = (pl->mins2[1] + pl->maxs2[1]) / 2;
+		surfacePlanar_t *pl = rl->pl;
+		float x = (pl->mins2[0] + pl->maxs2[0]) / 2;
+		float y = (pl->mins2[1] + pl->maxs2[1]) / 2;
 		VectorScale (pl->axis[0], x, center);
 		VectorMA (center, y, pl->axis[1], center);
 		VectorMA (center, pl->plane.dist + 1, pl->plane.normal, rl->center);

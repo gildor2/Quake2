@@ -75,8 +75,8 @@ extern unsigned vid_width, vid_height;
 // forwards
 class image_t;
 class model_t;
-struct surfaceCommon_t;
-struct surfacePlanar_t;
+class surfaceCommon_t;
+class surfacePlanar_t;		//?? remove this forward
 struct dynamicLightmap_t;
 struct viewPortal_t;
 struct refEntity_t;
@@ -125,7 +125,7 @@ typedef struct
 	int		surfs, cullSurfs;
 	int		tris, trisMT;		// number of tris, which will be drawn without mtex and with mtex (same if no multitexture)
 	int		tris2D;				// number of triangles for HUD/console
-	int		ents, cullEnts, cullEntsBox, cullEnts2, ocullEnts;
+	int		ents, cullEnts, ocullEnts;
 	int		parts, cullParts;	// particles
 	int		dlightSurfs, dlightVerts;
 	int		flares, testFlares, cullFlares;

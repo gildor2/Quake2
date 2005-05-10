@@ -28,20 +28,18 @@ float noiseTablef[256];
 
 void InitFuncTables (void)
 {
-	int		i, n;
+	int		i;
 
 	for (i = 0; i < TABLE_SIZE; i++)
 	{
-		float	j, f;
-
-		j = i;			// just to avoid "(float)i"
-		f = j / TABLE_SIZE;
+		float j = i;			// just to avoid "(float)i"
+		float f = j / TABLE_SIZE;
 		squareTable[i] = (i < TABLE_SIZE/2) ? -1 : 1;
 		sinTable[i] = sin (j / (TABLE_SIZE/2) * M_PI);		// 0 -- 0, last -- 2*pi
 		sawtoothTable[i] = f;
 		inverseSwatoothTable[i] = 1 - f;
 
-		n = (i + TABLE_SIZE/4) & TABLE_MASK;				// make range -1..1..-1
+		int n = (i + TABLE_SIZE/4) & TABLE_MASK;			// make range -1..1..-1
 		if (n >= TABLE_SIZE/2)
 			n = TABLE_SIZE - n;
 		triangleTable[i] = (float)(n - TABLE_SIZE/4) / (TABLE_SIZE/4);
@@ -75,10 +73,9 @@ void ModelToWorldCoord (vec3_t localOrigin, refEntity_t *e, vec3_t center)
 void WorldToModelCoord (vec3_t world, refEntity_t *e, vec3_t local)
 {
 	vec3_t	v;
-	int		i;
 
 	VectorSubtract (world, e->origin, v);
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 		local[i] = DotProduct (v, e->axis[i]);
 }
 
@@ -131,7 +128,6 @@ void BuildRotationMatrix (float r[3][3], vec3_t axis, float angle)
 bool GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2], bool clamp)
 {
 	vec3_t	axis[3], tmp, v;
-	float	x0, y0, z0;
 	int		i;
 
 	if (!ent->worldMatrix)
@@ -152,10 +148,10 @@ bool GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2],
 	}
 
 	VectorSubtract (ent->center, vp.vieworg, tmp);
-	z0 = DotProduct (tmp, vp.viewaxis[0]);
+	float z0 = DotProduct (tmp, vp.viewaxis[0]);
 	if (z0 < 4) return false;
-	x0 = DotProduct (tmp, vp.viewaxis[1]);
-	y0 = DotProduct (tmp, vp.viewaxis[2]);
+	float x0 = DotProduct (tmp, vp.viewaxis[1]);
+	float y0 = DotProduct (tmp, vp.viewaxis[2]);
 
 	// ClearBounds2D(mins2, maxs2)
 	mins2[0] = mins2[1] = BIG_NUMBER;
@@ -216,17 +212,15 @@ bool GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2],
 bool ProjectToScreen (vec3_t pos, int *scr)
 {
 	vec3_t	vec;
-	float	x, y, z;
-
 	VectorSubtract (pos, vp.vieworg, vec);
 
-	z = DotProduct (vec, vp.viewaxis[0]);
+	float z = DotProduct (vec, vp.viewaxis[0]);
 	if (z <= gl_znear->value) return false;			// not visible
 
-	x = DotProduct (vec, vp.viewaxis[1]) / z / vp.t_fov_x;
+	float x = DotProduct (vec, vp.viewaxis[1]) / z / vp.t_fov_x;
 	if (x < -1 || x > 1) return false;
 
-	y = DotProduct (vec, vp.viewaxis[2]) / z / vp.t_fov_y;
+	float y = DotProduct (vec, vp.viewaxis[2]) / z / vp.t_fov_y;
 	if (y < -1 || y > 1) return false;
 
 	scr[0] = appRound (vp.x + vp.w * (0.5 - x / 2));
@@ -241,12 +235,10 @@ void SaturateColor3f (vec3_t color)
 	float sat = r_saturation->value;
 	if (sat != 1.0f)
 	{
-		float	r, g, b, light;
-
-		r = color[0] * 255;
-		g = color[1] * 255;
-		b = color[2] * 255;
-		light = (r + g + b) / 3;
+		float r = color[0] * 255;
+		float g = color[1] * 255;
+		float b = color[2] * 255;
+		float light = (r + g + b) / 3;
 		SATURATE(r,light,sat);
 		SATURATE(g,light,sat);
 		SATURATE(b,light,sat);
@@ -262,12 +254,10 @@ void SaturateColor4b (color_t *c)
 	float sat = r_saturation->value;
 	if (sat != 1.0f)
 	{
-		float	r, g, b, light;
-
-		r = c->c[0];
-		g = c->c[1];
-		b = c->c[2];
-		light = (r + g + b) / 3;
+		float r = c->c[0];
+		float g = c->c[1];
+		float b = c->c[2];
+		float light = (r + g + b) / 3;
 		SATURATE(r,light,sat);
 		SATURATE(g,light,sat);
 		SATURATE(b,light,sat);

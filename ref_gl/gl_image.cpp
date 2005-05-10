@@ -133,8 +133,8 @@ static byte *Convert8to32bit (byte *in, int width, int height, unsigned *palette
 
 void GL_TextureMode (const char *name)	//?? change (not strings; use enum {none,bilinear,trilinear,anysotropic})
 {
-	static struct {
-		char	*name;
+	static const struct {
+		const char *name;
 		GLenum	minimize, maximize;
 	} texModes[] = {
 		{"GL_NEAREST", GL_NEAREST, GL_NEAREST},				// box filter, no mipmaps
@@ -338,9 +338,7 @@ static void LightScaleLightmap (unsigned *pic, int width, int height)
 	int c = width * height;
 	for (int i = 0; i < c; i++, p += 4)
 	{
-		int		r, g, b, sh;
-
-		sh = shift + (signed char)p[3];		// usa alpha as additional shift info
+		int sh = shift + (signed char)p[3];		// usa alpha as additional shift info
 		if (sh > 0)
 		{
 			p[0] >>= sh;
@@ -351,9 +349,9 @@ static void LightScaleLightmap (unsigned *pic, int width, int height)
 		{
 			sh = -sh;
 
-			r = p[0] << sh;
-			g = p[1] << sh;
-			b = p[2] << sh;
+			int r = p[0] << sh;
+			int g = p[1] << sh;
+			int b = p[2] << sh;
 			NORMALIZE_COLOR255(r, g, b);
 			p[0] = r;
 			p[1] = g;
@@ -577,15 +575,12 @@ START_PROFILE(..up::mip)
 			size = scaledWidth * scaledHeight;
 			if (r_colorMipLevels->integer)
 			{
-				int		i;
-				byte	*p;
-				color_t	c;
-
 				// here miplevel >= 1
+				color_t	c;
 				c.rgba = 0;
 				c.c[(miplevel - 1) % 3] = 255;
-				p = (byte *) scaledPic;
-				for (i = 0; i < size; i++, p += 4)
+				byte *p = (byte *) scaledPic;
+				for (int i = 0; i < size; i++, p += 4)
 				{
 					p[0] = (c.c[0] + p[0]) / 4;
 					p[1] = (c.c[1] + p[1]) / 4;
@@ -887,9 +882,6 @@ void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *p
 
 static void FreeImage (image_t *image)	//?? unused function
 {
-	int		hash;
-	image_t	*img;
-
 	if (!image->name[0])
 		return;		// already ...
 	if (image->flags & IMAGE_SYSTEM)
@@ -904,8 +896,8 @@ static void FreeImage (image_t *image)	//?? unused function
 	}
 
 	// remove from hash chain
-	hash = ComputeHash (image->name);
-	img = hashTable[hash];
+	int hash = ComputeHash (image->name);
+	image_t *img = hashTable[hash];
 	if (img == image)	// first in chain
 	{
 		hashTable[hash] = image->hashNext;
@@ -913,9 +905,7 @@ static void FreeImage (image_t *image)	//?? unused function
 	}
 	while (img)
 	{
-		image_t	*next;
-
-		next = img->hashNext;
+		image_t	*next = img->hashNext;
 		if (next == image)
 		{
 			img->hashNext = image->hashNext;
@@ -964,7 +954,7 @@ void SetupGamma (void)
 	{
 		int		v;
 
-		if (invGamma == 1.0)
+		if (invGamma == 1)
 			v = i;
 		else
 			v = appRound (pow (i / 255.0f, invGamma) * 255.0f);
@@ -1025,7 +1015,7 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 
 	static const struct {
 		GLenum	fmt;
-		char	*name;
+		const char *name;
 	} fmtInfo[] = {
 #define _STR(s) {s, #s}
 		{3,	"RGB"},
@@ -1444,8 +1434,8 @@ CVAR_END
 	gl_fogImage = CreateImage ("*fog", tex, 256, 32, IMAGE_CLAMP|IMAGE_TRUECOLOR);	//?? mipmap
 	gl_fogImage->flags |= IMAGE_SYSTEM; */
 
-	gl_reflImage = FindImage ("fx/specular", IMAGE_MIPMAP|IMAGE_TRUECOLOR);	//!! move reflection images to a different place
-	gl_reflImage2 = FindImage ("fx/diffuse", IMAGE_MIPMAP|IMAGE_TRUECOLOR);
+	gl_reflImage = FindImage ("fx/specular", IMAGE_MIPMAP);	//!! move reflection images to a different place
+	gl_reflImage2 = FindImage ("fx/diffuse", IMAGE_MIPMAP);
 
 	unguard;
 }
@@ -1534,7 +1524,7 @@ void ShowImages (void)
 		{
 			if (!num) break;
 
-			while (1)
+			while (true)
 			{
 				name = img->name;
 				if (name[0] && appMatchWildcard (name, mask, true)) break;
@@ -1577,7 +1567,7 @@ void ShowImages (void)
 image_t *FindImage (const char *name, unsigned flags)
 {
 	char	name2[MAX_QPATH], *s;
-	int		hash, flags2, fmt, prefFmt, width, height, len;
+	int		width, height, len;
 	image_t	*img;
 	byte	*pic;
 
@@ -1587,7 +1577,7 @@ image_t *FindImage (const char *name, unsigned flags)
 	appCopyFilename (name2, name, sizeof(name2));
 
 	/*------- find image using hash table --------*/
-	hash = ComputeHash (name2);
+	int hash = ComputeHash (name2);
 //	Com_Printf ("FindImage(%s): hash = %X\n", name2, hash);//!!
 
 	// find extension
@@ -1596,7 +1586,7 @@ image_t *FindImage (const char *name, unsigned flags)
 		s = strchr (name2, 0);		// == &name2[strlen(name2)]; points to a place, where extension will be added
 	len = s - name2;				// length of name without extension
 
-	flags2 = flags & (IMAGE_MIPMAP|IMAGE_CLAMP);
+	unsigned flags2 = flags & (IMAGE_MIPMAP|IMAGE_CLAMP);
 	if (!(flags & IMAGE_RELOAD))
 	{
 		for (img = hashTable[hash]; img; img = img->hashNext)
@@ -1638,6 +1628,7 @@ image_t *FindImage (const char *name, unsigned flags)
 	/*---------- image not found -----------*/
 //	Com_Printf("FindImage: disk name = %s\n",name2);//!!
 	// select preferred format
+	int prefFmt = 0;
 	if (!strcmp (s, ".tga"))
 		prefFmt = IMAGE_TGA;
 	else if (!strcmp (s, ".jpg"))
@@ -1646,11 +1637,9 @@ image_t *FindImage (const char *name, unsigned flags)
 //		prefFmt = IMAGE_PCX;
 //	else if (!strcmp (s, ".wal"))
 //		prefFmt = IMAGE_WAL;
-	else
-		prefFmt = 0;
 
 	*s = 0; // cut extension
-	fmt = ImageExists (name2, IMAGE_32BIT);
+	int fmt = ImageExists (name2, IMAGE_32BIT);
 	if (fmt & prefFmt)
 		fmt = prefFmt;				// restrict loading to this image type
 

@@ -70,8 +70,21 @@ typedef enum
 struct surfLight_t;				// forward declaration
 class inlineModel_t;
 
-struct surfacePlanar_t
+class surfaceCommon_t
 {
+public:
+	shader_t *shader;			// ignored for frame models
+	int		frame;				// ignored for frame models
+	int		dlightFrame;
+	unsigned dlightMask;
+	int		type;				//?? eliminate
+	inlineModel_t *owner;
+	virtual void Tesselate () = NULL;
+};
+
+class surfacePlanar_t : public surfaceCommon_t
+{
+public:
 	vec3_t	mins, maxs;
 	cplane_t plane;
 	vec3_t	axis[2];			// 2 orthogonal identity vectors from surface
@@ -83,20 +96,24 @@ struct surfacePlanar_t
 	dynamicLightmap_t *lightmap;
 	surfLight_t *light;
 	surfDlight_t *dlights;
+	virtual void Tesselate ();
 };
 
 //!! warning: if shader.fast -- use vertex_t instead of vertexNormal_t (normals are not required for fast shader)
 // Triangular surface: non-planar, every vertex have its own normal vector
-struct surfaceTrisurf_t
+class surfaceTrisurf_t : public surfaceCommon_t
 {
+public:
 	vec3_t	mins, maxs;		//?? origin/radius?
 	int		numVerts, numIndexes;
 	vertexNormal_t *verts;
 	int		*indexes;
+//!!	virtual void Tesselate ();
 };
 
-struct surfaceMd3_t
+class surfaceMd3_t : public surfaceCommon_t
 {
+public:
 	int		numFrames;
 
 	int		numVerts;
@@ -109,31 +126,35 @@ struct surfaceMd3_t
 	shader_t **shaders;			// [numShaders]
 
 	vertexMd3_t *verts;			// numVerts*numFrames
+	virtual void Tesselate ();
 };
 
-struct surfacePoly_t
+class surfacePoly_t : public surfaceCommon_t
 {
+public:
 	int		numVerts;
 	vertexPoly_t verts[1];		// [numVerts]
+	virtual void Tesselate ();
 };
 
-struct surfaceCommon_t
+// dummy surfaces
+
+class surfaceParticle_t : public surfaceCommon_t
 {
-	shader_t *shader;			// ignored for frame models
-	int		frame;				// ignored for frame models
-	int		dlightFrame;
-	unsigned dlightMask;
-	int		type;
-	inlineModel_t *owner;
-	union {
-		surfaceTrisurf_t *tri;	// type = SURFACE_TRISURF
-		surfacePlanar_t *pl;	// type = SURFACE_PLANAR
-		surfaceMd3_t	*md3;	// type = SURFACE_MD3
-		surfacePoly_t	*poly;	// type = SURFACE_POLY
-		particle_t		*part;	// type = SURFACE_PARTICLE
-		refEntity_t		*ent;	// type = SURFACE_ENTITY
-	};
+public:
+	particle_t *part;
+	virtual void Tesselate ();
 };
+
+
+//!! rename
+class surfaceEntity_t : public surfaceCommon_t
+{
+public:
+	refEntity_t *ent;
+	virtual void Tesselate ();
+};
+
 
 /*------------------------- BSP ---------------------------*/
 
@@ -196,7 +217,7 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	inlineModel_t	*models;
 	int		numModels;
 	// surfaces
-	surfaceCommon_t *faces;
+	surfaceCommon_t **faces;
 	int		numFaces;
 	// leaf surfaces
 	surfaceCommon_t **leafFaces;
@@ -244,6 +265,10 @@ class model_t : public CRenderModel
 public:
 	int		size;				// in memory
 	modelType_t	type;
+	virtual void InitEntity (entity_t *ent, refEntity_t *out);
+	virtual void AddSurfaces (refEntity_t *e);
+	virtual void DrawLabel (refEntity_t *e);
+	virtual node_t *GetLeaf (refEntity_t *e);	// NULL when culled
 };
 
 
@@ -255,6 +280,10 @@ public:
 	int		headnode;			//?? is Q3 inline models have this ?
 	surfaceCommon_t **faces;
 	int		numFaces;
+	virtual void InitEntity (entity_t *ent, refEntity_t *out);
+	virtual void AddSurfaces (refEntity_t *e);
+	virtual void DrawLabel (refEntity_t *e);
+	virtual node_t *GetLeaf (refEntity_t *e);
 };
 
 
@@ -270,9 +299,13 @@ class md3Model_t : public model_t
 {
 public:
 	int		numSurfaces;		// for MD2 = 1
-	surfaceCommon_t *surf;		// [numSurfaces];  ->surfaceCommon_t->surfaceMd3_t
+	surfaceMd3_t *surf;			// [numSurfaces]
 	int		numFrames;
 	md3Frame_t *frames;			// for culling
+	virtual void InitEntity (entity_t *ent, refEntity_t *out);
+	virtual void AddSurfaces (refEntity_t *e);
+	virtual void DrawLabel (refEntity_t *e);
+	virtual node_t *GetLeaf (refEntity_t *e);
 };
 
 
@@ -289,6 +322,9 @@ public:
 	int		numFrames;
 	float	radius;
 	sp2Frame_t frames[1];		// [numFrames]
+	virtual void InitEntity (entity_t *ent, refEntity_t *out);
+	virtual void AddSurfaces (refEntity_t *e);
+	virtual node_t *GetLeaf (refEntity_t *e);
 };
 
 

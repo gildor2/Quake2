@@ -14,9 +14,9 @@ glstate_t	gl_state;
 	Some tables for GL_TexEnv()
 -----------------------------------------------------------------------------*/
 
-
 #define STD_MASK		(TEXENV_FUNC_MASK)
 #define ARB_MASK		(TEXENV_FUNC_MASK|TEXENV_MUL2|TEXENV_SRC0_MASK|TEXENV_SRC1_MASK)
+
 
 typedef struct
 {

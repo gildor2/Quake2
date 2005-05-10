@@ -20,8 +20,6 @@ static int	lastDynamicSize;
 
 void *AllocDynamicMemory (int size)
 {
-	void	*ptr;
-
 	if (dynamicBufferSize + size > MAX_DYNAMIC_BUFFER)
 	{
 		//?? make this message developer-only
@@ -31,8 +29,9 @@ void *AllocDynamicMemory (int size)
 		return NULL;
 	}
 
+	void *ptr = &dynamicBuffer[dynamicBufferSize];
 	lastDynamicSize = dynamicBufferSize;
-	lastDynamicPtr = ptr = &dynamicBuffer[dynamicBufferSize];
+	lastDynamicPtr = ptr;
 	dynamicBufferSize += size;
 	memset (ptr, 0, size);
 
@@ -78,18 +77,6 @@ void AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityNum,
 	// update maxUsedShaderIndex
 	if (shader->sortIndex > gl_state.maxUsedShaderIndex)
 		gl_state.maxUsedShaderIndex = shader->sortIndex;
-}
-
-
-surfaceCommon_t *AddDynamicSurface (shader_t *shader, int entityNum)
-{
-	surfaceCommon_t *surf;
-
-	surf = (surfaceCommon_t*) AllocDynamicMemory (sizeof(surfaceCommon_t));
-	if (!surf) return NULL;
-
-	AddSurfaceToPortal (surf, shader, entityNum, 0);
-	return surf;
 }
 
 

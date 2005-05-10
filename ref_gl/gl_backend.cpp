@@ -75,6 +75,7 @@ bufExtra_t		gl_extra[MAX_VERTEXES];
 static color_t			srcVertexColor[MAX_VERTEXES];
 static bufTexCoordSrc_t	srcTexCoord[MAX_VERTEXES];
 
+//!! WARNING: do not rename to numVerts etc -- name used in some surfaceCommon_t successors
 int gl_numVerts, gl_numIndexes, gl_numExtra;
 
 
@@ -90,12 +91,9 @@ static surfaceInfo_t *sortedSurfaces[MAX_SCENE_SURFACES];
 
 static void ProcessShaderDeforms (shader_t *sh)
 {
-	int		i, j, k;
+	int		i, j;
 	deformParms_t *deform;
-	float	*table, f, t, *norm;
-	bufVertex_t *vec;
 	bufExtra_t	*ex;
-
 
 	if (!sh->numDeforms)
 		return;
@@ -105,15 +103,16 @@ static void ProcessShaderDeforms (shader_t *sh)
 		switch (deform->type)
 		{
 		case DEFORM_WAVE:
-			table = mathFuncs[deform->wave.type];
-			t = deform->wave.freq * vp.time + deform->wave.phase;
+			const float *table = mathFuncs[deform->wave.type];
+			float t = deform->wave.freq * vp.time + deform->wave.phase;
 
-			vec = vb->verts;
+			bufVertex_t *vec = vb->verts;
 			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
-				norm = ex->normal;
-				for (k = 0; k < ex->numVerts; k++, vec++)
+				float *norm = ex->normal;
+				for (int k = 0; k < ex->numVerts; k++, vec++)
 				{
+					float f;
 					if (deform->wave.amp)
 						f = PERIODIC_FUNC(table, t + deform->waveDiv * (vec->xyz[0] + vec->xyz[1] + vec->xyz[2]))
 							* deform->wave.amp + deform->wave.base;
@@ -161,11 +160,9 @@ static void GenerateColorArray (shaderStage_t *st)
 		break;
 	case RGBGEN_BOOST_VERTEX:
 		{
-			int		ka, kb;
-
 #define MIN_BOOST_BRIGHT		48
-			ka = (256 - MIN_BOOST_BRIGHT);							// do not lightscale multiplier
-			kb = (MIN_BOOST_BRIGHT * 256) >> gl_config.overbright;	// but lightscale bias
+			int ka = (256 - MIN_BOOST_BRIGHT);							// do not lightscale multiplier
+			int kb = (MIN_BOOST_BRIGHT * 256) >> gl_config.overbright;	// but lightscale bias
 			for (i = 0; i < gl_numVerts; i++, src++, dst++)
 			{
 				int r = src->c[0];
@@ -231,7 +228,7 @@ static void GenerateColorArray (shaderStage_t *st)
 		{
 			bufExtra_t *ex;
 			int		j, min;
-			float	scale, *norm;
+			float	scale;
 
 			if (st->alphaGenType == ALPHAGEN_DOT)
 			{
@@ -246,7 +243,7 @@ static void GenerateColorArray (shaderStage_t *st)
 			bufVertex_t *vec = vb->verts;
 			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
-				norm = ex->normal;
+				float *norm = ex->normal;
 				for (i = 0; i < ex->numVerts; i++, vec++, dst++)
 				{
 					vec3_t	v;
@@ -300,9 +297,8 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 			}
 		else
 		{
-			float	w, h;
-			w = tex->internalWidth;
-			h = tex->internalHeight;
+			float w = tex->internalWidth;
+			float h = tex->internalHeight;
 			for (j = 0; j < gl_numVerts; j++, src++, dst++)
 			{
 				dst->tex[0] = src->tex[0] * w;
@@ -322,13 +318,11 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 	case TCGEN_LIGHTMAP3:
 	case TCGEN_LIGHTMAP4:
 		{
-			float	shift, mul;
+			float mul = (float)(st->tcGenType - TCGEN_LIGHTMAP1 + 1) / LIGHTMAP_SIZE;
 			bufExtra_t *ex;
-
-			mul = (float)(st->tcGenType - TCGEN_LIGHTMAP1 + 1) / LIGHTMAP_SIZE;
 			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
-				shift = ex->lmWidth * mul;
+				float shift = ex->lmWidth * mul;
 				for (k = 0; k < ex->numVerts; k++, src++, dst++)
 				{
 					dst->tex[0] = src->lm[0] + shift;
@@ -340,11 +334,10 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 	case TCGEN_ENVIRONMENT:
 		{
 			bufExtra_t *ex;
-			bufVertex_t *vec;
 			vec3_t	v;
 			float	d;
 
-			vec = vb->verts;
+			bufVertex_t *vec = vb->verts;
 			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
 				if (ex->axis)
@@ -364,9 +357,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 				}
 				else
 				{	// axis is not provided - use normal
-					float	*norm;
-
-					norm = ex->normal;
+					float *norm = ex->normal;
 					for (k = 0; k < ex->numVerts; k++, vec++, dst++)
 					{
 						VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
@@ -385,18 +376,13 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 		if (st->tcGenType >= TCGEN_DLIGHT0 && st->tcGenType < TCGEN_DLIGHT0 + MAX_DLIGHTS)
 		{
 			bufExtra_t *ex;
-			bufVertex_t *vec;
-			surfDlight_t *sdl;
-			int		num;
 
-			num = st->tcGenType - TCGEN_DLIGHT0;
-			vec = vb->verts;
+			int num = st->tcGenType - TCGEN_DLIGHT0;
+			bufVertex_t *vec = vb->verts;
 			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
-				float	invRadius;
-
-				sdl = &ex->dlight[num];
-				invRadius = 0.5f / sdl->radius;
+				surfDlight_t *sdl = &ex->dlight[num];
+				float invRadius = 0.5f / sdl->radius;
 				for (k = 0; k < ex->numVerts; k++, dst++, vec++)
 				{
 					dst->tex[0] = (DotProduct (vec->xyz, sdl->axis[0]) - sdl->pos[0]) * invRadius + 0.5f;
@@ -437,13 +423,12 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 		case TCMOD_TURB:
 			{
 				bufVertex_t *vec;
-				float	f;
 
 				f1 = tcmod->wave.freq * vp.time + tcmod->wave.phase;
 				f2 = tcmod->wave.amp;
 				for (k = 0, vec = vb->verts; k < gl_numVerts; k++, dst++, vec++)
 				{
-					f = SIN_FUNC((vec->xyz[0] + vec->xyz[1] + vec->xyz[2]) / TABLE_SIZE + f1) * f2;
+					float f = SIN_FUNC((vec->xyz[0] + vec->xyz[1] + vec->xyz[2]) / TABLE_SIZE + f1) * f2;
 					dst->tex[0] += f;
 					dst->tex[1] += f;
 //					dst->tex[0] += PERIODIC_FUNC(sinTable, (vec->xyz[0] + vec->xyz[2]) / TABLE_SIZE + f1) * f2;	// Q3: vec[0] + vec[2]
@@ -501,8 +486,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 struct tempStage_t : public shaderStage_t
 {
 	// modified copy of original stage (or auto-generated stage) + additional fields
-	unsigned texEnv;		// REPLACE/MODILATE/ADD or COMBINE/COMBINE_NV/COMBINE_ATI
-	byte	tmu;
+	unsigned texEnv;		// value for GL_TexEnv()
 	bool	isConstRGBA;
 	bool	isIdentityRGBA;
 	bool	isDoubleRGBA;
@@ -830,7 +814,6 @@ static void PreprocessShader (shader_t *sh)
 			pass->numStages = 1;
 			pass->stages = st;
 			pass->colorStage = static_cast<shaderStage_t*>(st);
-			st->tmu = 0;
 			st->texEnv = st->isDoubleRGBA ?
 				TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX :
 				TEXENV_MODULATE;
@@ -883,7 +866,7 @@ static void PreprocessShader (shader_t *sh)
 		LOG_PP(va("  tmu[%d:%d] = \"%s\" (rgba: %s %s %8X)\n", i, tmuUsed, st[0].mapImage[0]->name,
 			st[0].isConstRGBA ? "const" : "var", st[0].isIdentityRGBA ? "ident" : "--", st[0].rgbaConst.rgba));
 
-		st[0].tmu = tmuUsed++;
+		tmuUsed++;
 		tmuLeft--;
 		// if at least 2nd TMU, we may need to update some pass fields
 		if (tmuUsed > 1)
@@ -1117,12 +1100,12 @@ static void StageIterator (void)
 		tempStage_t *st;
 		for (j = 0, st = pass->stages; j < pass->numStages; j++, st++)
 		{
-			GL_SelectTexture (st->tmu);
+			GL_SelectTexture (j);
 			GL_TexEnv (st->texEnv);
 			GL_TexEnvColor (&st->rgbaConst);
 			GL_Bind (st->mapImage[0]);
-			GenerateTexCoordArray (st, st->tmu, st->mapImage[0]);
-			GL_TexCoordPointer (vb->texCoord[st->tmu]);
+			GenerateTexCoordArray (st, j, st->mapImage[0]);
+			GL_TexCoordPointer (vb->texCoord[j]);
 		}
 
 		//------ setup color arrays / constant ------
@@ -1336,22 +1319,19 @@ static void DrawSkyBox (void)
 	Scene
 -----------------------------------------------------------------------------*/
 
-static void CheckDynamicLightmap (surfaceCommon_t *s)
+static void CheckDynamicLightmap (surfacePlanar_t *surf)
 {
 	if (!gl_dynamic->integer)
 		return;
 
 	// check for lightstyle modification (or vertex colors)
-	surfacePlanar_t *surf = s->pl;
 	if (!surf->lightmap) return;
 
 	dynamicLightmap_t *dl = surf->lightmap;
 	int updateType = 0;
 	for (int i = 0; i < dl->numStyles; i++)
 	{
-		byte	style;
-
-		style = dl->style[i];
+		byte style = dl->style[i];
 		if (IS_FAST_STYLE(style))
 		{
 			updateType = 1;		// vertex color
@@ -1364,7 +1344,7 @@ static void CheckDynamicLightmap (surfaceCommon_t *s)
 		}
 	}
 
-	bool dlightUpdate = (s->dlightMask && s->shader->lightmapNumber == LIGHTMAP_VERTEX);
+	bool dlightUpdate = (surf->dlightMask && surf->shader->lightmapNumber == LIGHTMAP_VERTEX);
 	if (dlightUpdate) updateType |= 1;	// vertex
 	if (updateType)
 	{
@@ -1373,7 +1353,7 @@ static void CheckDynamicLightmap (surfaceCommon_t *s)
 			dl->modulate[i] = vp.lightStyles[dl->style[i]].value;
 		if (dlightUpdate) dl->modulate[0]--;	// force to update vertex lightmap when dlight disappear
 
-		UpdateDynamicLightmap (s->shader, surf, updateType == 1, s->dlightMask);
+		UpdateDynamicLightmap (surf, updateType == 1, surf->dlightMask);
 	}
 }
 
@@ -1382,29 +1362,29 @@ static void CheckDynamicLightmap (surfaceCommon_t *s)
 	3D tesselators
 -----------------------------------------------------------------------------*/
 
-static void TesselatePlanarSurf (surfacePlanar_t *surf)
+void surfacePlanar_t::Tesselate ()
 {
-	ReserveVerts (surf->numVerts, surf->numIndexes);
+	ReserveVerts (numVerts, numIndexes);
 
 	int firstVert = gl_numVerts;
-	gl_numVerts += surf->numVerts;
+	gl_numVerts += numVerts;
 	int firstIndex = gl_numIndexes;
-	gl_numIndexes += surf->numIndexes;
+	gl_numIndexes += numIndexes;
 
 	bufExtra_t *ex = &gl_extra[gl_numExtra++];
-	ex->numVerts = surf->numVerts;
-	if (surf->lightmap) ex->lmWidth = surf->lightmap->w;
-	VectorCopy (surf->plane.normal, ex->normal);
-	ex->axis = surf->axis;
-	ex->dlight = surf->dlights;
+	ex->numVerts = numVerts;
+	if (lightmap) ex->lmWidth = lightmap->w;
+	VectorCopy (plane.normal, ex->normal);
+	ex->axis = axis;
+	ex->dlight = dlights;
 
 	bufVertex_t *v = &vb->verts[firstVert];
 	bufTexCoordSrc_t *t = &srcTexCoord[firstVert];
 	unsigned *c = &srcVertexColor[firstVert].rgba;
 
 	// copy vertexes
-	vertex_t *vs = surf->verts;
-	for (int i = 0; i < surf->numVerts; i++, vs++, v++, t++, c++)
+	vertex_t *vs = verts;
+	for (int i = 0; i < numVerts; i++, vs++, v++, t++, c++)
 	{
 		VectorCopy (vs->xyz, v->xyz);		// copy vertex
 		t->tex[0] = vs->st[0];		// copy texture coords
@@ -1416,26 +1396,26 @@ static void TesselatePlanarSurf (surfacePlanar_t *surf)
 
 	// copy indexes
 	int *idx = &gl_indexesArray[firstIndex];
-	int *idxSrc = surf->indexes;
-	for (i = 0; i < surf->numIndexes; i++)
+	int *idxSrc = indexes;
+	for (i = 0; i < numIndexes; i++)
 		*idx++ = *idxSrc++ + firstVert;
 }
 
 
-static void TesselatePolySurf (surfacePoly_t *surf)
+void surfacePoly_t::Tesselate ()
 {
 	int		i;
 
-	int numIdx = (surf->numVerts - 2) * 3;
-	ReserveVerts (surf->numVerts, numIdx);
+	int numIdx = (numVerts - 2) * 3;
+	ReserveVerts (numVerts, numIdx);
 
 	int firstVert = gl_numVerts;
-	gl_numVerts += surf->numVerts;
+	gl_numVerts += numVerts;
 	int firstIndex = gl_numIndexes;
 	gl_numIndexes += numIdx;
 
 	bufExtra_t *ex = &gl_extra[gl_numExtra++];
-	ex->numVerts = surf->numVerts;
+	ex->numVerts = numVerts;
 	// setup normal ?? -- depends on shader
 	ex->axis = NULL;
 	ex->dlight = NULL;
@@ -1445,8 +1425,8 @@ static void TesselatePolySurf (surfacePoly_t *surf)
 	unsigned *c = &srcVertexColor[firstVert].rgba;
 
 	// copy vertexes
-	vertexPoly_t *vs = surf->verts;
-	for (i = 0; i < surf->numVerts; i++, vs++, v++, t++, c++)
+	vertexPoly_t *vs = verts;
+	for (i = 0; i < numVerts; i++, vs++, v++, t++, c++)
 	{
 		VectorCopy (vs->xyz, v->xyz);		// copy vertex
 		t->tex[0] = vs->st[0];		// copy texture coords
@@ -1467,31 +1447,31 @@ static void TesselatePolySurf (surfacePoly_t *surf)
 }
 
 
-static void TesselateMd3Surf (surfaceMd3_t *surf)
+void surfaceMd3_t::Tesselate ()
 {
 	int		i;
 
-	int numIdx = surf->numTris * 3;
-	ReserveVerts (surf->numVerts, numIdx);
+	int numIdx = numTris * 3;
+	ReserveVerts (numVerts, numIdx);
 
 	int firstVert = gl_numVerts;
-	gl_numVerts += surf->numVerts;
+	gl_numVerts += numVerts;
 	int firstIndex = gl_numIndexes;
 	gl_numIndexes += numIdx;
 
 	bufExtra_t *ex = &gl_extra[gl_numExtra];
-	gl_numExtra += surf->numVerts;
+	gl_numExtra += numVerts;
 
 	/*------------- lerp verts ---------------*/
-	vertexMd3_t *vs1 = surf->verts + surf->numVerts * currentEntity->frame;
+	vertexMd3_t *vs1 = verts + numVerts * currentEntity->frame;
 	bufVertex_t *v = &vb->verts[firstVert];
 	if (currentEntity->backLerp != 0.0f && currentEntity->frame != currentEntity->oldFrame)
 	{
-		vertexMd3_t *vs2 = surf->verts + surf->numVerts * currentEntity->oldFrame;
+		vertexMd3_t *vs2 = verts + numVerts * currentEntity->oldFrame;
 		float backScale = currentEntity->backLerp * MD3_XYZ_SCALE;
 		float frontLerp = 1.0f - currentEntity->backLerp;
 		float frontScale = frontLerp * MD3_XYZ_SCALE;
-		for (i = 0; i < surf->numVerts; i++, vs1++, vs2++, v++, ex++)
+		for (i = 0; i < numVerts; i++, vs1++, vs2++, v++, ex++)
 		{
 			v->xyz[0] = vs1->xyz[0] * frontScale + vs2->xyz[0] * backScale;
 			v->xyz[1] = vs1->xyz[1] * frontScale + vs2->xyz[1] * backScale;
@@ -1513,7 +1493,7 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 		}
 	}
 	else
-		for (i = 0; i < surf->numVerts; i++, vs1++, v++, ex++)	// fast non-lerp case
+		for (i = 0; i < numVerts; i++, vs1++, v++, ex++)	// fast non-lerp case
 		{
 			v->xyz[0] = vs1->xyz[0] * MD3_XYZ_SCALE;
 			v->xyz[1] = vs1->xyz[1] * MD3_XYZ_SCALE;
@@ -1536,8 +1516,8 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 
 	/*----------- copy texcoords -------------*/
 	bufTexCoordSrc_t *t = &srcTexCoord[firstVert];
-	float *ts = surf->texCoords;
-	for (i = 0; i < surf->numVerts; i++, t++)
+	float *ts = texCoords;
+	for (i = 0; i < numVerts; i++, t++)
 	{
 		t->tex[0] = *ts++;
 		t->tex[1] = *ts++;
@@ -1545,7 +1525,7 @@ static void TesselateMd3Surf (surfaceMd3_t *surf)
 
 	/*------------ copy indexes --------------*/
 	int *idx = &gl_indexesArray[firstIndex];
-	int *idxSrc = surf->indexes;
+	int *idxSrc = indexes;
 	for (i = 0; i < numIdx; i++)
 		*idx++ = *idxSrc++ + firstVert;
 }
@@ -1744,9 +1724,9 @@ static void DrawNormals (void)
 
 
 
-static void TesselateEntitySurf (refEntity_t *e)
+void surfaceEntity_t::Tesselate ()
 {
-	if (e->flags & RF_BBOX)
+	if (ent->flags & RF_BBOX)
 	{
 		bufVertex_t v[8];
 		static const int inds[24] = {
@@ -1757,28 +1737,28 @@ static void TesselateEntitySurf (refEntity_t *e)
 
 		GL_SetMultitexture (0);		// disable texturing with all tmu's
 		glDisableClientState (GL_COLOR_ARRAY);
-		glColor4ubv (e->shaderColor.c);
+		glColor4ubv (ent->shaderColor.c);
 		GL_State (0);
 
 		// generate verts
 		for (int i = 0; i < 8; i++)
 		{
-			float x = (i & 1) ? e->boxSize[0] : -e->boxSize[0];
-			float y = (i & 2) ? e->boxSize[1] : -e->boxSize[1];
-			float z = (i & 4) ? e->boxSize[2] : -e->boxSize[2];
+			float x = (i & 1) ? ent->boxSize[0] : -ent->boxSize[0];
+			float y = (i & 2) ? ent->boxSize[1] : -ent->boxSize[1];
+			float z = (i & 4) ? ent->boxSize[2] : -ent->boxSize[2];
 
 			// project point to a world coordinate system (org + x*axis[0] + y*axis[1] + z*axis[2])
 			vec3_t	tmp;
-			VectorMA (e->center, x, e->boxAxis[0], tmp);
-			VectorMA (tmp,		 y, e->boxAxis[1], tmp);
-			VectorMA (tmp,		 z, e->boxAxis[2], v[i].xyz);
+			VectorMA (ent->center, x, ent->boxAxis[0], tmp);
+			VectorMA (tmp,  	   y, ent->boxAxis[1], tmp);
+			VectorMA (tmp,		   z, ent->boxAxis[2], v[i].xyz);
 		}
 		// draw it
 		glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
 		glDrawElements (GL_LINES, 24, GL_UNSIGNED_INT, inds);
 	}
 	else
-		DrawTextLeft (va("Unknown ent surf flags: %X", e->flags), RGB(1,0,0));
+		DrawTextLeft (va("Unknown ent surf flags: %X", ent->flags), RGB(1,0,0));
 }
 
 
@@ -1787,7 +1767,7 @@ static void TesselateEntitySurf (refEntity_t *e)
 	Drawing the scene
 -----------------------------------------------------------------------------*/
 
-static void DrawDotParticles (particle_t *p)
+void surfaceParticle_t::Tesselate ()
 {
 	vec3_t	up, right;
 	byte	c[4];
@@ -1802,7 +1782,7 @@ static void DrawDotParticles (particle_t *p)
 	VectorScale (vp.viewaxis[2], 1.5f, right);
 
 	glBegin (GL_TRIANGLES);
-	for ( ; p; p = p->drawNext)
+	for (particle_t *p = part; p; p = p->drawNext)
 	{
 		float	scale;
 
@@ -1894,8 +1874,9 @@ static void DrawScene (void)
 		if (shader->type != SHADERTYPE_SKY) break;
 
 		if (!index) SetCurrentShader (shader);
+		if (surf->type != SURFACE_PLANAR) continue;		//?? may be another types
 
-		AddSkySurface (surf->pl, vp.vieworg, SKY_SURF);	//?? may be another types
+		AddSkySurface (static_cast<surfacePlanar_t*>(surf), vp.vieworg, SKY_SURF);
 		numSkySurfs++;
 	}
 	//?? may be, require to set dlightMask, currentShader, currentEntity etc.
@@ -1910,7 +1891,7 @@ static void DrawScene (void)
 	{
 		surf = (*si2)->surf;
 		if (surf && surf->type == SURFACE_PLANAR)
-			CheckDynamicLightmap (surf);
+			CheckDynamicLightmap (static_cast<surfacePlanar_t*>(surf));
 	}
 
 	/*-------- draw world/models ---------*/
@@ -1971,25 +1952,7 @@ static void DrawScene (void)
 			currentWorld = isWorld;
 		}
 
-		switch (surf->type)
-		{
-		case SURFACE_PLANAR:
-			TesselatePlanarSurf (surf->pl);
-			break;
-		case SURFACE_MD3:
-			TesselateMd3Surf (surf->md3);
-			break;
-		case SURFACE_PARTICLE:
-			DrawDotParticles (surf->part);
-			break;
-		case SURFACE_POLY:
-			TesselatePolySurf (surf->poly);
-			break;
-		case SURFACE_ENTITY:
-			TesselateEntitySurf (surf->ent);
-			break;
-		//!! other types
-		}
+		surf->Tesselate ();
 	}
 
 	/*--------- finilize/debug -----------*/

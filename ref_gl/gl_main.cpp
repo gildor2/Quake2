@@ -750,7 +750,7 @@ void RenderFrame (refdef_t *fd)
 	vp.time = fd->time;
 
 	// add entities
-	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.cullEntsBox = gl_speeds.cullEnts2 = gl_speeds.ocullEnts = 0;
+	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.ocullEnts = 0;
 	vp.firstEntity = gl_numEntities;
 	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
 		AddEntity (ent);
@@ -788,7 +788,7 @@ void RenderFrame (refdef_t *fd)
 			"leafs: vis: %-3d fr: %-3d total: %d\n"
 			"surfs: %d culled: %d\n"
 			"tris: %d (+%d) mtex: %1.2f\n"
-			"ents: %d fcull: %d+%d cull: %d ocull: %d\n"
+			"ents: %d cull: %d occl: %d\n"
 			"particles: %d cull: %d\n"
 			"dlights: %d surfs: %d verts: %d\n"
 			"flares: %d test: %d cull: %d\n"
@@ -797,7 +797,7 @@ void RenderFrame (refdef_t *fd)
 			S.visLeafs, S.frustLeafs, S.leafs,
 			S.surfs, S.cullSurfs,
 			S.trisMT, S.tris2D, S.trisMT ? (float)S.tris / S.trisMT : 0,
-			S.ents, S.cullEnts, S.cullEntsBox, S.cullEnts2, S.ocullEnts,
+			S.ents, S.cullEnts, S.ocullEnts,
 			S.parts, S.cullParts,
 			gl_numDlights, S.dlightSurfs, S.dlightVerts,
 			S.flares, S.testFlares, S.cullFlares,
@@ -1156,15 +1156,11 @@ CRenderModel *RegisterModel (const char *name)
 
 void SetSky (const char *name, float rotate, vec3_t axis)
 {
-	int		i;
-	shader_t *shader, *old;
-	surfaceCommon_t *surf;
-	char	name2[MAX_OSPATH] = "env/";
-
-	old = gl_skyShader;
+	shader_t *old = gl_skyShader;
 	// find sky shader
-	strcpy (&name2[4], name);
-	shader = FindShader (name2, SHADER_SKY);
+	char name2[MAX_OSPATH];
+	appSprintf (ARRAY_ARG(name2), "env/%s", name);
+	shader_t *shader = FindShader (name2, SHADER_SKY);
 	if (shader->type != SHADERTYPE_SKY)
 	{
 		Com_WPrintf ("%s is not a sky shader\n", name2);
@@ -1183,8 +1179,11 @@ void SetSky (const char *name, float rotate, vec3_t axis)
 	gl_skyShader = shader;
 	// change all sky surfaces
 	//?? is it really needed ? whole map uses at most 1 sky shader, which processed specially
-	for (i = 0, surf = map.faces; i < map.numFaces; i++, surf++)
+	for (int i = 0; i < map.numFaces; i++)
+	{
+		surfaceCommon_t *surf = map.faces[i];
 		if (surf->shader == old) surf->shader = shader;
+	}
 }
 
 void Screenshot (int flags, const char *name)

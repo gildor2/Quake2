@@ -80,4 +80,8 @@ inline void *operator new (unsigned size, char *buffer)
 {
 	return buffer;
 }
-#define CALL_CONSTRUCTOR(obj,type)		obj = new ((char*)obj) type
+//#define CALL_CONSTRUCTOR(obj,type)		obj = new ((char*)obj) type
+template<class T> inline void CALL_CONSTRUCTOR(T *c)
+{
+	c = new ((char*)c) T;
+}

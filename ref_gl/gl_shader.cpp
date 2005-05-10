@@ -232,8 +232,8 @@ static shader_t *AddPermanentShader (void)
 
 	// allocate and copy new shader
 	shader_t *nsh = (shader_t*) shaderChain->Alloc(sizeof(shader_t) + (sh.numStages-1) * sizeof(shaderStage_t*));
-	memcpy (nsh, &sh, sizeof(shader_t));
-	CALL_CONSTRUCTOR(nsh, shader_t);		// after memcpy()
+	*nsh = sh;
+	CALL_CONSTRUCTOR(nsh);		// after copy
 
 	// allocate and copy stages
 	for (int i = 0; i < sh.numStages; i++)

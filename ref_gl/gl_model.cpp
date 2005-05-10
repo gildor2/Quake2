@@ -167,12 +167,11 @@ static void LoadFlares (lightFlare_t *data, int count)
 static void BuildSurfFlare (surfaceCommon_t *surf, color_t *color, float intens)
 {
 	gl_flare_t	*f;
-	surfacePlanar_t *pl;
 	vec3_t	origin, c;
 	float	/* aspect,*/ x, y;
 
 	if (surf->type != SURFACE_PLANAR) return;
-	pl = surf->pl;
+	surfacePlanar_t *pl = static_cast<surfacePlanar_t*>(surf);
 
 //	aspect = (pl->maxs2[0] - pl->mins2[0]) / (pl->maxs2[1] - pl->mins2[1]);
 //	if (aspect < MAX_ASPECT || aspect > 1/MAX_ASPECT) return;	// not square
@@ -443,7 +442,7 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 
 	for (int i = 0; i < count; i++, data++, out++)
 	{
-		CALL_CONSTRUCTOR(out, inlineModel_t);
+		CALL_CONSTRUCTOR(out);
 		appSprintf (ARRAY_ARG(out->name), "*%d", i);
 		out->type = MODEL_INLINE;
 		out->size = -1;							// do not delete in FreeModels()
@@ -457,10 +456,10 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 		out->numFaces = data->numfaces;
 		out->faces = new (map.dataChain) surfaceCommon_t* [out->numFaces];
 
-		int		j;
-		surfaceCommon_t *s;
-		for (j = 0, s = &map.faces[data->firstface]; j < out->numFaces; j++, s++)
+		int k = data->firstface;
+		for (int j = 0; j < out->numFaces; j++, k++)
 		{
+			surfaceCommon_t *s = map.faces[k];
 			out->faces[j] = s;
 			s->owner = i == 0 ? NULL : out;		// model 0 is world
 		}
@@ -472,27 +471,19 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 	dvertex_t *verts, texinfo_t *tex, cmodel_t *models, int numModels)
 {
 	int		j;
-	surfaceCommon_t *out;
 
 	map.numFaces = numSurfaces;
-	map.faces = out = new (map.dataChain) surfaceCommon_t [numSurfaces];
-	for (int i = 0; i < numSurfaces; i++, surfs++, out++)
+	map.faces = new (map.dataChain) surfaceCommon_t* [numSurfaces];
+	for (int i = 0; i < numSurfaces; i++, surfs++)
 	{
-		int			numTextures, numVerts, numIndexes, numTris;
-		surfacePlanar_t *s;
 		cmodel_t	*owner;
 		vertex_t	*v;
-		int			*pedge, *pindex, sflags;
-		texinfo_t	*stex, *ptex;
-		shader_t	*shader;
 		float		mins[2], maxs[2];	// surface extents
-		bool		needLightmap;
 		vec3_t		*pverts[MAX_POLYVERTS];
-		char		textures[MAX_QPATH * MAX_STAGE_TEXTURES], *pname;
 
-		numVerts = surfs->numedges;
+		int numVerts = surfs->numedges;
 		/*------- build vertex list -------*/
-		pedge = surfedges + surfs->firstedge;
+		int *pedge = surfedges + surfs->firstedge;
 		for (j = 0; j < numVerts; j++, pedge++)
 		{
 			int idx = *pedge;
@@ -503,8 +494,8 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		}
 
 		/*---- Generate shader with name and SURF_XXX flags ----*/
-		stex = tex + surfs->texinfo;
-		sflags = SHADER_WALL;
+		texinfo_t *stex = tex + surfs->texinfo;
+		int sflags = SHADER_WALL;
 		if (stex->flags & SURF_ALPHA)	sflags |= SHADER_ALPHA;
 		if (stex->flags & SURF_TRANS33)	sflags |= SHADER_TRANS33;
 		if (stex->flags & SURF_TRANS66)	sflags |= SHADER_TRANS66;
@@ -558,12 +549,12 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 
 
 		// check for shader lightmap
+		bool needLightmap = false;
 		if (surfs->lightofs >= 0 && !(sflags & SHADER_SKIN))	//??
 		{
 			if (sflags & SHADER_SKY)
 			{
 				//!! change this code (or update comment above)
-				needLightmap = false;
 				if (map.sunColor[0] + map.sunColor[1] + map.sunColor[2] == 0)
 				{
 					image_t *img = FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP|IMAGE_PICMIP);	// find sky image only for taking its color
@@ -585,13 +576,12 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 				needLightmap = true;
 			}
 		}
-		else
-			needLightmap = false;
 
 		/*---------- check for texture animation ----------*/
-		ptex = stex;
-		pname = textures;
-		numTextures = 0;
+		char	textures[MAX_QPATH * MAX_STAGE_TEXTURES];
+		texinfo_t *ptex = stex;
+		char *pname = textures;
+		int numTextures = 0;
 		while (true)
 		{
 			pname += appSprintf (pname, MAX_QPATH, "textures/%s", ptex->texture) + 1;	// length(format)+1
@@ -612,7 +602,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (needLightmap)
 			sflags |= SHADER_LIGHTMAP;
 
-		out->shader = shader = (sflags & SHADER_SKY) ? gl_skyShader : FindShader (textures, sflags);
+		shader_t *shader = (sflags & SHADER_SKY) ? gl_skyShader : FindShader (textures, sflags);
 		//!! update sflags from this (created) shader -- it may be scripted (with different flags)
 
 		if (sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA|SHADER_TURB|SHADER_SKY))
@@ -622,6 +612,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		 * numIndexes = numTriangles * 3
 		 * Indexes: (0 1 2) (0 2 3) (0 3 4) ... (here: 5 verts, 3 triangles, 9 indexes)
 		 */
+		int numTris;
 		if (shader->tessSize)
 		{
 			numTris = SubdividePlane (pverts, numVerts, shader->tessSize);
@@ -630,12 +621,16 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		else
 			numTris = numVerts - 2;
 
-		numIndexes = numTris * 3;
+		int numIndexes = numTris * 3;
 
 		/*------- Prepare for vertex generation ----------------*/
-		out->type = SURFACE_PLANAR;
-		out->pl = s = (surfacePlanar_t*) map.dataChain->Alloc (sizeof(surfacePlanar_t) + sizeof(vertex_t)*numVerts + sizeof(int)*numIndexes);
-		memcpy (&s->plane, map.planes + surfs->planenum, sizeof(cplane_t));
+		surfacePlanar_t *s = (surfacePlanar_t*) map.dataChain->Alloc (sizeof(surfacePlanar_t) + sizeof(vertex_t)*numVerts + sizeof(int)*numIndexes);
+		CALL_CONSTRUCTOR(s);
+		s->type = SURFACE_PLANAR;
+		s->shader = shader;
+		map.faces[i] = s;
+
+		s->plane = map.planes[surfs->planenum];
 		if (surfs->side)
 		{
 			// backface (needed for backface culling)
@@ -650,7 +645,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		s->indexes = (int *) (s->verts+numVerts);
 
 		/*-------------- Generate indexes ----------------------*/
-		pindex = s->indexes;
+		int *pindex = s->indexes;
 		if (shader->tessSize)
 		{
 			GetSubdivideIndexes (pindex);
@@ -733,9 +728,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			s->lightmap = lm = new (map.dataChain) dynamicLightmap_t;
 			for (j = 0; j < 4; j++)			// enum styles
 			{
-				int		st;
-
-				st = surfs->styles[j];
+				int st = surfs->styles[j];
 				if (st == 255) break;
 				lm->style[j] = st;
 				lm->modulate[j] = (j == 0 ? 128 : 0);			// initial state
@@ -751,15 +744,13 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		BuildPlanarSurfAxis (s);
 		if (stex->flags & SURF_LIGHT)		//!! + sky when ambient <> 0
 		{
-			image_t	*img;
-			float	area;
 			static color_t	defColor = {96, 96, 96, 255};// {255, 255, 255, 255};
 
-			area = GetPolyArea (pverts, numVerts);
-			img = FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP);
+			float area = GetPolyArea (pverts, numVerts);
+			image_t *img = FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP);
 			BuildSurfLight (s, img ? &img->color : &defColor, area, stex->value, (stex->flags & SURF_SKY) != 0);
 			if (stex->flags & SURF_AUTOFLARE && !(stex->flags & SURF_SKY))
-				BuildSurfFlare (out, img ? &img->color : &defColor, area);
+				BuildSurfFlare (s, img ? &img->color : &defColor, area);
 		}
 	}
 }
@@ -767,14 +758,14 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 
 static int LightmapCompare (const void *s1, const void *s2)
 {
-	surfaceCommon_t *surf1, *surf2;
+	surfacePlanar_t *surf1, *surf2;
 	byte	*v1, *v2;
 
-	surf1 = *(surfaceCommon_t **)s1;
-	surf2 = *(surfaceCommon_t **)s2;
+	surf1 = *(surfacePlanar_t **)s1;
+	surf2 = *(surfacePlanar_t **)s2;
 
-	v1 = (surf1->pl->lightmap) ? surf1->pl->lightmap->source[0] : NULL;
-	v2 = (surf2->pl->lightmap) ? surf2->pl->lightmap->source[0] : NULL;
+	v1 = (surf1->lightmap) ? surf1->lightmap->source[0] : NULL;
+	v2 = (surf2->lightmap) ? surf2->lightmap->source[0] : NULL;
 
 	if (v1 == v2 && v1)
 		return (surf1->shader->style & SHADER_TRYLIGHTMAP) ? 1 : -1;	// TRYLIGHTMAP should go after normal lightmaps
@@ -797,9 +788,11 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 	int		i, k, optLmTexels;
 	byte	*ptr;
 	lightmapBlock_t *bl;
-	surfaceCommon_t *s;
+	surfacePlanar_t *s;
 	dynamicLightmap_t *dl;
-	surfaceCommon_t *sortedSurfaces[MAX_MAP_FACES];
+	surfacePlanar_t *sortedSurfaces[MAX_MAP_FACES];
+
+	// NOTE: we assume here, that all Q2-bsp map faces are of surfacePlanar_t type
 
 	LM_Init ();		// reset lightmap status (even when vertex lighting used)
 
@@ -807,10 +800,10 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 
 	for (i = 0; i < map.numFaces; i++)
 	{
-		s = &map.faces[i];
+		s = static_cast<surfacePlanar_t*>(map.faces[i]);
 		sortedSurfaces[i] = s;		// prepare for sorting
 
-		if (dl = s->pl->lightmap)
+		if (dl = s->lightmap)
 		{
 			color_t avg;
 
@@ -826,16 +819,15 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 				if (1)
 				{
 					vertex_t *v;
-					byte	*p;
 
 					// replace lightmap block with a single texel
 					//!! WARNING: this will modify lightmap in bsp_t (will be affect map reloads)
 					//?? -OR- use pixel from center instead (modify dl->source[0]) ?
-					p = dl->source[0];
+					byte *p = dl->source[0];
 					p[0] = avg.c[0];
 					p[1] = avg.c[1];
 					p[2] = avg.c[2];
-					for (k = 0, v = s->pl->verts; k < s->pl->numVerts; k++, v++)
+					for (k = 0, v = s->verts; k < s->numVerts; k++, v++)
 						v->lm[0] = v->lm[1] = 0.5;		// all verts should point to a middle of lightmap texel
 					optLmTexels += dl->w * dl->h - 1;
 					dl->w = dl->h = 1;
@@ -861,15 +853,12 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 	ptr = NULL;
 	for (i = 0; i < map.numFaces; i++)
 	{
-		bool	bad;
-		int		lmSize;
-
 		s = sortedSurfaces[i];
-		dl = s->pl->lightmap;
+		dl = s->lightmap;
 		if (!dl) continue;
 
-		bad = false;
-		lmSize = dl->w * dl->h * dl->numStyles * 3;
+		bool bad = false;
+		int lmSize = dl->w * dl->h * dl->numStyles * 3;
 		if (dl->source[0] + lmSize > lightData + lightDataSize)
 			bad = true;		// out of bsp file
 		else if (ptr && ptr > dl->source[0] && (s->shader->style & SHADER_TRYLIGHTMAP))
@@ -901,16 +890,12 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 		// set shader lightstyles
 		if (s->shader->lightmapNumber >= 0)
 		{
-			int		styles;
-
-			styles = 0;
+			int styles = 0;
 			dl->w2 = dl->w;
 			dl->numFastStyles = 0;
 			for (k = dl->numStyles - 1; k >= 0; k--)
 			{
-				byte	t;
-
-				t = dl->style[k];
+				byte t = dl->style[k];
 				if (IS_FAST_STYLE(t))
 				{
 					styles = (styles << 8) + t;
@@ -926,16 +911,16 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 	// we should genetate lightmaps after validating of ALL lightmaps
 	for (i = 0; i < map.numFaces; i++)
 	{
-		s = &map.faces[i];
-		if (!s->pl->lightmap) continue;
+		s = static_cast<surfacePlanar_t*>(map.faces[i]);
+		if (!s->lightmap) continue;
 
 		if (s->shader->lightmapNumber == LIGHTMAP_NONE)
 		{	// lightmap was removed from shader - remove it from surface too
-			s->pl->lightmap = NULL;
+			s->lightmap = NULL;
 			continue;
 		}
 
-		UpdateDynamicLightmap (s->shader, s->pl, true, 0);
+		UpdateDynamicLightmap (s, true, 0);
 	}
 
 	/*----------- allocate lightmaps for surfaces -----------*/
@@ -948,36 +933,33 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 		i = 0;
 		while (i < map.numFaces)
 		{
-			shader_t *shader;
-			int		numShaderSurfs, i2, nextIndex;
-			bool	fit;
-
 			s = sortedSurfaces[i];
-			dl = s->pl->lightmap;
+			dl = s->lightmap;
 			if (!dl || s->shader->lightmapNumber == LIGHTMAP_VERTEX)
 			{
 				i++;
 				continue;
 			}
 
-			shader = sortedSurfaces[i]->shader;
+			shader_t *shader = sortedSurfaces[i]->shader;
 			// count number of surfaces with the same shader
+			int i2;
 			for (i2 = i + 1; i2 < map.numFaces; i2++)
 				if (sortedSurfaces[i2]->shader != shader) break;
 
-			numShaderSurfs = i2 - i;
-			nextIndex = i2;
+			int numShaderSurfs = i2 - i;
+			int nextIndex = i2;
 
 			// try to allocate all surfaces in a single lightmap block
 			LM_Rewind ();
-			fit = false;
+			bool fit = false;
 			while (!fit)
 			{
 				bl = LM_NextBlock ();
 				LM_Save (bl);					// save layout
 				for (i2 = i; i2 < nextIndex; i2++)
 				{
-					fit = LM_AllocBlock (bl, sortedSurfaces[i2]->pl->lightmap);
+					fit = LM_AllocBlock (bl, sortedSurfaces[i2]->lightmap);
 					if (!fit)
 					{
 						if (bl->empty)
@@ -998,7 +980,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			// Here: all surfaces fits "bl" block, or allocate multiple blocks started from "bl"
 			for (i2 = i; i2 < nextIndex; i2++)
 			{
-				dl = sortedSurfaces[i2]->pl->lightmap;
+				dl = sortedSurfaces[i2]->lightmap;
 				while (!LM_AllocBlock (bl, dl))
 				{
 					if (bl->empty)
@@ -1016,23 +998,19 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 		// update surfaces
 		for (i = 0; i < map.numFaces; i++)
 		{
-			int		j;
-			vertex_t *v;
-			float	s0, t0;
-			surfacePlanar_t *pl;
-
 			s = sortedSurfaces[i];
-			pl = s->pl;
-			dl = pl->lightmap;
+			dl = s->lightmap;
 			if (!dl || !dl->block) continue;
 
 			// set lightmap for shader
 			s->shader = SetShaderLightmap (s->shader, dl->block->index);
 
 			// update vertex lightmap coords
-			s0 = (float)dl->s / LIGHTMAP_SIZE;
-			t0 = (float)dl->t / LIGHTMAP_SIZE;
-			for (j = 0, v = pl->verts; j < pl->numVerts; j++, v++)
+			float s0 = (float)dl->s / LIGHTMAP_SIZE;
+			float t0 = (float)dl->t / LIGHTMAP_SIZE;
+			int		j;
+			vertex_t *v;
+			for (j = 0, v = s->verts; j < s->numVerts; j++, v++)
 			{
 				v->lm[0] = v->lm[0] / LIGHTMAP_SIZE + s0;
 				v->lm[1] = v->lm[1] / LIGHTMAP_SIZE + t0;
@@ -1050,7 +1028,7 @@ static void LoadLeafSurfaces2 (unsigned short *data, int count)
 	map.numLeafFaces = count;
 	map.leafFaces = out = new (map.dataChain) surfaceCommon_t* [count];
 	for (int i = 0; i < count; i++, data++, out++)
-		*out = map.faces + *data;
+		*out = map.faces[*data];
 }
 
 
@@ -1589,7 +1567,6 @@ static void CheckTrisSizes (surfaceMd3_t *surf, dAliasFrame_t *md2Frame = NULL, 
 md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 {
 	md3Model_t *md3;
-	surfaceCommon_t *cs;
 	surfaceMd3_t *surf;
 	int		i, numVerts, numTris;
 	int		xyzIndexes[MAX_XYZ_INDEXES];
@@ -1628,7 +1605,6 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	/* Allocate memory:
 		md3Model_t		[1]
 		md3Frame_t		[numFrames]
-		surfaceCommon_t [numSurfaces == 1]
 		surfaceMd3_t	[numSurfaces == 1]
 		float			texCoords[2*numVerts]
 		int				indexes[3*numTris]
@@ -1636,11 +1612,11 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 		shader_t*		shaders[numShaders == numSkins]
 	 */
 	int size = sizeof(md3Model_t) + hdr->numFrames*sizeof(md3Frame_t) +
-		sizeof(surfaceCommon_t) + sizeof(surfaceMd3_t) +
+		sizeof(surfaceMd3_t) +
 		numVerts*2*sizeof(float) + 3*hdr->numTris*sizeof(int)
 		+ numVerts*hdr->numFrames*sizeof(vertexMd3_t) + hdr->numSkins*sizeof(shader_t*);
-	md3 = (md3Model_t*)appMalloc (size);
-	CALL_CONSTRUCTOR(md3, md3Model_t);
+	md3 = (md3Model_t*) appMalloc (size);
+	CALL_CONSTRUCTOR(md3);
 	strcpy (md3->name, name);
 	md3->type = MODEL_MD3;
 	md3->size = size;
@@ -1650,14 +1626,13 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	md3->numFrames = hdr->numFrames;
 	md3->frames = (md3Frame_t*)(md3 + 1);
 
-	cs = (surfaceCommon_t*)(md3->frames + md3->numFrames);
-	surf = (surfaceMd3_t*)(cs + 1);
-	md3->surf = cs;
+	surf = (surfaceMd3_t*)(md3->frames + md3->numFrames);
+	CALL_CONSTRUCTOR(surf);
+	surf->type = SURFACE_MD3;
+	md3->surf = surf;
 
 	/*-------- fill surf structure -------*/
-	cs->md3 = surf;
-	cs->type = SURFACE_MD3;
-	cs->shader = gl_defaultShader;		//?? any?
+	surf->shader = gl_defaultShader;		//?? any?
 	surf->numFrames = hdr->numFrames;
 	surf->numVerts = numVerts;
 	surf->numTris = numTris;
@@ -1730,7 +1705,7 @@ static sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len)
 
 	int size = sizeof(sp2Model_t) + (hdr->numframes-1) * sizeof(sp2Frame_t);
 	sp2Model_t *sp2 = (sp2Model_t*)appMalloc (size);
-	CALL_CONSTRUCTOR(sp2, sp2Model_t);
+	CALL_CONSTRUCTOR(sp2);
 	strcpy (sp2->name, name);
 	sp2->type = MODEL_SP2;
 	sp2->size = size;

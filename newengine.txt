@@ -130,21 +130,12 @@
   - primary world 3D scene manager - entities, sprites/fx, dlights ...; will call renderer->DrawScene()
 - NullBackend (builtin?) - empty functions; may be useful for on-fly switching to dedicated server and to back GUI
 - BSP: class CBspNode -> class CBspLeaf (some additional fields)
-- model:
-  - remove (or relax usage) of "model->type" field (MODEL_INLINE, MODEL_MD3 etc values), replace its behaviour
-    with virtual functions:
-    - Free()
-    - DrawLabel()
-    - Cull()
-    - Draw() or AddSurfaces()
-    ...
-  - same for surfaceCommon_t.type (rename to CDrawSurface?)
-    - Tesselate()
-    - UpdateDynamicLightmap() -- for planar only?
-    - Cull() -- forntend.cpp
-    - ApplyDlights() -- frontend.cpp
-    - GetCluster() -- light.cpp
-    - BuildFlare() -- model.cpp -- for planar only?
+- remove (or relax usage) of surfaceCommon_t.type (rename to CDrawSurface?)
+  - UpdateDynamicLightmap() -- for planar only?
+  - Cull() -- forntend.cpp
+  - ApplyDlights() -- frontend.cpp
+  - GetCluster() -- light.cpp
+  - BuildFlare() -- model.cpp -- for planar only?
 
 --------------- Memory manager -------------
 - meminfo: implement subsystems (gl, game etc)

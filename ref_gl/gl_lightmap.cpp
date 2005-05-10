@@ -333,7 +333,7 @@ void LM_SortLightStyles (dynamicLightmap_t *dl)
 }
 
 
-void UpdateDynamicLightmap (shader_t *shader, surfacePlanar_t *surf, bool vertexOnly, unsigned dlightMask)
+void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dlightMask)
 {
 	byte	pic[LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4];
 	int		x, z;
