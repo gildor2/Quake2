@@ -473,7 +473,7 @@ bool SV_SendClientDatagram (client_t *client)
 	}
 
 	// send the datagram
-	Netchan_Transmit (&client->netchan, msg.cursize, msg.data);
+	client->netchan.Transmit (msg.data, msg.cursize);
 
 	// record the size for rate estimation
 	client->message_size[sv.framenum % RATE_MESSAGES] = msg.cursize;
@@ -578,7 +578,7 @@ void SV_SendClientMessages (void)
 		}
 
 		if (sv.state == ss_cinematic || sv.state == ss_demo || sv.state == ss_pic)
-			Netchan_Transmit (&c->netchan, msglen, msgbuf);
+			c->netchan.Transmit (msgbuf, msglen);
 		else if (c->state == cs_spawned)
 		{
 			// don't overrun bandwidth
@@ -589,7 +589,7 @@ void SV_SendClientMessages (void)
 		{
 			// just update reliable	if needed
 			if (c->netchan.message.cursize || curtime - c->netchan.last_sent > 1000)
-				Netchan_Transmit (&c->netchan, 0, NULL);
+				c->netchan.Transmit (NULL, 0);
 		}
 	}
 }

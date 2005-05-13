@@ -311,9 +311,6 @@ extern	entityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 
 //=============================================================================
 
-extern	netadr_t	net_from;
-extern	sizebuf_t	net_message;
-
 #define MAX_SUSTAINS		32
 //ROGUE
 struct cl_sustain_t

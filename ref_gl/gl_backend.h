@@ -55,6 +55,10 @@ void	BackEnd (void);
 void	InitBackend (void);
 void	ShutdownBackend (void);
 
+void	DrawStretchPic (shader_t *shader, int x, int y, int w, int h,
+			float s1 = 0, float t1 = 0, float s2 = 1, float t2 = 1,
+			unsigned color = RGB(1,1,1), byte flipMode = 0);
+
 
 /*-------- Macro for easy generating backend commands ----------*/
 

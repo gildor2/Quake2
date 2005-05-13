@@ -38,6 +38,9 @@
 
 - without WIN32_USE_SEH, crash log will contain error history only
 
+- command completion: complete cvar with quotes - should use Com_QuoteString() before inserting into edit line; bugcheck:
+  1) a="""a""" b """c"""; 2) a->complete+ENTER; 3) a->complete --> will be a different line
+
 
 UNRECOVARABLE:
 ~~~~~~~~~~~~~~

@@ -10,9 +10,13 @@ namespace OpenGLDrv {
 
 static int visFrame, drawFrame;
 static int currentEntity;
-
+static int	viewCluster;
 
 viewPortal_t vp;
+
+// map areas
+byte		areaMask[MAX_MAP_AREAS/8];
+bool		areaMaskChanged;						// when "true" - re-MarkLeaves() (rename var?)
 
 // entities
 refEntity_t gl_entities[MAX_GLENTITIES];
@@ -55,22 +59,19 @@ float		gl_fogStart, gl_fogEnd;
 
 static int BoxCull (vec3_t mins, vec3_t maxs, int frustumMask)
 {
-	int		i, res;
-	cplane_t *pl;
-
 	if (!gl_frustumCull->integer)
 		return FRUSTUM_ON;
 
 	if (!frustumMask)
 		return FRUSTUM_INSIDE;
 
-	res = FRUSTUM_INSIDE;
+	int res = FRUSTUM_INSIDE;
+	int	i;
+	cplane_t *pl;
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 		if (frustumMask & (1 << i))
 		{
-			int		tmp;
-
-			tmp = BoxOnPlaneSide (mins, maxs, pl);
+			int tmp = BoxOnPlaneSide (mins, maxs, pl);
 			if (tmp == 2) return FRUSTUM_OUTSIDE;
 			if (tmp == 3) res = FRUSTUM_ON;
 		}
@@ -82,27 +83,19 @@ static int BoxCull (vec3_t mins, vec3_t maxs, int frustumMask)
 // transformed bounding box is not axial.
 static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 {
-	int		i, res, frustumMask, mask;
-	cplane_t *fr;
-#if 0
-	float	*v;
-	vec3_t	box[8];
-#endif
-
 	if (!gl_frustumCull->integer)
 		return FRUSTUM_ON;
 
-	frustumMask = e->frustumMask;	//?? get this as OR(all_occupied_leafs->frustumMask) or remove
+	int frustumMask = e->frustumMask;	//?? get this as OR(all_occupied_leafs->frustumMask) or remove
 	if (!frustumMask)
 		return FRUSTUM_INSIDE;
 
 #if 1	// this version FASTER
-	res = 0;
-
+	int res = 0;
+	int	i, mask;
+	cplane_t *fr;
 	for (i = 0, mask = 1, fr = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, mask<<=1, fr++)
 	{
-		cplane_t pl;
-
 		if (!(mask & frustumMask))
 		{
 			res |= FRUSTUM_INSIDE;
@@ -110,6 +103,7 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 		}
 
 		// transform frustum plane to entity coordinate system
+		cplane_t pl;
 		pl.dist = fr->dist - DotProduct (e->origin, fr->normal);
 		pl.normal[0] = DotProduct (fr->normal, e->axis[0]);
 		pl.normal[1] = DotProduct (fr->normal, e->axis[1]);
@@ -130,31 +124,29 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 	}
 #else
 	// transform bounding box to a world coordinates
+	float	*v;
+	vec3_t	box[8];
+	int i;
 	for (i = 0, v = box[0]; i < 8; i++, v += 3)	// check all 8 verts of bounding box
 	{
-		float	x, y, z;
-		vec3_t	tmp;
-
-		if (i & 1)	x = maxs[0];
-		else		x = mins[0];
-
-		if (i & 2)	y = maxs[1];
-		else		y = mins[1];
-
-		if (i & 4)	z = maxs[2];
-		else		z = mins[2];
+		float x = (i & 1) ? maxs[0] : mins[0];
+		float y = (i & 2) ? maxs[1] : mins[1];
+		float z = (i & 4) ? maxs[2] : mins[2];
 
 		// project point to a world coordinate system (org + x*axis[0] + y*axis[1] + z*axis[2])
+		vec3_t	tmp;
 		VectorMA (e->origin, x, e->axis[0], tmp);
 		VectorMA (tmp,		 y, e->axis[1], tmp);
 		VectorMA (tmp,		 z, e->axis[2], v);
 	}
 
 	// perform frustum culling
-	res = 0;
+	int res = 0;
+	int mask;
+	cplane_t *fr;
 	for (i = 0, mask = 1, fr = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, mask<<=1, fr++)
 	{	// loop by frustum planes
-		int		j, side;
+		int		j;
 
 		if (!(mask & frustumMask))
 		{
@@ -162,7 +154,7 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 			continue;
 		}
 
-		side = 0;
+		int side = 0;
 		for (j = 0, v = box[0]; j < 8; j++, v += 3)
 		{	// loop by box verts
 			if (DotProduct (v, fr->normal) >= fr->dist)
@@ -188,9 +180,6 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 
 static int SphereCull (vec3_t origin, float radius, byte *frustumMask)
 {
-	int		i, ret, mask, m;
-	cplane_t *pl;
-
 	if (!gl_frustumCull->integer)
 	{
 		if (frustumMask)
@@ -199,15 +188,15 @@ static int SphereCull (vec3_t origin, float radius, byte *frustumMask)
 	}
 
 	// perform frustum culling
-	ret = 0;
-	mask = frustumMask ? *frustumMask : MAX_FRUSTUM_MASK;
+	int ret = 0;
+	int mask = frustumMask ? *frustumMask : MAX_FRUSTUM_MASK;
+	int	i, m;
+	cplane_t *pl;
 	for (i = 0, pl = vp.frustum, m = 1; i < NUM_FRUSTUM_PLANES; i++, pl++, m <<= 1)
 	{	// loop by frustum planes
-		float	dist;
-
 		if (!(m & mask)) continue;
 
-		dist = DotProduct (origin, pl->normal) - pl->dist;
+		float dist = DotProduct (origin, pl->normal) - pl->dist;
 		if (dist < -radius)
 			return FRUSTUM_OUTSIDE;
 		if (dist <= radius)
@@ -227,15 +216,14 @@ static int SphereCull (vec3_t origin, float radius, byte *frustumMask)
 // Reduced SphereCull()
 static int PointCull (vec3_t point, int frustumMask)
 {
-	int		i;
-	cplane_t *pl;
-
 	if (!gl_frustumCull->integer)
 		return FRUSTUM_INSIDE;
 
 	if (!frustumMask)
 		return FRUSTUM_INSIDE;
 
+	int	i;
+	cplane_t *pl;
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 		if (frustumMask & (1 << i))
 		{
@@ -253,15 +241,19 @@ static bool BoxOccluded (refEntity_t *e, vec3_t size2)
 	float	mins2[2], maxs2[2];
 	vec3_t	v, left, right;
 	int		n, brushes[NUM_TEST_BRUSHES];
-//	static cvar_t *test;
 
 	if (!GetBoxRect (e, size2, mins2, maxs2, true)) return false;
 
-//	if (!test) test=Cvar_Get("test","32",0);
 	// top-left
 	VectorMA (e->center, mins2[0], vp.viewaxis[1], left);
 	VectorMA (left, mins2[1], vp.viewaxis[2], v);
-	n = CM_BrushTrace (vp.vieworg, v, brushes, NUM_TEST_BRUSHES);	// test->integer);
+#if 0
+	static cvar_t *test;
+	if (!test) test=Cvar_Get("test","32",0);
+	n = CM_BrushTrace (vp.vieworg, v, brushes, test->integer);
+#else
+	n = CM_BrushTrace (vp.vieworg, v, brushes, NUM_TEST_BRUSHES);
+#endif
 	if (!n) return false;
 
 	// bottom-right (diagonal with 1st point)
@@ -286,20 +278,18 @@ static bool BoxOccluded (refEntity_t *e, vec3_t size2)
 
 static bool WorldBoxOccluded (vec3_t mins, vec3_t maxs)
 {
-	int		i;
-	vec3_t	v;
-	int		n, brushes[NUM_TEST_BRUSHES];
 //	static cvar_t *test;
-
 //	if (!test) test=Cvar_Get("test","32",0);
 	// optimize !!: 8 -> 4 points (find contour -- fast for axial boxes); change trace order
 	// in a case of fast non-occluded test: top-left, bottom-right, other 2 points
-	for (i = 0; i < 8; i++)
+	for (int i = 0; i < 8; i++)
 	{
+		vec3_t	v;
 		v[0] = (i & 1) ? maxs[0] : mins[0];
 		v[1] = (i & 2) ? maxs[1] : mins[1];
 		v[2] = (i & 4) ? maxs[2] : mins[2];
 
+		int	n, brushes[NUM_TEST_BRUSHES];
 		if (i == 0)
 			n = CM_BrushTrace (vp.vieworg, v, brushes, NUM_TEST_BRUSHES);	// test->integer);
 		else
@@ -339,9 +329,7 @@ static void SetupModelMatrix (refEntity_t *e)
 	for (i = 0; i < 4; i++)
 		for (j = 0; j < 4; j++)
 		{
-			float	s;
-
-			s = 0;
+			float s = 0;
 			for (k = 0; k < 4; k++)
 				s += vp.modelMatrix[k][j] * matrix[i][k];
 			e->modelMatrix[i][j] = s;
@@ -356,37 +344,33 @@ static void SetupModelMatrix (refEntity_t *e)
 // NOTE: can easily extend to any (invisible too) inline models (add flag "visibleOnly")
 static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brushmask)
 {
+	vec3_t	traceDir;
+	VectorSubtract (end, start, traceDir);
+	float traceLen = VectorNormalizeFast (traceDir);
+
 	int		i;
 	refEntity_t *e;
-	trace_t	trace;
-	float	traceLen;
-	vec3_t	traceDir;
-
-	VectorSubtract (end, start, traceDir);
-	traceLen = VectorNormalizeFast (traceDir);
-
 	for (i = 0, e = gl_entities + vp.firstEntity; i < vp.numEntities; i++, e++)
 	{
-		inlineModel_t *im;
-		float	entPos, dist2;
 		vec3_t	tmp, center2;
 
 		if (!e->visible || !e->model || e->model->type != MODEL_INLINE)
 			continue;
 
-		im = static_cast<inlineModel_t*>(e->model);
+		inlineModel_t *im = static_cast<inlineModel_t*>(e->model);
 		VectorSubtract (e->center, start, center2);
 
 		// collision detection: line vs sphere
-		entPos = DotProduct (center2, traceDir);
+		float entPos = DotProduct (center2, traceDir);
 		if (entPos < -im->radius || entPos > traceLen + im->radius)
 			continue;		// too near / too far
 
 		VectorMA (center2, -entPos, traceDir, tmp);
-		dist2 = DotProduct (tmp, tmp);
+		float dist2 = DotProduct (tmp, tmp);
 		if (dist2 >= im->radius * im->radius) continue;
 
 		// trace
+		trace_t	trace;
 		if (!e->worldMatrix)
 			CM_TransformedBoxTrace2 (&trace, start, end, NULL, NULL, im->headnode, brushmask, e->origin, e->axis);
 		else
@@ -415,7 +399,6 @@ static bool CutCylinder (vec3_t v1, vec3_t v2, float radius)
 {
 	int		i;
 	cplane_t *pl;
-
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 	{	// loop by frustum planes
 		float	dist1, dist2, frac;
@@ -462,10 +445,8 @@ static node_t *SphereLeaf (vec3_t origin, float radius)
 
 	sptr = 0;
 	node = map.nodes;
-	while (1)
+	while (true)
 	{
-		float	dist;
-
 		if (!node->isNode)
 		{	// leaf found
 			if (node->frame == drawFrame)
@@ -485,7 +466,7 @@ static node_t *SphereLeaf (vec3_t origin, float radius)
 			continue;
 		}
 
-		dist = DISTANCE_TO_PLANE(origin, node->plane);
+		float dist = DISTANCE_TO_PLANE(origin, node->plane);
 		if (dist > radius)
 			node = node->children[0];	// side 1
 		else if (dist < -radius)		// use mradius = -radius for speedup ??
@@ -521,10 +502,8 @@ static node_t *AlphaSphereLeaf (vec3_t origin, float radius)
 	node = map.nodes;
 	drawOrder = 0;
 	drawNode = NULL;
-	while (1)
+	while (true)
 	{
-		float	dist;
-
 		if (!node->isNode)
 		{	// leaf found
 			if (node->frame == drawFrame)
@@ -553,7 +532,7 @@ static node_t *AlphaSphereLeaf (vec3_t origin, float radius)
 			continue;
 		}
 
-		dist = DISTANCE_TO_PLANE(origin, node->plane);
+		float dist = DISTANCE_TO_PLANE(origin, node->plane);
 		if (dist > radius)
 			node = node->children[0];	// side 1
 		else if (dist < -radius)
@@ -614,10 +593,6 @@ static node_t *BeamLeaf (vec3_t v1, vec3_t v2)
 
 	while (node)
 	{
-		float	t1, t2, frac;
-		int		s1, s2, side, i;
-		vec3_t	mid;
-
 		if (node->visFrame != visFrame)
 		{
 			POP_NODE();
@@ -642,9 +617,10 @@ static node_t *BeamLeaf (vec3_t v1, vec3_t v2)
 		}
 
 		// node
-		t1 = DISTANCE_TO_PLANE(v1a, node->plane);
-		t2 = DISTANCE_TO_PLANE(v2a, node->plane);
-		s1 = IsNegative (t1); s2 = IsNegative (t2);
+		float t1 = DISTANCE_TO_PLANE(v1a, node->plane);
+		float t2 = DISTANCE_TO_PLANE(v2a, node->plane);
+		int s1 = IsNegative (t1);
+		int s2 = IsNegative (t2);
 		if (!(s1 | s2))
 			node = node->children[0];		// side 1
 		else if (s1 & s2)
@@ -652,9 +628,10 @@ static node_t *BeamLeaf (vec3_t v1, vec3_t v2)
 		else
 		{
 			// both sides
-			frac = t1 / (t1 - t2);			// t1 and t2 have different signs, so - |t1-t2| > |t1|, frac in [0..1] range
-			side = t1 < t2;					// which side v1 on (child index)
-			for (i = 0; i < 3; i++)
+			float frac = t1 / (t1 - t2);	// t1 and t2 have different signs, so - |t1-t2| > |t1|, frac in [0..1] range
+			int side = t1 < t2;				// which side v1 on (child index)
+			vec3_t	mid;
+			for (int i = 0; i < 3; i++)
 				mid[i] = v1a[i] + frac * (v2a[i] - v1a[i]);
 			// Recurse(node->children[side^1],mid,v2a)  -- later
 			PUSH_NODE(node->children[side^1], mid, v2a);
@@ -675,18 +652,15 @@ static node_t *BeamLeaf (vec3_t v1, vec3_t v2)
 
 static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMask, refEntity_t *e)
 {
-	int		i, numDlights, j, entNum;
+	int		j;
 	refDlight_t *dl;
-	float	*vieworg;
+	int		numDlights;
 
-	vieworg = e->modelvieworg;
+	float *vieworg = e->modelvieworg;
 
-	for (i = 0; i < numFaces; i++)
+	for (int i = 0; i < numFaces; i++)
 	{
-		surfaceCommon_t *surf;
-		surfacePlanar_t *pl;
-
-		surf = *psurf++;
+		surfaceCommon_t *surf = *psurf++;
 		if (surf->frame == drawFrame) continue;
 		surf->frame = drawFrame;
 		if (surf->dlightFrame != drawFrame) surf->dlightMask = 0;
@@ -695,97 +669,99 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 		switch (surf->type)
 		{
 		case SURFACE_PLANAR:
-			pl = static_cast<surfacePlanar_t*>(surf);
-
-			// backface culling
-			if (gl_backfaceCull->integer)
 			{
-				gl_cullMode_t cull = pl->shader->cullMode;
+				surfacePlanar_t *pl = static_cast<surfacePlanar_t*>(surf);
+
+				// backface culling
+				if (gl_backfaceCull->integer)
+				{
+					gl_cullMode_t cull = pl->shader->cullMode;
 #define CULL_SURF	\
 	{				\
 		gl_speeds.cullSurfs++;	\
 		continue;	\
 	}
 
-				if (cull != CULL_NONE)
-				{
-					float dist = DISTANCE_TO_PLANE(vieworg, &pl->plane);
-					if (cull == CULL_FRONT)
+					if (cull != CULL_NONE)
 					{
-						if (dist < -BACKFACE_EPSILON) CULL_SURF;
+						float dist = DISTANCE_TO_PLANE(vieworg, &pl->plane);
+						if (cull == CULL_FRONT)
+						{
+							if (dist < -BACKFACE_EPSILON) CULL_SURF;
+						}
+						else
+						{
+							if (dist > BACKFACE_EPSILON) CULL_SURF;
+						}
+					}
+				}
+
+				// frustum culling
+				if (frustumMask)
+				{
+					if (e->worldMatrix)
+					{
+						if (BoxCull (pl->mins, pl->maxs, frustumMask) == FRUSTUM_OUTSIDE) CULL_SURF;
 					}
 					else
 					{
-						if (dist > BACKFACE_EPSILON) CULL_SURF;
+						if (TransformedBoxCull (pl->mins, pl->maxs, e) == FRUSTUM_OUTSIDE) CULL_SURF;
 					}
 				}
-			}
-
-			// frustum culling
-			if (frustumMask)
-			{
-				if (e->worldMatrix)
-				{
-					if (BoxCull (pl->mins, pl->maxs, frustumMask) == FRUSTUM_OUTSIDE) CULL_SURF;
-				}
-				else
-				{
-					if (TransformedBoxCull (pl->mins, pl->maxs, e) == FRUSTUM_OUTSIDE) CULL_SURF;
-				}
-			}
 #undef CULL_SURF
 
-			// dlights
-			numDlights = 0;
-			pl->dlights = NULL;
-			if (pl->dlightMask && pl->shader->lightmapNumber != LIGHTMAP_NONE)
-			{
-				surfDlight_t *sdl;
-				unsigned mask;
+				// dlights
+				numDlights = 0;
+				pl->dlights = NULL;
+				if (pl->dlightMask && pl->shader->lightmapNumber != LIGHTMAP_NONE)
+				{
+					surfDlight_t *sdl;
+					unsigned mask;
 
-				sdl = pl->dlights = (surfDlight_t*)AllocDynamicMemory (sizeof(surfDlight_t) * MAX_DLIGHTS);
-				if (!sdl) pl->dlightMask = 0;		// easiest way to break the loop below; speed does not matter here
-				for (j = 0, mask = 1, dl = vp.dlights; j < vp.numDlights; j++, dl++, mask <<= 1)
-					if (pl->dlightMask & mask)
-					{
+					sdl = pl->dlights = (surfDlight_t*)AllocDynamicMemory (sizeof(surfDlight_t) * MAX_DLIGHTS);
+					if (!sdl) pl->dlightMask = 0;		// easiest way to break the loop below; speed does not matter here
+					for (j = 0, mask = 1, dl = vp.dlights; j < vp.numDlights; j++, dl++, mask <<= 1)
+						if (pl->dlightMask & mask)
+						{
 #define CULL_DLIGHT	\
 	{				\
 		pl->dlightMask &= ~mask;	\
 		continue;	\
 	}
-						float *dl_org = (e->worldMatrix) ? dl->origin : dl->modelOrg;
-						float dist = DISTANCE_TO_PLANE(dl_org, &pl->plane);
-						if (!gl_dlightBacks->integer && dist < -8) CULL_DLIGHT;
-						if (dist < 0) dist = -dist;
+							float *dl_org = (e->worldMatrix) ? dl->origin : dl->modelOrg;
+							float dist = DISTANCE_TO_PLANE(dl_org, &pl->plane);
+							if (!gl_dlightBacks->integer && dist < -8) CULL_DLIGHT;
+							if (dist < 0) dist = -dist;
 
-						if (dist >= dl->intensity) CULL_DLIGHT;
-						float rad = dl->intensity * dl->intensity - dist * dist;
-						rad = SQRTFAST(rad);
-						float org0 = DotProduct (dl_org, pl->axis[0]);
-						if (org0 < pl->mins2[0] - rad || org0 > pl->maxs2[0] + rad) CULL_DLIGHT;
-						float org1 = DotProduct (dl_org, pl->axis[1]);
-						if (org1 < pl->mins2[1] - rad || org1 > pl->maxs2[1] + rad) CULL_DLIGHT;
-						// save dlight info
-						sdl->pos[0] = org0;
-						sdl->pos[1] = org1;
-						sdl->radius = rad;
-						sdl->dlight = dl;
-						sdl->axis = pl->axis;
-						// next dlight
-						numDlights++;
-						sdl++;
-					}
+							if (dist >= dl->intensity) CULL_DLIGHT;
+							float rad = dl->intensity * dl->intensity - dist * dist;
+							rad = SQRTFAST(rad);
+							float org0 = DotProduct (dl_org, pl->axis[0]);
+							if (org0 < pl->mins2[0] - rad || org0 > pl->maxs2[0] + rad) CULL_DLIGHT;
+							float org1 = DotProduct (dl_org, pl->axis[1]);
+							if (org1 < pl->mins2[1] - rad || org1 > pl->maxs2[1] + rad) CULL_DLIGHT;
+							// save dlight info
+							sdl->pos[0] = org0;
+							sdl->pos[1] = org1;
+							sdl->radius = rad;
+							sdl->dlight = dl;
+							sdl->axis = pl->axis;
+							// next dlight
+							numDlights++;
+							sdl++;
+						}
 #undef CULL_DLIGHT
-				if (pl->dlights)
-					ResizeDynamicMemory (pl->dlights, sizeof(surfDlight_t) * numDlights);
-				if (numDlights)
-				{
-					gl_speeds.dlightSurfs++;
-					gl_speeds.dlightVerts += numDlights * pl->numVerts;
+					if (pl->dlights)
+						ResizeDynamicMemory (pl->dlights, sizeof(surfDlight_t) * numDlights);
+					if (numDlights)
+					{
+						gl_speeds.dlightSurfs++;
+						gl_speeds.dlightVerts += numDlights * pl->numVerts;
+					}
 				}
+				else
+					pl->dlightMask = 0;
 			}
-			else
-				pl->dlightMask = 0;
 			break;
 		default:
 			DrawTextLeft ("unknows surface type", RGB(1, 0, 0));
@@ -793,7 +769,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 		}
 		//!! apply fog
 		if (surf->shader->lightmapNumber == LIGHTMAP_VERTEX) numDlights = 0;	// sort all together
-		entNum = currentEntity;
+		int entNum = currentEntity;
 		if (entNum != ENTITYNUM_WORLD && e->worldMatrix && !surf->shader->dependOnEntity)
 			entNum = ENTITYNUM_WORLD;
 		AddSurfaceToPortal (surf, surf->shader, entNum, numDlights);
@@ -1236,21 +1212,19 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 {
 	vec3_t	viewDir;
 	vec3_t	axis[3];		// length, width, depth
-	float	len, st0, angle;
-	int		i;
 
 	VectorSubtract (b->drawStart, vp.vieworg, viewDir);
 	// compute beam axis
 	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
-	len = VectorNormalizeFast (axis[0]);
+	float len = VectorNormalizeFast (axis[0]);
 	CrossProduct (axis[0], viewDir, axis[1]);
 	VectorNormalizeFast (axis[1]);
 	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
 
-	st0 = VectorDistance (b->drawEnd, b->end);
+	float st0 = VectorDistance (b->drawEnd, b->end);
 
-	angle = 0;
-	for (i = 0; i < BEAM_PARTS; i++)
+	float angle = 0;
+	for (int i = 0; i < BEAM_PARTS; i++)
 	{
 		vec3_t	dir1, dir2;
 
@@ -1596,11 +1570,9 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 static void DrawParticles (void)
 {
-	particle_t *p;
-	beam_t	*b;
 	node_t	*leaf;
 
-	for (p = vp.particles; p; p = p->next)
+	for (particle_t *p = vp.particles; p; p = p->next)
 	{
 		leaf = &map.nodes[p->leafNum + map.numNodes];
 		if (leaf->frame == drawFrame)
@@ -1614,7 +1586,7 @@ static void DrawParticles (void)
 		gl_speeds.parts++;
 	}
 
-	for (b = vp.beams; b; b = b->next)
+	for (beam_t *b = vp.beams; b; b = b->next)
 	{
 		VectorCopy (b->start, b->drawStart);
 		VectorCopy (b->end, b->drawEnd);
@@ -1652,9 +1624,7 @@ static void DrawParticles (void)
 
 static void DrawFlares (void)
 {
-	gl_flare_t	*f;
-
-	for (f = map.flares; f ; f = f->next)
+	for (gl_flare_t *f = map.flares; f ; f = f->next)
 	{
 		float	scale;
 		vec3_t	tmp, flarePos;
@@ -1901,17 +1871,17 @@ static void DrawBspSequence (node_t *leaf)
 
 static void MarkLeaves (void)
 {
-	int		cluster, i;
+	int		i;
 	node_t	*n;
 
 	gl_speeds.leafs = map.numLeafNodes - map.numNodes;
 
 	// determine the vieworg cluster
-	cluster = PointInLeaf (vp.vieworg)->cluster;
+	int cluster = PointInLeaf (vp.vieworg)->cluster;
 	// if cluster or areamask changed -- re-mark visible leaves
-	if (gl_refdef.viewCluster != cluster || gl_refdef.areaMaskChanged)
+	if (viewCluster != cluster || areaMaskChanged)
 	{
-		gl_refdef.viewCluster = cluster;
+		viewCluster = cluster;
 		visFrame++;
 		if (r_novis->integer || cluster < 0 || cluster >= map.numClusters || map.numClusters <= 1)
 		{	// mark ALL nodes
@@ -1921,22 +1891,15 @@ static void MarkLeaves (void)
 		}
 		else
 		{	// use visinfo to mark nodes
-			byte	*row;
-
 			gl_speeds.visLeafs = 0;
-
-			row = map.visInfo + cluster * map.visRowSize;
-
+			byte *row = map.visInfo + cluster * map.visRowSize;
 			for (i = map.numNodes, n = map.nodes + map.numNodes; i < map.numLeafNodes; i++, n++)
 			{
-				node_t	*p;
-				int		cl, ar;
-
-				cl = n->cluster;
-				ar = n->area;
-				if (row[cl>>3] & (1<<(cl&7)) && gl_refdef.areaMask[ar>>3] & (1<<(ar&7)))
+				int cl = n->cluster;
+				int ar = n->area;
+				if (row[cl>>3] & (1<<(cl&7)) && areaMask[ar>>3] & (1<<(ar&7)))
 				{
-					for (p = n; p && p->visFrame != visFrame; p = p->parent)
+					for (node_t *p = n; p && p->visFrame != visFrame; p = p->parent)
 						p->visFrame = visFrame;
 					gl_speeds.visLeafs++;
 				}
@@ -1948,17 +1911,13 @@ static void MarkLeaves (void)
 
 void AddEntity (entity_t *ent)
 {
-	refEntity_t	*out;
-	vec3_t	v;
-	bool	mirror;
-
 	if (gl_numEntities >= MAX_GLENTITIES)
 	{
 		Com_WPrintf ("R_AddEntity: MAX_GLENTITIES hit\n");
 		return;
 	}
 
-	mirror = false;
+	bool mirror = false;
 	if (ent->flags & RF_WEAPONMODEL)
 	{
 		if (gl_hand->integer == 1)
@@ -1967,7 +1926,7 @@ void AddEntity (entity_t *ent)
 			return;
 	}
 
-	out = &gl_entities[gl_numEntities++];
+	refEntity_t *out = &gl_entities[gl_numEntities++];
 	vp.numEntities++;
 
 	// common fields
@@ -2009,6 +1968,8 @@ void AddEntity (entity_t *ent)
 	}
 	else if (ent->flags & RF_BBOX)
 	{
+		vec3_t	v;
+
 		VectorSubtract (ent->oldorigin, ent->origin, v);
 		VectorMA (ent->origin, ent->backlerp, v, out->center);
 		VectorCopy (ent->size, out->boxSize);

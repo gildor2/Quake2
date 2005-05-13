@@ -362,12 +362,15 @@ static char *MacroExpandString (const char *text)
 	static char	buf[MAX_STRING_CHARS];			// will contain result
 
 	int len = strlen (text);
+	if (text[len-1] == '\r')					// cut CR (not '\n'!) at end of line (DOS file encoding)
+		len--;
 	if (len >= sizeof(buf))
 	{
 		Com_WPrintf ("Line exceeded "STR(MAX_STRING_CHARS)" chars, discarded\n");
 		return NULL;
 	}
-	strcpy (buf, text);
+	memcpy (buf, text, len);
+	buf[len] = 0;
 
 	int count = 0;								// to prevent infinite recurse
 	int quotes = 0;
@@ -421,7 +424,7 @@ static char *MacroExpandString (const char *text)
 	char *s1 = strchr (buf, '=');
 	char *s2 = strchr (buf, '\"');
 	if (s1 && (!s2 || s2 > s1) &&						// a=b, but '=' not inside quotes
-		(s1 > buf && s1[-1] != ' ' && s1[1] != ' '))	// ingnore "a = b" (may be "bind = scr_sizeup" etc; NOTE: keyname already changed)
+		(s1 > buf && s1[-1] != ' ' && s1[1] != ' '))	// ingnore "a = b" (may be "bind = scr_sizeup" etc; NOTE: keyname already changed !!)
 	{
 		*s1 = 0;			// cut varName
 		s1++;				// skip '='
@@ -452,11 +455,8 @@ Parses the given string into command line tokens.
 */
 static void TokenizeString (const char *text)
 {
-	int		i;
-	char	*com_token;
-
 	// clear the args from the last string
-	for (i = 0; i < _argc; i++)
+	for (int i = 0; i < _argc; i++)
 		appFree (_argv[i]);
 	_argc = 0;
 
@@ -471,7 +471,7 @@ static void TokenizeString (const char *text)
 		if (!text[0] || text[0] == '\n')
 			break;
 
-		com_token = COM_Parse (text);
+		const char *com_token = COM_Parse (text);
 		if (!text) break;
 
 		if (_argc < ARRAY_COUNT(_argv))

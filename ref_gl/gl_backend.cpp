@@ -2209,6 +2209,38 @@ void BackEnd (void)
 
 
 /*-----------------------------------------------------------------------------
+	Helpers (eliminate??)
+-----------------------------------------------------------------------------*/
+
+void DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color, byte flipMode)
+{
+	PUT_BACKEND_COMMAND (bkDrawPic_t, p);
+	p->type = BACKEND_PIC;
+	p->shader = shader;
+	p->x = x;
+	p->y = y;
+	p->w = w;
+	p->h = h;
+	if (w > shader->width * 2)
+	{
+		s1 += 0.5f / shader->width;
+		s2 -= 0.5f / shader->width;
+	}
+	if (h > shader->height * 2)
+	{
+		t1 += 0.5f / shader->height;
+		t2 -= 0.5f / shader->height;
+	}
+	p->s1 = s1;
+	p->t1 = t1;
+	p->s2 = s2;
+	p->t2 = t2;
+	p->flipMode = flipMode;
+	p->c.rgba = color;
+}
+
+
+/*-----------------------------------------------------------------------------
 	Init/shutdown
 -----------------------------------------------------------------------------*/
 

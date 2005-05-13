@@ -24,7 +24,7 @@
 
 #include "gl_local.h"
 #include "gl_image.h"
-#include "gl_math.h"
+#include "gl_backend.h"			// for DrawStretchPic() only
 
 namespace OpenGLDrv {
 

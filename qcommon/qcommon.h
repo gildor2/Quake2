@@ -50,11 +50,8 @@ typedef float vec3_t[3];
 // exports for renderer
 #include "../client/engine_intf.h"
 
-// declarations for game system (!!)
+// declarations for game system (!!) + math
 #include "q_shared2.h"
-
-// Quake2 file formats (use when needed only ??)
-#include "qfiles.h"
 
 
 //--------------- some constants ------------------------------
@@ -521,7 +518,7 @@ void	NET_Shutdown (void);
 
 void	NET_Config (bool multiplayer);
 
-bool	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message);
+bool	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg);
 void	NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to);
 
 bool	NET_CompareAdr (netadr_t *a, netadr_t *b);
@@ -531,8 +528,9 @@ char	*NET_AdrToString (netadr_t *a);
 bool	NET_StringToAdr (const char *s, netadr_t *a);
 
 
-typedef struct
+class netchan_t
 {
+public:
 	bool	fatal_error;
 
 	netsrc_t sock;
@@ -543,7 +541,7 @@ typedef struct
 	int		last_sent;			// for retransmits
 
 	netadr_t remote_address;
-	int		qport;				// qport value to write when transmitting
+	int		port;				// qport value to write when transmitting
 
 	// sequencing variables
 	int		incoming_sequence;
@@ -563,42 +561,37 @@ typedef struct
 	// message is copied to this buffer when it is first transfered
 	int		reliable_length;
 	byte	reliable_buf[MAX_MSGLEN-16];	// unacked reliable message
-} netchan_t;
+
+	// methods
+
+	void Setup (netsrc_t sock, netadr_t adr, int qport);
+	// returns true if the last reliable message has acked; UNUSED??
+	inline bool CanReliable ()			// used in net_chan.cpp only
+	{
+		return (reliable_length == 0);	// if != 0 -- waiting for ack
+	}
+	bool NeedReliable ();
+	void Transmit (void *data, int length);
+	bool Process (sizebuf_t *msg);
+};
 
 extern netadr_t	net_from;
 extern sizebuf_t net_message;
-extern byte		net_message_buffer[MAX_MSGLEN];
 
 
 void	Netchan_Init (void);
-void	Netchan_Setup (netsrc_t sock, netchan_t *chan, netadr_t adr, int qport);
-
-bool	Netchan_NeedReliable (netchan_t *chan);
-void	Netchan_Transmit (netchan_t *chan, int length, void *data);
-void	Netchan_OutOfBand (netsrc_t net_socket, netadr_t adr, int length, void *data);
 void	Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, const char *format, ...);
-bool	Netchan_Process (netchan_t *chan, sizebuf_t *msg);
-
-bool	Netchan_CanReliable (netchan_t *chan);
 
 
 /*-----------------------------------------------------------------------------
 	cmodel.cpp
 -----------------------------------------------------------------------------*/
 
-
 // cmodel_t.flags
 #define CMODEL_ALPHA	1
 #define CMODEL_MOVABLE	2
 
-typedef struct
-{
-	vec3_t	mins, maxs;
-	float	radius;
-	int		headnode;
-	int		firstface, numfaces;
-	int		flags;
-} cmodel_t;
+struct cmodel_t;		// full declaration in cmodel.h
 
 extern char map_name[];
 extern bool map_clientLoaded;
@@ -613,8 +606,7 @@ const char *CM_EntityString (void);
 // creates a clipping hull for an arbitrary box
 int		CM_HeadnodeForBox (vec3_t mins, vec3_t maxs);
 
-
-// returns an ORed contents mask
+// returns an OR'ed contents mask
 int		CM_PointContents (const vec3_t p, int headnode);
 int		CM_TransformedPointContents (const vec3_t p, int headnode, vec3_t origin, vec3_t angles);
 int		CM_TransformedPointContents2 (const vec3_t p, int headnode, vec3_t origin, vec3_t *axis);
@@ -773,7 +765,6 @@ void	Sys_CopyProtect (void);
 	Client / server systems
 -----------------------------------------------------------------------------*/
 
-
 void	CL_Init (void);
 void	CL_Drop (bool fromError = false);
 void	CL_Shutdown (bool error);
@@ -789,161 +780,82 @@ void	SV_Frame (float msec);
 
 
 /*-----------------------------------------------------------------------------
-	Map and model stuff
+	Miscellaneous
 -----------------------------------------------------------------------------*/
 
+// from qfiles.h -- but required more frequently (may be, move all MAX_MAP_XXX consts here?)
+#define MAX_MAP_AREAS	256
 
-struct lightFlare_t
-{
-	vec3_t	origin;
-	float	size;
-	float	radius;					// -1 for sunflare
-	byte	color[4];
-	byte	style;
-	int		model;
-	lightFlare_t *next;
-};
+// contents flags are seperate bits
+// a given brush can contribute multiple content bits
+// multiple brushes can be in a single leaf
 
+// lower bits are stronger, and will eat weaker brushes completely
 
-// static map light
+#define	CONTENTS_SOLID			0x00000001	// an eye is never valid in a solid
+#define	CONTENTS_WINDOW			0x00000002	// translucent, but not watery
+#define	CONTENTS_AUX			0x00000004
+#define	CONTENTS_LAVA			0x00000008
+#define	CONTENTS_SLIME			0x00000010
+#define	CONTENTS_WATER			0x00000020
+#define	CONTENTS_MIST			0x00000040
+#define CONTENTS_ALPHA			0x00000080	// from Kingping - can shoot through this
 
-typedef enum {sl_linear, sl_inverse, sl_inverse2} slightType_t;
+// remaining contents are non-visible, and don't eat brushes
 
-struct slight_t
-{
-	slightType_t type;
-	byte	spot;					// bool
-	vec3_t	origin;
-	vec3_t	color;
-	byte	style;
-	float	intens;
-	// arghrad fields
-	float	focus;
-	float	fade;					// for linear lights only: scale the distance
-	// for spotlights
-	float	spotDot;
-	vec3_t	spotDir;
-	slight_t *next;
-};
+#define	CONTENTS_AREAPORTAL		0x00008000
 
-// static map effects
+#define	CONTENTS_PLAYERCLIP		0x00010000
+#define	CONTENTS_MONSTERCLIP	0x00020000
 
-struct splash_t
-{
-	vec3_t	origin;
-	splash_t *next;
-};
+// currents can be added to any other contents, and may be mixed
+#define	CONTENTS_CURRENT_0		0x00040000
+#define	CONTENTS_CURRENT_90		0x00080000
+#define	CONTENTS_CURRENT_180	0x00100000
+#define	CONTENTS_CURRENT_270	0x00200000
+#define	CONTENTS_CURRENT_UP		0x00400000
+#define	CONTENTS_CURRENT_DOWN	0x00800000
 
+#define	CONTENTS_ORIGIN			0x01000000	// removed before bsping an entity
 
-typedef enum {map_q2, map_kp, map_hl} mapType_t;
-typedef enum {fog_no, fog_linear, fog_exp, fog_exp2} fogMode_t;
+#define	CONTENTS_MONSTER		0x02000000	// should never be on a brush, only in game
+#define	CONTENTS_DEADMONSTER	0x04000000
+#define	CONTENTS_DETAIL			0x08000000	// brushes to be added after vis leafs
+#define	CONTENTS_TRANSLUCENT	0x10000000	// auto set if any surface has trans
+#define	CONTENTS_LADDER			0x20000000
 
+// content masks
+#define	MASK_ALL				(-1)
+#define	MASK_SOLID				(CONTENTS_SOLID|CONTENTS_WINDOW)
+#define	MASK_PLAYERSOLID		(CONTENTS_SOLID|CONTENTS_PLAYERCLIP|CONTENTS_WINDOW|CONTENTS_MONSTER)
+#define	MASK_DEADSOLID			(CONTENTS_SOLID|CONTENTS_PLAYERCLIP|CONTENTS_WINDOW)
+#define	MASK_MONSTERSOLID		(CONTENTS_SOLID|CONTENTS_MONSTERCLIP|CONTENTS_WINDOW|CONTENTS_MONSTER)
+#define	MASK_WATER				(CONTENTS_WATER|CONTENTS_LAVA|CONTENTS_SLIME)
+#define	MASK_OPAQUE				(CONTENTS_SOLID|CONTENTS_SLIME|CONTENTS_LAVA)
+#define	MASK_SHOT				(CONTENTS_SOLID|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEADMONSTER)
+#define MASK_CURRENT			(CONTENTS_CURRENT_0|CONTENTS_CURRENT_90|CONTENTS_CURRENT_180|CONTENTS_CURRENT_270|	\
+		CONTENTS_CURRENT_UP|CONTENTS_CURRENT_DOWN)
 
-struct bspfile_t
-{
-	char		name[MAX_QPATH];	// mapname
-	void		*file;				// buffer, returned by FS_LoadFile()
-	mapType_t	type;
-	unsigned	checksum;
-	unsigned	length;
-	CMemoryChain *extraChain;
+// surface flags
+#define	SURF_LIGHT		0x0001		// value will hold the light strength
 
-	// entstring
-	int			entDataSize;
-	char		*entities;
+#define	SURF_SLICK		0x0002		// effects game physics
 
-	// geometry
-	int			numPlanes;
-	dplane_t	*planes;
+#define	SURF_SKY		0x0004		// don't draw, but add to skybox
+#define	SURF_WARP		0x0008		// turbulent water warp
+#define	SURF_TRANS33	0x0010
+#define	SURF_TRANS66	0x0020
+#define	SURF_FLOWING	0x0040		// scroll towards angle
+#define	SURF_NODRAW		0x0080		// don't bother referencing the texture
 
-	int			numVertexes;
-	dvertex_t	*vertexes;
+// added since 4.00
+// Kingpin (used for non-KP maps too)
+#define SURF_ALPHA		0x1000
+#define	SURF_SPECULAR	0x4000		// have a bug in KP's q_shared.h: SPECULAR and DIFFUSE consts are 0x400 and 0x800
+#define	SURF_DIFFUSE	0x8000
 
-	// BSP
-	int			visDataSize;
-	dvis_t		*visibility;
+#define SURF_AUTOFLARE	0x2000		// just free flag (should use extra struc for dtexinfo_t !!)
 
-	int			numNodes;
-	dnode_t		*nodes;
-
-	int			numLeafs;
-	dleaf_t		*leafs;
-
-	int			numLeaffaces;
-	unsigned short *leaffaces;
-
-	int			numLeafbrushes;
-	unsigned short *leafbrushes;
-
-	int			numEdges;
-	dedge_t		*edges;
-
-	int			numSurfedges;
-	int			*surfedges;
-
-	int			numBrushes;
-	dbrush_t	*brushes;
-
-	int			numBrushsides;
-	dbrushside_t *brushsides;
-
-	int			numAreas;
-	darea_t		*areas;
-
-	int			numAreaportals;
-	dareaportal_t *areaportals;
-
-	int			numModels;
-	cmodel_t	*models;
-
-	// faces
-	int			numTexinfo;
-	texinfo_t	*texinfo;
-
-	int			numFaces;
-	dface_t		*faces;
-
-	// lighting
-	int			lightDataSize;
-	byte		*lighting;
-
-	int			numFlares;
-	lightFlare_t *flares;
-
-	int			numSlights;
-	slight_t	*slights;
-
-	// static effects
-	int			numSplashes;			// target_splash entities
-	splash_t	*splashes;
-
-	// fog
-	//?? remove
-	fogMode_t	fogMode;
-	float		fogColor[3];
-	union {
-		struct {	// exp/exp2
-			float	fogDens;
-		};
-		struct {	// linear
-			float	fogStart;
-			float	fogEnd;
-		};
-	};
-
-	float	sunLight;		// 0 if no sun
-	vec3_t	sunColor;
-	vec3_t	sunVec;
-	vec3_t	sunAmbient;		// ambient light from sky surfaces
-	vec3_t	sunSurface;
-	vec3_t	ambientLight;	// global ambient light
-};
-
-extern bspfile_t *map_bspfile;
-
-
-//--bspfile_t *LoadBspFile (char *filename, bool clientload, unsigned *checksum);
-char *ProcessEntstring (char *entString);
 
 
 #endif // QCOMMON_H

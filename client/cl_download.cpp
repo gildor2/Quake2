@@ -1,4 +1,5 @@
 #include "client.h"
+#include "qfiles.h"			// we analyze some file structures to extract model/skin info
 
 extern	cvar_t *allow_download;
 extern	cvar_t *allow_download_players;

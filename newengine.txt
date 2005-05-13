@@ -149,6 +149,6 @@
   "TMemoryPool<TEMP_MEM_SIZE> TempPool" for allocs
 
 -------------------- Names -----------------
-- BackEnd = Renderer
+- BackEnd = Renderer/OpenGLDrv
 - FrontEnd = SceneGraph
 - Using skeletal animation = skinning; Q2 tech = KeyFrameAnimation

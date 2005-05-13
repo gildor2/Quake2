@@ -588,10 +588,6 @@ void SV_ExecuteClientMessage (client_t *cl)
 				net_drop = cl->netchan.dropped;
 				if (net_drop < 20)
 				{
-
-//if (net_drop > 2)
-
-//	Com_Printf ("drop %i\n", net_drop);
 					while (net_drop > 2)
 					{
 						SV_ClientThink (cl, &cl->lastcmd);

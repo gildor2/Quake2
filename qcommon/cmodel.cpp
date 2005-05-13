@@ -20,6 +20,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // cmodel.cpp -- collision model loading
 
 #include "qcommon.h"
+#include "cmodel.h"
+
 
 typedef struct
 {
@@ -541,8 +543,6 @@ void CMod_LoadHLSurfaces (lump_t *l)
 	count = l->filelen / sizeof(*in);
 	if (count < 1)
 		Com_DropError ("Map with no surfaces");
-	if (count > MAX_MAP_TEXINFO)
-		Com_DropError ("Map has too many surfaces");
 
 	numTexinfo = count;
 	out = map_surfaces;
@@ -595,8 +595,6 @@ void CMod_LoadHLLeafs (lump_t *l)
 	if (count < 1)
 		Com_DropError ("Map with no leafs");
 	// need to save space for box planes
-	if (count > MAX_MAP_LEAFS)
-		Com_DropError ("Map has too many leafs");
 
 	out = map_leafs;
 	numleafs = count;
@@ -646,9 +644,6 @@ void CMod_LoadHLVisibility (lump_t *l)
 	int		i, size, vis;
 
 	numvisibility = l->filelen;
-	if (l->filelen > MAX_MAP_VISIBILITY)
-		Com_DropError ("Map has too large visibility lump");
-
 	if (!numvisibility) return;
 
 	size = 4 + 8 * numclusters; // sizeof(dvis_t)
@@ -678,8 +673,6 @@ void CMod_LoadHLSubmodels (lump_t *l)
 
 	if (count < 1)
 		Com_DropError ("Map with no models");
-	if (count > MAX_MAP_MODELS)
-		Com_DropError ("Map has too many models");
 
 	numcmodels = count;
 
@@ -713,8 +706,6 @@ void CMod_LoadHLClipnodes (lump_t *l)
 
 	if (count < 1)
 		Com_DropError ("Map has no nodes");
-	if (count > MAX_MAP_NODES)
-		Com_DropError ("Map has too many nodes");
 
 	out = map_nodes;
 
@@ -730,9 +721,6 @@ void CMod_LoadHLClipnodes (lump_t *l)
 				out->children[j] = child;
 			else
 			{	// child = HL_CONTENTS - create leaf for it ...
-				if (numleafs + 1 >= MAX_MAP_LEAFS)
-					Com_DropError ("Mod_LoadHLClipnodes: not enough space to generate leafs");
-
 				out->children[j] = -1 - numleafs; // points to leaf, that will be created below
 
 				leaf = &map_leafs[numleafs++];
@@ -765,8 +753,6 @@ void CMod_LoadHLNodes (lump_t *l)
 
 	if (count < 1)
 		Com_DropError ("Map has no nodes");
-	if (count + numNodes > MAX_MAP_NODES)
-		Com_DropError ("Map has too many nodes");
 
 	firstnode = 0; //?? numNodes; // place nodes after clipnodes
 	//?? if all OK, remove "firstnode"
@@ -810,9 +796,6 @@ void CMod_LoadHLBrushes ()
 	count = numleafs;
 	out = map_brushes;
 	numbrushes = count;
-
-	if (count > MAX_MAP_BRUSHES)
-		Com_DropError ("Map has too many brushes");
 
 	for (i = 0; i < count; i++, out++, in++)
 	{
@@ -886,9 +869,6 @@ void CMod_LoadHLBrushSides (lump_t *lf, lump_t *lm, lump_t *lv, lump_t *le, lump
 			int	j, num, n1, m;
 			dface_t	*face;
 
-			if (count >= MAX_MAP_BRUSHSIDES)
-				Com_DropError ("Map has too many brushsides");
-
 			num = LittleShort (marksurfs[brushside + k]); // number of face
 			if (num > numfaces)
 				Com_DropError ("Bad brushside face");
@@ -919,9 +899,6 @@ void CMod_LoadHLLeafBrushes ()
 	int	i, count;
 
 	count = numleafs;
-
-	if (count > MAX_MAP_LEAFBRUSHES)
-		Com_DropError ("Map has too many leafbrushes");
 
 	numleafbrushes = count;
 

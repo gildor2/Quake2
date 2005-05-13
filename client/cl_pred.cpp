@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "client.h"
+#include "cmodel.h"
 
 
 static float predictLerp = -1;		// >= 0 -- use this value for prediction; if < 0 -- use cl.lerpfrac

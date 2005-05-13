@@ -1,4 +1,5 @@
 #include "server.h"
+#include "cmodel.h"
 
 #define SV_PROFILE			//?? change
 

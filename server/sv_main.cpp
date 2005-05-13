@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "server.h"
+#include "cmodel.h"
 
 netadr_t	master_adr[MAX_MASTERS];	// address of group servers
 
@@ -313,7 +314,7 @@ static void cDirectConnect (int argc, char **argv)
 		if (cl->state == cs_free) continue;
 
 		if (NET_CompareBaseAdr (&adr, &cl->netchan.remote_address) &&
-			(cl->netchan.qport == port || adr.port == cl->netchan.remote_address.port))
+			(cl->netchan.port == port || adr.port == cl->netchan.remote_address.port))
 		{
 			if (!NET_IsLocalAddress (&adr) && (svs.realtime - cl->lastconnect) < (sv_reconnect_limit->integer * 1000))
 			{
@@ -382,7 +383,7 @@ static void cDirectConnect (int argc, char **argv)
 	else
 		Netchan_OutOfBandPrint (NS_SERVER, adr, "client_connect");
 
-	Netchan_Setup (NS_SERVER, &newcl->netchan, adr, port);
+	newcl->netchan.Setup (NS_SERVER, adr, port);
 	newcl->maxPacketSize = MAX_MSGLEN_OLD;
 	if (cl->newprotocol && (adr.type == NA_IP || adr.type == NA_LOOPBACK))
 		newcl->maxPacketSize = MAX_MSGLEN;
@@ -597,7 +598,7 @@ void SV_ReadPackets (void)
 				continue;
 			if (!NET_CompareBaseAdr (&net_from, &cl->netchan.remote_address))
 				continue;
-			if (cl->netchan.qport != qport)
+			if (cl->netchan.port != qport)
 				continue;
 			if (cl->netchan.remote_address.port != net_from.port)
 			{
@@ -605,7 +606,7 @@ void SV_ReadPackets (void)
 				cl->netchan.remote_address.port = net_from.port;
 			}
 
-			if (Netchan_Process (&cl->netchan, &net_message))
+			if (cl->netchan.Process (&net_message))
 			{	// this is a valid, sequenced packet, so process it
 				if (cl->state != cs_zombie)
 				{
@@ -1344,7 +1345,6 @@ CVAR_END
 	guard(SV_Init);
 	Cvar_GetVars (ARRAY_ARG(vars));
 	SV_InitOperatorCommands	();
-	net_message.Init (ARRAY_ARG(net_message_buffer));
 	unguard;
 }
 
@@ -1383,7 +1383,7 @@ void SV_Shutdown (const char *finalmsg, bool reconnect)
 				MSG_WriteString (&net_message, finalmsg);
 			MSG_WriteByte (&net_message, reconnect ? svc_reconnect : svc_disconnect);
 
-			Netchan_Transmit (&cl->netchan, net_message.cursize, net_message.data);
+			cl->netchan.Transmit (net_message.data, net_message.cursize);
 		}
 	}
 

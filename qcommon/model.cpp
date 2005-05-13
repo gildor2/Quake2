@@ -1,4 +1,5 @@
 #include "qcommon.h"
+#include "cmodel.h"
 
 
 static bspfile_t bspfile;
@@ -170,9 +171,7 @@ static void ProcessQ2BspFile (bspfile_t *f)
 	// models: inflate mins/maxs by 1
 	for (i = 0; i < f->numModels; i++)
 	{
-		cmodel_t	*d;
-
-		d = &f->models[i];
+		cmodel_t *d = &f->models[i];
 
 		for (j = 0; j < 3; j++)
 		{
@@ -205,14 +204,11 @@ static void ProcessQ2BspFile (bspfile_t *f)
 
 static void LoadQ2Submodels (bspfile_t *f, dmodel_t *data)
 {
-	cmodel_t *out;
-	int		i;
-
 	if (f->numModels < 1)
 		Com_DropError ("Map with no models");
 
-	out = f->models = new (f->extraChain) cmodel_t[f->numModels];
-	for (i = 0; i < f->numModels; i++, data++, out++)
+	cmodel_t *out = f->models = new (f->extraChain) cmodel_t[f->numModels];
+	for (int i = 0; i < f->numModels; i++, data++, out++)
 	{
 		vec3_t	tmp;
 
@@ -231,10 +227,8 @@ static void LoadQ2Submodels (bspfile_t *f, dmodel_t *data)
 
 static int CheckLump (int lump, void **ptr, int size)
 {
-	int		length, ofs;
-
-	length = header->lumps[lump].filelen;
-	ofs = header->lumps[lump].fileofs;
+	int length = header->lumps[lump].filelen;
+	int ofs = header->lumps[lump].fileofs;
 
 	if (length % size)
 		Com_DropError ("LoadBSPFile: incorrect lump size");
@@ -247,8 +241,6 @@ static int CheckLump (int lump, void **ptr, int size)
 
 void LoadQ2BspFile (void)
 {
-	dmodel_t	*models;
-
 	guard(LoadQ2BspFile);
 
 	header = (dheader_t *) bspfile.file;
@@ -283,6 +275,7 @@ void LoadQ2BspFile (void)
 	bspfile.numAreas =		C(AREAS, areas, darea_t);
 	bspfile.numAreaportals = C(AREAPORTALS, areaportals, dareaportal_t);
 
+	dmodel_t	*models;
 	bspfile.numModels =		CheckLump (LUMP_MODELS, (void**)&models, sizeof(dmodel_t));	// not in bspfile_t struc
 	LoadQ2Submodels (&bspfile, models);
 
@@ -307,7 +300,6 @@ void LoadQ2BspFile (void)
 
 bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksum)
 {
-	server_state_t ss;
 	guard(LoadBspFile);
 
 	if (!stricmp (filename, bspfile.name) && (clientload || !Cvar_VariableInt ("flushmap")))
@@ -318,7 +310,7 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 		return &bspfile;
 	}
 
-	ss = Com_ServerState ();
+	server_state_t ss = Com_ServerState ();
 	if (clientload && (ss == ss_loading || ss == ss_game) && stricmp (filename, bspfile.name) && bspfile.name[0])
 		Com_DropError ("client trying to load map \"%s\" while server running \"%s\"", filename, bspfile.name);
 
@@ -344,9 +336,11 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 		case BSP2_IDENT:
 			LoadQ2BspFile ();
 			return &bspfile;
-//??		case BSPHL_VERSION:
-//			LoadHLBspFile ();
-//			return &bspfile;
+#if 0
+		case BSPHL_VERSION:
+			LoadHLBspFile ();
+			return &bspfile;
+#endif
 	}
 	// error
 	FS_FreeFile (bspfile.file);
@@ -446,7 +440,7 @@ static bool ReadEntity (const char *&src)
 	}
 
 	field = entity;
-	while (1)
+	while (true)
 	{
 		tok = COM_Parse (src);
 		if (tok[0] == '}' && tok[1] == 0)
@@ -481,8 +475,7 @@ static bool ReadEntity (const char *&src)
 // debug helper
 #define DUMP_ENTITY	\
 			{		\
-				int i;	\
-				for (i = 0; i < numEntFields; i++)	\
+				for (int i = 0; i < numEntFields; i++)	\
 					DebugPrintf("-- %s : %s\n", entity[i].name, entity[i].value);	\
 			}
 
@@ -562,20 +555,17 @@ static float *FindEntityTarget (char *name)
 static bool ProcessEntity ()
 {
 	entField_t *f;
-	bool	haveOrigin, haveModel;
-	int		modelIdx;
-	vec3_t	origin;
-	int		spawnflags;
-	char	*classname;
 
 	/*------------------ get some fields -------------------*/
 
 	// get classname
+	const char *classname;
 	if (f = FindField ("classname"))
 		classname = f->value;
 	else
 		classname = "";
 	// get spawnflags
+	int spawnflags;
 	if (f = FindField ("spawnflags"))
 		spawnflags = atoi (f->value);
 	else
@@ -589,26 +579,27 @@ static bool ProcessEntity ()
 	}
 #endif
 	// get origin
+	bool haveOrigin = false;
+	vec3_t origin;
 	if (f = FindField ("origin"))
 	{
 		haveOrigin = true;
 		GetVector (f->value, origin);
 	}
-	else
-		haveOrigin = false;
 	// get inline model
+	int modelIdx;
+	bool haveModel = false;
 	if (f = FindField ("model"))
 	{
-		haveModel = true;
 		sscanf (f->value, "*%d", &modelIdx);
 		if (modelIdx >= bspfile.numModels)
 		{
 			haveModel = false;
 			Com_DPrintf ("invalid model index %d\n", modelIdx);
 		}
+		else
+			haveModel = true;
 	}
-	else
-		haveModel = false;
 
 	/*----------- check movable inline models -----------*/
 
@@ -620,28 +611,22 @@ static bool ProcessEntity ()
 
 	if (!memcmp (classname, "light", 5))
 	{
-		int		style;
-		slight_t *slight;
-
 		// "style": if >= 32 ... (def: 0)
 		// "spawnflags": &2 -> flare, &4 -> resize, {&8 -> dynamic ?}
 		// get common lighting fields
+		int style = 0;
 		if (f = FindField ("style,_style"))
 			style = atoi (f->value);
-		else
-			style = 0;							// default
 
 		/*--------------- lightflares -----------------*/
 
 		if ((!classname[5] || !strcmp (classname + 5, "flare")) && (spawnflags & 2))	// "light" or "lightflare"
 		{
-			lightFlare_t *flare;
-
 			// "health" -> size (def: 24)
 			// "dmg": normal (0, def), sun, amber, red, blue, green
 			// if "dmg" == SUN -> VectorNormalize(origin)
 
-			flare = new (bspfile.extraChain) lightFlare_t;
+			lightFlare_t *flare = new (bspfile.extraChain) lightFlare_t;
 			flare->next = bspfile.flares;
 			bspfile.flares = flare;
 			bspfile.numFlares++;
@@ -691,7 +676,7 @@ static bool ProcessEntity ()
 
 		/*-------------- light, light_mine -------------*/
 
-		slight = new (bspfile.extraChain) slight_t;
+		slight_t *slight = new (bspfile.extraChain) slight_t;
 		slight->next = bspfile.slights;
 		bspfile.slights = slight;
 		bspfile.numSlights++;
@@ -721,11 +706,10 @@ static bool ProcessEntity ()
 
 		if (f = FindField ("target"))
 		{
-			float	*dst;
 			vec3_t	vec;
 
 			slight->spot = true;
-			dst = FindEntityTarget (f->value);
+			float *dst = FindEntityTarget (f->value);
 			VectorSubtract (dst, slight->origin, vec);
 			VectorNormalize2 (vec, slight->spotDir);
 
@@ -762,9 +746,7 @@ static bool ProcessEntity ()
 			}
 			else if (f = FindField ("angle"))
 			{
-				float	angle;
-
-				angle = atof (f->value);
+				float angle = atof (f->value);
 				if (angle == -1)
 					VectorSet (slight->spotDir, 0, 0, 1);
 				else if (angle == -2)
@@ -806,22 +788,18 @@ static bool ProcessEntity ()
 	{
 		if (f = FindField ("name"))
 		{
-			int		i;
-			texinfo_t *d;
-			char	*name;
-
-			name = f->value;
+			const char *name = f->value;
 			if (f = FindField ("flags"))
 			{
-				bool	found;
-				int		flags, testflags, testmask;
-
-				flags = atoi (f->value);
+				int flags = atoi (f->value);
+				int testflags, testmask;
 				if (f = FindField ("inflags"))
 					sscanf (f->value, "%d %d", &testmask, &testflags);
 				else
 					testflags = testmask = 0;
-				found = false;
+				bool found = false;
+				int i;
+				texinfo_t *d;
 				for (i = 0, d = bspfile.texinfo; i < bspfile.numTexinfo; i++, d++)
 					if (appMatchWildcard (d->texture, name, true) && ((d->flags & testmask) == testflags))
 					{
@@ -839,14 +817,12 @@ static bool ProcessEntity ()
 
 	if (bspfile.type == map_kp)
 	{
-		int		chk;
-
 		// check entities to remove
 		if (!strcmp (classname, "junior"))
 			return false;	// KP "junior" entity
 
 		/*----- check entities with KP RF2_SURF_ALPHA flags ------*/
-		chk = 0;
+		int chk = 0;
 		if (!stricmp (classname, "func_wall"))	//?? case insensitive ?? (check game source, KP game source ...)
 			chk = 32;
 		else if (!stricmp (classname, "func_door"))
@@ -912,11 +888,9 @@ static bool ProcessEntity ()
 			}
 			if (f = FindField ("_sun_light"))
 			{
-				int		i;
-
 				bspfile.sunLight = atof (f->value);
 				// can be up to 4 suns; just add its values
-				for (i = 2; i <= 4; i++)
+				for (int i = 2; i <= 4; i++)
 					if (f = FindField (va("_sun%d_light", i)))
 						bspfile.sunLight += atof (f->value);
 					else
@@ -942,8 +916,7 @@ static bool ProcessEntity ()
 	{
 		if (haveOrigin)
 		{
-			splash_t	*spl;
-			spl = new (bspfile.extraChain) splash_t;
+			splash_t *spl = new (bspfile.extraChain) splash_t;
 			spl->next = bspfile.splashes;
 			bspfile.splashes = spl;
 			VectorCopy (origin, spl->origin);
@@ -965,17 +938,14 @@ static bool ProcessEntity ()
 
 char *ProcessEntstring (char *entString)
 {
-	char	*dst, *dst2;
-	const char *src;
-	// patch (temporary !!)
-	unsigned plen;
-	char	*patch;
-
 	guard(ProcessEntstring);
 
-	patch = (char*) FS_LoadFile (va("%s.add", bspfile.name), &plen);
+	// patch (temporary !!)
+	unsigned plen;
+	char *patch = (char*) FS_LoadFile (va("%s.add", bspfile.name), &plen);
 	plen++;	// add 1 byte for trailing zero
 
+	char *dst, *dst2;
 	dst = dst2 = (char*) bspfile.extraChain->Alloc (strlen (entString) + 1 + plen);
 
 	// detect Kingpin map
@@ -988,7 +958,7 @@ char *ProcessEntstring (char *entString)
 	}
 
 	// find target entities
-	src = entString;
+	const char *src = entString;
 	numTargets = 0;
 	while (!haveErrors && ReadEntity (src))
 		ProcessEntityTarget ();

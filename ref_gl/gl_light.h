@@ -1,6 +1,8 @@
 #ifndef __GL_LIGHT_INCLUDED__
 #define __GL_LIGHT_INCLUDED__
 
+#include "cmodel.h"
+
 
 namespace OpenGLDrv {
 

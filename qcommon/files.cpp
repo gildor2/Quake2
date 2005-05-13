@@ -5,6 +5,26 @@
 static bool initialized;
 
 /*-----------------------------------------------------------------------------
+	.PAK file format
+-----------------------------------------------------------------------------*/
+
+#define IDPAKHEADER		BYTES4('P','A','C','K')
+
+typedef struct
+{
+	unsigned ident;			// == IDPAKHEADER
+	int		dirofs;
+	int		dirlen;
+} dPackHeader_t;
+
+typedef struct
+{
+	char	name[56];
+	int		filepos, filelen;
+} dPackFile_t;
+
+
+/*-----------------------------------------------------------------------------
 	In memory
 -----------------------------------------------------------------------------*/
 

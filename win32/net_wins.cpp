@@ -331,7 +331,7 @@ LOOPBACK BUFFERS FOR LOCAL PLAYER
 =============================================================================
 */
 
-bool NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
+bool NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg)
 {
 	loopback_t *loop = &loopbacks[sock];
 
@@ -344,8 +344,8 @@ bool NET_GetLoopPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_messag
 	int i = loop->get & (MAX_LOOPBACK-1);
 	loop->get++;
 
-	memcpy (net_message->data, loop->msgs[i].data, loop->msgs[i].datalen);
-	net_message->cursize = loop->msgs[i].datalen;
+	memcpy (net_msg->data, loop->msgs[i].data, loop->msgs[i].datalen);
+	net_msg->cursize = loop->msgs[i].datalen;
 
 	memset (net_from, 0, sizeof(*net_from));
 	net_from->type = NA_LOOPBACK;
@@ -366,9 +366,9 @@ void NET_SendLoopPacket (netsrc_t sock, int length, void *data, netadr_t to)
 
 //=============================================================================
 
-bool NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
+bool NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg)
 {
-	if (NET_GetLoopPacket (sock, net_from, net_message))
+	if (NET_GetLoopPacket (sock, net_from, net_msg))
 		return true;
 
 	for (int protocol = 0; protocol < 2; protocol++)
@@ -378,7 +378,7 @@ bool NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 
 		SOCKADDR from;
 		int fromlen = sizeof(from);
-		int ret = recvfrom (net_socket, (char*)net_message->data, net_message->maxsize, 0, (SOCKADDR *)&from, &fromlen);
+		int ret = recvfrom (net_socket, (char*)net_msg->data, net_msg->maxsize, 0, (SOCKADDR *)&from, &fromlen);
 
 		SockadrToNetadr (&from, net_from);
 
@@ -395,13 +395,13 @@ bool NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 			continue;
 		}
 
-		if (ret == net_message->maxsize)
+		if (ret == net_msg->maxsize)
 		{
 			Com_WPrintf ("Oversize packet from %s\n", NET_AdrToString (net_from));
 			continue;
 		}
 
-		net_message->cursize = ret;
+		net_msg->cursize = ret;
 		return true;
 	}
 

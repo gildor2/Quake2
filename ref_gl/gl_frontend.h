@@ -15,6 +15,10 @@ extern float	gl_fogColor[4];
 extern float	gl_fogDensity;
 extern float	gl_fogStart, gl_fogEnd;
 
+// map areas
+extern byte		areaMask[MAX_MAP_AREAS/8];
+extern bool		areaMaskChanged;
+
 
 //?? rename (gl_entity_t ? entity_t) and separate beam
 struct refEntity_t

@@ -105,7 +105,8 @@ GL_RENDERER = \
 	$D/gl_model.cpp \
 	$D/gl_poly.cpp \
 	$D/gl_shader.cpp \
-	$D/gl_sky.cpp
+	$D/gl_sky.cpp \
+	$D/gl_text.cpp
 
 D = win32
 WIN32_FILES = \

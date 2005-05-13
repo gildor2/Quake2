@@ -15,9 +15,6 @@
 namespace OpenGLDrv {
 
 
-
-glrefdef_t	gl_refdef;
-
 drawSpeeds_t gl_speeds;
 
 static unsigned ref_flags;
@@ -29,6 +26,20 @@ bool renderingEnabled;
 
 unsigned vid_width, vid_height;	//?? remove; move to gl_config
 
+#define I 255
+#define o 51
+const unsigned colorTable[8] = {
+	RGB255(0, 0, 0),
+	RGB255(I, o, o),
+	RGB255(o, I, o),
+	RGB255(I, I, o),
+	RGB255(o, o, I),
+	RGB255(I, o, I),
+	RGB255(o, I, I),
+	RGB255(I, I, I)
+};
+#undef I
+#undef o
 
 //------------- Cvars -----------------
 
@@ -78,12 +89,6 @@ cvar_t	*gl_lightLines, *gl_showLights;
 cvar_t	*gl_singleShader;
 cvar_t	*gl_showFillRate;
 
-static cvar_t	*gl_logTexts;
-
-
-static void ClearTexts (void);
-void FlushTexts (void);
-
 
 static void Gfxinfo_f (bool usage, int argc, char **argv)
 {
@@ -109,6 +114,20 @@ static void Gfxinfo_f (bool usage, int argc, char **argv)
 	Com_Printf ("Multitexturing: ");
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
 	{
+#if 0
+		TString<256> name;
+		name = GL_SUPPORT(QGL_ARB_MULTITEXTURE) ? "ARB" : "SGIS";
+		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_ADD))
+			name += " +Add";
+		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE|QGL_EXT_TEXTURE_ENV_COMBINE))
+			name += " +Combine";
+		if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4))
+			name += " +NV";
+		if (GL_SUPPORT(QGL_ATI_TEXTURE_ENV_COMBINE3))
+			name += " +ATI";
+
+		Com_Printf ("yes, %s, %d texture units\n", name.str, gl_config.maxActiveTextures);
+#else
 		char	name[256];
 
 		strcpy (name, GL_SUPPORT(QGL_ARB_MULTITEXTURE) ? "ARB" : "SGIS");
@@ -122,6 +141,7 @@ static void Gfxinfo_f (bool usage, int argc, char **argv)
 			strcat (name, " +ATI");
 
 		Com_Printf ("yes, %s, %d texture units\n", name, gl_config.maxActiveTextures);
+#endif
 	}
 	else
 		Com_Printf ("no\n");
@@ -157,7 +177,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_skinMipBias, -1, CVAR_ARCHIVE),
 	CVAR_VAR(r_ignorehwgamma, 0, CVAR_ARCHIVE),
 	CVAR_VAR(gl_overbright, 2, CVAR_ARCHIVE|CVAR_NOUPDATE),
-	CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
+	CVAR_VAR(gl_bitdepth, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),			//?? gl_colorBits
 	//!! add gl_depthBits
 
 	CVAR_VAR(gl_fastSky, 0, CVAR_ARCHIVE),
@@ -196,7 +216,6 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_showLights, 0, 0),
 	CVAR_VAR(gl_singleShader, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showFillRate, 0, CVAR_CHEAT),
-	CVAR_VAR(gl_logTexts, 0, 0),
 	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE),
 CVAR_END
 
@@ -359,6 +378,7 @@ bool Init (void)
 	GUARD_BEGIN						// needs GUARD() in a case of error in some of following functions
 	{
 		InitFuncTables ();
+		InitTexts ();
 		InitImages ();
 		InitShaders ();
 		InitModels ();
@@ -372,8 +392,7 @@ bool Init (void)
 		throw;	//?? or return "false" ?
 	}
 
-	gl_refdef.viewCluster = -2;		// force update visinfo for map:
-				// -1 is "no visinfo", >= 0 -- visinfo, so, -2 is unused (not reserved)
+	areaMaskChanged = true;			// force update visinfo for map:
 
 	return true;
 
@@ -413,36 +432,6 @@ void GL_EnableRendering (bool enable)
 	{
 		LoadDelayedImages ();
 	}
-}
-
-
-/*---------------- Backend helpers ----------------------*/
-
-void DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color, byte flipMode)
-{
-	PUT_BACKEND_COMMAND (bkDrawPic_t, p);
-	p->type = BACKEND_PIC;
-	p->shader = shader;
-	p->x = x;
-	p->y = y;
-	p->w = w;
-	p->h = h;
-	if (w > shader->width * 2)
-	{
-		s1 += 0.5f / shader->width;
-		s2 -= 0.5f / shader->width;
-	}
-	if (h > shader->height * 2)
-	{
-		t1 += 0.5f / shader->height;
-		t2 -= 0.5f / shader->height;
-	}
-	p->s1 = s1;
-	p->t1 = t1;
-	p->s2 = s2;
-	p->t2 = t2;
-	p->flipMode = flipMode;
-	p->c.rgba = color;
 }
 
 
@@ -518,7 +507,6 @@ void EndFrame (void)
 
 	BackEnd ();
 	ClearBuffers ();
-
 
 	if (gl_finish->integer == 2) glFinish ();
 	gl_speeds.endFrame = appCycles ();
@@ -720,8 +708,8 @@ void RenderFrame (refdef_t *fd)
 			memset (floodArea, 0xFF, sizeof(floodArea));
 			areas = &floodArea[0];
 		}
-		gl_refdef.areaMaskChanged = memcmp (gl_refdef.areaMask, areas, sizeof(gl_refdef.areaMask)) != 0;
-		memcpy (gl_refdef.areaMask, areas, sizeof(floodArea));
+		areaMaskChanged = memcmp (areaMask, areas, sizeof(areaMask)) != 0;
+		memcpy (areaMask, areas, sizeof(floodArea));
 	}
 
 	/*------------ rendering -------------*/
@@ -819,67 +807,6 @@ void RenderFrame (refdef_t *fd)
 }
 
 
-/*--------------------- Text output ---------------------*/
-
-#define I 255
-#define o 51
-static unsigned colorTable[8] = {
-	RGB255(0, 0, 0),
-	RGB255(I, o, o),
-	RGB255(o, I, o),
-	RGB255(I, I, o),
-	RGB255(o, o, I),
-	RGB255(I, o, I),
-	RGB255(o, I, I),
-	RGB255(I, I, I)
-};
-#undef I
-#undef o
-
-//?? should be synched with console+menu char sizes
-#define CHAR_WIDTH	8
-#define CHAR_HEIGHT	8
-
-void DrawChar (int x, int y, int c, int color)
-{
-	if (c == ' ') return;
-
-	unsigned col = colorTable[color];
-	bkDrawText_t *p = (bkDrawText_t*)lastBackendCommand;
-
-	if (p && p->type == BACKEND_TEXT &&
-		p->c.rgba == col &&
-		p->w == CHAR_WIDTH && p->h == CHAR_HEIGHT &&
-		p->y == y && (p->x + p->len * CHAR_WIDTH) == x)
-	{
-		if (GET_BACKEND_SPACE(1))
-		{
-			p->text[p->len++] = c;
-			return;
-		}
-	}
-
-	{
-		PUT_BACKEND_COMMAND(bkDrawText_t, p1);	// 1-char space reserved in bkDrawText_t
-		p1->type = BACKEND_TEXT;
-		p1->len = 1;
-		p1->x = x;
-		p1->y = y;
-		p1->c.rgba = col;
-		p1->w = CHAR_WIDTH;
-		p1->h = CHAR_HEIGHT;
-		p1->text[0] = c;
-	}
-}
-
-
-void DrawConChar (int x, int y, int c, int color)
-{
-	if (c == ' ') return;
-	DrawChar (x * CHAR_WIDTH, y * CHAR_HEIGHT, c, color);
-}
-
-
 /*--------------------- 2D picture output ---------------------*/
 
 //?? place renderer-> client (or, at least, name parsing: if not started with '/' - add "pics/")
@@ -956,179 +883,13 @@ void DrawPic (int x, int y, const char *name, int anchor, int color)
 }
 
 
-/*------------------- Static text output ----------------------*/
-
-//!! separate to a different cpp and (nested) namespace (OpenGLDrv::Text)
-//!! + add normal (not screen-static, 8x8-sized) text functions into such module
-
-#define TEXTBUF_SIZE 65536
-
-#define TOP_TEXT_POS 64
-#define CHARSIZE_X 6
-#define CHARSIZE_Y 8
-
-
-struct textRec_t
-{
-	short	x, y;
-	color_t	c;
-	char	*text;
-	textRec_t *next;
-};
-
-
-static char	textbuf[TEXTBUF_SIZE];
-static int	textbufPos;			// position for next record
-static bool	textbufEmpty;		// count of records in buffer (0 or greater)
-static textRec_t *lastTextRec;
-
-static int nextLeft_y = TOP_TEXT_POS;
-static int nextRight_y = TOP_TEXT_POS;
-
-
-static void ClearTexts (void)
-{
-	nextLeft_y = nextRight_y = TOP_TEXT_POS;
-	textbufEmpty = true;
-}
-
-
-//?? later (CFont): implement as CFont method
-static void GetTextExtents (const char *s, int &width, int &height)
-{
-	int		x, w, h;
-	x = w = 0;
-	h = CHARSIZE_Y;
-	while (char c = *s++)
-	{
-		if (c == '\n')
-		{
-			if (x > w) w = x;
-			x = 0;
-			h += CHARSIZE_Y;
-			continue;
-		}
-		x += CHARSIZE_X;
-	}
-	width = max(x, w);
-	height = h;
-}
-
-
-static void FlushTexts (void)
-{
-	textRec_t *rec;
-
-	nextLeft_y = nextRight_y = TOP_TEXT_POS;
-	if (textbufEmpty) return;
-
-	for (rec = (textRec_t*)textbuf; rec; rec = rec->next)
-	{
-		int len = strlen (rec->text);
-		if (!len) continue;
-
-		if (gl_logTexts->integer)
-			Com_Printf (S_MAGENTA"%s\n", rec->text);
-
-		{
-			PUT_BACKEND_COMMAND2(bkDrawText_t, p, len-1);	// 1 char reserved in bkDrawText_t
-			p->type = BACKEND_TEXT;
-			p->len = len;
-			p->x = rec->x;
-			p->y = rec->y;
-			p->c.rgba = rec->c.rgba;
-			p->w = CHARSIZE_X;
-			p->h = CHARSIZE_Y;
-			memcpy (p->text, rec->text, len);	// not ASCIIZ
-		}
-	}
-	if (gl_logTexts->integer == 2)				// special value: log only 1 frame
-		Cvar_SetInteger ("gl_logTexts", 0);
-
-	textbufEmpty = true;
-}
-
-
-static void DrawTextPos (int x, int y, const char *text, unsigned rgba)
-{
-	if (!text || !*text) return;	// empty text
-
-	if (textbufEmpty)
-	{	// 1st record - perform initialization
-		lastTextRec = NULL;
-		textbufPos = 0;
-		textbufEmpty = false;
-	}
-
-	while (true)
-	{
-		textRec_t *rec = (textRec_t*) &textbuf[textbufPos];
-		const char *s = strchr (text, '\n');
-		int len = s ? s - text : strlen (text);
-
-		if (len)
-		{
-			int size = sizeof(textRec_t) + len + 1;
-			if (size + textbufPos > TEXTBUF_SIZE) return;	// out of buffer space
-
-			char *textCopy = (char*)rec + sizeof(textRec_t);
-			memcpy (textCopy, text, len);
-			textCopy[len] = 0;
-			rec->x = x;
-			rec->y = y;
-			rec->text = textCopy;
-			rec->c.rgba = rgba;
-			rec->next = NULL;
-
-			if (lastTextRec) lastTextRec->next = rec;
-			lastTextRec = rec;
-			textbufPos += size;
-		}
-		y += CHARSIZE_Y;
-		if (s)
-			text = s + 1;
-		else
-			return;
-	}
-}
-
-
-void DrawTextLeft (const char *text, unsigned rgba)
-{
-	int		w, h;
-	if (nextLeft_y >= vid_height) return;	// out of screen
-	GetTextExtents (text, w, h);
-	DrawTextPos (0, nextLeft_y, text, rgba);
-	nextLeft_y += h;
-}
-
-
-void DrawTextRight (const char *text, unsigned rgba)
-{
-	int		w, h;
-	if (nextRight_y >= vid_height) return;	// out of screen
-	GetTextExtents (text, w, h);
-	DrawTextPos (vid_width - w, nextRight_y, text, rgba);
-	nextRight_y += h;
-}
-
-
-void DrawText3D (vec3_t pos, const char *text, unsigned rgba)
-{
-	int		coords[2];
-
-	if (!ProjectToScreen (pos, coords)) return;
-	DrawTextPos (coords[0], coords[1], text, rgba);
-}
-
-
 /*------------------- Model registration ----------------------*/
 
 void BeginRegistration (const char *mapname)
 {
 	ResetShaders ();				// delete all shaders and re-create auto-shaders
 	LoadWorldMap (va("maps/%s.bsp", mapname));
-	gl_refdef.viewCluster = -2;
+	areaMaskChanged = true;			// force re-MarkLeaves()
 }
 
 

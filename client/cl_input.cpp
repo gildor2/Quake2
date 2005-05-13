@@ -443,7 +443,7 @@ void CL_SendCmd (void)
 	if (cls.state == ca_connected)
 	{
 		if (cls.netchan.message.cursize	|| cls.realtime - cls.netchan.last_sent > 1000)
-			Netchan_Transmit (&cls.netchan, 0, NULL);
+			cls.netchan.Transmit (NULL, 0);
 		return;
 	}
 
@@ -509,7 +509,7 @@ void CL_SendCmd (void)
 		cls.netchan.outgoing_sequence);
 
 	// deliver the message
-	Netchan_Transmit (&cls.netchan, buf.cursize, buf.data);
+	cls.netchan.Transmit (buf.data, buf.cursize);
 
 	// prepare for next frame
 	cls.netFrameDropped = false;

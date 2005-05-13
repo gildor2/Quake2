@@ -202,5 +202,6 @@ public:
 	template <int M> bool operator!= (const TString<M> &S) { return strcmp (str, S.str) != 0; }
 	bool operator> (const char *s2)		{ return strcmp (str, s2) > 0; }
 	bool operator>= (const char *s2)	{ return strcmp (str, s2) >= 0; }
+	TString<N>& operator+= (const char *s2) { appStrcatn (str, N, s2); return *this; }
 	operator char*()					{ return str; }
 };

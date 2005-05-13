@@ -99,7 +99,7 @@ sv_main::SVC_DirectConnect(): (on "connect")
 
 cl_main::CL_ConnectionlessPacket(): (on "client_connect")
    (ignores Cmd_Argc/Cmd_Argv -- make parsing our text )
-	Netchan_Setup (NS_CLIENT, &cls.netchan, net_from, cls.quakePort);
+	cls.netchan.Setup (NS_CLIENT, net_from, cls.quakePort);
 	MSG_WriteChar (&cls.netchan.message, clc_stringcmd);
 	MSG_WriteString (&cls.netchan.message, "new");
 	cls.state = ca_connected;

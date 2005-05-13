@@ -74,22 +74,24 @@ extern unsigned vid_width, vid_height;
 
 // forwards
 class image_t;
+class shader_t;
 class model_t;
 class surfaceCommon_t;
-class surfacePlanar_t;		//?? remove this forward
+class surfacePlanar_t;
 struct dynamicLightmap_t;
 struct viewPortal_t;
 struct refEntity_t;
-class shader_t;
 
 
 #include "gl_interface.h"
 
 
-/*----------------- gl_main.c -------------------*/
+/*----------------- gl_main.cpp -------------------*/
 
 extern bool renderingEnabled;
 void GL_EnableRendering (bool enable);
+
+extern const unsigned colorTable[];		// C_XXX->rgba; used for DrawChar() and DrawPic() only
 
 
 //?? clean this structure: most fields used from viewPortal_t; or -- eliminate at all
@@ -97,7 +99,7 @@ void GL_EnableRendering (bool enable);
  * - there is refdef_t from client/ref.h
  * - we are copied most fields to viewPortal_t
  * - but this structure is not for cross-frame work, its contents updated every frame COMPLETELY
- * - so, we need some structure with a static, cross-frame fields (now: glrefdef_t, rudimental structure)
+ * - so, we need some structure (set of vars) with a static, cross-frame fields
  * 1) make client's refdef static, and add a link from portal to it
  * 2) eliminate refdef fields from portal
  * 3) client should establish more control under refdef (detect viewcluster changes, areamask changes etc)
@@ -108,13 +110,6 @@ void GL_EnableRendering (bool enable);
  * 5) get visinfo from client ? (remove visinfo from renderer; call CM_ClusterPVS() when needed ?)
  * 6) PVS: can perform non-alpha-water-vis-bug avoiding in client (send combined vis)
  */
-typedef struct
-{
-	int		viewCluster;		//?? place to portal
-	// map areas
-	byte	areaMask[MAX_MAP_AREAS/8];
-	bool	areaMaskChanged;
-} glrefdef_t;
 
 
 //!! need to perform clearing this struc with "memset()" (clear all fields at once)
@@ -140,20 +135,24 @@ typedef struct
 } drawSpeeds_t;
 
 
-extern glrefdef_t  gl_refdef;	//!! used from gl_frontend.c :: MarkLeaves() only (filled from gl_main.c)
 extern drawSpeeds_t gl_speeds;
 
 
-void	DrawStretchPic (shader_t *shader, int x, int y, int w, int h,
-			float s1 = 0, float t1 = 0, float s2 = 1, float t2 = 1,
-			unsigned color = RGB(1,1,1), byte flipMode = 0);
-void	DrawTextPos (int x, int y, const char *text, unsigned rgba);
+/*----------- gl_text.cpp -------------------*/
+
+void	InitTexts ();
+void	ClearTexts ();
+void	FlushTexts ();
+
+void	DrawChar (int x, int y, int c, int color);
+void	DrawConChar (int x, int y, int c, int color);
+
 void	DrawTextLeft (const char *text, unsigned rgba);
 void	DrawTextRight (const char *text, unsigned rgba);
 void	DrawText3D (vec3_t pos, const char *text, unsigned rgba);
 
 
-/*---- Implementation-specific functions ----*/
+/*------ Platform-specific functions --------*/
 
 bool	GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscreen);
 void	GLimp_Shutdown (bool complete);

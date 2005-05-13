@@ -74,13 +74,13 @@ then a packet only needs to be delivered if there is something in the
 unacknowledged reliable
 */
 
-cvar_t		*showpackets;
-cvar_t		*showdrop;
-cvar_t		*qport;
+static cvar_t *showpackets;
+static cvar_t *showdrop;
+static cvar_t *qport;
 
 netadr_t	net_from;
 sizebuf_t	net_message;
-byte		net_message_buffer[MAX_MSGLEN];
+static byte	message_buffer[MAX_MSGLEN];
 
 /*
 ===============
@@ -90,36 +90,13 @@ Netchan_Init
 */
 void Netchan_Init (void)
 {
-	int		port;
-
 	// pick a port value that should be nice and random
-	port = appMilliseconds () & 0xFFFF;
+	int port = appMilliseconds () & 0xFFFF;
 
 	showpackets = Cvar_Get ("showpackets", "0", 0);
 	showdrop = Cvar_Get ("showdrop", "0", 0);
 	qport = Cvar_Get ("qport", va("%d", port), CVAR_NOSET);
-}
-
-/*
-===============
-Netchan_OutOfBand
-
-Sends an out-of-band datagram
-================
-*/
-void Netchan_OutOfBand (netsrc_t net_socket, netadr_t adr, int length, void *data)
-{
-	sizebuf_t	send;		//?? almost useless here
-	byte		send_buf[MAX_MSGLEN];
-
-	// write the packet header
-	send.Init (ARRAY_ARG(send_buf));
-
-	MSG_WriteLong (&send, -1);	// -1 sequence means out of band
-	send.Write (data, length);
-
-	// send the datagram
-	NET_SendPacket (net_socket, send.cursize, send.data, adr);
+	net_message.Init (ARRAY_ARG(message_buffer));
 }
 
 /*
@@ -132,77 +109,66 @@ Sends a text message in an out-of-band datagram
 void Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, const char *format, ...)
 {
 	va_list argptr;
-	static char string[MAX_MSGLEN - 4];
+	char string[MAX_MSGLEN - 4];
 
 	va_start (argptr, format);
-	vsnprintf (ARRAY_ARG(string), format,argptr);
+	int len = vsnprintf (ARRAY_ARG(string), format,argptr);
 	va_end (argptr);
+	if (len < 0) len = ARRAY_COUNT(string);	// buffer overflowed
 
-	Netchan_OutOfBand (net_socket, adr, strlen (string), (byte *)string);
+	// write the packet header
+	sizebuf_t	send;		//?? almost useless here
+	byte		send_buf[MAX_MSGLEN];
+	send.Init (ARRAY_ARG(send_buf));
+	MSG_WriteLong (&send, -1);	// -1 sequence means out of band
+	send.Write (string, len);
+
+	// send the datagram
+	NET_SendPacket (net_socket, send.cursize, send.data, adr);
 }
 
 
 /*
 ==============
-Netchan_Setup
+netchan_t::Setup
 
 called to open a channel to a remote system
 ==============
 */
-void Netchan_Setup (netsrc_t sock, netchan_t *chan, netadr_t adr, int qport)
+void netchan_t::Setup (netsrc_t sock, netadr_t adr, int qport)
 {
-	memset (chan, 0, sizeof(*chan));
+	memset (this, 0, sizeof(netchan_t));
 
-	chan->sock = sock;
-	chan->remote_address = adr;
-	chan->qport = qport;
-	chan->last_received = appMilliseconds ();
-	chan->incoming_sequence = 0;
-	chan->outgoing_sequence = 1;
+	this->sock = sock;
+	remote_address = adr;
+	port = qport;
+	last_received = appMilliseconds ();
+	incoming_sequence = 0;
+	outgoing_sequence = 1;
 
-	chan->message.Init (chan->message_buf, sizeof(chan->message_buf));
-	chan->message.allowoverflow = true;
+	this->message.Init (ARRAY_ARG(message_buf));
+	this->message.allowoverflow = true;
 }
 
 
-/*
-===============
-Netchan_CanReliable
-
-Returns true if the last reliable message has acked
-================
-*/
-bool Netchan_CanReliable (netchan_t *chan)
+bool netchan_t::NeedReliable ()
 {
-	if (chan->reliable_length)
-		return false;			// waiting for ack
-	return true;
-}
+	// if the remote side dropped the last reliable message, resend it
 
+	if (incoming_acknowledged > last_reliable_sequence &&
+		incoming_reliable_acknowledged != reliable_sequence)
+		return true;
 
-bool Netchan_NeedReliable (netchan_t *chan)
-{
-	bool	send_reliable;
+	// if the reliable transmit buffer is empty, copy the current message out
+	if (!reliable_length && message.cursize)
+		return true;
 
-// if the remote side dropped the last reliable message, resend it
-	send_reliable = false;
-
-	if (chan->incoming_acknowledged > chan->last_reliable_sequence
-	&& chan->incoming_reliable_acknowledged != chan->reliable_sequence)
-		send_reliable = true;
-
-// if the reliable transmit buffer is empty, copy the current message out
-	if (!chan->reliable_length && chan->message.cursize)
-	{
-		send_reliable = true;
-	}
-
-	return send_reliable;
+	return false;
 }
 
 /*
 ===============
-Netchan_Transmit
+netchan_t::Transmit
 
 tries to send an unreliable message to a connection, and handles the
 transmition / retransmition of the reliable messages.
@@ -210,110 +176,104 @@ transmition / retransmition of the reliable messages.
 A 0 length will still generate a packet and deal with the reliable messages.
 ================
 */
-void Netchan_Transmit (netchan_t *chan, int length, void *data)
+void netchan_t::Transmit (void *data, int length)
 {
-	sizebuf_t	send;
-	byte		send_buf[MAX_MSGLEN];
-	bool		send_reliable;
-	unsigned	w1, w2;
-
 	// check for message overflow
-	if (chan->message.overflowed)
+	if (message.overflowed)
 	{
-		chan->fatal_error = true;
-		Com_WPrintf ("%s: outgoing message overflow\n", NET_AdrToString (&chan->remote_address));
+		fatal_error = true;
+		Com_WPrintf ("%s: outgoing message overflow\n", NET_AdrToString (&remote_address));
 		return;
 	}
 
-	send_reliable = Netchan_NeedReliable (chan);
+	bool send_reliable = NeedReliable ();
 
-	if (!chan->reliable_length && chan->message.cursize)
+	if (!reliable_length && message.cursize)
 	{
-		memcpy (chan->reliable_buf, chan->message_buf, chan->message.cursize);
-		chan->reliable_length = chan->message.cursize;
-		chan->message.cursize = 0;
-		chan->reliable_sequence ^= 1;
+		memcpy (reliable_buf, message_buf, message.cursize);
+		reliable_length = message.cursize;
+		message.cursize = 0;
+		reliable_sequence ^= 1;
 	}
 
 
 	// write the packet header
+	sizebuf_t	send;
+	byte		send_buf[MAX_MSGLEN];
 	send.Init (ARRAY_ARG(send_buf));
 
-	w1 = ( chan->outgoing_sequence & 0x7FFFFFFF ) | (send_reliable<<31);
-	w2 = ( chan->incoming_sequence & 0x7FFFFFFF ) | (chan->incoming_reliable_sequence<<31);
+	unsigned w1 = (outgoing_sequence & 0x7FFFFFFF) | (send_reliable<<31);
+	unsigned w2 = (incoming_sequence & 0x7FFFFFFF) | (incoming_reliable_sequence<<31);
 
-	chan->outgoing_sequence++;
-	chan->last_sent = appMilliseconds ();
+	outgoing_sequence++;
+	last_sent = appMilliseconds ();
 
 	MSG_WriteLong (&send, w1);
 	MSG_WriteLong (&send, w2);
 
 	// send the qport if we are a client
-	if (chan->sock == NS_CLIENT)
+	if (sock == NS_CLIENT)
 		MSG_WriteShort (&send, qport->integer);
 
 	// copy the reliable message to the packet first
 	if (send_reliable)
 	{
-		send.Write (chan->reliable_buf, chan->reliable_length);
-		chan->last_reliable_sequence = chan->outgoing_sequence;
+		send.Write (reliable_buf, reliable_length);
+		last_reliable_sequence = outgoing_sequence;
 	}
 
 	// add the unreliable part if space is available
 	if (send.maxsize - send.cursize >= length)
 		send.Write (data, length);
 	else
-		Com_Printf ("Netchan_Transmit: dumped unreliable\n");
+		Com_Printf ("netchan_t::Transmit: dumped unreliable\n");
 
 	// send the datagram
-	NET_SendPacket (chan->sock, send.cursize, send.data, chan->remote_address);
+	NET_SendPacket (sock, send.cursize, send.data, remote_address);
 
 	if (showpackets->integer)
 	{
 		if (send_reliable)
 			Com_Printf ("send %4i : s=%i reliable=%i ack=%i rack=%i\n"
 				, send.cursize
-				, chan->outgoing_sequence - 1
-				, chan->reliable_sequence
-				, chan->incoming_sequence
-				, chan->incoming_reliable_sequence);
+				, outgoing_sequence - 1
+				, reliable_sequence
+				, incoming_sequence
+				, incoming_reliable_sequence);
 		else
 			Com_Printf ("send %4i : s=%i ack=%i rack=%i\n"
 				, send.cursize
-				, chan->outgoing_sequence - 1
-				, chan->incoming_sequence
-				, chan->incoming_reliable_sequence);
+				, outgoing_sequence - 1
+				, incoming_sequence
+				, incoming_reliable_sequence);
 	}
 }
 
 /*
 =================
-Netchan_Process
+netchan_t::Process
 
 called when the current net_message is from remote_address
 modifies net_message so that it points to the packet payload
+NOTE: arg msg is always = net_message
 =================
 */
-bool Netchan_Process (netchan_t *chan, sizebuf_t *msg)
+bool netchan_t::Process (sizebuf_t *msg)
 {
-	unsigned	sequence, sequence_ack;
-	unsigned	reliable_ack, reliable_message;
-	int			qport;
-
 	// get sequence numbers
 	MSG_BeginReading (msg);
-	sequence = MSG_ReadLong (msg);
-	sequence_ack = MSG_ReadLong (msg);
 
-	// read the qport if we are a server
-	if (chan->sock == NS_SERVER)
-		qport = MSG_ReadShort (msg);
-
-	reliable_message = sequence >> 31;
-	reliable_ack = sequence_ack >> 31;
-
+	unsigned sequence = MSG_ReadLong (msg);
+	unsigned sequence_ack = MSG_ReadLong (msg);
+	unsigned reliable_message = sequence >> 31;
+	unsigned reliable_ack = sequence_ack >> 31;
 	sequence &= 0x7FFFFFFF;
 	sequence_ack &= 0x7FFFFFFF;
+
+	// read the qport if we are a server
+	int qport;
+	if (sock == NS_SERVER)
+		qport = MSG_ReadShort (msg);
 
 	if (showpackets->integer)
 	{
@@ -321,7 +281,7 @@ bool Netchan_Process (netchan_t *chan, sizebuf_t *msg)
 			Com_Printf ("recv %4i : s=%i reliable=%i ack=%i rack=%i\n"
 				, msg->cursize
 				, sequence
-				, chan->incoming_reliable_sequence ^ 1
+				, incoming_reliable_sequence ^ 1
 				, sequence_ack
 				, reliable_ack);
 		else
@@ -332,54 +292,42 @@ bool Netchan_Process (netchan_t *chan, sizebuf_t *msg)
 				, reliable_ack);
 	}
 
-	//
 	// discard stale or duplicated packets
-	//
-	if (sequence <= chan->incoming_sequence)
+	if (sequence <= incoming_sequence)
 	{
 		if (showdrop->integer)
 			Com_Printf ("%s:Out of order packet %i at %i\n"
-				, NET_AdrToString (&chan->remote_address)
-				,  sequence
-				, chan->incoming_sequence);
+				, NET_AdrToString (&remote_address)
+				, sequence
+				, incoming_sequence);
 		return false;
 	}
 
-	//
 	// dropped packets don't keep the message from being used
-	//
-	chan->dropped = sequence - (chan->incoming_sequence+1);
-	if (chan->dropped > 0)
+	dropped = sequence - (incoming_sequence+1);
+	if (dropped > 0)
 	{
 		if (showdrop->integer)
 			Com_Printf ("%s:Dropped %i packets at %i\n"
-			, NET_AdrToString (&chan->remote_address)
-			, chan->dropped
+			, NET_AdrToString (&remote_address)
+			, dropped
 			, sequence);
 	}
 
-	//
 	// if the current outgoing reliable message has been acknowledged
 	// clear the buffer to make way for the next
-	//
-	if (reliable_ack == chan->reliable_sequence)
-		chan->reliable_length = 0;	// it has been received
+	if (reliable_ack == reliable_sequence)
+		reliable_length = 0;		// it has been received
 
-	//
 	// if this message contains a reliable message, bump incoming_reliable_sequence
-	//
-	chan->incoming_sequence = sequence;
-	chan->incoming_acknowledged = sequence_ack;
-	chan->incoming_reliable_acknowledged = reliable_ack;
+	incoming_sequence = sequence;
+	incoming_acknowledged = sequence_ack;
+	incoming_reliable_acknowledged = reliable_ack;
 	if (reliable_message)
-	{
-		chan->incoming_reliable_sequence ^= 1;
-	}
+		incoming_reliable_sequence ^= 1;
 
-	//
 	// the message can now be read from the current message pointer
-	//
-	chan->last_received = appMilliseconds ();
+	last_received = appMilliseconds ();
 
 	return true;
 }

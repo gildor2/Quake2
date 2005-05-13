@@ -880,7 +880,7 @@ static void SV_Status_f (void)
 			Com_Printf ("%4d ", min (cl->ping, 9999));
 
 		Com_Printf ("%-15s %7d %-21s %5d\n", cl->name, svs.realtime - cl->lastmessage,
-			NET_AdrToString (&cl->netchan.remote_address), cl->netchan.qport);
+			NET_AdrToString (&cl->netchan.remote_address), cl->netchan.port);
 	}
 	Com_Printf ("\n");
 }

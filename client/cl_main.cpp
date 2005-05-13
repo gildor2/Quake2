@@ -138,11 +138,9 @@ Dumps the current net message, prefixed by the length
 */
 void CL_WriteDemoMessage (void)
 {
-	int		len, swlen;
-
 	// the first eight bytes are just packet sequencing stuff
-	len = net_message.cursize-8;
-	swlen = LittleLong(len);
+	int len = net_message.cursize-8;
+	int swlen = LittleLong(len);
 	fwrite (&swlen, 4, 1, cls.demofile);
 	fwrite (net_message.data+8,	len, 1, cls.demofile);
 }
@@ -602,9 +600,9 @@ void CL_Disconnect (void)
 	final[0] = clc_stringcmd;
 	strcpy (final+1, "disconnect");
 //	int len = sterlen(final); == 11
-	Netchan_Transmit (&cls.netchan, 11, final);
-	Netchan_Transmit (&cls.netchan, 11, final);
-	Netchan_Transmit (&cls.netchan, 11, final);
+	cls.netchan.Transmit (final, 11);
+	cls.netchan.Transmit (final, 11);
+	cls.netchan.Transmit (final, 11);
 
 	CL_ClearState ();
 
@@ -838,7 +836,7 @@ static void cClientConnect (int argc, char **argv)
 		Com_Printf ("dup connect received: ignored\n");
 		return;
 	}
-	Netchan_Setup (NS_CLIENT, &cls.netchan, net_from, 0);	// use default qport value
+	cls.netchan.Setup (NS_CLIENT, net_from, 0);	// use default qport value
 	MSG_WriteChar (&cls.netchan.message, clc_stringcmd);
 	MSG_WriteString (&cls.netchan.message, "new");
 	cls.state = ca_connected;
@@ -986,7 +984,7 @@ void CL_ReadPackets (void)
 			Com_DPrintf ("%s: sequenced packet without connection\n", NET_AdrToString (&net_from));
 			continue;
 		}
-		if (!Netchan_Process (&cls.netchan, &net_message))
+		if (!cls.netchan.Process (&net_message))
 			continue;		// wasn't accepted for some reason
 		CL_ParseServerMessage ();
 	}
@@ -1409,8 +1407,6 @@ void CL_Init (void)
 	S_Init ();	// sound must be initialized after window is created
 #endif
 
-	net_message.data = net_message_buffer;
-	net_message.maxsize = sizeof(net_message_buffer);
 	if (!DEDICATED) cl_entities = new centity_t [MAX_EDICTS];
 
 	V_Init ();
