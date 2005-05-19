@@ -42,12 +42,6 @@ namespace OpenGLDrv {
 	( SQRTFAST((intens) * (scale) / (light)) )
 
 
-#if 0	//!!!
-// REMOVE THIS:
-#define TEST
-static cvar_t *test;
-#endif
-
 static vec3_t entityColorAxis[6];
 // array layout: back/front/right/left/bottom/top
 
@@ -333,11 +327,7 @@ static void AddSurfaceLight (const surfLight_t *rl, const vec3_t origin, const v
 	if (distN < 0.001f) return;							// backface culled
 
 	// fast distance culling
-#ifdef TEST	//!!
-	if (!ambient && !(test->integer & 1))
-#else
 	if (!ambient)
-#endif
 	{	// cull surface only if it is not for ambient sunlight
 		if (distN * distN > rl->maxDist2) return;		// too far from plane
 		VectorSubtract (origin, rl->center, dir);
@@ -576,10 +566,6 @@ void LightForEntity (refEntity_t *ent)
 	float	scale;
 	gl_depthMode_t prevDepth;
 
-#ifdef TEST	//!!!
-	if (!test) test = Cvar_Get("test","0",0);
-	if (test->integer & 8) return;
-#endif
 	// NOTE: sl.color is [0..1], out color is [0..255]
 
 	memset (entityColorAxis, 0, sizeof(entityColorAxis));
@@ -770,15 +756,13 @@ void LightForEntity (refEntity_t *ent)
 }
 
 
+//?? really, should move this func to backend, but must access entityColorAxis[]
 void DiffuseLight (color_t *dst, float lightScale)
 {
 	int		i, j;
 	bufExtra_t *ex;
 	float	light;
 
-#ifdef TEST	//!!!
-	if (test->integer & 4) return;
-#endif
 	light = lightScale * 2 * gl_config.identityLightValue_f;	// *2 -- because 1 == double light (similar to lightmaps)
 	for (i = 0, ex = gl_extra; i < gl_numExtra; i++, ex++)
 	{
@@ -843,7 +827,7 @@ void InitLightGrid (void)
 
 static void GetSurfLightCluster (void)
 {
-	surfaceCommon_t **s;
+	surfaceBase_t **s;
 	int		i, j;
 
 	surfLight_t *sl;

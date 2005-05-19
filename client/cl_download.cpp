@@ -302,7 +302,7 @@ static void RequestNextDownload (void)
 	}
 
 	if (precache_check >= CS_MODELS && precache_check < CS_MODELS+MAX_MODELS) {
-		dmdl_t *pheader;
+		dMd2_t *pheader;
 
 		if (allow_download_models->integer) {
 			while (precache_check < CS_MODELS+MAX_MODELS &&
@@ -327,7 +327,7 @@ static void RequestNextDownload (void)
 						precache_check++;
 						continue; // couldn't load it
 					}
-					pheader = (dmdl_t *)precache_model;
+					pheader = (dMd2_t *)precache_model;
 					if (LittleLong(pheader) != MD2_IDENT || LittleLong(pheader->version) != MD2_VERSION) {
 						// not an alias model, or wrong model version
 						FS_FreeFile (precache_model);
@@ -338,7 +338,7 @@ static void RequestNextDownload (void)
 					}
 				}
 
-				pheader = (dmdl_t *)precache_model;
+				pheader = (dMd2_t *)precache_model;
 
 				while (precache_model_skin - 1 < LittleLong(pheader->numSkins)) {
 					if (!CheckOrDownloadFile((char *)precache_model + LittleLong(pheader->ofsSkins) +

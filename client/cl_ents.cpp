@@ -550,10 +550,9 @@ static void AddViewWeapon (int renderfx)
 	else
 #endif
 		gun.model = cl.model_draw[ps->gunindex];
-	if (!gun.model)
-		return;
+	if (!gun.model) return;
 
-	// set up gun position
+	// lerp gun position
 	for (int i = 0; i < 3; i++)
 	{
 		gun.origin[i] = cl.refdef.vieworg[i] + ops->gunoffset[i] + cl.lerpfrac * (ps->gunoffset[i] - ops->gunoffset[i]);
@@ -579,21 +578,30 @@ static void AddViewWeapon (int renderfx)
 	gun.flags = RF_MINLIGHT|RF_DEPTHHACK|RF_WEAPONMODEL;
 	gun.backlerp = 1.0 - cl.lerpfrac;
 	VectorCopy (gun.origin, gun.oldorigin);	// don't lerp at all
+	//!! NEGATE
+	gun.angles[2] = -gun.angles[2];			// q2 bug: negate md2 angle (may be, for gun it is always 0?)
 	AddEntityWithEffects (&gun, renderfx);
 }
 
 
 void CL_AddEntityBox (entityState_t *st, unsigned rgba)
 {
-	entity_t	ent;
-	memset (&ent, 0, sizeof(ent));
-
 	centity_t *cent = &cl_entities[st->number];
 
+	entity_t ent;
+	memset (&ent, 0, sizeof(ent));
 	ent.flags = RF_BBOX;
 	ent.color.rgba = rgba;
 
+#if 1
+	// lerp
+	for (int i = 0; i < 3; i++)
+		ent.angles[i] = LerpAngle (cent->prev.angles[i], cent->current.angles[i], cl.lerpfrac);
+#else
+	// don't lerp
 	VectorCopy (cent->current.angles, ent.angles);
+#endif
+	//?? can use cent->lerp_origin
 	VectorCopy (cent->prev.center, ent.oldorigin);
 	VectorCopy (cent->current.center, ent.origin);
 	ent.backlerp = 1.0f - cl.lerpfrac;
@@ -606,7 +614,7 @@ void CL_AddEntityBox (entityState_t *st, unsigned rgba)
 	}
 	else
 	{
-		ent.angles[2] = -ent.angles[2];
+		ent.angles[2] = -ent.angles[2];		// triangle models have bug in Q2: angles[2] should be negated
 		VectorSubtract (st->maxs, st->mins, ent.size);
 		VectorScale (ent.size, 0.5f, ent.size);
 	}
@@ -622,9 +630,14 @@ static void CL_AddDebugLines (void)
 	for (int pnum = 0; pnum < cl.frame.num_entities; pnum++)
 	{
 		entityState_t *st = &cl_parse_entities[(cl.frame.parse_entities+pnum)&(MAX_PARSE_ENTITIES-1)];
-		if (!st->solid) continue;			// no collision with this entity
-
-		CL_AddEntityBox (st, 0xFF808000);
+		// different color for collision -- non-collision entities
+#if 0
+		//BUGS! -- server not sent bbox params for this entity
+		// most used for bbox drawing params computed (for non-inline models) from st->solid (encoded bbox)
+		CL_AddEntityBox (st, st->solid ? RGB(0,0.5,0.5) : RGB(0,0.1,0.1));
+#else
+		if (st->solid) CL_AddEntityBox (st, RGB(0,0.5,0.5));
+#endif
 	}
 }
 
@@ -632,29 +645,26 @@ static void CL_AddDebugLines (void)
 /*
 ===============
 CL_AddPacketEntities
-
 ===============
 */
 static void CL_AddPacketEntities (void)
 {
-	entity_t	ent;
-	entityState_t *s1;
-	int			i;
-	centity_t	*cent;
-	unsigned 	effects, renderfx;
+	int		i;
 
 	// bonus items rotate at a fixed rate
 	float autorotate = anglemod(cl.ftime * 100);
 	// brush models can auto animate their frames
 	int autoanim = 2 * cl.time / 1000;
 
-	memset (&ent, 0, sizeof(ent));
-
 	for (int pnum = 0; pnum < cl.frame.num_entities; pnum++)
 	{
-		GetEntityInfo (pnum, &s1, &effects, &renderfx);
-		s1 = &cl_parse_entities[(cl.frame.parse_entities+pnum)&(MAX_PARSE_ENTITIES-1)];
-		cent = &cl_entities[s1->number];
+		entity_t ent;
+		memset (&ent, 0, sizeof(ent));
+
+		entityState_t *st;
+		unsigned effects, renderfx;
+		GetEntityInfo (pnum, &st, &effects, &renderfx);
+		centity_t *cent = &cl_entities[st->number];
 
 		// set frame
 		if (effects & EF_ANIM01)
@@ -666,7 +676,7 @@ static void CL_AddPacketEntities (void)
 		else if (effects & EF_ANIM_ALLFAST)
 			ent.frame = cl.time / 100;
 		else
-			ent.frame = s1->frame;
+			ent.frame = st->frame;
 
 		ent.oldframe = cent->prev.frame;
 		ent.backlerp = 1.0f - cl.lerpfrac;
@@ -690,23 +700,21 @@ static void CL_AddPacketEntities (void)
 		// tweak the color of beams
 		if (renderfx & RF_BEAM)
 		{
-			beam_t	*b;
-
-			b = CL_AllocParticleBeam (ent.origin, ent.oldorigin, ent.frame / 2.0f, 0);
+			beam_t *b = CL_AllocParticleBeam (ent.origin, ent.oldorigin, ent.frame / 2.0f, 0);
 			if (!b) continue;
 			b->type = BEAM_STANDARD;
 			b->color.rgba = 0;
 			// the four beam colors are encoded in 32 bits of skinnum (hack)
-			b->color.c[0] = (s1->skinnum >> ((rand() % 4)*8)) & 0xFF;
+			b->color.c[0] = (st->skinnum >> ((rand() % 4)*8)) & 0xFF;
 			b->alpha = 0.3f;
 			continue;
 		}
 
 		// set skin
-		if (s1->modelindex == 255)
+		if (st->modelindex == 255)
 		{	// use custom player skin
 			ent.skinnum = 0;
-			clientinfo_t *ci = &cl.clientinfo[s1->skinnum & 0xFF];
+			clientinfo_t *ci = &cl.clientinfo[st->skinnum & 0xFF];
 			ent.skin = ci->skin;
 			ent.model = ci->model;
 			if (!ent.skin || !ent.model)
@@ -737,9 +745,9 @@ static void CL_AddPacketEntities (void)
 		}
 		else
 		{
-			ent.skinnum = s1->skinnum;
+			ent.skinnum = st->skinnum;
 			ent.skin = NULL;
-			ent.model = cl.model_draw[s1->modelindex];
+			ent.model = cl.model_draw[st->modelindex];
 		}
 
 		// only used for black hole model right now, FIXME: do better
@@ -765,7 +773,7 @@ static void CL_AddPacketEntities (void)
 			vec3_t forward, start;
 
 			ent.angles[0] = 0;
-			ent.angles[1] = anglemod(cl.time/2) + s1->angles[1];
+			ent.angles[1] = anglemod(cl.time/2) + st->angles[1];
 			ent.angles[2] = 180;
 			AngleVectors (ent.angles, forward, NULL, NULL);
 			VectorMA (ent.origin, 64, forward, start);
@@ -774,14 +782,12 @@ static void CL_AddPacketEntities (void)
 		else
 		{	// interpolate angles
 			for (i = 0; i < 3; i++)
-			{
-				float a1 = cent->current.angles[i];
-				float a2 = cent->prev.angles[i];
-				ent.angles[i] = LerpAngle (a2, a1, cl.lerpfrac);
-			}
+				ent.angles[i] = LerpAngle (cent->prev.angles[i], cent->current.angles[i], cl.lerpfrac);
 		}
+		if (st->solid != 31)
+			ent.angles[2] = -ent.angles[2];		// triangle models have bug in Q2: angles[2] should be negated
 
-		if (s1->number == cl.playernum+1)
+		if (st->number == cl.playernum+1)
 		{
 #if 0
 			-- Why disabled: works only for CURRENT player (not for others)
@@ -818,7 +824,7 @@ static void CL_AddPacketEntities (void)
 		}
 
 		// if set to invisible, skip
-		if (!s1->modelindex)
+		if (!st->modelindex)
 			continue;
 
 		if (effects & EF_BFG)
@@ -841,7 +847,7 @@ static void CL_AddPacketEntities (void)
 			ent.alpha = (effects & EF_TRACKERTRAIL) ? 0.6 : 0.3;
 		}
 
-		// add to refresh list
+		// send to renderer
 		AddEntityWithEffects (&ent, renderfx);
 
 		ent.skin = NULL;		// never use a custom skin on others
@@ -850,12 +856,12 @@ static void CL_AddPacketEntities (void)
 		ent.alpha = 0;
 
 		// duplicate for linked models
-		if (s1->modelindex2)
+		if (st->modelindex2)
 		{
-			if (s1->modelindex2 == 255)
+			if (st->modelindex2 == 255)
 			{	// custom weapon
-				clientinfo_t *ci = &cl.clientinfo[s1->skinnum & 0xff];
-				i = (s1->skinnum >> 8);
+				clientinfo_t *ci = &cl.clientinfo[st->skinnum & 0xff];
+				i = (st->skinnum >> 8);
 				if (!cl_vwep->integer || i > MAX_CLIENTWEAPONMODELS - 1)
 					i = 0;		// 0 is default weapon model
 				ent.model = ci->weaponmodel[i];
@@ -866,11 +872,12 @@ static void CL_AddPacketEntities (void)
 				}
 			}
 			else
-				ent.model = cl.model_draw[s1->modelindex2];
+				ent.model = cl.model_draw[st->modelindex2];
 
 			// PMM - check for the defender sphere shell .. make it translucent
 			// replaces the previous version which used the high bit on modelindex2 to determine transparency
-			if (!stricmp (cl.configstrings[CS_MODELS+(s1->modelindex2)], "models/items/shell/tris.md2"))
+			//!! change this
+			if (!stricmp (cl.configstrings[CS_MODELS+(st->modelindex2)], "models/items/shell/tris.md2"))
 			{
 				ent.alpha = 0.32;
 				ent.flags = RF_TRANSLUCENT;
@@ -882,14 +889,14 @@ static void CL_AddPacketEntities (void)
 			ent.flags = 0;
 			ent.alpha = 0;
 		}
-		if (s1->modelindex3)
+		if (st->modelindex3)
 		{
-			ent.model = cl.model_draw[s1->modelindex3];
+			ent.model = cl.model_draw[st->modelindex3];
 			AddEntityWithEffects (&ent, renderfx);
 		}
-		if (s1->modelindex4)
+		if (st->modelindex4)
 		{
-			ent.model = cl.model_draw[s1->modelindex4];
+			ent.model = cl.model_draw[st->modelindex4];
 			AddEntityWithEffects (&ent, renderfx);
 		}
 
@@ -898,7 +905,7 @@ static void CL_AddPacketEntities (void)
 			ent.model = cl_mod_powerscreen;
 			ent.oldframe = 0;
 			ent.frame = 0;
-			ent.flags |= (RF_TRANSLUCENT | RF_SHELL_GREEN);
+			ent.flags |= RF_TRANSLUCENT|RF_SHELL_GREEN;
 			ent.alpha = 0.30;
 			V_AddEntity (&ent);
 		}
@@ -945,13 +952,13 @@ static void CL_AddPacketEntities (void)
 				{
 					static float bfg_lightramp[7] = {200, 300, 400, 600, 300, 150, 75};
 
-					float intens = bfg_lightramp[s1->frame + 1];
-					float prev = bfg_lightramp[s1->frame];
+					float intens = bfg_lightramp[st->frame + 1];
+					float prev = bfg_lightramp[st->frame];
 					intens = prev * (1.0f - cl.lerpfrac) + intens * cl.lerpfrac;
-					float bright = s1->frame > 2 ? (5.0f - s1->frame) / (5 - 2) : 1;
+					float bright = st->frame > 2 ? (5.0f - st->frame) / (5 - 2) : 1;
 					V_AddLight (ent.origin, intens, 0, bright, 0);
 				}
-//				RE_DrawTextLeft (va("bfg: %d (%c) [%3.1f]", s1->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac),RGB(1,1,1));//!!
+//				RE_DrawTextLeft (va("bfg: %d (%c) [%3.1f]", st->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac),RGB(1,1,1));//!!
 			}
 			// XATRIX
 			else if (effects & EF_TRAP) {
@@ -1187,10 +1194,10 @@ void CL_AddEntities (void)
 	CL_CalcViewValues ();
 	// PMM - moved this here so the heat beam has the right values for the vieworg, and can lock the beam to the gun
 	CL_AddPacketEntities ();
+	CL_AddDebugLines ();
 	CL_AddTEnts ();
 	CL_AddDLights ();
 	CL_RunLightStyles ();	// migrated here from CL_Frame() because of clump time
-	CL_AddDebugLines ();
 
 	unguard;
 }

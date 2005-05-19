@@ -19,11 +19,10 @@ static poly_t *subdivPolys;
 
 static int NewVert (float x, float y, float z)
 {
-	int		i;
 	vec3_t	*v;
 
 //	DebugPrintf ("  NewVert(%g, %g, %g)", x, y, z);
-	for (i = 0; i < subdivNumVerts; i++)
+	for (int i = 0; i < subdivNumVerts; i++)
 	{
 		v = psubdivVerts[i];
 		if ((*v)[0] == x && (*v)[1] == y && (*v)[2] == z)
@@ -52,8 +51,8 @@ static poly_t *NewPoly (int numVerts)
 {
 //	DebugPrintf ("NewPoly(%d)\n", numVerts);
 	// alloc poly
-	poly_t *p = (poly_t*) subdivPolyChain->Alloc (sizeof(poly_t) + 4 * numVerts);
-	p->indexes = (int*)(p+1);
+	poly_t *p = new (subdivPolyChain) poly_t;
+	p->indexes = new (subdivPolyChain) int[numVerts];
 	p->numIndexes = 0;
 #ifdef POLY_DEBUG
 	p->maxIndexes = numVerts;
@@ -77,24 +76,23 @@ static void AddPointToPoly (poly_t *poly, int index)
 
 static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis, float value, float delta)
 {
-	int		i, lastIndex, idx1, idx2;
+	int		idx1, idx2;
 	vec3_t	*v1, *v2;
-	float	value1, value2;
 
 //	DebugPrintf ("SubdividePoly: %d inds, axis = %d, value = %g, delta = %g\n", poly->numIndexes, axis, value, delta);
-	lastIndex = poly->numIndexes - 1;
+	int lastIndex = poly->numIndexes - 1;
 	if (lastIndex < 0)
 	{
 //		DebugPrintf ("...empty!\n");
 		return;		// empty poly
 	}
 
-	value1 = value - delta;
-	value2 = value + delta;
+	float value1 = value - delta;
+	float value2 = value + delta;
 
 	idx2 = poly->indexes[0];
 	v2 = psubdivVerts[idx2];
-	for (i = 0; i <= lastIndex; i++)
+	for (int i = 0; i <= lastIndex; i++)
 	{
 		int		side1, side2;
 
@@ -127,11 +125,10 @@ static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis,
 			// if points are on the different sides -- split line
 			if (!(side1 & side2))
 			{
-				float	frac;
 				vec3_t	mid;
 
 				// calculate midpoint
-				frac = (value - (*v1)[axis]) / ((*v2)[axis] - (*v1)[axis]);
+				float frac = (value - (*v1)[axis]) / ((*v2)[axis] - (*v1)[axis]);
 				VectorSubtract ((*v2), (*v1), mid);
 				VectorScale (mid, frac, mid);
 				VectorAdd (mid, (*v1), mid);
@@ -160,7 +157,7 @@ static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis,
 // Returns number of triangles in new surface
 int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
 {
-	int		axis, i, numTris;
+	int		i;
 	poly_t	*poly, *firstPoly, *lastPoly;
 	float	tessError;		// deviation from splitting plane
 
@@ -179,19 +176,17 @@ int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
 	poly->numIndexes = numVerts;
 
 	/*------- subdivide polys -------*/
-	for (axis = 0; axis < 3; axis++)
+	for (int axis = 0; axis < 3; axis++)
 	{
 		poly = firstPoly;
 		firstPoly = NULL;
 		while (poly)
 		{
 			vec3_t	mins, maxs;
-			int		numIndexes;
-			float	value, min, max;
 			poly_t	*workPoly, *poly1, *poly2;
 
 //			DebugPrintf ("processing axis %d: %d indexes ...\n", axis, poly->numIndexes);
-			numIndexes = poly->numIndexes;
+			int numIndexes = poly->numIndexes;
 			if (!numIndexes) continue;	// skip empty poly
 
 			// calculate poly bounds
@@ -201,13 +196,13 @@ int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
 //			DebugPrintf ("bounds: (%g, %g, %g) - (%g, %g, %g)\n", VECTOR_ARG(mins), VECTOR_ARG(maxs));
 
 			// mins/maxs, aligned to tessSize grid and shifted to the poly center by tessSize
-			min = appFloor((mins[axis] + tessSize + tessError) / tessSize) * tessSize;
-			max = appCeil((maxs[axis] - tessSize - tessError) / tessSize) * tessSize;
+			float min = appFloor((mins[axis] + tessSize + tessError) / tessSize) * tessSize;
+			float max = appCeil((maxs[axis] - tessSize - tessError) / tessSize) * tessSize;
 //			DebugPrintf ("... stepping from %g to %g with step %g\n", min, max, tessSize);
 
 			// shred workPoly
 			workPoly = poly;
-			for (value = min; value <= max; value += tessSize)
+			for (float value = min; value <= max; value += tessSize)
 			{
 				numIndexes = workPoly->numIndexes;
 				// alloc new polys
@@ -237,7 +232,7 @@ int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
 	}
 	subdivPolys = firstPoly;
 	// calculate number of triangles in a resulting surface
-	numTris = 0;
+	int numTris = 0;
 	for (poly = firstPoly; poly; poly = poly->next)
 		numTris += poly->numIndexes - 2;	// numTris = numVerts - 2
 //	DebugPrintf ("SubdividePlane: OK\n--------------------------\n");
@@ -258,13 +253,9 @@ void FreeSubdividedPlane (void)
 
 void GetSubdivideIndexes (int *pindex)
 {
-	poly_t	*poly;
-
-	for (poly = subdivPolys; poly; poly = poly->next)
+	for (poly_t *poly = subdivPolys; poly; poly = poly->next)
 	{
-		int		i;
-
-		for (i = 0; i < poly->numIndexes - 2; i++)	// numTris; this will also reject polys with 2 vertexes
+		for (int i = 0; i < poly->numIndexes - 2; i++)	// numTris; this will also reject polys with 2 vertexes
 		{
 			*pindex++ = poly->indexes[0];
 			*pindex++ = poly->indexes[i+1];
@@ -279,10 +270,10 @@ void GetSubdivideIndexes (int *pindex)
 // Gets array of pointers to vectors, removes collinear points and returns new number of verts
 int RemoveCollinearPoints (vec3_t **pverts, int numVerts)
 {
-	int		i, prevVert, validVerts;
+	int		i;
 
 	pverts[numVerts] = pverts[0];			// make a loop
-	prevVert = 0;
+	int prevVert = 0;
 	for (i = 1; i < numVerts; i++)
 	{
 		vec3_t	v1, v2;
@@ -303,7 +294,7 @@ int RemoveCollinearPoints (vec3_t **pverts, int numVerts)
 #undef CHECK_AXIS
 	}
 	/*----- compress pverts and compute new numVerts ------*/
-	validVerts = 0;
+	int validVerts = 0;
 	for (i = 0; i < numVerts; i++)
 	{
 		if (pverts[i])
@@ -317,11 +308,8 @@ int RemoveCollinearPoints (vec3_t **pverts, int numVerts)
 
 float GetPolyArea (vec3_t **pverts, int numVerts)
 {
-	float	area;
-	int		i;
-
-	area = 0;
-	for (i = 1; i < numVerts - 1; i++)
+	float area = 0;
+	for (int i = 1; i < numVerts - 1; i++)
 	{
 		vec3_t	d1, d2, cross;
 

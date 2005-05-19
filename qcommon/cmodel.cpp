@@ -909,13 +909,11 @@ void CMod_LoadHLLeafBrushes ()
 void CM_LoadHLMap (char *name, void *buf)
 {
 	int	i;
-	hl_dheader_t	*header;
-
-	header = (hl_dheader_t *)buf;
+	dHlHdr_t *header = (dHlHdr_t*)buf;
 
 	maptype = map_hl;
 
-	for (i=0 ; i<sizeof(hl_dheader_t)/4 ; i++)
+	for (i=0 ; i<sizeof(dHlHdr_t)/4 ; i++)
 		((int *)header)[i] = LittleLong ( ((int *)header)[i]);
 
 	CMod_LoadHLSurfaces (&header->lumps[HL_LUMP_TEXINFO]);

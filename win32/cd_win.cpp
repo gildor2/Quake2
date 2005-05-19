@@ -351,10 +351,10 @@ static void CD_f (int argc, char **argv)
 }
 
 
-LONG CDAudio_MessageHandler (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static bool CDAudio_MsgHook (UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (lParam != wDeviceID)
-		return 1;
+	if (uMsg != MM_MCINOTIFY || lParam != wDeviceID)
+		return false;
 
 	switch (wParam)
 	{
@@ -386,10 +386,9 @@ LONG CDAudio_MessageHandler (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		default:
 			Com_DPrintf ("Unexpected MM_MCINOTIFY type (%i)\n", wParam);
-			return 1;
 	}
 
-	return 0;
+	return false;
 }
 
 
@@ -426,6 +425,8 @@ CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
 	if (cd_nocd->integer)
 		return -1;
+
+	AddMsgHook (CDAudio_MsgHook);
 
 	mciOpenParms.lpstrDeviceType = "cdaudio";
 	if (dwReturn = mciSendCommand (0, MCI_OPEN, MCI_OPEN_TYPE | MCI_OPEN_SHAREABLE, (DWORD) (LPVOID) &mciOpenParms))
@@ -466,8 +467,7 @@ CVAR_END
 
 void CDAudio_Shutdown (void)
 {
-	if (!initialized)
-		return;
+	if (!initialized) return;
 	CDAudio_Stop ();
 	if (mciSendCommand (wDeviceID, MCI_CLOSE, MCI_WAIT, (DWORD)NULL))
 		Com_DPrintf ("CDAudio_Shutdown: MCI_CLOSE failed\n");

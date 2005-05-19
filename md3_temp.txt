@@ -1,0 +1,8 @@
+cgame/cg_players.c
+  CG_ParseAnimationFile() -- reading frame numbers for model animations
+  CG_PlayerAnimation() -- set frame number for player [sub]models
+  CG_PlayerAngles() -- lean/rotare model depends on movement
+  CG_Player() -- compute/draw player model (most code in function - for different powerups)
+
+cg_ents.c
+  CG_PositionRotatedEntityOnTag() -- connect 2 sub-models (most work - in renderer.R_LerpTag())

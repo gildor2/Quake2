@@ -216,8 +216,8 @@ typedef	bool (*CreateDynRenderer_t) (const refImport_t *, refExport_t *);
 			rexp->struc_size != sizeof(refExport_t)) \
 			return false;	\
 		ri = *rimp;			\
-		InitRendererVars ();\
 		*rexp = re;			\
+		InitRendererVars ();\
 		return true;		\
 	}
 

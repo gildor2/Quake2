@@ -35,8 +35,8 @@
 namespace OpenGLDrv {
 
 
-bspModel_t gl_worldModel;
-static bspfile_t	*bspfile;
+bspModel_t map;
+static bspfile_t *bspfile;
 
 #define MAX_GLMODELS	1024
 
@@ -44,11 +44,15 @@ static model_t *modelsArray[MAX_GLMODELS];
 static int	modelCount;
 
 
-/*---------------- Loading models: common ----------------*/
+/*-----------------------------------------------------------------------------
+	Loading models: common code
+-----------------------------------------------------------------------------*/
 
+// forwards
 static md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len);
+static md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len);
 static sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len);
-static void FreeModels (void);
+static void FreeModels ();
 
 
 model_t	*FindModel (const char *name)
@@ -56,12 +60,26 @@ model_t	*FindModel (const char *name)
 	char	name2[MAX_QPATH];
 	appCopyFilename (name2, name, sizeof(name2));
 
+#if 0
+	// try to load md3 instead of md2
+	//!! disable later
+	char *ext = strrchr (name2, '.');
+	if (ext && !strcmp (ext, ".md2"))
+	{
+		ext[3] = '3';		// ".md2" -> ".md3"
+		if (FS_FileExists (name2))
+			return FindModel (name2);
+		// md3 model with the same name is not found -- load md2
+		ext[3] = '2';		// ".md3" -> ".md2"
+	}
+#endif
+
 	model_t *m;
 	// search already loaded models
 	for (int i = 0; i < modelCount; i++)
 	{
 		m = modelsArray[i];
-		if (!m) continue;
+		if (!m) continue;				//?? should not happens
 		if (!strcmp (name2, m->name)) return m;
 	}
 
@@ -79,7 +97,6 @@ START_PROFILE2(FindModel::Load, name)
 	{
 		m = new model_t;
 		strcpy (m->name, name2);
-		m->type = MODEL_UNKNOWN;
 		modelsArray[modelCount++] = m;
 		Com_DPrintf ("R_FindModel: %s not found\n", name2);
 		return NULL;	// file not found
@@ -91,6 +108,9 @@ START_PROFILE(FindModel::Process)
 	{
 	case MD2_IDENT:
 		m = LoadMd2 (name2, (byte*)file, len);
+		break;
+	case MD3_IDENT:
+		m = LoadMd3 (name2, (byte*)file, len);
 		break;
 	case SP2_IDENT:
 		m = LoadSp2 (name2, (byte*)file, len);
@@ -108,7 +128,9 @@ END_PROFILE
 }
 
 
-/*------------------ Common BSP loading code --------------------*/
+/*-----------------------------------------------------------------------------
+	Common BSP loading code
+-----------------------------------------------------------------------------*/
 
 // "stride" = sizeof(dplane_t) or sizeof(dplane3_t)
 // Both this structures has same fields, except Q3 lost "type"
@@ -164,25 +186,23 @@ static void LoadFlares (lightFlare_t *data, int count)
 
 //??#define MAX_ASPECT	(5.0f / 8)
 
-static void BuildSurfFlare (surfaceCommon_t *surf, color_t *color, float intens)
+static void BuildSurfFlare (surfaceBase_t *surf, color_t *color, float intens)
 {
-	gl_flare_t	*f;
 	vec3_t	origin, c;
-	float	/* aspect,*/ x, y;
 
 	if (surf->type != SURFACE_PLANAR) return;
 	surfacePlanar_t *pl = static_cast<surfacePlanar_t*>(surf);
 
-//	aspect = (pl->maxs2[0] - pl->mins2[0]) / (pl->maxs2[1] - pl->mins2[1]);
+//	float aspect = (pl->maxs2[0] - pl->mins2[0]) / (pl->maxs2[1] - pl->mins2[1]);
 //	if (aspect < MAX_ASPECT || aspect > 1/MAX_ASPECT) return;	// not square
 
-	x = (pl->maxs2[0] + pl->mins2[0]) / 2;
-	y = (pl->maxs2[1] + pl->mins2[1]) / 2;
+	float x = (pl->maxs2[0] + pl->mins2[0]) / 2;
+	float y = (pl->maxs2[1] + pl->mins2[1]) / 2;
 	VectorScale (pl->axis[0], x, origin);
 	VectorMA (origin, y, pl->axis[1], origin);
 	VectorMA (origin, pl->plane.dist + 1, pl->plane.normal, origin);
 
-	f = new (map.dataChain) gl_flare_t;
+	gl_flare_t *f = new (map.dataChain) gl_flare_t;
 
 	VectorCopy (origin, f->origin);
 	f->surf = surf;
@@ -314,7 +334,7 @@ static void SetNodeParent (node_t *node, node_t *parent)
 static void SetNodesAlpha (void)
 {
 	node_t	*node, *p;
-	surfaceCommon_t **psurf;
+	surfaceBase_t **psurf;
 	int		i, j;
 
 	// enumerate leafs
@@ -332,10 +352,6 @@ static void SetNodesAlpha (void)
 
 static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 {
-	int		i;
-	float	min1, max1, min2, max2;
-	vertex_t *v;
-
 	// generate axis
 	if (pl->plane.normal[2] == 1 || pl->plane.normal[2] == -1)
 	{
@@ -352,8 +368,11 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 		CrossProduct (pl->plane.normal, pl->axis[0], pl->axis[1]);
 	}
 	// compute 2D bounds
+	float min1, max1, min2, max2;
 	min1 = min2 = BIG_NUMBER;
 	max1 = max2 = -BIG_NUMBER;
+	int	i;
+	vertex_t *v;
 	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
 	{
 		float	p1, p2;
@@ -372,8 +391,9 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 }
 
 
-/*------------------ Loading Quake2 BSP file --------------------*/
-
+/*-----------------------------------------------------------------------------
+	Loading Quake2 BSP file
+-----------------------------------------------------------------------------*/
 
 static void LoadLeafsNodes2 (dnode_t *nodes, int numNodes, dleaf_t *leafs, int numLeafs)
 {
@@ -444,7 +464,6 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 	{
 		CALL_CONSTRUCTOR(out);
 		appSprintf (ARRAY_ARG(out->name), "*%d", i);
-		out->type = MODEL_INLINE;
 		out->size = -1;							// do not delete in FreeModels()
 		modelsArray[modelCount++] = out;
 
@@ -454,12 +473,12 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 		out->headnode = data->headnode;
 		// create surface list
 		out->numFaces = data->numfaces;
-		out->faces = new (map.dataChain) surfaceCommon_t* [out->numFaces];
+		out->faces = new (map.dataChain) surfaceBase_t* [out->numFaces];
 
 		int k = data->firstface;
 		for (int j = 0; j < out->numFaces; j++, k++)
 		{
-			surfaceCommon_t *s = map.faces[k];
+			surfaceBase_t *s = map.faces[k];
 			out->faces[j] = s;
 			s->owner = i == 0 ? NULL : out;		// model 0 is world
 		}
@@ -473,13 +492,10 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 	int		j;
 
 	map.numFaces = numSurfaces;
-	map.faces = new (map.dataChain) surfaceCommon_t* [numSurfaces];
+	map.faces = new (map.dataChain) surfaceBase_t* [numSurfaces];
 	for (int i = 0; i < numSurfaces; i++, surfs++)
 	{
-		cmodel_t	*owner;
-		vertex_t	*v;
-		float		mins[2], maxs[2];	// surface extents
-		vec3_t		*pverts[MAX_POLYVERTS];
+		vec3_t	*pverts[MAX_POLYVERTS];
 
 		int numVerts = surfs->numedges;
 		/*------- build vertex list -------*/
@@ -506,6 +522,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (stex->flags & SURF_DIFFUSE) sflags |= SHADER_ENVMAP2;
 
 		// find owner model
+		cmodel_t *owner;
 		for (j = 0, owner = models; j < numModels; j++, owner++)
 			if (i >= owner->firstface && i < owner->firstface + owner->numfaces)
 				break;
@@ -513,11 +530,13 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (owner->flags & CMODEL_ALPHA)
 			sflags |= SHADER_ALPHA;
 
-/*if (Cvar_VariableInt("dlmodels"))	//??
-{
-		if (owner->flags & CMODEL_MOVABLE && !(sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA)))
-			sflags = SHADER_SKIN;
-}*/
+#if 0
+		if (Cvar_VariableInt("dlmodels"))	//??
+		{
+				if (owner->flags & CMODEL_MOVABLE && !(sflags & (SHADER_TRANS33|SHADER_TRANS66|SHADER_ALPHA)))
+					sflags = SHADER_SKIN;
+		}
+#endif
 
 		// check covered contents and update shader flags
 		if (stex->flags & (SURF_TRANS33|SURF_TRANS66) && !(stex->flags &
@@ -626,7 +645,6 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		/*------- Prepare for vertex generation ----------------*/
 		surfacePlanar_t *s = (surfacePlanar_t*) map.dataChain->Alloc (sizeof(surfacePlanar_t) + sizeof(vertex_t)*numVerts + sizeof(int)*numIndexes);
 		CALL_CONSTRUCTOR(s);
-		s->type = SURFACE_PLANAR;
 		s->shader = shader;
 		map.faces[i] = s;
 
@@ -662,8 +680,9 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		}
 
 		/*----------- Create surface vertexes ------------------*/
-		v = s->verts;
+		vertex_t *v = s->verts;
 		// ClearBounds2D (mins, maxs)
+		float mins[2], maxs[2];				// surface extents
 		mins[0] = mins[1] = BIG_NUMBER;
 		maxs[0] = maxs[1] = -BIG_NUMBER;
 		ClearBounds (s->mins, s->maxs);
@@ -673,10 +692,8 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 			VectorCopy ((*pverts[j]), v->xyz);
 			if (!(sflags & SHADER_SKY))
 			{
-				float	v1, v2;
-
-				v1 = DotProduct (v->xyz, stex->vecs[0]) + stex->vecs[0][3];
-				v2 = DotProduct (v->xyz, stex->vecs[1]) + stex->vecs[1][3];
+				float v1 = DotProduct (v->xyz, stex->vecs[0]) + stex->vecs[0][3];
+				float v2 = DotProduct (v->xyz, stex->vecs[1]) + stex->vecs[1][3];
 				/*----------- Update bounds --------------*/
 				EXPAND_BOUNDS(v1, mins[0], maxs[0]);
 				EXPAND_BOUNDS(v2, mins[1], maxs[1]);
@@ -705,7 +722,6 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		{
 			int		size[2];		// lightmap size
 			int		imins[2], imaxs[2];		// int mins/maxs, aligned to lightmap grid
-			dynamicLightmap_t *lm;
 
 			// round mins/maxs to a lightmap cell size
 			imins[0] = appFloor(mins[0] / 16.0f) * 16;
@@ -725,7 +741,8 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 				v->lm2[1] = v->lm[1] - 0.5;
 			}
 			// create dynamic lightmap
-			s->lightmap = lm = new (map.dataChain) dynamicLightmap_t;
+			dynamicLightmap_t *lm = new (map.dataChain) dynamicLightmap_t;
+			s->lightmap = lm;
 			for (j = 0; j < 4; j++)			// enum styles
 			{
 				int st = surfs->styles[j];
@@ -775,10 +792,10 @@ static int LightmapCompare (const void *s1, const void *s2)
 
 static int ShaderCompare (const void *s1, const void *s2)
 {
-	surfaceCommon_t *surf1, *surf2;
+	surfaceBase_t *surf1, *surf2;
 
-	surf1 = *(surfaceCommon_t **)s1;
-	surf2 = *(surfaceCommon_t **)s2;
+	surf1 = *(surfaceBase_t **)s1;
+	surf2 = *(surfaceBase_t **)s2;
 
 	return surf1->shader->sortIndex - surf2->shader->sortIndex;
 }
@@ -846,7 +863,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 
 	/*------------ find invalid lightmaps -------------*/
 	// sort surfaces by lightmap data pointer
-	qsort (sortedSurfaces, map.numFaces, sizeof(surfaceCommon_t*), LightmapCompare);
+	qsort (sortedSurfaces, map.numFaces, sizeof(surfaceBase_t*), LightmapCompare);
 
 	// check for lightmap intersection
 	// NOTE: nere we compare lm->source[0], which should always correspond to a lightstyle=0 (global lighting)
@@ -927,7 +944,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 	if (!gl_config.vertexLight)
 	{
 		// resort surfaces by shader
-		qsort (sortedSurfaces, map.numFaces, sizeof(surfaceCommon_t*), ShaderCompare);
+		qsort (sortedSurfaces, map.numFaces, sizeof(surfaceBase_t*), ShaderCompare);
 
 		bl = NULL;
 		i = 0;
@@ -1023,10 +1040,10 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 // Q3's leafFaces are int, Q1/2 - short
 static void LoadLeafSurfaces2 (unsigned short *data, int count)
 {
-	surfaceCommon_t **out;
+	surfaceBase_t **out;
 
 	map.numLeafFaces = count;
-	map.leafFaces = out = new (map.dataChain) surfaceCommon_t* [count];
+	map.leafFaces = out = new (map.dataChain) surfaceBase_t* [count];
 	for (int i = 0; i < count; i++, data++, out++)
 		*out = map.faces[*data];
 }
@@ -1126,17 +1143,15 @@ END_PROFILE
 }
 
 
-/*--------------- LoadWorldMap --------------------*/
+/*-----------------------------------------------------------------------------
+	LoadWorldMap()
+-----------------------------------------------------------------------------*/
 
 void LoadWorldMap (const char *name)
 {
-	char	name2[MAX_QPATH];
-
-	if (!name[0])
-		Com_FatalError ("R_LoadWorldMap: NULL name");
-
 	guard(LoadWorldMap);
 
+	char name2[MAX_QPATH];
 	appCopyFilename (name2, name, sizeof(name2));
 
 	// map must be reloaded to update shaders (which are restarted every BeginRegistration())
@@ -1190,19 +1205,16 @@ void LoadWorldMap (const char *name)
 //?? can use cmodel.cpp function
 node_t *PointInLeaf (vec3_t p)
 {
-	node_t		*node;
-	cplane_t	*plane;
-
 	if (!map.name[0] || !map.numNodes)
 		Com_DropError ("R_PointInLeaf: bad model");
 
-	node = map.nodes;
-	while (1)
+	node_t *node = map.nodes;
+	while (true)
 	{
 		if (!node->isNode)
 			return node;
 
-		plane = node->plane;
+		cplane_t *plane = node->plane;
 		if (DotProduct (p, plane->normal) - plane->dist > 0)
 			node = node->children[0];
 		else
@@ -1213,50 +1225,48 @@ node_t *PointInLeaf (vec3_t p)
 }
 
 
-/*----------- Loading triangle models ----------*/
-
+/*-----------------------------------------------------------------------------
+	Loading triangle models
+-----------------------------------------------------------------------------*/
 
 // Find xyz_index for each "st" (st have unique xyz, but xyz may have few st on texture seams)
 // and fill "st" list.
 // This function may be used for Q2 and KP models
 static int ParseGlCmds (const char *name, surfaceMd3_t *surf, int *cmds, int *xyzIndexes)
 {
-	int		count, numTris, *idx, allocatedVerts;
 	int		vertsIndexes[1024];		// verts per triangle strip/fan
 
 	guard(ParseGlCmds);
 
-	numTris = 0;
-	allocatedVerts = 0;
-	idx = surf->indexes;
-	while (count = *cmds++)
+	int numTris = 0;
+	int allocatedVerts = 0;
+	int *idx = surf->indexes;
+	while (int count = *cmds++)
 	{
-		bool	strip;
 		int		i, i1, i2, i3;
 
 		// cmds -> s1, t1, idx1, s2, t2, idx2 ...
 
-		strip = count > 0;
+		bool strip = count > 0;
 		if (!strip)
 			count = -count;
 		numTris += count - 2;
 
 		if (numTris > surf->numTris)
 		{
-			Com_WPrintf ("R_LoadMd2(%s): incorrect triangle count\n", name);
+			Com_WPrintf ("ParseGlCmds(%s): incorrect triangle count\n", name);
 			return 0;
 		}
 
 		// generate vertexes and texcoords
 		for (i = 0; i < count; i++, cmds += 3)
 		{
-			float	*dst, s, t;
-			int		index;
-
-			s = ((float*)cmds)[0];
-			t = ((float*)cmds)[1];
+			float s = ((float*)cmds)[0];
+			float t = ((float*)cmds)[1];
 
 			// find st in allocated vertexes
+			int		index;
+			float	*dst;
 			for (index = 0, dst = surf->texCoords; index < allocatedVerts; index++, dst += 2)
 				if (xyzIndexes[index] == cmds[2] && dst[0] == s && dst[1] == t) break;
 
@@ -1264,7 +1274,7 @@ static int ParseGlCmds (const char *name, surfaceMd3_t *surf, int *cmds, int *xy
 			{	// vertex not found - allocate it
 				if (allocatedVerts == surf->numVerts)
 				{
-					Com_WPrintf ("R_LoadMd2(%s): too much texcoords\n", name);
+					Com_WPrintf ("ParseGlCmds(%s): too much texcoords\n", name);
 					return false;
 				}
 				dst[0] = s;
@@ -1303,22 +1313,39 @@ static int ParseGlCmds (const char *name, surfaceMd3_t *surf, int *cmds, int *xy
 }
 
 
-static void ProcessMd2Frame (vertexMd3_t *verts, dAliasFrame_t *srcFrame, md3Frame_t *dstFrame, int numVerts, int *xyzIndexes)
+static float ComputeMd3Radius (vec3_t localOrigin, vertexMd3_t *verts, int numVerts)
 {
-	int		i;
-	vertexMd3_t *dstVerts;
-	float	radius;
+	guard(ComputeMd3Radius);
 
+	float radius2 = 0;
+	for (int i = 0; i < numVerts; i++, verts++)
+	{
+		vec3_t p;
+		p[0] = verts->xyz[0] * MD3_XYZ_SCALE;
+		p[1] = verts->xyz[1] * MD3_XYZ_SCALE;
+		p[2] = verts->xyz[2] * MD3_XYZ_SCALE;
+		VectorSubtract (p, localOrigin, p);
+		float tmp = DotProduct (p, p);	// tmp = dist(p, localOrigin) ^2
+		radius2 = max(tmp, radius2);
+	}
+	return sqrt (radius2);
+
+	unguard;
+}
+
+
+static void ProcessMd2Frame (vertexMd3_t *verts, dMd2Frame_t *srcFrame, md3Frame_t *dstFrame, int numVerts, int *xyzIndexes)
+{
 	guard(ProcessMd2Frame);
 
 	ClearBounds (dstFrame->mins, dstFrame->maxs);
+	int i;
+	vertexMd3_t *dstVerts;
 	for (i = 0, dstVerts = verts; i < numVerts; i++, dstVerts++)
 	{
-		vec3_t	p;
-		dTriVertx_t *srcVert;
-
-		srcVert = &srcFrame->verts[xyzIndexes[i]];
+		dMd2Vert_t *srcVert = &srcFrame->verts[xyzIndexes[i]];
 		// compute vertex
+		vec3_t p;
 		p[0] = srcFrame->scale[0] * srcVert->v[0] + srcFrame->translate[0];
 		p[1] = srcFrame->scale[1] * srcVert->v[1] + srcFrame->translate[1];
 		p[2] = srcFrame->scale[2] * srcVert->v[2] + srcFrame->translate[2];
@@ -1329,25 +1356,11 @@ static void ProcessMd2Frame (vertexMd3_t *verts, dAliasFrame_t *srcFrame, md3Fra
 		dstVerts->xyz[1] = appRound (p[1] / MD3_XYZ_SCALE);
 		dstVerts->xyz[2] = appRound (p[2] / MD3_XYZ_SCALE);
 	}
-
-	// compute bounding sphere
+	// compute bounding sphere center
 	for (i = 0; i < 3; i++)
 		dstFrame->localOrigin[i] = (dstFrame->mins[i] + dstFrame->maxs[i]) / 2;
-	radius = 0;
-	for (i = 0, dstVerts = verts; i < numVerts; i++, dstVerts++)
-	{
-		vec3_t	p;
-		float	tmp;
-
-		p[0] = dstVerts->xyz[0] * MD3_XYZ_SCALE;
-		p[1] = dstVerts->xyz[1] * MD3_XYZ_SCALE;
-		p[2] = dstVerts->xyz[2] * MD3_XYZ_SCALE;
-		VectorSubtract (p, dstFrame->localOrigin, p);
-		tmp = DotProduct (p, p);	// tmp = dist(p, localOrigin) ^2
-		radius = max(tmp, radius);
-	}
-	dstFrame->radius = sqrt (radius);
-
+	// and radius
+	dstFrame->radius = ComputeMd3Radius (dstFrame->localOrigin, verts, numVerts);
 	unguard;
 }
 
@@ -1421,22 +1434,21 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 }
 
 
-static void SetMd3Skin (const char *name, surfaceMd3_t *surf, int index, char *skin)
+static void SetMd3Skin (const char *name, surfaceMd3_t *surf, int index, const char *skin)
 {
-	char	mName[MAX_QPATH], *mPtr, sName[MAX_QPATH], *sPtr;	// model/skin
-	shader_t *shader;
-
 	// try specified shader
-	shader = FindShader (skin, SHADER_CHECK|SHADER_SKIN);
+	shader_t *shader = FindShader (skin, SHADER_CHECK|SHADER_SKIN);
 	if (!shader)
-	{	// try to find skin forcing model directory
+	{
+		char	mName[MAX_QPATH], sName[MAX_QPATH];	// model/skin
+		// try to find skin forcing model directory
 		appCopyFilename (mName, name, sizeof(mName));
-		mPtr = strrchr (mName, '/');
+		char *mPtr = strrchr (mName, '/');
 		if (mPtr)	mPtr++;			// skip '/'
 		else		mPtr = mName;
 
 		appCopyFilename (sName, skin, sizeof(sName));
-		sPtr = strrchr (sName, '/');
+		char *sPtr = strrchr (sName, '/');
 		if (sPtr)	sPtr++;			// skip '/'
 		else		sPtr = sName;
 
@@ -1444,7 +1456,7 @@ static void SetMd3Skin (const char *name, surfaceMd3_t *surf, int index, char *s
 		shader = FindShader (mName, SHADER_CHECK|SHADER_SKIN);
 		if (!shader)
 		{	// not found
-			Com_DPrintf ("LoadMD2(%s): %s or %s is not found\n", name, skin, mName);
+			Com_DPrintf ("SetSkin(%s:%d): %s or %s is not found\n", name, index, skin, mName);
 			if (index > 0)
 				shader = surf->shaders[0];		// better than default shader
 			else
@@ -1461,7 +1473,7 @@ static void SetMd3Skin (const char *name, surfaceMd3_t *surf, int index, char *s
 #if 0
 #define BUILD_SCELETON
 //???? rename, may be remove
-static void CheckTrisSizes (surfaceMd3_t *surf, dAliasFrame_t *md2Frame = NULL, int md2FrameSize = 0)
+static void CheckTrisSizes (surfaceMd3_t *surf, dMd2Frame_t *md2Frame = NULL, int md2FrameSize = 0)
 {
 	int		tri, *inds;
 	bool	fixed[MAX_XYZ_INDEXES];
@@ -1566,16 +1578,15 @@ static void CheckTrisSizes (surfaceMd3_t *surf, dAliasFrame_t *md2Frame = NULL, 
 
 md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 {
+	guard(LoadMd2);
+
 	md3Model_t *md3;
 	surfaceMd3_t *surf;
 	int		i, numVerts, numTris;
 	int		xyzIndexes[MAX_XYZ_INDEXES];
-	char	*skin;
-
-	guard(LoadMd2);
 
 	//?? should add ri.LoadMd2 (buf, size) -- sanity check + swap bytes for big-endian machines
-	dmdl_t *hdr = (dmdl_t*)buf;
+	dMd2_t *hdr = (dMd2_t*)buf;
 	if (hdr->version != MD2_VERSION)
 	{
 		Com_WPrintf ("R_LoadMd2: %s has wrong version %d\n", name, hdr->version);
@@ -1584,7 +1595,7 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 
 	if (hdr->numXyz <= 0 || hdr->numTris <= 0 || hdr->numFrames <= 0)
 	{
-		Com_WPrintf ("R_LoadMd2: %s has incorrect triangle count\n", name);
+		Com_WPrintf ("R_LoadMd2: %s has incorrect surface params\n", name);
 		return NULL;
 	}
 
@@ -1600,7 +1611,7 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	numTris = surf->numTris;		// just computed
 	if (numTris != hdr->numTris) Com_WPrintf ("LoadMd2(%s): computed numTris %d != %d\n", name, numTris, hdr->numTris);
 	appFree (surf);
-	Com_DPrintf ("LoadMD2(%s): %d xyz  %d st  %d verts  %d tris\n", name, hdr->numXyz, hdr->numSt, numVerts, numTris);
+	Com_DPrintf ("MD2(%s): xyz=%d st=%d verts=%d tris=%d frms=%d\n", name, hdr->numXyz, hdr->numSt, numVerts, numTris, hdr->numFrames);
 
 	/* Allocate memory:
 		md3Model_t		[1]
@@ -1608,17 +1619,16 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 		surfaceMd3_t	[numSurfaces == 1]
 		float			texCoords[2*numVerts]
 		int				indexes[3*numTris]
-		vertexMd3_t		verts[numVerts*numFrames]
+		vertexMd3_t		verts[numVerts][numFrames]
 		shader_t*		shaders[numShaders == numSkins]
 	 */
-	int size = sizeof(md3Model_t) + hdr->numFrames*sizeof(md3Frame_t) +
-		sizeof(surfaceMd3_t) +
-		numVerts*2*sizeof(float) + 3*hdr->numTris*sizeof(int)
+	int size = sizeof(md3Model_t) + hdr->numFrames*sizeof(md3Frame_t)
+		+ sizeof(surfaceMd3_t)
+		+ numVerts*2*sizeof(float) + 3*hdr->numTris*sizeof(int)
 		+ numVerts*hdr->numFrames*sizeof(vertexMd3_t) + hdr->numSkins*sizeof(shader_t*);
 	md3 = (md3Model_t*) appMalloc (size);
 	CALL_CONSTRUCTOR(md3);
 	strcpy (md3->name, name);
-	md3->type = MODEL_MD3;
 	md3->size = size;
 
 	/*-------- fill md3 structure --------*/
@@ -1626,17 +1636,17 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	md3->numFrames = hdr->numFrames;
 	md3->frames = (md3Frame_t*)(md3 + 1);
 
-	surf = (surfaceMd3_t*)(md3->frames + md3->numFrames);
+	md3->surf = surf = (surfaceMd3_t*)(md3->frames + md3->numFrames);
 	CALL_CONSTRUCTOR(surf);
-	surf->type = SURFACE_MD3;
-	md3->surf = surf;
 
 	/*-------- fill surf structure -------*/
-	surf->shader = gl_defaultShader;		//?? any?
+	surf->shader = gl_defaultShader;		// any
+	// counts
 	surf->numFrames = hdr->numFrames;
 	surf->numVerts = numVerts;
 	surf->numTris = numTris;
 	surf->numShaders = hdr->numSkins;
+	// pointers
 	surf->texCoords = (float*)(surf + 1);
 	surf->indexes = (int*)(surf->texCoords + 2*surf->numVerts);
 	surf->verts = (vertexMd3_t*)(surf->indexes + 3*surf->numTris);
@@ -1647,7 +1657,7 @@ START_PROFILE(..Md2::Parse)
 	if (!ParseGlCmds (name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes))
 	{
 		appFree (md3);
-		return false;
+		return NULL;
 	}
 END_PROFILE
 
@@ -1655,7 +1665,7 @@ START_PROFILE(..Md2::Frame)
 	/*---- generate vertexes/normals -----*/
 	for (i = 0; i < surf->numFrames; i++)
 		ProcessMd2Frame (surf->verts + i * numVerts,
-				(dAliasFrame_t*)(buf + hdr->ofsFrames + i * hdr->frameSize),
+				(dMd2Frame_t*)(buf + hdr->ofsFrames + i * hdr->frameSize),
 				md3->frames + i, numVerts, xyzIndexes);
 END_PROFILE
 START_PROFILE(..Md2::Normals)
@@ -1663,12 +1673,13 @@ START_PROFILE(..Md2::Normals)
 END_PROFILE
 
 #ifdef BUILD_SCELETON	//????
-	CheckTrisSizes (surf, (dAliasFrame_t*)(buf + hdr->ofsFrames), hdr->frameSize);
+	CheckTrisSizes (surf, (dMd2Frame_t*)(buf + hdr->ofsFrames), hdr->frameSize);
 #endif
 
 START_PROFILE(..Md2::Skin)
 	/*---------- load skins --------------*/
 	surf->numShaders = hdr->numSkins;
+	const char *skin;
 	for (i = 0, skin = (char*)(buf + hdr->ofsSkins); i < surf->numShaders; i++, skin += MD2_MAX_SKINNAME)
 		SetMd3Skin (name, surf, i, skin);
 END_PROFILE
@@ -1679,10 +1690,151 @@ END_PROFILE
 }
 
 
+md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
+{
+	guard(LoadMd3);
+
+	int		i;
+	dMd3Surface_t *ds;
+	surfaceMd3_t *surf;
+
+	//?? load LOD
+	//?? should add ri.LoadMd3 (buf, size) -- sanity check + swap bytes for big-endian machines
+	dMd3_t *hdr = (dMd3_t*)buf;
+	if (hdr->version != MD3_VERSION)
+	{
+		Com_WPrintf ("R_LoadMd3: %s has wrong version %d\n", name, hdr->version);
+		return NULL;
+	}
+
+	if (hdr->numSurfaces <= 0 || hdr->numTags < 0 || hdr->numFrames <= 0)
+	{
+		Com_WPrintf ("R_LoadMd3: %s has incorrect surfaces\n", name);
+		return NULL;
+	}
+
+	// all-surface counts (total sums)
+	int tNumVerts = 0;
+	int tNumTris = 0;
+	int tNumShaders = 0;
+	ds = (dMd3Surface_t*)(buf + hdr->ofsSurfaces);
+	for (i = 0; i < hdr->numSurfaces; i++)
+	{
+		// check: model.numFrames should be == all surfs.numFrames
+		if (ds->numFrames != hdr->numFrames)
+		{
+			Com_WPrintf ("R_LoadMd3: %s have different frame counts in surfaces\n", name);
+			return NULL;
+		}
+		// counts
+		tNumVerts += ds->numVerts;
+		tNumTris += ds->numTriangles;
+		tNumShaders += ds->numShaders;
+		// next surface
+		ds = OffsetPointer (ds, ds->ofsEnd);
+	}
+	Com_DPrintf ("MD3(%s): verts=%d tris=%d frms=%d surfs=%d tags=%d\n", name, tNumVerts, tNumTris, hdr->numFrames, hdr->numSurfaces, hdr->numTags);
+
+	/* Allocate memory:
+		md3Model_t		[1]
+		md3Frame_t		[numFrames]
+		md3Tag_t		[numTags][numFrames]
+		surfaceMd3_t	[numSurfaces]
+		-- surfaces data [numSurfaces] --
+		float			texCoords[2*s.numVerts]
+		int				indexes[3*s.numTriangles]
+		vertexMd3_t		verts[s.numVerts][numFrames]
+		shader_t*		shaders[s.numShaders]
+	 */
+	int size = sizeof(md3Model_t) + hdr->numFrames*sizeof(md3Frame_t) + hdr->numTags*hdr->numFrames*sizeof(md3Tag_t)
+		+ hdr->numSurfaces*sizeof(surfaceMd3_t);
+	int surfDataOffs = size;			// start of data for surfaces
+	size += tNumVerts*2*sizeof(float) + tNumTris*3*sizeof(int) + tNumVerts*hdr->numFrames*sizeof(vertexMd3_t) + tNumShaders*sizeof(shader_t*);
+
+	md3Model_t *md3 = (md3Model_t*) appMalloc (size);
+	CALL_CONSTRUCTOR(md3);
+	strcpy (md3->name, name);
+	md3->size = size;
+
+	/*-------- fill md3 structure --------*/
+	// frames
+	md3->numFrames = hdr->numFrames;
+	md3->frames = (md3Frame_t*)(md3 + 1);
+	dMd3Frame_t *fs = (dMd3Frame_t*)(buf + hdr->ofsFrames);
+	for (i = 0; i < hdr->numFrames; i++, fs++)
+	{
+		// NOTE: md3 models, created with id model converter, have frame.localOrigin == (0,0,0)
+		// So, we should recompute localOrigin and radius for more effective culling
+		md3Frame_t *frm = &md3->frames[i];
+		VectorCopy (fs->bounds[0], frm->mins);
+		VectorCopy (fs->bounds[1], frm->maxs);
+		// compute localOrigin
+		for (int j = 0; j < 3; j++)
+			frm->localOrigin[j] = (frm->maxs[j] + frm->mins[j]) / 2;
+		frm->radius = 0;		// will compute later
+	}
+	// tags
+	//?? can optimize tags by name: between frames tag should not change its name ?!
+	md3->numTags = hdr->numTags;
+	md3->tags = (md3Tag_t*)(md3->frames + md3->numFrames);
+	memcpy (md3->tags, buf + hdr->ofsTags, hdr->numTags*hdr->numFrames*sizeof(dMd3Tag_t));	// same layout on disk and in memory
+	// surfaces
+	md3->numSurfaces = hdr->numSurfaces;
+	md3->surf = (surfaceMd3_t*)(md3->tags + md3->numTags*hdr->numFrames);
+	ds = (dMd3Surface_t*)(buf + hdr->ofsSurfaces);
+	byte *surfData = (byte*)md3 + surfDataOffs;
+	for (i = 0, surf = md3->surf; i < hdr->numSurfaces; i++, surf++)
+	{
+		CALL_CONSTRUCTOR(surf);
+		surf->shader = gl_defaultShader;	// any
+		// counts
+		surf->numFrames = hdr->numFrames;
+		surf->numVerts = ds->numVerts;
+		surf->numTris = ds->numTriangles;
+		surf->numShaders = ds->numShaders;
+		// pointers
+		surf->texCoords = (float*)surfData;
+		surf->indexes = (int*)(surf->texCoords + 2*surf->numVerts);
+		surf->verts = (vertexMd3_t*)(surf->indexes + 3*surf->numTris);
+		surf->shaders = (shader_t**)(surf->verts + surf->numVerts*surf->numFrames);
+		surfData = (byte*)(surf->shaders + surf->numShaders);
+		// triangles: same layout on disk and in memory
+		memcpy (surf->indexes, (byte*)ds + ds->ofsTriangles, ds->numTriangles * sizeof(dMd3Triangle_t));
+		// texcoords: same layout on disk and in memory
+		memcpy (surf->texCoords, (byte*)ds + ds->ofsSt, ds->numVerts * sizeof(dMd3St_t));
+		// verts: same layout on disk and in memory
+		memcpy (surf->verts, (byte*)ds + ds->ofsXyzNormals, ds->numVerts * ds->numFrames * sizeof(dMd3XyzNormal_t));
+		// shaders
+		dMd3Shader_t *ss = (dMd3Shader_t*)((byte*)ds + ds->ofsShaders);
+		for (int j = 0; j < ds->numShaders; j++, ss++)
+			SetMd3Skin (name, surf, j, ss->name);
+		// next surface
+		ds = OffsetPointer (ds, ds->ofsEnd);
+	}
+	// compute frame radiuses
+	md3Frame_t *frm = md3->frames;
+	for (i = 0; i < md3->numFrames; i++, frm++) // iterate frames
+	{
+		float radius = 0;
+		surf = md3->surf;
+		for (int j = 0; j < md3->numSurfaces; j++, surf++) // iterate surfaces
+		{
+			// find surface vertexes for current frame
+			vertexMd3_t *verts = surf->verts + surf->numVerts * i;
+			float radius2 = ComputeMd3Radius (frm->localOrigin, verts, surf->numVerts);
+			if (radius2 > radius) radius = radius2;
+		}
+		frm->radius = radius;
+	}
+	return md3;
+
+	unguardf(("%s", name));
+}
+
+
 shader_t *FindSkin (const char *name)
 {
 	return FindShader (name, SHADER_CHECK|SHADER_SKIN);
-	//?? do we need to disable mipmapping for skins ?
 }
 
 
@@ -1691,7 +1843,7 @@ shader_t *FindSkin (const char *name)
 
 static sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len)
 {
-	dsprite_t *hdr = (dsprite_t*)buf;
+	dSp2_t *hdr = (dSp2_t*)buf;
 	if (hdr->version != SP2_VERSION)
 	{
 		Com_WPrintf ("R_LoadSp2: %s has wrong version %d\n", name, hdr->version);
@@ -1707,16 +1859,14 @@ static sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len)
 	sp2Model_t *sp2 = (sp2Model_t*)appMalloc (size);
 	CALL_CONSTRUCTOR(sp2);
 	strcpy (sp2->name, name);
-	sp2->type = MODEL_SP2;
 	sp2->size = size;
 
 	sp2->numFrames = hdr->numframes;
 	sp2->radius = 0;
 	// parse frames
-	int		i;
-	dsprframe_t *in;
-	sp2Frame_t *out;
-	for (i = 0, in = hdr->frames, out = sp2->frames; i < hdr->numframes; i++, in++, out++)
+	dSp2Frame_t *in = hdr->frames;
+	sp2Frame_t *out = sp2->frames;
+	for (int i = 0; i < hdr->numframes; i++, in++, out++)
 	{
 		out->width = in->width;
 		out->height = in->height;
@@ -1770,7 +1920,7 @@ static void Modellist_f (bool usage, int argc, char **argv)
 }
 
 
-static void FreeModels (void)
+static void FreeModels ()
 {
 	// free non-inline models
 	for (int i = 0; i < modelCount; i++)
@@ -1802,7 +1952,7 @@ static void LoadModel_f (bool usage, int argc, char **argv)
 #endif
 
 
-void InitModels (void)
+void InitModels ()
 {
 	memset (&map, 0, sizeof(map));
 
@@ -1813,7 +1963,7 @@ void InitModels (void)
 }
 
 
-void ShutdownModels (void)
+void ShutdownModels ()
 {
 	FreeModels ();
 

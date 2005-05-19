@@ -284,8 +284,6 @@ void AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
 // In: s, t in range [-1..1]; out: tex = {s,t}, vec
 static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec, bufTexCoord_t **tex)
 {
-	vec3_t		b;
-
 	static const int stToVec[6][3] = {	// 1 = s, 2 = t, 3 = zFar
 		{ 3,-1, 2},
 		{-3, 1, 2},
@@ -295,6 +293,7 @@ static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec
 		{ 2,-1,-3}		// look straight down
 	};
 
+	vec3_t b;
 	b[0] = s * scale;
 	b[1] = t * scale;
 	b[2] = scale;

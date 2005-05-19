@@ -7,6 +7,10 @@
 namespace OpenGLDrv {
 
 
+/*-----------------------------------------------------------------------------
+	Static map lights
+-----------------------------------------------------------------------------*/
+
 // point light / spot light
 struct gl_slight_t
 {
@@ -25,7 +29,7 @@ struct gl_slight_t
 	float	maxDist2;
 };
 
-
+// surface light (surface is a light emitter)
 struct surfLight_t
 {
 	bool	sky;
@@ -42,6 +46,10 @@ struct surfLight_t
 };
 
 
+/*-----------------------------------------------------------------------------
+	World lighting info cache (lightgrid)
+-----------------------------------------------------------------------------*/
+
 #define LIGHTGRID_STEP	32
 
 typedef struct
@@ -49,6 +57,10 @@ typedef struct
 	byte	c[6][3];
 } lightCell_t;
 
+
+/*-----------------------------------------------------------------------------
+	Functions
+-----------------------------------------------------------------------------*/
 
 void ShowLights (void);
 

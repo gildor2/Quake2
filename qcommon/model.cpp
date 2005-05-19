@@ -3,7 +3,7 @@
 
 
 static bspfile_t bspfile;
-static dheader_t *header;
+static dBsp2Hdr_t *header;
 
 
 //?? Should perform SwapBlock() (as in Q3 bsp tools)
@@ -243,11 +243,11 @@ void LoadQ2BspFile (void)
 {
 	guard(LoadQ2BspFile);
 
-	header = (dheader_t *) bspfile.file;
+	header = (dBsp2Hdr_t *) bspfile.file;
 
 #ifndef LITTLE_ENDIAN
 	// swap the header
-	for (int i = 0; i < sizeof(dheader_t) / 4; i++)
+	for (int i = 0; i < sizeof(dBsp2Hdr_t) / 4; i++)
 		((int *)header)[i] = LittleLong (((int *)header)[i]);
 #endif
 

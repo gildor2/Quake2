@@ -74,7 +74,6 @@ cvar_t	*gl_hand;			// for weapon model
 cvar_t	*gl_znear;
 cvar_t	*gl_swapinterval;
 cvar_t	*gl_maxTextureUnits;
-cvar_t	*gl_finish;			// debug ? (can be a situation, when gl_finish==1 is necessary ? (linux))
 
 // debugging
 cvar_t	*gl_logFile;
@@ -90,6 +89,7 @@ cvar_t	*gl_singleShader;
 cvar_t	*gl_showFillRate;
 
 
+//?? move to gl_interface.cpp ??
 static void Gfxinfo_f (bool usage, int argc, char **argv)
 {
 	static const char *boolNames[] = {"no", "yes"};
@@ -100,7 +100,7 @@ static void Gfxinfo_f (bool usage, int argc, char **argv)
 		Com_Printf ("Usage: gfxinfo [extension_mask]");
 		return;
 	}
-	char *mask = (argc == 2) ? argv[1] : NULL;
+	const char *mask = (argc == 2) ? argv[1] : NULL;
 
 	Com_Printf (S_RED"---------- OpenGL info ----------\n");
 	Com_Printf (S_RED"Vendor:  "S_WHITE" %s\n", glGetString (GL_VENDOR));
@@ -215,8 +215,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_lightLines, 0, CVAR_CHEAT),
 	CVAR_VAR(gl_showLights, 0, 0),
 	CVAR_VAR(gl_singleShader, 0, CVAR_CHEAT),
-	CVAR_VAR(gl_showFillRate, 0, CVAR_CHEAT),
-	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE),
+	CVAR_VAR(gl_showFillRate, 0, CVAR_CHEAT)
 CVAR_END
 
 	Cvar_GetVars (ARRAY_ARG(vars));
@@ -392,7 +391,7 @@ bool Init (void)
 		throw;	//?? or return "false" ?
 	}
 
-	areaMaskChanged = true;			// force update visinfo for map:
+	forceVisMap = true;				// force update visinfo for map:
 
 	return true;
 
@@ -440,12 +439,6 @@ void GL_EnableRendering (bool enable)
 
 void BeginFrame (void)
 {
-	if (!renderingEnabled)
-	{
-		backendCmdSize = 0;				// avoid overflow
-		return;
-	}
-
 	if (gl_logFile->modified)
 	{
 		QGL_EnableLogging (gl_logFile->integer != 0);
@@ -459,9 +452,6 @@ void BeginFrame (void)
 
 //	DrawTextRight ("---------BeginFrame---------\n", RGB(1,0,0));
 	LOG_STRING ("\n---------- Begin Frame ----------\n\n");
-
-	if (gl_finish->integer == 2) glFinish ();
-	gl_speeds.beginFrame = appCycles ();
 
 	gl_state.have3d = gl_state.haveFullScreen3d = false;
 	gl_state.maxUsedShaderIndex = -1;
@@ -488,40 +478,17 @@ void BeginFrame (void)
 	if (gl_mode->modified || r_fullscreen->modified)
 		Vid_Restart ();
 
-	PUT_BACKEND_COMMAND (int, p);
-	*p = BACKEND_BEGIN_FRAME;
+	BK_BeginFrame ();
 }
 
 
 void EndFrame (void)
 {
-	if (!renderingEnabled) return;
-
-	if (!gl_state.have3d) ClearTexts ();
-
 //	DrawTextRight ("---------EndFrame---------\n", RGB(1,0,0));
-	{
-		PUT_BACKEND_COMMAND (int, p);
-		*p = BACKEND_END_FRAME;
-	}
+	if (!gl_state.have3d) ClearTexts ();
+	FlushTexts ();
 
-	BackEnd ();
-	ClearBuffers ();
-
-	if (gl_finish->integer == 2) glFinish ();
-	gl_speeds.endFrame = appCycles ();
-	if (r_speeds->integer && gl_state.have3d)	// draw only when have 3D on screen
-	{
-#define S gl_speeds
-		DrawTextRight (va("fe: %.2f bk: %.2f (srt: %.2f 3d: %.2f 2d: %.2f)",
-			appDeltaCyclesToMsecf (S.beginSort - S.beginFrame),
-			appDeltaCyclesToMsecf (S.endFrame - S.beginSort),
-			appDeltaCyclesToMsecf (S.begin3D - S.beginSort),
-			appDeltaCyclesToMsecf (S.begin2D - S.begin3D),
-			appDeltaCyclesToMsecf (S.endFrame - S.begin2D)
-#undef S
-			), RGB(1,0.5,0));
-	}
+	BK_EndFrame ();
 }
 
 
@@ -531,7 +498,7 @@ static void SetWorldModelview (void)
 {
 	float	matrix[4][4];
 	int		i, j, k;
-	static float baseMatrix[4][4] = {	// axias {0 0 -1} {-1 0 0} {0 1 0}
+	static const float baseMatrix[4][4] = {	// axias {0 0 -1} {-1 0 0} {0 1 0}
 		{  0,  0, -1,  0},
 		{ -1,  0,  0,  0},
 		{  0,  1,  0,  0},
@@ -560,9 +527,7 @@ static void SetWorldModelview (void)
 	for (i = 0; i < 4; i++)
 		for (j = 0; j < 4; j++)
 		{
-			float	s;
-
-			s = 0;
+			float s = 0;
 			for (k = 0; k < 4; k++)
 				s += baseMatrix[k][j] * matrix[i][k];
 			vp.modelMatrix[i][j] = s;
@@ -694,8 +659,13 @@ void RenderFrame (refdef_t *fd)
 
 //	DrawTextRight ("---------RenderFrame---------\n", RGB(1,0,0));
 
+	int numVisLeafs = gl_speeds.visLeafs;			// keep number of visLeafs (remove when MarkLeaves() will be called every frame)
+	memset (&gl_speeds, 0, sizeof(gl_speeds));		// clear
+	gl_speeds.visLeafs = numVisLeafs;
+
 	/*----------- prepare data ------------*/
 
+	gl_speeds.beginFrame = appCycles ();
 	gl_state.have3d = true;
 	if (!(fd->rdflags & RDF_NOWORLDMODEL))
 	{
@@ -708,8 +678,11 @@ void RenderFrame (refdef_t *fd)
 			memset (floodArea, 0xFF, sizeof(floodArea));
 			areas = &floodArea[0];
 		}
-		areaMaskChanged = memcmp (areaMask, areas, sizeof(areaMask)) != 0;
-		memcpy (areaMask, areas, sizeof(floodArea));
+		if (memcmp (areaMask, areas, sizeof(areaMask)) != 0)
+		{
+			memcpy (areaMask, areas, sizeof(areaMask));
+			forceVisMap = true;
+		}
 	}
 
 	/*------------ rendering -------------*/
@@ -728,7 +701,7 @@ void RenderFrame (refdef_t *fd)
 	vp.t_fov_x = tan (vp.fov_x * M_PI / 360.0f);
 	vp.t_fov_y = tan (vp.fov_y * M_PI / 360.0f);
 	vp.fov_scale = tan (fd->fov_x / 2.0f / 180.0f * M_PI);
-	if (vp.fov_scale < 0.01) vp.fov_scale = 0.01;
+	if (vp.fov_scale < 0.01f) vp.fov_scale = 0.01f;
 
 	// set vieworg/viewaxis before all to allow 3D text output
 	VectorCopy (fd->vieworg, vp.vieworg);
@@ -738,72 +711,74 @@ void RenderFrame (refdef_t *fd)
 	vp.time = fd->time;
 
 	// add entities
-	gl_speeds.ents = gl_speeds.cullEnts = gl_speeds.ocullEnts = 0;
-	vp.firstEntity = gl_numEntities;
+	vp.firstEntity = gl_numEntities;		//!! gl_numEntities is always 0 here (vp.firstEntity!=0 only when scene contains portals)
 	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
 		AddEntity (ent);
-
 	// add dlights
-	vp.dlights = &gl_dlights[gl_numDlights];
+	vp.dlights = &gl_dlights[gl_numDlights]; //!! gl_numDlights is always 0 here
 	vp.numDlights = fd->num_dlights;
 	for (i = 0, dl = fd->dlights; i < fd->num_dlights; i++, dl++)
 		AddDlight (dl);
-
-	gl_speeds.dlightSurfs = gl_speeds.dlightVerts = 0;
-	gl_speeds.flares = gl_speeds.testFlares = gl_speeds.cullFlares = 0;
-	gl_speeds.parts = gl_speeds.cullParts = 0;
+	// add particle effects
 	vp.particles = fd->particles;
 	vp.beams = fd->beams;
 
 	ClearPortal ();
-	SetWorldModelview ();
-	SetFrustum ();
+	SetWorldModelview ();					// prepare modelview matrix
+	SetFrustum ();							// setup frustum planes
+	DrawPortal ();							// collect data for rasterization
 
-	DrawPortal ();
-
-	SetPerspective ();
-
-	FinishPortal ();
+	if (vp.numSurfaces)
+	{
+		SetPerspective ();					// prepare projection matrix using some info from DrawPortal()
+		BK_DrawScene ();					// rasterization
+	}
 
 	/*------------ debug info ------------*/
 
 	if (r_speeds->integer)
 	{
 #define S gl_speeds
+		DrawTextRight (va("fe: %.2f bk: %.2f (srt: %.2f 3d: %.2f)",
+			appDeltaCyclesToMsecf (S.beginSort - S.beginFrame),
+			appDeltaCyclesToMsecf (S.end3D - S.beginSort),
+			appDeltaCyclesToMsecf (S.begin3D - S.beginSort),
+			appDeltaCyclesToMsecf (S.end3D - S.begin3D)
+			), RGB(1,0.6,0.1));
 		int lgridSize = map.mapGrid[0]*map.mapGrid[1]*map.mapGrid[2];
 		if (!lgridSize) lgridSize = 1;	// to avoid zero divide
+		//?? can be processed per-frame (not per-scene): tris2D
+		//?? split structure: gl_speeds -> frameStats + sceneStats
 		DrawTextRight (va(
-			"leafs: vis: %-3d fr: %-3d total: %d\n"
 			"surfs: %d culled: %d\n"
 			"tris: %d (+%d) mtex: %1.2f\n"
 			"ents: %d cull: %d occl: %d\n"
-			"particles: %d cull: %d\n"
-			"dlights: %d surfs: %d verts: %d\n"
-			"flares: %d test: %d cull: %d\n"
-			"lightgrid: %d/%d (%.1f%%)\n"		//?? add memory size too
-			"binds: %d uploads: %2d draws: %d",
-			S.visLeafs, S.frustLeafs, S.leafs,
+			"bind: %d upload: %2d flush: %d",
 			S.surfs, S.cullSurfs,
 			S.trisMT, S.tris2D, S.trisMT ? (float)S.tris / S.trisMT : 0,
 			S.ents, S.cullEnts, S.ocullEnts,
+			S.numBinds, S.numUploads, S.numFlushes
+			), RGB(1,0.5,0));
+
+		if (!(fd->rdflags & RDF_NOWORLDMODEL))
+		{
+		DrawTextRight (va(
+			"leafs: vis: %-3d fr: %-3d total: %d\n"
+			"particles: %d cull: %d\n"
+			"dlights: %d surfs: %d verts: %d\n"
+			"flares: %d test: %d cull: %d\n"
+			"lightgrid: %d/%d (%.1f%%)\n",		//?? add memory size too
+			S.visLeafs, S.frustLeafs, map.numLeafNodes - map.numNodes,
 			S.parts, S.cullParts,
 			gl_numDlights, S.dlightSurfs, S.dlightVerts,
 			S.flares, S.testFlares, S.cullFlares,
-			map.numLightCells, lgridSize, (float)map.numLightCells / lgridSize * 100,
-			S.numBinds, S.numUploads, S.numIterators
+			map.numLightCells, lgridSize, (float)map.numLightCells / lgridSize * 100
 			), RGB(1,0.5,0));
-
-		/* perform clearing after displaying, so, we will see speeds of previous frame
-		 * (some data will be set up in EndFrame()->BackEnd())
-		 */
-		S.surfs = S.cullSurfs = 0;
-		S.tris = S.trisMT = S.tris2D = 0;
-		S.numBinds = S.numUploads = 0;
-		S.numIterators = 0;
+		}
 #undef S
 	}
 
-	FlushTexts ();
+	ClearBuffers ();						// cleanup scene info (after stats display)
 }
 
 
@@ -826,12 +801,12 @@ static shader_t *FindPic (const char *name, bool force)
 
 void Fill8 (int x, int y, int w, int h, int c)
 {
-	DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, gl_config.tbl_8to32[c]);
+	BK_DrawPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, gl_config.tbl_8to32[c]);
 }
 
 void Fill (int x, int y, int w, int h, unsigned rgba)
 {
-	DrawStretchPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, rgba);
+	BK_DrawPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, rgba);
 }
 
 //?? see comment for FindPic()
@@ -847,26 +822,25 @@ void TileClear (int x, int y, int w, int h, const char *name)
 
 	shader_t *sh = FindShader (s, SHADER_CHECK);
 	if (sh)
-		DrawStretchPic (sh, x, y, w, h, (float)x / sh->width, (float)y / sh->height,
+		BK_DrawPic (sh, x, y, w, h, (float)x / sh->width, (float)y / sh->height,
 			(float)(x + w) / sh->width, (float)(y + h) / sh->height);
 	else
 		Fill (x, y, w, h, RGB(0,0,0));
 }
 
-void DrawStretchPic (int x, int y, int w, int h, const char *name)	//!! overload
+void DrawStretchPic (int x, int y, int w, int h, const char *name)
 {
-	DrawStretchPic (FindPic (name, true), x, y, w, h);
+	BK_DrawPic (FindPic (name, true), x, y, w, h);
 }
 
 
 void DrawDetailedPic (int x, int y, int w, int h, const char *name)
 {
 	shader_t *sh = FindPic (name, true);
-	DrawStretchPic (sh, x, y, w, h);
+	BK_DrawPic (sh, x, y, w, h);
 	if (!gl_detailShader || sh->width * 2 > w) return;		// detail is not available or not needed
 //	if (!Cvar_VariableInt("detail")) return;
-	DrawStretchPic (gl_detailShader, x, y, w, h, 0, 0,
-		w / gl_detailShader->width, h / gl_detailShader->height);
+	BK_DrawPic (gl_detailShader, x, y, w, h, 0, 0, w / gl_detailShader->width, h / gl_detailShader->height);
 }
 
 
@@ -879,7 +853,7 @@ void DrawPic (int x, int y, const char *name, int anchor, int color)
 	x -= (anchor & 0xF) * sh->width / 2;			// 0x00 -- keep X; 0x01 -- x-=w/2; 0x02 -- x-=w
 	y -= (anchor & 0xF0) * sh->height / (2 * 16);	// 0x00 -- keep Y; 0x10 -- y-=h/2; 0x20 -- y-=h
 	// draw
-	DrawStretchPic (sh, x, y, sh->width, sh->height, 0, 0, 1, 1, colorTable[color]);
+	BK_DrawPic (sh, x, y, sh->width, sh->height, 0, 0, 1, 1, colorTable[color]);
 }
 
 
@@ -889,7 +863,7 @@ void BeginRegistration (const char *mapname)
 {
 	ResetShaders ();				// delete all shaders and re-create auto-shaders
 	LoadWorldMap (va("maps/%s.bsp", mapname));
-	areaMaskChanged = true;			// force re-MarkLeaves()
+	forceVisMap = true;
 }
 
 
@@ -942,7 +916,7 @@ void SetSky (const char *name, float rotate, vec3_t axis)
 	//?? is it really needed ? whole map uses at most 1 sky shader, which processed specially
 	for (int i = 0; i < map.numFaces; i++)
 	{
-		surfaceCommon_t *surf = map.faces[i];
+		surfaceBase_t *surf = map.faces[i];
 		if (surf->shader == old) surf->shader = shader;
 	}
 }
@@ -952,8 +926,8 @@ void Screenshot (int flags, const char *name)
 	static char shotName[MAX_QPATH];
 
 	strcpy (shotName, name);
-	gl_screenshotFlags = flags;
-	gl_screenshotName = shotName;
+	screenshotFlags = flags;
+	screenshotName = shotName;
 }
 
 
@@ -974,8 +948,8 @@ unsigned GetCaps ()
 
 #ifndef SINGLE_RENDERER
 #	include "../client/rexp_exp.h"
-#endif
 RENDERER_EXPORT
+#endif
 
 
 } // namespace

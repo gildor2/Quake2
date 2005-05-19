@@ -1,10 +1,6 @@
-/*
-========================================================================
-
-.MD2 model file format
-
-========================================================================
-*/
+/*-----------------------------------------------------------------------------
+	.MD2 model file format
+-----------------------------------------------------------------------------*/
 
 #define MD2_IDENT			BYTES4('I','D','P','2')
 #define MD2_VERSION			8
@@ -13,50 +9,55 @@
 #define	MAX_TRIANGLES		4096
 #define MAX_VERTS			2048
 #define MAX_FRAMES			512
-*/
 #define MD2_MAX_SKINS		32
+*/
 #define	MD2_MAX_SKINNAME	64
 
-typedef struct
+#if 0
+// was used for software rendering only
+struct dMd2St_t
 {
 	short	s;
 	short	t;
-} dStVert_t;
+};
 
-typedef struct
+struct dTriangle_t
 {
 	short	indexXyz[3];
 	short	indexSt[3];
-} dTriangle_t;
+};
+#endif
 
-typedef struct
+struct dMd2Vert_t
 {
 	byte	v[3];			// scaled byte to fit in frame mins/maxs
 	byte	lightnormalindex;
-} dTriVertx_t;
+};
 
-typedef struct
+struct dMd2Frame_t
 {
 	float	scale[3];		// multiply byte verts by this
 	float	translate[3];	// then add this
 	char	name[16];		// frame name from grabbing
-	dTriVertx_t verts[1];	// variable sized
-} dAliasFrame_t;
+	dMd2Vert_t verts[1];	// variable sized
+};
 
 
-/* The glcmd format:
- *   - a positive integer starts a tristrip command, followed by that many
- *     vertex structures.
- *   - a negative integer starts a trifan command, followed by -x vertexes
- *   - a zero indicates the end of the command list.
- * A vertex consists of a floating point s, a floating point t,
- *   and an integer vertex index.
+/* glcmd format:
+ *   - read int x
+ *     - if x > 0 -- triangle strip of x verts
+ *     - if x < 0 -- triangle fan of x verts
+ *     - if x == 0 -- end of list
+ *   - repeat (if not end)
+ * Vertex format:
+ *   float s, t
+ *   int   vertexIndex
  */
 
-typedef struct
+struct dMd2_t
 {
-	int		ident;
-	int		version;
+	int		ident;			// MD2_IDENT
+	int		version;		// MD2_VERSION
 
 	int		skinWidth;
 	int		skinHeight;
@@ -69,72 +70,153 @@ typedef struct
 	int		numGlcmds;		// dwords in strip/fan command list
 	int		numFrames;
 
-	int		ofsSkins;		// each skin is a MD2_MAX_SKINNAME string
-	int		ofsSt;			// byte offset from start for stverts
-	int		ofsTris;		// offset for dtriangles
-	int		ofsFrames;		// offset for first frame
-	int		ofsGlcmds;
+	int		ofsSkins;		// char [MD2_MAX_SKINNAME][numSkins]
+	int		ofsSt;			// unused; offset -> dMd2St_t [numSt]
+	int		ofsTris;		// unused; offset -> dTriangle_t [numTris]
+	int		ofsFrames;		// offset -> dMd2Frame_t [numFrames]
+	int		ofsGlcmds;		// offset -> glcmd stream
 	int		ofsEnd;			// end of file
-} dmdl_t;
+};
 
-/*
-========================================================================
 
-.MD3 model file format
-
-========================================================================
-*/
+/*-----------------------------------------------------------------------------
+	.MD3 model file format
+-----------------------------------------------------------------------------*/
 
 #define MD3_IDENT			BYTES4('I','D','P','3')
 #define MD3_VERSION			15
 
-#define	MD3_XYZ_SCALE		(1.0f/64)	// vertex scales
-
+#define MD3_MAX_LODS		4
 #define	MD3_MAX_TRIANGLES	8192		// per surface
 #define MD3_MAX_VERTS		4096		// per surface
-//!! unfinished!
 
+#define MD3_MAX_SHADERS		256			// per surface
+#define MD3_MAX_FRAMES		1024		// per model
+#define	MD3_MAX_SURFACES	32			// per model
+#define MD3_MAX_TAGS		16			// per frame
+
+
+#define	MD3_XYZ_SCALE		(1.0f/64)	// vertex scales
+
+struct dMd3Frame_t
+{
+	vec3_t	bounds[2];
+	vec3_t	localOrigin;				// NOTE: q3 model converter tool always sets this to (0,0,0)
+	float	radius;						//		 and this is a maximal distance to all bounds[] vectors
+	char	name[16];
+};
+
+struct dMd3Tag_t
+{
+	char	name[MAX_QPATH]; // tag name
+	vec3_t	origin;
+	vec3_t	axis[3];
+};
+
+struct dMd3Shader_t
+{
+	char	name[MAX_QPATH];
+	int		shaderIndex;	//?? for in-game use
+};
+
+struct dMd3Triangle_t
+{
+	int		indexes[3];
+};
+
+struct dMd3St_t
+{
+	float	st[2];
+};
+
+struct dMd3XyzNormal_t
+{
+	short	xyz[3];
+	short	normal;
+};
 
 /*
-========================================================================
+ * header			dMd3Surface_t
+ * shaders			dMd3Shader_t [numShaders]
+ * triangles		dMd3Triangle_t [numTriangles]
+ * st				dMd3St_t [numVerts]
+ * XyzNormals		dMd3XyzNormal_t [numVerts*numFrames]
+ */
+struct dMd3Surface_t
+{
+	int		ident;			//?? md3 conversion tool set this to MD3_IDENT
+	char	name[MAX_QPATH]; //?? can be "tag_..."
+	int		flags;			//?? useless
 
-.SP2 sprite file format
+	int		numFrames;		// same for all md3 surfaces; == model.numFrames
+	int		numShaders;		// same for all md3 surfaces
+	int		numVerts;
+	int		numTriangles;
 
-========================================================================
-*/
+	// offsets from start of the current surface
+	int		ofsTriangles;	// offset -> dMd3Triangle_t [numTriangles]
+	int		ofsShaders;		// offset -> dMd3Shader_t [numShaders]
+	int		ofsSt;			// offset -> dMd3St_t [numVerts]
+	int		ofsXyzNormals;	// offset -> dMd3XyzNormal_t [numVerts*numFrames]
+
+	int		ofsEnd;			// offset -> next surface
+};
+
+struct dMd3_t
+{
+	int		ident;			// MD3_IDENT
+	int		version;		// MD3_VERSION
+
+	char	name[MAX_QPATH]; //??
+	int		flags;			//?? useless
+
+	int		numFrames;
+	int		numTags;
+	int		numSurfaces;
+
+	int		numSkins;		//?? useless
+
+	int		ofsFrames;		// offset -> dMd3Frame_t [numFrames]
+	int		ofsTags;		// offset -> dMd3Tag_t [numTags*numFrames]
+	int		ofsSurfaces;	// offset -> dMd3Surface_t [numSurfaces]
+
+	int		ofsEnd;			// end of file
+};
+
+
+/*-----------------------------------------------------------------------------
+	.SP2 sprite file format
+-----------------------------------------------------------------------------*/
 
 #define SP2_IDENT			BYTES4('I','D','S','2')
 #define SP2_VERSION			2
 
-typedef struct
+struct dSp2Frame_t
 {
 	int		width, height;
 	int		origin_x, origin_y;		// raster coordinates inside pic
 	char	name[MD2_MAX_SKINNAME];	// name of pcx file
-} dsprframe_t;
+};
 
-typedef struct {
+struct dSp2_t
+{
 	int		ident;
 	int		version;
 	int		numframes;
-	dsprframe_t frames[1];			// variable sized
-} dsprite_t;
+	dSp2Frame_t frames[1];			// variable sized
+};
 
-/*
-==============================================================================
 
-  .WAL texture file format
-
-==============================================================================
-*/
-
+/*-----------------------------------------------------------------------------
+	.WAL texture file format
+-----------------------------------------------------------------------------*/
 
 #define	MIPLEVELS	4
 typedef struct
 {
 	char	name[32];
 	unsigned width, height;
-	unsigned offsets[MIPLEVELS];	// four mip maps stored
+	unsigned offsets[MIPLEVELS];	// 4 mip maps stored
 	char	animname[32];			// next frame in animation chain
 	int		flags;
 	int		contents;
@@ -143,13 +225,9 @@ typedef struct
 
 
 
-/*
-==============================================================================
-
-  .BSP file format
-
-==============================================================================
-*/
+/*-----------------------------------------------------------------------------
+	Quake2 .BSP file format
+-----------------------------------------------------------------------------*/
 
 #define BSP2_IDENT			BYTES4('I','B','S','P')
 #define BSP2_VERSION		38
@@ -174,19 +252,18 @@ typedef struct
 #define	MAX_MAP_FACES		65536
 //#define	MAX_MAP_LEAFFACES	65536
 //#define	MAX_MAP_LEAFBRUSHES 65536
-//??#define	MAX_MAP_PORTALS		65536
+//??#define	MAX_MAP_PORTALS		65536 -- what is it?
 //#define	MAX_MAP_EDGES		128000
 //#define	MAX_MAP_SURFEDGES	256000
 //#define	MAX_MAP_LIGHTING	0x200000
 //#define	MAX_MAP_VISIBILITY	0x100000
 
 
-//=============================================================================
-
 typedef struct
 {
 	int		fileofs, filelen;
 } lump_t;
+
 
 typedef enum
 {
@@ -219,15 +296,14 @@ typedef struct
 	int		ident;
 	int		version;
 	lump_t	lumps[LUMP_COUNT];
-} dheader_t;
+} dBsp2Hdr_t;
 
 typedef struct
 {
 	float	mins[3], maxs[3];
 	float	origin[3];				// unused! (for sounds or lights ?)
 	int		headnode;
-	int		firstface, numfaces;	// submodels just draw faces
-									// without walking the bsp tree
+	int		firstface, numfaces;	// submodels just draw faces without walking the bsp tree
 } dmodel_t;
 
 
@@ -409,7 +485,7 @@ typedef struct
 {
 	int		version;
 	lump_t	lumps[HL_LUMP_COUNT];
-} hl_dheader_t;
+} dHlHdr_t;
 
 #define	HL_MAX_MAP_HULLS	4
 

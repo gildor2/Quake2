@@ -63,7 +63,7 @@ static int numSurfacesTotal;
 
 
 // Add surface to a current scene (to a "vp" structure)
-void AddSurfaceToPortal (surfaceCommon_t *surf, shader_t *shader, int entityNum, int numDlights)
+void AddSurfaceToPortal (surfaceBase_t *surf, shader_t *shader, int entityNum, int numDlights)
 {
 	surfaceInfo_t *si;
 
@@ -107,17 +107,6 @@ void ClearPortal (void)
 {
 	vp.surfaces = &surfaceBuffer[numSurfacesTotal];
 	vp.numSurfaces = 0;
-}
-
-
-void FinishPortal (void)
-{
-	if (!vp.numSurfaces) return;
-	{
-		PUT_BACKEND_COMMAND (bkDrawFrame_t, c);
-		c->type = BACKEND_DRAW_FRAME;
-		c->portal = vp;
-	}
 }
 
 

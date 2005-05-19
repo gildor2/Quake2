@@ -20,40 +20,14 @@ static cvar_t	*gl_logTexts;
 void DrawChar (int x, int y, int c, int color)
 {
 	if (c == ' ') return;
-
-	unsigned col = colorTable[color];
-	bkDrawText_t *p = (bkDrawText_t*)lastBackendCommand;
-
-	if (p && p->type == BACKEND_TEXT &&
-		p->c.rgba == col &&
-		p->w == CHAR_WIDTH && p->h == CHAR_HEIGHT &&
-		p->y == y && (p->x + p->len * CHAR_WIDTH) == x)
-	{
-		if (GET_BACKEND_SPACE(1))
-		{
-			p->text[p->len++] = c;
-			return;
-		}
-	}
-
-	{
-		PUT_BACKEND_COMMAND(bkDrawText_t, p1);	// 1-char space reserved in bkDrawText_t
-		p1->type = BACKEND_TEXT;
-		p1->len = 1;
-		p1->x = x;
-		p1->y = y;
-		p1->c.rgba = col;
-		p1->w = CHAR_WIDTH;
-		p1->h = CHAR_HEIGHT;
-		p1->text[0] = c;
-	}
+	BK_DrawText ((char*)&c, 1, x, y, CHAR_WIDTH, CHAR_HEIGHT, colorTable[color]);
 }
 
 
 void DrawConChar (int x, int y, int c, int color)
 {
 	if (c == ' ') return;
-	DrawChar (x * CHAR_WIDTH, y * CHAR_HEIGHT, c, color);
+	BK_DrawText ((char*)&c, 1, x * CHAR_WIDTH, y * CHAR_HEIGHT, CHAR_WIDTH, CHAR_HEIGHT, colorTable[color]);
 }
 
 
@@ -127,18 +101,7 @@ void FlushTexts ()
 
 		if (gl_logTexts->integer)
 			Com_Printf (S_MAGENTA"%s\n", rec->text);
-
-		{
-			PUT_BACKEND_COMMAND2(bkDrawText_t, p, len-1);	// 1 char reserved in bkDrawText_t
-			p->type = BACKEND_TEXT;
-			p->len = len;
-			p->x = rec->x;
-			p->y = rec->y;
-			p->c.rgba = rec->c.rgba;
-			p->w = CHARSIZE_X;
-			p->h = CHARSIZE_Y;
-			memcpy (p->text, rec->text, len);	// not ASCIIZ
-		}
+		BK_DrawText (rec->text, len, rec->x, rec->y, CHARSIZE_X, CHARSIZE_Y, rec->c.rgba);
 	}
 	if (gl_logTexts->integer == 2)				// special value: log only 1 frame
 		Cvar_SetInteger ("gl_logTexts", 0);
@@ -169,7 +132,7 @@ static void DrawTextPos (int x, int y, const char *text, unsigned rgba)
 			int size = sizeof(textRec_t) + len + 1;
 			if (size + textbufPos > TEXTBUF_SIZE) return;	// out of buffer space
 
-			char *textCopy = (char*)rec + sizeof(textRec_t);
+			char *textCopy = (char*)(rec + 1);
 			memcpy (textCopy, text, len);
 			textCopy[len] = 0;
 			rec->x = x;

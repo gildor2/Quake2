@@ -58,7 +58,7 @@ typedef float vec3_t[3];
 
 // version number
 
-#define	VERSION		4.10
+#define	VERSION		4.11
 
 #ifdef WIN32
 

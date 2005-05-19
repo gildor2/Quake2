@@ -120,8 +120,6 @@ static const byte vkToKey[256] = {
 
 static int MapKey (int vkCode, bool extended)
 {
-	int		key;
-
 	if (!extended)
 	{
 
@@ -149,7 +147,7 @@ static int MapKey (int vkCode, bool extended)
 		case VK_MENU:	return K_RALT;
 		}
 	}
-	key = vkToKey[vkCode];
+	int key = vkToKey[vkCode];
 	if (key == UNK) key = vkCode + 256;
 	return key;
 }
@@ -175,6 +173,38 @@ static void AppActivate (bool active, bool minimized)
 }
 
 
+/*-----------------------------------------------------------------------------
+	Message processing
+-----------------------------------------------------------------------------*/
+
+static MSGHOOK_FUNC hooks[8];
+
+void AddMsgHook (MSGHOOK_FUNC func)
+{
+	int idx = -1;
+	for (int i = 0; i < ARRAY_COUNT(hooks); i++)
+	{
+		if (hooks[i] == func) return;	// already hooked
+		if (!hooks[i] && idx < 0) idx = i;
+	}
+	if (idx < 0) Com_FatalError ("max msg hooks");
+	hooks[idx] = func;
+}
+
+void RemoveMsgHook (MSGHOOK_FUNC func)
+{
+	for (int i = 0; i < ARRAY_COUNT(hooks); i++)
+	{
+		if (hooks[i] == func)
+		{
+			hooks[i] = NULL;
+			return;
+		}
+	}
+	Com_DPrintf ("RemoveMsgHook: hook not installed\n");
+}
+
+
 static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	guard(MainWndProc);
@@ -182,23 +212,18 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 //	DebugPrintf("msg=%X w=%X l=%X\n",uMsg,wParam,lParam);//!!
 	if (uMsg == MSH_MOUSEWHEEL) uMsg = WM_MOUSEWHEEL;
 
+	guard(callHook);
+	for (int i = 0; i < ARRAY_COUNT(hooks); i++)
+	{
+		if (hooks[i])
+		{
+			if (hooks[i](uMsg, wParam, lParam)) return 0;
+		}
+	}
+	unguard;
+
 	switch (uMsg)
 	{
-	case WM_MOUSEWHEEL:
-		// this chunk of code theoretically only works under NT4+ and Win98+
-		// since this message doesn't exist under Win95
-		if (wParam >> 31)	// really, HIWORD(wParam) should be checked, but LOWORD() does not affects the sign of result
-		{
-			Key_Event (K_MWHEELDOWN, true);
-			Key_Event (K_MWHEELDOWN, false);
-		}
-		else
-		{
-			Key_Event (K_MWHEELUP, true);
-			Key_Event (K_MWHEELUP, false);
-		}
-		break;
-
 	case WM_HOTKEY:
 		return 0;
 
@@ -266,24 +291,6 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		}
 		break;
 
-	// this is complicated because Win32 seems to pack multiple mouse events into
-	// one update sometimes, so we always check all states and look for events
-	case WM_LBUTTONDOWN:
-	case WM_LBUTTONUP:
-	case WM_RBUTTONDOWN:
-	case WM_RBUTTONUP:
-	case WM_MBUTTONDOWN:
-	case WM_MBUTTONUP:
-	case WM_MOUSEMOVE:
-		{
-			int temp = 0;
-			if (wParam & MK_LBUTTON) temp |= 1;
-			if (wParam & MK_RBUTTON) temp |= 2;
-			if (wParam & MK_MBUTTON) temp |= 4;
-			IN_MouseEvent (temp);
-		}
-		break;
-
 	case WM_SYSCOMMAND:
 		switch (wParam)
 		{
@@ -326,13 +333,6 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		Com_Quit ();
 		break;							// should not return here
 
-	case MM_MCINOTIFY:
-		{
-			LONG CDAudio_MessageHandler (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);	//?? extern
-			CDAudio_MessageHandler (hWnd, uMsg, wParam, lParam);
-		}
-		break;
-
 	case WM_ERASEBKGND:
 		return 1;
 	}
@@ -342,6 +342,10 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	unguardf(("msg=%X", uMsg));
 }
 
+
+/*-----------------------------------------------------------------------------
+	Window creation/destroying
+-----------------------------------------------------------------------------*/
 
 void *Vid_CreateWindow (int width, int height, bool fullscreen)
 {
@@ -456,6 +460,8 @@ void Vid_DestroyWindow (bool force)
 }
 
 
+/*-------------------------------------------*/
+
 void Vid_Restart (void)
 {
 	needRestart = true;
@@ -514,6 +520,15 @@ static void Vid_UpdateWindowPosAndSize (int x, int y)
 
 /*-------- Dummy functions for console-only mode ---------*/
 
+//!! not works with SINGLE_RENDERER
+/*!! not works now; can replace gl_console_only with cl_console_only, switch on-fly (w/o vid_restart),
+ *    + remove RE_DrawConChar() -- use RE_DrawChar(); remove renderer.flags; console_only will differ
+ *    from normal mode by visualization; all models/textures/sounds will be loaded into memory, but
+ *    not used; when switch back to normal mode -- used as always; needs special path for console_only
+ *    in cl_scrn.cpp -- display console and exit; can remove check for console_only from most other
+ *    places (check qmenu.cpp!)
+ */
+#if 0
 static void	D_RenderFrame (refdef_t *fd) {}
 static void	D_BeginRegistration (const char *map) {}
 static CRenderModel *D_RegisterModel (const char *name) { return NULL; }
@@ -537,6 +552,7 @@ static void	D_DrawTextPos (int x, int y, const char *text, unsigned rgba) {}
 static void	D_DrawTextSide (const char *text, unsigned rgba) {}
 static void	D_DrawStretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data, unsigned *palette) {}
 static float D_GetClientLight (void) { return 0; }		// normal value is 150
+#endif
 
 
 static void FreeRenderer (void)
@@ -547,7 +563,7 @@ static void FreeRenderer (void)
 	if (refLibrary)		// if false - statically linked
 	{
 		if (!FreeLibrary (refLibrary))
-			Com_FatalError ("Reflib FreeLibrary() failed");
+			Com_FatalError ("Renderer FreeLibrary() failed");
 		refLibrary = NULL;
 	}
 	memset (&re, 0, sizeof(re));
@@ -621,7 +637,6 @@ static bool LoadRenderer (void)
 	}
 
 #if 0
-	//!! not works with SINGLE_RENDERER
 	if (RE_GetCaps() & REF_CONSOLE_ONLY)
 	{
 		re.RenderFrame =	D_RenderFrame;

@@ -7,13 +7,13 @@ namespace OpenGLDrv {
 
 // consts for image_t.flags
 #define IMAGE_CLAMP			1			// 0 -- repeat
-#define	IMAGE_MIPMAP		2
-#define IMAGE_PICMIP		4
+#define	IMAGE_MIPMAP		2			// generate and upload mipmap levels
+#define IMAGE_PICMIP		4			// allow texture downsampling for improving FPS
 #define IMAGE_NOALPHA		8			// original image have alpha-channel, but it was removed
 // image type
 #define IMAGE_SYSTEM		0x10		// auto-generated image (default, fog, dlight etc.)
-#define IMAGE_WORLD			0x20
-#define IMAGE_SKIN			0x40
+#define IMAGE_WORLD			0x20		// used for mip bias only
+#define IMAGE_SKIN			0x40		// ...
 //?? #define IMAGE_GUI			0x80
 // hints for image creating
 #define IMAGE_TRUECOLOR		0x80000000	// hint for GL_CreateImage: force to upload image in 32 bit
@@ -49,8 +49,8 @@ extern	image_t		*gl_particleImage;
 extern	image_t		*gl_reflImage;		// NULL if not found
 extern	image_t		*gl_reflImage2;		// NULL if not found
 
-extern int 	gl_screenshotFlags;
-extern char	*gl_screenshotName;
+extern int 	screenshotFlags;
+extern char	*screenshotName;
 
 void	GL_TextureMode (const char *name);
 

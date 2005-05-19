@@ -45,6 +45,9 @@ FILE SYSTEM
 - reading files:
    - GZip files (can auto-detect); can create such files too (special flag for FS_CreateFile() function)
    - text files (remove CR ('\r') from stream)
+- PAK formats:
+   - may be, register pak formats on program startup (ID-pak, ZIP) -- parser class + file masks
+   - option to compile without PAK support (will remove register pak format funcs etc)
 
 PACKAGE SYSTEM
 ~~~~~~~~~~~~~~

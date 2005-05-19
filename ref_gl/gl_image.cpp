@@ -24,7 +24,7 @@
 
 #include "gl_local.h"
 #include "gl_image.h"
-#include "gl_backend.h"			// for DrawStretchPic() only
+#include "gl_backend.h"			// for BK_DrawPic() only
 
 namespace OpenGLDrv {
 
@@ -39,8 +39,8 @@ image_t	*gl_videoImage;
 image_t	*gl_reflImage;
 image_t	*gl_reflImage2;
 
-int 	gl_screenshotFlags;
-char	*gl_screenshotName;
+int 	screenshotFlags;
+char	*screenshotName;
 
 
 /*-----------------------------------------------------------------------------
@@ -855,7 +855,7 @@ void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *p
 	// draw
 	gl_videoShader->width = width;
 	gl_videoShader->height = height;
-	DrawStretchPic (gl_videoShader, x, y, w, h, 0, 0, 1, 1, RGB(1,1,1));
+	BK_DrawPic (gl_videoShader, x, y, w, h, 0, 0, 1, 1, RGB(1,1,1));
 	if (gl_detailShader && width*3/2 < w)		// detail is not available or not needed
 	{
 #define VIDEO_NOISE_FPS		20
@@ -872,7 +872,7 @@ void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *p
 			dy = frand() / 2;
 			flipMode = rand() & 3;
 		}
-		DrawStretchPic (gl_detailShader, x, y, w, h, dx, dy,
+		BK_DrawPic (gl_detailShader, x, y, w, h, dx, dy,
 			w / gl_detailShader->width + dx, h / gl_detailShader->height + dy, RGB(1,1,1), flipMode);
 	}
 
@@ -1150,16 +1150,16 @@ void PerformScreenshot (void)
 	int		i, width, height;
 	FILE	*f;
 
-	if (!gl_screenshotName ||
-		((gl_screenshotFlags & SHOT_WAIT_3D) && !gl_state.have3d))
+	if (!screenshotName ||
+		((screenshotFlags & SHOT_WAIT_3D) && !gl_state.have3d))
 		return;		// already performed in current frame or wait another frame
 
 	glFinish ();
 
-	const char *ext = (gl_screenshotFlags & SHOT_JPEG ? ".jpg" : ".tga");
-	if (gl_screenshotName[0])
+	const char *ext = (screenshotFlags & SHOT_JPEG ? ".jpg" : ".tga");
+	if (screenshotName[0])
 	{
-		strcpy (name, gl_screenshotName);
+		strcpy (name, screenshotName);
 		strcat (name, ext);
 	}
 	else
@@ -1175,7 +1175,7 @@ void PerformScreenshot (void)
 		}
 
 	}
-	gl_screenshotName = NULL;
+	screenshotName = NULL;
 
 	// create the screenshots directory if it doesn't exist
 	FS_CreatePath (name);
@@ -1191,7 +1191,7 @@ void PerformScreenshot (void)
 	Com_Printf ("\n");
 */
 
-	if (gl_screenshotFlags & SHOT_SMALL)
+	if (screenshotFlags & SHOT_SMALL)
 	{
 		byte *buffer2 = (byte*)appMalloc (LEVELSHOT_W * LEVELSHOT_H * 4);
 		ResampleTexture ((unsigned *)buffer, vid_width, vid_height, (unsigned *)buffer2, LEVELSHOT_W, LEVELSHOT_H);
@@ -1219,7 +1219,7 @@ void PerformScreenshot (void)
 		// correct gamma
 		if (gl_config.deviceSupportsGamma)
 		{
-			if (gl_screenshotFlags & SHOT_NOGAMMA)
+			if (screenshotFlags & SHOT_NOGAMMA)
 			{
 				// we need to correct overbright
 				r <<= gl_config.overbright; r = bound(r, 0, 255);
@@ -1240,14 +1240,14 @@ void PerformScreenshot (void)
 	}
 
 	bool result;
-	if (gl_screenshotFlags & SHOT_JPEG)
-		result = WriteJPG (name, buffer, width, height, (gl_screenshotFlags & SHOT_SMALL));
+	if (screenshotFlags & SHOT_JPEG)
+		result = WriteJPG (name, buffer, width, height, (screenshotFlags & SHOT_SMALL));
 	else
 		result = WriteTGA (name, buffer, width, height);
 
 	appFree (buffer);
 
-	if (result && !(gl_screenshotFlags & SHOT_SILENT))
+	if (result && !(screenshotFlags & SHOT_SILENT))
 		Com_Printf ("Wrote %s\n", strrchr (name, '/') + 1);
 }
 

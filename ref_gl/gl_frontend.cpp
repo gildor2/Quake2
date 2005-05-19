@@ -10,13 +10,13 @@ namespace OpenGLDrv {
 
 static int visFrame, drawFrame;
 static int currentEntity;
-static int	viewCluster;
+static int viewCluster;
 
 viewPortal_t vp;
 
 // map areas
 byte		areaMask[MAX_MAP_AREAS/8];
-bool		areaMaskChanged;						// when "true" - re-MarkLeaves() (rename var?)
+bool		forceVisMap;
 
 // entities
 refEntity_t gl_entities[MAX_GLENTITIES];
@@ -650,7 +650,7 @@ static node_t *BeamLeaf (vec3_t v1, vec3_t v2)
 /*------------------ Drawing entities --------------------*/
 
 
-static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMask, refEntity_t *e)
+static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask, refEntity_t *e)
 {
 	int		j;
 	refDlight_t *dl;
@@ -660,7 +660,7 @@ static void AddBspSurfaces (surfaceCommon_t **psurf, int numFaces, int frustumMa
 
 	for (int i = 0; i < numFaces; i++)
 	{
-		surfaceCommon_t *surf = *psurf++;
+		surfaceBase_t *surf = *psurf++;
 		if (surf->frame == drawFrame) continue;
 		surf->frame = drawFrame;
 		if (surf->dlightFrame != drawFrame) surf->dlightMask = 0;
@@ -836,7 +836,7 @@ void inlineModel_t::AddSurfaces (refEntity_t *e)
 		dlightMask |= mask;
 	}
 	// mark surfaces
-	surfaceCommon_t	*surf, **psurf;
+	surfaceBase_t	*surf, **psurf;
 	if (dlightMask)
 		for (i = 0, psurf = faces; i < numFaces; i++, psurf++)
 		{
@@ -900,7 +900,12 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	// lerp radius
 	out->radius = (frame2->radius - frame1->radius) * out->backLerp + frame1->radius;
 	// compute mins/maxs (lerp ??)
+#if 0
+	//!!!! HERE: use frame bounding sphere for gl_showbboxes visualization
+	out->size2[0] = out->size2[1] = out->size2[2] = frame1->radius;
+#else
 	VectorSubtract (frame1->maxs, frame1->localOrigin, out->size2);
+#endif
 	// check for COLOR_SHELL
 	if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_HALF_DAM|RF_SHELL_DOUBLE))
 	{
@@ -974,7 +979,6 @@ void sp2Model_t::AddSurfaces (refEntity_t *e)
 	if (!p)		// out of dynamic memory
 		return;
 	CALL_CONSTRUCTOR(p);
-	p->type = SURFACE_POLY;
 
 	p->numVerts = 4;
 
@@ -1046,7 +1050,6 @@ static void AddBeamSurfaces (beam_t *b)
 		if (!p)		// out of dynamic memory
 			return;
 		CALL_CONSTRUCTOR(p);
-		p->type = SURFACE_POLY;
 
 		p->numVerts = 4;
 
@@ -1142,7 +1145,6 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 		if (!p)		// out of dynamic memory
 			return;
 		CALL_CONSTRUCTOR(p);
-		p->type = SURFACE_POLY;
 
 		p->numVerts = 4;
 
@@ -1232,7 +1234,6 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 		if (!p)		// out of dynamic memory
 			return;
 		CALL_CONSTRUCTOR(p);
-		p->type = SURFACE_POLY;
 
 		p->numVerts = 4;
 
@@ -1453,7 +1454,7 @@ static node_t *WalkBspTree (void)
 		if (dlightMask)
 		{
 			int		i;
-			surfaceCommon_t **psurf, *surf;
+			surfaceBase_t **psurf, *surf;
 
 			for (i = 0, psurf = node->leafFaces; i < node->numLeafFaces; i++, psurf++)
 			{
@@ -1496,7 +1497,6 @@ static void DrawEntities (int firstEntity, int numEntities)
 				if (surf)
 				{
 					CALL_CONSTRUCTOR(surf);
-					surf->type = SURFACE_ENTITY;
 					surf->ent = e;
 					AddSurfaceToPortal (surf, gl_entityShader, ENTITYNUM_WORLD);
 				}
@@ -1647,7 +1647,7 @@ static void DrawFlares (void)
 				// check entity visibility (can add entity origin only when it is valid for current frame)
 				if (!f->surf || cull)					// culled/fading flare
 				{
-					surfaceCommon_t **s;
+					surfaceBase_t **s;
 
 					for (i = 0, s = im->faces; i < im->numFaces; i++, s++)
 						if ((*s)->frame == drawFrame) break;
@@ -1761,7 +1761,6 @@ static void DrawFlares (void)
 		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p) return;
 		CALL_CONSTRUCTOR(p);
-		p->type = SURFACE_POLY;
 
 		p->numVerts = 4;
 
@@ -1841,7 +1840,6 @@ static void DrawBspSequence (node_t *leaf)
 			if (surf)
 			{
 				CALL_CONSTRUCTOR(surf);
-				surf->type = SURFACE_PARTICLE;
 				surf->part = leaf->drawParticle;
 				AddSurfaceToPortal (surf, gl_particleShader, ENTITYNUM_WORLD);
 			}
@@ -1874,25 +1872,24 @@ static void MarkLeaves (void)
 	int		i;
 	node_t	*n;
 
-	gl_speeds.leafs = map.numLeafNodes - map.numNodes;
-
 	// determine the vieworg cluster
 	int cluster = PointInLeaf (vp.vieworg)->cluster;
 	// if cluster or areamask changed -- re-mark visible leaves
-	if (viewCluster != cluster || areaMaskChanged)
+	if (viewCluster != cluster || forceVisMap)
 	{
 		viewCluster = cluster;
+		forceVisMap = false;
 		visFrame++;
 		if (r_novis->integer || cluster < 0 || cluster >= map.numClusters || map.numClusters <= 1)
 		{	// mark ALL nodes
 			for (i = 0, n = map.nodes; i < map.numLeafNodes; i++, n++)
 				n->visFrame = visFrame;
-			gl_speeds.visLeafs = gl_speeds.leafs;
+			gl_speeds.visLeafs = map.numLeafNodes - map.numNodes;
 		}
 		else
 		{	// use visinfo to mark nodes
 			gl_speeds.visLeafs = 0;
-			byte *row = map.visInfo + cluster * map.visRowSize;
+			const byte *row = map.visInfo + cluster * map.visRowSize;
 			for (i = map.numNodes, n = map.nodes + map.numNodes; i < map.numLeafNodes; i++, n++)
 			{
 				int cl = n->cluster;
@@ -1936,17 +1933,8 @@ void AddEntity (entity_t *ent)
 	if (ent->model)
 	{
 		VectorCopy (ent->origin, out->origin);
-		if (out->model->type == MODEL_MD3)
-		{
-			//!! need to negate angles[2] -- move outside renderer
-			//!! check: why this for MD2 only? (where error have place?!)
-			//!! best: send client->renderer not angles, but axis
-			ent->angles[2] = -ent->angles[2];
-			AnglesToAxis (ent->angles, out->axis);
-			ent->angles[2] = -ent->angles[2];
-		}
-		else
-			AnglesToAxis (ent->angles, out->axis);
+		//!! send client=>renderer not angles, but axis
+		AnglesToAxis (ent->angles, out->axis);
 
 		if (!ent->origin[0] && !ent->origin[1] && !ent->origin[2] &&
 			!ent->angles[0] && !ent->angles[1] && !ent->angles[2])
@@ -2037,7 +2025,6 @@ void DrawPortal (void)
 	if (r_drawworld->integer && !(vp.flags & RDF_NOWORLDMODEL))
 	{
 		drawFrame++;
-		gl_speeds.frustLeafs = 0;
 
 		// setup world entity
 		memset (&gl_entities[ENTITYNUM_WORLD], 0, sizeof(refEntity_t));

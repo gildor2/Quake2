@@ -27,8 +27,14 @@ extern bool	ActiveApp, MinimizedApp, FullscreenApp;
 
 // in_win.c
 void IN_Activate (bool active);	//?? declared in cl_input.h too
-void IN_MouseEvent (unsigned buttons);
 extern bool in_needRestart;		//?? used from vid_dll.c::Vid_NewVindow()
+
+
+// message hooks
+typedef bool (*MSGHOOK_FUNC) (UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+void AddMsgHook (MSGHOOK_FUNC func);
+void RemoveMsgHook (MSGHOOK_FUNC func);
 
 
 #endif

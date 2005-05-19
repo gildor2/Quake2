@@ -80,10 +80,9 @@
   - use for Menu, Console, Game (3D with world), Cinematic, Chat, HUD, LoadingSplash, DownloadingInfo
     - SCR_StopCinematic(): remove from keys.cpp and cl_input.cpp -> move to CCinematic::HandleEvent()
 ? screenshot: may perform detection of correct place to perform from client (not inside renderer):
-  - require backend to not cache drawings and immediately perform drawing of 3D and 2D objects:
+  - how backend should perform drawing of 3D and 2D objects:
     - 3D - exec frontend, sort surfaces and draw
     - 2D - sorting will affect draw order and create incorrect scene, so - can exec immediately too
-    * NOTE: command buffer was taken from Q3 engine ...
 - currently, all screen objects depends on client or client_static structures - try to cut necessary fields
   to separate structure
   - time parameters: cls.realtime, cls.frametime
@@ -105,6 +104,7 @@
 ------------ New renderer system -----------
 - separate renderer (math only) and backend (OpenGL); call hierarchy: mainEngine->renderer->backend->gl
   names: ref_gl -> SceneGraph + OpenGLDrv
+  - remove dependency on "gl.h", "glext.h", "qgl_*.h" etc from scene graph files
 - backend should provide "caps" field:
   - rect textures (GL_NV_texture_rectangle: clamp, no mipmap)
   - rect textures 2 (GL_ARB_texture_non_power_of_two: full-feautured textures)
@@ -120,17 +120,12 @@
 - CImage->CShader (CMaterial?); CImage->CGlImage; CMaterial->CGlMaterial
 - sky drawing: AddSkySurface() - during frontend pass (if r_fastSky==0); backend will only draw sky grid;
   this will eliminate sky surfaces from sorted surfaces array
-- 2D-drawing (non-world, i.e. GUI/HUD): don't need to buffer everything, can draw immediately; buffer only
-  3D world surfaces for later sorting and drawing in preferred order (sort by light/model/model-bone/shader/BSP-order ...);
-  3D drawing: after RenderScene() call, will perform frontend -> buffer -> sorted buffer -> backend; not needed
-  backend command list ?
-  ! check speed changing after removing backend cmd buffer
 - client rendering:
   - screen manager - top level, draw GUI and HUD; can draw 3D in GUI/HUD
   - primary world 3D scene manager - entities, sprites/fx, dlights ...; will call renderer->DrawScene()
 - NullBackend (builtin?) - empty functions; may be useful for on-fly switching to dedicated server and to back GUI
 - BSP: class CBspNode -> class CBspLeaf (some additional fields)
-- remove (or relax usage) of surfaceCommon_t.type (rename to CDrawSurface?)
+- remove (or relax usage) of surfaceBase_t.type
   - UpdateDynamicLightmap() -- for planar only?
   - Cull() -- forntend.cpp
   - ApplyDlights() -- frontend.cpp

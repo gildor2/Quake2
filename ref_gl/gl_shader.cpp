@@ -28,10 +28,6 @@ shader_t *gl_alphaShader1, *gl_alphaShader2;
 
 #define	MAX_SHADERS		1024
 
-/* Allocate all shaders dynamically. Reallocate every time new map loaded (do now perform partial cleanup) - this
-   will be fast enough, if we will hold shader scripts in memory.
-   Add refCount to image_t ??
- */
 static shader_t *shadersArray[MAX_SHADERS];	// sorted in ascending order with key = sortParam
 				// it's easier to keep array sorted, than sort it with "sortParam" later
 
@@ -42,17 +38,18 @@ static CMemoryChain *shaderChain;
 
 
 // name should be in a lower case
-static int ComputeHash (char *name)
+static int ComputeHash (const char *name)
 {
 	int h = 0;
-	char c;
-	while (c = *name++)
+	while (char c = *name++)
 		h = (h ^ 0x25) + c;
 	return h & HASH_MASK;
 }
 
 
-/*------- Initialization/finalization ----------*/
+/*-----------------------------------------------------------------------------
+	Initialization/finalization
+-----------------------------------------------------------------------------*/
 
 static void Shaderlist_f (bool usage, int argc, char **argv)
 {
@@ -72,12 +69,11 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 	Com_Printf ("----ns-lm-s--type-name--------\n");
 	for (int i = 0; i < shaderCount; i++)
 	{
-		const char *lmInfo, *color;
-
 		shader_t *sh = shadersArray[i];
 		if (mask && !appMatchWildcard (sh->name, mask, true)) continue;
 		n++;
 
+		const char *lmInfo, *color;
 		switch (sh->lightmapNumber)
 		{
 		case LIGHTMAP_NONE:
@@ -129,8 +125,9 @@ void ShutdownShaders (void)
 }
 
 
-/*------------- Creating new shader ------------*/
-
+/*-----------------------------------------------------------------------------
+	Creating new shader
+-----------------------------------------------------------------------------*/
 
 static shader_t sh;
 static shaderStage_t st[MAX_SHADER_STAGES];
@@ -141,22 +138,17 @@ static tcModParms_t tcMods[MAX_SHADER_STAGES * MAX_STAGE_TCMODS];
 
 static void ResortShader (shader_t *shader, int startIndex)
 {
-	float	sort;
-	int		i, numTextures, sort2;
-	shaderStage_t **pstages;
-
 	// compute secondary sort key
-	numTextures = 0;
-	sort2 = 0;
+	int numTextures = 0;
+	int sort2 = 0;
+	int	i;
+	shaderStage_t **pstages;
 	for (i = 0, pstages = shader->stages; i < shader->numStages; i++, pstages++)		// iterate stages
 	{
-		shaderStage_t *st;
-		image_t *image;
-		int		texnum;
+		shaderStage_t *st = *pstages;
+		image_t *image = st->mapImage[0];
 
-		st = *pstages;
-		image = st->mapImage[0];
-
+		int texnum;
 		if (image && !(shader->lightmapNumber == LIGHTMAP_RESERVE && st->isLightmap))
 			texnum = image->texnum;
 		else	// ignore image if this is reserved lightmap
@@ -169,12 +161,10 @@ static void ResortShader (shader_t *shader, int startIndex)
 	shader->sortParam2 = sort2;
 
 	// insert into a shadersArray (sorted)
-	sort = shader->sortParam;
+	float sort = shader->sortParam;
 	for (i = startIndex - 1; i >= 0; i--)
 	{
-		shader_t *ash;	// array shader
-
-		ash = shadersArray[i];
+		shader_t *ash = shadersArray[i];	// array shader
 		if (sort < ash->sortParam || (sort == ash->sortParam && sort2 < ash->sortParam2))
 		{
 			// move this shader down
@@ -199,6 +189,7 @@ static void ResortShader (shader_t *shader, int startIndex)
 static void ClearTempShader (void)
 {
 	memset (&sh, 0, sizeof(sh));
+	CALL_CONSTRUCTOR(&sh);
 	memset (&st, 0, sizeof(st));
 	memset (&shaderImages, 0, sizeof(shaderImages));
 	memset (&tcMods, 0, sizeof(tcMods));
@@ -208,12 +199,10 @@ static void ClearTempShader (void)
 
 static tcModParms_t *NewTcModStage (shaderStage_t *stage)
 {
-	tcModParms_t *par;
-
 	if (stage->numTcMods > MAX_STAGE_TCMODS)
 		Com_DropError ("Too many tcMod stages in shader \"%s\"\n", sh.name);
 	//?? check index overflow (no MAX_STAGE_TCMODS but MAX_SHADER_TCMODS ??)
-	par = &tcMods[numTcModStages++];	// alloc
+	tcModParms_t *par = &tcMods[numTcModStages++];	// alloc
 	if (!stage->numTcMods)
 		stage->tcModParms = par;		// if 1st tcMod in stage -- setup pointer
 	stage->numTcMods++;
@@ -221,29 +210,28 @@ static tcModParms_t *NewTcModStage (shaderStage_t *stage)
 }
 
 
-// Insert shader to shaders array
-static shader_t *AddPermanentShader (void)
+// Insert shader (sh) into shaders array
+static shader_t *CreateShader (void)
 {
 	if (shaderCount >= MAX_SHADERS)
 	{
-		Com_WPrintf ("AddPermanentShader(%s): MAX_SHADERS hit\n", sh.name);
+		Com_WPrintf ("CreateShader(%s): MAX_SHADERS hit\n", sh.name);
 		return gl_defaultShader;
 	}
 
 	// allocate and copy new shader
 	shader_t *nsh = (shader_t*) shaderChain->Alloc(sizeof(shader_t) + (sh.numStages-1) * sizeof(shaderStage_t*));
 	*nsh = sh;
-	CALL_CONSTRUCTOR(nsh);		// after copy
+	CALL_CONSTRUCTOR(nsh);				// after copy
 
 	// allocate and copy stages
 	for (int i = 0; i < sh.numStages; i++)
 	{
-		int size = sh.numStages * sizeof(shaderStage_t) + (st[i].numAnimTextures-1) * sizeof(image_t*);
-		shaderStage_t *nst;	// new stage
-		nst = (shaderStage_t*) shaderChain->Alloc(size);
-		nsh->stages[i] = nst;
-		memcpy (nst, &st[i], size);
-		// copy texture info
+		int size = sizeof(shaderStage_t) + (st[i].numAnimTextures-1) * sizeof(image_t*);
+		shaderStage_t *nst = (shaderStage_t*) shaderChain->Alloc(size);
+		*nst = st[i];					// copy contents
+		nsh->stages[i] = nst;			// register stage
+		// setup mapImage[]
 		memcpy (&nst->mapImage, &shaderImages[i * MAX_STAGE_TEXTURES], st[i].numAnimTextures * sizeof(image_t*));
 	}
 
@@ -264,50 +252,32 @@ static shader_t *AddPermanentShader (void)
 // WARNING: this function will not extract tcMods
 static void ExtractShader (shader_t *shader)
 {
-	int		i;
-	shaderStage_t *stage, **pstages;
-
 	ClearTempShader ();
 	memcpy (&sh, shader, sizeof(shader_t));
-	for (i = 0, pstages = shader->stages; i < shader->numStages; i++, pstages++)
+	for (int i = 0; i < shader->numStages; i++)
 	{
-		stage = *pstages;
-
-		memcpy (&st[i], stage, sizeof(shaderStage_t));
+		shaderStage_t *stage = shader->stages[i];
+		st[i] = *stage;
 		memcpy (&shaderImages[i * MAX_STAGE_TEXTURES], stage->mapImage, stage->numAnimTextures * sizeof(image_t*));
 	}
 }
 
 
-static shader_t *FinishShader (void)
+static shader_t *FinishShader (void)	//!!!! rename function
 {
-	int		numStages;
-
 	if (sh.type == SHADERTYPE_SKY)
 		sh.sortParam = SORT_SKY;
 	else if (!sh.sortParam && sh.usePolygonOffset)
 		sh.sortParam = SORT_DECAL;
 
 	// enum and count stages
-	for (numStages = 0; numStages < MAX_SHADER_STAGES; numStages++)
+	for (int numStages = 0; numStages < MAX_SHADER_STAGES; numStages++)
 	{
-		shaderStage_t *s;
-		int		blend1, blend2;
-
-		s = &st[numStages];
+		shaderStage_t *s = &st[numStages];
 		if (!s->numAnimTextures) break;
 
-		// determine tcGenType
-		if (s->isLightmap)
-		{	// lightmap stage
-			if (!s->tcGenType)
-				s->tcGenType = TCGEN_LIGHTMAP;
-		}
-		else
-		{	// texture stage
-			if (!s->tcGenType)
-				s->tcGenType = TCGEN_TEXTURE;
-		}
+		// set default tcGenType
+		if (!s->tcGenType) s->tcGenType = (s->isLightmap) ? TCGEN_LIGHTMAP : TCGEN_TEXTURE;
 
 		// process rgbGen
 		if (s->rgbGenType == RGBGEN_VERTEX && gl_config.identityLightValue_f == 1.0f)
@@ -321,7 +291,8 @@ static shader_t *FinishShader (void)
 		}
 
 		// replace blend mode aliases with main modes (for easier processing)
-		blend1 = s->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK);
+		unsigned blend1 = s->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK);
+		unsigned blend2 = blend1;
 		switch (blend1)
 		{
 		case GLSTATE_SRC_ONE|GLSTATE_DST_ZERO:		// src
@@ -331,8 +302,6 @@ static shader_t *FinishShader (void)
 			blend2 = GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO;
 			break;
 		//?? can remove/signal stages with blend = (0,1=dst) (0,0=0) and no depthwrite (BUT: depth-sorted anyway ???)
-		default:
-			blend2 = blend1;
 		}
 		// replace lightmap blend src*dst -> src*dst*2 when needed
 		if (numStages > 0 && st[numStages-1].isLightmap)
@@ -348,26 +317,18 @@ static shader_t *FinishShader (void)
 		// store new blend mode
 		s->glState = s->glState & ~(GLSTATE_SRCMASK|GLSTATE_DSTMASK) | blend2;
 
-		// set sort param
+		// set sort param for blending
 		if (blend2 && st[0].glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))	//?? check this condition
 		{	// have blending
 			if (!sh.sortParam)
-			{
-				if (s->glState & GLSTATE_DEPTHWRITE)
-					sh.sortParam = SORT_SEETHROUGH;
-				else
-					sh.sortParam = SORT_SPRITE;
-			}
+				sh.sortParam = (s->glState & GLSTATE_DEPTHWRITE) ? SORT_SEETHROUGH : SORT_SPRITE;
 		}
 
-		// process tcMod
+		// alloc/copy tcMod
 		if (s->numTcMods)
 		{
-			tcModParms_t *tc;
-			int		size;
-
-			size = s->numTcMods * sizeof(tcModParms_t);
-			tc = (tcModParms_t*) shaderChain->Alloc(size);
+			int size = s->numTcMods * sizeof(tcModParms_t);
+			tcModParms_t *tc = (tcModParms_t*) shaderChain->Alloc(size);
 			memcpy (tc, s->tcModParms, size);
 			s->tcModParms = tc;
 		}
@@ -380,12 +341,11 @@ static shader_t *FinishShader (void)
 	}
 	sh.numStages = numStages;
 
+	// if sortParam is not yet set - set it to opaque
 	if (!sh.sortParam)
 		sh.sortParam = SORT_OPAQUE;
 
-	// optimize stages (vertex lighting (simplify ?), multitexturing ...)
-
-	return AddPermanentShader ();
+	return CreateShader ();
 }
 
 
@@ -400,10 +360,6 @@ image_t *GetLightmapImage (int num)
 
 shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber)
 {
-	int			hash, i;
-	shader_t	*s, *dest;
-	shaderStage_t *stage, **pstages;
-
 	if (lightmapNumber == LIGHTMAP_NONE)
 	{
 		if (shader->lightmapNumber != LIGHTMAP_VERTEX || shader->numStages != 1)
@@ -413,6 +369,7 @@ shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber)
 		}
 		else
 		{
+			// HERE: 1-stage vertex-light shader
 			shader->lightmapNumber = LIGHTMAP_NONE;
 			shader->stages[0]->rgbGenType = RGBGEN_IDENTITY_LIGHTING;
 		}
@@ -422,9 +379,9 @@ shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber)
 	if (shader->lightmapNumber == LIGHTMAP_VERTEX)
 		return shader;
 
-	hash = ComputeHash (shader->name);
-	dest = NULL;
-	for (s = hashTable[hash]; s; s = s->hashNext)
+	int hash = ComputeHash (shader->name);
+	shader_t *dest = NULL;
+	for (shader_t *s = hashTable[hash]; s; s = s->hashNext)
 		if (!strcmp (shader->name, s->name) && shader->style == s->style)
 		{
 			if (s->lightmapNumber == lightmapNumber)
@@ -441,16 +398,16 @@ shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber)
 	{
 		// shader is not found -- duplicate source and change its lightmap
 		ExtractShader (shader);
-		sh.lightmapNumber = LIGHTMAP_RESERVE;	// temporarily mark as reserved (for CreatePermanentShader())
-		dest = AddPermanentShader ();
+		sh.lightmapNumber = LIGHTMAP_RESERVE;	// temporarily mark as reserved (for CreateShader())
+		dest = CreateShader ();
 		// new shader's tcMod will point to the old shader's tcMod stages
 	}
 
 	dest->lightmapNumber = lightmapNumber;
 	// find lightmap stage
-	for (i = 0, pstages = dest->stages; i < dest->numStages; i++, pstages++)
+	for (int i = 0; i < dest->numStages; i++)
 	{
-		stage = *pstages;
+		shaderStage_t *stage = dest->stages[i];
 
 		if (stage->isLightmap)
 		{
@@ -467,24 +424,17 @@ shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber)
 
 shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles)
 {
-	char	newname[MAX_QPATH], *s;
-	shader_t *newshader;
-	int		m;
-
 	if (!styles || gl_config.vertexLight) return shader;
 
+	char newname[MAX_QPATH];
 	strcpy (newname, shader->name);
-	s = strchr (newname, 0);		// find string end
+	char *s = strchr (newname, 0);			// find string end
 	*s++ = '$';
 
-	m = styles;
-	while (m)
+	for (unsigned m = styles; m; m >>= 8)
 	{
-		byte	c;
-
 		// style -> char
-		c = m & 0xFF;
-		m >>= 8;
+		byte c = m & 0xFF;
 
 		if (c < 10) c += '0';
 		else c += 'a' - 10;
@@ -492,20 +442,18 @@ shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles)
 	}
 	*s = 0;
 
-	newshader = FindShader (newname, shader->style | SHADER_CHECKLOADED);
+	shader_t *newshader = FindShader (newname, shader->style | SHADER_CHECKLOADED);
 	if (newshader) return newshader;
 
 	ExtractShader (shader);
 	strcpy (sh.name, newname);
 	sh.lightStyles_i = styles;
-	return AddPermanentShader ();
+	return CreateShader ();
 }
 
 
 shader_t *GetAlphaShader (shader_t *shader)
 {
-	int		i, j;
-
 	if (shader->alphaShader)
 		return shader->alphaShader;			// already done
 
@@ -525,14 +473,11 @@ shader_t *GetAlphaShader (shader_t *shader)
 	st[0].glState |= GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA;
 	st[0].glState &= ~GLSTATE_DEPTHWRITE;	// allow to see inside alpha-model
 	// setup shader images
-	for (i = 0; i < sh.numStages; i++)
-		for (j = 0; j < st[i].numAnimTextures; j++)
+	for (int i = 0; i < sh.numStages; i++)
+		for (int j = 0; j < st[i].numAnimTextures; j++)
 		{
-			image_t	*img;
-			int		idx;
-
-			idx = i * MAX_STAGE_TEXTURES + j;
-			img = shaderImages[idx];
+			int idx = i * MAX_STAGE_TEXTURES + j;
+			image_t *img = shaderImages[idx];
 			if (img->name[0] != '*' && !(img->flags & IMAGE_SYSTEM) && img->flags & IMAGE_NOALPHA)
 				shaderImages[idx] = FindImage (img->name, img->flags & ~IMAGE_NOALPHA);
 		}
@@ -814,9 +759,7 @@ shader_t *FindShader (const char *name, unsigned style)
 
 			if (style & SHADER_SCROLL)
 			{
-				tcModParms_t *par;
-
-				par = NewTcModStage (stage);
+				tcModParms_t *par = NewTcModStage (stage);
 				par->type = TCMOD_SCROLL;
 				if (style & SHADER_TURB)
 					par->sSpeed = -0.5;
@@ -916,7 +859,7 @@ void ResetShaders (void)
 	// create 2nd "identityLight" (with depth test/write and different name)
 	strcpy (sh.name, "*identitylight2");
 	st[0].rgbGenType = RGBGEN_EXACT_VERTEX;
-	gl_identityLightShader2 = AddPermanentShader ();
+	gl_identityLightShader2 = FinishShader ();
 
 	strcpy (sh.name, "*flare");
 	sh.sortParam = SORT_SPRITE;
@@ -931,7 +874,7 @@ void ResetShaders (void)
 #endif
 	shaderImages[0] = FindImage ("sprites/corona", IMAGE_MIPMAP|IMAGE_TRUECOLOR);
 	if (shaderImages[0])
-		gl_flareShader = FinishShader ();//?? AddPermanentShader ();
+		gl_flareShader = FinishShader ();
 	else
 		gl_flareShader = NULL;
 
@@ -972,7 +915,7 @@ void ResetShaders (void)
 	shaderImages[0] = FindImage ("fx/colorshell", IMAGE_MIPMAP);
 	sh.lightmapNumber = LIGHTMAP_NONE;
 	st[0].numAnimTextures = 1;
-	gl_colorShellShader = FinishShader ();//?? AddPermanentShader ();
+	gl_colorShellShader = FinishShader ();
 
 	//---------------------------------------------
 	ClearTempShader ();
@@ -1090,14 +1033,12 @@ void ResetShaders (void)
 	shader_t
 -----------------------------------------------------------------------------*/
 
-
 void shader_t::Reload ()
 {
 	//?? needs to reload shader script -- for debug only
-	//?? NOTE: this function will not work with shaders, whose names are differs from image name
 	if (numStages && stages[0]->numAnimTextures)
 	{
-		image_t *img = stages[0]->mapImage[0];	//?? all images (non-system, not "*name" etc), all stages
+		image_t *img = stages[0]->mapImage[0];	//?? all images (non-system, not "*name" etc), all anims, all stages
 		FindImage (img->name, img->flags | IMAGE_RELOAD);
 	}
 }

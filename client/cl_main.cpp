@@ -122,7 +122,7 @@ static bool TryParseStatus (char *str)
 	if (!v) return false;
 	cl_cheats = atoi (v) != 0;
 
-//	Com_Printf (S_RED"map: %s  game: %s  cheats: %d\n", cl_mapname, cl_gamename, cl_cheats);
+	Com_Printf (S_RED"map: %s  game: %s  cheats: %d\n", cl_mapname, cl_gamename, cl_cheats);
 
 	statusRequest = false;
 	return true;

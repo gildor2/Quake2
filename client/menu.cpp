@@ -2333,7 +2333,7 @@ struct playerConfigMenu_t : menuFramework_t
 			e[0].angles[1] = cls.realtime / 20 % 360;
 
 			// add weapon model
-			memcpy (&e[1], &e[0], sizeof (e[0]));		// fill angles, lerp and more ...
+			e[1] = e[0];		// fill angles, lerp and more ...
 			e[1].model = RE_RegisterModel (va("players/%s/weapon.md2", model->name));
 			e[1].skin = NULL;
 
@@ -2988,6 +2988,103 @@ static void Menu_Quit_f (void)
 
 
 
+#if 1
+/*
+=======================================================================
+
+TEST MENU
+
+=======================================================================
+*/
+#define REGISTER_TEST
+
+struct testMenu_t : menuFramework_t
+{
+	const char * KeyDown (int key)
+	{
+		switch (key)
+		{
+		case K_ESCAPE:
+			Pop ();
+			break;
+		}
+
+		return NULL;
+	}
+
+	void Draw ()
+	{
+		extern float CalcFov (float fov_x, float w, float h);
+		entity_t	e[3];
+		static dlight_t	dl[] = {
+			{{30, 100, 100}, {1, 1, 1}, 400},
+			{{90, -100, 10}, {0.4, 0.2, 0.2}, 200}
+		};
+
+		refdef_t refdef;
+		memset (&refdef, 0, sizeof (refdef));
+		refdef.x = viddef.width / 2;
+		refdef.y = viddef.height * 6 / 25;
+		refdef.width = viddef.width * 4 / 10 + 16;
+		refdef.height = viddef.width * 5 / 10;
+		refdef.fov_x = refdef.width * 90 / viddef.width;
+		refdef.fov_y = CalcFov (refdef.fov_x, refdef.width, refdef.height);
+		refdef.time = cls.realtime / 1000.0f;
+
+		memset (&e, 0, sizeof(e));
+
+//		const char *model_name = "visor";
+		const char *model_name = "crash";
+		// add head model
+		e[0].model = RE_RegisterModel (va("models/players/%s/head.md3", model_name));
+		e[0].skin = RE_RegisterSkin (va("models/players/%s/blue.pcx", model_name));
+//		e[0].flags = 0;
+		e[0].origin[0] = 130;
+//		e[0].origin[1] = 0;
+		e[0].origin[2] = 25;	//!! 15
+		VectorCopy (e[0].origin, e[0].oldorigin);
+
+		e[0].frame = 0;			// head frame
+		e[0].oldframe = e[0].frame;
+		e[0].backlerp = 0;
+		e[0].angles[1] = cls.realtime / 20 % 360;
+
+		// add torso model
+		e[1] = e[0];
+		e[1].frame = 151;		// torso frame
+		e[1].model = RE_RegisterModel (va("models/players/%s/upper.md3", model_name));
+//		e[1].skin = NULL;
+		e[1].origin[2] = 0;
+
+		// add legs model
+		e[2] = e[0];
+		e[2].frame = 220-63;	// legs frame
+		e[2].model = RE_RegisterModel (va("models/players/%s/lower.md3", model_name));
+//		e[2].skin = NULL;
+		e[2].origin[2] = -20;	//!! -10
+
+//		refdef.areabits = NULL;
+		refdef.num_entities = 3;
+		refdef.entities = e;
+//		refdef.lightstyles = NULL;
+		refdef.dlights = dl;
+		refdef.num_dlights = ARRAY_COUNT(dl);
+		refdef.rdflags = RDF_NOWORLDMODEL;
+
+		RE_Fill (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
+		RE_RenderFrame (&refdef);
+	}
+};
+static testMenu_t testMenu;
+
+static void Menu_Test_f (void)
+{
+	testMenu.Push ();
+}
+
+
+#endif
+
 //=============================================================================
 
 /*
@@ -3014,4 +3111,7 @@ void M_Init (void)
 	RegisterCommand ("menu_options", Menu_Options_f);
 		RegisterCommand ("menu_keys", Menu_Keys_f);
 	RegisterCommand ("menu_quit", Menu_Quit_f);
+#ifdef REGISTER_TEST
+	RegisterCommand ("menu_test", Menu_Test_f);
+#endif
 }

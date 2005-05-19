@@ -76,7 +76,7 @@ extern unsigned vid_width, vid_height;
 class image_t;
 class shader_t;
 class model_t;
-class surfaceCommon_t;
+class surfaceBase_t;
 class surfacePlanar_t;
 struct dynamicLightmap_t;
 struct viewPortal_t;
@@ -111,12 +111,10 @@ extern const unsigned colorTable[];		// C_XXX->rgba; used for DrawChar() and Dra
  * 6) PVS: can perform non-alpha-water-vis-bug avoiding in client (send combined vis)
  */
 
-
-//!! need to perform clearing this struc with "memset()" (clear all fields at once)
 typedef struct
 {
 	// geometry complexity
-	int		leafs, visLeafs, frustLeafs;	//?? frustLeafs -> ~cullLeafs
+	int		visLeafs, frustLeafs;	//?? frustLeafs -> ~cullLeafs
 	int		surfs, cullSurfs;
 	int		tris, trisMT;		// number of tris, which will be drawn without mtex and with mtex (same if no multitexture)
 	int		tris2D;				// number of triangles for HUD/console
@@ -125,13 +123,11 @@ typedef struct
 	int		dlightSurfs, dlightVerts;
 	int		flares, testFlares, cullFlares;
 	// OpenGL statistics
-	int		numBinds, numUploads, numIterators;
+	int		numBinds, numUploads, numFlushes;
 	// pefromance measuring (appCycles())
 	unsigned beginFrame;		// front-end
 	unsigned beginSort;			// sorting
-	unsigned begin3D;			// back-end (3D)
-	unsigned begin2D;			// back-end (2D)
-	unsigned endFrame;
+	unsigned begin3D, end3D;	// back-end (3D)
 } drawSpeeds_t;
 
 
@@ -192,7 +188,6 @@ extern cvar_t	*gl_backfaceCull;
 extern cvar_t	*gl_showSky;
 extern cvar_t	*r_drawworld, *r_drawentities;
 extern cvar_t	*gl_sortAlpha;
-extern cvar_t	*gl_finish;
 
 extern cvar_t	*gl_labels;
 extern cvar_t	*gl_lightLines, *gl_showLights;

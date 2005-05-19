@@ -2,8 +2,6 @@
 #define __GL_MODEL_INCLUDED__
 
 
-#define map gl_worldModel		// short alias
-
 #include "gl_frontend.h"
 #include "gl_light.h"
 
@@ -11,18 +9,9 @@
 namespace OpenGLDrv {
 
 
-/*--------------------- Lighting --------------------------*/
-
-struct surfDlight_t
-{
-	float	pos[2];
-	float	radius;
-	refDlight_t *dlight;
-	vec3_t	*axis;
-};
-
-
-/*------------------- Surface types -----------------------*/
+/*-----------------------------------------------------------------------------
+	Surfaces
+-----------------------------------------------------------------------------*/
 
 // Vertex without normal (for planar surface)
 struct vertex_t
@@ -50,7 +39,7 @@ struct vertexPoly_t
 	color_t	c;
 };
 
-struct vertexMd3_t	//?? == md3XyzNormal_t
+struct vertexMd3_t	//?? == dMd3XyzNormal_t (rename one of types? derive struc with no new fields?)
 {
 	short	xyz[3];
 	short	normal;
@@ -67,24 +56,24 @@ typedef enum
 } surfaceType_t;
 
 // Planar surface: same normal for all vertexes
-struct surfLight_t;				// forward declaration
-class inlineModel_t;
+class inlineModel_t;			// forward
 
-class surfaceCommon_t
+class surfaceBase_t
 {
 public:
+	int		type;				//?? eliminate
 	shader_t *shader;			// ignored for frame models
 	int		frame;				// ignored for frame models
 	int		dlightFrame;
 	unsigned dlightMask;
-	int		type;				//?? eliminate
 	inlineModel_t *owner;
 	virtual void Tesselate () = NULL;
 };
 
-class surfacePlanar_t : public surfaceCommon_t
+class surfacePlanar_t : public surfaceBase_t
 {
 public:
+	inline surfacePlanar_t () { type = SURFACE_PLANAR; };
 	vec3_t	mins, maxs;
 	cplane_t plane;
 	vec3_t	axis[2];			// 2 orthogonal identity vectors from surface
@@ -101,9 +90,10 @@ public:
 
 //!! warning: if shader.fast -- use vertex_t instead of vertexNormal_t (normals are not required for fast shader)
 // Triangular surface: non-planar, every vertex have its own normal vector
-class surfaceTrisurf_t : public surfaceCommon_t
+class surfaceTrisurf_t : public surfaceBase_t
 {
 public:
+	inline surfaceTrisurf_t () { type = SURFACE_TRISURF; };
 	vec3_t	mins, maxs;		//?? origin/radius?
 	int		numVerts, numIndexes;
 	vertexNormal_t *verts;
@@ -111,10 +101,11 @@ public:
 //!!	virtual void Tesselate ();
 };
 
-class surfaceMd3_t : public surfaceCommon_t
+class surfaceMd3_t : public surfaceBase_t
 {
 public:
-	int		numFrames;
+	inline surfaceMd3_t () { type = SURFACE_MD3; };
+	int		numFrames;			// same value in owner md3Model_t.numFrames
 
 	int		numVerts;
 	float	*texCoords;			// numVerts*2
@@ -129,9 +120,10 @@ public:
 	virtual void Tesselate ();
 };
 
-class surfacePoly_t : public surfaceCommon_t
+class surfacePoly_t : public surfaceBase_t
 {
 public:
+	inline surfacePoly_t () { type = SURFACE_POLY; };
 	int		numVerts;
 	vertexPoly_t verts[1];		// [numVerts]
 	virtual void Tesselate ();
@@ -139,24 +131,28 @@ public:
 
 // dummy surfaces
 
-class surfaceParticle_t : public surfaceCommon_t
+class surfaceParticle_t : public surfaceBase_t
 {
 public:
+	inline surfaceParticle_t () { type = SURFACE_PARTICLE; };
 	particle_t *part;
 	virtual void Tesselate ();
 };
 
 
 //!! rename
-class surfaceEntity_t : public surfaceCommon_t
+class surfaceEntity_t : public surfaceBase_t
 {
 public:
+	inline surfaceEntity_t () { type = SURFACE_ENTITY; };
 	refEntity_t *ent;
 	virtual void Tesselate ();
 };
 
 
-/*------------------------- BSP ---------------------------*/
+/*-----------------------------------------------------------------------------
+	BSP model (world)
+-----------------------------------------------------------------------------*/
 
 struct node_t
 {
@@ -178,7 +174,7 @@ struct node_t
 	// visibility params
 	int		cluster, area;
 	// surfaces (only if isNode==false)
-	surfaceCommon_t **leafFaces;
+	surfaceBase_t **leafFaces;
 	int		numLeafFaces;
 };
 
@@ -187,7 +183,7 @@ struct gl_flare_t
 {
 	// position
 	vec3_t	origin;
-	surfaceCommon_t *surf;
+	surfaceBase_t *surf;
 	inlineModel_t *owner;
 	node_t	*leaf;
 	// size
@@ -214,13 +210,13 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	int		numNodes;
 	int		numLeafNodes;
 	// inline models
-	inlineModel_t	*models;
+	inlineModel_t *models;
 	int		numModels;
 	// surfaces
-	surfaceCommon_t **faces;
+	surfaceBase_t **faces;
 	int		numFaces;
 	// leaf surfaces
-	surfaceCommon_t **leafFaces;
+	surfaceBase_t **leafFaces;
 	int		numLeafFaces;
 	// visibility
 	int		numClusters;
@@ -247,6 +243,9 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 };
 
 
+extern bspModel_t	map;
+
+
 /*-----------------------------------------------------------------------------
 	Models
 -----------------------------------------------------------------------------*/
@@ -263,8 +262,9 @@ typedef enum {	//?? eliminate
 class model_t : public CRenderModel
 {
 public:
-	int		size;				// in memory
 	modelType_t	type;
+	int		size;				// in memory
+	inline model_t () { type = MODEL_UNKNOWN; };
 	virtual void InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual void DrawLabel (refEntity_t *e);
@@ -272,14 +272,15 @@ public:
 };
 
 
-class inlineModel_t : public model_t	//?? replace this structure with extended cmodel_t
+class inlineModel_t : public model_t
 {
 public:
 	vec3_t	mins, maxs;
 	float	radius;
-	int		headnode;			//?? is Q3 inline models have this ?
-	surfaceCommon_t **faces;
+	int		headnode;			//?? is Q3 inline models have this ?; used for trace functions only
+	surfaceBase_t **faces;
 	int		numFaces;
+	inline inlineModel_t () { type = MODEL_INLINE; };
 	virtual void InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual void DrawLabel (refEntity_t *e);
@@ -290,9 +291,16 @@ public:
 // frame bounding volume (for culling)
 struct md3Frame_t
 {
-	vec3_t	mins, maxs;
-	vec3_t	localOrigin;		// origin for bounding sphere in model coords
+	vec3_t	mins, maxs;			// bounding box
+	vec3_t	localOrigin;		// origin for bounding sphere in model coords; computed: (mins+maxs)/2
 	float	radius;				// radius of the bounding sphere
+};
+
+struct md3Tag_t		//?? == dMd3Tag_t (see vertexMd3_t comments)
+{
+	char	name[MAX_QPATH];	// tag name; case-sensitive
+	vec3_t	origin;
+	vec3_t	axis[3];
 };
 
 class md3Model_t : public model_t
@@ -301,7 +309,10 @@ public:
 	int		numSurfaces;		// for MD2 = 1
 	surfaceMd3_t *surf;			// [numSurfaces]
 	int		numFrames;
-	md3Frame_t *frames;			// for culling
+	md3Frame_t *frames;			// [numFrames]
+	int		numTags;
+	md3Tag_t *tags;				// [numTags]
+	inline md3Model_t () { type = MODEL_MD3; };
 	virtual void InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual void DrawLabel (refEntity_t *e);
@@ -322,18 +333,16 @@ public:
 	int		numFrames;
 	float	radius;
 	sp2Frame_t frames[1];		// [numFrames]
+	inline sp2Model_t () { type = MODEL_SP2; };
 	virtual void InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual node_t *GetLeaf (refEntity_t *e);
 };
 
 
-/*---------------- Variables ---------------*/
-
-extern bspModel_t	gl_worldModel;
-
-
-/*---------------- Functions ---------------*/
+/*-----------------------------------------------------------------------------
+	Functions
+-----------------------------------------------------------------------------*/
 
 node_t *PointInLeaf (vec3_t p);
 
@@ -342,7 +351,7 @@ void	ShutdownModels (void);
 
 model_t	*FindModel (const char *name);
 shader_t *FindSkin (const char *name);
-void	LoadWorldMap (const char *name);
+void	LoadWorldMap (const char *name);	//?? rename
 
 
 } // namespace

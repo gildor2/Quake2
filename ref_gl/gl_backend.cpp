@@ -11,20 +11,19 @@
 
 namespace OpenGLDrv {
 
-//#define SWAP_ON_BEGIN		// call QGL_SwapBuffers() on frame begin (or frame end if not defined)
-
-/* LATER: replace (almost) all ap.time -> shader.time (or global "shaderTime") ??
+/* LATER: replace (almost) all vp.time -> shader.time (or global "shaderTime") ??
  * (because time may be taken (if engine will be extended) from entity)
  */
 
 
-//#define SPY_SHADER		// comment line to disable gl_spyShader staff
+//#define SPY_SHADER		// comment line to disable gl_spyShader stuff
 
 /*-----------------------------------------------------------------------------
 	Local cvars
 -----------------------------------------------------------------------------*/
 
 static cvar_t	*gl_clear;
+static cvar_t	*gl_finish;			// debug ? (can be a situation, when gl_finish==1 is necessary ? (linux))
 static cvar_t	*gl_showbboxes, *gl_showTris, *gl_showNormals;
 #ifdef SPY_SHADER
 static cvar_t	*gl_spyShader;
@@ -43,10 +42,6 @@ typedef struct
 
 
 /*------------- Command buffer ---------------*/
-
-byte	backendCommands[MAX_BACKEND_COMMANDS];
-int		backendCmdSize;
-byte	*lastBackendCommand;
 
 static shader_t		*currentShader;
 static refEntity_t	*currentEntity;
@@ -75,7 +70,7 @@ bufExtra_t		gl_extra[MAX_VERTEXES];
 static color_t			srcVertexColor[MAX_VERTEXES];
 static bufTexCoordSrc_t	srcTexCoord[MAX_VERTEXES];
 
-//!! WARNING: do not rename to numVerts etc -- name used in some surfaceCommon_t successors
+//!! WARNING: do not rename to numVerts etc -- name used in some surfaceBase_t successors
 int gl_numVerts, gl_numIndexes, gl_numExtra;
 
 
@@ -502,11 +497,11 @@ struct renderPass_t
 	shaderStage_t *colorStage;	//?? remove if it is always the same as "stages[0]"
 };
 
-#define MAX_TMP_STAGES	(MAX_SHADER_STAGES+8)
+#define MAX_RENDER_PASSES	(MAX_SHADER_STAGES+8)
 
-static tempStage_t	tmpSt[MAX_TMP_STAGES];
+static tempStage_t	tmpSt[MAX_RENDER_PASSES];
 static int			numTmpStages;
-static renderPass_t renderPasses[MAX_TMP_STAGES];
+static renderPass_t renderPasses[MAX_RENDER_PASSES];
 static int			numRenderPasses;
 //?? move currentShader here
 
@@ -798,7 +793,7 @@ static void PreprocessShader (shader_t *sh)
 	if (!numTmpStages)
 		DrawTextLeft (va("R_PreprocessShader(%s): 0 stages", currentShader->name), RGB(1,0,0));
 
-	if (numTmpStages > MAX_TMP_STAGES)
+	if (numTmpStages > MAX_RENDER_PASSES)
 		Com_FatalError ("R_PreprocessShader: numStages too large (%d)", numTmpStages);
 
 	renderPass_t *pass = renderPasses;
@@ -1054,15 +1049,14 @@ void DrawTriangles (void);
 void DrawNormals (void);
 
 
-static void StageIterator (void)
+static void FlushShader (void)
 {
-	guard(StageIterator);
+	guard(FlushShader);
 
-//	DrawTextLeft (va("StageIterator(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes), RGB(1,1,1));//!!!
-	LOG_STRING (va("*** StageIterator(%s, %d, %d) ***\n", currentShader->name, gl_numVerts, gl_numIndexes));
-
-	if (!currentShader->numStages)
-		return;
+//	DrawTextLeft (va("FlushShader(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes), RGB(1,1,1));//!!!
+	LOG_STRING (va("*** FlushShader(%s, %d, %d) ***\n", currentShader->name, gl_numVerts, gl_numIndexes));
+	if (!gl_numIndexes) return;					// buffer is empty
+	if (!currentShader->numStages) return;		// wrong shader?
 
 	PreprocessShader (currentShader);
 
@@ -1155,7 +1149,8 @@ static void StageIterator (void)
 	else
 		gl_speeds.tris2D += gl_numIndexes * numTmpStages / 3;
 
-	gl_speeds.numIterators++;
+	gl_speeds.numFlushes++;
+	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
 
 	unguardf(("%s", currentShader->name));
 }
@@ -1177,20 +1172,10 @@ static void SetCurrentShader (shader_t *shader)
 }
 
 
-static void FlushArrays (void)
-{
-//	DrawTextLeft(va("FlushArrays(%s,%d,%d)\n",currentShader->name,numVerts,numIndexes), RGB(1,1,1));
-	if (!gl_numIndexes) return;	// buffer is empty
-
-	StageIterator ();
-	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
-}
-
-
 static void ReserveVerts (int verts, int inds)
 {
 	if (gl_numIndexes + inds > MAX_INDEXES || gl_numVerts + verts > MAX_VERTEXES)
-		FlushArrays ();
+		FlushShader ();
 
 	if (verts > MAX_VERTEXES)	Com_DropError ("ReserveVerts: %d > MAX_VERTEXES", verts);
 	if (inds > MAX_INDEXES)		Com_DropError ("ReserveVerts: %d > MAX_INDEXES", inds);
@@ -1271,7 +1256,7 @@ static void DrawSkyBox (void)
 
 		glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 
-		//?? some debug stuff from StageIterator()
+		//?? some debug stuff from FlushShader()
 		if (gl_showTris->integer)
 		{
 			DrawTriangles ();
@@ -1834,23 +1819,24 @@ void surfaceParticle_t::Tesselate ()
 }
 
 
-// Draw scene, specified in "ap"
-static void DrawScene (void)
+void BK_DrawScene ()
 {
 	int				index, index2;
 	surfaceInfo_t	**si, **si2;
 	shader_t		*shader;
-	surfaceCommon_t	*surf;
+	surfaceBase_t	*surf;
 	// current state
 	int		currentShaderNum, currentEntityNum;
 	bool	currentWorld, isWorld;
 
 	guard(DrawScene);
 
+	if (!renderingEnabled) return;
+
 	LOG_STRING (va("******** R_DrawScene: (%d, %d) - (%d, %d) ********\n", vp.x, vp.y, vp.x+vp.w, vp.y+vp.h));
 
-	if (gl_numVerts) FlushArrays ();
-	GL_Setup (&vp);
+	if (gl_numVerts) FlushShader ();
+	GL_Set3DMode (&vp);
 
 	// sort surfaces
 	if (gl_finish->integer == 2) glFinish ();
@@ -1913,7 +1899,7 @@ static void DrawScene (void)
 		if (shNum != currentShaderNum || entNum != currentEntityNum || currentDlightMask != dlightMask)
 		{
 			// flush data for the previous shader
-			FlushArrays ();
+			FlushShader ();
 
 			// change shader
 			shader = GetShaderByNum (shNum);
@@ -1956,7 +1942,7 @@ static void DrawScene (void)
 	}
 
 	/*--------- finilize/debug -----------*/
-	FlushArrays ();
+	FlushShader ();
 
 	GL_DepthRange (DEPTH_NORMAL);
 
@@ -1967,7 +1953,7 @@ static void DrawScene (void)
 		ShowLights ();
 
 	if (gl_finish->integer == 2) glFinish ();
-	gl_speeds.begin2D = appCycles ();
+	gl_speeds.end3D = appCycles ();
 
 	unguard;
 }
@@ -1978,17 +1964,30 @@ static void DrawScene (void)
 	2D tesselators
 -----------------------------------------------------------------------------*/
 
-static void TesselateStretchPic (bkDrawPic_t *p)
+void BK_DrawPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color, byte flipMode)
 {
-	if (currentShader != p->shader)
+	if (!renderingEnabled) return;
+
+	if (currentShader != shader)
 	{
-		FlushArrays ();
-		SetCurrentShader (p->shader);
+		FlushShader ();
+		SetCurrentShader (shader);
 	}
 
 	GL_Set2DMode ();
 
 	ReserveVerts (4, 6);
+
+	if (w > shader->width * 2)
+	{
+		s1 += 0.5f / shader->width;
+		s2 -= 0.5f / shader->width;
+	}
+	if (h > shader->height * 2)
+	{
+		t1 += 0.5f / shader->height;
+		t2 -= 0.5f / shader->height;
+	}
 
 	/*   0 (0,0) -- 1 (1,0)
 	 *     |   \____   |
@@ -2004,22 +2003,18 @@ static void TesselateStretchPic (bkDrawPic_t *p)
 	// set vert.z
 	v[0].xyz[2] = v[1].xyz[2] = v[2].xyz[2] = v[3].xyz[2] = 0;
 	// set vert.x
-	v[0].xyz[0] = v[3].xyz[0] = p->x;
-	v[1].xyz[0] = v[2].xyz[0] = p->x + p->w;
+	v[0].xyz[0] = v[3].xyz[0] = x;
+	v[1].xyz[0] = v[2].xyz[0] = x + w;
 	// set vert.y
-	v[0].xyz[1] = v[1].xyz[1] = p->y;
-	v[2].xyz[1] = v[3].xyz[1] = p->y + p->h;
+	v[0].xyz[1] = v[1].xyz[1] = y;
+	v[2].xyz[1] = v[3].xyz[1] = y + h;
 
 	//?? make as function, use for sprites too
 	//?? make consts for flipMode (1,2,4)
 	// swap texture coords
-	float s1 = p->s1;
-	float s2 = p->s2;
-	float t1 = p->t1;
-	float t2 = p->t2;
 #define Swap(a,b) { float _tmp; _tmp = a; a = b; b = _tmp; }
-	if (p->flipMode & 1) Swap(s1, s2);
-	if (p->flipMode & 2) Swap(t1, t2);
+	if (flipMode & 1) Swap(s1, s2);
+	if (flipMode & 2) Swap(t1, t2);
 	// set s
 	t[0].tex[0] = t[3].tex[0] = s1;
 	t[1].tex[0] = t[2].tex[0] = s2;
@@ -2027,7 +2022,7 @@ static void TesselateStretchPic (bkDrawPic_t *p)
 	t[0].tex[1] = t[1].tex[1] = t1;
 	t[2].tex[1] = t[3].tex[1] = t2;
 	// flip s and t
-	if (p->flipMode & 4)
+	if (flipMode & 4)
 	{
 		/*
 		 *	0 1		==	s1,t1	s1,t2	>>		s1,t1	s2,t1
@@ -2039,7 +2034,7 @@ static void TesselateStretchPic (bkDrawPic_t *p)
 	}
 #undef Swap
 	// store colors
-	c[0] = c[1] = c[2] = c[3] = p->c.rgba;
+	c[0] = c[1] = c[2] = c[3] = color;
 
 	int *idx = &gl_indexesArray[gl_numIndexes];
 	gl_numIndexes += 6;
@@ -2048,18 +2043,20 @@ static void TesselateStretchPic (bkDrawPic_t *p)
 }
 
 
-// This is slightly optimized version of TesselateStretchPic() for drawing texts
-static void TesselateText (bkDrawText_t *p)
+// This is slightly optimized version of BK_DrawPic() for drawing texts
+void BK_DrawText (const char *text, int len, int x, int y, int w, int h, unsigned color)
 {
+	if (!renderingEnabled) return;
+
 	if (currentShader != gl_concharsShader)
 	{
-		FlushArrays ();
+		FlushShader ();
 		SetCurrentShader (gl_concharsShader);
 	}
 
 	GL_Set2DMode ();
 
-	ReserveVerts (p->len * 4, p->len * 6);
+	ReserveVerts (len * 4, len * 6);
 
 	bufVertex_t *v = &vb->verts[gl_numVerts];
 	bufTexCoordSrc_t *t = &srcTexCoord[gl_numVerts];
@@ -2067,14 +2064,13 @@ static void TesselateText (bkDrawText_t *p)
 	int *idx = &gl_indexesArray[gl_numIndexes];
 	int idx0 = gl_numVerts;
 
-	const char *s = p->text;
-	float xp = p->x;
-	float x = p->x + p->w;
+	float x1 = x;
+	float x2 = x + w;
 
 	float size = 1.0f / 16;
-	for (int i = p->len; i > 0 && xp < vid_width; i--)
+	for (int i = len; i > 0 && x1 < vid_width; i--)
 	{
-		const char chr = *s++;
+		char chr = *text++;
 		if (chr != ' ')		// space is hardcoded
 		{
 			float s1 = (chr & 15) * size;
@@ -2085,11 +2081,11 @@ static void TesselateText (bkDrawText_t *p)
 			// set vert.z
 			v[0].xyz[2] = v[1].xyz[2] = v[2].xyz[2] = v[3].xyz[2] = 0;
 			// set vert.x
-			v[0].xyz[0] = v[3].xyz[0] = xp;
-			v[1].xyz[0] = v[2].xyz[0] = x;
+			v[0].xyz[0] = v[3].xyz[0] = x1;
+			v[1].xyz[0] = v[2].xyz[0] = x2;
 			// set vert.y
-			v[0].xyz[1] = v[1].xyz[1] = p->y;
-			v[2].xyz[1] = v[3].xyz[1] = p->y + p->h;
+			v[0].xyz[1] = v[1].xyz[1] = y;
+			v[2].xyz[1] = v[3].xyz[1] = y + h;
 			// set s
 			t[0].tex[0] = t[3].tex[0] = s1;
 			t[1].tex[0] = t[2].tex[0] = s2;
@@ -2097,7 +2093,7 @@ static void TesselateText (bkDrawText_t *p)
 			t[0].tex[1] = t[1].tex[1] = t1;
 			t[2].tex[1] = t[3].tex[1] = t2;
 			// store colors
-			c[0] = c[1] = c[2] = c[3] = p->c.rgba;
+			c[0] = c[1] = c[2] = c[3] = color;
 
 			*idx++ = idx0+0; *idx++ = idx0+1; *idx++ = idx0+2;
 			*idx++ = idx0+0; *idx++ = idx0+2; *idx++ = idx0+3;
@@ -2109,134 +2105,44 @@ static void TesselateText (bkDrawText_t *p)
 			gl_numVerts += 4;
 			gl_numIndexes += 6;
 		}
-		xp = x;
-		x += p->w;
+		x1 = x2;
+		x2 += w;
 	}
 }
 
 
 /*---------------------------------------------------------------------------*/
 
-void BackEnd (void)
+void BK_BeginFrame ()
 {
-#if 0
-	static int max = 0;
+	if (!renderingEnabled) return;
 
-	// measure maximal backend command buffer size
-	if (backendCmdSize > max) max = backendCmdSize;
-	Cvar_SetInteger ("backend", max);
-#endif
-	* ((int*) &backendCommands[backendCmdSize]) = BACKEND_STOP;
-	backendCmdSize = 0;
-	lastBackendCommand = NULL;
-
-	int *p = (int*) &backendCommands[0];
-	while (*p != BACKEND_STOP)
+	if (gl_config.consoleOnly)
 	{
-		switch (*p)
-		{
-		case BACKEND_PIC:
-			{
-				bkDrawPic_t *p1;
-
-				p1 = (bkDrawPic_t *) p;
-				TesselateStretchPic (p1);
-				p = (int *) ++p1;
-			}
-			break;
-
-		case BACKEND_TEXT:
-			{
-				bkDrawText_t *p1;
-
-				p1 = (bkDrawText_t *) p;
-				TesselateText (p1);
-				p = (int *) ((byte *)p1 + sizeof(bkDrawText_t) + p1->len-1);	// 1 char in bkDrawText_t
-			}
-			break;
-
-		case BACKEND_BEGIN_FRAME:
-#ifdef SWAP_ON_BEGIN
-			QGL_SwapBuffers ();
-			if (gl_finish->integer) glFinish ();
-#endif
-
-			if (gl_config.consoleOnly)
-			{
-				glClearColor (0, 0.2, 0, 1);
-				glClear (GL_COLOR_BUFFER_BIT);
-			}
-			else if (gl_state.useFastSky && !gl_state.haveFullScreen3d)
-			{
-				glClearColor (0, 0, 0, 1);
-				glClear (GL_COLOR_BUFFER_BIT);
-			}
-			else if (gl_clear->integer && !gl_state.useFastSky)	// HERE: if useFastSky==true, then haveFullScreen3d==true too
-			{
-				glClearColor (0.1, 0.6, 0.3, 1);
-				glClear (GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-			}
-			p++;
-			break;
-
-		case BACKEND_END_FRAME:
-			FlushArrays ();
-			if (gl_screenshotName)
-				PerformScreenshot ();
-			ShowImages ();				// debug
-
-#ifndef SWAP_ON_BEGIN
-			if (gl_finish->integer) glFinish ();
-			QGL_SwapBuffers ();
-#endif
-			gl_state.is2dMode = false;	// invalidate 2D mode, because of buffer switching
-			p++;
-			break;
-
-		case BACKEND_DRAW_FRAME:
-			{
-				bkDrawFrame_t *p1;
-
-				p1 = (bkDrawFrame_t *) p;
-				vp = p1->portal;
-				DrawScene ();
-				p = (int *) ++p1;
-			}
-			break;
-		}
+		glClearColor (0, 0.2, 0, 1);
+		glClear (GL_COLOR_BUFFER_BIT);
 	}
+	else if (gl_clear->integer && !gl_state.useFastSky)
+	{
+		glClearColor (0.1, 0.6, 0.3, 1);
+		glClear (GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+	}
+	if (gl_finish->integer == 2) glFinish ();
 }
 
 
-/*-----------------------------------------------------------------------------
-	Helpers (eliminate??)
------------------------------------------------------------------------------*/
-
-void DrawStretchPic (shader_t *shader, int x, int y, int w, int h, float s1, float t1, float s2, float t2, unsigned color, byte flipMode)
+void BK_EndFrame ()
 {
-	PUT_BACKEND_COMMAND (bkDrawPic_t, p);
-	p->type = BACKEND_PIC;
-	p->shader = shader;
-	p->x = x;
-	p->y = y;
-	p->w = w;
-	p->h = h;
-	if (w > shader->width * 2)
-	{
-		s1 += 0.5f / shader->width;
-		s2 -= 0.5f / shader->width;
-	}
-	if (h > shader->height * 2)
-	{
-		t1 += 0.5f / shader->height;
-		t2 -= 0.5f / shader->height;
-	}
-	p->s1 = s1;
-	p->t1 = t1;
-	p->s2 = s2;
-	p->t2 = t2;
-	p->flipMode = flipMode;
-	p->c.rgba = color;
+	if (!renderingEnabled) return;
+
+	FlushShader ();
+	if (screenshotName)
+		PerformScreenshot ();
+	ShowImages ();				// debug
+	QGL_SwapBuffers ();
+	gl_state.is2dMode = false;	// invalidate 2D mode, because of buffer switching
+
+	if (gl_finish->integer) glFinish ();
 }
 
 
@@ -2248,6 +2154,7 @@ void InitBackend (void)
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(gl_clear, 0, 0),
+	CVAR_VAR(gl_finish, 0, CVAR_ARCHIVE),
 #ifdef SPY_SHADER
 	CVAR_VAR(gl_spyShader, 0, 0),
 #endif

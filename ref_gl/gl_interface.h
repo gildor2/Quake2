@@ -97,7 +97,7 @@ struct glstate_t
 	short	maxUsedShaderIndex;
 	bool	is2dMode;
 	bool	have3d;
-	bool	haveFullScreen3d;
+	bool	haveFullScreen3d;					// 3D, which fill whole window (incorrect var name? remove??)
 	bool	useFastSky;
 };
 
@@ -222,9 +222,9 @@ void	GL_DepthRange (gl_depthMode_t mode);
 void	GL_State (unsigned state);
 void	GL_EnableFog (bool enable);
 
-void	GL_SetDefaultState (void);
-void	GL_Set2DMode (void);
-void	GL_Setup (viewPortal_t *port);
+void	GL_SetDefaultState ();
+void	GL_Set2DMode ();
+void	GL_Set3DMode (viewPortal_t *port);
 
 
 //} // namespace

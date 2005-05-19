@@ -201,11 +201,6 @@ void Cbuf_Execute (void)
 */
 
 
-/*
-============
-Cmd_Wait_f
-============
-*/
 static void Cmd_Wait_f (bool usage, int argc, char **argv)
 {
 	if (argc > 2 || usage)
@@ -217,11 +212,6 @@ static void Cmd_Wait_f (bool usage, int argc, char **argv)
 }
 
 
-/*
-===============
-Cmd_Exec_f
-===============
-*/
 static void Cmd_Exec_f (bool usage, int argc, char **argv)
 {
 	char	*f;
@@ -245,13 +235,6 @@ static void Cmd_Exec_f (bool usage, int argc, char **argv)
 }
 
 
-/*
-===============
-Cmd_Echo_f
-
-Just prints the rest of the line to the console
-===============
-*/
 static void Cmd_Echo_f (int argc, char **argv)
 {
 	for (int i = 1; i < argc; i++)
@@ -259,13 +242,7 @@ static void Cmd_Echo_f (int argc, char **argv)
 	Com_Printf ("\n");
 }
 
-/*
-===============
-Cmd_Alias_f
 
-Creates a new command that executes a command string (possibly ";"-separated)
-===============
-*/
 static void Cmd_Alias_f (bool usage, int argc, char **argv)
 {
 	char	cmd[1024];

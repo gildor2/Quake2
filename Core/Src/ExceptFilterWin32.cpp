@@ -18,7 +18,7 @@
 
 
 //?? IsBadReadPtr -> platform-specific; DumpXxxx() -> platform-independent file;
-//?? DumpMem(): CONTEXT-staff -> inline function
+//?? DumpMem(): CONTEXT-stuff -> inline function
 
 //?? should change FILE to local file system (not required) (may be, avoid local FS usage when crashed ...)
 static void DumpReg4 (FILE *f, const char *name, unsigned value)

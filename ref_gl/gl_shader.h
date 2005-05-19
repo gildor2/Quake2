@@ -8,9 +8,18 @@
 namespace OpenGLDrv {
 
 
-/*---------------- Shader parameters --------------*/
+/*-----------------------------------------------------------------------------
+	Shader parameters
+-----------------------------------------------------------------------------*/
 
-//?? useless
+/* NOTES:
+ *	- SKY: move AddSkySurface() call from backend to frontend, and can eliminate this type at all
+ *		(currently used for backend to place sky surfaces 1st in sorted array)
+ *	- PORTAL - tech-dependent ??
+ *	- OPAQUE/SEETHROUGH - useless (opaque - sorted by shader, seethrough - sort bu BSP)
+ *	- DECAL, BANNER, UNDERWATER - ??
+ *	- SPRITE (ADDITIVE) - no depthwrite, draw it last (flares only?)
+ */
 typedef enum
 {
 	SORT_BAD,
@@ -57,7 +66,7 @@ typedef enum
 	TCGEN_LIGHTMAP1, TCGEN_LIGHTMAP2, TCGEN_LIGHTMAP3, TCGEN_LIGHTMAP4,	// for fast lightstyles
 	TCGEN_DLIGHT0,				// 32 values, index is for surfDlights[], not for portal.dlights[]
 	TCGEN_ZERO = TCGEN_DLIGHT0 + MAX_DLIGHTS,	//?? s = t = 0 (unused/unimplemented)
-	TCGEN_FOG									//?? used for fog image
+	TCGEN_FOG									//?? used for fog image (unimplemented)
 } tcGenType_t;
 
 typedef enum
@@ -118,7 +127,9 @@ typedef enum
 } deformType_t;
 
 
-/*---------------- Shader stage ----------------*/
+/*-----------------------------------------------------------------------------
+	Shader stage
+-----------------------------------------------------------------------------*/
 
 #define MAX_SHADER_DEFORMS	3
 #define MAX_STAGE_TCMODS	4
@@ -175,7 +186,7 @@ struct shaderStage_t
 	unsigned glState;
 
 	bool	isLightmap:1;
-	bool	detail:1;				//?? true is stage is detail (unused ??)
+//	bool	detail:1;				//?? true is stage is detail (unused ??)
 
 	/*---------------- RGBA params ----------------*/
 	color_t	rgbaConst;				// if RGBGEN_CONST or ALPHAGEN_CONST
@@ -201,9 +212,11 @@ struct shaderStage_t
 };
 
 
-/*--------------- Shader itself ----------------*/
+/*-----------------------------------------------------------------------------
+	Shader itself
+-----------------------------------------------------------------------------*/
 
-typedef enum
+typedef enum	//?? change this
 {
 	SHADERTYPE_NORMAL,
 	SHADERTYPE_SKY,
@@ -273,7 +286,9 @@ public:
 };
 
 
-/*--------------- System shaders ------------------*/
+/*-----------------------------------------------------------------------------
+	System shaders
+-----------------------------------------------------------------------------*/
 
 extern	shader_t	*gl_defaultShader;
 extern	shader_t	*gl_identityLightShader;	// no depth test/write
@@ -291,7 +306,9 @@ extern	shader_t	*gl_skyShader;
 extern	shader_t	*gl_alphaShader1, *gl_alphaShader2;
 
 
-/*------------------- Functions -------------------*/
+/*-----------------------------------------------------------------------------
+	Functions
+-----------------------------------------------------------------------------*/
 
 void	InitShaders (void);
 void	ShutdownShaders (void);
@@ -311,7 +328,7 @@ void	ResetShaders (void);			// should be called every time before loading a new 
 #define SHADER_ALPHA		0x0020		// use texture's alpha channel (depends on itage.alphaType: 0->none, 1->alphaTest or blend, 2->blend)
 #define SHADER_WALL			0x0040		// shader used as a wall texture (not GUI 2D image), also do mipmap
 #define SHADER_SKIN			0x0080		// shader used as skin for frame models
-#define SHADER_SKY			0x0100		// SURF_SKY (use stage iterator for sky)
+#define SHADER_SKY			0x0100		// SURF_SKY (use surface for sky drawing)
 #define SHADER_ANIM			0x0200		// main stage will contain more than 1 texture (names passed as name1<0>name2<0>...nameN<0><0>)
 #define SHADER_LIGHTMAP		0x0400		// reserve lightmap stage (need GL_SetShaderLightmap() later)
 #define SHADER_TRYLIGHTMAP	0x0800		// usualy not containing lightmap, but if present - generate it
@@ -331,7 +348,7 @@ shader_t *FindShader (const char *name, unsigned style);
 shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber);
 shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles);
 shader_t *GetAlphaShader (shader_t *shader);
-shader_t *GetShaderByNum (int num);
+shader_t *GetShaderByNum (int num);		//?? for backend: sort index -> shader
 
 
 } // namespace

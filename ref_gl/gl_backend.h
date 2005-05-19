@@ -40,111 +40,22 @@ extern int			gl_indexesArray[MAX_INDEXES];
 extern bufExtra_t	gl_extra[MAX_VERTEXES];
 
 
-#define MAX_BACKEND_COMMANDS	(64 * 1024)		// test results: 33K usage for 1600x1200 with a full console
-extern byte backendCommands[MAX_BACKEND_COMMANDS];
-extern int	backendCmdSize;
-extern byte *lastBackendCommand;
-
 #define MAX_SCENE_SURFACES	(64*1024)
 
 
 /*-------------------- Functions -------------------------------*/
 
-void	BackEnd (void);
+void	BK_BeginFrame ();
+void	BK_EndFrame ();
 
 void	InitBackend (void);
 void	ShutdownBackend (void);
 
-void	DrawStretchPic (shader_t *shader, int x, int y, int w, int h,
+void	BK_DrawPic (shader_t *shader, int x, int y, int w, int h,
 			float s1 = 0, float t1 = 0, float s2 = 1, float t2 = 1,
 			unsigned color = RGB(1,1,1), byte flipMode = 0);
-
-
-/*-------- Macro for easy generating backend commands ----------*/
-
-/* should be placed in {}
- * Usage:
- *		{
- *			PUT_BACKEND_COMMAND(bkSomeType_t, bkVar);
- *			bkVar->type = BACKEND_SOME_TYPE;
- *			bkVar->field = data;
- *			...
- *		}
- * Note:
- *   used "+sizeof(type)+4" -- 4 is sizeof(BACKEND_STOP) -- reserve
- *   place for "stop" command.
- */
-
-#define PUT_BACKEND_COMMAND(type,varname) \
-	type *varname;	\
-	if (backendCmdSize+sizeof(type)+4 > MAX_BACKEND_COMMANDS)	\
-		BackEnd ();	\
-	varname = (type *) &backendCommands[backendCmdSize];	\
-	lastBackendCommand = (byte*) varname;	\
-	backendCmdSize += sizeof(type);
-
-// same as PUT_BACKEND_COMMAND, but with additional reserving of "size" bytes
-#define PUT_BACKEND_COMMAND2(type,varname,size) \
-	type *varname;	\
-	if (backendCmdSize+sizeof(type)+size+4 > MAX_BACKEND_COMMANDS)	\
-		BackEnd ();	\
-	varname = (type *) &backendCommands[backendCmdSize];	\
-	lastBackendCommand = (byte*) varname;	\
-	backendCmdSize += sizeof(type) + size;
-
-inline bool GET_BACKEND_SPACE (int size)
-{
-	if (backendCmdSize+size+4 > MAX_BACKEND_COMMANDS)
-	{
-		BackEnd ();
-		return false;
-	}
-	backendCmdSize += size;
-	return true;
-}
-
-
-
-/*-------------------- Backend commands ------------------------*/
-
-typedef enum
-{
-	BACKEND_STOP,			// placed automatically, no params
-	BACKEND_PIC,			// DrawStretchPic()
-	BACKEND_TEXT,			// draw colored text; any output size
-	BACKEND_BEGIN_FRAME,	// no params
-	BACKEND_DRAW_FRAME,		// params: portal
-	BACKEND_END_FRAME		// no params
-} bkCommandType_t;
-
-
-typedef struct
-{
-	int		type;			// BACKEND_PIC
-	shader_t *shader;
-	short	x, y, w, h;
-	float	s1, t1, s2, t2;
-	byte	flipMode;		// 1 = swap s1-s2; 2 = swap t1-t2; 4 = swap s-t
-	color_t	c;
-} bkDrawPic_t;
-
-
-typedef struct
-{
-	int		type;			// BACKEND_TEXT
-	byte	len;
-	short	x, y;			// position on screen
-	short	w, h;			// character output size
-	color_t	c;
-	char	text[1];		// [len]
-} bkDrawText_t;
-
-
-typedef struct
-{
-	int		type;			// BACKEND_DRAW_FRAME
-	viewPortal_t portal;
-} bkDrawFrame_t;
+void	BK_DrawText (const char *text, int len, int x, int y, int w, int h, unsigned color);
+void	BK_DrawScene ();
 
 
 /*----------- Surface info bits (for scene sorting) ------------*/

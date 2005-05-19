@@ -1,6 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>			// for mmsystem.h
-#include <mmsystem.h>			// for timeGetTime() staff
+#include <mmsystem.h>			// for timeGetTime() stuff
 #include "Core.h"
 
 

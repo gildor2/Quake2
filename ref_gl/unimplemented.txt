@@ -11,8 +11,6 @@ FAST TODO:
   - when img !IMAGE_NOALPHA - when a==0 => r=g=b=0
   - when IMAGE_NOALPHA - make a=255, keep r,g,b unchanged
   * this is required for magnified textures (for example, when FSAA active, without this around all menu pics will appear pink border)
-- try to move FlushTexts() to EndFrame()
-- split world/noworld DrawScene() stats
 
 -------------------------------------------------------------------------------
 	new lightgrid:
@@ -297,8 +295,6 @@ QGL system:
 
 BUGS:
 ~~~~~
-?* Com_DropError (...) can cause "halt" renderer (will in loop display "red" message without screen update,
-  can switch to "oldgl" (to see this messages), but will crush when switch back to "gl" (if StageIterator() ?))
 ? map "terrain", light cone from helicopter: too opaque when overbright is 1 (invalid lightmap on alpha-surf ?)
 ? check demo "massive1": have error "frame #46 not found"
 - can't use alpha test for SHADER_WALL (dm_duke... have assault/glass texture, which is SURF_ALPHA with alpha < 0.5)
@@ -351,4 +347,3 @@ FOR GAME:
 - shaders (load-time, Q3 shaders): when texture have no alpha-channel, but alpha-channel used as specular mask by shader, remove
   specular mask
 - support ARB_texture_non_power_of_two (GeForce6+)
-? text (Draw[Con]CharColor()) - ability to draw strings (smaller memory usage of BackendCommandBuffer)

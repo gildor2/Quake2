@@ -528,14 +528,10 @@ void GL_State (unsigned state)
 	{
 		if (state & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
 		{
-			unsigned src = ((state & GLSTATE_SRCMASK) - GLSTATE_SRC_ZERO) >> GLSTATE_SRCSHIFT;
-			src = blends[src];
-
-			unsigned dst = ((state & GLSTATE_DSTMASK) - GLSTATE_DST_ZERO) >> GLSTATE_DSTSHIFT;
-			dst = blends[dst];
-
 			if (!(gl_state.currentState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK)))
 				glEnable (GL_BLEND);
+			GLenum src = blends[((state & GLSTATE_SRCMASK) - GLSTATE_SRC_ZERO) >> GLSTATE_SRCSHIFT];
+			GLenum dst = blends[((state & GLSTATE_DSTMASK) - GLSTATE_DST_ZERO) >> GLSTATE_DSTSHIFT];
 			glBlendFunc (src, dst);
 		}
 		else
@@ -617,7 +613,7 @@ void GL_EnableFog (bool enable)
 }
 
 
-void GL_SetDefaultState (void)
+void GL_SetDefaultState ()
 {
 	glDisable (GL_CULL_FACE);
 	glDepthRange (0, 1);
@@ -658,12 +654,12 @@ void GL_SetDefaultState (void)
 }
 
 
-void GL_Set2DMode (void)
+void GL_Set2DMode ()
 {
 	if (gl_state.is2dMode)
 		return;
 
-	if (gl_screenshotName && gl_screenshotFlags & SHOT_NO_2D)
+	if (screenshotName && (screenshotFlags & SHOT_NO_2D))	// can move this to gl_main.cpp::RenderScene(), but this will wait for 3D
 		PerformScreenshot ();
 
 	LOG_STRING ("***** Set2DMode() *****\n");
@@ -684,9 +680,9 @@ void GL_Set2DMode (void)
 
 
 // Setup OpenGL as specified in active portal
-void GL_Setup (viewPortal_t *port)
+void GL_Set3DMode (viewPortal_t *port)
 {
-	LOG_STRING ("*** GL_Setup() ***\n");
+	LOG_STRING ("*** GL_Set3DMode() ***\n");
 	gl_state.is2dMode = false;
 	glMatrixMode (GL_PROJECTION);
 	glLoadMatrixf (&port->projectionMatrix[0][0]);

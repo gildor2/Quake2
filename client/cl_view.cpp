@@ -52,8 +52,6 @@ int num_cl_weaponmodels;
 /*
 ====================
 V_ClearScene
-
-Specifies the model that will be used as the world
 ====================
 */
 static void V_ClearScene (void)
@@ -66,7 +64,6 @@ static void V_ClearScene (void)
 /*
 =====================
 V_AddEntity
-
 =====================
 */
 void V_AddEntity (entity_t *ent)
@@ -81,7 +78,6 @@ void V_AddEntity (entity_t *ent)
 /*
 =====================
 V_AddLight
-
 =====================
 */
 void V_AddLight (vec3_t org, float intensity, float r, float g, float b)
@@ -601,69 +597,55 @@ static void DrawSurfInfo (void)
 
 	if (trace.fraction < 1.0)
 	{
-		RE_DrawTextLeft ("Surface info:", RGB(0.4, 0.4, 0.6));
-		RE_DrawTextLeft ("-------------", RGB(0.4, 0.4, 0.6));
-		RE_DrawTextLeft (va("Point: %g  %g  %g", VECTOR_ARG(trace.endpos)),
-			RGBA(0.2, 0.4, 1, 1));
+		RE_DrawTextLeft ("Surface info:\n-------------", RGB(0.4,0.4,0.6));
+		RE_DrawTextLeft (va("Point: %g  %g  %g", VECTOR_ARG(trace.endpos)), RGB(0.2,0.4,0.1));
 		surf = trace.surface;
 		if (surf->rname[0])		// non-null surface
 		{
-			RE_DrawTextLeft (va("Texture: %s", surf->rname), RGB(0.2, 0.4, 1));
+			RE_DrawTextLeft (va("Texture: %s", surf->rname), RGB(0.2,0.4,0.1));
 			VectorCopy (trace.plane.normal, norm);
-			RE_DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARG(norm)), RGB(0.2, 0.4, 1));
+			RE_DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARG(norm)), RGB(0.2,0.4,0.1));
 			if (surf->value)
-				RE_DrawTextLeft (va("Value: %d", surf->value), RGB(0.2, 0.4, 1));
+				RE_DrawTextLeft (va("Value: %d", surf->value), RGB(0.2,0.4,0.1));
 			DrawFlag (surf->flags, ARRAY_ARG(surfNames), "SURF_");
-//#define SURF_KNOWN	(0xFF|SURF_ALPHA|SURF_DIFFUSE|SURF_SPECULAR|SURF_AUTOFLARE)
-//			if (surf->flags & ~SURF_KNOWN) // unknown flags
-//				RE_DrawTextLeft (va("SURF_UNK_%X", surf->flags & ~SURF_KNOWN), RGB(0.6, 0.3, 0.4));
 			// material
 			if (surf->material >= MATERIAL_FIRST && surf->material <= MATERIAL_LAST)
 				s = materialNames[surf->material];
 			else
 				s = "?? bad ??";
-			RE_DrawTextLeft (va("Material: %s", s), RGB(0.3, 0.6, 0.4));
+			RE_DrawTextLeft (va("Material: %s", s), RGB(0.3,0.6,0.4));
 		}
 		DecodeContents (trace.contents);
 		if (trace.ent)
 		{
-			entityState_t *ent;
+			entityState_t *ent = (entityState_t*)trace.ent;
+			RE_DrawTextLeft ("\nEntity:\n-------", RGB(0.4,0.4,0.6));
+			RE_DrawTextLeft (va("Origin: %g %g %g", VECTOR_ARG(ent->origin)), RGB(0.2,0.4,0.1));
+			RE_DrawTextLeft (va("fx: %X  rfx: %X", ent->effects, ent->renderfx), RGB(0.2,0.4,0.1));
+			if (ent->modelindex)	RE_DrawTextLeft (va("model: %s", ModelName (ent->modelindex)), RGB(0.2,0.4,0.1));
+			if (ent->modelindex2)	RE_DrawTextLeft (va("model2: %s", ModelName (ent->modelindex2)), RGB(0.2,0.4,0.1));
+			if (ent->modelindex3)	RE_DrawTextLeft (va("model3: %s", ModelName (ent->modelindex3)), RGB(0.2,0.4,0.1));
+			if (ent->modelindex4)	RE_DrawTextLeft (va("model4: %s", ModelName (ent->modelindex4)), RGB(0.2,0.4,0.1));
 
-			ent = (entityState_t*)trace.ent;
-			RE_DrawTextLeft ("Entity:", RGB(0.4, 0.4, 0.6));
-			RE_DrawTextLeft ("-------", RGB(0.4, 0.4, 0.6));
-			RE_DrawTextLeft (va("Origin: %g %g %g", VECTOR_ARG(ent->origin)), RGB(0.4, 0.4, 0.6));
-			RE_DrawTextLeft (va("fx: %X  rfx: %X", ent->effects, ent->renderfx), RGB(0.2, 0.4, 1));
-			if (ent->modelindex)	RE_DrawTextLeft (va("model: %s", ModelName (ent->modelindex)), RGB(0.2, 0.4, 1));
-			if (ent->modelindex2)	RE_DrawTextLeft (va("model2: %s", ModelName (ent->modelindex2)), RGB(0.2, 0.4, 1));
-			if (ent->modelindex3)	RE_DrawTextLeft (va("model3: %s", ModelName (ent->modelindex3)), RGB(0.2, 0.4, 1));
-			if (ent->modelindex4)	RE_DrawTextLeft (va("model4: %s", ModelName (ent->modelindex4)), RGB(0.2, 0.4, 1));
-
-			CL_AddEntityBox (ent, 0xFF2020FF);
+			CL_AddEntityBox (ent, RGB(1,0.1,0.1));
 		}
-		RE_DrawTextLeft ("", RGB(0, 0, 0));
+		RE_DrawTextLeft ("", RGB(0,0,0));	// empty line
 	}
 }
 
 static void DrawOriginInfo (void)
 {
+	RE_DrawTextLeft ("Player position:\n----------------", RGB(0.4,0.4,0.6));
+	RE_DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2,0.4,0.1));
+
 	vec3_t view;
-	vec3_t zero = {0, 0, 0};
-	int i;
-
-	RE_DrawTextLeft ("Player position:", RGB(0.4, 0.4, 0.6));
-	RE_DrawTextLeft ("----------------", RGB(0.4, 0.4, 0.6));
-	RE_DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2, 0.4, 0.1));
-
 	AngleVectors (cl.refdef.viewangles, view, NULL, NULL);
-	RE_DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARG(view)), RGB(0.2, 0.4, 0.1));
+	RE_DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARG(view)), RGB(0.2,0.4,0.1));
 
-	i = CM_PointLeafnum (cl.refdef.vieworg);
-	RE_DrawTextLeft (va("Leaf number: %d, cluster: %i, area: %i",
-		i, CM_LeafCluster (i), CM_LeafArea (i)),
-		RGB(0.1, 0.2, 1));
+	int i = CM_PointLeafnum (cl.refdef.vieworg);
+	RE_DrawTextLeft (va("Leaf: %d, cluster: %d, area: %d", i, CM_LeafCluster (i), CM_LeafArea (i)), RGB(0.2,0.4,0.1));
 	DecodeContents (CM_PointContents (cl.refdef.vieworg, 0));
-	RE_DrawTextLeft ("", RGB(0, 0, 0));	// empty line
+	RE_DrawTextLeft ("", RGB(0,0,0));	// empty line
 }
 
 
