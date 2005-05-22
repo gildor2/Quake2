@@ -34,6 +34,7 @@ struct cvar_t;
 struct cvarInfo_t;
 struct trace_t;
 struct bspfile_t;
+struct CAxis;
 
 typedef float vec3_t[3];
 
@@ -52,7 +53,6 @@ typedef float vec3_t[3];
 
 // declarations for game system (!!) + math
 #include "q_shared2.h"
-
 
 //--------------- some constants ------------------------------
 
@@ -608,11 +608,11 @@ int		CM_HeadnodeForBox (vec3_t mins, vec3_t maxs);
 
 // returns an OR'ed contents mask
 int		CM_PointContents (const vec3_t p, int headnode);
-int		CM_TransformedPointContents (const vec3_t p, int headnode, vec3_t origin, vec3_t angles);
-int		CM_TransformedPointContents2 (const vec3_t p, int headnode, vec3_t origin, vec3_t *axis);
+int		CM_TransformedPointContents (const vec3_t p, int headnode, const vec3_t origin, const vec3_t angles);
+int		CM_TransformedPointContents (const vec3_t p, int headnode, const vec3_t origin, const CAxis &axis);
 
 //--void	CM_BoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
-//--void	CM_TransformedBoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,	int headnode, int brushmask, vec3_t origin, vec3_t angles);
+//--void	CM_TransformedBoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
 
 byte	*CM_ClusterPVS (int cluster);
 byte	*CM_ClusterPHS (int cluster);

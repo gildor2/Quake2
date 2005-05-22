@@ -52,9 +52,9 @@ typedef struct
 struct entityState_t : public entity_state_t
 {
 	bool	valid;				// when "false", additional fields are not initialized
+	CAxis	axis;
+	CBox	bounds;
 	vec3_t	center;
-	vec3_t	axis[3];
-	vec3_t	mins, maxs;			// decoded bbox
 	float	radius;
 };
 

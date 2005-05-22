@@ -113,7 +113,7 @@ sub Warning {
 }
 
 
-@onceWarnings = ();
+%onceWarnings = ();
 
 sub WarningOnce {
 	my ($msg, $key) = @_;
@@ -141,7 +141,7 @@ sub Splitter {
 #------------------------------------------------------------------------------
 
 @includes = ();
-@vars = ();
+%vars = ();
 
 
 sub ExpandVars {
@@ -476,7 +476,7 @@ sub GetObjectList {
 #	Generating compiler commands
 #------------------------------------------------------------------------------
 
-@depends = ();
+%depends = ();
 
 sub CollectFileDependencies {
 	my ($file, $includes, $srcType) = @_;
@@ -673,7 +673,7 @@ sub FlushObjectFile {
 @targets = ();
 # target options:
 #	{filename:option} = value
-@targetOptions = ();
+%targetOptions = ();
 
 # usage: SetDefaultExtension ("file1 file2 file3 ...", extension)
 sub SetDefaultExtension {
@@ -871,7 +871,7 @@ Error ("no targets specified") if !@targets;
 
 print "# This file was automatically generated from \"$INNAME\": do not edit\n\n";
 
-@symTargets = ();
+%symTargets = ();
 Splitter ("symbolic targets");
 # generate "ALL" target (go 1st in makefile) and gather symbolic targets info
 print "ALL :";
@@ -935,7 +935,7 @@ GatherDependInfo ();
 
 # generate targets for all source files
 Splitter ("compiling source files");
-@compiled = ();
+%compiled = ();
 for $item (@sources) {
 	my ($src, $objdir, $defines, $includes, $options, undef) = split('%', $item);
 	if (!exists($compiled{"$src%$objdir"})) {

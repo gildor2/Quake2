@@ -381,7 +381,7 @@ bool Init (void)
 		InitImages ();
 		InitShaders ();
 		InitModels ();
-		InitBackend ();
+		BK_Init ();
 		CreateBuffers ();
 	}
 	GUARD_CATCH
@@ -406,7 +406,7 @@ void Shutdown (bool complete)
 	UnregisterCommand ("gfxinfo");
 
 	FreeBuffers ();
-	ShutdownBackend ();
+	BK_Shutdown ();
 	ShutdownModels ();
 	ShutdownShaders ();
 	ShutdownImages ();
@@ -450,7 +450,6 @@ void BeginFrame (void)
 		Cvar_SetInteger ("gl_logFile", 0);
 	}
 
-//	DrawTextRight ("---------BeginFrame---------\n", RGB(1,0,0));
 	LOG_STRING ("\n---------- Begin Frame ----------\n\n");
 
 	gl_state.have3d = gl_state.haveFullScreen3d = false;
@@ -484,7 +483,6 @@ void BeginFrame (void)
 
 void EndFrame (void)
 {
-//	DrawTextRight ("---------EndFrame---------\n", RGB(1,0,0));
 	if (!gl_state.have3d) ClearTexts ();
 	FlushTexts ();
 
@@ -575,7 +573,7 @@ static void SetFrustum (void)
 	{
 		vp.frustum[i].type = PLANE_NON_AXIAL;
 		vp.frustum[i].dist = DotProduct (vp.vieworg, vp.frustum[i].normal);
-		SetPlaneSignbits (&vp.frustum[i]);
+		vp.frustum[i].SetSignbits ();
 	}
 	vp.frustum[0].dist += gl_znear->value;
 }
@@ -594,10 +592,10 @@ static void SetPerspective (void)
 		for (int i = 0; i < 8; i++)			// check all 8 verts of bounding box
 		{
 			vec3_t	v;
-
-			v[0] = (i & 1) ? vp.maxs[0] : vp.mins[0];
-			v[1] = (i & 2) ? vp.maxs[1] : vp.mins[1];
-			v[2] = (i & 4) ? vp.maxs[2] : vp.mins[2];
+			CBox *b = &vp.bounds;
+			v[0] = (i & 1) ? b->maxs[0] : b->mins[0];
+			v[1] = (i & 2) ? b->maxs[1] : b->mins[1];
+			v[2] = (i & 4) ? b->maxs[2] : b->mins[2];
 
 			VectorSubtract (v, vp.vieworg, v);
 			float d1 = DotProduct (v, v);	// square of vector length
@@ -648,16 +646,12 @@ static void SetPerspective (void)
 // Can be called few RenderFrame() between BeginFrame() and EndFrame()
 void RenderFrame (refdef_t *fd)
 {
-	entity_t *ent;
-	dlight_t *dl;
 	int		i;
 
 	if (!renderingEnabled) return;
 
 	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !map.name)
 		Com_FatalError ("R_RenderFrame: NULL worldModel");
-
-//	DrawTextRight ("---------RenderFrame---------\n", RGB(1,0,0));
 
 	int numVisLeafs = gl_speeds.visLeafs;			// keep number of visLeafs (remove when MarkLeaves() will be called every frame)
 	memset (&gl_speeds, 0, sizeof(gl_speeds));		// clear
@@ -669,10 +663,10 @@ void RenderFrame (refdef_t *fd)
 	gl_state.have3d = true;
 	if (!(fd->rdflags & RDF_NOWORLDMODEL))
 	{
-		byte	*areas, floodArea[MAX_MAP_AREAS/8];
+		byte	floodArea[MAX_MAP_AREAS/8];
 
 		// check for areabits changes
-		areas = fd->areabits;
+		byte *areas = fd->areabits;
 		if (!areas)
 		{
 			memset (floodArea, 0xFF, sizeof(floodArea));
@@ -705,18 +699,20 @@ void RenderFrame (refdef_t *fd)
 
 	// set vieworg/viewaxis before all to allow 3D text output
 	VectorCopy (fd->vieworg, vp.vieworg);
-	AnglesToAxis (fd->viewangles, vp.viewaxis);
+	vp.viewaxis.FromAngles (fd->viewangles);
 
 	vp.lightStyles = fd->lightstyles;
 	vp.time = fd->time;
 
 	// add entities
 	vp.firstEntity = gl_numEntities;		//!! gl_numEntities is always 0 here (vp.firstEntity!=0 only when scene contains portals)
+	entity_t *ent;
 	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
 		AddEntity (ent);
 	// add dlights
 	vp.dlights = &gl_dlights[gl_numDlights]; //!! gl_numDlights is always 0 here
 	vp.numDlights = fd->num_dlights;
+	dlight_t *dl;
 	for (i = 0, dl = fd->dlights; i < fd->num_dlights; i++, dl++)
 		AddDlight (dl);
 	// add particle effects
@@ -784,7 +780,7 @@ void RenderFrame (refdef_t *fd)
 
 /*--------------------- 2D picture output ---------------------*/
 
-//?? place renderer-> client (or, at least, name parsing: if not started with '/' - add "pics/")
+//?? place func from renderer to client (or, at least, name parsing: if not started with '/' - add "pics/")
 static shader_t *FindPic (const char *name, bool force)
 {
 	const char *s;

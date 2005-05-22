@@ -74,7 +74,7 @@ class surfacePlanar_t : public surfaceBase_t
 {
 public:
 	inline surfacePlanar_t () { type = SURFACE_PLANAR; };
-	vec3_t	mins, maxs;
+	CBox	bounds;
 	cplane_t plane;
 	vec3_t	axis[2];			// 2 orthogonal identity vectors from surface
 	float	mins2[2], maxs2[2];	// 2D-bounds (in "axis" coordinate system)
@@ -161,7 +161,7 @@ struct node_t
 	byte	frustumMask;
 	int		visFrame, frame;	// PVS-cull frame, frustum-cull frame
 	// leaf geometry
-	float	mins[3], maxs[3];
+	CBox	bounds;
 	cplane_t *plane;
 	// tree structure
 	node_t	*parent, *children[2];
@@ -275,7 +275,7 @@ public:
 class inlineModel_t : public model_t
 {
 public:
-	vec3_t	mins, maxs;
+	CBox	bounds;
 	float	radius;
 	int		headnode;			//?? is Q3 inline models have this ?; used for trace functions only
 	surfaceBase_t **faces;
@@ -291,14 +291,23 @@ public:
 // frame bounding volume (for culling)
 struct md3Frame_t
 {
-	vec3_t	mins, maxs;			// bounding box
+	CBox	bounds;
 	vec3_t	localOrigin;		// origin for bounding sphere in model coords; computed: (mins+maxs)/2
 	float	radius;				// radius of the bounding sphere
 };
 
-struct md3Tag_t		//?? == dMd3Tag_t (see vertexMd3_t comments)
+//!!!!
+struct md3TagFrame_t
+{
+	vec3_t	origin;
+	vec3_t	axis[3];
+};
+
+struct md3Tag_t
 {
 	char	name[MAX_QPATH];	// tag name; case-sensitive
+//	md3TagFrame_t frames[1];	// [md3.numFrames]
+	//?!!! remove:
 	vec3_t	origin;
 	vec3_t	axis[3];
 };

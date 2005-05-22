@@ -198,7 +198,7 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 					var->flags |= CVAR_GAME_CREATED;			// user->game
 				var->flags &= ~CVAR_USER_CREATED;				// reset user flag
 			}
-			strcpy (var->name, var_name);						// update name (may be different case)
+			strcpy (const_cast<char*>(var->name), var_name);	// update name (may be different case)
 		}
 
 		// keep engine var

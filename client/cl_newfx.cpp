@@ -297,8 +297,8 @@ void CL_Heatbeam (vec3_t start, vec3_t end)
 //	MakeNormalVectors (vec, right, up);
 	VectorCopy (cl.v_right, right);
 	VectorCopy (cl.v_up, up);
-	VectorMA (move, -1, right, move);
-	VectorMA (move, -1, up, move);
+	VectorMA (move, -1, right);
+	VectorMA (move, -1, up);
 
 	VectorScale (vec, step, vec);
 	ltime = cl.ftime;
@@ -332,12 +332,12 @@ void CL_Heatbeam (vec3_t start, vec3_t end)
 			if (i < 10)
 			{
 				VectorScale (right, c*(i/10.0f)*k, dir);
-				VectorMA (dir, s*(i/10.0f)*k, up, dir);
+				VectorMA (dir, s*(i/10.0f)*k, up);
 			}
 			else
 			{
 				VectorScale (right, c*k, dir);
-				VectorMA (dir, s*k, up, dir);
+				VectorMA (dir, s*k, up);
 			}
 
 			for (j=0 ; j<3 ; j++)
@@ -382,14 +382,14 @@ void CL_Heatbeam (vec3_t start, vec3_t forward)
 //	MakeNormalVectors (vec, right, up);
 	VectorCopy (cl.v_right, right);
 	VectorCopy (cl.v_up, up);
-	VectorMA (move, -0.5f, right, move);
-	VectorMA (move, -0.5f, up, move);
+	VectorMA (move, -0.5f, right);
+	VectorMA (move, -0.5f, up);
 	// otherwise assume SOFT
 
 	int step = 32;
 	ltime = cl.ftime;
 	start_pt = fmod(ltime*96.0f,step);
-	VectorMA (move, start_pt, vec, move);
+	VectorMA (move, start_pt, vec);
 
 	VectorScale (vec, step, vec);
 
@@ -417,12 +417,12 @@ void CL_Heatbeam (vec3_t start, vec3_t forward)
 			if (i < 10)
 			{
 				VectorScale (right, c*(i/10.0f), dir);
-				VectorMA (dir, s*(i/10.0f), up, dir);
+				VectorMA (dir, s*(i/10.0f), up);
 			}
 			else
 			{
 				VectorScale (right, c, dir);
-				VectorMA (dir, s, up, dir);
+				VectorMA (dir, s, up);
 			}
 
 			p->alpha = 0.5f;
@@ -447,11 +447,10 @@ void CL_Heatbeam (vec3_t start, vec3_t end)
 	vec3_t		move;
 	vec3_t		vec;
 	float		len;
-	int			j;
 	particle_t	*p;
 	vec3_t		forward, right, up;
 	int			i;
-	float		d, c, s;
+	float		d;
 	vec3_t		dir;
 	float		ltime;
 	float		step = 32.0, rstep;
@@ -466,90 +465,24 @@ void CL_Heatbeam (vec3_t start, vec3_t end)
 	VectorCopy (cl.v_forward, forward);
 	VectorCopy (cl.v_right, right);
 	VectorCopy (cl.v_up, up);
-	VectorMA (move, -0.5, right, move);
-	VectorMA (move, -0.5, up, move);
+	VectorMA (move, -0.5, right);
+	VectorMA (move, -0.5, up);
 
 	for (i=0; i<8; i++)
 	{
 		if (!(p = CL_AllocParticle ()))
 			return;
 		p->accel[2] = 0;
-
-		d = crand()*M_PI;
-		c = cos(d)*30;
-		s = sin(d)*30;
-
 		p->alpha = 1.0;
 		p->alphavel = -5.0 / (1+frand());
 		p->color = 223 - (rand()&7);
 
-		for (j=0 ; j<3 ; j++)
-		{
-			p->org[j] = move[j];
-		}
+		VectorCopy (move, p->org);
+		d = crand()*M_PI;
 		VectorScale (vec, 450, p->vel);
-		VectorMA (p->vel, c, right, p->vel);
-		VectorMA (p->vel, s, up, p->vel);
+		VectorMA (p->vel, cos(d)*30, right);
+		VectorMA (p->vel, sin(d)*30, up);
 	}
-/*
-
-	ltime = cl.ftime;
-	start_pt = fmod(ltime*16.0,step);
-	VectorMA (move, start_pt, vec, move);
-
-	VectorScale (vec, step, vec);
-
-//	Com_Printf ("%f\n", ltime);
-	rstep = M_PI/12.0;
-	for (i=start_pt ; i<len ; i+=step)
-	{
-		if (i>step*5) // don't bother after the 5th ring
-			break;
-
-		for (rot = 0; rot < M_PI*2; rot += rstep)
-		{
-			if (!free_particles)
-				return;
-
-			p = free_particles;
-			free_particles = p->next;
-			p->next = active_particles;
-			active_particles = p;
-
-			VectorClear (p->accel);
-//			rot+= fmod(ltime, 12.0)*M_PI;
-//			c = cos(rot)/2.0;
-//			s = sin(rot)/2.0;
-			c = cos(rot)/1.5;
-			s = sin(rot)/1.5;
-
-			// trim it so it looks like it's starting at the origin
-			if (i < 10)
-			{
-				VectorScale (right, c*(i/10.0), dir);
-				VectorMA (dir, s*(i/10.0), up, dir);
-			}
-			else
-			{
-				VectorScale (right, c, dir);
-				VectorMA (dir, s, up, dir);
-			}
-
-			p->alpha = 0.5;
-	//		p->alphavel = -1.0 / (1+frand()*0.2);
-			p->alphavel = -1000.0;
-	//		p->color = 0x74 + (rand()&7);
-			p->color = 223 - (rand()&7);
-			for (j=0 ; j<3 ; j++)
-			{
-				p->org[j] = move[j] + dir[j]*3;
-	//			p->vel[j] = dir[j]*6;
-				p->vel[j] = 0;
-			}
-		}
-		VectorAdd (move, vec, move);
-	}
-*/
 }
 #endif
 
@@ -586,9 +519,9 @@ void CL_ParticleSteamEffect (vec3_t org, vec3_t dir, int color, int count, int m
 		}
 		VectorScale (dir, magnitude, p->vel);
 		d = crand()*magnitude/3;
-		VectorMA (p->vel, d, r, p->vel);
+		VectorMA (p->vel, d, r);
 		d = crand()*magnitude/3;
-		VectorMA (p->vel, d, u, p->vel);
+		VectorMA (p->vel, d, u);
 
 		p->accel[2] = -PARTICLE_GRAVITY/2;
 		p->alpha = 1.0;
@@ -625,9 +558,9 @@ void CL_ParticleSteamEffect2 (cl_sustain_t *self)
 		}
 		VectorScale (dir, self->magnitude, p->vel);
 		d = crand()*self->magnitude/3;
-		VectorMA (p->vel, d, r, p->vel);
+		VectorMA (p->vel, d, r);
 		d = crand()*self->magnitude/3;
-		VectorMA (p->vel, d, u, p->vel);
+		VectorMA (p->vel, d, u);
 
 		p->accel[2] = -PARTICLE_GRAVITY/2;
 		p->alpha = 1.0;
@@ -959,9 +892,9 @@ void CL_ParticleSmokeEffect (vec3_t org, vec3_t dir, int color, int count, int m
 		}
 		VectorScale (dir, magnitude, p->vel);
 		d = crand()*magnitude/3;
-		VectorMA (p->vel, d, r, p->vel);
+		VectorMA (p->vel, d, r);
 		d = crand()*magnitude/3;
-		VectorMA (p->vel, d, u, p->vel);
+		VectorMA (p->vel, d, u);
 
 		p->alpha = 1.0;
 		p->alphavel = -1.0 / (0.5 + frand()*0.3);

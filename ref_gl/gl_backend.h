@@ -45,11 +45,11 @@ extern bufExtra_t	gl_extra[MAX_VERTEXES];
 
 /*-------------------- Functions -------------------------------*/
 
+void	BK_Init ();
+void	BK_Shutdown ();
+
 void	BK_BeginFrame ();
 void	BK_EndFrame ();
-
-void	InitBackend (void);
-void	ShutdownBackend (void);
 
 void	BK_DrawPic (shader_t *shader, int x, int y, int w, int h,
 			float s1 = 0, float t1 = 0, float s2 = 1, float t2 = 1,

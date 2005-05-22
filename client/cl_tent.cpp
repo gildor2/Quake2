@@ -1568,10 +1568,10 @@ void CL_AddPlayerBeams (void)
 						+ cl.lerpfrac * (ps->gunoffset[j] - ops->gunoffset[j]);
 				}
 				VectorMA (b->start, (hand_multiplier * b->offset[0]), cl.v_right, org);
-				VectorMA (org, b->offset[1], cl.v_forward, org);
-				VectorMA (org, b->offset[2], cl.v_up, org);
+				VectorMA (org, b->offset[1], cl.v_forward);
+				VectorMA (org, b->offset[2], cl.v_up);
 				if (hand->integer == 2)
-					VectorMA (org, -1, cl.v_up, org);
+					VectorMA (org, -1, cl.v_up);
 			}
 			else
 				VectorCopy (b->start, org);
@@ -1590,13 +1590,11 @@ void CL_AddPlayerBeams (void)
 //PMM
 		if (isHeatbeam && isPlayer)
 		{
-			float	len;
-
-			len = VectorLength (dist);
+			float len = VectorLength (dist);
 			VectorScale (cl.v_forward, len, dist);
-			VectorMA (dist, (hand_multiplier * b->offset[0]), cl.v_right, dist);
-			VectorMA (dist, b->offset[1], cl.v_forward, dist);
-			VectorMA (dist, b->offset[2], cl.v_up, dist);
+			VectorMA (dist, (hand_multiplier * b->offset[0]), cl.v_right);
+			VectorMA (dist, b->offset[1], cl.v_forward);
+			VectorMA (dist, b->offset[2], cl.v_up);
 			if (hand->integer == 2)
 				VectorMA (org, -1, cl.v_up, org);
 		}
@@ -1643,9 +1641,9 @@ void CL_AddPlayerBeams (void)
 				// if it's a non-origin offset, it's a player, so use the hardcoded player offset
 				if (b->offset[0] || b->offset[1] || b->offset[2])
 				{
-					VectorMA (org, -(b->offset[0])+1, r, org);
-					VectorMA (org, -(b->offset[1]), f, org);
-					VectorMA (org, -(b->offset[2])-10, u, org);
+					VectorMA (org, -(b->offset[0])+1, r);
+					VectorMA (org, -(b->offset[1]), f);
+					VectorMA (org, -(b->offset[2])-10, u);
 				}
 				else
 				{

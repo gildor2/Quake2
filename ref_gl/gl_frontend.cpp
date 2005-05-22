@@ -57,7 +57,7 @@ float		gl_fogStart, gl_fogEnd;
 #define FRUSTUM_ON				(FRUSTUM_INSIDE|FRUSTUM_OUTSIDE)
 
 
-static int BoxCull (vec3_t mins, vec3_t maxs, int frustumMask)
+static int Cull (CBox &b, int frustumMask)
 {
 	if (!gl_frustumCull->integer)
 		return FRUSTUM_ON;
@@ -71,7 +71,7 @@ static int BoxCull (vec3_t mins, vec3_t maxs, int frustumMask)
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 		if (frustumMask & (1 << i))
 		{
-			int tmp = BoxOnPlaneSide (mins, maxs, pl);
+			int tmp = BoxOnPlaneSide (b.mins, b.maxs, pl);
 			if (tmp == 2) return FRUSTUM_OUTSIDE;
 			if (tmp == 3) res = FRUSTUM_ON;
 		}
@@ -81,7 +81,7 @@ static int BoxCull (vec3_t mins, vec3_t maxs, int frustumMask)
 
 // Uses entity to determine transformations. We cannot use BoxOnPlaneSide, because
 // transformed bounding box is not axial.
-static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
+static int TransformedCull (CBox &b, refEntity_t *e)
 {
 	if (!gl_frustumCull->integer)
 		return FRUSTUM_ON;
@@ -108,9 +108,9 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 		pl.normal[0] = DotProduct (fr->normal, e->axis[0]);
 		pl.normal[1] = DotProduct (fr->normal, e->axis[1]);
 		pl.normal[2] = DotProduct (fr->normal, e->axis[2]);
-		SetPlaneSignbits (&pl);
+		pl.SetSignbits ();
 
-		switch (BoxOnPlaneSide (mins, maxs, &pl))	// do not use BOX_ON_PLANE_SIDE -- useless
+		switch (BoxOnPlaneSide (b.mins, b.maxs, &pl))	// do not use BOX_ON_PLANE_SIDE -- useless
 		{
 		case 1:
 			frustumMask &= ~mask;
@@ -129,15 +129,11 @@ static int TransformedBoxCull (vec3_t mins, vec3_t maxs, refEntity_t *e)
 	int i;
 	for (i = 0, v = box[0]; i < 8; i++, v += 3)	// check all 8 verts of bounding box
 	{
-		float x = (i & 1) ? maxs[0] : mins[0];
-		float y = (i & 2) ? maxs[1] : mins[1];
-		float z = (i & 4) ? maxs[2] : mins[2];
-
-		// project point to a world coordinate system (org + x*axis[0] + y*axis[1] + z*axis[2])
-		vec3_t	tmp;
-		VectorMA (e->origin, x, e->axis[0], tmp);
-		VectorMA (tmp,		 y, e->axis[1], tmp);
-		VectorMA (tmp,		 z, e->axis[2], v);
+		vec3_t tmp;
+		tmp[0] = (i & 1) ? b.maxs[0] : b.mins[0];
+		tmp[1] = (i & 2) ? b.maxs[1] : b.mins[1];
+		tmp[2] = (i & 4) ? b.maxs[2] : b.mins[2];
+		ModelToWorldCoord (tmp, e, v);
 	}
 
 	// perform frustum culling
@@ -319,7 +315,7 @@ static void SetupModelMatrix (refEntity_t *e)
 			matrix[i][j] = e->axis[i][j];
 
 	if (e->mirror)
-		VectorNegate (matrix[1], matrix[1]);
+		VectorNegate (matrix[1]);
 
 	matrix[3][0] = e->origin[0];
 	matrix[3][1] = e->origin[1];
@@ -372,7 +368,7 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 		// trace
 		trace_t	trace;
 		if (!e->worldMatrix)
-			CM_TransformedBoxTrace2 (&trace, start, end, NULL, NULL, im->headnode, brushmask, e->origin, e->axis);
+			CM_TransformedBoxTrace (&trace, start, end, NULL, NULL, im->headnode, brushmask, e->origin, e->axis);
 		else
 			CM_BoxTrace (&trace, start, end, NULL, NULL, im->headnode, brushmask);
 
@@ -466,7 +462,7 @@ static node_t *SphereLeaf (vec3_t origin, float radius)
 			continue;
 		}
 
-		float dist = DISTANCE_TO_PLANE(origin, node->plane);
+		float dist = node->plane->DistanceTo (origin);
 		if (dist > radius)
 			node = node->children[0];	// side 1
 		else if (dist < -radius)		// use mradius = -radius for speedup ??
@@ -532,7 +528,7 @@ static node_t *AlphaSphereLeaf (vec3_t origin, float radius)
 			continue;
 		}
 
-		float dist = DISTANCE_TO_PLANE(origin, node->plane);
+		float dist = node->plane->DistanceTo (origin);
 		if (dist > radius)
 			node = node->children[0];	// side 1
 		else if (dist < -radius)
@@ -617,8 +613,8 @@ static node_t *BeamLeaf (vec3_t v1, vec3_t v2)
 		}
 
 		// node
-		float t1 = DISTANCE_TO_PLANE(v1a, node->plane);
-		float t2 = DISTANCE_TO_PLANE(v2a, node->plane);
+		float t1 = node->plane->DistanceTo (v1a);
+		float t2 = node->plane->DistanceTo (v2a);
 		int s1 = IsNegative (t1);
 		int s2 = IsNegative (t2);
 		if (!(s1 | s2))
@@ -684,7 +680,7 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 
 					if (cull != CULL_NONE)
 					{
-						float dist = DISTANCE_TO_PLANE(vieworg, &pl->plane);
+						float dist = pl->plane.DistanceTo (vieworg);
 						if (cull == CULL_FRONT)
 						{
 							if (dist < -BACKFACE_EPSILON) CULL_SURF;
@@ -701,11 +697,11 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 				{
 					if (e->worldMatrix)
 					{
-						if (BoxCull (pl->mins, pl->maxs, frustumMask) == FRUSTUM_OUTSIDE) CULL_SURF;
+						if (Cull (pl->bounds, frustumMask) == FRUSTUM_OUTSIDE) CULL_SURF;
 					}
 					else
 					{
-						if (TransformedBoxCull (pl->mins, pl->maxs, e) == FRUSTUM_OUTSIDE) CULL_SURF;
+						if (TransformedCull (pl->bounds, e) == FRUSTUM_OUTSIDE) CULL_SURF;
 					}
 				}
 #undef CULL_SURF
@@ -729,7 +725,7 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 		continue;	\
 	}
 							float *dl_org = (e->worldMatrix) ? dl->origin : dl->modelOrg;
-							float dist = DISTANCE_TO_PLANE(dl_org, &pl->plane);
+							float dist = pl->plane.DistanceTo (dl_org);
 							if (!gl_dlightBacks->integer && dist < -8) CULL_DLIGHT;
 							if (dist < 0) dist = -dist;
 
@@ -806,9 +802,8 @@ void model_t::DrawLabel (refEntity_t *e)
 void inlineModel_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
 	vec3_t v;
-	VectorAdd (mins, maxs, v);
-	VectorScale (v, 0.5f, v);
-	VectorSubtract (maxs, v, out->size2);
+	bounds.GetCenter (v);
+	VectorSubtract (bounds.maxs, v, out->size2);		// half-size
 	ModelToWorldCoord (v, out, out->center);
 	out->radius = radius;
 }
@@ -857,7 +852,7 @@ node_t *inlineModel_t::GetLeaf (refEntity_t *e)
 		return NULL;
 	// frustum culling (entire model)
 	if (ret & FRUSTUM_CENTER_OUTSIDE)
-		if (TransformedBoxCull (mins, maxs, e) == FRUSTUM_OUTSIDE)
+		if (TransformedCull (bounds, e) == FRUSTUM_OUTSIDE)
 			return NULL;
 
 	return SphereLeaf (e->center, e->radius);
@@ -904,7 +899,7 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	//!!!! HERE: use frame bounding sphere for gl_showbboxes visualization
 	out->size2[0] = out->size2[1] = out->size2[2] = frame1->radius;
 #else
-	VectorSubtract (frame1->maxs, frame1->localOrigin, out->size2);
+	VectorSubtract (frame1->bounds.maxs, frame1->localOrigin, out->size2);
 #endif
 	// check for COLOR_SHELL
 	if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_HALF_DAM|RF_SHELL_DOUBLE))
@@ -1059,7 +1054,7 @@ static void AddBeamSurfaces (beam_t *b)
 		float sx = SIN_FUNC(angle) * b->radius;
 		float cx = COS_FUNC(angle) * b->radius;
 		VectorScale (axis[1], cx, dir2);
-		VectorMA (dir2, sx, axis[2], dir2);
+		VectorMA (dir2, sx, axis[2]);
 
 		// setup xyz
 		VectorAdd (b->drawStart, dir1, p->verts[0].xyz);
@@ -1158,12 +1153,12 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 		sx = SIN_FUNC(anglePrev) * b->radius;
 		cx = COS_FUNC(anglePrev) * b->radius;
 		VectorScale (axis[1], cx, dir1);
-		VectorMA (dir1, sx, axis[2], dir1);
+		VectorMA (dir1, sx, axis[2]);
 
 		sx = SIN_FUNC(angle) * b->radius;
 		cx = COS_FUNC(angle) * b->radius;
 		VectorScale (axis[1], cx, dir2);
-		VectorMA (dir2, sx, axis[2], dir2);
+		VectorMA (dir2, sx, axis[2]);
 
 		// setup xyz
 		VectorAdd (b->drawStart, dir1, p->verts[0].xyz);
@@ -1240,7 +1235,7 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 		float sx = SIN_FUNC(angle) * b->radius;
 		float cx = COS_FUNC(angle) * b->radius;
 		VectorScale (axis[1], cx, dir1);
-		VectorMA (dir1, sx, axis[2], dir1);
+		VectorMA (dir1, sx, axis[2]);
 		VectorNegate (dir1, dir2);
 
 		angle += 0.5f / BEAM_PARTS;
@@ -1318,7 +1313,7 @@ static node_t *WalkBspTree (void)
 #define CULL_NODE(bit)	\
 			if (frustumMask & (1<<bit))	\
 			{							\
-				switch (BoxOnPlaneSide(node->mins, node->maxs, &vp.frustum[bit])) {	\
+				switch (BoxOnPlaneSide(node->bounds.mins, node->bounds.maxs, &vp.frustum[bit])) {	\
 				case 1:					\
 					frustumMask &= ~(1<<bit);	\
 					break;				\
@@ -1412,13 +1407,13 @@ static node_t *WalkBspTree (void)
 				for (i = 0, dl = vp.dlights, mask = 1; i < MAX_DLIGHTS; i++, dl++, mask <<= 1)
 				{
 					if (!(dlightMask & mask)) continue;
-					d = DISTANCE_TO_PLANE(dl->origin, node->plane);
+					d = node->plane->DistanceTo (dl->origin);
 					if (d > -dl->intensity) dlight0 |= mask;
 					if (d < dl->intensity) dlight1 |= mask;
 				}
 			}
 
-			if (DISTANCE_TO_PLANE(vp.vieworg, node->plane) < 0)
+			if (node->plane->DistanceTo (vp.vieworg) < 0)
 			{
 				// ch[0], then ch[1]
 				PUSH_NODE(node->children[1], dlight1);
@@ -1640,7 +1635,6 @@ static void DrawFlares (void)
 			VectorCopy (f->origin, flarePos);
 			if (im = f->owner)
 			{	// flare linked to entity - shift it with entity origin
-				vec3_t	tmp;
 				refEntity_t *e;
 				int		i;
 
@@ -1662,8 +1656,10 @@ static void DrawFlares (void)
 					}
 				if (i > 0) continue;					// should not happens ...
 				// compute flare origin
-				VectorAdd (im->mins, im->maxs, tmp);
-				VectorMA (e->center, -0.5f, tmp, tmp);
+				vec3_t tmp;
+				im->bounds.GetCenter (tmp);
+				// flarePos = e->center - im->center + flarePos
+				VectorSubtract (e->center, tmp, tmp);
 				VectorAdd (flarePos, tmp, flarePos);
 //				DrawTextLeft (va("flare shift: %g %g %g -> flarePos: %g %g %g", VECTOR_ARG(tmp), VECTOR_ARG(flarePos)),RGB(1,1,1));
 			}
@@ -1804,23 +1800,9 @@ static void DrawBspSequence (node_t *leaf)
 {
 	for ( ; leaf; leaf = leaf->drawNext)
 	{
-		/*------- update world bounding box -------*/
-
-		if (leaf->mins[0] < vp.mins[0])
-			vp.mins[0] = leaf->mins[0];
-		if (leaf->mins[1] < vp.mins[1])
-			vp.mins[1] = leaf->mins[1];
-		if (leaf->mins[2] < vp.mins[2])
-			vp.mins[2] = leaf->mins[2];
-		if (leaf->maxs[0] > vp.maxs[0])
-			vp.maxs[0] = leaf->maxs[0];
-		if (leaf->maxs[1] > vp.maxs[1])
-			vp.maxs[1] = leaf->maxs[1];
-		if (leaf->maxs[2] > vp.maxs[2])
-			vp.maxs[2] = leaf->maxs[2];
-
-		/*------ add leafFaces to draw list -------*/
-
+		// update world bounding box
+		vp.bounds.Expand (leaf->bounds);
+		// add leafFaces to draw list
 		currentEntity = ENTITYNUM_WORLD;
 		AddBspSurfaces (leaf->leafFaces, leaf->numLeafFaces, leaf->frustumMask, &gl_entities[ENTITYNUM_WORLD]);
 
@@ -1934,7 +1916,7 @@ void AddEntity (entity_t *ent)
 	{
 		VectorCopy (ent->origin, out->origin);
 		//!! send client=>renderer not angles, but axis
-		AnglesToAxis (ent->angles, out->axis);
+		out->axis.FromAngles (ent->angles);
 
 		if (!ent->origin[0] && !ent->origin[1] && !ent->origin[2] &&
 			!ent->angles[0] && !ent->angles[1] && !ent->angles[2])
@@ -1961,7 +1943,7 @@ void AddEntity (entity_t *ent)
 		VectorSubtract (ent->oldorigin, ent->origin, v);
 		VectorMA (ent->origin, ent->backlerp, v, out->center);
 		VectorCopy (ent->size, out->boxSize);
-		AnglesToAxis (ent->angles, out->boxAxis);
+		out->boxAxis.FromAngles (ent->angles);
 		out->shaderColor.rgba = ent->color.rgba;
 	}
 	else
@@ -2035,7 +2017,7 @@ void DrawPortal (void)
 //		gl_entities[ENTITYNUM_WORLD].axis[2][2] = 1;
 
 		MarkLeaves ();
-		ClearBounds (vp.mins, vp.maxs);
+		vp.bounds.Clear ();
 		firstLeaf = WalkBspTree ();
 		DrawEntities (vp.firstEntity, vp.numEntities);
 		DrawParticles ();

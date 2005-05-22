@@ -50,23 +50,24 @@ void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, unsigned
 
 	//!! if remove line "if (bits & (...) || baseline) ...", can remove "baseline" arg and "ent->valid" field
 //	if (bits & (U_ANGLE_N|U_MODEL_N) || baseline)
-		AnglesToAxis (to->angles, to->axis);
+		to->axis.FromAngles (to->angles);
 
 //	if (bits & (U_SOLID|U_ANGLE_N|U_ORIGIN_N|U_MODEL_N) || baseline || !to->valid)
 	{
 		if (to->solid && to->solid != 31)
 		{
-			vec3_t	d;
-
 			int x = 8 * (to->solid & 31);
 			int zd = 8 * ((to->solid>>5) & 31);
 			int zu = 8 * ((to->solid>>10) & 63) - 32;
 
-			VectorSet (to->mins, -x, -x, -zd);
-			VectorSet (to->maxs, x, x, zu);
-			VectorAdd (to->maxs, to->mins, d);
-			VectorMA (to->origin, 0.5f, d, to->center);
-			to->radius = VectorDistance (to->maxs, to->mins) / 2;
+			VectorSet (to->bounds.mins, -x, -x, -zd);
+			VectorSet (to->bounds.maxs, x, x, zu);
+
+			vec3_t d;
+			to->bounds.GetCenter (d);
+			VectorAdd (to->origin, d, to->center);
+
+			to->radius = VectorDistance (to->bounds.maxs, to->bounds.mins) / 2;
 			to->valid = true;
 		}
 		else
@@ -77,6 +78,7 @@ void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, unsigned
 				vec3_t	v, tmp;
 
 				VectorAdd (m->mins, m->maxs, v);
+				//?? transform
 				VectorScale (v, 0.5f, v);
 				VectorMA (to->origin, v[0], to->axis[0], tmp);
 				VectorMA (tmp, v[1], to->axis[1], tmp);
@@ -615,7 +617,7 @@ void CL_AddEntityBox (entityState_t *st, unsigned rgba)
 	else
 	{
 		ent.angles[2] = -ent.angles[2];		// triangle models have bug in Q2: angles[2] should be negated
-		VectorSubtract (st->maxs, st->mins, ent.size);
+		VectorSubtract (st->bounds.maxs, st->bounds.mins, ent.size);
 		VectorScale (ent.size, 0.5f, ent.size);
 	}
 

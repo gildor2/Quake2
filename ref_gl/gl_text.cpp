@@ -110,7 +110,7 @@ void FlushTexts ()
 }
 
 
-static void DrawTextPos (int x, int y, const char *text, unsigned rgba)
+void DrawTextPos (int x, int y, const char *text, unsigned rgba)
 {
 	if (!text || !*text) return;	// empty text
 

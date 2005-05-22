@@ -75,13 +75,10 @@ returns the blocked flags (1 = floor, 2 = step / wall)
 
 static void ClipVelocity (vec3_t in, vec3_t normal, vec3_t out, float overbounce)
 {
-	float	backoff;
-	int		i;
-
-	backoff = DotProduct (in, normal) * overbounce;
+	float backoff = DotProduct (in, normal) * overbounce;
 	VectorMA (in, -backoff, normal, out);
 
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 		if (out[i] > -STOP_EPSILON && out[i] < STOP_EPSILON)
 			out[i] = 0;
 }
@@ -501,7 +498,7 @@ static void AddCurrents (vec3_t wishvel)
 		if ((pm->waterlevel == 1) && (pm->groundentity))
 			f /= 2;
 
-		VectorMA (wishvel, f, v, wishvel);
+		VectorMA (wishvel, f, v);
 	}
 
 	// add conveyor belt velocities
@@ -515,7 +512,7 @@ static void AddCurrents (vec3_t wishvel)
 		if (pml.groundcontents & CONTENTS_CURRENT_UP) 	v[2] = 1;
 		if (pml.groundcontents & CONTENTS_CURRENT_DOWN)	v[2] = -1;
 
-		VectorMA (wishvel, 100 /* pm->groundentity->speed */, v, wishvel);
+		VectorMA (wishvel, 100 /* pm->groundentity->speed */, v);
 	}
 }
 
@@ -590,7 +587,7 @@ static void AirMove (void)
 //Com_Printf("v1(%g|%g|%g)",VECTOR_ARG(wishvel));//!!
 
 	AddCurrents (wishvel);
-	wishspeed = VectorNormalize2 (wishvel, wishdir);
+	wishspeed = VectorNormalize (wishvel, wishdir);
 
 	// clamp to server defined max speed
 	maxspeed = (pm->s.pm_flags & PMF_DUCKED) ? pm_duckspeed : pm_maxspeed;
@@ -954,7 +951,7 @@ static void FlyMove (bool doclip)
 	else
 	{
 		// move
-		VectorMA (pml.origin, pml.frametime, pml.velocity, pml.origin);
+		VectorMA (pml.origin, pml.frametime, pml.velocity);
 	}
 }
 

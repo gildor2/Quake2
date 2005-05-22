@@ -58,7 +58,7 @@ sub EmitStruc {
 	my $str = $args;
 	# remove default arguments from structure declaration
 	$str =~ s/\s*=\s*\w+\s*//g;
-	print (DEFS "\t$type\t(*${spref}$func) ($str);\n");
+	print (DEFS "\t$type\t(*${spref}$sname) ($str);\n");
 }
 
 sub EmitDefine {
@@ -66,12 +66,13 @@ sub EmitDefine {
 	#!! when parsing args == "()" instead of "(void)" -> perl will produce warning "use of uninit value"
 	if ($#args > 0 && $args[$#args] =~ /\.\.\./) {
 		# vararg function
-		print (DEFS "#define ${npref}$func\t$strucname.${spref}$func\n");
+		die "Cannot parse overloaded vararg function \"$func\"\n" if $func ne $sname;	# cannot #define overloaded function
+		print (DEFS "#define ${npref}$func\t$strucname.${spref}$sname\n");
 	} else {
 		# regular function, may be overloaded - so make inline code
 		print DEFS "inline $type ${npref}$func ($args)\n{\n\t";
 		print DEFS "return " if $type ne "void";
-		print DEFS "$strucname.${spref}$func (";
+		print DEFS "$strucname.${spref}$sname (";
 		# args
 		my $i = 0;
 		for $arg (@args) {
@@ -112,6 +113,7 @@ sub EmitCodePrep {
 sub Parse {
 	my $sub;
 	my ($subBegin, $subPreproc) = @_;
+	my %names = ();
 
 	open (IN, $infile) || die "Input file ", $infile, " not found";
 	$num = 0;
@@ -122,6 +124,15 @@ sub Parse {
 		} else {
 			($type, $func, $args) = $line =~ /^ \s* (\S+ [^(]* [\*\s]) (\w+) \s* \( (.*) \) \s* ; $/x;
 			($type) = $type =~ /\s*(\S.*\S)\s*/;	# truncate leading and trailing spaces
+
+			my $n = 0;
+			$sname = $func;
+			while (1) {
+				last if !exists $names{$sname};
+				$n++;
+				$sname = "$func$n";
+			}
+			$names{$sname} = 1;		# mark as defined
 
 			&$subBegin () if defined $subBegin;
 			$num++;

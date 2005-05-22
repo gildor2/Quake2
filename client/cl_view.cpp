@@ -551,12 +551,9 @@ static char *ModelName (int modelIndex)
 static void DrawSurfInfo (void)
 {
 	vec3_t	start, end;
-	trace_t	trace;
-	static const vec3_t zero = {0, 0, 0};
 	csurface_t	*surf;
 	vec3_t	norm;
 	const char *s;
-	int		cont;
 
 	static const flagInfo_t surfNames[] = {
 #define T(name)		{SURF_##name, #name}
@@ -590,7 +587,9 @@ static void DrawSurfInfo (void)
 	VectorScale (end, 500, end);
 	VectorAdd (start, end, end);
 
-	cont = r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER;
+	unsigned cont = r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER;
+	trace_t	trace;
+	static const vec3_t zero = {0, 0, 0};
 	CM_BoxTrace (&trace, start, end, NULL, NULL, 0, cont);
 	if (!(r_surfinfo->integer & 2))
 		CL_EntityTrace (&trace, start, end, zero, zero, cont);
@@ -600,9 +599,9 @@ static void DrawSurfInfo (void)
 		RE_DrawTextLeft ("Surface info:\n-------------", RGB(0.4,0.4,0.6));
 		RE_DrawTextLeft (va("Point: %g  %g  %g", VECTOR_ARG(trace.endpos)), RGB(0.2,0.4,0.1));
 		surf = trace.surface;
-		if (surf->rname[0])		// non-null surface
+		if (surf->fullName[0])		// non-null surface
 		{
-			RE_DrawTextLeft (va("Texture: %s", surf->rname), RGB(0.2,0.4,0.1));
+			RE_DrawTextLeft (va("Texture: %s", surf->fullName), RGB(0.2,0.4,0.1));
 			VectorCopy (trace.plane.normal, norm);
 			RE_DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARG(norm)), RGB(0.2,0.4,0.1));
 			if (surf->value)

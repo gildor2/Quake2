@@ -61,7 +61,16 @@ void InitFuncTables (void)
 }
 
 
+//?? move this func to global math (orientation_t.???(srcPoint, dstPoint)), rename, use from many engine places
+//?? different name?
 // Project localOrigin to a world coordinate system
+/*?? use of e->center instead of e->origin:
+ *	gl_backend.cpp: DrawBBoxes()-1, surfaceEntity_t::Tesselate()-1 (boxAxis)
+ *	other (same code):
+ *	cl_ents.cpp: CL_ParseDelta()-1
+ *	cmodel.cpp: CM_TransformedBoxTrace()-2, CM_TransformedBoxTrace[2]()-2
+ *	sv_world.cpp: SV_LinkEdict()-1
+ */
 void ModelToWorldCoord (vec3_t localOrigin, refEntity_t *e, vec3_t center)
 {
 	VectorMA (e->origin, localOrigin[0], e->axis[0], center);
@@ -69,7 +78,7 @@ void ModelToWorldCoord (vec3_t localOrigin, refEntity_t *e, vec3_t center)
 	VectorMA (center,	 localOrigin[2], e->axis[2], center);
 }
 
-
+//?? name?
 void WorldToModelCoord (vec3_t world, refEntity_t *e, vec3_t local)
 {
 	vec3_t	v;
@@ -107,7 +116,7 @@ void BuildRotationMatrix (float r[3][3], vec3_t axis, float angle)
 #define z axisn[2]
 
 	q = angle / 180 * M_PI;
-	VectorNormalize2 (axis, axisn);
+	VectorNormalize (axis, axisn);
 	sq = sin(q);
 	cq = cos(q); ncq = 1 - cq;
 	// compute uu'

@@ -282,26 +282,24 @@ CMod_LoadSurfaces
 
 static void CMod_LoadSurfaces (texinfo_t *data, int size)
 {
-	texinfo_t *in = data;
-
 	if (size < 1) Com_DropError ("Map with no surfaces");
 
 	ReadSurfMaterials ("sound/materials.lst");
 
+	texinfo_t *in = data;
 	numTexinfo = size;
 	csurface_t	*out;
 	out = map_surfaces = new (dataChain) csurface_t [size];
 
 	for (int i = 0; i < size; i++, in++, out++)
 	{
-		int		f, m;
-
-		appStrncpyz (out->name, in->texture, sizeof(out->name));	// texture name limited to 16 chars (compatibility with older mods?)
-		appStrncpyz (out->rname, in->texture, sizeof(out->rname));	// name limited to 32 chars (full?)
-		f = in->flags;
+		appStrncpyz (out->shortName, in->texture, sizeof(out->shortName));	// texture name limited to 16 chars (compatibility with older mods?)
+		appStrncpyz (out->fullName, in->texture, sizeof(out->fullName));	// name limited to 32 chars (w/o "textures/" and ".wal")
+		int f = in->flags;
 		out->flags = f & ~SURF_KP_MATERIAL;
 		out->value = in->value;
 
+		int m;
 		if (f & SURF_CONCRETE)		m = MATERIAL_CONCRETE;
 		else if (f & SURF_FABRIC)	m = MATERIAL_FABRIC;
 		else if (f & SURF_GRAVEL)	m = MATERIAL_GRAVEL;
@@ -420,8 +418,8 @@ static void CMod_LoadPlanes (dplane_t *data, int size)
 	{
 		VectorCopy (in->normal, out->normal);
 		out->dist = in->dist;
-		out->type = PlaneTypeForNormal (out->normal);
-		SetPlaneSignbits (out);
+		out->SetType ();
+		out->SetSignbits ();
 	}
 }
 
@@ -1136,13 +1134,13 @@ static void InitBoxHull (void)
 		p->type = PLANE_X + (i>>1);
 		VectorClear (p->normal);
 		p->normal[i>>1] = 1;
-		SetPlaneSignbits (p);
+		p->SetSignbits ();
 
 		p = &box_planes[i*2+1];
 		p->type = PLANE_MX + (i>>1);
 		VectorClear (p->normal);
 		p->normal[i>>1] = -1;
-		SetPlaneSignbits (p);
+		p->SetSignbits ();
 	}
 }
 
@@ -1185,7 +1183,7 @@ int CM_PointLeafnum (const vec3_t p, int num)
 	while (num >= 0)
 	{
 		cnode_t *node = map_nodes + num;
-		float d = DISTANCE_TO_PLANE(p, node->plane);
+		float d = node->plane->DistanceTo (p);
 		num = node->children[IsNegative(d)];
 	}
 
@@ -1205,14 +1203,16 @@ int CM_PointContents (const vec3_t p, int headnode)
 }
 
 
-int	CM_TransformedPointContents (const vec3_t p, int headnode, vec3_t origin, vec3_t angles)
+int	CM_TransformedPointContents (const vec3_t p, int headnode, const vec3_t origin, const vec3_t angles)
 {
-	vec3_t	p1, tmp, axis[3];
+	vec3_t	p1, tmp;
 
 	guard(CM_TransformedPointContents);
 	if (headnode != box_headnode && (angles[0] || angles[1] || angles[2]))
 	{
-		AnglesToAxis (angles, axis);
+		CAxis axis;		//!! CCoords
+		axis.FromAngles (angles);
+		//!! transform
 		VectorSubtract (p, origin, tmp);
 		p1[0] = DotProduct (tmp, axis[0]);
 		p1[1] = DotProduct (tmp, axis[1]);
@@ -1225,13 +1225,14 @@ int	CM_TransformedPointContents (const vec3_t p, int headnode, vec3_t origin, ve
 	unguard;
 }
 
-int	CM_TransformedPointContents2 (const vec3_t p, int headnode, vec3_t origin, vec3_t *axis)
+int	CM_TransformedPointContents (const vec3_t p, int headnode, const vec3_t origin, const CAxis &axis)
 {
 	vec3_t	p1, tmp;
 
 	guard(CM_TransformedPointContents2);
 	if (headnode != box_headnode)
 	{
+		//!! transform
 		VectorSubtract (p, origin, tmp);
 		p1[0] = DotProduct (tmp, axis[0]);
 		p1[1] = DotProduct (tmp, axis[1]);
@@ -1823,7 +1824,7 @@ void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t en
 	int headnode, int brushmask, const vec3_t origin, const vec3_t angles)
 {
 	vec3_t	start1, end1, tmp;
-	vec3_t	axis[3];
+	CAxis	axis;		//!! CCoords
 	bool	rotated;
 
 	guard(CM_TransformedBoxTrace);
@@ -1836,14 +1837,14 @@ void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t en
 
 	if (rotated)
 	{
-		AnglesToAxis (angles, axis);
-
+		axis.FromAngles (angles);
 		// transform start/end to axis (model coordinate system)
+		//!! transform
 		VectorSubtract (start, origin, tmp);
 		start1[0] = DotProduct (tmp, axis[0]);
 		start1[1] = DotProduct (tmp, axis[1]);
 		start1[2] = DotProduct (tmp, axis[2]);
-
+		//!! transform
 		VectorSubtract (end, origin, tmp);
 		end1[0] = DotProduct (tmp, axis[0]);
 		end1[1] = DotProduct (tmp, axis[1]);
@@ -1861,6 +1862,7 @@ void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t en
 	// transform normal/endpos to world coordinate system
 	if (trace->fraction != 1.0f && rotated)
 	{
+		//!! transform
 		VectorScale (axis[0], trace->plane.normal[0], tmp);
 		VectorMA (tmp, trace->plane.normal[1], axis[1], tmp);
 		VectorMA (tmp, trace->plane.normal[2], axis[2], trace->plane.normal);
@@ -1868,6 +1870,7 @@ void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t en
 
 	if (rotated)
 	{
+		//!! transform
 		VectorMA (origin, trace->endpos[0], axis[0], tmp);
 		VectorMA (tmp, trace->endpos[1], axis[1], tmp);
 		VectorMA (tmp, trace->endpos[2], axis[2], trace->endpos);
@@ -1879,19 +1882,22 @@ void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t en
 }
 
 
-void CM_TransformedBoxTrace2 (trace_t *trace, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs,
-	int headnode, int brushmask, const vec3_t origin, const vec3_t *axis)
+//?? use orientation_t
+void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs,
+	int headnode, int brushmask, const vec3_t origin, const CAxis &axis)
 {
 	vec3_t		start1, end1, tmp;
 
 	guard(CM_TransformedBoxTrace2);
 
 	// transform start/end to axis (model coordinate system)
+	//!! transform
 	VectorSubtract (start, origin, tmp);
 	start1[0] = DotProduct (tmp, axis[0]);
 	start1[1] = DotProduct (tmp, axis[1]);
 	start1[2] = DotProduct (tmp, axis[2]);
 
+	//!! transform
 	VectorSubtract (end, origin, tmp);
 	end1[0] = DotProduct (tmp, axis[0]);
 	end1[1] = DotProduct (tmp, axis[1]);
@@ -1903,11 +1909,13 @@ void CM_TransformedBoxTrace2 (trace_t *trace, const vec3_t start, const vec3_t e
 	// transform normal/endpos to world coordinate system
 	if (trace->fraction != 1.0f)
 	{
+		//!! transform
 		VectorScale (axis[0], trace->plane.normal[0], tmp);
 		VectorMA (tmp, trace->plane.normal[1], axis[1], tmp);
 		VectorMA (tmp, trace->plane.normal[2], axis[2], trace->plane.normal);
 	}
 
+	//!! transform
 	VectorMA (origin, trace->endpos[0], axis[0], tmp);
 	VectorMA (tmp, trace->endpos[1], axis[1], tmp);
 	VectorMA (tmp, trace->endpos[2], axis[2], trace->endpos);

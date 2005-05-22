@@ -34,7 +34,7 @@ typedef struct {
 	bspfile_t*	(*_LoadBspFile) (const char *filename, bool clientload, unsigned *checksum);
 	void	(*_CM_BoxTrace) (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask);
 	void	(*_CM_TransformedBoxTrace) (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles);
-	void	(*_CM_TransformedBoxTrace2) (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t *axis);
+	void	(*_CM_TransformedBoxTrace1) (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const CAxis &axis);
 	int	(*_CM_BrushTrace) (const vec3_t start, const vec3_t end, int *brushes, int maxBrushes);
 	int	(*_CM_RefineBrushTrace) (const vec3_t start, const vec3_t end, int *brushes, int numBrushes);
 #ifdef _WIN32
@@ -168,9 +168,9 @@ inline void CM_TransformedBoxTrace (trace_t *tr, const vec3_t start, const vec3_
 {
 	ri._CM_TransformedBoxTrace (tr, start, end, mins, maxs, headnode, brushmask, origin, angles);
 }
-inline void CM_TransformedBoxTrace2 (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t *axis)
+inline void CM_TransformedBoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const CAxis &axis)
 {
-	ri._CM_TransformedBoxTrace2 (tr, start, end, mins, maxs, headnode, brushmask, origin, axis);
+	ri._CM_TransformedBoxTrace1 (tr, start, end, mins, maxs, headnode, brushmask, origin);
 }
 inline int CM_BrushTrace (const vec3_t start, const vec3_t end, int *brushes, int maxBrushes)
 {

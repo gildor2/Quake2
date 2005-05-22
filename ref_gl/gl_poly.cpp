@@ -182,7 +182,7 @@ int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
 		firstPoly = NULL;
 		while (poly)
 		{
-			vec3_t	mins, maxs;
+			CBox bounds;
 			poly_t	*workPoly, *poly1, *poly2;
 
 //			DebugPrintf ("processing axis %d: %d indexes ...\n", axis, poly->numIndexes);
@@ -190,14 +190,14 @@ int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
 			if (!numIndexes) continue;	// skip empty poly
 
 			// calculate poly bounds
-			ClearBounds (mins, maxs);
+			bounds.Clear ();
 			for (i = 0; i < numIndexes; i++)
-				AddPointToBounds (*psubdivVerts[poly->indexes[i]], mins, maxs);
+				bounds.Expand (*psubdivVerts[poly->indexes[i]]);
 //			DebugPrintf ("bounds: (%g, %g, %g) - (%g, %g, %g)\n", VECTOR_ARG(mins), VECTOR_ARG(maxs));
 
 			// mins/maxs, aligned to tessSize grid and shifted to the poly center by tessSize
-			float min = appFloor((mins[axis] + tessSize + tessError) / tessSize) * tessSize;
-			float max = appCeil((maxs[axis] - tessSize - tessError) / tessSize) * tessSize;
+			float min = appFloor((bounds.mins[axis] + tessSize + tessError) / tessSize) * tessSize;
+			float max = appCeil((bounds.maxs[axis] - tessSize - tessError) / tessSize) * tessSize;
 //			DebugPrintf ("... stepping from %g to %g with step %g\n", min, max, tessSize);
 
 			// shred workPoly

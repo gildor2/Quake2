@@ -28,7 +28,7 @@ static float predictLerp = -1;		// >= 0 -- use this value for prediction; if < 0
 void CL_CheckPredictionError (void)
 {
 	int		frame;
-	int		delta[3];
+	short	delta[3];
 	int		i, len;
 
 	guard(CL_CheckPredictionError);
@@ -41,7 +41,7 @@ void CL_CheckPredictionError (void)
 	frame &= (CMD_BACKUP-1);
 
 	// compare what the server returned with what we had predicted it to be
-	VectorSubtract (cl.frame.playerstate.pmove.origin, cl.predicted_origins[frame], delta);
+	VectorSubtract2 (cl.frame.playerstate.pmove.origin, cl.predicted_origins[frame], delta);
 
 	// save the prediction error for interpolation
 	len = abs(delta[0]) + abs(delta[1]) + abs(delta[2]);	//?? VectorLength()
@@ -128,11 +128,11 @@ void CL_EntityTrace (trace_t *tr, const vec3_t start, const vec3_t end, const ve
 		{
 			cmodel = cl.model_clip[ent->modelindex];
 			if (!cmodel) continue;
-			CM_TransformedBoxTrace2 (&trace, start, end, mins, maxs, cmodel->headnode,  contents, eOrigin, ent->axis);
+			CM_TransformedBoxTrace (&trace, start, end, mins, maxs, cmodel->headnode,  contents, eOrigin, ent->axis);
 		}
 		else
 			CM_TransformedBoxTrace (&trace, start, end, mins, maxs,
-				CM_HeadnodeForBox (ent->mins, ent->maxs), contents, eOrigin, vec3_origin);
+				CM_HeadnodeForBox (ent->bounds.mins, ent->bounds.maxs), contents, eOrigin, vec3_origin);
 
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
@@ -230,7 +230,7 @@ int CL_PMpointcontents (vec3_t point)
 		dist2 = DotProduct (tmp, tmp);
 		if (dist2 > ent->radius * ent->radius) continue;
 		// accurate check with trace
-		contents |= CM_TransformedPointContents2 (point, cmodel->headnode, eOrigin, ent->axis);
+		contents |= CM_TransformedPointContents (point, cmodel->headnode, eOrigin, ent->axis);
 	}
 
 	return contents;

@@ -136,7 +136,7 @@ Basic animations and frame inc/dec are set in game/p_view.c::Q_SetClientFrame()
 
 Trace(mins=NULL,maxs=NULL):
 ~~~~~~~~~~~~~~~~~~~~~~~
-CM_BoxTrace(), CM_TransformedBoxTrace[2]() - already implemented
+CM_BoxTrace(), CM_TransformedBoxTrace() - already implemented
 CL_Trace() -> CL_EntityTrace
 CL_PMTrace() -> CL_EntityTrace
 SV_Trace() -> SV_ClipMoveToEntities

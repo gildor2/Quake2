@@ -53,16 +53,19 @@ static int			currentDlightMask;
 
 #define NUM_VERTEX_BUFFERS	64
 
-typedef struct
+struct vertexBuffer_t
 {
 	bufVertex_t		verts[MAX_VERTEXES];
 	color_t			color[MAX_VERTEXES];
 	bufTexCoord_t	texCoord[1][MAX_VERTEXES];
-} vertexBuffer_t;
+	static inline int getSize (int numTmu)
+	{
+		return sizeof(vertexBuffer_t) + (numTmu-1) * sizeof(bufTexCoord_t) * MAX_VERTEXES;	// 1 texCoord already reserved
+	}
+};
 
 static vertexBuffer_t	*vb;			// pointers to current buffer and to all buffers
 static int				currentBuffer;	// index of the current buffer
-static int				vbSize;			// size of 1 buffer (depends on multitexturing ability)
 
 int				gl_indexesArray[MAX_INDEXES];
 bufExtra_t		gl_extra[MAX_VERTEXES];
@@ -113,7 +116,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 							* deform->wave.amp + deform->wave.base;
 					else
 						f = deform->wave.base;		// used for "outline shield" effect
-					VectorMA (vec->xyz, f, norm, vec->xyz);
+					VectorMA (vec->xyz, f, norm);
 				}
 			}
 			break;
@@ -1573,8 +1576,9 @@ static void DrawBBoxes (void)
 			if (GetBoxRect (ent, ent->size2, mins2, maxs2, true))
 			{
 				vec3_t	h;
-				static int idx2[4] = {0, 2, 3, 1};
+				static const int idx2[4] = {0, 2, 3, 1};
 
+				//!! transform
 				VectorMA (ent->center, mins2[0], vp.viewaxis[1], h);
 				VectorMA (h, mins2[1], vp.viewaxis[2], v[0].xyz);
 				VectorMA (h, maxs2[1], vp.viewaxis[2], v[1].xyz);
@@ -1733,6 +1737,7 @@ void surfaceEntity_t::Tesselate ()
 			float z = (i & 4) ? ent->boxSize[2] : -ent->boxSize[2];
 
 			// project point to a world coordinate system (org + x*axis[0] + y*axis[1] + z*axis[2])
+			//!! transform
 			vec3_t	tmp;
 			VectorMA (ent->center, x, ent->boxAxis[0], tmp);
 			VectorMA (tmp,  	   y, ent->boxAxis[1], tmp);
@@ -2150,7 +2155,7 @@ void BK_EndFrame ()
 	Init/shutdown
 -----------------------------------------------------------------------------*/
 
-void InitBackend (void)
+void BK_Init ()
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(gl_clear, 0, 0),
@@ -2165,12 +2170,14 @@ CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
 	ClearBuffers ();
 
-	vbSize = sizeof(vertexBuffer_t) + (gl_config.maxActiveTextures-1) * sizeof(bufTexCoord_t) * MAX_VERTEXES;	// space for 1 texcoord already reserved
+	// size of 1 buffer (depends on multitexturing ability)
+	int vbSize = vertexBuffer_t::getSize (gl_config.maxActiveTextures);
+	// alloc
 	vb = (vertexBuffer_t*)appMalloc (vbSize, 16);
 }
 
 
-void ShutdownBackend (void)
+void BK_Shutdown ()
 {
 	if (!vb) return;	// not initialized
 	appFree (vb);

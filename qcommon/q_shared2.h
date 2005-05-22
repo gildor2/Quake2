@@ -37,9 +37,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 
-#define BIG_NUMBER			0x1000000
-
-
 //============================================================================
 
 
@@ -88,22 +85,24 @@ typedef enum
 } multicast_t;
 
 
-/*
-==============================================================
+/*-----------------------------------------------------------------------------
+	Math library
+-----------------------------------------------------------------------------*/
 
-MATHLIB
+// colors
 
-==============================================================
-*/
+float NormalizeColor (const vec3_t in, vec3_t out);
+float NormalizeColor255 (const vec3_t in, vec3_t out);
+
+// float numbers
+
+#define BIG_NUMBER			0x1000000
 
 #ifndef M_PI
 #define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
 #endif
 
 extern vec3_t vec3_origin;	// really, should be "const", but LOTS of functions uses this without "const" specifier ...
-
-float NormalizeColor (const vec3_t in, vec3_t out);
-float NormalizeColor255 (const vec3_t in, vec3_t out);
 
 // rename to CLAMP_COLOR255 ??
 #define NORMALIZE_COLOR255(r,g,b)	\
@@ -120,14 +119,12 @@ float NormalizeColor255 (const vec3_t in, vec3_t out);
 
 float ClampColor255 (const vec3_t in, vec3_t out);
 
-float VectorNormalizeFast (vec3_t v);
 float Q_rsqrt (float number);
 #define SQRTFAST(x)		(x * Q_rsqrt(x))
 
 #if !defined C_ONLY && !defined __linux__ && !defined __sgi
 
-//?? use C++ ...cast<>
-#define uint_cast(f)	(* (unsigned *) &(f))
+#define uint_cast(f)	(* reinterpret_cast<unsigned*>(&(f)))
 #define IsNegative(f)	(uint_cast(f) >> 31)
 #define FAbsSign(f,d,s)	\
 	{							\
@@ -156,38 +153,126 @@ float Q_rsqrt (float number);
 
 #endif
 
-typedef struct	// hack for VectorCopy
+// vector math
+
+inline float DotProduct (const vec3_t x, const vec3_t y)
 {
-	float x, y, z;
-} vec3a_t;
+	return x[0]*y[0] + x[1]*y[1] + x[2]*y[2];
+}
 
-#define DotProduct(x,y)			(x[0]*y[0]+x[1]*y[1]+x[2]*y[2])
-#define VectorSubtract(a,b,c)	(c[0]=a[0]-b[0],c[1]=a[1]-b[1],c[2]=a[2]-b[2])
-#define VectorAdd(a,b,c)		(c[0]=a[0]+b[0],c[1]=a[1]+b[1],c[2]=a[2]+b[2])
-//#define VectorCopy(a,b)			(b[0]=a[0],b[1]=a[1],b[2]=a[2])
-//#define VectorCopy(a,b)			memcpy(b, a, sizeof(vec3_t))		// should be faster when "memcpy" is intrinsic
-#define VectorCopy(a,b)			(*(vec3a_t*)(b)=*(vec3a_t*)(a))
-#define VectorClear(a)			(a[0]=a[1]=a[2]=0)
-//#define VectorClear(a)			memset(a, 0, sizeof(vec3_t))
-//#define VectorNegate(a,b)		(b[0]=-a[0],b[1]=-a[1],b[2]=-a[2])
-#define VectorNegate(a,b)		{FNegate(a[0],b[0]);FNegate(a[1],b[1]);FNegate(a[2],b[2])}
+inline void VectorSubtract (const vec3_t a, const vec3_t b, vec3_t d)
+{
+	d[0] = a[0] - b[0];
+	d[1] = a[1] - b[1];
+	d[2] = a[2] - b[2];
+}
+// macro version for any types (used 2 times)
+#define VectorSubtract2(a,b,c)	(c[0]=a[0]-b[0],c[1]=a[1]-b[1],c[2]=a[2]-b[2])
+
+inline void VectorAdd (const vec3_t a, const vec3_t b, vec3_t d)
+{
+	d[0] = a[0] + b[0];
+	d[1] = a[1] + b[1];
+	d[2] = a[2] + b[2];
+}
+//#define VectorAdd2(a,b,c)		(c[0]=a[0]+b[0],c[1]=a[1]+b[1],c[2]=a[2]+b[2])
+
+inline void VectorNegate (vec3_t a, vec3_t b)
+{
+	FNegate (a[0],b[0]);
+	FNegate (a[1],b[1]);
+	FNegate (a[2],b[2]);
+}
+
+inline void VectorNegate (vec3_t a)
+{
+	FNegate (a[0], a[0]);
+	FNegate (a[1], a[1]);
+	FNegate (a[2], a[2]);
+}
+
+inline void VectorScale (const vec3_t a, float scale, vec3_t b)
+{
+	b[0] = scale * a[0];
+	b[1] = scale * a[1];
+	b[2] = scale * a[2];
+}
+
+// d = a + scale * b
+inline void VectorMA (const vec3_t a, float scale, const vec3_t b, vec3_t d)
+{
+	d[0] = a[0] + scale * b[0];
+	d[1] = a[1] + scale * b[1];
+	d[2] = a[2] + scale * b[2];
+}
+
+// a += scale * b
+inline void VectorMA (vec3_t a, float scale, const vec3_t b)
+{
+	a[0] += scale * b[0];
+	a[1] += scale * b[1];
+	a[2] += scale * b[2];
+}
+
+inline void VectorCopy (const vec3_t a, vec3_t b)
+{
+	memcpy (b, a, sizeof(vec3_t));	// should be fast when "memcpy" is intrinsic
+}
+
+inline void VectorClear (vec3_t a)
+{
+	memset (a, 0, sizeof(vec3_t));
+}
+
 #define VectorSet(v, x, y, z)	(v[0]=(x), v[1]=(y), v[2]=(z))
-#define	VectorMA(v, s, b, o)	((o)[0]=(v)[0]+(b)[0]*(s),(o)[1]=(v)[1]+(b)[1]*(s),(o)[2]=(v)[2]+(b)[2]*(s))
-//void VectorMA (vec3_t veca, float scale, vec3_t vecb, vec3_t vecc);
 
-void ClearBounds (vec3_t mins, vec3_t maxs);
-void AddPointToBounds (const vec3_t v, vec3_t mins, vec3_t maxs);
-bool VectorCompare (const vec3_t v1, const vec3_t v2);
+inline bool VectorCompare (const vec3_t v1, const vec3_t v2)
+{
+	return memcmp (v1, v2, sizeof(vec3_t)) == 0;
+}
+
 float VectorLength (const vec3_t v);
 float VectorDistance (const vec3_t vec1, const vec3_t vec2);
-void AnglesToAxis (const vec3_t angles, vec3_t axis[3]);
-void AxisClear (vec3_t axis[3]);
-#define AxisCopy(i,o)			memcpy(o,i,sizeof(vec3_t)*3)
+
 void CrossProduct (const vec3_t v1, const vec3_t v2, vec3_t cross);
+
 float VectorNormalize (vec3_t v);		// returns vector length
-float VectorNormalize2 (const vec3_t v, vec3_t out);
-void VectorInverse (vec3_t v);
-void VectorScale (const vec3_t in, float scale, vec3_t out);
+float VectorNormalize (const vec3_t v, vec3_t out);
+float VectorNormalizeFast (vec3_t v);	//?? 2-arg version too?
+
+struct CBox
+{
+	// fields
+	vec3_t	mins, maxs;
+	// methods
+	void Clear ();						// set mins>maxs (negative volume)
+	void Expand (const vec3_t p);		// expand mins/maxs by point p
+	void Expand (const CBox &b);		// include box b into volume
+	void GetCenter (vec3_t p);			// compute center point
+};
+
+struct CAxis
+{
+	// fields
+	// NOTE: v[] can be private, but this will prevent from
+	// initializing CAxis object with initializer list ( "= {n,n,n,n ...}" )
+	vec3_t	v[3];
+	// methods
+	void Clear ();						// set to ((1,0,0),(0,1,0),(0,0,1))
+	void FromAngles (const vec3_t angles);
+	inline vec3_t& operator[] (int index)
+	{
+		return v[index];
+	}
+	inline const vec3_t& operator[] (int index) const
+	{
+		return v[index];
+	}
+};
+
+//!!!! CCoords
+
+// misc
 
 void MatrixMultiply (float in1[3][3], float in2[3][3], float out[3][3]);
 
@@ -195,26 +280,30 @@ void AngleVectors (const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
 float anglemod(float a);
 float LerpAngle (float a1, float a2, float frac);
 
-void ProjectPointOnPlane( vec3_t dst, const vec3_t p, const vec3_t normal );
-void PerpendicularVector( vec3_t dst, const vec3_t src );
-void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, float degrees );
 void MakeNormalVectors (vec3_t forward, vec3_t right, vec3_t up);
 
 
-//=============================================
+/*-----------------------------------------------------------------------------
+	Text parser
+-----------------------------------------------------------------------------*/
 
 char *COM_Parse (const char *&data_p, bool allowLineBreaks = true);
 const char *COM_QuoteString (const char *str, bool alwaysQuote);
 // data is an in/out parm, returns a parsed out token
 void SkipRestOfLine (char **data);
 
-void Com_PageInMemory (void *buffer, int size);
 
 //=============================================
+
+//??
+void Com_PageInMemory (void *buffer, int size);
 
 #define BYTES4(a,b,c,d)	((a) | ((b)<<8) | ((c)<<16) | ((d)<<24))
 
-//=============================================
+
+/*-----------------------------------------------------------------------------
+	Byte-order functions
+-----------------------------------------------------------------------------*/
 
 #ifdef LITTLE_ENDIAN
 
@@ -241,14 +330,10 @@ void	Swap_Init (void);
 
 #endif
 
-/*
-==========================================================
 
-CVARS (console variables)
-
-==========================================================
-*/
-
+/*-----------------------------------------------------------------------------
+	CVARS (console variables)
+-----------------------------------------------------------------------------*/
 
 #define	CVAR_ARCHIVE		0x00001	// set to cause it to be saved to config file (config.cfg)
 #define	CVAR_USERINFO		0x00002	// added to userinfo when changed, then sent to senver
@@ -273,7 +358,7 @@ CVARS (console variables)
 // nothing outside the Cvar_*() functions should modify these fields!
 struct cvar_t
 {
-	char	*name;
+	const char *name;
 	char	*string;
 	char	*latchedString;			// for CVAR_LATCH vars
 	unsigned flags;
@@ -305,13 +390,9 @@ struct cvar_t
 
 
 
-/*
-==============================================================
-
-COLLISION DETECTION
-
-==============================================================
-*/
+/*-----------------------------------------------------------------------------
+	Collision detection (??)
+-----------------------------------------------------------------------------*/
 
 // gi.BoxEdicts() can return a list of either solid or trigger entities
 // FIXME: eliminate AREA_ distinction?
@@ -328,29 +409,41 @@ COLLISION DETECTION
 #define	PLANE_NON_AXIAL	6			// any another normal
 
 // plane_t structure (the same as Q2 dplane_t, but "int type" -> "byte type,signbits,pad[2]")
-typedef struct
+struct cplane_t
 {
 	vec3_t	normal;
 	float	dist;
 	byte	type;			// for fast side tests; PLANE_[M]X|Y|Z
 	byte	signbits;		// sign(x) + (sign(y)<<1) + (sign(z)<<2)
 	byte	pad[2];
-} cplane_t;
+	// functions
+	inline void SetSignbits ()
+	{
+		signbits = IsNegative(normal[0]) + (IsNegative(normal[1]) << 1) + (IsNegative(normal[2]) << 2);
+	}
+	inline void SetType ()
+	{
+		if       (normal[0] == 1.0f) type = PLANE_X;
+		else if (normal[0] == -1.0f) type = PLANE_MX;
+		else if (normal[1] ==  1.0f) type = PLANE_Y;
+		else if (normal[1] == -1.0f) type = PLANE_MY;
+		else if (normal[2] ==  1.0f) type = PLANE_Z;
+		else if (normal[2] == -1.0f) type = PLANE_MZ;
+		else type = PLANE_NON_AXIAL;
+	}
+	inline float DistanceTo (const vec3_t vec)
+	{
+		if (type <= PLANE_Z)
+			return vec[type] - dist;
+		else if (type <= PLANE_MZ)
+			return -vec[type-3] - dist;
+		else
+			return DotProduct (normal, vec) - dist;
+	}
+};
 
-void SetPlaneSignbits (cplane_t *out);
-
+//?? move to CBox ? or to cplane
 int BoxOnPlaneSide (const vec3_t emins, const vec3_t emaxs, const cplane_t *plane);
-
-inline int PlaneTypeForNormal (const vec3_t p)
-{
-	if (p[0] == 1.0f) return PLANE_X;
-	else if (p[0] == -1.0f) return PLANE_MX;
-	else if (p[1] == 1.0f) return PLANE_Y;
-	else if (p[1] == -1.0f) return PLANE_MY;
-	else if (p[2] == 1.0f) return PLANE_Z;
-	else if (p[2] == -1.0f) return PLANE_MZ;
-	else return PLANE_NON_AXIAL;
-}
 
 inline int BOX_ON_PLANE_SIDE (const vec3_t mins, const vec3_t maxs, const cplane_t *plane)
 {
@@ -378,45 +471,40 @@ inline int BOX_ON_PLANE_SIDE (const vec3_t mins, const vec3_t maxs, const cplane
 	return BoxOnPlaneSide (mins, maxs, plane);
 }
 
-inline float DISTANCE_TO_PLANE (const vec3_t vec, const cplane_t *plane)
-{
-	if (plane->type <= PLANE_Z)
-		return vec[plane->type] - plane->dist;
-	else if (plane->type <= PLANE_MZ)
-		return -vec[plane->type - 3] - plane->dist;
-	else
-		return DotProduct (plane->normal, vec) - plane->dist;
-}
 
-
-typedef struct
+struct csurface_t
 {
-	// standard csurface_t fields (do not change this!)
-	char	name[16];
+	// standard csurface_t fields (do not change this - used in trace
+	//  functions, which are exported to game !)
+	char	shortName[16];
 	unsigned flags;
 	int		value;
-	// field from mapsurface_t (so, csurface_t now contains old csurface_t and mapsurface_t)
-	char	rname[32];		// used internally due to name len probs: ZOID (used only for precaching??)
+	// field from mapsurface_t (so, csurface_t now contains old
+	//  csurface_t and mapsurface_t)
+	char	fullName[32];	// shortName[] is too short ...
 	// fields added since 4.00
 	int		material;
-} csurface_t;
+};
 
 // a trace is returned when a box is swept through the world
 struct trace_t
 {
-	bool		allsolid;		// if true, plane is not valid
-	byte		pad1[3];		// qboolean pad
-	bool		startsolid;		// if true, the initial point was in a solid area
-	byte		pad2[3];		// qboolean pad
-	float		fraction;		// time completed, 1.0 = didn't hit anything
-	vec3_t		endpos;			// final position
-	cplane_t	plane;			// surface normal at impact
-	csurface_t	*surface;		// surface hit
-	int			contents;		// contents on other side of surface hit
-	struct edict_s	*ent;		// not set by CM_*() functions
+	bool	allsolid;		// if true, plane is not valid
+	byte	pad1[3];		// qboolean pad
+	bool	startsolid;		// if true, the initial point was in a solid area
+	byte	pad2[3];		// qboolean pad
+	float	fraction;		// time completed, 1.0 = didn't hit anything
+	vec3_t	endpos;			// final position
+	cplane_t plane;			// surface normal at impact
+	csurface_t *surface;	// surface hit
+	int		contents;		// contents on other side of surface hit
+	struct edict_s *ent;	// not set by CM_*() functions; unknown type at this point !
 };
 
 
+/*-----------------------------------------------------------------------------
+	Player movement code
+-----------------------------------------------------------------------------*/
 
 // pmove_state_t is the information necessary for client side movement
 // prediction
@@ -458,9 +546,7 @@ typedef struct
 } pmove_state_t;
 
 
-//
 // button bits
-//
 #define	BUTTON_ATTACK		1
 #define	BUTTON_USE			2
 #define	BUTTON_ANY			128			// any key whatsoever
@@ -518,6 +604,7 @@ typedef struct
 #define RDF_THIRD_PERSON	0x10
 
 
+//=============================================================================
 
 // sound channels
 // channel 0 never willingly overrides

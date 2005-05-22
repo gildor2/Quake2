@@ -147,8 +147,8 @@ static void LoadPlanes (dplane_t *data, int count, int stride)
 	{
 		VectorCopy (in->normal, out->normal);
 		out->dist = in->dist;
-		out->type = PlaneTypeForNormal (out->normal);
-		SetPlaneSignbits (out);
+		out->SetType ();
+		out->SetSignbits ();
 	}
 }
 
@@ -199,8 +199,8 @@ static void BuildSurfFlare (surfaceBase_t *surf, color_t *color, float intens)
 	float x = (pl->maxs2[0] + pl->mins2[0]) / 2;
 	float y = (pl->maxs2[1] + pl->mins2[1]) / 2;
 	VectorScale (pl->axis[0], x, origin);
-	VectorMA (origin, y, pl->axis[1], origin);
-	VectorMA (origin, pl->plane.dist + 1, pl->plane.normal, origin);
+	VectorMA (origin, y, pl->axis[1]);
+	VectorMA (origin, pl->plane.dist + 1, pl->plane.normal);
 
 	gl_flare_t *f = new (map.dataChain) gl_flare_t;
 
@@ -258,7 +258,7 @@ static void LoadSlights (slight_t *data, int count)
 
 			CM_BoxTrace (&tr, out->origin, out->origin, mins, maxs, 0, CONTENTS_SOLID);
 			if (tr.allsolid)
-				VectorMA (out->origin, 0.5f, tr.plane.normal, out->origin);
+				VectorMA (out->origin, 0.5f, tr.plane.normal);
 			else
 				break;
 		}
@@ -421,8 +421,8 @@ static void LoadLeafsNodes2 (dnode_t *nodes, int numNodes, dleaf_t *leafs, int n
 		// copy/convert mins/maxs
 		for (j = 0; j < 3; j++)
 		{
-			out->mins[j] = nodes->mins[j];
-			out->maxs[j] = nodes->maxs[j];
+			out->bounds.mins[j] = nodes->mins[j];	//?? if make nodes.bounds -- can use "out->bounds = nodes->bounds"
+			out->bounds.maxs[j] = nodes->maxs[j];
 		}
 	}
 
@@ -439,8 +439,8 @@ static void LoadLeafsNodes2 (dnode_t *nodes, int numNodes, dleaf_t *leafs, int n
 		// copy/convert mins/maxs
 		for (j = 0; j < 3; j++)
 		{
-			out->mins[j] = leafs->mins[j];
-			out->maxs[j] = leafs->maxs[j];
+			out->bounds.mins[j] = leafs->mins[j];	//?? make "out->bounds = lead->bounds"
+			out->bounds.maxs[j] = leafs->maxs[j];
 		}
 		// setup leafFaces
 		out->leafFaces = map.leafFaces + leafs->firstleafface;
@@ -467,8 +467,8 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 		out->size = -1;							// do not delete in FreeModels()
 		modelsArray[modelCount++] = out;
 
-		VectorCopy (data->mins, out->mins);
-		VectorCopy (data->maxs, out->maxs);
+		VectorCopy (data->mins, out->bounds.mins);
+		VectorCopy (data->maxs, out->bounds.maxs);
 		out->radius = data->radius;
 		out->headnode = data->headnode;
 		// create surface list
@@ -652,10 +652,10 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (surfs->side)
 		{
 			// backface (needed for backface culling)
-			VectorNegate (s->plane.normal, s->plane.normal);
+			VectorNegate (s->plane.normal);
 			s->plane.dist = -s->plane.dist;
 			//?? set signbits
-			s->plane.type = PlaneTypeForNormal (s->plane.normal);
+			s->plane.SetType ();
 		}
 		s->numVerts = numVerts;
 		s->verts = (vertex_t *) (s+1);	//!!! allocate verts separately (for fast draw - in AGP memory)
@@ -685,7 +685,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		float mins[2], maxs[2];				// surface extents
 		mins[0] = mins[1] = BIG_NUMBER;
 		maxs[0] = maxs[1] = -BIG_NUMBER;
-		ClearBounds (s->mins, s->maxs);
+		s->bounds.Clear ();
 		// Enumerate vertexes
 		for (j = 0; j < numVerts; j++, pedge++, v++)
 		{
@@ -697,7 +697,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 				/*----------- Update bounds --------------*/
 				EXPAND_BOUNDS(v1, mins[0], maxs[0]);
 				EXPAND_BOUNDS(v2, mins[1], maxs[1]);
-				AddPointToBounds (v->xyz, s->mins, s->maxs);
+				s->bounds.Expand (v->xyz);
 				/*-------- Texture coordinates -----------*/
 				if (!(sflags & SHADER_TURB)) //?? (!shader->tessSize)
 				{
@@ -1338,7 +1338,7 @@ static void ProcessMd2Frame (vertexMd3_t *verts, dMd2Frame_t *srcFrame, md3Frame
 {
 	guard(ProcessMd2Frame);
 
-	ClearBounds (dstFrame->mins, dstFrame->maxs);
+	dstFrame->bounds.Clear ();
 	int i;
 	vertexMd3_t *dstVerts;
 	for (i = 0, dstVerts = verts; i < numVerts; i++, dstVerts++)
@@ -1350,15 +1350,14 @@ static void ProcessMd2Frame (vertexMd3_t *verts, dMd2Frame_t *srcFrame, md3Frame
 		p[1] = srcFrame->scale[1] * srcVert->v[1] + srcFrame->translate[1];
 		p[2] = srcFrame->scale[2] * srcVert->v[2] + srcFrame->translate[2];
 		// update bounding box
-		AddPointToBounds (p, dstFrame->mins, dstFrame->maxs);
+		dstFrame->bounds.Expand (p);
 		// put vertex in a "short" form
 		dstVerts->xyz[0] = appRound (p[0] / MD3_XYZ_SCALE);
 		dstVerts->xyz[1] = appRound (p[1] / MD3_XYZ_SCALE);
 		dstVerts->xyz[2] = appRound (p[2] / MD3_XYZ_SCALE);
 	}
 	// compute bounding sphere center
-	for (i = 0; i < 3; i++)
-		dstFrame->localOrigin[i] = (dstFrame->mins[i] + dstFrame->maxs[i]) / 2;
+	dstFrame->bounds.GetCenter (dstFrame->localOrigin);
 	// and radius
 	dstFrame->radius = ComputeMd3Radius (dstFrame->localOrigin, verts, numVerts);
 	unguard;
@@ -1387,7 +1386,7 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 			// compute triangle normal
 			for (k = 0; k < 3; k++)
 			{
-				VectorSubtract (verts[idx[k]].xyz, verts[idx[k == 2 ? 0 : k + 1]].xyz, vecs[k]);
+				VectorSubtract2 (verts[idx[k]].xyz, verts[idx[k == 2 ? 0 : k + 1]].xyz, vecs[k]);
 				VectorNormalizeFast (vecs[k]);
 			}
 			CrossProduct (vecs[1], vecs[0], n);
@@ -1396,7 +1395,6 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 			for (k = 0; k < 3; k++)
 			{
 				float	ang;
-
 #if 1
 				ang = -DotProduct (vecs[k], vecs[k == 0 ? 2 : k - 1]);
 				ang = ACOS_FUNC(ang);
@@ -1404,7 +1402,7 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 				ang = acos (-DotProduct (vecs[k], vecs[k == 0 ? 2 : k - 1]));
 #endif
 				dst = &normals[xyzIndexes[idx[k]]][0];
-				VectorMA (dst, ang, n, dst);		// weighted normal: weight ~ angle
+				VectorMA (dst, ang, n);			// weighted normal: weight ~ angle
 			}
 		}
 		// convert computed xyz normals to compact form
@@ -1766,11 +1764,10 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 		// NOTE: md3 models, created with id model converter, have frame.localOrigin == (0,0,0)
 		// So, we should recompute localOrigin and radius for more effective culling
 		md3Frame_t *frm = &md3->frames[i];
-		VectorCopy (fs->bounds[0], frm->mins);
-		VectorCopy (fs->bounds[1], frm->maxs);
+		VectorCopy (fs->bounds[0], frm->bounds.mins);
+		VectorCopy (fs->bounds[1], frm->bounds.maxs);
 		// compute localOrigin
-		for (int j = 0; j < 3; j++)
-			frm->localOrigin[j] = (frm->maxs[j] + frm->mins[j]) / 2;
+		frm->bounds.GetCenter (frm->localOrigin);
 		frm->radius = 0;		// will compute later
 	}
 	// tags

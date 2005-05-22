@@ -7,6 +7,7 @@ class CRenderModel
 {
 public:
 	char	name[MAX_QPATH];
+//	virtual void LerpTag (int frame1, int frame2, CCoords *coord);
 };
 
 

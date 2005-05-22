@@ -406,7 +406,6 @@ void S_EndRegistration (void)
 {
 	int		i;
 	sfx_t	*sfx;
-	int		size;
 
 	// free any sounds not from this registration sequence
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
@@ -425,8 +424,8 @@ void S_EndRegistration (void)
 			// make sure it is paged in
 			if (sfx->cache)
 			{
-				size = sfx->cache->length*sfx->cache->width;
-				Com_PageInMemory ((byte *)sfx->cache, size);
+				int size = sfx->cache->length*sfx->cache->width;
+				Com_PageInMemory ((byte *)sfx->cache, size);		//??
 			}
 		}
 

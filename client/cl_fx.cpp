@@ -277,9 +277,9 @@ static void CL_AddParticleTraces (float timeDelta)
 		if (p->gravity)
 			p->vel[2] -= timeDelta * p->gravity;
 		// get direction vector and speed
-		speed = VectorNormalize2 (p->vel, dir);
+		speed = VectorNormalize (p->vel, dir);
 		// update pos
-		VectorMA (p->pos, timeDelta, p->vel, p->pos);
+		VectorMA (p->pos, timeDelta, p->vel);
 		CL_Trace (&trace, oldpos, p->pos, zero, zero, CONTENTS_SOLID);
 		if (p->elasticity && trace.fraction < 1.0f)
 		{
@@ -292,7 +292,7 @@ static void CL_AddParticleTraces (float timeDelta)
 				if (p->vel[i] > 0.1f && p->vel[i] < -0.1f) p->vel[i] = 0;
 			}
 			VectorAdd (trace.endpos, trace.plane.normal, p->pos);
-			speed = VectorNormalize2 (p->vel, dir);
+			speed = VectorNormalize (p->vel, dir);
 		}
 		else
 			if (trace.startsolid || trace.allsolid || trace.fraction < 1.0f)
@@ -335,7 +335,7 @@ static void CL_AddParticleTraces (float timeDelta)
 		{
 			particle_t *cp;
 
-			VectorMA (pos, distDelta, dir, pos);
+			VectorMA (pos, distDelta, dir);
 			//?? move this inside "switch"
 
 			switch (p->type)
@@ -389,7 +389,7 @@ particleTrace_t *CL_AllocParticleTrace (vec3_t pos, vec3_t vel, float lifeTime, 
 			p->lifeTime = lifeTime;
 			p->fadeTime = fadeTime;
 
-			VectorNormalize2 (vel, dir);
+			VectorNormalize (vel, dir);
 			MakeNormalVectors (dir, p->right, p->up);
 			VectorCopy (pos, p->pos);
 			VectorCopy (vel, p->vel);
@@ -630,8 +630,8 @@ void CL_ParseMuzzleFlash (void)
 
 	dl = CL_AllocDlight (i, pl->current.origin);
 	AngleVectors (pl->current.angles, fv, rv, NULL);
-	VectorMA (dl->origin, 18, fv, dl->origin);
-	VectorMA (dl->origin, 16, rv, dl->origin);
+	VectorMA (dl->origin, 18, fv);
+	VectorMA (dl->origin, 16, rv);
 	if (silenced)
 		dl->radius = 100 + (rand()&31);
 	else
@@ -1593,7 +1593,7 @@ void CL_RailTrail (vec3_t start, vec3_t end)
 		s = sin(d);		//!!
 
 		VectorScale (right, c, dir);
-		VectorMA (dir, s, up, dir);
+		VectorMA (dir, s, up);
 
 		p->alpha = 1.0;
 		p->alphavel = -1.0 / (1+frand()*0.2);

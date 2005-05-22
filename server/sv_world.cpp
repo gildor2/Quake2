@@ -53,16 +53,16 @@ static areanode_t areaNodes[AREA_NODES];
 static int		numAreaNodes;					// used only for creation of area tree
 
 
-typedef struct
+struct entityHull_t
 {
 	areanode_t *area;
 	edict_t	*owner;
 	cmodel_t *model;
 	vec3_t	center;
 	float	radius;
-	vec3_t	axis[3];
-	vec3_t	mins, maxs;				// for alias models it is equal to client prediction code bbox
-} entityHull_t;
+	CAxis	axis;
+	CBox	bounds;								// for alias models it is equal to client prediction code bbox
+};
 
 static entityHull_t ents[MAX_EDICTS];
 
@@ -238,7 +238,7 @@ void SV_LinkEdict (edict_t *ent)
 
 	ex = &ents[NUM_FOR_EDICT(ent)];
 	ex->owner = ent;
-	AnglesToAxis (ent->s.angles, ex->axis);
+	ex->axis.FromAngles (ent->s.angles);
 
 	// set the size
 	VectorSubtract (ent->maxs, ent->mins, ent->size);
@@ -264,12 +264,12 @@ void SV_LinkEdict (edict_t *ent)
 		i *= 8;
 		j *= 8;
 		k *= 8;
-		VectorSet (ex->mins, -i, -i, -j);
-		VectorSet (ex->maxs, i, i, k - 32);
-		VectorAdd (ex->maxs, ex->mins, v);
-		VectorMA (ent->s.origin, 0.5f, v, ex->center);
+		VectorSet (ex->bounds.mins, -i, -i, -j);
+		VectorSet (ex->bounds.maxs, i, i, k - 32);
+		ex->bounds.GetCenter (ex->center);
+		VectorAdd (ex->center, ent->s.origin, ex->center);
 		ex->model = NULL;
-		ex->radius = VectorDistance (ex->maxs, ex->mins) / 2;
+		ex->radius = VectorDistance (ex->bounds.maxs, ex->bounds.mins) / 2;
 	}
 	else if (ent->solid == SOLID_BSP)
 	{
@@ -531,9 +531,9 @@ int SV_PointContents (const vec3_t p)
 //		if (dist2 > ent->radius * ent->radius) continue;	// too far
 
 		if (ent->model)
-			c2 = CM_TransformedPointContents2 (p, ent->model->headnode, edict->s.origin, ent->axis);
+			c2 = CM_TransformedPointContents (p, ent->model->headnode, edict->s.origin, ent->axis);
 		else
-			c2 = CM_TransformedPointContents (p, CM_HeadnodeForBox (ent->mins, ent->maxs), edict->s.origin, vec3_origin);
+			c2 = CM_TransformedPointContents (p, CM_HeadnodeForBox (ent->bounds.mins, ent->bounds.maxs), edict->s.origin, vec3_origin);
 		contents |= c2;
 	}
 
@@ -618,10 +618,10 @@ void SV_ClipMoveToEntities (trace_t *tr, const vec3_t start, const vec3_t mins, 
 		if (dist2 >= dist0 * dist0) continue;
 
 		if (ent->model)
-			CM_TransformedBoxTrace2 (&trace, start, end, mins, maxs, ent->model->headnode, contentmask, edict->s.origin, ent->axis);
+			CM_TransformedBoxTrace (&trace, start, end, mins, maxs, ent->model->headnode, contentmask, edict->s.origin, ent->axis);
 		else
 			CM_TransformedBoxTrace (&trace, start, end, mins, maxs,
-				CM_HeadnodeForBox (ent->mins, ent->maxs), contentmask, edict->s.origin, vec3_origin);
+				CM_HeadnodeForBox (ent->bounds.mins, ent->bounds.maxs), contentmask, edict->s.origin, vec3_origin);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
 		{

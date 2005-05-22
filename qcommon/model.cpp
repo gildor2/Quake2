@@ -711,7 +711,7 @@ static bool ProcessEntity ()
 			slight->spot = true;
 			float *dst = FindEntityTarget (f->value);
 			VectorSubtract (dst, slight->origin, vec);
-			VectorNormalize2 (vec, slight->spotDir);
+			VectorNormalize (vec, slight->spotDir);
 
 			if (!strcmp (f->value, sunTarget))
 			{
@@ -734,7 +734,7 @@ static bool ProcessEntity ()
 			{
 				GetVector (f->value, vec);
 				VectorSubtract (vec, slight->origin, vec);
-				VectorNormalize2 (vec, slight->spotDir);
+				VectorNormalize (vec, slight->spotDir);
 			}
 			else if (f = FindField ("_mangle,_spotangle"))
 			{

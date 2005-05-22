@@ -42,7 +42,7 @@ bspfile_t* LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 // mins/maxs may be NULL for {0,0,0}
 void CM_BoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask);
 void CM_TransformedBoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles);
-void CM_TransformedBoxTrace2 (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t *axis);
+void CM_TransformedBoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const CAxis &axis);
 int CM_BrushTrace (const vec3_t start, const vec3_t end, int *brushes, int maxBrushes);
 int CM_RefineBrushTrace (const vec3_t start, const vec3_t end, int *brushes, int numBrushes);
 

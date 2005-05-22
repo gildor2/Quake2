@@ -43,8 +43,8 @@ struct viewPortal_t
 	refDlight_t *dlights;
 	int		numDlights;
 	// view params
-	vec3_t	vieworg;
-	vec3_t	viewaxis[3];
+	vec3_t	vieworg;			//!! CCoords
+	CAxis	viewaxis;
 	// modelview params (unused now, required for portals (??))
 /* following fields may be useful when Q3 portals will be implemented (or useless ??)
 	vec3_t	modelorg;			// {0 0 0} for world model (for non-portal view)
@@ -56,7 +56,7 @@ struct viewPortal_t
 	float	fov_x, fov_y, t_fov_x, t_fov_y, fov_scale;
 	cplane_t frustum[NUM_FRUSTUM_PLANES];	// used for frustum culling
 	float	projectionMatrix[4][4];
-	vec3_t	mins, maxs;			// bounding box of all visible leafs
+	CBox	bounds;				// bounding box of all visible leafs
 	float	zFar;				// maximim distance from vieworg to mins/maxs vertexes
 	// surfaces
 	surfaceInfo_t *surfaces;
@@ -116,7 +116,7 @@ struct refEntity_t
 		/*-------- entity with model --------*/
 			// position info
 			vec3_t	origin;
-			vec3_t	axis[3];
+			CAxis	axis;
 			bool	worldMatrix;
 			bool	mirror;
 			byte	frustumMask;		//?? remove
@@ -131,7 +131,7 @@ struct refEntity_t
 		};
 		/*------------- bbox ----------------*/
 		struct {
-			vec3_t	boxAxis[3];
+			CAxis	boxAxis;
 			vec3_t	boxSize;
 		};
 	};
