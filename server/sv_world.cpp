@@ -223,7 +223,7 @@ void SV_LinkEdict (edict_t *ent)
 	int		area;
 	int		topnode;
 	entityHull_t *ex;
-	vec3_t	v, tmp;
+	vec3_t	v;
 
 	guard(SV_LinkEdict);
 
@@ -276,10 +276,8 @@ void SV_LinkEdict (edict_t *ent)
 		ex->model = sv.models[ent->s.modelindex];
 		if (!ex->model) Com_FatalError ("MOVETYPE_PUSH with a non bsp model");
 		VectorAdd (ex->model->mins, ex->model->maxs, v);
-		VectorScale (v, 0.5f, v);
-		VectorMA (ent->s.origin, v[0], ex->axis[0], tmp);
-		VectorMA (tmp, v[1], ex->axis[1], tmp);
-		VectorMA (tmp, v[2], ex->axis[2], ex->center);
+		VectorScale (v, 0.5f, v);		//!! CBox.GetCenter()
+		UnTransformPoint (ent->s.origin, ex->axis, v, ex->center);
 		ex->radius = ex->model->radius;
 
 		ent->s.solid = 31;		// a SOLID_BBOX will never create this value (mins=(-248,-248,0) maxs=(248,248,-32))

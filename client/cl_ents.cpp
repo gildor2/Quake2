@@ -75,14 +75,10 @@ void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, unsigned
 			cmodel_t *m = cl.model_clip[to->modelindex];
 			if (m)
 			{
-				vec3_t	v, tmp;
-
+				vec3_t	v;
 				VectorAdd (m->mins, m->maxs, v);
-				//?? transform
-				VectorScale (v, 0.5f, v);
-				VectorMA (to->origin, v[0], to->axis[0], tmp);
-				VectorMA (tmp, v[1], to->axis[1], tmp);
-				VectorMA (tmp, v[2], to->axis[2], to->center);
+				VectorScale (v, 0.5f, v);			//!! CBox.GetCenter()
+				UnTransformPoint (to->origin, to->axis, v, to->center);
 				to->radius = m->radius;
 				to->valid = true;
 			}

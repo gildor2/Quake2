@@ -1533,6 +1533,7 @@ static void FlashColor (void)
 }
 
 
+//!! undef(BBOX_WORLD) not works now!
 #define BBOX_WORLD	1	// debug?
 // draw entity bounding boxes
 static void DrawBBoxes (void)
@@ -1578,7 +1579,6 @@ static void DrawBBoxes (void)
 				vec3_t	h;
 				static const int idx2[4] = {0, 2, 3, 1};
 
-				//!! transform
 				VectorMA (ent->center, mins2[0], vp.viewaxis[1], h);
 				VectorMA (h, mins2[1], vp.viewaxis[2], v[0].xyz);
 				VectorMA (h, maxs2[1], vp.viewaxis[2], v[1].xyz);
@@ -1607,25 +1607,19 @@ static void DrawBBoxes (void)
 		// generate verts
 		for (int j = 0; j < 8; j++)
 		{
-			float x = (j & 1) ? ent->size2[0] : -ent->size2[0];
-			float y = (j & 2) ? ent->size2[1] : -ent->size2[1];
-			float z = (j & 4) ? ent->size2[2] : -ent->size2[2];
+			vec3_t tmp;
+			tmp[0] = (j & 1) ? ent->size2[0] : -ent->size2[0];
+			tmp[1] = (j & 2) ? ent->size2[1] : -ent->size2[1];
+			tmp[2] = (j & 4) ? ent->size2[2] : -ent->size2[2];
 
 #ifdef BBOX_WORLD
-			// project point to a world coordinate system (org + x*axis[0] + y*axis[1] + z*axis[2])
+			// project point to a world coordinate system
 			if (!ent->worldMatrix)
-			{
-				vec3_t	tmp;
-				VectorMA (ent->center, x, ent->axis[0], tmp);
-				VectorMA (tmp,		   y, ent->axis[1], tmp);
-				VectorMA (tmp,		   z, ent->axis[2], v[j].xyz);
-			}
+				UnTransformPoint (ent->center, ent->coord.axis, tmp, v[j].xyz);
 			else
-			{
-				v[j].xyz[0] = x; v[j].xyz[1] = y; v[j].xyz[2] = z;
-			}
+				VectorCopy (tmp, v[j].xyz);
 #else
-			v[j].xyz[0] = x; v[j].xyz[1] = y; v[j].xyz[2] = z;
+			VectorCopy (tmp, v[j].xyz);
 #endif
 		}
 
@@ -1732,16 +1726,12 @@ void surfaceEntity_t::Tesselate ()
 		// generate verts
 		for (int i = 0; i < 8; i++)
 		{
-			float x = (i & 1) ? ent->boxSize[0] : -ent->boxSize[0];
-			float y = (i & 2) ? ent->boxSize[1] : -ent->boxSize[1];
-			float z = (i & 4) ? ent->boxSize[2] : -ent->boxSize[2];
-
-			// project point to a world coordinate system (org + x*axis[0] + y*axis[1] + z*axis[2])
-			//!! transform
-			vec3_t	tmp;
-			VectorMA (ent->center, x, ent->boxAxis[0], tmp);
-			VectorMA (tmp,  	   y, ent->boxAxis[1], tmp);
-			VectorMA (tmp,		   z, ent->boxAxis[2], v[i].xyz);
+			vec3_t tmp;
+			tmp[0] = (i & 1) ? ent->boxSize[0] : -ent->boxSize[0];
+			tmp[1] = (i & 2) ? ent->boxSize[1] : -ent->boxSize[1];
+			tmp[2] = (i & 4) ? ent->boxSize[2] : -ent->boxSize[2];
+			// project point to a world coordinate system
+			UnTransformPoint (ent->center, ent->boxAxis, tmp, v[i].xyz);
 		}
 		// draw it
 		glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);

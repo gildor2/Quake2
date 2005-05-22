@@ -115,8 +115,7 @@ struct refEntity_t
 		struct {
 		/*-------- entity with model --------*/
 			// position info
-			vec3_t	origin;
-			CAxis	axis;
+			CCoords	coord;
 			bool	worldMatrix;
 			bool	mirror;
 			byte	frustumMask;		//?? remove

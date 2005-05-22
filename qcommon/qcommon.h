@@ -35,6 +35,7 @@ struct cvarInfo_t;
 struct trace_t;
 struct bspfile_t;
 struct CAxis;
+struct cplane_t;
 
 typedef float vec3_t[3];
 

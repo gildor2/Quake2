@@ -240,6 +240,7 @@ float VectorNormalize (vec3_t v);		// returns vector length
 float VectorNormalize (const vec3_t v, vec3_t out);
 float VectorNormalizeFast (vec3_t v);	//?? 2-arg version too?
 
+// axis aligned box
 struct CBox
 {
 	// fields
@@ -268,13 +269,31 @@ struct CAxis
 	{
 		return v[index];
 	}
+	void TransformVector (const vec3_t src, vec3_t dst) const;
+	void UnTransformVector (const vec3_t src, vec3_t dst) const;
 };
 
-//!!!! CCoords
+
+struct CCoords
+{
+	// fields
+	vec3_t	origin;
+	CAxis	axis;
+	// methods
+	void TransformPoint (const vec3_t src, vec3_t dst) const;
+	void UnTransformPoint (const vec3_t src, vec3_t dst) const;
+	void TransformPlane (const cplane_t &src, cplane_t &dst) const;
+};
+
+// Functions for work with coordinate systems, not combined into CCoords class
+
+// global coordinate system -> local coordinate system (src -> dst) by origin/axis coords
+void TransformPoint (const vec3_t origin, const CAxis &axis, const vec3_t src, vec3_t dst);
+// local coordinate system -> global coordinate system
+void UnTransformPoint (const vec3_t origin, const CAxis &axis, const vec3_t src, vec3_t dst);
+
 
 // misc
-
-void MatrixMultiply (float in1[3][3], float in2[3][3], float out[3][3]);
 
 void AngleVectors (const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
 float anglemod(float a);

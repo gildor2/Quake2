@@ -104,11 +104,7 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 
 		// transform frustum plane to entity coordinate system
 		cplane_t pl;
-		pl.dist = fr->dist - DotProduct (e->origin, fr->normal);
-		pl.normal[0] = DotProduct (fr->normal, e->axis[0]);
-		pl.normal[1] = DotProduct (fr->normal, e->axis[1]);
-		pl.normal[2] = DotProduct (fr->normal, e->axis[2]);
-		pl.SetSignbits ();
+		e->coord.TransformPlane (*fr, pl);
 
 		switch (BoxOnPlaneSide (b.mins, b.maxs, &pl))	// do not use BOX_ON_PLANE_SIDE -- useless
 		{
@@ -133,7 +129,7 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 		tmp[0] = (i & 1) ? b.maxs[0] : b.mins[0];
 		tmp[1] = (i & 2) ? b.maxs[1] : b.mins[1];
 		tmp[2] = (i & 4) ? b.maxs[2] : b.mins[2];
-		ModelToWorldCoord (tmp, e, v);
+		e->coord.UpTransformPoint (tmp, v);
 	}
 
 	// perform frustum culling
@@ -312,14 +308,14 @@ static void SetupModelMatrix (refEntity_t *e)
 	memset (matrix, 0, sizeof(matrix));
 	for (i = 0; i < 3; i++)
 		for (j = 0; j < 3; j++)
-			matrix[i][j] = e->axis[i][j];
+			matrix[i][j] = e->coord.axis[i][j];
 
 	if (e->mirror)
 		VectorNegate (matrix[1]);
 
-	matrix[3][0] = e->origin[0];
-	matrix[3][1] = e->origin[1];
-	matrix[3][2] = e->origin[2];
+	matrix[3][0] = e->coord.origin[0];
+	matrix[3][1] = e->coord.origin[1];
+	matrix[3][2] = e->coord.origin[2];
 	matrix[3][3] = 1;
 	// e.modelMatrix = world.modelMatrix * matrix
 	for (i = 0; i < 4; i++)
@@ -332,7 +328,7 @@ static void SetupModelMatrix (refEntity_t *e)
 		}
 	// set e.modelvieworg
 	// NOTE: in Q3 axis may be non-normalized, so, there result is divided by length(axis[i])
-	WorldToModelCoord (vp.vieworg, e, e->modelvieworg);
+	e->coord.TransformPoint (vp.vieworg, e->modelvieworg);
 }
 
 
@@ -368,7 +364,7 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 		// trace
 		trace_t	trace;
 		if (!e->worldMatrix)
-			CM_TransformedBoxTrace (&trace, start, end, NULL, NULL, im->headnode, brushmask, e->origin, e->axis);
+			CM_TransformedBoxTrace (&trace, start, end, NULL, NULL, im->headnode, brushmask, e->coord.origin, e->coord.axis);
 		else
 			CM_BoxTrace (&trace, start, end, NULL, NULL, im->headnode, brushmask);
 
@@ -775,20 +771,20 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 
 void model_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
-	VectorCopy (ent->origin, out->origin);
+	VectorCopy (ent->origin, out->coord.origin);
 }
 
 
 void model_t::AddSurfaces (refEntity_t *e)
 {
 //??	if (developer->integer) -- cvar is not in renderer
-		DrawText3D (e->origin, va("no model: %s", e->model->name), RGB(1,0,0));
+		DrawText3D (e->coord.origin, va("no model: %s", e->model->name), RGB(1,0,0));
 }
 
 
 node_t *model_t::GetLeaf (refEntity_t *e)
 {
-	return PointInLeaf (e->origin);
+	return PointInLeaf (e->coord.origin);
 }
 
 
@@ -804,7 +800,7 @@ void inlineModel_t::InitEntity (entity_t *ent, refEntity_t *out)
 	vec3_t v;
 	bounds.GetCenter (v);
 	VectorSubtract (bounds.maxs, v, out->size2);		// half-size
-	ModelToWorldCoord (v, out, out->center);
+	out->coord.UnTransformPoint (v, out->center);
 	out->radius = radius;
 }
 
@@ -827,7 +823,7 @@ void inlineModel_t::AddSurfaces (refEntity_t *e)
 		dist2min = dist2min * dist2min;
 		if (dist2 >= dist2min) continue;	// too far
 
-		if (!e->worldMatrix) WorldToModelCoord (dl->origin, e, dl->modelOrg);
+		if (!e->worldMatrix) e->coord.TransformPoint (dl->origin, dl->modelOrg);
 		dlightMask |= mask;
 	}
 	// mark surfaces
@@ -862,7 +858,7 @@ node_t *inlineModel_t::GetLeaf (refEntity_t *e)
 void inlineModel_t::DrawLabel (refEntity_t *e)
 {
 	DrawText3D (e->center, va("origin: %g %g %g\nbmodel: %s\nflags: $%X",
-		VECTOR_ARG(e->origin), name, e->flags), RGB(0.1,0.4,0.2));
+		VECTOR_ARG(e->coord.origin), name, e->flags), RGB(0.1,0.4,0.2));
 }
 
 
@@ -886,10 +882,10 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	// lerp origin
 	vec3_t v;
 	VectorSubtract (ent->oldorigin, ent->origin, v);
-	VectorMA (ent->origin, out->backLerp, v, out->origin);
+	VectorMA (ent->origin, out->backLerp, v, out->coord.origin);
 	// lerp center
-	ModelToWorldCoord (frame1->localOrigin, out, center1);
-	ModelToWorldCoord (frame2->localOrigin, out, center2);
+	out->coord.UnTransformPoint (frame1->localOrigin, center1);
+	out->coord.UnTransformPoint (frame2->localOrigin, center2);
 	VectorSubtract (center2, center1, center2);				// delta
 	VectorMA (center1, out->backLerp, center2, out->center);
 	// lerp radius
@@ -957,13 +953,13 @@ node_t *md3Model_t::GetLeaf (refEntity_t *e)
 void md3Model_t::DrawLabel (refEntity_t *e)
 {
 	DrawText3D (e->center, va("origin: %g %g %g\nmd3: %s\nskin: %s\nflags: $%X",
-		VECTOR_ARG(e->origin), name, e->customShader ? e->customShader->name : "(default)", e->flags), RGB(0.1,0.4,0.2));
+		VECTOR_ARG(e->coord.origin), name, e->customShader ? e->customShader->name : "(default)", e->flags), RGB(0.1,0.4,0.2));
 }
 
 
 void sp2Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
-	VectorCopy (out->origin, out->center);
+	VectorCopy (out->coord.origin, out->center);
 	out->radius = radius;
 }
 
@@ -980,7 +976,7 @@ void sp2Model_t::AddSurfaces (refEntity_t *e)
 	sp2Frame_t *frame = &frames[e->frame % numFrames];
 	// setup xyz
 	vec3_t	down, up2;
-	VectorMA (e->origin, -frame->localOrigin[1], vp.viewaxis[2], down);
+	VectorMA (e->coord.origin, -frame->localOrigin[1], vp.viewaxis[2], down);
 	VectorMA (down, -frame->localOrigin[0], vp.viewaxis[1], p->verts[0].xyz);	// 0
 	VectorMA (down, frame->width - frame->localOrigin[0], vp.viewaxis[1], p->verts[1].xyz);	// 1
 	VectorScale (vp.viewaxis[2], frame->height, up2);
@@ -1004,7 +1000,7 @@ void sp2Model_t::AddSurfaces (refEntity_t *e)
 
 node_t *sp2Model_t::GetLeaf (refEntity_t *e)
 {
-	return AlphaSphereLeaf (e->origin, e->radius);
+	return AlphaSphereLeaf (e->coord.origin, e->radius);
 }
 
 
@@ -1497,7 +1493,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 				}
 			}
 			else
-				DrawText3D (e->origin, va("* bad ent %d: f=%X", i, e->flags), RGB(1,0,0));
+				DrawText3D (e->coord.origin, va("* bad ent %d: f=%X", i, e->flags), RGB(1,0,0));
 			continue;
 		}
 
@@ -1906,6 +1902,7 @@ void AddEntity (entity_t *ent)
 	}
 
 	refEntity_t *out = &gl_entities[gl_numEntities++];
+	memset (out, 0, sizeof(refEntity_t));
 	vp.numEntities++;
 
 	// common fields
@@ -1914,9 +1911,9 @@ void AddEntity (entity_t *ent)
 
 	if (ent->model)
 	{
-		VectorCopy (ent->origin, out->origin);
+		VectorCopy (ent->origin, out->coord.origin);
 		//!! send client=>renderer not angles, but axis
-		out->axis.FromAngles (ent->angles);
+		out->coord.axis.FromAngles (ent->angles);
 
 		if (!ent->origin[0] && !ent->origin[1] && !ent->origin[2] &&
 			!ent->angles[0] && !ent->angles[1] && !ent->angles[2])
@@ -1949,7 +1946,7 @@ void AddEntity (entity_t *ent)
 	else
 	{
 		// unknown entity type: copy origin for displaying warning in 3D
-		VectorCopy (ent->origin, out->origin);
+		VectorCopy (ent->origin, out->coord.origin);
 	}
 
 	gl_speeds.ents++;

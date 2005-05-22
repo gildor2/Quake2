@@ -89,8 +89,6 @@
   - GUI state: cls.key_dest, cls.loading, cl.cinematicActive, cls.download
 
 ------------------- Misc -------------------
-- math:
-  - WorldToModelCoord() etc.: make CWorldObject class with position+axis props + conversion funcs
 - network:
   - make channel_t (different name ??) as class, TcpChannel+LoopbackChannel as childs
   ? channel_t -> CNetStream

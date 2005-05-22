@@ -1205,43 +1205,35 @@ int CM_PointContents (const vec3_t p, int headnode)
 
 int	CM_TransformedPointContents (const vec3_t p, int headnode, const vec3_t origin, const vec3_t angles)
 {
-	vec3_t	p1, tmp;
-
 	guard(CM_TransformedPointContents);
+
+	vec3_t	p1;
 	if (headnode != box_headnode && (angles[0] || angles[1] || angles[2]))
 	{
-		CAxis axis;		//!! CCoords
+		CAxis axis;
 		axis.FromAngles (angles);
-		//!! transform
-		VectorSubtract (p, origin, tmp);
-		p1[0] = DotProduct (tmp, axis[0]);
-		p1[1] = DotProduct (tmp, axis[1]);
-		p1[2] = DotProduct (tmp, axis[2]);
+		TransformPoint (origin, axis, p, p1);
 	}
 	else
 		VectorSubtract (p, origin, p1);
 
 	return map_leafs[CM_PointLeafnum (p1, headnode)].contents;
+
 	unguard;
 }
 
 int	CM_TransformedPointContents (const vec3_t p, int headnode, const vec3_t origin, const CAxis &axis)
 {
-	vec3_t	p1, tmp;
-
 	guard(CM_TransformedPointContents2);
+
+	vec3_t	p1;
 	if (headnode != box_headnode)
-	{
-		//!! transform
-		VectorSubtract (p, origin, tmp);
-		p1[0] = DotProduct (tmp, axis[0]);
-		p1[1] = DotProduct (tmp, axis[1]);
-		p1[2] = DotProduct (tmp, axis[2]);
-	}
+		TransformPoint (origin, axis, p, p1);
 	else
 		VectorSubtract (p, origin, p1);
 
 	return map_leafs[CM_PointLeafnum (p1, headnode)].contents;
+
 	unguard;
 }
 
@@ -1823,11 +1815,11 @@ rotating entities
 void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs,
 	int headnode, int brushmask, const vec3_t origin, const vec3_t angles)
 {
-	vec3_t	start1, end1, tmp;
-	CAxis	axis;		//!! CCoords
-	bool	rotated;
-
 	guard(CM_TransformedBoxTrace);
+
+	vec3_t	start1, end1;
+	CAxis	axis;
+	bool	rotated;
 
 	// rotate start and end into the models frame of reference
 	if (headnode != box_headnode && (angles[0] || angles[1] || angles[2]))
@@ -1839,16 +1831,8 @@ void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t en
 	{
 		axis.FromAngles (angles);
 		// transform start/end to axis (model coordinate system)
-		//!! transform
-		VectorSubtract (start, origin, tmp);
-		start1[0] = DotProduct (tmp, axis[0]);
-		start1[1] = DotProduct (tmp, axis[1]);
-		start1[2] = DotProduct (tmp, axis[2]);
-		//!! transform
-		VectorSubtract (end, origin, tmp);
-		end1[0] = DotProduct (tmp, axis[0]);
-		end1[1] = DotProduct (tmp, axis[1]);
-		end1[2] = DotProduct (tmp, axis[2]);
+		TransformPoint (origin, axis, start, start1);
+		TransformPoint (origin, axis, end, end1);
 	}
 	else
 	{
@@ -1859,22 +1843,11 @@ void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t en
 	// sweep the box through the model
 	CM_BoxTrace (trace, start1, end1, mins, maxs, headnode, brushmask);
 
-	// transform normal/endpos to world coordinate system
+	// transform normal/endpos back to world coordinate system
 	if (trace->fraction != 1.0f && rotated)
-	{
-		//!! transform
-		VectorScale (axis[0], trace->plane.normal[0], tmp);
-		VectorMA (tmp, trace->plane.normal[1], axis[1], tmp);
-		VectorMA (tmp, trace->plane.normal[2], axis[2], trace->plane.normal);
-	}
-
+		axis.UnTransformVector (trace->plane.normal, trace->plane.normal);
 	if (rotated)
-	{
-		//!! transform
-		VectorMA (origin, trace->endpos[0], axis[0], tmp);
-		VectorMA (tmp, trace->endpos[1], axis[1], tmp);
-		VectorMA (tmp, trace->endpos[2], axis[2], trace->endpos);
-	}
+		UnTransformPoint (origin, axis, trace->endpos, trace->endpos);
 	else
 		VectorAdd (trace->endpos, origin, trace->endpos);
 
@@ -1886,39 +1859,20 @@ void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t en
 void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs,
 	int headnode, int brushmask, const vec3_t origin, const CAxis &axis)
 {
-	vec3_t		start1, end1, tmp;
-
 	guard(CM_TransformedBoxTrace2);
 
+	vec3_t start1, end1;
 	// transform start/end to axis (model coordinate system)
-	//!! transform
-	VectorSubtract (start, origin, tmp);
-	start1[0] = DotProduct (tmp, axis[0]);
-	start1[1] = DotProduct (tmp, axis[1]);
-	start1[2] = DotProduct (tmp, axis[2]);
-
-	//!! transform
-	VectorSubtract (end, origin, tmp);
-	end1[0] = DotProduct (tmp, axis[0]);
-	end1[1] = DotProduct (tmp, axis[1]);
-	end1[2] = DotProduct (tmp, axis[2]);
+	TransformPoint (origin, axis, start, start1);
+	TransformPoint (origin, axis, end, end1);
 
 	// sweep the box through the model
 	CM_BoxTrace (trace, start1, end1, mins, maxs, headnode, brushmask);
 
 	// transform normal/endpos to world coordinate system
 	if (trace->fraction != 1.0f)
-	{
-		//!! transform
-		VectorScale (axis[0], trace->plane.normal[0], tmp);
-		VectorMA (tmp, trace->plane.normal[1], axis[1], tmp);
-		VectorMA (tmp, trace->plane.normal[2], axis[2], trace->plane.normal);
-	}
-
-	//!! transform
-	VectorMA (origin, trace->endpos[0], axis[0], tmp);
-	VectorMA (tmp, trace->endpos[1], axis[1], tmp);
-	VectorMA (tmp, trace->endpos[2], axis[2], trace->endpos);
+		axis.UnTransformVector (trace->plane.normal, trace->plane.normal);
+	UnTransformPoint (origin, axis, trace->endpos, trace->endpos);
 
 	unguard;
 }

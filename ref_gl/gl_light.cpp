@@ -462,7 +462,7 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 	{
 		pcell = NULL;
 		origin = ent->center;
-		axis = &ent->axis;
+		axis = &ent->coord.axis;
 	}
 
 	node_t *leaf = PointInLeaf (origin);
@@ -665,13 +665,13 @@ void LightForEntity (refEntity_t *ent)
 
 #if 1
 #define STEP(n)							\
-				v = ent->axis[n][i>>1];	\
+				v = ent->coord.axis[n][i>>1]; \
 				FAbsSign(v,v,side);		\
 				side ^= i & 1;			\
 				VectorMA(entityColorAxis[n*2+side], v, accum[i]);
 #else
 #define STEP(n)							\
-				v = ent->axis[n][i>>1];	\
+				v = ent->coord.axis[n][i>>1]; \
 				if (i & 1) v = -v;		\
 				if (v < 0)	VectorMA (entityColorAxis[n*2+1], -v, accum[i]); \
 				else		VectorMA (entityColorAxis[n * 2],  v, accum[i]);
@@ -684,7 +684,7 @@ void LightForEntity (refEntity_t *ent)
 
 			for (i = 0, sl = map.slights; i < map.numSlights; i++, sl++)
 				if (sl->style != 0)
-					AddPointLight (sl, ent->center, ent->axis, row);
+					AddPointLight (sl, ent->center, ent->coord.axis, row);
 		}
 		else
 			GetCellLight (NULL, NULL, ent);
@@ -708,9 +708,9 @@ void LightForEntity (refEntity_t *ent)
 		color[0] = dl->c.c[0] * denom;
 		color[1] = dl->c.c[1] * denom;
 		color[2] = dl->c.c[2] * denom;
-		AddLight (ent->axis, dst, scale, color);
+		AddLight (ent->coord.axis, dst, scale, color);
 		if (gl_lightLines->value)
-			LightLine (ent->axis, dl->origin, ent->center, color, scale);
+			LightLine (ent->coord.axis, dl->origin, ent->center, color, scale);
 	}
 
 	if (ent->mirror)

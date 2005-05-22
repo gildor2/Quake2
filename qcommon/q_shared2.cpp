@@ -185,24 +185,6 @@ void MakeNormalVectors (vec3_t forward, vec3_t right, vec3_t up)
 }
 
 
-/*
-================
-MatrixMultiply
-================
-*/
-void MatrixMultiply (float in1[3][3], float in2[3][3], float out[3][3])
-{
-	out[0][0] = in1[0][0] * in2[0][0] + in1[0][1] * in2[1][0] + in1[0][2] * in2[2][0];
-	out[0][1] = in1[0][0] * in2[0][1] + in1[0][1] * in2[1][1] + in1[0][2] * in2[2][1];
-	out[0][2] = in1[0][0] * in2[0][2] + in1[0][1] * in2[1][2] + in1[0][2] * in2[2][2];
-	out[1][0] = in1[1][0] * in2[0][0] + in1[1][1] * in2[1][0] + in1[1][2] * in2[2][0];
-	out[1][1] = in1[1][0] * in2[0][1] + in1[1][1] * in2[1][1] + in1[1][2] * in2[2][1];
-	out[1][2] = in1[1][0] * in2[0][2] + in1[1][1] * in2[1][2] + in1[1][2] * in2[2][2];
-	out[2][0] = in1[2][0] * in2[0][0] + in1[2][1] * in2[1][0] + in1[2][2] * in2[2][0];
-	out[2][1] = in1[2][0] * in2[0][1] + in1[2][1] * in2[1][1] + in1[2][2] * in2[2][1];
-	out[2][2] = in1[2][0] * in2[0][2] + in1[2][1] * in2[1][2] + in1[2][2] * in2[2][2];
-}
-
 float VectorNormalize (vec3_t v)
 {
 	float length = DotProduct (v, v);
@@ -393,17 +375,6 @@ void CBox::GetCenter (vec3_t p)
 		p[i] = (mins[i] + maxs[i]) / 2;
 }
 
-//!!!!!!!!!!!
-void AnglesToAxis (const vec3_t angles, vec3_t axis[3])
-{
-	vec3_t	right;
-
-	// AngleVectors() returns "right" instead of "y axis"
-	AngleVectors (angles, axis[0], right, axis[2]);
-	VectorNegate (right, axis[1]);
-}
-
-//!!!!!!!!!!!
 
 void CAxis::Clear ()
 {
@@ -420,6 +391,66 @@ void CAxis::FromAngles (const vec3_t angles)
 	// AngleVectors() returns "right" instead of "y axis"
 	AngleVectors (angles, v[0], right, v[2]);
 	VectorNegate (right, v[1]);
+}
+
+void CAxis::TransformVector (const vec3_t src, vec3_t dst) const
+{
+	dst[0] = DotProduct (src, v[0]);
+	dst[1] = DotProduct (src, v[1]);
+	dst[2] = DotProduct (src, v[2]);
+}
+
+void CAxis::UnTransformVector (const vec3_t src, vec3_t dst) const
+{
+	vec3_t tmp;
+	VectorScale (v[0], src[0], tmp);
+	VectorMA (tmp, src[1], v[1], tmp);
+	VectorMA (tmp, src[2], v[2], dst);
+}
+
+
+void CCoords::TransformPoint (const vec3_t src, vec3_t dst) const
+{
+	vec3_t tmp;
+	VectorSubtract (src, origin, tmp);
+	dst[0] = DotProduct (tmp, axis[0]);
+	dst[1] = DotProduct (tmp, axis[1]);
+	dst[2] = DotProduct (tmp, axis[2]);
+}
+
+void CCoords::UnTransformPoint (const vec3_t src, vec3_t dst) const
+{
+	vec3_t tmp;
+	VectorMA (origin, src[0], axis[0], tmp);
+	VectorMA (tmp,	  src[1], axis[1], tmp);
+	VectorMA (tmp,	  src[2], axis[2], dst);
+}
+
+void CCoords::TransformPlane (const cplane_t &src, cplane_t &dst) const
+{
+	dst.dist = src.dist - DotProduct (origin, src.normal);
+	axis.TransformVector (src.normal, dst.normal);
+	dst.SetSignbits ();
+	// NOTE: dst.type is not set
+}
+
+
+void TransformPoint (const vec3_t origin, const CAxis &axis, const vec3_t src, vec3_t dst)
+{
+	vec3_t tmp;
+	VectorSubtract (src, origin, tmp);
+	dst[0] = DotProduct (tmp, axis[0]);
+	dst[1] = DotProduct (tmp, axis[1]);
+	dst[2] = DotProduct (tmp, axis[2]);
+}
+
+
+void UnTransformPoint (const vec3_t origin, const CAxis &axis, const vec3_t src, vec3_t dst)
+{
+	vec3_t tmp;
+	VectorMA (origin, src[0], axis[0], tmp);
+	VectorMA (tmp,	  src[1], axis[1], tmp);
+	VectorMA (tmp,	  src[2], axis[2], dst);
 }
 
 
