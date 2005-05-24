@@ -177,7 +177,7 @@ static byte skySideVisible[6];
 static byte skyVis[6][SKY_CELLS*SKY_CELLS];
 
 static bool skyRotated;
-static float rotAxis[3][3];
+static CAxis rotAxis;
 
 void ClearSkyBox (void)
 {
@@ -191,7 +191,7 @@ void SetSkyRotate (float angle, vec3_t axis)
 	if (angle)
 	{
 		skyRotated = true;
-		BuildRotationMatrix (rotAxis, axis, angle);
+		BuildRotationAxis (rotAxis, axis, angle);
 	}
 	else
 		skyRotated = false;
@@ -227,14 +227,7 @@ void AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
 	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
 	{
 		if (skyRotated)
-		{
-			vec3_t	tmp, tmp2;
-
-			VectorSubtract (v->xyz, vieworg, tmp);
-			VectorScale (rotAxis[0], tmp[0], tmp2);
-			VectorMA (tmp2, tmp[1], rotAxis[1], tmp2);
-			VectorMA (tmp2, tmp[2], rotAxis[2], verts[i]);
-		}
+			TransformPoint (vieworg, rotAxis, v->xyz, verts[i]);
 		else
 			VectorSubtract (v->xyz, vieworg, verts[i]);
 	}

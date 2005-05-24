@@ -502,9 +502,6 @@ Used for spatializing channels and autosounds
 */
 static void S_SpatializeOrigin (const vec3_t origin, float master_vol, float dist_mult, int *left_vol, int *right_vol)
 {
-    float		dot, dist, lscale, rscale, scale;
-    vec3_t		source_vec;
-
 	if (cls.state != ca_active)
 	{
 		*left_vol = *right_vol = 255;
@@ -512,16 +509,18 @@ static void S_SpatializeOrigin (const vec3_t origin, float master_vol, float dis
 	}
 
 	// calculate stereo seperation and distance attenuation
+    vec3_t source_vec;
 	VectorSubtract(origin, listener_origin, source_vec);
 
-	dist = VectorNormalize(source_vec);
+	float dist = VectorNormalize(source_vec);
 	dist -= SOUND_FULLVOLUME;
 	if (dist < 0)
 		dist = 0;			// close enough to be at full volume
 	dist *= dist_mult;		// different attenuation levels
 
-	dot = DotProduct(listener_right, source_vec);
+	float dot = DotProduct(listener_right, source_vec);
 
+	float lscale, rscale;
 	if (dma.channels == 1 || !dist_mult)
 	{	// no attenuation = no spatialization
 		rscale = 1.0f;
@@ -533,13 +532,11 @@ static void S_SpatializeOrigin (const vec3_t origin, float master_vol, float dis
 		lscale = 0.5f * (1.0f - dot);
 	}
 
+	// swap left and right volumes
 	if (s_reverse_stereo->integer)
-	{	// swap left and right volumes
-		scale = rscale;
-		rscale = lscale;
-		lscale = scale;
-	}
+		Exchange (lscale, rscale);
 
+	float scale;
 	// add in distance effect
 	scale = (1.0f - dist) * rscale;
 	*right_vol = appRound (master_vol * scale);

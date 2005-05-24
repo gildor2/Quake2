@@ -37,7 +37,13 @@ struct bspfile_t;
 struct CAxis;
 struct cplane_t;
 
+//#define VEC3_STRUC	//!! change
+
+#ifdef VEC3_STRUC
+struct vec3_t;
+#else
 typedef float vec3_t[3];
+#endif
 
 // image flags
 #define IMAGE_PCX	1
@@ -61,7 +67,7 @@ typedef float vec3_t[3];
 
 #define	VERSION		4.11
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #define BUILDSTRING "Win32"
 

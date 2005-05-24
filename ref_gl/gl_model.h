@@ -296,21 +296,6 @@ struct md3Frame_t
 	float	radius;				// radius of the bounding sphere
 };
 
-//!!!!
-struct md3TagFrame_t
-{
-	vec3_t	origin;
-	vec3_t	axis[3];
-};
-
-struct md3Tag_t
-{
-	char	name[MAX_QPATH];	// tag name; case-sensitive
-//	md3TagFrame_t frames[1];	// [md3.numFrames]
-	//?!!! remove:
-	vec3_t	origin;
-	vec3_t	axis[3];
-};
 
 class md3Model_t : public model_t
 {
@@ -320,7 +305,8 @@ public:
 	int		numFrames;
 	md3Frame_t *frames;			// [numFrames]
 	int		numTags;
-	md3Tag_t *tags;				// [numTags]
+	char	*tagNames;			// [MAX_QPATH][numTags]
+	CCoords	*tags;				// [numFrames][numTags]
 	inline md3Model_t () { type = MODEL_MD3; };
 	virtual void InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
@@ -353,7 +339,7 @@ public:
 	Functions
 -----------------------------------------------------------------------------*/
 
-node_t *PointInLeaf (vec3_t p);
+node_t *PointInLeaf (const vec3_t p);
 
 void	InitModels (void);
 void	ShutdownModels (void);

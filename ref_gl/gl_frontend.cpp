@@ -234,34 +234,34 @@ static bool BoxOccluded (refEntity_t *e, vec3_t size2)
 	vec3_t	v, left, right;
 	int		n, brushes[NUM_TEST_BRUSHES];
 
-	if (!GetBoxRect (e, size2, mins2, maxs2, true)) return false;
+	if (!GetBoxRect (e, size2, mins2, maxs2)) return false;
 
 	// top-left
-	VectorMA (e->center, mins2[0], vp.viewaxis[1], left);
-	VectorMA (left, mins2[1], vp.viewaxis[2], v);
+	VectorMA (e->center, mins2[0], vp.view.axis[1], left);
+	VectorMA (left, mins2[1], vp.view.axis[2], v);
 #if 0
 	static cvar_t *test;
 	if (!test) test=Cvar_Get("test","32",0);
-	n = CM_BrushTrace (vp.vieworg, v, brushes, test->integer);
+	n = CM_BrushTrace (vp.view.origin, v, brushes, test->integer);
 #else
-	n = CM_BrushTrace (vp.vieworg, v, brushes, NUM_TEST_BRUSHES);
+	n = CM_BrushTrace (vp.view.origin, v, brushes, NUM_TEST_BRUSHES);
 #endif
 	if (!n) return false;
 
 	// bottom-right (diagonal with 1st point)
-	VectorMA (e->center, maxs2[0], vp.viewaxis[1], right);
-	VectorMA (right, maxs2[1], vp.viewaxis[2], v);
-	n = CM_RefineBrushTrace (vp.vieworg, v, brushes, n);
+	VectorMA (e->center, maxs2[0], vp.view.axis[1], right);
+	VectorMA (right, maxs2[1], vp.view.axis[2], v);
+	n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
 	if (!n) return false;
 
 	// bottom-left
-	VectorMA (left, maxs2[1], vp.viewaxis[2], v);
-	n = CM_RefineBrushTrace (vp.vieworg, v, brushes, n);
+	VectorMA (left, maxs2[1], vp.view.axis[2], v);
+	n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
 	if (!n) return false;
 
 	// top-right
-	VectorMA (right, mins2[1], vp.viewaxis[2], v);
-	n = CM_RefineBrushTrace (vp.vieworg, v, brushes, n);
+	VectorMA (right, mins2[1], vp.view.axis[2], v);
+	n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
 	if (!n) return false;
 
 	return true;
@@ -283,9 +283,9 @@ static bool WorldBoxOccluded (vec3_t mins, vec3_t maxs)
 
 		int	n, brushes[NUM_TEST_BRUSHES];
 		if (i == 0)
-			n = CM_BrushTrace (vp.vieworg, v, brushes, NUM_TEST_BRUSHES);	// test->integer);
+			n = CM_BrushTrace (vp.view.origin, v, brushes, NUM_TEST_BRUSHES);	// test->integer);
 		else
-			n = CM_RefineBrushTrace (vp.vieworg, v, brushes, n);
+			n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
 		if (!n) return false;
 	}
 
@@ -328,7 +328,7 @@ static void SetupModelMatrix (refEntity_t *e)
 		}
 	// set e.modelvieworg
 	// NOTE: in Q3 axis may be non-normalized, so, there result is divided by length(axis[i])
-	e->coord.TransformPoint (vp.vieworg, e->modelvieworg);
+	e->coord.TransformPoint (vp.view.origin, e->modelvieworg);
 }
 
 
@@ -976,10 +976,10 @@ void sp2Model_t::AddSurfaces (refEntity_t *e)
 	sp2Frame_t *frame = &frames[e->frame % numFrames];
 	// setup xyz
 	vec3_t	down, up2;
-	VectorMA (e->coord.origin, -frame->localOrigin[1], vp.viewaxis[2], down);
-	VectorMA (down, -frame->localOrigin[0], vp.viewaxis[1], p->verts[0].xyz);	// 0
-	VectorMA (down, frame->width - frame->localOrigin[0], vp.viewaxis[1], p->verts[1].xyz);	// 1
-	VectorScale (vp.viewaxis[2], frame->height, up2);
+	VectorMA (e->coord.origin, -frame->localOrigin[1], vp.view.axis[2], down);
+	VectorMA (down, -frame->localOrigin[0], vp.view.axis[1], p->verts[0].xyz);	// 0
+	VectorMA (down, frame->width - frame->localOrigin[0], vp.view.axis[1], p->verts[1].xyz);	// 1
+	VectorScale (vp.view.axis[2], frame->height, up2);
 	VectorAdd (p->verts[0].xyz, up2, p->verts[3].xyz);	// 3
 	VectorAdd (p->verts[1].xyz, up2, p->verts[2].xyz);	// 2
 
@@ -1012,10 +1012,10 @@ static void AddBeamSurfaces (beam_t *b)
 	color_t	color;
 
 	// compute level of detail
-	VectorSubtract (b->drawStart, vp.vieworg, viewDir);
-	float z1 = DotProduct (viewDir, vp.viewaxis[0]);// beamStart.Z
-	VectorSubtract (b->drawEnd, vp.vieworg, tmp);
-	float z2 = DotProduct (tmp, vp.viewaxis[0]);	// beamEnd.Z
+	VectorSubtract (b->drawStart, vp.view.origin, viewDir);
+	float z1 = DotProduct (viewDir, vp.view.axis[0]);// beamStart.Z
+	VectorSubtract (b->drawEnd, vp.view.origin, tmp);
+	float z2 = DotProduct (tmp, vp.view.axis[0]);	// beamEnd.Z
 	float size = min(z1, z2);
 
 	size = b->radius * 200 / (size * vp.fov_scale);
@@ -1082,7 +1082,7 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 	vec3_t	axis[3];		// length, width, depth
 
 	//?? cumpute LOD
-	VectorSubtract (b->drawStart, vp.vieworg, viewDir);
+	VectorSubtract (b->drawStart, vp.view.origin, viewDir);
 	// compute beam axis
 	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
 	float len = VectorNormalizeFast (axis[0]);
@@ -1097,7 +1097,7 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 	float f = DotProduct (viewDir, axis[0]);
 	vec3_t v;
 	VectorMA (b->drawStart, -f, axis[0], v);		// v is a nearest point on beam line
-	VectorSubtract (v, vp.vieworg, v);
+	VectorSubtract (v, vp.view.origin, v);
 	f = DotProduct (v, v);
 	f = SQRTFAST(f);								// distance to line
 	float fixAngle;
@@ -1206,7 +1206,7 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 	vec3_t	viewDir;
 	vec3_t	axis[3];		// length, width, depth
 
-	VectorSubtract (b->drawStart, vp.vieworg, viewDir);
+	VectorSubtract (b->drawStart, vp.view.origin, viewDir);
 	// compute beam axis
 	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
 	float len = VectorNormalizeFast (axis[0]);
@@ -1354,17 +1354,17 @@ static node_t *WalkBspTree (void)
 				{
 					float	mins2[2], maxs2[2];
 
-					GetBoxRect (&ent, ent.size2, mins2, maxs2, true);
-					VectorMA (ent.center, mins2[0], vp.viewaxis[1], h);
-					VectorMA (h, mins2[1], vp.viewaxis[2], v);
+					GetBoxRect (&ent, ent.size2, mins2, maxs2);
+					VectorMA (ent.center, mins2[0], vp.view.axis[1], h);
+					VectorMA (h, mins2[1], vp.view.axis[2], v);
 #if 1
 					DrawText3D(v, "*", RGB(0.2,0.6,0.1));
-					VectorMA (h, maxs2[1], vp.viewaxis[2], v);
+					VectorMA (h, maxs2[1], vp.view.axis[2], v);
 					DrawText3D(v, "*", RGB(0.2,0.6,0.1));
-					VectorMA (ent.center, maxs2[0], vp.viewaxis[1], h);
-					VectorMA (h, mins2[1], vp.viewaxis[2], v);
+					VectorMA (ent.center, maxs2[0], vp.view.axis[1], h);
+					VectorMA (h, mins2[1], vp.view.axis[2], v);
 					DrawText3D(v, "*", RGB(0.2,0.6,0.1));
-					VectorMA (h, maxs2[1], vp.viewaxis[2], v);
+					VectorMA (h, maxs2[1], vp.view.axis[2], v);
 					DrawText3D(v, "*", RGB(0.2,0.6,0.1));
 #else
 					DrawText3D(v, va("(%d: %gx%gx%g)", sptr, ent.maxs[0]*2,ent.maxs[1]*2,ent.maxs[2]*2), RGB(0.3,0.9,0.2));
@@ -1409,7 +1409,7 @@ static node_t *WalkBspTree (void)
 				}
 			}
 
-			if (node->plane->DistanceTo (vp.vieworg) < 0)
+			if (node->plane->DistanceTo (vp.view.origin) < 0)
 			{
 				// ch[0], then ch[1]
 				PUSH_NODE(node->children[1], dlight1);
@@ -1527,8 +1527,8 @@ static void DrawEntities (int firstEntity, int numEntities)
 		e->visible = true;
 		// calc model distance
 		vec3_t delta;
-		VectorSubtract (e->center, vp.vieworg, delta);
-		float dist2 = e->dist2 = DotProduct (delta, vp.viewaxis[0]);
+		VectorSubtract (e->center, vp.view.origin, delta);
+		float dist2 = e->dist2 = DotProduct (delta, vp.view.axis[0]);	// get Z-coordinate
 		// add entity to leaf's entity list
 		if (leaf->drawEntity)
 		{
@@ -1668,7 +1668,7 @@ static void DrawFlares (void)
 			// sun flare
 			if (gl_state.useFastSky || gl_skyShader == gl_defaultSkyShader)
 				continue;	// no flare with this sky
-			VectorMA (vp.vieworg, SUN_DRAWDIST, f->origin, flarePos);
+			VectorMA (vp.view.origin, SUN_DRAWDIST, f->origin, flarePos);
 			scale = f->size * SUN_DRAWDIST / (2 * FLARE_DIST1);
 		}
 
@@ -1690,12 +1690,12 @@ static void DrawFlares (void)
 		// get viewsize
 		if (f->radius >= 0)
 		{
-			float	dist;
-
 			scale = f->size / 2;
-			dist  = (flarePos[0] - vp.vieworg[0]) * vp.viewaxis[0][0] +
-					(flarePos[1] - vp.vieworg[1]) * vp.viewaxis[0][1] +
-					(flarePos[2] - vp.vieworg[2]) * vp.viewaxis[0][2];		// get Z-coordinate
+
+			// get Z-coordinate
+			vec3_t tmp;
+			VectorSubtract (flarePos, vp.view.origin, tmp);
+			float dist = DotProduct (tmp, vp.view.axis[0]);
 
 			if (dist < FLARE_DIST0)			// too near - do not fade
 			{
@@ -1717,8 +1717,8 @@ static void DrawFlares (void)
 			// check visibility with trace
 			if (f->radius >= 0)
 			{
-				CM_BoxTrace (&trace, vp.vieworg, flarePos, NULL, NULL, 0, CONTENTS_SOLID);
-				ClipTraceToEntities (&trace, vp.vieworg, flarePos, CONTENTS_SOLID);
+				CM_BoxTrace (&trace, vp.view.origin, flarePos, NULL, NULL, 0, CONTENTS_SOLID);
+				ClipTraceToEntities (&trace, vp.view.origin, flarePos, CONTENTS_SOLID);
 				if (trace.fraction < 1 && (f->radius <= 0 || (VectorDistance (trace.endpos, flarePos) > f->radius)))
 					cull = true;
 			}
@@ -1726,9 +1726,9 @@ static void DrawFlares (void)
 			{	// sun flare
 				vec3_t	tracePos;
 
-				VectorMA (vp.vieworg, BIG_NUMBER, f->origin, tracePos);
-				CM_BoxTrace (&trace, vp.vieworg, tracePos, NULL, NULL, 0, CONTENTS_SOLID);
-				ClipTraceToEntities (&trace, vp.vieworg, tracePos, CONTENTS_SOLID);
+				VectorMA (vp.view.origin, BIG_NUMBER, f->origin, tracePos);
+				CM_BoxTrace (&trace, vp.view.origin, tracePos, NULL, NULL, 0, CONTENTS_SOLID);
+				ClipTraceToEntities (&trace, vp.view.origin, tracePos, CONTENTS_SOLID);
 				if (!(trace.fraction < 1 && trace.surface->flags & SURF_SKY))
 					cull = true;
 			}
@@ -1757,10 +1757,10 @@ static void DrawFlares (void)
 		p->numVerts = 4;
 
 		// setup xyz
-		VectorMA (flarePos, -scale, vp.viewaxis[2], tmp);			// down
-		VectorMA (tmp, -scale, vp.viewaxis[1], p->verts[0].xyz);	// 0
-		VectorMA (tmp, scale, vp.viewaxis[1], p->verts[1].xyz);		// 1
-		VectorScale (vp.viewaxis[2], scale * 2, tmp);				// up-down
+		VectorMA (flarePos, -scale, vp.view.axis[2], tmp);			// down
+		VectorMA (tmp, -scale, vp.view.axis[1], p->verts[0].xyz);	// 0
+		VectorMA (tmp, scale, vp.view.axis[1], p->verts[1].xyz);	// 1
+		VectorScale (vp.view.axis[2], scale * 2, tmp);				// up-down
 		VectorAdd (p->verts[0].xyz, tmp, p->verts[3].xyz);			// 3
 		VectorAdd (p->verts[1].xyz, tmp, p->verts[2].xyz);			// 2
 
@@ -1851,7 +1851,7 @@ static void MarkLeaves (void)
 	node_t	*n;
 
 	// determine the vieworg cluster
-	int cluster = PointInLeaf (vp.vieworg)->cluster;
+	int cluster = PointInLeaf (vp.view.origin)->cluster;
 	// if cluster or areamask changed -- re-mark visible leaves
 	if (viewCluster != cluster || forceVisMap)
 	{
@@ -2007,7 +2007,7 @@ void DrawPortal (void)
 
 		// setup world entity
 		memset (&gl_entities[ENTITYNUM_WORLD], 0, sizeof(refEntity_t));
-		VectorCopy (vp.vieworg, gl_entities[ENTITYNUM_WORLD].modelvieworg);
+		VectorCopy (vp.view.origin, gl_entities[ENTITYNUM_WORLD].modelvieworg);
 		gl_entities[ENTITYNUM_WORLD].worldMatrix = true;
 //		gl_entities[ENTITYNUM_WORLD].axis[0][0] = 1;
 //		gl_entities[ENTITYNUM_WORLD].axis[1][1] = 1;

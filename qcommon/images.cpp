@@ -32,29 +32,25 @@ typedef struct
 
 void LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *height)
 {
-	byte	*src, *dst;
-	pcx_t	*hdr;
-	unsigned filelen;
-	int		x, y, w, h;
-	char	*errMsg;
-
 	*pic = NULL;
 	*palette = NULL;
 
+	pcx_t	*hdr;
+	unsigned filelen;
 	if (!(hdr = (pcx_t*) FS_LoadFile (name, &filelen))) return;
 
-	src = (byte *)(hdr + 1);
+	byte *src = (byte *)(hdr + 1);
 
 //	hdr->xmin = LittleShort(hdr->xmin);
 //	hdr->ymin = LittleShort(hdr->ymin);
-	w = LittleShort(hdr->xmax) + 1;
-	h = LittleShort(hdr->ymax) + 1;
+	int w = LittleShort(hdr->xmax) + 1;
+	int h = LittleShort(hdr->ymax) + 1;
 //	hdr->hres = LittleShort(hdr->hres);
 //	hdr->vres = LittleShort(hdr->vres);
 //	hdr->bytes_per_line = LittleShort(hdr->bytes_per_line);
 //	hdr->palette_type = LittleShort(hdr->palette_type);
 
-	errMsg = NULL;
+	const char *errMsg = NULL;
 	if (filelen < sizeof(pcx_t) + 768 || hdr->manufacturer != 10 || hdr->version != 5 || hdr->encoding != 1 || hdr->bits_per_pixel != 8)
 		errMsg = "LoadPCX(%s): bad pcx file\n";
 	else if (w > MAX_IMG_SIZE || h > MAX_IMG_SIZE)
@@ -75,20 +71,17 @@ void LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *hei
 	if (width)	*width = w;
 	if (height)	*height = h;
 
-	dst = (byte*)appMalloc (w * h);
+	byte *dst = (byte*)appMalloc (w * h);
 	*pic = dst;
 
-	for (y = 0; y < h; y++)
+	for (int y = 0; y < h; y++)
 	{
-		for (x = 0; x < w; )
+		for (int x = 0; x < w; )
 		{
-			int		len;
-			byte	c;
-
-			c = *src++;
+			byte c = *src++;
 			if (c >= 0xC0)
 			{
-				len = c & 0x3F;
+				int len = c & 0x3F;
 				c = *src++;
 				while (len-- > 0)
 				{
@@ -139,12 +132,10 @@ typedef struct
 //!! add top-to-bottom support
 void LoadTGA (const char *name, byte **pic, int *width, int *height)
 {
-	int		numColumns, numRows, bpp, numPixels;
+	int		numColumns, numRows, bpp;
 	int		type, flags;
 	int		num, column, stride, copy;
 	byte	*file, *src, *dst;
-	tgaHdr_t header;		//??
-	char	*errMsg;
 
 	*pic = NULL;
 
@@ -155,6 +146,7 @@ void LoadTGA (const char *name, byte **pic, int *width, int *height)
 #define GET_BYTE(x)		x = *src++
 #define GET_SHORT(x)	x = LittleShort(*(short*)src); src += 2;
 
+	tgaHdr_t header;		//??
 	GET_BYTE(header.id_length);
 	GET_BYTE(header.colormap_type);
 	GET_BYTE(type);
@@ -169,7 +161,7 @@ void LoadTGA (const char *name, byte **pic, int *width, int *height)
 	GET_BYTE(bpp);
 	GET_BYTE(flags);
 
-	errMsg = NULL;
+	const char *errMsg = NULL;
 
 	if (type != 2 && type != 10 && type != 3)
 		errMsg = "LoadTGA(%s): Only type 2 (RGB), 3 (grey) and 10 (RGB RLE) targa RGB images supported\n";
@@ -189,7 +181,7 @@ void LoadTGA (const char *name, byte **pic, int *width, int *height)
 		Com_DropError (errMsg, name);
 	}
 
-	numPixels = numColumns * numRows;
+	int numPixels = numColumns * numRows;
 
 	if (width)	*width = numColumns;
 	if (height)	*height = numRows;
@@ -215,13 +207,12 @@ void LoadTGA (const char *name, byte **pic, int *width, int *height)
 	while (num < numPixels)
 	{
 		byte	r, g, b, a;
-		int		ct, i;
+		int		ct;
 
 		if (copy) copy--;
 		if (type == 10 && !copy)
 		{
-			byte	f;
-
+			byte f;
 			GET_BYTE(f);
 			if (f & 0x80)
 				ct = f + 1 - 0x80;	// packed
@@ -247,7 +238,7 @@ void LoadTGA (const char *name, byte **pic, int *width, int *height)
 			a = 255;
 		}
 
-		for (i = 0; i < ct; i++)
+		for (int i = 0; i < ct; i++)
 		{
 			*dst++ = r; *dst++ = g; *dst++ = b; *dst++ = a;
 			if (++column == numColumns)
@@ -474,7 +465,6 @@ int ImageExists (const char *name, int stop_mask)
 bool WriteTGA (const char *name, byte *pic, int width, int height)
 {
 	FILE	*f;
-	tgaHdr_t header;
 	int		i, column;
 
 	if (!(f = fopen (name, "wb")))
@@ -557,6 +547,7 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	}
 
 	// write header
+	tgaHdr_t header;
 	memset (&header, 0, sizeof(header));
 	header.width = LittleShort (width);
 	header.height = LittleShort (height);

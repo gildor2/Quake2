@@ -101,7 +101,7 @@ bugs:
   - map "ktdm1", {64,0,144} - teleporter model is too black (lightgrid bugs); same bug with "q2dm1"
   - "winter": too dark inside shadows (and: inside caverns should be "area lights" (check arghrad tutorial for understanding ...))
   - "beachassault": too dark inside ship (needs add surflights near pointlight -- or change pointlight equation -- 'linear+const/dist')
-  - weapon model can get light from inside wall (should use vieworg instead of ent.origin for lighting
+  - weapon model can get light from inside wall (should use view.origin instead of ent.origin for lighting
     -OR- perform trace to detect nearest non-inside-wall grid point)
   - "bigspacegunup": (-305,183,14) (inside tower, upper floor, under ceil lamp) - too dark model lighting (double-side surf light ?)
 
@@ -139,7 +139,7 @@ VIS:
 - bugs: use BoxLeafs() + LeafVis() to get combined vis without checking "near-nontrans-water" (of course, ignore
   non-world invisible leafs) - will fix water vis bug and, may be, some other vis bugs too (map "ground3", "actmet" have some ...)
   - example bugs:
-    - map "underrain": have sky brushes (MYST) for cave lighting; when vieworg is inside such brush - only sky painted
+    - map "underrain": have sky brushes (MYST) for cave lighting; when view.origin is inside such brush - only sky painted
       (oldgl: same as non-transparent water, combines 2 clusters vis)
     - "ground" (not #3!): pos=(347,-755,318), dir=(1,0,0) -- vis bug
 - require to perform MarkLeafs() every frame (can replace node.vidFrame and node.frame with a single one); check MarkLeafs() speed --

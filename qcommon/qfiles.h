@@ -108,9 +108,8 @@ struct dMd3Frame_t
 
 struct dMd3Tag_t
 {
-	char	name[MAX_QPATH]; // tag name
-	vec3_t	origin;
-	vec3_t	axis[3];
+	char	name[MAX_QPATH];			// tag name
+	CCoords	tag;						// vec3_t origin + vec3_t axis[3]
 };
 
 struct dMd3Shader_t

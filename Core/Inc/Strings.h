@@ -107,7 +107,7 @@ public:
 
 
 // Template for list of any objects, derived from CStringItem
-template <class T> class TList : public CStringList
+template<class T> class TList : public CStringList
 {
 public:
 	// list enumeration
@@ -174,7 +174,7 @@ public:
 	TString template - template for static strings (use instead of "char str[N]")
 -----------------------------------------------------------------------------*/
 
-template <int N> class TString
+template<int N> class TString
 {
 public:
 	char	str[N];
@@ -197,9 +197,9 @@ public:
 	bool operator< (const char *s2)		{ return strcmp (str, s2) < 0; }
 	bool operator<= (const char *s2)	{ return strcmp (str, s2) <= 0; }
 	bool operator== (const char *s2)	{ return strcmp (str, s2) == 0; }
-	template <int M> bool operator== (const TString<M> &S) { return strcmp (str, S.str) == 0; }
+	template<int M> bool operator== (const TString<M> &S) { return strcmp (str, S.str) == 0; }
 	bool operator!= (const char *s2)	{ return strcmp (str, s2) != 0; }
-	template <int M> bool operator!= (const TString<M> &S) { return strcmp (str, S.str) != 0; }
+	template<int M> bool operator!= (const TString<M> &S) { return strcmp (str, S.str) != 0; }
 	bool operator> (const char *s2)		{ return strcmp (str, s2) > 0; }
 	bool operator>= (const char *s2)	{ return strcmp (str, s2) >= 0; }
 	TString<N>& operator+= (const char *s2) { appStrcatn (str, N, s2); return *this; }

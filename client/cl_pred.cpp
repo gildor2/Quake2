@@ -87,7 +87,7 @@ void CL_EntityTrace (trace_t *tr, const vec3_t start, const vec3_t end, const ve
 	for (int i = 0; i < cl.frame.num_entities; i++)
 	{
 		cmodel_t *cmodel;
-		vec3_t	tmp, delta, eCenter, eOrigin;
+		vec3_t	tmp, delta;
 
 		entityState_t *ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
 		if (!ent->solid) continue;
@@ -104,6 +104,7 @@ void CL_EntityTrace (trace_t *tr, const vec3_t start, const vec3_t end, const ve
 		VectorClear (delta);
 #endif
 
+		vec3_t eCenter, eOrigin;
 		VectorSubtract (ent->center, start, eCenter);
 		VectorSubtract (eCenter, delta, eCenter);
 		VectorSubtract (ent->origin, delta, eOrigin);

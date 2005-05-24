@@ -129,6 +129,12 @@
   - ApplyDlights() -- frontend.cpp
   - GetCluster() -- light.cpp
   - BuildFlare() -- model.cpp -- for planar only?
+- entity:
+  - function ent.DrawText() -- draw text for entity; can merge multiple DrawText() calls into a single text block;
+    do not draw, when entity invisible (optional - "bool visibleOnly")
+    Implementation: gl_text.cpp text buffer will comtain link to entity (to determine visibility; may link to NULL
+      when always draw), entity will contain number of linked text lines to compute 2D offset for next DrawText()
+      call (may be returned from DrawTextPos()); all texts will be placed into common text buffer
 
 --------------- Memory manager -------------
 - meminfo: implement subsystems (gl, game etc)

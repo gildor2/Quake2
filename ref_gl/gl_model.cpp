@@ -134,19 +134,17 @@ END_PROFILE
 
 // "stride" = sizeof(dplane_t) or sizeof(dplane3_t)
 // Both this structures has same fields, except Q3 lost "type"
-static void LoadPlanes (dplane_t *data, int count, int stride)
+static void LoadPlanes (const dplane_t *data, int count, int stride)
 {
-	dplane_t *in;
 	cplane_t *out;
 
 	map.numPlanes = count;
 	map.planes = out = new (map.dataChain) cplane_t [count];
-	in = data;
 
-	for (int i = 0; i < count; i++, in = (dplane_t*)((byte*)in + stride), out++)
+	for (int i = 0; i < count; i++, data = OffsetPointer(data, stride), out++)
 	{
-		VectorCopy (in->normal, out->normal);
-		out->dist = in->dist;
+		VectorCopy (data->normal, out->normal);
+		out->dist = data->dist;
 		out->SetType ();
 		out->SetSignbits ();
 	}
@@ -331,7 +329,7 @@ static void SetNodeParent (node_t *node, node_t *parent)
 }
 
 
-static void SetNodesAlpha (void)
+static void SetNodesAlpha ()
 {
 	node_t	*node, *p;
 	surfaceBase_t **psurf;
@@ -375,10 +373,8 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	vertex_t *v;
 	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
 	{
-		float	p1, p2;
-
-		p1 = DotProduct (v->xyz, pl->axis[0]);
-		p2 = DotProduct (v->xyz, pl->axis[1]);
+		float p1 = DotProduct (v->xyz, pl->axis[0]);
+		float p2 = DotProduct (v->xyz, pl->axis[1]);
 		v->pos[0] = p1;
 		v->pos[1] = p2;
 		EXPAND_BOUNDS(p1, min1, max1);
@@ -395,7 +391,7 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	Loading Quake2 BSP file
 -----------------------------------------------------------------------------*/
 
-static void LoadLeafsNodes2 (dnode_t *nodes, int numNodes, dleaf_t *leafs, int numLeafs)
+static void LoadLeafsNodes2 (const dnode_t *nodes, int numNodes, const dleaf_t *leafs, int numLeafs)
 {
 	node_t	*out;
 	int		i, j;
@@ -486,8 +482,8 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 }
 
 
-static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedge_t *edges,
-	dvertex_t *verts, texinfo_t *tex, cmodel_t *models, int numModels)
+static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *surfedges, const dedge_t *edges,
+	dvertex_t *verts, const texinfo_t *tex, const cmodel_t *models, int numModels)
 {
 	int		j;
 
@@ -495,11 +491,11 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 	map.faces = new (map.dataChain) surfaceBase_t* [numSurfaces];
 	for (int i = 0; i < numSurfaces; i++, surfs++)
 	{
-		vec3_t	*pverts[MAX_POLYVERTS];
+		vec3_t *pverts[MAX_POLYVERTS];
 
 		int numVerts = surfs->numedges;
 		/*------- build vertex list -------*/
-		int *pedge = surfedges + surfs->firstedge;
+		const int *pedge = surfedges + surfs->firstedge;
 		for (j = 0; j < numVerts; j++, pedge++)
 		{
 			int idx = *pedge;
@@ -510,7 +506,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		}
 
 		/*---- Generate shader with name and SURF_XXX flags ----*/
-		texinfo_t *stex = tex + surfs->texinfo;
+		const texinfo_t *stex = tex + surfs->texinfo;
 		int sflags = SHADER_WALL;
 		if (stex->flags & SURF_ALPHA)	sflags |= SHADER_ALPHA;
 		if (stex->flags & SURF_TRANS33)	sflags |= SHADER_TRANS33;
@@ -522,7 +518,7 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		if (stex->flags & SURF_DIFFUSE) sflags |= SHADER_ENVMAP2;
 
 		// find owner model
-		cmodel_t *owner;
+		const cmodel_t *owner;
 		for (j = 0, owner = models; j < numModels; j++, owner++)
 			if (i >= owner->firstface && i < owner->firstface + owner->numfaces)
 				break;
@@ -597,8 +593,8 @@ static void LoadSurfaces2 (dface_t *surfs, int numSurfaces, int *surfedges, dedg
 		}
 
 		/*---------- check for texture animation ----------*/
-		char	textures[MAX_QPATH * MAX_STAGE_TEXTURES];
-		texinfo_t *ptex = stex;
+		char textures[MAX_QPATH * MAX_STAGE_TEXTURES];
+		const texinfo_t *ptex = stex;
 		char *pname = textures;
 		int numTextures = 0;
 		while (true)
@@ -1038,7 +1034,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 
 
 // Q3's leafFaces are int, Q1/2 - short
-static void LoadLeafSurfaces2 (unsigned short *data, int count)
+static void LoadLeafSurfaces2 (const unsigned short *data, int count)
 {
 	surfaceBase_t **out;
 
@@ -1049,7 +1045,7 @@ static void LoadLeafSurfaces2 (unsigned short *data, int count)
 }
 
 
-static void LoadVisinfo2 (dvis_t *data, int size)
+static void LoadVisinfo2 (const dvis_t *data, int size)
 {
 	int		rowSize;
 
@@ -1094,7 +1090,7 @@ static void LoadVisinfo2 (dvis_t *data, int size)
 }
 
 
-static void LoadBsp2 (bspfile_t *bsp)
+static void LoadBsp2 (const bspfile_t *bsp)
 {
 	// Load planes
 	LoadPlanes (bsp->planes, bsp->numPlanes, sizeof(dplane_t));
@@ -1203,7 +1199,7 @@ void LoadWorldMap (const char *name)
 
 
 //?? can use cmodel.cpp function
-node_t *PointInLeaf (vec3_t p)
+node_t *PointInLeaf (const vec3_t p)
 {
 	if (!map.name[0] || !map.numNodes)
 		Com_DropError ("R_PointInLeaf: bad model");
@@ -1211,14 +1207,8 @@ node_t *PointInLeaf (vec3_t p)
 	node_t *node = map.nodes;
 	while (true)
 	{
-		if (!node->isNode)
-			return node;
-
-		cplane_t *plane = node->plane;
-		if (DotProduct (p, plane->normal) - plane->dist > 0)
-			node = node->children[0];
-		else
-			node = node->children[1];
+		if (!node->isNode) return node;
+		node = node->children[IsNegative (node->plane->DistanceTo (p))];
 	}
 
 	return NULL;	// never
@@ -1736,7 +1726,8 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 	/* Allocate memory:
 		md3Model_t		[1]
 		md3Frame_t		[numFrames]
-		md3Tag_t		[numTags][numFrames]
+		char			[MAX_QPATH][numTags]   -- tag names
+		CCoords			[numFrames][numTags]
 		surfaceMd3_t	[numSurfaces]
 		-- surfaces data [numSurfaces] --
 		float			texCoords[2*s.numVerts]
@@ -1744,7 +1735,8 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 		vertexMd3_t		verts[s.numVerts][numFrames]
 		shader_t*		shaders[s.numShaders]
 	 */
-	int size = sizeof(md3Model_t) + hdr->numFrames*sizeof(md3Frame_t) + hdr->numTags*hdr->numFrames*sizeof(md3Tag_t)
+	int size = sizeof(md3Model_t) + hdr->numFrames*sizeof(md3Frame_t)
+		+ hdr->numTags*MAX_QPATH + hdr->numTags*hdr->numFrames*sizeof(CCoords)
 		+ hdr->numSurfaces*sizeof(surfaceMd3_t);
 	int surfDataOffs = size;			// start of data for surfaces
 	size += tNumVerts*2*sizeof(float) + tNumTris*3*sizeof(int) + tNumVerts*hdr->numFrames*sizeof(vertexMd3_t) + tNumShaders*sizeof(shader_t*);
@@ -1771,10 +1763,25 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 		frm->radius = 0;		// will compute later
 	}
 	// tags
-	//?? can optimize tags by name: between frames tag should not change its name ?!
 	md3->numTags = hdr->numTags;
-	md3->tags = (md3Tag_t*)(md3->frames + md3->numFrames);
-	memcpy (md3->tags, buf + hdr->ofsTags, hdr->numTags*hdr->numFrames*sizeof(dMd3Tag_t));	// same layout on disk and in memory
+	md3->tagNames = (char*)(md3->frames + md3->numFrames);
+	md3->tags = (CCoords*)(md3->tagNames + hdr->numTags*MAX_QPATH);
+	char *tagName = md3->tagNames;
+	dMd3Tag_t *ts = (dMd3Tag_t*)(buf + hdr->ofsTags);	// tag source
+	for (i = 0; i < hdr->numTags; i++, tagName += MAX_QPATH, ts++)
+		strcpy (tagName, ts->name);
+	ts = (dMd3Tag_t*)(buf + hdr->ofsTags);
+	CCoords *td = md3->tags;							// tag destination
+	for (i = 0; i < hdr->numFrames; i++)
+		for (int j = 0; j < hdr->numTags; j++, ts++, td++)
+		{
+			if (strcmp (ts->name, md3->tagNames + j * MAX_QPATH))
+			{
+				Com_WPrintf ("R_LoadMd3: %s have volatile tag names\n", name);
+				return NULL;
+			}
+			*td = ts->tag;
+		}
 	// surfaces
 	md3->numSurfaces = hdr->numSurfaces;
 	md3->surf = (surfaceMd3_t*)(md3->tags + md3->numTags*hdr->numFrames);

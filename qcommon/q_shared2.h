@@ -89,11 +89,6 @@ typedef enum
 	Math library
 -----------------------------------------------------------------------------*/
 
-// colors
-
-float NormalizeColor (const vec3_t in, vec3_t out);
-float NormalizeColor255 (const vec3_t in, vec3_t out);
-
 // float numbers
 
 #define BIG_NUMBER			0x1000000
@@ -102,30 +97,18 @@ float NormalizeColor255 (const vec3_t in, vec3_t out);
 #define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
 #endif
 
-extern vec3_t vec3_origin;	// really, should be "const", but LOTS of functions uses this without "const" specifier ...
-
-// rename to CLAMP_COLOR255 ??
-#define NORMALIZE_COLOR255(r,g,b)	\
-	if ((r|g|b) > 255)	\
-	{					\
-		int		m;		\
-		m = max(r,g);	\
-		m = max(m,b);	\
-		m = 255 * 256 / m;	\
-		r = r * m >> 8;	\
-		g = g * m >> 8;	\
-		b = b * m >> 8;	\
-	}
-
-float ClampColor255 (const vec3_t in, vec3_t out);
-
 float Q_rsqrt (float number);
 #define SQRTFAST(x)		(x * Q_rsqrt(x))
 
 #if !defined C_ONLY && !defined __linux__ && !defined __sgi
 
 #define uint_cast(f)	(* reinterpret_cast<unsigned*>(&(f)))
-#define IsNegative(f)	(uint_cast(f) >> 31)
+
+inline unsigned IsNegative (float f)
+{
+	return uint_cast(f) >> 31;
+}
+
 #define FAbsSign(f,d,s)	\
 	{							\
 		unsigned mask = uint_cast(f) & 0x80000000;	\
@@ -154,6 +137,22 @@ float Q_rsqrt (float number);
 #endif
 
 // vector math
+
+#ifdef VEC3_STRUC
+struct vec3_t
+{
+	float	v[3];
+	inline float& operator[] (int index)
+	{
+		return v[index];
+	}
+	inline const float& operator[] (int index) const
+	{
+		return v[index];
+	}
+};
+#endif
+
 
 inline float DotProduct (const vec3_t x, const vec3_t y)
 {
@@ -214,22 +213,37 @@ inline void VectorMA (vec3_t a, float scale, const vec3_t b)
 	a[2] += scale * b[2];
 }
 
-inline void VectorCopy (const vec3_t a, vec3_t b)
+inline void VectorCopy (const vec3_t a, vec3_t b)	//?? method
 {
+#ifndef VEC3_STRUC
 	memcpy (b, a, sizeof(vec3_t));	// should be fast when "memcpy" is intrinsic
+#else
+	b = a;
+#endif
 }
 
-inline void VectorClear (vec3_t a)
+inline void VectorClear (vec3_t a)	//?? method
 {
+#ifndef VEC3_STRUC
 	memset (a, 0, sizeof(vec3_t));
+#else
+	memset (&a, 0, sizeof(vec3_t));
+#endif
 }
 
 #define VectorSet(v, x, y, z)	(v[0]=(x), v[1]=(y), v[2]=(z))
 
+#ifdef VEC3_STRUC
+inline bool VectorCompare (const vec3_t &v1, const vec3_t &v2)
+{
+	return memcmp (&v1, &v2, sizeof(vec3_t)) == 0;
+}
+#else
 inline bool VectorCompare (const vec3_t v1, const vec3_t v2)
 {
 	return memcmp (v1, v2, sizeof(vec3_t)) == 0;
 }
+#endif
 
 float VectorLength (const vec3_t v);
 float VectorDistance (const vec3_t vec1, const vec3_t vec2);
@@ -272,8 +286,10 @@ struct CAxis
 	void TransformVector (const vec3_t src, vec3_t dst) const;
 	void UnTransformVector (const vec3_t src, vec3_t dst) const;
 };
+// NOTE: to produce inverted axis, can transpose matrix (valid for orthogonal matrix only)
 
 
+//?? CCoords : CVector, CAxis
 struct CCoords
 {
 	// fields
@@ -295,11 +311,33 @@ void UnTransformPoint (const vec3_t origin, const CAxis &axis, const vec3_t src,
 
 // misc
 
+extern vec3_t vec3_origin;	// really, should be "const", but LOTS of functions uses this without "const" specifier ...
+
 void AngleVectors (const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
 float anglemod(float a);
 float LerpAngle (float a1, float a2, float frac);
 
 void MakeNormalVectors (vec3_t forward, vec3_t right, vec3_t up);
+
+// colors
+
+float NormalizeColor (const vec3_t in, vec3_t out);
+float NormalizeColor255 (const vec3_t in, vec3_t out);
+
+// rename to CLAMP_COLOR255 ??
+#define NORMALIZE_COLOR255(r,g,b)	\
+	if ((r|g|b) > 255)	\
+	{					\
+		int		m;		\
+		m = max(r,g);	\
+		m = max(m,b);	\
+		m = 255 * 256 / m;	\
+		r = r * m >> 8;	\
+		g = g * m >> 8;	\
+		b = b * m >> 8;	\
+	}
+
+float ClampColor255 (const vec3_t in, vec3_t out);
 
 
 /*-----------------------------------------------------------------------------

@@ -1200,9 +1200,9 @@ static void DrawSkyBox (void)
 	// build frustum cover
 	vertex_t fv[4];
 	vec3_t	tmp, tmp1, up, right;
-	VectorMA (vp.vieworg, SKY_FRUST_DIST, vp.viewaxis[0], tmp);
-	VectorScale (vp.viewaxis[1], SKY_FRUST_DIST * vp.t_fov_x * 1.05, right);	// *1.05 -- to avoid FP precision bugs
-	VectorScale (vp.viewaxis[2], SKY_FRUST_DIST * vp.t_fov_y * 1.05, up);
+	VectorMA (vp.view.origin, SKY_FRUST_DIST, vp.view.axis[0], tmp);
+	VectorScale (vp.view.axis[1], SKY_FRUST_DIST * vp.t_fov_x * 1.05, right);	// *1.05 -- to avoid FP precision bugs
+	VectorScale (vp.view.axis[2], SKY_FRUST_DIST * vp.t_fov_y * 1.05, up);
 #ifdef VISUALIZE_SKY_FRUSTUM
 	VectorScale (right, 0.9, right);
 	VectorScale (up, 0.9, up);
@@ -1217,7 +1217,7 @@ static void DrawSkyBox (void)
 	surfacePlanar_t pl;
 	pl.numVerts = 4;
 	pl.verts = fv;
-	AddSkySurface (&pl, vp.vieworg, SKY_FRUSTUM);
+	AddSkySurface (&pl, vp.view.origin, SKY_FRUSTUM);
 
 	if (!SkyVisible ()) return;				// all sky surfaces are outside frustum
 
@@ -1238,8 +1238,8 @@ static void DrawSkyBox (void)
 	// if we will add "NODEPTHTEST" if gl_showSky mode -- DEPTHWITE will no effect
 	GL_State (gl_showSky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
 	GL_SetMultitexture (1);
-	// change modelview matrix
-	glTranslatef (VECTOR_ARG(vp.vieworg));
+	// modify modelview matrix
+	glTranslatef (VECTOR_ARG(vp.view.origin));
 	if (currentShader->skyRotate)
 		glRotatef (vp.time * currentShader->skyRotate, VECTOR_ARG(currentShader->skyAxis));
 
@@ -1533,8 +1533,6 @@ static void FlashColor (void)
 }
 
 
-//!! undef(BBOX_WORLD) not works now!
-#define BBOX_WORLD	1	// debug?
 // draw entity bounding boxes
 static void DrawBBoxes (void)
 {
@@ -1542,9 +1540,7 @@ static void DrawBBoxes (void)
 	refEntity_t *ent;
 
 	// common GL setup
-#ifdef BBOX_WORLD
 	glLoadMatrixf (&vp.modelMatrix[0][0]);		// world matrix
-#endif
 	GL_SetMultitexture (0);		// disable texturing with all tmu's
 	glDisableClientState (GL_COLOR_ARRAY);
 
@@ -1574,17 +1570,17 @@ static void DrawBBoxes (void)
 		{
 			float	mins2[2], maxs2[2];
 
-			if (GetBoxRect (ent, ent->size2, mins2, maxs2, true))
+			if (GetBoxRect (ent, ent->size2, mins2, maxs2))
 			{
 				vec3_t	h;
 				static const int idx2[4] = {0, 2, 3, 1};
 
-				VectorMA (ent->center, mins2[0], vp.viewaxis[1], h);
-				VectorMA (h, mins2[1], vp.viewaxis[2], v[0].xyz);
-				VectorMA (h, maxs2[1], vp.viewaxis[2], v[1].xyz);
-				VectorMA (ent->center, maxs2[0], vp.viewaxis[1], h);
-				VectorMA (h, mins2[1], vp.viewaxis[2], v[2].xyz);
-				VectorMA (h, maxs2[1], vp.viewaxis[2], v[3].xyz);
+				VectorMA (ent->center, mins2[0], vp.view.axis[1], h);
+				VectorMA (h, mins2[1], vp.view.axis[2], v[0].xyz);
+				VectorMA (h, maxs2[1], vp.view.axis[2], v[1].xyz);
+				VectorMA (ent->center, maxs2[0], vp.view.axis[1], h);
+				VectorMA (h, mins2[1], vp.view.axis[2], v[2].xyz);
+				VectorMA (h, maxs2[1], vp.view.axis[2], v[3].xyz);
 
 				GL_State (GLSTATE_POLYGON_LINE);
 				GL_DepthRange (DEPTH_NEAR);
@@ -1612,21 +1608,14 @@ static void DrawBBoxes (void)
 			tmp[1] = (j & 2) ? ent->size2[1] : -ent->size2[1];
 			tmp[2] = (j & 4) ? ent->size2[2] : -ent->size2[2];
 
-#ifdef BBOX_WORLD
 			// project point to a world coordinate system
 			if (!ent->worldMatrix)
 				UnTransformPoint (ent->center, ent->coord.axis, tmp, v[j].xyz);
 			else
-				VectorCopy (tmp, v[j].xyz);
-#else
-			VectorCopy (tmp, v[j].xyz);
-#endif
+				VectorAdd (ent->center, tmp, v[j].xyz);
 		}
 
 		// draw it
-#ifndef BBOX_WORLD
-		glLoadMatrixf (&ent->modelMatrix[0][0]);
-#endif
 		if (gl_showbboxes->integer == 3)
 		{
 			if (!ent->worldMatrix)
@@ -1758,18 +1747,17 @@ void surfaceParticle_t::Tesselate ()
 	GL_Bind (gl_particleImage);
 
 	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|/*GLSTATE_DEPTHWRITE|*/GLSTATE_ALPHA_GT0);
-	VectorScale (vp.viewaxis[1], 1.5f, up);
-	VectorScale (vp.viewaxis[2], 1.5f, right);
+	VectorScale (vp.view.axis[1], 1.5f, up);
+	VectorScale (vp.view.axis[2], 1.5f, right);
 
 	glBegin (GL_TRIANGLES);
 	for (particle_t *p = part; p; p = p->drawNext)
 	{
-		float	scale;
+		// get Z-coordinate
+		vec3_t tmp;
+		VectorSubtract (p->org, vp.view.origin, tmp);
+		float scale = DotProduct (tmp, vp.view.axis[0]) * vp.fov_scale;
 
-		scale = (p->org[0] - vp.vieworg[0]) * vp.viewaxis[0][0] +
-				(p->org[1] - vp.vieworg[1]) * vp.viewaxis[0][1] +
-				(p->org[2] - vp.vieworg[2]) * vp.viewaxis[0][2];		// get Z-coordinate
-		scale *= vp.fov_scale;
 		if (scale < 10)
 			continue;		// too near
 		if (scale < 20.0f)
@@ -1857,7 +1845,7 @@ void BK_DrawScene ()
 		if (!index) SetCurrentShader (shader);
 		if (surf->type != SURFACE_PLANAR) continue;		//?? may be another types
 
-		AddSkySurface (static_cast<surfacePlanar_t*>(surf), vp.vieworg, SKY_SURF);
+		AddSkySurface (static_cast<surfacePlanar_t*>(surf), vp.view.origin, SKY_SURF);
 		numSkySurfs++;
 	}
 	//?? may be, require to set dlightMask, currentShader, currentEntity etc.
@@ -2007,9 +1995,8 @@ void BK_DrawPic (shader_t *shader, int x, int y, int w, int h, float s1, float t
 	//?? make as function, use for sprites too
 	//?? make consts for flipMode (1,2,4)
 	// swap texture coords
-#define Swap(a,b) { float _tmp; _tmp = a; a = b; b = _tmp; }
-	if (flipMode & 1) Swap(s1, s2);
-	if (flipMode & 2) Swap(t1, t2);
+	if (flipMode & 1) Exchange (s1, s2);
+	if (flipMode & 2) Exchange (t1, t2);
 	// set s
 	t[0].tex[0] = t[3].tex[0] = s1;
 	t[1].tex[0] = t[2].tex[0] = s2;
@@ -2024,10 +2011,9 @@ void BK_DrawPic (shader_t *shader, int x, int y, int w, int h, float s1, float t
 		 *	3 2		==	s2,t1	s2,t2   >>		s1,t2	s2,t2
 		 */
 		// swap points 1 and 3
-		Swap(t[1].tex[0], t[3].tex[0]);
-		Swap(t[1].tex[1], t[3].tex[1]);
+		Exchange (t[1].tex[0], t[3].tex[0]);
+		Exchange (t[1].tex[1], t[3].tex[1]);
 	}
-#undef Swap
 	// store colors
 	c[0] = c[1] = c[2] = c[3] = color;
 

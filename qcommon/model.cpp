@@ -169,6 +169,7 @@ static void ProcessQ2BspFile (bspfile_t *f)
 	int i, j;
 
 	// models: inflate mins/maxs by 1
+	//?? this is to avoid precision errors ?
 	for (i = 0; i < f->numModels; i++)
 	{
 		cmodel_t *d = &f->models[i];

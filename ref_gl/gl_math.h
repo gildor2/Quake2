@@ -74,9 +74,9 @@ extern float noiseTablef[];
 
 
 void InitFuncTables (void);
-void BuildRotationMatrix (float r[3][3], vec3_t axis, float angle);
-bool GetBoxRect (refEntity_t *ent, vec3_t size2, float mins2[2], float maxs2[2], bool clamp);
-bool ProjectToScreen (vec3_t pos, int *scr);
+void BuildRotationAxis (CAxis &r, const vec3_t axis, float angle);
+bool GetBoxRect (const refEntity_t *ent, const vec3_t size2, float mins2[2], float maxs2[2], bool clamp = true);
+bool ProjectToScreen (const vec3_t pos, int scr[2]);
 
 
 void SaturateColor3f (vec3_t color);

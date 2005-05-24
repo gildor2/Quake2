@@ -14,7 +14,7 @@ namespace OpenGLDrv {
 void ClearSkyBox (void);
 void SetSkyRotate (float angle, vec3_t axis);
 bool SkyVisible (void);
-void AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag);
+void AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag);	//?? vieworg is always vp.view.origin
 int TesselateSkySide (int side, bufVertex_t *verts, bufTexCoord_t *tex, float zFar);
 
 

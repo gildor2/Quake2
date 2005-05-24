@@ -51,19 +51,19 @@ typedef union
 
 
 //!!! clean beam comments
-typedef struct
+struct entity_t
 {
 	CRenderModel *model;
-	float	angles[3];
+	vec3_t	angles;
 	/*------- most recent data --------*/
-	float	origin[3];
+	vec3_t	origin;
 	int		frame;
 	/*------- data for lerping --------*/
-	float	oldorigin[3];
+	vec3_t	oldorigin;
 	int		oldframe;
 	float	backlerp;		// 0.0 = current, 1.0 = old
 	/*-------------- misc -------------*/
-	float	size[3];
+	vec3_t	size;
 	int		skinnum;
 	color_t	color;			// for extended beam
 	/*----------- color info ----------*/
@@ -71,7 +71,7 @@ typedef struct
 
 	CBasicImage	*skin;		// NULL for inline skin
 	int		flags;
-} entity_t;
+};
 
 
 typedef enum
@@ -148,7 +148,7 @@ typedef struct
 	int		x, y, width, height;	// in virtual screen coordinates
 	float	fov_x, fov_y;
 	vec3_t	vieworg;
-	float	viewangles[3];
+	vec3_t	viewangles;
 	float	blend[4];				// rgba 0-1 full screen blend
 	float	time;					// time is used to auto animate
 	unsigned rdflags;				// RDF_UNDERWATER, etc

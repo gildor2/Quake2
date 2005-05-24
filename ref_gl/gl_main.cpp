@@ -504,7 +504,7 @@ static void SetWorldModelview (void)
 	};
 
 	// all fields should be zeroed before call this function !
-//	VectorCopy (vp.vieworg, vp.modelvieworg); // portals ??
+//	VectorCopy (vp.view.origin, vp.modelvieworg); // portals ??
 //	vp.modelaxis[0][0] = vp.modelaxis[1][1] = vp.modelaxis[2][2] = 1;	// orthogonal axis ( portals ??)
 	/* Matrix contents:
 	 *  a00   a01   a02    -x
@@ -516,10 +516,10 @@ static void SetWorldModelview (void)
 	memset (matrix, 0, sizeof(matrix));
 	for (i = 0; i < 3; i++)
 		for (j = 0; j < 3; j++)
-			matrix[i][j] = vp.viewaxis[j][i];
-	matrix[3][0] = -DotProduct (vp.vieworg, vp.viewaxis[0]);
-	matrix[3][1] = -DotProduct (vp.vieworg, vp.viewaxis[1]);
-	matrix[3][2] = -DotProduct (vp.vieworg, vp.viewaxis[2]);
+			matrix[i][j] = vp.view.axis[j][i];
+	matrix[3][0] = -DotProduct (vp.view.origin, vp.view.axis[0]);
+	matrix[3][1] = -DotProduct (vp.view.origin, vp.view.axis[1]);
+	matrix[3][2] = -DotProduct (vp.view.origin, vp.view.axis[2]);
 	matrix[3][3] = 1;
 	// vp.modelMatrix = baseMatrix * matrix
 	for (i = 0; i < 4; i++)
@@ -531,13 +531,9 @@ static void SetWorldModelview (void)
 			vp.modelMatrix[i][j] = s;
 		}
 #if 0
-#define m vp.vieworg
-	DrawTextLeft (va("Org: %9.4g, %9.4g %9.4g", VECTOR_ARG(m)), RGB(0.6,1,0.2));
-#undef m
-#define m vp.viewaxis
+	DrawTextLeft (va("Org: %9.4g, %9.4g %9.4g", VECTOR_ARG(vp.view.origin)), RGB(0.6,1,0.2));
 	for (i = 0; i < 3; i++)
-		DrawTextLeft (va("ax[%d] = {%9.4g, %9.4g %9.4g}", i, VECTOR_ARG(m[i])), RGB(0.4,0.8,1));
-#undef m
+		DrawTextLeft (va("ax[%d] = {%9.4g, %9.4g %9.4g}", i, VECTOR_ARG(vp.view.axis[i])), RGB(0.4,0.8,1));
 #define m vp.modelMatrix
 	DrawTextLeft (va("----- modelview matrix -----"), RGB(1,0.2,0.2));
 	for (i = 0; i < 4; i++)
@@ -552,7 +548,7 @@ static void SetFrustum (void)
 	int		i;
 
 	// setup plane [0]: view direction + znear
-	VectorCopy (vp.viewaxis[0], vp.frustum[0].normal);
+	VectorCopy (vp.view.axis[0], vp.frustum[0].normal);
 
 #define SCALE	(0.5/360.0f)
 	float sx = SIN_FUNC(vp.fov_x * SCALE);	// fov/2 * pi/180
@@ -563,16 +559,16 @@ static void SetFrustum (void)
 	// calculate normals
 	for (i = 0; i < 3; i++)
 	{
-		vp.frustum[1].normal[i] = vp.viewaxis[0][i] * sx + vp.viewaxis[1][i] * cx;
-		vp.frustum[2].normal[i] = vp.viewaxis[0][i] * sx - vp.viewaxis[1][i] * cx;
-		vp.frustum[3].normal[i] = vp.viewaxis[0][i] * sy + vp.viewaxis[2][i] * cy;
-		vp.frustum[4].normal[i] = vp.viewaxis[0][i] * sy - vp.viewaxis[2][i] * cy;
+		vp.frustum[1].normal[i] = vp.view.axis[0][i] * sx + vp.view.axis[1][i] * cx;
+		vp.frustum[2].normal[i] = vp.view.axis[0][i] * sx - vp.view.axis[1][i] * cx;
+		vp.frustum[3].normal[i] = vp.view.axis[0][i] * sy + vp.view.axis[2][i] * cy;
+		vp.frustum[4].normal[i] = vp.view.axis[0][i] * sy - vp.view.axis[2][i] * cy;
 	}
 	// complete planes
 	for (i = 0; i < NUM_FRUSTUM_PLANES; i++)
 	{
 		vp.frustum[i].type = PLANE_NON_AXIAL;
-		vp.frustum[i].dist = DotProduct (vp.vieworg, vp.frustum[i].normal);
+		vp.frustum[i].dist = DotProduct (vp.view.origin, vp.frustum[i].normal);
 		vp.frustum[i].SetSignbits ();
 	}
 	vp.frustum[0].dist += gl_znear->value;
@@ -589,19 +585,19 @@ static void SetPerspective (void)
 	{
 		// calculate zFar depends on visible bounding box size
 		float d = 0;
-		for (int i = 0; i < 8; i++)			// check all 8 verts of bounding box
+		for (int i = 0; i < 8; i++)			// enumarate all 8 verts of bounding box
 		{
 			vec3_t	v;
 			CBox *b = &vp.bounds;
 			v[0] = (i & 1) ? b->maxs[0] : b->mins[0];
 			v[1] = (i & 2) ? b->maxs[1] : b->mins[1];
 			v[2] = (i & 4) ? b->maxs[2] : b->mins[2];
-
-			VectorSubtract (v, vp.vieworg, v);
-			float d1 = DotProduct (v, v);	// square of vector length
+			// get Z-coordinate
+			VectorSubtract (v, vp.view.origin, v);
+			float d1 = DotProduct (v, vp.view.axis[0]);
 			if (d1 > d) d = d1;
 		}
-		vp.zFar = SQRTFAST(d) + 100;		// avoid precision errors
+		vp.zFar = d + 100;					// avoid float precision bugs
 	}
 	//-------------
 	float zmin = gl_znear->value;
@@ -697,9 +693,9 @@ void RenderFrame (refdef_t *fd)
 	vp.fov_scale = tan (fd->fov_x / 2.0f / 180.0f * M_PI);
 	if (vp.fov_scale < 0.01f) vp.fov_scale = 0.01f;
 
-	// set vieworg/viewaxis before all to allow 3D text output
-	VectorCopy (fd->vieworg, vp.vieworg);
-	vp.viewaxis.FromAngles (fd->viewangles);
+	// set vp.view before all to allow 3D text output
+	VectorCopy (fd->vieworg, vp.view.origin);
+	vp.view.axis.FromAngles (fd->viewangles);
 
 	vp.lightStyles = fd->lightstyles;
 	vp.time = fd->time;
