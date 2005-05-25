@@ -534,7 +534,7 @@ static void	D_BeginRegistration (const char *map) {}
 static CRenderModel *D_RegisterModel (const char *name) { return NULL; }
 static CBasicImage *D_RegisterSkin (const char *name) { return NULL; }
 static CBasicImage *D_FindPic (const char *name) { return NULL; }
-static void D_SetSky (const char *name, float rotate, vec3_t axis) {}
+static void D_SetSky (const char *name, float rotate, const CVec3 &axis) {}
 static void	D_EndRegistration (void) {}
 
 static void D_Screenshot (int flags, const char *name)

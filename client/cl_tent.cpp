@@ -30,8 +30,8 @@ typedef struct
 	int		dest_entity;
 	CRenderModel *model;
 	int		endtime;
-	vec3_t	offset;
-	vec3_t	start, end;
+	CVec3	offset;
+	CVec3	start, end;
 } mBeam_t;		// beam with model
 
 static mBeam_t	cl_mBeams[MAX_BEAMS];
@@ -41,13 +41,13 @@ static mBeam_t	cl_mPlayerbeams[MAX_BEAMS];
 
 //ROGUE
 cl_sustain_t	cl_sustains[MAX_SUSTAINS];
-extern void CL_TeleportParticles (vec3_t org);
+extern void CL_TeleportParticles (const CVec3 &org);
 
-void CL_BlasterParticles (vec3_t org, vec3_t dir);
-void CL_ExplosionParticles (vec3_t org);
-void CL_BFGExplosionParticles (vec3_t org);
+void CL_BlasterParticles (const CVec3 &org, const CVec3 &dir);
+void CL_ExplosionParticles (const CVec3 &org);
+void CL_BFGExplosionParticles (const CVec3 &org);
 // XATRIX
-void CL_BlueBlasterParticles (vec3_t org, vec3_t dir);
+void CL_BlueBlasterParticles (const CVec3 &org, const CVec3 &dir);
 
 sfx_t *cl_sfx_ric[3];
 sfx_t *cl_sfx_lashit;
@@ -295,7 +295,7 @@ typedef struct
 
 	int			frames;			// lifetime in number of frames (0.1s units)
 	float		light;
-	vec3_t		lightcolor;
+	CVec3		lightcolor;
 	float		time;
 	int			baseframe;
 } explosion_t;
@@ -324,7 +324,7 @@ void CL_ClearTEnts (void)
 CL_AllocExplosion
 =================
 */
-explosion_t *CL_AllocExplosion (vec3_t origin, exptype_t type)
+explosion_t *CL_AllocExplosion (const CVec3 &origin, exptype_t type)
 {
 	int		i;
 	explosion_t *ex, *dst;
@@ -477,7 +477,7 @@ void CL_AddExplosions (void)
 CL_SmokeAndFlash
 =================
 */
-void CL_SmokeAndFlash(vec3_t origin)
+void CL_SmokeAndFlash(const CVec3 &origin)
 {
 	explosion_t	*ex;
 
@@ -500,7 +500,7 @@ CL_ParseParticles
 void CL_ParseParticles (void)
 {
 	int		color, count;
-	vec3_t	pos, dir;
+	CVec3	pos, dir;
 
 	MSG_ReadPos (&net_message, pos);
 	MSG_ReadDir (&net_message, dir);
@@ -520,7 +520,7 @@ CL_ParseBeam
 int CL_ParseBeam (CRenderModel *model)
 {
 	int		ent;
-	vec3_t	start, end;
+	CVec3	start, end;
 	mBeam_t	*b;
 	int		i;
 
@@ -568,7 +568,7 @@ CL_ParseBeam2
 int CL_ParseBeam2 (CRenderModel *model)
 {
 	int		ent;
-	vec3_t	start, end, offset;
+	CVec3	start, end, offset;
 	mBeam_t	*b;
 	int		i;
 
@@ -621,7 +621,7 @@ CL_ParsePlayerBeam
 int CL_ParsePlayerBeam (CRenderModel *model)
 {
 	int		ent;
-	vec3_t	start, end, offset;
+	CVec3	start, end, offset;
 	mBeam_t	*b;
 	int		i;
 
@@ -685,7 +685,7 @@ CL_ParseLightning
 int CL_ParseLightning (CRenderModel *model)
 {
 	int		srcEnt, destEnt;
-	vec3_t	start, end;
+	CVec3	start, end;
 	mBeam_t	*b;
 	int		i;
 
@@ -738,13 +738,11 @@ CL_ParseLaser
 // Used for BFG laser only !
 void CL_ParseLaser (unsigned colors)
 {
-	vec3_t	start, end;
-	beam_t	*b;
-
+	CVec3	start, end;
 	MSG_ReadPos (&net_message, start);
 	MSG_ReadPos (&net_message, end);
 
-	b = CL_AllocParticleBeam (start, end, 2.0f, 0.1f);
+	beam_t *b = CL_AllocParticleBeam (start, end, 2.0f, 0.1f);
 	if (!b) return;
 
 	b->type = BEAM_STANDARD;
@@ -758,7 +756,7 @@ void CL_ParseLaser (unsigned colors)
 //ROGUE
 void CL_ParseSteam (void)
 {
-	vec3_t	pos, dir;
+	CVec3	pos, dir;
 	int		id, i;
 	int		r;
 	int		cnt;
@@ -814,13 +812,13 @@ void CL_ParseSteam (void)
 		magnitude = MSG_ReadShort (&net_message);
 		color = r & 0xff;
 		CL_ParticleSteamEffect (pos, dir, color, cnt, magnitude);
-//		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+//		S_StartSound (&pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 	}
 }
 
 void CL_ParseWidow (void)
 {
-	vec3_t	pos;
+	CVec3	pos;
 	int		id, i;
 	cl_sustain_t	*s, *free_sustain;
 
@@ -853,7 +851,7 @@ void CL_ParseWidow (void)
 
 void CL_ParseNuke (void)
 {
-	vec3_t	pos;
+	CVec3	pos;
 	int		i;
 	cl_sustain_t	*s, *free_sustain;
 
@@ -894,7 +892,7 @@ CL_ParseTEnt
 
 void CL_ParseTEnt (void)
 {
-	vec3_t	pos, pos2, dir;
+	CVec3	pos, pos2, dir;
 	explosion_t	*ex;
 	int		cnt, color, ent;
 
@@ -932,8 +930,8 @@ void CL_ParseTEnt (void)
 			if (cls.newprotocol)
 			{
 				trace_t	trace;
-				vec3_t	zero = {0, 0, 0};
-				vec3_t	start, end;
+				static const CVec3 zero = {0, 0, 0};
+				CVec3 start, end;
 
 				VectorAdd (pos, dir, start);
 				VectorMA (start, -2, dir, end);
@@ -945,7 +943,7 @@ void CL_ParseTEnt (void)
 					if (impactType < 0) break;		// silent
 
 					CL_SmokeAndFlash (pos);
-					S_StartSound (pos, 0, 0, cl_sfx_bullethits[impactType*3 + rand()%3], 1, ATTN_NORM, 0);
+					S_StartSound (&pos, 0, 0, cl_sfx_bullethits[impactType*3 + rand()%3], 1, ATTN_NORM, 0);
 					break;
 				}
 			}
@@ -955,7 +953,7 @@ void CL_ParseTEnt (void)
 			// impact sound
 			cnt = rand()%10;//&15;
 			if (cnt >= 0 && cnt <= 2)
-				S_StartSound (pos, 0, 0, cl_sfx_ric[cnt], 1, ATTN_NORM, 0);
+				S_StartSound (&pos, 0, 0, cl_sfx_ric[cnt], 1, ATTN_NORM, 0);
 		}
 
 		break;
@@ -969,7 +967,7 @@ void CL_ParseTEnt (void)
 		else
 			CL_ParticleEffect (pos, dir, 0xb0, 40);
 		//FIXME : replace or remove this sound
-		S_StartSound (pos, 0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+		S_StartSound (&pos, 0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
 
 	case TE_SHOTGUN:			// bullet hitting wall
@@ -1002,16 +1000,16 @@ void CL_ParseTEnt (void)
 				// just particles -- not water
 				r = rand() & 3;
 				if (r == 0)
-					S_StartSound (pos, 0, 0, cl_sfx_spark5, 1, ATTN_STATIC, 0);
+					S_StartSound (&pos, 0, 0, cl_sfx_spark5, 1, ATTN_STATIC, 0);
 				else if (r == 1)
-					S_StartSound (pos, 0, 0, cl_sfx_spark6, 1, ATTN_STATIC, 0);
+					S_StartSound (&pos, 0, 0, cl_sfx_spark6, 1, ATTN_STATIC, 0);
 				else
-					S_StartSound (pos, 0, 0, cl_sfx_spark7, 1, ATTN_STATIC, 0);
+					S_StartSound (&pos, 0, 0, cl_sfx_spark7, 1, ATTN_STATIC, 0);
 			}
 			else if ((r == SPLASH_BULLET_BLUE_WATER || r == SPLASH_BULLET_BROWN_WATER) && cls.newprotocol)
 			{
 				// bullet hitting water
-				S_StartSound (pos, 0, 0, cl_sfx_bullethits[IMPACT_WATER*3 + rand()%3], 1, ATTN_NORM, 0);
+				S_StartSound (&pos, 0, 0, cl_sfx_bullethits[IMPACT_WATER*3 + rand()%3], 1, ATTN_NORM, 0);
 			}
 		}
 		break;
@@ -1054,7 +1052,7 @@ void CL_ParseTEnt (void)
 		ex->lightcolor[1] = 1;
 		ex->ent.model = cl_mod_explode;
 		ex->frames = 4;
-		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+		S_StartSound (&pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
 
 	case TE_RAILTRAIL:			// railgun effect
@@ -1064,7 +1062,7 @@ void CL_ParseTEnt (void)
 			CL_RailTrail (pos, pos2);
 		else
 			CL_RailTrailExt (pos, pos2, 1, 0);
-		S_StartSound (pos2, 0, 0, cl_sfx_railg, 1, ATTN_NORM, 0);
+		S_StartSound (&pos2, 0, 0, cl_sfx_railg, 1, ATTN_NORM, 0);
 		break;
 
 	case TE_RAILTRAIL_EXT:		// advanced railgun effect
@@ -1074,7 +1072,7 @@ void CL_ParseTEnt (void)
 			byte rColor = MSG_ReadByte (&net_message);
 			byte rType = MSG_ReadByte (&net_message);
 			CL_RailTrailExt (pos, pos2, rType, rColor);
-			S_StartSound (pos2, 0, 0, cl_sfx_railg, 1, ATTN_NORM, 0);
+			S_StartSound (&pos2, 0, 0, cl_sfx_railg, 1, ATTN_NORM, 0);
 		}
 		break;
 
@@ -1095,9 +1093,9 @@ void CL_ParseTEnt (void)
 		ex->ent.angles[1] = rand() % 360;
 		CL_ExplosionParticles (pos);
 		if (type == TE_GRENADE_EXPLOSION_WATER)
-			S_StartSound (pos, 0, 0, cl_sfx_watrexp, 1, ATTN_NORM, 0);
+			S_StartSound (&pos, 0, 0, cl_sfx_watrexp, 1, ATTN_NORM, 0);
 		else
-			S_StartSound (pos, 0, 0, cl_sfx_grenexp, 1, ATTN_NORM, 0);
+			S_StartSound (&pos, 0, 0, cl_sfx_grenexp, 1, ATTN_NORM, 0);
 		break;
 
 	// XATRIX
@@ -1115,7 +1113,7 @@ void CL_ParseTEnt (void)
 			ex->baseframe = 15;
 		ex->frames = 15;
 		CL_ExplosionParticles (pos);
-		S_StartSound (pos, 0, 0, cl_sfx_rockexp, 1, ATTN_NORM, 0);
+		S_StartSound (&pos, 0, 0, cl_sfx_rockexp, 1, ATTN_NORM, 0);
 		break;
 
 	case TE_EXPLOSION1:
@@ -1138,7 +1136,7 @@ void CL_ParseTEnt (void)
 		ex->frames = 15;
 		if ((type != TE_EXPLOSION1_BIG) && (type != TE_EXPLOSION1_NP))		// PMM
 			CL_ExplosionParticles (pos);									// PMM
-		S_StartSound (pos, 0, 0, (type == TE_ROCKET_EXPLOSION_WATER) ? cl_sfx_watrexp : cl_sfx_rockexp,
+		S_StartSound (&pos, 0, 0, (type == TE_ROCKET_EXPLOSION_WATER) ? cl_sfx_watrexp : cl_sfx_rockexp,
 			1, ATTN_NORM, 0);
 		break;
 
@@ -1179,7 +1177,7 @@ void CL_ParseTEnt (void)
 	case TE_BOSSTPORT:					// boss teleporting to station
 		MSG_ReadPos (&net_message, pos);
 		CL_BigTeleportParticles (pos);
-		S_StartSound (pos, 0, 0, S_RegisterSound ("misc/bigtele.wav"), 1, ATTN_NONE, 0);
+		S_StartSound (&pos, 0, 0, S_RegisterSound ("misc/bigtele.wav"), 1, ATTN_NONE, 0);
 		break;
 
 	case TE_GRAPPLE_CABLE:
@@ -1252,7 +1250,7 @@ void CL_ParseTEnt (void)
 		}
 		ex->ent.model = cl_mod_explode;
 		ex->frames = 4;
-		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+		S_StartSound (&pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
 
 
@@ -1282,9 +1280,9 @@ void CL_ParseTEnt (void)
 			ex->baseframe = 15;
 		ex->frames = 15;
 		if (type == TE_ROCKET_EXPLOSION_WATER)
-			S_StartSound (pos, 0, 0, cl_sfx_watrexp, 1, ATTN_NORM, 0);
+			S_StartSound (&pos, 0, 0, cl_sfx_watrexp, 1, ATTN_NORM, 0);
 		else
-			S_StartSound (pos, 0, 0, cl_sfx_rockexp, 1, ATTN_NORM, 0);
+			S_StartSound (&pos, 0, 0, cl_sfx_rockexp, 1, ATTN_NORM, 0);
 		break;
 
 	case TE_FLASHLIGHT:
@@ -1313,7 +1311,7 @@ void CL_ParseTEnt (void)
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
 		CL_ParticleSteamEffect (pos, dir, 8, cnt, 60);
-		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+		S_StartSound (&pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
 
 	case TE_HEATBEAM_STEAM:
@@ -1321,7 +1319,7 @@ void CL_ParseTEnt (void)
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
 		CL_ParticleSteamEffect (pos, dir, 0xE0, cnt, 60);
-		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+		S_StartSound (&pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
 
 	case TE_STEAM:
@@ -1333,7 +1331,7 @@ void CL_ParseTEnt (void)
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadPos (&net_message, pos2);
 		CL_BubbleTrail2 (pos, pos2, cnt);
-		S_StartSound (pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+		S_StartSound (&pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
 
 	case TE_MOREBLOOD:
@@ -1354,7 +1352,7 @@ void CL_ParseTEnt (void)
 //		CL_ParticleEffect (pos, dir, 109, 40);
 		CL_ParticleEffect (pos, dir, 0x75, 40);
 		//FIXME : replace or remove this sound
-		S_StartSound (pos, 0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
+		S_StartSound (&pos, 0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
 
 	case TE_TRACKER_EXPLOSION:
@@ -1362,7 +1360,7 @@ void CL_ParseTEnt (void)
 		CL_ColorFlash (pos, 0, 150, -1, -1, -1);
 		CL_ColorExplosionParticles (pos, 0, 1);
 //		CL_Tracker_Explode (pos);
-		S_StartSound (pos, 0, 0, cl_sfx_disrexp, 1, ATTN_NORM, 0);
+		S_StartSound (&pos, 0, 0, cl_sfx_disrexp, 1, ATTN_NORM, 0);
 		break;
 
 	case TE_TELEPORT_EFFECT:
@@ -1398,7 +1396,7 @@ void CL_AddBeams (void)
 {
 	int			i,j;
 	mBeam_t		*b;
-	vec3_t		dist, org;
+	CVec3		dist, org;
 	float		d;
 	entity_t	ent;
 	float		yaw, pitch;
@@ -1521,14 +1519,14 @@ void CL_AddPlayerBeams (void)
 {
 	int		i, j;
 	mBeam_t	*b;
-	vec3_t		dist, org;
-	float		d;
-	entity_t	ent;
-	float		yaw, pitch;
-	float		forward;
-	float		len, steps;
-	float		model_length;
-	float		hand_multiplier;
+	CVec3	dist, org;
+	float	d;
+	entity_t ent;
+	float	yaw, pitch;
+	float	forward;
+	float	len, steps;
+	float	model_length;
+	float	hand_multiplier;
 
 //PMM
 	if (hand->integer == 2)
@@ -1628,7 +1626,7 @@ void CL_AddPlayerBeams (void)
 		{
 			if (!isPlayer)
 			{
-				vec3_t	u, f, r;
+				CVec3 u, f, r;
 
 				// third person
 				framenum = 2;

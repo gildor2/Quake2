@@ -10,9 +10,9 @@ namespace OpenGLDrv {
 
 struct refDlight_t
 {
-	vec3_t	origin;
+	CVec3	origin;
 	float	intensity;
-	vec3_t	modelOrg;					// temporaty: origin in model coordinates
+	CVec3	modelOrg;					// temporaty: origin in model coordinates
 	color_t	c;
 };
 
@@ -76,7 +76,7 @@ struct surfDlight_t
 	float	pos[2];
 	float	radius;
 	refDlight_t *dlight;
-	vec3_t	*axis;
+	CVec3	*axis;				// CVec3[2]
 };
 
 
@@ -104,7 +104,7 @@ struct refEntity_t
 	float	dist2;						// Z-coordinate of model
 	bool	visible;					// valid for current frame
 
-	vec3_t	center, size2;				// bounding box: center and (mins-maxs)/2
+	CVec3	center, size2;				// bounding box: center and (mins-maxs)/2
 	float	radius;
 	union {
 		struct {
@@ -114,7 +114,7 @@ struct refEntity_t
 			bool	worldMatrix;
 			bool	mirror;
 			byte	frustumMask;		//?? remove
-			vec3_t	modelvieworg;		// vp.view.origin in model coordinate system
+			CVec3	modelvieworg;		// vp.view.origin in model coordinate system
 			float	modelMatrix[4][4];	// modelview matrix
 			// info for frame lerping
 			int		frame, oldFrame;
@@ -126,7 +126,7 @@ struct refEntity_t
 		/*------------- bbox ----------------*/
 		struct {
 			CAxis	boxAxis;
-			vec3_t	boxSize;
+			CVec3	boxSize;
 		};
 	};
 

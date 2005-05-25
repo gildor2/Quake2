@@ -63,7 +63,7 @@ void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, unsigned
 			VectorSet (to->bounds.mins, -x, -x, -zd);
 			VectorSet (to->bounds.maxs, x, x, zu);
 
-			vec3_t d;
+			CVec3 d;
 			to->bounds.GetCenter (d);
 			VectorAdd (to->origin, d, to->center);
 
@@ -75,9 +75,8 @@ void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, unsigned
 			cmodel_t *m = cl.model_clip[to->modelindex];
 			if (m)
 			{
-				vec3_t	v;
-				VectorAdd (m->mins, m->maxs, v);
-				VectorScale (v, 0.5f, v);			//!! CBox.GetCenter()
+				CVec3 v;
+				m->bounds.GetCenter (v);
 				UnTransformPoint (to->origin, to->axis, v, to->center);
 				to->radius = m->radius;
 				to->valid = true;
@@ -607,7 +606,7 @@ void CL_AddEntityBox (entityState_t *st, unsigned rgba)
 	if (st->solid == 31)
 	{
 		cmodel_t *cmodel = cl.model_clip[st->modelindex];
-		VectorSubtract (cmodel->maxs, cmodel->mins, ent.size);
+		VectorSubtract (cmodel->bounds.maxs, cmodel->bounds.mins, ent.size);
 		VectorScale (ent.size, 0.5f, ent.size);
 	}
 	else
@@ -768,7 +767,7 @@ static void CL_AddPacketEntities (void)
 		// XATRIX
 		else if (effects & EF_SPINNINGLIGHTS)
 		{
-			vec3_t forward, start;
+			CVec3 forward, start;
 
 			ent.angles[0] = 0;
 			ent.angles[1] = anglemod(cl.time/2) + st->angles[1];
@@ -1014,12 +1013,12 @@ static void CL_AddPacketEntities (void)
 
 //#define FIXED_VIEW		// for debug purposes
 
-void CL_OffsetThirdPersonView (void)
+void CL_OffsetThirdPersonView ()
 {
-	vec3_t	forward, pos;
+	CVec3	forward, pos;
 	trace_t	trace;
 	float	camDist;//, dist;
-	static const vec3_t mins = {-5, -5, -5}, maxs = {5, 5, 5};
+	static const CVec3 mins = {-5, -5, -5}, maxs = {5, 5, 5};
 
 	// algorithm was taken from FAKK2
 	camDist = max(cl_cameradist->value, CAMERA_MINIMUM_DISTANCE);
@@ -1037,7 +1036,7 @@ void CL_OffsetThirdPersonView (void)
 
 	if (dist < CAMERA_MINIMUM_DISTANCE)
 	{
-		vec3_t	angles;
+		CVec3	angles;
 
 		VectorCopy (cl.refdef.viewangles, angles);
 		while (angles[PITCH] < 90)
@@ -1209,14 +1208,12 @@ CL_GetEntitySoundOrigin
 Called to get the sound spatialization origin
 ===============
 */
-void CL_GetEntitySoundOrigin (int ent, vec3_t org)
+void CL_GetEntitySoundOrigin (int ent, CVec3 &org)
 {
-	centity_t	*old;
-
 	if (ent < 0 || ent >= MAX_EDICTS)
 		Com_DropError ("CL_GetEntitySoundOrigin: bad ent");
-	old = &cl_entities[ent];
-	VectorCopy (old->lerp_origin, org);
+	centity_t *old = &cl_entities[ent];
+	org = old->lerp_origin;
 
 	// FIXME: bmodel issues...
 }

@@ -8,7 +8,6 @@
 #include "gl_buffers.h"
 #include "protocol.h"		//!! for RF_XXX consts only !
 
-
 namespace OpenGLDrv {
 
 /* LATER: replace (almost) all vp.time -> shader.time (or global "shaderTime") ??
@@ -107,7 +106,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 			bufVertex_t *vec = vb->verts;
 			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
-				float *norm = ex->normal;
+				CVec3 &norm = ex->normal;
 				for (int k = 0; k < ex->numVerts; k++, vec++)
 				{
 					float f;
@@ -241,14 +240,14 @@ static void GenerateColorArray (shaderStage_t *st)
 			bufVertex_t *vec = vb->verts;
 			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
-				float *norm = ex->normal;
+				CVec3 &norm = ex->normal;
 				for (i = 0; i < ex->numVerts; i++, vec++, dst++)
 				{
-					vec3_t	v;
+					CVec3	v;
 
 					VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
 					VectorNormalizeFast (v);
-					float d = DotProduct (v, norm);
+					float d = dot (v, norm);
 #if 0
 					d = d * d;
 					dst->c[3] = appRound (d * scale) + min;
@@ -332,7 +331,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 	case TCGEN_ENVIRONMENT:
 		{
 			bufExtra_t *ex;
-			vec3_t	v;
+			CVec3	v;
 			float	d;
 
 			bufVertex_t *vec = vb->verts;
@@ -340,27 +339,27 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 			{
 				if (ex->axis)
 				{	// compute envmap using surface axis
-					vec3_t	*axis;
+					CVec3	*axis;	// will point to CVec3[2]
 
 					axis = ex->axis;
 					for (k = 0; k < ex->numVerts; k++, vec++, dst++)
 					{
 						VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
 						VectorNormalizeFast (v);
-						d = DotProduct (v, axis[0]);
+						d = dot (v, axis[0]);
 						dst->tex[0] = (d - 1) / 2;
-						d = DotProduct (v, axis[1]);
+						d = dot (v, axis[1]);
 						dst->tex[1] = (d - 1) / 2;
 					}
 				}
 				else
 				{	// axis is not provided - use normal
-					float *norm = ex->normal;
+					CVec3 &norm = ex->normal;
 					for (k = 0; k < ex->numVerts; k++, vec++, dst++)
 					{
 						VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
 						VectorNormalizeFast (v);
-						d = DotProduct (v, norm) * 2;
+						d = dot (v, norm) * 2;
 						dst->tex[0] = (d * norm[1] - v[1] + 1) / 2;
 						dst->tex[1] = (d * norm[2] - v[2] + 1) / 2;
 					}
@@ -383,8 +382,8 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 				float invRadius = 0.5f / sdl->radius;
 				for (k = 0; k < ex->numVerts; k++, dst++, vec++)
 				{
-					dst->tex[0] = (DotProduct (vec->xyz, sdl->axis[0]) - sdl->pos[0]) * invRadius + 0.5f;
-					dst->tex[1] = (DotProduct (vec->xyz, sdl->axis[1]) - sdl->pos[1]) * invRadius + 0.5f;
+					dst->tex[0] = (dot (vec->xyz, sdl->axis[0]) - sdl->pos[0]) * invRadius + 0.5f;
+					dst->tex[1] = (dot (vec->xyz, sdl->axis[1]) - sdl->pos[1]) * invRadius + 0.5f;
 				}
 			}
 		}
@@ -1199,7 +1198,7 @@ static void DrawSkyBox (void)
 
 	// build frustum cover
 	vertex_t fv[4];
-	vec3_t	tmp, tmp1, up, right;
+	CVec3	tmp, tmp1, up, right;
 	VectorMA (vp.view.origin, SKY_FRUST_DIST, vp.view.axis[0], tmp);
 	VectorScale (vp.view.axis[1], SKY_FRUST_DIST * vp.t_fov_x * 1.05, right);	// *1.05 -- to avoid FP precision bugs
 	VectorScale (vp.view.axis[2], SKY_FRUST_DIST * vp.t_fov_y * 1.05, up);
@@ -1362,7 +1361,7 @@ void surfacePlanar_t::Tesselate ()
 	bufExtra_t *ex = &gl_extra[gl_numExtra++];
 	ex->numVerts = numVerts;
 	if (lightmap) ex->lmWidth = lightmap->w;
-	VectorCopy (plane.normal, ex->normal);
+	ex->normal = plane.normal;
 	ex->axis = axis;
 	ex->dlight = dlights;
 
@@ -1374,7 +1373,7 @@ void surfacePlanar_t::Tesselate ()
 	vertex_t *vs = verts;
 	for (int i = 0; i < numVerts; i++, vs++, v++, t++, c++)
 	{
-		VectorCopy (vs->xyz, v->xyz);		// copy vertex
+		v->xyz = vs->xyz;			// copy vertex
 		t->tex[0] = vs->st[0];		// copy texture coords
 		t->tex[1] = vs->st[1];
 		t->lm[0] = vs->lm[0];		// copy lightmap coords
@@ -1416,7 +1415,7 @@ void surfacePoly_t::Tesselate ()
 	vertexPoly_t *vs = verts;
 	for (i = 0; i < numVerts; i++, vs++, v++, t++, c++)
 	{
-		VectorCopy (vs->xyz, v->xyz);		// copy vertex
+		v->xyz = vs->xyz;			// copy vertex
 		t->tex[0] = vs->st[0];		// copy texture coords
 		t->tex[1] = vs->st[1];
 //		t->lm[0] = 0;				// lightmap coords are undefined
@@ -1464,7 +1463,6 @@ void surfaceMd3_t::Tesselate ()
 			v->xyz[0] = vs1->xyz[0] * frontScale + vs2->xyz[0] * backScale;
 			v->xyz[1] = vs1->xyz[1] * frontScale + vs2->xyz[1] * backScale;
 			v->xyz[2] = vs1->xyz[2] * frontScale + vs2->xyz[2] * backScale;
-			float *norm = ex->normal;
 			// lerp normal
 			int a1 = vs1->normal & 255;
 			int b1 = (vs1->normal >> 8) & 255;
@@ -1472,6 +1470,7 @@ void surfaceMd3_t::Tesselate ()
 			int a2 = vs2->normal & 255;
 			int b2 = (vs2->normal >> 8) & 255;
 			float sa2 = SIN_FUNC2(a2,256) * currentEntity->backLerp;
+			CVec3 &norm = ex->normal;
 			norm[0] = sa1 * COS_FUNC2(b1,256) + sa2 * COS_FUNC2(b2,256);
 			norm[1] = sa1 * SIN_FUNC2(b1,256) + sa2 * SIN_FUNC2(b2,256);
 			norm[2] = COS_FUNC2(a1,256) * frontLerp + COS_FUNC2(a2,256) * currentEntity->backLerp;
@@ -1486,10 +1485,10 @@ void surfaceMd3_t::Tesselate ()
 			v->xyz[0] = vs1->xyz[0] * MD3_XYZ_SCALE;
 			v->xyz[1] = vs1->xyz[1] * MD3_XYZ_SCALE;
 			v->xyz[2] = vs1->xyz[2] * MD3_XYZ_SCALE;
-			float *norm = ex->normal;
 			int a = vs1->normal & 255;
 			int b = (vs1->normal >> 8) & 255;
 			float sa = SIN_FUNC2(a,256);
+			CVec3 &norm = ex->normal;
 			norm[0] = sa * COS_FUNC2(b,256);	// sin(a)*cos(b)
 			norm[1] = sa * SIN_FUNC2(b,256);	// sin(a)*sin(b)
 			norm[2] = COS_FUNC2(a,256);			// cos(a)
@@ -1572,7 +1571,7 @@ static void DrawBBoxes (void)
 
 			if (GetBoxRect (ent, ent->size2, mins2, maxs2))
 			{
-				vec3_t	h;
+				CVec3	h;
 				static const int idx2[4] = {0, 2, 3, 1};
 
 				VectorMA (ent->center, mins2[0], vp.view.axis[1], h);
@@ -1603,7 +1602,7 @@ static void DrawBBoxes (void)
 		// generate verts
 		for (int j = 0; j < 8; j++)
 		{
-			vec3_t tmp;
+			CVec3 tmp;
 			tmp[0] = (j & 1) ? ent->size2[0] : -ent->size2[0];
 			tmp[1] = (j & 2) ? ent->size2[1] : -ent->size2[1];
 			tmp[2] = (j & 4) ? ent->size2[2] : -ent->size2[2];
@@ -1675,16 +1674,13 @@ static void DrawNormals (void)
 	// draw
 	glBegin (GL_LINES);
 	bufVertex_t *vec = vb->verts;
-	int i, j;
-	bufExtra_t *ex;
-	for (i = 0, ex = gl_extra; i < gl_numExtra; i++, ex++)
+	const bufExtra_t *ex = gl_extra;
+	for (int i = 0; i < gl_numExtra; i++, ex++)
 	{
-		float *norm = ex->normal;
-		for (j = 0; j < ex->numVerts; j++, vec++)
+		for (int j = 0; j < ex->numVerts; j++, vec++)
 		{
-			vec3_t	vec2;
-
 			glVertex3fv (vec->xyz);
+			CVec3 vec2;
 			VectorAdd (vec->xyz, ex->normal, vec2);
 			glVertex3fv (vec2);
 		}
@@ -1715,7 +1711,7 @@ void surfaceEntity_t::Tesselate ()
 		// generate verts
 		for (int i = 0; i < 8; i++)
 		{
-			vec3_t tmp;
+			CVec3 tmp;
 			tmp[0] = (i & 1) ? ent->boxSize[0] : -ent->boxSize[0];
 			tmp[1] = (i & 2) ? ent->boxSize[1] : -ent->boxSize[1];
 			tmp[2] = (i & 4) ? ent->boxSize[2] : -ent->boxSize[2];
@@ -1738,25 +1734,23 @@ void surfaceEntity_t::Tesselate ()
 
 void surfaceParticle_t::Tesselate ()
 {
-	vec3_t	up, right;
-	byte	c[4];
-
 	//!! oprimize this (vertex arrays, etc.)
 
 	GL_SetMultitexture (1);
 	GL_Bind (gl_particleImage);
 
 	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|/*GLSTATE_DEPTHWRITE|*/GLSTATE_ALPHA_GT0);
+	CVec3 up, right;
 	VectorScale (vp.view.axis[1], 1.5f, up);
 	VectorScale (vp.view.axis[2], 1.5f, right);
 
 	glBegin (GL_TRIANGLES);
-	for (particle_t *p = part; p; p = p->drawNext)
+	for (const particle_t *p = part; p; p = p->drawNext)
 	{
 		// get Z-coordinate
-		vec3_t tmp;
+		CVec3 tmp;
 		VectorSubtract (p->org, vp.view.origin, tmp);
-		float scale = DotProduct (tmp, vp.view.axis[0]) * vp.fov_scale;
+		float scale = dot (tmp, vp.view.axis[0]) * vp.fov_scale;
 
 		if (scale < 10)
 			continue;		// too near
@@ -1768,6 +1762,7 @@ void surfaceParticle_t::Tesselate ()
 		int alpha = appRound (p->alpha * 255);
 		alpha = bound(alpha, 0, 255);
 
+		byte	c[4];
 		switch (p->type)
 		{
 		case PT_SPARKLE:

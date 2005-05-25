@@ -28,12 +28,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // pmove, just to make damn sure we don't have
 // any differences when running on client or server
 
-typedef struct
+struct pml_t
 {
-	vec3_t		origin;			// full float precision
-	vec3_t		velocity;		// full float precision
+	CVec3		origin;			// full float precision
+	CVec3		velocity;		// full float precision
 
-	vec3_t		forward, right, up;
+	CVec3		forward, right, up;
 	float		frametime;
 
 
@@ -45,7 +45,7 @@ typedef struct
 
 	bool		ladder;
 	cplane_t	ladderPlane;
-} pml_t;
+};
 
 static pmove_t		*pm;
 static pml_t		pml;
@@ -73,7 +73,7 @@ returns the blocked flags (1 = floor, 2 = step / wall)
 */
 #define	STOP_EPSILON	0.1
 
-static void ClipVelocity (vec3_t in, vec3_t normal, vec3_t out, float overbounce)
+static void ClipVelocity (const CVec3 &in, const CVec3 &normal, CVec3 &out, float overbounce)
 {
 	float backoff = DotProduct (in, normal) * overbounce;
 	VectorMA (in, -backoff, normal, out);
@@ -104,14 +104,14 @@ Does not modify any world state?
 static bool SlideMove (void)
 {
 	int			bumpcount, numbumps;
-	vec3_t		dir;
+	CVec3		dir;
 	float		d;
 	int			numplanes;
-	vec3_t		planes[MAX_CLIP_PLANES];
-	vec3_t		primal_velocity;
+	CVec3		planes[MAX_CLIP_PLANES];
+	CVec3		primal_velocity;
 	int			i, j;
 	trace_t		trace;
-	vec3_t		end;
+	CVec3		end;
 	float		time_left;
 
 	numbumps = 4;
@@ -249,11 +249,11 @@ StepSlideMove
 */
 static void StepSlideMove (void)
 {
-	vec3_t		start_o, start_v;
-	vec3_t		down_o, down_v;
+	CVec3		start_o, start_v;
+	CVec3		down_o, down_v;
 	trace_t		trace;
 	float		stepHeight, down_dist, up_dist;
-	vec3_t		up, down;
+	CVec3		up, down;
 
 	VectorCopy (pml.origin, start_o);
 	VectorCopy (pml.velocity, start_v);
@@ -383,7 +383,7 @@ Accelerate
 Handles user intended acceleration
 ==============
 */
-static void Accelerate (vec3_t wishdir, float wishspeed, float accel)
+static void Accelerate (const CVec3 &wishdir, float wishspeed, float accel)
 {
 	int			i;
 	float		addspeed, accelspeed, currentspeed;
@@ -401,7 +401,7 @@ static void Accelerate (vec3_t wishdir, float wishspeed, float accel)
 }
 
 
-static void AirAccelerate (vec3_t wishdir, float wishspeed, float accel)
+static void AirAccelerate (const CVec3 &wishdir, float wishspeed, float accel)
 {
 	int			i;
 	float		addspeed, accelspeed, currentspeed, wishspd = wishspeed;
@@ -427,9 +427,9 @@ static void AirAccelerate (vec3_t wishdir, float wishspeed, float accel)
 AddCurrents
 =============
 */
-static void AddCurrents (vec3_t wishvel)
+static void AddCurrents (CVec3 &wishvel)
 {
-	vec3_t	v;
+	CVec3	v;
 	float	f;
 
 	// account for ladders
@@ -457,8 +457,8 @@ static void AddCurrents (vec3_t wishvel)
 		{
 			if (pml.ladderPlane.normal[2] != 1 && pml.ladderPlane.normal[2] != -1)
 			{
-				static const vec3_t up = {0, 0, 1};
-				vec3_t	axis[2], vel_vert;
+				static const CVec3 up = {0, 0, 1};
+				CVec3	axis[2], vel_vert;
 
 				// compute projections of velocity onto ladder plane axis
 				CrossProduct (pml.ladderPlane.normal, up, axis[0]);
@@ -525,9 +525,9 @@ WaterMove
 static void WaterMove (void)
 {
 	int		i;
-	vec3_t	wishvel;
+	CVec3	wishvel;
 	float	wishspeed;
-	vec3_t	wishdir;
+	CVec3	wishdir;
 
 	// user intentions
 	for (i = 0; i < 3; i++)
@@ -565,7 +565,7 @@ static void AirMove (void)
 {
 	int		i;
 	float	fmove, smove;
-	vec3_t	wishvel, wishdir;
+	CVec3	wishvel, wishdir;
 	float	wishspeed, maxspeed;
 
 	fmove = pm->cmd.forwardmove;
@@ -657,7 +657,7 @@ CatagorizePosition
 */
 static void CatagorizePosition (void)
 {
-	vec3_t		point;
+	CVec3		point;
 	int			cont;
 	trace_t		trace;
 	float		sample1, sample2;
@@ -817,8 +817,8 @@ CheckSpecialMovement
 */
 static void CheckSpecialMovement (void)
 {
-	vec3_t	spot;
-	vec3_t	flatforward;
+	CVec3	spot;
+	CVec3	flatforward;
 	trace_t	trace;
 	float	dist;
 
@@ -875,11 +875,11 @@ static void FlyMove (bool doclip)
 	float	speed, drop, friction, control, newspeed;
 	float	currentspeed, addspeed, accelspeed;
 	int		i;
-	vec3_t	wishvel;
+	CVec3	wishvel;
 	float	fmove, smove;
-	vec3_t	wishdir;
+	CVec3	wishdir;
 	float	wishspeed;
-	vec3_t	end;
+	CVec3	end;
 	trace_t	trace;
 
 	pm->viewheight = 22;
@@ -1047,7 +1047,7 @@ static void DeadMove (void)
 static bool GoodPosition (void)
 {
 	trace_t	tr;
-	vec3_t	v;
+	CVec3	v;
 	int		i;
 
 	if (pm->s.pm_type == PM_SPECTATOR)
@@ -1072,7 +1072,7 @@ static void SnapPosition (void)
 {
 #if 1
 	int		i, j;
-	vec3_t	v;
+	CVec3	v;
 	int		delta[3];
 
 	for (i = 0; i < 3; i++)
@@ -1174,21 +1174,20 @@ InitialSnapPosition
 //?? combine ...SnapPosition() funcs, +GoodPosition()
 static void InitialSnapPosition(void)
 {
-	int        x, y, z;
-	short      base[3];
-	static int offset[3] = {0, -1, 1};
+	static const int offset[3] = {0, -1, 1};
 
+	short base[3];
 	base[0] = pm->s.origin[0];
 	base[1] = pm->s.origin[1];
 	base[2] = pm->s.origin[2];
 
-	for (z = 0; z < 3; z++)
+	for (int z = 0; z < 3; z++)
 	{
 		pm->s.origin[2] = base[2] + offset[z];
-		for (y = 0; y < 3; y++)
+		for (int y = 0; y < 3; y++)
 		{
 			pm->s.origin[1] = base[1] + offset[y];
-			for (x = 0; x < 3; x++)
+			for (int x = 0; x < 3; x++)
 			{
 				pm->s.origin[0] = base[0] + offset[x];
 				if (GoodPosition ())
@@ -1357,7 +1356,7 @@ void Pmove (pmove_t *pmove)
 			WaterMove ();
 		else
 		{
-			vec3_t	angles;
+			CVec3	angles;
 
 			VectorCopy(pm->viewangles, angles);
 			if (angles[PITCH] > 180)

@@ -54,16 +54,16 @@ typedef union
 struct entity_t
 {
 	CRenderModel *model;
-	vec3_t	angles;
+	CVec3	angles;
 	/*------- most recent data --------*/
-	vec3_t	origin;
+	CVec3	origin;
 	int		frame;
 	/*------- data for lerping --------*/
-	vec3_t	oldorigin;
+	CVec3	oldorigin;
 	int		oldframe;
 	float	backlerp;		// 0.0 = current, 1.0 = old
 	/*-------------- misc -------------*/
-	vec3_t	size;
+	CVec3	size;
 	int		skinnum;
 	color_t	color;			// for extended beam
 	/*----------- color info ----------*/
@@ -85,8 +85,8 @@ typedef enum
 
 struct beam_t
 {
-	vec3_t	start;
-	vec3_t	end;
+	CVec3	start;
+	CVec3	end;
 	float	radius;
 	beamType_t type;
 	color_t	color;
@@ -97,7 +97,7 @@ struct beam_t
 	float	dstAlpha;				// alpha, which will be reached at end of life cycle (default==0)
 	float	growSpeed;				// radius_delta/sec
 	// temporary fields
-	vec3_t	drawStart, drawEnd;
+	CVec3	drawStart, drawEnd;
 
 	beam_t *next;
 	beam_t *drawNext;
@@ -106,8 +106,8 @@ struct beam_t
 
 typedef struct
 {
-	vec3_t	origin;
-	vec3_t	color;
+	CVec3	origin;
+	CVec3	color;
 	float	intensity;
 } dlight_t;
 
@@ -121,15 +121,15 @@ typedef enum
 struct particle_t
 {
 	// appearance
-	vec3_t	org;
+	CVec3	org;
 	byte	color;
 	bool	_new;
 	particleType_t type;
 	float	alpha;
 	int		leafNum;				// -1 -- uninitialized
 	// some physics
-	vec3_t	vel;					// org += vel * time
-	vec3_t	accel;					// vel += accel * time
+	CVec3	vel;					// org += vel * time
+	CVec3	accel;					// vel += accel * time
 	float	alphavel;
 
 	particle_t *next;
@@ -147,8 +147,8 @@ typedef struct
 {
 	int		x, y, width, height;	// in virtual screen coordinates
 	float	fov_x, fov_y;
-	vec3_t	vieworg;
-	vec3_t	viewangles;
+	CVec3	vieworg;
+	CVec3	viewangles;
 	float	blend[4];				// rgba 0-1 full screen blend
 	float	time;					// time is used to auto animate
 	unsigned rdflags;				// RDF_UNDERWATER, etc

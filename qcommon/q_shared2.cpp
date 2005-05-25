@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define DEG2RAD(a) ((a*M_PI)/180.0f)
 
-vec3_t vec3_origin = {0, 0, 0};
+CVec3 vec3_origin = {0, 0, 0};
 
 //============================================================================
 
@@ -168,7 +168,7 @@ void AngleVectors (const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
 
 
 // Gives "forward" (normalized!) and makes 2 additional axes for it
-void MakeNormalVectors (vec3_t forward, vec3_t right, vec3_t up)
+void MakeNormalVectors (const vec3_t forward, vec3_t right, vec3_t up)
 {
 	float	d;
 
@@ -379,9 +379,7 @@ void CBox::GetCenter (vec3_t p)
 void CAxis::Clear ()
 {
 	memset (this, 0, sizeof(CAxis));
-	v[0][0] = 1;
-	v[1][1] = 1;
-	v[2][2] = 1;
+	v[0][0] = v[1][1] = v[2][2] = 1;
 }
 
 void CAxis::FromAngles (const vec3_t angles)
@@ -492,12 +490,10 @@ int	LongNoSwap (int l)
 
 float FloatSwap (float f)
 {
-	union
-	{
+	union {
 		float	f;
 		byte	b[4];
 	} dat1, dat2;
-
 
 	dat1.f = f;
 	dat2.b[0] = dat1.b[3];
@@ -561,6 +557,14 @@ void Swap_Init (void)
 
 static char com_token[MAX_STRING_CHARS];
 static int	com_lines;
+
+/*
+============================================================================
+
+					TEXT PARSER
+
+============================================================================
+*/
 
 /*
 ==============

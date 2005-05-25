@@ -34,16 +34,12 @@ struct cvar_t;
 struct cvarInfo_t;
 struct trace_t;
 struct bspfile_t;
+struct CVec3;
 struct CAxis;
 struct cplane_t;
 
-//#define VEC3_STRUC	//!! change
-
-#ifdef VEC3_STRUC
-struct vec3_t;
-#else
+//!! change
 typedef float vec3_t[3];
-#endif
 
 // image flags
 #define IMAGE_PCX	1
@@ -223,7 +219,7 @@ void	MSG_WriteDeltaPlayerstate (sizebuf_t *msg, const player_state_t *oldState, 
 // used by:
 // 1. common.cpp: MSG_WriteDir(), MSG_ReadDir()
 // 2. cl_fx.cpp:  CL_FlyParticles(), CL_BfgParticles()
-extern	/*const*/ vec3_t bytedirs[NUMVERTEXNORMALS];
+extern	/*const*/ CVec3 bytedirs[NUMVERTEXNORMALS];
 
 void	InitByteDirs ();
 

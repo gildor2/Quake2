@@ -174,7 +174,7 @@ void DrawTextRight (const char *text, unsigned rgba)
 }
 
 
-void DrawText3D (vec3_t pos, const char *text, unsigned rgba)
+void DrawText3D (const CVec3 &pos, const char *text, unsigned rgba)
 {
 	int		coords[2];
 

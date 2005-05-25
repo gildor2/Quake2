@@ -11,10 +11,10 @@ namespace OpenGLDrv {
 #define SKY_FRUSTUM		1
 #define SKY_SURF		2
 
-void ClearSkyBox (void);
-void SetSkyRotate (float angle, vec3_t axis);
-bool SkyVisible (void);
-void AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag);	//?? vieworg is always vp.view.origin
+void ClearSkyBox ();
+void SetSkyRotate (float angle, const CVec3 &axis);
+bool SkyVisible ();
+void AddSkySurface (surfacePlanar_t *pl, const CVec3 &vieworg, byte flag);	//?? vieworg is always vp.view.origin
 int TesselateSkySide (int side, bufVertex_t *verts, bufTexCoord_t *tex, float zFar);
 
 

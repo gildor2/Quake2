@@ -1,23 +1,3 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-
 #ifndef QSHARED_H
 #define QSHARED_H
 
@@ -138,10 +118,10 @@ inline unsigned IsNegative (float f)
 
 // vector math
 
-#ifdef VEC3_STRUC
-struct vec3_t
+struct CVec3
 {
 	float	v[3];
+	// access to data
 	inline float& operator[] (int index)
 	{
 		return v[index];
@@ -150,9 +130,50 @@ struct vec3_t
 	{
 		return v[index];
 	}
-};
-#endif
+	// trivial setup functions
+	inline void Zero ()
+	{
+		memset (this, 0, sizeof(CVec3));
+	}
+	inline void Set (float x, float y, float z)
+	{
+		v[0] = x; v[1] = y; v[2] = z;
+	}
+	// simple math
+	inline void Negate ()
+	{
+		FNegate (v[0], v[0]);
+		FNegate (v[1], v[1]);
+		FNegate (v[2], v[2]);
+	}
+	//!! +Negate(dst)
+	inline void Scale (float scale) //?? == "operator *= (float)"
+	{
+		v[0] *= scale;
+		v[1] *= scale;
+		v[2] *= scale;
+	}
+	//!! +Scale(dst)
 
+	//?? remove later: used for easy conversion of vec3_t->CVec3
+	inline operator float*() { return v; }
+	inline operator const float*() const { return v; }
+};
+
+inline float dot (const CVec3 &a, const CVec3 &b)
+{
+//	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+	return a.v[0]*b.v[0] + a.v[1]*b.v[1] + a.v[2]*b.v[2];
+}
+
+
+inline bool VectorCompare (const CVec3 &v1, const CVec3 &v2)
+{
+	return memcmp (&v1, &v2, sizeof(vec3_t)) == 0;
+}
+
+
+//?? OLD FUNCTIONS :
 
 inline float DotProduct (const vec3_t x, const vec3_t y)
 {
@@ -213,37 +234,22 @@ inline void VectorMA (vec3_t a, float scale, const vec3_t b)
 	a[2] += scale * b[2];
 }
 
-inline void VectorCopy (const vec3_t a, vec3_t b)	//?? method
+inline void VectorCopy (const vec3_t a, vec3_t b)
 {
-#ifndef VEC3_STRUC
 	memcpy (b, a, sizeof(vec3_t));	// should be fast when "memcpy" is intrinsic
-#else
-	b = a;
-#endif
 }
 
-inline void VectorClear (vec3_t a)	//?? method
+inline void VectorClear (vec3_t a)
 {
-#ifndef VEC3_STRUC
 	memset (a, 0, sizeof(vec3_t));
-#else
-	memset (&a, 0, sizeof(vec3_t));
-#endif
 }
 
 #define VectorSet(v, x, y, z)	(v[0]=(x), v[1]=(y), v[2]=(z))
 
-#ifdef VEC3_STRUC
-inline bool VectorCompare (const vec3_t &v1, const vec3_t &v2)
-{
-	return memcmp (&v1, &v2, sizeof(vec3_t)) == 0;
-}
-#else
 inline bool VectorCompare (const vec3_t v1, const vec3_t v2)
 {
 	return memcmp (v1, v2, sizeof(vec3_t)) == 0;
 }
-#endif
 
 float VectorLength (const vec3_t v);
 float VectorDistance (const vec3_t vec1, const vec3_t vec2);
@@ -258,7 +264,7 @@ float VectorNormalizeFast (vec3_t v);	//?? 2-arg version too?
 struct CBox
 {
 	// fields
-	vec3_t	mins, maxs;
+	CVec3	mins, maxs;
 	// methods
 	void Clear ();						// set mins>maxs (negative volume)
 	void Expand (const vec3_t p);		// expand mins/maxs by point p
@@ -271,20 +277,21 @@ struct CAxis
 	// fields
 	// NOTE: v[] can be private, but this will prevent from
 	// initializing CAxis object with initializer list ( "= {n,n,n,n ...}" )
-	vec3_t	v[3];
+	CVec3	v[3];
 	// methods
 	void Clear ();						// set to ((1,0,0),(0,1,0),(0,0,1))
 	void FromAngles (const vec3_t angles);
-	inline vec3_t& operator[] (int index)
-	{
-		return v[index];
-	}
-	inline const vec3_t& operator[] (int index) const
-	{
-		return v[index];
-	}
 	void TransformVector (const vec3_t src, vec3_t dst) const;
 	void UnTransformVector (const vec3_t src, vec3_t dst) const;
+	// indexed access
+	inline CVec3& operator[] (int index)
+	{
+		return v[index];
+	}
+	inline const CVec3& operator[] (int index) const
+	{
+		return v[index];
+	}
 };
 // NOTE: to produce inverted axis, can transpose matrix (valid for orthogonal matrix only)
 
@@ -293,7 +300,7 @@ struct CAxis
 struct CCoords
 {
 	// fields
-	vec3_t	origin;
+	CVec3	origin;
 	CAxis	axis;
 	// methods
 	void TransformPoint (const vec3_t src, vec3_t dst) const;
@@ -311,13 +318,13 @@ void UnTransformPoint (const vec3_t origin, const CAxis &axis, const vec3_t src,
 
 // misc
 
-extern vec3_t vec3_origin;	// really, should be "const", but LOTS of functions uses this without "const" specifier ...
+extern CVec3 vec3_origin;	// really, should be "const", but LOTS of functions uses this without "const" specifier ...
 
 void AngleVectors (const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
 float anglemod(float a);
 float LerpAngle (float a1, float a2, float frac);
 
-void MakeNormalVectors (vec3_t forward, vec3_t right, vec3_t up);
+void MakeNormalVectors (const vec3_t forward, vec3_t right, vec3_t up);
 
 // colors
 
@@ -468,7 +475,7 @@ struct cvar_t
 // plane_t structure (the same as Q2 dplane_t, but "int type" -> "byte type,signbits,pad[2]")
 struct cplane_t
 {
-	vec3_t	normal;
+	CVec3	normal;
 	float	dist;
 	byte	type;			// for fast side tests; PLANE_[M]X|Y|Z
 	byte	signbits;		// sign(x) + (sign(y)<<1) + (sign(z)<<2)
@@ -480,7 +487,7 @@ struct cplane_t
 	}
 	inline void SetType ()
 	{
-		if       (normal[0] == 1.0f) type = PLANE_X;
+		if		(normal[0] ==  1.0f) type = PLANE_X;
 		else if (normal[0] == -1.0f) type = PLANE_MX;
 		else if (normal[1] ==  1.0f) type = PLANE_Y;
 		else if (normal[1] == -1.0f) type = PLANE_MY;
@@ -551,7 +558,7 @@ struct trace_t
 	bool	startsolid;		// if true, the initial point was in a solid area
 	byte	pad2[3];		// qboolean pad
 	float	fraction;		// time completed, 1.0 = didn't hit anything
-	vec3_t	endpos;			// final position
+	CVec3	endpos;			// final position
 	cplane_t plane;			// surface normal at impact
 	csurface_t *surface;	// surface hit
 	int		contents;		// contents on other side of surface hit
@@ -590,7 +597,7 @@ typedef enum
 // prediction stays in sync, so no floats are used.
 // if any part of the game code modifies this struct, it
 // will result in a prediction error of some degree.
-typedef struct
+struct pmove_state_t
 {
 	pmtype_t	pm_type;
 
@@ -600,7 +607,7 @@ typedef struct
 	byte		pm_time;			// each unit = 8 ms
 	short		gravity;
 	short		delta_angles[3];	// add to command angles to get view direction changed by spawns, rotating objects, and teleporters
-} pmove_state_t;
+};
 
 
 // button bits
@@ -610,7 +617,7 @@ typedef struct
 
 
 // usercmd_t is sent to the server each client frame
-typedef struct
+struct usercmd_t
 {
 	byte	msec;
 	byte	buttons;
@@ -618,11 +625,11 @@ typedef struct
 	short	forwardmove, sidemove, upmove;
 	byte	impulse;			// remove? (unused !!)
 	byte	lightlevel;			// light level the player is standing on
-} usercmd_t;
+};
 
 
 #define	MAXTOUCH	32
-typedef struct
+struct pmove_t
 {
 	// state (in / out)
 	pmove_state_t s;
@@ -636,19 +643,19 @@ typedef struct
 	int			numtouch;
 	struct edict_s	*touchents[MAXTOUCH];
 
-	vec3_t		viewangles;		// clamped
+	CVec3		viewangles;		// clamped
 	float		viewheight;
 
-	vec3_t		mins, maxs;		// bounding box size
+	CVec3		mins, maxs;		// bounding box; CBox
 
 	struct edict_s	*groundentity;
 	int			watertype;
 	int			waterlevel;
 
 	// callbacks to test the world
-	trace_t		(*trace) (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);
-	int			(*pointcontents) (vec3_t point);
-} pmove_t;
+	trace_t		(*trace) (const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end);
+	int			(*pointcontents) (const CVec3 &point);
+};
 
 
 // player_state_t->rdflags (refdef flags)
@@ -733,13 +740,13 @@ typedef enum
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will
 // need to render in some way
-typedef struct
+struct entity_state_t
 {
 	int		number;			// edict index; real size is "short"
 
-	vec3_t	origin;
-	vec3_t	angles;
-	vec3_t	old_origin;		// for lerping
+	CVec3	origin;
+	CVec3	angles;
+	CVec3	old_origin;		// for lerping
 	int		modelindex;
 	int		modelindex2, modelindex3, modelindex4;	// weapons, CTF flags, etc; real size is "byte"
 	int		frame;			// real size is "short"
@@ -751,7 +758,7 @@ typedef struct
 	int		sound;			// for looping sounds, to guarantee shutoff; real size is "byte"
 	int		event;			// impulse events -- muzzle flashes, footsteps, etc; events only go out for a single frame,
 							// they are automatically cleared each frame; real size is "byte"
-} entity_state_t;
+};
 
 //==============================================
 
@@ -762,19 +769,19 @@ typedef struct
 // to rendered a view.  There will only be 10 player_state_t sent each second,
 // but the number of pmove_state_t changes will be reletive to client
 // frame rates
-typedef struct
+struct player_state_t
 {
 	pmove_state_t	pmove;		// for prediction
 
 	// these fields do not need to be communicated bit-precise
 
-	vec3_t		viewangles;		// for fixed views
-	vec3_t		viewoffset;		// add to pmovestate->origin
-	vec3_t		kick_angles;	// add to view direction to get render angles
+	CVec3		viewangles;		// for fixed views
+	CVec3		viewoffset;		// add to pmovestate->origin
+	CVec3		kick_angles;	// add to view direction to get render angles
 								// set by weapon kicks, pain effects, etc
 
-	vec3_t		gunangles;
-	vec3_t		gunoffset;
+	CVec3		gunangles;
+	CVec3		gunoffset;
 	int			gunindex;
 	int			gunframe;
 
@@ -785,7 +792,7 @@ typedef struct
 	int			rdflags;		// refdef flags
 
 	short		stats[MAX_STATS];		// fast status bar updates
-} player_state_t;
+};
 
 
 #endif // QSHARED_H

@@ -16,7 +16,7 @@ namespace OpenGLDrv {
 // Vertex without normal (for planar surface)
 struct vertex_t
 {
-	vec3_t	xyz;				// vertex itself
+	CVec3	xyz;				// vertex itself
 	float	st[2], lm[2];		// texture coordinates (TCGEN_TEXTURE/TCGEN_LIGHTMAP)
 	float	lm2[2];				// for vertex color calculation: coords in surface lightmap rect (non-normalized)
 	float	pos[2];				// 2D position in plane axis
@@ -26,15 +26,15 @@ struct vertex_t
 // Vertex with stored normal
 struct vertexNormal_t
 {
-	vec3_t	xyz;
+	CVec3	xyz;
 	float	st[2], lm[2];
 	color_t	c;
-	vec3_t	normal;
+	CVec3	normal;
 };
 
 struct vertexPoly_t
 {
-	vec3_t	xyz;
+	CVec3	xyz;
 	float	st[2];
 	color_t	c;
 };
@@ -76,7 +76,7 @@ public:
 	inline surfacePlanar_t () { type = SURFACE_PLANAR; };
 	CBox	bounds;
 	cplane_t plane;
-	vec3_t	axis[2];			// 2 orthogonal identity vectors from surface
+	CVec3	axis[2];			// 2 orthogonal identity vectors from surface
 	float	mins2[2], maxs2[2];	// 2D-bounds (in "axis" coordinate system)
 	int		numVerts, numIndexes;
 	vertex_t *verts;
@@ -94,7 +94,7 @@ class surfaceTrisurf_t : public surfaceBase_t
 {
 public:
 	inline surfaceTrisurf_t () { type = SURFACE_TRISURF; };
-	vec3_t	mins, maxs;		//?? origin/radius?
+	CBox	bounds;		//?? origin/radius?
 	int		numVerts, numIndexes;
 	vertexNormal_t *verts;
 	int		*indexes;
@@ -182,7 +182,7 @@ struct node_t
 struct gl_flare_t
 {
 	// position
-	vec3_t	origin;
+	CVec3	origin;
 	surfaceBase_t *surf;
 	inlineModel_t *owner;
 	node_t	*leaf;
@@ -235,11 +235,11 @@ struct bspModel_t				//?? really needs as separate struc? (only one instance at 
 	int		numFlares;
 	// sun
 	float	sunLight;			// intensity; 0 if no sun
-	vec3_t	sunColor;
-	vec3_t	sunVec;
+	CVec3	sunColor;
+	CVec3	sunVec;
 	bool	haveSunAmbient;
-	vec3_t	sunAmbient;
-	vec3_t	ambientLight;
+	CVec3	sunAmbient;
+	CVec3	ambientLight;
 };
 
 
@@ -292,7 +292,7 @@ public:
 struct md3Frame_t
 {
 	CBox	bounds;
-	vec3_t	localOrigin;		// origin for bounding sphere in model coords; computed: (mins+maxs)/2
+	CVec3	localOrigin;		// origin for bounding sphere in model coords; computed: (mins+maxs)/2
 	float	radius;				// radius of the bounding sphere
 };
 
@@ -339,7 +339,7 @@ public:
 	Functions
 -----------------------------------------------------------------------------*/
 
-node_t *PointInLeaf (const vec3_t p);
+node_t *PointInLeaf (const CVec3 &p);
 
 void	InitModels (void);
 void	ShutdownModels (void);

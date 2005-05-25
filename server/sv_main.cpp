@@ -693,7 +693,7 @@ static void SV_PrepWorldFrame (void)
 	Protocol extensions support
 =============================================================================*/
 
-static vec3_t shotStart, shotEnd;
+static CVec3 shotStart, shotEnd;
 static int shotLevel;
 
 
@@ -716,9 +716,9 @@ void SV_PostprocessFrame (void)
 		if (ent->s.event == EV_FOOTSTEP || ent->s.event == EV_FALLSHORT)
 		{
 			trace_t trace;
-			vec3_t point;
 			int footsteptype;
 
+			CVec3	point;
 			point[0] = ent->s.origin[0];
 			point[1] = ent->s.origin[1];
 			point[2] = ent->s.origin[2] - 64;
@@ -791,9 +791,9 @@ void SV_PostprocessFrame (void)
 			else*/ if (pm->pm_type == PM_NORMAL)
 			{
 				int leaf, clust;
-				vec3_t pm_origin;
 				int sfx0, sfxn;
 
+				CVec3	pm_origin;
 				pm_origin[0] = pm->origin[0] / 8.0f;
 				pm_origin[1] = pm->origin[1] / 8.0f;
 				pm_origin[2] = pm->origin[2] / 8.0f;
@@ -804,12 +804,11 @@ void SV_PostprocessFrame (void)
 					if (curr_vel < FALLING_SCREAM_VELOCITY1 && prev_vel < FALLING_SCREAM_VELOCITY1)
 					{
 						trace_t	trace;
-						vec3_t	end;
-						static const vec3_t mins = {-20, -20, -10}, maxs = {20, 20, 10};
+						static const CVec3 mins = {-20, -20, -10}, maxs = {20, 20, 10};
 
-						end[0] = pm_origin[0];
-						end[1] = pm_origin[1];
+						CVec3 end = pm_origin;
 						end[2] = pm_origin[2] - FALLING_SCREAM_HEIGHT_WATER;
+
 						SV_Trace (&trace, pm_origin, mins, maxs, end, NULL, CONTENTS_WATER);
 						if (trace.fraction == 1.0 && !trace.startsolid)	// no water and start not in water
 						{
@@ -873,29 +872,26 @@ void SV_PostprocessFrame (void)
 }
 
 
-static client_t *FindClient (vec3_t origin, float maxDist2)
+static client_t *FindClient (const CVec3 &origin, float maxDist2)
 {
 	client_t *cl;
-	pmove_state_t *pm;
-	edict_t	*ent;
-	vec3_t	pm_origin, delta;
-	float	dist2;
 	int		i;
 
 //	Com_Printf("find for %g %g %g dist=%g\n",VECTOR_ARG(origin),maxDist2);
 	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 	{
-		ent = cl->edict;
+		edict_t *ent = cl->edict;
 		if (cl->state != cs_spawned && cl->state != cs_connected)
 			continue;
 
-		pm = &ent->client->ps.pmove;
+		pmove_state_t *pm = &ent->client->ps.pmove;
 //		Com_Printf("? %s");
+		CVec3 pm_origin, delta;
 		pm_origin[0] = pm->origin[0] / 8.0f;
 		pm_origin[1] = pm->origin[1] / 8.0f;
 		pm_origin[2] = pm->origin[2] / 8.0f;
 		VectorSubtract (origin, pm_origin, delta);
-		dist2 = DotProduct (delta, delta);
+		float dist2 = dot(delta, delta);
 		if (dist2 > maxDist2)
 		{
 //			Com_Printf(" far: %g\n", dist2);
@@ -912,7 +908,7 @@ static client_t *FindClient (vec3_t origin, float maxDist2)
 sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 {
 	byte	cmd;
-	vec3_t	v1, v2;
+	CVec3	v1, v2;
 	const char	*s;
 
 	guard(SV_MulticastHook);
@@ -929,15 +925,12 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 	{
 	case TE_RAILTRAIL:
 		{
-			int		rColor, rType;
-			client_t *cl;
-
 			MSG_ReadPos (original, v1);		// start
 			MSG_ReadPos (original, v2);		// end
 
-			cl = FindClient (v1, 18*18);
-			rType = 1;
-			rColor = 0;
+			client_t *cl = FindClient (v1, 18*18);
+			int rType = 1;
+			int rColor = 0;
 			if (cl)
 			{
 				if (s = Info_ValueForKey (cl->userinfo, "railcolor"))
@@ -966,10 +959,6 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 	case TE_SPARKS:
 	case TE_BULLET_SPARKS:
 		{
-			vec3_t	d;
-			float	back;
-			int		i;
-
 			if (shotLevel != 2) return original;
 
 			MSG_ReadPos (original, v1);
@@ -977,10 +966,11 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 
 			// compute reflection vector
 //			Com_Printf("sp: (%g %g %g) -> (%g %g %g)\n",VECTOR_ARG(v1),VECTOR_ARG(v2));//!!
+			CVec3 d;
 			VectorSubtract (shotStart, shotEnd, d);
 			VectorNormalizeFast (d);
-			back = DotProduct (d, v2);
-			for (i = 0; i < 3; i++)
+			float back = DotProduct (d, v2);
+			for (int i = 0; i < 3; i++)
 				v2[i] = d[i] - 2 * (d[i] - back * v2[i]);
 
 			MSG_WriteByte (ext, svc_temp_entity);
@@ -992,17 +982,16 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 
 	case TE_SPLASH:
 		{
-			int		i, count, type, tmp;
-			splash_t *spl;
-
-			count = MSG_ReadByte (original);
-			MSG_ReadPos (original, v1);		// pos
-			tmp = MSG_ReadByte (original);	// dir
-			type = MSG_ReadByte (original);
+			int count = MSG_ReadByte (original);
+			MSG_ReadPos (original, v1);			// pos
+			int tmp = MSG_ReadByte (original);	// dir
+			int type = MSG_ReadByte (original);
 			if (type != SPLASH_BLUE_WATER && type != SPLASH_BROWN_WATER)
 				return original;			// not bullet effect
 
 			// find splash origin in static map splashes to avoid bullethit sounds for waterfalls etc.
+			int		i;
+			splash_t *spl;
 			for (i = 0, spl = map_bspfile->splashes; i < map_bspfile->numSplashes; i++, spl = spl->next)
 			{
 				if (fabs (spl->origin[0] - v1[0]) < 1 &&

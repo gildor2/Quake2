@@ -80,7 +80,7 @@ void V_AddEntity (entity_t *ent)
 V_AddLight
 =====================
 */
-void V_AddLight (vec3_t org, float intensity, float r, float g, float b)
+void V_AddLight (const CVec3 &org, float intensity, float r, float g, float b)
 {
 	dlight_t	*dl;
 
@@ -214,7 +214,6 @@ void CL_PrepRefresh (void)
 	int			i;
 	char		name[MAX_QPATH];
 	float		rotate;
-	vec3_t		axis;
 	static int start_time = 0;
 	static int servercount = 0;
 
@@ -323,6 +322,7 @@ void CL_PrepRefresh (void)
 	Com_Printf ("sky\r", i);
 	SCR_UpdateScreen ();
 	rotate = atof (cl.configstrings[CS_SKYROTATE]);
+	CVec3 axis;
 	sscanf (cl.configstrings[CS_SKYAXIS], "%f %f %f", &axis[0], &axis[1], &axis[2]);
 	RE_SetSky (cl.configstrings[CS_SKY], rotate, axis);
 
@@ -447,18 +447,13 @@ Set a specific sky and rotation speed
 */
 static void Sky_f (bool usage, int argc, char **argv)
 {
-	float	rotate;
-	vec3_t	axis;
-
 	if (argc < 2 || usage)
 	{
 		Com_Printf ("Usage: sky <basename> <rotate> <axis x y z>\n");
 		return;
 	}
-	if (argc > 2)
-		rotate = atof (argv[2]);
-	else
-		rotate = 0;
+	float rotate = (argc > 2) ? atof (argv[2]) : 0;
+	CVec3 axis;
 	if (argc == 6)
 	{
 		axis[0] = atof (argv[3]);
@@ -550,9 +545,9 @@ static char *ModelName (int modelIndex)
 
 static void DrawSurfInfo (void)
 {
-	vec3_t	start, end;
+	CVec3	start, end;
 	csurface_t	*surf;
-	vec3_t	norm;
+	CVec3	norm;
 	const char *s;
 
 	static const flagInfo_t surfNames[] = {
@@ -589,7 +584,7 @@ static void DrawSurfInfo (void)
 
 	unsigned cont = r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER;
 	trace_t	trace;
-	static const vec3_t zero = {0, 0, 0};
+	static const CVec3 zero = {0, 0, 0};
 	CM_BoxTrace (&trace, start, end, NULL, NULL, 0, cont);
 	if (!(r_surfinfo->integer & 2))
 		CL_EntityTrace (&trace, start, end, zero, zero, cont);
@@ -637,7 +632,7 @@ static void DrawOriginInfo (void)
 	RE_DrawTextLeft ("Player position:\n----------------", RGB(0.4,0.4,0.6));
 	RE_DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2,0.4,0.1));
 
-	vec3_t view;
+	CVec3 view;
 	AngleVectors (cl.refdef.viewangles, view, NULL, NULL);
 	RE_DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARG(view)), RGB(0.2,0.4,0.1));
 
@@ -731,10 +726,10 @@ static void DrawFpsInfo (void)
 
 static void FixWaterVis (void)
 {
-	vec3_t		p;			// point
-	int			cont;		// its contents
-	int			w, w1;		// "in water" flag
-	trace_t		trace;
+	CVec3	p;			// point
+	int		cont;		// its contents
+	int		w, w1;		// "in water" flag
+	trace_t	trace;
 
 	if (cl.refdef.rdflags & RDF_THIRD_PERSON)
 		w1 = CM_PointContents (cl.refdef.vieworg, 0) & MASK_WATER;	// need to recompute UNDERWATER flag

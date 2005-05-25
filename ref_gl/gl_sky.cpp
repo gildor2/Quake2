@@ -13,16 +13,15 @@ static float skyMins[2][6], skyMaxs[2][6];
 
 enum {SIDE_FRONT, SIDE_BACK, SIDE_ON};
 
-static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
+static void ClipSkyPolygon (int numVerts, CVec3 *verts, int stage)
 {
-	float	*vec;
 	float	dists[MAX_CLIP_VERTS];
 	int		sides[MAX_CLIP_VERTS];
-	vec3_t	newv[2][MAX_CLIP_VERTS];	// new polys
+	CVec3	newv[2][MAX_CLIP_VERTS];	// new polys
 	int		newc[2];					// number of verts in new polys
 	int		i;
 
-	static const vec3_t skyClip[6] = {
+	static const CVec3 skyClip[6] = {
 		{ 1, 1, 0},
 		{ 1,-1, 0},
 		{ 0,-1, 1},
@@ -48,13 +47,13 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 
 	if (stage == 6)
 	{	// fully clipped -- update skymins/skymaxs
-		vec3_t	av, v;
-		float	*vp;
+		CVec3	av, v;
 
 		// decide which face it maps to
-		VectorClear (v);
-		for (i = 0, vp = verts; i < numVerts; i++, vp += 3)
-			VectorAdd (vp, v, v);
+		v.Zero ();
+		const CVec3 *vp = verts;
+		for (i = 0; i < numVerts; i++, vp++)
+			VectorAdd (v, *vp, v);
 		av[0] = fabs(v[0]);
 		av[1] = fabs(v[1]);
 		av[2] = fabs(v[2]);
@@ -68,19 +67,19 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 			axis = IsNegative (v[2]) + 4;
 
 		// project new texture coords
-		for (i = 0; i < numVerts; i++, verts += 3)
+		for (i = 0; i < numVerts; i++, verts++)
 		{
 			int		j;
 
 			j = vecToSt[axis][2];
-			float dv = (j < 0) ? -verts[-j - 1] : verts[j - 1];
+			float dv = (j < 0) ? -(*verts)[-j - 1] : (*verts)[j - 1];
 			if (dv < 0.001f) continue;	// don't divide by zero
 
 			j = vecToSt[axis][0];
-			float s = (j < 0) ? -verts[-j - 1] / dv : verts[j - 1] / dv;
+			float s = (j < 0) ? -(*verts)[-j - 1] / dv : (*verts)[j - 1] / dv;
 
 			j = vecToSt[axis][1];
-			float t = (j < 0) ? -verts[-j - 1] / dv : verts[j - 1] / dv;
+			float t = (j < 0) ? -(*verts)[-j - 1] / dv : (*verts)[j - 1] / dv;
 
 			EXPAND_BOUNDS(s, skyMins[0][axis], skyMaxs[0][axis]);
 			EXPAND_BOUNDS(t, skyMins[1][axis], skyMaxs[1][axis]);
@@ -89,10 +88,11 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 	}
 
 	bool front = false, back = false;
-	const float *norm = skyClip[stage];
-	for (i = 0, vec = verts; i < numVerts; i++, vec += 3)
+	const CVec3 &norm = skyClip[stage];
+	CVec3 *vec = verts;
+	for (i = 0; i < numVerts; i++, vec++)
 	{
-		float d = DotProduct (vec, norm);
+		float d = dot (*vec, norm);
 		if (d > ON_EPSILON)
 		{
 			front = true;
@@ -117,25 +117,23 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 	// clip it
 	sides[i] = sides[0];
 	dists[i] = dists[0];
-	VectorCopy (verts, (verts + (i * 3)));
+	verts[i] = verts[0];
 	newc[0] = newc[1] = 0;
 
-	for (i = 0, vec = verts; i < numVerts; i++, vec += 3)
+	for (i = 0, vec = verts; i < numVerts; i++, vec++)
 	{
 		switch (sides[i])
 		{
 		case SIDE_FRONT:
-			VectorCopy (vec, newv[0][newc[0]]);
-			newc[0]++;	// cannot insert this into VectorCopy(), because it is a macro ...
+			newv[0][newc[0]++] = *vec;
 			break;
 		case SIDE_BACK:
-			VectorCopy (vec, newv[1][newc[1]]);
-			newc[1]++;
+			newv[1][newc[1]++] = *vec;
 			break;
 		case SIDE_ON:
-			VectorCopy (vec, newv[0][newc[0]]);
+			newv[0][newc[0]] = *vec;
 			newc[0]++;
-			VectorCopy (vec, newv[1][newc[1]]);
+			newv[1][newc[1]] = *vec;
 			newc[1]++;
 			break;
 		}
@@ -147,7 +145,7 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 		float d = dists[i] / (dists[i] - dists[i+1]);
 		for (int j = 0; j < 3; j++)
 		{
-			float e = vec[j] + d * (vec[j + 3] - vec[j]);
+			float e = vec[0][j] + d * (vec[1][j] - vec[0][j]);
 			newv[0][newc[0]][j] = e;
 			newv[1][newc[1]][j] = e;
 		}
@@ -156,8 +154,8 @@ static void ClipSkyPolygon (int numVerts, vec3_t verts, int stage)
 	}
 
 	// process new polys
-	if (newc[0]) ClipSkyPolygon (newc[0], newv[0][0], stage + 1);
-	if (newc[1]) ClipSkyPolygon (newc[1], newv[1][0], stage + 1);
+	if (newc[0]) ClipSkyPolygon (newc[0], &newv[0][0], stage + 1);
+	if (newc[1]) ClipSkyPolygon (newc[1], &newv[1][0], stage + 1);
 }
 
 
@@ -179,14 +177,14 @@ static byte skyVis[6][SKY_CELLS*SKY_CELLS];
 static bool skyRotated;
 static CAxis rotAxis;
 
-void ClearSkyBox (void)
+void ClearSkyBox ()
 {
 	memset (skyVis, 0, sizeof(skyVis));
 	memset (skySideVisible, 0, sizeof(skySideVisible));
 }
 
 
-void SetSkyRotate (float angle, vec3_t axis)
+void SetSkyRotate (float angle, const CVec3 &axis)
 {
 	if (angle)
 	{
@@ -198,7 +196,7 @@ void SetSkyRotate (float angle, vec3_t axis)
 }
 
 
-bool SkyVisible (void)
+bool SkyVisible ()
 {
 	int		i;
 	byte	*p;
@@ -209,9 +207,9 @@ bool SkyVisible (void)
 }
 
 
-void AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
+void AddSkySurface (surfacePlanar_t *pl, const CVec3 &vieworg, byte flag)
 {
-	vec3_t	verts[MAX_CLIP_VERTS];
+	CVec3	verts[MAX_CLIP_VERTS];
 	int		i, side;
 	vertex_t *v;
 
@@ -231,7 +229,7 @@ void AddSkySurface (surfacePlanar_t *pl, vec3_t vieworg, byte flag)
 		else
 			VectorSubtract (v->xyz, vieworg, verts[i]);
 	}
-	ClipSkyPolygon (pl->numVerts, verts[0], 0);
+	ClipSkyPolygon (pl->numVerts, verts, 0);
 
 	// analyse skyMins/skyMaxs, detect occupied cells
 	for (side = 0; side < 6; side++)
@@ -286,7 +284,7 @@ static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec
 		{ 2,-1,-3}		// look straight down
 	};
 
-	vec3_t b;
+	CVec3 b;
 	b[0] = s * scale;
 	b[1] = t * scale;
 	b[2] = scale;

@@ -42,11 +42,12 @@ namespace OpenGLDrv {
 	( SQRTFAST((intens) * (scale) / (light)) )
 
 
-static vec3_t entityColorAxis[6];
+static CVec3 entityColorAxis[6];
+// contain color values for box
 // array layout: back/front/right/left/bottom/top
 
 
-static void LightLine (const CAxis &axis, const vec3_t from, const vec3_t to, const float *color, float lightScale)
+static void LightLine (const CAxis &axis, const CVec3 &from, const CVec3 &to, const CVec3 &color, float lightScale)
 {
 	if (lightScale < gl_lightLines->value) return;
 	if (vp.flags & RDF_NOWORLDMODEL) return;
@@ -76,7 +77,7 @@ static void LightLine (const CAxis &axis, const vec3_t from, const vec3_t to, co
 	glVertex3fv (to);
 	for (int i = 0; i < 3; i++)
 	{
-		vec3_t	v;
+		CVec3 v;
 
 		VectorMA (from, 10, axis[i], v);
 		glVertex3fv (v);
@@ -113,7 +114,7 @@ void ShowLights (void)
 		if (sl->spot)
 		{
 			bufVertex_t	vecs[5];
-			vec3_t	forward, right, up;
+			CVec3	forward, right, up;
 			float	dot, scale;
 			static const int indexes[16] = {0, 1, 0, 2, 0, 3, 0, 4, 1, 2, 2, 3, 3, 4, 4, 1};
 
@@ -131,18 +132,18 @@ void ShowLights (void)
 			VectorMA (sl->origin, dot, sl->spotDir, forward);
 			for (j = 0; j < 4; j++)
 				VectorMA (forward, j & 2 ? scale : -scale, j & 1 ? up : right, vecs[j + 1].xyz);
-			VectorCopy (sl->origin, vecs[0].xyz);
+			vecs[0].xyz = sl->origin;
 			glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vecs);
 			glDrawElements (GL_LINES, 16, GL_UNSIGNED_INT, indexes);
 		}
 		else
 		{
-			vec3_t	v;
+			CVec3	v;
 
 			glBegin (GL_LINES);
 			for (j = 0; j < 3; j++)
 			{
-				VectorCopy (sl->origin, v);
+				v = sl->origin;
 				v[j] -= DEBUG_POINT_SIZE/2;
 				glVertex3fv (v);
 				v[j] += DEBUG_POINT_SIZE;
@@ -165,7 +166,7 @@ void ShowLights (void)
 		for (int j = 0; j < 4; j++)
 		{
 			float	v[2];
-			vec3_t	tmp;
+			CVec3	tmp;
 
 			v[0] = j & 1 ? rl->pl->mins2[0] : rl->pl->maxs2[0];
 			v[1] = j & 2 ? rl->pl->mins2[1] : rl->pl->maxs2[1];
@@ -187,20 +188,20 @@ void ShowLights (void)
 }
 
 
-static void AddLight (const CAxis &axis, const vec3_t dir, float scale, const float *color)
+static void AddLight (const CAxis &axis, const CVec3 &dir, float scale, const CVec3 &color)
 {
-	float	v, *vec;
-	int		i;
+	float	v;
+	CVec3	*vec;
 
 #if 0
 	// light for sphere (will not work for sunlight! need correct dist); NOT WORKS NOW AT ALL
-	vec3_t	dir2;
+	CVec3	dir2;
 
 	float rad = ent->radius / dist;
 #define STEP(n)									\
 	VectorMA (dir, n&1 ? rad : -rad, axis[n>>1], dir2);	\
 	VectorNormalizeFast(dir2);					\
-	v = DotProduct (dir2, axis[n>>1]) * scale;	\
+	v = dot (dir2, axis[n>>1]) * scale;	\
 	if (n&1) v = -v;							\
 	if (!IsNegative(v))	VectorMA (entityColorAxis[n], v, color);
 		STEP(0); STEP(1); STEP(2); STEP(3); STEP(4); STEP(5);
@@ -210,14 +211,15 @@ static void AddLight (const CAxis &axis, const vec3_t dir, float scale, const fl
 
 	// light for point
 #if 1
-#define STEP(n)								\
-	v = DotProduct (dir, axis[n]) * scale;	\
-	FAbsSign(v,v,i);						\
-	vec = entityColorAxis[n*2+i];			\
-	VectorMA (vec, v, color);
+	int		i;
+#define STEP(n)						\
+	v = dot(dir, axis[n]) * scale;	\
+	FAbsSign(v,v,i);				\
+	vec = &entityColorAxis[n*2+i];	\
+	VectorMA (*vec, v, color);
 #else
-#define STEP(n)								\
-	v = DotProduct (dir, axis[n]) * scale;	\
+#define STEP(n)						\
+	v = dot(dir, axis[n]) * scale;	\
 	if (v < 0)	VectorMA (entityColorAxis[n*2+1], -v, color); \
 	else		VectorMA (entityColorAxis[n * 2],  v, color);
 #endif
@@ -231,21 +233,20 @@ static void AddLight (const CAxis &axis, const vec3_t dir, float scale, const fl
 static int traces, fasttraces, badtraces;
 
 
-static void AddPointLight (const gl_slight_t *sl, const vec3_t origin, const CAxis &axis, const byte *vis)
+static void AddPointLight (const gl_slight_t *sl, const CVec3 &origin, const CAxis &axis, const byte *vis)
 {
-	vec3_t	dif;
-
 	if (vis && sl->cluster >= 0)
 	{
 		if (!(vis[sl->cluster>>3] & (1<<(sl->cluster&7))))
 			return;										// light is culled with PVS
 	}
 
+	CVec3 dif;
 	VectorSubtract (origin, sl->origin, dif);
-	float dist = DotProduct (dif, dif);					// dist*dist
+	float dist = dot (dif, dif);						// dist*dist
 	if (dist > sl->maxDist2) return;					// too far
 
-	float	scale;
+	float scale;
 	if (sl->spot)
 	{
 		dist = sqrt (dist);								// should be more precisious
@@ -262,7 +263,7 @@ static void AddPointLight (const gl_slight_t *sl, const vec3_t origin, const CAx
 	float invScale = INV_SCALE;
 	if (sl->spot)
 	{
-		float dot2 = DotProduct (dif, sl->spotDir);
+		float dot2 = dot (dif, sl->spotDir);
 		if (dot2 <= sl->spotDot) return;				// outside cone
 		if (sl->focus != 1)
 		{
@@ -304,14 +305,9 @@ static void AddPointLight (const gl_slight_t *sl, const vec3_t origin, const CAx
 
 static bool needSunAmbient;
 
-static void AddSurfaceLight (const surfLight_t *rl, const vec3_t origin, const CAxis &axis, const byte *vis)
+static void AddSurfaceLight (const surfLight_t *rl, const CVec3 &origin, const CAxis &axis, const byte *vis)
 {
-	surfacePlanar_t *pl;
-	float	dist, distN, intens, x, y, dx, dy;
-	float	w, h, w0, h0;
-	bool	slope, ambient;
-	vec3_t	dir, dst;
-	int		br[2], numBr;
+	CVec3	dir, dst;
 
 	if (vis && rl->cluster >= 0)
 	{
@@ -319,11 +315,11 @@ static void AddSurfaceLight (const surfLight_t *rl, const vec3_t origin, const C
 			return;										// light is culled with PVS
 	}
 
-	ambient = rl->sky && needSunAmbient;				// sun ambient requirement
+	bool ambient = rl->sky && needSunAmbient;			// sun ambient requirement
 	if (!rl->intens && !ambient) return;				// ambient-only surface
 
-	pl = rl->pl;
-	distN = pl->plane.DistanceTo (origin);
+	surfacePlanar_t *pl = rl->pl;
+	float distN = pl->plane.DistanceTo (origin);
 	if (distN < 0.001f) return;							// backface culled
 
 	// fast distance culling
@@ -331,14 +327,15 @@ static void AddSurfaceLight (const surfLight_t *rl, const vec3_t origin, const C
 	{	// cull surface only if it is not for ambient sunlight
 		if (distN * distN > rl->maxDist2) return;		// too far from plane
 		VectorSubtract (origin, rl->center, dir);
-		dist = DotProduct (dir, dir);
-		if (dist > rl->maxDist2) return;				// too far from center
+		float dist2 = dot (dir, dir);
+		if (dist2 > rl->maxDist2) return;				// too far from center
 	}
 
 	// determine nearest point on light surface rect
-	x = DotProduct (origin, pl->axis[0]);
-	y = DotProduct (origin, pl->axis[1]);
-	slope = false;
+	float x = dot (origin, pl->axis[0]);
+	float y = dot (origin, pl->axis[1]);
+	bool slope = false;
+	float dx, dy;
 	dx = dy = 0;
 	if (x < pl->mins2[0])
 	{
@@ -361,6 +358,7 @@ static void AddSurfaceLight (const surfLight_t *rl, const vec3_t origin, const C
 		dy = y - pl->maxs2[1];
 	}
 
+	float dist, intens;
 	if (slope)
 	{
 		VectorScale (pl->axis[0], dx, dir);
@@ -371,7 +369,7 @@ static void AddSurfaceLight (const surfLight_t *rl, const vec3_t origin, const C
 	}
 	else
 	{
-		VectorCopy (pl->plane.normal, dir);
+		dir = pl->plane.normal;
 		dist = distN;
 		intens = rl->intens / (distN * distN) * SURF_SCALE;
 	}
@@ -380,10 +378,10 @@ static void AddSurfaceLight (const surfLight_t *rl, const vec3_t origin, const C
 	if (intens < MIN_SURF_LIGHT && !ambient) return;
 
 	// compensate short distances
-	w0 = pl->maxs2[0] - pl->mins2[0];
-	h0 = pl->maxs2[1] - pl->mins2[1];
-	w = min(w0, dist);
-	h = min(h0, dist);
+	float w0 = pl->maxs2[0] - pl->mins2[0];
+	float h0 = pl->maxs2[1] - pl->mins2[1];
+	float w = min(w0, dist);
+	float h = min(h0, dist);
 	if (w != w0 || h != h0)
 	{
 		intens *= w * h / (w0 * h0);
@@ -391,22 +389,22 @@ static void AddSurfaceLight (const surfLight_t *rl, const vec3_t origin, const C
 	}
 
 	VectorMA (origin, -dist + 1, dir, dst);				// need to shift in light direction because of trace bugs with non-axial planes
-	numBr = CM_BrushTrace (origin, dst, br, 2);
+	int br[2];
+	int numBr = CM_BrushTrace (origin, dst, br, 2);
 	if (numBr > 1) return;		// allow 0 or 1 brush intersection
 
 	if (numBr)					// may be, light source is placed in niche -- check the center of surface
 	{
 		if (intens < 10 || !slope) return;
-		VectorCopy (rl->center, dst);
+		dst = rl->center;
 		if (CM_RefineBrushTrace (origin, dst, br, numBr)) return;	// 1st -- try to clip against previous brush
 		if (CM_BrushTrace (dst, origin, br, 1)) return;				// not clipped -- try other brushes too
 	}
 
 	if (ambient)
 	{
-		vec3_t	c;
-
 		float scale = vp.lightStyles[0].value * SUN_AMBIENT_SCALE / 128.0f;
+		CVec3	c;
 		c[0] = map.sunColor[0] * map.sunAmbient[0] * scale;
 		c[1] = map.sunColor[1] * map.sunAmbient[1] * scale;
 		c[2] = map.sunColor[2] * map.sunAmbient[2] * scale;
@@ -426,16 +424,12 @@ static lightCell_t darkCell, outCell;	// zero-initialized
 
 #define NORMALIZE_AXIS
 
-static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
+static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 {
 	lightCell_t	**pcell, *cell;
-	gl_slight_t *sl;
-	surfLight_t *rl;
-	trace_t	tr;
 	int		i;
 	float	*out;
 	const CAxis *axis;
-	static const CAxis gridAxis = {1, 0, 0, 0, 1, 0, 0, 0, 1};
 
 	if (!ent)
 	{
@@ -456,16 +450,17 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 				*out = *src * CACHE_LIGHT_SCALE;
 			return cell != &outCell;
 		}
+		static const CAxis gridAxis = {1,0,0,  0,1,0,  0,0,1};
 		axis = &gridAxis;
 	}
 	else
 	{
 		pcell = NULL;
-		origin = ent->center;
+		origin = &ent->center;
 		axis = &ent->coord.axis;
 	}
 
-	node_t *leaf = PointInLeaf (origin);
+	node_t *leaf = PointInLeaf (*origin);
 	byte *row = leaf->cluster < 0 ? NULL : map.visInfo + leaf->cluster * map.visRowSize;
 
 	float scale = vp.lightStyles[0].value * AMBIENT_SCALE / 128.0f;
@@ -482,28 +477,31 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 
 	if (map.sunLight)
 	{
-		vec3_t	dst;
+		CVec3 dst;
 
-		VectorMA (origin, -16384, map.sunVec, dst);
-		CM_BoxTrace (&tr, origin, dst, NULL, NULL, 0, CONTENTS_SOLID);
+		VectorMA (*origin, -32768, map.sunVec, dst);
+		trace_t	tr;
+		CM_BoxTrace (&tr, *origin, dst, NULL, NULL, 0, CONTENTS_SOLID);
 		if (tr.surface->flags & SURF_SKY && !tr.startsolid)		// can be "startsolid" even if "row"!=NULL
 		{
 			float intens = map.sunLight * SUN_SCALE * vp.lightStyles[0].value / 128.0f;	// sun light have style=0
 			AddLight (*axis, map.sunVec, intens, map.sunColor);
 			if (gl_lightLines->value)
-				LightLine (*axis, tr.endpos, origin, map.sunColor, intens);
+				LightLine (*axis, tr.endpos, *origin, map.sunColor, intens);
 		}
 	}
 
 	/*--------------- point/surface lights ------------------*/
 
+	gl_slight_t *sl;
 	for (i = 0, sl = map.slights; i < map.numSlights; i++, sl++)
 		if (ent || sl->style == 0)
-			AddPointLight (sl, origin, *axis, row);
+			AddPointLight (sl, *origin, *axis, row);
 
 	needSunAmbient = map.haveSunAmbient;
+	surfLight_t *rl;
 	for (i = 0, rl = map.surfLights; i < map.numSurfLights; i++, rl = rl->next)
-		AddSurfaceLight (rl, origin, *axis, row);
+		AddSurfaceLight (rl, *origin, *axis, row);
 
 	if (ent) return true;
 
@@ -519,13 +517,12 @@ static bool GetCellLight (vec3_t origin, int *coord, refEntity_t *ent)
 
 	if (hasLight)
 	{
-		byte	*dst;
-
 		// alloc new cell
 		cell = new (map.lightGridChain) lightCell_t;
 		*pcell = cell;
 		map.numLightCells++;
 
+		byte *dst;
 #ifdef NORMALIZE_AXIS
 		// find maximal color
 		float m = 0;
@@ -574,8 +571,8 @@ void LightForEntity (refEntity_t *ent)
 	{
 		if (!gl_noGrid->integer)
 		{
-			vec3_t	accum[6];
-			vec3_t	pos, frac;
+			CVec3	accum[6];
+			CVec3	pos, frac;
 			int		coord[3];
 
 			i = PointInLeaf (ent->center)->cluster;
@@ -605,7 +602,7 @@ void LightForEntity (refEntity_t *ent)
 			float totalFrac = 0;
 			for (i = 0; i < 8; i++)
 			{
-				vec3_t	origin;
+				CVec3	origin;
 				int		c[3], j;
 
 				float f = 1;
@@ -623,7 +620,7 @@ void LightForEntity (refEntity_t *ent)
 						f *= frac[j];
 					}
 				if (!f) continue;			// will not add light from this cell
-				if (GetCellLight (origin, c, NULL))
+				if (GetCellLight (&origin, c, NULL))
 				{
 					totalFrac += f;
 					for (j = 0; j < 6; j++)
@@ -634,11 +631,9 @@ void LightForEntity (refEntity_t *ent)
 						glBegin (GL_LINES);
 						for (j = 0; j < 6; j++)
 						{
-							vec3_t	origin2;
-
 							glColor3f (entityColorAxis[j][0]/255, entityColorAxis[j][1]/255, entityColorAxis[j][2]/255);
 							glVertex3fv (origin);
-							VectorCopy (origin, origin2);
+							CVec3 origin2 = origin;
 							origin2[j >> 1] += (j & 1) ? 2 : -2;
 							glVertex3fv (origin2);
 						}
@@ -694,10 +689,10 @@ void LightForEntity (refEntity_t *ent)
 
 	for (i = 0, dl = vp.dlights; i < vp.numDlights; i++, dl++)
 	{
-		vec3_t	dst, color;
+		CVec3	dst, color;
 
 		VectorSubtract (ent->center, dl->origin, dst);
-		float dist = DotProduct (dst, dst);					// dist*dist
+		float dist = dot (dst, dst);						// dist*dist
 		if (dist > dl->intensity * dl->intensity) continue;	// dlight is too far
 		float denom = Q_rsqrt (dist);						// 1/sqrt(dist)
 		dist = 1.0f / denom;
@@ -715,12 +710,8 @@ void LightForEntity (refEntity_t *ent)
 
 	if (ent->mirror)
 	{
-		vec3_t	tmp;
-
 		// swap left and right lights
-		VectorCopy (entityColorAxis[2], tmp);
-		VectorCopy (entityColorAxis[3], entityColorAxis[2]);
-		VectorCopy (tmp, entityColorAxis[3]);
+		Exchange (entityColorAxis[2], entityColorAxis[3]);
 	}
 
 	if (ent->flags & RF_GLOW)
@@ -758,42 +749,42 @@ void LightForEntity (refEntity_t *ent)
 //?? really, should move this func to backend, but must access entityColorAxis[]
 void DiffuseLight (color_t *dst, float lightScale)
 {
-	int		i, j;
+	int		i;
 	bufExtra_t *ex;
-	float	light;
 
-	light = lightScale * 2 * gl_config.identityLightValue_f;	// *2 -- because 1 == double light (similar to lightmaps)
+	float light = lightScale * 2 * gl_config.identityLightValue_f;	// *2 -- because 1 == double light (similar to lightmaps)
 	for (i = 0, ex = gl_extra; i < gl_numExtra; i++, ex++)
 	{
-		float	*norm, *axis, val;
-		vec3_t	color;
-		color_t	c;
+		float	val;
+		CVec3	color;
+		CVec3	*axis;
 		int		tmp;
 
-		norm = ex->normal;
+		CVec3 &norm = ex->normal;
 
-		VectorClear (color);
+		color.Zero ();
 		// compute color
 #if 1
 #define STEP(n)		\
 		FAbsSign(norm[n],val,tmp);	\
 		val *= light;				\
-		axis = entityColorAxis[n*2+1-tmp];
+		axis = &entityColorAxis[n*2+1-tmp];
 #else
 #define STEP(n)		\
-		axis = entityColorAxis[(norm[n] < 0 ? (n * 2) : (n * 2 + 1))];	\
+		axis = &entityColorAxis[(norm[n] < 0 ? (n * 2) : (n * 2 + 1))];	\
 		val = fabs (norm[n]) * light;
 #endif
 
 		STEP(0);
-		VectorScale (axis, val, color);
+		VectorScale (*axis, val, color);
 		STEP(1);
-		VectorMA (color, val, axis);
+		VectorMA (color, val, *axis);
 		STEP(2);
-		VectorMA (color, val, axis);
+		VectorMA (color, val, *axis);
 #undef STEP
 
 		// apply color
+		color_t	c;
 #define STEP(n)		\
 		tmp = appRound (color[n]);	\
 		c.c[n] = (tmp > 255) ? 255 : tmp;
@@ -801,7 +792,7 @@ void DiffuseLight (color_t *dst, float lightScale)
 #undef STEP
 		c.c[3] = 255;
 
-		for (j = 0; j < ex->numVerts; j++, dst++)		// normally, here will be only 1 iteration ...
+		for (int j = 0; j < ex->numVerts; j++, dst++)	// normally, here will be only 1 iteration ...
 			dst->rgba = c.rgba;							// just put computed color
 	}
 }
@@ -888,11 +879,10 @@ void PostLoadLights (void)
 	surfLight_t *rl;
 	for (i = 0, rl = map.surfLights; i < map.numSurfLights; i++, rl = rl->next)
 	{
-		vec3_t	center;
-
 		surfacePlanar_t *pl = rl->pl;
 		float x = (pl->mins2[0] + pl->maxs2[0]) / 2;
 		float y = (pl->mins2[1] + pl->maxs2[1]) / 2;
+		CVec3 center;
 		VectorScale (pl->axis[0], x, center);
 		VectorMA (center, y, pl->axis[1]);
 		VectorMA (center, pl->plane.dist + 1, pl->plane.normal, rl->center);

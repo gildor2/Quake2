@@ -120,16 +120,16 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 	}
 #else
 	// transform bounding box to a world coordinates
-	float	*v;
-	vec3_t	box[8];
+	CVec3	box[8];
+	CVec3	*v = box;
 	int i;
-	for (i = 0, v = box[0]; i < 8; i++, v += 3)	// check all 8 verts of bounding box
+	for (i = 0; i < 8; i++, v++)	// check all 8 verts of bounding box
 	{
-		vec3_t tmp;
+		CVec3 tmp;
 		tmp[0] = (i & 1) ? b.maxs[0] : b.mins[0];
 		tmp[1] = (i & 2) ? b.maxs[1] : b.mins[1];
 		tmp[2] = (i & 4) ? b.maxs[2] : b.mins[2];
-		e->coord.UpTransformPoint (tmp, v);
+		e->coord.UnTransformPoint (tmp, *v);
 	}
 
 	// perform frustum culling
@@ -147,9 +147,9 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 		}
 
 		int side = 0;
-		for (j = 0, v = box[0]; j < 8; j++, v += 3)
+		for (j = 0, v = box; j < 8; j++, v++)
 		{	// loop by box verts
-			if (DotProduct (v, fr->normal) >= fr->dist)
+			if (dot (*v, fr->normal) >= fr->dist)
 				side |= FRUSTUM_INSIDE;
 			else
 				side |= FRUSTUM_OUTSIDE;
@@ -170,7 +170,7 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 }
 
 
-static int SphereCull (vec3_t origin, float radius, byte *frustumMask)
+static int SphereCull (const CVec3 &origin, float radius, byte *frustumMask)
 {
 	if (!gl_frustumCull->integer)
 	{
@@ -183,12 +183,12 @@ static int SphereCull (vec3_t origin, float radius, byte *frustumMask)
 	int ret = 0;
 	int mask = frustumMask ? *frustumMask : MAX_FRUSTUM_MASK;
 	int	i, m;
-	cplane_t *pl;
+	const cplane_t *pl;
 	for (i = 0, pl = vp.frustum, m = 1; i < NUM_FRUSTUM_PLANES; i++, pl++, m <<= 1)
 	{	// loop by frustum planes
 		if (!(m & mask)) continue;
 
-		float dist = DotProduct (origin, pl->normal) - pl->dist;
+		float dist = dot (origin, pl->normal) - pl->dist;
 		if (dist < -radius)
 			return FRUSTUM_OUTSIDE;
 		if (dist <= radius)
@@ -206,7 +206,7 @@ static int SphereCull (vec3_t origin, float radius, byte *frustumMask)
 
 
 // Reduced SphereCull()
-static int PointCull (vec3_t point, int frustumMask)
+static int PointCull (const CVec3 &point, int frustumMask)
 {
 	if (!gl_frustumCull->integer)
 		return FRUSTUM_INSIDE;
@@ -215,11 +215,11 @@ static int PointCull (vec3_t point, int frustumMask)
 		return FRUSTUM_INSIDE;
 
 	int	i;
-	cplane_t *pl;
+	const cplane_t *pl;
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 		if (frustumMask & (1 << i))
 		{
-			if (DotProduct (point, pl->normal) - pl->dist < 0)
+			if (dot (point, pl->normal) - pl->dist < 0)
 				return FRUSTUM_OUTSIDE;
 		}
 	return FRUSTUM_INSIDE;
@@ -228,10 +228,10 @@ static int PointCull (vec3_t point, int frustumMask)
 
 #define NUM_TEST_BRUSHES	2 // 32
 
-static bool BoxOccluded (refEntity_t *e, vec3_t size2)
+static bool BoxOccluded (const refEntity_t *e, const CVec3 &size2)
 {
 	float	mins2[2], maxs2[2];
-	vec3_t	v, left, right;
+	CVec3	v, left, right;
 	int		n, brushes[NUM_TEST_BRUSHES];
 
 	if (!GetBoxRect (e, size2, mins2, maxs2)) return false;
@@ -268,7 +268,7 @@ static bool BoxOccluded (refEntity_t *e, vec3_t size2)
 }
 
 
-static bool WorldBoxOccluded (vec3_t mins, vec3_t maxs)
+static bool WorldBoxOccluded (const CVec3 &mins, const CVec3 &maxs)	//?? CBox
 {
 //	static cvar_t *test;
 //	if (!test) test=Cvar_Get("test","32",0);
@@ -276,7 +276,7 @@ static bool WorldBoxOccluded (vec3_t mins, vec3_t maxs)
 	// in a case of fast non-occluded test: top-left, bottom-right, other 2 points
 	for (int i = 0; i < 8; i++)
 	{
-		vec3_t	v;
+		CVec3	v;
 		v[0] = (i & 1) ? maxs[0] : mins[0];
 		v[1] = (i & 2) ? maxs[1] : mins[1];
 		v[2] = (i & 4) ? maxs[2] : mins[2];
@@ -334,17 +334,16 @@ static void SetupModelMatrix (refEntity_t *e)
 
 // Point trace to visible INLINE models; function based on CL_ClipMoveToEntities()
 // NOTE: can easily extend to any (invisible too) inline models (add flag "visibleOnly")
-static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brushmask)
+static void ClipTraceToEntities (trace_t *tr, const CVec3 &start, const CVec3 &end, int brushmask)
 {
-	vec3_t	traceDir;
+	CVec3	traceDir;
 	VectorSubtract (end, start, traceDir);
 	float traceLen = VectorNormalizeFast (traceDir);
 
-	int		i;
-	refEntity_t *e;
-	for (i = 0, e = gl_entities + vp.firstEntity; i < vp.numEntities; i++, e++)
+	refEntity_t *e = gl_entities + vp.firstEntity;
+	for (int i = 0; i < vp.numEntities; i++, e++)
 	{
-		vec3_t	tmp, center2;
+		CVec3	tmp, center2;
 
 		if (!e->visible || !e->model || e->model->type != MODEL_INLINE)
 			continue;
@@ -353,12 +352,12 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 		VectorSubtract (e->center, start, center2);
 
 		// collision detection: line vs sphere
-		float entPos = DotProduct (center2, traceDir);
+		float entPos = dot (center2, traceDir);
 		if (entPos < -im->radius || entPos > traceLen + im->radius)
 			continue;		// too near / too far
 
 		VectorMA (center2, -entPos, traceDir, tmp);
-		float dist2 = DotProduct (tmp, tmp);
+		float dist2 = dot (tmp, tmp);
 		if (dist2 >= im->radius * im->radius) continue;
 
 		// trace
@@ -387,17 +386,17 @@ static void ClipTraceToEntities (trace_t *tr, vec3_t start, vec3_t end, int brus
 
 
 // returns false when cylinder is outside frustum; modifies v1 and v2
-static bool CutCylinder (vec3_t v1, vec3_t v2, float radius)
+static bool CutCylinder (CVec3 &v1, CVec3 &v2, float radius)
 {
 	int		i;
 	cplane_t *pl;
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 	{	// loop by frustum planes
-		float	dist1, dist2, frac;
-		vec3_t	delta;
+		float	frac;
+		CVec3	delta;
 
-		dist1 = DotProduct (v1, pl->normal) - pl->dist;
-		dist2 = DotProduct (v2, pl->normal) - pl->dist;
+		float dist1 = dot (v1, pl->normal) - pl->dist;				// pl->DistanceTo() w/o checking pl->type
+		float dist2 = dot (v2, pl->normal) - pl->dist;
 		if (dist1 < -radius && dist2 < -radius) return false;		// cylinder is outside the view frustum
 
 		if (dist1 < -radius)
@@ -429,7 +428,7 @@ static bool CutCylinder (vec3_t v1, vec3_t v2, float radius)
 */
 
 // Find nearest to sphere center visible leaf, occupied by entity bounding sphere
-static node_t *SphereLeaf (vec3_t origin, float radius)
+static node_t *SphereLeaf (const CVec3 &origin, float radius)
 {
 	int		sptr;
 	node_t	*node;
@@ -484,7 +483,7 @@ static node_t *SphereLeaf (vec3_t origin, float radius)
 
 // Find nearest (by draw order) visible leaf, occupied by entity sphere,
 // or nearest to a sphere center leaf with alpha surfaces (if one)
-static node_t *AlphaSphereLeaf (vec3_t origin, float radius)
+static node_t *AlphaSphereLeaf (const CVec3 &origin, float radius)
 {
 	int		sptr, drawOrder;
 	node_t	*node, *drawNode;
@@ -549,28 +548,27 @@ static node_t *AlphaSphereLeaf (vec3_t origin, float radius)
 
 
 // Find nearest (by draw order) visible leaf, occupied by beam
-static node_t *BeamLeaf (vec3_t v1, vec3_t v2)
+static node_t *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
 {
 	int		sptr, drawOrder;
 	node_t	*node, *drawNode;
-	vec3_t	v1a, v2a;
 	struct {
 		node_t	*node;
-		vec3_t	v1, v2;
+		CVec3	v1, v2;
 	} stack[MAX_TREE_DEPTH], *st;
 
 	sptr = 0;
 	node = map.nodes;
 	drawOrder = 0;
 	drawNode = NULL;
-	VectorCopy (v1, v1a);
-	VectorCopy (v2, v2a);
+	CVec3 v1a = v1;
+	CVec3 v2a = v2;
 
 #define PUSH_NODE(n, start, end) \
 	st = &stack[sptr++]; \
 	st->node = n;		\
-	VectorCopy (start, st->v1); \
-	VectorCopy (end, st->v2);
+	st->v1 = start;		\
+	st->v2 = end;
 
 #define POP_NODE()		\
 	if (!sptr)			\
@@ -579,8 +577,8 @@ static node_t *BeamLeaf (vec3_t v1, vec3_t v2)
 	{					\
 		st = &stack[--sptr]; \
 		node = st->node; \
-		VectorCopy (st->v1, v1a); \
-		VectorCopy (st->v2, v2a); \
+		v1a = st->v1;	\
+		v2a = st->v2;	\
 	}
 
 	while (node)
@@ -622,13 +620,13 @@ static node_t *BeamLeaf (vec3_t v1, vec3_t v2)
 			// both sides
 			float frac = t1 / (t1 - t2);	// t1 and t2 have different signs, so - |t1-t2| > |t1|, frac in [0..1] range
 			int side = t1 < t2;				// which side v1 on (child index)
-			vec3_t	mid;
-			for (int i = 0; i < 3; i++)
+			CVec3	mid;
+			for (int i = 0; i < 3; i++)		// use Lerp()
 				mid[i] = v1a[i] + frac * (v2a[i] - v1a[i]);
 			// Recurse(node->children[side^1],mid,v2a)  -- later
 			PUSH_NODE(node->children[side^1], mid, v2a);
 			// Recurse(node->children[side],v1a,mid)
-			VectorCopy (mid, v2a);
+			v2a = mid;
 			node = node->children[side];
 		}
 	}
@@ -648,7 +646,7 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 	refDlight_t *dl;
 	int		numDlights;
 
-	float *vieworg = e->modelvieworg;
+	CVec3 &vieworg = e->modelvieworg;
 
 	for (int i = 0; i < numFaces; i++)
 	{
@@ -720,7 +718,7 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 		pl->dlightMask &= ~mask;	\
 		continue;	\
 	}
-							float *dl_org = (e->worldMatrix) ? dl->origin : dl->modelOrg;
+							CVec3 &dl_org = (e->worldMatrix) ? dl->origin : dl->modelOrg;
 							float dist = pl->plane.DistanceTo (dl_org);
 							if (!gl_dlightBacks->integer && dist < -8) CULL_DLIGHT;
 							if (dist < 0) dist = -dist;
@@ -728,9 +726,9 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 							if (dist >= dl->intensity) CULL_DLIGHT;
 							float rad = dl->intensity * dl->intensity - dist * dist;
 							rad = SQRTFAST(rad);
-							float org0 = DotProduct (dl_org, pl->axis[0]);
+							float org0 = dot (dl_org, pl->axis[0]);
 							if (org0 < pl->mins2[0] - rad || org0 > pl->maxs2[0] + rad) CULL_DLIGHT;
-							float org1 = DotProduct (dl_org, pl->axis[1]);
+							float org1 = dot (dl_org, pl->axis[1]);
 							if (org1 < pl->mins2[1] - rad || org1 > pl->maxs2[1] + rad) CULL_DLIGHT;
 							// save dlight info
 							sdl->pos[0] = org0;
@@ -771,7 +769,7 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 
 void model_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
-	VectorCopy (ent->origin, out->coord.origin);
+	out->coord.origin = ent->origin;
 }
 
 
@@ -797,7 +795,7 @@ void model_t::DrawLabel (refEntity_t *e)
 
 void inlineModel_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
-	vec3_t v;
+	CVec3 v;
 	bounds.GetCenter (v);
 	VectorSubtract (bounds.maxs, v, out->size2);		// half-size
 	out->coord.UnTransformPoint (v, out->center);
@@ -815,10 +813,9 @@ void inlineModel_t::AddSurfaces (refEntity_t *e)
 	unsigned dlightMask = 0;
 	for (i = 0, dl = vp.dlights, mask = 1; i < vp.numDlights; i++, dl++, mask <<= 1)
 	{
-		vec3_t	tmp;
-
+		CVec3	tmp;
 		VectorSubtract (e->center, dl->origin, tmp);
-		float dist2 = DotProduct (tmp, tmp);
+		float dist2 = dot (tmp, tmp);
 		float dist2min = radius + dl->intensity;
 		dist2min = dist2min * dist2min;
 		if (dist2 >= dist2min) continue;	// too far
@@ -864,7 +861,7 @@ void inlineModel_t::DrawLabel (refEntity_t *e)
 
 void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
-	vec3_t	center1, center2;
+	CVec3	center1, center2;
 
 	// sanity check
 	if (out->frame >= numFrames || out->frame < 0)
@@ -880,7 +877,7 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	md3Frame_t *frame1 = frames + out->frame;
 	md3Frame_t *frame2 = frames + out->oldFrame;
 	// lerp origin
-	vec3_t v;
+	CVec3 v;
 	VectorSubtract (ent->oldorigin, ent->origin, v);
 	VectorMA (ent->origin, out->backLerp, v, out->coord.origin);
 	// lerp center
@@ -959,7 +956,7 @@ void md3Model_t::DrawLabel (refEntity_t *e)
 
 void sp2Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
-	VectorCopy (out->coord.origin, out->center);
+	out->center = out->coord.origin;
 	out->radius = radius;
 }
 
@@ -975,7 +972,7 @@ void sp2Model_t::AddSurfaces (refEntity_t *e)
 
 	sp2Frame_t *frame = &frames[e->frame % numFrames];
 	// setup xyz
-	vec3_t	down, up2;
+	CVec3	down, up2;
 	VectorMA (e->coord.origin, -frame->localOrigin[1], vp.view.axis[2], down);
 	VectorMA (down, -frame->localOrigin[0], vp.view.axis[1], p->verts[0].xyz);	// 0
 	VectorMA (down, frame->width - frame->localOrigin[0], vp.view.axis[1], p->verts[1].xyz);	// 1
@@ -1006,16 +1003,16 @@ node_t *sp2Model_t::GetLeaf (refEntity_t *e)
 
 static void AddBeamSurfaces (beam_t *b)
 {
-	vec3_t	viewDir, tmp;
-	vec3_t	axis[3];		// length, width, depth
-	vec3_t	dir1, dir2;
+	CVec3	viewDir, tmp;
+	CVec3	axis[3];		// length, width, depth
+	CVec3	dir1, dir2;
 	color_t	color;
 
 	// compute level of detail
 	VectorSubtract (b->drawStart, vp.view.origin, viewDir);
-	float z1 = DotProduct (viewDir, vp.view.axis[0]);// beamStart.Z
+	float z1 = dot (viewDir, vp.view.axis[0]);	// beamStart.Z
 	VectorSubtract (b->drawEnd, vp.view.origin, tmp);
-	float z2 = DotProduct (tmp, vp.view.axis[0]);	// beamEnd.Z
+	float z2 = dot (tmp, vp.view.axis[0]);		// beamEnd.Z
 	float size = min(z1, z2);
 
 	size = b->radius * 200 / (size * vp.fov_scale);
@@ -1045,7 +1042,7 @@ static void AddBeamSurfaces (beam_t *b)
 		p->numVerts = 4;
 
 		// rotate dir1 & dir2 vectors
-		VectorCopy (dir2, dir1);
+		dir1 = dir2;
 		angle += angleStep;
 		float sx = SIN_FUNC(angle) * b->radius;
 		float cx = COS_FUNC(angle) * b->radius;
@@ -1078,8 +1075,8 @@ static void AddBeamSurfaces (beam_t *b)
 
 static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 {
-	vec3_t	viewDir;
-	vec3_t	axis[3];		// length, width, depth
+	CVec3	viewDir;
+	CVec3	axis[3];		// length, width, depth
 
 	//?? cumpute LOD
 	VectorSubtract (b->drawStart, vp.view.origin, viewDir);
@@ -1094,11 +1091,11 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 
 #ifdef CYLINDER_FIX_ALPHA
 	// compute minimal distance to beam
-	float f = DotProduct (viewDir, axis[0]);
-	vec3_t v;
+	float f = dot (viewDir, axis[0]);
+	CVec3 v;
 	VectorMA (b->drawStart, -f, axis[0], v);		// v is a nearest point on beam line
 	VectorSubtract (v, vp.view.origin, v);
-	f = DotProduct (v, v);
+	f = dot (v, v);
 	f = SQRTFAST(f);								// distance to line
 	float fixAngle;
 	if (f <= b->radius)
@@ -1116,7 +1113,7 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 	for (int i = 0; i < CYLINDER_PARTS; i++)
 	{
 		float	sx, cx;
-		vec3_t	dir1, dir2;
+		CVec3	dir1, dir2;
 
 		// cylinder will be drawn with 2 passes, from far to near
 		// (for correct image when used shader with depthwrites)
@@ -1203,8 +1200,8 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 
 static void AddFlatBeam (beam_t *b, shader_t *shader)
 {
-	vec3_t	viewDir;
-	vec3_t	axis[3];		// length, width, depth
+	CVec3	viewDir;
+	CVec3	axis[3];		// length, width, depth
 
 	VectorSubtract (b->drawStart, vp.view.origin, viewDir);
 	// compute beam axis
@@ -1219,7 +1216,7 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 	float angle = 0;
 	for (int i = 0; i < BEAM_PARTS; i++)
 	{
-		vec3_t	dir1, dir2;
+		CVec3	dir1, dir2;
 
 		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p)		// out of dynamic memory
@@ -1343,7 +1340,7 @@ static node_t *WalkBspTree (void)
 			else
 			{	// >= 3
 				static refEntity_t ent;		// just zeroed entity
-				vec3_t	v, h;
+				CVec3	v, h;
 
 				VectorAdd (node->mins, node->maxs, v);		//?? can pre-compute on map loading
 				VectorScale (v, 0.5f, ent.center);
@@ -1526,9 +1523,9 @@ static void DrawEntities (int firstEntity, int numEntities)
 
 		e->visible = true;
 		// calc model distance
-		vec3_t delta;
+		CVec3 delta;
 		VectorSubtract (e->center, vp.view.origin, delta);
-		float dist2 = e->dist2 = DotProduct (delta, vp.view.axis[0]);	// get Z-coordinate
+		float dist2 = e->dist2 = dot (delta, vp.view.axis[0]);	// get Z-coordinate
 		// add entity to leaf's entity list
 		if (leaf->drawEntity)
 		{
@@ -1579,8 +1576,8 @@ static void DrawParticles (void)
 
 	for (beam_t *b = vp.beams; b; b = b->next)
 	{
-		VectorCopy (b->start, b->drawStart);
-		VectorCopy (b->end, b->drawEnd);
+		b->drawStart = b->start;
+		b->drawEnd = b->end;
 		if (!CutCylinder (b->drawStart, b->drawEnd, b->radius))
 		{
 			gl_speeds.cullParts++;
@@ -1588,7 +1585,7 @@ static void DrawParticles (void)
 		}
 		else
 		{
-			vec3_t	center;
+			CVec3	center;
 
 			VectorAdd (b->drawStart, b->drawEnd, center);
 			VectorScale (center, 0.5f, center);
@@ -1618,7 +1615,7 @@ static void DrawFlares (void)
 	for (gl_flare_t *f = map.flares; f ; f = f->next)
 	{
 		float	scale;
-		vec3_t	tmp, flarePos;
+		CVec3	tmp, flarePos;
 		color_t	color;
 
 		bool cull = false;
@@ -1628,7 +1625,7 @@ static void DrawFlares (void)
 			inlineModel_t *im;
 
 			if (f->surf && f->surf->frame != drawFrame) cull = true;
-			VectorCopy (f->origin, flarePos);
+			flarePos = f->origin;
 			if (im = f->owner)
 			{	// flare linked to entity - shift it with entity origin
 				refEntity_t *e;
@@ -1652,7 +1649,7 @@ static void DrawFlares (void)
 					}
 				if (i > 0) continue;					// should not happens ...
 				// compute flare origin
-				vec3_t tmp;
+				CVec3 tmp;
 				im->bounds.GetCenter (tmp);
 				// flarePos = e->center - im->center + flarePos
 				VectorSubtract (e->center, tmp, tmp);
@@ -1693,9 +1690,9 @@ static void DrawFlares (void)
 			scale = f->size / 2;
 
 			// get Z-coordinate
-			vec3_t tmp;
+			CVec3 tmp;
 			VectorSubtract (flarePos, vp.view.origin, tmp);
-			float dist = DotProduct (tmp, vp.view.axis[0]);
+			float dist = dot (tmp, vp.view.axis[0]);
 
 			if (dist < FLARE_DIST0)			// too near - do not fade
 			{
@@ -1724,7 +1721,7 @@ static void DrawFlares (void)
 			}
 			else
 			{	// sun flare
-				vec3_t	tracePos;
+				CVec3	tracePos;
 
 				VectorMA (vp.view.origin, BIG_NUMBER, f->origin, tracePos);
 				CM_BoxTrace (&trace, vp.view.origin, tracePos, NULL, NULL, 0, CONTENTS_SOLID);
@@ -1911,7 +1908,7 @@ void AddEntity (entity_t *ent)
 
 	if (ent->model)
 	{
-		VectorCopy (ent->origin, out->coord.origin);
+		out->coord.origin = ent->origin;
 		//!! send client=>renderer not angles, but axis
 		out->coord.axis.FromAngles (ent->angles);
 
@@ -1935,18 +1932,17 @@ void AddEntity (entity_t *ent)
 	}
 	else if (ent->flags & RF_BBOX)
 	{
-		vec3_t	v;
-
+		CVec3	v;
 		VectorSubtract (ent->oldorigin, ent->origin, v);
 		VectorMA (ent->origin, ent->backlerp, v, out->center);
-		VectorCopy (ent->size, out->boxSize);
+		out->boxSize = ent->size;
 		out->boxAxis.FromAngles (ent->angles);
 		out->shaderColor.rgba = ent->color.rgba;
 	}
 	else
 	{
 		// unknown entity type: copy origin for displaying warning in 3D
-		VectorCopy (ent->origin, out->coord.origin);
+		out->coord.origin = ent->origin;
 	}
 
 	gl_speeds.ents++;
@@ -1961,7 +1957,7 @@ void AddDlight (dlight_t *dl)
 		return;
 	}
 	refDlight_t *out = &gl_dlights[gl_numDlights++];
-	VectorCopy (dl->origin, out->origin);
+	out->origin = dl->origin;
 	out->intensity = dl->intensity;
 	float r = dl->color[0] * gl_config.identityLightValue;
 	float g = dl->color[1] * gl_config.identityLightValue;
@@ -2007,7 +2003,7 @@ void DrawPortal (void)
 
 		// setup world entity
 		memset (&gl_entities[ENTITYNUM_WORLD], 0, sizeof(refEntity_t));
-		VectorCopy (vp.view.origin, gl_entities[ENTITYNUM_WORLD].modelvieworg);
+		gl_entities[ENTITYNUM_WORLD].modelvieworg = vp.view.origin;
 		gl_entities[ENTITYNUM_WORLD].worldMatrix = true;
 //		gl_entities[ENTITYNUM_WORLD].axis[0][0] = 1;
 //		gl_entities[ENTITYNUM_WORLD].axis[1][1] = 1;

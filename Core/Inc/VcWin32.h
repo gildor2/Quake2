@@ -21,6 +21,8 @@ typedef unsigned int	address_t;
 
 // this functions are smaller. when in intrinsic form (and, of course, faster):
 #pragma intrinsic(memcpy, memset, memcmp, abs, fabs)
+// allow nested inline expansions
+#pragma inline_depth(8)
 
 /*-----------------------------------------------------------------------------
 	Miscellaneous

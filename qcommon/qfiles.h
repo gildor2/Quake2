@@ -100,8 +100,8 @@ struct dMd2_t
 
 struct dMd3Frame_t
 {
-	vec3_t	bounds[2];
-	vec3_t	localOrigin;				// NOTE: q3 model converter tool always sets this to (0,0,0)
+	CVec3	bounds[2];					// CBox
+	CVec3	localOrigin;				// NOTE: q3 model converter tool always sets this to (0,0,0)
 	float	radius;						//		 and this is a maximal distance to all bounds[] vectors
 	char	name[16];
 };
@@ -109,7 +109,7 @@ struct dMd3Frame_t
 struct dMd3Tag_t
 {
 	char	name[MAX_QPATH];			// tag name
-	CCoords	tag;						// vec3_t origin + vec3_t axis[3]
+	CCoords	tag;						// CVec3 origin + axis[3]
 };
 
 struct dMd3Shader_t
@@ -299,8 +299,8 @@ typedef struct
 
 typedef struct
 {
-	float	mins[3], maxs[3];
-	float	origin[3];				// unused! (for sounds or lights ?)
+	CVec3	mins, maxs;				// CBox
+	CVec3	origin2;				// unused! (for sounds or lights ?)
 	int		headnode;
 	int		firstface, numfaces;	// submodels just draw faces without walking the bsp tree
 } dmodel_t;
@@ -308,7 +308,7 @@ typedef struct
 
 typedef struct
 {
-	float	point[3];
+	CVec3	point;
 } dvertex_t;
 
 
@@ -316,7 +316,7 @@ typedef struct
 
 typedef struct
 {
-	float	normal[3];
+	CVec3	normal;
 	float	dist;
 	int		type;					// PLANE_X - PLANE_ANYZ ?remove? trivial to regenerate
 } dplane_t;
@@ -338,7 +338,10 @@ typedef struct
 
 typedef struct
 {
-	float	vecs[2][4];			// [s/t][xyz offset]
+	struct {					// axis for s/t computation
+		CVec3	vec;
+		float	offset;
+	} vecs[2];
 	int		flags;				// miptex flags + overrides
 	int		value;				// light emission, etc
 	char	texture[32];		// texture name (textures/*.wal)
@@ -490,8 +493,8 @@ typedef struct
 
 typedef struct
 {
-	float	mins[3], maxs[3];
-	float	origin[3];
+	CVec3	mins, maxs;				// CBox
+	CVec3	origin;
 	int		headnode[HL_MAX_MAP_HULLS]; // used mostly headnode[0]; other - for entity clipping
 	int		visleafs;				// not including the solid leaf 0 (UNUSED field!)
 	int		firstface, numfaces;

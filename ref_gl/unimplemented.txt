@@ -22,6 +22,7 @@ properties:
     point on surface is nearest, with ability to trace)
   ! should be useful when hardware lights will be implemented
   ? may be, make adaptive grid step -- sometimes lighting may be computed with interpolation from adjancent cells (memory optimization)
+  ? do not cache, when number of lights is small ? (but: how to make fading when light becomes culled?)
 entity system:
 ~~~~~~~~~~~~~~
   - ability to cache entity lighting between frames
@@ -172,7 +173,7 @@ COLORS (SATURATE/OVERBRIGHT):
 
 ? cmodel_t:
   - add "void *faces"   - filled/used by renderer (and clean R_LoadSubmodels)
-  - add "vec3_t center" - who will fill/update this ? ((mod->mins+mod->maxs)/2+ent->origin)
+  - add "CVec3 center" - who will fill/update this ? ((mod->mins+mod->maxs)/2+ent->origin)
 ? remove gl_fog stuff
 
 - color shell: should use size=0.5 for weapons and =3 for main model (use "fromEntity" ?)

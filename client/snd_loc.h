@@ -57,7 +57,7 @@ struct playsound_t
 	float	attenuation;
 	int		entnum;
 	int		entchannel;
-	vec3_t	origin;
+	CVec3	origin;
 	unsigned begin;				// begin on this sample
 };
 
@@ -83,7 +83,7 @@ typedef struct
 	int		looping;			// where to loop, -1 = no looping OBSOLETE?
 	int		entnum;				// to allow overriding a specific sound
 	int		entchannel;
-	vec3_t	origin;				// only use if fixed_origin is set
+	CVec3	origin;				// only use if fixed_origin is set
 	float	dist_mult;			// distance multiplier (attenuation/clipK)
 	byte	master_vol;			// 0-255 master volume
 	int		fixed_origin:1;		// use origin instead of fetching entnum's origin
@@ -129,10 +129,10 @@ extern	channel_t   channels[MAX_CHANNELS];
 
 extern	int		paintedtime;
 extern	int		s_rawend;
-extern	vec3_t	listener_origin;
-extern	vec3_t	listener_forward;
-extern	vec3_t	listener_right;
-extern	vec3_t	listener_up;
+extern	CVec3	listener_origin;
+extern	CVec3	listener_forward;
+extern	CVec3	listener_right;
+extern	CVec3	listener_up;
 extern	dma_t	dma;
 extern	playsound_t	s_pendingplays;
 

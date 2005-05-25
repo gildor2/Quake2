@@ -848,7 +848,7 @@ void CMod_LoadHLBrushSides (lump_t *lf, lump_t *lm, lump_t *lv, lump_t *le, lump
 	for (i = 0 ; i < numbrushes; i++, in++)
 	{
 		int	k, n, brushside, vert_ct;
-		vec3_t	avg;
+		CVec3	avg;
 
 		n = in->numsides; // nummarksurfaces
 		brushside = in->firstbrushside;  // firstbrushside == nummarksurfaces
@@ -1207,7 +1207,7 @@ int	CM_TransformedPointContents (const vec3_t p, int headnode, const vec3_t orig
 {
 	guard(CM_TransformedPointContents);
 
-	vec3_t	p1;
+	CVec3	p1;
 	if (headnode != box_headnode && (angles[0] || angles[1] || angles[2]))
 	{
 		CAxis axis;
@@ -1226,7 +1226,7 @@ int	CM_TransformedPointContents (const vec3_t p, int headnode, const vec3_t orig
 {
 	guard(CM_TransformedPointContents2);
 
-	vec3_t	p1;
+	CVec3	p1;
 	if (headnode != box_headnode)
 		TransformPoint (origin, axis, p, p1);
 	else
@@ -1300,9 +1300,17 @@ int CM_BoxLeafnums (const vec3_t mins, const vec3_t maxs, int *list, int listsiz
 
 #define	DIST_EPSILON	(1.0f/32)
 
+//?? does not compiled: tells, that "operator[]" have 4 overloads; try later, when vec3_t will be removed,
+//??   and "CVec3::operator float*()" too ...
+#if 0
+static CVec3	trace_start, trace_end;
+static CVec3	trace_mins, trace_maxs;
+static CVec3	trace_extents;
+#else
 static vec3_t	trace_start, trace_end;
 static vec3_t	trace_mins, trace_maxs;
 static vec3_t	trace_extents;
+#endif
 
 static trace_t	trace_trace;
 static int		trace_contents;
@@ -1337,7 +1345,7 @@ static void ClipBoxToBrush (const cbrush_t *brush)
 
 		if (!trace_ispoint)
 		{	// general box case
-			vec3_t	ofs;
+			CVec3	ofs;
 
 			if (plane->type <= PLANE_Z)
 			{
@@ -1352,7 +1360,7 @@ static void ClipBoxToBrush (const cbrush_t *brush)
 			else
 			{
 				for (int j = 0; j < 3; j++)
-					ofs[j] = (plane->normal[j] < 0) ? trace_maxs[j] : trace_mins[j];
+					ofs[j] = (IsNegative(plane->normal[j])) ? trace_maxs[j] : trace_mins[j];
 				dist = plane->dist - DotProduct (plane->normal, ofs);
 			}
 		}
@@ -1503,10 +1511,10 @@ static bool TestBoxInBrush (const cbrush_t *brush)
 			dist = plane->dist + trace_maxs[plane->type-3];
 		else
 		{
-			vec3_t	ofs;
+			CVec3	ofs;
 
 			for (j = 0; j < 3; j++)
-				ofs[j] = (plane->normal[j] < 0) ? trace_maxs[j] : trace_mins[j];
+				ofs[j] = (IsNegative(plane->normal[j])) ? trace_maxs[j] : trace_mins[j];
 			dist = plane->dist - DotProduct (plane->normal, ofs);
 		}
 
@@ -1575,7 +1583,7 @@ RecursiveHullCheck
 */
 static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
 {
-	vec3_t		mid, p1a;
+	CVec3	mid, p1a;
 
 	if (trace_trace.fraction <= p1f)
 		return;		// already hit something nearer (??)
@@ -1747,7 +1755,7 @@ void CM_BoxTrace (trace_t *trace, const vec3_t start, const vec3_t end, const ve
 	// check for "position test" special case
 	if (start[0] == end[0] && start[1] == end[1] && start[2] == end[2])
 	{
-		vec3_t	c1, c2;
+		CVec3	c1, c2;
 
 		for (i = 0; i < 3; i++)
 		{
@@ -1817,7 +1825,7 @@ void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t en
 {
 	guard(CM_TransformedBoxTrace);
 
-	vec3_t	start1, end1;
+	CVec3	start1, end1;
 	CAxis	axis;
 	bool	rotated;
 
@@ -1861,7 +1869,7 @@ void CM_TransformedBoxTrace (trace_t *trace, const vec3_t start, const vec3_t en
 {
 	guard(CM_TransformedBoxTrace2);
 
-	vec3_t start1, end1;
+	CVec3 start1, end1;
 	// transform start/end to axis (model coordinate system)
 	TransformPoint (origin, axis, start, start1);
 	TransformPoint (origin, axis, end, end1);
@@ -1945,7 +1953,7 @@ static void RecursiveBrushTest (const vec3_t start, const vec3_t end, int nodeNu
 	cplane_t *plane;
 	float	frac1, frac2, t1, t2, idist;
 	int		i, side, s1, s2;
-	vec3_t	mid, start1;
+	CVec3	mid, start1;
 
 	while (true)
 	{

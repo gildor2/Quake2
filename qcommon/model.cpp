@@ -24,8 +24,8 @@ static void SwapQ2BspFile (bspfile_t *f)
 
 		for (j = 0; j < 3; j++)
 		{
-			d->mins[j] = LittleFloat(d->mins[j]);
-			d->maxs[j] = LittleFloat(d->maxs[j]);
+			d->bounds.mins[j] = LittleFloat(d->bounds.mins[j]);
+			d->bounds.maxs[j] = LittleFloat(d->bounds.maxs[j]);
 //			d->origin[j] = LittleFloat(d->origin[j]);
 		}
 	}
@@ -53,8 +53,9 @@ static void SwapQ2BspFile (bspfile_t *f)
 
 		d = &f->texinfo[i];
 
+		float *vec = d->vecs[0].vec;	// hack to get all ([3]+1)[2] == 8 components of texinfo_t.vecs[]
 		for (j = 0 ;j < 8; j++)
-			d->vecs[0][j] = LittleFloat (d->vecs[0][j]);
+			vec[j] = LittleFloat (vec[j]);
 		d->flags = LittleLong (d->flags);
 		d->value = LittleLong (d->value);
 		d->nexttexinfo = LittleLong (d->nexttexinfo);
@@ -176,8 +177,8 @@ static void ProcessQ2BspFile (bspfile_t *f)
 
 		for (j = 0; j < 3; j++)
 		{
-			d->mins[j] = d->mins[j] - 1;
-			d->maxs[j] = d->maxs[j] + 1;
+			d->bounds.mins[j] -= 1;
+			d->bounds.maxs[j] += 1;
 		}
 	}
 
@@ -211,12 +212,9 @@ static void LoadQ2Submodels (bspfile_t *f, dmodel_t *data)
 	cmodel_t *out = f->models = new (f->extraChain) cmodel_t[f->numModels];
 	for (int i = 0; i < f->numModels; i++, data++, out++)
 	{
-		vec3_t	tmp;
-
-		VectorCopy (data->mins, out->mins);
-		VectorCopy (data->maxs, out->maxs);
-		VectorSubtract (out->maxs, out->mins, tmp);
-		out->radius = VectorLength (tmp) / 2;
+		out->bounds.mins = data->mins;
+		out->bounds.maxs = data->maxs;
+		out->radius = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
 		out->headnode = data->headnode;
 		out->flags = 0;
 		out->firstface = data->firstface;
@@ -369,7 +367,7 @@ typedef struct
 typedef struct
 {
 	char	name[64];
-	vec3_t	origin;
+	CVec3	origin;
 } target_t;
 
 
@@ -512,7 +510,7 @@ static void WriteEntity (char **dst)
 }
 
 // gets "%f %f %f" or "%f"
-static void GetVector (char *str, vec3_t vec)
+static void GetVector (const char *str, CVec3 &vec)
 {
 	if (sscanf (str, "%f %f %f", &vec[0], &vec[1], &vec[2]) != 3)
 		vec[1] = vec[2] = vec[0];
@@ -581,7 +579,7 @@ static bool ProcessEntity ()
 #endif
 	// get origin
 	bool haveOrigin = false;
-	vec3_t origin;
+	CVec3 origin;
 	if (f = FindField ("origin"))
 	{
 		haveOrigin = true;
@@ -707,10 +705,9 @@ static bool ProcessEntity ()
 
 		if (f = FindField ("target"))
 		{
-			vec3_t	vec;
-
 			slight->spot = true;
 			float *dst = FindEntityTarget (f->value);
+			CVec3	vec;
 			VectorSubtract (dst, slight->origin, vec);
 			VectorNormalize (vec, slight->spotDir);
 
@@ -726,7 +723,7 @@ static bool ProcessEntity ()
 		}
 		if (!strcmp (classname + 5, "_spot") || FindField ("_spotvector,_spotpoint,_mangle,_spotangle"))
 		{
-			vec3_t	vec;
+			CVec3	vec;
 
 			slight->spot = true;
 			if (f = FindField ("_spotvector"))
@@ -739,8 +736,7 @@ static bool ProcessEntity ()
 			}
 			else if (f = FindField ("_mangle,_spotangle"))
 			{
-				float	ang[3];
-
+				CVec3	ang;
 				sscanf (f->value, "%f %f", &ang[YAW], &ang[PITCH]);
 				ang[PITCH] *= -1;
 				AngleVectors (ang, slight->spotDir, NULL, NULL);
@@ -876,8 +872,7 @@ static bool ProcessEntity ()
 				strcpy (sunTarget, f->value);	// worldspawn always 1st in entstring, so - just remember suntarget
 			else if (f = FindField ("_sun_angle,_sun_mangle"))
 			{
-				float	ang[3];
-
+				CVec3 ang;
 				sscanf (f->value, "%f %f", &ang[YAW], &ang[PITCH]);
 				ang[PITCH] *= -1;
 				AngleVectors (ang, bspfile.sunVec, NULL, NULL);

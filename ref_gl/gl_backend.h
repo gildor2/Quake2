@@ -14,7 +14,7 @@ namespace OpenGLDrv {
 
 typedef struct
 {
-	float	xyz[3];
+	CVec3	xyz;
 	float	pad;
 } bufVertex_t;
 
@@ -29,8 +29,8 @@ typedef struct
 {
 	int		numVerts;
 	int		lmWidth;
-	vec3_t	normal;
-	vec3_t	*axis;
+	CVec3	normal;
+	CVec3	*axis;				// CVec3[2]
 	surfDlight_t *dlight;
 } bufExtra_t;
 

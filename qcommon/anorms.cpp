@@ -271,7 +271,7 @@ static const byte encoded[] =
 };
 
 
-vec3_t bytedirs[NUMVERTEXNORMALS];
+CVec3 bytedirs[NUMVERTEXNORMALS];
 
 void InitByteDirs ()
 {

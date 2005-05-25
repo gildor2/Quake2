@@ -21,10 +21,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "client.h"
 
-void CL_LogoutEffect (vec3_t org, int type);
-void CL_ItemRespawnParticles (vec3_t org);
+void CL_LogoutEffect (const CVec3 &org, int type);
 
-static vec3_t avelocities[NUMVERTEXNORMALS];
+static CVec3 avelocities[NUMVERTEXNORMALS];
 
 /*
 ==============================================================
@@ -137,7 +136,7 @@ void CL_ClearDlights (void)
 }
 
 
-cdlight_t *CL_AllocDlight (int key, vec3_t origin)
+cdlight_t *CL_AllocDlight (int key, const CVec3 &origin)
 {
 	int		i;
 	cdlight_t *dl, *dst;
@@ -218,8 +217,8 @@ typedef struct
 	float		lifeTime, fadeTime;		// in sec
 	float		gravity, elasticity;
 	byte		minAlpha, maxAlpha;
-	vec3_t		vel, pos;
-	vec3_t		up, right;	//??
+	CVec3		vel, pos;
+	CVec3		up, right;	//??
 	float		radius;
 } particleTrace_t;
 
@@ -263,11 +262,11 @@ static void CL_AddParticleTraces (float timeDelta)
 	fovScale = tan (cl.refdef.fov_x / 2.0f / 180.0f * M_PI);
 	for (p = particleTraces, i = 0; i < MAX_PARTICLE_TRACES; p++, i++)
 	{
-		vec3_t	dir, pos, oldpos;
+		CVec3	dir, pos, oldpos;
 		float	speed, dist, distDelta, pos1;
 		float	viewDist, t;
 		trace_t	trace;
-		static const vec3_t zero = {0, 0, 0};
+		static const CVec3 zero = {0, 0, 0};
 
 		if (!p->allocated)
 			continue;
@@ -371,7 +370,7 @@ static void CL_AddParticleTraces (float timeDelta)
 }
 
 
-particleTrace_t *CL_AllocParticleTrace (vec3_t pos, vec3_t vel, float lifeTime, float fadeTime)
+particleTrace_t *CL_AllocParticleTrace (const CVec3 &pos, const CVec3 &vel, float lifeTime, float fadeTime)
 {
 	int		i;
 	particleTrace_t *p;
@@ -383,7 +382,7 @@ particleTrace_t *CL_AllocParticleTrace (vec3_t pos, vec3_t vel, float lifeTime, 
 	{
 		if (!p->allocated)
 		{
-			vec3_t	dir;
+			CVec3	dir;
 
 			p->allocated = true;
 			p->lifeTime = lifeTime;
@@ -452,7 +451,7 @@ static void CL_UpdateParticleBeams (float timeDelta)
 }
 
 
-beam_t *CL_AllocParticleBeam (vec3_t start, vec3_t end, float radius, float fadeTime)
+beam_t *CL_AllocParticleBeam (const CVec3 &start, const CVec3 &end, float radius, float fadeTime)
 {
 	beam_t	*b;
 
@@ -577,9 +576,9 @@ void CL_UpdateParticles (void)
 }
 
 
-void CL_MetalSparks (vec3_t pos, vec3_t dir, int count)
+void CL_MetalSparks (const CVec3 &pos, const CVec3 &dir, int count)
 {
-	vec3_t	vel, pos2;
+	CVec3	vel, pos2;
 	int		i, n;
 
 	for (n = 0; n < count; n++)
@@ -611,24 +610,18 @@ CL_ParseMuzzleFlash
 */
 void CL_ParseMuzzleFlash (void)
 {
-	vec3_t		fv, rv;
-	cdlight_t	*dl;
-	int			i, weapon;
-	centity_t	*pl;
-	int			silenced;
-	float		volume;
-
-	i = MSG_ReadShort (&net_message);
+	int i = MSG_ReadShort (&net_message);
 	if (i < 1 || i >= MAX_EDICTS)
 		Com_DropError ("CL_ParseMuzzleFlash: bad entity");
 
-	weapon = MSG_ReadByte (&net_message);
-	silenced = weapon & MZ_SILENCED;
+	int weapon = MSG_ReadByte (&net_message);
+	bool silenced = (weapon & MZ_SILENCED) != 0;
 	weapon &= ~MZ_SILENCED;
 
-	pl = &cl_entities[i];
+	centity_t *pl = &cl_entities[i];
+	cdlight_t *dl = CL_AllocDlight (i, pl->current.origin);
 
-	dl = CL_AllocDlight (i, pl->current.origin);
+	CVec3 fv, rv;
 	AngleVectors (pl->current.angles, fv, rv, NULL);
 	VectorMA (dl->origin, 18, fv);
 	VectorMA (dl->origin, 16, rv);
@@ -638,10 +631,7 @@ void CL_ParseMuzzleFlash (void)
 		dl->radius = 200 + (rand()&31);
 	dl->die = cl.time + 10;
 
-	if (silenced)
-		volume = 0.2;
-	else
-		volume = 1;
+	float volume = (silenced) ? 0.2 : 1;
 
 	if (RE_GetCaps() & REF_CONSOLE_ONLY)
 		return;
@@ -752,7 +742,7 @@ CL_ParseMuzzleFlash2
 void CL_ParseMuzzleFlash2 (void)
 {
 	int			ent;
-	vec3_t		origin;
+	CVec3		origin;
 	int			flash_number;
 	cdlight_t	*dl;
 	float		*forward, *left;
@@ -1106,7 +1096,7 @@ void CL_ParseMuzzleFlash2 (void)
 }
 
 
-void CL_ParticleEffect (vec3_t org, vec3_t dir, int color, int count)
+void CL_ParticleEffect (const CVec3 &org, const CVec3 &dir, int color, int count)
 {
 	int			i, j;
 	particle_t	*p;
@@ -1132,7 +1122,7 @@ void CL_ParticleEffect (vec3_t org, vec3_t dir, int color, int count)
 }
 
 
-void CL_ParticleEffect2 (vec3_t org, vec3_t dir, int color, int count)
+void CL_ParticleEffect2 (const CVec3 &org, const CVec3 &dir, int color, int count)
 {
 	int			i, j;
 	particle_t	*p;
@@ -1158,7 +1148,7 @@ void CL_ParticleEffect2 (vec3_t org, vec3_t dir, int color, int count)
 }
 
 
-void CL_ParticleEffect3 (vec3_t org, vec3_t dir, int color, int count)
+void CL_ParticleEffect3 (const CVec3 &org, const CVec3 &dir, int color, int count)
 {
 	int			i, j;
 	particle_t	*p;
@@ -1213,7 +1203,7 @@ void CL_TeleporterParticles (entityState_t *ent)
 }
 
 
-void CL_LogoutEffect (vec3_t org, int type)
+void CL_LogoutEffect (const CVec3 &org, int type)
 {
 	int			i, j;
 	particle_t	*p;
@@ -1243,7 +1233,7 @@ void CL_LogoutEffect (vec3_t org, int type)
 }
 
 
-void CL_ItemRespawnParticles (vec3_t org)
+void CL_ItemRespawnParticles (const CVec3 &org)
 {
 	int			i, j;
 	particle_t	*p;
@@ -1269,7 +1259,7 @@ void CL_ItemRespawnParticles (vec3_t org)
 }
 
 
-void CL_ExplosionParticles (vec3_t org)
+void CL_ExplosionParticles (const CVec3 &org)
 {
 	int			i, j;
 	particle_t	*p;
@@ -1293,7 +1283,7 @@ void CL_ExplosionParticles (vec3_t org)
 }
 
 
-void CL_BigTeleportParticles (vec3_t org)
+void CL_BigTeleportParticles (const CVec3 &org)
 {
 	int			i;
 	particle_t	*p;
@@ -1327,7 +1317,7 @@ void CL_BigTeleportParticles (vec3_t org)
 }
 
 
-void CL_BlasterParticles (vec3_t org, vec3_t dir)
+void CL_BlasterParticles (const CVec3 &org, const CVec3 &dir)
 {
 	int			i, j;
 	particle_t	*p;
@@ -1355,10 +1345,9 @@ void CL_BlasterParticles (vec3_t org, vec3_t dir)
 }
 
 
-void CL_BlasterTrail (vec3_t start, vec3_t end)
+void CL_BlasterTrail (const CVec3 &start, const CVec3 &end)
 {
-	vec3_t		move;
-	vec3_t		vec;
+	CVec3		move, vec;
 	float		len;
 	int			j;
 	particle_t	*p;
@@ -1394,10 +1383,9 @@ void CL_BlasterTrail (vec3_t start, vec3_t end)
 }
 
 
-void CL_FlagTrail (vec3_t start, vec3_t end, int color)
+void CL_FlagTrail (const CVec3 &start, const CVec3 &end, int color)
 {
-	vec3_t		move;
-	vec3_t		vec;
+	CVec3		move, vec;
 	float		len;
 	int			j;
 	particle_t	*p;
@@ -1433,10 +1421,9 @@ void CL_FlagTrail (vec3_t start, vec3_t end, int color)
 }
 
 
-void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags)
+void CL_DiminishingTrail (const CVec3 &start, const CVec3 &end, centity_t *old, int flags)
 {
-	vec3_t		move;
-	vec3_t		vec;
+	CVec3		move, vec;
 	float		len;
 	int			j;
 	particle_t	*p;
@@ -1523,10 +1510,9 @@ void CL_DiminishingTrail (vec3_t start, vec3_t end, centity_t *old, int flags)
 }
 
 
-void CL_RocketTrail (vec3_t start, vec3_t end, centity_t *old)
+void CL_RocketTrail (const CVec3 &start, const CVec3 &end, centity_t *old)
 {
-	vec3_t		move;
-	vec3_t		vec;
+	CVec3		move, vec;
 	float		len;
 	int			j;
 	particle_t	*p;
@@ -1566,14 +1552,13 @@ void CL_RocketTrail (vec3_t start, vec3_t end, centity_t *old)
 }
 
 
-void CL_RailTrail (vec3_t start, vec3_t end)
+void CL_RailTrail (const CVec3 &start, const CVec3 &end)
 {
-	vec3_t		move;
-	vec3_t		vec;
+	CVec3		move, vec;
 	float		len, dec, d, c, s;
 	int			i, j;
 	particle_t	*p;
-	vec3_t		right, up, dir;
+	CVec3		right, up, dir;
 	byte		clr = 0x74;
 
 	VectorCopy (start, move);
@@ -1634,17 +1619,17 @@ void CL_RailTrail (vec3_t start, vec3_t end)
 }
 
 
-void CL_RailTrailExt (vec3_t start, vec3_t end, byte rType, byte rColor)
+void CL_RailTrailExt (const CVec3 &start, const CVec3 &end, byte rType, byte rColor)
 {
 	beam_t	*b;
-	static unsigned colorTable[8] = {
+	static const unsigned colorTable[8] = {
 		RGB255(23, 83, 111), RGB(1,0,0), RGB(0,1,0), RGB(1,1,0),
 		RGB(0,0,1), RGB(1,0,1), RGB(0,1,1), RGB(1,1,1)
 	};
 
 #	define I 255
 #	define o 128
-	static unsigned colorTable2[8] = {
+	static const unsigned colorTable2[8] = {
 		RGB255(I, I, I), RGB255(I, o, o), RGB255(o, I, o), RGB255(I, I, o),
 		RGB255(o, o, I), RGB255(I, o, I), RGB255(o, I, I), RGB255(I, I, I)
 	};
@@ -1691,10 +1676,9 @@ void CL_RailTrailExt (vec3_t start, vec3_t end, byte rType, byte rColor)
 CL_IonripperTrail
 ===============
 */
-void CL_IonripperTrail (vec3_t start, vec3_t ent)
+void CL_IonripperTrail (const CVec3 &start, const CVec3 &ent)
 {
-	vec3_t	move;
-	vec3_t	vec;
+	CVec3	move, vec;
 	float	len;
 	particle_t *p;
 	int     left = 0;
@@ -1744,10 +1728,9 @@ CL_BubbleTrail
 
 ===============
 */
-void CL_BubbleTrail (vec3_t start, vec3_t end)
+void CL_BubbleTrail (const CVec3 &start, const CVec3 &end)
 {
-	vec3_t		move;
-	vec3_t		vec;
+	CVec3		move, vec;
 	float		len;
 	int			i, j;
 	particle_t	*p;
@@ -1787,13 +1770,13 @@ CL_FlyParticles
 */
 
 #define	BEAMLENGTH			16
-void CL_FlyParticles (vec3_t origin, int count)
+void CL_FlyParticles (const CVec3 &origin, int count)
 {
 	int			i;
 	particle_t	*p;
 	float		angle;
 	float		sr, sp, sy, cr, cp, cy;
-	vec3_t		forward;
+	CVec3		forward;
 	float		ltime;
 
 	if (count > NUMVERTEXNORMALS)
@@ -1840,7 +1823,7 @@ void CL_FlyParticles (vec3_t origin, int count)
 	}
 }
 
-void CL_FlyEffect (centity_t *ent, vec3_t origin)
+void CL_FlyEffect (centity_t *ent, const CVec3 &origin)
 {
 	int		n;
 	int		count;
@@ -1885,9 +1868,9 @@ void CL_BfgParticles (entity_t *ent)
 	particle_t	*p;
 	float		angle;
 	float		sr, sp, sy, cr, cp, cy;
-	vec3_t		forward;
+	CVec3		forward;
 	float		dist = 64;
-	vec3_t		v;
+	CVec3		v;
 	float		ltime;
 
 	if (!avelocities[0][0])
@@ -1943,9 +1926,8 @@ CL_TrapParticles
 // XATRIX
 void CL_TrapParticles (entity_t *ent)
 {
-	vec3_t		move;
-	vec3_t		vec;
-	vec3_t		start, end;
+	CVec3		move, vec;
+	CVec3		start, end;
 	float		len;
 	int			j;
 	particle_t	*p;
@@ -1990,13 +1972,10 @@ void CL_TrapParticles (entity_t *ent)
 	int			i, j, k;
 	particle_t	*p;
 	float		vel;
-	vec3_t		dir;
-	vec3_t		org;
-
+	CVec3		dir, org;
 
 	ent->origin[2]+=14;
 	VectorCopy (ent->origin, org);
-
 
 	for (i=-2 ; i<=2 ; i+=4)
 		for (j=-2 ; j<=2 ; j+=4)
@@ -2032,7 +2011,7 @@ CL_BFGExplosionParticles
 ===============
 */
 //FIXME combined with CL_ExplosionParticles
-void CL_BFGExplosionParticles (vec3_t org)
+void CL_BFGExplosionParticles (const CVec3 &org)
 {
 	int			i, j;
 	particle_t	*p;
@@ -2062,12 +2041,12 @@ CL_TeleportParticles
 
 ===============
 */
-void CL_TeleportParticles (vec3_t org)
+void CL_TeleportParticles (const CVec3 &org)
 {
 	int			i, j, k;
 	particle_t	*p;
 	float		vel;
-	vec3_t		dir;
+	CVec3		dir;
 
 	for (i=-16 ; i<=16 ; i+=4)
 		for (j=-16 ; j<=16 ; j+=4)

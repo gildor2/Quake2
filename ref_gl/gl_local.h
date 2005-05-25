@@ -146,7 +146,7 @@ void	DrawConChar (int x, int y, int c, int color);
 void	DrawTextLeft (const char *text, unsigned rgba);
 void	DrawTextRight (const char *text, unsigned rgba);
 void	DrawTextPos (int x, int y, const char *text, unsigned rgba);
-void	DrawText3D (vec3_t pos, const char *text, unsigned rgba);
+void	DrawText3D (const CVec3 &pos, const char *text, unsigned rgba);
 
 
 /*------ Platform-specific functions --------*/

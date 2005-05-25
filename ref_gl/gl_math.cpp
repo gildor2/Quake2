@@ -78,9 +78,9 @@ void InitFuncTables (void)
  *      | xz(1-cosQ)-y*sinQ    yz(1-cosQ)+x*sinQ    zz+(1-zz)cosQ     |
  */
 
-void BuildRotationAxis (CAxis &r, const vec3_t axis, float angle)
+void BuildRotationAxis (CAxis &r, const CVec3 &axis, float angle)
 {
-	vec3_t	axisn;
+	CVec3	axisn;
 #define x axisn[0]
 #define y axisn[1]
 #define z axisn[2]
@@ -103,7 +103,7 @@ void BuildRotationAxis (CAxis &r, const vec3_t axis, float angle)
 
 // 3/12 + 4 * 3 = 15/24 dots (worldMatrix/non-worldMatrix)
 // In: ent -- axis + center, center+size2 = maxs, center-size2 = mins
-bool GetBoxRect (const refEntity_t *ent, const vec3_t size2, float mins2[2], float maxs2[2], bool clamp)
+bool GetBoxRect (const refEntity_t *ent, const CVec3 &size2, float mins2[2], float maxs2[2], bool clamp)
 {
 	CAxis axis;
 	if (!ent->worldMatrix)
@@ -116,12 +116,12 @@ bool GetBoxRect (const refEntity_t *ent, const vec3_t size2, float mins2[2], flo
 		axis = vp.view.axis;
 
 	// vp.view.TransformPoint(ent->center, {x0,y0,z0}) with fast z0 culling
-	vec3_t tmp;
+	CVec3 tmp;
 	VectorSubtract (ent->center, vp.view.origin, tmp);
-	float z0 = DotProduct (tmp, vp.view.axis[0]);		// get Z-coordinate
+	float z0 = dot (tmp, vp.view.axis[0]);				// get Z-coordinate
 	if (z0 < 4) return false;							// too near to viewer (4==gl_znear)
-	float x0 = DotProduct (tmp, vp.view.axis[1]);
-	float y0 = DotProduct (tmp, vp.view.axis[2]);
+	float x0 = dot (tmp, vp.view.axis[1]);
+	float y0 = dot (tmp, vp.view.axis[2]);
 
 	// {x0,y0,z0} - ent.center, projected to vp.view (3D projection of entity center to screen)
 	// axis - vp.view.axis, rotated to entity coordinate system
@@ -131,7 +131,7 @@ bool GetBoxRect (const refEntity_t *ent, const vec3_t size2, float mins2[2], flo
 	maxs2[0] = maxs2[1] = -BIG_NUMBER;
 
 	// enumerate all box points (can try to optimize: find contour ??)
-	vec3_t v;
+	CVec3 v;
 	v[2] = size2[2];									// constant for all iterations
 	// NOTE: in vertex iterations, we locked vector component 2, and
 	// vary components 0 and 1; really, we can lock any component
@@ -141,10 +141,10 @@ bool GetBoxRect (const refEntity_t *ent, const vec3_t size2, float mins2[2], flo
 		v[1] = (i & 2) ? size2[1] : -size2[1];
 
 		// axis.TransformVector(v, {x,y,z}) with fast z culling
-		float z = DotProduct (v, axis[0]);				// get entity-relative Z-coordinate of vertex (size of entity along axis.Z)
+		float z = dot (v, axis[0]);						// get entity-relative Z-coordinate of vertex (size of entity along axis.Z)
 		if ((z >= z0 || z <= -z0)) return false;		// |size| is greater than z0 (entity Z-coord) - box intersects screen
-		float x = DotProduct (v, axis[1]);				// entity-center-relative vertex position in 2D
-		float y = DotProduct (v, axis[2]);
+		float x = dot (v, axis[1]);						// entity-center-relative vertex position in 2D
+		float y = dot (v, axis[2]);
 
 		float	scale, x1, y1;
 		// we use orthogonal projection of symmetric box - can use half of computations
@@ -187,18 +187,18 @@ bool GetBoxRect (const refEntity_t *ent, const vec3_t size2, float mins2[2], flo
 
 
 // Project 3D point to screen coordinates; return false when not in view frustum
-bool ProjectToScreen (const vec3_t pos, int scr[2])
+bool ProjectToScreen (const CVec3 &pos, int scr[2])
 {
-	vec3_t	vec;
+	CVec3	vec;
 	VectorSubtract (pos, vp.view.origin, vec);
 
-	float z = DotProduct (vec, vp.view.axis[0]);
+	float z = dot (vec, vp.view.axis[0]);
 	if (z <= gl_znear->value) return false;			// not visible
 
-	float x = DotProduct (vec, vp.view.axis[1]) / z / vp.t_fov_x;
+	float x = dot (vec, vp.view.axis[1]) / z / vp.t_fov_x;
 	if (x < -1 || x > 1) return false;
 
-	float y = DotProduct (vec, vp.view.axis[2]) / z / vp.t_fov_y;
+	float y = dot (vec, vp.view.axis[2]) / z / vp.t_fov_y;
 	if (y < -1 || y > 1) return false;
 
 	scr[0] = appRound (vp.x + vp.w * (0.5 - x / 2));
@@ -208,7 +208,7 @@ bool ProjectToScreen (const vec3_t pos, int scr[2])
 }
 
 
-void SaturateColor3f (vec3_t color)
+void SaturateColor3f (CVec3 &color)
 {
 	float sat = r_saturation->value;
 	if (sat != 1.0f)

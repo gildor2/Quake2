@@ -19,12 +19,12 @@ struct poly_t
 
 extern int subdivNumVerts;
 
-int SubdividePlane (vec3_t **verts, int numVerts, float tessSize);
-void FreeSubdividedPlane (void);
+int SubdividePlane (CVec3 **verts, int numVerts, float tessSize);
+void FreeSubdividedPlane ();
 void GetSubdivideIndexes (int *pindex);
 
-int RemoveCollinearPoints (vec3_t **pverts, int numVerts);
-float GetPolyArea (vec3_t **pverts, int numVerts);
+int RemoveCollinearPoints (CVec3 **pverts, int numVerts);
+float GetPolyArea (CVec3 **pverts, int numVerts);
 
 
 } // namespace

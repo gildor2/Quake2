@@ -200,7 +200,7 @@ struct shaderStage_t
 	/*--------------- texture params --------------*/
 	// tcGen params
 	tcGenType_t tcGenType;
-	vec3_t	tcGenVec[2];			// for TCGEN_VECTOR
+	CVec3	tcGenVec[2];			// for TCGEN_VECTOR
 	// tcMod params
 	int		numTcMods;
 	tcModParms_t *tcModParms;
@@ -265,7 +265,7 @@ public:
 			image_t	*skyFarBox[6];
 //			image_t	*skyNearBox[6];
 			float	skyRotate;
-			vec3_t	skyAxis;
+			CVec3	skyAxis;
 		};
 		// portal params (SHADERTYPE_PORTAL)
 /*		struct {

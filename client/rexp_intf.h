@@ -9,7 +9,7 @@ typedef struct {
 	CRenderModel*	(*RegisterModel) (const char *name);
 	CBasicImage*	(*RegisterSkin) (const char *name);
 	CBasicImage*	(*RegisterPic) (const char *name);
-	void	(*SetSky) (const char *name, float rotate, vec3_t axis);
+	void	(*SetSky) (const char *name, float rotate, const CVec3 &axis);
 	void	(*EndRegistration) ();
 	void	(*BeginFrame) ();
 	void	(*RenderFrame) (refdef_t *fd);
@@ -63,9 +63,9 @@ inline CBasicImage* RE_RegisterPic (const char *name)
 {
 	return re.RegisterPic (name);
 }
-inline void RE_SetSky (const char *name, float rotate, vec3_t axis)
+inline void RE_SetSky (const char *name, float rotate, const CVec3 &axis)
 {
-	re.SetSky (name, rotate, axis);
+	re.SetSky (name, rotate);
 }
 inline void RE_EndRegistration ()
 {

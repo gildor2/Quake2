@@ -9,9 +9,9 @@ namespace OpenGLDrv {
 
 // verts
 int subdivNumVerts;							// number of vertexes in a new surface (find a way to make this static !!)
-static vec3_t **psubdivVerts;				// pointer to a destination "vector pointer" array
+static CVec3 **psubdivVerts;				// pointer to a destination "vector pointer" array
 static int subdivNumVerts2;					// number of NEW vertexes
-static vec3_t subdivVerts[MAX_POLYVERTS];	// place for a NEW vertexes
+static CVec3 subdivVerts[MAX_POLYVERTS];	// place for a NEW vertexes
 // polys
 static CMemoryChain *subdivPolyChain;
 static poly_t *subdivPolys;
@@ -19,13 +19,11 @@ static poly_t *subdivPolys;
 
 static int NewVert (float x, float y, float z)
 {
-	vec3_t	*v;
-
 //	DebugPrintf ("  NewVert(%g, %g, %g)", x, y, z);
 	for (int i = 0; i < subdivNumVerts; i++)
 	{
-		v = psubdivVerts[i];
-		if ((*v)[0] == x && (*v)[1] == y && (*v)[2] == z)
+		CVec3 &v = *psubdivVerts[i];
+		if (v[0] == x && v[1] == y && v[2] == z)
 		{
 //			DebugPrintf ("  -- already, %d\n", i);
 			return i;	// already have this vertex
@@ -35,12 +33,12 @@ static int NewVert (float x, float y, float z)
 		Com_DropError ("SubdividePlane: MAX_POLYVERTS hit");
 
 	// alloc vertex
-	v = &subdivVerts[subdivNumVerts2++];
+	CVec3 &v = subdivVerts[subdivNumVerts2++];
 	// "i" and "v" points to a place for new vertex
-	(*v)[0] = x;
-	(*v)[1] = y;
-	(*v)[2] = z;
-	psubdivVerts[i] = v;
+	v[0] = x;
+	v[1] = y;
+	v[2] = z;
+	psubdivVerts[i] = &v;
 	subdivNumVerts++;	// == i-1
 //	DebugPrintf (" -- new, %d\n", i);
 	return i;
@@ -77,7 +75,7 @@ static void AddPointToPoly (poly_t *poly, int index)
 static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis, float value, float delta)
 {
 	int		idx1, idx2;
-	vec3_t	*v1, *v2;
+	CVec3	*v1, *v2;
 
 //	DebugPrintf ("SubdividePoly: %d inds, axis = %d, value = %g, delta = %g\n", poly->numIndexes, axis, value, delta);
 	int lastIndex = poly->numIndexes - 1;
@@ -125,7 +123,7 @@ static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis,
 			// if points are on the different sides -- split line
 			if (!(side1 & side2))
 			{
-				vec3_t	mid;
+				CVec3 mid;
 
 				// calculate midpoint
 				float frac = (value - (*v1)[axis]) / ((*v2)[axis] - (*v1)[axis]);
@@ -155,7 +153,7 @@ static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis,
 // In: *verts[numVerts]
 // Out: updated numVerts and filled verts[old_numVerts+1..new_numVerts]
 // Returns number of triangles in new surface
-int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
+int SubdividePlane (CVec3 **verts, int numVerts, float tessSize)
 {
 	int		i;
 	poly_t	*poly, *firstPoly, *lastPoly;
@@ -241,7 +239,7 @@ int SubdividePlane (vec3_t **verts, int numVerts, float tessSize)
 }
 
 
-void FreeSubdividedPlane (void)
+void FreeSubdividedPlane ()
 {
 	if (subdivPolyChain)
 	{
@@ -268,7 +266,7 @@ void GetSubdivideIndexes (int *pindex)
 /*-------------------------------------------------------*/
 
 // Gets array of pointers to vectors, removes collinear points and returns new number of verts
-int RemoveCollinearPoints (vec3_t **pverts, int numVerts)
+int RemoveCollinearPoints (CVec3 **pverts, int numVerts)
 {
 	int		i;
 
@@ -276,7 +274,7 @@ int RemoveCollinearPoints (vec3_t **pverts, int numVerts)
 	int prevVert = 0;
 	for (i = 1; i < numVerts; i++)
 	{
-		vec3_t	v1, v2;
+		CVec3 v1, v2;
 
 		VectorSubtract ((*pverts[prevVert]), (*pverts[i]), v1);
 		VectorSubtract ((*pverts[i]), (*pverts[i+1]), v2);
@@ -306,12 +304,12 @@ int RemoveCollinearPoints (vec3_t **pverts, int numVerts)
 
 /*-------------------------------------------------------*/
 
-float GetPolyArea (vec3_t **pverts, int numVerts)
+float GetPolyArea (CVec3 **pverts, int numVerts)	//?? should be "const CVec3 **pverts" ?
 {
 	float area = 0;
 	for (int i = 1; i < numVerts - 1; i++)
 	{
-		vec3_t	d1, d2, cross;
+		CVec3	d1, d2, cross;
 
 		VectorSubtract ((*pverts[0]), (*pverts[i]), d1);
 		VectorSubtract ((*pverts[0]), (*pverts[i+1]), d2);

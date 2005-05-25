@@ -91,5 +91,10 @@ SOURCE FILES (COMPILER):
     and will display warning C4715 (not all control paths return value)
   - FS_LoadFile(filename, &len) have arg "unsigned *len"; using this via structure will produce warning C4700
     (local variable used without having been initialized)
+  ? "dot(const CVec3 &, const CVec3 &)" is not inlined, but "DotProduct(const float*, const float *)" inlined ...
+    When mark function as "__forceinline" - it will be inlined.
+    Reason: "dot()" uses overloaded inline "operator []", and compiler prevents from inlining nested inline functions.
+    Compiler even ignores "#pragma inline_depth(8)" and "/Ob1" options ... Workaround: do not use "operator []" - access
+    to members directly (as field)
 - (VisualC++ 7) -- cannot use default arguments for functions, which are part of structure
   Workaround: should use Struc_Func() inline (with default args) instead of struc.Func() call

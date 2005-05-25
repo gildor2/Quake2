@@ -349,12 +349,12 @@ static void ParseStartSoundPacket(void)
 		channel = 0;
 	}
 
-	vec3_t  pos_v;
-	float	*pos;
+	CVec3	pos_v;
+	CVec3	*pos;
 	if (flags & SND_POS)
 	{	// positioned in space
 		MSG_ReadPos (&net_message, pos_v);
-		pos = pos_v;
+		pos = &pos_v;
 	}
 	else	// use entity number
 		pos = NULL;

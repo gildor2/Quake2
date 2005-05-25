@@ -143,7 +143,7 @@ static void LoadPlanes (const dplane_t *data, int count, int stride)
 
 	for (int i = 0; i < count; i++, data = OffsetPointer(data, stride), out++)
 	{
-		VectorCopy (data->normal, out->normal);
+		out->normal = data->normal;
 		out->dist = data->dist;
 		out->SetType ();
 		out->SetSignbits ();
@@ -166,13 +166,13 @@ static void LoadFlares (lightFlare_t *data, int count)
 	out = new (map.dataChain) gl_flare_t [count];
 	for (int i = 0; i < count; i++, data = data->next, out++)
 	{
-		VectorCopy (data->origin, out->origin);
-		out->size = data->size;
+		out->origin = data->origin;
+		out->size   = data->size;
 		out->radius = data->radius;
 		out->color.rgba = *((unsigned*)data->color) | RGBA(0,0,0,1);
 		SaturateColor4b (&out->color);
-		out->style = data->style;
-		out->leaf = PointInLeaf (data->origin);
+		out->style  = data->style;
+		out->leaf   = PointInLeaf (data->origin);
 		if (data->model)
 			out->owner = map.models + data->model;
 
@@ -186,7 +186,7 @@ static void LoadFlares (lightFlare_t *data, int count)
 
 static void BuildSurfFlare (surfaceBase_t *surf, color_t *color, float intens)
 {
-	vec3_t	origin, c;
+	CVec3	origin, c;
 
 	if (surf->type != SURFACE_PLANAR) return;
 	surfacePlanar_t *pl = static_cast<surfacePlanar_t*>(surf);
@@ -202,7 +202,7 @@ static void BuildSurfFlare (surfaceBase_t *surf, color_t *color, float intens)
 
 	gl_flare_t *f = new (map.dataChain) gl_flare_t;
 
-	VectorCopy (origin, f->origin);
+	f->origin = origin;
 	f->surf = surf;
 //	f->owner = surf->owner;				// cannot do it: models not yet loaded
 	f->leaf = NULL;
@@ -235,23 +235,23 @@ static void LoadSlights (slight_t *data, int count)
 	// copy slights from map
 	for (int i = 0; i < count; i++, data = data->next)
 	{
-		VectorCopy (data->origin, out->origin);
-		VectorCopy (data->color, out->color);
-		out->intens = data->intens;
-		out->style = data->style;
-		out->type = data->type;
-		out->spot = data->spot != 0;
-		VectorCopy (data->spotDir, out->spotDir);
+		out->origin	= data->origin;
+		out->color	= data->color;
+		out->intens	= data->intens;
+		out->style	= data->style;
+		out->type	= data->type;
+		out->spot	= data->spot != 0;
+		out->spotDir = data->spotDir;
 		out->spotDot = data->spotDot;
-		out->focus = data->focus;
-		out->fade = data->fade;
+		out->focus	= data->focus;
+		out->fade	= data->fade;
 
 		SaturateColor3f (out->color);
 
 		// move away lights from nearby surfaces to avoid precision errors during computation
 		for (int j = 0; j < 3; j++)
 		{
-			static const vec3_t mins = {-0.3, -0.3, -0.3}, maxs = {0.3, 0.3, 0.3};
+			static const CVec3 mins = {-0.3, -0.3, -0.3}, maxs = {0.3, 0.3, 0.3};
 			trace_t	tr;
 
 			CM_BoxTrace (&tr, out->origin, out->origin, mins, maxs, 0, CONTENTS_SOLID);
@@ -268,7 +268,7 @@ static void LoadSlights (slight_t *data, int count)
 
 static void BuildSurfLight (surfacePlanar_t *pl, color_t *color, float area, float intens, bool sky)
 {
-	vec3_t	c;
+	CVec3	c;
 	c[0] = color->c[0] / 255.0f;
 	c[1] = color->c[1] / 255.0f;
 	c[2] = color->c[2] / 255.0f;
@@ -283,7 +283,7 @@ static void BuildSurfLight (surfacePlanar_t *pl, color_t *color, float area, flo
 			return;									// no light from sky surfaces
 
 		if (m > 0 && m <= 1)
-			VectorCopy (bspfile->sunSurface, c);	// sun_surface specified a color
+			c = bspfile->sunSurface;				// sun_surface specified a color
 		else if (m > 1)
 		{
 			// sun_surface specified an intensity, color -- from surface
@@ -301,7 +301,7 @@ static void BuildSurfLight (surfacePlanar_t *pl, color_t *color, float area, flo
 	sl->next = map.surfLights;
 	map.surfLights = sl;
 	map.numSurfLights++;
-	VectorCopy (c, sl->color);
+	sl->color = c;
 	sl->sky = sky;
 	sl->intens = intens * area;
 	sl->pl = pl;
@@ -359,7 +359,7 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	}
 	else
 	{
-		static const vec3_t up = {0, 0, 1};
+		static const CVec3 up = {0, 0, 1};
 
 		CrossProduct (pl->plane.normal, up, pl->axis[0]);
 		VectorNormalize (pl->axis[0]);
@@ -373,8 +373,8 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	vertex_t *v;
 	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
 	{
-		float p1 = DotProduct (v->xyz, pl->axis[0]);
-		float p2 = DotProduct (v->xyz, pl->axis[1]);
+		float p1 = dot (v->xyz, pl->axis[0]);
+		float p2 = dot (v->xyz, pl->axis[1]);
 		v->pos[0] = p1;
 		v->pos[1] = p2;
 		EXPAND_BOUNDS(p1, min1, max1);
@@ -463,8 +463,7 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 		out->size = -1;							// do not delete in FreeModels()
 		modelsArray[modelCount++] = out;
 
-		VectorCopy (data->mins, out->bounds.mins);
-		VectorCopy (data->maxs, out->bounds.maxs);
+		out->bounds = data->bounds;
 		out->radius = data->radius;
 		out->headnode = data->headnode;
 		// create surface list
@@ -491,7 +490,7 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 	map.faces = new (map.dataChain) surfaceBase_t* [numSurfaces];
 	for (int i = 0; i < numSurfaces; i++, surfs++)
 	{
-		vec3_t *pverts[MAX_POLYVERTS];
+		CVec3 *pverts[MAX_POLYVERTS];
 
 		int numVerts = surfs->numedges;
 		/*------- build vertex list -------*/
@@ -538,18 +537,18 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 		if (stex->flags & (SURF_TRANS33|SURF_TRANS66) && !(stex->flags &
 			(SURF_SPECULAR|SURF_DIFFUSE|SURF_WARP|SURF_FLOWING)))		// && gl_autoReflect ??
 		{
-			vec3_t	mid, p1, p2;
+			CVec3	mid, p1, p2;
 			trace_t	trace;
 
 			int headnode = owner->headnode;
 			// find middle point
-			VectorClear (mid);
+			mid.Zero ();
 			for (j = 0; j < numVerts; j++)
 				VectorAdd (mid, (*pverts[j]), mid);
 			float scale = 1.0f / numVerts;
 			VectorScale (mid, scale, mid);
 			// get trace points
-			float *norm = (map.planes + surfs->planenum)->normal;
+			CVec3 &norm = (map.planes + surfs->planenum)->normal;
 			// vector with length 1 is not enough for non-axial surfaces
 			VectorMA (mid, 2, norm, p1);
 			VectorMA (mid, -2, norm, p2);
@@ -575,13 +574,13 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 					image_t *img = FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP|IMAGE_PICMIP);	// find sky image only for taking its color
 					if (img)
 					{
-						map.sunColor[0] = img->color.c[0];		// do not require to divide by 255: will be normalized anyway
-						map.sunColor[1] = img->color.c[1];
-						map.sunColor[2] = img->color.c[2];
+						// do not require to divide by 255: will be normalized anyway
+						// NOTE: here byte c[4] -> float[3]
+						map.sunColor.Set (VECTOR_ARG(img->color.c));
 						NormalizeColor (map.sunColor, map.sunColor);
 					}
 					else
-						VectorSet (map.sunColor, 1, 1, 1);
+						map.sunColor.Set (1, 1, 1);
 				}
 			}
 			else
@@ -685,11 +684,11 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 		// Enumerate vertexes
 		for (j = 0; j < numVerts; j++, pedge++, v++)
 		{
-			VectorCopy ((*pverts[j]), v->xyz);
+			v->xyz = *pverts[j];
 			if (!(sflags & SHADER_SKY))
 			{
-				float v1 = DotProduct (v->xyz, stex->vecs[0]) + stex->vecs[0][3];
-				float v2 = DotProduct (v->xyz, stex->vecs[1]) + stex->vecs[1][3];
+				float v1 = dot (v->xyz, stex->vecs[0].vec) + stex->vecs[0].offset;
+				float v2 = dot (v->xyz, stex->vecs[1].vec) + stex->vecs[1].offset;
 				/*----------- Update bounds --------------*/
 				EXPAND_BOUNDS(v1, mins[0], maxs[0]);
 				EXPAND_BOUNDS(v2, mins[1], maxs[1]);
@@ -702,8 +701,8 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 				}
 				else
 				{
-					v->st[0] = v1 - stex->vecs[0][3];
-					v->st[1] = v2 - stex->vecs[1][3];
+					v->st[0] = v1 - stex->vecs[0].offset;
+					v->st[1] = v2 - stex->vecs[1].offset;
 				}
 				// save intermediate data for lightmap texcoords
 				v->lm[0] = v1;
@@ -1132,9 +1131,9 @@ END_PROFILE
 		gl_fogMode = 0;
 	}
 	if (bsp->fogMode)
-		VectorCopy (bsp->fogColor, gl_fogColor);
+		memcpy (gl_fogColor, bsp->fogColor, sizeof(bsp->fogColor));	// bsp->fogColor is [3], but gl_fogColor is [4]
 	else
-		VectorClear (gl_fogColor);
+		gl_fogColor[0] = gl_fogColor[1] = gl_fogColor[2] = 0;
 	gl_fogColor[3] = 1;
 }
 
@@ -1164,13 +1163,13 @@ void LoadWorldMap (const char *name)
 	// load sun
 	map.sunLight = bspfile->sunLight;
 	if (bspfile->sunColor[0] + bspfile->sunColor[1] + bspfile->sunColor[2])		// sun color was overrided
-		VectorCopy (bspfile->sunColor, map.sunColor);
+		map.sunColor = bspfile->sunColor;
 	NormalizeColor (map.sunColor, map.sunColor);
-	VectorCopy (bspfile->sunVec, map.sunVec);
-	VectorCopy (bspfile->sunAmbient, map.sunAmbient);
+	map.sunVec = bspfile->sunVec;
+	map.sunAmbient = bspfile->sunAmbient;
 	if (bspfile->sunAmbient[0] + bspfile->sunAmbient[1] + bspfile->sunAmbient[2] > 0)
 		map.haveSunAmbient = true;
-	VectorCopy (bspfile->ambientLight, map.ambientLight);
+	map.ambientLight = bspfile->ambientLight;
 
 	switch (bspfile->type)
 	{
@@ -1199,7 +1198,7 @@ void LoadWorldMap (const char *name)
 
 
 //?? can use cmodel.cpp function
-node_t *PointInLeaf (const vec3_t p)
+node_t *PointInLeaf (const CVec3 &p)
 {
 	if (!map.name[0] || !map.numNodes)
 		Com_DropError ("R_PointInLeaf: bad model");
@@ -1303,19 +1302,19 @@ static int ParseGlCmds (const char *name, surfaceMd3_t *surf, int *cmds, int *xy
 }
 
 
-static float ComputeMd3Radius (vec3_t localOrigin, vertexMd3_t *verts, int numVerts)
+static float ComputeMd3Radius (const CVec3 &localOrigin, const vertexMd3_t *verts, int numVerts)
 {
 	guard(ComputeMd3Radius);
 
 	float radius2 = 0;
 	for (int i = 0; i < numVerts; i++, verts++)
 	{
-		vec3_t p;
+		CVec3 p;
 		p[0] = verts->xyz[0] * MD3_XYZ_SCALE;
 		p[1] = verts->xyz[1] * MD3_XYZ_SCALE;
 		p[2] = verts->xyz[2] * MD3_XYZ_SCALE;
 		VectorSubtract (p, localOrigin, p);
-		float tmp = DotProduct (p, p);	// tmp = dist(p, localOrigin) ^2
+		float tmp = dot(p, p);	// tmp = dist(p, localOrigin) ^2
 		radius2 = max(tmp, radius2);
 	}
 	return sqrt (radius2);
@@ -1335,7 +1334,7 @@ static void ProcessMd2Frame (vertexMd3_t *verts, dMd2Frame_t *srcFrame, md3Frame
 	{
 		dMd2Vert_t *srcVert = &srcFrame->verts[xyzIndexes[i]];
 		// compute vertex
-		vec3_t p;
+		CVec3 p;
 		p[0] = srcFrame->scale[0] * srcVert->v[0] + srcFrame->translate[0];
 		p[1] = srcFrame->scale[1] * srcVert->v[1] + srcFrame->translate[1];
 		p[2] = srcFrame->scale[2] * srcVert->v[2] + srcFrame->translate[2];
@@ -1357,10 +1356,9 @@ static void ProcessMd2Frame (vertexMd3_t *verts, dMd2Frame_t *srcFrame, md3Frame
 static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 {
 	int		i, j, k, *idx;
-	vec3_t	normals[MD3_MAX_VERTS];	// normal per xyzIndex
+	CVec3	normals[MD3_MAX_VERTS];	// normal per xyzIndex
 	short	norm_i[MD3_MAX_VERTS];
 	vertexMd3_t *verts;
-	float	*dst;
 
 	guard(BuildMd2Normals);
 
@@ -1371,7 +1369,7 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 
 		for (j = 0, idx = surf->indexes; j < surf->numTris; j++, idx += 3)
 		{
-			vec3_t	vecs[3], n;
+			CVec3 vecs[3], n;
 
 			// compute triangle normal
 			for (k = 0; k < 3; k++)
@@ -1386,13 +1384,12 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 			{
 				float	ang;
 #if 1
-				ang = -DotProduct (vecs[k], vecs[k == 0 ? 2 : k - 1]);
+				ang = - dot (vecs[k], vecs[k == 0 ? 2 : k - 1]);
 				ang = ACOS_FUNC(ang);
 #else
-				ang = acos (-DotProduct (vecs[k], vecs[k == 0 ? 2 : k - 1]));
+				ang = acos (- dot (vecs[k], vecs[k == 0 ? 2 : k - 1]));
 #endif
-				dst = &normals[xyzIndexes[idx[k]]][0];
-				VectorMA (dst, ang, n);			// weighted normal: weight ~ angle
+				VectorMA (normals[xyzIndexes[idx[k]]], ang, n);		// weighted normal: weight ~ angle
 			}
 		}
 		// convert computed xyz normals to compact form
@@ -1400,7 +1397,7 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 		{
 			byte	a, b;
 
-			dst = &normals[j][0];
+			CVec3 &dst = normals[j];
 #if 1
 			VectorNormalizeFast (dst);
 			a = appRound (ACOS_FUNC(dst[2]) / (M_PI * 2) * 255);
@@ -1479,10 +1476,10 @@ static void CheckTrisSizes (surfaceMd3_t *surf, dMd2Frame_t *md2Frame = NULL, in
 	memset (&fixed, 1, sizeof(fixed));	// fill by "true" ?????
 
 	// compute max md2 frame scale (int * scale = float, so "scale" can be used as possible error)
-	vec3_t scale;
+	CVec3 scale;
 	if (md2Frame)
 	{
-		VectorClear (scale);
+		scale.Zero();
 		for (int frame = 0; frame < surf->numFrames; frame++, md2Frame = OffsetPointer (md2Frame, md2FrameSize))
 		{
 			if (md2Frame->scale[0] > scale[0]) scale[0] = md2Frame->scale[0];
@@ -1509,12 +1506,12 @@ static void CheckTrisSizes (surfaceMd3_t *surf, dMd2Frame_t *md2Frame = NULL, in
 			deltaMax[i] = BIG_NUMBER;
 		}
 //		float maxError2 = 0;
-		float errorConst = DotProduct (scale, scale);
+		float errorConst = dot (scale, scale);
 
 		vertexMd3_t *verts = surf->verts;
 		for (int frame = 0; frame < surf->numFrames; frame++, verts += surf->numVerts)
 		{
-			vec3_t d;
+			CVec3 d;
 
 			// compute distance between 2 verts from triangle separately by each coord
 			for (i = 0; i < 3; i++)
@@ -1523,9 +1520,9 @@ static void CheckTrisSizes (surfaceMd3_t *surf, dMd2Frame_t *md2Frame = NULL, in
 				for (j = 0; j < 3; j++)
 					d[j] = abs(verts[inds[i]].xyz[j] - verts[inds[k]].xyz[j]) * MD3_XYZ_SCALE;
 				// squared distance
-				float dist2 = DotProduct(d, d);
+				float dist2 = dot(d, d);
 				// quant-based error
-				float error2 = (2 * DotProduct(d, scale) + errorConst);	//!!!
+				float error2 = (2 * dot(d, scale) + errorConst);	//!!!
 				// distance-based error
 				float dist = SQRTFAST(dist2);
 				float err = dist * Cvar_VariableValue("err") / 100;	//!! percent from distance; make const
@@ -1756,8 +1753,8 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 		// NOTE: md3 models, created with id model converter, have frame.localOrigin == (0,0,0)
 		// So, we should recompute localOrigin and radius for more effective culling
 		md3Frame_t *frm = &md3->frames[i];
-		VectorCopy (fs->bounds[0], frm->bounds.mins);
-		VectorCopy (fs->bounds[1], frm->bounds.maxs);
+		frm->bounds.mins = fs->bounds[0];
+		frm->bounds.maxs = fs->bounds[1];
 		// compute localOrigin
 		frm->bounds.GetCenter (frm->localOrigin);
 		frm->radius = 0;		// will compute later

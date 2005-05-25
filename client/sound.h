@@ -26,13 +26,13 @@ void S_Shutdown (void);
 bool S_IsFemale (const char *model);
 
 // if origin is NULL, the sound will be dynamically sourced from the entity
-void S_StartSound (const vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float fvol,  float attenuation, float timeofs);
+void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, float fvol,  float attenuation, float timeofs);
 void S_StartLocalSound (const char *s);
 
 void S_RawSamples (int samples, int rate, int width, int channels, byte *data);
 
 void S_StopAllSounds_f (void);
-void S_Update (const vec3_t origin, const vec3_t v_forward, const vec3_t v_right, const vec3_t v_up);
+void S_Update (const CVec3 &origin, const CVec3 &v_forward, const CVec3 &v_right, const CVec3 &v_up);
 
 void S_Activate (bool active);
 
@@ -42,4 +42,4 @@ void S_EndRegistration (void);
 
 // the sound code makes callbacks to the client for entitiy position
 // information, so entities can be dynamically re-spatialized
-void CL_GetEntitySoundOrigin (int ent, vec3_t org);
+void CL_GetEntitySoundOrigin (int ent, CVec3 &org);

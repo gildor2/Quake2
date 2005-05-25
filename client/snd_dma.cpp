@@ -52,7 +52,7 @@ static bool sound_started = false;
 static bool s_registering;
 dma_t		dma;
 
-static vec3_t listener_origin, listener_forward, listener_right, listener_up;
+static CVec3 listener_origin, listener_forward, listener_right, listener_up;
 
 static int soundtime;		// sample PAIRS
 int paintedtime; 			// sample PAIRS; used in snd_mix.c
@@ -500,7 +500,7 @@ S_SpatializeOrigin
 Used for spatializing channels and autosounds
 =================
 */
-static void S_SpatializeOrigin (const vec3_t origin, float master_vol, float dist_mult, int *left_vol, int *right_vol)
+static void S_SpatializeOrigin (const CVec3 &origin, float master_vol, float dist_mult, int *left_vol, int *right_vol)
 {
 	if (cls.state != ca_active)
 	{
@@ -509,7 +509,7 @@ static void S_SpatializeOrigin (const vec3_t origin, float master_vol, float dis
 	}
 
 	// calculate stereo seperation and distance attenuation
-    vec3_t source_vec;
+    CVec3 source_vec;
 	VectorSubtract(origin, listener_origin, source_vec);
 
 	float dist = VectorNormalize(source_vec);
@@ -556,7 +556,7 @@ S_Spatialize
 */
 void S_Spatialize(channel_t *ch)
 {
-	vec3_t		origin;
+	CVec3		origin;
 
 	// anything coming from the view entity will always be full volume
 	if (ch->entnum == cl.playernum+1)
@@ -723,7 +723,7 @@ if pos is NULL, the sound will be dynamically sourced from the entity
 Entchannel 0 will never override a playing sound
 ====================
 */
-void S_StartSound (const vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float fvol, float attenuation, float timeofs)
+void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, float fvol, float attenuation, float timeofs)
 {
 	sfxcache_t	*sc;
 	int			vol;
@@ -756,7 +756,7 @@ void S_StartSound (const vec3_t origin, int entnum, int entchannel, sfx_t *sfx, 
 
 	if (origin)
 	{
-		VectorCopy (origin, ps->origin);
+		ps->origin = *origin;
 		ps->fixed_origin = true;
 	}
 	else
@@ -1069,7 +1069,7 @@ S_Update
 Called once each time through the main loop
 ============
 */
-void S_Update(const vec3_t origin, const vec3_t forward, const vec3_t right, const vec3_t up)
+void S_Update(const CVec3 &origin, const CVec3 &forward, const CVec3 &right, const CVec3 &up)
 {
 	int			i;
 	int			total;

@@ -131,10 +131,10 @@
   9)  rgbGen: when applied to entity, use "vertex" for lightgrid or "lightingDiffuse" for compute
      - colorwave <r> <g> <b> <func> <base> <amp> <phase> <freq>
   10) alphaGen
-     - dot [min] [max]            (DotProduct(viewDir, surfNormal); a=0 when parallel, 1 when perpendicular)
+     - dot [min] [max]            (dot(viewDir, surfNormal); a=0 when parallel, 1 when perpendicular)
        (water, reflections)
        def: min = 0; max = 1
-       expression: dst_alpha = DotProduct(NormalVec(vieworg-vec), normal) * (max-min) + min  (if dot() < 0 dot = 0)
+       expression: dst_alpha = dot(NormalVec(vieworg-vec), normal) * (max-min) + min  (if dot() < 0 dot = 0)
      - oneMinusDot
      - lightingSpecular <x y z>   ???
      - skyalpha

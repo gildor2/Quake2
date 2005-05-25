@@ -167,13 +167,10 @@ The client will interpolate the view position,
 so we can't use a single PVS point
 ===========
 */
-void SV_FatPVS (vec3_t org)
+static void SV_FatPVS (const CVec3 &org)
 {
-	int		leafs[64];
-	int		i, j, count;
-	int		longs;
-	byte	*src;
-	vec3_t	mins, maxs;
+	int		i, j;
+	CVec3	mins, maxs;
 
 	for (i = 0; i < 3; i++)
 	{
@@ -181,10 +178,11 @@ void SV_FatPVS (vec3_t org)
 		maxs[i] = org[i] + 8;
 	}
 
-	count = CM_BoxLeafnums (mins, maxs, ARRAY_ARG(leafs));
+	int leafs[64];
+	int count = CM_BoxLeafnums (mins, maxs, ARRAY_ARG(leafs));
 	if (count < 1)
 		Com_FatalError ("SV_FatPVS: count < 1");
-	longs = (CM_NumClusters()+31)>>5;
+	int longs = (CM_NumClusters()+31)>>5;
 
 	// convert leafs to clusters
 	for (i = 0; i < count; i++)
@@ -199,7 +197,7 @@ void SV_FatPVS (vec3_t org)
 				break;
 		if (j != i)
 			continue;		// already have the cluster we want
-		src = CM_ClusterPVS (leafs[i]);
+		const byte *src = CM_ClusterPVS (leafs[i]);
 		for (j = 0; j < longs; j++)
 			((long *)fatpvs)[j] |= ((long *)src)[j];
 	}
@@ -217,7 +215,7 @@ copies off the playerstat and areabits.
 void SV_BuildClientFrame (client_t *client)
 {
 	int		e, i;
-	vec3_t	org;
+	CVec3	org;
 	edict_t	*ent, *cl_ent;
 	client_frame_t	*frame;
 	entity_state_t	*state;
@@ -320,16 +318,9 @@ void SV_BuildClientFrame (client_t *client)
 						continue;		// not visible
 				}
 
-				if (!ent->s.modelindex)
-				{	// don't send sounds if they will be attenuated away
-					vec3_t	delta;
-					float	len;
-
-					VectorSubtract (org, ent->s.origin, delta);
-					len = VectorLength (delta);
-					if (len > 400)
-						continue;
-				}
+				// don't send sounds if they will be attenuated away
+				if (!ent->s.modelindex && VectorDistance (org, ent->s.origin) > 400)
+					continue;
 			}
 		}
 

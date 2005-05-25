@@ -504,7 +504,7 @@ static void SetWorldModelview (void)
 	};
 
 	// all fields should be zeroed before call this function !
-//	VectorCopy (vp.view.origin, vp.modelvieworg); // portals ??
+//	vp.modelvieworg = vp.view.origin;			// portals ??
 //	vp.modelaxis[0][0] = vp.modelaxis[1][1] = vp.modelaxis[2][2] = 1;	// orthogonal axis ( portals ??)
 	/* Matrix contents:
 	 *  a00   a01   a02    -x
@@ -517,9 +517,9 @@ static void SetWorldModelview (void)
 	for (i = 0; i < 3; i++)
 		for (j = 0; j < 3; j++)
 			matrix[i][j] = vp.view.axis[j][i];
-	matrix[3][0] = -DotProduct (vp.view.origin, vp.view.axis[0]);
-	matrix[3][1] = -DotProduct (vp.view.origin, vp.view.axis[1]);
-	matrix[3][2] = -DotProduct (vp.view.origin, vp.view.axis[2]);
+	matrix[3][0] = - dot (vp.view.origin, vp.view.axis[0]);
+	matrix[3][1] = - dot (vp.view.origin, vp.view.axis[1]);
+	matrix[3][2] = - dot (vp.view.origin, vp.view.axis[2]);
 	matrix[3][3] = 1;
 	// vp.modelMatrix = baseMatrix * matrix
 	for (i = 0; i < 4; i++)
@@ -548,7 +548,7 @@ static void SetFrustum (void)
 	int		i;
 
 	// setup plane [0]: view direction + znear
-	VectorCopy (vp.view.axis[0], vp.frustum[0].normal);
+	vp.frustum[0].normal = vp.view.axis[0];
 
 #define SCALE	(0.5/360.0f)
 	float sx = SIN_FUNC(vp.fov_x * SCALE);	// fov/2 * pi/180
@@ -568,7 +568,7 @@ static void SetFrustum (void)
 	for (i = 0; i < NUM_FRUSTUM_PLANES; i++)
 	{
 		vp.frustum[i].type = PLANE_NON_AXIAL;
-		vp.frustum[i].dist = DotProduct (vp.view.origin, vp.frustum[i].normal);
+		vp.frustum[i].dist = dot (vp.view.origin, vp.frustum[i].normal);
 		vp.frustum[i].SetSignbits ();
 	}
 	vp.frustum[0].dist += gl_znear->value;
@@ -587,14 +587,14 @@ static void SetPerspective (void)
 		float d = 0;
 		for (int i = 0; i < 8; i++)			// enumarate all 8 verts of bounding box
 		{
-			vec3_t	v;
+			CVec3	v;
 			CBox *b = &vp.bounds;
 			v[0] = (i & 1) ? b->maxs[0] : b->mins[0];
 			v[1] = (i & 2) ? b->maxs[1] : b->mins[1];
 			v[2] = (i & 4) ? b->maxs[2] : b->mins[2];
 			// get Z-coordinate
 			VectorSubtract (v, vp.view.origin, v);
-			float d1 = DotProduct (v, vp.view.axis[0]);
+			float d1 = dot (v, vp.view.axis[0]);
 			if (d1 > d) d = d1;
 		}
 		vp.zFar = d + 100;					// avoid float precision bugs
@@ -694,7 +694,7 @@ void RenderFrame (refdef_t *fd)
 	if (vp.fov_scale < 0.01f) vp.fov_scale = 0.01f;
 
 	// set vp.view before all to allow 3D text output
-	VectorCopy (fd->vieworg, vp.view.origin);
+	vp.view.origin = fd->vieworg;
 	vp.view.axis.FromAngles (fd->viewangles);
 
 	vp.lightStyles = fd->lightstyles;
@@ -881,7 +881,7 @@ CRenderModel *RegisterModel (const char *name)
 }
 
 
-void SetSky (const char *name, float rotate, vec3_t axis)
+void SetSky (const char *name, float rotate, const CVec3 &axis)
 {
 	shader_t *old = gl_skyShader;
 	// find sky shader
@@ -897,7 +897,7 @@ void SetSky (const char *name, float rotate, vec3_t axis)
 	if (shader != gl_defaultSkyShader)
 	{
 		shader->skyRotate = rotate;
-		VectorCopy (axis, shader->skyAxis);
+		shader->skyAxis = axis;
 	}
 
 	if (shader == old)

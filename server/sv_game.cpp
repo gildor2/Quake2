@@ -156,8 +156,8 @@ static void PF_setmodel (edict_t *ent, char *name)
 	if (name[0] == '*')
 	{
 		cmodel_t *mod = CM_InlineModel (name);
-		VectorCopy (mod->mins, ent->mins);
-		VectorCopy (mod->maxs, ent->maxs);
+		VectorCopy (mod->bounds.mins, ent->mins);
+		VectorCopy (mod->bounds.maxs, ent->maxs);
 		SV_LinkEdict (ent);
 	}
 	unguard;

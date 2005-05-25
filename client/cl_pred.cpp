@@ -69,25 +69,22 @@ void CL_CheckPredictionError (void)
 
 //#define NO_PREDICT_LERP	// debug
 
-void CL_EntityTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int contents)
+void CL_EntityTrace (trace_t *tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents)
 {
-	trace_t	trace;
-	float	traceLen;
-	vec3_t	traceDir;
-
 	guard(CL_EntityTrace);
 
 	float b1 = DotProduct (mins, mins);
 	float b2 = DotProduct (maxs, maxs);
 	float t = max(b1, b2);
 	float traceWidth = SQRTFAST(t);
+	CVec3	traceDir;
 	VectorSubtract (end, start, traceDir);
-	traceLen = VectorNormalize (traceDir) + traceWidth;
+	float traceLen = VectorNormalize (traceDir) + traceWidth;
 
 	for (int i = 0; i < cl.frame.num_entities; i++)
 	{
 		cmodel_t *cmodel;
-		vec3_t	tmp, delta;
+		CVec3	tmp, delta;
 
 		entityState_t *ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
 		if (!ent->solid) continue;
@@ -104,7 +101,7 @@ void CL_EntityTrace (trace_t *tr, const vec3_t start, const vec3_t end, const ve
 		VectorClear (delta);
 #endif
 
-		vec3_t eCenter, eOrigin;
+		CVec3 eCenter, eOrigin;
 		VectorSubtract (ent->center, start, eCenter);
 		VectorSubtract (eCenter, delta, eCenter);
 		VectorSubtract (ent->origin, delta, eOrigin);
@@ -125,6 +122,7 @@ void CL_EntityTrace (trace_t *tr, const vec3_t start, const vec3_t end, const ve
 		float dist0 = ent->radius + traceWidth;
 		if (dist2 >= dist0 * dist0) continue;
 
+		trace_t	trace;
 		if (ent->solid == 31)
 		{
 			cmodel = cl.model_clip[ent->modelindex];
@@ -155,7 +153,7 @@ void CL_EntityTrace (trace_t *tr, const vec3_t start, const vec3_t end, const ve
 }
 
 
-void CL_Trace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int contents)
+void CL_Trace (trace_t *tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents)
 {
 	guard(CL_Trace);
 	CM_BoxTrace (tr, start, end, mins, maxs, 0, contents);
@@ -165,7 +163,7 @@ void CL_Trace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t m
 
 
 //?? same as void CL_PMTrace(&trace, start, ...) -- but called from PMove() ...
-static trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
+static trace_t CL_PMTrace (const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end)
 {
 	trace_t	trace;
 
@@ -183,7 +181,7 @@ static trace_t CL_PMTrace (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end)
 }
 
 
-int CL_PMpointcontents (vec3_t point)
+int CL_PMpointcontents (const CVec3 &point)
 {
 	int		i, j;
 	cmodel_t *cmodel;
@@ -200,11 +198,9 @@ int CL_PMpointcontents (vec3_t point)
 
 	for (i = 0; i < cl.frame.num_entities; i++)
 	{
-		entityState_t *ent;
-		centity_t *cent;
-		vec3_t	 tmp, delta, eCenter, eOrigin;
+		CVec3	 tmp, delta, eCenter, eOrigin;
 
-		ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
+		entityState_t *ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
 
 		if (ent->solid != 31)	// use pointcontents only for inline models
 			continue;
@@ -213,7 +209,7 @@ int CL_PMpointcontents (vec3_t point)
 		if (!cmodel) continue;
 
 		// compute lerped entity position
-		cent = &cl_entities[ent->number];
+		centity_t *cent = &cl_entities[ent->number];
 #ifndef NO_PREDICT_LERP
 		for (j = 0; j < 3; j++)
 			delta[j] = backlerp * (cent->current.origin[j] - cent->prev.origin[j]);

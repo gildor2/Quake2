@@ -306,7 +306,7 @@ void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
 {
 	int			sendchan, flags, i, ent;
 	multicast_t	to;
-	vec3_t		origin_v;
+	CVec3		origin_v;
 	bool		use_phs;
 
 	guard(SV_StartSound);
