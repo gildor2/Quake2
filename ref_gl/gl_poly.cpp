@@ -1,7 +1,8 @@
-#include "gl_local.h"
+#include "OpenGLDrv.h"
 #include "gl_poly.h"
 
 
+//?? may be moved outside OpenGLDrv -- math functions
 namespace OpenGLDrv {
 
 //#define POLY_DEBUG
@@ -128,7 +129,7 @@ static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis,
 				// calculate midpoint
 				float frac = (value - (*v1)[axis]) / ((*v2)[axis] - (*v1)[axis]);
 				VectorSubtract ((*v2), (*v1), mid);
-				VectorScale (mid, frac, mid);
+				mid.Scale (frac);
 				VectorAdd (mid, (*v1), mid);
 				idx1 = NewVert (VECTOR_ARG(mid));
 				// add it to both polys
@@ -278,8 +279,8 @@ int RemoveCollinearPoints (CVec3 **pverts, int numVerts)
 
 		VectorSubtract ((*pverts[prevVert]), (*pverts[i]), v1);
 		VectorSubtract ((*pverts[i]), (*pverts[i+1]), v2);
-		VectorNormalize (v1);
-		VectorNormalize (v2);
+		v1.Normalize ();
+		v2.Normalize ();
 #define CHECK_AXIS(i)	(fabs(v1[i]-v2[i]) < 0.001f)
 		if (CHECK_AXIS(0) && CHECK_AXIS(1) && CHECK_AXIS(2))
 		{	// remove point

@@ -52,7 +52,7 @@ UNRECOVARABLE:
 BUGGY MAPS:
 ~~~~~~~~~~~
 - "reboot" (from KP, user-created) pos(-658,-242,-178) dir(-0.91,0.39,0) -- incorrect backface culling in gl (OK in oldgl); reason:
-  gl and oldgl have different backface culling (gl -- DotProduct(videdir,normal); oldgl -- using BSP only, w/o DotProduct()), this
+  gl and oldgl have different backface culling (gl -- dot(videdir,normal); oldgl -- using BSP only, w/o dot()), this
   map have incorrect normal info for this surface (if look at r_surfinfo, can see: incorrect brushes too - to simplify map navigation ?)
   To fix: can rebuild normals for draw surfaces
 - "winter" (AQ2) pos(-1023,463,55) dir(0,1,0) - incorrect backface culling in gl (OK in oldgl) (same as "reboot")
@@ -96,5 +96,7 @@ SOURCE FILES (COMPILER):
     Reason: "dot()" uses overloaded inline "operator []", and compiler prevents from inlining nested inline functions.
     Compiler even ignores "#pragma inline_depth(8)" and "/Ob1" options ... Workaround: do not use "operator []" - access
     to members directly (as field)
+    VisualC++ have no such problem, but when VC6 inlined dot() everywhere, VC7 inlined most of calls, but some calls
+    made as call to separate function.
 - (VisualC++ 7) -- cannot use default arguments for functions, which are part of structure
   Workaround: should use Struc_Func() inline (with default args) instead of struc.Func() call

@@ -5,7 +5,7 @@
 #	include <windows.h>				// need this include, because have wgl and GDI functions in gl.h
 #endif
 
-#include "../ref_gl/gl_local.h"
+#include "../ref_gl/OpenGLDrv.h"
 #include <time.h>
 
 #ifdef _WIN32

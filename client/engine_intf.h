@@ -32,11 +32,11 @@ typedef struct {
 	bool	(*_WriteTGA) (const char *name, byte *pic, int width, int height);
 	bool	(*_WriteJPG) (const char *name, byte *pic, int width, int height, bool highQuality);
 	bspfile_t*	(*_LoadBspFile) (const char *filename, bool clientload, unsigned *checksum);
-	void	(*_CM_BoxTrace) (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask);
-	void	(*_CM_TransformedBoxTrace) (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles);
-	void	(*_CM_TransformedBoxTrace1) (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const CAxis &axis);
-	int	(*_CM_BrushTrace) (const vec3_t start, const vec3_t end, int *brushes, int maxBrushes);
-	int	(*_CM_RefineBrushTrace) (const vec3_t start, const vec3_t end, int *brushes, int numBrushes);
+	void	(*_CM_BoxTrace) (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs, int headnode, int brushmask);
+	void	(*_CM_TransformedBoxTrace) (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs, int headnode, int brushmask, const CVec3 &origin, const CVec3 &angles);
+	void	(*_CM_TransformedBoxTrace1) (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs, int headnode, int brushmask, const CVec3 &origin, const CAxis &axis);
+	int	(*_CM_BrushTrace) (const CVec3 &start, const CVec3 &end, int *brushes, int maxBrushes);
+	int	(*_CM_RefineBrushTrace) (const CVec3 &start, const CVec3 &end, int *brushes, int numBrushes);
 #ifdef _WIN32
 	void*	(*_Vid_CreateWindow) (int width, int height, bool fullscreen);
 	void	(*_Vid_DestroyWindow) (bool force);
@@ -160,25 +160,25 @@ inline bspfile_t* LoadBspFile (const char *filename, bool clientload, unsigned *
 {
 	return ri._LoadBspFile (filename, clientload, checksum);
 }
-inline void CM_BoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask)
+inline void CM_BoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs, int headnode, int brushmask)
 {
-	ri._CM_BoxTrace (tr, start, end, mins, maxs, headnode, brushmask);
+	ri._CM_BoxTrace (, mins, maxs, headnode, brushmask);
 }
-inline void CM_TransformedBoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const vec3_t angles)
+inline void CM_TransformedBoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs, int headnode, int brushmask, const CVec3 &origin, const CVec3 &angles)
 {
-	ri._CM_TransformedBoxTrace (tr, start, end, mins, maxs, headnode, brushmask, origin, angles);
+	ri._CM_TransformedBoxTrace (, mins, maxs, headnode, brushmask);
 }
-inline void CM_TransformedBoxTrace (trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int headnode, int brushmask, const vec3_t origin, const CAxis &axis)
+inline void CM_TransformedBoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs, int headnode, int brushmask, const CVec3 &origin, const CAxis &axis)
 {
-	ri._CM_TransformedBoxTrace1 (tr, start, end, mins, maxs, headnode, brushmask, origin);
+	ri._CM_TransformedBoxTrace1 (, mins, maxs, headnode, brushmask);
 }
-inline int CM_BrushTrace (const vec3_t start, const vec3_t end, int *brushes, int maxBrushes)
+inline int CM_BrushTrace (const CVec3 &start, const CVec3 &end, int *brushes, int maxBrushes)
 {
-	return ri._CM_BrushTrace (start, end, brushes, maxBrushes);
+	return ri._CM_BrushTrace (, brushes, maxBrushes);
 }
-inline int CM_RefineBrushTrace (const vec3_t start, const vec3_t end, int *brushes, int numBrushes)
+inline int CM_RefineBrushTrace (const CVec3 &start, const CVec3 &end, int *brushes, int numBrushes)
 {
-	return ri._CM_RefineBrushTrace (start, end, brushes, numBrushes);
+	return ri._CM_RefineBrushTrace (, brushes, numBrushes);
 }
 #ifdef _WIN32
 inline void* Vid_CreateWindow (int width, int height, bool fullscreen)

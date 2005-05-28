@@ -10,6 +10,7 @@
 
 
 // this is the define for determining if we have an asm version of a C function
+//?? used in client/snd_mix.cpp only
 #if (defined _M_IX86 || defined __i386__)
 #define id386	1
 #else
@@ -22,9 +23,9 @@
 
 // angle indexes
 enum {
-	PITCH,							// up / down
-	YAW,							// left / right
-	ROLL							// fall over
+	PITCH,							// looking up and down (0=Straight Ahead, +Up, -Down).
+	YAW,							// rotating around (running in circles), 0=East, +North, -South.
+	ROLL							// rotation about axis of screen, 0=Straight, +Clockwise, -CCW.
 };
 
 #define	MAX_STRING_CHARS	1024	// max length of a string passed to TokenizeString()
@@ -73,16 +74,18 @@ typedef enum
 
 #define BIG_NUMBER			0x1000000
 
+//!! change, rename
 #ifndef M_PI
-#define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
+#define M_PI				3.14159265358979323846	// matches value in gcc v2 math.h
 #endif
 
 float Q_rsqrt (float number);
-#define SQRTFAST(x)		(x * Q_rsqrt(x))
+#define SQRTFAST(x)			(x * Q_rsqrt(x))
 
-#if !defined C_ONLY && !defined __linux__ && !defined __sgi
+#if 1
 
-#define uint_cast(f)	(* reinterpret_cast<unsigned*>(&(f)))
+#define uint_cast(f)		(reinterpret_cast<unsigned&>(f))
+#define uint_cast_const(f)	(reinterpret_cast<const unsigned&>(f))
 
 inline unsigned IsNegative (float f)
 {
@@ -90,29 +93,45 @@ inline unsigned IsNegative (float f)
 }
 
 #define FAbsSign(f,d,s)	\
-	{							\
-		unsigned mask = uint_cast(f) & 0x80000000;	\
-		uint_cast(d) = uint_cast(f) ^ mask;			\
-		s = mask >> 31;			\
+	{					\
+		unsigned mask = uint_cast_const(f) & 0x80000000; \
+		uint_cast(d) = uint_cast_const(f) ^ mask;		\
+		s = mask >> 31;	\
 	}
-#define FNegate(f,d)			\
-	{							\
-		uint_cast(d) = uint_cast(f) ^ 0x80000000;	\
-	}
+
+inline void FNegate (const float &a, float &b)
+{
+	uint_cast(b) = uint_cast_const(a) ^ 0x80000000;
+}
+
+inline void FNegate (float &a)
+{
+	uint_cast(a) ^= 0x80000000;
+}
 
 #else
-#define appRound(f)	(int) (f >= 0 ? (int)(f+0.5f) : (int)(f-0.5f))
-#define appFloor(f)	((int)floor(f))
-#define appCeil(f)	((int)ceil(f))
 
-#define IsNegative(f)	(f<0)
-#define FAbsSign(f,d,s)			\
-	{							\
-		s = IsNegative(f);		\
-		d = s ? -f : f;			\
+#define appRound(f)			(int) (f >= 0 ? (int)(f+0.5f) : (int)(f-0.5f))
+#define appFloor(f)			((int)floor(f))
+#define appCeil(f)			((int)ceil(f))
+
+inline unsigned IsNegative(f)
+{
+	return f<0;
+}
+#define FAbsSign(f,d,s)		\
+	{						\
+		s = IsNegative(f);	\
+		d = fabs(f);		\
 	}
-#define FNegate(f,d)			\
-	{	d = -f;		}
+inline void FNegate (const float &a, float &b)
+{
+	b = -a;
+}
+inline void FNegate (float &a)
+{
+	a = -a;
+}
 
 #endif
 
@@ -130,6 +149,7 @@ struct CVec3
 	{
 		return v[index];
 	}
+	// NOTE: for fnctions, which requires CVec3 -> float*, can easily do it using CVec3.v field
 	// trivial setup functions
 	inline void Zero ()
 	{
@@ -142,9 +162,9 @@ struct CVec3
 	// simple math
 	inline void Negate ()
 	{
-		FNegate (v[0], v[0]);
-		FNegate (v[1], v[1]);
-		FNegate (v[2], v[2]);
+		FNegate (v[0]);
+		FNegate (v[1]);
+		FNegate (v[2]);
 	}
 	//!! +Negate(dst)
 	inline void Scale (float scale) //?? == "operator *= (float)"
@@ -154,11 +174,27 @@ struct CVec3
 		v[2] *= scale;
 	}
 	//!! +Scale(dst)
-
-	//?? remove later: used for easy conversion of vec3_t->CVec3
-	inline operator float*() { return v; }
-	inline operator const float*() const { return v; }
+	float Normalize ();			// returns vector length
+	float NormalizeFast ();		//?? 2-arg version too?
 };
+
+inline bool operator== (const CVec3 &v1, const CVec3 &v2)
+{
+	return memcmp (&v1, &v2, sizeof(CVec3)) == 0;
+}
+
+inline bool operator!= (const CVec3 &v1, const CVec3 &v2)
+{
+	return memcmp (&v1, &v2, sizeof(CVec3)) != 0;
+}
+
+inline void Lerp (const CVec3 &A, const CVec3 &B, float Alpha, CVec3 &dst)
+{
+	dst[0] = A.v[0] + Alpha * (B.v[0]-A.v[0]);
+	dst[1] = A.v[1] + Alpha * (B.v[1]-A.v[1]);
+	dst[2] = A.v[2] + Alpha * (B.v[2]-A.v[2]);
+}
+
 
 inline float dot (const CVec3 &a, const CVec3 &b)
 {
@@ -167,98 +203,60 @@ inline float dot (const CVec3 &a, const CVec3 &b)
 }
 
 
-inline bool VectorCompare (const CVec3 &v1, const CVec3 &v2)
-{
-	return memcmp (&v1, &v2, sizeof(vec3_t)) == 0;
-}
-
-
 //?? OLD FUNCTIONS :
 
-inline float DotProduct (const vec3_t x, const vec3_t y)
+inline void VectorSubtract (const CVec3 &a, const CVec3 &b, CVec3 &d)
 {
-	return x[0]*y[0] + x[1]*y[1] + x[2]*y[2];
-}
-
-inline void VectorSubtract (const vec3_t a, const vec3_t b, vec3_t d)
-{
-	d[0] = a[0] - b[0];
-	d[1] = a[1] - b[1];
-	d[2] = a[2] - b[2];
+	d.v[0] = a.v[0] - b.v[0];
+	d.v[1] = a.v[1] - b.v[1];
+	d.v[2] = a.v[2] - b.v[2];
 }
 // macro version for any types (used 2 times)
 #define VectorSubtract2(a,b,c)	(c[0]=a[0]-b[0],c[1]=a[1]-b[1],c[2]=a[2]-b[2])
 
-inline void VectorAdd (const vec3_t a, const vec3_t b, vec3_t d)
+inline void VectorAdd (const CVec3 &a, const CVec3 &b, CVec3 &d)
 {
-	d[0] = a[0] + b[0];
-	d[1] = a[1] + b[1];
-	d[2] = a[2] + b[2];
-}
-//#define VectorAdd2(a,b,c)		(c[0]=a[0]+b[0],c[1]=a[1]+b[1],c[2]=a[2]+b[2])
-
-inline void VectorNegate (vec3_t a, vec3_t b)
-{
-	FNegate (a[0],b[0]);
-	FNegate (a[1],b[1]);
-	FNegate (a[2],b[2]);
+	d.v[0] = a.v[0] + b.v[0];
+	d.v[1] = a.v[1] + b.v[1];
+	d.v[2] = a.v[2] + b.v[2];
 }
 
-inline void VectorNegate (vec3_t a)
+inline void VectorNegate (const CVec3 &a, CVec3 &b)
 {
-	FNegate (a[0], a[0]);
-	FNegate (a[1], a[1]);
-	FNegate (a[2], a[2]);
+	FNegate (a.v[0], b.v[0]);
+	FNegate (a.v[1], b.v[1]);
+	FNegate (a.v[2], b.v[2]);
 }
 
-inline void VectorScale (const vec3_t a, float scale, vec3_t b)
+inline void VectorScale (const CVec3 &a, float scale, CVec3 &b)
 {
-	b[0] = scale * a[0];
-	b[1] = scale * a[1];
-	b[2] = scale * a[2];
+	b.v[0] = scale * a.v[0];
+	b.v[1] = scale * a.v[1];
+	b.v[2] = scale * a.v[2];
 }
 
 // d = a + scale * b
-inline void VectorMA (const vec3_t a, float scale, const vec3_t b, vec3_t d)
+inline void VectorMA (const CVec3 &a, float scale, const CVec3 &b, CVec3 &d)
 {
-	d[0] = a[0] + scale * b[0];
-	d[1] = a[1] + scale * b[1];
-	d[2] = a[2] + scale * b[2];
+	d.v[0] = a.v[0] + scale * b.v[0];
+	d.v[1] = a.v[1] + scale * b.v[1];
+	d.v[2] = a.v[2] + scale * b.v[2];
 }
 
 // a += scale * b
-inline void VectorMA (vec3_t a, float scale, const vec3_t b)
+inline void VectorMA (CVec3 &a, float scale, const CVec3 &b)	//!! method, rename?
 {
-	a[0] += scale * b[0];
-	a[1] += scale * b[1];
-	a[2] += scale * b[2];
+	a.v[0] += scale * b.v[0];
+	a.v[1] += scale * b.v[1];
+	a.v[2] += scale * b.v[2];
 }
 
-inline void VectorCopy (const vec3_t a, vec3_t b)
-{
-	memcpy (b, a, sizeof(vec3_t));	// should be fast when "memcpy" is intrinsic
-}
+float VectorLength (const CVec3 &v);	//!! method
+float VectorDistance (const CVec3 &vec1, const CVec3 &vec2);
 
-inline void VectorClear (vec3_t a)
-{
-	memset (a, 0, sizeof(vec3_t));
-}
+void CrossProduct (const CVec3 &v1, const CVec3 &v2, CVec3 &cross);	//!! rename
 
-#define VectorSet(v, x, y, z)	(v[0]=(x), v[1]=(y), v[2]=(z))
-
-inline bool VectorCompare (const vec3_t v1, const vec3_t v2)
-{
-	return memcmp (v1, v2, sizeof(vec3_t)) == 0;
-}
-
-float VectorLength (const vec3_t v);
-float VectorDistance (const vec3_t vec1, const vec3_t vec2);
-
-void CrossProduct (const vec3_t v1, const vec3_t v2, vec3_t cross);
-
-float VectorNormalize (vec3_t v);		// returns vector length
-float VectorNormalize (const vec3_t v, vec3_t out);
-float VectorNormalizeFast (vec3_t v);	//?? 2-arg version too?
+float VectorNormalize (const CVec3 &v, CVec3 &out);
 
 // axis aligned box
 struct CBox
@@ -267,9 +265,9 @@ struct CBox
 	CVec3	mins, maxs;
 	// methods
 	void Clear ();						// set mins>maxs (negative volume)
-	void Expand (const vec3_t p);		// expand mins/maxs by point p
+	void Expand (const CVec3 &p);		// expand mins/maxs by point p
 	void Expand (const CBox &b);		// include box b into volume
-	void GetCenter (vec3_t p);			// compute center point
+	void GetCenter (CVec3 &p);			// compute center point
 };
 
 struct CAxis
@@ -280,9 +278,9 @@ struct CAxis
 	CVec3	v[3];
 	// methods
 	void Clear ();						// set to ((1,0,0),(0,1,0),(0,0,1))
-	void FromAngles (const vec3_t angles);
-	void TransformVector (const vec3_t src, vec3_t dst) const;
-	void UnTransformVector (const vec3_t src, vec3_t dst) const;
+	void FromAngles (const CVec3 &angles);
+	void TransformVector (const CVec3 &src, CVec3 &dst) const;
+	void UnTransformVector (const CVec3 &src, CVec3 &dst) const;
 	// indexed access
 	inline CVec3& operator[] (int index)
 	{
@@ -303,33 +301,55 @@ struct CCoords
 	CVec3	origin;
 	CAxis	axis;
 	// methods
-	void TransformPoint (const vec3_t src, vec3_t dst) const;
-	void UnTransformPoint (const vec3_t src, vec3_t dst) const;
+	void TransformPoint (const CVec3 &src, CVec3 &dst) const;
+	void UnTransformPoint (const CVec3 &src, CVec3 &dst) const;
 	void TransformPlane (const cplane_t &src, cplane_t &dst) const;
 };
 
 // Functions for work with coordinate systems, not combined into CCoords class
 
 // global coordinate system -> local coordinate system (src -> dst) by origin/axis coords
-void TransformPoint (const vec3_t origin, const CAxis &axis, const vec3_t src, vec3_t dst);
+void TransformPoint (const CVec3 &origin, const CAxis &axis, const CVec3 &src, CVec3 &dst);
 // local coordinate system -> global coordinate system
-void UnTransformPoint (const vec3_t origin, const CAxis &axis, const vec3_t src, vec3_t dst);
+void UnTransformPoint (const CVec3 &origin, const CAxis &axis, const CVec3 &src, CVec3 &dst);
 
 
 // misc
 
-extern CVec3 vec3_origin;	// really, should be "const", but LOTS of functions uses this without "const" specifier ...
+extern const CVec3 vec3_origin;
 
-void AngleVectors (const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
-float anglemod(float a);
+void AngleVectors (const CVec3 &angles, CVec3 *forward, CVec3 *right, CVec3 *up);
+float anglemod (float a);
 float LerpAngle (float a1, float a2, float frac);
 
-void MakeNormalVectors (const vec3_t forward, vec3_t right, vec3_t up);
+void MakeNormalVectors (const CVec3 &forward, CVec3 &right, CVec3 &up);
 
 // colors
 
-float NormalizeColor (const vec3_t in, vec3_t out);
-float NormalizeColor255 (const vec3_t in, vec3_t out);
+typedef union
+{
+	byte	c[4];
+	unsigned rgba;
+} color_t;
+
+#undef RGBA
+#undef RGB
+#undef RGB255
+#undef RGBA255
+
+// constant colors
+#define RGBA(r,g,b,a)		((int)((r)*255) | ((int)((g)*255)<<8) | ((int)((b)*255)<<16) | ((int)((a)*255)<<24))
+#define RGB(r,g,b)			RGBA(r,g,b,1)
+#define RGB255(r,g,b)		((r) | ((g)<<8) | ((b)<<16) | (255<<24))
+#define RGBA255(r,g,b,a)	((r) | ((g)<<8) | ((b)<<16) | ((a)<<24))
+
+// computed colors
+#define RGBAS(r,g,b,a)		(appRound((r)*255) | (appRound((g)*255)<<8) | (appRound((b)*255)<<16) | (appRound((a)*255)<<24))
+#define RGBS(r,g,b)			(appRound((r)*255) | (appRound((g)*255)<<8) | (appRound((b)*255)<<16) | (255<<24))
+
+
+float NormalizeColor (const CVec3 &in, CVec3 &out);
+float NormalizeColor255 (const CVec3 &in, CVec3 &out);
 
 // rename to CLAMP_COLOR255 ??
 #define NORMALIZE_COLOR255(r,g,b)	\
@@ -344,7 +364,7 @@ float NormalizeColor255 (const vec3_t in, vec3_t out);
 		b = b * m >> 8;	\
 	}
 
-float ClampColor255 (const vec3_t in, vec3_t out);
+float ClampColor255 (const CVec3 &in, CVec3 &out);
 
 
 /*-----------------------------------------------------------------------------
@@ -396,65 +416,6 @@ void	Swap_Init (void);
 
 
 /*-----------------------------------------------------------------------------
-	CVARS (console variables)
------------------------------------------------------------------------------*/
-
-#define	CVAR_ARCHIVE		0x00001	// set to cause it to be saved to config file (config.cfg)
-#define	CVAR_USERINFO		0x00002	// added to userinfo when changed, then sent to senver
-#define	CVAR_SERVERINFO		0x00004	// added to serverinfo when changed
-#define	CVAR_NOSET			0x00008	// don't allow change from console at all, but can be set from the command line
-#define	CVAR_LATCH			0x00010	// save changes until server restart
-// added since 4.00
-#define	CVAR_USER_CREATED	0x00020	// created by a set command
-#define CVAR_GAME_CREATED	0x00040	// created from game library
-#define CVAR_CHEAT			0x00080	// will be reset to its default value when cheat protection active
-#define CVAR_CMDLINE		0x00100	// variable was set from command line
-
-#define CVAR_FLAG_MASK		0x0FFFF	// mask of stored cvar flags
-
-// not stored flags:
-#define CVAR_NODEFAULT		0x10000	// do not store "default" value from this Cvar_Get() call
-#define CVAR_UPDATE			0x20000	// set "modified" field after Cvar_Get() call
-#define CVAR_NOUPDATE		0x40000	// reset "modified" field ...
-
-#define	CVAR_BUFFER_SIZE	16		// size of buffer for var->string inside cvar_t
-
-// nothing outside the Cvar_*() functions should modify these fields!
-struct cvar_t
-{
-	const char *name;
-	char	*string;
-	char	*latchedString;			// for CVAR_LATCH vars
-	unsigned flags;
-	bool	modified;				// set each time the cvar is changed; originally - qboolean
-	byte	pad[3];					// qboolean pad (4 bytes)
-	float	value;					// atof(string)
-	cvar_t	*next;
-	// added since 4.00
-	char	*resetString;			// default cvar value (unset for user-created vars)
-	int		integer;				// atoi(string)
-	int		stringLength;			// size of buffer, allocated for holding var->string (or 0 if var->buf used)
-	char	buf[CVAR_BUFFER_SIZE];
-	cvar_t	*hashNext;
-	// functions
-	inline bool IsDefault ()
-	{
-		return resetString && strcmp (string, resetString) == 0;
-	}
-	inline void Reset ()
-	{
-		//!! not optimal - should use cvar_t struc instead of "name"
-		Cvar_Set (name, resetString);
-	}
-	inline float Clamp (float low, float high)
-	{
-		return Cvar_Clamp (this, low, high);
-	}
-};
-
-
-
-/*-----------------------------------------------------------------------------
 	Collision detection (??)
 -----------------------------------------------------------------------------*/
 
@@ -495,21 +456,21 @@ struct cplane_t
 		else if (normal[2] == -1.0f) type = PLANE_MZ;
 		else type = PLANE_NON_AXIAL;
 	}
-	inline float DistanceTo (const vec3_t vec)
+	inline float DistanceTo (const CVec3 &vec)
 	{
 		if (type <= PLANE_Z)
 			return vec[type] - dist;
 		else if (type <= PLANE_MZ)
 			return -vec[type-3] - dist;
 		else
-			return DotProduct (normal, vec) - dist;
+			return dot(normal, vec) - dist;
 	}
 };
 
 //?? move to CBox ? or to cplane
-int BoxOnPlaneSide (const vec3_t emins, const vec3_t emaxs, const cplane_t *plane);
+int BoxOnPlaneSide (const CBox &box, const cplane_t *plane);
 
-inline int BOX_ON_PLANE_SIDE (const vec3_t mins, const vec3_t maxs, const cplane_t *plane)
+inline int BOX_ON_PLANE_SIDE (const CBox &box, const cplane_t *plane)
 {
 	if (plane->type <= PLANE_MZ)
 	{
@@ -520,19 +481,19 @@ inline int BOX_ON_PLANE_SIDE (const vec3_t mins, const vec3_t maxs, const cplane
 		{
 			type = plane->type;
 			dist = plane->dist;
-			if (dist <= mins[type])			return 1;
-			else if (dist >= maxs[type])	return 2;
+			if (dist <= box.mins[type])			return 1;
+			else if (dist >= box.maxs[type])	return 2;
 		}
 		else
 		{
 			type = plane->type - 3;
 			dist = -plane->dist;
-			if (dist <= mins[type])			return 2;
-			else if (dist >= maxs[type])	return 1;
+			if (dist <= box.mins[type])			return 2;
+			else if (dist >= box.maxs[type])	return 1;
 		}
 		return 3;
 	}
-	return BoxOnPlaneSide (mins, maxs, plane);
+	return BoxOnPlaneSide (box, plane);
 }
 
 
@@ -646,7 +607,7 @@ struct pmove_t
 	CVec3		viewangles;		// clamped
 	float		viewheight;
 
-	CVec3		mins, maxs;		// bounding box; CBox
+	CBox		bounds;			// bounding box
 
 	struct edict_s	*groundentity;
 	int			watertype;

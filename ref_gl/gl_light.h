@@ -37,7 +37,7 @@ struct surfLight_t
 	float	intens;
 	surfacePlanar_t *pl;		// used for normal/axis/bounds
 		//!! NOTE: if few surflights will be combined into a single one, should insert this fields here;
-		//!! in this case can remove gl_model.h dependency and surfacePlanar_t decl. from gl_local.h
+		//!! in this case can remove gl_model.h dependency and surfacePlanar_t decl. from OpenGLDrv.h
 	surfLight_t *next;
 	// fields for culling
 	CVec3	center;

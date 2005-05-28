@@ -53,8 +53,8 @@ static void SwapQ2BspFile (bspfile_t *f)
 
 		d = &f->texinfo[i];
 
-		float *vec = d->vecs[0].vec;	// hack to get all ([3]+1)[2] == 8 components of texinfo_t.vecs[]
-		for (j = 0 ;j < 8; j++)
+		float *vec = &d->vecs[0].vec[0];	// hack to get all ([3]+1)[2] == 8 components of texinfo_t.vecs[]
+		for (j = 0; j < 8; j++)
 			vec[j] = LittleFloat (vec[j]);
 		d->flags = LittleLong (d->flags);
 		d->value = LittleLong (d->value);
@@ -212,8 +212,7 @@ static void LoadQ2Submodels (bspfile_t *f, dmodel_t *data)
 	cmodel_t *out = f->models = new (f->extraChain) cmodel_t[f->numModels];
 	for (int i = 0; i < f->numModels; i++, data++, out++)
 	{
-		out->bounds.mins = data->mins;
-		out->bounds.maxs = data->maxs;
+		out->bounds = data->bounds;
 		out->radius = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
 		out->headnode = data->headnode;
 		out->flags = 0;
@@ -512,7 +511,7 @@ static void WriteEntity (char **dst)
 // gets "%f %f %f" or "%f"
 static void GetVector (const char *str, CVec3 &vec)
 {
-	if (sscanf (str, "%f %f %f", &vec[0], &vec[1], &vec[2]) != 3)
+	if (sscanf (str, "%f %f %f", VECTOR_ARG(&vec)) != 3)
 		vec[1] = vec[2] = vec[0];
 }
 
@@ -539,7 +538,7 @@ static void ProcessEntityTarget ()
 }
 
 
-static float *FindEntityTarget (char *name)
+static const CVec3& FindEntityTarget (char *name)
 {
 	for (int i = 0; i < numTargets; i++)
 		if (!strcmp (targets[i].name, name))
@@ -623,7 +622,7 @@ static bool ProcessEntity ()
 		{
 			// "health" -> size (def: 24)
 			// "dmg": normal (0, def), sun, amber, red, blue, green
-			// if "dmg" == SUN -> VectorNormalize(origin)
+			// if "dmg" == SUN -> origin.Normalize()
 
 			lightFlare_t *flare = new (bspfile.extraChain) lightFlare_t;
 			flare->next = bspfile.flares;
@@ -636,8 +635,7 @@ static bool ProcessEntity ()
 				flare->size = 24;							// default size
 			flare->style = style;
 
-			VectorSet (flare->color, 255, 255, 255);
-			flare->color[3] = 255;
+			flare->color.rgba = RGB(1,1,1);
 			if (f = FindField ("dmg"))
 			{
 				switch (atoi (f->value))
@@ -645,28 +643,33 @@ static bool ProcessEntity ()
 				case 1:
 					if (bspfile.type == map_kp) DebugPrintf ("HAVE SUN FLARE: %s\n", bspfile.name);//!!
 					flare->radius = -1;						// mark as "sun"
-					flare->color[2] = 192;
-					VectorNormalize (origin);				// just a sun direction
+					flare->color.c[2] = 192;
+					origin.NormalizeFast ();				// just a sun direction
 					break;
 				case 2:		// amber
-					VectorSet (flare->color, 255, 192, 0);
+					flare->color.rgba = RGB255(255, 192, 0);
 					break;
 				case 3:		// red
-					VectorSet (flare->color, 255, 0, 64);
+					flare->color.rgba = RGB255(255, 0, 64);
 					break;
 				case 4:		// blue
-					VectorSet (flare->color, 0, 192, 255);
+					flare->color.rgba = RGB255(0, 192, 255);
 					break;
 				case 5:		// green
-					VectorSet (flare->color, 0, 255, 128);
+					flare->color.rgba = RGB255(0, 255, 128);
 					break;
 				}
 			}
-			VectorCopy(origin, flare->origin);
+			flare->origin = origin;
 			if (f = FindField ("radius"))
 				flare->radius = atof (f->value);
 			if (f = FindField ("color"))					// can override sun color ...
-				sscanf (f->value, "%d %d %d", &flare->color[0], &flare->color[1], &flare->color[2]);
+			{
+				// NOTE: cannot scanf() into byte-sized vars
+				int	v[3];
+				sscanf (f->value, "%d %d %d", VECTOR_ARG(&v));
+				flare->color.rgba = RGB255(v[0],v[1],v[2]);
+			}
 			if (haveModel)
 				flare->model = modelIdx;
 
@@ -693,7 +696,7 @@ static bool ProcessEntity ()
 			NormalizeColor (slight->color, slight->color);
 		}
 		else
-			VectorSet (slight->color, 1, 1, 1);			// default
+			slight->color.Set (1, 1, 1);				// default
 
 		if (f = FindField ("_falloff"))					// 0 - linear (default), 1 - 1/dist. 2 - 1/(dist*dist)
 			slight->type = (slightType_t)atoi (f->value);
@@ -701,12 +704,12 @@ static bool ProcessEntity ()
 			slight->fade = atof (f->value);
 		if (!slight->fade) slight->fade = 1;			// default value + disallow "fade==0"
 
-		VectorCopy (origin, slight->origin);
+		slight->origin = origin;
 
 		if (f = FindField ("target"))
 		{
 			slight->spot = true;
-			float *dst = FindEntityTarget (f->value);
+			const CVec3 &dst = FindEntityTarget (f->value);
 			CVec3	vec;
 			VectorSubtract (dst, slight->origin, vec);
 			VectorNormalize (vec, slight->spotDir);
@@ -714,7 +717,7 @@ static bool ProcessEntity ()
 			if (!strcmp (f->value, sunTarget))
 			{
 				// this spotlight used as sun target
-				VectorCopy (slight->spotDir, bspfile.sunVec);
+				bspfile.sunVec = slight->spotDir;
 				// remove from list
 				bspfile.slights = slight->next;
 				bspfile.numSlights--;
@@ -739,15 +742,15 @@ static bool ProcessEntity ()
 				CVec3	ang;
 				sscanf (f->value, "%f %f", &ang[YAW], &ang[PITCH]);
 				ang[PITCH] *= -1;
-				AngleVectors (ang, slight->spotDir, NULL, NULL);
+				AngleVectors (ang, &slight->spotDir, NULL, NULL);
 			}
 			else if (f = FindField ("angle"))
 			{
 				float angle = atof (f->value);
 				if (angle == -1)
-					VectorSet (slight->spotDir, 0, 0, 1);
+					slight->spotDir.Set (0, 0, 1);
 				else if (angle == -2)
-					VectorSet (slight->spotDir, 0, 0, -1);
+					slight->spotDir.Set (0, 0, -1);
 				else
 				{
 					angle *= M_PI / 180.0f;
@@ -862,11 +865,11 @@ static bool ProcessEntity ()
 		if (f = FindField ("_sun*"))
 		{
 			// have ArghRad sun
-			VectorSet (bspfile.sunVec, 0, 0, -1);		// will be default even if incorrect sun with spotlight
+			bspfile.sunVec.Set (0, 0, -1);		// will be default even if incorrect sun with spotlight
 			if (f = FindField ("_sun_vector"))
 			{
 				GetVector (f->value, bspfile.sunVec);
-				VectorNormalize (bspfile.sunVec);
+				bspfile.sunVec.NormalizeFast ();
 			}
 			else if (f = FindField ("_sun"))
 				strcpy (sunTarget, f->value);	// worldspawn always 1st in entstring, so - just remember suntarget
@@ -875,7 +878,7 @@ static bool ProcessEntity ()
 				CVec3 ang;
 				sscanf (f->value, "%f %f", &ang[YAW], &ang[PITCH]);
 				ang[PITCH] *= -1;
-				AngleVectors (ang, bspfile.sunVec, NULL, NULL);
+				AngleVectors (ang, &bspfile.sunVec, NULL, NULL);
 			}
 			if (f = FindField ("_sun_color"))
 			{
@@ -915,7 +918,7 @@ static bool ProcessEntity ()
 			splash_t *spl = new (bspfile.extraChain) splash_t;
 			spl->next = bspfile.splashes;
 			bspfile.splashes = spl;
-			VectorCopy (origin, spl->origin);
+			spl->origin = origin;
 			bspfile.numSplashes++;
 		}
 

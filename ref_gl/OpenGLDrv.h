@@ -1,8 +1,12 @@
-#ifndef __GL_LOCAL_INCLUDED__
-#define __GL_LOCAL_INCLUDED__
+#ifndef __OPENGLDRV_INCLUDED__
+#define __OPENGLDRV_INCLUDED__
 
 
 #include <stdio.h>
+
+/*-----------------------------------------------------------------------------
+	Standard OpenGL staff
+-----------------------------------------------------------------------------*/
 
 #ifdef _WIN32
 #if 0
@@ -10,7 +14,8 @@
 #	define WIN32_LEAN_AND_MEAN		// exclude rarely-used services from windown headers
 #	include <windows.h>				// need this include, because have wgl and GDI functions in gl.h
 #else // 0
-	// try to preform some windows defines to avoid "windows.h" including
+	// Try to preform some windows defines to avoid "windows.h" including.
+	// If source file require true windows headers, they should be included before this header.
 #	ifndef APIENTRY
 #		define APIENTRY __stdcall
 #	endif
@@ -31,7 +36,7 @@
 #		define CONST const
 #	endif
 #endif // 0
-#endif
+#endif // _WIN32
 
 #include <GL/gl.h>
 #ifndef GL_GLEXT_VERSION
@@ -48,9 +53,17 @@
 #define GL_TEXTURE3_SGIS			0x8361
 
 
+/*-----------------------------------------------------------------------------
+	Engine includes
+-----------------------------------------------------------------------------*/
+
 #include "qcommon.h"
 #include "../client/ref.h"
 
+
+/*-----------------------------------------------------------------------------
+	OpenGL driver interface
+-----------------------------------------------------------------------------*/
 
 namespace OpenGLDrv {
 

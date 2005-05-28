@@ -1,7 +1,7 @@
 #define WIN32_LEAN_AND_MEAN			// exclude rarely-used services from windown headers
 #include <windows.h>				// need this include, because have wgl and GDI functions in gl.h
 
-#include "../ref_gl/gl_local.h"
+#include "../ref_gl/OpenGLDrv.h"
 #include "gl_win.h"
 
 

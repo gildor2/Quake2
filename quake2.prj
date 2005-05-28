@@ -95,6 +95,7 @@ COMMON = \
 D = ref_gl
 GL_RENDERER = \
 	$D/gl_backend.cpp \
+	$D/gl_bspmodel.cpp \
 	$D/gl_buffers.cpp \
 	$D/gl_frontend.cpp \
 	$D/gl_image.cpp \
@@ -103,11 +104,11 @@ GL_RENDERER = \
 	$D/gl_lightmap.cpp \
 	$D/gl_main.cpp \
 	$D/gl_math.cpp \
-	$D/gl_model.cpp \
 	$D/gl_poly.cpp \
 	$D/gl_shader.cpp \
 	$D/gl_sky.cpp \
-	$D/gl_text.cpp
+	$D/gl_text.cpp \
+	$D/gl_trimodel.cpp
 
 D = win32
 WIN32_FILES = \

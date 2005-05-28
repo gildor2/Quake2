@@ -222,17 +222,17 @@ void SV_LinkEdict (edict_t *ent)
 	ex.axis.FromAngles (ent->s.angles);
 
 	// set the size
-	VectorSubtract (ent->maxs, ent->mins, ent->size);
+	VectorSubtract (ent->bounds.maxs, ent->bounds.mins, ent->size);
 
 	// encode the size into the entity_state for client prediction
 	if (ent->solid == SOLID_BBOX)
 	{
 		// assume that x/y are equal and symetric
-		i = appRound (ent->maxs[0] / 8);
+		i = appRound (ent->bounds.maxs[0] / 8);
 		// z is not symetric
-		j = appRound (-ent->mins[2] / 8);
+		j = appRound (-ent->bounds.mins[2] / 8);
 		// and z maxs can be negative...
-		k = appRound ((ent->maxs[2] + 32) / 8);
+		k = appRound ((ent->bounds.maxs[2] + 32) / 8);
 		// original Q2 have bounded i/j/k/ with lower margin==1 (for client prediction only); this will
 		// produce incorrect collision test when bbox mins/maxs is (0,0,0)
 		i = bound(i, 0, 31);		// mins/maxs[0,1] range is -248..0/0..248
@@ -245,8 +245,8 @@ void SV_LinkEdict (edict_t *ent)
 		i *= 8;
 		j *= 8;
 		k *= 8;
-		VectorSet (ex.bounds.mins, -i, -i, -j);
-		VectorSet (ex.bounds.maxs, i, i, k - 32);
+		ex.bounds.mins.Set (-i, -i, -j);
+		ex.bounds.maxs.Set (i, i, k - 32);
 		ex.bounds.GetCenter (ex.center);
 		VectorAdd (ex.center, ent->s.origin, ex.center);
 		ex.model = NULL;
@@ -272,24 +272,23 @@ void SV_LinkEdict (edict_t *ent)
 		// expand for rotation
 		for (i = 0; i < 3 ; i++)
 		{
-			ent->absmin[i] = ex.center[i] - ex.radius;
-			ent->absmax[i] = ex.center[i] + ex.radius;
+			ent->absBounds.mins[i] = ex.center[i] - ex.radius;
+			ent->absBounds.maxs[i] = ex.center[i] + ex.radius;
 		}
 	}
 	else
 	{	// normal
-		VectorAdd (ent->s.origin, ent->mins, ent->absmin);
-		VectorAdd (ent->s.origin, ent->maxs, ent->absmax);
+		VectorAdd (ent->s.origin, ent->bounds.mins, ent->absBounds.mins);
+		VectorAdd (ent->s.origin, ent->bounds.maxs, ent->absBounds.maxs);
 	}
 
 	// because movement is clipped an epsilon away from an actual edge,
 	// we must fully check even when bounding boxes don't quite touch
-	ent->absmin[0] -= 1;
-	ent->absmin[1] -= 1;
-	ent->absmin[2] -= 1;
-	ent->absmax[0] += 1;
-	ent->absmax[1] += 1;
-	ent->absmax[2] += 1;
+	for (i = 0; i < 3; i++)
+	{
+		ent->absBounds.mins[i] -= 1;
+		ent->absBounds.maxs[i] += 1;
+	}
 
 	// link to PVS leafs
 	ent->num_clusters = 0;
@@ -299,7 +298,7 @@ void SV_LinkEdict (edict_t *ent)
 	// get all leafs, including solids
 	int leafs[MAX_TOTAL_ENT_LEAFS];
 	int topnode;
-	int num_leafs = CM_BoxLeafnums (ent->absmin, ent->absmax, ARRAY_ARG(leafs), &topnode);
+	int num_leafs = CM_BoxLeafnums (ent->absBounds, ARRAY_ARG(leafs), &topnode);
 
 	// set areas
 	int clusters[MAX_TOTAL_ENT_LEAFS];
@@ -313,8 +312,7 @@ void SV_LinkEdict (edict_t *ent)
 			if (ent->areanum && ent->areanum != area)
 			{
 				if (ent->areanum2 && ent->areanum2 != area && sv.state == ss_loading)
-					Com_DPrintf ("Object touching 3 areas at %f %f %f\n",
-						ent->absmin[0], ent->absmin[1], ent->absmin[2]);
+					Com_DPrintf ("Object touching 3 areas at %g %g %g\n", VECTOR_ARG(ent->absBounds.mins));
 				ent->areanum2 = area;
 			}
 			else
@@ -353,7 +351,7 @@ void SV_LinkEdict (edict_t *ent)
 
 	// if first time, make sure old_origin is valid
 	if (!ent->linkcount)
-		VectorCopy (ent->s.origin, ent->s.old_origin);
+		ent->s.old_origin = ent->s.origin;
 	ent->linkcount++;
 
 	if (ent->solid == SOLID_NOT)
@@ -363,9 +361,9 @@ void SV_LinkEdict (edict_t *ent)
 	areanode_t *node = areaNodes;
 	while (node->axis != -1)
 	{
-		if (ent->absmin[node->axis] > node->dist)
+		if (ent->absBounds.mins[node->axis] > node->dist)
 			node = node->children[0];
-		else if (ent->absmax[node->axis] < node->dist)
+		else if (ent->absBounds.maxs[node->axis] < node->dist)
 			node = node->children[1];
 		else
 			break;		// crosses the node
@@ -426,9 +424,9 @@ static void SV_AreaEdicts_r (areanode_t *node)
 
 		if (check->solid == SOLID_NOT)
 			continue;		// deactivated
-		if (check->absmin[2] > area_bounds.maxs[2] || check->absmax[2] < area_bounds.mins[2] ||
-			check->absmin[0] > area_bounds.maxs[0] || check->absmax[0] < area_bounds.mins[0] ||
-			check->absmin[1] > area_bounds.maxs[1] || check->absmax[1] < area_bounds.mins[1])
+		if (check->absBounds.mins[2] > area_bounds.maxs[2] || check->absBounds.maxs[2] < area_bounds.mins[2] ||
+			check->absBounds.mins[0] > area_bounds.maxs[0] || check->absBounds.maxs[0] < area_bounds.mins[0] ||
+			check->absBounds.mins[1] > area_bounds.maxs[1] || check->absBounds.maxs[1] < area_bounds.mins[1])
 			continue;		// not touching
 
 		if (area_count == area_maxcount)
@@ -448,11 +446,11 @@ static void SV_AreaEdicts_r (areanode_t *node)
 }
 
 
-int SV_AreaEdicts (const vec3_t mins, const vec3_t maxs, edict_t **list, int maxcount, int areatype)
+int SV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list, int maxcount, int areatype)
 {
 	guard(SV_AreaEdicts);
-	VectorCopy (mins, area_bounds.mins);
-	VectorCopy (maxs, area_bounds.maxs);
+	area_bounds.mins = mins;
+	area_bounds.maxs = maxs;
 	area_list = list;
 	area_count = 0;
 	area_maxcount = maxcount;
@@ -472,32 +470,30 @@ int SV_AreaEdicts (const vec3_t mins, const vec3_t maxs, edict_t **list, int max
 SV_PointContents
 =============
 */
-int SV_PointContents (const vec3_t p)
+int SV_PointContents (const CVec3 &p)
 {
-	edict_t	*list[MAX_EDICTS], *edict;
-	int		i, num, contents, c2;
-	entityHull_t *ent;
-
 	guard(SV_PointContents);
 
 	// get base contents from world
-	contents = CM_PointContents (p, sv.models[1]->headnode);
+	unsigned contents = CM_PointContents (p, sv.models[1]->headnode);
 
-	num = SV_AreaEdicts (p, p, list, MAX_EDICTS, AREA_SOLID);
+	edict_t	*list[MAX_EDICTS];
+	int num = SV_AreaEdicts (p, p, ARRAY_ARG(list), AREA_SOLID);
 
-	for (i = 0; i < num; i++)
+	for (int i = 0; i < num; i++)
 	{
-		edict = list[i];
-		ent = &ents[NUM_FOR_EDICT(edict)];
+		edict_t *edict = list[i];
+		entityHull_t *ent = &ents[NUM_FOR_EDICT(edict)];
 
+		unsigned c2;
 		if (ent->model)
 			c2 = CM_TransformedPointContents (p, ent->model->headnode, edict->s.origin, ent->axis);
 		else
-			c2 = CM_TransformedPointContents (p, CM_HeadnodeForBox (ent->bounds.mins, ent->bounds.maxs), edict->s.origin, vec3_origin);
+			c2 = CM_TransformedPointContents (p, CM_HeadnodeForBox (ent->bounds), edict->s.origin, vec3_origin);
 		contents |= c2;
 	}
-
 	return contents;
+
 	unguard;
 }
 
@@ -510,11 +506,12 @@ SV_ClipMoveToEntities
 
 ====================
 */
-void SV_ClipMoveToEntities (trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *passedict, int contentmask)
+static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end,
+	edict_t *passedict, int contentmask)
 {
 	guard(SV_ClipMoveToEntities);
 
-	if (tr->allsolid) return;
+	if (tr.allsolid) return;
 
 	int		i;
 
@@ -536,13 +533,13 @@ void SV_ClipMoveToEntities (trace_t *tr, const vec3_t start, const vec3_t mins, 
 	int num = SV_AreaEdicts (amins, amaxs, ARRAY_ARG(list), AREA_SOLID);
 	if (!num) return;
 
-	float b1 = DotProduct (mins, mins);
-	float b2 = DotProduct (maxs, maxs);
+	float b1 = dot (mins, mins);
+	float b2 = dot (maxs, maxs);
 	float t = max(b1, b2);
 	float traceWidth = SQRTFAST(t);
 	CVec3 traceDir;
 	VectorSubtract (end, start, traceDir);
-	float traceLen = VectorNormalize (traceDir) + traceWidth;
+	float traceLen = traceDir.Normalize () + traceWidth;
 
 	for (i = 0; i < num; i++)
 	{
@@ -564,38 +561,37 @@ void SV_ClipMoveToEntities (trace_t *tr, const vec3_t start, const vec3_t mins, 
 		CVec3 center;
 		VectorSubtract (ent.center, start, center);
 		// check position of point projection on line
-		float entPos = DotProduct (center, traceDir);
+		float entPos = dot (center, traceDir);
 		if (entPos < -traceWidth - ent.radius || entPos > traceLen + ent.radius)
 			continue;		// too near / too far
 
 		// check distance between point and line
 		CVec3 tmp;
 		VectorMA (center, -entPos, traceDir, tmp);
-		float dist2 = DotProduct (tmp, tmp);
+		float dist2 = dot (tmp, tmp);
 		float dist0 = ent.radius + traceWidth;
 		if (dist2 >= dist0 * dist0) continue;
 
 		trace_t	trace;
 		if (ent.model)
-			CM_TransformedBoxTrace (&trace, start, end, mins, maxs, ent.model->headnode, contentmask, edict->s.origin, ent.axis);
+			CM_TransformedBoxTrace (trace, start, end, &mins, &maxs, ent.model->headnode, contentmask, edict->s.origin, ent.axis);
 		else
-			CM_TransformedBoxTrace (&trace, start, end, mins, maxs,
-				CM_HeadnodeForBox (ent.bounds.mins, ent.bounds.maxs), contentmask, edict->s.origin, vec3_origin);
+			CM_TransformedBoxTrace (trace, start, end, &mins, &maxs, CM_HeadnodeForBox (ent.bounds), contentmask, edict->s.origin, vec3_origin);
 
-		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
+		if (trace.allsolid || trace.startsolid || trace.fraction < tr.fraction)
 		{
 			trace.ent = edict;
-		 	if (tr->startsolid)
+		 	if (tr.startsolid)
 			{
-				*tr = trace;
-				tr->startsolid = true;
+				tr = trace;
+				tr.startsolid = true;
 			}
 			else
-				*tr = trace;
+				tr = trace;
 		}
 		else if (trace.startsolid)
-			tr->startsolid = true;
-		if (tr->allsolid) return;
+			tr.startsolid = true;
+		if (tr.allsolid) return;
 	}
 
 	unguard;
@@ -612,18 +608,16 @@ Passedict and edicts owned by passedict are explicitly not checked.
 
 ==================
 */
-void SV_Trace (trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *passedict, int contentmask)
+//!! change argument order (for game, SV_TraceHook() used anyway)
+void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end, edict_t *passedict, int contentmask)
 {
 	guard(SV_Trace);
 
-	if (!mins)	mins = vec3_origin;
-	if (!maxs)	maxs = vec3_origin;
-
 	// clip to world
-	CM_BoxTrace (tr, start, end, mins, maxs, 0, contentmask);
+	CM_BoxTrace (tr, start, end, &mins, &maxs, 0, contentmask);
 
-	tr->ent = ge->edicts;
-	if (!tr->fraction) return;		// blocked by the world
+	tr.ent = ge->edicts;
+	if (!tr.fraction) return;		// blocked by the world
 
 	// clip to other solid entities
 	SV_ClipMoveToEntities (tr, start, mins, maxs, end, passedict, contentmask);

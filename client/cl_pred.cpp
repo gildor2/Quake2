@@ -47,7 +47,7 @@ void CL_CheckPredictionError (void)
 	len = abs(delta[0]) + abs(delta[1]) + abs(delta[2]);	//?? VectorLength()
 	if (len > 640)	// 80 world units
 	{	// a teleport or something
-		VectorClear (cl.prediction_error);
+		cl.prediction_error.Zero();
 	}
 	else
 	{
@@ -69,17 +69,17 @@ void CL_CheckPredictionError (void)
 
 //#define NO_PREDICT_LERP	// debug
 
-void CL_EntityTrace (trace_t *tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents)
+void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents)
 {
 	guard(CL_EntityTrace);
 
-	float b1 = DotProduct (mins, mins);
-	float b2 = DotProduct (maxs, maxs);
+	float b1 = dot (mins, mins);
+	float b2 = dot (maxs, maxs);
 	float t = max(b1, b2);
 	float traceWidth = SQRTFAST(t);
 	CVec3	traceDir;
 	VectorSubtract (end, start, traceDir);
-	float traceLen = VectorNormalize (traceDir) + traceWidth;
+	float traceLen = traceDir.Normalize () + traceWidth;
 
 	for (int i = 0; i < cl.frame.num_entities; i++)
 	{
@@ -98,7 +98,7 @@ void CL_EntityTrace (trace_t *tr, const CVec3 &start, const CVec3 &end, const CV
 		for (int j = 0; j < 3; j++)
 			delta[j] = (1.0f - frac) * (cent->current.origin[j] - cent->prev.origin[j]);
 #else
-		VectorClear (delta);
+		delta.Zero();
 #endif
 
 		CVec3 eCenter, eOrigin;
@@ -111,14 +111,14 @@ void CL_EntityTrace (trace_t *tr, const CVec3 &start, const CVec3 &end, const CV
 
 		// collision detection: line vs sphere
 		// check position of point projection on line
-		float entPos = DotProduct (eCenter, traceDir);
+		float entPos = dot (eCenter, traceDir);
 		if (entPos < -traceWidth - ent->radius || entPos > traceLen + ent->radius)
 			continue; // too near / too far
 
 		//!! if entity rotated from prev to current, should lerp angles and recompute ent->axis
 		// check distance between point and line
 		VectorMA (eCenter, -entPos, traceDir, tmp);
-		float dist2 = DotProduct (tmp, tmp);
+		float dist2 = dot (tmp, tmp);
 		float dist0 = ent->radius + traceWidth;
 		if (dist2 >= dist0 * dist0) continue;
 
@@ -127,36 +127,36 @@ void CL_EntityTrace (trace_t *tr, const CVec3 &start, const CVec3 &end, const CV
 		{
 			cmodel = cl.model_clip[ent->modelindex];
 			if (!cmodel) continue;
-			CM_TransformedBoxTrace (&trace, start, end, mins, maxs, cmodel->headnode,  contents, eOrigin, ent->axis);
+			CM_TransformedBoxTrace (trace, start, end, &mins, &maxs, cmodel->headnode,  contents, eOrigin, ent->axis);
 		}
 		else
-			CM_TransformedBoxTrace (&trace, start, end, mins, maxs,
-				CM_HeadnodeForBox (ent->bounds.mins, ent->bounds.maxs), contents, eOrigin, vec3_origin);
+			CM_TransformedBoxTrace (trace, start, end, &mins, &maxs,
+				CM_HeadnodeForBox (ent->bounds), contents, eOrigin, vec3_origin);
 
 
-		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
+		if (trace.allsolid || trace.startsolid || trace.fraction < tr.fraction)
 		{
 			trace.ent = (struct edict_s *)ent;		// trace.ent is edict_t*, but ent is entityState_t*
-		 	if (tr->startsolid)
+		 	if (tr.startsolid)
 			{
-				*tr = trace;
-				tr->startsolid = true;
+				tr = trace;
+				tr.startsolid = true;
 			}
 			else
-				*tr = trace;
+				tr = trace;
 		}
 		else if (trace.startsolid)
-			tr->startsolid = true;
-		if (tr->allsolid) return;
+			tr.startsolid = true;
+		if (tr.allsolid) return;
 	}
 	unguard;
 }
 
 
-void CL_Trace (trace_t *tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents)
+void CL_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents)
 {
 	guard(CL_Trace);
-	CM_BoxTrace (tr, start, end, mins, maxs, 0, contents);
+	CM_BoxTrace (tr, start, end, &mins, &maxs, 0, contents);
 	CL_EntityTrace (tr, start, end, mins, maxs, contents);
 	unguard;
 }
@@ -169,12 +169,12 @@ static trace_t CL_PMTrace (const CVec3 &start, const CVec3 &mins, const CVec3 &m
 
 	guard(CL_PMTrace);
 	// check against world
-	CM_BoxTrace (&trace, start, end, mins, maxs, 0, MASK_PLAYERSOLID);
+	CM_BoxTrace (trace, start, end, &mins, &maxs, 0, MASK_PLAYERSOLID);
 	if (trace.fraction < 1.0)
 		trace.ent = (struct edict_s *)1;	//??
 
 	// check all other solid models
-	CL_EntityTrace (&trace, start, end, mins, maxs, MASK_PLAYERSOLID);
+	CL_EntityTrace (trace, start, end, mins, maxs, MASK_PLAYERSOLID);
 
 	return trace;
 	unguard;
@@ -187,14 +187,13 @@ int CL_PMpointcontents (const CVec3 &point)
 	cmodel_t *cmodel;
 	int		contents;
 	float	dist2;
-#ifndef NO_PREDICT_LERP
-	float	backlerp;
-#endif
 
 	guard(CL_PMpointcontents);
 
 	contents = CM_PointContents (point, 0);
-	backlerp = 1.0f - cl.lerpfrac;
+#ifndef NO_PREDICT_LERP
+	float backlerp = 1.0f - cl.lerpfrac;
+#endif
 
 	for (i = 0; i < cl.frame.num_entities; i++)
 	{
@@ -214,7 +213,7 @@ int CL_PMpointcontents (const CVec3 &point)
 		for (j = 0; j < 3; j++)
 			delta[j] = backlerp * (cent->current.origin[j] - cent->prev.origin[j]);
 #else
-		VectorClear (delta);
+		delta.Zero();
 #endif
 		VectorSubtract (ent->center, delta, eCenter);
 		VectorSubtract (ent->origin, delta, eOrigin);
@@ -224,7 +223,7 @@ int CL_PMpointcontents (const CVec3 &point)
 
 		// check entity bounding sphere
 		VectorSubtract (eCenter, point, tmp);
-		dist2 = DotProduct (tmp, tmp);
+		dist2 = dot (tmp, tmp);
 		if (dist2 > ent->radius * ent->radius) continue;
 		// accurate check with trace
 		contents |= CM_TransformedPointContents (point, cmodel->headnode, eOrigin, ent->axis);
@@ -318,7 +317,7 @@ void CL_PredictMovement (void)
 	cl.predicted_origin[2] = pm.s.origin[2]*0.125f;
 
 	if (predicted)				// there can be a situation (when very fast fps or small timescale), when ack+1==current
-		VectorCopy (pm.viewangles, cl.predicted_angles);
+		cl.predicted_angles = pm.viewangles;
 
 	unguard;
 }

@@ -413,7 +413,7 @@ void MSG_ReadDeltaEntity (sizebuf_t *msg, const entity_state_t *from, entity_sta
 
 	LOG("read delta entity\n");
 	*to = *from;
-	VectorCopy (from->origin, to->old_origin);
+	to->old_origin = from->origin;
 	to->event = 0;		// dalta from zero
 
 	ReadDelta (from, to, ARRAY_ARG(entityStateDelta), bits, msg);

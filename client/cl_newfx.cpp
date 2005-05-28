@@ -107,19 +107,19 @@ void CL_DebugTrail (const CVec3 &start, const CVec3 &end)
 //	float		d, c, s;
 //	CVec3		dir;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	float len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 	MakeNormalVectors (vec, right, up);
 
-//	VectorScale(vec, RT2_SKIP, vec);
+//	vec.Scale (RT2_SKIP);
 
 //	dec = 1.0;
 //	dec = 0.75;
 	float dec = 3;
-	VectorScale (vec, dec, vec);
-	VectorCopy (start, move);
+	vec.Scale (dec);
+	move = start;
 
 	while (len > 0)
 	{
@@ -129,12 +129,12 @@ void CL_DebugTrail (const CVec3 &start, const CVec3 &end)
 			return;
 
 		p->accel[2] = 0;
-		VectorClear (p->vel);
+		p->vel.Zero();
 		p->alpha = 1.0;
 		p->alphavel = -0.1;
 //		p->alphavel = 0;
 		p->color = 0x74 + (rand()&7);
-		VectorCopy (move, p->org);
+		p->org = move;
 /*
 		for (j=0 ; j<3 ; j++)
 		{
@@ -152,15 +152,14 @@ void CL_DebugTrail (const CVec3 &start, const CVec3 &end)
 void CL_ForceWall (const CVec3 &start, const CVec3 &end, int color)
 {
 	CVec3		move, vec;
-	float		len;
 	int			j;
 	particle_t	*p;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
-	VectorScale (vec, 4, vec);
+	vec.Scale (4);
 
 	// FIXME: this is a really silly way to have a loop
 	while (len > 0)
@@ -216,7 +215,7 @@ void CL_GenericParticleEffect (const CVec3 &org, const CVec3 &dir, int color, in
 			p->vel[j] = crand()*20;
 		}
 
-//		VectorCopy (accel, p->accel);
+//		p->accel = accel;
 		p->alpha = 1.0;
 		p->alphavel = -1.0 / (0.5 + frand()*alphavel);
 //		p->alphavel = alphavel;
@@ -235,11 +234,11 @@ void CL_BubbleTrail2 (const CVec3 &start, const CVec3 &end, int dist)
 	int			i, j;
 	particle_t	*p;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	int len = appFloor (VectorNormalize (vec));
+	int len = appFloor (vec.NormalizeFast ());
 
-	VectorScale (vec, dist, vec);
+	vec.Scale (dist);
 
 	for (i=0 ; i<len ; i+=dist)
 	{
@@ -272,7 +271,6 @@ void CL_BubbleTrail2 (const CVec3 &start, const CVec3 &end, int dist)
 void CL_Heatbeam (const CVec3 &start, const CVec3 &end)
 {
 	CVec3		move, vec;
-	float		len;
 	int			j,k;
 	particle_t	*p;
 	CVec3		right, up;
@@ -282,17 +280,17 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &end)
 	float		ltime;
 	int			step = 5;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 //	MakeNormalVectors (vec, right, up);
-	VectorCopy (cl.v_right, right);
-	VectorCopy (cl.v_up, up);
+	right = cl.v_right;
+	up = cl.v_up;
 	VectorMA (move, -1, right);
 	VectorMA (move, -1, up);
 
-	VectorScale (vec, step, vec);
+	vec.Scale (step);
 	ltime = cl.ftime;
 
 //	for (i=0 ; i<len ; i++)
@@ -349,7 +347,6 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &end)
 void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 {
 	CVec3		move, vec;
-	float		len;
 	int			j;
 	particle_t	*p;
 	CVec3		right, up;
@@ -364,14 +361,14 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 
 	VectorMA (start, 4096, forward, end);
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 	// FIXME - pmm - these might end up using old values?
 //	MakeNormalVectors (vec, right, up);
-	VectorCopy (cl.v_right, right);
-	VectorCopy (cl.v_up, up);
+	right = cl.v_right;
+	up = cl.v_up;
 	VectorMA (move, -0.5f, right);
 	VectorMA (move, -0.5f, up);
 	// otherwise assume SOFT
@@ -381,7 +378,7 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 	start_pt = fmod(ltime*96.0f,step);
 	VectorMA (move, start_pt, vec);
 
-	VectorScale (vec, step, vec);
+	vec.Scale (step);
 
 //	Com_Printf ("%f\n", ltime);
 	float rstep = M_PI/10.0f;
@@ -435,7 +432,6 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 void CL_Heatbeam (const CVec3 &start, const CVec3 &end)
 {
 	CVec3		move, vec;
-	float		len;
 	particle_t	*p;
 	CVec3		forward, right, up;
 	int			i;
@@ -446,14 +442,14 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &end)
 	float		start_pt;
 	float		rot;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 //	MakeNormalVectors (vec, right, up);
-	VectorCopy (cl.v_forward, forward);
-	VectorCopy (cl.v_right, right);
-	VectorCopy (cl.v_up, up);
+	forward = cl.v_forward;
+	right = cl.v_right;
+	up = cl.v_up;
 	VectorMA (move, -0.5, right);
 	VectorMA (move, -0.5, up);
 
@@ -466,7 +462,7 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &end)
 		p->alphavel = -5.0 / (1+frand());
 		p->color = 223 - (rand()&7);
 
-		VectorCopy (move, p->org);
+		p->org = move;
 		d = crand()*M_PI;
 		VectorScale (vec, 450, p->vel);
 		VectorMA (p->vel, cos(d)*30, right);
@@ -523,7 +519,7 @@ void CL_ParticleSteamEffect2 (cl_sustain_t *self)
 	CVec3		r, u;
 	CVec3		dir;
 
-	VectorCopy (self->dir, dir);
+	dir = self->dir;
 	MakeNormalVectors (dir, r, u);
 
 	for (i=0 ; i<self->count ; i++)
@@ -560,29 +556,28 @@ void CL_TrackerTrail (const CVec3 &start, const CVec3 &end, int particleColor)
 {
 	CVec3		move, vec;
 	CVec3		forward,right,up;
-	float		len;
 	int			j;
 	particle_t	*p;
 	int			dec;
 	float		dist;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
-	VectorCopy(vec, forward);
+	forward = vec;
 #if 0
 	CVec3		angle_dir;
 	//?? VERY silly way to get "right" and "up" vectors
 	//?? may check ref_gl tcGen environment for another sample
 	vectoangles2 (forward, angle_dir);
-	AngleVectors (angle_dir, forward, right, up);
+	AngleVectors (angle_dir, &forward, &right, &up);
 #else
 	MakeNormalVectors (forward, right, up);
 #endif
 
 	dec = 3;
-	VectorScale (vec, 3, vec);
+	vec.Scale (3);
 
 	// FIXME: this is a really silly way to have a loop
 	while (len > 0)
@@ -596,7 +591,7 @@ void CL_TrackerTrail (const CVec3 &start, const CVec3 &end, int particleColor)
 		p->alpha = 1.0;
 		p->alphavel = -2.0;
 		p->color = particleColor;
-		dist = DotProduct(move, forward);
+		dist = dot(move, forward);
 		VectorMA(move, 8 * cos(dist), up, p->org);
 		for (j=0 ; j<3 ; j++)
 		{
@@ -628,7 +623,7 @@ void CL_Tracker_Shell(const CVec3 &origin)
 		dir[0] = crand();
 		dir[1] = crand();
 		dir[2] = crand();
-		VectorNormalize(dir);
+		dir.NormalizeFast ();
 
 		VectorMA(origin, 40, dir, p->org);
 	}
@@ -653,7 +648,7 @@ void CL_MonsterPlasma_Shell(const CVec3 &origin)
 		dir[0] = crand();
 		dir[1] = crand();
 		dir[2] = crand();
-		VectorNormalize(dir);
+		dir.NormalizeFast ();
 
 		VectorMA(origin, 10, dir, p->org);
 //		VectorMA(origin, 10*(((rand () & 0x7fff) / ((float)0x7fff))), dir, p->org);
@@ -683,7 +678,7 @@ void CL_Widowbeamout (cl_sustain_t *self)
 		dir[0] = crand();
 		dir[1] = crand();
 		dir[2] = crand();
-		VectorNormalize(dir);
+		dir.NormalizeFast ();
 
 		VectorMA(self->org, (45.0 * ratio), dir, p->org);
 //		VectorMA(origin, 10*(((rand () & 0x7fff) / ((float)0x7fff))), dir, p->org);
@@ -713,7 +708,7 @@ void CL_Nukeblast (cl_sustain_t *self)
 		dir[0] = crand();
 		dir[1] = crand();
 		dir[2] = crand();
-		VectorNormalize(dir);
+		dir.NormalizeFast ();
 
 		VectorMA(self->org, (200.0 * ratio), dir, p->org);
 //		VectorMA(origin, 10*(((rand () & 0x7fff) / ((float)0x7fff))), dir, p->org);
@@ -737,7 +732,7 @@ void CL_WidowSplash (const CVec3 &org)
 		dir[0] = crand();
 		dir[1] = crand();
 		dir[2] = crand();
-		VectorNormalize(dir);
+		dir.NormalizeFast ();
 		VectorMA(org, 45.0, dir, p->org);
 		VectorScale(dir, 40.0, p->vel);
 
@@ -767,7 +762,7 @@ void CL_Tracker_Explode(const CVec3	&origin)
 		dir[0] = crand();
 		dir[1] = crand();
 		dir[2] = crand();
-		VectorNormalize(dir);
+		dir.NormalizeFast ();
 		VectorScale(dir, -1, backdir);
 
 		VectorMA(origin, 64, dir, p->org);
@@ -786,16 +781,15 @@ void CL_TagTrail (const CVec3 &start, const CVec3 &end, int color)
 {
 	CVec3		move;
 	CVec3		vec;
-	float		len;
 	int			j;
 	particle_t	*p;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 	int dec = 5;
-	VectorScale (vec, 5, vec);
+	vec.Scale (5);
 
 	while (len >= 0)
 	{
@@ -925,17 +919,16 @@ Green!
 void CL_BlasterTrail2 (const CVec3 &start, const CVec3 &end)
 {
 	CVec3		move, vec;
-	float		len;
 	int			j;
 	particle_t	*p;
 	int			dec;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 	dec = 5;
-	VectorScale (vec, 5, vec);
+	vec.Scale (5);
 
 	// FIXME: this is a really silly way to have a loop
 	while (len > 0)

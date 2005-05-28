@@ -87,7 +87,7 @@ void V_AddLight (const CVec3 &org, float intensity, float r, float g, float b)
 	if (r_numdlights >= MAX_DLIGHTS)
 		return;
 	dl = &r_dlights[r_numdlights++];
-	VectorCopy (org, dl->origin);
+	dl->origin = org;
 	dl->intensity = intensity;
 	dl->color[0] = r;
 	dl->color[1] = g;
@@ -138,26 +138,39 @@ If cl_testentities is set, create 32 player models
 */
 void V_TestEntities (void)
 {
-	int			i, j;
-	float		f, r;
-	entity_t	*ent;
-
 	r_numentities = 32;
 	memset (r_entities, 0, sizeof(r_entities));
 
-	for (i=0 ; i<r_numentities ; i++)
+	for (int i = 0; i < r_numentities; i++)
 	{
-		ent = &r_entities[i];
+		entity_t &ent = r_entities[i];
 
-		r = 64 * ( (i%4) - 1.5 );
-		f = 64 * (i/4) + 128;
-
-		for (j = 0; j < 3; j++)
-			ent->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j]*f + cl.v_right[j]*r;
-
-		ent->model = cl.baseclientinfo.model;
-		ent->skin = cl.baseclientinfo.skin;
+		float r = 64 * (i % 4) - (1*64+32);
+		float f = 64 * (i / 4) - (3*64+32);
+		VectorMA (cl.refdef.vieworg, 192, cl.v_forward, ent.origin);
+		ent.origin[0] += r;
+		ent.origin[1] += f;
+		ent.oldorigin = ent.origin;
+		// animate frames
+#if 0
+#define FIRST_FRAME	0
+#define LAST_FRAME	39
+#else
+#define FIRST_FRAME 40
+#define LAST_FRAME	45
+#endif
+		ent.frame = (cl.time + 99) / 100 % (LAST_FRAME-FIRST_FRAME+1) + FIRST_FRAME;
+		ent.oldframe = ent.frame - 1;
+		if (ent.oldframe < FIRST_FRAME)
+			ent.oldframe = LAST_FRAME;
+		ent.backlerp = 1.0f - (cl.time % 100) / 100.0f;
+		if (ent.backlerp == 1)
+			ent.backlerp = 0;
+		ent.model = cl.baseclientinfo.model;
+		ent.skin = cl.baseclientinfo.skin;
 	}
+#undef FIRST_FRAME
+#undef LAST_FRAME
 }
 
 /*
@@ -577,17 +590,17 @@ static void DrawSurfInfo (void)
 		"dirt"
 	};
 
-	VectorCopy (cl.refdef.vieworg, start);
-	AngleVectors (cl.refdef.viewangles, end, NULL, NULL);
-	VectorScale (end, 500, end);
+	start = cl.refdef.vieworg;
+	AngleVectors (cl.refdef.viewangles, &end, NULL, NULL);
+	end.Scale (500);
 	VectorAdd (start, end, end);
 
 	unsigned cont = r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER;
 	trace_t	trace;
 	static const CVec3 zero = {0, 0, 0};
-	CM_BoxTrace (&trace, start, end, NULL, NULL, 0, cont);
+	CM_BoxTrace (trace, start, end, NULL, NULL, 0, cont);
 	if (!(r_surfinfo->integer & 2))
-		CL_EntityTrace (&trace, start, end, zero, zero, cont);
+		CL_EntityTrace (trace, start, end, zero, zero, cont);
 
 	if (trace.fraction < 1.0)
 	{
@@ -597,7 +610,7 @@ static void DrawSurfInfo (void)
 		if (surf->fullName[0])		// non-null surface
 		{
 			RE_DrawTextLeft (va("Texture: %s", surf->fullName), RGB(0.2,0.4,0.1));
-			VectorCopy (trace.plane.normal, norm);
+			norm = trace.plane.normal;
 			RE_DrawTextLeft (va("Normal: %g  %g  %g", VECTOR_ARG(norm)), RGB(0.2,0.4,0.1));
 			if (surf->value)
 				RE_DrawTextLeft (va("Value: %d", surf->value), RGB(0.2,0.4,0.1));
@@ -633,7 +646,7 @@ static void DrawOriginInfo (void)
 	RE_DrawTextLeft (va("Point: %.0f  %.0f  %.0f", VECTOR_ARG(cl.refdef.vieworg)), RGB(0.2,0.4,0.1));
 
 	CVec3 view;
-	AngleVectors (cl.refdef.viewangles, view, NULL, NULL);
+	AngleVectors (cl.refdef.viewangles, &view, NULL, NULL);
 	RE_DrawTextLeft (va("View direction: %g  %g  %g", VECTOR_ARG(view)), RGB(0.2,0.4,0.1));
 
 	int i = CM_PointLeafnum (cl.refdef.vieworg);
@@ -759,9 +772,9 @@ static void FixWaterVis (void)
 
 	// trace from air to water
 	if (!w1)
-		CM_BoxTrace (&trace, cl.refdef.vieworg, p, NULL, NULL, 0, MASK_WATER);
+		CM_BoxTrace (trace, cl.refdef.vieworg, p, NULL, NULL, 0, MASK_WATER);
 	else
-		CM_BoxTrace (&trace, p, cl.refdef.vieworg, NULL, NULL, 0, MASK_WATER);
+		CM_BoxTrace (trace, p, cl.refdef.vieworg, NULL, NULL, 0, MASK_WATER);
 	if (trace.fraction < 1.0f && !(trace.surface->flags & (SURF_TRANS33|SURF_TRANS66)))
 	{
 //		RE_DrawTextLeft ("WATER FIX!", 1, 1, 1);

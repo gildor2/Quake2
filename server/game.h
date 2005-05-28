@@ -80,8 +80,9 @@ struct edict_s
 	//================================
 
 	int			svflags;			// SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
-	vec3_t		mins, maxs;
-	vec3_t		absmin, absmax, size;
+	CBox		bounds;				// old: vec3_t mins, maxs
+	CBox		absBounds;			// old: vec3_t absmin, absmax
+	CVec3		size;
 	solid_t		solid;
 	int			clipmask;
 	edict_t		*owner;
@@ -104,7 +105,11 @@ typedef struct
 	void	(*cprintf) (edict_t *ent, int printlevel, const char *fmt, ...);	// ORIGINAL: not "const"
 	void	(*centerprintf) (edict_t *ent, const char *fmt, ...);				// ORIGINAL: not "const"
 	void	(*sound) (edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
+#if 0
 	void	(*positioned_sound) (vec3_t origin, edict_t *ent, int channel, int soundinedex, float volume, float attenuation, float timeofs);
+#else
+	void	(*positioned_sound) (const CVec3 *origin, edict_t *ent, int channel, int soundinedex, float volume, float attenuation, float timeofs);
+#endif
 
 	// config strings hold all the index strings, the lightstyles,
 	// and misc data like the sky definition and cdtrack.
@@ -122,10 +127,17 @@ typedef struct
 	void	(*setmodel) (edict_t *ent, char *name);
 
 	// collision detection
+#if 0
 	trace_t	(*trace) (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passent, int contentmask);
 	int		(*pointcontents) (vec3_t point);
 	qboolean (*inPVS) (vec3_t p1, vec3_t p2);
 	qboolean (*inPHS) (vec3_t p1, vec3_t p2);
+#else
+	trace_t	(*trace) (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passent, int contentmask);
+	int		(*pointcontents) (const CVec3 &point);
+	qboolean (*inPVS) (const CVec3 &p1, const CVec3 &p2);
+	qboolean (*inPHS) (const CVec3 &p1, const CVec3 &p2);
+#endif
 	void	(*SetAreaPortalState) (int portalnum, qboolean open);
 	qboolean (*AreasConnected) (int area1, int area2);
 
@@ -134,11 +146,19 @@ typedef struct
 	// solidity changes, it must be relinked.
 	void	(*linkentity) (edict_t *ent);
 	void	(*unlinkentity) (edict_t *ent);		// call before removing an interactive edict
+#if 0
 	int		(*BoxEdicts) (vec3_t mins, vec3_t maxs, edict_t **list,	int maxcount, int areatype);
+#else
+	int		(*BoxEdicts) (const CVec3 &mins, const CVec3 &maxs, edict_t **list, int maxcount, int areatype);
+#endif
 	void	(*Pmove) (pmove_t *pmove);		// player movement code common with client prediction
 
 	// network messaging
+#if 0
 	void	(*multicast) (vec3_t origin, multicast_t to);
+#else
+	void	(*multicast) (const CVec3 &origin, multicast_t to);
+#endif
 	void	(*unicast) (edict_t *ent, qboolean reliable);
 	void	(*WriteChar) (int c);
 	void	(*WriteByte) (int c);
@@ -146,8 +166,13 @@ typedef struct
 	void	(*WriteLong) (int c);
 	void	(*WriteFloat) (float f);
 	void	(*WriteString) (char *s);
+#if 0
 	void	(*WritePosition) (vec3_t pos);	// some fractional bits
 	void	(*WriteDir) (vec3_t pos);		// single byte encoded, very coarse
+#else
+	void	(*WritePosition) (const CVec3 &pos);	// some fractional bits
+	void	(*WriteDir) (const CVec3 &pos);			// single byte encoded, very coarse
+#endif
 	void	(*WriteAngle) (float f);
 
 	// managed memory allocation

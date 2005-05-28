@@ -36,7 +36,7 @@ GRAPHICS
 MISC
 ~~~~
 ? "beachassault": when standing on wall (upstairs) inside ship projector cone, lighting may be incorrect when AddPointLight()
-  uses VectorNormalizeFast() instead of VectorNormalize() to detect distance/direction
+  uses CVec3::NormalizeFast() instead of CVec3::Normalize() to detect distance/direction
 - KP 3rd-party map "mansion": have no visinfo
 
 PHYSICS

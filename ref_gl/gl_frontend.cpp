@@ -1,4 +1,4 @@
-#include "gl_local.h"
+#include "OpenGLDrv.h"
 #include "gl_frontend.h"
 #include "gl_backend.h"
 #include "gl_buffers.h"
@@ -71,7 +71,7 @@ static int Cull (CBox &b, int frustumMask)
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 		if (frustumMask & (1 << i))
 		{
-			int tmp = BoxOnPlaneSide (b.mins, b.maxs, pl);
+			int tmp = BoxOnPlaneSide (b, pl);
 			if (tmp == 2) return FRUSTUM_OUTSIDE;
 			if (tmp == 3) res = FRUSTUM_ON;
 		}
@@ -106,7 +106,7 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 		cplane_t pl;
 		e->coord.TransformPlane (*fr, pl);
 
-		switch (BoxOnPlaneSide (b.mins, b.maxs, &pl))	// do not use BOX_ON_PLANE_SIDE -- useless
+		switch (BoxOnPlaneSide (b, &pl))	// do not use BOX_ON_PLANE_SIDE -- useless
 		{
 		case 1:
 			frustumMask &= ~mask;
@@ -311,7 +311,12 @@ static void SetupModelMatrix (refEntity_t *e)
 			matrix[i][j] = e->coord.axis[i][j];
 
 	if (e->mirror)
-		VectorNegate (matrix[1]);
+	{
+		// negate left axis (left<->right)
+		FNegate (matrix[1][0]);
+		FNegate (matrix[1][1]);
+		FNegate (matrix[1][2]);
+	}
 
 	matrix[3][0] = e->coord.origin[0];
 	matrix[3][1] = e->coord.origin[1];
@@ -334,11 +339,11 @@ static void SetupModelMatrix (refEntity_t *e)
 
 // Point trace to visible INLINE models; function based on CL_ClipMoveToEntities()
 // NOTE: can easily extend to any (invisible too) inline models (add flag "visibleOnly")
-static void ClipTraceToEntities (trace_t *tr, const CVec3 &start, const CVec3 &end, int brushmask)
+static void ClipTraceToEntities (trace_t &tr, const CVec3 &start, const CVec3 &end, int brushmask)
 {
 	CVec3	traceDir;
 	VectorSubtract (end, start, traceDir);
-	float traceLen = VectorNormalizeFast (traceDir);
+	float traceLen = traceDir.NormalizeFast ();
 
 	refEntity_t *e = gl_entities + vp.firstEntity;
 	for (int i = 0; i < vp.numEntities; i++, e++)
@@ -363,24 +368,24 @@ static void ClipTraceToEntities (trace_t *tr, const CVec3 &start, const CVec3 &e
 		// trace
 		trace_t	trace;
 		if (!e->worldMatrix)
-			CM_TransformedBoxTrace (&trace, start, end, NULL, NULL, im->headnode, brushmask, e->coord.origin, e->coord.axis);
+			CM_TransformedBoxTrace (trace, start, end, NULL, NULL, im->headnode, brushmask, e->coord.origin, e->coord.axis);
 		else
-			CM_BoxTrace (&trace, start, end, NULL, NULL, im->headnode, brushmask);
+			CM_BoxTrace (trace, start, end, NULL, NULL, im->headnode, brushmask);
 
-		if (trace.allsolid || trace.startsolid || trace.fraction < tr->fraction)
+		if (trace.allsolid || trace.startsolid || trace.fraction < tr.fraction)
 		{
 			trace.ent = (struct edict_s *)e;
-		 	if (tr->startsolid)
+		 	if (tr.startsolid)
 			{
-				*tr = trace;
-				tr->startsolid = true;
+				tr = trace;
+				tr.startsolid = true;
 			}
 			else
-				*tr = trace;
+				tr = trace;
 		}
 		else if (trace.startsolid)
-			tr->startsolid = true;
-		if (tr->allsolid) return;
+			tr.startsolid = true;
+		if (tr.allsolid) return;
 	}
 }
 
@@ -621,8 +626,7 @@ static node_t *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
 			float frac = t1 / (t1 - t2);	// t1 and t2 have different signs, so - |t1-t2| > |t1|, frac in [0..1] range
 			int side = t1 < t2;				// which side v1 on (child index)
 			CVec3	mid;
-			for (int i = 0; i < 3; i++)		// use Lerp()
-				mid[i] = v1a[i] + frac * (v2a[i] - v1a[i]);
+			Lerp (v1a, v2a, frac, mid);
 			// Recurse(node->children[side^1],mid,v2a)  -- later
 			PUSH_NODE(node->children[side^1], mid, v2a);
 			// Recurse(node->children[side],v1a,mid)
@@ -861,8 +865,6 @@ void inlineModel_t::DrawLabel (refEntity_t *e)
 
 void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
-	CVec3	center1, center2;
-
 	// sanity check
 	if (out->frame >= numFrames || out->frame < 0)
 	{
@@ -877,16 +879,14 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	md3Frame_t *frame1 = frames + out->frame;
 	md3Frame_t *frame2 = frames + out->oldFrame;
 	// lerp origin
-	CVec3 v;
-	VectorSubtract (ent->oldorigin, ent->origin, v);
-	VectorMA (ent->origin, out->backLerp, v, out->coord.origin);
+	Lerp (ent->origin, ent->oldorigin, out->backLerp, out->coord.origin);
 	// lerp center
+	CVec3 center1, center2;
 	out->coord.UnTransformPoint (frame1->localOrigin, center1);
 	out->coord.UnTransformPoint (frame2->localOrigin, center2);
-	VectorSubtract (center2, center1, center2);				// delta
-	VectorMA (center1, out->backLerp, center2, out->center);
+	Lerp (center1, center2, out->backLerp, out->center);
 	// lerp radius
-	out->radius = (frame2->radius - frame1->radius) * out->backLerp + frame1->radius;
+	out->radius = Lerp (frame1->radius, frame2->radius, out->backLerp);
 	// compute mins/maxs (lerp ??)
 #if 0
 	//!!!! HERE: use frame bounding sphere for gl_showbboxes visualization
@@ -1021,9 +1021,9 @@ static void AddBeamSurfaces (beam_t *b)
 
 	// compute beam axis
 	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
-	VectorNormalizeFast (axis[0]);
+	axis[0].NormalizeFast ();
 	CrossProduct (axis[0], viewDir, axis[1]);
-	VectorNormalizeFast (axis[1]);
+	axis[1].NormalizeFast ();
 	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
 
 	VectorScale (axis[1], b->radius, dir2);
@@ -1082,9 +1082,9 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 	VectorSubtract (b->drawStart, vp.view.origin, viewDir);
 	// compute beam axis
 	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
-	float len = VectorNormalizeFast (axis[0]);
+	float len = axis[0].NormalizeFast ();
 	CrossProduct (axis[0], viewDir, axis[1]);
-	VectorNormalizeFast (axis[1]);
+	axis[1].NormalizeFast ();
 	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
 
 	float st0 = VectorDistance (b->drawEnd, b->end);
@@ -1206,9 +1206,9 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 	VectorSubtract (b->drawStart, vp.view.origin, viewDir);
 	// compute beam axis
 	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
-	float len = VectorNormalizeFast (axis[0]);
+	float len = axis[0].NormalizeFast ();
 	CrossProduct (axis[0], viewDir, axis[1]);
-	VectorNormalizeFast (axis[1]);
+	axis[1].NormalizeFast ();
 	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
 
 	float st0 = VectorDistance (b->drawEnd, b->end);
@@ -1306,7 +1306,7 @@ static node_t *WalkBspTree (void)
 #define CULL_NODE(bit)	\
 			if (frustumMask & (1<<bit))	\
 			{							\
-				switch (BoxOnPlaneSide(node->bounds.mins, node->bounds.maxs, &vp.frustum[bit])) {	\
+				switch (BoxOnPlaneSide(node->bounds, &vp.frustum[bit])) {	\
 				case 1:					\
 					frustumMask &= ~(1<<bit);	\
 					break;				\
@@ -1342,9 +1342,8 @@ static node_t *WalkBspTree (void)
 				static refEntity_t ent;		// just zeroed entity
 				CVec3	v, h;
 
-				VectorAdd (node->mins, node->maxs, v);		//?? can pre-compute on map loading
-				VectorScale (v, 0.5f, ent.center);
-				VectorSubtract (node->maxs, ent.center, ent.size2);
+				node->bounds.GetCenter (ent.center);		//?? can pre-compute on map loading
+				VectorSubtract (node->bounds.maxs, ent.center, ent.size2);
 				ent.worldMatrix = true;
 				occl = BoxOccluded (&ent, ent.size2);
 				if (occl && gl_oCull->integer == 4)
@@ -1588,7 +1587,7 @@ static void DrawParticles (void)
 			CVec3	center;
 
 			VectorAdd (b->drawStart, b->drawEnd, center);
-			VectorScale (center, 0.5f, center);
+			center.Scale (0.5f);
 			leaf = BeamLeaf (b->drawStart, b->drawEnd);
 		}
 
@@ -1714,8 +1713,8 @@ static void DrawFlares (void)
 			// check visibility with trace
 			if (f->radius >= 0)
 			{
-				CM_BoxTrace (&trace, vp.view.origin, flarePos, NULL, NULL, 0, CONTENTS_SOLID);
-				ClipTraceToEntities (&trace, vp.view.origin, flarePos, CONTENTS_SOLID);
+				CM_BoxTrace (trace, vp.view.origin, flarePos, NULL, NULL, 0, CONTENTS_SOLID);
+				ClipTraceToEntities (trace, vp.view.origin, flarePos, CONTENTS_SOLID);
 				if (trace.fraction < 1 && (f->radius <= 0 || (VectorDistance (trace.endpos, flarePos) > f->radius)))
 					cull = true;
 			}
@@ -1724,8 +1723,8 @@ static void DrawFlares (void)
 				CVec3	tracePos;
 
 				VectorMA (vp.view.origin, BIG_NUMBER, f->origin, tracePos);
-				CM_BoxTrace (&trace, vp.view.origin, tracePos, NULL, NULL, 0, CONTENTS_SOLID);
-				ClipTraceToEntities (&trace, vp.view.origin, tracePos, CONTENTS_SOLID);
+				CM_BoxTrace (trace, vp.view.origin, tracePos, NULL, NULL, 0, CONTENTS_SOLID);
+				ClipTraceToEntities (trace, vp.view.origin, tracePos, CONTENTS_SOLID);
 				if (!(trace.fraction < 1 && trace.surface->flags & SURF_SKY))
 					cull = true;
 			}
@@ -1932,9 +1931,7 @@ void AddEntity (entity_t *ent)
 	}
 	else if (ent->flags & RF_BBOX)
 	{
-		CVec3	v;
-		VectorSubtract (ent->oldorigin, ent->origin, v);
-		VectorMA (ent->origin, ent->backlerp, v, out->center);
+		Lerp (ent->origin, ent->oldorigin, ent->backlerp, out->center);
 		out->boxSize = ent->size;
 		out->boxAxis.FromAngles (ent->angles);
 		out->shaderColor.rgba = ent->color.rgba;

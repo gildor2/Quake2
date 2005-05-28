@@ -78,7 +78,7 @@ void MSG_WriteString (sizebuf_t *sb, const char *s)
 	else	sb->Write (s, strlen(s)+1);
 }
 
-void MSG_WritePos (sizebuf_t *sb, vec3_t pos)
+void MSG_WritePos (sizebuf_t *sb, const CVec3 &pos)
 {
 	MSG_WriteShort (sb, appRound (pos[0]*8));
 	MSG_WriteShort (sb, appRound (pos[1]*8));
@@ -102,9 +102,9 @@ static byte dirTable[3*8*8*8];		// value=0 -- uninitialized, else idx+1
 	// 3*8 - cube: 6 planes, each subdivided to 4 squares (x<0,x>0,y<0,y>0)
 	// 8*8 - coordinates inside square
 
-static int GetDirCell (vec3_t dir)
+static int GetDirCell (CVec3 &dir)
 {
-	vec3_t	adir;
+	CVec3	adir;
 	float	m;
 	int		sign, base, base2;
 
@@ -148,16 +148,11 @@ static int GetDirCell (vec3_t dir)
 	return (base << 9) + (sign << 6) + base2;
 }
 
-void MSG_WriteDir (sizebuf_t *sb, vec3_t dir)
+void MSG_WriteDir (sizebuf_t *sb, const CVec3 &dir)
 {
 	int		cell, i, best;
 	float	d, bestd;
 
-	if (!dir)
-	{
-		MSG_WriteByte (sb, 0);
-		return;
-	}
 	// find cache cell
 	cell = GetDirCell (dir);
 	if (dirTable[cell])	// already computed
@@ -170,7 +165,7 @@ void MSG_WriteDir (sizebuf_t *sb, vec3_t dir)
 	bestd = best = 0;
 	for (i = 0; i < NUMVERTEXNORMALS; i++)
 	{
-		d = DotProduct (dir, bytedirs[i]);
+		d = dot (dir, bytedirs[i]);
 		if (d > bestd)
 		{
 			bestd = d;
@@ -185,19 +180,20 @@ void MSG_WriteDir (sizebuf_t *sb, vec3_t dir)
 
 #else
 
-void MSG_WriteDir (sizebuf_t *sb, vec3_t dir)
+void MSG_WriteDir (sizebuf_t *sb, const CVec3 &dir)
 {
-	if (!dir)
-	{
-		MSG_WriteByte (sb, 0);
-		return;
-	}
-
 	float bestd = 0;
 	int best = 0;
 	for (int i = 0; i < NUMVERTEXNORMALS; i++)
 	{
-		float d = DotProduct (dir, bytedirs[i]);
+		float d = dot (dir, bytedirs[i]);
+		if (d == 1.0f)	//?? allow some EPSILON
+		{
+			// found exact value
+			best = i;
+			break;
+		}
+		// remember nearest value
 		if (d > bestd)
 		{
 			bestd = d;
@@ -210,12 +206,12 @@ void MSG_WriteDir (sizebuf_t *sb, vec3_t dir)
 #endif
 
 
-void MSG_ReadDir (sizebuf_t *sb, vec3_t dir)
+void MSG_ReadDir (sizebuf_t *sb, CVec3 &dir)
 {
 	int b = MSG_ReadByte (sb);
 	if (b >= NUMVERTEXNORMALS)
 		Com_DropError ("MSG_ReadDir: out of range");
-	VectorCopy (bytedirs[b], dir);
+	dir = bytedirs[b];
 }
 
 //============================================================
@@ -306,7 +302,7 @@ char *MSG_ReadString (sizebuf_t *msg_read)
 	return string;
 }
 
-void MSG_ReadPos (sizebuf_t *msg_read, vec3_t pos)
+void MSG_ReadPos (sizebuf_t *msg_read, CVec3 &pos)
 {
 	pos[0] = MSG_ReadShort(msg_read) * (1.0f/8);
 	pos[1] = MSG_ReadShort(msg_read) * (1.0f/8);

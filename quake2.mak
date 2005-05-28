@@ -77,6 +77,7 @@ STATIC = \
 	Release/obj/q2stat/q2.res \
 	Release/obj/q2stat/makeres.obj \
 	Release/obj/q2stat/gl_backend.obj \
+	Release/obj/q2stat/gl_bspmodel.obj \
 	Release/obj/q2stat/gl_buffers.obj \
 	Release/obj/q2stat/gl_frontend.obj \
 	Release/obj/q2stat/gl_image.obj \
@@ -85,11 +86,11 @@ STATIC = \
 	Release/obj/q2stat/gl_lightmap.obj \
 	Release/obj/q2stat/gl_main.obj \
 	Release/obj/q2stat/gl_math.obj \
-	Release/obj/q2stat/gl_model.obj \
 	Release/obj/q2stat/gl_poly.obj \
 	Release/obj/q2stat/gl_shader.obj \
 	Release/obj/q2stat/gl_sky.obj \
 	Release/obj/q2stat/gl_text.obj \
+	Release/obj/q2stat/gl_trimodel.obj \
 	Release/obj/q2stat/qgl_win.obj \
 	Release/obj/q2stat/gl_win.obj
 
@@ -266,13 +267,13 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_buffers.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h \
@@ -301,6 +302,7 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_buffers.h \
 	ref_gl/gl_frontend.h \
@@ -308,7 +310,6 @@ DEPENDS = \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
 	ref_gl/gl_lightmap.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h \
@@ -338,13 +339,13 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_buffers.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h \
@@ -373,12 +374,12 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h \
@@ -406,12 +407,12 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h \
@@ -440,12 +441,12 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h \
@@ -473,12 +474,12 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_backend.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h \
 	ref_gl/qgl_decl.h
@@ -508,20 +509,20 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
 	ref_gl/gl_lightmap.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_poly.h \
 	ref_gl/gl_shader.h \
 	ref_gl/qgl_decl.h
 
-Release/obj/q2stat/gl_model.obj : ref_gl/gl_model.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_model.obj" ref_gl/gl_model.cpp
+Release/obj/q2stat/gl_bspmodel.obj : ref_gl/gl_bspmodel.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_bspmodel.obj" ref_gl/gl_bspmodel.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -542,12 +543,12 @@ DEPENDS = \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	qcommon/qfiles.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_light.h \
 	ref_gl/gl_lightmap.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h \
@@ -571,13 +572,45 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/cmodel.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_math.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h \
+	ref_gl/qgl_decl.h
+
+Release/obj/q2stat/gl_trimodel.obj : ref_gl/gl_trimodel.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_trimodel.obj" ref_gl/gl_trimodel.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/Strings.h \
+	Core/Inc/VcWin32.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_buffers.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_shader.h \
 	ref_gl/qgl_decl.h
 
@@ -601,10 +634,10 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_math.h \
 	ref_gl/gl_shader.h \
 	ref_gl/qgl_decl.h
@@ -629,10 +662,10 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_frontend.h \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_shader.h \
 	ref_gl/qgl_decl.h
 
@@ -656,8 +689,8 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_interface.h \
-	ref_gl/gl_local.h \
 	ref_gl/gl_poly.h \
 	ref_gl/qgl_decl.h
 
@@ -681,8 +714,8 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_interface.h \
-	ref_gl/gl_local.h \
 	ref_gl/qgl_decl.h \
 	ref_gl/qgl_impl.h \
 	win32/gl_win.h
@@ -707,8 +740,8 @@ DEPENDS = \
 	client/rexp_intf.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
+	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_interface.h \
-	ref_gl/gl_local.h \
 	ref_gl/qgl_decl.h \
 	win32/gl_win.h
 

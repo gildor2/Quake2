@@ -97,7 +97,7 @@ static bool cl_cheats;
 static char	cl_mapname[MAX_QPATH];
 static char	cl_gamename[MAX_QPATH];
 
-static bool TryParseStatus (char *str)
+static bool TryParseStatus (const char *str)
 {
 	char	buf[MAX_MSGLEN];
 
@@ -587,8 +587,7 @@ void CL_Disconnect (void)
 				1000.0f * cl.timedemoFrames / time, 1000.0f / cl.timedemoLongestFrame);
 	}
 
-	VectorClear (cl.refdef.blend);
-
+	memset (cl.refdef.blend, 0, sizeof(cl.refdef.blend));
 	cls.connect_time = 0;
 
 	SCR_StopCinematic ();

@@ -222,7 +222,7 @@ void SV_SendServerinfo (client_t *client);
 void SV_UserinfoChanged (client_t *cl);
 
 sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext);
-trace_t SV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask);
+trace_t SV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask);
 
 
 //
@@ -241,11 +241,11 @@ void SV_DemoCompleted (void);
 void SV_SendClientMessages (void);
 
 // send message to all clients
-void SV_MulticastOld (vec3_t origin, multicast_t to);
+void SV_MulticastOld (const CVec3 &origin, multicast_t to);
 // send message only to clients with a new protocol
-void SV_MulticastNew (vec3_t origin, multicast_t to);
-void SV_StartSoundOld (vec3_t origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs);
-void SV_StartSoundNew (vec3_t origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs);
+void SV_MulticastNew (const CVec3 &origin, multicast_t to);
+void SV_StartSoundOld (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs);
+void SV_StartSoundNew (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs);
 void SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
 void SV_BroadcastPrintf (int level, const char *fmt, ...);
 void SV_BroadcastCommand (const char *fmt, ...);
@@ -307,7 +307,7 @@ void SV_LinkEdict (edict_t *ent);
 // sets ent->leafnums[] for pvs determination even if the entity
 // is not solid
 
-int SV_AreaEdicts (const vec3_t mins, const vec3_t maxs, edict_t **list, int maxcount, int areatype);
+int SV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list, int maxcount, int areatype);
 // fills in a table of edict pointers with edicts that have bounding boxes
 // that intersect the given area.  It is possible for a non-axial bmodel
 // to be returned that doesn't actually intersect the area on an exact
@@ -320,12 +320,12 @@ int SV_AreaEdicts (const vec3_t mins, const vec3_t maxs, edict_t **list, int max
 //
 // functions that interact with everything apropriate
 //
-int SV_PointContents (const vec3_t p);
+int SV_PointContents (const CVec3 &p);
 // returns the CONTENTS_* value from the world at the given point.
 // Also check entities, to allow moving liquids
 
 
-void SV_Trace (trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *passedict, int contentmask);
+void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end, edict_t *passedict, int contentmask);
 // mins and maxs are relative
 
 // if the entire move stays in a solid volume, trace.allsolid will be set,

@@ -22,7 +22,7 @@
 #define END_PROFILE
 #endif
 
-#include "gl_local.h"
+#include "OpenGLDrv.h"
 #include "gl_image.h"
 #include "gl_backend.h"			// for BK_DrawPic() only
 

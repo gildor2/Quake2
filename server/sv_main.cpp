@@ -722,7 +722,7 @@ void SV_PostprocessFrame (void)
 			point[0] = ent->s.origin[0];
 			point[1] = ent->s.origin[1];
 			point[2] = ent->s.origin[2] - 64;
-			SV_Trace (&trace, ent->s.origin, ent->mins, ent->maxs, point, ent, MASK_PLAYERSOLID|MASK_MONSTERSOLID|MASK_WATER);
+			SV_Trace (trace, ent->s.origin, ent->bounds.mins, ent->bounds.maxs, point, ent, MASK_PLAYERSOLID|MASK_MONSTERSOLID|MASK_WATER);
 			if (trace.fraction < 1)
 			{
 				footsteptype = trace.surface->material - 1;
@@ -809,11 +809,11 @@ void SV_PostprocessFrame (void)
 						CVec3 end = pm_origin;
 						end[2] = pm_origin[2] - FALLING_SCREAM_HEIGHT_WATER;
 
-						SV_Trace (&trace, pm_origin, mins, maxs, end, NULL, CONTENTS_WATER);
+						SV_Trace (trace, pm_origin, mins, maxs, end, NULL, CONTENTS_WATER);
 						if (trace.fraction == 1.0 && !trace.startsolid)	// no water and start not in water
 						{
 							end[2] = pm_origin[2] - FALLING_SCREAM_HEIGHT_SOLID;
-							SV_Trace (&trace, pm_origin, mins, maxs, end, NULL, CONTENTS_SOLID|CONTENTS_LAVA);
+							SV_Trace (trace, pm_origin, mins, maxs, end, NULL, CONTENTS_SOLID|CONTENTS_LAVA);
 							if (trace.fraction == 1.0 || (!trace.ent && trace.plane.normal[2] < 0.5) ||
 								trace.contents & CONTENTS_LAVA || trace.surface->flags & SURF_SKY)
 								cl->screaming = true;
@@ -968,8 +968,8 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 //			Com_Printf("sp: (%g %g %g) -> (%g %g %g)\n",VECTOR_ARG(v1),VECTOR_ARG(v2));//!!
 			CVec3 d;
 			VectorSubtract (shotStart, shotEnd, d);
-			VectorNormalizeFast (d);
-			float back = DotProduct (d, v2);
+			d.NormalizeFast ();
+			float back = dot (d, v2);
 			for (int i = 0; i < 3; i++)
 				v2[i] = d[i] - 2 * (d[i] - back * v2[i]);
 
@@ -1018,7 +1018,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 
 extern bool trace_skipAlpha;	//!! hack
 
-trace_t SV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
+trace_t SV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
 {
 	trace_t	tr;
 	static edict_t *ent;
@@ -1026,30 +1026,33 @@ trace_t SV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_
 	guard(SV_TraceHook);
 
 #define RESET  { shotLevel = 0; return tr; }
-	trace_skipAlpha = true;	//!!
+	trace_skipAlpha = true;	//!! hack for kingpin CONTENTS_ALPHA
 	if (mins || maxs) trace_skipAlpha = false;
 
-	SV_Trace (&tr, start, mins, maxs, end, passedict, contentmask);
+	if (!mins) mins = &vec3_origin;		// required for game
+	if (!maxs) maxs = &vec3_origin;
+
+	SV_Trace (tr, start, *mins, *maxs, end, passedict, contentmask);
 	trace_skipAlpha = false;	//!!
 	if (!sv_extProtocol->integer) return tr;
 
 	if (mins || maxs) RESET
 
 	// for details, look game/g_weapon.c :: fire_lead()
-	if (contentmask == MASK_SHOT && ((unsigned)passedict) + 4 == (unsigned)start)
+	if (contentmask == MASK_SHOT && ((unsigned)passedict) + 4 == (unsigned)&start)
 	{
-		if (ent == passedict && VectorCompare (end, shotStart))
+		if (ent == passedict && end == shotStart)
 			RESET			// shotgun shot
 		shotLevel = 1;
-		VectorCopy (end, shotStart);
+		shotStart = end;
 		ent = passedict;
 	}
 	else if (shotLevel == 1)
 	{
-		if (passedict != ent || !VectorCompare (start, shotStart) ||
+		if (passedict != ent || start != shotStart ||
 			(contentmask != (MASK_SHOT|MASK_WATER) && contentmask != MASK_SHOT))
 			RESET
-		VectorCopy (end, shotEnd);
+		shotEnd = end;
 
 		shotLevel = 2;
 	}

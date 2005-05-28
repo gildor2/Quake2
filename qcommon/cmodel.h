@@ -4,6 +4,10 @@
 #include "qfiles.h"
 
 
+// cmodel_t.flags
+#define CMODEL_ALPHA	1
+#define CMODEL_MOVABLE	2
+
 struct cmodel_t
 {
 	CBox	bounds;
@@ -23,7 +27,7 @@ struct lightFlare_t
 	CVec3	origin;
 	float	size;
 	float	radius;					// -1 for sunflare
-	byte	color[4];
+	color_t	color;
 	byte	style;
 	int		model;
 	lightFlare_t *next;

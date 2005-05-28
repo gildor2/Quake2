@@ -512,13 +512,13 @@ static void S_SpatializeOrigin (const CVec3 &origin, float master_vol, float dis
     CVec3 source_vec;
 	VectorSubtract(origin, listener_origin, source_vec);
 
-	float dist = VectorNormalize(source_vec);
+	float dist = source_vec.NormalizeFast ();
 	dist -= SOUND_FULLVOLUME;
 	if (dist < 0)
 		dist = 0;			// close enough to be at full volume
 	dist *= dist_mult;		// different attenuation levels
 
-	float dot = DotProduct(listener_right, source_vec);
+	float d = dot(listener_right, source_vec);
 
 	float lscale, rscale;
 	if (dma.channels == 1 || !dist_mult)
@@ -528,8 +528,8 @@ static void S_SpatializeOrigin (const CVec3 &origin, float master_vol, float dis
 	}
 	else
 	{
-		rscale = 0.5f * (1.0f + dot);
-		lscale = 0.5f * (1.0f - dot);
+		rscale = 0.5f * (1.0f + d);
+		lscale = 0.5f * (1.0f - d);
 	}
 
 	// swap left and right volumes
@@ -568,7 +568,7 @@ void S_Spatialize(channel_t *ch)
 
 	if (ch->fixed_origin)
 	{
-		VectorCopy (ch->origin, origin);
+		origin = ch->origin;
 	}
 	else
 		CL_GetEntitySoundOrigin (ch->entnum, origin);
@@ -651,7 +651,7 @@ void S_IssuePlaysound (playsound_t *ps)
 	ch->entnum = ps->entnum;
 	ch->entchannel = ps->entchannel;
 	ch->sfx = ps->sfx;
-	VectorCopy (ps->origin, ch->origin);
+	ch->origin = ps->origin;
 	ch->fixed_origin = ps->fixed_origin;
 
 	S_Spatialize(ch);
@@ -1085,10 +1085,10 @@ void S_Update(const CVec3 &origin, const CVec3 &forward, const CVec3 &right, con
 	if (s_volume->modified)
 		S_InitScaletable ();
 
-	VectorCopy(origin, listener_origin);
-	VectorCopy(forward, listener_forward);
-	VectorCopy(right, listener_right);
-	VectorCopy(up, listener_up);
+	listener_origin = origin;
+	listener_forward = forward;
+	listener_right = right;
+	listener_up = up;
 
 	combine = NULL;
 

@@ -1,4 +1,4 @@
-#include "gl_local.h"
+#include "OpenGLDrv.h"
 #include "gl_image.h"
 #include "gl_frontend.h"		//?? for fog params only ?
 

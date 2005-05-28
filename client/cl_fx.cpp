@@ -171,7 +171,7 @@ cdlight_t *CL_AllocDlight (int key, const CVec3 &origin)
 
 	memset (dst, 0, sizeof(cdlight_t));
 	dst->key = key;
-	VectorCopy (origin, dst->origin);
+	dst->origin = origin;
 	return dst;
 }
 
@@ -271,7 +271,7 @@ static void CL_AddParticleTraces (float timeDelta)
 		if (!p->allocated)
 			continue;
 
-		VectorCopy (p->pos, oldpos);
+		oldpos = p->pos;
 		// apply gravity
 		if (p->gravity)
 			p->vel[2] -= timeDelta * p->gravity;
@@ -279,12 +279,12 @@ static void CL_AddParticleTraces (float timeDelta)
 		speed = VectorNormalize (p->vel, dir);
 		// update pos
 		VectorMA (p->pos, timeDelta, p->vel);
-		CL_Trace (&trace, oldpos, p->pos, zero, zero, CONTENTS_SOLID);
+		CL_Trace (trace, oldpos, p->pos, zero, zero, CONTENTS_SOLID);
 		if (p->elasticity && trace.fraction < 1.0f)
 		{
 			int		i;
 
-			t = DotProduct (trace.plane.normal, p->vel) * p->elasticity;
+			t = dot (trace.plane.normal, p->vel) * p->elasticity;
 			for (i = 0; i < 3; i++)
 			{
 				p->vel[i] -= t * trace.plane.normal[i];
@@ -329,7 +329,7 @@ static void CL_AddParticleTraces (float timeDelta)
 		if (!distDelta)
 			distDelta = 1;
 
-		VectorCopy (oldpos, pos);
+		pos = oldpos;
 		for (pos1 = distDelta; pos1 <= dist; pos1 += distDelta)
 		{
 			particle_t *cp;
@@ -355,8 +355,8 @@ static void CL_AddParticleTraces (float timeDelta)
 					(p->maxAlpha - p->minAlpha) + p->minAlpha -
 					(timeDelta - t) / p->fadeTime;
 				cp->accel[2] = 0;
-				VectorClear (cp->vel);
-				VectorCopy (pos, cp->org);
+				cp->vel.Zero();
+				cp->org = pos;
 				break;
 			}
 		}
@@ -390,8 +390,8 @@ particleTrace_t *CL_AllocParticleTrace (const CVec3 &pos, const CVec3 &vel, floa
 
 			VectorNormalize (vel, dir);
 			MakeNormalVectors (dir, p->right, p->up);
-			VectorCopy (pos, p->pos);
-			VectorCopy (vel, p->vel);
+			p->pos = pos;
+			p->vel = vel;
 
 			p->time = 0;
 
@@ -466,8 +466,8 @@ beam_t *CL_AllocParticleBeam (const CVec3 &start, const CVec3 &end, float radius
 		b->next = active_beams;
 		active_beams = b;
 
-		VectorCopy (start, b->start);
-		VectorCopy (end, b->end);
+		b->start = start;
+		b->end = end;
 		b->radius = radius;
 		b->fadeTime = b->lifeTime = fadeTime;
 		b->dstAlpha = 0;
@@ -622,7 +622,7 @@ void CL_ParseMuzzleFlash (void)
 	cdlight_t *dl = CL_AllocDlight (i, pl->current.origin);
 
 	CVec3 fv, rv;
-	AngleVectors (pl->current.angles, fv, rv, NULL);
+	AngleVectors (pl->current.angles, &fv, &rv, NULL);
 	VectorMA (dl->origin, 18, fv);
 	VectorMA (dl->origin, 16, rv);
 	if (silenced)
@@ -745,8 +745,6 @@ void CL_ParseMuzzleFlash2 (void)
 	CVec3		origin;
 	int			flash_number;
 	cdlight_t	*dl;
-	float		*forward, *left;
-	entityState_t *s;
 
 	ent = MSG_ReadShort (&net_message);
 	if (ent < 1 || ent >= MAX_EDICTS)
@@ -755,9 +753,9 @@ void CL_ParseMuzzleFlash2 (void)
 	flash_number = MSG_ReadByte (&net_message);
 
 	// locate the origin
-	s = &cl_entities[ent].current;
-	forward = s->axis[0];
-	left = s->axis[1];
+	entityState_t *s = &cl_entities[ent].current;
+	CVec3 &forward = s->axis[0];
+	CVec3 &left = s->axis[1];
 
 	float sx = monster_flash_offset[flash_number][0] / MONSTER_FLASH_SCALE;
 	float sy = monster_flash_offset[flash_number][1] / MONSTER_FLASH_SCALE;
@@ -1348,17 +1346,16 @@ void CL_BlasterParticles (const CVec3 &org, const CVec3 &dir)
 void CL_BlasterTrail (const CVec3 &start, const CVec3 &end)
 {
 	CVec3		move, vec;
-	float		len;
 	int			j;
 	particle_t	*p;
 	int			dec;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 	dec = 5;
-	VectorScale (vec, 5, vec);
+	vec.Scale (5);
 
 	// FIXME: this is a really silly way to have a loop
 	while (len > 0)
@@ -1386,17 +1383,16 @@ void CL_BlasterTrail (const CVec3 &start, const CVec3 &end)
 void CL_FlagTrail (const CVec3 &start, const CVec3 &end, int color)
 {
 	CVec3		move, vec;
-	float		len;
 	int			j;
 	particle_t	*p;
 	int			dec;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 	dec = 5;
-	VectorScale (vec, 5, vec);
+	vec.Scale (5);
 
 	// FIXME: this is a really silly way to have a loop
 	while (len > 0)
@@ -1424,18 +1420,17 @@ void CL_FlagTrail (const CVec3 &start, const CVec3 &end, int color)
 void CL_DiminishingTrail (const CVec3 &start, const CVec3 &end, centity_t *old, int flags)
 {
 	CVec3		move, vec;
-	float		len;
 	int			j;
 	particle_t	*p;
 	float		orgscale;
 	float		velscale;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 	float dec = 0.5f;
-	VectorScale (vec, dec, vec);
+	vec.Scale (dec);
 
 	if (old->trailcount > 900)
 	{
@@ -1513,7 +1508,6 @@ void CL_DiminishingTrail (const CVec3 &start, const CVec3 &end, centity_t *old, 
 void CL_RocketTrail (const CVec3 &start, const CVec3 &end, centity_t *old)
 {
 	CVec3		move, vec;
-	float		len;
 	int			j;
 	particle_t	*p;
 
@@ -1521,12 +1515,12 @@ void CL_RocketTrail (const CVec3 &start, const CVec3 &end, centity_t *old)
 	CL_DiminishingTrail (start, end, old, EF_ROCKET);
 
 	// fire
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 	int dec = 1;
-	VectorScale (vec, dec, vec);
+	vec.Scale (dec);
 
 	while (len > 0)
 	{
@@ -1555,15 +1549,15 @@ void CL_RocketTrail (const CVec3 &start, const CVec3 &end, centity_t *old)
 void CL_RailTrail (const CVec3 &start, const CVec3 &end)
 {
 	CVec3		move, vec;
-	float		len, dec, d, c, s;
+	float		dec, d, c, s;
 	int			i, j;
 	particle_t	*p;
 	CVec3		right, up, dir;
 	byte		clr = 0x74;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 	MakeNormalVectors (vec, right, up);
 
@@ -1593,8 +1587,8 @@ void CL_RailTrail (const CVec3 &start, const CVec3 &end)
 	}
 
 	dec = 0.75;
-	VectorScale (vec, dec, vec);
-	VectorCopy (start, move);
+	vec.Scale (dec);
+	move = start;
 
 	while (len > 0)
 	{
@@ -1679,16 +1673,15 @@ CL_IonripperTrail
 void CL_IonripperTrail (const CVec3 &start, const CVec3 &ent)
 {
 	CVec3	move, vec;
-	float	len;
 	particle_t *p;
 	int     left = 0;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (ent, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 	int dec = 5;
-	VectorScale (vec, 5, vec);
+	vec.Scale (5);
 
 	while (len > 0)
 	{
@@ -1702,7 +1695,7 @@ void CL_IonripperTrail (const CVec3 &start, const CVec3 &ent)
 		p->alphavel = -1.0 / (0.3 + frand() * 0.2);
 		p->color = 0xE4 + (rand()&3);
 
-		VectorCopy (move, p->org);
+		p->org = move;
 		if (left)
 		{
 			left = 0;
@@ -1731,16 +1724,15 @@ CL_BubbleTrail
 void CL_BubbleTrail (const CVec3 &start, const CVec3 &end)
 {
 	CVec3		move, vec;
-	float		len;
 	int			i, j;
 	particle_t	*p;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 	int dec = 32;
-	VectorScale (vec, dec, vec);
+	vec.Scale (dec);
 
 	for (i=0 ; i<len ; i+=dec)
 	{
@@ -1813,7 +1805,7 @@ void CL_FlyParticles (const CVec3 &origin, int count)
 		p->org[1] = origin[1] + bytedirs[i][1]*dist + forward[1]*BEAMLENGTH;
 		p->org[2] = origin[2] + bytedirs[i][2]*dist + forward[2]*BEAMLENGTH;
 
-		VectorClear (p->vel);
+		p->vel.Zero();
 		p->accel[2] = 0;
 
 		p->color = 0;
@@ -1905,7 +1897,7 @@ void CL_BfgParticles (entity_t *ent)
 		p->org[1] = ent->origin[1] + bytedirs[i][1]*dist + forward[1]*BEAMLENGTH;
 		p->org[2] = ent->origin[2] + bytedirs[i][2]*dist + forward[2]*BEAMLENGTH;
 
-		VectorClear (p->vel);
+		p->vel.Zero();
 		p->accel[2] = 0;
 
 		VectorSubtract (p->org, ent->origin, v);
@@ -1928,22 +1920,21 @@ void CL_TrapParticles (entity_t *ent)
 {
 	CVec3		move, vec;
 	CVec3		start, end;
-	float		len;
 	int			j;
 	particle_t	*p;
 	int			dec;
 
 	ent->origin[2]-=14;
-	VectorCopy (ent->origin, start);
-	VectorCopy (ent->origin, end);
+	start = ent->origin;
+	end = ent->origin;
 	end[2]+=64;
 
-	VectorCopy (start, move);
+	move = start;
 	VectorSubtract (end, start, vec);
-	len = VectorNormalize (vec);
+	float len = vec.NormalizeFast ();
 
 	dec = 5;
-	VectorScale (vec, 5, vec);
+	vec.Scale (5);
 
 	// FIXME: this is a really silly way to have a loop
 	while (len > 0)
@@ -1975,7 +1966,7 @@ void CL_TrapParticles (entity_t *ent)
 	CVec3		dir, org;
 
 	ent->origin[2]+=14;
-	VectorCopy (ent->origin, org);
+	org = ent->origin;
 
 	for (i=-2 ; i<=2 ; i+=4)
 		for (j=-2 ; j<=2 ; j+=4)
@@ -1997,7 +1988,7 @@ void CL_TrapParticles (entity_t *ent)
 				dir[1] = i * 8;
 				dir[2] = k * 8;
 
-				VectorNormalize (dir);
+				dir.NormalizeFast ();
 				vel = 50 + rand()&63;
 				VectorScale (dir, vel, p->vel);
 			}
@@ -2068,7 +2059,7 @@ void CL_TeleportParticles (const CVec3 &org)
 				dir[1] = i*8;
 				dir[2] = k*8;
 
-				VectorNormalize (dir);
+				dir.NormalizeFast ();
 				vel = 50 + (rand()&63);
 				VectorScale (dir, vel, p->vel);
 			}

@@ -156,8 +156,7 @@ static void PF_setmodel (edict_t *ent, char *name)
 	if (name[0] == '*')
 	{
 		cmodel_t *mod = CM_InlineModel (name);
-		VectorCopy (mod->bounds.mins, ent->mins);
-		VectorCopy (mod->bounds.maxs, ent->maxs);
+		ent->bounds = mod->bounds;
 		SV_LinkEdict (ent);
 	}
 	unguard;
@@ -202,8 +201,9 @@ static void PF_WriteShort (int c) {MSG_WriteShort (&sv.multicast, c);}
 static void PF_WriteLong (int c) {MSG_WriteLong (&sv.multicast, c);}
 static void PF_WriteFloat (float f) {MSG_WriteFloat (&sv.multicast, f);}
 static void PF_WriteString (char *s) {MSG_WriteString (&sv.multicast, s);}
-static void PF_WritePos (vec3_t pos) {MSG_WritePos (&sv.multicast, pos);}
-static void PF_WriteDir (vec3_t dir) {MSG_WriteDir (&sv.multicast, dir);}
+static void PF_WritePos (const CVec3 &pos) {MSG_WritePos (&sv.multicast, pos);}
+// WARNING: original MSG_WriteDir() was (CVec3 *pos) and was allowed pos==NULL
+static void PF_WriteDir (const CVec3 &dir) {MSG_WriteDir (&sv.multicast, dir);}
 static void PF_WriteAngle (float f) {MSG_WriteAngle (&sv.multicast, f);}
 
 
@@ -214,21 +214,17 @@ PF_inPVS
 Also checks portalareas so that doors block sight
 =================
 */
-static qboolean PF_inPVS (vec3_t p1, vec3_t p2)
+static qboolean PF_inPVS (const CVec3 &p1, const CVec3 &p2)
 {
-	int		leafnum, cluster;
-	int		area1, area2;
-	byte	*mask;
+	int leafnum = CM_PointLeafnum (p1);
+	int cluster = CM_LeafCluster (leafnum);
+	int area1 = CM_LeafArea (leafnum);
 
-	leafnum = CM_PointLeafnum (p1);
-	cluster = CM_LeafCluster (leafnum);
-	area1 = CM_LeafArea (leafnum);
-
-	mask = CM_ClusterPVS (cluster);
+	const byte *mask = CM_ClusterPVS (cluster);
 
 	leafnum = CM_PointLeafnum (p2);
 	cluster = CM_LeafCluster (leafnum);
-	area2 = CM_LeafArea (leafnum);
+	int area2 = CM_LeafArea (leafnum);
 
 	if (mask && (!(mask[cluster>>3] & (1<<(cluster&7)))))
 		return false;
@@ -245,22 +241,17 @@ PF_inPHS
 Also checks portalareas so that doors block sound
 =================
 */
-static qboolean PF_inPHS (vec3_t p1, vec3_t p2)
+static qboolean PF_inPHS (const CVec3 &p1, const CVec3 &p2)
 {
-	int		leafnum;
-	int		cluster;
-	int		area1, area2;
-	byte	*mask;
+	int leafnum = CM_PointLeafnum (p1);
+	int cluster = CM_LeafCluster (leafnum);
+	int area1 = CM_LeafArea (leafnum);
 
-	leafnum = CM_PointLeafnum (p1);
-	cluster = CM_LeafCluster (leafnum);
-	area1 = CM_LeafArea (leafnum);
-
-	mask = CM_ClusterPHS (cluster);
+	const byte *mask = CM_ClusterPHS (cluster);
 
 	leafnum = CM_PointLeafnum (p2);
 	cluster = CM_LeafCluster (leafnum);
-	area2 = CM_LeafArea (leafnum);
+	int area2 = CM_LeafArea (leafnum);
 
 	if (mask && (!(mask[cluster>>3] & (1<<(cluster&7)))))
 		return false;		// more than one bounce away
@@ -304,11 +295,9 @@ static int		z_count, z_bytes;
 
 static void Z_Free (void *ptr)
 {
-	zhead_t	*z;
-
 	guard(Z_Free);
 	if (!ptr) return;
-	z = ((zhead_t*)ptr)-1;
+	zhead_t *z = ((zhead_t*)ptr)-1;
 
 	z->prev->next = z->next;
 	z->next->prev = z->prev;
@@ -324,9 +313,8 @@ static void Z_Free (void *ptr)
 
 static void Z_FreeTags (int tag)
 {
-	zhead_t	*z, *next;
-
 	guard(Z_FreeTags);
+	zhead_t	*z, *next;
 	for (z = z_chain.next; z != &z_chain; z = next)
 	{
 		next = z->next;
@@ -338,15 +326,13 @@ static void Z_FreeTags (int tag)
 
 static void *Z_TagMalloc (int size, int tag)
 {
-	zhead_t	*z;
-
 	guard(Z_TagMalloc);
 #ifndef SV_PROFILE
 	MEM_ALLOCATOR(size);
 #endif
 	size += sizeof(zhead_t) + 1;	// reserve 1 byte for buggy mods
 
-	z = (zhead_t*) appMalloc (size);
+	zhead_t *z = (zhead_t*) appMalloc (size);
 	z_count++;
 	z_bytes += size;
 	z->tag = tag;
@@ -429,15 +415,15 @@ static void PSV_UnlinkEdict (edict_t *e)
 {	PROF; SV_UnlinkEdict(e); EPROF(1);	}
 #define SV_UnlinkEdict PSV_UnlinkEdict
 
-static int PSV_AreaEdicts (vec3_t mins, vec3_t maxs, edict_t **list, int maxcount, int areatype)
+static int PSV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list, int maxcount, int areatype)
 {	PROF2(int)	SV_AreaEdicts(mins,maxs,list,maxcount,areatype); EPROF2(2);	}
 #define SV_AreaEdicts PSV_AreaEdicts
 
-static trace_t PSV_TraceHook (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passedict, int contentmask)
+static trace_t PSV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
 {	PROF2(trace_t)	SV_TraceHook(start,mins,maxs,end,passedict,contentmask); EPROF2(3);	}
 #define SV_TraceHook PSV_TraceHook
 
-static int PSV_PointContents (vec3_t p)
+static int PSV_PointContents (const CVec3 &p)
 {	PROF2(int)	SV_PointContents(p); EPROF2(4);	}
 #define SV_PointContents PSV_PointContents
 

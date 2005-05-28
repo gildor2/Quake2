@@ -38,8 +38,6 @@ struct CVec3;
 struct CAxis;
 struct cplane_t;
 
-//!! change
-typedef float vec3_t[3];
 
 // image flags
 #define IMAGE_PCX	1
@@ -165,10 +163,10 @@ void	MSG_WriteShort (sizebuf_t *sb, int c);
 void	MSG_WriteLong (sizebuf_t *sb, int c);
 void	MSG_WriteFloat (sizebuf_t *sb, float f);
 void	MSG_WriteString (sizebuf_t *sb, const char *s);
-void	MSG_WritePos (sizebuf_t *sb, vec3_t pos);
+void	MSG_WritePos (sizebuf_t *sb, const CVec3 &pos);
 void	MSG_WriteAngle (sizebuf_t *sb, float f);
 void	MSG_WriteAngle16 (sizebuf_t *sb, float f);
-void	MSG_WriteDir (sizebuf_t *sb, vec3_t vector);
+void	MSG_WriteDir (sizebuf_t *sb, const CVec3 &vector);
 
 
 inline void MSG_BeginReading (sizebuf_t *msg)
@@ -184,11 +182,11 @@ int		MSG_ReadLong (sizebuf_t *sb);
 float	MSG_ReadFloat (sizebuf_t *sb);
 char	*MSG_ReadString (sizebuf_t *sb);
 
-void	MSG_ReadPos (sizebuf_t *sb, vec3_t pos);
+void	MSG_ReadPos (sizebuf_t *sb, CVec3 &pos);
 float	MSG_ReadAngle (sizebuf_t *sb);
 float	MSG_ReadAngle16 (sizebuf_t *sb);
 
-void	MSG_ReadDir (sizebuf_t *sb, vec3_t vector);
+void	MSG_ReadDir (sizebuf_t *sb, CVec3 &vector);
 
 void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
 
@@ -420,6 +418,60 @@ void	Cmd_WriteAliases (FILE *f);
 	cvar.cpp
 -----------------------------------------------------------------------------*/
 
+#define	CVAR_ARCHIVE		0x00001	// set to cause it to be saved to config file (config.cfg)
+#define	CVAR_USERINFO		0x00002	// added to userinfo when changed, then sent to senver
+#define	CVAR_SERVERINFO		0x00004	// added to serverinfo when changed
+#define	CVAR_NOSET			0x00008	// don't allow change from console at all, but can be set from the command line
+#define	CVAR_LATCH			0x00010	// save changes until server restart
+// added since 4.00
+#define	CVAR_USER_CREATED	0x00020	// created by a set command
+#define CVAR_GAME_CREATED	0x00040	// created from game library
+#define CVAR_CHEAT			0x00080	// will be reset to its default value when cheat protection active
+#define CVAR_CMDLINE		0x00100	// variable was set from command line
+
+#define CVAR_FLAG_MASK		0x0FFFF	// mask of stored cvar flags
+
+// not stored flags:
+#define CVAR_NODEFAULT		0x10000	// do not store "default" value from this Cvar_Get() call
+#define CVAR_UPDATE			0x20000	// set "modified" field after Cvar_Get() call
+#define CVAR_NOUPDATE		0x40000	// reset "modified" field ...
+
+#define	CVAR_BUFFER_SIZE	16		// size of buffer for var->string inside cvar_t
+
+// nothing outside the Cvar_*() functions should modify these fields!
+struct cvar_t
+{
+	const char *name;
+	char	*string;
+	char	*latchedString;			// for CVAR_LATCH vars
+	unsigned flags;
+	bool	modified;				// set each time the cvar is changed; originally - qboolean
+	byte	pad[3];					// qboolean pad (4 bytes)
+	float	value;					// atof(string)
+	cvar_t	*next;
+	// added since 4.00
+	char	*resetString;			// default cvar value (unset for user-created vars)
+	int		integer;				// atoi(string)
+	int		stringLength;			// size of buffer, allocated for holding var->string (or 0 if var->buf used)
+	char	buf[CVAR_BUFFER_SIZE];
+	cvar_t	*hashNext;
+	// functions
+	inline bool IsDefault ()
+	{
+		return resetString && strcmp (string, resetString) == 0;
+	}
+	inline void Reset ()
+	{
+		//!! not optimal - should use cvar_t struc instead of "name"
+		Cvar_Set (name, resetString);
+	}
+	inline float Clamp (float low, float high)
+	{
+		return Cvar_Clamp (this, low, high);
+	}
+};
+
+
 struct cvarInfo_t
 {
 	cvar_t	**var;				// destination, may be NULL
@@ -590,10 +642,6 @@ void	Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t adr, const char *form
 	cmodel.cpp
 -----------------------------------------------------------------------------*/
 
-// cmodel_t.flags
-#define CMODEL_ALPHA	1
-#define CMODEL_MOVABLE	2
-
 struct cmodel_t;		// full declaration in cmodel.h
 
 extern char map_name[];
@@ -607,24 +655,21 @@ int		CM_NumInlineModels (void);
 const char *CM_EntityString (void);
 
 // creates a clipping hull for an arbitrary box
-int		CM_HeadnodeForBox (vec3_t mins, vec3_t maxs);
+int		CM_HeadnodeForBox (const CBox &box);
 
 // returns an OR'ed contents mask
-int		CM_PointContents (const vec3_t p, int headnode);
-int		CM_TransformedPointContents (const vec3_t p, int headnode, const vec3_t origin, const vec3_t angles);
-int		CM_TransformedPointContents (const vec3_t p, int headnode, const vec3_t origin, const CAxis &axis);
-
-//--void	CM_BoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask);
-//--void	CM_TransformedBoxTrace (trace_t *tr, vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask, vec3_t origin, vec3_t angles);
+int		CM_PointContents (const CVec3 &p, int headnode);
+int		CM_TransformedPointContents (const CVec3 &p, int headnode, const CVec3 &origin, const CVec3 &angles);
+int		CM_TransformedPointContents (const CVec3 &p, int headnode, const CVec3 &origin, const CAxis &axis);
 
 byte	*CM_ClusterPVS (int cluster);
 byte	*CM_ClusterPHS (int cluster);
 
-int		CM_PointLeafnum (const vec3_t p, int num = 0);
+int		CM_PointLeafnum (const CVec3 &p, int num = 0);
 
 // call with topnode set to the headnode, returns with topnode
 // set to the first node that splits the box
-int		CM_BoxLeafnums (const vec3_t mins, const vec3_t maxs, int *list, int listsize, int *topnode = NULL, int headnode = 0);
+int		CM_BoxLeafnums (const CBox &bounds, int *list, int listsize, int *topnode = NULL, int headnode = 0);
 
 int		CM_LeafContents (int leafnum);
 int		CM_LeafCluster (int leafnum);
@@ -634,11 +679,10 @@ void	CM_SetAreaPortalState (int portalnum, bool open);
 bool	CM_AreasConnected (int area1, int area2);
 
 int		CM_WriteAreaBits (byte *buffer, int area);
-bool	CM_HeadnodeVisible (int headnode, byte *visbits);
+bool	CM_HeadnodeVisible (int headnode, const byte *visbits);
 
 void	CM_WritePortalState (FILE *f);
 void	CM_ReadPortalState (FILE *f);
-
 
 /*-----------------------------------------------------------------------------
 	Player movement code (pmove.cpp)

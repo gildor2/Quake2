@@ -1,4 +1,4 @@
-#include "gl_local.h"
+#include "OpenGLDrv.h"
 #include "gl_light.h"
 #include "gl_backend.h"
 #include "gl_math.h"
@@ -73,16 +73,16 @@ static void LightLine (const CAxis &axis, const CVec3 &from, const CVec3 &to, co
 //	GL_DisableTexCoordArrays ();
 
 	glBegin (GL_LINES);
-	glVertex3fv (from);
-	glVertex3fv (to);
+	glVertex3fv (from.v);
+	glVertex3fv (to.v);
 	for (int i = 0; i < 3; i++)
 	{
 		CVec3 v;
 
 		VectorMA (from, 10, axis[i], v);
-		glVertex3fv (v);
+		glVertex3fv (v.v);
 		VectorMA (from, -10, axis[i], v);
-		glVertex3fv (v);
+		glVertex3fv (v.v);
 	}
 	glEnd ();
 
@@ -110,7 +110,7 @@ void ShowLights (void)
 	gl_slight_t	*sl;
 	for (i = 0, sl = map.slights; i < map.numSlights; i++, sl++)
 	{
-		glColor3fv (sl->color);
+		glColor3fv (sl->color.v);
 		if (sl->spot)
 		{
 			bufVertex_t	vecs[5];
@@ -145,9 +145,9 @@ void ShowLights (void)
 			{
 				v = sl->origin;
 				v[j] -= DEBUG_POINT_SIZE/2;
-				glVertex3fv (v);
+				glVertex3fv (v.v);
 				v[j] += DEBUG_POINT_SIZE;
-				glVertex3fv (v);
+				glVertex3fv (v.v);
 			}
 			glEnd ();
 		}
@@ -161,7 +161,7 @@ void ShowLights (void)
 		bufVertex_t	vecs[4];
 		static const int indexes[8] = {0, 1, 1, 3, 3, 2, 2, 0};
 
-		glColor3fv (rl->color);
+		glColor3fv (rl->color.v);
 
 		for (int j = 0; j < 4; j++)
 		{
@@ -198,11 +198,11 @@ static void AddLight (const CAxis &axis, const CVec3 &dir, float scale, const CV
 	CVec3	dir2;
 
 	float rad = ent->radius / dist;
-#define STEP(n)									\
+#define STEP(n)							\
 	VectorMA (dir, n&1 ? rad : -rad, axis[n>>1], dir2);	\
-	VectorNormalizeFast(dir2);					\
+	dir2.NormalizeFast()				\
 	v = dot (dir2, axis[n>>1]) * scale;	\
-	if (n&1) v = -v;							\
+	if (n&1) v = -v;					\
 	if (!IsNegative(v))	VectorMA (entityColorAxis[n], v, color);
 		STEP(0); STEP(1); STEP(2); STEP(3); STEP(4); STEP(5);
 #undef STEP
@@ -257,7 +257,7 @@ static void AddPointLight (const gl_slight_t *sl, const CVec3 &origin, const CAx
 		scale = Q_rsqrt (dist);
 		dist = 1.0f / scale;
 	}
-	VectorScale (dif, scale, dif);
+	dif.Scale (scale);
 
 	float linearScale = LINEAR_SCALE;
 	float invScale = INV_SCALE;
@@ -364,7 +364,7 @@ static void AddSurfaceLight (const surfLight_t *rl, const CVec3 &origin, const C
 		VectorScale (pl->axis[0], dx, dir);
 		VectorMA (dir, dy, pl->axis[1]);
 		VectorMA (dir, distN, pl->plane.normal);
-		dist = VectorNormalizeFast (dir);
+		dist = dir.NormalizeFast ();
 		intens = rl->intens * distN / (dist * dist * dist) * SURF_SCALE;
 	}
 	else
@@ -446,7 +446,7 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 		{	// get cached light
 			byte	*src;
 
-			for (i = 0, src = cell->c[0], out = entityColorAxis[0]; i < 6*3; i++, src++, out++)
+			for (i = 0, src = cell->c[0], out = entityColorAxis[0].v; i < 6*3; i++, src++, out++)
 				*out = *src * CACHE_LIGHT_SCALE;
 			return cell != &outCell;
 		}
@@ -481,7 +481,7 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 
 		VectorMA (*origin, -32768, map.sunVec, dst);
 		trace_t	tr;
-		CM_BoxTrace (&tr, *origin, dst, NULL, NULL, 0, CONTENTS_SOLID);
+		CM_BoxTrace (tr, *origin, dst, NULL, NULL, 0, CONTENTS_SOLID);
 		if (tr.surface->flags & SURF_SKY && !tr.startsolid)		// can be "startsolid" even if "row"!=NULL
 		{
 			float intens = map.sunLight * SUN_SCALE * vp.lightStyles[0].value / 128.0f;	// sun light have style=0
@@ -508,7 +508,7 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 	// store computed light
 
 	bool hasLight = false;
-	for (i = 0, out = entityColorAxis[0]; i < 6 * 3; i++, out++)
+	for (i = 0, out = entityColorAxis[0].v; i < 6 * 3; i++, out++)
 		if (*out)
 		{	// have a non-zero color
 			hasLight = true;
@@ -526,17 +526,17 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 #ifdef NORMALIZE_AXIS
 		// find maximal color
 		float m = 0;
-		for (i = 0, out = entityColorAxis[0]; i < 6*3; i++, out++)
+		for (i = 0, out = entityColorAxis[0].v; i < 6*3; i++, out++)
 			if (*out > m) m = *out;
 		// normalize color axis and copy to grid
 		if (m > 255 * CACHE_LIGHT_SCALE)
 			m = 255.0f / CACHE_LIGHT_SCALE / m;
 		else
 			m = 1.0f / CACHE_LIGHT_SCALE;
-		for (i = 0, out = entityColorAxis[0], dst = cell->c[0]; i < 6*3; i++, out++, dst++)
+		for (i = 0, out = entityColorAxis[0].v, dst = cell->c[0]; i < 6*3; i++, out++, dst++)
 			*dst = appRound (*out * m);
 #else
-		for (i = 0, out = entityColorAxis[0], dst = cell->c[0]; i < 6; i++)
+		for (i = 0, out = entityColorAxis[0].v, dst = cell->c[0]; i < 6; i++)
 		{
 			int r = appRound (*out++ / CACHE_LIGHT_SCALE);
 			int g = appRound (*out++ / CACHE_LIGHT_SCALE);
@@ -632,10 +632,10 @@ void LightForEntity (refEntity_t *ent)
 						for (j = 0; j < 6; j++)
 						{
 							glColor3f (entityColorAxis[j][0]/255, entityColorAxis[j][1]/255, entityColorAxis[j][2]/255);
-							glVertex3fv (origin);
+							glVertex3fv (origin.v);
 							CVec3 origin2 = origin;
 							origin2[j >> 1] += (j & 1) ? 2 : -2;
-							glVertex3fv (origin2);
+							glVertex3fv (origin2.v);
 						}
 						glEnd ();
 					}
@@ -644,7 +644,7 @@ void LightForEntity (refEntity_t *ent)
 			if (totalFrac != 1)
 			{	// if some points have missed (outside the world) -- scale light from correct points
 				totalFrac = 1.0f / totalFrac;
-				for (i = 0; i < 6; i++) VectorScale (accum[i], totalFrac, accum[i]);
+				for (i = 0; i < 6; i++) accum[i].Scale (totalFrac);
 			}
 			if (gl_showGrid->integer)
 			{
@@ -696,7 +696,7 @@ void LightForEntity (refEntity_t *ent)
 		if (dist > dl->intensity * dl->intensity) continue;	// dlight is too far
 		float denom = Q_rsqrt (dist);						// 1/sqrt(dist)
 		dist = 1.0f / denom;
-		VectorScale (dst, denom, dst);
+		dst.Scale (denom);
 
 		scale = (dl->intensity - dist) * LINEAR_SCALE;
 		denom = 1.0f / gl_config.identityLightValue;
@@ -729,13 +729,13 @@ void LightForEntity (refEntity_t *ent)
 		// find maximal color
 		float m = 0;
 		float *out;
-		for (i = 0, out = entityColorAxis[0]; i < 6*3; i++, out++)
+		for (i = 0, out = entityColorAxis[0].v; i < 6*3; i++, out++)
 			if (*out > m) m = *out;
 		// normalize color axis and copy to grid
 		if (m > 255)
 		{
 			m = 255.0f / m;
-			for (i = 0, out = entityColorAxis[0]; i < 6*3; i++, out++)
+			for (i = 0, out = entityColorAxis[0].v; i < 6*3; i++, out++)
 				*out *= m;
 		}
 	}

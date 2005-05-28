@@ -2276,7 +2276,6 @@ struct playerConfigMenu_t : menuFramework_t
 // stand: 0-39; run: 40-45
 #define FIRST_FRAME	0			//!! replace with animation_type (to work correctly with ANY model type)
 #define LAST_FRAME	39
-#define FRAME_COUNT (LAST_FRAME-FIRST_FRAME+1)
 
 #define MODEL_DELAY	300
 
@@ -2290,8 +2289,8 @@ struct playerConfigMenu_t : menuFramework_t
 		};
 		bool	showModels;
 
-//		sscanf(Cvar_VariableString("dl0"), "%g %g %g %g", VECTOR_ARG(&dl[0].origin), &dl[0].intensity);
-//		sscanf(Cvar_VariableString("dl1"), "%g %g %g %g", VECTOR_ARG(&dl[1].origin), &dl[1].intensity);
+//		sscanf(Cvar_VariableString("dl0"), "%f %f %f %f", VECTOR_ARG(&dl[0].origin), &dl[0].intensity);
+//		sscanf(Cvar_VariableString("dl1"), "%f %f %f %f", VECTOR_ARG(&dl[1].origin), &dl[1].intensity);
 
 		showModels = appMilliseconds () - modelChangeTime > MODEL_DELAY;
 
@@ -2321,9 +2320,9 @@ struct playerConfigMenu_t : menuFramework_t
 			e[0].origin[0] = 90;
 //			e[0].origin[1] = 0;
 //			e[0].origin[2] = 0;
-			VectorCopy (e[0].origin, e[0].oldorigin);
+			e[0].oldorigin = e[0].origin;
 
-			e[0].frame = (cls.realtime + 99) / 100 % FRAME_COUNT + FIRST_FRAME;
+			e[0].frame = (cls.realtime + 99) / 100 % (LAST_FRAME-FIRST_FRAME+1) + FIRST_FRAME;
 			e[0].oldframe = e[0].frame - 1;
 			if (e[0].oldframe < FIRST_FRAME)
 				e[0].oldframe = LAST_FRAME;
@@ -3042,7 +3041,7 @@ struct testMenu_t : menuFramework_t
 		e[0].origin[0] = 130;
 //		e[0].origin[1] = 0;
 		e[0].origin[2] = 25;	//!! 15
-		VectorCopy (e[0].origin, e[0].oldorigin);
+		e[0].oldorigin = e[0].origin;
 
 		e[0].frame = 0;			// head frame
 		e[0].oldframe = e[0].frame;

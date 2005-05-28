@@ -60,8 +60,8 @@ void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, unsigned
 			int zd = 8 * ((to->solid>>5) & 31);
 			int zu = 8 * ((to->solid>>10) & 63) - 32;
 
-			VectorSet (to->bounds.mins, -x, -x, -zd);
-			VectorSet (to->bounds.maxs, x, x, zu);
+			to->bounds.mins.Set (-x, -x, -zd);
+			to->bounds.maxs.Set (x, x, zu);
 
 			CVec3 d;
 			to->bounds.GetCenter (d);
@@ -130,13 +130,13 @@ static void CL_DeltaEntity (frame_t *frame, int newnum, entityState_t *old, unsi
 		ent->prev = *state;
 		if (state->event == EV_OTHER_TELEPORT)
 		{
-			VectorCopy (state->origin, ent->prev.origin);
-			VectorCopy (state->origin, ent->lerp_origin);
+			ent->prev.origin = state->origin;
+			ent->lerp_origin = state->origin;
 		}
 		else
 		{
-			VectorCopy (state->old_origin, ent->prev.origin);
-			VectorCopy (state->old_origin, ent->lerp_origin);
+			ent->prev.origin = state->old_origin;
+			ent->lerp_origin = state->old_origin;
 		}
 	}
 	else
@@ -377,7 +377,7 @@ void CL_ParseFrame (void)
 			cl.predicted_origin[0] = cl.frame.playerstate.pmove.origin[0] * 0.125f;
 			cl.predicted_origin[1] = cl.frame.playerstate.pmove.origin[1] * 0.125f;
 			cl.predicted_origin[2] = cl.frame.playerstate.pmove.origin[2] * 0.125f;
-			VectorCopy (cl.frame.playerstate.viewangles, cl.predicted_angles);
+			cl.predicted_angles = cl.frame.playerstate.viewangles;
 			SCR_EndLoadingPlaque (false);	// get rid of loading plaque
 			CL_Pause (false);
 		}
@@ -552,7 +552,7 @@ static void AddViewWeapon (int renderfx)
 	// lerp gun position
 	for (int i = 0; i < 3; i++)
 	{
-		gun.origin[i] = cl.refdef.vieworg[i] + ops->gunoffset[i] + cl.lerpfrac * (ps->gunoffset[i] - ops->gunoffset[i]);
+		gun.origin[i] = cl.refdef.vieworg[i] + Lerp (ops->gunoffset[i], ps->gunoffset[i], cl.lerpfrac);
 		gun.angles[i] = cl.refdef.viewangles[i] + LerpAngle (ops->gunangles[i], ps->gunangles[i], cl.lerpfrac);
 	}
 
@@ -574,7 +574,7 @@ static void AddViewWeapon (int renderfx)
 
 	gun.flags = RF_MINLIGHT|RF_DEPTHHACK|RF_WEAPONMODEL;
 	gun.backlerp = 1.0 - cl.lerpfrac;
-	VectorCopy (gun.origin, gun.oldorigin);	// don't lerp at all
+	gun.oldorigin = gun.origin;	// don't lerp at all
 	//!! NEGATE
 	gun.angles[2] = -gun.angles[2];			// q2 bug: negate md2 angle (may be, for gun it is always 0?)
 	AddEntityWithEffects (&gun, renderfx);
@@ -596,24 +596,24 @@ void CL_AddEntityBox (entityState_t *st, unsigned rgba)
 		ent.angles[i] = LerpAngle (cent->prev.angles[i], cent->current.angles[i], cl.lerpfrac);
 #else
 	// don't lerp
-	VectorCopy (cent->current.angles, ent.angles);
+	ent->angles = cent->current.angles;
 #endif
 	//?? can use cent->lerp_origin
-	VectorCopy (cent->prev.center, ent.oldorigin);
-	VectorCopy (cent->current.center, ent.origin);
+	ent.oldorigin = cent->prev.center;
+	ent.origin = cent->current.center;
 	ent.backlerp = 1.0f - cl.lerpfrac;
 
 	if (st->solid == 31)
 	{
 		cmodel_t *cmodel = cl.model_clip[st->modelindex];
 		VectorSubtract (cmodel->bounds.maxs, cmodel->bounds.mins, ent.size);
-		VectorScale (ent.size, 0.5f, ent.size);
+		ent.size.Scale (0.5f);
 	}
 	else
 	{
 		ent.angles[2] = -ent.angles[2];		// triangle models have bug in Q2: angles[2] should be negated
 		VectorSubtract (st->bounds.maxs, st->bounds.mins, ent.size);
-		VectorScale (ent.size, 0.5f, ent.size);
+		ent.size.Scale (0.5f);
 	}
 
 	V_AddEntity (&ent);
@@ -680,16 +680,14 @@ static void CL_AddPacketEntities (void)
 
 		if (renderfx & (RF_FRAMELERP|RF_BEAM))
 		{	// step origin discretely, because the frames do the animation properly
-			VectorCopy (cent->current.origin, ent.origin);
-			VectorCopy (cent->current.old_origin, ent.oldorigin);
+			ent.origin = cent->current.origin;
+			ent.oldorigin = cent->current.old_origin;
 		}
 		else
-		{	// interpolate origin
-			for (i = 0; i < 3; i++)
-			{
-				ent.origin[i] = ent.oldorigin[i] = cent->prev.origin[i] + cl.lerpfrac *
-					(cent->current.origin[i] - cent->prev.origin[i]);
-			}
+		{
+			// interpolate origin
+			Lerp (cent->prev.origin, cent->current.origin, cl.lerpfrac, ent.origin);
+			ent.oldorigin = ent.origin;
 		}
 
 		// create a new entity
@@ -772,7 +770,7 @@ static void CL_AddPacketEntities (void)
 			ent.angles[0] = 0;
 			ent.angles[1] = anglemod(cl.time/2) + st->angles[1];
 			ent.angles[2] = 180;
-			AngleVectors (ent.angles, forward, NULL, NULL);
+			AngleVectors (ent.angles, &forward, NULL, NULL);
 			VectorMA (ent.origin, 64, forward, start);
 			V_AddLight (start, 100, 1, 0, 0);
 		}
@@ -1004,7 +1002,7 @@ static void CL_AddPacketEntities (void)
 			}
 		}
 
-		VectorCopy (ent.origin, cent->lerp_origin);
+		cent->lerp_origin = ent.origin;
 	}
 }
 
@@ -1023,31 +1021,31 @@ void CL_OffsetThirdPersonView ()
 	// algorithm was taken from FAKK2
 	camDist = max(cl_cameradist->value, CAMERA_MINIMUM_DISTANCE);
 #ifdef FIXED_VIEW
-	sscanf (Cvar_VariableString("3rd"), "%g %g %g", VECTOR_ARG(&cl.refdef.viewangles));
+	sscanf (Cvar_VariableString("3rd"), "%f %f %f", VECTOR_ARG(&cl.refdef.viewangles));
 #endif
-	AngleVectors (cl.refdef.viewangles, forward, NULL, NULL);
+	AngleVectors (cl.refdef.viewangles, &forward, NULL, NULL);
 	VectorMA (cl.refdef.vieworg, -camDist, forward, pos);
 	pos[2] += cl_cameraheight->value;
 
-	CL_Trace (&trace, cl.refdef.vieworg, pos, mins, maxs, MASK_SHOT|MASK_WATER);
+	CL_Trace (trace, cl.refdef.vieworg, pos, mins, maxs, MASK_SHOT|MASK_WATER);
 	if (trace.fraction < 1)
-		VectorCopy (trace.endpos, pos);
+		pos = trace.endpos;
 /*	dist = VectorDistance (pos, cl.refdef.vieworg);
 
 	if (dist < CAMERA_MINIMUM_DISTANCE)
 	{
 		CVec3	angles;
 
-		VectorCopy (cl.refdef.viewangles, angles);
+		angles = cl.refdef.viewangles;
 		while (angles[PITCH] < 90)
 		{
 			angles[PITCH] += 2;
-			AngleVectors (angles, forward, NULL, NULL);
+			AngleVectors (angles, &forward, NULL, NULL);
 			VectorMA (cl.refdef.vieworg, -camDist, forward, pos);
 			pos[2] += cl_cameraheight->value;
 
 			trace = CM_BoxTrace (cl.refdef.vieworg, pos, mins, maxs, 0, MASK_SHOT|MASK_WATER);
-			VectorCopy (trace.endpos, pos);
+			pos = trace.endpos;
 			dist = VectorDistance (pos, cl.refdef.vieworg);
 			if (dist >= CAMERA_MINIMUM_DISTANCE)
 			{
@@ -1057,7 +1055,7 @@ void CL_OffsetThirdPersonView ()
         }
 	} */
 
-	VectorCopy(pos, cl.refdef.vieworg);
+	cl.refdef.vieworg = pos;
 }
 
 
@@ -1071,7 +1069,6 @@ Sets cl.refdef view values
 void CL_CalcViewValues (void)
 {
 	int			i;
-	float		lerp, backlerp;
 	centity_t	*ent;
 	player_state_t	*ps, *ops;
 
@@ -1086,7 +1083,7 @@ void CL_CalcViewValues (void)
 		ops = ps;		// don't interpolate
 
 	ent = &cl_entities[cl.playernum+1];
-	lerp = cl.lerpfrac;
+	float lerp = cl.lerpfrac;
 
 	// calculate the origin
 	if ((cl_predict->integer) && !(cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION)
@@ -1094,11 +1091,11 @@ void CL_CalcViewValues (void)
 	{	// use predicted values
 		unsigned	delta;
 
-		backlerp = 1.0 - lerp;
+		float backlerp = 1.0 - lerp;
 		for (i = 0; i < 3; i++)
 		{
 			cl.modelorg[i] = cl.predicted_origin[i] - backlerp * cl.prediction_error[i];
-			cl.refdef.vieworg[i] = cl.modelorg[i] + ops->viewoffset[i] + lerp * (ps->viewoffset[i] - ops->viewoffset[i]);
+			cl.refdef.vieworg[i] = cl.modelorg[i] + Lerp (ops->viewoffset[i], ps->viewoffset[i], lerp);
 		}
 
 		// smooth out stair climbing
@@ -1111,7 +1108,7 @@ void CL_CalcViewValues (void)
 		for (i = 0; i < 3; i++)
 		{
 			cl.modelorg[i] = ops->pmove.origin[i] * 0.125f + lerp * (ps->pmove.origin[i] - ops->pmove.origin[i]) * 0.125f;
-			cl.refdef.vieworg[i] = cl.modelorg[i] + ops->viewoffset[i] + lerp * (ps->viewoffset[i] - ops->viewoffset[i]);
+			cl.refdef.vieworg[i] = cl.modelorg[i] + Lerp (ops->viewoffset[i], ps->viewoffset[i], lerp);
 		}
 	}
 
@@ -1131,11 +1128,10 @@ void CL_CalcViewValues (void)
 		cl.refdef.viewangles[i] += LerpAngle (ops->kick_angles[i], ps->kick_angles[i], lerp);
 
 	// interpolate field of view
-	cl.refdef.fov_x = ops->fov + lerp * (ps->fov - ops->fov);
+	cl.refdef.fov_x = Lerp (ops->fov, ps->fov, lerp);
 
 	for (i = 0; i < 4; i++)
-//		cl.refdef.blend[i] = ps->blend[i]; // originally: no blend ??
-		cl.refdef.blend[i] = ops->blend[i] + lerp * (ps->blend[i] - ops->blend[i]);
+		cl.refdef.blend[i] = Lerp (ops->blend[i], ps->blend[i], lerp);
 
 	if ((cl_3rd_person->integer || cl.frame.playerstate.stats[STAT_HEALTH] <= 0) &&
 		cl.frame.playerstate.pmove.pm_type != PM_SPECTATOR)
@@ -1146,11 +1142,10 @@ void CL_CalcViewValues (void)
 			cl.refdef.rdflags |= RDF_UNDERWATER;
 		// compute cl.modelorg for 3rd person view from client entity
 		ent = &cl_entities[cl.playernum+1];
-		for (i = 0; i < 3; i++)
-			cl.modelorg[i] = ent->prev.origin[i] + cl.lerpfrac * (ent->current.origin[i] - ent->prev.origin[i]);
+		Lerp (ent->prev.origin, ent->current.origin, cl.lerpfrac, cl.modelorg);
 	}
 
-	AngleVectors (cl.refdef.viewangles, cl.v_forward, cl.v_right, cl.v_up);
+	AngleVectors (cl.refdef.viewangles, &cl.v_forward, &cl.v_right, &cl.v_up);
 }
 
 /*

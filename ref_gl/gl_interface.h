@@ -2,7 +2,7 @@
 #define __GL_INTERFACE_INCLUDED__
 
 
-// -- namespace declared in "gl_local.h" -- namespace OpenGLDrv {
+// -- namespace declared in "OpenGLDrv.h" -- namespace OpenGLDrv {
 
 
 struct glconfig_t

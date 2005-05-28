@@ -52,7 +52,7 @@ struct viewPortal_t
 	cplane_t frustum[NUM_FRUSTUM_PLANES];	// used for frustum culling
 	float	projectionMatrix[4][4];
 	CBox	bounds;				// bounding box of all visible leafs
-	float	zFar;				// maximim distance from view.origin to mins/maxs vertexes
+	float	zFar;				// maximim distance (Z-coordinate) from view.origin to mins/maxs vertexes
 	// surfaces
 	surfaceInfo_t *surfaces;
 	int		numSurfaces;

@@ -28,28 +28,6 @@ public:
 #define	MAX_LIGHTSTYLES		256
 
 
-typedef union
-{
-	byte	c[4];
-	unsigned rgba;
-} color_t;
-
-#undef RGBA
-#undef RGB
-#undef RGB255
-#undef RGBA255
-
-// constant colors
-#define RGBA(r,g,b,a)		((int)((r)*255) | ((int)((g)*255)<<8) | ((int)((b)*255)<<16) | ((int)((a)*255)<<24))
-#define RGB(r,g,b)			RGBA(r,g,b,1)
-#define RGB255(r,g,b)		((r) | ((g)<<8) | ((b)<<16) | (255<<24))
-#define RGBA255(r,g,b,a)	((r) | ((g)<<8) | ((b)<<16) | ((a)<<24))
-
-// computed colors
-#define RGBAS(r,g,b,a)		(appRound((r)*255) | (appRound((g)*255)<<8) | (appRound((b)*255)<<16) | (appRound((a)*255)<<24))
-#define RGBS(r,g,b)			(appRound((r)*255) | (appRound((g)*255)<<8) | (appRound((b)*255)<<16) | (255<<24))
-
-
 //!!! clean beam comments
 struct entity_t
 {
@@ -59,9 +37,10 @@ struct entity_t
 	CVec3	origin;
 	int		frame;
 	/*------- data for lerping --------*/
-	CVec3	oldorigin;
+	CVec3	oldorigin;		//?? do we need oldorigin? may be, send to renderer lerped origin only
 	int		oldframe;
 	float	backlerp;		// 0.0 = current, 1.0 = old
+		//?? why we use backlerp instead of simple lerp ?
 	/*-------------- misc -------------*/
 	CVec3	size;
 	int		skinnum;

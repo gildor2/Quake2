@@ -100,7 +100,7 @@ struct dMd2_t
 
 struct dMd3Frame_t
 {
-	CVec3	bounds[2];					// CBox
+	CBox	bounds;
 	CVec3	localOrigin;				// NOTE: q3 model converter tool always sets this to (0,0,0)
 	float	radius;						//		 and this is a maximal distance to all bounds[] vectors
 	char	name[16];
@@ -299,7 +299,7 @@ typedef struct
 
 typedef struct
 {
-	CVec3	mins, maxs;				// CBox
+	CBox	bounds;
 	CVec3	origin2;				// unused! (for sounds or lights ?)
 	int		headnode;
 	int		firstface, numfaces;	// submodels just draw faces without walking the bsp tree
@@ -493,7 +493,7 @@ typedef struct
 
 typedef struct
 {
-	CVec3	mins, maxs;				// CBox
+	CBox	bounds;
 	CVec3	origin;
 	int		headnode[HL_MAX_MAP_HULLS]; // used mostly headnode[0]; other - for entity clipping
 	int		visleafs;				// not including the solid leaf 0 (UNUSED field!)

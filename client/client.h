@@ -546,8 +546,8 @@ extern menuFramework_t *m_current;
 //
 // cl_pred.cpp
 //
-void CL_EntityTrace (trace_t *tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents);
-void CL_Trace (trace_t *tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents);
+void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents);
+void CL_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents);
 void CL_PredictMovement (void);
 void CL_CheckPredictionError (void);
 

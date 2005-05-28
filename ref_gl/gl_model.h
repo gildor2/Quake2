@@ -1,6 +1,29 @@
 #ifndef __GL_MODEL_INCLUDED__
 #define __GL_MODEL_INCLUDED__
 
+//?? change this:
+#ifdef PROFILE_LOADING
+#define START_PROFILE(name)			\
+	{								\
+		static const char _name[] = #name;\
+		const char *_arg = "";		\
+		unsigned _time = appCycles();
+#define START_PROFILE2(name,arg)	\
+	{								\
+		static const char _name[] = #name;\
+		const char *_arg = arg;		\
+		unsigned _time = appCycles();
+#define END_PROFILE	\
+		if (Cvar_VariableInt("r_profile")) \
+			Com_Printf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %.2f ms\n", _name, _arg,\
+			appDeltaCyclesToMsecf(appCycles() - _time)); \
+	}
+#else
+#define START_PROFILE(name)
+#define START_PROFILE2(name,arg)
+#define END_PROFILE
+#endif
+
 
 #include "gl_frontend.h"
 #include "gl_light.h"
@@ -347,6 +370,10 @@ void	ShutdownModels (void);
 model_t	*FindModel (const char *name);
 shader_t *FindSkin (const char *name);
 void	LoadWorldMap (const char *name);	//?? rename
+
+md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len);
+md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len);
+sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len);
 
 
 } // namespace

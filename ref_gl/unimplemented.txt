@@ -231,8 +231,6 @@ PreprocessShader():
   - many dynamic lightmaps in: market, alley1 (look outside world), rc4 (at start point), punwar (not too slow?), vertigo
     lpbheaven (strong lighting, lots of SURF_TRANS + dl), beachassault (inside ship: shader with 3 lightstyles)
 
-! rename "gl_local.h" to something another (and change "#ifndef __GL_LOCAL_..."); rename all files from "gl_something.*" to
-  "GLRendererSomething.*" ??
 ? SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
 - add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
 ? don't need shader->sortParam other than sky/opaque/seethrough (may be, +coronas (already painted after all) +hud (2D ? already separate))

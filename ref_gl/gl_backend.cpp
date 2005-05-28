@@ -1,4 +1,4 @@
-#include "gl_local.h"
+#include "OpenGLDrv.h"
 #include "gl_backend.h"
 #include "gl_image.h"
 #include "gl_light.h"
@@ -246,7 +246,7 @@ static void GenerateColorArray (shaderStage_t *st)
 					CVec3	v;
 
 					VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
-					VectorNormalizeFast (v);
+					v.NormalizeFast ();
 					float d = dot (v, norm);
 #if 0
 					d = d * d;
@@ -345,7 +345,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 					for (k = 0; k < ex->numVerts; k++, vec++, dst++)
 					{
 						VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
-						VectorNormalizeFast (v);
+						v.NormalizeFast ();
 						d = dot (v, axis[0]);
 						dst->tex[0] = (d - 1) / 2;
 						d = dot (v, axis[1]);
@@ -358,7 +358,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 					for (k = 0; k < ex->numVerts; k++, vec++, dst++)
 					{
 						VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
-						VectorNormalizeFast (v);
+						v.NormalizeFast ();
 						d = dot (v, norm) * 2;
 						dst->tex[0] = (d * norm[1] - v[1] + 1) / 2;
 						dst->tex[1] = (d * norm[2] - v[2] + 1) / 2;
@@ -1203,8 +1203,8 @@ static void DrawSkyBox (void)
 	VectorScale (vp.view.axis[1], SKY_FRUST_DIST * vp.t_fov_x * 1.05, right);	// *1.05 -- to avoid FP precision bugs
 	VectorScale (vp.view.axis[2], SKY_FRUST_DIST * vp.t_fov_y * 1.05, up);
 #ifdef VISUALIZE_SKY_FRUSTUM
-	VectorScale (right, 0.9, right);
-	VectorScale (up, 0.9, up);
+	right.Scale (0.9);
+	up.Scale (0.9);
 #endif
 	VectorAdd (tmp, up, tmp1);				// up
 	VectorAdd (tmp1, right, fv[0].xyz);
@@ -1679,10 +1679,10 @@ static void DrawNormals (void)
 	{
 		for (int j = 0; j < ex->numVerts; j++, vec++)
 		{
-			glVertex3fv (vec->xyz);
+			glVertex3fv (vec->xyz.v);
 			CVec3 vec2;
 			VectorAdd (vec->xyz, ex->normal, vec2);
-			glVertex3fv (vec2);
+			glVertex3fv (vec2.v);
 		}
 	}
 	glEnd ();
@@ -1785,7 +1785,7 @@ void surfaceParticle_t::Tesselate ()
 		glColor4ubv (c);
 
 		glTexCoord2f (0.0625f, 0.0625f);
-		glVertex3fv (p->org);
+		glVertex3fv (p->org.v);
 
 		glTexCoord2f (1.0625f, 0.0625f);
 		glVertex3f (p->org[0] + up[0] * scale, p->org[1] + up[1] * scale, p->org[2] + up[2] * scale);

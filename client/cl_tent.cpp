@@ -334,7 +334,7 @@ explosion_t *CL_AllocExplosion (const CVec3 &origin, exptype_t type)
 	for (i = 0, ex = cl_explosions; i < MAX_EXPLOSIONS; i++, ex++)
 	{
 		if (ex->type == ex_free) continue;
-		if (type == ex->type && VectorCompare (ex->ent.origin, origin))
+		if (type == ex->type && ex->ent.origin == origin)
 		{
 			dst = ex;
 			break;
@@ -367,7 +367,7 @@ explosion_t *CL_AllocExplosion (const CVec3 &origin, exptype_t type)
 	}
 
 	memset (dst, 0, sizeof(explosion_t));
-	VectorCopy (origin, dst->ent.origin);
+	dst->ent.origin = origin;
 	dst->time = -100;
 	dst->type = type;
 	return dst;
@@ -461,7 +461,7 @@ void CL_AddExplosions (void)
 
 		if (!ent->model) continue;		// flash only
 
-		VectorCopy (ent->origin, ent->oldorigin);
+		ent->oldorigin = ent->origin;
 
 		ent->frame = ex->baseframe + frm + 1;
 		ent->oldframe = ex->baseframe + frm;
@@ -536,9 +536,9 @@ int CL_ParseBeam (CRenderModel *model)
 			b->entity = ent;
 			b->model = model;
 			b->endtime = cl.time + 200;
-			VectorCopy (start, b->start);
-			VectorCopy (end, b->end);
-			VectorClear (b->offset);
+			b->start = start;
+			b->end = end;
+			b->offset.Zero();
 			return ent;
 		}
 
@@ -550,9 +550,9 @@ int CL_ParseBeam (CRenderModel *model)
 			b->entity = ent;
 			b->model = model;
 			b->endtime = cl.time + 200;
-			VectorCopy (start, b->start);
-			VectorCopy (end, b->end);
-			VectorClear (b->offset);
+			b->start = start;
+			b->end = end;
+			b->offset.Zero();
 			return ent;
 		}
 	}
@@ -587,9 +587,9 @@ int CL_ParseBeam2 (CRenderModel *model)
 			b->entity = ent;
 			b->model = model;
 			b->endtime = cl.time + 200;
-			VectorCopy (start, b->start);
-			VectorCopy (end, b->end);
-			VectorCopy (offset, b->offset);
+			b->start = start;
+			b->end = end;
+			b->offset = offset;
 			return ent;
 		}
 
@@ -601,9 +601,9 @@ int CL_ParseBeam2 (CRenderModel *model)
 			b->entity = ent;
 			b->model = model;
 			b->endtime = cl.time + 200;
-			VectorCopy (start, b->start);
-			VectorCopy (end, b->end);
-			VectorCopy (offset, b->offset);
+			b->start = start;
+			b->end = end;
+			b->offset = offset;
 			return ent;
 		}
 	}
@@ -631,11 +631,11 @@ int CL_ParsePlayerBeam (CRenderModel *model)
 	MSG_ReadPos (&net_message, end);
 	// PMM - network optimization
 	if (model == cl_mod_heatbeam)
-		VectorSet(offset, 2, 7, -3);
+		offset.Set (2, 7, -3);
 	else if (model == cl_mod_monster_heatbeam)
 	{
 		model = cl_mod_heatbeam;
-		VectorSet(offset, 0, 0, 0);
+		offset.Zero ();
 	}
 	else
 		MSG_ReadPos (&net_message, offset);
@@ -651,9 +651,9 @@ int CL_ParsePlayerBeam (CRenderModel *model)
 			b->entity = ent;
 			b->model = model;
 			b->endtime = cl.time + 200;
-			VectorCopy (start, b->start);
-			VectorCopy (end, b->end);
-			VectorCopy (offset, b->offset);
+			b->start = start;
+			b->end = end;
+			b->offset = offset;
 			return ent;
 		}
 	}
@@ -666,9 +666,9 @@ int CL_ParsePlayerBeam (CRenderModel *model)
 			b->entity = ent;
 			b->model = model;
 			b->endtime = cl.time + 100;		// PMM - this needs to be 100 to prevent multiple heatbeams
-			VectorCopy (start, b->start);
-			VectorCopy (end, b->end);
-			VectorCopy (offset, b->offset);
+			b->start = start;
+			b->end = end;
+			b->offset = offset;
 			return ent;
 		}
 	}
@@ -704,9 +704,9 @@ int CL_ParseLightning (CRenderModel *model)
 			b->dest_entity = destEnt;
 			b->model = model;
 			b->endtime = cl.time + 200;
-			VectorCopy (start, b->start);
-			VectorCopy (end, b->end);
-			VectorClear (b->offset);
+			b->start = start;
+			b->end = end;
+			b->offset.Zero();
 			return srcEnt;
 		}
 
@@ -720,9 +720,9 @@ int CL_ParseLightning (CRenderModel *model)
 			b->dest_entity = destEnt;
 			b->model = model;
 			b->endtime = cl.time + 200;
-			VectorCopy (start, b->start);
-			VectorCopy (end, b->end);
-			VectorClear (b->offset);
+			b->start = start;
+			b->end = end;
+			b->offset.Zero();
 			return srcEnt;
 		}
 	}
@@ -935,7 +935,7 @@ void CL_ParseTEnt (void)
 
 				VectorAdd (pos, dir, start);
 				VectorMA (start, -2, dir, end);
-				CL_Trace (&trace, start, end, zero, zero, MASK_ALL);
+				CL_Trace (trace, start, end, zero, zero, MASK_ALL);
 				if (trace.fraction < 1.0)
 				{
 					csurface_t *surf = trace.surface;
@@ -1412,7 +1412,7 @@ void CL_AddBeams (void)
 
 		// if coming from the player, update the start position
 		if (b->entity == cl.playernum+1)	// entity 0 is the world
-			VectorCopy (cl.modelorg, b->start);
+			b->start = cl.modelorg;
 		VectorAdd (b->start, b->offset, org);
 
 		// calculate pitch and yaw
@@ -1443,7 +1443,7 @@ void CL_AddBeams (void)
 		}
 
 		// add new entities for the beams
-		d = VectorNormalize(dist);
+		d = dist.NormalizeFast ();
 
 		memset (&ent, 0, sizeof(ent));
 		if (b->model == cl_mod_lightning)
@@ -1464,7 +1464,7 @@ void CL_AddBeams (void)
 		if ((b->model == cl_mod_lightning) && (d <= model_length))
 		{
 //			Com_Printf ("special case\n");
-			VectorCopy (b->end, ent.origin);
+			ent.origin = b->end;
 			// offset to push beam outside of tesla model (negative because dist is from end to start
 			// for this beam)
 //			for (j = 0; j < 3 ; j++)
@@ -1480,7 +1480,7 @@ void CL_AddBeams (void)
 
 		while (d > 0)
 		{
-			VectorCopy (org, ent.origin);
+			ent.origin = org;
 			ent.model = b->model;
 			if (b->model == cl_mod_lightning)
 			{
@@ -1561,10 +1561,7 @@ void CL_AddPlayerBeams (void)
 				ps = &cl.frame.playerstate;
 				ops = &cl.oldFrame->playerstate;
 				for (j = 0; j < 3; j++)
-				{
-					b->start[j] = cl.modelorg[j] + ops->gunoffset[j]
-						+ cl.lerpfrac * (ps->gunoffset[j] - ops->gunoffset[j]);
-				}
+					b->start[j] = cl.modelorg[j] + Lerp (ops->gunoffset[j], ps->gunoffset[j], cl.lerpfrac);
 				VectorMA (b->start, (hand_multiplier * b->offset[0]), cl.v_right, org);
 				VectorMA (org, b->offset[1], cl.v_forward);
 				VectorMA (org, b->offset[2], cl.v_up);
@@ -1572,13 +1569,13 @@ void CL_AddPlayerBeams (void)
 					VectorMA (org, -1, cl.v_up);
 			}
 			else
-				VectorCopy (b->start, org);
+				org = b->start;
 		}
 		else
 		{
 			// if coming from the player, update the start position
 			if (isPlayer)
-				VectorCopy (cl.modelorg, b->start);
+				b->start = cl.modelorg;
 			VectorAdd (b->start, b->offset, org);
 		}
 
@@ -1634,7 +1631,7 @@ void CL_AddPlayerBeams (void)
 				ent.angles[1] = yaw + 180.0f;
 				ent.angles[2] = 0;
 //				Com_Printf ("%f %f - %f %f %f\n", -pitch, yaw+180.0, b->offset[0], b->offset[1], b->offset[2]);
-				AngleVectors(ent.angles, f, r, u);
+				AngleVectors(ent.angles, &f, &r, &u);
 
 				// if it's a non-origin offset, it's a player, so use the hardcoded player offset
 				if (b->offset[0] || b->offset[1] || b->offset[2])
@@ -1662,7 +1659,7 @@ void CL_AddPlayerBeams (void)
 		}
 
 		// add new entities for the beams
-		d = VectorNormalize(dist);
+		d = dist.NormalizeFast ();
 
 		memset (&ent, 0, sizeof(ent));
 		if (b->model == cl_mod_heatbeam)
@@ -1687,7 +1684,7 @@ void CL_AddPlayerBeams (void)
 		if ((b->model == cl_mod_lightning) && (d <= model_length))
 		{
 //			Com_Printf ("special case\n");
-			VectorCopy (b->end, ent.origin);
+			ent.origin = b->end;
 			// offset to push beam outside of tesla model (negative because dist is from end to start
 			// for this beam)
 //			for (j=0 ; j<3 ; j++)
@@ -1702,7 +1699,7 @@ void CL_AddPlayerBeams (void)
 		}
 		while (d > 0)
 		{
-			VectorCopy (org, ent.origin);
+			ent.origin = org;
 			ent.model = b->model;
 			if (isHeatbeam)
 			{

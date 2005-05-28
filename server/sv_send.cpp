@@ -150,7 +150,7 @@ void SV_BroadcastCommand (const char *fmt, ...)
 
 	MSG_WriteByte (&sv.multicast, svc_stufftext);
 	MSG_WriteString (&sv.multicast, string);
-	SV_MulticastOld (NULL, MULTICAST_ALL_R);
+	SV_MulticastOld (vec3_origin, MULTICAST_ALL_R);
 }
 
 
@@ -161,67 +161,52 @@ SV_Multicast
 Sends the contents of sv.multicast to a subset of the clients,
 then clears sv.multicast.
 
-MULTICAST_ALL	same as broadcast (origin can be NULL)
+MULTICAST_ALL	same as broadcast (origin ignored)
 MULTICAST_PVS	send to clients potentially visible from org
 MULTICAST_PHS	send to clients potentially hearable from org
 =================
 */
-void SV_Multicast (vec3_t origin, multicast_t to, bool oldclients)
+void SV_Multicast (const CVec3 &origin, multicast_t to, bool oldclients)
 {
 	client_t	*client;
-	byte		*mask;
-	int			leafnum, cluster;
 	int			j;
 	bool		reliable;
-	int			area1, area2;
 
 	guard(SV_Multicast);
 
-	reliable = false;
-
+	int area1;
 	if (to != MULTICAST_ALL_R && to != MULTICAST_ALL)
-	{
-		leafnum = CM_PointLeafnum (origin);
-		area1 = CM_LeafArea (leafnum);
-	}
+		area1 = CM_LeafArea (CM_PointLeafnum (origin));
 	else
-	{
-		leafnum = 0;	// just to avoid compiler warnings
 		area1 = 0;
-	}
 
 	// if doing a serverrecord, store everything
 	if (svs.wdemofile)
 		svs.demo_multicast.Write (sv.multicast);
 
+	reliable = false;
+	const byte *mask = NULL;
 	switch (to)
 	{
 	case MULTICAST_ALL_R:
-		reliable = true;	// intentional fallthrough
+		reliable = true;	// fallthrough
 	case MULTICAST_ALL:
-		leafnum = 0;
-		mask = NULL;
 		break;
 
 	case MULTICAST_PHS_R:
-		reliable = true;	// intentional fallthrough
+		reliable = true;	// fallthrough
 	case MULTICAST_PHS:
-		leafnum = CM_PointLeafnum (origin);
-		cluster = CM_LeafCluster (leafnum);
-		mask = CM_ClusterPHS (cluster);
+		mask = CM_ClusterPHS (CM_LeafCluster (CM_PointLeafnum (origin)));
 		break;
 
 	case MULTICAST_PVS_R:
-		reliable = true;	// intentional fallthrough
+		reliable = true;	// fallthrough
 	case MULTICAST_PVS:
-		leafnum = CM_PointLeafnum (origin);
-		cluster = CM_LeafCluster (leafnum);
-		mask = CM_ClusterPVS (cluster);
+		mask = CM_ClusterPVS (CM_LeafCluster (CM_PointLeafnum (origin)));
 		break;
 
 	default:
-		mask = NULL;
-		Com_FatalError ("SV_Multicast: bad to:%i", to);
+		Com_FatalError ("SV_Multicast: bad to=%d", to);
 	}
 
 	// process transferring message and create a copy for new clients
@@ -242,9 +227,9 @@ void SV_Multicast (vec3_t origin, multicast_t to, bool oldclients)
 
 		if (mask)
 		{
-			leafnum = CM_PointLeafnum (client->edict->s.origin);
-			cluster = CM_LeafCluster (leafnum);
-			area2 = CM_LeafArea (leafnum);
+			int leafnum = CM_PointLeafnum (client->edict->s.origin);
+			int cluster = CM_LeafCluster (leafnum);
+			int area2 = CM_LeafArea (leafnum);
 			if (!CM_AreasConnected (area1, area2))
 				continue;
 			if ( mask && (!(mask[cluster>>3] & (1<<(cluster&7)) ) ) )
@@ -263,12 +248,12 @@ void SV_Multicast (vec3_t origin, multicast_t to, bool oldclients)
 	unguard;
 }
 
-void SV_MulticastOld (vec3_t origin, multicast_t to)
+void SV_MulticastOld (const CVec3 &origin, multicast_t to)
 {
 	SV_Multicast (origin, to, true);	// send to old and new clients
 }
 
-void SV_MulticastNew (vec3_t origin, multicast_t to)
+void SV_MulticastNew (const CVec3 &origin, multicast_t to)
 {
 	SV_Multicast (origin, to, false);	// send to new clients only
 }
@@ -301,12 +286,11 @@ If origin is NULL, the origin is determined from the entity origin
 or the midpoint of the entity box for bmodels.
 ==================
 */
-void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
-		int soundindex, float volume, float attenuation, float timeofs, bool oldclients)
+void SV_StartSound (const CVec3 *origin, edict_t *entity, int channel,
+	int soundindex, float volume, float attenuation, float timeofs, bool oldclients)
 {
-	int			sendchan, flags, i, ent;
+	int			sendchan, flags, ent;
 	multicast_t	to;
-	CVec3		origin_v;
 	bool		use_phs;
 
 	guard(SV_StartSound);
@@ -355,18 +339,17 @@ void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
 		flags |= SND_OFFSET;
 
 	// use the entity origin unless it is a bmodel or explicitly specified
+	CVec3 origin_v;
 	if (!origin)
 	{
-		origin = origin_v;
+		origin = &origin_v;
 		if (entity->solid == SOLID_BSP)
 		{
-			for (i=0 ; i<3 ; i++)
-				origin_v[i] = entity->s.origin[i]+0.5*(entity->mins[i]+entity->maxs[i]);
+			entity->bounds.GetCenter (origin_v);
+			VectorAdd (origin_v, entity->s.origin, origin_v);
 		}
 		else
-		{
-			VectorCopy (entity->s.origin, origin_v);
-		}
+			origin_v = entity->s.origin;
 	}
 
 	MSG_WriteByte (&sv.multicast, svc_sound);
@@ -384,7 +367,7 @@ void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
 		MSG_WriteShort (&sv.multicast, sendchan);
 
 	if (flags & SND_POS)
-		MSG_WritePos (&sv.multicast, origin);
+		MSG_WritePos (&sv.multicast, *origin);
 
 	// if the sound doesn't attenuate,send it to everyone
 	// (global radio chatter, voiceovers, etc)
@@ -407,22 +390,20 @@ void SV_StartSound (vec3_t origin, edict_t *entity, int channel,
 	}
 
 	if (oldclients)
-		SV_MulticastOld (origin, to);
+		SV_MulticastOld (*origin, to);
 	else
-		SV_MulticastNew (origin, to);
+		SV_MulticastNew (*origin, to);
 
 	unguard;
 }
 
 
-void SV_StartSoundOld (vec3_t origin, edict_t *entity, int channel,
-		int soundindex, float volume, float attenuation, float timeofs)
+void SV_StartSoundOld (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs)
 {
 	SV_StartSound (origin, entity, channel, soundindex, volume, attenuation, timeofs, true);
 }
 
-void SV_StartSoundNew (vec3_t origin, edict_t *entity, int channel,
-		int soundindex, float volume, float attenuation, float timeofs)
+void SV_StartSoundNew (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs)
 {
 	SV_StartSound (origin, entity, channel, soundindex, volume, attenuation, timeofs, false);
 }

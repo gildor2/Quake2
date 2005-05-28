@@ -37,13 +37,11 @@ Writes a delta update of an entity_state_t list to the message.
 */
 static void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t *msg)
 {
-	int		oldindex, newindex;
-	int		from_num_entities;
-
 	MSG_WriteByte (msg, svc_packetentities);
 
-	from_num_entities = from ? from->num_entities : 0;
+	int from_num_entities = from ? from->num_entities : 0;
 
+	int oldindex, newindex;
 	newindex = oldindex = 0;
 	while (newindex < to->num_entities || oldindex < from_num_entities)
 	{
@@ -106,13 +104,11 @@ SV_WriteFrameToClient
 */
 void SV_WriteFrameToClient (client_t *client, sizebuf_t *msg)
 {
-	client_frame_t		*frame, *oldframe;
-	int					lastframe;
-
-//Com_Printf ("%i -> %i\n", client->lastframe, sv.framenum);
 	// this is the frame we are creating
-	frame = &client->frames[sv.framenum & UPDATE_MASK];
+	client_frame_t *frame = &client->frames[sv.framenum & UPDATE_MASK];
 
+	client_frame_t *oldframe;
+	int lastframe;
 	if (client->lastframe <= 0)
 	{	// client is asking for a retransmit
 		oldframe = NULL;
@@ -157,7 +153,7 @@ Build a client frame structure
 =============================================================================
 */
 
-byte		fatpvs[65536/8];	// 32767 is MAX_MAP_LEAFS
+byte		fatpvs[65536/8];	// 65536 is MAX_MAP_LEAFS
 
 /*
 ============
@@ -170,35 +166,34 @@ so we can't use a single PVS point
 static void SV_FatPVS (const CVec3 &org)
 {
 	int		i, j;
-	CVec3	mins, maxs;
+	CBox	bounds;
 
 	for (i = 0; i < 3; i++)
 	{
-		mins[i] = org[i] - 8;		// box should be greater, when client in 3rd person ??
-		maxs[i] = org[i] + 8;
+		bounds.mins[i] = org[i] - 8;		// box should be greater, when client in 3rd person ??
+		bounds.maxs[i] = org[i] + 8;
 	}
 
 	int leafs[64];
-	int count = CM_BoxLeafnums (mins, maxs, ARRAY_ARG(leafs));
+	int count = CM_BoxLeafnums (bounds, ARRAY_ARG(leafs));
 	if (count < 1)
 		Com_FatalError ("SV_FatPVS: count < 1");
-	int longs = (CM_NumClusters()+31)>>5;
+	int numDwords = (CM_NumClusters()+31) / 32;
 
 	// convert leafs to clusters
 	for (i = 0; i < count; i++)
 		leafs[i] = CM_LeafCluster (leafs[i]);
 
-	memcpy (fatpvs, CM_ClusterPVS (leafs[0]), longs<<2);
+	memcpy (fatpvs, CM_ClusterPVS (leafs[0]), numDwords * 4);
 	// or in all the other leaf bits
 	for (i = 1; i < count; i++)
 	{
 		for (j = 0; j < i; j++)
-			if (leafs[i] == leafs[j])
-				break;
-		if (j != i)
-			continue;		// already have the cluster we want
+			if (leafs[i] == leafs[j]) break;
+		if (j != i) continue;		// already have the cluster we want
+
 		const byte *src = CM_ClusterPVS (leafs[i]);
-		for (j = 0; j < longs; j++)
+		for (j = 0; j < numDwords; j++)
 			((long *)fatpvs)[j] |= ((long *)src)[j];
 	}
 }
@@ -214,34 +209,27 @@ copies off the playerstat and areabits.
 */
 void SV_BuildClientFrame (client_t *client)
 {
-	int		e, i;
-	CVec3	org;
-	edict_t	*ent, *cl_ent;
-	client_frame_t	*frame;
-	entity_state_t	*state;
-	int		l, leafnum;
-	int		clientarea, clientcluster;
-	int		c_fullsend;
-	byte	*clientphs, *bitvector;
-
 	guard(SV_BuildClientFrame);
 
-	cl_ent = client->edict;
+	int		i, l;
+
+	edict_t *cl_ent = client->edict;
 	if (!cl_ent->client)
 		return;		// not in game yet
 
 	// this is the frame we are creating
-	frame = &client->frames[sv.framenum & UPDATE_MASK];
+	client_frame_t *frame = &client->frames[sv.framenum & UPDATE_MASK];
 
 	frame->senttime = svs.realtime; // save it for ping calc later
 
 	// find the client's PVS
+	CVec3 org;
 	for (i = 0; i < 3; i++)
 		org[i] = cl_ent->client->ps.pmove.origin[i]*0.125f + cl_ent->client->ps.viewoffset[i];
 
-	leafnum = CM_PointLeafnum (org);
-	clientarea = CM_LeafArea (leafnum);
-	clientcluster = CM_LeafCluster (leafnum);
+	int leafnum = CM_PointLeafnum (org);
+	int clientarea = CM_LeafArea (leafnum);
+	int clientcluster = CM_LeafCluster (leafnum);
 
 	// calculate the visible areas
 	frame->areabytes = CM_WriteAreaBits (frame->areabits, clientarea);
@@ -249,19 +237,16 @@ void SV_BuildClientFrame (client_t *client)
 	// grab the current player_state_t
 	frame->ps = cl_ent->client->ps;
 
-
 	SV_FatPVS (org);
-	clientphs = CM_ClusterPHS (clientcluster);
+	const byte *clientphs = CM_ClusterPHS (clientcluster);
 
 	// build up the list of visible entities
 	frame->num_entities = 0;
 	frame->first_entity = svs.next_client_entities;
 
-	c_fullsend = 0;
-
-	for (e = 1; e < ge->num_edicts; e++)
+	for (int e = 1; e < ge->num_edicts; e++)
 	{
-		ent = EDICT_NUM(e);
+		edict_t *ent = EDICT_NUM(e);
 
 		// ignore ents without visible models
 		if (ent->svflags & SVF_NOCLIENT)
@@ -293,21 +278,16 @@ void SV_BuildClientFrame (client_t *client)
 			{
 				// FIXME: if an ent has a model and a sound, but isn't
 				// in the PVS, only the PHS, clear the model
-				if (ent->s.sound)
-				{
-					bitvector = fatpvs;	//clientphs;
-				}
-				else
-					bitvector = fatpvs;
+				const byte *bitvector = (ent->s.sound) ? fatpvs /*clientphs*/ : fatpvs;
 
 				if (ent->num_clusters == -1)
 				{	// too many leafs for individual check, go by headnode
 					if (!CM_HeadnodeVisible (ent->headnode, bitvector))
 						continue;
-					c_fullsend++;
 				}
 				else
-				{	// check individual leafs
+				{
+					// check individual leafs
 					for (i = 0; i < ent->num_clusters; i++)
 					{
 						l = ent->clusternums[i];
@@ -325,10 +305,10 @@ void SV_BuildClientFrame (client_t *client)
 		}
 
 		// add it to the circular client_entities array
-		state = &svs.client_entities[svs.next_client_entities%svs.num_client_entities];
+		entity_state_t *state = &svs.client_entities[svs.next_client_entities%svs.num_client_entities];
 		if (ent->s.number != e)
 		{
-			Com_DPrintf ("FIXING ENT->S.NUMBER!!!\n");
+			Com_DPrintf (S_RED"FIXING ENT->S.NUMBER\n");
 			ent->s.number = e;
 		}
 		*state = ent->s;
@@ -337,9 +317,7 @@ void SV_BuildClientFrame (client_t *client)
 		// disable new features for clients using old protocol
 		if (!client->newprotocol)
 		{
-			int evt;
-
-			evt = state->event;
+			int evt = state->event;
 
 			if (evt >= EV_FOOTSTEP0 && evt < EV_FOOTSTEP0 + MATERIAL_COUNT)
 				evt = EV_FOOTSTEP;

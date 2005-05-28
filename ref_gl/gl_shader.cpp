@@ -1,4 +1,4 @@
-#include "gl_local.h"
+#include "OpenGLDrv.h"
 #include "gl_shader.h"
 #include "gl_buffers.h"
 
