@@ -310,12 +310,13 @@ float GetPolyArea (CVec3 **pverts, int numVerts)	//?? should be "const CVec3 **p
 	float area = 0;
 	for (int i = 1; i < numVerts - 1; i++)
 	{
-		CVec3	d1, d2, cross;
+		CVec3	d1, d2, cr;
 
 		VectorSubtract ((*pverts[0]), (*pverts[i]), d1);
 		VectorSubtract ((*pverts[0]), (*pverts[i+1]), d2);
-		CrossProduct (d1, d2, cross);
-		area += VectorLength (cross) / 2;
+		cross (d1, d2, cr);
+		// we use a property of cross product vector length = parallelogram area = 2 * triangle area
+		area += VectorLength (cr) / 2;
 	}
 	return area;
 }

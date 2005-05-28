@@ -498,7 +498,7 @@ particle_t *CL_AllocParticle (void)
 		p->accel[0] = p->accel[1] = 0;
 		p->accel[2] = -PARTICLE_GRAVITY;
 		p->type = PT_DEFAULT;
-		p->_new = true;
+		p->isNew = true;
 		p->leafNum = -1;
 	}
 	return p;
@@ -532,9 +532,9 @@ void CL_UpdateParticles (void)
 	{
 		next = p->next;
 
-		if (p->_new)
+		if (p->isNew)
 		{
-			p->_new = false;	// particle is just created -- timeDelta == 0, nothing to update
+			p->isNew = false;	// particle is just created -- timeDelta == 0, nothing to update
 			p->leafNum = CM_PointLeafnum (p->org);
 		}
 		else if (timeDelta > 0)

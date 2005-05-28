@@ -71,7 +71,7 @@ static int Cull (CBox &b, int frustumMask)
 	for (i = 0, pl = vp.frustum; i < NUM_FRUSTUM_PLANES; i++, pl++)
 		if (frustumMask & (1 << i))
 		{
-			int tmp = BoxOnPlaneSide (b, pl);
+			int tmp = b.OnPlaneSide (*pl);
 			if (tmp == 2) return FRUSTUM_OUTSIDE;
 			if (tmp == 3) res = FRUSTUM_ON;
 		}
@@ -79,8 +79,7 @@ static int Cull (CBox &b, int frustumMask)
 }
 
 
-// Uses entity to determine transformations. We cannot use BoxOnPlaneSide, because
-// transformed bounding box is not axial.
+// Uses entity to determine transformations
 static int TransformedCull (CBox &b, refEntity_t *e)
 {
 	if (!gl_frustumCull->integer)
@@ -106,7 +105,7 @@ static int TransformedCull (CBox &b, refEntity_t *e)
 		cplane_t pl;
 		e->coord.TransformPlane (*fr, pl);
 
-		switch (BoxOnPlaneSide (b, &pl))	// do not use BOX_ON_PLANE_SIDE -- useless
+		switch (b.OnPlaneSide (pl))	// do not use BOX_ON_PLANE_SIDE -- useless (non-axial planes)
 		{
 		case 1:
 			frustumMask &= ~mask;
@@ -868,11 +867,13 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	// sanity check
 	if (out->frame >= numFrames || out->frame < 0)
 	{
+		//?? developer only
 		DrawTextLeft (va("md3Model_t::InitEntity: no frame %d in %s\n", out->frame, name), RGB(1,0,0));
 		out->frame = out->oldFrame = 0;
 	}
 	if (out->oldFrame >= numFrames || out->oldFrame < 0)
 	{
+		//?? developer only
 		DrawTextLeft (va("md3Model_t::InitEntity: no frame %d in %s\n", out->oldFrame, name), RGB(1,0,0));
 		out->frame = out->oldFrame = 0;
 	}
@@ -1022,9 +1023,9 @@ static void AddBeamSurfaces (beam_t *b)
 	// compute beam axis
 	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
 	axis[0].NormalizeFast ();
-	CrossProduct (axis[0], viewDir, axis[1]);
+	cross (axis[0], viewDir, axis[1]);
 	axis[1].NormalizeFast ();
-	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
+	cross (axis[0], axis[1], axis[2]);			// already normalized
 
 	VectorScale (axis[1], b->radius, dir2);
 	float angle = 0;
@@ -1083,9 +1084,9 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 	// compute beam axis
 	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
 	float len = axis[0].NormalizeFast ();
-	CrossProduct (axis[0], viewDir, axis[1]);
+	cross (axis[0], viewDir, axis[1]);
 	axis[1].NormalizeFast ();
-	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
+	cross (axis[0], axis[1], axis[2]);				// already normalized
 
 	float st0 = VectorDistance (b->drawEnd, b->end);
 
@@ -1207,9 +1208,9 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 	// compute beam axis
 	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
 	float len = axis[0].NormalizeFast ();
-	CrossProduct (axis[0], viewDir, axis[1]);
+	cross (axis[0], viewDir, axis[1]);
 	axis[1].NormalizeFast ();
-	CrossProduct (axis[0], axis[1], axis[2]);		// already normalized
+	cross (axis[0], axis[1], axis[2]);			// already normalized
 
 	float st0 = VectorDistance (b->drawEnd, b->end);
 
@@ -1306,7 +1307,7 @@ static node_t *WalkBspTree (void)
 #define CULL_NODE(bit)	\
 			if (frustumMask & (1<<bit))	\
 			{							\
-				switch (BoxOnPlaneSide(node->bounds, &vp.frustum[bit])) {	\
+				switch (node->bounds.OnPlaneSide (vp.frustum[bit])) {	\
 				case 1:					\
 					frustumMask &= ~(1<<bit);	\
 					break;				\
@@ -1376,7 +1377,7 @@ static node_t *WalkBspTree (void)
 			// stats
 			if (frm != drawFrame)
 			{
-				DrawTextLeft (va("occl: %d", tests),RGB(1,1,1));
+				DrawTextLeft (va("occl: %d", tests));
 				frm = drawFrame;
 				tests = 0;
 			}
@@ -1653,7 +1654,7 @@ static void DrawFlares (void)
 				// flarePos = e->center - im->center + flarePos
 				VectorSubtract (e->center, tmp, tmp);
 				VectorAdd (flarePos, tmp, flarePos);
-//				DrawTextLeft (va("flare shift: %g %g %g -> flarePos: %g %g %g", VECTOR_ARG(tmp), VECTOR_ARG(flarePos)),RGB(1,1,1));
+//				DrawTextLeft (va("flare shift: %g %g %g -> flarePos: %g %g %g", VECTOR_ARG(tmp), VECTOR_ARG(flarePos)));
 			}
 			// perform PVS cull for flares with radius 0 (if flare have radius > 0
 			// it (mostly) will be placed inside invisible (solid) leaf)

@@ -33,9 +33,9 @@ void	AppActivate (bool activate);
 void	Screenshot (int flags, const char *name);
 
 // drawing colored text in any screen position
-void	DrawTextPos (int x, int y, const char *text, unsigned rgba);
-void	DrawTextLeft (const char *text, unsigned rgba);
-void	DrawTextRight (const char *text, unsigned rgba);
+void	DrawTextPos (int x, int y, const char *text, unsigned rgba = 0xFFFFFFFF);
+void	DrawTextLeft (const char *text, unsigned rgba = 0xFFFFFFFF);
+void	DrawTextRight (const char *text, unsigned rgba = 0xFFFFFFFF);
 
 // draw char at (x,y) (char-related coordinates)
 void	DrawConChar (int x, int y, int c, int color = C_WHITE);

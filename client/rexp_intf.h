@@ -123,15 +123,15 @@ inline void RE_Screenshot (int flags, const char *name)
 {
 	re.Screenshot (flags, name);
 }
-inline void RE_DrawTextPos (int x, int y, const char *text, unsigned rgba)
+inline void RE_DrawTextPos (int x, int y, const char *text, unsigned rgba = 0xFFFFFFFF)
 {
 	re.DrawTextPos (x, y, text, rgba);
 }
-inline void RE_DrawTextLeft (const char *text, unsigned rgba)
+inline void RE_DrawTextLeft (const char *text, unsigned rgba = 0xFFFFFFFF)
 {
 	re.DrawTextLeft (text, rgba);
 }
-inline void RE_DrawTextRight (const char *text, unsigned rgba)
+inline void RE_DrawTextRight (const char *text, unsigned rgba = 0xFFFFFFFF)
 {
 	re.DrawTextRight (text, rgba);
 }

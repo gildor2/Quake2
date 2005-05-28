@@ -450,13 +450,13 @@ void CL_AddExplosions (void)
 		}
 
 //RE_DrawTextLeft (va("[%d / %g * %g] o(%g %g %g) c(%g %g %g)", i, ex->light, ent->alpha,
-//VECTOR_ARG(ent->origin), VECTOR_ARG(ex->lightcolor)),RGB(1,1,1));//!!
+//VECTOR_ARG(ent->origin), VECTOR_ARG(ex->lightcolor)));//!!
 		if (ex->light)
 		{
 //			V_AddLight (ent->origin, ex->light * ent->alpha, VECTOR_ARG(ex->lightcolor));
 			V_AddLight (ent->origin, ex->light * ent->alpha,
 				ex->lightcolor[0] * ent->alpha, ex->lightcolor[1] * ent->alpha, ex->lightcolor[2] * ent->alpha);
-//			RE_DrawTextLeft (va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARG(ent->origin), ent->alpha, VECTOR_ARG(ex->lightcolor)),RGB(1,1,1));
+//			RE_DrawTextLeft (va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARG(ent->origin), ent->alpha, VECTOR_ARG(ex->lightcolor)));
 		}
 
 		if (!ent->model) continue;		// flash only

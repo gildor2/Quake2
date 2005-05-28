@@ -334,9 +334,9 @@ static void BuildPlanarSurfAxis (surfacePlanar_t *pl)
 	{
 		static const CVec3 up = {0, 0, 1};
 
-		CrossProduct (pl->plane.normal, up, pl->axis[0]);
+		cross (pl->plane.normal, up, pl->axis[0]);
 		pl->axis[0].Normalize ();
-		CrossProduct (pl->plane.normal, pl->axis[0], pl->axis[1]);
+		cross (pl->plane.normal, pl->axis[0], pl->axis[1]);
 	}
 	// compute 2D bounds
 	float min1, max1, min2, max2;
@@ -622,7 +622,7 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 			// backface (needed for backface culling)
 			s->plane.normal.Negate ();
 			s->plane.dist = -s->plane.dist;
-			//?? set signbits
+			//?? s->plane.SetSignbits ();
 			s->plane.SetType ();
 		}
 		s->numVerts = numVerts;

@@ -153,12 +153,13 @@ void	InitTexts ();
 void	ClearTexts ();
 void	FlushTexts ();
 
-void	DrawChar (int x, int y, int c, int color);
-void	DrawConChar (int x, int y, int c, int color);
+// standard names (renderer interface)
+//void	DrawChar (int x, int y, int c, int color);
+//void	DrawConChar (int x, int y, int c, int color);
 
-void	DrawTextLeft (const char *text, unsigned rgba);
-void	DrawTextRight (const char *text, unsigned rgba);
-void	DrawTextPos (int x, int y, const char *text, unsigned rgba);
+//void	DrawTextLeft (const char *text, unsigned rgba);
+//void	DrawTextRight (const char *text, unsigned rgba);
+//void	DrawTextPos (int x, int y, const char *text, unsigned rgba);
 void	DrawText3D (const CVec3 &pos, const char *text, unsigned rgba);
 
 

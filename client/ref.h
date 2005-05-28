@@ -7,7 +7,7 @@ class CRenderModel
 {
 public:
 	char	name[MAX_QPATH];
-//	virtual void LerpTag (int frame1, int frame2, CCoords *coord);
+	virtual void LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const = NULL;
 };
 
 
@@ -83,12 +83,12 @@ struct beam_t
 };
 
 
-typedef struct
+struct dlight_t
 {
 	CVec3	origin;
 	CVec3	color;
 	float	intensity;
-} dlight_t;
+};
 
 
 typedef enum
@@ -101,28 +101,28 @@ struct particle_t
 {
 	// appearance
 	CVec3	org;
-	byte	color;
-	bool	_new;
+	byte	color;					// paletted
+	bool	isNew;
 	particleType_t type;
 	float	alpha;
 	int		leafNum;				// -1 -- uninitialized
 	// some physics
 	CVec3	vel;					// org += vel * time
 	CVec3	accel;					// vel += accel * time
-	float	alphavel;
+	float	alphavel;				// alpha/sec
 
 	particle_t *next;
 	particle_t *drawNext;
 };
 
-typedef struct
+struct lightstyle_t
 {
 	byte	length;
 	byte	value;					// current lighting; monochrome; 0 .. 255 -> 0.0 .. 2.0
 	byte	map[MAX_QPATH];
-} lightstyle_t;
+};
 
-typedef struct
+struct refdef_t
 {
 	int		x, y, width, height;	// in virtual screen coordinates
 	float	fov_x, fov_y;
@@ -143,7 +143,7 @@ typedef struct
 	lightstyle_t *lightstyles;		// [MAX_LIGHTSTYLES]
 	particle_t *particles;
 	beam_t	 *beams;
-} refdef_t;
+};
 
 
 // renderer flags (capabilities)

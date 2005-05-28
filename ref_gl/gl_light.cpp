@@ -588,7 +588,7 @@ void LightForEntity (refEntity_t *ent)
 
 			if (gl_showGrid->integer)
 			{
-//				DrawTextLeft (va("pos: %g %g %g frac: %g %g %g", VECTOR_ARG(pos), VECTOR_ARG(frac)), RGB(1,1,1));
+//				DrawTextLeft (va("pos: %g %g %g frac: %g %g %g", VECTOR_ARG(pos), VECTOR_ARG(frac)));
 				prevDepth = gl_state.currentDepthMode;
 				GL_DepthRange (DEPTH_NEAR);
 				glPushMatrix ();

@@ -165,16 +165,9 @@ void MakeNormalVectors (const CVec3 &forward, CVec3 &right, CVec3 &up)
 	float d = dot(right, forward);
 	VectorMA (right, -d, forward);
 	right.Normalize ();
-	CrossProduct (right, forward, up);
+	cross (right, forward, up);
 }
 
-
-void CrossProduct (const CVec3 &v1, const CVec3 &v2, CVec3 &cross)
-{
-	cross[0] = v1[1] * v2[2] - v1[2] * v2[1];
-	cross[1] = v1[2] * v2[0] - v1[0] * v2[2];
-	cross[2] = v1[0] * v2[1] - v1[1] * v2[0];
-}
 
 float VectorLength (const CVec3 &v)
 {
@@ -248,78 +241,17 @@ float CVec3::NormalizeFast ()
 	return len2 * denom;
 }
 
+void cross (const CVec3 &v1, const CVec3 &v2, CVec3 &result)
+{
+	result[0] = v1[1] * v2[2] - v1[2] * v2[1];
+	result[1] = v1[2] * v2[0] - v1[0] * v2[2];
+	result[2] = v1[0] * v2[1] - v1[1] * v2[0];
+}
+
 
 /*-----------------------------------------------------------------------------
 	CBox
 -----------------------------------------------------------------------------*/
-
-// returns 1, 2, or 1 + 2
-//?? make as CBox::OnPlaneSide()
-int BoxOnPlaneSide (const CBox &box, const cplane_t *p)
-{
-	float i0 = p->normal[0] * box.mins[0];
-	float a0 = p->normal[0] * box.maxs[0];
-	float i1 = p->normal[1] * box.mins[1];
-	float a1 = p->normal[1] * box.maxs[1];
-	float i2 = p->normal[2] * box.mins[2];
-	float a2 = p->normal[2] * box.maxs[2];
-
-	float	dist1, dist2;
-	switch (p->signbits)
-	{
-	case 0:
-		dist1 = a0 + a1 + a2;
-		dist2 = i0 + i1 + i2;
-		break;
-	case 1:
-		dist1 = i0 + a1 + a2;
-		dist2 = a0 + i1 + i2;
-		break;
-	case 2:
-		dist1 = a0 + i1 + a2;
-		dist2 = i0 + a1 + i2;
-		break;
-	case 3:
-		dist1 = i0 + i1 + a2;
-		dist2 = a0 + a1 + i2;
-		break;
-	case 4:
-		dist1 = a0 + a1 + i2;
-		dist2 = i0 + i1 + a2;
-		break;
-	case 5:
-		dist1 = i0 + a1 + i2;
-		dist2 = a0 + i1 + a2;
-		break;
-	case 6:
-		dist1 = a0 + i1 + i2;
-		dist2 = i0 + a1 + a2;
-		break;
-	case 7:
-//	default:	// shut up compiler
-		dist1 = i0 + i1 + i2;
-		dist2 = a0 + a1 + a2;
-		break;
-//	default:
-//		dist1 = dist2 = 0;		// shut up compiler
-//		break;
-	}
-
-	int sides = 0;
-#if 0
-	if (dist1 >= p->dist)
-		sides = 1;
-	if (dist2 < p->dist)
-		sides |= 2;
-#else
-	//?? faster
-	dist1 = p->dist - dist1;
-	dist2 = dist2 - p->dist;
-	sides = IsNegative (dist1) + (IsNegative (dist2) << 1);
-#endif
-
-	return sides;
-}
 
 void CBox::Clear ()
 {
@@ -351,6 +283,69 @@ void CBox::GetCenter (CVec3 &p)
 		p[i] = (mins[i] + maxs[i]) / 2;
 }
 
+// returns 1, 2, or 1 + 2
+int CBox::OnPlaneSide (const cplane_t &p) const
+{
+	float i0 = p.normal[0] * mins[0];	// In -- mIns[n] * p.normal[n]
+	float i1 = p.normal[1] * mins[1];
+	float i2 = p.normal[2] * mins[2];
+	float a0 = p.normal[0] * maxs[0];	// An -- mAxs[n] * p.normal[n]
+	float a1 = p.normal[1] * maxs[1];
+	float a2 = p.normal[2] * maxs[2];
+
+	float	dist1, dist2;
+	switch (p.signbits)
+	{
+	case 0:
+		dist1 = a0 + a1 + a2;
+		dist2 = i0 + i1 + i2;
+		break;
+	case 1:
+		dist1 = i0 + a1 + a2;
+		dist2 = a0 + i1 + i2;
+		break;
+	case 2:
+		dist1 = a0 + i1 + a2;
+		dist2 = i0 + a1 + i2;
+		break;
+	case 3:
+		dist1 = i0 + i1 + a2;
+		dist2 = a0 + a1 + i2;
+		break;
+	case 4:
+		dist1 = a0 + a1 + i2;
+		dist2 = i0 + i1 + a2;
+		break;
+	case 5:
+		dist1 = i0 + a1 + i2;
+		dist2 = a0 + i1 + a2;
+		break;
+	case 6:
+		dist1 = a0 + i1 + i2;
+		dist2 = i0 + a1 + a2;
+		break;
+	case 7:
+//	default:					// shut up compiler
+		dist1 = i0 + i1 + i2;
+		dist2 = a0 + a1 + a2;
+		break;
+//	default:
+//		dist1 = dist2 = 0;		// shut up compiler
+//		break;
+	}
+
+	int sides = 0;
+	dist1 = p.dist - dist1;
+	dist2 = dist2 - p.dist;
+	sides = IsNegative (dist1) + (IsNegative (dist2) << 1);
+
+	return sides;
+}
+
+
+/*-----------------------------------------------------------------------------
+	CAxis
+-----------------------------------------------------------------------------*/
 
 void CAxis::Clear ()
 {
@@ -382,6 +377,10 @@ void CAxis::UnTransformVector (const CVec3 &src, CVec3 &dst) const
 }
 
 
+/*-----------------------------------------------------------------------------
+	CCoords
+-----------------------------------------------------------------------------*/
+
 void CCoords::TransformPoint (const CVec3 &src, CVec3 &dst) const
 {
 	CVec3 tmp;
@@ -397,6 +396,22 @@ void CCoords::UnTransformPoint (const CVec3 &src, CVec3 &dst) const
 	VectorMA (origin, src[0], axis[0], tmp);
 	VectorMA (tmp,	  src[1], axis[1], tmp);
 	VectorMA (tmp,	  src[2], axis[2], dst);
+}
+
+void CCoords::TransformCoords (const CCoords &src, CCoords &dst) const
+{
+	TransformPoint (src.origin, dst.origin);
+	axis.TransformVector (src.axis[0], dst.axis[0]);
+	axis.TransformVector (src.axis[1], dst.axis[1]);
+	axis.TransformVector (src.axis[2], dst.axis[2]);
+}
+
+void CCoords::UnTransformCoords (const CCoords &src, CCoords &dst) const
+{
+	UnTransformPoint (src.origin, dst.origin);
+	axis.UnTransformVector (src.axis[0], dst.axis[0]);
+	axis.UnTransformVector (src.axis[1], dst.axis[1]);
+	axis.UnTransformVector (src.axis[2], dst.axis[2]);
 }
 
 void CCoords::TransformPlane (const cplane_t &src, cplane_t &dst) const
@@ -416,7 +431,6 @@ void TransformPoint (const CVec3 &origin, const CAxis &axis, const CVec3 &src, C
 	dst[1] = dot(tmp, axis[1]);
 	dst[2] = dot(tmp, axis[2]);
 }
-
 
 void UnTransformPoint (const CVec3 &origin, const CAxis &axis, const CVec3 &src, CVec3 &dst)
 {

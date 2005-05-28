@@ -172,6 +172,9 @@ MODEL SYSTEM:
 ? improve camper detection: track player position every ... 5 sec (??) for a 1+n minute period and set "camper" to true
   if current player position is near (tune this distance !) to history[now-1min .. now-2min]
 - menu option: priority (win_priorityBoost) -- for Win2K+
+- UT2003/UT2004-like light bulbs (flares) near player head for teamplay game (standard Q2 teamplay detects team by skin - it
+  is possible for Q2; but problem to detect flare positions (can find position in idle md2 frame, and project this position
+  to another frames using nearest triangle; for md3 - easier, because head is separate model ...))
 
 BSP:
 ~~~~
@@ -238,7 +241,7 @@ BSP:
   small difference in ms, large in fps)
 - server: when loading, ignore timescale (state is always ss_game, but clients are not spawned)
 
---------- REF_GL (new) -----------
+----------- RENDERER -------------
 
 - R_RecursiveWorldNode():
   3) fog-in-leaf
@@ -251,7 +254,7 @@ BSP:
   - add 2nd {viewcluster, leaf[].frame} set (1st for main scene, 2nd for portal) -- Q3 has recalculation of leaf visibility
     every frame twice, and without portal - once per few frames.
   ? try implement using stencil or render-to-texture
-? place LoadMd2 outside ref_xxx and perform lovercase for a skin names
+? place LoadMd2 outside renderer and perform lovercase for a skin names
 ! fog occlusion (for global fog) -- implement it like sky (occluded surface -> sky surface, sky -> fog color);
   may look at Alice (additional clip plane to 4 frustum planes)
 - detail textures + magnify filter (i.e. advmame2x -- check its name!) - use file "detail.lst" (?) wich will specify detail+filter
@@ -309,7 +312,7 @@ BSP:
 
 ----------- GAME LIB -------------
 
-!? add Python virtual machine (game library, inline map scripts)
+!? add Python or Lua virtual machine (game library, inline map scripts)
 ? loading Win32 mods in Linux (Wine)
 ? add support for loading ELF (other format?) object files -- cross-platform (any x86 platform), can place object files into paks;
   can implement renderer or gui or anything other as ELF package and place it into pak (ideal: small platform-depending exe with

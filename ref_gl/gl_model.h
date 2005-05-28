@@ -214,7 +214,7 @@ struct gl_flare_t
 	float	radius;
 	// lighting
 	color_t	color;
-	byte	style;				//!! unused now (is it needed ?)
+	byte	style;
 	float	lastTime;
 	gl_flare_t *next;
 };
@@ -288,6 +288,7 @@ public:
 	modelType_t	type;
 	int		size;				// in memory
 	inline model_t () { type = MODEL_UNKNOWN; };
+	virtual void LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
 	virtual void InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual void DrawLabel (refEntity_t *e);
@@ -323,6 +324,7 @@ struct md3Frame_t
 class md3Model_t : public model_t
 {
 public:
+	virtual void LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
 	int		numSurfaces;		// for MD2 = 1
 	surfaceMd3_t *surf;			// [numSurfaces]
 	int		numFrames;

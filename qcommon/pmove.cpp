@@ -185,7 +185,7 @@ static bool SlideMove (void)
 				if (dot (pml.velocity, planes[i]) >= 0) continue;
 
 				// go along the crease
-				CrossProduct (planes[i], planes[j], dir);
+				cross (planes[i], planes[j], dir);
 				dir.NormalizeFast ();
 				d = dot (dir, pml.velocity);
 				VectorScale (dir, d, pml.velocity);
@@ -220,7 +220,7 @@ static bool SlideMove (void)
 				pml.velocity.Zero();
 				break;
 			}
-			CrossProduct (planes[0], planes[1], dir);
+			cross (planes[0], planes[1], dir);
 			d = dot (dir, pml.velocity);
 			VectorScale (dir, d, pml.velocity);
 		}
@@ -460,9 +460,9 @@ static void AddCurrents (CVec3 &wishvel)
 				CVec3	axis[2], vel_vert;
 
 				// compute projections of velocity onto ladder plane axis
-				CrossProduct (pml.ladderPlane.normal, up, axis[0]);
+				cross (pml.ladderPlane.normal, up, axis[0]);
 				axis[0].NormalizeFast ();
-				CrossProduct (pml.ladderPlane.normal, axis[0], axis[1]);
+				cross (pml.ladderPlane.normal, axis[0], axis[1]);
 
 				f = dot (wishvel, axis[1]);
 				VectorScale (axis[1], f, vel_vert);

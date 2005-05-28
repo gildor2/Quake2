@@ -508,6 +508,7 @@ void CL_PrepRefresh (void);
 bool V_RenderView (void);
 void V_AddEntity (entity_t *ent);
 void V_AddLight (const CVec3 &org, float intensity, float r, float g, float b);
+float CalcFov (float fov_x, float width, float height);
 
 //
 // cl_tent.cpp

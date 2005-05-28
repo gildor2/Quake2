@@ -71,7 +71,7 @@ void V_AddEntity (entity_t *ent)
 	if (r_numentities >= MAX_ENTITIES)
 		return;
 	r_entities[r_numentities++] = *ent;
-//	if (!ent->model) RE_DrawTextLeft (va("NULL model: %g %g %g from %X", VECTOR_ARG(ent->origin), GET_RETADDR(ent)), RGB(1,1,1));
+//	if (!ent->model) RE_DrawTextLeft (va("NULL model: %g %g %g from %X", VECTOR_ARG(ent->origin), GET_RETADDR(ent)));
 }
 
 
@@ -82,16 +82,11 @@ V_AddLight
 */
 void V_AddLight (const CVec3 &org, float intensity, float r, float g, float b)
 {
-	dlight_t	*dl;
-
-	if (r_numdlights >= MAX_DLIGHTS)
-		return;
-	dl = &r_dlights[r_numdlights++];
-	dl->origin = org;
-	dl->intensity = intensity;
-	dl->color[0] = r;
-	dl->color[1] = g;
-	dl->color[2] = b;
+	if (r_numdlights >= MAX_DLIGHTS) return;
+	dlight_t &dl = r_dlights[r_numdlights++];
+	dl.origin = org;
+	dl.intensity = intensity;
+	dl.color.Set (r, g, b);
 }
 
 
@@ -104,23 +99,19 @@ If cl_testparticles is set, create 4096 particles in the view
 */
 void V_TestParticles (void)
 {
-	particle_t	*p;
-	int			i, j;
-	float		d, r, u;
-
 	CL_ClearParticles ();
 
-	for (i = 0; i < MAX_PARTICLES; i++)
+	for (int i = 0; i < MAX_PARTICLES; i++)
 	{
-		d = i / 4.0f;
-		r = 4 * ((i&7) - 3.5f);
-		u = 4 * (((i>>3)&7) - 3.5f);
+		float d = i / 4.0f;
+		float r = 4 * ((i&7) - 3.5f);
+		float u = 4 * (((i>>3)&7) - 3.5f);
 
-		if (!(p = CL_AllocParticle ()))
-			break;
+		particle_t	*p;
+		if (!(p = CL_AllocParticle ())) break;
+
 		p->accel[2] = 0;
-
-		for (j = 0; j < 3; j++)
+		for (int j = 0; j < 3; j++)
 			p->org[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * d + cl.v_right[j] * r + cl.v_up[j] * u;
 
 		p->color = 8;
@@ -182,9 +173,8 @@ If cl_testlights is set, create 32 lights models
 */
 void V_TestLights (void)
 {
-	int			i, j;
-	float		f, r;
-	dlight_t	*dl;
+	int		i;
+	dlight_t *dl;
 
 	r_numdlights = MAX_DLIGHTS;
 	memset (r_dlights, 0, sizeof(r_dlights));
@@ -199,10 +189,10 @@ void V_TestLights (void)
 			continue;
 		}
 #endif
-		r = 64 * ((i % 4) - 1.5);
-		f = 64 * (i / 4) + 128;
+		float r = 64 * ((i % 4) - 1.5);
+		float f = 64 * (i / 4) + 128;
 
-		for (j = 0; j < 3; j++)
+		for (int j = 0; j < 3; j++)
 			dl->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * f + cl.v_right[j] * r;
 		dl->color[0] = ((i % 6) + 1) & 1;
 		dl->color[1] = (((i % 6) + 1) & 2) >> 1;
@@ -405,19 +395,11 @@ CalcFov
 */
 float CalcFov (float fov_x, float width, float height)
 {
-	float	a;
-	float	x;
-
 	if (fov_x < 1 || fov_x > 179)
-		Com_DropError ("Bad fov: %f", fov_x);
+		Com_DropError ("Bad fov: %g", fov_x);
 
-	x = width/tan(fov_x/360*M_PI);
-
-	a = atan (height/x);
-
-	a = a*360/M_PI;
-
-	return a;
+	float aspect = width / tan (fov_x / 360 * M_PI);
+	return atan (height / aspect) * 360 / M_PI;
 }
 
 //============================================================================
@@ -488,10 +470,10 @@ static void Sky_f (bool usage, int argc, char **argv)
 typedef struct
 {
 	int		code;
-	char	*name;
+	const char *name;
 } flagInfo_t;
 
-static void DrawFlag (int flag, const flagInfo_t *info, int numFlags, char *prefix)
+static void DrawFlag (int flag, const flagInfo_t *info, int numFlags, const char *prefix)
 {
 #if 0
 	int		i;
@@ -740,12 +722,10 @@ static void DrawFpsInfo (void)
 static void FixWaterVis (void)
 {
 	CVec3	p;			// point
-	int		cont;		// its contents
-	int		w, w1;		// "in water" flag
-	trace_t	trace;
+	bool	w, w1;		// "in water" flag
 
 	if (cl.refdef.rdflags & RDF_THIRD_PERSON)
-		w1 = CM_PointContents (cl.refdef.vieworg, 0) & MASK_WATER;	// need to recompute UNDERWATER flag
+		w1 = (CM_PointContents (cl.refdef.vieworg, 0) & MASK_WATER) != 0;	// need to recompute UNDERWATER flag
 	else
 		w1 = (cl.refdef.rdflags & RDF_UNDERWATER) != 0;
 	p[0] = cl.refdef.vieworg[0];
@@ -753,7 +733,7 @@ static void FixWaterVis (void)
 
 	// check point below
 	p[2] = cl.refdef.vieworg[2] - MIN_WATER_DISTANCE;
-	cont = CM_PointContents (p, 0);
+	unsigned cont = CM_PointContents (p, 0);
 	w = (cont & MASK_WATER) != 0;
 
 	if (w1 == w || cont & MASK_SOLID)
@@ -771,6 +751,7 @@ static void FixWaterVis (void)
 	//?? improve by disabling this trick for correct maps
 
 	// trace from air to water
+	trace_t trace;
 	if (!w1)
 		CM_BoxTrace (trace, cl.refdef.vieworg, p, NULL, NULL, 0, MASK_WATER);
 	else
@@ -792,15 +773,6 @@ V_RenderView
 
 ==================
 */
-static int entitycmpfnc (const entity_t *a, const entity_t *b)
-{
-	if (a->model == b->model)
-		return ((int) a->skin - (int) b->skin);
-	else
-		return ((int) a->model - (int) b->model);
-}
-
-
 bool V_RenderView (void)
 {
 	guard(V_RenderView);
@@ -869,12 +841,14 @@ bool V_RenderView (void)
 		if (r_playerpos->integer)	DrawOriginInfo ();
 		if (r_surfinfo->integer)	DrawSurfInfo ();
 
+#if 0
 		// never let it sit exactly on a node line, because a water plane can
 		// dissapear when viewed with the eye exactly on it.
 		// the server protocol only specifies to 1/8 pixel, so add 1/16 in each axis
 		cl.refdef.vieworg[0] += 1.0f/16;	//??
 		cl.refdef.vieworg[1] += 1.0f/16;
 		cl.refdef.vieworg[2] += 1.0f/16;
+#endif
 
 		cl.refdef.x = scr_vrect.x;
 		cl.refdef.y = scr_vrect.y;
@@ -901,20 +875,15 @@ bool V_RenderView (void)
 		// underwater fov warp (taken from Q3 game source)
 		if (cl.refdef.rdflags & RDF_UNDERWATER)
 		{
-			float	v;
-
-			v = sin (cl.refdef.time * 0.4 * M_PI * 2);
+			float v = sin (cl.refdef.time * 0.4 * M_PI * 2);
 			cl.refdef.fov_x += v;
 			cl.refdef.fov_y -= v;
 		}
 		FixWaterVis ();
-
-		// sort entities for better cache locality - ???
-		qsort (cl.refdef.entities, cl.refdef.num_entities, sizeof(cl.refdef.entities[0]),
-			(int (*)(const void *, const void *))entitycmpfnc);
 	}
-
+	// render scene
 	RE_RenderFrame (&cl.refdef);
+	// add full-screen blend
 	if (cl.refdef.blend[3])
 		RE_Fill (cl.refdef.x, cl.refdef.y, cl.refdef.width, cl.refdef.height,
 			RGBAS(cl.refdef.blend[0], cl.refdef.blend[1], cl.refdef.blend[2], cl.refdef.blend[3]));

@@ -392,6 +392,7 @@ void CL_Drop (bool fromError)
 	if (fromError) SCR_EndLoadingPlaque (true);
 	if (cls.state != ca_uninitialized && cls.state != ca_disconnected)
 		CL_Disconnect ();
+	M_ForceMenuOff ();
 }
 
 

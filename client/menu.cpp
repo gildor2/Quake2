@@ -2281,9 +2281,8 @@ struct playerConfigMenu_t : menuFramework_t
 
 	void Draw ()
 	{
-		extern float CalcFov (float fov_x, float w, float h);
-		entity_t	e[2];
-		static dlight_t	dl[] = {
+		entity_t e[2];
+		static dlight_t dl[] = {
 			{{30, 100, 100}, {1, 1, 1}, 400},
 			{{90, -100, 10}, {0.4, 0.2, 0.2}, 200}
 		};
@@ -2997,6 +2996,17 @@ TEST MENU
 */
 #define REGISTER_TEST
 
+void attach (const entity_t &e1, entity_t &e2, const char *tag)
+{
+	CCoords lerped;		// get position modifier
+	e1.model->LerpTag (e1.frame, e1.frame, 0, tag, lerped);
+	CCoords base;		// prepare base
+	base.axis.FromAngles (e1.angles);	//!! use axis; use e1.coords instead of base
+	base.origin = e1.origin;
+	base.UnTransformCoords (lerped, lerped);
+	e2.origin = lerped.origin;			//!! +axis
+}
+
 struct testMenu_t : menuFramework_t
 {
 	const char * KeyDown (int key)
@@ -3013,8 +3023,7 @@ struct testMenu_t : menuFramework_t
 
 	void Draw ()
 	{
-		extern float CalcFov (float fov_x, float w, float h);
-		entity_t	e[3];
+		entity_t e[4];
 		static dlight_t	dl[] = {
 			{{30, 100, 100}, {1, 1, 1}, 400},
 			{{90, -100, 10}, {0.4, 0.2, 0.2}, 200}
@@ -3034,36 +3043,47 @@ struct testMenu_t : menuFramework_t
 
 //		const char *model_name = "visor";
 		const char *model_name = "crash";
-		// add head model
-		e[0].model = RE_RegisterModel (va("models/players/%s/head.md3", model_name));
+
+		// add legs model
+		e[0].model = RE_RegisterModel (va("models/players/%s/lower.md3", model_name));
 		e[0].skin = RE_RegisterSkin (va("models/players/%s/blue.pcx", model_name));
 //		e[0].flags = 0;
 		e[0].origin[0] = 130;
 //		e[0].origin[1] = 0;
-		e[0].origin[2] = 25;	//!! 15
+		e[0].origin[2] = 0;
+		e[0].frame = e[0].oldframe = 220-63;	// legs frame
 		e[0].oldorigin = e[0].origin;
 
-		e[0].frame = 0;			// head frame
 		e[0].oldframe = e[0].frame;
 		e[0].backlerp = 0;
 		e[0].angles[1] = cls.realtime / 20 % 360;
 
 		// add torso model
-		e[1] = e[0];
-		e[1].frame = 151;		// torso frame
+		e[1] = e[0];		//?? don't do it
 		e[1].model = RE_RegisterModel (va("models/players/%s/upper.md3", model_name));
 //		e[1].skin = NULL;
-		e[1].origin[2] = 0;
+		e[1].frame = e[1].oldframe = 151;		// torso frame
+		attach (e[0], e[1], "tag_torso");
+		e[1].oldorigin = e[1].origin;
 
-		// add legs model
-		e[2] = e[0];
-		e[2].frame = 220-63;	// legs frame
-		e[2].model = RE_RegisterModel (va("models/players/%s/lower.md3", model_name));
+		// add head model
+		e[2] = e[0];		//?? don't
+		e[2].frame = e[2].oldframe = 0;
+		e[2].model = RE_RegisterModel (va("models/players/%s/head.md3", model_name));
 //		e[2].skin = NULL;
-		e[2].origin[2] = -20;	//!! -10
+		attach (e[1], e[2], "tag_head");
+		e[2].oldorigin = e[2].origin;
+
+		e[3] = e[0];		//?? don't
+		e[3].frame = e[3].oldframe = 0;
+		e[3].model = RE_RegisterModel ("models/weapons/g_rail/tris.md2");
+		attach (e[1], e[3], "tag_weapon");
+		e[3].skin = NULL;
+		e[3].oldorigin = e[3].origin;
+
 
 //		refdef.areabits = NULL;
-		refdef.num_entities = 3;
+		refdef.num_entities = 4;
 		refdef.entities = e;
 //		refdef.lightstyles = NULL;
 		refdef.dlights = dl;

@@ -6,6 +6,59 @@
 namespace OpenGLDrv {
 
 
+void model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const
+{
+	Com_DropError ("model %s have no LerpTag caps", name);
+}
+
+
+void md3Model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const
+{
+	const char *name = tagNames;
+	for (int i = 0; i < numFrames; i++, name += MAX_QPATH)
+		if (!strcmp (name, tagName))
+			break;
+	if (i == numFrames)
+	{
+		//?? developer message
+		DrawTextLeft (va("no tag \"%s\" in %s", tagName, name), RGB(1,0,0));
+		i = 0;			// use 1st tag
+	}
+	if (frame1 < 0 || frame1 > numFrames)
+	{
+		//?? message
+		frame1 = 0;
+	}
+	if (frame2 < 0 || frame2 > numFrames)
+	{
+		//?? message
+		frame2 = 0;
+	}
+	const CCoords &tag1 = tags[frame1 * numTags + i];
+	const CCoords &tag2 = tags[frame2 * numTags + i];
+	// fast non-lerp case
+	if (frame1 == frame2 || lerp == 0)
+	{
+		tag = tag1;
+		return;
+	}
+	else if (lerp == 1)
+	{
+		tag = tag2;
+		return;
+	}
+	// interpolate tags
+	//?? use quaternions
+	for (i = 0; i < 3; i++)
+	{
+		// linear lerp axis vectors
+		Lerp (tag1.axis[i], tag2.axis[i], lerp, tag.axis[i]);
+		tag.axis[i].Normalize ();
+	}
+	Lerp (tag1.origin, tag2.origin, lerp, tag.origin);
+}
+
+
 /*-----------------------------------------------------------------------------
 	Loading triangle models
 -----------------------------------------------------------------------------*/
@@ -169,7 +222,7 @@ static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 				VectorSubtract2 (verts[idx[k]].xyz, verts[idx[k == 2 ? 0 : k + 1]].xyz, vecs[k]);
 				vecs[k].NormalizeFast ();
 			}
-			CrossProduct (vecs[1], vecs[0], n);
+			cross (vecs[1], vecs[0], n);
 			n.NormalizeFast ();
 			// add normal to verts
 			for (k = 0; k < 3; k++)

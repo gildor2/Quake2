@@ -953,7 +953,7 @@ static void CL_AddPacketEntities (void)
 					float bright = st->frame > 2 ? (5.0f - st->frame) / (5 - 2) : 1;
 					V_AddLight (ent.origin, intens, 0, bright, 0);
 				}
-//				RE_DrawTextLeft (va("bfg: %d (%c) [%3.1f]", st->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac),RGB(1,1,1));//!!
+//				RE_DrawTextLeft (va("bfg: %d (%c) [%3.1f]", st->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac));//!!
 			}
 			// XATRIX
 			else if (effects & EF_TRAP) {

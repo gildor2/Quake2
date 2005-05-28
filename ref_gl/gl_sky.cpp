@@ -319,7 +319,7 @@ int TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float zFar
 	byte	*ptr;
 
 #if 0
-	DrawTextLeft(va("side %d:", side),RGB(1,1,1));
+	DrawTextLeft(va("side %d:", side));
 	for (numIndexes = 0; numIndexes < SKY_CELLS; numIndexes++)
 	{
 		byte	*p;
@@ -369,7 +369,7 @@ int TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float zFar
 		grid1++;
 		grid2++;
 	}
-//	DrawTextLeft(va("side %d:  %d verts  %d idx", side, gl_numVerts, numIndexes),RGB(1,1,1));
+//	DrawTextLeft(va("side %d:  %d verts  %d idx", side, gl_numVerts, numIndexes));
 
 	return numIndexes;
 }

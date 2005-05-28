@@ -202,6 +202,8 @@ inline float dot (const CVec3 &a, const CVec3 &b)
 	return a.v[0]*b.v[0] + a.v[1]*b.v[1] + a.v[2]*b.v[2];
 }
 
+void cross (const CVec3 &v1, const CVec3 &v2, CVec3 &result);
+
 
 //?? OLD FUNCTIONS :
 
@@ -253,10 +255,53 @@ inline void VectorMA (CVec3 &a, float scale, const CVec3 &b)	//!! method, rename
 
 float VectorLength (const CVec3 &v);	//!! method
 float VectorDistance (const CVec3 &vec1, const CVec3 &vec2);
-
-void CrossProduct (const CVec3 &v1, const CVec3 &v2, CVec3 &cross);	//!! rename
-
 float VectorNormalize (const CVec3 &v, CVec3 &out);
+
+// normal type for cplane_t
+enum
+{
+	PLANE_X,						// { 1, 0, 0}
+	PLANE_Y,						// { 0, 1, 0}
+	PLANE_Z,						// { 0, 0, 1}
+	PLANE_MX,						// {-1, 0, 0}
+	PLANE_MY,						// { 0,-1, 0}
+	PLANE_MZ,						// { 0, 0,-1}
+	PLANE_NON_AXIAL					// any another normal
+};
+
+struct cplane_t		//?? rename
+{
+	CVec3	normal;
+	float	dist;
+	byte	type;					// for fast side tests; PLANE_[M]X|Y|Z
+	byte	signbits;				// sign(x) + (sign(y)<<1) + (sign(z)<<2); used for speedup CBox::OnPlaneSide()
+	byte	pad[2];					// for dword alignment
+	// methods
+	inline void SetSignbits ()
+	{
+		signbits = IsNegative(normal[0]) + (IsNegative(normal[1]) << 1) + (IsNegative(normal[2]) << 2);
+	}
+	inline void SetType ()
+	{
+		if		(normal[0] ==  1.0f) type = PLANE_X;
+		else if (normal[0] == -1.0f) type = PLANE_MX;
+		else if (normal[1] ==  1.0f) type = PLANE_Y;
+		else if (normal[1] == -1.0f) type = PLANE_MY;
+		else if (normal[2] ==  1.0f) type = PLANE_Z;
+		else if (normal[2] == -1.0f) type = PLANE_MZ;
+		else type = PLANE_NON_AXIAL;
+	}
+	// distance is positive, when point placed on a normal-looking side
+	inline float DistanceTo (const CVec3 &vec)
+	{
+		if (type <= PLANE_Z)
+			return vec[type] - dist;
+		else if (type <= PLANE_MZ)
+			return -vec[type-3] - dist;
+		else
+			return dot(normal, vec) - dist;
+	}
+};
 
 // axis aligned box
 struct CBox
@@ -268,7 +313,35 @@ struct CBox
 	void Expand (const CVec3 &p);		// expand mins/maxs by point p
 	void Expand (const CBox &b);		// include box b into volume
 	void GetCenter (CVec3 &p);			// compute center point
+	// returns 1 when box placed on a normal-looking side of plane, 2 when on opposite side,
+	// and 3 (1+2) when box intersects plane
+	int OnPlaneSide (const cplane_t &plane) const;
 };
+
+// CBox::OnPlaneSide(), optimized for axis-aligned planes
+inline int BOX_ON_PLANE_SIDE (const CBox &box, const cplane_t &plane)
+{
+	if (plane.type <= PLANE_MZ)
+	{
+		if (plane.type <= PLANE_Z)
+		{
+			int type = plane.type;
+			float dist = plane.dist;
+			if (dist <= box.mins[type])			return 1;
+			else if (dist >= box.maxs[type])	return 2;
+		}
+		else
+		{
+			int type = plane.type - 3;
+			float dist = -plane.dist;
+			if (dist <= box.mins[type])			return 2;
+			else if (dist >= box.maxs[type])	return 1;
+		}
+		return 3;
+	}
+	return box.OnPlaneSide (plane);
+}
+
 
 struct CAxis
 {
@@ -294,7 +367,7 @@ struct CAxis
 // NOTE: to produce inverted axis, can transpose matrix (valid for orthogonal matrix only)
 
 
-//?? CCoords : CVector, CAxis
+//?? CCoords : CVector, CAxis (will require to rename CVector.v or CAxis.v); can this be useful?
 struct CCoords
 {
 	// fields
@@ -303,6 +376,8 @@ struct CCoords
 	// methods
 	void TransformPoint (const CVec3 &src, CVec3 &dst) const;
 	void UnTransformPoint (const CVec3 &src, CVec3 &dst) const;
+	void TransformCoords (const CCoords &src, CCoords &dst) const;
+	void UnTransformCoords (const CCoords &src, CCoords &dst) const;
 	void TransformPlane (const cplane_t &src, cplane_t &dst) const;
 };
 
@@ -423,79 +498,6 @@ void	Swap_Init (void);
 // FIXME: eliminate AREA_ distinction?
 #define	AREA_SOLID		1
 #define	AREA_TRIGGERS	2
-
-// normal type for cplane_t
-#define	PLANE_X			0			// { 1, 0, 0}
-#define	PLANE_Y			1			// { 0, 1, 0}
-#define	PLANE_Z			2			// { 0, 0, 1}
-#define PLANE_MX		3			// {-1, 0, 0}
-#define PLANE_MY		4			// { 0,-1, 0}
-#define PLANE_MZ		5			// { 0, 0,-1}
-#define	PLANE_NON_AXIAL	6			// any another normal
-
-// plane_t structure (the same as Q2 dplane_t, but "int type" -> "byte type,signbits,pad[2]")
-struct cplane_t
-{
-	CVec3	normal;
-	float	dist;
-	byte	type;			// for fast side tests; PLANE_[M]X|Y|Z
-	byte	signbits;		// sign(x) + (sign(y)<<1) + (sign(z)<<2)
-	byte	pad[2];
-	// functions
-	inline void SetSignbits ()
-	{
-		signbits = IsNegative(normal[0]) + (IsNegative(normal[1]) << 1) + (IsNegative(normal[2]) << 2);
-	}
-	inline void SetType ()
-	{
-		if		(normal[0] ==  1.0f) type = PLANE_X;
-		else if (normal[0] == -1.0f) type = PLANE_MX;
-		else if (normal[1] ==  1.0f) type = PLANE_Y;
-		else if (normal[1] == -1.0f) type = PLANE_MY;
-		else if (normal[2] ==  1.0f) type = PLANE_Z;
-		else if (normal[2] == -1.0f) type = PLANE_MZ;
-		else type = PLANE_NON_AXIAL;
-	}
-	inline float DistanceTo (const CVec3 &vec)
-	{
-		if (type <= PLANE_Z)
-			return vec[type] - dist;
-		else if (type <= PLANE_MZ)
-			return -vec[type-3] - dist;
-		else
-			return dot(normal, vec) - dist;
-	}
-};
-
-//?? move to CBox ? or to cplane
-int BoxOnPlaneSide (const CBox &box, const cplane_t *plane);
-
-inline int BOX_ON_PLANE_SIDE (const CBox &box, const cplane_t *plane)
-{
-	if (plane->type <= PLANE_MZ)
-	{
-		int		type;
-		float	dist;
-
-		if (plane->type <= PLANE_Z)
-		{
-			type = plane->type;
-			dist = plane->dist;
-			if (dist <= box.mins[type])			return 1;
-			else if (dist >= box.maxs[type])	return 2;
-		}
-		else
-		{
-			type = plane->type - 3;
-			dist = -plane->dist;
-			if (dist <= box.mins[type])			return 2;
-			else if (dist >= box.maxs[type])	return 1;
-		}
-		return 3;
-	}
-	return BoxOnPlaneSide (box, plane);
-}
-
 
 struct csurface_t
 {

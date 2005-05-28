@@ -314,11 +314,12 @@ typedef struct
 
 // planes (x&~1) and (x&~1)+1 are always opposites
 
+// the same as cplane_t, but "byte type,signbits,pad[2]") -> "int type"
 typedef struct
 {
 	CVec3	normal;
 	float	dist;
-	int		type;					// PLANE_X - PLANE_ANYZ ?remove? trivial to regenerate
+	int		type;				// useless - will be recomputed on map loading
 } dplane_t;
 
 

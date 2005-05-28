@@ -1055,7 +1055,7 @@ static void FlushShader (void)
 {
 	guard(FlushShader);
 
-//	DrawTextLeft (va("FlushShader(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes), RGB(1,1,1));//!!!
+//	DrawTextLeft (va("FlushShader(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes));//!!!
 	LOG_STRING (va("*** FlushShader(%s, %d, %d) ***\n", currentShader->name, gl_numVerts, gl_numIndexes));
 	if (!gl_numIndexes) return;					// buffer is empty
 	if (!currentShader->numStages) return;		// wrong shader?

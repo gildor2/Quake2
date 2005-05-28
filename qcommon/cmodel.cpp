@@ -1131,15 +1131,15 @@ static void InitBoxHull (void)
 
 		// planes
 		cplane_t *p = &box_planes[i*2];
-		p->type = PLANE_X + (i>>1);
 		p->normal.Zero ();
 		p->normal[i>>1] = 1;
+		p->SetType ();
 		p->SetSignbits ();
 
 		p = &box_planes[i*2+1];
-		p->type = PLANE_MX + (i>>1);
 		p->normal.Zero ();
 		p->normal[i>>1] = -1;
+		p->SetType ();
 		p->SetSignbits ();
 	}
 }
@@ -1284,8 +1284,8 @@ int CM_BoxLeafnums (const CBox &bounds, int *list, int listsize, int *topnode, i
 			}
 		}
 
-		cnode_t &node = map_nodes[nodenum];
-		switch (BOX_ON_PLANE_SIDE(bounds, node.plane))
+		const cnode_t &node = map_nodes[nodenum];
+		switch (BOX_ON_PLANE_SIDE(bounds, *node.plane))
 		{
 		case 1:
 			nodenum = node.children[0];
@@ -1366,8 +1366,9 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 			else
 			{
 				CVec3 ofs;
-				for (int j = 0; j < 3; j++)
-					ofs[j] = (IsNegative(plane->normal[j])) ? tr.bounds.maxs[j] : tr.bounds.mins[j];
+				int signbits = plane->signbits;
+				for (int j = 0; j < 3; j++, signbits >>= 1)
+					ofs[j] = (signbits & 1) ? tr.bounds.maxs[j] : tr.bounds.mins[j];
 				dist = plane->dist - dot (plane->normal, ofs);
 			}
 		}
@@ -1514,8 +1515,9 @@ static bool TestBoxInBrush (const cbrush_t *brush)
 		else
 		{
 			CVec3	ofs;
-			for (int j = 0; j < 3; j++)
-				ofs[j] = (IsNegative(plane->normal[j])) ? tr.bounds.maxs[j] : tr.bounds.mins[j];
+			int signbits = plane->signbits;
+			for (int j = 0; j < 3; j++, signbits >>= 1)
+				ofs[j] = (signbits & 1) ? tr.bounds.maxs[j] : tr.bounds.mins[j];
 			size = - dot(plane->normal, ofs);
 		}
 
