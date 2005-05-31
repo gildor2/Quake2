@@ -3,6 +3,7 @@
 #include "gl_model.h"
 #include "gl_backend.h"
 
+
 namespace OpenGLDrv {
 
 
@@ -42,11 +43,9 @@ void *AllocDynamicMemory (int size)
 // This function should be called only for REDUCING size of allocated block
 void ResizeDynamicMemory (void *ptr, int newSize)
 {
-	int		n;
-
 	if (!ptr || ptr != lastDynamicPtr)
 		Com_FatalError ("R_ResizeDynamicMemory: bad pointer");
-	n = lastDynamicSize + newSize;
+	int n = lastDynamicSize + newSize;
 	if (n > MAX_DYNAMIC_BUFFER)
 		Com_FatalError ("R_ResizeDynamicMemory: out of memory in %d bytes", n - MAX_DYNAMIC_BUFFER);
 	dynamicBufferSize = n;
@@ -65,14 +64,12 @@ static int numSurfacesTotal;
 // Add surface to a current scene (to a "vp" structure)
 void AddSurfaceToPortal (surfaceBase_t *surf, shader_t *shader, int entityNum, int numDlights)
 {
-	surfaceInfo_t *si;
-
 //	LOG_STRING(va("add surf %s ent=%X n_dl=%d\n", shader->name, entityNum, numDlights));
 	if (numSurfacesTotal >= MAX_SCENE_SURFACES - 1) return;			// buffer is full
 	if (numDlights > DLIGHTNUM_MASK) numDlights = DLIGHTNUM_MASK;
-	si = vp.surfaces + vp.numSurfaces++;
-	si->sort = (shader->sortIndex << SHADERNUM_SHIFT) | (entityNum << ENTITYNUM_SHIFT) | (numDlights << DLIGHTNUM_SHIFT);
-	si->surf = surf;
+	surfaceInfo_t &si = vp.surfaces[vp.numSurfaces++];
+	si.sort = (shader->sortIndex << SHADERNUM_SHIFT) | (entityNum << ENTITYNUM_SHIFT) | (numDlights << DLIGHTNUM_SHIFT);
+	si.surf = surf;
 	numSurfacesTotal++;
 	// update maxUsedShaderIndex
 	if (shader->sortIndex > gl_state.maxUsedShaderIndex)
@@ -143,8 +140,7 @@ void SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 
 #define GET_SORT(value,result)	\
 	{							\
-		int		tmp;			\
-		tmp = value & (SHADERNUM_MASK << SHADERNUM_SHIFT);	\
+		int tmp = value & (SHADERNUM_MASK << SHADERNUM_SHIFT);	\
 		if (tmp > alpha1 && tmp < alpha2)	\
 			result = value & ~(SHADERNUM_MASK << SHADERNUM_SHIFT | ENTITYNUM_MASK << ENTITYNUM_SHIFT) | alpha2;	\
 		else					\

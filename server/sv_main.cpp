@@ -125,24 +125,21 @@ SV_StatusString
 Builds the string that is sent as heartbeats and status replies
 ===============
 */
-char *SV_StatusString (void)
+static const char *SV_StatusString (void)
 {
-	char	player[256];
 	static char	status[MAX_MSGLEN - 16];
-	client_t *cl;
-	int		statusLength, playerLength;
 
 	if (sv.attractloop) return "";
 
-	statusLength = appSprintf (ARRAY_ARG(status), "%s\n", Cvar_Serverinfo ());
+	int statusLength = appSprintf (ARRAY_ARG(status), "%s\n", Cvar_Serverinfo ());
 	for (int i = 0; i < maxclients->integer; i++)
 	{
-		cl = &svs.clients[i];
+		client_t *cl = &svs.clients[i];
 		if (cl->state == cs_connected || cl->state == cs_spawned)
 		{
-			appSprintf (ARRAY_ARG(player), "%d %d \"%s\"\n",
+			char player[256];
+			int playerLength = appSprintf (ARRAY_ARG(player), "%d %d \"%s\"\n",
 				cl->edict->client->ps.stats[STAT_FRAGS], cl->ping, cl->name);
-			playerLength = strlen(player);
 			if (statusLength + playerLength >= sizeof(status))
 				break;		// can't hold any more
 			strcpy (status + statusLength, player);
@@ -170,13 +167,10 @@ The second parameter should be the current protocol version number.
 */
 static void cInfo (int argc, char **argv)
 {
-	char	string[64];
-	int		version;
-
 	if (maxclients->integer == 1 || sv.state == ss_demo || sv.attractloop)
 		return;					// ignore in single player or demoplay
 
-	version = atoi (argv[1]);
+	int version = atoi (argv[1]);
 
 	if (!version)
 	{	// we should reject this packet -- this is our "info" answer to local client
@@ -184,14 +178,13 @@ static void cInfo (int argc, char **argv)
 		return;
 	}
 
+	char string[64];
 	if (version != PROTOCOL_VERSION)
 		appSprintf (ARRAY_ARG(string), "%s: wrong version %d\n", hostname->string, version);
 	else
 	{
-		int		i, count;
-
-		count = 0;
-		for (i = 0; i < maxclients->integer; i++)
+		int count = 0;
+		for (int i = 0; i < maxclients->integer; i++)
 			if (svs.clients[i].state >= cs_connected)
 				count++;
 
@@ -213,10 +206,10 @@ challenge, they must give a valid IP address.
 */
 static void cGetChallenge (int argc, char **argv)
 {
-	int		i, oldest, oldestTime;
+	int		i;
 
-	oldest = 0;
-	oldestTime = 0x7FFFFFFF;
+	int oldest = 0;
+	int oldestTime = 0x7FFFFFFF;
 
 	// see if we already have a challenge for this ip
 	for (i = 0; i < MAX_CHALLENGES; i++)
@@ -408,9 +401,6 @@ Redirect all printfs
 */
 static void cRemoteCommand (int argc, char **argv)
 {
-	int		i;
-	char	remaining[1024];
-
 	guard(SVC_RemoteCommand);
 
 	if (!rcon_password->string[0] || strcmp (argv[1], rcon_password->string))
@@ -423,8 +413,9 @@ static void cRemoteCommand (int argc, char **argv)
 		Com_Printf ("Rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
 
 		// fill line with a rest of command string (cut "rcon")
+		char remaining[1024];
 		remaining[0] = 0;
-		for (i = 2; i < argc; i++)
+		for (int i = 2; i < argc; i++)
 		{
 			strcat (remaining, argv[i]);
 			strcat (remaining, " ");
@@ -493,13 +484,9 @@ Updates the cl->ping variables
 */
 void SV_CalcPings (void)
 {
-	int			i, j;
-	client_t	*cl;
-	int			total, count;
-
-	for (i = 0; i < maxclients->integer; i++)
+	for (int i = 0; i < maxclients->integer; i++)
 	{
-		cl = &svs.clients[i];
+		client_t *cl = &svs.clients[i];
 		if (cl->state != cs_spawned)
 			continue;
 
@@ -510,9 +497,9 @@ void SV_CalcPings (void)
 			cl->frame_latency[sv.framenum&(LATENCY_COUNTS-1)] = 0;
 #endif
 
-		total = 0;
-		count = 0;
-		for (j = 0; j < LATENCY_COUNTS; j++)
+		int total = 0;
+		int count = 0;
+		for (int j = 0; j < LATENCY_COUNTS; j++)
 		{
 			if (cl->frame_latency[j] > 0)
 			{
@@ -545,15 +532,12 @@ for their command moves.  If they exceed it, assume cheating.
 */
 void SV_GiveMsec (void)
 {
-	int			i;
-	client_t	*cl;
-
 	if (sv.framenum & 15)
 		return;
 
-	for (i = 0; i < maxclients->integer; i++)
+	for (int i = 0; i < maxclients->integer; i++)
 	{
-		cl = &svs.clients[i];
+		client_t *cl = &svs.clients[i];
 		if (cl->state == cs_free )
 			continue;
 
@@ -569,10 +553,6 @@ SV_ReadPackets
 */
 void SV_ReadPackets (void)
 {
-	int			i;
-	client_t	*cl;
-	int			qport;
-
 	guard(SV_ReadPackets);
 
 	while (NET_GetPacket (NS_SERVER, &net_from, &net_message))
@@ -589,9 +569,11 @@ void SV_ReadPackets (void)
 		MSG_BeginReading (&net_message);
 		MSG_ReadLong (&net_message);		// sequence number
 		MSG_ReadLong (&net_message);		// sequence number
-		qport = MSG_ReadShort (&net_message) & 0xFFFF;
+		int qport = MSG_ReadShort (&net_message) & 0xFFFF;
 
 		// check for packets from connected clients
+		int		i;
+		client_t *cl;
 		for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 		{
 			if (cl->state == cs_free)
@@ -638,15 +620,12 @@ if necessary
 */
 void SV_CheckTimeouts (void)
 {
-	int		i;
-	client_t	*cl;
-	int			droppoint;
-	int			zombiepoint;
-
 	guard(SV_CheckTimeouts);
-	droppoint = svs.realtime - appRound (timeout->value * 1000);
-	zombiepoint = svs.realtime - appRound (zombietime->value * 1000);
+	int droppoint = svs.realtime - appRound (timeout->value * 1000);
+	int zombiepoint = svs.realtime - appRound (zombietime->value * 1000);
 
+	int		i;
+	client_t *cl;
 	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 	{
 		// message times may be wrong across a changelevel
@@ -700,7 +679,7 @@ static int shotLevel;
 void SV_PostprocessFrame (void)
 {
 	edict_t *ent;
-	int e, i, t;
+	int e, i;
 	client_t *cl;
 
 	guard(SV_PostprocessFrame);
@@ -715,17 +694,15 @@ void SV_PostprocessFrame (void)
 
 		if (ent->s.event == EV_FOOTSTEP || ent->s.event == EV_FALLSHORT)
 		{
-			trace_t trace;
-			int footsteptype;
-
 			CVec3	point;
 			point[0] = ent->s.origin[0];
 			point[1] = ent->s.origin[1];
 			point[2] = ent->s.origin[2] - 64;
+			trace_t trace;
 			SV_Trace (trace, ent->s.origin, ent->bounds.mins, ent->bounds.maxs, point, ent, MASK_PLAYERSOLID|MASK_MONSTERSOLID|MASK_WATER);
 			if (trace.fraction < 1)
 			{
-				footsteptype = trace.surface->material - 1;
+				int footsteptype = trace.surface->material - 1;
 
 				if (footsteptype < 0)//?? || footsteptype >= MATERIAL_COUNT)	// i.e. MATERIAL_SILENT (== 0) or incorrect
 					ent->s.event = 0;	// EV_FOOTSTEP ?
@@ -746,12 +723,9 @@ void SV_PostprocessFrame (void)
 	// work only in network game, not single-player
 	if (maxclients->integer > 1) //!! should be another variable; campersounds - below!! && sv_campersounds->integer)
 	{
-		t = appMilliseconds ();
+		int t = appMilliseconds ();
 		for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 		{
-			pmove_state_t *pm;
-			int sfxstate, curr_vel, prev_vel;
-
 			if (cl->state != cs_spawned && cl->state != cs_connected)
 			{
 				cl->last_velocity2 = 0;
@@ -759,10 +733,10 @@ void SV_PostprocessFrame (void)
 			}
 
 			ent = cl->edict;
-			pm = &ent->client->ps.pmove;
+			pmove_state_t *pm = &ent->client->ps.pmove;
 
-			prev_vel = cl->last_velocity2;
-			curr_vel = pm->velocity[2];
+			int prev_vel = cl->last_velocity2;
+			int curr_vel = pm->velocity[2];
 			cl->last_velocity2 = curr_vel;
 
 			if (cl->screaming && (curr_vel >= FALLING_SCREAM_VELOCITY1 || prev_vel >= FALLING_SCREAM_VELOCITY1
@@ -790,9 +764,6 @@ void SV_PostprocessFrame (void)
 			}
 			else*/ if (pm->pm_type == PM_NORMAL)
 			{
-				int leaf, clust;
-				int sfx0, sfxn;
-
 				CVec3	pm_origin;
 				pm_origin[0] = pm->origin[0] / 8.0f;
 				pm_origin[1] = pm->origin[1] / 8.0f;
@@ -833,9 +804,9 @@ void SV_PostprocessFrame (void)
 				}
 
 				// check for idle (camper) sounds
-				leaf = CM_PointLeafnum (pm_origin);
-				clust = CM_LeafCluster (leaf);
-				sfxstate = 2;
+				int leaf = CM_PointLeafnum (pm_origin);
+				int clust = CM_LeafCluster (leaf);
+				int sfxstate = 2;
 				if (!clust)
 					continue;	// possibly map without visinfo - no cluster partition (cannot detect campers with this way)
 
@@ -848,6 +819,7 @@ void SV_PostprocessFrame (void)
 				}
 				if (cl->nextsfxtime > t) continue; // waiting for sfx time
 				cl->nextsfxtime = t + CAMPER_REPEAT + rand()%CAMPER_REPEAT_DELTA;
+				int sfx0, sfxn;
 				if (pm->pm_flags & PMF_DUCKED)
 				{
 					sfx0 = EV_CAMPER0;
@@ -907,9 +879,8 @@ static client_t *FindClient (const CVec3 &origin, float maxDist2)
 
 sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 {
-	byte	cmd;
 	CVec3	v1, v2;
-	const char	*s;
+	const char *s;
 
 	guard(SV_MulticastHook);
 
@@ -920,7 +891,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 		return original;
 
 	ext->Clear ();
-	cmd = MSG_ReadByte (original);
+	byte cmd = MSG_ReadByte (original);
 	switch (cmd)
 	{
 	case TE_RAILTRAIL:
@@ -1020,18 +991,18 @@ extern bool trace_skipAlpha;	//!! hack
 
 trace_t SV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passedict, int contentmask)
 {
-	trace_t	tr;
-	static edict_t *ent;
-
 	guard(SV_TraceHook);
 
+	static edict_t *ent;
 #define RESET  { shotLevel = 0; return tr; }
+
 	trace_skipAlpha = true;	//!! hack for kingpin CONTENTS_ALPHA
 	if (mins || maxs) trace_skipAlpha = false;
 
-	if (!mins) mins = &vec3_origin;		// required for game
-	if (!maxs) maxs = &vec3_origin;
+	if (!mins) mins = &nullVec3;		// required for game
+	if (!maxs) maxs = &nullVec3;
 
+	trace_t	tr;
 	SV_Trace (tr, start, *mins, *maxs, end, passedict, contentmask);
 	trace_skipAlpha = false;	//!!
 	if (!sv_extProtocol->integer) return tr;
@@ -1082,8 +1053,6 @@ SV_Frame
 
 void SV_Frame (float msec)
 {
-	int		frameTime;
-
 	guard(SV_Frame);
 
 	time_before_game = time_after_game = 0;
@@ -1107,7 +1076,7 @@ void SV_Frame (float msec)
 	// get packets from clients
 	SV_ReadPackets ();
 
-	frameTime = 100;	// (sv_fps->integer > 10) ? (1000 / sv_fps->integer) : 100;
+	int frameTime = 100;	// (sv_fps->integer > 10) ? (1000 / sv_fps->integer) : 100;
 
 	// move autonomous things around if enough time has passed
 	if (svs.realtime < sv.time)
@@ -1194,9 +1163,6 @@ let it know we are alive, and log information
 #define	HEARTBEAT_SECONDS	300
 static void Master_Heartbeat (void)
 {
-	char		*string;
-	int			i;
-
 	if (!DEDICATED)
 		return;		// only dedicated servers send heartbeats
 
@@ -1213,10 +1179,10 @@ static void Master_Heartbeat (void)
 	svs.last_heartbeat = svs.realtime;
 
 	// send the same string that we would give for a status OOB command
-	string = SV_StatusString();
+	const char *string = SV_StatusString();
 
 	// send to group master
-	for (i = 0; i < MAX_MASTERS; i++)
+	for (int i = 0; i < MAX_MASTERS; i++)
 		if (master_adr[i].port)
 		{
 			Com_Printf ("Sending heartbeat to %s\n", NET_AdrToString (&master_adr[i]));
@@ -1240,7 +1206,7 @@ static void Master_Shutdown (void)
 	for (int i = 0; i < MAX_MASTERS; i++)
 		if (master_adr[i].port)
 		{
-			if (i > 0)
+			if (i != 0)
 				Com_Printf ("Sending heartbeat to %s\n", NET_AdrToString (&master_adr[i]));
 			Netchan_OutOfBandPrint (NS_SERVER, master_adr[i], "shutdown");
 		}

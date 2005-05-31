@@ -41,10 +41,10 @@ typedef enum {sl_linear, sl_inverse, sl_inverse2} slightType_t;
 struct slight_t
 {
 	slightType_t type;
-	byte	spot;					// bool
+	bool	spot;					// bool
+	byte	style;
 	CVec3	origin;
 	CVec3	color;
-	byte	style;
 	float	intens;
 	// arghrad fields
 	float	focus;

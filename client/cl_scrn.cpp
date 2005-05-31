@@ -501,7 +501,7 @@ void SCR_ShowConsole (bool show, bool noAnim)
 
 	if (!show)
 	{
-		cls.key_dest = m_current > 0 ? key_menu : key_game;
+		cls.key_dest = (m_current) ? key_menu : key_game;
 		if (noAnim) conCurrent = 0;
 		if (cls.key_dest != key_menu)
 			CL_Pause (false);
@@ -820,7 +820,7 @@ static void ExecuteLayoutString (const char *s)
 	char	*token;
 	int		width;
 	int		index;
-	clientinfo_t	*ci;
+	clientInfo_t *ci;
 
 	guard(SCR_ExecuteLayoutString);
 
@@ -863,7 +863,7 @@ static void ExecuteLayoutString (const char *s)
 			value = atoi (COM_Parse (s));
 			if (value >= MAX_CLIENTS || value < 0)
 				Com_DropError ("client >= MAX_CLIENTS");
-			ci = &cl.clientinfo[value];
+			ci = &cl.clientInfo[value];
 
 			int score = atoi (COM_Parse (s));
 			int ping = atoi (COM_Parse (s));
@@ -875,9 +875,8 @@ static void ExecuteLayoutString (const char *s)
 			DrawString (x1, y+CHAR_HEIGHT*2,va("Ping:  %d", ping));
 			DrawString (x1, y+CHAR_HEIGHT*3,va("Time:  %d", time));
 
-			if (!ci->icon)
-				ci = &cl.baseclientinfo;
-			RE_DrawPic (x, y, ci->iconname);
+			if (!ci->icon) ci = &cl.baseClientInfo;
+			RE_DrawPic (x, y, ci->iconName);		//!! draw Q3 icon in a different way
 		}
 		else if (!strcmp (token, "ctf"))
 		{	// draw a ctf client block
@@ -889,7 +888,7 @@ static void ExecuteLayoutString (const char *s)
 			value = atoi (COM_Parse (s));
 			if (value >= MAX_CLIENTS || value < 0)
 				Com_DropError ("client >= MAX_CLIENTS");
-			ci = &cl.clientinfo[value];
+			ci = &cl.clientInfo[value];
 
 			int score = atoi (COM_Parse (s));
 			int ping = atoi (COM_Parse (s));

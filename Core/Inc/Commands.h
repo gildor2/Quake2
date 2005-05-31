@@ -42,7 +42,7 @@ inline bool RegisterCommand (const char *name, void(*func)(bool,int,char**))
 struct CSimpleCommand
 {
 	const char	*name;
-	void (*func)(int argc, char **argv);
+	void (*func)(int argc, char **argv);	// NULL to ignore command
 };
 
 CORE_API bool ExecuteCommand (const char *str, const CSimpleCommand *CmdList, int numCommands);

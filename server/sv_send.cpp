@@ -150,7 +150,7 @@ void SV_BroadcastCommand (const char *fmt, ...)
 
 	MSG_WriteByte (&sv.multicast, svc_stufftext);
 	MSG_WriteString (&sv.multicast, string);
-	SV_MulticastOld (vec3_origin, MULTICAST_ALL_R);
+	SV_MulticastOld (nullVec3, MULTICAST_ALL_R);
 }
 
 

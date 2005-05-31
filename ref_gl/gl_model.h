@@ -288,7 +288,7 @@ public:
 	modelType_t	type;
 	int		size;				// in memory
 	inline model_t () { type = MODEL_UNKNOWN; };
-	virtual void LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
+	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
 	virtual void InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual void DrawLabel (refEntity_t *e);
@@ -324,7 +324,7 @@ struct md3Frame_t
 class md3Model_t : public model_t
 {
 public:
-	virtual void LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
+	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
 	int		numSurfaces;		// for MD2 = 1
 	surfaceMd3_t *surf;			// [numSurfaces]
 	int		numFrames;
@@ -364,15 +364,22 @@ public:
 	Functions
 -----------------------------------------------------------------------------*/
 
-node_t *PointInLeaf (const CVec3 &p);
+#define MAX_GLMODELS	1024
+extern model_t *modelsArray[MAX_GLMODELS];
+extern int	modelCount;
 
+// common
 void	InitModels (void);
 void	ShutdownModels (void);
-
 model_t	*FindModel (const char *name);
-shader_t *FindSkin (const char *name);
+void	FreeModels ();
+
+// bsp model
+node_t *PointInLeaf (const CVec3 &p);
 void	LoadWorldMap (const char *name);	//?? rename
 
+// triangle models
+shader_t *FindSkin (const char *name);
 md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len);
 md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len);
 sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len);

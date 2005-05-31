@@ -341,7 +341,7 @@ static void Menu_DrawDotsItem (menuCommon_t *item)
 
 void menuFramework_t::Draw ()
 {
-	int		i, vis;
+	int		i;
 	menuCommon_t *item;
 
 	/*------- draw banner ---------*/
@@ -349,7 +349,7 @@ void menuFramework_t::Draw ()
 		RE_DrawPic (viddef.width / 2, viddef.height / 2 - 110, banner, ANCHOR_TOP);
 
 	/*------- draw contents -------*/
-	vis = -1;
+	int vis = -1;
 	for (i = 0, item = itemList; i < nitems; i++, item = item->next)
 	{
 		if (Menu_ItemVisible (this, i))
@@ -810,9 +810,8 @@ M_Keydown
 */
 void M_Keydown (int key)
 {
-	const char *s;
+	if (!m_current) return;
 
-	if (m_current)
-		if ((s = m_current->KeyDown (key)) != NULL)
-			S_StartLocalSound (s);
+	const char *s = m_current->KeyDown (key);
+	if (s) S_StartLocalSound (s);
 }

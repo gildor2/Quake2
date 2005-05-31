@@ -52,7 +52,7 @@ static bool sound_started = false;
 static bool s_registering;
 dma_t		dma;
 
-static CVec3 listener_origin, listener_forward, listener_right, listener_up;
+static CVec3 listener_origin, listener_right;
 
 static int soundtime;		// sample PAIRS
 int paintedtime; 			// sample PAIRS; used in snd_mix.c
@@ -1069,7 +1069,7 @@ S_Update
 Called once each time through the main loop
 ============
 */
-void S_Update(const CVec3 &origin, const CVec3 &forward, const CVec3 &right, const CVec3 &up)
+void S_Update(const CVec3 &origin, const CVec3 &right)
 {
 	int			i;
 	int			total;
@@ -1086,9 +1086,7 @@ void S_Update(const CVec3 &origin, const CVec3 &forward, const CVec3 &right, con
 		S_InitScaletable ();
 
 	listener_origin = origin;
-	listener_forward = forward;
 	listener_right = right;
-	listener_up = up;
 
 	combine = NULL;
 

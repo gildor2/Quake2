@@ -136,112 +136,6 @@ static void ParseBaseline (void)
 
 /*
 ================
-CL_LoadClientinfo
-
-================
-*/
-void CL_LoadClientinfo (clientinfo_t *ci, char *s)
-{
-	char	model_name[MAX_QPATH], skin_name[MAX_QPATH];
-
-	appStrncpyz (ci->cinfo, s, sizeof(ci->cinfo));
-
-	// isolate the player's name
-	appStrncpyz (ci->name, s, sizeof(ci->name));
-	char *t = strchr (s, '\\');
-	if (t)
-	{
-		ci->name[t-s] = 0;
-		s = t+1;
-	}
-
-	if (cl_noskins->integer || *s == 0)
-	{
-		ci->model = RE_RegisterModel ("players/male/tris.md2");
-		memset (ci->weaponmodel, 0, sizeof(ci->weaponmodel));
-		ci->weaponmodel[0] = RE_RegisterModel ("players/male/weapon.md2");
-		ci->skin = RE_RegisterSkin ("players/male/grunt.pcx");
-		strcpy (ci->iconname, "/players/male/grunt_i.pcx");
-		ci->icon = RE_RegisterPic (ci->iconname);
-	}
-	else
-	{
-		// isolate the model name
-		strcpy (model_name, s);
-		t = strchr (model_name, '/');
-		if (!t)
-			t = strchr (model_name, '\\');
-		if (!t)
-			t = model_name;
-		*t = 0;
-
-		// isolate the skin name
-		strcpy (skin_name, s + strlen (model_name) + 1);
-
-		// model file
-		ci->model = RE_RegisterModel (va("players/%s/tris.md2", model_name));
-		if (!ci->model)
-		{
-			strcpy (model_name, "male");
-			ci->model = RE_RegisterModel ("players/male/tris.md2");
-		}
-
-		// skin file
-		ci->skin = RE_RegisterSkin (va("players/%s/%s.pcx", model_name, skin_name));
-
-		// if we don't have the skin and the model wasn't male,
-		// see if the male has it (this is for CTF's skins)
- 		if (!ci->skin && stricmp(model_name, "male"))
-		{
-			// change model to male
-			strcpy(model_name, "male");
-			ci->model = RE_RegisterModel ("players/male/tris.md2");
-
-			// see if the skin exists for the male model
-			ci->skin = RE_RegisterSkin (va("players/%s/%s.pcx", model_name, skin_name));
-		}
-
-		// if we still don't have a skin, it means that the male model didn't have
-		// it, so default to grunt
-		if (!ci->skin)
-		{
-			// see if the skin exists for the male model
-			ci->skin = RE_RegisterSkin (va("players/%s/grunt.pcx", model_name));
-		}
-
-		// weapon file
-		for (int i = 0; i < num_cl_weaponmodels; i++)
-		{
-			ci->weaponmodel[i] = RE_RegisterModel (va("players/%s/%s", model_name, cl_weaponmodels[i]));
-			if (!ci->weaponmodel[i] && strcmp(model_name, "cyborg") == 0)
-			{
-				// try male
-				ci->weaponmodel[i] = RE_RegisterModel (va("players/male/%s", cl_weaponmodels[i]));
-			}
-			if (!cl_vwep->integer)
-				break; // only one when vwep is off
-		}
-
-		// icon file
-		if (!memcmp (skin_name, "skn_", 4))
-			strcpy (ci->iconname, "/pics/default_icon.pcx");
-		else
-			appSprintf (ci->iconname, sizeof(ci->iconname), "/players/%s/%s_i.pcx", model_name, skin_name);
-		ci->icon = RE_RegisterPic (ci->iconname);
-	}
-
-	// must have loaded all data types to be valud
-	if (!ci->skin || !ci->icon || !ci->model || !ci->weaponmodel[0])
-	{
-		ci->skin = NULL;
-		ci->icon = NULL;
-		ci->model = NULL;
-		ci->weaponmodel[0] = NULL;
-	}
-}
-
-/*
-================
 CL_ParseClientinfo
 
 Load the skin, icon, and model for a client
@@ -249,7 +143,7 @@ Load the skin, icon, and model for a client
 */
 void CL_ParseClientinfo (int player)
 {
-	CL_LoadClientinfo (&cl.clientinfo[player], cl.configstrings[player+CS_PLAYERSKINS]);
+	CL_LoadClientinfo (cl.clientInfo[player], cl.configstrings[player+CS_PLAYERSKINS]);
 }
 
 

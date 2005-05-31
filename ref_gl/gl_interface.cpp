@@ -171,7 +171,7 @@ void GL_Unlock (void)
 -----------------------------------------------------------------------------*/
 
 
-void GL_Bind (image_t *tex)
+void GL_Bind (const image_t *tex)
 {
 	int		tmu;
 
@@ -235,7 +235,7 @@ void GL_Bind (image_t *tex)
 
 
 // Bind image even if nobind active (i.e. for uploading image)
-void GL_BindForce (image_t *tex)
+void GL_BindForce (const image_t *tex)
 {
 	int tmu = gl_state.currentTmu;
 
@@ -340,7 +340,7 @@ void GL_TexMipBias (float f)
 }
 
 
-void GL_TexEnvColor (color_t *c)
+void GL_TexEnvColor (const color_t *c)
 {
 	if (gl_state.locked)
 	{

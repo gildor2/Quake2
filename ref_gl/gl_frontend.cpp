@@ -772,7 +772,6 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 
 void model_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
-	out->coord.origin = ent->origin;
 }
 
 
@@ -879,8 +878,6 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	}
 	md3Frame_t *frame1 = frames + out->frame;
 	md3Frame_t *frame2 = frames + out->oldFrame;
-	// lerp origin
-	Lerp (ent->origin, ent->oldorigin, out->backLerp, out->coord.origin);
 	// lerp center
 	CVec3 center1, center2;
 	out->coord.UnTransformPoint (frame1->localOrigin, center1);
@@ -896,7 +893,7 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	VectorSubtract (frame1->bounds.maxs, frame1->localOrigin, out->size2);
 #endif
 	// check for COLOR_SHELL
-	if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_HALF_DAM|RF_SHELL_DOUBLE))
+	if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
 	{
 		out->customShader = gl_colorShellShader;
 		out->shaderColor.rgba = 0x202020;			// required for RED/GREEN/BLUE
@@ -1890,7 +1887,7 @@ void AddEntity (entity_t *ent)
 	}
 
 	bool mirror = false;
-	if (ent->flags & RF_WEAPONMODEL)
+	if (ent->flags & RF_WEAPONMODEL)		//?? move code to client, add RF_MIRROR flag
 	{
 		if (gl_hand->integer == 1)
 			mirror = true;
@@ -1906,14 +1903,11 @@ void AddEntity (entity_t *ent)
 	out->flags = ent->flags;
 	out->model = (model_t*)ent->model;		//!! namespace conversion (:: -> OpenGLDrv)
 
+	out->coord = ent->pos;
 	if (ent->model)
 	{
-		out->coord.origin = ent->origin;
-		//!! send client=>renderer not angles, but axis
-		out->coord.axis.FromAngles (ent->angles);
-
-		if (!ent->origin[0] && !ent->origin[1] && !ent->origin[2] &&
-			!ent->angles[0] && !ent->angles[1] && !ent->angles[2])
+		if (!memcmp (&ent->pos.origin, &nullVec3, sizeof(CVec3)) &&
+			!memcmp (&ent->pos.axis, &identAxis, sizeof(CAxis)))
 			out->worldMatrix = true;
 		else
 			out->worldMatrix = false;
@@ -1932,15 +1926,8 @@ void AddEntity (entity_t *ent)
 	}
 	else if (ent->flags & RF_BBOX)
 	{
-		Lerp (ent->origin, ent->oldorigin, ent->backlerp, out->center);
-		out->boxSize = ent->size;
-		out->boxAxis.FromAngles (ent->angles);
+		out->size2 = ent->size;
 		out->shaderColor.rgba = ent->color.rgba;
-	}
-	else
-	{
-		// unknown entity type: copy origin for displaying warning in 3D
-		out->coord.origin = ent->origin;
 	}
 
 	gl_speeds.ents++;

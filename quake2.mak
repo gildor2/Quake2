@@ -30,6 +30,7 @@ STATIC = \
 	Release/obj/q2stat/cl_main.obj \
 	Release/obj/q2stat/cl_newfx.obj \
 	Release/obj/q2stat/cl_parse.obj \
+	Release/obj/q2stat/cl_playermodel.obj \
 	Release/obj/q2stat/cl_pred.obj \
 	Release/obj/q2stat/cl_scrn.obj \
 	Release/obj/q2stat/cl_tent.obj \
@@ -77,7 +78,6 @@ STATIC = \
 	Release/obj/q2stat/q2.res \
 	Release/obj/q2stat/makeres.obj \
 	Release/obj/q2stat/gl_backend.obj \
-	Release/obj/q2stat/gl_bspmodel.obj \
 	Release/obj/q2stat/gl_buffers.obj \
 	Release/obj/q2stat/gl_frontend.obj \
 	Release/obj/q2stat/gl_image.obj \
@@ -90,6 +90,8 @@ STATIC = \
 	Release/obj/q2stat/gl_shader.obj \
 	Release/obj/q2stat/gl_sky.obj \
 	Release/obj/q2stat/gl_text.obj \
+	Release/obj/q2stat/gl_model.obj \
+	Release/obj/q2stat/gl_bspmodel.obj \
 	Release/obj/q2stat/gl_trimodel.obj \
 	Release/obj/q2stat/qgl_win.obj \
 	Release/obj/q2stat/gl_win.obj
@@ -227,6 +229,7 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	SDK/include/dinput.h \
 	client/cdaudio.h \
+	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -604,6 +607,37 @@ DEPENDS = \
 	client/ref.h \
 	client/renderer.h \
 	client/rexp_intf.h \
+	qcommon/cmodel.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	qcommon/qfiles.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_frontend.h \
+	ref_gl/gl_image.h \
+	ref_gl/gl_interface.h \
+	ref_gl/gl_light.h \
+	ref_gl/gl_model.h \
+	ref_gl/gl_shader.h \
+	ref_gl/qgl_decl.h
+
+Release/obj/q2stat/gl_model.obj : ref_gl/gl_model.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/gl_model.obj" ref_gl/gl_model.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/Strings.h \
+	Core/Inc/VcWin32.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
 	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	ref_gl/OpenGLDrv.h \
@@ -758,6 +792,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -790,6 +825,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -820,6 +856,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -856,6 +893,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -895,6 +933,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -926,6 +965,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -960,6 +1000,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -991,6 +1032,9 @@ Release/obj/q2stat/cl_newfx.obj : client/cl_newfx.cpp $(DEPENDS)
 Release/obj/q2stat/cl_parse.obj : client/cl_parse.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/cl_parse.obj" client/cl_parse.cpp
 
+Release/obj/q2stat/cl_playermodel.obj : client/cl_playermodel.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/cl_playermodel.obj" client/cl_playermodel.cpp
+
 Release/obj/q2stat/cl_scrn.obj : client/cl_scrn.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/cl_scrn.obj" client/cl_scrn.cpp
 
@@ -1010,6 +1054,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \
@@ -1042,6 +1087,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
 	client/engine.h \

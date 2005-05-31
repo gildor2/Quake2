@@ -6,23 +6,26 @@
 namespace OpenGLDrv {
 
 
-void model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const
+bool model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const
 {
 	Com_DropError ("model %s have no LerpTag caps", name);
+	return false;
 }
 
 
-void md3Model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const
+bool md3Model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const
 {
 	const char *name = tagNames;
-	for (int i = 0; i < numFrames; i++, name += MAX_QPATH)
+	for (int i = 0; i < numTags; i++, name += MAX_QPATH)
 		if (!strcmp (name, tagName))
 			break;
-	if (i == numFrames)
+	bool result = true;
+	if (i == numTags)
 	{
 		//?? developer message
 		DrawTextLeft (va("no tag \"%s\" in %s", tagName, name), RGB(1,0,0));
 		i = 0;			// use 1st tag
+		result = false;
 	}
 	if (frame1 < 0 || frame1 > numFrames)
 	{
@@ -40,12 +43,12 @@ void md3Model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagNam
 	if (frame1 == frame2 || lerp == 0)
 	{
 		tag = tag1;
-		return;
+		return result;
 	}
 	else if (lerp == 1)
 	{
 		tag = tag2;
-		return;
+		return result;
 	}
 	// interpolate tags
 	//?? use quaternions
@@ -55,7 +58,10 @@ void md3Model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagNam
 		Lerp (tag1.axis[i], tag2.axis[i], lerp, tag.axis[i]);
 		tag.axis[i].Normalize ();
 	}
+	// interpolate origin
 	Lerp (tag1.origin, tag2.origin, lerp, tag.origin);
+
+	return result;
 }
 
 

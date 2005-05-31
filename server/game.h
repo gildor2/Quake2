@@ -171,7 +171,7 @@ typedef struct
 	void	(*WriteDir) (vec3_t pos);		// single byte encoded, very coarse
 #else
 	void	(*WritePosition) (const CVec3 &pos);	// some fractional bits
-	void	(*WriteDir) (const CVec3 &pos);			// single byte encoded, very coarse
+	void	(*WriteDir) (const CVec3 *dir);			// single byte encoded, very coarse; dir may be NULL => {0,0,0}
 #endif
 	void	(*WriteAngle) (float f);
 

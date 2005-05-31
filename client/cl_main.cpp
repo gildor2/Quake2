@@ -1361,7 +1361,7 @@ void CL_Frame (float msec, float realMsec)
 	if (com_speeds->integer) time_after_ref = appCycles ();
 
 	// update audio
-	S_Update (cl.refdef.vieworg, cl.v_forward, cl.v_right, cl.v_up);
+	S_Update (cl.refdef.vieworg, cl.v_right);
 
 	CDAudio_Update();
 

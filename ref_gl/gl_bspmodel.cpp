@@ -4,8 +4,6 @@
 #include "gl_poly.h"
 #include "gl_lightmap.h"
 
-//#define TEST_LOAD	// will add command "loadmodel <filename>"; may implement this in client (not renderer)
-
 //#define PROFILE_LOADING
 
 namespace OpenGLDrv {
@@ -13,92 +11,6 @@ namespace OpenGLDrv {
 
 bspModel_t map;
 static bspfile_t *bspfile;
-
-#define MAX_GLMODELS	1024
-
-static model_t *modelsArray[MAX_GLMODELS];
-static int	modelCount;
-
-
-/*-----------------------------------------------------------------------------
-	Loading models: common code
------------------------------------------------------------------------------*/
-
-// forwards
-static void FreeModels ();
-
-
-model_t	*FindModel (const char *name)
-{
-	char	name2[MAX_QPATH];
-	appCopyFilename (name2, name, sizeof(name2));
-
-#if 0
-	// try to load md3 instead of md2
-	//!! disable later
-	char *ext = strrchr (name2, '.');
-	if (ext && !strcmp (ext, ".md2"))
-	{
-		ext[3] = '3';		// ".md2" -> ".md3"
-		if (FS_FileExists (name2))
-			return FindModel (name2);
-		// md3 model with the same name is not found -- load md2
-		ext[3] = '2';		// ".md3" -> ".md2"
-	}
-#endif
-
-	model_t *m;
-	// search already loaded models
-	for (int i = 0; i < modelCount; i++)
-	{
-		m = modelsArray[i];
-		if (!m) continue;				//?? should not happens
-		if (!strcmp (name2, m->name)) return m;
-	}
-
-	if (modelCount == MAX_GLMODELS)
-	{
-		Com_WPrintf ("R_FindModel: MAX_GLMODELS\n");
-		return NULL;
-	}
-
-START_PROFILE2(FindModel::Load, name)
-	/*----- not found -- load model ------*/
-	unsigned len;
-	unsigned *file;
-	if (!(file = (unsigned*) FS_LoadFile (name2, &len)))
-	{
-		m = new model_t;
-		strcpy (m->name, name2);
-		modelsArray[modelCount++] = m;
-		Com_DPrintf ("R_FindModel: %s not found\n", name2);
-		return NULL;	// file not found
-	}
-END_PROFILE
-START_PROFILE(FindModel::Process)
-
-	switch (LittleLong(*file))
-	{
-	case MD2_IDENT:
-		m = LoadMd2 (name2, (byte*)file, len);
-		break;
-	case MD3_IDENT:
-		m = LoadMd3 (name2, (byte*)file, len);
-		break;
-	case SP2_IDENT:
-		m = LoadSp2 (name2, (byte*)file, len);
-		break;
-	default:
-		// no error here: simply ignore unknown model formats
-		Com_WPrintf ("R_FindModel: unknown ID 0x%X in %s", LittleLong (*file), name);
-		m = NULL;
-	}
-	if (m) modelsArray[modelCount++] = m;
-
-END_PROFILE
-	FS_FreeFile (file);
-	return m;
-}
 
 
 /*-----------------------------------------------------------------------------
@@ -157,7 +69,7 @@ static void LoadFlares (lightFlare_t *data, int count)
 
 //??#define MAX_ASPECT	(5.0f / 8)
 
-static void BuildSurfFlare (surfaceBase_t *surf, color_t *color, float intens)
+static void BuildSurfFlare (surfaceBase_t *surf, const color_t *color, float intens)
 {
 	CVec3	origin, c;
 
@@ -239,12 +151,10 @@ static void LoadSlights (slight_t *data, int count)
 }
 
 
-static void BuildSurfLight (surfacePlanar_t *pl, color_t *color, float area, float intens, bool sky)
+static void BuildSurfLight (surfacePlanar_t *pl, const color_t *color, float area, float intens, bool sky)
 {
 	CVec3	c;
-	c[0] = color->c[0] / 255.0f;
-	c[1] = color->c[1] / 255.0f;
-	c[2] = color->c[2] / 255.0f;
+	c.Set (color->c[0] / 255.0f, color->c[1] / 255.0f, color->c[2] / 255.0f);
 
 	if (bspfile->sunLight && sky)
 	{	// have sun -- params may be changed
@@ -729,7 +639,7 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 		BuildPlanarSurfAxis (s);
 		if (stex->flags & SURF_LIGHT)		//!! + sky when ambient <> 0
 		{
-			static color_t	defColor = {96, 96, 96, 255};// {255, 255, 255, 255};
+			static const color_t defColor = {96, 96, 96, 255};// {255, 255, 255, 255};
 
 			float area = GetPolyArea (pverts, numVerts);
 			image_t *img = FindImage (va("textures/%s", stex->texture), IMAGE_MIPMAP);
@@ -744,11 +654,10 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 static int LightmapCompare (const void *s1, const void *s2)
 {
 	surfacePlanar_t *surf1, *surf2;
-	byte	*v1, *v2;
-
 	surf1 = *(surfacePlanar_t **)s1;
 	surf2 = *(surfacePlanar_t **)s2;
 
+	byte *v1, *v2;
 	v1 = (surf1->lightmap) ? surf1->lightmap->source[0] : NULL;
 	v2 = (surf2->lightmap) ? surf2->lightmap->source[0] : NULL;
 
@@ -761,7 +670,6 @@ static int LightmapCompare (const void *s1, const void *s2)
 static int ShaderCompare (const void *s1, const void *s2)
 {
 	surfaceBase_t *surf1, *surf2;
-
 	surf1 = *(surfaceBase_t **)s1;
 	surf2 = *(surfaceBase_t **)s2;
 
@@ -770,9 +678,7 @@ static int ShaderCompare (const void *s1, const void *s2)
 
 static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 {
-	int		i, k, optLmTexels;
-	byte	*ptr;
-	lightmapBlock_t *bl;
+	int		i, k;
 	surfacePlanar_t *s;
 	dynamicLightmap_t *dl;
 	surfacePlanar_t *sortedSurfaces[MAX_MAP_FACES];
@@ -781,7 +687,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 
 	LM_Init ();		// reset lightmap status (even when vertex lighting used)
 
-	optLmTexels = 0;
+	int optLmTexels = 0;
 
 	for (i = 0; i < map.numFaces; i++)
 	{
@@ -790,21 +696,18 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 
 		if (dl = s->lightmap)
 		{
-			color_t avg;
-
 			// convert lightmap offset to pointer
 			for (k = 0; k < dl->numStyles; k++)
 				dl->source[k] = lightData + (dl->source[k] - (byte*)NULL);
 
 			// optimize lightmaps
+			color_t avg;
 			if (LM_IsMonotone (dl, &avg))
 			{
 				//!! if no mtex (+env_add/env_combine) -- use 1-pixel lm; otherwise -- vertex lm
 				//?? can check avg color too: if c[i] < 128 -- can be doubled, so -- vertex light
 				if (1)
 				{
-					vertex_t *v;
-
 					// replace lightmap block with a single texel
 					//!! WARNING: this will modify lightmap in bsp_t (will be affect map reloads)
 					//?? -OR- use pixel from center instead (modify dl->source[0]) ?
@@ -812,6 +715,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 					p[0] = avg.c[0];
 					p[1] = avg.c[1];
 					p[2] = avg.c[2];
+					vertex_t *v;
 					for (k = 0, v = s->verts; k < s->numVerts; k++, v++)
 						v->lm[0] = v->lm[1] = 0.5;		// all verts should point to a middle of lightmap texel
 					optLmTexels += dl->w * dl->h - 1;
@@ -835,7 +739,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 
 	// check for lightmap intersection
 	// NOTE: nere we compare lm->source[0], which should always correspond to a lightstyle=0 (global lighting)
-	ptr = NULL;
+	byte *ptr = NULL;
 	for (i = 0; i < map.numFaces; i++)
 	{
 		s = sortedSurfaces[i];
@@ -914,7 +818,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 		// resort surfaces by shader
 		qsort (sortedSurfaces, map.numFaces, sizeof(surfaceBase_t*), ShaderCompare);
 
-		bl = NULL;
+		lightmapBlock_t *bl = NULL;
 		i = 0;
 		while (i < map.numFaces)
 		{
@@ -1184,90 +1088,6 @@ node_t *PointInLeaf (const CVec3 &p)
 	}
 
 	return NULL;	// never
-}
-
-
-/*----------------------------------------------*/
-
-
-static void Modellist_f (bool usage, int argc, char **argv)
-{
-	static const char *types[] = {"unk",	"inl",	"sp2",		"md3"};		// see modelType_t
-	static const char *colors[] = {S_RED,	"",		S_MAGENTA, S_GREEN};	// ...
-
-	if (argc > 2 || usage)
-	{
-		Com_Printf ("Usage: modellist [mask]\n");
-		return;
-	}
-	const char *mask = (argc == 2) ? argv[1] : NULL;
-
-	int totalSize = 0;
-	int totalCount = 0;
-	Com_Printf ("-----type-size----name---------\n");
-	for (int i = 0; i < modelCount; i++)
-	{
-		model_t *m = modelsArray[i];
-		if (mask && !appMatchWildcard (m->name, mask, true)) continue;
-		totalCount++;
-		Com_Printf ("%-3d  %3s  %-7d %s%s\n", i, types[m->type], m->size, colors[m->type], m->name);
-		totalSize += m->size;
-	}
-	Com_Printf ("Displayed %d/%d models, used %d bytes\n", totalCount, modelCount, totalSize);
-}
-
-
-static void FreeModels ()
-{
-	// free non-inline models
-	for (int i = 0; i < modelCount; i++)
-	{
-		model_t *m = modelsArray[i];
-		if (m && m->size >= 0) delete m;		// when size < 0 -- not allocated directly, used from different place
-	}
-
-	memset (modelsArray, 0, sizeof(modelsArray));
-	modelCount = 0;
-
-	// free map data
-	if (map.dataChain) delete map.dataChain;
-	if (map.lightGridChain) delete map.lightGridChain;
-	memset (&map, 0, sizeof(map));
-}
-
-
-#ifdef TEST_LOAD
-static void LoadModel_f (bool usage, int argc, char **argv)
-{
-	if (argc != 2 || usage)
-	{
-		Com_Printf ("Usage: loadmodel <filename>\n");
-		return;
-	}
-	FindModel (argv[1]);
-}
-#endif
-
-
-void InitModels ()
-{
-	memset (&map, 0, sizeof(map));
-
-	RegisterCommand ("modellist", Modellist_f);
-#ifdef TEST_LOAD
-	RegisterCommand ("loadmodel", LoadModel_f);
-#endif
-}
-
-
-void ShutdownModels ()
-{
-	FreeModels ();
-
-	UnregisterCommand ("modellist");
-#ifdef TEST_LOAD
-	UnregisterCommand ("loadmodel");
-#endif
 }
 
 

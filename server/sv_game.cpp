@@ -189,7 +189,7 @@ static void PF_Configstring (int index, char *val)
 		MSG_WriteShort (&sv.multicast, index);
 		MSG_WriteString (&sv.multicast, val);
 
-		SV_MulticastOld (vec3_origin, MULTICAST_ALL_R);
+		SV_MulticastOld (nullVec3, MULTICAST_ALL_R);
 	}
 	unguard;
 }
@@ -202,9 +202,15 @@ static void PF_WriteLong (int c) {MSG_WriteLong (&sv.multicast, c);}
 static void PF_WriteFloat (float f) {MSG_WriteFloat (&sv.multicast, f);}
 static void PF_WriteString (char *s) {MSG_WriteString (&sv.multicast, s);}
 static void PF_WritePos (const CVec3 &pos) {MSG_WritePos (&sv.multicast, pos);}
-// WARNING: original MSG_WriteDir() was (CVec3 *pos) and was allowed pos==NULL
-static void PF_WriteDir (const CVec3 &dir) {MSG_WriteDir (&sv.multicast, dir);}
 static void PF_WriteAngle (float f) {MSG_WriteAngle (&sv.multicast, f);}
+
+static void PF_WriteDir (const CVec3 *dir)
+{
+	if (dir)
+		MSG_WriteDir (&sv.multicast, *dir);
+	else
+		MSG_WriteByte (&sv.multicast, 0);
+}
 
 
 /*

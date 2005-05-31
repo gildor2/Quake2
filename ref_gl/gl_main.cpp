@@ -436,6 +436,7 @@ void GL_EnableRendering (bool enable)
 
 /*--------------------- Frame ---------------------------*/
 
+//?? move to frontend?
 
 void BeginFrame (void)
 {
@@ -636,7 +637,6 @@ static void SetPerspective (void)
 #undef dr
 #endif
 }
-
 
 
 // Can be called few RenderFrame() between BeginFrame() and EndFrame()

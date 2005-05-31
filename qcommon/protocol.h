@@ -47,7 +47,7 @@
 #define	RF_FULLBRIGHT		0x00000008		// allways draw full intensity
 #define	RF_DEPTHHACK		0x00000010		// for view weapon Z crunching
 #define	RF_TRANSLUCENT		0x00000020
-#define	RF_FRAMELERP		0x00000040
+#define	RF_FRAMELERP		0x00000040		// set but game, but ignored by engine
 #define RF_BEAM				0x00000080
 #define	RF_CUSTOMSKIN		0x00000100		// skin is an index in image_precache
 #define	RF_GLOW				0x00000200		// pulse lighting for bonus items

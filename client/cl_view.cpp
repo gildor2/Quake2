@@ -70,8 +70,36 @@ void V_AddEntity (entity_t *ent)
 {
 	if (r_numentities >= MAX_ENTITIES)
 		return;
-	r_entities[r_numentities++] = *ent;
-//	if (!ent->model) RE_DrawTextLeft (va("NULL model: %g %g %g from %X", VECTOR_ARG(ent->origin), GET_RETADDR(ent)));
+	entity_t &e = r_entities[r_numentities++];
+	e = *ent;
+	e.pos.axis.FromAngles (e.angles);
+}
+
+// same as V_AddEntity(), but without axis computation
+void V_AddEntity2 (entity_t *ent)
+{
+	if (r_numentities >= MAX_ENTITIES)
+		return;
+	entity_t &e = r_entities[r_numentities++];
+	e = *ent;
+}
+
+void AddEntityWithEffects2 (entity_t *ent, unsigned fx)
+{
+	V_AddEntity2 (ent);
+
+	// color shells generate a seperate entity for the main model
+	if (fx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
+	{
+		ent->flags |= fx;
+		V_AddEntity2 (ent);
+	}
+}
+
+void AddEntityWithEffects (entity_t *ent, unsigned fx)
+{
+	ent->pos.axis.FromAngles (ent->angles);
+	AddEntityWithEffects2 (ent, fx);
 }
 
 
@@ -138,10 +166,10 @@ void V_TestEntities (void)
 
 		float r = 64 * (i % 4) - (1*64+32);
 		float f = 64 * (i / 4) - (3*64+32);
-		VectorMA (cl.refdef.vieworg, 192, cl.v_forward, ent.origin);
-		ent.origin[0] += r;
-		ent.origin[1] += f;
-		ent.oldorigin = ent.origin;
+		VectorMA (cl.refdef.vieworg, 192, cl.v_forward, ent.pos.origin);
+		ent.pos.origin[0] += r;
+		ent.pos.origin[1] += f;
+		ent.pos.axis = identAxis;
 		// animate frames
 #if 0
 #define FIRST_FRAME	0
@@ -157,8 +185,8 @@ void V_TestEntities (void)
 		ent.backlerp = 1.0f - (cl.time % 100) / 100.0f;
 		if (ent.backlerp == 1)
 			ent.backlerp = 0;
-		ent.model = cl.baseclientinfo.model;
-		ent.skin = cl.baseclientinfo.skin;
+		ent.model = cl.baseClientInfo.md2model;
+		ent.skin = cl.baseClientInfo.md2skin;
 	}
 #undef FIRST_FRAME
 #undef LAST_FRAME
@@ -263,13 +291,13 @@ void CL_PrepRefresh (void)
 
 	CL_RegisterTEntModels ();
 
+	strcpy (cl_weaponmodels[0], "weapon.md2");	// default weapon model
 	num_cl_weaponmodels = 1;
-	strcpy (cl_weaponmodels[0], "weapon.md2");	//??
 
 	for (i = 1; i < MAX_MODELS && cl.configstrings[CS_MODELS+i][0]; i++)
 	{
 		strcpy (name, cl.configstrings[CS_MODELS+i]);
-		name[37] = 0;				// never go beyond one line
+		name[linewidth-1] = 0;		// never go beyond one line (for correct '\r' erasing)
 		if (name[0] != '*')
 			Com_Printf ("%s\r", name);
 		SCR_UpdateScreen ();
@@ -278,18 +306,13 @@ void CL_PrepRefresh (void)
 		{
 			// special player weapon model
 			if (num_cl_weaponmodels < MAX_CLIENTWEAPONMODELS)
-			{
-				strncpy(cl_weaponmodels[num_cl_weaponmodels], cl.configstrings[CS_MODELS+i]+1,
-					sizeof(cl_weaponmodels[num_cl_weaponmodels]) - 1);
-				num_cl_weaponmodels++;
-			}
+				strncpy (cl_weaponmodels[num_cl_weaponmodels++], cl.configstrings[CS_MODELS+i]+1,
+					sizeof(cl_weaponmodels[0])-1);
 		}
 		else
 		{
-			char	*mdl, *ext;
-
-			mdl = cl.configstrings[CS_MODELS + i];
-			ext = strrchr (name, '.');
+			char *mdl = cl.configstrings[CS_MODELS + i];
+			char *ext = strrchr (name, '.');
 			if (!ext || stricmp (ext, ".bsp"))
 				cl.model_draw[i] = RE_RegisterModel (cl.configstrings[CS_MODELS+i]);
 			else
@@ -319,7 +342,7 @@ void CL_PrepRefresh (void)
 		CL_ParseClientinfo (i);
 	}
 
-	CL_LoadClientinfo (&cl.baseclientinfo, "unnamed\\male/grunt");
+	CL_LoadClientinfo (cl.baseClientInfo, "unnamed\\male/grunt");
 
 	// set sky textures and speed
 	Com_Printf ("sky\r", i);
@@ -579,10 +602,9 @@ static void DrawSurfInfo (void)
 
 	unsigned cont = r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER;
 	trace_t	trace;
-	static const CVec3 zero = {0, 0, 0};
 	CM_BoxTrace (trace, start, end, NULL, NULL, 0, cont);
 	if (!(r_surfinfo->integer & 2))
-		CL_EntityTrace (trace, start, end, zero, zero, cont);
+		CL_EntityTrace (trace, start, end, nullVec3, nullVec3, cont);
 
 	if (trace.fraction < 1.0)
 	{

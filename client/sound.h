@@ -32,7 +32,7 @@ void S_StartLocalSound (const char *s);
 void S_RawSamples (int samples, int rate, int width, int channels, byte *data);
 
 void S_StopAllSounds_f (void);
-void S_Update (const CVec3 &origin, const CVec3 &v_forward, const CVec3 &v_right, const CVec3 &v_up);
+void S_Update (const CVec3 &origin, const CVec3 &v_right);
 
 void S_Activate (bool active);
 

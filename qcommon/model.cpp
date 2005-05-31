@@ -545,7 +545,7 @@ static const CVec3& FindEntityTarget (char *name)
 			return targets[i].origin;
 
 	Com_DPrintf ("target \"%s\" is not found\n", name);
-	return vec3_origin;		// not found
+	return nullVec3;		// not found
 }
 
 
@@ -754,9 +754,7 @@ static bool ProcessEntity ()
 				else
 				{
 					angle *= M_PI / 180.0f;
-					slight->spotDir[0] = cos(angle);
-					slight->spotDir[1] = sin(angle);
-					slight->spotDir[2] = 0;
+					slight->spotDir.Set (cos(angle), sin(angle), 0);
 				}
 			}
 			else

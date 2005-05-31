@@ -72,7 +72,7 @@ struct glstate_t
 	bool	locked;
 	// up to 32 texture units supports by OpenGL 1.3
 	byte	currentTmu;
-	image_t	*currentBinds[32];
+	const image_t *currentBinds[32];
 	unsigned currentEnv[32];
 	bool	texCoordEnabled[32];
 	GLenum	textureTarget[32];					// 0 - disabled, else == currentBinds[]->target
@@ -80,7 +80,7 @@ struct glstate_t
 	float	mipBias[32];
 	// fields for locked state
 	byte	newTmu;
-	image_t	*newBinds[32];
+	const image_t *newBinds[32];
 	unsigned newEnv[32];
 	bool	newTexCoordEnabled[32];
 	GLenum	newTextureTarget[32];
@@ -206,14 +206,14 @@ extern glstate_t   gl_state;
 void	GL_Lock (void);
 void	GL_Unlock (void);
 
-void	GL_Bind (image_t *tex);
-void	GL_BindForce (image_t *tex);
+void	GL_Bind (const image_t *tex);
+void	GL_BindForce (const image_t *tex);
 
 void	GL_SelectTexture (int tmu);
 void	GL_TexCoordPointer (void *ptr);
 void	GL_TexEnv (unsigned env);
 void	GL_TexMipBias (float f);
-void	GL_TexEnvColor (color_t *c);
+void	GL_TexEnvColor (const color_t *c);
 void	GL_SetMultitexture (int level);
 void	GL_DisableTexCoordArrays (void);
 

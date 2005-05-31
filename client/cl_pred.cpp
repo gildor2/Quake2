@@ -131,7 +131,7 @@ void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CV
 		}
 		else
 			CM_TransformedBoxTrace (trace, start, end, &mins, &maxs,
-				CM_HeadnodeForBox (ent->bounds), contents, eOrigin, vec3_origin);
+				CM_HeadnodeForBox (ent->bounds), contents, eOrigin, nullVec3);
 
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr.fraction)

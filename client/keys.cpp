@@ -151,11 +151,9 @@ static int Key_StringToKeynum (const char *str)
 	// check for 'UNKxx'
 	if (key[0] == 'u' && key[1] == 'n' && key[2] == 'k' && key[5] == 0)
 	{
-		int		n1, n2;
-
-		n1 = HexDigit (name[3]);
+		int n1 = HexDigit (name[3]);
 		if (n1 < 0) return -1;
-		n2 = HexDigit (name[4]);
+		int n2 = HexDigit (name[4]);
 		if (n2 < 0) return -1;
 		return (n1 << 4) + n2 + 256 + mod;
 	}
@@ -717,7 +715,7 @@ void Key_WriteBindings (FILE *f)
 
 void Key_Init (void)
 {
-	static const struct {byte base; byte shift;} keyShifts[] = {
+	static const struct {char base; char shift;} keyShifts[] = {
 		{'1', '!'},	{'2', '@'},	{'3', '#'},	{'4', '$'},	{'5', '%'},
 		{'6', '^'},	{'7', '&'},	{'8', '*'},	{'9', '('},	{'0', ')'},
 		{'-', '_'},	{'=', '+'},	{',', '<'},	{'.', '>'},	{'/', '?'},

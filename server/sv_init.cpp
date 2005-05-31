@@ -56,7 +56,7 @@ int SV_FindIndex (char *name, int start, int max, bool create)
 		MSG_WriteChar (&sv.multicast, svc_configstring);
 		MSG_WriteShort (&sv.multicast, start+i);
 		MSG_WriteString (&sv.multicast, name);
-		SV_MulticastOld (vec3_origin, MULTICAST_ALL_R);
+		SV_MulticastOld (nullVec3, MULTICAST_ALL_R);
 	}
 
 	return i;

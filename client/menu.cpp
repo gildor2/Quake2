@@ -1944,13 +1944,6 @@ PLAYER CONFIG MENU
 
 #define MAX_DISPLAYNAME 16
 
-class playerModelInfo_t : public CStringItem
-{
-public:
-	int		numSkins;
-	TList<CStringItem> skins;
-};
-
 static const int rate_tbl[] = {
 	2500, 3200, 5000, 10000, 25000, 0
 };
@@ -1976,10 +1969,6 @@ struct playerConfigMenu_t : menuFramework_t
 	menuSeparator_t	hand_title;
 	menuSeparator_t	rate_title;
 	menuAction_t		download_action;
-
-	static CMemoryChain *pmiChain;
-	static TList<playerModelInfo_t> pmiList;
-	static int numPlayerModels;
 
 	static int modelChangeTime;
 
@@ -2012,87 +2001,6 @@ struct playerConfigMenu_t : menuFramework_t
 		modelChangeTime = appMilliseconds ();
 	}
 
-	//!! place skin functions to a separate unit
-	static bool IsValidSkin (char *skin, CStringItem *pcxfiles)
-	{
-		char	scratch[MAX_OSPATH];
-
-		const char *ext = strrchr (skin, '.');
-		if (!ext) return false;
-
-		if (stricmp (ext, ".pcx") && stricmp (ext, ".tga") && stricmp (ext, ".jpg"))
-			return false;		// not image
-
-		// modelname/skn_* have no icon
-		const char *name = strrchr (skin, '/');
-		if (!name) return false;
-		else name++;			// skip '/'
-
-		if (!memcmp (name, "skn_", 4))
-			return true;
-		strcpy (scratch, skin);
-		strcpy (strrchr (scratch, '.'), "_i.pcx");
-
-		for (CStringItem *item = pcxfiles; item; item = item->next)
-			if (!strcmp (item->name, scratch)) return true;
-		return false;
-	}
-
-	static bool ScanDirectories (void)
-	{
-		numPlayerModels = 0;
-		pmiList.Reset();
-
-		/*----- get a list of directories -----*/
-		const char *path = NULL;
-		TList<CStringItem> dirnames;
-		while (path = FS_NextPath (path))
-		{
-			dirnames = FS_ListFiles (va("%s/players/*.*", path), LIST_DIRS);
-			if (dirnames.First()) break;
-		}
-		if (!dirnames.First()) return false;
-
-		/*--- go through the subdirectories ---*/
-		for (CStringItem *diritem = dirnames.First(); diritem; diritem = dirnames.Next(diritem))
-		{
-			// verify the existence of tris.md2
-			if (!FS_FileExists (va("%s/tris.md2", diritem->name))) continue;
-
-			// verify the existence of at least one pcx skin
-			// "/*.pcx" -> pcx,tga,jpg (see IsValidSkin())
-			TList<CStringItem> skinNames = FS_ListFiles (va("%s/*.*", diritem->name), LIST_FILES);
-			if (!skinNames.First()) continue;
-
-			// count valid skins, which consist of a skin with a matching "_i" icon
-			TList<CStringItem> skins;
-			int numSkins = 0;
-			for (CStringItem *skinItem = skinNames.First(); skinItem; skinItem = skinNames.Next(skinItem))
-				if (IsValidSkin (skinItem->name, skinNames.First()))
-				{
-					char *str = strrchr (skinItem->name, '/') + 1;
-					char *ext = strrchr (str, '.');
-					ext[0] = 0;
-					skins.CreateAndInsert (str, pmiChain);
-					numSkins++;
-				}
-			skinNames.Free();
-			if (!numSkins) continue;
-
-			// create model info
-			playerModelInfo_t *info = new (strrchr (diritem->name, '/')+1, pmiChain) playerModelInfo_t;
-			info->numSkins = numSkins;
-			info->skins = skins;
-			// add model info to pmi
-			pmiList.Insert (info);
-
-			numPlayerModels++;
-		}
-		dirnames.Free();
-		return true;
-	}
-
-
 	bool Init ()
 	{
 		extern cvar_t *name, *team, *skin;
@@ -2104,12 +2012,8 @@ struct playerConfigMenu_t : menuFramework_t
 		static const char *colorNames[] = {"default", "red", "green", "yellow", "blue", "magenta", "cyan", "white", NULL};
 		static const char *railTypes[]  = {"original", "spiral", "rings", "beam", NULL};
 
-		pmiChain = new CMemoryChain;
-		ScanDirectories ();
-
-		if (!numPlayerModels)
+		if (!ScanPlayerModels ())
 		{
-			delete pmiChain;
 			multiplayerMenu.SetStatusBar (S_YELLOW"No valid player models found");
 			return false;
 		}
@@ -2314,12 +2218,8 @@ struct playerConfigMenu_t : menuFramework_t
 		{
 			// add player model
 			e[0].model = RE_RegisterModel (va("players/%s/tris.md2", model->name));
-			e[0].skin = RE_RegisterSkin (va("players/%s/%s.pcx", model->name, skin->name));
-//			e[0].flags = 0;
-			e[0].origin[0] = 90;
-//			e[0].origin[1] = 0;
-//			e[0].origin[2] = 0;
-			e[0].oldorigin = e[0].origin;
+			e[0].skin = RE_RegisterSkin (va("players/%s/%s", model->name, skin->name));
+			e[0].pos.origin[0] = 90;
 
 			e[0].frame = (cls.realtime + 99) / 100 % (LAST_FRAME-FIRST_FRAME+1) + FIRST_FRAME;
 			e[0].oldframe = e[0].frame - 1;
@@ -2329,6 +2229,7 @@ struct playerConfigMenu_t : menuFramework_t
 			if (e[0].backlerp == 1.0)
 				e[0].backlerp = 0.0;
 			e[0].angles[1] = cls.realtime / 20 % 360;
+			e[0].pos.axis.FromAngles (e[0].angles);
 
 			// add weapon model
 			e[1] = e[0];		// fill angles, lerp and more ...
@@ -2350,9 +2251,9 @@ struct playerConfigMenu_t : menuFramework_t
 
 		const char *icon;
 		if (!memcmp (skin->name, "skn_", 4))
-			icon = "/pics/default_icon.pcx";
+			icon = "/pics/default_icon";
 		else
-			icon = va("/players/%s/%s_i.pcx", model->name, skin->name);
+			icon = va("/players/%s/%s_i", model->name, skin->name);
 		RE_DrawDetailedPic (x - 40, refdef.y, viddef.height * 32 / 240, viddef.height * 32 / 240, icon);
 	}
 
@@ -2387,7 +2288,7 @@ struct playerConfigMenu_t : menuFramework_t
 			Cvar_Set ("skin", va("%s/%s", model->name, skin->name));
 
 			// free directory scan data
-			delete pmiChain;
+			FreePlayerModelsInfo ();
 		}
 		return menuFramework_t::KeyDown (key);
 	}
@@ -2402,9 +2303,6 @@ menuList_t		playerConfigMenu_t::rtype_box;
 menuList_t		playerConfigMenu_t::rcolor_box;
 menuList_t		playerConfigMenu_t::handedness_box;
 menuList_t		playerConfigMenu_t::rate_box;
-CMemoryChain *playerConfigMenu_t::pmiChain;
-TList<playerModelInfo_t> playerConfigMenu_t::pmiList;
-int playerConfigMenu_t::numPlayerModels;
 int playerConfigMenu_t::modelChangeTime;
 
 
@@ -2999,12 +2897,8 @@ TEST MENU
 void attach (const entity_t &e1, entity_t &e2, const char *tag)
 {
 	CCoords lerped;		// get position modifier
-	e1.model->LerpTag (e1.frame, e1.frame, 0, tag, lerped);
-	CCoords base;		// prepare base
-	base.axis.FromAngles (e1.angles);	//!! use axis; use e1.coords instead of base
-	base.origin = e1.origin;
-	base.UnTransformCoords (lerped, lerped);
-	e2.origin = lerped.origin;			//!! +axis
+	e1.model->LerpTag (e1.frame, e1.oldframe, 0, tag, lerped);
+	e1.pos.UnTransformCoords (lerped, e2.pos);
 }
 
 struct testMenu_t : menuFramework_t
@@ -3025,7 +2919,7 @@ struct testMenu_t : menuFramework_t
 	{
 		entity_t e[4];
 		static dlight_t	dl[] = {
-			{{30, 100, 100}, {1, 1, 1}, 400},
+			{{30, 100, 100}, {1, 1, 1}, 350},
 			{{90, -100, 10}, {0.4, 0.2, 0.2}, 200}
 		};
 
@@ -3041,53 +2935,38 @@ struct testMenu_t : menuFramework_t
 
 		memset (&e, 0, sizeof(e));
 
-//		const char *model_name = "visor";
-		const char *model_name = "crash";
+		const char *model_name = "visor";
+//		const char *model_name = "crash";
 
 		// add legs model
+		e[0].angles[1] = cls.realtime / 20 % 360;	// rotate
+		e[0].pos.origin[0] = 130;
+		e[0].pos.axis.FromAngles (e[0].angles);		// compute legs axis
 		e[0].model = RE_RegisterModel (va("models/players/%s/lower.md3", model_name));
-		e[0].skin = RE_RegisterSkin (va("models/players/%s/blue.pcx", model_name));
-//		e[0].flags = 0;
-		e[0].origin[0] = 130;
-//		e[0].origin[1] = 0;
-		e[0].origin[2] = 0;
+		e[0].skin = RE_RegisterSkin (va("models/players/%s/blue", model_name));
 		e[0].frame = e[0].oldframe = 220-63;	// legs frame
-		e[0].oldorigin = e[0].origin;
-
-		e[0].oldframe = e[0].frame;
-		e[0].backlerp = 0;
-		e[0].angles[1] = cls.realtime / 20 % 360;
 
 		// add torso model
-		e[1] = e[0];		//?? don't do it
 		e[1].model = RE_RegisterModel (va("models/players/%s/upper.md3", model_name));
-//		e[1].skin = NULL;
+		e[1].skin = e[0].skin;
 		e[1].frame = e[1].oldframe = 151;		// torso frame
 		attach (e[0], e[1], "tag_torso");
-		e[1].oldorigin = e[1].origin;
 
 		// add head model
-		e[2] = e[0];		//?? don't
-		e[2].frame = e[2].oldframe = 0;
 		e[2].model = RE_RegisterModel (va("models/players/%s/head.md3", model_name));
-//		e[2].skin = NULL;
+		e[2].skin = e[0].skin;
+		e[2].frame = e[2].oldframe = 0;
 		attach (e[1], e[2], "tag_head");
-		e[2].oldorigin = e[2].origin;
 
-		e[3] = e[0];		//?? don't
-		e[3].frame = e[3].oldframe = 0;
 		e[3].model = RE_RegisterModel ("models/weapons/g_rail/tris.md2");
-		attach (e[1], e[3], "tag_weapon");
 		e[3].skin = NULL;
-		e[3].oldorigin = e[3].origin;
+		e[3].frame = e[3].oldframe = 0;
+		attach (e[1], e[3], "tag_weapon");
 
-
-//		refdef.areabits = NULL;
 		refdef.num_entities = 4;
 		refdef.entities = e;
-//		refdef.lightstyles = NULL;
 		refdef.dlights = dl;
-		refdef.num_dlights = ARRAY_COUNT(dl);
+		refdef.num_dlights = 1;//ARRAY_COUNT(dl);
 		refdef.rdflags = RDF_NOWORLDMODEL;
 
 		RE_Fill (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));

@@ -111,7 +111,7 @@ static void GetPalette (void)
 }
 
 
-static byte *Convert8to32bit (byte *in, int width, int height, unsigned *palette)
+static byte *Convert8to32bit (byte *in, int width, int height, const unsigned *palette)
 {
 	guard(Convert8to32bit);
 	if (!palette)
@@ -137,6 +137,7 @@ void GL_TextureMode (const char *name)	//?? change (not strings; use enum {none,
 		const char *name;
 		GLenum	minimize, maximize;
 	} texModes[] = {
+		//?? remove this later:
 		{"GL_NEAREST", GL_NEAREST, GL_NEAREST},				// box filter, no mipmaps
 		{"GL_LINEAR", GL_LINEAR, GL_LINEAR},				// linear filter, no mipmaps
 		{"GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST},	// no (box) filter
@@ -157,8 +158,8 @@ void GL_TextureMode (const char *name)	//?? change (not strings; use enum {none,
 		gl_filter_min = texModes[i].minimize;
 		gl_filter_max = texModes[i].maximize;
 
-		int		j;
-		image_t *img;
+		int j;
+		const image_t *img;
 		// change all the existing mipmap texture objects
 		for (j = 0, img = imagesArray; j < MAX_TEXTURES; j++, img++)
 		{

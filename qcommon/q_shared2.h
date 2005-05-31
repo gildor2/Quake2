@@ -350,7 +350,6 @@ struct CAxis
 	// initializing CAxis object with initializer list ( "= {n,n,n,n ...}" )
 	CVec3	v[3];
 	// methods
-	void Clear ();						// set to ((1,0,0),(0,1,0),(0,0,1))
 	void FromAngles (const CVec3 &angles);
 	void TransformVector (const CVec3 &src, CVec3 &dst) const;
 	void UnTransformVector (const CVec3 &src, CVec3 &dst) const;
@@ -391,7 +390,8 @@ void UnTransformPoint (const CVec3 &origin, const CAxis &axis, const CVec3 &src,
 
 // misc
 
-extern const CVec3 vec3_origin;
+extern const CVec3 nullVec3;
+extern const CAxis identAxis;
 
 void AngleVectors (const CVec3 &angles, CVec3 *forward, CVec3 *right, CVec3 *up);
 float anglemod (float a);
@@ -533,8 +533,7 @@ struct trace_t
 	Player movement code
 -----------------------------------------------------------------------------*/
 
-// pmove_state_t is the information necessary for client side movement
-// prediction
+// pmove_state_t is the information necessary for client side movement prediction
 typedef enum
 {
 	// can accelerate and turn

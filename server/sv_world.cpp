@@ -489,7 +489,7 @@ int SV_PointContents (const CVec3 &p)
 		if (ent->model)
 			c2 = CM_TransformedPointContents (p, ent->model->headnode, edict->s.origin, ent->axis);
 		else
-			c2 = CM_TransformedPointContents (p, CM_HeadnodeForBox (ent->bounds), edict->s.origin, vec3_origin);
+			c2 = CM_TransformedPointContents (p, CM_HeadnodeForBox (ent->bounds), edict->s.origin, nullVec3);
 		contents |= c2;
 	}
 	return contents;
@@ -576,7 +576,7 @@ static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 
 		if (ent.model)
 			CM_TransformedBoxTrace (trace, start, end, &mins, &maxs, ent.model->headnode, contentmask, edict->s.origin, ent.axis);
 		else
-			CM_TransformedBoxTrace (trace, start, end, &mins, &maxs, CM_HeadnodeForBox (ent.bounds), contentmask, edict->s.origin, vec3_origin);
+			CM_TransformedBoxTrace (trace, start, end, &mins, &maxs, CM_HeadnodeForBox (ent.bounds), contentmask, edict->s.origin, nullVec3);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr.fraction)
 		{

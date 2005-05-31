@@ -7,7 +7,8 @@ class CRenderModel
 {
 public:
 	char	name[MAX_QPATH];
-	virtual void LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const = NULL;
+	// return "false" when tag not found
+	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const = NULL;
 };
 
 
@@ -28,28 +29,24 @@ public:
 #define	MAX_LIGHTSTYLES		256
 
 
-//!!! clean beam comments
 struct entity_t
 {
 	CRenderModel *model;
-	CVec3	angles;
-	/*------- most recent data --------*/
-	CVec3	origin;
+	CCoords	pos;
+	CVec3	angles;			// not used by renderer
 	int		frame;
-	/*------- data for lerping --------*/
-	CVec3	oldorigin;		//?? do we need oldorigin? may be, send to renderer lerped origin only
 	int		oldframe;
-	float	backlerp;		// 0.0 = current, 1.0 = old
+	float	backlerp;		// 0.0 = current, 1.0 = old; used for frame models only
 		//?? why we use backlerp instead of simple lerp ?
 	/*-------------- misc -------------*/
-	CVec3	size;
-	int		skinnum;
-	color_t	color;			// for extended beam
+	CVec3	size;			// for RF_BBOX only; size of box
+	color_t	color;			// for RF_BBOX only; color of box
 	/*----------- color info ----------*/
 	float	alpha;			// ignore if RF_TRANSLUCENT isn't set
 
-	CBasicImage	*skin;		// NULL for inline skin
-	int		flags;
+	int		skinnum;		// number of model built-in skin
+	CBasicImage	*skin;		// NULL for built-in skin
+	unsigned flags;			// set of RF_XXX flags
 };
 
 

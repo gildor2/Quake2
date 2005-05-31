@@ -14,16 +14,17 @@ namespace OpenGLDrv {
 // point light / spot light
 struct gl_slight_t
 {
+	// almost all fields from slight_t, -"next" +"cluster" +"maxDist2"
 	slightType_t type;
 	bool	spot;
 	byte	style;
 	CVec3	origin;
 	CVec3	color;
 	float	intens;
-	CVec3	spotDir;
-	float	spotDot;
 	float	focus;
 	float	fade;
+	CVec3	spotDir;
+	float	spotDot;
 	// fields for culling
 	int		cluster;
 	float	maxDist2;

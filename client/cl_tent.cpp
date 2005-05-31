@@ -334,7 +334,7 @@ explosion_t *CL_AllocExplosion (const CVec3 &origin, exptype_t type)
 	for (i = 0, ex = cl_explosions; i < MAX_EXPLOSIONS; i++, ex++)
 	{
 		if (ex->type == ex_free) continue;
-		if (type == ex->type && ex->ent.origin == origin)
+		if (type == ex->type && ex->ent.pos.origin == origin)
 		{
 			dst = ex;
 			break;
@@ -367,7 +367,7 @@ explosion_t *CL_AllocExplosion (const CVec3 &origin, exptype_t type)
 	}
 
 	memset (dst, 0, sizeof(explosion_t));
-	dst->ent.origin = origin;
+	dst->ent.pos.origin = origin;
 	dst->time = -100;
 	dst->type = type;
 	return dst;
@@ -454,14 +454,12 @@ void CL_AddExplosions (void)
 		if (ex->light)
 		{
 //			V_AddLight (ent->origin, ex->light * ent->alpha, VECTOR_ARG(ex->lightcolor));
-			V_AddLight (ent->origin, ex->light * ent->alpha,
+			V_AddLight (ent->pos.origin, ex->light * ent->alpha,
 				ex->lightcolor[0] * ent->alpha, ex->lightcolor[1] * ent->alpha, ex->lightcolor[2] * ent->alpha);
 //			RE_DrawTextLeft (va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARG(ent->origin), ent->alpha, VECTOR_ARG(ex->lightcolor)));
 		}
 
 		if (!ent->model) continue;		// flash only
-
-		ent->oldorigin = ent->origin;
 
 		ent->frame = ex->baseframe + frm + 1;
 		ent->oldframe = ex->baseframe + frm;
@@ -930,12 +928,11 @@ void CL_ParseTEnt (void)
 			if (cls.newprotocol)
 			{
 				trace_t	trace;
-				static const CVec3 zero = {0, 0, 0};
 				CVec3 start, end;
 
 				VectorAdd (pos, dir, start);
 				VectorMA (start, -2, dir, end);
-				CL_Trace (trace, start, end, zero, zero, MASK_ALL);
+				CL_Trace (trace, start, end, nullVec3, nullVec3, MASK_ALL);
 				if (trace.fraction < 1.0)
 				{
 					csurface_t *surf = trace.surface;
@@ -1464,7 +1461,7 @@ void CL_AddBeams (void)
 		if ((b->model == cl_mod_lightning) && (d <= model_length))
 		{
 //			Com_Printf ("special case\n");
-			ent.origin = b->end;
+			ent.pos.origin = b->end;
 			// offset to push beam outside of tesla model (negative because dist is from end to start
 			// for this beam)
 //			for (j = 0; j < 3 ; j++)
@@ -1480,7 +1477,7 @@ void CL_AddBeams (void)
 
 		while (d > 0)
 		{
-			ent.origin = org;
+			ent.pos.origin = org;
 			ent.model = b->model;
 			if (b->model == cl_mod_lightning)
 			{
@@ -1615,7 +1612,7 @@ void CL_AddPlayerBeams (void)
 			if (yaw < 0) yaw += 360.0f;
 
 			forward = sqrt (dist[0]*dist[0] + dist[1]*dist[1]);	//!! slow
-			pitch = (atan2(dist[2], forward) * -180.0 / M_PI);	//
+			pitch = (atan2(dist[2], forward) * -180.0 / M_PI);	//!!
 			if (pitch < 0) pitch += 360.0f;
 		}
 
@@ -1684,7 +1681,7 @@ void CL_AddPlayerBeams (void)
 		if ((b->model == cl_mod_lightning) && (d <= model_length))
 		{
 //			Com_Printf ("special case\n");
-			ent.origin = b->end;
+			ent.pos.origin = b->end;
 			// offset to push beam outside of tesla model (negative because dist is from end to start
 			// for this beam)
 //			for (j=0 ; j<3 ; j++)
@@ -1699,7 +1696,7 @@ void CL_AddPlayerBeams (void)
 		}
 		while (d > 0)
 		{
-			ent.origin = org;
+			ent.pos.origin = org;
 			ent.model = b->model;
 			if (isHeatbeam)
 			{

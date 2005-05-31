@@ -21,9 +21,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // we require some ri.func() declarations => some type defines etc
 #include "qcommon.h"
 
-#define DEG2RAD(a) ((a*M_PI)/180.0f)
+//?? split to q_shared2.cpp, Core/{Math1D, Math3D, MathColor}.cpp
+//?? color: (CColor3f : CVec3), (CColor4f : CColor3f + float alpha)
 
-const CVec3 vec3_origin = {0, 0, 0};
+
+const CVec3 nullVec3 = {0, 0, 0};
+const CAxis identAxis = {1,0,0,  0,1,0,  0,0,1};
 
 //============================================================================
 
@@ -346,12 +349,6 @@ int CBox::OnPlaneSide (const cplane_t &p) const
 /*-----------------------------------------------------------------------------
 	CAxis
 -----------------------------------------------------------------------------*/
-
-void CAxis::Clear ()
-{
-	memset (this, 0, sizeof(CAxis));
-	v[0][0] = v[1][1] = v[2][2] = 1;
-}
 
 void CAxis::FromAngles (const CVec3 &angles)
 {

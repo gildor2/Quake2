@@ -8,7 +8,7 @@
 #define CHAR_WIDTH	8
 #define CHAR_HEIGHT	8
 
-typedef struct
+struct console_t
 {
 	bool	wrapped;		// will be set to true after 1st buffer wrap
 	bool	started;		// "false" if was no access to console
@@ -31,7 +31,7 @@ typedef struct
 
 	int		times[NUM_CON_TIMES];	// cls.realtime time the line was generated
 	char	text[CON_TEXTSIZE * 2];	// first half - text, second - color
-} console_t;
+};
 
 
 static console_t con;

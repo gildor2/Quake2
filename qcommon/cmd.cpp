@@ -583,6 +583,7 @@ bool ExecuteCommand (const char *str, const CSimpleCommand *CmdList, int numComm
 	for (int i = 0; i < numCommands; i++, CmdList++)
 		if (!stricmp (CmdList->name, _argv[0]))
 		{
+			if (!CmdList->func) return true;		// NULL function
 			guard(cmd)
 			CmdList->func (_argc, _argv);
 			return true;

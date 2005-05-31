@@ -31,12 +31,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "keys.h"
 #include "console.h"
 #include "cdaudio.h"
+#include "cl_playermodel.h"
 
 //=============================================================================
 
 //#define GUN_DEBUG				// uncomment to enable gun_xxx debugging commands
 
-typedef struct
+struct frame_t					//?? rename
 {
 	bool	valid;				// cleared if delta parsing was invalid
 	int		serverframe;
@@ -46,7 +47,7 @@ typedef struct
 	player_state_t playerstate;
 	int		num_entities;
 	int		parse_entities;		// non-masked index into cl_parse_entities array
-} frame_t;
+};
 
 
 struct entityState_t : public entity_state_t
@@ -59,7 +60,7 @@ struct entityState_t : public entity_state_t
 };
 
 
-typedef struct
+struct centity_t
 {
 	entityState_t baseline;		// delta from this if not from a previous frame
 	entityState_t current;
@@ -71,20 +72,8 @@ typedef struct
 	CVec3	lerp_origin;		// for trails (variable hz)
 
 	int		fly_stoptime;
-} centity_t;
+};
 
-#define MAX_CLIENTWEAPONMODELS	20	// PGM -- upped from 16 to fit the chainfist vwep
-
-typedef struct
-{
-	char	name[MAX_QPATH];
-	char	cinfo[MAX_QPATH];
-	CBasicImage	*skin;
-	CBasicImage	*icon;
-	char	iconname[MAX_QPATH];
-	CRenderModel *model;
-	CRenderModel *weaponmodel[MAX_CLIENTWEAPONMODELS];
-} clientinfo_t;
 
 extern char cl_weaponmodels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
 extern int num_cl_weaponmodels;
@@ -95,7 +84,7 @@ extern int num_cl_weaponmodels;
 // the client_state_t structure is wiped completely at every
 // server map change
 //
-typedef struct
+struct client_state_t
 {
 	int		timeoutcount;
 
@@ -141,6 +130,7 @@ typedef struct
 	refdef_t refdef;
 
 	CVec3	modelorg;			// center of client entity (used prediction for 1st person and server data for 3rd person)
+	//?? replace with CAxis (forward=[0], right=-[1], up=[2])
 	CVec3	v_forward, v_right, v_up; // set when refdef.angles is set
 
 	//
@@ -170,9 +160,9 @@ typedef struct
 	sfx_t	*sound_precache[MAX_SOUNDS];
 	CBasicImage	*image_precache[MAX_IMAGES];
 
-	clientinfo_t clientinfo[MAX_CLIENTS];
-	clientinfo_t baseclientinfo;
-} client_state_t;
+	clientInfo_t clientInfo[MAX_CLIENTS];
+	clientInfo_t baseClientInfo;
+};
 
 extern	client_state_t	cl;
 
@@ -203,7 +193,7 @@ typedef enum {
 
 typedef enum {key_game, key_console, key_message, key_menu, key_bindingMenu} keydest_t;
 
-typedef struct
+struct client_static_t
 {
 	connstate_t	state;
 	keydest_t	key_dest;
@@ -241,7 +231,7 @@ typedef struct
 	FILE		*demofile;
 
 	bool		newprotocol;
-} client_static_t;
+};
 
 extern client_static_t	cls;
 
@@ -354,14 +344,14 @@ extern lightstyle_t cl_lightstyles[MAX_LIGHTSTYLES];
 
 //----------------- dlights ----------------------
 
-typedef struct
+struct cdlight_t
 {
 	int		key;				// so entities can reuse same entry
 	CVec3	color;
 	CVec3	origin;
 	float	radius;
 	float	die;				// stop lighting after this time
-} cdlight_t;
+};
 
 cdlight_t *CL_AllocDlight (int key, const CVec3 &origin);
 void CL_AddDLights (void);
@@ -488,7 +478,6 @@ void IN_CenterView (void);
 extern	const char *svc_strings[svc_last];
 
 void CL_ParseServerMessage (void);
-void CL_LoadClientinfo (clientinfo_t *ci, char *s);
 
 #define SHOWNET(s)	\
 	if (cl_shownet->integer >= 2) Com_Printf ("%3d:%s\n", net_message.readcount-1, s);
@@ -506,7 +495,12 @@ extern	CRenderModel *gun_model;
 void V_Init (void);
 void CL_PrepRefresh (void);
 bool V_RenderView (void);
+
 void V_AddEntity (entity_t *ent);
+void V_AddEntity2 (entity_t *ent);
+void AddEntityWithEffects (entity_t *ent, unsigned fx);
+void AddEntityWithEffects2 (entity_t *ent, unsigned fx);
+
 void V_AddLight (const CVec3 &org, float intensity, float r, float g, float b);
 float CalcFov (float fov_x, float width, float height);
 

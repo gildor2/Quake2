@@ -26,7 +26,7 @@ extern int			gl_numDlights;
 
 struct surfaceInfo_t
 {
-	int		sort;
+	unsigned sort;
 	surfaceBase_t *surf;
 	surfaceInfo_t *sortNext;
 };
@@ -122,11 +122,6 @@ struct refEntity_t
 			// shading
 			//?? skin_t *customSkin;	// multiple shaders (1 per surface)
 			int		skinNum;			// number of default (inline) skin
-		};
-		/*------------- bbox ----------------*/
-		struct {
-			CAxis	boxAxis;
-			CVec3	boxSize;
 		};
 	};
 

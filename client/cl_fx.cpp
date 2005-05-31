@@ -266,7 +266,6 @@ static void CL_AddParticleTraces (float timeDelta)
 		float	speed, dist, distDelta, pos1;
 		float	viewDist, t;
 		trace_t	trace;
-		static const CVec3 zero = {0, 0, 0};
 
 		if (!p->allocated)
 			continue;
@@ -279,7 +278,7 @@ static void CL_AddParticleTraces (float timeDelta)
 		speed = VectorNormalize (p->vel, dir);
 		// update pos
 		VectorMA (p->pos, timeDelta, p->vel);
-		CL_Trace (trace, oldpos, p->pos, zero, zero, CONTENTS_SOLID);
+		CL_Trace (trace, oldpos, p->pos, nullVec3, nullVec3, CONTENTS_SOLID);
 		if (p->elasticity && trace.fraction < 1.0f)
 		{
 			int		i;
@@ -621,10 +620,8 @@ void CL_ParseMuzzleFlash (void)
 	centity_t *pl = &cl_entities[i];
 	cdlight_t *dl = CL_AllocDlight (i, pl->current.origin);
 
-	CVec3 fv, rv;
-	AngleVectors (pl->current.angles, &fv, &rv, NULL);
-	VectorMA (dl->origin, 18, fv);
-	VectorMA (dl->origin, 16, rv);
+	VectorMA (dl->origin,  18, pl->current.axis[0]);
+	VectorMA (dl->origin, -16, pl->current.axis[1]);	// axis[1] is left, move dlight to right
 	if (silenced)
 		dl->radius = 100 + (rand()&31);
 	else
@@ -692,9 +689,7 @@ void CL_ParseMuzzleFlash (void)
 	const mzTable_t *tbl = &mzTable[ (weapon < MZ_ETF_RIFLE) ? weapon : weapon - MZ_ETF_RIFLE + MZ_PHALANX + 1 ];
 
 	// process table data
-	dl->color[0] = appRound(tbl->r);
-	dl->color[1] = appRound(tbl->g);
-	dl->color[2] = appRound(tbl->b);
+	dl->color.Set (tbl->r / 255.0f, tbl->g / 255.0f, tbl->b / 255.0f);
 	if (!tbl->allowSilencer) volume = 1;
 	if (tbl->sound)
 		S_StartSound (NULL, i, CHAN_WEAPON, S_RegisterSound(va("weapons/%s.wav", va(tbl->sound, rand() % 5 + 1))), volume, ATTN_NORM, 0);
@@ -754,14 +749,12 @@ void CL_ParseMuzzleFlash2 (void)
 
 	// locate the origin
 	entityState_t *s = &cl_entities[ent].current;
-	CVec3 &forward = s->axis[0];
-	CVec3 &left = s->axis[1];
 
 	float sx = monster_flash_offset[flash_number][0] / MONSTER_FLASH_SCALE;
 	float sy = monster_flash_offset[flash_number][1] / MONSTER_FLASH_SCALE;
 	float sz = monster_flash_offset[flash_number][2] / MONSTER_FLASH_SCALE;
-	VectorMA (s->origin, sx, forward, origin);
-	VectorMA (origin, -sy, left, origin);
+	VectorMA (s->origin, sx, s->axis[0], origin);	// forward direction
+	VectorMA (origin,   -sy, s->axis[1], origin);	// left->right direction
 	origin[2] += sz;
 
 	dl = CL_AllocDlight (ent, origin);
@@ -802,7 +795,7 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_TANK_MACHINEGUN_17:
 	case MZ2_TANK_MACHINEGUN_18:
 	case MZ2_TANK_MACHINEGUN_19:
-		CL_ParticleEffect (origin, vec3_origin, 0, 40);
+		CL_ParticleEffect (origin, nullVec3, 0, 40);
 		CL_SmokeAndFlash(origin);
 		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound(va("tank/tnkatk2%c.wav", 'a' + rand() % 5)), 1, ATTN_NORM, 0);
 		break;
@@ -827,7 +820,7 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_INFANTRY_MACHINEGUN_11:
 	case MZ2_INFANTRY_MACHINEGUN_12:
 	case MZ2_INFANTRY_MACHINEGUN_13:
-		CL_ParticleEffect (origin, vec3_origin, 0, 40);
+		CL_ParticleEffect (origin, nullVec3, 0, 40);
 		CL_SmokeAndFlash(origin);
 		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NORM, 0);
 		break;
@@ -840,7 +833,7 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_SOLDIER_MACHINEGUN_6:
 	case MZ2_SOLDIER_MACHINEGUN_7:
 	case MZ2_SOLDIER_MACHINEGUN_8:
-		CL_ParticleEffect (origin, vec3_origin, 0, 40);
+		CL_ParticleEffect (origin, nullVec3, 0, 40);
 		CL_SmokeAndFlash(origin);
 		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("soldier/solatck3.wav"), 1, ATTN_NORM, 0);
 		break;
@@ -853,7 +846,7 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_GUNNER_MACHINEGUN_6:
 	case MZ2_GUNNER_MACHINEGUN_7:
 	case MZ2_GUNNER_MACHINEGUN_8:
-		CL_ParticleEffect (origin, vec3_origin, 0, 40);
+		CL_ParticleEffect (origin, nullVec3, 0, 40);
 		CL_SmokeAndFlash(origin);
 		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("gunner/gunatck2.wav"), 1, ATTN_NORM, 0);
 		break;
@@ -866,7 +859,7 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_SUPERTANK_MACHINEGUN_5:
 	case MZ2_SUPERTANK_MACHINEGUN_6:
 	case MZ2_TURRET_MACHINEGUN:			// PGM
-		CL_ParticleEffect (origin, vec3_origin, 0, 40);
+		CL_ParticleEffect (origin, nullVec3, 0, 40);
 		CL_SmokeAndFlash(origin);
 		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NORM, 0);
 		break;
@@ -878,7 +871,7 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_BOSS2_MACHINEGUN_L5:
 	case MZ2_CARRIER_MACHINEGUN_L1:		// PMM
 	case MZ2_CARRIER_MACHINEGUN_L2:		// PMM
-		CL_ParticleEffect (origin, vec3_origin, 0, 40);
+		CL_ParticleEffect (origin, nullVec3, 0, 40);
 		CL_SmokeAndFlash(origin);
 		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NONE, 0);
 		break;
@@ -992,7 +985,7 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_JORG_MACHINEGUN_L4:
 	case MZ2_JORG_MACHINEGUN_L5:
 	case MZ2_JORG_MACHINEGUN_L6:
-		CL_ParticleEffect (origin, vec3_origin, 0, 40);
+		CL_ParticleEffect (origin, nullVec3, 0, 40);
 		CL_SmokeAndFlash(origin);
 		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("boss3/xfire.wav"), 1, ATTN_NORM, 0);
 		break;
@@ -1003,7 +996,7 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_JORG_MACHINEGUN_R4:
 	case MZ2_JORG_MACHINEGUN_R5:
 	case MZ2_JORG_MACHINEGUN_R6:
-		CL_ParticleEffect (origin, vec3_origin, 0, 40);
+		CL_ParticleEffect (origin, nullVec3, 0, 40);
 		CL_SmokeAndFlash(origin);
 		break;
 
@@ -1018,7 +1011,7 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_BOSS2_MACHINEGUN_R5:
 	case MZ2_CARRIER_MACHINEGUN_R1:			// PMM
 	case MZ2_CARRIER_MACHINEGUN_R2:			// PMM
-		CL_ParticleEffect (origin, vec3_origin, 0, 40);
+		CL_ParticleEffect (origin, nullVec3, 0, 40);
 		CL_SmokeAndFlash(origin);
 		break;
 
@@ -1893,14 +1886,14 @@ void CL_BfgParticles (entity_t *ent)
 			return;
 
 		dist = sin(ltime + i)*64;
-		p->org[0] = ent->origin[0] + bytedirs[i][0]*dist + forward[0]*BEAMLENGTH;
-		p->org[1] = ent->origin[1] + bytedirs[i][1]*dist + forward[1]*BEAMLENGTH;
-		p->org[2] = ent->origin[2] + bytedirs[i][2]*dist + forward[2]*BEAMLENGTH;
+		p->org[0] = ent->pos.origin[0] + bytedirs[i][0]*dist + forward[0]*BEAMLENGTH;
+		p->org[1] = ent->pos.origin[1] + bytedirs[i][1]*dist + forward[1]*BEAMLENGTH;
+		p->org[2] = ent->pos.origin[2] + bytedirs[i][2]*dist + forward[2]*BEAMLENGTH;
 
 		p->vel.Zero();
 		p->accel[2] = 0;
 
-		VectorSubtract (p->org, ent->origin, v);
+		VectorSubtract (p->org, ent->pos.origin, v);
 		dist = VectorLength(v) / 90.0;
 		p->color = appFloor (0xd0 + dist * 7);
 
@@ -1924,9 +1917,9 @@ void CL_TrapParticles (entity_t *ent)
 	particle_t	*p;
 	int			dec;
 
-	ent->origin[2]-=14;
-	start = ent->origin;
-	end = ent->origin;
+	ent->pos.origin[2]-=14;
+	start = ent->pos.origin;
+	end = ent->pos.origin;
 	end[2]+=64;
 
 	move = start;
@@ -1965,8 +1958,8 @@ void CL_TrapParticles (entity_t *ent)
 	float		vel;
 	CVec3		dir, org;
 
-	ent->origin[2]+=14;
-	org = ent->origin;
+	ent->pos.origin[2]+=14;
+	org = ent->pos.origin;
 
 	for (i=-2 ; i<=2 ; i+=4)
 		for (j=-2 ; j<=2 ; j+=4)

@@ -962,6 +962,20 @@ CheckDuck
 Sets mins, maxs, and pm->viewheight
 ==============
 */
+/* View parameters:
+--------------------+-------------------------------+-------------------------------+
+	name			|	Quake 2						|	Quake 3						|
+--------------------+-------------------------------+-------------------------------+
+DEAD_VIEWHEIGHT		|	== crouch					|	-16							|
+CROUCH_VIEWHEIGHT	|	-2							|	12							|
+DEFAULT_VIEWHEIGHT	|	22							|	26							|
+BOX					| {-16,-16,-24} - {16,16,MAXZ}	| {-15,-15,-24} - {15,15,MAXZ}	|
+MAXZ_DEAD			|	== crouch					|	8							|
+MAXZ_DUCKED			|	4							|	16							|
+MAXD_NORMAL			|	32							|	32							|
+--------------------+-------------------------------+-------------------------------+
+*/
+
 static void CheckDuck (void)
 {
 	trace_t	trace;

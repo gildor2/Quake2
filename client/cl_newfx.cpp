@@ -21,50 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "client.h"
 
-/*
-======
-vectoangles2 - this is duplicated in the game DLL, but I need it here.
-======
-*/
-static void vectoangles2 (const CVec3 &value1, CVec3 angles)
-{
-	float	forward;
-	float	yaw, pitch;
 
-	if (value1[1] == 0 && value1[0] == 0)
-	{
-		yaw = 0;
-		if (value1[2] > 0)
-			pitch = 90;
-		else
-			pitch = 270;
-	}
-	else
-	{
-	// PMM - fixed to correct for pitch of 0
-		if (value1[0])
-			yaw = atan2 (value1[1], value1[0]) * 180 / M_PI;
-		else if (value1[1] > 0)
-			yaw = 90;
-		else
-			yaw = 270;
-
-		if (yaw < 0)
-			yaw += 360;
-
-		forward = sqrt (value1[0]*value1[0] + value1[1]*value1[1]);
-		pitch = atan2 (value1[2], forward) * 180 / M_PI;
-		if (pitch < 0)
-			pitch += 360;
-	}
-
-	angles[PITCH] = -pitch;
-	angles[YAW] = yaw;
-	angles[ROLL] = 0;
-}
-
-//=============
-//=============
 void CL_Flashlight (int ent, const CVec3 &pos)
 {
 	cdlight_t *dl = CL_AllocDlight (ent, pos);
@@ -273,7 +230,6 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &end)
 	CVec3		move, vec;
 	int			j,k;
 	particle_t	*p;
-	CVec3		right, up;
 	int			i;
 	float		d, c, s;
 	CVec3		dir;
@@ -284,16 +240,12 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &end)
 	VectorSubtract (end, start, vec);
 	float len = vec.NormalizeFast ();
 
-//	MakeNormalVectors (vec, right, up);
-	right = cl.v_right;
-	up = cl.v_up;
 	VectorMA (move, -1, right);
 	VectorMA (move, -1, up);
 
 	vec.Scale (step);
 	ltime = cl.ftime;
 
-//	for (i=0 ; i<len ; i++)
 	for (i=0 ; i<len ; i+=step)
 	{
 		d = i * 0.1 - fmod(ltime,16.0)*M_PI;
@@ -321,13 +273,13 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &end)
 			// trim it so it looks like it's starting at the origin
 			if (i < 10)
 			{
-				VectorScale (right, c*(i/10.0f)*k, dir);
-				VectorMA (dir, s*(i/10.0f)*k, up);
+				VectorScale (cl.v_right, c*(i/10.0f)*k, dir);
+				VectorMA (dir, s*(i/10.0f)*k, cl.v_up);
 			}
 			else
 			{
-				VectorScale (right, c*k, dir);
-				VectorMA (dir, s*k, up);
+				VectorScale (cl.v_right, c*k, dir);
+				VectorMA (dir, s*k, cl.v_up);
 			}
 
 			for (j=0 ; j<3 ; j++)
@@ -349,7 +301,6 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 	CVec3		move, vec;
 	int			j;
 	particle_t	*p;
-	CVec3		right, up;
 	int			i;
 	float		c, s;
 	CVec3		dir;
@@ -366,11 +317,8 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 	float len = vec.NormalizeFast ();
 
 	// FIXME - pmm - these might end up using old values?
-//	MakeNormalVectors (vec, right, up);
-	right = cl.v_right;
-	up = cl.v_up;
-	VectorMA (move, -0.5f, right);
-	VectorMA (move, -0.5f, up);
+	VectorMA (move, -0.5f, cl.v_right);
+	VectorMA (move, -0.5f, cl.v_up);
 	// otherwise assume SOFT
 
 	int step = 32;
@@ -403,13 +351,13 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 			// trim it so it looks like it's starting at the origin
 			if (i < 10)
 			{
-				VectorScale (right, c*(i/10.0f), dir);
-				VectorMA (dir, s*(i/10.0f), up);
+				VectorScale (cl.v_right, c*(i/10.0f), dir);
+				VectorMA (dir, s*(i/10.0f), cl.v_up);
 			}
 			else
 			{
-				VectorScale (right, c, dir);
-				VectorMA (dir, s, up);
+				VectorScale (cl.v_right, c, dir);
+				VectorMA (dir, s, cl.v_up);
 			}
 
 			p->alpha = 0.5f;
@@ -431,29 +379,20 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 #ifdef SPRAY
 void CL_Heatbeam (const CVec3 &start, const CVec3 &end)
 {
-	CVec3		move, vec;
+	CVec3		vec;
 	particle_t	*p;
-	CVec3		forward, right, up;
-	int			i;
-	float		d;
-	CVec3		dir;
-	float		ltime;
 	float		step = 32.0, rstep;
 	float		start_pt;
 	float		rot;
 
-	move = start;
+	CVec3 move = start;
 	VectorSubtract (end, start, vec);
 	float len = vec.NormalizeFast ();
 
-//	MakeNormalVectors (vec, right, up);
-	forward = cl.v_forward;
-	right = cl.v_right;
-	up = cl.v_up;
-	VectorMA (move, -0.5, right);
-	VectorMA (move, -0.5, up);
+	VectorMA (move, -0.5, cl.v_right);
+	VectorMA (move, -0.5, cl.v_up);
 
-	for (i=0; i<8; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		if (!(p = CL_AllocParticle ()))
 			return;
@@ -463,10 +402,10 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &end)
 		p->color = 223 - (rand()&7);
 
 		p->org = move;
-		d = crand()*M_PI;
+		float d = crand()*M_PI;
 		VectorScale (vec, 450, p->vel);
-		VectorMA (p->vel, cos(d)*30, right);
-		VectorMA (p->vel, sin(d)*30, up);
+		VectorMA (p->vel, cos(d)*30, cl.v_right);
+		VectorMA (p->vel, sin(d)*30, cl.v_up);
 	}
 }
 #endif
@@ -566,15 +505,7 @@ void CL_TrackerTrail (const CVec3 &start, const CVec3 &end, int particleColor)
 	float len = vec.NormalizeFast ();
 
 	forward = vec;
-#if 0
-	CVec3		angle_dir;
-	//?? VERY silly way to get "right" and "up" vectors
-	//?? may check ref_gl tcGen environment for another sample
-	vectoangles2 (forward, angle_dir);
-	AngleVectors (angle_dir, &forward, &right, &up);
-#else
 	MakeNormalVectors (forward, right, up);
-#endif
 
 	dec = 3;
 	vec.Scale (3);

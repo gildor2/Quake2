@@ -11,6 +11,7 @@ namespace OpenGLDrv {
 #define TABLE_SIZE	1024
 #define TABLE_MASK	(TABLE_SIZE-1)
 
+//?? make tables of size [TABLE_SIZE+1] to avoid some precision out-of-table errors
 extern float sinTable[], squareTable[], triangleTable[], sawtoothTable[], inverseSwatoothTable[];
 extern float asinTable[], acosTable[];
 extern float atanTable[], atanTable2[];
@@ -32,32 +33,45 @@ extern float atanTable[], atanTable2[];
 #define ACOS_FUNC(val)					acosTable[appFloor ((val) * (TABLE_SIZE-0.1f)) + TABLE_SIZE]
 
 
-inline float ATAN2_FUNC(float y, float x)
+inline float ATAN2_FUNC (float y, float x)
 {
-	float	val, m;
-
+#if 0
 	if (x == 0) return y > 0 ? M_PI / 2 : - M_PI / 2;
+#else
+	static const float x0[2] = { M_PI / 2, -M_PI / 2 };
+	if (x == 0) return x0[IsNegative(y)];
+#endif
 
-	val = y / x;
-	if (val < 0)
+	float val = y / x;
+#if 0
+	float m = 1;
+	if (IsNegative(val))
 	{
-		val = -val;
+		FNegate(val);
 		m = -1;
 	}
-	else
-		m = 1;
+#else
+	int s;
+	FAbsSign(val, val, s);
+	float m = 1 - s * 2;		// s=0 -> m=1; s=1 -> m=-1
+#endif
 	if (val <= 1.0f)
 		val = atanTable[appFloor (val * (TABLE_SIZE - 0.1f))];
 	else
 		val = atanTable2[appFloor (1.0f / val * (TABLE_SIZE - 0.1f))];
 	val *= m;
-	if (x < 0)
+#if 0
+	if (IsNegative(x))
 	{
 		if (y > 0)
 			val += M_PI;
 		else
 			val -= M_PI;
 	}
+#else
+	static const float x1[] = { 0, 0, M_PI, -M_PI };
+	val += x1[IsNegative(x) * 2 + IsNegative(y)];
+#endif
 	return val;
 }
 
@@ -73,7 +87,7 @@ extern int   noiseTablei[];
 extern float noiseTablef[];
 
 
-void InitFuncTables (void);
+void InitFuncTables (void);	//?? InitMath()
 void BuildRotationAxis (CAxis &r, const CVec3 &axis, float angle);
 bool GetBoxRect (const refEntity_t *ent, const CVec3 &size2, float mins2[2], float maxs2[2], bool clamp = true);
 bool ProjectToScreen (const CVec3 &pos, int scr[2]);

@@ -1051,7 +1051,7 @@ void DrawTriangles (void);
 void DrawNormals (void);
 
 
-static void FlushShader (void)
+static void FlushShader ()
 {
 	guard(FlushShader);
 
@@ -1523,7 +1523,7 @@ void surfaceMd3_t::Tesselate ()
 -----------------------------------------------------------------------------*/
 
 
-static void FlashColor (void)
+static void FlashColor ()
 {
 	int i = appRound (vp.time / 3 * TABLE_SIZE);
 	glColor3f (sinTable[i & TABLE_MASK] / 2 + 0.5,
@@ -1533,7 +1533,7 @@ static void FlashColor (void)
 
 
 // draw entity bounding boxes
-static void DrawBBoxes (void)
+static void DrawBBoxes ()
 {
 	int		i;
 	refEntity_t *ent;
@@ -1712,11 +1712,11 @@ void surfaceEntity_t::Tesselate ()
 		for (int i = 0; i < 8; i++)
 		{
 			CVec3 tmp;
-			tmp[0] = (i & 1) ? ent->boxSize[0] : -ent->boxSize[0];
-			tmp[1] = (i & 2) ? ent->boxSize[1] : -ent->boxSize[1];
-			tmp[2] = (i & 4) ? ent->boxSize[2] : -ent->boxSize[2];
+			tmp[0] = (i & 1) ? ent->size2[0] : -ent->size2[0];
+			tmp[1] = (i & 2) ? ent->size2[1] : -ent->size2[1];
+			tmp[2] = (i & 4) ? ent->size2[2] : -ent->size2[2];
 			// project point to a world coordinate system
-			UnTransformPoint (ent->center, ent->boxAxis, tmp, v[i].xyz);
+			ent->coord.UnTransformPoint (tmp, v[i].xyz);
 		}
 		// draw it
 		glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
