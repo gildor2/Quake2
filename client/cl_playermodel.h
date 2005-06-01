@@ -76,6 +76,8 @@ struct animState_t
 	short	animNum;					// number of current animation
 	short	nextAnimNum;				// number of animation, which will be launched after current
 	short	oldFrame;					// old frame numbers (may be, from another animation)
+	short	nearFrame;					// nearest animation
+	float	nearLerp;					// backlerp for nearset frame
 	int		startTime;					// time of current animation start (1st frame of current animation)
 };
 

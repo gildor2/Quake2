@@ -45,8 +45,6 @@ BUGS:
 - "paused": incorrect timing (at least, fx will be incorrect after paused=0)
   - should reimplement it in a different way
   - may be, make multiplayer pause (with sync clients to server; make attention to not timeout clients when server is paused)
-! make NEW_PROTOCOL_VERSION: send with NEW_PROTOCOL_ID, client warning when client older than server and disabling
-  ext protocol for client
 ? check for hook ability of precicious PMove (more than 1/8) (2 non-spectators cannot be in the same quantized world point;
   every new player will be performed InitialSnapPosition()
   - idea: save non-quantized+quantized positions (+velocity?); next time find non-quantized by quantized (save for few pmove types

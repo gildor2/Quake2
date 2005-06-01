@@ -370,8 +370,20 @@ static void cDirectConnect (int argc, char **argv)
 	// send the connect packet to the client
 	if (newcl->newprotocol)
 	{
+		int ver = atoi (argv[6]);
+		if (ver != NEW_PROTOCOL_VERSION)
+		{
+			Com_DPrintf ("Client used extended protocol %d != "STR(NEW_PROTOCOL_VERSION)"\n", ver);
+			if (ver < NEW_PROTOCOL_VERSION)
+				Netchan_OutOfBandPrint (NS_SERVER, adr, "print\n"
+				S_YELLOW"Server provides newer version of extended protocol\nPlease upgrade your client\n" );
+			newcl->newprotocol = false;
+		}
+	}
+	if (newcl->newprotocol)
+	{
 		Com_DPrintf ("Connecting client using extended protocol\n");
-		Netchan_OutOfBandPrint (NS_SERVER, adr, "client_connect %s", NEW_PROTOCOL_ID);
+		Netchan_OutOfBandPrint (NS_SERVER, adr, "client_connect "NEW_PROTOCOL_ID" "STR(NEW_PROTOCOL_VERSION));
 	}
 	else
 		Netchan_OutOfBandPrint (NS_SERVER, adr, "client_connect");

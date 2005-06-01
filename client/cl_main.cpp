@@ -421,13 +421,14 @@ void CL_SendConnectPacket (void)
 	userinfo_modified = false;
 
 	if (cl_extProtocol->integer)
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect %d %d %d \"%s\" %s",
-			PROTOCOL_VERSION, port, cls.challenge, Cvar_Userinfo (), NEW_PROTOCOL_ID);
+		Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect "STR(PROTOCOL_VERSION)" %d %d \"%s\" "
+			NEW_PROTOCOL_ID" "STR(NEW_PROTOCOL_VERSION),
+			port, cls.challenge, Cvar_Userinfo ());
 	else
 	{
 		Com_DPrintf ("Extended protocol disabled\n");
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect %d %d %d \"%s\"",
-			PROTOCOL_VERSION, port, cls.challenge, Cvar_Userinfo ());
+		Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect "STR(PROTOCOL_VERSION)" %d %d \"%s\"",
+			port, cls.challenge, Cvar_Userinfo ());
 	}
 }
 
@@ -842,7 +843,17 @@ static void cClientConnect (int argc, char **argv)
 	cls.state = ca_connected;
 	cls.newprotocol = !strcmp (argv[1], NEW_PROTOCOL_ID);
 	if (cls.newprotocol)
-		Com_DPrintf ("Connected using extended protocol\n");
+	{
+		int ver = atoi (argv[2]);
+		if (ver != NEW_PROTOCOL_VERSION)
+		{
+			if (ver < NEW_PROTOCOL_VERSION)
+				Com_WPrintf ("Server supports older version of extended protocol\n");
+			cls.newprotocol = false;
+		}
+		else
+			Com_DPrintf ("Connected to server using extended protocol\n");
+	}
 	else if (cl_extProtocol->integer)
 		Com_DPrintf ("Server does not support extended protocol\n");
 }
@@ -1427,19 +1438,16 @@ CL_Shutdown
 */
 void CL_Shutdown (bool error)
 {
-	static bool isdown = false;
-
-	if (isdown) return;
-	isdown = true;
-
-	if (!DEDICATED)
-	{
-		delete cl_entities;
-		if (!error)		// do not write configuration when error occured
-			CL_WriteConfiguration (Cvar_VariableString ("cfgfile"));
-		CDAudio_Shutdown ();
-		S_Shutdown();
-		IN_Shutdown ();
-		Vid_Shutdown();
-	}
+	EXEC_ONCE (				// no repeated shutdowns
+		if (!DEDICATED)
+		{
+			delete cl_entities;
+			if (!error)		// do not write configuration when error occured
+				CL_WriteConfiguration (Cvar_VariableString ("cfgfile"));
+			CDAudio_Shutdown ();
+			S_Shutdown();
+			IN_Shutdown ();
+			Vid_Shutdown();
+		}
+	)
 }

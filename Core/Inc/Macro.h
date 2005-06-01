@@ -77,3 +77,12 @@ template<class T> T Lerp (const T& A, const T& B, float Alpha)
 // field offset macros
 #define FIELD2OFS(struc, field)		((unsigned) &((struc *)NULL)->field)		// get offset of the field in struc
 #define OFS2FIELD(struc, ofs, type)	(*(type*) ((byte*)(struc) + ofs))			// get field of type by offset inside struc
+
+#define EXEC_ONCE(code)	\
+	{					\
+		static bool _flg = false; \
+		if (!_flg) {	\
+			_flg = true; \
+			code;		\
+		}				\
+	}

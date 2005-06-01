@@ -1324,6 +1324,7 @@ static struct
 	unsigned contents;
 	bool	isPoint;
 } tr;
+static int traceFrame;		// cannot place into "tr": should increment value between frames ("tr" will be zeroed)
 
 /*
 ================
@@ -1456,7 +1457,6 @@ TraceToLeaf
 ================
 */
 bool trace_skipAlpha;		//!! need another way to pass through SURF_ALPHA (callbacks??); used in SV_TraceHook()
-static int traceFrame;
 
 static void TraceToLeaf (int leafnum)
 {
@@ -1575,7 +1575,6 @@ static void TestInLeaf (int leafnum)
 /*
 ==================
 RecursiveHullCheck
-
 ==================
 */
 static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &point1, const CVec3 &point2)
@@ -1597,43 +1596,43 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &
 
 		// find the point distances to the separating plane
 		// and the offset for the size of the box
-		cnode_t *node = map_nodes + nodeNum;
-		cplane_t *plane = node->plane;
+		const cnode_t &node = map_nodes[nodeNum];
+		const cplane_t &plane = *node.plane;
 
 		float t1, t2, offset;
-		if (plane->type <= PLANE_Z)
+		if (plane.type <= PLANE_Z)
 		{
-			t1 = p1[plane->type] - plane->dist;
-			t2 = p2[plane->type] - plane->dist;
-			offset = tr.extents[plane->type];
+			t1 = p1[plane.type] - plane.dist;
+			t2 = p2[plane.type] - plane.dist;
+			offset = tr.extents[plane.type];
 		}
-		else if (plane->type <= PLANE_MZ)
+		else if (plane.type <= PLANE_MZ)
 		{
-			t1 = -p1[plane->type-3] - plane->dist;
-			t2 = -p2[plane->type-3] - plane->dist;
-			offset = tr.extents[plane->type-3];
+			t1 = -p1[plane.type-3] - plane.dist;
+			t2 = -p2[plane.type-3] - plane.dist;
+			offset = tr.extents[plane.type-3];
 		}
 		else
 		{
-			t1 = dot (plane->normal, p1) - plane->dist;
-			t2 = dot (plane->normal, p2) - plane->dist;
+			t1 = dot (plane.normal, p1) - plane.dist;
+			t2 = dot (plane.normal, p2) - plane.dist;
 			if (tr.isPoint)
 				offset = 0;
 			else
-				offset = fabs (tr.extents[0]*plane->normal[0]) +
-						 fabs (tr.extents[1]*plane->normal[1]) +
-						 fabs (tr.extents[2]*plane->normal[2]);
+				offset = fabs (tr.extents[0]*plane.normal[0]) +
+						 fabs (tr.extents[1]*plane.normal[1]) +
+						 fabs (tr.extents[2]*plane.normal[2]);
 		}
 
 		// see which sides we need to consider
 		if (t1 >= offset && t2 >= offset)
 		{
-			nodeNum = node->children[0];
+			nodeNum = node.children[0];
 			continue;
 		}
 		if (t1 < -offset && t2 < -offset)
 		{
-			nodeNum = node->children[1];
+			nodeNum = node.children[1];
 			continue;
 		}
 
@@ -1671,20 +1670,20 @@ static void RecursiveHullCheck (int nodeNum, float p1f, float p2f, const CVec3 &
 		CVec3 mid;
 
 		// move up to the node
-		midf = p1f + frac1 * (p2f - p1f);
+		midf = Lerp (p1f, p2f, frac1);
 		Lerp (p1, p2, frac1, mid);
-		RecursiveHullCheck (node->children[side], p1f, midf, p1, mid);
+		RecursiveHullCheck (node.children[side], p1f, midf, p1, mid);
 
 		// go past the node
-		midf = p1f + frac2 * (p2f - p1f);
+		midf = Lerp (p1f, p2f, frac2);
 #if 0
 		Lerp (p1, p2, frac2, mid);
-		RecursiveHullCheck (node->children[side^1], midf, p2f, mid, p2);
+		RecursiveHullCheck (node.children[side^1], midf, p2f, mid, p2);
 #else
 		Lerp (p1, p2, frac2, p1);
-		// do "RecursiveHullCheck (node->children[side^1], midf, p2f, mid, p2);"
+		// do "RecursiveHullCheck (node.children[side^1], midf, p2f, mid, p2);"
 		p1f = midf;
-		nodeNum = node->children[side^1];
+		nodeNum = node.children[side^1];
 #endif
 	}
 }
@@ -1707,12 +1706,13 @@ When start==end:
 ==================
 */
 //?? check: can this be faster if trace with sphere
+//!! TODO: *mins, *maxs => &box
 void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs, int headnode, int brushmask)
 {
 	guard(CM_BoxTrace);
 
-	traceFrame++;						// for multi-check avoidance
-	c_traces++;
+	traceFrame++;	// to avoid testing single brush from different leafs
+	c_traces++;		//??
 
 	// fill in a default trace
 	memset (&tr, 0, sizeof(tr));
@@ -1918,8 +1918,8 @@ static bool TestBrush (const CVec3 &start, const CVec3 &end, const cbrush_t &bru
 
 static void RecursiveBrushTest (const CVec3 &point1, const CVec3 &point2, int nodeNum)
 {
-	CVec3 start = point1;
-	CVec3 end = point2;
+	CVec3 p1 = point1;
+	CVec3 p2 = point2;
 	while (true)
 	{
 		if (trace_numBrushes >= trace_maxBrushes) return;		// buffer full
@@ -1938,7 +1938,7 @@ static void RecursiveBrushTest (const CVec3 &point1, const CVec3 &point2, int no
 				if (b.traceFrame != traceFrame && (b.contents & CONTENTS_SOLID))
 				{
 					b.traceFrame = traceFrame;
-					if (TestBrush (start, end, b))
+					if (TestBrush (p1, p2, b))
 					{
 						trace_brushes[trace_numBrushes++] = brushNum;
 						if (trace_numBrushes >= trace_maxBrushes)
@@ -1950,23 +1950,23 @@ static void RecursiveBrushTest (const CVec3 &point1, const CVec3 &point2, int no
 		}
 
 		const cnode_t &node = map_nodes[nodeNum];
-		const cplane_t *plane = node.plane;
+		const cplane_t &plane = *node.plane;
 
 		float t1, t2;
-		if (plane->type <= PLANE_Z)
+		if (plane.type <= PLANE_Z)
 		{
-			t1 = start[plane->type] - plane->dist;
-			t2 = end[plane->type] - plane->dist;
+			t1 = p1[plane.type] - plane.dist;
+			t2 = p2[plane.type] - plane.dist;
 		}
-		else if (plane->type <= PLANE_MZ)
+		else if (plane.type <= PLANE_MZ)
 		{
-			t1 = -start[plane->type-3] - plane->dist;
-			t2 = -end[plane->type-3] - plane->dist;
+			t1 = -p1[plane.type-3] - plane.dist;
+			t2 = -p2[plane.type-3] - plane.dist;
 		}
 		else
 		{
-			t1 = dot(plane->normal, start) - plane->dist;
-			t2 = dot(plane->normal, end) - plane->dist;
+			t1 = dot(plane.normal, p1) - plane.dist;
+			t2 = dot(plane.normal, p2) - plane.dist;
 		}
 
 		int s1, s2;
@@ -2003,14 +2003,14 @@ static void RecursiveBrushTest (const CVec3 &point1, const CVec3 &point2, int no
 
 		CVec3 mid;
 		// move up to the node
-		Lerp (start, end, frac1, mid);
+		Lerp (p1, p2, frac1, mid);
 
-		RecursiveBrushTest (start, mid, node.children[side]);
+		RecursiveBrushTest (p1, mid, node.children[side]);
 
 		// go past the node
-		Lerp (start, end, frac2, start);
+		Lerp (p1, p2, frac2, p1);
 
-		// do "RecursiveBrushTest (start, end, node->children[side^1]);"
+		// do "RecursiveBrushTest (start, end, node.children[side^1]);"
 		nodeNum = node.children[side^1];
 	}
 }

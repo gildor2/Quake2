@@ -2,13 +2,14 @@
 
 #define MEM_DEBUG		1			//?? comment when unneeded
 
-#define	APP_VERSION				0.01
+#define	APP_VERSION		0.01		//?? unused
 
 /*-----------------------------------------------------------------------------
 	these consts should not be inside engine (q2 launcher)
 -----------------------------------------------------------------------------*/
 
 #define APPNAME						"Quake2"					//?? unneeded
+#if 0
 #define	BASEDIRNAME					"baseq2"
 #define CONFIGNAME					"config.cfg"				//?? unneeded
 
@@ -26,6 +27,7 @@
 
 //?? should not be here
 #define NEW_PROTOCOL_ID				"gildor"
+#endif
 
 
 /*-----------------------------------------------------------------------------

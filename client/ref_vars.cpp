@@ -13,7 +13,6 @@ cvar_t	*r_lightmap;
 
 void InitRendererVars (void)
 {
-	static bool initialized = false;
 CVAR_BEGIN(vars)
 	CVAR_VAR(r_fullscreen, 1, CVAR_ARCHIVE),
 
@@ -26,7 +25,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(r_lightmap, 0, CVAR_CHEAT),
 CVAR_END
 
-	if (initialized) return;
-	initialized = true;
-	Cvar_GetVars (ARRAY_ARG(vars));
+	EXEC_ONCE (
+		Cvar_GetVars (ARRAY_ARG(vars));
+	)
 }

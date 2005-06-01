@@ -189,11 +189,11 @@ static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *inf
 				int e1 = 1<<info->extra1;
 				int e2 = 1<<info->extra2;
 				if (d < 0x100)
-					m = e1;
+					m = e1;				// 1 byte
 				else if ((d < 0x10000 && info->type == PINT) || (d < 0x8000 && info->type == PINT2))
-					m = e2;
+					m = e2;				// 2 bytes
 				else
-					m = e1 | e2;
+					m = e1 | e2;		// 4 bytes
 
 				int chk = bits & (e1|e2);
 				if (chk == e1) {

@@ -15,8 +15,6 @@ int numPlayerModels;
 
 static bool IsValidSkin (const char *skin, CStringItem *pcxfiles)
 {
-	char	scratch[MAX_OSPATH];
-
 	const char *ext = strrchr (skin, '.');
 	if (!ext) return false;
 
@@ -30,8 +28,9 @@ static bool IsValidSkin (const char *skin, CStringItem *pcxfiles)
 
 	if (!memcmp (name, "skn_", 4))
 		return true;
+	char scratch[MAX_OSPATH];
 	strcpy (scratch, skin);
-	strcpy (strrchr (scratch, '.'), "_i.pcx");
+	strcpy (scratch + (ext - skin), "_i.pcx");
 
 	for (CStringItem *item = pcxfiles; item; item = item->next)
 		if (!strcmp (item->name, scratch)) return true;
@@ -253,23 +252,17 @@ static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 		}
 		*d++ = 0;
 		// cut "//" comments
-		d = line;
-		while (*d)
-		{
+		for (d = line; d[0]; d++)
 			if (d[0] == '/' && d[1] == '/')
 			{
 				*d = 0;
 				break;
 			}
-			d++;
-		}
 		// cut trailing spaces
-		d = strchr (line, 0) - 1;
-		while (d >= line)
+		for (d = strchr (line, 0) - 1; d >= line; d--)
 		{
-			if (*d == ' ') *d = 0;
-			else break;
-			d--;
+			if (d[0] != ' ') break;
+			d[0] = 0;
 		}
 		// execute line
 		d = line;
@@ -335,21 +328,23 @@ static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 	anims[LEGS_BACKWALK].reversed = true;
 	// Q3 have some processing of flag animations ...
 
-//	for (int i = 0; i < MAX_TOTALANIMATIONS; i++)
-//		if (anims[i].frameLerp == 0) anims[i].frameLerp = 100;	// just in case
+	for (int i = 0; i < MAX_TOTALANIMATIONS; i++)
+		if (anims[i].frameLerp == 0) anims[i].frameLerp = 100;	// just in case
 
 	FS_FreeFile (buf);
 }
 
 static bool TryQuake3Model (clientInfo_t &ci, const char *modelName, const char *skinName)
 {
-	char	animCfg[MAX_QPATH];
+	char animCfg[MAX_QPATH];
 	appSprintf (ARRAY_ARG(animCfg), "models/players/%s/animation.cfg", modelName);
 	if (!FS_FileExists (animCfg)) return false;
+
 	ci.legsModel  = FindQ3Model (modelName, "lower");
 	ci.torsoModel = FindQ3Model (modelName, "upper");
 	ci.headModel  = FindQ3Model (modelName, "head");
 	if (!ci.legsModel || !ci.torsoModel || !ci.headModel) return false;
+
 	LoadAnimationCfg (ci, animCfg);
 	// init animations to something
 	ci.legsAnim.animNum = ci.legsAnim.nextAnimNum = LEGS_IDLE;
@@ -441,15 +436,14 @@ static const animInfo_t animInfo[] = {
 /* TORSO_STAND */	{	TORSO_STAND		},
 /* TORSO_STAND2 */	{	TORSO_STAND2	},
 
-/* LEGS_WALKCR */	{	LEGS_WALKCR		},	//?? standcr
-/* LEGS_WALK */		{	LEGS_WALK		},	//?? stand
-/* LEGS_RUN */		{	LEGS_RUN		},	//?? stand
-/* LEGS_BACK */		{	LEGS_BACK		},	//?? stand
+/* LEGS_WALKCR */	{	LEGS_WALKCR		},
+/* LEGS_WALK */		{	LEGS_WALK		},
+/* LEGS_RUN */		{	LEGS_RUN		},
+/* LEGS_BACK */		{	LEGS_BACK		},
 /* LEGS_SWIM */		{	LEGS_SWIM		},
 
 /* LEGS_JUMP */		{	LEGS_LAND		},	//??
 /* LEGS_LAND */		{	LEGS_IDLE		},	//?? run, other
-
 /* LEGS_JUMPB */	{	LEGS_LANDB		},	//??
 /* LEGS_LANDB */	{	LEGS_IDLE		},	//??
 
@@ -508,10 +502,8 @@ static void SetQuake3Animation (clientInfo_t &ci, animState_t &as, int animNum, 
 			animation_t *oldAnim = &ci.animations[as.animNum];
 			int timeDelta = curTime - as.startTime;
 			// get current frame frac
-			float curLerp = (float)(timeDelta % oldAnim->frameLerp) / oldAnim->frameLerp;
-			if (curLerp < 0) curLerp += 1;		// changing frame -> changing to another frame
-			// if old animation was static frame - do not take into account current lerp
-			if (oldAnim->numFrames <= 1) curLerp = 0;
+			float curLerp = 1.0f - as.nearLerp;
+			as.oldFrame = as.nearFrame;
 			// apply this frac for next animation
 			as.startTime = curTime + appFloor ((1.0f - curLerp) * anim->frameLerp);
 		}
@@ -550,15 +542,15 @@ static void RunQuake3Animation (clientInfo_t &ci, animState_t &as, entity_t &ent
 			// lerp current animation
 			int oldFrame = timeDelta / anim.frameLerp;
 			int frame    = oldFrame + 1;
-			ent.backlerp = 1.0f - (timeDelta / (float)anim.frameLerp - oldFrame);
+			ent.backlerp = 1.0f - (float)(timeDelta % anim.frameLerp) / anim.frameLerp;
 			// wrap frames
 			if (oldFrame >= anim.numFrames) oldFrame = 0;
 			if (frame >= anim.numFrames) frame = 0;
 			// reverse when needed
 			if (anim.reversed)
 			{
-				oldFrame = anim.numFrames - 1 - oldFrame;
-				frame    = anim.numFrames - 1 - frame;
+				oldFrame = anim.numFrames - oldFrame - 1;
+				frame    = anim.numFrames - frame - 1;
 			}
 			// store
 			ent.oldframe = anim.firstFrame + oldFrame;
@@ -569,10 +561,20 @@ static void RunQuake3Animation (clientInfo_t &ci, animState_t &as, entity_t &ent
 			ent.frame    = ent.oldframe = anim.firstFrame;
 			ent.backlerp = 0;
 		}
+		// save oldframe
+		as.oldFrame = ent.oldframe;
 	}
-
-	// save oldframe
-	as.oldFrame = ent.oldframe;
+	// save nearest frame params
+	if (ent.backlerp > Cvar_VariableValue("test"))// 0.5f)
+	{
+		as.nearFrame = ent.oldframe;
+		as.nearLerp  = ent.backlerp;
+	}
+	else
+	{
+		as.nearFrame = ent.frame;
+		as.nearLerp  = 1 - ent.backlerp;
+	}
 }
 
 
@@ -710,15 +712,12 @@ int ParsePlayerEntity (clientInfo_t *ci, const entity_t &ent, entity_t *buf, int
 	//!!-------- testing --------------
 	//?? is curTime always == cl.time ?
 	{
-		static bool init = false;
 		static cvar_t *v1, *v2;
-		if (!init)
-		{
-			init = true;
+		EXEC_ONCE (
 			v1 = Cvar_Get ("v1", "14", 0);
 			v2 = Cvar_Get ("v2", "11", 0);
 			v1->modified = v2->modified = true;
-		}
+		)
 		if (v1->modified) {
 			SetQuake3Animation (*ci, ci->legsAnim, v1->integer, cl.time);
 			v1->modified = false;

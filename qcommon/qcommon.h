@@ -103,6 +103,12 @@ struct cplane_t;
 
 #define VERSION_STR		STR(VERSION) " " CPUSTRING " " __DATE__ " " BUILDSTRING
 
+#ifndef DEDICATED_ONLY
+#define DEDICATED	dedicated->integer
+#else
+#define DEDICATED	1
+#endif
+
 // some configuration
 
 #define APPNAME		"Quake2"
@@ -112,19 +118,25 @@ struct cplane_t;
 #define CD_PATH		"install/data"
 #define CD_CHECK	"install/data/quake2.exe"	// file used for CD validation
 
-#define NEW_PROTOCOL_ID "gildor"
-
 #define SAVEGAME_DIRECTORY			"save"
 #define SAVEGAME_SERVER_EXTENSION	"sv2"
 #define SAVEGAME_GAME_EXTENSION		"sav"
 #define SAVEGAME_VARS_EXTENSION		"ssv"
 
+// protocol extensions
+#define NEW_PROTOCOL_ID 		"gildor"
+#define NEW_PROTOCOL_VERSION	1
 
-#ifndef DEDICATED_ONLY
-#define DEDICATED	dedicated->integer
-#else
-#define DEDICATED	1
-#endif
+/* Protocol extensions history:
+ * ----------------------------
+ *	0 (no version)
+ *		- surface-dependent footsteps (EV_FOOTSTEPn, EV_FALLSHORTn)
+ *		- camper sounds (EV_CAMPERn)
+ *		- increased max network packet size
+ *		- increased download packet size (faster downloading)
+ *	1 compatible with v0 (can read demos, recorded with v0 extensions)
+ *		-
+ */
 
 
 /*-----------------------------------------------------------------------------
