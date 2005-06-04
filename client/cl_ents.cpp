@@ -41,7 +41,7 @@ CL_ParseDelta
 Can go from either a baseline or a previous packet_entity
 ==================
 */
-void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, unsigned bits, bool baseline)
+void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsigned bits, bool baseline)
 {
 	guard(CL_ParseDelta);
 
@@ -95,10 +95,10 @@ Parses deltas from the given base and adds the resulting entity
 to the current frame
 ==================
 */
-static void CL_DeltaEntity (frame_t *frame, int newnum, entityState_t *old, unsigned bits)
+static void CL_DeltaEntity (frame_t *frame, int newnum, clEntityState_t *old, unsigned bits)
 {
 	centity_t	*ent;
-	entityState_t	*state;
+	clEntityState_t	*state;
 
 	ent = &cl_entities[newnum];
 
@@ -158,7 +158,7 @@ rest of the data stream.
 */
 void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 {
-	entityState_t *oldstate;
+	clEntityState_t *oldstate;
 	int		oldindex, oldnum, old_num_entities;
 
 	newframe->parse_entities = cl.parse_entities;
@@ -264,7 +264,7 @@ void CL_FireEntityEvents (frame_t *frame)
 	for (int pnum = 0 ; pnum<frame->num_entities ; pnum++)
 	{
 		int num = (frame->parse_entities + pnum)&(MAX_PARSE_ENTITIES-1);
-		entityState_t *s1 = &cl_parse_entities[num];
+		clEntityState_t *s1 = &cl_parse_entities[num];
 		if (s1->event)
 			CL_EntityEvent (s1);
 
@@ -395,7 +395,7 @@ void CL_ParseFrame (void)
 
 
 //?? unused
-CRenderModel *RegisterWeaponModel (entityState_t *ent, const char *base)
+CRenderModel *RegisterWeaponModel (clEntityState_t *ent, const char *base)
 {
 	char	model[MAX_QPATH];
 
@@ -434,12 +434,14 @@ CRenderModel *RegisterWeaponModel (entityState_t *ent, const char *base)
 }
 
 
-static void GetEntityInfo (int entityNum, entityState_t **st, unsigned *eff, unsigned *rfx)
+static void GetEntityInfo (int entityNum, clEntityState_t **st, unsigned *eff, unsigned *rfx)
 {
 	int		effects, renderfx;
-	entityState_t *state;
+	clEntityState_t *state;
 
 	state = &cl_parse_entities[(cl.frame.parse_entities + entityNum) & (MAX_PARSE_ENTITIES-1)];
+	//?? is state == cl_entities[entityNum] ? no ... but why ?
+	// -- if (memcmp (state, &cl_entities[entityNum].current, sizeof(clEntityState_t))) Com_WPrintf("%d\n");
 	effects = state->effects;
 	renderfx = state->renderfx;
 
@@ -552,7 +554,7 @@ static void AddViewWeapon (int renderfx)
 }
 
 
-void CL_AddEntityBox (entityState_t *st, unsigned rgba)
+void CL_AddEntityBox (clEntityState_t *st, unsigned rgba)
 {
 	centity_t *cent = &cl_entities[st->number];
 
@@ -595,7 +597,7 @@ static void CL_AddDebugLines (void)
 
 	for (int pnum = 0; pnum < cl.frame.num_entities; pnum++)
 	{
-		entityState_t *st = &cl_parse_entities[(cl.frame.parse_entities+pnum)&(MAX_PARSE_ENTITIES-1)];
+		clEntityState_t *st = &cl_parse_entities[(cl.frame.parse_entities+pnum)&(MAX_PARSE_ENTITIES-1)];
 		// different color for collision -- non-collision entities
 #if 0
 		//BUGS! -- server not sent bbox params for this entity
@@ -616,13 +618,13 @@ CL_AddPacketEntities
 static void CL_AddPacketEntities (void)
 {
 	// bonus items rotate at a fixed rate
-	float autorotate = anglemod(cl.ftime * 100);
+	float autorotate = AngleMod(cl.ftime * 100);
 	// brush models can auto animate their frames
 	int autoanim = 2 * cl.time / 1000;
 
 	for (int pnum = 0; pnum < cl.frame.num_entities; pnum++)
 	{
-		entityState_t *st;
+		clEntityState_t *st;
 		unsigned effects, renderfx;
 		GetEntityInfo (pnum, &st, &effects, &renderfx);
 		centity_t *cent = &cl_entities[st->number];		// not "const", because set cent->lerp_origin below ...
@@ -670,17 +672,6 @@ static void CL_AddPacketEntities (void)
 			ci = &cl.clientInfo[st->skinnum & 0xFF];
 			ent.skinnum = 0;
 #if 0
-			//?? code migrated to cl_playermodel.cpp
-			ent.skin = ci->skin;
-			ent.model = ci->model;
-			if (!ent.skin || !ent.model)
-			{
-				ent.skin = cl.baseClientInfo.skin;
-				ent.model = cl.baseClientInfo.model;
-			}
-#endif
-
-#if 0
 			//!! disabled by Gildor, 29.05.2005
 			// ROGUE
 			if (renderfx & RF_USE_DISGUISE)		//?? remove this code - skins absent anyway (may be, use q3-like cloaking)
@@ -703,7 +694,7 @@ static void CL_AddPacketEntities (void)
 
 		// only used for black hole model right now, FIXME: do better
 		if (renderfx == RF_TRANSLUCENT)
-			ent.alpha = 0.70;
+			ent.alpha = 0.7f;
 
 		// render effects (fullbright, translucent, etc)
 		if (effects & EF_COLOR_SHELL)
@@ -714,9 +705,7 @@ static void CL_AddPacketEntities (void)
 		// calculate angles
 		if (effects & EF_ROTATE)
 		{	// some bonus items auto-rotate
-			ent.angles[0] = 0;
-			ent.angles[1] = autorotate;
-			ent.angles[2] = 0;
+			ent.angles.Set (0, autorotate, 0);
 		}
 		// XATRIX
 		else if (effects & EF_SPINNINGLIGHTS)
@@ -724,7 +713,7 @@ static void CL_AddPacketEntities (void)
 			CVec3 forward, start;
 
 			ent.angles[0] = 0;
-			ent.angles[1] = anglemod(cl.time/2) + st->angles[1];
+			ent.angles[1] = AngleMod(cl.time/2) + st->angles[1];
 			ent.angles[2] = 180;
 			AngleVectors (ent.angles, &forward, NULL, NULL);
 			VectorMA (ent.pos.origin, 64, forward, start);
@@ -740,22 +729,6 @@ static void CL_AddPacketEntities (void)
 
 		if (st->number == cl.playernum+1)
 		{
-#if 0
-			-- Why disabled: works only for CURRENT player (not for others)
-			-- And: some mods creates many color shells -- glow should be a server-side decision ...
-			// add glow around player with COLOR_SHELL (have active powerups)
-			if (renderfx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE))
-			{
-				float	r, g, b;
-
-				r = g = b = frand () * 0.2f;
-				if (renderfx & RF_SHELL_RED)	r = 1;
-				if (renderfx & RF_SHELL_GREEN)	g = 1;
-				if (renderfx & RF_SHELL_BLUE)	b = 1;
-				V_AddLight (ent.pos.origin, 96 + (frand() * 10), r, g, b);
-			}
-#endif
-
 			ent.flags |= RF_VIEWERMODEL;	// only draw from mirrors
 
 			if (!(cl.refdef.rdflags & RDF_THIRD_PERSON))
@@ -770,6 +743,7 @@ static void CL_AddPacketEntities (void)
 					V_AddLight (ent.pos.origin, 100, -1.0, -1.0, -1.0);	//PGM
 
 				AddViewWeapon (renderfx);
+				ParsePlayerEntity (cent, ci, st, ent, NULL, 0);		// do not compute entities, but update animation frames
 				continue;		//?? extend when implement mirrors (with renderfx!); attention: be sure not to add effects later (i.e. twice)
 			}
 		}
@@ -801,8 +775,14 @@ static void CL_AddPacketEntities (void)
 		// send to renderer
 		if (ci)
 		{
+			int weaponIndex = -1;
+			if (st->modelindex2 == 255)		// linked weapon model
+				weaponIndex = st->skinnum >> 8;
+			if (!cl_vwep->integer || weaponIndex > MAX_CLIENTWEAPONMODELS-1)
+				weaponIndex = 0;			// default weapon model
+
 			entity_t buf[16];
-			int numEnts = ParsePlayerEntity (ci, ent, ARRAY_ARG(buf));
+			int numEnts = ParsePlayerEntity (cent, ci, st, ent, ARRAY_ARG(buf), weaponIndex);
 			for (int i = 0; i < numEnts; i++)
 				AddEntityWithEffects2 (&buf[i], renderfx);
 		}
@@ -816,24 +796,9 @@ static void CL_AddPacketEntities (void)
 
 		/*---------------------- add linked models --------------------------*/
 
-		//?? Q3 models: check linked models: may be weapons, flags; what more?
-		if (st->modelindex2)
+		if (st->modelindex2 && st->modelindex2 != 255)	// 255 - weapon model; already added
 		{
-			if (st->modelindex2 == 255)
-			{	// custom weapon
-				clientInfo_t *ci = &cl.clientInfo[st->skinnum & 0xff];
-				int i = (st->skinnum >> 8);
-				if (!cl_vwep->integer || i > MAX_CLIENTWEAPONMODELS - 1)
-					i = 0;		// 0 is default weapon model
-				ent.model = ci->weaponmodel[i];
-				if (!ent.model)
-				{
-					ent.model = ci->weaponmodel[0];
-					if (!ent.model)	ent.model = cl.baseClientInfo.weaponmodel[0];
-				}
-			}
-			else
-				ent.model = cl.model_draw[st->modelindex2];
+			ent.model = cl.model_draw[st->modelindex2];
 
 			// PMM - check for the defender sphere shell: make it translucent
 			// replaces the previous version which used the high bit on modelindex2 to determine transparency

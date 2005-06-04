@@ -45,7 +45,7 @@ typedef struct
 	cmodel_t	*models[MAX_MODELS];
 
 	char		configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
-	entity_state_t	baselines[MAX_EDICTS];
+	entityStateEx_t	baselines[MAX_EDICTS];
 
 	// the multicast buffer is used to send a message to a set of clients
 	// it is only used to marshall data until SV_Multicast is called
@@ -172,7 +172,7 @@ typedef struct
 	client_t	*clients;					// [maxclients->integer];
 	int			num_client_entities;		// maxclients->integer*UPDATE_BACKUP*MAX_PACKET_ENTITIES
 	int			next_client_entities;		// next client_entity to use
-	entity_state_t	*client_entities;		// [num_client_entities]
+	entityStateEx_t	*client_entities;		// [num_client_entities]
 
 	int			last_heartbeat;
 
@@ -191,13 +191,14 @@ extern	netadr_t	master_adr[MAX_MASTERS];	// address of the master server
 extern	server_static_t	svs;				// persistant server info
 extern	server_t		sv;					// local server
 
-extern	cvar_t		*sv_paused;
-extern	cvar_t		*maxclients;
-extern	cvar_t		*sv_noreload;			// don't reload level state when reentering
-extern	cvar_t		*sv_airaccelerate;		// don't reload level state when reentering
-extern	cvar_t		*sv_extProtocol;
-											// development tool
-extern	cvar_t		*sv_enforcetime;
+extern	cvar_t	*sv_paused;
+extern	cvar_t	*maxclients;
+extern	cvar_t	*sv_noreload;			// don't reload level state when reentering
+extern	cvar_t	*sv_airaccelerate;		// don't reload level state when reentering
+extern	cvar_t	*sv_extProtocol;
+extern	cvar_t	*sv_labels;
+
+extern	cvar_t	*sv_enforcetime;
 
 extern	client_t	*sv_client;
 extern	edict_t		*sv_player;
@@ -345,6 +346,15 @@ void	SV_TokenizeString (const char *text);
 int		SV_Argc (void);
 char *	SV_Argv (int arg);
 char *	SV_Args (void);
+
+//
+// sv_text.cpp
+//
+void SV_ClearTexts ();
+void SV_DrawTexts ();
+void SV_DrawTextLeft (const char *text, unsigned rgba = 0xFFFFFFFF);
+void SV_DrawTextRight (const char *text, unsigned rgba = 0xFFFFFFFF);
+void SV_DrawText3D (const CVec3 &pos, const char *text, unsigned rgba = 0xFFFFFFFF);
 
 
 //------------- Constants for new protocol ---------------------

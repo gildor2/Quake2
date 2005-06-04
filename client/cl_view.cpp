@@ -629,7 +629,7 @@ static void DrawSurfInfo (void)
 		DecodeContents (trace.contents);
 		if (trace.ent)
 		{
-			entityState_t *ent = (entityState_t*)trace.ent;
+			clEntityState_t *ent = (clEntityState_t*)trace.ent;
 			RE_DrawTextLeft ("\nEntity:\n-------", RGB(0.4,0.4,0.6));
 			RE_DrawTextLeft (va("Origin: %g %g %g", VECTOR_ARG(ent->origin)), RGB(0.2,0.4,0.1));
 			RE_DrawTextLeft (va("fx: %X  rfx: %X", ent->effects, ent->renderfx), RGB(0.2,0.4,0.1));

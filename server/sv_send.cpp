@@ -425,15 +425,15 @@ SV_SendClientDatagram
 */
 bool SV_SendClientDatagram (client_t *client)
 {
-	byte		msg_buf[MAX_MSGLEN];
-	sizebuf_t	msg;
-
 	SV_BuildClientFrame (client);
 
+	// prepare msg
+	sizebuf_t msg;
+	byte	msg_buf[MAX_MSGLEN];
 	msg.Init (msg_buf, client->maxPacketSize);
 	msg.allowoverflow = true;
 
-	// send over all the relevant entity_state_t
+	// send over all the relevant entity states
 	// and the player_state_t
 	SV_WriteFrameToClient (client, &msg);
 

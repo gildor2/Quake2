@@ -1955,50 +1955,58 @@ static const char *rate_names[] = {
 
 struct playerConfigMenu_t : menuFramework_t
 {
-	static menuField_t		name_field;
-	static menuList2_t		model_box;
-	static menuList2_t		skin_box;
-	static menuList_t		rtype_box;
-	static menuList_t		rcolor_box;
-	static menuList_t		handedness_box;
-	static menuList_t		rate_box;
+	static menuField_t	name_field;
+	static menuList2_t	model_box;
+	static menuList2_t	skin_box;
+	static menuList_t	rtype_box;
+	static menuList_t	rcolor_box;
+	static menuList_t	handedness_box;
+	static menuList_t	rate_box;
 	menuSeparator_t	skin_title;
 	menuSeparator_t	model_title;
 	menuSeparator_t	rtype_title;
 	menuSeparator_t	rcolor_title;
 	menuSeparator_t	hand_title;
 	menuSeparator_t	rate_title;
-	menuAction_t		download_action;
+	menuAction_t	download_action;
 
 	static int modelChangeTime;
+	static clientInfo_t ci;
+	static centity_t cent;
 
-	static void HandednessCallback (void *unused)
+	static void HandednessCallback (void *)
 	{
 		Cvar_SetInteger ("hand", handedness_box.curvalue);
 	}
 
-	static void RTypeCallback (void *unused)
+	static void RTypeCallback (void *)
 	{
 		Cvar_SetInteger ("railtype", rtype_box.curvalue);
 	}
 
-	static void RColorCallback (void *unused)
+	static void RColorCallback (void *)
 	{
 		Cvar_SetInteger ("railcolor", rcolor_box.curvalue);
 	}
 
-	static void RateCallback (void *unused)
+	static void RateCallback (void *)
 	{
 		if (rate_box.curvalue != ARRAY_COUNT(rate_tbl) - 1)
 			Cvar_SetInteger ("rate", rate_tbl[rate_box.curvalue]);
 	}
 
-	static void ModelCallback (void *unused)
+	static void ModelCallback (void *)
 	{
 		playerModelInfo_t *info = &pmiList[model_box.curvalue];
 		skin_box.itemnames = info->skins.First();
 		skin_box.curvalue = 0;
 		modelChangeTime = appMilliseconds ();
+		ci.isValidModel = false;
+	}
+
+	static void SkinCallback (void *)
+	{
+		ci.isValidModel = false;		// reload clientInfo_t for new skin/icon
 	}
 
 	bool Init ()
@@ -2011,6 +2019,9 @@ struct playerConfigMenu_t : menuFramework_t
 		static const char *handedness[] = {"right", "left", "center", NULL};
 		static const char *colorNames[] = {"default", "red", "green", "yellow", "blue", "magenta", "cyan", "white", NULL};
 		static const char *railTypes[]  = {"original", "spiral", "rings", "beam", NULL};
+
+		memset (&ci, 0, sizeof(ci));
+		memset (&cent, 0, sizeof(cent));
 
 		if (!ScanPlayerModels ())
 		{
@@ -2092,6 +2103,7 @@ struct playerConfigMenu_t : menuFramework_t
 		skin_box.type	= MTYPE_SPINCONTROL2;
 		skin_box.x		= -56;
 		skin_box.y		= y+=10;
+		skin_box.callback = SkinCallback;
 		skin_box.cursor_offset = -48;
 		skin_box.curvalue = currentSkinIndex;
 		skin_box.itemnames = info->skins.First();
@@ -2185,17 +2197,14 @@ struct playerConfigMenu_t : menuFramework_t
 
 	void Draw ()
 	{
-		entity_t e[2];
 		static dlight_t dl[] = {
-			{{30, 100, 100}, {1, 1, 1}, 400},
+			{{30, 100, 100}, {1, 1, 1}, 350},
 			{{90, -100, 10}, {0.4, 0.2, 0.2}, 200}
 		};
-		bool	showModels;
-
 //		sscanf(Cvar_VariableString("dl0"), "%f %f %f %f", VECTOR_ARG(&dl[0].origin), &dl[0].intensity);
 //		sscanf(Cvar_VariableString("dl1"), "%f %f %f %f", VECTOR_ARG(&dl[1].origin), &dl[1].intensity);
 
-		showModels = appMilliseconds () - modelChangeTime > MODEL_DELAY;
+		bool showModels = appMilliseconds () - modelChangeTime > MODEL_DELAY;
 
 		playerModelInfo_t *model = &pmiList[model_box.curvalue];
 		if (!model) return;
@@ -2204,40 +2213,47 @@ struct playerConfigMenu_t : menuFramework_t
 
 		refdef_t refdef;
 		memset (&refdef, 0, sizeof (refdef));
-		refdef.x = viddef.width / 2;
-		refdef.y = viddef.height * 6 / 25;
-		refdef.width = viddef.width * 4 / 10 + 16;
+		refdef.x      = viddef.width / 2;
+		refdef.y      = viddef.height * 6 / 25;
+		refdef.width  = viddef.width * 4 / 10 + 16;
 		refdef.height = viddef.width * 5 / 10;
-		refdef.fov_x = refdef.width * 90 / viddef.width;
-		refdef.fov_y = CalcFov (refdef.fov_x, refdef.width, refdef.height);
-		refdef.time = cls.realtime / 1000.0f;
+		refdef.fov_x  = refdef.width * 90 / viddef.width;
+		refdef.fov_y  = CalcFov (refdef.fov_x, refdef.width, refdef.height);
+		refdef.time   = cls.realtime / 1000.0f;
 
-		memset (&e, 0, sizeof(e));
-
-		if (showModels)
+		if (showModels && !ci.isValidModel)
 		{
-			// add player model
-			e[0].model = RE_RegisterModel (va("players/%s/tris.md2", model->name));
-			e[0].skin = RE_RegisterSkin (va("players/%s/%s", model->name, skin->name));
-			e[0].pos.origin[0] = 90;
+			// load new model
+			CL_LoadClientinfo (ci, va("menu\\%s/%s", model->name, skin->name), false);
+			ci.fixedAll = true;		// do not rotate model parts one around another
+		}
 
-			e[0].frame = (cls.realtime + 99) / 100 % (LAST_FRAME-FIRST_FRAME+1) + FIRST_FRAME;
-			e[0].oldframe = e[0].frame - 1;
-			if (e[0].oldframe < FIRST_FRAME)
-				e[0].oldframe = LAST_FRAME;
-			e[0].backlerp = 1.0 - (cls.realtime % 100) / 100.0;
-			if (e[0].backlerp == 1.0)
-				e[0].backlerp = 0.0;
-			e[0].angles[1] = cls.realtime / 20 % 360;
-			e[0].pos.axis.FromAngles (e[0].angles);
-
-			// add weapon model
-			e[1] = e[0];		// fill angles, lerp and more ...
-			e[1].model = RE_RegisterModel (va("players/%s/weapon.md2", model->name));
-			e[1].skin = NULL;
-
+		if (ci.isValidModel)
+		{
+			clEntityState_t st;
+			st.SetAnim (LEGS_IDLE, TORSO_STAND, LEGS_NEUTRAL);
+			cent.prev = st;
+			cent.current = st;
+			// setup base entity
+			entity_t base;
+			memset (&base, 0, sizeof(base));
+			base.pos.origin[0] = 90;
+			base.frame = (cls.realtime + 99) / 100 % (LAST_FRAME-FIRST_FRAME+1) + FIRST_FRAME;
+			base.oldframe = base.frame - 1;
+			if (base.oldframe < FIRST_FRAME)
+				base.oldframe = LAST_FRAME;
+			base.backlerp = 1.0f - (cls.realtime % 100) / 100.0f;
+			if (base.backlerp == 1.0f)
+				base.backlerp = 0.0;
+			base.angles[1] = cls.realtime / 20 % 360;
+			base.pos.axis.FromAngles (base.angles);
+			// create entities
+			entity_t e[16];
+			memset (&e, 0, sizeof(e));
+			// setup for renderer
+			int numEnts = ParsePlayerEntity (&cent, &ci, &st, base, ARRAY_ARG(e), 0);
 //			refdef.areabits = NULL;
-			refdef.num_entities = 2;
+			refdef.num_entities = numEnts;
 			refdef.entities = e;
 //			refdef.lightstyles = NULL;
 			refdef.dlights = dl;
@@ -2248,13 +2264,7 @@ struct playerConfigMenu_t : menuFramework_t
 		menuFramework_t::Draw ();
 		RE_Fill (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
 		RE_RenderFrame (&refdef);
-
-		const char *icon;
-		if (!memcmp (skin->name, "skn_", 4))
-			icon = "/pics/default_icon";
-		else
-			icon = va("/players/%s/%s_i", model->name, skin->name);
-		RE_DrawDetailedPic (x - 40, refdef.y, viddef.height * 32 / 240, viddef.height * 32 / 240, icon);
+		RE_DrawDetailedPic (x - 40, refdef.y, viddef.height * 32 / 240, viddef.height * 32 / 240, ci.iconName);
 	}
 
 	const char * KeyDown (int key)
@@ -2296,14 +2306,16 @@ struct playerConfigMenu_t : menuFramework_t
 static playerConfigMenu_t playerConfigMenu;
 
 // static members
-menuField_t		playerConfigMenu_t::name_field;
-menuList2_t		playerConfigMenu_t::model_box;
-menuList2_t		playerConfigMenu_t::skin_box;
-menuList_t		playerConfigMenu_t::rtype_box;
-menuList_t		playerConfigMenu_t::rcolor_box;
-menuList_t		playerConfigMenu_t::handedness_box;
-menuList_t		playerConfigMenu_t::rate_box;
+menuField_t	playerConfigMenu_t::name_field;
+menuList2_t	playerConfigMenu_t::model_box;
+menuList2_t	playerConfigMenu_t::skin_box;
+menuList_t	playerConfigMenu_t::rtype_box;
+menuList_t	playerConfigMenu_t::rcolor_box;
+menuList_t	playerConfigMenu_t::handedness_box;
+menuList_t	playerConfigMenu_t::rate_box;
 int playerConfigMenu_t::modelChangeTime;
+clientInfo_t playerConfigMenu_t::ci;
+centity_t playerConfigMenu_t::cent;
 
 
 static void Menu_PlayerConfig_f (void)
@@ -2884,7 +2896,7 @@ static void Menu_Quit_f (void)
 
 
 
-#if 1
+#if 0
 /*
 =======================================================================
 

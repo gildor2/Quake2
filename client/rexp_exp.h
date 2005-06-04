@@ -31,6 +31,7 @@ const refExport_t re = {
 	DrawTextPos,
 	DrawTextLeft,
 	DrawTextRight,
+	DrawText3D,
 	DrawConChar,
 	GetClientLight
 };

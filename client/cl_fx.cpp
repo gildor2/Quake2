@@ -748,7 +748,7 @@ void CL_ParseMuzzleFlash2 (void)
 	flash_number = MSG_ReadByte (&net_message);
 
 	// locate the origin
-	entityState_t *s = &cl_entities[ent].current;
+	clEntityState_t *s = &cl_entities[ent].current;
 
 	float sx = monster_flash_offset[flash_number][0] / MONSTER_FLASH_SCALE;
 	float sy = monster_flash_offset[flash_number][1] / MONSTER_FLASH_SCALE;
@@ -1167,7 +1167,7 @@ void CL_ParticleEffect3 (const CVec3 &org, const CVec3 &dir, int color, int coun
 }
 
 
-void CL_TeleporterParticles (entityState_t *ent)
+void CL_TeleporterParticles (clEntityState_t *ent)
 {
 	int			i, j;
 	particle_t	*p;
@@ -2075,7 +2075,7 @@ extern sfx_t *cl_sfx_fallshort2[9];
 extern sfx_t *cl_sfx_camper[9];
 
 
-void CL_EntityEvent (entityState_t *ent)
+void CL_EntityEvent (clEntityState_t *ent)
 {
 	if (RE_GetCaps() & REF_CONSOLE_ONLY)
 		return;

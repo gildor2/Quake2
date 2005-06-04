@@ -43,6 +43,7 @@ STATIC = \
 	Release/obj/q2stat/snd_dma.obj \
 	Release/obj/q2stat/snd_mem.obj \
 	Release/obj/q2stat/snd_mix.obj \
+	Release/obj/q2stat/sv_text.obj \
 	Release/obj/q2stat/sv_ccmds.obj \
 	Release/obj/q2stat/sv_ents.obj \
 	Release/obj/q2stat/sv_game.obj \
@@ -1146,6 +1147,9 @@ OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include
 Release/obj/q2stat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/sv_ccmds.obj" server/sv_ccmds.cpp
 
+Release/obj/q2stat/sv_text.obj : server/sv_text.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/sv_text.obj" server/sv_text.cpp
+
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
@@ -1323,6 +1327,31 @@ DEPENDS = \
 	client/engine_intf.h \
 	qcommon/protocol.h \
 	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj/dedstat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/pmove.obj" qcommon/pmove.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+
+Release/obj/q2stat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/pmove.obj" qcommon/pmove.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/Strings.h \
+	Core/Inc/VcWin32.h \
+	client/engine.h \
+	client/engine_intf.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
 	qcommon/qcommon.h \
 	server/game.h \
 	server/server.h
@@ -1390,9 +1419,6 @@ Release/obj/dedstat/msg.obj : qcommon/msg.cpp $(DEPENDS)
 Release/obj/dedstat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/net_chan.obj" qcommon/net_chan.cpp
 
-Release/obj/dedstat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/pmove.obj" qcommon/pmove.cpp
-
 Release/obj/dedstat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/q_shared2.obj" qcommon/q_shared2.cpp
 
@@ -1430,9 +1456,6 @@ Release/obj/q2stat/msg.obj : qcommon/msg.cpp $(DEPENDS)
 
 Release/obj/q2stat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/net_chan.obj" qcommon/net_chan.cpp
-
-Release/obj/q2stat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/pmove.obj" qcommon/pmove.cpp
 
 Release/obj/q2stat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/q_shared2.obj" qcommon/q_shared2.cpp

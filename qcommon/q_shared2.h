@@ -21,13 +21,6 @@
 //============================================================================
 
 
-// angle indexes
-enum {
-	PITCH,							// looking up and down (0=Straight Ahead, +Up, -Down).
-	YAW,							// rotating around (running in circles), 0=East, +North, -South.
-	ROLL							// rotation about axis of screen, 0=Straight, +Clockwise, -CCW.
-};
-
 #define	MAX_STRING_CHARS	1024	// max length of a string passed to TokenizeString()
 #define	MAX_STRING_TOKENS	80		// max tokens resulting from TokenizeString()
 
@@ -353,6 +346,8 @@ struct CAxis
 	void FromAngles (const CVec3 &angles);
 	void TransformVector (const CVec3 &src, CVec3 &dst) const;
 	void UnTransformVector (const CVec3 &src, CVec3 &dst) const;
+	void TransformAxis (const CAxis &src, CAxis &dst) const;
+	void UnTransformAxis (const CAxis &src, CAxis &dst) const;
 	// indexed access
 	inline CVec3& operator[] (int index)
 	{
@@ -393,9 +388,20 @@ void UnTransformPoint (const CVec3 &origin, const CAxis &axis, const CVec3 &src,
 extern const CVec3 nullVec3;
 extern const CAxis identAxis;
 
+// angle indexes
+enum
+{
+	PITCH,							// looking up and down (0=Straight Ahead, +Up, -Down).
+	YAW,							// rotating around (running in circles), 0=East, +North, -South.
+	ROLL							// rotation about axis of screen, 0=Straight, +Clockwise, -CCW.
+};
+
 void AngleVectors (const CVec3 &angles, CVec3 *forward, CVec3 *right, CVec3 *up);
-float anglemod (float a);
+float AngleMod (float a);
 float LerpAngle (float a1, float a2, float frac);
+float AngleSubtract (float a1, float a2);
+void AnglesSubtract (const CVec3 &v1, const CVec3 &v2, CVec3 &v3);
+
 
 void MakeNormalVectors (const CVec3 &forward, CVec3 &right, CVec3 &up);
 
@@ -699,9 +705,9 @@ typedef enum
 //==============================================
 
 
-// entity_state_t is the information conveyed from the server
-// in an update message about entities that the client will
-// need to render in some way
+// entity_state_t is the information conveyed from the server in an update message
+// about entities that the client will need to render in some way
+// this is a basic structure, supported by game library
 struct entity_state_t
 {
 	int		number;			// edict index; real size is "short"
@@ -711,6 +717,7 @@ struct entity_state_t
 	CVec3	old_origin;		// for lerping
 	int		modelindex;
 	int		modelindex2, modelindex3, modelindex4;	// weapons, CTF flags, etc; real size is "byte"
+							// modelindex2 used for weapon, 3 - for CTF flags, 4 - unused
 	int		frame;			// real size is "short"
 	int		skinnum;
 	unsigned effects;
@@ -720,6 +727,24 @@ struct entity_state_t
 	int		sound;			// for looping sounds, to guarantee shutoff; real size is "byte"
 	int		event;			// impulse events -- muzzle flashes, footsteps, etc; events only go out for a single frame,
 							// they are automatically cleared each frame; real size is "byte"
+};
+
+// entityStateEx_t is extended entity_state_t structure
+struct entityStateEx_t : entity_state_t
+{
+	// added since extended protocol v1
+	unsigned anim;			// legs, torso animation + some features
+	// functions to support additional fields
+	inline void SetAnim (int legs, int torso, int moveDir)
+	{
+		anim = legs | (torso << 6) | (moveDir << 12);
+	}
+	inline void GetAnim (int &legs, int &torso, int &moveDir) const
+	{
+		legs    = anim & 0x3F;
+		torso   = (anim >> 6) & 0x3F;
+		moveDir = (anim >> 12) & 7;
+	}
 };
 
 //==============================================

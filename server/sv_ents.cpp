@@ -35,8 +35,10 @@ SV_EmitPacketEntities
 Writes a delta update of an entity_state_t list to the message.
 =============
 */
-static void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t *msg)
+static void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, sizebuf_t *msg, bool extProtocol)
 {
+	guard(SV_EmitPacketEntities);
+
 	MSG_WriteByte (msg, svc_packetentities);
 
 	int from_num_entities = from ? from->num_entities : 0;
@@ -46,7 +48,7 @@ static void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, siz
 	while (newindex < to->num_entities || oldindex < from_num_entities)
 	{
 		int		oldnum, newnum;
-		entity_state_t *oldent, *newent;
+		entityStateEx_t *oldent, *newent;
 
 		if (newindex >= to->num_entities)
 			newnum = BIG_NUMBER;
@@ -69,7 +71,7 @@ static void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, siz
 			// delta update from old position
 			// note that players are always 'newentities', this updates their oldorigin always and prevents warping
 			// NOTE: it's impossible to get newindex AND oldindex both overflowed (> num_entities), because of while() condition
-			MSG_WriteDeltaEntity (msg, oldent, newent, false, newent->number <= maxclients->integer);
+			MSG_WriteDeltaEntity (msg, oldent, newent, false, newent->number <= maxclients->integer, extProtocol);
 			oldindex++;
 			newindex++;
 			continue;
@@ -78,7 +80,7 @@ static void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, siz
 		if (newnum < oldnum)
 		{
 			// this is a new entity, send it from the baseline
-			MSG_WriteDeltaEntity (msg, &sv.baselines[newnum], newent, true, true);
+			MSG_WriteDeltaEntity (msg, &sv.baselines[newnum], newent, true, true, extProtocol);
 			newindex++;
 			continue;
 		}
@@ -93,6 +95,8 @@ static void SV_EmitPacketEntities (client_frame_t *from, client_frame_t *to, siz
 	}
 
 	MSG_WriteShort (msg, 0);	// end of packetentities; corresponds to bits(byte)=0,entNum(byte)=0
+
+	unguard;
 }
 
 
@@ -141,7 +145,7 @@ void SV_WriteFrameToClient (client_t *client, sizebuf_t *msg)
 	MSG_WriteDeltaPlayerstate (msg, oldframe ? &oldframe->ps : NULL, &frame->ps);
 
 	// delta encode the entities
-	SV_EmitPacketEntities (oldframe, frame, msg);
+	SV_EmitPacketEntities (oldframe, frame, msg, client->newprotocol);
 }
 
 
@@ -214,8 +218,7 @@ void SV_BuildClientFrame (client_t *client)
 	int		i, l;
 
 	edict_t *cl_ent = client->edict;
-	if (!cl_ent->client)
-		return;		// not in game yet
+	if (!cl_ent->client) return;	// not in game yet
 
 	// this is the frame we are creating
 	client_frame_t *frame = &client->frames[sv.framenum & UPDATE_MASK];
@@ -305,19 +308,19 @@ void SV_BuildClientFrame (client_t *client)
 		}
 
 		// add it to the circular client_entities array
-		entity_state_t *state = &svs.client_entities[svs.next_client_entities%svs.num_client_entities];
 		if (ent->s.number != e)
 		{
 			Com_DPrintf (S_RED"FIXING ENT->S.NUMBER\n");
 			ent->s.number = e;
 		}
-		*state = ent->s;
+		// copy entity_state_t -> entityStateEx_t
+		entityStateEx_t &state = svs.client_entities[svs.next_client_entities % svs.num_client_entities];
+		static_cast<entity_state_t&>(state) = ent->s;
 
-//		if (state->event) Com_Printf("Ent #%i -- sfx #%i\n",e,state->event);//!!!
 		// disable new features for clients using old protocol
 		if (!client->newprotocol)
 		{
-			int evt = state->event;
+			int evt = state.event;
 
 			if (evt >= EV_FOOTSTEP0 && evt < EV_FOOTSTEP0 + MATERIAL_COUNT)
 				evt = EV_FOOTSTEP;
@@ -326,12 +329,35 @@ void SV_BuildClientFrame (client_t *client)
 			else if (evt >= EV_SPECTATOR0 && evt < EV_CAMPER0+NUM_CAMPER_EVENTS)
 				evt = EV_NONE;
 
-			state->event = evt;
+			state.event = evt;
+		}
+		else
+		{
+			// add some extended protocol features
+//			if (state.number <= maxclients->integer) // this is a player entity
+//			if (ent->client) // this is a player entity
+			if (state.modelindex == 255)
+				PM_ComputeAnimation (ent->client->ps, state);
+
+			if (sv_labels->integer)
+			{
+				if (state.modelindex == 255)
+				{
+					int legs, torso, angles;
+					state.GetAnim (legs, torso, angles);
+					SV_DrawText3D (state.origin, va("ent %d cl %04X\nframe %d\nanim %d+%d+%d",
+						e, state.skinnum,
+						state.frame,
+						legs, torso, angles));
+				}
+				else
+					SV_DrawText3D (state.origin, va("ent %d cl %04X\nframe %d", e, state.skinnum, state.frame), RGB(1,0,0));
+			}
 		}
 
 		// don't mark players missiles as solid
 		if (ent->owner == client->edict)
-			state->solid = 0;
+			state.solid = 0;
 
 		svs.next_client_entities++;
 		frame->num_entities++;
@@ -351,9 +377,11 @@ Used for recording footage for merged or assembled demos
 */
 void SV_RecordDemoMessage (void)
 {
+	guard(SV_RecordDemoMessage);
+
 	if (!svs.wdemofile) return;
 
-	entity_state_t	nostate;
+	entityStateEx_t	nostate;
 	memset (&nostate, 0, sizeof(nostate));
 
 	sizebuf_t buf;
@@ -369,10 +397,14 @@ void SV_RecordDemoMessage (void)
 	for (int i = 1; i < ge->num_edicts; i++)
 	{
 		edict_t *ent = EDICT_NUM(i);
+		entityStateEx_t st;
+		memset (&st, 0, sizeof(st));
+		static_cast<entity_state_t&>(st) = ent->s;
+		//?? may be, compute extended fields
 		// ignore ents without visible models unless they have an effect
 		if (ent->inuse && ent->s.number && !(ent->svflags & SVF_NOCLIENT) &&
 			(ent->s.modelindex || ent->s.effects || ent->s.sound || ent->s.event))
-			MSG_WriteDeltaEntity (&buf, &nostate, &ent->s, false, true);
+			MSG_WriteDeltaEntity (&buf, &nostate, &st, false, true, false /*?? extProtocol*/);
 	}
 
 	MSG_WriteShort (&buf, 0);		// end of packetentities
@@ -385,4 +417,6 @@ void SV_RecordDemoMessage (void)
 	int len = LittleLong (buf.cursize);
 	fwrite (&len, 4, 1, svs.wdemofile);
 	fwrite (buf.data, buf.cursize, 1, svs.wdemofile);
+
+	unguard;
 }

@@ -50,7 +50,7 @@ struct frame_t					//?? rename
 };
 
 
-struct entityState_t : public entity_state_t
+struct clEntityState_t : public entityStateEx_t
 {
 	bool	valid;				// when "false", additional fields are not initialized
 	CAxis	axis;
@@ -62,9 +62,10 @@ struct entityState_t : public entity_state_t
 
 struct centity_t
 {
-	entityState_t baseline;		// delta from this if not from a previous frame
-	entityState_t current;
-	entityState_t prev;			// will always be valid, but might just be a copy of current
+	clEntityState_t baseline;	// delta from this if not from a previous frame
+	clEntityState_t current;
+	clEntityState_t prev;		// will always be valid, but might just be a copy of current
+	playerAnim_t anim;			// animation state for Quake3 player model
 
 	int		serverframe;		// if not current, this ent isn't in the frame
 
@@ -136,7 +137,7 @@ struct client_state_t
 	//
 	// transient data from server
 	//
-	char	layout[1024];		// general 2D overlay
+	char	layout[1024];		// HUD info
 	int		inventory[MAX_ITEMS];
 
 	bool	cinematicActive;
@@ -297,7 +298,7 @@ extern	centity_t	*cl_entities;	// [MAX_EDICTS]
 // entities, so that when a delta compressed message arives from the server
 // it can be un-deltad from the original
 #define	MAX_PARSE_ENTITIES	1024
-extern	entityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
+extern	clEntityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 
 //=============================================================================
 
@@ -373,7 +374,7 @@ void CL_IonripperTrail (const CVec3 &start, const CVec3 &end);
 
 
 void CL_ParticleSteamEffect2(cl_sustain_t *self);
-void CL_TeleporterParticles (entityState_t *ent);
+void CL_TeleporterParticles (clEntityState_t *ent);
 void CL_ParticleEffect (const CVec3 &org, const CVec3 &dir, int color, int count);
 void CL_ParticleEffect2 (const CVec3 &org, const CVec3 &dir, int color, int count);
 void CL_ParticleEffect3 (const CVec3 &org, const CVec3 &dir, int color, int count);
@@ -400,7 +401,7 @@ void CL_Widowbeamout (cl_sustain_t *self);
 void CL_Nukeblast (cl_sustain_t *self);
 void CL_WidowSplash (const CVec3 &org);
 
-void CL_ParseDelta (entityState_t *from, entityState_t *to, int number, unsigned bits, bool baseline);
+void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsigned bits, bool baseline);
 void CL_ParseFrame (void);
 
 void CL_ParseTEnt (void);
@@ -421,7 +422,7 @@ void IN_Accumulate (void);
 
 void CL_ParseLayout (void);
 
-void CL_AddEntityBox (entityState_t *st, unsigned rgba);
+void CL_AddEntityBox (clEntityState_t *st, unsigned rgba);
 
 
 //
@@ -519,7 +520,7 @@ void CL_RocketTrail (const CVec3 &start, const CVec3 &end, centity_t *old);
 void CL_DiminishingTrail (const CVec3 &start, const CVec3 &end, centity_t *old, int flags);
 void CL_FlyEffect (centity_t *ent, const CVec3 &origin);
 void CL_BfgParticles (entity_t *ent);
-void CL_EntityEvent (entityState_t *ent);
+void CL_EntityEvent (clEntityState_t *ent);
 // XATRIX
 void CL_TrapParticles (entity_t *ent);
 

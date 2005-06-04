@@ -150,8 +150,6 @@ TRACE:
 MODEL SYSTEM:
 ~~~~~~~~~~~~~
 - when no SPECIFIED skin for model, use any (?) other; if no skins - use different (default) model
-- scan for models on initialization; check its gender, type (q2,hl,q3 etc.), skin list; create animation system (should convert
-  Q2 animation requests to q3 etc)
 - needs ability to specify model gender without "models.lst" file (special config file in model dir)
 ? player setup: add model type/gender filter
 ? make pmove player bounds to be taken from the actual player model (server option (?), requires extptotocol for

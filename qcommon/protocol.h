@@ -47,9 +47,9 @@
 #define	RF_FULLBRIGHT		0x00000008		// allways draw full intensity
 #define	RF_DEPTHHACK		0x00000010		// for view weapon Z crunching
 #define	RF_TRANSLUCENT		0x00000020
-#define	RF_FRAMELERP		0x00000040		// set but game, but ignored by engine
+#define	RF_FRAMELERP		0x00000040		// unused; set but game, but useless
 #define RF_BEAM				0x00000080
-#define	RF_CUSTOMSKIN		0x00000100		// skin is an index in image_precache
+#define	RF_CUSTOMSKIN		0x00000100		// unused
 #define	RF_GLOW				0x00000200		// pulse lighting for bonus items
 #define RF_SHELL_RED		0x00000400
 #define	RF_SHELL_GREEN		0x00000800
@@ -374,3 +374,83 @@ enum
 
 	MAX_CONFIGSTRINGS = CS_GENERAL+MAX_GENERAL
 };
+
+
+/*-----------------------------------------------------------------------------
+	Staff from Quake3 SDK
+-----------------------------------------------------------------------------*/
+
+// animations
+enum
+{
+	BOTH_DEATH1,
+	BOTH_DEAD1,
+	BOTH_DEATH2,
+	BOTH_DEAD2,
+	BOTH_DEATH3,
+	BOTH_DEAD3,
+
+	TORSO_GESTURE,
+
+	TORSO_ATTACK,
+	TORSO_ATTACK2,
+	TORSO_DROP,
+	TORSO_RAISE,
+
+	TORSO_STAND,
+	TORSO_STAND2,
+
+	LEGS_WALKCR,
+	LEGS_WALK,
+	LEGS_RUN,
+	LEGS_BACK,
+	LEGS_SWIM,
+
+	LEGS_JUMP,
+	LEGS_LAND,
+	LEGS_JUMPB,
+	LEGS_LANDB,
+
+	LEGS_IDLE,
+	LEGS_IDLECR,
+
+	LEGS_TURN,
+
+	// Q3 TA animations
+	TORSO_GETFLAG,
+	TORSO_GUARDBASE,
+	TORSO_PATROL,
+	TORSO_FOLLOWME,
+	TORSO_AFFIRMATIVE,
+	TORSO_NEGATIVE,
+
+	MAX_ANIMATIONS,
+
+	// computed animations
+	LEGS_BACKCR,
+	LEGS_BACKWALK,
+#if 0
+	// Q3 TA
+	FLAG_RUN,
+	FLAG_STAND,
+	FLAG_STAND2RUN,
+#endif
+
+	MAX_TOTALANIMATIONS
+};
+
+#define ANIM_NOCHANGE		MAX_ANIMATIONS	// unused value
+
+
+// torso rotate/lean
+enum
+{
+	LEGS_NEUTRAL,			// original legs position
+	LEGS_LEFT_45,
+	LEGS_LEFT_90,
+	LEGS_RIGHT_45,
+	LEGS_RIGHT_90
+};
+
+//!!	TORSO_LEAN_FORWARD,		// look up/down; pain effect
+//!!	TORSO_LEAN_BACK

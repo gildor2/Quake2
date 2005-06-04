@@ -87,7 +87,7 @@ client_state_t	cl;
 
 centity_t		*cl_entities;	// [MAX_EDICTS]
 
-entityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
+clEntityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 
 //======================================================================
 
@@ -187,8 +187,8 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 	byte	buf_data[MAX_MSGLEN];
 	sizebuf_t	buf;
 	int		i, len;
-	entityState_t	*ent;
-	entity_state_t	nullstate;
+	clEntityState_t	*ent;
+	entityStateEx_t	nullstate;
 
 	if (argc != 2 || usage)
 	{
@@ -276,7 +276,7 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 		}
 
 		MSG_WriteByte (&buf, svc_spawnbaseline);
-		MSG_WriteDeltaEntity (&buf, &nullstate, (entity_state_t*)&cl_entities[i].baseline, true, true);
+		MSG_WriteDeltaEntity (&buf, &nullstate, &cl_entities[i].baseline, true, true, cls.newprotocol);
 	}
 
 	MSG_WriteByte (&buf, svc_stufftext);
@@ -805,9 +805,7 @@ Load or download any custom player skins and models
 */
 void CL_Skins_f (void)
 {
-	int		i;
-
-	for (i = 0; i < MAX_CLIENTS; i++)
+	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if (!cl.configstrings[CS_PLAYERSKINS+i][0])
 			continue;
@@ -1302,12 +1300,17 @@ CL_Frame
 
 #define MAX_GUI_FPS		60
 
+extern void SV_DrawTexts ();		//?? move outside, different API ?
+
+
 void CL_Frame (float msec, float realMsec)
 {
 	static double extratime_real;	// real frame time, msec
 	static double extratime;		// scaled frame time, sec
 
 	guard(CL_Frame);
+
+	SV_DrawTexts ();
 
 	extratime += msec / 1000.0f;
 	extratime_real += realMsec;

@@ -86,7 +86,7 @@ void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CV
 		cmodel_t *cmodel;
 		CVec3	tmp, delta;
 
-		entityState_t *ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
+		clEntityState_t *ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
 		if (!ent->solid) continue;
 		if (ent->number == cl.playernum+1) continue;	// no clip with player entity
 
@@ -136,7 +136,7 @@ void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CV
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr.fraction)
 		{
-			trace.ent = (struct edict_s *)ent;		// trace.ent is edict_t*, but ent is entityState_t*
+			trace.ent = (edict_s *)ent;		// trace.ent is edict_t*, but ent is clEntityState_t*
 		 	if (tr.startsolid)
 			{
 				tr = trace;
@@ -199,7 +199,7 @@ int CL_PMpointcontents (const CVec3 &point)
 	{
 		CVec3	 tmp, delta, eCenter, eOrigin;
 
-		entityState_t *ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
+		clEntityState_t *ent = &cl_parse_entities[(cl.frame.parse_entities + i) & (MAX_PARSE_ENTITIES-1)];
 
 		if (ent->solid != 31)	// use pointcontents only for inline models
 			continue;

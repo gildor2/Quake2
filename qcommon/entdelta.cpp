@@ -65,18 +65,18 @@ TEMPLATE(Angle16,float,"A %g")
 
 enum {
 	// simple types
-	CHAR, BYTE, SHORT,
-	ANGLE, ANGLE16,			// float->byte/short; uses MSG_WriteAngle/MSG_WriteAngle16
-	FCHAR, FBYTE, FSHORT,	// float * extra2 -> char/byte/short + extra1
+	CHAR, BYTE, SHORT, DWORD,
+	ANGLE, ANGLE16,				// float->byte/short; uses MSG_WriteAngle/MSG_WriteAngle16
+	FCHAR, FBYTE, FSHORT,		// float * extra2 -> char/byte/short + extra1
 	// complex types
-	PSHORT,					// 0..0xFF - byte + extra1, >=0x100 - short + extra2
-	PINT,					// 0..0xFF - byte + extra1, 0x100..0xFFFF - short + extra2, >=0x10000 - long + extra1+extra2
-	PINT2					// 0..0xFF - byte + extra1, 0x100..0x7FFF - short + extra2, >=0x8000 - long + extra1+extra2;
-							//   != PINT, required to avoid MSG_ReadShort() sign extension when number is 0x8000..0xFFFF
+	PSHORT,						// 0..0xFF - byte + extra1, >=0x100 - short + extra2
+	PINT,						// 0..0xFF - byte + extra1, 0x100..0xFFFF - short + extra2, >=0x10000 - long + extra1+extra2
+	PINT2						// 0..0xFF - byte + extra1, 0x100..0x7FFF - short + extra2, >=0x8000 - long + extra1+extra2;
+								//   != PINT, required to avoid MSG_ReadShort() sign extension when number is 0x8000..0xFFFF
 };
 
 static const byte typeSize[] = {
-	1, 1, 2,
+	1, 1, 2, 4,
 	4, 4,
 	4, 4, 4,
 	2,
@@ -115,6 +115,7 @@ static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *inf
 		case CHAR:
 		case BYTE:
 		case SHORT:
+		case DWORD:
 		case ANGLE:
 		case ANGLE16:
 		case FCHAR:
@@ -136,6 +137,10 @@ static unsigned ParseDelta (const void *prev, void *next, const deltaInfo_t *inf
 				case SHORT:
 					if (w) MSG_WriteShort (w, F(short));
 					if (r) F(short) = MSG_ReadShort (r);
+					break;
+				case DWORD:
+					if (w) MSG_WriteLong (w, F(unsigned));
+					if (r) F(unsigned) = MSG_ReadLong (r);
 					break;
 				case ANGLE:
 					if (w) MSG_WriteAngle (w, F(float));
@@ -237,7 +242,7 @@ inline void ReadDelta (const void *prev, void *next, const deltaInfo_t *info, in
 
 
 /*-----------------------------------------------------------------------------
-	entity_state_t communication
+	entityStateEx_t (entity_state_t) communication
 -----------------------------------------------------------------------------*/
 
 //?? can make as enum
@@ -275,9 +280,13 @@ inline void ReadDelta (const void *prev, void *next, const deltaInfo_t *info, in
 #define	U_SKIN16			25
 #define	U_SOUND				26
 #define	U_SOLID				27
+// externded protocol
+#define U_ANIM				28
+
+#define U_OLD_MASK			((1<<U_ANIM)-1)
 
 
-#define STRUC	entity_state_t
+#define STRUC	entityStateEx_t
 static const deltaInfo_t entityStateDelta [] = {
 N(	modelindex,		BYTE,	U_MODEL, 0  ),
 N(	modelindex2,	BYTE,	U_MODEL2, 0  ),
@@ -298,12 +307,13 @@ N(	old_origin[1],	FSHORT, U_OLDORIGIN, NET_POS_SCALER  ),
 N(	old_origin[2],	FSHORT, U_OLDORIGIN, NET_POS_SCALER  ),
 N(	sound,			BYTE,	U_SOUND, 0  ),
 N(	event,			BYTE,	U_EVENT, 0  ),					// special: delta from 0
-N(	solid,			SHORT,	U_SOLID, 0  )
+N(	solid,			SHORT,	U_SOLID, 0  ),
+N(	anim,			DWORD,	U_ANIM,	0	)
 };
 #undef STRUC
 
 
-void MSG_WriteDeltaEntity (sizebuf_t *msg, const entity_state_t *from, entity_state_t *to, bool force, bool newentity)
+void MSG_WriteDeltaEntity (sizebuf_t *msg, const entityStateEx_t *from, entityStateEx_t *to, bool force, bool newentity, bool isExt)
 {
 	guard(MSG_WriteDeltaEntity);
 
@@ -316,6 +326,8 @@ void MSG_WriteDeltaEntity (sizebuf_t *msg, const entity_state_t *from, entity_st
 
 	unsigned bits = ComputeDeltaBits (from, to, ARRAY_ARG(entityStateDelta));
 	if (to->number >= 256) bits |= 1<<U_NUMBER16;
+
+	if (!isExt) bits &= U_OLD_MASK;		// do not transfer extended fields when old protocol
 
 	// HACKS:
 	bits &= ~((1<<U_OLDORIGIN)|(1<<U_EVENT));
@@ -407,7 +419,7 @@ int MSG_ReadEntityBits (sizebuf_t *msg, unsigned *bits, bool *remove)
 }
 
 
-void MSG_ReadDeltaEntity (sizebuf_t *msg, const entity_state_t *from, entity_state_t *to, unsigned bits)
+void MSG_ReadDeltaEntity (sizebuf_t *msg, const entityStateEx_t *from, entityStateEx_t *to, unsigned bits)
 {
 	guard(MSG_ReadDeltaEntity);
 

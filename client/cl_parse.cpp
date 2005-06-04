@@ -125,7 +125,7 @@ ParseBaseline
 */
 static void ParseBaseline (void)
 {
-	entityState_t nullstate;
+	clEntityState_t nullstate;
 	memset (&nullstate, 0, sizeof(nullstate));
 
 	unsigned	bits;
@@ -143,7 +143,13 @@ Load the skin, icon, and model for a client
 */
 void CL_ParseClientinfo (int player)
 {
-	CL_LoadClientinfo (cl.clientInfo[player], cl.configstrings[player+CS_PLAYERSKINS]);
+	clientInfo_t &ci = cl.clientInfo[player];
+	CL_LoadClientinfo (ci, cl.configstrings[player+CS_PLAYERSKINS]);
+	if (ci.isQ3model && !cls.newprotocol)
+	{
+		Com_WPrintf ("No extended protocol support.\nForce player %s to use base model\n", ci.name);
+		ci.isValidModel = false;
+	}
 }
 
 

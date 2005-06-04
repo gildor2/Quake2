@@ -91,21 +91,20 @@ baseline will be transmitted
 */
 void SV_CreateBaseline (void)
 {
-	edict_t			*svent;
-	int				entnum;
-
-	for (entnum = 1; entnum < ge->num_edicts ; entnum++)
+	for (int e = 1; e < ge->num_edicts ; e++)
 	{
-		svent = EDICT_NUM(entnum);
-		if (!svent->inuse)
+		edict_t *edict = EDICT_NUM(e);
+		if (!edict->inuse)
 			continue;
-		if (!svent->s.modelindex && !svent->s.sound && !svent->s.effects)
+		if (!edict->s.modelindex && !edict->s.sound && !edict->s.effects)
 			continue;
-		svent->s.number = entnum;
+		edict->s.number = e;
 
 		// take current state as baseline
-		svent->s.old_origin = svent->s.origin;
-		sv.baselines[entnum] = svent->s;
+		edict->s.old_origin = edict->s.origin;
+		static_cast<entity_state_t&>(sv.baselines[e]) = edict->s;
+		// set extended fields (not set by game)
+		sv.baselines[e].SetAnim (LEGS_IDLE, TORSO_STAND, LEGS_NEUTRAL);
 	}
 }
 
@@ -348,7 +347,7 @@ void SV_InitGame (void)
 	svs.spawncount = rand();
 	svs.clients = new client_t [maxclients->integer];
 	svs.num_client_entities = maxclients->integer*UPDATE_BACKUP*64;		//?? what is "64" (MAX_PACKET_ENTITIES, undefined const?)
-	svs.client_entities = new entity_state_t [svs.num_client_entities];
+	svs.client_entities = new entityStateEx_t [svs.num_client_entities];
 
 	// init network stuff
 	NET_Config (maxclients->integer > 1);

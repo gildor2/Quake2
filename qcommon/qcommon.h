@@ -208,11 +208,11 @@ void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
 
 // entity_state_t communication
 
-void	MSG_WriteDeltaEntity (sizebuf_t *msg, const entity_state_t *from, entity_state_t *to, bool force, bool newentity);
+void	MSG_WriteDeltaEntity (sizebuf_t *msg, const entityStateEx_t *from, entityStateEx_t *to, bool force, bool newentity, bool isExt);
 void	MSG_WriteRemoveEntity (sizebuf_t *msg, int num);
 
 int		MSG_ReadEntityBits (sizebuf_t *msg, unsigned *bits, bool *remove);
-void	MSG_ReadDeltaEntity (sizebuf_t *msg, const entity_state_t *from, entity_state_t *to, unsigned bits);
+void	MSG_ReadDeltaEntity (sizebuf_t *msg, const entityStateEx_t *from, entityStateEx_t *to, unsigned bits);
 
 void	MSG_ReadDeltaUsercmd (sizebuf_t *smg, const usercmd_t *from, usercmd_t *to);
 void	MSG_WriteDeltaUsercmd (sizebuf_t *msg, const usercmd_t *from, usercmd_t *to);
@@ -704,6 +704,7 @@ void	CM_ReadPortalState (FILE *f);
 extern float pm_airaccelerate;
 
 void	Pmove (pmove_t *pmove);
+void	PM_ComputeAnimation (player_state_t &ps, entityStateEx_t &ent);
 
 
 /*-----------------------------------------------------------------------------

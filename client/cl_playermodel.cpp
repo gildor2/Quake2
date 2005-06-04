@@ -346,9 +346,6 @@ static bool TryQuake3Model (clientInfo_t &ci, const char *modelName, const char 
 	if (!ci.legsModel || !ci.torsoModel || !ci.headModel) return false;
 
 	LoadAnimationCfg (ci, animCfg);
-	// init animations to something
-	ci.legsAnim.animNum = ci.legsAnim.nextAnimNum = LEGS_IDLE;
-	ci.torsoAnim.animNum = ci.torsoAnim.nextAnimNum = TORSO_STAND;
 
 	appSprintf (ARRAY_ARG(ci.iconName), "/models/players/%s/icon_%s", modelName, skinName);
 	ci.icon = RE_RegisterPic (ci.iconName);
@@ -365,13 +362,65 @@ static bool TryQuake3Model (clientInfo_t &ci, const char *modelName, const char 
 }
 
 
-static void attach (const entity_t &e1, entity_t &e2, const char *tag)
+// service functions
+
+static void attach (const entity_t &e1, entity_t &e2, const char *tag, const CVec3 *angles = NULL)
 {
 	CCoords lerped;		// get position modifier
 	e1.model->LerpTag (e1.frame, e1.oldframe, e1.backlerp, tag, lerped);
+	if (angles)
+	{
+		CAxis rotate;
+		rotate.FromAngles (*angles);
+		lerped.axis.UnTransformAxis (rotate, lerped.axis);
+	}
 	e1.pos.UnTransformCoords (lerped, e2.pos);
 }
 
+
+// from Quake3; optimized
+static void SwingAngle (float dst, float tolerance, float clamp, float speed, float &angle, bool &swinging)
+{
+	float swing = AngleSubtract (dst, angle);
+	float absSwing = fabs (swing);
+
+	// do not swing when angle delta less than tolerance
+	if (absSwing > tolerance)
+		swinging = true;
+
+	if (!swinging) return;
+
+	// non-linear rotation speed
+	float scale;
+	if (absSwing < tolerance / 2)
+		scale = 0.5f;
+	else if (absSwing < tolerance)
+		scale = 1.0f;
+	else
+		scale = 2.0f;
+	// swing
+	float move = cls.frametime * 1000 /*sec->msec*/ * scale * speed;
+	if (move >= absSwing)
+	{
+		// moved to destination
+		move = absSwing;
+		swinging = false;
+	}
+	else if (absSwing - move > clamp)
+	{
+		// do not allow angle distance to be more than clamp
+		// if no - angle between torso and head may be too large (and similar situations)
+		move = absSwing - clamp;
+	}
+
+	if (!IsNegative (swing))
+		angle = AngleMod (angle + move);
+	else
+		angle = AngleMod (angle - move);
+}
+
+
+// animation support
 
 /* Quake2 animation frames:
 	name		frames	num	loop stop simple	torso		legs
@@ -416,14 +465,16 @@ struct animInfo_t
 	int		nextAnim;
 };
 
+#define ANIM_FREEZE		-1					//!! useless
+
 static const animInfo_t animInfo[] = {
 //	animation			next
-/* BOTH_DEATH1 */	{	BOTH_DEAD1		},
-/* BOTH_DEAD1 */	{	BOTH_DEAD1		},
-/* BOTH_DEATH2 */	{	BOTH_DEAD2		},
-/* BOTH_DEAD2 */	{	BOTH_DEAD2		},
-/* BOTH_DEATH3 */	{	BOTH_DEAD3		},
-/* BOTH_DEAD3 */	{	BOTH_DEAD3		},
+/* BOTH_DEATH1 */	{	ANIM_FREEZE		},
+/* BOTH_DEAD1 */	{	ANIM_FREEZE		},
+/* BOTH_DEATH2 */	{	ANIM_FREEZE		},
+/* BOTH_DEAD2 */	{	ANIM_FREEZE		},
+/* BOTH_DEATH3 */	{	ANIM_FREEZE		},
+/* BOTH_DEAD3 */	{	ANIM_FREEZE		},
 
 /* TORSO_GESTURE */	{	TORSO_STAND		},
 
@@ -442,15 +493,15 @@ static const animInfo_t animInfo[] = {
 /* LEGS_BACK */		{	LEGS_BACK		},
 /* LEGS_SWIM */		{	LEGS_SWIM		},
 
-/* LEGS_JUMP */		{	LEGS_LAND		},	//??
-/* LEGS_LAND */		{	LEGS_IDLE		},	//?? run, other
-/* LEGS_JUMPB */	{	LEGS_LANDB		},	//??
+/* LEGS_JUMP */		{	ANIM_FREEZE		},
+/* LEGS_LAND */		{	LEGS_IDLE		},	//??
+/* LEGS_JUMPB */	{	ANIM_FREEZE		},
 /* LEGS_LANDB */	{	LEGS_IDLE		},	//??
 
 /* LEGS_IDLE */		{	LEGS_IDLE		},
 /* LEGS_IDLECR */	{	LEGS_IDLECR		},
 
-/* LEGS_TURN */		{	LEGS_IDLE		},	//??
+/* LEGS_TURN */		{	LEGS_TURN		},
 
 /* TORSO_GETFLAG */	{	TORSO_STAND		},
 /* TORSO_GUARDBASE */{	TORSO_STAND		},
@@ -470,11 +521,16 @@ static const animInfo_t animInfo[] = {
 /* MAX_TOTALANIMATIONS */{0				}	// no such animation
 };
 
+#define curTime	cl.time	//????
 
-static void SetQuake3Animation (clientInfo_t &ci, animState_t &as, int animNum, int curTime)
+void RunAnimation (clientInfo_t &ci, animState_t &as, int animNum)
 {
 	// just in case ...
 	if (animNum < 0 || animNum >= MAX_TOTALANIMATIONS) animNum = 0;
+
+	if (animNum == ANIM_NOCHANGE)
+		animNum = as.animNum;
+
 	// get animation
 	animation_t *anim = &ci.animations[animNum];
 
@@ -482,99 +538,91 @@ static void SetQuake3Animation (clientInfo_t &ci, animState_t &as, int animNum, 
 	//!! can make this using teleport detection (significant changing of origin):
 	//!! when detected, lerp frames from 0
 
-	bool force = false;	//!! true when change animation w/o lerping; USE IT!!!
-
-	int wholeAnimTime = anim->numFrames * anim->frameLerp;
 	// check for next animation in sequence
+	int wholeAnimTime = anim->numFrames * anim->frameLerp;
 	if (animNum == as.animNum && (curTime >= as.startTime + wholeAnimTime - anim->frameLerp))	// start next sequence 1 frame earlier
 	{
-		animNum = as.nextAnimNum;
-		as.nextAnimNum = animInfo[animNum].nextAnim;
-		anim = &ci.animations[animNum];
+		if (as.nextAnimNum == ANIM_FREEZE)
+			as.freezed = true;
+		else if (!anim->loopFrames)
+		{
+			// animation sequence
+			animNum = as.nextAnimNum;
+			as.nextAnimNum = animInfo[animNum].nextAnim;
+			anim = &ci.animations[animNum];
+		}
 	}
+
 	if (animNum != as.animNum)
 	{
 		// animation was changed
-		if (force)
-			as.startTime = curTime;
-		else
-		{
-			animation_t *oldAnim = &ci.animations[as.animNum];
-			int timeDelta = curTime - as.startTime;
-			// get current frame frac
-			float curLerp = 1.0f - as.nearLerp;
-			as.oldFrame = as.nearFrame;
-			// apply this frac for next animation
-			as.startTime = curTime + appFloor ((1.0f - curLerp) * anim->frameLerp);
-		}
-		as.animNum = animNum;
+		as.animNum     = animNum;
 		as.nextAnimNum = animInfo[animNum].nextAnim;
+		as.freezed     = false;
+		as.startTime   = as.time + anim->frameLerp;		// allow current frame to complete
 	}
-	else
+
+	// compute frame, oldFrame, time, oldTime (taken from Q3:CG_RunLerpFrame())
+	if (as.freezed)
 	{
-		// continue animation
-		// wrap frame start time (happens for looping animations only)
-		if (curTime >= as.startTime + wholeAnimTime)
-			as.startTime += (curTime - as.startTime) / wholeAnimTime * wholeAnimTime;
+		as.time = as.oldTime = curTime;
+		if (!anim->reversed)
+			as.frame = anim->firstFrame + anim->numFrames - 1;
+		else
+			as.frame = anim->firstFrame;
 	}
+	else if (curTime >= as.time)
+	{
+		// copy frame -> oldframe
+		as.oldTime  = as.time;
+		as.oldFrame = as.frame;
+		as.time    += anim->frameLerp;
+		int frm = (as.time - as.startTime) / anim->frameLerp;
+		if (frm >= anim->numFrames)
+		{
+			frm %= anim->numFrames;
+			if (anim->loopFrames)
+				frm = frm % anim->loopFrames + (anim->numFrames - anim->loopFrames);
+			else
+				as.time = curTime;						// no lerping
+		}
+		if (!anim->reversed)
+			as.frame = anim->firstFrame + frm;
+		else
+			as.frame = anim->firstFrame + anim->numFrames - 1 - frm;
+	}
+	// clamp times
+	if (as.time > curTime + 200)
+		as.time = curTime;
+	if (as.oldTime > curTime)
+		as.oldTime = curTime;
+	// when we was skippen few RunAnimation() calls before ...
+	if (as.time < curTime)
+		as.time = as.oldTime = curTime;
 }
 
 
-static void RunQuake3Animation (clientInfo_t &ci, animState_t &as, entity_t &ent, int curTime)
+static void ApplyAnimation (clientInfo_t &ci, animState_t &as, entity_t &ent)
 {
-	int timeDelta = curTime - as.startTime;
+	RunAnimation (ci, as);
 
-	SetQuake3Animation (ci, as, as.animNum, curTime);
 	animation_t &anim = ci.animations[as.animNum];
 
-	if (timeDelta < 0)
-	{
-		// HERE: timeDelta is in [-frameLerp .. 0] range
-		// lerp from previous animation
-		ent.backlerp = -timeDelta / (float)anim.frameLerp;
-		ent.oldframe = as.oldFrame;
-		ent.frame    = anim.reversed ? anim.firstFrame + anim.numFrames - 1 : anim.firstFrame;
-	}
-	else
-	{
-		if (anim.numFrames > 1)
-		{
-			// lerp current animation
-			int oldFrame = timeDelta / anim.frameLerp;
-			int frame    = oldFrame + 1;
-			ent.backlerp = 1.0f - (float)(timeDelta % anim.frameLerp) / anim.frameLerp;
-			// wrap frames
-			if (oldFrame >= anim.numFrames) oldFrame = 0;
-			if (frame >= anim.numFrames) frame = 0;
-			// reverse when needed
-			if (anim.reversed)
-			{
-				oldFrame = anim.numFrames - oldFrame - 1;
-				frame    = anim.numFrames - frame - 1;
-			}
-			// store
-			ent.oldframe = anim.firstFrame + oldFrame;
-			ent.frame    = anim.firstFrame + frame;
-		}
-		else
-		{
-			ent.frame    = ent.oldframe = anim.firstFrame;
-			ent.backlerp = 0;
-		}
-		// save oldframe
-		as.oldFrame = ent.oldframe;
-	}
-	// save nearest frame params
-	if (ent.backlerp > Cvar_VariableValue("test"))// 0.5f)
-	{
-		as.nearFrame = ent.oldframe;
-		as.nearLerp  = ent.backlerp;
-	}
-	else
-	{
-		as.nearFrame = ent.frame;
-		as.nearLerp  = 1 - ent.backlerp;
-	}
+	ent.oldframe = as.oldFrame;
+	ent.frame    = as.frame;
+	ent.backlerp = (as.time > as.oldTime) ? 1.0f - (float)(curTime - as.oldTime) / (as.time - as.oldTime) : 0;
+//	RE_DrawTextLeft (va("frm: %d -> %d %g\nold:%d new:%d curr:%d",ent.oldframe, ent.frame, ent.backlerp,as.oldTime,as.time,curTime));
+}
+
+
+static bool IsCommonLegsAnim (int n)
+{
+	if (n == LEGS_RUN    || n == LEGS_BACK ||
+		n == LEGS_WALK   || n == LEGS_BACKWALK ||
+		n == LEGS_WALKCR || n == LEGS_BACKCR ||
+		n == LEGS_IDLE   || n == LEGS_IDLECR)
+		return true;
+	return false;
 }
 
 
@@ -582,7 +630,7 @@ static void RunQuake3Animation (clientInfo_t &ci, animState_t &as, entity_t &ent
 	Quake2 and common player model code
 -----------------------------------------------------------------------------*/
 
-void CL_LoadClientinfo (clientInfo_t &ci, const char *s)
+void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 {
 	guard (CL_LoadClientinfo);
 
@@ -653,15 +701,17 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s)
 			ci.md2skin = RE_RegisterSkin (va("players/male/grunt"));
 
 		// weapon file
-		for (int i = 0; i < num_cl_weaponmodels; i++)
-		{
-			ci.weaponmodel[i] = RE_RegisterModel (va("players/%s/%s", modelName, cl_weaponmodels[i]));
-			// HACK: cyborg have the weapon same models, as male model
-			if (!ci.weaponmodel[i] && !strcmp(modelName, "cyborg"))
-				ci.weaponmodel[i] = RE_RegisterModel (va("players/male/%s", cl_weaponmodels[i]));
-			if (!cl_vwep->integer)
-				break; // only one when vwep is off
-		}
+		ci.weaponmodel[0] = RE_RegisterModel (va("players/%s/weapon.md2", modelName));
+		if (loadWeapons)
+			for (int i = 1; i < num_cl_weaponmodels; i++)
+			{
+				ci.weaponmodel[i] = RE_RegisterModel (va("players/%s/%s", modelName, cl_weaponmodels[i]));
+				// HACK: cyborg have the weapon same models, as male model
+				if (!ci.weaponmodel[i] && !strcmp(modelName, "cyborg"))
+					ci.weaponmodel[i] = RE_RegisterModel (va("players/male/%s", cl_weaponmodels[i]));
+				if (!cl_vwep->integer)
+					break; // only one when vwep is off
+			}
 
 		// icon file
 		if (!memcmp (skinName, "skn_", 4))
@@ -687,63 +737,150 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s)
 
 
 //!! replace menu.cpp player config + menu_test with this API
-//!! should add weapon model code here
-int ParsePlayerEntity (clientInfo_t *ci, const entity_t &ent, entity_t *buf, int maxEnts)
+int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, const entity_t &ent, entity_t *buf, int maxEnts, int weaponIndex)
 {
+	// argument usage: st->GetAnim(), cent->anim, cent->prev.GetAnim()
 	guard(ParsePlayerEntity);
 
-	if (maxEnts < 1) return 0;
-
- 	if (!ci->isValidModel)
+	if (!ci->isValidModel)
 		ci = &cl.baseClientInfo;
+
+	if (maxEnts > 0) memset (buf, 0, sizeof(entity_t) * maxEnts);
 
 	if (!ci->isQ3model)
 	{
+		if (maxEnts < 1) return 0;
 		buf[0] = ent;
-		buf[0].skin = ci->md2skin;
+		buf[0].skin  = ci->md2skin;
 		buf[0].model = ci->md2model;
 		buf[0].pos.axis.FromAngles (ent.angles);
-		return 1;
+		if (maxEnts < 2 || weaponIndex < 0) return 1;		// no linked weapon
+		if (!ci->weaponmodel[weaponIndex]) weaponIndex = 0;	// no model -> change to default model
+		// here: assume, that weapon[0] exists - else, clientInfo will be baseClientInfo
+		buf[1]       = buf[0];
+		buf[1].skin  = NULL;
+		buf[1].model = ci->weaponmodel[weaponIndex];
+		return 2;
 	}
-	// Quake3 player model
-	if (maxEnts < 3) return 0;			// not enough destination size
-	buf[0] = buf[1] = buf[2] = ent;
 
-	//!!-------- testing --------------
-	//?? is curTime always == cl.time ?
+	//!!! weapon for Q3
+
+	animState_t &la = cent->anim.legsAnim;
+	animState_t &ta = cent->anim.torsoAnim;
+
+	// Quake3 player model
+	int legsAnim, torsoAnim, movingDir;
+	st->GetAnim (legsAnim, torsoAnim, movingDir);
+	//?? do not exec jump animation, when falling from small height
+	if (IsCommonLegsAnim (legsAnim))
 	{
-		static cvar_t *v1, *v2;
-		EXEC_ONCE (
-			v1 = Cvar_Get ("v1", "14", 0);
-			v2 = Cvar_Get ("v2", "11", 0);
-			v1->modified = v2->modified = true;
-		)
-		if (v1->modified) {
-			SetQuake3Animation (*ci, ci->legsAnim, v1->integer, cl.time);
-			v1->modified = false;
-		}
-		if (v2->modified) {
-			SetQuake3Animation (*ci, ci->torsoAnim, v2->integer, cl.time);
-			v2->modified = false;
-		}
+		int prevLegs, prevTorso, prevDir;
+		cent->prev.GetAnim (prevLegs, prevTorso, prevDir);
+		if (prevLegs == LEGS_JUMP)
+			legsAnim = LEGS_LAND;
+		else if (prevLegs == LEGS_JUMPB)
+			legsAnim = LEGS_LANDB;
+		else if (la.animNum == LEGS_LAND || la.animNum == LEGS_LANDB)
+			legsAnim = ANIM_NOCHANGE;
 	}
-	RunQuake3Animation (*ci, ci->legsAnim, buf[0], cl.time);
-	RunQuake3Animation (*ci, ci->torsoAnim, buf[1], cl.time);
-	//!!-------------------------------
-	//?? head frame is always 0
+
+#if 0
+	//!! testing
+	legsAnim = torsoAnim = ANIM_NOCHANGE;
+	static cvar_t *v1, *v2, *v3;
+	EXEC_ONCE (
+		v1 = Cvar_Get ("v1", "14", 0);
+		v2 = Cvar_Get ("v2", "11", 0);
+		v3 = Cvar_Get ("v3", "0", 0);
+		v1->modified = v2->modified = true;
+	)
+	if (v1->modified) {
+		legsAnim = v1->integer;
+		v1->modified = false;
+	}
+	if (v2->modified) {
+		torsoAnim = v2->integer;
+		v2->modified = false;
+	}
+	movingDir = v3->integer;
+#endif
+
+	// rotate models
+	CVec3 legsAngles, torsoAngles, headAngles;
+	static const float angleDifs[] = {0, 22.5, 45, -22.5, -45};	// corresponds to LEGS_[NEUTRAL/LEFT_XXX/RIGHT_XXX]
+
+	headAngles  = ent.angles;
+	torsoAngles = headAngles;
+	legsAngles  = headAngles;
+
+	if (!ci->fixedAll)
+	{
+		if (la.animNum != LEGS_IDLE || ta.animNum != TORSO_STAND)
+		{
+			// allow rotating when not standing
+			ta.rotating[YAW]   = true;
+			ta.rotating[PITCH] = true;
+			la.rotating[YAW]   = true;
+		}
+
+		if (!(legsAnim == torsoAnim && legsAnim >= BOTH_DEATH1 && legsAnim <= BOTH_DEAD3))
+		{
+			torsoAngles[YAW] = headAngles[YAW] + angleDifs[movingDir] / 4.0f;
+			legsAngles[YAW]  = headAngles[YAW] + angleDifs[movingDir];
+		}
+		// swing angles
+		SwingAngle (torsoAngles[YAW], 25, 90, 0.3f, ta.angles[YAW], ta.rotating[YAW]);
+		SwingAngle (legsAngles[YAW],  40, 90, 0.3f, la.angles[YAW], la.rotating[YAW]);
+		torsoAngles[YAW] = ta.angles[YAW];
+		legsAngles[YAW]  = la.angles[YAW];
+	}
+
+	// when standing and rotating, exec "turn" animation
+	if (legsAnim == LEGS_IDLE && la.rotating[YAW])
+		legsAnim = LEGS_TURN;
+
+	//!! add looking up/down (should detect, when rotate all 3 ents, and when - don't rotate legs)
+	//!! fixedTorso -- don't bend body when looking up/down
+
+	// fixedLegs -- legs will stand absolutely vertical when moving (no lean to direction of movement)
+	if (ci->fixedLegs)
+	{
+		legsAngles[YAW] = torsoAngles[YAW];
+		legsAngles[PITCH] = legsAngles[ROLL] = 0;
+	}
+
+	// run animations
+	RunAnimation (*ci, la, legsAnim);
+	RunAnimation (*ci, ta, torsoAnim);
+
+	if (maxEnts < 3) return 0;			// not enough destination size
+
+	buf[0] = buf[1] = buf[2] = ent;
+	// head frame is always 0
 	buf[2].frame = buf[2].oldframe = 0;
 
 	buf[0].pos.axis.FromAngles (ent.angles);
 	buf[0].model = ci->legsModel;
 	buf[1].model = ci->torsoModel;
 	buf[2].model = ci->headModel;
-	//!! skins, frames
-	attach (buf[0], buf[1], "tag_torso");
-	attach (buf[1], buf[2], "tag_head");
+
+	// animate models
+	ApplyAnimation (*ci, la, buf[0]);
+	ApplyAnimation (*ci, ta, buf[1]);
+
+	// prepare angles
+	AnglesSubtract (headAngles, torsoAngles, headAngles);
+	AnglesSubtract (torsoAngles, legsAngles, torsoAngles);
+
+	buf[0].pos.axis.FromAngles (legsAngles);
+	attach (buf[0], buf[1], "tag_torso", &torsoAngles);
+	attach (buf[1], buf[2], "tag_head", &headAngles);
+
 	//!!!
 	buf[0].skin = ci->legsSkin;
 	buf[1].skin = ci->torsoSkin;
 	buf[2].skin = ci->headSkin;
+	//!! lighting origin for all 3 entities should be the same (ent.origin)
 
 	return 3;
 

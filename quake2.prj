@@ -58,7 +58,8 @@ CLIENT = \
 	$D/ref_vars.cpp \
 	$D/snd_dma.cpp \
 	$D/snd_mem.cpp \
-	$D/snd_mix.cpp
+	$D/snd_mix.cpp \
+	server/sv_text.cpp		# server file, buf placed here ... change ??
 
 D = server
 SERVER = \

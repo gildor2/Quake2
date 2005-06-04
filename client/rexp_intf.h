@@ -27,6 +27,7 @@ typedef struct {
 	void	(*DrawTextPos) (int x, int y, const char *text, unsigned rgba);
 	void	(*DrawTextLeft) (const char *text, unsigned rgba);
 	void	(*DrawTextRight) (const char *text, unsigned rgba);
+	void	(*DrawText3D) (const CVec3 &pos, const char *text, unsigned rgba);
 	void	(*DrawConChar) (int x, int y, int c, int color);
 	float	(*GetClientLight) ();
 } refExport_t;
@@ -135,6 +136,10 @@ inline void RE_DrawTextRight (const char *text, unsigned rgba = 0xFFFFFFFF)
 {
 	re.DrawTextRight (text, rgba);
 }
+inline void RE_DrawText3D (const CVec3 &pos, const char *text, unsigned rgba = 0xFFFFFFFF)
+{
+	re.DrawText3D (, text, rgba);
+}
 inline void RE_DrawConChar (int x, int y, int c, int color = C_WHITE)
 {
 	re.DrawConChar (x, y, c, color);
@@ -176,6 +181,7 @@ namespace OpenGLDrv
 #define RE_DrawTextPos	OpenGLDrv::DrawTextPos
 #define RE_DrawTextLeft	OpenGLDrv::DrawTextLeft
 #define RE_DrawTextRight	OpenGLDrv::DrawTextRight
+#define RE_DrawText3D	OpenGLDrv::DrawText3D
 #define RE_DrawConChar	OpenGLDrv::DrawConChar
 #define RE_GetClientLight	OpenGLDrv::GetClientLight
 

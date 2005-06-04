@@ -165,9 +165,11 @@ SV_Baselines_f
 */
 static void SV_Baselines_f (int argc, char **argv)
 {
+	guard(SV_Baselines_f);
+
 	int		start, mid;
-	entity_state_t	nullstate;
-	entity_state_t	*base;
+	entityStateEx_t	nullstate;
+	entityStateEx_t	*base;
 
 	Com_DPrintf ("Baselines() from %s\n", sv_client->name);
 
@@ -197,7 +199,7 @@ static void SV_Baselines_f (int argc, char **argv)
 		if (base->modelindex || base->sound || base->effects)
 		{
 			MSG_WriteByte (&sv_client->netchan.message, svc_spawnbaseline);
-			MSG_WriteDeltaEntity (&sv_client->netchan.message, &nullstate, base, true, true);
+			MSG_WriteDeltaEntity (&sv_client->netchan.message, &nullstate, base, true, true, sv_client->newprotocol);
 		}
 		start++;
 	}
@@ -213,6 +215,8 @@ static void SV_Baselines_f (int argc, char **argv)
 		MSG_WriteByte (&sv_client->netchan.message, svc_stufftext);
 		MSG_WriteString (&sv_client->netchan.message, va("cmd baselines %i %i\n",svs.spawncount, start) );
 	}
+
+	unguard;
 }
 
 /*

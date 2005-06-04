@@ -1,62 +1,6 @@
-/*-----------------------------------------------------------------------------
-	Staff from Quake3 SDK
------------------------------------------------------------------------------*/
-
-// animations
-typedef enum {
-	BOTH_DEATH1,
-	BOTH_DEAD1,
-	BOTH_DEATH2,
-	BOTH_DEAD2,
-	BOTH_DEATH3,
-	BOTH_DEAD3,
-
-	TORSO_GESTURE,
-
-	TORSO_ATTACK,
-	TORSO_ATTACK2,
-
-	TORSO_DROP,
-	TORSO_RAISE,
-
-	TORSO_STAND,
-	TORSO_STAND2,
-
-	LEGS_WALKCR,
-	LEGS_WALK,
-	LEGS_RUN,
-	LEGS_BACK,
-	LEGS_SWIM,
-
-	LEGS_JUMP,
-	LEGS_LAND,
-
-	LEGS_JUMPB,
-	LEGS_LANDB,
-
-	LEGS_IDLE,
-	LEGS_IDLECR,
-
-	LEGS_TURN,
-
-	TORSO_GETFLAG,
-	TORSO_GUARDBASE,
-	TORSO_PATROL,
-	TORSO_FOLLOWME,
-	TORSO_AFFIRMATIVE,
-	TORSO_NEGATIVE,
-
-	MAX_ANIMATIONS,
-	LEGS_BACKCR,
-	LEGS_BACKWALK,
-#if 0
-	FLAG_RUN,
-	FLAG_STAND,
-	FLAG_STAND2RUN,
-#endif
-	MAX_TOTALANIMATIONS
-} animNumber_t;
-
+// declared later in client.h:
+struct clEntityState_t;
+struct centity_t;
 
 struct animation_t
 {
@@ -76,9 +20,18 @@ struct animState_t
 	short	animNum;					// number of current animation
 	short	nextAnimNum;				// number of animation, which will be launched after current
 	short	oldFrame;					// old frame numbers (may be, from another animation)
-	short	nearFrame;					// nearest animation
-	float	nearLerp;					// backlerp for nearset frame
-	int		startTime;					// time of current animation start (1st frame of current animation)
+	short	frame;
+	int		startTime;					// time of animation start
+	int		oldTime;					// time of current animation frame start
+	int		time;						// time of next animation frame
+	bool	freezed;					// when true, display last animation frame until animation change
+	CVec3	angles;
+	bool	rotating[3];
+};
+
+struct playerAnim_t						//?? sometimes should initialize this struct
+{
+	animState_t legsAnim, torsoAnim;
 };
 
 struct clientInfo_t
@@ -102,10 +55,9 @@ struct clientInfo_t
 			CBasicImage  *legsSkin;
 			CBasicImage  *torsoSkin;
 			CBasicImage  *headSkin;
-			// animation states
-			animState_t legsAnim, torsoAnim;
 			// animation parameters
-			bool	fixedLegs, fixedTorso;			//?? unused now
+			bool	fixedLegs, fixedTorso;
+			bool	fixedAll;			// do not rotate head/torso/legs at all
 			animation_t animations[MAX_TOTALANIMATIONS];
 		};
 	};
@@ -126,5 +78,6 @@ extern int numPlayerModels;
 
 void FreePlayerModelsInfo ();
 bool ScanPlayerModels ();
-void CL_LoadClientinfo (clientInfo_t &ci, const char *s);
-int ParsePlayerEntity (clientInfo_t *ci, const entity_t &ent, entity_t *buf, int maxEnts);
+void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons = true);
+void RunAnimation (clientInfo_t &ci, animState_t &as, int animNum = ANIM_NOCHANGE);
+int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, const entity_t &ent, entity_t *buf, int maxEnts, int weaponIndex = -1);

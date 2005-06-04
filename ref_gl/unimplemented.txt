@@ -11,6 +11,7 @@ FAST TODO:
   - when img !IMAGE_NOALPHA - when a==0 => r=g=b=0
   - when IMAGE_NOALPHA - make a=255, keep r,g,b unchanged
   * this is required for magnified textures (for example, when FSAA active, without this around all menu pics will appear pink border)
+- BUG: no world + gl_showFillrate -- needs glClear() (should be implemented with fastsky)
 
 -------------------------------------------------------------------------------
 	new lightgrid:

@@ -20,18 +20,15 @@ Implement SplitCommandLine() for use in
 
 void SV_TokenizeString (const char *text)
 {
-	int		i;
-	char	*com_token;
-
 	// clear the args from the last string
-	for (i = 0; i < _argc; i++)
+	for (int i = 0; i < _argc; i++)
 		appFree (_argv[i]);
 	_argc = 0;
 	cmd_args[0] = 0;
 
 	if (!text) return;
 
-	while (1)
+	while (true)
 	{
 		// skip spaces and tabs (char in [1..32]); stop on non-space, null or '\n'
 		while (*text && *text <= ' ' && *text != '\n') text++;
@@ -49,7 +46,7 @@ void SV_TokenizeString (const char *text)
 				cmd_args[len--] = 0;
 		}
 
-		com_token = COM_Parse (text);
+		const char *com_token = COM_Parse (text);
 		if (!text) return;
 
 		if (_argc < MAX_STRING_TOKENS)

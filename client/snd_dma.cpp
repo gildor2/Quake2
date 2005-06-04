@@ -664,13 +664,13 @@ void S_IssuePlaysound (playsound_t *ps)
 	S_FreePlaysound (ps);
 }
 
-static sfx_t *GetSexedSound (entityState_t *ent, char *base)
+static sfx_t *GetSexedSound (clEntityState_t *ent, char *base)
 {
 	char	model[MAX_QPATH], sexedFilename[MAX_QPATH];
 
 	// determine what model the client is using
 	model[0] = 0;
-	const char *s = cl.configstrings[CS_PLAYERSKINS + ent->number - 1];
+	const char *s = cl.configstrings[CS_PLAYERSKINS + ent->number - 1];	//?? can use cl.clientInfo[ent->number]
 	if (s[0])
 	{
 		char *p = strchr (s, '\\');
@@ -898,7 +898,7 @@ void S_AddLoopSounds (void)
 	sfx_t		*sfx;
 	sfxcache_t	*sc;
 	int			num;
-	entityState_t	*ent;
+	clEntityState_t	*ent;
 
 	if (cl_paused->integer)
 		return;

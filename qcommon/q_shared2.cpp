@@ -184,11 +184,11 @@ float VectorDistance (const CVec3 &vec1, const CVec3 &vec2)
 	return VectorLength (vec);
 }
 
-/*
-===============
-LerpAngle
-===============
-*/
+
+/*-----------------------------------------------------------------------------
+	Angle functions (taken from Quake3)
+-----------------------------------------------------------------------------*/
+
 //!! incorrect in most cases (should be slerp); used by cl_ents.cpp only
 float LerpAngle (float a1, float a2, float frac)
 {
@@ -199,17 +199,27 @@ float LerpAngle (float a1, float a2, float frac)
 	return Lerp (a1, a2, frac);
 }
 
-
-float anglemod (float a)
+float AngleMod (float a)
 {
-#if 0
-	if (a >= 0)
-		a -= 360 * appFloor (a/360);
-	else
-		a += 360 * (1 + appFloor (-a/360));
-#endif
 	a = (360.0f/65536) * (appRound (a*(65536.0f/360)) & 65535);
 	return a;
+}
+
+float AngleSubtract (float a1, float a2)
+{
+	float a = a1 - a2;
+	while (a > 180)
+		a -= 360;
+	while (a < -180)
+		a += 360;
+	return a;
+}
+
+void AnglesSubtract (const CVec3 &v1, const CVec3 &v2, CVec3 &v3)
+{
+	v3[0] = AngleSubtract (v1[0], v2[0]);
+	v3[1] = AngleSubtract (v1[1], v2[1]);
+	v3[2] = AngleSubtract (v1[2], v2[2]);
 }
 
 
@@ -373,6 +383,24 @@ void CAxis::UnTransformVector (const CVec3 &src, CVec3 &dst) const
 	VectorMA (tmp, src[2], v[2], dst);
 }
 
+void CAxis::TransformAxis (const CAxis &src, CAxis &dst) const
+{
+	CAxis tmp;
+	TransformVector (src[0], tmp[0]);
+	TransformVector (src[1], tmp[1]);
+	TransformVector (src[2], tmp[2]);
+	dst = tmp;
+}
+
+void CAxis::UnTransformAxis (const CAxis &src, CAxis &dst) const
+{
+	CAxis tmp;
+	UnTransformVector (src[0], tmp[0]);
+	UnTransformVector (src[1], tmp[1]);
+	UnTransformVector (src[2], tmp[2]);
+	dst = tmp;
+}
+
 
 /*-----------------------------------------------------------------------------
 	CCoords
@@ -398,17 +426,13 @@ void CCoords::UnTransformPoint (const CVec3 &src, CVec3 &dst) const
 void CCoords::TransformCoords (const CCoords &src, CCoords &dst) const
 {
 	TransformPoint (src.origin, dst.origin);
-	axis.TransformVector (src.axis[0], dst.axis[0]);
-	axis.TransformVector (src.axis[1], dst.axis[1]);
-	axis.TransformVector (src.axis[2], dst.axis[2]);
+	axis.TransformAxis (src.axis, dst.axis);
 }
 
 void CCoords::UnTransformCoords (const CCoords &src, CCoords &dst) const
 {
 	UnTransformPoint (src.origin, dst.origin);
-	axis.UnTransformVector (src.axis[0], dst.axis[0]);
-	axis.UnTransformVector (src.axis[1], dst.axis[1]);
-	axis.UnTransformVector (src.axis[2], dst.axis[2]);
+	axis.UnTransformAxis (src.axis, dst.axis);
 }
 
 void CCoords::TransformPlane (const cplane_t &src, cplane_t &dst) const
