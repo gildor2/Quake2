@@ -1061,7 +1061,7 @@ void CL_CalcViewValues (void)
 	cl.refdef.fov_x = Lerp (ops->fov, ps->fov, lerp);
 
 	for (i = 0; i < 4; i++)
-		cl.refdef.blend[i] = Lerp (ops->blend[i], ps->blend[i], lerp);
+		r_blend[i] = Lerp (ops->blend[i], ps->blend[i], lerp);
 
 	if ((cl_3rd_person->integer || cl.frame.playerstate.stats[STAT_HEALTH] <= 0) &&
 		cl.frame.playerstate.pmove.pm_type != PM_SPECTATOR)

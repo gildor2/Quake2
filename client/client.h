@@ -62,10 +62,12 @@ struct clEntityState_t : public entityStateEx_t
 
 struct centity_t
 {
+	unsigned clientInfoId;		// id from linked clientInfo_t (for detection of animation restart)
 	clEntityState_t baseline;	// delta from this if not from a previous frame
 	clEntityState_t current;
 	clEntityState_t prev;		// will always be valid, but might just be a copy of current
-	playerAnim_t anim;			// animation state for Quake3 player model
+	animState_t legsAnim;		// animation state for Quake3 player model
+	animState_t torsoAnim;
 
 	int		serverframe;		// if not current, this ent isn't in the frame
 
@@ -492,6 +494,7 @@ void CL_ParseClientinfo (int player);
 extern	int		gun_frame;
 extern	CRenderModel *gun_model;
 #endif
+extern	float r_blend[4];
 
 void V_Init (void);
 void CL_PrepRefresh (void);

@@ -90,7 +90,7 @@ public:
 	int		dlightFrame;
 	unsigned dlightMask;
 	inlineModel_t *owner;
-	virtual void Tesselate () = NULL;
+	virtual void Tesselate (refEntity_t &ent) = NULL;
 };
 
 class surfacePlanar_t : public surfaceBase_t
@@ -108,7 +108,7 @@ public:
 	dynamicLightmap_t *lightmap;
 	surfLight_t *light;
 	surfDlight_t *dlights;
-	virtual void Tesselate ();
+	virtual void Tesselate (refEntity_t &ent);
 };
 
 //!! warning: if shader.fast -- use vertex_t instead of vertexNormal_t (normals are not required for fast shader)
@@ -121,14 +121,16 @@ public:
 	int		numVerts, numIndexes;
 	vertexNormal_t *verts;
 	int		*indexes;
-//!!	virtual void Tesselate ();
+//!!	virtual void Tesselate (refEntity_t &ent);
 };
 
 class surfaceMd3_t : public surfaceBase_t
 {
 public:
 	inline surfaceMd3_t () { type = SURFACE_MD3; };
-	int		numFrames;			// same value in owner md3Model_t.numFrames
+
+	// fields, same on all surfaces
+	int		numFrames;
 
 	int		numVerts;
 	float	*texCoords;			// numVerts*2
@@ -140,7 +142,7 @@ public:
 	shader_t **shaders;			// [numShaders]
 
 	vertexMd3_t *verts;			// numVerts*numFrames
-	virtual void Tesselate ();
+	virtual void Tesselate (refEntity_t &ent);
 };
 
 class surfacePoly_t : public surfaceBase_t
@@ -149,7 +151,7 @@ public:
 	inline surfacePoly_t () { type = SURFACE_POLY; };
 	int		numVerts;
 	vertexPoly_t verts[1];		// [numVerts]
-	virtual void Tesselate ();
+	virtual void Tesselate (refEntity_t &ent);
 };
 
 // dummy surfaces
@@ -159,7 +161,7 @@ class surfaceParticle_t : public surfaceBase_t
 public:
 	inline surfaceParticle_t () { type = SURFACE_PARTICLE; };
 	particle_t *part;
-	virtual void Tesselate ();
+	virtual void Tesselate (refEntity_t &ent);
 };
 
 
@@ -168,8 +170,8 @@ class surfaceEntity_t : public surfaceBase_t
 {
 public:
 	inline surfaceEntity_t () { type = SURFACE_ENTITY; };
-	refEntity_t *ent;
-	virtual void Tesselate ();
+	refEntity_t *entity;
+	virtual void Tesselate (refEntity_t &ent);
 };
 
 
@@ -324,7 +326,6 @@ struct md3Frame_t
 class md3Model_t : public model_t
 {
 public:
-	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
 	int		numSurfaces;		// for MD2 = 1
 	surfaceMd3_t *surf;			// [numSurfaces]
 	int		numFrames;
@@ -333,10 +334,13 @@ public:
 	char	*tagNames;			// [MAX_QPATH][numTags]
 	CCoords	*tags;				// [numFrames][numTags]
 	inline md3Model_t () { type = MODEL_MD3; };
+	// funcs for OpenGLDrv
 	virtual void InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual void DrawLabel (refEntity_t *e);
 	virtual node_t *GetLeaf (refEntity_t *e);
+	// funcs for scene manager
+	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
 };
 
 

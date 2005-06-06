@@ -1349,7 +1349,7 @@ static void CheckDynamicLightmap (surfacePlanar_t *surf)
 	3D tesselators
 -----------------------------------------------------------------------------*/
 
-void surfacePlanar_t::Tesselate ()
+void surfacePlanar_t::Tesselate (refEntity_t &ent)
 {
 	ReserveVerts (numVerts, numIndexes);
 
@@ -1389,7 +1389,7 @@ void surfacePlanar_t::Tesselate ()
 }
 
 
-void surfacePoly_t::Tesselate ()
+void surfacePoly_t::Tesselate (refEntity_t &ent)
 {
 	int		i;
 
@@ -1434,7 +1434,7 @@ void surfacePoly_t::Tesselate ()
 }
 
 
-void surfaceMd3_t::Tesselate ()
+void surfaceMd3_t::Tesselate (refEntity_t &ent)
 {
 	int		i;
 
@@ -1455,9 +1455,9 @@ void surfaceMd3_t::Tesselate ()
 	if (currentEntity->backLerp != 0.0f && currentEntity->frame != currentEntity->oldFrame)
 	{
 		vertexMd3_t *vs2 = verts + numVerts * currentEntity->oldFrame;
-		float backScale = currentEntity->backLerp * MD3_XYZ_SCALE;
+		float backScale = currentEntity->backLerp * MD3_XYZ_SCALE * ent.drawScale;
 		float frontLerp = 1.0f - currentEntity->backLerp;
-		float frontScale = frontLerp * MD3_XYZ_SCALE;
+		float frontScale = frontLerp * MD3_XYZ_SCALE * ent.drawScale;
 		for (i = 0; i < numVerts; i++, vs1++, vs2++, v++, ex++)
 		{
 			v->xyz[0] = vs1->xyz[0] * frontScale + vs2->xyz[0] * backScale;
@@ -1480,11 +1480,13 @@ void surfaceMd3_t::Tesselate ()
 		}
 	}
 	else
+	{
+		float scale = MD3_XYZ_SCALE * ent.drawScale;
 		for (i = 0; i < numVerts; i++, vs1++, v++, ex++)	// fast non-lerp case
 		{
-			v->xyz[0] = vs1->xyz[0] * MD3_XYZ_SCALE;
-			v->xyz[1] = vs1->xyz[1] * MD3_XYZ_SCALE;
-			v->xyz[2] = vs1->xyz[2] * MD3_XYZ_SCALE;
+			v->xyz[0] = vs1->xyz[0] * scale;
+			v->xyz[1] = vs1->xyz[1] * scale;
+			v->xyz[2] = vs1->xyz[2] * scale;
 			int a = vs1->normal & 255;
 			int b = (vs1->normal >> 8) & 255;
 			float sa = SIN_FUNC2(a,256);
@@ -1496,6 +1498,7 @@ void surfaceMd3_t::Tesselate ()
 			ex->axis = NULL;
 			ex->dlight = NULL;
 		}
+	}
 
 	unsigned *c = &srcVertexColor[firstVert].rgba;
 	for (i = 0; i < gl_numVerts; i++)
@@ -1692,9 +1695,9 @@ static void DrawNormals (void)
 
 
 
-void surfaceEntity_t::Tesselate ()
+void surfaceEntity_t::Tesselate (refEntity_t &ent)
 {
-	if (ent->flags & RF_BBOX)
+	if (entity->flags & RF_BBOX)
 	{
 		bufVertex_t v[8];
 		static const int inds[24] = {
@@ -1705,25 +1708,25 @@ void surfaceEntity_t::Tesselate ()
 
 		GL_SetMultitexture (0);		// disable texturing with all tmu's
 		glDisableClientState (GL_COLOR_ARRAY);
-		glColor4ubv (ent->shaderColor.c);
+		glColor4ubv (entity->shaderColor.c);
 		GL_State (0);
 
 		// generate verts
 		for (int i = 0; i < 8; i++)
 		{
 			CVec3 tmp;
-			tmp[0] = (i & 1) ? ent->size2[0] : -ent->size2[0];
-			tmp[1] = (i & 2) ? ent->size2[1] : -ent->size2[1];
-			tmp[2] = (i & 4) ? ent->size2[2] : -ent->size2[2];
+			tmp[0] = (i & 1) ? entity->size2[0] : -entity->size2[0];
+			tmp[1] = (i & 2) ? entity->size2[1] : -entity->size2[1];
+			tmp[2] = (i & 4) ? entity->size2[2] : -entity->size2[2];
 			// project point to a world coordinate system
-			ent->coord.UnTransformPoint (tmp, v[i].xyz);
+			entity->coord.UnTransformPoint (tmp, v[i].xyz);
 		}
 		// draw it
 		glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), v);
 		glDrawElements (GL_LINES, 24, GL_UNSIGNED_INT, inds);
 	}
 	else
-		DrawTextLeft (va("Unknown ent surf flags: %X", ent->flags), RGB(1,0,0));
+		DrawTextLeft (va("Unknown ent surf flags: %X", entity->flags), RGB(1,0,0));
 }
 
 
@@ -1732,7 +1735,7 @@ void surfaceEntity_t::Tesselate ()
 	Drawing the scene
 -----------------------------------------------------------------------------*/
 
-void surfaceParticle_t::Tesselate ()
+void surfaceParticle_t::Tesselate (refEntity_t &ent)
 {
 	//!! oprimize this (vertex arrays, etc.)
 
@@ -1916,7 +1919,7 @@ void BK_DrawScene ()
 			currentWorld = isWorld;
 		}
 
-		surf->Tesselate ();
+		surf->Tesselate (*currentEntity);
 	}
 
 	/*--------- finilize/debug -----------*/

@@ -37,11 +37,12 @@ struct entity_t
 	int		frame;
 	int		oldframe;
 	float	backlerp;		// 0.0 = current, 1.0 = old; used for frame models only
+	float	scale;			// scale model; 0 == 1 == unscaled
 		//?? why we use backlerp instead of simple lerp ?
-	/*-------------- misc -------------*/
+	// misc
 	CVec3	size;			// for RF_BBOX only; size of box
 	color_t	color;			// for RF_BBOX only; color of box
-	/*----------- color info ----------*/
+	// color info
 	float	alpha;			// ignore if RF_TRANSLUCENT isn't set
 
 	int		skinnum;		// number of model built-in skin
@@ -83,7 +84,7 @@ struct beam_t
 struct dlight_t
 {
 	CVec3	origin;
-	CVec3	color;
+	CVec3	color;					//?? make color_t
 	float	intensity;
 };
 
@@ -125,7 +126,6 @@ struct refdef_t
 	float	fov_x, fov_y;
 	CVec3	vieworg;
 	CVec3	viewangles;
-	float	blend[4];				// rgba 0-1 full screen blend
 	float	time;					// time is used to auto animate
 	unsigned rdflags;				// RDF_UNDERWATER, etc
 

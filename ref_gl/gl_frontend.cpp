@@ -880,17 +880,29 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	md3Frame_t *frame2 = frames + out->oldFrame;
 	// lerp center
 	CVec3 center1, center2;
-	out->coord.UnTransformPoint (frame1->localOrigin, center1);
-	out->coord.UnTransformPoint (frame2->localOrigin, center2);
+	if (out->drawScale != 1)
+	{
+		VectorScale (frame1->localOrigin, out->drawScale, center1);
+		VectorScale (frame2->localOrigin, out->drawScale, center2);
+	}
+	else
+	{
+		center1 = frame1->localOrigin;
+		center2 = frame2->localOrigin;
+	}
+	out->coord.UnTransformPoint (center1, center1);
+	out->coord.UnTransformPoint (center2, center2);
 	Lerp (center1, center2, out->backLerp, out->center);
 	// lerp radius
-	out->radius = Lerp (frame1->radius, frame2->radius, out->backLerp);
+	out->radius = Lerp (frame1->radius, frame2->radius, out->backLerp) * out->drawScale;
 	// compute mins/maxs (lerp ??)
 #if 0
 	//!!!! HERE: use frame bounding sphere for gl_showbboxes visualization
-	out->size2[0] = out->size2[1] = out->size2[2] = frame1->radius;
+	out->size2[0] = out->size2[1] = out->size2[2] = frame1->radius * out->drawScale;
 #else
 	VectorSubtract (frame1->bounds.maxs, frame1->localOrigin, out->size2);
+	if (out->drawScale != 1)
+		out->size2.Scale (out->drawScale);
 #endif
 	// check for COLOR_SHELL
 	if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
@@ -947,8 +959,9 @@ node_t *md3Model_t::GetLeaf (refEntity_t *e)
 
 void md3Model_t::DrawLabel (refEntity_t *e)
 {
-	DrawText3D (e->center, va("origin: %g %g %g\nmd3: %s\nskin: %s\nflags: $%X",
-		VECTOR_ARG(e->coord.origin), name, e->customShader ? e->customShader->name : "(default)", e->flags), RGB(0.1,0.4,0.2));
+	DrawText3D (e->center, va("origin: %g %g %g\nmd3: %s\nskin: %s\nflags: $%X  scale: %g",
+		VECTOR_ARG(e->coord.origin), name, e->customShader ? e->customShader->name : "(default)", e->flags, e->drawScale),
+		RGB(0.1,0.4,0.2));
 }
 
 
@@ -1482,7 +1495,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 				if (surf)
 				{
 					CALL_CONSTRUCTOR(surf);
-					surf->ent = e;
+					surf->entity = e;
 					AddSurfaceToPortal (surf, gl_entityShader, ENTITYNUM_WORLD);
 				}
 			}
@@ -1911,13 +1924,14 @@ void AddEntity (entity_t *ent)
 			out->worldMatrix = true;
 		else
 			out->worldMatrix = false;
-		out->mirror = mirror;
-		out->frame = ent->frame;
-		out->oldFrame = ent->oldframe;
-		out->backLerp = ent->backlerp;
+		out->drawScale = (ent->scale) ? ent->scale : 1.0f;	// 0 == 1 == original size
+		out->mirror    = mirror;
+		out->frame     = ent->frame;
+		out->oldFrame  = ent->oldframe;
+		out->backLerp  = ent->backlerp;
 
 		out->customShader = (shader_t*) ent->skin;	//!! should use customSkin
-		out->skinNum = ent->skinnum;				//?? check skinnum in [0..model.numSkins]
+		out->skinNum   = ent->skinnum;				//?? check skinnum in [0..model.numSkins]
 		out->shaderColor.rgba = RGB(1,1,1);
 		out->shaderColor.c[3] = appRound (ent->alpha * 255);
 

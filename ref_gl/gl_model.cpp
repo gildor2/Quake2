@@ -14,6 +14,8 @@ int	modelCount;
 
 model_t	*FindModel (const char *name)
 {
+	guard(R_FindModel);
+
 	char	name2[MAX_QPATH];
 	appCopyFilename (name2, name, sizeof(name2));
 
@@ -37,7 +39,13 @@ model_t	*FindModel (const char *name)
 	{
 		m = modelsArray[i];
 		if (!m) continue;				//?? should not happens
-		if (!strcmp (name2, m->name)) return m;
+		if (!strcmp (name2, m->name))
+		{
+			// found
+			if (m->type == MODEL_UNKNOWN)
+				return NULL;			// model name was cached to avoid file system lookup again
+			return m;
+		}
 	}
 
 	if (modelCount == MAX_GLMODELS)
@@ -82,6 +90,8 @@ START_PROFILE(FindModel::Process)
 END_PROFILE
 	FS_FreeFile (file);
 	return m;
+
+	unguardf(("mdl=%s", name));
 }
 
 

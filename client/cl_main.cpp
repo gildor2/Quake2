@@ -572,8 +572,6 @@ Sends a disconnect message to the server
 */
 void CL_Disconnect (void)
 {
-	char	final[32];
-
 	guard(CL_Disconnect);
 
 	if (cls.state == ca_disconnected)
@@ -581,15 +579,13 @@ void CL_Disconnect (void)
 
 	if (timedemo->integer)
 	{
-		int	time;
-
-		time = appMilliseconds () - cl.timedemoStart;
+		int time = appMilliseconds () - cl.timedemoStart;
 		if (time > 0)
 			Com_Printf (S_GREEN"Total %d frames, %3.1f seconds: %3.1f avg fps %3.1f min fps\n", cl.timedemoFrames, time / 1000.0f,
 				1000.0f * cl.timedemoFrames / time, 1000.0f / cl.timedemoLongestFrame);
 	}
 
-	memset (cl.refdef.blend, 0, sizeof(cl.refdef.blend));
+	r_blend[3] = 0;
 	cls.connect_time = 0;
 
 	SCR_StopCinematic ();
@@ -598,6 +594,7 @@ void CL_Disconnect (void)
 		CL_Stop_f ();
 
 	// send a disconnect message to the server
+	char final[32];
 	final[0] = clc_stringcmd;
 	strcpy (final+1, "disconnect");
 //	int len = sterlen(final); == 11
@@ -1024,31 +1021,24 @@ void CL_ReadPackets (void)
 CL_FixUpGender_f
 ==============
 */
-void CL_FixUpGender(void)
+void CL_FixUpGender (void)
 {
-	char	*p, sk[MAX_QPATH];
+	if (!gender_auto->integer) return;
 
-	if (gender_auto->integer)
-	{
+	char *p, sk[MAX_QPATH];
+	appStrncpylwr (sk, skin->string, sizeof(sk));
+	if (p = strchr (sk, '/')) *p = 0;
 
-		if (gender->modified)
-		{
-			// was set directly, don't override the user
-			gender->modified = false;
-			return;
-		}
+	const char *names[] = {"none", "male", "female"};
+	int idx = 0;
 
-		appStrncpyz (sk, skin->string, sizeof(sk));
-		if ((p = strchr(sk, '/')) != NULL)
-			*p = 0;
-		if (!stricmp(sk, "male") || !stricmp(sk, "cyborg"))
-			Cvar_Set ("gender", "male");
-		else if (S_IsFemale (sk))
-			Cvar_Set ("gender", "female");
-		else
-			Cvar_Set ("gender", "none");
-		gender->modified = false;
-	}
+	if (!strcmp (sk, "male") || !strcmp (sk, "cyborg"))
+		idx = 1;
+	else if (S_IsFemale (sk))
+		idx = 2;
+	Cvar_Set ("gender", names[idx]);
+
+	gender->modified = false;
 }
 
 /*
@@ -1205,7 +1195,7 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(msg, 1, CVAR_USERINFO|CVAR_ARCHIVE),
 	CVAR_VAR(hand, 0, CVAR_USERINFO|CVAR_ARCHIVE),
 	CVAR_VAR(fov, 90, CVAR_USERINFO|CVAR_ARCHIVE),
-	CVAR_VAR(gender, male, CVAR_USERINFO|CVAR_ARCHIVE),
+	CVAR_VAR(gender, male, CVAR_USERINFO|CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gender_auto, 1, CVAR_ARCHIVE),
 
 	CVAR_VAR(cl_vwep, 1, CVAR_ARCHIVE),
@@ -1229,8 +1219,6 @@ CVAR_END
 	cls.realtime = appMilliseconds ();
 
 	CL_InitInput ();
-
-	gender->modified = false; // clear this so we know when user sets it manually (??)
 
 	// register our commands
 	RegisterCommand ("cmd", CL_ForwardToServer_f);

@@ -41,25 +41,22 @@ bool md3Model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagNam
 	const CCoords &tag2 = tags[frame2 * numTags + i];
 	// fast non-lerp case
 	if (frame1 == frame2 || lerp == 0)
-	{
 		tag = tag1;
-		return result;
-	}
 	else if (lerp == 1)
-	{
 		tag = tag2;
-		return result;
-	}
-	// interpolate tags
-	//?? use quaternions
-	for (i = 0; i < 3; i++)
+	else
 	{
-		// linear lerp axis vectors
-		Lerp (tag1.axis[i], tag2.axis[i], lerp, tag.axis[i]);
-		tag.axis[i].Normalize ();
+		// interpolate tags
+		//?? use quaternions
+		for (i = 0; i < 3; i++)
+		{
+			// linear lerp axis vectors
+			Lerp (tag1.axis[i], tag2.axis[i], lerp, tag.axis[i]);
+			tag.axis[i].Normalize ();
+		}
+		// interpolate origin
+		Lerp (tag1.origin, tag2.origin, lerp, tag.origin);
 	}
-	// interpolate origin
-	Lerp (tag1.origin, tag2.origin, lerp, tag.origin);
 
 	return result;
 }
@@ -476,17 +473,17 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	CALL_CONSTRUCTOR(surf);
 
 	/*-------- fill surf structure -------*/
-	surf->shader = gl_defaultShader;		// any
+	surf->shader    = gl_defaultShader;		// any
 	// counts
 	surf->numFrames = hdr->numFrames;
-	surf->numVerts = numVerts;
-	surf->numTris = numTris;
+	surf->numVerts  = numVerts;
+	surf->numTris   = numTris;
 	surf->numShaders = hdr->numSkins;
 	// pointers
 	surf->texCoords = (float*)(surf + 1);
-	surf->indexes = (int*)(surf->texCoords + 2*surf->numVerts);
-	surf->verts = (vertexMd3_t*)(surf->indexes + 3*surf->numTris);
-	surf->shaders = (shader_t**)(surf->verts + surf->numVerts*surf->numFrames);
+	surf->indexes   = (int*)(surf->texCoords + 2*surf->numVerts);
+	surf->verts     = (vertexMd3_t*)(surf->indexes + 3*surf->numTris);
+	surf->shaders   = (shader_t**)(surf->verts + surf->numVerts*surf->numFrames);
 
 START_PROFILE(..Md2::Parse)
 	/*--- build texcoords and indexes ----*/
@@ -522,7 +519,7 @@ END_PROFILE
 
 	return md3;
 
-	unguardf(("%s", name));
+	unguard;
 }
 
 
@@ -628,6 +625,9 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 				return NULL;
 			}
 			*td = ts->tag;
+			td->axis[0].Normalize ();
+			td->axis[1].Normalize ();
+			td->axis[2].Normalize ();
 		}
 	// surfaces
 	md3->numSurfaces = hdr->numSurfaces;
@@ -637,17 +637,17 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 	for (i = 0, surf = md3->surf; i < hdr->numSurfaces; i++, surf++)
 	{
 		CALL_CONSTRUCTOR(surf);
-		surf->shader = gl_defaultShader;	// any
+		surf->shader    = gl_defaultShader;	// any
 		// counts
 		surf->numFrames = hdr->numFrames;
-		surf->numVerts = ds->numVerts;
-		surf->numTris = ds->numTriangles;
+		surf->numVerts  = ds->numVerts;
+		surf->numTris   = ds->numTriangles;
 		surf->numShaders = ds->numShaders;
 		// pointers
 		surf->texCoords = (float*)surfData;
-		surf->indexes = (int*)(surf->texCoords + 2*surf->numVerts);
-		surf->verts = (vertexMd3_t*)(surf->indexes + 3*surf->numTris);
-		surf->shaders = (shader_t**)(surf->verts + surf->numVerts*surf->numFrames);
+		surf->indexes   = (int*)(surf->texCoords + 2*surf->numVerts);
+		surf->verts     = (vertexMd3_t*)(surf->indexes + 3*surf->numTris);
+		surf->shaders   = (shader_t**)(surf->verts + surf->numVerts*surf->numFrames);
 		surfData = (byte*)(surf->shaders + surf->numShaders);
 		// triangles: same layout on disk and in memory
 		memcpy (surf->indexes, (byte*)ds + ds->ofsTriangles, ds->numTriangles * sizeof(dMd3Triangle_t));
@@ -679,7 +679,7 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 	}
 	return md3;
 
-	unguardf(("%s", name));
+	unguard;
 }
 
 

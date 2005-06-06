@@ -755,7 +755,7 @@ void SV_PostprocessFrame (void)
 			if (cl->screaming && (curr_vel >= FALLING_SCREAM_VELOCITY1 || prev_vel >= FALLING_SCREAM_VELOCITY1
 							 || pm->pm_type != PM_NORMAL))	// killed
 			{	// stop scream
-				SV_StartSoundNew (NULL, ent, CHAN_BODY, SV_SoundIndex ("*fall.wav"), 0.0f, ATTN_NORM, 0);	// volume=0
+				SV_StartSoundNew (NULL, ent, CHAN_BODY, SV_SoundIndex ("*falling1.wav"), 0.0f, ATTN_NORM, 0);	// volume=0
 				cl->screaming = false;
 			}
 
@@ -805,14 +805,14 @@ void SV_PostprocessFrame (void)
 					}
 					if (cl->screaming)
 					{
-						SV_StartSoundNew (NULL, ent, CHAN_BODY, SV_SoundIndex ("*fall.wav"), 1, ATTN_NORM, 0);
+						SV_StartSoundNew (NULL, ent, CHAN_BODY, SV_SoundIndex ("*falling1.wav"), 1, ATTN_NORM, 0);
 						continue;
 					}
 				}
 				else if (curr_vel >= FALLING_SCREAM_VELOCITY1 || prev_vel >= FALLING_SCREAM_VELOCITY1)
 				{	// stop scream
 					if (cl->screaming)
-						SV_StartSoundNew (NULL, ent, CHAN_BODY, SV_SoundIndex ("*fall.wav"), 0.0, ATTN_NORM, 0);
+						SV_StartSoundNew (NULL, ent, CHAN_BODY, SV_SoundIndex ("*falling1.wav"), 0.0, ATTN_NORM, 0);
 					cl->screaming = false;
 				}
 

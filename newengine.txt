@@ -1,6 +1,7 @@
 - can't use:
   - Commands.cpp -- require alias, cvar + command buffer support
-  - FileSystem... -- unfinished
+    ? make as CCommandSource -- file, mem (+alias) etc; command buffer - in game (not Core)
+  - FileSystem... -- just started
 
 --------------- image/shader usage --------------------
 - CBasicImage:

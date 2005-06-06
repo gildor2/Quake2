@@ -1,3 +1,4 @@
+- model "bender", sound "death3.wav" -- infinite looping when played
 - "dirty": "newgame" from menu: "loading" will appear, but new game not started (no alias)
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
    (saved without shot) but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
@@ -40,6 +41,9 @@
 
 - command completion: complete cvar with quotes - should use Com_QuoteString() before inserting into edit line; bugcheck:
   1) a="""a""" b """c"""; 2) a->complete+ENTER; 3) a->complete --> will be a different line
+
+- in windowed mode, when launching console/menu, mouse will be deactivated, but it will not be usable at all (no cursor); to use mouse,
+  should deactivate window
 
 
 UNRECOVARABLE:

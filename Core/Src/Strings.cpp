@@ -476,11 +476,9 @@ CStringItem *CStringList::Find (const char *name, CStringItem **after)
 	{
 		int cmp = appStricmp (name, item->name);
 		if (!cmp)
-		{
 			// found exact item
-			if (after) *after = NULL;	// do not need to insert ...
 			return item;
-		}
+
 		if (cmp < 0)
 			return NULL;				// list is alpha-sorted, and item should be before this place
 		if (after) *after = item;

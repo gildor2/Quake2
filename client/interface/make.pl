@@ -14,6 +14,7 @@ if (1) {
 	$outdef2  = "../rexp_intf.h";
 } else {
 	#...... test .......
+	print "*** TEST RUN ***\n";
 	$infile1  = "engine.test.h";
 	$outcode1 = "engine_exp.h";
 	$outdef1  = "engine_intf.h";

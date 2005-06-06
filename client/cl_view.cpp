@@ -46,6 +46,8 @@ static dlight_t	r_dlights[MAX_DLIGHTS];
 static int		r_numentities;
 static entity_t	r_entities[MAX_ENTITIES];
 
+float			r_blend[4];			// rgba 0-1 full screen blend
+
 char cl_weaponmodels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
 int num_cl_weaponmodels;
 
@@ -297,11 +299,11 @@ void CL_PrepRefresh (void)
 	for (i = 1; i < MAX_MODELS && cl.configstrings[CS_MODELS+i][0]; i++)
 	{
 		strcpy (name, cl.configstrings[CS_MODELS+i]);
-		name[linewidth-1] = 0;		// never go beyond one line (for correct '\r' erasing)
+		name[linewidth-1] = 0;					// never go beyond one line (for correct '\r' erasing)
 		if (name[0] != '*')
 			Com_Printf ("%s\r", name);
 		SCR_UpdateScreen ();
-		Sys_SendKeyEvents ();		// pump message loop
+		Sys_SendKeyEvents ();					// pump message loop
 		if (name[0] == '#')
 		{
 			// special player weapon model
@@ -311,8 +313,8 @@ void CL_PrepRefresh (void)
 		}
 		else
 		{
-			char *mdl = cl.configstrings[CS_MODELS + i];
-			char *ext = strrchr (name, '.');
+			const char *mdl = cl.configstrings[CS_MODELS + i];
+			const char *ext = strrchr (name, '.');
 			if (!ext || stricmp (ext, ".bsp"))
 				cl.model_draw[i] = RE_RegisterModel (cl.configstrings[CS_MODELS+i]);
 			else
@@ -853,10 +855,10 @@ bool V_RenderView (void)
 		if (cl_testlights->integer)		V_TestLights ();
 		if (cl_testblend->integer)
 		{
-			cl.refdef.blend[0] = 1;
-			cl.refdef.blend[1] = 0.5;
-			cl.refdef.blend[2] = 0.25;
-			cl.refdef.blend[3] = 0.5;
+			r_blend[0] = 1;
+			r_blend[1] = 0.5;
+			r_blend[2] = 0.25;
+			r_blend[3] = 0.5;
 		}
 
 		// debug output
@@ -884,7 +886,7 @@ bool V_RenderView (void)
 		if (!cl_add_entities->integer)	r_numentities = 0;
 		if (!cl_add_lights->integer)	r_numdlights = 0;
 		if (!cl_add_blend->integer || cl.refdef.rdflags & RDF_THIRD_PERSON)
-			memset (cl.refdef.blend, 0, sizeof(cl.refdef.blend));
+			r_blend[3] = 0;
 
 		cl.refdef.num_entities = r_numentities;
 		cl.refdef.entities = r_entities;
@@ -906,9 +908,9 @@ bool V_RenderView (void)
 	// render scene
 	RE_RenderFrame (&cl.refdef);
 	// add full-screen blend
-	if (cl.refdef.blend[3])
+	if (r_blend[3])
 		RE_Fill (cl.refdef.x, cl.refdef.y, cl.refdef.width, cl.refdef.height,
-			RGBAS(cl.refdef.blend[0], cl.refdef.blend[1], cl.refdef.blend[2], cl.refdef.blend[3]));
+			RGBAS(r_blend[0], r_blend[1], r_blend[2], r_blend[3]));
 
 	// stats
 	if (r_drawfps->integer)

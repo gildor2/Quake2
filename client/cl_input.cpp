@@ -46,85 +46,83 @@ static kbutton_t	in_Up, in_Down;
 kbutton_t	in_Strafe, in_Speed;
 
 
-static void KeyDown (kbutton_t *b, char **argv)
+static void KeyDown (kbutton_t &b, char **argv)
 {
 	int		k;
 
-	char *c = argv[1];
+	const char *c = argv[1];
 	if (c[0])
 		k = atoi(c);
 	else
 		k = -1;					// typed manually at the console for continuous down
 
-	if (k == b->down[0] || k == b->down[1])
+	if (k == b.down[0] || k == b.down[1])
 		return;					// repeating key
 
-	if (!b->down[0])
-		b->down[0] = k;
-	else if (!b->down[1])
-		b->down[1] = k;
+	if (!b.down[0])
+		b.down[0] = k;
+	else if (!b.down[1])
+		b.down[1] = k;
 	else
 	{
 		Com_Printf ("Three keys down for a button!\n");
 		return;
 	}
 
-	if (b->state & 1)
+	if (b.state & 1)
 		return;					// still down
 
 	// save timestamp
 	c = argv[2];
-	b->downtime = atoi(c);
-	if (!b->downtime)
-		b->downtime = sys_frame_time - 100;
+	b.downtime = atoi(c);
+	if (!b.downtime)
+		b.downtime = sys_frame_time - 100;
 
-	b->state |= 1 + 2;			// down + impulse down
+	b.state |= 1 + 2;			// down + impulse down
 }
 
-static void KeyUp (kbutton_t *b, char **argv)
+static void KeyUp (kbutton_t &b, char **argv)
 {
 	int		k;
-	char	*c;
-	unsigned	uptime;
 
-	c = argv[1];
+	const char *c = argv[1];
 	if (c[0])
 		k = atoi(c);
 	else
 	{	// typed manually at the console, assume for unsticking, so clear all
-		b->down[0] = b->down[1] = 0;
-		b->state = 4;			// impulse up
+		b.down[0] = b.down[1] = 0;
+		b.state = 4;			// impulse up
 		return;
 	}
 
-	if (b->down[0] == k)
-		b->down[0] = 0;
-	else if (b->down[1] == k)
-		b->down[1] = 0;
+	if (b.down[0] == k)
+		b.down[0] = 0;
+	else if (b.down[1] == k)
+		b.down[1] = 0;
 	else
 		return;					// key up without corresponding down (menu pass through)
-	if (b->down[0] || b->down[1])
+	if (b.down[0] || b.down[1])
 		return;					// some other key is still holding it down
 
-	if (!(b->state & 1))
+	if (!(b.state & 1))
 		return;					// still up (this should not happen)
 
 	// save timestamp
 	c = argv[2];
-	uptime = atoi(c);
+	unsigned uptime = atoi(c);
 	if (uptime)
-		b->msec += uptime - b->downtime;
+		b.msec += uptime - b.downtime;
 	else
-		b->msec += 10;
+		b.msec += 10;
 
-	b->state &= ~1;				// now up
-	b->state |= 4; 				// impulse up
+	b.state &= ~1;				// now up
+	b.state |= 4; 				// impulse up
 }
 
 // Declare console functions
 #define KB(name)	\
-static void IN_##name##Up (int argc, char **argv) { KeyUp(&in_##name, argv); }	\
-static void IN_##name##Down (int argc, char **argv) { KeyDown(&in_##name, argv); }
+static void IN_##name##Up (int argc, char **argv) { KeyUp(in_##name, argv); }	\
+static void IN_##name##Down (int argc, char **argv) { KeyDown(in_##name, argv); }
 
 	KB(KLook)
 	KB(Up)			KB(Down)
@@ -145,17 +143,17 @@ KeyState
 Returns the fraction of the frame that the key was down
 ===============
 */
-static float KeyState (kbutton_t *key)
+static float KeyState (kbutton_t &key)
 {
-	key->state &= 1;			// clear impulses
+	key.state &= 1;			// clear impulses
 
-	int msec = key->msec;
-	key->msec = 0;
+	int msec = key.msec;
+	key.msec = 0;
 
-	if (key->state)
+	if (key.state)
 	{	// still down
-		msec += sys_frame_time - key->downtime;
-		key->downtime = sys_frame_time;
+		msec += sys_frame_time - key.downtime;
+		key.downtime = sys_frame_time;
 	}
 
 	float val = (float)msec / frame_msec;
@@ -198,21 +196,12 @@ static void AdjustAngles (void)
 		speed = cls.frametime;
 
 	if (!(in_Strafe.state & 1))
-	{
-		cl.viewangles[YAW] -= speed * cl_yawspeed->value * KeyState (&in_Right);
-		cl.viewangles[YAW] += speed * cl_yawspeed->value * KeyState (&in_Left);
-	}
+		cl.viewangles[YAW] += speed * cl_yawspeed->value * (KeyState (in_Left) - KeyState (in_Right));
+
 	if (in_KLook.state & 1)
-	{
-		cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * KeyState (&in_Forward);
-		cl.viewangles[PITCH] += speed * cl_pitchspeed->value * KeyState (&in_Back);
-	}
+		cl.viewangles[PITCH] += speed * cl_pitchspeed->value * (KeyState (in_Back) - KeyState (in_Forward));
 
-	float up = KeyState (&in_Lookup);
-	float down = KeyState (&in_Lookdown);
-
-	cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * up;
-	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * down;
+	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * (KeyState (in_Lookdown) - KeyState (in_Lookup));
 }
 
 /*
@@ -226,29 +215,21 @@ static void BaseMove (usercmd_t *cmd)
 {
 	AdjustAngles ();
 
-	memset (cmd, 0, sizeof(*cmd));
+	memset (cmd, 0, sizeof(usercmd_t));
 
 	// copy angles with float->short
 	cmd->angles[0] = appRound (cl.viewangles[0]);
 	cmd->angles[1] = appRound (cl.viewangles[1]);
 	cmd->angles[2] = appRound (cl.viewangles[2]);
 	if (in_Strafe.state & 1)
-	{
-		cmd->sidemove += appRound (cl_sidespeed->value * KeyState (&in_Right));
-		cmd->sidemove -= appRound (cl_sidespeed->value * KeyState (&in_Left));
-	}
+		cmd->sidemove += appRound (cl_sidespeed->value * (KeyState (in_Right) - KeyState (in_Left)));
 
-	cmd->sidemove += appRound (cl_sidespeed->value * KeyState (&in_Moveright));
-	cmd->sidemove -= appRound (cl_sidespeed->value * KeyState (&in_Moveleft));
+	cmd->sidemove += appRound (cl_sidespeed->value * (KeyState (in_Moveright) - KeyState (in_Moveleft)));
 
-	cmd->upmove += appRound (cl_upspeed->value * KeyState (&in_Up));
-	cmd->upmove -= appRound (cl_upspeed->value * KeyState (&in_Down));
+	cmd->upmove += appRound (cl_upspeed->value * (KeyState (in_Up) - KeyState (in_Down)));
 
-	if (! (in_KLook.state & 1) )
-	{
-		cmd->forwardmove += appRound (cl_forwardspeed->value * KeyState (&in_Forward));
-		cmd->forwardmove -= appRound (cl_forwardspeed->value * KeyState (&in_Back));
-	}
+	if (!(in_KLook.state & 1))
+		cmd->forwardmove += appRound (cl_forwardspeed->value * (KeyState (in_Forward) - KeyState (in_Back)));
 
 	// adjust for speed key / running
 	if ((in_Speed.state & 1) ^ cl_run->integer)
@@ -280,8 +261,6 @@ CL_FinishMove
 */
 static void FinishMove (usercmd_t *cmd)
 {
-	int		i, ms;
-
 	// figure button bits
 	if (in_Attack.state & 3)
 		cmd->buttons |= BUTTON_ATTACK;
@@ -295,13 +274,13 @@ static void FinishMove (usercmd_t *cmd)
 		cmd->buttons |= BUTTON_ANY;
 
 	// send milliseconds of time to apply the move
-	ms = appRound (accum_frame_time * 1000);
+	int ms = appRound (accum_frame_time * 1000);
 	if (ms > 250) ms = 250;
 
 	cmd->msec = ms;
 
 	ClampPitch ();
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 		cmd->angles[i] = ANGLE2SHORT(cl.viewangles[i]);
 
 	cmd->impulse = 0;		//!! unused

@@ -116,6 +116,7 @@ struct refEntity_t
 			byte	frustumMask;		//?? remove
 			CVec3	modelvieworg;		// vp.view.origin in model coordinate system
 			float	modelMatrix[4][4];	// modelview matrix
+			float	drawScale;			// 1 == original size
 			// info for frame lerping
 			int		frame, oldFrame;
 			float	backLerp;

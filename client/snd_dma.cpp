@@ -116,7 +116,6 @@ char	female_model_buf[MAX_FEMALE_MODEL_BUF];
 void S_ReadModelsSex (void)
 {
 	char	*buf, *in, *out, *s;
-	int		free, i;
 
 	female_models[0] = NULL;
 	if (!(buf = (char*) FS_LoadFile ("players/model.lst")))
@@ -127,14 +126,12 @@ void S_ReadModelsSex (void)
 
 	in = buf;
 	out = female_model_buf;
-	free = MAX_FEMALE_MODEL_BUF;
-	i = 0;
+	int free = MAX_FEMALE_MODEL_BUF;
+	int i = 0;
 
 	while (s = COM_Parse (in), in)
 	{
-		int		n;
-
-		n = strlen (s);
+		int n = strlen (s);
 		Com_DPrintf("Female model: %s\n",s);
 		n++;
 		free -= n;
@@ -237,9 +234,6 @@ CVAR_END
 
 void S_Shutdown (void)
 {
-	int		i;
-	sfx_t	*sfx;
-
 	if (!sound_started)
 		return;
 
@@ -253,6 +247,8 @@ void S_Shutdown (void)
 	UnregisterCommand ("soundinfo");
 
 	// free all sounds
+	int		i;
+	sfx_t	*sfx;
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
 	{
 		if (!sfx->name[0])
@@ -278,11 +274,12 @@ S_FindName
 */
 static sfx_t *S_FindName (const char *name, bool create)
 {
+	guard(S_FindName);
+
 	int		i;
 	sfx_t	*sfx;
 	char	filename[MAX_QPATH];
 
-	guard(S_FindName);
 	if (!name)
 		Com_FatalError ("NULL name\n");
 	if (!name[0])
@@ -309,7 +306,14 @@ static sfx_t *S_FindName (const char *name, bool create)
 	{
 		// not found
 		if (num_sfx == MAX_SFX)
+		{
+#if 0
 			Com_FatalError ("too much sfx records");
+#else
+			Com_DPrintf ("too much sfx records\n");
+			return NULL;
+#endif
+		}
 		// alloc next free record
 		num_sfx++;
 	}
@@ -317,9 +321,9 @@ static sfx_t *S_FindName (const char *name, bool create)
 	memset (sfx, 0, sizeof(*sfx));
 	strcpy (sfx->name, filename);
 	sfx->registration_sequence = s_registration_sequence;
+	return sfx;
 
 	unguard;
-	return sfx;
 }
 
 
@@ -331,12 +335,11 @@ S_AliasName
 */
 static sfx_t *S_AliasName (const char *aliasname, const char *truename)
 {
-	sfx_t	*sfx;
-	int		i;
-
 	guard(S_AliasName);
 
 	// find a free sfx
+	sfx_t	*sfx;
+	int		i;
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
 		if (!sfx->name[0])
 			break;
@@ -344,17 +347,24 @@ static sfx_t *S_AliasName (const char *aliasname, const char *truename)
 	if (i == num_sfx)
 	{
 		if (num_sfx == MAX_SFX)
+		{
+#if 0
 			Com_FatalError ("too much sfx records");
+#else
+			Com_DPrintf ("too much sfx records\n");
+			return NULL;
+#endif
+		}
 		num_sfx++;
 	}
 
 	memset (sfx, 0, sizeof(*sfx));
-	appCopyFilename (sfx->name, aliasname, sizeof(*sfx->name));
+	appCopyFilename (sfx->name, aliasname, sizeof(sfx->name));
 	appStrncpyz (sfx->truename, truename, sizeof(sfx->truename));
 	sfx->registration_sequence = s_registration_sequence;
+	return sfx;
 
 	unguard;
-	return sfx;
 }
 
 
@@ -664,13 +674,13 @@ void S_IssuePlaysound (playsound_t *ps)
 	S_FreePlaysound (ps);
 }
 
-static sfx_t *GetSexedSound (clEntityState_t *ent, char *base)
+static sfx_t *GetPlayerSound (clEntityState_t *ent, const char *base)
 {
-	char	model[MAX_QPATH], sexedFilename[MAX_QPATH];
+	char	model[MAX_QPATH], localFilename[MAX_QPATH];
 
 	// determine what model the client is using
 	model[0] = 0;
-	const char *s = cl.configstrings[CS_PLAYERSKINS + ent->number - 1];	//?? can use cl.clientInfo[ent->number]
+	const char *s = cl.configstrings[CS_PLAYERSKINS + ent->number - 1];	//?? can use cl.clientInfo[ent->number]; use model gender
 	if (s[0])
 	{
 		char *p = strchr (s, '\\');
@@ -686,23 +696,52 @@ static sfx_t *GetSexedSound (clEntityState_t *ent, char *base)
 		strcpy (model, "male");
 
 	// see if we already know of the model specific sound
-	appSprintf (ARRAY_ARG(sexedFilename), "#players/%s/%s", model, base+1);
-	sfx_t *sfx = S_FindName (sexedFilename, false);
+	appSprintf (ARRAY_ARG(localFilename), "#players/%s/%s", model, base+1);
+	sfx_t *sfx = S_FindName (localFilename, false);
 
 	if (!sfx)
 	{
-		// no, so see if it exists
-		if (FS_FileExists (&sexedFilename[1]))
-		{
-			// yes, register it
-			sfx = S_RegisterSound (sexedFilename);
-		}
-		else if (S_IsFemale (model))
-			sfx = S_AliasName (sexedFilename, va("player/female/%s", base+1));
+		// try sound in Quake2 model directory ("players/[model_name]/[sound]")
+		if (FS_FileExists (localFilename + 1))
+			sfx = S_RegisterSound (localFilename);
+	}
+
+	if (!sfx)
+	{
+		// try sound in Quake3 model directory ("sound/player/[model_name]/[sound]")
+		char filename2[MAX_QPATH];
+		static const struct {
+			const char *q2name, *q3name;
+		} convert[] = {
+			{"death4.wav",	 "death1.wav"},
+			{"fall2.wav",	 "fall1.wav"},
+			{"pain25_2.wav", "pain25_1.wav"},
+			{"pain50_2.wav", "pain50_1.wav"},
+			{"pain75_2.wav", "pain75_1.wav"},
+			{"pain100_2.wav","pain100_1.wav"}
+		};
+		// Quake3 models have no some Quake2 sounds
+		const char *newName = base + 1;
+		for (int i = 0; i < ARRAY_COUNT(convert); i++)
+			if (!stricmp (newName, convert[i].q2name))
+			{
+				newName = convert[i].q3name;
+				break;
+			}
+		appSprintf (ARRAY_ARG(filename2), "sound/player/%s/%s", model, newName);	// NOTE: used below as filename2+6 too
+		if (FS_FileExists (filename2))
+			sfx = S_AliasName (localFilename, filename2 + 6 /* skip "sound/" */);
+	}
+
+	if (!sfx)
+	{
+		// setup as default sound
+		if (S_IsFemale (model))
+			sfx = S_AliasName (localFilename, va("player/female/%s", base+1));
 		else
 		{
 			// no, revert to the male sound in the pak0.pak
-			sfx = S_AliasName (sexedFilename, va("player/male/%s", base+1));
+			sfx = S_AliasName (localFilename, va("player/male/%s", base+1));
 		}
 	}
 
@@ -740,7 +779,7 @@ void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, 
 		return;
 
 	if (sfx->name[0] == '*')
-		sfx = GetSexedSound (&cl_entities[entnum].current, sfx->name);
+		sfx = GetPlayerSound (&cl_entities[entnum].current, sfx->name);
 
 	// make sure the sound is loaded
 	sc = S_LoadSound (sfx);
