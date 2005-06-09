@@ -145,11 +145,14 @@ void CL_ParseClientinfo (int player)
 {
 	clientInfo_t &ci = cl.clientInfo[player];
 	CL_LoadClientinfo (ci, cl.configstrings[player+CS_PLAYERSKINS]);
+
 	if (ci.isQ3model && !cls.newprotocol)
 	{
 		Com_WPrintf ("No extended protocol support.\nForce player %s to use base model\n", ci.name);
 		ci.isValidModel = false;
 	}
+	if (!ci.isValidModel)
+		CL_LoadClientinfo (ci, va("%s\\male/grunt", ci.name));
 }
 
 

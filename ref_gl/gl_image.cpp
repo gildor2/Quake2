@@ -118,7 +118,7 @@ static byte *Convert8to32bit (byte *in, int width, int height, const unsigned *p
 		palette = gl_config.tbl_8to32;
 
 	int size = width * height;
-	byte *out = (byte*)appMalloc (size * 4);
+	byte *out = new byte [size * 4];
 
 	unsigned *p = (unsigned*) out;
 	for (int i = 0; i < size; i++)
@@ -724,7 +724,7 @@ image_t *CreateImage (const char *name, void *pic, int width, int height, unsign
 	{
 		// save image for later upload
 		if (image->pic)
-			appFree (image->pic);
+			delete image->pic;
 		size *= 4;
 		image->pic = new byte [size];
 		memcpy (image->pic, pic, size);
@@ -810,7 +810,7 @@ void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *p
 		// we can perform uploading pic without scaling using TexSubImage onto a large texture and using
 		// (0..width/large_width) - (0..height/large_height) coords when drawing ?? (but needs palette conversion anyway)
 		GetImageDimensions (width, height, &scaledWidth, &scaledHeight, false);
-		pic32 = (byte*) appMalloc (scaledWidth * scaledHeight * 4);
+		pic32 = new byte [scaledWidth * scaledHeight * 4];
 
 		// fast resampling with conversion 8->32 bit
 		float hScale = (float) height / scaledHeight;
@@ -851,7 +851,7 @@ void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *p
 	}
 	gl_speeds.numUploads++;
 	// free converted pic
-	appFree (pic32);
+	delete pic32;
 
 	// draw
 	gl_videoShader->width = width;
@@ -892,7 +892,7 @@ static void FreeImage (image_t *image)	//?? unused function
 	glDeleteTextures (1, &image->texnum);
 	if (image->pic)
 	{
-		appFree (image->pic);
+		delete image->pic;
 		image->pic = NULL;
 	}
 
@@ -1182,7 +1182,7 @@ void PerformScreenshot (void)
 	FS_CreatePath (name);
 
 	// allocate buffer for 4 color components (required for ResampleTexture()
-	byte *buffer = (byte*)appMalloc (vid_width * vid_height * 4);
+	byte *buffer = new byte [vid_width * vid_height * 4];
 	// read frame buffer data
 	glReadPixels (0, 0, vid_width, vid_height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
@@ -1194,10 +1194,10 @@ void PerformScreenshot (void)
 
 	if (screenshotFlags & SHOT_SMALL)
 	{
-		byte *buffer2 = (byte*)appMalloc (LEVELSHOT_W * LEVELSHOT_H * 4);
+		byte *buffer2 = new byte [LEVELSHOT_W * LEVELSHOT_H * 4];
 		ResampleTexture ((unsigned *)buffer, vid_width, vid_height, (unsigned *)buffer2, LEVELSHOT_W, LEVELSHOT_H);
 		// replace "buffer" pointer with a resampled image
-		appFree (buffer);
+		delete buffer;
 		buffer = buffer2;
 		width = LEVELSHOT_W;
 		height = LEVELSHOT_H;
@@ -1246,7 +1246,7 @@ void PerformScreenshot (void)
 	else
 		result = WriteTGA (name, buffer, width, height);
 
-	appFree (buffer);
+	delete buffer;
 
 	if (result && !(screenshotFlags & SHOT_SILENT))
 		Com_Printf ("Wrote %s\n", strrchr (name, '/') + 1);
@@ -1463,7 +1463,7 @@ void ShutdownImages (void)
 		img->name[0] = 0;				// required for statically linked renderer
 		if (img->pic)
 		{
-			appFree (img->pic);
+			delete img->pic;
 			img->pic = NULL;
 		}
 	}

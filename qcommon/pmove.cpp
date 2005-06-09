@@ -19,7 +19,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "qcommon.h"
-#include "protocol.h"			// animation support
 
 
 #define	STEPSIZE	18
@@ -220,7 +219,7 @@ static bool SlideMove (void)
 #endif
 
 		// if velocity is against the original velocity, stop dead
-		// to avoid tiny occilations in sloping corners
+		// to avoid tiny oscilations in sloping corners
 		if (dot (pml.velocity, primal_velocity) <= 0)
 		{
 			pml.velocity.Zero();
@@ -375,29 +374,24 @@ static void Accelerate (const CVec3 &wishdir, float wishspeed, float accel)
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
-	for (int i = 0; i < 3; i++)
-		pml.velocity[i] += accelspeed * wishdir[i];
+	VectorMA (pml.velocity, accelspeed, wishdir);
 }
 
 
 static void AirAccelerate (const CVec3 &wishdir, float wishspeed, float accel)
 {
-	int			i;
-	float		addspeed, accelspeed, currentspeed, wishspd = wishspeed;
+	float wishspd = wishspeed;
+	if (wishspd > 30) wishspd = 30;
 
-	if (wishspd > 30)
-		wishspd = 30;
-	currentspeed = dot (pml.velocity, wishdir);
-	addspeed = wishspd - currentspeed;
-
+	float currentspeed = dot (pml.velocity, wishdir);
+	float addspeed = wishspd - currentspeed;
 	if (addspeed <= 0) return;
 
-	accelspeed = accel * wishspeed * pml.frametime;
+	float accelspeed = accel * wishspeed * pml.frametime;
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
-	for (i = 0; i < 3; i++)
-		pml.velocity[i] += accelspeed * wishdir[i];
+	VectorMA (pml.velocity, accelspeed, wishdir);
 }
 
 
@@ -1301,180 +1295,4 @@ void Pmove (pmove_t *pmove)
 	SnapPosition ();
 
 	unguard;
-}
-
-
-/*-----------------------------------------------------------------------------
-	Animation support
------------------------------------------------------------------------------*/
-
-struct simpleAnim_t
-{
-	short first, last;
-	short anim;
-};
-
-
-/*!!
-  should implement bot support (no player_state_t, but, I think, Pmove() will be called)
-  capture old pmove state to allow comparision with current state (better legs animation)
-    required to detect jump->land + no duplicate jump animations
-  check with:
-    * sv_extProtocol=0 (disable Q3 models at all, use baseClientInfo for client)
-    - bots
-    - lox decoy
-    * dead bodies
- */
-
-void PM_ComputeAnimation (player_state_t &ps, entityStateEx_t &ent)
-{
-	int f = ent.frame;		// Quake2 animation frame
-	int i;
-
-	/*----------------------- Death animation -------------------------------*/
-
-	static const simpleAnim_t deaths[] = {
-		{173, 176, BOTH_DEATH1},	// crdeath
-		{177, 177, BOTH_DEAD1},
-		{178, 182, BOTH_DEATH1},	// death1
-		{183, 183, BOTH_DEAD1},
-		{184, 188, BOTH_DEATH2},	// death2
-		{189, 189, BOTH_DEAD2},
-		{190, 196, BOTH_DEATH3},	// death3
-		{197, 197, BOTH_DEAD3}
-	};
-
-	for (i = 0; i < ARRAY_COUNT(deaths); i++)
-	{
-		const simpleAnim_t &p = deaths[i];
-		if (f >= p.first && f <= p.last)
-		{
-			ent.SetAnim (p.anim, p.anim, LEGS_NEUTRAL);
-			return;
-		}
-	}
-
-	if (&ps == NULL)
-	{
-		ent.SetAnim (LEGS_JUMP, TORSO_STAND, LEGS_NEUTRAL);	//???
-		return;						//?? disallow crash; temporary; true when LOX + launch decoy
-	}
-
-#if 0
-	if (ps.pmove.pm_type == PM_DEAD)
-	{
-		// should not happens -- should be processed by deaths[]
-		ent.SetAnim (LEGS_SWIM, BOTH_DEATH1, LEGS_NEUTRAL);	//!!!!
-		return;		//??
-	}
-#endif
-
-	/*------------------------ Legs animation -------------------------------*/
-
-	CVec3 velHorz;
-	velHorz[0] = ps.pmove.velocity[0] * 0.125f;
-	velHorz[1] = ps.pmove.velocity[1] * 0.125f;
-	velHorz[2] = 0;		// no vertical component
-
-	CVec3 forward, right;
-	AngleVectors (ps.viewangles, &forward, &right, NULL);
-	float velForward = dot (forward, velHorz);
-	float velRight   = dot (right, velHorz);
-	float absVelHorz = SQRTFAST(velForward*velForward + velRight*velRight);
-
-	//?? torso angles: note, that Q3 angles is for legs (torso rotated), but in Q2 angles for
-	//??  torso (because legs are fixed) - legs rotated
-
-	int legs = ANIM_NOCHANGE;
-
-	if (ps.rdflags & RDF_UNDERWATER)
-		legs = LEGS_SWIM;
-	else if (!(ps.pmove.pm_flags & PMF_ON_GROUND))
-	{
-		legs = (velForward > -20) ? LEGS_JUMP : LEGS_JUMPB;
-		//!! - BUG: when while animation player will rotate 180 degrees, will be launched opposite animation
-		//!! - do not start jump animation, when begin jumping with vertical vel <= 0
-		//!!   but: when jump animation already started, do not change it!
-		// land animation: automatically launched by client, when JUMP -> IDLE/RUN/WALK
-	}
-	else if (ps.pmove.pm_flags & PMF_DUCKED)
-	{
-		// duck
-		if (absVelHorz < 20)
-			legs = LEGS_IDLECR;
-		else if (velForward > -10)
-			legs = LEGS_WALKCR;
-		else
-			legs = LEGS_BACKCR;
-	}
-	else
-	{
-		// stand
-		if (absVelHorz > 150)
-		{
-			// run
-			legs = velForward > -10 ? LEGS_RUN : LEGS_BACK;
-		}
-		else if (absVelHorz > 20)
-		{
-			// walk
-			legs = velForward > -20 ? LEGS_WALK : LEGS_BACKWALK;
-		}
-		else
-			legs = LEGS_IDLE;
-	}
-	// choose legs angle
-	int legsAngle = LEGS_NEUTRAL;
-	if (legs != LEGS_IDLE && legs != LEGS_IDLECR && legs != LEGS_SWIM)
-	{
-		if (abs(velForward) < 20)
-		{
-			// side movement ?
-			if (velRight > 20)
-				legsAngle = LEGS_RIGHT_90;
-			else if (velRight < -20)
-				legsAngle = LEGS_LEFT_90;
-		}
-		else if (abs(velRight) > 20)
-		{
-			// |velRight| > 20, |velForward| > 20 -- +/- 45 degrees
-			if (IsNegative (velRight) ^ IsNegative (velForward))
-				legsAngle = LEGS_LEFT_45;
-			else
-				legsAngle = LEGS_RIGHT_45;
-		}
-	}
-
-	/*----------------------- Torso animation -------------------------------*/
-
-	int torso = TORSO_STAND;	//!! this animation should be on IDLE: some Q3 anims may be longer, than
-								//!! Q2 analogs - should allow them to complete
-
-#define A2(first,last,num,anim)		\
-		{first, first+num-1, anim},	\
-		{first+num, last, ANIM_NOCHANGE}
-	static const simpleAnim_t torses[] = {
-		// NOTE: we use 1st 3 frames to detect animation; other frames will left animation unchanged
-		A2( 46,  53, 3, TORSO_ATTACK),	// attack
-		A2(160, 168, 3, TORSO_ATTACK),	// crattack
-		A2( 72,  83, 3, TORSO_GESTURE),	// flip
-		A2( 84,  94, 3, TORSO_GESTURE),	// salute
-		A2( 95, 111, 3, TORSO_GESTURE),	// taunt
-		A2(112, 122, 3, TORSO_GESTURE),	// wave
-		A2(123, 134, 3, TORSO_GESTURE)	// point
-	};
-
-	for (i = 0; i < ARRAY_COUNT(torses); i++)
-	{
-		const simpleAnim_t &p = torses[i];
-		if (f >= p.first && f <= p.last)
-		{
-			torso = p.anim;
-			break;
-		}
-	}
-	//!! pain: 54-57,58-61,62-65; crpain: 169-172 -> angles (may be, mix rotate + lean angles?)
-
-	// send
-	ent.SetAnim (legs, torso, legsAngle);
 }

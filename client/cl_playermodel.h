@@ -22,7 +22,7 @@ struct animState_t
 	int		startTime;					// time of animation start
 	int		oldTime;					// time of current animation frame start
 	int		time;						// time of next animation frame
-	bool	freezed;					// when true, display last animation frame until animation change
+	bool	completed;					// when true, display last animation frame until animation change
 	CVec3	angles;
 	bool	rotating[3];
 };
@@ -45,27 +45,25 @@ struct clientInfo_t
 	char	iconName[MAX_QPATH];		//?? may be used instead of iconName[] for drawing; require CBasicImage.Draw()
 	bool	isQ3model;
 	bool	isValidModel;
+	char	modelGender;				// 'm' - male, 'f' - female, 'n' - neutral
 	CBasicImage	*icon;					// used as "!= NULL" only
-	union {
-		struct { // data for Quake2 player model
-			CBasicImage	 *md2skin;
-			CRenderModel *md2model;
-		};
-		struct { // data for Quake3 player model
-			// models
-			CRenderModel *legsModel;
-			CRenderModel *torsoModel;
-			CRenderModel *headModel;
-			// skins
-			CBasicImage  *legsSkin;
-			CBasicImage  *torsoSkin;
-			CBasicImage  *headSkin;
-			// animation parameters (should be linked to model ??)
-			bool	fixedLegs, fixedTorso;
-			bool	fixedAll;			// do not rotate head/torso/legs at all
-			animation_t animations[MAX_TOTALANIMATIONS];
-		};
-	};
+	// data for Quake2 player model (use one of Q3 model info??)
+	CModelSkin	md2skin;
+	CRenderModel *md2model;
+	// data for Quake3 player model
+	// ... models
+	CRenderModel *legsModel;
+	CRenderModel *torsoModel;
+	CRenderModel *headModel;
+	// ... skins
+	CModelSkin	legsSkin;
+	CModelSkin	torsoSkin;
+	CModelSkin	headSkin;
+	// ... animation parameters (should be linked to model ??)
+	bool	fixedLegs, fixedTorso;
+	bool	fixedAll;			// do not rotate head/torso/legs at all
+	animation_t animations[MAX_TOTALANIMATIONS];
+	// weapon info
 	weaponInfo_t weaponModel[MAX_CLIENTWEAPONMODELS];
 };
 
@@ -80,6 +78,8 @@ public:
 
 extern TList<playerModelInfo_t> pmiList;
 extern int numPlayerModels;
+
+bool CL_IsFemaleModel (const char *model);
 
 void FreePlayerModelsInfo ();
 bool ScanPlayerModels ();

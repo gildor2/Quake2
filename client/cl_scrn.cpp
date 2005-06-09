@@ -875,12 +875,7 @@ static void ExecuteLayoutString (const char *s)
 			DrawString (x1, y+CHAR_HEIGHT*2,va("Ping:  %d", ping));
 			DrawString (x1, y+CHAR_HEIGHT*3,va("Time:  %d", time));
 
-			if (!ci->icon) ci = &cl.baseClientInfo;
-#if 0
-			RE_DrawPic (x, y, ci->iconName);
-#else
 			RE_DrawStretchPic (x, y, 32, 32, ci->iconName);
-#endif
 		}
 		else if (!strcmp (token, "ctf"))
 		{	// draw a ctf client block

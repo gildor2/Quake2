@@ -951,13 +951,16 @@ void CL_OffsetThirdPersonView ()
 	static const CVec3 mins = {-5, -5, -5}, maxs = {5, 5, 5};
 
 	// algorithm was taken from FAKK2
-	camDist = max(cl_cameradist->value, CAMERA_MINIMUM_DISTANCE);
+	camDist = max(cl_cameraDist->value, CAMERA_MINIMUM_DISTANCE);
 #ifdef FIXED_VIEW
 	sscanf (Cvar_VariableString("3rd"), "%f %f %f", VECTOR_ARG(&cl.refdef.viewangles));
 #endif
-	AngleVectors (cl.refdef.viewangles, &forward, NULL, NULL);
+	CVec3 angles = cl.refdef.viewangles;
+	angles[YAW] += cl_cameraAngle->value;
+	AngleVectors (angles, &forward, NULL, NULL);
 	VectorMA (cl.refdef.vieworg, -camDist, forward, pos);
-	pos[2] += cl_cameraheight->value;
+	pos[2] += cl_cameraHeight->value;
+	cl.refdef.viewangles[YAW] += cl_cameraAngle->value;
 
 	CL_Trace (trace, cl.refdef.vieworg, pos, mins, maxs, MASK_SHOT|MASK_WATER);
 	if (trace.fraction < 1)

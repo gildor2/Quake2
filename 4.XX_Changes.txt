@@ -28,8 +28,10 @@ Comments:
 - improved look of "player setup" menu
 - improved "set game directory" action
 - ability to reverse sound channels; controllable with "s_reverse_stereo"
-- can use skins without icon ("*_i.???") file -- skin shound have name "skn_*.???"; side effect: even when
-  skin icon exists, it will be ignored
+- skins:
+  - md2: can use skins without icon ("*_i.???") file -- skin shound have name "skn_*.???"; side effect: even when
+    skin icon exists, it will be ignored
+  - md2: implemented skin selection logic when specified skin is absent
 - added "disconnect" menu item into "multiplayer" menu
 
 2. FIXES
@@ -187,6 +189,8 @@ Configuration
   - to execute commands, use "-command [arguments]"
   - examples: quake2 -nosound -deathmatch=1 -map q2dm1 -echo "hello world!"
               quake2 -nointro -nosound -timedemo -demomap demo1 -set nextserver quit
+- support for Quake3 player models; simply put model.pk3 into baseq2 directory and rename file to .pak
+  (or use "loadpak model.pk3" command); this feature requires extended protocol support
 
 Server
 ------

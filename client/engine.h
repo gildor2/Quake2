@@ -19,7 +19,7 @@ bool	FS_FileExists (const char *filename);
 TList<CStringItem> FS_ListFiles (const char *name, int flags);
 void*	FS_LoadFile (const char *name, unsigned *size = NULL);
 void	FS_FreeFile (void *buf);
-char*	FS_Gamedir (void);
+const char* FS_Gamedir ();
 void	FS_CreatePath (const char *path);
 void	FS_CopyFile (const char *src, const char *dst);
 void	FS_CopyFiles (const char *srcMask, const char *dstDir);

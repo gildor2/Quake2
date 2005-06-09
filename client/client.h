@@ -68,6 +68,7 @@ struct centity_t
 	clEntityState_t prev;		// will always be valid, but might just be a copy of current
 	animState_t legsAnim;		// animation state for Quake3 player model
 	animState_t torsoAnim;
+	animState_t headAnim;		// used only angles
 
 	int		serverframe;		// if not current, this ent isn't in the frame
 
@@ -164,7 +165,6 @@ struct client_state_t
 	CBasicImage	*image_precache[MAX_IMAGES];
 
 	clientInfo_t clientInfo[MAX_CLIENTS];
-	clientInfo_t baseClientInfo;
 };
 
 extern	client_state_t	cl;
@@ -283,8 +283,7 @@ extern	cvar_t	*cl_paused;
 
 extern	cvar_t	*cl_vwep;
 extern	cvar_t	*cl_3rd_person;
-extern	cvar_t	*cl_cameradist;
-extern	cvar_t	*cl_cameraheight;
+extern	cvar_t	*cl_cameraDist, *cl_cameraHeight, *cl_cameraAngle;
 
 extern  cvar_t  *cl_extProtocol;
 
@@ -293,6 +292,8 @@ extern	cvar_t	*cl_showbboxes;
 extern	cvar_t	*r_sfx_pause;
 
 extern	cvar_t	*cl_infps;
+
+extern	cvar_t	*gender, *gender_auto, *skin;
 
 extern	centity_t	*cl_entities;	// [MAX_EDICTS]
 
@@ -433,7 +434,6 @@ void CL_AddEntityBox (clEntityState_t *st, unsigned rgba);
 void CL_Init (void);
 
 void CL_Pause (bool enable);
-void CL_FixUpGender(void);
 void CL_Disconnect (void);
 void CL_Disconnect_f (void);
 void CL_GetChallengePacket (void);

@@ -63,6 +63,7 @@ CLIENT = \
 
 D = server
 SERVER = \
+	$D/sv_anim.cpp \
 	$D/sv_ccmds.cpp \
 	$D/sv_ents.cpp \
 	$D/sv_game.cpp \

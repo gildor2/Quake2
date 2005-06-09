@@ -2,235 +2,12 @@
 
 #define QUAKE3_PLAYER_SCALE		0.9	// Cvar_VariableValue("test")
 
-//!! move gender-by-model selection code here (if not server-side)
-//!! model-specific sounds placed in sound/player/[model]/*.wav
 
 /*-----------------------------------------------------------------------------
-	Scanning for player models
+	Simple text parser
+	?? change, move outside, use another etc
 -----------------------------------------------------------------------------*/
 
-static CMemoryChain *pmiChain;
-TList<playerModelInfo_t> pmiList;
-int numPlayerModels;
-
-
-static bool IsValidSkin (const char *skin, CStringItem *pcxfiles)
-{
-	const char *ext = strrchr (skin, '.');
-	if (!ext) return false;
-
-	if (stricmp (ext, ".pcx") && stricmp (ext, ".tga") && stricmp (ext, ".jpg"))
-		return false;		// not image
-
-	// modelname/skn_* have no icon
-	const char *name = strrchr (skin, '/');
-	if (!name) return false;
-	else name++;			// skip '/'
-
-	if (!memcmp (name, "skn_", 4))
-		return true;
-	char scratch[MAX_OSPATH];
-	strcpy (scratch, skin);
-	strcpy (scratch + (ext - skin), "_i.pcx");
-
-	for (CStringItem *item = pcxfiles; item; item = item->next)
-		if (!strcmp (item->name, scratch)) return true;
-	return false;
-}
-
-
-void FreePlayerModelsInfo ()
-{
-	if (pmiChain)
-	{
-		delete pmiChain;
-		pmiChain = NULL;
-	}
-	numPlayerModels = 0;
-	pmiList.Reset();
-}
-
-
-static void ScanQuake2Models ()
-{
-	/*----- get a list of directories -----*/
-	const char *path = NULL;
-	TList<CStringItem> dirnames;
-	while (path = FS_NextPath (path))
-	{
-		dirnames = FS_ListFiles (va("%s/players/*.*", path), LIST_DIRS);
-		if (dirnames.First()) break;
-	}
-	if (!dirnames.First()) return;
-
-	/*--- go through the subdirectories ---*/
-	for (CStringItem *diritem = dirnames.First(); diritem; diritem = dirnames.Next(diritem))
-	{
-		// verify the existence of tris.md2
-		if (!FS_FileExists (va("%s/tris.md2", diritem->name)))
-			continue;
-
-		// verify the existence of at least one pcx skin
-		// "/*.pcx" -> pcx,tga,jpg (see IsValidSkin())
-		TList<CStringItem> skinNames = FS_ListFiles (va("%s/*.*", diritem->name), LIST_FILES);
-		if (!skinNames.First()) continue;
-
-		// count valid skins, which consist of a skin with a matching "_i" icon
-		TList<CStringItem> skins;
-		int numSkins = 0;
-		for (CStringItem *skinItem = skinNames.First(); skinItem; skinItem = skinNames.Next(skinItem))
-			if (IsValidSkin (skinItem->name, skinNames.First()))
-			{
-				char *str = strrchr (skinItem->name, '/') + 1;
-				char *ext = strrchr (str, '.');
-				ext[0] = 0;
-				skins.CreateAndInsert (str, pmiChain);
-				numSkins++;
-			}
-		skinNames.Free();
-		if (!numSkins) continue;
-
-		// create model info
-		playerModelInfo_t *info = new (strrchr (diritem->name, '/')+1, pmiChain) playerModelInfo_t;
-		info->numSkins = numSkins;
-		info->skins = skins;
-		// add model info to pmi
-		pmiList.Insert (info);	//?? check pmiList, if exists - do not add (have same Quake3 model)
-
-		numPlayerModels++;
-	}
-	dirnames.Free();
-}
-
-
-void ScanQuake3Models ()
-{
-	/*----- get a list of directories -----*/
-	const char *path = NULL;
-	TList<CStringItem> dirnames;
-	while (path = FS_NextPath (path))
-	{
-		dirnames = FS_ListFiles (va("%s/models/players/*.*", path), LIST_DIRS);
-		if (dirnames.First()) break;
-	}
-	if (!dirnames.First()) return;
-
-	/*--- go through the subdirectories ---*/
-	for (CStringItem *diritem = dirnames.First(); diritem; diritem = dirnames.Next(diritem))
-	{
-		// verify the existence of animation.cfg
-		if (!FS_FileExists (va("%s/animation.cfg", diritem->name)))
-			continue;
-
-		// verify the existence of at least one skin file
-		TList<CStringItem> skinNames = FS_ListFiles (va("%s/icon_*", diritem->name), LIST_FILES);
-		if (!skinNames.First()) continue;
-
-		// count valid skins, which consist of a skin with a matching "_i" icon
-		TList<CStringItem> skins;
-		int numSkins = 0;
-		for (CStringItem *skinItem = skinNames.First(); skinItem; skinItem = skinNames.Next(skinItem))
-		{
-			char *str = strrchr (skinItem->name, '/') + 1 /*skip '/'*/ + 5 /*skip "icon_"*/;
-			char *ext = strrchr (str, '.');
-			ext[0] = 0;
-			skins.CreateAndInsert (str, pmiChain);
-			numSkins++;
-		}
-		skinNames.Free();
-		if (!numSkins) continue;
-
-		// create model info
-		playerModelInfo_t *info = new (strrchr (diritem->name, '/')+1, pmiChain) playerModelInfo_t;
-		info->numSkins = numSkins;
-		info->skins = skins;
-		info->isQ3mdl = true;
-		// add model info to pmi
-		pmiList.Insert (info);
-
-		numPlayerModels++;
-	}
-	dirnames.Free();
-}
-
-
-bool ScanPlayerModels ()
-{
-	FreePlayerModelsInfo ();
-	pmiChain = new CMemoryChain;
-
-	// give priority to Quake3 player models: when model with same name
-	// presents in md2 format too, it will be ignored
-	ScanQuake3Models ();
-	ScanQuake2Models ();
-
-	if (!numPlayerModels)
-	{
-		FreePlayerModelsInfo ();
-		return false;
-	}
-
-	return true;
-}
-
-
-/*=============================================================================
-
-	In-game player model drawing/loading code
-
-=============================================================================*/
-
-// WARNING: OpenGLDrv creates model_t for absent files
-// ... so, we use wrapper functions
-static CRenderModel *FindQ2Model (const char *name, const char *part)
-{
-	char filename[MAX_QPATH];
-	appSprintf (ARRAY_ARG(filename), "players/%s/%s", name, part);
-	if (!strchr (part, '.')) strcat (filename, ".md2");
-	return RE_RegisterModel (filename);
-}
-
-static CRenderModel *FindQ3Model (const char *name, const char *part)
-{
-	char filename[MAX_QPATH];
-	appSprintf (ARRAY_ARG(filename), "models/players/%s/%s.md3", name, part);
-	return RE_RegisterModel (filename);
-}
-
-
-/*-----------------------------------------------------------------------------
-	Quake3 player model support
------------------------------------------------------------------------------*/
-
-static clientInfo_t *gci;
-
-static void cAnimGender (int argc, char **argv)
-{
-// 'F','f' -> female, 'N','n' -> neutral, other - male
-//	gci->gender =
-}
-
-static void cAnimFixedLegs (int argc, char **argv)
-{
-	gci->fixedLegs = true;
-}
-
-static void cAnimFixedTorso (int argc, char **argv)
-{
-	gci->fixedTorso = true;
-}
-
-
-static const CSimpleCommand animCommands[] = {
-	{"footsteps",	NULL},
-	{"headoffset",	NULL},				// used in Q3 for HUD only
-	{"sex",			cAnimGender},
-	{"fixedlegs",	cAnimFixedLegs},
-	{"fixedtorso",	cAnimFixedTorso}
-};
-
-
-//!! change, move outside, use another etc
 static const char *parserText;
 
 static void SetupTextParser (const char *text)
@@ -276,6 +53,386 @@ static const char *GetLine ()
 }
 
 
+/*-----------------------------------------------------------------------------
+	Scanning for player models
+-----------------------------------------------------------------------------*/
+
+static CMemoryChain *pmiChain;
+TList<playerModelInfo_t> pmiList;
+int numPlayerModels;
+
+
+static bool Md2SkinExists (const char *skin, CStringItem *pcxfiles)
+{
+	const char *ext = strrchr (skin, '.');
+	if (!ext) return false;
+
+	if (stricmp (ext, ".pcx") && stricmp (ext, ".tga") && stricmp (ext, ".jpg"))
+		return false;		// not image
+
+	// modelname/skn_* have no icon
+	const char *name = strrchr (skin, '/');
+	if (!name) name = skin;
+	else name++;			// skip '/'
+
+	if (!memcmp (name, "skn_", 4))
+		return true;
+	char scratch[MAX_OSPATH];
+	strcpy (scratch, skin);
+	strcpy (scratch + (ext - skin), "_i.pcx");
+
+	for (CStringItem *item = pcxfiles; item; item = item->next)
+		if (!strcmp (item->name, scratch)) return true;
+	return false;
+}
+
+
+void FreePlayerModelsInfo ()
+{
+	if (pmiChain)
+	{
+		delete pmiChain;
+		pmiChain = NULL;
+	}
+	numPlayerModels = 0;
+	pmiList.Reset();
+}
+
+
+static void ScanQuake2Models (const char *path)
+{
+	/*----- get a list of directories -----*/
+	TList<CStringItem> dirnames;
+	dirnames = FS_ListFiles (va("%s/players/*.*", path), LIST_DIRS);
+	if (!dirnames.First()) return;
+
+	/*--- go through the subdirectories ---*/
+	for (CStringItem *diritem = dirnames.First(); diritem; diritem = dirnames.Next(diritem))
+	{
+		// verify the existence of tris.md2
+		if (!FS_FileExists (va("%s/tris.md2", diritem->name)))
+			continue;
+
+		// verify the existence of at least one pcx skin
+		// "/*.pcx" -> pcx,tga,jpg (see Md2SkinExists())
+		TList<CStringItem> skinNames = FS_ListFiles (va("%s/*.*", diritem->name), LIST_FILES);
+		if (!skinNames.First()) continue;
+
+		// count valid skins, which consist of a skin with a matching "_i" icon
+		TList<CStringItem> skins;
+		int numSkins = 0;
+		for (CStringItem *skinItem = skinNames.First(); skinItem; skinItem = skinNames.Next(skinItem))
+			if (Md2SkinExists (skinItem->name, skinNames.First()))
+			{
+				char *str = strrchr (skinItem->name, '/') + 1;
+				char *ext = strrchr (str, '.');
+				ext[0] = 0;
+				skins.CreateAndInsert (str, pmiChain);
+				numSkins++;
+			}
+		skinNames.Free();
+		if (!numSkins) continue;
+
+		// create model info
+		playerModelInfo_t *info = new (strrchr (diritem->name, '/')+1, pmiChain) playerModelInfo_t;
+		info->numSkins = numSkins;
+		info->skins = skins;
+		// add model info to pmi
+		pmiList.Insert (info);	//?? check pmiList, if exists - do not add (have same Quake3 model)
+
+		numPlayerModels++;
+	}
+	dirnames.Free();
+}
+
+
+void ScanQuake3Models (const char *path)
+{
+	/*----- get a list of directories -----*/
+	TList<CStringItem> dirnames;
+	dirnames = FS_ListFiles (va("%s/models/players/*.*", path), LIST_DIRS);
+	if (!dirnames.First()) return;
+
+	/*--- go through the subdirectories ---*/
+	for (CStringItem *diritem = dirnames.First(); diritem; diritem = dirnames.Next(diritem))
+	{
+		// verify the existence of animation.cfg
+		if (!FS_FileExists (va("%s/animation.cfg", diritem->name)))
+			continue;
+
+		// verify the existence of at least one skin file
+		TList<CStringItem> skinNames = FS_ListFiles (va("%s/icon_*", diritem->name), LIST_FILES);
+		if (!skinNames.First()) continue;
+
+		// count valid skins, which consist of a skin with a matching "_i" icon
+		TList<CStringItem> skins;
+		int numSkins = 0;
+		for (CStringItem *skinItem = skinNames.First(); skinItem; skinItem = skinNames.Next(skinItem))
+		{
+			char *str = strrchr (skinItem->name, '/') + 1 /*skip '/'*/ + 5 /*skip "icon_"*/;
+			char *ext = strrchr (str, '.');
+			ext[0] = 0;
+			// check at least one skin file
+			if (FS_FileExists (va("%s/lower_%s.skin", diritem->name, str)))
+			{
+				if (skins.Find (str)) continue;		// may be, have "icon_file.jpg" and "icon_file.tga" ...
+				skins.CreateAndInsert (str, pmiChain);
+				numSkins++;
+			}
+		}
+		skinNames.Free();
+		if (!numSkins) continue;
+
+		// create model info
+		playerModelInfo_t *info = new (strrchr (diritem->name, '/')+1, pmiChain) playerModelInfo_t;
+		info->numSkins = numSkins;
+		info->skins = skins;
+		info->isQ3mdl = true;
+		// add model info to pmi
+		pmiList.Insert (info);
+
+		numPlayerModels++;
+	}
+	dirnames.Free();
+}
+
+
+bool ScanPlayerModels ()
+{
+	FreePlayerModelsInfo ();
+	pmiChain = new CMemoryChain;
+
+	const char *path = NULL;
+	while (path = FS_NextPath (path))
+	{
+		// give priority to Quake3 player models: when model with same name
+		// presents in md2 format too, it will be ignored
+		ScanQuake3Models (path);
+		ScanQuake2Models (path);
+		if (pmiList.First()) break;		// models found
+	}
+
+	if (!numPlayerModels)
+	{
+		FreePlayerModelsInfo ();
+		return false;
+	}
+
+	return true;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Gender-by-model detection
+-----------------------------------------------------------------------------*/
+
+#define		MAX_FEMALE_MODELS		128
+#define		MAX_FEMALE_MODEL_BUF	(MAX_FEMALE_MODELS*16)
+static char *female_models[MAX_FEMALE_MODELS];
+static char female_model_buf[MAX_FEMALE_MODEL_BUF];
+
+static void ReadModelsGenderList ()
+{
+	char	*buf;
+
+	//?? allow multiple files (place in special directory); allow separate file for each model (placed in model dir)
+	female_models[0] = NULL;
+	if (!(buf = (char*) FS_LoadFile ("players/model.lst")))
+	{
+		Com_DPrintf ("players/model.lst is not found\n");
+		return;
+	}
+
+	SetupTextParser (buf);
+
+	char *out = female_model_buf;
+	int free = MAX_FEMALE_MODEL_BUF;
+	int i = 0;
+
+	while (true)
+	{
+		const char *line = GetLine ();
+		if (!line) break;
+		if (!line[0]) continue;
+
+		int n = strlen (line);
+		Com_DPrintf("female model: %s\n",line);
+		n++;
+		free -= n;
+		if (free < 0 || i >= MAX_FEMALE_MODELS - 1)
+		{
+			Com_WPrintf ("model.lst is too large\n");
+			break;
+		}
+		strcpy (out, line);
+		female_models[i++] = out;
+		out += n;
+	}
+
+	female_models[i] = NULL;
+	Com_DPrintf ("Parsed %d model genders\n", i);
+
+	FS_FreeFile (buf);
+}
+
+
+bool CL_IsFemaleModel (const char *model)
+{
+	if (!stricmp(model, "female") || !stricmp(model, "crakhor"))
+		return true;
+
+	static char lastGameDir[MAX_QPATH];
+	const char *gameDir = FS_Gamedir ();
+	if (strcmp (gameDir, lastGameDir))
+	{
+		ReadModelsGenderList ();
+		strcpy (lastGameDir, gameDir);
+	}
+
+	int i = 0;
+	while (const char *s = female_models[i++])
+		if (!stricmp (s, model))
+			return true;
+
+	return false;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Model skins
+-----------------------------------------------------------------------------*/
+
+static void SetSimpleSkin (const char *name, CModelSkin &skin)
+{
+	skin.surf[0].surfName[0] = 0;	// empty surface name
+	CBasicImage *shader = RE_RegisterSkin (name);
+	skin.surf[0].shader = shader;
+	skin.numSurfs = (shader != NULL) ? 1 : 0;
+}
+
+
+// false when: a) no skin file b) absent one of skin shaders
+static bool SetMd3Skin (const char *skinName, CModelSkin &skin)
+{
+	// load skin file
+	char	*buf;
+	char	filename[MAX_QPATH];
+	appSprintf (ARRAY_ARG(filename), "models/players/%s.skin", skinName);
+	if (!(buf = (char*) FS_LoadFile (filename)))
+	{
+		Com_DPrintf ("no skin: %s\n", filename);
+		return false;
+	}
+
+	// parse skin
+	memset (&skin, 0, sizeof(skin));
+	bool result = true;
+	SetupTextParser (buf);
+
+	int numSurfs = 0;
+	while (true)
+	{
+		const char *line = GetLine ();
+		if (!line) break;
+		if (!line[0]) continue;
+
+		char *p = strchr (line, ',');
+		if (!p || !p[1]) continue;		// no shader
+		// check/load shader
+
+		// special processing of "nodraw" shader
+		const char *n = strrchr (p+1, '/');
+		if (n) n++; else n = p+1;
+		if (!strnicmp (n, "nodraw", 6))
+		{
+			if (n[6] == 0 || n[6] == '.')	// "nodraw" or "nodraw.ext"
+			{
+				Com_DPrintf("nodraw for %s/%s\n", skinName, line);
+				continue;
+			}
+		}
+
+		CBasicImage *shader = RE_RegisterSkin (p+1);
+		if (!shader)
+		{
+			// code based on gl_trimodel.cpp::SetMd3Skin()
+			char	mName[MAX_QPATH];	// new skin name
+			// try to find skin forcing model directory
+			appCopyFilename (mName, filename, sizeof(mName));
+			char *mPtr = strrchr (mName, '/');
+			if (mPtr)	mPtr++;			// skip '/'
+			else		mPtr = mName;
+
+			char *sPtr = strrchr (p+1, '/');
+			if (sPtr)	sPtr++;			// skip '/'
+			else		sPtr = p+1;
+
+			strcpy (mPtr, sPtr);		// make "modelpath/skinname"
+			shader = RE_RegisterSkin (mName);
+		}
+		if (!shader)
+		{
+#if 0
+			result = false;
+			break;
+#else
+			shader = RE_RegisterSkin ("*identityLight");	//?? temporary
+#endif
+		}
+		if (numSurfs >= ARRAY_COUNT(skin.surf))
+		{
+			Com_WPrintf ("Too much skin surfaces in %s\n", skinName);
+			result = false;
+			break;
+		}
+		// store info
+		appStrncpylwr (skin.surf[numSurfs].surfName, line, p - line + 1);
+		skin.surf[numSurfs].shader = shader;
+//		Com_Printf("%s %d : [%s] <- %s\n", skinName, numSurfs, skin.surf[numSurfs].surfName, shader->name);
+		numSurfs++;
+	}
+	if (result)
+		skin.numSurfs = numSurfs;
+
+	FS_FreeFile (buf);
+
+	return result;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Quake3 player model loading
+-----------------------------------------------------------------------------*/
+
+static clientInfo_t *gci;
+
+static void cAnimGender (int argc, char **argv)
+{
+	// 'F','f' -> female, 'N','n' -> neutral, other - male
+	if (argc < 2) return;
+	gci->modelGender = toLower (argv[1][0]);
+}
+
+static void cAnimFixedLegs (int argc, char **argv)
+{
+	gci->fixedLegs = true;
+}
+
+static void cAnimFixedTorso (int argc, char **argv)
+{
+	gci->fixedTorso = true;
+}
+
+
+static const CSimpleCommand animCommands[] = {
+	{"footsteps",	NULL},
+	{"headoffset",	NULL},				// used in Q3 for HUD only
+	{"sex",			cAnimGender},
+	{"fixedlegs",	cAnimFixedLegs},
+	{"fixedtorso",	cAnimFixedTorso}
+};
+
+
 static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 {
 	char *buf = (char*) FS_LoadFile (filename);
@@ -284,55 +441,55 @@ static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 	animation_t *anims = ci.animations;
 	int frameSkip = 0;
 
+	ci.modelGender = 'm';								// male; default
+
 	SetupTextParser (buf);
 
 	while (true)
 	{
 		const char *line = GetLine ();
 		if (!line) break;								// end of text
+		if (!line[0]) continue;
 
 		// execute line
-		if (line[0])
+		if (line[0] >= '0' && line[0] <= '9')		// numbers => frame numbers
 		{
-			if (line[0] >= '0' && line[0] <= '9')		// numbers => frame numbers
+			if (animNumber >= MAX_ANIMATIONS)
 			{
-				if (animNumber >= MAX_ANIMATIONS)
-				{
-					Com_WPrintf ("Too much animations in \"%s\"\n", filename);
-					break;
-				}
-				int firstFrame, numFrames, loopFrames;
-				float fps;
-				if (sscanf (line, "%d %d %d %f", &firstFrame, &numFrames, &loopFrames, &fps) != 4)
-				{
-					Com_WPrintf ("Invalid frame info [%s] in \"%s\"\n", line, filename);
-					break;
-				}
-				// some processing on acquired data + store info
-				if (animNumber == LEGS_WALKCR)
-				{
-					frameSkip = firstFrame - anims[TORSO_GESTURE].firstFrame;
-					firstFrame = anims[TORSO_GESTURE].firstFrame;
-				}
-				else if (animNumber > LEGS_WALKCR && animNumber < TORSO_GETFLAG)
-					firstFrame -= frameSkip;
-				if (numFrames < 0)
-				{
-					numFrames = -numFrames;
-					anims[animNumber].reversed = true;
-				}
-				anims[animNumber].firstFrame = firstFrame;
-				anims[animNumber].numFrames  = numFrames;
-				anims[animNumber].loopFrames = loopFrames;
-				if (fps < 1) fps = 1;
-				anims[animNumber].frameLerp = appRound (1000.0f / fps);
-				animNumber++;
-			}
-			else if (!ExecuteCommand (line, ARRAY_ARG(animCommands)))
-			{
-				Com_WPrintf ("Invalid line [%s] in \"%s\"\n", line, filename);
+				Com_WPrintf ("Too much animations in \"%s\"\n", filename);
 				break;
 			}
+			int firstFrame, numFrames, loopFrames;
+			float fps;
+			if (sscanf (line, "%d %d %d %f", &firstFrame, &numFrames, &loopFrames, &fps) != 4)
+			{
+				Com_WPrintf ("Invalid frame info [%s] in \"%s\"\n", line, filename);
+				break;
+			}
+			// some processing on acquired data + store info
+			if (animNumber == LEGS_WALKCR)
+			{
+				frameSkip = firstFrame - anims[TORSO_GESTURE].firstFrame;
+				firstFrame = anims[TORSO_GESTURE].firstFrame;
+			}
+			else if (animNumber > LEGS_WALKCR && animNumber < TORSO_GETFLAG)
+				firstFrame -= frameSkip;
+			if (numFrames < 0)
+			{
+				numFrames = -numFrames;
+				anims[animNumber].reversed = true;
+			}
+			anims[animNumber].firstFrame = firstFrame;
+			anims[animNumber].numFrames  = numFrames;
+			anims[animNumber].loopFrames = loopFrames;
+			if (fps < 1) fps = 1;
+			anims[animNumber].frameLerp = appRound (1000.0f / fps);
+			animNumber++;
+		}
+		else if (!ExecuteCommand (line, ARRAY_ARG(animCommands)))
+		{
+			Com_WPrintf ("Invalid line [%s] in \"%s\"\n", line, filename);
+			break;
 		}
 	}
 
@@ -358,6 +515,25 @@ static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 	FS_FreeFile (buf);
 }
 
+
+static bool SetQuake3Skin (clientInfo_t &ci, const char *modelName, const char *skinName)
+{
+	bool result = SetMd3Skin (va("%s/lower_%s", modelName, skinName), ci.legsSkin);
+	result     &= SetMd3Skin (va("%s/upper_%s", modelName, skinName), ci.torsoSkin);
+	result     &= SetMd3Skin (va("%s/head_%s", modelName, skinName), ci.headSkin);
+
+	return result;
+}
+
+
+static CRenderModel *FindQ3Model (const char *name, const char *part)
+{
+	char filename[MAX_QPATH];
+	appSprintf (ARRAY_ARG(filename), "models/players/%s/%s.md3", name, part);
+	return RE_RegisterModel (filename);
+}
+
+
 static bool TryQuake3Model (clientInfo_t &ci, const char *modelName, const char *skinName)
 {
 	char animCfg[MAX_QPATH];
@@ -371,14 +547,15 @@ static bool TryQuake3Model (clientInfo_t &ci, const char *modelName, const char 
 
 	LoadAnimationCfg (ci, animCfg);
 
+	if (!SetQuake3Skin (ci, modelName, skinName))
+	{
+//		skinName = "default";
+		if (!SetQuake3Skin (ci, modelName, "default"))
+			return false;			// no default skin
+	}
+
 	appSprintf (ARRAY_ARG(ci.iconName), "/models/players/%s/icon_%s", modelName, skinName);
 	ci.icon = RE_RegisterPic (ci.iconName);
-
-	//!! load/parse skin
-
-	//!! change:
-	ci.legsSkin = RE_RegisterSkin (va("models/players/%s/%s", modelName, skinName));
-	ci.torsoSkin = ci.headSkin = ci.legsSkin;
 
 	ci.isQ3model = true;
 	ci.isValidModel = true;
@@ -386,7 +563,394 @@ static bool TryQuake3Model (clientInfo_t &ci, const char *modelName, const char 
 }
 
 
-// service functions
+/*-----------------------------------------------------------------------------
+	Quake3 model animation
+-----------------------------------------------------------------------------*/
+
+struct animInfo_t
+{
+	int		nextAnim;
+};
+
+#define ANIM_FREEZE		-1					//!! useless
+
+static const animInfo_t animInfo[] = {
+//	animation			next
+/* BOTH_DEATH1 */	{	ANIM_FREEZE		},
+/* BOTH_DEAD1 */	{	ANIM_FREEZE		},
+/* BOTH_DEATH2 */	{	ANIM_FREEZE		},
+/* BOTH_DEAD2 */	{	ANIM_FREEZE		},
+/* BOTH_DEATH3 */	{	ANIM_FREEZE		},
+/* BOTH_DEAD3 */	{	ANIM_FREEZE		},
+
+/* TORSO_GESTURE */	{	TORSO_STAND		},
+
+/* TORSO_ATTACK */	{	TORSO_STAND		},
+/* TORSO_ATTACK2 */	{	TORSO_STAND2	},
+
+/* TORSO_DROP */	{	TORSO_RAISE		},
+/* TORSO_RAISE */	{	TORSO_STAND		},
+
+/* TORSO_STAND */	{	TORSO_STAND		},
+/* TORSO_STAND2 */	{	TORSO_STAND2	},
+
+/* LEGS_WALKCR */	{	LEGS_WALKCR		},
+/* LEGS_WALK */		{	LEGS_WALK		},
+/* LEGS_RUN */		{	LEGS_RUN		},
+/* LEGS_BACK */		{	LEGS_BACK		},
+/* LEGS_SWIM */		{	LEGS_SWIM		},
+
+/* LEGS_JUMP */		{	ANIM_FREEZE		},
+/* LEGS_LAND */		{	ANIM_FREEZE		},
+/* LEGS_JUMPB */	{	ANIM_FREEZE		},
+/* LEGS_LANDB */	{	ANIM_FREEZE		},
+
+/* LEGS_IDLE */		{	LEGS_IDLE		},
+/* LEGS_IDLECR */	{	LEGS_IDLECR		},
+
+/* LEGS_TURN */		{	LEGS_TURN		},
+
+/* TORSO_GETFLAG */	{	TORSO_STAND		},
+/* TORSO_GUARDBASE */{	TORSO_STAND		},
+/* TORSO_PATROL */	{	TORSO_STAND		},
+/* TORSO_FOLLOWME */{	TORSO_STAND		},
+/* TORSO_AFFIRMATIVE */{TORSO_STAND		},
+/* TORSO_NEGATIVE */{	TORSO_STAND		},
+
+/* MAX_ANIMATIONS */{	0				},	// no such animation
+/* LEGS_BACKCR */	{	LEGS_BACKCR		},
+/* LEGS_BACKWALK */	{	LEGS_BACKWALK	},
+#if 0
+/* FLAG_RUN */		{	FLAG_RUN		},
+/* FLAG_STAND */	{	FLAG_STAND		},
+/* FLAG_STAND2RUN */{	FLAG_RUN		},
+#endif
+/* MAX_TOTALANIMATIONS */{0				}	// no such animation
+};
+
+#define curTime	cl.time	//????
+
+void RunAnimation (clientInfo_t &ci, animState_t &as, int animNum)
+{
+	// just in case ...
+	if (animNum < 0 || animNum >= MAX_TOTALANIMATIONS) animNum = 0;
+
+	if (animNum == ANIM_NOCHANGE)
+		animNum = as.animNum;
+
+	// get animation
+	animation_t *anim = &ci.animations[animNum];
+
+	//!! check for correct animation changing w/o lerping (teleport, respawn ...)
+	//!! can make this using teleport detection (significant changing of origin):
+	//!! when detected, lerp frames from 0
+
+	// check for next animation in sequence
+	int wholeAnimTime = anim->numFrames * anim->frameLerp;
+	if (animNum == as.animNum && (curTime >= as.startTime + wholeAnimTime - anim->frameLerp))	// start next sequence 1 frame earlier
+	{
+		if (as.nextAnimNum == ANIM_FREEZE)
+			as.completed = true;
+		else if (!anim->loopFrames)
+		{
+			// animation sequence
+			animNum = as.nextAnimNum;
+			as.nextAnimNum = animInfo[animNum].nextAnim;
+			anim = &ci.animations[animNum];
+		}
+	}
+
+	if (animNum != as.animNum)
+	{
+		// animation was changed
+		as.animNum     = animNum;
+		as.nextAnimNum = animInfo[animNum].nextAnim;
+		as.completed   = false;
+		as.startTime   = as.time + anim->frameLerp;		// allow current frame to complete
+	}
+
+	// compute frame, oldFrame, time, oldTime (taken from Q3:CG_RunLerpFrame())
+	if (as.completed)
+	{
+		as.time = as.oldTime = curTime;
+		if (!anim->reversed)
+			as.frame = anim->firstFrame + anim->numFrames - 1;
+		else
+			as.frame = anim->firstFrame;
+	}
+	else if (curTime >= as.time)
+	{
+		// copy frame -> oldframe
+		as.oldTime  = as.time;
+		as.oldFrame = as.frame;
+		as.time    += anim->frameLerp;
+		int frm = (as.time - as.startTime) / anim->frameLerp;
+		if (frm >= anim->numFrames)
+		{
+			frm %= anim->numFrames;
+			if (anim->loopFrames)
+				frm = frm % anim->loopFrames + (anim->numFrames - anim->loopFrames);
+			else
+			{
+				frm = anim->numFrames - 1;				// hold last frame
+				as.time = curTime;						// without lerp
+			}
+		}
+		if (!anim->reversed)
+			as.frame = anim->firstFrame + frm;
+		else
+			as.frame = anim->firstFrame + anim->numFrames - 1 - frm;
+	}
+	// clamp times
+	if (as.time > curTime + 200)
+		as.time = curTime;
+	if (as.oldTime > curTime)
+		as.oldTime = curTime;
+	// when we was skippen few RunAnimation() calls before ...
+	if (as.time < curTime)
+		as.time = as.oldTime = curTime;
+}
+
+
+static void ApplyAnimation (clientInfo_t &ci, animState_t &as, entity_t &ent)
+{
+	RunAnimation (ci, as);
+
+	animation_t &anim = ci.animations[as.animNum];
+
+	ent.oldframe = as.oldFrame;
+	ent.frame    = as.frame;
+	ent.backlerp = (as.time > as.oldTime) ? 1.0f - (float)(curTime - as.oldTime) / (as.time - as.oldTime) : 0;
+//	RE_DrawTextLeft (va("frm: %d -> %d %g\nold:%d new:%d curr:%d",ent.oldframe, ent.frame, ent.backlerp,as.oldTime,as.time,curTime));
+}
+
+
+static bool IsGroundLegsAnim (int n)
+{
+	if (n == LEGS_RUN    || n == LEGS_BACK ||
+		n == LEGS_WALK   || n == LEGS_BACKWALK ||
+		n == LEGS_WALKCR || n == LEGS_BACKCR ||
+		n == LEGS_IDLE   || n == LEGS_IDLECR)
+		return true;
+	return false;
+}
+
+
+// visible weapon support
+
+static weaponInfo_t *loadingWeap;
+
+static void cWeapModel (int argc, char **argv)
+{
+	loadingWeap->model = RE_RegisterModel (argv[1]);
+}
+
+static void cWeapScale (int argc, char **argv)
+{
+	loadingWeap->drawScale = atof (argv[1]);
+}
+
+static void cWeapOffset (int argc, char **argv)
+{
+	for (int i = 0; i < 3; i++)
+		loadingWeap->origin[i] = atof (argv[i+1]);
+}
+
+static const CSimpleCommand weapCommands[] = {
+	{"model",	cWeapModel},
+	{"scale",	cWeapScale},
+	{"offset",	cWeapOffset}
+};
+
+
+static bool LoadWeaponInfo (const char *filename, weaponInfo_t &weap)
+{
+	char *buf = (char*) FS_LoadFile (va("models/weapons/%s.cfg", filename));
+	if (!buf) return false;
+
+	memset (&weap, 0, sizeof(weaponInfo_t));
+	loadingWeap = &weap;
+	// defaults
+	weap.drawScale = 1;
+	bool result = true;
+	SetupTextParser (buf);
+	while (true)
+	{
+		const char *line = GetLine ();
+		if (!line) break;
+		if (!line[0]) continue;
+
+		if (!ExecuteCommand (line, ARRAY_ARG(weapCommands)))
+		{
+			Com_WPrintf ("Invalid line [%s] in \"%s.cfg\"\n", line, filename);
+			result = false;
+			break;
+		}
+	}
+	weap.origin.Scale (weap.drawScale);
+	FS_FreeFile (buf);
+	return result && weap.model != NULL;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Quake2 player model loading
+-----------------------------------------------------------------------------*/
+
+static CRenderModel *FindQ2Model (const char *name, const char *part)
+{
+	char filename[MAX_QPATH];
+	appSprintf (ARRAY_ARG(filename), "players/%s/%s", name, part);
+	if (!strchr (part, '.')) strcat (filename, ".md2");
+	return RE_RegisterModel (filename);
+}
+
+
+static bool TryQuake2Model (clientInfo_t &ci, const char *modelName, const char *skinName, bool lockSkin = false)
+{
+	// model
+	ci.md2model = FindQ2Model (modelName, "tris");
+	if (!ci.md2model) return false;
+
+	// skin
+	SetSimpleSkin (va("players/%s/%s", modelName, skinName), ci.md2skin);
+	if (!ci.md2skin.IsValid())
+	{
+		if (lockSkin) return false;
+
+		// try skin == model
+		SetSimpleSkin (va("players/%s/%s", modelName, modelName), ci.md2skin);
+		if (!ci.md2skin.IsValid ())
+		{
+			// try any skin
+			TList<CStringItem> skinNames = FS_ListFiles (va("players/%s/*.*", modelName), LIST_FILES);
+			for (CStringItem *skinItem = skinNames.First(); skinItem; skinItem = skinNames.Next(skinItem))
+				if (Md2SkinExists (skinItem->name, skinNames.First()))
+				{
+					const char *t = strrchr (skinItem->name, '/');
+					if (!t) t = skinItem->name;
+					else t++;							// skip '/'
+					SetSimpleSkin (va("players/%s/%s", modelName, skinItem->name), ci.md2skin);
+					if (ci.md2skin.IsValid ()) break;	// done
+				}
+			skinNames.Free ();
+			if (!ci.md2skin.IsValid ()) return false;	// skins not found
+			// can change icon info too, but skin is not as specified - so, use "default_icon"
+		}
+	}
+
+	// icon
+	appSprintf (ARRAY_ARG(ci.iconName), "/players/%s/%s_i", modelName, skinName);
+	ci.icon = RE_RegisterPic (ci.iconName);
+
+	ci.isQ3model = false;
+	ci.isValidModel = true;
+	return true;
+}
+
+/*-----------------------------------------------------------------------------
+	Loading client information
+-----------------------------------------------------------------------------*/
+
+void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
+{
+	guard (CL_LoadClientinfo);
+
+	char modelName[MAX_QPATH], skinName[MAX_QPATH];
+	static unsigned id_count = 1;
+
+	memset (&ci, 0, sizeof(clientInfo_t));
+	ci.id = id_count++;
+	if (!cl_vwep->integer) loadWeapons = false;
+
+	// get player's name
+	appStrncpyz (ci.name, s, sizeof(ci.name));
+	char *t = strchr (ci.name, '\\');
+	if (t)
+	{
+		*t = 0;
+		s = t + 1;
+	}
+
+	if (cl_noskins->integer || !t || !s[0])
+		s = "male/grunt";				// default skin
+
+	// get model name
+	strcpy (modelName, s);
+	t = strchr (modelName, '/');
+	if (!t) t = strchr (modelName, '\\');
+	if (!t) t = modelName;
+	*t = 0;
+
+	// get skin name
+	strcpy (skinName, t + 1);
+
+	// try loading Quake3 model
+	if (!TryQuake3Model (ci, modelName, skinName))
+	{
+		// no such Quake3 player model - load Quake2 model
+		if (!TryQuake2Model (ci, modelName, skinName))
+		{
+			// try "male" model with the same skin
+			if (!TryQuake2Model (ci, "male", skinName, true))
+			{
+				// try "male/grunt"
+				if (!TryQuake2Model (ci, "male", "grunt"))
+					return;				// at this point, client info is invalid, and no way to make it valid
+				strcpy (skinName, "grunt");
+			}
+			strcpy (modelName, "male");
+		}
+
+		// weapons
+		ci.weaponModel[0].model = FindQ2Model (modelName, "weapon");
+		if (loadWeapons)
+			for (int i = 1; i < num_cl_weaponmodels; i++)
+			{
+				ci.weaponModel[i].model = FindQ2Model (modelName, cl_weaponmodels[i]);
+#if 0
+				// HACK: cyborg have the weapon same models, as male model
+				if (!ci.weaponModel[i].model && !strcmp (modelName, "cyborg"))
+					ci.weaponModel[i].model = FindQ2Model ("male", cl_weaponmodels[i]);
+#endif
+			}
+
+		ci.modelGender = (CL_IsFemaleModel (modelName)) ? 'f' : 'm';
+	}
+	else
+	{
+		// Quake3 model -- try loading weapons
+#if 0
+		if (!LoadWeaponInfo ("weapon.md2", ci.weaponModel[0]))
+		{
+			ci.isValidModel = false;
+			EXEC_ONCE(	// do not show multiple times
+				Com_WPrintf ("Weapon description for default weapon is not found\n");
+			)
+			return;
+		}
+#else
+		LoadWeaponInfo ("weapon.md2", ci.weaponModel[0]);
+#endif
+		if (loadWeapons)
+			for (int i = 1; i < num_cl_weaponmodels; i++)
+				LoadWeaponInfo (cl_weaponmodels[i], ci.weaponModel[i]);
+	}
+
+	// default icon
+	if (!ci.icon)
+	{
+		strcpy (ci.iconName, "default_icon");
+		ci.icon = RE_RegisterPic (ci.iconName);
+	}
+
+	unguard;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Preparing data for display
+-----------------------------------------------------------------------------*/
 
 static bool attach (const entity_t &e1, entity_t &e2, const char *tag, const CVec3 *angles = NULL, float drawScale = QUAKE3_PLAYER_SCALE)
 {
@@ -447,376 +1011,19 @@ static void SwingAngle (float dst, float tolerance, float clamp, float speed, fl
 }
 
 
-// animation support
-
-/* Quake2 animation frames:
-	name		frames	num	loop stop simple	torso		legs
-	---------------------------------------------------------------------------
-	stand	 	0-39	40	+			+		STAND[2]	IDLE
-	run			40-45	6	+			+		STAND[2]	** (WALK,BACKWALK,RUN,BACK)
-	attack		46-53	8						ATTACK[2]	**
-	pain1		54-57	4						(angle)		**
-	pain2		58-61	4						(angle)		**
-	pain3		62-65	4						(angle)		**
-	jump		66-71	6						IDLE		** (JUMP,LAND, JUMPB, LANDB)
-	flip		72-83	12						GESTURE		**
-	salute		84-94	11						GESTURE		**
-	taunt		95-111	17						GESTURE		**
-	wave		112-122	11						GESTURE		**
-	point		123-134	12						GESTURE		**
-	crstnd		135-153	19	+			+		STAND[2]	IDLECR
-	crwalk		154-159	6	+			+		STAND[2]	WALKCR
-	crattack	160-168	9						ATTACK[2]	** (IDLECR,WALKCR+BACKCR) !!+ attack in jump
-	crpain		169-172	4						(angle)		----//----
-	crdeath		173-177	5		  +		+		? (BOTH_DEATHn ?)
-	death1		178-183	6		  +		+		BOTH_DEATH1->DEAD1
-	death2		184-189	6		  +		+		BOTH_DEATH2->DEAD2
-	death3		190-197	8		  +		+		BOTH_DEATH3->DEAD3
-	---------------------------------------------------------------------------
-	stop - stop on last frame (death animation)
-	simple - basic animation, almost (or completely) idle; other (!simple) - may be combined with simple animation
-	TORSO_STAND2, TORSO_ATTACK2 - for special weapons only (gauntlet)
-	** - compute from movement
-	(angle) - pain animation in Q3 made with torso movement
-	JUMP,LAND - forward, JUMPB,LANDB - backward movement
-
-	"crpain" and "pain3" (in std q2 game) may be used in reverse order to signal weapon dropping/changing
-	"wave" may be used in reverse order for grenade throwing (1st 8 frames)
-	"jump" used 3-6 frames; frame #2 - for "in air" state (static); strange code: game/p_view.c :: G_SetClientFrame()
-
-	Unused in Q2, but present in Q3: LEGS_SWIM, LEGS_TURN, TORSO_DROP, TORSO_RAISE
-*/
-
-struct animInfo_t
+// clamp angle to [dst-clamp .. dst+clamp]
+static bool ClampAngle (float dst, float clamp, float &angle)
 {
-	int		nextAnim;
-};
+	float swing = AngleSubtract (dst, angle);
+	float absSwing = fabs (swing);
+	if (absSwing <= clamp) return false;
 
-#define ANIM_FREEZE		-1					//!! useless
-
-static const animInfo_t animInfo[] = {
-//	animation			next
-/* BOTH_DEATH1 */	{	ANIM_FREEZE		},
-/* BOTH_DEAD1 */	{	ANIM_FREEZE		},
-/* BOTH_DEATH2 */	{	ANIM_FREEZE		},
-/* BOTH_DEAD2 */	{	ANIM_FREEZE		},
-/* BOTH_DEATH3 */	{	ANIM_FREEZE		},
-/* BOTH_DEAD3 */	{	ANIM_FREEZE		},
-
-/* TORSO_GESTURE */	{	TORSO_STAND		},
-
-/* TORSO_ATTACK */	{	TORSO_STAND		},
-/* TORSO_ATTACK2 */	{	TORSO_STAND2	},
-
-/* TORSO_DROP */	{	TORSO_STAND		},
-/* TORSO_RAISE */	{	TORSO_STAND		},
-
-/* TORSO_STAND */	{	TORSO_STAND		},
-/* TORSO_STAND2 */	{	TORSO_STAND2	},
-
-/* LEGS_WALKCR */	{	LEGS_WALKCR		},
-/* LEGS_WALK */		{	LEGS_WALK		},
-/* LEGS_RUN */		{	LEGS_RUN		},
-/* LEGS_BACK */		{	LEGS_BACK		},
-/* LEGS_SWIM */		{	LEGS_SWIM		},
-
-/* LEGS_JUMP */		{	ANIM_FREEZE		},
-/* LEGS_LAND */		{	LEGS_IDLE		},	//??
-/* LEGS_JUMPB */	{	ANIM_FREEZE		},
-/* LEGS_LANDB */	{	LEGS_IDLE		},	//??
-
-/* LEGS_IDLE */		{	LEGS_IDLE		},
-/* LEGS_IDLECR */	{	LEGS_IDLECR		},
-
-/* LEGS_TURN */		{	LEGS_TURN		},
-
-/* TORSO_GETFLAG */	{	TORSO_STAND		},
-/* TORSO_GUARDBASE */{	TORSO_STAND		},
-/* TORSO_PATROL */	{	TORSO_STAND		},
-/* TORSO_FOLLOWME */{	TORSO_STAND		},
-/* TORSO_AFFIRMATIVE */{TORSO_STAND		},
-/* TORSO_NEGATIVE */{	TORSO_STAND		},
-
-/* MAX_ANIMATIONS */{	0				},	// no such animation
-/* LEGS_BACKCR */	{	LEGS_BACKCR		},
-/* LEGS_BACKWALK */	{	LEGS_BACKWALK	},
-#if 0
-/* FLAG_RUN */		{	FLAG_RUN		},
-/* FLAG_STAND */	{	FLAG_STAND		},
-/* FLAG_STAND2RUN */{	FLAG_RUN		},
-#endif
-/* MAX_TOTALANIMATIONS */{0				}	// no such animation
-};
-
-#define curTime	cl.time	//????
-
-void RunAnimation (clientInfo_t &ci, animState_t &as, int animNum)
-{
-	// just in case ...
-	if (animNum < 0 || animNum >= MAX_TOTALANIMATIONS) animNum = 0;
-
-	if (animNum == ANIM_NOCHANGE)
-		animNum = as.animNum;
-
-	// get animation
-	animation_t *anim = &ci.animations[animNum];
-
-	//!! check for correct animation changing w/o lerping (teleport, respawn ...)
-	//!! can make this using teleport detection (significant changing of origin):
-	//!! when detected, lerp frames from 0
-
-	// check for next animation in sequence
-	int wholeAnimTime = anim->numFrames * anim->frameLerp;
-	if (animNum == as.animNum && (curTime >= as.startTime + wholeAnimTime - anim->frameLerp))	// start next sequence 1 frame earlier
-	{
-		if (as.nextAnimNum == ANIM_FREEZE)
-			as.freezed = true;
-		else if (!anim->loopFrames)
-		{
-			// animation sequence
-			animNum = as.nextAnimNum;
-			as.nextAnimNum = animInfo[animNum].nextAnim;
-			anim = &ci.animations[animNum];
-		}
-	}
-
-	if (animNum != as.animNum)
-	{
-		// animation was changed
-		as.animNum     = animNum;
-		as.nextAnimNum = animInfo[animNum].nextAnim;
-		as.freezed     = false;
-		as.startTime   = as.time + anim->frameLerp;		// allow current frame to complete
-	}
-
-	// compute frame, oldFrame, time, oldTime (taken from Q3:CG_RunLerpFrame())
-	if (as.freezed)
-	{
-		as.time = as.oldTime = curTime;
-		if (!anim->reversed)
-			as.frame = anim->firstFrame + anim->numFrames - 1;
-		else
-			as.frame = anim->firstFrame;
-	}
-	else if (curTime >= as.time)
-	{
-		// copy frame -> oldframe
-		as.oldTime  = as.time;
-		as.oldFrame = as.frame;
-		as.time    += anim->frameLerp;
-		int frm = (as.time - as.startTime) / anim->frameLerp;
-		if (frm >= anim->numFrames)
-		{
-			frm %= anim->numFrames;
-			if (anim->loopFrames)
-				frm = frm % anim->loopFrames + (anim->numFrames - anim->loopFrames);
-			else
-				as.time = curTime;						// no lerping
-		}
-		if (!anim->reversed)
-			as.frame = anim->firstFrame + frm;
-		else
-			as.frame = anim->firstFrame + anim->numFrames - 1 - frm;
-	}
-	// clamp times
-	if (as.time > curTime + 200)
-		as.time = curTime;
-	if (as.oldTime > curTime)
-		as.oldTime = curTime;
-	// when we was skippen few RunAnimation() calls before ...
-	if (as.time < curTime)
-		as.time = as.oldTime = curTime;
-}
-
-
-static void ApplyAnimation (clientInfo_t &ci, animState_t &as, entity_t &ent)
-{
-	RunAnimation (ci, as);
-
-	animation_t &anim = ci.animations[as.animNum];
-
-	ent.oldframe = as.oldFrame;
-	ent.frame    = as.frame;
-	ent.backlerp = (as.time > as.oldTime) ? 1.0f - (float)(curTime - as.oldTime) / (as.time - as.oldTime) : 0;
-//	RE_DrawTextLeft (va("frm: %d -> %d %g\nold:%d new:%d curr:%d",ent.oldframe, ent.frame, ent.backlerp,as.oldTime,as.time,curTime));
-}
-
-
-static bool IsCommonLegsAnim (int n)
-{
-	if (n == LEGS_RUN    || n == LEGS_BACK ||
-		n == LEGS_WALK   || n == LEGS_BACKWALK ||
-		n == LEGS_WALKCR || n == LEGS_BACKCR ||
-		n == LEGS_IDLE   || n == LEGS_IDLECR)
-		return true;
-	return false;
-}
-
-
-// visible weapon support
-
-static weaponInfo_t *loadingWeap;
-
-static void cWeapModel (int argc, char **argv)
-{
-	loadingWeap->model = RE_RegisterModel (argv[1]);
-}
-
-static void cWeapScale (int argc, char **argv)
-{
-	loadingWeap->drawScale = atof (argv[1]);
-}
-
-static void cWeapOffset (int argc, char **argv)
-{
-	for (int i = 0; i < 3; i++)
-		loadingWeap->origin[i] = atof (argv[i+1]);
-}
-
-static const CSimpleCommand weapCommands[] = {
-	{"model",	cWeapModel},
-	{"scale",	cWeapScale},
-	{"offset",	cWeapOffset}
-};
-
-
-static bool LoadWeaponInfo (const char *filename, weaponInfo_t &weap)
-{
-	char *buf = (char*) FS_LoadFile (va("models/weapons/%s.cfg", filename));
-	if (!buf) return false;
-
-	memset (&weap, 0, sizeof(weaponInfo_t));
-	loadingWeap = &weap;
-	// defaults
-	weap.drawScale = 1;
-	bool result = true;
-	SetupTextParser (buf);
-	while (true)
-	{
-		const char *line = GetLine ();
-		if (!line) break;
-		if (!line[0]) continue;
-		if (!ExecuteCommand (line, ARRAY_ARG(weapCommands)))
-		{
-			Com_WPrintf ("Invalid line [%s] in \"%s.cfg\"\n", line, filename);
-			result = false;
-			break;
-		}
-	}
-	weap.origin.Scale (weap.drawScale);
-	FS_FreeFile (buf);
-	return result && weap.model != NULL;
-}
-
-
-/*-----------------------------------------------------------------------------
-	Quake2 and common player model code
------------------------------------------------------------------------------*/
-
-void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
-{
-	guard (CL_LoadClientinfo);
-
-	char modelName[MAX_QPATH], skinName[MAX_QPATH];
-	static unsigned id_count = 1;
-
-	memset (&ci, 0, sizeof(clientInfo_t));
-	ci.id = id_count++;
-	if (!cl_vwep->integer) loadWeapons = false;
-
-	// get player's name
-	appStrncpyz (ci.name, s, sizeof(ci.name));
-	char *t = strchr (ci.name, '\\');
-	if (t)
-	{
-		*t = 0;
-		s = t + 1;
-	}
-
-	if (cl_noskins->integer || !t || !s[0])
-		s = "male/grunt";				// default skin
-
-	// get model name
-	strcpy (modelName, s);
-	t = strchr (modelName, '/');
-	if (!t) t = strchr (modelName, '\\');
-	if (!t) t = modelName;
-	*t = 0;
-
-	// get skin name
-	strcpy (skinName, t + 1);
-
-	// try loading Quake3 model
-	if (!TryQuake3Model (ci, modelName, skinName))
-	{
-		// no such Quake3 player model - load Quake2 model
-		ci.md2model = FindQ2Model (modelName, "tris");
-		if (!ci.md2model)
-		{
-			strcpy (modelName, "male");
-			ci.md2model = FindQ2Model ("male", "tris");
-		}
-
-		// skin
-		ci.md2skin = RE_RegisterSkin (va("players/%s/%s", modelName, skinName));
-
-		// if we don't have the skin and the model wasn't male,
-		// see if the male has it (this is for CTF's skins)
-		if (!ci.md2skin && stricmp (modelName, "male"))
-		{
-			//?? find any skin, then (if no) change model to male (should be done for non-teamplay games only,
-			//?? can detect this by using of only 2 skins for all players)
-			// change model to male
-			strcpy (modelName, "male");
-			ci.md2model = FindQ2Model ("male", "tris");
-			ci.md2skin = RE_RegisterSkin (va("players/%s/%s", modelName, skinName));
-		}
-
-		// if we still don't have a skin, it means that the male model didn't have
-		// it, so default to grunt
-		if (!ci.md2skin)
-			// see if the skin exists for the male model
-			ci.md2skin = RE_RegisterSkin (va("players/male/grunt"));
-
-		// icon
-		if (!memcmp (skinName, "skn_", 4))
-			strcpy (ci.iconName, "/pics/default_icon");
-		else
-			appSprintf (ARRAY_ARG(ci.iconName), "/players/%s/%s_i", modelName, skinName);
-		ci.icon = RE_RegisterPic (ci.iconName);
-
-		// weapons
-		ci.weaponModel[0].model = FindQ2Model (modelName, "weapon");
-		if (loadWeapons)
-			for (int i = 1; i < num_cl_weaponmodels; i++)
-			{
-				ci.weaponModel[i].model = FindQ2Model (modelName, cl_weaponmodels[i]);
-				// HACK: cyborg have the weapon same models, as male model
-				if (!ci.weaponModel[i].model && !strcmp (modelName, "cyborg"))
-					ci.weaponModel[i].model = FindQ2Model ("male", cl_weaponmodels[i]);
-			}
-
-		// validate client info
-		if (ci.md2skin && ci.icon && ci.md2model && ci.weaponModel[0].model)
-			ci.isValidModel = true;
-	}
+	float move = absSwing - clamp;
+	if (!IsNegative (swing))
+		angle = AngleMod (angle + move);
 	else
-	{
-		// Quake3 model -- try loading weapons
-		if (!LoadWeaponInfo ("weapon.md2", ci.weaponModel[0]))
-		{
-			ci.isValidModel = false;
-			EXEC_ONCE(	// do not show multiple times
-				Com_WPrintf ("Weapon description for default weapon is not found\n");
-			)
-			return;
-		}
-		if (loadWeapons)
-			for (int i = 1; i < num_cl_weaponmodels; i++)
-				LoadWeaponInfo (cl_weaponmodels[i], ci.weaponModel[i]);
-	}
-
-	unguard;
+		angle = AngleMod (angle - move);
+	return true;
 }
 
 
@@ -826,11 +1033,14 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 	guard(ParsePlayerEntity);
 
 	if (!ci->isValidModel)
-		ci = &cl.baseClientInfo;
+	{
+		RE_DrawText3D (ent.pos.origin, va("%s\ninvalid model", ci->name), RGB(1,0,0));
+		return 0;
+	}
 
 	if (cent->clientInfoId != ci->id)
 	{
-		// clientInfo_t changed -> reset animations
+		// clientInfo_t changed -> reset animations for new model
 		cent->clientInfoId = ci->id;
 		memset (&cent->legsAnim, 0, sizeof(animState_t));
 		cent->legsAnim.angles = ent.angles;
@@ -847,35 +1057,38 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 	{
 		if (maxEnts < 1) return 0;
 		buf[0] = ent;
-		buf[0].skin  = ci->md2skin;
+		buf[0].skin  = &ci->md2skin;
 		buf[0].model = ci->md2model;
 		buf[0].pos.axis.FromAngles (ent.angles);
 		if (maxEnts < 2 || weaponIndex < 0) return 1;	// no linked weapon
-		// here: assume, that weapon[0] exists - else, clientInfo will be baseClientInfo
+		// here: assume, that weapon[0] exists
 		buf[1]       = buf[0];
 		buf[1].skin  = NULL;
 		buf[1].model = ci->weaponModel[weaponIndex].model;
 		return 2;
 	}
 
-	//!!! weapon for Q3
-
 	animState_t &la = cent->legsAnim;
 	animState_t &ta = cent->torsoAnim;
+	animState_t &ha = cent->headAnim;
 
-	// Quake3 player model
-	int legsAnim, torsoAnim, movingDir;
-	st->GetAnim (legsAnim, torsoAnim, movingDir);
+	//---------- Quake3 player model --------------
+	int legsAnim, torsoAnim, movingDir, pitchAngle;
+	st->GetAnim (legsAnim, torsoAnim, movingDir, pitchAngle);
 	//?? do not exec jump animation, when falling from small height
-	if (IsCommonLegsAnim (legsAnim))
+
+	int prevLegs = ANIM_NOCHANGE,
+		prevTorso = ANIM_NOCHANGE,
+		prevDir = LEGS_NEUTRAL,
+		prevPitch = pitchAngle;
+	if (IsGroundLegsAnim (legsAnim))
 	{
-		int prevLegs, prevTorso, prevDir;
-		cent->prev.GetAnim (prevLegs, prevTorso, prevDir);
+		cent->prev.GetAnim (prevLegs, prevTorso, prevDir, prevPitch);
 		if (prevLegs == LEGS_JUMP)
 			legsAnim = LEGS_LAND;
 		else if (prevLegs == LEGS_JUMPB)
 			legsAnim = LEGS_LANDB;
-		else if (la.animNum == LEGS_LAND || la.animNum == LEGS_LANDB)
+		else if ((la.animNum == LEGS_LAND || la.animNum == LEGS_LANDB) && !la.completed && legsAnim != LEGS_IDLECR)
 			legsAnim = ANIM_NOCHANGE;
 	}
 
@@ -918,6 +1131,7 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 			la.rotating[YAW]   = true;
 		}
 
+		// YAW angles
 		if (!(legsAnim == torsoAnim && legsAnim >= BOTH_DEATH1 && legsAnim <= BOTH_DEAD3))
 		{
 			torsoAngles[YAW] = headAngles[YAW] + angleDifs[movingDir] / 4.0f;
@@ -926,16 +1140,65 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 		// swing angles
 		SwingAngle (torsoAngles[YAW], 25, 90, 0.3f, ta.angles[YAW], ta.rotating[YAW]);
 		SwingAngle (legsAngles[YAW],  40, 90, 0.3f, la.angles[YAW], la.rotating[YAW]);
-		torsoAngles[YAW] = ta.angles[YAW];
-		legsAngles[YAW]  = la.angles[YAW];
+
+		// PITCH angles (looking up/down)
+#if 0
+		//?? better angles when SWIM
+		la.angles[PITCH]  = 0;		//?? when standing/run/walk only; process ANIM_NOCHANGE too
+		la.angles[ROLL]   = 0;		//??
+		headAngles[PITCH] = Lerp (prevPitch, pitchAngle, cl.lerpfrac);
+		float dst = headAngles[PITCH];
+		if (dst > 180) dst -= 360;
+		dst *= 0.75f;
+		SwingAngle (dst, 15, 30, 0.1f, ta.angles[PITCH], ta.rotating[PITCH]);
+
+		// clamp angles
+		ClampAngle (ent.angles[PITCH], 45, la.angles[PITCH]);
+		ClampAngle (la.angles[PITCH],  45, ta.angles[PITCH]);
+		ClampAngle (ta.angles[PITCH],  45, headAngles[PITCH]);
+#else
+		headAngles[PITCH] = Lerp (prevPitch, pitchAngle, cl.lerpfrac);
+		float rot = ent.angles[PITCH];
+		if (rot > 180)
+			rot -= 360;
+		if (rot > 35 || rot < -35)
+			headAngles[PITCH] = rot;
+		SwingAngle (headAngles[PITCH], 0, 180, 0.3f, ha.angles[PITCH], ha.rotating[PITCH]);
+
+		if (!ClampAngle (ha.angles[PITCH], 45, ta.angles[PITCH]))
+		{
+			float dst = LerpAngle (la.angles[PITCH], headAngles[PITCH], 0.6f);
+			SwingAngle (dst, 15, 60, 0.3f, ta.angles[PITCH], ta.rotating[PITCH]);
+		}
+		if (!ClampAngle (ta.angles[PITCH], IsGroundLegsAnim (legsAnim) ? 60 : 30, la.angles[PITCH]))
+			SwingAngle (0, 0, 60, 0.3f, la.angles[PITCH], la.rotating[PITCH]);
+
+		headAngles[PITCH] = ha.angles[PITCH];
+#endif
+
+		// ROLL angles
+		float dst = IsGroundLegsAnim (legsAnim) ? 0 : headAngles[ROLL];
+		ta.angles[ROLL] = la.angles[ROLL] = headAngles[ROLL] = dst;
+
+		torsoAngles = ta.angles;
+		legsAngles  = la.angles;
+
+		// lean legs, dependent on movement
+		CVec3 posDelta;
+		VectorSubtract (cent->current.origin, cent->prev.origin, posDelta);
+		if (posDelta[0] || posDelta[1] || posDelta[2])
+		{
+			CAxis axis;
+			axis.FromAngles (ent.angles);
+//			RE_DrawTextLeft(va("[0]=%g\n[1]=%g\n[2]=%g", dot(posDelta,axis[0]), dot(posDelta,axis[1]), dot(posDelta,axis[2])));
+			legsAngles[PITCH] += dot(posDelta, axis[0]) / 3;
+			legsAngles[ROLL]  -= dot(posDelta, axis[1]) / 3;
+		}
 	}
 
 	// when standing and rotating, exec "turn" animation
 	if (legsAnim == LEGS_IDLE && la.rotating[YAW])
 		legsAnim = LEGS_TURN;
-
-	//!! add looking up/down (should detect, when rotate all 3 ents, and when - don't rotate legs)
-	//!! fixedTorso -- don't bend body when looking up/down
 
 	// fixedLegs -- legs will stand absolutely vertical when moving (no lean to direction of movement)
 	if (ci->fixedLegs)
@@ -943,6 +1206,9 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 		legsAngles[YAW] = torsoAngles[YAW];
 		legsAngles[PITCH] = legsAngles[ROLL] = 0;
 	}
+	// fixedTorso -- do not add PITCH angle to torso, when look up/down
+	if (ci->fixedTorso)
+		torsoAngles[PITCH] = 0;
 
 	// run animations
 	RunAnimation (*ci, la, legsAnim);
@@ -976,10 +1242,9 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 	attach (buf[0], buf[1], "tag_torso", &torsoAngles);
 	attach (buf[1], buf[2], "tag_head", &headAngles);
 
-	//!!!
-	buf[0].skin = ci->legsSkin;
-	buf[1].skin = ci->torsoSkin;
-	buf[2].skin = ci->headSkin;
+	buf[0].skin = &ci->legsSkin;
+	buf[1].skin = &ci->torsoSkin;
+	buf[2].skin = &ci->headSkin;
 
 	if (maxEnts < 4) weaponIndex = -1;	// do not add weapon - no space
 

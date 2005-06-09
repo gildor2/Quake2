@@ -1336,6 +1336,8 @@ void CL_BlasterParticles (const CVec3 &org, const CVec3 &dir)
 }
 
 
+#define BLASTER_TRAIL_LEN	0.05
+
 void CL_BlasterTrail (const CVec3 &start, const CVec3 &end)
 {
 	CVec3		move, vec;
@@ -1361,6 +1363,7 @@ void CL_BlasterTrail (const CVec3 &start, const CVec3 &end)
 
 		p->alpha = 1.0;
 		p->alphavel = -1.0 / (0.3+frand()*0.2);
+		p->alphavel = -1.0 / ((frand()+1.5) * BLASTER_TRAIL_LEN);
 		p->color = 0xE0;
 		for (j=0 ; j<3 ; j++)
 		{

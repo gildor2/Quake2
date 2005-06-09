@@ -104,7 +104,7 @@ void SV_CreateBaseline (void)
 		edict->s.old_origin = edict->s.origin;
 		static_cast<entity_state_t&>(sv.baselines[e]) = edict->s;
 		// set extended fields (not set by game)
-		sv.baselines[e].SetAnim (LEGS_IDLE, TORSO_STAND, LEGS_NEUTRAL);
+		sv.baselines[e].SetAnim (LEGS_IDLE, TORSO_STAND);
 	}
 }
 

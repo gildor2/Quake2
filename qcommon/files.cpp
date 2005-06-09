@@ -241,7 +241,7 @@ static void AddDirFilesToList (const char *findname, TList<CStringItem> *List, i
 			if (!(item = List->Find (s, &place)))
 			{
 				item = new (s) CStringItem;
-				appStrncpylwr (item->name, item->name, BIG_NUMBER);		//!! lowercase the name
+				appStrncpylwr (item->name, item->name, BIG_NUMBER);		//!! lowercase the name; in-place
 				List->InsertAfter (item, place);
 			}
 		}
@@ -1201,7 +1201,7 @@ FS_Gamedir
 Called to find where to write a file (demos, savegames, etc)
 ============
 */
-char *FS_Gamedir (void)
+const char *FS_Gamedir (void)
 {
 	return (fs_gamedir[0]) ? fs_gamedir : BASEDIRNAME;
 }

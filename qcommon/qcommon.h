@@ -59,7 +59,7 @@ struct cplane_t;
 
 // version number
 
-#define	VERSION		4.11
+#define	VERSION		4.12
 
 #ifdef _WIN32
 
@@ -704,7 +704,6 @@ void	CM_ReadPortalState (FILE *f);
 extern float pm_airaccelerate;
 
 void	Pmove (pmove_t *pmove);
-void	PM_ComputeAnimation (player_state_t &ps, entityStateEx_t &ent);
 
 
 /*-----------------------------------------------------------------------------

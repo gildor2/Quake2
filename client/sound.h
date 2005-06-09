@@ -23,8 +23,6 @@ struct sfx_t;
 void S_Init (void);
 void S_Shutdown (void);
 
-bool S_IsFemale (const char *model);
-
 // if origin is NULL, the sound will be dynamically sourced from the entity
 void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, float fvol,  float attenuation, float timeofs);
 void S_StartLocalSound (const char *s);

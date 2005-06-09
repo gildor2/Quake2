@@ -438,7 +438,7 @@ int ImageExists (const char *name, int stop_mask)
 		for (CStringItem *item = list.First(); item; item = list.Next(item))
 		{
 			char *ext = strrchr (item->name, '/'); // find filename
-			if (!ext) continue;
+			if (!ext) ext = item->name;
 			ext = strchr (ext, '.'); // find FIRST dot in a filename
 			if (!ext) continue;
 

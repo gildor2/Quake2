@@ -425,8 +425,6 @@ SV_SendClientDatagram
 */
 bool SV_SendClientDatagram (client_t *client)
 {
-	SV_BuildClientFrame (client);
-
 	// prepare msg
 	sizebuf_t msg;
 	byte	msg_buf[MAX_MSGLEN];

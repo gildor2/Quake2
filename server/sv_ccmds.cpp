@@ -1070,6 +1070,7 @@ static void SV_ServerCommand_f (int argc, char **argv)
 
 	// pass command to server string tokenizer
 	char buffer[1024];
+	buffer[0] = 0;
 	for (int i = 0; i < argc; i++)
 	{
 		if (i > 0) appStrcatn (ARRAY_ARG(buffer), " ");

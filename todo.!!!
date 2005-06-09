@@ -149,7 +149,6 @@ TRACE:
 
 MODEL SYSTEM:
 ~~~~~~~~~~~~~
-- when no SPECIFIED skin for model, use any (?) other; if no skins - use different (default) model
 - needs ability to specify model gender without "models.lst" file (special config file in model dir)
 ? player setup: add model type/gender filter
 ? make pmove player bounds to be taken from the actual player model (server option (?), requires extptotocol for

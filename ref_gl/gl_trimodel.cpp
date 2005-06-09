@@ -473,7 +473,8 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	CALL_CONSTRUCTOR(surf);
 
 	/*-------- fill surf structure -------*/
-	surf->shader    = gl_defaultShader;		// any
+	surf->shader    = gl_defaultShader;		// any, ignored
+	strcpy (surf->name, "single_surf");		// any name
 	// counts
 	surf->numFrames = hdr->numFrames;
 	surf->numVerts  = numVerts;
@@ -613,7 +614,10 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 	char *tagName = md3->tagNames;
 	dMd3Tag_t *ts = (dMd3Tag_t*)(buf + hdr->ofsTags);	// tag source
 	for (i = 0; i < hdr->numTags; i++, tagName += MAX_QPATH, ts++)
+	{
+//		Com_Printf("model %s tag %d %s\n", name, i, ts->name);
 		strcpy (tagName, ts->name);
+	}
 	ts = (dMd3Tag_t*)(buf + hdr->ofsTags);
 	CCoords *td = md3->tags;							// tag destination
 	for (i = 0; i < hdr->numFrames; i++)
@@ -637,7 +641,9 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 	for (i = 0, surf = md3->surf; i < hdr->numSurfaces; i++, surf++)
 	{
 		CALL_CONSTRUCTOR(surf);
-		surf->shader    = gl_defaultShader;	// any
+		surf->shader    = gl_defaultShader;	// any, ignored
+		appStrncpylwr (surf->name, ds->name, sizeof(surf->name));
+//		Com_Printf("model %s surf %d %s\n", name, i, surf->name);
 		// counts
 		surf->numFrames = hdr->numFrames;
 		surf->numVerts  = ds->numVerts;

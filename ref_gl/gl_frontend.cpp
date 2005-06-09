@@ -921,26 +921,55 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 			out->shaderColor.c[2] = 255;
 		out->shaderColor.c[3] = 255;
 	}
+	else if (ent->skin && ent->skin->numSurfs == 1 && ent->skin->surf[0].surfName[0] == 0)
+	{
+		out->customShader = static_cast<shader_t*>(ent->skin->surf[0].shader);
+		out->shaderColor.rgba = RGB(1,1,1);			// just in case
+	}
 }
 
 
+//#define SHOW_MD3_SURFS
+
 void md3Model_t::AddSurfaces (refEntity_t *e)
 {
+#ifdef SHOW_MD3_SURFS
+	DrawTextLeft(va("%s: custSh=%X skin=%X skinNum=%d", name, e->customShader, e->skin, e->skinNum));
+#endif
 	surfaceMd3_t *s = surf;
 	for (int i = 0; i < numSurfaces; i++, s++)
 	{
-		shader_t *shader;
+		shader_t *shader = NULL;
 		//!! fog
 		// choose skin to draw
-		if (e->customShader)
+		if (e->customShader)			// used for fx (overrided skin)
 			shader = e->customShader;
-		else
+		else if (e->skin)
 		{
-			if (e->skinNum >= 0 && e->skinNum < s->numShaders)
-				shader = s->shaders[e->skinNum];
-			else
-				shader = gl_defaultShader;
-		}
+			for (int j = 0; j < e->skin->numSurfs; j++)
+				if (!strcmp (e->skin->surf[j].surfName, s->name))
+				{
+					shader = static_cast<shader_t*>(e->skin->surf[j].shader);
+#ifdef SHOW_MD3_SURFS
+					DrawTextLeft (va("  %s for %s", shader->name, s->name));
+#endif
+					break;
+				}
+			if (!shader)
+			{
+				// it seems, this surface not listed (or "nodraw" shader used) -- skip it
+#ifdef SHOW_MD3_SURFS
+				DrawTextLeft (va("  skip: %s", s->name));
+#endif
+				continue;
+			}
+		} // {} required for correct "else" attachment ...
+		else if (e->skinNum >= 0 && e->skinNum < s->numShaders)
+			shader = s->shaders[e->skinNum];
+
+		if (!shader && s->numShaders) shader = s->shaders[0];
+		if (!shader) shader = FindShader ("*identityLight", SHADER_SKIN); // white + diffuse lighting
+
 		if (e->flags & RF_TRANSLUCENT)
 			shader = GetAlphaShader (shader);
 		// draw surface
@@ -962,6 +991,7 @@ void md3Model_t::DrawLabel (refEntity_t *e)
 	DrawText3D (e->center, va("origin: %g %g %g\nmd3: %s\nskin: %s\nflags: $%X  scale: %g",
 		VECTOR_ARG(e->coord.origin), name, e->customShader ? e->customShader->name : "(default)", e->flags, e->drawScale),
 		RGB(0.1,0.4,0.2));
+		//?? incorrect skin info for md3 multi-surface models
 }
 
 
@@ -1801,6 +1831,8 @@ static void DrawFlares (void)
 
 static void DrawBspSequence (node_t *leaf)
 {
+	guard(DrawBspSequence);
+
 	for ( ; leaf; leaf = leaf->drawNext)
 	{
 		// update world bounding box
@@ -1849,6 +1881,8 @@ static void DrawBspSequence (node_t *leaf)
 			}
 		}
 	}
+
+	unguard;
 }
 
 
@@ -1914,7 +1948,7 @@ void AddEntity (entity_t *ent)
 
 	// common fields
 	out->flags = ent->flags;
-	out->model = (model_t*)ent->model;		//!! namespace conversion (:: -> OpenGLDrv)
+	out->model = static_cast<model_t*>(ent->model);		// namespace conversion (:: -> OpenGLDrv)
 
 	out->coord = ent->pos;
 	if (ent->model)
@@ -1930,8 +1964,9 @@ void AddEntity (entity_t *ent)
 		out->oldFrame  = ent->oldframe;
 		out->backLerp  = ent->backlerp;
 
-		out->customShader = (shader_t*) ent->skin;	//!! should use customSkin
-		out->skinNum   = ent->skinnum;				//?? check skinnum in [0..model.numSkins]
+		out->customShader = NULL;
+		out->skin      = ent->skin;
+		out->skinNum   = ent->skinnum;				//?? check skinnum in [0..model.numSkins-1]
 		out->shaderColor.rgba = RGB(1,1,1);
 		out->shaderColor.c[3] = appRound (ent->alpha * 255);
 

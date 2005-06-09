@@ -440,7 +440,16 @@ void CL_SendCmd (void)
 	// (when enabled, one of demo' player will be re-skinned as local player)
 	if (userinfo_modified && !cl.attractloop)
 	{
-		CL_FixUpGender();
+		// fix up gender
+		//?? use clientInfo_t.modelGender for this
+		if (gender_auto->integer)
+		{
+			char *p, model[MAX_QPATH];
+			appStrncpylwr (model, skin->string, sizeof(model));
+			if (p = strchr (model, '/')) *p = 0;
+			Cvar_Set ("gender", CL_IsFemaleModel (model) ? "female" : "male");
+			gender->modified = false;
+		}
 		userinfo_modified = false;
 		MSG_WriteByte (&cls.netchan.message, clc_userinfo);
 		MSG_WriteString (&cls.netchan.message, Cvar_Userinfo() );

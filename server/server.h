@@ -268,7 +268,6 @@ void SV_ReadLevelFile (void);
 //
 void SV_WriteFrameToClient (client_t *client, sizebuf_t *msg);
 void SV_RecordDemoMessage (void);
-void SV_BuildClientFrame (client_t *client);
 
 
 void SV_Error (char *error, ...);
@@ -326,7 +325,7 @@ int SV_PointContents (const CVec3 &p);
 // Also check entities, to allow moving liquids
 
 
-void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end, edict_t *passedict, int contentmask);
+void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, edict_t *passedict, int contentmask);
 // mins and maxs are relative
 
 // if the entire move stays in a solid volume, trace.allsolid will be set,
@@ -355,6 +354,11 @@ void SV_DrawTexts ();
 void SV_DrawTextLeft (const char *text, unsigned rgba = 0xFFFFFFFF);
 void SV_DrawTextRight (const char *text, unsigned rgba = 0xFFFFFFFF);
 void SV_DrawText3D (const CVec3 &pos, const char *text, unsigned rgba = 0xFFFFFFFF);
+
+//
+// sv_anim.cpp
+//
+void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateEx_t *oldent, edict_t *edict);
 
 
 //------------- Constants for new protocol ---------------------

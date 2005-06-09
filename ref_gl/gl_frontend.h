@@ -106,7 +106,7 @@ struct refEntity_t
 
 	CVec3	center, size2;				// bounding box: center and (mins-maxs)/2
 	float	radius;
-	union {
+	union {								//?? useless
 		struct {
 		/*-------- entity with model --------*/
 			// position info
@@ -121,8 +121,8 @@ struct refEntity_t
 			int		frame, oldFrame;
 			float	backLerp;
 			// shading
-			//?? skin_t *customSkin;	// multiple shaders (1 per surface)
 			int		skinNum;			// number of default (inline) skin
+			CModelSkin *skin;			// if not NULL, used for model shading
 		};
 	};
 

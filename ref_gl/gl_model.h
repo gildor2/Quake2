@@ -129,6 +129,7 @@ class surfaceMd3_t : public surfaceBase_t
 public:
 	inline surfaceMd3_t () { type = SURFACE_MD3; };
 
+	char	name[MAX_QPATH];	// for skin application
 	// fields, same on all surfaces
 	int		numFrames;
 

@@ -569,8 +569,8 @@ struct pmove_state_t
 {
 	pmtype_t	pm_type;
 
-	short		origin[3];			// 12.3
-	short		velocity[3];		// 12.3
+	short		origin[3];			// fixed 12.3
+	short		velocity[3];		// fixed 12.3; unit/sec
 	byte		pm_flags;			// ducked, jump_held, etc
 	byte		pm_time;			// each unit = 8 ms
 	short		gravity;
@@ -735,15 +735,16 @@ struct entityStateEx_t : entity_state_t
 	// added since extended protocol v1
 	unsigned anim;			// legs, torso animation + some features
 	// functions to support additional fields
-	inline void SetAnim (int legs, int torso, int moveDir)
+	inline void SetAnim (int legs, int torso, int moveDir = 0, int pitch = 0)
 	{
-		anim = legs | (torso << 6) | (moveDir << 12);
+		anim = legs | (torso << 6) | (moveDir << 12) | ((pitch + 90) << 15);
 	}
-	inline void GetAnim (int &legs, int &torso, int &moveDir) const
+	inline void GetAnim (int &legs, int &torso, int &moveDir, int &pitch) const
 	{
 		legs    = anim & 0x3F;
 		torso   = (anim >> 6) & 0x3F;
 		moveDir = (anim >> 12) & 7;
+		pitch   = ((anim >> 15) & 0xFF) - 90;
 	}
 };
 

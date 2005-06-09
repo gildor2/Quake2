@@ -187,8 +187,8 @@ void V_TestEntities (void)
 		ent.backlerp = 1.0f - (cl.time % 100) / 100.0f;
 		if (ent.backlerp == 1)
 			ent.backlerp = 0;
-		ent.model = cl.baseClientInfo.md2model;
-		ent.skin = cl.baseClientInfo.md2skin;
+		ent.model = RE_RegisterModel ("players/male/tris.md2");
+		ent.skin = NULL;	//??
 	}
 #undef FIRST_FRAME
 #undef LAST_FRAME
@@ -343,8 +343,6 @@ void CL_PrepRefresh (void)
 		Sys_SendKeyEvents ();	// pump message loop
 		CL_ParseClientinfo (i);
 	}
-
-	CL_LoadClientinfo (cl.baseClientInfo, "unnamed\\male/grunt");
 
 	// set sky textures and speed
 	Com_Printf ("sky\r", i);

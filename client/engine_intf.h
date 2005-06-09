@@ -18,7 +18,7 @@ typedef struct {
 	TList<CStringItem>	(*_FS_ListFiles) (const char *name, int flags);
 	void*	(*_FS_LoadFile) (const char *name, unsigned *size);
 	void	(*_FS_FreeFile) (void *buf);
-	char*	(*_FS_Gamedir) (void);
+	const char*	(*_FS_Gamedir) ();
 	void	(*_FS_CreatePath) (const char *path);
 	void	(*_FS_CopyFile) (const char *src, const char *dst);
 	void	(*_FS_CopyFiles) (const char *srcMask, const char *dstDir);
@@ -104,7 +104,7 @@ inline void FS_FreeFile (void *buf)
 {
 	ri._FS_FreeFile (buf);
 }
-inline char* FS_Gamedir (void)
+inline const char* FS_Gamedir ()
 {
 	return ri._FS_Gamedir ();
 }

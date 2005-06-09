@@ -2231,7 +2231,7 @@ struct playerConfigMenu_t : menuFramework_t
 		if (ci.isValidModel)
 		{
 			clEntityState_t st;
-			st.SetAnim (LEGS_IDLE, TORSO_STAND, LEGS_NEUTRAL);
+			st.SetAnim (LEGS_IDLE, TORSO_STAND);
 			cent.prev = st;
 			cent.current = st;
 			// setup base entity

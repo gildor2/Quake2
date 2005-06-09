@@ -506,7 +506,7 @@ SV_ClipMoveToEntities
 
 ====================
 */
-static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end,
+static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs,
 	edict_t *passedict, int contentmask)
 {
 	guard(SV_ClipMoveToEntities);
@@ -608,8 +608,7 @@ Passedict and edicts owned by passedict are explicitly not checked.
 
 ==================
 */
-//!! change argument order (for game, SV_TraceHook() used anyway)
-void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &mins, const CVec3 &maxs, const CVec3 &end, edict_t *passedict, int contentmask)
+void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, edict_t *passedict, int contentmask)
 {
 	guard(SV_Trace);
 
@@ -620,7 +619,7 @@ void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &mins, const CVec3 &
 	if (!tr.fraction) return;		// blocked by the world
 
 	// clip to other solid entities
-	SV_ClipMoveToEntities (tr, start, mins, maxs, end, passedict, contentmask);
+	SV_ClipMoveToEntities (tr, start, end, mins, maxs, passedict, contentmask);
 
 	unguard;
 }

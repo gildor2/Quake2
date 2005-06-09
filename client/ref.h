@@ -21,6 +21,21 @@ public:
 };
 
 
+class CModelSkin
+{
+public:
+	int		numSurfs;
+	struct {
+		char	surfName[32];		// should be enough
+		CBasicImage *shader;
+	} surf[32];						// MAX_MD3_SURFACES == 32
+	inline bool IsValid ()
+	{
+		return numSurfs > 0;
+	}
+};
+
+
 #define	MAX_DLIGHTS			32
 #define	MAX_ENTITIES		1024
 #define	MAX_PARTICLES		4096
@@ -33,21 +48,21 @@ struct entity_t
 {
 	CRenderModel *model;
 	CCoords	pos;
-	CVec3	angles;			// not used by renderer
+	CVec3	angles;					// not used by renderer
 	int		frame;
 	int		oldframe;
-	float	backlerp;		// 0.0 = current, 1.0 = old; used for frame models only
-	float	scale;			// scale model; 0 == 1 == unscaled
+	float	backlerp;				// 0.0 = current, 1.0 = old; used for frame models only
+	float	scale;					// scale model; 0 == 1 == unscaled
 		//?? why we use backlerp instead of simple lerp ?
 	// misc
-	CVec3	size;			// for RF_BBOX only; size of box
-	color_t	color;			// for RF_BBOX only; color of box
+	CVec3	size;					// for RF_BBOX only; size of box
+	color_t	color;					// for RF_BBOX only; color of box
 	// color info
-	float	alpha;			// ignore if RF_TRANSLUCENT isn't set
+	float	alpha;					// ignore if RF_TRANSLUCENT isn't set
 
-	int		skinnum;		// number of model built-in skin
-	CBasicImage	*skin;		// NULL for built-in skin
-	unsigned flags;			// set of RF_XXX flags
+	CModelSkin *skin;				// NULL for built-in skin
+	int		skinnum;				// number of model built-in skin
+	unsigned flags;					// set of RF_XXX flags
 };
 
 
@@ -200,7 +215,7 @@ typedef	bool (*CreateDynRenderer_t) (const refImport_t *, refExport_t *);
 
 #else
 
-#define RENDERER_EXPORT			// empty for STATIC_BUILD
+#define RENDERER_EXPORT				// empty for STATIC_BUILD
 
 #endif
 

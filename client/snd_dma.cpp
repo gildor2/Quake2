@@ -108,72 +108,6 @@ void S_SoundInfo_f(void)
 }
 
 
-#define		MAX_FEMALE_MODELS		64
-#define		MAX_FEMALE_MODEL_BUF	(MAX_FEMALE_MODELS*16)
-char	*female_models[MAX_FEMALE_MODELS];
-char	female_model_buf[MAX_FEMALE_MODEL_BUF];
-
-void S_ReadModelsSex (void)
-{
-	char	*buf, *in, *out, *s;
-
-	female_models[0] = NULL;
-	if (!(buf = (char*) FS_LoadFile ("players/model.lst")))
-	{
-		Com_DPrintf ("players/model.lst is not found\n");
-		return;
-	}
-
-	in = buf;
-	out = female_model_buf;
-	int free = MAX_FEMALE_MODEL_BUF;
-	int i = 0;
-
-	while (s = COM_Parse (in), in)
-	{
-		int n = strlen (s);
-		Com_DPrintf("Female model: %s\n",s);
-		n++;
-		free -= n;
-		if (free < 0 || i >= MAX_FEMALE_MODELS - 1)
-		{
-			Com_WPrintf ("model.lst is too large\n");
-			break;
-		}
-		strcpy (out, s);
-		female_models[i++] = out;
-		out += n;
-	}
-	female_models[i] = NULL;
-	Com_DPrintf ("Parsed %i model genders\n", i);
-
-	FS_FreeFile (buf);
-}
-
-bool S_IsFemale (const char *model)
-{
-//	Com_DPrintf ("Checking %s gender...\n",model);
-
-	if (!stricmp(model, "female") || !stricmp(model, "crakhor"))
-	{
-//		Com_DPrintf ("...hardcoded female\n");
-		return true;
-	}
-	int i = 0;
-	while (const char *s = female_models[i++])
-	{
-//		Com_DPrintf ("%s ...\n",s);
-		if (!stricmp (s, model))
-		{
-//			Com_DPrintf ("...female\n");
-			return true;
-		}
-	}
-//	Com_DPrintf ("...male\n");
-	return false;
-}
-
-
 /*
 ================
 S_Init
@@ -223,8 +157,6 @@ CVAR_END
 
 		Com_Printf("------------------------------------\n");
 	}
-	S_ReadModelsSex ();
-
 }
 
 
@@ -676,9 +608,8 @@ void S_IssuePlaysound (playsound_t *ps)
 
 static sfx_t *GetPlayerSound (clEntityState_t *ent, const char *base)
 {
-	char	model[MAX_QPATH], localFilename[MAX_QPATH];
-
 	// determine what model the client is using
+	char model[MAX_QPATH];
 	model[0] = 0;
 	const char *s = cl.configstrings[CS_PLAYERSKINS + ent->number - 1];	//?? can use cl.clientInfo[ent->number]; use model gender
 	if (s[0])
@@ -695,7 +626,17 @@ static sfx_t *GetPlayerSound (clEntityState_t *ent, const char *base)
 	if (!model[0])
 		strcpy (model, "male");
 
+	bool isFemale;
+	if (ent->modelindex == 255)
+		isFemale = cl.clientInfo[ent->skinnum & 0xFF].modelGender == 'f';
+	else
+	{
+		// should not happen (gender sound for non-player model?)
+		isFemale = CL_IsFemaleModel (model);
+	}
+
 	// see if we already know of the model specific sound
+	char localFilename[MAX_QPATH];
 	appSprintf (ARRAY_ARG(localFilename), "#players/%s/%s", model, base+1);
 	sfx_t *sfx = S_FindName (localFilename, false);
 
@@ -736,7 +677,7 @@ static sfx_t *GetPlayerSound (clEntityState_t *ent, const char *base)
 	if (!sfx)
 	{
 		// setup as default sound
-		if (S_IsFemale (model))
+		if (isFemale)
 			sfx = S_AliasName (localFilename, va("player/female/%s", base+1));
 		else
 		{

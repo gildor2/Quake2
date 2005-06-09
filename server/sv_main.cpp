@@ -712,7 +712,7 @@ void SV_PostprocessFrame (void)
 			point[1] = ent->s.origin[1];
 			point[2] = ent->s.origin[2] - 64;
 			trace_t trace;
-			SV_Trace (trace, ent->s.origin, ent->bounds.mins, ent->bounds.maxs, point, ent, MASK_PLAYERSOLID|MASK_MONSTERSOLID|MASK_WATER);
+			SV_Trace (trace, ent->s.origin, point, ent->bounds.mins, ent->bounds.maxs, ent, MASK_PLAYERSOLID|MASK_MONSTERSOLID|MASK_WATER);
 			if (trace.fraction < 1)
 			{
 				int footsteptype = trace.surface->material - 1;
@@ -793,11 +793,11 @@ void SV_PostprocessFrame (void)
 						CVec3 end = pm_origin;
 						end[2] = pm_origin[2] - FALLING_SCREAM_HEIGHT_WATER;
 
-						SV_Trace (trace, pm_origin, mins, maxs, end, NULL, CONTENTS_WATER);
+						SV_Trace (trace, pm_origin, end, mins, maxs, NULL, CONTENTS_WATER);
 						if (trace.fraction == 1.0 && !trace.startsolid)	// no water and start not in water
 						{
 							end[2] = pm_origin[2] - FALLING_SCREAM_HEIGHT_SOLID;
-							SV_Trace (trace, pm_origin, mins, maxs, end, NULL, CONTENTS_SOLID|CONTENTS_LAVA);
+							SV_Trace (trace, pm_origin, end, mins, maxs, NULL, CONTENTS_SOLID|CONTENTS_LAVA);
 							if (trace.fraction == 1.0 || (!trace.ent && trace.plane.normal[2] < 0.5) ||
 								trace.contents & CONTENTS_LAVA || trace.surface->flags & SURF_SKY)
 								cl->screaming = true;
@@ -1016,7 +1016,7 @@ trace_t SV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, 
 	if (!maxs) maxs = &nullVec3;
 
 	trace_t	tr;
-	SV_Trace (tr, start, *mins, *maxs, end, passedict, contentmask);
+	SV_Trace (tr, start, end, *mins, *maxs, passedict, contentmask);
 	trace_skipAlpha = false;	//!!
 	if (!sv_extProtocol->integer) return tr;
 

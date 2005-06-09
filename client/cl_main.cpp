@@ -71,8 +71,7 @@ cvar_t	*gender_auto;
 
 cvar_t	*cl_vwep;
 cvar_t	*cl_3rd_person;
-cvar_t	*cl_cameradist;
-cvar_t	*cl_cameraheight;
+cvar_t	*cl_cameraDist, *cl_cameraHeight, *cl_cameraAngle;
 
 cvar_t  *cl_extProtocol;
 
@@ -1018,31 +1017,6 @@ void CL_ReadPackets (void)
 
 /*
 ==============
-CL_FixUpGender_f
-==============
-*/
-void CL_FixUpGender (void)
-{
-	if (!gender_auto->integer) return;
-
-	char *p, sk[MAX_QPATH];
-	appStrncpylwr (sk, skin->string, sizeof(sk));
-	if (p = strchr (sk, '/')) *p = 0;
-
-	const char *names[] = {"none", "male", "female"};
-	int idx = 0;
-
-	if (!strcmp (sk, "male") || !strcmp (sk, "cyborg"))
-		idx = 1;
-	else if (S_IsFemale (sk))
-		idx = 2;
-	Cvar_Set ("gender", names[idx]);
-
-	gender->modified = false;
-}
-
-/*
-==============
 CL_Userinfo_f
 ==============
 */
@@ -1199,9 +1173,10 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gender_auto, 1, CVAR_ARCHIVE),
 
 	CVAR_VAR(cl_vwep, 1, CVAR_ARCHIVE),
-	CVAR_VAR(cl_3rd_person, 0, CVAR_ARCHIVE),
-	CVAR_VAR(cl_cameradist, 80, CVAR_ARCHIVE),
-	CVAR_VAR(cl_cameraheight, 10, CVAR_ARCHIVE),
+	CVAR_VAR(cl_3rd_person, 0, CVAR_ARCHIVE),		//?? cheat
+	CVAR_VAR(cl_cameraDist, 80, CVAR_ARCHIVE),
+	CVAR_VAR(cl_cameraHeight, 10, CVAR_ARCHIVE),
+	CVAR_VAR(cl_cameraAngle, 0, 0),
 
 	CVAR_VAR(cl_extProtocol, 1, CVAR_ARCHIVE),
 

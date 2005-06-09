@@ -698,6 +698,9 @@ void menuFramework_t::Push ()
 
 void M_ForceMenuOff (void)
 {
+	//?? should call for each opened menu "virtual OnClose()" for freeing menu data
+	//?? now: will leak resources, when open some resource-allocating menu and typing
+	//??      "disconnect" from console
 	m_current = NULL;
 	cls.key_dest = key_game;
 	m_menudepth = 0;

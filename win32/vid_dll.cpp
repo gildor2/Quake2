@@ -465,6 +465,7 @@ void Vid_DestroyWindow (bool force)
 void Vid_Restart (void)
 {
 	needRestart = true;
+	M_ForceMenuOff ();		// required: menu graphics may be required to reload
 }
 
 
