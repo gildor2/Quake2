@@ -1215,7 +1215,8 @@ int CM_PointContents (const CVec3 &p, int headnode)
  * by trace functions separately (TempBoxModel() will simply remember box params, and
  * trace functions will use them for fast check)
  * If do so, can remove reserving of 6 planes, 1 brush, leafs, brushsides etc (will reduce
- * memory requirements for map loading !)
+ * memory requirements for map loading - some funcs have copied data with reserving few
+ * strucs, and without reserving can simply setup data pointer !)
  */
 
 int	CM_TransformedPointContents (const CVec3 &p, int headnode, const CVec3 &origin, const CVec3 &angles)
@@ -1261,7 +1262,7 @@ int CM_BoxLeafnums (const CBox &bounds, int *list, int listsize, int *topnode, i
 {
 	guard(CM_BoxLeafnums);
 
-	int		stack[MAX_TREE_DEPTH], sptr;		// stack
+	int	stack[MAX_TREE_DEPTH], sptr;			// stack
 	int count = 0;
 	int _topnode = -1;
 	int nodenum = headnode;
@@ -1500,7 +1501,6 @@ static bool TestBoxInBrush (const cbrush_t *brush)
 
 	float clipdist = -BIG_NUMBER;
 	cbrushside_t *clipside = NULL;
-	cplane_t *clipplane = NULL;
 	int i;
 	cbrushside_t *side;
 	for (i = 0, side = &map_brushSides[brush->firstbrushside]; i < brush->numsides; i++, side++)
@@ -1527,7 +1527,6 @@ static bool TestBoxInBrush (const cbrush_t *brush)
 		if (d > clipdist)
 		{
 			clipdist = d;
-			clipplane = plane;
 			clipside = side;
 		}
 	}
@@ -1536,8 +1535,8 @@ static bool TestBoxInBrush (const cbrush_t *brush)
 	tr.trace.startsolid = tr.trace.allsolid = true;
 	tr.trace.fraction = 0;
 	tr.trace.contents = brush->contents;
-	tr.trace.plane = *clipplane;
-	tr.trace.surface = clipside->surface;
+	tr.trace.plane    = *clipside->plane;
+	tr.trace.surface  = clipside->surface;
 
 	return true;
 }
@@ -1706,8 +1705,7 @@ When start==end:
 ==================
 */
 //?? check: can this be faster if trace with sphere
-//!! TODO: *mins, *maxs => &box
-void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs, int headnode, int brushmask)
+void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, int brushmask)
 {
 	guard(CM_BoxTrace);
 
@@ -1726,10 +1724,9 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CV
 	}
 
 	tr.contents = brushmask;
-	tr.start = start;
-	tr.end = end;
-	if (mins) tr.bounds.mins = *mins;
-	if (maxs) tr.bounds.maxs = *maxs;
+	tr.start    = start;
+	tr.end      = end;
+	tr.bounds   = bounds;
 
 	// check for "position test" special case
 	if (start[0] == end[0] && start[1] == end[1] && start[2] == end[2])
@@ -1790,7 +1787,7 @@ rotating entities
 */
 
 
-void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs,
+void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds,
 	int headnode, int brushmask, const CVec3 &origin, const CVec3 &angles)
 {
 	guard(CM_TransformedBoxTrace);
@@ -1818,7 +1815,7 @@ void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &en
 	}
 
 	// sweep the box through the model
-	CM_BoxTrace (trace, start1, end1, mins, maxs, headnode, brushmask);
+	CM_BoxTrace (trace, start1, end1, bounds, headnode, brushmask);
 
 	// transform normal/endpos back to world coordinate system
 	if (trace.fraction != 1.0f && rotated)
@@ -1833,7 +1830,7 @@ void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &en
 
 
 //?? use orientation_t
-void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs,
+void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds,
 	int headnode, int brushmask, const CVec3 &origin, const CAxis &axis)
 {
 	guard(CM_TransformedBoxTrace2);
@@ -1844,7 +1841,7 @@ void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &en
 	TransformPoint (origin, axis, end, end1);
 
 	// sweep the box through the model
-	CM_BoxTrace (trace, start1, end1, mins, maxs, headnode, brushmask);
+	CM_BoxTrace (trace, start1, end1, bounds, headnode, brushmask);
 
 	// transform normal/endpos to world coordinate system
 	if (trace.fraction != 1.0f)

@@ -1,8 +1,10 @@
 #include "server.h"
 #include "../client/ref.h"
 
-//!! add support for dedicated + DEDICATED_ONLY
 
+//?? create as class with allowed multiple instances of text container
+//?? class name: CScreenTextContainer ?
+//?? in gl, can use the same, simply export few renderer function for IMMEDIATE text drawing
 
 #define TEXTBUF_SIZE 65536
 
@@ -32,6 +34,7 @@ void SV_DrawTexts ()
 	guard(SV_DrawTexts);
 
 	if (!textbufFilled) return;
+	if (DEDICATED) return;
 
 	for (textRec_t *rec = (textRec_t*)textbuf; rec; rec = rec->next)
 	{
@@ -55,6 +58,7 @@ static void AddText (int anchor, const CVec3 &pos, const char *text, unsigned rg
 {
 	guard(SV_AddText);
 
+	if (DEDICATED) return;
 	if (!text || !*text) return;	// empty text
 
 	if (!textbufFilled)

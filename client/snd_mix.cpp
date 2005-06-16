@@ -330,11 +330,15 @@ void S_PaintChannels(int endtime)
 						ch->pos = 0;
 						ch->end = ltime + sc->length;
 					}
+#if 0
+					// disabled 13.06.2005 by Gildor: game code uses "target_speaker" entity
+					// with "spawnflags & 1" for looping sounds
 					else if (sc->loopstart >= 0)
 					{
 						ch->pos = sc->loopstart;
 						ch->end = ltime + sc->length - ch->pos;
 					}
+#endif
 					else
 					{	// channel just stopped
 						ch->sfx = NULL;

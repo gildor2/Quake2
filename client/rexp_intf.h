@@ -7,11 +7,11 @@ typedef struct {
 	void	(*Shutdown) (bool complete);
 	void	(*BeginRegistration) (const char *map);
 	CRenderModel*	(*RegisterModel) (const char *name);
-	CBasicImage*	(*RegisterSkin) (const char *name);
+	CBasicImage*	(*RegisterSkin) (const char *name, bool force);
 	CBasicImage*	(*RegisterPic) (const char *name);
 	void	(*SetSky) (const char *name, float rotate, const CVec3 &axis);
 	void	(*EndRegistration) ();
-	void	(*BeginFrame) ();
+	void	(*BeginFrame) (float time);
 	void	(*RenderFrame) (refdef_t *fd);
 	void	(*EndFrame) ();
 	void	(*DrawPic) (int x, int y, const char *pic, int anchor, int color);
@@ -56,9 +56,9 @@ inline CRenderModel* RE_RegisterModel (const char *name)
 {
 	return re.RegisterModel (name);
 }
-inline CBasicImage* RE_RegisterSkin (const char *name)
+inline CBasicImage* RE_RegisterSkin (const char *name, bool force = false)
 {
-	return re.RegisterSkin (name);
+	return re.RegisterSkin (name, force);
 }
 inline CBasicImage* RE_RegisterPic (const char *name)
 {
@@ -66,15 +66,15 @@ inline CBasicImage* RE_RegisterPic (const char *name)
 }
 inline void RE_SetSky (const char *name, float rotate, const CVec3 &axis)
 {
-	re.SetSky (name, rotate);
+	re.SetSky (name, rotate, axis);
 }
 inline void RE_EndRegistration ()
 {
 	re.EndRegistration ();
 }
-inline void RE_BeginFrame ()
+inline void RE_BeginFrame (float time)
 {
-	re.BeginFrame ();
+	re.BeginFrame (time);
 }
 inline void RE_RenderFrame (refdef_t *fd)
 {
@@ -138,7 +138,7 @@ inline void RE_DrawTextRight (const char *text, unsigned rgba = 0xFFFFFFFF)
 }
 inline void RE_DrawText3D (const CVec3 &pos, const char *text, unsigned rgba = 0xFFFFFFFF)
 {
-	re.DrawText3D (, text, rgba);
+	re.DrawText3D (pos, text, rgba);
 }
 inline void RE_DrawConChar (int x, int y, int c, int color = C_WHITE)
 {

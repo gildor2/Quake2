@@ -43,7 +43,6 @@ STATIC = \
 	Release/obj/q2stat/snd_dma.obj \
 	Release/obj/q2stat/snd_mem.obj \
 	Release/obj/q2stat/snd_mix.obj \
-	Release/obj/q2stat/sv_text.obj \
 	Release/obj/q2stat/sv_anim.obj \
 	Release/obj/q2stat/sv_ccmds.obj \
 	Release/obj/q2stat/sv_ents.obj \
@@ -51,6 +50,7 @@ STATIC = \
 	Release/obj/q2stat/sv_init.obj \
 	Release/obj/q2stat/sv_main.obj \
 	Release/obj/q2stat/sv_send.obj \
+	Release/obj/q2stat/sv_text.obj \
 	Release/obj/q2stat/sv_tokenize.obj \
 	Release/obj/q2stat/sv_user.obj \
 	Release/obj/q2stat/sv_world.obj \
@@ -124,6 +124,7 @@ DEDICATED = \
 	Release/obj/dedstat/sv_init.obj \
 	Release/obj/dedstat/sv_main.obj \
 	Release/obj/dedstat/sv_send.obj \
+	Release/obj/dedstat/sv_text.obj \
 	Release/obj/dedstat/sv_tokenize.obj \
 	Release/obj/dedstat/sv_user.obj \
 	Release/obj/dedstat/sv_world.obj \
@@ -649,6 +650,7 @@ DEPENDS = \
 	ref_gl/gl_image.h \
 	ref_gl/gl_interface.h \
 	ref_gl/gl_shader.h \
+	ref_gl/gl_shadersyntax.h \
 	ref_gl/qgl_decl.h
 
 Release/obj/q2stat/gl_shader.obj : ref_gl/gl_shader.cpp $(DEPENDS)
@@ -1143,6 +1145,9 @@ DEPENDS = \
 
 Release/obj/dedstat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/sv_ccmds.obj" server/sv_ccmds.cpp
+
+Release/obj/dedstat/sv_text.obj : server/sv_text.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/sv_text.obj" server/sv_text.cpp
 
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
 

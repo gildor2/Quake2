@@ -932,7 +932,7 @@ void CL_ParseTEnt (void)
 
 				VectorAdd (pos, dir, start);
 				VectorMA (start, -2, dir, end);
-				CL_Trace (trace, start, end, nullVec3, nullVec3, MASK_ALL);
+				CL_Trace (trace, start, end, nullBox, MASK_ALL);
 				if (trace.fraction < 1.0)
 				{
 					csurface_t *surf = trace.surface;
@@ -1503,8 +1503,6 @@ void CL_AddBeams (void)
 	}
 }
 
-
-extern cvar_t *hand;
 
 /*
 =================

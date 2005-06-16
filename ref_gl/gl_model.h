@@ -384,7 +384,6 @@ node_t *PointInLeaf (const CVec3 &p);
 void	LoadWorldMap (const char *name);	//?? rename
 
 // triangle models
-shader_t *FindSkin (const char *name);
 md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len);
 md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len);
 sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len);

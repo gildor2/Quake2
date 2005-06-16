@@ -1,3 +1,9 @@
+- need ability to get shader script from memory (map script with builtin shaders; main engine will pass them to renderer)
+  (EASY to implement ...)
+? can do similar thing, using FindShader(name, scriptName) -- will create shader with "name", but using script/template "scriptName"
+  - can use this for r_lightmap (?), f_fullbright (?), gl_showFillRate, gl_singleShader (!)
+=============
+- correct autoflare center
 - gl_state.haveFullscreen3d -- change (may be, remove var)
 =============
 - replace Sys_Find() and Sys_MkDir() with FileSystemWin32.cpp, then can remove fs_win.cpp ...

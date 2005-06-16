@@ -96,9 +96,9 @@ struct client_state_t
 	int		timedemoStart;
 	int		timedemoLongestFrame;
 
-	bool	refresh_prepped;	// false if on new level or new ref dll
+	bool	rendererReady;		// false if on new level or restarting renderer
 	bool	sound_prepped;		// ambient sounds can start
-	bool	force_refdef;		// vid has changed, so we can't use a paused refdef
+	bool	forceViewFrame;		// should draw 1 frame of world scene from network data
 
 	int		parse_entities;		// index (not anded off) into cl_parse_entities[]
 
@@ -251,7 +251,6 @@ extern	cvar_t	*cl_add_entities;
 extern	cvar_t	*cl_predict;
 extern	cvar_t	*cl_footsteps;
 extern	cvar_t	*cl_noskins;
-extern	cvar_t	*cl_autoskins;
 
 extern	cvar_t	*cl_upspeed;
 extern	cvar_t	*cl_forwardspeed;
@@ -282,6 +281,7 @@ extern	cvar_t	*freelook;
 extern	cvar_t	*cl_paused;
 
 extern	cvar_t	*cl_vwep;
+extern	cvar_t	*hand;
 extern	cvar_t	*cl_3rd_person;
 extern	cvar_t	*cl_cameraDist, *cl_cameraHeight, *cl_cameraAngle;
 
@@ -490,15 +490,16 @@ void CL_ParseClientinfo (int player);
 //
 // cl_view.cpp
 //
+extern CBasicImage *railSpiralShader, *railRingsShader, *railBeamShader;
 #ifdef GUN_DEBUG
-extern	int		gun_frame;
-extern	CRenderModel *gun_model;
+extern int gun_frame;
+extern CRenderModel *gun_model;
 #endif
-extern	float r_blend[4];
+extern float r_blend[4];
 
 void V_Init (void);
-void CL_PrepRefresh (void);
-bool V_RenderView (void);
+void V_InitRenderer ();
+bool V_RenderView ();
 
 void V_AddEntity (entity_t *ent);
 void V_AddEntity2 (entity_t *ent);
@@ -545,8 +546,8 @@ extern menuFramework_t *m_current;
 //
 // cl_pred.cpp
 //
-void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents);
-void CL_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents);
+void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int contents);
+void CL_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int contents);
 void CL_PredictMovement (void);
 void CL_CheckPredictionError (void);
 

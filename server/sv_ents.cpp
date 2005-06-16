@@ -28,7 +28,7 @@ Build a client frame structure
 =============================================================================
 */
 
-byte		fatpvs[65536/8];	// 65536 is MAX_MAP_LEAFS
+static byte fatpvs[65536/8];				// 65536 is MAX_MAP_LEAFS
 
 /*
 ============
@@ -225,9 +225,10 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 		{
 			if (state.modelindex == 255)
 			{
-				int legs, torso, angle1, angle2;
+				int legs, torso, angle1;
+				float angle2;
 				state.GetAnim (legs, torso, angle1, angle2);
-				SV_DrawText3D (state.origin, va("ent %d cl %04X\nframe %d\nanim %d+%d/%d+%d",
+				SV_DrawText3D (state.origin, va("ent %d cl %04X\nframe %d\nanim %d+%d/%d+%g",
 					e, state.skinnum,
 					state.frame,
 					legs, torso, angle1, angle2));

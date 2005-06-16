@@ -423,12 +423,12 @@ void LoadJPG (const char *name, byte **pic, int *width, int *height)
 
 /*
  * Finds name.* images within all game dirs and paks; returns 0 if not found or OR'ed
- * set of IMAGE_XXX flags. Name should not have dots and MUST be in a lowercase
+ * set of IMAGE_XXX flags. Name should be without extension and in a lowercase.
  */
 
 int ImageExists (const char *name, int stop_mask)
 {
-	char *path = NULL;
+	const char *path = NULL;
 	int out = 0;
 
 	while (path = FS_NextPath (path))
@@ -437,12 +437,12 @@ int ImageExists (const char *name, int stop_mask)
 		list = FS_ListFiles (va("%s/%s.*", path, name), LIST_FILES);
 		for (CStringItem *item = list.First(); item; item = list.Next(item))
 		{
-			char *ext = strrchr (item->name, '/'); // find filename
+			char *ext = strrchr (item->name, '/');	// find filename
 			if (!ext) ext = item->name;
-			ext = strchr (ext, '.'); // find FIRST dot in a filename
+			ext = strrchr (ext, '.');				// find last dot in a filename
 			if (!ext) continue;
 
-			if (!strcmp (ext, ".pcx")) out |= IMAGE_PCX;
+			if		(!strcmp (ext, ".pcx")) out |= IMAGE_PCX;
 			else if (!strcmp (ext, ".wal")) out |= IMAGE_WAL;
 			else if (!strcmp (ext, ".tga")) out |= IMAGE_TGA;
 			else if (!strcmp (ext, ".jpg")) out |= IMAGE_JPG;

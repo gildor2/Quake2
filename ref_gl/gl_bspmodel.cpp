@@ -136,10 +136,10 @@ static void LoadSlights (slight_t *data, int count)
 		// move away lights from nearby surfaces to avoid precision errors during computation
 		for (int j = 0; j < 3; j++)
 		{
-			static const CVec3 mins = {-0.3, -0.3, -0.3}, maxs = {0.3, 0.3, 0.3};
+			static const CBox bounds = {{-0.3, -0.3, -0.3}, {0.3, 0.3, 0.3}};
 			trace_t	tr;
 
-			CM_BoxTrace (tr, out->origin, out->origin, &mins, &maxs, 0, CONTENTS_SOLID);
+			CM_BoxTrace (tr, out->origin, out->origin, bounds, 0, CONTENTS_SOLID);
 			if (tr.allsolid)
 				VectorMA (out->origin, 0.5f, tr.plane.normal);
 			else
@@ -437,9 +437,9 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 			VectorMA (mid, -2, norm, p2);
 			// perform trace
 			if (!surfs->side)
-				CM_BoxTrace (trace, p1, p2, NULL, NULL, headnode, MASK_SOLID);
+				CM_BoxTrace (trace, p1, p2, nullBox, headnode, MASK_SOLID);
 			else
-				CM_BoxTrace (trace, p2, p1, NULL, NULL, headnode, MASK_SOLID);
+				CM_BoxTrace (trace, p2, p1, nullBox, headnode, MASK_SOLID);
 			if (trace.fraction < 1 && !(trace.contents & CONTENTS_MIST))	//?? make MYST to be non-"alpha=f(angle)"-dependent
 				sflags |= SHADER_ENVMAP;
 		}

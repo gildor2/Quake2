@@ -13,3 +13,43 @@
 - gl_labels == 2 -> show labels of occluded ents
 - gl_showLights == 2 -> display spotlight intensities
 - gl_singleShader == 1 -> default shader for world; == 2 -> for skins too
+
+-------------------------------------------------------------------------------
+Interestung effects
+-------------------------------------------------------------------------------
+1. may use instead of gl_singleShader - seamlessly map texture on a whole map
+textures/*
+{
+	{
+		map $lightmap
+	}
+	{
+		map *default
+//		map textures/e2u3/bluwter
+		tcGen vector ( 0.03 0.01 0.01 ) ( 0.01 0.03 0.01 )
+		blendFunc GL_DST_COLOR GL_ZERO
+	}
+}
+
+2. detail-like effect
+textures/*
+{
+	{
+		map $lightmap
+	}
+	{
+		map $texture
+		blendFunc GL_DST_COLOR GL_ZERO
+	}
+	{
+		map *detail
+		blendFunc GL_DST_COLOR GL_SRC_COLOR
+		tcGen vector ( 0.05 0.003 0.003 ) ( 0.003 0.05 0.003 )
+	}
+	// detail again - for different direction
+	{
+		map *detail
+		blendFunc GL_DST_COLOR GL_SRC_COLOR
+		tcGen vector ( 0.003 0.05 0.003 ) ( 0.003 0.003 0.05 )
+	}
+}

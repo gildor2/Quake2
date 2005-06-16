@@ -4,6 +4,7 @@ BUGS:
   - jumpy demo "tower" (at home, all Q2 versions -- at least from p10) -- low fps on original server computer ?
   - gl_console_only not works with SINGLE_RENDERER (because of static link to functions); NOW: disabled in vid_dll.cpp
 
+- com_speeds: currently, displays some server stats - can use sv_texts.cpp funcs for this; and - separate cvar for this
 - software gamma: should use identityLight corrected by gamma(but: 1**any==1 ?!)/brightness/contrast (not overbright only)
   ? but: sometimes texture modulated by identityLight; separate identityLight and textureIdentityLight ??
     ? may be, only replace 'glBind(NULL)+glColor(color*identityLight)+DrawRect()' (white texture) ->
@@ -16,9 +17,6 @@ BUGS:
 - minimize in Win98:
   - check WM_ACTIVATE(bool), WM_SIZE(min) order
   - may be, will fix if WM_SIZE(min) will be handled only when AppActive==false
-? cl_3rd_person 2 -- smooth camera; add game option: play with 3rd person camera (ext protocol only ?)
-- 3rd person camera trace: can extend Trace() to decect point of contents change
-  (do not leave water; current: will not enter water, but can leave it)
 - "conchars.pcx": create drop-shadow effect (in pic; may be, require to cut (as grid) + grow image + different drawing code)
   for better reading (require MemBitmap fx code ...)
 - crash.log:
@@ -113,6 +111,11 @@ HALFLIFE2:
 
 CAMERA:
   - interpolate camera 1st/3rd person change
+  ? cl_3rd_person 2 -- smooth camera; add game option: play with 3rd person camera (ext protocol only ?)
+  - 3rd person camera trace: can extend Trace() to decect point of contents change
+    (do not leave water; current: will not enter water, but can leave it)
+    - trace note: can add flag for contents: CONTENTS_VIS_BLOCK (different name?) to detect visibility block: can check
+      collided brush side surface flags - when TRANS33 | TRANS66 | ALPHA | NODRAW (?) - continue trace, else - stop
 
 TRACE:
   ? speedup ClipToEntities() (client/server/ref_gl):
@@ -130,7 +133,7 @@ TRACE:
       1) compare trace bounds with ent bbox (very fast; like AreaEdicts())
       2) compare ent sphere with trace cylinder  (already implemented ?)
       3) TransformedTrace()  (already ?)
-  - speedup detection of "tr.fraction != 1" - stop on 1st collision
+  - speedup detection of "tr.fraction != 1" - stop on 1st collision -- special trace flag
   - TransformedBoxTrace: replace (headnode,origin,angles) with entity; make HeadnodeForBox() -> tempEntity;
     cache/update ent.angles->ent.axis ! (in renderer: ClipToEntities() -- use TransformedBoxTrace; send to renderer axis, not angles
     (check how this will affects left-hand weapon model))
@@ -197,6 +200,7 @@ BSP:
 - when menu script will be implemented:
   - add developer submenus
 - M_DrawTextBox()+M_Print() used only for "please wait" messages; replace with MessageBox-like function
+! can add menu item to view screenshots (browse like levelshots?)
 
 -------- CLIENT/SERVER -----------
 

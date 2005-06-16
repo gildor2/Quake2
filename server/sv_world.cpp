@@ -506,8 +506,7 @@ SV_ClipMoveToEntities
 
 ====================
 */
-static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs,
-	edict_t *passedict, int contentmask)
+static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask)
 {
 	guard(SV_ClipMoveToEntities);
 
@@ -520,21 +519,21 @@ static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 
 	{
 		if (start[i] < end[i])
 		{
-			amins[i] = start[i] + mins[i];
-			amaxs[i] = end[i] + maxs[i];
+			amins[i] = start[i] + bounds.mins[i];
+			amaxs[i] = end[i] + bounds.maxs[i];
 		}
 		else
 		{
-			amins[i] = end[i] + mins[i];
-			amaxs[i] = start[i] + maxs[i];
+			amins[i] = end[i] + bounds.mins[i];
+			amaxs[i] = start[i] + bounds.maxs[i];
 		}
 	}
 	edict_t	*list[MAX_EDICTS];
 	int num = SV_AreaEdicts (amins, amaxs, ARRAY_ARG(list), AREA_SOLID);
 	if (!num) return;
 
-	float b1 = dot (mins, mins);
-	float b2 = dot (maxs, maxs);
+	float b1 = dot (bounds.mins, bounds.mins);
+	float b2 = dot (bounds.maxs, bounds.maxs);
 	float t = max(b1, b2);
 	float traceWidth = SQRTFAST(t);
 	CVec3 traceDir;
@@ -574,9 +573,9 @@ static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 
 
 		trace_t	trace;
 		if (ent.model)
-			CM_TransformedBoxTrace (trace, start, end, &mins, &maxs, ent.model->headnode, contentmask, edict->s.origin, ent.axis);
+			CM_TransformedBoxTrace (trace, start, end, bounds, ent.model->headnode, contentmask, edict->s.origin, ent.axis);
 		else
-			CM_TransformedBoxTrace (trace, start, end, &mins, &maxs, CM_HeadnodeForBox (ent.bounds), contentmask, edict->s.origin, nullVec3);
+			CM_TransformedBoxTrace (trace, start, end, bounds, CM_HeadnodeForBox (ent.bounds), contentmask, edict->s.origin, nullVec3);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr.fraction)
 		{
@@ -608,18 +607,18 @@ Passedict and edicts owned by passedict are explicitly not checked.
 
 ==================
 */
-void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, edict_t *passedict, int contentmask)
+void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask)
 {
 	guard(SV_Trace);
 
 	// clip to world
-	CM_BoxTrace (tr, start, end, &mins, &maxs, 0, contentmask);
+	CM_BoxTrace (tr, start, end, bounds, 0, contentmask);
 
 	tr.ent = ge->edicts;
 	if (!tr.fraction) return;		// blocked by the world
 
 	// clip to other solid entities
-	SV_ClipMoveToEntities (tr, start, end, mins, maxs, passedict, contentmask);
+	SV_ClipMoveToEntities (tr, start, end, bounds, passedict, contentmask);
 
 	unguard;
 }

@@ -77,7 +77,7 @@ sub EmitDefine {
 		# args
 		my $i = 0;
 		for $arg (@args) {
-			my ($param) = $arg =~ / \s* [^=]+ [\*\s] (\w+) (\[.*\])? (\s*= .*)? $/x;
+			my ($param) = $arg =~ / \s* [^=]+ [\*\&\s] (\w+) (\[.*\])? (\s*= .*)? $/x;
 			if (defined($param)) {
 				print (DEFS ", ") if $i > 0;
 				print (DEFS $param);
@@ -123,7 +123,7 @@ sub Parse {
 		if ($line =~ /\# .+/x) {
 			&$subPreproc () if defined $subPreproc;
 		} else {
-			($type, $func, $args) = $line =~ /^ \s* (\S+ [^(]* [\*\s]) (\w+) \s* \( (.*) \) \s* ; $/x;
+			($type, $func, $args) = $line =~ /^ \s* (\S+ [^(]* [\*\&\s]) (\w+) \s* \( (.*) \) \s* ; $/x;
 			($type) = $type =~ /\s*(\S.*\S)\s*/;	# truncate leading and trailing spaces
 
 			my $n = 0;

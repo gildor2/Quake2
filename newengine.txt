@@ -13,10 +13,8 @@
 
 - drawing:
   - 3D: shaders only, accumulate scene, sort and draw
-  - 2D **: images and shaders; draw immediately; for drawing image, can use static temp shader with 1 stage -- insert image here;
-    because of immediate drawing, 1 temp shader is enough; can accumulate few subsequental Draw() calls (for shaders too) for
-    the same image (shader) and draw when EndFrame() or when image (shader) changed
-  - temp shaders (templates):
+  - 2D **: images and shaders; draw immediately (done); for drawing image, can use static temp shader with 1 stage -- insert image here;
+    because of immediate drawing, 1 temp shader is enough; temp shaders (templates):
     - GUI picture with/without alpha
     - skin
 - creating 2D image/shader: when have script - create shader; when no script - use image itself (see **)
@@ -112,7 +110,7 @@
   - fast culling (for soft: when "false" will try to cull everything before sending to backend)
   - some lighting info (software, hardware with/without cubemaps etc)
 - images.cpp -> renderer (not backend); backend - uploading only
-- (abstract) class CImage, wisible from GUI/client - implementation in renderer, some service funcs
+* (abstract) class CImage, wisible from GUI/client - implementation in renderer, some service funcs
   (uploading, retreiving from screen, rendering to texture) - in backend
 ? vid_restart: restart backend ? (renderer restarting - unneded ??); rename cmd ?
 ? share model/map loading with cmodel (separate into own library, used by server/client/renderer)

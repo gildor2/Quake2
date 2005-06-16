@@ -59,7 +59,6 @@ CLIENT = \
 	$D/snd_dma.cpp \
 	$D/snd_mem.cpp \
 	$D/snd_mix.cpp \
-	server/sv_text.cpp		# server file, buf placed here ... change ??
 
 D = server
 SERVER = \
@@ -70,6 +69,7 @@ SERVER = \
 	$D/sv_init.cpp \
 	$D/sv_main.cpp \
 	$D/sv_send.cpp \
+	$D/sv_text.cpp \
 	$D/sv_tokenize.cpp \
 	$D/sv_user.cpp \
 	$D/sv_world.cpp

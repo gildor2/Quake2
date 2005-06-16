@@ -380,7 +380,7 @@ SCR_EndLoadingPlaque
 void SCR_EndLoadingPlaque (bool force)
 {
 	guard(SCR_EndLoadingPlaque);
-	if (force || (cls.disable_servercount != cl.servercount && cl.refresh_prepped))
+	if (force || (cls.disable_servercount != cl.servercount && cl.rendererReady))
 	{
 		cls.loading = false;
 		map_levelshot = NULL;
@@ -617,7 +617,7 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 	{
 		cl.refdef.viewangles[1] = (float)i * 360 / steps;
 
-		RE_BeginFrame ();
+		RE_BeginFrame (cls.realtime / 1000.0f);
 		RE_RenderFrame (&cl.refdef);
 		RE_EndFrame ();
 		time = (appMillisecondsf () - start) / 1000;
@@ -824,7 +824,7 @@ static void ExecuteLayoutString (const char *s)
 
 	guard(SCR_ExecuteLayoutString);
 
-	if (cls.state != ca_active || !cl.refresh_prepped)
+	if (cls.state != ca_active || !cl.rendererReady)
 		return;
 
 	if (!s[0]) return;
@@ -1041,7 +1041,7 @@ void SCR_UpdateScreen (void)
 
 	if (!initialized) return;		// not initialized yet
 
-	RE_BeginFrame ();
+	RE_BeginFrame (cls.realtime / 1000.0f);
 
 	if (cl.cinematicActive)
 	{

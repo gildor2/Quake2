@@ -25,7 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //?? color: (CColor3f : CVec3), (CColor4f : CColor3f + float alpha)
 
 
-const CVec3 nullVec3 = {0, 0, 0};
+const CVec3 nullVec3  = {0,0,0};
+const CBox	nullBox   = {{0,0,0}, {0,0,0}};
 const CAxis identAxis = {1,0,0,  0,1,0,  0,0,1};
 
 //============================================================================

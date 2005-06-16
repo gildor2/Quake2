@@ -689,12 +689,6 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 }
 
 
-shader_t *FindSkin (const char *name)
-{
-	return FindShader (name, SHADER_CHECK|SHADER_SKIN);
-}
-
-
 /*-------------- Sprite models  ----------------*/
 
 

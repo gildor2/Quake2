@@ -1032,7 +1032,7 @@ void IN_Frame (void)
 {
 	guard(IN_Frame);
 
-	if ((!cl.refresh_prepped || cls.key_dest == key_console || cls.key_dest == key_menu) && !FullscreenApp)
+	if ((!cl.rendererReady || cls.key_dest == key_console || cls.key_dest == key_menu) && !FullscreenApp)
 	{
 		//?? deactivate for console only (when GUI mouse will be implemented)
 		// temporarily deactivate if not in fullscreen

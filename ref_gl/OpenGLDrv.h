@@ -124,7 +124,7 @@ extern const unsigned colorTable[];		// C_XXX->rgba; used for DrawChar() and Dra
  * 6) PVS: can perform non-alpha-water-vis-bug avoiding in client (send combined vis)
  */
 
-typedef struct
+struct drawSpeeds_t
 {
 	// geometry complexity
 	int		visLeafs, frustLeafs;	//?? frustLeafs -> ~cullLeafs
@@ -141,7 +141,7 @@ typedef struct
 	unsigned beginFrame;		// front-end
 	unsigned beginSort;			// sorting
 	unsigned begin3D, end3D;	// back-end (3D)
-} drawSpeeds_t;
+};
 
 
 extern drawSpeeds_t gl_speeds;
@@ -191,8 +191,6 @@ extern cvar_t	*gl_showGrid;
 
 extern cvar_t	*gl_driver;
 extern cvar_t	*gl_bitdepth;
-
-extern cvar_t	*gl_hand;
 
 extern cvar_t	*gl_nobind;
 extern cvar_t	*gl_logFile;

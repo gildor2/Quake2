@@ -3,7 +3,7 @@
 #include "gl_backend.h"
 #include "gl_buffers.h"
 #include "gl_math.h"
-#include "protocol.h"		//!! for RF_XXX consts only !
+#include "protocol.h"		//!! for RF_XXX consts only (SHELL_*, TRANSLUCENT, BBOX, DEPTHHACK, WEAPONMODEL)!
 
 
 namespace OpenGLDrv {
@@ -367,9 +367,9 @@ static void ClipTraceToEntities (trace_t &tr, const CVec3 &start, const CVec3 &e
 		// trace
 		trace_t	trace;
 		if (!e->worldMatrix)
-			CM_TransformedBoxTrace (trace, start, end, NULL, NULL, im->headnode, brushmask, e->coord.origin, e->coord.axis);
+			CM_TransformedBoxTrace (trace, start, end, nullBox, im->headnode, brushmask, e->coord.origin, e->coord.axis);
 		else
-			CM_BoxTrace (trace, start, end, NULL, NULL, im->headnode, brushmask);
+			CM_BoxTrace (trace, start, end, nullBox, im->headnode, brushmask);
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr.fraction)
 		{
@@ -904,28 +904,8 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	if (out->drawScale != 1)
 		out->size2.Scale (out->drawScale);
 #endif
-	// check for COLOR_SHELL
-	if (ent->flags & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
-	{
-		out->customShader = gl_colorShellShader;
-		out->shaderColor.rgba = 0x202020;			// required for RED/GREEN/BLUE
-		if (ent->flags & RF_SHELL_HALF_DAM)
-			out->shaderColor.rgba = RGB(0.56, 0.59, 0.45);
-		if (ent->flags & RF_SHELL_DOUBLE)
-			out->shaderColor.rgba = RGB(0.9, 0.7 ,0);
-		if (ent->flags & RF_SHELL_RED)
-			out->shaderColor.c[0] = 255;
-		if (ent->flags & RF_SHELL_GREEN)
-			out->shaderColor.c[1] = 255;
-		if (ent->flags & RF_SHELL_BLUE)
-			out->shaderColor.c[2] = 255;
-		out->shaderColor.c[3] = 255;
-	}
-	else if (ent->skin && ent->skin->numSurfs == 1 && ent->skin->surf[0].surfName[0] == 0)
-	{
+	if (ent->skin && ent->skin->numSurfs == 1 && ent->skin->surf[0].surfName[0] == 0)
 		out->customShader = static_cast<shader_t*>(ent->skin->surf[0].shader);
-		out->shaderColor.rgba = RGB(1,1,1);			// just in case
-	}
 }
 
 
@@ -1042,7 +1022,7 @@ node_t *sp2Model_t::GetLeaf (refEntity_t *e)
 }
 
 
-static void AddBeamSurfaces (beam_t *b)
+static void AddBeamSurfaces (const beam_t *b)
 {
 	CVec3	viewDir, tmp;
 	CVec3	axis[3];		// length, width, depth
@@ -1114,7 +1094,7 @@ static void AddBeamSurfaces (beam_t *b)
 #define CYLINDER_FIX_ALPHA
 #define MIN_FIXED_ALPHA			0.2f
 
-static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
+static void AddCylinderSurfaces (const beam_t *b)
 {
 	CVec3	viewDir;
 	CVec3	axis[3];		// length, width, depth
@@ -1232,14 +1212,14 @@ static void AddCylinderSurfaces (beam_t *b, shader_t *shader)
 		}
 #endif
 
-		AddSurfaceToPortal (p, shader, ENTITYNUM_WORLD);
+		AddSurfaceToPortal (p, static_cast<shader_t*>(b->shader), ENTITYNUM_WORLD);
 	}
 }
 
 
 #define BEAM_PARTS	3		// 1 - flat
 
-static void AddFlatBeam (beam_t *b, shader_t *shader)
+static void AddStarBeam (const beam_t *b)
 {
 	CVec3	viewDir;
 	CVec3	axis[3];		// length, width, depth
@@ -1287,7 +1267,7 @@ static void AddFlatBeam (beam_t *b, shader_t *shader)
 
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = b->color.rgba;
 
-		AddSurfaceToPortal (p, shader, ENTITYNUM_WORLD);
+		AddSurfaceToPortal (p, static_cast<shader_t*>(b->shader), ENTITYNUM_WORLD);
 	}
 }
 
@@ -1754,7 +1734,7 @@ static void DrawFlares (void)
 			// check visibility with trace
 			if (f->radius >= 0)
 			{
-				CM_BoxTrace (trace, vp.view.origin, flarePos, NULL, NULL, 0, CONTENTS_SOLID);
+				CM_BoxTrace (trace, vp.view.origin, flarePos, nullBox, 0, CONTENTS_SOLID);
 				ClipTraceToEntities (trace, vp.view.origin, flarePos, CONTENTS_SOLID);
 				if (trace.fraction < 1 && (f->radius <= 0 || (VectorDistance (trace.endpos, flarePos) > f->radius)))
 					cull = true;
@@ -1764,7 +1744,7 @@ static void DrawFlares (void)
 				CVec3	tracePos;
 
 				VectorMA (vp.view.origin, BIG_NUMBER, f->origin, tracePos);
-				CM_BoxTrace (trace, vp.view.origin, tracePos, NULL, NULL, 0, CONTENTS_SOLID);
+				CM_BoxTrace (trace, vp.view.origin, tracePos, nullBox, 0, CONTENTS_SOLID);
 				ClipTraceToEntities (trace, vp.view.origin, tracePos, CONTENTS_SOLID);
 				if (!(trace.fraction < 1 && trace.surface->flags & SURF_SKY))
 					cull = true;
@@ -1869,14 +1849,11 @@ static void DrawBspSequence (node_t *leaf)
 			case BEAM_STANDARD:
 				AddBeamSurfaces (b);
 				break;
-			case BEAM_RAILBEAM:
-				AddFlatBeam (b, gl_railBeamShader);
+			case BEAM_STAR:
+				AddStarBeam (b);
 				break;
-			case BEAM_RAILSPIRAL:
-				AddCylinderSurfaces (b, gl_railSpiralShader);
-				break;
-			case BEAM_RAILRINGS:
-				AddCylinderSurfaces (b, gl_railRingsShader);
+			case BEAM_CYLINDER:
+				AddCylinderSurfaces (b);
 				break;
 			}
 		}
@@ -1933,14 +1910,7 @@ void AddEntity (entity_t *ent)
 		return;
 	}
 
-	bool mirror = false;
-	if (ent->flags & RF_WEAPONMODEL)		//?? move code to client, add RF_MIRROR flag
-	{
-		if (gl_hand->integer == 1)
-			mirror = true;
-		else if (gl_hand->integer == 2)		// do not draw weapon when "hand" == 2
-			return;
-	}
+	bool mirror = (ent->flags & RF_MIRROR) != 0;
 
 	refEntity_t *out = &gl_entities[gl_numEntities++];
 	memset (out, 0, sizeof(refEntity_t));
@@ -1949,6 +1919,7 @@ void AddEntity (entity_t *ent)
 	// common fields
 	out->flags = ent->flags;
 	out->model = static_cast<model_t*>(ent->model);		// namespace conversion (:: -> OpenGLDrv)
+	out->shaderColor.rgba = ent->color.rgba;
 
 	out->coord = ent->pos;
 	if (ent->model)
@@ -1964,20 +1935,16 @@ void AddEntity (entity_t *ent)
 		out->oldFrame  = ent->oldframe;
 		out->backLerp  = ent->backlerp;
 
-		out->customShader = NULL;
+		out->customShader = static_cast<shader_t*>(ent->customShader);
 		out->skin      = ent->skin;
 		out->skinNum   = ent->skinnum;				//?? check skinnum in [0..model.numSkins-1]
-		out->shaderColor.rgba = RGB(1,1,1);
-		out->shaderColor.c[3] = appRound (ent->alpha * 255);
+		out->shaderColor.c[3] = appRound (ent->alpha * 255);	//?? use color.c[3]
 
 		// model-specific code and calculate model center
 		out->model->InitEntity (ent, out);
 	}
 	else if (ent->flags & RF_BBOX)
-	{
 		out->size2 = ent->size;
-		out->shaderColor.rgba = ent->color.rgba;
-	}
 
 	gl_speeds.ents++;
 }

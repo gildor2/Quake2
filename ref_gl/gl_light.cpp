@@ -481,7 +481,7 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 
 		VectorMA (*origin, -32768, map.sunVec, dst);
 		trace_t	tr;
-		CM_BoxTrace (tr, *origin, dst, NULL, NULL, 0, CONTENTS_SOLID);
+		CM_BoxTrace (tr, *origin, dst, nullBox, 0, CONTENTS_SOLID);
 		if (tr.surface->flags & SURF_SKY && !tr.startsolid)		// can be "startsolid" even if "row"!=NULL
 		{
 			float intens = map.sunLight * SUN_SCALE * vp.lightStyles[0].value / 128.0f;	// sun light have style=0

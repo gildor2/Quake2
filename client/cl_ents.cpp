@@ -373,7 +373,7 @@ void CL_ParseFrame (void)
 			cls.state = ca_active;
 			SCR_ShowConsole (false, true);	// hide console
 			M_ForceMenuOff ();				// hide menu
-			cl.force_refdef = true;
+			cl.forceViewFrame = true;
 			cl.predicted_origin[0] = cl.frame.playerstate.pmove.origin[0] * 0.125f;
 			cl.predicted_origin[1] = cl.frame.playerstate.pmove.origin[1] * 0.125f;
 			cl.predicted_origin[2] = cl.frame.playerstate.pmove.origin[2] * 0.125f;
@@ -394,47 +394,7 @@ void CL_ParseFrame (void)
 }
 
 
-//?? unused
-CRenderModel *RegisterWeaponModel (clEntityState_t *ent, const char *base)
-{
-	char	model[MAX_QPATH];
-
-	// determine what model the client is using
-	model[0] = 0;
-	int n = CS_PLAYERSKINS + ent->number - 1;
-	if (cl.configstrings[n][0])
-	{
-		char *p = strchr(cl.configstrings[n], '\\');
-		if (p)
-		{
-			p += 1;
-			strcpy (model, p);
-			p = strchr (model, '/');
-			if (p) *p = 0;
-		}
-	}
-	// if we can't figure it out, they're male
-	if (!model[0]) strcpy (model, "male");
-	CRenderModel *mdl;
-
-	mdl = RE_RegisterModel (va("players/%s/%s", model, base+1));
-	if (mdl) return mdl;
-
-	// not found, try default weapon model
-	mdl = RE_RegisterModel (va("players/%s/weapon.md2", model));
-	if (mdl) return mdl;
-
-	// not found again, revert to the male model
-	mdl = RE_RegisterModel (va("players/male/%s", base+1));
-	if (mdl) return mdl;
-
-	// last try, default male weapon.md2
-	mdl = RE_RegisterModel ("players/male/weapon.md2");
-	return mdl;
-}
-
-
-static void GetEntityInfo (int entityNum, clEntityState_t **st, unsigned *eff, unsigned *rfx)
+static void GetEntityInfo (int entityNum, clEntityState_t * &st, unsigned &eff, unsigned &rfx)
 {
 	int		effects, renderfx;
 	clEntityState_t *state;
@@ -491,9 +451,9 @@ static void GetEntityInfo (int entityNum, clEntityState_t **st, unsigned *eff, u
 		}
 	}
 
-	if (st)  *st  = state;
-	if (eff) *eff = effects;
-	if (rfx) *rfx = renderfx;
+	st  = state;
+	eff = effects;
+	rfx = renderfx;
 }
 
 
@@ -509,6 +469,7 @@ static void AddViewWeapon (int renderfx)
 
 	// allow the gun to be completely removed
 	if (!cl_gun->integer) return;
+	if (hand->integer == 2) return;
 
 	// don't draw gun if in wide angle view
 	if (ps->fov > 90) return;
@@ -548,6 +509,7 @@ static void AddViewWeapon (int renderfx)
 	}
 
 	gun.flags = RF_MINLIGHT|RF_DEPTHHACK|RF_WEAPONMODEL;
+	if (hand->integer == 1) gun.flags |= RF_MIRROR;
 	gun.backlerp = 1.0 - cl.lerpfrac;
 	FNegate (gun.angles[2]);			// q2 bug: negate md2 angle (may be, for gun it is always 0?)
 	AddEntityWithEffects (&gun, renderfx);
@@ -626,7 +588,7 @@ static void CL_AddPacketEntities (void)
 	{
 		clEntityState_t *st;
 		unsigned effects, renderfx;
-		GetEntityInfo (pnum, &st, &effects, &renderfx);
+		GetEntityInfo (pnum, st, effects, renderfx);
 		centity_t *cent = &cl_entities[st->number];		// not "const", because set cent->lerp_origin below ...
 
 		// parse beams
@@ -671,19 +633,6 @@ static void CL_AddPacketEntities (void)
 			// use custom player skin
 			ci = &cl.clientInfo[st->skinnum & 0xFF];
 			ent.skinnum = 0;
-#if 0
-			//!! disabled by Gildor, 29.05.2005
-			// ROGUE
-			if (renderfx & RF_USE_DISGUISE)		//?? remove this code - skins absent anyway (may be, use q3-like cloaking)
-			{
-				if		(!memcmp(ent.skin->name, "players/male/", 13))
-					ent.skin =  RE_RegisterSkin ("players/male/disguise");
-				else if (!memcmp(ent.skin->name, "players/female/", 15))
-					ent.skin =  RE_RegisterSkin ("players/female/disguise");
-				else if (!memcmp(ent.skin->name, "players/cyborg/", 15))
-					ent.skin =  RE_RegisterSkin ("players/cyborg/disguise");
-			}
-#endif
 		}
 		else
 		{
@@ -799,23 +748,9 @@ static void CL_AddPacketEntities (void)
 		if (st->modelindex2 && st->modelindex2 != 255)	// 255 - weapon model; already added
 		{
 			ent.model = cl.model_draw[st->modelindex2];
-
-			// PMM - check for the defender sphere shell: make it translucent
-			// replaces the previous version which used the high bit on modelindex2 to determine transparency
-			//!! change this
-			if (ent.model && !strcmp (ent.model->name, "models/items/shell/tris.md2"))
-			{
-				ent.alpha = 0.32f;
-				ent.flags = RF_TRANSLUCENT;
-			}
-
 			AddEntityWithEffects (&ent, renderfx);
-
-			//PGM - make sure these get reset.
-			ent.flags = 0;
-			ent.alpha = 0;
 		}
-		if (st->modelindex3)
+		if (st->modelindex3)	//?? this may be a flag; add for Q3 player model as a tag attachment
 		{
 			ent.model = cl.model_draw[st->modelindex3];
 			AddEntityWithEffects (&ent, renderfx);
@@ -948,7 +883,6 @@ void CL_OffsetThirdPersonView ()
 	CVec3	forward, pos;
 	trace_t	trace;
 	float	camDist;//, dist;
-	static const CVec3 mins = {-5, -5, -5}, maxs = {5, 5, 5};
 
 	// algorithm was taken from FAKK2
 	camDist = max(cl_cameraDist->value, CAMERA_MINIMUM_DISTANCE);
@@ -962,7 +896,8 @@ void CL_OffsetThirdPersonView ()
 	pos[2] += cl_cameraHeight->value;
 	cl.refdef.viewangles[YAW] += cl_cameraAngle->value;
 
-	CL_Trace (trace, cl.refdef.vieworg, pos, mins, maxs, MASK_SHOT|MASK_WATER);
+	static const CBox bounds = {{-5, -5, -5}, {5, 5, 5}};
+	CL_Trace (trace, cl.refdef.vieworg, pos, bounds, MASK_SHOT|MASK_WATER);
 	if (trace.fraction < 1)
 		pos = trace.endpos;
 #if 0
@@ -978,7 +913,7 @@ void CL_OffsetThirdPersonView ()
 			VectorMA (cl.refdef.vieworg, -camDist, forward, pos);
 			pos[2] += cl_cameraheight->value;
 
-			trace = CM_BoxTrace (cl.refdef.vieworg, pos, mins, maxs, 0, MASK_SHOT|MASK_WATER);
+			trace = CM_BoxTrace (cl.refdef.vieworg, pos, bounds, 0, MASK_SHOT|MASK_WATER);
 			pos = trace.endpos;
 			dist = VectorDistance (pos, cl.refdef.vieworg);
 			if (dist >= CAMERA_MINIMUM_DISTANCE)

@@ -114,7 +114,7 @@ static void ParseServerData (void)
 		Com_Printf (S_RED"%s\n", str);			// display map message
 
 		// need to prep refresh at next oportunity
-		cl.refresh_prepped = false;
+		cl.rendererReady = false;
 	}
 }
 
@@ -182,12 +182,12 @@ static void ParseConfigString (void)
 		CL_SetLightstyle (i - CS_LIGHTS, cl.configstrings[i]);
 	else if (i == CS_CDTRACK)
 	{
-		if (cl.refresh_prepped)
+		if (cl.rendererReady)
 			CDAudio_Play (atoi(cl.configstrings[CS_CDTRACK]), true);
 	}
 	else if (i >= CS_MODELS && i < CS_MODELS+MAX_MODELS)
 	{
-		if (cl.refresh_prepped)
+		if (cl.rendererReady)
 		{
 			cl.model_draw[i-CS_MODELS] = RE_RegisterModel (cl.configstrings[i]);
 			if (cl.configstrings[i][0] == '*')
@@ -198,17 +198,17 @@ static void ParseConfigString (void)
 	}
 	else if (i >= CS_SOUNDS && i < CS_SOUNDS+MAX_MODELS)
 	{
-		if (cl.refresh_prepped)
+		if (cl.rendererReady)
 			cl.sound_precache[i-CS_SOUNDS] = S_RegisterSound (cl.configstrings[i]);
 	}
 	else if (i >= CS_IMAGES && i < CS_IMAGES+MAX_MODELS)
 	{
-		if (cl.refresh_prepped)
+		if (cl.rendererReady)
 			cl.image_precache[i-CS_IMAGES] = RE_RegisterPic (cl.configstrings[i]);
 	}
 	else if (i >= CS_PLAYERSKINS && i < CS_PLAYERSKINS+MAX_CLIENTS)
 	{
-		if (cl.refresh_prepped && strcmp(olds, s))
+		if (cl.rendererReady && strcmp(olds, s))
 			CL_ParseClientinfo (i-CS_PLAYERSKINS);
 	}
 }
@@ -301,9 +301,7 @@ CL_ParseServerMessage
 */
 void CL_ParseServerMessage (void)
 {
-	int		cmd;
-	const char *s;
-
+	int cmd = svc_bad;
 	guard(CL_ParseServerMessage);
 
 	// if recording demos, copy the message out
@@ -315,6 +313,7 @@ void CL_ParseServerMessage (void)
 	// parse the message
 	while (true)
 	{
+		const char *s;
 		if (net_message.readcount > net_message.cursize)
 		{
 			Com_DropError ("CL_ParseServerMessage: Bad server message");

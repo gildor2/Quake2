@@ -12,7 +12,7 @@ namespace OpenGLDrv {
 -----------------------------------------------------------------------------*/
 
 #define MAX_DYNAMIC_BUFFER		(384 * 1024)
-static byte	*dynamicBuffer;		// [MAX_DYNAMIC_BUFFER]
+static byte	*dynamicBuffer; // [MAX_DYNAMIC_BUFFER]
 static int	dynamicBufferSize;
 
 static void *lastDynamicPtr;
@@ -57,7 +57,7 @@ void ResizeDynamicMemory (void *ptr, int newSize)
 -----------------------------------------------------------------------------*/
 
 
-static surfaceInfo_t *surfaceBuffer;	// [MAX_SCENE_SURFACES]
+static surfaceInfo_t *surfaceBuffer; // [MAX_SCENE_SURFACES]
 static int numSurfacesTotal;
 
 
@@ -65,6 +65,8 @@ static int numSurfacesTotal;
 void AddSurfaceToPortal (surfaceBase_t *surf, shader_t *shader, int entityNum, int numDlights)
 {
 //	LOG_STRING(va("add surf %s ent=%X n_dl=%d\n", shader->name, entityNum, numDlights));
+	if (shader->noDraw) return;						// invisible surface
+
 	if (numSurfacesTotal >= MAX_SCENE_SURFACES - 1) return;			// buffer is full
 	if (numDlights > DLIGHTNUM_MASK) numDlights = DLIGHTNUM_MASK;
 	surfaceInfo_t &si = vp.surfaces[vp.numSurfaces++];
@@ -86,7 +88,7 @@ void InsertShaderIndex (int index)
 	for (i = 0, si = surfaceBuffer; i < numSurfacesTotal; i++, si++)
 	{
 		int s = (si->sort >> SHADERNUM_SHIFT) & SHADERNUM_MASK;
-		if (s >= index)	// shader index incremented
+		if (s >= index)								// shader index incremented
 		{
 			si->sort += (1 << SHADERNUM_SHIFT);		// increment shader index field
 			n++;

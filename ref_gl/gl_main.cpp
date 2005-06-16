@@ -67,9 +67,6 @@ cvar_t	*gl_vertexLight;	// use glColor() against lightmaps
 cvar_t	*gl_noGrid;
 cvar_t	*gl_showGrid;
 
-// game settings
-cvar_t	*gl_hand;			// for weapon model
-
 // renderer settings
 cvar_t	*gl_znear;
 cvar_t	*gl_swapinterval;
@@ -189,8 +186,6 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(gl_vertexLight, 0, CVAR_ARCHIVE|CVAR_NOUPDATE),
 	CVAR_VAR(gl_noGrid, 0, 0),
 	CVAR_VAR(gl_showGrid, 0, CVAR_CHEAT),
-
-	CVAR_FULL(&gl_hand, "hand", "0", CVAR_USERINFO|CVAR_ARCHIVE),	//?? move handness to client (set special flag for ent: MIRROR)
 
 	CVAR_VAR(gl_znear, 4, 0),
 	CVAR_VAR(gl_swapinterval, 0, CVAR_ARCHIVE|CVAR_UPDATE),
@@ -438,8 +433,12 @@ void GL_EnableRendering (bool enable)
 
 //?? move to frontend?
 
-void BeginFrame (void)
+static float defaultTime;
+
+void BeginFrame (float time)
 {
+	defaultTime = vp.time = time;
+
 	if (gl_logFile->modified)
 	{
 		QGL_EnableLogging (gl_logFile->integer != 0);
@@ -698,7 +697,7 @@ void RenderFrame (refdef_t *fd)
 	vp.view.axis.FromAngles (fd->viewangles);
 
 	vp.lightStyles = fd->lightstyles;
-	vp.time = fd->time;
+	vp.time = fd->time;						// set scene time
 
 	// add entities
 	vp.firstEntity = gl_numEntities;		//!! gl_numEntities is always 0 here (vp.firstEntity!=0 only when scene contains portals)
@@ -771,6 +770,7 @@ void RenderFrame (refdef_t *fd)
 	}
 
 	ClearBuffers ();						// cleanup scene info (after stats display)
+	vp.time = defaultTime;					// restore time for 2D
 }
 
 
@@ -870,9 +870,11 @@ CBasicImage *RegisterPic (const char *name)
 	return FindPic (name, false);
 }
 
-CBasicImage *RegisterSkin (const char *name)
+CBasicImage *RegisterSkin (const char *name, bool force)
 {
-	return FindSkin (name);
+	unsigned flags = SHADER_SKIN;
+	if (!force) flags |= SHADER_CHECK;
+	return FindShader (name, flags);
 }
 
 CRenderModel *RegisterModel (const char *name)

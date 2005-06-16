@@ -40,9 +40,9 @@ bool	WriteJPG (const char *name, byte *pic, int width, int height, bool highQual
 //--------- models ----------
 bspfile_t* LoadBspFile (const char *filename, bool clientload, unsigned *checksum);
 // mins/maxs may be NULL for {0,0,0}
-void CM_BoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs, int headnode, int brushmask);
-void CM_TransformedBoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs, int headnode, int brushmask, const CVec3 &origin, const CVec3 &angles);
-void CM_TransformedBoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 *mins, const CVec3 *maxs, int headnode, int brushmask, const CVec3 &origin, const CAxis &axis);
+void CM_BoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, int brushmask);
+void CM_TransformedBoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, int brushmask, const CVec3 &origin, const CVec3 &angles);
+void CM_TransformedBoxTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int headnode, int brushmask, const CVec3 &origin, const CAxis &axis);
 int CM_BrushTrace (const CVec3 &start, const CVec3 &end, int *brushes, int maxBrushes);
 int CM_RefineBrushTrace (const CVec3 &start, const CVec3 &end, int *brushes, int numBrushes);
 

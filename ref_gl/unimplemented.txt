@@ -175,10 +175,6 @@ COLORS (SATURATE/OVERBRIGHT):
 ? cmodel_t:
   - add "void *faces"   - filled/used by renderer (and clean R_LoadSubmodels)
   - add "CVec3 center" - who will fill/update this ? ((mod->mins+mod->maxs)/2+ent->origin)
-? remove gl_fog stuff
-
-- color shell: should use size=0.5 for weapons and =3 for main model (use "fromEntity" ?)
-  ? may be, depend on model size
 
 - reflections:
   - small bugs when one can see througs another (for example, lift on map "japan"; "ground3") - unstable draw order
@@ -192,6 +188,7 @@ COLORS (SATURATE/OVERBRIGHT):
   - cvar for disabling envmaps
   - cvar for disabling HQ windows with envmaps (HQ alpha surfaces at all ? (envmaps, alphagen dot etc.))
   - needs to remove extra.plane.axis when shader have deformVertexes
+  ? envmap for view weapon model: may be, depend on viewer pos/angles (can be checked with disguise)
 
 - flares:
   ! autoflares: should combine bsp-divided surfaces onto a single flare (combine by parent brush ?)
@@ -209,6 +206,7 @@ COLORS (SATURATE/OVERBRIGHT):
   ? should not be affected by fog (check it!): flares
   ! if fogDens > LIMIT -> sky = defaultSky, its color = fogColor
   - cull surfaces by fog (or simplify shader: keep fog pass only)
+  ? remove gl_fog stuff
 
 ? gl_state:
   - add GL_Color() (do not compare, but save to struc ...)
@@ -219,23 +217,34 @@ PreprocessShader():
   - add GL_DECAL blend: src=SRC_ALPHA, dst=ONE_MINUS_SRC_ALPHA
   - can combine (src_a, 1-src_a)+(1,1)
   ? constRgba/identRgba -> rgbType,alphaType = {compute,const,ident (const=1),vertex,vertexConst(vetrex*const)}
+  - BUG?: r_lightmap will not hide envmaps, end r_fullbright will not show texture when have envmap
+
 - shaders:
   ? make shader_t.name dynamically allocated (~ basenamed_t)
   ? sky shader: specify color for "gl_fastSky"
   - backend GenerateColors (and other?): for multipass rendering can save "current type of data in buffer" and use it
     later (example: 1st pass - rgbGen_vertex, 2nd - same -- do not update)
-  - parser: try to use Execute[Simple]Command(shaderLine) for parsing
+  - some shaders have "hack" instead of "nodraw": they use texture with alpha = 0, and draw without alphatest, when
+    surface visible, and with alphatest, when not; should find this (check max texture alpha), and when surface completely
+    invisible - do not draw it; example: marvin/police (invisible only part of skin? visual bugs, because of our mipmapping
+    algorithm?)
+  - map size <w> <h> -- change image size (for Q2 maps: allows to replace texture without resampling to original size)
+  ? map color        -- change color of SURF_LIGHT source (see Q3/FAKK q3map_color etc. -- different name)
+  ? implement SHADER_ENVMAP[2]/SHADER_TRANS[33|66] etc. with templates (script, uses "if ... / else ... endif" with analyzing
+    shader flags -- whole GL_FindShader() default_shader part as script ?!!)
+  ? SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
+  - add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
+  ? don't need shader->sortParam other than opaque/seethrough (may be, +coronas (already painted after all) +hud (2D ? already separate))
+    +sky (may be processed in frontend)
+  - r_colorMipLevels changing: cat auto-reload all IMAGE_MIPMAP pics (but may require to recreate some system images)
+
+
 
 - dynamic lightmaps:
   ? option (menu): dynamic lightmap type - uploadable/multipass/auto
   ? when no multitexture - use "multiPassLM = false" (if "auto")
   - many dynamic lightmaps in: market, alley1 (look outside world), rc4 (at start point), punwar (not too slow?), vertigo
     lpbheaven (strong lighting, lots of SURF_TRANS + dl), beachassault (inside ship: shader with 3 lightstyles)
-
-? SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
-- add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
-? don't need shader->sortParam other than sky/opaque/seethrough (may be, +coronas (already painted after all) +hud (2D ? already separate))
-- r_colorMipLevels changing: cat auto-reload all IMAGE_MIPMAP pics (but may require to recreate some system images)
 
 - dlights:
   - cut dlights (by angle: rad/intens = cos(angle)); backlights -- rad/intens can be greater (for culling)
@@ -254,7 +263,7 @@ PreprocessShader():
     (hard to implement ?)
 
 Screenshots:
-  - on auto-save, when entering "base2", flares appeared (but should be occluded by lift door)
+  - BUG: on auto-save, when entering "base2", flares appeared (but should be occluded by lift door)
 
 ? "gl_fastSky 2" - use "*sky" shader; add color to "*sky" shader (color-filled skies)
 ? gl_lastValidRenderer (reset all config params ("reset gl_*" if changed ??); example of value -- "Riva TNT2/SSE")
@@ -266,17 +275,6 @@ Screenshots:
   	else if ((*v1)[axis] > value2)	side1 = 2;
   	else				side1 = 3;
      to detect side[1|2] (no error when used "<=" and ">=" instead of "<" and ">")
-
-- Shaders:
-  ! should load scripts (scripts/*.shader); replace system shaders with script
-  ? may use separate file for each shader (use the same name as texture, but with different extension)
-  - need ability to get shader script from memory (map script with builtin shaders; main engine will pass them to renderer)
-  - shader templates (in scripts/*.shader, use mask instead of shader name; use "map $texture" for image specification)
-    - map $texture     -- map image with the same name as shader name
-  - map size <w> <h> -- change image size (for Q2 maps: allows to replace texture without resampling to original size)
-  ? map color        -- change color of SURF_LIGHT source (see Q3/FAKK q3map_color etc. -- different name)
-  ? implement SHADER_ENVMAP[2]/SHADER_TRANS[33|66] etc. with templates (script, uses "if ... / else ... endif" with analyzing
-    shader flags -- whole GL_FindShader() default_shader part as script ?!!)
 
 HW occlusion:
   - model culling: use hw occlusion test (HP or NV), if NV -- can use LOD when model partially visible
@@ -309,8 +307,6 @@ BUGS:
 VISIBLE:
 - models (entities)
   - md2
-    - IR-vision fx (can force different (special) shader (skin) for IR-visible model -- make this in client, not in renderer; same for
-      power shells?; can parse RF_XXX consts in client and send as special flags to renderer - this will remove "protocol.h" dependency)
     - check all RF_XXX flags from protocol.h
 - shadows
 ? inlineModels: RF_TRANSLUCENT: glColor4f (1,1,1,0.25) + blend + no lightmap (vertex light ?)
@@ -322,7 +318,7 @@ FOR GAME:
 	Unsorted
 -------------------------------------------------------------------------------
 
-? combine all tcMod's (all but wave) into a single matrix (TCMOD_TRANSFORM)
+? combine all tcMod's (all but wave) into a single matrix (extended TCMOD_TRANSFORM ?); combine for each frame; may be, use texture matrix?
 - optimize sky box drawing:
   ? can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs) (problems when surf can be placed on few box sides)
     ? find fast cases, when surface placed only on one plane (use surface bounds ?)
@@ -339,7 +335,7 @@ FOR GAME:
 - fast vid_restart: can reload all (necessary!?) textures/lightmaps (+ update vertex colors); problems:
   - some changes requires vid_restart (GL_Register/GL_Init etc.) -- extensions, overbright etc. -- just check all cvars in gl_main.c
   - should restart shaders: remove unnecessary shaders
-- make refEntity_t (rename it!), particle_t, beam_t to be derived from a single structure: { strucType, next, drawNext }, node_t (leaf)
+?! make refEntity_t (rename it!), particle_t, beam_t to be derived from a single structure: { strucType, next, drawNext }, node_t (leaf)
   should have a single pointer to this list, not separate pointers to entities, particles, beams (sprites too ??)
 ? GL_Cull() --(insert)-> GL_State()
 ? RGBGEN_SPECULAR (rgb depends on viewer direction and light positions) -- for windows/water

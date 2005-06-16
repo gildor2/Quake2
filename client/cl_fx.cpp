@@ -278,7 +278,7 @@ static void CL_AddParticleTraces (float timeDelta)
 		speed = VectorNormalize (p->vel, dir);
 		// update pos
 		VectorMA (p->pos, timeDelta, p->vel);
-		CL_Trace (trace, oldpos, p->pos, nullVec3, nullVec3, CONTENTS_SOLID);
+		CL_Trace (trace, oldpos, p->pos, nullBox, CONTENTS_SOLID);
 		if (p->elasticity && trace.fraction < 1.0f)
 		{
 			int		i;
@@ -465,16 +465,17 @@ beam_t *CL_AllocParticleBeam (const CVec3 &start, const CVec3 &end, float radius
 		b->next = active_beams;
 		active_beams = b;
 
-		b->start = start;
-		b->end = end;
-		b->radius = radius;
+		b->start      = start;
+		b->end        = end;
+		b->radius     = radius;
 		b->fadeTime = b->lifeTime = fadeTime;
 		b->dstAlpha = 0;
 
 		b->color.rgba = RGBA(1,1,1,1);
-		b->alpha = 1;
-		b->type = BEAM_RAILBEAM;
-		b->growSpeed = 0;
+		b->alpha      = 1;
+		b->type       = BEAM_STANDARD;
+		b->shader     = NULL;
+		b->growSpeed  = 0;
 	}
 	return b;
 }
@@ -1626,7 +1627,7 @@ void CL_RailTrailExt (const CVec3 &start, const CVec3 &end, byte rType, byte rCo
 #	undef I
 #	undef o
 
-	if (!rType || !cl_newfx->integer)
+	if (!rType || !cl_newfx->integer || !railBeamShader || !railSpiralShader || !railRingsShader)
 	{
 		CL_RailTrail (start, end);
 		return;
@@ -1634,27 +1635,30 @@ void CL_RailTrailExt (const CVec3 &start, const CVec3 &end, byte rType, byte rCo
 
 	b = CL_AllocParticleBeam (start, end, 3, 0.6);
 	if (!b) return;
-	b->type = BEAM_RAILBEAM;
+	b->type       = BEAM_STAR;
+	b->shader     = railBeamShader;
 	b->color.rgba = colorTable2[rColor];
-//	b->alpha = 1.0f;
-	b->growSpeed = 6;
+//	b->alpha      = 1.0f;
+	b->growSpeed  = 6;
 
 	switch (rType)
 	{
 	case 1:
 		b = CL_AllocParticleBeam (start, end, 1, 0.8);
 		if (!b) return;
-		b->type = BEAM_RAILSPIRAL;
+		b->type       = BEAM_CYLINDER;
+		b->shader     = railSpiralShader;
 		b->color.rgba = colorTable[rColor];
-		b->growSpeed = 6;
+		b->growSpeed  = 6;
 		break;
 	case 2:
 		b = CL_AllocParticleBeam (start, end, 2, 0.8);
 		if (!b) return;
-		b->type = BEAM_RAILRINGS;
+		b->type       = BEAM_CYLINDER;
+		b->shader     = railRingsShader;
 		b->color.rgba = colorTable[rColor];
-		b->alpha = 0.5f;
-		b->growSpeed = 2;
+		b->alpha      = 0.5f;
+		b->growSpeed  = 2;
 		break;
 	}
 }

@@ -306,7 +306,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	data_p += 4+2;
 	info.width = GetLittleShort() / 8;
 
-// get cue chunk
+	// get cue chunk
 	FindChunk("cue ");
 	if (data_p)
 	{
@@ -314,7 +314,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 		info.loopstart = GetLittleLong();
 //		Com_Printf("loopstart=%d\n", sfx->loopstart);
 
-	// if the next chunk is a LIST chunk, look for a cue length marker
+		// if the next chunk is a LIST chunk, look for a cue length marker
 		FindNextChunk ("LIST");
 		if (data_p)
 		{
@@ -330,7 +330,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	else
 		info.loopstart = -1;
 
-// find data chunk
+	// find data chunk
 	FindChunk("data");
 	if (!data_p)
 	{

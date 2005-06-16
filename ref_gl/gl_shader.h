@@ -76,7 +76,7 @@ typedef enum
 	TCMOD_WARP,					// standard fx for quake "SURF_WARP"
 	TCMOD_SCROLL,				// coord[i] += speed[i] * shader.time
 	TCMOD_OFFSET,				// coord[i] += offset[i]
-	TCMOD_ENTITYTRANSLATE,		// == SCROLL with speeds, taken from entity
+//	TCMOD_ENTITYTRANSLATE,		// == SCROLL with speeds, taken from entity; unused in Q3
 	TCMOD_SCALE,				// coord[i] *= scales[i]
 	TCMOD_STRETCH,				// coord[i] = (coord[i]-0.5) * wave + 0.5  (wave stretch, center-relative)
 	TCMOD_ROTATE				// rotate around center with "rotateSpeed" degree per second
@@ -121,7 +121,7 @@ typedef enum
 	DEFORM_NORMAL,
 	DEFORM_BULGE,
 	DEFORM_MOVE,
-	DEFORM_PROJECTIONSHADOW,
+//	DEFORM_PROJECTIONSHADOW,
 	DEFORM_AUTOSPRITE,
 	DEFORM_AUTOSPRITE2
 } deformType_t;
@@ -174,7 +174,8 @@ struct deformParms_t
 			float	bulgeWidth, bulgeHeight, bulgeSpeed;
 		};
 		struct {	// DEFORM_MOVE
-			float	move_x, move_y, move_z;
+			waveParams_t moveWave;
+			CVec3	move;
 		};
 	};
 };
@@ -234,17 +235,18 @@ public:
 		int		lightStyles_i;
 	};
 	int		sortIndex;
-	float	sortParam;		// values from sortParam_t, but in float representation
-	int		sortParam2;		// secondary sort values (main image, lightmap num etc.)
+	int		sortParam;			// values from sortParam_t
+	int		sortParam2;			// secondary sort values (main image, lightmap num etc.)
 
-	unsigned style;			// SHADER_XXX
-	float	tessSize;		// used for warp surface subdivision
+	unsigned style;				// SHADER_XXX
+	float	tessSize;			// used for warp surface subdivision
 
 	gl_cullMode_t cullMode;
 
 	bool	scripted:1;
-	bool	bad:1;			// errors in script or no map image found (for auto-generated shader)
-	bool	dependOnEntity:1; // when false, surface may be mixed with surfaces from different entities
+	bool	bad:1;				// errors in script or no map image found (for auto-generated shader)
+	bool	dependOnEntity:1;	// when false, surface may be mixed with surfaces from different entities
+	bool	noDraw:1;			// when true, do not draw this surfaces with this shader
 
 	bool	usePolygonOffset:1;
 
@@ -274,14 +276,15 @@ public:
 	}; */
 
 	// remap shader
-	shader_t *alphaShader;	// for skins: same shader as current, but translucent
+	shader_t *alphaShader;		// for skins: same shader as current, but translucent
 
 	shader_t *hashNext;
 
 	// stages: variable length
 	int		numStages;
-	shaderStage_t *stages[1];
+	shaderStage_t *stages[1];	// WARNING: should be last
 
+	// functions
 	virtual void Reload ();
 };
 
@@ -300,8 +303,6 @@ extern	shader_t	*gl_particleShader;
 extern	shader_t	*gl_entityShader;
 extern	shader_t	*gl_flareShader;			// NULL if not found
 extern	shader_t	*gl_detailShader;			// NULL if not found
-extern	shader_t	*gl_colorShellShader;
-extern	shader_t	*gl_railSpiralShader, *gl_railRingsShader, *gl_railBeamShader;
 extern	shader_t	*gl_skyShader;
 extern	shader_t	*gl_alphaShader1, *gl_alphaShader2;
 
@@ -320,8 +321,8 @@ void	ResetShaders (void);			// should be called every time before loading a new 
 #define LIGHTMAP_RESERVE	(1024-1)	// lightmap will be set when valid number specified in subsequent SetShaderLightmap() call
 
 // shader styles for auto-generation (if script is not found)
-#define SHADER_SCROLL		0x0001		// SURF_FLOWING (tcMod scroll -1.4 0 ?)
-#define SHADER_TURB			0x0002		// SURF_WARP (tcMod turb ...?)
+#define SHADER_SCROLL		0x0001		// SURF_FLOWING (tcMod scroll -1.4 0)
+#define SHADER_TURB			0x0002		// SURF_WARP (tcMod warp, tessSize 64)
 #define SHADER_TRANS33		0x0004		// SURF_TRANS33 (alphaGen const 0.33, blend)
 #define SHADER_TRANS66		0x0008		// SURF_TRANS66 (alphaGen const 0.66, blend)
 #define SHADER_FORCEALPHA	0x0010		// for alphaGen vertex (image itself may be without alpha-channel)
@@ -344,7 +345,7 @@ void	ResetShaders (void);			// should be called every time before loading a new 
 #define SHADER_CHECK		0x40000000	// if shader doesn't exists, FindShader() will return NULL and do not generate error
 #define SHADER_CHECKLOADED	0x80000000	// if shader loaded, return it, else - NULL
 
-shader_t *FindShader (const char *name, unsigned style);
+shader_t *FindShader (const char *name, unsigned style = 0);
 shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber);
 shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles);
 shader_t *GetAlphaShader (shader_t *shader);

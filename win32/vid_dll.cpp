@@ -422,7 +422,7 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 
 		if (width || height) ShowWindow (cl_hwnd, SW_SHOW);
 		// let the sound and input subsystems know about the new window
-		cl.force_refdef = true;		// can't use a paused refdef
+		cl.forceViewFrame = true;
 		in_needRestart = true;
 	}
 
@@ -700,9 +700,9 @@ void Vid_Tick (void)
 	if (needRestart)
 	{
 		// refresh has changed
-		cl.force_refdef = true;		// can't use a paused refdef
+		cl.forceViewFrame = true;
 		S_StopAllSounds_f ();
-		cl.refresh_prepped = false;
+		cl.rendererReady = false;
 
 #ifndef SINGLE_RENDERER
 		static char lastRenderer[MAX_QPATH];

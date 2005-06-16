@@ -712,7 +712,7 @@ void SV_PostprocessFrame (void)
 			point[1] = ent->s.origin[1];
 			point[2] = ent->s.origin[2] - 64;
 			trace_t trace;
-			SV_Trace (trace, ent->s.origin, point, ent->bounds.mins, ent->bounds.maxs, ent, MASK_PLAYERSOLID|MASK_MONSTERSOLID|MASK_WATER);
+			SV_Trace (trace, ent->s.origin, point, ent->bounds, ent, MASK_PLAYERSOLID|MASK_MONSTERSOLID|MASK_WATER);
 			if (trace.fraction < 1)
 			{
 				int footsteptype = trace.surface->material - 1;
@@ -788,16 +788,16 @@ void SV_PostprocessFrame (void)
 					if (curr_vel < FALLING_SCREAM_VELOCITY1 && prev_vel < FALLING_SCREAM_VELOCITY1)
 					{
 						trace_t	trace;
-						static const CVec3 mins = {-20, -20, -10}, maxs = {20, 20, 10};
 
 						CVec3 end = pm_origin;
 						end[2] = pm_origin[2] - FALLING_SCREAM_HEIGHT_WATER;
 
-						SV_Trace (trace, pm_origin, end, mins, maxs, NULL, CONTENTS_WATER);
+						static const CBox bounds = {{-20, -20, -10}, {20, 20, 10}};
+						SV_Trace (trace, pm_origin, end, bounds, NULL, CONTENTS_WATER);
 						if (trace.fraction == 1.0 && !trace.startsolid)	// no water and start not in water
 						{
 							end[2] = pm_origin[2] - FALLING_SCREAM_HEIGHT_SOLID;
-							SV_Trace (trace, pm_origin, end, mins, maxs, NULL, CONTENTS_SOLID|CONTENTS_LAVA);
+							SV_Trace (trace, pm_origin, end, bounds, NULL, CONTENTS_SOLID|CONTENTS_LAVA);
 							if (trace.fraction == 1.0 || (!trace.ent && trace.plane.normal[2] < 0.5) ||
 								trace.contents & CONTENTS_LAVA || trace.surface->flags & SURF_SKY)
 								cl->screaming = true;
@@ -1009,14 +1009,15 @@ trace_t SV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, 
 	static edict_t *ent;
 #define RESET  { shotLevel = 0; return tr; }
 
-	trace_skipAlpha = true;	//!! hack for kingpin CONTENTS_ALPHA
+	trace_skipAlpha = true;		//!! hack for kingpin CONTENTS_ALPHA
 	if (mins || maxs) trace_skipAlpha = false;
 
-	if (!mins) mins = &nullVec3;		// required for game
-	if (!maxs) maxs = &nullVec3;
+	CBox bounds = nullBox;
+	if (mins) bounds.mins = *mins;		// required for game; may be NULL
+	if (maxs) bounds.maxs = *maxs;
 
 	trace_t	tr;
-	SV_Trace (tr, start, end, *mins, *maxs, passedict, contentmask);
+	SV_Trace (tr, start, end, bounds, passedict, contentmask);
 	trace_skipAlpha = false;	//!!
 	if (!sv_extProtocol->integer) return tr;
 

@@ -321,7 +321,8 @@ int appSprintf (char *dest, int size, const char *fmt, ...)
 // 3) *rest  - name ends with "rest" (for example, ".ext")
 // 4) start* - name starts with "start"
 // 4) text   - name equals "text"
-// Comparision is case-sensitive.
+// Comparision is case-sensitive, when ignoreCase == false (default)
+// A few masks can be separated with ','
 bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 {
 	int		masklen, namelen;
@@ -406,6 +407,14 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 
 	return false;
 	unguardSlow;
+}
+
+
+bool appIsWildcard (const char *string)
+{
+	if (strchr (string, '*')) return true;
+	if (strchr (string, ',')) return true;
+	return false;
 }
 
 

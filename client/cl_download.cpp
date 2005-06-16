@@ -1,6 +1,15 @@
 #include "client.h"
 #include "qfiles.h"			// we analyze some file structures to extract model/skin info
 
+/*?? What we can do here (with extended protocol):
+ *	1. compress data with zlib
+ *	2. with data, send full filename too; this may be useful for:
+ *		a) transferring images - any image type by single request name
+ *		b) transferring mod data: specify, where data from: base dir or mod
+ *		c) transferring paks: when file comes from pakfile, send pak and
+ *			mount it atfer transfer (before other downloads!)
+ */
+
 extern	cvar_t *allow_download;
 extern	cvar_t *allow_download_players;
 extern	cvar_t *allow_download_models;
@@ -499,9 +508,8 @@ static void RequestNextDownload (void)
 		precache_check = DCS_SKIP_ALL;
 	}
 
-	//ZOID
 	CL_RegisterSounds ();
-	CL_PrepRefresh ();
+	V_InitRenderer ();
 
 	MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
 	MSG_WriteString (&cls.netchan.message, va("begin %d\n", precache_spawncount));
@@ -528,7 +536,7 @@ void CL_Precache_f (int argc, char **argv)
 
 		CM_LoadMap (cl.configstrings[CS_MODELS+1], true, &map_checksum);
 		CL_RegisterSounds ();
-		CL_PrepRefresh ();
+		V_InitRenderer ();
 		return;
 	}
 

@@ -706,6 +706,7 @@ void M_ForceMenuOff (void)
 	m_menudepth = 0;
 	Key_ClearStates ();
 	CL_Pause (false);
+	SCR_ShowConsole (false, true);	// immediately hide console
 }
 
 void menuFramework_t::Pop ()

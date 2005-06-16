@@ -68,6 +68,13 @@ static void V_ClearScene (void)
 V_AddEntity
 =====================
 */
+
+// player effects
+static CBasicImage *disguiseShader, *irShader, *shellShader;
+// railgun trails
+CBasicImage *railSpiralShader, *railRingsShader, *railBeamShader;
+
+
 void V_AddEntity (entity_t *ent)
 {
 	if (r_numentities >= MAX_ENTITIES)
@@ -88,12 +95,47 @@ void V_AddEntity2 (entity_t *ent)
 
 void AddEntityWithEffects2 (entity_t *ent, unsigned fx)
 {
+	if ((fx & RF_USE_DISGUISE) && disguiseShader)
+	{
+		ent->customShader = disguiseShader;
+		ent->skinnum      = 0;
+		ent->skin         = NULL;
+	}
+	else if ((fx & RF_IR_VISIBLE) && (cl.refdef.rdflags & RDF_IRGOGGLES))
+	{
+		if (irShader)
+		{
+			ent->customShader = irShader;
+			ent->skinnum      = 0;
+			ent->skin         = NULL;
+		}
+		else
+		{
+			// shader should exists, but ...
+			ent->flags |= RF_FULLBRIGHT;
+		}
+		ent->flags &= ~RF_GLOW;		// no glow for IR-visible
+	}
+
 	V_AddEntity2 (ent);
 
 	// color shells generate a seperate entity for the main model
+	// check for COLOR_SHELL
 	if (fx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
 	{
-		ent->flags |= fx;
+		ent->customShader = shellShader;
+		ent->color.rgba = 0x202020;				// required for RED/GREEN/BLUE
+		if (fx & RF_SHELL_HALF_DAM)
+			ent->color.rgba = RGB(0.56, 0.59, 0.45);
+		if (fx & RF_SHELL_DOUBLE)
+			ent->color.rgba = RGB(0.9, 0.7 ,0);
+		if (fx & RF_SHELL_RED)
+			ent->color.c[0] = 255;
+		if (fx & RF_SHELL_GREEN)
+			ent->color.c[1] = 255;
+		if (fx & RF_SHELL_BLUE)
+			ent->color.c[2] = 255;
+		ent->color.c[3] = 255;
 		V_AddEntity2 (ent);
 	}
 }
@@ -102,6 +144,19 @@ void AddEntityWithEffects (entity_t *ent, unsigned fx)
 {
 	ent->pos.axis.FromAngles (ent->angles);
 	AddEntityWithEffects2 (ent, fx);
+}
+
+
+//!! USE: rail shaders (remove from GL), colorShell (too)
+
+static void RegisterShaders ()
+{
+	disguiseShader   = RE_RegisterSkin ("fx/disguiseShell");
+	irShader         = RE_RegisterSkin ("fx/irModel");
+	shellShader      = RE_RegisterSkin ("fx/colorShell");
+	railBeamShader   = RE_RegisterSkin ("fx/railBeam");
+	railSpiralShader = RE_RegisterSkin ("fx/railSpiral");
+	railRingsShader  = RE_RegisterSkin ("fx/railRings");
 }
 
 
@@ -233,26 +288,13 @@ void V_TestLights (void)
 
 //===================================================================
 
-/*
-=================
-CL_PrepRefresh
-
-Call before entering a new level, or after changing dlls
-=================
-*/
-//?? try to make with tables/automaton, call SCR_UpdateScreen() and check "disconnect" every step, + get keyboard events
-void CL_PrepRefresh (void)
+void V_InitRenderer ()
 {
-	char		mapname[32];
-	int			i;
-	char		name[MAX_QPATH];
-	float		rotate;
-	static int start_time = 0;
-	static int servercount = 0;
+	guard(V_InitRenderer);
 
-	if (!cl.configstrings[CS_MODELS+1][0])
-		return;				// no map loaded
+	int		i;
 
+	if (!cl.configstrings[CS_MODELS+1][0]) return;			// no map loaded
 	SCR_SetLevelshot ();
 
 	// wait a small time to let server complete initialization
@@ -266,18 +308,21 @@ void CL_PrepRefresh (void)
 	//      - send configstrings#2
 	// in some circumstances, client will receive configstrings#1 after server frame#2 - this will load
 	// client map#1 after loading server map#2 (out-of-sync client/server maps -- fatal error)
-	if (servercount != cl.servercount)
+	static int startTime = 0;
+	static int serverCount = 0;
+	if (serverCount != cl.servercount)
 	{
-		servercount = cl.servercount;
-		start_time = cls.realtime;
+		serverCount = cl.servercount;
+		startTime = cls.realtime;
 		return;
 	}
-	if (cls.realtime < start_time + 300)
+	if (cls.realtime < startTime + 300)
 		return;
 
 	CL_ClearTEnts ();		// temp entities linked to models, which are invalid after vid_restart
 
 	// let the render dll load the map
+	char mapname[MAX_QPATH];
 	strcpy (mapname, cl.configstrings[CS_MODELS+1] + 5);	// skip "maps/"
 	mapname[strlen(mapname)-4] = 0;		// cut off ".bsp"
 
@@ -292,12 +337,14 @@ void CL_PrepRefresh (void)
 	SCR_TouchPics ();
 
 	CL_RegisterTEntModels ();
+	RegisterShaders ();
 
 	strcpy (cl_weaponmodels[0], "weapon.md2");	// default weapon model
 	num_cl_weaponmodels = 1;
 
 	for (i = 1; i < MAX_MODELS && cl.configstrings[CS_MODELS+i][0]; i++)
 	{
+		char name[MAX_QPATH];
 		strcpy (name, cl.configstrings[CS_MODELS+i]);
 		name[linewidth-1] = 0;					// never go beyond one line (for correct '\r' erasing)
 		if (name[0] != '*')
@@ -338,7 +385,7 @@ void CL_PrepRefresh (void)
 	{
 		if (!cl.configstrings[CS_PLAYERSKINS+i][0])
 			continue;
-		Com_Printf ("client %i\r", i);
+		Com_Printf ("client %d\r", i);
 		SCR_UpdateScreen ();
 		Sys_SendKeyEvents ();	// pump message loop
 		CL_ParseClientinfo (i);
@@ -347,7 +394,7 @@ void CL_PrepRefresh (void)
 	// set sky textures and speed
 	Com_Printf ("sky\r", i);
 	SCR_UpdateScreen ();
-	rotate = atof (cl.configstrings[CS_SKYROTATE]);
+	float rotate = atof (cl.configstrings[CS_SKYROTATE]);
 	CVec3 axis;
 	sscanf (cl.configstrings[CS_SKYAXIS], "%f %f %f", &axis[0], &axis[1], &axis[2]);
 	RE_SetSky (cl.configstrings[CS_SKY], rotate, axis);
@@ -360,11 +407,13 @@ void CL_PrepRefresh (void)
 
 	SCR_UpdateScreen ();
 	SCR_EndLoadingPlaque (true);
-	cl.refresh_prepped = true;
-	cl.force_refdef = true;	// make sure we have a valid refdef
+	cl.rendererReady = true;
+	cl.forceViewFrame = true;
 
 	// start the cd track
 	CDAudio_Play (atoi(cl.configstrings[CS_CDTRACK]), true);
+
+	unguard;
 }
 
 
@@ -602,9 +651,9 @@ static void DrawSurfInfo (void)
 
 	unsigned cont = r_surfinfo->integer & 4 ? MASK_ALL : MASK_SHOT|MASK_WATER;
 	trace_t	trace;
-	CM_BoxTrace (trace, start, end, NULL, NULL, 0, cont);
+	CM_BoxTrace (trace, start, end, nullBox, 0, cont);
 	if (!(r_surfinfo->integer & 2))
-		CL_EntityTrace (trace, start, end, nullVec3, nullVec3, cont);
+		CL_EntityTrace (trace, start, end, nullBox, cont);
 
 	if (trace.fraction < 1.0)
 	{
@@ -775,9 +824,9 @@ static void FixWaterVis (void)
 	// trace from air to water
 	trace_t trace;
 	if (!w1)
-		CM_BoxTrace (trace, cl.refdef.vieworg, p, NULL, NULL, 0, MASK_WATER);
+		CM_BoxTrace (trace, cl.refdef.vieworg, p, nullBox, 0, MASK_WATER);
 	else
-		CM_BoxTrace (trace, p, cl.refdef.vieworg, NULL, NULL, 0, MASK_WATER);
+		CM_BoxTrace (trace, p, cl.refdef.vieworg, nullBox, 0, MASK_WATER);
 	if (trace.fraction < 1.0f && !(trace.surface->flags & (SURF_TRANS33|SURF_TRANS66)))
 	{
 //		RE_DrawTextLeft ("WATER FIX!", 1, 1, 1);
@@ -801,7 +850,7 @@ bool V_RenderView (void)
 
 	if (cls.state != ca_active)
 		return false;
-	if (!cl.refresh_prepped)
+	if (!cl.rendererReady)
 		return false;			// still loading
 	if (!map_clientLoaded)
 		return false;			// map already unloaded (by server), but client is still active (ca_active)
@@ -829,13 +878,12 @@ bool V_RenderView (void)
 
 	// an invalid frame will just use the exact previous refdef
 	// we can't use the old frame if the video mode has changed, though...
-	if (cl.frame.valid && (cl.force_refdef || !cl_paused->integer))
+	if (cl.frame.valid && (cl.forceViewFrame || !cl_paused->integer))
 	{
+		cl.forceViewFrame = false;
+
 		CalcVrect ();
 		TileClear ();
-
-		cl.force_refdef = false;
-
 		V_ClearScene ();
 
 		cl.refdef.rdflags = cl.frame.playerstate.rdflags;

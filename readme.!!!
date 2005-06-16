@@ -69,7 +69,7 @@ SpawnEntities() exported from game
 server\sv_init.c  SV_SpawnServer () -> ge->SpawnEntities (...)
 
 
--------------------------------
+----------------------------------------
 
 New server:
 ~~~~~~~~~~~
@@ -83,35 +83,6 @@ New server:
 
 --OR-- (may be, this is better...)
   we can add extra bytes to any packet
-
-        =================
-
-cl_main::CL_SendConnectPacket():
-	Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect %i %i %i \"%s\"\n",
-		PROTOCOL_VERSION, port, cls.challenge, Cvar_Userinfo() );
-   (!! add any text (NEW_PROTOCOL_ID) before "\n" as Cmd_Argv(5))
-
-sv_main::SVC_DirectConnect(): (on "connect")
-   get Cmd_Argc(1-4)
-	Netchan_OutOfBandPrint (NS_SERVER, adr, "client_connect");
-   (!! add any text (NEW_PROTOCOL_ID) as Cmd_Argc(1) if Cmd_Argc==5+1 && Cmd_Argc(5)==NEW_PROTOCOL_ID
-    and mark this address as connected with a new protocol)
-
-cl_main::CL_ConnectionlessPacket(): (on "client_connect")
-   (ignores Cmd_Argc/Cmd_Argv -- make parsing our text )
-	cls.netchan.Setup (NS_CLIENT, net_from, cls.quakePort);
-	MSG_WriteChar (&cls.netchan.message, clc_stringcmd);
-	MSG_WriteString (&cls.netchan.message, "new");
-	cls.state = ca_connected;
-   (!! if Cmd_Argc==1+1 && Cmd_Argv(1)==NEW_PROTOCOL_ID - we are connected with a new protocol)
-
-??WARNING?? disable changing protocol by client during a game (i.e. "cl_newprotocol 0;reconnect")
-  (seems, "reconnect" make "disconnect;connect <last_addr>", so we don't need to check this...)
-
-!!!! DISABLE using Kingpin/HalfLife (if one) models for clients, who set "cl_newprotocol 0" !!!!
-  (this models' frame numbers are different from Quake2 md2 frames!)
-May be, new protocol must be disabled for some mods, which have different animations in player
-  models.
 
 ----------------------------------------
 
@@ -131,16 +102,3 @@ entity_state_t filled in server/sv_ents.c::SV_BuildClientFrame(client)
 
 Basic animations and frame inc/dec are set in game/p_view.c::Q_SetClientFrame()
   Note: anim_end is inaccessible!
-
-----------------------------------------
-
-Trace(mins=NULL,maxs=NULL):
-~~~~~~~~~~~~~~~~~~~~~~~
-CM_BoxTrace(), CM_TransformedBoxTrace() - already implemented
-CL_Trace() -> CL_EntityTrace
-CL_PMTrace() -> CL_EntityTrace
-SV_Trace() -> SV_ClipMoveToEntities
-CL_EntityTrace() *
-SV_ClipMoveToEntities() *
-
-* - attention on mins/maxs usage

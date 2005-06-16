@@ -106,7 +106,7 @@ struct refEntity_t
 
 	CVec3	center, size2;				// bounding box: center and (mins-maxs)/2
 	float	radius;
-	union {								//?? useless
+	union {								//?? union is useless
 		struct {
 		/*-------- entity with model --------*/
 			// position info

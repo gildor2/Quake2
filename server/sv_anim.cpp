@@ -91,6 +91,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 #else
 	// test ps-computation mode
 	EXEC_ONCE(Com_WPrintf("TEST !!!!!!!!!!!!\n");)
+	if (Cvar_VariableInt("test") || ps == NULL)
 #endif
 	{
 		/* try to re-create player_state_t
@@ -109,9 +110,11 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 		down[2] -= 0.25f;
 		trace_t trace;
 		// consts from pmove.cpp:
-		static const CVec3 tMins = {-16, -16, -24};
-		static const CVec3 tMaxs = { 16,  16,   4}; // as ducked
-		SV_Trace (trace, ent.origin, down, tMins, tMaxs, edict, MASK_PLAYERSOLID);
+		static const CBox trBounds = {
+			{-16, -16, -24},
+			{ 16,  16,   4}		// as ducked
+		};
+		SV_Trace (trace, ent.origin, down, trBounds, edict, MASK_PLAYERSOLID);
 		if (trace.fraction < 1.0f || trace.startsolid)
 			calcPs.pmove.pm_flags |= PMF_ON_GROUND;
 		// check underwater
@@ -143,7 +146,8 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 	float absVelHorz = SQRTFAST(velForward*velForward + velRight*velRight);
 
 	// acquire previous frame info
-	int prevLegs = ANIM_NOCHANGE, prevTorso = ANIM_NOCHANGE, prevAngle = LEGS_NEUTRAL, prevPitch = 0;
+	int prevLegs = ANIM_NOCHANGE, prevTorso = ANIM_NOCHANGE, prevAngle = LEGS_NEUTRAL;
+	float prevPitch = 0;
 	if (oldent) oldent->GetAnim (prevLegs, prevTorso, prevAngle, prevPitch);
 
 	//?? torso angles: note, that Q3 angles is for legs (torso rotated), but in Q2 angles for
@@ -194,7 +198,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 	int legsAngle = LEGS_NEUTRAL;
 	if (legs != LEGS_IDLE && legs != LEGS_IDLECR && legs != LEGS_SWIM)
 	{
-		if (abs(velForward) < 20)
+		if (fabs(velForward) < 20)
 		{
 			// side movement ?
 			if (velRight > 20)
@@ -202,7 +206,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 			else if (velRight < -20)
 				legsAngle = LEGS_LEFT_90;
 		}
-		else if (abs(velRight) > 20)
+		else if (fabs(velRight) > 20)
 		{
 			// |velRight| > 20, |velForward| > 20 -- +/- 45 degrees
 			if (IsNegative (velRight) ^ IsNegative (velForward))
@@ -243,16 +247,16 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 
 	// weapon changing animation
 	// uses reversed crpain (172->169->172) / pain3 (65->62->65)
-#if 0
+#if 1
 	if (oldent && (
-		(oldent->frame == 170 && f == 169) ||
-		(oldent->frame == 63  && f == 62)))
+		(oldent->frame == 171 && f == 170) ||
+		(oldent->frame == 64  && f == 63)))	//?? check skinnum shanges too?
 #else
 	if (oldent && ((ent.skinnum ^ oldent->skinnum) & 0xFF00))
 #endif
 		torso = TORSO_DROP;
 
-	int pitch = bound(ps->viewangles[PITCH], -90, 90);
+	int pitch = bound(appRound (ps->viewangles[PITCH]), -90, 90);
 
 	//!! pain: 54-57,58-61,62-65; crpain: 169-172 -> angles (may be, mix rotate + lean angles?)
 

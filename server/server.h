@@ -325,8 +325,8 @@ int SV_PointContents (const CVec3 &p);
 // Also check entities, to allow moving liquids
 
 
-void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, edict_t *passedict, int contentmask);
-// mins and maxs are relative
+void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask);
+// bounds are relative
 
 // if the entire move stays in a solid volume, trace.allsolid will be set,
 // trace.startsolid will be set, and trace.fraction will be 0

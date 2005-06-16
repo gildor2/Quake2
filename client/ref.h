@@ -59,7 +59,10 @@ struct entity_t
 	color_t	color;					// for RF_BBOX only; color of box
 	// color info
 	float	alpha;					// ignore if RF_TRANSLUCENT isn't set
+			//?? use color.c[3]
 
+	// entity shading; priority: 1. skin 2. skinnum 3. customShader
+	CBasicImage *customShader;		// single shader for all entity surfaces
 	CModelSkin *skin;				// NULL for built-in skin
 	int		skinnum;				// number of model built-in skin
 	unsigned flags;					// set of RF_XXX flags
@@ -69,9 +72,9 @@ struct entity_t
 typedef enum
 {
 	BEAM_STANDARD,
-	BEAM_RAILBEAM,
-	BEAM_RAILSPIRAL,
-	BEAM_RAILRINGS
+	//?? add BEAM_FLAT
+	BEAM_STAR,
+	BEAM_CYLINDER
 } beamType_t;
 
 
@@ -82,6 +85,7 @@ struct beam_t
 	float	radius;
 	beamType_t type;
 	color_t	color;
+	CBasicImage *shader;
 	// internal fields
 	float	alpha;					// color.c[3] is byte and have no enough precision
 	float	fadeTime;

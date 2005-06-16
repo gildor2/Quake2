@@ -303,7 +303,6 @@ static sfx_t *S_AliasName (const char *aliasname, const char *truename)
 /*
 =====================
 S_BeginRegistration
-
 =====================
 */
 void S_BeginRegistration (void)
@@ -315,7 +314,6 @@ void S_BeginRegistration (void)
 /*
 ==================
 S_RegisterSound
-
 ==================
 */
 sfx_t *S_RegisterSound (const char *name)

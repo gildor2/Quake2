@@ -48,13 +48,11 @@ CORE_API int appCStrlen (const char *str);
 // Remove color marks from string
 CORE_API void appUncolorizeString (char *dst, const char *src = NULL);
 
-
 CORE_API const char *va (const char *format, ...);
 CORE_API int appSprintf (char *dest, int size, const char *fmt, ...);
 
-
 CORE_API bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase = false);
-
+CORE_API bool appIsWildcard (const char *string);
 
 CORE_API char *CopyString (const char *str);
 CORE_API char *CopyString (const char *str, CMemoryChain *chain);
@@ -88,12 +86,12 @@ protected:
 	CORE_API CStringItem *Find (const char *name, CStringItem **after);
 	CORE_API CStringItem *Find (int index);
 public:
-	CStringList ()
+	inline CStringList ()
 	{
 		first = NULL;
 	}
 	// function for implicit list initialization
-	void Reset ()
+	inline void Reset ()
 	{
 		first = NULL;
 	}
@@ -115,7 +113,7 @@ public:
 	{
 		return (T*) first;
 	}
-	T *Next (T* prev)
+	T *Next (const T* prev)
 	{
 		return (T*) prev->next;
 	}

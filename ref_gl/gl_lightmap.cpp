@@ -35,8 +35,8 @@ void LM_Flush (lightmapBlock_t *lm)
 	if (lm->pic)
 	{
 		// free memory blocks
-		appFree (lm->pic);
-		appFree (lm->allocated);
+		delete lm->pic;
+		delete lm->allocated;
 		lm->pic = NULL;
 	}
 }
@@ -44,9 +44,7 @@ void LM_Flush (lightmapBlock_t *lm)
 
 void LM_Done (void)
 {
-	int		i;
-
-	for (i = 0; i < lightmapsNum; i++)
+	for (int i = 0; i < lightmapsNum; i++)
 		LM_Flush (&lmBlocks[i]);
 }
 
@@ -65,25 +63,20 @@ void LM_Restore (lightmapBlock_t *lm)
 
 lightmapBlock_t *LM_NewBlock (void)
 {
-	lightmapBlock_t *lm;
-
 	// find free slot
 	if (++lightmapsNum == MAX_LIGHTMAPS)
 		Com_FatalError ("LM_NewBlock: MAX_LIGHTMAPS hit");
-	lm = &lmBlocks[lightmapsNum - 1];
+	lightmapBlock_t &lm = lmBlocks[lightmapsNum - 1];
 	// init fields
-	lm->index = lightmapsNum;
-	lm->image = NULL;
-	lm->empty = true;
-	lm->filled = false;
+	lm.index  = lightmapsNum;
+	lm.image  = NULL;
+	lm.empty  = true;
+	lm.filled = false;
 	// alloc data blocks
-	lm->pic = (byte*)appMalloc (LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4);
-	lm->allocated = (int*)appMalloc (LIGHTMAP_SIZE * sizeof(lm->allocated[0]));
-	// clear data blocks
-	memset (&lm->allocated[0], 0, sizeof(lm->allocated));
-	memset (lm->pic, 0, LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4);
+	lm.pic = new byte [LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4];
+	lm.allocated = new int [LIGHTMAP_SIZE];
 
-	return lm;
+	return &lm;
 }
 
 
@@ -95,13 +88,11 @@ void LM_Rewind (void)
 
 lightmapBlock_t *LM_NextBlock (void)
 {
-	lightmapBlock_t *lm;
-
 	while (currentLightmapNum < lightmapsNum)
 	{
-		lm = &lmBlocks[currentLightmapNum++];
-		if (!lm->filled)
-			return lm;
+		lightmapBlock_t &lm = lmBlocks[currentLightmapNum++];
+		if (!lm.filled)
+			return &lm;
 	}
 
 	return LM_NewBlock ();
@@ -110,12 +101,10 @@ lightmapBlock_t *LM_NextBlock (void)
 
 void LM_CheckMinlight (dynamicLightmap_t *dl)
 {
-	int		i, r, g, b, m;
-	byte	*src;
-
-	src = dl->source[0];
-	for (i = 0; i < dl->w * dl->h; i++)
+	const byte *src = dl->source[0];
+	for (int i = 0; i < dl->w * dl->h; i++)
 	{
+		int r, g, b, m;
 		r = *src++; g = *src++; b = *src++;
 		m = max(r, g);
 		m = max(m, b);
@@ -131,17 +120,15 @@ void LM_CheckMinlight (dynamicLightmap_t *dl)
 
 bool LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl)
 {
-	int		i, j, w, h;
-	int		best, best2;
+	int w = dl->w2 + 1;					// make a border around lightmap
+	int h = dl->h + 1;
 
-	w = dl->w2 + 1;					// make a border around lightmap
-	h = dl->h + 1;
+	int best = LIGHTMAP_SIZE;
 
-	best = LIGHTMAP_SIZE;
-
+	int i, j;
 	for (i = 0; i < LIGHTMAP_SIZE - w; i++)
 	{
-		best2 = 0;
+		int best2 = 0;
 
 		for (j = 0; j < w; j++)
 		{
@@ -173,16 +160,13 @@ bool LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl)
 // Converts brightness to color
 static void CreateSolarColor (float light, float x, float y, float *vec)
 {
-	float	f, a0, s, t;
-	int		i;
-
-	f = light * 5;
-	i = appCeil (f);
+	float f = light * 5;
+	int i = appCeil (f);
 	f = f - i;				// frac part
 
-	s = (1.0f - x) * y;
-	t = (1.0f - f * x) * y;
-	a0 = y * (1.0f - x * (1.0f - f));
+	float s = (1.0f - x) * y;
+	float t = (1.0f - f * x) * y;
+	float a0 = y * (1.0f - x * (1.0f - f));
 	switch (i)
 	{
 		case 0:
@@ -239,9 +223,7 @@ static void CopyLightmap (byte *dst, byte *src, int w, int h, int stride, byte a
 	}
 	else
 	{
-		float	sat;
-
-		sat = r_saturation->value;
+		float sat = r_saturation->value;
 		if (r_lightmap->integer == 3)
 			sat = -sat;
 
@@ -279,18 +261,15 @@ static void CopyLightmap (byte *dst, byte *src, int w, int h, int stride, byte a
 
 void LM_PutBlock (dynamicLightmap_t *dl)
 {
-	byte	*dst;
-	int		stride, i, numFast;
-
-	stride = (LIGHTMAP_SIZE - dl->w) * 4;
+	int stride = (LIGHTMAP_SIZE - dl->w) * 4;
 
 	// put main lightmap (style 0, slow)
-	dst = dl->block->pic + (dl->t * LIGHTMAP_SIZE + dl->s) * 4;
+	byte *dst = dl->block->pic + (dl->t * LIGHTMAP_SIZE + dl->s) * 4;
 	CopyLightmap (dst, dl->source[0], dl->w, dl->h, stride, 0);		// alpha (flag: no additional scale)
 
 	// put fast dynamic lightmaps
-	numFast = 0;
-	for (i = 0; i < dl->numStyles; i++)
+	int numFast = 0;
+	for (int i = 0; i < dl->numStyles; i++)
 	{
 		if (!IS_FAST_STYLE(dl->style[i])) continue;
 
@@ -309,24 +288,19 @@ void LM_PutBlock (dynamicLightmap_t *dl)
 // perform selection sort on lightstyles (mostly not needed, just in case)
 void LM_SortLightStyles (dynamicLightmap_t *dl)
 {
-	int		i, j;
-
 	if (dl->numStyles < 2) return;	// nothing to sort
 
-	for (i = 0; i < dl->numStyles - 1; i++)	// at iteration "i == dl->numStyles-1" all already will be sorted
+	for (int i = 0; i < dl->numStyles - 1; i++)	// at iteration "i == dl->numStyles-1" all already will be sorted
 	{
-		int		min;
-		byte	*source, style;
-
-		min = i;
-		for (j = i + 1; j < dl->numStyles; j++)
+		int min = i;
+		for (int j = i + 1; j < dl->numStyles; j++)
 			if (dl->style[j] < dl->style[i]) min = j;
 		if (min == i) continue;		// in place
 		// exchange styles [i] and [j]
-		source = dl->source[i];
+		byte *source = dl->source[i];
 		dl->source[i] = dl->source[j];
 		dl->source[j] = source;
-		style = dl->style[i];
+		byte style = dl->style[i];
 		dl->style[i] = dl->style[j];
 		dl->style[j] = style;
 	}
@@ -336,10 +310,10 @@ void LM_SortLightStyles (dynamicLightmap_t *dl)
 void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dlightMask)
 {
 	byte	pic[LIGHTMAP_SIZE * LIGHTMAP_SIZE * 4];
-	int		x, z;
-	dynamicLightmap_t *dl;
+	int		i, x, z;
+	unsigned r, g, b;
 
-	dl = surf->lightmap;
+	dynamicLightmap_t *dl = surf->lightmap;
 
 	if (dl->block && !vertexOnly)
 	{
@@ -347,21 +321,16 @@ void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dli
 		memset (pic, 0, dl->w * dl->h * 4);	// set initial state to zero (add up to 4 lightmaps)
 		for (z = 0; z < dl->numStyles; z++)
 		{
-			int		scale, count;
-			byte	*src, *dst;
-
 			if (IS_FAST_STYLE(dl->style[z])) continue;
-			src = dl->source[z];
-			dst = pic;
-			scale = dl->modulate[z] >> gl_config.overbright;
+			byte *src = dl->source[z];
+			byte *dst = pic;
+			int scale = dl->modulate[z] >> gl_config.overbright;
 			if (!gl_config.doubleModulateLM) scale <<= 1;
 
-			count = dl->w * dl->h;
+			int count = dl->w * dl->h;
 			for (x = 0; x < count; x++)
 			{
 				// modulate lightmap: scale==0 -> by 0, scale==128 - by 1; scale==255 - by 2 (to be exact, 2.0-1/256)
-				int		r, g, b;
-
 				r = dst[0] + (scale * *src++ >> 7);
 				g = dst[1] + (scale * *src++ >> 7);
 				b = dst[2] + (scale * *src++ >> 7);
@@ -379,23 +348,18 @@ void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dli
 	{
 		/*-------------- update vertex colors --------------*/
 		vertex_t *v;
-		int		i;
-
 		for (i = 0, v = surf->verts; i < surf->numVerts; i++, v++)
 		{
-			unsigned r, g, b;			// 0 -- 0.0f, 256*16384*128 -- 256 (rang=21+8)
-
-			r = g = b = 0;
+			r = g = b = 0;				// 0 -- 0.0f, 256*16384*128 -- 256 (rang=21+8)
 			for (z = 0; z < dl->numStyles; z++)
 			{
-				byte	*point;
 				unsigned scale;			// 0 -- 0.0f, 128 -- 1.0f, 255 ~ 2.0 (rang=7)
 				unsigned frac_s, frac_t;// 0 -- 0.0f, 128 -- 1.0f (rang=7)
 				unsigned frac;			// point frac: 0 -- 0.0f, 16384*128 -- 1.0f (rang=14+7=21)
 
 				// calculate vertex color as weighted average of 4 points
 				scale = dl->modulate[z] * 2 >> gl_config.overbright;
-				point = dl->source[z] + (appFloor (v->lm2[1]) * dl->w + appFloor (v->lm2[0])) * 3;
+				byte *point = dl->source[z] + (appFloor (v->lm2[1]) * dl->w + appFloor (v->lm2[0])) * 3;
 				// calculate s/t weights
 				frac_s = appRound (v->lm2[0] * 128) & 127;
 				frac_t = appRound (v->lm2[1] * 128) & 127;
@@ -428,29 +392,21 @@ void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dli
 		// apply vertex dlights
 		if (dlightMask)
 		{
-			surfDlight_t *sdl;
-			refDlight_t *dlight;
-
-			sdl = surf->dlights;
+			surfDlight_t *sdl = surf->dlights;
 			for ( ; dlightMask; dlightMask >>= 1)
 			{
-				float	intens2;
-
 				if (!(dlightMask & 1)) continue;
-				dlight = sdl->dlight;
-				intens2 = sdl->radius * sdl->radius;
+				refDlight_t *dlight = sdl->dlight;
+				float intens2 = sdl->radius * sdl->radius;
 
 				for (i = 0, v = surf->verts; i < surf->numVerts; i++, v++)
 				{
-					float	f1, f2, dist2;
-					int		intens, r, g, b;
-
-					f1 = sdl->pos[0] - v->pos[0];
-					f2 = sdl->pos[1] - v->pos[1];
-					dist2 = f1 * f1 + f2 * f2;
+					float f1 = sdl->pos[0] - v->pos[0];
+					float f2 = sdl->pos[1] - v->pos[1];
+					float dist2 = f1 * f1 + f2 * f2;
 					if (dist2 >= intens2) continue;			// vertex is too far from dlight
 
-					intens = appRound ((1 - dist2 / intens2) * 256);
+					int intens = appRound ((1 - dist2 / intens2) * 256);
 					r = v->c.c[0] + (dlight->c.c[0] * intens >> 8);
 					g = v->c.c[1] + (dlight->c.c[1] * intens >> 8);
 					b = v->c.c[2] + (dlight->c.c[2] * intens >> 8);
@@ -469,26 +425,21 @@ void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dli
 // check for single-color lightmap block
 bool LM_IsMonotone (dynamicLightmap_t *lm, color_t *avg)
 {
-	byte	*p;
-	byte	min[3], max[3];
-	int		i;
-
 	if (lm->numStyles != 1) return false;
 
 #define MAX_DEV		4		// maximal deviation of texture color (4 looks bad with 1-texel lm, but good with vertex lighting)
 	//?? MAX_DEV should depend on value ( fabs(v1-v2)/(v1+v2) < MAX_DEV , MAX_DEV--float )
 
-	p = lm->source[0];
+	const byte *p = lm->source[0];
+	byte min[3], max[3];
 	min[0] = max[0] = *p++;
 	min[1] = max[1] = *p++;
 	min[2] = max[2] = *p++;
 
-	for (i = 1; i < lm->w * lm->h; i++, p += 3)
+	for (int i = 1; i < lm->w * lm->h; i++, p += 3)
 	{
 		byte	c;
-		bool	m;
-
-		m = false;
+		bool m = false;
 #define STEP(n)	\
 		c = p[n];		\
 		if (c < min[n])	\

@@ -69,12 +69,12 @@ void CL_CheckPredictionError (void)
 
 //#define NO_PREDICT_LERP	// debug
 
-void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents)
+void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int contents)
 {
 	guard(CL_EntityTrace);
 
-	float b1 = dot (mins, mins);
-	float b2 = dot (maxs, maxs);
+	float b1 = dot (bounds.mins, bounds.mins);
+	float b2 = dot (bounds.maxs, bounds.maxs);
 	float t = max(b1, b2);
 	float traceWidth = SQRTFAST(t);
 	CVec3	traceDir;
@@ -127,11 +127,10 @@ void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CV
 		{
 			cmodel = cl.model_clip[ent->modelindex];
 			if (!cmodel) continue;
-			CM_TransformedBoxTrace (trace, start, end, &mins, &maxs, cmodel->headnode,  contents, eOrigin, ent->axis);
+			CM_TransformedBoxTrace (trace, start, end, bounds, cmodel->headnode, contents, eOrigin, ent->axis);
 		}
 		else
-			CM_TransformedBoxTrace (trace, start, end, &mins, &maxs,
-				CM_HeadnodeForBox (ent->bounds), contents, eOrigin, nullVec3);
+			CM_TransformedBoxTrace (trace, start, end, bounds, CM_HeadnodeForBox (ent->bounds), contents, eOrigin, nullVec3);
 
 
 		if (trace.allsolid || trace.startsolid || trace.fraction < tr.fraction)
@@ -153,11 +152,11 @@ void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CV
 }
 
 
-void CL_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CVec3 &mins, const CVec3 &maxs, int contents)
+void CL_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, int contents)
 {
 	guard(CL_Trace);
-	CM_BoxTrace (tr, start, end, &mins, &maxs, 0, contents);
-	CL_EntityTrace (tr, start, end, mins, maxs, contents);
+	CM_BoxTrace (tr, start, end, bounds, 0, contents);
+	CL_EntityTrace (tr, start, end, bounds, contents);
 	unguard;
 }
 
@@ -169,12 +168,15 @@ static trace_t CL_PMTrace (const CVec3 &start, const CVec3 &mins, const CVec3 &m
 
 	guard(CL_PMTrace);
 	// check against world
-	CM_BoxTrace (trace, start, end, &mins, &maxs, 0, MASK_PLAYERSOLID);
+	CBox bounds;
+	bounds.mins = mins;
+	bounds.maxs = maxs;
+	CM_BoxTrace (trace, start, end, bounds, 0, MASK_PLAYERSOLID);
 	if (trace.fraction < 1.0)
 		trace.ent = (struct edict_s *)1;	//??
 
 	// check all other solid models
-	CL_EntityTrace (trace, start, end, mins, maxs, MASK_PLAYERSOLID);
+	CL_EntityTrace (trace, start, end, bounds, MASK_PLAYERSOLID);
 
 	return trace;
 	unguard;

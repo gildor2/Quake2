@@ -31,6 +31,9 @@ namespace OpenGLDrv {
 
 image_t	*gl_defaultImage;
 //image_t	*gl_whiteImage;		//?? unneeded: can use "image = NULL" for this (CHECK THIS WITH MTEX!)
+			//?? may be, use dummy image (static) and handle this pointer specially (when GL_Bind() - use glDisable() etc ...)
+			//?? This may be required, when using $white image, and system will try to get image params
+			//?? May be, instead of special processing, setup img->target == 0 (not TEXTURE2D or TEXTURE_RECTANGLE ...)
 image_t	*gl_identityLightImage;
 image_t	*gl_dlightImage;
 image_t	*gl_particleImage;
@@ -375,6 +378,12 @@ static void MipMap (byte *in, int width, int height)
 			int		r, g, b, a, am, n;
 
 			r = g = b = a = am = n = 0;
+//!! should perform removing of alpha-channel when IMAGE_NOALPHA specified
+//!! should perform removing (making black) color channel when alpha==0 NOT ALWAYS
+//!!  - should analyze shader, and it will not use blending with alpha (or no blending at all)
+//!!    then remove alpha channel (require to process shader's *map commands after all other commands, this
+//!!    can be done with delaying [map|animmap|clampmap|animclampmap] lines and executing after all)
+#if 0
 #define PROCESS_PIXEL(idx)	\
 	if (in[idx+3])	\
 	{	\
@@ -382,6 +391,14 @@ static void MipMap (byte *in, int width, int height)
 		r += in[idx]; g += in[idx+1]; b += in[idx+2]; a += in[idx+3];	\
 		am = max(am, in[idx+3]);	\
 	}
+#else
+#define PROCESS_PIXEL(idx)	\
+	{	\
+		n++;	\
+		r += in[idx]; g += in[idx+1]; b += in[idx+2]; a += in[idx+3];	\
+		am = max(am, in[idx+3]);	\
+	}
+#endif
 			PROCESS_PIXEL(0);
 			PROCESS_PIXEL(4);
 			PROCESS_PIXEL(width);
@@ -1583,6 +1600,13 @@ image_t *FindImage (const char *name, unsigned flags)
 
 	// find extension
 	s = strrchr (name2, '.');
+	if (s)
+	{
+		// found "." - check for supported image extensions
+		if (strcmp (s, ".pcx") && strcmp (s, ".wal") &&
+			strcmp (s, ".jpg") && strcmp (s, ".tga"))
+			s = NULL;				// this is not an image extension - try to add extension
+	}
 	if (!s)
 		s = strchr (name2, 0);		// == &name2[strlen(name2)]; points to a place, where extension will be added
 	len = s - name2;				// length of name without extension

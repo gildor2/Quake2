@@ -35,6 +35,7 @@ struct cvarInfo_t;
 struct trace_t;
 struct bspfile_t;
 struct CVec3;
+struct CBox;
 struct CAxis;
 struct cplane_t;
 

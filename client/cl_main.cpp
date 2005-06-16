@@ -27,7 +27,6 @@ cvar_t	*rcon_client_password;
 cvar_t	*rcon_address;
 
 cvar_t	*cl_noskins;
-cvar_t	*cl_autoskins;
 cvar_t	*cl_footsteps;
 cvar_t	*cl_timeout;
 cvar_t	*cl_predict;
@@ -1127,7 +1126,6 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(cl_gun, 1, 0),
 	CVAR_VAR(cl_footsteps, 1, 0),
 	CVAR_VAR(cl_noskins, 0, 0),
-	CVAR_VAR(cl_autoskins, 0, 0),
 	CVAR_VAR(cl_predict, 1, 0),
 	CVAR_VAR(cl_maxfps, 0, CVAR_ARCHIVE),		// ignored by default
 
@@ -1329,8 +1327,8 @@ void CL_Frame (float msec, float realMsec)
 
 	// allow rendering DLL change
 	Vid_Tick ();
-	if (!cl.refresh_prepped && cls.state == ca_active)
-		CL_PrepRefresh ();
+	if (!cl.rendererReady && cls.state == ca_active)
+		V_InitRenderer ();
 
 	// update the screen
 	if (com_speeds->integer) time_before_ref = appCycles ();

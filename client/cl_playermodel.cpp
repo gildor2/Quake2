@@ -2,6 +2,8 @@
 
 #define QUAKE3_PLAYER_SCALE		0.9	// Cvar_VariableValue("test")
 
+//?? add Q3TA team player models (players/characters); ui/ui_main.c::UI_LoadTeams(),UI_ParseTeamInfo()
+
 
 /*-----------------------------------------------------------------------------
 	Simple text parser
@@ -109,6 +111,9 @@ static void ScanQuake2Models (const char *path)
 	/*--- go through the subdirectories ---*/
 	for (CStringItem *diritem = dirnames.First(); diritem; diritem = dirnames.Next(diritem))
 	{
+		const char *infoName = strrchr (diritem->name, '/')+1;
+		if (pmiList.Find (infoName)) continue;	// already have model with the same name
+
 		// verify the existence of tris.md2
 		if (!FS_FileExists (va("%s/tris.md2", diritem->name)))
 			continue;
@@ -134,11 +139,11 @@ static void ScanQuake2Models (const char *path)
 		if (!numSkins) continue;
 
 		// create model info
-		playerModelInfo_t *info = new (strrchr (diritem->name, '/')+1, pmiChain) playerModelInfo_t;
+		playerModelInfo_t *info = new (infoName, pmiChain) playerModelInfo_t;
 		info->numSkins = numSkins;
 		info->skins = skins;
 		// add model info to pmi
-		pmiList.Insert (info);	//?? check pmiList, if exists - do not add (have same Quake3 model)
+		pmiList.Insert (info);
 
 		numPlayerModels++;
 	}
@@ -156,12 +161,15 @@ void ScanQuake3Models (const char *path)
 	/*--- go through the subdirectories ---*/
 	for (CStringItem *diritem = dirnames.First(); diritem; diritem = dirnames.Next(diritem))
 	{
+		const char *infoName = strrchr (diritem->name, '/')+1;
+		if (pmiList.Find (infoName)) continue;	// already have model with the same name
+
 		// verify the existence of animation.cfg
 		if (!FS_FileExists (va("%s/animation.cfg", diritem->name)))
 			continue;
 
 		// verify the existence of at least one skin file
-		TList<CStringItem> skinNames = FS_ListFiles (va("%s/icon_*", diritem->name), LIST_FILES);
+		TList<CStringItem> skinNames = FS_ListFiles (va("%s/lower_*.skin", diritem->name), LIST_FILES);
 		if (!skinNames.First()) continue;
 
 		// count valid skins, which consist of a skin with a matching "_i" icon
@@ -169,22 +177,21 @@ void ScanQuake3Models (const char *path)
 		int numSkins = 0;
 		for (CStringItem *skinItem = skinNames.First(); skinItem; skinItem = skinNames.Next(skinItem))
 		{
-			char *str = strrchr (skinItem->name, '/') + 1 /*skip '/'*/ + 5 /*skip "icon_"*/;
+			char *str = strrchr (skinItem->name, '/') + 1 /*skip '/'*/ + 6 /*skip "lower_"*/;
 			char *ext = strrchr (str, '.');
 			ext[0] = 0;
-			// check at least one skin file
-			if (FS_FileExists (va("%s/lower_%s.skin", diritem->name, str)))
-			{
-				if (skins.Find (str)) continue;		// may be, have "icon_file.jpg" and "icon_file.tga" ...
-				skins.CreateAndInsert (str, pmiChain);
-				numSkins++;
-			}
+			// check at least one model
+			if (!FS_FileExists (va("%s/lower.md3", diritem->name))) continue;
+			// may be, have "icon_file.jpg" and "icon_file.tga" ...
+			if (skins.Find (str)) continue;
+			skins.CreateAndInsert (str, pmiChain);
+			numSkins++;
 		}
 		skinNames.Free();
 		if (!numSkins) continue;
 
 		// create model info
-		playerModelInfo_t *info = new (strrchr (diritem->name, '/')+1, pmiChain) playerModelInfo_t;
+		playerModelInfo_t *info = new (infoName, pmiChain) playerModelInfo_t;
 		info->numSkins = numSkins;
 		info->skins = skins;
 		info->isQ3mdl = true;
@@ -228,15 +235,20 @@ bool ScanPlayerModels ()
 
 #define		MAX_FEMALE_MODELS		128
 #define		MAX_FEMALE_MODEL_BUF	(MAX_FEMALE_MODELS*16)
-static char *female_models[MAX_FEMALE_MODELS];
-static char female_model_buf[MAX_FEMALE_MODEL_BUF];
+static const char *femaleModels[MAX_FEMALE_MODELS];
+static int  numFemaleModels;
+static char femaleModelBuf[MAX_FEMALE_MODEL_BUF];
 
 static void ReadModelsGenderList ()
 {
-	char	*buf;
+	femaleModels[0] = "female";
+	femaleModels[1] = "crakhor";
+	numFemaleModels = 2;
 
-	//?? allow multiple files (place in special directory); allow separate file for each model (placed in model dir)
-	female_models[0] = NULL;
+	//?? allow multiple files (place in special directory)
+	//?? OR allow separate file for each model (placed in model dir) - in this case, don't need this functions
+	//??  (can check model gender at loading time); if remove "model.lst" feature, should change documentaion ...
+	char	*buf;
 	if (!(buf = (char*) FS_LoadFile ("players/model.lst")))
 	{
 		Com_DPrintf ("players/model.lst is not found\n");
@@ -245,9 +257,8 @@ static void ReadModelsGenderList ()
 
 	SetupTextParser (buf);
 
-	char *out = female_model_buf;
+	char *out = femaleModelBuf;
 	int free = MAX_FEMALE_MODEL_BUF;
-	int i = 0;
 
 	while (true)
 	{
@@ -255,22 +266,20 @@ static void ReadModelsGenderList ()
 		if (!line) break;
 		if (!line[0]) continue;
 
-		int n = strlen (line);
+		int n = strlen (line) + 1;
 		Com_DPrintf("female model: %s\n",line);
-		n++;
 		free -= n;
-		if (free < 0 || i >= MAX_FEMALE_MODELS - 1)
+		if (free < 0 || numFemaleModels >= MAX_FEMALE_MODELS)
 		{
 			Com_WPrintf ("model.lst is too large\n");
 			break;
 		}
-		strcpy (out, line);
-		female_models[i++] = out;
+		memcpy (out, line, n);
+		femaleModels[numFemaleModels++] = out;
 		out += n;
 	}
 
-	female_models[i] = NULL;
-	Com_DPrintf ("Parsed %d model genders\n", i);
+	Com_DPrintf ("Parsed %d model genders\n", numFemaleModels);
 
 	FS_FreeFile (buf);
 }
@@ -278,9 +287,6 @@ static void ReadModelsGenderList ()
 
 bool CL_IsFemaleModel (const char *model)
 {
-	if (!stricmp(model, "female") || !stricmp(model, "crakhor"))
-		return true;
-
 	static char lastGameDir[MAX_QPATH];
 	const char *gameDir = FS_Gamedir ();
 	if (strcmp (gameDir, lastGameDir))
@@ -289,9 +295,8 @@ bool CL_IsFemaleModel (const char *model)
 		strcpy (lastGameDir, gameDir);
 	}
 
-	int i = 0;
-	while (const char *s = female_models[i++])
-		if (!stricmp (s, model))
+	for (int i = 0; i < numFemaleModels; i++)
+		if (!stricmp (femaleModels[i], model))
 			return true;
 
 	return false;
@@ -368,16 +373,7 @@ static bool SetMd3Skin (const char *skinName, CModelSkin &skin)
 			else		sPtr = p+1;
 
 			strcpy (mPtr, sPtr);		// make "modelpath/skinname"
-			shader = RE_RegisterSkin (mName);
-		}
-		if (!shader)
-		{
-#if 0
-			result = false;
-			break;
-#else
-			shader = RE_RegisterSkin ("*identityLight");	//?? temporary
-#endif
+			shader = RE_RegisterSkin (mName, true);
 		}
 		if (numSurfs >= ARRAY_COUNT(skin.surf))
 		{
@@ -425,7 +421,7 @@ static void cAnimFixedTorso (int argc, char **argv)
 
 
 static const CSimpleCommand animCommands[] = {
-	{"footsteps",	NULL},
+	{"footsteps",	NULL},				//!! use it
 	{"headoffset",	NULL},				// used in Q3 for HUD only
 	{"sex",			cAnimGender},
 	{"fixedlegs",	cAnimFixedLegs},
@@ -1073,14 +1069,15 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 	animState_t &ha = cent->headAnim;
 
 	//---------- Quake3 player model --------------
-	int legsAnim, torsoAnim, movingDir, pitchAngle;
+	int legsAnim, torsoAnim, movingDir;
+	float pitchAngle;
 	st->GetAnim (legsAnim, torsoAnim, movingDir, pitchAngle);
 	//?? do not exec jump animation, when falling from small height
 
 	int prevLegs = ANIM_NOCHANGE,
 		prevTorso = ANIM_NOCHANGE,
-		prevDir = LEGS_NEUTRAL,
-		prevPitch = pitchAngle;
+		prevDir = LEGS_NEUTRAL;
+	float prevPitch = pitchAngle;
 	if (IsGroundLegsAnim (legsAnim))
 	{
 		cent->prev.GetAnim (prevLegs, prevTorso, prevDir, prevPitch);

@@ -390,23 +390,20 @@ static packFile_t *AddPakFile (pack_t *pak, char *name)
 // list can be NULL (will be created). attr is combination of LISTPAK_FILES and LISTPAK_DIRS
 static void ListPakDirectory (pack_t *pak, const char *dir, const char *mask, int flags, TList<CStringItem> *List, const char *prefix)
 {
-	packDir_t *d, *dirlist;
-	packFile_t *filelist;
-	char	addbuf[MAX_OSPATH], *addbufptr;
-
+	char	addbuf[MAX_OSPATH];
 	strcpy (addbuf, prefix);
-	addbufptr = strchr (addbuf, 0);		// find end of line
-	if (d = FindPakDirectory (pak, dir))
+	char *addbufptr = strchr (addbuf, 0);		// find end of line
+	if (packDir_t *d = FindPakDirectory (pak, dir))
 	{
 		if (flags & LIST_DIRS)
-			for (dirlist = d->cDir.First(); dirlist; dirlist = d->cDir.Next(dirlist))
+			for (const packDir_t *dirlist = d->cDir.First(); dirlist; dirlist = d->cDir.Next(dirlist))
 				if (appMatchWildcard (dirlist->name, mask, true))
 				{
 					strcpy (addbufptr, dirlist->name);		//?? can use va()
 					List->CreateAndInsert (addbuf);
 				}
 		if (flags & LIST_FILES)
-			for (filelist = d->cFile.First(); filelist; filelist = d->cFile.Next(filelist))
+			for (const packFile_t *filelist = d->cFile.First(); filelist; filelist = d->cFile.Next(filelist))
 				if (appMatchWildcard (filelist->name, mask, true))
 				{
 					strcpy (addbufptr, filelist->name);
@@ -624,7 +621,7 @@ void FS_FCloseFile (QFILE *f)
 			int rest = f->zFile->rest_write;
 			if (!Zip_CloseFile (f->zFile) && !rest)
 			{	// file readed completely, but bad checksum
-				Com_FatalError ("FS_FCloseFile: damaged zip file %s %s", f->name, f->pFile->name);
+				Com_WPrintf ("FS_FCloseFile: damaged zip file %s : %s\n", f->name, f->pFile->name);
 			}
 		}
 		if (f->file)
@@ -779,7 +776,13 @@ QFILE *FS_FOpenFile (const char *filename2, int *plen)
 	}
 
 	// check for a resource (inline) file
+#if 0
 	resFile_t *rf = resFiles.Find (filename);
+#else
+	// resource files are not sorted by name, so - do not use resFiles.Find()
+	for (resFile_t *rf = resFiles.First(); rf; rf = resFiles.Next(rf))
+		if (!stricmp (rf->name, filename)) break;
+#endif
 	if (rf)
 	{
 		DEBUG_LOG(va("rfile: %s\n", filename));
@@ -923,7 +926,7 @@ void FS_Read (void *buffer, int len, QFILE *f)
 
 	guard(FS_Read);
 
-	if (!f) return;
+	if (!f || !len) return;
 
 //	// simple validation of FILE2 structure (don't let to pass FILE structure, allocated without FS_FOpenFile())
 //	if (f->name - (char *)f != sizeof(QFILE))
@@ -1502,7 +1505,7 @@ FS_ListFiles
 
 TList<CStringItem> FS_ListFiles (const char *name, int flags)
 {
-	char	buf[MAX_OSPATH], game[MAX_OSPATH], path[MAX_OSPATH];
+	char	buf[MAX_OSPATH], path[MAX_OSPATH];
 
 	appCopyFilename (buf, name, sizeof(buf));
 	DEBUG_LOG(va("list: %s\n", name));
@@ -1517,7 +1520,8 @@ TList<CStringItem> FS_ListFiles (const char *name, int flags)
 
 	int gamelen = 0;
 	int gamePos = 0;
-	game[0] = 0;		// "game" will be used aniway as "prefix" for ListPakDirectory()
+	char prefix[MAX_OSPATH];
+	prefix[0] = 0;
 	if (name[1] == ':' && name[2] == '/')	// allow only CD path with X:/path
 	{
 #ifdef CD_PATH
@@ -1536,18 +1540,24 @@ TList<CStringItem> FS_ListFiles (const char *name, int flags)
 	else if (name[0] == '.' && name[1] == '/')
 		gamePos = 2;
 
+	char *s = strrchr (name, '/');			// should be always !NULL
+	int pathLen = 0;
+	if (s) pathLen = s - name + 1;
+
 	const char *pakname;
 	if (gamePos)
 	{
-		pakname = strchr (name + gamePos, '/');	// find end of [CD +] game directory
+		// find end of [CD +] game directory
+		// path is "./gamedir/<pakname>"
+		pakname = strchr (name + gamePos, '/');
 		if (pakname)
 		{
 			pakname++;
 			gamelen = pakname - name;
-			appStrncpyz (game, name, strrchr (name, '/') - name + 2);
+			appStrncpyz (prefix, name, pathLen + 1);
 		}
 		else
-			pakname = name;		// shouldn't happens
+			pakname = name + gamePos;		// happens, when specified "./gamedir" (without trailing slash)
 	}
 	else
 		pakname = name;
@@ -1573,13 +1583,25 @@ TList<CStringItem> FS_ListFiles (const char *name, int flags)
 		if (pack_t *pak = search->pack)
 		{
 			// validate .pak game directory
-			if (gamelen && memcmp(pak->filename, game, gamelen))
+			if (gamelen)
 			{
-//				Com_Printf (S_RED"  ignore pak %s\n", pak->filename);
-				continue;		// .pak placed in other game directory - skip it
+				if (memcmp (pak->filename, prefix, gamelen))
+					continue;		// .pak placed in other game directory - skip it
 			}
-//			Com_Printf (S_RED"  use pak %s\n", pak->filename);
-			ListPakDirectory (pak, path, mask, flags, &List, game);
+			else
+			{
+				/* pak name: "./game/pakpath/pakname.pak"
+				 * findname: "path/name"
+				 * prefix will be "./game/path/"
+				 */
+				strcpy (prefix, pak->filename);
+				s = strchr (prefix+2, '/');
+				if (!s) continue;	// pak in root directory ?
+				s++;				// include trailing "/"
+				if (s + pathLen - prefix >= sizeof(prefix)) continue;	// combined string is too long
+				appStrncpyz (s, name, pathLen + 1);
+			}
+			ListPakDirectory (pak, path, mask, flags, &List, prefix);
 		}
 	}
 

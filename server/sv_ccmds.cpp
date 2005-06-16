@@ -578,15 +578,12 @@ static void SV_Savegame_f (bool usage, int argc, char **argv)
 
 static bool SetPlayer (char *s)
 {
-	client_t *cl;
-	int		i, idnum;
-
 	if (sv.attractloop)
 		return false;
 	// numeric values are just slot numbers
 	if (s[0] >= '0' && s[0] <= '9')
 	{
-		idnum = atoi (s);
+		int idnum = atoi (s);
 		if (idnum >= maxclients->integer)		// negative values are impossible here
 		{
 			Com_WPrintf ("Bad client slot: %d\n", idnum);
@@ -604,6 +601,8 @@ static bool SetPlayer (char *s)
 	}
 
 	// check for a name match
+	client_t *cl;
+	int		i;
 	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 	{
 		if (!cl->state) continue;
@@ -663,9 +662,7 @@ static char banlist[40][MAX_BAN_LIST];				// longest ban string is "NNN-NNN" * 4
 
 static int FindBanString (char *str)
 {
-	int		i;
-
-	for (i = 0; i < banCount; i++)
+	for (int i = 0; i < banCount; i++)
 		if (!strcmp (banlist[i], str))
 			return i;
 	return -1;
@@ -691,10 +688,8 @@ static void AddBanString (char *str)
 
 bool SV_AddressBanned (netadr_t *a)
 {
-	int		i;
-
 	if (a->type != NA_IP) return false;				// non-IP address
-	for (i = 0; i < banCount; i++)
+	for (int i = 0; i < banCount; i++)
 		if (IPWildcard (a, banlist[i]))
 			return true;							// banned
 	return false;
@@ -739,10 +734,6 @@ static void SV_Ban_f (bool usage, int argc, char **argv)
 
 static void SV_BanIP_f (bool usage, int argc, char **argv)
 {
-	char	*str;
-	client_t *cl;
-	int		i;
-
 	// can modify banlist before server launched
 	if (argc != 2 || usage)
 	{
@@ -750,7 +741,7 @@ static void SV_BanIP_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	str = argv[1];
+	char *str = argv[1];
 	if (strlen (str) > 32)
 	{
 		Com_WPrintf ("IP-mask is too long\n");
@@ -762,6 +753,8 @@ static void SV_BanIP_f (bool usage, int argc, char **argv)
 
 	// find client with banned IP
 	sv_client = NULL;
+	client_t *cl;
+	int		i;
 	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
 	{
 		if (!cl->state) continue;
@@ -775,25 +768,22 @@ static void SV_BanIP_f (bool usage, int argc, char **argv)
 
 static void SV_BanList_f (void)
 {
-	int		i;
-
 	Com_Printf ("Banned IP's:\n");
-	for (i = 0; i < banCount; i++)
+	for (int i = 0; i < banCount; i++)
 		Com_Printf ("%-2d: %s\n", i, banlist[i]);
 }
 
 
 static void SV_BanRemove_f (bool usage, int argc, char **argv)
 {
-	char	*str;
-	int		n;
-
 	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: banremove <list-index or ip-mask>\n");
 		return;
 	}
-	str = argv[1];
+
+	char *str = argv[1];
+	int		n;
 	if (strchr (str, '.'))
 	{
 		n = FindBanString (str);
@@ -853,9 +843,6 @@ SV_Status_f
 */
 static void SV_Status_f (void)
 {
-	int		i;
-	client_t *cl;
-
 	if (!svs.clients)
 	{
 		Com_WPrintf ("No server running.\n");
@@ -864,6 +851,8 @@ static void SV_Status_f (void)
 	Com_Printf ("map: %s\n", sv.name);
 
 	Com_Printf ("--n-score-ping-name------------lastmsg-address---------------qport-\n");
+	int		i;
+	client_t *cl;
 	for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
 	{
 		if (!cl->state) continue;
@@ -888,6 +877,7 @@ static void SV_Status_f (void)
 /*
 ==================
 SV_ConSay_f
+"say" for dedicated server
 ==================
 */
 static void SV_ConSay_f (int argc, char **argv)
@@ -946,10 +936,6 @@ recorded, but no playerinfo will be stored.  Primarily for demo merging.
 */
 static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 {
-	char	name[MAX_OSPATH], buf_data[32768];
-	int		len, i;
-	sizebuf_t buf;
-
 	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: serverrecord <demoname>\n");
@@ -969,6 +955,7 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 	}
 
 	// open the demo file
+	char	name[MAX_OSPATH];
 	appSprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
 	Com_Printf ("recording to %s\n", name);
@@ -984,6 +971,8 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 	svs.demo_multicast.Init (ARRAY_ARG(svs.demo_multicast_buf));
 
 	// write a single giant fake message with all the startup info
+	sizebuf_t buf;
+	char	buf_data[32768];
 	buf.Init (ARRAY_ARG(buf_data));
 
 	// serverdata needs to go over for all types of servers
@@ -1000,7 +989,7 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 	// send full levelname
 	MSG_WriteString (&buf, sv.configstrings[CS_NAME]);
 
-	for (i = 0; i < MAX_CONFIGSTRINGS; i++)
+	for (int i = 0; i < MAX_CONFIGSTRINGS; i++)
 		if (sv.configstrings[i][0])
 		{
 			MSG_WriteByte (&buf, svc_configstring);
@@ -1009,7 +998,7 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 		}
 
 	// write it to the demo file
-	len = LittleLong (buf.cursize);
+	int len = LittleLong (buf.cursize);
 	fwrite (&len, 4, 1, svs.wdemofile);
 	fwrite (buf.data, buf.cursize, 1, svs.wdemofile);
 

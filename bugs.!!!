@@ -1,4 +1,3 @@
-- model "bender", sound "death3.wav" -- infinite looping when played
 - "dirty": "newgame" from menu: "loading" will appear, but new game not started (no alias)
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
    (saved without shot) but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
@@ -28,9 +27,6 @@
 
 - bug: "game baseq2;unloadpak q2maps;game bad_dir(?);demomap demo1;game baseq2(?);demomap demo1"
   (1st demomap - "cannot load map (q2maps not loaded)", 2nd - "bad map contents (pak loaded, but name cached??)"
-
-? once: tried to draw main menu cursor with a negative image number (should be 0..15): menu.c :: M_DrawCursor()
-- menus: when renderer changed (with a different resolution!) - menus should be repositioned (fatal errors may appear)
 
 - z-buffer bugs with glass floor on "omd_map1"
 
@@ -68,7 +64,7 @@ BUGGY MAPS:
 HARDWARE:
 ~~~~~~~~~
 - ATI:
-  - when uploading rectangular texture (GL_TEXTURE_RECTANGLE_NV) with compressed internal format, app will crash in ICD GL dll
+  - when uploading rectangular texture (GL_TEXTURE_RECTANGLE_NV) in compressed internal format, app will crash in ICD GL dll
   - (old drivers) when game launched fullscreen, <Alt-Enter> will switch to windowed mode with incorrect viewport (visible region);
     vid_restart will not fix situation
   - (Catalyst 4.9) GL_SGIS_multitexture: GL_MAX_TEXTURES_SGIS == 0

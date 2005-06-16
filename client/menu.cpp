@@ -173,9 +173,12 @@ struct menuMain_t : menuFramework_t
 			);
 		}
 		// draw animated cursor
-		//?? shader: can use animmap instead of programming
+#if 0
 		RE_DrawPic (xoffset - 25, ystart + cursor * 40 + 11,
 			va("m_cursor%d", (unsigned)appRound (cls.realtime / 100) % NUM_CURSOR_FRAMES));
+#else
+		RE_DrawPic (xoffset - 25, ystart + cursor * 40 + 11, "m_cursor");
+#endif
 
 		CBasicImage *img = RE_RegisterPic ("m_main_plaque");
 		if (img)
@@ -2013,8 +2016,6 @@ struct playerConfigMenu_t : menuFramework_t
 	{
 		extern cvar_t *name, *team, *skin;
 		char	currentModel[MAX_QPATH], currentSkin[MAX_QPATH], *path;
-
-		cvar_t *hand = Cvar_Get ("hand", "0", CVAR_USERINFO|CVAR_ARCHIVE);
 
 		static const char *handedness[] = {"right", "left", "center", NULL};
 		static const char *colorNames[] = {"default", "red", "green", "yellow", "blue", "magenta", "cyan", "white", NULL};

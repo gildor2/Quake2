@@ -9,13 +9,13 @@ void	Shutdown (bool complete = false);
 
 void	BeginRegistration (const char *map);	//?? rename
 CRenderModel* RegisterModel (const char *name);
-CBasicImage* RegisterSkin (const char *name);
+CBasicImage* RegisterSkin (const char *name, bool force = false);
 CBasicImage* RegisterPic (const char *name);	//?? rename (GetPic() etc)
 void	SetSky (const char *name, float rotate, const CVec3 &axis);
 void	EndRegistration ();						//?? remove
 
 // frame; rename!!
-void	BeginFrame ();
+void	BeginFrame (float time);
 void	RenderFrame (refdef_t *fd);
 void	EndFrame ();
 

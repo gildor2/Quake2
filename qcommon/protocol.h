@@ -60,6 +60,7 @@
 #define	RF_SHELL_HALF_DAM	0x00020000
 #define RF_USE_DISGUISE		0x00040000
 // 4.00
+#define RF_MIRROR			0x20000000		// draw mirrored model (for right->left hand weapons)
 #define RF_BBOX				0x40000000
 
 
@@ -442,7 +443,7 @@ enum
 #define ANIM_NOCHANGE		MAX_ANIMATIONS	// unused value
 
 
-// torso rotate/lean
+// torso rotate
 enum
 {
 	LEGS_NEUTRAL,			// original legs position
@@ -451,6 +452,3 @@ enum
 	LEGS_RIGHT_45,
 	LEGS_RIGHT_90
 };
-
-//!!	TORSO_LEAN_FORWARD,		// look up/down; pain effect
-//!!	TORSO_LEAN_BACK

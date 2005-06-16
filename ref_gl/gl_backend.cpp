@@ -6,7 +6,7 @@
 #include "gl_sky.h"
 #include "gl_math.h"
 #include "gl_buffers.h"
-#include "protocol.h"		//!! for RF_XXX consts only !
+#include "protocol.h"		//!! for RF_XXX consts only (FULLBRIGHT, BBOX, DEPTHHACK)!
 
 namespace OpenGLDrv {
 
@@ -97,26 +97,146 @@ static void ProcessShaderDeforms (shader_t *sh)
 
 	for (i = 0, deform = &sh->deforms[0]; i < sh->numDeforms; i++, deform++)
 	{
+		bufVertex_t *vec = vb->verts;
+
 		switch (deform->type)
 		{
 		case DEFORM_WAVE:
-			const float *table = mathFuncs[deform->wave.type];
-			float t = deform->wave.freq * vp.time + deform->wave.phase;
-
-			bufVertex_t *vec = vb->verts;
-			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 			{
-				CVec3 &norm = ex->normal;
-				for (int k = 0; k < ex->numVerts; k++, vec++)
+#define P deform->wave
+				const float *table = mathFuncs[P.type];
+				float t = P.freq * vp.time + P.phase;
+
+				for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 				{
-					float f;
-					if (deform->wave.amp)
-						f = PERIODIC_FUNC(table, t + deform->waveDiv * (vec->xyz[0] + vec->xyz[1] + vec->xyz[2]))
-							* deform->wave.amp + deform->wave.base;
+					CVec3 &norm = ex->normal;
+					int k;
+					if (P.amp)
+					{
+						for (k = 0; k < ex->numVerts; k++, vec++)
+						{
+							float f = PERIODIC_FUNC(table, t + deform->waveDiv * (vec->xyz[0] + vec->xyz[1] + vec->xyz[2])) * P.amp + P.base;
+							VectorMA (vec->xyz, f, norm);
+						}
+					}
 					else
-						f = deform->wave.base;		// used for "outline shield" effect
-					VectorMA (vec->xyz, f, norm);
+					{
+						// used for "outline shield" effect (move vertex in direction of normal in constant amount == deform->wave.base)
+						CVec3 delta;
+						VectorScale (norm, P.base, delta);
+						for (k = 0; k < ex->numVerts; k++, vec++)
+							VectorAdd (vec->xyz, delta, vec->xyz);
+					}
 				}
+#undef P
+			}
+			break;
+		case DEFORM_MOVE:
+			{
+#define P deform->moveWave
+				float f = PERIODIC_FUNC(mathFuncs[P.type], P.freq * vp.time + P.phase) * P.amp + P.base;
+				CVec3 delta;
+				VectorScale (deform->move, f, delta);
+				for (j = 0; j < gl_numVerts; j++, vec++)
+					VectorAdd (vec->xyz, delta, vec->xyz);
+#undef P
+			}
+			break;
+		case DEFORM_BULGE:
+			{
+				float f0 = vp.time * deform->bulgeSpeed;
+				bufTexCoordSrc_t *tex = &srcTexCoord[0];
+				for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
+				{
+					CVec3 &norm = ex->normal;
+					for (int k = 0; k < ex->numVerts; k++, vec++, tex++)
+					{
+						//?? taken from Q3; change function?
+						float f = SIN_FUNC((f0 + tex->tex[0] * deform->bulgeWidth) / (M_PI * 2)) * deform->bulgeHeight;
+						VectorMA (vec->xyz, f, norm);
+					}
+				}
+			}
+			break;
+		case DEFORM_AUTOSPRITE:
+			{
+				// autoSprite deform require quads
+				if (gl_numVerts & 3 || gl_numIndexes != gl_numVerts / 2 * 3)
+				{
+					DrawTextLeft (va("Incorrect surface for AUTOSPRITE in %s", currentShader->name), RGB(1,0,0));	//?? developer
+					break;
+				}
+				// rotate view axis to model coords
+				CAxis mViewAxis;
+				if (currentEntity->worldMatrix)
+					mViewAxis = vp.view.axis;
+				else
+					currentEntity->coord.axis.TransformAxis (vp.view.axis, mViewAxis);
+				// process vertices
+				bufTexCoordSrc_t *tex = &srcTexCoord[0];
+				int *idx = gl_indexesArray;
+
+				for (j = 0; j < gl_numVerts; j += 4)
+				{
+					// find middle point
+					CVec3 center = vec[0].xyz;
+					for (int k = 1; k < 4; k++)
+						VectorAdd (center, vec[k].xyz, center);
+					center.Scale (1.0f/4);								// average
+#if 0
+					// compute current quad axis
+					CVec3 axis_s, axis_t;
+					VectorSubtract (vec[0].xyz, vec[2].xyz, axis_s);
+					axis_s.NormalizeFast ();
+					VectorSubtract (vec[3].xyz, vec[0].xyz, axis_t);
+					VectorMA (axis_t, -dot(axis_t, axis_s), axis_s);	// make axis_t to be orthogonal to axis_s
+					axis_t.NormalizeFast ();
+					// rotate each vertex
+					for (k = 0; k < 4; k++, vec++)
+					{
+						CVec3 tmp;
+						VectorSubtract (vec->xyz, center, tmp);
+						float s = dot(tmp, axis_s);
+						float t = dot(tmp, axis_t);
+						VectorMA (center, s, mViewAxis[1], tmp);
+						VectorMA (tmp,    t, mViewAxis[2], vec->xyz);
+					}
+#else
+					// assume source shape is square
+					CVec3 tmp;
+					VectorSubtract (vec[0].xyz, center, tmp);
+					// square side = sqrt(dot(tmp,tmp)) / sqrt(2) = sqrt(dot(tmp,tmp)/2)
+					float radius = dot(tmp,tmp) / 2;
+					radius = SQRTFAST(radius);
+					// compute vertexes
+					VectorMA (center,  radius, mViewAxis[1], tmp);		// right
+					VectorMA (tmp,  radius, mViewAxis[2], vec->xyz);
+					vec++;
+					VectorMA (tmp, -radius, mViewAxis[2], vec->xyz);
+					vec++;
+					VectorMA (center, -radius, mViewAxis[1], tmp);		// left
+					VectorMA (tmp, -radius, mViewAxis[2], vec->xyz);
+					vec++;
+					VectorMA (tmp,  radius, mViewAxis[2], vec->xyz);
+					vec++;
+					// recompute texcoords
+					tex->tex[0] = 0; tex->tex[1] = 0;
+					tex++;
+					tex->tex[0] = 1; tex->tex[1] = 0;
+					tex++;
+					tex->tex[0] = 1; tex->tex[1] = 1;
+					tex++;
+					tex->tex[0] = 0; tex->tex[1] = 1;
+					tex++;
+					// recompute indexes
+					*idx++ = j; *idx++ = j+2; *idx++ = j+1;
+					*idx++ = j; *idx++ = j+3; *idx++ = j+2;
+#endif
+				}
+				// store normals
+				mViewAxis[0].Negate ();
+				for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
+					ex->normal = mViewAxis[0];
 			}
 			break;
 		//?? other types
@@ -252,8 +372,9 @@ static void GenerateColorArray (shaderStage_t *st)
 					d = d * d;
 					dst->c[3] = appRound (d * scale) + min;
 #else
-					if (d < 0)	dst->c[3] = 0;
-					else		dst->c[3] = appRound (d * scale) + min;
+//					if (d < 0)	dst->c[3] = 0;
+//					else		dst->c[3] = appRound (d * scale) + min;
+					dst->c[3] = bound (appRound (d * scale) + min, 0, 255);
 #endif
 				}
 			}
@@ -367,7 +488,19 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 			}
 		}
 		break;
-	// other types: VECTOR, ZERO (?), FOG (?)
+	case TCGEN_VECTOR:
+		{
+			bufVertex_t *vec = vb->verts;
+			CVec3 v0 = st->tcGenVec[0];		// cache vectors
+			CVec3 v1 = st->tcGenVec[1];
+			for (j = 0; j < gl_numVerts; j++, vec++, dst++)
+			{
+				dst->tex[0] = dot (vec->xyz, v0);
+				dst->tex[1] = dot (vec->xyz, v1);
+			}
+		}
+		break;
+	// other types: ZERO (?), FOG (?)
 
 	default:
 		if (st->tcGenType >= TCGEN_DLIGHT0 && st->tcGenType < TCGEN_DLIGHT0 + MAX_DLIGHTS)
@@ -425,11 +558,14 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 				f2 = tcmod->wave.amp;
 				for (k = 0, vec = vb->verts; k < gl_numVerts; k++, dst++, vec++)
 				{
+#if 0
+					dst->tex[0] += PERIODIC_FUNC(sinTable, (vec->xyz[0] + vec->xyz[2]) / TABLE_SIZE + f1) * f2;	// Q3: vec[0] + vec[2]
+					dst->tex[1] += PERIODIC_FUNC(sinTable, (vec->xyz[1] + vec->xyz[2]) / TABLE_SIZE + f1) * f2;	// Q3: vec[1]
+#else
 					float f = SIN_FUNC((vec->xyz[0] + vec->xyz[1] + vec->xyz[2]) / TABLE_SIZE + f1) * f2;
 					dst->tex[0] += f;
 					dst->tex[1] += f;
-//					dst->tex[0] += PERIODIC_FUNC(sinTable, (vec->xyz[0] + vec->xyz[2]) / TABLE_SIZE + f1) * f2;	// Q3: vec[0] + vec[2]
-//					dst->tex[1] += PERIODIC_FUNC(sinTable, (vec->xyz[1] + vec->xyz[2]) / TABLE_SIZE + f1) * f2;	// Q3: vec[1]
+#endif
 				}
 			}
 			break;
@@ -451,9 +587,25 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 				dst->tex[1] *= f2;
 			}
 			break;
+		case TCMOD_STRETCH:
+			{
+				// stretch around texture center
+#define P tcmod->wave		//?? make as inline function (find all similar places)
+				float f1 = PERIODIC_FUNC(mathFuncs[P.type], P.freq * vp.time + P.phase) * P.amp + P.base;
+#undef P
+				if (f1) f1 = 1.0f / f1;
+				float f2 = (1 - f1) / 2;
+				for (k = 0; k < gl_numVerts; k++, dst++)
+				{
+					dst->tex[0] = dst->tex[0] * f1 + f2;
+					dst->tex[1] = dst->tex[1] * f1 + f2;
+				}
+			}
+			break;
 		case TCMOD_ROTATE:
 			{
-				float f = - tcmod->rotateSpeed * vp.time / 180 * M_PI;	// angle
+				// rotate around texture center
+				float f = tcmod->rotateSpeed * vp.time / 360;	// angle
 				f1 = SIN_FUNC(f);
 				f2 = COS_FUNC(f);
 				float c1 = 0.5f * (1 - f1 - f2);
@@ -466,7 +618,15 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
 				}
 			}
 			break;
-		// other types: TRANSFORM, ENTITYTRANSLATE, STRETCH
+		case TCMOD_TRANSFORM:
+			for (k = 0; k < gl_numVerts; k++, dst++)
+			{
+				f1 = dst->tex[0];
+				f2 = dst->tex[1];
+				dst->tex[0] = f1 * tcmod->m[0][0] + f2 * tcmod->m[1][0] + tcmod->t[0];
+				dst->tex[1] = f1 * tcmod->m[0][1] + f2 * tcmod->m[1][1] + tcmod->t[1];
+			}
+			break;
 		}
 	}
 
@@ -743,12 +903,16 @@ static void PreprocessShader (shader_t *sh)
 			{
 				//?? function may be NOISE
 #define P stage->rgbGenWave
-				float c1 = PERIODIC_FUNC(mathFuncs[stage->rgbGenWave.type], P.freq * vp.time + P.phase) * P.amp + P.base;
+				float c1 = PERIODIC_FUNC(mathFuncs[P.type], P.freq * vp.time + P.phase) * P.amp + P.base;
 #undef P
-				byte c2 = appRound (c1 * 255);
-				c2 = bound(c2, 0, 255);
-				st->rgbaConst.c[0] = st->rgbaConst.c[1] = st->rgbaConst.c[2] = c2;
+				int c2 = appRound (c1 * 255);
+				int	c3;
+#define STEP(n)							\
+	c3 = c2 * st->rgbaConst.c[n] >> 8;	\
+	st->rgbaConst.c[n] = bound(c3, 0, 255);
+				STEP(0); STEP(1); STEP(2);
 				st->rgbGenType = RGBGEN_CONST;
+#undef STEP
 			}
 			break;
 		case RGBGEN_DIFFUSE:
@@ -785,6 +949,16 @@ static void PreprocessShader (shader_t *sh)
 		case ALPHAGEN_ONE_MINUS_ENTITY:
 			st->rgbaConst.c[3] = 255 - currentEntity->shaderColor.c[3];
 			st->alphaGenType = ALPHAGEN_CONST;
+			break;
+		case ALPHAGEN_WAVE:
+			{
+#define P stage->alphaGenWave
+				float c1 = PERIODIC_FUNC(mathFuncs[P.type], P.freq * vp.time + P.phase) * P.amp + P.base;
+#undef P
+				int c2 = appRound (c1 * 255);
+				st->rgbaConst.c[3] = bound(c2, 0, 255);
+				st->alphaGenType = ALPHAGEN_CONST;
+			}
 			break;
 		}
 
@@ -1088,7 +1262,7 @@ static void FlushShader ()
 	renderPass_t *pass;
 	for (i = 0, pass = renderPasses; i < numRenderPasses; i++, pass++)
 	{
-		LOG_STRING (va("-- pass %d (mtex %d) --\n", i, pass->numStages));
+		LOG_STRING (va("-- pass %d (mtex %d) --\n", i+1, pass->numStages));
 		GL_Lock ();
 		GL_SetMultitexture (pass->numStages);
 
