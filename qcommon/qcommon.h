@@ -350,6 +350,15 @@ enum
 #define DEFAULT_SOUND_PACKET_ATTENUATION	1.0
 
 
+/*-----------------------------------------------------------------------------
+	Simple text parser
+-----------------------------------------------------------------------------*/
+
+void SetupTextParser (const char *text);
+const char *GetParserPos ();
+const char *GetLine ();
+const char *GetScriptLine ();
+
 
 /*-----------------------------------------------------------------------------
 	Command text buffering and command execution (cmd.cpp)

@@ -48,17 +48,17 @@
 #define	RF_DEPTHHACK		0x00000010		// for view weapon Z crunching
 #define	RF_TRANSLUCENT		0x00000020
 #define	RF_FRAMELERP		0x00000040		// unused; set but game, but useless
-#define RF_BEAM				0x00000080
+#define RF_BEAM				0x00000080		// used for game->server->client only (not for renderer)
 #define	RF_CUSTOMSKIN		0x00000100		// unused
 #define	RF_GLOW				0x00000200		// pulse lighting for bonus items
 #define RF_SHELL_RED		0x00000400
 #define	RF_SHELL_GREEN		0x00000800
 #define RF_SHELL_BLUE		0x00001000
 //ROGUE
-#define RF_IR_VISIBLE		0x00008000
+#define RF_IR_VISIBLE		0x00008000		// set IR skin for entity
 #define	RF_SHELL_DOUBLE		0x00010000
 #define	RF_SHELL_HALF_DAM	0x00020000
-#define RF_USE_DISGUISE		0x00040000
+#define RF_USE_DISGUISE		0x00040000		// set disguise skin for entity
 // 4.00
 #define RF_MIRROR			0x20000000		// draw mirrored model (for right->left hand weapons)
 #define RF_BBOX				0x40000000
@@ -378,7 +378,7 @@ enum
 
 
 /*-----------------------------------------------------------------------------
-	Staff from Quake3 SDK
+	Stuff from Quake3 SDK
 -----------------------------------------------------------------------------*/
 
 // animations

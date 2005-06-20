@@ -105,35 +105,37 @@ extern glconfig_t  gl_config;
 extern glstate_t   gl_state;
 
 
-// GL_State constants
+/*-----------------------------------------------------------------------------
+	GL_State constants
+-----------------------------------------------------------------------------*/
 
-// source blend modes
+// blend modes
+enum
+{
+	// names: BLEND_[M_][S|D]_[COLOR|ALPHA] == GL_[ONE_MINUS_]_[SRC|DST]_[COLOR|ALPHA]
+	BLEND_0 = 1,
+	BLEND_1,
+	BLEND_S_COLOR,				// for dst only *
+	BLEND_M_S_COLOR,			// for dst only *
+	BLEND_S_ALPHA,
+	BLEND_M_S_ALPHA,
+	BLEND_D_COLOR,				// for src only *
+	BLEND_M_D_COLOR,			// for src only *
+	BLEND_D_ALPHA,
+	BLEND_M_D_ALPHA,
+	BLEND_S_ALPHASATURATE		// for src only
+};
+// NOTE: marked with '*' inaccessible in OpenGL 1.1; appears in OpenGL 1.4 or with GL_NV_blend_square extension
 #define GLSTATE_SRCMASK		0xF
 #define GLSTATE_SRCSHIFT	0
-#define GLSTATE_SRC_ZERO				1
-#define GLSTATE_SRC_ONE					2
-#define GLSTATE_SRC_SRCCOLOR			3		// inaccessible in OpenGL 1.1
-#define GLSTATE_SRC_ONEMINUSSRCCOLOR	4		// ---
-#define GLSTATE_SRC_SRCALPHA			5
-#define GLSTATE_SRC_ONEMINUSSRCALPHA	6
-#define GLSTATE_SRC_DSTCOLOR			7
-#define GLSTATE_SRC_ONEMINUSDSTCOLOR	8
-#define GLSTATE_SRC_DSTALPHA			9
-#define GLSTATE_SRC_ONEMINUSDSTALPHA	0xA
-#define GLSTATE_SRC_SRCALPHASATURATE	0xB
-// destination blend modes (same set as source blend, const_src = const_dst>>4)
 #define GLSTATE_DSTMASK		0xF0
 #define GLSTATE_DSTSHIFT	4
-#define GLSTATE_DST_ZERO				0x10
-#define GLSTATE_DST_ONE					0x20
-#define GLSTATE_DST_SRCCOLOR			0x30
-#define GLSTATE_DST_ONEMINUSSRCCOLOR	0x40
-#define GLSTATE_DST_SRCALPHA			0x50
-#define GLSTATE_DST_ONEMINUSSRCALPHA	0x60
-#define GLSTATE_DST_DSTCOLOR			0x70	// ---
-#define GLSTATE_DST_ONEMINUSDSTCOLOR	0x80	// ---
-#define GLSTATE_DST_DSTALPHA			0x90
-#define GLSTATE_DST_ONEMINUSDSTALPHA	0xA0
+#define GLSTATE_BLENDMASK	(GLSTATE_SRCMASK|GLSTATE_DSTMASK)
+
+#define SRCBLEND(n)				(BLEND_##n << GLSTATE_SRCSHIFT)
+#define DSTBLEND(n)				(BLEND_##n << GLSTATE_DSTSHIFT)
+#define BLEND(src,dst)			(SRCBLEND(src)|DSTBLEND(dst))
+
 // alpha function (0 - disabled)
 #define GLSTATE_ALPHAMASK	0xF00
 #define GLSTATE_ALPHA_GT0				0x100
@@ -147,7 +149,9 @@ extern glstate_t   gl_state;
 #define GLSTATE_POLYGON_LINE			0x8000
 
 
-// GL_TexEnv constants
+/*-----------------------------------------------------------------------------
+	GL_TexEnv constants
+-----------------------------------------------------------------------------*/
 
 // standard modes (0 - undefined)
 #define TEXENV_REPLACE				1
@@ -169,6 +173,8 @@ extern glstate_t   gl_state;
 #define TEXENV_ENVCOLOR				0x20
 
 // source selection (0 - undefined)
+//?? rename like BLEND_XXX, make enum
+//??   TEXENV_[M_][P_COLOR|T_COLOR|P_ALPHA|T_ALPHA|CONST|COLOR] | 0|1
 #define TEXENV_TEXTURE				1
 #define TEXENV_ONE_MINUS_TEXTURE	2
 #define TEXENV_TEXALPHA				3
@@ -200,11 +206,16 @@ extern glstate_t   gl_state;
 #define TEXENV_SRC3_MASK			(TEXENV_SRC_MASK<<TEXENV_SRC3_SHIFT)
 
 // some common defines
-#define TEXENV_0PREV_1TEX			((TEXENV_PREVIOUS<<TEXENV_SRC0_SHIFT)|(TEXENV_TEXTURE<<TEXENV_SRC1_SHIFT))
+#define TEXENV(n,type)				(TEXENV_##type << TEXENV_SRC##n##_SHIFT)
+#define TEXENV_0PREV_1TEX			(TEXENV(0,PREVIOUS) | TEXENV(1,TEXTURE))
 
 
-void	GL_Lock (void);
-void	GL_Unlock (void);
+/*-----------------------------------------------------------------------------
+	Functions
+-----------------------------------------------------------------------------*/
+
+void	GL_Lock ();
+void	GL_Unlock ();
 
 void	GL_Bind (const image_t *tex);
 void	GL_BindForce (const image_t *tex);
@@ -215,7 +226,7 @@ void	GL_TexEnv (unsigned env);
 void	GL_TexMipBias (float f);
 void	GL_TexEnvColor (const color_t *c);
 void	GL_SetMultitexture (int level);
-void	GL_DisableTexCoordArrays (void);
+void	GL_DisableTexCoordArrays ();
 
 void	GL_CullFace (gl_cullMode_t mode);
 void	GL_DepthRange (gl_depthMode_t mode);
@@ -225,6 +236,7 @@ void	GL_EnableFog (bool enable);
 void	GL_SetDefaultState ();
 void	GL_Set2DMode ();
 void	GL_Set3DMode (viewPortal_t *port);
+void	GL_ResetState ();
 
 
 //} // namespace

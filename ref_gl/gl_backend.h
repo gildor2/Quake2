@@ -35,6 +35,20 @@ typedef struct
 } bufExtra_t;
 
 
+struct vertexBuffer_t
+{
+	bufVertex_t		verts[MAX_VERTEXES];
+	color_t			color[MAX_VERTEXES];
+	bufTexCoord_t	texCoord[1][MAX_VERTEXES];
+	static inline int getSize (int numTmu)
+	{
+		return sizeof(vertexBuffer_t) + (numTmu-1) * sizeof(bufTexCoord_t) * MAX_VERTEXES;	// 1 texCoord already reserved
+	}
+};
+
+extern vertexBuffer_t *vb;		// pointers to current buffer
+
+
 extern int gl_numVerts, gl_numIndexes, gl_numExtra;
 extern int			gl_indexesArray[MAX_INDEXES];
 extern bufExtra_t	gl_extra[MAX_VERTEXES];
@@ -45,17 +59,22 @@ extern bufExtra_t	gl_extra[MAX_VERTEXES];
 
 /*-------------------- Functions -------------------------------*/
 
-void	BK_Init ();
-void	BK_Shutdown ();
+void BK_Init ();
+void BK_Shutdown ();
 
-void	BK_BeginFrame ();
-void	BK_EndFrame ();
+void BK_BeginFrame ();
+void BK_EndFrame ();
 
-void	BK_DrawPic (shader_t *shader, int x, int y, int w, int h,
+void BK_DrawPic (shader_t *shader, int x, int y, int w, int h,
 			float s1 = 0, float t1 = 0, float s2 = 1, float t2 = 1,
 			unsigned color = RGB(1,1,1), byte flipMode = 0);
-void	BK_DrawText (const char *text, int len, int x, int y, int w, int h, unsigned color);
-void	BK_DrawScene ();
+void BK_DrawText (const char *text, int len, int x, int y, int w, int h, unsigned color);
+void BK_DrawScene ();
+
+
+// debug
+bool DrawTriangles ();
+bool DrawNormals ();
 
 
 /*----------- Surface info bits (for scene sorting) ------------*/

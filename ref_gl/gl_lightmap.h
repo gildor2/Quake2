@@ -38,14 +38,14 @@ struct dynamicLightmap_t
 };
 
 
-void LM_Init (void);
+void LM_Init ();
 void LM_Flush (lightmapBlock_t *lm);
-void LM_Done (void);
+void LM_Done ();
 void LM_Save (lightmapBlock_t *lm);
 void LM_Restore (lightmapBlock_t *lm);
-lightmapBlock_t *LM_NewBlock (void);
-void LM_Rewind (void);
-lightmapBlock_t *LM_NextBlock (void);
+lightmapBlock_t *LM_NewBlock ();
+void LM_Rewind ();
+lightmapBlock_t *LM_NextBlock ();
 void LM_CheckMinlight (dynamicLightmap_t *dl);
 bool LM_AllocBlock (lightmapBlock_t *lm, dynamicLightmap_t *dl);
 void LM_PutBlock (dynamicLightmap_t *dl);

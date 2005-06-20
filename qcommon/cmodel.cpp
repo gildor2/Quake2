@@ -108,8 +108,8 @@ static bool portalopen[MAX_MAP_AREAPORTALS];
 
 static cvar_t	*map_noareas;
 
-void	InitBoxHull (void);				// static; forward
-void	FloodAreaConnections (void);	// static; forward
+void	InitBoxHull ();					// static; forward
+void	FloodAreaConnections ();		// static; forward
 
 
 
@@ -957,13 +957,11 @@ Loads in the map and all submodels
 */
 cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 {
-	static unsigned	last_checksum;
-	bspfile_t	*bsp;
-
 	guard(CM_LoadMap);
 
 	map_noareas = Cvar_Get ("map_noareas", "0", 0);
 
+	static unsigned	last_checksum;
 	if (map_name[0] && !stricmp (map_name, name) && (clientload || !Cvar_VariableInt ("flushmap")))
 	{
 		*checksum = last_checksum;
@@ -975,6 +973,7 @@ cmodel_t *CM_LoadMap (const char *name, bool clientload, unsigned *checksum)
 		return &map_cmodels[0];
 	}
 
+	bspfile_t	*bsp;
 	// free old stuff
 	numPlanes = 0;
 	numNodes = 0;
@@ -1043,17 +1042,17 @@ cmodel_t *CM_InlineModel (const char *name)
 	return &map_cmodels[num];
 }
 
-int CM_NumClusters (void)
+int CM_NumClusters ()
 {
 	return numclusters;
 }
 
-int CM_NumInlineModels (void)
+int CM_NumInlineModels ()
 {
 	return numcmodels;
 }
 
-const char *CM_EntityString (void)
+const char *CM_EntityString ()
 {
 	return map_entitystring;
 }
@@ -1094,7 +1093,7 @@ Set up the planes and nodes so that the six floats of a bounding box
 can just be stored out and get a proper clipping hull structure.
 ===================
 */
-static void InitBoxHull (void)
+static void InitBoxHull ()
 {
 	box_headnode = numNodes;
 	box_planes = &map_planes[numPlanes];
@@ -2175,7 +2174,7 @@ static void FloodArea_r (carea_t *area, int floodnum)
 FloodAreaConnections
 ====================
 */
-static void FloodAreaConnections (void)
+static void FloodAreaConnections ()
 {
 	// all current floods are now invalid
 	floodvalid++;
@@ -2288,10 +2287,9 @@ is potentially visible
 // This function used only from sv_ents.c :: SV_BuildClientFrame()
 bool CM_HeadnodeVisible (int nodenum, const byte *visbits)
 {
-	int		stack[MAX_TREE_DEPTH], sptr;	// stack
-
 	guard(CM_HeadnodeVisible);
 
+	int		stack[MAX_TREE_DEPTH], sptr;	// stack
 	sptr = 0;
 	while (true)
 	{
@@ -2300,7 +2298,7 @@ bool CM_HeadnodeVisible (int nodenum, const byte *visbits)
 			int cluster = map_leafs[-1-nodenum].cluster;
 			if (cluster == -1 || !(visbits[cluster>>3] & (1<<(cluster&7))))
 			{
-				if (!sptr) return false;		// whole tree visited
+				if (!sptr) return false;	// whole tree visited
 				nodenum = stack[--sptr];
 				continue;
 			}

@@ -540,7 +540,7 @@ float	LittleFloat (float l) {return _LittleFloat(l);}
 Swap_Init
 ================
 */
-void Swap_Init (void)
+void Swap_Init ()
 {
 	static const byte swaptest[2] = {1,0};
 

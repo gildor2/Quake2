@@ -63,13 +63,13 @@ typedef struct
 	Functions
 -----------------------------------------------------------------------------*/
 
-void ShowLights (void);
+void ShowLights ();
 
 void LightForEntity (refEntity_t *ent);
 void DiffuseLight (color_t *dst, float lightScale);
 
-void InitLightGrid (void);
-void PostLoadLights (void);
+void InitLightGrid ();
+void PostLoadLights ();
 
 
 } // namespace

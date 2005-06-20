@@ -30,16 +30,16 @@ struct dTriangle_t
 
 struct dMd2Vert_t
 {
-	byte	v[3];			// scaled byte to fit in frame mins/maxs
+	byte	v[3];					// scaled byte to fit in frame mins/maxs
 	byte	lightnormalindex;
 };
 
 struct dMd2Frame_t
 {
-	float	scale[3];		// multiply byte verts by this
-	float	translate[3];	// then add this
-	char	name[16];		// frame name from grabbing
-	dMd2Vert_t verts[1];	// variable sized
+	float	scale[3];				// multiply byte verts by this
+	float	translate[3];			// then add this
+	char	name[16];				// frame name from grabbing
+	dMd2Vert_t verts[1];			// variable sized
 };
 
 
@@ -56,26 +56,26 @@ struct dMd2Frame_t
 
 struct dMd2_t
 {
-	int		ident;			// MD2_IDENT
-	int		version;		// MD2_VERSION
+	unsigned ident;					// MD2_IDENT
+	unsigned version;				// MD2_VERSION
 
-	int		skinWidth;
-	int		skinHeight;
-	int		frameSize;		// byte size of each frame
+	int		skinWidth;				// unused
+	int		skinHeight;				// unused
+	int		frameSize;				// byte size of each frame
 
 	int		numSkins;
 	int		numXyz;
-	int		numSt;			// greater than num_xyz for seams
+	int		numSt;					// greater than num_xyz for seams
 	int		numTris;
-	int		numGlcmds;		// dwords in strip/fan command list
+	int		numGlcmds;				// dwords in strip/fan command list
 	int		numFrames;
 
-	int		ofsSkins;		// char [MD2_MAX_SKINNAME][numSkins]
-	int		ofsSt;			// unused; offset -> dMd2St_t [numSt]
-	int		ofsTris;		// unused; offset -> dTriangle_t [numTris]
-	int		ofsFrames;		// offset -> dMd2Frame_t [numFrames]
-	int		ofsGlcmds;		// offset -> glcmd stream
-	int		ofsEnd;			// end of file
+	int		ofsSkins;				// char [MD2_MAX_SKINNAME][numSkins]
+	int		ofsSt;					// unused; offset -> dMd2St_t [numSt]
+	int		ofsTris;				// unused; offset -> dTriangle_t [numTris]
+	int		ofsFrames;				// offset -> dMd2Frame_t [numFrames]
+	int		ofsGlcmds;				// offset -> glcmd stream
+	int		ofsEnd;					// end of file
 };
 
 
@@ -87,13 +87,13 @@ struct dMd2_t
 #define MD3_VERSION			15
 
 #define MD3_MAX_LODS		4
-#define	MD3_MAX_TRIANGLES	8192		// per surface
-#define MD3_MAX_VERTS		4096		// per surface
+#define	MD3_MAX_TRIANGLES	8192	// per surface
+#define MD3_MAX_VERTS		4096	// per surface
 
-#define MD3_MAX_SHADERS		256			// per surface
-#define MD3_MAX_FRAMES		1024		// per model
-#define	MD3_MAX_SURFACES	32			// per model
-#define MD3_MAX_TAGS		16			// per frame
+#define MD3_MAX_SHADERS		256		// per surface
+#define MD3_MAX_FRAMES		1024	// per model
+#define	MD3_MAX_SURFACES	32		// per model
+#define MD3_MAX_TAGS		16		// per frame
 
 
 #define	MD3_XYZ_SCALE		(1.0f/64)	// vertex scales
@@ -101,21 +101,21 @@ struct dMd2_t
 struct dMd3Frame_t
 {
 	CBox	bounds;
-	CVec3	localOrigin;				// NOTE: q3 model converter tool always sets this to (0,0,0)
-	float	radius;						//		 and this is a maximal distance to all bounds[] vectors
+	CVec3	localOrigin;			// NOTE: q3 model converter tool always sets this to (0,0,0)
+	float	radius;					//		 and this is a maximal distance to all bounds[] vectors
 	char	name[16];
 };
 
 struct dMd3Tag_t
 {
-	char	name[MAX_QPATH];			// tag name
-	CCoords	tag;						// CVec3 origin + axis[3]
+	char	name[MAX_QPATH];		// tag name
+	CCoords	tag;					// CVec3 origin + axis[3]
 };
 
 struct dMd3Shader_t
 {
 	char	name[MAX_QPATH];
-	int		shaderIndex;	//?? for in-game use
+	int		shaderIndex;			// original Q3: for in-game use
 };
 
 struct dMd3Triangle_t
@@ -143,43 +143,43 @@ struct dMd3XyzNormal_t
  */
 struct dMd3Surface_t
 {
-	int		ident;			//?? md3 conversion tool set this to MD3_IDENT
-	char	name[MAX_QPATH]; //?? can be "tag_..."
-	int		flags;			//?? useless
+	unsigned ident;					// md3 conversion tool set this to MD3_IDENT
+	char	name[MAX_QPATH]; 		// can be "tag_..."
+	int		flags;					// unused
 
-	int		numFrames;		// same for all md3 surfaces; == model.numFrames
-	int		numShaders;		// same for all md3 surfaces
+	int		numFrames;				// same for all md3 surfaces; == model.numFrames
+	int		numShaders;				// same for all md3 surfaces
 	int		numVerts;
 	int		numTriangles;
 
 	// offsets from start of the current surface
-	int		ofsTriangles;	// offset -> dMd3Triangle_t [numTriangles]
-	int		ofsShaders;		// offset -> dMd3Shader_t [numShaders]
-	int		ofsSt;			// offset -> dMd3St_t [numVerts]
-	int		ofsXyzNormals;	// offset -> dMd3XyzNormal_t [numVerts*numFrames]
+	int		ofsTriangles;			// offset -> dMd3Triangle_t [numTriangles]
+	int		ofsShaders;				// offset -> dMd3Shader_t [numShaders]
+	int		ofsSt;					// offset -> dMd3St_t [numVerts]
+	int		ofsXyzNormals;			// offset -> dMd3XyzNormal_t [numVerts*numFrames]
 
-	int		ofsEnd;			// offset -> next surface
+	int		ofsEnd;					// offset -> next surface
 };
 
 struct dMd3_t
 {
-	int		ident;			// MD3_IDENT
-	int		version;		// MD3_VERSION
+	unsigned ident;					// MD3_IDENT
+	unsigned version;				// MD3_VERSION
 
-	char	name[MAX_QPATH]; //??
-	int		flags;			//?? useless
+	char	name[MAX_QPATH];		// unused
+	int		flags;					// unused
 
 	int		numFrames;
 	int		numTags;
 	int		numSurfaces;
 
-	int		numSkins;		//?? useless
+	int		numSkins;				// unused
 
-	int		ofsFrames;		// offset -> dMd3Frame_t [numFrames]
-	int		ofsTags;		// offset -> dMd3Tag_t [numTags*numFrames]
-	int		ofsSurfaces;	// offset -> dMd3Surface_t [numSurfaces]
+	int		ofsFrames;				// offset -> dMd3Frame_t [numFrames]
+	int		ofsTags;				// offset -> dMd3Tag_t [numTags*numFrames]
+	int		ofsSurfaces;			// offset -> dMd3Surface_t [numSurfaces]
 
-	int		ofsEnd;			// end of file
+	int		ofsEnd;					// end of file
 };
 
 
@@ -199,8 +199,8 @@ struct dSp2Frame_t
 
 struct dSp2_t
 {
-	int		ident;
-	int		version;
+	unsigned ident;					// SP2_IDENT
+	unsigned version;				// SP2_VERSION
 	int		numframes;
 	dSp2Frame_t frames[1];			// variable sized
 };
@@ -211,16 +211,16 @@ struct dSp2_t
 -----------------------------------------------------------------------------*/
 
 #define	MIPLEVELS	4
-typedef struct
+struct miptex_t
 {
 	char	name[32];
 	unsigned width, height;
 	unsigned offsets[MIPLEVELS];	// 4 mip maps stored
 	char	animname[32];			// next frame in animation chain
-	int		flags;
-	int		contents;
+	unsigned flags;
+	unsigned contents;
 	int		value;
-} miptex_t;
+};
 
 
 
@@ -286,14 +286,14 @@ typedef enum
 	LUMP_AREAS,
 	LUMP_AREAPORTALS,
 
-	LUMP_COUNT				// must be last
+	LUMP_COUNT						// must be last
 } q2bsplumps_t;
 
 
 typedef struct
 {
-	int		ident;
-	int		version;
+	unsigned ident;					// BSP2_IDENT
+	unsigned version;				// BSP2_VERSION
 	lump_t	lumps[LUMP_COUNT];
 } dBsp2Hdr_t;
 
@@ -319,7 +319,7 @@ typedef struct
 {
 	CVec3	normal;
 	float	dist;
-	int		type;				// useless - will be recomputed on map loading
+	int		type;					// useless - will be recomputed on map loading
 } dplane_t;
 
 
@@ -329,24 +329,24 @@ typedef struct
 typedef struct
 {
 	int		planenum;
-	int		children[2];		// negative numbers are -(leafs+1), not nodes
-	short	mins[3];			// for frustom culling
+	int		children[2];			// negative numbers are -(leafs+1), not nodes
+	short	mins[3];				// for frustom culling
 	short	maxs[3];
 	unsigned short firstface;
-	unsigned short numfaces;	// counting both sides
+	unsigned short numfaces;		// counting both sides
 } dnode_t;
 
 
 typedef struct
 {
-	struct {					// axis for s/t computation
+	struct {						// axis for s/t computation
 		CVec3	vec;
 		float	offset;
 	} vecs[2];
-	int		flags;				// miptex flags + overrides
-	int		value;				// light emission, etc
-	char	texture[32];		// texture name (textures/*.wal)
-	int		nexttexinfo;		// for animations, -1 = end of chain
+	unsigned flags;					// miptex flags + overrides
+	int		value;					// light emission, etc
+	char	texture[32];			// texture name (textures/*.wal)
+	int		nexttexinfo;			// for animations, -1 = end of chain
 } texinfo_t;
 
 
@@ -354,7 +354,7 @@ typedef struct
 // counterclockwise use of the edge in a face
 typedef struct
 {
-	unsigned short	v[2];		// vertex numbers
+	unsigned short	v[2];			// vertex numbers
 } dedge_t;
 
 #define	MAXLIGHTMAPS	4
@@ -363,23 +363,23 @@ typedef struct
 	unsigned short planenum;
 	short	side;
 
-	int		firstedge;			// we must support > 64k edges
+	int		firstedge;				// we must support > 64k edges
 	short	numedges;
 	short	texinfo;
 
 	// lighting info
 	byte	styles[MAXLIGHTMAPS];
-	int		lightofs;			// start of [numstyles*surfsize] samples
+	int		lightofs;				// start of [numstyles*surfsize] samples
 } dface_t;
 
 typedef struct
 {
-	int		contents;			// OR of all brushes (not needed?)
+	unsigned contents;				// OR of all brushes (not needed?)
 
 	short	cluster;
 	short	area;
 
-	short	mins[3];			// for frustum culling
+	short	mins[3];				// for frustum culling
 	short	maxs[3];
 
 	unsigned short firstleafface;
@@ -391,7 +391,7 @@ typedef struct
 
 typedef struct
 {
-	unsigned short planenum;	// facing out of the leaf
+	unsigned short planenum;		// facing out of the leaf
 	short	texinfo;
 } dbrushside_t;
 
@@ -414,7 +414,7 @@ typedef struct
 typedef struct
 {
 	int		numclusters;
-	int		bitofs[8][2];	// bitofs[numclusters][2]
+	int		bitofs[8][2];			// bitofs[numclusters][2]
 } dvis_t;
 
 // each area has a list of portals that lead into other areas
@@ -433,29 +433,28 @@ typedef struct
 } darea_t;
 
 
-/*============================================================================
-
-	FOREIGN MAP SUPPORT STRUCTURES/FLAGS
-
-============================================================================*/
-
-//................ Kingpin stuff .......................
+/*-----------------------------------------------------------------------------
+	Kingpin stuff
+-----------------------------------------------------------------------------*/
 // materials
 
-#define SURF_WATER		0x00080000
-#define SURF_CONCRETE	0x00100000
-#define SURF_FABRIC		0x00200000
-#define SURF_GRAVEL		0x00400000
-#define SURF_METAL		0x00800000
-#define SURF_METAL_L	0x01000000
-#define SURF_SNOW		0x02000000
-#define SURF_TILE		0x04000000
-#define SURF_WOOD		0x08000000
+#define SURF_WATER			0x00080000
+#define SURF_CONCRETE		0x00100000
+#define SURF_FABRIC			0x00200000
+#define SURF_GRAVEL			0x00400000
+#define SURF_METAL			0x00800000
+#define SURF_METAL_L		0x01000000
+#define SURF_SNOW			0x02000000
+#define SURF_TILE			0x04000000
+#define SURF_WOOD			0x08000000
 
 #define SURF_KP_MATERIAL	0x0FF80000
 
-//............... Half-Life stuff ......................
-#define BSPHL_VERSION	30
+/*-----------------------------------------------------------------------------
+	Half-Life stuff
+-----------------------------------------------------------------------------*/
+
+#define BSPHL_VERSION		30
 
 /* Marks:
  * "*" - same as Quake2
@@ -502,16 +501,16 @@ typedef struct
 } hl_dmodel_t;
 
 
-#define	HL_NUM_AMBIENTS				4	// automatic ambient sounds
+#define	HL_NUM_AMBIENTS		4	// automatic ambient sounds
 
-#define	HL_CONTENTS_EMPTY			-1
-#define	HL_CONTENTS_SOLID			-2
-#define	HL_CONTENTS_WATER			-3
-#define	HL_CONTENTS_SLIME			-4
-#define	HL_CONTENTS_LAVA			-5
-#define	HL_CONTENTS_SKY				-6
-#define	HL_CONTENTS_ORIGIN			-7	// removed at csg time
-#define	HL_CONTENTS_CLIP			-8	// changed to contents_solid
+#define	HL_CONTENTS_EMPTY	-1
+#define	HL_CONTENTS_SOLID	-2
+#define	HL_CONTENTS_WATER	-3
+#define	HL_CONTENTS_SLIME	-4
+#define	HL_CONTENTS_LAVA	-5
+#define	HL_CONTENTS_SKY		-6
+#define	HL_CONTENTS_ORIGIN	-7	// removed at csg time
+#define	HL_CONTENTS_CLIP	-8	// changed to contents_solid
 
 #define	HL_CONTENTS_CURRENT_0		-9
 #define	HL_CONTENTS_CURRENT_90		-10

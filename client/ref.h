@@ -56,16 +56,18 @@ struct entity_t
 		//?? why we use backlerp instead of simple lerp ?
 	// misc
 	CVec3	size;					// for RF_BBOX only; size of box
-	color_t	color;					// for RF_BBOX only; color of box
 	// color info
+	color_t	color;
 	float	alpha;					// ignore if RF_TRANSLUCENT isn't set
 			//?? use color.c[3]
 
-	// entity shading; priority: 1. skin 2. skinnum 3. customShader
+	// entity shading; priority: 1.skin 2.skinnum 3.customShader
 	CBasicImage *customShader;		// single shader for all entity surfaces
 	CModelSkin *skin;				// NULL for built-in skin
 	int		skinnum;				// number of model built-in skin
+
 	unsigned flags;					// set of RF_XXX flags
+	float	time;					// for effects; used as refdef.time-ent.time (starting time of fx)
 };
 
 

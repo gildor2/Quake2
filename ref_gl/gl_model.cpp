@@ -80,6 +80,9 @@ START_PROFILE(FindModel::Process)
 	case SP2_IDENT:
 		m = LoadSp2 (name2, (byte*)file, len);
 		break;
+	case BYTES4('/','/','S','P'):
+		m = LoadSpr (name2, (byte*)file, len);
+		break;
 	default:
 		// no error here: simply ignore unknown model formats
 		Com_WPrintf ("R_FindModel: unknown ID 0x%X in %s", LittleLong (*file), name);
@@ -116,7 +119,7 @@ void FreeModels ()
 
 static void Modellist_f (bool usage, int argc, char **argv)
 {
-	static const char *types[] = {"unk",	"inl",	"sp2",		"md3"};		// see modelType_t
+	static const char *types[] = {"unk",	"inl",	"spr",		"md3"};		// see modelType_t
 	static const char *colors[] = {S_RED,	"",		S_MAGENTA, S_GREEN};	// ...
 
 	if (argc > 2 || usage)

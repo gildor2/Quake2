@@ -26,7 +26,7 @@ int   noiseTablei[256];
 float noiseTablef[256];
 
 
-void InitFuncTables (void)
+void InitFuncTables ()
 {
 	int		i;
 

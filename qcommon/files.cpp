@@ -165,7 +165,7 @@ static TList<resFile_t> resFiles;
 static int resFileCount;
 
 
-static void InitResFiles (void)
+static void InitResFiles ()
 {
 	int		fsize;
 
@@ -572,7 +572,7 @@ static char cached_name[MAX_OSPATH];	// name of last opened file
 static FILE *cached_handle;				// handle file cached_name
 static FILE *cached_handle2;			// handle, available for opening (same as cached_handle or NULL)
 
-static void ClearFileCache (void)
+static void ClearFileCache ()
 {
 	if (cached_handle2)
 		fclose (cached_handle2);		// close file only if it is not in use
@@ -1204,7 +1204,7 @@ FS_Gamedir
 Called to find where to write a file (demos, savegames, etc)
 ============
 */
-const char *FS_Gamedir (void)
+const char *FS_Gamedir ()
 {
 	return (fs_gamedir[0]) ? fs_gamedir : BASEDIRNAME;
 }
@@ -1214,7 +1214,7 @@ const char *FS_Gamedir (void)
 FS_LoadGameConfig
 =============
 */
-void FS_LoadGameConfig (void)
+void FS_LoadGameConfig ()
 {
 	char	dir[MAX_QPATH];
 
@@ -1700,7 +1700,7 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 FS_Path_f
 ============
 */
-static void FS_Path_f (void)
+static void FS_Path_f ()
 {
 	fileLink_t		*l;
 
@@ -1817,7 +1817,7 @@ char *FS_NextPath (const char *prevpath)
 FS_InitFilesystem
 ================
 */
-void FS_InitFilesystem (void)
+void FS_InitFilesystem ()
 {
 CVAR_BEGIN(vars)
 	// basedir <path>  -- allows the game to run from outside the data tree

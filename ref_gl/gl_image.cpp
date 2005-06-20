@@ -90,13 +90,13 @@ static int ComputeHash (const char *name)
 
 //-------------- 8-bit palette -----------------------------------------
 
-static void GetPalette (void)
+static void GetPalette ()
 {
 	int		width, height;
 	byte	*pic, *pal;
 
 	// get the palette
-	LoadPCX ("pics/colormap.pcx", &pic, &pal, &width, &height);
+	LoadPCX ("pics/colormap.pcx", pic, pal, width, height);
 	if (!pal)
 		Com_FatalError ("Can not load pics/colormap.pcx");
 
@@ -763,7 +763,7 @@ image_t *CreateImage (const char *name, void *pic, int width, int height, unsign
 }
 
 
-void LoadDelayedImages (void)
+void LoadDelayedImages ()
 {
 	int		i;
 	image_t	*img;
@@ -942,7 +942,7 @@ static void FreeImage (image_t *image)	//?? unused function
 //-------------------------------------------------------------------
 
 
-void SetupGamma (void)
+void SetupGamma ()
 {
 	gl_config.vertexLight = gl_vertexLight->integer != 0;
 	gl_config.deviceSupportsGamma = GLimp_HasGamma ();
@@ -1161,7 +1161,7 @@ static void ImageReload_f (bool usage, int argc, char **argv)
 #define LEVELSHOT_H		256
 
 
-void PerformScreenshot (void)
+void PerformScreenshot ()
 {
 	byte	*src, *dst;
 	char	name[MAX_OSPATH];
@@ -1276,7 +1276,7 @@ void PerformScreenshot (void)
 #define DEF_IMG_SIZE	16
 #define DLIGHT_SIZE		16
 
-void InitImages (void)
+void InitImages ()
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(gl_showImages, 0, 0),
@@ -1459,7 +1459,7 @@ CVAR_END
 }
 
 
-void ShutdownImages (void)
+void ShutdownImages ()
 {
 	int		i;
 	image_t	*img;
@@ -1491,7 +1491,7 @@ void ShutdownImages (void)
 }
 
 
-void ShowImages (void)
+void ShowImages ()
 {
 	int		i, nx, ny, x, y, num, numImg;
 	image_t	*img;
@@ -1515,7 +1515,7 @@ void ShowImages (void)
 	// setup OpenGL
 	GL_Set2DMode ();
 	GL_SetMultitexture (1);
-	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_NODEPTHTEST);
+	GL_State (BLEND(S_ALPHA,M_S_ALPHA)|GLSTATE_NODEPTHTEST);
 	glClearColor (0.1, 0.02, 0.02, 1);
 	glClear (GL_COLOR_BUFFER_BIT);
 	glColor3f (1, 1, 1);
@@ -1673,14 +1673,14 @@ image_t *FindImage (const char *name, unsigned flags)
 	{
 		strcpy (s, ".tga");
 START_PROFILE2(img::tga, name)
-		LoadTGA (name2, &pic, &width, &height);
+		LoadTGA (name2, pic, width, height);
 END_PROFILE
 	}
 	else if (fmt & IMAGE_JPG)
 	{
 		strcpy (s, ".jpg");
 START_PROFILE2(img::jpg, name)
-		LoadJPG (name2, &pic, &width, &height);
+		LoadJPG (name2, pic, width, height);
 END_PROFILE
 	}
 	else if (fmt & IMAGE_PCX)
@@ -1689,7 +1689,7 @@ END_PROFILE
 
 		strcpy (s, ".pcx");
 START_PROFILE2(img::pcx, name)
-		LoadPCX (name2, &pic8, &palette, &width, &height);
+		LoadPCX (name2, pic8, palette, width, height);
 		if (pic8)
 		{
 #if 0

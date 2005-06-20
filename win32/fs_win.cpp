@@ -47,7 +47,7 @@ const char *Sys_FindFirst (const char *path, int flags)
 	return findPath;
 }
 
-const char *Sys_FindNext (void)
+const char *Sys_FindNext ()
 {
 	_finddata_t findinfo;
 
@@ -65,7 +65,7 @@ const char *Sys_FindNext (void)
 	return NULL;
 }
 
-void Sys_FindClose (void)
+void Sys_FindClose ()
 {
 	if (findHandle != -1)
 		_findclose (findHandle);

@@ -91,6 +91,7 @@ COMMON = \
 	$D/model.cpp \
 	$D/msg.cpp \
 	$D/net_chan.cpp \
+	$D/parser.cpp \
 	$D/pmove.cpp \
 	$D/q_shared2.cpp \
 	$D/zip.cpp

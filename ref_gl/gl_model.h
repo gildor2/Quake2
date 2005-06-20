@@ -279,7 +279,7 @@ extern bspModel_t	map;
 typedef enum {	//?? eliminate
 	MODEL_UNKNOWN,
 	MODEL_INLINE,
-	MODEL_SP2,
+	MODEL_SPR,
 	MODEL_MD3
 } modelType_t;
 
@@ -345,20 +345,20 @@ public:
 };
 
 
-struct sp2Frame_t
+struct sprFrame_t
 {
 	float	width, height;
 	float	localOrigin[2];
 	shader_t *shader;
 };
 
-class sp2Model_t : public model_t
+class sprModel_t : public model_t
 {
 public:
 	int		numFrames;
 	float	radius;
-	sp2Frame_t frames[1];		// [numFrames]
-	inline sp2Model_t () { type = MODEL_SP2; };
+	sprFrame_t frames[1];		// [numFrames]
+	inline sprModel_t () { type = MODEL_SPR; };
 	virtual void InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual node_t *GetLeaf (refEntity_t *e);
@@ -374,8 +374,8 @@ extern model_t *modelsArray[MAX_GLMODELS];
 extern int	modelCount;
 
 // common
-void	InitModels (void);
-void	ShutdownModels (void);
+void	InitModels ();
+void	ShutdownModels ();
 model_t	*FindModel (const char *name);
 void	FreeModels ();
 
@@ -386,7 +386,8 @@ void	LoadWorldMap (const char *name);	//?? rename
 // triangle models
 md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len);
 md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len);
-sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len);
+sprModel_t *LoadSp2 (const char *name, byte *buf, unsigned len);
+sprModel_t *LoadSpr (const char *name, byte *buf, unsigned len);
 
 
 } // namespace

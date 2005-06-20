@@ -96,7 +96,7 @@ extern byte		areaMask[MAX_MAP_AREAS/8];
 extern bool		forceVisMap;
 
 
-//?? rename (gl_entity_t ? entity_t) and separate beam
+//?? rename (gl_entity_t ? entity_t) -- no "ref" ("refresh")
 struct refEntity_t
 {
 	unsigned flags;
@@ -128,6 +128,7 @@ struct refEntity_t
 
 	shader_t	*customShader;			// one shader for all surfaces
 	color_t		shaderColor;			// for "rgbGen/alphaGen entity"
+	float		time;					// time for shader effects
 	// draw sequence
 	refEntity_t *drawNext;
 };
@@ -136,7 +137,7 @@ extern refEntity_t	gl_entities[];
 extern int			gl_numEntities;
 
 
-void	DrawPortal (void);
+void	DrawPortal ();
 void	AddEntity (entity_t *ent);
 void	AddDlight (dlight_t *dl);
 

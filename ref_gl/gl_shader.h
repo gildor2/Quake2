@@ -13,9 +13,8 @@ namespace OpenGLDrv {
 -----------------------------------------------------------------------------*/
 
 /* NOTES:
- *	- SKY: move AddSkySurface() call from backend to frontend, and can eliminate this type at all
- *		(currently used for backend to place sky surfaces 1st in sorted array)
- *	- PORTAL - tech-dependent ??
+ *	- SKY				- useless (originally was used for drawing sky before other surfaces)
+ *	- PORTAL			- tech-dependent ??
  *	- OPAQUE/SEETHROUGH - useless (opaque - sorted by shader, seethrough - sort bu BSP)
  *	- DECAL, BANNER, UNDERWATER - ??
  *	- SPRITE (ADDITIVE) - no depthwrite, draw it last (flares only?)
@@ -23,15 +22,15 @@ namespace OpenGLDrv {
 typedef enum
 {
 	SORT_BAD,
-	SORT_PORTAL,	// surface, which will be replaced with other scene
+	SORT_PORTAL,		// surface, which will be replaced with other scene
 	SORT_SKY,
-	SORT_OPAQUE,	// opeque walls etc.
-	SORT_DECAL,		// marks on the wall
-	SORT_SEETHROUGH,// windows etc. (blending + depthWrite)
-	SORT_BANNER,	// ?
-	SORT_UNK7,		// ?
-	SORT_UNDERWATER,// ?
-	SORT_SPRITE		// (ADDITIVE ?) have blending, but no depthWrite
+	SORT_OPAQUE,		// opeque walls etc.
+	SORT_DECAL,			// marks on the wall
+	SORT_SEETHROUGH,	// windows etc. (blending + depthWrite)
+	SORT_BANNER,		// ?
+	SORT_UNK7,			// ?
+	SORT_UNDERWATER,	// ?
+	SORT_SPRITE			// (ADDITIVE ?) have blending, but no depthWrite
 	//?? Q3 have: banner=6, underwater=8,additive=10,nearest=16
 } sortParam_t;
 
@@ -110,7 +109,7 @@ typedef enum
 	ALPHAGEN_ONE_MINUS_VERTEX,
 	ALPHAGEN_DOT,
 	ALPHAGEN_ONE_MINUS_DOT,
-	ALPHAGEN_LIGHTING_SPECULAR,
+	ALPHAGEN_LIGHTING_SPECULAR,	//??
 	ALPHAGEN_WAVE,
 	ALPHAGEN_PORTAL,
 } alphaGenType_t;
@@ -209,7 +208,7 @@ struct shaderStage_t
 	int		numAnimTextures;		// in range [1..MAX_STAGE_TEXTURES]; FinishShader(): if 0 -- ignore stage (and treat previous as last)
 	float	animMapFreq;			// valid only when numAnimTextures > 1 && (frameFromEntity == false || model = WORLD)
 	bool	frameFromEntity;
-	image_t	*mapImage[1];
+	const image_t *mapImage[1];
 };
 
 
@@ -246,6 +245,7 @@ public:
 	bool	scripted:1;
 	bool	bad:1;				// errors in script or no map image found (for auto-generated shader)
 	bool	dependOnEntity:1;	// when false, surface may be mixed with surfaces from different entities
+	bool	dependOnTime:1;		// when false, can mix surfaces from entities with different effect time
 	bool	noDraw:1;			// when true, do not draw this surfaces with this shader
 
 	bool	usePolygonOffset:1;
@@ -263,9 +263,8 @@ public:
 		}; */
 		// sky params SHADERTYPE_SKY)
 		struct {
-//			float	skyCloudHeight;
-			image_t	*skyFarBox[6];
-//			image_t	*skyNearBox[6];
+			//?? these sky params are only 1 at a time - may be, make as global variables?
+			const image_t *skyBox[6];
 			float	skyRotate;
 			CVec3	skyAxis;
 		};
@@ -311,9 +310,9 @@ extern	shader_t	*gl_alphaShader1, *gl_alphaShader2;
 	Functions
 -----------------------------------------------------------------------------*/
 
-void	InitShaders (void);
-void	ShutdownShaders (void);
-void	ResetShaders (void);			// should be called every time before loading a new map
+void	InitShaders ();
+void	ShutdownShaders ();
+void	ResetShaders ();				// should be called every time before loading a new map
 
 // lightmap types (negative numbers -- no lightmap stage, >= 0 -- has lightmap stage)
 #define LIGHTMAP_NONE		(-1)

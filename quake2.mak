@@ -67,6 +67,7 @@ STATIC = \
 	Release/obj/q2stat/model.obj \
 	Release/obj/q2stat/msg.obj \
 	Release/obj/q2stat/net_chan.obj \
+	Release/obj/q2stat/parser.obj \
 	Release/obj/q2stat/pmove.obj \
 	Release/obj/q2stat/q_shared2.obj \
 	Release/obj/q2stat/zip.obj \
@@ -141,6 +142,7 @@ DEDICATED = \
 	Release/obj/dedstat/model.obj \
 	Release/obj/dedstat/msg.obj \
 	Release/obj/dedstat/net_chan.obj \
+	Release/obj/dedstat/parser.obj \
 	Release/obj/dedstat/pmove.obj \
 	Release/obj/dedstat/q_shared2.obj \
 	Release/obj/dedstat/zip.obj \
@@ -356,6 +358,7 @@ DEPENDS = \
 	ref_gl/gl_math.h \
 	ref_gl/gl_model.h \
 	ref_gl/gl_shader.h \
+	ref_gl/gl_sky.h \
 	ref_gl/qgl_decl.h
 
 Release/obj/q2stat/gl_frontend.obj : ref_gl/gl_frontend.cpp $(DEPENDS)
@@ -1407,6 +1410,9 @@ Release/obj/dedstat/msg.obj : qcommon/msg.cpp $(DEPENDS)
 Release/obj/dedstat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/net_chan.obj" qcommon/net_chan.cpp
 
+Release/obj/dedstat/parser.obj : qcommon/parser.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/parser.obj" qcommon/parser.cpp
+
 Release/obj/dedstat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/pmove.obj" qcommon/pmove.cpp
 
@@ -1447,6 +1453,9 @@ Release/obj/q2stat/msg.obj : qcommon/msg.cpp $(DEPENDS)
 
 Release/obj/q2stat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/net_chan.obj" qcommon/net_chan.cpp
+
+Release/obj/q2stat/parser.obj : qcommon/parser.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/parser.obj" qcommon/parser.cpp
 
 Release/obj/q2stat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/pmove.obj" qcommon/pmove.cpp

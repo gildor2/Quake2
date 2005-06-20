@@ -16,7 +16,7 @@ static int lmAllocSaved[LIGHTMAP_SIZE];
 color_t lmMinlight;
 
 
-void LM_Init (void)
+void LM_Init ()
 {
 	lightmapsNum = currentLightmapNum = 0;
 	lmMinlight.rgba = RGBA(1,1,1,1);
@@ -42,7 +42,7 @@ void LM_Flush (lightmapBlock_t *lm)
 }
 
 
-void LM_Done (void)
+void LM_Done ()
 {
 	for (int i = 0; i < lightmapsNum; i++)
 		LM_Flush (&lmBlocks[i]);
@@ -61,7 +61,7 @@ void LM_Restore (lightmapBlock_t *lm)
 }
 
 
-lightmapBlock_t *LM_NewBlock (void)
+lightmapBlock_t *LM_NewBlock ()
 {
 	// find free slot
 	if (++lightmapsNum == MAX_LIGHTMAPS)
@@ -80,13 +80,13 @@ lightmapBlock_t *LM_NewBlock (void)
 }
 
 
-void LM_Rewind (void)
+void LM_Rewind ()
 {
 	currentLightmapNum = 0;
 }
 
 
-lightmapBlock_t *LM_NextBlock (void)
+lightmapBlock_t *LM_NextBlock ()
 {
 	while (currentLightmapNum < lightmapsNum)
 	{

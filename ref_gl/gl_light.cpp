@@ -95,7 +95,7 @@ static void LightLine (const CAxis &axis, const CVec3 &from, const CVec3 &to, co
 #define DEBUG_POINT_SIZE	16
 #define DEBUG_SPOT_SIZE		40
 
-void ShowLights (void)
+void ShowLights ()
 {
 	int		i, j;
 
@@ -802,7 +802,7 @@ void DiffuseLight (color_t *dst, float lightScale)
 	Initialization
 -----------------------------------------------------------------------------*/
 
-void InitLightGrid (void)
+void InitLightGrid ()
 {
 	for (int i = 0; i < 3; i++)
 	{
@@ -815,7 +815,7 @@ void InitLightGrid (void)
 }
 
 
-static void GetSurfLightCluster (void)
+static void GetSurfLightCluster ()
 {
 	surfaceBase_t **s;
 	int		i, j;
@@ -844,7 +844,7 @@ static void GetSurfLightCluster (void)
 }
 
 
-void PostLoadLights (void)
+void PostLoadLights ()
 {
 	float	f;
 	int		i;

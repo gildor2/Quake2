@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 /*-----------------------------------------------------------------------------
-	Standard OpenGL staff
+	Standard OpenGL stuff
 -----------------------------------------------------------------------------*/
 
 #ifdef _WIN32
@@ -70,12 +70,12 @@ namespace OpenGLDrv {
 #include "qgl_decl.h"
 
 bool	QGL_Init (const char *libName);
-void	QGL_Shutdown (void);
+void	QGL_Shutdown ();
 
-void	QGL_InitExtensions (void);
+void	QGL_InitExtensions ();
 void	QGL_PrintExtensionsString (const char *label, const char *str, const char *mask = NULL);
 
-void	QGL_SwapBuffers (void);
+void	QGL_SwapBuffers ();
 
 void	QGL_EnableLogging (bool enable);
 void	QGL_LogMessage (const char *text);
@@ -169,7 +169,7 @@ bool	GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 void	GLimp_Shutdown (bool complete);
 void	AppActivate (bool active);
 
-bool	GLimp_HasGamma (void);
+bool	GLimp_HasGamma ();
 void	GLimp_SetGamma (float gamma);
 
 

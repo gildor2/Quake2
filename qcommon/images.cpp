@@ -30,11 +30,9 @@ typedef struct
 } pcx_t;
 
 
-void LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *height)
+void LoadPCX (const char *name, byte *&pic, byte *&palette, int &width, int &height)
 {
-	*pic = NULL;
-	*palette = NULL;
-
+	pic = palette = NULL;
 	pcx_t	*hdr;
 	unsigned filelen;
 	if (!(hdr = (pcx_t*) FS_LoadFile (name, &filelen))) return;
@@ -62,17 +60,14 @@ void LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *hei
 		Com_DropError (errMsg, name);
 	}
 
-	if (palette)
-	{
-		*palette = (byte*)appMalloc (768);
-		memcpy (*palette, (byte *)hdr + filelen - 768, 768);
-	}
+	palette = new byte [768];
+	memcpy (palette, (byte *)hdr + filelen - 768, 768);
 
-	if (width)	*width = w;
-	if (height)	*height = h;
+	width = w;
+	height = h;
 
 	byte *dst = (byte*)appMalloc (w * h);
-	*pic = dst;
+	pic = dst;
 
 	for (int y = 0; y < h; y++)
 	{
@@ -129,16 +124,14 @@ typedef struct
 #endif
 
 
-//!! add top-to-bottom support
-void LoadTGA (const char *name, byte **pic, int *width, int *height)
+void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 {
 	int		numColumns, numRows, bpp;
 	int		type, flags;
 	int		num, column, stride, copy;
 	byte	*file, *src, *dst;
 
-	*pic = NULL;
-
+	pic = NULL;
 	if (!(file = (byte*) FS_LoadFile (name))) return;
 
 	src = file;
@@ -183,11 +176,11 @@ void LoadTGA (const char *name, byte **pic, int *width, int *height)
 
 	int numPixels = numColumns * numRows;
 
-	if (width)	*width = numColumns;
-	if (height)	*height = numRows;
+	width = numColumns;
+	height = numRows;
 
-	dst = (byte*)appMalloc (numPixels * 4);
-	*pic = dst;
+	dst = new byte [numPixels * 4];
+	pic = dst;
 
 	if (header.id_length != 0)
 		src += header.id_length;		// skip image comment
@@ -339,20 +332,18 @@ static struct jpeg_error_mgr *InitJpegError (struct jpeg_error_mgr *err)
 }
 
 
-void LoadJPG (const char *name, byte **pic, int *width, int *height)
+void LoadJPG (const char *name, byte *&pic, int &width, int &height)
 {
 	struct jpeg_decompress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 	byte	line[MAX_IMG_SIZE*3];
 
-	*pic = NULL;
-
-	jpegerror = false;
-
+	pic = NULL;
 	unsigned length;
 	byte *buffer;
 	if (!(buffer = (byte*) FS_LoadFile (name, &length))) return;
 
+	jpegerror = false;
 	jpegname = name;
 	const char *errMsg = NULL;
 
@@ -412,9 +403,9 @@ void LoadJPG (const char *name, byte **pic, int *width, int *height)
 
 	if (!jpegerror)
 	{
-		*pic = decompr;
-		*width = columns;
-		*height = rows;
+		pic = decompr;
+		width = columns;
+		height = rows;
 	}
 
 	FS_FreeFile (buffer);

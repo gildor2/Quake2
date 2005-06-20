@@ -492,7 +492,7 @@ short	LittleShort(short l);
 int		LittleLong (int l);
 float	LittleFloat (float l);
 
-void	Swap_Init (void);
+void	Swap_Init ();
 
 #endif
 

@@ -237,7 +237,7 @@ static int CheckLump (int lump, void **ptr, int size)
 }
 
 
-void LoadQ2BspFile (void)
+void LoadQ2BspFile ()
 {
 	guard(LoadQ2BspFile);
 

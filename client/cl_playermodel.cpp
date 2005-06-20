@@ -6,56 +6,6 @@
 
 
 /*-----------------------------------------------------------------------------
-	Simple text parser
-	?? change, move outside, use another etc
------------------------------------------------------------------------------*/
-
-static const char *parserText;
-
-static void SetupTextParser (const char *text)
-{
-	parserText = text;
-}
-
-static const char *GetLine ()
-{
-	static char line[1024];
-
-	char *d = line;
-	char c = 0;
-	while (d < line + sizeof(line) - 2)
-	{
-		c = *parserText;
-		if (!c) break;						// end of text
-		parserText++;
-		if (c == '\r' || c == '\n')			// end of line
-			break;
-		if (c == '\t') c = ' ';				// tab -> space
-		*d++ = c;
-	}
-	*d++ = 0;
-	// cut "//" comments
-	for (d = line; d[0]; d++)
-		if (d[0] == '/' && d[1] == '/')		//?? later: not inside quotes
-		{
-			*d = 0;
-			break;
-		}
-	// cut trailing spaces
-	for (d = strchr (line, 0) - 1; d >= line; d--)
-	{
-		if (d[0] != ' ') break;
-		d[0] = 0;
-	}
-	// skip leading spaces
-	d = line;
-	while (d[0] == ' ') d++;
-
-	return (c || d[0]) ? d : NULL;
-}
-
-
-/*-----------------------------------------------------------------------------
 	Scanning for player models
 -----------------------------------------------------------------------------*/
 
@@ -260,12 +210,8 @@ static void ReadModelsGenderList ()
 	char *out = femaleModelBuf;
 	int free = MAX_FEMALE_MODEL_BUF;
 
-	while (true)
+	while (const char *line = GetScriptLine ())
 	{
-		const char *line = GetLine ();
-		if (!line) break;
-		if (!line[0]) continue;
-
 		int n = strlen (line) + 1;
 		Com_DPrintf("female model: %s\n",line);
 		free -= n;
@@ -335,12 +281,8 @@ static bool SetMd3Skin (const char *skinName, CModelSkin &skin)
 	SetupTextParser (buf);
 
 	int numSurfs = 0;
-	while (true)
+	while (const char *line = GetScriptLine ())
 	{
-		const char *line = GetLine ();
-		if (!line) break;
-		if (!line[0]) continue;
-
 		char *p = strchr (line, ',');
 		if (!p || !p[1]) continue;		// no shader
 		// check/load shader
@@ -441,12 +383,8 @@ static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 
 	SetupTextParser (buf);
 
-	while (true)
+	while (const char *line = GetScriptLine ())
 	{
-		const char *line = GetLine ();
-		if (!line) break;								// end of text
-		if (!line[0]) continue;
-
 		// execute line
 		if (line[0] >= '0' && line[0] <= '9')		// numbers => frame numbers
 		{
@@ -756,6 +694,7 @@ static const CSimpleCommand weapCommands[] = {
 	{"model",	cWeapModel},
 	{"scale",	cWeapScale},
 	{"offset",	cWeapOffset}
+	//?? add flashOffset
 };
 
 
@@ -770,12 +709,8 @@ static bool LoadWeaponInfo (const char *filename, weaponInfo_t &weap)
 	weap.drawScale = 1;
 	bool result = true;
 	SetupTextParser (buf);
-	while (true)
+	while (const char *line = GetScriptLine ())
 	{
-		const char *line = GetLine ();
-		if (!line) break;
-		if (!line[0]) continue;
-
 		if (!ExecuteCommand (line, ARRAY_ARG(weapCommands)))
 		{
 			Com_WPrintf ("Invalid line [%s] in \"%s.cfg\"\n", line, filename);
@@ -940,6 +875,8 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 		ci.icon = RE_RegisterPic (ci.iconName);
 	}
 
+	cl.forceViewFrame = true;	// when paused, force to update scene
+
 	unguard;
 }
 
@@ -951,7 +888,21 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 static bool attach (const entity_t &e1, entity_t &e2, const char *tag, const CVec3 *angles = NULL, float drawScale = QUAKE3_PLAYER_SCALE)
 {
 	CCoords lerped;		// get position modifier
-	if (!e1.model->LerpTag (e1.frame, e1.oldframe, e1.backlerp, tag, lerped)) return false;	// no such tag
+	if (!e1.model->LerpTag (e1.frame, e1.oldframe, e1.backlerp, tag, lerped))
+	{
+		if (developer->integer)
+			RE_DrawTextLeft(va("%s: no tag \"%s\"", e1.model->name, tag));
+		return false;	// no such tag
+	}
+	// some player models (at least, "dangergirl") have lerped origin set very far from base model
+	// to hide attached model (this hack used, because quake3 cgame code not allows to remove most tags)
+	if (fabs (lerped.origin[0]) > 1000 || fabs (lerped.origin[1]) > 1000 || fabs (lerped.origin[2]) > 1000)
+	{
+		if (developer->integer)
+			RE_DrawTextLeft(va("%s: removed tag \"%s\"", e1.model->name, tag));
+		return false;
+	}
+
 	if (angles)
 	{
 		CAxis rotate;
@@ -1135,7 +1086,7 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 			legsAngles[YAW]  = headAngles[YAW] + angleDifs[movingDir];
 		}
 		// swing angles
-		SwingAngle (torsoAngles[YAW], 25, 90, 0.3f, ta.angles[YAW], ta.rotating[YAW]);
+		SwingAngle (torsoAngles[YAW], 25, 90, 0.1f, ta.angles[YAW], ta.rotating[YAW]);
 		SwingAngle (legsAngles[YAW],  40, 90, 0.3f, la.angles[YAW], la.rotating[YAW]);
 
 		// PITCH angles (looking up/down)
@@ -1165,7 +1116,7 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 		if (!ClampAngle (ha.angles[PITCH], 45, ta.angles[PITCH]))
 		{
 			float dst = LerpAngle (la.angles[PITCH], headAngles[PITCH], 0.6f);
-			SwingAngle (dst, 15, 60, 0.3f, ta.angles[PITCH], ta.rotating[PITCH]);
+			SwingAngle (dst, 15, 60, 0.1f, ta.angles[PITCH], ta.rotating[PITCH]);
 		}
 		if (!ClampAngle (ta.angles[PITCH], IsGroundLegsAnim (legsAnim) ? 60 : 30, la.angles[PITCH]))
 			SwingAngle (0, 0, 60, 0.3f, la.angles[PITCH], la.rotating[PITCH]);
@@ -1245,10 +1196,11 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 
 	if (maxEnts < 4) weaponIndex = -1;	// do not add weapon - no space
 
-	if (weaponIndex >= 0)
+	bool weaponAttached = false;
+	if (weaponIndex >= 0 && attach (buf[1], buf[3], "tag_weapon"))
 	{
-		attach (buf[1], buf[3], "tag_weapon");
 		// setup model ant draw params
+		//?? allow weapon model debug to be enabled with cvar at any time
 #if 0
 		// model debugging
 		weaponInfo_t weap;
@@ -1266,11 +1218,12 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 		buf[3].model = weap.model;
 		buf[3].scale = weap.drawScale;
 		buf[3].pos.UnTransformPoint (weap.origin, buf[3].pos.origin);
+		weaponAttached = true;
 	}
 
 	//!! lighting origin for all 3 (4) entities should be the same (ent.origin)
 
-	return 3 + (weaponIndex >= 0);
+	return 3 + weaponAttached;
 
 	unguard;
 }

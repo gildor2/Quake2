@@ -77,6 +77,12 @@ FUNC(cull)
 }
 
 
+FUNC(polygonOffset)
+{
+	sh.usePolygonOffset = true;
+}
+
+
 FUNC(force32bit)
 {
 	sh_imgFlags |= IMAGE_TRUECOLOR;
@@ -195,13 +201,16 @@ FUNC(tessSize)
 
 static CSimpleCommand shaderFuncs[] = {
 	TBL(cull),
+	TBL(polygonOffset),
 	TBL(force32bit),
 	TBL(nomipmaps),
 	TBL(nopicmip),
 	TBL(sort),
 	TBL(deformVertexes),
 	TBL(surfaceparm),
-	TBL(tessSize)
+	TBL(tessSize),
+	TBL_IGNORE(entityMergable)
+	//!! skyParms: should set sh.width/sh.height from map textures (for seamless sky drawing)
 };
 
 
@@ -241,10 +250,7 @@ FUNC(map)
 		img = NULL;
 	else
 	{
-		if (IS(1, "$texture"))
-			img = FindImage (sh.name, sh_imgFlags);
-		else
-			img = FindImage (argv[1], sh_imgFlags);
+		img = FindImage (IS(1,"$texture") ? sh.name : argv[1], sh_imgFlags);
 		if (!img) ERROR_IN_SHADER(va("no texture: %s", argv[1]));
 		if (!sh.width && !sh.height)
 		{
@@ -259,7 +265,7 @@ FUNC(map)
 
 FUNC(clampMap)
 {
-	image_t *img = FindImage (argv[1], sh_imgFlags | IMAGE_CLAMP);
+	image_t *img = FindImage (IS(1,"$texture") ? sh.name : argv[1], sh_imgFlags | IMAGE_CLAMP);
 	if (!img) ERROR_IN_SHADER(va("no texture: %s", argv[1]));
 	shaderImages[sh.numStages * MAX_STAGE_TEXTURES] = img;
 	if (!sh.width && !sh.height)
@@ -340,11 +346,11 @@ FUNC(blendfunc)
 
 	unsigned blend = 0;
 	if (IS(1, "add"))
-		blend = GLSTATE_SRC_ONE|GLSTATE_DST_ONE;
+		blend = BLEND(1,1);
 	else if (IS(1, "blend"))
-		blend = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA;
+		blend = BLEND(S_ALPHA, M_S_ALPHA);
 	else if (IS(1, "filter"))
-		blend = GLSTATE_SRC_ZERO|GLSTATE_DST_SRCCOLOR;
+		blend = BLEND(0, S_COLOR);
 	else
 	{
 		for (int i = 0; i < ARRAY_COUNT(blendNames); i++)
@@ -359,7 +365,7 @@ FUNC(blendfunc)
 		blend = ((i+1) << GLSTATE_SRCSHIFT) | ((j+1) << GLSTATE_DSTSHIFT);
 	}
 	unsigned &glState = st[sh.numStages].glState;
-	glState = glState & ~(GLSTATE_SRCMASK|GLSTATE_DSTMASK) | blend;
+	glState = glState & ~GLSTATE_BLENDMASK | blend;
 }
 
 

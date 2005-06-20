@@ -54,13 +54,13 @@ extern char	*screenshotName;
 
 void	GL_TextureMode (const char *name);
 
-void	PerformScreenshot (void);
+void	PerformScreenshot ();
 
 // setup
-void	SetupGamma (void);
-void	InitImages (void);
-void	ShutdownImages (void);
-void	LoadDelayedImages (void);
+void	SetupGamma ();
+void	InitImages ();
+void	ShutdownImages ();
+void	LoadDelayedImages ();
 
 // creating images
 image_t *CreateImage (const char *name, void *pic, int width, int height, unsigned flags);
@@ -69,7 +69,7 @@ image_t *FindImage (const char *name, unsigned flags);
 // video support
 void	DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *pic, unsigned *palette);
 
-void	ShowImages (void);
+void	ShowImages ();
 
 
 } // namespace

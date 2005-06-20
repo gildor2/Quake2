@@ -87,7 +87,7 @@ extern int   noiseTablei[];
 extern float noiseTablef[];
 
 
-void InitFuncTables (void);	//?? InitMath()
+void InitFuncTables ();	//?? InitMath()
 void BuildRotationAxis (CAxis &r, const CVec3 &axis, float angle);
 bool GetBoxRect (const refEntity_t *ent, const CVec3 &size2, float mins2[2], float maxs2[2], bool clamp = true);
 bool ProjectToScreen (const CVec3 &pos, int scr[2]);

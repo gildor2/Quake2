@@ -123,6 +123,7 @@ void AddEntityWithEffects2 (entity_t *ent, unsigned fx)
 	// check for COLOR_SHELL
 	if (fx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
 	{
+		ent->skin = NULL;
 		ent->customShader = shellShader;
 		ent->color.rgba = 0x202020;				// required for RED/GREEN/BLUE
 		if (fx & RF_SHELL_HALF_DAM)
@@ -320,6 +321,7 @@ void V_InitRenderer ()
 		return;
 
 	CL_ClearTEnts ();		// temp entities linked to models, which are invalid after vid_restart
+	CL_ClearEffects ();		// can use shaders ...
 
 	// let the render dll load the map
 	char mapname[MAX_QPATH];

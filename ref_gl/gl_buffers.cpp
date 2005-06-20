@@ -102,7 +102,7 @@ void InsertShaderIndex (int index)
 	Work with "vp"
 -----------------------------------------------------------------------------*/
 
-void ClearPortal (void)
+void ClearPortal ()
 {
 	vp.surfaces = &surfaceBuffer[numSurfacesTotal];
 	vp.numSurfaces = 0;
@@ -214,7 +214,7 @@ void SortSurfaces (viewPortal_t *port, surfaceInfo_t **destination)
 /*-----------------------------------------*/
 
 // prepare buffers for new scene
-void ClearBuffers (void)
+void ClearBuffers ()
 {
 	numSurfacesTotal = 0;
 	gl_numEntities = 0;
@@ -227,13 +227,13 @@ void ClearBuffers (void)
 	Initialization/finalization
 -----------------------------------------------------------------------------*/
 
-void CreateBuffers (void)
+void CreateBuffers ()
 {
 	dynamicBuffer = new byte [MAX_DYNAMIC_BUFFER];
 	surfaceBuffer = new surfaceInfo_t [MAX_SCENE_SURFACES];
 }
 
-void FreeBuffers (void)
+void FreeBuffers ()
 {
 	if (!dynamicBuffer) return;
 	delete dynamicBuffer;

@@ -54,12 +54,12 @@ bool in_needRestart;
 // mouse look stuff (should be moved to client!)
 static bool mlooking;
 
-static void MLookDown (void)
+static void MLookDown ()
 {
 	mlooking = true;
 }
 
-static void MLookUp (void)
+static void MLookUp ()
 {
 	mlooking = false;
 	if (!freelook->integer && lookspring->integer)
@@ -120,7 +120,7 @@ static void DXMouse_Free ()
 }
 
 
-static bool DXMouse_Init (void)
+static bool DXMouse_Init ()
 {
 	Com_Printf ("Initializing DirectInput\n");
 #if DIRECTINPUT_VERSION < 0x0800
@@ -232,7 +232,7 @@ static bool DXMouse_Init (void)
 }
 
 
-static void DXMouse_Frame (void)
+static void DXMouse_Frame ()
 {
 	// poll DirectInput mouse
 #ifdef BUFFERED_MOUSE
@@ -367,7 +367,7 @@ static bool MouseMsgHook (UINT uMsg, WPARAM wParam, LPARAM lParam)
 }
 
 
-static void WinMouse_Init (void)
+static void WinMouse_Init ()
 {
 	Com_Printf ("Initializing Win32 mouse support\n");
 	AddMsgHook (MouseMsgHook);
@@ -402,7 +402,7 @@ static void WinMouse_Init (void)
 }
 
 
-static void WinMouse_Free (void)
+static void WinMouse_Free ()
 {
 	Com_DPrintf ("Shutdown Win32 mouse\n");
 	RemoveMsgHook (MouseMsgHook);
@@ -441,7 +441,7 @@ static void DeactivateMouse (bool complete)
 }
 
 
-static void ActivateMouse (void)
+static void ActivateMouse ()
 {
 	in_mouse->modified = false;
 	if (mouseType == in_mouse->integer) return;
@@ -467,7 +467,7 @@ static void ActivateMouse (void)
 }
 
 
-static void StartupMouse (void)
+static void StartupMouse ()
 {
 	haveSpiMouse = SystemParametersInfo (SPI_GETMOUSE, 0, originalMouseParms, 0) != 0;
 	haveSpiMouseSpeed = SystemParametersInfo (SPI_GETMOUSESPEED, 0, &originalMouseSpeed, 0) != 0;	// Win98+, Win2K+
@@ -626,7 +626,7 @@ static cvar_t	*joy_upthreshold;
 static cvar_t	*joy_upsensitivity;
 
 
-static void StartupJoystick (void)
+static void StartupJoystick ()
 {
 	int			numdevs;
 	JOYCAPS		jc;
@@ -697,7 +697,7 @@ static void StartupJoystick (void)
 Joy_AdvancedUpdate_f
 ===========
 */
-static void Joy_AdvancedUpdate_f (void)
+static void Joy_AdvancedUpdate_f ()
 {
 
 	// called once by IN_ReadJoystick and by user whenever an update is needed
@@ -757,7 +757,7 @@ static void Joy_AdvancedUpdate_f (void)
 IN_Commands
 ===========
 */
-void IN_Commands (void)
+void IN_Commands ()
 {
 	int		i, key_index;
 	DWORD	buttonstate, povstate;
@@ -810,7 +810,7 @@ void IN_Commands (void)
 }
 
 
-static bool ReadJoystick (void)
+static bool ReadJoystick ()
 {
 
 	memset (&ji, 0, sizeof(ji));
@@ -945,7 +945,7 @@ static void JoyMove (usercmd_t *cmd)
 	Initialization/finalization
 -----------------------------------------------------------------------------*/
 
-void IN_Init (void)
+void IN_Init ()
 {
 CVAR_BEGIN(vars)
 	// mouse variables
@@ -986,7 +986,7 @@ CVAR_END
 }
 
 
-void IN_Shutdown (void)
+void IN_Shutdown ()
 {
 	DeactivateMouse (true);
 }
@@ -1028,7 +1028,7 @@ IN_Frame
 Called every frame, even if not generating commands
 ==================
 */
-void IN_Frame (void)
+void IN_Frame ()
 {
 	guard(IN_Frame);
 

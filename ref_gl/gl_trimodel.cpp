@@ -23,7 +23,7 @@ bool md3Model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagNam
 	if (i == numTags)
 	{
 		//?? developer message
-		DrawTextLeft (va("no tag \"%s\" in %s", tagName, name), RGB(1,0,0));
+//		DrawTextLeft (va("no tag \"%s\" in %s", tagName, name), RGB(1,0,0));
 		i = 0;			// use 1st tag
 		result = false;
 	}
@@ -692,7 +692,20 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 /*-------------- Sprite models  ----------------*/
 
 
-sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len)
+static void SetSprRadius (sprModel_t *spr)
+{
+	for (int i = 0; i < spr->numFrames; i++)
+	{
+		sprFrame_t &frm = spr->frames[i];
+		float s = max (frm.localOrigin[0], frm.width - frm.localOrigin[0]);
+		float t = max (frm.localOrigin[1], frm.height - frm.localOrigin[1]);
+		float radius = sqrt (s * s + t * t);
+		spr->radius = max (spr->radius, radius);
+	}
+}
+
+
+sprModel_t *LoadSp2 (const char *name, byte *buf, unsigned len)
 {
 	dSp2_t *hdr = (dSp2_t*)buf;
 	if (hdr->version != SP2_VERSION)
@@ -706,28 +719,23 @@ sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len)
 		return NULL;
 	}
 
-	int size = sizeof(sp2Model_t) + (hdr->numframes-1) * sizeof(sp2Frame_t);
-	sp2Model_t *sp2 = (sp2Model_t*)appMalloc (size);
-	CALL_CONSTRUCTOR(sp2);
-	strcpy (sp2->name, name);
-	sp2->size = size;
+	int size = sizeof(sprModel_t) + (hdr->numframes-1) * sizeof(sprFrame_t);
+	sprModel_t *spr = (sprModel_t*)appMalloc (size);
+	CALL_CONSTRUCTOR(spr);
+	strcpy (spr->name, name);
+	spr->size = size;
 
-	sp2->numFrames = hdr->numframes;
-	sp2->radius = 0;
+	spr->numFrames = hdr->numframes;
+	spr->radius = 0;
 	// parse frames
 	dSp2Frame_t *in = hdr->frames;
-	sp2Frame_t *out = sp2->frames;
+	sprFrame_t *out = spr->frames;
 	for (int i = 0; i < hdr->numframes; i++, in++, out++)
 	{
 		out->width = in->width;
 		out->height = in->height;
 		out->localOrigin[0] = in->origin_x;
 		out->localOrigin[1] = in->origin_y;
-
-		float s = max (out->localOrigin[0], out->width - out->localOrigin[0]);
-		float t = max (out->localOrigin[1], out->height - out->localOrigin[1]);
-		float radius = sqrt (s * s + t * t);
-		sp2->radius = max (sp2->radius, radius);
 
 		out->shader = FindShader (in->name, SHADER_CHECK|SHADER_WALL|SHADER_FORCEALPHA);
 		if (!out->shader)
@@ -736,8 +744,66 @@ sp2Model_t *LoadSp2 (const char *name, byte *buf, unsigned len)
 			out->shader = gl_defaultShader;
 		}
 	}
+	SetSprRadius (spr);
 
-	return sp2;
+	return spr;
+}
+
+
+static sprModel_t *loadSpr;
+
+static void cSprShader (int argc, char **argv)
+{
+	shader_t *shader = loadSpr->frames[0].shader = FindShader (argv[1], SHADER_CHECK|SHADER_WALL|SHADER_FORCEALPHA);
+	if (!shader)
+	{
+		Com_DPrintf ("R_LoadSpr(%s): %s is not found\n", loadSpr->name, argv[1]);
+		loadSpr->frames[0].shader = gl_defaultShader;
+	}
+}
+
+
+static const CSimpleCommand sprCommands[] = {
+	{"shader",	cSprShader}
+};
+
+
+sprModel_t *LoadSpr (const char *name, byte *buf, unsigned len)
+{
+	int size = sizeof(sprModel_t);
+	sprModel_t *spr = (sprModel_t*)appMalloc (size);
+	CALL_CONSTRUCTOR(spr);
+	strcpy (spr->name, name);
+	spr->size = size;
+
+	spr->numFrames = 1;
+
+	loadSpr = spr;
+	SetupTextParser ((char*)buf);
+	while (const char *line = GetScriptLine ())
+		if (!ExecuteCommand (line, ARRAY_ARG(sprCommands)))
+			Com_WPrintf ("%s: invalid line [%s]\n", name, line);
+
+	shader_t *shader = spr->frames[0].shader;
+	if (!shader)
+	{
+		Com_WPrintf ("R_LoadSpr(%s): no shader specified\n", name);
+		appFree (spr);
+		return NULL;
+	}
+
+	if (!spr->frames[0].width && !spr->frames[0].height)
+	{
+		//?? allow overriding from script
+		spr->frames[0].width = shader->width;
+		spr->frames[0].height = shader->height;
+		spr->frames[0].localOrigin[0] = shader->width / 2;
+		spr->frames[0].localOrigin[1] = shader->height / 2;
+	}
+
+	SetSprRadius (spr);
+
+	return spr;
 }
 
 

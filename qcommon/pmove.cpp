@@ -100,7 +100,7 @@ Does not modify any world state?
 #define	MAX_CLIP_PLANES	5
 #define OVERBOUNCE		1.01
 
-static bool SlideMove (void)
+static bool SlideMove ()
 {
 	CVec3 planes[MAX_CLIP_PLANES];
 	CVec3 primal_velocity = pml.velocity;
@@ -239,7 +239,7 @@ static bool SlideMove (void)
 StepSlideMove
 ==================
 */
-static void StepSlideMove (void)
+static void StepSlideMove ()
 {
 	CVec3 start_o = pml.origin;
 	CVec3 start_v = pml.velocity;
@@ -318,7 +318,7 @@ Friction
 Handles both ground friction and water friction
 ==================
 */
-static void Friction (void)
+static void Friction ()
 {
 	CVec3 &vel = pml.velocity;
 	float speed = dot(vel, vel);		// this is (speed*speed)
@@ -492,7 +492,7 @@ static void AddCurrents (CVec3 &wishvel)
 WaterMove
 ===================
 */
-static void WaterMove (void)
+static void WaterMove ()
 {
 	CVec3	wishvel;
 	for (int i = 0; i < 3; i++)
@@ -526,7 +526,7 @@ static void WaterMove (void)
 AirMove
 ===================
 */
-static void AirMove (void)
+static void AirMove ()
 {
 	float fmove = pm->cmd.forwardmove;
 	float smove = pm->cmd.sidemove;
@@ -616,7 +616,7 @@ static void AirMove (void)
 CatagorizePosition
 =============
 */
-static void CatagorizePosition (void)
+static void CatagorizePosition ()
 {
 	// if the player hull point one unit down is solid, the player
 	// is on ground
@@ -717,7 +717,7 @@ static void CatagorizePosition (void)
 CheckJump
 =============
 */
-static void CheckJump (void)
+static void CheckJump ()
 {
 	if (pm->s.pm_flags & PMF_TIME_LAND)
 	{	// hasn't been long enough since landing to jump again
@@ -772,7 +772,7 @@ static void CheckJump (void)
 CheckSpecialMovement
 =============
 */
-static void CheckSpecialMovement (void)
+static void CheckSpecialMovement ()
 {
 	if (pm->s.pm_time) return;
 
@@ -919,7 +919,7 @@ MAXD_NORMAL			|	32							|	32							|
 --------------------+-------------------------------+-------------------------------+
 */
 
-static void CheckDuck (void)
+static void CheckDuck ()
 {
 	pm->bounds.mins[0] = -16;
 	pm->bounds.mins[1] = -16;
@@ -971,7 +971,7 @@ static void CheckDuck (void)
 DeadMove
 ==============
 */
-static void DeadMove (void)
+static void DeadMove ()
 {
 	if (!pm->groundentity) return;
 
@@ -984,7 +984,7 @@ static void DeadMove (void)
 }
 
 
-static bool GoodPosition (void)
+static bool GoodPosition ()
 {
 	if (pm->s.pm_type == PM_SPECTATOR) return true;
 
@@ -1004,7 +1004,7 @@ On exit, the origin will have a value that is pre-quantized to the 0.125
 precision of the network channel and in a valid position.
 ================
 */
-static void SnapPosition (void)
+static void SnapPosition ()
 {
 #if 1
 	int		i, j;
@@ -1103,7 +1103,7 @@ InitialSnapPosition
 ================
 */
 //?? combine ...SnapPosition() funcs, +GoodPosition()
-static void InitialSnapPosition(void)
+static void InitialSnapPosition()
 {
 	static const int offset[3] = {0, -1, 1};
 
@@ -1144,7 +1144,7 @@ static void InitialSnapPosition(void)
 ClampAngles
 ================
 */
-static void ClampAngles (void)
+static void ClampAngles ()
 {
 	if (pm->s.pm_flags & PMF_TIME_TELEPORT)
 	{

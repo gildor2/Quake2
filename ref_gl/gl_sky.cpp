@@ -1,6 +1,7 @@
 #include "OpenGLDrv.h"
 #include "gl_sky.h"
 #include "gl_math.h"
+#include "gl_backend.h"
 
 
 namespace OpenGLDrv {
@@ -177,37 +178,33 @@ static byte skyVis[6][SKY_CELLS*SKY_CELLS];
 static bool skyRotated;
 static CAxis rotAxis;
 
-void ClearSkyBox ()
+void ClearSky ()
 {
 	memset (skyVis, 0, sizeof(skyVis));
 	memset (skySideVisible, 0, sizeof(skySideVisible));
-}
-
-
-void SetSkyRotate (float angle, const CVec3 &axis)
-{
+	// rotate sky
+	float angle = vp.time * gl_skyShader->skyRotate;
 	if (angle)
 	{
 		skyRotated = true;
-		BuildRotationAxis (rotAxis, axis, angle);
+		BuildRotationAxis (rotAxis, gl_skyShader->skyAxis, angle);
 	}
 	else
 		skyRotated = false;
 }
 
 
-bool SkyVisible ()
+static bool SkyVisible ()
 {
 	int		i;
 	byte	*p;
-
 	for (i = 0, p = skyVis[0]; i < sizeof(skyVis); i++, p++)
 		if (*p == (SKY_FRUSTUM|SKY_SURF)) return true;
 	return false;
 }
 
 
-void AddSkySurface (surfacePlanar_t *pl, const CVec3 &vieworg, byte flag)
+void AddSkySurface (surfacePlanar_t *pl, byte flag)
 {
 	CVec3	verts[MAX_CLIP_VERTS];
 	int		i, side;
@@ -225,9 +222,9 @@ void AddSkySurface (surfacePlanar_t *pl, const CVec3 &vieworg, byte flag)
 	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
 	{
 		if (skyRotated)
-			TransformPoint (vieworg, rotAxis, v->xyz, verts[i]);
+			TransformPoint (vp.view.origin, rotAxis, v->xyz, verts[i]);
 		else
-			VectorSubtract (v->xyz, vieworg, verts[i]);
+			VectorSubtract (v->xyz, vp.view.origin, verts[i]);
 	}
 	ClipSkyPolygon (pl->numVerts, verts, 0);
 
@@ -272,8 +269,10 @@ void AddSkySurface (surfacePlanar_t *pl, const CVec3 &vieworg, byte flag)
 
 /*------------------- Tesselation -------------------*/
 
+static float skyDist;
+
 // In: s, t in range [-1..1]; out: tex = {s,t}, vec
-static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec, bufTexCoord_t **tex)
+static int AddSkyVec (float s, float t, int axis, bufVertex_t **vec, bufTexCoord_t **tex)
 {
 	static const int stToVec[6][3] = {	// 1 = s, 2 = t, 3 = zFar
 		{ 3,-1, 2},
@@ -285,9 +284,7 @@ static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec
 	};
 
 	CVec3 b;
-	b[0] = s * scale;
-	b[1] = t * scale;
-	b[2] = scale;
+	b.Set (s * skyDist, t * skyDist, skyDist);
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -310,14 +307,8 @@ static int AddSkyVec (float s, float t, int axis, float scale, bufVertex_t **vec
 }
 
 
-int TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float zFar)
+static void TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex)
 {
-	float	s, t, scale;
-	int		numIndexes;
-	int		grid[SKY_VERTS*SKY_VERTS];
-	int		*idx, *grid1, *grid2;
-	byte	*ptr;
-
 #if 0
 	DrawTextLeft(va("side %d:", side));
 	for (numIndexes = 0; numIndexes < SKY_CELLS; numIndexes++)
@@ -333,29 +324,31 @@ int TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float zFar
 	}
 #endif
 
-	if (skySideVisible[side] != (SKY_FRUSTUM|SKY_SURF)) return 0;
+	gl_numIndexes = 0;
+	if (skySideVisible[side] != (SKY_FRUSTUM|SKY_SURF)) return;
 
 	// generate side vertexes
-	gl_numVerts = 0;
-	scale = zFar / 3;				// any non-zero value not works on TNT2 (but works with GeForce2)
+	int grid[SKY_VERTS*SKY_VERTS];
 	memset (grid, 0, sizeof(grid));	// "0" is valid, because index=0 only for upper-left vertex, which is used only for 1 cell ...
-	ptr = skyVis[side];
-	grid1 = grid;
-	grid2 = grid + SKY_VERTS;
-	idx = gl_indexesArray;
-	numIndexes = 0;
-	for (t = -1; t < 1; t += 1.0f / SKY_TESS_SIZE)
+	byte *ptr = skyVis[side];
+	int *grid1 = grid;
+	int *grid2 = grid + SKY_VERTS;
+
+	gl_numVerts = 0;
+	int *idx = gl_indexesArray;
+
+	for (float t = -1; t < 1; t += 1.0f / SKY_TESS_SIZE)
 	{
-		for (s = -1; s < 1; s += 1.0f / SKY_TESS_SIZE, ptr++, grid1++, grid2++)
+		for (float s = -1; s < 1; s += 1.0f / SKY_TESS_SIZE, ptr++, grid1++, grid2++)
 		{
 			if (*ptr != (SKY_FRUSTUM|SKY_SURF)) continue;		// this cell is not visible
 			// this 2 verts can be filled by previous line
-			if (!grid1[0])	grid1[0] = AddSkyVec (s, t, side, scale, &vec, &tex);
-			if (!grid1[1])	grid1[1] = AddSkyVec (s + 1.0f / SKY_TESS_SIZE, t, side, scale, &vec, &tex);
+			if (!grid1[0])	grid1[0] = AddSkyVec (s, t, side, &vec, &tex);
+			if (!grid1[1])	grid1[1] = AddSkyVec (s + 1.0f / SKY_TESS_SIZE, t, side, &vec, &tex);
 			// this vertex can be filled by previous cell
-			if (!grid2[0])	grid2[0] = AddSkyVec (s, t + 1.0f / SKY_TESS_SIZE, side, scale, &vec, &tex);
+			if (!grid2[0])	grid2[0] = AddSkyVec (s, t + 1.0f / SKY_TESS_SIZE, side, &vec, &tex);
 			// this vertex cannot be filled by previous cells
-			grid2[1] = AddSkyVec (s + 1.0f / SKY_TESS_SIZE, t + 1.0f / SKY_TESS_SIZE, side, scale, &vec, &tex);
+			grid2[1] = AddSkyVec (s + 1.0f / SKY_TESS_SIZE, t + 1.0f / SKY_TESS_SIZE, side, &vec, &tex);
 			// generate indexes
 			// g1(1) ----- g1+1(2)
 			//  |           |
@@ -363,15 +356,133 @@ int TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex, float zFar
 			// g2(3) ----- g2+1(4)
 			*idx++ = grid1[0]; *idx++ = grid2[0]; *idx++ = grid1[1];	// triangle 1 (1-3-2)
 			*idx++ = grid2[0]; *idx++ = grid2[1]; *idx++ = grid1[1];	// triangle 2 (3-4-2)
-			numIndexes += 6;		// overflow is compile-time checked (see "#error" ...)
+			gl_numIndexes += 6;		// overflow is compile-time checked (see "#error" ...)
 		}
 		// sky verts are not wrapped -- skip seam
 		grid1++;
 		grid2++;
 	}
 //	DrawTextLeft(va("side %d:  %d verts  %d idx", side, gl_numVerts, numIndexes));
+}
 
-	return numIndexes;
+
+/*-----------------------------------------------------------------------------
+	Drawing
+-----------------------------------------------------------------------------*/
+
+#define SKY_FRUST_DIST	10			// 1 is not enough - bad FP precision
+//#define VISUALIZE_SKY_FRUSTUM		// NOTE: SKY_FRUST_DIST should be at least gl_znear->value to make rect visible
+
+void DrawSky ()
+{
+	LOG_STRING ("***** DrawSky() *****\n");
+	if (gl_state.useFastSky) return;
+
+	// build frustum cover
+	vertex_t fv[4];
+	CVec3	tmp, tmp1, up, right;
+	VectorMA (vp.view.origin, SKY_FRUST_DIST, vp.view.axis[0], tmp);
+	VectorScale (vp.view.axis[1], SKY_FRUST_DIST * vp.t_fov_x * 1.05, right);	// *1.05 -- to avoid FP precision bugs
+	VectorScale (vp.view.axis[2], SKY_FRUST_DIST * vp.t_fov_y * 1.05, up);
+#ifdef VISUALIZE_SKY_FRUSTUM
+	right.Scale (0.9);
+	up.Scale (0.9);
+#endif
+	VectorAdd (tmp, up, tmp1);				// up
+	VectorAdd (tmp1, right, fv[0].xyz);
+	VectorSubtract (tmp1, right, fv[1].xyz);
+	VectorSubtract (tmp, up, tmp1);			// down
+	VectorSubtract (tmp1, right, fv[2].xyz);
+	VectorAdd (tmp1, right, fv[3].xyz);
+	// rasterize frustum
+	surfacePlanar_t pl;
+	pl.numVerts = 4;
+	pl.verts = fv;
+	AddSkySurface (&pl, SKY_FRUSTUM);
+
+	if (!SkyVisible ()) return;				// all sky surfaces are outside frustum
+
+	// draw sky
+	GL_DepthRange (gl_showSky->integer ? DEPTH_NEAR : DEPTH_FAR);
+	GL_EnableFog (false);
+
+	glDisableClientState (GL_COLOR_ARRAY);
+	if (gl_skyShader != gl_defaultSkyShader)
+		glColor3f (gl_config.identityLightValue_f,
+				   gl_config.identityLightValue_f,
+				   gl_config.identityLightValue_f); // avoid overbright
+	else
+//		glColor3f (0, 0, 0);			// bad sky -- make it black (almost as gl_fastSky)
+		glColor3fv (gl_fogColor);
+
+	glPushMatrix ();
+	// if we will add "NODEPTHTEST" if gl_showSky mode -- DEPTHWITE will no effect
+	GL_State (gl_showSky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
+	GL_SetMultitexture (1);
+	// modify modelview matrix
+	glTranslatef (VECTOR_ARG(vp.view.origin));
+	if (gl_skyShader->skyRotate)
+		glRotatef (vp.time * gl_skyShader->skyRotate, VECTOR_ARG(gl_skyShader->skyAxis));
+
+	GL_TexEnv (TEXENV_MODULATE);
+	glTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord[0]);
+	glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
+
+	skyDist = vp.zFar / 3;				// any non-zero value not works on TNT2 (but works with GeForce2)
+
+	for (int side = 0; side < 6; side++)
+	{
+		TesselateSkySide (side, vb->verts, vb->texCoord[0]);
+		if (!gl_numIndexes) continue;	// no surfaces on this side
+
+		//?? should call FlushShader() instead of MOST of this code to allow scripted skies
+		//?? if so, should call SetCurrentShader(gl_skyShader)
+		//?? ... and can remove DrawTriangles() from publics
+		// if gl_skyShader == gl_defaultSkyShader, then skyBox[] will be NULL (disabled texturing)
+		GL_Bind (/* ??gl_skyShader != gl_defaultSkyShader ? */ gl_skyShader->skyBox[side] /*: ?? NULL*/);
+		glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
+
+		//?? some debug stuff from FlushShader()
+		if (DrawTriangles ())
+		{
+			// need to perform some state restoration (do it with another way ??)
+			GL_State (gl_showSky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
+			if (gl_skyShader != gl_defaultSkyShader)
+				glColor3f (gl_config.identityLightValue_f,
+						   gl_config.identityLightValue_f,
+						   gl_config.identityLightValue_f); // avoid overbright
+			else
+//				glColor3f (0, 0, 0);
+				glColor3fv (gl_fogColor);
+			GL_SetMultitexture (1);
+		}
+		gl_speeds.tris += gl_numIndexes /* * numTmpStages*/ / 3;
+		gl_speeds.trisMT += gl_numIndexes /* * numRenderPasses*/ / 3;
+		//?? end of FlushShader()
+	}
+	glPopMatrix ();
+
+	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
+
+#ifdef VISUALIZE_SKY_FRUSTUM
+	glPushMatrix ();
+	glLoadMatrixf (&vp.modelMatrix[0][0]);		// world matrix
+	GL_SetMultitexture (0);
+	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
+	GL_DepthRange (DEPTH_NEAR);
+	glDisableClientState (GL_COLOR_ARRAY);
+	glColor3f (0, 0, 0);
+	GL_CullFace (CULL_NONE);
+	glBegin (GL_QUADS);
+	glVertex3fv (fv[0].xyz);
+	glVertex3fv (fv[1].xyz);
+	glVertex3fv (fv[2].xyz);
+	glVertex3fv (fv[3].xyz);
+	glEnd ();
+	glPopMatrix ();
+#endif
+
+	GL_DepthRange (DEPTH_NORMAL);
 }
 
 

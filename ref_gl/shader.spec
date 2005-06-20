@@ -24,8 +24,8 @@
        nodamage, metalsteps, flesh, nosteps, nodraw, pointlight, nolightmap, nodlight, dust
 * 8) nomipmaps
 * 9) nopicmip
-  10) polygonOffset
-  11) entityMergable
+* 10) polygonOffset
+* 11) entityMergable              -- ignored (have internal mechanist for efficient sprite combining)
   12) fogParms ( <r> <g> <b> ) <dist_to_opaque>
   13) portal		          -- set SORT_PORTAL
   14) skyparms <farbox|-> <cloud height> <nearbox|->
@@ -33,7 +33,7 @@
 * 16) cull
      - node, twosided, disable
      - back, backside, backsided
-     (default is front)
+     - front (default)
 * 17) sort
      - portal		== 1
      - sky		== 2
@@ -75,6 +75,7 @@
      - $whiteimage
      - $lightmap
 * 2) clampmap <texture>
+     - $texture
 * 3) animMap <freq> <texture1> [... <texture8>]
   4) videoMap <cin file>
 * 5) alphaFunc  (default -- disabled)

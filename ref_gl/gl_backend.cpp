@@ -10,10 +10,6 @@
 
 namespace OpenGLDrv {
 
-/* LATER: replace (almost) all vp.time -> shader.time (or global "shaderTime") ??
- * (because time may be taken (if engine will be extended) from entity)
- */
-
 
 //#define SPY_SHADER		// comment line to disable gl_spyShader stuff
 
@@ -40,31 +36,14 @@ typedef struct
 } bufTexCoordSrc_t;
 
 
-/*------------- Command buffer ---------------*/
-
 static shader_t		*currentShader;
 static refEntity_t	*currentEntity;
 static int			currentDlightMask;
 
 
-/*-------------- Vertex arrays ---------------*/
+// vertex arrays
 
-
-#define NUM_VERTEX_BUFFERS	64
-
-struct vertexBuffer_t
-{
-	bufVertex_t		verts[MAX_VERTEXES];
-	color_t			color[MAX_VERTEXES];
-	bufTexCoord_t	texCoord[1][MAX_VERTEXES];
-	static inline int getSize (int numTmu)
-	{
-		return sizeof(vertexBuffer_t) + (numTmu-1) * sizeof(bufTexCoord_t) * MAX_VERTEXES;	// 1 texCoord already reserved
-	}
-};
-
-static vertexBuffer_t	*vb;			// pointers to current buffer and to all buffers
-static int				currentBuffer;	// index of the current buffer
+vertexBuffer_t	*vb;
 
 int				gl_indexesArray[MAX_INDEXES];
 bufExtra_t		gl_extra[MAX_VERTEXES];
@@ -76,9 +55,8 @@ static bufTexCoordSrc_t	srcTexCoord[MAX_VERTEXES];
 int gl_numVerts, gl_numIndexes, gl_numExtra;
 
 
-/*------------------ Scene -----------------*/
+// scene surfaces
 
-// surfaces
 static surfaceInfo_t *sortedSurfaces[MAX_SCENE_SURFACES];
 
 
@@ -239,7 +217,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 					ex->normal = mViewAxis[0];
 			}
 			break;
-		//?? other types
+		//?? other types: AUTOSPRITE2, NORMAL, PROJECTION_SHADOW (?)
 		}
 	}
 }
@@ -380,14 +358,14 @@ static void GenerateColorArray (shaderStage_t *st)
 			}
 		}
 		break;
-	// other types: LIGHTING_SPECULAR, PORTAL
+	//?? other types: LIGHTING_SPECULAR, PORTAL
 	}
 
 	unguard;
 }
 
 
-static void GenerateTexCoordArray (shaderStage_t *st, int tmu, image_t *tex)
+static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *tex)
 {
 	int				j, k;
 	tcModParms_t	*tcmod;
@@ -711,7 +689,7 @@ static void PreprocessShader (shader_t *sh)
 
 	st = tmpSt;
 	numTmpStages = 0;
-	memset (tmpSt, 0, sizeof(tmpSt));			// initialize all fields with zeros
+	memset (tmpSt, 0, sizeof(tmpSt));				// initialize all fields with zeros
 
 	// get lightmap stage (should be first ??)
 	shaderStage_t *lmStage = NULL;
@@ -733,7 +711,7 @@ static void PreprocessShader (shader_t *sh)
 				if (!numTmpStages)
 					st->glState = lmStage->glState;
 				else
-					st->glState = GLSTATE_SRC_ONE|GLSTATE_DST_ONE;			// src + dst
+					st->glState = BLEND(1,1);		// src + dst
 				// set rgba
 				st->alphaGenType = ALPHAGEN_CONST;
 				st->rgbGenType = RGBGEN_CONST;
@@ -762,7 +740,7 @@ static void PreprocessShader (shader_t *sh)
 				if (!numTmpStages)
 					st->glState = lmStage->glState;
 				else
-					st->glState = GLSTATE_SRC_ONE|GLSTATE_DST_ONE;			// src + dst
+					st->glState = BLEND(1,1);		// src + dst
 				// set rgba
 				st->alphaGenType = ALPHAGEN_CONST;
 				st->rgbGenType = RGBGEN_CONST;
@@ -806,10 +784,10 @@ static void PreprocessShader (shader_t *sh)
 			int		n;
 
 			if (currentEntity == &gl_entities[ENTITYNUM_WORLD] || !stage->frameFromEntity)
-				n = appRound (vp.time * stage->animMapFreq);
+				n = appFloor (vp.time * stage->animMapFreq);
 			else
 				n = currentEntity->frame;
-			image_t *img = st->mapImage[0] = stage->mapImage[n % stage->numAnimTextures];
+			const image_t *img = st->mapImage[0] = stage->mapImage[n % stage->numAnimTextures];
 			// determine: whether image have alpha-channel
 			if (img && img->alphaType)
 				st->imgNoAlpha = false;
@@ -857,7 +835,7 @@ static void PreprocessShader (shader_t *sh)
 		tmpSt[0].numAnimTextures = 1;
 		tmpSt[0].mapImage[0] = NULL;
 		// glState
-		tmpSt[0].glState = GLSTATE_SRC_ONE|GLSTATE_DST_ONE|GLSTATE_NODEPTHTEST;
+		tmpSt[0].glState = BLEND(1,1)|GLSTATE_NODEPTHTEST;
 		//---- 2nd stage: display wireframe with non-red color
 		// color
 		tmpSt[1].rgbGenType = RGBGEN_CONST;
@@ -869,7 +847,7 @@ static void PreprocessShader (shader_t *sh)
 		tmpSt[1].numAnimTextures = 1;
 		tmpSt[1].mapImage[0] = NULL;
 		// glState
-		tmpSt[1].glState = GLSTATE_SRC_ONE|GLSTATE_DST_ONE|GLSTATE_NODEPTHTEST|GLSTATE_POLYGON_LINE;
+		tmpSt[1].glState = BLEND(1,1)|GLSTATE_NODEPTHTEST|GLSTATE_POLYGON_LINE;
 	}
 
 	bool entityLightingDone = false;
@@ -902,7 +880,7 @@ static void PreprocessShader (shader_t *sh)
 		case RGBGEN_WAVE:
 			{
 				//?? function may be NOISE
-#define P stage->rgbGenWave
+#define P st->rgbGenWave
 				float c1 = PERIODIC_FUNC(mathFuncs[P.type], P.freq * vp.time + P.phase) * P.amp + P.base;
 #undef P
 				int c2 = appRound (c1 * 255);
@@ -952,7 +930,7 @@ static void PreprocessShader (shader_t *sh)
 			break;
 		case ALPHAGEN_WAVE:
 			{
-#define P stage->alphaGenWave
+#define P st->alphaGenWave
 				float c1 = PERIODIC_FUNC(mathFuncs[P.type], P.freq * vp.time + P.phase) * P.amp + P.base;
 #undef P
 				int c2 = appRound (c1 * 255);
@@ -1017,16 +995,16 @@ static void PreprocessShader (shader_t *sh)
 				TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX :
 				TEXENV_MODULATE;			// modulate with rgbaGen
 
-			switch (pass->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
+			switch (pass->glState & GLSTATE_BLENDMASK)
 			{
 			case 0:
 				passStyle = BLEND_ANY;
 				break;
-			case GLSTATE_SRC_ONE|GLSTATE_DST_ONE:
+			case BLEND(1,1):
 				passStyle = BLEND_ADDITIVE;
 				break;
-			case GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR:
-			case GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO:
+			case BLEND(D_COLOR,S_COLOR):	// src*dst*2
+			case BLEND(D_COLOR,0):			// src*dst
 				passStyle = BLEND_MULTIPLICATIVE;
 				break;
 			default:
@@ -1051,21 +1029,21 @@ static void PreprocessShader (shader_t *sh)
 
 		// check for compatibility of current glState with the next glState
 		if (tmuLeft < 1 || passStyle == BLEND_INCOMPATIBLE ||
-			(st[0].glState ^ st[1].glState) & ~(GLSTATE_SRCMASK|GLSTATE_DSTMASK|GLSTATE_DEPTHWRITE))
+			(st[0].glState ^ st[1].glState) & ~(GLSTATE_BLENDMASK|GLSTATE_DEPTHWRITE))
 		{	// incompatible ... next stage will be 1st in the next rendering pass
 			tmuLeft = 0;
 			continue;
 		}
 
 		// now, we can check blendmode and rgbaGen
-		unsigned blend2 = st[1].glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK);
+		unsigned blend2 = st[1].glState & GLSTATE_BLENDMASK;
 
 		// pure multitexture: PREV+T2 or PREV+T2, no multipliers
 		// any rgba for current TMU, identity for next
 		if (st[1].isIdentityRGBA)
 		{
 			// pure multitexture can emulate only 2 blendmodes: "src*dst" and "src+dst" (when texenv_add)
-			if (blend2 == (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO) && passStyle & BLEND_MULTIPLICATIVE)
+			if (blend2 == BLEND(D_COLOR,0) && passStyle & BLEND_MULTIPLICATIVE)
 			{
 				LOG_PP(va("  MT(MUL): with \"%s\"\n", st[1].mapImage[0]->name));
 				st[1].texEnv = TEXENV_MODULATE;
@@ -1074,7 +1052,7 @@ static void PreprocessShader (shader_t *sh)
 			}
 
 			if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_ADD|QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE) &&
-				blend2 == (GLSTATE_SRC_ONE|GLSTATE_DST_ONE) && passStyle & BLEND_ADDITIVE)
+				blend2 == BLEND(1,1) && passStyle & BLEND_ADDITIVE)
 			{
 				LOG_PP(va("  MT(ADD): with \"%s\"\n", st[1].mapImage[0]->name));
 				st[1].texEnv = (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_ADD))
@@ -1084,7 +1062,7 @@ static void PreprocessShader (shader_t *sh)
 			}
 
 			if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE)
-				&& blend2 == (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR)		// src*dst + dst*src
+				&& blend2 == BLEND(D_COLOR,S_COLOR)		// src*dst + dst*src
 				&& passStyle & BLEND_MULTIPLICATIVE)
 			{
 				LOG_PP(va("  MT(MUL2): with \"%s\"\n", st[1].mapImage[0]->name));
@@ -1098,7 +1076,7 @@ static void PreprocessShader (shader_t *sh)
 			// NV: This extension can perform A*T1+B*T2, where A/B is 1|0|prev|tex
 			//   st[1] is B*T2, if rgba is not 1, rgbGen will eat B and we will not be able to use most of blends ...
 			// ATI: can perform A*T1+T2 or T1+A*T2 (similar to NV, but either A or B should be 1)
-			(st[1].isIdentityRGBA || (blend2 & GLSTATE_SRCMASK) == GLSTATE_SRC_ONE))
+			(st[1].isIdentityRGBA || (blend2 & GLSTATE_SRCMASK) == SRCBLEND(1)))
 		{
 			static const unsigned blendToEnv[] = {	// this table is corresponding to GLSTATE_[SRC|DST]_XXX
 				0,
@@ -1117,14 +1095,14 @@ static void PreprocessShader (shader_t *sh)
 			unsigned b2 = blend2 & GLSTATE_DSTMASK;
 			if (passStyle == BLEND_ADDITIVE)
 			{
-				if (b1 != GLSTATE_SRC_ONE && b1 != GLSTATE_SRC_SRCALPHA && b1 != GLSTATE_SRC_ONEMINUSSRCALPHA)
+				if (b1 != SRCBLEND(1) && b1 != SRCBLEND(S_ALPHA) && b1 != SRCBLEND(M_S_ALPHA))
 					combine = false;
-				if (b2 != GLSTATE_DST_ONE && b2 != GLSTATE_DST_DSTALPHA && b2 != GLSTATE_DST_ONEMINUSDSTALPHA)
+				if (b2 != DSTBLEND(1) && b2 != DSTBLEND(D_ALPHA) && b2 != DSTBLEND(M_D_ALPHA))
 					combine = false;
 			}
 			else if (passStyle == BLEND_MULTIPLICATIVE)
 			{
-				if (b1 != GLSTATE_SRC_ZERO && b2 != GLSTATE_DST_ZERO && blend2 != (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR))
+				if (b1 != SRCBLEND(0) && b2 != DSTBLEND(0) && blend2 != BLEND(D_COLOR,S_COLOR))
 					combine = false;
 			}
 			// convert blendmode to TexEnv
@@ -1136,11 +1114,11 @@ static void PreprocessShader (shader_t *sh)
 			if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4))
 			{
 				// src0*src1+src2*src3
-				env = TEXENV_C4_ADD | (TEXENV_TEXTURE<<TEXENV_SRC1_SHIFT) | (TEXENV_PREVIOUS<<TEXENV_SRC3_SHIFT);
+				env = TEXENV_C4_ADD | TEXENV(1,TEXTURE) | TEXENV(3,PREVIOUS);
 				if (st[1].isIdentityRGBA || env1 != TEXENV_ONE)
 					env |= env1 << TEXENV_SRC0_SHIFT;
 				else
-					env |= (TEXENV_CONSTANT << TEXENV_SRC0_SHIFT) | TEXENV_ENVCOLOR;
+					env |= TEXENV(0,CONSTANT) | TEXENV_ENVCOLOR;
 				env |= env2 << TEXENV_SRC2_SHIFT;
 			}
 			else // if (GL_SUPPORT(QGL_ATI_TEXTURE_ENV_COMBINE3))
@@ -1149,18 +1127,16 @@ static void PreprocessShader (shader_t *sh)
 				if (env1 == TEXENV_ONE)
 				{	// TEXTURE mul is 1
 					if (st[1].isIdentityRGBA)
-						env = TEXENV_C3_ADD | (TEXENV_TEXTURE<<TEXENV_SRC1_SHIFT) | (TEXENV_PREVIOUS<<TEXENV_SRC0_SHIFT) |
-							(env2<<TEXENV_SRC2_SHIFT);	// env2*PREVIOUS+TEXTURE
+						env = TEXENV_C3_ADD | TEXENV(1,TEXTURE) | TEXENV(0,PREVIOUS) | (env2<<TEXENV_SRC2_SHIFT); // env2*PREVIOUS+TEXTURE
 					else if (env2 == TEXENV_ONE)
-						env = TEXENV_C3_ADD | (TEXENV_TEXTURE<<TEXENV_SRC0_SHIFT) | (TEXENV_PREVIOUS<<TEXENV_SRC1_SHIFT) |
-							(TEXENV_CONSTANT << TEXENV_SRC2_SHIFT) | TEXENV_ENVCOLOR;	// envColor*TEXTURE+PREVIOUS
+						env = TEXENV_C3_ADD | TEXENV(0,TEXTURE) | TEXENV(1,PREVIOUS) |
+							TEXENV(2,CONSTANT) | TEXENV_ENVCOLOR;	// envColor*TEXTURE+PREVIOUS
 					else // 3 operands not enough
 						combine = false;
 				}
 				else if (env2 == TEXENV_ONE)
 				{	// PREVIOUS mul is 1
-					env = TEXENV_C3_ADD | (TEXENV_TEXTURE<<TEXENV_SRC0_SHIFT) | (TEXENV_PREVIOUS<<TEXENV_SRC1_SHIFT) |
-						(env1<<TEXENV_SRC2_SHIFT);	// env1*TEXTURE+PREVIOUS
+					env = TEXENV_C3_ADD | TEXENV(0,TEXTURE) | TEXENV(1,PREVIOUS) | (env1<<TEXENV_SRC2_SHIFT);	// env1*TEXTURE+PREVIOUS
 				}
 				else
 					combine = false;
@@ -1193,11 +1169,11 @@ static void PreprocessShader (shader_t *sh)
 		}
 
 		// GL_EXT_TEXTURE_ENV_COMBINE is unsupported here (this extension supports INTERP with SRC_ALPHA only)
-		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE) && blend2 == (GLSTATE_SRC_ONE|GLSTATE_DST_ONE)
+		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE) && blend2 == BLEND(1,1)
 			&& passStyle & BLEND_ADDITIVE && st[0].isConstRGBA && st[1].isConstRGBA && tmuUsed == 1)
 		{
 			LOG_PP(va("  MT(INTERP*2): with \"%s\"\n", st[1].mapImage[0]->name));
-			st[1].texEnv = TEXENV_C_INTERP | TEXENV_MUL2 | TEXENV_ENVCOLOR | TEXENV_0PREV_1TEX | (TEXENV_CONSTANT<<TEXENV_SRC2_SHIFT);
+			st[1].texEnv = TEXENV_C_INTERP | TEXENV_MUL2 | TEXENV_ENVCOLOR | TEXENV_0PREV_1TEX | TEXENV(2,CONSTANT);
 			// set RGBA for both stages
 			LOG_PP(va("  (old rgba: %X %X", st[0].rgbaConst.rgba, st[1].rgbaConst.rgba));
 			for (int k = 0; k < 4; k++)
@@ -1220,19 +1196,15 @@ static void PreprocessShader (shader_t *sh)
 #undef LOG_PP
 
 
-// forwards
-void DrawTriangles (void);
-void DrawNormals (void);
-
-
 static void FlushShader ()
 {
 	guard(FlushShader);
 
-//	DrawTextLeft (va("FlushShader(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes));//!!!
-	LOG_STRING (va("*** FlushShader(%s, %d, %d) ***\n", currentShader->name, gl_numVerts, gl_numIndexes));
 	if (!gl_numIndexes) return;					// buffer is empty
 	if (!currentShader->numStages) return;		// wrong shader?
+
+//	DrawTextLeft (va("FlushShader(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes));//!!!
+	LOG_STRING (va("*** FlushShader(%s, %d, %d) ***\n", currentShader->name, gl_numVerts, gl_numIndexes));
 
 	PreprocessShader (currentShader);
 
@@ -1314,11 +1286,8 @@ static void FlushShader ()
 	// debug
 	if (!gl_state.is2dMode)
 	{
-		if (gl_showTris->integer)
-			DrawTriangles ();
-		if (gl_showNormals->integer)
-			DrawNormals ();
-
+		DrawTriangles ();
+		DrawNormals ();
 		gl_speeds.tris += gl_numIndexes * numTmpStages / 3;
 		gl_speeds.trisMT += gl_numIndexes * numRenderPasses / 3;
 	}
@@ -1344,7 +1313,6 @@ static void SetCurrentShader (shader_t *shader)
 	}
 	currentShader = shader;
 	gl_numVerts = gl_numIndexes = gl_numExtra = 0;		// clear buffer
-	//?? setup shader time
 }
 
 
@@ -1355,124 +1323,6 @@ static void ReserveVerts (int verts, int inds)
 
 	if (verts > MAX_VERTEXES)	Com_DropError ("ReserveVerts: %d > MAX_VERTEXES", verts);
 	if (inds > MAX_INDEXES)		Com_DropError ("ReserveVerts: %d > MAX_INDEXES", inds);
-}
-
-
-/*-----------------------------------------------------------------------------
-	Skybox
------------------------------------------------------------------------------*/
-
-#define SKY_FRUST_DIST	10			// 1 is not enough - bad FP precision
-//#define VISUALIZE_SKY_FRUSTUM		// NOTE: SKY_FRUST_DIST should be at least gl_znear->value to make rect visible
-
-static void DrawSkyBox (void)
-{
-	LOG_STRING ("***** DrawSkyBox() *****\n");
-	if (gl_state.useFastSky) return;
-
-	// build frustum cover
-	vertex_t fv[4];
-	CVec3	tmp, tmp1, up, right;
-	VectorMA (vp.view.origin, SKY_FRUST_DIST, vp.view.axis[0], tmp);
-	VectorScale (vp.view.axis[1], SKY_FRUST_DIST * vp.t_fov_x * 1.05, right);	// *1.05 -- to avoid FP precision bugs
-	VectorScale (vp.view.axis[2], SKY_FRUST_DIST * vp.t_fov_y * 1.05, up);
-#ifdef VISUALIZE_SKY_FRUSTUM
-	right.Scale (0.9);
-	up.Scale (0.9);
-#endif
-	VectorAdd (tmp, up, tmp1);				// up
-	VectorAdd (tmp1, right, fv[0].xyz);
-	VectorSubtract (tmp1, right, fv[1].xyz);
-	VectorSubtract (tmp, up, tmp1);			// down
-	VectorSubtract (tmp1, right, fv[2].xyz);
-	VectorAdd (tmp1, right, fv[3].xyz);
-	// rasterize frustum
-	surfacePlanar_t pl;
-	pl.numVerts = 4;
-	pl.verts = fv;
-	AddSkySurface (&pl, vp.view.origin, SKY_FRUSTUM);
-
-	if (!SkyVisible ()) return;				// all sky surfaces are outside frustum
-
-	// draw sky
-	GL_DepthRange (gl_showSky->integer ? DEPTH_NEAR : DEPTH_FAR);
-	GL_EnableFog (false);
-
-	glDisableClientState (GL_COLOR_ARRAY);
-	if (currentShader != gl_defaultSkyShader)
-		glColor3f (gl_config.identityLightValue_f,
-					gl_config.identityLightValue_f,
-					gl_config.identityLightValue_f); // avoid overbright
-	else
-//		glColor3f (0, 0, 0);			// bad sky -- make it black (almost as gl_fastSky)
-		glColor3fv (gl_fogColor);
-
-	glPushMatrix ();
-	// if we will add "NODEPTHTEST" if gl_showSky mode -- DEPTHWITE will no effect
-	GL_State (gl_showSky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
-	GL_SetMultitexture (1);
-	// modify modelview matrix
-	glTranslatef (VECTOR_ARG(vp.view.origin));
-	if (currentShader->skyRotate)
-		glRotatef (vp.time * currentShader->skyRotate, VECTOR_ARG(currentShader->skyAxis));
-
-	GL_TexEnv (TEXENV_MODULATE);
-	glTexCoordPointer (2, GL_FLOAT, 0, vb->texCoord[0]);
-	glVertexPointer (3, GL_FLOAT, sizeof(bufVertex_t), vb->verts);
-
-	for (int side = 0; side < 6; side++)
-	{
-		gl_numIndexes = TesselateSkySide (side, vb->verts, vb->texCoord[0], vp.zFar);
-		if (!gl_numIndexes) continue;	// no surfaces on this side
-
-		if (currentShader != gl_defaultSkyShader)
-			GL_Bind (currentShader->skyFarBox[side]);
-		else
-			GL_Bind (NULL);				// disable texturing
-
-		glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
-
-		//?? some debug stuff from FlushShader()
-		if (gl_showTris->integer)
-		{
-			DrawTriangles ();
-			// need to perform some state restoration (do it with another way ??)
-			GL_State (gl_showSky->integer ? GLSTATE_DEPTHWRITE : GLSTATE_NODEPTHTEST);
-			if (currentShader != gl_defaultSkyShader)
-				glColor3f (gl_config.identityLightValue_f,
-						   gl_config.identityLightValue_f,
-						   gl_config.identityLightValue_f); // avoid overbright
-			else
-//				glColor3f (0, 0, 0);
-				glColor3fv (gl_fogColor);
-			GL_SetMultitexture (1);
-		}
-		gl_speeds.tris += gl_numIndexes * numTmpStages / 3;
-		gl_speeds.trisMT += gl_numIndexes * numRenderPasses / 3;
-	}
-	glPopMatrix ();
-
-	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
-
-#ifdef VISUALIZE_SKY_FRUSTUM
-	glPushMatrix ();
-	glLoadMatrixf (&vp.modelMatrix[0][0]);		// world matrix
-	GL_SetMultitexture (0);
-	GL_State (GLSTATE_POLYGON_LINE|GLSTATE_DEPTHWRITE);
-	GL_DepthRange (DEPTH_NEAR);
-	glDisableClientState (GL_COLOR_ARRAY);
-	glColor3f (0, 0, 0);
-	GL_CullFace (CULL_NONE);
-	glBegin (GL_QUADS);
-	glVertex3fv (fv[0].xyz);
-	glVertex3fv (fv[1].xyz);
-	glVertex3fv (fv[2].xyz);
-	glVertex3fv (fv[3].xyz);
-	glEnd ();
-	glPopMatrix ();
-#endif
-
-	GL_DepthRange (DEPTH_NORMAL);
 }
 
 
@@ -1639,10 +1489,10 @@ void surfaceMd3_t::Tesselate (refEntity_t &ent)
 			v->xyz[2] = vs1->xyz[2] * frontScale + vs2->xyz[2] * backScale;
 			// lerp normal
 			int a1 = vs1->normal & 255;
-			int b1 = (vs1->normal >> 8) & 255;
+			int b1 = vs1->normal >> 8;
 			float sa1 = SIN_FUNC2(a1,256) * frontLerp;
 			int a2 = vs2->normal & 255;
-			int b2 = (vs2->normal >> 8) & 255;
+			int b2 = vs2->normal >> 8;
 			float sa2 = SIN_FUNC2(a2,256) * currentEntity->backLerp;
 			CVec3 &norm = ex->normal;
 			norm[0] = sa1 * COS_FUNC2(b1,256) + sa2 * COS_FUNC2(b2,256);
@@ -1662,7 +1512,7 @@ void surfaceMd3_t::Tesselate (refEntity_t &ent)
 			v->xyz[1] = vs1->xyz[1] * scale;
 			v->xyz[2] = vs1->xyz[2] * scale;
 			int a = vs1->normal & 255;
-			int b = (vs1->normal >> 8) & 255;
+			int b = vs1->normal >> 8;
 			float sa = SIN_FUNC2(a,256);
 			CVec3 &norm = ex->normal;
 			norm[0] = sa * COS_FUNC2(b,256);	// sin(a)*cos(b)
@@ -1764,7 +1614,7 @@ static void DrawBBoxes ()
 				glColor3f (0.5, 0.1, 0.1);
 				glDrawElements (GL_QUADS, 4, GL_UNSIGNED_INT, idx2);
 
-				GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA);
+				GL_State (BLEND(S_ALPHA,M_S_ALPHA));
 				GL_DepthRange (DEPTH_NORMAL);
 				if (!ent->worldMatrix)
 					glColor4f (0.1, 0.1, 0.3, 0.4);
@@ -1805,8 +1655,10 @@ static void DrawBBoxes ()
 }
 
 
-static void DrawTriangles (void)
+bool DrawTriangles ()
 {
+	if (!gl_showTris->integer) return false;
+
 	gl_depthMode_t prevDepth = gl_state.currentDepthMode;
 	GL_SetMultitexture (0);		// disable texturing
 	if (gl_showTris->integer - 1 & 1)
@@ -1827,11 +1679,15 @@ static void DrawTriangles (void)
 	glDrawElements (GL_TRIANGLES, gl_numIndexes, GL_UNSIGNED_INT, gl_indexesArray);
 	// restore state
 	GL_DepthRange (prevDepth);
+
+	return true;
 }
 
 
-static void DrawNormals (void)
+bool DrawNormals ()
 {
+	if (!gl_showNormals->integer) return false;
+
 	gl_depthMode_t prevDepth = gl_state.currentDepthMode;
 	GL_SetMultitexture (0);		// disable texturing
 	if (gl_showNormals->integer - 1 & 1)
@@ -1865,6 +1721,8 @@ static void DrawNormals (void)
 	glEnd ();
 	// restore state
 	GL_DepthRange (prevDepth);
+
+	return true;
 }
 
 
@@ -1916,7 +1774,7 @@ void surfaceParticle_t::Tesselate (refEntity_t &ent)
 	GL_SetMultitexture (1);
 	GL_Bind (gl_particleImage);
 
-	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|/*GLSTATE_DEPTHWRITE|*/GLSTATE_ALPHA_GT0);
+	GL_State (BLEND(S_ALPHA,M_S_ALPHA)|/*GLSTATE_DEPTHWRITE|*/GLSTATE_ALPHA_GT0);
 	CVec3 up, right;
 	VectorScale (vp.view.axis[1], 1.5f, up);
 	VectorScale (vp.view.axis[2], 1.5f, right);
@@ -1976,14 +1834,6 @@ void surfaceParticle_t::Tesselate (refEntity_t &ent)
 
 void BK_DrawScene ()
 {
-	int				index, index2;
-	surfaceInfo_t	**si, **si2;
-	shader_t		*shader;
-	surfaceBase_t	*surf;
-	// current state
-	int		currentShaderNum, currentEntityNum;
-	bool	currentWorld, isWorld;
-
 	guard(DrawScene);
 
 	if (!renderingEnabled) return;
@@ -1998,50 +1848,38 @@ void BK_DrawScene ()
 	gl_speeds.beginSort = appCycles ();
 	SortSurfaces (&vp, sortedSurfaces);
 	gl_speeds.begin3D = appCycles ();
+	gl_speeds.surfs += vp.numSurfaces;
 
 	currentDlightMask = 0;
+	float worldTime = vp.time;
 
 	/*------------ draw sky --------------*/
 
-	ClearSkyBox ();
-	SetSkyRotate (vp.time * gl_skyShader->skyRotate, gl_skyShader->skyAxis);
-	int numSkySurfs = 0;
-
-	si = sortedSurfaces;
-	for (index = 0; index < vp.numSurfaces; index++, si++)
+	if (!(vp.flags & RDF_NOWORLDMODEL))
 	{
-		surf = (*si)->surf;
-		shader = GetShaderByNum (((*si)->sort >> SHADERNUM_SHIFT) & SHADERNUM_MASK);
-		if (shader->type != SHADERTYPE_SKY) break;
-
-		if (!index) SetCurrentShader (shader);
-		if (surf->type != SURFACE_PLANAR) continue;		//?? may be another types
-
-		AddSkySurface (static_cast<surfacePlanar_t*>(surf), vp.view.origin, SKY_SURF);
-		numSkySurfs++;
+		//?? setup currentEntity, currentShader before sky drawing
+		DrawSky ();
 	}
-	//?? may be, require to set dlightMask, currentShader, currentEntity etc.
-	if (numSkySurfs) DrawSkyBox ();
-
-	// update r_speeds values
-	gl_speeds.surfs += vp.numSurfaces - index;	// numSurfaces - numSkySurfaces
 
 	/*--- update all dynamic lightmaps ---*/
 
-	for (index2 = index, si2 = si; index2 < vp.numSurfaces; index2++, si2++)
+	int				index;
+	surfaceInfo_t	**si;
+
+	for (index = 0, si = sortedSurfaces; index < vp.numSurfaces; index++, si++)
 	{
-		surf = (*si2)->surf;
+		surfaceBase_t *surf = (*si)->surf;
 		if (surf && surf->type == SURFACE_PLANAR)
 			CheckDynamicLightmap (static_cast<surfacePlanar_t*>(surf));
 	}
 
 	/*-------- draw world/models ---------*/
 
-	currentShaderNum = currentEntityNum = -1;
-	currentWorld = false;
-	for (/* continue */; index < vp.numSurfaces; index++, si++)
+	int currentShaderNum = -1, currentEntityNum = -1;
+	bool currentWorld = false;
+	for (index = 0, si = sortedSurfaces; index < vp.numSurfaces; index++, si++)
 	{
-		surf = (*si)->surf;
+		surfaceBase_t *surf = (*si)->surf;
 		unsigned code = (*si)->sort;
 		unsigned shNum = (code >> SHADERNUM_SHIFT) & SHADERNUM_MASK;
 		unsigned entNum = (code >> ENTITYNUM_SHIFT) & ENTITYNUM_MASK;
@@ -2057,7 +1895,7 @@ void BK_DrawScene ()
 			FlushShader ();
 
 			// change shader
-			shader = GetShaderByNum (shNum);
+			shader_t *shader = GetShaderByNum (shNum);
 			SetCurrentShader (shader);
 			currentDlightMask = dlightMask;
 			LOG_STRING (va("******** shader = %s ********\n", shader->name));
@@ -2069,13 +1907,12 @@ void BK_DrawScene ()
 			currentEntity = &gl_entities[entNum];
 			currentEntityNum = entNum;
 
-			isWorld = (entNum == ENTITYNUM_WORLD) || currentEntity->worldMatrix;
+			bool isWorld = (entNum == ENTITYNUM_WORLD) || currentEntity->worldMatrix;
 
 			if (isWorld)
 			{
 				if (!currentWorld)		// previous entity was not world
 				{
-					//?? set shader.time to vp.time
 					LOG_STRING (va("******** entity = WORLD ********\n"));
 					glLoadMatrixf (&vp.modelMatrix[0][0]);
 				}
@@ -2084,13 +1921,13 @@ void BK_DrawScene ()
 			}
 			else
 			{
-				//?? set shader.time to vp.time - entity.time
 				LOG_STRING (va("******** entity = %s ********\n", currentEntity->model->name));
 				glLoadMatrixf (&currentEntity->modelMatrix[0][0]);
 				gl_state.inverseCull = currentEntity->mirror;
 				GL_DepthRange (currentEntity->flags & RF_DEPTHHACK ? DEPTH_HACK : DEPTH_NORMAL);
 			}
 			currentWorld = isWorld;
+			vp.time = (entNum == ENTITYNUM_WORLD) ? worldTime : currentEntity->time;
 		}
 
 		surf->Tesselate (*currentEntity);
@@ -2098,6 +1935,7 @@ void BK_DrawScene ()
 
 	/*--------- finilize/debug -----------*/
 	FlushShader ();
+	vp.time = worldTime;				// restore time
 
 	GL_DepthRange (DEPTH_NORMAL);
 
@@ -2281,6 +2119,8 @@ void BK_BeginFrame ()
 		glClear (GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	}
 	if (gl_finish->integer == 2) glFinish ();
+
+//??	GL_ResetState (); -- not helps; see bugs.txt for info
 }
 
 
@@ -2327,7 +2167,7 @@ CVAR_END
 
 void BK_Shutdown ()
 {
-	if (!vb) return;	// not initialized
+	if (!vb) return;			// not initialized
 	appFree (vb);
 	vb = NULL;
 }

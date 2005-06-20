@@ -86,6 +86,22 @@ DLIGHTS:
 3. refine to 32 with relevancy (intens/dist)
 - add static dlights: color, fade speed, origin, type (for relevancy culling)
 ? combine few nearby dlights into a single one (3 -> 2 etc; sometimes have 2 dlights with same origin !)
+- cut dlights (by angle: rad/intens = cos(angle)); backlights -- rad/intens can be greater (for culling)
+- speedup of markup process (?):
+  1) share planes between surfs
+  2) add "dlightMask" for plane
+  3) WalkBspTree(): mark plane dlights (no surface dlights)
+  4) DrawBspSeq(): give dlight info from planes
+  !) need a way to provide dlight info for inline models (static (WORLD) and dynamic models)
+- increase DLIGHT_BITS, store dlightMask instead of numDlights in surface array when ap.numDlights <= DLIGHT_BITS
+- cvar gl_fastDlights (==1 -- current; ==0 -- correct brightness by distance to surface plane);
+  correct dlights: DrawScene() should check for dlighted shaders a plane pointer (needs to share planes between coplanar
+  surfaces !!) and call Flush() when plane differs; can be optimized: MOST (not all!) shaders can be painted correctly,
+  when plane is different, BUT all surfaces have only 1 dlight (different code path for PreprocessShader(): use glColor,
+  not glEnvColor); may be, use 1 dlight for different planes and any number of dlights for same plane in a single Flush()
+  (hard to implement ?)
+- far+small dlights on small surfaces: can use vertex light instead of texture
+
 
 IMAGE/SHADER MANAGER:
 ~~~~~~~~~~~~~~~~~~~~~
@@ -235,7 +251,6 @@ PreprocessShader():
   ? SHADER_WALL -> SHADER_WORLD (depthwrite, depthtest) or add SHADER_HUD (no write/test)
   - add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
   ? don't need shader->sortParam other than opaque/seethrough (may be, +coronas (already painted after all) +hud (2D ? already separate))
-    +sky (may be processed in frontend)
   - r_colorMipLevels changing: cat auto-reload all IMAGE_MIPMAP pics (but may require to recreate some system images)
 
 
@@ -245,22 +260,6 @@ PreprocessShader():
   ? when no multitexture - use "multiPassLM = false" (if "auto")
   - many dynamic lightmaps in: market, alley1 (look outside world), rc4 (at start point), punwar (not too slow?), vertigo
     lpbheaven (strong lighting, lots of SURF_TRANS + dl), beachassault (inside ship: shader with 3 lightstyles)
-
-- dlights:
-  - cut dlights (by angle: rad/intens = cos(angle)); backlights -- rad/intens can be greater (for culling)
-  - speedup of markup process (?):
-    1) share planes between surfs
-    2) add "dlightMask" for plane
-    3) WalkBspTree(): mark plane dlights (no surface dlights)
-    4) DrawBspSeq(): give dlight info from planes
-    !) need a way to provide dlight info for inline models (static (WORLD) and dynamic models)
-  - increase DLIGHT_BITS, store dlightMask instead of numDlights in surface array when ap.numDlights <= DLIGHT_BITS
-  - cvar gl_fastDlights (==1 -- current; ==0 -- correct brightness by distance to surface plane);
-    correct dlights: DrawScene() should check for dlighted shaders a plane pointer (needs to share planes between coplanar
-    surfaces !!) and call Flush() when plane differs; can be optimized: MOST (not all!) shaders can be painted correctly,
-    when plane is different, BUT all surfaces have only 1 dlight (different code path for PreprocessShader(): use glColor,
-    not glEnvColor); may be, use 1 dlight for different planes and any number of dlights for same plane in a single Flush()
-    (hard to implement ?)
 
 Screenshots:
   - BUG: on auto-save, when entering "base2", flares appeared (but should be occluded by lift door)
@@ -307,9 +306,9 @@ BUGS:
 VISIBLE:
 - models (entities)
   - md2
-    - check all RF_XXX flags from protocol.h
+    ? RF_MINLIGHT
+    ? inlineModels: RF_TRANSLUCENT: glColor4f (1,1,1,0.25) + blend + no lightmap (vertex light ?)
 - shadows
-? inlineModels: RF_TRANSLUCENT: glColor4f (1,1,1,0.25) + blend + no lightmap (vertex light ?)
 FOR GAME:
 - RE_GetClientLight () - really, should change this API completely
 

@@ -77,7 +77,7 @@ static const texEnvSource_t texEnvSource[] = {
 -----------------------------------------------------------------------------*/
 
 
-void GL_Lock (void)
+void GL_Lock ()
 {
 	if (gl_state.locked) return;
 
@@ -96,7 +96,7 @@ void GL_Lock (void)
 }
 
 
-void GL_Unlock (void)
+void GL_Unlock ()
 {
 	if (!gl_state.locked) return;
 	gl_state.locked = false;
@@ -170,7 +170,6 @@ void GL_Unlock (void)
 	Bind
 -----------------------------------------------------------------------------*/
 
-
 void GL_Bind (const image_t *tex)
 {
 	int		tmu;
@@ -184,7 +183,7 @@ void GL_Bind (const image_t *tex)
 		else if (tex->flags & IMAGE_SKIN)
 			f = gl_skinMipBias->value;
 		else
-			f = 0;							//?? gl_defMipBias
+			f = 0;							//?? gl_defMipBias; mipmaps for GUI image?
 		GL_TexMipBias (f);
 	}
 
@@ -260,7 +259,6 @@ void GL_BindForce (const image_t *tex)
 	Multitexturing
 -----------------------------------------------------------------------------*/
 
-
 void GL_TexEnv (unsigned env)
 {
 	static const GLenum sourceRgb[4] = {GL_SOURCE0_RGB_ARB, GL_SOURCE1_RGB_ARB, GL_SOURCE2_RGB_ARB, GL_SOURCE3_RGB_NV};
@@ -282,7 +280,10 @@ void GL_TexEnv (unsigned env)
 
 	gl_state.currentEnv[tmu] ^= diff;		// this will not update fields, which can be unchanged
 
-//	diff = env & info->mask;	//?? always update all registers
+#if 0
+	//!! DEBUG: always update all registers
+	diff = env & info->mask;
+#endif
 
 	if (diff & TEXENV_FUNC_MASK)
 	{
@@ -366,8 +367,6 @@ void GL_TexEnvColor (const color_t *c)
 
 void GL_SelectTexture (int tmu)
 {
-	int		tex;
-
 	if (gl_state.locked)
 	{
 		gl_state.newTmu = tmu;
@@ -377,12 +376,13 @@ void GL_SelectTexture (int tmu)
 	if (tmu == gl_state.currentTmu)
 		return;
 
+	int tex;
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE))
 	{
 		// ARB_multitexture
 		tex = GL_TEXTURE0_ARB + tmu;
 		glActiveTextureARB (tex);
-		glClientActiveTextureARB (tex);
+		glClientActiveTextureARB (tex);	// affects gl[Enable|Disable]ClientState(GL_TEXTURE_COORD_ARRAY) and glTexCoordPointer() only
 	}
 	else
 	{
@@ -452,7 +452,7 @@ void GL_SetMultitexture (int level)
 }
 
 
-void GL_DisableTexCoordArrays (void)
+void GL_DisableTexCoordArrays ()
 {
 	if (gl_state.locked)
 	{
@@ -512,6 +512,7 @@ void GL_DepthRange (gl_depthMode_t mode)
 void GL_State (unsigned state)
 {
 	static const GLenum blends[] = {
+		0,		// unused value (used for "no blend")
 		GL_ZERO, GL_ONE,
 		GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR,
 		GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
@@ -524,14 +525,14 @@ void GL_State (unsigned state)
 	if (!diff)
 		return;
 
-	if (diff & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
+	if (diff & GLSTATE_BLENDMASK)
 	{
-		if (state & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
+		if (state & GLSTATE_BLENDMASK)
 		{
-			if (!(gl_state.currentState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK)))
+			if (!(gl_state.currentState & GLSTATE_BLENDMASK))
 				glEnable (GL_BLEND);
-			GLenum src = blends[((state & GLSTATE_SRCMASK) - GLSTATE_SRC_ZERO) >> GLSTATE_SRCSHIFT];
-			GLenum dst = blends[((state & GLSTATE_DSTMASK) - GLSTATE_DST_ZERO) >> GLSTATE_DSTSHIFT];
+			GLenum src = blends[(state & GLSTATE_SRCMASK) >> GLSTATE_SRCSHIFT];
+			GLenum dst = blends[(state & GLSTATE_DSTMASK) >> GLSTATE_DSTSHIFT];
 			glBlendFunc (src, dst);
 		}
 		else
@@ -557,7 +558,7 @@ void GL_State (unsigned state)
 	}
 
 	if (diff & GLSTATE_DEPTHWRITE)
-		glDepthMask ((GLboolean)(state & GLSTATE_DEPTHWRITE ? GL_TRUE : GL_FALSE));
+		glDepthMask (state & GLSTATE_DEPTHWRITE ? GL_TRUE : GL_FALSE);
 
 	if (diff & GLSTATE_NODEPTHTEST)
 	{
@@ -615,6 +616,8 @@ void GL_EnableFog (bool enable)
 
 void GL_SetDefaultState ()
 {
+	memset (&gl_state, 0, sizeof(gl_state));
+
 	glDisable (GL_CULL_FACE);
 	glDepthRange (0, 1);
 	gl_state.currentDepthMode = DEPTH_NORMAL;
@@ -670,7 +673,7 @@ void GL_Set2DMode ()
 	glOrtho (0, vid_width, vid_height, 0, 0, 1);
 	glMatrixMode (GL_MODELVIEW);
 	glLoadIdentity ();
-	GL_State (GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_NODEPTHTEST);
+	GL_State (BLEND(S_ALPHA,M_S_ALPHA)|GLSTATE_NODEPTHTEST);
 	GL_CullFace (CULL_NONE);
 	gl_state.is2dMode = true;
 
@@ -691,7 +694,7 @@ void GL_Set3DMode (viewPortal_t *port)
 
 	glViewport (port->x, port->y, port->w, port->h);
 	glScissor (port->x, port->y, port->w, port->h);
-	GL_State(GLSTATE_DEPTHWRITE);					// affects glClear(DEPTH)
+	GL_State (GLSTATE_DEPTHWRITE);					// affects glClear(DEPTH)
 
 	GLbitfield bits = GL_DEPTH_BUFFER_BIT;
 	if (gl_state.useFastSky && !(port->flags & RDF_NOWORLDMODEL))
@@ -703,6 +706,21 @@ void GL_Set3DMode (viewPortal_t *port)
 
 	gl_state.inverseCull = false;
 	GL_CullFace (CULL_FRONT);
+}
+
+
+//!!!!! NOT HELPS
+void GL_ResetState ()
+{
+#if 0
+	gl_state.currentTmu = -1;
+	for (int i = 0; i < gl_config.maxActiveTextures; i++)
+	{
+		gl_state.currentBinds[i] = (image_t*) -1;
+		* (byte*) &gl_state.texCoordEnabled[i] = 2;
+		gl_state.textureTarget[i] = -1;
+	}
+#endif
 }
 
 

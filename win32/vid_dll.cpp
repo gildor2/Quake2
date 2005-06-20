@@ -462,7 +462,7 @@ void Vid_DestroyWindow (bool force)
 
 /*-------------------------------------------*/
 
-void Vid_Restart (void)
+void Vid_Restart ()
 {
 	needRestart = true;
 	M_ForceMenuOff ();		// required: menu graphics may be required to reload
@@ -536,7 +536,7 @@ static CRenderModel *D_RegisterModel (const char *name) { return NULL; }
 static CBasicImage *D_RegisterSkin (const char *name) { return NULL; }
 static CBasicImage *D_FindPic (const char *name) { return NULL; }
 static void D_SetSky (const char *name, float rotate, const CVec3 &axis) {}
-static void	D_EndRegistration (void) {}
+static void	D_EndRegistration () {}
 
 static void D_Screenshot (int flags, const char *name)
 {
@@ -552,11 +552,11 @@ static void D_Fill (int x, int y, int w, int h, unsigned rgba) {}
 static void	D_DrawTextPos (int x, int y, const char *text, unsigned rgba) {}
 static void	D_DrawTextSide (const char *text, unsigned rgba) {}
 static void	D_DrawStretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data, unsigned *palette) {}
-static float D_GetClientLight (void) { return 0; }		// normal value is 150
+static float D_GetClientLight () { return 0; }		// normal value is 150
 #endif
 
 
-static void FreeRenderer (void)
+static void FreeRenderer ()
 {
 	refActive = false;
 
@@ -582,7 +582,7 @@ namespace OpenGLDrv {
 #ifndef SINGLE_RENDERER
 static bool LoadRenderer (const char *name)
 #else
-static bool LoadRenderer (void)
+static bool LoadRenderer ()
 #endif
 {
 	guard(LoadRenderer);
@@ -675,7 +675,7 @@ static bool LoadRenderer (void)
 }
 
 
-void Vid_Tick (void)
+void Vid_Tick ()
 {
 	if (win_noalttab->modified)
 	{
@@ -737,7 +737,7 @@ void Vid_Tick (void)
 }
 
 
-void Vid_Init (void)
+void Vid_Init ()
 {
 CVAR_BEGIN(vars)
 #ifndef SINGLE_RENDERER
@@ -798,7 +798,7 @@ CVAR_END
 Vid_Shutdown
 ============
 */
-void Vid_Shutdown (void)
+void Vid_Shutdown ()
 {
 	if (refActive)
 	{

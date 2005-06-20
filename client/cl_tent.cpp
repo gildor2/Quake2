@@ -288,7 +288,7 @@ typedef enum
 	ex_free, ex_explosion, ex_misc, ex_flash, ex_mflash, ex_poly
 } exptype_t;
 
-typedef struct
+struct explosion_t
 {
 	exptype_t	type;
 	entity_t	ent;
@@ -298,7 +298,7 @@ typedef struct
 	CVec3		lightcolor;
 	float		time;
 	int			baseframe;
-} explosion_t;
+};
 
 
 
@@ -370,6 +370,7 @@ explosion_t *CL_AllocExplosion (const CVec3 &origin, exptype_t type)
 	dst->ent.pos.origin = origin;
 	dst->time = -100;
 	dst->type = type;
+	dst->ent.time = cl.ftime;
 	return dst;
 }
 
@@ -381,19 +382,19 @@ CL_AddExplosions
 */
 void CL_AddExplosions (void)
 {
-	entity_t	*ent;
-	int			i, frm;
-	explosion_t	*ex;
-	float		 timeDelta, frac;
 	static float oldTime;
-
-	timeDelta = (cl.ftime - oldTime) * 1000.0f;		// msec
+	float timeDelta = (cl.ftime - oldTime) * 1000.0f;	// msec
 	oldTime = cl.ftime;
 
-	if (r_sfx_pause->integer) timeDelta = 0;
+	float incTime = 0;
+	if (r_sfx_pause->integer)
+	{
+		incTime = timeDelta / 1000.0f;					// sec
+		timeDelta = 0;
+	}
 
-	memset (&ent, 0, sizeof(ent));
-
+	int i;
+	explosion_t	*ex;
 	for (i = 0, ex = cl_explosions; i < MAX_EXPLOSIONS; i++, ex++)
 	{
 		if (ex->type == ex_free)
@@ -404,9 +405,9 @@ void CL_AddExplosions (void)
 		else
 			ex->time += timeDelta;
 
-		frac = ex->time / 100.0f;
+		float frac = ex->time / 100.0f;
 		if (frac < 0) frac = 0;
-		frm = appFloor (frac);
+		int frm = appFloor (frac);
 
 		if (frm >= ex->frames-1)
 		{
@@ -414,7 +415,7 @@ void CL_AddExplosions (void)
 			continue;
 		}
 
-		ent = &ex->ent;
+		entity_t *ent = &ex->ent;
 
 		switch (ex->type)
 		{
@@ -430,7 +431,6 @@ void CL_AddExplosions (void)
 			break;
 
 		case ex_poly:
-//			ent->alpha = 1.0f - frm / 16.0f;		// ladder effect
 			ent->alpha = 1.0f - frac / 16.0f;		// smooth
 			if (frm < 10)
 			{
@@ -449,21 +449,18 @@ void CL_AddExplosions (void)
 			break;
 		}
 
-//RE_DrawTextLeft (va("[%d / %g * %g] o(%g %g %g) c(%g %g %g)", i, ex->light, ent->alpha,
-//VECTOR_ARG(ent->origin), VECTOR_ARG(ex->lightcolor)));//!!
 		if (ex->light)
 		{
-//			V_AddLight (ent->origin, ex->light * ent->alpha, VECTOR_ARG(ex->lightcolor));
 			V_AddLight (ent->pos.origin, ex->light * ent->alpha,
 				ex->lightcolor[0] * ent->alpha, ex->lightcolor[1] * ent->alpha, ex->lightcolor[2] * ent->alpha);
-//			RE_DrawTextLeft (va("%d:%d = {%g %g %g} : %g %g %g : %g", ex->type, frm, VECTOR_ARG(ent->origin), ent->alpha, VECTOR_ARG(ex->lightcolor)));
 		}
 
 		if (!ent->model) continue;		// flash only
 
-		ent->frame = ex->baseframe + frm + 1;
+		ent->frame    = ex->baseframe + frm + 1;
 		ent->oldframe = ex->baseframe + frm;
-		ent->backlerp = r_sfx_pause->integer ? 0 : 1.0f - (frac - frm);
+		ent->backlerp = 1.0f - (frac - frm);
+		ent->time += incTime;			// modified when r_sfx_pause only
 
 		V_AddEntity (ent);
 	}
@@ -485,8 +482,8 @@ void CL_SmokeAndFlash(const CVec3 &origin)
 	ex->ent.model = cl_mod_smoke;
 
 	ex = CL_AllocExplosion (origin, ex_flash);
-	ex->ent.flags = RF_FULLBRIGHT;
 	ex->frames = 2;
+	ex->ent.flags = RF_FULLBRIGHT;
 	ex->ent.model = cl_mod_flash;
 }
 
@@ -497,15 +494,12 @@ CL_ParseParticles
 */
 void CL_ParseParticles (void)
 {
-	int		color, count;
 	CVec3	pos, dir;
-
 	MSG_ReadPos (&net_message, pos);
 	MSG_ReadDir (&net_message, dir);
 
-	color = MSG_ReadByte (&net_message);
-
-	count = MSG_ReadByte (&net_message);
+	int color = MSG_ReadByte (&net_message);
+	int count = MSG_ReadByte (&net_message);
 
 	CL_ParticleEffect (pos, dir, color, count);
 }
@@ -517,13 +511,12 @@ CL_ParseBeam
 */
 int CL_ParseBeam (CRenderModel *model)
 {
-	int		ent;
-	CVec3	start, end;
-	mBeam_t	*b;
 	int		i;
+	mBeam_t	*b;
 
-	ent = MSG_ReadShort (&net_message);
+	int ent = MSG_ReadShort (&net_message);
 
+	CVec3	start, end;
 	MSG_ReadPos (&net_message, start);
 	MSG_ReadPos (&net_message, end);
 
@@ -565,13 +558,12 @@ CL_ParseBeam2
 */
 int CL_ParseBeam2 (CRenderModel *model)
 {
-	int		ent;
-	CVec3	start, end, offset;
-	mBeam_t	*b;
 	int		i;
+	mBeam_t	*b;
 
-	ent = MSG_ReadShort (&net_message);
+	int ent = MSG_ReadShort (&net_message);
 
+	CVec3	start, end, offset;
 	MSG_ReadPos (&net_message, start);
 	MSG_ReadPos (&net_message, end);
 	MSG_ReadPos (&net_message, offset);
@@ -618,13 +610,12 @@ CL_ParsePlayerBeam
 */
 int CL_ParsePlayerBeam (CRenderModel *model)
 {
-	int		ent;
-	CVec3	start, end, offset;
-	mBeam_t	*b;
 	int		i;
+	mBeam_t	*b;
 
-	ent = MSG_ReadShort (&net_message);
+	int ent = MSG_ReadShort (&net_message);
 
+	CVec3	start, end, offset;
 	MSG_ReadPos (&net_message, start);
 	MSG_ReadPos (&net_message, end);
 	// PMM - network optimization
@@ -682,14 +673,13 @@ CL_ParseLightning
 */
 int CL_ParseLightning (CRenderModel *model)
 {
-	int		srcEnt, destEnt;
-	CVec3	start, end;
-	mBeam_t	*b;
 	int		i;
+	mBeam_t	*b;
 
-	srcEnt = MSG_ReadShort (&net_message);
-	destEnt = MSG_ReadShort (&net_message);
+	int srcEnt = MSG_ReadShort (&net_message);
+	int destEnt = MSG_ReadShort (&net_message);
 
+	CVec3	start, end;
 	MSG_ReadPos (&net_message, start);
 	MSG_ReadPos (&net_message, end);
 
@@ -734,7 +724,7 @@ CL_ParseLaser
 =================
 */
 // Used for BFG laser only !
-void CL_ParseLaser (unsigned colors)
+static void CL_ParseBFGLaser (unsigned colors)
 {
 	CVec3	start, end;
 	MSG_ReadPos (&net_message, start);
@@ -745,24 +735,20 @@ void CL_ParseLaser (unsigned colors)
 
 	b->type = BEAM_STANDARD;
 	b->color.rgba = 0;
-	// the four beam colors are encoded in 32 bits of skinnum (hack)
 	b->color.c[0] = (colors >> ((rand() % 4)*8)) & 0xFF;
 	b->alpha = b->dstAlpha = 0.3f;
 }
 
 //=============
 //ROGUE
-void CL_ParseSteam (void)
+static void CL_ParseSteam (void)
 {
 	CVec3	pos, dir;
-	int		id, i;
-	int		r;
-	int		cnt;
-	int		color;
+	int		i, r, cnt;
 	int		magnitude;
-	cl_sustain_t	*s, *free_sustain;
+	cl_sustain_t *s, *free_sustain;
 
-	id = MSG_ReadShort (&net_message);		// an id of -1 is an instant effect
+	int id = MSG_ReadShort (&net_message);		// an id of -1 is an instant effect
 	if (id != -1) // sustains
 	{
 //			Com_Printf ("Sustain effect id %d\n", id);
@@ -781,8 +767,7 @@ void CL_ParseSteam (void)
 			s->count = MSG_ReadByte (&net_message);
 			MSG_ReadPos (&net_message, s->org);
 			MSG_ReadDir (&net_message, s->dir);
-			r = MSG_ReadByte (&net_message);
-			s->color = r & 0xff;
+			s->color = MSG_ReadByte (&net_message);
 			s->magnitude = MSG_ReadShort (&net_message);
 			s->endtime = cl.time + MSG_ReadLong (&net_message);
 			s->think = CL_ParticleSteamEffect2;
@@ -808,8 +793,7 @@ void CL_ParseSteam (void)
 		MSG_ReadDir (&net_message, dir);
 		r = MSG_ReadByte (&net_message);
 		magnitude = MSG_ReadShort (&net_message);
-		color = r & 0xff;
-		CL_ParticleSteamEffect (pos, dir, color, cnt, magnitude);
+		CL_ParticleSteamEffect (pos, dir, r, cnt, magnitude);
 //		S_StartSound (&pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 	}
 }
@@ -817,10 +801,10 @@ void CL_ParseSteam (void)
 void CL_ParseWidow (void)
 {
 	CVec3	pos;
-	int		id, i;
-	cl_sustain_t	*s, *free_sustain;
+	int		i;
+	cl_sustain_t *s, *free_sustain;
 
-	id = MSG_ReadShort (&net_message);
+	int id = MSG_ReadShort (&net_message);
 
 	free_sustain = NULL;
 	for (i=0, s=cl_sustains; i<MAX_SUSTAINS; i++, s++)
@@ -1146,8 +1130,6 @@ void CL_ParseTEnt (void)
 		ex->lightcolor[1] = 1.0;
 		ex->lightcolor[2] = 0.0;
 		ex->ent.model = cl_mod_bfg_explo;
-		ex->ent.flags |= RF_TRANSLUCENT;
-		ex->ent.alpha = 0.30;
 		ex->frames = 4;
 		break;
 
@@ -1157,7 +1139,7 @@ void CL_ParseTEnt (void)
 		break;
 
 	case TE_BFG_LASER:
-		CL_ParseLaser (0xD0D1D2D3);
+		CL_ParseBFGLaser (0xD0D1D2D3);
 		break;
 
 	case TE_BUBBLETRAIL:

@@ -1,6 +1,7 @@
 #include "OpenGLDrv.h"
 #include "gl_frontend.h"
 #include "gl_backend.h"
+#include "gl_sky.h"
 #include "gl_buffers.h"
 #include "gl_math.h"
 #include "protocol.h"		//!! for RF_XXX consts only (SHELL_*, TRANSLUCENT, BBOX, DEPTHHACK, WEAPONMODEL)!
@@ -642,6 +643,17 @@ static node_t *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
 
 /*------------------ Drawing entities --------------------*/
 
+//?? add ent==NULL for generated sprites (set currentEntity = ?); send fxTime as param (use when ent==NULL only)
+static void AddSurface (surfaceBase_t *surf, shader_t *shader, refEntity_t *ent = NULL, int numDlights = 0)
+{
+	int entNum = currentEntity;
+	//?? !ent -- change! (should use fxTime)
+	if (!ent || (ent->worldMatrix && (!shader->dependOnTime || (ent->time == vp.time)) && !shader->dependOnEntity))
+		entNum = ENTITYNUM_WORLD;
+
+	AddSurfaceToPortal (surf, shader, entNum, numDlights);
+}
+
 
 static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask, refEntity_t *e)
 {
@@ -760,12 +772,19 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 			DrawTextLeft ("unknows surface type", RGB(1, 0, 0));
 			continue;
 		}
-		//!! apply fog
-		if (surf->shader->lightmapNumber == LIGHTMAP_VERTEX) numDlights = 0;	// sort all together
-		int entNum = currentEntity;
-		if (entNum != ENTITYNUM_WORLD && e->worldMatrix && !surf->shader->dependOnEntity)
-			entNum = ENTITYNUM_WORLD;
-		AddSurfaceToPortal (surf, surf->shader, entNum, numDlights);
+		if (surf->shader->type != SHADERTYPE_SKY)
+		{
+			//!! apply fog
+			if (surf->shader->lightmapNumber == LIGHTMAP_VERTEX) numDlights = 0;	// sort all together
+			int entNum = currentEntity;
+			if (entNum != ENTITYNUM_WORLD && e->worldMatrix && !surf->shader->dependOnEntity)
+				entNum = ENTITYNUM_WORLD;
+			AddSurfaceToPortal (surf, surf->shader, entNum, numDlights);
+		}
+		else if (surf->type == SURFACE_PLANAR)
+			AddSkySurface (static_cast<surfacePlanar_t*>(surf));
+		else
+			DrawTextLeft (va("non-planar sky surface %s", surf->shader->name), RGB(1,0,0));	//?? make this load-time ?
 	}
 }
 
@@ -914,7 +933,7 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 void md3Model_t::AddSurfaces (refEntity_t *e)
 {
 #ifdef SHOW_MD3_SURFS
-	DrawTextLeft(va("%s: custSh=%X skin=%X skinNum=%d", name, e->customShader, e->skin, e->skinNum));
+	DrawTextLeft(va("%s: custSh=%s skin=%X skinNum=%d", name, e->customShader ? e->customShader->name : "NULL", e->skin, e->skinNum));
 #endif
 	surfaceMd3_t *s = surf;
 	for (int i = 0; i < numSurfaces; i++, s++)
@@ -953,7 +972,7 @@ void md3Model_t::AddSurfaces (refEntity_t *e)
 		if (e->flags & RF_TRANSLUCENT)
 			shader = GetAlphaShader (shader);
 		// draw surface
-		AddSurfaceToPortal (s, shader, currentEntity);
+		AddSurface (s, shader, e);
 	}
 }
 
@@ -975,14 +994,15 @@ void md3Model_t::DrawLabel (refEntity_t *e)
 }
 
 
-void sp2Model_t::InitEntity (entity_t *ent, refEntity_t *out)
+void sprModel_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
 	out->center = out->coord.origin;
 	out->radius = radius;
+	out->worldMatrix = true;
 }
 
 
-void sp2Model_t::AddSurfaces (refEntity_t *e)
+void sprModel_t::AddSurfaces (refEntity_t *e)
 {
 	surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 	if (!p)		// out of dynamic memory
@@ -991,7 +1011,7 @@ void sp2Model_t::AddSurfaces (refEntity_t *e)
 
 	p->numVerts = 4;
 
-	sp2Frame_t *frame = &frames[e->frame % numFrames];
+	sprFrame_t *frame = &frames[e->frame % numFrames];
 	// setup xyz
 	CVec3	down, up2;
 	VectorMA (e->coord.origin, -frame->localOrigin[1], vp.view.axis[2], down);
@@ -1012,11 +1032,11 @@ void sp2Model_t::AddSurfaces (refEntity_t *e)
 		color |= RGBA(0,0,0,1);						// make it non-transparent
 	p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color;
 
-	AddSurfaceToPortal (p, frame->shader, ENTITYNUM_WORLD);
+	AddSurface (p, frame->shader, e);
 }
 
 
-node_t *sp2Model_t::GetLeaf (refEntity_t *e)
+node_t *sprModel_t::GetLeaf (refEntity_t *e)
 {
 	return AlphaSphereLeaf (e->coord.origin, e->radius);
 }
@@ -1085,7 +1105,7 @@ static void AddBeamSurfaces (const beam_t *b)
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = color.rgba;
 
 		//!! can be different shader to provide any types of lined particles
-		AddSurfaceToPortal (p, gl_identityLightShader2, ENTITYNUM_WORLD);
+		AddSurface (p, gl_identityLightShader2);
 	}
 }
 
@@ -1204,15 +1224,15 @@ static void AddCylinderSurfaces (const beam_t *b)
 			}
 			if (a1 > 0.25f) a1 = 0.25f;
 			if (a2 > 0.25f) a2 = 0.25f;
-			a1 = a1 * 4 * (1 - MIN_FIXED_ALPHA) + MIN_FIXED_ALPHA;
-			a2 = a2 * 4 * (1 - MIN_FIXED_ALPHA) + MIN_FIXED_ALPHA;
+			a1 = Lerp (MIN_FIXED_ALPHA, 1.0f, a1 * 4);
+			a2 = Lerp (MIN_FIXED_ALPHA, 1.0f, a2 * 4);
 
 			p->verts[0].c.c[3] = p->verts[1].c.c[3] = appRound (b->color.c[3] * a1);
 			p->verts[2].c.c[3] = p->verts[3].c.c[3] = appRound (b->color.c[3] * a2);
 		}
 #endif
 
-		AddSurfaceToPortal (p, static_cast<shader_t*>(b->shader), ENTITYNUM_WORLD);
+		AddSurface (p, static_cast<shader_t*>(b->shader));
 	}
 }
 
@@ -1267,7 +1287,7 @@ static void AddStarBeam (const beam_t *b)
 
 		p->verts[0].c.rgba = p->verts[1].c.rgba = p->verts[2].c.rgba = p->verts[3].c.rgba = b->color.rgba;
 
-		AddSurfaceToPortal (p, static_cast<shader_t*>(b->shader), ENTITYNUM_WORLD);
+		AddSurface (p, static_cast<shader_t*>(b->shader));
 	}
 }
 
@@ -1275,7 +1295,7 @@ static void AddStarBeam (const beam_t *b)
 /*------------------ Drawing world -------------------*/
 
 
-static node_t *WalkBspTree (void)
+static node_t *WalkBspTree ()
 {
 	int		sptr, frustumMask, drawOrder;
 	unsigned dlightMask;
@@ -1576,7 +1596,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 }
 
 
-static void DrawParticles (void)
+static void DrawParticles ()
 {
 	node_t	*leaf;
 
@@ -1630,7 +1650,7 @@ static void DrawParticles (void)
 #define FLARE_FADE		0.2		// Cvar_VariableValue("flare")
 #define SUN_DRAWDIST	32
 
-static void DrawFlares (void)
+static void DrawFlares ()
 {
 	for (gl_flare_t *f = map.flares; f ; f = f->next)
 	{
@@ -1863,7 +1883,7 @@ static void DrawBspSequence (node_t *leaf)
 }
 
 
-static void MarkLeaves (void)
+static void MarkLeaves ()
 {
 	int		i;
 	node_t	*n;
@@ -1920,6 +1940,12 @@ void AddEntity (entity_t *ent)
 	out->flags = ent->flags;
 	out->model = static_cast<model_t*>(ent->model);		// namespace conversion (:: -> OpenGLDrv)
 	out->shaderColor.rgba = ent->color.rgba;
+	out->time  = vp.time - ent->time;
+	if (out->time < 0)
+	{
+		RE_DrawTextLeft (va("ent.time > time for %s\n", ent->model ? ent->model->name : "(no model)"));
+		out->time = 0;
+	}
 
 	out->coord = ent->pos;
 	if (ent->model)
@@ -1992,9 +2018,8 @@ void AddDlight (dlight_t *dl)
 /*--------------------------------------------------------------*/
 
 
-void DrawPortal (void)
+void DrawPortal ()
 {
-	node_t	*firstLeaf;
 	int		i;
 	refEntity_t *e;
 
@@ -2005,14 +2030,13 @@ void DrawPortal (void)
 		// setup world entity
 		memset (&gl_entities[ENTITYNUM_WORLD], 0, sizeof(refEntity_t));
 		gl_entities[ENTITYNUM_WORLD].modelvieworg = vp.view.origin;
-		gl_entities[ENTITYNUM_WORLD].worldMatrix = true;
-//		gl_entities[ENTITYNUM_WORLD].axis[0][0] = 1;
-//		gl_entities[ENTITYNUM_WORLD].axis[1][1] = 1;
-//		gl_entities[ENTITYNUM_WORLD].axis[2][2] = 1;
+		gl_entities[ENTITYNUM_WORLD].coord.axis   = identAxis;
+		gl_entities[ENTITYNUM_WORLD].worldMatrix  = true;
 
+		ClearSky ();
 		MarkLeaves ();
 		vp.bounds.Clear ();
-		firstLeaf = WalkBspTree ();
+		node_t *firstLeaf = WalkBspTree ();
 		DrawEntities (vp.firstEntity, vp.numEntities);
 		DrawParticles ();
 

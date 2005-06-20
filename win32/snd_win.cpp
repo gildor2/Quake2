@@ -75,7 +75,7 @@ static MMTIME	mmstarttime;
 
 
 
-void FreeSound (void);
+void FreeSound ();
 
 static const char *DSoundError (int error)
 {
@@ -97,7 +97,7 @@ static const char *DSoundError (int error)
 /*
 ** DS_CreateBuffers
 */
-static bool DS_CreateBuffers (void)
+static bool DS_CreateBuffers ()
 {
 	DSBUFFERDESC	dsbuf;
 	DSBCAPS			dsbcaps;
@@ -251,7 +251,7 @@ static bool DS_CreateBuffers (void)
 /*
 ** DS_DestroyBuffers
 */
-static void DS_DestroyBuffers (void)
+static void DS_DestroyBuffers ()
 {
 	Com_DPrintf ("Destroying DS buffers\n");
 	if (pDS)
@@ -284,7 +284,7 @@ static void DS_DestroyBuffers (void)
 FreeSound
 ==================
 */
-static void FreeSound (void)
+static void FreeSound ()
 {
 	Com_Printf ("Shutting down sound system\n");
 
@@ -346,7 +346,7 @@ SNDDMA_InitDirect
 Direct-Sound support
 ==================
 */
-static bool SNDDMA_InitDirect (void)
+static bool SNDDMA_InitDirect ()
 {
 //	DSCAPS	dscaps;
 	int		i;
@@ -444,7 +444,7 @@ SNDDM_InitWav
 Crappy windows multimedia base
 ==================
 */
-static bool SNDDMA_InitWav (void)
+static bool SNDDMA_InitWav ()
 {
 	WAVEFORMATEX format;
 	HRESULT	hr;
@@ -542,7 +542,7 @@ Try to find a sound device to mix for.
 Returns false if nothing is found.
 ==================
 */
-bool SNDDMA_Init (void)
+bool SNDDMA_Init ()
 {
 	memset ((void *)&dma, 0, sizeof (dma));
 
@@ -624,7 +624,7 @@ inside the recirculating dma buffer, so the mixing code will know
 how many sample are required to fill it up.
 ===============
 */
-int SNDDMA_GetDMAPos (void)
+int SNDDMA_GetDMAPos ()
 {
 	int		s;
 
@@ -660,7 +660,7 @@ Makes sure dma.buffer is valid
 ===============
 */
 DWORD	locksize;
-void SNDDMA_BeginPainting (void)
+void SNDDMA_BeginPainting ()
 {
 	int		reps;
 	DWORD	dwSize2;
@@ -712,7 +712,7 @@ Send sound to device if buffer isn't really the dma buffer
 Also unlocks the dsound buffer
 ===============
 */
-void SNDDMA_Submit (void)
+void SNDDMA_Submit ()
 {
 	if (!dma.buffer)
 		return;
@@ -780,7 +780,7 @@ SNDDMA_Shutdown
 Reset the sound device for exiting
 ===============
 */
-void SNDDMA_Shutdown (void)
+void SNDDMA_Shutdown ()
 {
 	FreeSound ();
 }

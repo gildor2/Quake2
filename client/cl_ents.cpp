@@ -642,6 +642,7 @@ static void CL_AddPacketEntities (void)
 		}
 
 		// only used for black hole model right now, FIXME: do better
+		//?? use shader
 		if (renderfx == RF_TRANSLUCENT)
 			ent.alpha = 0.7f;
 
@@ -676,6 +677,13 @@ static void CL_AddPacketEntities (void)
 		if (st->solid != 31)
 			FNegate (ent.angles[2]);		// triangle models have bug in Q2: angles[2] should be negated
 
+		if (effects & (EF_BFG|EF_ANIM_ALLFAST) == EF_BFG)
+		{
+			// BFG explosion: compute fx time
+			//?? may check model name
+			ent.time = (st->frame + cl.lerpfrac) / 10.0f;
+		}
+
 		if (st->number == cl.playernum+1)
 		{
 			ent.flags |= RF_VIEWERMODEL;	// only draw from mirrors
@@ -701,24 +709,20 @@ static void CL_AddPacketEntities (void)
 		if (!st->modelindex)
 			continue;
 
-		if (effects & EF_BFG)
-		{
-			ent.flags |= RF_TRANSLUCENT;
-			ent.alpha = 0.30;
-		}
-
 		// XATRIX
 		if (effects & EF_PLASMA)
 		{
+			//?? model is "sprites/s_photon.sp2"
 			ent.flags |= RF_TRANSLUCENT;
 			ent.alpha = 0.6;
 		}
 
 		if (effects & EF_SPHERETRANS)
 		{
+			//?? models/items/spawngro/tris.md2, models/items/spawngro2/tris.md2
+			//?? no translucent in rogue/g_newtarg.c:SP_target_blacklight()
 			ent.flags |= RF_TRANSLUCENT;
-			// PMM - *sigh*  yet more EF overloading
-			ent.alpha = (effects & EF_TRACKERTRAIL) ? 0.6 : 0.3;
+			ent.alpha = 0.3;
 		}
 
 		// send to renderer
@@ -768,6 +772,7 @@ static void CL_AddPacketEntities (void)
 			// add power screen for entity
 			ent.model = cl_mod_powerscreen;
 			ent.frame = ent.oldframe = 0;
+			//?? shader
 			ent.flags |= RF_TRANSLUCENT|RF_SHELL_GREEN;
 			ent.alpha = 0.3f;
 			V_AddEntity (&ent);
@@ -808,17 +813,14 @@ static void CL_AddPacketEntities (void)
 				if (effects & EF_ANIM_ALLFAST)
 				{
 					CL_BfgParticles (&ent);
-					float extra = frand () * 0.5;
+					float extra = frand () / 2;
 					V_AddLight (ent.pos.origin, 200, extra, 1, extra);
 				}
 				else
 				{
 					static const float bfg_lightramp[7] = {200, 300, 400, 600, 300, 150, 75};
-
-					float intens = bfg_lightramp[st->frame + 1];
-					float prev = bfg_lightramp[st->frame];
-					intens = prev * (1.0f - cl.lerpfrac) + intens * cl.lerpfrac;
-					float bright = st->frame > 2 ? (5.0f - st->frame) / (5 - 2) : 1;
+					float intens = Lerp (bfg_lightramp[st->frame], bfg_lightramp[st->frame+1], cl.lerpfrac);
+					float bright = st->frame > 2 ? (5.0f - st->frame - cl.lerpfrac) / (5 - 2) : 1;
 					V_AddLight (ent.pos.origin, intens, 0, bright, 0);
 				}
 //				RE_DrawTextLeft (va("bfg: %d (%c) [%3.1f]", st->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac));//!!

@@ -5,80 +5,6 @@
 
 namespace OpenGLDrv {
 
-/*-----------------------------------------------------------------------------
-	Simple text parser
-	?? change, move outside, use another etc
------------------------------------------------------------------------------*/
-
-static const char *parserText;
-
-static void SetupTextParser (const char *text)
-{
-	parserText = text;
-}
-
-static const char *GetLine ()
-{
-	static char line[1024];
-
-	char *d = line;
-	char c = 0;
-	while (d < line + sizeof(line) - 2)
-	{
-		c = *parserText;
-		if (!c) break;						// end of text
-		parserText++;
-		if (c == '\r' || c == '\n')			// end of line
-			break;
-		if (c == '\t') c = ' ';				// tab -> space
-		*d++ = c;
-	}
-	*d++ = 0;
-	// cut "//" comments
-	for (d = line; d[0]; d++)
-		if (d[0] == '/' && d[1] == '/')		//?? later: not inside quotes
-		{
-			*d = 0;
-			break;
-		}
-	// cut trailing spaces
-	for (d = strchr (line, 0) - 1; d >= line; d--)
-	{
-		if (d[0] != ' ') break;
-		d[0] = 0;
-	}
-	// skip leading spaces
-	d = line;
-	while (d[0] == ' ') d++;
-
-	return (c || d[0]) ? d : NULL;
-}
-
-// returns non-empty line or NULL
-static const char *GetScriptLine ()
-{
-	// skip leading spaces
-	while (parserText[0] && parserText[0] <= ' ') parserText++;
-	// process {} separately (allow few on a single line, without spaces between them)
-	if (parserText[0] == '{' || parserText[0] == '}')
-	{
-		static char brace[2];
-		brace[0] = *parserText++;
-		return brace;
-	}
-
-	const char *line;
-	while (line = GetLine ())
-	{
-		if (line[0]) break;
-	}
-	//?? cut comments and trailing spaces here?
-	return line;
-}
-
-
-//-----------------------------------------------------------------------------
-
 
 shader_t *gl_defaultShader;
 shader_t *gl_identityLightShader;
@@ -207,11 +133,11 @@ void ShutdownShaders ()
 	Creating new shader
 -----------------------------------------------------------------------------*/
 
-static shader_t sh;
-static shaderStage_t st[MAX_SHADER_STAGES];
-static image_t *shaderImages[MAX_SHADER_STAGES * MAX_STAGE_TEXTURES];
-static int numTcModStages;
-static tcModParms_t tcMods[MAX_SHADER_STAGES * MAX_STAGE_TCMODS];
+static shader_t			sh;
+static shaderStage_t	st[MAX_SHADER_STAGES];
+static const image_t	*shaderImages[MAX_SHADER_STAGES * MAX_STAGE_TEXTURES];
+static int				numTcModStages;
+static tcModParms_t		tcMods[MAX_SHADER_STAGES * MAX_STAGE_TCMODS];
 
 
 static void ResortShader (shader_t *shader, int startIndex)
@@ -224,7 +150,7 @@ static void ResortShader (shader_t *shader, int startIndex)
 	for (i = 0, pstages = shader->stages; i < shader->numStages; i++, pstages++)		// iterate stages
 	{
 		shaderStage_t *st = *pstages;
-		image_t *image = st->mapImage[0];
+		const image_t *image = st->mapImage[0];
 
 		int texnum;
 		if (image && !(shader->lightmapNumber == LIGHTMAP_RESERVE && st->isLightmap))
@@ -264,7 +190,7 @@ static void ResortShader (shader_t *shader, int startIndex)
 }
 
 
-static void ClearTempShader (void)
+static void ClearTempShader ()
 {
 	memset (&sh, 0, sizeof(sh));
 	CALL_CONSTRUCTOR(&sh);
@@ -289,7 +215,7 @@ static tcModParms_t *NewTcModStage (shaderStage_t *stage)
 
 
 // Insert shader (sh) into shaders array
-static shader_t *CreateShader (void)
+static shader_t *CreateShader ()
 {
 	if (shaderCount >= MAX_SHADERS)
 	{
@@ -302,6 +228,7 @@ static shader_t *CreateShader (void)
 	*nsh = sh;
 	CALL_CONSTRUCTOR(nsh);				// after copy
 
+//	Com_Printf(S_GREEN"sh: %s\n",sh.name);
 	// allocate and copy stages
 	for (int i = 0; i < sh.numStages; i++)
 	{
@@ -311,6 +238,8 @@ static shader_t *CreateShader (void)
 		nsh->stages[i] = nst;			// register stage
 		// setup mapImage[]
 		memcpy (&nst->mapImage, &shaderImages[i * MAX_STAGE_TEXTURES], st[i].numAnimTextures * sizeof(image_t*));
+//		for (int j = 0; j < nst->numAnimTextures; j++)
+//			Com_Printf("  %d.%d: %s\n",i,j,nst->mapImage[j] ? nst->mapImage[j]->name : "$white");
 	}
 
 	// insert into a hash table
@@ -341,7 +270,7 @@ static void ExtractShader (shader_t *shader)
 }
 
 
-static shader_t *FinishShader (void)	//!!!! rename function
+static shader_t *FinishShader ()	//!!!! rename function
 {
 	if (sh.type == SHADERTYPE_SKY)
 		sh.sortParam = SORT_SKY;
@@ -372,34 +301,34 @@ static shader_t *FinishShader (void)	//!!!! rename function
 		}
 
 		// replace blend mode aliases with main modes (for easier processing)
-		unsigned blend1 = s->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK);
+		unsigned blend1 = s->glState & GLSTATE_BLENDMASK;
 		unsigned blend2 = blend1;
 		switch (blend1)
 		{
-		case GLSTATE_SRC_ONE|GLSTATE_DST_ZERO:		// src
+		case BLEND(1,0):							// src
 			blend2 = 0;
 			break;
-		case GLSTATE_SRC_ZERO|GLSTATE_DST_SRCCOLOR:	// src*dst
-			blend2 = GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO;
+		case BLEND(0,S_COLOR):						// src*dst
+			blend2 = BLEND(D_COLOR,0);
 			break;
 		}
 		if (!blend2) s->glState |= GLSTATE_DEPTHWRITE;						// required, when no blending
 		// replace lightmap blend src*dst -> src*dst*2 when needed
 		if (numStages > 0 && st[numStages-1].isLightmap)
 		{
-			if (blend2 == (GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO))			// src*dst
+			if (blend2 == BLEND(D_COLOR,0))			// src*dst
 			{
 				if (gl_config.doubleModulateLM)
-					blend2 = GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR;		// src*dst*2
+					blend2 = BLEND(D_COLOR,S_COLOR);// src*dst*2
 			}
 			else
 				Com_WPrintf ("R_FinishShader(%s): strange blend for lightmap in stage %d\n", sh.name, numStages);	//?? DPrintf
 		}
 		// store new blend mode
-		s->glState = s->glState & ~(GLSTATE_SRCMASK|GLSTATE_DSTMASK) | blend2;
+		s->glState = s->glState & ~GLSTATE_BLENDMASK | blend2;
 
 		// set sort param for blending
-		if (blend2 && st[0].glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))	//?? check this condition
+		if (blend2 && st[0].glState & GLSTATE_BLENDMASK)	//?? check this condition
 		{	// have blending
 			if (!sh.sortParam)
 				sh.sortParam = (s->glState & GLSTATE_DEPTHWRITE) ? SORT_SEETHROUGH : SORT_SPRITE;
@@ -419,6 +348,12 @@ static shader_t *FinishShader (void)	//!!!! rename function
 			s->alphaGenType == ALPHAGEN_ENTITY || s->alphaGenType == ALPHAGEN_ONE_MINUS_ENTITY ||
 			s->frameFromEntity)
 			sh.dependOnEntity = true;
+		// check time dependency
+		if (s->numAnimTextures > 1 || s->numTcMods || s->rgbGenType == RGBGEN_WAVE || s->alphaGenType == ALPHAGEN_WAVE)
+			sh.dependOnTime = true;
+		for (int i = 0; i < sh.numDeforms; i++)
+			if (sh.deforms[i].type != DEFORM_AUTOSPRITE && sh.deforms[i].type != DEFORM_AUTOSPRITE2)
+				sh.dependOnTime = true;
 	}
 	sh.numStages = numStages;
 
@@ -426,27 +361,25 @@ static shader_t *FinishShader (void)	//!!!! rename function
 	//?? check: is it correct, when 3rd stage uses DSTALPHA too?
 	if (numStages >= 2)
 	{
-		unsigned blend1 = st[0].glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK|GLSTATE_ALPHAMASK);
-		unsigned blend2 = st[1].glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK|GLSTATE_ALPHAMASK);
-		if (blend1 == 0 &&
-			(blend2 == (GLSTATE_DST_DSTALPHA|GLSTATE_SRC_ONEMINUSDSTALPHA) ||
-			(blend2 == (GLSTATE_DST_ONEMINUSDSTALPHA|GLSTATE_SRC_DSTALPHA))))
+		unsigned blend1 = st[0].glState & (GLSTATE_BLENDMASK|GLSTATE_ALPHAMASK);
+		unsigned blend2 = st[1].glState & (GLSTATE_BLENDMASK|GLSTATE_ALPHAMASK);
+		if ( blend1 == 0 && ( blend2 == BLEND(M_D_ALPHA,D_ALPHA) || (blend2 == BLEND(D_ALPHA,M_D_ALPHA)) ) )
 		{
 			// exchange stages
 			Exchange (st[0], st[1]);
 			Exchange (st[0].glState, st[1].glState);
-			st[0].glState &= ~(GLSTATE_SRCMASK|GLSTATE_DSTMASK);	// blend = 0
-			// st[1] received blend from st[0], which is 0 ...
-			st[1].glState &= ~(GLSTATE_SRCMASK|GLSTATE_DSTMASK);
-			if (blend2 == (GLSTATE_DST_DSTALPHA|GLSTATE_SRC_ONEMINUSDSTALPHA))
-				st[1].glState |= GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_SRC_SRCALPHA;
+			st[0].glState &= ~GLSTATE_BLENDMASK;	// blend = 0
+			st[1].glState &= ~GLSTATE_BLENDMASK;
+			if (blend2 == BLEND(M_D_ALPHA,D_ALPHA))
+				st[1].glState |= BLEND(S_ALPHA,M_S_ALPHA);
 			else
-				st[1].glState |= GLSTATE_DST_SRCALPHA|GLSTATE_SRC_ONEMINUSSRCALPHA;
+				st[1].glState |= BLEND(M_S_ALPHA,S_ALPHA);
 			// exchange textures
 			image_t tmpImg[MAX_STAGE_TEXTURES];
 			memcpy (tmpImg, shaderImages, sizeof(tmpImg));
 			memcpy (shaderImages, shaderImages + MAX_STAGE_TEXTURES, sizeof(tmpImg));
 			memcpy (shaderImages + MAX_STAGE_TEXTURES, tmpImg, sizeof(tmpImg));
+			Com_DPrintf ("swapping first 2 stages in shader %s\n", sh.name);
 		}
 	}
 
@@ -566,7 +499,7 @@ shader_t *GetAlphaShader (shader_t *shader)
 	if (shader->alphaShader)
 		return shader->alphaShader;			// already done
 
-	if (shader->stages[0]->glState & (GLSTATE_SRCMASK|GLSTATE_DSTMASK))
+	if (shader->stages[0]->glState & GLSTATE_BLENDMASK)
 	{	// already have blend mode
 		shader->alphaShader = shader;
 		Com_DPrintf ("GetAlphaShader(%s): already have blend\n", shader->name);
@@ -579,14 +512,14 @@ shader_t *GetAlphaShader (shader_t *shader)
 	// setup alpha/blend
 	sh.sortParam = SORT_SEETHROUGH;			//?? SORT_SPRITE? check SHADER_WALL ??
 	st[0].alphaGenType = ALPHAGEN_ENTITY;
-	st[0].glState |= GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA;
+	st[0].glState |= BLEND(S_ALPHA,M_S_ALPHA);
 	st[0].glState &= ~GLSTATE_DEPTHWRITE;	// allow to see inside alpha-model
 	// setup shader images
 	for (int i = 0; i < sh.numStages; i++)
 		for (int j = 0; j < st[i].numAnimTextures; j++)
 		{
 			int idx = i * MAX_STAGE_TEXTURES + j;
-			image_t *img = shaderImages[idx];
+			const image_t *img = shaderImages[idx];
 			if (img->name[0] != '*' && !(img->flags & IMAGE_SYSTEM) && img->flags & IMAGE_NOALPHA)
 				shaderImages[idx] = FindImage (img->name, img->flags & ~IMAGE_NOALPHA);
 		}
@@ -690,7 +623,7 @@ shader_t *FindShader (const char *name, unsigned style)
 	if (style & SHADER_CLAMP) sh_imgFlags |= IMAGE_CLAMP;
 
 	/*----- create shader without script -----*/
-	image_t *img;
+	const image_t *img;
 
 	if (style & SHADER_SKY)
 	{
@@ -714,7 +647,7 @@ shader_t *FindShader (const char *name, unsigned style)
 				sh.width = img->width;
 				sh.height = img->height;
 			}
-			sh.skyFarBox[i] = img;
+			sh.skyBox[i] = img;
 		}
 		if (!sh.bad)							// valid sky
 			return FinishShader ();
@@ -789,7 +722,7 @@ shader_t *FindShader (const char *name, unsigned style)
 	/*--------- processing style -------------*/
 	if (lightmapNumber >= 0)
 	{
-		stage->glState = GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_ZERO;		// 2nd stage -- texture (src*dst)
+		stage->glState = BLEND(D_COLOR,0);		// 2nd stage -- texture (src*dst)
 		stage->rgbGenType = RGBGEN_IDENTITY;
 		stage->alphaGenType = ALPHAGEN_IDENTITY;
 	}
@@ -801,27 +734,27 @@ shader_t *FindShader (const char *name, unsigned style)
 	}
 	else if (style & SHADER_FORCEALPHA)
 	{
-		stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_ALPHA_GT0;
+		stage->glState = BLEND(S_ALPHA,M_S_ALPHA)|GLSTATE_ALPHA_GT0;
 				// image has no alpha, but use glColor(x,x,x,<1)
 		stage->alphaGenType = ALPHAGEN_VERTEX;
 	}
 	else if (style & SHADER_ALPHA && img->alphaType)
 	{
 		if (style & SHADER_WALL)
-			stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_DEPTHWRITE|GLSTATE_ALPHA_GT0;
+			stage->glState = BLEND(S_ALPHA,M_S_ALPHA)|GLSTATE_DEPTHWRITE|GLSTATE_ALPHA_GT0;
 		else
 		{
 			if (img->alphaType == 1)
 				stage->glState = GLSTATE_ALPHA_GE05;
 			else
-				stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_ALPHA_GT0;
+				stage->glState = BLEND(S_ALPHA,M_S_ALPHA)|GLSTATE_ALPHA_GT0;
 		}
 	}
 	else if (style & (SHADER_TRANS33|SHADER_TRANS66))
 	{
 		float	alpha;
 
-		stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONEMINUSSRCALPHA|GLSTATE_DEPTHWRITE;
+		stage->glState = BLEND(S_ALPHA,M_S_ALPHA)|GLSTATE_DEPTHWRITE;
 		if (style & SHADER_TRANS33)
 		{
 			if (style & SHADER_TRANS66)	alpha = 0.22;	// both flags -- make it more translucent
@@ -914,7 +847,7 @@ shader_t *FindShader (const char *name, unsigned style)
 		stageIdx++;
 		stage->numAnimTextures = 1;
 		shaderImages[stageIdx * MAX_STAGE_TEXTURES] = style & SHADER_ENVMAP ? gl_reflImage : gl_reflImage2;
-		stage->glState = GLSTATE_SRC_SRCALPHA|GLSTATE_DST_ONE;
+		stage->glState = BLEND(S_ALPHA,1);
 		stage->rgbGenType = RGBGEN_EXACT_VERTEX;
 		// ?? should be VERTEX for non-[vertex-]lightmapped surfs, EXACT_VERTEX for LM
 		//    Why: vertex color computed already lightscaled (for Q2 maps, at least) -- EXACT_VERTEX; when
@@ -980,11 +913,8 @@ static void FindShaderScripts ()
 #endif
 		SetupTextParser (buf);
 		const char *errMsg = NULL;
-		while (true)
+		while (const char *line = GetScriptLine ())
 		{
-			const char *line = GetScriptLine ();
-			if (!line) break;
-
 			if (line[0] == '}' || line[0] == '{')
 			{
 				errMsg = va("unexpected \"%s\"", line);
@@ -1003,7 +933,7 @@ static void FindShaderScripts ()
 			}
 			int braces = 0;
 			// remember start
-			int start = parserText - buf;
+			int start = GetParserPos () - buf;
 			int end = start;
 			while (line = GetScriptLine ())
 			{
@@ -1015,7 +945,7 @@ static void FindShaderScripts ()
 					braces--;
 				}
 				// remember end (updated after each line)
-				end = parserText - buf;
+				end = GetParserPos () - buf;
 			}
 			if (!line)
 			{
@@ -1112,11 +1042,8 @@ static bool InitShaderFromScript ()
 	SetupTextParser (text);
 
 	shaderError = NULL;
-	while (true)
+	while (const char *line = GetScriptLine ())
 	{
-		const char *line = GetScriptLine ();
-		if (!line) break;
-
 		if (line[0] == '{')
 		{
 			// parse stage keywords
@@ -1193,7 +1120,7 @@ shader_t *GetShaderByNum (int num)
 }
 
 
-void ResetShaders (void)
+void ResetShaders ()
 {
 	guard(ResetShaders);
 
@@ -1238,7 +1165,7 @@ void ResetShaders (void)
 	if (gl_detailShader)
 	{
 		gl_detailShader->cullMode = CULL_NONE;
-		gl_detailShader->stages[0]->glState = GLSTATE_NODEPTHTEST|GLSTATE_SRC_DSTCOLOR|GLSTATE_DST_SRCCOLOR;
+		gl_detailShader->stages[0]->glState = BLEND(D_COLOR,S_COLOR)|GLSTATE_NODEPTHTEST;
 	}
 
 	gl_concharsShader = FindShader ("pics/conchars", SHADER_ALPHA);
@@ -1256,7 +1183,7 @@ void shader_t::Reload ()
 	//?? needs to reload shader script -- for debug only
 	if (numStages && stages[0]->numAnimTextures)
 	{
-		image_t *img = stages[0]->mapImage[0];	//?? all images (non-system, not "*name" etc), all anims, all stages
+		const image_t *img = stages[0]->mapImage[0];	//?? all images (non-system, not "*name" etc), all anims, all stages
 		if (img)			// may be NULL when $white
 			FindImage (img->name, img->flags | IMAGE_RELOAD);
 	}

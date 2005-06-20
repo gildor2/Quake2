@@ -57,7 +57,7 @@ cvar_t	*gl_texMipBias, *gl_skinMipBias;
 cvar_t	*gl_texturemode;
 
 // rendering speed/quality settings
-static cvar_t *gl_fastSky;	// do not draw skybox
+static cvar_t *gl_fastSky;	// do not draw sky
 cvar_t	*gl_fog;			//??
 
 cvar_t	*gl_flares;
@@ -162,7 +162,7 @@ static void Gfxinfo_f (bool usage, int argc, char **argv)
 }
 
 
-static void RegisterCvars (void)
+static void RegisterCvars ()
 {
 /* NOTE: some cvars have "CVAR_NOUPDATE" flag -- for correct video-config-menu work (to detect changes)
  * Every cvar here can have this flag (?) (but only few of them REQUIRE it)
@@ -219,7 +219,7 @@ CVAR_END
 }
 
 
-static bool SetMode (void)
+static bool SetMode ()
 {
 	r_fullscreen->modified = false;
 	gl_mode->modified = false;
@@ -249,7 +249,7 @@ static bool SetMode (void)
 }
 
 
-bool Init (void)
+bool Init ()
 {
 	guard(OpenGLDrv::Init);
 
@@ -258,7 +258,6 @@ bool Init (void)
 	renderingEnabled = true;
 
 	memset (&gl_config, 0, sizeof(gl_config));
-	memset (&gl_state, 0, sizeof(gl_state));
 
 	gl_config.consoleOnly = Cvar_Get ("gl_console_only", "0", 0)->integer != 0;
 	ref_flags = 0;
@@ -455,7 +454,7 @@ void BeginFrame (float time)
 	gl_state.have3d = gl_state.haveFullScreen3d = false;
 	gl_state.maxUsedShaderIndex = -1;
 	//?? useFastSky: when gl_fastSky!=0 - should clear screen only when at least one of sky surfaces visible
-	//?? (perform glClear() in DrawSkyBox() ?)
+	//?? (perform glClear() in DrawSky() ?)
 	gl_state.useFastSky = gl_fastSky->integer || (r_fullbright->integer && r_lightmap->integer) || gl_showFillRate->integer;
 
 	if (gl_texturemode->modified)
@@ -481,7 +480,7 @@ void BeginFrame (float time)
 }
 
 
-void EndFrame (void)
+void EndFrame ()
 {
 	if (!gl_state.have3d) ClearTexts ();
 	FlushTexts ();
@@ -492,7 +491,7 @@ void EndFrame (void)
 
 /*----------------- Rendering ---------------------*/
 
-static void SetWorldModelview (void)
+static void SetWorldModelview ()
 {
 	float	matrix[4][4];
 	int		i, j, k;
@@ -543,7 +542,7 @@ static void SetWorldModelview (void)
 }
 
 
-static void SetFrustum (void)
+static void SetFrustum ()
 {
 	int		i;
 
@@ -576,7 +575,7 @@ static void SetFrustum (void)
 
 
 // Create projection matrix as glFrustum() does
-static void SetPerspective (void)
+static void SetPerspective ()
 {
 #define m	vp.projectionMatrix
 	if (vp.flags & RDF_NOWORLDMODEL)
@@ -859,7 +858,7 @@ void BeginRegistration (const char *mapname)
 }
 
 
-void EndRegistration (void)
+void EndRegistration ()
 {
 	//?? empty
 }

@@ -25,7 +25,7 @@ static WORD gammaRamp[3*256], newGamma[3*256];
 extern cvar_t *r_ignorehwgamma;
 
 
-bool GLimp_HasGamma (void)
+bool GLimp_HasGamma ()
 {
 	if (r_ignorehwgamma->integer) return false;
 	return gammaStored;
@@ -33,7 +33,7 @@ bool GLimp_HasGamma (void)
 
 
 // Called from GLimp_Init()
-static void ReadGamma (void)
+static void ReadGamma ()
 {
 	if (r_ignorehwgamma->integer)
 	{
@@ -48,7 +48,7 @@ static void ReadGamma (void)
 
 
 // Called from GLimp_Shutdown() and AppActivate()
-static void RestoreGamma (void)
+static void RestoreGamma ()
 {
 	if (!gammaStored) return;
 	HWND hwnd = GetDesktopWindow ();
@@ -62,7 +62,7 @@ static void RestoreGamma (void)
 
 
 // Called from GLimp_SetGamma() and AppActivate()
-static void UpdateGamma (void)
+static void UpdateGamma ()
 {
 //	DebugPrintf("updata gamma\n");//!!
 	if (!gammaValid) return;
@@ -151,7 +151,7 @@ static HGLRC	contextHandle;
 static bool		contextActive;
 
 
-static bool CreateGLcontext (void)
+static bool CreateGLcontext ()
 {
 	contextActive = false;
 	if (!(contextHandle = wglCreateContext (gl_hDC)))
@@ -163,7 +163,7 @@ static bool CreateGLcontext (void)
 }
 
 
-static bool ActivateGLcontext (void)
+static bool ActivateGLcontext ()
 {
 	if (contextActive) return true;
 	// 1st - activate context, 2nd - enable rendering
@@ -178,7 +178,7 @@ static bool ActivateGLcontext (void)
 }
 
 
-static bool DeactivateGLcontext (void)
+static bool DeactivateGLcontext ()
 {
 	if (!contextActive) return true;
 	GL_EnableRendering (false);
@@ -192,7 +192,7 @@ static bool DeactivateGLcontext (void)
 }
 
 
-static bool DestoryGLcontext (void)
+static bool DestoryGLcontext ()
 {
 	if (!contextHandle) return true;
 	if (!DeactivateGLcontext ()) return false;
@@ -210,7 +210,7 @@ static bool DestoryGLcontext (void)
 	Initialization/shutdown
 -----------------------------------------------------------------------------*/
 
-static bool GLimp_SetPixelFormat (void)
+static bool GLimp_SetPixelFormat ()
 {
 	static const PIXELFORMATDESCRIPTOR pfdBase =
 	{
@@ -264,7 +264,7 @@ static bool GLimp_SetPixelFormat (void)
 }
 
 
-static bool GLimp_InitGL (void)
+static bool GLimp_InitGL ()
 {
 	// get a DC for the specified window
 	if ((gl_hDC = GetDC (gl_hWnd)) == NULL)

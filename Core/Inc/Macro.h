@@ -61,6 +61,20 @@ template<class T> T Lerp (const T& A, const T& B, float Alpha)
 }
 
 
+/*
+template<class T> int Cmp (const T& A, const T& B)
+{
+	return memcmp (&A, &B, sizeof(T));
+}
+*/
+
+
+template<class T> void Zero (T& A)
+{
+	memset (&A, 0, sizeof(T));
+}
+
+
 #define EXPAND_BOUNDS(a,minval,maxval)	\
 	if (a < minval) minval = a;			\
 	if (a > maxval) maxval = a;

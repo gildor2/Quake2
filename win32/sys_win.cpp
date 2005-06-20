@@ -24,7 +24,7 @@ SYSTEM IO
 */
 
 
-void Sys_Quit (void)
+void Sys_Quit ()
 {
 #ifndef DEDICATED_ONLY
 	if (DEDICATED) FreeConsole ();
@@ -43,7 +43,7 @@ Sys_ScanForCD
 
 ================
 */
-static char *Sys_ScanForCD (void)
+static char *Sys_ScanForCD ()
 {
 #ifdef CD_PATH
 	static char cddir2[MAX_OSPATH], *cddir;
@@ -78,7 +78,7 @@ Sys_CopyProtect
 
 ================
 */
-void Sys_CopyProtect (void)
+void Sys_CopyProtect ()
 {
 #ifdef CD_PATH
 	if (!Sys_ScanForCD ())
@@ -93,7 +93,7 @@ void Sys_CopyProtect (void)
 Sys_Init
 ================
 */
-void Sys_Init (void)
+void Sys_Init ()
 {
 	guard(Sys_Init);
 
@@ -116,7 +116,7 @@ static char	console_text[MAX_CMDLINE];
 static int	console_textlen = 0;
 static bool console_drawInput = true;
 
-static void EraseConInput (void)
+static void EraseConInput ()
 {
 	if (!console_drawInput)
 	{
@@ -136,7 +136,7 @@ static void EraseConInput (void)
 Sys_ConsoleInput
 ================
 */
-char *Sys_ConsoleInput (void)
+char *Sys_ConsoleInput ()
 {
 	DWORD	dummy;
 
@@ -270,7 +270,7 @@ Sys_SendKeyEvents
 Send Key_Event calls
 ================
 */
-void Sys_SendKeyEvents (void)
+void Sys_SendKeyEvents ()
 {
 #ifndef DEDICATED_ONLY
 	guard(Sys_SendKeyEvents);
@@ -313,7 +313,7 @@ static HINSTANCE game_library;
 Sys_UnloadGame
 =================
 */
-void Sys_UnloadGame (void)
+void Sys_UnloadGame ()
 {
 	guard(Sys_UnloadGame);
 	if (!FreeLibrary (game_library))

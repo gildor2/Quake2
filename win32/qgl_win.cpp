@@ -78,7 +78,7 @@ bool QGL_Init (const char *libName)
 	Shutdown (unloading library)
 -----------------------------------------------------------------------------*/
 
-void QGL_Shutdown (void)
+void QGL_Shutdown ()
 {
 	if (logFile)
 	{
@@ -137,7 +137,7 @@ static bool ExtensionSupported (extInfo_t *ext, const char *extStr1, const char 
 }
 
 
-void QGL_InitExtensions (void)
+void QGL_InitExtensions ()
 {
 	int		i, j;
 	extInfo_t *ext;
@@ -414,7 +414,7 @@ void QGL_LogMessage (const char *text)
 	Miscellaneous
 -----------------------------------------------------------------------------*/
 
-void QGL_SwapBuffers (void)
+void QGL_SwapBuffers ()
 {
 	LOG_STRING("// QGL_SwapBuffers()\n");
 #ifdef _WIN32
