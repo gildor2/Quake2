@@ -214,7 +214,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 				// store normals
 				mViewAxis[0].Negate ();
 				for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
-					ex->normal = mViewAxis[0];
+					ex->normal.Zero ();
 			}
 			break;
 		//?? other types: AUTOSPRITE2, NORMAL, PROJECTION_SHADOW (?)
@@ -571,7 +571,8 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 #define P tcmod->wave		//?? make as inline function (find all similar places)
 				float f1 = PERIODIC_FUNC(mathFuncs[P.type], P.freq * vp.time + P.phase) * P.amp + P.base;
 #undef P
-				if (f1) f1 = 1.0f / f1;
+				if (f1 < 0.001f) f1 = 0.001f;
+				f1 = 1.0f / f1;
 				float f2 = (1 - f1) / 2;
 				for (k = 0; k < gl_numVerts; k++, dst++)
 				{
@@ -904,7 +905,7 @@ static void PreprocessShader (shader_t *sh)
 				else
 				{
 					LightForEntity (currentEntity);
-					if (GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE) &&		//?? NV_COMBINE4
+					if (GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE) &&
 						!gl_config.overbright &&		// allows double brightness by itself
 						i == 0)			//?? should analyze blend: can be 'src'=='no blend' or 'src*dst'
 					{
@@ -1427,9 +1428,9 @@ void surfacePoly_t::Tesselate (refEntity_t &ent)
 
 	bufExtra_t *ex = &gl_extra[gl_numExtra++];
 	ex->numVerts = numVerts;
-	// setup normal ?? -- depends on shader
 	ex->axis = NULL;
 	ex->dlight = NULL;
+	ex->normal.Zero ();				// normal = {0,0,0} - compute light for point
 
 	bufVertex_t *v = &vb->verts[firstVert];
 	bufTexCoordSrc_t *t = &srcTexCoord[firstVert];
@@ -1851,7 +1852,7 @@ void BK_DrawScene ()
 	gl_speeds.surfs += vp.numSurfaces;
 
 	currentDlightMask = 0;
-	float worldTime = vp.time;
+	double worldTime = vp.time;
 
 	/*------------ draw sky --------------*/
 

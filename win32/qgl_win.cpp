@@ -13,6 +13,9 @@
 #endif
 
 
+extern bool ActiveApp;	//!!! change
+
+
 namespace OpenGLDrv {
 
 
@@ -426,8 +429,16 @@ void QGL_SwapBuffers ()
 			wglSwapIntervalEXT (gl_swapinterval->integer);
 	}
 
-	if (!wglSwapBuffers (gl_hDC))
-		Com_FatalError ("QGL_SwapBuffers(): SwapBuffers() failed!\n");
+	static int error = 0;
+	if (wglSwapBuffers (gl_hDC))
+		error = 0;
+	else
+	{
+		if (++error > 3 && ActiveApp)	// make fatal error only when 4 errors one by one
+			Com_FatalError ("wglSwapBuffers() failed");
+		else
+			Com_WPrintf ("wglSwapBuffers() failed\n");
+	}
 #else
 	glXSwapBuffers() ?
 #endif

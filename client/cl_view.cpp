@@ -717,11 +717,11 @@ extern bool fileFromPak;
 
 static void DrawFpsInfo (void)
 {
-	static float startSecTime, lastFrameTime;
+	static double startSecTime, lastFrameTime;
 	static float avgFps, minFps, maxFps;
 	static int frames;
 
-	float time = appMillisecondsf ();
+	double time = appMillisecondsf ();
 
 	if (cls.key_dest != key_game || (time - lastFrameTime > 2000))
 	{	// reinitialize counters
@@ -947,7 +947,7 @@ bool V_RenderView (void)
 		// underwater fov warp (taken from Q3 game source)
 		if (cl.refdef.rdflags & RDF_UNDERWATER)
 		{
-			float v = sin (cl.refdef.time * 0.4 * M_PI * 2);
+			float v = sin (cl.ftime * 0.4f * M_PI * 2);
 			cl.refdef.fov_x += v;
 			cl.refdef.fov_y -= v;
 		}

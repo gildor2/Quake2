@@ -26,9 +26,9 @@ typedef struct {
 	void	(*_Vid_Restart) (void);
 	bool	(*_Vid_GetModeInfo) (int *width, int *height, int mode);
 	int	(*_ImageExists) (const char *name, int stop_mask);
-	void	(*_LoadPCX) (const char *name, byte **pic, byte **palette, int *width, int *height);
-	void	(*_LoadTGA) (const char *name, byte **pic, int *width, int *height);
-	void	(*_LoadJPG) (const char *name, byte **pic, int *width, int *height);
+	void	(*_LoadPCX) (const char *name, byte *&pic, byte *&palette, int &width, int &height);
+	void	(*_LoadTGA) (const char *name, byte *&pic, int &width, int &height);
+	void	(*_LoadJPG) (const char *name, byte *&pic, int &width, int &height);
 	bool	(*_WriteTGA) (const char *name, byte *pic, int width, int height);
 	bool	(*_WriteJPG) (const char *name, byte *pic, int width, int height, bool highQuality);
 	bspfile_t*	(*_LoadBspFile) (const char *filename, bool clientload, unsigned *checksum);
@@ -136,15 +136,15 @@ inline int ImageExists (const char *name, int stop_mask = IMAGE_ANY)
 {
 	return ri._ImageExists (name, stop_mask);
 }
-inline void LoadPCX (const char *name, byte **pic, byte **palette, int *width, int *height)
+inline void LoadPCX (const char *name, byte *&pic, byte *&palette, int &width, int &height)
 {
 	ri._LoadPCX (name, pic, palette, width, height);
 }
-inline void LoadTGA (const char *name, byte **pic, int *width, int *height)
+inline void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 {
 	ri._LoadTGA (name, pic, width, height);
 }
-inline void LoadJPG (const char *name, byte **pic, int *width, int *height)
+inline void LoadJPG (const char *name, byte *&pic, int &width, int &height)
 {
 	ri._LoadJPG (name, pic, width, height);
 }

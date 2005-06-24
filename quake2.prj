@@ -26,6 +26,7 @@ CORE = \
 	$D/Memory.cpp \
 	$D/OutputDevice.cpp \
 	$D/ErrorMgr.cpp \
+	$D/ScriptParser.cpp \
 	$D/Strings.cpp
 #	$D/FileSystem.cpp
 #	$D/Commands.cpp
@@ -91,7 +92,6 @@ COMMON = \
 	$D/model.cpp \
 	$D/msg.cpp \
 	$D/net_chan.cpp \
-	$D/parser.cpp \
 	$D/pmove.cpp \
 	$D/q_shared2.cpp \
 	$D/zip.cpp

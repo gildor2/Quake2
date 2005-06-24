@@ -38,7 +38,7 @@ struct surfaceInfo_t
 struct viewPortal_t
 {
 	unsigned flags;
-	float	time;				// time in seconds (for shader effects etc)
+	double	time;				// time in seconds (for shader effects etc)
 	lightstyle_t *lightStyles;	// light styles for Q2/HL dynamic lightmaps
 	refDlight_t *dlights;
 	int		numDlights;
@@ -128,7 +128,7 @@ struct refEntity_t
 
 	shader_t	*customShader;			// one shader for all surfaces
 	color_t		shaderColor;			// for "rgbGen/alphaGen entity"
-	float		time;					// time for shader effects
+	double		time;					// time for shader effects
 	// draw sequence
 	refEntity_t *drawNext;
 };

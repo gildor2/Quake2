@@ -911,9 +911,10 @@ static void FindShaderScripts ()
 #ifdef DEBUG_SHADERS
 		Com_Printf(S_GREEN"%s\n", tmp);
 #endif
-		SetupTextParser (buf);
+		CSimpleParser text;
+		text.InitFromBuf (buf, PARSER_CPP_COMMENTS|PARSER_SEPARATE_BRACES);
 		const char *errMsg = NULL;
-		while (const char *line = GetScriptLine ())
+		while (const char *line = text.GetLine ())
 		{
 			if (line[0] == '}' || line[0] == '{')
 			{
@@ -925,33 +926,23 @@ static void FindShaderScripts ()
 #endif
 			char name[MAX_QPATH];
 			appCopyFilename (name, line, sizeof(name));
-			line = GetScriptLine ();
-			if (name[0] == '{' && name[1] == 0)
+			line = text.GetLine ();
+			if (line[0] != '{' || line[1] != 0)
 			{
 				errMsg = va("%s: \"{\" expected", name);
 				break;
 			}
-			int braces = 0;
 			// remember start
-			int start = GetParserPos () - buf;
-			int end = start;
-			while (line = GetScriptLine ())
-			{
-				if (line[0] == '{')
-					braces++;
-				else if (line[0] == '}')
-				{
-					if (!braces) break;
-					braces--;
-				}
-				// remember end (updated after each line)
-				end = GetParserPos () - buf;
-			}
-			if (!line)
+			int start = text.GetPos () - buf;
+			// skip shader body
+			const char *endPos  = text.SkipBraces ();
+			if (!endPos)
 			{
 				errMsg = "unexpected end of file";
 				break;
 			}
+			int end = endPos - buf;
+
 			// remember script info
 			shaderScript_t *scr = scriptList.Find (name);
 			if (!scr)
@@ -1039,10 +1030,11 @@ static bool InitShaderFromScript ()
 	sh.scripted = true;
 
 	// parse script
-	SetupTextParser (text);
+	CSimpleParser parser;
+	parser.InitFromBuf (text, PARSER_CPP_COMMENTS|PARSER_SEPARATE_BRACES);
 
 	shaderError = NULL;
-	while (const char *line = GetScriptLine ())
+	while (const char *line = parser.GetLine ())
 	{
 		if (line[0] == '{')
 		{
@@ -1054,7 +1046,7 @@ static bool InitShaderFromScript ()
 			}
 			while (true)
 			{
-				line = GetScriptLine ();
+				line = parser.GetLine ();
 				if (!line)
 				{
 					shaderError = "unexpected end of script";

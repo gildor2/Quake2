@@ -32,13 +32,37 @@ static void GetWave (int argc, char **argv, int pos, waveParams_t &wave)
 	if (pos + 5 > argc)
 		ERROR_IN_SHADER("invalid wave arguments");
 	static const char *waveNames[] = {
-		"sin", "square", "triangle", "sawtooth", "inversesawtooth"	//!! "noise"
+		"sin", "square", "triangle", "sawtooth" //!! "noise"
 	};
+	bool inv = false;
+	const char *func = argv[pos];
+	if (!strnicmp (func, "inverse", 7))
+	{
+		inv = true;
+		func += 7;		// skip "inverse"
+	}
 	for (int i = 0; i < ARRAY_COUNT(waveNames); i++)
-		if (IS(pos, waveNames[i])) break;
+		if (!stricmp (func, waveNames[i])) break;
 	if (i == ARRAY_COUNT(waveNames)) ERROR_IN_SHADER(va("bad wave func: %s", argv[pos]));
 	wave.type  = (waveFunc_t) i;
 	GetWave0 (argc, argv, pos+1, wave);
+	// undocumented: any "inverse" function
+	if (inv)
+	{
+		switch (wave.type)
+		{
+		// functions in 0..1 range
+		case FUNC_SAWTOOTH:
+			wave.base = wave.base + wave.amp;
+			wave.amp  = -wave.amp;
+			break;
+		// functions in -1..1 range
+		case FUNC_SIN:
+		case FUNC_SQUARE:
+			wave.amp  = -wave.amp;
+			break;
+		}
+	}
 }
 
 static void GetVec (int argc, char **argv, int pos, CVec3 &dst)
@@ -229,6 +253,23 @@ static CSimpleCommand shaderFuncs[] = {
 
 // texture mapping
 
+static image_t *ShaderImage (const char *name, unsigned addFlags = 0)
+{
+	char buf[MAX_QPATH*2];	// *2 - just in case
+	// if image name starts with "./" -- replace with shader path
+	if (name[0] == '.' && name[1] == '/')
+	{
+		strcpy (buf, sh.name);
+		char *s = strrchr (buf, '/');
+		if (!s) s = buf;
+		else	s++;		// skip '/'
+		strcpy (s, name+2);
+		name = buf;
+	}
+	return FindImage (name, sh_imgFlags | addFlags);
+}
+
+
 FUNC(map)
 {
 	image_t *img;
@@ -250,7 +291,7 @@ FUNC(map)
 		img = NULL;
 	else
 	{
-		img = FindImage (IS(1,"$texture") ? sh.name : argv[1], sh_imgFlags);
+		img = ShaderImage (IS(1,"$texture") ? sh.name : argv[1]);
 		if (!img) ERROR_IN_SHADER(va("no texture: %s", argv[1]));
 		if (!sh.width && !sh.height)
 		{
@@ -265,7 +306,7 @@ FUNC(map)
 
 FUNC(clampMap)
 {
-	image_t *img = FindImage (IS(1,"$texture") ? sh.name : argv[1], sh_imgFlags | IMAGE_CLAMP);
+	image_t *img = ShaderImage (IS(1,"$texture") ? sh.name : argv[1], IMAGE_CLAMP);
 	if (!img) ERROR_IN_SHADER(va("no texture: %s", argv[1]));
 	shaderImages[sh.numStages * MAX_STAGE_TEXTURES] = img;
 	if (!sh.width && !sh.height)
@@ -286,7 +327,7 @@ static void DoAnimMap (int argc, char **argv, unsigned imgFlags)
 	int dst = sh.numStages * MAX_STAGE_TEXTURES;
 	for (int i = 2; i < argc; i++)
 	{
-		image_t *img = FindImage (argv[i], imgFlags);
+		image_t *img = ShaderImage (argv[i], imgFlags);
 		if (!img) ERROR_IN_SHADER(va("no texture: %s", argv[i]));
 		if (!sh.width && !sh.height)
 		{

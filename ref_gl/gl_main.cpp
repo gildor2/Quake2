@@ -432,9 +432,9 @@ void GL_EnableRendering (bool enable)
 
 //?? move to frontend?
 
-static float defaultTime;
+static double defaultTime;
 
-void BeginFrame (float time)
+void BeginFrame (double time)
 {
 	defaultTime = vp.time = time;
 
@@ -696,6 +696,7 @@ void RenderFrame (refdef_t *fd)
 	vp.view.axis.FromAngles (fd->viewangles);
 
 	vp.lightStyles = fd->lightstyles;
+
 	vp.time = fd->time;						// set scene time
 
 	// add entities

@@ -6,16 +6,11 @@
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?) -- should be at least dlights ?? (or not?)
 - when game paused: moving mouse will not rotate view, but when game unpaused -- will rotate to moved amount (should not rotate)
 
-- ATI (check NV!):
-  - BK_EndFrame(): if add GL_SetMultitexture(0) to the end of function, sky will be corrupted
-  - during video playback, map textures will disappear (lightmaps only); when fire from blaster (dlight) - some textures appear;
-    may be reversed situation: have textures, but with dlight disappears; no bug, when no 2D display at all
-    - gl_interface.cpp::GL_ResetState() does not helps
-    - textures appears, when looking in 3rd person at some shadered models (with additive glow - "dangergirl/unpretty")
+- ATI:
+  - BK_EndFrame(): if add GL_SetMultitexture(0) to the end of function, sky will be corrupted (NV-ok)
 
 - timing:
   - after power sleep/resume FPS counter will be incorrect
-  - drizzle of movement (for example, "jump" action, 3rd person) with timescale=0.01
   ? may be, use appCycles() in most places (at least, in WinMain()::MainLoop) instead of appMilliseconds() -- will require to implement
     this for non-Pentium (RDTSC) platforms
   ? check sync of float/int versions of appMilliseconds
@@ -78,6 +73,14 @@ HARDWARE:
     WM_SYNCPAINT, WM_NCPAINT, WM_ERASEBKGND, WM_PAINT; Q3 have no this problem, UT2004 (GL) have.
     * FIXED: set TOPMOST wnd attribute with SetWindowPos(), not with SetWindowLong(); when restore from minimized state - update
       gamma in AppActivate() using "r_gamma->modified=true" i.e. in 1st rendering frame, not using UpdateGamma() call
+  - during video playback (different task/app, using overlay), map textures will disappear (lightmaps only); when fire from
+    blaster (dlight) - some textures appear; may be reversed effect: have textures, but with dlight disappears;
+    no bug, when no 2D display at all, and when not using multitexture; vid_restart does not helps; when closing video player,
+    effect will stay until fire from blaster; additional bug: additive blended texture (multitexturing) may have incorrect
+    color (white -> green); this effect will not be corrected even after player quit and quake exit/launch (corrected after
+    sleep/resume or Windows restart)
+    - gl_interface.cpp::GL_ResetState() does not helps
+    - textures appears, when looking in 3rd person at some shadered models (with additive glow - "dangergirl/unpretty")
 - NV
   - (NV:bitdepth change, Blade3D:vid_restart): cannot restart GL with Vid_DestroyWindow(force=false) -- require to recreate window
   - screenshot is black after changing color depth, but all OK when make one more vid_restart (TNT2, Win2K, 41.09)
@@ -85,6 +88,7 @@ HARDWARE:
     gl_showtris=1); workaround: CVA is ALWAYS used (i.e. for 1-pass rendering too); ATI have no this bug
   - GF FX5200: GL_EXT_texture_compression_s3tc: font image, compressed into DXT1 (with 1-bit alpha) have visual bugs (pink color on
     letters); no bug with DXT5
+  - when app not focused (and. may be, during video playback), wglSwapBuffers() may fail (turned fatal error -> warning)
 ? texture rectangle (ATI; NV untested): when "*video" created as regular texture and uploaded as rect texture, after displaying
   video (exec alias "d1" -- video+demo) when level loading, displayed black rect instead of "loading" banner
 ? notebook keyboard: when pushing arrow keys with <Shift>, <Shift> will be unpressed while other keys is down (unable to move

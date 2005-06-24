@@ -148,6 +148,7 @@
   ---------------------- MY: ---------------------
 * 1) map
      $texture                     map texture with the same name, as shader (most useful for templates)
+     ./texName                    use image path from shader
 * 12) tcMod
      - warp                       (Quake1/2 texture warping)
 * 15) nodepthtest                 check for UberEngine analogs??!

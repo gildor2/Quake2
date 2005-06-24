@@ -11,7 +11,7 @@ typedef struct {
 	CBasicImage*	(*RegisterPic) (const char *name);
 	void	(*SetSky) (const char *name, float rotate, const CVec3 &axis);
 	void	(*EndRegistration) ();
-	void	(*BeginFrame) (float time);
+	void	(*BeginFrame) (double time);
 	void	(*RenderFrame) (refdef_t *fd);
 	void	(*EndFrame) ();
 	void	(*DrawPic) (int x, int y, const char *pic, int anchor, int color);
@@ -72,7 +72,7 @@ inline void RE_EndRegistration ()
 {
 	re.EndRegistration ();
 }
-inline void RE_BeginFrame (float time)
+inline void RE_BeginFrame (double time)
 {
 	re.BeginFrame (time);
 }

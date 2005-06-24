@@ -999,7 +999,7 @@ struct savegameMenu_t : menuFramework_t
 				fread (m_savestrings[i], sizeof(m_savestrings[i])-1, 1, f);
 				fclose (f);
 				m_savevalid[i] = true;
-				const char *name = va("/" SAVEGAME_DIRECTORY "/save%d/shot.pcx", i);
+				const char *name = va("/" SAVEGAME_DIRECTORY "/save%d/shot", i);
 				if (RE_RegisterPic (name))
 				{
 					m_shotvalid[i] = true;
@@ -1080,6 +1080,8 @@ struct savegameMenu_t : menuFramework_t
 				actions[i].y += 10;
 
 			actions[i].type = MTYPE_ACTION;
+//			if (!m_savevalid[i] && !saveMenu) -- incorrect drawing
+//				actions[i].type = MTYPE_SEPARATOR;
 			AddItem (&actions[i]);
 		}
 		return true;

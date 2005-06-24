@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #define	MAX_BEAMS	32
-typedef struct
+struct mBeam_t		// beam with model
 {
 	int		entity;
 	int		dest_entity;
@@ -32,7 +32,7 @@ typedef struct
 	int		endtime;
 	CVec3	offset;
 	CVec3	start, end;
-} mBeam_t;		// beam with model
+};
 
 static mBeam_t	cl_mBeams[MAX_BEAMS];
 
@@ -43,46 +43,45 @@ static mBeam_t	cl_mPlayerbeams[MAX_BEAMS];
 cl_sustain_t	cl_sustains[MAX_SUSTAINS];
 extern void CL_TeleportParticles (const CVec3 &org);
 
-void CL_BlasterParticles (const CVec3 &org, const CVec3 &dir);
 void CL_ExplosionParticles (const CVec3 &org);
 void CL_BFGExplosionParticles (const CVec3 &org);
+
+
+static sfx_t *cl_sfx_ric[3];
+static sfx_t *cl_sfx_lashit;
+static sfx_t *cl_sfx_spark5;
+static sfx_t *cl_sfx_spark6;
+static sfx_t *cl_sfx_spark7;
+static sfx_t *cl_sfx_railg;
+static sfx_t *cl_sfx_rockexp;
+static sfx_t *cl_sfx_grenexp;
+static sfx_t *cl_sfx_watrexp;
 // XATRIX
-void CL_BlueBlasterParticles (const CVec3 &org, const CVec3 &dir);
-
-sfx_t *cl_sfx_ric[3];
-sfx_t *cl_sfx_lashit;
-sfx_t *cl_sfx_spark5;
-sfx_t *cl_sfx_spark6;
-sfx_t *cl_sfx_spark7;
-sfx_t *cl_sfx_railg;
-sfx_t *cl_sfx_rockexp;
-sfx_t *cl_sfx_grenexp;
-sfx_t *cl_sfx_watrexp;
-// XATRIX
-sfx_t *cl_sfx_plasexp;
-
-sfx_t *cl_sfx_fallshort;
-sfx_t *cl_sfx_footsteps[4];
-
-CRenderModel *cl_mod_explode;
-CRenderModel *cl_mod_smoke;
-CRenderModel *cl_mod_flash;
-CRenderModel *cl_mod_parasite_segment;
-CRenderModel *cl_mod_grapple_cable;
-CRenderModel *cl_mod_parasite_tip;
-CRenderModel *cl_mod_explo4;
-CRenderModel *cl_mod_bfg_explo;
-CRenderModel *cl_mod_powerscreen;
-// XATRIX
-CRenderModel *cl_mod_plasmaexplo;
-
+static sfx_t *cl_sfx_plasexp;
 // ROGUE
-sfx_t *cl_sfx_lightning;
-sfx_t *cl_sfx_disrexp;
-CRenderModel *cl_mod_lightning;
-CRenderModel *cl_mod_heatbeam;
-CRenderModel *cl_mod_monster_heatbeam;
-CRenderModel *cl_mod_explo4_big;
+static sfx_t *cl_sfx_lightning;
+static sfx_t *cl_sfx_disrexp;
+
+static sfx_t *cl_sfx_fallshort;
+sfx_t		 *cl_sfx_footsteps[4];
+
+
+static CRenderModel *cl_mod_explode;
+static CRenderModel *cl_mod_smoke;
+static CRenderModel *cl_mod_flash;
+static CRenderModel *cl_mod_parasite_segment;
+static CRenderModel *cl_mod_grapple_cable;
+static CRenderModel *cl_mod_parasite_tip;
+static CRenderModel *cl_mod_explo4;
+static CRenderModel *cl_mod_bfg_explo;
+CRenderModel		*cl_mod_powerscreen;
+// XATRIX
+static CRenderModel *cl_mod_plasmaexplo;
+// ROGUE
+static CRenderModel *cl_mod_lightning;
+static CRenderModel *cl_mod_heatbeam;
+static CRenderModel *cl_mod_monster_heatbeam;
+static CRenderModel *cl_mod_explo4_big;
 
 
 //--------------- Extended protocol -------------------
@@ -148,19 +147,6 @@ static const char *impactSounds[IMPACT_COUNT] = {
 	"wood"
 };
 
-static const char *camperSounds[9] = {
-	"tinyfart",
-	"cough1",
-	"cough2",
-	"sneeze1",
-	"sneeze2",
-	"yawn1",
-	"yawn2",
-	"burp1",
-	"spit1"
-};
-
-
 /*
 =================
 CL_RegisterTEntSounds
@@ -221,7 +207,11 @@ void CL_RegisterTEntSounds (void)
 		{
 			cl_sfx_spectator[i] = S_RegisterSound (va("player/spectator/spect%i.wav", i + 1));
 		} */
-		for (i = 0; i < 9; i++)
+		static const char *camperSounds[] = {
+			"tinyfart", "cough1", "cough2", "sneeze1", "sneeze2",
+			"yawn1", "yawn2", "burp1", "spit1"
+		};
+		for (i = 0; i < ARRAY_COUNT(camperSounds); i++)
 			cl_sfx_camper[i] = S_RegisterSound (va("player/reallife/%s.wav", camperSounds[i]));
 	}
 
@@ -241,6 +231,22 @@ static CRenderModel *RegModel (const char *name)
 	return RE_RegisterModel (va("models/%s/tris.md2", name));
 }
 
+static CRenderModel *RegFxModel (const char *oldName, const char *newName)
+{
+	CRenderModel *model = NULL;
+	if (NEW_FX)
+	{
+		model = RE_RegisterModel (va("fx/%s", newName));
+		if (!model) Com_DPrintf ("no fx model %s\n", newName);
+	}
+	if (!model)
+		model = RegModel (oldName);
+	return model;
+}
+
+
+#define EXPLO4_WALL_DIST	16
+
 void CL_RegisterTEntModels (void)
 {
 	static const char *modelNames[] = {
@@ -254,31 +260,23 @@ void CL_RegisterTEntModels (void)
 		"objects/gibs/bone2"
 	};
 
-	cl_mod_explode = RegModel ("objects/explode");
-	cl_mod_smoke = RegModel ("objects/smoke");
-	cl_mod_flash = RegModel ("objects/flash");
+	cl_mod_explode     = RegModel ("objects/explode");
+	cl_mod_smoke       = RegFxModel ("objects/smoke", "particles/smoke.spr");
+	cl_mod_flash       = RegModel ("objects/flash");
 	cl_mod_parasite_segment = RegModel ("monsters/parasite/segment");
 	cl_mod_grapple_cable = RegModel ("ctf/segment");
 	cl_mod_parasite_tip = RegModel ("monsters/parasite/tip");
-	cl_mod_explo4 = RegModel ("objects/r_explode");
-	cl_mod_bfg_explo = RE_RegisterModel ("sprites/s_bfg2.sp2");
+	cl_mod_explo4      = RegFxModel ("objects/r_explode", "particles/explode.spr");
+	cl_mod_bfg_explo   = RE_RegisterModel ("sprites/s_bfg2.sp2");
 	cl_mod_powerscreen = RegModel ("items/armor/effect");
 
 	for (int i = 0; i < ARRAY_COUNT(modelNames); i++)
 		RegModel (modelNames[i]);
-	// XARRIX
-	// RegModel ("objects/blaser");
-
-	//??
-	RE_RegisterPic ("w_machinegun");
-	RE_RegisterPic ("a_bullets");
-	RE_RegisterPic ("i_health");
-	RE_RegisterPic ("a_grenades");
 
 	//ROGUE
-	cl_mod_explo4_big = RegModel ("objects/r_explode2");
-	cl_mod_lightning = RegModel ("proj/lightning");
-	cl_mod_heatbeam = RegModel ("proj/beam");
+	cl_mod_explo4_big  = RegModel ("objects/r_explode2");
+	cl_mod_lightning   = RegModel ("proj/lightning");
+	cl_mod_heatbeam    = RegModel ("proj/beam");
 	cl_mod_monster_heatbeam = RegModel ("proj/widowbeam");
 }
 
@@ -313,7 +311,6 @@ void CL_ClearTEnts (void)
 {
 	memset (cl_mBeams, 0, sizeof(cl_mBeams));
 	memset (cl_explosions, 0, sizeof(cl_explosions));
-
 	//ROGUE
 	memset (cl_mPlayerbeams, 0, sizeof(cl_mPlayerbeams));
 	memset (cl_sustains, 0, sizeof(cl_sustains));
@@ -324,22 +321,39 @@ void CL_ClearTEnts (void)
 CL_AllocExplosion
 =================
 */
-explosion_t *CL_AllocExplosion (const CVec3 &origin, exptype_t type)
+static explosion_t *CL_AllocExplosion (const CVec3 &origin, exptype_t type, CRenderModel *model, float wallOffset = 0)
 {
 	int		i;
-	explosion_t *ex, *dst;
+	explosion_t *ex;
 
-	dst = NULL;
+	// move explosion from wall
+	CVec3 origin2 = origin;
+	if (wallOffset)
+	{
+		CBox bounds;
+		for (i = 0; i < 3; i++)
+		{
+			bounds.mins[i] = -wallOffset/2;
+			bounds.maxs[i] =  wallOffset/2;
+		}
+		trace_t trace;
+		CL_Trace (trace, origin, origin, bounds, CONTENTS_SOLID);
+		if (trace.allsolid)
+			VectorMA (origin, wallOffset, trace.plane.normal, origin2);
+	}
+
+	explosion_t *dst = NULL;
 	// find another explosion with the same origin
 	for (i = 0, ex = cl_explosions; i < MAX_EXPLOSIONS; i++, ex++)
 	{
 		if (ex->type == ex_free) continue;
-		if (type == ex->type && ex->ent.pos.origin == origin)
+		if (type == ex->type && ex->ent.pos.origin == origin2)
 		{
+			//!! accumulate color?!
 			dst = ex;
 			break;
 		}
-    }
+	}
 
 	// find free explosion
 	if (!dst)
@@ -352,10 +366,8 @@ explosion_t *CL_AllocExplosion (const CVec3 &origin, exptype_t type)
 
 	if (!dst)
 	{
-		float	time;
-
 		// find the oldest explosion (add priority for smoke/explode ??)
-		time = 0;
+		float time = 0;
 		dst = cl_explosions;
 
 		for (i = 1, ex = &cl_explosions[1]; i < MAX_EXPLOSIONS; i++, ex++)
@@ -367,10 +379,11 @@ explosion_t *CL_AllocExplosion (const CVec3 &origin, exptype_t type)
 	}
 
 	memset (dst, 0, sizeof(explosion_t));
-	dst->ent.pos.origin = origin;
+	dst->ent.pos.origin = origin2;
 	dst->time = -100;
 	dst->type = type;
 	dst->ent.time = cl.ftime;
+	dst->ent.model = model;
 	return dst;
 }
 
@@ -382,7 +395,7 @@ CL_AddExplosions
 */
 void CL_AddExplosions (void)
 {
-	static float oldTime;
+	static double oldTime;
 	float timeDelta = (cl.ftime - oldTime) * 1000.0f;	// msec
 	oldTime = cl.ftime;
 
@@ -461,6 +474,7 @@ void CL_AddExplosions (void)
 		ent->oldframe = ex->baseframe + frm;
 		ent->backlerp = 1.0f - (frac - frm);
 		ent->time += incTime;			// modified when r_sfx_pause only
+		if (ent->time > cl.ftime) ent->time = cl.ftime;
 
 		V_AddEntity (ent);
 	}
@@ -472,19 +486,17 @@ void CL_AddExplosions (void)
 CL_SmokeAndFlash
 =================
 */
-void CL_SmokeAndFlash(const CVec3 &origin)
+void CL_SmokeAndFlash (const CVec3 &origin)
 {
 	explosion_t	*ex;
 
-	ex = CL_AllocExplosion (origin, ex_misc);
+	ex = CL_AllocExplosion (origin, ex_misc, cl_mod_smoke, 4);
 	ex->frames = 4;
 	ex->ent.flags = RF_TRANSLUCENT;
-	ex->ent.model = cl_mod_smoke;
 
-	ex = CL_AllocExplosion (origin, ex_flash);
+	ex = CL_AllocExplosion (origin, ex_flash, cl_mod_flash);	//??
 	ex->frames = 2;
 	ex->ent.flags = RF_FULLBRIGHT;
-	ex->ent.model = cl_mod_flash;
 }
 
 /*
@@ -893,7 +905,7 @@ void CL_ParseTEnt (void)
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
 
-		if (cl_newfx->integer)
+		if (NEW_FX)
 		{	//!! check for metal surface (smoke for non-metals) + check for "type" (see below) (see KP)
 			// AND: should make sparks sometimes not appear (or very short lifetime ?)
 			CL_MetalSparks (pos, dir, rand() % 5 + 1);
@@ -1007,15 +1019,15 @@ void CL_ParseTEnt (void)
 	case TE_BLUEHYPERBLASTER:
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadPos (&net_message, dir);
-		CL_BlasterParticles (pos, dir);
+		CL_BlasterParticles (pos, dir, 0xE0);
 		break;
 
 	case TE_BLASTER:			// blaster hitting wall
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
-		CL_BlasterParticles (pos, dir);
+		CL_BlasterParticles (pos, dir, 0xE0);
 
-		ex = CL_AllocExplosion (pos, ex_misc);
+		ex = CL_AllocExplosion (pos, ex_misc, cl_mod_explode);
 		ex->ent.angles[0] = acos(dir[2])/M_PI*180;
 		// PMM - fixed to correct for pitch of 0
 		if (dir[0])
@@ -1031,7 +1043,6 @@ void CL_ParseTEnt (void)
 		ex->light = 150;
 		ex->lightcolor[0] = 1;
 		ex->lightcolor[1] = 1;
-		ex->ent.model = cl_mod_explode;
 		ex->frames = 4;
 		S_StartSound (&pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
@@ -1062,13 +1073,12 @@ void CL_ParseTEnt (void)
 	case TE_GRENADE_EXPLOSION_WATER:
 		MSG_ReadPos (&net_message, pos);
 
-		ex = CL_AllocExplosion (pos, ex_poly);
+		ex = CL_AllocExplosion (pos, ex_poly, cl_mod_explo4, EXPLO4_WALL_DIST);
 		ex->ent.flags = RF_FULLBRIGHT;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
 		ex->lightcolor[1] = 0.5;
 		ex->lightcolor[2] = 0.5;
-		ex->ent.model = cl_mod_explo4;
 		ex->frames = 15;	//?? original: max frame was 19; for this explosion type should be 15 (can be negative ex->alpha)
 		ex->baseframe = 30;
 		ex->ent.angles[1] = rand() % 360;
@@ -1082,14 +1092,13 @@ void CL_ParseTEnt (void)
 	// XATRIX
 	case TE_PLASMA_EXPLOSION:
 		MSG_ReadPos (&net_message, pos);
-		ex = CL_AllocExplosion (pos, ex_poly);
+		ex = CL_AllocExplosion (pos, ex_poly, cl_mod_explo4, EXPLO4_WALL_DIST);
 		ex->ent.flags = RF_FULLBRIGHT;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
 		ex->lightcolor[1] = 0.5;
 		ex->lightcolor[2] = 0.5;
 		ex->ent.angles[1] = rand() % 360;
-		ex->ent.model = cl_mod_explo4;
 		if (frand() < 0.5)
 			ex->baseframe = 15;
 		ex->frames = 15;
@@ -1104,14 +1113,13 @@ void CL_ParseTEnt (void)
 	case TE_EXPLOSION1_NP:						// PMM
 		MSG_ReadPos (&net_message, pos);
 
-		ex = CL_AllocExplosion (pos, ex_poly);
+		ex = CL_AllocExplosion (pos, ex_poly, (type != TE_EXPLOSION1_BIG) ? cl_mod_explo4 : cl_mod_explo4_big, EXPLO4_WALL_DIST);
 		ex->ent.flags = RF_FULLBRIGHT;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
 		ex->lightcolor[1] = 0.5;
 		ex->lightcolor[2] = 0.5;
 		ex->ent.angles[1] = rand() % 360;
-		ex->ent.model = (type != TE_EXPLOSION1_BIG) ? cl_mod_explo4 : cl_mod_explo4_big;			// PMM
 		if (frand() < 0.5)
 			ex->baseframe = 15;
 		ex->frames = 15;
@@ -1123,13 +1131,12 @@ void CL_ParseTEnt (void)
 
 	case TE_BFG_EXPLOSION:
 		MSG_ReadPos (&net_message, pos);
-		ex = CL_AllocExplosion (pos, ex_poly);
+		ex = CL_AllocExplosion (pos, ex_poly, cl_mod_bfg_explo);
 		ex->ent.flags = RF_FULLBRIGHT;
 		ex->light = 350;
 		ex->lightcolor[0] = 0.0;
 		ex->lightcolor[1] = 1.0;
 		ex->lightcolor[2] = 0.0;
-		ex->ent.model = cl_mod_bfg_explo;
 		ex->frames = 4;
 		break;
 
@@ -1171,12 +1178,11 @@ void CL_ParseTEnt (void)
 		color = MSG_ReadByte (&net_message);
 		CL_ParticleEffect2 (pos, dir, color, cnt);
 
-		ex = CL_AllocExplosion (pos, ex_flash);
+		ex = CL_AllocExplosion (pos, ex_flash, NULL);	// flash only
 		ex->light = 100 + (rand()%75);
 		ex->lightcolor[0] = 1.0f;
 		ex->lightcolor[1] = 1.0f;
 		ex->lightcolor[2] = 0.3f;
-		ex->ent.model = NULL;			// flash only
 		ex->frames = 2;
 		break;
 
@@ -1202,9 +1208,9 @@ void CL_ParseTEnt (void)
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
 
-		CL_BlasterParticles2 (pos, dir, (type == TE_BLASTER2) ? 0xD0 : 0x6F);
+		CL_BlasterParticles (pos, dir, (type == TE_BLASTER2) ? 0xD0 : 0x6F);
 
-		ex = CL_AllocExplosion (pos, ex_misc);
+		ex = CL_AllocExplosion (pos, ex_misc, cl_mod_explode);
 		ex->ent.angles[0] = acos(dir[2])/M_PI*180;
 		// PMM - fixed to correct for pitch of 0
 		if (dir[0])
@@ -1227,7 +1233,6 @@ void CL_ParseTEnt (void)
 			ex->lightcolor[1] = 0.41;
 			ex->lightcolor[2] = 0.75;
 		}
-		ex->ent.model = cl_mod_explode;
 		ex->frames = 4;
 		S_StartSound (&pos,  0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
 		break;
@@ -1247,14 +1252,13 @@ void CL_ParseTEnt (void)
 	case TE_PLAIN_EXPLOSION:
 		MSG_ReadPos (&net_message, pos);
 
-		ex = CL_AllocExplosion (pos, ex_poly);
+		ex = CL_AllocExplosion (pos, ex_poly, cl_mod_explo4, EXPLO4_WALL_DIST);
 		ex->ent.flags = RF_FULLBRIGHT;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
 		ex->lightcolor[1] = 0.5;
 		ex->lightcolor[2] = 0.5;
 		ex->ent.angles[1] = rand() % 360;
-		ex->ent.model = cl_mod_explo4;
 		if (frand() < 0.5)
 			ex->baseframe = 15;
 		ex->frames = 15;
@@ -1328,7 +1332,6 @@ void CL_ParseTEnt (void)
 	case TE_ELECTRIC_SPARKS:
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
-//		CL_ParticleEffect (pos, dir, 109, 40);
 		CL_ParticleEffect (pos, dir, 0x75, 40);
 		//FIXME : replace or remove this sound
 		S_StartSound (&pos, 0, 0, cl_sfx_lashit, 1, ATTN_NORM, 0);
@@ -1338,7 +1341,6 @@ void CL_ParseTEnt (void)
 		MSG_ReadPos (&net_message, pos);
 		CL_ColorFlash (pos, 0, 150, -1, -1, -1);
 		CL_ColorExplosionParticles (pos, 0, 1);
-//		CL_Tracker_Explode (pos);
 		S_StartSound (&pos, 0, 0, cl_sfx_disrexp, 1, ATTN_NORM, 0);
 		break;
 

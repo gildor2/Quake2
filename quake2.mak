@@ -18,6 +18,7 @@ STATIC = \
 	Release/obj/CoreStatic/Memory.obj \
 	Release/obj/CoreStatic/OutputDevice.obj \
 	Release/obj/CoreStatic/ErrorMgr.obj \
+	Release/obj/CoreStatic/ScriptParser.obj \
 	Release/obj/CoreStatic/Strings.obj \
 	Release/obj/CoreStatic/CoreWin32.obj \
 	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
@@ -67,7 +68,6 @@ STATIC = \
 	Release/obj/q2stat/model.obj \
 	Release/obj/q2stat/msg.obj \
 	Release/obj/q2stat/net_chan.obj \
-	Release/obj/q2stat/parser.obj \
 	Release/obj/q2stat/pmove.obj \
 	Release/obj/q2stat/q_shared2.obj \
 	Release/obj/q2stat/zip.obj \
@@ -113,6 +113,7 @@ DEDICATED = \
 	Release/obj/CoreStatic/Memory.obj \
 	Release/obj/CoreStatic/OutputDevice.obj \
 	Release/obj/CoreStatic/ErrorMgr.obj \
+	Release/obj/CoreStatic/ScriptParser.obj \
 	Release/obj/CoreStatic/Strings.obj \
 	Release/obj/CoreStatic/CoreWin32.obj \
 	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
@@ -142,7 +143,6 @@ DEDICATED = \
 	Release/obj/dedstat/model.obj \
 	Release/obj/dedstat/msg.obj \
 	Release/obj/dedstat/net_chan.obj \
-	Release/obj/dedstat/parser.obj \
 	Release/obj/dedstat/pmove.obj \
 	Release/obj/dedstat/q_shared2.obj \
 	Release/obj/dedstat/zip.obj \
@@ -181,6 +181,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h
 
@@ -205,6 +206,9 @@ Release/obj/CoreStatic/Memory.obj : Core/Src/Memory.cpp $(DEPENDS)
 Release/obj/CoreStatic/OutputDevice.obj : Core/Src/OutputDevice.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/OutputDevice.obj" Core/Src/OutputDevice.cpp
 
+Release/obj/CoreStatic/ScriptParser.obj : Core/Src/ScriptParser.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/ScriptParser.obj" Core/Src/ScriptParser.cpp
+
 Release/obj/CoreStatic/Strings.obj : Core/Src/Strings.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/Strings.obj" Core/Src/Strings.cpp
 
@@ -215,6 +219,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	Core/Src/CoreLocal.h
@@ -231,6 +236,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/dinput.h \
@@ -263,6 +269,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -298,6 +305,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -335,6 +343,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -371,6 +380,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -405,6 +415,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -439,6 +450,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -472,6 +484,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -507,6 +520,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -541,6 +555,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -574,6 +589,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -606,6 +622,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -637,6 +654,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -666,6 +684,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -694,6 +713,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -721,6 +741,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -746,6 +767,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -772,6 +794,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
@@ -797,6 +820,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
@@ -830,6 +854,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
@@ -861,6 +886,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
@@ -898,6 +924,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
@@ -938,6 +965,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
@@ -970,6 +998,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
@@ -1005,6 +1034,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
@@ -1059,6 +1089,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
@@ -1092,6 +1123,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
@@ -1133,6 +1165,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
@@ -1169,6 +1202,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
@@ -1196,6 +1230,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
@@ -1225,6 +1260,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
@@ -1258,6 +1294,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
@@ -1299,6 +1336,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
@@ -1331,6 +1369,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
@@ -1382,6 +1421,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
@@ -1409,9 +1449,6 @@ Release/obj/dedstat/msg.obj : qcommon/msg.cpp $(DEPENDS)
 
 Release/obj/dedstat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/net_chan.obj" qcommon/net_chan.cpp
-
-Release/obj/dedstat/parser.obj : qcommon/parser.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/parser.obj" qcommon/parser.cpp
 
 Release/obj/dedstat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/pmove.obj" qcommon/pmove.cpp
@@ -1454,9 +1491,6 @@ Release/obj/q2stat/msg.obj : qcommon/msg.cpp $(DEPENDS)
 Release/obj/q2stat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/net_chan.obj" qcommon/net_chan.cpp
 
-Release/obj/q2stat/parser.obj : qcommon/parser.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/parser.obj" qcommon/parser.cpp
-
 Release/obj/q2stat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/pmove.obj" qcommon/pmove.cpp
 
@@ -1478,6 +1512,7 @@ DEPENDS = \
 	Core/Inc/DbgSymbols.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \

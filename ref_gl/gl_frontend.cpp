@@ -934,6 +934,8 @@ void md3Model_t::AddSurfaces (refEntity_t *e)
 {
 #ifdef SHOW_MD3_SURFS
 	DrawTextLeft(va("%s: custSh=%s skin=%X skinNum=%d", name, e->customShader ? e->customShader->name : "NULL", e->skin, e->skinNum));
+	for (int k = 0; k < e->skin->numSurfs; k++)
+		DrawTextLeft(va("  %d: %s = %s", k, e->skin->surf[k].surfName, e->skin->surf[k].shader->name),RGB(0.1,0.1,1));
 #endif
 	surfaceMd3_t *s = surf;
 	for (int i = 0; i < numSurfaces; i++, s++)

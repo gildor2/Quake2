@@ -677,11 +677,11 @@ static void CL_AddPacketEntities (void)
 		if (st->solid != 31)
 			FNegate (ent.angles[2]);		// triangle models have bug in Q2: angles[2] should be negated
 
-		if (effects & (EF_BFG|EF_ANIM_ALLFAST) == EF_BFG)
+		if ((effects & (EF_BFG|EF_ANIM_ALLFAST)) == EF_BFG)
 		{
 			// BFG explosion: compute fx time
 			//?? may check model name
-			ent.time = (st->frame + cl.lerpfrac) / 10.0f;
+			ent.time = cl.ftime - (st->frame + cl.lerpfrac) / 10.0f;
 		}
 
 		if (st->number == cl.playernum+1)

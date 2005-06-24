@@ -241,8 +241,9 @@ Shader system
 - implemented Quake3-like shader system
 - scripts can be loaded from standard Quake3 place (scripts/*.shader) and from separate file (*.qs) - one script
   per file (priority to *.qs file, if absent - check *.shader files)
-- shader templates (inside *.shader files, can use filename mask instead of shader name and $texture in *map
+- shader templates (inside *.shader files, can use filename mask instead of shader name and "$texture" in *map
   commands for mapping texture, which base name is the same, as requested shader name)
+- in all *map commands when used "./texName", "./" will be replaced within a shader path
 
 
 ?????????

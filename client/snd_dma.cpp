@@ -318,12 +318,9 @@ S_RegisterSound
 */
 sfx_t *S_RegisterSound (const char *name)
 {
-	sfx_t	*sfx;
+	if (!sound_started) return NULL;
 
-	if (!sound_started)
-		return NULL;
-
-	sfx = S_FindName (name, true);
+	sfx_t *sfx = S_FindName (name, true);
 	sfx->registration_sequence = s_registration_sequence;
 
 	if (!s_registering)
@@ -1191,43 +1188,33 @@ console functions
 
 static void S_Play_f (int argc, char **argv)
 {
-	int 	i;
-	char name[256];
-	sfx_t	*sfx;
-
-	for (i = 1; i < argc; i++)
+	for (int i = 1; i < argc; i++)
 	{
+		char name[256];
 		if (!strrchr (argv[i], '.'))
-		{
-			strcpy(name, argv[i]);
-			strcat(name, ".wav");
-		}
+			appSprintf (ARRAY_ARG(name), "%s.wav", argv[i]);
 		else
-			strcpy(name, argv[i]);
-		sfx = S_RegisterSound(name);
+			strcpy (name, argv[i]);
+		sfx_t *sfx = S_RegisterSound (name);
 		S_StartSound(NULL, cl.playernum+1, 0, sfx, 1.0, 1.0, 0);
 	}
 }
 
 static void S_SoundList_f (bool usage, int argc, char **argv)
 {
-	int		i, n;
-	sfx_t	*sfx;
-	sfxcache_t	*sc;
-	int		size, total;
-	char	*mask;
-
 	if (argc > 2 || usage)
 	{
 		Com_Printf ("Usage: soundlist [<mask>]\n");
 		return;
 	}
 
-	mask = argc == 2 ? argv[1] : NULL;
+	const char *mask = (argc == 2) ? argv[1] : NULL;
 
 	Com_Printf ("---lp-bit-size----name----------\n");
 
-	n =	total = 0;
+	int n = 0, total = 0;
+	int		i;
+	sfx_t	*sfx;
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
 	{
 		if (!sfx->name[0])
@@ -1236,10 +1223,10 @@ static void S_SoundList_f (bool usage, int argc, char **argv)
 		if (mask && !appMatchWildcard (sfx->name, mask, true)) continue;
 		n++;
 
-		sc = sfx->cache;
+		sfxcache_t *sc = sfx->cache;
 		if (sc)
 		{
-			size = sc->length*sc->width*(sc->stereo+1);
+			int size = sc->length*sc->width*(sc->stereo+1);
 			total += size;
 			Com_Printf ("%-3d %c %-2d  %-7d %s\n", i, sc->loopstart >= 0 ? 'L' : ' ', sc->width*8,  size, sfx->name);
 		}

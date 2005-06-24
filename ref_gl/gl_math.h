@@ -12,7 +12,7 @@ namespace OpenGLDrv {
 #define TABLE_MASK	(TABLE_SIZE-1)
 
 //?? make tables of size [TABLE_SIZE+1] to avoid some precision out-of-table errors
-extern float sinTable[], squareTable[], triangleTable[], sawtoothTable[], inverseSwatoothTable[];
+extern float sinTable[], squareTable[], triangleTable[], sawtoothTable[];
 extern float asinTable[], acosTable[];
 extern float atanTable[], atanTable2[];
 
@@ -78,7 +78,7 @@ inline float ATAN2_FUNC (float y, float x)
 #define SATURATE(c,l,v) c = l+(c-l)*v; c = bound(c, 0, 255);
 
 
-extern float *mathFuncs[];
+extern const float *mathFuncs[];
 
 
 //!! these tables are unused now

@@ -78,6 +78,8 @@ struct centity_t
 	int		fly_stoptime;
 };
 
+#define NEW_FX	(cl_newfx->integer)
+
 
 extern char cl_weaponmodels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
 extern int num_cl_weaponmodels;
@@ -364,7 +366,6 @@ void CL_AddDLights (void);
 //------------------------------------------------
 
 
-void CL_ClearEffects (void);
 void CL_ClearTEnts (void);
 void CL_BlasterTrail (const CVec3 &start, const CVec3 &end);
 void CL_RailTrail (const CVec3 &start, const CVec3 &end);
@@ -382,18 +383,16 @@ void CL_ParticleEffect (const CVec3 &org, const CVec3 &dir, int color, int count
 void CL_ParticleEffect2 (const CVec3 &org, const CVec3 &dir, int color, int count);
 void CL_ParticleEffect3 (const CVec3 &org, const CVec3 &dir, int color, int count);
 
+void CL_BlasterParticles (const CVec3 &org, const CVec3 &dir, unsigned color);
 // ROGUE
-void CL_BlasterParticles2 (const CVec3 &org, const CVec3 &dir, unsigned int color);
 void CL_BlasterTrail2 (const CVec3 &start, const CVec3 &end);
 void CL_DebugTrail (const CVec3 &start, const CVec3 &end);
 void CL_Flashlight (int ent, const CVec3 &pos);
 void CL_ForceWall (const CVec3 &start, const CVec3 &end, int color);
-void CL_GenericParticleEffect (const CVec3 &org, const CVec3 &dir, int color, int count, int numcolors, int dirspread, float alphavel);
 void CL_BubbleTrail2 (const CVec3 &start, const CVec3 &end, int dist);
 void CL_Heatbeam (const CVec3 &start, const CVec3 &end);
 void CL_ParticleSteamEffect (const CVec3 &org, const CVec3 &dir, int color, int count, int magnitude);
 void CL_TrackerTrail (const CVec3 &start, const CVec3 &end, int particleColor);
-void CL_Tracker_Explode(const CVec3 &origin);
 void CL_TagTrail (const CVec3 &start, const CVec3 &end, int color);
 void CL_ColorFlash (const CVec3 &pos, int ent, int intensity, float r, float g, float b);
 void CL_Tracker_Shell(const CVec3 &origin);
@@ -527,6 +526,9 @@ void CL_BfgParticles (entity_t *ent);
 void CL_EntityEvent (clEntityState_t *ent);
 // XATRIX
 void CL_TrapParticles (entity_t *ent);
+
+void CL_ClearEffects ();
+void CL_ClearLightStyles ();
 
 //
 // menus

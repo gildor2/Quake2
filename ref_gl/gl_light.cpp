@@ -749,48 +749,64 @@ void LightForEntity (refEntity_t *ent)
 //?? really, should move this func to backend, but must access entityColorAxis[]
 void DiffuseLight (color_t *dst, float lightScale)
 {
-	int		i;
+	int		i, tmp;
 	bufExtra_t *ex;
+
+	CVec3 maxColor = entityColorAxis[0];
+	maxColor.Zero ();
+	for (i = 1; i < 6; i++)
+	{
+		CVec3 &c = entityColorAxis[i];
+		if (maxColor[0] < c[0]) maxColor[0] = c[0];
+		if (maxColor[1] < c[1]) maxColor[1] = c[1];
+		if (maxColor[2] < c[2]) maxColor[2] = c[2];
+	}
+#define COLOR_STEP(src,dst,n)		\
+		tmp = appRound (src[n]);	\
+		dst.c[n] = (tmp > 255) ? 255 : tmp;
+	color_t c2;
+	COLOR_STEP(maxColor,c2,0); COLOR_STEP(maxColor,c2,1); COLOR_STEP(maxColor,c2,2);
 
 	float light = lightScale * 2 * gl_config.identityLightValue_f;	// *2 -- because 1 == double light (similar to lightmaps)
 	for (i = 0, ex = gl_extra; i < gl_numExtra; i++, ex++)
 	{
 		float	val;
-		CVec3	color;
 		CVec3	*axis;
-		int		tmp;
 
 		CVec3 &norm = ex->normal;
+		color_t	c;
 
-		color.Zero ();
-		// compute color
+		if (norm[0] || norm[1] || norm[2])
+		{
+			// compute color
+			CVec3 color;
+			color.Zero ();
 #if 1
 #define STEP(n)		\
-		FAbsSign(norm[n],val,tmp);	\
-		val *= light;				\
-		axis = &entityColorAxis[n*2+1-tmp];
+			FAbsSign(norm[n],val,tmp);	\
+			val *= light;				\
+			axis = &entityColorAxis[n*2+1-tmp];
 #else
 #define STEP(n)		\
-		axis = &entityColorAxis[(norm[n] < 0 ? (n * 2) : (n * 2 + 1))];	\
-		val = fabs (norm[n]) * light;
+			axis = &entityColorAxis[(norm[n] < 0 ? (n * 2) : (n * 2 + 1))];	\
+			val = fabs (norm[n]) * light;
 #endif
 
-		STEP(0);
-		VectorScale (*axis, val, color);
-		STEP(1);
-		VectorMA (color, val, *axis);
-		STEP(2);
-		VectorMA (color, val, *axis);
+			STEP(0);
+			VectorScale (*axis, val, color);
+			STEP(1);
+			VectorMA (color, val, *axis);
+			STEP(2);
+			VectorMA (color, val, *axis);
 #undef STEP
 
-		// apply color
-		color_t	c;
-#define STEP(n)		\
-		tmp = appRound (color[n]);	\
-		c.c[n] = (tmp > 255) ? 255 : tmp;
-		STEP(0); STEP(1); STEP(2);
-#undef STEP
-		c.c[3] = 255;
+			// apply color
+			COLOR_STEP(color,c,0); COLOR_STEP(color,c,1); COLOR_STEP(color,c,2);
+#undef COLOR_STEP
+			c.c[3] = 255;
+		}
+		else
+			c.rgba = c2.rgba;
 
 		for (int j = 0; j < ex->numVerts; j++, dst++)	// normally, here will be only 1 iteration ...
 			dst->rgba = c.rgba;							// just put computed color

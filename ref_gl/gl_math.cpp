@@ -7,11 +7,10 @@ namespace OpenGLDrv {
 
 /*----- Tables for fast periodic function computation -----*/
 
-float sinTable[TABLE_SIZE], squareTable[TABLE_SIZE], triangleTable[TABLE_SIZE],
-		 sawtoothTable[TABLE_SIZE], inverseSwatoothTable[TABLE_SIZE];
+float sinTable[TABLE_SIZE], squareTable[TABLE_SIZE], triangleTable[TABLE_SIZE], sawtoothTable[TABLE_SIZE];
 
-float *mathFuncs[5] = {
-	sinTable, squareTable, triangleTable, sawtoothTable, inverseSwatoothTable
+const float *mathFuncs[] = {
+	sinTable, squareTable, triangleTable, sawtoothTable
 };
 
 /*---------- Tables for non-periodic functions ------------*/
@@ -37,7 +36,6 @@ void InitFuncTables ()
 		squareTable[i] = (i < TABLE_SIZE/2) ? -1 : 1;
 		sinTable[i] = sin (j / (TABLE_SIZE/2) * M_PI);		// 0 -- 0, last -- 2*pi
 		sawtoothTable[i] = f;
-		inverseSwatoothTable[i] = 1 - f;
 
 		int n = (i + TABLE_SIZE/4) & TABLE_MASK;			// make range -1..1..-1
 		if (n >= TABLE_SIZE/2)

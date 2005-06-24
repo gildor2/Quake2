@@ -1493,16 +1493,16 @@ if box inside this brush or intersects its brushsides:
 else trace is unchanged
 ================
 */
-static bool TestBoxInBrush (const cbrush_t *brush)
+static bool TestBoxInBrush (const cbrush_t &brush)
 {
-	if (!brush->numsides)
+	if (!brush.numsides)
 		return false;
 
 	float clipdist = -BIG_NUMBER;
 	cbrushside_t *clipside = NULL;
 	int i;
 	cbrushside_t *side;
-	for (i = 0, side = &map_brushSides[brush->firstbrushside]; i < brush->numsides; i++, side++)
+	for (i = 0, side = &map_brushSides[brush.firstbrushside]; i < brush.numsides; i++, side++)
 	{
 		cplane_t *plane = side->plane;
 
@@ -1533,7 +1533,7 @@ static bool TestBoxInBrush (const cbrush_t *brush)
 	// inside this brush
 	tr.trace.startsolid = tr.trace.allsolid = true;
 	tr.trace.fraction = 0;
-	tr.trace.contents = brush->contents;
+	tr.trace.contents = brush.contents;
 	tr.trace.plane    = *clipside->plane;
 	tr.trace.surface  = clipside->surface;
 
@@ -1558,12 +1558,12 @@ static void TestInLeaf (int leafnum)
 	// trace line against all brushes in the leaf
 	for (int i = 0; i < leaf->numleafbrushes; i++)
 	{
-		cbrush_t *b = map_brushes + map_leafBrushes[leaf->firstleafbrush + i];
-		if (b->traceFrame == traceFrame)
+		cbrush_t &b = map_brushes[map_leafBrushes[leaf->firstleafbrush + i]];
+		if (b.traceFrame == traceFrame)
 			continue;	// already checked this brush in another leaf
-		b->traceFrame = traceFrame;
+		b.traceFrame = traceFrame;
 
-		if (!(b->contents & tr.contents))
+		if (!(b.contents & tr.contents))
 			continue;
 		if (TestBoxInBrush (b)) return;
 	}

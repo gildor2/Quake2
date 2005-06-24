@@ -31,7 +31,7 @@ typedef struct
 	char	imageName[MAX_OSPATH];		// used for "map image.pcx"
 
 	int		frame;
-	float	frameTime;					// == cls.realtime for current cinematic frame; float precision for correct
+	double	frameTime;					// == cls.realtime for current cinematic frame; float precision for correct
 										// video/audio synchronization; why: S_RawSamples() will not restart sound, but sound
 										// buffer will be filled every 1000/CIN_SPEED ~ 71.4 msecs; when round this value to
 										// 71 or 72 will get desynchronization about 0.5/71 == 0.007 => ~0.42 sec per minute ...)

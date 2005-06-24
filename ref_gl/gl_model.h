@@ -218,7 +218,7 @@ struct gl_flare_t
 	// lighting
 	color_t	color;
 	byte	style;
-	float	lastTime;
+	double	lastTime;
 	gl_flare_t *next;
 };
 

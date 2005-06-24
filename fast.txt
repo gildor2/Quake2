@@ -1,25 +1,17 @@
-! NVIDIA: check bugs, described in bugs.txt (BK_EndFrame (!) and video playback (?))
-? EF_BFG, some other - TRANSLUCENT -> shader (cl_ents.cpp)
+- EF_BFG, some other - TRANSLUCENT -> shader (cl_ents.cpp)
 - need ability to get shader script from memory (map script with builtin shaders; main engine will pass them to renderer)
   (EASY to implement ...)
 ? can do similar thing, using FindShader(name, scriptName) -- will create shader with "name", but using script/template "scriptName"
   - can use this for r_lightmap (?), f_fullbright (?), gl_showFillRate, gl_singleShader (!)
 ? aminMap with cross-blending (for sprites) -- combiners?
+? animMapOnce (check UberEngine function)
 - bfg beams: try to find entity, which is damaged, and lerp beam dst to it (beam src should be lerped too)
-- sprites:
-  - should get time for shader from entity (entity.fxTime: use "refdef.time - entity.fxTime" as shader time)
-  * shader: add flag "dependOnTime", when one of stages have *animMap, rgbGen/alphaGen wave with amp<>0 and freq<>0,
-    deforms (more?), to allow multiple sprites to have independent animations (like "dependOnEntity" for shader);
-    can mix different entities with "dependOnTime == true", only when these entities have the same fxTime;
-    set "dependOnTime" to "true" when:
-    * any tcmod
-    * rgbGen wave, (entity, oneMinusEntity? -- dependOnEntity)
-    * alphaGen wave, (entity, oneMinusEntity?)
-    * numAnimTextures > 1
-    * deform != autosprite[2]
-  - how to use dependOnTime:
-    * if ent.worldMatrix & (ent.time == world.time || !ent.dependOnTime) -> entityNum = WORLD
-    ! may be, require to create dummy entity for beams etc
+- sprite system:
+  - pos
+  - rotate
+  - scale
+  - alpha
+- shader.globalTime -- force to use vp.time; shader.absoluteTime -- use ent.time instead of (vp.time-ent.time) (useful for sprites)
 =============
 - correct autoflare center
 - gl_state.haveFullscreen3d -- change (may be, remove var)

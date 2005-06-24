@@ -762,9 +762,20 @@ static void cSprShader (int argc, char **argv)
 	}
 }
 
+static void cSize (int argc, char **argv)
+{
+	int w = atoi (argv[1]);
+	int h = atoi (argv[2]);
+	loadSpr->frames[0].width  = w;
+	loadSpr->frames[0].height = h;
+	loadSpr->frames[0].localOrigin[0] = w / 2;
+	loadSpr->frames[0].localOrigin[1] = h / 2;
+}
+
 
 static const CSimpleCommand sprCommands[] = {
-	{"shader",	cSprShader}
+	{"shader",	cSprShader	},
+	{"size",	cSize		}
 };
 
 
@@ -779,8 +790,9 @@ sprModel_t *LoadSpr (const char *name, byte *buf, unsigned len)
 	spr->numFrames = 1;
 
 	loadSpr = spr;
-	SetupTextParser ((char*)buf);
-	while (const char *line = GetScriptLine ())
+	CSimpleParser text;
+	text.InitFromBuf ((char*)buf);
+	while (const char *line = text.GetLine ())
 		if (!ExecuteCommand (line, ARRAY_ARG(sprCommands)))
 			Com_WPrintf ("%s: invalid line [%s]\n", name, line);
 

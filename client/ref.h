@@ -67,7 +67,7 @@ struct entity_t
 	int		skinnum;				// number of model built-in skin
 
 	unsigned flags;					// set of RF_XXX flags
-	float	time;					// for effects; used as refdef.time-ent.time (starting time of fx)
+	double	time;					// for effects; used as refdef.time-ent.time (starting time of fx)
 };
 
 
@@ -147,7 +147,7 @@ struct refdef_t
 	float	fov_x, fov_y;
 	CVec3	vieworg;
 	CVec3	viewangles;
-	float	time;					// time is used to auto animate
+	double	time;					// time for shader effects
 	unsigned rdflags;				// RDF_UNDERWATER, etc
 
 	byte	*areabits;				// if not NULL, only areas with set bits will be drawn

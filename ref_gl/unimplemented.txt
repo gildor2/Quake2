@@ -252,7 +252,12 @@ PreprocessShader():
   - add SHADER_SPRITE: alpha/alphatest, depth-write/test, sort=5, rgb/alpha-gen=vertex
   ? don't need shader->sortParam other than opaque/seethrough (may be, +coronas (already painted after all) +hud (2D ? already separate))
   - r_colorMipLevels changing: cat auto-reload all IMAGE_MIPMAP pics (but may require to recreate some system images)
-
+  ! perfomance: each sprite with tcMod/rgbGen/alphaGen dependOnTime painted with separate FlushShader() call; can improve in
+    following ways:
+    1) pre-transform texcoords, colors when adding to buffer (limit to rgbGen entity, alphaGen entity ? or add flag: "already transformed")
+    2) when trying to draw 2 sprites with the same shader (but different entity) one by one, can accumulate parameters (compute
+       rgb/alpha/tex in BK_DrawScene()?) and draw when shader changed -- suitable for 1-stage shaders only? or for shaders with
+       only 1 texcoord and 1 color array per all stages (1 stage only, or all params are same, or use const color + 1 array ...)
 
 
 - dynamic lightmaps:

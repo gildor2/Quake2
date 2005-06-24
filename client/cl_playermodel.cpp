@@ -205,12 +205,13 @@ static void ReadModelsGenderList ()
 		return;
 	}
 
-	SetupTextParser (buf);
+	CSimpleParser text;
+	text.InitFromBuf (buf);
 
 	char *out = femaleModelBuf;
 	int free = MAX_FEMALE_MODEL_BUF;
 
-	while (const char *line = GetScriptLine ())
+	while (const char *line = text.GetLine ())
 	{
 		int n = strlen (line) + 1;
 		Com_DPrintf("female model: %s\n",line);
@@ -278,10 +279,11 @@ static bool SetMd3Skin (const char *skinName, CModelSkin &skin)
 	// parse skin
 	memset (&skin, 0, sizeof(skin));
 	bool result = true;
-	SetupTextParser (buf);
+	CSimpleParser text;
+	text.InitFromBuf (buf);
 
 	int numSurfs = 0;
-	while (const char *line = GetScriptLine ())
+	while (const char *line = text.GetLine ())
 	{
 		char *p = strchr (line, ',');
 		if (!p || !p[1]) continue;		// no shader
@@ -381,9 +383,10 @@ static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 
 	ci.modelGender = 'm';								// male; default
 
-	SetupTextParser (buf);
+	CSimpleParser text;
+	text.InitFromBuf (buf);
 
-	while (const char *line = GetScriptLine ())
+	while (const char *line = text.GetLine ())
 	{
 		// execute line
 		if (line[0] >= '0' && line[0] <= '9')		// numbers => frame numbers
@@ -708,8 +711,9 @@ static bool LoadWeaponInfo (const char *filename, weaponInfo_t &weap)
 	// defaults
 	weap.drawScale = 1;
 	bool result = true;
-	SetupTextParser (buf);
-	while (const char *line = GetScriptLine ())
+	CSimpleParser text;
+	text.InitFromBuf (buf);
+	while (const char *line = text.GetLine ())
 	{
 		if (!ExecuteCommand (line, ARRAY_ARG(weapCommands)))
 		{

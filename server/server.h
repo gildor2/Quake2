@@ -162,7 +162,7 @@ typedef struct
 {
 	bool		initialized;				// sv_init has completed
 	int			realtime;					// always increasing, no clamping, etc
-	float		realtimef;					// same as "realtime", but more precisious (may be fractional, when timescale < 1)
+	double		realtimef;					// same as "realtime", but more precisious (may be fractional, when timescale < 1)
 
 	char		mapcmd[128];				// ie: *intro.cin+base
 

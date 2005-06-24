@@ -188,6 +188,7 @@ inline float appDeltaCyclesToMsecf (unsigned timeDelta)
 //!! #include "Cvar.h"
 #include "Commands.h"
 //!! #include "FileSystem.h"
+#include "ScriptParser.h"
 
 /*-----------------------------------------------------------------------------
 	Global variables

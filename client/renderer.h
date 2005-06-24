@@ -15,7 +15,7 @@ void	SetSky (const char *name, float rotate, const CVec3 &axis);
 void	EndRegistration ();						//?? remove
 
 // frame; rename!!
-void	BeginFrame (float time);
+void	BeginFrame (double time);
 void	RenderFrame (refdef_t *fd);
 void	EndFrame ();
 

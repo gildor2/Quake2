@@ -333,6 +333,7 @@ void S_PaintChannels(int endtime)
 #if 0
 					// disabled 13.06.2005 by Gildor: game code uses "target_speaker" entity
 					// with "spawnflags & 1" for looping sounds
+					// NOTE: if works OK, can remove all "loopstart" fields
 					else if (sc->loopstart >= 0)
 					{
 						ch->pos = sc->loopstart;
