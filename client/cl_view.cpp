@@ -320,8 +320,8 @@ void V_InitRenderer ()
 	if (cls.realtime < startTime + 300)
 		return;
 
-	CL_ClearTEnts ();		// temp entities linked to models, which are invalid after vid_restart
 	CL_ClearEffects ();		// can use shaders ...
+	CL_ClearTEnts ();		// temp entities linked to models, which are invalid after vid_restart
 
 	// let the render dll load the map
 	char mapname[MAX_QPATH];

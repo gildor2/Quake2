@@ -803,9 +803,7 @@ static void CL_AddPacketEntities (void)
 					V_AddLight (ent.pos.origin, 200, 0, 1, 0);	// PGM
 				else											// PGM
 					V_AddLight (ent.pos.origin, 200, 1, 1, 0);
-			} else if (effects & EF_GIB) {
-				CL_DiminishingTrail (cent->lerp_origin, ent.pos.origin, cent, effects);
-			} else if (effects & EF_GRENADE) {
+			} else if (effects & (EF_GIB|EF_GREENGIB|EF_GRENADE)) {
 				CL_DiminishingTrail (cent->lerp_origin, ent.pos.origin, cent, effects);
 			} else if (effects & EF_FLIES) {
 				CL_FlyEffect (cent, ent.pos.origin);
@@ -831,15 +829,15 @@ static void CL_AddPacketEntities (void)
 				CL_TrapParticles (&ent);
 				V_AddLight (ent.pos.origin, (rand()%100) + 100, 1, 0.8, 0.1);
 			} else if (effects & EF_FLAG1) {
-				CL_FlagTrail (cent->lerp_origin, ent.pos.origin, 242);
+				CL_FlagTrail (cent->lerp_origin, ent.pos.origin, 0xF2);
 				V_AddLight (ent.pos.origin, 100, 1, 0.1, 0.1);
 			} else if (effects & EF_FLAG2) {
-				CL_FlagTrail (cent->lerp_origin, ent.pos.origin, 115);
+				CL_FlagTrail (cent->lerp_origin, ent.pos.origin, 0x73);
 				V_AddLight (ent.pos.origin, 100, 0.1, 0.1, 1);
 			}
 			//ROGUE
 			else if (effects & EF_TAGTRAIL) {
-				CL_TagTrail (cent->lerp_origin, ent.pos.origin, 220);
+				CL_TagTrail (cent->lerp_origin, ent.pos.origin);
 				V_AddLight (ent.pos.origin, 100, 1.0, 1.0, 0.0);
 			} else if (effects & EF_TRACKERTRAIL) {
 				if (effects & EF_TRACKER)
@@ -857,9 +855,7 @@ static void CL_AddPacketEntities (void)
 				V_AddLight (ent.pos.origin, 200, -1, -1, -1);	//?? neg light
 			}
 			// XATRIX
-			else if (effects & EF_GREENGIB) {
-				CL_DiminishingTrail (cent->lerp_origin, ent.pos.origin, cent, effects);
-			} else if (effects & EF_IONRIPPER) {
+			else if (effects & EF_IONRIPPER) {
 				CL_IonripperTrail (cent->lerp_origin, ent.pos.origin);
 				V_AddLight (ent.pos.origin, 100, 1, 0.5, 0.5);
 			} else if (effects & EF_BLUEHYPERBLASTER) {

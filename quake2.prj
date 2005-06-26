@@ -45,7 +45,6 @@ CLIENT = \
 	$D/cl_fx.cpp \
 	$D/cl_input.cpp \
 	$D/cl_main.cpp \
-	$D/cl_newfx.cpp \
 	$D/cl_parse.cpp \
 	$D/cl_playermodel.cpp \
 	$D/cl_pred.cpp \

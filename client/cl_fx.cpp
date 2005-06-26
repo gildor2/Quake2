@@ -1,36 +1,9 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-// cl_fx.cpp -- entity effects parsing and management
-
 #include "client.h"
 
-void CL_LogoutEffect (const CVec3 &org, int type);
 
-/*
-==============================================================
-
-LIGHT STYLE MANAGEMENT
-
-==============================================================
-*/
-
+/*-----------------------------------------------------------------------------
+	Lightstyles
+-----------------------------------------------------------------------------*/
 
 lightstyle_t cl_lightstyles[MAX_LIGHTSTYLES];
 
@@ -61,7 +34,7 @@ void CL_ClearLightStyles ()
 }
 
 
-void CL_RunLightStyles (void)
+void CL_RunLightStyles ()
 {
 	int ofs = cl.time / 100;
 	float frac1 = (cl.time % 100) / 100.0f;
@@ -108,16 +81,11 @@ void CL_SetLightstyle (int i, const char *s)
 }
 
 
-/*
-==============================================================
-
-DLIGHT MANAGEMENT
-
-==============================================================
-*/
+/*-----------------------------------------------------------------------------
+	Dlights
+-----------------------------------------------------------------------------*/
 
 static cdlight_t cl_dlights[MAX_DLIGHTS];
-
 
 void CL_ClearDlights (void)
 {
@@ -169,10 +137,7 @@ void CL_AddDLights (void)
 {
 	int			i;
 	cdlight_t	*dl;
-
-	dl = cl_dlights;
-
-	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
+	for (i = 0, dl = cl_dlights; i < MAX_DLIGHTS; i++, dl++)
 	{
 		if (!dl->radius) continue;
 		if (dl->die < cl.time)
@@ -185,13 +150,9 @@ void CL_AddDLights (void)
 }
 
 
-/*
-==============================================================
-
-PARTICLE MANAGEMENT
-
-==============================================================
-*/
+/*-----------------------------------------------------------------------------
+	Particles
+-----------------------------------------------------------------------------*/
 
 particle_t	*active_particles;
 static particle_t *free_particles, particles[MAX_PARTICLES];
@@ -481,12 +442,6 @@ particle_t *CL_AllocParticle (void)
 }
 
 
-
-/*
-===============
-CL_UpdateParticles
-===============
-*/
 void CL_UpdateParticles (void)
 {
 	guard(CL_UpdateParticles);
@@ -1139,11 +1094,12 @@ void CL_ParticleEffect2 (const CVec3 &org, const CVec3 &dir, int color, int coun
 		-PARTICLE_GRAVITY,				// gravity
 		8								// width
 	};
+	fx.color = color;
 	ParticleEffect (org, count, fx, dir);
 }
 
 
-// same as CL_ParticleEffect2(), but with positive gravity
+// same as CL_ParticleEffect2(), but with inversed gravity
 void CL_ParticleEffect3 (const CVec3 &org, const CVec3 &dir, int color, int count)
 {
 	static particleEffect_t fx = {
@@ -1231,18 +1187,15 @@ void CL_BFGExplosionParticles (const CVec3 &org)
 }
 
 
-// used for tracker explosion only, color=1, run=1
-void CL_ColorExplosionParticles (const CVec3 &org, int color, int run)
+void CL_TrackerExplosionParticles (const CVec3 &org)
 {
-	static particleEffect_t fx = {
-		0, 1,							// both params -> from args
+	static const particleEffect_t fx = {
+		0, 1,							// color
 		{-16,-16,-16, 16,16,16},		// bounds
 		{-128,-128,-128, 128,128,128},	// velocity
 		1.5, 2.0,						// fade time
 		-PARTICLE_GRAVITY				// gravity
 	};
-	fx.color = color;
-	fx.colorRand = run;
 	ParticleEffect (org, 128, fx);
 }
 
@@ -1326,6 +1279,8 @@ void CL_RocketTrail (const CVec3 &start, const CVec3 &end, centity_t *old)
 	CL_DiminishingTrail (start, end, old, EF_ROCKET);
 	// fire
 	static const particleEffect_t fx = {
+#if 0
+		// original fire trail
 		0xDC, 4,						// color
 		{-5, -5, -5,  5, 5, 5},			// bounds
 		{-20,-20,-20, 20,20,20},		// velocity
@@ -1335,6 +1290,17 @@ void CL_RocketTrail (const CVec3 &start, const CVec3 &end, centity_t *old)
 		0,								// velWidth
 		1,								// interval
 		0.125							// density
+#else
+		0xDC, 4,						// color
+		{-5, -5, -5,  5, 5, 5},			// bounds
+		{-20,-20,-20, 20,20,20},		// velocity
+		0.25, 0.3,						// fade time
+		-PARTICLE_GRAVITY,				// gravity
+		0,								// width
+		0,								// velWidth
+		1,								// interval
+		0								// density
+#endif
 	};
 	MovableParticleEffect (start, end, fx);
 }
@@ -1357,9 +1323,9 @@ void CL_BubbleTrail (const CVec3 &start, const CVec3 &end)
 }
 
 
-void CL_BubbleTrail2 (const CVec3 &start, const CVec3 &end, int dist)
+void CL_BubbleTrail2 (const CVec3 &start, const CVec3 &end)
 {
-	static particleEffect_t fx = {
+	static const particleEffect_t fx = {
 		4, 8,							// color
 		{-2, -2, -6,  2, 2,-2},			// bounds
 		{-10,-10,10,  10,10,30},		// velocity
@@ -1367,18 +1333,17 @@ void CL_BubbleTrail2 (const CVec3 &start, const CVec3 &end, int dist)
 		0,								// gravity
 		0,								// width
 		0,								// velWidth
-		1,								// interval -> from arg
+		8,								// interval
 		0								// density
 	};
-	fx.interval = dist;
 	MovableParticleEffect (start, end, fx);
 }
 
 
-void CL_TagTrail (const CVec3 &start, const CVec3 &end, int color)
+void CL_TagTrail (const CVec3 &start, const CVec3 &end)
 {
-	static particleEffect_t fx = {
-		0, 1,							// color -> from arg
+	static const particleEffect_t fx = {
+		0xDC, 1,						// color -> from arg
 		{-16,-16,-16,  16,16,16},		// bounds
 		{-5,-5,-5,   5, 5, 5},			// velocity
 		0.8, 1.0,						// fade time
@@ -1388,7 +1353,6 @@ void CL_TagTrail (const CVec3 &start, const CVec3 &end, int color)
 		5,								// interval
 		0								// density
 	};
-	fx.color = color;
 	MovableParticleEffect (start, end, fx);
 }
 
@@ -1434,27 +1398,26 @@ void CL_ForceWall (const CVec3 &start, const CVec3 &end, int color)
 
 void CL_BigTeleportParticles (const CVec3 &org)
 {
-	int			i;
-	particle_t	*p;
-	float		angle, dist;
-	static int colortable[4] = {2*8,13*8,21*8,18*8};
+	static const int colortable[4] = {2*8,13*8,21*8,18*8};
 
-	for (i=0 ; i<4096 ; i++)
+	for (int i = 0; i < 4096; i++)
 	{
-		if (!(p = CL_AllocParticle ()))
-			return;
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
 
 		p->color = colortable[rand()&3];
 
-		angle = M_PI*2*(rand()&1023)/1023.0;
-		dist = rand()&31;
-		p->org[0] = org[0] + cos(angle)*dist;
-		p->vel[0] = cos(angle)*(70+(rand()&63));
+		float angle = 2*M_PI * (rand()&1023) / 1023.0;
+		float dist = rand()&31;
+		float c = cos(angle);
+		float s = sin(angle);
+		p->org[0] = org[0] + c * dist;
+		p->vel[0] = c * (70+(rand()&63));
 		p->accel[0] = -cos(angle)*200;
 
-		p->org[1] = org[1] + sin(angle)*dist;
-		p->vel[1] = sin(angle)*(70+(rand()&63));
-		p->accel[1] = -sin(angle)*200;
+		p->org[1] = org[1] + s * dist;
+		p->vel[1] = s * (70+(rand()&63));
+		p->accel[1] = -s * 200;
 
 		p->org[2] = org[2] + 8 + (rand()%90);
 		p->vel[2] = -100 + (rand()&31);
@@ -1468,19 +1431,15 @@ void CL_BigTeleportParticles (const CVec3 &org)
 
 void CL_DiminishingTrail (const CVec3 &start, const CVec3 &end, centity_t *old, int flags)
 {
-	CVec3		move, vec;
-	int			j;
-	particle_t	*p;
-	float		orgscale;
-	float		velscale;
-
-	move = start;
+	CVec3 move = start;
+	CVec3 vec;
 	VectorSubtract (end, start, vec);
 	float len = vec.NormalizeFast ();
 
 	float dec = 0.5f;
 	vec.Scale (dec);
 
+	float orgscale, velscale;
 	if (old->trailcount > 900)
 	{
 		orgscale = 4;
@@ -1497,53 +1456,48 @@ void CL_DiminishingTrail (const CVec3 &start, const CVec3 &end, centity_t *old, 
 		velscale = 5;
 	}
 
+	int baseColor;
+	float fadeDelta;
+	float vel2 = 0, accel2 = 0;
+	if (flags & EF_GIB)
+	{
+		fadeDelta = 0.4f;
+		baseColor = 0xE8;
+		vel2 -= PARTICLE_GRAVITY;
+	}
+	else if (flags & EF_GREENGIB)
+	{
+		fadeDelta = 0.4f;
+		baseColor = 0xDB;
+		vel2 -= PARTICLE_GRAVITY;
+	}
+	else // EF_GRENADE, EF_ROCKET
+	{
+		fadeDelta = 0.2f;
+		baseColor = 4;
+		accel2 = PARTICLE_GRAVITY/2;
+	}
+
 	while (len > 0)
 	{
 		len -= dec;
 
 		// drop less particles as it flies
-		if ((rand()&1023) < old->trailcount)
+		if ((rand() & 1023) < old->trailcount)
 		{
-			if (!(p = CL_AllocParticle ()))
-				return;
-			p->accel[2] = 0;		// accel = 0
+			particle_t *p;
+			if (!(p = CL_AllocParticle ())) return;
+			p->accel[2] = accel2;
+			p->alpha = 1.0f;
+			p->alphavel = -1.0f / (1 + frand() * fadeDelta);
+			p->color = baseColor + (rand() & 7);
 
-			if (flags & EF_GIB)
+			for (int j = 0; j < 3; j++)
 			{
-				p->alpha = 1.0f;
-				p->alphavel = -1.0f / (1+frand()*0.4f);
-				p->color = 0xe8 + (rand()&7);
-				for (j=0 ; j<3 ; j++)
-				{
-					p->org[j] = move[j] + crand()*orgscale;
-					p->vel[j] = crand()*velscale;
-				}
-				p->vel[2] -= PARTICLE_GRAVITY;
+				p->org[j] = move[j] + crand()*orgscale;
+				p->vel[j] = crand()*velscale;
 			}
-			else if (flags & EF_GREENGIB)
-			{
-				p->alpha = 1.0f;
-				p->alphavel = -1.0f / (1+frand()*0.4f);
-				p->color = 0xdb + (rand()&7);
-				for (j=0; j< 3; j++)
-				{
-					p->org[j] = move[j] + crand()*orgscale;
-					p->vel[j] = crand()*velscale;
-				}
-				p->vel[2] -= PARTICLE_GRAVITY;
-			}
-			else
-			{
-				p->alpha = 1.0f;
-				p->alphavel = -1.0f / (1+frand()*0.2f);
-				p->color = 4 + (rand()&7);
-				for (j=0 ; j<3 ; j++)
-				{
-					p->org[j] = move[j] + crand()*orgscale;
-					p->vel[j] = crand()*velscale;
-				}
-				p->accel[2] = PARTICLE_GRAVITY/2;
-			}
+			p->vel[2] += vel2;
 		}
 
 		old->trailcount -= 5;
@@ -1556,40 +1510,34 @@ void CL_DiminishingTrail (const CVec3 &start, const CVec3 &end, centity_t *old, 
 
 void CL_RailTrail (const CVec3 &start, const CVec3 &end)
 {
-	CVec3		move, vec;
-	float		d, c, s;
-	int			i, j;
-	particle_t	*p;
-	CVec3		right, up, dir;
-	byte		clr = 0x74;
-
-	move = start;
+	// spiral
+	CVec3 move = start;
+	CVec3 vec;
 	VectorSubtract (end, start, vec);
 	float len = vec.NormalizeFast ();
 
+	CVec3 right, up;
 	MakeNormalVectors (vec, right, up);
 
-	// spiral
-	for (i = 0; i < len; i++)
+	for (int i = 0; i < len; i++)
 	{
-		if (!(p = CL_AllocParticle ()))
-			return;
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
 		p->accel[2] = 0;
 
-		d = i * 0.1;
-		c = cos(d);		//!!
-		s = sin(d);		//!!
+		CVec3 dir;
+		float d = i * 0.1f;
+		// dir = right*cos(d) + up*sin(d)
+		VectorScale (right, cos(d), dir);
+		VectorMA (dir, sin(d), up);
 
-		VectorScale (right, c, dir);
-		VectorMA (dir, s, up);
-
-		p->alpha = 1.0;
-		p->alphavel = -1.0 / (1+frand()*0.2);
-		p->color = clr + (rand()&7);
-		for (j = 0; j < 3; j++)
+		p->alpha = 1.0f;
+		p->alphavel = -1.0f / (1 + frand () * 0.2f);
+		p->color = 0x74 + (rand()&7);
+		for (int j = 0; j < 3; j++)
 		{
-			p->org[j] = move[j] + dir[j]*3;
-			p->vel[j] = dir[j]*6;
+			p->org[j] = move[j] + dir[j] * 3;
+			p->vel[j] = dir[j] * 6;
 		}
 
 		VectorAdd (move, vec, move);
@@ -1666,30 +1614,23 @@ void CL_RailTrailExt (const CVec3 &start, const CVec3 &end, byte rType, byte rCo
 
 
 // XATRIX
-/*
-===============
-CL_IonripperTrail
-===============
-*/
 void CL_IonripperTrail (const CVec3 &start, const CVec3 &ent)
 {
-	CVec3	move, vec;
-	particle_t *p;
-	int     left = 0;
-
-	move = start;
+	CVec3 move = start;
+	CVec3 vec;
 	VectorSubtract (ent, start, vec);
 	float len = vec.NormalizeFast ();
 
 	int dec = 5;
 	vec.Scale (5);
+	float vel0 = -10;
 
 	while (len > 0)
 	{
 		len -= dec;
 
-		if (!(p = CL_AllocParticle ()))
-			return;
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
 		p->accel[2] = 0;
 
 		p->alpha = 0.5;
@@ -1697,30 +1638,16 @@ void CL_IonripperTrail (const CVec3 &start, const CVec3 &ent)
 		p->color = 0xE4 + (rand()&3);
 
 		p->org = move;
-		if (left)
-		{
-			left = 0;
-			p->vel[0] = 10;
-		}
-		else
-		{
-			left = 1;
-			p->vel[0] = -10;
-		}
-
+		p->vel[0] = vel0;
 		p->vel[1] = 0;
 		p->vel[2] = 0;
+		FNegate (vel0);
 
 		VectorAdd (move, vec, move);
 	}
 }
 
 
-/*
-===============
-CL_FlyParticles
-===============
-*/
 static CVec3 avelocities[NUMVERTEXNORMALS];
 
 static void InitAVelocities ()
@@ -1745,6 +1672,9 @@ void CL_FlyParticles (const CVec3 &origin, int count)
 	float ltime = cl.ftime;
 	for (int i = 0; i < count; i += 2)
 	{
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
+
 		angle = ltime * avelocities[i][0];
 		float sy = sin(angle);
 		float cy = cos(angle);
@@ -1758,9 +1688,6 @@ void CL_FlyParticles (const CVec3 &origin, int count)
 		forward[0] = cp*cy;
 		forward[1] = cp*sy;
 		forward[2] = -sp;
-
-		particle_t *p;
-		if (!(p = CL_AllocParticle ())) return;
 
 		float dist = sin(ltime + i)*64;
 		p->org[0] = origin[0] + bytedirs[i][0]*dist + forward[0]*BEAMLENGTH;
@@ -1807,25 +1734,19 @@ void CL_FlyEffect (centity_t *ent, const CVec3 &origin)
 }
 
 
-/*
-===============
-CL_BfgParticles
-===============
-*/
-
 #define	BEAMLENGTH			16
 void CL_BfgParticles (entity_t *ent)
 {
-	float	angle;
-	CVec3	forward;
-	CVec3	v;
-
 	if (!avelocities[0][0])
 		InitAVelocities ();
 
 	float ltime = cl.ftime;
 	for (int i=0 ; i<NUMVERTEXNORMALS ; i++)
 	{
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
+
+		float angle;
 		angle = ltime * avelocities[i][0];
 		float sy = sin(angle);
 		float cy = cos(angle);
@@ -1836,12 +1757,8 @@ void CL_BfgParticles (entity_t *ent)
 		float sr = sin(angle);
 		float cr = cos(angle);
 
-		forward[0] = cp*cy;
-		forward[1] = cp*sy;
-		forward[2] = -sp;
-
-		particle_t *p;
-		if (!(p = CL_AllocParticle ())) return;
+		CVec3 forward;
+		forward.Set (cp*cy, cp*sy, -sp);
 
 		float dist = sin(ltime + i)*64;
 		p->org[0] = ent->pos.origin[0] + bytedirs[i][0]*dist + forward[0]*BEAMLENGTH;
@@ -1851,8 +1768,7 @@ void CL_BfgParticles (entity_t *ent)
 		p->vel.Zero();
 		p->accel[2] = 0;
 
-		VectorSubtract (p->org, ent->pos.origin, v);
-		dist = VectorLength(v) / 90.0;
+		dist = VectorDistance (p->org, ent->pos.origin) / 90;
 		p->color = appFloor (0xd0 + dist * 7);
 
 		p->alpha = 1.0 - dist;
@@ -1861,12 +1777,6 @@ void CL_BfgParticles (entity_t *ent)
 }
 
 
-/*
-===============
-CL_TrapParticles
-===============
-*/
-// XATRIX
 void CL_TrapParticles (entity_t *ent)
 {
 	// simple trail
@@ -1918,22 +1828,14 @@ void CL_TrapParticles (entity_t *ent)
 }
 
 
-/*
-===============
-CL_TeleportParticles
-===============
-*/
 void CL_TeleportParticles (const CVec3 &org)
 {
-	particle_t	*p;
-	CVec3		dir;
-
 	for (int i = -16; i <= 16; i += 4)
 		for (int j = -16; j <= 16; j += 4)
 			for (int k = -16; k <= 32; k += 4)
 			{
-				if (!(p = CL_AllocParticle ()))
-					return;
+				particle_t *p;
+				if (!(p = CL_AllocParticle ())) return;
 
 				p->color = 7 + (rand()&7);
 
@@ -1944,14 +1846,245 @@ void CL_TeleportParticles (const CVec3 &org)
 				p->org[1] = org[1] + j + (rand()&3);
 				p->org[2] = org[2] + k + (rand()&3);
 
-				dir[0] = j*8;
-				dir[1] = i*8;
-				dir[2] = k*8;
-
+				CVec3 dir;
+				dir.Set (j*8, i*8, k*8);
 				dir.NormalizeFast ();
+
 				float vel = 50 + (rand()&63);
 				VectorScale (dir, vel, p->vel);
 			}
+}
+
+
+void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
+{
+	CVec3		move, vec;
+	int			j;
+	particle_t	*p;
+	int			i;
+	float		c, s;
+	CVec3		dir;
+	float		ltime;
+	float		start_pt;
+	float		rot;
+	float		variance;
+	CVec3		end;
+
+	VectorMA (start, 4096, forward, end);
+
+	move = start;
+	VectorSubtract (end, start, vec);
+	float len = vec.NormalizeFast ();
+
+	// FIXME - pmm - these might end up using old values?
+	VectorMA (move, -0.5f, cl.v_right);
+	VectorMA (move, -0.5f, cl.v_up);
+	// otherwise assume SOFT
+
+	int step = 32;
+	ltime = cl.ftime;
+	start_pt = fmod(ltime*96.0f,step);
+	VectorMA (move, start_pt, vec);
+
+	vec.Scale (step);
+
+//	Com_Printf ("%f\n", ltime);
+	float rstep = M_PI/10.0f;
+	for (i=appRound(start_pt) ; i<len ; i+=step)
+	{
+		if (i>step*5) // don't bother after the 5th ring
+			break;
+
+		for (rot = 0; rot < M_PI*2; rot += rstep)
+		{
+			if (!(p = CL_AllocParticle ()))
+				return;
+			p->accel[2] = 0;
+			variance = 0.5f;
+			c = cos(rot)*variance;
+			s = sin(rot)*variance;
+
+			// trim it so it looks like it's starting at the origin
+			if (i < 10)
+			{
+				VectorScale (cl.v_right, c*(i/10.0f), dir);
+				VectorMA (dir, s*(i/10.0f), cl.v_up);
+			}
+			else
+			{
+				VectorScale (cl.v_right, c, dir);
+				VectorMA (dir, s, cl.v_up);
+			}
+
+			p->alpha = 0.5f;
+			p->alphavel = -1000.0f;
+			p->color = 223 - (rand()&7);
+			for (j=0 ; j<3 ; j++)
+			{
+				p->org[j] = move[j] + dir[j]*3;
+				p->vel[j] = 0;
+			}
+		}
+		VectorAdd (move, vec, move);
+	}
+}
+
+
+void CL_ParticleSteamEffect (const CVec3 &org, const CVec3 &dir, int color, int count, int magnitude)
+{
+	CVec3 r, u;
+	MakeNormalVectors (dir, r, u);
+
+	for (int i = 0; i < count; i++)
+	{
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
+
+		p->color = color + (rand()&7);
+
+		for (int j = 0; j < 3; j++)
+			p->org[j] = org[j] + magnitude * 0.1f * crand();
+		VectorScale (dir, magnitude, p->vel);
+		float d;
+		d = crand() * magnitude / 3;
+		VectorMA (p->vel, d, r);
+		d = crand() * magnitude / 3;
+		VectorMA (p->vel, d, u);
+
+		p->accel[2] = -PARTICLE_GRAVITY/2;
+		p->alpha = 1.0;
+		p->alphavel = -1.0 / (0.5 + frand()*0.3);
+	}
+}
+
+
+void CL_TrackerTrail (const CVec3 &start, const CVec3 &end, int particleColor)
+{
+	CVec3 move = start;
+	CVec3 forward;
+	VectorSubtract (end, start, forward);
+	float len = forward.NormalizeFast ();
+
+	CVec3 right, up;
+	MakeNormalVectors (forward, right, up);
+
+	CVec3 vec = forward;
+	vec.Scale (3);
+
+	// FIXME: this is a really silly way to have a loop
+	while (len > 0)
+	{
+		len -= 3;
+		particle_t	*p;
+		if (!(p = CL_AllocParticle ())) return;
+		p->accel[2] = 0;
+
+		p->alpha = 1.0;
+		p->alphavel = -2.0;
+		p->color = particleColor;
+		float dist = dot (move, forward);
+		VectorMA (move, 8 * cos(dist), up, p->org);
+		p->vel.Set (0, 0, 5);
+
+		VectorAdd (move, vec, move);
+	}
+}
+
+void CL_Tracker_Shell (const CVec3 &origin)
+{
+	for (int i = 0; i < 300; i++)
+	{
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
+		p->accel[2] = 0;
+
+		p->alpha = 1.0;
+		p->alphavel = INSTANT_PARTICLE;
+		p->color = 0;
+
+		CVec3 dir;
+		dir.Set (crand(), crand(), crand());
+		dir.NormalizeFast ();
+
+		VectorMA (origin, 40, dir, p->org);
+	}
+}
+
+// same as CL_Tracker_Shell(), but different particle count, color and radius
+void CL_MonsterPlasma_Shell(const CVec3 &origin)
+{
+	for (int i = 0; i < 40; i++)
+	{
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
+		p->accel[2] = 0;
+
+		p->alpha = 1.0;
+		p->alphavel = INSTANT_PARTICLE;
+		p->color = 0xE0;
+
+		CVec3 dir;
+		dir.Set (crand(), crand(), crand());
+		dir.NormalizeFast ();
+
+		VectorMA(origin, 10, dir, p->org);
+	}
+}
+
+void CL_WidowSplash (const CVec3 &org)
+{
+	static const int colortable[4] = {2*8,13*8,21*8,18*8};
+
+	for (int i = 0; i < 256; i++)
+	{
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
+
+		p->color = colortable[rand()&3];
+
+		CVec3 dir;
+		dir.Set (crand(), crand(), crand());
+		dir.NormalizeFast ();
+
+		VectorMA(org, 45.0, dir, p->org);
+		VectorScale (dir, 40.0f, p->vel);
+
+//??		p->accel[2] = (originally -- undefined) ??
+		p->alpha = 1.0;
+		p->alphavel = -0.8 / (0.5 + frand()*0.3);
+	}
+
+}
+
+
+// like the steam effect, but unaffected by gravity
+void CL_ParticleSmokeEffect (const CVec3 &org, const CVec3 &dir, int color, int count, int magnitude)
+{
+	CVec3 r, u;
+	MakeNormalVectors (dir, r, u);
+
+	for (int i = 0; i < count; i++)
+	{
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
+		p->accel[2] = 0;
+		p->color = color + (rand()&7);
+
+		for (int j = 0; j < 3; j++)
+		{
+			p->org[j] = org[j] + magnitude*0.1*crand();
+//			p->vel[j] = dir[j]*magnitude;
+		}
+		VectorScale (dir, magnitude, p->vel);
+		float d;
+		d = crand() * magnitude / 3;
+		VectorMA (p->vel, d, r);
+		d = crand() * magnitude / 3;
+		VectorMA (p->vel, d, u);
+
+		p->alpha = 1.0;
+		p->alphavel = -1.0 / (0.5 + frand()*0.3);
+	}
 }
 
 
@@ -2034,6 +2167,7 @@ CL_ClearEffects
 */
 void CL_ClearEffects ()
 {
+	//!! NOTE: used with CL_ClearTEnts()
 	CL_ClearParticles ();
 	CL_ClearDlights ();
 }

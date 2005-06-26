@@ -29,7 +29,6 @@ STATIC = \
 	Release/obj/q2stat/cl_fx.obj \
 	Release/obj/q2stat/cl_input.obj \
 	Release/obj/q2stat/cl_main.obj \
-	Release/obj/q2stat/cl_newfx.obj \
 	Release/obj/q2stat/cl_parse.obj \
 	Release/obj/q2stat/cl_playermodel.obj \
 	Release/obj/q2stat/cl_pred.obj \
@@ -1063,9 +1062,6 @@ Release/obj/q2stat/cl_input.obj : client/cl_input.cpp $(DEPENDS)
 
 Release/obj/q2stat/cl_main.obj : client/cl_main.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/cl_main.obj" client/cl_main.cpp
-
-Release/obj/q2stat/cl_newfx.obj : client/cl_newfx.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/cl_newfx.obj" client/cl_newfx.cpp
 
 Release/obj/q2stat/cl_parse.obj : client/cl_parse.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/cl_parse.obj" client/cl_parse.cpp

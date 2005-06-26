@@ -173,6 +173,51 @@ void MakeNormalVectors (const CVec3 &forward, CVec3 &right, CVec3 &up)
 }
 
 
+void Vec2Angles (const CVec3 &vec, CVec3 &angles)
+{
+	angles[ROLL] = 0;
+	if (vec[0] == 0 && vec[1] == 0)
+	{
+		angles[YAW] = 0;
+		angles[PITCH] = (!IsNegative (vec[2])) ? 90 : 270;
+	}
+	else
+	{
+		float yaw;
+		if (vec[0])
+		{
+			yaw = atan2 (vec[1], vec[0]) * 180 / M_PI;
+			if (IsNegative (yaw)) yaw += 360;
+		}
+		else
+			yaw = (!IsNegative (vec[1])) ? 90 : 270;
+
+		float forward = sqrt (vec[0]*vec[0] + vec[1]*vec[1]);
+		float pitch = -atan2 (vec[2], forward) * 180 / M_PI;
+		if (IsNegative (pitch)) pitch += 360;
+
+		angles[PITCH] = pitch;
+		angles[YAW] = yaw;
+	}
+}
+
+
+float Vec2Yaw (const CVec3 &vec)
+{
+	if (vec[0] == 0 && vec[1] == 0)
+		return 0;
+
+	if (vec[0])
+	{
+		float yaw = atan2 (vec[1], vec[0]) * 180 / M_PI;
+		if (IsNegative (yaw)) yaw += 360;
+		return yaw;
+	}
+	else
+		return !IsNegative (vec[1]) ? 90 : 270;
+}
+
+
 float VectorLength (const CVec3 &v)
 {
 	return sqrt (dot (v, v));

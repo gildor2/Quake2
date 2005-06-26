@@ -405,6 +405,8 @@ void AnglesSubtract (const CVec3 &v1, const CVec3 &v2, CVec3 &v3);
 
 
 void MakeNormalVectors (const CVec3 &forward, CVec3 &right, CVec3 &up);
+void Vec2Angles (const CVec3 &vec, CVec3 &angles);
+float Vec2Yaw (const CVec3 &vec);
 
 // colors
 

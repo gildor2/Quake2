@@ -305,26 +305,6 @@ extern	centity_t	*cl_entities;	// [MAX_EDICTS]
 #define	MAX_PARSE_ENTITIES	1024
 extern	clEntityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 
-//=============================================================================
-
-#define MAX_SUSTAINS		32
-//ROGUE
-struct cl_sustain_t
-{
-	int		id;
-	int		type;
-	int		endtime;
-	int		nextthink;
-	int		thinkinterval;
-	CVec3	org;
-	CVec3	dir;
-	int		color;
-	int		count;
-	int		magnitude;
-	void	(*think)(cl_sustain_t *self);
-};
-
-
 //---------------- particles ---------------------
 
 
@@ -338,7 +318,6 @@ extern particle_t *active_particles;
 extern beam_t	*active_beams;
 
 #define	PARTICLE_GRAVITY			80
-#define BLASTER_PARTICLE_COLOR		0xE0
 #define INSTANT_PARTICLE			-10000.0	//??
 
 //--------------- lightstyles --------------------
@@ -377,7 +356,6 @@ void CL_FlagTrail (const CVec3 &start, const CVec3 &end, int color);
 void CL_IonripperTrail (const CVec3 &start, const CVec3 &end);
 
 
-void CL_ParticleSteamEffect2(cl_sustain_t *self);
 void CL_TeleporterParticles (clEntityState_t *ent);
 void CL_ParticleEffect (const CVec3 &org, const CVec3 &dir, int color, int count);
 void CL_ParticleEffect2 (const CVec3 &org, const CVec3 &dir, int color, int count);
@@ -387,20 +365,16 @@ void CL_BlasterParticles (const CVec3 &org, const CVec3 &dir, unsigned color);
 // ROGUE
 void CL_BlasterTrail2 (const CVec3 &start, const CVec3 &end);
 void CL_DebugTrail (const CVec3 &start, const CVec3 &end);
-void CL_Flashlight (int ent, const CVec3 &pos);
 void CL_ForceWall (const CVec3 &start, const CVec3 &end, int color);
-void CL_BubbleTrail2 (const CVec3 &start, const CVec3 &end, int dist);
+void CL_BubbleTrail2 (const CVec3 &start, const CVec3 &end);
 void CL_Heatbeam (const CVec3 &start, const CVec3 &end);
 void CL_ParticleSteamEffect (const CVec3 &org, const CVec3 &dir, int color, int count, int magnitude);
 void CL_TrackerTrail (const CVec3 &start, const CVec3 &end, int particleColor);
-void CL_TagTrail (const CVec3 &start, const CVec3 &end, int color);
-void CL_ColorFlash (const CVec3 &pos, int ent, int intensity, float r, float g, float b);
+void CL_TagTrail (const CVec3 &start, const CVec3 &end);
 void CL_Tracker_Shell(const CVec3 &origin);
 void CL_MonsterPlasma_Shell(const CVec3 &origin);
-void CL_ColorExplosionParticles (const CVec3 &org, int color, int run);
+void CL_TrackerExplosionParticles (const CVec3 &org);
 void CL_ParticleSmokeEffect (const CVec3 &org, const CVec3 &dir, int color, int count, int magnitude);
-void CL_Widowbeamout (cl_sustain_t *self);
-void CL_Nukeblast (cl_sustain_t *self);
 void CL_WidowSplash (const CVec3 &org);
 
 void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsigned bits, bool baseline);
@@ -410,6 +384,7 @@ void CL_ParseTEnt (void);
 void CL_ParseMuzzleFlash (void);
 void CL_ParseMuzzleFlash2 (void);
 void SmokeAndFlash(const CVec3 &origin);
+void CL_LogoutEffect (const CVec3 &org, int type);
 
 void CL_AddEntities (void);
 void CL_AddTEnts (void);
