@@ -48,7 +48,7 @@ static int ComputeHash (const char *name)
 // forwards
 void FindShaderScripts ();
 void FreeShaderScripts ();
-bool InitShaderFromScript ();
+bool InitShaderFromScript (const char *srcName, const char *text = NULL);
 
 
 /*-----------------------------------------------------------------------------
@@ -602,7 +602,7 @@ shader_t *FindShader (const char *name, unsigned style)
 	sh.style = style & SHADER_STYLEMASK;
 
 	/*------------ find script ---------------*/
-	if (InitShaderFromScript ())
+	if (InitShaderFromScript (sh.name))
 		return FinishShader ();
 
 	// script is not found, or it was bad
@@ -980,51 +980,57 @@ static void FreeShaderScripts ()
 
 static const char *shaderError;	// for script commands
 #define ERROR_IN_SHADER(msg)	{ shaderError = msg; return; }
+//?? use throw "message" ?
 #include "gl_shadersyntax.h"
 
 
 // will get params from "sh"
-static bool InitShaderFromScript ()
+// if "text" is not NULL, shader will be created from it, otherwise, will
+// be searched shader body for srcName
+//?? add shader command, which will allow to init from different script
+static bool InitShaderFromScript (const char *srcName, const char *text)
 {
 	guard(InitShaderFromScript);
 
 	char *buf = NULL;
-	char *text = NULL;
 
-	// 1st: check .qs file  2nd: check *.shader files
-
-	// try loading name.qs
-	buf = (char*)FS_LoadFile (va("%s.qs", sh.name));
-	if (buf)
-		text = buf;
-	else
+	if (!text)
 	{
-		// find shader or template
-		// 1st: shader
-		shaderScript_t *scr = scriptList.Find (sh.name);
-		if (!scr)	// 2nd: template
-			for (scr = scriptList.First(); scr; scr = scriptList.Next(scr))
-				if (scr->isTemplate && appMatchWildcard (sh.name, scr->name, false))
-					break;
-		if (!scr) return false;
+		// 1st: check .qs file  2nd: check *.shader files
+
+		// try loading name.qs
+		buf = (char*)FS_LoadFile (va("%s.qs", srcName));
+		if (buf)
+			text = buf;
+		else
+		{
+			// find shader or template
+			// 1st: shader
+			shaderScript_t *scr = scriptList.Find (srcName);
+			if (!scr)	// 2nd: template
+				for (scr = scriptList.First(); scr; scr = scriptList.Next(scr))
+					if (scr->isTemplate && appMatchWildcard (srcName, scr->name, false))
+						break;
+			if (!scr) return false;
 
 #ifdef DEBUG_SHADERS
-		Com_WPrintf ("found %s in %s %X-%X\n", scr->name, scr->file, scr->start, scr->end);
+			Com_WPrintf ("found %s in %s %X-%X\n", scr->name, scr->file, scr->start, scr->end);
 #endif
-		// load script file
-		unsigned length;
-		buf = (char*)FS_LoadFile (va("scripts/%s", scr->file), &length);
-		if (scr->end > length)
-		{
-			Com_WPrintf ("script \"%s\" beyond end of file \"%s\" ?", sh.name, scr->file);
-			return false;
+			// load script file
+			unsigned length;
+			buf = (char*)FS_LoadFile (va("scripts/%s", scr->file), &length);
+			if (scr->end > length)
+			{
+				Com_WPrintf ("script \"%s\" beyond end of file \"%s\" ?", srcName, scr->file);
+				return false;
+			}
+			text = buf + scr->start;
+			buf[scr->end] = 0;
 		}
-		text = buf + scr->start;
-		buf[scr->end] = 0;
 	}
 
 #ifdef DEBUG_SHADERS
-	Com_Printf (S_GREEN"%s:\n-----\n%s\n-----\n", sh.name, text);
+	Com_Printf (S_GREEN"%s:\n-----\n%s\n-----\n", srcName, text);
 #endif
 
 	sh.scripted = true;
@@ -1083,7 +1089,7 @@ static bool InitShaderFromScript ()
 	if (shaderError)
 	{
 		sh.bad = true;
-		Com_WPrintf ("ERROR in shader \"%s\": %s\n", sh.name, shaderError);
+		Com_WPrintf ("ERROR in shader \"%s\": %s\n", srcName, shaderError);
 		result = false;
 	}
 	else
@@ -1093,10 +1099,10 @@ static bool InitShaderFromScript ()
 		if (!sh.height) sh.height = 1;
 	}
 
-	FS_FreeFile (buf);
+	if (buf) FS_FreeFile (buf);
 	return result;
 
-	unguardf(("%s", sh.name));
+	unguardf(("%s", srcName));
 }
 
 

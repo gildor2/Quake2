@@ -13,6 +13,7 @@ struct refDlight_t
 	CVec3	origin;
 	float	intensity;
 	CVec3	modelOrg;					// temporaty: origin in model coordinates
+										//?? change this; if remove field - can use cdlight_t instead of refDlight_t
 	color_t	c;
 };
 

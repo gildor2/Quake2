@@ -37,7 +37,3 @@ void S_Activate (bool active);
 void S_BeginRegistration (void);
 sfx_t *S_RegisterSound (const char *sample);
 void S_EndRegistration (void);
-
-// the sound code makes callbacks to the client for entitiy position
-// information, so entities can be dynamically re-spatialized
-void CL_GetEntitySoundOrigin (int ent, CVec3 &org);

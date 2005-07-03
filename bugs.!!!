@@ -5,9 +5,15 @@
    (saved without shot) but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?) -- should be at least dlights ?? (or not?)
 - when game paused: moving mouse will not rotate view, but when game unpaused -- will rotate to moved amount (should not rotate)
+? game, base1, kill all grunts -- dead bodies will fall through floor
 
-- ATI:
-  - BK_EndFrame(): if add GL_SetMultitexture(0) to the end of function, sky will be corrupted (NV-ok)
+- q3 player model animation:
+  - "dirty": jump with salto, forward - will be finished (landing) with strange leg angles
+  - when standing on a movable entity - legs will move in entity direction:
+    ? should analyze usercmd
+    ? check ground entity and compare player speed with its speed (dirty, map "lumber", moving tape -- CONTENTS_CURRENT_NNN|CONTENTS_SOLID)
+
+- ATI: BK_EndFrame(): if add GL_SetMultitexture(0) to the end of function, sky will be corrupted (NV -- OK)
 
 - timing:
   - after power sleep/resume FPS counter will be incorrect

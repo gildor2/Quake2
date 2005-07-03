@@ -34,11 +34,9 @@ void CL_ClearLightStyles ()
 }
 
 
-void CL_RunLightStyles ()
+static void RunLightStyles ()
 {
 	int ofs = cl.time / 100;
-	float frac1 = (cl.time % 100) / 100.0f;
-	float frac = 1 - frac1;
 
 	int		i;
 	lightstyle_t *ls;
@@ -57,7 +55,7 @@ void CL_RunLightStyles ()
 			int pos1 = pos + 1;
 			if (pos1 >= ls->length) pos1 = 0;
 
-			ls->value = appRound (ls->map[pos] * frac + ls->map[pos1] * frac1);
+			ls->value = appRound (Lerp<float> (ls->map[pos], ls->map[pos1], cl.lerpfrac));
 		}
 	}
 }
@@ -87,7 +85,7 @@ void CL_SetLightstyle (int i, const char *s)
 
 static cdlight_t cl_dlights[MAX_DLIGHTS];
 
-void CL_ClearDlights (void)
+static void ClearDlights ()
 {
 	memset (cl_dlights, 0, sizeof(cl_dlights));
 }
@@ -133,7 +131,7 @@ cdlight_t *CL_AllocDlight (int key, const CVec3 &origin)
 }
 
 
-void CL_AddDLights (void)
+static void AddDLights ()
 {
 	int			i;
 	cdlight_t	*dl;
@@ -178,7 +176,7 @@ beam_t	*active_beams;
 static beam_t *free_beams, particleBeams[MAX_PARTICLE_BEAMS];
 
 
-void CL_ClearParticles (void)
+static void ClearParticles ()
 {
 	int		i;
 
@@ -201,7 +199,7 @@ void CL_ClearParticles (void)
 }
 
 
-static void CL_AddParticleTraces (float timeDelta)
+static void AddParticleTraces (float timeDelta)
 {
 	static int oldTime;
 	int		i;
@@ -276,7 +274,12 @@ static void CL_AddParticleTraces (float timeDelta)
 		pos = oldpos;
 		for (pos1 = distDelta; pos1 <= dist; pos1 += distDelta)
 		{
-			particle_t *cp;
+			particle_t *cp = CL_AllocParticle ();
+			if (!cp)
+			{
+				pos1 = dist;
+				break;
+			}
 
 			VectorMA (pos, distDelta, dir);
 			//?? move this inside "switch"
@@ -284,14 +287,7 @@ static void CL_AddParticleTraces (float timeDelta)
 			switch (p->type)
 			{
 			case PT_SPARKLE:
-				if (!(cp = CL_AllocParticle ()))
-				{
-					pos1 = dist;
-					break;
-				}
-
 				t = pos1 / dist * timeDelta;	// time offset
-
 				cp->type = p->type;
 				cp->color = 0;					// any -- ignored
 				cp->alphavel = -1.0f / p->fadeTime;
@@ -351,7 +347,7 @@ particleTrace_t *CL_AllocParticleTrace (const CVec3 &pos, const CVec3 &vel, floa
 }
 
 
-static void CL_UpdateParticleBeams (float timeDelta)
+static void UpdateParticleBeams (float timeDelta)
 {
 	beam_t	*b, *prev, *next;
 
@@ -420,31 +416,31 @@ beam_t *CL_AllocParticleBeam (const CVec3 &start, const CVec3 &end, float radius
 }
 
 
-particle_t *CL_AllocParticle (void)
+particle_t *CL_AllocParticle ()
 {
 	if (r_sfx_pause->integer == 2)
 		return NULL;
 
 	particle_t *p = free_particles;
-	if (p)
-	{
-		free_particles = p->next;
-		p->next = active_particles;
-		active_particles = p;
+	if (!p) return NULL;
 
-		p->accel[0] = p->accel[1] = 0;
-		p->accel[2] = -PARTICLE_GRAVITY;
-		p->type = PT_DEFAULT;
-		p->isNew = true;
-		p->leafNum = -1;
-	}
+	free_particles = p->next;
+	p->next = active_particles;
+	active_particles = p;
+
+	p->alpha = 1;
+	p->accel[0] = p->accel[1] = 0;
+	p->accel[2] = -PARTICLE_GRAVITY;
+	p->type = PT_DEFAULT;
+	p->isNew = true;
+	p->leafNum = -1;
 	return p;
 }
 
 
-void CL_UpdateParticles (void)
+static void UpdateParticles ()
 {
-	guard(CL_UpdateParticles);
+	guard(UpdateParticles);
 
 	static double oldTime;
 
@@ -453,8 +449,8 @@ void CL_UpdateParticles (void)
 	if (r_sfx_pause->integer) timeDelta = 0;
 	float time2 = timeDelta * timeDelta;
 
-	CL_UpdateParticleBeams (timeDelta);
-	CL_AddParticleTraces (timeDelta);
+	UpdateParticleBeams (timeDelta);
+	AddParticleTraces (timeDelta);
 
 	particle_t *p, *prev, *next;
 	prev = NULL;
@@ -525,10 +521,95 @@ void CL_MetalSparks (const CVec3 &pos, const CVec3 &dir, int count)
 
 
 /*-----------------------------------------------------------------------------
+	Common
+-----------------------------------------------------------------------------*/
+
+void CL_AddEffects ()
+{
+	//!! NOTE: used with CL_AddTEnts()
+	AddDLights ();
+	RunLightStyles ();
+	UpdateParticles ();
+}
+
+
+void CL_ClearEffects ()
+{
+	//!! NOTE: used with CL_ClearTEnts()
+	ClearParticles ();
+	ClearDlights ();
+}
+
+
+/*-----------------------------------------------------------------------------
 	Parsing network data
 -----------------------------------------------------------------------------*/
 
-void CL_ParseMuzzleFlash (void)
+extern sfx_t *cl_sfx_footsteps[4];
+extern sfx_t *cl_sfx_footsteps2[9*4];
+extern sfx_t *cl_sfx_fallshort2[9];
+//?? extern sfx_t *cl_sfx_spectator[4];
+extern sfx_t *cl_sfx_camper[9];
+
+
+void CL_EntityEvent (clEntityState_t *ent)
+{
+	if (RE_GetCaps() & REF_CONSOLE_ONLY) return;
+
+	if (ent->event >= EV_FOOTSTEP0 && ent->event < EV_FOOTSTEP0 + MATERIAL_COUNT)
+	{
+		if (cl_footsteps->integer)
+			S_StartSound (NULL, ent->number, CHAN_BODY, cl_sfx_footsteps2[4*(ent->event-EV_FOOTSTEP0) + (rand()&3)],
+				1, ATTN_NORM, 0);
+		return;
+	}
+	else if (ent->event >= EV_FALLSHORT0 && ent->event < EV_FALLSHORT0 + MATERIAL_COUNT)
+	{
+		S_StartSound (NULL, ent->number, CHAN_AUTO, cl_sfx_fallshort2[ent->event-EV_FALLSHORT0], 1, ATTN_NORM, 0);
+		return;
+	}
+/*??	else if (ent->event >= EV_SPECTATOR0 && ent->event <= EV_SPECTATOR3)
+	{
+		S_StartSound (NULL, ent->number, CHAN_AUTO, cl_sfx_spectator[ent->event-EV_SPECTATOR0], 1, ATTN_NORM, 0);
+		return;
+	} */
+	else if (ent->event >= EV_CAMPER0 && ent->event < EV_CAMPER0+NUM_CAMPER_EVENTS)
+	{
+		S_StartSound (NULL, ent->number, CHAN_AUTO, cl_sfx_camper[ent->event-EV_CAMPER0], 1, ATTN_NORM, 0);
+		return;
+	}
+
+	static char *sound = NULL;
+	switch (ent->event)
+	{
+	case EV_ITEM_RESPAWN:
+		S_StartSound (NULL, ent->number, CHAN_WEAPON, S_RegisterSound ("items/respawn1.wav"), 1, ATTN_IDLE, 0);
+		CL_ItemRespawnParticles (ent->origin);
+		break;
+	case EV_PLAYER_TELEPORT:
+		S_StartSound (NULL, ent->number, CHAN_WEAPON, S_RegisterSound ("misc/tele1.wav"), 1, ATTN_IDLE, 0);
+		CL_TeleportParticles (ent->origin);
+		break;
+	case EV_FOOTSTEP:
+		if (cl_footsteps->integer)
+			S_StartSound (NULL, ent->number, CHAN_BODY, cl_sfx_footsteps[rand()&3], 1, ATTN_NORM, 0);
+		break;
+	case EV_FALLSHORT:
+		sound = "player/land1.wav";
+		break;
+	case EV_FALL:
+		sound = "*fall2.wav";
+		break;
+	case EV_FALLFAR:
+		sound = "*fall1.wav";
+		break;
+	}
+	if (sound)
+		S_StartSound (NULL, ent->number, CHAN_AUTO, S_RegisterSound (sound), 1, ATTN_NORM, 0);
+}
+
+
+void CL_ParseMuzzleFlash ()
 {
 	int i = MSG_ReadShort (&net_message);
 	if (i < 1 || i >= MAX_EDICTS)
@@ -650,43 +731,41 @@ void CL_ParseMuzzleFlash (void)
 
 #include "monster_flash.h"
 
-void CL_ParseMuzzleFlash2 (void)
+void CL_ParseMuzzleFlash2 ()
 {
-	CVec3	origin;
-
 	int ent = MSG_ReadShort (&net_message);
 	if (ent < 1 || ent >= MAX_EDICTS)
 		Com_DropError ("CL_ParseMuzzleFlash2: bad entity");
 
 	int flash_number = MSG_ReadByte (&net_message);
+	if (RE_GetCaps() & REF_CONSOLE_ONLY) return;
 
-	// locate the origin
+	// compute origin
 	clEntityState_t *s = &cl_entities[ent].current;
+	CVec3 offset;
+	offset[0] =  monster_flash_offset[flash_number][0] / MONSTER_FLASH_SCALE;
+	offset[1] = -monster_flash_offset[flash_number][1] / MONSTER_FLASH_SCALE; // "-" for changing left->right direction
+	offset[2] =  monster_flash_offset[flash_number][2] / MONSTER_FLASH_SCALE;
+	CVec3 origin;
+	UnTransformPoint (s->origin, s->axis, offset, origin);
 
-	float sx = monster_flash_offset[flash_number][0] / MONSTER_FLASH_SCALE;
-	float sy = monster_flash_offset[flash_number][1] / MONSTER_FLASH_SCALE;
-	float sz = monster_flash_offset[flash_number][2] / MONSTER_FLASH_SCALE;
-	VectorMA (s->origin, sx, s->axis[0], origin);	// forward direction
-	VectorMA (origin,   -sy, s->axis[1], origin);	// left->right direction
-	origin[2] += sz;
-
+	// setup dlight
 	cdlight_t *dl = CL_AllocDlight (ent, origin);
 	dl->radius = 200 + (rand()&31);
 	dl->die = cl.time + 10;
-	// most used dlight color
-	dl->color[0] = 1;
-	dl->color[1] = 1;
-	dl->color[2] = 0;
+	dl->color.Set (1, 1, 0);		// most used dlight color
 
-	if (RE_GetCaps() & REF_CONSOLE_ONLY)
-		return;
+#define PART  1
+#define FLASH 2
+	const char *sound = NULL;
+	int fx = 0;
 
 	switch (flash_number)
 	{
 	case MZ2_TANK_BLASTER_1:
 	case MZ2_TANK_BLASTER_2:
 	case MZ2_TANK_BLASTER_3:
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("tank/tnkatck3.wav"), 1, ATTN_NORM, 0);
+		sound = "tank/tnkatck3.wav";
 		break;
 
 	case MZ2_TANK_MACHINEGUN_1:
@@ -708,16 +787,15 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_TANK_MACHINEGUN_17:
 	case MZ2_TANK_MACHINEGUN_18:
 	case MZ2_TANK_MACHINEGUN_19:
-		CL_ParticleEffect (origin, nullVec3, 0, 40);
-		CL_SmokeAndFlash (origin);
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound(va("tank/tnkatk2%c.wav", 'a' + rand() % 5)), 1, ATTN_NORM, 0);
+		fx = PART|FLASH;
+		sound = va("tank/tnkatk2%c.wav", 'a' + rand() % 5);
 		break;
 
 	case MZ2_TANK_ROCKET_1:
 	case MZ2_TANK_ROCKET_2:
 	case MZ2_TANK_ROCKET_3:
-		dl->color[0] = 1;dl->color[1] = 0.5;dl->color[2] = 0.2;
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("tank/tnkatck1.wav"), 1, ATTN_NORM, 0);
+		dl->color.Set (1, 0.5, 0.2);
+		sound = "tank/tnkatck1.wav";
 		break;
 
 	case MZ2_INFANTRY_MACHINEGUN_1:
@@ -733,9 +811,8 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_INFANTRY_MACHINEGUN_11:
 	case MZ2_INFANTRY_MACHINEGUN_12:
 	case MZ2_INFANTRY_MACHINEGUN_13:
-		CL_ParticleEffect (origin, nullVec3, 0, 40);
-		CL_SmokeAndFlash (origin);
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NORM, 0);
+		fx = PART|FLASH;
+		sound = "infantry/infatck1.wav";
 		break;
 
 	case MZ2_SOLDIER_MACHINEGUN_1:
@@ -746,9 +823,8 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_SOLDIER_MACHINEGUN_6:
 	case MZ2_SOLDIER_MACHINEGUN_7:
 	case MZ2_SOLDIER_MACHINEGUN_8:
-		CL_ParticleEffect (origin, nullVec3, 0, 40);
-		CL_SmokeAndFlash (origin);
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("soldier/solatck3.wav"), 1, ATTN_NORM, 0);
+		fx = PART|FLASH;
+		sound = "soldier/solatck3.wav";
 		break;
 
 	case MZ2_GUNNER_MACHINEGUN_1:
@@ -759,9 +835,8 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_GUNNER_MACHINEGUN_6:
 	case MZ2_GUNNER_MACHINEGUN_7:
 	case MZ2_GUNNER_MACHINEGUN_8:
-		CL_ParticleEffect (origin, nullVec3, 0, 40);
-		CL_SmokeAndFlash (origin);
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("gunner/gunatck2.wav"), 1, ATTN_NORM, 0);
+		fx = PART|FLASH;
+		sound = "gunner/gunatck2.wav";
 		break;
 
 	case MZ2_ACTOR_MACHINEGUN_1:
@@ -772,9 +847,8 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_SUPERTANK_MACHINEGUN_5:
 	case MZ2_SUPERTANK_MACHINEGUN_6:
 	case MZ2_TURRET_MACHINEGUN:			// PGM
-		CL_ParticleEffect (origin, nullVec3, 0, 40);
-		CL_SmokeAndFlash (origin);
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NORM, 0);
+		fx = PART|FLASH;
+		sound = "infantry/infatck1.wav";
 		break;
 
 	case MZ2_BOSS2_MACHINEGUN_L1:
@@ -784,9 +858,8 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_BOSS2_MACHINEGUN_L5:
 	case MZ2_CARRIER_MACHINEGUN_L1:		// PMM
 	case MZ2_CARRIER_MACHINEGUN_L2:		// PMM
-		CL_ParticleEffect (origin, nullVec3, 0, 40);
-		CL_SmokeAndFlash (origin);
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NONE, 0);
+		fx = PART|FLASH;
+		sound = "infantry/infatck1.wav";
 		break;
 
 	case MZ2_SOLDIER_BLASTER_1:
@@ -798,24 +871,24 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_SOLDIER_BLASTER_7:
 	case MZ2_SOLDIER_BLASTER_8:
 	case MZ2_TURRET_BLASTER:			// PGM
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("soldier/solatck2.wav"), 1, ATTN_NORM, 0);
+		sound = "soldier/solatck2.wav";
 		break;
 
 	case MZ2_FLYER_BLASTER_1:
 	case MZ2_FLYER_BLASTER_2:
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NORM, 0);
+		sound = "flyer/flyatck3.wav";
 		break;
 
 	case MZ2_MEDIC_BLASTER_1:
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("medic/medatck1.wav"), 1, ATTN_NORM, 0);
+		sound = "medic/medatck1.wav";
 		break;
 
 	case MZ2_HOVER_BLASTER_1:
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("hover/hovatck1.wav"), 1, ATTN_NORM, 0);
+		sound = "hover/hovatck1.wav";
 		break;
 
 	case MZ2_FLOAT_BLASTER_1:
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("floater/fltatck1.wav"), 1, ATTN_NORM, 0);
+		sound = "floater/fltatck1.wav";
 		break;
 
 	case MZ2_SOLDIER_SHOTGUN_1:
@@ -826,14 +899,14 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_SOLDIER_SHOTGUN_6:
 	case MZ2_SOLDIER_SHOTGUN_7:
 	case MZ2_SOLDIER_SHOTGUN_8:
-		CL_SmokeAndFlash (origin);
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("soldier/solatck1.wav"), 1, ATTN_NORM, 0);
+		fx = FLASH;
+		sound = "soldier/solatck1.wav";
 		break;
 
 	case MZ2_CHICK_ROCKET_1:
 	case MZ2_TURRET_ROCKET:			// PGM
-		dl->color[0] = 1;dl->color[1] = 0.5;dl->color[2] = 0.2;
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("chick/chkatck2.wav"), 1, ATTN_NORM, 0);
+		dl->color.Set (1, 0.5, 0.2);
+		sound = "chick/chkatck2.wav";
 		break;
 
 	case MZ2_SUPERTANK_ROCKET_1:
@@ -847,29 +920,27 @@ void CL_ParseMuzzleFlash2 (void)
 //	case MZ2_CARRIER_ROCKET_2:
 //	case MZ2_CARRIER_ROCKET_3:
 //	case MZ2_CARRIER_ROCKET_4:
-		dl->color[0] = 1;dl->color[1] = 0.5;dl->color[2] = 0.2;
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("tank/rocket.wav"), 1, ATTN_NORM, 0);
+		dl->color.Set (1, 0.5, 0.2);
+		sound = "tank/rocket.wav";
 		break;
 
 	case MZ2_GUNNER_GRENADE_1:
 	case MZ2_GUNNER_GRENADE_2:
 	case MZ2_GUNNER_GRENADE_3:
 	case MZ2_GUNNER_GRENADE_4:
-		dl->color[0] = 1;dl->color[1] = 0.5;dl->color[2] = 0;
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("gunner/gunatck3.wav"), 1, ATTN_NORM, 0);
+		dl->color.Set (1, 0.5, 0);
+		sound = "gunner/gunatck3.wav";
 		break;
 
 	case MZ2_GLADIATOR_RAILGUN_1:
-	// PMM
 	case MZ2_CARRIER_RAILGUN:
 	case MZ2_WIDOW_RAIL:
-	// pmm
-		dl->color[0] = 0.5;dl->color[1] = 0.5;dl->color[2] = 1.0;
+		dl->color.Set (0.5, 0.5, 1.0);
 		break;
 
 	case MZ2_MAKRON_BFG:
-		dl->color[0] = 0.5;dl->color[1] = 1 ;dl->color[2] = 0.5;
-		//S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("makron/bfg_fire.wav"), 1, ATTN_NORM, 0);
+	case MZ2_JORG_BFG_1:
+		dl->color.Set (0.5, 1, 0.5);
 		break;
 
 	case MZ2_MAKRON_BLASTER_1:
@@ -889,7 +960,7 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_MAKRON_BLASTER_15:
 	case MZ2_MAKRON_BLASTER_16:
 	case MZ2_MAKRON_BLASTER_17:
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("makron/blaster.wav"), 1, ATTN_NORM, 0);
+		sound = "makron/blaster.wav";
 		break;
 
 	case MZ2_JORG_MACHINEGUN_L1:
@@ -898,9 +969,8 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_JORG_MACHINEGUN_L4:
 	case MZ2_JORG_MACHINEGUN_L5:
 	case MZ2_JORG_MACHINEGUN_L6:
-		CL_ParticleEffect (origin, nullVec3, 0, 40);
-		CL_SmokeAndFlash (origin);
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("boss3/xfire.wav"), 1, ATTN_NORM, 0);
+		fx = PART|FLASH;
+		sound = "boss3/xfire.wav";
 		break;
 
 	case MZ2_JORG_MACHINEGUN_R1:
@@ -909,14 +979,6 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_JORG_MACHINEGUN_R4:
 	case MZ2_JORG_MACHINEGUN_R5:
 	case MZ2_JORG_MACHINEGUN_R6:
-		CL_ParticleEffect (origin, nullVec3, 0, 40);
-		CL_SmokeAndFlash (origin);
-		break;
-
-	case MZ2_JORG_BFG_1:
-		dl->color[0] = 0.5;dl->color[1] = 1 ;dl->color[2] = 0.5;
-		break;
-
 	case MZ2_BOSS2_MACHINEGUN_R1:
 	case MZ2_BOSS2_MACHINEGUN_R2:
 	case MZ2_BOSS2_MACHINEGUN_R3:
@@ -924,8 +986,7 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_BOSS2_MACHINEGUN_R5:
 	case MZ2_CARRIER_MACHINEGUN_R1:			// PMM
 	case MZ2_CARRIER_MACHINEGUN_R2:			// PMM
-		CL_ParticleEffect (origin, nullVec3, 0, 40);
-		CL_SmokeAndFlash (origin);
+		fx = PART|FLASH;
 		break;
 
 	case MZ2_STALKER_BLASTER:
@@ -967,13 +1028,13 @@ void CL_ParseMuzzleFlash2 (void)
 	case MZ2_WIDOW_RUN_6:
 	case MZ2_WIDOW_RUN_7:
 	case MZ2_WIDOW_RUN_8:
-		dl->color[0] = 0;dl->color[1] = 1;dl->color[2] = 0;
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("tank/tnkatck3.wav"), 1, ATTN_NORM, 0);
+		dl->color.Set (0, 1, 0);
+		sound = "tank/tnkatck3.wav";
 		break;
 
 	case MZ2_WIDOW_DISRUPTOR:
-		dl->color[0] = -1;dl->color[1] = -1;dl->color[2] = -1;
-		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound("weapons/disint2.wav"), 1, ATTN_NORM, 0);
+		dl->color.Set (-1, -1, -1);
+		sound = "weapons/disint2.wav";
 		break;
 
 	case MZ2_WIDOW_PLASMABEAM:
@@ -997,6 +1058,12 @@ void CL_ParseMuzzleFlash2 (void)
 		dl->die = cl.time + 200;
 		break;
 	}
+
+	if (sound)		S_StartSound (NULL, ent, CHAN_WEAPON, S_RegisterSound(sound), 1, ATTN_NORM, 0);
+	if (fx & PART)	CL_ParticleEffect (origin, nullVec3, 0, 40);
+	if (fx & FLASH)	CL_SmokeAndFlash (origin);
+#undef PART
+#undef FLASH
 }
 
 
@@ -1023,8 +1090,11 @@ static void ParticleEffect (const CVec3 &origin, int count, const particleEffect
 	CVec3 org = origin;
 	for (int i = 0; i < count; i++)
 	{
-		if ((fx.density > 0 && fx.density < 1) && (frand () <= fx.density))
+		if ((fx.density > 0) && (fx.density < 1) && (frand () >= fx.density)) // skip freq: >=dens, keep freq: <dens
+		{
+			VectorAdd (org, moveDir, org);
 			continue;
+		}
 
 		particle_t *p = CL_AllocParticle ();
 		if (!p) return;					// no free particles
@@ -1045,7 +1115,6 @@ static void ParticleEffect (const CVec3 &origin, int count, const particleEffect
 		if (fx.velWidth) VectorMA (p->vel, fx.velWidth, dir);
 
 		p->accel[2] = fx.gravity;
-		p->alpha = 1.0f;
 		p->alphavel = -1.0f / Lerp (fx.fadeTime1, fx.fadeTime2, frand());
 
 		VectorAdd (org, moveDir, org);
@@ -1053,13 +1122,32 @@ static void ParticleEffect (const CVec3 &origin, int count, const particleEffect
 }
 
 
-static void MovableParticleEffect (const CVec3 &start, const CVec3 &end, const particleEffect_t &fx)
+static float MovableParticleEffect (const CVec3 &start, const CVec3 &end, const particleEffect_t &fx)
 {
 	CVec3 delta;
 	VectorSubtract (end, start, delta);
 	float len = delta.NormalizeFast ();
 	delta.Scale (fx.interval);
 	ParticleEffect (start, appCeil (len / fx.interval), fx, nullVec3, delta);
+	return len;
+}
+
+
+static float MovableParticleEffect (centity_t &ent, const particleEffect_t &fx)
+{
+	CVec3 pos;
+	Lerp (ent.prev.origin, ent.current.origin, cl.lerpfrac, pos);
+	CVec3 delta;
+	VectorSubtract (pos, ent.prevTrail, delta);
+	float len = delta.NormalizeFast ();
+	if (len < fx.interval) return 0;	// not enough movement
+	delta.Scale (fx.interval);
+	int count = appFloor (len / fx.interval);
+	ParticleEffect (ent.prevTrail, count, fx, nullVec3, delta);
+	VectorMA (ent.prevTrail, count, delta); // ent.prevTrail += delta * count
+	len = count * fx.interval;			// snap len to fx.interval
+	ent.trailLen += len;
+	return len;
 }
 
 
@@ -1220,7 +1308,7 @@ void CL_BlasterParticles (const CVec3 &org, const CVec3 &dir, unsigned color)
 	Simple particle trails
 -----------------------------------------------------------------------------*/
 
-void CL_BlasterTrail (const CVec3 &start, const CVec3 &end)
+void CL_BlasterTrail (centity_t &ent)
 {
 	static const particleEffect_t fx = {
 		0xE0, 1,						// color
@@ -1233,12 +1321,12 @@ void CL_BlasterTrail (const CVec3 &start, const CVec3 &end)
 		1,								// interval
 		0								// density
 	};
-	MovableParticleEffect (start, end, fx);
+	MovableParticleEffect (ent, fx);
 }
 
 
 // same as CL_BlasterTrail, but green
-void CL_BlasterTrail2 (const CVec3 &start, const CVec3 &end)
+void CL_BlasterTrail2 (centity_t &ent)
 {
 	static const particleEffect_t fx = {
 		0xD0, 1,						// color
@@ -1251,11 +1339,11 @@ void CL_BlasterTrail2 (const CVec3 &start, const CVec3 &end)
 		1,								// interval
 		0								// density
 	};
-	MovableParticleEffect (start, end, fx);
+	MovableParticleEffect (ent, fx);
 }
 
 
-void CL_FlagTrail (const CVec3 &start, const CVec3 &end, int color)
+void CL_FlagTrail (centity_t &ent, int color)
 {
 	static particleEffect_t fx = {
 		0, 1,							// color -> from arg
@@ -1269,14 +1357,16 @@ void CL_FlagTrail (const CVec3 &start, const CVec3 &end, int color)
 		0								// density
 	};
 	fx.color = color;
-	MovableParticleEffect (start, end, fx);
+	MovableParticleEffect (ent, fx);
 }
 
 
-void CL_RocketTrail (const CVec3 &start, const CVec3 &end, centity_t *old)
+void CL_RocketTrail (centity_t &ent)
 {
+	// use copy of entity for correct double trail
+	centity_t ent2 = ent;
 	// smoke
-	CL_DiminishingTrail (start, end, old, EF_ROCKET);
+	CL_DiminishingTrail (ent, EF_ROCKET);
 	// fire
 	static const particleEffect_t fx = {
 #if 0
@@ -1292,7 +1382,7 @@ void CL_RocketTrail (const CVec3 &start, const CVec3 &end, centity_t *old)
 		0.125							// density
 #else
 		0xDC, 4,						// color
-		{-5, -5, -5,  5, 5, 5},			// bounds
+		{-1, -1, -1,  1, 1, 1},			// bounds
 		{-20,-20,-20, 20,20,20},		// velocity
 		0.25, 0.3,						// fade time
 		-PARTICLE_GRAVITY,				// gravity
@@ -1302,7 +1392,7 @@ void CL_RocketTrail (const CVec3 &start, const CVec3 &end, centity_t *old)
 		0								// density
 #endif
 	};
-	MovableParticleEffect (start, end, fx);
+	MovableParticleEffect (ent2, fx);
 }
 
 
@@ -1340,7 +1430,7 @@ void CL_BubbleTrail2 (const CVec3 &start, const CVec3 &end)
 }
 
 
-void CL_TagTrail (const CVec3 &start, const CVec3 &end)
+void CL_TagTrail (centity_t &ent)
 {
 	static const particleEffect_t fx = {
 		0xDC, 1,						// color -> from arg
@@ -1353,7 +1443,7 @@ void CL_TagTrail (const CVec3 &start, const CVec3 &end)
 		5,								// interval
 		0								// density
 	};
-	MovableParticleEffect (start, end, fx);
+	MovableParticleEffect (ent, fx);
 }
 
 
@@ -1413,7 +1503,7 @@ void CL_BigTeleportParticles (const CVec3 &org)
 		float s = sin(angle);
 		p->org[0] = org[0] + c * dist;
 		p->vel[0] = c * (70+(rand()&63));
-		p->accel[0] = -cos(angle)*200;
+		p->accel[0] = -c * 200;
 
 		p->org[1] = org[1] + s * dist;
 		p->vel[1] = s * (70+(rand()&63));
@@ -1422,89 +1512,148 @@ void CL_BigTeleportParticles (const CVec3 &org)
 		p->org[2] = org[2] + 8 + (rand()%90);
 		p->vel[2] = -100 + (rand()&31);
 		p->accel[2] = PARTICLE_GRAVITY*4;
-		p->alpha = 1.0;
 
 		p->alphavel = -0.3 / (0.5 + frand()*0.3);
 	}
 }
 
 
-void CL_DiminishingTrail (const CVec3 &start, const CVec3 &end, centity_t *old, int flags)
+static CVec3 avelocities[NUMVERTEXNORMALS];	// same size, as bytedirs[]
+
+static void InitAVelocities ()
 {
-	CVec3 move = start;
-	CVec3 vec;
-	VectorSubtract (end, start, vec);
-	float len = vec.NormalizeFast ();
+	for (int i = 0; i < ARRAY_COUNT(avelocities)*3; i++)
+		avelocities[0][i] = frand() / M_PI * 180;
+}
 
-	float dec = 0.5f;
-	vec.Scale (dec);
+#define	BEAMLENGTH 16
 
-	float orgscale, velscale;
-	if (old->trailcount > 900)
+void CL_BfgParticles (const CVec3 &origin)
+{
+	if (!avelocities[0][0])
+		InitAVelocities ();
+
+	for (int i = 0; i < ARRAY_COUNT(avelocities); i++)
 	{
-		orgscale = 4;
-		velscale = 15;
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
+		p->vel.Zero();
+		p->accel[2] = 0;
+
+		CVec3 angles;
+		VectorScale (avelocities[i], cl.ftime, angles);
+		CVec3 forward;
+		AngleVectors (angles, &forward, NULL, NULL);
+
+		float dist = sin(cl.ftime + i)*64;
+		p->org[0] = origin[0] + bytedirs[i][0]*dist + forward[0]*BEAMLENGTH;
+		p->org[1] = origin[1] + bytedirs[i][1]*dist + forward[1]*BEAMLENGTH;
+		p->org[2] = origin[2] + bytedirs[i][2]*dist + forward[2]*BEAMLENGTH;
+
+		dist = VectorDistance (p->org, origin) / 90;
+		if (dist > 1) dist = 1;
+		p->color = appFloor (0xD0 + dist * 7);
+		p->alpha = 1.0 - dist;
+		p->alphavel = INSTANT_PARTICLE;	// -100;		// 0.1s
 	}
-	else if (old->trailcount > 800)
+}
+
+
+void CL_FlyEffect (centity_t &ent)
+{
+	int starttime;
+	if (ent.fly_stoptime < cl.time)
 	{
-		orgscale = 2;
-		velscale = 10;
+		starttime = cl.time;
+		ent.fly_stoptime = cl.time + 60000;
 	}
 	else
-	{
-		orgscale = 1;
-		velscale = 5;
-	}
+		starttime = ent.fly_stoptime - 60000;
 
-	int baseColor;
-	float fadeDelta;
+	int n = cl.time - starttime;
+	if (n > 20000)
+		n = ent.fly_stoptime - cl.time;
+	int count = (n < 20000) ? n * 162 / 20000 : 162;
+
+	if (count > ARRAY_COUNT(avelocities))
+		count = ARRAY_COUNT(avelocities);
+
+	if (!avelocities[0][0])
+		InitAVelocities ();
+
+	CVec3 origin;
+	Lerp (ent.prev.origin, ent.current.origin, cl.lerpfrac, origin);
+
+	for (int i = 0; i < count; i += 2)
+	{
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
+		p->vel.Zero();
+		p->accel[2] = 0;
+
+		CVec3 angles;
+		VectorScale (avelocities[i], cl.ftime, angles);
+		CVec3 forward;
+		AngleVectors (angles, &forward, NULL, NULL);
+
+		float dist = sin(cl.ftime + i) * 64;
+		p->org[0] = origin[0] + bytedirs[i][0]*dist + forward[0]*BEAMLENGTH;
+		p->org[1] = origin[1] + bytedirs[i][1]*dist + forward[1]*BEAMLENGTH;
+		p->org[2] = origin[2] + bytedirs[i][2]*dist + forward[2]*BEAMLENGTH;
+
+		p->color = 0;
+		p->alphavel = -100;	// 0.1s
+	}
+}
+
+
+void CL_DiminishingTrail (centity_t &ent, int flags)
+{
+	static particleEffect_t fx = {
+		0, 8,							// color -> from arg
+		{-3, -3, -3,  3, 3, 3},			// bounds
+		{0, 0, 0,  0, 0, 0},			// velocity
+		1.0, 1.0,						// fade time 2 -> var
+		0,								// gravity -> var
+		0,								// width
+		0,								// velWidth
+		0.5,							// interval
+		0								// density -> var
+	};
+	float orgscale = (200 - ent.trailLen) / 50.0f;
+	float velscale = (100 - ent.trailLen) / 6.5f;
+	if (orgscale < 1) orgscale = 1;
+	if (velscale < 5) velscale = 5;
+	fx.density = (200.0f - ent.trailLen) / 200.0f;
+	if (fx.density < 0.1f) fx.density = 0.1f;
+
 	float vel2 = 0, accel2 = 0;
 	if (flags & EF_GIB)
 	{
-		fadeDelta = 0.4f;
-		baseColor = 0xE8;
+		fx.fadeTime2 = 1.4f;
+		fx.color = 0xE8;
 		vel2 -= PARTICLE_GRAVITY;
 	}
 	else if (flags & EF_GREENGIB)
 	{
-		fadeDelta = 0.4f;
-		baseColor = 0xDB;
+		fx.fadeTime2 = 1.4f;
+		fx.color = 0xDB;
 		vel2 -= PARTICLE_GRAVITY;
 	}
 	else // EF_GRENADE, EF_ROCKET
 	{
-		fadeDelta = 0.2f;
-		baseColor = 4;
+		fx.fadeTime2 = 1.2f;
+		fx.color = 4;
 		accel2 = PARTICLE_GRAVITY/2;
 	}
 
-	while (len > 0)
-	{
-		len -= dec;
-
-		// drop less particles as it flies
-		if ((rand() & 1023) < old->trailcount)
-		{
-			particle_t *p;
-			if (!(p = CL_AllocParticle ())) return;
-			p->accel[2] = accel2;
-			p->alpha = 1.0f;
-			p->alphavel = -1.0f / (1 + frand() * fadeDelta);
-			p->color = baseColor + (rand() & 7);
-
-			for (int j = 0; j < 3; j++)
-			{
-				p->org[j] = move[j] + crand()*orgscale;
-				p->vel[j] = crand()*velscale;
-			}
-			p->vel[2] += vel2;
-		}
-
-		old->trailcount -= 5;
-		if (old->trailcount < 100)
-			old->trailcount = 100;
-		VectorAdd (move, vec, move);
-	}
+	fx.bounds.mins.Set (-orgscale, -orgscale, -orgscale);
+	fx.bounds.maxs.Set ( orgscale,  orgscale,  orgscale);
+	fx.velocity.mins.Set (-velscale, -velscale, -velscale + vel2);
+	fx.velocity.maxs.Set ( velscale,  velscale,  velscale + vel2);
+	fx.gravity = accel2;
+	MovableParticleEffect (ent, fx);
+//	RE_DrawText3D(ent.prevTrail, va("%g\n%g",ent.trailLen, fx.density), RGB(1,0,0));
 }
 
 
@@ -1531,7 +1680,6 @@ void CL_RailTrail (const CVec3 &start, const CVec3 &end)
 		VectorScale (right, cos(d), dir);
 		VectorMA (dir, sin(d), up);
 
-		p->alpha = 1.0f;
 		p->alphavel = -1.0f / (1 + frand () * 0.2f);
 		p->color = 0x74 + (rand()&7);
 		for (int j = 0; j < 3; j++)
@@ -1614,15 +1762,19 @@ void CL_RailTrailExt (const CVec3 &start, const CVec3 &end, byte rType, byte rCo
 
 
 // XATRIX
-void CL_IonripperTrail (const CVec3 &start, const CVec3 &ent)
+void CL_IonripperTrail (centity_t &ent)
 {
-	CVec3 move = start;
-	CVec3 vec;
-	VectorSubtract (ent, start, vec);
-	float len = vec.NormalizeFast ();
+	CVec3 end;
+	Lerp (ent.prev.origin, ent.current.origin, cl.lerpfrac, end);
+	CVec3 move = ent.prevTrail;
+	CVec3 forward;
+	VectorSubtract (end, ent.prevTrail, forward);
+	float len = forward.NormalizeFast ();
+
+	ent.prevTrail = end;
 
 	int dec = 5;
-	vec.Scale (5);
+	forward.Scale (5);
 	float vel0 = -10;
 
 	while (len > 0)
@@ -1643,145 +1795,16 @@ void CL_IonripperTrail (const CVec3 &start, const CVec3 &ent)
 		p->vel[2] = 0;
 		FNegate (vel0);
 
-		VectorAdd (move, vec, move);
+		VectorAdd (move, forward, move);
 	}
 }
 
 
-static CVec3 avelocities[NUMVERTEXNORMALS];
-
-static void InitAVelocities ()
-{
-	for (int i = 0; i < NUMVERTEXNORMALS*3; i++)
-		avelocities[0][i] = (rand()&255) * 0.01f;
-}
-
-
-#define	BEAMLENGTH			16
-void CL_FlyParticles (const CVec3 &origin, int count)
-{
-	float		angle;
-	CVec3		forward;
-
-	if (count > NUMVERTEXNORMALS)
-		count = NUMVERTEXNORMALS;
-
-	if (!avelocities[0][0])
-		InitAVelocities ();
-
-	float ltime = cl.ftime;
-	for (int i = 0; i < count; i += 2)
-	{
-		particle_t *p;
-		if (!(p = CL_AllocParticle ())) return;
-
-		angle = ltime * avelocities[i][0];
-		float sy = sin(angle);
-		float cy = cos(angle);
-		angle = ltime * avelocities[i][1];
-		float sp = sin(angle);
-		float cp = cos(angle);
-		angle = ltime * avelocities[i][2];
-		float sr = sin(angle);
-		float cr = cos(angle);
-
-		forward[0] = cp*cy;
-		forward[1] = cp*sy;
-		forward[2] = -sp;
-
-		float dist = sin(ltime + i)*64;
-		p->org[0] = origin[0] + bytedirs[i][0]*dist + forward[0]*BEAMLENGTH;
-		p->org[1] = origin[1] + bytedirs[i][1]*dist + forward[1]*BEAMLENGTH;
-		p->org[2] = origin[2] + bytedirs[i][2]*dist + forward[2]*BEAMLENGTH;
-
-		p->vel.Zero();
-		p->accel[2] = 0;
-
-		p->color = 0;
-
-		p->alpha = 1;
-		p->alphavel = -100;
-	}
-}
-
-void CL_FlyEffect (centity_t *ent, const CVec3 &origin)
-{
-	int		count, starttime;
-
-	if (ent->fly_stoptime < cl.time)
-	{
-		starttime = cl.time;
-		ent->fly_stoptime = cl.time + 60000;
-	}
-	else
-	{
-		starttime = ent->fly_stoptime - 60000;
-	}
-
-	int n = cl.time - starttime;
-	if (n < 20000)
-		count = n * 162 / 20000;
-	else
-	{
-		n = ent->fly_stoptime - cl.time;
-		if (n < 20000)
-			count = n * 162 / 20000;
-		else
-			count = 162;
-	}
-
-	CL_FlyParticles (origin, count);
-}
-
-
-#define	BEAMLENGTH			16
-void CL_BfgParticles (entity_t *ent)
-{
-	if (!avelocities[0][0])
-		InitAVelocities ();
-
-	float ltime = cl.ftime;
-	for (int i=0 ; i<NUMVERTEXNORMALS ; i++)
-	{
-		particle_t *p;
-		if (!(p = CL_AllocParticle ())) return;
-
-		float angle;
-		angle = ltime * avelocities[i][0];
-		float sy = sin(angle);
-		float cy = cos(angle);
-		angle = ltime * avelocities[i][1];
-		float sp = sin(angle);
-		float cp = cos(angle);
-		angle = ltime * avelocities[i][2];
-		float sr = sin(angle);
-		float cr = cos(angle);
-
-		CVec3 forward;
-		forward.Set (cp*cy, cp*sy, -sp);
-
-		float dist = sin(ltime + i)*64;
-		p->org[0] = ent->pos.origin[0] + bytedirs[i][0]*dist + forward[0]*BEAMLENGTH;
-		p->org[1] = ent->pos.origin[1] + bytedirs[i][1]*dist + forward[1]*BEAMLENGTH;
-		p->org[2] = ent->pos.origin[2] + bytedirs[i][2]*dist + forward[2]*BEAMLENGTH;
-
-		p->vel.Zero();
-		p->accel[2] = 0;
-
-		dist = VectorDistance (p->org, ent->pos.origin) / 90;
-		p->color = appFloor (0xd0 + dist * 7);
-
-		p->alpha = 1.0 - dist;
-		p->alphavel = -100;
-	}
-}
-
-
-void CL_TrapParticles (entity_t *ent)
+void CL_TrapParticles (const CVec3 &origin)
 {
 	// simple trail
 	CVec3 start, end;
-	start = end = ent->pos.origin;
+	start = end = origin;
 	start[2] -= 14;
 	end[2] += 64;
 
@@ -1799,7 +1822,7 @@ void CL_TrapParticles (entity_t *ent)
 	MovableParticleEffect (start, end, fx);
 
 	// complex
-	CVec3 org = ent->pos.origin;
+	CVec3 org = origin;
 	for (int i= -2; i <= 2; i += 4)
 		for (int j = -2; j <= 2; j += 4)
 			for (int k = -2; k <= 4; k += 4)
@@ -1808,8 +1831,6 @@ void CL_TrapParticles (entity_t *ent)
 				if (!(p = CL_AllocParticle ())) return;
 
 				p->color = 0xE0 + (rand()&3);
-
-				p->alpha = 1.0;
 				p->alphavel = -1.0 / (0.3 + (rand()&7) * 0.02);
 
 				p->org[0] = org[0] + i + ((rand()&23) * crand());
@@ -1817,9 +1838,7 @@ void CL_TrapParticles (entity_t *ent)
 				p->org[2] = org[2] + k + ((rand()&23) * crand());
 
 				CVec3 dir;
-				dir[0] = j * 8;
-				dir[1] = i * 8;
-				dir[2] = k * 8;
+				dir.Set (j*8, i*8, k*8);
 
 				dir.NormalizeFast ();
 				float vel = 50 + rand()&63;
@@ -1838,8 +1857,6 @@ void CL_TeleportParticles (const CVec3 &org)
 				if (!(p = CL_AllocParticle ())) return;
 
 				p->color = 7 + (rand()&7);
-
-				p->alpha = 1.0;
 				p->alphavel = -1.0 / (0.3 + (rand()&7) * 0.02);
 
 				p->org[0] = org[0] + i + (rand()&3);
@@ -1941,29 +1958,55 @@ void CL_ParticleSteamEffect (const CVec3 &org, const CVec3 &dir, int color, int 
 		if (!(p = CL_AllocParticle ())) return;
 
 		p->color = color + (rand()&7);
+		p->alphavel = -1.0 / (0.5 + frand()*0.3);
 
 		for (int j = 0; j < 3; j++)
 			p->org[j] = org[j] + magnitude * 0.1f * crand();
 		VectorScale (dir, magnitude, p->vel);
-		float d;
-		d = crand() * magnitude / 3;
-		VectorMA (p->vel, d, r);
-		d = crand() * magnitude / 3;
-		VectorMA (p->vel, d, u);
+		VectorMA (p->vel, crand() * magnitude / 3, r);
+		VectorMA (p->vel, crand() * magnitude / 3, u);
 
 		p->accel[2] = -PARTICLE_GRAVITY/2;
-		p->alpha = 1.0;
-		p->alphavel = -1.0 / (0.5 + frand()*0.3);
 	}
 }
 
 
-void CL_TrackerTrail (const CVec3 &start, const CVec3 &end, int particleColor)
+// same as CL_ParticleSteamEffect, but unaffected by gravity
+void CL_ParticleSmokeEffect (const CVec3 &org, const CVec3 &dir)
 {
-	CVec3 move = start;
+	CVec3 r, u;
+	MakeNormalVectors (dir, r, u);
+
+	const float magnitude = 20;
+	for (int i = 0; i < 20; i++)
+	{
+		particle_t *p;
+		if (!(p = CL_AllocParticle ())) return;
+
+		p->color = 0 + (rand()&7);
+		p->alphavel = -1.0 / (0.5 + frand()*0.3);
+
+		for (int j = 0; j < 3; j++)
+			p->org[j] = org[j] + magnitude * 0.1 * crand();
+		VectorScale (dir, magnitude, p->vel);
+		VectorMA (p->vel, crand() * magnitude / 3, r);
+		VectorMA (p->vel, crand() * magnitude / 3, u);
+
+		p->accel[2] = 0;
+	}
+}
+
+
+void CL_TrackerTrail (centity_t &ent)
+{
+	CVec3 end;
+	Lerp (ent.prev.origin, ent.current.origin, cl.lerpfrac, end);
+	CVec3 move = ent.prevTrail;
 	CVec3 forward;
-	VectorSubtract (end, start, forward);
+	VectorSubtract (end, ent.prevTrail, forward);
 	float len = forward.NormalizeFast ();
+
+	ent.prevTrail = end;
 
 	CVec3 right, up;
 	MakeNormalVectors (forward, right, up);
@@ -1979,9 +2022,8 @@ void CL_TrackerTrail (const CVec3 &start, const CVec3 &end, int particleColor)
 		if (!(p = CL_AllocParticle ())) return;
 		p->accel[2] = 0;
 
-		p->alpha = 1.0;
 		p->alphavel = -2.0;
-		p->color = particleColor;
+		p->color = 0;
 		float dist = dot (move, forward);
 		VectorMA (move, 8 * cos(dist), up, p->org);
 		p->vel.Set (0, 0, 5);
@@ -1990,7 +2032,7 @@ void CL_TrackerTrail (const CVec3 &start, const CVec3 &end, int particleColor)
 	}
 }
 
-void CL_Tracker_Shell (const CVec3 &origin)
+void CL_TrackerShell (const CVec3 &origin)
 {
 	for (int i = 0; i < 300; i++)
 	{
@@ -1998,7 +2040,6 @@ void CL_Tracker_Shell (const CVec3 &origin)
 		if (!(p = CL_AllocParticle ())) return;
 		p->accel[2] = 0;
 
-		p->alpha = 1.0;
 		p->alphavel = INSTANT_PARTICLE;
 		p->color = 0;
 
@@ -2010,8 +2051,8 @@ void CL_Tracker_Shell (const CVec3 &origin)
 	}
 }
 
-// same as CL_Tracker_Shell(), but different particle count, color and radius
-void CL_MonsterPlasma_Shell(const CVec3 &origin)
+// same as CL_TrackerShell(), but different particle count, color and radius
+void CL_MonsterPlasmaShell(const CVec3 &origin)
 {
 	for (int i = 0; i < 40; i++)
 	{
@@ -2019,7 +2060,6 @@ void CL_MonsterPlasma_Shell(const CVec3 &origin)
 		if (!(p = CL_AllocParticle ())) return;
 		p->accel[2] = 0;
 
-		p->alpha = 1.0;
 		p->alphavel = INSTANT_PARTICLE;
 		p->color = 0xE0;
 
@@ -2050,124 +2090,7 @@ void CL_WidowSplash (const CVec3 &org)
 		VectorScale (dir, 40.0f, p->vel);
 
 //??		p->accel[2] = (originally -- undefined) ??
-		p->alpha = 1.0;
 		p->alphavel = -0.8 / (0.5 + frand()*0.3);
 	}
 
-}
-
-
-// like the steam effect, but unaffected by gravity
-void CL_ParticleSmokeEffect (const CVec3 &org, const CVec3 &dir, int color, int count, int magnitude)
-{
-	CVec3 r, u;
-	MakeNormalVectors (dir, r, u);
-
-	for (int i = 0; i < count; i++)
-	{
-		particle_t *p;
-		if (!(p = CL_AllocParticle ())) return;
-		p->accel[2] = 0;
-		p->color = color + (rand()&7);
-
-		for (int j = 0; j < 3; j++)
-		{
-			p->org[j] = org[j] + magnitude*0.1*crand();
-//			p->vel[j] = dir[j]*magnitude;
-		}
-		VectorScale (dir, magnitude, p->vel);
-		float d;
-		d = crand() * magnitude / 3;
-		VectorMA (p->vel, d, r);
-		d = crand() * magnitude / 3;
-		VectorMA (p->vel, d, u);
-
-		p->alpha = 1.0;
-		p->alphavel = -1.0 / (0.5 + frand()*0.3);
-	}
-}
-
-
-/*
-==============
-CL_EntityEvent
-
-An entity has just been parsed that has an event value
-
-the female events are there for backwards compatability
-==============
-*/
-extern sfx_t *cl_sfx_footsteps[4];
-extern sfx_t *cl_sfx_footsteps2[9*4];
-extern sfx_t *cl_sfx_fallshort2[9];
-//?? extern sfx_t *cl_sfx_spectator[4];
-extern sfx_t *cl_sfx_camper[9];
-
-
-void CL_EntityEvent (clEntityState_t *ent)
-{
-	if (RE_GetCaps() & REF_CONSOLE_ONLY)
-		return;
-
-	if (ent->event >= EV_FOOTSTEP0 && ent->event < EV_FOOTSTEP0 + MATERIAL_COUNT)
-	{
-		if (cl_footsteps->integer)
-			S_StartSound (NULL, ent->number, CHAN_BODY, cl_sfx_footsteps2[4*(ent->event-EV_FOOTSTEP0) + (rand()&3)],
-				1, ATTN_NORM, 0);
-		return;
-	}
-	else if (ent->event >= EV_FALLSHORT0 && ent->event < EV_FALLSHORT0 + MATERIAL_COUNT)
-	{
-		S_StartSound (NULL, ent->number, CHAN_AUTO, cl_sfx_fallshort2[ent->event-EV_FALLSHORT0], 1, ATTN_NORM, 0);
-		return;
-	}
-/*??	else if (ent->event >= EV_SPECTATOR0 && ent->event <= EV_SPECTATOR3)
-	{
-		S_StartSound (NULL, ent->number, CHAN_AUTO, cl_sfx_spectator[ent->event-EV_SPECTATOR0], 1, ATTN_NORM, 0);
-		return;
-	} */
-	else if (ent->event >= EV_CAMPER0 && ent->event < EV_CAMPER0+NUM_CAMPER_EVENTS)
-	{
-		S_StartSound (NULL, ent->number, CHAN_AUTO, cl_sfx_camper[ent->event-EV_CAMPER0], 1, ATTN_NORM, 0);
-		return;
-	}
-
-	switch (ent->event)
-	{
-	case EV_ITEM_RESPAWN:
-		S_StartSound (NULL, ent->number, CHAN_WEAPON, S_RegisterSound("items/respawn1.wav"), 1, ATTN_IDLE, 0);
-		CL_ItemRespawnParticles (ent->origin);
-		break;
-	case EV_PLAYER_TELEPORT:
-		S_StartSound (NULL, ent->number, CHAN_WEAPON, S_RegisterSound("misc/tele1.wav"), 1, ATTN_IDLE, 0);
-		CL_TeleportParticles (ent->origin);
-		break;
-	case EV_FOOTSTEP:
-		if (cl_footsteps->integer)
-			S_StartSound (NULL, ent->number, CHAN_BODY, cl_sfx_footsteps[rand()&3], 1, ATTN_NORM, 0);
-		break;
-	case EV_FALLSHORT:
-		S_StartSound (NULL, ent->number, CHAN_AUTO, S_RegisterSound ("player/land1.wav"), 1, ATTN_NORM, 0);
-		break;
-	case EV_FALL:
-		S_StartSound (NULL, ent->number, CHAN_AUTO, S_RegisterSound ("*fall2.wav"), 1, ATTN_NORM, 0);
-		break;
-	case EV_FALLFAR:
-		S_StartSound (NULL, ent->number, CHAN_AUTO, S_RegisterSound ("*fall1.wav"), 1, ATTN_NORM, 0);
-		break;
-	}
-}
-
-
-/*
-==============
-CL_ClearEffects
-
-==============
-*/
-void CL_ClearEffects ()
-{
-	//!! NOTE: used with CL_ClearTEnts()
-	CL_ClearParticles ();
-	CL_ClearDlights ();
 }

@@ -491,6 +491,17 @@ static void S_SpatializeOrigin (const CVec3 &origin, float master_vol, float dis
 S_Spatialize
 =================
 */
+
+
+// Called to get the sound spatialization origin
+static void GetEntitySoundOrigin (int ent, CVec3 &org)
+{
+	if (ent < 0 || ent >= MAX_EDICTS)
+		Com_DropError ("CL_GetEntitySoundOrigin: bad ent");
+	centity_t *e = &cl_entities[ent];
+	Lerp (e->prev.center, e->current.center, cl.lerpfrac, org);
+}
+
 void S_Spatialize(channel_t *ch)
 {
 	CVec3		origin;
@@ -508,7 +519,7 @@ void S_Spatialize(channel_t *ch)
 		origin = ch->origin;
 	}
 	else
-		CL_GetEntitySoundOrigin (ch->entnum, origin);
+		GetEntitySoundOrigin (ch->entnum, origin);
 
 	S_SpatializeOrigin (origin, ch->master_vol, ch->dist_mult, &ch->leftvol, &ch->rightvol);
 }

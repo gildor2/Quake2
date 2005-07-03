@@ -1351,11 +1351,12 @@ CL_ClearState
 
 =====================
 */
-void CL_ClearState (void)
+void CL_ClearState ()
 {
 	S_StopAllSounds_f ();
 	CL_ClearEffects ();
 	CL_ClearTEnts ();
+	CL_ClearLightStyles ();
 
 	// wipe the entire cl structure
 	memset (&cl, 0, sizeof(cl));

@@ -111,7 +111,7 @@ void AngleVectors (const CVec3 &angles, CVec3 *forward, CVec3 *right, CVec3 *up)
 
 	if (angles[YAW])
 	{
-		angle = angles[YAW] * (M_PI*2 / 360);
+		angle = angles[YAW] * M_PI / 180;
 		sy = sin (angle);
 		cy = cos (angle);
 	}
@@ -123,7 +123,7 @@ void AngleVectors (const CVec3 &angles, CVec3 *forward, CVec3 *right, CVec3 *up)
 
 	if (angles[PITCH])
 	{
-		angle = angles[PITCH] * (M_PI*2 / 360);
+		angle = angles[PITCH] * M_PI / 180;
 		sp = sin (angle);
 		cp = cos (angle);
 	}
@@ -137,7 +137,7 @@ void AngleVectors (const CVec3 &angles, CVec3 *forward, CVec3 *right, CVec3 *up)
 	{
 		if (angles[ROLL])
 		{
-			angle = angles[ROLL] * (M_PI*2 / 360);
+			angle = angles[ROLL] * M_PI / 180;
 			sr = sin (angle);
 			cr = cos (angle);
 		}

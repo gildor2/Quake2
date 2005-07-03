@@ -1,8 +1,5 @@
 - EF_BFG, some other - TRANSLUCENT -> shader (cl_ents.cpp)
-- need ability to get shader script from memory (map script with builtin shaders; main engine will pass them to renderer)
-  (EASY to implement ...)
-? can do similar thing, using FindShader(name, scriptName) -- will create shader with "name", but using script/template "scriptName"
-  - can use this for r_lightmap (?), f_fullbright (?), gl_showFillRate, gl_singleShader (!)
+- map script with builtin shaders; main engine will pass them to renderer
 ? aminMap with cross-blending (for sprites) -- combiners?
 ? animMapOnce (check UberEngine function)
 - bfg beams: try to find entity, which is damaged, and lerp beam dst to it (beam src should be lerped too)

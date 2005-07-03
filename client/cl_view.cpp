@@ -29,7 +29,6 @@ int		gun_frame;
 CRenderModel *gun_model;
 #endif
 
-static cvar_t	*cl_testparticles;
 static cvar_t	*cl_testentities;
 static cvar_t	*cl_testlights;
 static cvar_t	*cl_testblend;
@@ -175,36 +174,6 @@ void V_AddLight (const CVec3 &org, float intensity, float r, float g, float b)
 	dl.color.Set (r, g, b);
 }
 
-
-/*
-================
-V_TestParticles
-
-If cl_testparticles is set, create 4096 particles in the view
-================
-*/
-void V_TestParticles (void)
-{
-	CL_ClearParticles ();
-
-	for (int i = 0; i < MAX_PARTICLES; i++)
-	{
-		float d = i / 4.0f;
-		float r = 4 * ((i&7) - 3.5f);
-		float u = 4 * (((i>>3)&7) - 3.5f);
-
-		particle_t	*p;
-		if (!(p = CL_AllocParticle ())) break;
-
-		p->accel[2] = 0;
-		for (int j = 0; j < 3; j++)
-			p->org[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * d + cl.v_right[j] * r + cl.v_up[j] * u;
-
-		p->color = 8;
-		p->alpha = cl_testparticles->value;
-		p->alphavel = -1;	// fade out with 1 second after "cl_testparticles" switched off
-	}
-}
 
 /*
 ================
@@ -894,10 +863,8 @@ bool V_RenderView (void)
 		// this also calls CL_CalcViewValues which loads
 		// v_forward, etc.
 		CL_AddEntities ();
-
-		if (cl_testparticles->value)		// float value
-			V_TestParticles ();
-		CL_UpdateParticles ();
+		CL_AddEffects ();
+		CL_AddTEnts ();
 
 		if (cl_testentities->integer)	V_TestEntities ();
 		if (cl_testlights->integer)		V_TestLights ();
@@ -978,7 +945,6 @@ void V_Init (void)
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(cl_testblend, 0, 0),
-	CVAR_VAR(cl_testparticles, 0, 0),
 	CVAR_VAR(cl_testentities, 0, 0),
 	CVAR_VAR(cl_testlights, 0, CVAR_CHEAT),
 

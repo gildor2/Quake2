@@ -767,23 +767,6 @@ CVAR_END
 		MSH_MOUSEWHEEL = RegisterWindowMessage ("MSWHEEL_ROLLMSG");
 	}
 
-#if 0
-	// this is a gross hack but necessary to clamp the mode for 3Dfx
-	{
-		cvar_t *gl_driver = Cvar_Get ("gl_driver", "opengl32", 0);
-		cvar_t *gl_mode = Cvar_Get ("gl_mode", "3", 0);
-
-		if (stricmp (gl_driver->string, "3dfxgl") == 0)
-		{
-			Cvar_SetInteger ("gl_mode", 3);
-			viddef.width  = 640;
-			viddef.height = 480;
-		}
-	}
-#endif
-	// disable the 3Dfx splash screen
-	putenv ("FX_GLIDE_NO_SPLASH=0");
-
 	// create invisible (fake) window to capture Win32 focus
 	Vid_CreateWindow (0, 0, false);
 

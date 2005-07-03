@@ -458,6 +458,7 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	FILE	*f;
 	int		i, column;
 
+	FS_CreatePath (name);
 	if (!(f = fopen (name, "wb")))
 	{
 		Com_WPrintf ("WriteTGA(%s): cannot create file\n", name);
@@ -573,6 +574,7 @@ bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQual
 	struct jpeg_error_mgr jerr;
 	JSAMPROW row[1];
 
+	FS_CreatePath (name);
 	if (!(f = fopen (name, "wb")))
 	{
 		Com_WPrintf ("WriteJPG(%s): cannot create file\n", name);

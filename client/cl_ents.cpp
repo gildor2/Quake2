@@ -97,55 +97,46 @@ to the current frame
 */
 static void CL_DeltaEntity (frame_t *frame, int newnum, clEntityState_t *old, unsigned bits)
 {
-	centity_t	*ent;
-	clEntityState_t	*state;
+	centity_t &ent = cl_entities[newnum];
+	clEntityState_t &state = cl_parse_entities[cl.parse_entities & (MAX_PARSE_ENTITIES-1)];
 
-	ent = &cl_entities[newnum];
-
-	state = &cl_parse_entities[cl.parse_entities & (MAX_PARSE_ENTITIES-1)];
 	cl.parse_entities++;
 	frame->num_entities++;
 
-	CL_ParseDelta (old, state, newnum, bits, false);
+	CL_ParseDelta (old, &state, newnum, bits, false);
 
 	// some data changes will force no lerping
-	if (state->modelindex != ent->current.modelindex ||
-		state->modelindex2 != ent->current.modelindex2 ||
-		state->modelindex3 != ent->current.modelindex3 ||
-		state->modelindex4 != ent->current.modelindex4 ||
-		fabs(state->origin[0] - ent->current.origin[0]) > 512 ||
-		fabs(state->origin[1] - ent->current.origin[1]) > 512 ||
-		fabs(state->origin[2] - ent->current.origin[2]) > 512 ||
-		state->event == EV_PLAYER_TELEPORT ||
-		state->event == EV_OTHER_TELEPORT
+	if (state.modelindex  != ent.current.modelindex  ||
+		state.modelindex2 != ent.current.modelindex2 ||
+		state.modelindex3 != ent.current.modelindex3 ||
+		state.modelindex4 != ent.current.modelindex4 ||
+		fabs(state.origin[0] - ent.current.origin[0]) > 256 ||	// whole map max 4096, 1/10 map/sec speed is 409
+		fabs(state.origin[1] - ent.current.origin[1]) > 256 ||
+		fabs(state.origin[2] - ent.current.origin[2]) > 256 ||
+		state.event == EV_PLAYER_TELEPORT ||
+		state.event == EV_OTHER_TELEPORT
 		)
 	{
-		ent->serverframe = -99;
+		ent.serverframe = -99;
 	}
 
-	if (ent->serverframe != cl.frame.serverframe - 1)
-	{	// wasn't in last update, so initialize some things
-		ent->trailcount = 1024;		// for diminishing rocket / grenade trails
+	if (ent.serverframe != cl.frame.serverframe - 1)
+	{
 		// duplicate the current state so lerping doesn't hurt anything
-		ent->prev = *state;
-		if (state->event == EV_OTHER_TELEPORT)
-		{
-			ent->prev.origin = state->origin;
-			ent->lerp_origin = state->origin;
-		}
+		ent.prev = state;			// new entity: prev = new
+		if (state.event == EV_OTHER_TELEPORT)
+			ent.prev.origin = state.origin;
 		else
-		{
-			ent->prev.origin = state->old_origin;
-			ent->lerp_origin = state->old_origin;
-		}
+			ent.prev.origin = state.old_origin;
+		// init some non-transferred fields (reset entity)
+		ent.prevTrail = ent.prev.origin;
+		ent.trailLen = 0;
 	}
 	else
-	{	// shuffle the last state to previous
-		ent->prev = ent->current;
-	}
+		ent.prev = ent.current;		// normal delta: prev = current, current = new
 
-	ent->serverframe = cl.frame.serverframe;
-	ent->current = *state;
+	ent.serverframe = cl.frame.serverframe;
+	ent.current = state;
 }
 
 /*
@@ -156,7 +147,7 @@ An svc_packetentities has just been parsed, deal with the
 rest of the data stream.
 ==================
 */
-void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
+static void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 {
 	clEntityState_t *oldstate;
 	int		oldindex, oldnum, old_num_entities;
@@ -259,7 +250,7 @@ CL_FireEntityEvents
 
 ==================
 */
-void CL_FireEntityEvents (frame_t *frame)
+static void CL_FireEntityEvents (frame_t *frame)
 {
 	for (int pnum = 0 ; pnum<frame->num_entities ; pnum++)
 	{
@@ -474,7 +465,7 @@ static void AddViewWeapon (int renderfx)
 	// don't draw gun if in wide angle view
 	if (ps->fov > 90) return;
 
-	entity_t	gun;		// view model
+	entity_t gun;		// view model
 	memset (&gun, 0, sizeof(gun));
 
 #ifdef GUN_DEBUG
@@ -589,12 +580,12 @@ static void CL_AddPacketEntities (void)
 		clEntityState_t *st;
 		unsigned effects, renderfx;
 		GetEntityInfo (pnum, st, effects, renderfx);
-		centity_t *cent = &cl_entities[st->number];		// not "const", because set cent->lerp_origin below ...
+		centity_t &cent = cl_entities[st->number];		// not "const", because used for trails
 
 		// parse beams
 		if (renderfx & RF_BEAM)
 		{
-			beam_t *b = CL_AllocParticleBeam (cent->current.origin, cent->current.old_origin, st->frame / 2.0f, 0);
+			beam_t *b = CL_AllocParticleBeam (cent.current.origin, cent.current.old_origin, st->frame / 2.0f, 0);
 			if (!b) continue;
 			b->type = BEAM_STANDARD;
 			b->color.rgba = 0;
@@ -620,11 +611,11 @@ static void CL_AddPacketEntities (void)
 		else
 			ent.frame = st->frame;
 
-		ent.oldframe = cent->prev.frame;
+		ent.oldframe = cent.prev.frame;
 		ent.backlerp = 1.0f - cl.lerpfrac;
 
 		// interpolate origin
-		Lerp (cent->prev.origin, cent->current.origin, cl.lerpfrac, ent.pos.origin);
+		Lerp (cent.prev.origin, cent.current.origin, cl.lerpfrac, ent.pos.origin);
 
 		// set skin
 		clientInfo_t *ci = NULL;
@@ -672,7 +663,7 @@ static void CL_AddPacketEntities (void)
 		else
 		{	// interpolate angles
 			for (int i = 0; i < 3; i++)
-				ent.angles[i] = LerpAngle (cent->prev.angles[i], cent->current.angles[i], cl.lerpfrac);
+				ent.angles[i] = LerpAngle (cent.prev.angles[i], cent.current.angles[i], cl.lerpfrac);
 		}
 		if (st->solid != 31)
 			FNegate (ent.angles[2]);		// triangle models have bug in Q2: angles[2] should be negated
@@ -775,99 +766,96 @@ static void CL_AddPacketEntities (void)
 			//?? shader
 			ent.flags |= RF_TRANSLUCENT|RF_SHELL_GREEN;
 			ent.alpha = 0.3f;
-			V_AddEntity (&ent);
+			AddEntityWithEffects (&ent, ent.flags | RF_SHELL_GREEN);
 		}
 
 		// add automatic particle trails and dlights
-		if (effects & ~EF_ROTATE)
-		{
-			if (effects & EF_ROCKET) {
-				CL_RocketTrail (cent->lerp_origin, ent.pos.origin, cent);
+		if (!(effects & ~EF_ROTATE)) continue;
+
+		if (effects & EF_ROCKET) {
+			CL_RocketTrail (cent);
+			V_AddLight (ent.pos.origin, 200, 1, 1, 0);
+		}
+		// PGM - Do not reorder EF_BLASTER and EF_HYPERBLASTER.
+		// EF_BLASTER | EF_TRACKER is a special case for EF_BLASTER2... Cheese!
+		else if (effects & EF_BLASTER) {
+			if (effects & EF_TRACKER)	// lame... problematic?
+			{
+				CL_BlasterTrail2 (cent);
+				V_AddLight (ent.pos.origin, 200, 0, 1, 0);
+			}
+			else
+			{
+				CL_BlasterTrail (cent);
 				V_AddLight (ent.pos.origin, 200, 1, 1, 0);
 			}
-			// PGM - Do not reorder EF_BLASTER and EF_HYPERBLASTER.
-			// EF_BLASTER | EF_TRACKER is a special case for EF_BLASTER2... Cheese!
-			else if (effects & EF_BLASTER) {
-				if (effects & EF_TRACKER)	// lame... problematic?
-				{
-					CL_BlasterTrail2 (cent->lerp_origin, ent.pos.origin);
-					V_AddLight (ent.pos.origin, 200, 0, 1, 0);
-				}
-				else
-				{
-					CL_BlasterTrail (cent->lerp_origin, ent.pos.origin);
-					V_AddLight (ent.pos.origin, 200, 1, 1, 0);
-				}
-			} else if (effects & EF_HYPERBLASTER) {
-				if (effects & EF_TRACKER)						// PGM	overloaded for blaster2.
-					V_AddLight (ent.pos.origin, 200, 0, 1, 0);	// PGM
-				else											// PGM
-					V_AddLight (ent.pos.origin, 200, 1, 1, 0);
-			} else if (effects & (EF_GIB|EF_GREENGIB|EF_GRENADE)) {
-				CL_DiminishingTrail (cent->lerp_origin, ent.pos.origin, cent, effects);
-			} else if (effects & EF_FLIES) {
-				CL_FlyEffect (cent, ent.pos.origin);
-			} else if (effects & EF_BFG) {
-				if (effects & EF_ANIM_ALLFAST)
-				{
-					CL_BfgParticles (&ent);
-					float extra = frand () / 2;
-					V_AddLight (ent.pos.origin, 200, extra, 1, extra);
-				}
-				else
-				{
-					static const float bfg_lightramp[7] = {200, 300, 400, 600, 300, 150, 75};
-					float intens = Lerp (bfg_lightramp[st->frame], bfg_lightramp[st->frame+1], cl.lerpfrac);
-					float bright = st->frame > 2 ? (5.0f - st->frame - cl.lerpfrac) / (5 - 2) : 1;
-					V_AddLight (ent.pos.origin, intens, 0, bright, 0);
-				}
-//				RE_DrawTextLeft (va("bfg: %d (%c) [%3.1f]", st->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac));//!!
+		} else if (effects & EF_HYPERBLASTER) {
+			if (effects & EF_TRACKER)						// PGM	overloaded for blaster2.
+				V_AddLight (ent.pos.origin, 200, 0, 1, 0);	// PGM
+			else											// PGM
+				V_AddLight (ent.pos.origin, 200, 1, 1, 0);
+		} else if (effects & (EF_GIB|EF_GREENGIB|EF_GRENADE)) {
+			CL_DiminishingTrail (cent, effects);
+		} else if (effects & EF_FLIES) {
+			CL_FlyEffect (cent);
+		} else if (effects & EF_BFG) {
+			if (effects & EF_ANIM_ALLFAST)
+			{
+				CL_BfgParticles (ent.pos.origin);
+				float extra = frand () / 2;
+				V_AddLight (ent.pos.origin, 200, extra, 1, extra);
 			}
-			// XATRIX
-			else if (effects & EF_TRAP) {
-				ent.pos.origin[2] += 32;
-				CL_TrapParticles (&ent);
-				V_AddLight (ent.pos.origin, (rand()%100) + 100, 1, 0.8, 0.1);
-			} else if (effects & EF_FLAG1) {
-				CL_FlagTrail (cent->lerp_origin, ent.pos.origin, 0xF2);
-				V_AddLight (ent.pos.origin, 100, 1, 0.1, 0.1);
-			} else if (effects & EF_FLAG2) {
-				CL_FlagTrail (cent->lerp_origin, ent.pos.origin, 0x73);
-				V_AddLight (ent.pos.origin, 100, 0.1, 0.1, 1);
+			else
+			{
+				static const float bfg_lightramp[7] = {200, 300, 400, 600, 300, 150, 75};
+				float intens = Lerp (bfg_lightramp[st->frame], bfg_lightramp[st->frame+1], cl.lerpfrac);
+				float bright = st->frame > 2 ? (5.0f - st->frame - cl.lerpfrac) / (5 - 2) : 1;
+				V_AddLight (ent.pos.origin, intens, 0, bright, 0);
 			}
-			//ROGUE
-			else if (effects & EF_TAGTRAIL) {
-				CL_TagTrail (cent->lerp_origin, ent.pos.origin);
-				V_AddLight (ent.pos.origin, 100, 1.0, 1.0, 0.0);
-			} else if (effects & EF_TRACKERTRAIL) {
-				if (effects & EF_TRACKER)
-				{
-					float intensity = 50 + (500 * (sin(cl.time/500.0f) + 1.0f));
-					V_AddLight (ent.pos.origin, intensity, -1.0, -1.0, -1.0);	//?? neg light
-				}
-				else
-				{
-					CL_Tracker_Shell (cent->lerp_origin);
-					V_AddLight (ent.pos.origin, 155, -1.0, -1.0, -1.0);	//?? neg light
-				}
-			} else if (effects & EF_TRACKER) {
-				CL_TrackerTrail (cent->lerp_origin, ent.pos.origin, 0);
-				V_AddLight (ent.pos.origin, 200, -1, -1, -1);	//?? neg light
-			}
-			// XATRIX
-			else if (effects & EF_IONRIPPER) {
-				CL_IonripperTrail (cent->lerp_origin, ent.pos.origin);
-				V_AddLight (ent.pos.origin, 100, 1, 0.5, 0.5);
-			} else if (effects & EF_BLUEHYPERBLASTER) {
-				V_AddLight (ent.pos.origin, 200, 0, 0, 1);
-			} else if (effects & EF_PLASMA) {
-				if (effects & EF_ANIM_ALLFAST)
-					CL_BlasterTrail (cent->lerp_origin, ent.pos.origin);
-				V_AddLight (ent.pos.origin, 130, 1, 0.5, 0.5);
-			}
+//			RE_DrawTextLeft (va("bfg: %d (%c) [%3.1f]", st->frame, effects & EF_ANIM_ALLFAST ? '*' : ' ', cl.lerpfrac));//!!
 		}
-
-		cent->lerp_origin = ent.pos.origin;		//?? why set after use
+		// XATRIX
+		else if (effects & EF_TRAP) {
+			ent.pos.origin[2] += 32;
+			CL_TrapParticles (ent.pos.origin);
+			V_AddLight (ent.pos.origin, (rand()%100) + 100, 1, 0.8, 0.1);
+		} else if (effects & EF_FLAG1) {
+			CL_FlagTrail (cent, 0xF2);
+			V_AddLight (ent.pos.origin, 100, 1, 0.1, 0.1);
+		} else if (effects & EF_FLAG2) {
+			CL_FlagTrail (cent, 0x73);
+			V_AddLight (ent.pos.origin, 100, 0.1, 0.1, 1);
+		}
+		//ROGUE
+		else if (effects & EF_TAGTRAIL) {
+			CL_TagTrail (cent);
+			V_AddLight (ent.pos.origin, 100, 1.0, 1.0, 0.0);
+		} else if (effects & EF_TRACKERTRAIL) {
+			if (effects & EF_TRACKER)
+			{
+				float intensity = 50 + (500 * (sin(cl.time/500.0f) + 1.0f));
+				V_AddLight (ent.pos.origin, intensity, -1.0, -1.0, -1.0);	//?? neg light
+			}
+			else
+			{
+				CL_TrackerShell (ent.pos.origin);
+				V_AddLight (ent.pos.origin, 155, -1.0, -1.0, -1.0);	//?? neg light
+			}
+		} else if (effects & EF_TRACKER) {
+			CL_TrackerTrail (cent);
+			V_AddLight (ent.pos.origin, 200, -1, -1, -1);	//?? neg light
+		}
+		// XATRIX
+		else if (effects & EF_IONRIPPER) {
+			CL_IonripperTrail (cent);
+			V_AddLight (ent.pos.origin, 100, 1, 0.5, 0.5);
+		} else if (effects & EF_BLUEHYPERBLASTER) {
+			V_AddLight (ent.pos.origin, 200, 0, 0, 1);
+		} else if (effects & EF_PLASMA) {
+			if (effects & EF_ANIM_ALLFAST)
+				CL_BlasterTrail (cent);
+			V_AddLight (ent.pos.origin, 130, 1, 0.5, 0.5);
+		}
 	}
 }
 
@@ -934,7 +922,7 @@ CL_CalcViewValues
 Sets cl.refdef view values
 ===============
 */
-void CL_CalcViewValues (void)
+static void CL_CalcViewValues (void)
 {
 	int			i;
 	centity_t	*ent;
@@ -1053,28 +1041,6 @@ void CL_AddEntities (void)
 	// PMM - moved this here so the heat beam has the right values for the vieworg, and can lock the beam to the gun
 	CL_AddPacketEntities ();
 	CL_AddDebugLines ();
-	CL_AddTEnts ();
-	CL_AddDLights ();
-	CL_RunLightStyles ();	// migrated here from CL_Frame() because of clump time
 
 	unguard;
-}
-
-
-
-/*
-===============
-CL_GetEntitySoundOrigin
-
-Called to get the sound spatialization origin
-===============
-*/
-void CL_GetEntitySoundOrigin (int ent, CVec3 &org)
-{
-	if (ent < 0 || ent >= MAX_EDICTS)
-		Com_DropError ("CL_GetEntitySoundOrigin: bad ent");
-	centity_t *old = &cl_entities[ent];
-	org = old->lerp_origin;
-
-	// FIXME: bmodel issues...
 }

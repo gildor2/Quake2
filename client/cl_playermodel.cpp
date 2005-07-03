@@ -978,9 +978,9 @@ static bool ClampAngle (float dst, float clamp, float &angle)
 }
 
 
-int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, const entity_t &ent, entity_t *buf, int maxEnts, int weaponIndex)
+int ParsePlayerEntity (centity_t &cent, clientInfo_t *ci, clEntityState_t *st, const entity_t &ent, entity_t *buf, int maxEnts, int weaponIndex)
 {
-	// argument usage: st->GetAnim(), cent->anim, cent->prev.GetAnim()
+	// argument usage: st->GetAnim(), cent.anim, cent.prev.GetAnim()
 	guard(ParsePlayerEntity);
 
 	if (!ci->isValidModel)
@@ -989,14 +989,14 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 		return 0;
 	}
 
-	if (cent->clientInfoId != ci->id)
+	if (cent.clientInfoId != ci->id)
 	{
 		// clientInfo_t changed -> reset animations for new model
-		cent->clientInfoId = ci->id;
-		memset (&cent->legsAnim, 0, sizeof(animState_t));
-		cent->legsAnim.angles = ent.angles;
-		memset (&cent->torsoAnim, 0, sizeof(animState_t));
-		cent->torsoAnim.angles = ent.angles;
+		cent.clientInfoId = ci->id;
+		memset (&cent.legsAnim, 0, sizeof(animState_t));
+		cent.legsAnim.angles = ent.angles;
+		memset (&cent.torsoAnim, 0, sizeof(animState_t));
+		cent.torsoAnim.angles = ent.angles;
 	}
 
 	if (maxEnts > 0) memset (buf, 0, sizeof(entity_t) * maxEnts);
@@ -1019,9 +1019,9 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 		return 2;
 	}
 
-	animState_t &la = cent->legsAnim;
-	animState_t &ta = cent->torsoAnim;
-	animState_t &ha = cent->headAnim;
+	animState_t &la = cent.legsAnim;
+	animState_t &ta = cent.torsoAnim;
+	animState_t &ha = cent.headAnim;
 
 	//---------- Quake3 player model --------------
 	int legsAnim, torsoAnim, movingDir;
@@ -1035,7 +1035,7 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 	float prevPitch = pitchAngle;
 	if (IsGroundLegsAnim (legsAnim))
 	{
-		cent->prev.GetAnim (prevLegs, prevTorso, prevDir, prevPitch);
+		cent.prev.GetAnim (prevLegs, prevTorso, prevDir, prevPitch);
 		if (prevLegs == LEGS_JUMP)
 			legsAnim = LEGS_LAND;
 		else if (prevLegs == LEGS_JUMPB)
@@ -1090,7 +1090,7 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 			legsAngles[YAW]  = headAngles[YAW] + angleDifs[movingDir];
 		}
 		// swing angles
-		SwingAngle (torsoAngles[YAW], 25, 90, 0.1f, ta.angles[YAW], ta.rotating[YAW]);
+		SwingAngle (torsoAngles[YAW], 25, 80, 0.15f, ta.angles[YAW], ta.rotating[YAW]);
 		SwingAngle (legsAngles[YAW],  40, 90, 0.3f, la.angles[YAW], la.rotating[YAW]);
 
 		// PITCH angles (looking up/down)
@@ -1120,7 +1120,7 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 		if (!ClampAngle (ha.angles[PITCH], 45, ta.angles[PITCH]))
 		{
 			float dst = LerpAngle (la.angles[PITCH], headAngles[PITCH], 0.6f);
-			SwingAngle (dst, 15, 60, 0.1f, ta.angles[PITCH], ta.rotating[PITCH]);
+			SwingAngle (dst, 15, 60, 0.15f, ta.angles[PITCH], ta.rotating[PITCH]);
 		}
 		if (!ClampAngle (ta.angles[PITCH], IsGroundLegsAnim (legsAnim) ? 60 : 30, la.angles[PITCH]))
 			SwingAngle (0, 0, 60, 0.3f, la.angles[PITCH], la.rotating[PITCH]);
@@ -1137,7 +1137,7 @@ int ParsePlayerEntity (centity_t *cent, clientInfo_t *ci, clEntityState_t *st, c
 
 		// lean legs, dependent on movement
 		CVec3 posDelta;
-		VectorSubtract (cent->current.origin, cent->prev.origin, posDelta);
+		VectorSubtract (cent.current.origin, cent.prev.origin, posDelta);
 		if (posDelta[0] || posDelta[1] || posDelta[2])
 		{
 			CAxis axis;

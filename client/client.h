@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "console.h"
 #include "cdaudio.h"
 #include "cl_playermodel.h"
+#include "cl_fx.h"
 
 //=============================================================================
 
@@ -71,10 +72,9 @@ struct centity_t
 	animState_t headAnim;		// used only angles
 
 	int		serverframe;		// if not current, this ent isn't in the frame
-
-	int		trailcount;			// for diminishing grenade trails
-	CVec3	lerp_origin;		// for trails (variable hz)
-
+	// particle effects
+	CVec3	prevTrail;
+	float	trailLen;
 	int		fly_stoptime;
 };
 
@@ -305,102 +305,13 @@ extern	centity_t	*cl_entities;	// [MAX_EDICTS]
 #define	MAX_PARSE_ENTITIES	1024
 extern	clEntityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 
-//---------------- particles ---------------------
-
-
-void CL_ClearParticles (void);
-void CL_UpdateParticles (void);
-particle_t *CL_AllocParticle (void);
-beam_t *CL_AllocParticleBeam (const CVec3 &start, const CVec3 &end, float radius, float fadeTime);
-void CL_MetalSparks (const CVec3 &pos, const CVec3 &dir, int count);
-
-extern particle_t *active_particles;
-extern beam_t	*active_beams;
-
-#define	PARTICLE_GRAVITY			80
-#define INSTANT_PARTICLE			-10000.0	//??
-
-//--------------- lightstyles --------------------
-
-void CL_SetLightstyle (int i, const char *s);
-void CL_RunLightStyles (void);
-extern lightstyle_t cl_lightstyles[MAX_LIGHTSTYLES];
-
-
-//----------------- dlights ----------------------
-
-struct cdlight_t
-{
-	int		key;				// so entities can reuse same entry
-	CVec3	color;
-	CVec3	origin;
-	float	radius;
-	float	die;				// stop lighting after this time
-};
-
-cdlight_t *CL_AllocDlight (int key, const CVec3 &origin);
-void CL_AddDLights (void);
-
-
-//------------------------------------------------
-
-
-void CL_ClearTEnts (void);
-void CL_BlasterTrail (const CVec3 &start, const CVec3 &end);
-void CL_RailTrail (const CVec3 &start, const CVec3 &end);
-void CL_RailTrailExt (const CVec3 &start, const CVec3 &end, byte rType, byte rColor);
-void CL_BubbleTrail (const CVec3 &start, const CVec3 &end);
-void CL_FlagTrail (const CVec3 &start, const CVec3 &end, int color);
-
-// XATRIX
-void CL_IonripperTrail (const CVec3 &start, const CVec3 &end);
-
-
-void CL_TeleporterParticles (clEntityState_t *ent);
-void CL_ParticleEffect (const CVec3 &org, const CVec3 &dir, int color, int count);
-void CL_ParticleEffect2 (const CVec3 &org, const CVec3 &dir, int color, int count);
-void CL_ParticleEffect3 (const CVec3 &org, const CVec3 &dir, int color, int count);
-
-void CL_BlasterParticles (const CVec3 &org, const CVec3 &dir, unsigned color);
-// ROGUE
-void CL_BlasterTrail2 (const CVec3 &start, const CVec3 &end);
-void CL_DebugTrail (const CVec3 &start, const CVec3 &end);
-void CL_ForceWall (const CVec3 &start, const CVec3 &end, int color);
-void CL_BubbleTrail2 (const CVec3 &start, const CVec3 &end);
-void CL_Heatbeam (const CVec3 &start, const CVec3 &end);
-void CL_ParticleSteamEffect (const CVec3 &org, const CVec3 &dir, int color, int count, int magnitude);
-void CL_TrackerTrail (const CVec3 &start, const CVec3 &end, int particleColor);
-void CL_TagTrail (const CVec3 &start, const CVec3 &end);
-void CL_Tracker_Shell(const CVec3 &origin);
-void CL_MonsterPlasma_Shell(const CVec3 &origin);
-void CL_TrackerExplosionParticles (const CVec3 &org);
-void CL_ParticleSmokeEffect (const CVec3 &org, const CVec3 &dir, int color, int count, int magnitude);
-void CL_WidowSplash (const CVec3 &org);
-
+//
+// cl_ents.cpp
+//
 void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsigned bits, bool baseline);
-void CL_ParseFrame (void);
-
-void CL_ParseTEnt (void);
-void CL_ParseMuzzleFlash (void);
-void CL_ParseMuzzleFlash2 (void);
-void SmokeAndFlash(const CVec3 &origin);
-void CL_LogoutEffect (const CVec3 &org, int type);
-
-void CL_AddEntities (void);
-void CL_AddTEnts (void);
-
-//=================================================
-
-void CL_RegisterSounds (void);
-
-void CL_Quit_f (void);
-
-void IN_Accumulate (void);
-
-void CL_ParseLayout (void);
-
 void CL_AddEntityBox (clEntityState_t *st, unsigned rgba);
-
+void CL_AddEntities ();
+void CL_ParseFrame (void);
 
 //
 // cl_main.cpp
@@ -414,8 +325,9 @@ void CL_GetChallengePacket (void);
 
 #define NUM_ADDRESSBOOK_ENTRIES 9
 void CL_PingServers_f (void);
-
+void CL_Quit_f (void);
 void CL_Snd_Restart_f (void);
+void CL_RegisterSounds (void);
 
 void CL_WriteDemoMessage (void);
 
@@ -486,27 +398,16 @@ float CalcFov (float fov_x, float width, float height);
 //
 // cl_tent.cpp
 //
+//!! MOVE to cl_fx.h
 void CL_RegisterTEntSounds (void);
 void CL_RegisterTEntModels (void);
 void CL_SmokeAndFlash(const CVec3 &origin);
+void CL_ClearTEnts (void);
+void CL_ParseTEnt (void);
+void CL_AddTEnts (void);
 
 //
-// cl_fx.cpp
-//
-void CL_BigTeleportParticles (const CVec3 &org);
-void CL_RocketTrail (const CVec3 &start, const CVec3 &end, centity_t *old);
-void CL_DiminishingTrail (const CVec3 &start, const CVec3 &end, centity_t *old, int flags);
-void CL_FlyEffect (centity_t *ent, const CVec3 &origin);
-void CL_BfgParticles (entity_t *ent);
-void CL_EntityEvent (clEntityState_t *ent);
-// XATRIX
-void CL_TrapParticles (entity_t *ent);
-
-void CL_ClearEffects ();
-void CL_ClearLightStyles ();
-
-//
-// menus
+// menu.cpp & qmenu.cpp
 //
 void M_Init (void);
 void M_Keydown (int key);

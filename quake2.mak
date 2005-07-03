@@ -240,6 +240,7 @@ DEPENDS = \
 	Core/Inc/VcWin32.h \
 	SDK/include/dinput.h \
 	client/cdaudio.h \
+	client/cl_fx.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
@@ -823,6 +824,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_fx.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
@@ -857,6 +859,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_fx.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
@@ -889,6 +892,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_fx.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
@@ -927,6 +931,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_fx.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
@@ -968,6 +973,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_fx.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
@@ -1001,6 +1007,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_fx.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
@@ -1037,6 +1044,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_fx.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
@@ -1089,6 +1097,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_fx.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \
@@ -1123,6 +1132,7 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
+	client/cl_fx.h \
 	client/cl_playermodel.h \
 	client/client.h \
 	client/console.h \

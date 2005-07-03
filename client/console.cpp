@@ -82,18 +82,17 @@ static void Con_Clear_f (void)
 
 static void Con_Dump_f (bool usage, int argc, char **argv)
 {
-	FILE	*f;
-	char	buffer[1024], name[MAX_OSPATH];
-
 	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: condump <filename>\n");
 		return;
 	}
 
+	char name[MAX_OSPATH];
 	appSprintf (ARRAY_ARG(name), "%s/%s.txt", FS_Gamedir(), argv[1]);
 
 	FS_CreatePath (name);
+	FILE *f;
 	if (!(f = fopen (name, "w")))
 	{
 		Com_WPrintf ("ERROR: couldn't open %s\n", name);
@@ -104,6 +103,7 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 	int size = con.endpos - pos;
 	if (size < 0) size += CON_TEXTSIZE;
 
+	char buffer[1024];
 	int out = 0;
 	while (size)
 	{
@@ -452,9 +452,7 @@ void Con_DrawNotify (bool drawBack)
 
 void Con_DrawConsole (float frac)
 {
-	int		i, j, x, y;
-	int		row, rows;
-	static const char version[] = APPNAME " v" STR(VERSION);
+	int		i, x;
 #ifdef DEBUG_CONSOLE
 	char	dbgBuf[256];
 	dbgBuf[0] = 0;
@@ -484,6 +482,7 @@ void Con_DrawConsole (float frac)
 	int dy = viddef.height / CHAR_HEIGHT;
 
 	// draw version info
+	static const char version[] = APPNAME " v" STR(VERSION);
 	i = sizeof(version) - 1;
 	for (x = 0; x < i; x++)
 		if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
@@ -494,6 +493,7 @@ void Con_DrawConsole (float frac)
 	// draw the text
 	con.vislines = lines;
 
+	int rows, y;
 	if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
 	{
 		rows = (lines - CHAR_HEIGHT/2) / CHAR_HEIGHT - 2;	// rows of text to draw
@@ -512,24 +512,17 @@ void Con_DrawConsole (float frac)
 	// when console buffer contains leas than 10 lines, require next line ...
 	if (con.display > con.current)	con.display = con.current;
 
-	row = con.display - rows + 1; // top line to display
+	int row = con.display - rows + 1; // top line to display
 
 	CON_DBG(va(" top:%d row:%d",topline,row));
 	if (row < topline)
 	{
 		// row is out of (before) buffer
-		j = topline - row;
-		CON_DBG(va(" fix_top:%d",j));
+		i = topline - row;
+		CON_DBG(va(" fix_top:%d",i));
 		row = topline;
-		rows -= j;
+		rows -= i;
 	}
-
-	CON_DBG(va(" 1st:%d/count:%d/y1:%d",row,rows,y));
-	i = FindLine (row);
-
-	// cache info
-	con.disp.line = row;
-	con.disp.pos = i;
 
 	int y0 = y;												// last console text line
 	if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
@@ -552,6 +545,12 @@ void Con_DrawConsole (float frac)
 		rows--;
 	}
 
+	CON_DBG(va(" 1st:%d/count:%d/y1:%d",row,rows,y));
+	i = FindLine (row);
+	// cache info
+	con.disp.line = row;
+	con.disp.pos = i;
+	// draw console text
 	CON_DBG(va("/y2:%d",y));
 	if (rows > 0 && i != -1)
 	{
