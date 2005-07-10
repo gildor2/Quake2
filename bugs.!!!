@@ -1,6 +1,4 @@
 - "dirty": "newgame" from menu: "loading" will appear, but new game not started (no alias)
-- "dirty", q3 model "lobo" (any q3 model?), jump: in middle point, set timescale=0 -- 2 models will appear (drizzle); no in baseq2
-  (reason is dirty salto ?)
 ?! savegame shot: when loading game/show "load menu" from non-baseq2, shot will be displayed when it is not exists in current mod,
    (saved without shot) but exists in baseq2 (incorrect shot; BUT: situation, when save exists but shot -- not, may be treated as incorrect)
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?) -- should be at least dlights ?? (or not?)
@@ -8,7 +6,6 @@
 ? game, base1, kill all grunts -- dead bodies will fall through floor
 
 - q3 player model animation:
-  - "dirty": jump with salto, forward - will be finished (landing) with strange leg angles
   - when standing on a movable entity - legs will move in entity direction:
     ? should analyze usercmd
     ? check ground entity and compare player speed with its speed (dirty, map "lumber", moving tape -- CONTENTS_CURRENT_NNN|CONTENTS_SOLID)

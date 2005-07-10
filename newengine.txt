@@ -5,14 +5,14 @@
 
 --------------- image/shader usage --------------------
 - CBasicImage:
-  - name, width, height, alphaBits
+  * name, width, height, alphaBits (?)
   - virtual: Draw(), StretchDraw(), [Stretch]DrawNoAlpha() (or [Stretch]DrawAlpha() ?)
-  ? virtual Reload()
+  * virtual Reload()
 - CImage:CBasicImage (-> CTexture, CGLTexture, ... (other name?))
-- CShader:CBasicImage (-> CGLShader?):
+* CShader:CBasicImage (-> CGLShader?):
 
 - drawing:
-  - 3D: shaders only, accumulate scene, sort and draw
+  * 3D: shaders only, accumulate scene, sort and draw
   - 2D **: images and shaders; draw immediately (done); for drawing image, can use static temp shader with 1 stage -- insert image here;
     because of immediate drawing, 1 temp shader is enough; temp shaders (templates):
     - GUI picture with/without alpha
@@ -115,8 +115,6 @@
 ? vid_restart: restart backend ? (renderer restarting - unneded ??); rename cmd ?
 ? share model/map loading with cmodel (separate into own library, used by server/client/renderer)
 - CImage->CShader (CMaterial?); CImage->CGlImage; CMaterial->CGlMaterial
-- sky drawing: AddSkySurface() - during frontend pass (if r_fastSky==0); backend will only draw sky grid;
-  this will eliminate sky surfaces from sorted surfaces array
 - client rendering:
   - screen manager - top level, draw GUI and HUD; can draw 3D in GUI/HUD
   - primary world 3D scene manager - entities, sprites/fx, dlights ...; will call renderer->DrawScene()

@@ -85,4 +85,4 @@ void FreePlayerModelsInfo ();
 bool ScanPlayerModels ();
 void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons = true);
 void RunAnimation (clientInfo_t &ci, animState_t &as, int animNum = ANIM_NOCHANGE);
-int ParsePlayerEntity (centity_t &cent, clientInfo_t *ci, clEntityState_t *st, const entity_t &ent, entity_t *buf, int maxEnts, int weaponIndex = -1);
+int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, const entity_t &ent, entity_t *buf, int maxEnts, int weaponIndex = -1);

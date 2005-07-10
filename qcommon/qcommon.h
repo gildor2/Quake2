@@ -64,40 +64,40 @@ struct cplane_t;
 
 #ifdef _WIN32
 
-#define BUILDSTRING "Win32"
+#define BUILDSTRING		"Win32"
 
 #ifdef _M_IX86
-#define	CPUSTRING	"x86"
+#define	CPUSTRING		"x86"
 #elif defined _M_ALPHA
-#define	CPUSTRING	"AXP"
+#define	CPUSTRING		"AXP"
 #endif
 
 #elif defined __linux__
 
-#define BUILDSTRING "Linux"
+#define BUILDSTRING		"Linux"
 
 #ifdef __i386__
-#define CPUSTRING "i386"
+#define CPUSTRING		"i386"
 #elif defined __alpha__
-#define CPUSTRING "axp"
+#define CPUSTRING		"axp"
 #else
-#define CPUSTRING "Unknown"
+#define CPUSTRING		"Unknown"
 #endif
 
 #elif defined __sun__
 
-#define BUILDSTRING "Solaris"
+#define BUILDSTRING		"Solaris"
 
 #ifdef __i386__
-#define CPUSTRING "i386"
+#define CPUSTRING		"i386"
 #else
-#define CPUSTRING "sparc"
+#define CPUSTRING		"sparc"
 #endif
 
 #else	// unknown platform
 
-#define BUILDSTRING "Unknown"
-#define	CPUSTRING	"Unknown"
+#define BUILDSTRING		"Unknown"
+#define	CPUSTRING		"Unknown"
 
 #endif
 
@@ -105,19 +105,28 @@ struct cplane_t;
 #define VERSION_STR		STR(VERSION) " " CPUSTRING " " __DATE__ " " BUILDSTRING
 
 #ifndef DEDICATED_ONLY
-#define DEDICATED	dedicated->integer
+#define DEDICATED		dedicated->integer
 #else
-#define DEDICATED	1
+#define DEDICATED		1
 #endif
+
+
+#ifndef NO_DEVELOPER
+#define DEVELOPER		developer->integer
+#else
+#define DEVELOPER		0
+#define Com_DPrintf(m)	{}
+#endif
+
 
 // some configuration
 
-#define APPNAME		"Quake2"
-#define	BASEDIRNAME	"baseq2"
-#define CONFIGNAME	"config.cfg"
+#define APPNAME			"Quake2"
+#define	BASEDIRNAME		"baseq2"
+#define CONFIGNAME		"config.cfg"
 // if CD_PATH is not defined, CD checking and adding its paths will not be performed
-#define CD_PATH		"install/data"
-#define CD_CHECK	"install/data/quake2.exe"	// file used for CD validation
+#define CD_PATH			"install/data"
+#define CD_CHECK		"install/data/quake2.exe"	// file used for CD validation
 
 #define SAVEGAME_DIRECTORY			"save"
 #define SAVEGAME_SERVER_EXTENSION	"sv2"

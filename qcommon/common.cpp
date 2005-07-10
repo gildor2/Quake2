@@ -162,6 +162,7 @@ void Com_Printf (const char *fmt, ...)
 }
 
 
+#ifndef NO_DEVELOPER
 /*
 ================
 Com_DPrintf
@@ -177,7 +178,7 @@ void Com_DPrintf (const char *fmt, ...)
 	va_list	argptr;
 	char	msg[MAXPRINTMSG];
 
-	if (!developer->integer) return;
+	if (!DEVELOPER) return;
 
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
@@ -189,6 +190,7 @@ void Com_DPrintf (const char *fmt, ...)
 		DebugPrintf ("%s", msg);
 	}
 }
+#endif
 
 
 bool debugLogged = false;
@@ -236,7 +238,9 @@ void Com_WPrintf (const char *fmt, ...)
 	va_end (argptr);
 
 	Com_Printf (S_YELLOW"%s", msg);
+#ifndef NO_DEVELOPER
 	if (developer->integer == 2) DebugPrintf ("%s", msg);
+#endif
 }
 
 
@@ -678,7 +682,11 @@ void Com_Init (const char *cmdline)
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(com_speeds, 0, 0),
+#ifndef NO_DEVELOPER
 	CVAR_VAR(developer, 0, 0),
+#else
+	CVAR_VAR(developer, 0, CVAR_NOSET),
+#endif
 	CVAR_VAR(timescale, 1, CVAR_CHEAT),
 	CVAR_VAR(timedemo, 0, CVAR_CHEAT),
 	CVAR_VAR(nointro, 0, CVAR_NOSET),

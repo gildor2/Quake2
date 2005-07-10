@@ -1165,8 +1165,7 @@ void PerformScreenshot ()
 {
 	byte	*src, *dst;
 	char	name[MAX_OSPATH];
-	int		i, width, height;
-	FILE	*f;
+	int		i;
 
 	if (!screenshotName ||
 		((screenshotFlags & SHOT_WAIT_3D) && !gl_state.have3d))
@@ -1186,6 +1185,7 @@ void PerformScreenshot ()
 		//?? should ListFiles(..."shot*") in current mod (OS FS) and find unused name in this list
 		for (i = 0; i < 10000; i++)
 		{	// check for a free filename
+			FILE *f;
 			appSprintf (ARRAY_ARG(name), "%s/screenshots/shot%04d%s", FS_Gamedir (), i, ext);
 			if (!(f = fopen (name, "rb")))
 				break;	// file doesn't exist
@@ -1209,6 +1209,7 @@ void PerformScreenshot ()
 	Com_Printf ("\n");
 */
 
+	int width, height;
 	if (screenshotFlags & SHOT_SMALL)
 	{
 		byte *buffer2 = new byte [LEVELSHOT_W * LEVELSHOT_H * 4];
@@ -1230,9 +1231,9 @@ void PerformScreenshot ()
 	src = dst = buffer;
 	for (i = 0; i < size; i++)
 	{
-		unsigned	r, g, b;
-
-		r = *src++; g = *src++; b = *src++;
+		int r = *src++;
+		int g = *src++;
+		int b = *src++;
 		src++;	// skip alpha
 		// correct gamma
 		if (gl_config.deviceSupportsGamma)
@@ -1461,9 +1462,6 @@ CVAR_END
 
 void ShutdownImages ()
 {
-	int		i;
-	image_t	*img;
-
 	UnregisterCommand ("imagelist");
 	UnregisterCommand ("img_reload");
 
@@ -1473,6 +1471,8 @@ void ShutdownImages ()
 	GL_SetMultitexture (0);
 
 	// delete textures
+	int		i;
+	image_t	*img;
 	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
 		if (!img->name[0]) continue;	// free slot

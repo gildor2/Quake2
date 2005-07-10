@@ -438,7 +438,7 @@ static void DrawGUI (bool allowNotifyArea)
 	// draw loading splash
 	if (cls.loading)
 	{
-		if (developer->integer)
+		if (DEVELOPER)
 		{
 			// draw full-screen console before loading plaque if in developer mode
 			RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
@@ -464,7 +464,7 @@ static void DrawGUI (bool allowNotifyArea)
 	}
 
 	// draw downloading info
-	if (cls.download && !(developer->integer && cls.loading))
+	if (cls.download && !(DEVELOPER && cls.loading))
 	{
 		int w = viddef.width / 2;
 		int r = w * cls.downloadpercent / 100;
@@ -480,7 +480,7 @@ static void DrawGUI (bool allowNotifyArea)
 	M_Draw ();
 
 	// draw console
-	if (!cls.loading || !developer->integer)
+	if (!cls.loading || !DEVELOPER)
 		if (conCurrent)
 			Con_DrawConsole (conCurrent);
 		else if (allowNotifyArea && cl_draw2d->integer && (cls.key_dest == key_game || cls.key_dest == key_message))

@@ -691,7 +691,7 @@ static void CL_AddPacketEntities (void)
 					V_AddLight (ent.pos.origin, 100, -1.0, -1.0, -1.0);	//PGM
 
 				AddViewWeapon (renderfx);
-				ParsePlayerEntity (cent, ci, st, ent, NULL, 0);		// do not compute entities, but update animation frames
+				ParsePlayerEntity (cent, *ci, st, ent, NULL, 0);		// do not compute entities, but update animation frames
 				continue;		//?? extend when implement mirrors (with renderfx!); attention: be sure not to add effects later (i.e. twice)
 			}
 		}
@@ -726,7 +726,7 @@ static void CL_AddPacketEntities (void)
 				weaponIndex = 0;			// default weapon model
 
 			entity_t buf[16];
-			int numEnts = ParsePlayerEntity (cent, ci, st, ent, ARRAY_ARG(buf), weaponIndex);
+			int numEnts = ParsePlayerEntity (cent, *ci, st, ent, ARRAY_ARG(buf), weaponIndex);
 			for (int i = 0; i < numEnts; i++)
 				AddEntityWithEffects2 (&buf[i], renderfx);
 		}

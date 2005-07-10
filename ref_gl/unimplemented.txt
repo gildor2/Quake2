@@ -12,6 +12,9 @@ FAST TODO:
   - when IMAGE_NOALPHA - make a=255, keep r,g,b unchanged
   * this is required for magnified textures (for example, when FSAA active, without this around all menu pics will appear pink border)
 - BUG: no world + gl_showFillrate -- needs glClear() (should be implemented with fastsky)
+- surface lights:
+  - when nearest and center points occluded, check far point too
+  - when distance/size is large, check center point only
 
 -------------------------------------------------------------------------------
 	new lightgrid:
@@ -323,6 +326,7 @@ FOR GAME:
 -------------------------------------------------------------------------------
 
 ? combine all tcMod's (all but wave) into a single matrix (extended TCMOD_TRANSFORM ?); combine for each frame; may be, use texture matrix?
+- "tcGen environment" can be done with vertex shader
 - optimize sky box drawing:
   ? can tesselate SOME surface as axis-aligned rects (find surf planar mins/maxs) (problems when surf can be placed on few box sides)
     ? find fast cases, when surface placed only on one plane (use surface bounds ?)

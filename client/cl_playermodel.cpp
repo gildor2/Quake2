@@ -667,7 +667,8 @@ static bool IsGroundLegsAnim (int n)
 	if (n == LEGS_RUN    || n == LEGS_BACK ||
 		n == LEGS_WALK   || n == LEGS_BACKWALK ||
 		n == LEGS_WALKCR || n == LEGS_BACKCR ||
-		n == LEGS_IDLE   || n == LEGS_IDLECR)
+		n == LEGS_IDLE   || n == LEGS_IDLECR ||
+		n == LEGS_LAND   || n == LEGS_LANDB)
 		return true;
 	return false;
 }
@@ -894,7 +895,7 @@ static bool attach (const entity_t &e1, entity_t &e2, const char *tag, const CVe
 	CCoords lerped;		// get position modifier
 	if (!e1.model->LerpTag (e1.frame, e1.oldframe, e1.backlerp, tag, lerped))
 	{
-		if (developer->integer)
+		if (DEVELOPER)
 			RE_DrawTextLeft(va("%s: no tag \"%s\"", e1.model->name, tag));
 		return false;	// no such tag
 	}
@@ -902,7 +903,7 @@ static bool attach (const entity_t &e1, entity_t &e2, const char *tag, const CVe
 	// to hide attached model (this hack used, because quake3 cgame code not allows to remove most tags)
 	if (fabs (lerped.origin[0]) > 1000 || fabs (lerped.origin[1]) > 1000 || fabs (lerped.origin[2]) > 1000)
 	{
-		if (developer->integer)
+		if (DEVELOPER)
 			RE_DrawTextLeft(va("%s: removed tag \"%s\"", e1.model->name, tag));
 		return false;
 	}
@@ -978,21 +979,21 @@ static bool ClampAngle (float dst, float clamp, float &angle)
 }
 
 
-int ParsePlayerEntity (centity_t &cent, clientInfo_t *ci, clEntityState_t *st, const entity_t &ent, entity_t *buf, int maxEnts, int weaponIndex)
+int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, const entity_t &ent, entity_t *buf, int maxEnts, int weaponIndex)
 {
 	// argument usage: st->GetAnim(), cent.anim, cent.prev.GetAnim()
 	guard(ParsePlayerEntity);
 
-	if (!ci->isValidModel)
+	if (!ci.isValidModel)
 	{
-		RE_DrawText3D (ent.pos.origin, va("%s\ninvalid model", ci->name), RGB(1,0,0));
+		RE_DrawText3D (ent.pos.origin, va("%s\ninvalid model", ci.name), RGB(1,0,0));
 		return 0;
 	}
 
-	if (cent.clientInfoId != ci->id)
+	if (cent.clientInfoId != ci.id)
 	{
 		// clientInfo_t changed -> reset animations for new model
-		cent.clientInfoId = ci->id;
+		cent.clientInfoId = ci.id;
 		memset (&cent.legsAnim, 0, sizeof(animState_t));
 		cent.legsAnim.angles = ent.angles;
 		memset (&cent.torsoAnim, 0, sizeof(animState_t));
@@ -1000,22 +1001,22 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t *ci, clEntityState_t *st, c
 	}
 
 	if (maxEnts > 0) memset (buf, 0, sizeof(entity_t) * maxEnts);
-	if (weaponIndex >= 0 && !ci->weaponModel[weaponIndex].model)
+	if (weaponIndex >= 0 && !ci.weaponModel[weaponIndex].model)
 		weaponIndex = 0;								// no model -> change to default model
-	if (!ci->weaponModel[0].model) weaponIndex = -1;	// no model at all
+	if (!ci.weaponModel[0].model) weaponIndex = -1;		// no model at all
 
-	if (!ci->isQ3model)
+	if (!ci.isQ3model)
 	{
 		if (maxEnts < 1) return 0;
 		buf[0] = ent;
-		buf[0].skin  = &ci->md2skin;
-		buf[0].model = ci->md2model;
+		buf[0].skin  = &ci.md2skin;
+		buf[0].model = ci.md2model;
 		buf[0].pos.axis.FromAngles (ent.angles);
 		if (maxEnts < 2 || weaponIndex < 0) return 1;	// no linked weapon
 		// here: assume, that weapon[0] exists
 		buf[1]       = buf[0];
 		buf[1].skin  = NULL;
-		buf[1].model = ci->weaponModel[weaponIndex].model;
+		buf[1].model = ci.weaponModel[weaponIndex].model;
 		return 2;
 	}
 
@@ -1073,7 +1074,7 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t *ci, clEntityState_t *st, c
 	torsoAngles = headAngles;
 	legsAngles  = headAngles;
 
-	if (!ci->fixedAll)
+	if (!ci.fixedAll)
 	{
 		if (la.animNum != LEGS_IDLE || ta.animNum != TORSO_STAND)
 		{
@@ -1095,7 +1096,6 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t *ci, clEntityState_t *st, c
 
 		// PITCH angles (looking up/down)
 #if 0
-		//?? better angles when SWIM
 		la.angles[PITCH]  = 0;		//?? when standing/run/walk only; process ANIM_NOCHANGE too
 		la.angles[ROLL]   = 0;		//??
 		headAngles[PITCH] = Lerp (prevPitch, pitchAngle, cl.lerpfrac);
@@ -1122,9 +1122,10 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t *ci, clEntityState_t *st, c
 			float dst = LerpAngle (la.angles[PITCH], headAngles[PITCH], 0.6f);
 			SwingAngle (dst, 15, 60, 0.15f, ta.angles[PITCH], ta.rotating[PITCH]);
 		}
-		if (!ClampAngle (ta.angles[PITCH], IsGroundLegsAnim (legsAnim) ? 60 : 30, la.angles[PITCH]))
+		if (IsGroundLegsAnim(legsAnim))
 			SwingAngle (0, 0, 60, 0.3f, la.angles[PITCH], la.rotating[PITCH]);
-
+		else
+			ClampAngle (ta.angles[PITCH], 30, la.angles[PITCH]);
 		headAngles[PITCH] = ha.angles[PITCH];
 #endif
 
@@ -1153,18 +1154,18 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t *ci, clEntityState_t *st, c
 		legsAnim = LEGS_TURN;
 
 	// fixedLegs -- legs will stand absolutely vertical when moving (no lean to direction of movement)
-	if (ci->fixedLegs)
+	if (ci.fixedLegs)
 	{
 		legsAngles[YAW] = torsoAngles[YAW];
 		legsAngles[PITCH] = legsAngles[ROLL] = 0;
 	}
 	// fixedTorso -- do not add PITCH angle to torso, when look up/down
-	if (ci->fixedTorso)
+	if (ci.fixedTorso)
 		torsoAngles[PITCH] = 0;
 
 	// run animations
-	RunAnimation (*ci, la, legsAnim);
-	RunAnimation (*ci, ta, torsoAnim);
+	RunAnimation (ci, la, legsAnim);
+	RunAnimation (ci, ta, torsoAnim);
 
 	if (maxEnts < 3) return 0;			// not enough destination size
 
@@ -1173,9 +1174,9 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t *ci, clEntityState_t *st, c
 	buf[2].frame = buf[2].oldframe = 0;
 
 	buf[0].pos.axis.FromAngles (ent.angles);
-	buf[0].model = ci->legsModel;
-	buf[1].model = ci->torsoModel;
-	buf[2].model = ci->headModel;
+	buf[0].model = ci.legsModel;
+	buf[1].model = ci.torsoModel;
+	buf[2].model = ci.headModel;
 	for (int i = 0; i < 3; i++)
 		buf[i].scale = QUAKE3_PLAYER_SCALE;
 
@@ -1183,8 +1184,8 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t *ci, clEntityState_t *st, c
 	VectorMA (buf[0].pos.origin, (1.0f-QUAKE3_PLAYER_SCALE) * (-24), buf[0].pos.axis[2]);
 
 	// animate models
-	ApplyAnimation (*ci, la, buf[0]);
-	ApplyAnimation (*ci, ta, buf[1]);
+	ApplyAnimation (ci, la, buf[0]);
+	ApplyAnimation (ci, ta, buf[1]);
 
 	// prepare angles
 	AnglesSubtract (headAngles, torsoAngles, headAngles);
@@ -1194,9 +1195,9 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t *ci, clEntityState_t *st, c
 	attach (buf[0], buf[1], "tag_torso", &torsoAngles);
 	attach (buf[1], buf[2], "tag_head", &headAngles);
 
-	buf[0].skin = &ci->legsSkin;
-	buf[1].skin = &ci->torsoSkin;
-	buf[2].skin = &ci->headSkin;
+	buf[0].skin = &ci.legsSkin;
+	buf[1].skin = &ci.torsoSkin;
+	buf[2].skin = &ci.headSkin;
 
 	if (maxEnts < 4) weaponIndex = -1;	// do not add weapon - no space
 
@@ -1216,7 +1217,7 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t *ci, clEntityState_t *st, c
 		offs.Scale (weap.drawScale);
 		weap.origin = offs;
 #else
-		weaponInfo_t &weap = ci->weaponModel[weaponIndex];
+		weaponInfo_t &weap = ci.weaponModel[weaponIndex];
 #endif
 
 		buf[3].model = weap.model;

@@ -2254,7 +2254,7 @@ struct playerConfigMenu_t : menuFramework_t
 			entity_t e[16];
 			memset (&e, 0, sizeof(e));
 			// setup for renderer
-			int numEnts = ParsePlayerEntity (cent, &ci, &st, base, ARRAY_ARG(e), 0);
+			int numEnts = ParsePlayerEntity (cent, ci, &st, base, ARRAY_ARG(e), 0);
 //			refdef.areabits = NULL;
 			refdef.num_entities = numEnts;
 			refdef.entities = e;
