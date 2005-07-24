@@ -337,7 +337,7 @@ void SV_InitGame (void)
 	}
 	else	// non-deathmatch, non-coop is one player
 	{
-		Cvar_FullSet ("maxclients", "1", CVAR_SERVERINFO | CVAR_LATCH);
+		Cvar_FullSet ("maxclients", "1", CVAR_SERVERINFO|CVAR_LATCH);
 #ifdef COPYPROTECT
 		if (!sv.attractloop)
 			Sys_CopyProtect ();

@@ -59,7 +59,7 @@ int		con_height;
 #define		WRAP_CHAR	(char)(' ' + 128)
 
 
-static void Con_Clear_f (void)
+static void Con_Clear_f ()
 {
 	con.totallines = 1;		// current line, even if empty, encounted
 	con.current = con.display = 0;
@@ -126,13 +126,13 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 }
 
 
-void Con_ClearNotify (void)
+void Con_ClearNotify ()
 {
 	memset (con.times, 0, sizeof(con.times));
 }
 
 
-void Con_CheckResize (void)
+void Con_CheckResize ()
 {
 	bool w = (con_wordWrap && con_wordWrap->integer);
 	if (w != con.wordwrap)
@@ -346,7 +346,7 @@ void Con_Print (const char *txt)
 	Drawing console
 -----------------------------------------------------------------------------*/
 
-static void DrawInput (void)
+static void DrawInput ()
 {
 	int		y, shift;
 
@@ -600,7 +600,7 @@ static bool iswordsym (char n)
 	return (n >= '0' && n <= '9') || (n >= 'A' && n <= 'Z') || (n >= 'a' && n <= 'z') || n == '_';
 }
 
-void Con_ClearTyping (void)
+void Con_ClearTyping ()
 {
 	editLine[0] = ']';
 	editLine[1] = 0;
@@ -638,7 +638,6 @@ void Key_Console (int key, int modKey)
 			else
 				break;
 #endif
-		// backslash text are commands, else chat
 		if (editLine[1] == '\\' || editLine[1] == '/')
 			Cbuf_AddText (editLine + 2);			// skip the prompt
 		else
@@ -792,7 +791,7 @@ void Key_Console (int key, int modKey)
 	Initialization
 -----------------------------------------------------------------------------*/
 
-void Con_Init (void)
+void Con_Init ()
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(con_notifyTime, 3, 0),

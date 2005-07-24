@@ -203,12 +203,12 @@ static void ProcessMd2Frame (vertexMd3_t *verts, dMd2Frame_t *srcFrame, md3Frame
 
 static void BuildMd2Normals (surfaceMd3_t *surf, int *xyzIndexes, int numXyz)
 {
+	guard(BuildMd2Normals);
+
 	int		i, j, *idx;
 	CVec3	normals[MD3_MAX_VERTS];	// normal per xyzIndex
 	short	norm_i[MD3_MAX_VERTS];
 	vertexMd3_t *verts;
-
-	guard(BuildMd2Normals);
 
 	for (i = 0, verts = surf->verts; i < surf->numFrames; i++, verts += surf->numVerts)
 	{

@@ -22,14 +22,12 @@ static CPackageSymbols* pkgDebugInfo[MAX_PACKAGES];
 static int dbgPackages;
 
 
-void appLoadDebugSymbols (void)
+void appLoadDebugSymbols ()
 {
-	FILE	*f;
-
 	guard(appLoadDebugSymbols);
 
 	//?? should use engine file system (can GZip debug file)
-	f = fopen (DBG_SYMBOLS_FILE, "rb");
+	FILE *f = fopen (DBG_SYMBOLS_FILE, "rb");
 	if (!f)
 	{
 		appPrintf (DBG_SYMBOLS_FILE " is not found\n");		//?? DPrintf
@@ -39,12 +37,10 @@ void appLoadDebugSymbols (void)
 	while (true)
 	{
 		char	c, pkgName[MAX_PKG_NAME];
-		int		i;
-		CPackageSymbols *pkg;
 		CSymbol *lastSym;
 
 		// read package name
-		i = 0;
+		int i = 0;
 
 		do
 		{
@@ -58,7 +54,7 @@ void appLoadDebugSymbols (void)
 		if (dbgPackages >= MAX_PACKAGES)
 			appError ("too much packages");
 
-		pkg = pkgDebugInfo[dbgPackages++] = new CPackageSymbols;
+		CPackageSymbols *pkg = pkgDebugInfo[dbgPackages++] = new CPackageSymbols;
 		lastSym = NULL;
 
 		appStrcpy (pkg->name, pkgName);
@@ -67,7 +63,6 @@ void appLoadDebugSymbols (void)
 		{
 			char	c, symName[256];
 			unsigned addr;
-			CSymbol *sym;
 
 			// read symbol address
 			if (fread (&addr, sizeof(unsigned), 1, f) != 1) appError ("unexpected EOF");
@@ -81,7 +76,7 @@ void appLoadDebugSymbols (void)
 				symName[i++] = c;
 			} while (c);
 
-			sym = new (symName, pkg) CSymbol;
+			CSymbol *sym = new (symName, pkg) CSymbol;
 			sym->address = addr;
 			// insert into list
 			pkg->InsertAfter (sym, lastSym);
@@ -108,15 +103,14 @@ void appLoadDebugSymbols (void)
 
 bool appSymbolName (address_t addr, char *buffer, int size)
 {
-	char	package[256], *name;
+	char	package[256];
 	int		offset;
-	CSymbol	*sym;
 
 	if (!osAddressInfo (addr, ARRAY_ARG(package), &offset))
 		return false;
 
 	// find info for our packages
-	sym = NULL;
+	CSymbol *sym = NULL;
 	for (int i = 0; i < dbgPackages; i++)
 	{
 		CPackageSymbols *pkg = pkgDebugInfo[i];
@@ -131,6 +125,7 @@ bool appSymbolName (address_t addr, char *buffer, int size)
 		}
 	}
 
+	const char *name;
 	if (i == dbgPackages)
 	{
 		// symbol belongs to a system library

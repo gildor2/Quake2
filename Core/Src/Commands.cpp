@@ -267,8 +267,7 @@ static void Cmd_CmdList (bool usage, int argc, char **argv)
 	Initialization
 -----------------------------------------------------------------------------*/
 
-
-void appInitCommands (void)
+void appInitCommands ()
 {
 	RegisterCommand ("echo", Cmd_Echo);
 	RegisterCommand ("cmdlist", Cmd_CmdList);

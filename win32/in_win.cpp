@@ -558,6 +558,53 @@ static void MouseMove (usercmd_t *cmd)
 }
 
 
+/*-----------------------------------------------------------------------------
+	Win32 accessibility feature
+-----------------------------------------------------------------------------*/
+
+#define VARS(type)		\
+static type acc##type;	\
+static bool have##type;
+
+#define DISABLE(type)			\
+	acc##type.cbSize = sizeof(type); \
+	have##type = SystemParametersInfo (SPI_GET##type, sizeof(type), &acc##type, 0) != 0; \
+	if (have##type) {			\
+		type tmp = acc##type;	\
+		tmp.dwFlags = 0;		\
+		SystemParametersInfo (SPI_SET##type, sizeof(type), &tmp, 0); \
+	}
+
+#define RESTORE(type)	\
+	if (have##type)		\
+		SystemParametersInfo (SPI_SET##type, sizeof(type), &acc##type, 0);
+
+VARS(FILTERKEYS)
+VARS(HIGHCONTRAST)
+VARS(MOUSEKEYS)
+VARS(STICKYKEYS)
+VARS(TOGGLEKEYS)
+
+static void DisableAccessibility ()
+{
+	DISABLE(FILTERKEYS)
+	DISABLE(HIGHCONTRAST)
+	DISABLE(MOUSEKEYS)
+	DISABLE(STICKYKEYS)
+	DISABLE(TOGGLEKEYS)
+}
+
+
+static void RestoreAccessibility ()
+{
+	RESTORE(FILTERKEYS)
+	RESTORE(HIGHCONTRAST)
+	RESTORE(MOUSEKEYS)
+	RESTORE(STICKYKEYS)
+	RESTORE(TOGGLEKEYS)
+}
+
+
 /*
 =========================================================================
 
@@ -981,6 +1028,7 @@ CVAR_END
 
 	RegisterCommand ("joy_advancedUpdate", Joy_AdvancedUpdate_f);
 
+	DisableAccessibility ();
 	StartupMouse ();
 	StartupJoystick ();
 }
@@ -989,6 +1037,7 @@ CVAR_END
 void IN_Shutdown ()
 {
 	DeactivateMouse (true);
+	RestoreAccessibility ();
 }
 
 

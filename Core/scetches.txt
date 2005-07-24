@@ -87,7 +87,7 @@ SUBSYSTEMS
 - purpose: notifications:
   - unloading package (free package core resources ?)
   ? loading package
-  - system crush
+  - system crash
   - system exit (automatically deactivate all subsystems; order-dependent ??)
 
 CONFIG SYSTEM

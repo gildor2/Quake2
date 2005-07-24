@@ -72,8 +72,8 @@ typedef enum
 #define M_PI				3.14159265358979323846	// matches value in gcc v2 math.h
 #endif
 
-float Q_rsqrt (float number);
-#define SQRTFAST(x)			(x * Q_rsqrt(x))
+float appRsqrt (float number);
+#define SQRTFAST(x)			(x * appRsqrt(x))
 
 #if 1
 

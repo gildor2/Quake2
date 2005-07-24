@@ -85,7 +85,7 @@ public:
 	bool	modified;				// set each time the cvar is changed
 	byte	pad[3];					// align to 4 bytes (Q2 qboolean)
 #else
-	word	flags;					// 2 bytes enough (even for Quake3)
+	short	flags;					// 2 bytes enough (even for Quake3)
 	bool	modified;
 #endif
 	float	value;					// atof(string)

@@ -111,9 +111,8 @@
      * oneMinusEntity
      * vertex
      * oneMinusVertex
-     * lightingSpecular
-     - portal <range>
-       if <range> is not specified --> error, <range> = 256
+     - lightingSpecular
+     - portal <range>             if <range> is not specified --> error, <range> = 256
 * 11) texgen, tcGen
      - texture, base
      - lightmap
@@ -138,7 +137,7 @@
        expression: dst_alpha = dot(NormalVec(vieworg-vec), normal) * (max-min) + min  (if dot() < 0 dot = 0)
      * oneMinusDot
      - lightingSpecular <x y z>   ???
-     - skyalpha
+     - skyAlpha
      - oneMinusSkyAlpha
 ? 12) tcMod
      * offset <sOffset> <tOffset> (may be treated as initial values for "scroll")

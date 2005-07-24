@@ -88,18 +88,14 @@ float ClampColor255 (const CVec3 &in, CVec3 &out)
 	return m;
 }
 
-float Q_rsqrt (float number)
-{
-	const float threehalfs = 1.5f;
 
+float appRsqrt (float number)
+{
 	float x2 = number * 0.5f;
-	float y  = number;
-	long i = * reinterpret_cast<long*>(&y);
-	i  = 0x5F3759DF - (i >> 1);
-	y  = *(float*) &i;
-	y  = y * (threehalfs - (x2 * y * y));	// 1st iteration
-//	y  = y * (threehalfs - (x2 * y * y));	// 2nd iteration, this can be removed
-	return y;
+	uint_cast(number) = 0x5F3759DF - (uint_cast(number) >> 1);
+	number = number * (1.5f - (x2 * number * number));	// 1st iteration
+//	number = number * (1.5f - (x2 * number * number));	// 2nd iteration, this can be removed
+	return number;
 }
 
 
@@ -295,7 +291,7 @@ float VectorNormalize (const CVec3 &v, CVec3 &out)
 float CVec3::NormalizeFast ()
 {
 	float len2 = dot(*this, *this);
-	float denom = Q_rsqrt (len2);
+	float denom = appRsqrt (len2);
 	Scale (denom);
 	return len2 * denom;
 }

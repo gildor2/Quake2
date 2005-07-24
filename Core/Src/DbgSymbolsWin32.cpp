@@ -8,10 +8,9 @@ static HMODULE	hModule;
 
 bool osAddressInfo (address_t address, char *pkgName, int bufSize, int *offset)
 {
-	MEMORY_BASIC_INFORMATION mbi;
-	char	*s;
-
 	hModule = NULL;
+
+	MEMORY_BASIC_INFORMATION mbi;
 	if (!VirtualQuery ((void*) address, &mbi, sizeof(mbi)))
 		return false;
 	if (!(hModule = (HMODULE)mbi.AllocationBase))
@@ -19,6 +18,7 @@ bool osAddressInfo (address_t address, char *pkgName, int bufSize, int *offset)
 	if (!GetModuleFileName (hModule, ARRAY_ARG(module)))
 		return false;
 
+	char	*s;
 	if (s = strrchr (module, '.')) *s = 0;
 	if (!(s = strrchr (module, '\\')))
 		s = module;
@@ -53,7 +53,7 @@ bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset
 		DWORD* addrTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfFunctions);
 		DWORD* nameTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfNames);
 		unsigned bestRVA = 0;
-		int		bestIndex = -1;
+		int bestIndex = -1;
 		unsigned RVA = address - (unsigned)hModule;
 		for (int i = 0; i < exp->NumberOfFunctions; i++)
 		{

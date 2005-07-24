@@ -25,10 +25,8 @@ static cvar_t	*graphshift;
 // Function DrawString used for painting HUD
 void DrawString (int x, int y, const char *s)
 {
-	int color, c;
-
-	color = C_WHITE;
-	while (c = *s++)
+	int color = C_WHITE;
+	while (char c = *s++)
 	{
 		if (c == COLOR_ESCAPE)
 		{
@@ -84,9 +82,8 @@ static void DrawDebugGraph (void)
 	for (int a = 0; a < w; a++)
 	{
 		int i = (current-1-a+1024) & 1023;
-		float v = values[i].value;
+		float v = values[i].value * graphscale->value + graphshift->value;
 		int color = values[i].color;
-		v = v * graphscale->value + graphshift->value;
 
 		if (v < 0)
 			v += graphheight->integer * (1 + appRound (-v / graphheight->value));
@@ -212,7 +209,7 @@ static void DrawChatInput (void)
 	if (cls.key_dest != key_message) return;
 
 	int x;
-	int v = CHAR_HEIGHT * 8;		//??
+	int v = CHAR_HEIGHT * 8;		//?? num notify lines
 	if (chat_team)
 	{
 		DrawString (8, v, "say_team:");
@@ -533,14 +530,13 @@ void SCR_ToggleConsole (void)
 
 static void Screenshot_f (bool usage, int argc, char **argv)
 {
-	static char filename[MAX_OSPATH], tmpName[MAX_OSPATH];
-
 	if (usage)
 	{
 		Com_Printf ("Usage: screenshot [-levelshot] [-no2d] [-nogamma] [-silent] [-jpeg] [<filename>]\n");
 		return;
 	}
 
+	static char filename[MAX_OSPATH];
 	filename[0] = 0;
 	int flags = 0;
 	for (int i = 1; i < argc; i++)
@@ -553,7 +549,7 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 			{
 				if (cls.state != ca_active)
 				{
-					Com_WPrintf ("No levelshots in disconnected state\n");
+					Com_WPrintf ("No levelshots when disconnected\n");
 					return;
 				}
 
@@ -589,6 +585,7 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 		{
 			if (filename[0])
 				Com_WPrintf ("WARNING: name already specified (%s). Changed.\n", filename);
+			char tmpName[MAX_OSPATH];
 			appSprintf (ARRAY_ARG(tmpName), "%s/screenshots/%s", FS_Gamedir (), opt);
 			appCopyFilename (filename, tmpName, sizeof(filename));
 		}
@@ -617,7 +614,7 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 	{
 		cl.refdef.viewangles[1] = (float)i * 360 / steps;
 
-		RE_BeginFrame (cls.realtime / 1000.0f);
+		RE_BeginFrame (cls.realtime / 1000.0);
 		RE_RenderFrame (&cl.refdef);
 		RE_EndFrame ();
 		time = (appMillisecondsf () - start) / 1000;
@@ -646,14 +643,10 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 
 static void SizeHUDString (const char *string, int *w, int *h)
 {
-	int		lines, width, current;
-	char	c;
-
-	lines = 1;
-	width = 0;
-
-	current = 0;
-	while (c = *string++)
+	int lines = 1;
+	int width = 0;
+	int current = 0;
+	while (char c = *string++)
 	{
 		if (c == '\n')
 		{
@@ -781,7 +774,7 @@ static void DrawInventory (void)
 			keyName = "";
 
 		if (item == selected)
-			RE_DrawChar (x-CHAR_WIDTH, y, 13);	//?? original: 15 (but not displayed) anyway
+			RE_DrawChar (x-CHAR_WIDTH, y, 13);	//?? original: 15 (but not displayed anyway)
 
 		DrawString (x, y, va("%s%6s %3i %s", (item == selected) ? S_GREEN: S_WHITE,
 			keyName, cl.inventory[item], cl.configstrings[CS_ITEMS+item]));
@@ -808,20 +801,9 @@ static void DrawCrosshair (void)
 	RE_DrawPic (viddef.width / 2, viddef.height / 2, crosshair_pic, ANCHOR_CENTER, crosshairColor->integer);
 }
 
-/*
-================
-SCR_ExecuteLayoutString
-================
-*/
+
 static void ExecuteLayoutString (const char *s)
 {
-	int		x, y;
-	int		value;
-	char	*token;
-	int		width;
-	int		index;
-	clientInfo_t *ci;
-
 	guard(SCR_ExecuteLayoutString);
 
 	if (cls.state != ca_active || !cl.rendererReady)
@@ -829,12 +811,14 @@ static void ExecuteLayoutString (const char *s)
 
 	if (!s[0]) return;
 
-	x = y = 0;
-	width = 3;
+	int x = 0, y = 0;
 
 	while (s)
 	{
-		token = COM_Parse (s);
+		int value, index;
+		clientInfo_t *ci;
+
+		const char *token = COM_Parse (s);
 		if (!strcmp (token, "xl"))
 			x = atoi (COM_Parse (s));
 		else if (!strcmp (token, "xr"))
@@ -866,8 +850,8 @@ static void ExecuteLayoutString (const char *s)
 			ci = &cl.clientInfo[value];
 
 			int score = atoi (COM_Parse (s));
-			int ping = atoi (COM_Parse (s));
-			int time = atoi (COM_Parse (s));
+			int ping  = atoi (COM_Parse (s));
+			int time  = atoi (COM_Parse (s));
 
 			int x1 = x+32;
 			DrawString (x1, y,				va(S_GREEN"%s", ci->name));
@@ -906,7 +890,7 @@ static void ExecuteLayoutString (const char *s)
 		}
 		else if (!strcmp (token, "num"))
 		{	// draw a number
-			width = atoi (COM_Parse (s));
+			int width = atoi (COM_Parse (s));
 			value = cl.frame.playerstate.stats[atoi (COM_Parse (s))];
 			DrawField (x, y, 0, width, value);
 		}
@@ -914,7 +898,6 @@ static void ExecuteLayoutString (const char *s)
 		{	// health number
 			int		color;
 
-			width = 3;
 			value = cl.frame.playerstate.stats[STAT_HEALTH];
 			if (value > 25)
 				color = 0;	// green
@@ -926,13 +909,12 @@ static void ExecuteLayoutString (const char *s)
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 1)
 				RE_DrawPic (x, y, "field_3");
 
-			DrawField (x, y, color, width, value);
+			DrawField (x, y, color, 3, value);
 		}
 		else if (!strcmp (token, "anum"))
 		{	// ammo number
 			int		color;
 
-			width = 3;
 			value = cl.frame.playerstate.stats[STAT_AMMO];
 			if (value > 5)
 				color = 0;	// green
@@ -944,22 +926,17 @@ static void ExecuteLayoutString (const char *s)
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 4)
 				RE_DrawPic (x, y, "field_3");
 
-			DrawField (x, y, color, width, value);
+			DrawField (x, y, color, 3, value);
 		}
 		else if (!strcmp (token, "rnum"))
 		{	// armor number
-			int		color;
-
-			width = 3;
 			value = cl.frame.playerstate.stats[STAT_ARMOR];
 			if (value < 1) continue;
-
-			color = 0;	// green
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 2)
 				RE_DrawPic (x, y, "field_3");
 
-			DrawField (x, y, color, width, value);
+			DrawField (x, y, 0, 3, value);		// color = green
 		}
 		else if (!strcmp (token, "stat_string"))
 		{
@@ -1041,7 +1018,7 @@ void SCR_UpdateScreen (void)
 
 	if (!initialized) return;		// not initialized yet
 
-	RE_BeginFrame (cls.realtime / 1000.0f);
+	RE_BeginFrame (cls.realtime / 1000.0);
 
 	if (cl.cinematicActive)
 	{

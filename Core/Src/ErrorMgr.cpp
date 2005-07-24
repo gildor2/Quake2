@@ -109,7 +109,7 @@ static void Cmd_Error (int argc, char **argv)
 
 
 //?? set GErr
-void appInitError (void)
+void appInitError ()
 {
 	GErr.Reset ();
 	RegisterCommand ("error", Cmd_Error);

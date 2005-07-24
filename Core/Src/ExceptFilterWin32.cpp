@@ -183,8 +183,7 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 
 	__try
 	{
-		char	*excName;
-
+		const char *excName = "Exception";
 		switch (info->ExceptionRecord->ExceptionCode)
 		{
 		case EXCEPTION_ACCESS_VIOLATION:
@@ -205,8 +204,6 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 		case EXCEPTION_STACK_OVERFLOW:
 			excName = "Stack overflow";
 			break;
-		default:
-			excName = "Exception";
 		}
 
 		//?? should make logging a global class (implements opening/logging date/closing)
@@ -215,12 +212,12 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 		{
 			CONTEXT* ctx = info->ContextRecord;
 //			EXCEPTION_RECORD* rec = info->ExceptionRecord;
-			time_t	itime;
-			char	ctime[256];
 
 			appSprintf (ARRAY_ARG(GErr.message), "%s at \"%s\"", excName, appSymbolName (ctx->Eip));	//?? may be, supply package name
 
+			time_t itime;
 			time (&itime);
+			char ctime[256];
 			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
 			fprintf (f, "----- "APPNAME" crash at %s -----\n", ctime);		//!! should use main_package name instead of APPNAME
 			fprintf (f, "%s\n\n", GErr.message);
@@ -247,7 +244,7 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 }
 
 
-__declspec(naked) int win32ExceptFilter2 (void)
+__declspec(naked) int win32ExceptFilter2 ()
 {
 	__asm {
 		push	[ebp-0x14]

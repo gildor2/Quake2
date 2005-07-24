@@ -395,6 +395,16 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 Cvar_FullSet
 ============
 */
+
+void Cvar_FullSet (cvar_t *var, const char *value, unsigned flags)
+{
+	Cvar_SetString (var, value);
+	if (var->modified && var->flags & CVAR_USERINFO)
+		userinfo_modified = true;	// transmit at next oportunity
+
+	var->flags = flags & CVAR_FLAG_MASK;
+}
+
 cvar_t *Cvar_FullSet (const char *var_name, const char *value, unsigned flags)
 {
 	cvar_t *var = Cvar_FindVar (var_name);
@@ -403,12 +413,7 @@ cvar_t *Cvar_FullSet (const char *var_name, const char *value, unsigned flags)
 		return Cvar_Get (var_name, value, flags|CVAR_NODEFAULT);
 	}
 
-	Cvar_SetString (var, value);
-	if (var->modified && var->flags & CVAR_USERINFO)
-		userinfo_modified = true;	// transmit at next oportunity
-
-	var->flags = flags & CVAR_FLAG_MASK;
-
+	Cvar_FullSet (var, value, flags);
 	return var;
 }
 
@@ -540,8 +545,8 @@ static void Cvar_SetWithFlags (const char *name, const char *value, unsigned set
 	}
 	else
 		flags = CVAR_USER_CREATED|CVAR_NODEFAULT;
-	flags = flags & ~reset | set;
-	Cvar_FullSet (name, value, flags);
+	// var may be NULL here!
+	Cvar_FullSet (name, value, flags & ~reset | set);
 }
 
 

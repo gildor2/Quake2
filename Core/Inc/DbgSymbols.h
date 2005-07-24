@@ -3,7 +3,7 @@
 
 #define DBG_SYMBOLS_FILE	"symbols.dbg"
 
-void appLoadDebugSymbols (void);		//?? CoreLocal
+void appLoadDebugSymbols ();			//?? CoreLocal
 CORE_API bool appSymbolName (address_t addr, char *buffer, int size);
 CORE_API const char *appSymbolName (address_t addr);
 

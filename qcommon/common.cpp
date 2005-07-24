@@ -713,8 +713,6 @@ CVAR_END
 
 	InitByteDirs ();
 
-	Sys_Init ();
-
 	FS_InitFilesystem ();
 
 	FS_LoadGameConfig ();

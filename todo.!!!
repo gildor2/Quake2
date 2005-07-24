@@ -37,6 +37,7 @@ BUGS:
   ! backend: few static arrays [MAX_VERTEXES][MAX_INDEXES][MAX_SCENE_SURFACES]
     ? all gl buffers should be allocated dynamically; may be, vary size from map surface count
 - fatal error msgbox: display few latest warnings (if going one by one); may be, display as "advanced info" (checkbox)
+
   
 ! new pmove.c errors:
   - "ground3" cafe, on the street: cannot jump onto a corner column (horiz. speed set to 0 due to position snap)
@@ -76,11 +77,10 @@ BUGS:
 
 ----------------------------------------
 
-! map "trainstation": very slow (10-20ms) server (AMD K6-2+) (slow SV_AreaEdicts(), >800 times/sv_frame)
-! unpack PVS in LoadBsp(); use unpacked version in renderer and CM_InPVS() etc.
+? check PHS requirement; what Q3 do; use occluders?
 - option "Screen Flashes" (flash scale ? -- 0 - invisible, 1 - as is)
 - compile option: store configs and savegames (and screenshots?) in "ApplicationData", "MyGames" or inside game directory
-  ? Linux: "~/Quake2/..." (under user's home directory)
+  ? Linux: "~/<APP_NAME>/<MOD_NAME>/..." (under user's home directory)
   - this will allow to launch game directly from CD without installation
 
 - if Win32 can't get keyboard focus, "set r_fullscreen 0" (as Unreal2)
@@ -91,11 +91,11 @@ BINDS:
     are unknown, + for scripts, + general "controls menu" may be reimplemented with this command
   ? bindtmp, aliastmp (not stored in config ?) ("bind [-temp] <key> <action>", "alias ...")
 SAVEGAMES:
-  - check compatibility with original Q2 savegames
+  - check compatibility with original Q2 savegames (incompatible?!)
   ? show game time (like Anachronox)
   - quicksave: save to a few (3-4?) slots
-  - sort savegames by time, ignore slots; any number of savegames (?)
-  ? qcommon.h (engine config): NO_SAVEGAMES - remove save/load game code
+  - sort savegames by time, ignore slots; any number of savegames (?), any savegame names
+  ? compile option: NO_SAVEGAMES - remove save/load game code
   ? gzip file (or pkzip file -- can keep uncompressed only "current" save dir; will require to load/unload savegames.zip for
     displaying savegame menu)
 KINGPIN:
@@ -226,13 +226,13 @@ BSP:
   - place downloaded files into "downloads/" dir (check before downloading - may be already downloaded) + link file (or for paks -
     make "loadpak downloads/<name>.pak"
     ? may be, limit this dir by size or file lifetime (work as cache)
-? perform extended protocol checking by adding "[cl_]extprotocol" to userinfo
 ? server with long player names: replace all userinfo names with special names (va("\x01\x02%2d",id) etc.), and when game dll
   will try to display this name somewhere (check all API functions!), replace it with original name
   ! WANRING: check demo recording -- should display correct names (this is client-side, so - safe ?)
 ? SV_FindIndex() -- use hash tables ?
 ? server: if game_time is comparable (or greater than ?) with ref_time, need to Sleep(game_time) every frame between game
   frames (smooth FPS)
+  - map "trainstation": very slow (10-20ms) server (AMD K6-2+) (slow SV_AreaEdicts(), >800 times/sv_frame)
 ? CHECK: sv_user.c :: SV_ExecuteUserCmd() ("false")
 ?? cl_maxfps: can better control max FPS (currently: if non-limited fps is 250 (4ms) and set limit to 200 (5ms), real fps will
   be 125 (8ms) (really, 170 -- not 200!)); improve: move FPS control to CommonFrame(): we can know, how much can Sleep()
@@ -286,7 +286,7 @@ BSP:
   - add support for "1024x768@70"-like strings (see UT2003 for ideas)
 
 - add marks: bulletholes (?), explosion marks, blood (!), "cheesy shadow" (!), water ripple
-- decompress visinfo for client (cmodel); share this with renderer
+- decompress visinfo (PVS) for client (cmodel); share this with renderer
 ? support for view-dependent LightForPoint()
 
 -------------- FS ----------------
@@ -302,6 +302,8 @@ BSP:
   removing "/" and "\" at line start before parsing; may be, change prompt "]" -> other (">", "#"
   or #define'd string; draw prompt separately -- remove it from input line, i.e. empty line will be
   "" (in memory), not "]")
+  ? may keep Q3-like behaviour (any text during game, not beginning with slash -> chat) -- but for multiplayer only (not for
+    botmatch) and when developer=0
 
 - make zip.c big-endian compatible
 - md4.c::Encode()/Decode() -- works exactly as memcpy() with little-endian platforms, memcpy()+LongSwapBuffer() with big-endian
@@ -311,8 +313,8 @@ BSP:
 
 ----------- GAME LIB -------------
 
-!? add Python or Lua virtual machine (game library, inline map scripts)
-? loading Win32 mods in Linux (Wine)
+!? add Python or Lua virtual machine (game library, inline map scripts, GUI, map preprocessing)
+? loading Win32 mods in Linux (Wine-like DLL loading)
 ? add support for loading ELF (other format?) object files -- cross-platform (any x86 platform), can place object files into paks;
   can implement renderer or gui or anything other as ELF package and place it into pak (ideal: small platform-depending exe with
   support of loading ELF modules)
@@ -347,5 +349,4 @@ BSP:
 ? check all "#pragma pack" places (gcc have ability to compile this)
 - update video config menu
 - hardware gamma (see /usr/X11R6/bin/xgamma as example ...)
-- LoadRefresh: "vid_ref->modified = false" when OK
 - net.c: some funcs changed args netadr_t -> *netadr_t

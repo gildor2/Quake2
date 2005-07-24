@@ -2,10 +2,10 @@
 	Platform-specific type defines
 -----------------------------------------------------------------------------*/
 
-typedef unsigned char	byte;
-typedef unsigned short	word;
-typedef unsigned int	dword;
-typedef unsigned __int64 qword;
+typedef unsigned char	byte;		//?? change name to BYTE etc
+//??typedef unsigned short	word;
+//??typedef unsigned int	dword;
+//??typedef unsigned __int64 qword;
 
 typedef unsigned int	address_t;
 
@@ -50,7 +50,7 @@ typedef unsigned int	address_t;
 //?? macro i.e. PRIMARY_PACKAGE -- in this case, can use single IMPLEMENT_PACKAGE macro for both cases)
 
 
-//  disable some compiler warnings
+// disable some compiler warnings
 #pragma warning(disable : 4018)			// signed/unsigned mismatch
 #pragma warning(disable : 4291)			// no matched operator delete found
 #pragma warning(disable : 4275)			// non dll-interface class used as base for dll-interface class
@@ -105,7 +105,7 @@ inline int appCeil (float f)
 
 
 /*-----------------------------------------------------------------------------
-	Win32 timing
+	Pentium timing
 -----------------------------------------------------------------------------*/
 
 #pragma warning(push)
@@ -131,22 +131,22 @@ inline __int64 appCycles64 ()
 
 #if !WIN32_USE_SEH
 
-#define guard(func)					\
-	{								\
+#define guard(func)						\
+	{									\
 		static const char __FUNC__[] = #func; \
 		try {
 
-#define unguard						\
-		} catch (...) {				\
-			appUnwindThrow (__FUNC__); \
-		}							\
+#define unguard							\
+		} catch (...) {					\
+			appUnwindThrow (__FUNC__);	\
+		}								\
 	}
 
-#define unguardf(msg)				\
-		} catch (...) {				\
+#define unguardf(msg)					\
+		} catch (...) {					\
 			appUnwindPrefix (__FUNC__);	\
-			appUnwindThrow msg;		\
-		}							\
+			appUnwindThrow msg;			\
+		}								\
 	}
 
 #define GUARD_BEGIN	try
@@ -160,27 +160,27 @@ CORE_API int win32ExceptFilter (struct _EXCEPTION_POINTERS *info);
 #define EXCEPT_FILTER	win32ExceptFilter(GetExceptionInformation())
 #else
 // this will allow to produce slightly smaller code, but may not work under non-VC6 compiler
-CORE_API int win32ExceptFilter2 (void);
+CORE_API int win32ExceptFilter2 ();
 #define EXCEPT_FILTER	win32ExceptFilter2()
 #endif
 
 
-#define guard(func)					\
-	{								\
+#define guard(func)						\
+	{									\
 		static const char __FUNC__[] = #func; \
 		__try {
 
-#define unguard						\
-		} __except (EXCEPT_FILTER) { \
-			appUnwindThrow (__FUNC__); \
-		}							\
+#define unguard							\
+		} __except (EXCEPT_FILTER) {	\
+			appUnwindThrow (__FUNC__);	\
+		}								\
 	}
 
-#define unguardf(msg)				\
-		} __except (EXCEPT_FILTER) { \
+#define unguardf(msg)					\
+		} __except (EXCEPT_FILTER) {	\
 			appUnwindPrefix (__FUNC__);	\
-			appUnwindThrow msg;		\
-		}							\
+			appUnwindThrow msg;			\
+		}								\
 	}
 
 #define GUARD_BEGIN	__try

@@ -1828,7 +1828,7 @@ CVAR_BEGIN(vars)
 #ifdef CD_PATH
 	CVAR_FULL(&fs_cddir, "cddir", "", CVAR_NOSET),
 #endif
-	CVAR_FULL(&fs_gamedirvar, "game", "", CVAR_LATCH|CVAR_SERVERINFO),
+	CVAR_FULL(&fs_gamedirvar, "game", "", CVAR_SERVERINFO|CVAR_LATCH),
 	CVAR_VAR(fs_debug, 0, 0)
 CVAR_END
 

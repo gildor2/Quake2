@@ -10,8 +10,6 @@
 int			starttime;
 bool		ActiveApp, MinimizedApp, FullscreenApp;
 
-static HANDLE hinput, houtput;
-
 unsigned	sys_frame_time;			//?? used in cl_input.cpp only
 
 
@@ -88,33 +86,18 @@ void Sys_CopyProtect ()
 }
 
 
-/*
-================
-Sys_Init
-================
-*/
-void Sys_Init ()
-{
-	guard(Sys_Init);
+/*-----------------------------------------------------------------------------
+	Win32 console input/output
+-----------------------------------------------------------------------------*/
 
-	if (DEDICATED)
-	{
-#ifndef DEDICATED_ONLY
-		AllocConsole ();
-#endif
-		hinput = GetStdHandle (STD_INPUT_HANDLE);
-		houtput = GetStdHandle (STD_OUTPUT_HANDLE);
-	}
-
-	unguard;
-}
-
+static HANDLE hConInput, hConOutput;
 
 #define MAX_CMDLINE		256		//?? same as in client/keys.h
 
 static char	console_text[MAX_CMDLINE];
 static int	console_textlen = 0;
 static bool console_drawInput = true;
+
 
 static void EraseConInput ()
 {
@@ -127,7 +110,7 @@ static void EraseConInput ()
 		memset (&text[1], ' ', console_textlen+1);
 		text[console_textlen+2] = '\r';
 		text[console_textlen+3] = 0;
-		WriteFile (houtput, text, console_textlen+3, &dummy, NULL);
+		WriteFile (hConOutput, text, console_textlen+3, &dummy, NULL);
 	}
 }
 
@@ -145,27 +128,27 @@ char *Sys_ConsoleInput ()
 	if (console_drawInput)
 	{
 		// display input line
-		WriteFile (houtput, "]", 1, &dummy, NULL);
+		WriteFile (hConOutput, "]", 1, &dummy, NULL);
 		if (console_textlen)
-			WriteFile (houtput, console_text, console_textlen, &dummy, NULL);
+			WriteFile (hConOutput, console_text, console_textlen, &dummy, NULL);
 		console_drawInput = false;
 	}
 
 	while (true)
 	{
 		DWORD	numevents, numread;
-		GetNumberOfConsoleInputEvents (hinput, &numevents);
+		GetNumberOfConsoleInputEvents (hConInput, &numevents);
 		if (numevents <= 0) break;
 
 		INPUT_RECORD rec;
-		ReadConsoleInput (hinput, &rec, 1, &numread);
+		ReadConsoleInput (hConInput, &rec, 1, &numread);
 		if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown)
 		{
 			int ch = rec.Event.KeyEvent.uChar.AsciiChar;
 			switch (ch)
 			{
 				case '\r':		// ENTER
-					WriteFile (houtput, "\r\n", 2, &dummy, NULL);
+					WriteFile (hConOutput, "\r\n", 2, &dummy, NULL);
 					console_drawInput = true;
 					if (console_textlen)
 					{
@@ -178,7 +161,7 @@ char *Sys_ConsoleInput ()
 					if (console_textlen)
 					{
 						console_text[--console_textlen] = 0;
-						WriteFile (houtput, "\b \b", 3, &dummy, NULL);
+						WriteFile (hConOutput, "\b \b", 3, &dummy, NULL);
 					}
 					break;
 
@@ -210,7 +193,7 @@ char *Sys_ConsoleInput ()
 					{
 						if (console_textlen < sizeof(console_text)-2)
 						{
-							WriteFile(houtput, &ch, 1, &dummy, NULL);
+							WriteFile(hConOutput, &ch, 1, &dummy, NULL);
 							console_text[console_textlen++] = ch;
 							console_text[console_textlen] = 0;
 						}
@@ -235,9 +218,22 @@ Sys_ConsoleOutput
 Print text to the dedicated console
 ================
 */
+
+static void InitWin32Console ()
+{
+#ifndef DEDICATED_ONLY
+	AllocConsole ();
+#endif
+	hConInput  = GetStdHandle (STD_INPUT_HANDLE);
+	hConOutput = GetStdHandle (STD_OUTPUT_HANDLE);
+}
+
+
 void Sys_ConsoleOutput (const char *string)
 {
 	if (!DEDICATED) return;
+
+	EXEC_ONCE(InitWin32Console ();)
 
 	EraseConInput ();
 
@@ -248,16 +244,16 @@ void Sys_ConsoleOutput (const char *string)
 		if (c == COLOR_ESCAPE && string[1] >= '0' && string[1] <= '7')
 		{
 			static const byte colorTable[8] = {0, 4, 2, 6, 1, 5, 3, 7};
-			SetConsoleTextAttribute (houtput, colorTable[string[1] - '0']);
+			SetConsoleTextAttribute (hConOutput, colorTable[string[1] - '0']);
 			string += 2;
 			continue;
 		}
 		c &= 0x7F;		// clear 7th bit
 		DWORD	dummy;
-		WriteFile (houtput, &c, 1, &dummy, NULL);
+		WriteFile (hConOutput, &c, 1, &dummy, NULL);
 		string++;
 	}
-	SetConsoleTextAttribute (houtput, 7);
+	SetConsoleTextAttribute (hConOutput, 7);
 
 	console_drawInput = true;
 }
@@ -505,6 +501,6 @@ int main (int argc, const char **argv)
 	}
 	// will get here only when fatal error happens
 	Sys_Quit ();
-	// and will neverget here ... (NORETURN Sys_Quit())
+	// and will never get here ... (NORETURN Sys_Quit())
 	return 0;
 }

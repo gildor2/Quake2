@@ -545,11 +545,10 @@ bool CStringList::Remove (CStringItem *item)
 }
 
 
-void CStringList::Free (void)
+void CStringList::Free ()
 {
-	CStringItem *item, *next;
-
 	guardSlow(CStringList::Free);
+	CStringItem *item, *next;
 	for (item = first; item; item = next)
 	{
 		next = item->next;

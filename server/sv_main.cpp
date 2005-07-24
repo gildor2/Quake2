@@ -374,6 +374,7 @@ static void cDirectConnect (int argc, char **argv)
 		int ver = atoi (argv[6]);
 		if (ver != NEW_PROTOCOL_VERSION)
 		{
+			//?? we may also perform extended protocol checking by adding "[cl_]extprotocol" to userinfo
 			Com_DPrintf ("Client used extended protocol %d != "STR(NEW_PROTOCOL_VERSION)"\n", ver);
 			if (ver < NEW_PROTOCOL_VERSION)
 				Netchan_OutOfBandPrint (NS_SERVER, adr, "print\n"
@@ -1310,8 +1311,8 @@ CVAR_BEGIN(vars)
 
 	CVAR_VAR(sv_reconnect_limit, 3, CVAR_ARCHIVE),
 
-	CVAR_VAR(sv_extProtocol, 1, CVAR_SERVERINFO|CVAR_LATCH|CVAR_ARCHIVE),
-	CVAR_VAR(sv_camperSounds, 1, CVAR_SERVERINFO|CVAR_ARCHIVE),
+	CVAR_VAR(sv_extProtocol, 1, CVAR_SERVERINFO|CVAR_LATCH),
+	CVAR_VAR(sv_camperSounds, 1, CVAR_SERVERINFO),
 	CVAR_VAR(sv_labels, 0, CVAR_CHEAT),
 	CVAR_NULL(dmflags, 16, CVAR_SERVERINFO)			//?? old default value: 0 for game, DF_INSTANT_ITEMS (16) for server
 //	CVAR_VAR(sv_fps, 20, 0)	// archive/serverinfo ??

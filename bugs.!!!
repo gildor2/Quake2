@@ -24,20 +24,16 @@
     - disco: neon lamp text should not disappear
   ? g_misc.c::SP_light() -- disabled lights with style>=32
 
-- when sound is busy, error about "command already registered" appears for sound commands
-
-? game crush in msvcrt.dll (pak loading/unloading/download breaking/map not found)
-? crush on map change/game load with Anachronox map : crush when door/elevator moving somewhere on level -- absolute pointers ?
-
-- bug: "game baseq2;unloadpak q2maps;game bad_dir(?);demomap demo1;game baseq2(?);demomap demo1"
-  (1st demomap - "cannot load map (q2maps not loaded)", 2nd - "bad map contents (pak loaded, but name cached??)"
+? game crash in msvcrt.dll (pak loading/unloading/download breaking/map not found)
+? crash on map change/game load with Anachronox map : crash when door/elevator moving somewhere on level -- absolute pointers ?
 
 - z-buffer bugs with glass floor on "omd_map1"
 
 - filesystem:
   - when q2 launched from "release" directory (w/o baseq2 subdir), FS "search paths" will be empty, "dir" command will not work at all
+    (possible in dedicated server only)
 
-- without WIN32_USE_SEH, crash log will contain error history only
+- WIN32_USE_SEH=0, "error -gpf": crash log will contain error history only
 
 - command completion: complete cvar with quotes - should use Com_QuoteString() before inserting into edit line; bugcheck:
   1) a="""a""" b """c"""; 2) a->complete+ENTER; 3) a->complete --> will be a different line

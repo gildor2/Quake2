@@ -100,7 +100,7 @@ public:
 	// unlink item from list
 	CORE_API bool Remove (CStringItem *item);
 	// freeing list of items, allocated in generic memory
-	CORE_API void Free (void);
+	CORE_API void Free ();
 };
 
 
@@ -109,7 +109,7 @@ template<class T> class TList : public CStringList
 {
 public:
 	// list enumeration
-	T *First (void)
+	T *First ()
 	{
 		return (T*) first;
 	}

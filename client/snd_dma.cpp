@@ -135,13 +135,12 @@ CVAR_END
 
 		Com_Printf("\n------- Sound initialization -------\n");
 
+		if (!SNDDMA_Init()) return;
+
 		RegisterCommand ("play", S_Play_f);
 		RegisterCommand ("stopsound", S_StopAllSounds_f);
 		RegisterCommand ("soundlist", S_SoundList_f);
 		RegisterCommand ("soundinfo", S_SoundInfo_f);
-
-		if (!SNDDMA_Init())
-			return;
 
 		S_InitScaletable ();
 
@@ -632,14 +631,9 @@ static sfx_t *GetPlayerSound (clEntityState_t *ent, const char *base)
 	if (!model[0])
 		strcpy (model, "male");
 
-	bool isFemale;
+	bool isFemale = false;
 	if (ent->modelindex == 255)
 		isFemale = cl.clientInfo[ent->skinnum & 0xFF].modelGender == 'f';
-	else
-	{
-		// should not happen (gender sound for non-player model?)
-		isFemale = CL_IsFemaleModel (model);
-	}
 
 	// see if we already know of the model specific sound
 	char localFilename[MAX_QPATH];

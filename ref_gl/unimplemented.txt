@@ -322,6 +322,28 @@ FOR GAME:
 
 
 -------------------------------------------------------------------------------
+	Mandatory (for Q3 games)
+-------------------------------------------------------------------------------
+
+- portals
+- fog
+- loading Q3 bsp
+- curved surfaces, trisurfs
+- finish shader support:
+  - deform autosprite2, normal
+  - skyParms, fogParms, portal
+  - detail (?)
+  - videomap
+  - tcmod entityTranslate (?)
+  - alphaGen lightingSpecular, portal
+  - wave noise (for deform normal)
+- reading lighting info from shaders
+- correct lighting for multipass shaders with lightmap in non-first stage
+- renderer interface
+- use MD3 LOD (may be, try to generate LOD for ANY model?)
+
+
+-------------------------------------------------------------------------------
 	Unsorted
 -------------------------------------------------------------------------------
 

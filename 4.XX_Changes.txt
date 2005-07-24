@@ -28,11 +28,12 @@ Comments:
 - improved look of "player setup" menu
 - improved "set game directory" action
 - ability to reverse sound channels; controllable with "s_reverse_stereo"
-- skins:
+- player skins:
   - md2: can use skins without icon ("*_i.???") file -- skin shound have name "skn_*.???"; side effect: even when
     skin icon exists, it will be ignored
   - md2: implemented skin selection logic when specified skin is absent
 - added "disconnect" menu item into "multiplayer" menu
+- win32 monitor power function, screensaver and accessibility disabled during gameplay
 
 2. FIXES
 ~~~~~~~~
@@ -45,7 +46,7 @@ Comments:
   2) unbindall
   3) reset *
   4) exec config.cfg
-- bug with menu spin control (crush when curvalue > maxvalue)
+- bug with menu spin control (crash when curvalue > maxvalue)
 - removed calling "-alias" EVERY time key depressed
 - fixed collision detection code to prevent from "blocked inside the opening door" and some other bugs
 - fixed "WSAECONRESET" error for Win2K (server was crashed when one client exits game)
@@ -232,7 +233,7 @@ Network
   - camper sounds (server-side)
   - falling sounds (server-side)
   - customised rail trail
-  * side effect: demos will crush server, when played with original Quake2; to record compatible demos, just
+  * side effect: demos will crash server, when played with original Quake2; to record compatible demos, just
     use cl_extprotocol=0 or sv_extprotocol=0
   - faster downloading speed (10 times)
 

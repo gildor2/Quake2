@@ -42,14 +42,14 @@ struct FMemHeader
 	/*------ all blocks are in double-linked list -------*/
 	static FMemHeader *first;
 
-	inline void Link (void)
+	inline void Link ()
 	{
 		if (first) first->prev = this;
 		next = first;
 		prev = NULL;
 		first = this;
 	}
-	inline void Unlink (void)
+	inline void Unlink ()
 	{
 		if (first == this) first = next;
 		if (prev) prev->next = next;
@@ -63,7 +63,7 @@ FMemHeader *FMemHeader::first;
 #endif
 
 
-static void OutOfMemory (void)
+static void OutOfMemory ()
 {
 	appError ("Out of memory");
 }
@@ -71,21 +71,16 @@ static void OutOfMemory (void)
 
 void *appMalloc (size_t size, int alignment)
 {
-	FMemHeader *hdr;
-	void	*data;
-	size_t	alloc;
-	int		pad;
-
 	guardSlow(appMalloc);
 	// allocate block
-	alloc = size + alignment - 1 + sizeof(FMemHeader);
-	hdr = (FMemHeader *) malloc (alloc);
+	size_t alloc = size + alignment - 1 + sizeof(FMemHeader);
+	FMemHeader *hdr = (FMemHeader *) malloc (alloc);
 	if (!hdr)
 		OutOfMemory ();
 	memset (hdr, 0, alloc);
-	data = hdr + 1;
+	void *data = hdr + 1;
 	// align pointers
-	pad = SizeToAlign (data, alignment);
+	int pad = SizeToAlign (data, alignment);
 	hdr = OffsetPointer (hdr, pad);
 	data = OffsetPointer (data, pad);
 	// fill header
@@ -114,14 +109,11 @@ void *appMalloc (size_t size, int alignment)
 
 void appFree (void *ptr)
 {
-	FMemHeader *hdr;
-	void	*block;
-
 	guardSlow(appFree);
 //	if (!ptr) return;		// ignore NULL pointers
 	// get pointers
-	hdr = (FMemHeader *)ptr - 1;
-	block = OffsetPointer (hdr, -hdr->offset);
+	FMemHeader *hdr = (FMemHeader *)ptr - 1;
+	void *block = OffsetPointer (hdr, -hdr->offset);
 #if MEM_STATS
 	// update stats
 	allocsSize -= hdr->size;
@@ -142,14 +134,14 @@ void appFree (void *ptr)
 
 CMemoryChain *CMemoryChain::first;
 
-void CMemoryChain::Link (void)
+void CMemoryChain::Link ()
 {
 	if (first) first->dPrev = this;
 	dNext = first;
 	dPrev = NULL;
 	first = this;
 }
-void CMemoryChain::Unlink (void)
+void CMemoryChain::Unlink ()
 {
 	if (first == this) first = dNext;
 	if (dPrev) dPrev->dNext = dNext;
@@ -160,18 +152,15 @@ void CMemoryChain::Unlink (void)
 
 void *CMemoryChain::operator new (size_t size, int dataSize)
 {
-	int		alloc;
-	CMemoryChain *chain;
-
 	guardSlow(CMemoryChain::new);
-	alloc = Align (size + dataSize, MEM_CHUNK_SIZE);
-	chain = (CMemoryChain *) malloc (alloc);
+	int alloc = Align (size + dataSize, MEM_CHUNK_SIZE);
+	CMemoryChain *chain = (CMemoryChain *) malloc (alloc);
 	if (!chain)
 		OutOfMemory ();
 	chain->size = alloc;
 	chain->next = NULL;
 	chain->data = (byte*) OffsetPointer (chain, size);
-	chain->end = (byte*) OffsetPointer (chain, alloc);
+	chain->end  = (byte*) OffsetPointer (chain, alloc);
 
 	memset (chain->data, 0, chain->end - chain->data);
 
@@ -193,9 +182,8 @@ void *CMemoryChain::operator new (size_t size, int dataSize)
 
 void CMemoryChain::operator delete (void *ptr)
 {
-	CMemoryChain *curr, *next;
-
 	guardSlow(CMemoryChain::delete);
+	CMemoryChain *curr, *next;
 	for (curr = (CMemoryChain *)ptr; curr; curr = next)
 	{
 #if MEM_STATS
@@ -216,15 +204,12 @@ void CMemoryChain::operator delete (void *ptr)
 
 void *CMemoryChain::Alloc (size_t size, int alignment)
 {
-	CMemoryChain *b;
-	byte	*start;
-
 	guardSlow(CMemoryChain::Alloc);
 	if (!size) return NULL;
 
 	// sequence of blocks (with using "next" field): 1(==this)->5(last)->4->3->2->NULL
-	b = (next) ? next : this;				// block for allocation
-	start = Align (b->data, alignment);		// start of new allocation
+	CMemoryChain *b = (next) ? next : this;			// block for allocation
+	byte* start = Align (b->data, alignment);		// start of new allocation
 	// check block free space
 	if (start + size > b->end)
 	{
@@ -239,7 +224,7 @@ void *CMemoryChain::Alloc (size_t size, int alignment)
 	// update pointer to a free space
 	b->data = start + size;
 #if MEM_DEBUG
-	b->owner = owner;						// make all subchains to be owned by a single place
+	b->owner = owner;								// make all subchains to be owned by a single place
 #endif
 
 	return start;
@@ -248,7 +233,7 @@ void *CMemoryChain::Alloc (size_t size, int alignment)
 
 
 #if MEM_STATS
-static void Cmd_Meminfo (void)
+static void Cmd_Meminfo ()
 {
 	appPrintf ("Memory usage information:\n"
 		"  %8d bytes allocated in %d blocks\n"
@@ -285,12 +270,12 @@ static int CompareAllocators (const FAllocatorInfo *a1, const FAllocatorInfo *a2
 //?? BuildAllocatorsTable declared in MemoryMgr.h as friend of CMemoryChain
 static int BuildAllocatorsTable (void *info1, int maxCount)
 {
-	int		numAllocators, i;
+	int		i;
 	FAllocatorInfo *p;
 
 	FAllocatorInfo* info = (FAllocatorInfo*)info1;
 	// enumerate all memory blocks
-	numAllocators = 0;
+	int numAllocators = 0;
 	GUARD_BEGIN {
 		for (FMemHeader *hdr = FMemHeader::first; hdr; hdr = hdr->next)
 		{
@@ -302,9 +287,9 @@ static int BuildAllocatorsTable (void *info1, int maxCount)
 			{
 				if (numAllocators >= maxCount) continue;	// list is full
 				// init new cell
-				p->count = 1;
+				p->count   = 1;
 				p->isChain = false;
-				p->total = hdr->size;
+				p->total   = hdr->size;
 				p->address = hdr->owner;
 				numAllocators++;
 			}
@@ -329,9 +314,9 @@ static int BuildAllocatorsTable (void *info1, int maxCount)
 			{
 				if (numAllocators >= maxCount) continue;	// list ls full
 				// init new block
-				p->count = 1;
+				p->count   = 1;
 				p->isChain = true;
-				p->total = ch->size;
+				p->total   = ch->size;
 				p->address = ch->owner;
 				numAllocators++;
 			}
@@ -361,7 +346,7 @@ static FAllocatorInfo *MarkedAllocs;
 static int numMarkedAllocs;
 
 
-static void Cmd_DumpAllocs (void)
+static void Cmd_DumpAllocs ()
 {
 	FAllocatorInfo info[MAX_ALLOCATORS], *p;
 
@@ -410,12 +395,6 @@ static void Cmd_MarkAllocs (bool usage)
 
 static void Cmd_CheckAllocs (bool usage)
 {
-	FAllocatorInfo info[MAX_ALLOCATORS];
-	int		numAllocators;
-	// array iterators: "n" - new (current), "m" - marked
-	FAllocatorInfo *n, *m;
-	int		in, im;
-
 	if (usage)
 	{
 		appPrintf ("Compares current memory allocations with marked by \"mem_mark\"\n");
@@ -428,20 +407,21 @@ static void Cmd_CheckAllocs (bool usage)
 		return;
 	}
 
-	numAllocators = BuildAllocatorsTable (ARRAY_ARG(info));
+	FAllocatorInfo info[MAX_ALLOCATORS];
+	int numAllocators = BuildAllocatorsTable (ARRAY_ARG(info));
 	//?? filter symbol names (and/or package name) ?!
 	//?? can filter different types of info (i.e. ignore "not modfied" lines)
 
 	// prepare for loop
+	// array iterators: "n" - new (current), "m" - marked
+	FAllocatorInfo *n, *m;
+	int		in, im;
 	n = info; m = MarkedAllocs;
 	in = im = 0;
 
 	while (in < numAllocators || im < numMarkedAllocs)
 	{
 		FAllocatorInfo *p1, *p2;
-		char	symbol[256];
-		address_t addr;
-
 		p1 = (in == numAllocators) ? NULL : n;
 		p2 = (im == numMarkedAllocs) ? NULL : m;
 
@@ -455,6 +435,7 @@ static void Cmd_CheckAllocs (bool usage)
 			// else -- allocation present in both lists
 		}
 		// HERE: p1 and p2 either the same or one of them is NULL
+		address_t addr;
 		if (p1) addr = p1->address;
 		else if (p2) addr = p2->address;
 		else break;								// should not happen
@@ -494,6 +475,7 @@ static void Cmd_CheckAllocs (bool usage)
 			}
 		}
 
+		char symbol[256];
 		if (!appSymbolName (addr, ARRAY_ARG(symbol)))
 			appSprintf (ARRAY_ARG(symbol), "%08X", addr);
 		bool isChain;
@@ -525,7 +507,7 @@ static void Cmd_CheckAllocs (bool usage)
 -----------------------------------------------------------------------------*/
 
 
-void appInitMemory (void)
+void appInitMemory ()
 {
 #if MEM_STATS
 	RegisterCommand ("meminfo", Cmd_Meminfo);

@@ -5,7 +5,7 @@
 #if 0	//!!!
 char	GVersion[512];
 
-static void Cmd_Version (void)
+static void Cmd_Version ()
 {
 	appPrintf ("%s\n", GVersion);
 }
@@ -31,7 +31,7 @@ void appInit (/*?? const char *_cmdLine, COutputDevice *_log */)
 }
 
 
-void appExit (void)
+void appExit ()
 {
 	appShutdownPlatform ();
 }

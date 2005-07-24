@@ -71,8 +71,7 @@ static void DisableAltTab (bool enable)
 
 static void SetHighPriority (bool enable)
 {
-	HANDLE hProcess = GetCurrentProcess ();
-	SetPriorityClass (hProcess, enable ? HIGH_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS);
+	SetPriorityClass (GetCurrentProcess (), enable ? HIGH_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS);
 }
 
 

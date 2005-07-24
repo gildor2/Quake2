@@ -404,9 +404,7 @@ connect.
 */
 void CL_SendConnectPacket (void)
 {
-	netadr_t	adr;
-	int		port;
-
+	netadr_t adr;
 	if (!NET_StringToAdr (cls.servername, &adr))
 	{
 		Com_WPrintf ("Bad server address %s\n", cls.servername);
@@ -415,7 +413,7 @@ void CL_SendConnectPacket (void)
 	}
 	if (!adr.port) adr.port = BigShort (PORT_SERVER);
 
-	port = Cvar_VariableInt ("qport");
+	int port = Cvar_VariableInt ("qport");
 	userinfo_modified = false;
 
 	if (cl_extProtocol->integer)

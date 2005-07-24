@@ -441,7 +441,7 @@ void	Cmd_WriteAliases (FILE *f);
 
 #define	CVAR_ARCHIVE		0x00001	// set to cause it to be saved to config file (config.cfg)
 #define	CVAR_USERINFO		0x00002	// added to userinfo when changed, then sent to senver
-#define	CVAR_SERVERINFO		0x00004	// added to serverinfo when changed
+#define	CVAR_SERVERINFO		0x00004	// added to serverinfo when changed; mostly used with NOSET or LATCH flag
 #define	CVAR_NOSET			0x00008	// don't allow change from console at all, but can be set from the command line
 #define	CVAR_LATCH			0x00010	// save changes until server restart
 // added since 4.00
@@ -459,7 +459,6 @@ void	Cmd_WriteAliases (FILE *f);
 
 #define	CVAR_BUFFER_SIZE	16		// size of buffer for var->string inside cvar_t
 
-// nothing outside the Cvar_*() functions should modify these fields!
 struct cvar_t
 {
 	const char *name;
@@ -490,6 +489,10 @@ struct cvar_t
 	{
 		return Cvar_Clamp (this, low, high);
 	}
+//	inline void FullSet (const char *value, unsigned flags)
+//	{
+//		Cvar_FullSet (this, value, flags);
+//	}
 };
 
 
@@ -523,7 +526,9 @@ extern int	cvar_initialized;
 // if it exists, the value will not be changed, but flags will be ORed in
 // that allows variables to be unarchived without needing bitflags
 
-cvar_t 	*Cvar_FullSet (const char *var_name, const char *value, unsigned flags);
+// used for CVAR_SERVERINFO|(CVAR_LATCH/CVAR_NOSET)
+// and inside cvar.cpp for "set[s|u|a]" commands
+cvar_t	*Cvar_FullSet (const char *var_name, const char *value, unsigned flags);
 
 //--cvar_t	*Cvar_SetValue (char *var_name, float value);
 //--cvar_t	*Cvar_SetInteger (char *var_name, int value);
@@ -560,7 +565,7 @@ const char *Cvar_Userinfo (void);
 const char *Cvar_Serverinfo (void);
 // returns an info string containing all the CVAR_SERVERINFO cvars
 
-extern bool userinfo_modified;
+extern bool userinfo_modified;		//?? should change this to not track CVAR_USERINFO modification
 // this is set each time a CVAR_USERINFO variable is changed
 // so that the client knows to send it to the server
 
@@ -815,8 +820,6 @@ void	SCR_DebugGraph (float value, int color);
 /*-----------------------------------------------------------------------------
 	Non-portable system services (sys_*.cpp)
 -----------------------------------------------------------------------------*/
-
-void	Sys_Init (void);
 
 void	*Sys_GetGameAPI (void *parms);
 void	Sys_UnloadGame (void);

@@ -254,7 +254,7 @@ static void AddPointLight (const gl_slight_t *sl, const CVec3 &origin, const CAx
 	}
 	else
 	{
-		scale = Q_rsqrt (dist);
+		scale = appRsqrt (dist);
 		dist = 1.0f / scale;
 	}
 	dif.Scale (scale);
@@ -694,7 +694,7 @@ void LightForEntity (refEntity_t *ent)
 		VectorSubtract (ent->center, dl->origin, dst);
 		float dist = dot (dst, dst);						// dist*dist
 		if (dist > dl->intensity * dl->intensity) continue;	// dlight is too far
-		float denom = Q_rsqrt (dist);						// 1/sqrt(dist)
+		float denom = appRsqrt (dist);						// 1/sqrt(dist)
 		dist = 1.0f / denom;
 		dst.Scale (denom);
 

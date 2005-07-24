@@ -100,7 +100,7 @@ inline unsigned cpuid3 (unsigned code)
 }
 #endif
 
-static void CheckCpuModel (void)
+static void CheckCpuModel ()
 {
 #define MAX_CPU_NAME_PARTS	12	// 3 times of 4 regs
 	union {
@@ -184,7 +184,7 @@ static void CheckCpuModel (void)
 }
 
 
-static void CheckCpuSpeed (void)
+static void CheckCpuSpeed ()
 {
 	if (!IsRDTSC) return;
 

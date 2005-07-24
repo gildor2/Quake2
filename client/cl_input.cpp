@@ -395,8 +395,6 @@ CL_SendCmd
 */
 void CL_SendCmd (void)
 {
-	sizebuf_t	buf;
-	byte		data[128];
 	int			i, fillness;
 	usercmd_t	*cmd, *oldcmd;
 	usercmd_t	nullcmd;
@@ -440,8 +438,9 @@ void CL_SendCmd (void)
 	// (when enabled, one of demo' player will be re-skinned as local player)
 	if (userinfo_modified && !cl.attractloop)
 	{
-		// fix up gender
+		// fix up auto-gender
 		//?? use clientInfo_t.modelGender for this
+		//?? place auto-gender detection to server?
 		if (gender_auto->integer)
 		{
 			char *p, model[MAX_QPATH];
@@ -452,9 +451,11 @@ void CL_SendCmd (void)
 		}
 		userinfo_modified = false;
 		MSG_WriteByte (&cls.netchan.message, clc_userinfo);
-		MSG_WriteString (&cls.netchan.message, Cvar_Userinfo() );
+		MSG_WriteString (&cls.netchan.message, Cvar_Userinfo());
 	}
 
+	sizebuf_t	buf;
+	byte		data[128];
 	buf.Init (ARRAY_ARG(data));
 
 	if (cmd->buttons && cl.cinematicActive && !cl.attractloop)

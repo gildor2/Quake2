@@ -1,8 +1,7 @@
-// this file is included in both the game dll and quake2,
-// the game needs it to source shot locations, the client
-// needs it to position muzzle flashes
+// This file is included in both the game dll and client code: the game needs
+// it to source shot locations, the client needs it to position muzzle flashes
 
-// max found size = 111.2
+// max found size = 111.2; we use 128 as denom here
 #if 1
 // 3 byte per flash
 #define MONSTER_FLASH_SCALE		(255.0f/128)
@@ -12,7 +11,7 @@ static const char monster_flash_offset[][3] =
 #define MONSTER_FLASH_SCALE		(32767.0f/128)
 static const short monster_flash_offset[][3] =
 #if 0
-// 12 bytes per flash
+// 12 bytes per flash - original variant
 #define MONSTER_FLASH_SCALE		1
 static const float monster_flash_offset[][3] =
 #endif
@@ -178,7 +177,6 @@ static const float monster_flash_offset[][3] =
 	// MZ2_SUPERTANK_ROCKET_3			72
 	F(16.0, -42.8, 83.3),
 
-	// --- Start Xian Stuff ---
 	// MZ2_BOSS2_MACHINEGUN_L1			73
 	F(32, -40, 70),
 	// MZ2_BOSS2_MACHINEGUN_L2			74
@@ -189,7 +187,6 @@ static const float monster_flash_offset[][3] =
 	F(32, -40, 70),
 	// MZ2_BOSS2_MACHINEGUN_L5			77
 	F(32, -40, 70),
-	// --- End Xian Stuff
 
 	// MZ2_BOSS2_ROCKET_1				78
 	F(22.0, 16.0, 10.0),
@@ -241,7 +238,6 @@ static const float monster_flash_offset[][3] =
 	// MZ2_SOLDIER_MACHINEGUN_8			100
 	F(34.5 * 1.2, 9.6 * 1.2, 6.1 * 1.2),
 
-	// --- Xian shit below ---
 	// MZ2_MAKRON_BFG					101
 	F(17, -19.5, 62.9),
 	// MZ2_MAKRON_BLASTER_1				102
@@ -308,27 +304,24 @@ static const float monster_flash_offset[][3] =
 	// MZ2_JORG_BFG_1					132
 	F(6.3, -9, 111.2),
 
-	// MZ2_BOSS2_MACHINEGUN_R1			73
+	// MZ2_BOSS2_MACHINEGUN_R1			133
 	F(32, 40, 70),
-	// MZ2_BOSS2_MACHINEGUN_R2			74
+	// MZ2_BOSS2_MACHINEGUN_R2			134
 	F(32, 40, 70),
-	// MZ2_BOSS2_MACHINEGUN_R3			75
+	// MZ2_BOSS2_MACHINEGUN_R3			135
 	F(32, 40, 70),
-	// MZ2_BOSS2_MACHINEGUN_R4			76
+	// MZ2_BOSS2_MACHINEGUN_R4			136
 	F(32, 40, 70),
-	// MZ2_BOSS2_MACHINEGUN_R5			77
+	// MZ2_BOSS2_MACHINEGUN_R5			137
 	F(32, 40, 70),
-
-	// --- End Xian Shit ---
 
 	// ROGUE
-	// note that the above really ends at 137
 	// carrier machineguns
-	// MZ2_CARRIER_MACHINEGUN_L1
+	// MZ2_CARRIER_MACHINEGUN_L1		138
 	F(56, -32, 32),
-	// MZ2_CARRIER_MACHINEGUN_R1
+	// MZ2_CARRIER_MACHINEGUN_R1		139
 	F(56, 32, 32),
-	// MZ2_CARRIER_GRENADE
+	// MZ2_CARRIER_GRENADE				140
 	F(42, 24, 50),
 	// MZ2_TURRET_MACHINEGUN			141
 	F(16, 0, 0),
