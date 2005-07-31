@@ -56,11 +56,6 @@ const char *svc_strings[svc_last] =
 =====================================================================
 */
 
-/*
-==================
-ParseServerData
-==================
-*/
 static void ParseServerData (void)
 {
 	Com_DPrintf ("Serverdata packet received.\n");
@@ -110,7 +105,8 @@ static void ParseServerData (void)
 	}
 	else
 	{
-		Com_Printf (S_RED"\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
+		Com_Printf (S_RED"\n\n====================================\n\n");
+//		Com_Printf (S_RED"\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
 		Com_Printf (S_RED"%s\n", str);			// display map message
 
 		// need to prep refresh at next oportunity
@@ -118,11 +114,7 @@ static void ParseServerData (void)
 	}
 }
 
-/*
-==================
-ParseBaseline
-==================
-*/
+
 static void ParseBaseline (void)
 {
 	clEntityState_t nullstate;
@@ -134,13 +126,6 @@ static void ParseBaseline (void)
 }
 
 
-/*
-================
-CL_ParseClientinfo
-
-Load the skin, icon, and model for a client
-================
-*/
 void CL_ParseClientinfo (int player)
 {
 	clientInfo_t &ci = cl.clientInfo[player];
@@ -148,11 +133,25 @@ void CL_ParseClientinfo (int player)
 
 	if (ci.isQ3model && !cls.newprotocol)
 	{
-		Com_WPrintf ("No extended protocol support.\nForce player %s to use base model\n", ci.name);
+		Com_WPrintf ("No extended protocol support.\nForce player %s to use base model\n", ci.playerName);
 		ci.isValidModel = false;
 	}
 	if (!ci.isValidModel)
-		CL_LoadClientinfo (ci, va("%s\\male/grunt", ci.name));
+		CL_LoadClientinfo (ci, va("%s\\male/grunt", ci.playerName));
+	if (gender_auto->integer && player == cl.playernum)
+	{
+//		Com_Drintf("Fix gender: [%d]=%c\n",cl.playernum,cl.clientInfo[cl.playernum].modelGender);
+		Cvar_Set ("gender", ci.modelGender == 'f' ? "female" : "male");
+		gender->modified = false;
+	}
+}
+
+
+void CL_UpdatePlayerClientInfo ()
+{
+	appSprintf (ARRAY_ARG(cl.configstrings[CS_PLAYERSKINS+cl.playernum]),
+		"%s\\%s", Cvar_VariableString("name"), Cvar_VariableString("skin"));
+	CL_ParseClientinfo (cl.playernum);
 }
 
 
@@ -222,11 +221,6 @@ ACTION MESSAGES
 =====================================================================
 */
 
-/*
-==================
-ParseStartSoundPacket
-==================
-*/
 static void ParseStartSoundPacket(void)
 {
 	int flags = MSG_ReadByte (&net_message);
@@ -269,13 +263,6 @@ static void ParseStartSoundPacket(void)
 }
 
 
-/*
-==============
-AddNetgraph
-
-A new packet was just parsed
-==============
-*/
 static void AddNetgraph (void)
 {
 	int		i;
@@ -294,11 +281,6 @@ static void AddNetgraph (void)
 }
 
 
-/*
-=====================
-CL_ParseServerMessage
-=====================
-*/
 void CL_ParseServerMessage (void)
 {
 	int cmd = svc_bad;

@@ -250,7 +250,7 @@ static void DXMouse_Frame ()
 		}
 		if FAILED(res)
 		{
-			Com_WPrintf ("Error on DI mouse.GetData(): err = %X\n", res);
+			Com_WPrintf ("Error %X on DI mouse.GetData()\n", res);
 			return;
 		}
 		if (dwElements == 0) return;	// no data available

@@ -395,10 +395,8 @@ CL_SendCmd
 */
 void CL_SendCmd (void)
 {
-	int			i, fillness;
-	usercmd_t	*cmd, *oldcmd;
-	usercmd_t	nullcmd;
-	int			checksumIndex;
+	int		i;
+	usercmd_t *cmd;
 
 	accum_frame_time += cls.frametime;
 
@@ -426,7 +424,7 @@ void CL_SendCmd (void)
 
 	// restrict outgoing commands to avoid CMD_BACKUP overflow when cl.fps/sv.fps is too
 	// large (fast system or small timescale)
-	fillness = cls.netchan.outgoing_sequence - cls.netchan.incoming_acknowledged;
+	int fillness = cls.netchan.outgoing_sequence - cls.netchan.incoming_acknowledged;
 	if (fillness > CMD_BACKUP/10 && (float)fillness / CMD_BACKUP > cl.lerpfrac * 0.9f) //!! restrict FPS: || accum_frame_time < 0.005)
 		return;
 
@@ -438,24 +436,19 @@ void CL_SendCmd (void)
 	// (when enabled, one of demo' player will be re-skinned as local player)
 	if (userinfo_modified && !cl.attractloop)
 	{
-		// fix up auto-gender
-		//?? use clientInfo_t.modelGender for this
-		//?? place auto-gender detection to server?
-		if (gender_auto->integer)
-		{
-			char *p, model[MAX_QPATH];
-			appStrncpylwr (model, skin->string, sizeof(model));
-			if (p = strchr (model, '/')) *p = 0;
-			Cvar_Set ("gender", CL_IsFemaleModel (model) ? "female" : "male");
-			gender->modified = false;
-		}
 		userinfo_modified = false;
+		// update model/gender (really, server will send clientinfo back, but we already
+		// updated it; and more: this will update "gender" when "gender_auto" is set;
+		// "gender" will be recomputed later (when server send info back) too, but this
+		// will require to send userinfo to server again)
+		CL_UpdatePlayerClientInfo ();
+		// send userinfo
 		MSG_WriteByte (&cls.netchan.message, clc_userinfo);
 		MSG_WriteString (&cls.netchan.message, Cvar_Userinfo());
 	}
 
-	sizebuf_t	buf;
-	byte		data[128];
+	sizebuf_t buf;
+	byte	data[128];
 	buf.Init (ARRAY_ARG(data));
 
 	if (cmd->buttons && cl.cinematicActive && !cl.attractloop)
@@ -465,7 +458,7 @@ void CL_SendCmd (void)
 	MSG_WriteByte (&buf, clc_move);
 
 	// save the position for a checksum byte
-	checksumIndex = buf.cursize;
+	int checksumIndex = buf.cursize;
 	MSG_WriteByte (&buf, 0);
 
 	// let the server know what the last frame we
@@ -477,11 +470,13 @@ void CL_SendCmd (void)
 
 	// send this and the previous cmds in the message, so
 	// if the last packet was dropped, it can be recovered
+	usercmd_t nullcmd;
+	memset (&nullcmd, 0, sizeof(nullcmd));
+
 	i = (cls.netchan.outgoing_sequence-2) & (CMD_BACKUP-1);
 	cmd = &cl.cmds[i];
-	memset (&nullcmd, 0, sizeof(nullcmd));
 	MSG_WriteDeltaUsercmd (&buf, &nullcmd, cmd);
-	oldcmd = cmd;
+	usercmd_t *oldcmd = cmd;
 
 	i = (cls.netchan.outgoing_sequence-1) & (CMD_BACKUP-1);
 	cmd = &cl.cmds[i];

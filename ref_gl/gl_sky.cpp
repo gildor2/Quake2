@@ -47,14 +47,14 @@ static void ClipSkyPolygon (int numVerts, CVec3 *verts, int stage)
 		Com_DropError ("ClipSkyPolygon: MAX_CLIP_VERTS hit");
 
 	if (stage == 6)
-	{	// fully clipped -- update skymins/skymaxs
-		CVec3	av, v;
-
+	{
+		// fully clipped -- update skymins/skymaxs
 		// decide which face it maps to
-		v.Zero ();
-		const CVec3 *vp = verts;
-		for (i = 0; i < numVerts; i++, vp++)
+		CVec3 v = verts[0];
+		const CVec3 *vp = verts + 1;
+		for (i = 1; i < numVerts; i++, vp++)
 			VectorAdd (v, *vp, v);
+		CVec3	av;
 		av[0] = fabs(v[0]);
 		av[1] = fabs(v[1]);
 		av[2] = fabs(v[2]);
@@ -160,7 +160,9 @@ static void ClipSkyPolygon (int numVerts, CVec3 *verts, int stage)
 }
 
 
-/*------------------- Interface ---------------------*/
+/*-----------------------------------------------------------------------------
+	Interface
+-----------------------------------------------------------------------------*/
 
 
 #define SKY_TESS_SIZE	4
@@ -267,7 +269,9 @@ void AddSkySurface (surfacePlanar_t *pl, byte flag)
 }
 
 
-/*------------------- Tesselation -------------------*/
+/*-----------------------------------------------------------------------------
+	Tesselation
+-----------------------------------------------------------------------------*/
 
 static float skyDist;
 

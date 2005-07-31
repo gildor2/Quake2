@@ -579,7 +579,7 @@ void CL_EntityEvent (clEntityState_t *ent)
 		return;
 	}
 
-	static char *sound = NULL;
+	const char *sound = NULL;
 	switch (ent->event)
 	{
 	case EV_ITEM_RESPAWN:

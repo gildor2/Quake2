@@ -711,9 +711,9 @@ image_t *CreateImage (const char *name, void *pic, int width, int height, unsign
 
 	// setup image_t fields
 	strcpy (image->name, name2);
-	image->width = width;
+	image->width  = width;
 	image->height = height;
-	image->flags = flags & IMAGE_FLAGMASK;
+	image->flags  = flags & IMAGE_FLAGMASK;
 	image->target = GL_TEXTURE_2D;
 
 	if (width & (width-1) | height & (height-1))
@@ -851,7 +851,7 @@ void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *p
 		glTexParameteri (image->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri (image->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		width = scaledWidth;
+		width  = scaledWidth;
 		height = scaledHeight;
 	}
 
@@ -862,7 +862,7 @@ void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *p
 	}
 	else
 	{	// TexImage()
-		image->internalWidth = width;
+		image->internalWidth  = width;
 		image->internalHeight = height;
 		glTexImage2D (image->target, 0, image->internalFormat, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pic32);
 	}
@@ -871,7 +871,7 @@ void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *p
 	delete pic32;
 
 	// draw
-	gl_videoShader->width = width;
+	gl_videoShader->width  = width;
 	gl_videoShader->height = height;
 	BK_DrawPic (gl_videoShader, x, y, w, h, 0, 0, 1, 1, RGB(1,1,1));
 	if (gl_detailShader && width*3/2 < w)		// detail is not available or not needed
@@ -989,32 +989,26 @@ void SetupGamma ()
 static void Imagelist_f (bool usage, int argc, char **argv)
 {
 #if 0
-	// testing hash function
-	int		hash, i, j, distr[HASH_SIZE], distr2[HASH_SIZE], max;
-	static int last = 0;
+	// testing hash function; may be used for search best hash function
+	//?? separate into different console function
+	int hash = atoi (argv[1]) << 8;
 
-	hash = last;
-	last = (last + 16) & 0x1FF;
-
-	for (j = 0; j < 16; j++)
+	for (int j = 0; j < 16; j++)
 	{
+		int i, distr[HASH_SIZE], distr2[HASH_SIZE];
 		Com_Printf ("---- Hash distribution (0x%4X) ----\n", hash);
 		memset (distr, 0, sizeof(distr));
 		memset (distr2, 0, sizeof(distr2));
-		max = 0;
+		int max = 0;
 
 		for (i = 0; i < MAX_TEXTURES; i++)
 		{
-			image_t *img;
-			int		h;
-			char	*s, c;
-
-			img = &imagesArray[i];
+			image_t *img = &imagesArray[i];
 			if (!img->name[0]) continue;
 
-			h = 0;
-			s = img->name;
-			while (c = *s++) h = (h ^ hash) + c;
+			int h = 0;
+			const char *s = img->name;
+			while (char c = *s++) h = (h ^ hash) + c;
 			h &= HASH_MASK;
 
 			distr[h]++;
@@ -1056,7 +1050,6 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 	};
 	static const char alphaTypes[3] = {' ', '1', '8'};
 	static const char boolTypes[2] = {' ', '+'};
-	int		idx, texels, n;
 
 	if (argc > 2 || usage)
 	{
@@ -1067,6 +1060,7 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 
 	Com_Printf ("----w----h----a-wr-m-fmt------name----------\n");
+	int idx, texels, n;
 	idx = texels = n = 0;
 
 	for (int i = 0; i < MAX_TEXTURES; i++)
@@ -1104,9 +1098,8 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 
 	if (mask && mask[0] == '*' && mask[1] == 0)	// mask = "*"
 	{
-		int		distr[HASH_SIZE];
-
 		int max = 0;
+		int distr[HASH_SIZE];
 		memset (distr, 0, sizeof(distr));
 
 		for (i = 0; i < HASH_SIZE; i++)
@@ -1584,14 +1577,12 @@ void ShowImages ()
 // FindImage -- main image creating/loading function
 image_t *FindImage (const char *name, unsigned flags)
 {
-	char	name2[MAX_QPATH], *s;
-	int		width, height, len;
-	image_t	*img;
-	byte	*pic;
+	guard(R_FindImage);
 
 	if (!name[0])
 		return gl_defaultImage;		// NULL name -- NULL image
 
+	char name2[MAX_QPATH];
 	appCopyFilename (name2, name, sizeof(name2));
 
 	/*------- find image using hash table --------*/
@@ -1599,7 +1590,7 @@ image_t *FindImage (const char *name, unsigned flags)
 //	Com_Printf ("FindImage(%s): hash = %X\n", name2, hash);//!!
 
 	// find extension
-	s = strrchr (name2, '.');
+	char *s = strrchr (name2, '.');
 	if (s)
 	{
 		// found "." - check for supported image extensions
@@ -1609,12 +1600,12 @@ image_t *FindImage (const char *name, unsigned flags)
 	}
 	if (!s)
 		s = strchr (name2, 0);		// == &name2[strlen(name2)]; points to a place, where extension will be added
-	len = s - name2;				// length of name without extension
+	int len = s - name2;			// length of name without extension
 
 	unsigned flags2 = flags & (IMAGE_MIPMAP|IMAGE_CLAMP);
 	if (!(flags & IMAGE_RELOAD))
 	{
-		for (img = hashTable[hash]; img; img = img->hashNext)
+		for (image_t *img = hashTable[hash]; img; img = img->hashNext)
 			if (!strnicmp (img->name, name2, len) &&			// len chars matched
 				(!img->name[len] || img->name[len] == '.'))		// rest of img->name if null or extension
 			{
@@ -1648,7 +1639,7 @@ image_t *FindImage (const char *name, unsigned flags)
 			}
 	}
 	if (hash == -1)
-		Com_WPrintf ("R_FindImage(%s): Reusing image with a different flags %X\n", name2, flags);
+		Com_WPrintf ("R_FindImage: reusing \"%s\" with a different flags %X\n", name2, flags);
 
 	/*---------- image not found -----------*/
 //	Com_Printf("FindImage: disk name = %s\n",name2);//!!
@@ -1668,6 +1659,8 @@ image_t *FindImage (const char *name, unsigned flags)
 	if (fmt & prefFmt)
 		fmt = prefFmt;				// restrict loading to this image type
 
+	int width, height;
+	byte *pic;
 	// load image within a preferred (or prioritized) format
 	if (fmt & IMAGE_TGA)
 	{
@@ -1719,15 +1712,13 @@ END_PROFILE
 	}
 	else if (fmt & IMAGE_WAL)
 	{
-		miptex_t	*mt;
-
 		strcpy (s, ".wal");
 START_PROFILE2(img::wal, name)
-		if (mt = (miptex_t*) FS_LoadFile (name2))
+		if (miptex_t *mt = (miptex_t*) FS_LoadFile (name2))
 		{
-			width = LittleLong(mt->width);
+			width  = LittleLong(mt->width);
 			height = LittleLong(mt->height);
-			pic = Convert8to32bit ((byte*)mt + LittleLong(mt->offsets[0]), width, height, NULL);
+			pic    = Convert8to32bit ((byte*)mt + LittleLong(mt->offsets[0]), width, height, NULL);
 			FS_FreeFile (mt);
 		}
 		else
@@ -1736,7 +1727,8 @@ END_PROFILE
 	}
 	else
 	{
-		Com_DPrintf ("Cannot find image %s.*\n", name2);
+		//!! use img_debug
+//		Com_DPrintf ("Cannot find image %s.*\n", name2);
 		return NULL;
 	}
 
@@ -1744,7 +1736,7 @@ END_PROFILE
 	if (pic)
 	{
 START_PROFILE(..img::up)
-		img = CreateImage (name2, pic, width, height, flags);
+		image_t *img = CreateImage (name2, pic, width, height, flags);
 		appFree (pic);
 END_PROFILE
 		return img;
@@ -1754,6 +1746,8 @@ END_PROFILE
 		Com_WPrintf ("R_FindImage(%s): cannot load texture\n", name2);
 		return NULL;
 	}
+
+	unguardf(("img=%s", name));
 }
 
 

@@ -256,7 +256,7 @@ struct FAllocatorInfo
 	address_t address;
 	unsigned total;
 	bool	isChain;					//?? correctly initialized, but not displayed/used
-	//?? byte pkgIndex;					// number of package
+	//?? byte pkgIndex;					// index of package
 	unsigned short count;
 };
 
@@ -415,9 +415,8 @@ static void Cmd_CheckAllocs (bool usage)
 	// prepare for loop
 	// array iterators: "n" - new (current), "m" - marked
 	FAllocatorInfo *n, *m;
-	int		in, im;
 	n = info; m = MarkedAllocs;
-	in = im = 0;
+	int in = 0, im = 0;
 
 	while (in < numAllocators || im < numMarkedAllocs)
 	{

@@ -52,7 +52,6 @@ char	editLine[MAXCMDLINE];
 int		editPos;
 
 
-static bool initialized;
 int		con_height;
 
 // WRAP_CHAR will be placed as "soft" line-feed instead of a space char
@@ -200,13 +199,13 @@ void Con_CheckResize ()
 
 static int FindLine (int lineno)
 {
-	int		i;
-
 	// try to get line info from cache
 	if (lineno == con.disp.line)
 		return con.disp.pos;
 	else if (lineno == con.notif.line)
 		return con.notif.pos;
+
+	int		i;
 
 	if (lineno == con.current)
 	{
@@ -329,13 +328,13 @@ void Con_Print (const char *txt)
 				continue;
 			}
 		}
-		if (c == '\r' && *txt == '\n')					// handle CR/LF correctly
+		if (c == '\r' && *txt == '\n')					// handle CR+LF correctly
 		{
 			c = '\n';
 			txt++;
 		}
 		else if (c == WRAP_CHAR)
-			c = ' ';									// force WRAP_CHAR (or'ed space) to be a space
+			c = ' ';									// force WRAP_CHAR (== space|0x80) to be a space
 
 		PlaceChar (c, color);
 	}
@@ -799,18 +798,17 @@ CVAR_BEGIN(vars)
 	CVAR_VAR(con_colorText, 1, CVAR_ARCHIVE)
 CVAR_END
 
-	if (initialized) return;
+	EXEC_ONCE(
+		Cvar_GetVars (ARRAY_ARG(vars));
+		linewidth = -1;		// force Con_CheckResize()
 
-	Cvar_GetVars (ARRAY_ARG(vars));
-	linewidth = -1;		// force Con_CheckResize()
+		if (!con.started) Con_Clear_f ();
 
-	if (!con.started) Con_Clear_f ();
+//		Con_CheckResize ();
 
-	Con_CheckResize ();
+		RegisterCommand ("clear", Con_Clear_f);
+		RegisterCommand ("condump", Con_Dump_f);
 
-	RegisterCommand ("clear", Con_Clear_f);
-	RegisterCommand ("condump", Con_Dump_f);
-
-	Con_ClearTyping ();
-	initialized = true;
+		Con_ClearTyping ();
+	)
 }

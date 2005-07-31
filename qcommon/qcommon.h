@@ -408,8 +408,6 @@ public:
 extern TList<CCommand> CmdList;
 
 
-void	Cmd_Init (void);
-
 //--bool	RegisterCommand (char *cmd_name, void (*func)(void), int flags);
 // called by the init functions of other parts of the program to
 // register commands and functions to call for them.
@@ -557,7 +555,6 @@ void	Cvar_WriteVariables (FILE *f, int includeMask, int excludeMask, const char 
 // appends lines containing "set variable value" for all variables with the archive flag set.
 
 void	Cvar_Cheats (bool enable);
-void	Cvar_Init (void);
 
 const char *Cvar_Userinfo (void);
 // returns an info string containing all the CVAR_USERINFO cvars
@@ -592,7 +589,7 @@ typedef struct
 	unsigned short port;
 } netadr_t;
 
-bool	IPWildcard (netadr_t *a, char *mask);
+bool	IPWildcard (netadr_t *a, const char *mask);
 
 void	NET_Init (void);
 void	NET_Shutdown (void);

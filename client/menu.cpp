@@ -902,8 +902,8 @@ struct gameMenu_t : menuFramework_t
 		cl.servercount = -1;
 		M_ForceMenuOff ();
 		Cvar_ForceSet ("skill", skill);
-		Cvar_SetInteger ("deathmatch", 0);
-		Cvar_SetInteger ("coop", 0);
+		Cvar_ForceSet ("deathmatch", "0");
+		Cvar_ForceSet ("coop", "0");
 
 		Cvar_SetInteger ("gamerules", 0);		// ROGUE
 

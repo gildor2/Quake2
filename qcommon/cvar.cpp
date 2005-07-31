@@ -164,8 +164,12 @@ If the variable already exists, the value will not be set
 The flags will be or'ed in if the variable exists.
 ============
 */
+static void Cvar_Init();
+
 cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 {
+	EXEC_ONCE(Cvar_Init())
+
 	if (flags & (CVAR_USERINFO|CVAR_SERVERINFO))
 	{
 		if (!Cvar_InfoValidate (var_name))
@@ -942,7 +946,7 @@ Cvar_Init
 Reads in all archived cvars
 ============
 */
-void Cvar_Init (void)
+static void Cvar_Init ()
 {
 	cvar_chain = new CMemoryChain;
 

@@ -308,7 +308,7 @@ static void SV_EmitPacketEntities (const client_frame_t *from, const client_fram
 			// delta update from old position
 			// note that players are always 'newentities', this updates their oldorigin always and prevents warping
 			// NOTE: it's impossible to get newindex AND oldindex both overflowed (> num_entities), because of while() condition
-			MSG_WriteDeltaEntity (msg, oldent, newent, false, newent->number <= maxclients->integer, extProtocol);
+			MSG_WriteDeltaEntity (msg, oldent, newent, false, newent->number <= sv_maxclients->integer, extProtocol);
 			oldindex++;
 			newindex++;
 		}

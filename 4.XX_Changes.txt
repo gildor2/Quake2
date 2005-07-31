@@ -1,9 +1,5 @@
-4.00 Changes
-
-- vid_fullscreen -> r_fullscreen, r_gamma = 1/vid_gamma
-- nosound = !s_initsound
-
 Comments:
+=========
 ? when filename.??? appeared in this log, this means "tga"/"jpg"/"pcx"/"wal"
 - wildcards are case-insensitive and can be in form: "*", "*.*" (same as "*"), "*text", "text*", "text*text"
   or "*text*"; multiple wildcards can be separated with commas (','); if path specified, multi-wildcard syntax
@@ -14,6 +10,13 @@ Comments:
   - "AAA-BBB" - any number in range
   - "*" - any number (same as "0-255")
   All-IP mask is "*.*.*.*" or "0-255.0-255.0-255.0-255"
+
+
+4.00 Changes
+============
+
+- vid_fullscreen -> r_fullscreen, r_gamma = 1/vid_gamma
+- nosound = !s_initsound
 
 1. IMPROVEMENTS
 ~~~~~~~~~~~~~~~
@@ -59,8 +62,9 @@ Comments:
   - ability to stop with any key (old: incorrect when playing sequence of few cinematics)
 - menu: allowed binds to all keys (except ESC and "~")
 - better work with large FPS
-- cvar "logfile": "console.log" placed in quake root directory (not in game directory) + removed lines, finished
+- cvar "logfile": log placed in quake root directory (not in game directory) in "quake2.log" + removed lines, finished
   with LF ('\r')
+- using specified model/skin in a singleplayer mode (original: used male/grunt skin)
 
 3. ADDONS
 ~~~~~~~~~
@@ -177,6 +181,7 @@ Configuration
 - command "wait": added parameter <num_frames>; default 1
 - added "players/model.lst": this file contains names of models, which gender should be female (always female for
   "female" and "crakhor")
+- better support for "gender_auto"
 - added "sound/materials.lst" - contains sound description depended of texture name (almost HalfLife style)
 - surface footstep sounds depended on material (Kingpin, "materials.lst")
 - "screenshot [-silent] [-levelshot] [-no2d] [-nogamma] [-jpeg] [<filename>]"

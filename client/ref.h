@@ -61,7 +61,7 @@ struct entity_t
 	float	alpha;					// ignore if RF_TRANSLUCENT isn't set
 			//?? use color.c[3]
 
-	// entity shading; priority: 1.skin 2.skinnum 3.customShader
+	// entity shading; priority: 1.customShader 2.skin 3.skinnum
 	CBasicImage *customShader;		// single shader for all entity surfaces
 	CModelSkin *skin;				// NULL for built-in skin
 	int		skinnum;				// number of model built-in skin

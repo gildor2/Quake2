@@ -63,7 +63,7 @@ START_PROFILE2(FindModel::Load, name)
 		m = new model_t;
 		strcpy (m->name, name2);
 		modelsArray[modelCount++] = m;
-		Com_DPrintf ("R_FindModel: %s not found\n", name2);
+		Com_DPrintf ("R_FindModel: not found: %s\n", name2);
 		return NULL;	// file not found
 	}
 END_PROFILE

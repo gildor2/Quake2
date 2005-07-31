@@ -20,7 +20,6 @@ void appInit (/*?? const char *_cmdLine, COutputDevice *_log */)
 //??	GLog = _log;
 	appInitPlatform ();
 	appInitMemory ();
-//!!	appInitCommands ();
 	appInitError ();
 	appLoadDebugSymbols ();
 

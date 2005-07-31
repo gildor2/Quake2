@@ -587,10 +587,10 @@ static void SetPerspective ()
 		for (int i = 0; i < 8; i++)			// enumarate all 8 verts of bounding box
 		{
 			CVec3	v;
-			CBox *b = &vp.bounds;
-			v[0] = (i & 1) ? b->maxs[0] : b->mins[0];
-			v[1] = (i & 2) ? b->maxs[1] : b->mins[1];
-			v[2] = (i & 4) ? b->maxs[2] : b->mins[2];
+			CBox &b = vp.bounds;
+			v[0] = (i & 1) ? b.maxs[0] : b.mins[0];
+			v[1] = (i & 2) ? b.maxs[1] : b.mins[1];
+			v[2] = (i & 4) ? b.maxs[2] : b.mins[2];
 			// get Z-coordinate
 			VectorSubtract (v, vp.view.origin, v);
 			float d1 = dot (v, vp.view.axis[0]);
@@ -602,9 +602,9 @@ static void SetPerspective ()
 	float zmin = gl_znear->value;
 	float zmax = vp.zFar;
 	float xmin = -zmin * vp.t_fov_x;
-	float xmax = zmin * vp.t_fov_x;
+	float xmax =  zmin * vp.t_fov_x;
 	float ymin = -zmin * vp.t_fov_y;
-	float ymax = zmin * vp.t_fov_y;
+	float ymax =  zmin * vp.t_fov_y;
 	/* Matrix contents:
 	 *  |   0    1    2    3
 	 * -+-------------------
@@ -640,8 +640,6 @@ static void SetPerspective ()
 // Can be called few RenderFrame() between BeginFrame() and EndFrame()
 void RenderFrame (refdef_t *fd)
 {
-	int		i;
-
 	if (!renderingEnabled) return;
 
 	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !map.name)
@@ -701,6 +699,7 @@ void RenderFrame (refdef_t *fd)
 
 	// add entities
 	vp.firstEntity = gl_numEntities;		//!! gl_numEntities is always 0 here (vp.firstEntity!=0 only when scene contains portals)
+	int		i;
 	entity_t *ent;
 	for (i = 0, ent = fd->entities; i < fd->num_entities; i++, ent++)
 		AddEntity (ent);

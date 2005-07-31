@@ -170,22 +170,22 @@ static void CreateSolarColor (float light, float x, float y, float *vec)
 	switch (i)
 	{
 		case 0:
-			vec[0] = y; vec[1] = a0; vec[2] = s;
+			vec[0] = y;  vec[1] = a0; vec[2] = s;
 			break;
 		case 1:
-			vec[0] = t; vec[1] = y; vec[2] = s;
+			vec[0] = t;  vec[1] = y;  vec[2] = s;
 			break;
 		case 2:
-			vec[0] = s; vec[1] = y; vec[2] = a0;
+			vec[0] = s;  vec[1] = y;  vec[2] = a0;
 			break;
 		case 3:
-			vec[0] = s; vec[1] = t; vec[2] = y;
+			vec[0] = s;  vec[1] = t;  vec[2] = y;
 			break;
 		case 4:
-			vec[0] = a0; vec[1] = s; vec[2] = y;
+			vec[0] = a0; vec[1] = s;  vec[2] = y;
 			break;
 		case 5:
-			vec[0] = y; vec[1] = s; vec[2] = t;
+			vec[0] = y;  vec[1] = s;  vec[2] = t;
 			break;
 	}
 }

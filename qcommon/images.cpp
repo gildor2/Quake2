@@ -425,7 +425,10 @@ int ImageExists (const char *name, int stop_mask)
 	while (path = FS_NextPath (path))
 	{
 		TList<CStringItem> list;
-		list = FS_ListFiles (va("%s/%s.*", path, name), LIST_FILES);
+		list = FS_ListFiles (name[0] == '.' && name[1] == '/' ?
+			va("%s.*", name) :				// root-based
+			va("%s/%s.*", path, name),		// game-based
+			LIST_FILES);
 		for (CStringItem *item = list.First(); item; item = list.Next(item))
 		{
 			char *ext = strrchr (item->name, '/');	// find filename
@@ -546,7 +549,7 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	header.pixel_size = 24;
 	if (done)
 	{
-		Com_DPrintf ("WriteTGA(): packed %d -> %d\n", size * 3, dst - packed);
+		Com_DPrintf ("WriteTGA: packed %d -> %d\n", size * 3, dst - packed);
 		header.image_type = 10;		// RLE
 		// write data
 		fwrite (&header, 1, sizeof(header), f);
@@ -554,7 +557,7 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	}
 	else
 	{
-		Com_DPrintf ("WriteTGA(): revert to uncompressed\n");
+		Com_DPrintf ("WriteTGA: revert to uncompressed\n");
 		header.image_type = 2;		// uncompressed
 		// write data
 		fwrite (&header, 1, sizeof(header), f);
@@ -577,7 +580,7 @@ bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQual
 	FS_CreatePath (name);
 	if (!(f = fopen (name, "wb")))
 	{
-		Com_WPrintf ("WriteJPG(%s): cannot create file\n", name);
+		Com_WPrintf ("WriteJPG: cannot create \"%s\"\n", name);
 		return false;
 	}
 

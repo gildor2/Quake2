@@ -12,13 +12,6 @@ static cvar_t	*con_maxSize;
 static cvar_t	*scr_centertime;
 static cvar_t	*cl_draw2d;
 
-static cvar_t	*netgraph;
-static cvar_t	*timegraph;
-static cvar_t	*debuggraph;
-static cvar_t	*graphheight;
-static cvar_t	*graphscale;
-static cvar_t	*graphshift;
-
 #define CHAR_WIDTH	8
 #define CHAR_HEIGHT	8
 
@@ -48,42 +41,34 @@ void DrawString (int x, int y, const char *s)
 	Graphs (remove, or replace ??)
 -----------------------------------------------------------------------------*/
 
-typedef struct
-{
+static cvar_t *netgraph, *timegraph, *debuggraph;
+static cvar_t *graphheight, *graphscale, *graphshift;
+
+static int gr_current;
+static struct {
 	float	value;
 	int		color;
-} graphsamp_t;
+} gr_values[1024];
 
-static	int			current;
-static	graphsamp_t	values[1024];
 
-/*
-==============
-SCR_DebugGraph
-==============
-*/
 void SCR_DebugGraph (float value, int color)
 {
-	values[current&1023].value = value;
-	values[current&1023].color = color;
-	current++;
+	gr_values[gr_current&1023].value = value;
+	gr_values[gr_current&1023].color = color;
+	gr_current++;
 }
 
-/*
-==============
-SCR_DrawDebugGraph
-==============
-*/
-static void DrawDebugGraph (void)
+
+static void DrawDebugGraph ()
 {
 	int w = min(viddef.width, 1024);
 	RE_Fill8 (0, viddef.height - graphheight->integer, w, graphheight->integer, 8);
 
 	for (int a = 0; a < w; a++)
 	{
-		int i = (current-1-a+1024) & 1023;
-		float v = values[i].value * graphscale->value + graphshift->value;
-		int color = values[i].color;
+		int i = (gr_current-1-a+1024) & 1023;
+		float v = gr_values[i].value * graphscale->value + graphshift->value;
+		int color = gr_values[i].color;
 
 		if (v < 0)
 			v += graphheight->integer * (1 + appRound (-v / graphheight->value));
@@ -97,52 +82,42 @@ static void DrawDebugGraph (void)
 	Center print
 -----------------------------------------------------------------------------*/
 
-static char		scr_centerstring[1024];
-static float	scr_centertime_off;
-static int		scr_center_lines;
-static int		scr_erase_center;
+static char centerstring[1024];
+static int	center_lines;
+static float centertime_off;
 
-/*
-==============
-SCR_CenterPrint
 
-Called for important messages that should stay in the center of the screen
-for a few moments
-==============
-*/
-void SCR_CenterPrint (char *str)
+// Called for important messages that should stay in the center of the screen
+// for a few moments
+void SCR_CenterPrint (const char *str)
 {
-	char	*s;
-	char	line[64];
-	int		i, j, l;
-
-	appStrncpyz (scr_centerstring, str, sizeof(scr_centerstring));
-	scr_centertime_off = scr_centertime->value;
+	appStrncpyz (centerstring, str, sizeof(centerstring));
+	centertime_off = scr_centertime->value;
 
 	// count the number of lines for centering
-	scr_center_lines = 1;
-	s = str;
+	center_lines = 1;
+	const char *s = str;
 	while (*s)
-	{
-		if (*s == '\n')
-			scr_center_lines++;
-		s++;
-	}
+		if (*s++ == '\n') center_lines++;
 
 	// echo it to the console
-	Com_Printf("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
+	Com_Printf ("\n------------------------------------\n\n");
+//	Com_Printf("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
 
 	s = str;
-	do
+	while (true)
 	{
+		//?? UGLY WAY ...
+		char	line[64];
+		int		i, j, len;
 		// scan the width of the line
-		for (l = 0; l < 40; l++)
-			if (s[l] == '\n' || !s[l])
+		for (len = 0; len < 40; len++)
+			if (s[len] == '\n' || !s[len])
 				break;
-		for (i = 0; i < (40-l)/2; i++)
+		for (i = 0; i < (40-len)/2; i++)
 			line[i] = ' ';
 
-		for (j = 0; j < l; j++)
+		for (j = 0; j < len; j++)
 			line[i++] = s[j];
 
 		line[i] = '\n';
@@ -155,39 +130,33 @@ void SCR_CenterPrint (char *str)
 
 		if (!*s) break;
 		s++;		// skip the \n
-	} while (1);
-	Com_Printf("\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
+	}
+	Com_Printf ("------------------------------------\n");
+//	Com_Printf("\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
 	Con_ClearNotify ();
 }
 
 
-static void DrawCenterString (void)
+static void DrawCenterString ()
 {
-	scr_centertime_off -= cls.frametime;
-	if (scr_centertime_off <= 0) return;
+	centertime_off -= cls.frametime;
+	if (centertime_off <= 0) return;
 
-	scr_erase_center = 0;
-	const char *start = scr_centerstring;
-
-	int y = (scr_center_lines <= 4) ? appRound (viddef.height * 0.35f) : 48;
-
+	int y = (center_lines <= 4) ? appRound (viddef.height * 0.35f) : 48;
+	const char *start = centerstring;
 	while (true)
 	{
 		// scan the width of the line
-		for (int l = 0; l < 40; l++)
-			if (start[l] == '\n' || !start[l])
+		for (int len = 0; len < 40; len++)
+			if (start[len] == '\n' || !start[len])
 				break;
-		int x = (viddef.width - l * CHAR_WIDTH) / 2;
-		for (int j = 0; j < l; j++, x += CHAR_WIDTH)
-			RE_DrawChar (x, y, start[j]);
+		int x = (viddef.width - len * CHAR_WIDTH) / 2;
+		for (int i = 0; i < len; i++, x += CHAR_WIDTH)
+			RE_DrawChar (x, y, *start++);
 
 		y += CHAR_HEIGHT;
 
-		while (*start && *start != '\n')
-			start++;
-
-		if (!*start)
-			break;
+		if (!*start) break;
 		start++;		// skip the '\n'
 	}
 }
@@ -202,7 +171,7 @@ static char		chat_buffer[MAXCMDLINE];
 static int		chat_bufferlen = 0;
 
 
-static void DrawChatInput (void)
+static void DrawChatInput ()
 {
 	// edit current player message
 	if (RE_GetCaps() & REF_CONSOLE_ONLY) return;
@@ -349,12 +318,7 @@ void SCR_SetLevelshot (const char *name)
 }
 
 
-/*
-================
-SCR_BeginLoadingPlaque
-================
-*/
-void SCR_BeginLoadingPlaque (void)
+void SCR_BeginLoadingPlaque ()
 {
 	guard(SCR_BeginLoadingPlaque);
 	S_StopAllSounds_f ();
@@ -369,11 +333,7 @@ void SCR_BeginLoadingPlaque (void)
 	unguard;
 }
 
-/*
-================
-SCR_EndLoadingPlaque
-================
-*/
+
 void SCR_EndLoadingPlaque (bool force)
 {
 	guard(SCR_EndLoadingPlaque);
@@ -514,7 +474,7 @@ void SCR_ShowConsole (bool show, bool noAnim)
 }
 
 
-void SCR_ToggleConsole (void)
+void SCR_ToggleConsole ()
 {
 	if (cls.keep_console) return;
 
@@ -523,10 +483,6 @@ void SCR_ToggleConsole (void)
 	SCR_ShowConsole (cls.key_dest != key_console, false);
 }
 
-
-/*-----------------------------------------------------------------------------
-	Screenshots
------------------------------------------------------------------------------*/
 
 static void Screenshot_f (bool usage, int argc, char **argv)
 {
@@ -724,7 +680,7 @@ static void DrawField (int x, int y, int color, int width, int value)
 
 #define	DISPLAY_ITEMS	17
 
-static void DrawInventory (void)
+static void DrawInventory ()
 {
 	int		i, index[MAX_ITEMS];
 
@@ -785,7 +741,7 @@ static void DrawInventory (void)
 
 static char	crosshair_pic[MAX_QPATH];
 
-static void DrawCrosshair (void)
+static void DrawCrosshair ()
 {
 	if (!crosshair->integer || cl.refdef.rdflags & RDF_THIRD_PERSON)
 		return;
@@ -854,7 +810,7 @@ static void ExecuteLayoutString (const char *s)
 			int time  = atoi (COM_Parse (s));
 
 			int x1 = x+32;
-			DrawString (x1, y,				va(S_GREEN"%s", ci->name));
+			DrawString (x1, y,				va(S_GREEN"%s", ci->playerName));
 			DrawString (x1, y+CHAR_HEIGHT,	va("Score: "S_GREEN"%d", score));
 			DrawString (x1, y+CHAR_HEIGHT*2,va("Ping:  %d", ping));
 			DrawString (x1, y+CHAR_HEIGHT*3,va("Time:  %d", time));
@@ -877,7 +833,7 @@ static void ExecuteLayoutString (const char *s)
 			int ping = atoi (COM_Parse (s));
 			if (ping > 999) ping = 999;
 
-			appSprintf (ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, ci->name);
+			appSprintf (ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, ci->playerName);
 
 			if (value == cl.playernum)
 				DrawString (x, y, va(S_RED"%s", block));
@@ -968,16 +924,8 @@ static void ExecuteLayoutString (const char *s)
 }
 
 
-//=======================================================
-
-/*
-===============
-SCR_TouchPics
-
-Allows rendering code to cache all needed sbar graphics
-===============
-*/
-void SCR_TouchPics (void)
+//?? remove
+void SCR_TouchPics ()
 {
 	if (RE_GetCaps() & REF_CONSOLE_ONLY)
 		return;
@@ -1004,15 +952,8 @@ void SCR_TouchPics (void)
 }
 
 
-/*
-==================
-SCR_UpdateScreen
-
-This is called every frame, and can also be called explicitly to flush
-text to the screen.
-==================
-*/
-void SCR_UpdateScreen (void)
+// This is called every frame, and can also be called explicitly to flush text to the screen.
+void SCR_UpdateScreen ()
 {
 	guard(SCR_UpdateScreen);
 
@@ -1079,14 +1020,7 @@ void SCR_UpdateScreen (void)
 }
 
 
-//============================================================================
-
-/*
-==================
-SCR_Init
-==================
-*/
-void SCR_Init (void)
+void SCR_Init ()
 {
 CVAR_BEGIN(vars)
 	CVAR_VAR(crosshair, 0, CVAR_ARCHIVE),

@@ -444,17 +444,17 @@ FUNC(rgbGen)
 		rgbGenType_t rgbGen;
 	} rgbNames[] = {
 		// simple
-		{"identity",		RGBGEN_IDENTITY		},
+		{"identity",		RGBGEN_IDENTITY	},
 		{"identityLighting",RGBGEN_IDENTITY_LIGHTING},
-		{"entity",			RGBGEN_ENTITY		},
+		{"entity",			RGBGEN_ENTITY	},
 		{"oneMinusEntity",	RGBGEN_ONE_MINUS_ENTITY},
-		{"vertex",			RGBGEN_VERTEX		},
+		{"vertex",			RGBGEN_VERTEX	},
 		{"oneMinusVertex",	RGBGEN_ONE_MINUS_VERTEX},
-		{"exactVertex",		RGBGEN_EXACT_VERTEX	},
-		{"lightingDiffuse",	RGBGEN_DIFFUSE		},
+		{"exactVertex",		RGBGEN_EXACT_VERTEX},
+		{"lightingDiffuse",	RGBGEN_DIFFUSE	},
 		// parametrized
-		{"const",			RGBGEN_CONST		},
-		{"constant",		RGBGEN_CONST		}
+		{"const",			RGBGEN_CONST	},
+		{"constant",		RGBGEN_CONST	}
 	};
 
 	rgbGenType_t rgbGen = RGBGEN_NONE;

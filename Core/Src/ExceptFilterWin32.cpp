@@ -1,11 +1,11 @@
-#define WIN32_LEAN_AND_MEAN			// exclude rarely-used services from windown headers
+#define WIN32_LEAN_AND_MEAN		// exclude rarely-used services from windown headers
 #include <windows.h>
 
 #include "Core.h"
-#include <time.h>			//?? for logging time funcs
+#include <time.h>				//?? for logging time funcs
 
 
-#define CRASH_LOG	"crash.log"
+#define CRASH_LOG				"crash.log"
 
 
 //#define LOG_FUNCS_ONLY
@@ -175,9 +175,9 @@ static void DumpMem (FILE *f, const unsigned *data, CONTEXT *ctx)
 
 int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 {
-	static bool dumped = false;
-
 	if (GErr.swError) return EXCEPTION_EXECUTE_HANDLER;		// no interest to thread context when software-generated errors
+
+	static bool dumped = false;
 	if (dumped) return EXCEPTION_EXECUTE_HANDLER;			// error will be handled only once
 	dumped = true;
 
@@ -206,7 +206,7 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			break;
 		}
 
-		//?? should make logging a global class (implements opening/logging date/closing)
+		//?? should implement logging as global class (implements opening/logging date/closing)
 		// make a log in "crash.log"
 		if (FILE *f = fopen (CRASH_LOG, "a+"))
 		{
@@ -219,7 +219,7 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			time (&itime);
 			char ctime[256];
 			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
-			fprintf (f, "----- "APPNAME" crash at %s -----\n", ctime);		//!! should use main_package name instead of APPNAME
+			fprintf (f, "----- "APPNAME" crashed at %s -----\n", ctime);		//!! should use main_package name instead of APPNAME
 			fprintf (f, "%s\n\n", GErr.message);
 
 			for (int j = 0; j < ARRAY_COUNT(regData); j++)
@@ -229,7 +229,7 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			DumpReg2 (f, "FS", ctx->SegFs); DumpReg2 (f, "GS", ctx->SegGs);
 			fprintf (f, "  EFLAGS: %08X\n", ctx->EFlags);
 
-			fprintf (f, "\nStack frame:\n");
+			fprintf (f, "\nStack:\n");
 			DumpMem (f, (unsigned*) ctx->Esp, ctx);
 			fprintf (f, "\n");
 			fclose (f);

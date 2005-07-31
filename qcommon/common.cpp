@@ -23,8 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	MAXPRINTMSG	4096
 
-int		realtime;
-
 #include "../client/ref.h"	// using RE_DrawTextXxx () for com_speeds
 
 
@@ -102,10 +100,10 @@ static char log_name[MAX_OSPATH];
 
 void Com_Printf (const char *fmt, ...)
 {
+	guard(Com_Printf);
+
 	va_list	argptr;
 	char	msg[MAXPRINTMSG];
-
-	guard(Com_Printf);
 
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
@@ -137,7 +135,7 @@ void Com_Printf (const char *fmt, ...)
 		if (!s[0]) return;						// nothing to print
 		if (!logfile)
 		{
-			logfile = fopen ("console.log", logfile_active->integer > 2 || console_logged ? "a" : "w");
+			logfile = fopen (APPNAME".log", logfile_active->integer > 2 || console_logged ? "a" : "w");
 			if (!logfile)
 			{
 				Cvar_SetInteger ("logfile", 0);
@@ -175,11 +173,10 @@ When developer is set to 256, do not colorize message.
 */
 void Com_DPrintf (const char *fmt, ...)
 {
-	va_list	argptr;
-	char	msg[MAXPRINTMSG];
-
 	if (!DEVELOPER) return;
 
+	va_list	argptr;
+	char	msg[MAXPRINTMSG];
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
@@ -199,16 +196,15 @@ void DebugPrintf (const char *fmt, ...)
 {
 	va_list	argptr;
 	char	msg[1024], ctime[256];
-	FILE	*log;
-	time_t	itime;
 
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
 
-	log = fopen ("debug.log", "a+");
+	FILE *log = fopen ("debug.log", "a+");
 	if (!debugLogged)
 	{
+		time_t	itime;
 		time (&itime);
 		strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
 		fprintf (log, "\n\n----- " APPNAME " debug log on %s -----\n", ctime);
@@ -261,16 +257,13 @@ void Com_Quit (void)
 }
 
 
-static unsigned GetInt (char **str)
+static unsigned GetInt (const char **str)
 {
-	unsigned r;
-	char	c, *s;
-
-	r = 0;
-	s = *str;
+	unsigned r = 0;
+	const char *s = *str;
 	while (1)
 	{
-		c = *s;
+		char c = *s;
 		if (c < '0' || c > '9') break;
 		r = r * 10 + c - '0';
 		s++;
@@ -279,21 +272,18 @@ static unsigned GetInt (char **str)
 	return r;
 }
 
-bool IPWildcard (netadr_t *a, char *mask)
+bool IPWildcard (netadr_t *a, const char *mask)
 {
-	int		i, n;
-	char	*m;
-
 	if (a->type != NA_IP) return false;
-	m = mask;
+	const char *m = mask;
 
-	for (i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		if (m[0] == '*')
 			m++;			// skip '*'
 		else if (m[0] >= '0' && m[0] <= '9')
 		{
-			n = GetInt (&m);
+			int n = GetInt (&m);
 			if (m[0] == '.' || m[0] == 0)
 			{
 				if (a->ip[i] != n) return false;
@@ -447,9 +437,6 @@ static void Info_RemoveKey (char *s, const char *key)
 
 void Info_SetValueForKey (char *s, const char *key, const char *value)
 {
-	char	newi[MAX_INFO_STRING], *v;
-	int		maxsize = MAX_INFO_STRING;
-
 	if (strchr (key, '\\') || strchr (value, '\\'))
 	{
 		Com_WPrintf ("Info_Set(\"%s\",\"%s\"): can't use keys or values with a '\\'\n", key, value);
@@ -476,11 +463,11 @@ void Info_SetValueForKey (char *s, const char *key, const char *value)
 		return;
 	}
 	Info_RemoveKey (s, key);
-	if (!value || !value[0])
-		return;
+	if (!value || !value[0]) return;
 
+	char newi[MAX_INFO_STRING];
 	int size = appSprintf (ARRAY_ARG(newi), "\\%s\\%s", key, value);
-	if (strlen (s) + size > maxsize)
+	if (strlen (s) + size > MAX_INFO_STRING)
 	{
 		Com_WPrintf ("Info string length exceeded\n");
 		return;
@@ -488,7 +475,7 @@ void Info_SetValueForKey (char *s, const char *key, const char *value)
 
 	// only copy ASCII values
 	s += strlen (s);
-	v = newi;
+	char *v = newi;
 	while (*v)
 	{
 		char c = *v++ & 127;		// strip high bits
@@ -543,17 +530,15 @@ static int cmdlineNumParts;
 
 static void ParseCmdline (const char *cmdline)
 {
-	char	c, *dst;
-	static char buf[512];
-	int		i, quotes;
-
 	guard(ParseCmdline);
 
 	// parse command line; fill cmdlineParts[] array
+	static char buf[512];
 	buf[0] = 0;						// starts with 0 (needs for trimming trailing spaces)
-	dst = &buf[1];
+	char *dst = &buf[1];
 	while (true)
 	{
+		char c;
 		while ((c = *cmdline) == ' ') cmdline++;	// skip spaces
 		if (!c) break;				// end of commandline
 
@@ -577,7 +562,7 @@ static void ParseCmdline (const char *cmdline)
 			break;
 		}
 		cmdlineParts[cmdlineNumParts++] = dst;
-		quotes = 0;
+		int quotes = 0;
 		while (c = *++cmdline)
 		{
 			if (c == '\"')
@@ -597,24 +582,20 @@ static void ParseCmdline (const char *cmdline)
 	}
 
 	// immediately exec strings of type "var=value"
-	for (i = 0; i < cmdlineNumParts; i++)
+	for (int i = 0; i < cmdlineNumParts; i++)
 	{
-		char	*cmd, *s1, *s2;
-
-		cmd = cmdlineParts[i];
-		s1 = strchr (cmd, '=');
-		s2 = strchr (cmd, '\"');
+		const char *cmd = cmdlineParts[i];
+		const char *s1 = strchr (cmd, '=');
+		const char *s2 = strchr (cmd, '\"');
 		if (s1 && (!s2 || s2 > s1))		// a=b, but '=' not inside quotes
 		{
 			char	varName[64], varValue[256];
 			char	*value;
-			int		len;
-			cvar_t	*var;
 
 			// convert to "set a b"
 			appStrncpyz (varName, cmd, s1 - cmd + 1);	// copy "a"
 			appStrncpyz (varValue, s1 + 1, sizeof(varValue));
-			len = strlen (varValue);
+			int len = strlen (varValue);
 			if (varValue[0] == '\"' && varValue[len-1] == '\"')
 			{
 				// remove quotes
@@ -623,7 +604,7 @@ static void ParseCmdline (const char *cmdline)
 			}
 			else
 				value = varValue;
-			var = Cvar_Set (varName, value);
+			cvar_t *var = Cvar_Set (varName, value);
 			if (var)
 				var->flags |= CVAR_CMDLINE;
 			else
@@ -639,12 +620,9 @@ static void ParseCmdline (const char *cmdline)
 
 bool Com_CheckCmdlineVar (const char *name)
 {
-	int		i;
-	char	*cmd;
-
-	for (i = 0; i < cmdlineNumParts; i++)
+	for (int i = 0; i < cmdlineNumParts; i++)
 	{
-		cmd = cmdlineParts[i];
+		const char *cmd = cmdlineParts[i];
 		if (!cmd || strchr (cmd, ' ')) continue;	// already removed or contains arguments
 		if (!stricmp (name, cmd))
 		{
@@ -658,12 +636,9 @@ bool Com_CheckCmdlineVar (const char *name)
 
 static void PushCmdline (void)
 {
-	int		i;
-	char	*cmd;
-
-	for (i = 0; i < cmdlineNumParts; i++)
+	for (int i = 0; i < cmdlineNumParts; i++)
 	{
-		cmd = cmdlineParts[i];
+		const char *cmd = cmdlineParts[i];
 		if (!cmd) continue;				// already removed
 		Cbuf_AddText (va("%s\n", cmd));
 		cmdlineParts[i] = NULL;			// just in case
@@ -702,13 +677,11 @@ CVAR_END
 	guard(Com_Init);
 
 	Swap_Init ();
-	Cvar_Init ();
 
 	ParseCmdline (cmdline);			// should be executed before any cvar creation
 	Cvar_GetVars (ARRAY_ARG(vars));
 	Cvar_Get ("version", VERSION_STR, CVAR_SERVERINFO|CVAR_NOSET);
 
-	Cmd_Init ();
 	Key_Init ();
 
 	InitByteDirs ();
@@ -722,6 +695,8 @@ CVAR_END
 	if (DEDICATED)
 	{
 		RegisterCommand ("quit", Com_Quit);
+		// require this for dedicated server, when launching common executable (!DEDICATED_ONLY)
+		// (executed Con_Print() -> Con_CheckResize() function):
 		linewidth = 80;
 	}
 
@@ -844,9 +819,7 @@ void Com_Frame (float msec)
 					"PtContents", "Pmove", "ModIndex", "ImgIndex", "SndIndex",
 					"Malloc", "Free", "FreeTags"};
 				static unsigned counts[12], times[12];
-				static unsigned cyc, lastCycles, lastMsec;
 
-				cyc = appCycles ();
 				for (int i = 0; i < ARRAY_COUNT(names); i++)
 				{
 					if (time_before_ref)
@@ -854,11 +827,10 @@ void Com_Frame (float msec)
 					if (time_before_game)
 					{
 						counts[i] = prof_counts[i];
-						times[i] = prof_times[i];
+						times[i]  = prof_times[i];
 						prof_counts[i] = prof_times[i] = 0;
 					}
 				}
-				lastCycles = cyc;
 			}
 #endif
 		}

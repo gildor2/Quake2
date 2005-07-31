@@ -613,80 +613,51 @@ void S_IssuePlaysound (playsound_t *ps)
 
 static sfx_t *GetPlayerSound (clEntityState_t *ent, const char *base)
 {
-	// determine what model the client is using
-	char model[MAX_QPATH];
-	model[0] = 0;
-	const char *s = cl.configstrings[CS_PLAYERSKINS + ent->number - 1];	//?? can use cl.clientInfo[ent->number]; use model gender
-	if (s[0])
-	{
-		char *p = strchr (s, '\\');
-		if (p)
-		{
-			strcpy (model, p+1);
-			p = strchr (model, '/');
-			if (p) *p = 0;
-		}
-	}
-	// if we can't figure it out, they're male
-	if (!model[0])
-		strcpy (model, "male");
-
-	bool isFemale = false;
-	if (ent->modelindex == 255)
-		isFemale = cl.clientInfo[ent->skinnum & 0xFF].modelGender == 'f';
+	clientInfo_t &ci = cl.clientInfo[ent->number - 1];	// may use ent->skinnum & 0xFF too ...
+	bool isFemale = ci.modelGender == 'f';
 
 	// see if we already know of the model specific sound
 	char localFilename[MAX_QPATH];
-	appSprintf (ARRAY_ARG(localFilename), "#players/%s/%s", model, base+1);
+	appSprintf (ARRAY_ARG(localFilename), "#players/%s/%s", ci.modelName, base+1);
 	sfx_t *sfx = S_FindName (localFilename, false);
+	if (sfx) return sfx;
 
-	if (!sfx)
+	// try sound in Quake2 model directory ("players/[model_name]/[sound]")
+	if (FS_FileExists (localFilename + 1))
 	{
-		// try sound in Quake2 model directory ("players/[model_name]/[sound]")
-		if (FS_FileExists (localFilename + 1))
-			sfx = S_RegisterSound (localFilename);
+		sfx = S_RegisterSound (localFilename);
+		if (sfx) return sfx;
 	}
 
-	if (!sfx)
-	{
-		// try sound in Quake3 model directory ("sound/player/[model_name]/[sound]")
-		char filename2[MAX_QPATH];
-		static const struct {
-			const char *q2name, *q3name;
-		} convert[] = {
-			{"death4.wav",	 "death1.wav"},
-			{"fall2.wav",	 "fall1.wav"},
-			{"pain25_2.wav", "pain25_1.wav"},
-			{"pain50_2.wav", "pain50_1.wav"},
-			{"pain75_2.wav", "pain75_1.wav"},
-			{"pain100_2.wav","pain100_1.wav"}
-		};
-		// Quake3 models have no some Quake2 sounds
-		const char *newName = base + 1;
-		for (int i = 0; i < ARRAY_COUNT(convert); i++)
-			if (!stricmp (newName, convert[i].q2name))
-			{
-				newName = convert[i].q3name;
-				break;
-			}
-		appSprintf (ARRAY_ARG(filename2), "sound/player/%s/%s", model, newName);	// NOTE: used below as filename2+6 too
-		if (FS_FileExists (filename2))
-			sfx = S_AliasName (localFilename, filename2 + 6 /* skip "sound/" */);
-	}
-
-	if (!sfx)
-	{
-		// setup as default sound
-		if (isFemale)
-			sfx = S_AliasName (localFilename, va("player/female/%s", base+1));
-		else
+	// try sound in Quake3 model directory ("sound/player/[model_name]/[sound]")
+	char filename2[MAX_QPATH];
+	static const struct {
+		const char *q2name, *q3name;
+	} convert[] = {
+		{"death4.wav",	 "death1.wav"},
+		{"fall2.wav",	 "fall1.wav"},
+		{"pain25_2.wav", "pain25_1.wav"},
+		{"pain50_2.wav", "pain50_1.wav"},
+		{"pain75_2.wav", "pain75_1.wav"},
+		{"pain100_2.wav","pain100_1.wav"}
+	};
+	// Quake3 models have no some Quake2 sounds
+	const char *newName = base + 1;
+	for (int i = 0; i < ARRAY_COUNT(convert); i++)
+		if (!stricmp (newName, convert[i].q2name))
 		{
-			// no, revert to the male sound in the pak0.pak
-			sfx = S_AliasName (localFilename, va("player/male/%s", base+1));
+			newName = convert[i].q3name;
+			break;
 		}
+	appSprintf (ARRAY_ARG(filename2), "sound/player/%s/%s", ci.modelName, newName);	// NOTE: used below as filename2+6 too
+	if (FS_FileExists (filename2))
+	{
+		sfx = S_AliasName (localFilename, filename2 + 6 /* skip "sound/" */);
+		if (sfx) return sfx;
 	}
 
-	return sfx;
+	// setup as default sound
+	return S_AliasName (localFilename, va("player/%smale/%s", isFemale ? "fe" : "", base+1));
 }
 
 

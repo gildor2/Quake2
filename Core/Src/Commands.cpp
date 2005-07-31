@@ -31,10 +31,13 @@ static TList<CAlias> AliasList;
 	Command management
 -----------------------------------------------------------------------------*/
 
+static void InitCommands ();
 
 bool RegisterCommand (const char *name, void(*func)(), int flags)
 {
 	guard(RegisterCommand);
+	EXEC_ONCE(InitCommands())
+
 	CCommand *pos;
 	if (CmdList.Find (name, &pos))
 	{
@@ -43,7 +46,7 @@ bool RegisterCommand (const char *name, void(*func)(), int flags)
 	}
 	CCommand *cmd = new (name) CCommand;
 	cmd->flags = flags;
-	cmd->func = func;
+	cmd->func  = func;
 	CmdList.InsertAfter (cmd, pos);
 
 	return true;
@@ -88,17 +91,15 @@ static int  _argc;
 
 static void GetArgs (const char *str, bool expandVars)
 {
-	char	*d, c;
-
 	guard(GetArgs);
 	// preparing
 	_argc = 0;
-	d = lineBuffer;
+	char *d = lineBuffer;
 	for (int i = 0; i < MAX_ARGS; i++) _argv[i] = "";
 	// skip leading spaces
 	while (*str == ' ') str++;
 	// parsing line
-	while (c = *str++)
+	while (char c = *str++)
 	{
 		if (_argc == MAX_ARGS)
 		{
@@ -156,14 +157,11 @@ static void GetArgs (const char *str, bool expandVars)
 // Generic command execution
 void ExecuteCommand (const char *str)
 {
-	CAlias	*alias;
-	CCommand *cmd;
-
 	guard(ExecuteCommand);
 	GetArgs (str, true);
 	if (!_argc) return;				// empty string
 
-	alias = AliasList.Find (_argv[0]);
+	CAlias *alias = AliasList.Find (_argv[0]);
 	if (alias && !alias->active)
 	{
 		alias->active = true;
@@ -172,7 +170,7 @@ void ExecuteCommand (const char *str)
 		return;
 	}
 
-	cmd = CmdList.Find (_argv[0]);
+	CCommand *cmd = CmdList.Find (_argv[0]);
 	if (cmd && cmd->func)
 	{
 		bool usage = _argc == 2 && !appStrcmp (_argv[1], "/?");
@@ -238,8 +236,6 @@ static void Cmd_Echo (int argc, char **argv)
 
 static void Cmd_CmdList (bool usage, int argc, char **argv)
 {
-	int		n, total;
-
 	if (argc > 2 || usage)
 	{
 		Com_Printf ("Usage: cmdlist [<mask>]\n");
@@ -247,7 +243,7 @@ static void Cmd_CmdList (bool usage, int argc, char **argv)
 	}
 
 	const char *mask = (argc == 2) ? argv[1] : NULL;
-	n = total = 0;
+	int n = 0, total = 0;
 	Com_Printf ("----i-a-name----------------\n");
 	for (CCommand *cmd = CmdList.First(); cmd; cmd = CmdList.Next(cmd))
 	{
@@ -267,7 +263,7 @@ static void Cmd_CmdList (bool usage, int argc, char **argv)
 	Initialization
 -----------------------------------------------------------------------------*/
 
-void appInitCommands ()
+static void InitCommands ()
 {
 	RegisterCommand ("echo", Cmd_Echo);
 	RegisterCommand ("cmdlist", Cmd_CmdList);

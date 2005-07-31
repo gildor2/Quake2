@@ -1,3 +1,4 @@
+# script file; perl highlighting
 # libraries
 
 !if $COMPILER eq VisualC

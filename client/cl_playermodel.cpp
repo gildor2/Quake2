@@ -232,7 +232,7 @@ static void ReadModelsGenderList ()
 }
 
 
-bool CL_IsFemaleModel (const char *model)
+static bool IsFemaleModel (const char *model)
 {
 	static char lastGameDir[MAX_QPATH];
 	const char *gameDir = FS_Gamedir ();
@@ -683,6 +683,11 @@ static void cWeapModel (int argc, char **argv)
 	loadingWeap->model = RE_RegisterModel (argv[1]);
 }
 
+static void cWeapSkin (int argc, char **argv)
+{
+	loadingWeap->skin = RE_RegisterSkin (argv[1]);
+}
+
 static void cWeapScale (int argc, char **argv)
 {
 	loadingWeap->drawScale = atof (argv[1]);
@@ -695,9 +700,10 @@ static void cWeapOffset (int argc, char **argv)
 }
 
 static const CSimpleCommand weapCommands[] = {
-	{"model",	cWeapModel},
-	{"scale",	cWeapScale},
-	{"offset",	cWeapOffset}
+	{"model",	cWeapModel	},
+	{"skin",	cWeapSkin	},
+	{"scale",	cWeapScale	},
+	{"offset",	cWeapOffset	}
 	//?? add flashOffset
 };
 
@@ -726,6 +732,7 @@ static bool LoadWeaponInfo (const char *filename, weaponInfo_t &weap)
 	weap.origin.Scale (weap.drawScale);
 	FS_FreeFile (buf);
 	return result && weap.model != NULL;
+	//?? NOTE: currently, "false" result ignored ...
 }
 
 
@@ -800,8 +807,8 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 	if (!cl_vwep->integer) loadWeapons = false;
 
 	// get player's name
-	appStrncpyz (ci.name, s, sizeof(ci.name));
-	char *t = strchr (ci.name, '\\');
+	appStrncpyz (ci.playerName, s, sizeof(ci.playerName));
+	char *t = strchr (ci.playerName, '\\');
 	if (t)
 	{
 		*t = 0;
@@ -851,7 +858,7 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 #endif
 			}
 
-		ci.modelGender = (CL_IsFemaleModel (modelName)) ? 'f' : 'm';
+		ci.modelGender = (IsFemaleModel (modelName)) ? 'f' : 'm';
 	}
 	else
 	{
@@ -872,6 +879,9 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 			for (int i = 1; i < num_cl_weaponmodels; i++)
 				LoadWeaponInfo (cl_weaponmodels[i], ci.weaponModel[i]);
 	}
+
+	// save model name
+	strcpy (ci.modelName, modelName);
 
 	// default icon
 	if (!ci.icon)
@@ -986,7 +996,7 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, c
 
 	if (!ci.isValidModel)
 	{
-		RE_DrawText3D (ent.pos.origin, va("%s\ninvalid model", ci.name), RGB(1,0,0));
+		RE_DrawText3D (ent.pos.origin, va("%s\ninvalid model", ci.playerName), RGB(1,0,0));
 		return 0;
 	}
 
@@ -1220,8 +1230,9 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, c
 		weaponInfo_t &weap = ci.weaponModel[weaponIndex];
 #endif
 
-		buf[3].model = weap.model;
-		buf[3].scale = weap.drawScale;
+		buf[3].model        = weap.model;
+		buf[3].customShader = weap.skin;
+		buf[3].scale        = weap.drawScale;
 		buf[3].pos.UnTransformPoint (weap.origin, buf[3].pos.origin);
 		weaponAttached = true;
 	}

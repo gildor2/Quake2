@@ -47,11 +47,11 @@ template<class T> int Sign (T value)
 }
 
 
-template<class T> inline void Exchange (T& a, T& b)
+template<class T> inline void Exchange (T& A, T& B)
 {
-	const T tmp = a;
-	a = b;
-	b = tmp;
+	const T tmp = A;
+	A = B;
+	B = tmp;
 }
 
 

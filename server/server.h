@@ -169,8 +169,8 @@ typedef struct
 	int			spawncount;					// incremented each server start
 											// used to check late spawns
 
-	client_t	*clients;					// [maxclients->integer];
-	int			num_client_entities;		// maxclients->integer*UPDATE_BACKUP*MAX_PACKET_ENTITIES
+	client_t	*clients;					// [sv_maxclients->integer];
+	int			num_client_entities;		// sv_maxclients->integer*UPDATE_BACKUP*MAX_PACKET_ENTITIES
 	int			next_client_entities;		// next client_entity to use
 	entityStateEx_t	*client_entities;		// [num_client_entities]
 
@@ -192,7 +192,7 @@ extern	server_static_t	svs;				// persistant server info
 extern	server_t		sv;					// local server
 
 extern	cvar_t	*sv_paused;
-extern	cvar_t	*maxclients;
+extern	cvar_t	*sv_deathmatch, *sv_coop, *sv_maxclients;
 extern	cvar_t	*sv_noreload;			// don't reload level state when reentering
 extern	cvar_t	*sv_airaccelerate;		// don't reload level state when reentering
 extern	cvar_t	*sv_extProtocol;

@@ -444,7 +444,7 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	numTris = surf->numTris;		// just computed
 	if (numTris != hdr->numTris) Com_WPrintf ("LoadMd2(%s): computed numTris %d != %d\n", name, numTris, hdr->numTris);
 	appFree (surf);
-	Com_DPrintf ("MD2(%s): xyz=%d st=%d verts=%d tris=%d frms=%d\n", name, hdr->numXyz, hdr->numSt, numVerts, numTris, hdr->numFrames);
+//	Com_DPrintf ("MD2(%s): xyz=%d st=%d verts=%d tris=%d frms=%d\n", name, hdr->numXyz, hdr->numSt, numVerts, numTris, hdr->numFrames);
 
 	/* Allocate memory:
 		md3Model_t		[1]
@@ -567,7 +567,7 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 		// next surface
 		ds = OffsetPointer (ds, ds->ofsEnd);
 	}
-	Com_DPrintf ("MD3(%s): verts=%d tris=%d frms=%d surfs=%d tags=%d\n", name, tNumVerts, tNumTris, hdr->numFrames, hdr->numSurfaces, hdr->numTags);
+//	Com_DPrintf ("MD3(%s): verts=%d tris=%d frms=%d surfs=%d tags=%d\n", name, tNumVerts, tNumTris, hdr->numFrames, hdr->numSurfaces, hdr->numTags);
 
 	/* Allocate memory:
 		md3Model_t		[1]

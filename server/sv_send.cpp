@@ -118,7 +118,7 @@ void SV_BroadcastPrintf (int level, const char *fmt, ...)
 		Com_Printf ("%s", copy);
 	}
 
-	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+	for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 	{
 		if (level < cl->messagelevel)
 			continue;
@@ -213,7 +213,7 @@ void SV_Multicast (const CVec3 &origin, multicast_t to, bool oldclients)
 	sizebuf_t *newBuf = (sv_extProtocol->integer) ? SV_MulticastHook (&sv.multicast, &sv.multicastNew) : &sv.multicast;
 
 	// send the data to all relevent clients
-	for (j = 0, client = svs.clients; j < maxclients->integer; j++, client++)
+	for (j = 0, client = svs.clients; j < sv_maxclients->integer; j++, client++)
 	{
 		if (client->state == cs_free || client->state == cs_zombie)
 			continue;
@@ -545,7 +545,7 @@ void SV_SendClientMessages (void)
 
 	// send a message to each connected client
 	int curtime = appMilliseconds ();
-	for (i = 0, c = svs.clients ; i < maxclients->integer; i++, c++)
+	for (i = 0, c = svs.clients ; i < sv_maxclients->integer; i++, c++)
 	{
 		if (!c->state) continue;
 		// if the reliable message overflowed, drop the client

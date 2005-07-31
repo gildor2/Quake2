@@ -39,8 +39,6 @@ BUGS:
 - fatal error msgbox: display few latest warnings (if going one by one); may be, display as "advanced info" (checkbox)
 
   
-! new pmove.c errors:
-  - "ground3" cafe, on the street: cannot jump onto a corner column (horiz. speed set to 0 due to position snap)
 - "paused": incorrect timing (at least, fx will be incorrect after paused=0)
   - should reimplement it in a different way
   - may be, make multiplayer pause (with sync clients to server; make attention to not timeout clients when server is paused)
@@ -54,7 +52,7 @@ BUGS:
   1) disable "cmd say[_team]" etc. for client (will not disable non-"say" chat, when message typed in console)
   2) disable PRINT_CHAT with text "Player: message"
   3) (best?) hook ge->ClientCommand(from), and disable all PF_cprintf(to,PRINT_CHAT,"...") inside this call, when from!=to
-? remove IPX protocol from win32 code (MS-DOS rudiment)
+? remove IPX protocol from win32 code (MS-DOS rudiment); check all NA_XXX verifications: may be, check for IP or LOOPBACK -- always pass
 ? eliminate BigShort(MASTER|SERVER_PORT) (sv_cmds.c, cl_main.c) -- only one thing, for which BigXxx() is used (big-endian numbers)
 ! spec for map script
 - colorize server list (old/new-only/cheats/full) (make legend ? or make table with some attributes: server-name, map-name, players,
@@ -66,7 +64,7 @@ BUGS:
   - zaero, plasma shield (jump + shield in down direction - movement lock when landed on shield);
     original Q2 works incorrect too, but in a different way: can pass through shield
   ! lerp entity angles (may remove bug with locking inside opening door)
-? make "r_consoleOnly" work without "vid_restart"
+? make "r_consoleOnly" work without "vid_restart" (or remove this; currently - does not works at all)
 - "client" source dir: split game-related stuff (effects, particles, prediction etc) and sound/console/keyboard/menu into separate
   dirs (choose 2 names from: cgame, client, ui ... etc)
 - game/m_flash.c : convert float[][3] -> short[][3]  (2.5 Kb -> 2 times smaller ...)

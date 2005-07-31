@@ -44,7 +44,8 @@ cvar_t *sv_airaccelerate;
 
 cvar_t	*sv_noreload;					// don't reload level state when reentering
 
-cvar_t	*maxclients;					// FIXME: rename sv_maxclients
+cvar_t	*sv_deathmatch, *sv_coop, *sv_maxclients;
+
 static cvar_t	*sv_showclamp;
 
 static cvar_t	*hostname;
@@ -133,7 +134,7 @@ static const char *SV_StatusString (void)
 	if (sv.attractloop) return "";
 
 	int statusLength = appSprintf (ARRAY_ARG(status), "%s\n", Cvar_Serverinfo ());
-	for (int i = 0; i < maxclients->integer; i++)
+	for (int i = 0; i < sv_maxclients->integer; i++)
 	{
 		client_t *cl = &svs.clients[i];
 		if (cl->state == cs_connected || cl->state == cs_spawned)
@@ -168,7 +169,7 @@ The second parameter should be the current protocol version number.
 */
 static void cInfo (int argc, char **argv)
 {
-	if (maxclients->integer == 1 || sv.state == ss_demo || sv.attractloop)
+	if (sv_maxclients->integer == 1 || sv.state == ss_demo || sv.attractloop)
 		return;					// ignore in single player or demoplay
 
 	int version = atoi (argv[1]);
@@ -185,11 +186,11 @@ static void cInfo (int argc, char **argv)
 	else
 	{
 		int count = 0;
-		for (int i = 0; i < maxclients->integer; i++)
+		for (int i = 0; i < sv_maxclients->integer; i++)
 			if (svs.clients[i].state >= cs_connected)
 				count++;
 
-		appSprintf (ARRAY_ARG(string), "%16s %8s %2d/%2d\n", hostname->string, sv.name, count, maxclients->integer);
+		appSprintf (ARRAY_ARG(string), "%16s %8s %2d/%2d\n", hostname->string, sv.name, count, sv_maxclients->integer);
 	}
 	Netchan_OutOfBandPrint (NS_SERVER, net_from, "info\n%s", string);
 }
@@ -303,7 +304,7 @@ static void cDirectConnect (int argc, char **argv)
 	client_t *newcl = NULL;
 
 	// if there is already a slot for this ip, reuse it
-	for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
+	for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++,cl++)
 	{
 		if (cl->state == cs_free) continue;
 
@@ -324,7 +325,7 @@ static void cDirectConnect (int argc, char **argv)
 	// find a client slot
 	if (!newcl)
 	{
-		for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
+		for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++,cl++)
 		{
 			if (cl->state == cs_free)
 			{
@@ -473,7 +474,8 @@ void SV_ConnectionlessPacket (void)
 	MSG_ReadLong (&net_message);		// skip the -1 marker
 
 	char *s = MSG_ReadString (&net_message);
-	Com_DPrintf ("Packet %s : %s\n", NET_AdrToString (&net_from), s);
+	//?? "s" may be too long (userinfo etc)
+	Com_DPrintf ("SV: packet from %s: %s\n", NET_AdrToString (&net_from), s);
 
 	if (SV_AddressBanned (&net_from))
 	{
@@ -498,7 +500,7 @@ Updates the cl->ping variables
 */
 void SV_CalcPings (void)
 {
-	for (int i = 0; i < maxclients->integer; i++)
+	for (int i = 0; i < sv_maxclients->integer; i++)
 	{
 		client_t *cl = &svs.clients[i];
 		if (cl->state != cs_spawned)
@@ -549,7 +551,7 @@ void SV_GiveMsec (void)
 	if (sv.framenum & 15)
 		return;
 
-	for (int i = 0; i < maxclients->integer; i++)
+	for (int i = 0; i < sv_maxclients->integer; i++)
 	{
 		client_t *cl = &svs.clients[i];
 		if (cl->state == cs_free )
@@ -588,7 +590,7 @@ void SV_ReadPackets (void)
 		// check for packets from connected clients
 		int		i;
 		client_t *cl;
-		for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+		for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 		{
 			if (cl->state == cs_free)
 				continue;
@@ -613,7 +615,7 @@ void SV_ReadPackets (void)
 			break;
 		}
 
-//		if (i != maxclients->integer) continue;
+//		if (i != sv_maxclients->integer) continue;
 	}
 
 	unguard;
@@ -640,7 +642,7 @@ void SV_CheckTimeouts (void)
 
 	int		i;
 	client_t *cl;
-	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+	for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 	{
 		// message times may be wrong across a changelevel
 		if (cl->lastmessage > svs.realtime)
@@ -735,10 +737,10 @@ void SV_PostprocessFrame (void)
 	}
 
 	// work only in network game, not single-player
-	if (maxclients->integer > 1) //!! should be another variable; campersounds - below!! && sv_campersounds->integer)
+	if (sv_maxclients->integer > 1) //!! should be another variable; campersounds - below!! && sv_campersounds->integer)
 	{
 		int t = appMilliseconds ();
-		for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+		for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 		{
 			if (cl->state != cs_spawned && cl->state != cs_connected)
 			{
@@ -864,7 +866,7 @@ static client_t *FindClient (const CVec3 &origin, float maxDist2)
 	int		i;
 
 //	Com_Printf("find for %g %g %g dist=%g\n",VECTOR_ARG(origin),maxDist2);
-	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+	for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 	{
 		edict_t *ent = cl->edict;
 		if (cl->state != cs_spawned && cl->state != cs_connected)
@@ -1127,7 +1129,7 @@ void SV_Frame (float msec)
 	sv.time += frameTime;	//  = sv.framenum*100; ??
 
 	// don't run if paused
-	if (!sv_paused->integer || maxclients->integer > 1)
+	if (!sv_paused->integer || sv_maxclients->integer > 1)
 	{
 		if (com_speeds->integer)
 			time_before_game = appCycles();
@@ -1285,11 +1287,11 @@ void SV_Init (void)
 CVAR_BEGIN(vars)
 	CVAR_FULL(&rcon_password, "rcon_password", "", 0),
 	CVAR_NULL(skill, 1, 0),
-	CVAR_NULL(deathmatch, 0, CVAR_LATCH),
-	CVAR_NULL(coop, 0, CVAR_LATCH),
-	CVAR_NULL(fraglimit, 0, CVAR_SERVERINFO),
-	CVAR_NULL(timelimit, 0, CVAR_SERVERINFO),
-	CVAR_VAR(maxclients, 1, CVAR_SERVERINFO|CVAR_LATCH),
+	CVAR_FULL(&sv_deathmatch, "deathmatch", "0", CVAR_SERVERINFO|CVAR_LATCH),
+	CVAR_FULL(&sv_coop, "coop", "0", CVAR_SERVERINFO|CVAR_LATCH),
+	CVAR_FULL(&sv_maxclients, "maxclients", "1", CVAR_SERVERINFO|CVAR_LATCH),
+	CVAR_NULL(fraglimit,  0, CVAR_SERVERINFO),
+	CVAR_NULL(timelimit,  0, CVAR_SERVERINFO),
 	CVAR_VAR(hostname, noname, CVAR_SERVERINFO|CVAR_ARCHIVE),
 	CVAR_VAR(timeout, 125, 0),
 	CVAR_VAR(zombietime, 2, 0),
@@ -1345,7 +1347,7 @@ void SV_Shutdown (const char *finalmsg, bool reconnect)
 		// Send a final message to all connected clients before the server goes down.
 		//  The messages are sent immediately, not just stuck on the outgoing message
 		// list, because the server is going to totally exit after returning from this function.
-		for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+		for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 		{
 			if (cl->state < cs_connected)
 				continue;

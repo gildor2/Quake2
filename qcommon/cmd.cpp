@@ -465,10 +465,12 @@ static void TokenizeString (const char *text)
 	Command management
 -----------------------------------------------------------------------------*/
 
+static void Cmd_Init();
 
 bool RegisterCommand (const char *name, void(*func)(), int flags)
 {
 	guard(RegisterCommand);
+	EXEC_ONCE(Cmd_Init())
 	CCommand *pos;
 	if (CmdList.Find (name, &pos))
 	{
@@ -601,8 +603,6 @@ Cmd_List_f
 */
 static void Cmd_List_f (bool usage, int argc, char **argv)
 {
-	int		n, total;
-
 	if (argc > 2 || usage)
 	{
 		Com_Printf ("Usage: cmdlist [<mask>]\n");
@@ -610,7 +610,7 @@ static void Cmd_List_f (bool usage, int argc, char **argv)
 	}
 
 	const char *mask = (argc == 2) ? argv[1] : NULL;
-	n = total = 0;
+	int n = 0, total = 0;
 	Com_Printf ("----i-a-name----------------\n");
 	for (CCommand *cmd = CmdList.First(); cmd; cmd = CmdList.Next(cmd))
 	{
@@ -625,12 +625,7 @@ static void Cmd_List_f (bool usage, int argc, char **argv)
 	Com_Printf ("Displayed %d/%d commands\n", n, total);
 }
 
-/*
-============
-Cmd_Init
-============
-*/
-void Cmd_Init (void)
+static void Cmd_Init ()
 {
 	// cbuf
 	cmd_text.Init (ARRAY_ARG(cmd_text_buf));

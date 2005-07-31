@@ -128,8 +128,9 @@ static bool ExtensionSupported (extInfo_t *ext, const char *extStr1, const char 
 		return true;
 	while (true)
 	{
-		s = strchr (s, '\0') + 1;
+		s = strchr (s, 0) + 1;
 		if (!s[0]) return false;	// no another aliases
+		//?? change notify string
 		Com_DPrintf ("%s not found - try alias %s\n", ext->names, s);
 		if (ExtensionNameSupported (s, extStr1) || ExtensionNameSupported (s, extStr2))
 		{
@@ -333,7 +334,7 @@ void QGL_PrintExtensionsString (const char *label, const char *str, const char *
 				while (s[0])	// while aliases present
 				{
 					if (!strcmp (s, name)) break;
-					s = strchr (s, '\0') + 1;
+					s = strchr (s, 0) + 1;
 				}
 				if (!s[0]) continue;
 				// here: current name is one of aliases of extInfo[j]
@@ -385,7 +386,7 @@ void QGL_EnableLogging (bool enable)
 			logFile = fopen ("gl.log", "a+");
 			if (!logFile)
 			{
-				Com_WPrintf ("QGL_EnableLogging(): unable to create file\n");
+				Com_WPrintf ("QGL_EnableLogging: unable to create file\n");
 				return;
 			}
 			fprintf (logFile, "\n---------------------------\n%s\n---------------------------\n", ctime);

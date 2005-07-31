@@ -122,7 +122,7 @@ void SV_CheckForSavegame (void)
 	if (sv_noreload->integer)
 		return;
 
-	if (Cvar_VariableInt ("deathmatch"))
+	if (sv_deathmatch->integer)
 		return;
 
 	f = fopen (va("%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name), "rb");
@@ -173,7 +173,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	if (attractloop)
 		Cvar_Set ("paused", "0");
 
-	Com_Printf ("\n------- Server Initialization -------\n");
+	Com_Printf ("\n------ Server initialization -------\n");
 
 	Com_DPrintf ("SpawnServer: %s\n",server);
 	if (sv.rdemofile)
@@ -192,7 +192,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 
 	// save name for levels that don't set message
 	strcpy (sv.configstrings[CS_NAME], server);
-	if (Cvar_VariableInt ("deathmatch"))
+	if (sv_deathmatch->integer)
 	{
 		appSprintf (ARRAY_ARG(sv.configstrings[CS_AIRACCEL]), "%g", sv_airaccelerate->value);
 		pm_airaccelerate = sv_airaccelerate->value;
@@ -209,7 +209,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	strcpy (sv.name, server);
 
 	// leave slots at start for clients only
-	for (i = 0; i < maxclients->integer; i++)
+	for (i = 0; i < sv_maxclients->integer; i++)
 	{
 		// needs to reconnect
 		if (svs.clients[i].state > cs_connected)
@@ -269,7 +269,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	// set serverinfo variable
 	Cvar_FullSet ("mapname", sv.name, CVAR_SERVERINFO|CVAR_NOSET);
 
-	Com_Printf ("-------------------------------------\n");
+	Com_Printf ("------------------------------------\n");
 
 	unguard;
 }
@@ -281,10 +281,8 @@ SV_InitGame
 A brand new game has been started
 ==============
 */
-void SV_InitGame (void)
+void SV_InitGame ()
 {
-	int		i;
-
 	guard(SV_InitGame);
 
 	if (svs.initialized)
@@ -304,32 +302,32 @@ void SV_InitGame (void)
 
 	svs.initialized = true;
 
-	if (Cvar_VariableInt ("coop") && Cvar_VariableInt ("deathmatch"))
+	if (sv_coop->integer && sv_deathmatch->integer)
 	{
 		Com_WPrintf ("\"deathmatch\" and \"coop\" both set, disabling \"coop\"\n");
-		Cvar_FullSet ("coop", "0", CVAR_SERVERINFO|CVAR_LATCH);
+		Cvar_ForceSet ("coop", "0");
 	}
 
 	// dedicated servers are can't be single player and are usually DM
 	// so unless they explicity set coop, force it to deathmatch
 	if (DEDICATED)
 	{
-		if (!Cvar_VariableInt ("coop"))
-			Cvar_FullSet ("deathmatch", "1", CVAR_SERVERINFO|CVAR_LATCH);
+		if (!sv_coop->integer)
+			Cvar_ForceSet ("deathmatch", "1");
 	}
 
 	// init clients
-	if (Cvar_VariableInt ("deathmatch"))
+	if (sv_deathmatch->integer)
 	{
-		if (maxclients->integer <= 1)
-			Cvar_FullSet ("maxclients", "8", CVAR_SERVERINFO|CVAR_LATCH);
-		else if (maxclients->integer > MAX_CLIENTS)
-			Cvar_FullSet ("maxclients", STR(MAX_CLIENTS), CVAR_SERVERINFO|CVAR_LATCH);
+		if (sv_maxclients->integer <= 1)
+			Cvar_ForceSet ("maxclients", "8");
+		else if (sv_maxclients->integer > MAX_CLIENTS)
+			Cvar_ForceSet ("maxclients", STR(MAX_CLIENTS));
 	}
-	else if (Cvar_VariableInt ("coop"))
+	else if (sv_coop->integer)
 	{
-		if (maxclients->integer <= 1 || maxclients->integer > 4)
-			Cvar_FullSet ("maxclients", "4", CVAR_SERVERINFO|CVAR_LATCH);
+		if (sv_maxclients->integer <= 1 || sv_maxclients->integer > 4)
+			Cvar_ForceSet ("maxclients", "4");
 #ifdef COPYPROTECT
 		if (!sv.attractloop && !DEDICATED)
 			Sys_CopyProtect ();
@@ -337,20 +335,20 @@ void SV_InitGame (void)
 	}
 	else	// non-deathmatch, non-coop is one player
 	{
-		Cvar_FullSet ("maxclients", "1", CVAR_SERVERINFO|CVAR_LATCH);
+		Cvar_ForceSet ("maxclients", "1");
 #ifdef COPYPROTECT
 		if (!sv.attractloop)
 			Sys_CopyProtect ();
 #endif
 	}
 
-	svs.spawncount = rand();
-	svs.clients = new client_t [maxclients->integer];
-	svs.num_client_entities = maxclients->integer*UPDATE_BACKUP*64;		//?? what is "64" (MAX_PACKET_ENTITIES, undefined const?)
-	svs.client_entities = new entityStateEx_t [svs.num_client_entities];
+	svs.spawncount          = rand();
+	svs.clients             = new client_t [sv_maxclients->integer];
+	svs.num_client_entities = sv_maxclients->integer*UPDATE_BACKUP*64;		//?? what is "64" (MAX_PACKET_ENTITIES, undefined const?)
+	svs.client_entities     = new entityStateEx_t [svs.num_client_entities];
 
 	// init network stuff
-	NET_Config (maxclients->integer > 1);
+	NET_Config (sv_maxclients->integer > 1);
 
 	// heartbeats will always be sent to the id master
 	svs.last_heartbeat = -BIG_NUMBER;		// send immediately
@@ -360,7 +358,7 @@ void SV_InitGame (void)
 	if (!sv.attractloop)
 	{
 		SV_InitGameLibrary (false);
-		for (i = 0; i < maxclients->integer; i++)
+		for (int i = 0; i < sv_maxclients->integer; i++)
 		{
 			edict_t	*ent = EDICT_NUM(i+1);
 			ent->s.number = i+1;
@@ -393,11 +391,10 @@ another level:
 */
 void SV_Map (bool attractloop, const char *levelstring, bool loadgame)
 {
-	char	level[MAX_QPATH], spawnpoint[MAX_QPATH], *ch, *s;
+	char	level[MAX_QPATH], spawnpoint[MAX_QPATH], *s;
 	server_state_t newState;
-	int		l;
 
-	sv.loadgame = loadgame;
+	sv.loadgame    = loadgame;
 	sv.attractloop = attractloop;
 
 	if (sv.state == ss_dead && !sv.loadgame)
@@ -406,44 +403,39 @@ void SV_Map (bool attractloop, const char *levelstring, bool loadgame)
 	strcpy (level, levelstring);
 
 	// if there is a '+' in the map, set nextserver to the remainder
-	ch = strchr (level, '+');
-	if (ch)
+	if (s = strchr (level, '+'))
 	{
-		*ch = 0;
-		Cvar_Set ("nextserver", va("gamemap \"%s\"", ch + 1));
+		*s = 0;
+		Cvar_Set ("nextserver", va("gamemap \"%s\"", s+1));
 	}
 	else
 		Cvar_Set ("nextserver", "");
+	// if there is a $, use the remainder as a spawnpoint
+	spawnpoint[0] = 0;
+	if (s = strchr (level, '$'))
+	{
+		*s = 0;
+		strcpy (spawnpoint, s+1);
+	}
 
 	//ZOID special hack for end game screen in coop mode
-	if (Cvar_VariableInt ("coop") && !stricmp(level, "victory.pcx"))
+	if (sv_coop->integer && !stricmp(level, "victory.pcx"))	//??
 		Cvar_Set ("nextserver", "gamemap \"*base1\"");
-
-	// if there is a $, use the remainder as a spawnpoint
-	ch = strchr (level, '$');
-	if (ch)
-	{
-		*ch = 0;
-		strcpy (spawnpoint, ch+1);
-	}
-	else
-		spawnpoint[0] = 0;
 
 	// skip the end-of-unit flag if necessary
 	if (level[0] == '*')
 		strcpy (level, level+1);
 
-	l = strlen (level);
-	s = level+l-4;
-
 	newState = ss_game;
-	if (l > 4)
+	int len = strlen (level);
+	if (len > 4)
 	{
-		if (!strcmp (s, ".cin"))
+		const char *ext = level+len-4;
+		if (!strcmp (ext, ".cin"))
 			newState = ss_cinematic;
-		else if (!strcmp (s, ".dm2"))
+		else if (!strcmp (ext, ".dm2"))
 			newState = ss_demo;
-		else if (!strcmp (s, ".pcx") || !strcmp (s, ".tga") || !strcmp (s, ".jpg"))
+		else if (!strcmp (ext, ".pcx") || !strcmp (ext, ".tga") || !strcmp (ext, ".jpg"))
 			newState = ss_pic;
 	}
 

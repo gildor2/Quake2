@@ -139,17 +139,13 @@ struct client_state_t
 	//?? replace with CAxis (forward=[0], right=-[1], up=[2])
 	CVec3	v_forward, v_right, v_up; // set when refdef.angles is set
 
-	//
 	// transient data from server
-	//
 	char	layout[1024];		// HUD info
 	int		inventory[MAX_ITEMS];
 
 	bool	cinematicActive;
 
-	//
 	// server state information
-	//
 	bool	attractloop;		// running the attract loop, any key will menu
 	int		servercount;		// server identification for prespawns
 	char	gamedir[MAX_QPATH];
@@ -157,10 +153,8 @@ struct client_state_t
 
 	char	configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
 
-	//
 	// locally derived information from server state
-	//
-	CRenderModel	*model_draw[MAX_MODELS];
+	CRenderModel *model_draw[MAX_MODELS];
 	cmodel_t *model_clip[MAX_MODELS];
 
 	sfx_t	*sound_precache[MAX_SOUNDS];
@@ -372,6 +366,7 @@ void CL_ParseServerMessage (void);
 	if (cl_shownet->integer >= 2) Com_Printf ("%3d:%s\n", net_message.readcount-1, s);
 
 void CL_ParseClientinfo (int player);
+void CL_UpdatePlayerClientInfo ();
 
 //
 // cl_view.cpp

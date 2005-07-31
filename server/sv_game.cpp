@@ -23,7 +23,7 @@ static void PF_Unicast (edict_t *ent, qboolean reliable)
 
 	if (!ent) return;
 	int p = NUM_FOR_EDICT(ent);
-	if (p < 1 || p > maxclients->integer)
+	if (p < 1 || p > sv_maxclients->integer)
 		return;
 
 	client_t *client = svs.clients + (p-1);
@@ -78,7 +78,7 @@ static void PF_cprintf (edict_t *ent, int level, const char *fmt, ...)
 	if (ent)
 	{
 		int n = NUM_FOR_EDICT(ent);
-		if (n < 1 || n > maxclients->integer)
+		if (n < 1 || n > sv_maxclients->integer)
 			Com_DropError ("cprintf to a non-client");
 		SV_ClientPrintf (svs.clients+(n-1), level, "%s", msg);
 	}
@@ -101,7 +101,7 @@ static void PF_centerprintf (edict_t *ent, const char *fmt, ...)
 	va_list	argptr;
 
 	int n = NUM_FOR_EDICT(ent);
-	if (n < 1 || n > maxclients->integer)
+	if (n < 1 || n > sv_maxclients->integer)
 		return;	// Com_DropError ("centerprintf to a non-client");
 
 	guard(PF_centerprintf);

@@ -796,7 +796,7 @@ CL_Skins_f
 Load or download any custom player skins and models
 =================
 */
-void CL_Skins_f (void)
+void CL_Skins_f ()
 {
 	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
@@ -1264,12 +1264,12 @@ extern void SV_DrawTexts ();		//?? move outside, different API ?
 
 void CL_Frame (float msec, float realMsec)
 {
-	static double extratime_real;	// real frame time, msec
-	static double extratime;		// scaled frame time, sec
-
 	guard(CL_Frame);
 
 	SV_DrawTexts ();
+
+	static double extratime_real;	// real frame time, msec
+	static double extratime;		// scaled frame time, sec
 
 	extratime += msec / 1000.0f;
 	extratime_real += realMsec;
@@ -1301,8 +1301,8 @@ void CL_Frame (float msec, float realMsec)
 
 	cls.realtime = appMilliseconds ();
 
-	if (cls.frametime > (1.0f / 5))	// low FPS fix ?? (cannot send user commands with frame time > 255ms)
-		cls.frametime = (1.0f / 5);
+	if (cls.frametime > 0.2f)		// low FPS fix ?? (cannot send user commands with frame time > 255ms == 0.255s)
+		cls.frametime = 0.2f;
 
 	// if in the debugger last frame, don't timeout
 	if (msec > 5000)
@@ -1323,15 +1323,15 @@ void CL_Frame (float msec, float realMsec)
 	// predict all unacknowledged movements
 	CL_PredictMovement ();
 
-	// allow rendering DLL change
+	// allow renderer DLL change
 	Vid_Tick ();
 	if (!cl.rendererReady && cls.state == ca_active)
 		V_InitRenderer ();
 
 	// update the screen
-	if (com_speeds->integer) time_before_ref = appCycles ();
+	if (com_speeds->integer) time_before_ref = appCycles ();	//?? move
 	SCR_UpdateScreen ();
-	if (com_speeds->integer) time_after_ref = appCycles ();
+	if (com_speeds->integer) time_after_ref = appCycles ();		//??
 
 	// update audio
 	S_Update (cl.refdef.vieworg, cl.v_right);

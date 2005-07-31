@@ -1126,13 +1126,23 @@ void CL_ParseTEnt (void)
 		break;
 
 	case TE_BUBBLETRAIL:
+	case TE_BUBBLETRAIL2:
 	case TE_DEBUGTRAIL:
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadPos (&net_message, pos2);
-		if (type == TE_BUBBLETRAIL)
+		switch (type)
+		{
+		case TE_BUBBLETRAIL:
 			CL_BubbleTrail (pos, pos2);
-		else
+			break;
+		case TE_BUBBLETRAIL2:
+			CL_BubbleTrail2 (pos, pos2);
+			sound = cl_sfx_lashit;		//?? sound for trail?
+			break;
+		case TE_DEBUGTRAIL:
 			CL_DebugTrail (pos, pos2);
+			break;
+		}
 		break;
 
 	case TE_BLUEHYPERBLASTER:	// unused ??
@@ -1230,7 +1240,6 @@ void CL_ParseTEnt (void)
 
 	case TE_HEATBEAM_SPARKS:
 	case TE_HEATBEAM_STEAM:
-	case TE_BUBBLETRAIL2:
 		MSG_ReadPos (&net_message, pos);
 		MSG_ReadDir (&net_message, dir);
 		switch (type)
@@ -1241,16 +1250,7 @@ void CL_ParseTEnt (void)
 		case TE_HEATBEAM_STEAM:
 			CL_ParticleSteamEffect (pos, dir, 0xE0, 20, 60);
 			break;
-		case TE_BUBBLETRAIL2:
-			CL_BubbleTrail2 (pos, pos2);
-			break;
 		}
-		sound = cl_sfx_lashit;
-		break;
-
-		MSG_ReadPos (&net_message, pos);
-		MSG_ReadDir (&net_message, dir);
-		CL_ParticleSteamEffect (pos, dir, 0xE0, 20, 60);
 		sound = cl_sfx_lashit;
 		break;
 
@@ -1405,7 +1405,7 @@ void CL_AddPlayerBeams (void)
 			continue;
 
 		bool isHeatbeam = cl_mod_heatbeam && (b->model == cl_mod_heatbeam);
-		bool isPlayer = b->entity == cl.playernum + 1;
+		bool isPlayer = b->entity == cl.playernum+1;
 
 		CVec3 org;
 		if (isHeatbeam)

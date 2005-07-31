@@ -987,7 +987,7 @@ char *ProcessEntstring (char *entString)
 	if (haveErrors)
 		return entString;
 
-	Com_DPrintf ("ProcessEntstring(): old size = %d, new size = %d\n", strlen (entString), dst - dst2);
+	Com_DPrintf ("ProcessEntstring: size = %d -> %d\n", strlen (entString), dst - dst2);
 	return dst2;
 
 	unguard;

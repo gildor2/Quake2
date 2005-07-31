@@ -41,6 +41,8 @@
 - in windowed mode, when launching console/menu, mouse will be deactivated, but it will not be usable at all (no cursor); to use mouse,
   should deactivate window
 
+- new pmove.cpp errors:
+  - "ground3" cafe, on the street: cannot jump onto a corner column (horiz. speed set to 0 due to position snap)
 
 UNRECOVARABLE:
 ~~~~~~~~~~~~~~
@@ -67,7 +69,7 @@ HARDWARE:
   - when uploading rectangular texture (GL_TEXTURE_RECTANGLE_NV) in compressed internal format, app will crash in ICD GL dll
   - (old drivers) when game launched fullscreen, <Alt-Enter> will switch to windowed mode with incorrect viewport (visible region);
     vid_restart will not fix situation
-  - (Catalyst 4.9) GL_SGIS_multitexture: GL_MAX_TEXTURES_SGIS == 0
+  - (Catalyst 4.9) GL_SGIS_multitexture: GL_MAX_TEXTURES_SGIS == 0, but extension is present
   * gamma: after app startup (screen resolution changing) drivers will set gamma==1; tech info: main window will get messages:
     WM_SYNCPAINT, WM_NCPAINT, WM_ERASEBKGND, WM_PAINT; Q3 have no this problem, UT2004 (GL) have.
     * FIXED: set TOPMOST wnd attribute with SetWindowPos(), not with SetWindowLong(); when restore from minimized state - update

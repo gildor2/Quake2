@@ -33,6 +33,7 @@ struct weaponInfo_t						// weapon for Quake3 player model
 	float	drawScale;
 	CVec3	origin;
 	CRenderModel *model;
+	CBasicImage *skin;
 };
 
 
@@ -41,12 +42,14 @@ struct weaponInfo_t						// weapon for Quake3 player model
 struct clientInfo_t
 {
 	unsigned id;						// for detecting changes
-	char	name[MAX_QPATH];			// player name
-	char	iconName[MAX_QPATH];		//?? may be used instead of iconName[] for drawing; require CBasicImage.Draw()
+	char	playerName[MAX_QPATH];
+	char	modelName[MAX_QPATH];
+	char	iconName[MAX_QPATH];
 	bool	isQ3model;
 	bool	isValidModel;
 	char	modelGender;				// 'm' - male, 'f' - female, 'n' - neutral
 	CBasicImage	*icon;					// used as "!= NULL" only
+										//?? may be used instead of iconName[] for drawing; require CBasicImage.Draw()
 	// data for Quake2 player model (use one of Q3 model info??)
 	CModelSkin	md2skin;
 	CRenderModel *md2model;
@@ -78,8 +81,6 @@ public:
 
 extern TList<playerModelInfo_t> pmiList;
 extern int numPlayerModels;
-
-bool CL_IsFemaleModel (const char *model);
 
 void FreePlayerModelsInfo ();
 bool ScanPlayerModels ();

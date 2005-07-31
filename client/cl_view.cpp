@@ -361,6 +361,12 @@ void V_InitRenderer ()
 		Sys_SendKeyEvents ();	// pump message loop
 		CL_ParseClientinfo (i);
 	}
+	if (!cl.configstrings[CS_PLAYERSKINS+cl.playernum][0])
+	{
+		// in a singleplayer mode, server will not send clientinfo - generate it by ourself
+//		Com_DPrintf("Fixing CI[playernum]\n");
+		CL_UpdatePlayerClientInfo ();
+	}
 
 	// set sky textures and speed
 	Com_Printf ("sky\r", i);

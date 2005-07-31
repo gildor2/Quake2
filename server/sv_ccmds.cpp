@@ -268,7 +268,6 @@ SV_ReadServerFile
 */
 void SV_ReadServerFile (void)
 {
-	FILE	*f;
 	char	name[MAX_OSPATH], string[128];
 	char	comment[32];
 	char	mapcmd[128];
@@ -277,7 +276,7 @@ void SV_ReadServerFile (void)
 	if (!DEDICATED) SCR_SetLevelshot ("/" SAVEGAME_DIRECTORY "/current/shot");
 
 	appSprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
-	f = fopen (name, "rb");
+	FILE *f = fopen (name, "rb");
 	if (!f)
 	{
 		Com_WPrintf ("Couldn't read %s\n", name);
@@ -291,10 +290,9 @@ void SV_ReadServerFile (void)
 
 	// read all CVAR_LATCH cvars
 	// these will be things like coop, skill, deathmatch, etc
-	while (1)
+	while (true)
 	{
-		if (!fread (name, 1, sizeof(name), f))
-			break;
+		if (!fread (name, 1, sizeof(name), f)) break;
 		fread (string, sizeof(string), 1, f);
 		Com_DPrintf ("Set %s = %s\n", name, string);
 		Cvar_ForceSet (name, string);
@@ -394,7 +392,7 @@ static void SV_GameMap_f (bool usage, int argc, char **argv)
 			// clear all the client.inuse flags before saving so that
 			// when the level is re-entered, the clients will spawn
 			// at spawn points instead of occupying body shells
-			for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+			for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 			{
 				savedInUse[i] = cl->edict->inuse != 0;
 				cl->edict->inuse = false;
@@ -403,7 +401,7 @@ static void SV_GameMap_f (bool usage, int argc, char **argv)
 			SV_WriteLevelFile ();
 
 			// we must restore these for clients to transfer over correctly
-			for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+			for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 				cl->edict->inuse = savedInUse[i];
 		}
 	}
@@ -415,7 +413,7 @@ static void SV_GameMap_f (bool usage, int argc, char **argv)
 	appStrncpyz (svs.mapcmd, map, sizeof(svs.mapcmd));
 
 	// copy off the level to the autosave slot
-	if (!DEDICATED && !Cvar_VariableInt ("deathmatch"))
+	if (!DEDICATED && !sv_deathmatch->integer)
 	{
 		FS_CreatePath (va("%s/" SAVEGAME_DIRECTORY "/current/", FS_Gamedir()));
 		SV_CopySaveGame ("current", "save0");
@@ -533,7 +531,7 @@ static void SV_Savegame_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	if (Cvar_VariableInt ("deathmatch"))
+	if (sv_deathmatch->integer)
 	{
 		Com_WPrintf ("Can't savegame in a deathmatch\n");
 		return;
@@ -545,7 +543,7 @@ static void SV_Savegame_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	if (maxclients->integer == 1 && svs.clients[0].edict->client->ps.stats[STAT_HEALTH] <= 0)
+	if (svs.clients[0].edict->client->ps.stats[STAT_HEALTH] <= 0)
 	{
 		Com_WPrintf ("\nCan't savegame while dead!\n");
 		return;
@@ -584,7 +582,7 @@ static bool SetPlayer (char *s)
 	if (s[0] >= '0' && s[0] <= '9')
 	{
 		int idnum = atoi (s);
-		if (idnum >= maxclients->integer)		// negative values are impossible here
+		if (idnum >= sv_maxclients->integer)		// negative values are impossible here
 		{
 			Com_WPrintf ("Bad client slot: %d\n", idnum);
 			return false;
@@ -603,7 +601,7 @@ static bool SetPlayer (char *s)
 	// check for a name match
 	client_t *cl;
 	int		i;
-	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+	for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 	{
 		if (!cl->state) continue;
 		if (!stricmp (cl->name, s))
@@ -755,7 +753,7 @@ static void SV_BanIP_f (bool usage, int argc, char **argv)
 	sv_client = NULL;
 	client_t *cl;
 	int		i;
-	for (i = 0, cl = svs.clients; i < maxclients->integer; i++, cl++)
+	for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 	{
 		if (!cl->state) continue;
 		if (!IPWildcard (&cl->netchan.remote_address, str)) continue;
@@ -853,7 +851,7 @@ static void SV_Status_f (void)
 	Com_Printf ("--n-score-ping-name------------lastmsg-address---------------qport-\n");
 	int		i;
 	client_t *cl;
-	for (i = 0, cl = svs.clients; i < maxclients->integer; i++,cl++)
+	for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++,cl++)
 	{
 		if (!cl->state) continue;
 		if (!sv.attractloop)
@@ -892,7 +890,7 @@ static void SV_ConSay_f (int argc, char **argv)
 	for (i = 1; i < argc; i++)
 		appStrcatn (ARRAY_ARG(text), va(" %s", argv[i]));
 
-	for (i = 0, client = svs.clients; i < maxclients->integer; i++, client++)
+	for (i = 0, client = svs.clients; i < sv_maxclients->integer; i++, client++)
 	{
 		if (client->state != cs_spawned)
 			continue;
