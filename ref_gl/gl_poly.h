@@ -7,16 +7,6 @@ namespace OpenGLDrv {
 #define MAX_POLYVERTS	1024
 
 
-struct poly_t
-{
-	int		numIndexes;
-	int		*indexes;
-#ifdef POLY_DEBUG
-	int		maxIndexes;
-#endif
-	poly_t	*next;
-};
-
 extern int subdivNumVerts;
 
 int SubdividePlane (CVec3 **verts, int numVerts, float tessSize);

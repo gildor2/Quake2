@@ -481,7 +481,7 @@ void SV_ClientThink (client_t *cl, usercmd_t *cmd)
 {
 	cl->commandMsec -= cmd->msec;
 
-	if (cl->commandMsec < 0 && sv_enforcetime->integer )
+	if (cl->commandMsec < 0 && sv_enforcetime->integer)
 	{
 		Com_DPrintf ("commandMsec underflow from %s\n", cl->name);
 		return;

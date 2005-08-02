@@ -23,6 +23,8 @@ typedef unsigned long   ulg;	// 4-byte unsigned
 
 #ifdef _WIN32
 #pragma pack(push,1)
+#else
+#error Adapt for non-Win32 platform!!!
 #endif
 
 typedef struct

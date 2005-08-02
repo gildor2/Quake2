@@ -238,9 +238,9 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 				Com_DPrintf ("Setting desktop resolution\n");
 				// save screen parameters
 				HDC dc = GetDC (NULL);
-				dm.dmSize = sizeof(dm);
-				dm.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL;
-				dm.dmPelsWidth = GetDeviceCaps (dc, HORZRES);
+				dm.dmSize       = sizeof(dm);
+				dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL;
+				dm.dmPelsWidth  = GetDeviceCaps (dc, HORZRES);
 				dm.dmPelsHeight = GetDeviceCaps (dc, VERTRES);
 				dm.dmBitsPerPel = GetDeviceCaps (dc, BITSPIXEL);
 				// restore mode
@@ -260,7 +260,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 	case WM_ACTIVATE:
 		{
-			bool active = LOWORD(wParam) != WA_INACTIVE;
+			bool active    = LOWORD(wParam) != WA_INACTIVE;
 			bool minimized = HIWORD(wParam) != 0;
 //			Com_Printf("WM_ACTIVATE: a=%d m=%d (act=%d min=%d)\n",active, minimized, ActiveApp, MinimizedApp);//!!
 			AppActivate (active, minimized);
@@ -348,22 +348,17 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 void *Vid_CreateWindow (int width, int height, bool fullscreen)
 {
-	WNDCLASS wc;
-	RECT	r;
-	int		stylebits;
-	int		x, y, w, h;
-	int		exstyle;
-
 	guard(Vid_CreateWindow);
 
+	DWORD stylebits, exstyle;
 	if (fullscreen)
 	{
-		exstyle = WS_EX_TOPMOST;
+		exstyle   = WS_EX_TOPMOST;
 		stylebits = WS_POPUP|WS_SYSMENU;
 	}
 	else
 	{
-		exstyle = 0;
+		exstyle   = 0;
 		stylebits = WS_SYSMENU|WS_CAPTION;
 	}
 
@@ -371,17 +366,19 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 //	if (width || height)		// if enable this, window will be created without taskbar button!
 //		stylebits |= WS_VISIBLE;
 
-	r.left = 0;
-	r.top = 0;
+	RECT r;
+	r.left   = 0;
+	r.top    = 0;
 	r.right  = width;
 	r.bottom = height;
 
 	AdjustWindowRect (&r, stylebits, FALSE);
 
-	w = r.right - r.left;
-	h = r.bottom - r.top;
+	int w = r.right - r.left;
+	int h = r.bottom - r.top;
 
 	FullscreenApp = fullscreen;
+	int x, y;
 	if (fullscreen)
 	{
 		x = 0;
@@ -403,17 +400,14 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 	else
 	{
 		// Register the frame class
-		wc.style			= 0;
-		wc.lpfnWndProc		= MainWndProc;
-		wc.cbClsExtra		= 0;
-		wc.cbWndExtra		= 0;
-		wc.hInstance		= global_hInstance;
-		wc.hIcon			= LoadIcon (global_hInstance, MAKEINTRESOURCE(IDI_ICON1));
-		wc.hCursor			= LoadCursor (NULL,IDC_ARROW);
-//		wc.hbrBackground	= (HBRUSH) COLOR_GRAYTEXT;
-		wc.hbrBackground	= NULL;
-		wc.lpszMenuName 	= NULL;
-		wc.lpszClassName	= APPNAME;
+		WNDCLASS wc;
+		memset (&wc, 0, sizeof(WNDCLASS));
+		wc.lpfnWndProc   = MainWndProc;
+		wc.hInstance     = global_hInstance;
+		wc.hIcon         = LoadIcon (global_hInstance, MAKEINTRESOURCE(IDI_ICON1));
+		wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
+//		wc.hbrBackground = (HBRUSH) COLOR_GRAYTEXT;
+		wc.lpszClassName = APPNAME;
 		if (!RegisterClass (&wc)) Com_FatalError ("Couldn't register window class");
 
 		cl_hwnd = CreateWindowEx (exstyle, APPNAME, APPNAME, stylebits, x, y, w, h, NULL, NULL, global_hInstance, NULL);
@@ -501,7 +495,7 @@ bool Vid_GetModeInfo (int *width, int *height, int mode)
 
 static void Vid_UpdateWindowPosAndSize (int x, int y)
 {
-	RECT	r;
+	RECT r;
 	r.left   = 0;
 	r.top    = 0;
 	r.right  = viddef.width;
@@ -515,44 +509,6 @@ static void Vid_UpdateWindowPosAndSize (int x, int y)
 
 	MoveWindow (cl_hwnd, vid_xpos->integer, vid_ypos->integer, w, h, TRUE);
 }
-
-
-
-/*-------- Dummy functions for console-only mode ---------*/
-
-//!! not works with SINGLE_RENDERER
-/*!! not works now; can replace gl_console_only with cl_console_only, switch on-fly (w/o vid_restart),
- *    + remove RE_DrawConChar() -- use RE_DrawChar(); remove renderer.flags; console_only will differ
- *    from normal mode by visualization; all models/textures/sounds will be loaded into memory, but
- *    not used; when switch back to normal mode -- used as always; needs special path for console_only
- *    in cl_scrn.cpp -- display console and exit; can remove check for console_only from most other
- *    places (check qmenu.cpp!)
- */
-#if 0
-static void	D_RenderFrame (refdef_t *fd) {}
-static void	D_BeginRegistration (const char *map) {}
-static CRenderModel *D_RegisterModel (const char *name) { return NULL; }
-static CBasicImage *D_RegisterSkin (const char *name) { return NULL; }
-static CBasicImage *D_FindPic (const char *name) { return NULL; }
-static void D_SetSky (const char *name, float rotate, const CVec3 &axis) {}
-static void	D_EndRegistration () {}
-
-static void D_Screenshot (int flags, const char *name)
-{
-	Com_WPrintf ("Screenshots are unsupported by this renderer\n");
-}
-
-static void	D_DrawPic (int x, int y, const char *name, int anchor, int color) {}
-static void	D_DrawStretchPic (int x, int y, int w, int h, const char *pic) {}
-static void	D_DrawChar (int x, int y, int c, int color) {}
-static void	D_TileClear (int x, int y, int w, int h, const char *name) {}
-static void	D_Fill8 (int x, int y, int w, int h, int c) {}
-static void D_Fill (int x, int y, int w, int h, unsigned rgba) {}
-static void	D_DrawTextPos (int x, int y, const char *text, unsigned rgba) {}
-static void	D_DrawTextSide (const char *text, unsigned rgba) {}
-static void	D_DrawStretchRaw8 (int x, int y, int w, int h, int cols, int rows, byte *data, unsigned *palette) {}
-static float D_GetClientLight () { return 0; }		// normal value is 150
-#endif
 
 
 static void FreeRenderer ()
@@ -635,35 +591,6 @@ static bool LoadRenderer ()
 		FreeRenderer ();
 		return false;
 	}
-
-#if 0
-	if (RE_GetCaps() & REF_CONSOLE_ONLY)
-	{
-		re.RenderFrame =	D_RenderFrame;
-		re.Screenshot =		D_Screenshot;
-		re.BeginRegistration = D_BeginRegistration;
-		re.RegisterModel =	D_RegisterModel;
-		re.RegisterSkin =	D_RegisterSkin;
-		re.RegisterPic =	D_FindPic;
-		re.SetSky =			D_SetSky;
-		re.EndRegistration = D_EndRegistration;
-
-		re.DrawPic =		D_DrawPic;
-		re.DrawStretchPic =	D_DrawStretchPic;
-		re.DrawDetailedPic = D_DrawStretchPic;
-		re.DrawChar =		D_DrawChar;
-		re.TileClear =		D_TileClear;
-		re.Fill8 =			D_Fill8;
-		re.Fill =			D_Fill;
-		re.DrawStretchRaw8 = D_DrawStretchRaw8;
-
-		re.DrawTextPos =	D_DrawTextPos;
-		re.DrawTextLeft =	D_DrawTextSide;
-		re.DrawTextRight =	D_DrawTextSide;
-
-		re.GetClientLight = D_GetClientLight;
-	}
-#endif
 
 	Com_Printf ("------------------------------------\n");
 	refActive = true;

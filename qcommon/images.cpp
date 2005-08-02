@@ -1,6 +1,6 @@
 #include "qcommon.h"
 
-// hack to allow jpeglib to work from C++ source (no "#ifdef __cplusplus ..." in jpeglib.h)
+// allow jpeglib to work from C++ source (no "#ifdef __cplusplus ..." in jpeglib.h)
 extern "C" {
 #include "../lib/jpeglib/jpeglib.h"
 }
@@ -13,43 +13,36 @@ extern "C" {
 -----------------------------------------------------------------------------*/
 
 
-typedef struct
+// NOTE: this structure have good 4-byte alignment
+struct pcxHdr_t
 {
 	char	manufacturer;
 	char	version;
 	char	encoding;
 	char	bits_per_pixel;
-	unsigned short	xmin,ymin,xmax,ymax;
-	unsigned short	hres,vres;
-	unsigned char	palette[48];
+	unsigned short xmin,ymin,xmax,ymax;
+	unsigned short hres,vres;
+	unsigned char palette[48];
 	char	reserved;
 	char	color_planes;
-	unsigned short	bytes_per_line;
-	unsigned short	palette_type;
+	unsigned short bytes_per_line;
+	unsigned short palette_type;
 	char	filler[58];
-} pcx_t;
+};
 
 
 void LoadPCX (const char *name, byte *&pic, byte *&palette, int &width, int &height)
 {
 	pic = palette = NULL;
-	pcx_t	*hdr;
+	pcxHdr_t *hdr;
 	unsigned filelen;
-	if (!(hdr = (pcx_t*) FS_LoadFile (name, &filelen))) return;
+	if (!(hdr = (pcxHdr_t*) FS_LoadFile (name, &filelen))) return;
 
-	byte *src = (byte *)(hdr + 1);
-
-//	hdr->xmin = LittleShort(hdr->xmin);
-//	hdr->ymin = LittleShort(hdr->ymin);
 	int w = LittleShort(hdr->xmax) + 1;
 	int h = LittleShort(hdr->ymax) + 1;
-//	hdr->hres = LittleShort(hdr->hres);
-//	hdr->vres = LittleShort(hdr->vres);
-//	hdr->bytes_per_line = LittleShort(hdr->bytes_per_line);
-//	hdr->palette_type = LittleShort(hdr->palette_type);
 
 	const char *errMsg = NULL;
-	if (filelen < sizeof(pcx_t) + 768 || hdr->manufacturer != 10 || hdr->version != 5 || hdr->encoding != 1 || hdr->bits_per_pixel != 8)
+	if (filelen < sizeof(pcxHdr_t) + 768 || hdr->manufacturer != 10 || hdr->version != 5 || hdr->encoding != 1 || hdr->bits_per_pixel != 8)
 		errMsg = "LoadPCX(%s): bad pcx file\n";
 	else if (w > MAX_IMG_SIZE || h > MAX_IMG_SIZE)
 		errMsg = "LoadPCX(%s): image is too large\n";
@@ -66,6 +59,7 @@ void LoadPCX (const char *name, byte *&pic, byte *&palette, int &width, int &hei
 	width = w;
 	height = h;
 
+	byte *src = (byte*)(hdr + 1);
 	byte *dst = (byte*)appMalloc (w * h);
 	pic = dst;
 
@@ -102,22 +96,25 @@ void LoadPCX (const char *name, byte *&pic, byte *&palette, int &width, int &hei
 
 #define TGA_ORIGIN_MASK		0x30
 #define TGA_BOTLEFT			0x00
-#define TGA_BOTRIGHT		0x10		// unused
+#define TGA_BOTRIGHT		0x10					// unused
 #define TGA_TOPLEFT			0x20
-#define TGA_TOPRIGHT		0x30		// unused
+#define TGA_TOPRIGHT		0x30					// unused
 
 #ifdef _WIN32
 #pragma pack(push,1)
+#else
+#error Adapt for non-Win32 platform!!!
 #endif
 
-typedef struct
+struct tgaHdr_t
 {
-	unsigned char 	id_length, colormap_type, image_type;
-	unsigned short	colormap_index, colormap_length;
-	unsigned char	colormap_size;
-	unsigned short	x_origin, y_origin, width, height;
-	unsigned char	pixel_size, attributes;
-} tgaHdr_t;
+	byte 	id_length, colormap_type, image_type;
+	unsigned short colormap_index, colormap_length;	// unused
+	byte	colormap_size;							// unused
+	unsigned short x_origin, y_origin;				// unused
+	unsigned short width, height;
+	byte	pixel_size, attributes;
+};
 
 #ifdef _WIN32
 #pragma pack(pop)
@@ -126,46 +123,27 @@ typedef struct
 
 void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 {
-	int		numColumns, numRows, bpp;
-	int		type, flags;
-	int		num, column, stride, copy;
-	byte	*file, *src, *dst;
-
 	pic = NULL;
+	byte	*file;
 	if (!(file = (byte*) FS_LoadFile (name))) return;
 
-	src = file;
-
-#define GET_BYTE(x)		x = *src++
-#define GET_SHORT(x)	x = LittleShort(*(short*)src); src += 2;
-
-	tgaHdr_t header;		//??
-	GET_BYTE(header.id_length);
-	GET_BYTE(header.colormap_type);
-	GET_BYTE(type);
-
-	GET_SHORT(header.colormap_index);
-	GET_SHORT(header.colormap_length);
-	GET_BYTE(header.colormap_size);
-	GET_SHORT(header.x_origin);
-	GET_SHORT(header.y_origin);
-	GET_SHORT(numColumns);
-	GET_SHORT(numRows);
-	GET_BYTE(bpp);
-	GET_BYTE(flags);
+	tgaHdr_t *hdr = (tgaHdr_t*)file;
 
 	const char *errMsg = NULL;
 
-	if (type != 2 && type != 10 && type != 3)
+	width  = LittleShort(hdr->width);
+	height = LittleShort(hdr->height);
+
+	if (hdr->image_type != 2 && hdr->image_type != 10 && hdr->image_type != 3)
 		errMsg = "LoadTGA(%s): Only type 2 (RGB), 3 (grey) and 10 (RGB RLE) targa RGB images supported\n";
-	else if (header.colormap_type != 0)
+	else if (hdr->colormap_type != 0)
 		errMsg = "LoadTGA(%s): colormaps not supported\n";
-	else if (bpp != 32 && bpp != 24 && !(type == 3 && bpp == 8))
+	else if (hdr->pixel_size != 32 && hdr->pixel_size != 24 && !(hdr->image_type == 3 && hdr->pixel_size == 8))
 	{
 		FS_FreeFile (file);
-		Com_DropError ("LoadTGA(%s): invalid color depth %d for format %d\n", name, bpp, type);
+		Com_DropError ("LoadTGA(%s): invalid color depth %d for format %d\n", name, hdr->pixel_size, hdr->image_type);
 	}
-	else if (numColumns > MAX_IMG_SIZE || numRows > MAX_IMG_SIZE)
+	else if (width > MAX_IMG_SIZE || height > MAX_IMG_SIZE)
 		errMsg = "LoadTGA(%s): image is too large\n";
 
 	if (errMsg)
@@ -174,39 +152,37 @@ void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 		Com_DropError (errMsg, name);
 	}
 
-	int numPixels = numColumns * numRows;
+	int numPixels = width * height;
 
-	width = numColumns;
-	height = numRows;
-
-	dst = new byte [numPixels * 4];
+	byte *src = (byte*)(hdr + 1);
+	byte *dst = new byte [numPixels * 4];
 	pic = dst;
 
-	if (header.id_length != 0)
-		src += header.id_length;		// skip image comment
+	if (hdr->id_length != 0)
+		src += hdr->id_length;		// skip image comment
 
-	if ((flags & TGA_ORIGIN_MASK) == TGA_TOPLEFT)
+	int stride;
+	if ((hdr->attributes & TGA_ORIGIN_MASK) == TGA_TOPLEFT)
 	{
 		stride = 0;
 	}
 	else
 	{
-		stride = -numColumns * 4 * 2;
-		dst = dst + (numRows - 1) * numColumns * 4;
+		stride = -width * 4 * 2;
+		dst = dst + (height - 1) * width * 4;
 	}
 
-	column = num = 0;
-	copy = 0;
+	int column = 0, num = 0;
+	int copy = 0;
 	while (num < numPixels)
 	{
 		byte	r, g, b, a;
 		int		ct;
 
 		if (copy) copy--;
-		if (type == 10 && !copy)
+		if (hdr->image_type == 10 && !copy)
 		{
-			byte f;
-			GET_BYTE(f);
+			byte f = *src++;
 			if (f & 0x80)
 				ct = f + 1 - 0x80;	// packed
 			else
@@ -218,12 +194,12 @@ void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 		else
 			ct = 1;
 
-		GET_BYTE(b);
-		if (bpp > 8)
+		b = *src++;
+		if (hdr->pixel_size > 8)
 		{
-			GET_BYTE(g);
-			GET_BYTE(r);
-			if (bpp == 32) GET_BYTE(a); else a = 255;
+			g = *src++;
+			r = *src++;
+			if (hdr->pixel_size == 32) a = *src++; else a = 255;
 		}
 		else
 		{
@@ -234,7 +210,7 @@ void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 		for (int i = 0; i < ct; i++)
 		{
 			*dst++ = r; *dst++ = g; *dst++ = b; *dst++ = a;
-			if (++column == numColumns)
+			if (++column == width)
 			{
 				column = 0;
 				dst += stride;
@@ -242,8 +218,6 @@ void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 		}
 		num += ct;
 	}
-#undef GET_SHORT
-#undef GET_BYTE
 
 	FS_FreeFile (file);
 }

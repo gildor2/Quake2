@@ -169,16 +169,18 @@ PF_Configstring
 
 ===============
 */
-static void PF_Configstring (int index, char *val)
+static void PF_Configstring (int index, const char *val)
 {
 	guard(PF_Configstring);
 	if (index < 0 || index >= MAX_CONFIGSTRINGS)
 		Com_DropError ("configstring: bad index %i\n", index);
 
-	if (!val)
-		val = "";
+	if (!val) val = "";
 
 	// change the string in sv
+	// NOTE: cannot use appStrncpyz (sv.configstrings[index], val, sizeof(sv.configstrings[index])) here,
+	//	because some configstrings are longer, than MAX_QPATH (one string uses few configstrings[]); for
+	//	example, CS_STATUSBAR
 	strcpy (sv.configstrings[index], val);
 
 	if (sv.state != ss_loading)
@@ -373,15 +375,14 @@ static void ShutdownGameMemory (void)
 
 // Memory status console command
 //?? make as global "meminfo" subsystem
-static void GZ_Stats_f (void)
+static void GZ_Stats_f ()
 {
 	Com_Printf ("Game memory:\n%d bytes in %d blocks\n", z_bytes, z_count);
 }
 
 /*-------- Wrappers for some system functions ----------------*/
 
-
-static cvar_t *PF_Cvar_Get (char *name, char *value, int flags)
+static cvar_t *PF_Cvar_Get (const char *name, char *value, int flags)
 {
 	return Cvar_Get (name, value, flags|CVAR_GAME_CREATED|CVAR_NODEFAULT);
 }
@@ -438,15 +439,15 @@ static void PPmove (pmove_t *pmove)
 #undef SV_Pmove
 #define SV_Pmove PPmove
 
-static int PSV_ModelIndex (char *name)
+static int PSV_ModelIndex (const char *name)
 {	PROF2(int)	SV_ModelIndex(name); EPROF2(6);	}
 #define SV_ModelIndex PSV_ModelIndex
 
-static int PSV_ImageIndex (char *name)
+static int PSV_ImageIndex (const char *name)
 {	PROF2(int)	SV_ImageIndex(name); EPROF2(7);	}
 #define SV_ImageIndex PSV_ImageIndex
 
-static int PSV_SoundIndex (char *name)
+static int PSV_SoundIndex (const char *name)
 {	PROF2(int)	SV_SoundIndex(name); EPROF2(8);	}
 #define SV_SoundIndex PSV_SoundIndex
 

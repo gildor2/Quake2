@@ -106,9 +106,6 @@ void CL_EntityTrace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CB
 		VectorSubtract (eCenter, delta, eCenter);
 		VectorSubtract (ent->origin, delta, eOrigin);
 
-//if (delta[0]||delta[1]||delta[2])//!!
-//Com_Printf("(%g %g %g)->(%g %g %g) =(%g %g %g):%g\n",VECTOR_ARG(cent->prev.origin),VECTOR_ARG(cent->current.origin),VECTOR_ARG(eOrigin),frac);//!!
-
 		// collision detection: line vs sphere
 		// check position of point projection on line
 		float entPos = dot (eCenter, traceDir);
@@ -240,14 +237,10 @@ int CL_PMpointcontents (const CVec3 &point)
 
 void CL_PredictMovement (void)
 {
-	int		ack, current;
-	int		frame, oldframe;
-	usercmd_t *cmd;
-	pmove_t	pm;
-	int		i, step, oldz;
-	bool	predicted;
-
 	guard(CL_PredictMovement);
+
+	if (!map_clientLoaded)		// the code below will use trace(), but map is not yet ready ...
+		return;
 
 	if (cls.state != ca_active || cl.attractloop)
 		return;
@@ -257,13 +250,13 @@ void CL_PredictMovement (void)
 
 	if (!cl_predict->integer || (cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION))
 	{	// just set angles
-		for (i = 0; i < 3; i++)
+		for (int i = 0; i < 3; i++)
 			cl.predicted_angles[i] = cl.viewangles[i] + SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[i]);
 		return;
 	}
 
-	ack = cls.netchan.incoming_acknowledged;
-	current = cls.netchan.outgoing_sequence;
+	int ack = cls.netchan.incoming_acknowledged;
+	int current = cls.netchan.outgoing_sequence;
 	if (cls.netFrameDropped) current++;
 
 	// if we are too far out of date, just freeze
@@ -275,6 +268,7 @@ void CL_PredictMovement (void)
 	}
 
 	// copy current state to pmove
+	pmove_t	pm;
 	memset (&pm, 0, sizeof(pm));
 	pm.trace = CL_PMTrace;
 	pm.pointcontents = CL_PMpointcontents;
@@ -285,13 +279,11 @@ void CL_PredictMovement (void)
 
 	// immediately after server frame, there will be 1 Pmove() cycle; till next server frame this
 	// number will be incremented up to (FPS / sv_fps)
-	predicted = false;
+	bool predicted = false;
 	while (++ack < current)
 	{
-		frame = ack & (CMD_BACKUP-1);
-		cmd = &cl.cmds[frame];
-
-		pm.cmd = *cmd;
+		int frame = ack & (CMD_BACKUP-1);
+		pm.cmd = cl.cmds[frame];
 		predictLerp = 1;
 		Pmove (&pm);
 
@@ -304,9 +296,9 @@ void CL_PredictMovement (void)
 	predictLerp = -1;			// flag to use cl.lerpfrac
 
 	//?? predict ladders
-	oldframe = (ack - 2) & (CMD_BACKUP - 1);
-	oldz = cl.predicted_origins[oldframe][2];
-	step = pm.s.origin[2] - oldz;
+	int oldframe = (ack - 2) & (CMD_BACKUP - 1);
+	int oldz = cl.predicted_origins[oldframe][2];
+	int step = pm.s.origin[2] - oldz;
 	if (step > 63 && step < 160 && (pm.s.pm_flags & PMF_ON_GROUND))
 	{
 		cl.predicted_step = step * 0.125f;

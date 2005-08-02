@@ -53,7 +53,7 @@ struct entity_t
 	int		oldframe;
 	float	backlerp;				// 0.0 = current, 1.0 = old; used for frame models only
 	float	scale;					// scale model; 0 == 1 == unscaled
-		//?? why we use backlerp instead of simple lerp ?
+			//?? why do we use backlerp instead of simple lerp ?
 	// misc
 	CVec3	size;					// for RF_BBOX only; size of box
 	// color info
@@ -164,9 +164,6 @@ struct refdef_t
 };
 
 
-// renderer flags (capabilities)
-#define REF_CONSOLE_ONLY	1		// if set -- no graphics output
-
 // screenshot flags
 #define SHOT_SMALL			1		// stretch screenshot to reduce its dimensions (levelshots, savegames etc.)
 #define SHOT_NO_2D			2		// perform screenshot before switching to 2D mode
@@ -189,7 +186,7 @@ struct refdef_t
 
 /*-------------------- Common renderer cvars -----------------------------*/
 
-void InitRendererVars (void);
+void InitRendererVars ();
 
 extern	cvar_t	*r_fullscreen;
 extern	cvar_t	*r_gamma, *r_brightness, *r_contrast, *r_saturation;

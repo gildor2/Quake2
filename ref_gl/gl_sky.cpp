@@ -14,50 +14,25 @@ static float skyMins[2][6], skyMaxs[2][6];
 
 enum {SIDE_FRONT, SIDE_BACK, SIDE_ON};
 
-static void ClipSkyPolygon (int numVerts, CVec3 *verts, int stage)
+static void ClipSkyPolygon (CVec3 *verts, int numVerts, int stage)
 {
-	float	dists[MAX_CLIP_VERTS];
-	int		sides[MAX_CLIP_VERTS];
-	CVec3	newv[2][MAX_CLIP_VERTS];	// new polys
-	int		newc[2];					// number of verts in new polys
-	int		i;
-
-	static const CVec3 skyClip[6] = {
-		{ 1, 1, 0},
-		{ 1,-1, 0},
-		{ 0,-1, 1},
-		{ 0, 1, 1},
-		{ 1, 0, 1},
-		{-1, 0, 1}
-	};
-
-	static const int vecToSt[6][3] = {	// s = [0]/[2], t = [1]/[2]
-		{-2, 3, 1},
-		{ 2, 3,-1},
-		{ 1, 3, 2},
-		{-1, 3,-2},
-		{-2,-1, 3},
-		{-2, 1,-3}
-	};
-
-
 	if (!numVerts) return;				// empty polygon
 
-	if (numVerts > MAX_CLIP_VERTS - 2)
-		Com_DropError ("ClipSkyPolygon: MAX_CLIP_VERTS hit");
+	if (numVerts > MAX_CLIP_VERTS - 2)	// may require to add 2 verts for slitting
+		Com_DropError ("ClipSkyPolygon: overflow");
+
+	int		i;
 
 	if (stage == 6)
 	{
-		// fully clipped -- update skymins/skymaxs
+		// fully clipped -- update skyMins/skyMaxs
 		// decide which face it maps to
 		CVec3 v = verts[0];
 		const CVec3 *vp = verts + 1;
 		for (i = 1; i < numVerts; i++, vp++)
 			VectorAdd (v, *vp, v);
 		CVec3	av;
-		av[0] = fabs(v[0]);
-		av[1] = fabs(v[1]);
-		av[2] = fabs(v[2]);
+		av.Set (fabs(v[0]), fabs(v[1]), fabs(v[2]));
 		// Here: v = sum vector, av = abs(v)
 		int		axis;
 		if (av[0] > av[1] && av[0] > av[2])
@@ -70,6 +45,15 @@ static void ClipSkyPolygon (int numVerts, CVec3 *verts, int stage)
 		// project new texture coords
 		for (i = 0; i < numVerts; i++, verts++)
 		{
+			static const int vecToSt[6][3] = {	// s = [0]/[2], t = [1]/[2]
+				{-2, 3, 1},
+				{ 2, 3,-1},
+				{ 1, 3, 2},
+				{-1, 3,-2},
+				{-2,-1, 3},
+				{-2, 1,-3}
+			};
+
 			int		j;
 
 			j = vecToSt[axis][2];
@@ -88,12 +72,24 @@ static void ClipSkyPolygon (int numVerts, CVec3 *verts, int stage)
 		return;
 	}
 
+	int		sides[MAX_CLIP_VERTS];
+	float	dists[MAX_CLIP_VERTS];
+
+	static const CVec3 clipNormals[6] = {
+		{ 1, 1, 0},
+		{ 1,-1, 0},
+		{ 0,-1, 1},
+		{ 0, 1, 1},
+		{ 1, 0, 1},
+		{-1, 0, 1}
+	};
+
 	bool front = false, back = false;
-	const CVec3 &norm = skyClip[stage];
-	CVec3 *vec = verts;
-	for (i = 0; i < numVerts; i++, vec++)
+	const CVec3 &norm = clipNormals[stage];
+	for (i = 0; i < numVerts; i++)
 	{
-		float d = dot (*vec, norm);
+		float d = dot (verts[i], norm);
+		dists[i] = d;
 		if (d > ON_EPSILON)
 		{
 			front = true;
@@ -106,36 +102,39 @@ static void ClipSkyPolygon (int numVerts, CVec3 *verts, int stage)
 		}
 		else
 			sides[i] = SIDE_ON;
-		dists[i] = d;
 	}
 
 	if (!front || !back)
-	{	// not clipped
-		ClipSkyPolygon (numVerts, verts, stage + 1);
+	{
+		// polygon is not clipped by current plane
+		ClipSkyPolygon (verts, numVerts, stage + 1);
 		return;
 	}
 
-	// clip it
-	sides[i] = sides[0];
-	dists[i] = dists[0];
-	verts[i] = verts[0];
-	newc[0] = newc[1] = 0;
+	// clip polygon
 
-	for (i = 0, vec = verts; i < numVerts; i++, vec++)
+	// make a vertex loop for simplification of the algorithm
+	sides[numVerts] = sides[0];
+	dists[numVerts] = dists[0];
+	verts[numVerts] = verts[0];
+	// init new polygons
+	CVec3	poly1[MAX_CLIP_VERTS], poly2[MAX_CLIP_VERTS];	// new polys
+	int		poly1size = 0, poly2size = 0;					// number of verts in new polys
+
+	const CVec3 *vec = verts;
+	for (i = 0; i < numVerts; i++, vec++)
 	{
 		switch (sides[i])
 		{
 		case SIDE_FRONT:
-			newv[0][newc[0]++] = *vec;
+			poly1[poly1size++] = *vec;
 			break;
 		case SIDE_BACK:
-			newv[1][newc[1]++] = *vec;
+			poly2[poly2size++] = *vec;
 			break;
 		case SIDE_ON:
-			newv[0][newc[0]] = *vec;
-			newc[0]++;
-			newv[1][newc[1]] = *vec;
-			newc[1]++;
+			poly1[poly1size++] = *vec;
+			poly2[poly2size++] = *vec;
 			break;
 		}
 
@@ -144,19 +143,14 @@ static void ClipSkyPolygon (int numVerts, CVec3 *verts, int stage)
 
 		// line intersects clip plane: split line to 2 parts by adding new point
 		float d = dists[i] / (dists[i] - dists[i+1]);
-		for (int j = 0; j < 3; j++)
-		{
-			float e = vec[0][j] + d * (vec[1][j] - vec[0][j]);
-			newv[0][newc[0]][j] = e;
-			newv[1][newc[1]][j] = e;
-		}
-		newc[0]++;
-		newc[1]++;
+		CVec3 tmp;
+		Lerp (vec[0], vec[1], d, tmp);
+		poly1[poly1size++] = poly2[poly2size++] = tmp;
 	}
 
 	// process new polys
-	if (newc[0]) ClipSkyPolygon (newc[0], &newv[0][0], stage + 1);
-	if (newc[1]) ClipSkyPolygon (newc[1], &newv[1][0], stage + 1);
+	if (poly1size) ClipSkyPolygon (poly1, poly1size, stage + 1);
+	if (poly2size) ClipSkyPolygon (poly2, poly2size, stage + 1);
 }
 
 
@@ -208,11 +202,9 @@ static bool SkyVisible ()
 
 void AddSkySurface (surfacePlanar_t *pl, byte flag)
 {
-	CVec3	verts[MAX_CLIP_VERTS];
-	int		i, side;
-	vertex_t *v;
-
 	if (gl_state.useFastSky) return;
+
+	int		side;
 
 	// clear bounds for all sky box planes
 	for (side = 0; side < 6; side++)
@@ -221,6 +213,9 @@ void AddSkySurface (surfacePlanar_t *pl, byte flag)
 		skyMaxs[0][side] = skyMaxs[1][side] = -BIG_NUMBER;
 	}
 	// add verts to bounds
+	CVec3 verts[MAX_CLIP_VERTS]; // buffer for polygon
+	int i;
+	vertex_t *v;
 	for (i = 0, v = pl->verts; i < pl->numVerts; i++, v++)
 	{
 		if (skyRotated)
@@ -228,7 +223,7 @@ void AddSkySurface (surfacePlanar_t *pl, byte flag)
 		else
 			VectorSubtract (v->xyz, vp.view.origin, verts[i]);
 	}
-	ClipSkyPolygon (pl->numVerts, verts, 0);
+	ClipSkyPolygon (verts, pl->numVerts, 0);
 
 	// analyse skyMins/skyMaxs, detect occupied cells
 	for (side = 0; side < 6; side++)
@@ -276,14 +271,14 @@ void AddSkySurface (surfacePlanar_t *pl, byte flag)
 static float skyDist;
 
 // In: s, t in range [-1..1]; out: tex = {s,t}, vec
-static int AddSkyVec (float s, float t, int axis, bufVertex_t **vec, bufTexCoord_t **tex)
+static int AddSkyVec (float s, float t, int axis, bufVertex_t *&vec, bufTexCoord_t *&tex)
 {
 	static const int stToVec[6][3] = {	// 1 = s, 2 = t, 3 = zFar
 		{ 3,-1, 2},
 		{-3, 1, 2},
 		{ 1, 3, 2},
 		{-1,-3, 2},
-		{-2,-1, 3},		// 0 degrees yaw, look straight up
+		{-2,-1, 3},		// look straight up
 		{ 2,-1,-3}		// look straight down
 	};
 
@@ -293,9 +288,9 @@ static int AddSkyVec (float s, float t, int axis, bufVertex_t **vec, bufTexCoord
 	for (int i = 0; i < 3; i++)
 	{
 		int tmp = stToVec[axis][i];
-		(*vec)->xyz[i] = tmp < 0 ? -b[-tmp - 1] : b[tmp - 1];
+		vec->xyz[i] = tmp < 0 ? -b[-tmp - 1] : b[tmp - 1];
 	}
-	(*vec)++;
+	vec++;
 
 	float fix = 1.0f - 1.0f / gl_skyShader->width;	// fix sky side seams
 	s = (s * fix + 1) / 2;							// [-1,1] -> [0,1]
@@ -303,9 +298,9 @@ static int AddSkyVec (float s, float t, int axis, bufVertex_t **vec, bufTexCoord
 	t = (1 - t * fix) / 2;							// [-1,1] -> [1,0]
 	t = bound(t, 0, 1);
 
-	(*tex)->tex[0] = s;
-	(*tex)->tex[1] = t;
-	(*tex)++;
+	tex->tex[0] = s;
+	tex->tex[1] = t;
+	tex++;
 
 	return gl_numVerts++;
 }
@@ -347,12 +342,12 @@ static void TesselateSkySide (int side, bufVertex_t *vec, bufTexCoord_t *tex)
 		{
 			if (*ptr != (SKY_FRUSTUM|SKY_SURF)) continue;		// this cell is not visible
 			// this 2 verts can be filled by previous line
-			if (!grid1[0])	grid1[0] = AddSkyVec (s, t, side, &vec, &tex);
-			if (!grid1[1])	grid1[1] = AddSkyVec (s + 1.0f / SKY_TESS_SIZE, t, side, &vec, &tex);
+			if (!grid1[0])	grid1[0] = AddSkyVec (s, t, side, vec, tex);
+			if (!grid1[1])	grid1[1] = AddSkyVec (s + 1.0f / SKY_TESS_SIZE, t, side, vec, tex);
 			// this vertex can be filled by previous cell
-			if (!grid2[0])	grid2[0] = AddSkyVec (s, t + 1.0f / SKY_TESS_SIZE, side, &vec, &tex);
+			if (!grid2[0])	grid2[0] = AddSkyVec (s, t + 1.0f / SKY_TESS_SIZE, side, vec, tex);
 			// this vertex cannot be filled by previous cells
-			grid2[1] = AddSkyVec (s + 1.0f / SKY_TESS_SIZE, t + 1.0f / SKY_TESS_SIZE, side, &vec, &tex);
+			grid2[1] = AddSkyVec (s + 1.0f / SKY_TESS_SIZE, t + 1.0f / SKY_TESS_SIZE, side, vec, tex);
 			// generate indexes
 			// g1(1) ----- g1+1(2)
 			//  |           |

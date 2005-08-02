@@ -1,7 +1,5 @@
 //!! I don't like "Pic" suffix: replace with "Image" ?
 
-unsigned GetCaps ();
-
 // called when the library is loaded
 bool	Init ();
 // called before the library is unloaded
@@ -37,9 +35,6 @@ void	DrawTextPos (int x, int y, const char *text, unsigned rgba = 0xFFFFFFFF);
 void	DrawTextLeft (const char *text, unsigned rgba = 0xFFFFFFFF);
 void	DrawTextRight (const char *text, unsigned rgba = 0xFFFFFFFF);
 void	DrawText3D (const CVec3 &pos, const char *text, unsigned rgba = 0xFFFFFFFF);
-
-// draw char at (x,y) (char-related coordinates)
-void	DrawConChar (int x, int y, int c, int color = C_WHITE);
 
 // lighting
 float	GetClientLight ();			// used by server to determine client visibility (AI); change ??

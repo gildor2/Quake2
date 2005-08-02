@@ -86,7 +86,7 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 {
 	guard(SV_BuildClientFrame);
 
-	int		i, l;
+	int		i;
 
 	edict_t *cl_ent = client->edict;
 	if (!cl_ent->client) return;	// not in game yet
@@ -144,8 +144,8 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 			// beams just check one point for PHS
 			if (ent->s.renderfx & RF_BEAM)
 			{
-				l = ent->clusternums[0];
-				if (!(clientphs[l >> 3] & (1 << (l & 7))))
+				int num = ent->clusternums[0];
+				if (!(clientphs[num >> 3] & (1 << (num & 7))))
 					continue;
 			}
 			else
@@ -164,8 +164,8 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 					// check individual leafs
 					for (i = 0; i < ent->num_clusters; i++)
 					{
-						l = ent->clusternums[i];
-						if (bitvector[l >> 3] & (1 << (l&7)))
+						int num = ent->clusternums[i];
+						if (bitvector[num >> 3] & (1 << (num & 7)))
 							break;
 					}
 					if (i == ent->num_clusters)
@@ -181,7 +181,7 @@ static void SV_BuildClientFrame (client_t *client, const client_frame_t *oldfram
 		// add it to the circular client_entities array
 		if (ent->s.number != e)
 		{
-			Com_DPrintf (S_RED"FIXING ENT->S.NUMBER\n");
+//			Com_DPrintf (S_RED"FIXING ENT->S.NUMBER\n");
 			ent->s.number = e;
 		}
 		// copy entity_state_t -> entityStateEx_t

@@ -155,7 +155,7 @@ struct menuMain_t : menuFramework_t
 		int		totalheight = 0;
 		for (i = 0; i < MAIN_ITEMS; i++)
 		{
-			CBasicImage *img = RE_RegisterPic (va("m_main_%s", menuNames[i]));
+			CBasicImage *img = RE_RegisterPic (va("pics/m_main_%s", menuNames[i]));
 			if (!img) continue;		//?? error
 			if (img->width > widest) widest = img->width;
 			totalheight += img->height + 12;
@@ -168,25 +168,23 @@ struct menuMain_t : menuFramework_t
 		for (i = 0; i < MAIN_ITEMS; i++)
 		{
 			//?? can use img->Draw()
-			RE_DrawPic (xoffset, ystart + i * 40 + 13,
-				va((i != cursor) ? "m_main_%s" : "m_main_%s_sel", menuNames[i])
-			);
+			RE_DrawPic (xoffset, ystart + i * 40 + 13, va("pics/m_main_%s%s", menuNames[i], i != cursor ? "" : "_sel"));
 		}
 		// draw animated cursor
 #if 0
 		RE_DrawPic (xoffset - 25, ystart + cursor * 40 + 11,
-			va("m_cursor%d", (unsigned)appRound (cls.realtime / 100) % NUM_CURSOR_FRAMES));
+			va("pics/m_cursor%d", (unsigned)appRound (cls.realtime / 100) % NUM_CURSOR_FRAMES));
 #else
-		RE_DrawPic (xoffset - 25, ystart + cursor * 40 + 11, "m_cursor");
+		RE_DrawPic (xoffset - 25, ystart + cursor * 40 + 11, "pics/m_cursor");
 #endif
 
-		CBasicImage *img = RE_RegisterPic ("m_main_plaque");
+		CBasicImage *img = RE_RegisterPic ("pics/m_main_plaque");
 		if (img)
 		{
 			//!! can use img->Draw()
 			// NOTE: size of this image used for 2 image placement
-			RE_DrawPic (xoffset - 30 - img->width, ystart, "m_main_plaque");					// "QUAKE2" vertical text
-			RE_DrawPic (xoffset - 30 - img->width, ystart + img->height + 5, "m_main_logo");	// id logo
+			RE_DrawPic (xoffset - 30 - img->width, ystart, "pics/m_main_plaque");					// "QUAKE2" vertical text
+			RE_DrawPic (xoffset - 30 - img->width, ystart + img->height + 5, "pics/m_main_logo");	// id logo
 		}
 	}
 
@@ -275,7 +273,7 @@ struct multiplayerMenu_t : menuFramework_t
 	{
 		x = viddef.width / 2 - 64;
 		nitems = 0;
-		banner = "m_banner_multiplayer";
+		banner = "multiplayer";
 
 		MENU_ACTION(join_network_server_action,0,"join network server",NULL,"menu_joinserver")
 		join_network_server_action.flags  = QMF_LEFT_JUSTIFY;
@@ -697,7 +695,7 @@ struct optionsMenu_t : menuFramework_t
 		x = viddef.width / 2;
 		y = viddef.height / 2 - 58;
 		nitems = 0;
-		banner = "m_banner_options";
+		banner = "options";
 
 		int y = 0;
 
@@ -751,7 +749,8 @@ struct optionsMenu_t : menuFramework_t
 		menuFramework_t::Draw ();
 		// draw crosshair
 		if (!crosshair->integer) return;
-		RE_DrawPic (viddef.width / 2 + 32, crosshair_box.y + y + 10, va("ch%d", crosshair->integer), ANCHOR_CENTER, crosshairColor->integer);
+		RE_DrawPic (viddef.width / 2 + 32, crosshair_box.y + y + 10, va("pics/ch%d", crosshair->integer),
+			ANCHOR_CENTER, crosshairColor->integer);
 	}
 };
 static optionsMenu_t optionsMenu;
@@ -934,7 +933,7 @@ struct gameMenu_t : menuFramework_t
 
 		x = viddef.width / 2;
 		nitems = 0;
-		banner = "m_banner_game";
+		banner = "game";
 
 		MENU_ACTION(easy_game_action,0,"easy",EasyGameFunc,NULL)
 		easy_game_action.flags  = QMF_LEFT_JUSTIFY;
@@ -999,13 +998,11 @@ struct savegameMenu_t : menuFramework_t
 				fread (m_savestrings[i], sizeof(m_savestrings[i])-1, 1, f);
 				fclose (f);
 				m_savevalid[i] = true;
-				const char *name = va("/" SAVEGAME_DIRECTORY "/save%d/shot", i);
-				if (RE_RegisterPic (name))
+				if (CBasicImage *img = RE_RegisterPic (va(SAVEGAME_DIRECTORY "/save%d/shot", i)))
 				{
 					m_shotvalid[i] = true;
 					// force renderer to refresh image
-					CBasicImage *img = RE_RegisterPic (name);
-					if (img) img->Reload ();
+					img->Reload ();
 				}
 			}
 		}
@@ -1016,7 +1013,6 @@ struct savegameMenu_t : menuFramework_t
 		int		x, w, h;
 
 		if (saveMenu) index++;
-		const char *name = va("/" SAVEGAME_DIRECTORY "/save%d/shot.pcx", index);
 		if (viddef.width >= 320)
 		{
 			x = viddef.width / 2 + 20;
@@ -1033,7 +1029,7 @@ struct savegameMenu_t : menuFramework_t
 		RE_Fill (x - 3, y - 3, w + 6, h + 6, RGB(0,0,0));
 
 		if (!m_shotvalid[index]) return;
-		RE_DrawDetailedPic (x, y, w, h, name);
+		RE_DrawDetailedPic (x, y, w, h, va(SAVEGAME_DIRECTORY "/save%d/shot", index));
 	}
 
 	static void LoadGameCallback (void *self)
@@ -1060,7 +1056,7 @@ struct savegameMenu_t : menuFramework_t
 		x = viddef.width / 2 - 120 - (viddef.width - 320) / 6;
 		y = viddef.height / 2 - 58;
 		nitems = 0;
-		banner = saveMenu ? "m_banner_save_game" : "m_banner_load_game";
+		banner = saveMenu ? "save_game" : "load_game";
 
 		Create_Savestrings ();
 
@@ -1179,7 +1175,7 @@ struct joinserverMenu_t : menuFramework_t
 	{
 		x = viddef.width / 2 - 120;
 		nitems = 0;
-		banner = "m_banner_join_server";
+		banner = "join_server";
 
 		server_title.type = MTYPE_SEPARATOR;
 		server_title.name = "connect to...";
@@ -1903,7 +1899,7 @@ struct addressBookMenu_t : menuFramework_t
 		x = viddef.width / 2 - 142;
 		y = viddef.height / 2 - 58;
 		nitems = 0;
-		banner = "m_banner_addressbook";
+		banner = "addressbook";
 
 		for (int i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
 		{
@@ -2531,7 +2527,7 @@ struct dmbrowseMenu_t : menuFramework_t
 		RE_Fill (x - THUMBNAIL_BORDER, y - THUMBNAIL_BORDER, w + THUMBNAIL_BORDER * 2,
 				h + THUMBNAIL_BORDER * 2 + THUMBNAIL_TEXT, selected ? RGB(0,0.1,0.2) : RGB(0,0,0) /* blue/black */);
 
-		RE_DrawStretchPic (x, y, w, h, va("/levelshots/%s.pcx", name));
+		RE_DrawStretchPic (x, y, w, h, va("levelshots/%s", name));
 		int max_width = w / CHAR_WIDTH;
 		strcpy (name2, name);
 		int text_width = strlen (name2);
@@ -2742,7 +2738,7 @@ CVAR_END
 		x = viddef.width / 2;
 		y = viddef.height / 2 - 58;
 		nitems = 0;
-		banner = "m_banner_video";
+		banner = "video";
 
 		// save current gamma (for cancel action)
 		old_gamma = r_gamma->value;
@@ -2881,13 +2877,13 @@ struct quitMenu_t : menuFramework_t
 
 	void Draw ()
 	{
-		CBasicImage *img = RE_RegisterPic ("quit");
+		CBasicImage *img = RE_RegisterPic ("pics/quit");
 		if (!img) return;
 		//!! can use img->Draw()
 		if (img->width >= 320 && img->width * 3 / 4 == img->height)		// this pic is for fullscreen in mode 320x240
-			RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "quit");
+			RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "pics/quit");
 		else
-			RE_DrawPic (viddef.width / 2, viddef.height / 2, "quit", ANCHOR_CENTER);
+			RE_DrawPic (viddef.width / 2, viddef.height / 2, "pics/quit", ANCHOR_CENTER);
 	}
 };
 static quitMenu_t quitMenu;

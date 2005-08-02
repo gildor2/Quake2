@@ -107,23 +107,17 @@ void GL_EnableRendering (bool enable);
 extern const unsigned colorTable[];		// C_XXX->rgba; used for DrawChar() and DrawPic() only
 
 
-//?? clean this structure: most fields used from viewPortal_t; or -- eliminate at all
 /* What we can do: (??)
- * - there is refdef_t from client/ref.h
- * - we are copied most fields to viewPortal_t
- * - but this structure is not for cross-frame work, its contents updated every frame COMPLETELY
- * - so, we need some structure (set of vars) with a static, cross-frame fields
- * 1) make client's refdef static, and add a link from portal to it
- * 2) eliminate refdef fields from portal
- * 3) client should establish more control under refdef (detect viewcluster changes, areamask changes etc)
- * 4) portals/mirrors: we needs a way to keep few visibility marks for leafs ? (useless -- can't find a point
+ * - client should establish more control under refdef (detect viewcluster changes, areamask changes etc)
+ * - portals/mirrors: we needs a way to keep few visibility marks for leafs ? (useless -- can't find a point
  *    of view source in common case (all reflections), when it will come from "inside wall" ?)
  *    -- use occlusion culling for mirrors ? (OR in most cases of Q3 portals (not mirrors), can use PVS - portals
  *    visible only within a near distance from surface)
- * 5) get visinfo from client ? (remove visinfo from renderer; call CM_ClusterPVS() when needed ?)
- * 6) PVS: can perform non-alpha-water-vis-bug avoiding in client (send combined vis)
+ * - get visinfo from client ? (remove visinfo from renderer; call CM_ClusterPVS() when needed ?)
+ * - PVS: can perform non-alpha-water-vis-bug avoiding in client (send combined vis)
  */
 
+//?? "speeds" -> "stats"
 struct drawSpeeds_t
 {
 	// geometry complexity
@@ -155,7 +149,6 @@ void	FlushTexts ();
 
 // standard names (renderer interface)
 //void	DrawChar (int x, int y, int c, int color);
-//void	DrawConChar (int x, int y, int c, int color);
 
 //void	DrawTextLeft (const char *text, unsigned rgba);
 //void	DrawTextRight (const char *text, unsigned rgba);

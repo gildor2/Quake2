@@ -12,27 +12,27 @@ namespace OpenGLDrv {
 #define MAX_INDEXES		(MAX_VERTEXES*6)
 
 
-typedef struct
+struct bufVertex_t
 {
 	CVec3	xyz;
 	float	pad;
-} bufVertex_t;
+};
 
 
-typedef struct
+struct bufTexCoord_t
 {
 	float	tex[2];
-} bufTexCoord_t;
+};
 
 // some data may be grouped by few vertexes
-typedef struct
+struct bufExtra_t
 {
 	int		numVerts;
 	int		lmWidth;
 	CVec3	normal;
 	CVec3	*axis;				// CVec3[2]
 	surfDlight_t *dlight;
-} bufExtra_t;
+};
 
 
 struct vertexBuffer_t

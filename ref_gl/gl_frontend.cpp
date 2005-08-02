@@ -1048,9 +1048,6 @@ node_t *sprModel_t::GetLeaf (refEntity_t *e)
 static void AddBeamSurfaces (const beam_t *b)
 {
 	CVec3	viewDir, tmp;
-	CVec3	axis[3];		// length, width, depth
-	CVec3	dir1, dir2;
-	color_t	color;
 
 	// compute level of detail
 	VectorSubtract (b->drawStart, vp.view.origin, viewDir);
@@ -1064,15 +1061,18 @@ static void AddBeamSurfaces (const beam_t *b)
 	numParts = bound(numParts, 1, 6);
 
 	// compute beam axis
+	CVec3	axis[3];		// length, width, depth
 	VectorSubtract (b->drawEnd, b->drawStart, axis[0]);
 	axis[0].NormalizeFast ();
 	cross (axis[0], viewDir, axis[1]);
 	axis[1].NormalizeFast ();
 	cross (axis[0], axis[1], axis[2]);			// already normalized
 
+	CVec3	dir1, dir2;
 	VectorScale (axis[1], b->radius, dir2);
 	float angle = 0;
-	float angleStep = 0.5f / numParts;				// 0.5 -- PI/2
+	float angleStep = 0.5f / numParts;			// 0.5 -- PI/2
+	color_t	color;
 	color.rgba = gl_config.tbl_8to32[b->color.c[0]];
 	color.c[3] = b->color.c[3];
 	for (int i = 0; i < numParts; i++)
@@ -1156,9 +1156,6 @@ static void AddCylinderSurfaces (const beam_t *b)
 	float	angle, anglePrev, angleStep;
 	for (int i = 0; i < CYLINDER_PARTS; i++)
 	{
-		float	sx, cx;
-		CVec3	dir1, dir2;
-
 		// cylinder will be drawn with 2 passes, from far to near
 		// (for correct image when used shader with depthwrites)
 		switch (i)
@@ -1186,6 +1183,9 @@ static void AddCylinderSurfaces (const beam_t *b)
 			angle = 0.25f;
 		else
 			angle += angleStep;
+
+		float	sx, cx;
+		CVec3	dir1, dir2;
 
 		sx = SIN_FUNC(anglePrev) * b->radius;
 		cx = COS_FUNC(anglePrev) * b->radius;
@@ -1260,8 +1260,6 @@ static void AddStarBeam (const beam_t *b)
 	float angle = 0;
 	for (int i = 0; i < BEAM_PARTS; i++)
 	{
-		CVec3	dir1, dir2;
-
 		surfacePoly_t *p = (surfacePoly_t*)AllocDynamicMemory (sizeof(surfacePoly_t) + (4-1) * sizeof(vertexPoly_t));
 		if (!p)		// out of dynamic memory
 			return;
@@ -1271,6 +1269,7 @@ static void AddStarBeam (const beam_t *b)
 
 		float sx = SIN_FUNC(angle) * b->radius;
 		float cx = COS_FUNC(angle) * b->radius;
+		CVec3	dir1, dir2;
 		VectorScale (axis[1], cx, dir1);
 		VectorMA (dir1, sx, axis[2]);
 		VectorNegate (dir1, dir2);
@@ -1476,11 +1475,11 @@ static node_t *WalkBspTree ()
 		lastLeaf = node;
 		gl_speeds.frustLeafs++;
 
-		node->frame = drawFrame;
-		node->frustumMask = frustumMask;
-		node->drawEntity = NULL;
+		node->frame        = drawFrame;
+		node->frustumMask  = frustumMask;
+		node->drawEntity   = NULL;
 		node->drawParticle = NULL;
-		node->drawBeam = NULL;
+		node->drawBeam     = NULL;
 		// mark dlights on leaf surfaces
 		if (dlightMask)
 		{
@@ -1813,10 +1812,9 @@ static void DrawFlares ()
 		// setup color
 		if (style != 128)
 		{
-			int		r, g, b;
-			r = color.c[0] * style >> 7;
-			g = color.c[1] * style >> 7;
-			b = color.c[2] * style >> 7;
+			int r = color.c[0] * style >> 7;
+			int g = color.c[1] * style >> 7;
+			int b = color.c[2] * style >> 7;
 			if (style > 128)
 				NORMALIZE_COLOR255(r, g, b);
 			color.c[0] = r;

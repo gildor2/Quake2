@@ -107,26 +107,23 @@ struct refEntity_t
 
 	CVec3	center, size2;				// bounding box: center and (mins-maxs)/2
 	float	radius;
-	union {								//?? union is useless
-		struct {
-		/*-------- entity with model --------*/
-			// position info
-			CCoords	coord;
-			bool	worldMatrix;
-			bool	mirror;
-			byte	frustumMask;		//?? remove
-			CVec3	modelvieworg;		// vp.view.origin in model coordinate system
-			float	modelMatrix[4][4];	// modelview matrix
-			float	drawScale;			// 1 == original size
-			// info for frame lerping
-			int		frame, oldFrame;
-			float	backLerp;
-			// shading
-			int		skinNum;			// number of default (inline) skin
-			CModelSkin *skin;			// if not NULL, used for model shading
-		};
-	};
+	/*-------- entity with model --------*/
+	// position info
+	CCoords	coord;
+	bool	worldMatrix;
+	bool	mirror;
+	byte	frustumMask;				//?? remove
+	CVec3	modelvieworg;				// vp.view.origin in model coordinate system
+	float	modelMatrix[4][4];			// modelview matrix
+	float	drawScale;					// 1 == original size
+	// info for frame lerping
+	int		frame, oldFrame;
+	float	backLerp;
+	// shading
+	int		skinNum;					// number of default (inline) skin
+	CModelSkin *skin;					// if not NULL, used for model shading
 
+	/*---------- shading ----------------*/
 	shader_t	*customShader;			// one shader for all surfaces
 	color_t		shaderColor;			// for "rgbGen/alphaGen entity"
 	double		time;					// time for shader effects

@@ -119,7 +119,6 @@ static cvar_t	*fs_debug;
 #define DEBUG_LOG(msg)	if (fs_debug->integer) Com_Printf(S_GREEN"%s", msg);
 
 
-static cvar_t	*fs_basedir;
 static cvar_t	*fs_configfile;
 #ifdef CD_PATH
 static cvar_t	*fs_cddir;
@@ -400,14 +399,16 @@ static void ListPakDirectory (pack_t *pak, const char *dir, const char *mask, in
 				if (appMatchWildcard (dirlist->name, mask, true))
 				{
 					strcpy (addbufptr, dirlist->name);		//?? can use va()
-					List->CreateAndInsert (addbuf);
+					if (!List->Find (addbuf))				//?? not optimal: if Insert() -- Find() twice
+						List->CreateAndInsert (addbuf);
 				}
 		if (flags & LIST_FILES)
 			for (const packFile_t *filelist = d->cFile.First(); filelist; filelist = d->cFile.Next(filelist))
 				if (appMatchWildcard (filelist->name, mask, true))
 				{
 					strcpy (addbufptr, filelist->name);
-					List->CreateAndInsert (addbuf);
+					if (!List->Find (addbuf))				//?? not optimal
+						List->CreateAndInsert (addbuf);
 				}
 	}
 }
@@ -1220,7 +1221,7 @@ void FS_LoadGameConfig ()
 
 	const char *gdir = Cvar_VariableString ("gamedir");
 	// game = "" => gdir = "baseq2"
-	appSprintf (ARRAY_ARG(dir), "%s/%s", fs_basedir->string, *gdir ? gdir : BASEDIRNAME);
+	appSprintf (ARRAY_ARG(dir), "./%s", *gdir ? gdir : BASEDIRNAME);
 
 	FILE	*f;
 	if (f = fopen (va("%s/%s", dir, fs_configfile->string), "r"))
@@ -1248,8 +1249,6 @@ Sets the gamedir and path to a different directory.
 */
 bool FS_SetGamedir (const char *dir)
 {
-	char	path[MAX_OSPATH];
-
 	if (strchr (dir, '/') || strchr (dir, '\\') || strchr (dir, ':'))
 	{
 		Com_Printf ("Gamedir should be a single filename, not a path\n");
@@ -1260,14 +1259,15 @@ bool FS_SetGamedir (const char *dir)
 		dir = BASEDIRNAME;
 
 	// check for valid game directory
-	if (!Sys_FileExists (va("%s/%s/*", fs_basedir->string, dir), LIST_FILES|LIST_DIRS))
+	if (!Sys_FileExists (va("./%s/*", dir), LIST_FILES|LIST_DIRS))
 	{
 		Com_WPrintf ("Invalid game directory: %s\n", dir);
 		return false;
 	}
 
 	// check for game directory change
-	appSprintf (ARRAY_ARG(path), "%s/%s", fs_basedir->string, dir);
+	char path[MAX_OSPATH];
+	appSprintf (ARRAY_ARG(path), "./%s", dir);
 	if (!strcmp (path, fs_gamedir))
 		return true;		// directory is not changed (should return something another to avoid FS_Restart ??)
 
@@ -1295,7 +1295,7 @@ bool FS_SetGamedir (const char *dir)
 		if (fs_cddir->string[0])
 			AddGameDirectory (va("%s/%s", fs_cddir->string, dir));
 #endif
-		AddGameDirectory (va("%s/%s", fs_basedir->string, dir));
+		AddGameDirectory (va("./%s", dir));
 	}
 
 	return true;
@@ -1820,12 +1820,9 @@ FS_InitFilesystem
 void FS_InitFilesystem ()
 {
 CVAR_BEGIN(vars)
-	// basedir <path>  -- allows the game to run from outside the data tree
-	CVAR_FULL(&fs_basedir, "basedir", ".", CVAR_NOSET),
 	CVAR_FULL(&fs_configfile, "cfgfile", CONFIGNAME, CVAR_NOSET),
-	// cddir <path>	   -- logically concatenates the cddir after the basedir for
-	// allows the game to run from outside the data tree
 #ifdef CD_PATH
+	// cddir <path>	-- allow game to be partially installed - read rest of data from CD
 	CVAR_FULL(&fs_cddir, "cddir", "", CVAR_NOSET),
 #endif
 	CVAR_FULL(&fs_gamedirvar, "game", "", CVAR_SERVERINFO|CVAR_LATCH),
@@ -1850,7 +1847,7 @@ CVAR_END
 #endif
 
 	// start up with baseq2 by default
-	AddGameDirectory (va("%s/"BASEDIRNAME, fs_basedir->string));
+	AddGameDirectory ("./"BASEDIRNAME);
 
 	// any set gamedirs will be freed up to here
 	fs_base_searchpaths = fs_searchpaths.First();

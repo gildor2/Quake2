@@ -5,14 +5,7 @@
 #define CIN_SPEED	14		// do not change: video format depends on in (number of sound samples)
 							// to change video playback speed, edit RunCinematic() function (CIN_MSEC_PER_FRAME)
 
-//?? remove?
-typedef struct
-{
-	byte	*data;
-	int		count;
-} cblock_t;
-
-typedef struct
+struct cinematics_t
 {
 	// sound info
 	bool	restartSound;
@@ -28,7 +21,7 @@ typedef struct
 
 	// file data
 	QFILE	*file;						// if NULL, display pic
-	char	imageName[MAX_OSPATH];		// used for "map image.pcx"
+	char	imageName[MAX_QPATH];		// used for "map image.pcx"
 
 	int		frame;
 	double	frameTime;					// == cls.realtime for current cinematic frame; float precision for correct
@@ -43,13 +36,13 @@ typedef struct
 	// fields for Huffman decoding
 	int		*huffNodes;					// [256][256][2];
 	int		numHuffNodes[256];
-} cinematics_t;
+};
 
 static cinematics_t cin;
 
 
 //?? helper function (should place to files.cpp)
-static int ReadCinInt (void)
+static int ReadCinInt ()
 {
 	int		tmp;
 	FS_Read (&tmp, 4, cin.file);
@@ -61,6 +54,13 @@ static int ReadCinInt (void)
 /*-----------------------------------------------------------------------------
 	Decompression of .CIN files
 -----------------------------------------------------------------------------*/
+
+struct cblock_t
+{
+	byte	*data;
+	int		count;
+};
+
 
 static int SmallestNode1 (int numhnodes, bool *h_used, int *h_count)
 {
@@ -85,7 +85,7 @@ static int SmallestNode1 (int numhnodes, bool *h_used, int *h_count)
 
 // .CIN compression uses huffman encoding with dependency on previous byte
 // This function will create 256 huffman tables (for each previous byte)
-static void InitHuffTable (void)
+static void InitHuffTable ()
 {
 	//?? if make cin dynamically allocated, can place huffNodes[] as static
 	cin.huffNodes = new int [256*256*2];		// 128K integers
@@ -172,7 +172,7 @@ static void HuffDecompress (cblock_t *in, cblock_t *out, byte *buffer, int count
 	Cinematic control
 -----------------------------------------------------------------------------*/
 
-static void FreeCinematic (void)
+static void FreeCinematic ()
 {
 	if (cin.buf[0])		delete cin.buf[0];
 	if (cin.buf[1])		delete cin.buf[1];
@@ -263,7 +263,7 @@ static bool ReadNextFrame (byte *buffer)
 }
 
 
-static void RunCinematic (void)
+static void RunCinematic ()
 {
 	guard(RunCinematic);
 
@@ -316,7 +316,7 @@ static void RunCinematic (void)
 }
 
 
-bool SCR_DrawCinematic (void)
+bool SCR_DrawCinematic ()
 {
 	if (!cl.cinematicActive)
 		return false;
@@ -334,19 +334,12 @@ bool SCR_DrawCinematic (void)
 }
 
 
-void SCR_PlayCinematic (char *filename)
+void SCR_PlayCinematic (const char *filename)
 {
 	guard(SCR_PlayCinematic);
 
 	// make sure CD isn't playing music
 	CDAudio_Stop ();
-
-	if (RE_GetCaps() & REF_CONSOLE_ONLY)
-	{
-		// no cinematic for text-only mode
-		SCR_StopCinematic ();
-		return;
-	}
 
 	FreeCinematic ();
 
@@ -354,12 +347,11 @@ void SCR_PlayCinematic (char *filename)
 	if (ext && strcmp (ext, ".cin"))
 	{
 		// not ".cin" extension - try static image
-		appCopyFilename (cin.imageName, filename, sizeof(cin.imageName));
-		cin.imageName[ext - filename] = 0;	// cut extension
+		appSprintf (ARRAY_ARG(cin.imageName), "pics/%s", filename);
 		CBasicImage *img = RE_RegisterPic (cin.imageName);
 		if (img)
 		{
-			cin.width = img->width;
+			cin.width  = img->width;
 			cin.height = img->height;
 		}
 		else

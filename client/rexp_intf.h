@@ -2,7 +2,6 @@
 
 typedef struct {
 	int		struc_size;
-	unsigned	(*GetCaps) ();
 	bool	(*Init) ();
 	void	(*Shutdown) (bool complete);
 	void	(*BeginRegistration) (const char *map);
@@ -28,7 +27,6 @@ typedef struct {
 	void	(*DrawTextLeft) (const char *text, unsigned rgba);
 	void	(*DrawTextRight) (const char *text, unsigned rgba);
 	void	(*DrawText3D) (const CVec3 &pos, const char *text, unsigned rgba);
-	void	(*DrawConChar) (int x, int y, int c, int color);
 	float	(*GetClientLight) ();
 } refExport_t;
 
@@ -36,10 +34,6 @@ typedef struct {
 
 extern refExport_t re;
 
-inline unsigned RE_GetCaps ()
-{
-	return re.GetCaps ();
-}
 inline bool RE_Init ()
 {
 	return re.Init ();
@@ -140,10 +134,6 @@ inline void RE_DrawText3D (const CVec3 &pos, const char *text, unsigned rgba = 0
 {
 	re.DrawText3D (pos, text, rgba);
 }
-inline void RE_DrawConChar (int x, int y, int c, int color = C_WHITE)
-{
-	re.DrawConChar (x, y, c, color);
-}
 inline float RE_GetClientLight ()
 {
 	return re.GetClientLight ();
@@ -156,7 +146,6 @@ namespace OpenGLDrv
 #include "renderer.h"
 };
 
-#define RE_GetCaps	OpenGLDrv::GetCaps
 #define RE_Init	OpenGLDrv::Init
 #define RE_Shutdown	OpenGLDrv::Shutdown
 #define RE_BeginRegistration	OpenGLDrv::BeginRegistration
@@ -182,7 +171,6 @@ namespace OpenGLDrv
 #define RE_DrawTextLeft	OpenGLDrv::DrawTextLeft
 #define RE_DrawTextRight	OpenGLDrv::DrawTextRight
 #define RE_DrawText3D	OpenGLDrv::DrawText3D
-#define RE_DrawConChar	OpenGLDrv::DrawConChar
 #define RE_GetClientLight	OpenGLDrv::GetClientLight
 
 #endif // SINGLE_RENDERER

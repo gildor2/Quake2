@@ -445,7 +445,7 @@ static void S_SpatializeOrigin (const CVec3 &origin, float master_vol, float dis
 	}
 
 	// calculate stereo seperation and distance attenuation
-    CVec3 source_vec;
+	CVec3 source_vec;
 	VectorSubtract(origin, listener_origin, source_vec);
 
 	float dist = source_vec.NormalizeFast ();
@@ -676,32 +676,21 @@ Entchannel 0 will never override a playing sound
 */
 void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, float fvol, float attenuation, float timeofs)
 {
-	sfxcache_t	*sc;
-	int			vol;
-	playsound_t	*ps, *sort;
-	int			start;
-
-	if (RE_GetCaps() & REF_CONSOLE_ONLY)
-		return;
-
-	if (!sound_started)
-		return;
-
-	if (!sfx)
-		return;
+	if (!sound_started) return;
+	if (!sfx) return;
 
 	if (sfx->name[0] == '*')
 		sfx = GetPlayerSound (&cl_entities[entnum].current, sfx->name);
 
 	// make sure the sound is loaded
-	sc = S_LoadSound (sfx);
+	sfxcache_t *sc = S_LoadSound (sfx);
 	if (!sc)
 		return;		// couldn't load the sound's data
 
-	vol = appRound (fvol*255);
+	int vol = appRound (fvol*255);
 
 	// make the playsound_t
-	ps = S_AllocPlaysound ();
+	playsound_t *ps = S_AllocPlaysound ();
 	if (!ps)
 		return;
 
@@ -720,16 +709,16 @@ void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, 
 	ps->sfx = sfx;
 
 	// drift s_beginofs
-	start = appRound (cl.frame.servertime * 0.001 * dma.speed + s_beginofs);
+	int start = appRound (cl.frame.servertime / 1000.0f * dma.speed + s_beginofs);
 	if (start < paintedtime)
 	{
 		start = paintedtime;
-		s_beginofs = start - appRound (cl.frame.servertime * 0.001 * dma.speed);
+		s_beginofs = start - appRound (cl.frame.servertime / 1000.0f * dma.speed);
 	}
 	else if (start > paintedtime + 0.3 * dma.speed)
 	{
 		start = appRound (paintedtime + 0.1 * dma.speed);
-		s_beginofs = start - appRound (cl.frame.servertime * 0.001 * dma.speed);
+		s_beginofs = start - appRound (cl.frame.servertime / 1000.0f * dma.speed);
 	}
 	else
 	{
@@ -742,10 +731,10 @@ void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, 
 		ps->begin = appRound (start + timeofs * dma.speed);
 
 	// sort into the pending sound list
-	for (sort = s_pendingplays.next ;
-		sort != &s_pendingplays && sort->begin < ps->begin ;
-		sort = sort->next)
-			;
+	for (playsound_t *sort = s_pendingplays.next;
+		 sort != &s_pendingplays && sort->begin < ps->begin;
+		 sort = sort->next)
+		; // empty
 
 	ps->next = sort;
 	ps->prev = sort->prev;
@@ -840,62 +829,48 @@ that are automatically started, stopped, and merged together
 as the entities are sent to the client
 ==================
 */
-void S_AddLoopSounds (void)
+void S_AddLoopSounds ()
 {
-	int			i, j;
-	int			sounds[MAX_EDICTS];
-	int			left, right, left_total, right_total;
-	channel_t	*ch;
-	sfx_t		*sfx;
-	sfxcache_t	*sc;
-	int			num;
+	int		i;
+	int		num;
 	clEntityState_t	*ent;
 
-	if (cl_paused->integer)
-		return;
+	if (cl_paused->integer) return;
+	if (cls.state != ca_active) return;
+	if (!cl.sound_ambient) return;
 
-	if (cls.state != ca_active)
-		return;
-
-	if (!cl.sound_prepped)
-		return;
-
-	for (i=0 ; i<cl.frame.num_entities ; i++)
+	int sounds[MAX_EDICTS];
+	for (i = 0; i < cl.frame.num_entities; i++)
 	{
 		num = (cl.frame.parse_entities + i)&(MAX_PARSE_ENTITIES-1);
 		ent = &cl_parse_entities[num];
 		sounds[i] = ent->sound;
 	}
 
-	for (i=0 ; i<cl.frame.num_entities ; i++)
+	for (i = 0; i < cl.frame.num_entities; i++)
 	{
-		if (!sounds[i])
-			continue;
-
-		sfx = cl.sound_precache[sounds[i]];
-		if (!sfx)
-			continue;		// bad sound effect
-		sc = sfx->cache;
-		if (!sc)
-			continue;
+		if (!sounds[i]) continue;
+		sfx_t *sfx = cl.sound_precache[sounds[i]];
+		if (!sfx) continue;		// bad sound effect
+		sfxcache_t *sc = sfx->cache;
+		if (!sc) continue;
 
 		num = (cl.frame.parse_entities + i)&(MAX_PARSE_ENTITIES-1);
 		ent = &cl_parse_entities[num];
 
 		// find the total contribution of all sounds of this type
-		S_SpatializeOrigin (ent->origin, 255.0, SOUND_LOOPATTENUATE,
-			&left_total, &right_total);
-		for (j=i+1 ; j<cl.frame.num_entities ; j++)
+		int left_total, right_total;
+		S_SpatializeOrigin (ent->origin, 255.0, SOUND_LOOPATTENUATE, &left_total, &right_total);
+		for (int j = i + 1; j < cl.frame.num_entities; j++)
 		{
-			if (sounds[j] != sounds[i])
-				continue;
+			if (sounds[j] != sounds[i]) continue;
 			sounds[j] = 0;	// don't check this again later
 
 			num = (cl.frame.parse_entities + j)&(MAX_PARSE_ENTITIES-1);
 			ent = &cl_parse_entities[num];
 
-			S_SpatializeOrigin (ent->origin, 255.0, SOUND_LOOPATTENUATE,
-				&left, &right);
+			int left, right;
+			S_SpatializeOrigin (ent->origin, 255.0, SOUND_LOOPATTENUATE, &left, &right);
 			left_total += left;
 			right_total += right;
 		}
@@ -904,9 +879,8 @@ void S_AddLoopSounds (void)
 			continue;		// not audible
 
 		// allocate a channel
-		ch = S_PickChannel(0, 0);
-		if (!ch)
-			return;
+		channel_t *ch = S_PickChannel(0, 0);
+		if (!ch) return;
 
 		if (left_total > 255)
 			left_total = 255;
@@ -1022,13 +996,7 @@ Called once each time through the main loop
 */
 void S_Update(const CVec3 &origin, const CVec3 &right)
 {
-	int			i;
-	int			total;
-	channel_t	*ch;
-	channel_t	*combine;
-
-	if (RE_GetCaps() & REF_CONSOLE_ONLY)
-		return;
+	int		i;
 
 	if (!sound_started) return;
 
@@ -1039,10 +1007,10 @@ void S_Update(const CVec3 &origin, const CVec3 &right)
 	listener_origin = origin;
 	listener_right = right;
 
-	combine = NULL;
+	channel_t *combine = NULL;
 
 	// update spatialization for dynamic sounds
-	ch = channels;
+	channel_t *ch = channels;
 	for (i = 0; i < MAX_CHANNELS; i++, ch++)
 	{
 		if (!ch->sfx)
@@ -1068,7 +1036,7 @@ void S_Update(const CVec3 &origin, const CVec3 &right)
 	//
 	if (s_show->integer == 2)
 	{
-		total = 0;
+		int total = 0;
 		ch = channels;
 		for (i=0 ; i<MAX_CHANNELS; i++, ch++)
 			if (ch->sfx && (ch->leftvol || ch->rightvol) )

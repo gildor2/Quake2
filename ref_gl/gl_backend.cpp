@@ -29,11 +29,11 @@ static cvar_t	*gl_spyShader;
 	Data
 -----------------------------------------------------------------------------*/
 
-typedef struct
+struct bufTexCoordSrc_t
 {
 	float	tex[2];
 	float	lm[2];
-} bufTexCoordSrc_t;
+};
 
 
 static shader_t		*currentShader;
@@ -67,8 +67,8 @@ static surfaceInfo_t *sortedSurfaces[MAX_SCENE_SURFACES];
 static void ProcessShaderDeforms (shader_t *sh)
 {
 	int		i, j;
-	deformParms_t *deform;
-	bufExtra_t	*ex;
+	const deformParms_t *deform;
+	bufExtra_t *ex;
 
 	if (!sh->numDeforms)
 		return;
@@ -87,7 +87,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 
 				for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 				{
-					CVec3 &norm = ex->normal;
+					const CVec3 &norm = ex->normal;
 					int k;
 					if (P.amp)
 					{
@@ -126,7 +126,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 				bufTexCoordSrc_t *tex = &srcTexCoord[0];
 				for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
 				{
-					CVec3 &norm = ex->normal;
+					const CVec3 &norm = ex->normal;
 					for (int k = 0; k < ex->numVerts; k++, vec++, tex++)
 					{
 						//?? taken from Q3; change function?
@@ -226,8 +226,6 @@ static void ProcessShaderDeforms (shader_t *sh)
 static void GenerateColorArray (shaderStage_t *st)
 {
 	int		i;
-	unsigned rgba;
-	byte	a;
 	color_t	*src, *dst;
 
 	guard(GenerateColorArray);
@@ -238,9 +236,11 @@ static void GenerateColorArray (shaderStage_t *st)
 	switch (st->rgbGenType)
 	{
 	case RGBGEN_CONST:
-		rgba = st->rgbaConst.rgba;
-		for (i = 0; i < gl_numVerts; i++, dst++)
-			dst->rgba = rgba;
+		{
+			unsigned rgba = st->rgbaConst.rgba;
+			for (i = 0; i < gl_numVerts; i++, dst++)
+				dst->rgba = rgba;
+		}
 		break;
 	case RGBGEN_EXACT_VERTEX:
 		memcpy (dst, src, gl_numVerts * sizeof(color_t));
@@ -306,9 +306,11 @@ static void GenerateColorArray (shaderStage_t *st)
 	switch (st->alphaGenType)
 	{
 	case ALPHAGEN_CONST:
-		a = st->rgbaConst.c[3];
-		for (i = 0; i < gl_numVerts; i++, dst++)
-			dst->c[3] = a;
+		{
+			byte a = st->rgbaConst.c[3];
+			for (i = 0; i < gl_numVerts; i++, dst++)
+				dst->c[3] = a;
+		}
 		break;
 	case ALPHAGEN_VERTEX:
 		for (i = 0; i < gl_numVerts; i++, src++, dst++)
@@ -342,7 +344,6 @@ static void GenerateColorArray (shaderStage_t *st)
 				for (i = 0; i < ex->numVerts; i++, vec++, dst++)
 				{
 					CVec3	v;
-
 					VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
 					v.NormalizeFast ();
 					float d = dot (v, norm);
@@ -714,8 +715,8 @@ static void PreprocessShader (shader_t *sh)
 				else
 					st->glState = BLEND(1,1);		// src + dst
 				// set rgba
-				st->alphaGenType = ALPHAGEN_CONST;
-				st->rgbGenType = RGBGEN_CONST;
+				st->alphaGenType   = ALPHAGEN_CONST;
+				st->rgbGenType     = RGBGEN_CONST;
 				st->rgbaConst.rgba = vp.dlights[i].c.rgba;
 				// set tcGen
 				st->tcGenType = (tcGenType_t)(TCGEN_DLIGHT0 + num);
@@ -744,7 +745,7 @@ static void PreprocessShader (shader_t *sh)
 					st->glState = BLEND(1,1);		// src + dst
 				// set rgba
 				st->alphaGenType = ALPHAGEN_CONST;
-				st->rgbGenType = RGBGEN_CONST;
+				st->rgbGenType   = RGBGEN_CONST;
 				if (style)
 				{
 					byte c = vp.lightStyles[style].value;
@@ -827,28 +828,28 @@ static void PreprocessShader (shader_t *sh)
 		numTmpStages = 2;
 		//---- 1st stage: color.red == fillrate
 		// color
-		tmpSt[0].rgbGenType = RGBGEN_CONST;
-		tmpSt[0].alphaGenType = ALPHAGEN_CONST;
-		tmpSt[0].rgbaConst.rgba = RGB255(sh->numStages * 16, 0, 0);
+		tmpSt[0].rgbGenType      = RGBGEN_CONST;
+		tmpSt[0].alphaGenType    = ALPHAGEN_CONST;
+		tmpSt[0].rgbaConst.rgba  = RGB255(sh->numStages * 16, 0, 0);
 		// texture
-		tmpSt[0].tcGenType = TCGEN_TEXTURE;	// any
-		tmpSt[0].numTcMods = 0;
+		tmpSt[0].tcGenType       = TCGEN_TEXTURE;	// any
+		tmpSt[0].numTcMods       = 0;
 		tmpSt[0].numAnimTextures = 1;
-		tmpSt[0].mapImage[0] = NULL;
+		tmpSt[0].mapImage[0]     = NULL;
 		// glState
-		tmpSt[0].glState = BLEND(1,1)|GLSTATE_NODEPTHTEST;
+		tmpSt[0].glState         = BLEND(1,1)|GLSTATE_NODEPTHTEST;
 		//---- 2nd stage: display wireframe with non-red color
 		// color
-		tmpSt[1].rgbGenType = RGBGEN_CONST;
-		tmpSt[1].alphaGenType = ALPHAGEN_CONST;
-		tmpSt[1].rgbaConst.rgba = RGB255(0, 10, 10);
+		tmpSt[1].rgbGenType      = RGBGEN_CONST;
+		tmpSt[1].alphaGenType    = ALPHAGEN_CONST;
+		tmpSt[1].rgbaConst.rgba  = RGB255(0, 10, 10);
 		// texture
-		tmpSt[1].tcGenType = TCGEN_TEXTURE;	// any
-		tmpSt[1].numTcMods = 0;
+		tmpSt[1].tcGenType       = TCGEN_TEXTURE;	// any
+		tmpSt[1].numTcMods       = 0;
 		tmpSt[1].numAnimTextures = 1;
-		tmpSt[1].mapImage[0] = NULL;
+		tmpSt[1].mapImage[0]     = NULL;
 		// glState
-		tmpSt[1].glState = BLEND(1,1)|GLSTATE_NODEPTHTEST|GLSTATE_POLYGON_LINE;
+		tmpSt[1].glState         = BLEND(1,1)|GLSTATE_NODEPTHTEST|GLSTATE_POLYGON_LINE;
 	}
 
 	bool entityLightingDone = false;
@@ -960,9 +961,9 @@ static void PreprocessShader (shader_t *sh)
 	{
 		for (i = 0; i < numTmpStages; i++, st++, pass++)
 		{
-			pass->glState = st->glState;
-			pass->numStages = 1;
-			pass->stages = st;
+			pass->glState    = st->glState;
+			pass->numStages  = 1;
+			pass->stages     = st;
 			pass->colorStage = static_cast<shaderStage_t*>(st);
 			st->texEnv = st->isDoubleRGBA ?
 				TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX :
@@ -988,9 +989,9 @@ static void PreprocessShader (shader_t *sh)
 			tmuUsed = 0;
 			// start new pass
 			numRenderPasses++;
-			pass->glState = st[0].glState;
-			pass->numStages = 1;
-			pass->stages = st;
+			pass->glState    = st[0].glState;
+			pass->numStages  = 1;
+			pass->stages     = st;
 			pass->colorStage = static_cast<shaderStage_t*>(st);
 			st[0].texEnv = st->isDoubleRGBA ?
 				TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX :
@@ -1881,8 +1882,8 @@ void BK_DrawScene ()
 	for (index = 0, si = sortedSurfaces; index < vp.numSurfaces; index++, si++)
 	{
 		surfaceBase_t *surf = (*si)->surf;
-		unsigned code = (*si)->sort;
-		unsigned shNum = (code >> SHADERNUM_SHIFT) & SHADERNUM_MASK;
+		unsigned code   = (*si)->sort;
+		unsigned shNum  = (code >> SHADERNUM_SHIFT) & SHADERNUM_MASK;
 		unsigned entNum = (code >> ENTITYNUM_SHIFT) & ENTITYNUM_MASK;
 		unsigned dlightMask;
 		if ((code >> DLIGHTNUM_SHIFT) & DLIGHTNUM_MASK)
@@ -2109,12 +2110,7 @@ void BK_BeginFrame ()
 {
 	if (!renderingEnabled) return;
 
-	if (gl_config.consoleOnly)
-	{
-		glClearColor (0, 0.2, 0, 1);
-		glClear (GL_COLOR_BUFFER_BIT);
-	}
-	else if (gl_clear->integer && !gl_state.useFastSky)
+	if (gl_clear->integer && !gl_state.useFastSky)
 	{
 		glClearColor (0.1, 0.6, 0.3, 1);
 		glClear (GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);

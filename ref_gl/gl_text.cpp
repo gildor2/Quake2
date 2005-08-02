@@ -24,13 +24,6 @@ void DrawChar (int x, int y, int c, int color)
 }
 
 
-void DrawConChar (int x, int y, int c, int color)
-{
-	if (c == ' ') return;
-	BK_DrawText ((char*)&c, 1, x * CHAR_WIDTH, y * CHAR_HEIGHT, CHAR_WIDTH, CHAR_HEIGHT, colorTable[color]);
-}
-
-
 /*-----------------------------------------------------------------------------
 	Static (change name?) text output
 -----------------------------------------------------------------------------*/
@@ -56,7 +49,7 @@ static int	textbufPos;			// position for next record
 static bool	textbufEmpty;		// count of records in buffer (0 or greater)
 static textRec_t *lastTextRec;
 
-static int nextLeft_y = TOP_TEXT_POS;
+static int nextLeft_y  = TOP_TEXT_POS;
 static int nextRight_y = TOP_TEXT_POS;
 
 
@@ -70,9 +63,8 @@ void ClearTexts ()
 //?? later (CFont): implement as CFont method
 static void GetTextExtents (const char *s, int &width, int &height)
 {
-	int		x, w, h;
-	x = w = 0;
-	h = CHARSIZE_Y;
+	int x = 0, w = 0;
+	int h = CHARSIZE_Y;
 	while (char c = *s++)
 	{
 		if (c == '\n')
@@ -116,8 +108,8 @@ void DrawTextPos (int x, int y, const char *text, unsigned rgba)
 
 	if (textbufEmpty)
 	{	// 1st record - perform initialization
-		lastTextRec = NULL;
-		textbufPos = 0;
+		lastTextRec  = NULL;
+		textbufPos   = 0;
 		textbufEmpty = false;
 	}
 
@@ -135,11 +127,11 @@ void DrawTextPos (int x, int y, const char *text, unsigned rgba)
 			char *textCopy = (char*)(rec + 1);
 			memcpy (textCopy, text, len);
 			textCopy[len] = 0;
-			rec->x = x;
-			rec->y = y;
-			rec->text = textCopy;
+			rec->x      = x;
+			rec->y      = y;
+			rec->text   = textCopy;
 			rec->c.rgba = rgba;
-			rec->next = NULL;
+			rec->next   = NULL;
 
 			if (lastTextRec) lastTextRec->next = rec;
 			lastTextRec = rec;

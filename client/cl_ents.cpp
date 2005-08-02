@@ -372,7 +372,7 @@ void CL_ParseFrame (void)
 			SCR_EndLoadingPlaque (false);	// get rid of loading plaque
 			CL_Pause (false);
 		}
-		cl.sound_prepped = true;			// can start mixing ambient sounds
+		cl.sound_ambient = true;			// can start mixing ambient sounds
 
 		// fire entity events
 		CL_FireEntityEvents (&cl.frame);

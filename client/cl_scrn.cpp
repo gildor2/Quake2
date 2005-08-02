@@ -174,7 +174,6 @@ static int		chat_bufferlen = 0;
 static void DrawChatInput ()
 {
 	// edit current player message
-	if (RE_GetCaps() & REF_CONSOLE_ONLY) return;
 	if (cls.key_dest != key_message) return;
 
 	int x;
@@ -271,7 +270,7 @@ static const char *map_levelshot;
 
 void SCR_SetLevelshot (const char *name)
 {
-	static const char defLevelshot[] = "/pics/levelshot";
+	static const char defLevelshot[] = "pics/levelshot";
 
 	if (!name)
 	{
@@ -286,7 +285,7 @@ void SCR_SetLevelshot (const char *name)
 			tmp = tmp ? ++tmp : mapname;
 		else
 			tmp++;				// skip '/'
-		name = va("/levelshots/%s", tmp);
+		name = va("levelshots/%s", tmp);
 	}
 
 	if (map_levelshot && stricmp (map_levelshot, defLevelshot))
@@ -322,7 +321,7 @@ void SCR_BeginLoadingPlaque ()
 {
 	guard(SCR_BeginLoadingPlaque);
 	S_StopAllSounds_f ();
-	cl.sound_prepped = false;		// don't play ambients
+	cl.sound_ambient = false;		// don't play ambients
 	CDAudio_Stop ();
 	cls.loading = true;
 	cls.disable_servercount = cl.servercount;
@@ -359,14 +358,6 @@ static void DrawGUI (bool allowNotifyArea)
 
 	Con_CheckResize ();
 
-	// draw full-screen console in "console-only" mode and exit
-	if (RE_GetCaps() & REF_CONSOLE_ONLY)
-	{
-		cls.key_dest = key_console;
-		Con_DrawConsole (1.0f);
-		return;
-	}
-
 	// decide on the height of the console
 	if (cls.key_dest == key_console || cls.keep_console)
 		conDesired = bound(con_maxSize->value, 0.1, 1);
@@ -398,7 +389,7 @@ static void DrawGUI (bool allowNotifyArea)
 		if (DEVELOPER)
 		{
 			// draw full-screen console before loading plaque if in developer mode
-			RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
+			RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "pics/conback");
 			Con_DrawConsole (1.0f);
 #define DEV_SHOT_FRAC	4		// part of screen for levelshot when loading in "developer" mode
 			if (map_levelshot)
@@ -411,8 +402,8 @@ static void DrawGUI (bool allowNotifyArea)
 				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, map_levelshot);
 			else
 			{
-				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
-				RE_DrawPic (viddef.width / 2, viddef.height / 2, "loading", ANCHOR_CENTER);
+				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "pics/conback");
+				RE_DrawPic (viddef.width / 2, viddef.height / 2, "pics/loading", ANCHOR_CENTER);
 			}
 			if (!conCurrent)
 				Con_DrawNotify (false);		// do not draw notify area when console is visible too
@@ -448,13 +439,6 @@ static void DrawGUI (bool allowNotifyArea)
 void SCR_ShowConsole (bool show, bool noAnim)
 {
 	guard(SCR_ShowConsole);
-
-	if (RE_GetCaps() & REF_CONSOLE_ONLY)
-	{
-		// ignore "show" arg
-		cls.key_dest = key_console;
-		return;
-	}
 
 	if (!show)
 	{
@@ -652,7 +636,7 @@ static void DrawHUDString (char *string, int x0, int y, int centerwidth, int col
 }
 
 
-static void DrawField (int x, int y, int color, int width, int value)
+static void DrawField (int x, int y, bool color, int width, int value)
 {
 	if (width < 1) return;
 
@@ -669,9 +653,9 @@ static void DrawField (int x, int y, int color, int width, int value)
 	while (*ptr && len--)
 	{
 		if (*ptr == '-')
-			RE_DrawPic (x, y, va("%snum_minus", color ? "a" : ""));
+			RE_DrawPic (x, y, va("pics/%snum_minus", color ? "a" : ""));
 		else
-			RE_DrawPic (x, y, va("%snum_%c", color ? "a" : "", *ptr));
+			RE_DrawPic (x, y, va("pics/%snum_%c", color ? "a" : "", *ptr));
 		x += HUDCHAR_WIDTH;
 		ptr++;
 	}
@@ -708,7 +692,7 @@ static void DrawInventory ()
 	int x = (viddef.width-256)/2;
 	int y = (viddef.height-240)/2;
 
-	RE_DrawPic (x, y+CHAR_HEIGHT, "inventory");
+	RE_DrawPic (x, y+CHAR_HEIGHT, "pics/inventory");
 
 	y += 3 * CHAR_HEIGHT;
 	x += 3 * CHAR_WIDTH;
@@ -793,7 +777,7 @@ static void ExecuteLayoutString (const char *s)
 			if (value >= MAX_IMAGES)
 				Com_DropError ("Pic >= MAX_IMAGES");
 			if (cl.configstrings[CS_IMAGES+value])
-				RE_DrawPic (x, y, cl.configstrings[CS_IMAGES+value]);
+				RE_DrawPic (x, y, va("pics/%s", cl.configstrings[CS_IMAGES+value]));
 		}
 		else if (!strcmp (token, "client"))
 		{	// draw a deathmatch client block
@@ -842,45 +826,45 @@ static void ExecuteLayoutString (const char *s)
 		}
 		else if (!strcmp (token, "picn"))
 		{	// draw a pic from a name
-			RE_DrawPic (x, y, COM_Parse (s));
+			RE_DrawPic (x, y, va("pics/%s", COM_Parse (s)));
 		}
 		else if (!strcmp (token, "num"))
 		{	// draw a number
 			int width = atoi (COM_Parse (s));
 			value = cl.frame.playerstate.stats[atoi (COM_Parse (s))];
-			DrawField (x, y, 0, width, value);
+			DrawField (x, y, false, width, value);
 		}
 		else if (!strcmp (token, "hnum"))
 		{	// health number
-			int		color;
+			bool	color;
 
 			value = cl.frame.playerstate.stats[STAT_HEALTH];
 			if (value > 25)
-				color = 0;	// green
+				color = false;	// green
 			else if (value > 0)
 				color = (cl.frame.serverframe>>2) & 1;		// flash
 			else
-				color = 1;
+				color = true;
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 1)
-				RE_DrawPic (x, y, "field_3");
+				RE_DrawPic (x, y, "pics/field_3");
 
 			DrawField (x, y, color, 3, value);
 		}
 		else if (!strcmp (token, "anum"))
 		{	// ammo number
-			int		color;
+			bool	color;
 
 			value = cl.frame.playerstate.stats[STAT_AMMO];
 			if (value > 5)
-				color = 0;	// green
+				color = false;	// green
 			else if (value >= 0)
 				color = (cl.frame.serverframe>>2) & 1;		// flash
 			else
 				continue;	// negative number = don't show
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 4)
-				RE_DrawPic (x, y, "field_3");
+				RE_DrawPic (x, y, "pics/field_3");
 
 			DrawField (x, y, color, 3, value);
 		}
@@ -890,9 +874,9 @@ static void ExecuteLayoutString (const char *s)
 			if (value < 1) continue;
 
 			if (cl.frame.playerstate.stats[STAT_FLASHES] & 2)
-				RE_DrawPic (x, y, "field_3");
+				RE_DrawPic (x, y, "pics/field_3");
 
-			DrawField (x, y, 0, 3, value);		// color = green
+			DrawField (x, y, false, 3, value);		// color = green
 		}
 		else if (!strcmp (token, "stat_string"))
 		{
@@ -927,19 +911,12 @@ static void ExecuteLayoutString (const char *s)
 //?? remove
 void SCR_TouchPics ()
 {
-	if (RE_GetCaps() & REF_CONSOLE_ONLY)
-		return;
-
-//	for (int i = 0; i < 2; i++)
-//		for (int j = 0 ; j < 11 ; j++)
-//			RE_RegisterPic (sb_nums[i][j]);		// can remember image handles and use later (faster drawing, but need API extension ??)
-
 	int ch_num = crosshair->integer;
 	if (ch_num)
 	{
 		if (ch_num > 0)
 		{
-			appSprintf (ARRAY_ARG(crosshair_pic), "ch%d", crosshair->integer);
+			appSprintf (ARRAY_ARG(crosshair_pic), "pics/ch%d", crosshair->integer);
 			if (!RE_RegisterPic (crosshair_pic))
 				ch_num = -1;								// invalid value
 		}
@@ -986,13 +963,13 @@ void SCR_UpdateScreen ()
 
 				// show disconnected icon when server is not responding
 				if (cl.overtime > 200)
-					RE_DrawPic (64, 0, "net");
+					RE_DrawPic (64, 0, "pics/net");
 
 				DrawCenterString ();
 
 				// draw pause
 				if (cl_paused->integer)
-					RE_DrawPic (viddef.width / 2, viddef.height / 2, "pause", ANCHOR_CENTER);
+					RE_DrawPic (viddef.width / 2, viddef.height / 2, "pics/pause", ANCHOR_CENTER);
 
 				DrawChatInput ();
 			}
@@ -1001,7 +978,7 @@ void SCR_UpdateScreen ()
 		{
 			// 3D not rendered - draw background
 			if (!cls.loading || !map_levelshot)
-				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "conback");
+				RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, "pics/conback");
 			if (cls.state == ca_disconnected && !cls.loading)
 				M_ForceMenuOn ();
 		}

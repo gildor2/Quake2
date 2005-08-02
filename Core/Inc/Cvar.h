@@ -2,6 +2,8 @@
 
 // cvar_t->flags values
 
+//?? check: CVAR_LATCH: rename, change behaviour; CVAR_ARCHIVE: rename to CVAR_CONFIG?
+
 #define	CVAR_ARCHIVE		0x00001	// set to cause it to be saved to config file (config.cfg)
 
 /*?? may be, remove game dependency (leave Quake2 consts), because Quake3 game library will create

@@ -17,7 +17,6 @@ namespace OpenGLDrv {
 
 drawSpeeds_t gl_speeds;
 
-static unsigned ref_flags;
 #ifndef STATIC_BUILD
 refImport_t	ri;
 #endif
@@ -227,8 +226,8 @@ static bool SetMode ()
 	if (GLimp_SetMode (&vid_width, &vid_height, gl_mode->integer, r_fullscreen->integer != 0))
 	{
 		gl_config.prevMode = gl_mode->integer;
-		gl_config.prevBPP = gl_bitdepth->integer;
-		gl_config.prevFS = gl_config.fullscreen;
+		gl_config.prevBPP  = gl_bitdepth->integer;
+		gl_config.prevFS   = gl_config.fullscreen;
 		return true;
 	}
 
@@ -259,9 +258,6 @@ bool Init ()
 
 	memset (&gl_config, 0, sizeof(gl_config));
 
-	gl_config.consoleOnly = Cvar_Get ("gl_console_only", "0", 0)->integer != 0;
-	ref_flags = 0;
-	if (gl_config.consoleOnly) ref_flags |= REF_CONSOLE_ONLY;
 #ifndef STATIC_BUILD
 	Swap_Init ();
 #endif
@@ -335,21 +331,21 @@ bool Init ()
 
 	if (GL_SUPPORT(QGL_ARB_TEXTURE_COMPRESSION))
 	{
-		gl_config.formatSolid = GL_COMPRESSED_RGB_ARB;
-		gl_config.formatAlpha = GL_COMPRESSED_RGBA_ARB;
+		gl_config.formatSolid  = GL_COMPRESSED_RGB_ARB;
+		gl_config.formatAlpha  = GL_COMPRESSED_RGBA_ARB;
 		gl_config.formatAlpha1 = GL_COMPRESSED_RGBA_ARB;
 //		glHint (GL_TEXTURE_COMPRESSION_HINT_ARB, GL_NICEST);
 	}
 	else if (GL_SUPPORT(QGL_S3_S3TC))
 	{
-		gl_config.formatSolid = GL_RGB4_S3TC;
-		gl_config.formatAlpha = GL_RGBA4_S3TC;
+		gl_config.formatSolid  = GL_RGB4_S3TC;
+		gl_config.formatAlpha  = GL_RGBA4_S3TC;
 		gl_config.formatAlpha1 = GL_RGBA_S3TC;
 	}
 	else if (GL_SUPPORT(QGL_EXT_TEXTURE_COMPRESSION_S3TC))
 	{
-		gl_config.formatSolid = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-		gl_config.formatAlpha = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;	// DXT5 - compressed alpha; DXT3 - uncompressed alpha
+		gl_config.formatSolid  = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+		gl_config.formatAlpha  = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;	// DXT5 - compressed alpha; DXT3 - uncompressed alpha
 		gl_config.formatAlpha1 = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;	// RGBA DXT1 - 1bit alpha (bugs with GF FX5200), DXT5 - 8bit alpha
 	}
 
@@ -467,8 +463,8 @@ void BeginFrame (double time)
 	if ((r_gamma->modified || r_contrast->modified || r_brightness->modified) && gl_config.deviceSupportsGamma)
 	{
 		SetupGamma ();
-		r_gamma->modified = false;
-		r_contrast->modified = false;
+		r_gamma->modified      = false;
+		r_contrast->modified   = false;
 		r_brightness->modified = false;
 	}
 
@@ -718,11 +714,9 @@ void RenderFrame (refdef_t *fd)
 	SetFrustum ();							// setup frustum planes
 	DrawPortal ();							// collect data for rasterization
 
-	if (vp.numSurfaces)
-	{
-		SetPerspective ();					// prepare projection matrix using some info from DrawPortal()
-		BK_DrawScene ();					// rasterization
-	}
+	// NOTE: vp.numSurfaces may be 0, when only sky is visible
+	SetPerspective ();						// prepare projection matrix using some info from DrawPortal()
+	BK_DrawScene ();						// rasterization
 
 	/*------------ debug info ------------*/
 
@@ -775,19 +769,11 @@ void RenderFrame (refdef_t *fd)
 
 /*--------------------- 2D picture output ---------------------*/
 
-//?? place func from renderer to client (or, at least, name parsing: if not started with '/' - add "pics/")
-static shader_t *FindPic (const char *name, bool force)
+static shader_t *FindPic (const char *name, bool force)	//?? rename
 {
-	const char *s;
-
-	if (name[0] != '/' && name[0] != '\\')	//?? is '\\' needed
-		s = va("pics/%s.pcx", name);
-	else
-		s = name+1;		// skip '/'
-
 	int flags = SHADER_ALPHA|SHADER_CLAMP;
 	if (!force) flags |= SHADER_CHECK;
-	return FindShader (s, flags);
+	return FindShader (name, flags);
 }
 
 void Fill8 (int x, int y, int w, int h, int c)
@@ -800,18 +786,9 @@ void Fill (int x, int y, int w, int h, unsigned rgba)
 	BK_DrawPic (gl_identityLightShader, x, y, w, h, 0, 0, 0, 0, rgba);
 }
 
-//?? see comment for FindPic()
 void TileClear (int x, int y, int w, int h, const char *name)
 {
-	const char *s;
-
-	// FindPic() without SHADER_CLAMP
-	if (name[0] != '/')
-		s = va("pics/%s.pcx", name);
-	else
-		s = name+1;		// skip '/'
-
-	shader_t *sh = FindShader (s, SHADER_CHECK);
+	shader_t *sh = FindShader (name, SHADER_CHECK);
 	if (sh)
 		BK_DrawPic (sh, x, y, w, h, (float)x / sh->width, (float)y / sh->height,
 			(float)(x + w) / sh->width, (float)(y + h) / sh->height);
@@ -929,11 +906,6 @@ float GetClientLight ()
 	return 150;		//!! need to implement (outside renderer !!)
 }
 
-
-unsigned GetCaps ()
-{
-	return ref_flags;
-}
 
 /*-----------------------------------------------------------------------------
 	Renderer interface

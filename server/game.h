@@ -1,64 +1,45 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-
-// game.h -- game dll information visible to server
+// This is a modified (for compile compatibility) version of game.h from quake2 SDK
+// Most changes:
+//	- vec3_t -> CVec3
+//	- added "const" for "char*"
 
 #define	GAME_API_VERSION	3
 
 // edict->svflags
 
-#define	SVF_NOCLIENT			0x00000001	// don't send entity to clients, even if it has effects
-#define	SVF_DEADMONSTER			0x00000002	// treat as CONTENTS_DEADMONSTER for collision
-#define	SVF_MONSTER				0x00000004	// treat as CONTENTS_MONSTER for collision
+#define	SVF_NOCLIENT		0x00000001	// don't send entity to clients, even if it has effects
+#define	SVF_DEADMONSTER		0x00000002	// treat as CONTENTS_DEADMONSTER for collision
+#define	SVF_MONSTER			0x00000004	// treat as CONTENTS_MONSTER for collision
 
 // edict->solid values
 
 typedef enum
 {
-	SOLID_NOT,			// no interaction with other objects
-	SOLID_TRIGGER,		// only touch when inside, after moving
-	SOLID_BBOX,			// touch on edge
-	SOLID_BSP			// bsp clip, touch on edge
+	SOLID_NOT,							// no interaction with other objects
+	SOLID_TRIGGER,						// only touch when inside, after moving
+	SOLID_BBOX,							// touch on edge
+	SOLID_BSP							// bsp clip, touch on edge
 } solid_t;
 
-//===============================================================
 
-// link_t is only used for entity area links now
-typedef struct link_s
+// link_t is only used for entity area links
+struct link_t
 {
-	struct link_s *prev, *next;
-} link_t;
+	struct link_t *prev, *next;
+};
 
 #define	MAX_ENT_CLUSTERS	16
-
 
 typedef struct edict_s edict_t;
 typedef struct gclient_s gclient_t;
 
-
 struct gclient_s
 {
-	player_state_t	ps;		// communicated by server to clients
+	player_state_t	ps;					// communicated by server to clients
 	int				ping;
-	// the game dll can add anything it wants after
-	// this point in the structure
+
+	// the game dll can add anything it wants after this point in the structure
+	// ...
 };
 
 
@@ -70,40 +51,37 @@ struct edict_s
 	int			linkcount;
 
 	// FIXME: move these fields to a server private sv_entity_t
-	link_t		area;				// linked to a division node or leaf
+	link_t		area;					// linked to a division node or leaf
 
-	int			num_clusters;		// if -1, use headnode instead
+	int			num_clusters;			// if -1, use headnode instead
 	int			clusternums[MAX_ENT_CLUSTERS];
-	int			headnode;			// unused if num_clusters != -1
+	int			headnode;				// unused if num_clusters != -1
 	int			areanum, areanum2;
 
-	//================================
-
-	int			svflags;			// SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
-	CBox		bounds;				// old: vec3_t mins, maxs
-	CBox		absBounds;			// old: vec3_t absmin, absmax
+	int			svflags;				// SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
+	CBox		bounds;
+	CBox		absBounds;
 	CVec3		size;
 	solid_t		solid;
 	int			clipmask;
 	edict_t		*owner;
 
-	// the game dll can add anything it wants after
-	// this point in the structure
+	// the game dll can add anything it wants after this point in the structure
+	// ...
 };
 
 
-//===============================================================
+/*-----------------------------------------------------------------------------
+	Functions provided by the main engine
+-----------------------------------------------------------------------------*/
 
-//
-// functions provided by the main engine
-//
-typedef struct
+struct game_import_t
 {
 	// special messages
-	void	(*bprintf) (int printlevel, const char *fmt, ...);					// ORIGINAL: not "const"
-	void	(*dprintf) (const char *fmt, ...);									// ORIGINAL: not "const"
-	void	(*cprintf) (edict_t *ent, int printlevel, const char *fmt, ...);	// ORIGINAL: not "const"
-	void	(*centerprintf) (edict_t *ent, const char *fmt, ...);				// ORIGINAL: not "const"
+	void	(*bprintf) (int printlevel, const char *fmt, ...);
+	void	(*dprintf) (const char *fmt, ...);
+	void	(*cprintf) (edict_t *ent, int printlevel, const char *fmt, ...);
+	void	(*centerprintf) (edict_t *ent, const char *fmt, ...);
 	void	(*sound) (edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
 #if 0
 	void	(*positioned_sound) (vec3_t origin, edict_t *ent, int channel, int soundinedex, float volume, float attenuation, float timeofs);
@@ -115,29 +93,22 @@ typedef struct
 	// and misc data like the sky definition and cdtrack.
 	// All of the current configstrings are sent to clients when
 	// they connect, and changes are sent to all connected clients.
-	void	(*configstring) (int num, char *string);
+	void	(*configstring) (int num, const char *string);
 
-	void	(*error) (const char *fmt, ...);									// ORIGINAL: not "const"
+	void	(*error) (const char *fmt, ...);
 
 	// the *index functions create configstrings and some internal server state
-	int		(*modelindex) (char *name);
-	int		(*soundindex) (char *name);
-	int		(*imageindex) (char *name);
+	int		(*modelindex) (const char *name);
+	int		(*soundindex) (const char *name);
+	int		(*imageindex) (const char *name);
 
 	void	(*setmodel) (edict_t *ent, char *name);
 
 	// collision detection
-#if 0
-	trace_t	(*trace) (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passent, int contentmask);
-	int		(*pointcontents) (vec3_t point);
-	qboolean (*inPVS) (vec3_t p1, vec3_t p2);
-	qboolean (*inPHS) (vec3_t p1, vec3_t p2);
-#else
 	trace_t	(*trace) (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, const CVec3 &end, edict_t *passent, int contentmask);
 	int		(*pointcontents) (const CVec3 &point);
 	qboolean (*inPVS) (const CVec3 &p1, const CVec3 &p2);
 	qboolean (*inPHS) (const CVec3 &p1, const CVec3 &p2);
-#endif
 	void	(*SetAreaPortalState) (int portalnum, qboolean open);
 	qboolean (*AreasConnected) (int area1, int area2);
 
@@ -145,20 +116,12 @@ typedef struct
 	// if it is not passed to linkentity.  If the size, position, or
 	// solidity changes, it must be relinked.
 	void	(*linkentity) (edict_t *ent);
-	void	(*unlinkentity) (edict_t *ent);		// call before removing an interactive edict
-#if 0
-	int		(*BoxEdicts) (vec3_t mins, vec3_t maxs, edict_t **list,	int maxcount, int areatype);
-#else
+	void	(*unlinkentity) (edict_t *ent);			// call before removing an interactive edict
 	int		(*BoxEdicts) (const CVec3 &mins, const CVec3 &maxs, edict_t **list, int maxcount, int areatype);
-#endif
-	void	(*Pmove) (pmove_t *pmove);		// player movement code common with client prediction
+	void	(*Pmove) (pmove_t *pmove);				// player movement code common with client prediction
 
 	// network messaging
-#if 0
-	void	(*multicast) (vec3_t origin, multicast_t to);
-#else
 	void	(*multicast) (const CVec3 &origin, multicast_t to);
-#endif
 	void	(*unicast) (edict_t *ent, qboolean reliable);
 	void	(*WriteChar) (int c);
 	void	(*WriteByte) (int c);
@@ -166,13 +129,8 @@ typedef struct
 	void	(*WriteLong) (int c);
 	void	(*WriteFloat) (float f);
 	void	(*WriteString) (char *s);
-#if 0
-	void	(*WritePosition) (vec3_t pos);	// some fractional bits
-	void	(*WriteDir) (vec3_t pos);		// single byte encoded, very coarse
-#else
 	void	(*WritePosition) (const CVec3 &pos);	// some fractional bits
 	void	(*WriteDir) (const CVec3 *dir);			// single byte encoded, very coarse; dir may be NULL => {0,0,0}
-#endif
 	void	(*WriteAngle) (float f);
 
 	// managed memory allocation
@@ -181,37 +139,39 @@ typedef struct
 	void	(*FreeTags) (int tag);
 
 	// console variable interaction
-	cvar_t	*(*cvar) (char *var_name, char *value, int flags);
-	cvar_t	*(*cvar_set) (const char *var_name, const char *value);			// ORIGINAL: not "const"
-	cvar_t	*(*cvar_forceset) (const char *var_name, const char *value);	// ORIGINAL: not "const"
+	cvar_t	*(*cvar) (const char *var_name, char *value, int flags);
+	cvar_t	*(*cvar_set) (const char *var_name, const char *value);
+	cvar_t	*(*cvar_forceset) (const char *var_name, const char *value);
 
 	// ClientCommand and ServerCommand parameter access
-	int		(*argc) (void);
+	int		(*argc) ();
 	char	*(*argv) (int n);
-	char	*(*args) (void);	// concatenation of all argv >= 1
+	char	*(*args) ();							// concatenation of all argv >= 1
 
 	// add commands to the server console as if they were typed in
 	// for map changing, etc
-	void	(*AddCommandString) (const char *text);							// ORIGINAL: not "const"
+	void	(*AddCommandString) (const char *text);
 
 	void	(*DebugGraph) (float value, int color);
-} game_import_t;
+};
 
-//
-// functions exported by the game subsystem
-//
-typedef struct
+
+/*-----------------------------------------------------------------------------
+	Functions exported by the game subsystem
+-----------------------------------------------------------------------------*/
+
+struct game_export_t
 {
 	int		apiversion;
 
 	// the init function will only be called when a game starts,
 	// not each time a level is loaded.  Persistant data for clients
 	// and the server can be allocated in init
-	void	(*Init) (void);
-	void	(*Shutdown) (void);
+	void	(*Init) ();
+	void	(*Shutdown) ();
 
 	// each new level entered will cause a call to SpawnEntities
-	void	(*SpawnEntities) (const char *mapname, const char *entstring, const char *spawnpoint);	// ORIGINAL: not "const"
+	void	(*SpawnEntities) (const char *mapname, const char *entstring, const char *spawnpoint);
 
 	// Read/Write Game is for storing persistant cross level information
 	// about the world state and the clients.
@@ -232,13 +192,13 @@ typedef struct
 	void	(*ClientCommand) (edict_t *ent);
 	void	(*ClientThink) (edict_t *ent, usercmd_t *cmd);
 
-	void	(*RunFrame) (void);
+	void	(*RunFrame) ();
 
 	// ServerCommand will be called when an "sv <command>" command is issued on the
 	// server console.
 	// The game can issue gi.argc() / gi.argv() commands to get the rest
 	// of the parameters
-	void	(*ServerCommand) (void);
+	void	(*ServerCommand) ();
 
 	// global variables shared between game and server
 
@@ -250,6 +210,4 @@ typedef struct
 	int		edict_size;
 	int		num_edicts;		// current number, <= max_edicts
 	int		max_edicts;
-} game_export_t;
-
-game_export_t *GetGameApi (game_import_t *import);
+};

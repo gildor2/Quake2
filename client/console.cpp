@@ -1,5 +1,10 @@
 #include "client.h"
 
+/*?? TODO:
+ *	- console: smooth scroll with adaptive speed (different keys scrolls by different line counts)
+ *	- notify: smooth scroll, smooth fade of background when notify area disappears
+ */
+
 #define	NUM_CON_TIMES 6
 
 #define	CON_TEXTSIZE 32768
@@ -205,11 +210,9 @@ static int FindLine (int lineno)
 	else if (lineno == con.notif.line)
 		return con.notif.pos;
 
-	int		i;
-
 	if (lineno == con.current)
 	{
-		i = con.endpos - con.x;
+		int i = con.endpos - con.x;
 		if (i < 0) i += CON_TEXTSIZE;
 		return i;
 	}
@@ -223,18 +226,18 @@ static int FindLine (int lineno)
 
 	if (!size) return -1;						// no text in buffer
 
-	i = con.startpos;
+	int pos = con.startpos;
 	int x = 0;
 	while (size--)
 	{
-		char c = con.text[i++];
-		if (i >= CON_TEXTSIZE) i -= CON_TEXTSIZE;
+		char c = con.text[pos++];
+		if (pos >= CON_TEXTSIZE) pos -= CON_TEXTSIZE;
 
 		if (c == '\n' || c == WRAP_CHAR || ++x >= linewidth)
 		{
 			x = 0;
 			line++;
-			if (line == lineno) return i;
+			if (line == lineno) return pos;
 		}
 	}
 	return -1; // should not happen
@@ -347,11 +350,10 @@ void Con_Print (const char *txt)
 
 static void DrawInput ()
 {
-	int		y, shift;
-
 	const char *text = editLine;
 
 	// prestep if horizontally scrolling
+	int shift;
 	if (editPos >= linewidth)
 	{
 		shift = 1 + editPos - linewidth;
@@ -361,16 +363,12 @@ static void DrawInput ()
 		shift = 0;
 
 	// draw it
-	if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
-		y = con.vislines - CHAR_HEIGHT - 14;
-	else
-		y = (viddef.height / CHAR_HEIGHT) - 2;
+	int y = con.vislines - CHAR_HEIGHT - 14;
 
 	bool eoln = false;
 	for (int i = 0; i < linewidth; i++, text++)
 	{
 		char	c;
-		int		color;
 
 		int x = (i+1) * CHAR_WIDTH;
 		if (!eoln)
@@ -379,26 +377,12 @@ static void DrawInput ()
 			if (!c) eoln = true;
 		}
 		if (eoln) c = ' ';
-		// draw blinking cursor
-		if ((i == editPos  - shift) && (cls.realtime >> 8) & 1 && cls.key_dest != key_menu)
-		{
-#define CURSOR_HEIGHT	(CHAR_HEIGHT/4)
-			if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
-			{
-				RE_DrawChar (x, y, c);
-				RE_Fill (x, y+CHAR_HEIGHT-CURSOR_HEIGHT, CHAR_WIDTH, CURSOR_HEIGHT, RGBA(1,0.2,0.3,0.8));
-				continue;
-			}
-			c = 11;									// cursor char
-			color = C_GREEN;
-		}
-		else
-			color = C_WHITE;						// do not colorize input
 		// draw char
-		if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
-			RE_DrawChar (x, y, c, color);
-		else
-			RE_DrawConChar (i+1, y, c, color);
+		RE_DrawChar (x, y, c);
+		// draw blinking cursor
+#define CURSOR_HEIGHT	(CHAR_HEIGHT/4)
+		if ((i == editPos  - shift) && (cls.realtime >> 8) & 1 && cls.key_dest == key_console)
+			RE_Fill (x, y+CHAR_HEIGHT-CURSOR_HEIGHT, CHAR_WIDTH, CURSOR_HEIGHT, RGBA(1,0.2,0.3,0.8));
 	}
 }
 
@@ -422,7 +406,7 @@ void Con_DrawNotify (bool drawBack)
 			pos = FindLine (i);		// else (pos!=-1) - already searched on previous loop
 			// cache info
 			con.notif.line = i;
-			con.notif.pos = pos;
+			con.notif.pos  = pos;
 		}
 
 		if (pos == -1) continue;	// should not happen
@@ -468,13 +452,10 @@ void Con_DrawConsole (float frac)
 		lines = viddef.height;
 
 	// draw the background
-	if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
-	{
-//		RE_Fill (0, 0, viddef.width, lines, RGBA(0,0,0.02,Cvar_VariableValue("con_alpha")));
-		RE_Fill (0, 0, viddef.width, lines, RGBA(0,0,0.02,0.75));
-		if (lines < viddef.height)
-			RE_Fill (0, lines - 1, viddef.width, 1, RGBA(0.2,0.2,0.2,0.8));
-	}
+//	RE_Fill (0, 0, viddef.width, lines, RGBA(0,0,0.02,Cvar_VariableValue("con_alpha")));
+	RE_Fill (0, 0, viddef.width, lines, RGBA(0,0,0.02,0.75));
+	if (lines < viddef.height)
+		RE_Fill (0, lines - 1, viddef.width, 1, RGBA(0.2,0.2,0.2,0.8));
 
 	// Variables for console-only mode
 	int dx = viddef.width / CHAR_WIDTH;
@@ -484,25 +465,13 @@ void Con_DrawConsole (float frac)
 	static const char version[] = APPNAME " v" STR(VERSION);
 	i = sizeof(version) - 1;
 	for (x = 0; x < i; x++)
-		if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
-			RE_DrawChar (viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, version[x], C_GREEN);
-		else
-			RE_DrawConChar (dx - i - 1 + x, dy - 1, version[x], C_GREEN);
+		RE_DrawChar (viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, version[x], C_GREEN);
 
 	// draw the text
 	con.vislines = lines;
 
-	int rows, y;
-	if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
-	{
-		rows = (lines - CHAR_HEIGHT/2) / CHAR_HEIGHT - 2;	// rows of text to draw
-		y = lines - 30;
-	}
-	else
-	{
-		rows = dy - 2;
-		y = rows - 1;
-	}
+	int rows = (lines - CHAR_HEIGHT/2) / CHAR_HEIGHT - 2;	// rows of text to draw
+	int y = lines - 30;
 
 	int topline = con.current - con.totallines + 1;			// number of top line in buffer
 
@@ -524,23 +493,12 @@ void Con_DrawConsole (float frac)
 	}
 
 	int y0 = y;												// last console text line
-	if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
-		y -= (rows - 1) * CHAR_HEIGHT;
-	else
-		y -= rows - 1;
+	y -= (rows - 1) * CHAR_HEIGHT;
 	if (con.totallines && con.display != con.current)
 	{
 		/*------ draw arrows to show the buffer is backscrolled -------*/
-		if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
-		{
-			for (x = 0; x < linewidth; x += 4)
-				RE_DrawChar ((x + 1) * CHAR_WIDTH, y0, '^');
-		}
-		else
-		{
-			for (x = 0; x < linewidth; x += 4)
-				RE_DrawConChar (x + 1, y0, '^');
-		}
+		for (x = 0; x < linewidth; x += 4)
+			RE_DrawChar ((x + 1) * CHAR_WIDTH, y0, '^');
 		rows--;
 	}
 
@@ -564,25 +522,16 @@ void Con_DrawConsole (float frac)
 				if (c == '\n' || c == WRAP_CHAR) break;
 
 				if (!con_colorText->integer) color = C_WHITE;
-				if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
-					RE_DrawChar ((x + 1) * CHAR_WIDTH, y, c, color);
-				else
-					RE_DrawConChar (x + 1, y, c, color);
+				RE_DrawChar ((x + 1) * CHAR_WIDTH, y, c, color);
 			}
-			if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
-				y += CHAR_HEIGHT;
-			else
-				y++;
+			y += CHAR_HEIGHT;
 		}
 	}
 	CON_DBG(va(" disp:%d total:%d",con.display,con.totallines));
 #ifdef DEBUG_CONSOLE
 	i = strlen (dbgBuf);
 	for (x = 0; x < i; x++)
-		if (!(RE_GetCaps() & REF_CONSOLE_ONLY))
-			RE_DrawChar (x*CHAR_WIDTH, lines - 12, dbgBuf[x], C_BLUE);
-		else
-			RE_DrawConChar (x, dy - 1, dbgBuf[x], C_BLUE);
+		RE_DrawChar (x*CHAR_WIDTH, lines - 12, dbgBuf[x], C_BLUE);
 #endif
 	// draw the input prompt, user text, and cursor
 	DrawInput ();

@@ -31,7 +31,7 @@ static bool Md2SkinExists (const char *skin, CStringItem *pcxfiles)
 		return true;
 	char scratch[MAX_OSPATH];
 	strcpy (scratch, skin);
-	strcpy (scratch + (ext - skin), "_i.pcx");
+	strcpy (scratch + (ext - skin), "_i.pcx");	//?? this will allow .PCX only
 
 	for (CStringItem *item = pcxfiles; item; item = item->next)
 		if (!strcmp (item->name, scratch)) return true;
@@ -491,7 +491,7 @@ static bool TryQuake3Model (clientInfo_t &ci, const char *modelName, const char 
 			return false;			// no default skin
 	}
 
-	appSprintf (ARRAY_ARG(ci.iconName), "/models/players/%s/icon_%s", modelName, skinName);
+	appSprintf (ARRAY_ARG(ci.iconName), "models/players/%s/icon_%s", modelName, skinName);
 	ci.icon = RE_RegisterPic (ci.iconName);
 
 	ci.isQ3model = true;
@@ -783,7 +783,7 @@ static bool TryQuake2Model (clientInfo_t &ci, const char *modelName, const char 
 	}
 
 	// icon
-	appSprintf (ARRAY_ARG(ci.iconName), "/players/%s/%s_i", modelName, skinName);
+	appSprintf (ARRAY_ARG(ci.iconName), "players/%s/%s_i", modelName, skinName);
 	ci.icon = RE_RegisterPic (ci.iconName);
 
 	ci.isQ3model = false;
@@ -886,7 +886,7 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 	// default icon
 	if (!ci.icon)
 	{
-		strcpy (ci.iconName, "default_icon");
+		strcpy (ci.iconName, "pics/default_icon");
 		ci.icon = RE_RegisterPic (ci.iconName);
 	}
 

@@ -543,9 +543,6 @@ cvar_t	*Cvar_ForceSet (const char *var_name, const char *value);	// will set the
 //--const char	*Cvar_VariableString (char *var_name);
 // returns an empty string if not defined
 
-void	Cvar_GetLatchedVars (void);
-// any CVAR_LATCHED variables that have been set will now take effect
-
 bool	Cvar_Command (int argc, char **argv);
 // called by Cmd_ExecuteString when Cmd_Argv(0) doesn't match a known
 // command.  Returns true if the command was a variable reference that

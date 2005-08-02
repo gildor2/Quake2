@@ -5,8 +5,42 @@
 //?? may be moved outside OpenGLDrv -- math functions
 namespace OpenGLDrv {
 
+
+static CMemoryChain *subdivPolyChain;
+
+
+struct poly_t
+{
+	int		numIndexes;
+	int		*indexes;
+#ifdef POLY_DEBUG
+	int		maxIndexes;
+#endif
+	poly_t	*next;
+	void AddPoint (int index)
+	{
+#ifdef POLY_DEBUG
+		if (numIndexes >= maxIndexes)
+			Com_DropError ("poly_t::AddPoint: index overflow");
+#endif
+		indexes[numIndexes] = index;
+		numIndexes++;
+	}
+	poly_t (int numVerts)
+	{
+		// alloc poly
+		indexes    = new (subdivPolyChain) int[numVerts];
+//		numIndexes = 0;
+#ifdef POLY_DEBUG
+		maxIndexes = numVerts;
+#endif
+//		next       = NULL;
+	}
+};
+
+
 //#define POLY_DEBUG
-#define SUBDIV_ERROR	0.2		// max deviation from splitting plane
+#define SUBDIV_ERROR	0.2					// max deviation from splitting plane
 
 // verts
 int subdivNumVerts;							// number of vertexes in a new surface (find a way to make this static !!)
@@ -14,21 +48,16 @@ static CVec3 **psubdivVerts;				// pointer to a destination "vector pointer" arr
 static int subdivNumVerts2;					// number of NEW vertexes
 static CVec3 subdivVerts[MAX_POLYVERTS];	// place for a NEW vertexes
 // polys
-static CMemoryChain *subdivPolyChain;
 static poly_t *subdivPolys;
 
 
 static int NewVert (float x, float y, float z)
 {
-//	DebugPrintf ("  NewVert(%g, %g, %g)", x, y, z);
 	for (int i = 0; i < subdivNumVerts; i++)
 	{
 		CVec3 &v = *psubdivVerts[i];
 		if (v[0] == x && v[1] == y && v[2] == z)
-		{
-//			DebugPrintf ("  -- already, %d\n", i);
 			return i;	// already have this vertex
-		}
 	}
 	if (subdivNumVerts >= MAX_POLYVERTS)
 		Com_DropError ("SubdividePlane: MAX_POLYVERTS hit");
@@ -36,40 +65,10 @@ static int NewVert (float x, float y, float z)
 	// alloc vertex
 	CVec3 &v = subdivVerts[subdivNumVerts2++];
 	// "i" and "v" points to a place for new vertex
-	v[0] = x;
-	v[1] = y;
-	v[2] = z;
+	v.Set (x, y, z);
 	psubdivVerts[i] = &v;
 	subdivNumVerts++;	// == i-1
-//	DebugPrintf (" -- new, %d\n", i);
 	return i;
-}
-
-
-static poly_t *NewPoly (int numVerts)
-{
-//	DebugPrintf ("NewPoly(%d)\n", numVerts);
-	// alloc poly
-	poly_t *p = new (subdivPolyChain) poly_t;
-	p->indexes = new (subdivPolyChain) int[numVerts];
-	p->numIndexes = 0;
-#ifdef POLY_DEBUG
-	p->maxIndexes = numVerts;
-#endif
-	p->next = NULL;
-
-	return p;
-}
-
-
-static void AddPointToPoly (poly_t *poly, int index)
-{
-#ifdef POLY_DEBUG
-	if (poly->numIndexes >= poly->maxIndexes)
-		Com_DropError ("AddPointToPoly: index error");
-#endif
-	poly->indexes[poly->numIndexes] = index;
-	poly->numIndexes++;
 }
 
 
@@ -78,13 +77,9 @@ static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis,
 	int		idx1, idx2;
 	CVec3	*v1, *v2;
 
-//	DebugPrintf ("SubdividePoly: %d inds, axis = %d, value = %g, delta = %g\n", poly->numIndexes, axis, value, delta);
 	int lastIndex = poly->numIndexes - 1;
 	if (lastIndex < 0)
-	{
-//		DebugPrintf ("...empty!\n");
 		return;		// empty poly
-	}
 
 	float value1 = value - delta;
 	float value2 = value + delta;
@@ -102,52 +97,42 @@ static void SubdividePoly (poly_t *poly, poly_t *poly1, poly_t *poly2, int axis,
 		v2 = psubdivVerts[idx2];
 
 		// check point side
-		if ((*v1)[axis] <= value1)			side1 = 1;
-		else if ((*v1)[axis] >= value2)		side1 = 2;
-		else								side1 = 3;
+		if ((*v1)[axis] <= value1)		side1 = 1;
+		else if ((*v1)[axis] >= value2)	side1 = 2;
+		else							side1 = 3;
 		// check next point side
-		if ((*v2)[axis] <= value1)			side2 = 1;
-		else if ((*v2)[axis] >= value2)		side2 = 2;
-		else								side2 = 3;
+		if ((*v2)[axis] <= value1)		side2 = 1;
+		else if ((*v2)[axis] >= value2)	side2 = 2;
+		else							side2 = 3;
 		// add point to the corresponding poly
 		if (side1 == 3 && side2 == 3)
 		{
 			// both points are on divider -- add point only to the one poly
-			AddPointToPoly ((*v1)[axis] < (*v2)[axis] ? poly1 : poly2, idx1);
-			// NOTE: can be error here (non-convex polygon)
+			if ((*v1)[axis] < (*v2)[axis])
+				poly1->AddPoint (idx1);
+			else
+				poly2->AddPoint (idx1);
+			// NOTE: can be error (non-convex polygon) ??
 		}
 		else
 		{
 			// at least one of points not on divider
-			if (side1 & 1)	AddPointToPoly (poly1, idx1);
-			if (side1 & 2)	AddPointToPoly (poly2, idx1);
+			if (side1 & 1)	poly1->AddPoint (idx1);
+			if (side1 & 2)	poly2->AddPoint (idx1);
 			// if points are on the different sides -- split line
 			if (!(side1 & side2))
 			{
-				CVec3 mid;
-
 				// calculate midpoint
 				float frac = (value - (*v1)[axis]) / ((*v2)[axis] - (*v1)[axis]);
-				VectorSubtract ((*v2), (*v1), mid);
-				mid.Scale (frac);
-				VectorAdd (mid, (*v1), mid);
+				CVec3 mid;
+				Lerp (*v1, *v2, frac, mid);
 				idx1 = NewVert (VECTOR_ARG(mid));
 				// add it to both polys
-				AddPointToPoly (poly1, idx1);
-				AddPointToPoly (poly2, idx1);
+				poly1->AddPoint (idx1);
+				poly2->AddPoint (idx1);
 			}
 		}
-//		DebugPrintf ("  point #%d: (%g, %g, %g), side: %d\n",
-//			poly->indexes[i], (*v1)[0], (*v1)[1], (*v1)[2], side1);
 	}
-/*	DebugPrintf ("...OK: %d and %d inds (", poly1->numIndexes, poly2->numIndexes);
-	for (i = 0; i < poly1->numIndexes; i++)
-		DebugPrintf (" %d ", poly1->indexes[i]);
-	DebugPrintf (") and (");
-	for (i = 0; i < poly2->numIndexes; i++)
-		DebugPrintf (" %d ", poly2->indexes[i]);
-	DebugPrintf (")\n");
-*/
 }
 
 
@@ -158,18 +143,16 @@ int SubdividePlane (CVec3 **verts, int numVerts, float tessSize)
 {
 	int		i;
 	poly_t	*poly, *firstPoly, *lastPoly;
-	float	tessError;		// deviation from splitting plane
 
-//	DebugPrintf ("SubdividePlane: %d verts, %g tessSize\n", numVerts, tessSize);
 	/*------ initialization ---------*/
 	psubdivVerts = verts;
 	subdivNumVerts = numVerts;
 	subdivNumVerts2 = 0;
 	subdivPolyChain = new CMemoryChain;
-	tessError = tessSize * SUBDIV_ERROR;
+	float tessError = tessSize * SUBDIV_ERROR;		// deviation from splitting plane
 
 	/*---- generate initial poly ----*/
-	firstPoly = poly = NewPoly (numVerts);
+	firstPoly = poly = new (subdivPolyChain) poly_t (numVerts);
 	for (i = 0; i < numVerts; i++)
 		poly->indexes[i] = i;
 	poly->numIndexes = numVerts;
@@ -181,32 +164,26 @@ int SubdividePlane (CVec3 **verts, int numVerts, float tessSize)
 		firstPoly = NULL;
 		while (poly)
 		{
-			CBox bounds;
-			poly_t	*workPoly, *poly1, *poly2;
-
-//			DebugPrintf ("processing axis %d: %d indexes ...\n", axis, poly->numIndexes);
-			int numIndexes = poly->numIndexes;
-			if (!numIndexes) continue;	// skip empty poly
+			if (!poly->numIndexes) continue;		// skip empty poly
 
 			// calculate poly bounds
+			CBox bounds;
 			bounds.Clear ();
-			for (i = 0; i < numIndexes; i++)
+			for (i = 0; i < poly->numIndexes; i++)
 				bounds.Expand (*psubdivVerts[poly->indexes[i]]);
-//			DebugPrintf ("bounds: (%g, %g, %g) - (%g, %g, %g)\n", VECTOR_ARG(mins), VECTOR_ARG(maxs));
 
 			// mins/maxs, aligned to tessSize grid and shifted to the poly center by tessSize
 			float min = appFloor((bounds.mins[axis] + tessSize + tessError) / tessSize) * tessSize;
 			float max = appCeil((bounds.maxs[axis] - tessSize - tessError) / tessSize) * tessSize;
-//			DebugPrintf ("... stepping from %g to %g with step %g\n", min, max, tessSize);
 
 			// shred workPoly
-			workPoly = poly;
+			poly_t *workPoly = poly;
 			for (float value = min; value <= max; value += tessSize)
 			{
-				numIndexes = workPoly->numIndexes;
+				int numIndexes = workPoly->numIndexes;
 				// alloc new polys
-				poly1 = NewPoly (numIndexes+1);		// subdivision of convex polygon can produce up to numVerts+1 verts
-				poly2 = NewPoly (numIndexes+1);
+				poly_t *poly1 = new (subdivPolyChain) poly_t (numIndexes+1); // subdivision of convex polygon can produce up to numVerts+1 verts
+				poly_t *poly2 = new (subdivPolyChain) poly_t (numIndexes+1);
 				// add poly1 to chain
 				if (!firstPoly)
 					firstPoly = poly1;
@@ -233,8 +210,7 @@ int SubdividePlane (CVec3 **verts, int numVerts, float tessSize)
 	// calculate number of triangles in a resulting surface
 	int numTris = 0;
 	for (poly = firstPoly; poly; poly = poly->next)
-		numTris += poly->numIndexes - 2;	// numTris = numVerts - 2
-//	DebugPrintf ("SubdividePlane: OK\n--------------------------\n");
+		numTris += poly->numIndexes - 2;			// numTris = numVerts - 2
 
 	return numTris;
 }
@@ -254,7 +230,7 @@ void GetSubdivideIndexes (int *pindex)
 {
 	for (poly_t *poly = subdivPolys; poly; poly = poly->next)
 	{
-		for (int i = 0; i < poly->numIndexes - 2; i++)	// numTris; this will also reject polys with 2 vertexes
+		for (int i = 0; i < poly->numIndexes - 2; i++)		// numTris; this will also reject polys with 2 vertexes
 		{
 			*pindex++ = poly->indexes[0];
 			*pindex++ = poly->indexes[i+1];
@@ -271,7 +247,7 @@ int RemoveCollinearPoints (CVec3 **pverts, int numVerts)
 {
 	int		i;
 
-	pverts[numVerts] = pverts[0];			// make a loop
+	pverts[numVerts] = pverts[0];							// make a loop
 	int prevVert = 0;
 	for (i = 1; i < numVerts; i++)
 	{

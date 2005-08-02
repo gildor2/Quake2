@@ -346,7 +346,7 @@ void menuFramework_t::Draw ()
 
 	/*------- draw banner ---------*/
 	if (banner)
-		RE_DrawPic (viddef.width / 2, viddef.height / 2 - 110, banner, ANCHOR_TOP);
+		RE_DrawPic (viddef.width / 2, viddef.height / 2 - 110, va("pics/m_banner_%s", banner), ANCHOR_TOP);
 
 	/*------- draw contents -------*/
 	int vis = -1;
@@ -668,8 +668,6 @@ static int		m_menudepth;
 
 void menuFramework_t::Push ()
 {
-	if (RE_GetCaps() & REF_CONSOLE_ONLY) return;	// no menus in this mode
-
 	// if this menu is already present, drop back to that level
 	// to avoid stacking menus by hotkeys
 //	if (m_menudepth == 0) CL_Pause (true);

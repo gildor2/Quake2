@@ -30,8 +30,6 @@ struct glconfig_t
 	byte	prevBPP;
 	bool	prevFS;
 
-	bool	consoleOnly;			// true if graphics disabled (can use ref_flags & REF_CONSOLE_ONLY !!)
-
 	// gamma
 	bool	deviceSupportsGamma;
 	int		overbright;				// 0 - normal, 1 - double gamma

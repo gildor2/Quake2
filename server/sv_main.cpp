@@ -736,8 +736,8 @@ void SV_PostprocessFrame (void)
 		}
 	}
 
-	// work only in network game, not single-player
-	if (sv_maxclients->integer > 1) //!! should be another variable; campersounds - below!! && sv_campersounds->integer)
+	// work only in deathmatch game, not in single-player or coop game
+	if (sv_deathmatch->integer) //!! should be another variable; campersounds - below!! && sv_campersounds->integer)
 	{
 		int t = appMilliseconds ();
 		for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
@@ -1282,47 +1282,63 @@ SV_Init
 Only called at program startup, not for each game
 ===============
 */
-void SV_Init (void)
+
+void SV_InitVars ()
 {
 CVAR_BEGIN(vars)
-	CVAR_FULL(&rcon_password, "rcon_password", "", 0),
-	CVAR_NULL(skill, 1, 0),
+	// LATCH cvars (note: all are SERVERINFO)
 	CVAR_FULL(&sv_deathmatch, "deathmatch", "0", CVAR_SERVERINFO|CVAR_LATCH),
 	CVAR_FULL(&sv_coop, "coop", "0", CVAR_SERVERINFO|CVAR_LATCH),
 	CVAR_FULL(&sv_maxclients, "maxclients", "1", CVAR_SERVERINFO|CVAR_LATCH),
+	CVAR_VAR(sv_extProtocol, 1, CVAR_SERVERINFO|CVAR_LATCH),
+	// cvars from outside the server: here for LATCH updating only
+	//?? may be, move this cvars here COMPLETELY?
+	CVAR_FULL(NULL, "cheats", "", CVAR_SERVERINFO|CVAR_LATCH|CVAR_NODEFAULT),
+	CVAR_FULL(NULL, "game", "", CVAR_SERVERINFO|CVAR_LATCH|CVAR_NODEFAULT),
+	// other SERVERINFO vars
 	CVAR_NULL(fraglimit,  0, CVAR_SERVERINFO),
 	CVAR_NULL(timelimit,  0, CVAR_SERVERINFO),
-	CVAR_VAR(hostname, noname, CVAR_SERVERINFO|CVAR_ARCHIVE),
+	CVAR_VAR(hostname, noname, CVAR_SERVERINFO),
+	CVAR_NULL(dmflags, 16, CVAR_SERVERINFO),		//?? old default value: 0 for game, DF_INSTANT_ITEMS (16) for server
+	CVAR_VAR(sv_camperSounds, 1, CVAR_SERVERINFO),
+	// read-only SERVERINFO
+	CVAR_FULL(NULL, "protocol", STR(PROTOCOL_VERSION), CVAR_SERVERINFO|CVAR_NOSET),
+	// non-archive LATCH vars
+	CVAR_VAR(sv_airaccelerate, 0, CVAR_LATCH),		// send: CS_AIRACCEL -> CL_PredictMovement() -> pm_airaccelerate;
+													// no other use (including server/game!)
+
 	CVAR_VAR(timeout, 125, 0),
 	CVAR_VAR(zombietime, 2, 0),
+
+	CVAR_FULL(&rcon_password, "rcon_password", "", 0),
+	CVAR_NULL(skill, 1, 0),
+
 	CVAR_FULL(&sv_showclamp, "showclamp", "0", 0),
 	CVAR_FULL(&sv_paused, "paused", "0", CVAR_CHEAT),
-	CVAR_VAR(sv_enforcetime, 0, 0),
 	CVAR_VAR(allow_download, 1, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_players, 0, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_models, 1, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_sounds, 1, CVAR_ARCHIVE),
 	CVAR_VAR(allow_download_maps, 1, CVAR_ARCHIVE),
-	CVAR_FULL(NULL, "protocol", STR(PROTOCOL_VERSION), CVAR_SERVERINFO|CVAR_NOSET),
 
-	CVAR_VAR(sv_noreload, 0, 0),
-
-	CVAR_VAR(sv_airaccelerate, 0, CVAR_LATCH),
+	CVAR_VAR(sv_enforcetime, 0, 0),					//??
+	CVAR_VAR(sv_noreload, 0, 0),					//??
 
 	CVAR_FULL(&public_server, "public", "0", 0),
 
 	CVAR_VAR(sv_reconnect_limit, 3, CVAR_ARCHIVE),
 
-	CVAR_VAR(sv_extProtocol, 1, CVAR_SERVERINFO|CVAR_LATCH),
-	CVAR_VAR(sv_camperSounds, 1, CVAR_SERVERINFO),
-	CVAR_VAR(sv_labels, 0, CVAR_CHEAT),
-	CVAR_NULL(dmflags, 16, CVAR_SERVERINFO)			//?? old default value: 0 for game, DF_INSTANT_ITEMS (16) for server
+	CVAR_VAR(sv_labels, 0, CVAR_CHEAT)
 //	CVAR_VAR(sv_fps, 20, 0)	// archive/serverinfo ??
 CVAR_END
-
-	guard(SV_Init);
 	Cvar_GetVars (ARRAY_ARG(vars));
-	SV_InitOperatorCommands	();
+}
+
+void SV_Init ()
+{
+	guard(SV_Init);
+	SV_InitVars ();
+	SV_InitCommands ();
 	unguard;
 }
 
@@ -1381,7 +1397,7 @@ void SV_Shutdown (const char *finalmsg, bool reconnect)
 		fclose (svs.wdemofile);
 	memset (&svs, 0, sizeof(svs));
 
-	Cvar_GetLatchedVars ();
+	SV_InitVars ();	// called for unlocking latched vars
 	Cvar_ForceSet ("nointro", "1");
 
 	unguard;

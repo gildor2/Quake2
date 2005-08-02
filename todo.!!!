@@ -2,7 +2,6 @@ BUGS:
 ~~~~~
   *? 1st try to start demomap after start, when no d1 alias -- "killserver+menu_main"
   - jumpy demo "tower" (at home, all Q2 versions -- at least from p10) -- low fps on original server computer ?
-  - gl_console_only not works with SINGLE_RENDERER (because of static link to functions); NOW: disabled in vid_dll.cpp
 
 - com_speeds: currently, displays some server stats - can use sv_texts.cpp funcs for this; and - separate cvar for this
 - software gamma: should use identityLight corrected by gamma(but: 1**any==1 ?!)/brightness/contrast (not overbright only)
@@ -64,7 +63,6 @@ BUGS:
   - zaero, plasma shield (jump + shield in down direction - movement lock when landed on shield);
     original Q2 works incorrect too, but in a different way: can pass through shield
   ! lerp entity angles (may remove bug with locking inside opening door)
-? make "r_consoleOnly" work without "vid_restart" (or remove this; currently - does not works at all)
 - "client" source dir: split game-related stuff (effects, particles, prediction etc) and sound/console/keyboard/menu into separate
   dirs (choose 2 names from: cgame, client, ui ... etc)
 - game/m_flash.c : convert float[][3] -> short[][3]  (2.5 Kb -> 2 times smaller ...)

@@ -6,7 +6,6 @@ extern const refExport_t re;
 const refExport_t re = {
 	sizeof(refExport_t),
 
-	GetCaps,
 	Init,
 	Shutdown,
 	BeginRegistration,
@@ -32,7 +31,6 @@ const refExport_t re = {
 	DrawTextLeft,
 	DrawTextRight,
 	DrawText3D,
-	DrawConChar,
 	GetClientLight
 };
 

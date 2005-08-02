@@ -29,15 +29,13 @@ SV_FindIndex
 
 ================
 */
-int SV_FindIndex (char *name, int start, int max, bool create)
+int SV_FindIndex (const char *name, int start, int max, bool create)
 {
-	int		i;
-
 	guard(SV_FindIndex);
 
-	if (!name || !name[0])
-		return 0;
+	if (!name || !name[0]) return 0;
 
+	int	i;
 	for (i = 1; i < max && sv.configstrings[start+i][0]; i++)
 		if (!strcmp(sv.configstrings[start+i], name))
 			return i;
@@ -64,17 +62,17 @@ int SV_FindIndex (char *name, int start, int max, bool create)
 }
 
 
-int SV_ModelIndex (char *name)
+int SV_ModelIndex (const char *name)
 {
 	return SV_FindIndex (name, CS_MODELS, MAX_MODELS, true);
 }
 
-int SV_SoundIndex (char *name)
+int SV_SoundIndex (const char *name)
 {
 	return SV_FindIndex (name, CS_SOUNDS, MAX_SOUNDS, true);
 }
 
-int SV_ImageIndex (char *name)
+int SV_ImageIndex (const char *name)
 {
 	return SV_FindIndex (name, CS_IMAGES, MAX_IMAGES, true);
 }
@@ -114,7 +112,7 @@ void SV_CreateBaseline (void)
 SV_CheckForSavegame
 =================
 */
-void SV_CheckForSavegame (void)
+static void SV_CheckForSavegame (void)
 {
 	FILE	*f;
 	int		i;
@@ -297,8 +295,7 @@ void SV_InitGame ()
 		SCR_BeginLoadingPlaque ();
 	}
 
-	// get any latched variable changes (maxclients, etc)
-	Cvar_GetLatchedVars ();
+	SV_InitVars ();		// called for unlocking latched vars
 
 	svs.initialized = true;
 

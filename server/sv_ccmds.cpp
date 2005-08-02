@@ -1077,7 +1077,7 @@ static void SV_ServerCommand_f (int argc, char **argv)
 SV_InitOperatorCommands
 ==================
 */
-void SV_InitOperatorCommands (void)
+void SV_InitCommands (void)
 {
 	RegisterCommand ("heartbeat", SV_Heartbeat_f);
 

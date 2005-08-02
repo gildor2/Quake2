@@ -348,7 +348,7 @@ void V_InitRenderer ()
 	SCR_UpdateScreen ();
 	for (i = 1; i < MAX_IMAGES && cl.configstrings[CS_IMAGES+i][0]; i++)
 	{
-		cl.image_precache[i] = RE_RegisterPic (cl.configstrings[CS_IMAGES+i]);
+		cl.image_precache[i] = RE_RegisterPic (va("pics/%s", cl.configstrings[CS_IMAGES+i]));
 		Sys_SendKeyEvents ();	// pump message loop
 	}
 
@@ -421,7 +421,7 @@ static void CalcVrect (void)
 
 static void TileClear (void)
 {
-	const char *tileName = "backtile";	//?? try "/*detail" with a different color
+	const char *tileName = "pics/backtile";	//?? try "/*detail" with a different color
 	if (con_height == viddef.height || scr_viewsize->integer == 100) return;
 
 	int y1 = scr_vrect.y;
@@ -815,12 +815,6 @@ static void FixWaterVis (void)
 }
 
 
-/*
-==================
-V_RenderView
-
-==================
-*/
 bool V_RenderView (void)
 {
 	guard(V_RenderView);

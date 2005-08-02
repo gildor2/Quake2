@@ -16,7 +16,7 @@ extern	cvar_t *allow_download_models;
 extern	cvar_t *allow_download_sounds;
 extern	cvar_t *allow_download_maps;
 
-static void RequestNextDownload (void);
+static void RequestNextDownload ();
 
 
 static void DownloadFileName (char *dest, int destlen, const char *filename)
@@ -171,7 +171,7 @@ CL_ParseDownload
 A download message has been received from the server
 =====================
 */
-void CL_ParseDownload (void)
+void CL_ParseDownload ()
 {
 	char	name[MAX_OSPATH];
 
@@ -267,7 +267,7 @@ static byte *precache_model;				// used for skin checking in alias models
 //!!	   not display error when file absent on server (but texture: error when no image at all).
 //!!	   Make this as flag for CheckOrDownloadFile()
 
-static void RequestNextDownload (void)
+static void RequestNextDownload ()
 {
 	guard(RequestNextDownload);
 
@@ -311,8 +311,6 @@ static void RequestNextDownload (void)
 	}
 
 	if (precache_check >= CS_MODELS && precache_check < CS_MODELS+MAX_MODELS) {
-		dMd2_t *pheader;
-
 		if (allow_download_models->integer) {
 			while (precache_check < CS_MODELS+MAX_MODELS &&
 				cl.configstrings[precache_check][0]) {
@@ -336,8 +334,8 @@ static void RequestNextDownload (void)
 						precache_check++;
 						continue; // couldn't load it
 					}
-					pheader = (dMd2_t *)precache_model;
-					if (LittleLong(pheader) != MD2_IDENT || LittleLong(pheader->version) != MD2_VERSION) {
+					dMd2_t *hdr = (dMd2_t *)precache_model;
+					if (LittleLong(hdr) != MD2_IDENT || LittleLong(hdr->version) != MD2_VERSION) {
 						// not an alias model, or wrong model version
 						FS_FreeFile (precache_model);
 						precache_model = NULL;
@@ -347,10 +345,9 @@ static void RequestNextDownload (void)
 					}
 				}
 
-				pheader = (dMd2_t *)precache_model;
-
-				while (precache_model_skin - 1 < LittleLong(pheader->numSkins)) {
-					if (!CheckOrDownloadFile((char *)precache_model + LittleLong(pheader->ofsSkins) +
+				dMd2_t *hdr = (dMd2_t *)precache_model;
+				while (precache_model_skin - 1 < LittleLong(hdr->numSkins)) {
+					if (!CheckOrDownloadFile((char *)precache_model + LittleLong(hdr->ofsSkins) +
 						(precache_model_skin - 1)*MD2_MAX_SKINNAME))
 					{
 						precache_model_skin++;
@@ -360,8 +357,8 @@ static void RequestNextDownload (void)
 				}
 				if (precache_model)
 				{
-					FS_FreeFile(precache_model);
-					precache_model = 0;
+					FS_FreeFile (precache_model);
+					precache_model = NULL;
 				}
 				precache_model_skin = 0;
 				precache_check++;
@@ -402,32 +399,30 @@ static void RequestNextDownload (void)
 	if (precache_check >= CS_PLAYERSKINS && precache_check < CS_PLAYERSKINS + MAX_CLIENTS * PLAYER_MULT) {
 		if (allow_download_players->integer) {
 			while (precache_check < CS_PLAYERSKINS + MAX_CLIENTS * PLAYER_MULT) {
-				int		i;
-				char model[MAX_QPATH], skin[MAX_QPATH], *p;
-
-				i = (precache_check - CS_PLAYERSKINS) / PLAYER_MULT;	// player index
+				int i = (precache_check - CS_PLAYERSKINS) / PLAYER_MULT;	// player index
 
 				if (!cl.configstrings[CS_PLAYERSKINS+i][0]) {
 					precache_check = CS_PLAYERSKINS + (i + 1) * PLAYER_MULT;
 					continue;
 				}
 
-				if ((p = strchr(cl.configstrings[CS_PLAYERSKINS+i], '\\')) != NULL)
+				char *p = strchr (cl.configstrings[CS_PLAYERSKINS+i], '\\');
+				if (p)
 					p++;
 				else
 					p = cl.configstrings[CS_PLAYERSKINS+i];
 
-				strcpy (model, p);
+				char model[MAX_QPATH];
+				strcpy (model, p);		// format: model/skin
+				const char *skin = "";
 				p = strchr (model, '/');
 				if (!p)
-					p = strchr(model, '\\');
+					p = strchr (model, '\\');
 				if (p)
 				{
-					*p++ = 0;
-					strcpy(skin, p);
+					*p = 0;				// "model" will contain "modelName<0>skinName"
+					skin = p+1;
 				}
-				else
-					*skin = 0;
 
 				switch ((precache_check - CS_PLAYERSKINS) % PLAYER_MULT)	// 0..PLAYER_MULT-1 -- what to check
 				{
@@ -497,7 +492,7 @@ static void RequestNextDownload (void)
 	// confirm existance of textures, download any that don't exist
 	if (precache_check == DCS_TEXTURE + 1)
 	{
-		// from qcommon/cmodel.c
+		// from qcommon/cmodel.cpp
 		extern int			numTexinfo;
 		extern csurface_t	*map_surfaces;
 
@@ -542,8 +537,8 @@ void CL_Precache_f (int argc, char **argv)
 
 	precache_check = DCS_START;
 	precache_spawncount = atoi (argv[1]);
-	precache_model = 0;
+	precache_model = NULL;
 	precache_model_skin = 0;
 
-	RequestNextDownload();
+	RequestNextDownload ();
 }

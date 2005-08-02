@@ -203,7 +203,7 @@ static void ParseConfigString (void)
 	else if (i >= CS_IMAGES && i < CS_IMAGES+MAX_MODELS)
 	{
 		if (cl.rendererReady)
-			cl.image_precache[i-CS_IMAGES] = RE_RegisterPic (cl.configstrings[i]);
+			cl.image_precache[i-CS_IMAGES] = RE_RegisterPic (va("pics/%s", cl.configstrings[i]));
 	}
 	else if (i >= CS_PLAYERSKINS && i < CS_PLAYERSKINS+MAX_CLIENTS)
 	{
@@ -336,7 +336,7 @@ void CL_ParseServerMessage (void)
 				cls.download = NULL;
 			}
 			cls.state = ca_connecting;
-			cls.connect_time = -BIG_NUMBER;	// CL_CheckForResend() will fire immediately
+			cls.connect_time = -BIG_NUMBER;	// CL_InitiateConnection() will fire immediately
 			break;
 
 		case svc_print:

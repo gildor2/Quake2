@@ -87,20 +87,21 @@ centity_t		*cl_entities;	// [MAX_EDICTS]
 
 clEntityState_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 
-//======================================================================
 
+/*-----------------------------------------------------------------------------
+	Requesting server status
+-----------------------------------------------------------------------------*/
 
 static bool statusRequest;
-static bool cl_cheats;
+static bool cl_cheats;				// value of "cheats" cvar from server
 static char	cl_mapname[MAX_QPATH];
 static char	cl_gamename[MAX_QPATH];
 
 static bool TryParseStatus (const char *str)
 {
-	char	buf[MAX_MSGLEN];
-
 	if (!statusRequest) return false;
 
+	char	buf[MAX_MSGLEN];
 	appStrncpyz (buf, str, sizeof(buf));
 	// remove players info
 	char *s = strchr (buf, '\n');
@@ -120,21 +121,37 @@ static bool TryParseStatus (const char *str)
 	if (!v) return false;
 	cl_cheats = atoi (v) != 0;
 
-	Com_Printf (S_RED"map: %s  game: %s  cheats: %d\n", cl_mapname, cl_gamename, cl_cheats);
+	Com_Printf ("map: %s game: %s cheats: %d\n", cl_mapname, cl_gamename, cl_cheats);
 
 	statusRequest = false;
 	return true;
 }
 
+static void SendStatusRequest ()
+{
+	statusRequest = true;
+	cl_cheats      = false;
+	cl_mapname[0]  = 0;		// needed ??
+	cl_gamename[0] = 0;
+	Netchan_OutOfBandPrint (NS_CLIENT, cls.serverAddr, "status");
+}
 
-/*
-====================
-CL_WriteDemoMessage
+static void CloseStatusRequest ()
+{
+	if (statusRequest)
+	{
+		statusRequest  = false;
+		Com_DPrintf ("no status answer\n");
+	}
+}
 
-Dumps the current net message, prefixed by the length
-====================
-*/
-void CL_WriteDemoMessage (void)
+
+/*-----------------------------------------------------------------------------
+	Client-side demo recording
+-----------------------------------------------------------------------------*/
+
+// Dumps the current net message, prefixed by the length
+void CL_WriteDemoMessage ()
 {
 	// the first eight bytes are just packet sequencing stuff
 	int len = net_message.cursize-8;
@@ -144,17 +161,9 @@ void CL_WriteDemoMessage (void)
 }
 
 
-/*
-====================
-CL_Stop_f
-
-stop recording a demo
-====================
-*/
-static void CL_Stop_f (void)
+// stop recording a demo
+static void CL_Stop_f ()
 {
-	int		len;
-
 	if (!cls.demorecording)
 	{
 		Com_WPrintf ("Not recording a demo.\n");
@@ -162,7 +171,7 @@ static void CL_Stop_f (void)
 	}
 
 	// finish up
-	len = -1;
+	int len = -1;
 	fwrite (&len, 4, 1, cls.demofile);
 	fclose (cls.demofile);
 	cls.demofile = NULL;
@@ -170,23 +179,11 @@ static void CL_Stop_f (void)
 	Com_Printf ("Stopped demo.\n");
 }
 
-/*
-====================
-CL_Record_f
 
-record <demoname>
-
-Begins recording a demo from the current position
-====================
-*/
+// Begins recording a demo from the current position
 static void CL_Record_f (bool usage, int argc, char **argv)
 {
-	char	name[MAX_OSPATH];
-	byte	buf_data[MAX_MSGLEN];
-	sizebuf_t	buf;
-	int		i, len;
-	clEntityState_t	*ent;
-	entityStateEx_t	nullstate;
+	int		i;
 
 	if (argc != 2 || usage)
 	{
@@ -207,6 +204,7 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 	}
 
 	// open the demo file
+	char name[MAX_OSPATH];
 	appSprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
 	Com_Printf ("recording to %s.\n", name);
@@ -223,14 +221,13 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 	cls.demowaiting = true;
 
 	// write out messages to hold the startup information
+	sizebuf_t buf;
+	byte buf_data[MAX_MSGLEN];
 	buf.Init (ARRAY_ARG(buf_data));
 
 	// send the serverdata
 	MSG_WriteByte (&buf, svc_serverdata);
-	if (cls.newprotocol)
-		MSG_WriteLong (&buf, -PROTOCOL_VERSION);
-	else
-		MSG_WriteLong (&buf, PROTOCOL_VERSION);
+	MSG_WriteLong (&buf, cls.newprotocol ? -PROTOCOL_VERSION : PROTOCOL_VERSION);
 	MSG_WriteLong (&buf, 0x10000 + cl.servercount);
 	MSG_WriteByte (&buf, 1);	// demos are always attract loops
 	MSG_WriteString (&buf, cl.gamedir);
@@ -245,7 +242,7 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 		{
 			if (buf.cursize + strlen (cl.configstrings[i]) + 32 > buf.maxsize)
 			{	// write it out
-				len = LittleLong (buf.cursize);
+				int len = LittleLong (buf.cursize);
 				fwrite (&len, 4, 1, cls.demofile);
 				fwrite (buf.data, buf.cursize, 1, cls.demofile);
 				buf.cursize = 0;
@@ -258,16 +255,17 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 	}
 
 	// baselines
+	entityStateEx_t	nullstate;
 	memset (&nullstate, 0, sizeof(nullstate));
 	for (i = 0; i < MAX_EDICTS; i++)
 	{
-		ent = &cl_entities[i].baseline;
+		entityStateEx_t *ent = &cl_entities[i].baseline;
 		if (!ent->modelindex)
 			continue;
 
 		if (buf.cursize + 64 > buf.maxsize)
 		{	// write it out
-			len = LittleLong (buf.cursize);
+			int len = LittleLong (buf.cursize);
 			fwrite (&len, 4, 1, cls.demofile);
 			fwrite (buf.data, buf.cursize, 1, cls.demofile);
 			buf.cursize = 0;
@@ -282,12 +280,13 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 
 	// write it to the demo file
 
-	len = LittleLong (buf.cursize);
+	int len = LittleLong (buf.cursize);
 	fwrite (&len, 4, 1, cls.demofile);
 	fwrite (buf.data, buf.cursize, 1, cls.demofile);
 
 	// the rest of the demo file will be individual frames
 }
+
 
 //======================================================================
 
@@ -362,7 +361,7 @@ void CL_Pause (bool enable)
 }
 
 
-static void CL_Pause_f (void)
+static void CL_Pause_f ()
 {
 	CL_Pause (!cl_paused->integer);
 }
@@ -372,7 +371,7 @@ static void CL_Pause_f (void)
 CL_Quit_f
 ==================
 */
-void CL_Quit_f (void)	//?? do we need 2 quit commands (in cl_main.c and common.c) ??
+void CL_Quit_f ()	//?? do we need 2 quit commands (in cl_main.c and common.c) ??
 {
 	CL_Disconnect ();
 	Com_Quit ();
@@ -404,74 +403,61 @@ connect.
 */
 void CL_SendConnectPacket (void)
 {
-	netadr_t adr;
-	if (!NET_StringToAdr (cls.servername, &adr))
-	{
-		Com_WPrintf ("Bad server address %s\n", cls.servername);
-		cls.connect_time = 0;
-		return;
-	}
-	if (!adr.port) adr.port = BigShort (PORT_SERVER);
-
 	int port = Cvar_VariableInt ("qport");
 	userinfo_modified = false;
 
 	if (cl_extProtocol->integer)
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect "STR(PROTOCOL_VERSION)" %d %d \"%s\" "
+		Netchan_OutOfBandPrint (NS_CLIENT, cls.serverAddr, "connect "STR(PROTOCOL_VERSION)" %d %d \"%s\" "
 			NEW_PROTOCOL_ID" "STR(NEW_PROTOCOL_VERSION),
 			port, cls.challenge, Cvar_Userinfo ());
 	else
 	{
 		Com_DPrintf ("Extended protocol disabled\n");
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, "connect "STR(PROTOCOL_VERSION)" %d %d \"%s\"",
+		Netchan_OutOfBandPrint (NS_CLIENT, cls.serverAddr, "connect "STR(PROTOCOL_VERSION)" %d %d \"%s\"",
 			port, cls.challenge, Cvar_Userinfo ());
 	}
 }
 
-/*
-=================
-CL_CheckForResend
 
-Resend a connect message if the last one has timed out
-=================
-*/
-void CL_CheckForResend (void)
+static void InitServerAddress ()
 {
-	netadr_t	adr;
-
-	// if the local server is running and we aren't then connect
-	if (cls.state == ca_disconnected && Com_ServerState())
+	if (!NET_StringToAdr (cls.serverName, &cls.serverAddr))
 	{
+		cls.state = ca_disconnected;	// without this, CL_Disconnect() will throw exception ...
+		cls.serverName[0] = 0;
+		Com_DropError ("Bad server address %s\n", cls.serverName);
+		return;
+	}
+	if (!cls.serverAddr.port) cls.serverAddr.port = BigShort (PORT_SERVER);
+}
+
+
+// Send connect message when needed + resend a connect message if the last one has timed out
+static void CL_InitiateConnection ()
+{
+	// if the local server is running and we aren't then connect
+	if (cls.state == ca_disconnected && Com_ServerState ())
+	{
+		Com_DPrintf ("CL: found running server: connecting\n");
 		cls.state = ca_connecting;
-		strcpy (cls.servername, "localhost");
+		strcpy (cls.serverName, "localhost");
+		InitServerAddress ();
+		SendStatusRequest ();
 		// we don't need a challenge on the localhost
 		CL_SendConnectPacket ();
 		return;
-//		cls.connect_time = -BIG_NUMBER;	// CL_CheckForResend() will fire immediately
 	}
 
-	// resend if we haven't gotten a reply yet
-	if (cls.state != ca_connecting)
-		return;
-
-	if (cls.realtime - cls.connect_time < 3000)
-		return;
-
-	if (!NET_StringToAdr (cls.servername, &adr))
-	{
-		Com_WPrintf ("Bad server address %s\n", cls.servername);
-		cls.state = ca_disconnected;
-		return;
-	}
-	if (!adr.port) adr.port = BigShort (PORT_SERVER);
+	if (cls.state != ca_connecting) return;
+	if (cls.realtime - cls.connect_time < 3000) return;
 
 	cls.connect_time = cls.realtime;	// for retransmit requests
 
-	Com_Printf ("Connecting to %s...\n", cls.servername);
+	Com_Printf ("Connecting to %s...\n", cls.serverName);
 
-	statusRequest = true;
-	Netchan_OutOfBandPrint (NS_CLIENT, adr, "status");
-	Netchan_OutOfBandPrint (NS_CLIENT, adr, "getchallenge");
+	InitServerAddress ();
+	SendStatusRequest ();
+	Netchan_OutOfBandPrint (NS_CLIENT, cls.serverAddr, "getchallenge");
 }
 
 
@@ -483,8 +469,6 @@ CL_Connect_f
 */
 void CL_Connect_f (bool usage, int argc, char **argv)
 {
-	char	*server;
-
 	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: connect <server>\n");
@@ -500,15 +484,12 @@ void CL_Connect_f (bool usage, int argc, char **argv)
 		CL_Disconnect ();
 	}
 
-	server = argv[1];
-
 	NET_Config (true);			// allow remote
-
 	CL_Disconnect ();
 
 	cls.state = ca_connecting;
-	appStrncpyz (cls.servername, server, sizeof(cls.servername));
-	cls.connect_time = -BIG_NUMBER;	// CL_CheckForResend() will fire immediately
+	appStrncpyz (cls.serverName, argv[1], sizeof(cls.serverName));
+	cls.connect_time = -BIG_NUMBER;	// CL_InitiateConnection() will fire immediately
 }
 
 
@@ -566,7 +547,7 @@ Goes from a connected state to full screen console state
 Sends a disconnect message to the server
 =====================
 */
-void CL_Disconnect (void)
+void CL_Disconnect ()
 {
 	guard(CL_Disconnect);
 
@@ -619,58 +600,6 @@ void CL_Disconnect_f (void)
 
 
 /*
-====================
-CL_Packet_f (disabled, not linked to command system)
-
-packet <destination> <contents>
-
-Contents allows \n escape character
-====================
-*/
-void CL_Packet_f (bool usage, int argc, char **argv)
-{
-	char	send[2048];
-	int		i, l;
-	char	*in, *out;
-	netadr_t	adr;
-
-	if (argc != 3 || usage)
-	{
-		Com_Printf ("Usage: packet <destination> <contents>\n");
-		return;
-	}
-
-	NET_Config (true);		// allow remote
-
-	if (!NET_StringToAdr (argv[1], &adr))
-	{
-		Com_WPrintf ("Bad address %s\n", argv[1]);
-		return;
-	}
-	if (!adr.port)
-		adr.port = BigShort (PORT_SERVER);
-
-	in = argv[2];
-	out = send+4;
-	send[0] = send[1] = send[2] = send[3] = (char)0xff;
-
-	l = strlen (in);
-	for (i=0 ; i<l ; i++)
-	{
-		if (in[i] == '\\' && in[i+1] == 'n')
-		{
-			*out++ = '\n';
-			i++;
-		}
-		else
-			*out++ = in[i];
-	}
-	*out = 0;
-
-	NET_SendPacket (NS_CLIENT, out-send, send, adr);
-}
-
-/*
 =================
 CL_Changing_f
 
@@ -706,7 +635,8 @@ void CL_Reconnect_f (void)
 		return;
 
 	S_StopAllSounds_f ();
-	if (cls.state == ca_connected) {
+	if (cls.state == ca_connected)
+	{
 		Com_Printf ("reconnecting...\n");
 		cls.state = ca_connected;
 		MSG_WriteChar (&cls.netchan.message, clc_stringcmd);
@@ -714,19 +644,18 @@ void CL_Reconnect_f (void)
 		return;
 	}
 
-	if (*cls.servername)
-	{
-		if (cls.state >= ca_connected)
-		{
-			CL_Disconnect ();
-			cls.connect_time = cls.realtime - 1500;
-		}
-		else
-			cls.connect_time = -BIG_NUMBER; // fire immediately
+	if (!cls.serverName[0]) return;
 
-		cls.state = ca_connecting;
-		Com_Printf ("reconnecting...\n");
+	if (cls.state >= ca_connected)
+	{
+		CL_Disconnect ();
+		cls.connect_time = cls.realtime - 1500;
 	}
+	else
+		cls.connect_time = -BIG_NUMBER; // fire immediately
+
+	cls.state = ca_connecting;
+	Com_Printf ("reconnecting...\n");
 }
 
 
@@ -735,7 +664,7 @@ void CL_Reconnect_f (void)
 CL_PingServers_f
 =================
 */
-void CL_PingServers_f (void)
+void CL_PingServers_f ()
 {
 	netadr_t adr;
 	const char *adrstring;
@@ -766,8 +695,6 @@ void CL_PingServers_f (void)
 		adr.port = BigShort(PORT_SERVER);
 		Netchan_OutOfBandPrint (NS_CLIENT, adr, cmd);
 	}
-
-
 
 	// send a packet to each address book entry
 	for (int i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
@@ -810,18 +737,17 @@ void CL_Skins_f ()
 }
 
 
-/*
-=================
-CL_ConnectionlessPacket
+/*-----------------------------------------------------------------------------
+	Connectionless communication
+	Responses to broadcasts, etc
+-----------------------------------------------------------------------------*/
 
-Responses to broadcasts, etc
-=================
-*/
-
-static char *cnstr;
+static char *connectStr;
 
 static void cClientConnect (int argc, char **argv)
 {
+	CloseStatusRequest ();
+
 	// server connection
 	if (cls.state == ca_connected)
 	{
@@ -849,6 +775,7 @@ static void cClientConnect (int argc, char **argv)
 		Com_DPrintf ("Server does not support extended protocol\n");
 }
 
+
 static void cInfo (int argc, char **argv)
 {
 	// server responding to a status broadcast
@@ -858,9 +785,10 @@ static void cInfo (int argc, char **argv)
 		return;
 	}
 
-	Com_Printf ("%s\n", cnstr);
-	M_AddToServerList (net_from, cnstr);
+	Com_Printf ("%s\n", connectStr);
+	M_AddToServerList (net_from, connectStr);
 }
+
 
 static void cCmd (int argc, char **argv)
 {
@@ -869,40 +797,32 @@ static void cCmd (int argc, char **argv)
 		Com_Printf ("Command packet from remote host. Ignored.\n");
 		return;
 	}
-	Cbuf_AddText (cnstr);
+	Cbuf_AddText (connectStr);
 	Cbuf_AddText ("\n");
 }
+
 
 static void cPrint (int argc, char **argv)
 {
 	// print command from somewhere
-	if (TryParseStatus (cnstr)) return;	// do not pring status message
+	if (TryParseStatus (connectStr)) return;	// do not print status message
 
-	Com_Printf ("%s", cnstr);
+	Com_Printf ("%s", connectStr);
 }
+
 
 static void cPing (int argc, char **argv)
 {
 	Netchan_OutOfBandPrint (NS_CLIENT, net_from, "ack");
 }
 
+
 static void cChallenge (int argc, char **argv)
 {
-	// challenge from the server we are connecting to
-	// check status info
-	if (statusRequest)
-	{
-		Com_DPrintf ("no status answer\n");
-		statusRequest = false;
-		cl_cheats = false;
-		cl_mapname[0] = 0;		// needed ??
-		cl_gamename[0] = 0;
-	}
-	Cvar_SetInteger ("cheats", cl_cheats);		// synchronize client "cheats" cvar with server
-
 	cls.challenge = atoi (argv[1]);
 	CL_SendConnectPacket ();
 }
+
 
 static void cEcho (int argc, char **argv)
 {
@@ -910,39 +830,39 @@ static void cEcho (int argc, char **argv)
 	Netchan_OutOfBandPrint (NS_CLIENT, net_from, "%s", argv[1]);
 }
 
+
 static const CSimpleCommand connectionlessCmds[] = {
 	{"client_connect", cClientConnect},
-	{"info", cInfo},
-	{"cmd", cCmd},
-	{"print", cPrint},
-	{"ping", cPing},
+	{"info",	cInfo},
+	{"cmd",		cCmd},
+	{"print",	cPrint},
+	{"ping",	cPing},
 	{"challenge", cChallenge},
-	{"echo", cEcho}
+	{"echo",	cEcho}
 };
 
 
-void CL_ConnectionlessPacket (void)
+void CL_ConnectionlessPacket ()
 {
-	char	cmd[1024];
-
 	guard(CL_ConnectionlessPacket);
 
 	MSG_BeginReading (&net_message);
 	MSG_ReadLong (&net_message);	// skip the -1
 
-	char *s = MSG_ReadString (&net_message);
-	cnstr = strchr (s, '\n');
-	if (cnstr)
+	const char *s = MSG_ReadString (&net_message);
+	connectStr = strchr (s, '\n');
+	char cmd[1024];
+	if (connectStr)
 	{
-		cnstr++;
-		appStrncpyz (cmd, s, cnstr - s);
+		connectStr++;
+		appStrncpyz (cmd, s, connectStr - s);
 	}
 	else
 	{
 		strcpy (cmd, s);
-		cnstr = "";				// just in case
+		connectStr = "";			// just in case
 	}
-	// cnstr = NULL || next line ptr
+	// connectStr = NULL || next line ptr
 
 	Com_DPrintf ("%s: %s\n", NET_AdrToString (&net_from), cmd);
 
@@ -1095,13 +1015,12 @@ void CL_WriteConfiguration (const char *filename)
 
 void CL_WriteConfig_f (bool usage, int argc, char **argv)
 {
-	char	name[MAX_OSPATH];
-
 	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: writeconfig <filename>\n");
 		return;
 	}
+	char name[MAX_OSPATH];
 	strcpy (name, argv[1]);
 	if (!strchr (name, '.'))
 		strcat (name, ".cfg");
@@ -1109,12 +1028,7 @@ void CL_WriteConfig_f (bool usage, int argc, char **argv)
 }
 
 
-/*
-=================
-CL_InitLocal
-=================
-*/
-static void CL_InitLocal (void)
+static void CL_InitLocal ()
 {
 CVAR_BEGIN(vars)
 	CVAR_FULL(&cl_add_blend, "cl_blend", "1", 0),
@@ -1211,8 +1125,6 @@ CVAR_END
 	RegisterCommand ("reconnect", CL_Reconnect_f);
 	RegisterCommand ("rcon", CL_Rcon_f);
 
-//	RegisterCommand ("packet", CL_Packet_f);		// this is dangerous to leave in
-
 	RegisterCommand ("precache", CL_Precache_f);
 	RegisterCommand ("download", CL_Download_f);
 
@@ -1220,42 +1132,25 @@ CVAR_END
 }
 
 
-/*
-==================
-CL_FixCvarCheats
-
-==================
-*/
-
-void CL_FixCvarCheats (void)
+void CL_FixCvarCheats ()
 {
-	bool	cheats;
-	char	*str;
-
-	cheats = false;
+	bool cheats = cl_cheats;						// value from server
 
 	if (cl.attractloop) cheats = true;
 	if (cls.state != ca_connected && cls.state != ca_active) cheats = true;
 
-	str = cl.configstrings[CS_MAXCLIENTS];
+	//?? another way to check for deathmatch?
+	const char *str = cl.configstrings[CS_MAXCLIENTS];
 	if ((str[0] == '1' && str[1] == 0) || str[0] == 0)	// == "1" or ""
 		cheats = true;									// single player can cheat
-
-	if (sv_cheats->integer)
-		cheats = true;
 
 	Cvar_Cheats (cheats);
 }
 
-//============================================================================
 
-
-/*
-==================
-CL_Frame
-
-==================
-*/
+/*-----------------------------------------------------------------------------
+	Client frame (tick)
+-----------------------------------------------------------------------------*/
 
 #define MAX_GUI_FPS		60
 
@@ -1318,7 +1213,7 @@ void CL_Frame (float msec, float realMsec)
 
 	// send a new command message to the server
 	CL_SendCmd ();					// send intentions now
-	CL_CheckForResend ();			// resend a connection request if necessary
+	CL_InitiateConnection ();		// resend a connection request if necessary
 
 	// predict all unacknowledged movements
 	CL_PredictMovement ();
@@ -1343,12 +1238,6 @@ void CL_Frame (float msec, float realMsec)
 
 //============================================================================
 
-/*
-=====================
-CL_ClearState
-
-=====================
-*/
 void CL_ClearState ()
 {
 	S_StopAllSounds_f ();
@@ -1363,12 +1252,8 @@ void CL_ClearState ()
 	cls.netchan.message.Clear ();
 }
 
-/*
-====================
-CL_Init
-====================
-*/
-void CL_Init (void)
+
+void CL_Init ()
 {
 	guard(CL_Init);
 
@@ -1394,11 +1279,6 @@ void CL_Init (void)
 }
 
 
-/*
-===============
-CL_Shutdown
-===============
-*/
 void CL_Shutdown (bool error)
 {
 	EXEC_ONCE (				// no repeated shutdowns

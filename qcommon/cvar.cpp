@@ -214,6 +214,15 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 //			var->flags &= ~(CVAR_USER_CREATED|CVAR_GAME_CREATED); // cvar BECOMES engine-created (reset flags and keep it later)
 
 		var->flags |= flags & CVAR_FLAG_MASK;
+
+		// CVAR_LATCH vars updated only with Cvar_Get() calls ...
+		if (var->latchedString)
+		{
+			Cvar_SetHardcoded (var, var->latchedString);
+			appFree (var->latchedString);
+			var->latchedString = NULL;
+		}
+
 		return var;
 	}
 
@@ -366,7 +375,7 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 				if (Com_ServerState () == ss_demo)
 					return var;										// disable changing of latched cvars from demos
 
-				Com_Printf ("%s will be changed for next game.\n", var_name);
+				Com_Printf ("%s will be changed after restart\n", var_name);
 				var->latchedString = CopyString (value);
 			}
 			else
@@ -462,26 +471,6 @@ float Cvar_Clamp (cvar_t *cvar, float low, float high)
 		return high;
 	}
 	return cvar->value;
-}
-
-/*
-============
-Cvar_GetLatchedVars
-
-Any variables with latched values will now be updated
-============
-*/
-void Cvar_GetLatchedVars (void)
-{
-	for (cvar_t *var = cvar_vars; var; var = var->next)
-	{
-		if (!var->latchedString) continue;
-
-		Cvar_SetHardcoded (var, var->latchedString);
-
-		appFree (var->latchedString);
-		var->latchedString = NULL;
-	}
 }
 
 /*

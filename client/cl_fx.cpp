@@ -554,8 +554,6 @@ extern sfx_t *cl_sfx_camper[9];
 
 void CL_EntityEvent (clEntityState_t *ent)
 {
-	if (RE_GetCaps() & REF_CONSOLE_ONLY) return;
-
 	if (ent->event >= EV_FOOTSTEP0 && ent->event < EV_FOOTSTEP0 + MATERIAL_COUNT)
 	{
 		if (cl_footsteps->integer)
@@ -631,9 +629,6 @@ void CL_ParseMuzzleFlash ()
 	dl->die = cl.time + 10;
 
 	float volume = (silenced) ? 0.2 : 1;
-
-	if (RE_GetCaps() & REF_CONSOLE_ONLY)
-		return;
 
 	//	1. snd_name -- if not NULL:
 	//		sound(NULL,i,CHAN_WEAPON,S_RegisterSound(snd_name),vol:full/silenced, ATTN_NORM, 0)
@@ -738,7 +733,6 @@ void CL_ParseMuzzleFlash2 ()
 		Com_DropError ("CL_ParseMuzzleFlash2: bad entity");
 
 	int flash_number = MSG_ReadByte (&net_message);
-	if (RE_GetCaps() & REF_CONSOLE_ONLY) return;
 
 	// compute origin
 	clEntityState_t *s = &cl_entities[ent].current;

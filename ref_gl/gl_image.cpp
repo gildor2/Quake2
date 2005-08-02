@@ -1685,6 +1685,7 @@ START_PROFILE2(img::pcx, name)
 		LoadPCX (name2, pic8, palette, width, height);
 		if (pic8)
 		{
+			//?? should use palette; sometimes should use 0xFF as color (not transparency)
 #if 0
 			unsigned pal[256];
 			byte	*p;

@@ -350,7 +350,8 @@ enum
 
 
 // config strings are a general means of communication from the server to
-// all connected clients. Each config string can be at most MAX_QPATH characters.
+// all connected clients. Each config string can be at most MAX_QPATH characters
+// (exception: CS_STATUSBAR)
 enum
 {
 	CS_NAME,
@@ -358,7 +359,7 @@ enum
 	CS_SKY,
 	CS_SKYAXIS,			// %f %f %f format
 	CS_SKYROTATE,
-	CS_STATUSBAR,		// display program string
+	CS_STATUSBAR,		// display program string (NOTE: few configstring indexes used)
 
 	CS_AIRACCEL = 29,	// air acceleration control
 	CS_MAXCLIENTS,

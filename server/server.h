@@ -31,7 +31,7 @@ typedef unsigned int		qboolean;
 #define	MAX_MASTERS	8				// max recipients for heartbeat packets
 
 
-typedef struct
+struct server_t
 {
 	server_state_t	state;				// precache commands are only valid during load
 
@@ -44,7 +44,7 @@ typedef struct
 	char		name[MAX_QPATH];		// map name, or cinematic name
 	cmodel_t	*models[MAX_MODELS];
 
-	char		configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
+	char		configstrings[MAX_CONFIGSTRINGS][MAX_QPATH]; // some strings are longer, than MAX_QPATH ...
 	entityStateEx_t	baselines[MAX_EDICTS];
 
 	// the multicast buffer is used to send a message to a set of clients
@@ -56,7 +56,7 @@ typedef struct
 
 	// demo server information
 	QFILE		*rdemofile;				// reading demos
-} server_t;
+};
 
 #define EDICT_NUM(n) ((edict_t *)((byte *)ge->edicts + ge->edict_size*(n)))
 #define NUM_FOR_EDICT(e) ( ((byte *)(e)-(byte *)ge->edicts ) / ge->edict_size)
@@ -210,14 +210,11 @@ extern	edict_t		*sv_player;
 //
 void SV_DropClient (client_t *drop, char *info);
 
-int SV_ModelIndex (char *name);
-int SV_SoundIndex (char *name);
-int SV_ImageIndex (char *name);
-
 void SV_WriteClientdataToMessage (client_t *client, sizebuf_t *msg);
 
 void SV_ExecuteUserCommand (char *s);
-void SV_InitOperatorCommands (void);
+void SV_InitCommands (void);
+void SV_InitVars ();
 
 void SV_SendServerinfo (client_t *client);
 void SV_UserinfoChanged (client_t *cl);
@@ -229,6 +226,10 @@ trace_t SV_TraceHook (const CVec3 &start, const CVec3 *mins, const CVec3 *maxs, 
 //
 // sv_init.c
 //
+int SV_ModelIndex (const char *name);
+int SV_SoundIndex (const char *name);
+int SV_ImageIndex (const char *name);
+
 void SV_InitGame (void);
 void SV_Map (bool attractloop, const char *levelstring, bool loadgame);
 

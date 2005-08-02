@@ -21,6 +21,6 @@ void SCR_ToggleConsole ();
 void Key_Message (int key);
 
 // cl_cin.cpp
-void SCR_PlayCinematic (char *filename);		// begin
+void SCR_PlayCinematic (const char *filename);	// begin
 bool SCR_DrawCinematic ();						// play/draw
 void SCR_StopCinematic ();						// stop
