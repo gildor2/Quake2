@@ -421,7 +421,7 @@ static void CalcVrect (void)
 
 static void TileClear (void)
 {
-	const char *tileName = "pics/backtile";	//?? try "/*detail" with a different color
+	const char *tileName = "pics/backtile";	//?? try "*detail" with a different color
 	if (con_height == viddef.height || scr_viewsize->integer == 100) return;
 
 	int y1 = scr_vrect.y;

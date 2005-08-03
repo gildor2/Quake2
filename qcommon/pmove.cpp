@@ -55,11 +55,11 @@ static float pm_stopspeed = 100;
 static float pm_maxspeed = 300;
 static float pm_duckspeed = 100;
 static float pm_accelerate = 10;
+float		 pm_airaccelerate = 0;		// really, default value is 1.0f
 static float pm_wateraccelerate = 10;
 static float pm_friction = 6;
 static float pm_waterfriction = 1;
 static float pm_waterspeed = 400;
-float	pm_airaccelerate = 0;
 
 
 /*
@@ -368,26 +368,9 @@ static void Accelerate (const CVec3 &wishdir, float wishspeed, float accel)
 {
 	float currentspeed = dot (pml.velocity, wishdir);
 	float addspeed = wishspeed - currentspeed;
-	if (addspeed <= 0)
-		return;
-	float accelspeed = accel * pml.frametime * wishspeed;
-	if (accelspeed > addspeed)
-		accelspeed = addspeed;
-
-	VectorMA (pml.velocity, accelspeed, wishdir);
-}
-
-
-static void AirAccelerate (const CVec3 &wishdir, float wishspeed, float accel)
-{
-	float wishspd = wishspeed;
-	if (wishspd > 30) wishspd = 30;
-
-	float currentspeed = dot (pml.velocity, wishdir);
-	float addspeed = wishspd - currentspeed;
 	if (addspeed <= 0) return;
 
-	float accelspeed = accel * wishspeed * pml.frametime;
+	float accelspeed = accel * pml.frametime * wishspeed;
 	if (accelspeed > addspeed)
 		accelspeed = addspeed;
 
@@ -533,19 +516,10 @@ static void AirMove ()
 	if (pml.ladder && fmove < 0 && !(pm->s.pm_flags & PMF_ON_GROUND))
 		fmove = 0;			// disable backward move when on a ladder
 
-//!!!!! pitch should be 1/3 so this isn't needed??!
-#if 0
-	pml.forward[2] = 0;
-	pml.right[2] = 0;
-	pml.forward.Normalize ();
-	pml.right.Normalize ();
-#endif
-
 	CVec3 wishvel, wishdir;
 	for (int i = 0; i < 2; i++)
 		wishvel[i] = pml.forward[i]*fmove + pml.right[i]*smove;
 	wishvel[2] = 0;
-//Com_Printf("v1(%g|%g|%g)",VECTOR_ARG(wishvel));//!!
 
 	AddCurrents (wishvel);
 	float wishspeed = VectorNormalize (wishvel, wishdir);
@@ -594,19 +568,13 @@ static void AirMove ()
 		StepSlideMove ();
 	}
 	else
-	{	// not on ground, so little effect on velocity
-//Com_Printf("v2(%g|%g|%g)*%g ",VECTOR_ARG(wishdir),wishspeed);//!!
-		if (pm_airaccelerate)
-			AirAccelerate (wishdir, wishspeed, pm_accelerate);
-		else
-			Accelerate (wishdir, wishspeed, 1);
-//Com_Printf("vel0(%g|%g|%g) o0(%g|%g|%g)\n",VECTOR_ARG(pml.velocity),VECTOR_ARG(pml.origin));//!!
+	{
+		// not on ground, so little effect on velocity
+		Accelerate (wishdir, wishspeed, pm_airaccelerate ? pm_airaccelerate : 1);
 		// add gravity
 		pml.velocity[2] -= pm->s.gravity * pml.frametime;
 		StepSlideMove ();
-//Com_Printf("tm=%g vel1(%g|%g|%g) o1(%g|%g|%g)\n",pml.frametime, VECTOR_ARG(pml.velocity),VECTOR_ARG(pml.origin));//!!
 	}
-//Com_Printf("\n");//!!
 }
 
 

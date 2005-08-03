@@ -98,13 +98,8 @@ static void InsertLinkBefore (link_t *l, link_t *before)
 	l->next->prev = l;
 }
 
-/*
-===============
-SV_CreateAreaNode
 
-Builds a uniformly subdivided tree for the given world size
-===============
-*/
+// Builds a uniformly subdivided tree for the given world size
 static areanode_t *SV_CreateAreaNode (int depth, const CBox &bounds)
 {
 	areanode_t &anode = areaNodes[numAreaNodes++];
@@ -123,13 +118,9 @@ static areanode_t *SV_CreateAreaNode (int depth, const CBox &bounds)
 	float f1 = bounds.maxs[1] - bounds.mins[1];
 	float f2 = bounds.maxs[2] - bounds.mins[2];
 	if (f0 > f1)
-	{
 		anode.axis = f0 > f2 ? 0 : 2;
-	}
 	else
-	{
 		anode.axis = f1 > f2 ? 1 : 2;
-	}
 
 	// split bounds into 2 identical by volume sub-bounds
 	anode.dist = (bounds.maxs[anode.axis] + bounds.mins[anode.axis]) / 2;
@@ -144,13 +135,8 @@ static areanode_t *SV_CreateAreaNode (int depth, const CBox &bounds)
 	return &anode;
 }
 
-/*
-===============
-SV_ClearWorld
 
-===============
-*/
-void SV_ClearWorld (void)
+void SV_ClearWorld ()
 {
 	memset (areaNodes, 0, sizeof(areaNodes));
 	memset (ents, 0, sizeof(ents));
@@ -160,12 +146,10 @@ void SV_ClearWorld (void)
 }
 
 
-/*
-===============
-SV_UnlinkEdict
+/*-----------------------------------------------------------------------------
+	Linking edicts to world tree
+-----------------------------------------------------------------------------*/
 
-===============
-*/
 void SV_UnlinkEdict (edict_t *ent)
 {
 	guard(SV_UnlinkEdict);
@@ -194,12 +178,6 @@ void SV_UnlinkEdict (edict_t *ent)
 }
 
 
-/*
-===============
-SV_LinkEdict
-
-===============
-*/
 #define MAX_TOTAL_ENT_LEAFS		128
 
 void SV_LinkEdict (edict_t *ent)
@@ -395,12 +373,6 @@ void SV_LinkEdict (edict_t *ent)
 }
 
 
-/*
-====================
-SV_AreaEdicts
-
-====================
-*/
 static void SV_AreaEdicts_r (areanode_t *node)
 {
 	link_t	*l, *next, *start;
@@ -451,10 +423,10 @@ int SV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list, int max
 	guard(SV_AreaEdicts);
 	area_bounds.mins = mins;
 	area_bounds.maxs = maxs;
-	area_list = list;
-	area_count = 0;
-	area_maxcount = maxcount;
-	area_type = areatype;
+	area_list        = list;
+	area_count       = 0;
+	area_maxcount    = maxcount;
+	area_type        = areatype;
 
 	SV_AreaEdicts_r (areaNodes);
 
@@ -463,13 +435,10 @@ int SV_AreaEdicts (const CVec3 &mins, const CVec3 &maxs, edict_t **list, int max
 }
 
 
-//===========================================================================
+/*-----------------------------------------------------------------------------
+	Trace
+-----------------------------------------------------------------------------*/
 
-/*
-=============
-SV_PointContents
-=============
-*/
 int SV_PointContents (const CVec3 &p)
 {
 	guard(SV_PointContents);
@@ -498,14 +467,6 @@ int SV_PointContents (const CVec3 &p)
 }
 
 
-//===========================================================================
-
-/*
-====================
-SV_ClipMoveToEntities
-
-====================
-*/
 static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask)
 {
 	guard(SV_ClipMoveToEntities);
@@ -597,16 +558,8 @@ static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 
 }
 
 
-/*
-==================
-SV_Trace
-
-Moves the given mins/maxs volume through the world from start to end.
-
-Passedict and edicts owned by passedict are explicitly not checked.
-
-==================
-*/
+// Moves the given mins/maxs volume through the world from start to end.
+// Passedict and edicts owned by passedict are explicitly not checked.
 void SV_Trace (trace_t &tr, const CVec3 &start, const CVec3 &end, const CBox &bounds, edict_t *passedict, int contentmask)
 {
 	guard(SV_Trace);

@@ -28,26 +28,18 @@ void DrawChar (int x, int y, int c, int color)
 	Static (change name?) text output
 -----------------------------------------------------------------------------*/
 
-#define TEXTBUF_SIZE 65536
-
 #define TOP_TEXT_POS 64
 #define CHARSIZE_X 6
 #define CHARSIZE_Y 8
 
 
-struct textRec_t
+struct CRText : public CTextRec
 {
 	short	x, y;
 	color_t	c;
-	char	*text;
-	textRec_t *next;
 };
 
-
-static char	textbuf[TEXTBUF_SIZE];
-static int	textbufPos;			// position for next record
-static bool	textbufEmpty;		// count of records in buffer (0 or greater)
-static textRec_t *lastTextRec;
+static TTextContainer<CRText, 65536> Text;
 
 static int nextLeft_y  = TOP_TEXT_POS;
 static int nextRight_y = TOP_TEXT_POS;
@@ -56,7 +48,7 @@ static int nextRight_y = TOP_TEXT_POS;
 void ClearTexts ()
 {
 	nextLeft_y = nextRight_y = TOP_TEXT_POS;
-	textbufEmpty = true;
+	Text.Clear ();
 }
 
 
@@ -81,68 +73,45 @@ static void GetTextExtents (const char *s, int &width, int &height)
 }
 
 
+static void DrawText (const CRText *rec)
+{
+	if (gl_logTexts->integer)
+		Com_Printf (S_MAGENTA"%s\n", rec->text);
+
+	int y = rec->y;
+	const char *text = rec->text;
+
+	while (true)
+	{
+		const char *s = strchr (text, '\n');
+		int len = s ? s - text : strlen (text);
+
+		BK_DrawText (text, len, rec->x, y, CHARSIZE_X, CHARSIZE_Y, rec->c.rgba);
+		if (!s) return;							// all done
+
+		y += CHARSIZE_Y;
+		text = s + 1;
+	}
+}
+
+
 void FlushTexts ()
 {
-	nextLeft_y = nextRight_y = TOP_TEXT_POS;
-	if (textbufEmpty) return;
-
-	for (textRec_t *rec = (textRec_t*)textbuf; rec; rec = rec->next)
-	{
-		int len = strlen (rec->text);
-		if (!len) continue;
-
-		if (gl_logTexts->integer)
-			Com_Printf (S_MAGENTA"%s\n", rec->text);
-		BK_DrawText (rec->text, len, rec->x, rec->y, CHARSIZE_X, CHARSIZE_Y, rec->c.rgba);
-	}
+	Text.Enumerate (DrawText);
 	if (gl_logTexts->integer == 2)				// special value: log only 1 frame
 		Cvar_SetInteger ("gl_logTexts", 0);
-
-	textbufEmpty = true;
+	nextLeft_y = nextRight_y = TOP_TEXT_POS;
+	ClearTexts ();
 }
 
 
 void DrawTextPos (int x, int y, const char *text, unsigned rgba)
 {
-	if (!text || !*text) return;	// empty text
-
-	if (textbufEmpty)
-	{	// 1st record - perform initialization
-		lastTextRec  = NULL;
-		textbufPos   = 0;
-		textbufEmpty = false;
-	}
-
-	while (true)
-	{
-		textRec_t *rec = (textRec_t*) &textbuf[textbufPos];
-		const char *s = strchr (text, '\n');
-		int len = s ? s - text : strlen (text);
-
-		if (len)
-		{
-			int size = sizeof(textRec_t) + len + 1;
-			if (size + textbufPos > TEXTBUF_SIZE) return;	// out of buffer space
-
-			char *textCopy = (char*)(rec + 1);
-			memcpy (textCopy, text, len);
-			textCopy[len] = 0;
-			rec->x      = x;
-			rec->y      = y;
-			rec->text   = textCopy;
-			rec->c.rgba = rgba;
-			rec->next   = NULL;
-
-			if (lastTextRec) lastTextRec->next = rec;
-			lastTextRec = rec;
-			textbufPos += size;
-		}
-		y += CHARSIZE_Y;
-		if (s)
-			text = s + 1;
-		else
-			return;
-	}
+	CRText *rec = Text.Add (text);
+	if (!rec) return;
+	rec->x      = x;
+	rec->y      = y;
+	rec->c.rgba = rgba;
 }
 
 

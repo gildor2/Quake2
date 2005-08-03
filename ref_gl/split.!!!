@@ -1,0 +1,142 @@
+B: backend
+F: frontend
+F*: frontend, accessible from backend
+
+
+===============================================================================
+	Stages of separation
+===============================================================================
+
+- create interface from backend to draw primitives (for debug)
+- split gl_images.cpp to F/B
+  - rename (in B) to gl_texture.cpp
+- split gl_interface.h::gl_config struc to F/B; some fields should be accessible from both:
+  - gamma info; place in a separate struc -> gammaInfo_t -- initialized by F,
+    then copied to B ?)
+- split gl_speeds struc (may be, change profiling method -- make it global, with registering
+  sub-functions ?!); RENAME!! ("speeds" is incorrect name ...)
+- split gl_main.cpp: cut most gfxinfo -> B; Init() - most code -> B
+
+  ....
+  ....
+
+
+- remove header dependencies (most important: gl_interface.h from F)
+- create interface for B (as for renderer now); remove such interface from renderer
+- rename GL_Func(), gl_var ...
+  - F: no "GL_" prefix; change to "R_" ? or use explicit namespace?)
+    for cvars: all "gl_" -> "r_"
+  - B: will be placed in a OpenGLDrv namespace, so - prefixes not needed; keep
+    prefixes for cvars only
+  - if it will be needed, we can change prefixes later ...
+- "OpenGLDrv" namespace: for B only; F should use "Renderer"
+- separate F/B by 2 dirs
+- rename files: B: "gl_*.cpp" -> "OGL*.cpp"
+- for dynamic B binding: should move parts of "vid_dll.cpp" inside "F::gl_main.cpp"
+  (create C++ platform-independent interface for dll/so loading?)
+
+
+===============================================================================
+	Strategy
+===============================================================================
+
+- keep B as small as possible: most functions should be implemented in F,
+  even when immediate visualization required -- call visualization via B interfaces
+
+
+===============================================================================
+	Frontend
+===============================================================================
+
+gl_bspmodel.cpp:
+gl_trimodel.cpp:
+gl_model.cpp:
+
+gl_frontend.cpp:
+	culling
+	trace
+	bsp object insertion
+	generating list of visible surfaces
+	getting surface list from model
+	bsp drawing
+	flares -- can use (later) visibility info from backend
+
+gl_poly.cpp:
+
+gl_shader.cpp:
+
+gl_text.cpp:
+
+gl_buffers.cpp: F*
+	SortSurfaces <- gl_backend.cpp
+
+gl_math.cpp: F*
+
+
+===============================================================================
+	Backend
+===============================================================================
+
+gl_backend.cpp:
+	shader processing -> B
+	CheckDynamicLightmap
+	surface tesselators -> B
+??	debug 3D: may be, move bboxes to F; other -> B
+??	particle visualization
+	scene drawing -> B
+	pic drawing -> B
+	text drawing -> B
+
+gl_interface.cpp:
+
+qgl.cpp:
+
+glw_imp.cpp:
+
+
+===============================================================================
+	Check!!!
+===============================================================================
+
+gl_main.cpp: (most -> F)
+	gfxinfo: most -> B, parts -> F
+	RegisterCvars(): some cvars -> F, some -> B
+	SetMode() -> B
+	Init() - extensions, GL info -> B; common code, calling all other -> F
+	BeginFrame/EndFrame: parts -> B (logging, texture mode); gamma -> F
+	RenderFrame -> F; r_speeds -> parts to B
+	renderer interface -- may be shared with client (F will be part of Engine, B - separated)
+
+gl_image.cpp:
+	texture resampling -> F*
+	texture re-lighting/gamma/saturation -> F*
+	mipmapping -> F*
+	Upload() -> B
+	CreateImage() - create image_t from texture buffer -> B (decition of target/format ...)
+	LoadDelayedImage() -> B
+	DrawStretchRaw8() -> B (contains GL only)
+	gamma table, calling win32 gamma ramp -> F
+	imagelist -> B (displays GL info ...)
+	image reload: file assess -> F, upload -> B
+	screenshot: glFinish(), glReadPixels() -> B, other (resampling, gamma, files) -> F
+	InitImages() - creating system textures -> F
+	ShutdownImages() - free all images -> B
+	ShowImages() - B (called from gl_backend.cpp)
+	FindImage() - search in image list -> B, loading from file -> F; will call CreateImage()
+
+gl_sky.cpp: (50/50)
+	ClipSkyPolygon, AddSkySurface -> F
+	tesselation, DrawSky -> B
+
+gl_light.cpp: (most to F) !!! -- B should give interface for debug 3D line output
+	ShowLights(): F, but should be possible to call backend line functions
+	light computation, lightgrid -> F
+		showGrid -> B
+	DiffuseLight() -> ?? access color data for renderer
+	loading light info from map -> F
+
+gl_lightmap.cpp: (most to F)
+	building lightmap texture from small blocks -> F
+	lightscaling lightmaps -> F
+	updating dynamic lightmaps
+		have code for updating texture -> B

@@ -65,6 +65,7 @@ Comments:
 - cvar "logfile": log placed in quake root directory (not in game directory) in "quake2.log" + removed lines, finished
   with LF ('\r')
 - using specified model/skin in a singleplayer mode (original: used male/grunt skin)
+- air acceleration works correct (sv_airaccelerate); before: value of cvar was ignored
 
 3. ADDONS
 ~~~~~~~~~
@@ -105,7 +106,7 @@ File system
 - improved "dir" console command (reformatted, listing paks)
 - added support of zip (pk3) pak files (should also have ".pak" extension; to load ".pk3" files add to "autoexec.cfg"
   following line: "loadpak *.pk3")
-- loading unlimited number of paks with any names (all internally lowercased)
+- loading unlimited number of paks with any names
 
 Console/Menu
 ------------

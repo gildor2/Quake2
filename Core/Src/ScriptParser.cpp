@@ -93,3 +93,104 @@ const char *CSimpleParser::SkipBraces ()
 	}
 	return NULL;
 }
+
+
+/*-----------------------------------------------------------------------------
+	Support for quoted strings
+-----------------------------------------------------------------------------*/
+
+//?? should be "const", but what to do with return type?
+// will return NULL, when line unexpectedly finished
+// will return pointer to next-after-closing-quote char otherwise
+//?? rename to appSkipString(); process non-quoted strings; skip leading spaces
+CORE_API char* appSkipQuotedString (char *str)
+{
+	char c = *str;
+	if (c != '"') return str;					//?? not started with quotes ?!
+	str++;
+
+	while (true)
+	{
+		c = *str++;
+		if (c == 0 || c == '\n') return NULL;	// unexpected end of line
+		if (c == '"') return str;				// found
+		if (c != '\\') continue;				// next char ...
+		// C-like escape sequence (no oct/hex codes!)
+		c = *str++;
+		if (c == 0 || c == '\n') return NULL;	// char expected !
+	}
+}
+
+
+CORE_API bool appQuoteString (char *dst, int dstSize, const char *src)
+{
+	// place starting quote
+	if (!dstSize--) return false;
+	*dst++ = '\"';
+
+	while (true)
+	{
+		char c = *src++;
+		if (!c) break;
+		if (dstSize < 2) return false;			// at least, no space for char + closing quote
+		if (c == '\n')
+		{
+			*dst++ = '\\'; *dst++ = 'n';
+			dstSize -= 2;
+		}
+		else if (c == '\t')
+		{
+			*dst++ = '\\'; *dst++ = 't';
+			dstSize -= 2;
+		}
+		else if (c == '"')
+		{
+			*dst++ = '\\'; *dst++ = '"';
+			dstSize -= 2;
+		}
+		else
+		{
+			*dst++ = c;
+			dstSize--;
+		}
+	}
+
+	// place closing quote
+	if (!dstSize) return false;
+	*dst = '\"';
+
+	return true;
+}
+
+
+CORE_API bool appUnquoteString (char *dst, int dstSize, const char *src)
+{
+	char c = *src++;
+	if (c != '"') return false;					//?? not started with quotes ?!
+
+	while (true)
+	{
+		c = *src++;
+		if (c == 0 || c == '\n') return false;	// unexpected end of line
+		if (!dstSize--) return false;			// no space
+		if (c == '"')							// found closing quote
+		{
+			*dst = 0;
+			return true;
+		}
+		if (c != '\\')
+		{
+			*dst++ = c;
+			continue;
+		}
+		// C-like escape sequence (no oct/hex codes!)
+		c = *src++;
+		if (c == 0 || c == '\n') return false;	// char expected !
+		if (c == 'n')
+			*dst++ = '\n';
+		else if (c == 't')
+			*dst++ = '\t';
+		else
+			*dst++ = c;
+	}
+}

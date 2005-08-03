@@ -21,9 +21,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "qcommon.h"
 #include "protocol.h"
 
-// need qboolean declaration for game library interface
-typedef unsigned int		qboolean;
-
 #include "game.h"
 
 //=============================================================================
@@ -194,10 +191,10 @@ extern	server_t		sv;					// local server
 extern	cvar_t	*sv_paused;
 extern	cvar_t	*sv_deathmatch, *sv_coop, *sv_maxclients;
 extern	cvar_t	*sv_noreload;			// don't reload level state when reentering
-extern	cvar_t	*sv_airaccelerate;		// don't reload level state when reentering
 extern	cvar_t	*sv_extProtocol;
 extern	cvar_t	*sv_labels;
 
+extern	cvar_t	*sv_airaccelerate;
 extern	cvar_t	*sv_enforcetime;
 
 extern	client_t	*sv_client;
@@ -212,8 +209,7 @@ void SV_DropClient (client_t *drop, char *info);
 
 void SV_WriteClientdataToMessage (client_t *client, sizebuf_t *msg);
 
-void SV_ExecuteUserCommand (char *s);
-void SV_InitCommands (void);
+void SV_InitCommands ();
 void SV_InitVars ();
 
 void SV_SendServerinfo (client_t *client);

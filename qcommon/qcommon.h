@@ -710,7 +710,6 @@ void	CM_ReadPortalState (FILE *f);
 -----------------------------------------------------------------------------*/
 
 extern float pm_airaccelerate;
-
 void	Pmove (pmove_t *pmove);
 
 
@@ -899,7 +898,7 @@ void	SV_Frame (float msec);
 #define	MASK_OPAQUE				(CONTENTS_SOLID|CONTENTS_SLIME|CONTENTS_LAVA)
 #define	MASK_SHOT				(CONTENTS_SOLID|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEADMONSTER)
 #define MASK_CURRENT			(CONTENTS_CURRENT_0|CONTENTS_CURRENT_90|CONTENTS_CURRENT_180|CONTENTS_CURRENT_270|	\
-		CONTENTS_CURRENT_UP|CONTENTS_CURRENT_DOWN)
+								CONTENTS_CURRENT_UP|CONTENTS_CURRENT_DOWN)
 
 // surface flags
 #define	SURF_LIGHT		0x0001		// value will hold the light strength

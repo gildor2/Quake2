@@ -200,7 +200,6 @@ void appCopyFilename (char *dest, const char *src, int len)
 	Colorized strings support
 -----------------------------------------------------------------------------*/
 
-
 int appCStrlen (const char *str)
 {
 	int len = 0;
@@ -247,7 +246,6 @@ void appUncolorizeString (char *dst, const char *src)
 /*-----------------------------------------------------------------------------
 	String formatting
 -----------------------------------------------------------------------------*/
-
 
 #define VA_GOODSIZE		512
 #define VA_BUFSIZE		2048
@@ -446,7 +444,6 @@ char *CopyString (const char *str, CMemoryChain *chain)
 	String lists
 -----------------------------------------------------------------------------*/
 
-
 void* CStringItem::operator new (size_t size, const char *str)
 {
 	guardSlow(CStringItem::new);
@@ -463,12 +460,9 @@ void* CStringItem::operator new (size_t size, const char *str)
 
 void* CStringItem::operator new (size_t size, const char *str, CMemoryChain *chain)
 {
-	int		len;
-	CStringItem *item;
-
 	guardSlow(CStringItem::new(chain));
-	len = strlen (str) + 1;
-	item = (CStringItem*) chain->Alloc (size + len);
+	int len = strlen (str) + 1;
+	CStringItem *item = (CStringItem*) chain->Alloc (size + len);
 	item->name = (char*) OffsetPointer (item, size);
 	memcpy (item->name, str, len);			// may be faster than strcpy()
 
@@ -509,10 +503,9 @@ CStringItem* CStringList::Find (int index)
 
 int CStringList::IndexOf (const char *str)
 {
+	guardSlow(CStringList::IndexOf);
 	int		index;
 	CStringItem *item;
-
-	guardSlow(CStringList::IndexOf);
 	for (item = first, index = 0; item; item = item->next, index++)
 		if (!appStricmp (str, item->name))		//!! NOTE: when list is alpha-sorted, can return NULL if cmp<0
 			return index;
@@ -523,11 +516,9 @@ int CStringList::IndexOf (const char *str)
 
 bool CStringList::Remove (CStringItem *item)
 {
-	CStringItem *curr, *prev;
-
 	guardSlow(CStringList::Remove);
-	prev = NULL;
-	for (curr = first; curr; curr = curr->next)
+	CStringItem *prev = NULL;
+	for (CStringItem *curr = first; curr; curr = curr->next)
 	{
 		if (curr == item)
 		{

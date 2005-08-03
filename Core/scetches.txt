@@ -108,8 +108,8 @@ CONFIG SYSTEM
    - problem: user cvars -- in which section (package) to store ?
 
 
-OPENGL (UPDATED) RENDERER
-~~~~~~~~~~~~~~~~~~~~~~~~~
+OPENGL RENDERER
+~~~~~~~~~~~~~~~
 - use GL_ALPHA[xx], GL_LUMINANCE[xx] (?) texture formats for some textures (auto-detect format)
 - add GL_ARB_vertex_buffer_object extension (at least for model tex coords)
 
@@ -117,6 +117,7 @@ OPENGL (UPDATED) RENDERER
 COMMAND SYSTEM
 ~~~~~~~~~~~~~~
 - aliases: add support for bash_function-like arguments (bash have no args for aliases, but our command system have no functions ...)
+  ? make as function? aliases - no args
 ? make separate command system for each subsystem (+ global ?)
 
 
@@ -135,12 +136,3 @@ MEMORY
   - subsystem name (game, renderer + subsystems (images, models, bsp, lightgrid ...), etc) + info (bytes/blocks ...)
   - memory usage
   - percent of total memory usage
-
-MATH
-~~~~
-- add to Core:
-  - table-driven trigonometric functions
-  - fast sqrt
-- add to Engine:
-  - vectors
-  - _some_ matrix functions (required functions only!)

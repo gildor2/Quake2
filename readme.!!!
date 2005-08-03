@@ -81,8 +81,10 @@ New server:
   Response received in (cl_main.c :: CL_ConnectlessPacket() -> CL_ParseStatusMessage()) and analyzed in
     (client/menu.c :: M_AddToServerList())
 
---OR-- (may be, this is better...)
+--OR--
   we can add extra bytes to any packet
+--OR--
+  we can send extra info in "stat" server responce (currently: cheats, mapname ...)
 
 ----------------------------------------
 

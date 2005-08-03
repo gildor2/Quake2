@@ -190,16 +190,10 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 
 	// save name for levels that don't set message
 	strcpy (sv.configstrings[CS_NAME], server);
-	if (sv_deathmatch->integer)
-	{
-		appSprintf (ARRAY_ARG(sv.configstrings[CS_AIRACCEL]), "%g", sv_airaccelerate->value);
-		pm_airaccelerate = sv_airaccelerate->value;
-	}
-	else
-	{
-		strcpy (sv.configstrings[CS_AIRACCEL], "0");
-		pm_airaccelerate = 0;
-	}
+
+	// choose air acceleration
+	pm_airaccelerate = (sv_deathmatch->integer) ? sv_airaccelerate->value : 0;
+	appSprintf (ARRAY_ARG(sv.configstrings[CS_AIRACCEL]), "%g", pm_airaccelerate);
 
 	sv.multicast.Init (sv.multicast_buf, sizeof(sv.multicast_buf));
 	sv.multicastNew.Init (sv.multicast_bufNew, sizeof(sv.multicast_bufNew));

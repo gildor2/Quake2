@@ -62,10 +62,6 @@ bool md3Model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagNam
 }
 
 
-/*-----------------------------------------------------------------------------
-	Loading triangle models
------------------------------------------------------------------------------*/
-
 // Find xyz_index for each "st" (st have unique xyz, but xyz may have few st on texture seams)
 // and fill "st" list.
 // This function may be used for Q2 and KP models
@@ -438,8 +434,8 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	 */
 	surf = (surfaceMd3_t*)appMalloc (sizeof(surfaceMd3_t) + MAX_XYZ_INDEXES * 2*sizeof(int));	// alloc space for MAX_XYZ_INDEXES texcoords
 	surf->texCoords = (float*)(surf+1);
-	surf->numVerts = MAX_XYZ_INDEXES;
-	surf->numTris = MAX_XYZ_INDEXES - 2;
+	surf->numVerts  = MAX_XYZ_INDEXES;
+	surf->numTris   = MAX_XYZ_INDEXES - 2;
 	numVerts = ParseGlCmds (name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes);
 	numTris = surf->numTris;		// just computed
 	if (numTris != hdr->numTris) Com_WPrintf ("LoadMd2(%s): computed numTris %d != %d\n", name, numTris, hdr->numTris);
@@ -732,8 +728,8 @@ sprModel_t *LoadSp2 (const char *name, byte *buf, unsigned len)
 	sprFrame_t *out = spr->frames;
 	for (int i = 0; i < hdr->numframes; i++, in++, out++)
 	{
-		out->width = in->width;
-		out->height = in->height;
+		out->width          = in->width;
+		out->height         = in->height;
 		out->localOrigin[0] = in->origin_x;
 		out->localOrigin[1] = in->origin_y;
 
@@ -766,8 +762,8 @@ static void cSize (int argc, char **argv)
 {
 	int w = atoi (argv[1]);
 	int h = atoi (argv[2]);
-	loadSpr->frames[0].width  = w;
-	loadSpr->frames[0].height = h;
+	loadSpr->frames[0].width          = w;
+	loadSpr->frames[0].height         = h;
 	loadSpr->frames[0].localOrigin[0] = w / 2;
 	loadSpr->frames[0].localOrigin[1] = h / 2;
 }

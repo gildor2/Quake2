@@ -17,9 +17,11 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
-//#include "q_shared2.h"
+
+#include "Core.h"
+#include "q_shared2.h"
 // we require some ri.func() declarations => some type defines etc
-#include "qcommon.h"
+//#include "qcommon.h"
 
 //?? split to q_shared2.cpp, Core/{Math1D, Math3D, MathColor}.cpp
 //?? color: (CColor3f : CVec3), (CColor4f : CColor3f + float alpha)

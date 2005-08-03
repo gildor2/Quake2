@@ -629,7 +629,7 @@ image_t *CreateImage (const char *name, void *pic, int width, int height, unsign
 	image_t	*image;
 
 	guard(CreateImage);
-	if (!name[0]) Com_FatalError ("R_CreateImage: null name");
+	if (!name[0]) Com_FatalError ("R_CreateImage: NULL name");
 
 //	Com_Printf ("CreateImage(%s)\n", name);//!!!!
 
@@ -1309,10 +1309,8 @@ CVAR_END
 
 	/*---------- create video image ------------*/
 	memset (tex, 255, 16*16*4);
-	if (!GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))
-		gl_videoImage = CreateImage ("*video", tex, 16, 16, IMAGE_CLAMP);
-	else	// without this, uploading video as rect texture will damage other texture:
-		gl_videoImage = CreateImage ("*video", tex, 10, 5, IMAGE_CLAMP);
+	// NOTE: here non-power-of-2 texture size; when not supported - will be automatically resampled
+	gl_videoImage = CreateImage ("*video", tex, 10, 5, IMAGE_CLAMP);
 	gl_videoImage->flags |= IMAGE_SYSTEM;
 
 	/*------ create identity light image ---------*/

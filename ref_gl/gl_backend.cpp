@@ -2039,6 +2039,7 @@ void BK_DrawPic (shader_t *shader, int x, int y, int w, int h, float s1, float t
 // This is slightly optimized version of BK_DrawPic() for drawing texts
 void BK_DrawText (const char *text, int len, int x, int y, int w, int h, unsigned color)
 {
+	if (!len) return;
 	if (!renderingEnabled) return;
 
 	if (currentShader != gl_concharsShader)

@@ -29,3 +29,10 @@ public:
 	// NOTE: textPtr will point to line AFTER matched "}"
 	const char *SkipBraces ();
 };
+
+
+CORE_API char* appSkipQuotedString (char *str);
+// return false when not enough dstSize
+CORE_API bool appQuoteString (char *dst, int dstSize, const char *src);
+// return false when not enough dstSize or when no closing quote
+CORE_API bool appUnquoteString (char *dst, int dstSize, const char *src);

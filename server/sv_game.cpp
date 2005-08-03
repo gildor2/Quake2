@@ -10,16 +10,14 @@ static bool dummyGame;		// when demomap or cinematic loaded
 #define SV_Pmove Pmove		// for profiling
 
 
-/*
-===============
-PF_Unicast
+/*-----------------------------------------------------------------------------
+	Interface functions for game library
+-----------------------------------------------------------------------------*/
 
-Sends the contents of the mutlicast buffer to a single client
-===============
-*/
-static void PF_Unicast (edict_t *ent, qboolean reliable)
+// Sends the contents of the mutlicast buffer to a single client
+static void G_Unicast (edict_t *ent, qboolean reliable)
 {
-	guard(PF_Unicast);
+	guard(G_Unicast);
 
 	if (!ent) return;
 	int p = NUM_FOR_EDICT(ent);
@@ -38,14 +36,8 @@ static void PF_Unicast (edict_t *ent, qboolean reliable)
 }
 
 
-/*
-===============
-PF_dprintf
-
-Debug print to server console
-===============
-*/
-static void PF_dprintf (const char *fmt, ...)
+// Debug print to server console
+static void G_dprintf (const char *fmt, ...)
 {
 	char	msg[1024];
 	va_list	argptr;
@@ -58,19 +50,14 @@ static void PF_dprintf (const char *fmt, ...)
 }
 
 
-/*
-===============
-PF_cprintf
 
-Print to a single client
-===============
-*/
-static void PF_cprintf (edict_t *ent, int level, const char *fmt, ...)
+// Print to a single client
+static void G_cprintf (edict_t *ent, int level, const char *fmt, ...)
 {
 	char	msg[1024];
 	va_list	argptr;
 
-	guard(PF_cprintf);
+	guard(G_cprintf);
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg), fmt, argptr);
 	va_end (argptr);
@@ -88,14 +75,8 @@ static void PF_cprintf (edict_t *ent, int level, const char *fmt, ...)
 }
 
 
-/*
-===============
-PF_centerprintf
-
-centerprint to a single client
-===============
-*/
-static void PF_centerprintf (edict_t *ent, const char *fmt, ...)
+// centerprint to a single client
+static void G_centerprintf (edict_t *ent, const char *fmt, ...)
 {
 	char	msg[1024];
 	va_list	argptr;
@@ -104,26 +85,20 @@ static void PF_centerprintf (edict_t *ent, const char *fmt, ...)
 	if (n < 1 || n > sv_maxclients->integer)
 		return;	// Com_DropError ("centerprintf to a non-client");
 
-	guard(PF_centerprintf);
+	guard(G_centerprintf);
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg), fmt, argptr);
 	va_end (argptr);
 
 	MSG_WriteByte (&sv.multicast,svc_centerprint);
 	MSG_WriteString (&sv.multicast,msg);
-	PF_Unicast (ent, true);
+	G_Unicast (ent, true);
 	unguard;
 }
 
 
-/*
-===============
-PF_error
-
-Abort the server with a game error
-===============
-*/
-static void PF_error (const char *fmt, ...)
+// Abort the server with a game error
+static void G_error (const char *fmt, ...)
 {
 	char	msg[1024];
 	va_list	argptr;
@@ -136,18 +111,12 @@ static void PF_error (const char *fmt, ...)
 }
 
 
-/*
-=================
-PF_setmodel
-
-Also sets mins and maxs for inline bmodels
-=================
-*/
-static void PF_setmodel (edict_t *ent, char *name)
+// Also sets mins/maxs for inline bmodels
+static void G_setmodel (edict_t *ent, char *name)
 {
-	guard(PF_setmodel);
+	guard(G_setmodel);
 
-	if (!name) Com_DropError ("PF_setmodel: NULL name");
+	if (!name) Com_DropError ("G_setmodel: NULL name");
 
 	//	ent->model = name;
 	ent->s.modelindex = SV_ModelIndex (name);
@@ -163,15 +132,9 @@ static void PF_setmodel (edict_t *ent, char *name)
 }
 
 
-/*
-===============
-PF_Configstring
-
-===============
-*/
-static void PF_Configstring (int index, const char *val)
+static void G_Configstring (int index, const char *val)
 {
-	guard(PF_Configstring);
+	guard(G_Configstring);
 	if (index < 0 || index >= MAX_CONFIGSTRINGS)
 		Com_DropError ("configstring: bad index %i\n", index);
 
@@ -197,16 +160,16 @@ static void PF_Configstring (int index, const char *val)
 }
 
 
-static void PF_WriteChar (int c) {MSG_WriteChar (&sv.multicast, c);}
-static void PF_WriteByte (int c) {MSG_WriteByte (&sv.multicast, c);}
-static void PF_WriteShort (int c) {MSG_WriteShort (&sv.multicast, c);}
-static void PF_WriteLong (int c) {MSG_WriteLong (&sv.multicast, c);}
-static void PF_WriteFloat (float f) {MSG_WriteFloat (&sv.multicast, f);}
-static void PF_WriteString (char *s) {MSG_WriteString (&sv.multicast, s);}
-static void PF_WritePos (const CVec3 &pos) {MSG_WritePos (&sv.multicast, pos);}
-static void PF_WriteAngle (float f) {MSG_WriteAngle (&sv.multicast, f);}
+static void G_WriteChar (int c)		{ MSG_WriteChar (&sv.multicast, c); }
+static void G_WriteByte (int c)		{ MSG_WriteByte (&sv.multicast, c); }
+static void G_WriteShort (int c)	{ MSG_WriteShort (&sv.multicast, c); }
+static void G_WriteLong (int c)		{ MSG_WriteLong (&sv.multicast, c); }
+static void G_WriteFloat (float f)	{ MSG_WriteFloat (&sv.multicast, f); }
+static void G_WriteString (char *s) { MSG_WriteString (&sv.multicast, s); }
+static void G_WritePos (const CVec3 &pos) { MSG_WritePos (&sv.multicast, pos); }
+static void G_WriteAngle (float f)	{ MSG_WriteAngle (&sv.multicast, f); }
 
-static void PF_WriteDir (const CVec3 *dir)
+static void G_WriteDir (const CVec3 *dir)
 {
 	if (dir)
 		MSG_WriteDir (&sv.multicast, *dir);
@@ -215,74 +178,68 @@ static void PF_WriteDir (const CVec3 *dir)
 }
 
 
-/*
-=================
-PF_inPVS
 
-Also checks portalareas so that doors block sight
-=================
-*/
-static qboolean PF_inPVS (const CVec3 &p1, const CVec3 &p2)
+// Also checks portalareas so that doors block sight
+static qboolean G_inPVS (const CVec3 &p1, const CVec3 &p2)
 {
-	int leafnum = CM_PointLeafnum (p1);
-	int cluster = CM_LeafCluster (leafnum);
-	int area1 = CM_LeafArea (leafnum);
+	int leafnum1 = CM_PointLeafnum (p1);
+	const byte *mask = CM_ClusterPVS (CM_LeafCluster (leafnum1));
 
-	const byte *mask = CM_ClusterPVS (cluster);
+	int leafnum2 = CM_PointLeafnum (p2);
+	int cluster  = CM_LeafCluster (leafnum2);
 
-	leafnum = CM_PointLeafnum (p2);
-	cluster = CM_LeafCluster (leafnum);
-	int area2 = CM_LeafArea (leafnum);
-
-	if (mask && (!(mask[cluster>>3] & (1<<(cluster&7)))))
+	if (mask && (!(mask[cluster >> 3] & (1<<(cluster & 7)))))
 		return false;
-	if (!CM_AreasConnected (area1, area2))
+
+	if (!CM_AreasConnected (CM_LeafArea (leafnum1), CM_LeafArea (leafnum2)))
 		return false;		// a door blocks sight
 	return true;
 }
 
 
-/*
-=================
-PF_inPHS
-
-Also checks portalareas so that doors block sound
-=================
-*/
-static qboolean PF_inPHS (const CVec3 &p1, const CVec3 &p2)
+// Also checks portalareas so that doors block sound
+static qboolean G_inPHS (const CVec3 &p1, const CVec3 &p2)
 {
-	int leafnum = CM_PointLeafnum (p1);
-	int cluster = CM_LeafCluster (leafnum);
-	int area1 = CM_LeafArea (leafnum);
+	int leafnum1 = CM_PointLeafnum (p1);
+	const byte *mask = CM_ClusterPHS (CM_LeafCluster (leafnum1));
 
-	const byte *mask = CM_ClusterPHS (cluster);
-
-	leafnum = CM_PointLeafnum (p2);
-	cluster = CM_LeafCluster (leafnum);
-	int area2 = CM_LeafArea (leafnum);
+	int leafnum2 = CM_PointLeafnum (p2);
+	int cluster  = CM_LeafCluster (leafnum2);
 
 	if (mask && (!(mask[cluster>>3] & (1<<(cluster&7)))))
-		return false;		// more than one bounce away
-	if (!CM_AreasConnected (area1, area2))
+		return false;
+
+	if (!CM_AreasConnected (CM_LeafArea (leafnum1), CM_LeafArea (leafnum2)))
 		return false;		// a door blocks hearing
 
 	return true;
 }
 
-static void PF_StartSound (edict_t *entity, int channel, int sound_num, float volume, float attenuation, float timeofs)
+
+static void G_StartSound (edict_t *entity, int channel, int sound_num, float volume, float attenuation, float timeofs)
 {
 	if (!entity) return;
 	SV_StartSoundOld (NULL, entity, channel, sound_num, volume, attenuation, timeofs);
 }
 
-static void	PF_SetAreaPortalState (int portalnum, qboolean open)
+
+static void	G_SetAreaPortalState (int portalnum, qboolean open)
 {
 	CM_SetAreaPortalState (portalnum, open != 0);
 }
 
-static qboolean PF_AreasConnected (int area1, int area2)
+
+static qboolean G_AreasConnected (int area1, int area2)
 {
 	return CM_AreasConnected (area1, area2);
+}
+
+
+/*-------- Wrappers for some system functions ----------------*/
+
+static cvar_t *G_Cvar_Get (const char *name, char *value, int flags)
+{
+	return Cvar_Get (name, value, flags|CVAR_GAME_CREATED|CVAR_NODEFAULT);
 }
 
 
@@ -356,7 +313,7 @@ static void *Z_TagMalloc (int size, int tag)
 }
 
 
-static void ShutdownGameMemory (void)
+static void ShutdownGameMemory ()
 {
 	guard(ShutdownGameMemory);
 	if (z_count || z_bytes)
@@ -380,15 +337,10 @@ static void GZ_Stats_f ()
 	Com_Printf ("Game memory:\n%d bytes in %d blocks\n", z_bytes, z_count);
 }
 
-/*-------- Wrappers for some system functions ----------------*/
 
-static cvar_t *PF_Cvar_Get (const char *name, char *value, int flags)
-{
-	return Cvar_Get (name, value, flags|CVAR_GAME_CREATED|CVAR_NODEFAULT);
-}
-
-
-//--------------------------------------------------------------
+/*-----------------------------------------------------------------------------
+	Server profiling
+-----------------------------------------------------------------------------*/
 
 #ifdef SV_PROFILE
 
@@ -466,6 +418,10 @@ static void PZ_FreeTags (int tag)
 #endif // SV_PROFILE
 
 
+/*-----------------------------------------------------------------------------
+	Library dynamic binding
+-----------------------------------------------------------------------------*/
+
 // dummy functions
 static void D_Func0 (void) {}
 static void D_Func1 (char *a) {}
@@ -483,23 +439,22 @@ static const char *gameCommands[] = {"wave", "inven", "kill", "use",
 
 void SV_InitGameLibrary (bool dummy)
 {
-	game_import_t import;
-	static const game_import_t import2 = {
-		SV_BroadcastPrintf, PF_dprintf, PF_cprintf, PF_centerprintf,
-		PF_StartSound, SV_StartSoundOld,
-		PF_Configstring,
-		PF_error,
+	static const game_import_t importFuncs = {
+		SV_BroadcastPrintf, G_dprintf, G_cprintf, G_centerprintf,
+		G_StartSound, SV_StartSoundOld,
+		G_Configstring,
+		G_error,
 		SV_ModelIndex, SV_SoundIndex, SV_ImageIndex,
-		PF_setmodel,
+		G_setmodel,
 		SV_TraceHook, SV_PointContents,
-		PF_inPVS, PF_inPHS, PF_SetAreaPortalState, PF_AreasConnected,
+		G_inPVS, G_inPHS, G_SetAreaPortalState, G_AreasConnected,
 		SV_LinkEdict, SV_UnlinkEdict, SV_AreaEdicts,
 		SV_Pmove,
-		SV_MulticastOld, PF_Unicast,
-		PF_WriteChar, PF_WriteByte, PF_WriteShort, PF_WriteLong, PF_WriteFloat,
-		PF_WriteString, PF_WritePos, PF_WriteDir, PF_WriteAngle,
+		SV_MulticastOld, G_Unicast,
+		G_WriteChar, G_WriteByte, G_WriteShort, G_WriteLong, G_WriteFloat,
+		G_WriteString, G_WritePos, G_WriteDir, G_WriteAngle,
 		Z_TagMalloc, Z_Free, Z_FreeTags,
-		PF_Cvar_Get, Cvar_Set, Cvar_ForceSet,
+		G_Cvar_Get, Cvar_Set, Cvar_ForceSet,
 		SV_Argc, SV_Argv, SV_Args,
 		Cbuf_AddText,
 		SCR_DebugGraph
@@ -534,7 +489,8 @@ void SV_InitGameLibrary (bool dummy)
 	if (ge) SV_ShutdownGameLibrary ();
 
 	// load game library
-	import = import2;
+	// make a local copy in a case GetGameAPI() modify it (no "const" modifier for this arg ...)
+	game_import_t import = importFuncs;
 	ge = (game_export_t*) Sys_GetGameAPI (&import);
 
 	if (!ge)
@@ -556,7 +512,7 @@ void SV_InitGameLibrary (bool dummy)
 }
 
 
-void SV_ShutdownGameLibrary (void)
+void SV_ShutdownGameLibrary ()
 {
 	guard(SV_ShutdownGameLibrary);
 	if (dummyGame)

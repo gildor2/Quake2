@@ -20,6 +20,7 @@ STATIC = \
 	Release/obj/CoreStatic/ErrorMgr.obj \
 	Release/obj/CoreStatic/ScriptParser.obj \
 	Release/obj/CoreStatic/Strings.obj \
+	Release/obj/CoreStatic/TextContainer.obj \
 	Release/obj/CoreStatic/CoreWin32.obj \
 	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj/CoreStatic/ExceptFilterWin32.obj \
@@ -114,6 +115,7 @@ DEDICATED = \
 	Release/obj/CoreStatic/ErrorMgr.obj \
 	Release/obj/CoreStatic/ScriptParser.obj \
 	Release/obj/CoreStatic/Strings.obj \
+	Release/obj/CoreStatic/TextContainer.obj \
 	Release/obj/CoreStatic/CoreWin32.obj \
 	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj/CoreStatic/ExceptFilterWin32.obj \
@@ -182,6 +184,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h
 
 Release/obj/CoreStatic/CoreWin32.obj : Core/Src/CoreWin32.cpp $(DEPENDS)
@@ -211,6 +214,9 @@ Release/obj/CoreStatic/ScriptParser.obj : Core/Src/ScriptParser.cpp $(DEPENDS)
 Release/obj/CoreStatic/Strings.obj : Core/Src/Strings.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/Strings.obj" Core/Src/Strings.cpp
 
+Release/obj/CoreStatic/TextContainer.obj : Core/Src/TextContainer.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/TextContainer.obj" Core/Src/TextContainer.cpp
+
 DEPENDS = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
@@ -220,6 +226,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	Core/Src/CoreLocal.h
 
@@ -237,6 +244,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/dinput.h \
 	client/cdaudio.h \
@@ -271,6 +279,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -307,6 +316,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -345,6 +355,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -382,6 +393,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -417,6 +429,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -452,6 +465,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -486,6 +500,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -522,6 +537,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -557,6 +573,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -591,6 +608,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -624,6 +642,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -656,6 +675,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -686,6 +706,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -715,6 +736,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -743,6 +765,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -769,6 +792,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -796,6 +820,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	SDK/include/glext.h \
 	client/engine.h \
@@ -822,6 +847,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
@@ -857,6 +883,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
@@ -890,6 +917,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
@@ -929,6 +957,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
@@ -971,6 +1000,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
@@ -1005,6 +1035,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
@@ -1042,6 +1073,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
@@ -1095,6 +1127,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
@@ -1130,6 +1163,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/cdaudio.h \
 	client/cl_fx.h \
@@ -1173,6 +1207,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
 	client/engine_intf.h \
@@ -1188,13 +1223,42 @@ DEPENDS = \
 Release/obj/dedstat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/sv_ccmds.obj" server/sv_ccmds.cpp
 
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+
+Release/obj/q2stat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/sv_ccmds.obj" server/sv_ccmds.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Inc/VcWin32.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj/dedstat/common.obj : qcommon/common.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/common.obj" qcommon/common.cpp
+
 Release/obj/dedstat/sv_text.obj : server/sv_text.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/sv_text.obj" server/sv_text.cpp
 
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
 
-Release/obj/q2stat/sv_ccmds.obj : server/sv_ccmds.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/sv_ccmds.obj" server/sv_ccmds.cpp
+Release/obj/q2stat/common.obj : qcommon/common.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/common.obj" qcommon/common.cpp
 
 Release/obj/q2stat/sv_text.obj : server/sv_text.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/sv_text.obj" server/sv_text.cpp
@@ -1210,34 +1274,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
-	Core/Inc/VcWin32.h \
-	client/engine.h \
-	client/engine_intf.h \
-	client/ref.h \
-	client/renderer.h \
-	client/rexp_intf.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h
-
-Release/obj/dedstat/common.obj : qcommon/common.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/common.obj" qcommon/common.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
-
-Release/obj/q2stat/common.obj : qcommon/common.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/common.obj" qcommon/common.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
-
-DEPENDS = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
 	client/engine_intf.h \
@@ -1268,6 +1305,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
 	client/engine_intf.h \
@@ -1302,6 +1340,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
 	client/engine_intf.h \
@@ -1344,6 +1383,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
 	client/engine_intf.h \
@@ -1377,6 +1417,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
 	client/engine_intf.h \
@@ -1429,6 +1470,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
 	client/engine_intf.h \
@@ -1458,9 +1500,6 @@ Release/obj/dedstat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 
 Release/obj/dedstat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/pmove.obj" qcommon/pmove.cpp
-
-Release/obj/dedstat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/q_shared2.obj" qcommon/q_shared2.cpp
 
 Release/obj/dedstat/sv_dedicated.obj : server/sv_dedicated.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/sv_dedicated.obj" server/sv_dedicated.cpp
@@ -1500,9 +1539,6 @@ Release/obj/q2stat/net_chan.obj : qcommon/net_chan.cpp $(DEPENDS)
 Release/obj/q2stat/pmove.obj : qcommon/pmove.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/pmove.obj" qcommon/pmove.cpp
 
-Release/obj/q2stat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/q_shared2.obj" qcommon/q_shared2.cpp
-
 Release/obj/q2stat/sv_tokenize.obj : server/sv_tokenize.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/sv_tokenize.obj" server/sv_tokenize.cpp
 
@@ -1520,6 +1556,7 @@ DEPENDS = \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
 	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	client/engine.h \
 	client/engine_intf.h \
@@ -1534,6 +1571,29 @@ OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include
 
 Release/obj/q2stat/fs_win.obj : win32/fs_win.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/fs_win.obj" win32/fs_win.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Inc/VcWin32.h \
+	qcommon/q_shared2.h
+
+Release/obj/dedstat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/q_shared2.obj" qcommon/q_shared2.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+
+Release/obj/q2stat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/q_shared2.obj" qcommon/q_shared2.cpp
 
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
 

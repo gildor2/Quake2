@@ -1,6 +1,6 @@
 #include "qcommon.h"
 
-// some dummy (stub) functions for (small) dedicated server
+// some dummy (stub) functions for dedicated server (DEDICATED_ONLY)
 // NOTE: dedicated server can be compiled from complete Q2 executable source
 
 // cl_scrn.cpp
@@ -35,12 +35,12 @@ void CL_Shutdown (bool error)
 {
 }
 
-void Key_Init (void)
+void Key_Init ()
 {
 }
 
 //??? separate CompleteCommand() from keys.cpp
-void CompleteCommand (void)
+void CompleteCommand ()
 {
 }
 

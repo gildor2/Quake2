@@ -5,6 +5,9 @@
 
 #define	GAME_API_VERSION	3
 
+// need qboolean declaration for game library interface
+typedef unsigned			qboolean;
+
 // edict->svflags
 
 #define	SVF_NOCLIENT		0x00000001	// don't send entity to clients, even if it has effects
@@ -35,8 +38,8 @@ typedef struct gclient_s gclient_t;
 
 struct gclient_s
 {
-	player_state_t	ps;					// communicated by server to clients
-	int				ping;
+	player_state_t ps;					// communicated by server to clients
+	int			ping;
 
 	// the game dll can add anything it wants after this point in the structure
 	// ...
@@ -45,7 +48,7 @@ struct gclient_s
 
 struct edict_s
 {
-	entity_state_t	s;
+	entity_state_t s;
 	struct gclient_s *client;
 	qboolean	inuse;
 	int			linkcount;

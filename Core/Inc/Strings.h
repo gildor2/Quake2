@@ -111,20 +111,20 @@ public:
 	// list enumeration
 	T *First ()
 	{
-		return (T*) first;
+		return static_cast<T*>(first);
 	}
 	T *Next (const T* prev)
 	{
-		return (T*) prev->next;
+		return static_cast<T*>(prev->next);
 	}
 	// searching items
 	T *Find (const char *name, T **after = NULL)
 	{
-		return (T*) CStringList::Find (name, (CStringItem **) after);
+		return static_cast<T*>(CStringList::Find (name, (CStringItem **) after));
 	}
 	T *Find (int index)
 	{
-		return (T*) CStringList::Find (index);
+		return static_cast<T*>(CStringList::Find (index));
 	}
 	// list insertion
 	void InsertAfter (T *Item, T *Point)
@@ -136,7 +136,7 @@ public:
 		}
 		else
 		{
-			Item->next = (T*) first;
+			Item->next = static_cast<T*>(first);
 			first = Item;
 		}
 	}
