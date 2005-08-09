@@ -229,7 +229,7 @@ static material_t CMod_GetSurfMaterial (const char *name)
 	else
 		checkname = name;
 
-	for (surfMaterial_t *sm = surfMaterialList.First(); sm; sm = surfMaterialList.Next(sm))
+	for (TListIterator<surfMaterial_t> sm = surfMaterialList; sm; ++sm)
 	{
 		const char *s = sm->name;
 		if (strchr (s, '/'))

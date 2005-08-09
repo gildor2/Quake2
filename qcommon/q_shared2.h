@@ -458,13 +458,9 @@ float ClampColor255 (const CVec3 &in, CVec3 &out);
 char *COM_Parse (const char *&data_p, bool allowLineBreaks = true);
 const char *COM_QuoteString (const char *str, bool alwaysQuote);
 // data is an in/out parm, returns a parsed out token
-void SkipRestOfLine (char **data);
 
 
 //=============================================
-
-//??
-void Com_PageInMemory (void *buffer, int size);
 
 #define BYTES4(a,b,c,d)	((a) | ((b)<<8) | ((c)<<16) | ((d)<<24))
 

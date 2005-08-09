@@ -403,7 +403,7 @@ int ImageExists (const char *name, int stop_mask)
 			va("%s.*", name) :				// root-based
 			va("%s/%s.*", path, name),		// game-based
 			LIST_FILES);
-		for (CStringItem *item = list.First(); item; item = list.Next(item))
+		for (CListIterator item = list; item; ++item)
 		{
 			char *ext = strrchr (item->name, '/');	// find filename
 			if (!ext) ext = item->name;

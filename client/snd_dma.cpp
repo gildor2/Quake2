@@ -355,16 +355,6 @@ void S_EndRegistration (void)
 				appFree (sfx->cache);	// from a server that didn't finish loading
 			memset (sfx, 0, sizeof(*sfx));
 		}
-		else
-		{
-			// make sure it is paged in
-			if (sfx->cache)
-			{
-				int size = sfx->cache->length*sfx->cache->width;
-				Com_PageInMemory ((byte *)sfx->cache, size);		//??
-			}
-		}
-
 	}
 
 	// load everything in

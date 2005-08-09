@@ -32,16 +32,9 @@ void sizebuf_t::Write (const void *data, int length)
 }
 
 
-/*
-==============================================================================
-
-			MESSAGE IO FUNCTIONS
-
-Handles byte ordering and avoids alignment errors
-==============================================================================
-*/
-
-// writing functions
+/*-----------------------------------------------------------------------------
+	Writing functions
+-----------------------------------------------------------------------------*/
 
 void MSG_WriteChar (sizebuf_t *sb, int c)
 {
@@ -214,11 +207,10 @@ void MSG_ReadDir (sizebuf_t *sb, CVec3 &dir)
 	dir = bytedirs[b];
 }
 
-//============================================================
 
-//
-// reading functions
-//
+/*-----------------------------------------------------------------------------
+	Reading functions
+-----------------------------------------------------------------------------*/
 
 // returns -1 if no more characters are available
 int MSG_ReadChar (sizebuf_t *msg_read)

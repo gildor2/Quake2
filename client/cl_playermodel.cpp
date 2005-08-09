@@ -14,7 +14,7 @@ TList<playerModelInfo_t> pmiList;
 int numPlayerModels;
 
 
-static bool Md2SkinExists (const char *skin, CStringItem *pcxfiles)
+static bool Md2SkinExists (const char *skin, CStringList &pcxfiles)
 {
 	const char *ext = strrchr (skin, '.');
 	if (!ext) return false;
@@ -33,7 +33,7 @@ static bool Md2SkinExists (const char *skin, CStringItem *pcxfiles)
 	strcpy (scratch, skin);
 	strcpy (scratch + (ext - skin), "_i.pcx");	//?? this will allow .PCX only
 
-	for (CStringItem *item = pcxfiles; item; item = item->next)
+	for (CListIterator item = pcxfiles; item; ++item)
 		if (!strcmp (item->name, scratch)) return true;
 	return false;
 }
@@ -56,10 +56,10 @@ static void ScanQuake2Models (const char *path)
 	/*----- get a list of directories -----*/
 	TList<CStringItem> dirnames;
 	dirnames = FS_ListFiles (va("%s/players/*.*", path), LIST_DIRS);
-	if (!dirnames.First()) return;
+	if (!dirnames) return;
 
 	/*--- go through the subdirectories ---*/
-	for (CStringItem *diritem = dirnames.First(); diritem; diritem = dirnames.Next(diritem))
+	for (CListIterator diritem = dirnames; diritem; ++diritem)
 	{
 		const char *infoName = strrchr (diritem->name, '/')+1;
 		if (pmiList.Find (infoName)) continue;	// already have model with the same name
@@ -71,13 +71,13 @@ static void ScanQuake2Models (const char *path)
 		// verify the existence of at least one pcx skin
 		// "/*.pcx" -> pcx,tga,jpg (see Md2SkinExists())
 		TList<CStringItem> skinNames = FS_ListFiles (va("%s/*.*", diritem->name), LIST_FILES);
-		if (!skinNames.First()) continue;
+		if (!skinNames) continue;
 
 		// count valid skins, which consist of a skin with a matching "_i" icon
 		TList<CStringItem> skins;
 		int numSkins = 0;
-		for (CStringItem *skinItem = skinNames.First(); skinItem; skinItem = skinNames.Next(skinItem))
-			if (Md2SkinExists (skinItem->name, skinNames.First()))
+		for (CListIterator skinItem = skinNames; skinItem; ++skinItem)
+			if (Md2SkinExists (skinItem->name, skinNames))
 			{
 				char *str = strrchr (skinItem->name, '/') + 1;
 				char *ext = strrchr (str, '.');
@@ -106,10 +106,10 @@ void ScanQuake3Models (const char *path)
 	/*----- get a list of directories -----*/
 	TList<CStringItem> dirnames;
 	dirnames = FS_ListFiles (va("%s/models/players/*.*", path), LIST_DIRS);
-	if (!dirnames.First()) return;
+	if (!dirnames) return;
 
 	/*--- go through the subdirectories ---*/
-	for (CStringItem *diritem = dirnames.First(); diritem; diritem = dirnames.Next(diritem))
+	for (CListIterator diritem = dirnames; diritem; ++diritem)
 	{
 		const char *infoName = strrchr (diritem->name, '/')+1;
 		if (pmiList.Find (infoName)) continue;	// already have model with the same name
@@ -120,12 +120,12 @@ void ScanQuake3Models (const char *path)
 
 		// verify the existence of at least one skin file
 		TList<CStringItem> skinNames = FS_ListFiles (va("%s/lower_*.skin", diritem->name), LIST_FILES);
-		if (!skinNames.First()) continue;
+		if (!skinNames) continue;
 
 		// count valid skins, which consist of a skin with a matching "_i" icon
 		TList<CStringItem> skins;
 		int numSkins = 0;
-		for (CStringItem *skinItem = skinNames.First(); skinItem; skinItem = skinNames.Next(skinItem))
+		for (CListIterator skinItem = skinNames; skinItem; ++skinItem)
 		{
 			char *str = strrchr (skinItem->name, '/') + 1 /*skip '/'*/ + 6 /*skip "lower_"*/;
 			char *ext = strrchr (str, '.');
@@ -166,7 +166,7 @@ bool ScanPlayerModels ()
 		// presents in md2 format too, it will be ignored
 		ScanQuake3Models (path);
 		ScanQuake2Models (path);
-		if (pmiList.First()) break;		// models found
+		if (pmiList) break;			// models found
 	}
 
 	if (!numPlayerModels)
@@ -767,8 +767,8 @@ static bool TryQuake2Model (clientInfo_t &ci, const char *modelName, const char 
 		{
 			// try any skin
 			TList<CStringItem> skinNames = FS_ListFiles (va("players/%s/*.*", modelName), LIST_FILES);
-			for (CStringItem *skinItem = skinNames.First(); skinItem; skinItem = skinNames.Next(skinItem))
-				if (Md2SkinExists (skinItem->name, skinNames.First()))
+			for (CListIterator skinItem = skinNames; skinItem; ++skinItem)
+				if (Md2SkinExists (skinItem->name, skinNames))
 				{
 					const char *t = strrchr (skinItem->name, '/');
 					if (!t) t = skinItem->name;

@@ -288,7 +288,7 @@ static char *Do_CompleteCommand (char *partial)
 			// complete "alias name "
 			if (!stricmp (complete_command, "alias"))
 			{
-				for (CAlias *alias = AliasList.First(); alias; alias = AliasList.Next(alias))
+				for (TListIterator<CAlias> alias(AliasList); alias; ++alias)
 					if (!stricmp (alias->name, arg1))
 					{
 						strcpy (completed_name, va("alias %s %s", arg1, COM_QuoteString (alias->value, false)));
@@ -317,7 +317,7 @@ static char *Do_CompleteCommand (char *partial)
 				partial_name = arg1s;
 				partial_len = strlen (arg1s);
 				completed_count = 0;
-				for (CAlias *alias = AliasList.First(); alias; alias = AliasList.Next(alias))
+				for (TListIterator<CAlias> alias(AliasList); alias; ++alias)
 					TryComplete (alias->name, display, 'a');
 				if (!completed_count)
 					return NULL;
@@ -379,9 +379,9 @@ static char *Do_CompleteCommand (char *partial)
 
 		// complete "map" or "demomap" with mask/arg*
 		TList<CStringItem> filelist = FS_ListFiles (va("%s/*%s", path, ext), file_type);
-		if (filelist.First())
+		if (filelist)
 		{
-			for (CStringItem *fileitem = filelist.First(); fileitem; fileitem = filelist.Next(fileitem))
+			for (CListIterator fileitem(filelist); fileitem; ++fileitem)
 			{
 				char *name;
 				// remove path part
@@ -396,7 +396,7 @@ static char *Do_CompleteCommand (char *partial)
 			for (int display = 0; display < 2; display++)
 			{
 				completed_count = 0;
-				for (fileitem = filelist.First(); fileitem; fileitem = filelist.Next(fileitem))
+				for (CListIterator fileitem(filelist); fileitem; ++fileitem)
 					TryComplete (fileitem->name, display, comp_type);
 				if (!completed_count)
 					return NULL;			// not completed
@@ -429,9 +429,9 @@ static char *Do_CompleteCommand (char *partial)
 		completed_count = 0;
 
 		// check for partial match
-		for (CCommand *cmd = CmdList.First(); cmd; cmd = CmdList.Next(cmd))
+		for (TListIterator<CCommand> cmd = CmdList; cmd; ++cmd)
 			TryComplete (cmd->name, display, 'c');
-		for (CAlias *a = AliasList.First(); a; a = AliasList.Next(a))
+		for (TListIterator<CAlias> a = AliasList; a; ++a)
 			TryComplete (a->name, display, 'a');
 		for (cvar_t *var = cvar_vars; var; var = var->next)
 			TryComplete (var->name, display, 'v');

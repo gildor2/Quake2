@@ -195,7 +195,7 @@ static void InitResFiles ()
 	}
 	// now zstream points to begin of 1st file data - need to calculate file offsets
 	int offs = z->readed;
-	for (resFile_t *f = resFiles.First(); f; f = resFiles.Next(f))
+	for (TListIterator<resFile_t> f = resFiles; f; ++f)
 	{
 		f->pos = offs;
 		offs += f->size;
@@ -268,7 +268,7 @@ static packDir_t *FindPakDirectory (pack_t *pak, const char *name)
 		else		len = rest - s;
 		appStrncpyz (dirname, s, len+1);
 
-		if (!dir->cDir.First ())
+		if (!dir->cDir)
 			return NULL;				// current directory have no childs
 		else
 		{
@@ -395,7 +395,7 @@ static void ListPakDirectory (pack_t *pak, const char *dir, const char *mask, in
 	if (packDir_t *d = FindPakDirectory (pak, dir))
 	{
 		if (flags & LIST_DIRS)
-			for (const packDir_t *dirlist = d->cDir.First(); dirlist; dirlist = d->cDir.Next(dirlist))
+			for (TListIterator<packDir_t> dirlist = d->cDir; dirlist; ++dirlist)
 				if (appMatchWildcard (dirlist->name, mask, true))
 				{
 					strcpy (addbufptr, dirlist->name);		//?? can use va()
@@ -403,7 +403,7 @@ static void ListPakDirectory (pack_t *pak, const char *dir, const char *mask, in
 						List->CreateAndInsert (addbuf);
 				}
 		if (flags & LIST_FILES)
-			for (const packFile_t *filelist = d->cFile.First(); filelist; filelist = d->cFile.Next(filelist))
+			for (TListIterator<packFile_t> filelist = d->cFile; filelist; ++filelist)
 				if (appMatchWildcard (filelist->name, mask, true))
 				{
 					strcpy (addbufptr, filelist->name);
@@ -424,13 +424,13 @@ static void DumpPakDirectory (packDir_t *dir, FILE *log)
 	for (i = 0; i < dumpPakLevel * 2; i++) fputc (' ', log);
 	fprintf (log, "%s/\n", dir->name);
 	dumpPakLevel++;
-	for (packFile_t *f = dir->cFile.First(); f; f = dir->cFile.Next(f))
+	for (TListIterator<packFile_t> f = dir->cFile; f; ++f)
 	{
 		for (i = 0; i < dumpPakLevel * 2; i++) fputc (' ', log);
 		fprintf (log, "%s\n", f->name);
 	}
-	for (packDir_t *d = dir->cDir.First(); d; d = dir->cDir.Next(d))
-		DumpPakDirectory (d, log);
+	for (TListIterator<packDir_t> d = dir->cDir; d; ++d)
+		DumpPakDirectory (*d, log);
 	dumpPakLevel--;
 }
 
@@ -730,7 +730,7 @@ QFILE *FS_FOpenFile (const char *filename2, int *plen)
 
 	// pakname = game-relative path, game = subtracted game path, gamelen = strlen(game).
 	// We should refine .pak files with a game path (if specified, gamelen > 0)
-	for (searchPath_t *search = fs_searchpaths.First(); search; search = fs_searchpaths.Next(search))
+	for (TListIterator<searchPath_t> search = fs_searchpaths; search; ++search)
 	{
 		// is the element a pak file?
 		if (pak = search->pack)
@@ -781,14 +781,14 @@ QFILE *FS_FOpenFile (const char *filename2, int *plen)
 	resFile_t *rf = resFiles.Find (filename);
 #else
 	// resource files are not sorted by name, so - do not use resFiles.Find()
-	for (resFile_t *rf = resFiles.First(); rf; rf = resFiles.Next(rf))
+	for (TListIterator<resFile_t> rf = resFiles; rf; ++rf)
 		if (!stricmp (rf->name, filename)) break;
 #endif
 	if (rf)
 	{
 		DEBUG_LOG(va("rfile: %s\n", filename));
 		QFILE *file = AllocFileInternal (filename, NULL, FT_ZMEM);
-		file->rFile = rf;
+		file->rFile = *rf;
 		if (plen) *plen = rf->size;
 		return file;
 	}
@@ -873,7 +873,7 @@ bool FS_FileExists (const char *filename)
 //	Com_Printf(S_RED"check %s in %s; l = %d\n", pakname, game, gamelen);
 	// pakname = game relative path, game = subtracted game path, gamelen = strlen(game).
 	// We should refine .pak files with a game path (if specified, gamelen > 0)
-	for (searchPath_t *search = fs_searchpaths.First(); search; search = fs_searchpaths.Next(search))
+	for (TListIterator<searchPath_t> search = fs_searchpaths; search; ++search)
 	{
 		// is the element a pak file?
 		if (pack_t *pak = search->pack)
@@ -1144,9 +1144,9 @@ static pack_t *LoadPackFile (const char *packfile)
 
 #if 0
 	// debug:
-	packhandle = fopen("pakfiles.log", "a+");
-	DumpPakContents(pack, packhandle);
-	fclose(packhandle);
+	packHandle = fopen("pakfiles.log", "a+");
+	DumpPakContents(pack, packHandle);
+	fclose(packHandle);
 #endif
 
 	return pack;
@@ -1186,7 +1186,7 @@ static void AddGameDirectory (const char *dir)
 
 	TList<CStringItem> PakList;
 	AddDirFilesToList (va("%s/*.pak", dir), &PakList, LIST_FILES);
-	for (CStringItem *pakName = PakList.First(); pakName; pakName = PakList.Next(pakName))
+	for (CListIterator pakName = PakList; pakName; ++pakName)
 	{
 		pack_t *pak = LoadPackFile (pakName->name);
 		if (!pak) continue;
@@ -1305,14 +1305,14 @@ bool FS_SetGamedir (const char *dir)
 static searchPath_t *FindPakStruc (const char *name)
 {
 	int namelen = strlen (name);
-	for (searchPath_t *item = fs_searchpaths.First(); item; item = fs_searchpaths.Next(item))
+	for (TListIterator<searchPath_t> item = fs_searchpaths; item; ++item)
 		if (pack_t *pak = item->pack)
 		{
 			int len = strlen (pak->filename);
 			if (len < namelen) continue;
 			// compare last namelen chars if pak filename with a name
 			if (!stricmp (name, &pak->filename[len - namelen]))
-				return item;
+				return *item;
 		}
 	return NULL;
 }
@@ -1365,9 +1365,9 @@ static void FS_LoadPak_f (bool usage, int argc, char **argv)
 	{	// name is a wildcard
 		TList<CStringItem> PakList;
 		AddDirFilesToList (pakname, &PakList, LIST_FILES);
-		if (PakList.First())
+		if (PakList)
 		{
-			for (CStringItem *item = PakList.First(); item; item = PakList.Next(item))
+			for (CListIterator item = PakList; item; ++item)
 				TryLoadPak (item->name);
 			PakList.Free();
 			return;
@@ -1439,14 +1439,14 @@ static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 			return;
 		}
 	}
-	for (searchPath_t *item = fs_searchpaths.First(); item; item = fs_searchpaths.Next(item))
-		if (item == search)
+	for (TListIterator<searchPath_t> item = fs_searchpaths; item; ++item)
+		if (*item == search)
 		{
-			fs_searchpaths.Remove (item);
-			if (fs_base_searchpaths == item)
-				fs_base_searchpaths = fs_searchpaths.Next(item);;
+			fs_searchpaths.Remove (*item);
+			if (fs_base_searchpaths == *item)
+				fs_base_searchpaths = fs_searchpaths.Next(*item);;
 			UnloadPackFile (item->pack);
-			delete item;
+			delete *item;
 			return;
 		}
 }
@@ -1578,7 +1578,7 @@ TList<CStringItem> FS_ListFiles (const char *name, int flags)
 	}
 
 	/*------------- check pak files --------------------*/
-	for (searchPath_t *search = fs_searchpaths.First(); search; search = fs_searchpaths.Next(search))
+	for (TListIterator<searchPath_t> search = fs_searchpaths; search; ++search)
 	{
 		if (pack_t *pak = search->pack)
 		{
@@ -1658,10 +1658,11 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 		Com_Printf (S_GREEN"Directory of %s\n-------------------\n", findname);
 
 		TList<CStringItem> dirnames = FS_ListFiles (findname, LIST_FILES|LIST_DIRS);
-		if (dirnames.First())
+		if (dirnames)
 		{
 			maxlen = 0;
-			for (CStringItem *item = dirnames.First(); item; item = dirnames.Next(item))
+			CListIterator item;
+			for (item = dirnames; item; ++item)
 			{
 				if (name = strrchr (item->name, '/'))
 					item->name = name + 1; // cut directory prefix
@@ -1673,7 +1674,7 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 			if (!colcount) colcount = 1;
 
 			colwidth = maxlen + SPACING;
-			for (col = 0, item = dirnames.First(); item; item = dirnames.Next(item))
+			for (col = 0, item = dirnames; item; ++item)
 			{
 				Com_Printf ("%s", item->name);
 				if (++col >= colcount)
@@ -1702,15 +1703,13 @@ FS_Path_f
 */
 static void FS_Path_f ()
 {
-	fileLink_t		*l;
-
 	Com_Printf (S_GREEN"Current search path:\n");
 	Com_Printf ("----zip-files-name------------\n");
 	int n = 0;
-	for (searchPath_t *s = fs_searchpaths.First(); s; s = fs_searchpaths.Next(s))
+	for (TListIterator<searchPath_t> s = fs_searchpaths; s; ++s)
 	{
 		n++;
-		if (s == fs_base_searchpaths)
+		if (*s == fs_base_searchpaths)
 			Com_Printf (S_GREEN"------------------------\n");
 		if (s->pack)
 			Com_Printf ("%-3d  %c  %-5d %s\n", n, s->pack->isZip ? '+' : ' ', s->pack->numFiles, s->pack->filename);
@@ -1721,7 +1720,7 @@ static void FS_Path_f ()
 	if (fs_links)
 	{
 		Com_Printf (S_GREEN"\nLinks:\n");
-		for (l = fs_links; l; l = l->next)
+		for (fileLink_t *l = fs_links; l; l = l->next)
 			Com_Printf ("%s : %s\n", l->from, l->to);
 	}
 }
@@ -1801,7 +1800,7 @@ Allows enumerating all of the directories in the search path
 char *FS_NextPath (const char *prevpath)
 {
 	const char *prev = NULL;
-	for (searchPath_t *s = fs_searchpaths.First(); s; s = fs_searchpaths.Next(s))
+	for (TListIterator<searchPath_t> s = fs_searchpaths; s; ++s)
 	{
 		if (s->pack) continue;
 		if (prevpath == prev)

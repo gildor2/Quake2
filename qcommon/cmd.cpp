@@ -246,7 +246,6 @@ static void Cmd_Echo_f (int argc, char **argv)
 static void Cmd_Alias_f (bool usage, int argc, char **argv)
 {
 	char	cmd[1024];
-	CAlias	*a;
 
 	if (argc == 2 || usage)
 	{
@@ -257,7 +256,7 @@ static void Cmd_Alias_f (bool usage, int argc, char **argv)
 	if (argc == 1)
 	{
 		Com_Printf ("Current alias commands:\n");
-		for (a = AliasList.First(); a; a = AliasList.Next(a))
+		for (TListIterator<CAlias> a = AliasList; a; ++a)
 			Com_Printf ("%s \"%s\"\n", a->name, a->value);
 		return;
 	}
@@ -266,7 +265,7 @@ static void Cmd_Alias_f (bool usage, int argc, char **argv)
 
 	// if the alias already exists, reuse it
 	CAlias *pos;
-	a = AliasList.Find (name, &pos);
+	CAlias *a = AliasList.Find (name, &pos);
 	if (a)
 		appFree (a->value);
 	else
@@ -290,8 +289,6 @@ static void Cmd_Alias_f (bool usage, int argc, char **argv)
 
 void Cmd_Unalias_f (bool usage, int argc, char **argv)
 {
-	CAlias *alias, *next;
-
 	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: unalias <mask>\n");
@@ -299,6 +296,7 @@ void Cmd_Unalias_f (bool usage, int argc, char **argv)
 	}
 
 	int n = 0;
+	CAlias *alias, *next;
 	for (alias = AliasList.First(); alias; alias = next)
 	{
 		next = AliasList.Next(alias);
@@ -316,7 +314,7 @@ void Cmd_Unalias_f (bool usage, int argc, char **argv)
 
 void Cmd_WriteAliases (FILE *f)
 {
-	for (CAlias *alias = AliasList.First(); alias; alias = AliasList.Next(alias))
+	for (TListIterator<CAlias> alias = AliasList; alias; ++alias)
 		fprintf (f, "alias %s %s\n", alias->name, COM_QuoteString (alias->value, true));
 }
 
@@ -612,7 +610,7 @@ static void Cmd_List_f (bool usage, int argc, char **argv)
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 	int n = 0, total = 0;
 	Com_Printf ("----i-a-name----------------\n");
-	for (CCommand *cmd = CmdList.First(); cmd; cmd = CmdList.Next(cmd))
+	for (TListIterator<CCommand> cmd = CmdList; cmd; ++cmd)
 	{
 		total++;
 		if (mask && !appMatchWildcard (cmd->name, mask, true)) continue;

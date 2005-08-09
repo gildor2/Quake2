@@ -620,17 +620,9 @@ static int	com_lines;
 ============================================================================
 */
 
-/*
-==============
-COM_Parse
-
-Parse a token out of a string
-==============
-*/
 static const char *SkipWhitespace (const char *data, bool *hasNewLines)
 {
-	int		c;
-
+	char	c;
 	while ((c = *data) <= ' ')
 	{
 		if (!c) return NULL;
@@ -647,19 +639,17 @@ static const char *SkipWhitespace (const char *data, bool *hasNewLines)
 
 char *COM_Parse (const char *&data_p, bool allowLineBreaks)
 {
-	int		c, len;
-	bool	hasNewLines;
-	const char *data;
-
-	data = data_p;
-	len = c = 0;
+	const char *data = data_p;
 	com_token[0] = 0;
-	hasNewLines = false;
 
 	if (!data)					// all data is out
 		return com_token;		// ""
 
-	while (1)
+	int len = 0;
+	char c = 0;
+	bool hasNewLines = false;
+
+	while (true)
 	{
 		// skip whitespace
 		data = SkipWhitespace (data, &hasNewLines);
@@ -699,7 +689,7 @@ char *COM_Parse (const char *&data_p, bool allowLineBreaks)
 	if (c == '\"')
 	{
 		data++;
-		while (1)
+		while (true)
 		{
 			c = *data++;
 			if (c == '\"' && *data == '\"')
@@ -744,7 +734,7 @@ char *COM_Parse (const char *&data_p, bool allowLineBreaks)
 	}
 	com_token[len] = 0;
 
-	data_p = (char *) data;
+	data_p = data;
 	return com_token;
 }
 
@@ -773,42 +763,4 @@ const char *COM_QuoteString (const char *str, bool alwaysQuote)
 	*dst = 0;
 
 	return com_token;
-}
-
-
-/*
-=================
-SkipRestOfLine
-=================
-*/
-void SkipRestOfLine (char **data)
-{
-	char *p = *data;
-	while (char c = *p++)
-	{
-		if (c == '\n')
-		{
-			com_lines++;
-			break;
-		}
-	}
-
-	*data = p;
-}
-
-
-
-/*
-===============
-Com_PageInMemory
-
-===============
-*/
-int	paged_total;
-
-void Com_PageInMemory (void *buffer, int size)
-{
-	byte	*buf = (byte*)buffer;
-	for (int i=size-1 ; i>0 ; i-=4096)
-		paged_total += buf[i];
 }

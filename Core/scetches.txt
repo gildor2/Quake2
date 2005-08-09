@@ -101,6 +101,8 @@ CONFIG SYSTEM
      (preinitialized) and removed)
       - need mechanism to get cvars, owned by different package (global (engine ?) cvars ??)
    - access by simple (without "pkgname." part) name: scan packages for cvar, scan user cvars
+   ? CVAR_[USER|SERVER]INFO: can remove this flag, send such cvars to server manually
+   ? enumerator for Cvars()
 - storage (variants):
    1) UT-like config with section-per-package
       - requires to change file extension from .cfg to another (.ini) -- this is not a script file

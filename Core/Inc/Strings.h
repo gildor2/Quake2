@@ -54,6 +54,7 @@ CORE_API int appSprintf (char *dest, int size, const char *fmt, ...);
 CORE_API bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase = false);
 CORE_API bool appIsWildcard (const char *string);
 
+//?? rename to appStrdup()
 CORE_API char *CopyString (const char *str);
 CORE_API char *CopyString (const char *str, CMemoryChain *chain);
 
@@ -79,6 +80,7 @@ public:
 // Base list of strings
 class CStringList
 {
+	friend class CListIterator;
 protected:
 	CStringItem *first;
 
@@ -87,13 +89,16 @@ protected:
 	CORE_API CStringItem *Find (int index);
 public:
 	inline CStringList ()
-	{
-		first = NULL;
-	}
+	:	first (NULL)
+	{}
 	// function for implicit list initialization
 	inline void Reset ()
 	{
 		first = NULL;
+	}
+	operator bool ()
+	{
+		return first != NULL;
 	}
 	CORE_API int IndexOf (const char *str);
 	//!! IndexOfWildcard (str)
@@ -166,6 +171,86 @@ public:
 		return (T&) *CStringList::Find (index);
 	}
 };
+
+
+// Iterator for CStringList
+class CListIterator
+{
+protected:
+	CStringItem *item;
+public:
+	// initialization
+	CListIterator ()
+	:	item (NULL)
+	{}
+	CListIterator (CStringList &list)
+	:	item (list.first)
+	{}
+	CListIterator& operator= (const CStringList &list)
+	{
+		item = list.first;
+		return *this;
+	}
+	// enumerator
+	void operator++ ()		// prefix form
+	{
+		item = item->next;
+	}
+	// do not define postfix form to require use of "++item" - style (better readability)
+//	void operator++ (int)	// postfix form
+//	{
+//		item = item->next;
+//	}
+	operator bool ()
+	{
+		return item != NULL;
+	}
+	// accessing enumerated data
+	CStringItem* operator-> ()
+	{
+		return item;
+	}
+	CStringItem* operator* ()
+	{
+		return item;
+	}
+};
+
+
+template<class T> class TListIterator : public CListIterator
+{
+public:
+	// initialization
+	TListIterator (TList<T> &list)
+	:	CListIterator (list)
+	{}
+	TListIterator& operator= (const T &list)
+	{
+		item = list.First();
+		return *this;
+	}
+	// data access
+	T* operator-> ()
+	{
+		return (T*)item;
+	}
+	T* operator* ()
+	{
+		return (T*)item;
+	}
+};
+
+// How to use iterators:
+// ---------------------
+// CListIterator -- for CStringList only (or, when used for derived classes, will be used as CStringItem)
+//	a) for (CListIterator item = list; item; ++item)
+//	b) for (CListIterator item(list); item; ++item)							-- same as a)
+//	c) for (CStringItem *item = list->first; item; item = item->next)		-- long form without iterators
+// TListIterator -- for TStringList<>
+//	a) for (TListIterator<CItem> item = ItemList; item; ++item)
+//	b) for (TListIterator<CItem> item(ItemList); item; ++item)
+//	c) for (CItem *item = ItemList.First(); item; item = ItemList.Next(item))
+// When required access to current item, use "*item" (overloaded operator*())
 
 
 /*-----------------------------------------------------------------------------

@@ -2405,9 +2405,9 @@ struct dmbrowseMenu_t : menuFramework_t
 		while (path = FS_NextPath (path))
 		{
 			browse_list = FS_ListFiles (va("%s/levelshots/*.*", path), LIST_FILES);
-			if (browse_list.First()) break;
+			if (browse_list) break;
 		}
-		for (CStringItem *item = browse_list.First(); item; item = browse_list.Next(item))
+		for (CListIterator item = browse_list; item; ++item)
 		{
 			char *name = strrchr (item->name, '/');
 			if (!name)

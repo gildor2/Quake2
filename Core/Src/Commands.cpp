@@ -1,6 +1,6 @@
 #include "Core.h"
 
-//!! TODO: exec, alias, unalias
+//!! TODO: exec (outside?!), alias, unalias
 
 
 #define MAX_CMDLINE		1024
@@ -245,7 +245,7 @@ static void Cmd_CmdList (bool usage, int argc, char **argv)
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 	int n = 0, total = 0;
 	Com_Printf ("----i-a-name----------------\n");
-	for (CCommand *cmd = CmdList.First(); cmd; cmd = CmdList.Next(cmd))
+	for (TListIterator<CCommand> cmd = CmdList; cmd; ++cmd)
 	{
 		total++;
 		if (mask && !appMatchWildcard (cmd->name, mask, true)) continue;

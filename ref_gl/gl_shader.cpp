@@ -896,7 +896,7 @@ static void FindShaderScripts ()
 	Com_Printf ("Searching for shader scripts:\n");
 
 	TList<CStringItem> scriptFiles = FS_ListFiles (va("scripts/*.shader"), LIST_FILES);
-	for (CStringItem *file = scriptFiles.First(); file; file = scriptFiles.Next(file))
+	for (CListIterator file = scriptFiles; file; ++file)
 	{
 		numFiles++;
 
