@@ -26,7 +26,7 @@ namespace OpenGLDrv {
 class image_t //?? : public CBasicImage
 {
 public:
-	char	name[MAX_QPATH];			// lowercased game-relative image name (system images started with "*")
+	TString<64> Name;					// lowercased game-relative image name (system images started with "*")
 	int		width, height;
 	byte	alphaType;					// 0 - none, 1 - 1-bit alpha, 2 - 8-bit alpha
 	GLenum	target;						// GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE_NV

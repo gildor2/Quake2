@@ -92,14 +92,14 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	char name[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name), "%s/%s.txt", FS_Gamedir(), argv[1]);
+	TString<MAX_OSPATH> Name;
+	Name.sprintf ("%s/%s.txt", FS_Gamedir(), argv[1]);
 
-	FS_CreatePath (name);
+	FS_CreatePath (Name);
 	FILE *f;
-	if (!(f = fopen (name, "w")))
+	if (!(f = fopen (Name, "w")))
 	{
-		Com_WPrintf ("ERROR: couldn't open %s\n", name);
+		Com_WPrintf ("ERROR: couldn't open %s\n", *Name);
 		return;
 	}
 
@@ -126,7 +126,7 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 		}
 	}
 	fclose (f);
-	Com_Printf ("Console text was dumped to %s\n", name);
+	Com_Printf ("Console text was dumped to %s\n", *Name);
 }
 
 
@@ -437,9 +437,9 @@ void Con_DrawConsole (float frac)
 {
 	int		i, x;
 #ifdef DEBUG_CONSOLE
-	char	dbgBuf[256];
-	dbgBuf[0] = 0;
-#define CON_DBG(x)	appStrcatn(ARRAY_ARG(dbgBuf),x)
+	TString<256> DbgBuf;
+	DbgBuf[0] = 0;
+#define CON_DBG(x)	DbgBuf += x
 #else
 #define CON_DBG(x)
 #endif
@@ -529,9 +529,9 @@ void Con_DrawConsole (float frac)
 	}
 	CON_DBG(va(" disp:%d total:%d",con.display,con.totallines));
 #ifdef DEBUG_CONSOLE
-	i = strlen (dbgBuf);
+	i = DbgBuf.len ();
 	for (x = 0; x < i; x++)
-		RE_DrawChar (x*CHAR_WIDTH, lines - 12, dbgBuf[x], C_BLUE);
+		RE_DrawChar (x*CHAR_WIDTH, lines - 12, DbgBuf[x], C_BLUE);
 #endif
 	// draw the input prompt, user text, and cursor
 	DrawInput ();

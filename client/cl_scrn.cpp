@@ -248,14 +248,14 @@ void Key_Message (int key)
 }
 
 
-static void SCR_MessageMode_f (void)
+static void MessageMode_f ()
 {
 	chat_team = false;
 	cls.key_dest = key_message;
 }
 
 
-static void SCR_MessageMode2_f (void)
+static void MessageMode2_f ()
 {
 	chat_team = true;
 	cls.key_dest = key_message;
@@ -274,17 +274,13 @@ void SCR_SetLevelshot (const char *name)
 
 	if (!name)
 	{
-		char mapname[MAX_QPATH], *tmp;
-
 		// get levelshot name from map name
-		appCopyFilename (mapname, cl.configstrings[CS_MODELS+1], sizeof(mapname));
-		tmp = strchr (mapname, '.');
+		TString<64> MapName;
+		MapName.filename (cl.configstrings[CS_MODELS+1]);
+		char *tmp = MapName.chr ('.');
 		if (tmp) tmp[0] = 0;
-		tmp = strrchr (mapname, '/');
-		if (!tmp)
-			tmp = tmp ? ++tmp : mapname;
-		else
-			tmp++;				// skip '/'
+		tmp = MapName.rchr ('/');
+		tmp = tmp ? tmp+1 : MapName;
 		name = va("levelshots/%s", tmp);
 	}
 
@@ -293,11 +289,11 @@ void SCR_SetLevelshot (const char *name)
 
 	if (ImageExists (name))
 	{
-		static char levelshot[MAX_OSPATH];
+		static TString<MAX_OSPATH> Levelshot;
 
 		Com_DPrintf ("SetLevelshot: %s\n", name);
-		strcpy (levelshot, name);
-		map_levelshot = levelshot;
+		Levelshot = name;
+		map_levelshot = Levelshot;
 		// force renderer to refresh image
 		CBasicImage *img = RE_RegisterPic (name);
 		if (img) img->Reload ();
@@ -414,14 +410,14 @@ static void DrawGUI (bool allowNotifyArea)
 	// draw downloading info
 	if (cls.download && !(DEVELOPER && cls.loading))
 	{
-		int w = viddef.width / 2;
-		int r = w * cls.downloadpercent / 100;
-		int top = viddef.height - 3 * CHAR_HEIGHT - 2;
+		int w      = viddef.width / 2;
+		int r      = w * cls.downloadPercent / 100;
+		int top    = viddef.height - 3 * CHAR_HEIGHT - 2;
 		int height = 2 * CHAR_HEIGHT + 4;
 		RE_Fill (6, top, r, height, RGB(0.5,0,0));
 		RE_Fill (6 + r, top, w - r, height, RGB(0.1,0.1,0.1));
-		DrawString (8, viddef.height - 3 * CHAR_HEIGHT, va("Downloading: %s", cls.downloadname));
-		DrawString (8, viddef.height - 2 * CHAR_HEIGHT, va("%d%% complete", cls.downloadpercent));
+		DrawString (8, viddef.height - 3 * CHAR_HEIGHT, va("Downloading: %s", *cls.DownloadName));
+		DrawString (8, viddef.height - 2 * CHAR_HEIGHT, va("%d%% complete", cls.downloadPercent));
 	}
 
 	// draw menu
@@ -476,12 +472,12 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	static char filename[MAX_OSPATH];
-	filename[0] = 0;
+	static TString<MAX_OSPATH> Filename;
+	Filename[0] = 0;
 	int flags = 0;
 	for (int i = 1; i < argc; i++)
 	{
-		char *opt = argv[i];
+		const char *opt = argv[i];
 		if (opt[0] == '-')
 		{
 			opt++;
@@ -502,9 +498,9 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 				tmp++;	// skip '/'
 
 				flags |= SHOT_SMALL|SHOT_NO_2D|SHOT_NOGAMMA;
-				appSprintf (ARRAY_ARG(filename), "%s/levelshots/%s", FS_Gamedir (), tmp);
+				Filename.sprintf ("%s/levelshots/%s", FS_Gamedir (), tmp);
 				// cut extension
-				tmp = strrchr (filename, '.');
+				tmp = Filename.rchr ('.');
 				if (tmp) *tmp = 0;
 			}
 			else if (!stricmp (opt, "no2d"))
@@ -523,15 +519,13 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 		}
 		else
 		{
-			if (filename[0])
-				Com_WPrintf ("WARNING: name already specified (%s). Changed.\n", filename);
-			char tmpName[MAX_OSPATH];
-			appSprintf (ARRAY_ARG(tmpName), "%s/screenshots/%s", FS_Gamedir (), opt);
-			appCopyFilename (filename, tmpName, sizeof(filename));
+			if (Filename[0])
+				Com_WPrintf ("WARNING: name already specified (%s). Changed.\n", *Filename);
+			Filename.filename (va("%s/screenshots/%s", FS_Gamedir (), opt));
 		}
 	}
 
-	RE_Screenshot (flags, filename);
+	RE_Screenshot (flags, Filename);
 }
 
 
@@ -559,7 +553,7 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 		RE_EndFrame ();
 		time = (appMillisecondsf () - start) / 1000;
 		// prevent too long measuring
-		Sys_SendKeyEvents ();			// poll keyboard
+		Sys_ProcessMessages ();			// poll keyboard
 		if (cls.key_dest != keyDest)	// console or menu was activated or deactivated
 		{
 			steps = i;
@@ -607,22 +601,19 @@ static void SizeHUDString (const char *string, int *w, int *h)
 
 static void DrawHUDString (char *string, int x0, int y, int centerwidth, int color)
 {
-	int		width, i, x;
-	char	c;
-
 	while (*string)
 	{
 		// scan out one line of text from the string
-		width = 0;
+		int width = 0;
 		while (true)
 		{
-			c = string[width];
+			char c = string[width];
 			if (!c || c == '\n') break;
 			width++;
 		}
 
-		x = centerwidth ? x0 + (centerwidth - width * CHAR_WIDTH) / 2 : x0;
-		for (i = 0; i < width; i++)
+		int x = centerwidth ? x0 + (centerwidth - width * CHAR_WIDTH) / 2 : x0;
+		for (int i = 0; i < width; i++)
 		{
 			RE_DrawChar (x, y, *string++, color);
 			x += CHAR_WIDTH;
@@ -641,15 +632,15 @@ static void DrawField (int x, int y, bool color, int width, int value)
 	if (width < 1) return;
 
 	// draw number string
-	char	num[16];
-	int len = appSprintf (ARRAY_ARG(num), "%d", value);
+	TString<16> Num;
+	int len = Num.sprintf ("%d", value);
 	if (width > 5) width = 5;
 	if (len > width) len = width;
 
 	// align number to right
 	x += 2 + HUDCHAR_WIDTH * (width - len);
 
-	const char *ptr = num;
+	const char *ptr = Num;
 	while (*ptr && len--)
 	{
 		if (*ptr == '-')
@@ -794,12 +785,12 @@ static void ExecuteLayoutString (const char *s)
 			int time  = atoi (COM_Parse (s));
 
 			int x1 = x+32;
-			DrawString (x1, y,				va(S_GREEN"%s", ci->playerName));
+			DrawString (x1, y,				va(S_GREEN"%s", *ci->PlayerName));
 			DrawString (x1, y+CHAR_HEIGHT,	va("Score: "S_GREEN"%d", score));
 			DrawString (x1, y+CHAR_HEIGHT*2,va("Ping:  %d", ping));
 			DrawString (x1, y+CHAR_HEIGHT*3,va("Time:  %d", time));
 
-			RE_DrawStretchPic (x, y, 32, 32, ci->iconName);
+			RE_DrawStretchPic (x, y, 32, 32, ci->IconName);
 		}
 		else if (!strcmp (token, "ctf"))
 		{	// draw a ctf client block
@@ -817,7 +808,7 @@ static void ExecuteLayoutString (const char *s)
 			int ping = atoi (COM_Parse (s));
 			if (ping > 999) ping = 999;
 
-			appSprintf (ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, ci->playerName);
+			appSprintf (ARRAY_ARG(block), "%3d %3d %-12.12s", score, ping, *ci->PlayerName);
 
 			if (value == cl.playernum)
 				DrawString (x, y, va(S_RED"%s", block));
@@ -908,7 +899,7 @@ static void ExecuteLayoutString (const char *s)
 }
 
 
-//?? remove
+//?? remove; but: this code allow us to cycle crosshairs (when ch#N absent, crosshair is set to 0)
 void SCR_TouchPics ()
 {
 	int ch_num = crosshair->integer;
@@ -1017,10 +1008,9 @@ CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
 
 	RegisterCommand ("timerefresh", TimeRefresh_f);
-	RegisterCommand ("loading", SCR_BeginLoadingPlaque);
 	RegisterCommand ("toggleconsole", SCR_ToggleConsole);
-	RegisterCommand ("messagemode", SCR_MessageMode_f);
-	RegisterCommand ("messagemode2", SCR_MessageMode2_f);
+	RegisterCommand ("messagemode", MessageMode_f);
+	RegisterCommand ("messagemode2", MessageMode2_f);
 	RegisterCommand ("screenshot", Screenshot_f);
 
 	initialized = true;

@@ -142,14 +142,12 @@ void appStrcatn (char *dst, int count, const char *src)
 
 void appCopyFilename (char *dest, const char *src, int len)
 {
-	char	c, *d;
-	const char *s;
-
 	guardSlow(appCopyFilename);
 
+	char	c;
 	// copy name with replacing '\' -> '/' and lowercasing
-	s = src;
-	d = dest;
+	const char *s = src;
+	char *d = dest;
 	while (len--)
 	{
 		c = *s++;
@@ -223,7 +221,7 @@ int appCStrlen (const char *str)
 
 void appUncolorizeString (char *dst, const char *src)
 {
-	char	c, c1;
+	char	c;
 
 	if (!src) src = dst;
 	do
@@ -231,7 +229,7 @@ void appUncolorizeString (char *dst, const char *src)
 		c = *src++;
 		if (c == COLOR_ESCAPE)
 		{
-			c1 = *src;
+			char c1 = *src;
 			if (c1 < '0' || c1 > '7')
 				*dst++ = c;
 			else
@@ -253,21 +251,19 @@ void appUncolorizeString (char *dst, const char *src)
 //?? should be "const char* va()"
 const char *va (const char *format, ...)
 {
-	va_list argptr;
-	static char buf[VA_BUFSIZE];
-	static int bufPos = 0;
-	int		len;
-	char	*str;
-
 	guardSlow(va);
 
+	static char buf[VA_BUFSIZE];
+	static int bufPos = 0;
+
+	va_list argptr;
 	va_start (argptr, format);
 
 	// wrap buffer
 	if (bufPos >= VA_BUFSIZE - VA_GOODSIZE) bufPos = 0;
 	// print
-	str = buf + bufPos;
-	len = vsnprintf (str, VA_BUFSIZE - bufPos, format, argptr);
+	char *str = buf + bufPos;
+	int len = vsnprintf (str, VA_BUFSIZE - bufPos, format, argptr);
 	if (len < 0 && bufPos > 0)
 	{
 		// buffer overflow - try again with printing to buffer start
@@ -294,12 +290,10 @@ const char *va (const char *format, ...)
 
 int appSprintf (char *dest, int size, const char *fmt, ...)
 {
-	int		len;
-	va_list	argptr;
-
 	guardSlow(appSprintf);
+	va_list	argptr;
 	va_start (argptr, fmt);
-	len = vsnprintf (dest, size, fmt, argptr);
+	int len = vsnprintf (dest, size, fmt, argptr);
 	va_end (argptr);
 	if (len < 0 || len >= size - 1)
 		appWPrintf ("appSprintf: overflow of %d (called by \"%s\")\n", size, appSymbolName (GET_RETADDR(dest)));
@@ -323,24 +317,25 @@ int appSprintf (char *dest, int size, const char *fmt, ...)
 // A few masks can be separated with ','
 bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 {
-	int		masklen, namelen;
-	char	maskCopy[MAX_OSPATH], nameCopy[MAX_OSPATH], *next;
-
 	guardSlow(appMatchWildcard);
+
+	TString<256> MaskCopy, NameCopy;
 	if (ignoreCase)
 	{
-		appStrncpylwr (nameCopy, name, sizeof(nameCopy));
-		name = nameCopy;
-		appStrncpylwr (maskCopy, mask, sizeof(maskCopy));
+		NameCopy.toLower (name);
+		name = NameCopy;
+		MaskCopy.toLower (mask);
 	}
 	else
-		appStrncpyz (maskCopy, mask, sizeof(maskCopy));
-	namelen = strlen (name);
+		MaskCopy = mask;
+	int namelen = strlen (name);
 
-	for (mask = maskCopy; mask; mask = next)
+	char *next;
+	for (mask = MaskCopy; mask; mask = next)
 	{
 		// find next wildcard (comma-separated)
 		next = strchr (mask, ',');
+		int masklen;
 		if (next)
 		{
 			masklen = next - mask;
@@ -375,17 +370,13 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 		}
 		else
 		{
-			char	*suff;
-
 			// "*text" or "text*" mask
-			suff = strchr (mask, '*');
+			char *suff = strchr (mask, '*');
 			if (next && suff >= next) suff = NULL;		// suff can be in next wildcard
 			if (suff)
 			{
-				int		preflen, sufflen;
-
-				preflen = suff - mask;
-				sufflen = masklen - preflen - 1;
+				int preflen = suff - mask;
+				int sufflen = masklen - preflen - 1;
 				suff++;
 
 				if (namelen < preflen + sufflen)

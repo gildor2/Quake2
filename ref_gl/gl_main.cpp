@@ -110,34 +110,18 @@ static void Gfxinfo_f (bool usage, int argc, char **argv)
 	Com_Printf ("Multitexturing: ");
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
 	{
-#if 0
-		TString<256> name;
-		name = GL_SUPPORT(QGL_ARB_MULTITEXTURE) ? "ARB" : "SGIS";
+		TString<256> Name;
+		Name = GL_SUPPORT(QGL_ARB_MULTITEXTURE) ? "ARB" : "SGIS";
 		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_ADD))
-			name += " +Add";
+			Name += " +Add";
 		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE|QGL_EXT_TEXTURE_ENV_COMBINE))
-			name += " +Combine";
+			Name += " +Combine";
 		if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4))
-			name += " +NV";
+			Name += " +NV";
 		if (GL_SUPPORT(QGL_ATI_TEXTURE_ENV_COMBINE3))
-			name += " +ATI";
+			Name += " +ATI";
 
-		Com_Printf ("yes, %s, %d texture units\n", name.str, gl_config.maxActiveTextures);
-#else
-		char	name[256];
-
-		strcpy (name, GL_SUPPORT(QGL_ARB_MULTITEXTURE) ? "ARB" : "SGIS");
-		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_ADD))
-			strcat (name, " +Add");
-		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE|QGL_EXT_TEXTURE_ENV_COMBINE))
-			strcat (name, " +Combine");
-		if (GL_SUPPORT(QGL_NV_TEXTURE_ENV_COMBINE4))
-			strcat (name, " +NV");
-		if (GL_SUPPORT(QGL_ATI_TEXTURE_ENV_COMBINE3))
-			strcat (name, " +ATI");
-
-		Com_Printf ("yes, %s, %d texture units\n", name, gl_config.maxActiveTextures);
-#endif
+		Com_Printf ("yes, %s, %d texture units\n", *Name, gl_config.maxActiveTextures);
 	}
 	else
 		Com_Printf ("no\n");
@@ -638,7 +622,7 @@ void RenderFrame (refdef_t *fd)
 {
 	if (!renderingEnabled) return;
 
-	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !map.name)
+	if (!(fd->rdflags & RDF_NOWORLDMODEL) && !map.Name[0])
 		Com_FatalError ("R_RenderFrame: NULL worldModel");
 
 	int numVisLeafs = gl_speeds.visLeafs;			// keep number of visLeafs (remove when MarkLeaves() will be called every frame)
@@ -863,12 +847,12 @@ void SetSky (const char *name, float rotate, const CVec3 &axis)
 {
 	shader_t *old = gl_skyShader;
 	// find sky shader
-	char name2[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name2), "env/%s", name);
-	shader_t *shader = FindShader (name2, SHADER_SKY);
+	TString<64> Name2;
+	Name2.sprintf ("env/%s", name);
+	shader_t *shader = FindShader (Name2, SHADER_SKY);
 	if (shader->type != SHADERTYPE_SKY)
 	{
-		Com_WPrintf ("%s is not a sky shader\n", name2);
+		Com_WPrintf ("%s is not a sky shader\n", *Name2);
 		shader = gl_skyShader;
 	}
 
@@ -893,11 +877,11 @@ void SetSky (const char *name, float rotate, const CVec3 &axis)
 
 void Screenshot (int flags, const char *name)
 {
-	static char shotName[MAX_QPATH];
+	static TString<64> ShotName;
 
-	strcpy (shotName, name);
+	ShotName = name;
 	screenshotFlags = flags;
-	screenshotName = shotName;
+	screenshotName = ShotName;
 }
 
 

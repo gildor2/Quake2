@@ -64,7 +64,7 @@ static int numSurfacesTotal;
 // Add surface to a current scene (to a "vp" structure)
 void AddSurfaceToPortal (surfaceBase_t *surf, shader_t *shader, int entityNum, int numDlights)
 {
-//	LOG_STRING(va("add surf %s ent=%X n_dl=%d\n", shader->name, entityNum, numDlights));
+//	LOG_STRING(va("add surf %s ent=%X n_dl=%d\n", *shader->Name, entityNum, numDlights));
 	if (shader->noDraw) return;						// invisible surface
 
 	if (numSurfacesTotal >= MAX_SCENE_SURFACES - 1) return;			// buffer is full

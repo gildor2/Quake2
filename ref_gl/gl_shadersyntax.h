@@ -255,14 +255,14 @@ static CSimpleCommand shaderFuncs[] = {
 
 static image_t *ShaderImage (const char *name, unsigned addFlags = 0)
 {
-	char buf[MAX_QPATH*2];	// *2 - just in case
+	char buf[256];
 	// if image name starts with "./" -- replace with shader path
 	if (name[0] == '.' && name[1] == '/')
 	{
-		strcpy (buf, sh.name);
+		strcpy (buf, sh.Name);
 		char *s = strrchr (buf, '/');
 		if (!s) s = buf;
-		else	s++;		// skip '/'
+		else	s++;			// skip '/'
 		strcpy (s, name+2);
 		name = buf;
 	}
@@ -291,7 +291,7 @@ FUNC(map)
 		img = NULL;
 	else
 	{
-		img = ShaderImage (IS(1,"$texture") ? sh.name : argv[1]);
+		img = ShaderImage (IS(1,"$texture") ? sh.Name : argv[1]);
 		if (!img) ERROR_IN_SHADER(va("no texture: %s", argv[1]));
 		if (!sh.width && !sh.height)
 		{
@@ -306,7 +306,7 @@ FUNC(map)
 
 FUNC(clampMap)
 {
-	image_t *img = ShaderImage (IS(1,"$texture") ? sh.name : argv[1], IMAGE_CLAMP);
+	image_t *img = ShaderImage (IS(1,"$texture") ? sh.Name : argv[1], IMAGE_CLAMP);
 	if (!img) ERROR_IN_SHADER(va("no texture: %s", argv[1]));
 	shaderImages[sh.numStages * MAX_STAGE_TEXTURES] = img;
 	if (!sh.width && !sh.height)

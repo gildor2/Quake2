@@ -321,7 +321,7 @@ void V_InitRenderer ()
 		if (name[0] != '*')
 			Com_Printf ("%s\r", name);
 		SCR_UpdateScreen ();
-		Sys_SendKeyEvents ();					// pump message loop
+		Sys_ProcessMessages ();					// pump message loop
 		if (name[0] == '#')
 		{
 			// special player weapon model
@@ -349,7 +349,7 @@ void V_InitRenderer ()
 	for (i = 1; i < MAX_IMAGES && cl.configstrings[CS_IMAGES+i][0]; i++)
 	{
 		cl.image_precache[i] = RE_RegisterPic (va("pics/%s", cl.configstrings[CS_IMAGES+i]));
-		Sys_SendKeyEvents ();	// pump message loop
+		Sys_ProcessMessages ();	// pump message loop
 	}
 
 	for (i = 0; i < MAX_CLIENTS; i++)
@@ -358,7 +358,7 @@ void V_InitRenderer ()
 			continue;
 		Com_Printf ("client %d\r", i);
 		SCR_UpdateScreen ();
-		Sys_SendKeyEvents ();	// pump message loop
+		Sys_ProcessMessages ();	// pump message loop
 		CL_ParseClientinfo (i);
 	}
 	if (!cl.configstrings[CS_PLAYERSKINS+cl.playernum][0])
@@ -531,25 +531,21 @@ static void DrawFlag (int flag, const flagInfo_t *info, int numFlags, const char
 		if (flag & info->code)
 			RE_DrawTextLeft (va("%s%s", prefix, info->name), RGB(0.3, 0.6, 0.4));
 #else
-	char	buf[256];
-
-	buf[0] = 0;
+	TString<256> Buf;
+	Buf[0] = 0;
 	for (int i = 0; i < numFlags; i++, info++)
 		if (flag & info->code)
 		{
-			if (buf[0])
-				appStrcatn (ARRAY_ARG(buf), va(" %s%s", prefix, info->name));
-			else
-				appSprintf (ARRAY_ARG(buf), "%s%s", prefix, info->name);
-			if (strlen (buf) > 40)
+			Buf += va(Buf[0] ? " %s%s" : "%s%s", prefix, info->name);
+			if (Buf.len () > 40)
 			{
-				RE_DrawTextLeft (buf, RGB(0.3, 0.6, 0.4));
-				buf[0] = 0;
+				RE_DrawTextLeft (Buf, RGB(0.3, 0.6, 0.4));
+				Buf[0] = 0;
 			}
 			flag &= ~info->code;
 		}
-	if (buf[0])
-		RE_DrawTextLeft (buf, RGB(0.3, 0.6, 0.4));
+	if (Buf[0])
+		RE_DrawTextLeft (Buf, RGB(0.3, 0.6, 0.4));
 	if (flag)
 		RE_DrawTextLeft (va("%sUNK_%X", prefix, flag), RGB(0.6, 0.3, 0.4));
 #endif

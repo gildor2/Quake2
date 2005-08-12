@@ -319,19 +319,9 @@ void SV_InitGame ()
 	{
 		if (sv_maxclients->integer <= 1 || sv_maxclients->integer > 4)
 			Cvar_ForceSet ("maxclients", "4");
-#ifdef COPYPROTECT
-		if (!sv.attractloop && !DEDICATED)
-			Sys_CopyProtect ();
-#endif
 	}
 	else	// non-deathmatch, non-coop is one player
-	{
 		Cvar_ForceSet ("maxclients", "1");
-#ifdef COPYPROTECT
-		if (!sv.attractloop)
-			Sys_CopyProtect ();
-#endif
-	}
 
 	svs.spawncount          = rand();
 	svs.clients             = new client_t [sv_maxclients->integer];

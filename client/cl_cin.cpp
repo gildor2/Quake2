@@ -21,7 +21,7 @@ struct cinematics_t
 
 	// file data
 	QFILE	*file;						// if NULL, display pic
-	char	imageName[MAX_QPATH];		// used for "map image.pcx"
+	TString<MAX_QPATH> ImageName;		// used for "map image.pcx"
 
 	int		frame;
 	double	frameTime;					// == cls.realtime for current cinematic frame; float precision for correct
@@ -130,7 +130,7 @@ static void HuffDecompress (cblock_t *in, cblock_t *out, byte *buffer, int count
 	nodenum = cin.numHuffNodes[prevByte];
 
 	// hnodes -> huffman table for current decoding byte
-	int		*hnodes, nodenum;
+	int *hnodes, nodenum;
 	// init decompression; assume previous byte is 0
 	NEXT_TABLE(0);
 
@@ -195,30 +195,17 @@ void SCR_StopCinematic ()
 }
 
 
-/*
-==================
-ReadNextFrame
-==================
-*/
 static bool ReadNextFrame (byte *buffer)
 {
-	int		command;
-	byte	samples[22050 * 4];
-	byte	compressed[0x20000];
-	int		size;
-	byte	*pic;
-	cblock_t in, huf1;
-	int		start, end, count;
-
 	guard(ReadNextFrame);
 
 	// read the next frame
-	command = ReadCinInt ();
+	int command = ReadCinInt ();
 	if (command == 2) return false;			// last frame marker
 
 	if (command == 1)
 	{
-		byte	palette[256*3];
+		byte palette[256*3];
 		// read palette
 		FS_Read (palette, sizeof(palette), cin.file);
 		// convert 3-byte RGB palette to 4-byte RGBA for renderer
@@ -234,7 +221,8 @@ static bool ReadNextFrame (byte *buffer)
 	}
 
 	// decompress the next frame
-	size = ReadCinInt () - 4;
+	byte compressed[0x20000];
+	int size = ReadCinInt () - 4;
 	if (size > sizeof(compressed) || size < 1)
 		Com_DropError ("Bad compressed frame size: %d\n", size);
 	// read and verify check decompressed frame size
@@ -244,18 +232,19 @@ static bool ReadNextFrame (byte *buffer)
 	FS_Read (compressed, size, cin.file);
 
 	// read sound
-	start = cin.frame * cin.s_rate / CIN_SPEED;
-	end = (cin.frame + 1) * cin.s_rate / CIN_SPEED;
-	count = end - start;
+	int start = cin.frame * cin.s_rate / CIN_SPEED;
+	int end   = (cin.frame + 1) * cin.s_rate / CIN_SPEED;
+	int count = end - start;
 
+	byte samples[22050 * 4];
 	FS_Read (samples, count*cin.s_width*cin.s_channels, cin.file);
 	S_RawSamples (count, cin.s_rate, cin.s_width, cin.s_channels, samples);
 
-	in.data = compressed;
+	cblock_t in, huf1;
+	in.data  = compressed;
 	in.count = size;
 
 	HuffDecompress (&in, &huf1, buffer, cin.frameSize);
-	pic = huf1.data;
 
 	return true;
 
@@ -321,9 +310,9 @@ bool SCR_DrawCinematic ()
 	if (!cl.cinematicActive)
 		return false;
 
-	if (cin.imageName[0]) {
+	if (cin.ImageName[0]) {
 		// static image
-		RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, cin.imageName);
+		RE_DrawDetailedPic (0, 0, viddef.width, viddef.height, cin.ImageName);
 	} else if (cin.file) {
 		// cinematic frame
 		RE_DrawStretchRaw8 (0, 0, viddef.width, viddef.height, cin.width, cin.height, cin.buf[cin.activeBuf], cin.palette);
@@ -347,8 +336,8 @@ void SCR_PlayCinematic (const char *filename)
 	if (ext && strcmp (ext, ".cin"))
 	{
 		// not ".cin" extension - try static image
-		appSprintf (ARRAY_ARG(cin.imageName), "pics/%s", filename);
-		CBasicImage *img = RE_RegisterPic (cin.imageName);
+		cin.ImageName.sprintf ("pics/%s", filename);
+		CBasicImage *img = RE_RegisterPic (cin.ImageName);
 		if (img)
 		{
 			cin.width  = img->width;
@@ -372,16 +361,16 @@ void SCR_PlayCinematic (const char *filename)
 			return;
 		}
 
-		cin.width = ReadCinInt ();
-		cin.height = ReadCinInt ();
-		cin.s_rate = ReadCinInt ();
-		cin.s_width = ReadCinInt ();
+		cin.width      = ReadCinInt ();
+		cin.height     = ReadCinInt ();
+		cin.s_rate     = ReadCinInt ();
+		cin.s_width    = ReadCinInt ();
 		cin.s_channels = ReadCinInt ();
 
-		cin.frameSize = cin.width * cin.height;
-		cin.buf[0] = new byte [cin.frameSize];
-		cin.buf[1] = new byte [cin.frameSize];
-		cin.activeBuf = 0;
+		cin.frameSize  = cin.width * cin.height;
+		cin.buf[0]     = new byte [cin.frameSize];
+		cin.buf[1]     = new byte [cin.frameSize];
+		cin.activeBuf  = 0;
 
 		InitHuffTable ();
 
@@ -397,7 +386,7 @@ void SCR_PlayCinematic (const char *filename)
 		// prepare 2 display frames
 		ReadNextFrame (cin.buf[0]);
 		ReadNextFrame (cin.buf[1]);
-		cin.frame = 0;
+		cin.frame     = 0;
 		cin.frameTime = cls.realtime;
 	}
 

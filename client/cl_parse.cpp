@@ -89,7 +89,7 @@ static void ParseServerData (void)
 	cl.attractloop = MSG_ReadByte (&net_message) != 0;
 
 	// game directory
-	char *str = MSG_ReadString (&net_message);
+	const char *str = MSG_ReadString (&net_message);
 	appStrncpyz (cl.gamedir, str, sizeof(cl.gamedir));
 	Cvar_Set ("game", str);
 
@@ -133,11 +133,11 @@ void CL_ParseClientinfo (int player)
 
 	if (ci.isQ3model && !cls.newprotocol)
 	{
-		Com_WPrintf ("No extended protocol support.\nForce player %s to use base model\n", ci.playerName);
+		Com_WPrintf ("No extended protocol support.\nForce player %s to use base model\n", *ci.PlayerName);
 		ci.isValidModel = false;
 	}
 	if (!ci.isValidModel)
-		CL_LoadClientinfo (ci, va("%s\\male/grunt", ci.playerName));
+		CL_LoadClientinfo (ci, va("%s\\male/grunt", *ci.PlayerName));
 	if (gender_auto->integer && player == cl.playernum)
 	{
 //		Com_Drintf("Fix gender: [%d]=%c\n",cl.playernum,cl.clientInfo[cl.playernum].modelGender);

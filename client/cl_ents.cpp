@@ -56,7 +56,7 @@ void CL_ParseDelta (clEntityState_t *from, clEntityState_t *to, int number, unsi
 	{
 		if (to->solid && to->solid != 31)
 		{
-			int x = 8 * (to->solid & 31);
+			int x  = 8 * (to->solid & 31);
 			int zd = 8 * ((to->solid>>5) & 31);
 			int zu = 8 * ((to->solid>>10) & 63) - 32;
 
@@ -278,8 +278,8 @@ void CL_ParseFrame (void)
 	memset (&cl.frame, 0, sizeof(cl.frame));
 
 	cl.frame.serverframe = MSG_ReadLong (&net_message);
-	cl.frame.deltaframe = MSG_ReadLong (&net_message);
-	cl.frame.servertime = cl.frame.serverframe*100;
+	cl.frame.deltaframe  = MSG_ReadLong (&net_message);
+	cl.frame.servertime  = cl.frame.serverframe*100;
 
 	// BIG HACK to let old demos continue to work
 	if (cls.serverProtocol != 26)
@@ -485,10 +485,7 @@ static void AddViewWeapon (int renderfx)
 
 #ifdef GUN_DEBUG
 	if (gun_frame)
-	{
-		gun.frame = gun_frame;
-		gun.oldframe = gun_frame;
-	}
+		gun.frame = gun.oldframe = gun_frame;
 	else
 #endif
 	{
@@ -516,14 +513,9 @@ void CL_AddEntityBox (clEntityState_t *st, unsigned rgba)
 	ent.flags = RF_BBOX;
 	ent.color.rgba = rgba;
 
-#if 1
 	// lerp
 	for (int i = 0; i < 3; i++)
 		ent.angles[i] = LerpAngle (cent->prev.angles[i], cent->current.angles[i], cl.lerpfrac);
-#else
-	// don't lerp
-	ent->angles = cent->current.angles;
-#endif
 	Lerp (cent->prev.center, cent->current.center, cl.lerpfrac, ent.pos.origin);
 
 	CBox *box;
@@ -628,8 +620,8 @@ static void CL_AddPacketEntities (void)
 		else
 		{
 			ent.skinnum = st->skinnum;
-			ent.skin = NULL;
-			ent.model = cl.model_draw[st->modelindex];
+			ent.skin    = NULL;
+			ent.model   = cl.model_draw[st->modelindex];
 		}
 
 		// only used for black hole model right now, FIXME: do better
@@ -733,10 +725,10 @@ static void CL_AddPacketEntities (void)
 		else
 			AddEntityWithEffects (&ent, renderfx);
 
-		ent.skin = NULL;		// never use a custom skin on others
+		ent.skin    = NULL;		// never use a custom skin on others
 		ent.skinnum = 0;
-		ent.flags = 0;
-		ent.alpha = 0;
+		ent.flags   = 0;
+		ent.alpha   = 0;
 
 		/*---------------------- add linked models --------------------------*/
 
@@ -925,7 +917,6 @@ Sets cl.refdef view values
 static void CL_CalcViewValues (void)
 {
 	int			i;
-	centity_t	*ent;
 	player_state_t	*ps, *ops;
 
 	// find the previous frame to interpolate from
@@ -938,7 +929,7 @@ static void CL_CalcViewValues (void)
 		abs(ops->pmove.origin[2] - ps->pmove.origin[2]) > 256*8)
 		ops = ps;		// don't interpolate
 
-	ent = &cl_entities[cl.playernum+1];
+	centity_t *ent = &cl_entities[cl.playernum+1];
 	float lerp = cl.lerpfrac;
 
 	// calculate the origin
@@ -1021,8 +1012,8 @@ void CL_AddEntities (void)
 		if (cl_showclamp->integer)
 			Com_Printf ("high clamp %i\n", cl.time - cl.frame.servertime);
 		cl.overtime += cl.time - cl.frame.servertime;
-		cl.time = cl.frame.servertime;
-		cl.ftime = cl.time / 1000.0f;
+		cl.time     = cl.frame.servertime;
+		cl.ftime    = cl.time / 1000.0f;
 		cl.lerpfrac = 1.0;
 	}
 	else if (cl.time < cl.frame.servertime - 100)
@@ -1030,15 +1021,14 @@ void CL_AddEntities (void)
 		if (cl_showclamp->integer)
 			Com_Printf ("low clamp %i\n", cl.frame.servertime - 100 - cl.time);
 		cl.overtime = 0;
-		cl.time = cl.frame.servertime - 100;
-		cl.ftime = cl.time / 1000.0f;
+		cl.time     = cl.frame.servertime - 100;
+		cl.ftime    = cl.time / 1000.0f;
 		cl.lerpfrac = 0;
 	}
 	else
 		cl.lerpfrac = 1.0f - (cl.frame.servertime - cl.time) / 100.0f;		//?? use cl.ftime
 
 	CL_CalcViewValues ();
-	// PMM - moved this here so the heat beam has the right values for the vieworg, and can lock the beam to the gun
 	CL_AddPacketEntities ();
 	CL_AddDebugLines ();
 

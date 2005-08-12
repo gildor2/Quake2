@@ -784,7 +784,7 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 		else if (surf->type == SURFACE_PLANAR)
 			AddSkySurface (static_cast<surfacePlanar_t*>(surf));
 		else
-			DrawTextLeft (va("non-planar sky surface %s", surf->shader->name), RGB(1,0,0));	//?? make this load-time ?
+			DrawTextLeft (va("non-planar sky surface %s", *surf->shader->Name), RGB(1,0,0));	//?? make this load-time ?
 	}
 }
 
@@ -797,7 +797,7 @@ void model_t::InitEntity (entity_t *ent, refEntity_t *out)
 void model_t::AddSurfaces (refEntity_t *e)
 {
 //??	if (developer->integer) -- cvar is not in renderer
-		DrawText3D (e->coord.origin, va("no model: %s", e->model->name), RGB(1,0,0));
+		DrawText3D (e->coord.origin, va("no model: %s", *e->model->Name), RGB(1,0,0));
 }
 
 
@@ -876,7 +876,7 @@ node_t *inlineModel_t::GetLeaf (refEntity_t *e)
 void inlineModel_t::DrawLabel (refEntity_t *e)
 {
 	DrawText3D (e->center, va("origin: %g %g %g\nbmodel: %s\nflags: $%X",
-		VECTOR_ARG(e->coord.origin), name, e->flags), RGB(0.1,0.4,0.2));
+		VECTOR_ARG(e->coord.origin), *Name, e->flags), RGB(0.1,0.4,0.2));
 }
 
 
@@ -886,13 +886,13 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	if (out->frame >= numFrames || out->frame < 0)
 	{
 		//?? developer only
-		DrawTextLeft (va("md3Model_t::InitEntity: no frame %d in %s\n", out->frame, name), RGB(1,0,0));
+		DrawTextLeft (va("md3Model_t::InitEntity: no frame %d in %s\n", out->frame, *Name), RGB(1,0,0));
 		out->frame = out->oldFrame = 0;
 	}
 	if (out->oldFrame >= numFrames || out->oldFrame < 0)
 	{
 		//?? developer only
-		DrawTextLeft (va("md3Model_t::InitEntity: no frame %d in %s\n", out->oldFrame, name), RGB(1,0,0));
+		DrawTextLeft (va("md3Model_t::InitEntity: no frame %d in %s\n", out->oldFrame, *Name), RGB(1,0,0));
 		out->frame = out->oldFrame = 0;
 	}
 	md3Frame_t *frame1 = frames + out->frame;
@@ -923,7 +923,7 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 	if (out->drawScale != 1)
 		out->size2.Scale (out->drawScale);
 #endif
-	if (ent->skin && ent->skin->numSurfs == 1 && ent->skin->surf[0].surfName[0] == 0)
+	if (ent->skin && ent->skin->numSurfs == 1 && ent->skin->surf[0].Name[0] == 0)
 		out->customShader = static_cast<shader_t*>(ent->skin->surf[0].shader);
 }
 
@@ -933,10 +933,10 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 void md3Model_t::AddSurfaces (refEntity_t *e)
 {
 #ifdef SHOW_MD3_SURFS
-	DrawTextLeft(va("%s: custSh=%s skin=%X skinNum=%d", name, e->customShader ? e->customShader->name : "NULL", e->skin, e->skinNum));
+	DrawTextLeft(va("%s: custSh=%s skin=%X skinNum=%d", *Name, e->customShader ? *e->customShader->Name : "NULL", e->skin, e->skinNum));
 	if (e->skin)
 		for (int k = 0; k < e->skin->numSurfs; k++)
-			DrawTextLeft(va("  %d: %s = %s", k, e->skin->surf[k].surfName, e->skin->surf[k].shader->name),RGB(0.1,0.1,1));
+			DrawTextLeft(va("  %d: %s = %s", k, *e->skin->surf[k].Name, *e->skin->surf[k].shader->Name),RGB(0.1,0.1,1));
 #endif
 	surfaceMd3_t *s = surf;
 	for (int i = 0; i < numSurfaces; i++, s++)
@@ -949,11 +949,11 @@ void md3Model_t::AddSurfaces (refEntity_t *e)
 		else if (e->skin)
 		{
 			for (int j = 0; j < e->skin->numSurfs; j++)
-				if (!strcmp (e->skin->surf[j].surfName, s->name))
+				if (e->skin->surf[j].Name == s->Name)
 				{
 					shader = static_cast<shader_t*>(e->skin->surf[j].shader);
 #ifdef SHOW_MD3_SURFS
-					DrawTextLeft (va("  %s for %s", shader->name, s->name));
+					DrawTextLeft (va("  %s for %s", *shader->Name, *s->Name));
 #endif
 					break;
 				}
@@ -961,7 +961,7 @@ void md3Model_t::AddSurfaces (refEntity_t *e)
 			{
 				// it seems, this surface not listed (or "nodraw" shader used) -- skip it
 #ifdef SHOW_MD3_SURFS
-				DrawTextLeft (va("  skip: %s", s->name));
+				DrawTextLeft (va("  skip: %s", *s->Name));
 #endif
 				continue;
 			}
@@ -991,7 +991,7 @@ node_t *md3Model_t::GetLeaf (refEntity_t *e)
 void md3Model_t::DrawLabel (refEntity_t *e)
 {
 	DrawText3D (e->center, va("origin: %g %g %g\nmd3: %s\nskin: %s\nflags: $%X  scale: %g",
-		VECTOR_ARG(e->coord.origin), name, e->customShader ? e->customShader->name : "(default)", e->flags, e->drawScale),
+		VECTOR_ARG(e->coord.origin), *Name, e->customShader ? *e->customShader->Name : "(default)", e->flags, e->drawScale),
 		RGB(0.1,0.4,0.2));
 		//?? incorrect skin info for md3 multi-surface models
 }
@@ -1554,7 +1554,7 @@ static void DrawEntities (int firstEntity, int numEntities)
 			if (BoxOccluded (e, e->size2))
 			{
 				if (gl_labels->integer == 2)
-					DrawText3D (e->center, va("occluded\n%s", e->model->name), RGB(0.1,0.2,0.4));
+					DrawText3D (e->center, va("occluded\n%s", *e->model->Name), RGB(0.1,0.2,0.4));
 				gl_speeds.ocullEnts++;
 				continue;
 			}
@@ -1944,7 +1944,7 @@ void AddEntity (entity_t *ent)
 	out->time  = vp.time - ent->time;
 	if (out->time < 0)
 	{
-		RE_DrawTextLeft (va("ent.time > time for %s\n", ent->model ? ent->model->name : "(no model)"));
+		RE_DrawTextLeft (va("ent.time > time for %s\n", ent->model ? *ent->model->Name : "(no model)"));
 		out->time = 0;
 	}
 

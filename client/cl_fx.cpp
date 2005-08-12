@@ -404,7 +404,7 @@ beam_t *CL_AllocParticleBeam (const CVec3 &start, const CVec3 &end, float radius
 		b->end        = end;
 		b->radius     = radius;
 		b->fadeTime = b->lifeTime = fadeTime;
-		b->dstAlpha = 0;
+		b->dstAlpha   = 0;
 
 		b->color.rgba = RGBA(1,1,1,1);
 		b->alpha      = 1;
@@ -428,12 +428,13 @@ particle_t *CL_AllocParticle ()
 	p->next = active_particles;
 	active_particles = p;
 
-	p->alpha = 1;
+	// default params
+	p->alpha    = 1;
 	p->accel[0] = p->accel[1] = 0;
 	p->accel[2] = -PARTICLE_GRAVITY;
-	p->type = PT_DEFAULT;
-	p->isNew = true;
-	p->leafNum = -1;
+	p->type     = PT_DEFAULT;
+	p->isNew    = true;
+	p->leafNum  = -1;			// uninitialized
 	return p;
 }
 
@@ -471,15 +472,13 @@ static void UpdateParticles ()
 			// update position
 			if (p->vel[2] || p->vel[1] || p->vel[0])
 			{
-				p->org[0] += p->vel[0] * timeDelta + p->accel[0] * time2;
-				p->org[1] += p->vel[1] * timeDelta + p->accel[1] * time2;
-				p->org[2] += p->vel[2] * timeDelta + p->accel[2] * time2;
+				// org += timeDelta * vel + timeDelta^2 * accel
+				VectorMA (p->org, timeDelta, p->vel);
+				VectorMA (p->org, time2, p->accel);
 				p->leafNum = CM_PointLeafnum (p->org);
 			}
-			// update velocity
-			p->vel[0] += timeDelta * p->accel[0];
-			p->vel[1] += timeDelta * p->accel[1];
-			p->vel[2] += timeDelta * p->accel[2];
+			// update velocity: vel += timeDelta * accel
+			VectorMA (p->vel, timeDelta, p->accel);
 		}
 
 		// remove particle if it is faded out or out of world
@@ -746,7 +745,7 @@ void CL_ParseMuzzleFlash2 ()
 	// setup dlight
 	cdlight_t *dl = CL_AllocDlight (ent, origin);
 	dl->radius = 200 + (rand()&31);
-	dl->die = cl.time + 10;
+	dl->die    = cl.time + 10;
 	dl->color.Set (1, 1, 0);		// most used dlight color
 
 #define PART  1
@@ -1495,16 +1494,17 @@ void CL_BigTeleportParticles (const CVec3 &org)
 		float dist = rand()&31;
 		float c = cos(angle);
 		float s = sin(angle);
+
 		p->org[0] = org[0] + c * dist;
-		p->vel[0] = c * (70+(rand()&63));
-		p->accel[0] = -c * 200;
-
 		p->org[1] = org[1] + s * dist;
-		p->vel[1] = s * (70+(rand()&63));
-		p->accel[1] = -s * 200;
-
 		p->org[2] = org[2] + 8 + (rand()%90);
+
+		p->vel[0] = c * (70+(rand()&63));
+		p->vel[1] = s * (70+(rand()&63));
 		p->vel[2] = -100 + (rand()&31);
+
+		p->accel[0] = -c * 200;
+		p->accel[1] = -s * 200;
 		p->accel[2] = PARTICLE_GRAVITY*4;
 
 		p->alphavel = -0.3 / (0.5 + frand()*0.3);
@@ -1869,17 +1869,7 @@ void CL_TeleportParticles (const CVec3 &org)
 
 void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 {
-	CVec3		move, vec;
-	int			j;
-	particle_t	*p;
-	int			i;
-	float		c, s;
-	CVec3		dir;
-	float		ltime;
-	float		start_pt;
-	float		rot;
-	float		variance;
-	CVec3		end;
+	CVec3	move, vec, dir, end;
 
 	VectorMA (start, 4096, forward, end);
 
@@ -1893,27 +1883,25 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 	// otherwise assume SOFT
 
 	int step = 32;
-	ltime = cl.ftime;
-	start_pt = fmod(ltime*96.0f,step);
+	float ltime = cl.ftime;
+	float start_pt = fmod (ltime*96.0f,step);
 	VectorMA (move, start_pt, vec);
 
 	vec.Scale (step);
 
-//	Com_Printf ("%f\n", ltime);
-	float rstep = M_PI/10.0f;
-	for (i=appRound(start_pt) ; i<len ; i+=step)
+	for (int i = appRound (start_pt); i < len; i += step)
 	{
 		if (i>step*5) // don't bother after the 5th ring
 			break;
 
-		for (rot = 0; rot < M_PI*2; rot += rstep)
+		for (float rot = 0; rot < M_PI*2; rot += M_PI/10)
 		{
+			particle_t *p;
 			if (!(p = CL_AllocParticle ()))
 				return;
 			p->accel[2] = 0;
-			variance = 0.5f;
-			c = cos(rot)*variance;
-			s = sin(rot)*variance;
+			float c = cos(rot) * 0.5f;
+			float s = sin(rot) * 0.5f;
 
 			// trim it so it looks like it's starting at the origin
 			if (i < 10)
@@ -1927,12 +1915,12 @@ void CL_Heatbeam (const CVec3 &start, const CVec3 &forward)
 				VectorMA (dir, s, cl.v_up);
 			}
 
-			p->alpha = 0.5f;
-			p->alphavel = -1000.0f;
-			p->color = 223 - (rand()&7);
-			for (j=0 ; j<3 ; j++)
+			p->alpha    = 0.5f;
+			p->alphavel = INSTANT_PARTICLE;
+			p->color    = 0xD8 + (rand()&7);
+			for (int j = 0; j < 3; j++)
 			{
-				p->org[j] = move[j] + dir[j]*3;
+				p->org[j] = move[j] + dir[j] * 3;
 				p->vel[j] = 0;
 			}
 		}
@@ -1951,7 +1939,7 @@ void CL_ParticleSteamEffect (const CVec3 &org, const CVec3 &dir, int color, int 
 		particle_t *p;
 		if (!(p = CL_AllocParticle ())) return;
 
-		p->color = color + (rand()&7);
+		p->color    = color + (rand()&7);
 		p->alphavel = -1.0 / (0.5 + frand()*0.3);
 
 		for (int j = 0; j < 3; j++)
@@ -1977,7 +1965,7 @@ void CL_ParticleSmokeEffect (const CVec3 &org, const CVec3 &dir)
 		particle_t *p;
 		if (!(p = CL_AllocParticle ())) return;
 
-		p->color = 0 + (rand()&7);
+		p->color    = 0 + (rand()&7);
 		p->alphavel = -1.0 / (0.5 + frand()*0.3);
 
 		for (int j = 0; j < 3; j++)
@@ -2017,7 +2005,7 @@ void CL_TrackerTrail (centity_t &ent)
 		p->accel[2] = 0;
 
 		p->alphavel = -2.0;
-		p->color = 0;
+		p->color    = 0;
 		float dist = dot (move, forward);
 		VectorMA (move, 8 * cos(dist), up, p->org);
 		p->vel.Set (0, 0, 5);
@@ -2035,7 +2023,7 @@ void CL_TrackerShell (const CVec3 &origin)
 		p->accel[2] = 0;
 
 		p->alphavel = INSTANT_PARTICLE;
-		p->color = 0;
+		p->color    = 0;
 
 		CVec3 dir;
 		dir.Set (crand(), crand(), crand());

@@ -257,8 +257,8 @@ static void SV_BeginDownload_f (int argc, char **argv)
 	extern	cvar_t *allow_download_sounds;
 	extern	cvar_t *allow_download_maps;
 
-	char name[MAX_QPATH];
-	appCopyFilename (name, argv[1], sizeof(name));
+	TString<MAX_OSPATH> Name;
+	Name.filename (argv[1]);
 
 	int offset = 0;
 	if (argc > 2) offset = atoi (argv[2]); 		// downloaded offset
@@ -267,19 +267,19 @@ static void SV_BeginDownload_f (int argc, char **argv)
 	// first off, no .. or global allow check
 	if (!allow_download->integer
 		// leading dot is no good
-		|| name[0] == '.'						// "./dir" or "../dir"
+		|| Name[0] == '.'						// "./dir" or "../dir"
 		// leading slash bad as well, must be in subdir
-		|| name[0] == '/'
+		|| Name[0] == '/'
 		// next up, skin check
-		|| (!memcmp (name, "players/", 6) && !allow_download_players->integer)
+		|| (!memcmp (Name, "players/", 6) && !allow_download_players->integer)
 		// now models
-		|| (!memcmp (name, "models/", 6) && !allow_download_models->integer)
+		|| (!memcmp (Name, "models/", 6) && !allow_download_models->integer)
 		// now sounds
-		|| (!memcmp (name, "sound/", 6) && !allow_download_sounds->integer)
+		|| (!memcmp (Name, "sound/", 6) && !allow_download_sounds->integer)
 		// now maps (note special case for maps, must not be in pak)
-		|| (!memcmp (name, "maps/", 6) && !allow_download_maps->integer)
+		|| (!memcmp (Name, "maps/", 6) && !allow_download_maps->integer)
 		// MUST be in a subdirectory
-		|| !strchr (name, '/'))
+		|| !Name.chr ('/'))
 	{	// don't allow anything with .. path
 		MSG_WriteByte (&sv_client->netchan.message, svc_download);
 		MSG_WriteShort (&sv_client->netchan.message, -1);
@@ -291,7 +291,7 @@ static void SV_BeginDownload_f (int argc, char **argv)
 	if (sv_client->download)
 		FS_FreeFile (sv_client->download);
 
-	sv_client->download = (byte*) FS_LoadFile (name, &sv_client->downloadsize);
+	sv_client->download = (byte*) FS_LoadFile (Name, &sv_client->downloadsize);
 	sv_client->downloadcount = offset;
 
 	if (offset > sv_client->downloadsize)
@@ -299,7 +299,7 @@ static void SV_BeginDownload_f (int argc, char **argv)
 
 	if (!sv_client->download)
 	{
-		Com_DPrintf ("Couldn't download %s to %s\n", name, sv_client->name);
+		Com_DPrintf ("Couldn't download %s to %s\n", *Name, sv_client->name);
 		if (sv_client->download) {
 			FS_FreeFile (sv_client->download);
 			sv_client->download = NULL;
@@ -312,7 +312,7 @@ static void SV_BeginDownload_f (int argc, char **argv)
 	}
 
 	SV_NextDownload_f (argc, argv);
-	Com_DPrintf ("Downloading %s to %s\n", name, sv_client->name);
+	Com_DPrintf ("Downloading %s to %s\n", *Name, sv_client->name);
 }
 
 

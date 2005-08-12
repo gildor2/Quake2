@@ -906,7 +906,7 @@ struct gameMenu_t : menuFramework_t
 
 		Cvar_SetInteger ("gamerules", 0);		// ROGUE
 
-		Cbuf_AddText ("killserver\nloading\nwait\nnewgame\n");
+		Cbuf_AddText ("killserver\nwait\nnewgame\n");
 		cls.key_dest = key_game;
 	}
 
@@ -2263,7 +2263,7 @@ struct playerConfigMenu_t : menuFramework_t
 		menuFramework_t::Draw ();
 		RE_Fill (refdef.x-4, refdef.y-4, refdef.width+8, refdef.height+8, RGBA(0,0,0,0.6));
 		RE_RenderFrame (&refdef);
-		RE_DrawDetailedPic (x - 40, refdef.y, viddef.height * 32 / 240, viddef.height * 32 / 240, ci.iconName);
+		RE_DrawDetailedPic (x - 40, refdef.y, viddef.height * 32 / 240, viddef.height * 32 / 240, ci.IconName);
 	}
 
 	const char * KeyDown (int key)

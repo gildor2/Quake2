@@ -187,7 +187,7 @@ void GL_Bind (const image_t *tex)
 		GL_TexMipBias (f);
 	}
 
-	if (tex && gl_nobind->integer && (gl_nobind->integer != 2 || strcmp (tex->name, "pics/conchars.pcx")))
+	if (tex && gl_nobind->integer && (gl_nobind->integer != 2 || tex->Name != "pics/conchars.pcx"))
 		tex = gl_dlightImage;		//?? need a better way to detect force-bind images
 
 	if (gl_state.locked)
@@ -226,7 +226,7 @@ void GL_Bind (const image_t *tex)
 		if (tex == gl_state.currentBinds[tmu]) return;
 
 		gl_state.currentBinds[tmu] = tex;
-		LOG_STRING(va("// GL_Bind(%s)\n", tex->name));
+		LOG_STRING(va("// GL_Bind(%s)\n", *tex->Name));
 		glBindTexture (tex->target, tex->texnum);
 		gl_speeds.numBinds++;
 	}
@@ -249,7 +249,7 @@ void GL_BindForce (const image_t *tex)
 	if (gl_state.currentBinds[tmu] == tex) return;
 
 	gl_state.currentBinds[tmu] = tex;
-	LOG_STRING(va("// GL_Bind(%s)\n", tex->name));
+	LOG_STRING(va("// GL_Bind(%s)\n", *tex->Name));
 	glBindTexture (tex->target, tex->texnum);
 	gl_speeds.numBinds++;
 }

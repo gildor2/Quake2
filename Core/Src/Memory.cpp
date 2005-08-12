@@ -474,14 +474,14 @@ static void Cmd_CheckAllocs (bool usage)
 			}
 		}
 
-		char symbol[256];
-		if (!appSymbolName (addr, ARRAY_ARG(symbol)))
-			appSprintf (ARRAY_ARG(symbol), "%08X", addr);
+		TString<256> Symbol;
+		if (!appSymbolName (addr, ARRAY_ARG(Symbol)))
+			Symbol.sprintf ("%08X", addr);
 		bool isChain;
 		if (p1) isChain = p1->isChain;
 		else if (p2) isChain = p2->isChain;
 		else continue; // should not happen
-		appPrintf ("%s%s\n", isChain ? S_GREEN : S_WHITE, symbol);
+		appPrintf ("%s%s\n", isChain ? S_GREEN : S_WHITE, *Symbol);
 
 		// advance list pointers
 		if (p1)

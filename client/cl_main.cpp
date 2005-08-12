@@ -204,15 +204,15 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 	}
 
 	// open the demo file
-	char name[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
+	TString<MAX_OSPATH> Name;
+	Name.sprintf ("%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
-	Com_Printf ("recording to %s.\n", name);
-	FS_CreatePath (name);
-	cls.demofile = fopen (name, "wb");
+	Com_Printf ("recording to %s.\n", *Name);
+	FS_CreatePath (Name);
+	cls.demofile = fopen (Name, "wb");
 	if (!cls.demofile)
 	{
-		Com_WPrintf ("Cannot create file %s\n", name);
+		Com_WPrintf ("Cannot create file %s\n", *Name);
 		return;
 	}
 	cls.demorecording = true;
@@ -292,14 +292,14 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 
 static void NetchanAppendArgs (char **argv, int first, int last)
 {
-	char	buf[1024];
-	buf[0] = 0;
+	TString<1024> Buf;
+	Buf[0] = 0;
 	for (int i = first; i < last; i++)
 	{
-		if (i > first) appStrcatn (ARRAY_ARG(buf), " ");
-		appStrcatn (ARRAY_ARG(buf), argv[i]);
+		if (i > first) Buf += " ";
+		Buf += argv[i];
 	}
-	MSG_WriteString (&cls.netchan.message, buf);
+	MSG_WriteString (&cls.netchan.message, Buf);
 }
 
 /*
@@ -503,10 +503,6 @@ CL_Rcon_f
 */
 void CL_Rcon_f (int argc, char **argv)
 {
-	char	message[1024];
-	int		i;
-	netadr_t to;
-
 	if (!rcon_client_password->string[0])
 	{
 		Com_WPrintf ("\"rcon_password\" is not set\n");
@@ -515,13 +511,12 @@ void CL_Rcon_f (int argc, char **argv)
 
 	NET_Config (true);		// allow remote
 
-	appSprintf (ARRAY_ARG(message), "\xFF\xFF\xFF\xFFrcon %s ", rcon_client_password->string);
-	for (i = 1; i < argc; i++)
-	{
-		strcat (message, argv[i]);
-		strcat (message, " ");
-	}
+	TString<1024> Message;
+	Message.sprintf ("\xFF\xFF\xFF\xFFrcon %s", rcon_client_password->string);
+	for (int i = 1; i < argc; i++)
+		Message += va(" %s", argv[i]);
 
+	netadr_t to;
 	if (cls.state >= ca_connected)
 		to = cls.netchan.remote_address;
 	else
@@ -535,7 +530,7 @@ void CL_Rcon_f (int argc, char **argv)
 		if (!to.port) to.port = BigShort (PORT_SERVER);
 	}
 
-	NET_SendPacket (NS_CLIENT, strlen(message)+1, message, to);
+	NET_SendPacket (NS_CLIENT, Message.len () + 1, Message, to);
 }
 
 
@@ -731,7 +726,7 @@ void CL_Skins_f ()
 			continue;
 		Com_Printf ("client %d: %s\n", i, cl.configstrings[CS_PLAYERSKINS+i]);
 		SCR_UpdateScreen ();
-		Sys_SendKeyEvents ();	// pump message loop
+		Sys_ProcessMessages ();	// pump message loop
 		CL_ParseClientinfo (i);
 	}
 }
@@ -958,7 +953,7 @@ void CL_RegisterSounds (void)
 		if (!cl.configstrings[CS_SOUNDS+i][0])
 			break;
 		cl.sound_precache[i] = S_RegisterSound (cl.configstrings[CS_SOUNDS+i]);
-		Sys_SendKeyEvents ();	// pump message loop
+		Sys_ProcessMessages ();	// pump message loop
 	}
 	S_EndRegistration ();
 }
@@ -1020,11 +1015,10 @@ void CL_WriteConfig_f (bool usage, int argc, char **argv)
 		Com_Printf ("Usage: writeconfig <filename>\n");
 		return;
 	}
-	char name[MAX_OSPATH];
-	strcpy (name, argv[1]);
-	if (!strchr (name, '.'))
-		strcat (name, ".cfg");
-	CL_WriteConfiguration (name);
+	TString<MAX_OSPATH> Name;
+	Name = argv[1];
+	if (!Name.chr ('.')) Name += ".cfg";
+	CL_WriteConfiguration (Name);
 }
 
 
@@ -1206,7 +1200,7 @@ void CL_Frame (float msec, float realMsec)
 	// fetch results from server
 	CL_ReadPackets ();
 
-	Sys_SendKeyEvents ();			// get OS events
+	Sys_ProcessMessages ();			// get OS events
 	IN_Commands ();					// allow mice or other external controllers to add commands
 	Cbuf_Execute ();				// process console commands
 	CL_FixCvarCheats ();			// fix any cheating cvars

@@ -13,15 +13,6 @@ bool		ActiveApp, MinimizedApp, FullscreenApp;
 unsigned	sys_frame_time;			//?? used in cl_input.cpp only
 
 
-/*
-===============================================================================
-
-SYSTEM IO
-
-===============================================================================
-*/
-
-
 void Sys_Quit ()
 {
 #ifndef DEDICATED_ONLY
@@ -32,24 +23,11 @@ void Sys_Quit ()
 }
 
 
-//================================================================
-
-
-/*
-================
-Sys_ScanForCD
-
-================
-*/
-static char *Sys_ScanForCD ()
+static char *ScanForCD ()
 {
 #ifdef CD_PATH
-	static char cddir2[MAX_OSPATH], *cddir;
-	static bool done = false;
+	static TString<MAX_OSPATH> CdDir;
 	static char drive[4] = "c:/";
-
-	if (done) return cddir;		// don't re-check
-	done = true;
 
 	// no abort/retry/fail errors
 	SetErrorMode (SEM_FAILCRITICALERRORS);
@@ -61,28 +39,12 @@ static char *Sys_ScanForCD ()
 		if (FILE *f = fopen (va("%s"CD_CHECK, drive), "r"))
 		{
 			fclose (f);
-			appCopyFilename (cddir2, va("%s"CD_PATH, drive), sizeof(cddir));
-			cddir = cddir2;
-			return cddir;
+			CdDir.filename (va("%s"CD_PATH, drive));
+			return CdDir;
 		}
 	}
 #endif
 	return NULL;
-}
-
-/*
-================
-Sys_CopyProtect
-
-================
-*/
-void Sys_CopyProtect ()
-{
-#ifdef CD_PATH
-	if (!Sys_ScanForCD ())
-		// FUNNY NOTE: FatalError() will provide ErrorHistory with path to Sys_CopyProtect()
-		Com_FatalError ("You must have the "APPNAME" CD in the drive to play.");
-#endif
 }
 
 
@@ -114,16 +76,12 @@ static void EraseConInput ()
 	}
 }
 
-/*
-================
-Sys_ConsoleInput
-================
-*/
+
 char *Sys_ConsoleInput ()
 {
-	DWORD	dummy;
-
 	guard(Sys_ConsoleInput);
+
+	DWORD	dummy;
 
 	if (console_drawInput)
 	{
@@ -211,14 +169,6 @@ char *Sys_ConsoleInput ()
 }
 
 
-/*
-================
-Sys_ConsoleOutput
-
-Print text to the dedicated console
-================
-*/
-
 static void InitWin32Console ()
 {
 #ifndef DEDICATED_ONLY
@@ -259,17 +209,10 @@ void Sys_ConsoleOutput (const char *string)
 }
 
 
-/*
-================
-Sys_SendKeyEvents
-
-Send Key_Event calls
-================
-*/
-void Sys_SendKeyEvents ()
+void Sys_ProcessMessages ()
 {
 #ifndef DEDICATED_ONLY
-	guard(Sys_SendKeyEvents);
+	guard(Sys_ProcessMessages);
 	MSG		msg;
 	while (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
 	{
@@ -294,21 +237,13 @@ void Sys_SendKeyEvents ()
 
 
 
-/*
-========================================================================
-
-GAME DLL
-
-========================================================================
-*/
+/*-----------------------------------------------------------------------------
+	Game DLL
+-----------------------------------------------------------------------------*/
 
 static HINSTANCE game_library;
 
-/*
-=================
-Sys_UnloadGame
-=================
-*/
+
 void Sys_UnloadGame ()
 {
 	guard(Sys_UnloadGame);
@@ -319,51 +254,47 @@ void Sys_UnloadGame ()
 	unguard;
 }
 
-/*
-=================
-Sys_GetGameAPI
 
-Loads the game dll
-=================
-*/
 void *Sys_GetGameAPI (void *parms)
 {
-	typedef void * (* pGetGameApi_t)(void *);
-	pGetGameApi_t pGetGameAPI;
-	char	name[MAX_OSPATH], *path;
-#if defined _M_IX86
-	const char *gamename = "gamex86.dll";
-#elif defined _M_ALPHA
-	const char *gamename = "gameaxp.dll";
-#endif
-
 	guard(Sys_GetGameAPI);
 
 	if (game_library)
 		Com_FatalError ("Sys_GetGameAPI() without Sys_UnloadGame()");
 
+#if defined(_M_IX86)
+#	define GAME_DLL "gamex86.dll"
+#elif defined(_M_ALPHA)
+#	define GAME_DLL "gameaxp.dll"
+#else
+#	error "Don't know, how game dll named"
+#endif
+
 	// run through the search paths
-	path = NULL;
+	const char *path = NULL;
 	while (path = FS_NextPath (path))
 	{
-		appSprintf (ARRAY_ARG(name), "%s/%s", path, gamename);
-		if (FILE *f = fopen (name, "rb"))	// check file presence
+		TString<MAX_OSPATH> DllName;
+		DllName.sprintf ("%s/" GAME_DLL, path);
+		if (FILE *f = fopen (DllName, "rb"))	// check file presence
 		{
 			fclose (f);
-			if (game_library = LoadLibrary (name))
+			if (game_library = LoadLibrary (DllName))
 			{
-				Com_DPrintf ("LoadLibrary (%s)\n",name);
+				Com_DPrintf ("LoadLibrary (%s)\n", *DllName);
 				break;
 			}
 			else
-				Com_WPrintf ("Sys_GetGameAPI(%s): failed to load library\n", name);
+				Com_WPrintf ("Sys_GetGameAPI(%s): failed to load library\n", *DllName);
 		}
 		else
-			Com_DPrintf ("Sys_GetGameAPI(%s): file not found\n", name);
+			Com_DPrintf ("Sys_GetGameAPI(%s): file not found\n", *DllName);
 	}
 	if (!game_library)
 		return NULL;		// couldn't find one anywhere
 
+	typedef void * (* pGetGameApi_t)(void *);
+	pGetGameApi_t pGetGameAPI;
 	pGetGameAPI = (pGetGameApi_t)GetProcAddress (game_library, "GetGameAPI");
 	if (!pGetGameAPI)
 	{
@@ -378,22 +309,19 @@ void *Sys_GetGameAPI (void *parms)
 	unguard;
 }
 
-//=======================================================================
+
+/*-----------------------------------------------------------------------------
+	Program startup, main loop and exception handling
+-----------------------------------------------------------------------------*/
 
 extern bool debugLogged;
+HINSTANCE global_hInstance;
 
-/*
-==================
-WinMain
-
-==================
-*/
-HINSTANCE	global_hInstance;
 
 #ifndef DEDICATED_ONLY
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 #else
-int main (int argc, const char **argv)
+int main (int argc, const char **argv) // force to link as console application
 #endif
 {
 	GUARD_BEGIN
@@ -409,10 +337,10 @@ int main (int argc, const char **argv)
 #ifdef CD_PATH
 		char cmdline2[1024];
 		// if we find the CD, add a "-cddir=xxx" command line
-		if (char *cddir = Sys_ScanForCD ())
+		if (char *cddir = ScanForCD ())
 		{
-			// add to the end of cmdline, so, if already specified - will not override option
-			appSprintf (ARRAY_ARG(cmdline2), "%s -cddir=\"%s\"", cmdline, cddir);
+			// add to the start of cmdline, so, if already specified - will not override option
+			appSprintf (ARRAY_ARG(cmdline2), "-cddir=\"%s\" %s", cddir, cmdline);
 			cmdline = cmdline2;
 		}
 #endif
@@ -429,7 +357,7 @@ int main (int argc, const char **argv)
 #ifndef DEDICATED_ONLY
 			if (!ActiveApp || DEDICATED)
 				Sleep (10);		//?? what about client and server in one place: will server become slower ?
-			Sys_SendKeyEvents ();
+			Sys_ProcessMessages ();
 #else
 			Sleep (10);
 #endif
@@ -458,13 +386,13 @@ int main (int argc, const char **argv)
 				{
 					//!! TEST: dedicated: error -drop, error -gpf, error "msg"
 					//!! check old behaviour on DropError(NULL)
-					SV_Shutdown (va("Server crashed: %s\n", GErr.message), false);	// message
-					Com_DPrintf ("History: %s\n", GErr.history);					// history
+					SV_Shutdown (va("Server crashed: %s\n", *GErr.Message), false);	// message
+					Com_DPrintf ("History: %s\n", *GErr.History);					// history
 					if (!DEDICATED) CL_Drop (true);
 					GErr.Reset ();
 				}
 				else
-					throw;
+					throw;		// go to outer GUARD_CATCH{}
 			}
 			oldtime = newtime;
 		}
@@ -475,16 +403,16 @@ int main (int argc, const char **argv)
 		if (FILE *f = fopen (CRASH_LOG, "a+"))
 		{
 			if (GErr.swError)
-				fprintf (f, "----- " APPNAME " software exception -----\n%s\n\n", GErr.message);
-			fprintf (f, "History: %s\n\n", GErr.history);
+				fprintf (f, "----- " APPNAME " software exception -----\n%s\n\n", *GErr.Message);
+			fprintf (f, "History: %s\n\n", *GErr.History);
 			fclose (f);
 		}
 		if (debugLogged)
-			DebugPrintf ("***** CRASH *****\n%s\n*****************\n", GErr.history);
+			DebugPrintf ("***** CRASH *****\n%s\n*****************\n", *GErr.History);
 
 		GUARD_BEGIN {
 			// shutdown all subsystems
-			SV_Shutdown (va("Server fatal crashed: %s\n", GErr.message), false);	// message
+			SV_Shutdown (va("Server fatal crashed: %s\n", *GErr.Message), false);	// message
 			CL_Shutdown (true);
 			Com_Shutdown ();
 		} GUARD_CATCH {
@@ -492,11 +420,11 @@ int main (int argc, const char **argv)
 		}
 		// display error
 #ifndef DEDICATED_ONLY
-		MessageBox (NULL, va("%s\n\nHistory: %s", GErr.message, GErr.history),
+		MessageBox (NULL, va("%s\n\nHistory: %s", *GErr.Message, *GErr.History),
 			APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
 #else
 		Sys_ConsoleOutput ("\n\n"S_RED"--------------------\n" APPNAME " fatal error\n");
-		Sys_ConsoleOutput (va("%s\nHistory: %s\n", GErr.message, GErr.history));
+		Sys_ConsoleOutput (va("%s\nHistory: %s\n", *GErr.Message, *GErr.History));
 #endif
 	}
 	// will get here only when fatal error happens

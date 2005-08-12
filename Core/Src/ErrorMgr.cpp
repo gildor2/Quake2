@@ -15,7 +15,7 @@ void appFatalError (const char *fmt, ...)
 	GErr.swError = true;
 
 	va_start (argptr, fmt);
-	vsnprintf (ARRAY_ARG(GErr.message), fmt, argptr);
+	vsnprintf (ARRAY_ARG(GErr.Message), fmt, argptr);
 	va_end (argptr);
 
 //??	if (debugLogged) DebugPrintf ("FATAL ERROR: %s\n", errMsg);
@@ -35,12 +35,12 @@ void appNonFatalError (const char *fmt, ...)
 	if (fmt)
 	{
 		va_start (argptr, fmt);
-		vsnprintf (ARRAY_ARG(GErr.message), fmt, argptr);
+		vsnprintf (ARRAY_ARG(GErr.Message), fmt, argptr);
 		va_end (argptr);
-		appPrintf (S_RED"ERROR: %s\n", GErr.message);
+		appPrintf (S_RED"ERROR: %s\n", *GErr.Message);
 	}
 	else
-		GErr.message[0] = 0;
+		GErr.Message[0] = 0;
 
 	throw 1;
 }
@@ -48,15 +48,10 @@ void appNonFatalError (const char *fmt, ...)
 
 void appUnwindPrefix (const char *fmt)
 {
-	char	buf[512];
-
-	if (GErr.wasError)
-		appSprintf (buf, sizeof(buf), " <- %s:", fmt);
-	else
-		appSprintf (buf, sizeof(buf), "%s:", fmt);
-
+	TString<512> Buf;
+	Buf.sprintf (GErr.wasError ? " <- %s:" : "%s:", fmt);
+	GErr.History += Buf;
 	GErr.wasError = false;		// will not insert "<-" next appUnwindThrow()
-	appStrcatn (ARRAY_ARG(GErr.history), buf);
 }
 
 
@@ -76,7 +71,7 @@ void appUnwindThrow (const char *fmt, ...)
 	va_end (argptr);
 	GErr.wasError = true;
 
-	appStrcatn (ARRAY_ARG(GErr.history), buf);
+	GErr.History += buf;
 
 #if 1
 	throw;
@@ -89,8 +84,8 @@ void appUnwindThrow (const char *fmt, ...)
 void CErrorHandler::Reset ()
 {
 	swError = nonFatalError = wasError = false;
-	strcpy (message, "General Protection Fault !");	//?? check: is this message appears ?
-	history[0] = 0;
+	Message = "General Protection Fault !";		//?? check: is this message appears ?
+	History[0] = 0;
 }
 
 

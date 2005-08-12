@@ -202,14 +202,14 @@ bool NET_CompareBaseAdr (netadr_t *a, netadr_t *b)
 
 char *NET_AdrToString (netadr_t *a)
 {
-	static	char	s[64];
+	static TString<64> s;
 
 	if (a->type == NA_LOOPBACK)
-		appSprintf (ARRAY_ARG(s), "loopback");
+		s = "loopback";
 	else if (a->type == NA_IP)
-		appSprintf (ARRAY_ARG(s), "%d.%d.%d.%d:%d", a->ip[0], a->ip[1], a->ip[2], a->ip[3], ntohs(a->port));
+		s.sprintf ("%d.%d.%d.%d:%d", a->ip[0], a->ip[1], a->ip[2], a->ip[3], ntohs(a->port));
 	else
-		appSprintf (ARRAY_ARG(s), "%02x%02x%02x%02x:%02x%02x%02x%02x%02x%02x:%i", a->ipx[0], a->ipx[1], a->ipx[2], a->ipx[3], a->ipx[4], a->ipx[5], a->ipx[6], a->ipx[7], a->ipx[8], a->ipx[9], ntohs(a->port));
+		s.sprintf ("%02x%02x%02x%02x:%02x%02x%02x%02x%02x%02x:%i", a->ipx[0], a->ipx[1], a->ipx[2], a->ipx[3], a->ipx[4], a->ipx[5], a->ipx[6], a->ipx[7], a->ipx[8], a->ipx[9], ntohs(a->port));
 
 	return s;
 }

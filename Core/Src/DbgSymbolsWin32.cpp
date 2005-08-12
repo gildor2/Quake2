@@ -34,7 +34,7 @@ bool osAddressInfo (address_t address, char *pkgName, int bufSize, int *offset)
 
 bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset)
 {
-	char	func[256];
+	TString<256> Func;
 
 	if (!hModule) return false;		// there was no osAddressInfo() call before this
 
@@ -66,9 +66,9 @@ bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset
 		if (bestIndex >= 0)
 		{
 			if (nameTbl[bestIndex])
-				appStrncpyz (func, (char*) OffsetPointer (hModule, nameTbl[bestIndex]), sizeof(func));
+				Func = (char*) OffsetPointer (hModule, nameTbl[bestIndex]);
 			else
-				appSprintf (ARRAY_ARG(func), "#%d", exp->Base +		// ordinal base
+				Func.sprintf ("#%d", exp->Base +		// ordinal base
 					((WORD*) OffsetPointer (hModule, exp->AddressOfNameOrdinals))[bestIndex]);
 			*offset = RVA - bestRVA;
 		}
@@ -80,7 +80,7 @@ bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset
 		return false;
 	}
 
-	appSprintf (exportName, bufSize, "%s!%s", module, func);
+	appSprintf (exportName, bufSize, "%s!%s", module, *Func);
 
 	hModule = NULL;					// disallow second subsequentional call
 	return true;

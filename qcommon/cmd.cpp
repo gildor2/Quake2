@@ -214,14 +214,13 @@ static void Cmd_Wait_f (bool usage, int argc, char **argv)
 
 static void Cmd_Exec_f (bool usage, int argc, char **argv)
 {
-	char	*f;
-
 	if (argc != 2 || usage)
 	{
 		Com_Printf ("Usage: exec <filename>\n");
 		return;
 	}
 
+	char	*f;
 	if (!(f = (char*) FS_LoadFile (argv[1])))
 	{
 		Com_WPrintf ("Couldn't exec %s\n", argv[1]);

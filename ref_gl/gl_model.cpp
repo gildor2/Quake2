@@ -16,18 +16,18 @@ model_t	*FindModel (const char *name)
 {
 	guard(R_FindModel);
 
-	char	name2[MAX_QPATH];
-	appCopyFilename (name2, name, sizeof(name2));
+	TString<64> Name2;
+	Name2.filename (name);
 
 #if 0
 	// try to load md3 instead of md2
 	//!! disable later
-	char *ext = strrchr (name2, '.');
+	char *ext = strrchr (Name2, '.');
 	if (ext && !strcmp (ext, ".md2"))
 	{
 		ext[3] = '3';		// ".md2" -> ".md3"
-		if (FS_FileExists (name2))
-			return FindModel (name2);
+		if (FS_FileExists (Name2))
+			return FindModel (Name2);
 		// md3 model with the same name is not found -- load md2
 		ext[3] = '2';		// ".md3" -> ".md2"
 	}
@@ -39,7 +39,7 @@ model_t	*FindModel (const char *name)
 	{
 		m = modelsArray[i];
 		if (!m) continue;				//?? should not happens
-		if (!strcmp (name2, m->name))
+		if (Name2 == m->Name)
 		{
 			// found
 			if (m->type == MODEL_UNKNOWN)
@@ -58,12 +58,12 @@ START_PROFILE2(FindModel::Load, name)
 	/*----- not found -- load model ------*/
 	unsigned len;
 	unsigned *file;
-	if (!(file = (unsigned*) FS_LoadFile (name2, &len)))
+	if (!(file = (unsigned*) FS_LoadFile (Name2, &len)))
 	{
 		m = new model_t;
-		strcpy (m->name, name2);
+		m->Name = Name2;
 		modelsArray[modelCount++] = m;
-		Com_DPrintf ("R_FindModel: not found: %s\n", name2);
+		Com_DPrintf ("R_FindModel: not found: %s\n", *Name2);
 		return NULL;	// file not found
 	}
 END_PROFILE
@@ -72,16 +72,16 @@ START_PROFILE(FindModel::Process)
 	switch (LittleLong(*file))
 	{
 	case MD2_IDENT:
-		m = LoadMd2 (name2, (byte*)file, len);
+		m = LoadMd2 (Name2, (byte*)file, len);
 		break;
 	case MD3_IDENT:
-		m = LoadMd3 (name2, (byte*)file, len);
+		m = LoadMd3 (Name2, (byte*)file, len);
 		break;
 	case SP2_IDENT:
-		m = LoadSp2 (name2, (byte*)file, len);
+		m = LoadSp2 (Name2, (byte*)file, len);
 		break;
 	case BYTES4('/','/','S','P'):
-		m = LoadSpr (name2, (byte*)file, len);
+		m = LoadSpr (Name2, (byte*)file, len);
 		break;
 	default:
 		// no error here: simply ignore unknown model formats
@@ -134,10 +134,11 @@ static void Modellist_f (bool usage, int argc, char **argv)
 	Com_Printf ("-----type-size----name---------\n");
 	for (int i = 0; i < modelCount; i++)
 	{
+		//?? skip inline model from list, or compact (print somethink like this: "0-96 inl *1..*97")
 		model_t *m = modelsArray[i];
-		if (mask && !appMatchWildcard (m->name, mask, true)) continue;
+		if (mask && !appMatchWildcard (m->Name, mask, true)) continue;
 		totalCount++;
-		Com_Printf ("%-3d  %3s  %-7d %s%s\n", i, types[m->type], m->size, colors[m->type], m->name);
+		Com_Printf ("%-3d  %3s  %-7d %s%s\n", i, types[m->type], m->size, colors[m->type], *m->Name);
 		totalSize += m->size;
 	}
 	Com_Printf ("Displayed %d/%d models, used %d bytes\n", totalCount, modelCount, totalSize);

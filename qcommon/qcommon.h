@@ -818,11 +818,10 @@ void	*Sys_GetGameAPI (void *parms);
 void	Sys_UnloadGame (void);
 // loads the game dll and calls the api init function
 
-char	*Sys_ConsoleInput (void);
+char	*Sys_ConsoleInput ();
 void	Sys_ConsoleOutput (const char *string);
-void	Sys_SendKeyEvents (void);
-void	NORETURN Sys_Quit (void);
-void	Sys_CopyProtect (void);
+void	Sys_ProcessMessages ();
+void	NORETURN Sys_Quit ();
 
 
 /*-----------------------------------------------------------------------------

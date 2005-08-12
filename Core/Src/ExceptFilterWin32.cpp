@@ -213,14 +213,14 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			CONTEXT* ctx = info->ContextRecord;
 //			EXCEPTION_RECORD* rec = info->ExceptionRecord;
 
-			appSprintf (ARRAY_ARG(GErr.message), "%s at \"%s\"", excName, appSymbolName (ctx->Eip));	//?? may be, supply package name
+			GErr.Message.sprintf ("%s at \"%s\"", excName, appSymbolName (ctx->Eip));	//?? may be, supply package name
 
 			time_t itime;
 			time (&itime);
 			char ctime[256];
 			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
 			fprintf (f, "----- "APPNAME" crashed at %s -----\n", ctime);		//!! should use main_package name instead of APPNAME
-			fprintf (f, "%s\n\n", GErr.message);
+			fprintf (f, "%s\n\n", *GErr.Message);
 
 			for (int j = 0; j < ARRAY_COUNT(regData); j++)
 				DumpReg4 (f, regData[j].name, OFS2FIELD(ctx, regData[j].ofs, unsigned));

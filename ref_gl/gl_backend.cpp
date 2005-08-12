@@ -141,7 +141,7 @@ static void ProcessShaderDeforms (shader_t *sh)
 				// autoSprite deform require quads
 				if (gl_numVerts & 3 || gl_numIndexes != gl_numVerts / 2 * 3)
 				{
-					DrawTextLeft (va("Incorrect surface for AUTOSPRITE in %s", currentShader->name), RGB(1,0,0));	//?? developer
+					DrawTextLeft (va("Incorrect surface for AUTOSPRITE in %s", *currentShader->Name), RGB(1,0,0));	//?? developer
 					break;
 				}
 				// rotate view axis to model coords
@@ -380,7 +380,7 @@ static void GenerateTexCoordArray (shaderStage_t *st, int tmu, const image_t *te
 
 	guard(GenerateTexCoordArray);
 	if (tex && tex->target == GL_TEXTURE_RECTANGLE_NV && st->tcGenType != TCGEN_TEXTURE)
-		Com_DropError ("shader %s uses TEXTURE_RECTANGLE with not \"tcGen texture\"", currentShader->name);
+		Com_DropError ("shader %s uses TEXTURE_RECTANGLE with not \"tcGen texture\"", *currentShader->Name);
 
 	// process tcGen
 	switch (st->tcGenType)
@@ -682,7 +682,7 @@ static void PreprocessShader (shader_t *sh)
 	bool spy = false;
 	const char *mask = gl_spyShader->string;
 	if ((mask[0] && mask[1]) || mask[0] == '*')		// string >= 2 chars or "*"
-		spy = appMatchWildcard (sh->name, mask, false);
+		spy = appMatchWildcard (sh->Name, mask, false);
 #endif
 
 	int debugMode = 0;
@@ -947,7 +947,7 @@ static void PreprocessShader (shader_t *sh)
 	}
 
 	if (!numTmpStages)
-		DrawTextLeft (va("R_PreprocessShader(%s): 0 stages", currentShader->name), RGB(1,0,0));
+		DrawTextLeft (va("R_PreprocessShader(%s): 0 stages", *currentShader->Name), RGB(1,0,0));
 
 	if (numTmpStages > MAX_RENDER_PASSES)
 		Com_FatalError ("R_PreprocessShader: numStages too large (%d)", numTmpStages);
@@ -979,7 +979,7 @@ static void PreprocessShader (shader_t *sh)
 	int tmuLeft = 0;
 	int tmuUsed = 0;
 	unsigned passStyle = BLEND_UNKNOWN;
-	LOG_PP(va("--- PreprocessShader(%s) ---\n", sh->name));
+	LOG_PP(va("--- PreprocessShader(%s) ---\n", *sh->Name));
 	for (i = 0; i < numTmpStages; i++, st++)
 	{
 		if (!tmuLeft)						// all tmu was distributed or just started
@@ -1014,7 +1014,7 @@ static void PreprocessShader (shader_t *sh)
 			}
 			LOG_PP("-- next pass\n");
 		}
-		LOG_PP(va("  tmu[%d:%d] = \"%s\" (rgba: %s %s %8X)\n", i, tmuUsed, st[0].mapImage[0]->name,
+		LOG_PP(va("  tmu[%d:%d] = \"%s\" (rgba: %s %s %8X)\n", i, tmuUsed, *st[0].mapImage[0]->Name,
 			st[0].isConstRGBA ? "const" : "var", st[0].isIdentityRGBA ? "ident" : "--", st[0].rgbaConst.rgba));
 
 		tmuUsed++;
@@ -1047,7 +1047,7 @@ static void PreprocessShader (shader_t *sh)
 			// pure multitexture can emulate only 2 blendmodes: "src*dst" and "src+dst" (when texenv_add)
 			if (blend2 == BLEND(D_COLOR,0) && passStyle & BLEND_MULTIPLICATIVE)
 			{
-				LOG_PP(va("  MT(MUL): with \"%s\"\n", st[1].mapImage[0]->name));
+				LOG_PP(va("  MT(MUL): with \"%s\"\n", *st[1].mapImage[0]->Name));
 				st[1].texEnv = TEXENV_MODULATE;
 				pass->numStages++;
 				continue;
@@ -1056,7 +1056,7 @@ static void PreprocessShader (shader_t *sh)
 			if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_ADD|QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE) &&
 				blend2 == BLEND(1,1) && passStyle & BLEND_ADDITIVE)
 			{
-				LOG_PP(va("  MT(ADD): with \"%s\"\n", st[1].mapImage[0]->name));
+				LOG_PP(va("  MT(ADD): with \"%s\"\n", *st[1].mapImage[0]->Name));
 				st[1].texEnv = (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_ADD))
 					? TEXENV_ADD : TEXENV_C_ADD | TEXENV_0PREV_1TEX;
 				pass->numStages++;
@@ -1067,7 +1067,7 @@ static void PreprocessShader (shader_t *sh)
 				&& blend2 == BLEND(D_COLOR,S_COLOR)		// src*dst + dst*src
 				&& passStyle & BLEND_MULTIPLICATIVE)
 			{
-				LOG_PP(va("  MT(MUL2): with \"%s\"\n", st[1].mapImage[0]->name));
+				LOG_PP(va("  MT(MUL2): with \"%s\"\n", *st[1].mapImage[0]->Name));
 				st[1].texEnv = TEXENV_C_MODULATE | TEXENV_MUL2 | TEXENV_0PREV_1TEX;
 				pass->numStages++;
 				continue;
@@ -1174,7 +1174,7 @@ static void PreprocessShader (shader_t *sh)
 		if (GL_SUPPORT(QGL_ARB_TEXTURE_ENV_COMBINE) && blend2 == BLEND(1,1)
 			&& passStyle & BLEND_ADDITIVE && st[0].isConstRGBA && st[1].isConstRGBA && tmuUsed == 1)
 		{
-			LOG_PP(va("  MT(INTERP*2): with \"%s\"\n", st[1].mapImage[0]->name));
+			LOG_PP(va("  MT(INTERP*2): with \"%s\"\n", *st[1].mapImage[0]->Name));
 			st[1].texEnv = TEXENV_C_INTERP | TEXENV_MUL2 | TEXENV_ENVCOLOR | TEXENV_0PREV_1TEX | TEXENV(2,CONSTANT);
 			// set RGBA for both stages
 			LOG_PP(va("  (old rgba: %X %X", st[0].rgbaConst.rgba, st[1].rgbaConst.rgba));
@@ -1205,8 +1205,8 @@ static void FlushShader ()
 	if (!gl_numIndexes) return;					// buffer is empty
 	if (!currentShader->numStages) return;		// wrong shader?
 
-//	DrawTextLeft (va("FlushShader(%s, %d, %d)\n", currentShader->name, numVerts, numIndexes));//!!!
-	LOG_STRING (va("*** FlushShader(%s, %d, %d) ***\n", currentShader->name, gl_numVerts, gl_numIndexes));
+//	DrawTextLeft (va("FlushShader(%s, %d, %d)\n", *currentShader->Name, numVerts, numIndexes));//!!!
+	LOG_STRING (va("*** FlushShader(%s, %d, %d) ***\n", *currentShader->Name, gl_numVerts, gl_numIndexes));
 
 	PreprocessShader (currentShader);
 
@@ -1299,7 +1299,7 @@ static void FlushShader ()
 	gl_speeds.numFlushes++;
 	gl_numVerts = gl_numIndexes = gl_numExtra = 0;
 
-	unguardf(("%s", currentShader->name));
+	unguardf(("%s", *currentShader->Name));
 }
 
 
@@ -1311,7 +1311,7 @@ static void SetCurrentShader (shader_t *shader)
 	{
 		DrawTextLeft ("SetCurrentShader() without flush!", RGB(1,0,0));
 		Com_WPrintf ("SetCurrentShader(%s) without flush (old: %s, %d verts, %d inds)\n",
-			shader->name, currentShader->name, gl_numVerts, gl_numIndexes);
+			*shader->Name, *currentShader->Name, gl_numVerts, gl_numIndexes);
 	}
 	currentShader = shader;
 	gl_numVerts = gl_numIndexes = gl_numExtra = 0;		// clear buffer
@@ -1900,7 +1900,7 @@ void BK_DrawScene ()
 			shader_t *shader = GetShaderByNum (shNum);
 			SetCurrentShader (shader);
 			currentDlightMask = dlightMask;
-			LOG_STRING (va("******** shader = %s ********\n", shader->name));
+			LOG_STRING (va("******** shader = %s ********\n", *shader->Name));
 			currentShaderNum = shNum;
 		}
 
@@ -1923,7 +1923,7 @@ void BK_DrawScene ()
 			}
 			else
 			{
-				LOG_STRING (va("******** entity = %s ********\n", currentEntity->model->name));
+				LOG_STRING (va("******** entity = %s ********\n", *currentEntity->model->Name));
 				glLoadMatrixf (&currentEntity->modelMatrix[0][0]);
 				gl_state.inverseCull = currentEntity->mirror;
 				GL_DepthRange (currentEntity->flags & RF_DEPTHHACK ? DEPTH_HACK : DEPTH_NORMAL);

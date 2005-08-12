@@ -38,8 +38,7 @@ typedef struct
 
 struct sfx_t
 {
-	char 		name[MAX_QPATH];
-	char 		truename[MAX_QPATH];
+	TString<MAX_QPATH> Name, TrueName;
 	int			registration_sequence;
 	sfxcache_t	*cache;
 	bool		absent;

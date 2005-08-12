@@ -42,9 +42,9 @@ struct weaponInfo_t						// weapon for Quake3 player model
 struct clientInfo_t
 {
 	unsigned id;						// for detecting changes
-	char	playerName[MAX_QPATH];
-	char	modelName[MAX_QPATH];
-	char	iconName[MAX_QPATH];
+	TString<64> PlayerName;
+	TString<64> ModelName;
+	TString<64> IconName;
 	bool	isQ3model;
 	bool	isValidModel;
 	char	modelGender;				// 'm' - male, 'f' - female, 'n' - neutral

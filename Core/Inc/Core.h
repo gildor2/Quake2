@@ -66,7 +66,6 @@
 #endif
 
 
-
 /*----------------------------------------------------------------------------
 	Forward declarations
 ----------------------------------------------------------------------------*/
@@ -74,11 +73,9 @@
 class CMemoryChain;
 
 
-/*-----------------------------------------------------------------------------
-	Structures
------------------------------------------------------------------------------*/
 
-//??
+#include "Macro.h"
+#include "Strings.h"
 
 
 /*-----------------------------------------------------------------------------
@@ -134,11 +131,12 @@ class CORE_API CErrorHandler
 public:
 	bool	swError;			// true when error was thrown by appError() call; will not dump CPU context
 	bool	wasError;			// used for error history formatting
-	char	message[256];		// error message
-	char	history[2048];		// call history
+	TString<256>  Message;		// error message
+	TString<2048> History;		// call history
 	void	Reset ();
 	// fields for non-fatal error
 	bool	nonFatalError;		// when false, app can try to recover from error (and swError will be true)
+	//?? add virtuals HandleFatalError()/HandleNonfatalError() or HandleError() for both cases (may call Fatal/Nonfatal handler)
 };
 
 CORE_API NORETURN void appFatalError (const char *fmt, ...);
@@ -155,7 +153,7 @@ CORE_API NORETURN void appUnwindThrow (const char *fmt, ...);
 -----------------------------------------------------------------------------*/
 
 // Initialize core
-CORE_API void appInit (/*?? const char *_cmdLine, COutputDevice *_log */);
+CORE_API void appInit (/*?? const char *_cmdLine, COutputDevice *_log, CErrorHandler *_err */);
 CORE_API void appExit ();
 
 
@@ -181,9 +179,7 @@ inline float appDeltaCyclesToMsecf (unsigned timeDelta)
 	Normal includes
 -----------------------------------------------------------------------------*/
 
-#include "Strings.h"
 #include "DbgSymbols.h"						// MAY have some macros, so go as first as possible
-#include "Macro.h"
 #include "MemoryMgr.h"
 //!! #include "Cvar.h"
 #include "Commands.h"

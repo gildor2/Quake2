@@ -242,9 +242,7 @@ static void BaseMove (usercmd_t *cmd)
 
 static void ClampPitch (void)
 {
-	float	pitch;
-
-	pitch = SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
+	float pitch = SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
 	if (pitch > 180)
 		pitch -= 360;
 
@@ -395,15 +393,12 @@ CL_SendCmd
 */
 void CL_SendCmd (void)
 {
-	int		i;
-	usercmd_t *cmd;
-
 	accum_frame_time += cls.frametime;
 
 	// build a command even if not connected
 	// save this command off for prediction
-	i = cls.netchan.outgoing_sequence & (CMD_BACKUP-1);
-	cmd = &cl.cmds[i];
+	int i = cls.netchan.outgoing_sequence & (CMD_BACKUP-1);
+	usercmd_t *cmd = &cl.cmds[i];
 	cl.cmd_time[i] = cls.realtime;	// for netgraph ping calculation
 
 	CreateCmd (cmd);

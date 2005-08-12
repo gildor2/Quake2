@@ -105,7 +105,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	float		stepscale;
 	sfxcache_t	*sc;
 
-	if (s->name[0] == '*')
+	if (s->Name[0] == '*')
 		return NULL;
 
 	// see if still in memory
@@ -117,7 +117,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 
 //	Com_Printf ("S_LoadSound: %x\n", (int)stackbuf);
 	// load it in
-	name = s->truename[0] ? s->truename : s->name;
+	name = s->TrueName[0] ? s->TrueName : s->Name;
 
 	if (name[0] == '#')
 		strcpy(namebuffer, &name[1]);
@@ -133,10 +133,10 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 		return NULL;
 	}
 
-	info = GetWavinfo (s->name, data, size);
+	info = GetWavinfo (s->Name, data, size);
 	if (info.channels != 1)
 	{
-		Com_Printf ("%s is a stereo sample\n",s->name);
+		Com_Printf ("%s is a stereo sample\n", *s->Name);
 		FS_FreeFile (data);
 		return NULL;
 	}

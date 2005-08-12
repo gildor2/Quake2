@@ -342,7 +342,7 @@ static void LoadInlineModels2 (cmodel_t *data, int count)
 	for (int i = 0; i < count; i++, data++, out++)
 	{
 		CALL_CONSTRUCTOR(out);
-		appSprintf (ARRAY_ARG(out->name), "*%d", i);
+		out->Name.sprintf ("*%d", i);
 		out->size = -1;							// do not delete in FreeModels()
 		modelsArray[modelCount++] = out;
 
@@ -725,7 +725,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 				{
 					// convert to a vertex lightmap
 					//!! UNFINISHED: need SPECIAL vertex lm, which will be combined with dyn. lm with ENV_ADD
-					s->shader = FindShader (s->shader->name, s->shader->style | SHADER_TRYLIGHTMAP);
+					s->shader = FindShader (s->shader->Name, s->shader->style | SHADER_TRYLIGHTMAP);
 					optLmTexels += dl->w * dl->h;
 				}
 			}
@@ -761,7 +761,7 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 			if (s->shader->lightmapNumber != LIGHTMAP_NONE)
 			{
 				// later (in this function), just don't create vertex colors for this surface
-				Com_DPrintf ("Disable lm for %s\n", s->shader->name);
+				Com_DPrintf ("Disable lm for %s\n", *s->shader->Name);
 				SetShaderLightmap (s->shader, LIGHTMAP_NONE);
 //				Com_Printf ("  diff: %d\n", ptr - lm->source);
 //				Com_Printf ("  w: %d  h: %d  st: %d\n", lm->w, lm->h, lm->numStyles);
@@ -1023,19 +1023,19 @@ void LoadWorldMap (const char *name)
 {
 	guard(LoadWorldMap);
 
-	char name2[MAX_QPATH];
-	appCopyFilename (name2, name, sizeof(name2));
+	TString<64> Name2;
+	Name2.filename (name);
 
 	// map must be reloaded to update shaders (which are restarted every BeginRegistration())
-//	if (!strcmp (name2, map.name))
+//	if (Name2 == map.Name)
 //		return;		// map is not changed
 
 	FreeModels ();
-	strcpy (map.name, name2);
+	map.Name = Name2;
 	map.dataChain = new CMemoryChain;
 
 	// map should be already loaded by client
-	bspfile = LoadBspFile (name2, true, NULL);
+	bspfile = LoadBspFile (Name2, true, NULL);
 
 	// load sun
 	map.sunLight = bspfile->sunLight;
@@ -1077,7 +1077,7 @@ void LoadWorldMap (const char *name)
 //?? can use cmodel.cpp function
 node_t *PointInLeaf (const CVec3 &p)
 {
-	if (!map.name[0] || !map.numNodes)
+	if (!map.Name[0] || !map.numNodes)
 		Com_DropError ("R_PointInLeaf: bad model");
 
 	node_t *node = map.nodes;

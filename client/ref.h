@@ -6,7 +6,7 @@
 class CRenderModel
 {
 public:
-	char	name[MAX_QPATH];
+	TString<64>	Name;
 	// return "false" when tag not found
 	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const = NULL;
 };
@@ -15,7 +15,7 @@ public:
 class CBasicImage
 {
 public:
-	char	name[MAX_QPATH];
+	TString<64> Name;
 	short	width, height;
 	virtual void Reload (void) = NULL;
 };
@@ -26,7 +26,7 @@ class CModelSkin
 public:
 	int		numSurfs;
 	struct {
-		char	surfName[32];		// should be enough
+		TString<32> Name;			// size should be enough
 		CBasicImage *shader;
 	} surf[32];						// MAX_MD3_SURFACES == 32
 	inline bool IsValid ()

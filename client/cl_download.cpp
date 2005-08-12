@@ -27,14 +27,6 @@ static void DownloadFileName (char *dest, int destlen, const char *filename)
 		appSprintf (dest, destlen, "%s/%s", FS_Gamedir(), filename);
 }
 
-/*
-===============
-CheckOrDownloadFile
-
-Returns true if the file exists, otherwise it attempts
-to start a download from the server.
-===============
-*/
 
 // cache failed downloading names for preventing re-check/re-warning
 #define MAX_CHECK_CACHE		32768
@@ -42,43 +34,44 @@ to start a download from the server.
 static char *checkedNames[MAX_CHECK_NAMES], checkNameCache[MAX_CHECK_CACHE];
 static int numCheckedNames, nextCheckCachePos;
 
-
+// Returns true if the file exists, otherwise it attempts
+// to start a download from the server.
 static bool CheckOrDownloadFile (const char *fmt, ...)
 {
-	char	name[MAX_OSPATH], name2[MAX_OSPATH], *ext;
-
 	guard(CheckOrDownloadFile);
 
+	TString<MAX_OSPATH> Name;
 	va_list	argptr;
 	va_start (argptr, fmt);
-	vsnprintf (ARRAY_ARG(name), fmt, argptr);
+	vsnprintf (ARRAY_ARG(Name), fmt, argptr);
 	va_end (argptr);
 
-	appCopyFilename (name, name, sizeof(name));		// in-place
-	if (!memcmp (name, "../", 3))					// if trying to leave quake root dir, "../" will be at start
+	Name.filename (Name);							// in-place
+	if (!memcmp (Name, "../", 3))					// if trying to leave quake root dir, "../" will be at start
 	{
 		Com_Printf ("Refusing to download a path with ..\n");
 		return true;
 	}
 
-	strcpy (name2, name);
-	ext = strrchr (name2, '.');
+	TString<MAX_OSPATH> Name2;
+	Name2 = Name;
+	char *ext = Name2.rchr ('.');
 
 	// checking map - this should be a first precache request, so - clear name cache
 	if (ext && !strcmp (ext, ".bsp"))
 		numCheckedNames = nextCheckCachePos = 0;
 	// prevent from checking the same file twice
 	for (int i = 0; i < numCheckedNames; i++)
-		if (!strcmp (name, checkedNames[i]))
+		if (Name == checkedNames[i])
 			return true;	// already checked, return "found" even if not found
 	// register new name
 	if (numCheckedNames < MAX_CHECK_NAMES)
 	{
-		int len = strlen (name);
+		int len = Name.len ();
 		if (len + nextCheckCachePos + 1 < MAX_CHECK_CACHE)
 		{
 			char *s = checkedNames[numCheckedNames++] = &checkNameCache[nextCheckCachePos];
-			strcpy (s, name);
+			strcpy (s, Name);
 			nextCheckCachePos += len + 1;
 		}
 	}
@@ -87,25 +80,25 @@ static bool CheckOrDownloadFile (const char *fmt, ...)
 	if (ext && (!strcmp (ext, ".pcx") || !strcmp (ext, ".wal")))
 	{
 		*ext = 0; // strip extension
-		if (ImageExists (name2, IMAGE_ANY))
+		if (ImageExists (Name2, IMAGE_ANY))
 			return true;
 	}
 
-	if (FS_FileExists (name))	// it exists, no need to download
+	if (FS_FileExists (Name))	// it exists, no need to download
 		return true;
 
-	strcpy (cls.downloadname, name);
+	cls.DownloadName = Name;
 
 	// download to a temp name, and only rename
 	// to the real name when done, so if interrupted
 	// a runt file wont be left
-	appSprintf (ARRAY_ARG(cls.downloadtempname), "%s.tmp", name);
+	cls.DownloadTempName.sprintf ("%s.tmp", *Name);
 
 	// check to see if we already have a tmp for this file, if so, try to resume
 	// open the file if not opened yet
-	DownloadFileName (ARRAY_ARG(name), cls.downloadtempname);
+	DownloadFileName (ARRAY_ARG(Name), cls.DownloadTempName);
 
-	FILE *fp = fopen (name, "r+b");
+	FILE *fp = fopen (Name, "r+b");
 	if (fp)
 	{
 		fseek (fp, 0, SEEK_END);
@@ -113,34 +106,25 @@ static bool CheckOrDownloadFile (const char *fmt, ...)
 		cls.download = fp;
 
 		// give the server an offset to start the download
-		Com_Printf ("Resuming %s\n", cls.downloadname);
+		Com_Printf ("Resuming %s\n", *cls.DownloadName);
 		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString (&cls.netchan.message, va("download %s %i", cls.downloadname, len));
+		MSG_WriteString (&cls.netchan.message, va("download %s %d", *cls.DownloadName, len));
 	}
 	else
 	{
-		Com_Printf ("Downloading %s\n", cls.downloadname);
+		Com_Printf ("Downloading %s\n", *cls.DownloadName);
 		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString (&cls.netchan.message, va("download %s", cls.downloadname));
+		MSG_WriteString (&cls.netchan.message, va("download %s", *cls.DownloadName));
 	}
 
-	cls.downloadnumber++;
-
 	return false;
-	unguardf(("file=%s", name));
+	unguard;
 }
 
-/*
-===============
-CL_Download_f
 
-Request a download from the server
-===============
-*/
+// Request a download from the server
 void CL_Download_f (bool usage, int argc, char **argv)
 {
-	char filename[MAX_OSPATH];
-
 	if (argc != 2 || usage)
 	{
 		Com_Printf("Usage: download <filename>\n");
@@ -153,30 +137,24 @@ void CL_Download_f (bool usage, int argc, char **argv)
 		return;
 	}
 
-	appCopyFilename (filename, argv[1], sizeof(filename));
+	TString<MAX_OSPATH> FileName;
+	FileName.filename (argv[1]);
 
-	if (FS_FileExists (filename))
+	if (FS_FileExists (FileName))
 	{	// it exists, no need to download
 		Com_Printf ("File already exists.\n");
 		return;
 	}
 
-	CheckOrDownloadFile (filename);
+	CheckOrDownloadFile (FileName);
 }
 
-/*
-=====================
-CL_ParseDownload
 
-A download message has been received from the server
-=====================
-*/
+// A download message has been received from the server
 void CL_ParseDownload ()
 {
-	char	name[MAX_OSPATH];
-
 	// read the data
-	int size = MSG_ReadShort (&net_message);
+	int size    = MSG_ReadShort (&net_message);
 	int percent = MSG_ReadByte (&net_message);
 	if (size == -1)
 	{
@@ -194,15 +172,16 @@ void CL_ParseDownload ()
 	// open the file if not opened yet
 	if (!cls.download)
 	{
-		DownloadFileName (ARRAY_ARG(name), cls.downloadtempname);
+		TString<MAX_OSPATH> Name;
+		DownloadFileName (ARRAY_ARG(Name), cls.DownloadTempName);
 
-		FS_CreatePath (name);
+		FS_CreatePath (Name);
 
-		cls.download = fopen (name, "wb");
+		cls.download = fopen (Name, "wb");
 		if (!cls.download)
 		{
 			net_message.readcount += size;
-			Com_WPrintf ("Failed to open %s\n", cls.downloadtempname);
+			Com_WPrintf ("Failed to open %s\n", cls.DownloadTempName);
 			RequestNextDownload ();
 			return;
 		}
@@ -214,26 +193,24 @@ void CL_ParseDownload ()
 	if (percent < 100)
 	{
 		// request next block
-		cls.downloadpercent = percent;
+		cls.downloadPercent = percent;
 
 		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
 		MSG_WriteString (&cls.netchan.message, "nextdl");
 	}
 	else
 	{
-		char	oldn[MAX_OSPATH];
-		char	newn[MAX_OSPATH];
-
 		fclose (cls.download);
 
 		// rename the temp file to it's final name
-		DownloadFileName (ARRAY_ARG(oldn), cls.downloadtempname);
-		DownloadFileName (ARRAY_ARG(newn), cls.downloadname);
-		if (rename (oldn, newn))
-			Com_WPrintf ("failed to rename \"%s\" to \"%s\"\n", oldn, newn);
+		TString<MAX_OSPATH> Oldn, Newn;
+		DownloadFileName (ARRAY_ARG(Oldn), cls.DownloadTempName);
+		DownloadFileName (ARRAY_ARG(Newn), cls.DownloadName);
+		if (rename (Oldn, Newn))
+			Com_WPrintf ("failed to rename \"%s\" to \"%s\"\n", *Oldn, *Newn);
 
 		cls.download = NULL;
-		cls.downloadpercent = 0;
+		cls.downloadPercent = 0;
 
 		// get another file if needed
 		//?? Is it ALWAYS needed ? Downloading may be initiated with "download" console command
@@ -512,32 +489,24 @@ static void RequestNextDownload ()
 	unguardf(("idx=%d", precache_check));
 }
 
-/*
-=================
-CL_Precache_f
 
-The server will send this command right
-before allowing the client into the server
-=================
-*/
+// The server will send this command right before allowing the client into the server
 void CL_Precache_f (int argc, char **argv)
 {
 	SCR_SetLevelshot ();
-	//Yet another hack to let old demos work
-	//the old precache sequence
+	// Yet another hack to let old demos work; the old precache sequence
 	if (argc < 2)
 	{
 		unsigned map_checksum;		// for detecting cheater maps
-
 		CM_LoadMap (cl.configstrings[CS_MODELS+1], true, &map_checksum);
 		CL_RegisterSounds ();
 		V_InitRenderer ();
 		return;
 	}
 
-	precache_check = DCS_START;
+	precache_check      = DCS_START;
 	precache_spawncount = atoi (argv[1]);
-	precache_model = NULL;
+	precache_model      = NULL;
 	precache_model_skin = 0;
 
 	RequestNextDownload ();

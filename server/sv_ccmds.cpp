@@ -766,17 +766,17 @@ static void SV_ConSay_f (int argc, char **argv)
 	if (argc < 2) return;
 
 	int		i;
-	char text[1024];
-	strcpy (text, "console:");
+	TString<1024> Buf;
+	Buf[0] = 0;
 	for (i = 1; i < argc; i++)
-		appStrcatn (ARRAY_ARG(text), va(" %s", argv[i]));
+		Buf += va(" %s", argv[i]);
 
 	client_t *client;
 	for (i = 0, client = svs.clients; i < sv_maxclients->integer; i++, client++)
 	{
 		if (client->state != cs_spawned)
 			continue;
-		SV_ClientPrintf (client, PRINT_CHAT, "%s\n", text);
+		SV_ClientPrintf (client, PRINT_CHAT, "server: %s\n", *Buf);
 	}
 }
 
@@ -904,14 +904,14 @@ static void SV_ServerCommand_f (int argc, char **argv)
 	}
 
 	// pass command to server string tokenizer
-	char buffer[1024];
-	buffer[0] = 0;
+	TString<1024> Buf;
+	Buf[0] = 0;
 	for (int i = 0; i < argc; i++)
 	{
-		if (i > 0) appStrcatn (ARRAY_ARG(buffer), " ");
-		appStrcatn (ARRAY_ARG(buffer), argv[i]);
+		if (i > 0) Buf += " ";
+		Buf += argv[i];
 	}
-	SV_TokenizeString (buffer);
+	SV_TokenizeString (Buf);
 
 	guard(ge.ServerCommand);
 	ge->ServerCommand ();

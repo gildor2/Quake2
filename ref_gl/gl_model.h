@@ -129,7 +129,7 @@ class surfaceMd3_t : public surfaceBase_t
 public:
 	inline surfaceMd3_t () { type = SURFACE_MD3; };
 
-	char	name[MAX_QPATH];	// for skin application
+	TString<32> Name;			// for skin application
 	// fields, same on all surfaces
 	int		numFrames;
 
@@ -225,7 +225,7 @@ struct gl_flare_t
 
 struct bspModel_t				//?? really needs as separate struc? (only one instance at a time)
 {
-	char	name[MAX_QPATH];
+	TString<64> Name;			//?? used for verifying "is map loaded" only
 	CMemoryChain *dataChain;
 	//?? shaders, fog, lightGrid (Q3)
 	// planes

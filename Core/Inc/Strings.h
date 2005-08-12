@@ -259,32 +259,81 @@ public:
 
 template<int N> class TString
 {
-public:
+private:
 	char	str[N];
-	int len ()					{ return strlen (str); }
-	char& operator[] (int idx)	{ return str[idx]; }
-
-	int cmp (const char *s2)	{ return strcmp (str, s2); }
-	int icmp (const char *s2)	{ return stricmp (str, s2); }
-	void cpy (const char *s2, int len = N)	{ strncpy (str, s2, Min(N,len)); }
-	void cpyz (const char *s2)	{ appStrncpyz (str, s2, N); }
-	void cat (const char *s2)	{ appStrcatn (str, N, s2); }
-	char chr (char c)			{ return strchr (str, c); }
-	char rchr (char c)			{ return strrchr (str, c); }
-	void toLower () { appStrncpylwr (str, str, N); }
+public:
+// no constructors ... anyway, 1/2 of initialization will be done with filename()
+#if 0
+	TString ()								{}
+	TString (const char *s)					{ appStrncpyz (str, s, N); }
+#endif
+	int len () const						{ return strlen (str); }
+	char& operator[] (int idx)				{ return str[idx]; }
+	const char& operator[] (int idx) const	{ return str[idx]; }
+	// copying
+	void cpy (const char *s2, int len = N)	{ strncpy (str, s2, min(N,len)); }
+	void cpyz (const char *s2)				{ appStrncpyz (str, s2, N); }
+	void filename (const char *s2)			{ appCopyFilename (str, s2, N); }	//?? rename function
+	void cat (const char *s2)				{ appStrcatn (str, N, s2); }
+	TString<N>& operator+= (const char *s2)	{ appStrcatn (str, N, s2); return *this; }
+	int sprintf (const char *fmt, ...)
+	{
+		va_list	argptr;
+		va_start (argptr, fmt);
+		int len = vsnprintf (str, N, fmt, argptr);
+		va_end (argptr);
+		return len;
+	}
+	// searching
+	char *chr (char c)						{ return strchr (str, c); }
+	const char *chr (char c) const			{ return strchr (srt, c); }
+	char *rchr (char c)						{ return strrchr (str, c); }
+	const char *rchr (char c) const			{ return strrchr (str, c); }
+	// lowercasing
+	void toLower ()							{ appStrncpylwr (str, str, N); }
+	void toLower (const char *s2, int len = N) { appStrncpylwr (str, s2, min(N,len)); }
+	// assignment
 	TString& operator= (const char *s2)
 	{
 		strncpy (str, s2, N);
 		return *this;
 	}
-	bool operator< (const char *s2)		{ return strcmp (str, s2) < 0; }
-	bool operator<= (const char *s2)	{ return strcmp (str, s2) <= 0; }
-	bool operator== (const char *s2)	{ return strcmp (str, s2) == 0; }
-	template<int M> bool operator== (const TString<M> &S) { return strcmp (str, S.str) == 0; }
-	bool operator!= (const char *s2)	{ return strcmp (str, s2) != 0; }
-	template<int M> bool operator!= (const TString<M> &S) { return strcmp (str, S.str) != 0; }
-	bool operator> (const char *s2)		{ return strcmp (str, s2) > 0; }
-	bool operator>= (const char *s2)	{ return strcmp (str, s2) >= 0; }
-	TString<N>& operator+= (const char *s2) { appStrcatn (str, N, s2); return *this; }
-	operator char*()					{ return str; }
+	// string comparision
+	// NOTE: comparision as class members suitable for cases, when TString<> is on a left
+	// side of operator; when TString on the right side, and "char*" on the left, by default,
+	// will be executed "str <operator> char*(Str)", i.e. will be performed address comparision;
+	// so, to correct this situation, we overloaded binary operator (char*,TString<>&) too
+	int cmp (const char *s2) const			{ return strcmp (str, s2); }
+	int icmp (const char *s2) const			{ return stricmp (str, s2); }
+	bool operator< (const char *s2) const	{ return strcmp (str, s2) < 0; }
+	bool operator<= (const char *s2) const	{ return strcmp (str, s2) <= 0; }
+	bool operator== (const char *s2) const	{ return strcmp (str, s2) == 0; }
+	template<int M> bool operator== (const TString<M> &S) const
+	{ return strcmp (str, S.str) == 0; }
+	bool operator!= (const char *s2) const	{ return strcmp (str, s2) != 0; }
+	template<int M> bool operator!= (const TString<M> &S) const
+	{ return strcmp (str, S.str) != 0; }
+	bool operator> (const char *s2) const	{ return strcmp (str, s2) > 0; }
+	bool operator>= (const char *s2) const	{ return strcmp (str, s2) >= 0; }
+	// implicit use as "const char*"
+	operator const char* () const			{ return str; }
+	operator char* ()						{ return str; }
+	// use "*Str" when used in printf()-like functions (no type conversion by default ...)
+	const char* operator* () const			{ return str; }
+#if 0
+// do not make "operator bool", because this will introduce conflicts with "operator char*" -- compiler
+// can not deside, which conversion to use in statements ...
+	// check for empty string (true when non-empty)
+	operator bool () const					{ return str[0] != 0; }
+#endif
 };
+
+template<int N> inline bool operator== (const char *s1, TString<N> &s2)
+{
+	return strcmp (s1, *s2) == 0;
+}
+
+template<int N> inline bool operator!= (const char *s1, TString<N> &s2)
+{
+	return strcmp (s1, *s2) != 0;
+}

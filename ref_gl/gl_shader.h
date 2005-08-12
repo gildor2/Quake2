@@ -230,7 +230,7 @@ public:
 	int		lightmapNumber;
 	union {
 		byte	lightStyles[4];	// 0 - unused; can be 1..31
-		int		lightStyles_i;
+		unsigned lightStyles_i;
 	};
 	int		sortIndex;
 	int		sortParam;			// values from sortParam_t
@@ -280,7 +280,7 @@ public:
 
 	// stages: variable length
 	int		numStages;
-	shaderStage_t *stages[1];	// WARNING: should be last
+	shaderStage_t *stages[1];	// WARNING: should be last data field
 
 	// functions
 	virtual void Reload ();

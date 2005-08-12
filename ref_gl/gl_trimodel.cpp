@@ -8,7 +8,7 @@ namespace OpenGLDrv {
 
 bool model_t::LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const
 {
-	Com_DropError ("model %s have no LerpTag caps", name);
+	Com_DropError ("model %s have no LerpTag caps", *Name);
 	return false;
 }
 
@@ -269,23 +269,24 @@ static void SetMd3Skin (const char *name, surfaceMd3_t *surf, int index, const c
 	shader_t *shader = FindShader (skin, SHADER_CHECK|SHADER_SKIN);
 	if (!shader)
 	{
-		char	mName[MAX_QPATH], sName[MAX_QPATH];	// model/skin
 		// try to find skin forcing model directory
-		appCopyFilename (mName, name, sizeof(mName));
-		char *mPtr = strrchr (mName, '/');
+		TString<128> MName;			// model name; double size: will append skin name
+		MName.filename (name);
+		char *mPtr = MName.rchr ('/');
 		if (mPtr)	mPtr++;			// skip '/'
-		else		mPtr = mName;
+		else		mPtr = MName;
 
-		appCopyFilename (sName, skin, sizeof(sName));
-		char *sPtr = strrchr (sName, '/');
+		TString<64> SName;			// skin name
+		SName.filename (skin);
+		char *sPtr = SName.rchr ('/');
 		if (sPtr)	sPtr++;			// skip '/'
-		else		sPtr = sName;
+		else		sPtr = SName;
 
 		strcpy (mPtr, sPtr);		// make "modelpath/skinname"
-		shader = FindShader (mName, SHADER_CHECK|SHADER_SKIN);
+		shader = FindShader (MName, SHADER_CHECK|SHADER_SKIN);
 		if (!shader)
 		{	// not found
-			Com_DPrintf ("SetSkin(%s:%d): %s or %s is not found\n", name, index, skin, mName);
+			Com_DPrintf ("SetSkin(%s:%d): %s or %s is not found\n", name, index, skin, *MName);
 			if (index > 0)
 				shader = surf->shaders[0];		// better than default shader
 			else
@@ -457,7 +458,7 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 		+ numVerts*hdr->numFrames*sizeof(vertexMd3_t) + hdr->numSkins*sizeof(shader_t*);
 	md3 = (md3Model_t*) appMalloc (size);
 	CALL_CONSTRUCTOR(md3);
-	strcpy (md3->name, name);
+	md3->Name = name;
 	md3->size = size;
 
 	/*-------- fill md3 structure --------*/
@@ -470,7 +471,7 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 
 	/*-------- fill surf structure -------*/
 	surf->shader    = gl_defaultShader;		// any, ignored
-	strcpy (surf->name, "single_surf");		// any name
+	surf->Name      = "single_surf";		// any name
 	// counts
 	surf->numFrames = hdr->numFrames;
 	surf->numVerts  = numVerts;
@@ -585,7 +586,7 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 
 	md3Model_t *md3 = (md3Model_t*) appMalloc (size);
 	CALL_CONSTRUCTOR(md3);
-	strcpy (md3->name, name);
+	md3->Name = name;
 	md3->size = size;
 
 	/*-------- fill md3 structure --------*/
@@ -638,8 +639,8 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 	{
 		CALL_CONSTRUCTOR(surf);
 		surf->shader    = gl_defaultShader;	// any, ignored
-		appStrncpylwr (surf->name, ds->name, sizeof(surf->name));
-//		Com_Printf("model %s surf %d %s\n", name, i, surf->name);
+		surf->Name.toLower (ds->name);
+//		Com_Printf("model %s surf %d %s\n", name, i, *surf->Name);
 		// counts
 		surf->numFrames = hdr->numFrames;
 		surf->numVerts  = ds->numVerts;
@@ -718,7 +719,7 @@ sprModel_t *LoadSp2 (const char *name, byte *buf, unsigned len)
 	int size = sizeof(sprModel_t) + (hdr->numframes-1) * sizeof(sprFrame_t);
 	sprModel_t *spr = (sprModel_t*)appMalloc (size);
 	CALL_CONSTRUCTOR(spr);
-	strcpy (spr->name, name);
+	spr->Name = name;
 	spr->size = size;
 
 	spr->numFrames = hdr->numframes;
@@ -753,7 +754,7 @@ static void cSprShader (int argc, char **argv)
 	shader_t *shader = loadSpr->frames[0].shader = FindShader (argv[1], SHADER_CHECK|SHADER_WALL|SHADER_FORCEALPHA);
 	if (!shader)
 	{
-		Com_DPrintf ("R_LoadSpr(%s): %s is not found\n", loadSpr->name, argv[1]);
+		Com_DPrintf ("R_LoadSpr(%s): %s is not found\n", *loadSpr->Name, argv[1]);
 		loadSpr->frames[0].shader = gl_defaultShader;
 	}
 }
@@ -780,7 +781,7 @@ sprModel_t *LoadSpr (const char *name, byte *buf, unsigned len)
 	int size = sizeof(sprModel_t);
 	sprModel_t *spr = (sprModel_t*)appMalloc (size);
 	CALL_CONSTRUCTOR(spr);
-	strcpy (spr->name, name);
+	spr->Name = name;
 	spr->size = size;
 
 	spr->numFrames = 1;

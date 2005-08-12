@@ -166,7 +166,7 @@ void GL_TextureMode (const char *name)	//?? change (not strings; use enum {none,
 		// change all the existing mipmap texture objects
 		for (j = 0, img = imagesArray; j < MAX_TEXTURES; j++, img++)
 		{
-			if (!img->name[0]) continue;	// free slot
+			if (!img->Name[0]) continue;	// free slot
 			if (!(img->flags & IMAGE_MIPMAP)) continue;
 			GL_BindForce (img);
 			glTexParameteri (img->target, GL_TEXTURE_MIN_FILTER, gl_filter_min);
@@ -486,7 +486,7 @@ static void Upload (void *pic, unsigned flags, image_t *image)
 	int		scaledWidth, scaledHeight;
 	int		format, size;
 
-	LOG_STRING(va("// Upload(%s)\n", image->name));
+	LOG_STRING(va("// Upload(%s)\n", *image->Name));
 
 	/*----- Calculate internal dimensions of the new texture --------*/
 	if (image->target != GL_TEXTURE_RECTANGLE_NV)
@@ -624,30 +624,27 @@ END_PROFILE
 
 image_t *CreateImage (const char *name, void *pic, int width, int height, unsigned flags)
 {
-	char	name2[MAX_QPATH];
-	int		texnum;
-	image_t	*image;
-
 	guard(CreateImage);
 	if (!name[0]) Com_FatalError ("R_CreateImage: NULL name");
 
 //	Com_Printf ("CreateImage(%s)\n", name);//!!!!
 
-//	if (strlen (name) >= MAX_QPATH)
-//		Com_FatalError ("R_CreateImage: name \"%s\" is too long", name);
-	appCopyFilename (name2, name, sizeof(name2));
+	TString<64> Name2;
+	Name2.filename (name);
 
+	int		texnum;
+	image_t	*image;
 	// find image with the same name
 	bool reuse = false;
 	image_t *freeSlot = NULL;
 	for (texnum = 0, image = &imagesArray[0]; texnum < MAX_TEXTURES; texnum++, image++)
 	{
-		if (!image->name[0])
+		if (!image->Name[0])
 		{
 			if (!freeSlot) freeSlot = image;
 			continue;
 		}
-		if (!strcmp (name2, image->name) && image->flags == (flags & IMAGE_FLAGMASK))
+		if (Name2 == image->Name && image->flags == (flags & IMAGE_FLAGMASK))
 		{
 			reuse = true;
 			break;
@@ -710,7 +707,7 @@ image_t *CreateImage (const char *name, void *pic, int width, int height, unsign
 	image->alphaType = alpha;
 
 	// setup image_t fields
-	strcpy (image->name, name2);
+	image->Name   = Name2;
 	image->width  = width;
 	image->height = height;
 	image->flags  = flags & IMAGE_FLAGMASK;
@@ -752,7 +749,7 @@ image_t *CreateImage (const char *name, void *pic, int width, int height, unsign
 	if (!reuse)
 	{
 		// insert image into a hash table
-		int hash = ComputeHash (name2);
+		int hash = ComputeHash (Name2);
 		image->hashNext = hashTable[hash];
 		hashTable[hash] = image;
 	}
@@ -772,10 +769,10 @@ void LoadDelayedImages ()
 	int num = 0;
 	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
-		if (!img->name[0]) continue;	// free slot
+		if (!img->Name[0]) continue;	// free slot
 		if (!(img->pic)) continue;
 
-//		Com_Printf ("up: %s\n", img->name);
+//		Com_Printf ("up: %s\n", *img->Name);
 		// upload image
 		GL_SetMultitexture (1);
 		GL_BindForce (img);
@@ -900,7 +897,7 @@ void DrawStretchRaw8 (int x, int y, int w, int h, int width, int height, byte *p
 
 static void FreeImage (image_t *image)	//?? unused function
 {
-	if (!image->name[0])
+	if (!image->Name[0])
 		return;		// already ...
 	if (image->flags & IMAGE_SYSTEM)
 		return;		// system image - don't free it
@@ -914,7 +911,7 @@ static void FreeImage (image_t *image)	//?? unused function
 	}
 
 	// remove from hash chain
-	int hash = ComputeHash (image->name);
+	int hash = ComputeHash (image->Name);
 	image_t *img = hashTable[hash];
 	if (img == image)	// first in chain
 	{
@@ -933,7 +930,7 @@ static void FreeImage (image_t *image)	//?? unused function
 	}
 
 	// mark slot as free
-	image->name[0] = 0;
+	image->Name[0] = 0;
 	image->hashNext = NULL;
 	imageCount--;
 }
@@ -1004,10 +1001,10 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 		for (i = 0; i < MAX_TEXTURES; i++)
 		{
 			image_t *img = &imagesArray[i];
-			if (!img->name[0]) continue;
+			if (!img->Name[0]) continue;
 
 			int h = 0;
-			const char *s = img->name;
+			const char *s = img->Name;
 			while (char c = *s++) h = (h ^ hash) + c;
 			h &= HASH_MASK;
 
@@ -1066,10 +1063,10 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 	for (int i = 0; i < MAX_TEXTURES; i++)
 	{
 		image_t *img = &imagesArray[i];
-		if (!img->name[0]) continue;	// free slot
+		if (!img->Name[0]) continue;	// free slot
 
 		idx++;
-		if (mask && !appMatchWildcard (img->name, mask, true)) continue;
+		if (mask && !appMatchWildcard (img->Name, mask, true)) continue;
 		n++;
 
 		texels += img->internalWidth * img->internalHeight;
@@ -1091,7 +1088,7 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 		Com_Printf ("%-3d %-4d %-4d %c %c  %c %-8s %s%s\n", idx, img->internalWidth, img->internalHeight,
 			img->flags & IMAGE_NOALPHA ? '-' : alphaTypes[img->alphaType],
 			boolTypes[(img->flags & IMAGE_CLAMP) == 0], boolTypes[(img->flags & IMAGE_MIPMAP) != 0],
-			fmt, color, img->name);
+			fmt, color, *img->Name);
 	}
 
 	Com_Printf ("Displayed %d/%d images; texel count (no mipmaps) %d\n", n, idx, texels);
@@ -1133,13 +1130,13 @@ static void ImageReload_f (bool usage, int argc, char **argv)
 	int num = 0;
 	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
-		if (!img->name[0]) continue;	// free slot
-		if (!appMatchWildcard (img->name, mask, true)) continue;
+		if (!img->Name[0]) continue;	// free slot
+		if (!appMatchWildcard (img->Name, mask, true)) continue;
 
-		if (img->name[0] == '*' || img->flags & IMAGE_SYSTEM) continue;
-		if (FindImage (img->name, img->flags | IMAGE_RELOAD))
+		if (img->Name[0] == '*' || img->flags & IMAGE_SYSTEM) continue;
+		if (FindImage (img->Name, img->flags | IMAGE_RELOAD))
 		{
-//			Com_DPrintf ("%s reloaded\n", img->name);
+//			Com_DPrintf ("%s reloaded\n", *img->Name);
 			num++;
 		}
 	}
@@ -1157,7 +1154,7 @@ static void ImageReload_f (bool usage, int argc, char **argv)
 void PerformScreenshot ()
 {
 	byte	*src, *dst;
-	char	name[MAX_OSPATH];
+	TString<256> Name;
 	int		i;
 
 	if (!screenshotName ||
@@ -1168,10 +1165,7 @@ void PerformScreenshot ()
 
 	const char *ext = (screenshotFlags & SHOT_JPEG ? ".jpg" : ".tga");
 	if (screenshotName[0])
-	{
-		strcpy (name, screenshotName);
-		strcat (name, ext);
-	}
+		Name.sprintf ("%s%s", screenshotName, ext);
 	else
 	{
 		// autogenerate name
@@ -1179,8 +1173,8 @@ void PerformScreenshot ()
 		for (i = 0; i < 10000; i++)
 		{	// check for a free filename
 			FILE *f;
-			appSprintf (ARRAY_ARG(name), "%s/screenshots/shot%04d%s", FS_Gamedir (), i, ext);
-			if (!(f = fopen (name, "rb")))
+			Name.sprintf ("%s/screenshots/shot%04d%s", FS_Gamedir (), i, ext);
+			if (!(f = fopen (Name, "rb")))
 				break;	// file doesn't exist
 			fclose (f);
 		}
@@ -1189,7 +1183,7 @@ void PerformScreenshot ()
 	screenshotName = NULL;
 
 	// create the screenshots directory if it doesn't exist
-	FS_CreatePath (name);
+	FS_CreatePath (Name);
 
 	// allocate buffer for 4 color components (required for ResampleTexture()
 	byte *buffer = new byte [vid_width * vid_height * 4];
@@ -1253,14 +1247,14 @@ void PerformScreenshot ()
 
 	bool result;
 	if (screenshotFlags & SHOT_JPEG)
-		result = WriteJPG (name, buffer, width, height, (screenshotFlags & SHOT_SMALL));
+		result = WriteJPG (Name, buffer, width, height, (screenshotFlags & SHOT_SMALL));
 	else
-		result = WriteTGA (name, buffer, width, height);
+		result = WriteTGA (Name, buffer, width, height);
 
 	delete buffer;
 
 	if (result && !(screenshotFlags & SHOT_SILENT))
-		Com_Printf ("Wrote %s\n", strrchr (name, '/') + 1);
+		Com_Printf ("Wrote %s\n", Name.rchr ('/') + 1);
 }
 
 
@@ -1466,9 +1460,9 @@ void ShutdownImages ()
 	image_t	*img;
 	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
-		if (!img->name[0]) continue;	// free slot
+		if (!img->Name[0]) continue;	// free slot
 		glDeleteTextures (1, &img->texnum);
-		img->name[0] = 0;				// required for statically linked renderer
+		img->Name[0] = 0;				// required for statically linked renderer
 		if (img->pic)
 		{
 			delete img->pic;
@@ -1484,22 +1478,19 @@ void ShutdownImages ()
 
 void ShowImages ()
 {
-	int		i, nx, ny, x, y, num, numImg;
+	int		i;
 	image_t	*img;
-	float	dx, dy;
-	char	*name, *mask;
 
-	mask = gl_showImages->string;
+	const char *mask = gl_showImages->string;
 	if (!mask[0] || (!mask[1] && mask[0] == '0')) return;	// "" or "0"
 	if (mask[0] == '1' && mask[1] == 0) mask = "*";			// "1" -> "*"
 
 	// count matches
-	numImg = 0;
-	for (i = 0; i < MAX_TEXTURES; i++)
+	int numImg = 0;
+	for (i = 0, img = imagesArray; i < MAX_TEXTURES; i++, img++)
 	{
-		name = imagesArray[i].name;
-		if (!name[0]) continue;
-		if (appMatchWildcard (name, mask, true)) numImg++;
+		if (!img->Name[0]) continue;
+		if (appMatchWildcard (img->Name, mask, true)) numImg++;
 	}
 	if (!numImg) return;		// no matched images
 
@@ -1512,6 +1503,7 @@ void ShowImages ()
 	glColor3f (1, 1, 1);
 
 	// compute best grid size
+	int nx, ny;
 	for (i = 1; i < 10; i++)
 	{
 		nx = i * 4;
@@ -1520,23 +1512,22 @@ void ShowImages ()
 	}
 
 	// display images
-	dx = vid_width / nx;
-	dy = vid_height / ny;
-	num = numImg;
+	float dx = vid_width / nx;
+	float dy = vid_height / ny;
+	int num = numImg;
 	img = &imagesArray[0];
-	for (y = 0; y < ny && num; y++)
+	for (int y = 0; y < ny && num; y++)
 	{
 		float	y0, x0, s, t;
 
 		y0 = y * dy;
-		for (x = 0; x < nx; x++)
+		for (int x = 0; x < nx; x++)
 		{
 			if (!num) break;
 
 			while (true)
 			{
-				name = img->name;
-				if (name[0] && appMatchWildcard (name, mask, true)) break;
+				if (img->Name[0] && appMatchWildcard (img->Name, mask, true)) break;
 				img++;
 			}
 
@@ -1580,15 +1571,15 @@ image_t *FindImage (const char *name, unsigned flags)
 	if (!name[0])
 		return gl_defaultImage;		// NULL name -- NULL image
 
-	char name2[MAX_QPATH];
-	appCopyFilename (name2, name, sizeof(name2));
+	TString<64> Name2;
+	Name2.filename (name);
 
 	/*------- find image using hash table --------*/
-	int hash = ComputeHash (name2);
+	int hash = ComputeHash (Name2);
 //	Com_Printf ("FindImage(%s): hash = %X\n", name2, hash);//!!
 
 	// find extension
-	char *s = strrchr (name2, '.');
+	char *s = Name2.rchr ('.');
 	if (s)
 	{
 		// found "." - check for supported image extensions
@@ -1597,15 +1588,15 @@ image_t *FindImage (const char *name, unsigned flags)
 			s = NULL;				// this is not an image extension - try to add extension
 	}
 	if (!s)
-		s = strchr (name2, 0);		// == &name2[strlen(name2)]; points to a place, where extension will be added
-	int len = s - name2;			// length of name without extension
+		s = Name2.chr (0);			// == &Name2[strlen(Name2)]; points to a place, where extension will be added
+	int len = s - Name2;			// length of name without extension
 
 	unsigned flags2 = flags & (IMAGE_MIPMAP|IMAGE_CLAMP);
 	if (!(flags & IMAGE_RELOAD))
 	{
 		for (image_t *img = hashTable[hash]; img; img = img->hashNext)
-			if (!strnicmp (img->name, name2, len) &&			// len chars matched
-				(!img->name[len] || img->name[len] == '.'))		// rest of img->name if null or extension
+			if (!strnicmp (img->Name, Name2, len) &&			// len chars matched
+				(!img->Name[len] || img->Name[len] == '.'))		// rest of img->Name if null or extension
 			{
 				// found a name ...
 				// compare image flags
@@ -1628,7 +1619,7 @@ image_t *FindImage (const char *name, unsigned flags)
 					// flags are different ...
 					if (name[0] == '*' || img->flags & IMAGE_SYSTEM)
 					{
-						Com_WPrintf ("R_FindImage(%s): using different flags (%X != %X) for system image\n", name2, flags, img->flags);
+						Com_WPrintf ("R_FindImage(%s): using different flags (%X != %X) for system image\n", *Name2, flags, img->flags);
 						return img;
 					}
 					hash = -1;	// mark: image used with a different flags (for displaying a warning message)
@@ -1637,7 +1628,7 @@ image_t *FindImage (const char *name, unsigned flags)
 			}
 	}
 	if (hash == -1)
-		Com_WPrintf ("R_FindImage: reusing \"%s\" with a different flags %X\n", name2, flags);
+		Com_WPrintf ("R_FindImage: reusing \"%s\" with a different flags %X\n", *Name2, flags);
 
 	/*---------- image not found -----------*/
 //	Com_Printf("FindImage: disk name = %s\n",name2);//!!
@@ -1653,7 +1644,7 @@ image_t *FindImage (const char *name, unsigned flags)
 //		prefFmt = IMAGE_WAL;
 
 	*s = 0; // cut extension
-	int fmt = ImageExists (name2, IMAGE_32BIT);
+	int fmt = ImageExists (Name2, IMAGE_32BIT);
 	if (fmt & prefFmt)
 		fmt = prefFmt;				// restrict loading to this image type
 
@@ -1664,14 +1655,14 @@ image_t *FindImage (const char *name, unsigned flags)
 	{
 		strcpy (s, ".tga");
 START_PROFILE2(img::tga, name)
-		LoadTGA (name2, pic, width, height);
+		LoadTGA (Name2, pic, width, height);
 END_PROFILE
 	}
 	else if (fmt & IMAGE_JPG)
 	{
 		strcpy (s, ".jpg");
 START_PROFILE2(img::jpg, name)
-		LoadJPG (name2, pic, width, height);
+		LoadJPG (Name2, pic, width, height);
 END_PROFILE
 	}
 	else if (fmt & IMAGE_PCX)
@@ -1680,21 +1671,17 @@ END_PROFILE
 
 		strcpy (s, ".pcx");
 START_PROFILE2(img::pcx, name)
-		LoadPCX (name2, pic8, palette, width, height);
+		LoadPCX (Name2, pic8, palette, width, height);
 		if (pic8)
 		{
 			//?? should use palette; sometimes should use 0xFF as color (not transparency)
 #if 0
 			unsigned pal[256];
-			byte	*p;
-			int		i;
 
-			p = palette;
-			for (i = 0; i < 256; i++, p += 3)
+			byte *p = palette;
+			for (int i = 0; i < 256; i++, p += 3)
 			{
-				unsigned	v;
-
-				v = RGB255(p[0], p[1], p[2]);
+				unsigned v = RGB255(p[0], p[1], p[2]);
 				pal[i] = LittleLong(v);
 			}
 			pal[255] &= LittleLong(0x00FFFFFF);						// #255 is transparent (alpha = 0)
@@ -1713,7 +1700,7 @@ END_PROFILE
 	{
 		strcpy (s, ".wal");
 START_PROFILE2(img::wal, name)
-		if (miptex_t *mt = (miptex_t*) FS_LoadFile (name2))
+		if (miptex_t *mt = (miptex_t*) FS_LoadFile (Name2))
 		{
 			width  = LittleLong(mt->width);
 			height = LittleLong(mt->height);
@@ -1727,7 +1714,7 @@ END_PROFILE
 	else
 	{
 		//!! use img_debug
-//		Com_DPrintf ("Cannot find image %s.*\n", name2);
+//		Com_DPrintf ("Cannot find image %s.*\n", *Name2);
 		return NULL;
 	}
 
@@ -1735,14 +1722,14 @@ END_PROFILE
 	if (pic)
 	{
 START_PROFILE(..img::up)
-		image_t *img = CreateImage (name2, pic, width, height, flags);
+		image_t *img = CreateImage (Name2, pic, width, height, flags);
 		appFree (pic);
 END_PROFILE
 		return img;
 	}
 	else
 	{
-		Com_WPrintf ("R_FindImage(%s): cannot load texture\n", name2);
+		Com_WPrintf ("R_FindImage(%s): cannot load texture\n", *Name2);
 		return NULL;
 	}
 

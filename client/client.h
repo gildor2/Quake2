@@ -171,14 +171,6 @@ typedef enum {
 	ca_active					// game views should be displayed
 } connstate_t;
 
-typedef enum {
-	dl_none,
-	dl_model,
-	dl_sound,
-	dl_skin,
-	dl_single
-} dltype_t;						// download type
-
 typedef enum {key_game, key_console, key_message, key_menu, key_bindingMenu} keydest_t;
 
 // the client_static_t structure is persistant through an arbitrary number
@@ -210,11 +202,8 @@ struct client_static_t
 	int			challenge;		// from the server to use for connecting
 
 	FILE		*download;		// file transfer from server
-	char		downloadtempname[MAX_OSPATH];
-	char		downloadname[MAX_OSPATH];
-	int			downloadnumber;
-	dltype_t	downloadtype;
-	int			downloadpercent;
+	TString<MAX_OSPATH> DownloadName, DownloadTempName;
+	int			downloadPercent;
 
 	// demo recording info must be here, so it isn't cleared on level change
 	bool		demorecording;

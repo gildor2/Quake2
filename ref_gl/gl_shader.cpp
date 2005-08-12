@@ -74,7 +74,7 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 	for (int i = 0; i < shaderCount; i++)
 	{
 		shader_t *sh = shadersArray[i];
-		if (mask && !appMatchWildcard (sh->name, mask, true)) continue;
+		if (mask && !appMatchWildcard (sh->Name, mask, true)) continue;
 		n++;
 
 		const char *lmInfo, *color;
@@ -100,7 +100,7 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 			color = "";
 
 		Com_Printf ("%-3d %d  %2s %-2d %3s  %-3s %s%s%s\n", i, sh->numStages, lmInfo,
-			sh->sortParam, shTypes[sh->type], boolNames[sh->scripted], color, sh->name, badNames[sh->bad]);
+			sh->sortParam, shTypes[sh->type], boolNames[sh->scripted], color, *sh->Name, badNames[sh->bad]);
 	}
 	Com_Printf ("Displayed %d/%d shaders\n", n, shaderCount);
 }
@@ -204,7 +204,7 @@ static void ClearTempShader ()
 static tcModParms_t *NewTcModStage (shaderStage_t *stage)
 {
 	if (stage->numTcMods > MAX_STAGE_TCMODS)
-		Com_DropError ("Too many tcMod stages in shader \"%s\"\n", sh.name);	//?? ERROR_IN_SHADER()
+		Com_DropError ("Too many tcMod stages in shader \"%s\"\n", *sh.Name);	//?? ERROR_IN_SHADER()
 	//?? check index overflow (no MAX_STAGE_TCMODS but MAX_SHADER_TCMODS ??)
 	tcModParms_t *par = &tcMods[numTcModStages++];	// alloc
 	if (!stage->numTcMods)
@@ -219,7 +219,7 @@ static shader_t *CreateShader ()
 {
 	if (shaderCount >= MAX_SHADERS)
 	{
-		Com_WPrintf ("CreateShader(%s): MAX_SHADERS hit\n", sh.name);
+		Com_WPrintf ("CreateShader(%s): MAX_SHADERS hit\n", *sh.Name);
 		return gl_defaultShader;
 	}
 
@@ -228,7 +228,7 @@ static shader_t *CreateShader ()
 	*nsh = sh;
 	CALL_CONSTRUCTOR(nsh);				// after copy
 
-//	Com_Printf(S_GREEN"sh: %s\n",sh.name);
+//	Com_Printf(S_GREEN"sh: %s\n",*sh.Name);
 	// allocate and copy stages
 	for (int i = 0; i < sh.numStages; i++)
 	{
@@ -239,11 +239,11 @@ static shader_t *CreateShader ()
 		// setup mapImage[]
 		memcpy (&nst->mapImage, &shaderImages[i * MAX_STAGE_TEXTURES], st[i].numAnimTextures * sizeof(image_t*));
 //		for (int j = 0; j < nst->numAnimTextures; j++)
-//			Com_Printf("  %d.%d: %s\n",i,j,nst->mapImage[j] ? nst->mapImage[j]->name : "$white");
+//			Com_Printf("  %d.%d: %s\n",i,j,nst->mapImage[j] ? *nst->mapImage[j]->Name : "$white");
 	}
 
 	// insert into a hash table
-	int hash = ComputeHash (sh.name);
+	int hash = ComputeHash (sh.Name);
 	nsh->hashNext = hashTable[hash];
 	hashTable[hash] = nsh;
 
@@ -322,7 +322,7 @@ static shader_t *FinishShader ()	//!!!! rename function
 					blend2 = BLEND(D_COLOR,S_COLOR);// src*dst*2
 			}
 			else
-				Com_WPrintf ("R_FinishShader(%s): strange blend for lightmap in stage %d\n", sh.name, numStages);	//?? DPrintf
+				Com_WPrintf ("R_FinishShader(%s): strange blend for lightmap in stage %d\n", *sh.Name, numStages);	//?? DPrintf
 		}
 		// store new blend mode
 		s->glState = s->glState & ~GLSTATE_BLENDMASK | blend2;
@@ -379,7 +379,7 @@ static shader_t *FinishShader ()	//!!!! rename function
 			memcpy (tmpImg, shaderImages, sizeof(tmpImg));
 			memcpy (shaderImages, shaderImages + MAX_STAGE_TEXTURES, sizeof(tmpImg));
 			memcpy (shaderImages + MAX_STAGE_TEXTURES, tmpImg, sizeof(tmpImg));
-			Com_DPrintf ("swapping first 2 stages in shader %s\n", sh.name);
+			Com_DPrintf ("swapping first 2 stages in shader %s\n", *sh.Name);
 		}
 	}
 
@@ -406,7 +406,7 @@ shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber)
 	{
 		if (shader->lightmapNumber != LIGHTMAP_VERTEX || shader->numStages != 1)
 		{
-			Com_DPrintf ("SetLM(NONE) for non-vertexLM shader %s\n", shader->name);
+			Com_DPrintf ("SetLM(NONE) for non-vertexLM shader %s\n", *shader->Name);
 			shader->lightmapNumber = LIGHTMAP_NONE;		// bad situation, but ...
 		}
 		else
@@ -421,10 +421,10 @@ shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber)
 	if (shader->lightmapNumber == LIGHTMAP_VERTEX)
 		return shader;
 
-	int hash = ComputeHash (shader->name);
+	int hash = ComputeHash (shader->Name);
 	shader_t *dest = NULL;
 	for (shader_t *s = hashTable[hash]; s; s = s->hashNext)
-		if (!strcmp (shader->name, s->name) && shader->style == s->style)
+		if (shader->Name == s->Name && shader->style == s->style)
 		{
 			if (s->lightmapNumber == lightmapNumber)
 				return s;	// found exact shader as required
@@ -459,7 +459,7 @@ shader_t *SetShaderLightmap (shader_t *shader, int lightmapNumber)
 		}
 	}
 
-	Com_DropError ("SetShaderLightmap(%s, %d): lightmap stage is not found", shader->name, lightmapNumber);
+	Com_DropError ("SetShaderLightmap(%s, %d): lightmap stage is not found", *shader->Name, lightmapNumber);
 	return NULL;	// make compiler happy (will not go here)
 }
 
@@ -468,9 +468,9 @@ shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles)
 {
 	if (!styles || gl_config.vertexLight) return shader;
 
-	char newname[MAX_QPATH];
-	strcpy (newname, shader->name);
-	char *s = strchr (newname, 0);			// find string end
+	TString<64> NewName;
+	NewName = shader->Name;
+	char *s = NewName.chr (0);			// find string end
 	*s++ = '$';
 
 	for (unsigned m = styles; m; m >>= 8)
@@ -484,11 +484,11 @@ shader_t *SetShaderLightstyles (shader_t *shader, unsigned styles)
 	}
 	*s = 0;
 
-	shader_t *newshader = FindShader (newname, shader->style | SHADER_CHECKLOADED);
+	shader_t *newshader = FindShader (NewName, shader->style | SHADER_CHECKLOADED);
 	if (newshader) return newshader;
 
 	ExtractShader (shader);
-	strcpy (sh.name, newname);
+	sh.Name          = NewName;
 	sh.lightStyles_i = styles;
 	return CreateShader ();
 }
@@ -502,13 +502,13 @@ shader_t *GetAlphaShader (shader_t *shader)
 	if (shader->stages[0]->glState & GLSTATE_BLENDMASK)
 	{	// already have blend mode
 		shader->alphaShader = shader;
-		Com_DPrintf ("GetAlphaShader(%s): already have blend\n", shader->name);
+		Com_DPrintf ("GetAlphaShader(%s): already have blend\n", *shader->Name);
 		return shader;
 	}
 
 	// clone shader
 	ExtractShader (shader);
-	strcat (sh.name, "#a");					// just make different name
+	sh.Name += "#a";						// just make different name
 	// setup alpha/blend
 	sh.sortParam = SORT_SEETHROUGH;			//?? SORT_SPRITE? check SHADER_WALL ??
 	st[0].alphaGenType = ALPHAGEN_ENTITY;
@@ -520,8 +520,8 @@ shader_t *GetAlphaShader (shader_t *shader)
 		{
 			int idx = i * MAX_STAGE_TEXTURES + j;
 			const image_t *img = shaderImages[idx];
-			if (img->name[0] != '*' && !(img->flags & IMAGE_SYSTEM) && img->flags & IMAGE_NOALPHA)
-				shaderImages[idx] = FindImage (img->name, img->flags & ~IMAGE_NOALPHA);
+			if (img->Name[0] != '*' && !(img->flags & IMAGE_SYSTEM) && img->flags & IMAGE_NOALPHA)
+				shaderImages[idx] = FindImage (img->Name, img->flags & ~IMAGE_NOALPHA);
 		}
 
 	shader->alphaShader = FinishShader ();
@@ -558,9 +558,10 @@ shader_t *FindShader (const char *name, unsigned style)
 			name = "*default";
 	}
 
-	char name2[MAX_QPATH], *s;
-	appCopyFilename (name2, name, sizeof(name2));
-	if (s = strrchr (name2, '.')) *s = 0;		// cut extension
+	TString<64> Name2;
+	Name2.filename (name);
+	char *s;
+	if (s = Name2.rchr ('.')) *s = 0;			// cut extension
 
 	int lightmapNumber = LIGHTMAP_NONE;
 	if (style & SHADER_LIGHTMAP)
@@ -572,9 +573,9 @@ shader_t *FindShader (const char *name, unsigned style)
 	}
 
 	/*----- find shader using hash table -----*/
-	int hash = ComputeHash (name2);
+	int hash = ComputeHash (Name2);
 	for (shader_t *shader = hashTable[hash]; shader; shader = shader->hashNext)
-		if (!strcmp (shader->name, name2))
+		if (shader->Name == Name2)
 		{
 			if (shader->bad)					// generated by bad script
 				return shader;
@@ -595,12 +596,12 @@ shader_t *FindShader (const char *name, unsigned style)
 
 	// prepate common shader fields
 	ClearTempShader ();
-	strcpy (sh.name, name2);
+	sh.Name           = Name2;
 	sh.lightmapNumber = lightmapNumber;
-	sh.style = style & SHADER_STYLEMASK;
+	sh.style          = style & SHADER_STYLEMASK;
 
 	/*------------ find script ---------------*/
-	if (InitShaderFromScript (sh.name))
+	if (InitShaderFromScript (sh.Name))
 		return FinishShader ();
 
 	// script is not found, or it was bad
@@ -608,10 +609,10 @@ shader_t *FindShader (const char *name, unsigned style)
 	{
 		// script have errors, clear shader again
 		ClearTempShader ();
-		strcpy (sh.name, name2);
+		sh.Name           = Name2;
 		sh.lightmapNumber = lightmapNumber;
-		sh.style = style & SHADER_STYLEMASK;
-		sh.bad = true;		// stats
+		sh.style          = style & SHADER_STYLEMASK;
+		sh.bad            = true;		// stats
 	}
 
 	// non-scripted shaders: putge alpha-channel when not required
@@ -634,7 +635,7 @@ shader_t *FindShader (const char *name, unsigned style)
 		{
 			static const char *suff[6] = {"rt", "lf", "bk", "ft", "up", "dn"};
 
-			img = FindImage (va("%s%s", name2, suff[i]), IMAGE_CLAMP);
+			img = FindImage (va("%s%s", *Name2, suff[i]), IMAGE_CLAMP);
 			if (!img)
 			{
 				sh.bad = true;
@@ -642,7 +643,7 @@ shader_t *FindShader (const char *name, unsigned style)
 			}
 			if (!i)
 			{
-				sh.width = img->width;
+				sh.width  = img->width;
 				sh.height = img->height;
 			}
 			sh.skyBox[i] = img;
@@ -776,8 +777,8 @@ shader_t *FindShader (const char *name, unsigned style)
 #if 0
 		// scale
 		tcmod = NewTcModStage (stage);
-		tcmod->type   = TCMOD_SCALE;
-		tcmod->sScale = tcmod->tScale = 1.0f / 64;
+		tcmod->type       = TCMOD_SCALE;
+		tcmod->sScale     = tcmod->tScale = 1.0f / 64;
 		// turb
 		tcmod = NewTcModStage (stage);
 		tcmod->type       = TCMOD_TURB;
@@ -791,10 +792,8 @@ shader_t *FindShader (const char *name, unsigned style)
 
 #if 0
 		{
-			deformParms_t	*deform;
-
 			// deform verts
-			deform = &sh.deforms[0];
+			deformParms_t *deform = &sh.deforms[0];
 			deform->type       = DEFORM_WAVE;
 			deform->wave.type  = FUNC_SIN;
 			deform->wave.amp   = 2;
@@ -873,7 +872,7 @@ shader_t *FindShader (const char *name, unsigned style)
 class shaderScript_t : public CStringItem
 {
 public:
-	char	file[MAX_QPATH];
+	TString<64> FileName;
 	bool	isTemplate;
 	unsigned start;
 	unsigned end;
@@ -907,7 +906,7 @@ static void FindShaderScripts ()
 		if (!buf) continue;			// should not happens
 
 #ifdef DEBUG_SHADERS
-		Com_Printf(S_GREEN"%s\n", tmp);
+		Com_Printf (S_GREEN"%s\n", tmp);
 #endif
 		CSimpleParser text;
 		text.InitFromBuf (buf, PARSER_CPP_COMMENTS|PARSER_SEPARATE_BRACES);
@@ -922,12 +921,12 @@ static void FindShaderScripts ()
 #ifdef DEBUG_SHADERS
 			Com_Printf (S_RED"%s\n", line);
 #endif
-			char name[MAX_QPATH];
-			appCopyFilename (name, line, sizeof(name));
+			TString<64> Name;
+			Name.filename (line);
 			line = text.GetLine ();
 			if (line[0] != '{' || line[1] != 0)
 			{
-				errMsg = va("%s: \"{\" expected", name);
+				errMsg = va("%s: \"{\" expected", *Name);
 				break;
 			}
 			// remember start
@@ -942,14 +941,14 @@ static void FindShaderScripts ()
 			int end = endPos - buf;
 
 			// remember script info
-			shaderScript_t *scr = scriptList.Find (name);
+			shaderScript_t *scr = scriptList.Find (Name);
 			if (!scr)
 			{
 				// not found - create new; else - override previous script
-				scr = new (name, scriptChain) shaderScript_t;
+				scr = new (Name, scriptChain) shaderScript_t;
 				scriptList.Insert (scr);
 			}
-			appCopyFilename (scr->file, tmp, sizeof(scr->file));
+			scr->FileName.filename (tmp);
 			scr->start      = start;
 			scr->end        = end;
 			scr->isTemplate = appIsWildcard (scr->name);
@@ -1006,9 +1005,12 @@ static bool InitShaderFromScript (const char *srcName, const char *text)
 			// 1st: shader
 			shaderScript_t *scr = scriptList.Find (srcName);
 			if (!scr)	// 2nd: template
-				for (scr = scriptList.First(); scr; scr = scriptList.Next(scr))
-					if (scr->isTemplate && appMatchWildcard (srcName, scr->name, false))
+				for (TListIterator<shaderScript_t> script = scriptList; script; ++script)
+					if (script->isTemplate && appMatchWildcard (srcName, script->name, false))
+					{
+						scr = *script;
 						break;
+					}
 			if (!scr) return false;
 
 #ifdef DEBUG_SHADERS
@@ -1016,10 +1018,10 @@ static bool InitShaderFromScript (const char *srcName, const char *text)
 #endif
 			// load script file
 			unsigned length;
-			buf = (char*)FS_LoadFile (va("scripts/%s", scr->file), &length);
+			buf = (char*)FS_LoadFile (va("scripts/%s", *scr->FileName), &length);
 			if (scr->end > length)
 			{
-				Com_WPrintf ("script \"%s\" beyond end of file \"%s\" ?", srcName, scr->file);
+				Com_WPrintf ("script \"%s\" beyond end of file \"%s\" ?", srcName, *scr->FileName);
 				return false;
 			}
 			text = buf + scr->start;
@@ -1151,7 +1153,7 @@ void ResetShaders ()
 	gl_identityLightShader->stages[0]->glState &= ~GLSTATE_DEPTHWRITE;
 
 	// create 2nd "identityLight" (with depth test/write and different name)
-	strcpy (sh.name, "*identitylight2");
+	sh.Name = "*identitylight2";
 	st[0].rgbGenType = RGBGEN_EXACT_VERTEX;
 	gl_identityLightShader2 = FinishShader ();
 
@@ -1184,7 +1186,7 @@ void shader_t::Reload ()
 	{
 		const image_t *img = stages[0]->mapImage[0];	//?? all images (non-system, not "*name" etc), all anims, all stages
 		if (img)			// may be NULL when $white
-			FindImage (img->name, img->flags | IMAGE_RELOAD);
+			FindImage (img->Name, img->flags | IMAGE_RELOAD);
 	}
 }
 

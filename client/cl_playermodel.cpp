@@ -234,12 +234,12 @@ static void ReadModelsGenderList ()
 
 static bool IsFemaleModel (const char *model)
 {
-	static char lastGameDir[MAX_QPATH];
+	static TString<32> LastGameDir;
 	const char *gameDir = FS_Gamedir ();
-	if (strcmp (gameDir, lastGameDir))
+	if (gameDir != LastGameDir)
 	{
+		LastGameDir = gameDir;
 		ReadModelsGenderList ();
-		strcpy (lastGameDir, gameDir);
 	}
 
 	for (int i = 0; i < numFemaleModels; i++)
@@ -256,7 +256,7 @@ static bool IsFemaleModel (const char *model)
 
 static void SetSimpleSkin (const char *name, CModelSkin &skin)
 {
-	skin.surf[0].surfName[0] = 0;	// empty surface name
+	skin.surf[0].Name[0] = 0;	// empty surface name
 	CBasicImage *shader = RE_RegisterSkin (name);
 	skin.surf[0].shader = shader;
 	skin.numSurfs = (shader != NULL) ? 1 : 0;
@@ -267,12 +267,12 @@ static void SetSimpleSkin (const char *name, CModelSkin &skin)
 static bool SetMd3Skin (const char *skinName, CModelSkin &skin)
 {
 	// load skin file
+	TString<MAX_QPATH> Filename;
+	Filename.sprintf ("models/players/%s.skin", skinName);
 	char	*buf;
-	char	filename[MAX_QPATH];
-	appSprintf (ARRAY_ARG(filename), "models/players/%s.skin", skinName);
-	if (!(buf = (char*) FS_LoadFile (filename)))
+	if (!(buf = (char*) FS_LoadFile (Filename)))
 	{
-		Com_DPrintf ("no skin: %s\n", filename);
+		Com_DPrintf ("no skin: %s\n", Filename);
 		return false;
 	}
 
@@ -305,19 +305,19 @@ static bool SetMd3Skin (const char *skinName, CModelSkin &skin)
 		if (!shader)
 		{
 			// code based on gl_trimodel.cpp::SetMd3Skin()
-			char	mName[MAX_QPATH];	// new skin name
+			TString<64> MName;			// new skin name
 			// try to find skin forcing model directory
-			appCopyFilename (mName, filename, sizeof(mName));
-			char *mPtr = strrchr (mName, '/');
+			MName.filename (Filename);
+			char *mPtr = MName.rchr ('/');
 			if (mPtr)	mPtr++;			// skip '/'
-			else		mPtr = mName;
+			else		mPtr = MName;
 
 			char *sPtr = strrchr (p+1, '/');
 			if (sPtr)	sPtr++;			// skip '/'
 			else		sPtr = p+1;
 
 			strcpy (mPtr, sPtr);		// make "modelpath/skinname"
-			shader = RE_RegisterSkin (mName, true);
+			shader = RE_RegisterSkin (MName, true);
 		}
 		if (numSurfs >= ARRAY_COUNT(skin.surf))
 		{
@@ -326,9 +326,9 @@ static bool SetMd3Skin (const char *skinName, CModelSkin &skin)
 			break;
 		}
 		// store info
-		appStrncpylwr (skin.surf[numSurfs].surfName, line, p - line + 1);
+		skin.surf[numSurfs].Name.toLower (line, p-line+1);
 		skin.surf[numSurfs].shader = shader;
-//		Com_Printf("%s %d : [%s] <- %s\n", skinName, numSurfs, skin.surf[numSurfs].surfName, shader->name);
+//		Com_Printf("%s %d : [%s] <- %s\n", skinName, numSurfs, *skin.surf[numSurfs].Name, *shader->Name);
 		numSurfs++;
 	}
 	if (result)
@@ -473,16 +473,16 @@ static CRenderModel *FindQ3Model (const char *name, const char *part)
 
 static bool TryQuake3Model (clientInfo_t &ci, const char *modelName, const char *skinName)
 {
-	char animCfg[MAX_QPATH];
-	appSprintf (ARRAY_ARG(animCfg), "models/players/%s/animation.cfg", modelName);
-	if (!FS_FileExists (animCfg)) return false;
+	TString<MAX_QPATH> AnimCfg;
+	AnimCfg.sprintf ("models/players/%s/animation.cfg", modelName);
+	if (!FS_FileExists (AnimCfg)) return false;
 
 	ci.legsModel  = FindQ3Model (modelName, "lower");
 	ci.torsoModel = FindQ3Model (modelName, "upper");
 	ci.headModel  = FindQ3Model (modelName, "head");
 	if (!ci.legsModel || !ci.torsoModel || !ci.headModel) return false;
 
-	LoadAnimationCfg (ci, animCfg);
+	LoadAnimationCfg (ci, AnimCfg);
 
 	if (!SetQuake3Skin (ci, modelName, skinName))
 	{
@@ -491,8 +491,8 @@ static bool TryQuake3Model (clientInfo_t &ci, const char *modelName, const char 
 			return false;			// no default skin
 	}
 
-	appSprintf (ARRAY_ARG(ci.iconName), "models/players/%s/icon_%s", modelName, skinName);
-	ci.icon = RE_RegisterPic (ci.iconName);
+	ci.IconName.sprintf ("models/players/%s/icon_%s", modelName, skinName);
+	ci.icon = RE_RegisterPic (ci.IconName);
 
 	ci.isQ3model = true;
 	ci.isValidModel = true;
@@ -742,10 +742,10 @@ static bool LoadWeaponInfo (const char *filename, weaponInfo_t &weap)
 
 static CRenderModel *FindQ2Model (const char *name, const char *part)
 {
-	char filename[MAX_QPATH];
-	appSprintf (ARRAY_ARG(filename), "players/%s/%s", name, part);
-	if (!strchr (part, '.')) strcat (filename, ".md2");
-	return RE_RegisterModel (filename);
+	TString<MAX_QPATH> Filename;
+	Filename.sprintf ("players/%s/%s", name, part);
+	if (!strchr (part, '.')) Filename += ".md2";
+	return RE_RegisterModel (Filename);
 }
 
 
@@ -783,8 +783,8 @@ static bool TryQuake2Model (clientInfo_t &ci, const char *modelName, const char 
 	}
 
 	// icon
-	appSprintf (ARRAY_ARG(ci.iconName), "players/%s/%s_i", modelName, skinName);
-	ci.icon = RE_RegisterPic (ci.iconName);
+	ci.IconName.sprintf ("players/%s/%s_i", modelName, skinName);
+	ci.icon = RE_RegisterPic (ci.IconName);
 
 	ci.isQ3model = false;
 	ci.isValidModel = true;
@@ -797,9 +797,8 @@ static bool TryQuake2Model (clientInfo_t &ci, const char *modelName, const char 
 
 void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 {
-	guard (CL_LoadClientinfo);
+	guard(CL_LoadClientinfo);
 
-	char modelName[MAX_QPATH], skinName[MAX_QPATH];
 	static unsigned id_count = 1;
 
 	memset (&ci, 0, sizeof(clientInfo_t));
@@ -807,8 +806,8 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 	if (!cl_vwep->integer) loadWeapons = false;
 
 	// get player's name
-	appStrncpyz (ci.playerName, s, sizeof(ci.playerName));
-	char *t = strchr (ci.playerName, '\\');
+	ci.PlayerName = s;
+	char *t = ci.PlayerName.chr ('\\');
 	if (t)
 	{
 		*t = 0;
@@ -819,46 +818,48 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 		s = "male/grunt";				// default skin
 
 	// get model name
-	strcpy (modelName, s);
-	t = strchr (modelName, '/');
-	if (!t) t = strchr (modelName, '\\');
-	if (!t) t = modelName;
+	TString<MAX_QPATH> ModelName;
+	ModelName = s;
+	t = ModelName.chr ('/');
+	if (!t) t = ModelName.chr ('\\');
+	if (!t) t = ModelName;
 	*t = 0;
 
 	// get skin name
-	strcpy (skinName, t + 1);
+	TString<MAX_QPATH> SkinName;
+	SkinName = t + 1;
 
 	// try loading Quake3 model
-	if (!TryQuake3Model (ci, modelName, skinName))
+	if (!TryQuake3Model (ci, ModelName, SkinName))
 	{
 		// no such Quake3 player model - load Quake2 model
-		if (!TryQuake2Model (ci, modelName, skinName))
+		if (!TryQuake2Model (ci, ModelName, SkinName))
 		{
 			// try "male" model with the same skin
-			if (!TryQuake2Model (ci, "male", skinName, true))
+			if (!TryQuake2Model (ci, "male", SkinName, true))
 			{
 				// try "male/grunt"
 				if (!TryQuake2Model (ci, "male", "grunt"))
 					return;				// at this point, client info is invalid, and no way to make it valid
-				strcpy (skinName, "grunt");
+				SkinName = "grunt";
 			}
-			strcpy (modelName, "male");
+			ModelName = "male";
 		}
 
 		// weapons
-		ci.weaponModel[0].model = FindQ2Model (modelName, "weapon");
+		ci.weaponModel[0].model = FindQ2Model (ModelName, "weapon");
 		if (loadWeapons)
 			for (int i = 1; i < num_cl_weaponmodels; i++)
 			{
-				ci.weaponModel[i].model = FindQ2Model (modelName, cl_weaponmodels[i]);
+				ci.weaponModel[i].model = FindQ2Model (ModelName, cl_weaponmodels[i]);
 #if 0
 				// HACK: cyborg have the weapon same models, as male model
-				if (!ci.weaponModel[i].model && !strcmp (modelName, "cyborg"))
+				if (!ci.weaponModel[i].model && ModelName == "cyborg")
 					ci.weaponModel[i].model = FindQ2Model ("male", cl_weaponmodels[i]);
 #endif
 			}
 
-		ci.modelGender = (IsFemaleModel (modelName)) ? 'f' : 'm';
+		ci.modelGender = (IsFemaleModel (ModelName)) ? 'f' : 'm';
 	}
 	else
 	{
@@ -881,13 +882,13 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 	}
 
 	// save model name
-	strcpy (ci.modelName, modelName);
+	ci.ModelName = ModelName;
 
 	// default icon
 	if (!ci.icon)
 	{
-		strcpy (ci.iconName, "pics/default_icon");
-		ci.icon = RE_RegisterPic (ci.iconName);
+		ci.IconName = "pics/default_icon";
+		ci.icon = RE_RegisterPic (ci.IconName);
 	}
 
 	cl.forceViewFrame = true;	// when paused, force to update scene
@@ -906,7 +907,7 @@ static bool attach (const entity_t &e1, entity_t &e2, const char *tag, const CVe
 	if (!e1.model->LerpTag (e1.frame, e1.oldframe, e1.backlerp, tag, lerped))
 	{
 		if (DEVELOPER)
-			RE_DrawTextLeft(va("%s: no tag \"%s\"", e1.model->name, tag));
+			RE_DrawTextLeft(va("%s: no tag \"%s\"", *e1.model->Name, tag));
 		return false;	// no such tag
 	}
 	// some player models (at least, "dangergirl") have lerped origin set very far from base model
@@ -914,7 +915,7 @@ static bool attach (const entity_t &e1, entity_t &e2, const char *tag, const CVe
 	if (fabs (lerped.origin[0]) > 1000 || fabs (lerped.origin[1]) > 1000 || fabs (lerped.origin[2]) > 1000)
 	{
 		if (DEVELOPER)
-			RE_DrawTextLeft(va("%s: removed tag \"%s\"", e1.model->name, tag));
+			RE_DrawTextLeft(va("%s: removed tag \"%s\"", *e1.model->Name, tag));
 		return false;
 	}
 
@@ -996,7 +997,7 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, c
 
 	if (!ci.isValidModel)
 	{
-		RE_DrawText3D (ent.pos.origin, va("%s\ninvalid model", ci.playerName), RGB(1,0,0));
+		RE_DrawText3D (ent.pos.origin, va("%s\ninvalid model", *ci.PlayerName), RGB(1,0,0));
 		return 0;
 	}
 
@@ -1040,9 +1041,9 @@ int ParsePlayerEntity (centity_t &cent, clientInfo_t &ci, clEntityState_t *st, c
 	st->GetAnim (legsAnim, torsoAnim, movingDir, pitchAngle);
 	//?? do not exec jump animation, when falling from small height
 
-	int prevLegs = ANIM_NOCHANGE,
+	int prevLegs  = ANIM_NOCHANGE,
 		prevTorso = ANIM_NOCHANGE,
-		prevDir = LEGS_NEUTRAL;
+		prevDir   = LEGS_NEUTRAL;
 	float prevPitch = pitchAngle;
 	if (IsGroundLegsAnim (legsAnim))
 	{

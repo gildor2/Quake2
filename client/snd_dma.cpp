@@ -182,7 +182,7 @@ void S_Shutdown (void)
 	sfx_t	*sfx;
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
 	{
-		if (!sfx->name[0])
+		if (!sfx->Name[0])
 			continue;
 		if (sfx->cache)
 			appFree (sfx->cache);
@@ -209,20 +209,17 @@ static sfx_t *S_FindName (const char *name, bool create)
 
 	int		i;
 	sfx_t	*sfx;
-	char	filename[MAX_QPATH];
 
-	if (!name)
-		Com_FatalError ("NULL name\n");
-	if (!name[0])
-		Com_FatalError ("empty name\n");
+	if (!name)		Com_FatalError ("NULL name\n");
+	if (!name[0])	Com_FatalError ("empty name\n");
+	if (strlen (name) >= MAX_QPATH) Com_FatalError ("Sound name too long: %s", name);
 
-	if (strlen (name) >= MAX_QPATH)
-		Com_FatalError ("Sound name too long: %s", name);
-	appCopyFilename (filename, name, sizeof(filename));
+	TString<MAX_QPATH> Filename;
+	Filename.filename (name);
 
 	// see if already loaded
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
-		if (!strcmp (sfx->name, filename))
+		if (sfx->Name == Filename)
 			return sfx;
 
 	if (!create)
@@ -230,7 +227,7 @@ static sfx_t *S_FindName (const char *name, bool create)
 
 	// find a free sfx
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
-		if (!sfx->name[0])
+		if (!sfx->Name[0])
 			break;
 
 	if (i == num_sfx)
@@ -250,7 +247,7 @@ static sfx_t *S_FindName (const char *name, bool create)
 	}
 
 	memset (sfx, 0, sizeof(*sfx));
-	strcpy (sfx->name, filename);
+	sfx->Name = Filename;
 	sfx->registration_sequence = s_registration_sequence;
 	return sfx;
 
@@ -272,7 +269,7 @@ static sfx_t *S_AliasName (const char *aliasname, const char *truename)
 	sfx_t	*sfx;
 	int		i;
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
-		if (!sfx->name[0])
+		if (!sfx->Name[0])
 			break;
 
 	if (i == num_sfx)
@@ -290,8 +287,8 @@ static sfx_t *S_AliasName (const char *aliasname, const char *truename)
 	}
 
 	memset (sfx, 0, sizeof(*sfx));
-	appCopyFilename (sfx->name, aliasname, sizeof(sfx->name));
-	appStrncpyz (sfx->truename, truename, sizeof(sfx->truename));
+	sfx->Name.filename (aliasname);
+	sfx->TrueName = truename;
 	sfx->registration_sequence = s_registration_sequence;
 	return sfx;
 
@@ -346,7 +343,7 @@ void S_EndRegistration (void)
 	// free any sounds not from this registration sequence
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
 	{
-		if (!sfx->name[0])
+		if (!sfx->Name[0])
 			continue;
 		if (sfx->registration_sequence != s_registration_sequence)
 		{
@@ -360,7 +357,7 @@ void S_EndRegistration (void)
 	// load everything in
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
 	{
-		if (!sfx->name[0])
+		if (!sfx->Name[0])
 			continue;
 		S_LoadSound (sfx);
 	}
@@ -570,7 +567,7 @@ void S_IssuePlaysound (playsound_t *ps)
 	sfxcache_t	*sc;
 
 	if (s_show->integer)
-		Com_Printf ("Sound: %s begin:%d ent:%d chn:%d\n", ps->sfx->name, ps->begin, ps->entnum, ps->entchannel);
+		Com_Printf ("Sound: %s begin:%d ent:%d chn:%d\n", *ps->sfx->Name, ps->begin, ps->entnum, ps->entchannel);
 	// pick a channel to play on
 	ch = S_PickChannel(ps->entnum, ps->entchannel);
 	if (!ch)
@@ -607,20 +604,19 @@ static sfx_t *GetPlayerSound (clEntityState_t *ent, const char *base)
 	bool isFemale = ci.modelGender == 'f';
 
 	// see if we already know of the model specific sound
-	char localFilename[MAX_QPATH];
-	appSprintf (ARRAY_ARG(localFilename), "#players/%s/%s", ci.modelName, base+1);
-	sfx_t *sfx = S_FindName (localFilename, false);
+	TString<MAX_QPATH> LocalFilename;
+	LocalFilename.sprintf ("#players/%s/%s", *ci.ModelName, base+1);
+	sfx_t *sfx = S_FindName (LocalFilename, false);
 	if (sfx) return sfx;
 
 	// try sound in Quake2 model directory ("players/[model_name]/[sound]")
-	if (FS_FileExists (localFilename + 1))
+	if (FS_FileExists (LocalFilename + 1))
 	{
-		sfx = S_RegisterSound (localFilename);
+		sfx = S_RegisterSound (LocalFilename);
 		if (sfx) return sfx;
 	}
 
 	// try sound in Quake3 model directory ("sound/player/[model_name]/[sound]")
-	char filename2[MAX_QPATH];
 	static const struct {
 		const char *q2name, *q3name;
 	} convert[] = {
@@ -639,15 +635,16 @@ static sfx_t *GetPlayerSound (clEntityState_t *ent, const char *base)
 			newName = convert[i].q3name;
 			break;
 		}
-	appSprintf (ARRAY_ARG(filename2), "sound/player/%s/%s", ci.modelName, newName);	// NOTE: used below as filename2+6 too
-	if (FS_FileExists (filename2))
+	TString<MAX_QPATH> FileName2;
+	FileName2.sprintf ("sound/player/%s/%s", *ci.ModelName, newName);	// NOTE: used below as filename2+6 too
+	if (FS_FileExists (FileName2))
 	{
-		sfx = S_AliasName (localFilename, filename2 + 6 /* skip "sound/" */);
+		sfx = S_AliasName (LocalFilename, FileName2 + 6 /* skip "sound/" */);
 		if (sfx) return sfx;
 	}
 
 	// setup as default sound
-	return S_AliasName (localFilename, va("player/%smale/%s", isFemale ? "fe" : "", base+1));
+	return S_AliasName (LocalFilename, va("player/%smale/%s", isFemale ? "fe" : "", base+1));
 }
 
 
@@ -669,8 +666,8 @@ void S_StartSound (const CVec3 *origin, int entnum, int entchannel, sfx_t *sfx, 
 	if (!sound_started) return;
 	if (!sfx) return;
 
-	if (sfx->name[0] == '*')
-		sfx = GetPlayerSound (&cl_entities[entnum].current, sfx->name);
+	if (sfx->Name[0] == '*')
+		sfx = GetPlayerSound (&cl_entities[entnum].current, sfx->Name);
 
 	// make sure the sound is loaded
 	sfxcache_t *sc = S_LoadSound (sfx);
@@ -1031,7 +1028,7 @@ void S_Update(const CVec3 &origin, const CVec3 &right)
 		for (i=0 ; i<MAX_CHANNELS; i++, ch++)
 			if (ch->sfx && (ch->leftvol || ch->rightvol) )
 			{
-				Com_Printf ("%3i %3i %s\n", ch->leftvol, ch->rightvol, ch->sfx->name);
+				Com_Printf ("%3i %3i %s\n", ch->leftvol, ch->rightvol, *ch->sfx->Name);
 				total++;
 			}
 
@@ -1151,10 +1148,10 @@ static void S_SoundList_f (bool usage, int argc, char **argv)
 	sfx_t	*sfx;
 	for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++)
 	{
-		if (!sfx->name[0])
+		if (!sfx->Name[0])
 			continue;
 
-		if (mask && !appMatchWildcard (sfx->name, mask, true)) continue;
+		if (mask && !appMatchWildcard (sfx->Name, mask, true)) continue;
 		n++;
 
 		sfxcache_t *sc = sfx->cache;
@@ -1162,19 +1159,19 @@ static void S_SoundList_f (bool usage, int argc, char **argv)
 		{
 			int size = sc->length*sc->width*(sc->stereo+1);
 			total += size;
-			Com_Printf ("%-3d %c %-2d  %-7d %s\n", i, sc->loopstart >= 0 ? 'L' : ' ', sc->width*8,  size, sfx->name);
+			Com_Printf ("%-3d %c %-2d  %-7d %s\n", i, sc->loopstart >= 0 ? 'L' : ' ', sc->width*8, size, *sfx->Name);
 		}
 		else
 		{
 			char *status;
 
-			if (sfx->name[0] == '*')
+			if (sfx->Name[0] == '*')
 				status = "placeholder  ";
 			else if (sfx->absent)
 				status = S_RED"not found    "S_WHITE;
 			else
 				status = "not loaded   ";
-			Com_Printf ("%-3d %s %s\n", i, status, sfx->name);
+			Com_Printf ("%-3d %s %s\n", i, status, *sfx->Name);
 		}
 	}
 	Com_Printf ("Displayed %d/%d sounds; resident: %d bytes\n", n, num_sfx, total);

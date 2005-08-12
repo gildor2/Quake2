@@ -560,17 +560,17 @@ static bool LoadRenderer ()
 	else
 #endif
 	{
-		char	dllName[MAX_OSPATH];
-		appSprintf (ARRAY_ARG(dllName), "ref_%s.dll", name);
-		if (!(refLibrary = LoadLibrary (dllName)))
+		TString<256> DllName;
+		DllName.sprintf ("ref_%s.dll", name);
+		if (!(refLibrary = LoadLibrary (DllName)))
 		{
-			Com_WPrintf ("LoadLibrary(\"%s\") failed\n", dllName);
+			Com_WPrintf ("LoadLibrary(\"%s\") failed\n", *DllName);
 			return false;
 		}
 		CreateDynRenderer_t pCreateRenderer;
 		if (!(pCreateRenderer = (CreateDynRenderer_t) GetProcAddress (refLibrary, "CreateRenderer")))
 		{
-			Com_WPrintf ("GetProcAddress() failed on %s\n", dllName);
+			Com_WPrintf ("GetProcAddress() failed on %s\n", *DllName);
 			FreeRenderer ();
 			return false;
 		}
@@ -578,7 +578,7 @@ static bool LoadRenderer ()
 		re.struc_size = sizeof(refExport_t);
 		if (!pCreateRenderer (&ri, &re))
 		{
-			Com_WPrintf ("%s has incompatible renderer\n", dllName);
+			Com_WPrintf ("%s has incompatible renderer\n", *DllName);
 			FreeRenderer ();
 			return false;
 		}
