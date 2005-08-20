@@ -252,11 +252,7 @@ static void ClampPitch (void)
 		cl.viewangles[PITCH] = -89 - pitch;
 }
 
-/*
-==============
-CL_FinishMove
-==============
-*/
+
 static void FinishMove (usercmd_t *cmd)
 {
 	// figure button bits
@@ -287,11 +283,7 @@ static void FinishMove (usercmd_t *cmd)
 	cmd->lightlevel = appRound (RE_GetClientLight ());
 }
 
-/*
-=================
-CL_CreateCmd
-=================
-*/
+
 static void CreateCmd (usercmd_t *cmd)
 {
 	frame_msec = sys_frame_time - old_sys_frame_time;
@@ -303,6 +295,7 @@ static void CreateCmd (usercmd_t *cmd)
 	IN_Move (cmd);
 
 	FinishMove (cmd);
+	//?? if not in game (menu, console, paused/gui ...) -- clear usercmd
 
 	old_sys_frame_time = sys_frame_time;
 
@@ -338,12 +331,7 @@ static void IN_Lookup (bool usage, int argc, char **argv)	// can be used "lookdo
 }
 
 
-/*
-============
-CL_InitInput
-============
-*/
-void CL_InitInput (void)
+void CL_InitInput ()
 {
 	RegisterCommand ("centerview", IN_CenterView);
 
@@ -385,13 +373,7 @@ void CL_InitInput (void)
 }
 
 
-
-/*
-=================
-CL_SendCmd
-=================
-*/
-void CL_SendCmd (void)
+void CL_SendCmd ()
 {
 	accum_frame_time += cls.frametime;
 

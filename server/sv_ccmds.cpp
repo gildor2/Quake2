@@ -609,17 +609,17 @@ static void SV_Ban_f (bool usage, int argc, char **argv)
 	if (!SetPlayer (argv[1]))
 		return;
 
-	if (sv_client->netchan.remote_address.type != NA_IP)
+	if (sv_client->netchan.remote_address.type == NA_LOOPBACK)
 	{
-		Com_WPrintf ("Cannot ban non-IP client\n");
+		Com_WPrintf ("Cannot ban local client\n");
 		return;
 	}
 
 	// add to ban list
 	byte *ip = sv_client->netchan.remote_address.ip;
-	char ban[40];
-	appSprintf (ARRAY_ARG(ban), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
-	AddBanString (ban);
+	TString<40> Ban;
+	Ban.sprintf ("%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+	AddBanString (Ban);
 
 	SV_DropClient (sv_client, "was banned");
 	sv_client->lastmessage = svs.realtime;		// min case there is a funny zombie
@@ -919,9 +919,6 @@ static void SV_ServerCommand_f (int argc, char **argv)
 }
 
 
-//-----------------------------------------------------------------------------
-
-
 void SV_InitCommands ()
 {
 	RegisterCommand ("heartbeat", SV_Heartbeat_f);
@@ -941,9 +938,6 @@ void SV_InitCommands ()
 	RegisterCommand ("gamemap", SV_GameMap_f);
 	RegisterCommand ("setmaster", SV_SetMaster_f);
 
-	if (DEDICATED)
-		RegisterCommand ("say", SV_ConSay_f);
-
 	RegisterCommand ("serverrecord", SV_ServerRecord_f);
 	RegisterCommand ("serverstop", SV_ServerStop_f);
 
@@ -953,4 +947,7 @@ void SV_InitCommands ()
 	RegisterCommand ("killserver", SV_KillServer_f);
 
 	RegisterCommand ("sv", SV_ServerCommand_f);
+
+	if (DEDICATED)
+		RegisterCommand ("say", SV_ConSay_f);
 }

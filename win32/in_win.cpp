@@ -21,14 +21,42 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#define DIRECTINPUT_VERSION  0x0700
 #define DIRECTINPUT_VERSION  0x0800
 
-#define INITGUID
+//#define INITGUID
 #include "winquake.h"
 #include "dinput.h"
+
+/*-----------------------------------------------------------------------------
+	Some DirectInput GUIDs
+	Placed here to reduce executable size (if create using #define INITGUID
+	before #include "dinput.h", ALL DirectInput GUIDs will be created)
+-----------------------------------------------------------------------------*/
 
 #if DIRECTINPUT_VERSION < 0x0800
 #pragma comment (lib, "dinput.lib")
 #else
 #pragma comment (lib, "dinput8.lib")
+#endif
+
+#ifndef INITGUID
+
+#undef DEFINE_GUID
+#define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
+		EXTERN_C const GUID name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
+
+#if DIRECTINPUT_VERSION < 0x0800
+DEFINE_GUID(IID_IDirectInputA,	0x89521360,0xAA8A,0x11CF,0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00);
+#else
+DEFINE_GUID(IID_IDirectInput8A,	0xBF798030,0x483A,0x4DA2,0xAA,0x99,0x5D,0x64,0xED,0x36,0x97,0x00);
+#endif
+
+DEFINE_GUID(GUID_SysMouse,	0x6F1D2B60,0xD5A0,0x11CF,0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00);
+//DEFINE_GUID(GUID_SysKeyboard,0x6F1D2B61,0xD5A0,0x11CF,0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00);
+//DEFINE_GUID(GUID_Joystick,	0x6F1D2B70,0xD5A0,0x11CF,0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00);
+
+DEFINE_GUID(GUID_XAxis, 0xA36D02E0,0xC9F3,0x11CF,0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00);
+DEFINE_GUID(GUID_YAxis, 0xA36D02E1,0xC9F3,0x11CF,0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00);
+DEFINE_GUID(GUID_ZAxis, 0xA36D02E2,0xC9F3,0x11CF,0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00);
+
 #endif
 
 #include "../client/client.h"
@@ -43,15 +71,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 bool in_needRestart;
 
 
-/*
-============================================================
+/*-----------------------------------------------------------------------------
+	Mouse looking stuff
+-----------------------------------------------------------------------------*/
 
-  MOUSE CONTROL
-
-============================================================
-*/
-
-// mouse look stuff (should be moved to client!)
+//?? This is a rudiment from old non-mouse games; remove +mlooking at all?! (make always ON)
+//?? movement rudiments:
+//??	+mlook: button version of freelook
+//??	+klook: look with keyboard (!freelook, button version)
+//??	+strafe: when 1, moving mouse left<->right will strafe (in ANY mode): sidemove != 0
+//??	lookstrafe: when mlook=1, moving mouse left<->right will strafe
+//??	lookspring: when mlook=0 (moving with mouse), "centerview" will be called with any mouse move
+//??	freelook: allow to look with mouse (normal behaviour)
+//?? Remove: mlook=1, klook=0, strafe=0, lookstrafe=0, lookspring=? (should not be path at all), freelook=1
 static bool mlooking;
 
 static void MLookDown ()
@@ -130,20 +162,20 @@ static bool DXMouse_Init ()
 	{
 		if (!(hInstDI = LoadLibrary ("dinput.dll")))
 		{
-			Com_WPrintf ("... loading dinput.dll failed\n");
+			Com_WPrintf ("dinput.dll not found\n");
 			return false;
 		}
 		if (!(pDirectInputCreate = (pDirectInputCreate_t) GetProcAddress (hInstDI, "DirectInputCreateA")))
 		{
-			Com_WPrintf ("... couldn't get DI proc address\n");
-			IN_DXMouse_Free ();
+			Com_WPrintf ("Wrong dinput.dll\n");
+			DXMouse_Free ();
 			return false;
 		}
 	}
 	if FAILED(pDirectInputCreate (global_hInstance, DIRECTINPUT_VERSION, &pDI, NULL))
 	{
 		Com_DPrintf ("... cannot create DirectInput object\n");
-		IN_DXMouse_Free ();
+		DXMouse_Free ();
 		return false;
 	}
 
@@ -154,12 +186,12 @@ static bool DXMouse_Init ()
 	{
 		if (!(hInstDI = LoadLibrary ("dinput8.dll")))
 		{
-			Com_WPrintf ("... loading dinput8.dll failed\n");
+			Com_WPrintf ("dinput8.dll not found\n");
 			return false;
 		}
 		if (!(pDirectInput8Create = (pDirectInput8Create_t) GetProcAddress (hInstDI, "DirectInput8Create")))
 		{
-			Com_WPrintf ("... couldn't get DI proc address\n");
+			Com_WPrintf ("Wrong dinput8.dll\n");
 			DXMouse_Free ();
 			return false;
 		}
@@ -181,7 +213,7 @@ static bool DXMouse_Init ()
 	}
 
 #if DIRECTINPUT_VERSION >= 0x0700
-	HRESULT res = pMouse->SetDataFormat (&c_dfDIMouse2);		// up to 8 mouse buttons
+	HRESULT res = pMouse->SetDataFormat (&c_dfDIMouse2);	// up to 8 mouse buttons
 #else
 	HRESULT res = pMouse->SetDataFormat (&c_dfDIMouse);		// up to 4 mouse buttons
 #endif
@@ -273,7 +305,7 @@ static void DXMouse_Frame ()
 			move_y += od.dwData;
 			break;
 		case DIMOFS_Z:
-			int msg = ((int)od.dwData > 0 ) ? K_MWHEELUP : K_MWHEELDOWN;
+			int msg = ((int)od.dwData > 0) ? K_MWHEELUP : K_MWHEELDOWN;
 			Key_Event (msg, true);
 			Key_Event (msg, false);
 			break;
@@ -294,7 +326,7 @@ static void DXMouse_Frame ()
 	}
 	if FAILED(res)
 	{
-		Com_WPrintf ("error on DI mouse.GetState()\n");
+		Com_WPrintf ("Error %X on DI mouse.GetState()\n", res);
 		return;
 	}
 	// process mouse wheel
@@ -562,11 +594,22 @@ static void MouseMove (usercmd_t *cmd)
 	Win32 accessibility feature
 -----------------------------------------------------------------------------*/
 
-#define VARS(type)		\
+#define LIST		\
+	F(FILTERKEYS)	\
+	F(HIGHCONTRAST)	\
+	F(MOUSEKEYS)	\
+	F(STICKYKEYS)	\
+	F(TOGGLEKEYS)
+
+// declare variables
+#define F(type)		\
 static type acc##type;	\
 static bool have##type;
+LIST
+#undef F
 
-#define DISABLE(type)			\
+// save state and disable accessibility
+#define F(type)		\
 	acc##type.cbSize = sizeof(type); \
 	have##type = SystemParametersInfo (SPI_GET##type, sizeof(type), &acc##type, 0) != 0; \
 	if (have##type) {			\
@@ -575,35 +618,24 @@ static bool have##type;
 		SystemParametersInfo (SPI_SET##type, sizeof(type), &tmp, 0); \
 	}
 
-#define RESTORE(type)	\
-	if (have##type)		\
-		SystemParametersInfo (SPI_SET##type, sizeof(type), &acc##type, 0);
-
-VARS(FILTERKEYS)
-VARS(HIGHCONTRAST)
-VARS(MOUSEKEYS)
-VARS(STICKYKEYS)
-VARS(TOGGLEKEYS)
-
 static void DisableAccessibility ()
 {
-	DISABLE(FILTERKEYS)
-	DISABLE(HIGHCONTRAST)
-	DISABLE(MOUSEKEYS)
-	DISABLE(STICKYKEYS)
-	DISABLE(TOGGLEKEYS)
+	LIST
 }
+#undef F
 
+// restore accessibility to original state
+#define F(type)		\
+	if (have##type)	\
+		SystemParametersInfo (SPI_SET##type, sizeof(type), &acc##type, 0);
 
 static void RestoreAccessibility ()
 {
-	RESTORE(FILTERKEYS)
-	RESTORE(HIGHCONTRAST)
-	RESTORE(MOUSEKEYS)
-	RESTORE(STICKYKEYS)
-	RESTORE(TOGGLEKEYS)
+	LIST
 }
+#undef F
 
+#undef LIST
 
 /*
 =========================================================================

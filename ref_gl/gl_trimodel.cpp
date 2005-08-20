@@ -419,13 +419,13 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	dMd2_t *hdr = (dMd2_t*)buf;
 	if (hdr->version != MD2_VERSION)
 	{
-		Com_WPrintf ("R_LoadMd2: %s has wrong version %d\n", name, hdr->version);
+		Com_WPrintf ("LoadMd2(%s): wrong version %d\n", name, hdr->version);
 		return NULL;
 	}
 
 	if (hdr->numXyz <= 0 || hdr->numTris <= 0 || hdr->numFrames <= 0)
 	{
-		Com_WPrintf ("R_LoadMd2: %s has incorrect surface params\n", name);
+		Com_WPrintf ("LoadMd2(%s): incorrect params\n", name);
 		return NULL;
 	}
 
@@ -534,13 +534,13 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 	dMd3_t *hdr = (dMd3_t*)buf;
 	if (hdr->version != MD3_VERSION)
 	{
-		Com_WPrintf ("R_LoadMd3: %s has wrong version %d\n", name, hdr->version);
+		Com_WPrintf ("LoadMd3(%s): wrong version %d\n", name, hdr->version);
 		return NULL;
 	}
 
 	if (hdr->numSurfaces <= 0 || hdr->numTags < 0 || hdr->numFrames <= 0)
 	{
-		Com_WPrintf ("R_LoadMd3: %s has incorrect surfaces\n", name);
+		Com_WPrintf ("LoadMd3(%s): incorrect params\n", name);
 		return NULL;
 	}
 
@@ -554,7 +554,7 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 		// check: model.numFrames should be == all surfs.numFrames
 		if (ds->numFrames != hdr->numFrames)
 		{
-			Com_WPrintf ("R_LoadMd3: %s have different frame counts in surfaces\n", name);
+			Com_WPrintf ("LoadMd3(%s): different frame counts in surfaces\n", name);
 			return NULL;
 		}
 		// counts
@@ -622,7 +622,7 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 		{
 			if (strcmp (ts->name, md3->tagNames + j * MAX_QPATH))
 			{
-				Com_WPrintf ("R_LoadMd3: %s have volatile tag names\n", name);
+				Com_WPrintf ("LoadMd3(%s): volatile tag names\n", name);
 				return NULL;
 			}
 			*td = ts->tag;
@@ -707,12 +707,12 @@ sprModel_t *LoadSp2 (const char *name, byte *buf, unsigned len)
 	dSp2_t *hdr = (dSp2_t*)buf;
 	if (hdr->version != SP2_VERSION)
 	{
-		Com_WPrintf ("R_LoadSp2: %s has wrong version %d\n", name, hdr->version);
+		Com_WPrintf ("LoadSp2(%s): wrong version %d\n", name, hdr->version);
 		return NULL;
 	}
 	if (hdr->numframes < 0)
 	{
-		Com_WPrintf ("R_LoadSp2: %s has incorrect frame count %d\n", name, hdr->numframes);
+		Com_WPrintf ("LoadSp2(%s): incorrect frame count %d\n", name, hdr->numframes);
 		return NULL;
 	}
 
@@ -737,7 +737,7 @@ sprModel_t *LoadSp2 (const char *name, byte *buf, unsigned len)
 		out->shader = FindShader (in->name, SHADER_CHECK|SHADER_WALL|SHADER_FORCEALPHA);
 		if (!out->shader)
 		{
-			Com_DPrintf ("R_LoadSp2(%s): %s is not found\n", name, in->name);
+			Com_DPrintf ("LoadSp2(%s): %s is not found\n", name, in->name);
 			out->shader = gl_defaultShader;
 		}
 	}
@@ -754,7 +754,7 @@ static void cSprShader (int argc, char **argv)
 	shader_t *shader = loadSpr->frames[0].shader = FindShader (argv[1], SHADER_CHECK|SHADER_WALL|SHADER_FORCEALPHA);
 	if (!shader)
 	{
-		Com_DPrintf ("R_LoadSpr(%s): %s is not found\n", *loadSpr->Name, argv[1]);
+		Com_DPrintf ("LoadSpr(%s): %s is not found\n", *loadSpr->Name, argv[1]);
 		loadSpr->frames[0].shader = gl_defaultShader;
 	}
 }
@@ -796,7 +796,7 @@ sprModel_t *LoadSpr (const char *name, byte *buf, unsigned len)
 	shader_t *shader = spr->frames[0].shader;
 	if (!shader)
 	{
-		Com_WPrintf ("R_LoadSpr(%s): no shader specified\n", name);
+		Com_WPrintf ("LoadSpr(%s): no shader specified\n", name);
 		appFree (spr);
 		return NULL;
 	}

@@ -568,23 +568,18 @@ extern bool userinfo_modified;		//?? should change this to not track CVAR_USERIN
 	net_chan.cpp, net_{platform}.cpp
 -----------------------------------------------------------------------------*/
 
-
-#define	PORT_ANY		-1
-
 #define	MAX_MSGLEN		16384		// max length of a message
-#define MAX_MSGLEN_OLD	1400		// MAX_MSGLEN for old clients and for IPX protocol
+#define MAX_MSGLEN_OLD	1400		// MAX_MSGLEN for old clients (and for IPX protocol - gone)
 
-typedef enum {NA_LOOPBACK, NA_BROADCAST, NA_IP, NA_IPX, NA_BROADCAST_IPX} netadrtype_t;
-
+typedef enum {NA_LOOPBACK, NA_BROADCAST, NA_IP} netadrtype_t;
 typedef enum {NS_CLIENT, NS_SERVER} netsrc_t;
 
-typedef struct
+struct netadr_t
 {
 	netadrtype_t type;
-	byte	ip[4];
-	byte	ipx[10];
 	unsigned short port;
-} netadr_t;
+	byte	ip[4];
+};
 
 bool	IPWildcard (netadr_t *a, const char *mask);
 

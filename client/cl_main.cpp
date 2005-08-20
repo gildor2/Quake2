@@ -453,7 +453,7 @@ static void CL_InitiateConnection ()
 
 	cls.connect_time = cls.realtime;	// for retransmit requests
 
-	Com_Printf ("Connecting to %s...\n", cls.serverName);
+	Com_Printf ("Connecting to %s\n", cls.serverName);
 
 	InitServerAddress ();
 	SendStatusRequest ();
@@ -654,39 +654,22 @@ void CL_Reconnect_f (void)
 }
 
 
-/*
-=================
-CL_PingServers_f
-=================
-*/
 void CL_PingServers_f ()
 {
-	netadr_t adr;
-	const char *adrstring;
-
 	NET_Config (true);		// allow remote
 
 	// send a broadcast packet
 	Com_Printf ("pinging broadcast...\n");
 	const char *cmd = "info " STR(PROTOCOL_VERSION);
 
-	if (!Cvar_VariableInt ("noudp"))
+	netadr_t adr;
+	adr.type = NA_BROADCAST;
+	adr.port = BigShort(PORT_SERVER);
+	Netchan_OutOfBandPrint (NS_CLIENT, adr, cmd);
+	// implicitly check localhost for local dedicated server
+	if (!Com_ServerState ())
 	{
-		adr.type = NA_BROADCAST;
-		adr.port = BigShort(PORT_SERVER);
-		Netchan_OutOfBandPrint (NS_CLIENT, adr, cmd);
-		// implicitly check localhost for local dedicated server
-		if (!Com_ServerState ())
-		{
-			NET_StringToAdr ("127.0.0.1", &adr);
-			adr.port = BigShort(PORT_SERVER);
-			Netchan_OutOfBandPrint (NS_CLIENT, adr, cmd);
-		}
-	}
-
-	if (!Cvar_VariableInt ("noipx"))
-	{
-		adr.type = NA_BROADCAST_IPX;
+		NET_StringToAdr ("127.0.0.1", &adr);
 		adr.port = BigShort(PORT_SERVER);
 		Netchan_OutOfBandPrint (NS_CLIENT, adr, cmd);
 	}
@@ -694,7 +677,7 @@ void CL_PingServers_f ()
 	// send a packet to each address book entry
 	for (int i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
 	{
-		adrstring = Cvar_VariableString (va("adr%d", i));
+		const char *adrstring = Cvar_VariableString (va("adr%d", i));
 		if (!adrstring || !adrstring[0])
 			continue;
 

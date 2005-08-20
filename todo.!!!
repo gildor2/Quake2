@@ -51,7 +51,6 @@ BUGS:
   1) disable "cmd say[_team]" etc. for client (will not disable non-"say" chat, when message typed in console)
   2) disable PRINT_CHAT with text "Player: message"
   3) (best?) hook ge->ClientCommand(from), and disable all PF_cprintf(to,PRINT_CHAT,"...") inside this call, when from!=to
-? remove IPX protocol from win32 code (MS-DOS rudiment); check all NA_XXX verifications: may be, check for IP or LOOPBACK -- always pass
 ? eliminate BigShort(MASTER|SERVER_PORT) (sv_cmds.c, cl_main.c) -- only one thing, for which BigXxx() is used (big-endian numbers)
 ! spec for map script
 - colorize server list (old/new-only/cheats/full) (make legend ? or make table with some attributes: server-name, map-name, players,

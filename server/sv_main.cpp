@@ -393,7 +393,7 @@ static void cDirectConnect (int argc, char **argv)
 
 	newcl->netchan.Setup (NS_SERVER, adr, port);
 	newcl->maxPacketSize = MAX_MSGLEN_OLD;
-	if (cl->newprotocol && (adr.type == NA_IP || adr.type == NA_LOOPBACK))
+	if (cl->newprotocol)
 		newcl->maxPacketSize = MAX_MSGLEN;
 
 	newcl->state = cs_connected;

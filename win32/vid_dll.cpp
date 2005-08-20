@@ -37,18 +37,14 @@ static bool needRestart;
 HWND	cl_hwnd;						// main window handle
 
 static bool alttab_disabled;
-
-/*
-** WIN32 helper functions
-*/
-static bool s_win95;
+static bool isWin95;
 
 static void DisableAltTab (bool enable)
 {
 	if (alttab_disabled == enable) return;
 	alttab_disabled = enable;
 
-	if (s_win95)
+	if (isWin95)
 	{
 		BOOL old;
 		SystemParametersInfo (SPI_SCREENSAVERRUNNING, enable, &old, 0);
@@ -121,7 +117,6 @@ static int MapKey (int vkCode, bool extended)
 {
 	if (!extended)
 	{
-
 		switch (vkCode)
 		{
 		case VK_PRIOR:	return K_KP_PGUP;
@@ -270,6 +265,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_MOVE:
 		if (!FullscreenApp)
 		{
+			// using (short) type conversion to convert "unsigned short" to signed
 			int xPos = (short) LOWORD(lParam);    // horizontal position
 			int yPos = (short) HIWORD(lParam);    // vertical position
 
@@ -689,7 +685,7 @@ CVAR_END
 	GetVersionEx (&vinfo);
 	if (vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
 	{
-		s_win95 = true;
+		isWin95 = true;
 		MSH_MOUSEWHEEL = RegisterWindowMessage ("MSWHEEL_ROLLMSG");
 	}
 
@@ -702,11 +698,7 @@ CVAR_END
 	unguard;
 }
 
-/*
-============
-Vid_Shutdown
-============
-*/
+
 void Vid_Shutdown ()
 {
 	if (refActive)
