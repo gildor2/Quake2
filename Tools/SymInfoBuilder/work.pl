@@ -86,8 +86,13 @@ sub ProcessMap {
 }
 
 
+if ($#ARGV == 0) {
+	$workdir = $ARGV[0];
+} elsif ($#ARGV > 0) {
+	die "Generate symbols.dbg\nUsage: work.pl [workdir]\n";
+}
 # read output directory
-opendir (DIR, $workdir) or die "cannot open dir";
+opendir (DIR, $workdir) or die "cannot open dir \"$workdir\"\n";
 @filelist = readdir (DIR);
 closedir (DIR);
 

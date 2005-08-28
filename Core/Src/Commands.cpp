@@ -155,11 +155,11 @@ static void GetArgs (const char *str, bool expandVars)
 
 
 // Generic command execution
-void ExecuteCommand (const char *str)
+bool ExecuteCommand (const char *str)
 {
 	guard(ExecuteCommand);
 	GetArgs (str, true);
-	if (!_argc) return;				// empty string
+	if (!_argc) return true;			// empty string
 
 	CAlias *alias = AliasList.Find (_argv[0]);
 	if (alias && !alias->active)
@@ -167,7 +167,7 @@ void ExecuteCommand (const char *str)
 		alias->active = true;
 		//!! exec (requires (global?) command buffer(s) with insertion ability; + may be, source from file (#include))
 
-		return;
+		return true;	//?? recurse
 	}
 
 	CCommand *cmd = CmdList.Find (_argv[0]);
@@ -177,7 +177,7 @@ void ExecuteCommand (const char *str)
 		if (!(cmd->flags & COMMAND_USAGE) && usage)
 		{
 			appPrintf ("No usage info for command \"%s\"\n", cmd->name);
-			return;
+			return true;
 		}
 		// execute function
 		guard(cmd);
@@ -196,10 +196,11 @@ void ExecuteCommand (const char *str)
 			((void (*) (bool, int, char**)) cmd->func) (usage, _argc, _argv);
 			break;
 		}
-		return;
+		return true;
 		unguardf(("%s", cmd->name));
 	}
 	//!! should pass unhandled commands to registered function (when server started, will send to server)
+	return false;
 	unguard;
 }
 

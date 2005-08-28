@@ -5,7 +5,7 @@ struct CTextRec
 };
 
 
-CORE_API class CTextContainer
+class CORE_API CTextContainer
 {
 protected:
 	// static values

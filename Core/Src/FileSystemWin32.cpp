@@ -1,5 +1,7 @@
 #include "Core.h"
 #include <io.h>
+//!! SHOULD BE INCLUDED FROM "Core.h"
+#include "FileSystem.h"
 
 
 void osListDirectory (const char *dir, CFileList *List, int flags)

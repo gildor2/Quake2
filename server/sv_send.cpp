@@ -24,40 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 /*
 =============================================================================
 
-appPrintf redirection
-
-=============================================================================
-*/
-
-#define	SV_OUTPUTBUF_LENGTH	(MAX_MSGLEN - 16)
-static char sv_outputbuf[SV_OUTPUTBUF_LENGTH];
-
-static void SV_FlushRedirect (char *outputbuf)
-{
-	guard(SV_FlushRedirect);
-
-	// if server will be restarted during active redirection, drop data
-	// (NOTE: we cannot call Com_EndRedirect(), because this will recurse flush())
-	if (!sv_client->netchan.message.maxsize)
-		return;
-	// send redirected text
-	MSG_WriteByte (&sv_client->netchan.message, svc_print);
-	MSG_WriteByte (&sv_client->netchan.message, PRINT_HIGH);
-	MSG_WriteString (&sv_client->netchan.message, outputbuf);
-
-	unguard;
-}
-
-
-void SV_BeginRedirect (void)
-{
-	Com_BeginRedirect (sv_outputbuf, SV_OUTPUTBUF_LENGTH, SV_FlushRedirect);
-}
-
-
-/*
-=============================================================================
-
 EVENT MESSAGES
 
 =============================================================================

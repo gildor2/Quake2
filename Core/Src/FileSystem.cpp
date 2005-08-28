@@ -1,5 +1,6 @@
 #include "Core.h"
-
+//!! SHOULD BE INCLUDED FROM "Core.h"
+#include "FileSystem.h"
 
 CFileContainer *appFileExists (const char *name, int flags, int tags)
 {

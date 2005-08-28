@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define	MAXPRINTMSG	4096
 
 #include "../client/ref.h"	// using RE_DrawTextXxx () for com_speeds
+#include "OutputDeviceFile.h"
 
 
 cvar_t	*com_speeds;
@@ -42,7 +43,7 @@ cvar_t	*dedicated;
 #endif
 
 static cvar_t	*logfile_active;		// 1 = buffer log, 2 = flush after each print
-static FILE	*logfile;
+static COutputDeviceFile *FileLog;
 
 static server_state_t server_state;
 
@@ -50,105 +51,6 @@ static server_state_t server_state;
 unsigned time_before_game, time_after_game, time_before_ref, time_after_ref;
 
 int		linewidth = 80;
-
-/*
-============================================================================
-
-CLIENT / SERVER interactions
-
-============================================================================
-*/
-
-static char	*rd_buffer;
-static int	rd_buffersize;
-static void	(*rd_flush)(char *buffer);
-
-
-void Com_BeginRedirect (char *buffer, int buffersize, void (*flush)(char*))
-{
-	if (!buffer || !buffersize || !flush)
-		return;
-	rd_buffer = buffer;
-	rd_buffersize = buffersize;
-	rd_flush = flush;
-
-	*rd_buffer = 0;
-}
-
-void Com_EndRedirect (void)
-{
-	rd_flush (rd_buffer);
-
-	rd_buffer = NULL;
-	rd_buffersize = 0;
-	rd_flush = NULL;
-}
-
-
-static bool console_logged = false;
-static char log_name[MAX_OSPATH];
-
-
-void appPrintf (const char *fmt, ...)
-{
-	guard(appPrintf);
-
-	va_list	argptr;
-	char	msg[MAXPRINTMSG];
-
-	va_start (argptr,fmt);
-	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
-	va_end (argptr);
-
-	if (rd_buffer)
-	{
-		if ((strlen (msg) + strlen(rd_buffer)) > rd_buffersize - 1)
-		{
-			rd_flush (rd_buffer);
-			*rd_buffer = 0;
-		}
-		strcat (rd_buffer, msg);
-		return;
-	}
-
-	if (!DEDICATED)
-		Con_Print (msg);
-
-	// also echo to debugging console (for win32 - in dedicated server mode only)
-	Sys_ConsoleOutput (msg);
-
-	// logfile
-	if (logfile_active && logfile_active->integer)
-	{
-		const char *s = strchr (msg, '\r');		// find line-feed
-		if (s)	s++;
-		else	s = msg;
-		if (!s[0]) return;						// nothing to print
-		if (!logfile)
-		{
-			logfile = fopen (APPNAME".log", logfile_active->integer > 2 || console_logged ? "a" : "w");
-			if (!logfile)
-			{
-				Cvar_SetInteger ("logfile", 0);
-				appWPrintf ("Unable to create console.log\n");
-			}
-		}
-
-		if (logfile)
-		{
-			appUncolorizeString (msg, msg);
-			fprintf (logfile, "%s", msg);
-			if (logfile_active->integer > 1)	// force to save every message
-			{
-				fclose (logfile);
-				logfile = NULL;
-			}
-		}
-		console_logged = true;
-	}
-
-	unguard;
-}
 
 
 #ifndef NO_DEVELOPER
@@ -710,6 +612,30 @@ void Com_Frame (float msec)
 
 	guard(Com_Frame);
 
+	// logfile
+	//?? move to Core, to appPrintf() ?
+	//?? appUncolorizeString() for file log
+	if (logfile_active && logfile_active->modified)
+	{
+		if (logfile_active->integer)
+		{
+			if (!FileLog)
+			{
+				FileLog = new COutputDeviceFile (APPNAME".log", true);
+				FileLog->Register ();
+			}
+		}
+		else
+		{
+			if (FileLog)
+			{
+				FileLog->Unregister ();
+				delete FileLog;
+				FileLog = NULL;
+			}
+		}
+	}
+
 	//?? ignore timescale in multiplayer and timedemo in non-demo mode
 	float smsec;								// scaled msec (for timescale or timedemo)
 	if (timedemo->integer)
@@ -808,9 +734,10 @@ void Com_Frame (float msec)
 
 void Com_Shutdown (void)
 {
-	if (logfile)
+	if (FileLog)
 	{
-		fclose (logfile);
-		logfile = NULL;
+		FileLog->Unregister ();
+		delete FileLog;
+		FileLog = NULL;
 	}
 }

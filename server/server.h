@@ -233,8 +233,6 @@ void SV_Map (bool attractloop, const char *levelstring, bool loadgame);
 //
 // sv_send.c
 //
-void SV_BeginRedirect (void);
-
 void SV_DemoCompleted (void);
 void SV_SendClientMessages (void);
 

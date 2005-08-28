@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "server.h"
 #include "cmodel.h"
+#include "OutputDeviceMem.h"
 
 netadr_t	master_adr[MAX_MASTERS];	// address of group servers
 
@@ -414,6 +415,20 @@ Shift down the remaining args
 Redirect all printfs
 ===============
 */
+
+class COutputDeviceMem2 : public COutputDeviceMem
+{
+public:
+	COutputDeviceMem2 (int size)
+	:	COutputDeviceMem (size)
+	{}
+	bool Write (const char *str)
+	{
+		COutputDeviceMem::Write (str);
+		return false;		// not for others ...
+	}
+};
+
 static void cRemoteCommand (int argc, char **argv)
 {
 	guard(SVC_RemoteCommand);
@@ -437,10 +452,21 @@ static void cRemoteCommand (int argc, char **argv)
 		}
 
 		// execute command with a redirected output
-		SV_BeginRedirect ();
+		//?? may be, if message is longer, than MAX_MSGLEN_OLD, flush and continue
+		//?? buffering output
+		COutputDeviceMem2 *Mem = new COutputDeviceMem2 (MAX_MSGLEN_OLD-16);
+		Mem->Register ();
 		if (!Cmd_ExecuteString (remaining))
 			appWPrintf ("Bad remote command \"%s\"\n", remaining);
-		Com_EndRedirect ();
+		// if server will be restarted during active redirection, drop data
+		if (sv_client && sv_client->netchan.message.maxsize)
+		{
+			// send redirected text
+			MSG_WriteByte (&sv_client->netchan.message, svc_print);
+			MSG_WriteByte (&sv_client->netchan.message, PRINT_HIGH);
+			MSG_WriteString (&sv_client->netchan.message, Mem->GetText ());
+		}
+		delete Mem;
 	}
 
 	unguard;
@@ -1092,6 +1118,7 @@ void SV_Frame (float msec)
 	}
 	// get packets from clients
 	SV_ReadPackets ();
+	if (sv.state == ss_dead) return;	// server was killed from one of packet (e.g. "rcon killserver")
 
 	int frameTime = 100;	// (sv_fps->integer > 10) ? (1000 / sv_fps->integer) : 100;
 
@@ -1388,9 +1415,10 @@ void SV_Shutdown (const char *finalmsg, bool reconnect)
 	if (sv.rdemofile)
 		FS_FCloseFile (sv.rdemofile);
 	memset (&sv, 0, sizeof(sv));
-	Com_SetServerState (sv.state);
+	Com_SetServerState (ss_dead);	// == 0
 
 	// free server static data
+	sv_client = NULL;
 	if (svs.clients) delete svs.clients;
 	if (svs.client_entities) delete svs.client_entities;
 	if (svs.wdemofile)

@@ -751,11 +751,7 @@ bool		Sys_FileExists (const char *path, int flags);
 // debugging
 void	DebugPrintf (const char *fmt, ...);
 
-
 extern	int linewidth;		// for functions, which wants to perform advanced output formatting
-
-void	Com_BeginRedirect (char *buffer, int buffersize, void (*flush)(char*));
-void	Com_EndRedirect (void);
 
 void	NORETURN Com_Quit (void);
 
@@ -814,7 +810,6 @@ void	Sys_UnloadGame (void);
 // loads the game dll and calls the api init function
 
 char	*Sys_ConsoleInput ();
-void	Sys_ConsoleOutput (const char *string);
 void	Sys_ProcessMessages ();
 void	NORETURN Sys_Quit ();
 
@@ -829,7 +824,6 @@ void	CL_Shutdown (bool error);
 void	CL_Frame (float msec, float realMsec);
 
 void	Key_Init (void);
-void	Con_Print (const char *text);
 void	SCR_BeginLoadingPlaque (void);
 
 void	SV_Init (void);

@@ -314,33 +314,35 @@ static void PlaceChar (char c, byte color)
 }
 
 
-void Con_Print (const char *txt)
+bool COutputDeviceCon::Write (const char *str)
 {
 	if (!con.started) Con_Clear_f ();
 
 	byte color = C_WHITE;
-	while (char c = *txt++)
+	while (char c = *str++)
 	{
 		if (c == COLOR_ESCAPE)
 		{
-			int col = *txt - '0';
+			int col = *str - '0';
 			if (col >= 0 && col <= 7)
 			{
 				color = col;
-				txt++;
+				str++;
 				continue;
 			}
 		}
-		if (c == '\r' && *txt == '\n')					// handle CR+LF correctly
+		if (c == '\r' && *str == '\n')					// handle CR+LF correctly
 		{
 			c = '\n';
-			txt++;
+			str++;
 		}
 		else if (c == WRAP_CHAR)
 			c = ' ';									// force WRAP_CHAR (== space|0x80) to be a space
 
 		PlaceChar (c, color);
 	}
+
+	return true;
 }
 
 

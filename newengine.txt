@@ -41,10 +41,7 @@
 
 -------------- WinMain() -------------------
 - WinMain():
-  appInit() -- pass NULL (==outputDevice) for GUI and OutputDeviceWin32Console for dedicated (cvar "dedicated" unknown here ?)
-    + pass APPNAME (make non-#define, just const string for appInit()) (and request later with appName() -- different name?)
-- CL_Init: set (add) OutputDeviceConsole
-  ? func SetOutputDevice() - can add output devices
+  appInit(): pass APPNAME (make non-#define, just const string for appInit()) (and request later with appName() -- different name?)
 - appPrintf() etc:
   - should be able to use few output devices
   - ability to hook output (for rcon etc)
@@ -52,14 +49,9 @@
 --------------- Output ---------------------
 - COutputDevice:
   - bool useColors -- when "false" - UncolString before output (e.g. for file logging)
-  - appPrintf, appWPrintf, appDPrintf -> called via GLog etc.
-    Implement wrappers (appPrintf()==GLog->Printf() etc) in separate cpp file (CoreWrapper.cpp or CoreGlobal.cpp ...)
-  - wrapper should allow placing few COutputDevice's; they should be called in LIFO order, and function should be able
-    to prevent sending text to remainder of loggers (completely catch output)
+  - bool hook      -- when "true", appPrintf() will output to this device only
   - access functions: appPrintf(), appLogf(), Logf() -- which name ? (better - Logf() - shorter ...);
     DLogf(), WLogf() ...
-  - function to attach/detach COutputDevice to Logger - allow to log onto console and in file; function to replace logger (for
-    redirection output)
 - CErrorHandler:
   - bool isDropError -- when Com_DropError; no such error in Core, so can place DropError() function in Engine; this func
     will set "GDropError=true", and call appError(msg)

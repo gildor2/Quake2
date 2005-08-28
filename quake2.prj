@@ -209,3 +209,17 @@ sources(DEDICATED) = $DED_CLIENT $SERVER $COMMON $DED_WIN32 $RES_FILES
 
 LIBS = winmm lib/lib
 target(executable, $OUT/q2ded, DEDICATED, DEDICATED)
+
+#------------------------------------------------------------------------------
+# test application
+
+OBJDIR = TestApp/obj
+#-- app files
+TEST_FILES = TestApp/TestApp.cpp
+#-- files, required for Core to be standalone
+TEST_FILES += Core/Src/Commands.cpp Core/Src/FileSystem.cpp Core/Src/FileSystemWin32.cpp
+
+LIBS = winmm
+DEFINES = CORE_API=
+sources(TEST) = $CORE $CORE_WIN32 $TEST_FILES
+target(executable, TestApp/TestApp, TEST, TESTAPP)

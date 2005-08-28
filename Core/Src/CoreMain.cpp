@@ -12,12 +12,10 @@ static void Cmd_Version ()
 #endif
 
 
-void appInit (/*?? const char *_cmdLine, COutputDevice *_log */)
+void appInit (/*?? const char *_cmdLine */)
 {
 	guard(appInit);
 
-	//!!
-//??	GLog = _log;
 	appInitPlatform ();
 	appInitMemory ();
 	appInitError ();

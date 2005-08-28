@@ -1,5 +1,6 @@
 #include "winquake.h"
 #include "Core.h"
+#include "OutputDeviceMem.h"
 
 #include <direct.h>
 
@@ -7,7 +8,6 @@
 
 #define CRASH_LOG	"crash.log"		//!! required for history logging (should move to Core ??!)
 
-int			starttime;
 bool		ActiveApp, MinimizedApp, FullscreenApp;
 
 unsigned	sys_frame_time;			//?? used in cl_input.cpp only
@@ -77,6 +77,48 @@ static void EraseConInput ()
 }
 
 
+class COutputDeviceWin32Console : public COutputDevice
+{
+public:
+	void Init ()
+	{
+#ifndef DEDICATED_ONLY
+		AllocConsole ();
+#endif
+		hConInput  = GetStdHandle (STD_INPUT_HANDLE);		//?? not OutputDevice-stuff
+		hConOutput = GetStdHandle (STD_OUTPUT_HANDLE);
+		Register ();
+	}
+	bool Write (const char *str)
+	{
+		EraseConInput ();
+
+		// draw message
+		while (char c = str[0])
+		{
+			// parse color info
+			if (c == COLOR_ESCAPE && str[1] >= '0' && str[1] <= '7')
+			{
+				static const byte colorTable[8] = {0, 4, 2, 6, 1, 5, 3, 7};
+				SetConsoleTextAttribute (hConOutput, colorTable[str[1] - '0']);
+				str += 2;
+				continue;
+			}
+			c &= 0x7F;		// clear 7th bit
+			DWORD	dummy;
+			WriteFile (hConOutput, &c, 1, &dummy, NULL);
+			str++;
+		}
+		SetConsoleTextAttribute (hConOutput, 7);
+
+		console_drawInput = true;
+		return true;
+	}
+};
+
+static COutputDeviceWin32Console Win32Log;
+
+
 char *Sys_ConsoleInput ()
 {
 	guard(Sys_ConsoleInput);
@@ -135,7 +177,8 @@ char *Sys_ConsoleInput ()
 						{
 							console_textlen = min(len, sizeof(console_text)-2);
 							appStrncpyz (console_text, s, console_textlen+1);
-							Sys_ConsoleOutput ("");		// update line
+							EraseConInput ();
+							console_drawInput = true;	// next time ...
 						}
 					}
 					break;
@@ -166,46 +209,6 @@ char *Sys_ConsoleInput ()
 	return NULL;
 
 	unguard;
-}
-
-
-static void InitWin32Console ()
-{
-#ifndef DEDICATED_ONLY
-	AllocConsole ();
-#endif
-	hConInput  = GetStdHandle (STD_INPUT_HANDLE);
-	hConOutput = GetStdHandle (STD_OUTPUT_HANDLE);
-}
-
-
-void Sys_ConsoleOutput (const char *string)
-{
-	if (!DEDICATED) return;
-
-	EXEC_ONCE(InitWin32Console ();)
-
-	EraseConInput ();
-
-	// draw message
-	while (char c = string[0])
-	{
-		// parse color info
-		if (c == COLOR_ESCAPE && string[1] >= '0' && string[1] <= '7')
-		{
-			static const byte colorTable[8] = {0, 4, 2, 6, 1, 5, 3, 7};
-			SetConsoleTextAttribute (hConOutput, colorTable[string[1] - '0']);
-			string += 2;
-			continue;
-		}
-		c &= 0x7F;		// clear 7th bit
-		DWORD	dummy;
-		WriteFile (hConOutput, &c, 1, &dummy, NULL);
-		string++;
-	}
-	SetConsoleTextAttribute (hConOutput, 7);
-
-	console_drawInput = true;
 }
 
 
@@ -345,8 +348,26 @@ int main (int argc, const char **argv) // force to link as console application
 		}
 #endif
 
+		// init-time output
+		COutputDeviceMem *TempLog = new COutputDeviceMem (16384);
+		TempLog->Register ();
+
 		appInit ();		//!!!!
 		Com_Init (cmdline);
+
+#ifndef DEDICATED_ONLY
+		COutputDeviceCon ConLog;
+		if (DEDICATED)
+			Win32Log.Init ();
+		else
+			ConLog.Init ();
+#else
+		Win32Log.Init ();
+#endif
+		// flush init-time log
+		TempLog->Unregister ();
+		appPrintf (TempLog->GetText ());
+		delete TempLog;
 
 		double oldtime = appMillisecondsf ();
 

@@ -109,12 +109,15 @@ class CMemoryChain;
 class CORE_API COutputDevice
 {
 public:
-	virtual void Write (const char *str) = 0;
+	// return "false" to prevent logging to other devices
+	virtual bool Write (const char *str) = 0;
 	void Printf (const char *fmt, ...);
+	void Register ();
+	void Unregister ();
 };
 
 
-CORE_API void appPrintf (const char *fmt, ...);		//!! currently - in qcommon/common.cpp !!
+CORE_API void appPrintf (const char *fmt, ...);
 CORE_API void appWPrintf (const char *fmt, ...);
 
 
@@ -122,7 +125,7 @@ CORE_API void appWPrintf (const char *fmt, ...);
 	Error management
 -----------------------------------------------------------------------------*/
 
-class CORE_API CErrorHandler
+class CErrorHandler
 {
 public:
 	bool	swError;			// true when error was thrown by appError() call; will not dump CPU context
@@ -187,8 +190,6 @@ inline float appDeltaCyclesToMsecf (unsigned timeDelta)
 	Global variables
 -----------------------------------------------------------------------------*/
 
-//??CORE_API extern COutputDevice	*GLog;
-//??CORE_API extern COutputDevice	*GNull;
 CORE_API extern CErrorHandler	GErr;
 //??CORE_API extern char GVersion[512];
 
