@@ -24,7 +24,7 @@ void Cmd_ForwardToServer (int argc, char **argv)
 			Com_DPrintf ("Skipped dummy command \"%s\"\n", cmd);
 			return;
 		}
-	Com_WPrintf ("Unknown command \"%s\"\n", cmd);
+	appWPrintf ("Unknown command \"%s\"\n", cmd);
 }
 
 void CL_WriteConfiguration (const char *filename)

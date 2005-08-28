@@ -31,7 +31,7 @@ static void Cvar_SetString (cvar_t *var, const char *str)
 	if (var->string && !strcmp (var->string, str))
 		return;		// not changed
 
-//	Com_Printf (S_MAGENTA"set %s = %s\n", var->name, str);//!!
+//	appPrintf (S_MAGENTA"set %s = %s\n", var->name, str);//!!
 
 	// update non-string fields
 	var->value = atof (str);
@@ -174,7 +174,7 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 	{
 		if (!Cvar_InfoValidate (var_name))
 		{
-			Com_WPrintf("Invalid info cvar name\n");
+			appWPrintf("Invalid info cvar name\n");
 			return NULL;
 		}
 	}
@@ -190,7 +190,7 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 				if (!var->resetString)
 					var->resetString = CopyString (var_value, cvar_chain);	// save "default" value
 				else if (stricmp (var->resetString, var_value))
-					Com_WPrintf ("Different default value for cvar %s: %s != %s\n", var_name, var_value, var->resetString);
+					appWPrintf ("Different default value for cvar %s: %s != %s\n", var_name, var_value, var->resetString);
 			}
 
 			if (flags & CVAR_CHEAT && !cheats)					// reset cheatvar
@@ -233,7 +233,7 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 	{
 		if (!Cvar_InfoValidate (var_value))
 		{
-			Com_WPrintf ("Invalid info cvar value\n");
+			appWPrintf ("Invalid info cvar value\n");
 			return NULL;
 		}
 	}
@@ -328,7 +328,7 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 	{
 		if (!Cvar_InfoValidate (value))
 		{
-			Com_WPrintf ("Invalid info cvar value\n");
+			appWPrintf ("Invalid info cvar value\n");
 			return var;
 		}
 	}
@@ -339,7 +339,7 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 		if (var->flags & CVAR_NOSET)
 		{
 			if (strcmp (var->string, value))						// no error when value is not changed
-				Com_WPrintf ("%s is write protected\n", var_name);
+				appWPrintf ("%s is write protected\n", var_name);
 			return var;
 		}
 
@@ -348,7 +348,7 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 			if (!strcmp (value, var->string))						// no message when not modified
 				return var;
 			if (flags & CVAR_USER_CREATED)
-				Com_WPrintf ("%s is cheat protected\n", var_name);
+				appWPrintf ("%s is cheat protected\n", var_name);
 			else
 				Com_DPrintf ("%s is cheat protected\n", var_name);	// trying to modify cheat cvar by engine without "force"
 			return var;
@@ -375,7 +375,7 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 				if (Com_ServerState () == ss_demo)
 					return var;										// disable changing of latched cvars from demos
 
-				Com_Printf ("%s will be changed after restart\n", var_name);
+				appPrintf ("%s will be changed after restart\n", var_name);
 				var->latchedString = CopyString (value);
 			}
 			else
@@ -504,7 +504,7 @@ bool Cvar_Command (int argc, char **argv)
 		else
 			def = "(no default)";
 		// print info
-		Com_Printf ("\"%s\" is:\"%s\" %s%s\n", var->name, var->string, latch, def);
+		appPrintf ("\"%s\" is:\"%s\" %s%s\n", var->name, var->string, latch, def);
 		return true;
 	}
 
@@ -547,7 +547,7 @@ static void Cvar_Set_f (bool usage, int argc, char **argv)
 {
 	if (argc != 3 && argc != 4 || usage)
 	{
-		Com_Printf ("Usage: set <variable> <value> [a|u|s]\n  (archive|userinfo|serverinfo)\n");
+		appPrintf ("Usage: set <variable> <value> [a|u|s]\n  (archive|userinfo|serverinfo)\n");
 		return;
 	}
 
@@ -565,7 +565,7 @@ static void Cvar_Set_f (bool usage, int argc, char **argv)
 			Cvar_SetWithFlags (argv[1], argv[2], CVAR_SERVERINFO, CVAR_USERINFO);	// +s -u
 			break;
 		default:
-			Com_WPrintf ("Invalid flag for set: %c\n", flag);
+			appWPrintf ("Invalid flag for set: %c\n", flag);
 			return;
 		}
 	}
@@ -578,7 +578,7 @@ static void Cvar_Seta_f (bool usage, int argc, char **argv)
 {
 	if (argc != 3 || usage)
 	{
-		Com_Printf ("Usage: seta <variable> <value>\n");
+		appPrintf ("Usage: seta <variable> <value>\n");
 		return;
 	}
 	Cvar_SetWithFlags (argv[1], argv[2], CVAR_ARCHIVE, 0);
@@ -589,7 +589,7 @@ static void Cvar_Setu_f (bool usage, int argc, char **argv)
 {
 	if (argc != 3 || usage)
 	{
-		Com_Printf ("Usage: setu <variable> <value>\n");
+		appPrintf ("Usage: setu <variable> <value>\n");
 		return;
 	}
 	Cvar_SetWithFlags (argv[1], argv[2], CVAR_USERINFO, CVAR_SERVERINFO);
@@ -600,7 +600,7 @@ static void Cvar_Sets_f (bool usage, int argc, char **argv)
 {
 	if (argc != 3 || usage)
 	{
-		Com_Printf ("Usage: sets <variable> <value>\n");
+		appPrintf ("Usage: sets <variable> <value>\n");
 		return;
 	}
 	Cvar_SetWithFlags (argv[1], argv[2], CVAR_SERVERINFO, CVAR_USERINFO);
@@ -611,7 +611,7 @@ static void Cvar_Reset_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: reset <mask>\n");
+		appPrintf ("Usage: reset <mask>\n");
 		return;
 	}
 	const char *mask = argv[1];
@@ -670,7 +670,7 @@ static void Cvar_List_f (bool usage, int argc, char **argv)
 {
 	if (argc > 2 || usage)
 	{
-		Com_Printf ("Usage: cvarlist [<mask>]\n");
+		appPrintf ("Usage: cvarlist [<mask>]\n");
 		return;
 	}
 
@@ -710,9 +710,9 @@ static void Cvar_List_f (bool usage, int argc, char **argv)
 			s[4] = 'L';
 		if (flags & CVAR_CHEAT)
 			s[5] = 'C';
-		Com_Printf ("%s %s%s = \"%s\"\n", s, color, var->name, var->string);
+		appPrintf ("%s %s%s = \"%s\"\n", s, color, var->name, var->string);
 	}
-	Com_Printf ("Displayed %d/%d cvars\n", n, total);
+	appPrintf ("Displayed %d/%d cvars\n", n, total);
 }
 
 
@@ -754,7 +754,7 @@ static void Cvar_Add_f (bool usage, int argc, char **argv)
 
 	if (argc != 3 && argc != 5 && argc != 6 || usage)
 	{
-		Com_Printf ("Usage: add <variable> <increment> [<min> <max> [w][f]]\n");
+		appPrintf ("Usage: add <variable> <increment> [<min> <max> [w][f]]\n");
 		return;
 	}
 
@@ -773,7 +773,7 @@ static void Cvar_Add_f (bool usage, int argc, char **argv)
 				force = true;
 				break;
 			default:
-				Com_WPrintf ("Invalid flag for add: %c\n", flag);
+				appWPrintf ("Invalid flag for add: %c\n", flag);
 				return;
 			}
 		}
@@ -787,7 +787,7 @@ static void Cvar_Add_f (bool usage, int argc, char **argv)
 			var = Cvar_Get (varName, "0", 0);
 		else
 		{
-			Com_WPrintf ("%s is not found\n", varName);
+			appWPrintf ("%s is not found\n", varName);
 			return;
 		}
 	}
@@ -799,7 +799,7 @@ static void Cvar_Add_f (bool usage, int argc, char **argv)
 		float max = atof (argv[4]);
 		if (min >= max)
 		{
-			Com_WPrintf ("add: MIN >= MAX\n");
+			appWPrintf ("add: MIN >= MAX\n");
 			return;
 		}
 		// check bounds with a small epsilon to avoid FP precision bugs with small numbers
@@ -830,7 +830,7 @@ static void Cvar_Scale_f (bool usage, int argc, char **argv)
 
 	if (argc != 3 || usage)
 	{
-		Com_Printf ("Usage: scale <variable> <scale>\n");
+		appPrintf ("Usage: scale <variable> <scale>\n");
 		return;
 	}
 
@@ -838,7 +838,7 @@ static void Cvar_Scale_f (bool usage, int argc, char **argv)
 	var = Cvar_FindVar (varName);
 	if (!var)
 	{
-		Com_WPrintf ("%s is not found\n", varName);
+		appWPrintf ("%s is not found\n", varName);
 		return;
 	}
 
@@ -852,7 +852,7 @@ static void Cvar_Toggle_f (bool usage, int argc, char **argv)
 
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: toggle <variable>\n");
+		appPrintf ("Usage: toggle <variable>\n");
 		return;
 	}
 
@@ -883,7 +883,7 @@ static void Cvar_Cycle_f (bool usage, int argc, char **argv)
 	numValues = argc - firstValue;
 	if (numValues < 2 || usage)
 	{
-		Com_Printf ("Usage: cycle [-r] <variable> <value1> <value2> [<value3> ...]\n");
+		appPrintf ("Usage: cycle [-r] <variable> <value1> <value2> [<value3> ...]\n");
 		return;
 	}
 

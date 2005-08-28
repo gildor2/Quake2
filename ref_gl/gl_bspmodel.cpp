@@ -492,7 +492,7 @@ static void LoadSurfaces2 (const dface_t *surfs, int numSurfaces, const int *sur
 		*pname = 0;						// make zero (NULL string) after ASCIIZ string
 
 		if (numTextures > MAX_STAGE_TEXTURES)
-			Com_WPrintf ("%s: animation chain is too long (%d)\n", stex->texture, numTextures);
+			appWPrintf ("%s: animation chain is too long (%d)\n", stex->texture, numTextures);
 		else if (numTextures > 1)
 			sflags |= SHADER_ANIM;
 
@@ -763,8 +763,8 @@ static void GenerateLightmaps2 (byte *lightData, int lightDataSize)
 				// later (in this function), just don't create vertex colors for this surface
 				Com_DPrintf ("Disable lm for %s\n", *s->shader->Name);
 				SetShaderLightmap (s->shader, LIGHTMAP_NONE);
-//				Com_Printf ("  diff: %d\n", ptr - lm->source);
-//				Com_Printf ("  w: %d  h: %d  st: %d\n", lm->w, lm->h, lm->numStyles);
+//				appPrintf ("  diff: %d\n", ptr - lm->source);
+//				appPrintf ("  w: %d  h: %d  st: %d\n", lm->w, lm->h, lm->numStyles);
 			}
 			continue;
 		}

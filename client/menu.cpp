@@ -1397,7 +1397,7 @@ struct startserverMenu_t : menuFramework_t
 		{	// if file not present in OS filesystem - try pak file
 			if (!(buffer = (char*) FS_LoadFile ("maps.lst")))
 			{
-				Com_WPrintf ("Couldn't find maps.lst\n");
+				appWPrintf ("Couldn't find maps.lst\n");
 				buffer = NULL;
 			}
 		}
@@ -2424,7 +2424,7 @@ struct dmbrowseMenu_t : menuFramework_t
 				browse_map_names[thumbs.count++] = name;
 				if (thumbs.count == MAX_BROWSE_MAPS)
 				{
-					Com_WPrintf ("Maximum number of levelshots reached\n");
+					appWPrintf ("Maximum number of levelshots reached\n");
 					break;
 				}
 			}

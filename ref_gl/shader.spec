@@ -11,8 +11,8 @@
        if <div> == 0 --> error, div = 100
      * move <x> <y> <z> <func> <base> <amp> <phase> <freq>
      - normal <amp> <freq>        -- distort normal with noise (??)
-     ? projectionShadow           -- implemented, but unused in Q3
-     ? text0 .. text7             -- implemented, but unused in Q3
+     ? projectionShadow           -- used internally in Q3 for blob shadow ONLY
+     ? text0 .. text7             -- originally was used in Q3 for scoreboard; currently unused
 * 3) tessSize <value>             -- in Q3 used by q3map util; in Q2 used for surface tesselation
   4) clampTime <value>
 * 5) qer*                         -- ignore
@@ -111,7 +111,7 @@
      * oneMinusEntity
      * vertex
      * oneMinusVertex
-     - lightingSpecular
+     * lightingSpecular
      - portal <range>             if <range> is not specified --> error, <range> = 256
 * 11) texgen, tcGen
      - texture, base
@@ -136,7 +136,7 @@
        def: min = 0; max = 1
        expression: dst_alpha = dot(NormalVec(vieworg-vec), normal) * (max-min) + min  (if dot() < 0 dot = 0)
      * oneMinusDot
-     - lightingSpecular <x y z>   ???
+     - lightingSpecular <x y z>   ??? with specified light position
      - skyAlpha
      - oneMinusSkyAlpha
 ? 12) tcMod

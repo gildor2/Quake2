@@ -85,22 +85,13 @@ void Com_EndRedirect (void)
 }
 
 
-/*
-=============
-Com_Printf
-
-Both client and server can use this, and it will output
-to the apropriate place.
-=============
-*/
-
 static bool console_logged = false;
 static char log_name[MAX_OSPATH];
 
 
-void Com_Printf (const char *fmt, ...)
+void appPrintf (const char *fmt, ...)
 {
-	guard(Com_Printf);
+	guard(appPrintf);
 
 	va_list	argptr;
 	char	msg[MAXPRINTMSG];
@@ -123,7 +114,7 @@ void Com_Printf (const char *fmt, ...)
 	if (!DEDICATED)
 		Con_Print (msg);
 
-	// also echo to debugging console (in dedicated server mode only, when win32)
+	// also echo to debugging console (for win32 - in dedicated server mode only)
 	Sys_ConsoleOutput (msg);
 
 	// logfile
@@ -139,7 +130,7 @@ void Com_Printf (const char *fmt, ...)
 			if (!logfile)
 			{
 				Cvar_SetInteger ("logfile", 0);
-				Com_WPrintf ("Unable to create console.log\n");
+				appWPrintf ("Unable to create console.log\n");
 			}
 		}
 
@@ -165,7 +156,7 @@ void Com_Printf (const char *fmt, ...)
 ================
 Com_DPrintf
 
-A Com_Printf that only shows up if the "developer" cvar is set
+A appPrintf that only shows up if the "developer" cvar is set
 (prints on a screen with a different color)
 When developer is set to 2, logging the message.
 When developer is set to 256, do not colorize message.
@@ -180,7 +171,7 @@ void Com_DPrintf (const char *fmt, ...)
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
-	Com_Printf (S_BLUE"%s", msg);
+	appPrintf (S_BLUE"%s", msg);
 	if (developer->integer == 2)
 	{
 		appUncolorizeString (msg, msg);
@@ -212,31 +203,6 @@ void DebugPrintf (const char *fmt, ...)
 	}
 	fprintf (log, "%s", msg);
 	fclose (log);
-}
-
-
-/*
-================
-Com_WPrintf
-
-Printf non-fatal error message (warning) using a different color
-When developer is set to 2, logging the message
-================
-*/
-
-void Com_WPrintf (const char *fmt, ...)
-{
-	va_list		argptr;
-	char		msg[MAXPRINTMSG];
-
-	va_start (argptr,fmt);
-	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
-	va_end (argptr);
-
-	Com_Printf (S_YELLOW"%s", msg);
-#ifndef NO_DEVELOPER
-	if (developer->integer == 2) DebugPrintf ("%s", msg);
-#endif
 }
 
 
@@ -439,27 +405,27 @@ void Info_SetValueForKey (char *s, const char *key, const char *value)
 {
 	if (strchr (key, '\\') || strchr (value, '\\'))
 	{
-		Com_WPrintf ("Info_Set(\"%s\",\"%s\"): can't use keys or values with a '\\'\n", key, value);
+		appWPrintf ("Info_Set(\"%s\",\"%s\"): can't use keys or values with a '\\'\n", key, value);
 		return;
 	}
 
 #if 0
 	if (strchr (key, '\"') || strchr (value, '\"'))
 	{
-		Com_WPrintf ("Can't use keys or values with a '\"'\n");
+		appWPrintf ("Can't use keys or values with a '\"'\n");
 		return;
 	}
 
 	if (strchr (key, ';'))
 	{
-		Com_WPrintf ("Can't use keys or values with a semicolon\n");
+		appWPrintf ("Can't use keys or values with a semicolon\n");
 		return;
 	}
 #endif
 
 	if (strlen (key) > MAX_INFO_KEY - 1 || strlen (value) > MAX_INFO_KEY - 1)
 	{
-		Com_WPrintf ("Keys and values must be < " STR(MAX_INFO_KEY) " characters\n");
+		appWPrintf ("Keys and values must be < " STR(MAX_INFO_KEY) " characters\n");
 		return;
 	}
 	Info_RemoveKey (s, key);
@@ -469,7 +435,7 @@ void Info_SetValueForKey (char *s, const char *key, const char *value)
 	int size = appSprintf (ARRAY_ARG(newi), "\\%s\\%s", key, value);
 	if (strlen (s) + size > MAX_INFO_STRING)
 	{
-		Com_WPrintf ("Info string length exceeded\n");
+		appWPrintf ("Info string length exceeded\n");
 		return;
 	}
 
@@ -497,11 +463,11 @@ void Info_Print (const char *s)
 		while (*s && *s != '\\')
 			*o++ = *s++;
 		*o = 0;
-		Com_Printf (S_GREEN"%-22s", key);
+		appPrintf (S_GREEN"%-22s", key);
 
 		if (!*s)
 		{
-			Com_WPrintf ("missing value\n");
+			appWPrintf ("missing value\n");
 			return;
 		}
 
@@ -510,7 +476,7 @@ void Info_Print (const char *s)
 		while (*s && *s != '\\')
 			*o++ = *s++;
 		*o = 0;
-		Com_Printf ("%s\n", value);
+		appPrintf ("%s\n", value);
 
 		if (!*s) return;
 		s++;
@@ -545,20 +511,20 @@ static void ParseCmdline (const char *cmdline)
 		if (c != '-')
 		{
 			// bad argument
-			Com_Printf ("ParseCmdline: bad argument \"");
+			appPrintf ("ParseCmdline: bad argument \"");
 			do
 			{
-				Com_Printf ("%c", c);
+				appPrintf ("%c", c);
 				c = *++cmdline;
 			} while (c != ' ' && c != 0);
-			Com_Printf ("\"\n");
+			appPrintf ("\"\n");
 			continue;				// try next argument
 		}
 
 		// cmdline points to start of possible command
 		if (cmdlineNumParts == MAX_CMDLINE_PARTS)
 		{
-			Com_WPrintf ("ParseCmdline: overflow\n");
+			appWPrintf ("ParseCmdline: overflow\n");
 			break;
 		}
 		cmdlineParts[cmdlineNumParts++] = dst;
@@ -578,7 +544,7 @@ static void ParseCmdline (const char *cmdline)
 		while (*(dst-1) == ' ') dst--;
 
 		*dst++ = 0;
-//		Com_Printf("arg[%d] = <%s>\n", cmdlineNumParts-1, cmdlineParts[cmdlineNumParts-1]);
+//		appPrintf("arg[%d] = <%s>\n", cmdlineNumParts-1, cmdlineParts[cmdlineNumParts-1]);
 	}
 
 	// immediately exec strings of type "var=value"
@@ -608,7 +574,7 @@ static void ParseCmdline (const char *cmdline)
 			if (var)
 				var->flags |= CVAR_CMDLINE;
 			else
-				Com_WPrintf ("ParseCmdline: unable to set \"%s\"\n", varName);
+				appWPrintf ("ParseCmdline: unable to set \"%s\"\n", varName);
 
 			cmdlineParts[i] = NULL;		// remove command
 		}
@@ -727,7 +693,7 @@ CVAR_END
 
 	cvar_initialized = 2;
 	PushCmdline ();
-	Com_Printf (S_GREEN"\n====== " APPNAME " Initialized ======\n\n");
+	appPrintf (S_GREEN"\n====== " APPNAME " Initialized ======\n\n");
 
 	unguard;
 }

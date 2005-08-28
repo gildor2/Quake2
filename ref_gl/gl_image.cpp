@@ -13,7 +13,7 @@
 		unsigned _time = appCycles();
 #define END_PROFILE	\
 		if (Cvar_VariableInt("r_profile2")) \
-			Com_Printf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %.2f ms\n", _name, _arg, \
+			appPrintf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %.2f ms\n", _name, _arg, \
 			appDeltaCyclesToMsecf(appCycles() - _time)); \
 	}
 #else
@@ -175,7 +175,7 @@ void GL_TextureMode (const char *name)	//?? change (not strings; use enum {none,
 		return;
 	}
 
-	Com_WPrintf ("R_TextureMode: bad filter name\n");
+	appWPrintf ("R_TextureMode: bad filter name\n");
 }
 
 
@@ -627,7 +627,7 @@ image_t *CreateImage (const char *name, void *pic, int width, int height, unsign
 	guard(CreateImage);
 	if (!name[0]) Com_FatalError ("R_CreateImage: NULL name");
 
-//	Com_Printf ("CreateImage(%s)\n", name);//!!!!
+//	appPrintf ("CreateImage(%s)\n", name);//!!!!
 
 	TString<64> Name2;
 	Name2.filename (name);
@@ -655,7 +655,7 @@ image_t *CreateImage (const char *name, void *pic, int width, int height, unsign
 	{
 		if (!freeSlot)
 		{
-			Com_WPrintf ("R_CreateImage(%s): MAX_TEXTURES hit\n", name);
+			appWPrintf ("R_CreateImage(%s): MAX_TEXTURES hit\n", name);
 			return gl_defaultImage;
 		}
 		// not found - allocate free image slot
@@ -772,7 +772,7 @@ void LoadDelayedImages ()
 		if (!img->Name[0]) continue;	// free slot
 		if (!(img->pic)) continue;
 
-//		Com_Printf ("up: %s\n", *img->Name);
+//		appPrintf ("up: %s\n", *img->Name);
 		// upload image
 		GL_SetMultitexture (1);
 		GL_BindForce (img);
@@ -993,7 +993,7 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 	for (int j = 0; j < 16; j++)
 	{
 		int i, distr[HASH_SIZE], distr2[HASH_SIZE];
-		Com_Printf ("---- Hash distribution (0x%4X) ----\n", hash);
+		appPrintf ("---- Hash distribution (0x%4X) ----\n", hash);
 		memset (distr, 0, sizeof(distr));
 		memset (distr2, 0, sizeof(distr2));
 		int max = 0;
@@ -1016,7 +1016,7 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 			distr2[distr[i]]++;
 
 		for (i = 0; i <= max; i++)
-			Com_Printf ("Chain %dx : %d\n", i, distr2[i]);
+			appPrintf ("Chain %dx : %d\n", i, distr2[i]);
 		hash++;
 	}
 
@@ -1050,13 +1050,13 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 
 	if (argc > 2 || usage)
 	{
-		Com_Printf ("Usage: imagelist [<mask>]\n");
+		appPrintf ("Usage: imagelist [<mask>]\n");
 		return;
 	}
 
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 
-	Com_Printf ("----w----h----a-wr-m-fmt------name----------\n");
+	appPrintf ("----w----h----a-wr-m-fmt------name----------\n");
 	int idx, texels, n;
 	idx = texels = n = 0;
 
@@ -1085,13 +1085,13 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 		else if (img->flags & IMAGE_SKIN)
 			color = S_CYAN;
 
-		Com_Printf ("%-3d %-4d %-4d %c %c  %c %-8s %s%s\n", idx, img->internalWidth, img->internalHeight,
+		appPrintf ("%-3d %-4d %-4d %c %c  %c %-8s %s%s\n", idx, img->internalWidth, img->internalHeight,
 			img->flags & IMAGE_NOALPHA ? '-' : alphaTypes[img->alphaType],
 			boolTypes[(img->flags & IMAGE_CLAMP) == 0], boolTypes[(img->flags & IMAGE_MIPMAP) != 0],
 			fmt, color, *img->Name);
 	}
 
-	Com_Printf ("Displayed %d/%d images; texel count (no mipmaps) %d\n", n, idx, texels);
+	appPrintf ("Displayed %d/%d images; texel count (no mipmaps) %d\n", n, idx, texels);
 
 	if (mask && mask[0] == '*' && mask[1] == 0)	// mask = "*"
 	{
@@ -1106,9 +1106,9 @@ static void Imagelist_f (bool usage, int argc, char **argv)
 			if (num > max) max = num;
 			distr[num]++;
 		}
-		Com_Printf ("--------------\nHash distribution:\n");
+		appPrintf ("--------------\nHash distribution:\n");
 		for (i = 1; i <= max; i++)
-			Com_Printf ("Chain %dx : %d\n", i, distr[i]);
+			appPrintf ("Chain %dx : %d\n", i, distr[i]);
 	}
 #endif
 }
@@ -1121,7 +1121,7 @@ static void ImageReload_f (bool usage, int argc, char **argv)
 
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: img_reload <mask>\n");
+		appPrintf ("Usage: img_reload <mask>\n");
 		return;
 	}
 
@@ -1191,9 +1191,9 @@ void PerformScreenshot ()
 	glReadPixels (0, 0, vid_width, vid_height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
 /*
-	if (!buffer[2000] && !buffer[2001] && !buffer[2002] && !buffer[2004] && !buffer[2005] && !buffer[2006]) Com_WPrintf("BLACK!\n");
-	for (i = 2000; i < 2240; i++) Com_Printf("%02X  ", buffer[i]);
-	Com_Printf ("\n");
+	if (!buffer[2000] && !buffer[2001] && !buffer[2002] && !buffer[2004] && !buffer[2005] && !buffer[2006]) appWPrintf("BLACK!\n");
+	for (i = 2000; i < 2240; i++) appPrintf("%02X  ", buffer[i]);
+	appPrintf ("\n");
 */
 
 	int width, height;
@@ -1254,7 +1254,7 @@ void PerformScreenshot ()
 	delete buffer;
 
 	if (result && !(screenshotFlags & SHOT_SILENT))
-		Com_Printf ("Wrote %s\n", Name.rchr ('/') + 1);
+		appPrintf ("Wrote %s\n", Name.rchr ('/') + 1);
 }
 
 
@@ -1576,7 +1576,7 @@ image_t *FindImage (const char *name, unsigned flags)
 
 	/*------- find image using hash table --------*/
 	int hash = ComputeHash (Name2);
-//	Com_Printf ("FindImage(%s): hash = %X\n", name2, hash);//!!
+//	appPrintf ("FindImage(%s): hash = %X\n", name2, hash);//!!
 
 	// find extension
 	char *s = Name2.rchr ('.');
@@ -1619,7 +1619,7 @@ image_t *FindImage (const char *name, unsigned flags)
 					// flags are different ...
 					if (name[0] == '*' || img->flags & IMAGE_SYSTEM)
 					{
-						Com_WPrintf ("R_FindImage(%s): using different flags (%X != %X) for system image\n", *Name2, flags, img->flags);
+						appWPrintf ("R_FindImage(%s): using different flags (%X != %X) for system image\n", *Name2, flags, img->flags);
 						return img;
 					}
 					hash = -1;	// mark: image used with a different flags (for displaying a warning message)
@@ -1628,10 +1628,10 @@ image_t *FindImage (const char *name, unsigned flags)
 			}
 	}
 	if (hash == -1)
-		Com_WPrintf ("R_FindImage: reusing \"%s\" with a different flags %X\n", *Name2, flags);
+		appWPrintf ("R_FindImage: reusing \"%s\" with a different flags %X\n", *Name2, flags);
 
 	/*---------- image not found -----------*/
-//	Com_Printf("FindImage: disk name = %s\n",name2);//!!
+//	appPrintf("FindImage: disk name = %s\n",name2);//!!
 	// select preferred format
 	int prefFmt = 0;
 	if (!strcmp (s, ".tga"))
@@ -1729,7 +1729,7 @@ END_PROFILE
 	}
 	else
 	{
-		Com_WPrintf ("R_FindImage(%s): cannot load texture\n", *Name2);
+		appWPrintf ("R_FindImage(%s): cannot load texture\n", *Name2);
 		return NULL;
 	}
 

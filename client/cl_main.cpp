@@ -121,7 +121,7 @@ static bool TryParseStatus (const char *str)
 	if (!v) return false;
 	cl_cheats = atoi (v) != 0;
 
-	Com_Printf ("map: %s game: %s cheats: %d\n", cl_mapname, cl_gamename, cl_cheats);
+	appPrintf ("map: %s game: %s cheats: %d\n", cl_mapname, cl_gamename, cl_cheats);
 
 	statusRequest = false;
 	return true;
@@ -166,7 +166,7 @@ static void CL_Stop_f ()
 {
 	if (!cls.demorecording)
 	{
-		Com_WPrintf ("Not recording a demo.\n");
+		appWPrintf ("Not recording a demo.\n");
 		return;
 	}
 
@@ -176,7 +176,7 @@ static void CL_Stop_f ()
 	fclose (cls.demofile);
 	cls.demofile = NULL;
 	cls.demorecording = false;
-	Com_Printf ("Stopped demo.\n");
+	appPrintf ("Stopped demo.\n");
 }
 
 
@@ -187,19 +187,19 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: record <demoname>\n");
+		appPrintf ("Usage: record <demoname>\n");
 		return;
 	}
 
 	if (cls.demorecording)
 	{
-		Com_WPrintf ("Already recording.\n");
+		appWPrintf ("Already recording.\n");
 		return;
 	}
 
 	if (cls.state != ca_active)
 	{
-		Com_WPrintf ("You must be in a level to record.\n");
+		appWPrintf ("You must be in a level to record.\n");
 		return;
 	}
 
@@ -207,12 +207,12 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 	TString<MAX_OSPATH> Name;
 	Name.sprintf ("%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
-	Com_Printf ("recording to %s.\n", *Name);
+	appPrintf ("recording to %s.\n", *Name);
 	FS_CreatePath (Name);
 	cls.demofile = fopen (Name, "wb");
 	if (!cls.demofile)
 	{
-		Com_WPrintf ("Cannot create file %s\n", *Name);
+		appWPrintf ("Cannot create file %s\n", *Name);
 		return;
 	}
 	cls.demorecording = true;
@@ -316,7 +316,7 @@ void Cmd_ForwardToServer (int argc, char **argv)
 	const char *cmd = argv[0];
 	if (cls.state <= ca_connected || *cmd == '-' || *cmd == '+')
 	{
-		Com_WPrintf ("Unknown command \"%s\"\n", cmd);
+		appWPrintf ("Unknown command \"%s\"\n", cmd);
 		return;
 	}
 
@@ -333,7 +333,7 @@ void CL_ForwardToServer_f (int argc, char **argv)
 {
 	if (cls.state != ca_connected && cls.state != ca_active)
 	{
-		Com_WPrintf ("Can't \"%s\", not connected\n", argv[0]);	// argv[0] == "cmd"
+		appWPrintf ("Can't \"%s\", not connected\n", argv[0]);	// argv[0] == "cmd"
 		return;
 	}
 
@@ -453,7 +453,7 @@ static void CL_InitiateConnection ()
 
 	cls.connect_time = cls.realtime;	// for retransmit requests
 
-	Com_Printf ("Connecting to %s\n", cls.serverName);
+	appPrintf ("Connecting to %s\n", cls.serverName);
 
 	InitServerAddress ();
 	SendStatusRequest ();
@@ -471,7 +471,7 @@ void CL_Connect_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: connect <server>\n");
+		appPrintf ("Usage: connect <server>\n");
 		return;
 	}
 
@@ -505,7 +505,7 @@ void CL_Rcon_f (int argc, char **argv)
 {
 	if (!rcon_client_password->string[0])
 	{
-		Com_WPrintf ("\"rcon_password\" is not set\n");
+		appWPrintf ("\"rcon_password\" is not set\n");
 		return;
 	}
 
@@ -523,7 +523,7 @@ void CL_Rcon_f (int argc, char **argv)
 	{
 		if (!rcon_address->string[0])
 		{
-			Com_WPrintf ("Not connected and \"rcon_address\" is not set\n");
+			appWPrintf ("Not connected and \"rcon_address\" is not set\n");
 			return;
 		}
 		NET_StringToAdr (rcon_address->string, &to);
@@ -553,7 +553,7 @@ void CL_Disconnect ()
 	{
 		int time = appMilliseconds () - cl.timedemoStart;
 		if (time > 0)
-			Com_Printf (S_GREEN"Total %d frames, %3.1f seconds: %3.1f avg fps %3.1f min fps\n", cl.timedemoFrames, time / 1000.0f,
+			appPrintf (S_GREEN"Total %d frames, %3.1f seconds: %3.1f avg fps %3.1f min fps\n", cl.timedemoFrames, time / 1000.0f,
 				1000.0f * cl.timedemoFrames / time, 1000.0f / cl.timedemoLongestFrame);
 	}
 
@@ -611,7 +611,7 @@ void CL_Changing_f (void)
 
 	SCR_BeginLoadingPlaque ();
 	cls.state = ca_connected;	// not active anymore, but not disconnected
-	Com_Printf ("\nChanging map...\n");
+	appPrintf ("\nChanging map...\n");
 }
 
 
@@ -632,7 +632,7 @@ void CL_Reconnect_f (void)
 	S_StopAllSounds_f ();
 	if (cls.state == ca_connected)
 	{
-		Com_Printf ("reconnecting...\n");
+		appPrintf ("reconnecting...\n");
 		cls.state = ca_connected;
 		MSG_WriteChar (&cls.netchan.message, clc_stringcmd);
 		MSG_WriteString (&cls.netchan.message, "new");
@@ -650,7 +650,7 @@ void CL_Reconnect_f (void)
 		cls.connect_time = -BIG_NUMBER; // fire immediately
 
 	cls.state = ca_connecting;
-	Com_Printf ("reconnecting...\n");
+	appPrintf ("reconnecting...\n");
 }
 
 
@@ -659,7 +659,7 @@ void CL_PingServers_f ()
 	NET_Config (true);		// allow remote
 
 	// send a broadcast packet
-	Com_Printf ("pinging broadcast...\n");
+	appPrintf ("pinging broadcast...\n");
 	const char *cmd = "info " STR(PROTOCOL_VERSION);
 
 	netadr_t adr;
@@ -681,10 +681,10 @@ void CL_PingServers_f ()
 		if (!adrstring || !adrstring[0])
 			continue;
 
-		Com_Printf ("pinging %s...\n", adrstring);
+		appPrintf ("pinging %s...\n", adrstring);
 		if (!NET_StringToAdr (adrstring, &adr))
 		{
-			Com_Printf ("Bad address: %s\n", adrstring);
+			appPrintf ("Bad address: %s\n", adrstring);
 			continue;
 		}
 		if (!adr.port)
@@ -707,7 +707,7 @@ void CL_Skins_f ()
 	{
 		if (!cl.configstrings[CS_PLAYERSKINS+i][0])
 			continue;
-		Com_Printf ("client %d: %s\n", i, cl.configstrings[CS_PLAYERSKINS+i]);
+		appPrintf ("client %d: %s\n", i, cl.configstrings[CS_PLAYERSKINS+i]);
 		SCR_UpdateScreen ();
 		Sys_ProcessMessages ();	// pump message loop
 		CL_ParseClientinfo (i);
@@ -729,7 +729,7 @@ static void cClientConnect (int argc, char **argv)
 	// server connection
 	if (cls.state == ca_connected)
 	{
-		Com_Printf ("dup connect received: ignored\n");
+		appPrintf ("dup connect received: ignored\n");
 		return;
 	}
 	cls.netchan.Setup (NS_CLIENT, net_from, 0);	// use default qport value
@@ -743,7 +743,7 @@ static void cClientConnect (int argc, char **argv)
 		if (ver != NEW_PROTOCOL_VERSION)
 		{
 			if (ver < NEW_PROTOCOL_VERSION)
-				Com_WPrintf ("Server supports older version of extended protocol\n");
+				appWPrintf ("Server supports older version of extended protocol\n");
 			cls.newprotocol = false;
 		}
 		else
@@ -763,7 +763,7 @@ static void cInfo (int argc, char **argv)
 		return;
 	}
 
-	Com_Printf ("%s\n", connectStr);
+	appPrintf ("%s\n", connectStr);
 	M_AddToServerList (net_from, connectStr);
 }
 
@@ -772,7 +772,7 @@ static void cCmd (int argc, char **argv)
 {
 	if (!NET_IsLocalAddress (&net_from))
 	{
-		Com_Printf ("Command packet from remote host. Ignored.\n");
+		appPrintf ("Command packet from remote host. Ignored.\n");
 		return;
 	}
 	Cbuf_AddText (connectStr);
@@ -785,7 +785,7 @@ static void cPrint (int argc, char **argv)
 	// print command from somewhere
 	if (TryParseStatus (connectStr)) return;	// do not print status message
 
-	Com_Printf ("%s", connectStr);
+	appPrintf ("%s", connectStr);
 }
 
 
@@ -845,7 +845,7 @@ void CL_ConnectionlessPacket ()
 	Com_DPrintf ("%s: %s\n", NET_AdrToString (&net_from), cmd);
 
 	if (!ExecuteCommand (s, ARRAY_ARG(connectionlessCmds)))
-		Com_Printf ("Unknown command \"%s\".\n", cmd);
+		appPrintf ("Unknown command \"%s\".\n", cmd);
 
 	unguard;
 }
@@ -874,7 +874,7 @@ void CL_ReadPackets (void)
 
 		if (net_message.cursize < 8)
 		{
-			Com_WPrintf ("%s: runt packet\n", NET_AdrToString (&net_from));
+			appWPrintf ("%s: runt packet\n", NET_AdrToString (&net_from));
 			continue;
 		}
 
@@ -896,7 +896,7 @@ void CL_ReadPackets (void)
 	{
 		if (++cl.timeoutcount > 5)	// timeoutcount saves debugger
 		{
-			Com_WPrintf ("\nServer connection timed out.\n");
+			appWPrintf ("\nServer connection timed out.\n");
 			CL_Disconnect ();
 			return;
 		}
@@ -917,7 +917,7 @@ CL_Userinfo_f
 */
 void CL_Userinfo_f (void)
 {
-	Com_Printf (S_GREEN"------- User info settings -------\n");
+	appPrintf (S_GREEN"------- User info settings -------\n");
 	Info_Print (Cvar_Userinfo());
 }
 
@@ -974,7 +974,7 @@ void CL_WriteConfiguration (const char *filename)
 	FILE *f = fopen (va("%s/%s", FS_Gamedir(), filename), "w");
 	if (!f)
 	{
-		Com_Printf ("Couldn't write %s.\n", filename);
+		appPrintf ("Couldn't write %s.\n", filename);
 		return;
 	}
 
@@ -995,7 +995,7 @@ void CL_WriteConfig_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: writeconfig <filename>\n");
+		appPrintf ("Usage: writeconfig <filename>\n");
 		return;
 	}
 	TString<MAX_OSPATH> Name;

@@ -157,7 +157,7 @@ char *Sys_ConsoleInput ()
 						}
 					}
 //					else
-//						Com_Printf ("%2X\n",ch);
+//						appPrintf ("%2X\n",ch);
 					break;
 			}
 		}
@@ -285,7 +285,7 @@ void *Sys_GetGameAPI (void *parms)
 				break;
 			}
 			else
-				Com_WPrintf ("Sys_GetGameAPI(%s): failed to load library\n", *DllName);
+				appWPrintf ("Sys_GetGameAPI(%s): failed to load library\n", *DllName);
 		}
 		else
 			Com_DPrintf ("Sys_GetGameAPI(%s): file not found\n", *DllName);

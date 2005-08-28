@@ -207,7 +207,7 @@ static bool SlideMove ()
 		{	// go along the crease
 			if (numplanes != 2)
 			{
-//				Com_Printf ("clip velocity, numplanes == %d\n",numplanes);
+//				appPrintf ("clip velocity, numplanes == %d\n",numplanes);
 				pml.velocity.Zero();
 				break;
 			}
@@ -260,7 +260,7 @@ static void StepSlideMove ()
 	trace_t trace = pm->trace (start_o, pm->bounds.mins, pm->bounds.maxs, up);
 	if (trace.allsolid)
 	{
-//		Com_Printf("no up\n");//!!
+//		appPrintf("no up\n");//!!
 		return;		// can't step up
 	}
 
@@ -279,7 +279,7 @@ static void StepSlideMove ()
 	pml.velocity = start_v;
 #endif
 
-//Com_Printf(S_GREEN" up ");//!!
+//appPrintf(S_GREEN" up ");//!!
 	SlideMove ();
 
 	// push down the final amount
@@ -300,7 +300,7 @@ static void StepSlideMove ()
 
 	if (down_dist > up_dist || trace.plane.normal[2] < MIN_STEP_NORMAL)
 	{
-//		Com_Printf("down: d_d=%g u_d=%g n2=%g\n", down_dist, up_dist, trace.plane.normal[2]);//!!
+//		appPrintf("down: d_d=%g u_d=%g n2=%g\n", down_dist, up_dist, trace.plane.normal[2]);//!!
 		pml.origin = down_o;
 		pml.velocity = down_v;
 		return;
@@ -607,8 +607,8 @@ static void CatagorizePosition ()
 		pml.groundsurface = trace.surface;
 		pml.groundcontents = trace.contents;
 
-//		Com_Printf("gr: n2=%g frac=%g sol=%d\n", trace.plane.normal[2], trace.fraction, trace.allsolid);//!!
-//		if (trace.allsolid) Com_WPrintf("locked: %g %g %g\n", VECTOR_ARG(point));
+//		appPrintf("gr: n2=%g frac=%g sol=%d\n", trace.plane.normal[2], trace.fraction, trace.allsolid);//!!
+//		if (trace.allsolid) appWPrintf("locked: %g %g %g\n", VECTOR_ARG(point));
 		if (!trace.ent || (trace.plane.normal[2] < 0.7 && !trace.startsolid))
 		{
 			pm->groundentity = NULL;
@@ -986,7 +986,7 @@ static void SnapPosition ()
 	if (pm->s.pm_type == PM_SPECTATOR) return;
 
 //if (pml.velocity[0] || pml.velocity[1] || pml.velocity[2])//!!
-//Com_Printf("g:%d org: %g %g %g (pr: %d %d %d)  sp: %g %g %g\n", (pm->s.pm_flags & PMF_ON_GROUND) != 0,
+//appPrintf("g:%d org: %g %g %g (pr: %d %d %d)  sp: %g %g %g\n", (pm->s.pm_flags & PMF_ON_GROUND) != 0,
 //VECTOR_ARG(pml.origin),VECTOR_ARG(pml.previous_origin),VECTOR_ARG(pml.velocity));//!!
 
 	int delta[3];
@@ -1016,9 +1016,9 @@ static void SnapPosition ()
 			delta[n]++;						\
 		}
 		STEP(0); STEP(1); STEP(2);
-//		Com_Printf("#%d(%g %g %g)->(%d %d %d)\n",i,VECTOR_ARG(tr.plane.normal),VECTOR_ARG(pm->s.origin));//!!
+//		appPrintf("#%d(%g %g %g)->(%d %d %d)\n",i,VECTOR_ARG(tr.plane.normal),VECTOR_ARG(pm->s.origin));//!!
 	}
-//	Com_Printf(S_RED"***\n");//!!
+//	appPrintf(S_RED"***\n");//!!
 
 #else
 	//!! OLD
@@ -1058,7 +1058,7 @@ static void SnapPosition ()
 	}
 #endif
 
-//	Com_Printf("BAD!\n");//!!
+//	appPrintf("BAD!\n");//!!
 	// go back to the last position
 	pm->s.origin[0] = pml.previous_origin[0];
 	pm->s.origin[1] = pml.previous_origin[1];

@@ -101,8 +101,8 @@ void SCR_CenterPrint (const char *str)
 		if (*s++ == '\n') center_lines++;
 
 	// echo it to the console
-	Com_Printf ("\n------------------------------------\n\n");
-//	Com_Printf("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
+	appPrintf ("\n------------------------------------\n\n");
+//	appPrintf("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
 
 	s = str;
 	while (true)
@@ -123,7 +123,7 @@ void SCR_CenterPrint (const char *str)
 		line[i] = '\n';
 		line[i+1] = 0;
 
-		Com_Printf ("%s", line);
+		appPrintf ("%s", line);
 
 		while (*s && *s != '\n')
 			s++;
@@ -131,8 +131,8 @@ void SCR_CenterPrint (const char *str)
 		if (!*s) break;
 		s++;		// skip the \n
 	}
-	Com_Printf ("------------------------------------\n");
-//	Com_Printf("\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
+	appPrintf ("------------------------------------\n");
+//	appPrintf("\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
 	Con_ClearNotify ();
 }
 
@@ -468,7 +468,7 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 {
 	if (usage)
 	{
-		Com_Printf ("Usage: screenshot [-levelshot] [-no2d] [-nogamma] [-silent] [-jpeg] [<filename>]\n");
+		appPrintf ("Usage: screenshot [-levelshot] [-no2d] [-nogamma] [-silent] [-jpeg] [<filename>]\n");
 		return;
 	}
 
@@ -485,14 +485,14 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 			{
 				if (cls.state != ca_active)
 				{
-					Com_WPrintf ("No levelshots when disconnected\n");
+					appWPrintf ("No levelshots when disconnected\n");
 					return;
 				}
 
 				char *tmp;
 				if (!(tmp = strrchr (map_name, '/')))
 				{
-					Com_WPrintf ("Invalid map_name: %s\n", map_name);
+					appWPrintf ("Invalid map_name: %s\n", map_name);
 					return;
 				}
 				tmp++;	// skip '/'
@@ -513,14 +513,14 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 				flags |= SHOT_JPEG;
 			else
 			{
-				Com_WPrintf ("Unknown option: %s\n", opt);
+				appWPrintf ("Unknown option: %s\n", opt);
 				return;
 			}
 		}
 		else
 		{
 			if (Filename[0])
-				Com_WPrintf ("WARNING: name already specified (%s). Changed.\n", *Filename);
+				appWPrintf ("WARNING: name already specified (%s). Changed.\n", *Filename);
 			Filename.filename (va("%s/screenshots/%s", FS_Gamedir (), opt));
 		}
 	}
@@ -533,7 +533,7 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 {
 	if (usage || argc > 2)
 	{
-		Com_Printf ("Usage: timerefresh [steps=256]\n");
+		appPrintf ("Usage: timerefresh [steps=256]\n");
 		return;
 	}
 	if (cls.state != ca_active) return;
@@ -561,7 +561,7 @@ static void TimeRefresh_f (bool usage, int argc, char **argv)
 		}
 	}
 
-	Com_Printf ("%d frames/%g seconds (%g fps)\n", steps, time, steps / time);
+	appPrintf ("%d frames/%g seconds (%g fps)\n", steps, time, steps / time);
 }
 
 

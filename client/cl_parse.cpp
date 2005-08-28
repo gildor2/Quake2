@@ -105,9 +105,9 @@ static void ParseServerData (void)
 	}
 	else
 	{
-		Com_Printf (S_RED"\n\n====================================\n\n");
-//		Com_Printf (S_RED"\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
-		Com_Printf (S_RED"%s\n", str);			// display map message
+		appPrintf (S_RED"\n\n====================================\n\n");
+//		appPrintf (S_RED"\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
+		appPrintf (S_RED"%s\n", str);			// display map message
 
 		// need to prep refresh at next oportunity
 		cl.rendererReady = false;
@@ -133,7 +133,7 @@ void CL_ParseClientinfo (int player)
 
 	if (ci.isQ3model && !cls.newprotocol)
 	{
-		Com_WPrintf ("No extended protocol support.\nForce player %s to use base model\n", *ci.PlayerName);
+		appWPrintf ("No extended protocol support.\nForce player %s to use base model\n", *ci.PlayerName);
 		ci.isValidModel = false;
 	}
 	if (!ci.isValidModel)
@@ -288,9 +288,9 @@ void CL_ParseServerMessage (void)
 
 	// if recording demos, copy the message out
 	if (cl_shownet->integer == 1)
-		Com_Printf ("%i ",net_message.cursize);
+		appPrintf ("%i ",net_message.cursize);
 	else if (cl_shownet->integer >= 2)
-		Com_Printf ("------------------\n");
+		appPrintf ("------------------\n");
 
 	// parse the message
 	while (true)
@@ -328,7 +328,7 @@ void CL_ParseServerMessage (void)
 			break;
 
 		case svc_reconnect:
-			Com_Printf ("Server disconnected, reconnecting\n");
+			appPrintf ("Server disconnected, reconnecting\n");
 			if (cls.download)
 			{
 				//ZOID, close download
@@ -347,7 +347,7 @@ void CL_ParseServerMessage (void)
 			}
 			else
 				s = "";
-			Com_Printf ("%s%s", s, MSG_ReadString (&net_message));
+			appPrintf ("%s%s", s, MSG_ReadString (&net_message));
 			break;
 
 		case svc_centerprint:

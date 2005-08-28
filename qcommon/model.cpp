@@ -415,7 +415,7 @@ static void AddField (char *name, char *value)
 static void ErrMsg (char *str)
 {
 	haveErrors = true;
-	Com_WPrintf ("EntString error: %s\n", str);
+	appWPrintf ("EntString error: %s\n", str);
 }
 
 
@@ -504,7 +504,7 @@ static void WriteEntity (char **dst)
 			(*dst) += appSprintf (*dst, 1024, "\"%s\" \"%s\"\n", entity[i].name, entity[i].value);
 	strcpy (*dst, "}\n"); (*dst) += 2;
 #ifdef SHOW_WRITE
-	Com_Printf (S_CYAN"%s", txt);
+	appPrintf (S_CYAN"%s", txt);
 #endif
 }
 
@@ -721,7 +721,7 @@ static bool ProcessEntity ()
 				// remove from list
 				bspfile.slights = slight->next;
 				bspfile.numSlights--;
-//Com_Printf(S_RED"sun: %g %g %g (dst: %g %g %g, org: %g %g %g)\n",VECTOR_ARG(bspfile.sunVec),VECTOR_ARG(dst),VECTOR_ARG(slight->spotDir));
+//appPrintf(S_RED"sun: %g %g %g (dst: %g %g %g, org: %g %g %g)\n",VECTOR_ARG(bspfile.sunVec),VECTOR_ARG(dst),VECTOR_ARG(slight->spotDir));
 			}
 		}
 		if (!strcmp (classname + 5, "_spot") || FindField ("_spotvector,_spotpoint,_mangle,_spotangle"))
@@ -923,10 +923,10 @@ static bool ProcessEntity ()
 		return true;
 	}
 
-/*	Com_Printf("------------\n");
+/*	appPrintf("------------\n");
 	for (i = 0; i < numEntFields; i++)
 	{
-		Com_Printf("\"%s\"=\"%s\"\n", entity[i].name, entity[i].value);
+		appPrintf("\"%s\"=\"%s\"\n", entity[i].name, entity[i].value);
 	} */
 
 	return true;

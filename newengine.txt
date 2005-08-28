@@ -56,7 +56,7 @@
     Implement wrappers (appPrintf()==GLog->Printf() etc) in separate cpp file (CoreWrapper.cpp or CoreGlobal.cpp ...)
   - wrapper should allow placing few COutputDevice's; they should be called in LIFO order, and function should be able
     to prevent sending text to remainder of loggers (completely catch output)
-  - access functions: Com_Printf(), appPrintf(), appLogf(), Logf() -- which name ? (better - Logf() - shorter ...);
+  - access functions: appPrintf(), appLogf(), Logf() -- which name ? (better - Logf() - shorter ...);
     DLogf(), WLogf() ...
   - function to attach/detach COutputDevice to Logger - allow to log onto console and in file; function to replace logger (for
     redirection output)

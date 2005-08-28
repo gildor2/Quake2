@@ -150,7 +150,7 @@ static void CheckCpuModel ()
 	appPrintf ("CPU caps: [ ");
 
 	unsigned tmp = cpuid3 (1);
-	if (tmp & 0x00000001)	Com_Printf ("FPU ");
+	if (tmp & 0x00000001)	appPrintf ("FPU ");
 	//!! NOTE: if planning to use MMX/SSE/SSE2/3DNow! - should check OS support for this tech
 	if (tmp & 0x00800000)
 	{
@@ -162,7 +162,7 @@ static void CheckCpuModel ()
 		appPrintf ("SSE ");
 		IsSSE = true;
 	}
-	if (tmp & 0x04000000)	Com_Printf ("SSE2 ");
+	if (tmp & 0x04000000)	appPrintf ("SSE2 ");
 	if (tmp & 0x00000010)
 	{
 		appPrintf ("RDTSC ");
@@ -205,9 +205,9 @@ static void CheckCpuSpeed ()
 		double msecPerCycle = (time2 - time1) / (((double)stamp2 - (double)stamp1));
 		if (msecPerCycle < GMSecondsPerCycle) GMSecondsPerCycle = msecPerCycle;
 
-//		Com_Printf ("try #%d\n", tries);
-//		Com_Printf ("stampd: %u %u   timed: %d\n", stamp2 - stamp1, time2 - time1);
-//		Com_Printf ("CPU speed: %g MHz\n", 1e-6 / secPerCycle1);
+//		appPrintf ("try #%d\n", tries);
+//		appPrintf ("stampd: %u %u   timed: %d\n", stamp2 - stamp1, time2 - time1);
+//		appPrintf ("CPU speed: %g MHz\n", 1e-6 / secPerCycle1);
 	}
 	GSecondsPerCycle = GMSecondsPerCycle / 1000.0;
 	appPrintf ("CPU speed: %g MHz\n", 1e-6 / GSecondsPerCycle);

@@ -63,14 +63,14 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 
 	if (argc > 2 || usage)
 	{
-		Com_Printf ("Usage: shaderlist [<mask>]\n");
+		appPrintf ("Usage: shaderlist [<mask>]\n");
 		return;
 	}
 
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 
 	int n = 0;
-	Com_Printf ("----ns-lm-s--type-scr-name--------\n");
+	appPrintf ("----ns-lm-s--type-scr-name--------\n");
 	for (int i = 0; i < shaderCount; i++)
 	{
 		shader_t *sh = shadersArray[i];
@@ -99,10 +99,10 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 		else
 			color = "";
 
-		Com_Printf ("%-3d %d  %2s %-2d %3s  %-3s %s%s%s\n", i, sh->numStages, lmInfo,
+		appPrintf ("%-3d %d  %2s %-2d %3s  %-3s %s%s%s\n", i, sh->numStages, lmInfo,
 			sh->sortParam, shTypes[sh->type], boolNames[sh->scripted], color, *sh->Name, badNames[sh->bad]);
 	}
-	Com_Printf ("Displayed %d/%d shaders\n", n, shaderCount);
+	appPrintf ("Displayed %d/%d shaders\n", n, shaderCount);
 }
 
 
@@ -219,7 +219,7 @@ static shader_t *CreateShader ()
 {
 	if (shaderCount >= MAX_SHADERS)
 	{
-		Com_WPrintf ("CreateShader(%s): MAX_SHADERS hit\n", *sh.Name);
+		appWPrintf ("CreateShader(%s): MAX_SHADERS hit\n", *sh.Name);
 		return gl_defaultShader;
 	}
 
@@ -228,7 +228,7 @@ static shader_t *CreateShader ()
 	*nsh = sh;
 	CALL_CONSTRUCTOR(nsh);				// after copy
 
-//	Com_Printf(S_GREEN"sh: %s\n",*sh.Name);
+//	appPrintf(S_GREEN"sh: %s\n",*sh.Name);
 	// allocate and copy stages
 	for (int i = 0; i < sh.numStages; i++)
 	{
@@ -239,7 +239,7 @@ static shader_t *CreateShader ()
 		// setup mapImage[]
 		memcpy (&nst->mapImage, &shaderImages[i * MAX_STAGE_TEXTURES], st[i].numAnimTextures * sizeof(image_t*));
 //		for (int j = 0; j < nst->numAnimTextures; j++)
-//			Com_Printf("  %d.%d: %s\n",i,j,nst->mapImage[j] ? *nst->mapImage[j]->Name : "$white");
+//			appPrintf("  %d.%d: %s\n",i,j,nst->mapImage[j] ? *nst->mapImage[j]->Name : "$white");
 	}
 
 	// insert into a hash table
@@ -322,7 +322,7 @@ static shader_t *FinishShader ()	//!!!! rename function
 					blend2 = BLEND(D_COLOR,S_COLOR);// src*dst*2
 			}
 			else
-				Com_WPrintf ("R_FinishShader(%s): strange blend for lightmap in stage %d\n", *sh.Name, numStages);	//?? DPrintf
+				appWPrintf ("R_FinishShader(%s): strange blend for lightmap in stage %d\n", *sh.Name, numStages);	//?? DPrintf
 		}
 		// store new blend mode
 		s->glState = s->glState & ~GLSTATE_BLENDMASK | blend2;
@@ -667,7 +667,7 @@ shader_t *FindShader (const char *name, unsigned style)
 		if (style & SHADER_CHECK)
 			return NULL;	// do not return default shader
 
-		Com_WPrintf ("R_FindShader: couldn't find image \"%s\"\n", name);
+		appWPrintf ("R_FindShader: couldn't find image \"%s\"\n", name);
 		sh.bad = true;
 		img = (style & SHADER_SKIN) ? gl_identityLightImage : gl_defaultImage; // can use NULL as white, but will check img->... below ...
 	}
@@ -708,7 +708,7 @@ shader_t *FindShader (const char *name, unsigned style)
 			img = FindImage (pname, sh_imgFlags);
 			if (!img)
 			{
-				Com_WPrintf ("R_FindShader: couldn't find image \"%s\"\n", pname);
+				appWPrintf ("R_FindShader: couldn't find image \"%s\"\n", pname);
 				stage->numAnimTextures = 1;
 				sh.bad = true;
 				break;
@@ -892,7 +892,7 @@ static void FindShaderScripts ()
 
 	int numFiles = 0, numScripts = 0;
 
-	Com_Printf ("Searching for shader scripts:\n");
+	appPrintf ("Searching for shader scripts:\n");
 
 	TList<CStringItem> scriptFiles = FS_ListFiles (va("scripts/*.shader"), LIST_FILES);
 	for (CListIterator file = scriptFiles; file; ++file)
@@ -906,7 +906,7 @@ static void FindShaderScripts ()
 		if (!buf) continue;			// should not happens
 
 #ifdef DEBUG_SHADERS
-		Com_Printf (S_GREEN"%s\n", tmp);
+		appPrintf (S_GREEN"%s\n", tmp);
 #endif
 		CSimpleParser text;
 		text.InitFromBuf (buf, PARSER_CPP_COMMENTS|PARSER_SEPARATE_BRACES);
@@ -919,7 +919,7 @@ static void FindShaderScripts ()
 				break;
 			}
 #ifdef DEBUG_SHADERS
-			Com_Printf (S_RED"%s\n", line);
+			appPrintf (S_RED"%s\n", line);
 #endif
 			TString<64> Name;
 			Name.filename (line);
@@ -956,14 +956,14 @@ static void FindShaderScripts ()
 			numScripts++;
 		}
 #ifdef DEBUG_SHADERS
-		if (errMsg) Com_WPrintf ("ERROR in scripts/%s: %s\n", tmp, errMsg);
+		if (errMsg) appWPrintf ("ERROR in scripts/%s: %s\n", tmp, errMsg);
 #endif
 
 		FS_FreeFile (buf);
 	}
 	scriptFiles.Free ();
 
-	Com_Printf ("...found %d shader scripts in %d files\n", numScripts, numFiles);
+	appPrintf ("...found %d shader scripts in %d files\n", numScripts, numFiles);
 	unguard;
 }
 
@@ -1014,14 +1014,14 @@ static bool InitShaderFromScript (const char *srcName, const char *text)
 			if (!scr) return false;
 
 #ifdef DEBUG_SHADERS
-			Com_WPrintf ("found %s in %s %X-%X\n", scr->name, scr->file, scr->start, scr->end);
+			appWPrintf ("found %s in %s %X-%X\n", scr->name, scr->file, scr->start, scr->end);
 #endif
 			// load script file
 			unsigned length;
 			buf = (char*)FS_LoadFile (va("scripts/%s", *scr->FileName), &length);
 			if (scr->end > length)
 			{
-				Com_WPrintf ("script \"%s\" beyond end of file \"%s\" ?", srcName, *scr->FileName);
+				appWPrintf ("script \"%s\" beyond end of file \"%s\" ?", srcName, *scr->FileName);
 				return false;
 			}
 			text = buf + scr->start;
@@ -1030,7 +1030,7 @@ static bool InitShaderFromScript (const char *srcName, const char *text)
 	}
 
 #ifdef DEBUG_SHADERS
-	Com_Printf (S_GREEN"%s:\n-----\n%s\n-----\n", srcName, text);
+	appPrintf (S_GREEN"%s:\n-----\n%s\n-----\n", srcName, text);
 #endif
 
 	sh.scripted = true;
@@ -1089,7 +1089,7 @@ static bool InitShaderFromScript (const char *srcName, const char *text)
 	if (shaderError)
 	{
 		sh.bad = true;
-		Com_WPrintf ("ERROR in shader \"%s\": %s\n", srcName, shaderError);
+		appWPrintf ("ERROR in shader \"%s\": %s\n", srcName, shaderError);
 		result = false;
 	}
 	else

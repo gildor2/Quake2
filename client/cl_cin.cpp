@@ -160,7 +160,7 @@ static void HuffDecompress (cblock_t *in, cblock_t *out, byte *buffer, int count
 
 	int readCount = input - in->data;
 	if (readCount != in->count && readCount != in->count + 1)
-		Com_WPrintf ("Decompression overread by %d\n", readCount - in->count);
+		appWPrintf ("Decompression overread by %d\n", readCount - in->count);
 
 	out->count = buffer - out->data;
 	return;
@@ -345,7 +345,7 @@ void SCR_PlayCinematic (const char *filename)
 		}
 		else
 		{
-			Com_WPrintf ("%s not found\n", filename);
+			appWPrintf ("%s not found\n", filename);
 			SCR_StopCinematic ();			// launch next server
 			return;
 		}

@@ -15,7 +15,7 @@
 		unsigned _time = appCycles();
 #define END_PROFILE	\
 		if (Cvar_VariableInt("r_profile")) \
-			Com_Printf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %.2f ms\n", _name, _arg,\
+			appPrintf(S_MAGENTA"%s "S_GREEN"%s"S_CYAN": %.2f ms\n", _name, _arg,\
 			appDeltaCyclesToMsecf(appCycles() - _time)); \
 	}
 #else

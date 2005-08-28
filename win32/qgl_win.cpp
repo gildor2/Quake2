@@ -37,7 +37,7 @@ bool QGL_Init (const char *libName)
 {
 	if (!(libGL = LoadLibrary (libName)))	//!! win32
 	{
-		Com_WPrintf ("QGL_Init: LoadLibrary(%s) failed\n", libName);
+		appWPrintf ("QGL_Init: LoadLibrary(%s) failed\n", libName);
 		return false;
 	}
 
@@ -49,14 +49,14 @@ bool QGL_Init (const char *libName)
 			FreeLibrary (libGL);	//!! win32
 			libGL = NULL;
 
-			Com_WPrintf ("QGL_Init: inconsistent OpenGL library %s: function %s is not found\n", libName, qglNames[i]);
+			appWPrintf ("QGL_Init: inconsistent OpenGL library %s: function %s is not found\n", libName, qglNames[i]);
 			return false;
 		}
 	}
 #ifdef _WIN32
 	// detect minidriver OpenGL version
 	if (!gl_driver->IsDefault())			// compare with opengl32.dll
-		Com_Printf ("...minidriver detected\n");
+		appPrintf ("...minidriver detected\n");
 	else
 	{
 		// replace some wgl function with equivalent GDI ones
@@ -195,7 +195,7 @@ void QGL_InitExtensions ()
 				dummyFunc_t func = qgl.funcs[j] = lib.funcs[j] = (dummyFunc_t) (wglGetProcAddress (qglNames[j]));	//!! win32
 				if (!func)
 				{
-					Com_WPrintf ("Inconsistent extension %s: function %s is not found\n", ext->name, qglNames[j]);
+					appWPrintf ("Inconsistent extension %s: function %s is not found\n", ext->name, qglNames[j]);
 					enable = false;
 					break;
 				}
@@ -228,7 +228,7 @@ void QGL_InitExtensions ()
 				for (j = 0; j < NUM_EXTENSIONS; j++)
 				{
 					if ((1 << j) & tmp)
-						Com_WPrintf ("%s required for %s\n", extInfo[j].names, ext->name);
+						appWPrintf ("%s required for %s\n", extInfo[j].names, ext->name);
 				}
 //				// disable extension
 //				gl_config.ignoredExt |= 1 << i;
@@ -240,7 +240,7 @@ void QGL_InitExtensions ()
 	/*-------- choose preferred extensions ----------*/
 	if (gl_config.extensionMask)
 	{
-		Com_Printf ("...used extensions:\n");
+		appPrintf ("...used extensions:\n");
 		for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 		{
 			if (!(gl_config.extensionMask & (1 << i)))
@@ -260,25 +260,25 @@ void QGL_InitExtensions ()
 				gl_config.ignoredExt |= 1 << i;
 			}
 			else
-				Com_Printf ("   %s\n", ext->name);
+				appPrintf ("   %s\n", ext->name);
 		}
 	}
 	else
-		Com_WPrintf ("...no extensions was found\n");
+		appWPrintf ("...no extensions was found\n");
 
 	/*---------- notify disabled extensions ---------*/
 	if (gl_config.disabledExt)
 	{
-		Com_Printf (S_CYAN"...disabled extensions:\n");
+		appPrintf (S_CYAN"...disabled extensions:\n");
 		for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 			if (gl_config.disabledExt & (1 << i))
-				Com_Printf (S_CYAN"   %s\n", ext->name);
+				appPrintf (S_CYAN"   %s\n", ext->name);
 	}
 
 	/*----------- notify extension absence ----------*/
 	if (notFoundExt)
 	{
-		Com_Printf ("...undetected extensions:\n");
+		appPrintf ("...undetected extensions:\n");
 		for (i = 0, ext = extInfo; i < NUM_EXTENSIONS; i++, ext++)
 		{
 			if (!(notFoundExt & (1 << i))) continue;
@@ -296,9 +296,9 @@ void QGL_InitExtensions ()
 				}
 			}
 			else
-				Com_Printf ("   %s\n", ext->name);
+				appPrintf ("   %s\n", ext->name);
 		}
-		Com_Printf ("\n");
+		appPrintf ("\n");
 	}
 
 	unguard;
@@ -310,7 +310,7 @@ void QGL_PrintExtensionsString (const char *label, const char *str, const char *
 	char	name[256];
 
 	// display label
-	Com_Printf (S_RED"%s extensions: ", label);
+	appPrintf (S_RED"%s extensions: ", label);
 	// display extension names
 	int i = 0;
 	while (true)
@@ -346,16 +346,16 @@ void QGL_PrintExtensionsString (const char *label, const char *str, const char *
 					color = S_GREEN;		// used
 				else
 					color = S_RED;			// switched off by another reason
-				Com_Printf ("%s%s "S_WHITE, color, name);
+				appPrintf ("%s%s "S_WHITE, color, name);
 				break;
 			}
-			if (!color) Com_Printf ("%s ", name);		// unsupported extension
+			if (!color) appPrintf ("%s ", name);		// unsupported extension
 		}
 		else
 		{
 			if (i >= sizeof(name)-1)
 			{
-				Com_WPrintf ("Bad extension string\n");
+				appWPrintf ("Bad extension string\n");
 				return;
 			}
 			name[i++] = c;
@@ -363,7 +363,7 @@ void QGL_PrintExtensionsString (const char *label, const char *str, const char *
 		if (!c) break;
 	}
 	// EOLN
-	Com_Printf ("\n");
+	appPrintf ("\n");
 }
 
 
@@ -386,7 +386,7 @@ void QGL_EnableLogging (bool enable)
 			logFile = fopen ("gl.log", "a+");
 			if (!logFile)
 			{
-				Com_WPrintf ("QGL_EnableLogging: unable to create file\n");
+				appWPrintf ("QGL_EnableLogging: unable to create file\n");
 				return;
 			}
 			fprintf (logFile, "\n---------------------------\n%s\n---------------------------\n", ctime);
@@ -438,7 +438,7 @@ void QGL_SwapBuffers ()
 		if (++error > 3 && ActiveApp)	// make fatal error only when 4 errors one by one
 			Com_FatalError ("wglSwapBuffers() failed");
 		else
-			Com_WPrintf ("wglSwapBuffers() failed\n");
+			appWPrintf ("wglSwapBuffers() failed\n");
 	}
 #else
 	glXSwapBuffers() ?

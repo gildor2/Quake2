@@ -344,7 +344,7 @@ extern	const char *svc_strings[svc_last];
 void CL_ParseServerMessage (void);
 
 #define SHOWNET(s)	\
-	if (cl_shownet->integer >= 2) Com_Printf ("%3d:%s\n", net_message.readcount-1, s);
+	if (cl_shownet->integer >= 2) appPrintf ("%3d:%s\n", net_message.readcount-1, s);
 
 void CL_ParseClientinfo (int player);
 void CL_UpdatePlayerClientInfo ();

@@ -39,7 +39,7 @@ static void SV_New_f (int argc, char **argv)
 
 	if (sv_client->state != cs_connected)
 	{
-		Com_Printf ("New not valid -- already spawned\n");
+		appPrintf ("New not valid -- already spawned\n");
 		return;
 	}
 
@@ -97,14 +97,14 @@ static void SV_Configstrings_f (int argc, char **argv)
 
 	if (sv_client->state != cs_connected)
 	{
-		Com_Printf ("configstrings not valid -- already spawned\n");
+		appPrintf ("configstrings not valid -- already spawned\n");
 		return;
 	}
 
 	// handle the case of a level changing while a client was connecting
 	if (atoi (argv[1]) != svs.spawncount)
 	{
-		Com_Printf ("SV_Configstrings_f from different level\n");
+		appPrintf ("SV_Configstrings_f from different level\n");
 		SV_New_f (argc, argv);
 		return;
 	}
@@ -146,14 +146,14 @@ static void SV_Baselines_f (int argc, char **argv)
 
 	if (sv_client->state != cs_connected)
 	{
-		Com_Printf ("baselines not valid -- already spawned\n");
+		appPrintf ("baselines not valid -- already spawned\n");
 		return;
 	}
 
 	// handle the case of a level changing while a client was connecting
 	if (atoi (argv[1]) != svs.spawncount)
 	{
-		Com_Printf ("SV_Baselines_f from different level\n");
+		appPrintf ("SV_Baselines_f from different level\n");
 		SV_New_f (argc, argv);
 		return;
 	}
@@ -199,7 +199,7 @@ static void SV_Begin_f (int argc, char **argv)
 	// handle the case of a level changing while a client was connecting
 	if (atoi (argv[1]) != svs.spawncount)
 	{
-		Com_Printf ("SV_Begin_f from different level\n");
+		appPrintf ("SV_Begin_f from different level\n");
 		SV_New_f (argc, argv);
 		return;
 	}
@@ -513,7 +513,7 @@ void SV_ExecuteClientMessage (client_t *cl)
 	{
 		if (net_message.readcount > net_message.cursize)
 		{
-			Com_Printf ("SV_ReadClientMessage: badread\n");
+			appPrintf ("SV_ReadClientMessage: badread\n");
 			SV_DropClient (cl, NULL);
 			return;
 		}
@@ -550,7 +550,7 @@ void SV_ExecuteClientMessage (client_t *cl)
 			break;
 
 		default:
-			Com_Printf ("SV_ReadClientMessage: unknown command char\n");
+			appPrintf ("SV_ReadClientMessage: unknown command char\n");
 			SV_DropClient (cl, NULL);
 			return;
 		}

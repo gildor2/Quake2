@@ -41,7 +41,7 @@ static void SV_SetMaster_f (int argc, char **argv)
 	// only dedicated servers send heartbeats
 	if (!DEDICATED)
 	{
-		Com_Printf ("Only dedicated servers use masters.\n");
+		appPrintf ("Only dedicated servers use masters.\n");
 		return;
 	}
 
@@ -59,15 +59,15 @@ static void SV_SetMaster_f (int argc, char **argv)
 
 		if (!NET_StringToAdr (argv[i], &master_adr[i]))
 		{
-			Com_Printf ("Bad address: %s\n", argv[i]);
+			appPrintf ("Bad address: %s\n", argv[i]);
 			continue;
 		}
 		if (master_adr[slot].port == 0)
 			master_adr[slot].port = BigShort (PORT_MASTER);
 
-		Com_Printf ("Master server at %s\n", NET_AdrToString (&master_adr[slot]));
+		appPrintf ("Master server at %s\n", NET_AdrToString (&master_adr[slot]));
 
-		Com_Printf ("Sending a ping.\n");
+		appPrintf ("Sending a ping.\n");
 
 		Netchan_OutOfBandPrint (NS_SERVER, master_adr[slot], "ping");
 
@@ -108,7 +108,7 @@ static void SV_WriteLevelFile ()
 	FILE *f = fopen (name, "wb");
 	if (!f)
 	{
-		Com_WPrintf ("Failed to open %s\n", name);
+		appWPrintf ("Failed to open %s\n", name);
 		return;
 	}
 	fwrite (sv.configstrings, sizeof(sv.configstrings), 1, f);
@@ -129,7 +129,7 @@ void SV_ReadLevelFile ()
 	FILE *f = fopen(name, "rb");
 	if (!f)
 	{
-		Com_WPrintf ("Failed to open %s\n", name);
+		appWPrintf ("Failed to open %s\n", name);
 		return;
 	}
 	fread (sv.configstrings, sizeof(sv.configstrings), 1, f);
@@ -153,7 +153,7 @@ static void SV_WriteServerFile (bool autosave, const char *dir)
 	FILE *f = fopen (name, "wb");
 	if (!f)
 	{
-		Com_WPrintf ("Couldn't write %s\n", name);
+		appWPrintf ("Couldn't write %s\n", name);
 		return;
 	}
 	// write the comment field
@@ -182,7 +182,7 @@ static void SV_WriteServerFile (bool autosave, const char *dir)
 			continue;
 		if (strlen(var->name) >= sizeof(name)-1 || strlen(var->string) >= sizeof(string)-1)
 		{
-			Com_WPrintf ("Cvar too long: %s = %s\n", var->name, var->string);
+			appWPrintf ("Cvar too long: %s = %s\n", var->name, var->string);
 			continue;
 		}
 		memset (name, 0, sizeof(name));
@@ -223,7 +223,7 @@ static void SV_ReadServerFile ()
 	FILE *f = fopen (name, "rb");
 	if (!f)
 	{
-		Com_WPrintf ("Couldn't read %s\n", name);
+		appWPrintf ("Couldn't read %s\n", name);
 		return;
 	}
 	// read the comment field
@@ -261,16 +261,16 @@ static void SV_Loadgame_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: loadgame <directory>\n");
+		appPrintf ("Usage: loadgame <directory>\n");
 		return;
 	}
 
-	Com_Printf ("Loading game...\n");
+	appPrintf ("Loading game...\n");
 
 	const char *dir = argv[1];
 	if (strstr (dir, "..") || strchr (dir, '/') || strchr (dir, '\\'))
 	{
-		Com_WPrintf ("Bad savedir\n");
+		appWPrintf ("Bad savedir\n");
 		return;
 	}
 
@@ -280,7 +280,7 @@ static void SV_Loadgame_f (bool usage, int argc, char **argv)
 	FILE *f = fopen (name, "rb");
 	if (!f)
 	{
-		Com_WPrintf ("No such savegame: %s\n", name);
+		appWPrintf ("No such savegame: %s\n", name);
 		return;
 	}
 	fclose (f);
@@ -300,42 +300,42 @@ static void SV_Savegame_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: savegame <directory>\n");
+		appPrintf ("Usage: savegame <directory>\n");
 		return;
 	}
 
 	if (sv.state != ss_game)
 	{
-		Com_WPrintf ("You must be in a game to save.\n");
+		appWPrintf ("You must be in a game to save.\n");
 		return;
 	}
 
 	if (sv_deathmatch->integer)
 	{
-		Com_WPrintf ("Can't savegame in a deathmatch\n");
+		appWPrintf ("Can't savegame in a deathmatch\n");
 		return;
 	}
 
 	if (!strcmp (argv[1], "current"))
 	{
-		Com_WPrintf ("Can't save to 'current'\n");
+		appWPrintf ("Can't save to 'current'\n");
 		return;
 	}
 
 	if (svs.clients[0].edict->client->ps.stats[STAT_HEALTH] <= 0)
 	{
-		Com_WPrintf ("Can't savegame while dead!\n");
+		appWPrintf ("Can't savegame while dead!\n");
 		return;
 	}
 
 	const char *dir = argv[1];
 	if (strstr (dir, "..") || strchr (dir, '/') || strchr (dir, '\\'))
 	{
-		Com_WPrintf ("Bad savedir\n");
+		appWPrintf ("Bad savedir\n");
 		return;
 	}
 
-	Com_Printf ("Saving game...\n");
+	appPrintf ("Saving game...\n");
 
 	// archive current level, including all client edicts.
 	// when the level is reloaded, they will be shells awaiting
@@ -347,7 +347,7 @@ static void SV_Savegame_f (bool usage, int argc, char **argv)
 	// save server state
 	SV_WriteServerFile (false, dir);
 
-	Com_Printf ("Done.\n");
+	appPrintf ("Done.\n");
 }
 
 
@@ -395,7 +395,7 @@ static void SV_GameMap_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: gamemap <map>\n");
+		appPrintf ("Usage: gamemap <map>\n");
 		return;
 	}
 
@@ -462,7 +462,7 @@ static void SV_Map_f (int argc, char **argv)
 		appSprintf (ARRAY_ARG(expanded), "maps/%s.bsp", map);
 		if (!FS_FileExists (expanded))
 		{
-			Com_WPrintf ("Can't find %s\n", expanded);
+			appWPrintf ("Can't find %s\n", expanded);
 			return;
 		}
 	}
@@ -488,7 +488,7 @@ static bool SetPlayer (const char *s)
 		int idnum = atoi (s);
 		if (idnum >= sv_maxclients->integer)		// negative values are impossible here
 		{
-			Com_WPrintf ("Bad client slot: %d\n", idnum);
+			appWPrintf ("Bad client slot: %d\n", idnum);
 			return false;
 		}
 
@@ -496,7 +496,7 @@ static bool SetPlayer (const char *s)
 		sv_player = sv_client->edict;
 		if (!sv_client->state)
 		{
-			Com_WPrintf ("Client %d is not active\n", idnum);
+			appWPrintf ("Client %d is not active\n", idnum);
 			return false;
 		}
 		return true;
@@ -516,7 +516,7 @@ static bool SetPlayer (const char *s)
 		}
 	}
 
-	Com_WPrintf ("Userid %s is not on the server\n", s);
+	appWPrintf ("Userid %s is not on the server\n", s);
 	return false;
 }
 
@@ -526,13 +526,13 @@ static void SV_Kick_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: kick <userid>\n");
+		appPrintf ("Usage: kick <userid>\n");
 		return;
 	}
 
 	if (!svs.initialized)
 	{
-		Com_WPrintf ("No server running.\n");
+		appWPrintf ("No server running.\n");
 		return;
 	}
 
@@ -541,7 +541,7 @@ static void SV_Kick_f (bool usage, int argc, char **argv)
 
 	if (sv_client->netchan.remote_address.type == NA_LOOPBACK)
 	{
-		Com_WPrintf ("Cannot kick host player\n");
+		appWPrintf ("Cannot kick host player\n");
 		return;
 	}
 
@@ -569,12 +569,12 @@ static void AddBanString (const char *str)
 {
 	if (FindBanString (str) >= 0)
 	{
-		Com_WPrintf ("%s already banned\n", str);
+		appWPrintf ("%s already banned\n", str);
 		return;
 	}
 	if (banCount >= MAX_BAN_LIST)
 	{
-		Com_WPrintf ("Cannot ban %s: ban list full\n", str);
+		appWPrintf ("Cannot ban %s: ban list full\n", str);
 		return;
 	}
 	Com_DPrintf ("Add %s to banlist\n", str);
@@ -596,13 +596,13 @@ static void SV_Ban_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: ban <userid>\n");
+		appPrintf ("Usage: ban <userid>\n");
 		return;
 	}
 
 	if (!svs.initialized)		// ban by userid requires user to be connected, so -- server must be launched
 	{
-		Com_WPrintf ("No server running.\n");
+		appWPrintf ("No server running.\n");
 		return;
 	}
 
@@ -611,7 +611,7 @@ static void SV_Ban_f (bool usage, int argc, char **argv)
 
 	if (sv_client->netchan.remote_address.type == NA_LOOPBACK)
 	{
-		Com_WPrintf ("Cannot ban local client\n");
+		appWPrintf ("Cannot ban local client\n");
 		return;
 	}
 
@@ -631,14 +631,14 @@ static void SV_BanIP_f (bool usage, int argc, char **argv)
 	// can modify banlist before server launched
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: banip <ip-mask>\n");
+		appPrintf ("Usage: banip <ip-mask>\n");
 		return;
 	}
 
 	const char *str = argv[1];
 	if (strlen (str) > 32)
 	{
-		Com_WPrintf ("IP-mask is too long\n");
+		appWPrintf ("IP-mask is too long\n");
 		return;
 	}
 	AddBanString (str);
@@ -662,9 +662,9 @@ static void SV_BanIP_f (bool usage, int argc, char **argv)
 
 static void SV_BanList_f ()
 {
-	Com_Printf ("Banned IP's:\n");
+	appPrintf ("Banned IP's:\n");
 	for (int i = 0; i < banCount; i++)
-		Com_Printf ("%-2d: %s\n", i, banlist[i]);
+		appPrintf ("%-2d: %s\n", i, banlist[i]);
 }
 
 
@@ -672,7 +672,7 @@ static void SV_BanRemove_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: banremove <list-index or ip-mask>\n");
+		appPrintf ("Usage: banremove <list-index or ip-mask>\n");
 		return;
 	}
 
@@ -683,7 +683,7 @@ static void SV_BanRemove_f (bool usage, int argc, char **argv)
 		n = FindBanString (str);
 		if (n < 0)
 		{
-			Com_WPrintf ("Mask %s is not in ban list\n", str);
+			appWPrintf ("Mask %s is not in ban list\n", str);
 			return;
 		}
 	}
@@ -691,13 +691,13 @@ static void SV_BanRemove_f (bool usage, int argc, char **argv)
 	{
 		if (str[0] < '0' || str[0] > '9')
 		{
-			Com_WPrintf ("Bad list index %d\n", str);
+			appWPrintf ("Bad list index %d\n", str);
 			return;
 		}
 		n = atoi (str);
 		if (n >= banCount)		// do not need "< 0" check: if number have "-" - will not get here
 		{
-			Com_WPrintf ("Index %d is out of list bounds\n", n);
+			appWPrintf ("Index %d is out of list bounds\n", n);
 			return;
         }
 	}
@@ -712,14 +712,14 @@ static void SV_DumpUser_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: dumpuser <userid>\n");
+		appPrintf ("Usage: dumpuser <userid>\n");
 		return;
 	}
 
 	if (!SetPlayer (argv[1]))
 		return;
 
-	Com_Printf (S_GREEN"userinfo\n--------\n");
+	appPrintf (S_GREEN"userinfo\n--------\n");
 	Info_Print (sv_client->userinfo);
 }
 
@@ -730,33 +730,33 @@ static void SV_Status_f ()
 {
 	if (!svs.clients)
 	{
-		Com_WPrintf ("No server running.\n");
+		appWPrintf ("No server running.\n");
 		return;
 	}
-	Com_Printf ("map: %s\n", sv.name);
+	appPrintf ("map: %s\n", sv.name);
 
-	Com_Printf ("--n-score-ping-name------------lastmsg-address---------------qport-\n");
+	appPrintf ("--n-score-ping-name------------lastmsg-address---------------qport-\n");
 	int		i;
 	client_t *cl;
 	for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++,cl++)
 	{
 		if (!cl->state) continue;
 		if (!sv.attractloop)
-			Com_Printf ("%3d %5d ", i, cl->edict->client->ps.stats[STAT_FRAGS]);
+			appPrintf ("%3d %5d ", i, cl->edict->client->ps.stats[STAT_FRAGS]);
 		else	// cannot access edict for demo client
-			Com_Printf ("%3d "S_RED"----- "S_WHITE, i);
+			appPrintf ("%3d "S_RED"----- "S_WHITE, i);
 
 		if (cl->state == cs_connected)
-			Com_Printf ("CNCT ");
+			appPrintf ("CNCT ");
 		else if (cl->state == cs_zombie)
-			Com_Printf (S_RED"ZMBI "S_WHITE);
+			appPrintf (S_RED"ZMBI "S_WHITE);
 		else
-			Com_Printf ("%4d ", min (cl->ping, 9999));
+			appPrintf ("%4d ", min (cl->ping, 9999));
 
-		Com_Printf ("%-15s %7d %-21s %5d\n", cl->name, svs.realtime - cl->lastmessage,
+		appPrintf ("%-15s %7d %-21s %5d\n", cl->name, svs.realtime - cl->lastmessage,
 			NET_AdrToString (&cl->netchan.remote_address), cl->netchan.port);
 	}
-	Com_Printf ("\n");
+	appPrintf ("\n");
 }
 
 
@@ -790,7 +790,7 @@ static void SV_Heartbeat_f ()
 // Examine the serverinfo string
 static void SV_Serverinfo_f ()
 {
-	Com_Printf (S_GREEN"------ Server info settings ------\n");
+	appPrintf (S_GREEN"------ Server info settings ------\n");
 	Info_Print (Cvar_Serverinfo());
 }
 
@@ -802,19 +802,19 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: serverrecord <demoname>\n");
+		appPrintf ("Usage: serverrecord <demoname>\n");
 		return;
 	}
 
 	if (svs.wdemofile)
 	{
-		Com_WPrintf ("Already recording\n");
+		appWPrintf ("Already recording\n");
 		return;
 	}
 
 	if (sv.state != ss_game)
 	{
-		Com_WPrintf ("You must be in a level to record\n");
+		appWPrintf ("You must be in a level to record\n");
 		return;
 	}
 
@@ -822,12 +822,12 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 	char name[MAX_OSPATH];
 	appSprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
-	Com_Printf ("recording to %s\n", name);
+	appPrintf ("recording to %s\n", name);
 	FS_CreatePath (name);
 	svs.wdemofile = fopen (name, "wb");
 	if (!svs.wdemofile)
 	{
-		Com_WPrintf ("ERROR: couldn't open\n");
+		appWPrintf ("ERROR: couldn't open\n");
 		return;
 	}
 
@@ -875,12 +875,12 @@ static void SV_ServerStop_f ()
 {
 	if (!svs.wdemofile)
 	{
-		Com_Printf ("Not doing a serverrecord.\n");
+		appPrintf ("Not doing a serverrecord.\n");
 		return;
 	}
 	fclose (svs.wdemofile);
 	svs.wdemofile = NULL;
-	Com_Printf ("Recording completed.\n");
+	appPrintf ("Recording completed.\n");
 }
 
 
@@ -899,7 +899,7 @@ static void SV_ServerCommand_f (int argc, char **argv)
 {
 	if (!ge)
 	{
-		Com_WPrintf ("No game loaded.\n");
+		appWPrintf ("No game loaded.\n");
 		return;
 	}
 

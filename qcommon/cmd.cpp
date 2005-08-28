@@ -44,15 +44,15 @@ void Cbuf_AddText (const char *text)
 
 	if (cmd_text.cursize + len >= cmd_text.maxsize)
 	{
-		Com_WPrintf ("Cbuf_AddText: overflow\n");
+		appWPrintf ("Cbuf_AddText: overflow\n");
 		return;
 	}
 	if (cmd_debug->integer & 2)
 	{
 		if (len > 256)
-			Com_Printf (S_BLUE"AddText: %d chars\n", len);
+			appPrintf (S_BLUE"AddText: %d chars\n", len);
 		else
-			Com_Printf (S_BLUE"AddText: \"%s\"\n", text);
+			appPrintf (S_BLUE"AddText: \"%s\"\n", text);
 	}
 	cmd_text.Write (text, len);
 }
@@ -72,15 +72,15 @@ static void Cbuf_InsertText (const char *text)
 
 	if (cmd_text.cursize + len >= cmd_text.maxsize)
 	{
-		Com_WPrintf ("Cbuf_InsertText: overflow\n");
+		appWPrintf ("Cbuf_InsertText: overflow\n");
 		return;
 	}
 	if (cmd_debug->integer & 2)
 	{
 		if (len > 256)
-			Com_Printf (S_BLUE"InsText: %d chars\n", len);
+			appPrintf (S_BLUE"InsText: %d chars\n", len);
 		else
-			Com_Printf (S_BLUE"InsText: \"%s\"\n", text);
+			appPrintf (S_BLUE"InsText: \"%s\"\n", text);
 	}
 	// NOTE: here no overflow
 	// SZ_Insert (&cmd_text, text, len, 0);
@@ -100,7 +100,7 @@ void Cbuf_CopyToDefer (void)
 	memcpy (defer_text_buf, cmd_text_buf, cmd_text.cursize);
 	defer_text_buf[cmd_text.cursize] = 0;
 	cmd_text.cursize = 0;
-	if (cmd_debug->integer & 2) Com_Printf (S_BLUE"DeferCommands\n");
+	if (cmd_debug->integer & 2) appPrintf (S_BLUE"DeferCommands\n");
 }
 
 /*
@@ -110,7 +110,7 @@ Cbuf_InsertFromDefer
 */
 void Cbuf_InsertFromDefer (void)
 {
-	if (cmd_debug->integer & 2) Com_Printf (S_BLUE"UndeferCommands: ");	// line will be continued from Cbuf_InsertText()
+	if (cmd_debug->integer & 2) appPrintf (S_BLUE"UndeferCommands: ");	// line will be continued from Cbuf_InsertText()
 	Cbuf_InsertText (defer_text_buf);
 	defer_text_buf[0] = 0;
 }
@@ -205,7 +205,7 @@ static void Cmd_Wait_f (bool usage, int argc, char **argv)
 {
 	if (argc > 2 || usage)
 	{
-		Com_Printf ("Usage: wait [<num_frames>]\n");
+		appPrintf ("Usage: wait [<num_frames>]\n");
 		return;
 	}
 	cmdWait = argc == 2 ? atoi (argv[1]) : 1;
@@ -216,17 +216,17 @@ static void Cmd_Exec_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: exec <filename>\n");
+		appPrintf ("Usage: exec <filename>\n");
 		return;
 	}
 
 	char	*f;
 	if (!(f = (char*) FS_LoadFile (argv[1])))
 	{
-		Com_WPrintf ("Couldn't exec %s\n", argv[1]);
+		appWPrintf ("Couldn't exec %s\n", argv[1]);
 		return;
 	}
-	Com_Printf ("Execing %s\n", argv[1]);
+	appPrintf ("Execing %s\n", argv[1]);
 
 	Cbuf_InsertText (f);
 
@@ -237,8 +237,8 @@ static void Cmd_Exec_f (bool usage, int argc, char **argv)
 static void Cmd_Echo_f (int argc, char **argv)
 {
 	for (int i = 1; i < argc; i++)
-		Com_Printf ("%s ", argv[i]);
-	Com_Printf ("\n");
+		appPrintf ("%s ", argv[i]);
+	appPrintf ("\n");
 }
 
 
@@ -248,15 +248,15 @@ static void Cmd_Alias_f (bool usage, int argc, char **argv)
 
 	if (argc == 2 || usage)
 	{
-		Com_Printf ("Usage: alias [<name> <value>]\n");
+		appPrintf ("Usage: alias [<name> <value>]\n");
 		return;
 	}
 
 	if (argc == 1)
 	{
-		Com_Printf ("Current alias commands:\n");
+		appPrintf ("Current alias commands:\n");
 		for (TListIterator<CAlias> a = AliasList; a; ++a)
-			Com_Printf ("%s \"%s\"\n", a->name, a->value);
+			appPrintf ("%s \"%s\"\n", a->name, a->value);
 		return;
 	}
 
@@ -290,7 +290,7 @@ void Cmd_Unalias_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: unalias <mask>\n");
+		appPrintf ("Usage: unalias <mask>\n");
 		return;
 	}
 
@@ -307,7 +307,7 @@ void Cmd_Unalias_f (bool usage, int argc, char **argv)
 			n++;
 		}
 	}
-	Com_Printf ("%d aliases removed\n", n);
+	appPrintf ("%d aliases removed\n", n);
 }
 
 
@@ -340,7 +340,7 @@ static char *MacroExpandString (const char *text)
 		len--;
 	if (len >= sizeof(buf))
 	{
-		Com_WPrintf ("Line exceeded "STR(MAX_STRING_CHARS)" chars, discarded\n");
+		appWPrintf ("Line exceeded "STR(MAX_STRING_CHARS)" chars, discarded\n");
 		return NULL;
 	}
 	memcpy (buf, text, len);
@@ -371,7 +371,7 @@ static char *MacroExpandString (const char *text)
 		len = len - (data - s) + varLen;		// update length for overflow checking
 		if (len >= sizeof(buf))
 		{
-			Com_WPrintf ("Expanded line exceeded "STR(MAX_STRING_CHARS)" chars, discarded\n");
+			appWPrintf ("Expanded line exceeded "STR(MAX_STRING_CHARS)" chars, discarded\n");
 			return NULL;
 		}
 
@@ -382,16 +382,16 @@ static char *MacroExpandString (const char *text)
 
 		if (++count == MACRO_LOOP_COUNT)
 		{
-			Com_WPrintf ("Macro expansion loop, discarded\n");
+			appWPrintf ("Macro expansion loop, discarded\n");
 			return NULL;
 		}
 	}
 
 	if (quotes)
 	{
-		Com_WPrintf ("Line has unmatched quote, discarded.\n");
+		appWPrintf ("Line has unmatched quote, discarded.\n");
 		if (cmd_debug->integer)
-			Com_Printf ("bad str: <%s> -> <%s>\n", text, buf);
+			appPrintf ("bad str: <%s> -> <%s>\n", text, buf);
 		return NULL;
 	}
 
@@ -411,7 +411,7 @@ static char *MacroExpandString (const char *text)
 				*s2 = 0;	// cut trailng '"'
 			}
 		}
-//		Com_WPrintf("[%s] <- [%s]\n", buf, s1);
+//		appWPrintf("[%s] <- [%s]\n", buf, s1);
 		Cvar_Set (buf, s1);
 		return NULL;
 	}
@@ -518,7 +518,7 @@ bool Cmd_ExecuteString (const char *text)
 	if (!_argc) return true;		// no tokens
 
 	if (cmd_debug->integer & 1)
-		Com_Printf (S_CYAN"cmd: %s\n", text);
+		appPrintf (S_CYAN"cmd: %s\n", text);
 
 	// check functions
 	CCommand *cmd = CmdList.Find (_argv[0]);
@@ -558,7 +558,7 @@ bool Cmd_ExecuteString (const char *text)
 	{
 		if (++aliasCount == ALIAS_LOOP_COUNT)
 		{
-			Com_WPrintf ("ALIAS_LOOP_COUNT\n");
+			appWPrintf ("ALIAS_LOOP_COUNT\n");
 			return true;
 		}
 		Cbuf_InsertText (va("%s\n", a->value));
@@ -602,24 +602,24 @@ static void Cmd_List_f (bool usage, int argc, char **argv)
 {
 	if (argc > 2 || usage)
 	{
-		Com_Printf ("Usage: cmdlist [<mask>]\n");
+		appPrintf ("Usage: cmdlist [<mask>]\n");
 		return;
 	}
 
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 	int n = 0, total = 0;
-	Com_Printf ("----i-a-name----------------\n");
+	appPrintf ("----i-a-name----------------\n");
 	for (TListIterator<CCommand> cmd = CmdList; cmd; ++cmd)
 	{
 		total++;
 		if (mask && !appMatchWildcard (cmd->name, mask, true)) continue;
-		Com_Printf ("%-3d %c %c %s\n", total,
+		appPrintf ("%-3d %c %c %s\n", total,
 			cmd->flags & COMMAND_USAGE ? 'I' : ' ',
 			cmd->flags & COMMAND_ARGS ? 'A' : ' ',
 			cmd->name);
 		n++;
 	}
-	Com_Printf ("Displayed %d/%d commands\n", n, total);
+	appPrintf ("Displayed %d/%d commands\n", n, total);
 }
 
 static void Cmd_Init ()

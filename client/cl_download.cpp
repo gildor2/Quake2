@@ -49,7 +49,7 @@ static bool CheckOrDownloadFile (const char *fmt, ...)
 	Name.filename (Name);							// in-place
 	if (!memcmp (Name, "../", 3))					// if trying to leave quake root dir, "../" will be at start
 	{
-		Com_Printf ("Refusing to download a path with ..\n");
+		appPrintf ("Refusing to download a path with ..\n");
 		return true;
 	}
 
@@ -106,13 +106,13 @@ static bool CheckOrDownloadFile (const char *fmt, ...)
 		cls.download = fp;
 
 		// give the server an offset to start the download
-		Com_Printf ("Resuming %s\n", *cls.DownloadName);
+		appPrintf ("Resuming %s\n", *cls.DownloadName);
 		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
 		MSG_WriteString (&cls.netchan.message, va("download %s %d", *cls.DownloadName, len));
 	}
 	else
 	{
-		Com_Printf ("Downloading %s\n", *cls.DownloadName);
+		appPrintf ("Downloading %s\n", *cls.DownloadName);
 		MSG_WriteByte (&cls.netchan.message, clc_stringcmd);
 		MSG_WriteString (&cls.netchan.message, va("download %s", *cls.DownloadName));
 	}
@@ -127,13 +127,13 @@ void CL_Download_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf("Usage: download <filename>\n");
+		appPrintf("Usage: download <filename>\n");
 		return;
 	}
 
 	if (cls.state != ca_connected && cls.state != ca_active)
 	{
-		Com_WPrintf ("Not connected\n");
+		appWPrintf ("Not connected\n");
 		return;
 	}
 
@@ -142,7 +142,7 @@ void CL_Download_f (bool usage, int argc, char **argv)
 
 	if (FS_FileExists (FileName))
 	{	// it exists, no need to download
-		Com_Printf ("File already exists.\n");
+		appPrintf ("File already exists.\n");
 		return;
 	}
 
@@ -158,7 +158,7 @@ void CL_ParseDownload ()
 	int percent = MSG_ReadByte (&net_message);
 	if (size == -1)
 	{
-		Com_WPrintf ("Server does not have this file.\n");
+		appWPrintf ("Server does not have this file.\n");
 		if (cls.download)
 		{
 			// if here, we tried to resume a file but the server said no
@@ -181,7 +181,7 @@ void CL_ParseDownload ()
 		if (!cls.download)
 		{
 			net_message.readcount += size;
-			Com_WPrintf ("Failed to open %s\n", cls.DownloadTempName);
+			appWPrintf ("Failed to open %s\n", cls.DownloadTempName);
 			RequestNextDownload ();
 			return;
 		}
@@ -207,7 +207,7 @@ void CL_ParseDownload ()
 		DownloadFileName (ARRAY_ARG(Oldn), cls.DownloadTempName);
 		DownloadFileName (ARRAY_ARG(Newn), cls.DownloadName);
 		if (rename (Oldn, Newn))
-			Com_WPrintf ("failed to rename \"%s\" to \"%s\"\n", *Oldn, *Newn);
+			appWPrintf ("failed to rename \"%s\" to \"%s\"\n", *Oldn, *Newn);
 
 		cls.download = NULL;
 		cls.downloadPercent = 0;

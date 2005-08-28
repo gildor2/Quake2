@@ -584,7 +584,7 @@ static void CL_ParseBeam (CRenderModel *model)
 			return;
 		}
 
-	Com_Printf ("beam list overflow!\n");
+	appPrintf ("beam list overflow!\n");
 	return;
 }
 
@@ -630,7 +630,7 @@ static void CL_ParseBeam2 (CRenderModel *model)
 			return;
 		}
 
-	Com_Printf ("beam list overflow!\n");
+	appPrintf ("beam list overflow!\n");
 	return;
 }
 
@@ -688,7 +688,7 @@ int CL_ParsePlayerBeam (CRenderModel *model)
 			return ent;
 		}
 
-	Com_Printf ("beam list overflow!\n");
+	appPrintf ("beam list overflow!\n");
 	return ent;
 }
 //rogue
@@ -737,7 +737,7 @@ int CL_ParseLightning (CRenderModel *model)
 			return srcEnt;
 		}
 
-	Com_Printf ("beam list overflow!\n");
+	appPrintf ("beam list overflow!\n");
 	return srcEnt;
 }
 
@@ -1545,7 +1545,7 @@ void CL_AddPlayerBeams (void)
 				ent.angles[ROLL] = rand() % 360;
 			}
 
-//			Com_Printf("B: %d -> %d\n", b->entity, b->dest_entity);
+//			appPrintf("B: %d -> %d\n", b->entity, b->dest_entity);
 			V_AddEntity (&ent);
 
 			VectorMA (org, len, dist);

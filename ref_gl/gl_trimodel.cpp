@@ -87,7 +87,7 @@ static int ParseGlCmds (const char *name, surfaceMd3_t *surf, int *cmds, int *xy
 
 		if (numTris > surf->numTris)
 		{
-			Com_WPrintf ("ParseGlCmds(%s): incorrect triangle count\n", name);
+			appWPrintf ("ParseGlCmds(%s): incorrect triangle count\n", name);
 			return 0;
 		}
 
@@ -107,7 +107,7 @@ static int ParseGlCmds (const char *name, surfaceMd3_t *surf, int *cmds, int *xy
 			{	// vertex not found - allocate it
 				if (allocatedVerts == surf->numVerts)
 				{
-					Com_WPrintf ("ParseGlCmds(%s): too much texcoords\n", name);
+					appWPrintf ("ParseGlCmds(%s): too much texcoords\n", name);
 					return false;
 				}
 				dst[0] = s;
@@ -398,9 +398,9 @@ static void CheckTrisSizes (surfaceMd3_t *surf, dMd2Frame_t *md2Frame = NULL, in
 			inds[0] = inds[1] = inds[2] = 0;
 
 		//???
-//		Com_Printf ("%s%3d\n", fixed[tri] ? S_GREEN : "", tri);
+//		appPrintf ("%s%3d\n", fixed[tri] ? S_GREEN : "", tri);
 	}
-	Com_Printf (S_CYAN"FIXED: %d / %d\n", numFixed, surf->numTris);	//??
+	appPrintf (S_CYAN"FIXED: %d / %d\n", numFixed, surf->numTris);	//??
 }
 
 #endif
@@ -419,13 +419,13 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	dMd2_t *hdr = (dMd2_t*)buf;
 	if (hdr->version != MD2_VERSION)
 	{
-		Com_WPrintf ("LoadMd2(%s): wrong version %d\n", name, hdr->version);
+		appWPrintf ("LoadMd2(%s): wrong version %d\n", name, hdr->version);
 		return NULL;
 	}
 
 	if (hdr->numXyz <= 0 || hdr->numTris <= 0 || hdr->numFrames <= 0)
 	{
-		Com_WPrintf ("LoadMd2(%s): incorrect params\n", name);
+		appWPrintf ("LoadMd2(%s): incorrect params\n", name);
 		return NULL;
 	}
 
@@ -439,7 +439,7 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 	surf->numTris   = MAX_XYZ_INDEXES - 2;
 	numVerts = ParseGlCmds (name, surf, (int*)(buf + hdr->ofsGlcmds), xyzIndexes);
 	numTris = surf->numTris;		// just computed
-	if (numTris != hdr->numTris) Com_WPrintf ("LoadMd2(%s): computed numTris %d != %d\n", name, numTris, hdr->numTris);
+	if (numTris != hdr->numTris) appWPrintf ("LoadMd2(%s): computed numTris %d != %d\n", name, numTris, hdr->numTris);
 	appFree (surf);
 //	Com_DPrintf ("MD2(%s): xyz=%d st=%d verts=%d tris=%d frms=%d\n", name, hdr->numXyz, hdr->numSt, numVerts, numTris, hdr->numFrames);
 
@@ -534,13 +534,13 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 	dMd3_t *hdr = (dMd3_t*)buf;
 	if (hdr->version != MD3_VERSION)
 	{
-		Com_WPrintf ("LoadMd3(%s): wrong version %d\n", name, hdr->version);
+		appWPrintf ("LoadMd3(%s): wrong version %d\n", name, hdr->version);
 		return NULL;
 	}
 
 	if (hdr->numSurfaces <= 0 || hdr->numTags < 0 || hdr->numFrames <= 0)
 	{
-		Com_WPrintf ("LoadMd3(%s): incorrect params\n", name);
+		appWPrintf ("LoadMd3(%s): incorrect params\n", name);
 		return NULL;
 	}
 
@@ -554,7 +554,7 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 		// check: model.numFrames should be == all surfs.numFrames
 		if (ds->numFrames != hdr->numFrames)
 		{
-			Com_WPrintf ("LoadMd3(%s): different frame counts in surfaces\n", name);
+			appWPrintf ("LoadMd3(%s): different frame counts in surfaces\n", name);
 			return NULL;
 		}
 		// counts
@@ -612,7 +612,7 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 	dMd3Tag_t *ts = (dMd3Tag_t*)(buf + hdr->ofsTags);	// tag source
 	for (i = 0; i < hdr->numTags; i++, tagName += MAX_QPATH, ts++)
 	{
-//		Com_Printf("model %s tag %d %s\n", name, i, ts->name);
+//		appPrintf("model %s tag %d %s\n", name, i, ts->name);
 		strcpy (tagName, ts->name);
 	}
 	ts = (dMd3Tag_t*)(buf + hdr->ofsTags);
@@ -622,7 +622,7 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 		{
 			if (strcmp (ts->name, md3->tagNames + j * MAX_QPATH))
 			{
-				Com_WPrintf ("LoadMd3(%s): volatile tag names\n", name);
+				appWPrintf ("LoadMd3(%s): volatile tag names\n", name);
 				return NULL;
 			}
 			*td = ts->tag;
@@ -640,7 +640,7 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 		CALL_CONSTRUCTOR(surf);
 		surf->shader    = gl_defaultShader;	// any, ignored
 		surf->Name.toLower (ds->name);
-//		Com_Printf("model %s surf %d %s\n", name, i, *surf->Name);
+//		appPrintf("model %s surf %d %s\n", name, i, *surf->Name);
 		// counts
 		surf->numFrames = hdr->numFrames;
 		surf->numVerts  = ds->numVerts;
@@ -707,12 +707,12 @@ sprModel_t *LoadSp2 (const char *name, byte *buf, unsigned len)
 	dSp2_t *hdr = (dSp2_t*)buf;
 	if (hdr->version != SP2_VERSION)
 	{
-		Com_WPrintf ("LoadSp2(%s): wrong version %d\n", name, hdr->version);
+		appWPrintf ("LoadSp2(%s): wrong version %d\n", name, hdr->version);
 		return NULL;
 	}
 	if (hdr->numframes < 0)
 	{
-		Com_WPrintf ("LoadSp2(%s): incorrect frame count %d\n", name, hdr->numframes);
+		appWPrintf ("LoadSp2(%s): incorrect frame count %d\n", name, hdr->numframes);
 		return NULL;
 	}
 
@@ -791,12 +791,12 @@ sprModel_t *LoadSpr (const char *name, byte *buf, unsigned len)
 	text.InitFromBuf ((char*)buf);
 	while (const char *line = text.GetLine ())
 		if (!ExecuteCommand (line, ARRAY_ARG(sprCommands)))
-			Com_WPrintf ("%s: invalid line [%s]\n", name, line);
+			appWPrintf ("%s: invalid line [%s]\n", name, line);
 
 	shader_t *shader = spr->frames[0].shader;
 	if (!shader)
 	{
-		Com_WPrintf ("LoadSpr(%s): no shader specified\n", name);
+		appWPrintf ("LoadSpr(%s): no shader specified\n", name);
 		appFree (spr);
 		return NULL;
 	}

@@ -884,10 +884,10 @@ void PostLoadLights ()
 		case sl_inverse2:
 			f = DISTANCE_INV2_POINTLIGHT(sl->intens, MIN_POINT_LIGHT, INV_SCALE);
 			sl->maxDist2 = f * f;
-			Com_Printf ("inv2 slight at %g %g %g\n", VECTOR_ARG(sl->origin));
+			appPrintf ("inv2 slight at %g %g %g\n", VECTOR_ARG(sl->origin));
 			break;
 		default:
-			Com_Printf ("unknown point sl.type at %g %g %g\n", VECTOR_ARG(sl->origin));
+			appPrintf ("unknown point sl.type at %g %g %g\n", VECTOR_ARG(sl->origin));
 		}
 	}
 

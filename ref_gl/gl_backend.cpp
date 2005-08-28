@@ -198,14 +198,10 @@ static void ProcessShaderDeforms (shader_t *sh)
 					VectorMA (tmp,  radius, mViewAxis[2], vec->xyz);
 					vec++;
 					// recompute texcoords
-					tex->tex[0] = 0; tex->tex[1] = 0;
-					tex++;
-					tex->tex[0] = 1; tex->tex[1] = 0;
-					tex++;
-					tex->tex[0] = 1; tex->tex[1] = 1;
-					tex++;
-					tex->tex[0] = 0; tex->tex[1] = 1;
-					tex++;
+					tex->tex[0] = 0; tex->tex[1] = 0; tex++;
+					tex->tex[0] = 1; tex->tex[1] = 0; tex++;
+					tex->tex[0] = 1; tex->tex[1] = 1; tex++;
+					tex->tex[0] = 0; tex->tex[1] = 1; tex++;
 					// recompute indexes
 					*idx++ = j; *idx++ = j+2; *idx++ = j+1;
 					*idx++ = j; *idx++ = j+3; *idx++ = j+2;
@@ -359,7 +355,44 @@ static void GenerateColorArray (shaderStage_t *st)
 			}
 		}
 		break;
-	//?? other types: LIGHTING_SPECULAR, PORTAL
+	case ALPHAGEN_LIGHTING_SPECULAR:
+		{
+			int j;
+			bufExtra_t *ex;
+
+			bufVertex_t *vec = vb->verts;
+			for (j = 0, ex = gl_extra; j < gl_numExtra; j++, ex++)
+			{
+				CVec3 &norm = ex->normal;
+				for (i = 0; i < ex->numVerts; i++, vec++, dst++)
+				{
+					CVec3 v;
+					// compute direction from vertex to light source
+					static const CVec3 lightOrigin = {-960, 1980, 96};	//!! should use major light from DiffuseLight(), when using for model
+					VectorSubtract (lightOrigin, vec->xyz, v);
+					v.NormalizeFast ();
+					// compute reflection vector
+					float d = dot (v, norm) * 2;
+					CVec3 refl;
+					refl[0] = d * norm[0] - v[0];
+					refl[1] = d * norm[1] - v[1];
+					refl[2] = d * norm[2] - v[2];
+					// compute amount of light, reflected to viewer
+					VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
+					v.NormalizeFast ();
+					float f = dot (refl, v);
+					if (f < 0)
+						f = 0;
+					else
+					{
+						f *= f; f *= f;
+					}
+					dst->c[3] = bound (appRound (f * 255), 0, 255);
+				}
+			}
+		}
+		break;
+	//?? other types: PORTAL
 	}
 
 	unguard;
@@ -1310,7 +1343,7 @@ static void SetCurrentShader (shader_t *shader)
 		// sample: map "actmet", inside building with rotating glass doors, floor 2: exotic lamp (nested cilinders with alpha)
 	{
 		DrawTextLeft ("SetCurrentShader() without flush!", RGB(1,0,0));
-		Com_WPrintf ("SetCurrentShader(%s) without flush (old: %s, %d verts, %d inds)\n",
+		appWPrintf ("SetCurrentShader(%s) without flush (old: %s, %d verts, %d inds)\n",
 			*shader->Name, *currentShader->Name, gl_numVerts, gl_numIndexes);
 	}
 	currentShader = shader;

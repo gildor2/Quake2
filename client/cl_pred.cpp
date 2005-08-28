@@ -218,7 +218,7 @@ int CL_PMpointcontents (const CVec3 &point)
 		VectorSubtract (ent->origin, delta, eOrigin);
 
 //if (delta[0]||delta[1]||delta[2])//!!
-//Com_WPrintf("(%g %g %g)->(%g %g %g) =(%g %g %g):%g\n",VECTOR_ARG(cent->prev.origin),VECTOR_ARG(cent->current.origin),VECTOR_ARG(eOrigin),cl.lerpfrac);//!!
+//appWPrintf("(%g %g %g)->(%g %g %g) =(%g %g %g):%g\n",VECTOR_ARG(cent->prev.origin),VECTOR_ARG(cent->current.origin),VECTOR_ARG(eOrigin),cl.lerpfrac);//!!
 
 		// check entity bounding sphere
 		VectorSubtract (eCenter, point, tmp);
@@ -263,7 +263,7 @@ void CL_PredictMovement (void)
 	if (current - ack >= CMD_BACKUP)
 	{
 		if (cl_showmiss->integer)
-			Com_WPrintf ("CL_PredictMovement: exceeded CMD_BACKUP\n");
+			appWPrintf ("CL_PredictMovement: exceeded CMD_BACKUP\n");
 		return;
 	}
 

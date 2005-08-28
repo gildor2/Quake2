@@ -93,21 +93,21 @@ static void Gfxinfo_f (bool usage, int argc, char **argv)
 
 	if (argc > 2 || usage)
 	{
-		Com_Printf ("Usage: gfxinfo [extension_mask]");
+		appPrintf ("Usage: gfxinfo [extension_mask]");
 		return;
 	}
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 
-	Com_Printf (S_RED"---------- OpenGL info ----------\n");
-	Com_Printf (S_RED"Vendor:  "S_WHITE" %s\n", glGetString (GL_VENDOR));
-	Com_Printf (S_RED"Renderer:"S_WHITE" %s\n", glGetString (GL_RENDERER));
-	Com_Printf (S_RED"Version: "S_WHITE" %s\n", glGetString (GL_VERSION));
+	appPrintf (S_RED"---------- OpenGL info ----------\n");
+	appPrintf (S_RED"Vendor:  "S_WHITE" %s\n", glGetString (GL_VENDOR));
+	appPrintf (S_RED"Renderer:"S_WHITE" %s\n", glGetString (GL_RENDERER));
+	appPrintf (S_RED"Version: "S_WHITE" %s\n", glGetString (GL_VERSION));
 	QGL_PrintExtensionsString ("Base", gl_config.extensions, mask);
 	if (gl_config.extensions2)
 		QGL_PrintExtensionsString ("Platform", gl_config.extensions2, mask);
-	Com_Printf (S_RED"---------------------------------\n");
+	appPrintf (S_RED"---------------------------------\n");
 	// multitexturing
-	Com_Printf ("Multitexturing: ");
+	appPrintf ("Multitexturing: ");
 	if (GL_SUPPORT(QGL_ARB_MULTITEXTURE|QGL_SGIS_MULTITEXTURE))
 	{
 		TString<256> Name;
@@ -121,27 +121,27 @@ static void Gfxinfo_f (bool usage, int argc, char **argv)
 		if (GL_SUPPORT(QGL_ATI_TEXTURE_ENV_COMBINE3))
 			Name += " +ATI";
 
-		Com_Printf ("yes, %s, %d texture units\n", *Name, gl_config.maxActiveTextures);
+		appPrintf ("yes, %s, %d texture units\n", *Name, gl_config.maxActiveTextures);
 	}
 	else
-		Com_Printf ("no\n");
+		appPrintf ("no\n");
 	// texturing
-	Com_Printf ("Max texture size: %d\n", gl_config.maxTextureSize);
-	Com_Printf ("Texture rectangle: ");
+	appPrintf ("Max texture size: %d\n", gl_config.maxTextureSize);
+	appPrintf ("Texture rectangle: ");
 	if (GL_SUPPORT(QGL_NV_TEXTURE_RECTANGLE))
-		Com_Printf ("max size is %d\n", gl_config.maxRectTextureSize);
+		appPrintf ("max size is %d\n", gl_config.maxRectTextureSize);
 	else
-		Com_Printf ("unsupported\n");
+		appPrintf ("unsupported\n");
 	// gamma info
-	Com_Printf ("Lighting: %s\n", gl_config.vertexLight ? "vertex" : "lightmap");
-	Com_Printf ("Gamma: ");
+	appPrintf ("Lighting: %s\n", gl_config.vertexLight ? "vertex" : "lightmap");
+	appPrintf ("Gamma: ");
 	if (gl_config.deviceSupportsGamma)
-		Com_Printf ("hardware, overbright: %s (%s), lightmap overbright: %s\n",
+		appPrintf ("hardware, overbright: %s (%s), lightmap overbright: %s\n",
 			//?? NOTE: here used gl_overbright->integer, which can be modified after vid_restart
 			boolNames[gl_config.overbright], overbrNames[gl_overbright->integer == 2][gl_config.overbright],
 			boolNames[!gl_config.doubleModulateLM]);
 	else
-		Com_Printf ("software\n");
+		appPrintf ("software\n");
 }
 
 
@@ -215,7 +215,7 @@ static bool SetMode ()
 		return true;
 	}
 
-	Com_WPrintf ("SetMode() - invalid mode\n");
+	appWPrintf ("SetMode() - invalid mode\n");
 
 	Cvar_SetInteger ("gl_mode", gl_config.prevMode);
 	gl_mode->modified = false;
@@ -224,7 +224,7 @@ static bool SetMode ()
 	// try setting it back to something safe
 	if (!GLimp_SetMode (&vid_width, &vid_height, gl_config.prevMode, gl_config.prevFS))
 	{
-		Com_WPrintf ("SetMode() - could not revert to safe mode\n");	//?? "to previous mode" ? (but, here will be mode "3")
+		appWPrintf ("SetMode() - could not revert to safe mode\n");	//?? "to previous mode" ? (but, here will be mode "3")
 		return false;
 	}
 	// initialize OS-specific parts of OpenGL
@@ -236,7 +236,7 @@ bool Init ()
 {
 	guard(OpenGLDrv::Init);
 
-	Com_Printf ("\n--- Initializing OpenGL renderer ---\n");
+	appPrintf ("\n--- Initializing OpenGL renderer ---\n");
 
 	renderingEnabled = true;
 
@@ -252,22 +252,22 @@ bool Init ()
 	{
 		if (!gl_driver->IsDefault())
 		{
-			Com_WPrintf ("Cannot load %s - trying default driver (%s) ... ", gl_driver->string, gl_driver->resetString);
+			appWPrintf ("Cannot load %s - trying default driver (%s) ... ", gl_driver->string, gl_driver->resetString);
 			if (QGL_Init (gl_driver->resetString))
 			{
-				Com_Printf ("OK\n");
+				appPrintf ("OK\n");
 				gl_driver->Reset();
 			}
 			else
 			{
-				Com_Printf (S_RED"failed\n");
+				appPrintf (S_RED"failed\n");
 				QGL_Shutdown ();
 				return false;
 			}
 		}
 		else
 		{
-			Com_WPrintf ("Cannot load %s\n", gl_driver->string);
+			appWPrintf ("Cannot load %s\n", gl_driver->string);
 			QGL_Shutdown ();
 			return false;
 		}
@@ -300,12 +300,12 @@ bool Init ()
 		gl_config.maxActiveTextures = 1;
 	if (!gl_config.maxActiveTextures)
 	{
-		Com_WPrintf ("Error in multitexture support\n");
+		appWPrintf ("Error in multitexture support\n");
 		gl_config.maxActiveTextures = 1;
 	}
 	if (gl_maxTextureUnits->integer > 0 && gl_config.maxActiveTextures > gl_maxTextureUnits->integer)
 	{
-		Com_Printf (S_CYAN"...multitexture limited by %d units\n", gl_maxTextureUnits->integer);
+		appPrintf (S_CYAN"...multitexture limited by %d units\n", gl_maxTextureUnits->integer);
 		gl_config.maxActiveTextures = gl_maxTextureUnits->integer;
 	}
 
@@ -852,7 +852,7 @@ void SetSky (const char *name, float rotate, const CVec3 &axis)
 	shader_t *shader = FindShader (Name2, SHADER_SKY);
 	if (shader->type != SHADERTYPE_SKY)
 	{
-		Com_WPrintf ("%s is not a sky shader\n", *Name2);
+		appWPrintf ("%s is not a sky shader\n", *Name2);
 		shader = gl_skyShader;
 	}
 

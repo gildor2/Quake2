@@ -1927,7 +1927,7 @@ void AddEntity (entity_t *ent)
 {
 	if (gl_numEntities >= MAX_GLENTITIES)
 	{
-		Com_WPrintf ("R_AddEntity: MAX_GLENTITIES hit\n");
+		appWPrintf ("R_AddEntity: MAX_GLENTITIES hit\n");
 		return;
 	}
 
@@ -1981,7 +1981,7 @@ void AddDlight (dlight_t *dl)
 {
 	if (gl_numDlights >= MAX_GLDLIGHTS)
 	{
-		Com_WPrintf ("R_AddDlight: MAX_GLDLIGHTS hit\n");
+		appWPrintf ("R_AddDlight: MAX_GLDLIGHTS hit\n");
 		return;
 	}
 	refDlight_t *out = &gl_dlights[gl_numDlights++];

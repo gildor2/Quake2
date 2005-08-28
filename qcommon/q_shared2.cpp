@@ -729,7 +729,7 @@ char *COM_Parse (const char *&data_p, bool allowLineBreaks)
 
 	if (len == sizeof(com_token))
 	{
-//		Com_WPrintf ("Token exceeded %d chars, discarded.\n", sizeof(com_token));
+//		appWPrintf ("Token exceeded %d chars, discarded.\n", sizeof(com_token));
 		len = 0;
 	}
 	com_token[len] = 0;

@@ -293,7 +293,7 @@ typedef enum {
 //=========================================
 
 #define	PORT_MASTER	27900
-#define	PORT_CLIENT	27901
+#define	PORT_CLIENT	27901		//?? unused
 #define	PORT_SERVER	27910
 
 //=========================================

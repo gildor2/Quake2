@@ -218,7 +218,7 @@ static void ReadModelsGenderList ()
 		free -= n;
 		if (free < 0 || numFemaleModels >= MAX_FEMALE_MODELS)
 		{
-			Com_WPrintf ("model.lst is too large\n");
+			appWPrintf ("model.lst is too large\n");
 			break;
 		}
 		memcpy (out, line, n);
@@ -321,14 +321,14 @@ static bool SetMd3Skin (const char *skinName, CModelSkin &skin)
 		}
 		if (numSurfs >= ARRAY_COUNT(skin.surf))
 		{
-			Com_WPrintf ("Too much skin surfaces in %s\n", skinName);
+			appWPrintf ("Too much skin surfaces in %s\n", skinName);
 			result = false;
 			break;
 		}
 		// store info
 		skin.surf[numSurfs].Name.toLower (line, p-line+1);
 		skin.surf[numSurfs].shader = shader;
-//		Com_Printf("%s %d : [%s] <- %s\n", skinName, numSurfs, *skin.surf[numSurfs].Name, *shader->Name);
+//		appPrintf("%s %d : [%s] <- %s\n", skinName, numSurfs, *skin.surf[numSurfs].Name, *shader->Name);
 		numSurfs++;
 	}
 	if (result)
@@ -393,14 +393,14 @@ static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 		{
 			if (animNumber >= MAX_ANIMATIONS)
 			{
-				Com_WPrintf ("Too much animations in \"%s\"\n", filename);
+				appWPrintf ("Too much animations in \"%s\"\n", filename);
 				break;
 			}
 			int firstFrame, numFrames, loopFrames;
 			float fps;
 			if (sscanf (line, "%d %d %d %f", &firstFrame, &numFrames, &loopFrames, &fps) != 4)
 			{
-				Com_WPrintf ("Invalid frame info [%s] in \"%s\"\n", line, filename);
+				appWPrintf ("Invalid frame info [%s] in \"%s\"\n", line, filename);
 				break;
 			}
 			// some processing on acquired data + store info
@@ -425,7 +425,7 @@ static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 		}
 		else if (!ExecuteCommand (line, ARRAY_ARG(animCommands)))
 		{
-			Com_WPrintf ("Invalid line [%s] in \"%s\"\n", line, filename);
+			appWPrintf ("Invalid line [%s] in \"%s\"\n", line, filename);
 			break;
 		}
 	}
@@ -724,7 +724,7 @@ static bool LoadWeaponInfo (const char *filename, weaponInfo_t &weap)
 	{
 		if (!ExecuteCommand (line, ARRAY_ARG(weapCommands)))
 		{
-			Com_WPrintf ("Invalid line [%s] in \"%s.cfg\"\n", line, filename);
+			appWPrintf ("Invalid line [%s] in \"%s.cfg\"\n", line, filename);
 			result = false;
 			break;
 		}
@@ -869,7 +869,7 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 		{
 			ci.isValidModel = false;
 			EXEC_ONCE(	// do not show multiple times
-				Com_WPrintf ("Weapon description for default weapon is not found\n");
+				appWPrintf ("Weapon description for default weapon is not found\n");
 			)
 			return;
 		}

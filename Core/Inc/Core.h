@@ -114,11 +114,7 @@ public:
 };
 
 
-//?? #define appPrintf	GLog->Printf
-void Com_Printf(const char *fmt, ...);
-#define appPrintf Com_Printf
-
-//?? reimplement
+CORE_API void appPrintf (const char *fmt, ...);		//!! currently - in qcommon/common.cpp !!
 CORE_API void appWPrintf (const char *fmt, ...);
 
 

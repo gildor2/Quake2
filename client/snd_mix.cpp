@@ -234,7 +234,7 @@ void S_PaintChannels(int endtime)
 
 	snd_vol = appRound (s_volume->value * 255);
 
-//	Com_Printf ("%i to %i\n", paintedtime, endtime);
+//	appPrintf ("%i to %i\n", paintedtime, endtime);
 	while (paintedtime < endtime)
 	{
 		// if paintbuffer is smaller than DMA buffer
@@ -262,7 +262,7 @@ void S_PaintChannels(int endtime)
 		// clear the paint buffer
 		if (s_rawend < paintedtime)
 		{
-//			Com_Printf ("clear\n");
+//			appPrintf ("clear\n");
 			memset(paintbuffer, 0, (end - paintedtime) * sizeof(portable_samplepair_t));
 		}
 		else
@@ -278,9 +278,9 @@ void S_PaintChannels(int endtime)
 				paintbuffer[i-paintedtime] = s_rawsamples[s];
 			}
 //			if (i != end)
-//				Com_Printf ("partial stream\n");
+//				appPrintf ("partial stream\n");
 //			else
-//				Com_Printf ("full stream\n");
+//				appPrintf ("full stream\n");
 			for ( ; i<end ; i++)
 			{
 				paintbuffer[i-paintedtime].left =

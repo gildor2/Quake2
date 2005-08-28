@@ -238,24 +238,24 @@ static void Cmd_CmdList (bool usage, int argc, char **argv)
 {
 	if (argc > 2 || usage)
 	{
-		Com_Printf ("Usage: cmdlist [<mask>]\n");
+		appPrintf ("Usage: cmdlist [<mask>]\n");
 		return;
 	}
 
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 	int n = 0, total = 0;
-	Com_Printf ("----i-a-name----------------\n");
+	appPrintf ("----i-a-name----------------\n");
 	for (TListIterator<CCommand> cmd = CmdList; cmd; ++cmd)
 	{
 		total++;
 		if (mask && !appMatchWildcard (cmd->name, mask, true)) continue;
-		Com_Printf ("%-3d %c %c %s\n", total,
+		appPrintf ("%-3d %c %c %s\n", total,
 			cmd->flags & COMMAND_USAGE ? 'I' : ' ',
 			cmd->flags & COMMAND_ARGS ? 'A' : ' ',
 			cmd->name);
 		n++;
 	}
-	Com_Printf ("Displayed %d/%d commands\n", n, total);
+	appPrintf ("Displayed %d/%d commands\n", n, total);
 }
 
 

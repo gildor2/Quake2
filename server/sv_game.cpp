@@ -46,7 +46,7 @@ static void G_dprintf (const char *fmt, ...)
 	vsnprintf (ARRAY_ARG(msg), fmt, argptr);
 	va_end (argptr);
 
-	Com_Printf ("%s", msg);
+	appPrintf ("%s", msg);
 }
 
 
@@ -70,7 +70,7 @@ static void G_cprintf (edict_t *ent, int level, const char *fmt, ...)
 		SV_ClientPrintf (svs.clients+(n-1), level, "%s", msg);
 	}
 	else
-		Com_Printf ("%s", msg);
+		appPrintf ("%s", msg);
 	unguard;
 }
 
@@ -334,7 +334,7 @@ static void ShutdownGameMemory ()
 //?? make as global "meminfo" subsystem
 static void GZ_Stats_f ()
 {
-	Com_Printf ("Game memory:\n%d bytes in %d blocks\n", z_bytes, z_count);
+	appPrintf ("Game memory:\n%d bytes in %d blocks\n", z_bytes, z_count);
 }
 
 

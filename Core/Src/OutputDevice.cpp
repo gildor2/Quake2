@@ -1,9 +1,6 @@
 #include "Core.h"
 
 
-char	GErrorHistory[4096];
-
-
 class COutputDeviceNull : public COutputDevice
 {
 public:
@@ -20,12 +17,10 @@ COutputDevice *GNull = &NullDevice;
 
 void COutputDevice::Printf (const char *fmt, ...)
 {
-	char	buf[4096];
 	va_list	argptr;
-	int		len;
-
 	va_start (argptr, fmt);
-	len = vsnprintf (buf, sizeof(buf), fmt, argptr);
+	char buf[4096];
+	int len = vsnprintf (ARRAY_ARG(buf), fmt, argptr);
 	va_end (argptr);
 	if (len < 0 || len >= sizeof(buf) - 1)
 		return;
@@ -34,20 +29,18 @@ void COutputDevice::Printf (const char *fmt, ...)
 }
 
 
-//???
 void appWPrintf (const char *fmt, ...)
 {
-	char	buf[4096];
 	va_list	argptr;
-	int		len;
-
 	va_start (argptr, fmt);
-	buf[0] = COLOR_ESCAPE; buf[1] = C_YELLOW + '0';		// make string colored
-	len = vsnprintf (buf+2, sizeof(buf)-2, fmt, argptr);
+	char buf[4096];
+	int len = vsnprintf (ARRAY_ARG(buf), fmt, argptr);
 	va_end (argptr);
-	if (len < 0 || len >= sizeof(buf) - 1 - 2)
-		return;
 
+	if (len < 0 || len >= sizeof(buf) - 1) return;
 //??	GLog->Write (buf);
-	appPrintf (buf);
+	appPrintf (S_YELLOW"%s", buf);
+//??#ifndef NO_DEVELOPER
+//??	if (developer->integer == 2) DebugPrintf ("%s", msg);
+//??#endif
 }

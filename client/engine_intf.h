@@ -11,9 +11,7 @@ typedef struct {
 	float	(*_Cvar_VariableValue) (const char *name);
 	int	(*_Cvar_VariableInt) (const char *name);
 	float	(*_Cvar_Clamp) (cvar_t *cvar, float low, float high);
-	void	(*_Com_Printf) (const char *str, ...);
 	void	(*_Com_DPrintf) (const char *str, ...);
-	void	(*_Com_WPrintf) (const char *str, ...);
 	bool	(*_FS_FileExists) (const char *filename);
 	TList<CStringItem>	(*_FS_ListFiles) (const char *name, int flags);
 	void*	(*_FS_LoadFile) (const char *name, unsigned *size);
@@ -85,9 +83,7 @@ inline float Cvar_Clamp (cvar_t *cvar, float low, float high)
 {
 	return ri._Cvar_Clamp (cvar, low, high);
 }
-#define Com_Printf	ri._Com_Printf
 #define Com_DPrintf	ri._Com_DPrintf
-#define Com_WPrintf	ri._Com_WPrintf
 inline bool FS_FileExists (const char *filename)
 {
 	return ri._FS_FileExists (filename);

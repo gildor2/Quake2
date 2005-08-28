@@ -171,7 +171,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	if (attractloop)
 		Cvar_Set ("paused", "0");
 
-	Com_Printf ("\n------ Server initialization -------\n");
+	appPrintf ("\n------ Server initialization -------\n");
 
 	Com_DPrintf ("SpawnServer: %s\n",server);
 	if (sv.rdemofile)
@@ -261,7 +261,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 	// set serverinfo variable
 	Cvar_FullSet ("mapname", sv.name, CVAR_SERVERINFO|CVAR_NOSET);
 
-	Com_Printf ("------------------------------------\n");
+	appPrintf ("------------------------------------\n");
 
 	unguard;
 }
@@ -295,7 +295,7 @@ void SV_InitGame ()
 
 	if (sv_coop->integer && sv_deathmatch->integer)
 	{
-		Com_WPrintf ("\"deathmatch\" and \"coop\" both set, disabling \"coop\"\n");
+		appWPrintf ("\"deathmatch\" and \"coop\" both set, disabling \"coop\"\n");
 		Cvar_ForceSet ("coop", "0");
 	}
 

@@ -149,7 +149,7 @@ static int MapKey (int vkCode, bool extended)
 
 static void AppActivate (bool active, bool minimized)
 {
-//	Com_Printf("act:%d min:%d\n", active, minimized);//!!
+//	appPrintf("act:%d min:%d\n", active, minimized);//!!
 	MinimizedApp = minimized;
 	if (ActiveApp != active)
 	{
@@ -227,7 +227,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			static DEVMODE dm;
 			static bool desktopMode = false;
 
-//			Com_Printf("WM_SIZE: %d (act=%d min=%d)\n",wParam, ActiveApp, MinimizedApp);//!!
+//			appPrintf("WM_SIZE: %d (act=%d min=%d)\n",wParam, ActiveApp, MinimizedApp);//!!
 			if (wParam == SIZE_MINIMIZED && !desktopMode)
 			{
 				Com_DPrintf ("Setting desktop resolution\n");
@@ -257,7 +257,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		{
 			bool active    = LOWORD(wParam) != WA_INACTIVE;
 			bool minimized = HIWORD(wParam) != 0;
-//			Com_Printf("WM_ACTIVATE: a=%d m=%d (act=%d min=%d)\n",active, minimized, ActiveApp, MinimizedApp);//!!
+//			appPrintf("WM_ACTIVATE: a=%d m=%d (act=%d min=%d)\n",active, minimized, ActiveApp, MinimizedApp);//!!
 			AppActivate (active, minimized);
 		}
 		break;
@@ -546,7 +546,7 @@ static bool LoadRenderer ()
 
 #ifndef SINGLE_RENDERER
 
-	Com_Printf ("Loading %s\n", name);
+	appPrintf ("Loading %s\n", name);
 
 #ifdef STATIC_BUILD
 	refLibrary = NULL;
@@ -560,13 +560,13 @@ static bool LoadRenderer ()
 		DllName.sprintf ("ref_%s.dll", name);
 		if (!(refLibrary = LoadLibrary (DllName)))
 		{
-			Com_WPrintf ("LoadLibrary(\"%s\") failed\n", *DllName);
+			appWPrintf ("LoadLibrary(\"%s\") failed\n", *DllName);
 			return false;
 		}
 		CreateDynRenderer_t pCreateRenderer;
 		if (!(pCreateRenderer = (CreateDynRenderer_t) GetProcAddress (refLibrary, "CreateRenderer")))
 		{
-			Com_WPrintf ("GetProcAddress() failed on %s\n", *DllName);
+			appWPrintf ("GetProcAddress() failed on %s\n", *DllName);
 			FreeRenderer ();
 			return false;
 		}
@@ -574,7 +574,7 @@ static bool LoadRenderer ()
 		re.struc_size = sizeof(refExport_t);
 		if (!pCreateRenderer (&ri, &re))
 		{
-			Com_WPrintf ("%s has incompatible renderer\n", *DllName);
+			appWPrintf ("%s has incompatible renderer\n", *DllName);
 			FreeRenderer ();
 			return false;
 		}
@@ -588,7 +588,7 @@ static bool LoadRenderer ()
 		return false;
 	}
 
-	Com_Printf ("------------------------------------\n");
+	appPrintf ("------------------------------------\n");
 	refActive = true;
 
 	return true;

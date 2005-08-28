@@ -94,17 +94,17 @@ void S_SoundInfo_f(void)
 {
 	if (!sound_started)
 	{
-		Com_Printf ("sound system not started\n");
+		appPrintf ("sound system not started\n");
 		return;
 	}
 
-    Com_Printf("%5d stereo\n", dma.channels - 1);
-    Com_Printf("%5d samples\n", dma.samples);
-    Com_Printf("%5d samplepos\n", dma.samplepos);
-    Com_Printf("%5d samplebits\n", dma.samplebits);
-    Com_Printf("%5d submission_chunk\n", dma.submission_chunk);
-    Com_Printf("%5d speed\n", dma.speed);
-    Com_Printf("0x%X dma buffer\n", dma.buffer);
+    appPrintf("%5d stereo\n", dma.channels - 1);
+    appPrintf("%5d samples\n", dma.samples);
+    appPrintf("%5d samplepos\n", dma.samplepos);
+    appPrintf("%5d samplebits\n", dma.samplebits);
+    appPrintf("%5d submission_chunk\n", dma.submission_chunk);
+    appPrintf("%5d speed\n", dma.speed);
+    appPrintf("0x%X dma buffer\n", dma.buffer);
 }
 
 
@@ -117,7 +117,7 @@ void S_Init (void)
 {
 	cvar_t *cv = Cvar_Get ("nosound", "0", 0);
 	if (cv->integer)
-		Com_Printf (S_CYAN"Sound disabled\n");
+		appPrintf (S_CYAN"Sound disabled\n");
 	else
 	{
 CVAR_BEGIN(vars)
@@ -133,7 +133,7 @@ CVAR_END
 
 		Cvar_GetVars (ARRAY_ARG(vars));
 
-		Com_Printf("\n------- Sound initialization -------\n");
+		appPrintf("\n------- Sound initialization -------\n");
 
 		if (!SNDDMA_Init()) return;
 
@@ -150,11 +150,11 @@ CVAR_END
 		soundtime = 0;
 		paintedtime = 0;
 
-		Com_Printf ("sound sampling rate: %d\n", dma.speed);
+		appPrintf ("sound sampling rate: %d\n", dma.speed);
 
 		S_StopAllSounds_f ();
 
-		Com_Printf("------------------------------------\n");
+		appPrintf("------------------------------------\n");
 	}
 }
 
@@ -567,7 +567,7 @@ void S_IssuePlaysound (playsound_t *ps)
 	sfxcache_t	*sc;
 
 	if (s_show->integer)
-		Com_Printf ("Sound: %s begin:%d ent:%d chn:%d\n", *ps->sfx->Name, ps->begin, ps->entnum, ps->entchannel);
+		appPrintf ("Sound: %s begin:%d ent:%d chn:%d\n", *ps->sfx->Name, ps->begin, ps->entnum, ps->entchannel);
 	// pick a channel to play on
 	ch = S_PickChannel(ps->entnum, ps->entchannel);
 	if (!ch)
@@ -744,7 +744,7 @@ void S_StartLocalSound (const char *sound)
 	sfx_t *sfx = S_RegisterSound (sound);
 	if (!sfx)
 	{
-		Com_Printf ("S_StartLocalSound: can't cache %s\n", sound);
+		appPrintf ("S_StartLocalSound: can't cache %s\n", sound);
 		return;
 	}
 	S_StartSound (NULL, cl.playernum+1, 0, sfx, 1, 1, 0);
@@ -904,7 +904,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 		s_rawend = paintedtime;
 	scale = (float)rate / dma.speed;
 
-//Com_Printf ("%i < %i < %i\n", soundtime, paintedtime, s_rawend);
+//appPrintf ("%i < %i < %i\n", soundtime, paintedtime, s_rawend);
 	if (channels == 2 && width == 2)
 	{
 		if (scale == 1.0)
@@ -1028,11 +1028,11 @@ void S_Update(const CVec3 &origin, const CVec3 &right)
 		for (i=0 ; i<MAX_CHANNELS; i++, ch++)
 			if (ch->sfx && (ch->leftvol || ch->rightvol) )
 			{
-				Com_Printf ("%3i %3i %s\n", ch->leftvol, ch->rightvol, *ch->sfx->Name);
+				appPrintf ("%3i %3i %s\n", ch->leftvol, ch->rightvol, *ch->sfx->Name);
 				total++;
 			}
 
-		Com_Printf ("----(%i)---- painted: %i\n", total, paintedtime);
+		appPrintf ("----(%i)---- painted: %i\n", total, paintedtime);
 	}
 
 // mix some sound
@@ -1135,13 +1135,13 @@ static void S_SoundList_f (bool usage, int argc, char **argv)
 {
 	if (argc > 2 || usage)
 	{
-		Com_Printf ("Usage: soundlist [<mask>]\n");
+		appPrintf ("Usage: soundlist [<mask>]\n");
 		return;
 	}
 
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 
-	Com_Printf ("---lp-bit-size----name----------\n");
+	appPrintf ("---lp-bit-size----name----------\n");
 
 	int n = 0, total = 0;
 	int		i;
@@ -1159,7 +1159,7 @@ static void S_SoundList_f (bool usage, int argc, char **argv)
 		{
 			int size = sc->length*sc->width*(sc->stereo+1);
 			total += size;
-			Com_Printf ("%-3d %c %-2d  %-7d %s\n", i, sc->loopstart >= 0 ? 'L' : ' ', sc->width*8, size, *sfx->Name);
+			appPrintf ("%-3d %c %-2d  %-7d %s\n", i, sc->loopstart >= 0 ? 'L' : ' ', sc->width*8, size, *sfx->Name);
 		}
 		else
 		{
@@ -1171,8 +1171,8 @@ static void S_SoundList_f (bool usage, int argc, char **argv)
 				status = S_RED"not found    "S_WHITE;
 			else
 				status = "not loaded   ";
-			Com_Printf ("%-3d %s %s\n", i, status, *sfx->Name);
+			appPrintf ("%-3d %s %s\n", i, status, *sfx->Name);
 		}
 	}
-	Com_Printf ("Displayed %d/%d sounds; resident: %d bytes\n", n, num_sfx, total);
+	appPrintf ("Displayed %d/%d sounds; resident: %d bytes\n", n, num_sfx, total);
 }

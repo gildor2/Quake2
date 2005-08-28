@@ -20,7 +20,7 @@ void sizebuf_t::Write (const void *data, int length)
 		if (length > maxsize)
 			Com_FatalError ("MSG_Write: %d is > full buffer size", length);
 
-		Com_Printf ("MSG_Write: overflow (max=%d, need=%d)\n", maxsize, need);
+		appPrintf ("MSG_Write: overflow (max=%d, need=%d)\n", maxsize, need);
 		Clear ();
 		overflowed = true;
 	}
@@ -151,7 +151,7 @@ void MSG_WriteDir (sizebuf_t *sb, const CVec3 &dir)
 	if (dirTable[cell])	// already computed
 	{
 		MSG_WriteByte (sb, dirTable[cell] - 1);
-		Com_Printf("*");
+		appPrintf("*");
 		return;
 	}
 	// compute index

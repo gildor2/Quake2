@@ -287,7 +287,7 @@ bool NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg)
 		if (err == WSAEWOULDBLOCK || err == WSAECONNRESET)	// WSAECONNRESET: see Q263823 in MSDN (applies to Win2k+)
 			return false;
 		if (err == WSAEMSGSIZE)
-			Com_WPrintf ("Oversize packet from %s\n", NET_AdrToString(net_from));
+			appWPrintf ("Oversize packet from %s\n", NET_AdrToString(net_from));
 		else
 			Com_DPrintf ("NET_GetPacket(%s): %s\n", NET_AdrToString(net_from), NET_ErrorString());
 		return false;
@@ -295,7 +295,7 @@ bool NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg)
 
 	if (ret == net_msg->maxsize)
 	{
-		Com_WPrintf ("Oversize packet from %s\n", NET_AdrToString (net_from));
+		appWPrintf ("Oversize packet from %s\n", NET_AdrToString (net_from));
 		return false;
 	}
 
@@ -339,10 +339,10 @@ static int IPSocket (char *net_interface, int port)
 {
 	int newsocket;
 
-	if ((newsocket = socket (PF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
+	if ((newsocket = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
 	{
 		if (WSAGetLastError() != WSAEAFNOSUPPORT)
-			Com_WPrintf ("IPSocket: socket: %s", NET_ErrorString());
+			appWPrintf ("IPSocket: socket: %s", NET_ErrorString());
 		return 0;
 	}
 
@@ -350,7 +350,7 @@ static int IPSocket (char *net_interface, int port)
 	static unsigned long _true = 1;
 	if (ioctlsocket (newsocket, FIONBIO, &_true) == SOCKET_ERROR)
 	{
-		Com_WPrintf ("IPSocket: nonblocking: %s\n", NET_ErrorString());
+		appWPrintf ("IPSocket: nonblocking: %s\n", NET_ErrorString());
 		return 0;
 	}
 
@@ -358,7 +358,7 @@ static int IPSocket (char *net_interface, int port)
 	int i = 1;
 	if (setsockopt(newsocket, SOL_SOCKET, SO_BROADCAST, (char *)&i, sizeof(i)) == SOCKET_ERROR)
 	{
-		Com_WPrintf ("IPSocket: broadcast: %s\n", NET_ErrorString());
+		appWPrintf ("IPSocket: broadcast: %s\n", NET_ErrorString());
 		return 0;
 	}
 
@@ -374,20 +374,20 @@ static int IPSocket (char *net_interface, int port)
 		return newsocket;
 
 	// error allocating socket -- try different port
-	Com_Printf ("IPSocket: unable to bind to port %d. Trying next port\n", port);
+	appPrintf ("IPSocket: unable to bind to port %d. Trying next port\n", port);
 	for (i = 1; i < 32; i++)
 	{
 		port++;
 		address.sin_port = htons (port);
 		if (!bind (newsocket, (SOCKADDR*)&address, sizeof(address)))
 		{
-			Com_Printf ("IPSocket: allocated port %d\n", port);
+			appPrintf ("IPSocket: allocated port %d\n", port);
 			return newsocket;
 		}
 	}
 	// this may happen when no TCP/IP support available, or when running 32 applications with
 	// such port address
-	Com_WPrintf ("IPSocket: unable to allocate address (%s)\n", NET_ErrorString ());
+	appWPrintf ("IPSocket: unable to allocate address (%s)\n", NET_ErrorString ());
 
 	closesocket (newsocket);
 	return 0;
@@ -410,8 +410,8 @@ void NET_Config (bool multiplayer)
 	if (multiplayer)
 	{
 		// open socket
-		cvar_t *ip = Cvar_Get ("ip", "localhost", CVAR_NOSET);
-		int port = Cvar_Get ("port", va("%d", PORT_SERVER), CVAR_NOSET)->integer;
+		cvar_t *ip = Cvar_Get ("ip", "localhost", CVAR_NOSET);		//?? useless cvar
+		int port = Cvar_Get ("port", va("%d", PORT_SERVER), CVAR_NOSET)->integer;	//?? useless cvar
 		netSocket = IPSocket (ip->string, port);
 		if (!netSocket) multiplayer = false;
 	}
@@ -427,7 +427,7 @@ void NET_Init ()
 	if (WSAStartup (MAKEWORD(1,1), &winsockdata))
 		Com_FatalError ("Winsock initialization failed");
 
-	Com_Printf ("Winsock Initialized\n");
+	appPrintf ("Winsock Initialized\n");
 
 	unguard;
 }

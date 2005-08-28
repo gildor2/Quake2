@@ -117,7 +117,7 @@ static void cPing (int argc, char **argv)
 
 static void cAck (int argc, char **argv)
 {
-	Com_Printf ("Ping acknowledge from %s\n", NET_AdrToString (&net_from));
+	appPrintf ("Ping acknowledge from %s\n", NET_AdrToString (&net_from));
 }
 
 /*
@@ -275,7 +275,7 @@ static void cDirectConnect (int argc, char **argv)
 	{
 		if (!NET_IsLocalAddress (&adr))
 		{
-			Com_Printf ("Remote connect in attract loop.  Ignored.\n");
+			appPrintf ("Remote connect in attract loop.  Ignored.\n");
 			Netchan_OutOfBandPrint (NS_SERVER, adr, "print\nConnection refused.\n");
 			return;
 		}
@@ -316,7 +316,7 @@ static void cDirectConnect (int argc, char **argv)
 				Com_DPrintf ("%s:reconnect rejected : too soon\n", NET_AdrToString (&adr));
 				return;
 			}
-			Com_Printf ("%s:reconnect\n", NET_AdrToString (&adr));
+			appPrintf ("%s:reconnect\n", NET_AdrToString (&adr));
 			newcl = cl;
 			break;
 		}
@@ -420,12 +420,12 @@ static void cRemoteCommand (int argc, char **argv)
 
 	if (!rcon_password->string[0] || strcmp (argv[1], rcon_password->string))
 	{
-		Com_Printf ("Bad rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
+		appPrintf ("Bad rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
 		Netchan_OutOfBandPrint (NS_SERVER, net_from, "print\nBad rcon password\n");
 	}
 	else
 	{
-		Com_Printf ("Rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
+		appPrintf ("Rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
 
 		// fill line with a rest of command string (cut "rcon")
 		char remaining[1024];
@@ -439,7 +439,7 @@ static void cRemoteCommand (int argc, char **argv)
 		// execute command with a redirected output
 		SV_BeginRedirect ();
 		if (!Cmd_ExecuteString (remaining))
-			Com_WPrintf ("Bad remote command \"%s\"\n", remaining);
+			appWPrintf ("Bad remote command \"%s\"\n", remaining);
 		Com_EndRedirect ();
 	}
 
@@ -484,7 +484,7 @@ void SV_ConnectionlessPacket (void)
 	}
 
 	if (!ExecuteCommand (s, ARRAY_ARG(connectionlessCmds)))
-		Com_WPrintf ("Bad connectionless packet from %s: \"%s\"\n", NET_AdrToString (&net_from), s);
+		appWPrintf ("Bad connectionless packet from %s: \"%s\"\n", NET_AdrToString (&net_from), s);
 	unguard;
 }
 
@@ -600,7 +600,7 @@ void SV_ReadPackets (void)
 				continue;
 			if (cl->netchan.remote_address.port != net_from.port)
 			{
-				Com_Printf ("SV_ReadPackets: fixing up a translated port\n");
+				appPrintf ("SV_ReadPackets: fixing up a translated port\n");
 				cl->netchan.remote_address.port = net_from.port;
 			}
 
@@ -776,7 +776,7 @@ void SV_PostprocessFrame (void)
 				if (cl->nextsfxtime > t) continue; // waiting for sfx time
 				cl->nextsfxtime = t + 1000 + (rand()&0x7FF);
 				ent->s.event = EV_SPECTATOR0 + (rand()&3);
-				Com_Printf ("%i:SPECT-SFX\n",i);
+				appPrintf ("%i:SPECT-SFX\n",i);
 			}
 			else*/ if (pm->pm_type == PM_NORMAL)
 			{
@@ -865,7 +865,7 @@ static client_t *FindClient (const CVec3 &origin, float maxDist2)
 	client_t *cl;
 	int		i;
 
-//	Com_Printf("find for %g %g %g dist=%g\n",VECTOR_ARG(origin),maxDist2);
+//	appPrintf("find for %g %g %g dist=%g\n",VECTOR_ARG(origin),maxDist2);
 	for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 	{
 		edict_t *ent = cl->edict;
@@ -873,7 +873,7 @@ static client_t *FindClient (const CVec3 &origin, float maxDist2)
 			continue;
 
 		pmove_state_t *pm = &ent->client->ps.pmove;
-//		Com_Printf("? %s");
+//		appPrintf("? %s");
 		CVec3 pm_origin, delta;
 		pm_origin[0] = pm->origin[0] / 8.0f;
 		pm_origin[1] = pm->origin[1] / 8.0f;
@@ -882,10 +882,10 @@ static client_t *FindClient (const CVec3 &origin, float maxDist2)
 		float dist2 = dot(delta, delta);
 		if (dist2 > maxDist2)
 		{
-//			Com_Printf(" far: %g\n", dist2);
+//			appPrintf(" far: %g\n", dist2);
 			continue;
 		}
-//		Com_Printf(" + %g\n", dist2);
+//		appPrintf(" + %g\n", dist2);
 		return cl;
 	}
 
@@ -952,7 +952,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 			MSG_ReadDir (original, v2);
 
 			// compute reflection vector
-//			Com_Printf("sp: (%g %g %g) -> (%g %g %g)\n",VECTOR_ARG(v1),VECTOR_ARG(v2));//!!
+//			appPrintf("sp: (%g %g %g) -> (%g %g %g)\n",VECTOR_ARG(v1),VECTOR_ARG(v2));//!!
 			CVec3 d;
 			VectorSubtract (shotStart, shotEnd, d);
 			d.NormalizeFast ();
@@ -1102,7 +1102,7 @@ void SV_Frame (float msec)
 		if (sv.time - svs.realtime > frameTime)
 		{
 			if (sv_showclamp->integer)
-				Com_Printf ("sv lowclamp s:%d -- r:%d -> %d\n", sv.time, svs.realtime, sv.time - frameTime);
+				appPrintf ("sv lowclamp s:%d -- r:%d -> %d\n", sv.time, svs.realtime, sv.time - frameTime);
 			svs.realtime = sv.time - frameTime;
 			svs.realtimef = svs.realtime;
 		}
@@ -1142,7 +1142,7 @@ void SV_Frame (float msec)
 		if (sv.time < svs.realtime)
 		{
 			if (sv_showclamp->integer)
-				Com_Printf ("sv highclamp s:%d r:%d -> %d\n", sv.time, svs.realtime, sv.time);
+				appPrintf ("sv highclamp s:%d r:%d -> %d\n", sv.time, svs.realtime, sv.time);
 			svs.realtime = sv.time;
 			svs.realtimef = sv.time;
 		}
@@ -1204,7 +1204,7 @@ static void Master_Heartbeat (void)
 	for (int i = 0; i < MAX_MASTERS; i++)
 		if (master_adr[i].port)
 		{
-			Com_Printf ("Sending heartbeat to %s\n", NET_AdrToString (&master_adr[i]));
+			appPrintf ("Sending heartbeat to %s\n", NET_AdrToString (&master_adr[i]));
 			Netchan_OutOfBandPrint (NS_SERVER, master_adr[i], "heartbeat\n%s", string);
 		}
 }
@@ -1226,7 +1226,7 @@ static void Master_Shutdown (void)
 		if (master_adr[i].port)
 		{
 			if (i != 0)
-				Com_Printf ("Sending heartbeat to %s\n", NET_AdrToString (&master_adr[i]));
+				appPrintf ("Sending heartbeat to %s\n", NET_AdrToString (&master_adr[i]));
 			Netchan_OutOfBandPrint (NS_SERVER, master_adr[i], "shutdown");
 		}
 }

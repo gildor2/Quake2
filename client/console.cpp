@@ -88,7 +88,7 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: condump <filename>\n");
+		appPrintf ("Usage: condump <filename>\n");
 		return;
 	}
 
@@ -99,7 +99,7 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 	FILE *f;
 	if (!(f = fopen (Name, "w")))
 	{
-		Com_WPrintf ("ERROR: couldn't open %s\n", *Name);
+		appWPrintf ("ERROR: couldn't open %s\n", *Name);
 		return;
 	}
 
@@ -126,7 +126,7 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 		}
 	}
 	fclose (f);
-	Com_Printf ("Console text was dumped to %s\n", *Name);
+	appPrintf ("Console text was dumped to %s\n", *Name);
 }
 
 
@@ -591,7 +591,7 @@ void Key_Console (int key, int modKey)
 		else
 			Cbuf_AddText (editLine + 1);			// valid command
 		Cbuf_AddText ("\n");
-		Com_Printf ("%s\n", editLine);
+		appPrintf ("%s\n", editLine);
 
 		if (editLine[1])							// editLine[0] is input prompt
 		{

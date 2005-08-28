@@ -65,7 +65,7 @@ static void KeyDown (kbutton_t &b, char **argv)
 		b.down[1] = k;
 	else
 	{
-		Com_Printf ("Three keys down for a button!\n");
+		appPrintf ("Three keys down for a button!\n");
 		return;
 	}
 
@@ -313,7 +313,7 @@ static void IN_Lookdown (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: lookdown <angle>\n");
+		appPrintf ("Usage: lookdown <angle>\n");
 		return;
 	}
 	cl.viewangles[PITCH] += atof (argv[1]);
@@ -324,7 +324,7 @@ static void IN_Lookup (bool usage, int argc, char **argv)	// can be used "lookdo
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: lookup <angle>\n");
+		appPrintf ("Usage: lookup <angle>\n");
 		return;
 	}
 	cl.viewangles[PITCH] -= atof (argv[1]);

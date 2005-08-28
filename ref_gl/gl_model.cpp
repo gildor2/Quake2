@@ -50,7 +50,7 @@ model_t	*FindModel (const char *name)
 
 	if (modelCount == MAX_GLMODELS)
 	{
-		Com_WPrintf ("R_FindModel: MAX_GLMODELS\n");
+		appWPrintf ("R_FindModel: MAX_GLMODELS\n");
 		return NULL;
 	}
 
@@ -85,7 +85,7 @@ START_PROFILE(FindModel::Process)
 		break;
 	default:
 		// no error here: simply ignore unknown model formats
-		Com_WPrintf ("R_FindModel: unknown ID 0x%X in %s", LittleLong (*file), name);
+		appWPrintf ("R_FindModel: unknown ID 0x%X in %s", LittleLong (*file), name);
 		m = NULL;
 	}
 	if (m) modelsArray[modelCount++] = m;
@@ -124,24 +124,24 @@ static void Modellist_f (bool usage, int argc, char **argv)
 
 	if (argc > 2 || usage)
 	{
-		Com_Printf ("Usage: modellist [mask]\n");
+		appPrintf ("Usage: modellist [mask]\n");
 		return;
 	}
 	const char *mask = (argc == 2) ? argv[1] : NULL;
 
 	int totalSize = 0;
 	int totalCount = 0;
-	Com_Printf ("-----type-size----name---------\n");
+	appPrintf ("-----type-size----name---------\n");
 	for (int i = 0; i < modelCount; i++)
 	{
 		//?? skip inline model from list, or compact (print somethink like this: "0-96 inl *1..*97")
 		model_t *m = modelsArray[i];
 		if (mask && !appMatchWildcard (m->Name, mask, true)) continue;
 		totalCount++;
-		Com_Printf ("%-3d  %3s  %-7d %s%s\n", i, types[m->type], m->size, colors[m->type], *m->Name);
+		appPrintf ("%-3d  %3s  %-7d %s%s\n", i, types[m->type], m->size, colors[m->type], *m->Name);
 		totalSize += m->size;
 	}
-	Com_Printf ("Displayed %d/%d models, used %d bytes\n", totalCount, modelCount, totalSize);
+	appPrintf ("Displayed %d/%d models, used %d bytes\n", totalCount, modelCount, totalSize);
 }
 
 
@@ -150,7 +150,7 @@ static void LoadModel_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: loadmodel <filename>\n");
+		appPrintf ("Usage: loadmodel <filename>\n");
 		return;
 	}
 	FindModel (argv[1]);

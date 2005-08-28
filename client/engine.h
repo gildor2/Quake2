@@ -10,9 +10,7 @@ int	Cvar_VariableInt (const char *name);
 float	Cvar_Clamp (cvar_t *cvar, float low, float high);
 
 //--------- console ---------
-void	Com_Printf (const char *str, ...);
 void	Com_DPrintf (const char *str, ...);
-void	Com_WPrintf (const char *str, ...);
 
 //---------- files ----------
 bool	FS_FileExists (const char *filename);

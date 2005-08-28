@@ -43,9 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
 		EXTERN_C const GUID name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
 
-#if DIRECTINPUT_VERSION < 0x0800
-DEFINE_GUID(IID_IDirectInputA,	0x89521360,0xAA8A,0x11CF,0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00);
-#else
+#if DIRECTINPUT_VERSION >= 0x0800
 DEFINE_GUID(IID_IDirectInput8A,	0xBF798030,0x483A,0x4DA2,0xAA,0x99,0x5D,0x64,0xED,0x36,0x97,0x00);
 #endif
 
@@ -154,7 +152,7 @@ static void DXMouse_Free ()
 
 static bool DXMouse_Init ()
 {
-	Com_Printf ("Initializing DirectInput\n");
+	appPrintf ("Initializing DirectInput\n");
 #if DIRECTINPUT_VERSION < 0x0800
 	typedef HRESULT (WINAPI * pDirectInputCreate_t) (HINSTANCE, DWORD, LPDIRECTINPUT *, LPUNKNOWN);
 	static pDirectInputCreate_t pDirectInputCreate;
@@ -162,12 +160,12 @@ static bool DXMouse_Init ()
 	{
 		if (!(hInstDI = LoadLibrary ("dinput.dll")))
 		{
-			Com_WPrintf ("dinput.dll not found\n");
+			appWPrintf ("dinput.dll not found\n");
 			return false;
 		}
 		if (!(pDirectInputCreate = (pDirectInputCreate_t) GetProcAddress (hInstDI, "DirectInputCreateA")))
 		{
-			Com_WPrintf ("Wrong dinput.dll\n");
+			appWPrintf ("Wrong dinput.dll\n");
 			DXMouse_Free ();
 			return false;
 		}
@@ -186,12 +184,12 @@ static bool DXMouse_Init ()
 	{
 		if (!(hInstDI = LoadLibrary ("dinput8.dll")))
 		{
-			Com_WPrintf ("dinput8.dll not found\n");
+			appWPrintf ("dinput8.dll not found\n");
 			return false;
 		}
 		if (!(pDirectInput8Create = (pDirectInput8Create_t) GetProcAddress (hInstDI, "DirectInput8Create")))
 		{
-			Com_WPrintf ("Wrong dinput8.dll\n");
+			appWPrintf ("Wrong dinput8.dll\n");
 			DXMouse_Free ();
 			return false;
 		}
@@ -219,7 +217,7 @@ static bool DXMouse_Init ()
 #endif
 	if FAILED(res)
 	{
-		Com_Printf ("... cannot set data format\n");
+		appPrintf ("... cannot set data format\n");
 		DXMouse_Free ();
 		return false;
 	}
@@ -227,7 +225,7 @@ static bool DXMouse_Init ()
 	{
 		//?? set fullscreen to 0 -- if cannot capture mouse in fullscreen mode
 		//?? (if fullscreen is already 0, it will not be changed)
-		Com_Printf ("... cannot set cooperative level\n");
+		appPrintf ("... cannot set cooperative level\n");
 		DXMouse_Free ();
 		return false;
 	}
@@ -242,7 +240,7 @@ static bool DXMouse_Init ()
 	dipdw.dwData			= 16;							// size of buffer
 	if FAILED(pMouse->SetProperty (DIPROP_BUFFERSIZE, &dipdw.diph))
 	{
-		Com_Printf ("... cannot set mouse buffered mode\n");
+		appPrintf ("... cannot set mouse buffered mode\n");
 		DXMouse_Free ();
 		return false;
 	}
@@ -251,7 +249,7 @@ static bool DXMouse_Init ()
 	if FAILED(pMouse->Acquire ())
 	{
 		//?? fullscreen <- 0
-		Com_Printf ("... cannot acquire mouse\n");
+		appPrintf ("... cannot acquire mouse\n");
 		//?? do not Free() -- just keep mouse unacquired; when window will be activated -- acquire mouse
 		IN_DXMouse_Free ();
 		return false;
@@ -282,7 +280,7 @@ static void DXMouse_Frame ()
 		}
 		if FAILED(res)
 		{
-			Com_WPrintf ("Error %X on DI mouse.GetData()\n", res);
+			appWPrintf ("Error %X on DI mouse.GetData()\n", res);
 			return;
 		}
 		if (dwElements == 0) return;	// no data available
@@ -326,7 +324,7 @@ static void DXMouse_Frame ()
 	}
 	if FAILED(res)
 	{
-		Com_WPrintf ("Error %X on DI mouse.GetState()\n", res);
+		appWPrintf ("Error %X on DI mouse.GetState()\n", res);
 		return;
 	}
 	// process mouse wheel
@@ -401,7 +399,7 @@ static bool MouseMsgHook (UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 static void WinMouse_Init ()
 {
-	Com_Printf ("Initializing Win32 mouse support\n");
+	appPrintf ("Initializing Win32 mouse support\n");
 	AddMsgHook (MouseMsgHook);
 
 	static int mouseParms[3] = {0, 0, 0};
@@ -717,7 +715,7 @@ static void StartupJoystick ()
 	// verify joystick driver is present
 	if (!(numdevs = joyGetNumDevs ()))
 	{
-//		Com_Printf ("\njoystick not found -- driver not present\n\n");
+//		appPrintf ("\njoystick not found -- driver not present\n\n");
 		return;
 	}
 
@@ -735,13 +733,13 @@ static void StartupJoystick ()
 	// MSDN Q133065
 	if (mmr == JOYERR_PARMS)
 	{
-		Com_Printf ("No connected joysticks found\n");
+		appPrintf ("No connected joysticks found\n");
 		return;
 	}
 
 	if (mmr != JOYERR_NOERROR)
 	{
-		Com_Printf ("No valid joysticks (err=%X)\n", mmr);
+		appPrintf ("No valid joysticks (err=%X)\n", mmr);
 		return;
 	}
 
@@ -750,7 +748,7 @@ static void StartupJoystick ()
 	memset (&jc, 0, sizeof(jc));
 	if ((mmr = joyGetDevCaps (joy_id, &jc, sizeof(jc))) != JOYERR_NOERROR)
 	{
-		Com_Printf ("Invalid joystick capabilities (err=%X)\n", mmr);
+		appPrintf ("Invalid joystick capabilities (err=%X)\n", mmr);
 		return;
 	}
 
@@ -767,7 +765,7 @@ static void StartupJoystick ()
 	joy_avail = true;
 	joy_advancedinit = false;
 
-	Com_Printf ("Joystick detected\n");
+	appPrintf ("Joystick detected\n");
 }
 
 
@@ -804,7 +802,7 @@ static void Joy_AdvancedUpdate_f ()
 		if (strcmp (joy_name->string, "joystick") != 0)
 		{
 			// notify user of advanced controller
-			Com_Printf ("\n%s configured\n\n", joy_name->string);
+			appPrintf ("\n%s configured\n\n", joy_name->string);
 		}
 
 		// advanced initialization here
@@ -903,7 +901,7 @@ static bool ReadJoystick ()
 		// read error occurred
 		// turning off the joystick seems too harsh for 1 read error,\
 		// but what should be done?
-		// Com_Printf ("IN_ReadJoystick: no response\n");
+		// appPrintf ("IN_ReadJoystick: no response\n");
 		// joy_avail = false;
 		return false;
 	}

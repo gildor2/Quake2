@@ -115,7 +115,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	// see if already tryed to load, but file not found
 	if (s->absent) return NULL;
 
-//	Com_Printf ("S_LoadSound: %x\n", (int)stackbuf);
+//	appPrintf ("S_LoadSound: %x\n", (int)stackbuf);
 	// load it in
 	name = s->TrueName[0] ? s->TrueName : s->Name;
 
@@ -124,7 +124,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	else
 		appSprintf (ARRAY_ARG(namebuffer), "sound/%s", name);
 
-//	Com_Printf ("loading %s\n",namebuffer);
+//	appPrintf ("loading %s\n",namebuffer);
 
 	if (!(data = (byte*) FS_LoadFile (namebuffer, &size)))
 	{
@@ -136,7 +136,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	info = GetWavinfo (s->Name, data, size);
 	if (info.channels != 1)
 	{
-		Com_Printf ("%s is a stereo sample\n", *s->Name);
+		appPrintf ("%s is a stereo sample\n", *s->Name);
 		FS_FreeFile (data);
 		return NULL;
 	}
@@ -250,7 +250,7 @@ static void DumpChunks(void)
 		memcpy (str, data_p, 4);
 		data_p += 4;
 		iff_chunk_len = GetLittleLong();
-		Com_Printf ("0x%x : %s (%d)\n", (int)(data_p - 4), str, iff_chunk_len);
+		appPrintf ("0x%x : %s (%d)\n", (int)(data_p - 4), str, iff_chunk_len);
 		data_p += Align (iff_chunk_len, 2);
 	} while (data_p < iff_end);
 }
@@ -279,7 +279,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	FindChunk ("RIFF");
 	if (!(data_p && !memcmp (data_p+8, "WAVE", 4)))
 	{
-		Com_WPrintf("Missing RIFF/WAVE chunks\n");
+		appWPrintf("Missing RIFF/WAVE chunks\n");
 		return info;
 	}
 
@@ -290,14 +290,14 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	FindChunk ("fmt ");
 	if (!data_p)
 	{
-		Com_WPrintf("Missing fmt chunk\n");
+		appWPrintf("Missing fmt chunk\n");
 		return info;
 	}
 	data_p += 8;
 	format = GetLittleShort();
 	if (format != 1)
 	{
-		Com_WPrintf("Microsoft PCM format only\n");
+		appWPrintf("Microsoft PCM format only\n");
 		return info;
 	}
 
@@ -312,7 +312,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	{
 		data_p += 32;
 		info.loopstart = GetLittleLong();
-//		Com_Printf("loopstart=%d\n", sfx->loopstart);
+//		appPrintf("loopstart=%d\n", sfx->loopstart);
 
 		// if the next chunk is a LIST chunk, look for a cue length marker
 		FindNextChunk ("LIST");
@@ -323,7 +323,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 				data_p += 24;
 				i = GetLittleLong ();	// samples in loop
 				info.samples = info.loopstart + i;
-//				Com_Printf("looped length: %i\n", i);
+//				appPrintf("looped length: %i\n", i);
 			}
 		}
 	}
@@ -334,7 +334,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	FindChunk("data");
 	if (!data_p)
 	{
-		Com_WPrintf("Missing data chunk\n");
+		appWPrintf("Missing data chunk\n");
 		return info;
 	}
 

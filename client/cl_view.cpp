@@ -298,12 +298,12 @@ void V_InitRenderer ()
 	mapname[strlen(mapname)-4] = 0;		// cut off ".bsp"
 
 	// register models, pics, and skins
-	Com_Printf ("Map: %s\r", mapname);
+	appPrintf ("Map: %s\r", mapname);
 	SCR_UpdateScreen ();
 	RE_BeginRegistration (mapname);
 
 	// precache status bar pics
-	Com_Printf ("pics\r");
+	appPrintf ("pics\r");
 	SCR_UpdateScreen ();
 	SCR_TouchPics ();
 
@@ -319,7 +319,7 @@ void V_InitRenderer ()
 		strcpy (name, cl.configstrings[CS_MODELS+i]);
 		name[linewidth-1] = 0;					// never go beyond one line (for correct '\r' erasing)
 		if (name[0] != '*')
-			Com_Printf ("%s\r", name);
+			appPrintf ("%s\r", name);
 		SCR_UpdateScreen ();
 		Sys_ProcessMessages ();					// pump message loop
 		if (name[0] == '#')
@@ -344,7 +344,7 @@ void V_InitRenderer ()
 		}
 	}
 
-	Com_Printf ("images\r", i);
+	appPrintf ("images\r", i);
 	SCR_UpdateScreen ();
 	for (i = 1; i < MAX_IMAGES && cl.configstrings[CS_IMAGES+i][0]; i++)
 	{
@@ -356,7 +356,7 @@ void V_InitRenderer ()
 	{
 		if (!cl.configstrings[CS_PLAYERSKINS+i][0])
 			continue;
-		Com_Printf ("client %d\r", i);
+		appPrintf ("client %d\r", i);
 		SCR_UpdateScreen ();
 		Sys_ProcessMessages ();	// pump message loop
 		CL_ParseClientinfo (i);
@@ -369,7 +369,7 @@ void V_InitRenderer ()
 	}
 
 	// set sky textures and speed
-	Com_Printf ("sky\r", i);
+	appPrintf ("sky\r", i);
 	SCR_UpdateScreen ();
 	float rotate = atof (cl.configstrings[CS_SKYROTATE]);
 	CVec3 axis;
@@ -378,7 +378,7 @@ void V_InitRenderer ()
 
 	// the renderer can now free unneeded stuff
 	RE_EndRegistration ();
-	Com_Printf (" \r");			// clear console notification about loading process; require to send space char !
+	appPrintf (" \r");			// clear console notification about loading process; require to send space char !
 
 	Con_ClearNotify ();
 
@@ -459,7 +459,7 @@ float CalcFov (float fov_x, float width, float height)
 void V_Gun_Next_f (void)
 {
 	gun_frame++;
-	Com_Printf ("frame %i\n", gun_frame);
+	appPrintf ("frame %i\n", gun_frame);
 }
 
 void V_Gun_Prev_f (void)
@@ -467,7 +467,7 @@ void V_Gun_Prev_f (void)
 	gun_frame--;
 	if (gun_frame < 0)
 		gun_frame = 0;
-	Com_Printf ("frame %i\n", gun_frame);
+	appPrintf ("frame %i\n", gun_frame);
 }
 
 void V_Gun_Model_f (int argc, char **argv)
@@ -493,7 +493,7 @@ static void Sky_f (bool usage, int argc, char **argv)
 {
 	if (argc < 2 || usage)
 	{
-		Com_Printf ("Usage: sky <basename> <rotate> <axis x y z>\n");
+		appPrintf ("Usage: sky <basename> <rotate> <axis x y z>\n");
 		return;
 	}
 	float rotate = (argc > 2) ? atof (argv[2]) : 0;

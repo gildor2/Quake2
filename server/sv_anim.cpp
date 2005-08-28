@@ -90,7 +90,7 @@ void SV_ComputeAnimation (player_state_t *ps, entityStateEx_t &ent, entityStateE
 	if (ps == NULL)
 #else
 	// test ps-computation mode
-	EXEC_ONCE(Com_WPrintf("TEST !!!!!!!!!!!!\n");)
+	EXEC_ONCE(appWPrintf("TEST !!!!!!!!!!!!\n");)
 	if (Cvar_VariableInt("test") || ps == NULL)
 #endif
 	{

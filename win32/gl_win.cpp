@@ -156,7 +156,7 @@ static bool CreateGLcontext ()
 	contextActive = false;
 	if (!(contextHandle = wglCreateContext (gl_hDC)))
 	{
-		Com_WPrintf ("...CreateGLcontext() failed\n");
+		appWPrintf ("...CreateGLcontext() failed\n");
 		return false;
 	}
 	return true;
@@ -169,7 +169,7 @@ static bool ActivateGLcontext ()
 	// 1st - activate context, 2nd - enable rendering
 	if (!wglMakeCurrent (gl_hDC, contextHandle))
 	{
-		Com_WPrintf ("...ActivateGLcontext() failed\n");
+		appWPrintf ("...ActivateGLcontext() failed\n");
 		return false;
 	}
 	contextActive = true;
@@ -184,7 +184,7 @@ static bool DeactivateGLcontext ()
 	GL_EnableRendering (false);
 	if (!wglMakeCurrent (gl_hDC, NULL))
 	{
-		Com_WPrintf ("...DeactivateGLcontext() failed\n");
+		appWPrintf ("...DeactivateGLcontext() failed\n");
 		return false;
 	}
 	contextActive = false;
@@ -198,7 +198,7 @@ static bool DestoryGLcontext ()
 	if (!DeactivateGLcontext ()) return false;
 	if (!wglDeleteContext (contextHandle))
 	{
-		Com_WPrintf ("...DestoryGLcontext() failed...\n");
+		appWPrintf ("...DestoryGLcontext() failed...\n");
 		return false;
 	}
 	contextHandle = NULL;
@@ -238,12 +238,12 @@ static bool GLimp_SetPixelFormat ()
 
 	if ((pixelformat = wglChoosePixelFormat (gl_hDC, &pfdBase)) == 0)
 	{
-		Com_WPrintf ("(wgl)ChoosePixelFormat() failed\n");
+		appWPrintf ("(wgl)ChoosePixelFormat() failed\n");
 		return false;
 	}
 	if (wglSetPixelFormat (gl_hDC, pixelformat, &pfdBase) == FALSE)
 	{
-		Com_WPrintf ("(wgl)SetPixelFormat() failed\n");
+		appWPrintf ("(wgl)SetPixelFormat() failed\n");
 		return false;
 	}
 	wglDescribePixelFormat (gl_hDC, pixelformat, sizeof(pfd), &pfd);
@@ -254,12 +254,12 @@ static bool GLimp_SetPixelFormat ()
 
 	if (!(pfd.dwFlags & PFD_GENERIC_ACCELERATED) && (pfd.dwFlags & PFD_GENERIC_FORMAT))
 	{
-		Com_WPrintf ("...no hardware acceleration detected\n");
+		appWPrintf ("...no hardware acceleration detected\n");
 		return false;
 	}
 
 	// print PFD info
-	Com_Printf ("Pixelformat %d: color:%d depth:%d\n", pixelformat, pfd.cColorBits, pfd.cDepthBits);
+	appPrintf ("Pixelformat %d: color:%d depth:%d\n", pixelformat, pfd.cColorBits, pfd.cDepthBits);
 	return true;
 }
 
@@ -269,7 +269,7 @@ static bool GLimp_InitGL ()
 	// get a DC for the specified window
 	if ((gl_hDC = GetDC (gl_hWnd)) == NULL)
 	{
-		Com_WPrintf ("...GetDC() failed\n");
+		appWPrintf ("...GetDC() failed\n");
 		return false;
 	}
 
@@ -292,11 +292,11 @@ bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 
 	if (!Vid_GetModeInfo (&width, &height, mode))
 	{
-		Com_WPrintf ("Invalid mode: %d\n", mode);
+		appWPrintf ("Invalid mode: %d\n", mode);
 		return false;
 	}
 
-	Com_Printf ("Mode %d: %dx%d (%s)\n", mode, width, height, fullscreen ? "fullscreen" : "windowed");
+	appPrintf ("Mode %d: %dx%d (%s)\n", mode, width, height, fullscreen ? "fullscreen" : "windowed");
 
 	// destroy the existing window
 	if (gl_hWnd)
@@ -315,7 +315,7 @@ bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 			vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS &&		// Win9x
 			LOWORD(vinfo.dwBuildNumber) < 1111)						// OSR2_BUILD_NUMBER
 		{
-			Com_WPrintf ("Changing color bitdepth under Win95 requires OSR2\n" );
+			appWPrintf ("Changing color bitdepth under Win95 requires OSR2\n" );
 			colorBits = 0;
 		}
 	}
@@ -334,20 +334,20 @@ bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 		{
 			dm.dmBitsPerPel = colorBits;
 			dm.dmFields |= DM_BITSPERPEL;
-			Com_Printf ("...using color depth of %d\n", colorBits);
+			appPrintf ("...using color depth of %d\n", colorBits);
 		}
 		else
 		{
 			HDC hdc = GetDC (NULL);
 			int bitspixel = GetDeviceCaps (hdc, BITSPIXEL);
 			ReleaseDC (0, hdc);
-			Com_Printf ("...using desktop color depth of %d\n", bitspixel);
+			appPrintf ("...using desktop color depth of %d\n", bitspixel);
 		}
 
 		if (ChangeDisplaySettings (&dm, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)
 		{
-			Com_WPrintf ("...fullscreen unavailable in this mode\n");
-			Com_Printf ("...setting windowed mode\n");
+			appWPrintf ("...fullscreen unavailable in this mode\n");
+			appPrintf ("...setting windowed mode\n");
 			fullscreen = false;
 
 			ChangeDisplaySettings (NULL, 0);
@@ -355,7 +355,7 @@ bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 	}
 	else	// not fullscreen
 	{
-		Com_Printf ("...setting windowed mode\n");
+		appPrintf ("...setting windowed mode\n");
 		ChangeDisplaySettings (NULL, 0);
 	}
 
@@ -369,7 +369,7 @@ bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 
 	// init gamma
 	ReadGamma ();
-	Com_Printf ("Gamma: %s\n", gammaStored ? "hardware" : "software");
+	appPrintf ("Gamma: %s\n", gammaStored ? "hardware" : "software");
 
 	return true;
 }
@@ -379,12 +379,12 @@ void GLimp_Shutdown (bool complete)
 {
 	RestoreGamma ();
 
-	Com_Printf ("Performing GL shutdown\n");
+	appPrintf ("Performing GL shutdown\n");
 	DestoryGLcontext ();
 	if (gl_hDC)
 	{
 		if (!ReleaseDC (gl_hWnd, gl_hDC))
-			Com_WPrintf ("...ReleaseDC() failed\n");
+			appWPrintf ("...ReleaseDC() failed\n");
 		gl_hDC = NULL;
 	}
 

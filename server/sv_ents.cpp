@@ -352,7 +352,7 @@ void SV_WriteFrameToClient (client_t *client, sizebuf_t *msg)
 	}
 	else if (sv.framenum - client->lastframe >= (UPDATE_BACKUP - 3))
 	{	// client hasn't gotten a good message through in a long time
-//		Com_Printf ("%s: Delta request from out-of-date packet.\n", client->name);
+//		appPrintf ("%s: Delta request from out-of-date packet.\n", client->name);
 		oldframe  = NULL;
 		lastframe = -1;
 	}

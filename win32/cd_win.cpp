@@ -137,7 +137,7 @@ void CDAudio_Play2 (int track, bool looping)
 	}
 	if (mciStatusParms.dwReturn != MCI_CDA_TRACK_AUDIO)
 	{
-		Com_Printf ("CDAudio: track %i is not audio\n", track);
+		appPrintf ("CDAudio: track %i is not audio\n", track);
 		return;
 	}
 
@@ -276,7 +276,7 @@ static void CD_f (int argc, char **argv)
 		{
 			for (int n = 1; n < 100; n++)
 				if (remap[n] != n)
-					Com_Printf ("  %d -> %d\n", n, remap[n]);
+					appPrintf ("  %d -> %d\n", n, remap[n]);
 			return;
 		}
 		for (int n = 1; n <= ret; n++)
@@ -295,7 +295,7 @@ static void CD_f (int argc, char **argv)
 		CDAudio_GetAudioDiskInfo ();
 		if (!cdValid)
 		{
-			Com_Printf ("No CD in player.\n");
+			appPrintf ("No CD in player.\n");
 			return;
 		}
 	}
@@ -341,11 +341,11 @@ static void CD_f (int argc, char **argv)
 
 	if (!stricmp (command, "info"))
 	{
-		Com_Printf ("%d tracks\n", maxTrack);
+		appPrintf ("%d tracks\n", maxTrack);
 		if (playing)
-			Com_Printf ("Currently %s track %d\n", playLooping ? "looping" : "playing", playTrack);
+			appPrintf ("Currently %s track %d\n", playLooping ? "looping" : "playing", playTrack);
 		else if (wasPlaying)
-			Com_Printf ("Paused %s track %d\n", playLooping ? "looping" : "playing", playTrack);
+			appPrintf ("Paused %s track %d\n", playLooping ? "looping" : "playing", playTrack);
 		return;
 	}
 }
@@ -452,14 +452,14 @@ CVAR_END
 
 	if (CDAudio_GetAudioDiskInfo())
 	{
-//		Com_Printf("CDAudio_Init: No CD in player.\n");
+//		appPrintf("CDAudio_Init: No CD in player.\n");
 		cdValid = false;
 		enabled = false;
 	}
 
 	RegisterCommand ("cd", CD_f);
 
-	Com_Printf("CD Audio Initialized\n");
+	appPrintf("CD Audio Initialized\n");
 
 	return 0;
 }

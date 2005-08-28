@@ -229,7 +229,7 @@ static void TryComplete (const char *full, int display, char mark)
 	if (strnicmp (partial_name, full, partial_len)) return;
 
 	if (display)
-		Com_Printf ("  "S_GREEN"%c"S_WHITE"  %s\n", mark, full);
+		appPrintf ("  "S_GREEN"%c"S_WHITE"  %s\n", mark, full);
 
 	if (!completed_count)	// have not yet completed - just copy string
 		strcpy (completed_name, full);
@@ -277,7 +277,7 @@ static char *Do_CompleteCommand (char *partial)
 		else
 			strcpy (arg1, arg1s);
 
-//		Com_Printf ("cmd: \"%s\"  arg1s: \"%s\"  arg2s: \"%s\"  arg1: \"%s\"\n",command, arg1s, arg2s, arg1);
+//		appPrintf ("cmd: \"%s\"  arg1s: \"%s\"  arg2s: \"%s\"  arg1: \"%s\"\n",command, arg1s, arg2s, arg1);
 
 		if (arg2s)
 		{
@@ -328,7 +328,7 @@ static char *Do_CompleteCommand (char *partial)
 					break;
 				}
 				if (!display)
-					Com_Printf ("]/%s\n", partial);
+					appPrintf ("]/%s\n", partial);
 			}
 
 			strcpy (completed_name, va("%s %s", complete_command, completed_name));
@@ -408,7 +408,7 @@ static char *Do_CompleteCommand (char *partial)
 				}
 				if (!display)
 				{	// at this loop we just see, that we have many matches ...
-					Com_Printf ("]/%s\n", partial);
+					appPrintf ("]/%s\n", partial);
 				}
 			}
 			strcpy (completed_name, va("%s %s", complete_command, completed_name));
@@ -446,7 +446,7 @@ static char *Do_CompleteCommand (char *partial)
 		// many matches
 		if (!display)
 		{	// at this loop we just see, that we have many matches ...
-			Com_Printf ("]/%s\n", partial);
+			appPrintf ("]/%s\n", partial);
 		}
 	}
 	return completed_name;
@@ -598,7 +598,7 @@ static void Key_Unbind_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: unbind <key mask>\n");
+		appPrintf ("Usage: unbind <key mask>\n");
 		return;
 	}
 	const char *mask = argv[1];
@@ -621,9 +621,9 @@ static void Key_Unbind_f (bool usage, int argc, char **argv)
 	}
 
 	if (found)
-		Com_Printf ("%d key(s) unbound\n", n);
+		appPrintf ("%d key(s) unbound\n", n);
 	else
-		Com_WPrintf ("\"%s\" isn't a valid key\n", mask);
+		appWPrintf ("\"%s\" isn't a valid key\n", mask);
 }
 
 
@@ -639,22 +639,22 @@ static void Key_Bind_f (bool usage, int argc, char **argv)
 {
 	if (argc < 2 || usage)
 	{
-		Com_Printf ("Usage: bind <key> [command]\n");
+		appPrintf ("Usage: bind <key> [command]\n");
 		return;
 	}
 	int b = Key_StringToKeynum (argv[1]);
 	if (b == -1)
 	{
-		Com_WPrintf ("\"%s\" isn't a valid key\n", argv[1]);
+		appWPrintf ("\"%s\" isn't a valid key\n", argv[1]);
 		return;
 	}
 
 	if (argc == 2)
 	{	// just print current binding
 		if (keybindings[b])
-			Com_Printf ("\"%s\" = \"%s\"\n", argv[1], keybindings[b] );
+			appPrintf ("\"%s\" = \"%s\"\n", argv[1], keybindings[b] );
 		else
-			Com_Printf ("\"%s\" is not bound\n", argv[1] );
+			appPrintf ("\"%s\" is not bound\n", argv[1] );
 		return;
 	}
 
@@ -675,22 +675,22 @@ static void Key_Bindlist_f (bool usage, int argc, char **argv)
 {
 	if (argc > 2 || usage)
 	{
-		Com_Printf ("Usage: bindlist [<action mask>]\n");
+		appPrintf ("Usage: bindlist [<action mask>]\n");
 		return;
 	}
 
 	const char *mask = argc == 2 ? argv[1] : NULL;
 
 	int n = 0;
-	Com_Printf ("---key----action---------\n");
+	appPrintf ("---key----action---------\n");
 	for (int i = 0; i < NUM_BINDINGS; i++)
 		if (keybindings[i] && (!mask || appMatchWildcard (keybindings[i], mask, true)))
 		{
 			n++;
-			Com_Printf (S_YELLOW"%-9s "S_WHITE"%s\n", Key_KeynumToString(i), keybindings[i]);
+			appPrintf (S_YELLOW"%-9s "S_WHITE"%s\n", Key_KeynumToString(i), keybindings[i]);
 		}
 	if (mask)
-		Com_Printf ("    %d binds found\n", n);
+		appPrintf ("    %d binds found\n", n);
 }
 
 

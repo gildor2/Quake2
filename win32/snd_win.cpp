@@ -113,12 +113,12 @@ static bool DS_CreateBuffers ()
 	format.cbSize = 0;
 	format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;	// bytes per sec for all channels
 
-	Com_Printf ("Creating DS buffers\n");
+	appPrintf ("Creating DS buffers\n");
 
 	Com_DPrintf ("...setting PRIORITY coop level: ");
 	if (DS_OK != pDS->SetCooperativeLevel (cl_hwnd, DSSCL_PRIORITY))
 	{
-		Com_Printf ("failed\n");
+		appPrintf ("failed\n");
 		FreeSound ();
 		return false;
 	}
@@ -156,7 +156,7 @@ static bool DS_CreateBuffers ()
 		}
 	}
 	else
-		Com_Printf ("failed\n");
+		appPrintf ("failed\n");
 
 	if (!primary_format_set || !s_primary->integer)
 	{
@@ -173,7 +173,7 @@ static bool DS_CreateBuffers ()
 		Com_DPrintf ("...creating secondary buffer: ");
 		if (DS_OK != pDS->CreateSoundBuffer (&dsbuf, &pDSBuf, NULL))
 		{
-			Com_Printf ("failed\n");
+			appPrintf ("failed\n");
 			FreeSound ();
 			return false;
 		}
@@ -185,21 +185,21 @@ static bool DS_CreateBuffers ()
 
 		if (DS_OK != pDSBuf->GetCaps (&dsbcaps))
 		{
-			Com_WPrintf ("*** GetCaps failed ***\n");
+			appWPrintf ("*** GetCaps failed ***\n");
 			FreeSound ();
 			return false;
 		}
 
-		Com_Printf ("...using secondary sound buffer\n");
+		appPrintf ("...using secondary sound buffer\n");
 	}
 	else
 	{
-		Com_Printf ("...using primary buffer\n");
+		appPrintf ("...using primary buffer\n");
 
 		Com_DPrintf ("...setting WRITEPRIMARY coop level: ");
 		if (DS_OK != pDS->SetCooperativeLevel (cl_hwnd, DSSCL_WRITEPRIMARY))
 		{
-			Com_Printf ("failed\n");
+			appPrintf ("failed\n");
 			FreeSound ();
 			return false;
 		}
@@ -207,7 +207,7 @@ static bool DS_CreateBuffers ()
 
 		if (DS_OK != pDSPBuf->GetCaps (&dsbcaps))
 		{
-			Com_WPrintf ("*** GetCaps failed ***\n");
+			appWPrintf ("*** GetCaps failed ***\n");
 			return false;
 		}
 
@@ -218,9 +218,9 @@ static bool DS_CreateBuffers ()
 	pDSBuf->Play (0, 0, DSBPLAY_LOOPING);
 
 	if (snd_firsttime)
-		Com_Printf ("   %d channel(s)\n"
-					"   %d bits/sample\n"
-					"   %d bytes/sec\n",
+		appPrintf ("   %d channel(s)\n"
+				   "   %d bits/sample\n"
+				   "   %d bytes/sec\n",
 			dma.channels, dma.samplebits, dma.speed);
 
 	gSndBufSize = dsbcaps.dwBufferBytes;
@@ -286,7 +286,7 @@ FreeSound
 */
 static void FreeSound ()
 {
-	Com_Printf ("Shutting down sound system\n");
+	appPrintf ("Shutting down sound system\n");
 
 	if (pDS)
 		DS_DestroyBuffers ();
@@ -361,7 +361,7 @@ static bool SNDDMA_InitDirect ()
 	else
 		dma.speed = 11025;
 
-	Com_Printf ("Initializing DirectSound\n");
+	appPrintf ("Initializing DirectSound\n");
 
 	if (!hInstDS)
 	{
@@ -371,7 +371,7 @@ static bool SNDDMA_InitDirect ()
 
 		if (hInstDS == NULL)
 		{
-			Com_Printf ("failed\n");
+			appPrintf ("failed\n");
 			return false;
 		}
 
@@ -380,7 +380,7 @@ static bool SNDDMA_InitDirect ()
 
 		if (!pDirectSoundCreate)
 		{
-			Com_WPrintf ("*** couldn't get DS proc addr ***\n");
+			appWPrintf ("*** couldn't get DS proc addr ***\n");
 			return false;
 		}
 	}
@@ -405,7 +405,7 @@ static bool SNDDMA_InitDirect ()
 
 			if (i == 2)
 			{
-				Com_WPrintf ("failed, hardware already in use\n");
+				appWPrintf ("failed, hardware already in use\n");
 				return false;
 			}
 			Com_DPrintf ("retrying...\n");
@@ -416,7 +416,7 @@ static bool SNDDMA_InitDirect ()
 /*	dscaps.dwSize = sizeof(dscaps);
 
 	if (DS_OK != pDS->GetCaps (&dscaps))
-		Com_Printf ("*** couldn't get DS caps ***\n");
+		appPrintf ("*** couldn't get DS caps ***\n");
 
 	if (dscaps.dwFlags & DSCAPS_EMULDRIVER)
 	{
@@ -449,7 +449,7 @@ static bool SNDDMA_InitWav ()
 	WAVEFORMATEX format;
 	HRESULT	hr;
 
-	Com_Printf ("Initializing wave sound\n");
+	appPrintf ("Initializing wave sound\n");
 
 	snd_sent = 0;
 	snd_completed = 0;
@@ -481,7 +481,7 @@ static bool SNDDMA_InitWav ()
 	{
 		if (hr != MMSYSERR_ALLOCATED)
 		{
-			Com_Printf ("failed\n");
+			appPrintf ("failed\n");
 			return false;
 		}
 
@@ -491,7 +491,7 @@ static bool SNDDMA_InitWav ()
 						"Sound not available",
 						MB_RETRYCANCEL | MB_SETFOREGROUND | MB_ICONEXCLAMATION) != IDRETRY)
 		{
-			Com_Printf ("hw in use\n");
+			appPrintf ("hw in use\n");
 			return false;
 		}
 	}
@@ -513,7 +513,7 @@ static bool SNDDMA_InitWav ()
 
 		if (waveOutPrepareHeader (hWaveOut, lpWaveHdr+i, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
 		{
-			Com_Printf ("failed\n");
+			appPrintf ("failed\n");
 			FreeSound ();
 			return false;
 		}
@@ -564,12 +564,12 @@ bool SNDDMA_Init ()
 				snd_isdirect = true;
 
 				if (snd_firsttime)
-					Com_Printf ("dsound init succeeded\n");
+					appPrintf ("dsound init succeeded\n");
 			}
 			else
 			{
 				snd_isdirect = false;
-				Com_Printf ("*** dsound init failed ***\n");
+				appPrintf ("*** dsound init failed ***\n");
 			}
 		}
 	}
@@ -586,11 +586,11 @@ bool SNDDMA_Init ()
 			if (snd_iswave = SNDDMA_InitWav ())
 			{
 				if (snd_firsttime)
-					Com_Printf ("Wave sound init succeeded\n");
+					appPrintf ("Wave sound init succeeded\n");
 			}
 			else
 			{
-				Com_Printf ("Wave sound init failed\n");
+				appPrintf ("Wave sound init failed\n");
 			}
 		}
 	}
@@ -607,7 +607,7 @@ bool SNDDMA_Init ()
 #endif
 	{
 		if (snd_firsttime)
-			Com_Printf ("*** No sound device initialized ***\n");
+			appPrintf ("*** No sound device initialized ***\n");
 
 		return false;
 	}
@@ -672,7 +672,7 @@ void SNDDMA_BeginPainting ()
 
 	// if the buffer was lost or stopped, restore it and/or restart it
 	if (pDSBuf->GetStatus (&dwStatus) != DS_OK)
-		Com_Printf ("Couldn't get sound buffer status\n");
+		appPrintf ("Couldn't get sound buffer status\n");
 
 	if (dwStatus & DSBSTATUS_BUFFERLOST)
 		pDSBuf->Restore ();
@@ -689,7 +689,7 @@ void SNDDMA_BeginPainting ()
 	{
 		if (hresult != DSERR_BUFFERLOST)
 		{
-			Com_WPrintf ("S_TransferStereo16: Lock failed with error '%s'\n", DSoundError (hresult));
+			appWPrintf ("S_TransferStereo16: Lock failed with error '%s'\n", DSoundError (hresult));
 			S_Shutdown ();
 			return;
 		}
@@ -742,7 +742,7 @@ void SNDDMA_Submit ()
 		snd_completed++;	// this buffer has been played
 	}
 
-//Com_Printf ("completed %i\n", snd_completed);
+//appPrintf ("completed %i\n", snd_completed);
 	//
 	// submit a few new sound blocks
 	//
@@ -753,8 +753,8 @@ void SNDDMA_Submit ()
 
 		h = lpWaveHdr + ( snd_sent&WAV_MASK );
 		if (paintedtime/256 <= snd_sent)
-		break;	//	Com_Printf ("submit overrun\n");
-//Com_Printf ("send %i\n", snd_sent);
+		break;	//	appPrintf ("submit overrun\n");
+//appPrintf ("send %i\n", snd_sent);
 		snd_sent++;
 		/*
 		 * Now the data block can be sent to the output device. The
@@ -765,7 +765,7 @@ void SNDDMA_Submit ()
 
 		if (wResult != MMSYSERR_NOERROR)
 		{
-			Com_Printf ("Failed to write block to device\n");
+			appPrintf ("Failed to write block to device\n");
 			FreeSound ();
 			return;
 		}

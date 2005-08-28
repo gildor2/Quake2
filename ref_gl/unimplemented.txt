@@ -329,6 +329,9 @@ FOR GAME:
 - fog
 - loading Q3 bsp
 - curved surfaces, trisurfs
+- shadered skies
+- fonts (Q3 format: font.tga+font.dat) -- Q3 uses this for Q3TA; may be migrated to Q3 UI interface
+? image formats: bmp, pcx32 (using OWN palette instead of colormap)
 - finish shader support:
   - deform autosprite2, normal
   - skyParms, fogParms, portal
@@ -337,9 +340,14 @@ FOR GAME:
   - tcmod entityTranslate (?)
   - alphaGen lightingSpecular, portal
   - wave noise (for deform normal)
-- reading lighting info from shaders
-- correct lighting for multipass shaders with lightmap in non-first stage
+- lighting:
+  - reading lighting info from shaders
+  - correct lighting for multipass shaders with lightmap in non-first stage
 - renderer interface
+  - DrawStretchRaw32()
+  - dlights
+  - decals
+  ...
 - use MD3 LOD (may be, try to generate LOD for ANY model?)
 
 

@@ -116,7 +116,7 @@ cvar_t	*fs_gamedirvar;
 
 // debugging
 static cvar_t	*fs_debug;
-#define DEBUG_LOG(msg)	if (fs_debug->integer) Com_Printf(S_GREEN"%s", msg);
+#define DEBUG_LOG(msg)	if (fs_debug->integer) appPrintf(S_GREEN"%s", msg);
 
 
 static cvar_t	*fs_configfile;
@@ -199,11 +199,11 @@ static void InitResFiles ()
 	{
 		f->pos = offs;
 		offs += f->size;
-//		Com_Printf ("res: %s (%d bytes) at %d\n", f->name, f->size, f->pos);
+//		appPrintf ("res: %s (%d bytes) at %d\n", f->name, f->size, f->pos);
 	}
 
 	Zip_CloseBuf (z);
-	Com_Printf ("Added %d inline files\n", resFileCount);
+	appPrintf ("Added %d inline files\n", resFileCount);
 }
 
 
@@ -520,7 +520,7 @@ void FS_CopyFiles (const char *srcMask, const char *dstDir)
 	const char *found = strrchr (srcMask, '/');
 	if (!found)
 	{
-		Com_WPrintf ("CopyFiles: bad srcMask \"%s\"\n", srcMask);
+		appWPrintf ("CopyFiles: bad srcMask \"%s\"\n", srcMask);
 		return;
 	}
 	int pos1 = found - srcMask + 1;
@@ -621,7 +621,7 @@ void FS_FCloseFile (QFILE *f)
 			int rest = f->zFile->rest_write;
 			if (!Zip_CloseFile (f->zFile) && !rest)
 			{	// file readed completely, but bad checksum
-				Com_WPrintf ("FS_FCloseFile: damaged zip file %s : %s\n", f->name, f->pFile->name);
+				appWPrintf ("FS_FCloseFile: damaged zip file %s : %s\n", f->name, f->pFile->name);
 			}
 		}
 		if (f->file)
@@ -873,7 +873,7 @@ bool FS_FileExists (const char *filename)
 	else
 		pakname = filename;
 
-//	Com_Printf(S_RED"check %s in %s; l = %d\n", pakname, game, gamelen);
+//	appPrintf(S_RED"check %s in %s; l = %d\n", pakname, game, gamelen);
 	// pakname = game relative path, game = subtracted game path, gamelen = strlen(game).
 	// We should refine .pak files with a game path (if specified, gamelen > 0)
 	for (TListIterator<searchPath_t> search = fs_searchpaths; search; ++search)
@@ -1086,14 +1086,14 @@ static pack_t *LoadPackFile (const char *packfile)
 	FILE *packHandle = fopen(packfile, "rb");
 	if (!packHandle)
 	{
-		Com_WPrintf ("Cannot open packfile %s\n", packfile);
+		appWPrintf ("Cannot open packfile %s\n", packfile);
 		return NULL;
 	}
 
 	dPackHeader_t	header;
 	if (fread (&header, sizeof(header), 1, packHandle) != 1)
 	{
-		Com_WPrintf ("Cannot read packfile %s\n", packfile);
+		appWPrintf ("Cannot read packfile %s\n", packfile);
 		fclose (packHandle);
 		return NULL;
 	}
@@ -1103,7 +1103,7 @@ static pack_t *LoadPackFile (const char *packfile)
 		packHandle = Zip_OpenArchive (packfile);
 		if (!packHandle)
 		{
-			Com_WPrintf ("%s is not a packfile\n", packfile);
+			appWPrintf ("%s is not a packfile\n", packfile);
 			return NULL;
 		}
 		is_zip = true;
@@ -1181,7 +1181,7 @@ static void AddGameDirectory (const char *dir)
 	/*-------- check for valid game directory -----------------*/
 	if (!Sys_FileExists (va("%s/*", dir), LIST_FILES|LIST_DIRS))
 	{
-		Com_WPrintf ("AddGameDirectory: path \"%s\" is not found\n", dir);
+		appWPrintf ("AddGameDirectory: path \"%s\" is not found\n", dir);
 		return;
 	}
 
@@ -1256,7 +1256,7 @@ bool FS_SetGamedir (const char *dir)
 {
 	if (strchr (dir, '/') || strchr (dir, '\\') || strchr (dir, ':'))
 	{
-		Com_Printf ("Gamedir should be a single filename, not a path\n");
+		appPrintf ("Gamedir should be a single filename, not a path\n");
 		return false;
 	}
 
@@ -1266,7 +1266,7 @@ bool FS_SetGamedir (const char *dir)
 	// check for valid game directory
 	if (!Sys_FileExists (va("./%s/*", dir), LIST_FILES|LIST_DIRS))
 	{
-		Com_WPrintf ("Invalid game directory: %s\n", dir);
+		appWPrintf ("Invalid game directory: %s\n", dir);
 		return false;
 	}
 
@@ -1335,7 +1335,7 @@ static bool TryLoadPak (char *pakname)
 
 	if (FindPakStruc (pakname))
 	{
-		Com_WPrintf ("Packfile %s is already loaded\n", pakname);
+		appWPrintf ("Packfile %s is already loaded\n", pakname);
 		return true;		// already loaded
 	}
 	if (f = fopen (pakname, "rb"))
@@ -1360,7 +1360,7 @@ static void FS_LoadPak_f (bool usage, int argc, char **argv)
 
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: loadpak <pakname>[.pak]\n"
+		appPrintf ("Usage: loadpak <pakname>[.pak]\n"
 					"  or   loadpak <wildcard>\n");
 		return;
 	}
@@ -1385,7 +1385,7 @@ static void FS_LoadPak_f (bool usage, int argc, char **argv)
 		if (TryLoadPak (pakname)) return;
 	}
 
-	Com_WPrintf ("Packfile %s is not found\n", argv[1]);
+	appWPrintf ("Packfile %s is not found\n", argv[1]);
 }
 
 
@@ -1400,7 +1400,7 @@ static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: unloadpak <pakname>[.pak]\n"
+		appPrintf ("Usage: unloadpak <pakname>[.pak]\n"
 					"  or   unloadpak <wildcard>\n");
 		return;
 	}
@@ -1428,7 +1428,7 @@ static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 			}
 		}
 		if (!found)
-			Com_WPrintf ("Packfile %s is not loaded\n", pakname);
+			appWPrintf ("Packfile %s is not loaded\n", pakname);
 		return;
 	}
 
@@ -1440,7 +1440,7 @@ static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 		strcat (pakname, ".pak");
 		if (!(search = FindPakStruc (pakname)))
 		{
-			Com_WPrintf ("Packfile %s is not loaded\n", pakname);
+			appWPrintf ("Packfile %s is not loaded\n", pakname);
 			return;
 		}
 	}
@@ -1468,7 +1468,7 @@ static void FS_Link_f (bool usage, int argc, char **argv)
 
 	if (argc != 3 || usage)
 	{
-		Com_Printf ("Usage: link <from> <to>\n");
+		appPrintf ("Usage: link <from> <to>\n");
 		return;
 	}
 
@@ -1560,7 +1560,7 @@ TList<CStringItem> FS_ListFiles (const char *name, int flags)
 	else
 		pakname = name;
 
-//	Com_Printf (S_RED"list: %s in %s (l = %d); fullname = \"%s\"\n", pakname, game, gamelen, name);
+//	appPrintf (S_RED"list: %s in %s (l = %d); fullname = \"%s\"\n", pakname, game, gamelen, name);
 
 	// extract wildcard
 	char	path[MAX_OSPATH];
@@ -1627,7 +1627,7 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 
 	if (argc > 2 || usage)
 	{
-		Com_Printf ("Usage: dir [<mask>]\n");
+		appPrintf ("Usage: dir [<mask>]\n");
 		return;
 	}
 
@@ -1648,7 +1648,7 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 	{
 		TString<MAX_OSPATH> FindName;
 		FindName.filename (va ("%s/%s", path, *Wildcard));
-		Com_Printf (S_GREEN"Directory of %s\n-------------------\n", *FindName);
+		appPrintf (S_GREEN"Directory of %s\n-------------------\n", *FindName);
 
 		TList<CStringItem> dirnames = FS_ListFiles (FindName, LIST_FILES|LIST_DIRS);
 		if (dirnames)
@@ -1671,20 +1671,20 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 			int col = 0;
 			for (item = dirnames; item; ++item)
 			{
-				Com_Printf ("%s", item->name);
+				appPrintf ("%s", item->name);
 				if (++col >= colcount)
 				{
 					col = 0;
-					Com_Printf ("\n");
+					appPrintf ("\n");
 					continue;
 				}
 				int len = strlen (item->name);
-				for (int i = 0; i < colwidth - len; i++) Com_Printf (" ");
+				for (int i = 0; i < colwidth - len; i++) appPrintf (" ");
 			}
-			if (col) Com_Printf ("\n");
+			if (col) appPrintf ("\n");
 			dirnames.Free();
 		}
-		Com_Printf ("\n");
+		appPrintf ("\n");
 		// if wildcard starts from "../" - dir is root-based, ignore other paths
 		if (Wildcard[0] == '.' && Wildcard[1] == '.' && Wildcard[2] == '/') break;
 	}
@@ -1698,25 +1698,25 @@ FS_Path_f
 */
 static void FS_Path_f ()
 {
-	Com_Printf (S_GREEN"Current search path:\n");
-	Com_Printf ("----zip-files-name------------\n");
+	appPrintf (S_GREEN"Current search path:\n");
+	appPrintf ("----zip-files-name------------\n");
 	int n = 0;
 	for (TListIterator<searchPath_t> s = fs_searchpaths; s; ++s)
 	{
 		n++;
 		if (*s == fs_base_searchpaths)
-			Com_Printf (S_GREEN"------------------------\n");
+			appPrintf (S_GREEN"------------------------\n");
 		if (s->pack)
-			Com_Printf ("%-3d  %c  %-5d %s\n", n, s->pack->isZip ? '+' : ' ', s->pack->numFiles, s->pack->filename);
+			appPrintf ("%-3d  %c  %-5d %s\n", n, s->pack->isZip ? '+' : ' ', s->pack->numFiles, s->pack->filename);
 		else
-			Com_Printf ("%-3d     --    %s\n", n, s->name);
+			appPrintf ("%-3d     --    %s\n", n, s->name);
 	}
 
 	if (fs_links)
 	{
-		Com_Printf (S_GREEN"\nLinks:\n");
+		appPrintf (S_GREEN"\nLinks:\n");
 		for (fileLink_t *l = fs_links; l; l = l->next)
-			Com_Printf ("%s : %s\n", l->from, l->to);
+			appPrintf ("%s : %s\n", l->from, l->to);
 	}
 }
 
@@ -1728,16 +1728,16 @@ static void FS_Cat_f (bool usage, int argc, char **argv)
 
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: cat <filename>\n");
+		appPrintf ("Usage: cat <filename>\n");
 		return;
 	}
 	QFILE *f = FS_FOpenFile (argv[1], &len);
 	if (!f)
 	{
-		Com_Printf ("File %s is not found\n", argv[1]);
+		appPrintf ("File %s is not found\n", argv[1]);
 		return;
 	}
-	Com_Printf ("\n--------\n");
+	appPrintf ("\n--------\n");
 	while (len)
 	{
 		int		i;
@@ -1747,17 +1747,17 @@ static void FS_Cat_f (bool usage, int argc, char **argv)
 		FS_Read (buf, get, f);
 
 		for (i = 0, p = buf; i < get && *p; i++, p++)
-			if (*p != '\r') Com_Printf ("%c", *p);
+			if (*p != '\r') appPrintf ("%c", *p);
 
 		if (i < get)
 		{
-			Com_Printf ("\nbinary file ... stopped.\n");
+			appPrintf ("\nbinary file ... stopped.\n");
 			break;
 		}
 		len -= get;
 	}
 	FS_FCloseFile (f);
-	Com_Printf ("\n--------\n");
+	appPrintf ("\n--------\n");
 }
 
 
@@ -1765,7 +1765,7 @@ static void FS_Type_f (bool usage, int argc, char **argv)
 {
 	if (argc != 2 || usage)
 	{
-		Com_Printf ("Usage: type <filename>\n");
+		appPrintf ("Usage: type <filename>\n");
 		return;
 	}
 	const char *name = argv[1];
@@ -1776,11 +1776,11 @@ static void FS_Type_f (bool usage, int argc, char **argv)
 	Cvar_SetInteger ("fs_debug", oldDev);
 	if (!f)
 	{
-		Com_Printf ("File \"%s\" is not found\n", name);
+		appPrintf ("File \"%s\" is not found\n", name);
 		return;
 	}
 	// display info about file
-	Com_Printf ("length: %d bytes\n", len);
+	appPrintf ("length: %d bytes\n", len);
 	FS_FCloseFile (f);
 }
 

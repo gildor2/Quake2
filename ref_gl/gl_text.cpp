@@ -76,7 +76,7 @@ static void GetTextExtents (const char *s, int &width, int &height)
 static void DrawText (const CRText *rec)
 {
 	if (gl_logTexts->integer)
-		Com_Printf (S_MAGENTA"%s\n", rec->text);
+		appPrintf (S_MAGENTA"%s\n", rec->text);
 
 	int y = rec->y;
 	const char *text = rec->text;

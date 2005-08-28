@@ -241,7 +241,7 @@ METHODDEF(boolean) J_FillInputBuffer (j_decompress_ptr cinfo)
 {
 	if (!jpegerror)
 	{
-		Com_WPrintf ("LoadJPG(%s): damaged file\n", jpegname);
+		appWPrintf ("LoadJPG(%s): damaged file\n", jpegname);
 //		Com_DropError ("Bad JPEG");
 		jpegerror = true;
 	}
@@ -285,22 +285,22 @@ static struct jpeg_error_mgr *InitJpegError (struct jpeg_error_mgr *err)
 {
 	memset (err, 0, sizeof(*err));
 
-	err->error_exit = J_ErrorExit;
-	err->emit_message = J_EmitMessage;
-	err->output_message = J_ErrorExit;
-//	err->format_message = NULL;			// used only from jerror.c
+	err->error_exit      = J_ErrorExit;
+	err->emit_message    = J_EmitMessage;
+	err->output_message  = J_ErrorExit;
+//	err->format_message  = NULL;		// used only from jerror.c
 	err->reset_error_mgr = J_ResetErrorMgr;
 
-//	err->trace_level = 0;				// default = no tracing
+//	err->trace_level  = 0;				// default = no tracing
 //	err->num_warnings = 0;				// no warnings emitted yet
-//	err->msg_code = 0;					// may be useful as a flag for "no error"
+//	err->msg_code     = 0;				// may be useful as a flag for "no error"
 
 //	err->jpeg_message_table = NULL;		// used only from jerror.c
-//	err->last_jpeg_message = 0;			// ...
+//	err->last_jpeg_message  = 0;		// ...
 
 //	err->addon_message_table = NULL;
 //	err->first_addon_message = 0;		//for safety
-//	err->last_addon_message = 0;
+//	err->last_addon_message  = 0;
 
 	return err;
 }
@@ -327,13 +327,13 @@ void LoadJPG (const char *name, byte *&pic, int &width, int &height)
 	// init jpeg source
 	cinfo.src = (struct jpeg_source_mgr *) (*cinfo.mem->alloc_small) ((j_common_ptr) &cinfo, JPOOL_PERMANENT,
 		sizeof(struct jpeg_source_mgr));
-	cinfo.src->init_source = J_InitSource;
+	cinfo.src->init_source       = J_InitSource;
 	cinfo.src->fill_input_buffer = J_FillInputBuffer;
-	cinfo.src->skip_input_data = J_SkipInputData;
+	cinfo.src->skip_input_data   = J_SkipInputData;
 	cinfo.src->resync_to_restart = jpeg_resync_to_restart;  // default method
-	cinfo.src->term_source = J_TermSource;
-	cinfo.src->bytes_in_buffer = length;
-	cinfo.src->next_input_byte = buffer;
+	cinfo.src->term_source       = J_TermSource;
+	cinfo.src->bytes_in_buffer   = length;
+	cinfo.src->next_input_byte   = buffer;
 
 	jpeg_read_header (&cinfo, true);
 	jpeg_start_decompress (&cinfo);
@@ -438,7 +438,7 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	FS_CreatePath (name);
 	if (!(f = fopen (name, "wb")))
 	{
-		Com_WPrintf ("WriteTGA(%s): cannot create file\n", name);
+		appWPrintf ("WriteTGA(%s): cannot create file\n", name);
 		return false;
 	}
 
@@ -518,8 +518,8 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	// write header
 	tgaHdr_t header;
 	memset (&header, 0, sizeof(header));
-	header.width = LittleShort (width);
-	header.height = LittleShort (height);
+	header.width      = LittleShort (width);
+	header.height     = LittleShort (height);
 	header.pixel_size = 24;
 	if (done)
 	{
@@ -554,7 +554,7 @@ bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQual
 	FS_CreatePath (name);
 	if (!(f = fopen (name, "wb")))
 	{
-		Com_WPrintf ("WriteJPG: cannot create \"%s\"\n", name);
+		appWPrintf ("WriteJPG: cannot create \"%s\"\n", name);
 		return false;
 	}
 
@@ -563,10 +563,10 @@ bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQual
 	jpeg_create_compress (&cinfo);
 	jpeg_stdio_dest (&cinfo, f);
 
-	cinfo.image_width = width;
-	cinfo.image_height = height;
+	cinfo.image_width      = width;
+	cinfo.image_height     = height;
 	cinfo.input_components = 3;
-	cinfo.in_color_space = JCS_RGB;
+	cinfo.in_color_space   = JCS_RGB;
 	jpeg_set_defaults (&cinfo);
 	if (highQuality)
 		jpeg_set_quality (&cinfo, 100, TRUE);

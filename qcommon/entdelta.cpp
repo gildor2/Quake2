@@ -13,13 +13,13 @@
 #define TEMPLATE(Name,type,fmt)						\
 static void M_Write##Name (sizebuf_t *m, type c)	\
 {													\
-	Com_Printf (S_GREEN"w" fmt "\n", c);			\
+	appPrintf (S_GREEN"w" fmt "\n", c);			\
 	MSG_Write##Name (m, c);							\
 }													\
 static type M_Read##Name (sizebuf_t *m)				\
 {													\
 	type c = MSG_Read##Name (m);					\
-	Com_Printf (S_RED"r" fmt "\n", c);				\
+	appPrintf (S_RED"r" fmt "\n", c);				\
 	return c;										\
 }
 
@@ -49,7 +49,7 @@ TEMPLATE(Angle16,float,"A %g")
 #define MSG_ReadAngle		M_ReadAngle
 #define MSG_ReadAngle16		M_ReadAngle16
 
-#define LOG(str)	Com_Printf(str)
+#define LOG(str)	appPrintf(str)
 
 #else
 #define LOG(str)

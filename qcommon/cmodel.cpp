@@ -197,14 +197,14 @@ static void ReadSurfMaterials (const char *filename)
 			m = MATERIAL_SILENT;
 			break;
 		default:
-			Com_WPrintf ("Unknown material mark \"%s\" in %s\n", s, filename);
+			appWPrintf ("Unknown material mark \"%s\" in %s\n", s, filename);
 			m = MATERIAL_CONCRETE;
 		}
 
 		s = COM_Parse (in);
 		if (!in)
 		{
-			Com_WPrintf ("Unexpected end of file %s\n", filename);
+			appWPrintf ("Unexpected end of file %s\n", filename);
 			break;
 		}
 		// s points to surface name
@@ -799,7 +799,7 @@ void CMod_LoadHLBrushes ()
 	{
 		out->firstbrushside = in->firstleafbrush; // hl_dleaf_t->firstmarksurface
 		out->numsides = in->numleafbrushes;       // hl_dleaf_t->nummarksurfaces
-		Com_Printf(",%d",out->numsides); //!!
+		appPrintf(",%d",out->numsides); //!!
 		in->firstleafbrush = i; // points to current structure
 		in->numleafbrushes = 1;
 		out->contents = in->contents;

@@ -44,6 +44,7 @@ global:
 	STDLIBS		= list of used libraries
 	LIBRARIES   = path to additional library files
 	LIBC		= static | dynamic == undef
+	ALLOW_MISSING_INCLUDES = 1 | 0		when #include "filename" will fail, warning will be generated instead of error
 
 per-target:
 //	CONSOLE		= 1 | 0 == undef		useless for Visual C++ - automatically detected by presence of main() or WinMain()
@@ -508,7 +509,7 @@ sub CollectFileDependencies {
 			}
 		} else {
 			# [#include "file"]
-			$inc = ($line =~ /^\s* \# \s* include \s* \" ([\w\.\\\/]+) \" \s* (\/\/.*|\/\*.*)? [\r\n]* $/x)[0];
+			$inc = ($line =~ /^\s* \# \s* include \s* \" ([\w\.\-\\\/]+) \" \s* (\/\/.*|\/\*.*)? [\r\n]* $/x)[0];
 		}
 		next if !defined($inc);
 		# find included file in current directory or in INCLUDES paths
@@ -531,19 +532,27 @@ sub CollectFileDependencies {
 				}
 			}
 		}
-		Error ("cannot find file \"$inc\" included from \"$file\"; directories used: [$includes]") unless $found;
 
-		# check file presense
-		if ($doRecurse) {
-			if (CollectFileDependencies ($inc2, $includes, $srcType) == -1) {
-				# may be inc<->file, and may be file1->file2->file3->file1 ...
-				WarningOnce ("circular reference from \"$inc2\" to \"$file\"", "circ:$file<->$inc2");
+		if (!$found) {
+			my $doWarn = $vars{"ALLOW_MISSING_INCLUDES"};
+			if (defined($doWarn) && $doWarn) {
+				Warning ("cannot find file \"$inc\" included from \"$file\"; directories used: [$includes]") unless $found;
+			} else {
+				Error ("cannot find file \"$inc\" included from \"$file\"; directories used: [$includes]") unless $found;
 			}
 		} else {
-			$depends{$inc2} = "";
+			# check file presense
+			if ($doRecurse) {
+				if (CollectFileDependencies ($inc2, $includes, $srcType) == -1) {
+					# may be inc<->file, and may be file1->file2->file3->file1 ...
+					WarningOnce ("circular reference from \"$inc2\" to \"$file\"", "circ:$file<->$inc2");
+				}
+			} else {
+				$depends{$inc2} = "";
+			}
+			# remember file
+			$dep .= " ".$inc2." ";					# spaces around filename
 		}
-		# remember file
-		$dep .= " ".$inc2." ";					# spaces around filename
 	}
 	close (DEP);
 	$depends{$file} = $dep;

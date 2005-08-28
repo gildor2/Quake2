@@ -182,7 +182,7 @@ void netchan_t::Transmit (void *data, int length)
 	if (message.overflowed)
 	{
 		fatal_error = true;
-		Com_WPrintf ("%s: outgoing message overflow\n", NET_AdrToString (&remote_address));
+		appWPrintf ("%s: outgoing message overflow\n", NET_AdrToString (&remote_address));
 		return;
 	}
 
@@ -226,7 +226,7 @@ void netchan_t::Transmit (void *data, int length)
 	if (send.maxsize - send.cursize >= length)
 		send.Write (data, length);
 	else
-		Com_Printf ("netchan_t::Transmit: dumped unreliable\n");
+		appPrintf ("netchan_t::Transmit: dumped unreliable\n");
 
 	// send the datagram
 	NET_SendPacket (sock, send.cursize, send.data, remote_address);
@@ -234,14 +234,14 @@ void netchan_t::Transmit (void *data, int length)
 	if (showpackets->integer)
 	{
 		if (send_reliable)
-			Com_Printf ("send %4i : s=%i reliable=%i ack=%i rack=%i\n"
+			appPrintf ("send %4i : s=%i reliable=%i ack=%i rack=%i\n"
 				, send.cursize
 				, outgoing_sequence - 1
 				, reliable_sequence
 				, incoming_sequence
 				, incoming_reliable_sequence);
 		else
-			Com_Printf ("send %4i : s=%i ack=%i rack=%i\n"
+			appPrintf ("send %4i : s=%i ack=%i rack=%i\n"
 				, send.cursize
 				, outgoing_sequence - 1
 				, incoming_sequence
@@ -278,14 +278,14 @@ bool netchan_t::Process (sizebuf_t *msg)
 	if (showpackets->integer)
 	{
 		if (reliable_message)
-			Com_Printf ("recv %4i : s=%i reliable=%i ack=%i rack=%i\n"
+			appPrintf ("recv %4i : s=%i reliable=%i ack=%i rack=%i\n"
 				, msg->cursize
 				, sequence
 				, incoming_reliable_sequence ^ 1
 				, sequence_ack
 				, reliable_ack);
 		else
-			Com_Printf ("recv %4i : s=%i ack=%i rack=%i\n"
+			appPrintf ("recv %4i : s=%i ack=%i rack=%i\n"
 				, msg->cursize
 				, sequence
 				, sequence_ack
@@ -296,7 +296,7 @@ bool netchan_t::Process (sizebuf_t *msg)
 	if (sequence <= incoming_sequence)
 	{
 		if (showdrop->integer)
-			Com_Printf ("%s:Out of order packet %i at %i\n"
+			appPrintf ("%s:Out of order packet %i at %i\n"
 				, NET_AdrToString (&remote_address)
 				, sequence
 				, incoming_sequence);
@@ -308,7 +308,7 @@ bool netchan_t::Process (sizebuf_t *msg)
 	if (dropped > 0)
 	{
 		if (showdrop->integer)
-			Com_Printf ("%s:Dropped %i packets at %i\n"
+			appPrintf ("%s:Dropped %i packets at %i\n"
 			, NET_AdrToString (&remote_address)
 			, dropped
 			, sequence);

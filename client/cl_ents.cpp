@@ -183,7 +183,7 @@ static void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 		{
 			// one or more entities from the old packet are unchanged
 			if (cl_shownet->integer == 3)
-				Com_Printf ("   unchanged: %d\n", oldnum);
+				appPrintf ("   unchanged: %d\n", oldnum);
 			CL_DeltaEntity (newframe, oldnum, oldstate, 0);
 
 			if (++oldindex >= old_num_entities)
@@ -198,9 +198,9 @@ static void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 		if (remove)
 		{	// the entity present in oldframe is not in the current frame
 			if (cl_shownet->integer == 3)
-				Com_Printf ("   remove: %d\n", newnum);
+				appPrintf ("   remove: %d\n", newnum);
 			if (oldnum != newnum)
-				Com_WPrintf ("CL_ParsePacketEntities: remove: oldnum != newnum\n");
+				appWPrintf ("CL_ParsePacketEntities: remove: oldnum != newnum\n");
 
 			oldindex++;
 			continue;
@@ -210,7 +210,7 @@ static void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 		{
 			// delta from previous state
 			if (cl_shownet->integer == 3)
-				Com_Printf ("   delta: %d\n", newnum);
+				appPrintf ("   delta: %d\n", newnum);
 			CL_DeltaEntity (newframe, newnum, oldstate, bits);
 
 			oldindex++;
@@ -221,7 +221,7 @@ static void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 		{
 			// delta from baseline
 			if (cl_shownet->integer == 3)
-				Com_Printf ("   baseline: %d\n", newnum);
+				appPrintf ("   baseline: %d\n", newnum);
 			CL_DeltaEntity (newframe, newnum, &cl_entities[newnum].baseline, bits);
 			continue;
 		}
@@ -235,7 +235,7 @@ static void CL_ParsePacketEntities (frame_t *oldframe, frame_t *newframe)
 		oldnum = oldstate->number;
 
 		if (cl_shownet->integer == 3)
-			Com_Printf ("   unchanged: %d\n", oldnum);
+			appPrintf ("   unchanged: %d\n", oldnum);
 		CL_DeltaEntity (newframe, oldnum, oldstate, 0);
 
 		oldindex++;
@@ -286,7 +286,7 @@ void CL_ParseFrame (void)
 		cl.surpressCount = MSG_ReadByte (&net_message);
 
 	if (cl_shownet->integer == 3)
-		Com_Printf ("   frame:%i  delta:%i\n", cl.frame.serverframe,
+		appPrintf ("   frame:%i  delta:%i\n", cl.frame.serverframe,
 		cl.frame.deltaframe);
 
 	cl.overtime = 0;
@@ -306,16 +306,16 @@ void CL_ParseFrame (void)
 		old = &cl.frames[cl.frame.deltaframe & UPDATE_MASK];
 		if (!old->valid)
 		{	// should never happen
-			Com_Printf ("Delta from invalid frame (not supposed to happen!).\n");
+			appPrintf ("Delta from invalid frame (not supposed to happen!).\n");
 		}
 		if (old->serverframe != cl.frame.deltaframe)
 		{	// The frame that the server did the delta from
 			// is too old, so we can't reconstruct it properly.
-			Com_Printf ("Delta frame too old.\n");
+			appPrintf ("Delta frame too old.\n");
 		}
 		else if (cl.parse_entities - old->parse_entities > MAX_PARSE_ENTITIES-128)
 		{
-			Com_Printf ("Delta parse_entities too old.\n");
+			appPrintf ("Delta parse_entities too old.\n");
 		}
 		else
 			cl.frame.valid = true;			// valid delta parse
@@ -392,7 +392,7 @@ static void GetEntityInfo (int entityNum, clEntityState_t * &st, unsigned &eff, 
 
 	state = &cl_parse_entities[(cl.frame.parse_entities + entityNum) & (MAX_PARSE_ENTITIES-1)];
 	//?? is state == cl_entities[entityNum] ? no ... but why ?
-	// -- if (memcmp (state, &cl_entities[entityNum].current, sizeof(clEntityState_t))) Com_WPrintf("%d\n");
+	// -- if (memcmp (state, &cl_entities[entityNum].current, sizeof(clEntityState_t))) appWPrintf("%d\n");
 	effects = state->effects;
 	renderfx = state->renderfx;
 
@@ -1010,7 +1010,7 @@ void CL_AddEntities (void)
 	if (cl.time > cl.frame.servertime)
 	{
 		if (cl_showclamp->integer)
-			Com_Printf ("high clamp %i\n", cl.time - cl.frame.servertime);
+			appPrintf ("high clamp %i\n", cl.time - cl.frame.servertime);
 		cl.overtime += cl.time - cl.frame.servertime;
 		cl.time     = cl.frame.servertime;
 		cl.ftime    = cl.time / 1000.0f;
@@ -1019,7 +1019,7 @@ void CL_AddEntities (void)
 	else if (cl.time < cl.frame.servertime - 100)
 	{
 		if (cl_showclamp->integer)
-			Com_Printf ("low clamp %i\n", cl.frame.servertime - 100 - cl.time);
+			appPrintf ("low clamp %i\n", cl.frame.servertime - 100 - cl.time);
 		cl.overtime = 0;
 		cl.time     = cl.frame.servertime - 100;
 		cl.ftime    = cl.time / 1000.0f;
