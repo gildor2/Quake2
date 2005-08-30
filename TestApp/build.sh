@@ -21,6 +21,5 @@ time vc32tools --make quake2 TestApp
 
 cd Tools/SymInfoBuilder
 ./work.pl ../../TestApp
-cd ../..
 
 echo "Build done."

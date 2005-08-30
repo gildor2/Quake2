@@ -6,34 +6,50 @@ protected:
 public:
 	COutputDeviceFile ()
 	:	log (NULL)
-	{}
+	{
+		NoColors = true;
+	}
 	COutputDeviceFile (const char *fileName, bool erasePrevious = false)
 	{
-		log = fopen (fileName, erasePrevious ? "w" : "a");
-		if (!log)
-			appWPrintf ("Unable to open log file \"%s\"", fileName);
+		NoColors = true;
+		Open (fileName, erasePrevious);
 	}
 	~COutputDeviceFile ()
 	{
-		fclose (log);
-		log = NULL;
+		if (log) fclose (log);
 	}
-	bool Write (const char *str)
+	void Write (const char *str)
 	{
-		if (!log || !str[0]) return true;
+		if (!log || !str[0]) return;
 		// remove color codes
-		char buf[4096];
-		appUncolorizeString (buf, str);
-		int len = strlen (buf);
-		if (!len) return true;
+		int len = strlen (str);
+		if (!len) return;
 		// write to file
-		if (fwrite (buf, 1, len, log) < len)
+		if (fwrite (str, 1, len, log) < len)
 		{
 			appWPrintf ("Unable to write to log\n");
 			fclose (log);
 			log = NULL;
 		}
-		return true;
+	}
+	void Flush ()
+	{
+		if (log) fflush (log);
+	}
+	void Open (const char *fileName, bool erasePrevious = false)
+	{
+		log = fopen (fileName, erasePrevious ? "w" : "a");
+		if (!log)
+			appWPrintf ("Cannot write to file \"%s\"", fileName);
+	}
+	void Close ()
+	{
+		if (log) fclose (log);
+		log = NULL;
+	}
+	inline bool IsOpened ()
+	{
+		return log != NULL;
 	}
 };
 

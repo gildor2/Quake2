@@ -28,7 +28,7 @@ $constname   = "NUM_GLFUNCS";
 $constname2  = "NUM_EXTFUNCS";
 $constname3  = "NUM_EXTENSIONS";
 $extArrName  = "extInfo";
-$log         = "fprintf (logFile, ";
+$log         = "LogFile->Printf (";
 
 
 #------------------------------------------------------------------------------

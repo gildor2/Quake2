@@ -1,3 +1,5 @@
+//!! call Flush() when buffer filled (by 1/2 ?); if not flushed (memory-only) -- do not try again??
+//!! bool: flushOnFull, flushOnHalf ...
 
 class COutputDeviceMem : public COutputDevice
 {
@@ -22,7 +24,7 @@ public:
 	{
 		return buffer;
 	}
-	bool Write (const char *str)
+	void Write (const char *str)
 	{
 		int len = strlen (str);
 		if (used + len + 1 >= size - 2)	// 2 is place for S_WHITE
@@ -39,6 +41,5 @@ public:
 			buffer[used++] = '0' + C_WHITE;
 			buffer[used] = 0;
 		}
-		return true;
 	}
 };

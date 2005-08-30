@@ -1,23 +1,3 @@
-/*
-Copyright (C) 1997-2001 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-// common.cpp -- misc functions used in client and server
 #include "qcommon.h"
 #include <time.h>
 
@@ -118,9 +98,8 @@ do the apropriate things.
 */
 void Com_Quit (void)
 {
-	SV_Shutdown ("Server quit\n", false);
-	CL_Shutdown (false);
-	Com_Shutdown ();
+	SV_Shutdown ("Server quit\n");
+	CL_Shutdown ();
 	Sys_Quit ();
 }
 
@@ -617,6 +596,7 @@ void Com_Frame (float msec)
 	//?? appUncolorizeString() for file log
 	if (logfile_active && logfile_active->modified)
 	{
+		logfile_active->modified = false;
 		if (logfile_active->integer)
 		{
 			if (!FileLog)
@@ -624,6 +604,7 @@ void Com_Frame (float msec)
 				FileLog = new COutputDeviceFile (APPNAME".log", true);
 				FileLog->Register ();
 			}
+			FileLog->FlushEveryTime = logfile_active->integer > 1;
 		}
 		else
 		{
@@ -729,15 +710,4 @@ void Com_Frame (float msec)
 	}
 
 	unguard;
-}
-
-
-void Com_Shutdown (void)
-{
-	if (FileLog)
-	{
-		FileLog->Unregister ();
-		delete FileLog;
-		FileLog = NULL;
-	}
 }

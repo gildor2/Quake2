@@ -2,6 +2,7 @@
 
 int		cvar_initialized = 0;			// 0 - before config read, 1 - before system finished init, 2 - after init
 cvar_t	*cvar_vars;
+static cvar_t *lastCvar;
 static CMemoryChain *cvar_chain;
 
 bool userinfo_modified;
@@ -251,9 +252,10 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 		Cvar_SetString (var, var_value);
 	}
 
-	// link the variable in
-	var->next = cvar_vars;
-	cvar_vars = var;
+	// add var to list (in order of creation)
+	if (!cvar_vars) cvar_vars = var;		// 1st cvar
+	if (lastCvar) lastCvar->next = var;
+	lastCvar = var;
 
 	// insert into a hash table
 	int hash = ComputeHash (var_name);
@@ -632,7 +634,7 @@ Appends lines containing "set variable value" for all variables
 with the archive flag set to true.
 ============
 */
-void Cvar_WriteVariables (FILE *f, int includeMask, int excludeMask, const char *header)
+void Cvar_WriteVariables (COutputDevice *Out, int includeMask, int excludeMask, const char *header)
 {
 	bool logged = false;
 	for (cvar_t *var = cvar_vars; var; var = var->next)
@@ -654,10 +656,10 @@ void Cvar_WriteVariables (FILE *f, int includeMask, int excludeMask, const char 
 			type = 'u';
 		if (!logged)
 		{
-			fprintf (f, header);
+			Out->Printf (header);
 			logged = true;
 		}
-		fprintf (f, "set%c %s \"%s\"\n", type, var->name, var->string);
+		Out->Printf ("set%c %s \"%s\"\n", type, var->name, var->string);
 	}
 }
 

@@ -11,6 +11,7 @@
 
 static const char *NET_ErrorString ()
 {
+#if 0
 	static const struct {
 		int		code;
 		char	*str;
@@ -44,6 +45,10 @@ static const char *NET_ErrorString ()
 		return va("WSA%s", s);
 	else
 		return va("WSA_ERR_%d", code);
+#else
+	int code = WSAGetLastError ();
+	return va("WSA_%d: %s", code, appGetSystemErrorMessage (code));
+#endif
 }
 
 

@@ -22,7 +22,7 @@ public:
 	{
 		Register ();
 	}
-	bool Write (const char *str);
+	void Write (const char *str);
 };
 
 

@@ -58,10 +58,12 @@ typedef unsigned int	address_t;
 #pragma warning(disable : 4244)			// conversion from 'int'/'double' to 'float'
 
 
+const char *appGetSystemErrorMessage (unsigned code);
+
+
 /*-----------------------------------------------------------------------------
 	Some math functions
 -----------------------------------------------------------------------------*/
-
 
 inline int appRound (float f)
 {
@@ -152,7 +154,7 @@ inline __int64 appCycles64 ()
 #define GUARD_BEGIN	try
 #define GUARD_CATCH	catch (...)
 
-#else
+#else // WIN32_USE_SEH
 
 #if 0
 #include <excpt.h>
@@ -186,4 +188,4 @@ CORE_API int win32ExceptFilter2 ();
 #define GUARD_BEGIN	__try
 #define GUARD_CATCH	__except (EXCEPT_FILTER)
 
-#endif
+#endif // WIN32_USE_SEH

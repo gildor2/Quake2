@@ -62,8 +62,9 @@ Comments:
   - ability to stop with any key (old: incorrect when playing sequence of few cinematics)
 - menu: allowed binds to all keys (except ESC and "~")
 - better work with large FPS
-- cvar "logfile": log placed in quake root directory (not in game directory) in "quake2.log" + removed lines, finished
-  with LF ('\r')
+- cvar "logfile":
+  - log placed in quake root directory (not in game directory) in "quake2.log"
+  - use logfile=2 for flushing file after every write
 - using specified model/skin in a singleplayer mode (original: used male/grunt skin)
 - air acceleration works correct (sv_airaccelerate); before: value of cvar was ignored
 
@@ -107,6 +108,8 @@ File system
 - added support of zip (pk3) pak files (should also have ".pak" extension; to load ".pk3" files add to "autoexec.cfg"
   following line: "loadpak *.pk3")
 - loading unlimited number of paks with any names
+- "cddir" cvar may specify path to game contents on hard drive or network share
+  example: cddir="//SERVER/GAMES/Quake2" or cddir="E:/DISTR/GAMES/Quake2"
 
 Console/Menu
 ------------

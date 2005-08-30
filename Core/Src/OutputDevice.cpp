@@ -16,7 +16,9 @@ void COutputDevice::Printf (const char *fmt, ...)
 	if (len < 0 || len >= sizeof(buf) - 1)
 		return;
 
+	if (NoColors) appUncolorizeString (buf, buf); // in-place
 	Write (buf);
+	if (FlushEveryTime) Flush ();
 }
 
 
@@ -62,8 +64,17 @@ void appPrintf (const char *fmt, ...)
 	va_end (argptr);
 	if (len < 0 || len >= sizeof(buf) - 1) return;		//?? may be, write anyway ...
 
+	char buf2[BUFFER_LEN];				// buffer for string with removed color codes
+	buf2[0] = 0;
 	for (int i = 0; i < numDevices; i++)
-		if (!loggers[i]->Write (buf)) break;
+	{
+		COutputDevice *out = loggers[i];
+		if (out->NoColors && !buf2[0])	// lazy operation: when needed only
+			appUncolorizeString (buf2, buf);
+		out->Write (out->NoColors ? buf2 : buf);
+		if (out->FlushEveryTime) out->Flush ();
+		if (out->GrabOutput) break;
+	}
 	unguard;
 }
 

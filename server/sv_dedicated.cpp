@@ -5,12 +5,10 @@
 
 // cl_scrn.cpp
 void SCR_SetLevelshot (const char *name)
-{
-}
+{}
 
 void SCR_DebugGraph (float value, int color)
-{
-}
+{}
 
 // cl_main.cpp
 void Cmd_ForwardToServer (int argc, char **argv)
@@ -28,21 +26,17 @@ void Cmd_ForwardToServer (int argc, char **argv)
 }
 
 void CL_WriteConfiguration (const char *filename)
-{
-}
+{}
 
-void CL_Shutdown (bool error)
-{
-}
+void CL_Shutdown ()
+{}
 
 void Key_Init ()
-{
-}
+{}
 
 //??? separate CompleteCommand() from keys.cpp
 void CompleteCommand ()
-{
-}
+{}
 
 //?? separate editLine[] from console.cpp
 char editLine[1024];

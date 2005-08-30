@@ -79,7 +79,7 @@ const char *Key_KeynumToString (int keynum);
 
 void Key_SetBinding (int keynum, const char *binding);
 int Key_FindBinding (const char *str, int *keys, int maxKeys);
-void Key_WriteBindings (FILE *f);
+void Key_WriteBindings (COutputDevice *Out);
 
 void Key_Init (void);
 void Key_Event (int key, bool down);

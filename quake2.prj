@@ -155,8 +155,8 @@ DEFINES = STATIC_BUILD CORE_API= SINGLE_RENDERER	#?? SINGLE_RENDERER -- check wh
 OBJDIR  = $OUT/obj/q2stat
 sources(STATIC) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER
 
-LIBS = winmm lib/lib
-target(executable, $OUT/quake2, STATIC, STATIC)
+LIBS = lib/lib
+target(executable, $OUT/Quake2, STATIC, STATIC)
 
 #------------------------------------------------------------------------------
 # dynamic build
@@ -173,7 +173,7 @@ target(shared, $OUT/Core, CORE, DYNAMIC)
 
 #----------------------------
 
-LIBS = winmm lib/lib $OUT/Core
+LIBS = lib/lib $OUT/Core
 
 DEFINES = CORE_API=DLL_IMPORT
 OBJDIR  = $OUT/obj/q2dyn
@@ -183,7 +183,7 @@ target(executable, $OUT/quake2_dyn, DYN_EXE, DYNAMIC)
 
 #----------------------------
 
-LIBS = winmm $OUT/Core
+LIBS = $OUT/Core
 
 # we should define DYNAMIC_REF to allow link from renderer to engine functions
 DEFINES = CORE_API=DLL_IMPORT DYNAMIC_REF
@@ -207,19 +207,24 @@ DEFINES = STATIC_BUILD CORE_API= DEDICATED_ONLY
 OBJDIR  = $OUT/obj/dedstat
 sources(DEDICATED) = $DED_CLIENT $SERVER $COMMON $DED_WIN32 $RES_FILES
 
-LIBS = winmm lib/lib
+LIBS = lib/lib
 target(executable, $OUT/q2ded, DEDICATED, DEDICATED)
 
 #------------------------------------------------------------------------------
 # test application
 
-OBJDIR = TestApp/obj
+DEFINES = STATIC_BUILD CORE_API=
+LIBS =
+
+#-- Core files
+OBJDIR = $OUT/obj/CoreStatic
+sources(TEST) = $CORE $CORE_WIN32
+
 #-- app files
 TEST_FILES = TestApp/TestApp.cpp
 #-- files, required for Core to be standalone
 TEST_FILES += Core/Src/Commands.cpp Core/Src/FileSystem.cpp Core/Src/FileSystemWin32.cpp
+OBJDIR = $OUT/obj/TestApp
+sources(TEST) = $TEST_FILES
 
-LIBS = winmm
-DEFINES = CORE_API=
-sources(TEST) = $CORE $CORE_WIN32 $TEST_FILES
 target(executable, TestApp/TestApp, TEST, TESTAPP)

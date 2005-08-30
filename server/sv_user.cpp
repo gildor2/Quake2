@@ -266,10 +266,13 @@ static void SV_BeginDownload_f (int argc, char **argv)
 	// hacked by zoid to allow more conrol over download
 	// first off, no .. or global allow check
 	if (!allow_download->integer
-		// leading dot is no good
-		|| Name[0] == '.'						// "./dir" or "../dir"
-		// leading slash bad as well, must be in subdir
+		// leading dot is no good: "./dir" or "../dir"
+		|| Name[0] == '.'
+		// leading slash bad as well (root-relative path + network share)
 		|| Name[0] == '/'
+		// Win32 root-relative path
+		|| Name[1] == ':'
+		//?? simplify following part
 		// next up, skin check
 		|| (!memcmp (Name, "players/", 6) && !allow_download_players->integer)
 		// now models

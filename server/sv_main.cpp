@@ -416,19 +416,6 @@ Redirect all printfs
 ===============
 */
 
-class COutputDeviceMem2 : public COutputDeviceMem
-{
-public:
-	COutputDeviceMem2 (int size)
-	:	COutputDeviceMem (size)
-	{}
-	bool Write (const char *str)
-	{
-		COutputDeviceMem::Write (str);
-		return false;		// not for others ...
-	}
-};
-
 static void cRemoteCommand (int argc, char **argv)
 {
 	guard(SVC_RemoteCommand);
@@ -454,10 +441,13 @@ static void cRemoteCommand (int argc, char **argv)
 		// execute command with a redirected output
 		//?? may be, if message is longer, than MAX_MSGLEN_OLD, flush and continue
 		//?? buffering output
-		COutputDeviceMem2 *Mem = new COutputDeviceMem2 (MAX_MSGLEN_OLD-16);
+		COutputDeviceMem *Mem = new COutputDeviceMem (MAX_MSGLEN_OLD-16);
+		Mem->GrabOutput = true;
+		Mem->NoColors   = true;
 		Mem->Register ();
 		if (!Cmd_ExecuteString (remaining))
 			appWPrintf ("Bad remote command \"%s\"\n", remaining);
+		//?? move code to Mem->Flush(); call Flush() implicitly at end too
 		// if server will be restarted during active redirection, drop data
 		if (sv_client && sv_client->netchan.message.maxsize)
 		{

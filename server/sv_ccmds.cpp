@@ -880,7 +880,7 @@ static void SV_ServerStop_f ()
 	}
 	fclose (svs.wdemofile);
 	svs.wdemofile = NULL;
-	appPrintf ("Recording completed.\n");
+	appPrintf ("Recording completed\n");
 }
 
 
@@ -889,7 +889,7 @@ static void SV_KillServer_f (void)
 {
 	if (!svs.initialized)
 		return;
-	SV_Shutdown ("Server was killed.\n", false);
+	SV_Shutdown ("Server was killed\n");
 	NET_Config (false);		// close network sockets
 }
 
@@ -899,7 +899,7 @@ static void SV_ServerCommand_f (int argc, char **argv)
 {
 	if (!ge)
 	{
-		appWPrintf ("No game loaded.\n");
+		appWPrintf ("No game loaded\n");
 		return;
 	}
 

@@ -1,16 +1,23 @@
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>			// for mmsystem.h
-#include <mmsystem.h>			// for timeGetTime() stuff
+#include <windows.h>
+
+#include <mmsystem.h>				// for timeGetTime() stuff
+#pragma comment (lib, "winmm.lib")	// ...
+
 #include "Core.h"
 
 
-double GSecondsPerCycle;		// really, should use GCyclesPerSecond, but this will require divide operation every
-								// time we use this, so GSecondsPerCycle=1/GCyclesPerSecond
-double GMSecondsPerCycle;		// == 1000*GSecondsPerCycle
+double GSecondsPerCycle;			// really, should use GCyclesPerSecond, but this will require divide operation every
+									// time we use this, so GSecondsPerCycle=1/GCyclesPerSecond
+double GMSecondsPerCycle;			// == 1000*GSecondsPerCycle
 static unsigned timeBase;
 
 static bool IsMMX, IsSSE, IsRDTSC, Is3DNow;
 
+
+/*-----------------------------------------------------------------------------
+	Timing
+-----------------------------------------------------------------------------*/
 
 // We should subtract timeBase from acquired appCycles64 value to determine time since
 // application start, this is useful only for improving precision of retreived float
@@ -49,6 +56,10 @@ unsigned appMilliseconds ()
 		return timeGetTime () - timeBase;
 }
 
+
+/*-----------------------------------------------------------------------------
+	CPU identification
+-----------------------------------------------------------------------------*/
 
 static unsigned cpuidRegs[4];
 
@@ -191,7 +202,7 @@ static void CheckCpuSpeed ()
 	timeBeginPeriod (1);
 
 	GMSecondsPerCycle = 1.0;					// initial value
-	for (int tries = 0; tries < 4; tries++)
+	for (int tries = 0; tries < 3; tries++)
 	{
 		__int64 stamp1 = appCycles64 ();
 		unsigned time1 = timeGetTime ();
@@ -199,15 +210,17 @@ static void CheckCpuSpeed ()
 		while (true)
 		{
 			time2 = timeGetTime ();
-			if (time2 - time1 > 200) break;		// 200ms enough to compute CPU speed
+			if (time2 - time1 > 150) break;		// 100ms enough to compute CPU speed
 		}
 		__int64 stamp2 = appCycles64 ();
 		double msecPerCycle = (time2 - time1) / (((double)stamp2 - (double)stamp1));
 		if (msecPerCycle < GMSecondsPerCycle) GMSecondsPerCycle = msecPerCycle;
 
-//		appPrintf ("try #%d\n", tries);
-//		appPrintf ("stampd: %u %u   timed: %d\n", stamp2 - stamp1, time2 - time1);
-//		appPrintf ("CPU speed: %g MHz\n", 1e-6 / secPerCycle1);
+#if 0
+		appPrintf ("try #%d\n", tries);
+		appPrintf ("  stampd: %u %u   timed: %d\n", stamp2 - stamp1, time2 - time1);
+		appPrintf ("  CPU speed: %g MHz\n", 1e-3 / msecPerCycle);
+#endif
 	}
 	GSecondsPerCycle = GMSecondsPerCycle / 1000.0;
 	appPrintf ("CPU speed: %g MHz\n", 1e-6 / GSecondsPerCycle);
@@ -215,6 +228,56 @@ static void CheckCpuSpeed ()
 	timeEndPeriod (1);
 }
 
+
+/*-----------------------------------------------------------------------------
+	Miscellaneous
+-----------------------------------------------------------------------------*/
+
+const char *appPackage ()
+{
+	static TString<256> Filename;
+	if (Filename[0]) return Filename;	// already computed
+	// get executable filename
+	GetModuleFileName (NULL, ARRAY_ARG(Filename));
+	char *s = Filename.rchr ('\\');
+	if (s) Filename = s+1;
+	s = Filename.rchr ('.');
+	if (s) *s = 0;
+	appPrintf ("Package: %s\n", *Filename);
+	return Filename;
+}
+
+
+const char *appGetSystemErrorMessage (unsigned code)
+{
+	char buffer[1024];
+	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, code,
+		MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT),
+		ARRAY_ARG(buffer), NULL))
+	{
+		// cut CR/LF
+		char *s = strchr (buffer, '\r');
+		if (s) s[0] = 0;
+		return va("%s", buffer);
+	}
+	return "unknown error code";
+}
+
+
+void appDisplayError ()
+{
+	MessageBox (NULL, va("%s\n\nHistory: %s", *GErr.Message, *GErr.History),
+		va("%s: fatal error", appPackage ()), MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
+	// add CR/LF to error log and close it
+	COutputDevice *ErrLog = appGetErrorLog ();
+	ErrLog->Write ("\n\n");
+	ErrLog->Close ();
+}
+
+
+/*-----------------------------------------------------------------------------
+	Initialization/finalization
+-----------------------------------------------------------------------------*/
 
 void appInitPlatform ()
 {

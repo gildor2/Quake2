@@ -40,8 +40,6 @@
 - should have capabilities of parsing of quake config files (but store configuration in INI ...)
 
 -------------- WinMain() -------------------
-- WinMain():
-  appInit(): pass APPNAME (make non-#define, just const string for appInit()) (and request later with appName() -- different name?)
 - appPrintf() etc:
   - should be able to use few output devices
   - ability to hook output (for rcon etc)

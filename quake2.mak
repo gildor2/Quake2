@@ -6,11 +6,11 @@
 
 ALL : STATIC DEDICATED TESTAPP
 TESTAPP : TestApp/TestApp.exe
-STATIC : Release/quake2.exe
+STATIC : Release/Quake2.exe
 DEDICATED : Release/q2ded.exe
 
 #------------------------------------------------------------------------------
-#	"Release/quake2.exe" target
+#	"Release/Quake2.exe" target
 #------------------------------------------------------------------------------
 
 STATIC = \
@@ -100,9 +100,9 @@ STATIC = \
 	Release/obj/q2stat/qgl_win.obj \
 	Release/obj/q2stat/gl_win.obj
 
-Release/quake2.exe : DIRS $(STATIC)
-	echo Creating executable "Release/quake2.exe" ...
-	link.exe -nologo -filealign:512 -incremental:no -out:"Release/quake2.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib winmm.lib lib/lib.lib -map:"Release/quake2.map" $(STATIC)
+Release/Quake2.exe : DIRS $(STATIC)
+	echo Creating executable "Release/Quake2.exe" ...
+	link.exe -nologo -filealign:512 -incremental:no -out:"Release/Quake2.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/lib.lib -map:"Release/Quake2.map" $(STATIC)
 
 #------------------------------------------------------------------------------
 #	"Release/q2ded.exe" target
@@ -155,32 +155,32 @@ DEDICATED = \
 
 Release/q2ded.exe : DIRS $(DEDICATED)
 	echo Creating executable "Release/q2ded.exe" ...
-	link.exe -nologo -filealign:512 -incremental:no -out:"Release/q2ded.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib winmm.lib lib/lib.lib -map:"Release/q2ded.map" $(DEDICATED)
+	link.exe -nologo -filealign:512 -incremental:no -out:"Release/q2ded.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/lib.lib -map:"Release/q2ded.map" $(DEDICATED)
 
 #------------------------------------------------------------------------------
 #	"TestApp/TestApp.exe" target
 #------------------------------------------------------------------------------
 
 TEST = \
-	TestApp/obj/CoreMain.obj \
-	TestApp/obj/DbgSymbols.obj \
-	TestApp/obj/Memory.obj \
-	TestApp/obj/OutputDevice.obj \
-	TestApp/obj/ErrorMgr.obj \
-	TestApp/obj/ScriptParser.obj \
-	TestApp/obj/Strings.obj \
-	TestApp/obj/TextContainer.obj \
-	TestApp/obj/CoreWin32.obj \
-	TestApp/obj/DbgSymbolsWin32.obj \
-	TestApp/obj/ExceptFilterWin32.obj \
-	TestApp/obj/TestApp.obj \
-	TestApp/obj/Commands.obj \
-	TestApp/obj/FileSystem.obj \
-	TestApp/obj/FileSystemWin32.obj
+	Release/obj/CoreStatic/CoreMain.obj \
+	Release/obj/CoreStatic/DbgSymbols.obj \
+	Release/obj/CoreStatic/Memory.obj \
+	Release/obj/CoreStatic/OutputDevice.obj \
+	Release/obj/CoreStatic/ErrorMgr.obj \
+	Release/obj/CoreStatic/ScriptParser.obj \
+	Release/obj/CoreStatic/Strings.obj \
+	Release/obj/CoreStatic/TextContainer.obj \
+	Release/obj/CoreStatic/CoreWin32.obj \
+	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
+	Release/obj/CoreStatic/ExceptFilterWin32.obj \
+	Release/obj/TestApp/TestApp.obj \
+	Release/obj/TestApp/Commands.obj \
+	Release/obj/TestApp/FileSystem.obj \
+	Release/obj/TestApp/FileSystemWin32.obj
 
 TestApp/TestApp.exe : DIRS $(TEST)
 	echo Creating executable "TestApp/TestApp.exe" ...
-	link.exe -nologo -filealign:512 -incremental:no -out:"TestApp/TestApp.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib winmm.lib -map:"TestApp/TestApp.map" $(TEST)
+	link.exe -nologo -filealign:512 -incremental:no -out:"TestApp/TestApp.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib -map:"TestApp/TestApp.map" $(TEST)
 
 #------------------------------------------------------------------------------
 #	compiling source files
@@ -199,7 +199,7 @@ Release/obj/q2stat/md4.obj : qcommon/md4.cpp
 Release/obj/q2stat/q2.res : win32/q2.rc
 	rc.exe -l 0x409 -i win32/ -fo"Release/obj/q2stat/q2.res" -dNDEBUG win32/q2.rc
 
-OPTIONS = -W3 -O1 -D CORE_API= -I SDK/include -I Core/Inc -I qcommon
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -215,8 +215,8 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h
 
-TestApp/obj/TestApp.obj : TestApp/TestApp.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/TestApp.obj" TestApp/TestApp.cpp
+Release/obj/TestApp/TestApp.obj : TestApp/TestApp.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/TestApp/TestApp.obj" TestApp/TestApp.cpp
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -231,11 +231,92 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h
 
-TestApp/obj/FileSystem.obj : Core/Src/FileSystem.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/FileSystem.obj" Core/Src/FileSystem.cpp
+Release/obj/TestApp/FileSystem.obj : Core/Src/FileSystem.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/TestApp/FileSystem.obj" Core/Src/FileSystem.cpp
 
-TestApp/obj/FileSystemWin32.obj : Core/Src/FileSystemWin32.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/FileSystemWin32.obj" Core/Src/FileSystemWin32.cpp
+Release/obj/TestApp/FileSystemWin32.obj : Core/Src/FileSystemWin32.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/TestApp/FileSystemWin32.obj" Core/Src/FileSystemWin32.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceFile.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Inc/VcWin32.h
+
+Release/obj/CoreStatic/ErrorMgr.obj : Core/Src/ErrorMgr.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/ErrorMgr.obj" Core/Src/ErrorMgr.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceFile.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Inc/VcWin32.h \
+	SDK/include/glext.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h \
+	ref_gl/OpenGLDrv.h \
+	ref_gl/gl_interface.h \
+	ref_gl/qgl_decl.h \
+	ref_gl/qgl_impl.h \
+	win32/gl_win.h
+
+Release/obj/q2stat/qgl_win.obj : win32/qgl_win.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/qgl_win.obj" win32/qgl_win.cpp
+
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceFile.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Inc/VcWin32.h \
+	client/cdaudio.h \
+	client/cl_fx.h \
+	client/cl_playermodel.h \
+	client/client.h \
+	client/console.h \
+	client/engine.h \
+	client/engine_intf.h \
+	client/input.h \
+	client/keys.h \
+	client/ref.h \
+	client/renderer.h \
+	client/rexp_intf.h \
+	client/screen.h \
+	client/sound.h \
+	client/vid.h \
+	qcommon/protocol.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj/q2stat/cl_main.obj : client/cl_main.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/cl_main.obj" client/cl_main.cpp
 
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
 
@@ -341,7 +422,7 @@ OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include
 Release/obj/q2stat/sv_main.obj : server/sv_main.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/sv_main.obj" server/sv_main.cpp
 
-OPTIONS = -W3 -O1 -D CORE_API= -I SDK/include -I Core/Inc -I qcommon
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -355,40 +436,8 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h
 
-TestApp/obj/Commands.obj : Core/Src/Commands.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/Commands.obj" Core/Src/Commands.cpp
-
-TestApp/obj/CoreWin32.obj : Core/Src/CoreWin32.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/CoreWin32.obj" Core/Src/CoreWin32.cpp
-
-TestApp/obj/DbgSymbols.obj : Core/Src/DbgSymbols.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/DbgSymbols.obj" Core/Src/DbgSymbols.cpp
-
-TestApp/obj/DbgSymbolsWin32.obj : Core/Src/DbgSymbolsWin32.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/DbgSymbolsWin32.obj" Core/Src/DbgSymbolsWin32.cpp
-
-TestApp/obj/ErrorMgr.obj : Core/Src/ErrorMgr.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/ErrorMgr.obj" Core/Src/ErrorMgr.cpp
-
-TestApp/obj/ExceptFilterWin32.obj : Core/Src/ExceptFilterWin32.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/ExceptFilterWin32.obj" Core/Src/ExceptFilterWin32.cpp
-
-TestApp/obj/Memory.obj : Core/Src/Memory.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/Memory.obj" Core/Src/Memory.cpp
-
-TestApp/obj/OutputDevice.obj : Core/Src/OutputDevice.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/OutputDevice.obj" Core/Src/OutputDevice.cpp
-
-TestApp/obj/ScriptParser.obj : Core/Src/ScriptParser.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/ScriptParser.obj" Core/Src/ScriptParser.cpp
-
-TestApp/obj/Strings.obj : Core/Src/Strings.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/Strings.obj" Core/Src/Strings.cpp
-
-TestApp/obj/TextContainer.obj : Core/Src/TextContainer.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/TextContainer.obj" Core/Src/TextContainer.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I SDK/include -I Core/Inc -I qcommon
+Release/obj/TestApp/Commands.obj : Core/Src/Commands.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/TestApp/Commands.obj" Core/Src/Commands.cpp
 
 Release/obj/CoreStatic/CoreWin32.obj : Core/Src/CoreWin32.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/CoreWin32.obj" Core/Src/CoreWin32.cpp
@@ -398,9 +447,6 @@ Release/obj/CoreStatic/DbgSymbols.obj : Core/Src/DbgSymbols.cpp $(DEPENDS)
 
 Release/obj/CoreStatic/DbgSymbolsWin32.obj : Core/Src/DbgSymbolsWin32.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/DbgSymbolsWin32.obj" Core/Src/DbgSymbolsWin32.cpp
-
-Release/obj/CoreStatic/ErrorMgr.obj : Core/Src/ErrorMgr.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/ErrorMgr.obj" Core/Src/ErrorMgr.cpp
 
 Release/obj/CoreStatic/ExceptFilterWin32.obj : Core/Src/ExceptFilterWin32.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/ExceptFilterWin32.obj" Core/Src/ExceptFilterWin32.cpp
@@ -420,8 +466,6 @@ Release/obj/CoreStatic/Strings.obj : Core/Src/Strings.cpp $(DEPENDS)
 Release/obj/CoreStatic/TextContainer.obj : Core/Src/TextContainer.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/TextContainer.obj" Core/Src/TextContainer.cpp
 
-OPTIONS = -W3 -O1 -D CORE_API= -I SDK/include -I Core/Inc -I qcommon
-
 DEPENDS = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
@@ -434,11 +478,6 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
 	Core/Src/CoreLocal.h
-
-TestApp/obj/CoreMain.obj : Core/Src/CoreMain.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"TestApp/obj/CoreMain.obj" Core/Src/CoreMain.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I SDK/include -I Core/Inc -I qcommon
 
 Release/obj/CoreStatic/CoreMain.obj : Core/Src/CoreMain.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/CoreMain.obj" Core/Src/CoreMain.cpp
@@ -1015,34 +1054,6 @@ DEPENDS = \
 	ref_gl/OpenGLDrv.h \
 	ref_gl/gl_interface.h \
 	ref_gl/qgl_decl.h \
-	ref_gl/qgl_impl.h \
-	win32/gl_win.h
-
-Release/obj/q2stat/qgl_win.obj : win32/qgl_win.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/qgl_win.obj" win32/qgl_win.cpp
-
-DEPENDS = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	Core/Inc/VcWin32.h \
-	SDK/include/glext.h \
-	client/engine.h \
-	client/engine_intf.h \
-	client/ref.h \
-	client/renderer.h \
-	client/rexp_intf.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	ref_gl/OpenGLDrv.h \
-	ref_gl/gl_interface.h \
-	ref_gl/qgl_decl.h \
 	win32/gl_win.h
 
 Release/obj/q2stat/gl_win.obj : win32/gl_win.cpp $(DEPENDS)
@@ -1309,9 +1320,6 @@ Release/obj/q2stat/cl_cin.obj : client/cl_cin.cpp $(DEPENDS)
 
 Release/obj/q2stat/cl_input.obj : client/cl_input.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/cl_input.obj" client/cl_input.cpp
-
-Release/obj/q2stat/cl_main.obj : client/cl_main.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/cl_main.obj" client/cl_main.cpp
 
 Release/obj/q2stat/cl_parse.obj : client/cl_parse.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/cl_parse.obj" client/cl_parse.cpp
@@ -1804,5 +1812,5 @@ DIRS :
 	if not exist "Release/obj/CoreStatic" mkdir "Release/obj/CoreStatic"
 	if not exist "Release/obj/q2stat" mkdir "Release/obj/q2stat"
 	if not exist "Release/obj/dedstat" mkdir "Release/obj/dedstat"
-	if not exist "TestApp/obj" mkdir "TestApp/obj"
+	if not exist "Release/obj/TestApp" mkdir "Release/obj/TestApp"
 

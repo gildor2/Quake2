@@ -1,11 +1,6 @@
 #define WIN32_LEAN_AND_MEAN		// exclude rarely-used services from windown headers
 #include <windows.h>
-
 #include "Core.h"
-#include <time.h>				//?? for logging time funcs
-
-
-#define CRASH_LOG				"crash.log"
 
 
 //#define LOG_FUNCS_ONLY
@@ -21,37 +16,34 @@
 //?? DumpMem(): CONTEXT-stuff -> inline function
 
 //?? should change FILE to local file system (not required) (may be, avoid local FS usage when crashed ...)
-static void DumpReg4 (FILE *f, const char *name, unsigned value)
+static void DumpReg4 (COutputDevice *Out, const char *name, unsigned value)
 {
-	int		i;
-
 	const char *data = (char*) value;
-	fprintf (f, "  %s: %08X  ", name, value);
+	Out->Printf ("  %s: %08X  ", name, value);
 	if (IsBadReadPtr (data, 16))
-		fprintf (f, " <N/A>");
+		Out->Printf (" <N/A>");
 	else
 	{
+		int		i;
 		for (i = 0; i < 16; i++)
-			fprintf (f, " %02X", data[i] & 0xFF);
+			Out->Printf (" %02X", data[i] & 0xFF);
 
-		fprintf (f, "  ");
+		Out->Printf ("  ");
 
 		for (i = 0; i < 16; i++)
 		{
-			char c;
-
-			c = data[i];
+			char c = data[i];
 			if (c < ' ' || c > 0x7F) c = '.';
-			fprintf (f, "%c", c);
+			Out->Printf ("%c", c);
 		}
 	}
-	fprintf (f, "\n");
+	Out->Printf ("\n");
 }
 
 
-static void DumpReg2 (FILE *f, const char *name, DWORD value)
+static void DumpReg2 (COutputDevice *Out, const char *name, DWORD value)
 {
-	fprintf (f, "  %s: %04X", name, value);
+	Out->Printf ("  %s: %04X", name, value);
 }
 
 
@@ -71,78 +63,79 @@ static bool IsString (const char *str)
 }
 
 
-static bool DumpString (FILE *f, const char *str)
+static bool DumpString (COutputDevice *Out, const char *str)
 {
-	fprintf (f, " = \"");
+	Out->Printf (" = \"");
 	for (int i = 0; i < MAX_STRING_WIDTH && *str; i++, str++)
 	{
 		if (*str == '\n')
-			fprintf (f, "\\n");
+			Out->Printf ("\\n");
 		else
-			fprintf (f, "%c", *str);
+			Out->Printf ("%c", *str);
 	}
-	fprintf (f, "%s\"", *str ? "..." : "");
+	Out->Printf ("%s\"", *str ? "..." : "");
 	return true;
 }
 
 #endif
 
 
+#define F(r,n)	{ FIELD2OFS(CONTEXT,r), n }
 static const struct {
 	unsigned ofs;
 	const char *name;
 } regData[] = {
-#define F(r,n)	{ FIELD2OFS(CONTEXT,r), n }
 	F(Eax, "EAX"), F(Ebx, "EBX"), F(Ecx, "ECX"), F(Edx, "EDX"),
 	F(Esi, "ESI"), F(Edi, "EDI"),
 	F(Esp, "ESP"), F(Ebp, "EBP"), F(Eip, "EIP")
-#undef F
+}, regData2[] = {
+	F(SegCs, "CS"), F(SegSs, "SS"), F(SegDs, "DS"),
+	F(SegEs, "ES"), F(SegFs, "FS"), F(SegGs, "GS")
 };
+#undef F
 
-
-static void DumpMem (FILE *f, const unsigned *data, CONTEXT *ctx)
+static void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 {
 #define STAT_SPACES		"     "
 	//!! should try to use address as a symbol
 	int n = 0;
 	for (int i = 0; i < STACK_UNWIND_DEPTH; i++, data++)
 	{
-		char	symbol[256], *spaces;
-
 		if (IsBadReadPtr (data, 4))
 		{
-			fprintf (f, "  <N/A>\n");
+			Out->Printf ("  <N/A>\n");
 			return;
 		}
 
-		spaces = STAT_SPACES;
+		const char *spaces = STAT_SPACES;
 		for (int j = 0; j < ARRAY_COUNT(regData); j++)
 			if (OFS2FIELD(ctx, regData[j].ofs, unsigned*) == data)
 			{
 				if (n)
 				{
-					fprintf (f, "\n");
+					Out->Printf ("\n");
 					n = 0;
 				}
-				fprintf (f, "%s->", regData[j].name);
+				Out->Printf ("%s->", regData[j].name);
 				spaces = "";
 				break;
 			}
 
+		char symbol[256];
 		if (appSymbolName (*data, ARRAY_ARG(symbol)))
 #ifdef LOG_FUNCS_ONLY
 			if (strchr (symbol, '('))
 #endif
 				{
 					// log as symbol
-					fprintf (f, "%s%s%08X = %s",
+					Out->Printf ("%s%s%08X = %s",
 						n > 0 ? "\n" : "", spaces,
 						*data, symbol);
 #if !defined(LOG_FUNCS_ONLY) && defined(LOG_STRINGS)
 					if (!strchr (symbol, '(') && IsString ((char*)*data))	// do not test funcs()
-						DumpString (f, (char*)*data);
+						DumpString (Out, (char*)*data);
 #endif
-					fprintf (f, "\n");
+					Out->Printf ("\n");
 					n = 0;
 					continue;
 				}
@@ -151,23 +144,23 @@ static void DumpMem (FILE *f, const unsigned *data, CONTEXT *ctx)
 		// try to log as string
 		if (IsString ((char*)*data))
 		{
-			fprintf (f, "%s%08X", n > 0 ? "\n" STAT_SPACES : spaces, *data);
-			DumpString (f, (char*)*data);
-			fprintf (f, "\n");
+			Out->Printf ("%s%08X", n > 0 ? "\n" STAT_SPACES : spaces, *data);
+			DumpString (Out, (char*)*data);
+			Out->Printf ("\n");
 			n = 0;
 			continue;
 		}
 #endif
 
 		// log as simple number
-		fprintf (f, "%s%08X", n > 0 ? "  " : spaces, *data);
+		Out->Printf ("%s%08X", n > 0 ? "  " : spaces, *data);
 		if (++n >= 8)
 		{
-			fprintf (f, "\n");
+			Out->Printf ("\n");
 			n = 0;
 		}
 	}
-	fprintf (f, "\n");
+	Out->Printf ("\n");
 	return;
 #undef STAT_SPACES
 }
@@ -179,6 +172,8 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 
 	static bool dumped = false;
 	if (dumped) return EXCEPTION_EXECUTE_HANDLER;			// error will be handled only once
+	// WARNING: recursive error will not be found
+	// If we will disable line above, will be dumped context for each appUnwind() entry
 	dumped = true;
 
 	__try
@@ -206,34 +201,23 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 			break;
 		}
 
-		//?? should implement logging as global class (implements opening/logging date/closing)
-		// make a log in "crash.log"
-		if (FILE *f = fopen (CRASH_LOG, "a+"))
-		{
-			CONTEXT* ctx = info->ContextRecord;
-//			EXCEPTION_RECORD* rec = info->ExceptionRecord;
+		// log error
+		CONTEXT* ctx = info->ContextRecord;
+//		EXCEPTION_RECORD* rec = info->ExceptionRecord;
+		GErr.Message.sprintf ("%s at \"%s\"", excName, appSymbolName (ctx->Eip));	//?? may be, supply package name
+		COutputDevice *Out = appGetErrorLog ();
 
-			GErr.Message.sprintf ("%s at \"%s\"", excName, appSymbolName (ctx->Eip));	//?? may be, supply package name
+		Out->Write ("Registers:\n");
+		int j;
+		for (j = 0; j < ARRAY_COUNT(regData); j++)
+			DumpReg4 (Out, regData[j].name, OFS2FIELD(ctx, regData[j].ofs, unsigned));
+		for (j = 0; j < ARRAY_COUNT(regData2); j++)
+			DumpReg2 (Out, regData2[j].name, OFS2FIELD(ctx, regData2[j].ofs, unsigned));
+		Out->Printf ("  EFLAGS: %08X\n", ctx->EFlags);
 
-			time_t itime;
-			time (&itime);
-			char ctime[256];
-			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
-			fprintf (f, "----- "APPNAME" crashed at %s -----\n", ctime);		//!! should use main_package name instead of APPNAME
-			fprintf (f, "%s\n\n", *GErr.Message);
-
-			for (int j = 0; j < ARRAY_COUNT(regData); j++)
-				DumpReg4 (f, regData[j].name, OFS2FIELD(ctx, regData[j].ofs, unsigned));
-			DumpReg2 (f, "CS", ctx->SegCs); DumpReg2 (f, "SS", ctx->SegSs);
-			DumpReg2 (f, "DS", ctx->SegDs); DumpReg2 (f, "ES", ctx->SegEs);
-			DumpReg2 (f, "FS", ctx->SegFs); DumpReg2 (f, "GS", ctx->SegGs);
-			fprintf (f, "  EFLAGS: %08X\n", ctx->EFlags);
-
-			fprintf (f, "\nStack:\n");
-			DumpMem (f, (unsigned*) ctx->Esp, ctx);
-			fprintf (f, "\n");
-			fclose (f);
-		}
+		Out->Printf ("\nStack:\n");
+		DumpMem (Out, (unsigned*) ctx->Esp, ctx);
+		Out->Printf ("\n");
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
 	{

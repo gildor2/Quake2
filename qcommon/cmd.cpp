@@ -311,10 +311,10 @@ void Cmd_Unalias_f (bool usage, int argc, char **argv)
 }
 
 
-void Cmd_WriteAliases (FILE *f)
+void Cmd_WriteAliases (COutputDevice *Out)
 {
 	for (TListIterator<CAlias> alias = AliasList; alias; ++alias)
-		fprintf (f, "alias %s %s\n", alias->name, COM_QuoteString (alias->value, true));
+		Out->Printf ("alias %s %s\n", alias->name, COM_QuoteString (alias->value, true));
 }
 
 

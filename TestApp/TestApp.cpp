@@ -1,22 +1,11 @@
-/*!! TODO:
-	- error handler
-	- APPNAME
- */
-
-#include <windows.h>
-
-#include <stdio.h>
-#include <stdlib.h>
 #include "Core.h"
 
-//!!#include "ErrorDeviceWin32.h" -- does not works: needs more complex error management
 #include "OutputDeviceFile.h"
-
-//!!static CErrorDeviceWin32 Err;
 static COutputDeviceStdout	Out;
 
 //!!!: test (unfinished) Core files
 #include "FileSystem.h"
+
 
 char tests[256] = "TestApp.cpp";
 void crash(char *b)
@@ -85,7 +74,7 @@ void cmd1 (int argc, char **argv)
 void cUncol (int argc, char **argv)
 {
 	if (argc != 2) return;
-	char	dst[256];
+	char dst[256];
 	appUncolorizeString (dst, argv[1]);
 	appPrintf("uncol (\"%s\") -> \"%s\"\n", argv[1], dst);
 }
@@ -149,10 +138,8 @@ void cBoth (bool usage, int argc, char **argv)
 
 void cDir (int argc, char **argv)
 {
-	CFileList *list;
-
-	list = new CFileList (argc == 2 ? argv[1] : "*", FS_FILE|FS_DIR|FS_OS);	//?? FS_OS
-	for (CFileItem *item = list->First(); item; item = list->Next(item))
+	CFileList *list = new CFileList (argc == 2 ? argv[1] : "*", FS_FILE|FS_DIR|FS_OS);	//?? FS_OS
+	for (TListIterator<CFileItem> item = *list; item; ++item)
 		appPrintf ("[%c%c] %s\n", item->flags & FS_FILE ? 'f' : '-', item->flags & FS_DIR ? 'd' : '-', item->name);
 	delete list;
 }
@@ -160,16 +147,14 @@ void cDir (int argc, char **argv)
 
 void cSym (bool usage, int argc, char **argv)
 {
-	unsigned addr;
-	char	info[256];
-
 	if (usage || argc != 2)
 	{
 		appPrintf ("Usage: sym <address>\n");
 		return;
 	}
-	addr = strtol (argv[1], NULL, 0);
+	unsigned addr = strtol (argv[1], NULL, 0);
 	appPrintf ("Info on address %08X : ", addr);
+	char info[256];
 	if (!appSymbolName (addr, ARRAY_ARG(info)))
 		appPrintf ("failed\n");
 	else
@@ -179,8 +164,6 @@ void cSym (bool usage, int argc, char **argv)
 
 int main(int argc, char* argv[])
 {
-	char	buf[1024];
-
 	GUARD_BEGIN
 	{
 		Out.Register ();
@@ -199,21 +182,21 @@ int main(int argc, char* argv[])
 		while (true)
 		{
 			appPrintf (">");
+			char buf[1024];
 			gets (buf);
 			if (!buf[0]) break;
 
 			if (!ExecuteCommand (buf, ARRAY_ARG(commands)))
 			{
-//				appPrintf("BAD COMMAND!\n");
 				if (!ExecuteCommand (buf))
-					appPrintf ("BAD COMMAND!\n");
+					appWPrintf ("ERROR: bad command\n");
 			}
 		}
 		unguard;
 	}
 	GUARD_CATCH
 	{
-//!!		Err.HandleError ();
+		appDisplayError ();
 		return 1;
 	}
 

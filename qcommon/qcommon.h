@@ -430,7 +430,7 @@ void	Cmd_ForwardToServer (int argc, char **argv);
 // so when they are typed in at the console, they will need to be forwarded.
 // NOTE: implemented in client
 
-void	Cmd_WriteAliases (FILE *f);
+void	Cmd_WriteAliases (COutputDevice *Out);
 
 
 /*-----------------------------------------------------------------------------
@@ -548,7 +548,7 @@ bool	Cvar_Command (int argc, char **argv);
 // command.  Returns true if the command was a variable reference that
 // was handled. (print or change)
 
-void	Cvar_WriteVariables (FILE *f, int includeMask, int excludeMask, const char *header);
+void	Cvar_WriteVariables (COutputDevice *Out, int includeMask, int excludeMask, const char *header);
 // appends lines containing "set variable value" for all variables with the archive flag set.
 
 void	Cvar_Cheats (bool enable);
@@ -795,7 +795,6 @@ bool	Com_CheckCmdlineVar (const char *name);
 
 void	Com_Init (const char *cmdline);
 void	Com_Frame (float msec);
-void	Com_Shutdown (void);
 
 // this is in the client code, but can be used for debugging from server
 void	SCR_DebugGraph (float value, int color);
@@ -818,16 +817,16 @@ void	NORETURN Sys_Quit ();
 	Client / server systems
 -----------------------------------------------------------------------------*/
 
-void	CL_Init (void);
+void	CL_Init ();
 void	CL_Drop (bool fromError = false);
-void	CL_Shutdown (bool error);
+void	CL_Shutdown ();
 void	CL_Frame (float msec, float realMsec);
 
-void	Key_Init (void);
+void	Key_Init ();
 void	SCR_BeginLoadingPlaque (void);
 
-void	SV_Init (void);
-void	SV_Shutdown (const char *finalmsg, bool reconnect);
+void	SV_Init ();
+void	SV_Shutdown (const char *finalmsg, bool reconnect = false);
 void	SV_Frame (float msec);
 
 

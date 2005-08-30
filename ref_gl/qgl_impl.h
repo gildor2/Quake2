@@ -376,319 +376,319 @@ static const char *EnumName (GLenum v)
 
 static void APIENTRY logAlphaFunc (GLenum func, GLclampf ref)
 {
-	fprintf (logFile, "%s (GL_%s, %g)\n", "glAlphaFunc", EnumName(func), ref);
+	LogFile->Printf ("%s (GL_%s, %g)\n", "glAlphaFunc", EnumName(func), ref);
 	lib.AlphaFunc (func, ref);
 }
 
 static void APIENTRY logBegin (GLenum mode)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glBegin", EnumName(mode));
+	LogFile->Printf ("%s (GL_%s)\n", "glBegin", EnumName(mode));
 	lib.Begin (mode);
 }
 
 static void APIENTRY logBindTexture (GLenum target, GLuint texture)
 {
-	fprintf (logFile, "%s (GL_%s, %d)\n", "glBindTexture", EnumName(target), texture);
+	LogFile->Printf ("%s (GL_%s, %d)\n", "glBindTexture", EnumName(target), texture);
 	lib.BindTexture (target, texture);
 }
 
 static void APIENTRY logBlendFunc (GLenum sfactor, GLenum dfactor)
 {
-	fprintf (logFile, "%s (GL_%s, GL_%s)\n", "glBlendFunc", EnumName(sfactor), EnumName(dfactor));
+	LogFile->Printf ("%s (GL_%s, GL_%s)\n", "glBlendFunc", EnumName(sfactor), EnumName(dfactor));
 	lib.BlendFunc (sfactor, dfactor);
 }
 
 static void APIENTRY logClear (GLbitfield mask)
 {
-	fprintf (logFile, "%s\n", "glClear");
+	LogFile->Printf ("%s\n", "glClear");
 	lib.Clear (mask);
 }
 
 static void APIENTRY logClearColor (GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
 {
-	fprintf (logFile, "%s (%g, %g, %g, %g)\n", "glClearColor", red, green, blue, alpha);
+	LogFile->Printf ("%s (%g, %g, %g, %g)\n", "glClearColor", red, green, blue, alpha);
 	lib.ClearColor (red, green, blue, alpha);
 }
 
 static void APIENTRY logColor3f (GLfloat red, GLfloat green, GLfloat blue)
 {
-	fprintf (logFile, "%s (%g, %g, %g)\n", "glColor3f", red, green, blue);
+	LogFile->Printf ("%s (%g, %g, %g)\n", "glColor3f", red, green, blue);
 	lib.Color3f (red, green, blue);
 }
 
 static void APIENTRY logColor3fv (const GLfloat *v)
 {
-	fprintf (logFile, "%s\n", "glColor3fv");
+	LogFile->Printf ("%s\n", "glColor3fv");
 	lib.Color3fv (v);
 }
 
 static void APIENTRY logColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
-	fprintf (logFile, "%s (%g, %g, %g, %g)\n", "glColor4f", red, green, blue, alpha);
+	LogFile->Printf ("%s (%g, %g, %g, %g)\n", "glColor4f", red, green, blue, alpha);
 	lib.Color4f (red, green, blue, alpha);
 }
 
 static void APIENTRY logColor4ubv (const GLubyte *v)
 {
-	fprintf (logFile, "%s\n", "glColor4ubv");
+	LogFile->Printf ("%s\n", "glColor4ubv");
 	lib.Color4ubv (v);
 }
 
 static void APIENTRY logColorPointer (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
-	fprintf (logFile, "%s (%d, GL_%s, %d, $%X)\n", "glColorPointer", size, EnumName(type), stride, pointer);
+	LogFile->Printf ("%s (%d, GL_%s, %d, $%X)\n", "glColorPointer", size, EnumName(type), stride, pointer);
 	lib.ColorPointer (size, type, stride, pointer);
 }
 
 static void APIENTRY logCullFace (GLenum mode)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glCullFace", EnumName(mode));
+	LogFile->Printf ("%s (GL_%s)\n", "glCullFace", EnumName(mode));
 	lib.CullFace (mode);
 }
 
 static void APIENTRY logDeleteTextures (GLsizei n, const GLuint *textures)
 {
-	fprintf (logFile, "%s (%d, $%X)\n", "glDeleteTextures", n, textures);
+	LogFile->Printf ("%s (%d, $%X)\n", "glDeleteTextures", n, textures);
 	lib.DeleteTextures (n, textures);
 }
 
 static void APIENTRY logDepthFunc (GLenum func)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glDepthFunc", EnumName(func));
+	LogFile->Printf ("%s (GL_%s)\n", "glDepthFunc", EnumName(func));
 	lib.DepthFunc (func);
 }
 
 static void APIENTRY logDepthMask (GLboolean flag)
 {
-	fprintf (logFile, "%s (%d)\n", "glDepthMask", flag);
+	LogFile->Printf ("%s (%d)\n", "glDepthMask", flag);
 	lib.DepthMask (flag);
 }
 
 static void APIENTRY logDepthRange (GLclampd zNear, GLclampd zFar)
 {
-	fprintf (logFile, "%s (%g, %g)\n", "glDepthRange", zNear, zFar);
+	LogFile->Printf ("%s (%g, %g)\n", "glDepthRange", zNear, zFar);
 	lib.DepthRange (zNear, zFar);
 }
 
 static void APIENTRY logDisable (GLenum cap)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glDisable", EnumName(cap));
+	LogFile->Printf ("%s (GL_%s)\n", "glDisable", EnumName(cap));
 	lib.Disable (cap);
 }
 
 static void APIENTRY logDisableClientState (GLenum array)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glDisableClientState", EnumName(array));
+	LogFile->Printf ("%s (GL_%s)\n", "glDisableClientState", EnumName(array));
 	lib.DisableClientState (array);
 }
 
 static void APIENTRY logDrawElements (GLenum mode, GLsizei count, GLenum type, const GLvoid *indices)
 {
-	fprintf (logFile, "%s (GL_%s, %d, GL_%s, $%X)\n", "glDrawElements", EnumName(mode), count, EnumName(type), indices);
+	LogFile->Printf ("%s (GL_%s, %d, GL_%s, $%X)\n", "glDrawElements", EnumName(mode), count, EnumName(type), indices);
 	lib.DrawElements (mode, count, type, indices);
 }
 
 static void APIENTRY logEnable (GLenum cap)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glEnable", EnumName(cap));
+	LogFile->Printf ("%s (GL_%s)\n", "glEnable", EnumName(cap));
 	lib.Enable (cap);
 }
 
 static void APIENTRY logEnableClientState (GLenum array)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glEnableClientState", EnumName(array));
+	LogFile->Printf ("%s (GL_%s)\n", "glEnableClientState", EnumName(array));
 	lib.EnableClientState (array);
 }
 
 static void APIENTRY logEnd (void)
 {
-	fprintf (logFile, "%s\n", "glEnd");
+	LogFile->Printf ("%s\n", "glEnd");
 	lib.End ();
 }
 
 static void APIENTRY logFinish (void)
 {
-	fprintf (logFile, "%s\n", "glFinish");
+	LogFile->Printf ("%s\n", "glFinish");
 	lib.Finish ();
 }
 
 static void APIENTRY logFogf (GLenum pname, GLfloat param)
 {
-	fprintf (logFile, "%s (GL_%s, %g)\n", "glFogf", EnumName(pname), param);
+	LogFile->Printf ("%s (GL_%s, %g)\n", "glFogf", EnumName(pname), param);
 	lib.Fogf (pname, param);
 }
 
 static void APIENTRY logFogfv (GLenum pname, const GLfloat *params)
 {
-	fprintf (logFile, "%s (GL_%s, $%X)\n", "glFogfv", EnumName(pname), params);
+	LogFile->Printf ("%s (GL_%s, $%X)\n", "glFogfv", EnumName(pname), params);
 	lib.Fogfv (pname, params);
 }
 
 static void APIENTRY logGetIntegerv (GLenum pname, GLint *params)
 {
-	fprintf (logFile, "%s\n", "glGetIntegerv");
+	LogFile->Printf ("%s\n", "glGetIntegerv");
 	lib.GetIntegerv (pname, params);
 }
 
 static const GLubyte * APIENTRY logGetString (GLenum name)
 {
-	fprintf (logFile, "%s\n", "glGetString");
+	LogFile->Printf ("%s\n", "glGetString");
 	return lib.GetString (name);
 }
 
 static void APIENTRY logLoadIdentity (void)
 {
-	fprintf (logFile, "%s\n", "glLoadIdentity");
+	LogFile->Printf ("%s\n", "glLoadIdentity");
 	lib.LoadIdentity ();
 }
 
 static void APIENTRY logLoadMatrixf (const GLfloat *m)
 {
-	fprintf (logFile, "%s\n", "glLoadMatrixf");
+	LogFile->Printf ("%s\n", "glLoadMatrixf");
 	lib.LoadMatrixf (m);
 }
 
 static void APIENTRY logMatrixMode (GLenum mode)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glMatrixMode", EnumName(mode));
+	LogFile->Printf ("%s (GL_%s)\n", "glMatrixMode", EnumName(mode));
 	lib.MatrixMode (mode);
 }
 
 static void APIENTRY logOrtho (GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar)
 {
-	fprintf (logFile, "%s (%g, %g, %g, %g, %g, %g)\n", "glOrtho", left, right, bottom, top, zNear, zFar);
+	LogFile->Printf ("%s (%g, %g, %g, %g, %g, %g)\n", "glOrtho", left, right, bottom, top, zNear, zFar);
 	lib.Ortho (left, right, bottom, top, zNear, zFar);
 }
 
 static void APIENTRY logPolygonMode (GLenum face, GLenum mode)
 {
-	fprintf (logFile, "%s (GL_%s, GL_%s)\n", "glPolygonMode", EnumName(face), EnumName(mode));
+	LogFile->Printf ("%s (GL_%s, GL_%s)\n", "glPolygonMode", EnumName(face), EnumName(mode));
 	lib.PolygonMode (face, mode);
 }
 
 static void APIENTRY logPolygonOffset (GLfloat factor, GLfloat units)
 {
-	fprintf (logFile, "%s (%g, %g)\n", "glPolygonOffset", factor, units);
+	LogFile->Printf ("%s (%g, %g)\n", "glPolygonOffset", factor, units);
 	lib.PolygonOffset (factor, units);
 }
 
 static void APIENTRY logPopMatrix (void)
 {
-	fprintf (logFile, "%s\n", "glPopMatrix");
+	LogFile->Printf ("%s\n", "glPopMatrix");
 	lib.PopMatrix ();
 }
 
 static void APIENTRY logPushMatrix (void)
 {
-	fprintf (logFile, "%s\n", "glPushMatrix");
+	LogFile->Printf ("%s\n", "glPushMatrix");
 	lib.PushMatrix ();
 }
 
 static void APIENTRY logReadPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels)
 {
-	fprintf (logFile, "%s (%d, %d, %d, %d, GL_%s, GL_%s, $%X)\n", "glReadPixels", x, y, width, height, EnumName(format), EnumName(type), pixels);
+	LogFile->Printf ("%s (%d, %d, %d, %d, GL_%s, GL_%s, $%X)\n", "glReadPixels", x, y, width, height, EnumName(format), EnumName(type), pixels);
 	lib.ReadPixels (x, y, width, height, format, type, pixels);
 }
 
 static void APIENTRY logRotatef (GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
-	fprintf (logFile, "%s (%g, %g, %g, %g)\n", "glRotatef", angle, x, y, z);
+	LogFile->Printf ("%s (%g, %g, %g, %g)\n", "glRotatef", angle, x, y, z);
 	lib.Rotatef (angle, x, y, z);
 }
 
 static void APIENTRY logScissor (GLint x, GLint y, GLsizei width, GLsizei height)
 {
-	fprintf (logFile, "%s (%d, %d, %d, %d)\n", "glScissor", x, y, width, height);
+	LogFile->Printf ("%s (%d, %d, %d, %d)\n", "glScissor", x, y, width, height);
 	lib.Scissor (x, y, width, height);
 }
 
 static void APIENTRY logShadeModel (GLenum mode)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glShadeModel", EnumName(mode));
+	LogFile->Printf ("%s (GL_%s)\n", "glShadeModel", EnumName(mode));
 	lib.ShadeModel (mode);
 }
 
 static void APIENTRY logTexCoord2f (GLfloat s, GLfloat t)
 {
-	fprintf (logFile, "%s (%g, %g)\n", "glTexCoord2f", s, t);
+	LogFile->Printf ("%s (%g, %g)\n", "glTexCoord2f", s, t);
 	lib.TexCoord2f (s, t);
 }
 
 static void APIENTRY logTexCoordPointer (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
-	fprintf (logFile, "%s (%d, GL_%s, %d, $%X)\n", "glTexCoordPointer", size, EnumName(type), stride, pointer);
+	LogFile->Printf ("%s (%d, GL_%s, %d, $%X)\n", "glTexCoordPointer", size, EnumName(type), stride, pointer);
 	lib.TexCoordPointer (size, type, stride, pointer);
 }
 
 static void APIENTRY logTexEnvf (GLenum target, GLenum pname, GLfloat param)
 {
-	fprintf (logFile, "%s (GL_%s, GL_%s, %g)\n", "glTexEnvf", EnumName(target), EnumName(pname), param);
+	LogFile->Printf ("%s (GL_%s, GL_%s, %g)\n", "glTexEnvf", EnumName(target), EnumName(pname), param);
 	lib.TexEnvf (target, pname, param);
 }
 
 static void APIENTRY logTexEnvfv (GLenum target, GLenum pname, const GLfloat *params)
 {
-	fprintf (logFile, "%s (GL_%s, GL_%s, $%X)\n", "glTexEnvfv", EnumName(target), EnumName(pname), params);
+	LogFile->Printf ("%s (GL_%s, GL_%s, $%X)\n", "glTexEnvfv", EnumName(target), EnumName(pname), params);
 	lib.TexEnvfv (target, pname, params);
 }
 
 static void APIENTRY logTexEnvi (GLenum target, GLenum pname, GLenum param)
 {
-	fprintf (logFile, "%s (GL_%s, GL_%s, GL_%s)\n", "glTexEnvi", EnumName(target), EnumName(pname), EnumName(param));
+	LogFile->Printf ("%s (GL_%s, GL_%s, GL_%s)\n", "glTexEnvi", EnumName(target), EnumName(pname), EnumName(param));
 	lib.TexEnvi (target, pname, param);
 }
 
 static void APIENTRY logTexImage2D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels)
 {
-	fprintf (logFile, "%s (GL_%s, %d, GL_%s, %d, %d, %d, GL_%s, GL_%s, $%X)\n", "glTexImage2D", EnumName(target), level, EnumName(internalformat), width, height, border, EnumName(format), EnumName(type), pixels);
+	LogFile->Printf ("%s (GL_%s, %d, GL_%s, %d, %d, %d, GL_%s, GL_%s, $%X)\n", "glTexImage2D", EnumName(target), level, EnumName(internalformat), width, height, border, EnumName(format), EnumName(type), pixels);
 	lib.TexImage2D (target, level, internalformat, width, height, border, format, type, pixels);
 }
 
 static void APIENTRY logTexParameteri (GLenum target, GLenum pname, GLint param)
 {
-	fprintf (logFile, "%s (GL_%s, GL_%s, %d)\n", "glTexParameteri", EnumName(target), EnumName(pname), param);
+	LogFile->Printf ("%s (GL_%s, GL_%s, %d)\n", "glTexParameteri", EnumName(target), EnumName(pname), param);
 	lib.TexParameteri (target, pname, param);
 }
 
 static void APIENTRY logTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels)
 {
-	fprintf (logFile, "%s (GL_%s, %d, %d, %d, %d, %d, GL_%s, GL_%s, $%X)\n", "glTexSubImage2D", EnumName(target), level, xoffset, yoffset, width, height, EnumName(format), EnumName(type), pixels);
+	LogFile->Printf ("%s (GL_%s, %d, %d, %d, %d, %d, GL_%s, GL_%s, $%X)\n", "glTexSubImage2D", EnumName(target), level, xoffset, yoffset, width, height, EnumName(format), EnumName(type), pixels);
 	lib.TexSubImage2D (target, level, xoffset, yoffset, width, height, format, type, pixels);
 }
 
 static void APIENTRY logTranslatef (GLfloat x, GLfloat y, GLfloat z)
 {
-	fprintf (logFile, "%s (%g, %g, %g)\n", "glTranslatef", x, y, z);
+	LogFile->Printf ("%s (%g, %g, %g)\n", "glTranslatef", x, y, z);
 	lib.Translatef (x, y, z);
 }
 
 static void APIENTRY logVertex2f (GLfloat x, GLfloat y)
 {
-	fprintf (logFile, "%s (%g, %g)\n", "glVertex2f", x, y);
+	LogFile->Printf ("%s (%g, %g)\n", "glVertex2f", x, y);
 	lib.Vertex2f (x, y);
 }
 
 static void APIENTRY logVertex3f (GLfloat x, GLfloat y, GLfloat z)
 {
-	fprintf (logFile, "%s (%g, %g, %g)\n", "glVertex3f", x, y, z);
+	LogFile->Printf ("%s (%g, %g, %g)\n", "glVertex3f", x, y, z);
 	lib.Vertex3f (x, y, z);
 }
 
 static void APIENTRY logVertex3fv (const GLfloat *v)
 {
-	fprintf (logFile, "%s\n", "glVertex3fv");
+	LogFile->Printf ("%s\n", "glVertex3fv");
 	lib.Vertex3fv (v);
 }
 
 static void APIENTRY logVertexPointer (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
-	fprintf (logFile, "%s (%d, GL_%s, %d, $%X)\n", "glVertexPointer", size, EnumName(type), stride, pointer);
+	LogFile->Printf ("%s (%d, GL_%s, %d, $%X)\n", "glVertexPointer", size, EnumName(type), stride, pointer);
 	lib.VertexPointer (size, type, stride, pointer);
 }
 
 static void APIENTRY logViewport (GLint x, GLint y, GLsizei width, GLsizei height)
 {
-	fprintf (logFile, "%s (%d, %d, %d, %d)\n", "glViewport", x, y, width, height);
+	LogFile->Printf ("%s (%d, %d, %d, %d)\n", "glViewport", x, y, width, height);
 	lib.Viewport (x, y, width, height);
 }
 
@@ -697,49 +697,49 @@ static void APIENTRY logViewport (GLint x, GLint y, GLsizei width, GLsizei heigh
 
 static int APIENTRY logChoosePixelFormat (HDC hdc, CONST PIXELFORMATDESCRIPTOR *ppfd)
 {
-	fprintf (logFile, "%s\n", "wglChoosePixelFormat");
+	LogFile->Printf ("%s\n", "wglChoosePixelFormat");
 	return lib.ChoosePixelFormat (hdc, ppfd);
 }
 
 static int APIENTRY logDescribePixelFormat (HDC hdc, int iPixelFormat, UINT nBytes, LPPIXELFORMATDESCRIPTOR ppfd)
 {
-	fprintf (logFile, "%s\n", "wglDescribePixelFormat");
+	LogFile->Printf ("%s\n", "wglDescribePixelFormat");
 	return lib.DescribePixelFormat (hdc, iPixelFormat, nBytes, ppfd);
 }
 
 static BOOL APIENTRY logSetPixelFormat (HDC hdc, int iPixelFormat, CONST PIXELFORMATDESCRIPTOR *ppfd)
 {
-	fprintf (logFile, "%s\n", "wglSetPixelFormat");
+	LogFile->Printf ("%s\n", "wglSetPixelFormat");
 	return lib.SetPixelFormat (hdc, iPixelFormat, ppfd);
 }
 
 static BOOL APIENTRY logSwapBuffers (HDC hdc)
 {
-	fprintf (logFile, "%s\n", "wglSwapBuffers");
+	LogFile->Printf ("%s\n", "wglSwapBuffers");
 	return lib.SwapBuffers (hdc);
 }
 
 static HGLRC APIENTRY logCreateContext (HDC hdc)
 {
-	fprintf (logFile, "%s\n", "wglCreateContext");
+	LogFile->Printf ("%s\n", "wglCreateContext");
 	return lib.CreateContext (hdc);
 }
 
 static BOOL APIENTRY logDeleteContext (HGLRC hglrc)
 {
-	fprintf (logFile, "%s\n", "wglDeleteContext");
+	LogFile->Printf ("%s\n", "wglDeleteContext");
 	return lib.DeleteContext (hglrc);
 }
 
 static PROC APIENTRY logGetProcAddress (LPCSTR lpszProc)
 {
-	fprintf (logFile, "%s\n", "wglGetProcAddress");
+	LogFile->Printf ("%s\n", "wglGetProcAddress");
 	return lib.GetProcAddress (lpszProc);
 }
 
 static BOOL APIENTRY logMakeCurrent (HDC hdc, HGLRC hglrc)
 {
-	fprintf (logFile, "%s\n", "wglMakeCurrent");
+	LogFile->Printf ("%s\n", "wglMakeCurrent");
 	return lib.MakeCurrent (hdc, hglrc);
 }
 
@@ -748,37 +748,37 @@ static BOOL APIENTRY logMakeCurrent (HDC hdc, HGLRC hglrc)
 
 static void APIENTRY logSelectTextureSGIS (GLenum target)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glSelectTextureSGIS", EnumName(target));
+	LogFile->Printf ("%s (GL_%s)\n", "glSelectTextureSGIS", EnumName(target));
 	lib.SelectTextureSGIS (target);
 }
 
 static void APIENTRY logSelectTextureCoordSetSGIS (GLenum target)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glSelectTextureCoordSetSGIS", EnumName(target));
+	LogFile->Printf ("%s (GL_%s)\n", "glSelectTextureCoordSetSGIS", EnumName(target));
 	lib.SelectTextureCoordSetSGIS (target);
 }
 
 static void APIENTRY logActiveTextureARB (GLenum texture)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glActiveTextureARB", EnumName(texture));
+	LogFile->Printf ("%s (GL_%s)\n", "glActiveTextureARB", EnumName(texture));
 	lib.ActiveTextureARB (texture);
 }
 
 static void APIENTRY logClientActiveTextureARB (GLenum texture)
 {
-	fprintf (logFile, "%s (GL_%s)\n", "glClientActiveTextureARB", EnumName(texture));
+	LogFile->Printf ("%s (GL_%s)\n", "glClientActiveTextureARB", EnumName(texture));
 	lib.ClientActiveTextureARB (texture);
 }
 
 static void APIENTRY logLockArraysEXT (GLint first, GLint count)
 {
-	fprintf (logFile, "%s (%d, %d)\n", "glLockArraysEXT", first, count);
+	LogFile->Printf ("%s (%d, %d)\n", "glLockArraysEXT", first, count);
 	lib.LockArraysEXT (first, count);
 }
 
 static void APIENTRY logUnlockArraysEXT (void)
 {
-	fprintf (logFile, "%s\n", "glUnlockArraysEXT");
+	LogFile->Printf ("%s\n", "glUnlockArraysEXT");
 	lib.UnlockArraysEXT ();
 }
 
@@ -787,7 +787,7 @@ static void APIENTRY logUnlockArraysEXT (void)
 
 static BOOL APIENTRY logSwapIntervalEXT (int interval)
 {
-	fprintf (logFile, "%s (%d)\n", "wglSwapIntervalEXT", interval);
+	LogFile->Printf ("%s (%d)\n", "wglSwapIntervalEXT", interval);
 	return lib.SwapIntervalEXT (interval);
 }
 

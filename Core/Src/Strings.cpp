@@ -167,7 +167,8 @@ void appCopyFilename (char *dest, const char *src, int len)
 		c = *s++;
 		if (c == '/')
 		{
-			while (*s == '/') s++;			// replace '//' -> '/' (may be when "path/" + "/name")
+			// replace '//' -> '/' (may be when "path/" + "/name") when not at start (allow win32 network path)
+			if (len) while (*s == '/') s++;
 			if (s[0] == '.' && s[1] == '.' && s[2] == '/'&& len && *(s-2) != '.')	// cut "dir/../", but leave "../.."
 			{
 				do

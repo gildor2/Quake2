@@ -12,6 +12,8 @@
 #	include "gl_win.h"				// gl_hDC
 #endif
 
+#include "OutputDeviceFile.h"
+
 
 extern bool ActiveApp;	//!!! change
 
@@ -24,7 +26,7 @@ static HINSTANCE libGL;		//!! win32 (type)
 qgl_t			qgl;
 static qgl_t	lib;
 
-static FILE *logFile;
+static COutputDeviceFile *LogFile;
 
 #include "../ref_gl/qgl_impl.h"
 
@@ -83,10 +85,10 @@ bool QGL_Init (const char *libName)
 
 void QGL_Shutdown ()
 {
-	if (logFile)
+	if (LogFile)
 	{
-		fclose (logFile);
-		logFile = NULL;
+		delete LogFile;
+		LogFile = NULL;
 	}
 
 	if (libGL)
@@ -375,7 +377,7 @@ void QGL_EnableLogging (bool enable)
 {
 	if (enable)
 	{
-		if (!logFile)
+		if (!LogFile)
 		{
 			time_t	itime;
 			char	ctime[256];
@@ -383,23 +385,25 @@ void QGL_EnableLogging (bool enable)
 			time (&itime);
 			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
 
-			logFile = fopen ("gl.log", "a+");
-			if (!logFile)
+			LogFile = new COutputDeviceFile ("gl.log");
+			if (!LogFile->IsOpened ())
 			{
+				delete LogFile;
+				LogFile = NULL;
 				appWPrintf ("QGL_EnableLogging: unable to create file\n");
 				return;
 			}
-			fprintf (logFile, "\n---------------------------\n%s\n---------------------------\n", ctime);
+			LogFile->Printf ("\n---------------------------\n%s\n---------------------------\n", ctime);
 		}
 
 		qgl = logFuncs;
 	}
 	else
 	{
-		if (logFile)
+		if (LogFile)
 		{
-			fclose (logFile);
-			logFile = NULL;
+			delete LogFile;
+			LogFile = NULL;
 		}
 
 		qgl = lib;
@@ -409,8 +413,8 @@ void QGL_EnableLogging (bool enable)
 
 void QGL_LogMessage (const char *text)
 {
-	if (!logFile) return;
-	fprintf (logFile, text);
+	if (!LogFile) return;
+	LogFile->Printf (text);
 }
 
 

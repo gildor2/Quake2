@@ -4,6 +4,26 @@
 
 static bool initialized;
 
+#if 0
+#ifdef _WIN32
+#define IS_ABSOLUTE_PATH(name)	\
+	((name[1] == ':' && name[2] == '/') ||	/* absolute path */		\
+	 (name[0] == '/' && name[1] == '/'))	/* network path */
+#else
+#define IS_ABSOLUTE_PATH(name)	\
+	(name[0] == '/')
+#endif
+#endif
+
+#ifdef _WIN32
+#define IS_ABSOLUTE_PATH(name)	\
+	((name[1] == ':' && name[2] == '/') || (name[0] == '/' && name[1] == '/'))
+#else
+#define IS_ABSOLUTE_PATH(name)	\
+	(name[0] == '/')
+#endif
+
+
 /*-----------------------------------------------------------------------------
 	.PAK file format
 -----------------------------------------------------------------------------*/
@@ -453,13 +473,7 @@ static int FileLength (FILE *f)
 }
 
 
-/*
-============
-FS_CreatePath
-
-Creates any directories needed to store the given filename
-============
-*/
+// Creates any directories needed to store the given filename
 void FS_CreatePath (const char *path)
 {
 	// need a copy of path, because will modify (and restore) path string
@@ -561,12 +575,6 @@ void FS_RemoveFiles (const char *mask)
 }
 
 
-/*
-==============
-FS_FCloseFile
-==============
-*/
-
 // Stuff for caching open/close/reopen packfiles
 static char cached_name[MAX_OSPATH];	// name of last opened file
 static FILE *cached_handle;				// handle file cached_name
@@ -635,20 +643,8 @@ void FS_FCloseFile (QFILE *f)
 }
 
 
-/*
-===========
-FS_FOpenFile
-
-Finds the file in the search path.
-returns filesize and an open FILE *
-Used for streaming data out of either a pak file or
-a seperate file.
-===========
-*/
-
-
 // Allocates QFILE structure
-static QFILE *AllocFileInternal (const char *name, FILE *file, fileType_t type)
+inline QFILE *AllocFileInternal (const char *name, FILE *file, fileType_t type)
 {
 	QFILE *f2 = new (name) QFILE;
 	f2->file = file;
@@ -659,7 +655,6 @@ static QFILE *AllocFileInternal (const char *name, FILE *file, fileType_t type)
 
 bool fileFromPak;		// used for precaching
 
-// WARNING: FS_FOpenFile, FS_Read and FS_FCloseFile works with FILE2* (not with FILE*) structure.
 
 QFILE *FS_FOpenFile (const char *filename2, int *plen)
 {
@@ -692,26 +687,18 @@ QFILE *FS_FOpenFile (const char *filename2, int *plen)
 	}
 
 	/*----- search through the path, one element at a time -----*/
-	int gamelen = 0;
-	int gamePos = 0;
-	if (Filename[1] == ':' && Filename[2] == '/')	// CD path?
-	{
+	int gamelen = 0, gamePos = 0;
 #ifdef CD_PATH
-		gamePos = strlen (fs_cddir->string);
-		if (memcmp (Filename, fs_cddir->string, gamePos))
-		{
-			Com_DPrintf ("FS_FOpenFile: bad path %s\n", *Filename);
-			if (plen) *plen = -1;
-			return NULL;
-		}
-		gamePos++;			// skip '/'
-#else
-		Com_DPrintf ("FS_FOpenFile: bad path %s\n", *Filename);
-		if (plen) *plen = -1;
-		return NULL;
-#endif
+	if (IS_ABSOLUTE_PATH(Filename))
+	{
+		// if file path == cddir, treat this as game dir
+		int len = strlen (fs_cddir->string);
+		if (!memcmp (Filename, fs_cddir->string, gamePos))
+			gamePos = len + 1;	// path + '/'
 	}
-	else if (Filename[0] == '.' && Filename[1] == '/')
+	else
+#endif
+	if (Filename[0] == '.' && Filename[1] == '/')
 		gamePos = 2;
 
 	if (gamePos)
@@ -802,32 +789,24 @@ QFILE *FS_FOpenFile (const char *filename2, int *plen)
 }
 
 
-/*
-=================
-FS_FileExists
-
-This is a fast version of FS_FOpenFile()
-Will not check inline files (only filesystem or paks)
-=================
-*/
-
-bool FS_FileExists (const char *filename)
+// This is a fast version of FS_FOpenFile()
+// Will not check inline files (only filesystem or paks)
+bool FS_FileExists (const char *filename2)
 {
 	char	game[MAX_OSPATH];
 	FILE	*f;
 
 	fileFromPak = false;
-	TString<MAX_OSPATH> Buf;
-	Buf.filename (filename);
-	filename = Buf;
-	DEBUG_LOG(va("check: %s\n", filename));
+	TString<MAX_OSPATH> Filename;
+	Filename.filename (filename2);
+	DEBUG_LOG(va("check: %s\n", *Filename));
 
 	/*------------- check for links first ----------------------*/
 	for (fileLink_t *link = fs_links; link; link = link->next)
 	{
-		if (!memcmp (filename, link->from, link->fromlength))
+		if (!memcmp (Filename, link->from, link->fromlength))
 		{
-			if (f = fopen (va("%s%s", link->to, filename + link->fromlength), "rb"))
+			if (f = fopen (va("%s%s", link->to, Filename + link->fromlength), "rb"))
 			{
 				fclose (f);
 				return true;
@@ -837,41 +816,35 @@ bool FS_FileExists (const char *filename)
 	}
 
 	/*----- search through the path, one element at a time -----*/
-	int gamelen = 0;
-	int gamePos = 0;
-	if (filename[1] == ':' && filename[2] == '/')		// CD path?
-	{
+	int gamelen = 0, gamePos = 0;
 #ifdef CD_PATH
-		gamePos = strlen (fs_cddir->string);
-		if (memcmp (filename, fs_cddir->string, gamePos))
-		{
-			Com_DPrintf ("FS_FileExists: bad path: %s\n", filename);
-			return false;
-		}
-		gamePos++;			// skip '/'
-#else
-		Com_DPrintf ("FS_FileExists: bad path: %s\n", filename);
-		return false;
-#endif
+	if (IS_ABSOLUTE_PATH(Filename))
+	{
+		// if file path == cddir, treat this as game dir
+		int len = strlen (fs_cddir->string);
+		if (!memcmp (Filename, fs_cddir->string, gamePos))
+			gamePos = len + 1;	// path + '/'
 	}
-	else if (filename[0] == '.' && filename[1] == '/')
+	else
+#endif
+	if (Filename[0] == '.' && Filename[1] == '/')
 		gamePos = 2;
 
 	const char	*pakname;
 	if (gamePos)
 	{
-		pakname = strchr (filename + gamePos, '/');	// find end of [CD +] game directory
+		pakname = strchr (Filename + gamePos, '/');	// find end of [CD +] game directory
 		if (pakname)
 		{
 			pakname++;		// skip '/'
-			gamelen = pakname - filename;
-			appStrncpyz (game, filename, strrchr (filename, '/') - filename + 2);
+			gamelen = pakname - Filename;
+			appStrncpyz (game, Filename, Filename.rchr ('/') - Filename + 2);
 		}
 		else
-			pakname = filename;
+			pakname = Filename;
 	}
 	else
-		pakname = filename;
+		pakname = Filename;
 
 //	appPrintf(S_RED"check %s in %s; l = %d\n", pakname, game, gamelen);
 	// pakname = game relative path, game = subtracted game path, gamelen = strlen(game).
@@ -896,7 +869,7 @@ bool FS_FileExists (const char *filename)
 			if (!gamelen)
 			{
 				// check a file in the directory tree (only for game-relative path)
-				if (!(f = fopen (va("%s/%s",search->name, filename), "rb")))
+				if (!(f = fopen (va("%s/%s",search->name, *Filename), "rb")))
 					continue;
 
 				fclose (f);
@@ -906,7 +879,7 @@ bool FS_FileExists (const char *filename)
 	}
 
 	// check a file in the directory tree for base-relative path
-	if (gamelen && (f = fopen (filename, "rb")))
+	if (gamelen && (f = fopen (Filename, "rb")))
 	{
 		fclose (f);
 		return true;
@@ -915,14 +888,6 @@ bool FS_FileExists (const char *filename)
 	return false;
 }
 
-
-/*
-=================
-FS_ReadFile
-
-Properly handles partial reads
-=================
-*/
 
 void FS_Read (void *buffer, int len, QFILE *f)
 {
@@ -1005,15 +970,8 @@ void FS_Read (void *buffer, int len, QFILE *f)
 	unguard;
 }
 
-/*
-============
-FS_LoadFile
 
-Filename are reletive to the quake search path
-a null buffer will just return the file length without loading
-When file is loaded, it contained in buffer with added trailing zero
-============
-*/
+// When file is loaded, it contained in buffer with added trailing zero
 void* FS_LoadFile (const char *path, unsigned *len)
 {
 	guard(FS_LoadFile);
@@ -1039,27 +997,11 @@ void* FS_LoadFile (const char *path, unsigned *len)
 }
 
 
-/*
-=============
-FS_FreeFile
-=============
-*/
 void FS_FreeFile (void *buffer)
 {
 	appFree (buffer);
 }
 
-
-/*
-=================
-FS_LoadPackFile
-
-Takes an explicit (not game tree related) path to a pak file.
-
-Loads the header and directory, adding the files at the beginning
-of the list so they override previous pack files.
-=================
-*/
 
 static pack_t *createdPak;
 
@@ -1070,10 +1012,10 @@ static bool EnumZippedPak (zipFile_t *file)
 	{	// not a directory - add file
 		packFile_t *newfile = AddPakFile (createdPak, file->name);
 		newfile->method = file->method;
-		newfile->pos = file->pos;
-		newfile->cSize = file->csize;
+		newfile->pos    = file->pos;
+		newfile->cSize  = file->csize;
 		newfile->ucSize = file->ucsize;
-		newfile->crc = file->crc32;
+		newfile->crc    = file->crc32;
 	}
 	return true;
 }
@@ -1115,9 +1057,9 @@ static pack_t *LoadPackFile (const char *packfile)
 	CMemoryChain *chain = new CMemoryChain;
 	pack_t *pack = new (chain) pack_t;
 	pack->filename = CopyString (packfile, chain);
-	pack->root = new ("", chain) packDir_t;
-	pack->isZip = is_zip;
-	pack->chain = chain;
+	pack->root     = new ("", chain) packDir_t;
+	pack->isZip    = is_zip;
+	pack->chain    = chain;
 
 	if (!is_zip)
 	{	// load standard quake pack file
@@ -1132,9 +1074,9 @@ static pack_t *LoadPackFile (const char *packfile)
 			dPackFile_t info;
 			fread (&info, sizeof(dPackFile_t), 1, packHandle);
 			packFile_t *newfile = AddPakFile (pack, info.name);
-			newfile->pos = LittleLong(info.filepos);
+			newfile->pos    = LittleLong(info.filepos);
 			newfile->ucSize = LittleLong(info.filelen);
-			newfile->cSize = newfile->ucSize; // unpacked file
+			newfile->cSize  = newfile->ucSize; // unpacked file
 		}
 		fclose (packHandle);
 	}
@@ -1166,14 +1108,8 @@ static void UnloadPackFile (pack_t *pak)
 }
 
 
-/*
-================
-FS_AddGameDirectory
-
-Sets fs_gamedir, adds the directory to the head of the path,
-then loads and adds pak1.pak pak2.pak ...
-================
-*/
+// Sets fs_gamedir, adds the directory to the head of the path,
+// then loads and adds pak1.pak pak2.pak ...
 static void AddGameDirectory (const char *dir)
 {
 	strcpy (fs_gamedir, dir);
@@ -1203,23 +1139,14 @@ static void AddGameDirectory (const char *dir)
 	PakList.Free();
 }
 
-/*
-============
-FS_Gamedir
 
-Called to find where to write a file (demos, savegames, etc)
-============
-*/
+// Called to find where to write a file (demos, savegames, etc)
 const char *FS_Gamedir ()
 {
 	return (fs_gamedir[0]) ? fs_gamedir : BASEDIRNAME;
 }
 
-/*
-=============
-FS_LoadGameConfig
-=============
-*/
+
 void FS_LoadGameConfig ()
 {
 	char	dir[MAX_QPATH];
@@ -1245,13 +1172,7 @@ void FS_LoadGameConfig ()
 }
 
 
-/*
-================
-FS_SetGamedir
-
-Sets the gamedir and path to a different directory.
-================
-*/
+// Sets the gamedir and path to a different directory.
 bool FS_SetGamedir (const char *dir)
 {
 	if (strchr (dir, '/') || strchr (dir, '\\') || strchr (dir, ':'))
@@ -1323,12 +1244,6 @@ static searchPath_t *FindPakStruc (const char *name)
 }
 
 
-/*
-================
-FS_LoadPak_f
-================
-*/
-
 static bool TryLoadPak (char *pakname)
 {
 	FILE	*f;
@@ -1389,11 +1304,6 @@ static void FS_LoadPak_f (bool usage, int argc, char **argv)
 }
 
 
-/*
-================
-FS_UnloadPak_f
-================
-*/
 static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 {
 	char	pakname[MAX_OSPATH];
@@ -1457,15 +1367,8 @@ static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 }
 
 
-/*
-================
-FS_Link_f
-================
-*/
 static void FS_Link_f (bool usage, int argc, char **argv)
 {
-	fileLink_t	*l, **prev;
-
 	if (argc != 3 || usage)
 	{
 		appPrintf ("Usage: link <from> <to>\n");
@@ -1473,17 +1376,18 @@ static void FS_Link_f (bool usage, int argc, char **argv)
 	}
 
 	// see if the link already exists
-	prev = &fs_links;
+	fileLink_t **prev = &fs_links;
+	fileLink_t *l;
 	for (l = fs_links; l; l = l->next)
 	{
 		if (!strcmp (l->from, argv[1]))
 		{
-			appFree (l->to);
+			delete l->to;
 			if (!argv[2][0])	// <to> is ""
 			{	// delete it
 				*prev = l->next;
-				appFree (l->from);
-				appFree (l);
+				delete l->from;
+				delete l;
 				return;
 			}
 			l->to = CopyString (argv[2]);
@@ -1493,21 +1397,21 @@ static void FS_Link_f (bool usage, int argc, char **argv)
 	}
 
 	// create a new link
-	l = (fileLink_t*)appMalloc(sizeof(*l));
-	l->next = fs_links;
+	l = new fileLink_t;
+	l->next       = fs_links;
 	fs_links = l;
-	l->from = CopyString (argv[1]);
+	l->from       = CopyString (argv[1]);
 	l->fromlength = strlen (l->from);
-	l->to = CopyString (argv[2]);
+	l->to         = CopyString (argv[2]);
 }
 
 
-TList<CStringItem> FS_ListFiles (const char *name, int flags)
+TList<CStringItem> FS_ListFiles (const char *filename2, int flags)
 {
-	DEBUG_LOG(va("list: %s\n", name));
-	TString<MAX_OSPATH> Buf;
-	Buf.filename (name);
-	name = Buf;
+	DEBUG_LOG(va("list: %s\n", filename2));
+
+	TString<MAX_OSPATH> Filename;
+	Filename.filename (filename2);
 
 	/*	Make gamePos = index of first char in game directory part of source filename (after '/').
 	 *  After all calculations, gamelen = position of 1st char of game-relative path in the source filename.
@@ -1516,49 +1420,44 @@ TList<CStringItem> FS_ListFiles (const char *name, int flags)
 	// initialize file list
 	TList<CStringItem> List;
 
-	int gamelen = 0;
-	int gamePos = 0;
 	char prefix[MAX_OSPATH];
 	prefix[0] = 0;
-	if (name[1] == ':' && name[2] == '/')	// allow only CD path with X:/path
-	{
+
+	int gamelen = 0, gamePos = 0;
 #ifdef CD_PATH
-		gamePos = strlen (fs_cddir->string);
-		if (memcmp (name, fs_cddir->string, gamePos))
-		{
-			Com_DPrintf ("FS_ListFiles: bad path %s\n", name);
-			return List;	// empty
-		}
-		gamePos++;		// skip '/'
-#else
-		Com_DPrintf ("FS_ListFiles: bad path %s\n", name);
-		return List;		// empty
-#endif
+	if (IS_ABSOLUTE_PATH(Filename))
+	{
+		// if file path == cddir, treat this as game dir
+		int len = strlen (fs_cddir->string);
+		if (!memcmp (Filename, fs_cddir->string, gamePos))
+			gamePos = len + 1;	// path + '/'
 	}
-	else if (name[0] == '.' && name[1] == '/')
+	else
+#endif
+	if (Filename[0] == '.' && Filename[1] == '/')
 		gamePos = 2;
 
-	char *s = strrchr (name, '/');			// should be always !NULL
+	char *s = Filename.rchr ('/');			// should be always !NULL
 	int pathLen = 0;
-	if (s) pathLen = s - name + 1;
+	if (s) pathLen = s - Filename + 1;
 
 	const char *pakname;
 	if (gamePos)
 	{
 		// find end of [CD +] game directory
 		// path is "./gamedir/<pakname>"
-		pakname = strchr (name + gamePos, '/');
+		pakname = strchr (Filename + gamePos, '/');
 		if (pakname)
 		{
 			pakname++;
-			gamelen = pakname - name;
-			appStrncpyz (prefix, name, pathLen + 1);
+			gamelen = pakname - Filename;
+			appStrncpyz (prefix, Filename, pathLen + 1);
 		}
 		else
-			pakname = name + gamePos;		// happens, when specified "./gamedir" (without trailing slash)
+			pakname = Filename + gamePos;	// happens, when specified "./gamedir" (without trailing slash)
 	}
 	else
-		pakname = name;
+		pakname = Filename;
 
 //	appPrintf (S_RED"list: %s in %s (l = %d); fullname = \"%s\"\n", pakname, game, gamelen, name);
 
@@ -1598,22 +1497,24 @@ TList<CStringItem> FS_ListFiles (const char *name, int flags)
 				if (!s) continue;	// pak in root directory ?
 				s++;				// include trailing "/"
 				if (s + pathLen - prefix >= sizeof(prefix)) continue;	// combined string is too long
-				appStrncpyz (s, name, pathLen + 1);
+				appStrncpyz (s, Filename, pathLen + 1);
 			}
 			ListPakDirectory (pak, path, mask, flags, &List, prefix);
 		}
 	}
 
 	/*------------ check directory tree ----------------*/
-	if (name[0] == '.' && name[1] == '/')		// root-relative listing
-		AddDirFilesToList (name, &List, flags);
-	else if (name[0] == '.' && name[1] == '.' && name[2] == '/')	// "../dir" (game-relative) -> "./dir" (root-relative) path
-		AddDirFilesToList (name+1, &List, flags);
+	if (IS_ABSOLUTE_PATH(Filename))
+		AddDirFilesToList (Filename, &List, flags);
+	else if (Filename[0] == '.' && Filename[1] == '/')		// root-relative listing
+		AddDirFilesToList (Filename, &List, flags);
+	else if (Filename[0] == '.' && Filename[1] == '.' && Filename[2] == '/')	// "../dir" (game-relative) -> "./dir" (root-relative) path
+		AddDirFilesToList (Filename+1, &List, flags);
 	else
 	{	// game is not specified - list all searchpaths
 		const char *path2 = NULL;
 		while (path2 = FS_NextPath (path2))
-			AddDirFilesToList (va("%s/%s", path2, name), &List, flags);
+			AddDirFilesToList (va("%s/%s", path2, *Filename), &List, flags);
 	}
 
 	return List;
@@ -1622,9 +1523,6 @@ TList<CStringItem> FS_ListFiles (const char *name, int flags)
 
 static void FS_Dir_f (bool usage, int argc, char **argv)
 {
-	int		colwidth, colcount;
-	char	*name;
-
 	if (argc > 2 || usage)
 	{
 		appPrintf ("Usage: dir [<mask>]\n");
@@ -1657,17 +1555,17 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 			CListIterator item;
 			for (item = dirnames; item; ++item)
 			{
-				if (name = strrchr (item->name, '/'))
+				if (char *name = strrchr (item->name, '/'))
 					item->name = name + 1; // cut directory prefix
 				int len = strlen (item->name);
 				if (len > maxlen) maxlen = len;
 			}
 
 #define SPACING 6
-			colcount = (linewidth - 2 + SPACING) / (maxlen + SPACING);
+			int colcount = (linewidth - 2 + SPACING) / (maxlen + SPACING);
 			if (!colcount) colcount = 1;
 
-			colwidth = maxlen + SPACING;
+			int colwidth = maxlen + SPACING;
 			int col = 0;
 			for (item = dirnames; item; ++item)
 			{
@@ -1691,11 +1589,6 @@ static void FS_Dir_f (bool usage, int argc, char **argv)
 }
 
 
-/*
-============
-FS_Path_f
-============
-*/
 static void FS_Path_f ()
 {
 	appPrintf (S_GREEN"Current search path:\n");
@@ -1723,14 +1616,12 @@ static void FS_Path_f ()
 
 static void FS_Cat_f (bool usage, int argc, char **argv)
 {
-	int		len;
-	char	buf[64];
-
 	if (argc != 2 || usage)
 	{
 		appPrintf ("Usage: cat <filename>\n");
 		return;
 	}
+	int len;
 	QFILE *f = FS_FOpenFile (argv[1], &len);
 	if (!f)
 	{
@@ -1740,12 +1631,12 @@ static void FS_Cat_f (bool usage, int argc, char **argv)
 	appPrintf ("\n--------\n");
 	while (len)
 	{
-		int		i;
-		char	*p;
-
-		int get = min(len, sizeof(buf));
+		char buf[64];
+		int get = min (len, sizeof(buf));
 		FS_Read (buf, get, f);
 
+		int		i;
+		char	*p;
 		for (i = 0, p = buf; i < get && *p; i++, p++)
 			if (*p != '\r') appPrintf ("%c", *p);
 
@@ -1785,13 +1676,7 @@ static void FS_Type_f (bool usage, int argc, char **argv)
 }
 
 
-/*
-================
-FS_NextPath
-
-Allows enumerating all of the directories in the search path
-================
-*/
+// Allows enumerating all of the directories in the search path
 char *FS_NextPath (const char *prevpath)
 {
 	const char *prev = NULL;
@@ -1806,19 +1691,14 @@ char *FS_NextPath (const char *prevpath)
 }
 
 
-/*
-================
-FS_InitFilesystem
-================
-*/
 void FS_InitFilesystem ()
 {
 CVAR_BEGIN(vars)
 	CVAR_FULL(&fs_configfile, "cfgfile", CONFIGNAME, CVAR_NOSET),
-#ifdef CD_PATH
+//#ifdef CD_PATH -- always allow cvar to allow local (network) game copy
 	// cddir <path>	-- allow game to be partially installed - read rest of data from CD
 	CVAR_FULL(&fs_cddir, "cddir", "", CVAR_NOSET),
-#endif
+//#endif
 	CVAR_FULL(&fs_gamedirvar, "game", "", CVAR_SERVERINFO|CVAR_LATCH),
 	CVAR_VAR(fs_debug, 0, 0)
 CVAR_END

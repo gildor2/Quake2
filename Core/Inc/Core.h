@@ -109,13 +109,28 @@ class CMemoryChain;
 class CORE_API COutputDevice
 {
 public:
-	// return "false" to prevent logging to other devices
-	virtual bool Write (const char *str) = 0;
+	bool	NoColors;			// when true, color codes will be removed from output
+	bool	FlushEveryTime;		// when true, Flush() will be called after every Write()
+	bool	GrabOutput;			// when true, appPrintf() will output to this device only (if this device registered last)
+	COutputDevice ()
+	:	NoColors(false), FlushEveryTime(false), GrabOutput(false)
+	{}
+	virtual void Write (const char *str) = 0;
+	virtual void Flush ()
+	{ /* empty */ }
+	virtual void Close ()		// may be used instead of destructor
+	{ /* empty */ }
 	void Printf (const char *fmt, ...);
 	void Register ();
 	void Unregister ();
 };
 
+class CORE_API COutputDeviceNull : public COutputDevice
+{
+public:
+	void Write (const char *str)
+	{ /* empty */ }
+};
 
 CORE_API void appPrintf (const char *fmt, ...);
 CORE_API void appWPrintf (const char *fmt, ...);
@@ -146,6 +161,10 @@ CORE_API NORETURN void appNonFatalError (const char *fmt, ...);
 CORE_API void appUnwindPrefix (const char *fmt);		// not vararg (will display function name for unguardf only)
 CORE_API NORETURN void appUnwindThrow (const char *fmt, ...);
 
+// will return correct value even when log cannot be opened
+CORE_API COutputDevice *appGetErrorLog ();
+CORE_API void appDisplayError ();
+
 
 /*-----------------------------------------------------------------------------
 	Process control
@@ -154,6 +173,9 @@ CORE_API NORETURN void appUnwindThrow (const char *fmt, ...);
 // Initialize core
 CORE_API void appInit (/*?? const char *_cmdLine, COutputDevice *_log, CErrorHandler *_err */);
 CORE_API void appExit ();
+
+// System information
+CORE_API const char *appPackage ();
 
 
 /*-----------------------------------------------------------------------------
@@ -192,6 +214,7 @@ inline float appDeltaCyclesToMsecf (unsigned timeDelta)
 
 CORE_API extern CErrorHandler	GErr;
 //??CORE_API extern char GVersion[512];
+CORE_API extern bool			GIsFatalError;
 
 /*-----------------------------------------------------------------------------
 	Variables for current package

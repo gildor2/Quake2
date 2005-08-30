@@ -273,7 +273,7 @@ void SV_Error (char *error, ...);
 extern	game_export_t	*ge;
 
 void SV_InitGameLibrary (bool dummy);
-void SV_ShutdownGameLibrary (void);
+void SV_ShutdownGameLibrary ();
 void SV_InitEdict (edict_t *e);
 
 

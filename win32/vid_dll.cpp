@@ -395,6 +395,7 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 	}
 	else
 	{
+		const char *app = appPackage ();
 		// Register the frame class
 		WNDCLASS wc;
 		memset (&wc, 0, sizeof(WNDCLASS));
@@ -403,10 +404,10 @@ void *Vid_CreateWindow (int width, int height, bool fullscreen)
 		wc.hIcon         = LoadIcon (global_hInstance, MAKEINTRESOURCE(IDI_ICON1));
 		wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
 //		wc.hbrBackground = (HBRUSH) COLOR_GRAYTEXT;
-		wc.lpszClassName = APPNAME;
+		wc.lpszClassName = app;
 		if (!RegisterClass (&wc)) Com_FatalError ("Couldn't register window class");
 
-		cl_hwnd = CreateWindowEx (exstyle, APPNAME, APPNAME, stylebits, x, y, w, h, NULL, NULL, global_hInstance, NULL);
+		cl_hwnd = CreateWindowEx (exstyle, app, app, stylebits, x, y, w, h, NULL, NULL, global_hInstance, NULL);
 		if (!cl_hwnd) Com_FatalError ("Couldn't create window");
 
 		if (width || height) ShowWindow (cl_hwnd, SW_SHOW);
@@ -445,7 +446,7 @@ void Vid_DestroyWindow (bool force)
 		cl_hwnd = 0;
 	}
 
-	UnregisterClass (APPNAME, global_hInstance);
+	UnregisterClass (appPackage (), global_hInstance);
 }
 
 

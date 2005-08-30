@@ -1,6 +1,5 @@
 SOURCE CODE
 ~~~~~~~~~~~
-- APPNAME: replace with func appName() -- get info from argv[0] (or GAppName -- name of primary package; init with IMPLEMENT_PRIMARY_PACKAGE()) or appInit()
 - Core/Build.h contains non-core consts (game-related stuff)
 - Little/Big-Endian
   - use LITTLE_ENDIAN/BIG_ENDIAN defines (not run-time detection !)

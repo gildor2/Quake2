@@ -5,32 +5,6 @@
 #define	APP_VERSION		0.01		//?? unused
 
 /*-----------------------------------------------------------------------------
-	these consts should not be inside engine (q2 launcher)
------------------------------------------------------------------------------*/
-
-#define APPNAME						"Quake2"					//?? unneeded
-#if 0
-#define	BASEDIRNAME					"baseq2"
-#define CONFIGNAME					"config.cfg"				//?? unneeded
-
-
-// if CD_PATH is not defined, CD checking and adding its paths will not be performed
-#define CD_PATH						"install/data"
-#define CD_CHECK					"install/data/quake2.exe"	// file used for CD validation
-
-
-#define SAVEGAME_DIRECTORY			"save"
-#define SAVEGAME_SERVER_EXTENSION	"sv2"
-#define SAVEGAME_GAME_EXTENSION		"sav"
-#define SAVEGAME_VARS_EXTENSION		"ssv"
-
-
-//?? should not be here
-#define NEW_PROTOCOL_ID				"gildor"
-#endif
-
-
-/*-----------------------------------------------------------------------------
 	Defaults (put this section to a separate header ?)
 -----------------------------------------------------------------------------*/
 

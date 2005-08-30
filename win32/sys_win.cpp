@@ -6,8 +6,6 @@
 
 #include "../client/client.h"		//!! for editLine[] and CompleteCommand() only
 
-#define CRASH_LOG	"crash.log"		//!! required for history logging (should move to Core ??!)
-
 bool		ActiveApp, MinimizedApp, FullscreenApp;
 
 unsigned	sys_frame_time;			//?? used in cl_input.cpp only
@@ -52,7 +50,7 @@ static char *ScanForCD ()
 	Win32 console input/output
 -----------------------------------------------------------------------------*/
 
-static HANDLE hConInput, hConOutput;
+static HANDLE hConInput;
 
 #define MAX_CMDLINE		256		//?? same as in client/keys.h
 
@@ -61,24 +59,10 @@ static int	console_textlen = 0;
 static bool console_drawInput = true;
 
 
-static void EraseConInput ()
-{
-	if (!console_drawInput)
-	{
-		char	text[MAX_CMDLINE+2];
-		DWORD	dummy;
-
-		text[0] = '\r';
-		memset (&text[1], ' ', console_textlen+1);
-		text[console_textlen+2] = '\r';
-		text[console_textlen+3] = 0;
-		WriteFile (hConOutput, text, console_textlen+3, &dummy, NULL);
-	}
-}
-
-
 class COutputDeviceWin32Console : public COutputDevice
 {
+protected:
+	HANDLE	hOutput;
 public:
 	void Init ()
 	{
@@ -86,33 +70,51 @@ public:
 		AllocConsole ();
 #endif
 		hConInput  = GetStdHandle (STD_INPUT_HANDLE);		//?? not OutputDevice-stuff
-		hConOutput = GetStdHandle (STD_OUTPUT_HANDLE);
+		hOutput = GetStdHandle (STD_OUTPUT_HANDLE);
 		Register ();
 	}
-	bool Write (const char *str)
+	// writting without processing
+	inline void WriteChar (char c)
 	{
-		EraseConInput ();
-
+		DWORD dummy;
+		WriteFile (hOutput, &c, 1, &dummy, NULL);
+	}
+	inline void WriteStr (const char *str)
+	{
+		DWORD dummy;
+		WriteFile (hOutput, str, strlen (str), &dummy, NULL);
+	}
+	// writting with processing
+	void Write (const char *str)
+	{
+		EraseInput ();
 		// draw message
-		while (char c = str[0])
+		while (char c = *str++)
 		{
 			// parse color info
-			if (c == COLOR_ESCAPE && str[1] >= '0' && str[1] <= '7')
+			if (c == COLOR_ESCAPE && str[0] >= '0' && str[0] <= '7')
 			{
 				static const byte colorTable[8] = {0, 4, 2, 6, 1, 5, 3, 7};
-				SetConsoleTextAttribute (hConOutput, colorTable[str[1] - '0']);
-				str += 2;
+				SetConsoleTextAttribute (hOutput, colorTable[str[0] - '0']);
+				str++;
 				continue;
 			}
-			c &= 0x7F;		// clear 7th bit
-			DWORD	dummy;
-			WriteFile (hConOutput, &c, 1, &dummy, NULL);
-			str++;
+			WriteChar (c & 0x7F);		// clear 7th bit
 		}
-		SetConsoleTextAttribute (hConOutput, 7);
-
+		SetConsoleTextAttribute (hOutput, 7);
+		// should draw input again
 		console_drawInput = true;
-		return true;
+	}
+	void EraseInput ()
+	{
+		if (console_drawInput) return;	// already erased
+		char text[MAX_CMDLINE+2];
+		text[0] = '\r';
+		memset (&text[1], ' ', console_textlen+1);
+		text[console_textlen+2] = '\r';
+		text[console_textlen+3] = 0;
+		DWORD dummy;
+		WriteFile (hOutput, text, console_textlen+3, &dummy, NULL);
 	}
 };
 
@@ -123,14 +125,15 @@ char *Sys_ConsoleInput ()
 {
 	guard(Sys_ConsoleInput);
 
-	DWORD	dummy;
-
 	if (console_drawInput)
 	{
 		// display input line
-		WriteFile (hConOutput, "]", 1, &dummy, NULL);
+		Win32Log.WriteChar (']');
 		if (console_textlen)
-			WriteFile (hConOutput, console_text, console_textlen, &dummy, NULL);
+		{
+			console_text[console_textlen] = 0;
+			Win32Log.WriteStr (console_text);
+		}
 		console_drawInput = false;
 	}
 
@@ -148,7 +151,7 @@ char *Sys_ConsoleInput ()
 			switch (ch)
 			{
 				case '\r':		// ENTER
-					WriteFile (hConOutput, "\r\n", 2, &dummy, NULL);
+					Win32Log.WriteStr ("\r\n");
 					console_drawInput = true;
 					if (console_textlen)
 					{
@@ -161,7 +164,7 @@ char *Sys_ConsoleInput ()
 					if (console_textlen)
 					{
 						console_text[--console_textlen] = 0;
-						WriteFile (hConOutput, "\b \b", 3, &dummy, NULL);
+						Win32Log.WriteStr ("\b \b");
 					}
 					break;
 
@@ -177,14 +180,14 @@ char *Sys_ConsoleInput ()
 						{
 							console_textlen = min(len, sizeof(console_text)-2);
 							appStrncpyz (console_text, s, console_textlen+1);
-							EraseConInput ();
+							Win32Log.EraseInput ();
 							console_drawInput = true;	// next time ...
 						}
 					}
 					break;
 
 				case '\x1B':	// ESC
-					EraseConInput ();
+					Win32Log.EraseInput ();
 					console_textlen = 0;
 					console_text[0] = 0;
 					break;
@@ -194,7 +197,7 @@ char *Sys_ConsoleInput ()
 					{
 						if (console_textlen < sizeof(console_text)-2)
 						{
-							WriteFile(hConOutput, &ch, 1, &dummy, NULL);
+							Win32Log.WriteChar (ch);
 							console_text[console_textlen++] = ch;
 							console_text[console_textlen] = 0;
 						}
@@ -338,19 +341,17 @@ int main (int argc, const char **argv) // force to link as console application
 #endif
 
 #ifdef CD_PATH
-		char cmdline2[1024];
-		// if we find the CD, add a "-cddir=xxx" command line
-		if (char *cddir = ScanForCD ())
-		{
-			// add to the start of cmdline, so, if already specified - will not override option
-			appSprintf (ARRAY_ARG(cmdline2), "-cddir=\"%s\" %s", cddir, cmdline);
-			cmdline = cmdline2;
-		}
+		if (const char *cddir = ScanForCD ())
+			Cvar_Set ("cddir", cddir);
 #endif
 
+#ifndef DEDICATED_ONLY
 		// init-time output
 		COutputDeviceMem *TempLog = new COutputDeviceMem (16384);
 		TempLog->Register ();
+#else
+		Win32Log.Init ();
+#endif
 
 		appInit ();		//!!!!
 		Com_Init (cmdline);
@@ -361,13 +362,11 @@ int main (int argc, const char **argv) // force to link as console application
 			Win32Log.Init ();
 		else
 			ConLog.Init ();
-#else
-		Win32Log.Init ();
-#endif
 		// flush init-time log
 		TempLog->Unregister ();
 		appPrintf (TempLog->GetText ());
 		delete TempLog;
+#endif
 
 		double oldtime = appMillisecondsf ();
 
@@ -377,7 +376,7 @@ int main (int argc, const char **argv) // force to link as console application
 		{
 #ifndef DEDICATED_ONLY
 			if (!ActiveApp || DEDICATED)
-				Sleep (10);		//?? what about client and server in one place: will server become slower ?
+				Sleep (10);		//?? what about client and server in one place: will server became slower ?
 			Sys_ProcessMessages ();
 #else
 			Sleep (10);
@@ -405,10 +404,9 @@ int main (int argc, const char **argv) // force to link as console application
 			} GUARD_CATCH {
 				if (GErr.nonFatalError)
 				{
-					//!! TEST: dedicated: error -drop, error -gpf, error "msg"
 					//!! check old behaviour on DropError(NULL)
-					SV_Shutdown (va("Server crashed: %s\n", *GErr.Message), false);	// message
-					Com_DPrintf ("History: %s\n", *GErr.History);					// history
+					SV_Shutdown (va("Server crashed: %s\n", *GErr.Message));	// message
+					Com_DPrintf ("History: %s\n", *GErr.History);				// history
 					if (!DEDICATED) CL_Drop (true);
 					GErr.Reset ();
 				}
@@ -419,33 +417,21 @@ int main (int argc, const char **argv) // force to link as console application
 		}
 		unguard;
 	} GUARD_CATCH {
-		//?? should move softError and history logging to Core
-		// log error
-		if (FILE *f = fopen (CRASH_LOG, "a+"))
-		{
-			if (GErr.swError)
-				fprintf (f, "----- " APPNAME " software exception -----\n%s\n\n", *GErr.Message);
-			fprintf (f, "History: %s\n\n", *GErr.History);
-			fclose (f);
-		}
 		if (debugLogged)
 			DebugPrintf ("***** CRASH *****\n%s\n*****************\n", *GErr.History);
-
 		GUARD_BEGIN {
 			// shutdown all subsystems
-			SV_Shutdown (va("Server fatal crashed: %s\n", *GErr.Message), false);	// message
-			CL_Shutdown (true);
-			Com_Shutdown ();
+			SV_Shutdown (va("Server fatal crashed: %s\n", *GErr.Message));
+			CL_Shutdown ();
 		} GUARD_CATCH {
 			// nothing here ...
 		}
 		// display error
 #ifndef DEDICATED_ONLY
-		MessageBox (NULL, va("%s\n\nHistory: %s", *GErr.Message, *GErr.History),
-			APPNAME ": fatal error", MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
+		appDisplayError ();
 #else
-		Sys_ConsoleOutput ("\n\n"S_RED"--------------------\n" APPNAME " fatal error\n");
-		Sys_ConsoleOutput (va("%s\nHistory: %s\n", *GErr.Message, *GErr.History));
+		Win32Log.Printf ("\n\n"S_RED"--------------------\n%s fatal error\n", appPackage ());
+		Win32Log.Printf ("%s\nHistory: %s\n", *GErr.Message, *GErr.History);
 #endif
 	}
 	// will get here only when fatal error happens

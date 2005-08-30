@@ -314,7 +314,7 @@ static void PlaceChar (char c, byte color)
 }
 
 
-bool COutputDeviceCon::Write (const char *str)
+void COutputDeviceCon::Write (const char *str)
 {
 	if (!con.started) Con_Clear_f ();
 
@@ -341,8 +341,6 @@ bool COutputDeviceCon::Write (const char *str)
 
 		PlaceChar (c, color);
 	}
-
-	return true;
 }
 
 
@@ -464,10 +462,17 @@ void Con_DrawConsole (float frac)
 	int dy = viddef.height / CHAR_HEIGHT;
 
 	// draw version info
+#if 1
+	TString<64> Version;
+	i = Version.sprintf ("%s v" STR(VERSION), appPackage ());
+	for (x = 0; x < i; x++)
+		RE_DrawChar (viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, Version[x], C_GREEN);
+#else
 	static const char version[] = APPNAME " v" STR(VERSION);
 	i = sizeof(version) - 1;
 	for (x = 0; x < i; x++)
 		RE_DrawChar (viddef.width - i*CHAR_WIDTH - CHAR_WIDTH/2 + x*CHAR_WIDTH, lines - 12, version[x], C_GREEN);
+#endif
 
 	// draw the text
 	con.vislines = lines;
