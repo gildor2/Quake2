@@ -1,14 +1,14 @@
-#include <time.h>						// for logging time funcs
 #include "Core.h"
 #include "OutputDeviceFile.h"
 
-#if !DO_GUARD
-//?? may be, can do NonFatalError() without DO_GUARD ? (to be exact, without GUARD_BEGIN/GUARD_CATCH)
-#error Current implementation not allow appNonFatalError() without DO_GUARD
-#endif
 
 #define CRASH_LOG		"crash.log"
 
+
+/* NOTE:
+ *	for error throwing, we use "throw 1" operator; "1" is required for WIN32_USE_SEH=0 compilation
+ *	for appError()/appNonFatalError() (otherwise, unhandled GPF will be generated)
+ */
 
 bool GIsFatalError;
 
@@ -28,14 +28,9 @@ COutputDevice *appGetErrorLog ()
 		ErrLog.Open (CRASH_LOG);
 		ErrLog.FlushEveryTime = true;
 		ErrLog.NoColors       = false;	// do not modify output
-		// log date/time (header)
-		time_t itime;
-		time (&itime);
-		char ctime[256];
-		strftime (ARRAY_ARG(ctime), "%b %d, %Y (%H:%M:%S)", localtime (&itime));
 		ErrLog.Printf ("\n\n");
 		ErrLog.Printf ("-------------------------------------------\n");
-		ErrLog.Printf ("%s: %s crash\n", appPackage (), ctime);
+		ErrLog.Printf ("%s crash, %s\n", appPackage (), appTimestamp ());
 		ErrLog.Printf ("-------------------------------------------\n");
 		ErrLog.Printf ("\nERROR: %s\n\n", *GErr.Message);
 	}
@@ -43,6 +38,7 @@ COutputDevice *appGetErrorLog ()
 }
 
 
+#if DO_GUARD
 static void LogHistory (const char *part)
 {
 	if (GErr.nonFatalError)
@@ -63,6 +59,7 @@ static void LogHistory (const char *part)
 	GErr.History += part;
 	ErrLog.Write (part);
 }
+#endif
 
 
 /*-----------------------------------------------------------------------------
@@ -121,6 +118,8 @@ void appNonFatalError (const char *fmt, ...)
 }
 
 
+#if DO_GUARD
+
 void appUnwindPrefix (const char *fmt)
 {
 	TString<512> Buf;
@@ -150,8 +149,10 @@ void appUnwindThrow (const char *fmt, ...)
 	if (!GErr.nonFatalError)
 		GIsFatalError = true;
 
-	throw;
+	throw 1;
 }
+
+#endif
 
 
 void CErrorHandler::Reset ()

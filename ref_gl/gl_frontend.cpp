@@ -789,8 +789,9 @@ static void AddBspSurfaces (surfaceBase_t **psurf, int numFaces, int frustumMask
 }
 
 
-void model_t::InitEntity (entity_t *ent, refEntity_t *out)
+bool model_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
+	return true;
 }
 
 
@@ -814,13 +815,14 @@ void model_t::DrawLabel (refEntity_t *e)
 }
 
 
-void inlineModel_t::InitEntity (entity_t *ent, refEntity_t *out)
+bool inlineModel_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
 	CVec3 v;
 	bounds.GetCenter (v);
 	VectorSubtract (bounds.maxs, v, out->size2);		// half-size
 	out->coord.UnTransformPoint (v, out->center);
 	out->radius = radius;
+	return true;
 }
 
 
@@ -880,8 +882,10 @@ void inlineModel_t::DrawLabel (refEntity_t *e)
 }
 
 
-void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
+bool md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
+	if (!numSurfaces) return false;
+
 	// sanity check
 	if (out->frame >= numFrames || out->frame < 0)
 	{
@@ -925,6 +929,7 @@ void md3Model_t::InitEntity (entity_t *ent, refEntity_t *out)
 #endif
 	if (ent->skin && ent->skin->numSurfs == 1 && ent->skin->surf[0].Name[0] == 0)
 		out->customShader = static_cast<shader_t*>(ent->skin->surf[0].shader);
+	return true;
 }
 
 
@@ -997,11 +1002,12 @@ void md3Model_t::DrawLabel (refEntity_t *e)
 }
 
 
-void sprModel_t::InitEntity (entity_t *ent, refEntity_t *out)
+bool sprModel_t::InitEntity (entity_t *ent, refEntity_t *out)
 {
 	out->center = out->coord.origin;
 	out->radius = radius;
 	out->worldMatrix = true;
+	return true;
 }
 
 
@@ -1933,9 +1939,8 @@ void AddEntity (entity_t *ent)
 
 	bool mirror = (ent->flags & RF_MIRROR) != 0;
 
-	refEntity_t *out = &gl_entities[gl_numEntities++];
+	refEntity_t *out = &gl_entities[gl_numEntities];
 	memset (out, 0, sizeof(refEntity_t));
-	vp.numEntities++;
 
 	// common fields
 	out->flags = ent->flags;
@@ -1968,11 +1973,14 @@ void AddEntity (entity_t *ent)
 		out->shaderColor.c[3] = appRound (ent->alpha * 255);	//?? use color.c[3]
 
 		// model-specific code and calculate model center
-		out->model->InitEntity (ent, out);
+		if (!out->model->InitEntity (ent, out))
+			return;
 	}
 	else if (ent->flags & RF_BBOX)
 		out->size2 = ent->size;
 
+	gl_numEntities++;
+	vp.numEntities++;
 	gl_speeds.ents++;
 }
 

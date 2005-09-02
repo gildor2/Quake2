@@ -292,7 +292,8 @@ public:
 	int		size;				// in memory
 	inline model_t () { type = MODEL_UNKNOWN; };
 	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const;
-	virtual void InitEntity (entity_t *ent, refEntity_t *out);
+	// when return false, entity will not be added to world
+	virtual bool InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual void DrawLabel (refEntity_t *e);
 	virtual node_t *GetLeaf (refEntity_t *e);	// NULL when culled
@@ -308,7 +309,7 @@ public:
 	surfaceBase_t **faces;
 	int		numFaces;
 	inline inlineModel_t () { type = MODEL_INLINE; };
-	virtual void InitEntity (entity_t *ent, refEntity_t *out);
+	virtual bool InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual void DrawLabel (refEntity_t *e);
 	virtual node_t *GetLeaf (refEntity_t *e);
@@ -336,7 +337,7 @@ public:
 	CCoords	*tags;				// [numFrames][numTags]
 	inline md3Model_t () { type = MODEL_MD3; };
 	// funcs for OpenGLDrv
-	virtual void InitEntity (entity_t *ent, refEntity_t *out);
+	virtual bool InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual void DrawLabel (refEntity_t *e);
 	virtual node_t *GetLeaf (refEntity_t *e);
@@ -359,7 +360,7 @@ public:
 	float	radius;
 	sprFrame_t frames[1];		// [numFrames]
 	inline sprModel_t () { type = MODEL_SPR; };
-	virtual void InitEntity (entity_t *ent, refEntity_t *out);
+	virtual bool InitEntity (entity_t *ent, refEntity_t *out);
 	virtual void AddSurfaces (refEntity_t *e);
 	virtual node_t *GetLeaf (refEntity_t *e);
 };

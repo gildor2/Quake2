@@ -16,6 +16,7 @@ public:
 	}
 	~COutputDeviceFile ()
 	{
+		Unregister ();
 		if (log) fclose (log);
 	}
 	void Write (const char *str)
@@ -47,7 +48,7 @@ public:
 		if (log) fclose (log);
 		log = NULL;
 	}
-	inline bool IsOpened ()
+	inline bool IsOpened () const
 	{
 		return log != NULL;
 	}

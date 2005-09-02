@@ -30,13 +30,13 @@ CORE_API void appStrcpy (char *dst, const char *src);
 // If buffer is overflowed, dst string is not null-terminated
 CORE_API void appStrncpy (char *dst, const char *src, int count);
 // Same as appStrncpyz, but destination string will be lowercased
-CORE_API void appStrncpylwr (char *dst, const char *src, int count);
+CORE_API void appStrncpylwr (char *dst, const char *src, int count = BIG_NUMBER);
 // Same as appStrncpy, but when dst buffer is overflowed, it will be null-terminated
 // (0 at [count-1] position)
 CORE_API void appStrncpyz (char *dst, const char *src, int count);
 // Copy filename from src to dst with some path compression, replacing '\' with '/' and lowercasing;
 // dst string will fit count chars and null-terminated.
-CORE_API void appCopyFilename (char *dst, const char *src, int count);
+CORE_API void appCopyFilename (char *dst, const char *src, int count = BIG_NUMBER);
 CORE_API void appStrcatn (char *dst, int count, const char *src);
 
 //?? quake3-style ?? make single-byte color codes + conversion q3<->our style (codes should be i+0..i+7, i != 0 (!!))
@@ -264,8 +264,8 @@ private:
 public:
 // no constructors ... anyway, 1/2 of initialization will be done with filename()
 #if 0
-	TString ()								{}
-	TString (const char *s)					{ appStrncpyz (str, s, N); }
+	inline TString ()						{}
+	inline TString (const char *s)			{ appStrncpyz (str, s, N); }
 #endif
 	int len () const						{ return strlen (str); }
 	char& operator[] (int idx)				{ return str[idx]; }

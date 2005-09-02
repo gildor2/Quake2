@@ -250,6 +250,9 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h
 
+Release/obj/CoreStatic/DbgSymbols.obj : Core/Src/DbgSymbols.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/DbgSymbols.obj" Core/Src/DbgSymbols.cpp
+
 Release/obj/CoreStatic/ErrorMgr.obj : Core/Src/ErrorMgr.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/ErrorMgr.obj" Core/Src/ErrorMgr.cpp
 
@@ -441,9 +444,6 @@ Release/obj/TestApp/Commands.obj : Core/Src/Commands.cpp $(DEPENDS)
 
 Release/obj/CoreStatic/CoreWin32.obj : Core/Src/CoreWin32.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/CoreWin32.obj" Core/Src/CoreWin32.cpp
-
-Release/obj/CoreStatic/DbgSymbols.obj : Core/Src/DbgSymbols.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/DbgSymbols.obj" Core/Src/DbgSymbols.cpp
 
 Release/obj/CoreStatic/DbgSymbolsWin32.obj : Core/Src/DbgSymbolsWin32.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/DbgSymbolsWin32.obj" Core/Src/DbgSymbolsWin32.cpp

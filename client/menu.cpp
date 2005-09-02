@@ -2237,6 +2237,7 @@ struct playerConfigMenu_t : menuFramework_t
 			entity_t base;
 			memset (&base, 0, sizeof(base));
 			base.pos.origin[0] = 90;
+			base.pos.origin[2] = -6;
 			base.frame = (cls.realtime + 99) / 100 % (LAST_FRAME-FIRST_FRAME+1) + FIRST_FRAME;
 			base.oldframe = base.frame - 1;
 			if (base.oldframe < FIRST_FRAME)
@@ -2865,7 +2866,7 @@ struct quitMenu_t : menuFramework_t
 		case 'Y':
 		case 'y':
 		case K_MOUSE1:
-			CL_Quit_f ();
+			GIsRequestingExit = true;
 			break;
 
 		default:

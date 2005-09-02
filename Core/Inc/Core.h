@@ -41,13 +41,9 @@
 #	undef guard
 #	undef unguard
 #	undef unguardf
-#	undef GUARD_BEGIN
-#	undef GUARD_CATCH
 #	define guard(func)
 #	define unguard
 #	define unguardf(msg)
-#	define GUARD_BEGIN
-#	define GUARD_CATCH			if (0)
 #endif
 
 #if DO_GUARD_SLOW
@@ -72,6 +68,10 @@
 
 class CMemoryChain;
 
+
+//----- miscellaneous ?
+
+#define BIG_NUMBER				0x1000000
 
 
 #include "Macro.h"
@@ -115,6 +115,12 @@ public:
 	COutputDevice ()
 	:	NoColors(false), FlushEveryTime(false), GrabOutput(false)
 	{}
+#if 0
+	virtual ~COutputDevice ()
+	{
+		Unregister ();
+	}
+#endif
 	virtual void Write (const char *str) = 0;
 	virtual void Flush ()
 	{ /* empty */ }
@@ -185,6 +191,7 @@ CORE_API const char *appPackage ();
 CORE_API double appSeconds ();
 CORE_API double appMillisecondsf ();
 CORE_API unsigned appMilliseconds ();
+CORE_API const char *appTimestamp ();
 
 
 extern CORE_API double GMSecondsPerCycle;
@@ -215,6 +222,7 @@ inline float appDeltaCyclesToMsecf (unsigned timeDelta)
 CORE_API extern CErrorHandler	GErr;
 //??CORE_API extern char GVersion[512];
 CORE_API extern bool			GIsFatalError;
+CORE_API extern bool			GIsRequestingExit;
 
 /*-----------------------------------------------------------------------------
 	Variables for current package

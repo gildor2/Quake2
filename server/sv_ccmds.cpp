@@ -19,7 +19,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "server.h"
-#include <time.h>
 
 //?? only for screenshot
 #include "../client/ref.h"
@@ -159,16 +158,9 @@ static void SV_WriteServerFile (bool autosave, const char *dir)
 	// write the comment field
 	memset (comment, 0, sizeof(comment));
 	if (!autosave)
-	{
-		time_t itime;
-		time (&itime);
-		strftime (ARRAY_ARG(comment), "%H:%M %b %d  ", localtime (&itime));
-		appStrcatn (ARRAY_ARG(comment), sv.configstrings[CS_NAME]);
-	}
+		appSprintf (ARRAY_ARG(comment), "%s  %s", appTimestamp (), sv.configstrings[CS_NAME]);
 	else
-	{	// autosaved
-		appSprintf (ARRAY_ARG(comment), "ENTERING %s", sv.configstrings[CS_NAME]);
-	}
+		appSprintf (ARRAY_ARG(comment), "ENTERING %s", sv.configstrings[CS_NAME]);	// autosaved
 	fwrite (comment, 1, 32, f);
 
 	// write the mapcmd

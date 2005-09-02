@@ -248,7 +248,6 @@ A connection request that did not come from the master
 */
 static void cDirectConnect (int argc, char **argv)
 {
-	char	userinfo[MAX_INFO_STRING];
 	int		i;
 
 	netadr_t adr = net_from;
@@ -267,6 +266,7 @@ static void cDirectConnect (int argc, char **argv)
 	int challenge = atoi (argv[3]);
 
 	// get userinfo
+	char userinfo[MAX_INFO_STRING];
 	appStrncpyz (userinfo, argv[4], sizeof(userinfo));
 	// force the IP key/value pair to be in userinfo (for game-side IP filters)
 	Info_SetValueForKey (userinfo, "ip", NET_AdrToString(&net_from));
@@ -327,13 +327,11 @@ static void cDirectConnect (int argc, char **argv)
 	if (!newcl)
 	{
 		for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++,cl++)
-		{
 			if (cl->state == cs_free)
 			{
 				newcl = cl;
 				break;
 			}
-		}
 	}
 	if (!newcl)
 	{
@@ -406,16 +404,8 @@ static void cDirectConnect (int argc, char **argv)
 }
 
 
-/*
-===============
-cRemoteCommand
-
-A client issued an rcon command.
-Shift down the remaining args
-Redirect all printfs
-===============
-*/
-
+// Execute command on server from remove client with redirected console output
+// Output will be sent back to client as "svc_print" command
 static void cRemoteCommand (int argc, char **argv)
 {
 	guard(SVC_RemoteCommand);
@@ -430,12 +420,12 @@ static void cRemoteCommand (int argc, char **argv)
 		appPrintf ("Rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
 
 		// fill line with a rest of command string (cut "rcon")
-		char remaining[1024];
-		remaining[0] = 0;
+		TString<256> Cmd;
+		Cmd[0] = 0;
 		for (int i = 2; i < argc; i++)
 		{
-			strcat (remaining, argv[i]);
-			strcat (remaining, " ");
+			if (i > 2) Cmd += " ";
+			Cmd += argv[i];
 		}
 
 		// execute command with a redirected output
@@ -443,10 +433,10 @@ static void cRemoteCommand (int argc, char **argv)
 		//?? buffering output
 		COutputDeviceMem *Mem = new COutputDeviceMem (MAX_MSGLEN_OLD-16);
 		Mem->GrabOutput = true;
-		Mem->NoColors   = true;
+		Mem->NoColors   = true;		// client may not support colored texts ...
 		Mem->Register ();
-		if (!Cmd_ExecuteString (remaining))
-			appWPrintf ("Bad remote command \"%s\"\n", remaining);
+		if (!ExecuteCommand (Cmd))
+			appWPrintf ("Bad remote command \"%s\"\n", *Cmd);
 		//?? move code to Mem->Flush(); call Flush() implicitly at end too
 		// if server will be restarted during active redirection, drop data
 		if (sv_client && sv_client->netchan.message.maxsize)
@@ -1363,8 +1353,7 @@ void SV_Init ()
 ================
 SV_Shutdown
 
-Called when each game quits,
-before Sys_Quit() or FatalError()
+Called when each game quits, and before exitting application
 ================
 */
 void SV_Shutdown (const char *finalmsg, bool reconnect)

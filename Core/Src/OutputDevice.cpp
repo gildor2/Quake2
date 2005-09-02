@@ -73,7 +73,8 @@ void appPrintf (const char *fmt, ...)
 			appUncolorizeString (buf2, buf);
 		out->Write (out->NoColors ? buf2 : buf);
 		if (out->FlushEveryTime) out->Flush ();
-		if (out->GrabOutput) break;
+		// allow single device to grab all output
+		if (out->GrabOutput && !GIsFatalError) break;
 	}
 	unguard;
 }

@@ -538,7 +538,7 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 		return NULL;
 	}
 
-	if (hdr->numSurfaces <= 0 || hdr->numTags < 0 || hdr->numFrames <= 0)
+	if (hdr->numSurfaces < 0 || hdr->numTags < 0 || hdr->numFrames <= 0)
 	{
 		appWPrintf ("LoadMd3(%s): incorrect params\n", name);
 		return NULL;

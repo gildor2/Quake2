@@ -103,7 +103,8 @@ const char *CSimpleParser::SkipBraces ()
 // will return NULL, when line unexpectedly finished
 // will return pointer to next-after-closing-quote char otherwise
 //?? rename to appSkipString(); process non-quoted strings; skip leading spaces
-CORE_API char* appSkipQuotedString (char *str)
+//?? CORE_API: in header only!!
+char* appSkipQuotedString (char *str)
 {
 	char c = *str;
 	if (c != '"') return str;					//?? not started with quotes ?!
@@ -122,7 +123,7 @@ CORE_API char* appSkipQuotedString (char *str)
 }
 
 
-CORE_API bool appQuoteString (char *dst, int dstSize, const char *src)
+bool appQuoteString (char *dst, int dstSize, const char *src)
 {
 	// place starting quote
 	if (!dstSize--) return false;
@@ -163,7 +164,7 @@ CORE_API bool appQuoteString (char *dst, int dstSize, const char *src)
 }
 
 
-CORE_API bool appUnquoteString (char *dst, int dstSize, const char *src)
+bool appUnquoteString (char *dst, int dstSize, const char *src)
 {
 	char c = *src++;
 	if (c != '"') return false;					//?? not started with quotes ?!

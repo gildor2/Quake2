@@ -1,5 +1,4 @@
 #include "qcommon.h"
-#include <time.h>
 
 #define	MAXPRINTMSG	4096
 
@@ -68,7 +67,7 @@ bool debugLogged = false;
 void DebugPrintf (const char *fmt, ...)
 {
 	va_list	argptr;
-	char	msg[1024], ctime[256];
+	char	msg[1024];
 
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
@@ -77,10 +76,7 @@ void DebugPrintf (const char *fmt, ...)
 	FILE *log = fopen ("debug.log", "a+");
 	if (!debugLogged)
 	{
-		time_t	itime;
-		time (&itime);
-		strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
-		fprintf (log, "\n\n----- " APPNAME " debug log on %s -----\n", ctime);
+		fprintf (log, "\n\n----- " APPNAME " debug log on %s -----\n", appTimestamp ());
 		debugLogged = true;
 	}
 	fprintf (log, "%s", msg);
@@ -88,31 +84,15 @@ void DebugPrintf (const char *fmt, ...)
 }
 
 
-/*
-=============
-Com_Quit
-
-Both client and server can use this, and it will
-do the apropriate things.
-=============
-*/
-void Com_Quit (void)
-{
-	SV_Shutdown ("Server quit\n");
-	CL_Shutdown ();
-	Sys_Quit ();
-}
-
-
 static unsigned GetInt (const char **str)
 {
 	unsigned r = 0;
 	const char *s = *str;
-	while (1)
+	while (true)
 	{
-		char c = *s;
-		if (c < '0' || c > '9') break;
-		r = r * 10 + c - '0';
+		int c = *s - '0';
+		if (c < 0 || c > 9) break;
+		r = r * 10 + c;
 		s++;
 	}
 	*str = s;
@@ -164,21 +144,11 @@ bool IPWildcard (netadr_t *a, const char *mask)
 }
 
 
-/*
-==================
-Com_ServerState
-==================
-*/
 server_state_t Com_ServerState (void)
 {
 	return server_state;
 }
 
-/*
-==================
-Com_SetServerState
-==================
-*/
 void Com_SetServerState (server_state_t state)
 {
 	server_state = state;
@@ -541,7 +511,6 @@ CVAR_END
 
 	if (DEDICATED)
 	{
-		RegisterCommand ("quit", Com_Quit);
 		// require this for dedicated server, when launching common executable (!DEDICATED_ONLY)
 		// (executed Con_Print() -> Con_CheckResize() function):
 		linewidth = 80;

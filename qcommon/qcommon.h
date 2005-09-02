@@ -60,7 +60,7 @@ struct cplane_t;
 
 // version number
 
-#define	VERSION		4.12
+#define	VERSION			4.13
 
 #ifdef _WIN32
 
@@ -420,7 +420,7 @@ extern TList<CCommand> CmdList;
 // functions. Cmd_Argv () will return an empty string, not a NULL
 // if arg > argc, so string operations are always safe.
 
-bool	Cmd_ExecuteString (const char *text);
+//bool	Cmd_ExecuteString (const char *text);
 // Parses a single line of text into arguments and tries to execute it
 // as if it was typed at the console; if command is unknown, will return false
 
@@ -753,8 +753,6 @@ void	DebugPrintf (const char *fmt, ...);
 
 extern	int linewidth;		// for functions, which wants to perform advanced output formatting
 
-void	NORETURN Com_Quit (void);
-
 server_state_t Com_ServerState (void);		// this should have just been a cvar...
 void	Com_SetServerState (server_state_t state);
 
@@ -810,7 +808,6 @@ void	Sys_UnloadGame (void);
 
 char	*Sys_ConsoleInput ();
 void	Sys_ProcessMessages ();
-void	NORETURN Sys_Quit ();
 
 
 /*-----------------------------------------------------------------------------

@@ -66,6 +66,7 @@ static bool IsString (const char *str)
 static bool DumpString (COutputDevice *Out, const char *str)
 {
 	Out->Printf (" = \"");
+	//?? can use appQuoteString()
 	for (int i = 0; i < MAX_STRING_WIDTH && *str; i++, str++)
 	{
 		if (*str == '\n')
@@ -126,19 +127,19 @@ static void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 #ifdef LOG_FUNCS_ONLY
 			if (strchr (symbol, '('))
 #endif
-				{
-					// log as symbol
-					Out->Printf ("%s%s%08X = %s",
-						n > 0 ? "\n" : "", spaces,
-						*data, symbol);
+			{
+				// log as symbol
+				Out->Printf ("%s%s%08X = %s",
+					n > 0 ? "\n" : "", spaces,
+					*data, symbol);
 #if !defined(LOG_FUNCS_ONLY) && defined(LOG_STRINGS)
-					if (!strchr (symbol, '(') && IsString ((char*)*data))	// do not test funcs()
-						DumpString (Out, (char*)*data);
+				if (!strchr (symbol, '(') && IsString ((char*)*data))	// do not test funcs()
+					DumpString (Out, (char*)*data);
 #endif
-					Out->Printf ("\n");
-					n = 0;
-					continue;
-				}
+				Out->Printf ("\n");
+				n = 0;
+				continue;
+			}
 
 #ifdef LOG_STRINGS
 		// try to log as string
@@ -203,7 +204,6 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 
 		// log error
 		CONTEXT* ctx = info->ContextRecord;
-//		EXCEPTION_RECORD* rec = info->ExceptionRecord;
 		GErr.Message.sprintf ("%s at \"%s\"", excName, appSymbolName (ctx->Eip));	//?? may be, supply package name
 		COutputDevice *Out = appGetErrorLog ();
 

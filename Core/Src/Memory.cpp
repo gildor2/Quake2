@@ -276,7 +276,7 @@ static int BuildAllocatorsTable (void *info1, int maxCount)
 	FAllocatorInfo* info = (FAllocatorInfo*)info1;
 	// enumerate all memory blocks
 	int numAllocators = 0;
-	GUARD_BEGIN {
+	TRY {
 		for (FMemHeader *hdr = FMemHeader::first; hdr; hdr = hdr->next)
 		{
 			// find same owner
@@ -299,11 +299,11 @@ static int BuildAllocatorsTable (void *info1, int maxCount)
 				p->total += hdr->size;
 			}
 		}
-	} GUARD_CATCH {
+	} CATCH {
 		appWPrintf ("BuildAllocatorsTable: error in memory blocks\n");
 	}
 	// enumerate memory chains
-	GUARD_BEGIN {
+	TRY {
 		for (CMemoryChain *ch = CMemoryChain::first; ch; ch = ch->dNext)
 		{
 			// find same owner
@@ -326,7 +326,7 @@ static int BuildAllocatorsTable (void *info1, int maxCount)
 				p->total += ch->size;
 			}
 		}
-	} GUARD_CATCH {
+	} CATCH {
 		appWPrintf ("BuildAllocatorsTable: error in memory chains\n");
 	}
 
@@ -348,16 +348,15 @@ static int numMarkedAllocs;
 
 static void Cmd_DumpAllocs ()
 {
-	FAllocatorInfo info[MAX_ALLOCATORS], *p;
-
+	FAllocatorInfo info[MAX_ALLOCATORS];
 	int numAllocators = BuildAllocatorsTable (ARRAY_ARG(info));
 
 	//?? filter symbol names (and/or package name) ?!
 	//?? can split by packages and dump per-package info too (requires appSymbolName() returns package info)
 	//?? (in this case, should display "/?" help for command)
+	int totalSize = 0, totalCount = 0;
 	int i;
-	int totalSize = 0;
-	int totalCount = 0;
+	FAllocatorInfo *p;
 	for (i = 0, p = info; i < numAllocators; i++, p++)
 	{
 		char	symbol[256];
@@ -375,17 +374,15 @@ static void Cmd_DumpAllocs ()
 
 static void Cmd_MarkAllocs (bool usage)
 {
-	FAllocatorInfo info[MAX_ALLOCATORS];
-
 	if (usage)
 	{
 		appPrintf ("Remembers current memory allocations for later \"mem_check\"\n");
 		return;
 	}
 
+	FAllocatorInfo info[MAX_ALLOCATORS];
 	numMarkedAllocs = BuildAllocatorsTable (ARRAY_ARG(info));
 	if (MarkedAllocs) appFree (MarkedAllocs);
-	// NOTE: VC6 produces non-beautiful code here ! (computes block size twice, + asm-level may be much more optimized)
 	MarkedAllocs = new FAllocatorInfo[numMarkedAllocs];
 	memcpy (MarkedAllocs, info, sizeof(FAllocatorInfo) * numMarkedAllocs);
 
@@ -414,8 +411,7 @@ static void Cmd_CheckAllocs (bool usage)
 
 	// prepare for loop
 	// array iterators: "n" - new (current), "m" - marked
-	FAllocatorInfo *n, *m;
-	n = info; m = MarkedAllocs;
+	FAllocatorInfo *n = info, *m = MarkedAllocs;
 	int in = 0, im = 0;
 
 	while (in < numAllocators || im < numMarkedAllocs)

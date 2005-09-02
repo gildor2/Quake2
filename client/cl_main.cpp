@@ -368,17 +368,6 @@ static void CL_Pause_f ()
 }
 
 /*
-==================
-CL_Quit_f
-==================
-*/
-void CL_Quit_f ()	//?? do we need 2 quit commands (in cl_main.c and common.c) ??
-{
-	CL_Disconnect ();
-	Com_Quit ();
-}
-
-/*
 ================
 CL_Drop
 
@@ -424,9 +413,11 @@ static void InitServerAddress ()
 {
 	if (!NET_StringToAdr (cls.serverName, &cls.serverAddr))
 	{
-		cls.state = ca_disconnected;	// without this, CL_Disconnect() will throw exception ...
+		TString<64> NameCopy;
+		NameCopy = cls.serverName;			// cls.serverName will be erased
+		cls.state = ca_disconnected;		// without this, CL_Disconnect() will throw exception ...
 		cls.serverName[0] = 0;
-		Com_DropError ("Bad server address %s\n", cls.serverName);
+		Com_DropError ("Bad server address %s\n", *NameCopy);
 		return;
 	}
 	if (!cls.serverAddr.port) cls.serverAddr.port = BigShort (PORT_SERVER);
@@ -470,17 +461,12 @@ void CL_Connect_f (bool usage, int argc, char **argv)
 		return;
 	}
 
+	// if running a local server, kill it and reissue
 	if (Com_ServerState ())
-	{	// if running a local server, kill it and reissue
 		SV_Shutdown ("Server quit\n");
-	}
-	else
-	{
-		CL_Disconnect ();
-	}
+	CL_Disconnect ();
 
 	NET_Config (true);			// allow remote
-	CL_Disconnect ();
 
 	cls.state = ca_connecting;
 	appStrncpyz (cls.serverName, argv[1], sizeof(cls.serverName));
@@ -574,7 +560,7 @@ void CL_Disconnect ()
 	// stop download
 	if (cls.download)
 	{
-		fclose(cls.download);
+		fclose (cls.download);
 		cls.download = NULL;
 	}
 
@@ -1087,8 +1073,6 @@ CVAR_END
 	RegisterCommand ("record", CL_Record_f);
 	RegisterCommand ("stop", CL_Stop_f);
 
-	RegisterCommand ("quit", CL_Quit_f);
-
 	RegisterCommand ("connect", CL_Connect_f);
 	RegisterCommand ("reconnect", CL_Reconnect_f);
 	RegisterCommand ("rcon", CL_Rcon_f);
@@ -1252,6 +1236,7 @@ void CL_Shutdown ()
 	EXEC_ONCE (						// no repeated shutdowns
 		if (!DEDICATED)
 		{
+			CL_Disconnect ();
 			delete cl_entities;
 			if (!GIsFatalError)		// do not write configuration when error occured
 				CL_WriteConfiguration (Cvar_VariableString ("cfgfile"));

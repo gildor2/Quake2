@@ -300,7 +300,6 @@ void CL_GetChallengePacket (void);
 
 #define NUM_ADDRESSBOOK_ENTRIES 9
 void CL_PingServers_f (void);
-void CL_Quit_f (void);
 void CL_Snd_Restart_f (void);
 void CL_RegisterSounds (void);
 

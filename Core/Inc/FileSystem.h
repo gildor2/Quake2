@@ -99,4 +99,4 @@ public:
 -----------------------------------------------------------------------------*/
 
 //?? move to local headers (CoreLocal.h) ?
-CORE_API void osListDirectory (const char *dir, CFileList *List, int flags);
+CORE_API void osListDirectory (const char *dir, CFileList &List, int flags);

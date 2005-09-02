@@ -185,7 +185,7 @@ void Cbuf_Execute (void)
 		}
 
 		// execute the command line
-		if (!Cmd_ExecuteString (line))
+		if (!ExecuteCommand (line))
 			// send it as a server command if we are connected
 			Cmd_ForwardToServer (_argc, _argv);
 	}
@@ -503,14 +503,14 @@ bool UnregisterCommand (const char *name)
 
 /*
 ============
-Cmd_ExecuteString
+ExecuteCommand
 
 $Cvars will be expanded unless they are in a quoted token
 ============
 */
-bool Cmd_ExecuteString (const char *text)
+bool ExecuteCommand (const char *text)
 {
-	guard(Cmd_ExecuteString);
+	guard(ExecuteCommand);
 
 	TokenizeString (MacroExpandString (text));
 
@@ -526,7 +526,7 @@ bool Cmd_ExecuteString (const char *text)
 	{
 		if (!cmd->func)
 		{	// forward to server command
-			Cmd_ExecuteString (va("cmd %s", text));
+			ExecuteCommand (va("cmd %s", text));
 		}
 		else
 		{

@@ -4,7 +4,7 @@
 
 static bool initialized;
 
-#if 0
+#if 1
 #ifdef _WIN32
 #define IS_ABSOLUTE_PATH(name)	\
 	((name[1] == ':' && name[2] == '/') ||	/* absolute path */		\
@@ -13,14 +13,6 @@ static bool initialized;
 #define IS_ABSOLUTE_PATH(name)	\
 	(name[0] == '/')
 #endif
-#endif
-
-#ifdef _WIN32
-#define IS_ABSOLUTE_PATH(name)	\
-	((name[1] == ':' && name[2] == '/') || (name[0] == '/' && name[1] == '/'))
-#else
-#define IS_ABSOLUTE_PATH(name)	\
-	(name[0] == '/')
 #endif
 
 
@@ -40,7 +32,7 @@ typedef struct
 typedef struct
 {
 	char	name[56];
-	int		filepos, filelen;
+	unsigned filepos, filelen;
 } dPackFile_t;
 
 
@@ -140,21 +132,11 @@ static cvar_t	*fs_debug;
 
 
 static cvar_t	*fs_configfile;
-#ifdef CD_PATH
 static cvar_t	*fs_cddir;
-#endif
 static char	fs_gamedir[MAX_OSPATH];
 
-struct fileLink_t
-{
-	fileLink_t *next;
-	char	*from;
-	int		fromlength;
-	char	*to;
-};
-
-static fileLink_t *fs_links;
-
+//?? if make base class CFileContainer => pack | fileSystem, add "CFileContainer *Next", then
+//?? can remove searchPath_t at all - list will be implemented in CFileContainer layer
 class searchPath_t : public CStringItem
 {
 public:
@@ -186,18 +168,15 @@ static int resFileCount;
 
 static void InitResFiles ()
 {
-	int		fsize;
-
 	resChain = new CMemoryChain;
 	ZBUF *z = OpenZRes();
 
 	resFile_t *last = NULL;
-	while (Zip_ReadBuf (z, &fsize, sizeof(int)))
+	int fsize;
+	while (Zip_ReadBuf (z, &fsize, sizeof(int)), fsize)
 	{
-		char	c, name[MAX_OSPATH], *s;
-
-		if (!fsize) break;
-		s = name;
+		char	c, name[MAX_OSPATH];
+		char *s = name;
 		// get filename
 		do
 		{
@@ -235,32 +214,30 @@ Functions to work with in-memory directory/file trees
 
 static void AddDirFilesToList (const char *findname, TList<CStringItem> *List, int flags)
 {
-	char	pattern[MAX_OSPATH], wildcard[MAX_OSPATH];
+	TString<MAX_OSPATH> Pattern;
+	Pattern = findname;
 
-	appStrncpyz (pattern, findname, sizeof(pattern));
-	char *mask = strrchr (pattern, '/');
-	if (mask)
-	{
-		strcpy (wildcard, mask+1);
-		strcpy (mask+1, "*");			// wildcard -> "*" -- list all files
-	}
-	else
-		return;							// no path in filename ? (should not happens)
+	char *mask = Pattern.rchr ('/');
+	if (!mask) return;								// no path in filename ? (should not happens)
+
+	TString<MAX_OSPATH> Wildcard;
+	Wildcard = mask+1;
+	strcpy (mask+1, "*");							// wildcard -> "*" -- list all files
 
 	// HERE: Sys_FindFirst() used with short file names (without path) (path part removed)
-	for (const char *s = Sys_FindFirst (pattern, flags); s; s = Sys_FindNext ())
+	for (const char *s = Sys_FindFirst (Pattern, flags); s; s = Sys_FindNext ())
 	{
-		const char *name = strrchr (s, '/');	// should always be not NULL
-		if (!name) continue;			// just in case ...
+		const char *name = strrchr (s, '/');		// should always be not NULL
+		if (!name) continue;						// just in case ...
 		name++;
-		if (name[0] == '.') continue;	// ignore "." and ".." dirs (any dir, started with '.' -- Unix-like hidden files)
-		if (appMatchWildcard (name, wildcard, true))
+		if (name[0] == '.') continue;				// ignore "." and ".." dirs (any dir, started with '.' -- Unix-like hidden files)
+		if (appMatchWildcard (name, Wildcard, true))
 		{
-			CStringItem *item, *place;
-			if (!(item = List->Find (s, &place)))
+			CStringItem *place;
+			if (List->Find (s, &place)) continue;	// already exists
 			{
-				item = new (s) CStringItem;
-				appStrncpylwr (item->name, item->name, BIG_NUMBER);		//!! lowercase the name; in-place
+				CStringItem *item = new (s) CStringItem;
+				appStrncpylwr (item->name, item->name);		//!! lowercase the name; in-place
 				List->InsertAfter (item, place);
 			}
 		}
@@ -273,43 +250,36 @@ static void AddDirFilesToList (const char *findname, TList<CStringItem> *List, i
 static packDir_t *FindPakDirectory (pack_t *pak, const char *name)
 {
 	packDir_t *dir = pak->root;
-	const char *s = name;
 	if (!name || !*name || name[0] == '/' && !name[1]) return dir; // empty string or "/" => root directory
 
-	while (true)
+	const char *s = name;
+	while (dir->cDir)					// have childs
 	{
-		char	*rest, dirname[MAX_OSPATH];
-		int		len;
-		packDir_t *newdir;
-
 		// get name of the next directory into dirname
-		rest = strchr (s, '/');
+		int		len;
+		const char *rest = strchr (s, '/');
 		if (!rest)	len = strlen (s);
 		else		len = rest - s;
+		char	dirname[MAX_OSPATH];
 		appStrncpyz (dirname, s, len+1);
 
-		if (!dir->cDir)
-			return NULL;				// current directory have no childs
-		else
-		{
-			newdir = dir->cDir.Find (dirname);
-			if (!newdir) return NULL;	// directory not found
-		}
+		packDir_t *newdir = dir->cDir.Find (dirname);
+		if (!newdir) return NULL;		// directory not found
 		// rest=NULL or ->"/\0" or ->"/another_text..."
 		if (!rest || !rest[1]) return newdir; // found
 		s = rest + 1;					// skip '/'
 		dir = newdir;
 	}
+	return NULL;						// no more children dirs, and not found
 }
 
 
 // Returns packFile_t structure or NULL
 static packFile_t *FindPakFile (pack_t *pak, const char *name)
 {
-	const char *filename;
 	packDir_t *dir;
 
-	filename = strrchr (name, '/');
+	const char *filename = strrchr (name, '/');
 //	DebugPrintf("Searching file %s (%s) in %s ...\n", filename, name, pak->filename);
 	if (!filename)
 	{	// root directory
@@ -318,11 +288,10 @@ static packFile_t *FindPakFile (pack_t *pak, const char *name)
 	}
 	else
 	{
-		char	dirname[MAX_OSPATH], *dirname2;
-
+		char	dirname[MAX_OSPATH];
 		appStrncpyz (dirname, name, filename - name + 1);
 		// process "./directory/file" names
-		dirname2 = dirname;
+		const char *dirname2 = dirname;
 		if (dirname[0] == '.' && dirname[1] == '/') dirname2 += 2;
 		dir = FindPakDirectory (pak, dirname2);
 		if (!dir) return NULL;
@@ -339,16 +308,16 @@ static packFile_t *FindPakFile (pack_t *pak, const char *name)
 // Returns found or new directory.
 static packDir_t *AddPakDirectory (pack_t *pak, const char *name)
 {
-	char	dirname[MAX_OSPATH], *rest;
+	char	dirname[MAX_OSPATH];
 
 	packDir_t *dir = pak->root;
-	const char *s = name;
 	if (!name || !*name || name[0] == '/' && !name[1]) return dir; // empty string or "/" => root directory
 
+	const char *s = name;
 	while (true)
 	{
 		// get name of the next directory into dirname
-		rest = strchr (s, '/');
+		const char *rest = strchr (s, '/');
 		int len = (rest) ? rest - s : strlen (s);
 		appStrncpylwr (dirname, s, len+1);	// +1 for zero byte
 
@@ -667,25 +636,6 @@ QFILE *FS_FOpenFile (const char *filename2, int *plen)
 	TString<MAX_OSPATH> Filename;
 	Filename.filename (filename2);
 
-	/*-------------- check for links first ---------------------*/
-	for (fileLink_t *link = fs_links; link; link = link->next)
-	{
-		if (!memcmp (Filename, link->from, link->fromlength))
-		{
-			TString<MAX_OSPATH> NetPath; //?? strange name
-			NetPath.sprintf ("%s%s", link->to, Filename + link->fromlength);
-			if (f = fopen (NetPath, "rb"))
-			{
-				DEBUG_LOG(va("link: %s\n", *NetPath));
-				QFILE *file = AllocFileInternal (NetPath, f, FT_NORMAL);
-				if (plen) *plen = FileLength (f);
-				return file;
-			}
-			if (plen) *plen = -1;
-			return NULL;
-		}
-	}
-
 	/*----- search through the path, one element at a time -----*/
 	int gamelen = 0, gamePos = 0;
 #ifdef CD_PATH
@@ -800,20 +750,6 @@ bool FS_FileExists (const char *filename2)
 	TString<MAX_OSPATH> Filename;
 	Filename.filename (filename2);
 	DEBUG_LOG(va("check: %s\n", *Filename));
-
-	/*------------- check for links first ----------------------*/
-	for (fileLink_t *link = fs_links; link; link = link->next)
-	{
-		if (!memcmp (Filename, link->from, link->fromlength))
-		{
-			if (f = fopen (va("%s%s", link->to, Filename + link->fromlength), "rb"))
-			{
-				fclose (f);
-				return true;
-			}
-			return false;	// have a link, but have no file
-		}
-	}
 
 	/*----- search through the path, one element at a time -----*/
 	int gamelen = 0, gamePos = 0;
@@ -1367,45 +1303,6 @@ static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 }
 
 
-static void FS_Link_f (bool usage, int argc, char **argv)
-{
-	if (argc != 3 || usage)
-	{
-		appPrintf ("Usage: link <from> <to>\n");
-		return;
-	}
-
-	// see if the link already exists
-	fileLink_t **prev = &fs_links;
-	fileLink_t *l;
-	for (l = fs_links; l; l = l->next)
-	{
-		if (!strcmp (l->from, argv[1]))
-		{
-			delete l->to;
-			if (!argv[2][0])	// <to> is ""
-			{	// delete it
-				*prev = l->next;
-				delete l->from;
-				delete l;
-				return;
-			}
-			l->to = CopyString (argv[2]);
-			return;
-		}
-		prev = &l->next;
-	}
-
-	// create a new link
-	l = new fileLink_t;
-	l->next       = fs_links;
-	fs_links = l;
-	l->from       = CopyString (argv[1]);
-	l->fromlength = strlen (l->from);
-	l->to         = CopyString (argv[2]);
-}
-
-
 TList<CStringItem> FS_ListFiles (const char *filename2, int flags)
 {
 	DEBUG_LOG(va("list: %s\n", filename2));
@@ -1604,13 +1501,6 @@ static void FS_Path_f ()
 		else
 			appPrintf ("%-3d     --    %s\n", n, s->name);
 	}
-
-	if (fs_links)
-	{
-		appPrintf (S_GREEN"\nLinks:\n");
-		for (fileLink_t *l = fs_links; l; l = l->next)
-			appPrintf ("%s : %s\n", l->from, l->to);
-	}
 }
 
 
@@ -1631,7 +1521,7 @@ static void FS_Cat_f (bool usage, int argc, char **argv)
 	appPrintf ("\n--------\n");
 	while (len)
 	{
-		char buf[64];
+		char buf[256];
 		int get = min (len, sizeof(buf));
 		FS_Read (buf, get, f);
 
@@ -1695,10 +1585,8 @@ void FS_InitFilesystem ()
 {
 CVAR_BEGIN(vars)
 	CVAR_FULL(&fs_configfile, "cfgfile", CONFIGNAME, CVAR_NOSET),
-//#ifdef CD_PATH -- always allow cvar to allow local (network) game copy
-	// cddir <path>	-- allow game to be partially installed - read rest of data from CD
+	// cddir <path>	-- allow game to be partially installed - read missing data from CD
 	CVAR_FULL(&fs_cddir, "cddir", "", CVAR_NOSET),
-//#endif
 	CVAR_FULL(&fs_gamedirvar, "game", "", CVAR_SERVERINFO|CVAR_LATCH),
 	CVAR_VAR(fs_debug, 0, 0)
 CVAR_END
@@ -1706,7 +1594,6 @@ CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
 
 	RegisterCommand ("path", FS_Path_f);
-	RegisterCommand ("link", FS_Link_f);
 	RegisterCommand ("dir", FS_Dir_f);
 	RegisterCommand ("loadpak", FS_LoadPak_f);
 	RegisterCommand ("unloadpak", FS_UnloadPak_f);

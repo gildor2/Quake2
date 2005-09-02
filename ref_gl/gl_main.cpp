@@ -312,6 +312,8 @@ bool Init ()
 	gl_config.doubleModulateLM = true;			// no multitexture or env_combine
 	if (!GL_SUPPORT(QGL_EXT_TEXTURE_ENV_COMBINE|QGL_ARB_TEXTURE_ENV_COMBINE|QGL_NV_TEXTURE_ENV_COMBINE4))
 		gl_config.doubleModulateLM = false;
+	if (!GL_SUPPORT(QGL_SGIS_MULTITEXTURE|QGL_ARB_MULTITEXTURE))	// no multitexturing - can do normal blending
+		gl_config.doubleModulateLM = false;
 
 	if (GL_SUPPORT(QGL_ARB_TEXTURE_COMPRESSION))
 	{
@@ -348,8 +350,7 @@ bool Init ()
 
 	GL_SetDefaultState ();
 
-	GUARD_BEGIN						// needs GUARD() in a case of error in some of following functions
-	{
+	TRY {							// needs GUARD() in a case of error in some of following functions
 		InitFuncTables ();
 		InitTexts ();
 		InitImages ();
@@ -357,9 +358,7 @@ bool Init ()
 		InitModels ();
 		BK_Init ();
 		CreateBuffers ();
-	}
-	GUARD_CATCH
-	{
+	} CATCH {
 		GLimp_Shutdown (true);
 		QGL_Shutdown ();
 		throw;	//?? or return "false" ?

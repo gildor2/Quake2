@@ -65,8 +65,6 @@ typedef enum
 
 // float numbers
 
-#define BIG_NUMBER			0x1000000
-
 //!! change, rename
 #ifndef M_PI
 #define M_PI				3.14159265358979323846	// matches value in gcc v2 math.h

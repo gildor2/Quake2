@@ -8,7 +8,7 @@ class CRenderModel
 public:
 	TString<64>	Name;
 	// return "false" when tag not found
-	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const = NULL;
+	virtual bool LerpTag (int frame1, int frame2, float lerp, const char *tagName, CCoords &tag) const = 0;
 };
 
 
@@ -17,18 +17,21 @@ class CBasicImage
 public:
 	TString<64> Name;
 	short	width, height;
-	virtual void Reload (void) = NULL;
+	virtual void Reload (void) = 0;
 };
 
 
 class CModelSkin
 {
-public:
-	int		numSurfs;
-	struct {
+private:
+	// declaration of a single surface skin
+	struct CSkinnedSurface {
 		TString<32> Name;			// size should be enough
 		CBasicImage *shader;
-	} surf[32];						// MAX_MD3_SURFACES == 32
+	};
+public:
+	int numSurfs;
+	CSkinnedSurface surf[32];		// MAX_MD3_SURFACES == 32; should be [numSurfs]
 	inline bool IsValid ()
 	{
 		return numSurfs > 0;

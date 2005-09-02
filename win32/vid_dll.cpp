@@ -325,7 +325,7 @@ static LONG WINAPI MainWndProc (HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		break;
 
 	case WM_CLOSE:
-		Com_Quit ();
+		GIsRequestingExit = true;
 		break;							// should not return here
 
 	case WM_ERASEBKGND:

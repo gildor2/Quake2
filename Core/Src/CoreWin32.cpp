@@ -162,6 +162,11 @@ static void CheckCpuModel ()
 
 	unsigned tmp = cpuid3 (1);
 	if (tmp & 0x00000001)	appPrintf ("FPU ");
+	if (tmp & 0x00000010)
+	{
+		appPrintf ("RDTSC ");
+		IsRDTSC = true;
+	}
 	//!! NOTE: if planning to use MMX/SSE/SSE2/3DNow! - should check OS support for this tech
 	if (tmp & 0x00800000)
 	{
@@ -174,11 +179,6 @@ static void CheckCpuModel ()
 		IsSSE = true;
 	}
 	if (tmp & 0x04000000)	appPrintf ("SSE2 ");
-	if (tmp & 0x00000010)
-	{
-		appPrintf ("RDTSC ");
-		IsRDTSC = true;
-	}
 
 	// check extended features
 	if (cpu0 >= 0x80000001)		// largest recognized extended function
@@ -266,7 +266,12 @@ const char *appGetSystemErrorMessage (unsigned code)
 
 void appDisplayError ()
 {
-	MessageBox (NULL, va("%s\n\nHistory: %s", *GErr.Message, *GErr.History),
+	MessageBox (NULL,
+#if DO_GUARD
+		va("%s\n\nHistory: %s", *GErr.Message, *GErr.History),
+#else
+		GErr.Message,
+#endif
 		va("%s: fatal error", appPackage ()), MB_OK|MB_ICONSTOP/*|MB_TOPMOST*/|MB_SETFOREGROUND);
 	// add CR/LF to error log and close it
 	COutputDevice *ErrLog = appGetErrorLog ();

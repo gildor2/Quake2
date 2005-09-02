@@ -34,15 +34,14 @@ bool osAddressInfo (address_t address, char *pkgName, int bufSize, int *offset)
 
 bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset)
 {
-	TString<256> Func;
-
 	if (!hModule) return false;		// there was no osAddressInfo() call before this
 
+	TString<256> Func;
 	__try
 	{
 		// we want to walk system memory -- not very safe action
 		if (*(WORD*)hModule != 'M'+('Z'<<8)) return false;		// bad MZ header
-		WORD* tmp = (WORD*) (*(DWORD*) OffsetPointer (hModule, 0x3C) + (char*)hModule);
+		const WORD* tmp = (WORD*) (*(DWORD*) OffsetPointer (hModule, 0x3C) + (char*)hModule);
 		if (*tmp != 'P'+('E'<<8)) return false;					// non-PE executable
 		IMAGE_OPTIONAL_HEADER32 *hdr = (IMAGE_OPTIONAL_HEADER32*) OffsetPointer (tmp, 4 + sizeof(IMAGE_FILE_HEADER));
 		// check export directory
@@ -50,8 +49,8 @@ bool osModuleInfo (address_t address, char *exportName, int bufSize, int *offset
 			return false;
 		IMAGE_EXPORT_DIRECTORY* exp = (IMAGE_EXPORT_DIRECTORY*) OffsetPointer (hModule, hdr->DataDirectory[0].VirtualAddress);
 
-		DWORD* addrTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfFunctions);
-		DWORD* nameTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfNames);
+		const DWORD* addrTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfFunctions);
+		const DWORD* nameTbl = (DWORD*) OffsetPointer (hModule, exp->AddressOfNames);
 		unsigned bestRVA = 0;
 		int bestIndex = -1;
 		unsigned RVA = address - (unsigned)hModule;

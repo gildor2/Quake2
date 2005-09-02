@@ -2,7 +2,6 @@
 
 #if DBG_SYMBOLS			// do not compile unit when debug symbols are disabled, even when it was specified in a makefile
 
-//?? should (try to) get package name from GPackage, not from memory_info -> dll_name
 
 class CSymbol : public CStringItem
 {
@@ -87,13 +86,15 @@ void appLoadDebugSymbols ()
 	fclose (f);
 
 #if 0
+#include "OutputDeviceFile.h"
+	COutputDeviceFile F("./symbols");
 	for (int i = 0; i < dbgPackages; i++)
 	{
 		CPackageSymbols *pkg = pkgDebugInfo[i];
 
-		appPrintf ("pkg: %s\n", pkg->name);
+		appPrintf ("\n--------------\nPkg: %s\n", pkg->name);
 		for (CSymbol *s = pkg->First(); s; s = pkg->Next(s))
-			appPrintf ("  %08X: %s\n", s->address, s->name);
+			F.Printf ("  %08X: %s\n", s->address, s->name);
 	}
 #endif
 

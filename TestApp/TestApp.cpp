@@ -87,6 +87,13 @@ void cClen (int argc, char **argv)
 }
 
 
+static CSimpleCommand commands[] = {
+	{"uncol", cUncol},
+	{"clen", cClen},
+	{"xcpt",cmd1}
+};
+
+
 void cAlloc (int argc, char **argv)
 {
 	if (argc < 2 || argc > 3) return;
@@ -96,18 +103,6 @@ void cAlloc (int argc, char **argv)
 	void *ptr = appMalloc (size, al);
 	appPrintf ("... ret = %X\n", ptr);
 }
-
-
-void quit (int, char**)
-{
-	exit(0);
-}
-
-
-static CSimpleCommand commands[] = {
-	{"quit",quit},
-	{"xcpt",cmd1}
-};
 
 
 void cUsage (bool a)
@@ -164,27 +159,24 @@ void cSym (bool usage, int argc, char **argv)
 
 int main(int argc, char* argv[])
 {
-	GUARD_BEGIN
-	{
+	TRY {
 		Out.Register ();
 		appInit ();//!!"", &Out, &Err);
 
 		RegisterCommand ("args", cArgs);
 		RegisterCommand ("usage", cUsage);
 		RegisterCommand ("both", cBoth);
-		RegisterCommand ("uncol", cUncol);
-		RegisterCommand ("clen", cClen);
 		RegisterCommand ("alloc", cAlloc);
 		RegisterCommand ("dir", cDir);
 		RegisterCommand ("sym", cSym);
 
 		guard(MainLoop);
-		while (true)
+		while (!GIsRequestingExit)
 		{
 			appPrintf (">");
 			char buf[1024];
 			gets (buf);
-			if (!buf[0]) break;
+			if (!buf[0]) continue;
 
 			if (!ExecuteCommand (buf, ARRAY_ARG(commands)))
 			{
@@ -193,12 +185,10 @@ int main(int argc, char* argv[])
 			}
 		}
 		unguard;
-	}
-	GUARD_CATCH
-	{
-		appDisplayError ();
-		return 1;
+	} CATCH {
+		GIsFatalError = true;
 	}
 
+	appExit ();
 	return 0;
 }

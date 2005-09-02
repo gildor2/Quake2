@@ -20,26 +20,35 @@ public:
 		Unregister ();
 		delete buffer;
 	}
-	inline const char *GetText ()
+	inline const char *GetText () const
 	{
 		return buffer;
 	}
 	void Write (const char *str)
 	{
 		int len = strlen (str);
-		if (used + len + 1 >= size - 2)	// 2 is place for S_WHITE
+		//?? Move S_WHITE part to appPrintf(); add when string is colored only!
+		//?? Problem with this: when string not fits to buffer in 1 byte,
+		//?? COLOR_ESCAPE will be added, but C_WHITE - not
+		int len2 = len;
+		if (!NoColors) len2 += 2;			// place for S_WHITE
+		if (used + len2 + 1 >= size)
 		{
 			// shrink len
-			len = size - 2 - used - 1;
+			len2 = size - used - 1;
+			if (!NoColors) len = len2 - 2;	// ...
 		}
-		if (len > 0)
+		if (len <= 0) return;
+		// add text to buffer
+		memcpy (buffer + used, str, len);
+		used += len;
+		// add S_WHITE to the end of string
+		if (!NoColors)
 		{
-			// add text to buffer
-			memcpy (buffer + used, str, len);
-			used += len;
 			buffer[used++] = COLOR_ESCAPE;
 			buffer[used++] = '0' + C_WHITE;
-			buffer[used] = 0;
 		}
+		// add trailing zero
+		buffer[used] = 0;
 	}
 };

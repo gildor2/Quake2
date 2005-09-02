@@ -1,3 +1,10 @@
+/*=============================================================================
+
+	Core definitions for Win32/VisualC++ platform
+
+=============================================================================*/
+
+
 /*-----------------------------------------------------------------------------
 	Platform-specific type defines
 -----------------------------------------------------------------------------*/
@@ -56,6 +63,7 @@ typedef unsigned int	address_t;
 #pragma warning(disable : 4275)			// non dll-interface class used as base for dll-interface class
 #pragma warning(disable : 4305)			// truncation from 'const double' to 'const float'
 #pragma warning(disable : 4244)			// conversion from 'int'/'double' to 'float'
+#pragma warning(disable : 4509)			// nonstandard extension used: function uses SEH and object has destructor
 
 
 const char *appGetSystemErrorMessage (unsigned code);
@@ -151,8 +159,8 @@ inline __int64 appCycles64 ()
 		}								\
 	}
 
-#define GUARD_BEGIN	try
-#define GUARD_CATCH	catch (...)
+#define TRY		try
+#define CATCH	catch (...)
 
 #else // WIN32_USE_SEH
 
@@ -185,7 +193,7 @@ CORE_API int win32ExceptFilter2 ();
 		}								\
 	}
 
-#define GUARD_BEGIN	__try
-#define GUARD_CATCH	__except (EXCEPT_FILTER)
+#define TRY		__try
+#define CATCH	__except (EXCEPT_FILTER)
 
 #endif // WIN32_USE_SEH

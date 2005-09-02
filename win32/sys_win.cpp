@@ -11,16 +11,6 @@ bool		ActiveApp, MinimizedApp, FullscreenApp;
 unsigned	sys_frame_time;			//?? used in cl_input.cpp only
 
 
-void Sys_Quit ()
-{
-#ifndef DEDICATED_ONLY
-	if (DEDICATED) FreeConsole ();
-#endif
-	appExit ();
-	exit (0);
-}
-
-
 static char *ScanForCD ()
 {
 #ifdef CD_PATH
@@ -222,7 +212,8 @@ void Sys_ProcessMessages ()
 	MSG		msg;
 	while (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
 	{
-		if (msg.message == WM_QUIT) Com_Quit ();
+		if (msg.message == WM_QUIT)
+			GIsRequestingExit = true;
 
 		// TranslateMessage() used for convert VK_XXX messages to WM_CHAR-like
 		// We don't need this, but keep TranslateMessage() just in case of compatibility
@@ -330,7 +321,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 int main (int argc, const char **argv) // force to link as console application
 #endif
 {
-	GUARD_BEGIN
+	TRY
 	{
 #ifndef DEDICATED_ONLY
 		global_hInstance = hInstance;
@@ -372,7 +363,7 @@ int main (int argc, const char **argv) // force to link as console application
 
 		/*--------- main window message loop ------------*/
 		guard(MainLoop);
-		while (true)
+		while (!GIsRequestingExit)
 		{
 #ifndef DEDICATED_ONLY
 			if (!ActiveApp || DEDICATED)
@@ -399,43 +390,36 @@ int main (int argc, const char **argv) // force to link as console application
 				if (timeDelta > 1.0f) break;	//?? client (or server?) time bugs with ">0" condition & cl_maxfps < realFPS -- net/prediction errors
 				Sleep (0);
 			}
-			GUARD_BEGIN {
+			TRY {
 				Com_Frame (timeDelta);
-			} GUARD_CATCH {
-				if (GErr.nonFatalError)
-				{
-					//!! check old behaviour on DropError(NULL)
-					SV_Shutdown (va("Server crashed: %s\n", *GErr.Message));	// message
-					Com_DPrintf ("History: %s\n", *GErr.History);				// history
-					if (!DEDICATED) CL_Drop (true);
-					GErr.Reset ();
-				}
-				else
-					throw;		// go to outer GUARD_CATCH{}
+			} CATCH {
+				if (!GErr.nonFatalError) throw;		// go to outer CATCH{}
+
+				//!! check old behaviour on DropError(NULL)
+				SV_Shutdown (va("Server crashed: %s\n", *GErr.Message));	// message
+				Com_DPrintf ("History: %s\n", *GErr.History);				// history
+				if (!DEDICATED) CL_Drop (true);
+				GErr.Reset ();
 			}
 			oldtime = newtime;
 		}
 		unguard;
-	} GUARD_CATCH {
+	} CATCH {
+		GIsFatalError = true;
 		if (debugLogged)
 			DebugPrintf ("***** CRASH *****\n%s\n*****************\n", *GErr.History);
-		GUARD_BEGIN {
-			// shutdown all subsystems
-			SV_Shutdown (va("Server fatal crashed: %s\n", *GErr.Message));
-			CL_Shutdown ();
-		} GUARD_CATCH {
-			// nothing here ...
-		}
-		// display error
+	}
+
+	// shutdown all systems
+	TRY {
+		SV_Shutdown (GIsFatalError ? va("Server fatal crashed: %s\n", *GErr.Message) : "Server quit\n");
+		CL_Shutdown ();
 #ifndef DEDICATED_ONLY
-		appDisplayError ();
-#else
-		Win32Log.Printf ("\n\n"S_RED"--------------------\n%s fatal error\n", appPackage ());
-		Win32Log.Printf ("%s\nHistory: %s\n", *GErr.Message, *GErr.History);
+		if (DEDICATED) FreeConsole ();
 #endif
 	}
-	// will get here only when fatal error happens
-	Sys_Quit ();
-	// and will never get here ... (NORETURN Sys_Quit())
+	CATCH {}	// nothing ...
+
+	appExit ();
 	return 0;
 }

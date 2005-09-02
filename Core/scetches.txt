@@ -1,6 +1,3 @@
-? #define for_each(var,list)		for (var=list->First(); var; var=list->Next(var))
-          for_each2(type,var,list)	for (type *var=list->First(); var; var=list->Next(var))
-
 FILE SYSTEM
 ~~~~~~~~~~~
 ? special syntax: "pakname:path/filename.ext" -- ability to access explicit pak file
@@ -120,14 +117,15 @@ COMMAND SYSTEM
 ~~~~~~~~~~~~~~
 - aliases: add support for bash_function-like arguments (bash have no args for aliases, but our command system have no functions ...)
   ? make as function? aliases - no args
-? make separate command system for each subsystem (+ global ?)
 
 
 COMMON
 ~~~~~~
 - extend TList with item count (different base class + new InsertItem(), change constructor)
-- exit/quit cmd: add "bool GRequestingExit" and use it in a main app loop
-- main loop + error handling: implement as #define in VcWin32.h (or in Core.h as generic case)
+? console window: set title to appPackage()
+- COutputDeviceXxxx.h -> Core.h + CORE_API; rename to COutputStream ?
+? iterators: make template, not based on any class (base is not needed?!), and iterate any class, containing field "next",
+  pointed to the same data type
 
 
 MEMORY

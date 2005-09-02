@@ -59,7 +59,6 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 {
 	static const char *shTypes[] = {"", "sky", "fog", "por"};
 	static const char *boolNames[] = {" ", "+"};
-	static const char *badNames[] = {"", S_RED" (errors)"S_WHITE};
 
 	if (argc > 2 || usage)
 	{
@@ -99,8 +98,12 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 		else
 			color = "";
 
+		const char *rem = "";
+		if (sh->noDraw) rem = S_YELLOW" (nodraw)"S_WHITE;
+		if (sh->bad) rem = S_RED" (errors)"S_WHITE;
+		if (sh->style & SHADER_ABSTRACT) rem = S_YELLOW" (abstract)"S_WHITE;
 		appPrintf ("%-3d %d  %2s %-2d %3s  %-3s %s%s%s\n", i, sh->numStages, lmInfo,
-			sh->sortParam, shTypes[sh->type], boolNames[sh->scripted], color, *sh->Name, badNames[sh->bad]);
+			sh->sortParam, shTypes[sh->type], boolNames[sh->scripted], color, *sh->Name, rem);
 	}
 	appPrintf ("Displayed %d/%d shaders\n", n, shaderCount);
 }
@@ -270,7 +273,8 @@ static void ExtractShader (shader_t *shader)
 }
 
 
-static shader_t *FinishShader ()	//!!!! rename function
+//!!!! rename function
+static shader_t *FinishShader ()
 {
 	if (sh.type == SHADERTYPE_SKY)
 		sh.sortParam = SORT_SKY;
@@ -356,6 +360,7 @@ static shader_t *FinishShader ()	//!!!! rename function
 				sh.dependOnTime = true;
 	}
 	sh.numStages = numStages;
+	if (!numStages && !(sh.style & SHADER_ABSTRACT)) sh.noDraw = true;
 
 	// exchange 1st 2 stages, when 2nd stage uses DSTALPHA (to allow correct drawing in 16-bit modes)
 	//?? check: is it correct, when 3rd stage uses DSTALPHA too?

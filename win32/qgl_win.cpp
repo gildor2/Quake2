@@ -6,7 +6,6 @@
 #endif
 
 #include "../ref_gl/OpenGLDrv.h"
-#include <time.h>
 
 #ifdef _WIN32
 #	include "gl_win.h"				// gl_hDC
@@ -379,21 +378,15 @@ void QGL_EnableLogging (bool enable)
 	{
 		if (!LogFile)
 		{
-			time_t	itime;
-			char	ctime[256];
-
-			time (&itime);
-			strftime (ARRAY_ARG(ctime), "%a %b %d, %Y (%H:%M:%S)", localtime (&itime));
-
 			LogFile = new COutputDeviceFile ("gl.log");
 			if (!LogFile->IsOpened ())
 			{
-				delete LogFile;
-				LogFile = NULL;
+//				delete LogFile; -- if enable this, logfile will be tried to create every frame ...
+//				LogFile = NULL;
 				appWPrintf ("QGL_EnableLogging: unable to create file\n");
 				return;
 			}
-			LogFile->Printf ("\n---------------------------\n%s\n---------------------------\n", ctime);
+			LogFile->Printf ("\n---------------------------\n%s\n---------------------------\n", appTimestamp ());
 		}
 
 		qgl = logFuncs;
