@@ -10,7 +10,8 @@
  *	for appError()/appNonFatalError() (otherwise, unhandled GPF will be generated)
  */
 
-bool GIsFatalError;
+bool			GIsFatalError;
+CErrorHandler	GErr;
 
 
 /*-----------------------------------------------------------------------------
@@ -32,6 +33,7 @@ COutputDevice *appGetErrorLog ()
 		ErrLog.Printf ("-------------------------------------------\n");
 		ErrLog.Printf ("%s crash, %s\n", appPackage (), appTimestamp ());
 		ErrLog.Printf ("-------------------------------------------\n");
+		ErrLog.Printf ("OS: %s\nCPU: %s\n", GMachineOS, GMachineCPU);
 		ErrLog.Printf ("\nERROR: %s\n\n", *GErr.Message);
 	}
 	return &ErrLog;
@@ -66,12 +68,12 @@ static void LogHistory (const char *part)
 	Error throwing
 -----------------------------------------------------------------------------*/
 
-CErrorHandler GErr;
-
 void appFatalError (const char *fmt, ...)
 {
-	GErr.swError = true;
+	GErr.swError  = true;
 	GIsFatalError = true;
+
+	GLogHook = NULL;
 
 	char buf[1024];
 	va_list argptr;
@@ -79,7 +81,7 @@ void appFatalError (const char *fmt, ...)
 	vsnprintf (ARRAY_ARG(buf), fmt, argptr);
 	va_end (argptr);
 
-//??	if (debugLogged) DebugPrintf ("FATAL ERROR: %s\n", buf);
+//??	if (debugLog) debugLog->Printf ("FATAL ERROR: %s\n", buf);
 	// open log
 	if (!ErrLogOpened)
 	{
@@ -102,6 +104,8 @@ void appNonFatalError (const char *fmt, ...)
 {
 	GErr.swError       = true;
 	GErr.nonFatalError = true;
+
+	GLogHook = NULL;
 
 	if (fmt)
 	{

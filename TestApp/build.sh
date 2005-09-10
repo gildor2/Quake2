@@ -19,7 +19,6 @@ rm -f $logfile
 TIMEFORMAT="Total time: %1R sec"
 time vc32tools --make quake2 TestApp
 
-cd Tools/SymInfoBuilder
-./work.pl ../../TestApp
+Tools/SymInfoBuilder/work.pl TestApp
 
 echo "Build done."

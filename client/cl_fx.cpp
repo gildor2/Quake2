@@ -1827,6 +1827,7 @@ void CL_TrapParticles (const CVec3 &origin)
 				p->color = 0xE0 + (rand()&3);
 				p->alphavel = -1.0 / (0.3 + (rand()&7) * 0.02);
 
+				//?? rand() * crand() ??
 				p->org[0] = org[0] + i + ((rand()&23) * crand());
 				p->org[1] = org[1] + j + ((rand()&23) * crand());
 				p->org[2] = org[2] + k + ((rand()&23) * crand());

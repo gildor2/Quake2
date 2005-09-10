@@ -29,7 +29,9 @@ CORE = \
 	$D/ScriptParser.cpp \
 	$D/Strings.cpp \
 	$D/TextContainer.cpp \
-#	$D/FileSystem.cpp \
+	$D/FileSystem.cpp \
+	$D/FileContainerArc.cpp \
+	$D/FileSystemWin32.cpp
 #	$D/Commands.cpp \
 #	$D/Core.cpp
 CORE_WIN32 = \
@@ -223,7 +225,7 @@ sources(TEST) = $CORE $CORE_WIN32
 #-- app files
 TEST_FILES = TestApp/TestApp.cpp
 #-- files, required for Core to be standalone
-TEST_FILES += Core/Src/Commands.cpp Core/Src/FileSystem.cpp Core/Src/FileSystemWin32.cpp
+TEST_FILES += Core/Src/Commands.cpp
 OBJDIR = $OUT/obj/TestApp
 sources(TEST) = $TEST_FILES
 

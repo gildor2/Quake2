@@ -97,7 +97,7 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 
 	FS_CreatePath (Name);
 	FILE *f;
-	if (!(f = fopen (Name, "w")))
+	if (!(f = fopen (Name, "w")))	//?? use COutputDevice
 	{
 		appWPrintf ("ERROR: couldn't open %s\n", *Name);
 		return;
@@ -452,8 +452,12 @@ void Con_DrawConsole (float frac)
 		lines = viddef.height;
 
 	// draw the background
+#if 1
 //	RE_Fill (0, 0, viddef.width, lines, RGBA(0,0,0.02,Cvar_VariableValue("con_alpha")));
 	RE_Fill (0, 0, viddef.width, lines, RGBA(0,0,0.02,0.75));
+#else
+	RE_DrawStretchPic (0, 0, viddef.width, lines, "pics/console");
+#endif
 	if (lines < viddef.height)
 		RE_Fill (0, lines - 1, viddef.width, 1, RGBA(0.2,0.2,0.2,0.8));
 

@@ -4,6 +4,7 @@
 - explosions are invisible through non-transparent water (incorrect server-side PVS cull ?) -- should be at least dlights ?? (or not?)
 - when game paused: moving mouse will not rotate view, but when game unpaused -- will rotate to moved amount (should not rotate)
 ? game, base1, kill all grunts -- dead bodies will fall through floor
+- jumpy demo "tower" (at home, all Q2 versions -- at least from p10) -- low fps on original server computer ?
 
 - q3 player model animation:
   - when standing on a movable entity - legs will move in entity direction:
@@ -33,8 +34,6 @@
   - when q2 launched from "release" directory (w/o baseq2 subdir), FS "search paths" will be empty, "dir" command will not work at all
     (possible in dedicated server only)
 
-- WIN32_USE_SEH=0, "error -gpf": crash log will contain error history only
-
 - command completion: complete cvar with quotes - should use Com_QuoteString() before inserting into edit line; bugcheck:
   1) a="""a""" b """c"""; 2) a->complete+ENTER; 3) a->complete --> will be a different line
 
@@ -48,7 +47,7 @@ UNRECOVARABLE:
 ~~~~~~~~~~~~~~
 - rogue demo3: ".../items/defender/tris..." - linked NULL-model entity (modelindex2 > max available model index)
   reason: old rogue used linked model ".../shell/...", but link was created using "modelindex|0x80"; now rogue is new, but this
-  demo was recorded using this buggy game
+  demo was recorded using old game
 
 
 BUGGY MAPS:
@@ -109,5 +108,6 @@ SOURCE FILES (COMPILER):
     to members directly (as field)
     VisualC++ have no such problem, but when VC6 inlined dot() everywhere, VC7 inlined most of calls, but some calls
     made as call to separate function.
+  - not understand template classes as friends (VC7 - OK)
 - (VisualC++ 7) -- cannot use default arguments for functions, which are part of structure
   Workaround: should use Struc_Func() inline (with default args) instead of struc.Func() call

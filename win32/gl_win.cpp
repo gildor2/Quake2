@@ -110,7 +110,7 @@ void GLimp_SetGamma (float gamma)
 		int v = appRound (tmp);
 #endif
 
-		if (_winmajor >= 5)						//?? may not work in DLL
+		if (GIsWin2K)
 		{
 			// Win2K/XP performs checking of gamma ramp and may reject it
 #ifndef FIND_GAMMA
@@ -150,13 +150,18 @@ void GLimp_SetGamma (float gamma)
 static HGLRC	contextHandle;
 static bool		contextActive;
 
+static void ErrFail (const char *what)
+{
+	int err = GetLastError ();
+	appWPrintf ("...%s failed\nError %d  %s\n", what, err, appGetSystemErrorMessage (err));
+}
 
 static bool CreateGLcontext ()
 {
 	contextActive = false;
 	if (!(contextHandle = wglCreateContext (gl_hDC)))
 	{
-		appWPrintf ("...CreateGLcontext() failed\n");
+		ErrFail ("CreateGLcontext()");
 		return false;
 	}
 	return true;
@@ -169,7 +174,7 @@ static bool ActivateGLcontext ()
 	// 1st - activate context, 2nd - enable rendering
 	if (!wglMakeCurrent (gl_hDC, contextHandle))
 	{
-		appWPrintf ("...ActivateGLcontext() failed\n");
+		ErrFail ("ActivateGLcontext()");
 		return false;
 	}
 	contextActive = true;
@@ -184,7 +189,7 @@ static bool DeactivateGLcontext ()
 	GL_EnableRendering (false);
 	if (!wglMakeCurrent (gl_hDC, NULL))
 	{
-		appWPrintf ("...DeactivateGLcontext() failed\n");
+		ErrFail ("DeactivateGLcontext()");
 		return false;
 	}
 	contextActive = false;
@@ -198,7 +203,7 @@ static bool DestoryGLcontext ()
 	if (!DeactivateGLcontext ()) return false;
 	if (!wglDeleteContext (contextHandle))
 	{
-		appWPrintf ("...DestoryGLcontext() failed...\n");
+		ErrFail ("DestoryGLcontext()");
 		return false;
 	}
 	contextHandle = NULL;
@@ -238,12 +243,12 @@ static bool GLimp_SetPixelFormat ()
 
 	if ((pixelformat = wglChoosePixelFormat (gl_hDC, &pfdBase)) == 0)
 	{
-		appWPrintf ("(wgl)ChoosePixelFormat() failed\n");
+		ErrFail ("(wgl)ChoosePixelFormat()");
 		return false;
 	}
 	if (wglSetPixelFormat (gl_hDC, pixelformat, &pfdBase) == FALSE)
 	{
-		appWPrintf ("(wgl)SetPixelFormat() failed\n");
+		ErrFail ("(wgl)SetPixelFormat()");
 		return false;
 	}
 	wglDescribePixelFormat (gl_hDC, pixelformat, sizeof(pfd), &pfd);
@@ -269,7 +274,7 @@ static bool GLimp_InitGL ()
 	// get a DC for the specified window
 	if ((gl_hDC = GetDC (gl_hWnd)) == NULL)
 	{
-		appWPrintf ("...GetDC() failed\n");
+		ErrFail ("GetDC()");
 		return false;
 	}
 
@@ -304,21 +309,6 @@ bool GLimp_SetMode (unsigned *pwidth, unsigned *pheight, int mode, bool fullscre
 
 	colorBits = gl_bitdepth->integer;
 	gl_bitdepth->modified = false;
-
-	// check Win95
-	if (gl_bitdepth->integer)
-	{
-		OSVERSIONINFO	vinfo;
-		vinfo.dwOSVersionInfoSize = sizeof(vinfo);
-		GetVersionEx (&vinfo);
-		if (vinfo.dwMajorVersion == 4 &&
-			vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS &&		// Win9x
-			LOWORD(vinfo.dwBuildNumber) < 1111)						// OSR2_BUILD_NUMBER
-		{
-			appWPrintf ("Changing color bitdepth under Win95 requires OSR2\n" );
-			colorBits = 0;
-		}
-	}
 
 	// do a CDS if needed
 	if (fullscreen)
@@ -384,7 +374,7 @@ void GLimp_Shutdown (bool complete)
 	if (gl_hDC)
 	{
 		if (!ReleaseDC (gl_hWnd, gl_hDC))
-			appWPrintf ("...ReleaseDC() failed\n");
+			ErrFail ("ReleaseDC()");
 		gl_hDC = NULL;
 	}
 

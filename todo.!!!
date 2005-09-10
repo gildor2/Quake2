@@ -1,8 +1,5 @@
 BUGS:
 ~~~~~
-  *? 1st try to start demomap after start, when no d1 alias -- "killserver+menu_main"
-  - jumpy demo "tower" (at home, all Q2 versions -- at least from p10) -- low fps on original server computer ?
-
 - com_speeds: currently, displays some server stats - can use sv_texts.cpp funcs for this; and - separate cvar for this
 - software gamma: should use identityLight corrected by gamma(but: 1**any==1 ?!)/brightness/contrast (not overbright only)
   ? but: sometimes texture modulated by identityLight; separate identityLight and textureIdentityLight ??

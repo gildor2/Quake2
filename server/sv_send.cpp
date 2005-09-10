@@ -406,14 +406,14 @@ bool SV_SendClientDatagram (client_t *client)
 	// it is necessary for this to be after the WriteEntities
 	// so that entity references will be current
 	if (client->datagram.overflowed)
-		appWPrintf ("Datagram overflowed for %s\n", client->name);
+		appWPrintf ("Datagram overflowed for %s\n", *client->Name);
 	else
 		msg.Write (client->datagram);
 	client->datagram.Clear ();
 
 	if (msg.overflowed)
 	{	// must have room left for the packet header
-		appWPrintf ("Msg overflowed for %s\n", client->name);
+		appWPrintf ("Msg overflowed for %s\n", *client->Name);
 		msg.Clear ();
 	}
 

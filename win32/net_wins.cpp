@@ -298,7 +298,7 @@ bool NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_msg)
 		return false;
 	}
 
-	if (ret == net_msg->maxsize)
+	if (ret >= net_msg->maxsize)
 	{
 		appWPrintf ("Oversize packet from %s\n", NET_AdrToString (net_from));
 		return false;

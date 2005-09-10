@@ -1,4 +1,4 @@
 #!/bin/bash
 
-rm -rf obj
+rm -rf ../Release/obj/TestApp
 rm -f *.log *.pdb

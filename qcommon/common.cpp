@@ -1,7 +1,4 @@
 #include "qcommon.h"
-
-#define	MAXPRINTMSG	4096
-
 #include "../client/ref.h"	// using RE_DrawTextXxx () for com_speeds
 #include "OutputDeviceFile.h"
 
@@ -48,7 +45,7 @@ void Com_DPrintf (const char *fmt, ...)
 	if (!DEVELOPER) return;
 
 	va_list	argptr;
-	char	msg[MAXPRINTMSG];
+	char	msg[4096];
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
@@ -62,25 +59,23 @@ void Com_DPrintf (const char *fmt, ...)
 #endif
 
 
-bool debugLogged = false;
+COutputDevice *debugLog;	// can initialize with GNull (COutputDeviceNull) ?
 
 void DebugPrintf (const char *fmt, ...)
 {
 	va_list	argptr;
-	char	msg[1024];
-
+	char	msg[4096];
 	va_start (argptr,fmt);
 	vsnprintf (ARRAY_ARG(msg),fmt,argptr);
 	va_end (argptr);
 
-	FILE *log = fopen ("debug.log", "a+");
-	if (!debugLogged)
+	if (!debugLog)
 	{
-		fprintf (log, "\n\n----- " APPNAME " debug log on %s -----\n", appTimestamp ());
-		debugLogged = true;
+		debugLog = new COutputDeviceFile ("debug.log");
+		debugLog->Printf ("\n\n----- %s debug log, %s -----\n", appPackage (), appTimestamp ());
 	}
-	fprintf (log, "%s", msg);
-	fclose (log);
+	debugLog->Write (msg);
+	debugLog->Flush ();
 }
 
 
@@ -156,14 +151,8 @@ void Com_SetServerState (server_state_t state)
 
 
 #if 1
-// 0 to 1
-float frand (void)
-{
-	return rand() * (1.0f/RAND_MAX);
-}
-
 // -1 to 1
-float crand (void)
+float crand ()
 {
 	return rand() * (2.0f/RAND_MAX) - 1;
 }
@@ -451,7 +440,7 @@ bool Com_CheckCmdlineVar (const char *name)
 }
 
 
-static void PushCmdline (void)
+static void PushCmdline ()
 {
 	for (int i = 0; i < cmdlineNumParts; i++)
 	{

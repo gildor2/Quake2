@@ -25,8 +25,8 @@ void appLoadDebugSymbols ()
 {
 	guard(appLoadDebugSymbols);
 
-	//?? should use engine file system (can GZip debug file)
-	FILE *f = fopen (DBG_SYMBOLS_FILE, "rb");
+	//?? can GZip debug file
+	CFile *f = appOpenFile (DBG_SYMBOLS_FILE);
 	if (!f)
 	{
 		appPrintf (DBG_SYMBOLS_FILE " is not found\n");		//?? DPrintf
@@ -35,45 +35,32 @@ void appLoadDebugSymbols ()
 
 	while (true)
 	{
-		char	c, pkgName[MAX_PKG_NAME];
-		CSymbol *lastSym;
-
-		// read package name
-		int i = 0;
-
-		do
+		if (f->Eof ())
 		{
-			if (fread (&c, sizeof(char), 1, f) != 1) appError ("unexpected EOF");
-			if (i >= sizeof(pkgName)) appError ("package name too long");
-			pkgName[i++] = c;
-		} while (c);
-
+			appWPrintf (DBG_SYMBOLS_FILE ": unexpected EOF\n");
+			break;
+		}
+		// read package name
+		char pkgName[256];
+		f->ReadString (ARRAY_ARG(pkgName));
 		if (!pkgName[0]) break;		// eof mark
 
 		if (dbgPackages >= MAX_PACKAGES)
 			appError ("too much packages");
 
 		CPackageSymbols *pkg = pkgDebugInfo[dbgPackages++] = new CPackageSymbols;
-		lastSym = NULL;
+		CSymbol *lastSym = NULL;
 
 		appStrcpy (pkg->name, pkgName);
 		// read symbols
 		while (true)
 		{
-			char	c, symName[256];
-			unsigned addr;
-
 			// read symbol address
-			if (fread (&addr, sizeof(unsigned), 1, f) != 1) appError ("unexpected EOF");
+			unsigned addr = f->ReadInt ();		//?? can use ReadIndex() for more compact file
 			if (!addr) break;		// end of package mark
 			// read symbol name
-			i = 0;
-			do
-			{
-				if (fread (&c, sizeof(char), 1, f) != 1) appError ("unexpected EOF");
-				if (i >= sizeof(symName)) appError ("symbol name too long");
-				symName[i++] = c;
-			} while (c);
+			char symName[256];
+			f->ReadString (ARRAY_ARG(symName));
 
 			CSymbol *sym = new (symName, pkg) CSymbol;
 			sym->address = addr;
@@ -83,7 +70,7 @@ void appLoadDebugSymbols ()
 		}
 	}
 
-	fclose (f);
+	delete f;
 
 #if 0
 #include "OutputDeviceFile.h"
@@ -106,7 +93,6 @@ bool appSymbolName (address_t addr, char *buffer, int size)
 {
 	char	package[256];
 	int		offset;
-
 	if (!osAddressInfo (addr, ARRAY_ARG(package), &offset))
 		return false;
 
@@ -117,10 +103,10 @@ bool appSymbolName (address_t addr, char *buffer, int size)
 		CPackageSymbols *pkg = pkgDebugInfo[i];
 		if (!appStricmp (pkg->name, package))
 		{
-			for (CSymbol *s = pkg->First(); s; s = pkg->Next(s))
+			for (TListIterator<CSymbol> s = *pkg; s; ++s)
 			{
 				if (s->address > offset) break;
-				sym = s;
+				sym = *s;
 			}
 			break;
 		}
@@ -158,10 +144,9 @@ const char *appSymbolName (address_t addr)
 {
 	static char	buf[256];
 
-	if (appSymbolName (addr, ARRAY_ARG(buf)))
-		return buf;
-	else
-		return va("%08X", addr);
+	if (!appSymbolName (addr, ARRAY_ARG(buf)))
+		appSprintf (ARRAY_ARG(buf), "%08X", addr);
+	return buf;
 }
 
 #endif					// DBG_SYMBOLS

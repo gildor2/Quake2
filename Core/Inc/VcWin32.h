@@ -67,6 +67,7 @@ typedef unsigned int	address_t;
 
 
 const char *appGetSystemErrorMessage (unsigned code);
+extern bool GIsWinNT, GIsWin2K;
 
 
 /*-----------------------------------------------------------------------------

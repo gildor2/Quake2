@@ -8,6 +8,10 @@
 // need qboolean declaration for game library interface
 typedef unsigned			qboolean;
 
+// gi.BoxEdicts() can return a list of either solid or trigger entities; migrated from q_shared.h
+#define	AREA_SOLID			1
+#define	AREA_TRIGGERS		2
+
 // edict->svflags
 
 #define	SVF_NOCLIENT		0x00000001	// don't send entity to clients, even if it has effects

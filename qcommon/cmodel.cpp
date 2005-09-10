@@ -265,7 +265,7 @@ static material_t CMod_GetSurfMaterial (const char *name)
 CMod_LoadSubmodels
 =================
 */
-static void CMod_LoadSubmodels (cmodel_t *data, int count)
+inline void CMod_LoadSubmodels (cmodel_t *data, int count)
 {
 	map_cmodels = data;
 	numcmodels = count;
@@ -488,7 +488,7 @@ static void CMod_LoadAreas (darea_t *data, int size)
 CMod_LoadAreaPortals
 =================
 */
-static void CMod_LoadAreaPortals (dareaportal_t *data, int size)
+inline void CMod_LoadAreaPortals (dareaportal_t *data, int size)
 {
 	numareaportals = size;
 	map_areaportals = data;
@@ -499,7 +499,7 @@ static void CMod_LoadAreaPortals (dareaportal_t *data, int size)
 CMod_LoadVisibility
 =================
 */
-static void CMod_LoadVisibility (dvis_t *data, int size)
+inline void CMod_LoadVisibility (dvis_t *data, int size)
 {
 	numvisibility = size;
 	map_visibility = (byte *) data;
@@ -511,7 +511,7 @@ static void CMod_LoadVisibility (dvis_t *data, int size)
 CMod_LoadEntityString
 =================
 */
-static void CMod_LoadEntityString (const char *data, int size)
+inline void CMod_LoadEntityString (const char *data, int size)
 {
 	numentitychars = size;
 	map_entitystring = data;
@@ -1261,12 +1261,11 @@ int CM_BoxLeafnums (const CBox &bounds, int *list, int listsize, int *topnode, i
 {
 	guard(CM_BoxLeafnums);
 
-	int	stack[MAX_TREE_DEPTH], sptr;			// stack
+	int	stack[MAX_TREE_DEPTH], sptr = 0;		// stack
 	int count = 0;
 	int _topnode = -1;
 	int nodenum = headnode;
 
-	sptr = 0;
 	while (true)
 	{
 		if (nodenum < 0)
@@ -1319,6 +1318,7 @@ static struct
 {
 	CVec3	start, end;
 	CBox	bounds;
+	CVec3	boundsVecs[8];	// corners of bounds
 	CVec3	extents;
 	trace_t	trace;
 	unsigned contents;
@@ -1366,11 +1366,7 @@ static void ClipBoxToBrush (const cbrush_t &brush)
 			}
 			else
 			{
-				CVec3 ofs;
-				int signbits = plane->signbits;
-				for (int j = 0; j < 3; j++, signbits >>= 1)
-					ofs[j] = (signbits & 1) ? tr.bounds.maxs[j] : tr.bounds.mins[j];
-				dist = plane->dist - dot (plane->normal, ofs);
+				dist = plane->dist - dot (plane->normal, tr.boundsVecs[plane->signbits]);
 			}
 		}
 		else
@@ -1512,13 +1508,7 @@ static bool TestBoxInBrush (const cbrush_t &brush)
 		else if (plane->type <= PLANE_MZ)
 			size = tr.bounds.maxs[plane->type-3];
 		else
-		{
-			CVec3	ofs;
-			int signbits = plane->signbits;
-			for (int j = 0; j < 3; j++, signbits >>= 1)
-				ofs[j] = (signbits & 1) ? tr.bounds.maxs[j] : tr.bounds.mins[j];
-			size = - dot(plane->normal, ofs);
-		}
+			size = - dot(plane->normal, tr.boundsVecs[plane->signbits]);
 
 		float d = plane->DistanceTo (tr.start) - size;
 		// if completely in front of face, no intersection
@@ -1726,6 +1716,12 @@ void CM_BoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CB
 	tr.start    = start;
 	tr.end      = end;
 	tr.bounds   = bounds;
+	for (int boundsVec = 0; boundsVec < 8; boundsVec++)
+	{
+		int signbits = boundsVec;
+		for (int j = 0; j < 3; j++, signbits >>= 1)
+			tr.boundsVecs[boundsVec][j] = (signbits & 1) ? bounds.maxs[j] : bounds.mins[j];
+	}
 
 	// check for "position test" special case
 	if (start[0] == end[0] && start[1] == end[1] && start[2] == end[2])
@@ -2289,8 +2285,7 @@ bool CM_HeadnodeVisible (int nodenum, const byte *visbits)
 {
 	guard(CM_HeadnodeVisible);
 
-	int		stack[MAX_TREE_DEPTH], sptr;	// stack
-	sptr = 0;
+	int stack[MAX_TREE_DEPTH], sptr = 0;	// stack
 	while (true)
 	{
 		if (nodenum < 0)

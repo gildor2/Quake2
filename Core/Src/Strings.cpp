@@ -320,6 +320,8 @@ bool appMatchWildcard (const char *name, const char *mask, bool ignoreCase)
 {
 	guardSlow(appMatchWildcard);
 
+	if (!name[0] && !mask[0]) return true;		// empty strings matched
+
 	TString<256> MaskCopy, NameCopy;
 	if (ignoreCase)
 	{
@@ -436,14 +438,28 @@ char *CopyString (const char *str, CMemoryChain *chain)
 	String lists
 -----------------------------------------------------------------------------*/
 
+#ifdef STRING_ITEM_TRICK
+// We allocate string in the same block, as CStringItem; but we cannot initialize
+// CStringItem.name field in common case: offset to this field depends on presense
+// of VMT in derived class (basic CStringItem - have no virtual methods, but derived
+// class can have it ...)
+// To resolve this problem, we using a simple trick with static AllocatedName.
+char *CStringItem::AllocatedName;
+#endif
+
 void* CStringItem::operator new (size_t size, const char *str)
 {
 	guardSlow(CStringItem::new);
 	MEM_ALLOCATOR(size);
 	int len = strlen (str) + 1;
 	CStringItem *item = (CStringItem*) appMalloc (size + len);
+#ifndef STRING_ITEM_TRICK
 	item->name = (char*) OffsetPointer (item, size);
 	memcpy (item->name, str, len);			// may be faster than strcpy()
+#else
+	AllocatedName = (char*) OffsetPointer (item, size);
+	memcpy (AllocatedName, str, len);
+#endif
 
 	return item;
 	unguardSlow;
@@ -453,19 +469,39 @@ void* CStringItem::operator new (size_t size, const char *str)
 void* CStringItem::operator new (size_t size, const char *str, CMemoryChain *chain)
 {
 	guardSlow(CStringItem::new(chain));
+#if 0
+	// allocate CStringItem and string in a single block
 	int len = strlen (str) + 1;
 	CStringItem *item = (CStringItem*) chain->Alloc (size + len);
 	item->name = (char*) OffsetPointer (item, size);
 	memcpy (item->name, str, len);			// may be faster than strcpy()
+#else
+	// 2 separate blocks: may be more effective memory usage
+	CStringItem *item = (CStringItem*) chain->Alloc (size);
+  #ifndef STRING_ITEM_TRICK
+	item->name = CopyString (str, chain);
+  #else
+	AllocatedName = CopyString (str, chain);
+  #endif
+#endif
 
 	return item;
 	unguardSlow;
 }
 
+#ifdef STRING_ITEM_TRICK
+// used in conjunction with "CStringItem::operator new" only!
+CStringItem::CStringItem ()
+{
+	// properly initialize CStringItem::name field
+	name = AllocatedName;
+}
+#endif
+
 
 CStringItem *CStringList::Find (const char *name, CStringItem **after)
 {
-	guardSlow(CStringItem::Find(str));
+	guardSlow(CStringItem::Find(str,after));
 	if (after) *after = NULL;
 	for (CStringItem *item = first; item; item = item->next)
 	{
@@ -477,6 +513,25 @@ CStringItem *CStringList::Find (const char *name, CStringItem **after)
 		if (cmp < 0)
 			return NULL;				// list is alpha-sorted, and item should be before this place
 		if (after) *after = item;
+	}
+
+	return NULL;
+	unguardSlow;
+}
+
+
+const CStringItem *CStringList::Find (const char *name) const
+{
+	guardSlow(CStringItem::Find(str) const);
+	for (const CStringItem *item = first; item; item = item->next)
+	{
+		int cmp = appStricmp (name, item->name);
+		if (!cmp)
+			// found exact item
+			return item;
+
+		if (cmp < 0)
+			return NULL;				// list is alpha-sorted, and item should be before this place
 	}
 
 	return NULL;
@@ -503,6 +558,20 @@ int CStringList::IndexOf (const char *str)
 			return index;
 	return -1;
 	unguardSlow;
+}
+
+
+void CStringList::InsertLast (CStringItem *item)
+{
+	if (!first)
+	{
+		first = item;
+		return;
+	}
+	// here: at least 1 element in list
+	CStringItem *curr;
+	for (curr = first; curr->next; curr = curr->next) ; // find list end
+	curr->next = item;
 }
 
 

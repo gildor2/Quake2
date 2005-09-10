@@ -255,7 +255,7 @@ struct FAllocatorInfo
 {
 	address_t address;
 	unsigned total;
-	bool	isChain;					//?? correctly initialized, but not displayed/used
+	bool	isChain;
 	//?? byte pkgIndex;					// index of package
 	unsigned short count;
 };
@@ -400,7 +400,7 @@ static void Cmd_CheckAllocs (bool usage)
 
 	if (!MarkedAllocs)
 	{
-		appWPrintf ("no \"mem_mark\" preformed\n");
+		appWPrintf ("no \"mem_mark\" performed\n");
 		return;
 	}
 
@@ -489,8 +489,6 @@ static void Cmd_CheckAllocs (bool usage)
 			im++; m++;
 		}
 	}
-//??	appPrintf ("Displayed %d points\n", numAllocators);
-	//?? display stats for "allocated (bytes) in (blocks), released (bytes) ..."
 }
 
 

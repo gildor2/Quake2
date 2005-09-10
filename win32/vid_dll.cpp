@@ -37,20 +37,20 @@ static bool needRestart;
 HWND	cl_hwnd;						// main window handle
 
 static bool alttab_disabled;
-static bool isWin95;
 
 static void DisableAltTab (bool enable)
 {
 	if (alttab_disabled == enable) return;
 	alttab_disabled = enable;
 
-	if (isWin95)
+	if (!GIsWinNT)
 	{
 		BOOL old;
 		SystemParametersInfo (SPI_SCREENSAVERRUNNING, enable, &old, 0);
 	}
 	else
 	{
+		// this code does not works with WinNT 4.0 +
 		if (enable)
 		{
 			RegisterHotKey (0, 0, 1/*MOD_ALT*/, VK_TAB);	// MOD_ALT is redefined, so use winuser.h const directly
@@ -681,14 +681,8 @@ CVAR_END
 	// add some console commands that we want to handle
 	RegisterCommand ("vid_restart", Vid_Restart);
 
-	OSVERSIONINFO vinfo;
-	vinfo.dwOSVersionInfoSize = sizeof(vinfo);
-	GetVersionEx (&vinfo);
-	if (vinfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
-	{
-		isWin95 = true;
+	if (!GIsWin2K)		// really, for WinNT 3.51 and Win95
 		MSH_MOUSEWHEEL = RegisterWindowMessage ("MSWHEEL_ROLLMSG");
-	}
 
 	// create invisible (fake) window to capture Win32 focus
 	Vid_CreateWindow (0, 0, false);

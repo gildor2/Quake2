@@ -78,7 +78,7 @@ or crashing.
 void SV_DropClient (client_t *drop, char *info)
 {
 	if (info)
-		SV_BroadcastPrintf (PRINT_HIGH, "%s %s\n", drop->name, info);
+		SV_BroadcastPrintf (PRINT_HIGH, "%s %s\n", *drop->Name, info);
 
 	// add the disconnect
 	MSG_WriteByte (&drop->netchan.message, svc_disconnect);
@@ -97,7 +97,7 @@ void SV_DropClient (client_t *drop, char *info)
 	}
 
 	drop->state = cs_zombie;		// become free in a few seconds
-	drop->name[0] = 0;
+	drop->Name[0] = 0;
 }
 
 
@@ -142,7 +142,7 @@ static const char *SV_StatusString (void)
 		{
 			char player[256];
 			int playerLength = appSprintf (ARRAY_ARG(player), "%d %d \"%s\"\n",
-				cl->edict->client->ps.stats[STAT_FRAGS], cl->ping, cl->name);
+				cl->edict->client->ps.stats[STAT_FRAGS], cl->ping, *cl->Name);
 			if (statusLength + playerLength >= sizeof(status))
 				break;		// can't hold any more
 			strcpy (status + statusLength, player);
@@ -363,7 +363,7 @@ static void cDirectConnect (int argc, char **argv)
 	}
 
 	// parse some info from the info strings
-	appStrncpyz (newcl->userinfo, userinfo, sizeof(newcl->userinfo));
+	newcl->Userinfo = userinfo;
 	SV_UserinfoChanged (newcl);
 
 	// check if client trying to connect with a new protocol
@@ -432,20 +432,26 @@ static void cRemoteCommand (int argc, char **argv)
 		//?? may be, if message is longer, than MAX_MSGLEN_OLD, flush and continue
 		//?? buffering output
 		COutputDeviceMem *Mem = new COutputDeviceMem (MAX_MSGLEN_OLD-16);
-		Mem->GrabOutput = true;
-		Mem->NoColors   = true;		// client may not support colored texts ...
-		Mem->Register ();
-		if (!ExecuteCommand (Cmd))
-			appWPrintf ("Bad remote command \"%s\"\n", *Cmd);
-		//?? move code to Mem->Flush(); call Flush() implicitly at end too
-		// if server will be restarted during active redirection, drop data
-		if (sv_client && sv_client->netchan.message.maxsize)
-		{
-			// send redirected text
-			MSG_WriteByte (&sv_client->netchan.message, svc_print);
-			MSG_WriteByte (&sv_client->netchan.message, PRINT_HIGH);
-			MSG_WriteString (&sv_client->netchan.message, Mem->GetText ());
+		Mem->NoColors = true;		// client may not support colored texts ...
+		HookOutput(Mem);
+		TRY {
+			if (!ExecuteCommand (Cmd))
+				appWPrintf ("Bad remote command \"%s\"\n", *Cmd);
+			//?? move code to Mem->Flush(); call Flush() implicitly at end too
+			// if server will be restarted during active redirection, drop data
+			if (sv_client && sv_client->netchan.message.maxsize)
+			{
+				// send redirected text
+				MSG_WriteByte (&sv_client->netchan.message, svc_print);
+				MSG_WriteByte (&sv_client->netchan.message, PRINT_HIGH);
+				MSG_WriteString (&sv_client->netchan.message, Mem->GetText ());
+			}
+		} CATCH {
+			UnhookOutput;
+			delete Mem;
+			throw;
 		}
+		UnhookOutput;
 		delete Mem;
 	}
 
@@ -926,12 +932,12 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 			int rColor = 0;
 			if (cl)
 			{
-				if (s = Info_ValueForKey (cl->userinfo, "railcolor"))
+				if (s = Info_ValueForKey (cl->Userinfo, "railcolor"))
 				{
 					rColor = atoi (s);
 					rColor = bound (rColor, 0, 7);
 				}
-				if (s = Info_ValueForKey (cl->userinfo, "railtype"))
+				if (s = Info_ValueForKey (cl->Userinfo, "railtype"))
 				{
 					rType = atoi (s);
 					rType = bound (rType, 0, 3);
@@ -1254,15 +1260,15 @@ void SV_UserinfoChanged (client_t *cl)
 	const char *val;
 
 	// call game code to allow overrides
-	ge->ClientUserinfoChanged (cl->edict, cl->userinfo);
+	ge->ClientUserinfoChanged (cl->edict, cl->Userinfo);
 
 	// name
-	appStrncpyz (cl->name, Info_ValueForKey (cl->userinfo, "name"), sizeof(cl->name));
+	cl->Name = Info_ValueForKey (cl->Userinfo, "name");
 	// mask off high bit
-	for (int i = 0; i < sizeof(cl->name); i++) cl->name[i] &= 127;
+	for (int i = 0; i < sizeof(cl->Name); i++) cl->Name[i] &= 127;	//??
 
 	// rate
-	val = Info_ValueForKey (cl->userinfo, "rate");
+	val = Info_ValueForKey (cl->Userinfo, "rate");
 	if (strlen(val))
 	{
 		i = atoi(val);
@@ -1272,7 +1278,7 @@ void SV_UserinfoChanged (client_t *cl)
 		cl->rate = 5000;
 
 	// msg
-	val = Info_ValueForKey (cl->userinfo, "msg");
+	val = Info_ValueForKey (cl->Userinfo, "msg");
 	if (strlen(val))
 	{
 		cl->messagelevel = atoi(val);

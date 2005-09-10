@@ -500,7 +500,7 @@ static bool SetPlayer (const char *s)
 	for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
 	{
 		if (!cl->state) continue;
-		if (!stricmp (cl->name, s))
+		if (!(cl->Name.icmp (s)))
 		{
 			sv_client = cl;
 			sv_player = sv_client->edict;
@@ -712,7 +712,7 @@ static void SV_DumpUser_f (bool usage, int argc, char **argv)
 		return;
 
 	appPrintf (S_GREEN"userinfo\n--------\n");
-	Info_Print (sv_client->userinfo);
+	Info_Print (sv_client->Userinfo);
 }
 
 
@@ -745,7 +745,7 @@ static void SV_Status_f ()
 		else
 			appPrintf ("%4d ", min (cl->ping, 9999));
 
-		appPrintf ("%-15s %7d %-21s %5d\n", cl->name, svs.realtime - cl->lastmessage,
+		appPrintf ("%-15s %7d %-21s %5d\n", *cl->Name, svs.realtime - cl->lastmessage,
 			NET_AdrToString (&cl->netchan.remote_address), cl->netchan.port);
 	}
 	appPrintf ("\n");

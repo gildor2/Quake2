@@ -1,8 +1,7 @@
 #!/usr/bin/perl -w
 
-$workdir  = "../../Release";
 $workext  = "map";								# can use "(ext1|ext2|ext3)" syntax
-$cvt_tool = "../DumpMap/dumpmap";
+$cvt_tool = "dumpmap";
 $dbg_file = "symbols.dbg";
 
 #$sizesWarn = 128;			# maximum size of variable (Kb), which allowed without warning
@@ -18,6 +17,7 @@ sub ProcessType {
 	$arg =~ s/\b unsigned \s+ char \b/uchar/x;
 	$arg =~ s/\b unsigned \s+ int \b/uint/x;
 	$arg =~ s/\b unsigned \s+ short \b/ushort/x;
+	$arg =~ s/\b_iobuf\b/FILE/x;				# Visual C++ FILE structure
 	$arg =~ s/\s+\*$/*/x;						# replace "name *" -> "name*"
 	return $arg;
 }
@@ -85,9 +85,14 @@ sub ProcessMap {
 	syswrite (DBG, "\0\0\0\0");
 }
 
+# cvt_tool placed in a directory of this script
+($tmp) = $0 =~ /(.*\/)[^\/]+/;						# extract path
+$cvt_tool = $tmp.$cvt_tool;							# append filename
 
 if ($#ARGV == 0) {
 	$workdir = $ARGV[0];
+} elsif ($#ARGV == -1) {
+	$workdir = ".";
 } elsif ($#ARGV > 0) {
 	die "Generate symbols.dbg\nUsage: work.pl [workdir]\n";
 }
@@ -100,12 +105,15 @@ closedir (DIR);
 open (DBG, ">$workdir/$dbg_file") or die "cannot create $dbg_file";
 binmode (DBG);
 # process map files
+$found = 0;
 for $file (@filelist) {
 	if ($file =~ /^ .* \. $workext $/x) {
 #		print ("$filelist[$i]\n");
 		ProcessMap ("$workdir/$file");
+		$found = 1;
 	}
 }
+die "No *.map files found\n" if !$found;
 # write end-of-file mark (module with null name)
 syswrite (DBG, "\0");
 close (DBG);

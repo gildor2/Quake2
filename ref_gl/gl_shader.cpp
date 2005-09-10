@@ -99,9 +99,9 @@ static void Shaderlist_f (bool usage, int argc, char **argv)
 			color = "";
 
 		const char *rem = "";
-		if (sh->noDraw) rem = S_YELLOW" (nodraw)"S_WHITE;
-		if (sh->bad) rem = S_RED" (errors)"S_WHITE;
-		if (sh->style & SHADER_ABSTRACT) rem = S_YELLOW" (abstract)"S_WHITE;
+		if (sh->noDraw) rem = S_YELLOW"   (nodraw)"S_WHITE;
+		if (sh->bad) rem = S_RED"   (errors)"S_WHITE;
+		if (sh->style & SHADER_ABSTRACT) rem = S_YELLOW"   (abstract)"S_WHITE;
 		appPrintf ("%-3d %d  %2s %-2d %3s  %-3s %s%s%s\n", i, sh->numStages, lmInfo,
 			sh->sortParam, shTypes[sh->type], boolNames[sh->scripted], color, *sh->Name, rem);
 	}

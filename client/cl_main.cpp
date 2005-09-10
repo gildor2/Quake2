@@ -347,12 +347,6 @@ void CL_ForwardToServer_f (int argc, char **argv)
 }
 
 
-/*
-==================
-CL_Pause_f
-==================
-*/
-
 void CL_Pause (bool enable)
 {
 	if ((Cvar_VariableInt ("maxclients") == 1 || cl_cheats) && Com_ServerState () || cl.attractloop)
@@ -367,13 +361,7 @@ static void CL_Pause_f ()
 	CL_Pause (!cl_paused->integer);
 }
 
-/*
-================
-CL_Drop
 
-Called after an Com_DropError() was thrown
-================
-*/
 void CL_Drop (bool fromError)
 {
 	if (fromError) SCR_EndLoadingPlaque (true);
@@ -383,14 +371,7 @@ void CL_Drop (bool fromError)
 }
 
 
-/*
-=======================
-CL_SendConnectPacket
-
-We have gotten a challenge from the server, so try and
-connect.
-======================
-*/
+// We have gotten a challenge from the server, so try to connect
 void CL_SendConnectPacket (void)
 {
 	int port = Cvar_VariableInt ("qport");

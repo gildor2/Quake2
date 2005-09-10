@@ -180,9 +180,8 @@ void MSG_WriteDir (sizebuf_t *sb, const CVec3 &dir)
 	for (int i = 0; i < NUMVERTEXNORMALS; i++)
 	{
 		float d = dot (dir, bytedirs[i]);
-		if (d == 1.0f)	//?? allow some EPSILON
+		if (d >= 0.99f)
 		{
-			// found exact value
 			best = i;
 			break;
 		}

@@ -68,7 +68,7 @@ typedef enum
 	cs_spawned							// client is fully in game
 } client_state_t;
 
-typedef struct
+struct client_frame_t
 {
 	int			areabytes;
 	byte		areabits[MAX_MAP_AREAS/8]; // portalarea visibility bits
@@ -76,16 +76,16 @@ typedef struct
 	int			num_entities;
 	int			first_entity;			// into the circular sv_packet_entities[]
 	int			senttime;				// for ping calculations
-} client_frame_t;
+};
 
 #define	LATENCY_COUNTS	16
 #define	RATE_MESSAGES	10
 
-typedef struct
+struct client_t
 {
 	client_state_t state;
 
-	char		userinfo[MAX_INFO_STRING]; // name, etc
+	TString<MAX_INFO_STRING> Userinfo;	// name, etc
 
 	int			lastframe;				// for delta compression
 	usercmd_t	lastcmd;				// for filling in big drops
@@ -101,7 +101,7 @@ typedef struct
 	int			surpressCount;			// number of messages rate supressed
 
 	edict_t		*edict;					// EDICT_NUM(clientnum+1)
-	char		name[32];				// extracted from userinfo, high bits masked
+	TString<32>	Name;					// extracted from userinfo, high bits masked
 	int			messagelevel;			// for filtering printed messages
 
 	// The datagram is written to by sound calls, prints, temp ents, etc.
@@ -132,7 +132,7 @@ typedef struct
 	// falling sounds
 	int			last_velocity2;
 	bool		screaming;
-} client_t;
+};
 
 // a client can leave the server in one of four ways:
 // dropping properly by quiting or disconnecting
@@ -147,15 +147,15 @@ typedef struct
 // out before legitimate users connected
 #define	MAX_CHALLENGES	1024
 
-typedef struct
+struct challenge_t
 {
 	netadr_t	adr;
 	int			challenge;
 	int			time;
-} challenge_t;
+};
 
 
-typedef struct
+struct server_static_t
 {
 	bool		initialized;				// sv_init has completed
 	int			realtime;					// always increasing, no clamping, etc
@@ -179,7 +179,7 @@ typedef struct
 	FILE		*wdemofile;					// writting demos
 	sizebuf_t	demo_multicast;
 	byte		demo_multicast_buf[MAX_MSGLEN];
-} server_static_t;
+};
 
 //=============================================================================
 

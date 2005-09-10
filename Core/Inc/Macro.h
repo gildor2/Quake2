@@ -100,3 +100,6 @@ template<class T> void Zero (T& A)
 			code;		\
 		}				\
 	}
+
+//?? LITTLE_ENDIAN ??
+#define BYTES4(a,b,c,d)	((a) | ((b)<<8) | ((c)<<16) | ((d)<<24))

@@ -14,6 +14,10 @@ static unsigned timeBase;
 
 static bool IsMMX, IsSSE, IsRDTSC, Is3DNow;
 
+char GMachineOS[64]  = "Unknown Windows variant";
+char GMachineCPU[64] = "Unknown 386/486 CPU";
+bool GIsWinNT, GIsWin2K;
+
 
 /*-----------------------------------------------------------------------------
 	Timing
@@ -128,7 +132,7 @@ static void CheckCpuModel ()
 	__except(EXCEPTION_EXECUTE_HANDLER)
 	{
 		// no CPUID available
-		appPrintf ("Unknown 386/486 CPU\n");
+		appPrintf ("CPU: %s\n", GMachineCPU);
 		return;
 	}
 
@@ -144,8 +148,8 @@ static void CheckCpuModel ()
 		}
 		t.name[i*4] = 0;
 		const char *s = t.name;
-		while (*s == ' ') s++;
-		appPrintf ("CPU name: %s\n", s);
+		while (*s == ' ') s++;	// skip leading spaces
+		appStrncpyz (GMachineCPU, s, sizeof(GMachineCPU));
 	}
 	else
 	{
@@ -153,9 +157,10 @@ static void CheckCpuModel ()
 		t.reg[0] = cpuidRegs[1];
 		t.reg[1] = cpuidRegs[3];
 		t.reg[2] = cpuidRegs[2];
-		t.name[12] = 0;		// ASCIIZ
-		appPrintf ("CPU name: %s\n", t.name);
+		t.name[12] = 0;			// null-terminated
+		appStrncpyz (GMachineCPU, t.name, sizeof(GMachineCPU));
 	}
+	appPrintf ("CPU name: %s\n", GMachineCPU);
 
 	// caps
 	appPrintf ("CPU caps: [ ");
@@ -201,7 +206,7 @@ static void CheckCpuSpeed ()
 
 	timeBeginPeriod (1);
 
-	GMSecondsPerCycle = 1.0;					// initial value
+	GMSecondsPerCycle = 1.0;	// initial value (1 Hz)
 	for (int tries = 0; tries < 3; tries++)
 	{
 		__int64 stamp1 = appCycles64 ();
@@ -210,7 +215,7 @@ static void CheckCpuSpeed ()
 		while (true)
 		{
 			time2 = timeGetTime ();
-			if (time2 - time1 > 150) break;		// 100ms enough to compute CPU speed
+			if (time2 - time1 > 150) break;
 		}
 		__int64 stamp2 = appCycles64 ();
 		double msecPerCycle = (time2 - time1) / (((double)stamp2 - (double)stamp1));
@@ -223,9 +228,73 @@ static void CheckCpuSpeed ()
 #endif
 	}
 	GSecondsPerCycle = GMSecondsPerCycle / 1000.0;
-	appPrintf ("CPU speed: %g MHz\n", 1e-6 / GSecondsPerCycle);
+	double rate = 1e-6 / GSecondsPerCycle;
+	const char *units = "MHz";
+	if (rate > 1000)							// modern CPU have GHz clock rates ...
+	{
+		rate /= 1000;
+		units = "GHz";
+	}
+	appPrintf ("CPU speed: %.2f %s\n", rate, units);
 
 	timeEndPeriod (1);
+}
+
+
+/*-----------------------------------------------------------------------------
+	Detecting Windows version
+-----------------------------------------------------------------------------*/
+
+static void DetectOs ()
+{
+	struct osInfo_t {
+		byte	vMaj, vMin, vPlatf;
+		const char *name;
+	};
+	static const osInfo_t table[] = {
+#define WIN9X	VER_PLATFORM_WIN32_WINDOWS
+#define WINNT	VER_PLATFORM_WIN32_NT
+		// Win9X
+		{	4,0,	WIN9X,	"95"	},
+		{	4,10,	WIN9X,	"98"	},
+		{	4,90,	WIN9X,	"Me"	},
+		// WinNT
+		{	3,51,	WINNT,	"NT 3.51"},
+		{	4,0,	WINNT,	"NT 4.0"},
+		{	5,0,	WINNT,	"2000"	},
+		{	5,1,	WINNT,	"XP"	},
+		{	5,2,	WINNT,	"2003"	},
+		{	6,0,	WINNT,	"Vista"	}
+	};
+	OSVERSIONINFO ver;
+	ver.dwOSVersionInfoSize = sizeof(ver);
+	if (!GetVersionEx (&ver))
+	{
+		int err = GetLastError ();
+		appPrintf ("Windows version detection failed:\nError: %d  %s\n", err, appGetSystemErrorMessage (err));
+		return;
+	}
+	GIsWinNT = (ver.dwPlatformId == VER_PLATFORM_WIN32_NT);
+	GIsWin2K = (GIsWinNT && ver.dwMajorVersion >= 5);
+	for (int i = 0; i < ARRAY_COUNT(table); i++)
+	{
+		const osInfo_t &v = table[i];
+		if (v.vPlatf == ver.dwPlatformId &&
+			v.vMaj == ver.dwMajorVersion &&
+			v.vMin == ver.dwMinorVersion)
+		{
+			appSprintf (ARRAY_ARG(GMachineOS), "Windows %s (Build: %d)", v.name, ver.dwBuildNumber);
+			appPrintf ("Detected OS: %s\n", GMachineOS);
+			return;
+		}
+	}
+	const char *platf = "Unknown";
+	if (ver.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
+		platf = "9X";
+	else if (ver.dwPlatformId == VER_PLATFORM_WIN32_NT)
+		platf = "NT";
+	appSprintf (ARRAY_ARG(GMachineOS), "Windows %s %d.%d (Build: %d)", platf, ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber);
+	appPrintf ("Detected OS: %s\n", GMachineOS);
 }
 
 
@@ -245,6 +314,16 @@ const char *appPackage ()
 	if (s) *s = 0;
 	appPrintf ("Package: %s\n", *Filename);
 	return Filename;
+}
+
+
+static void SetDefaultDirectory ()
+{
+	TString<256> Filename;
+	GetModuleFileName (NULL, ARRAY_ARG(Filename));
+	char *s = Filename.rchr ('\\');
+	if (s) *s = 0;
+	SetCurrentDirectory (Filename);
 }
 
 
@@ -288,6 +367,8 @@ void appInitPlatform ()
 {
 	CheckCpuModel ();
 	CheckCpuSpeed ();
+	DetectOs ();
+	SetDefaultDirectory ();
 #if 0
 	// DEBUG: force mmsystem timing functions
 	IsRDTSC = false;

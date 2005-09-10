@@ -457,12 +457,6 @@ char *COM_Parse (const char *&data_p, bool allowLineBreaks = true);
 const char *COM_QuoteString (const char *str, bool alwaysQuote);
 // data is an in/out parm, returns a parsed out token
 
-
-//=============================================
-
-#define BYTES4(a,b,c,d)	((a) | ((b)<<8) | ((c)<<16) | ((d)<<24))
-
-
 /*-----------------------------------------------------------------------------
 	Byte-order functions
 -----------------------------------------------------------------------------*/
@@ -496,11 +490,6 @@ void	Swap_Init ();
 /*-----------------------------------------------------------------------------
 	Collision detection (??)
 -----------------------------------------------------------------------------*/
-
-// gi.BoxEdicts() can return a list of either solid or trigger entities
-// FIXME: eliminate AREA_ distinction?
-#define	AREA_SOLID		1
-#define	AREA_TRIGGERS	2
 
 struct csurface_t
 {

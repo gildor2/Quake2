@@ -157,7 +157,7 @@ static const char *is_zip_str[2] = {"", " [zip]"};
 #define MAX_RES_FILES	64
 
 extern "C" byte zresource_start[], zresource_end[];
-#define OpenZRes() 	Zip_OpenBuf (zresource_start+10, zresource_end-zresource_start-18);	// +10 - skip gzip header, -18 - dhr+crc+size
+#define OpenZRes() 	Zip_OpenBuf (zresource_start+10, zresource_end-zresource_start-18);	// +10 - skip gzip header, -18 - hdr+crc+size
 
 
 
@@ -256,11 +256,9 @@ static packDir_t *FindPakDirectory (pack_t *pak, const char *name)
 	while (dir->cDir)					// have childs
 	{
 		// get name of the next directory into dirname
-		int		len;
 		const char *rest = strchr (s, '/');
-		if (!rest)	len = strlen (s);
-		else		len = rest - s;
-		char	dirname[MAX_OSPATH];
+		int len = (rest) ? rest - s : strlen (s);
+		char dirname[MAX_OSPATH];
 		appStrncpyz (dirname, s, len+1);
 
 		packDir_t *newdir = dir->cDir.Find (dirname);
@@ -288,7 +286,7 @@ static packFile_t *FindPakFile (pack_t *pak, const char *name)
 	}
 	else
 	{
-		char	dirname[MAX_OSPATH];
+		char dirname[MAX_OSPATH];
 		appStrncpyz (dirname, name, filename - name + 1);
 		// process "./directory/file" names
 		const char *dirname2 = dirname;
@@ -306,10 +304,9 @@ static packFile_t *FindPakFile (pack_t *pak, const char *name)
 
 // Find directory "name" in "pak". If not found - create it.
 // Returns found or new directory.
+// This function is very similar to FindPakDirectory()
 static packDir_t *AddPakDirectory (pack_t *pak, const char *name)
 {
-	char	dirname[MAX_OSPATH];
-
 	packDir_t *dir = pak->root;
 	if (!name || !*name || name[0] == '/' && !name[1]) return dir; // empty string or "/" => root directory
 
@@ -319,6 +316,7 @@ static packDir_t *AddPakDirectory (pack_t *pak, const char *name)
 		// get name of the next directory into dirname
 		const char *rest = strchr (s, '/');
 		int len = (rest) ? rest - s : strlen (s);
+		char dirname[MAX_OSPATH];
 		appStrncpylwr (dirname, s, len+1);	// +1 for zero byte
 
 		packDir_t *insdir;
@@ -331,7 +329,7 @@ static packDir_t *AddPakDirectory (pack_t *pak, const char *name)
 		}
 		// rest=NULL or ->"/\0" or ->"/another_text..."
 		if (!rest || !rest[1]) return newdir;
-		s = &rest[1];					// skip '/'
+		s = rest + 1;					// skip '/'
 		dir = newdir;
 	}
 }
@@ -340,7 +338,6 @@ static packDir_t *AddPakDirectory (pack_t *pak, const char *name)
 // Returns UNFILLED packFile_t structure
 static packFile_t *AddPakFile (pack_t *pak, char *name)
 {
-	char	dirname[MAX_OSPATH];
 	packDir_t *dir;
 
 	const char *filename = strrchr (name, '/');
@@ -353,6 +350,7 @@ static packFile_t *AddPakFile (pack_t *pak, char *name)
 	}
 	else
 	{
+		char dirname[MAX_OSPATH];
 		appStrncpyz (dirname, name, filename - name + 1);		// +1 for zero char
 		filename++;						// skip '/'
 		if (!*filename) return NULL;	// empty name
@@ -558,7 +556,7 @@ static void ClearFileCache ()
 }
 
 
-static FILE *FOpenCached (char *name)
+static FILE *FOpenCached (const char *name)
 {
 	if (cached_handle2 && !stricmp(cached_name, name))
 	{
@@ -595,7 +593,7 @@ void FS_FCloseFile (QFILE *f)
 	{
 		if (f->zFile)
 		{
-			int rest = f->zFile->rest_write;
+			int rest = f->zFile->restWrite;
 			if (!Zip_CloseFile (f->zFile) && !rest)
 			{	// file readed completely, but bad checksum
 				appWPrintf ("FS_FCloseFile: damaged zip file %s : %s\n", f->name, f->pFile->name);
@@ -604,9 +602,9 @@ void FS_FCloseFile (QFILE *f)
 		if (f->file)
 			FCloseCached (f->file);		// fclose (f->file) or ZipClose (f->file);
 	}
-	else if (f->type == FT_ZPAK)
+	else if (f->type == FT_ZMEM)
 		Zip_CloseBuf (f->zBuf);
-//	else Com_FatalError ("FS_FCloseFile: invalid handle type");
+//	else Com_FatalError ("FS_FCloseFile: invalid handle type %d", f->type);
 
 	delete f;
 }
@@ -913,6 +911,7 @@ void* FS_LoadFile (const char *path, unsigned *len)
 	guard(FS_LoadFile);
 	// look for it in the filesystem or pack files
 	int len2;
+	//?? can use static (stack) "QFILE h" -- allocated/deallocated in single function
 	QFILE *h = FS_FOpenFile (path, &len2);
 	if (!h)
 	{
@@ -941,10 +940,10 @@ void FS_FreeFile (void *buffer)
 
 static pack_t *createdPak;
 
-static bool EnumZippedPak (zipFile_t *file)
+static bool EnumZippedPak (const zipFile_t *file)
 {
 	int len = strlen (file->name);
-	if (len > 0 && file->name[len - 1] != '/')
+	if (len > 0 && file->name[len - 1] != '/') // not a directory
 	{	// not a directory - add file
 		packFile_t *newfile = AddPakFile (createdPak, file->name);
 		newfile->method = file->method;
@@ -968,7 +967,7 @@ static pack_t *LoadPackFile (const char *packfile)
 		return NULL;
 	}
 
-	dPackHeader_t	header;
+	dPackHeader_t header;
 	if (fread (&header, sizeof(header), 1, packHandle) != 1)
 	{
 		appWPrintf ("Cannot read packfile %s\n", packfile);
@@ -1180,41 +1179,38 @@ static searchPath_t *FindPakStruc (const char *name)
 }
 
 
+// if file exists, try to load return true (even if not loaded);
+// if not exists - return false
 static bool TryLoadPak (char *pakname)
 {
-	FILE	*f;
-
 	if (FindPakStruc (pakname))
 	{
 		appWPrintf ("Packfile %s is already loaded\n", pakname);
 		return true;		// already loaded
 	}
-	if (f = fopen (pakname, "rb"))
-	{
-		pack_t	*pak;
+	FILE	*f;
+	if (!(f = fopen (pakname, "rb"))) return false;
 
-		fclose (f);
-		if (!(pak = LoadPackFile (pakname))) return 1;	// not loaded, but don't try more
-		// include new packfile in search paths
-		searchPath_t *search = new ("") searchPath_t;
-		fs_searchpaths.InsertAfter (search, NULL);		// first
-		search->pack = pak;
-		return true;
-	}
-	return false;
+	fclose (f);
+	pack_t *pak;
+	if (!(pak = LoadPackFile (pakname))) return true;	// not loaded, but don't try more
+	// include new packfile in search paths
+	searchPath_t *search = new ("") searchPath_t;
+	fs_searchpaths.InsertAfter (search, NULL);			// first
+	search->pack = pak;
+	return true;
 }
 
 
 static void FS_LoadPak_f (bool usage, int argc, char **argv)
 {
-	char pakname[MAX_OSPATH];
-
 	if (argc != 2 || usage)
 	{
 		appPrintf ("Usage: loadpak <pakname>[.pak]\n"
 					"  or   loadpak <wildcard>\n");
 		return;
 	}
+	char pakname[MAX_OSPATH];
 	appSprintf (ARRAY_ARG(pakname), "%s/%s", fs_gamedir, argv[1]);
 
 	if (strchr (pakname, '*'))
@@ -1242,14 +1238,13 @@ static void FS_LoadPak_f (bool usage, int argc, char **argv)
 
 static void FS_UnloadPak_f (bool usage, int argc, char **argv)
 {
-	char	pakname[MAX_OSPATH];
-
 	if (argc != 2 || usage)
 	{
 		appPrintf ("Usage: unloadpak <pakname>[.pak]\n"
 					"  or   unloadpak <wildcard>\n");
 		return;
 	}
+	char pakname[MAX_OSPATH];
 	if (strchr (argv[1], '*'))
 	{
 		// name is a wildcard

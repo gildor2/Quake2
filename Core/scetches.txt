@@ -9,42 +9,32 @@ FILE SYSTEM
       ? NO_PREV_MODS     - list current mod only (ignored for basedir)
       ? BASE_MOD         - list basedir only
       - FULL_NAMES       - path + name  (PATH_NAMES ??)
-      ? NO_EXTENSION     - name without extension
       ? RECURSE_SUBDIRS  - look in subdirectories; +special case for !FULL_NAMES - keep relative path
       ?? KEEP_DUPLICATES - name = "pak:path/name" (incompatible with !FULL_NAMES)
-      - STOP_ON_ANY_FILE - for testing of file existance (use in wrapper func -- "bool FS_FileExists(name, flags)")
-   - skip all files, which names are started with '.' (this will remove "." and ".." dirs, and allows behaviour of
-     Unix-like hidden files)
-      ? char *shortName (or SHORT_NAMES flag)
-   ? another "operator new"
-   ?? class CFileList : public CMemoryChain, public TList<CFileItem> (but: how to pass self as chain to alloc functions ?)
-   - CFileItem = class(CStringItem):
-      1) IsFile:1 (else dir), IsPak:1 (else OS)
-      2) CFileContainer *container -- can get any file info
-- CFileContainer *FileExists(name,flags) (NULL if not found)
 - MakeDirectory(name)
    ? DeleteDirectory()
       ? with files
    ? should process directory trees
 - CopyFiles()
 - DeleteFiles()
-? filesystem: use TAGS instead of MOD DIRS; all functions -- supply tag: TAG_BASE, TAG_MOD, TAG_ALL
-   - this should be a bitfield, which can be passed with "flags" for CFileList creation; if no tags passed - list any tags
-   - func AddPath(path, tag)       -- will add paks too ?
-   ? func AddPaks(path/mask, tag)  -- not needed ?
-   - func DelPath(tag)
-   ?? if tags will be used for changing q2 game, can remove them at all: register function (trigger) on game changing, which will
-     enumerate all registered file containers and remove non-baseq2 (should be implemented outside Core); note: should take into
-     account CD-ROM directory (if one)
 - flag "bool fs_modified": when user was unlinked some TAG_BASE paks, this flag is set to true and when game is changed, should
   completely unlink all files and relink base files again
-- "[un]loadpak" -> "[u]mount"; "path" -> "mount" without args; "dir" -> "ls"
+* "[un]loadpak" -> "[u]mount"; "path" -> "mount" without args; "dir" -> "ls"
 - reading files:
    - GZip files (can auto-detect); can create such files too (special flag for FS_CreateFile() function)
    - text files (remove CR ('\r') from stream)
-- PAK formats:
-   - may be, register pak formats on program startup (ID-pak, ZIP) -- parser class + file masks
-   - option to compile without PAK support (will remove register pak format funcs etc)
+! for integration into Q2:
+  - zip and resource file containers
+  - cut/reimplement game-depending layer of files.cpp to QuakeFileSystem.cpp
+  - implement mkdir()
+  - remove: files.cpp, fs_win32.cpp
+  - remove file functions from engine.h
+  - document changes to "4xx_changes.txt":
+    - replace info about "loadpak/unloadpak", add "ls"
+    - remove (change) info about network "cddir" var
+    - info about file system accesss restriction by mounts (but: info about "cano mount everything")
+    - info about hidden filenames
+  ? compare file size of previous quake2.exe
 
 PACKAGE SYSTEM
 ~~~~~~~~~~~~~~
@@ -117,6 +107,9 @@ COMMAND SYSTEM
 ~~~~~~~~~~~~~~
 - aliases: add support for bash_function-like arguments (bash have no args for aliases, but our command system have no functions ...)
   ? make as function? aliases - no args
+- argument for all commands "--silent" or "-silent" -- will redirect output to GNull (should correctly process such flag in
+  renderer "screenshot" command -- executed asynchronously !)
+  ? may be, make generic redirection: "command >null" or "command >file"
 
 
 COMMON
@@ -126,6 +119,11 @@ COMMON
 - COutputDeviceXxxx.h -> Core.h + CORE_API; rename to COutputStream ?
 ? iterators: make template, not based on any class (base is not needed?!), and iterate any class, containing field "next",
   pointed to the same data type
+- wildcards for filenames: make something like "path/filename.#pcx,jpg,tga" to work - find all images, started with "filename"
+  - currently, require "path/filename.pcx,filename.jpg,filename.tga" - should interlace mask and filename; wanted: store mask
+    separately: "pcx,jpg,tga" with simple adding to filename
+  - '#' - place, when wildcard started; currently, started after last '/' for filenames -- really, started from start of string
+  - may be, make following form (bash-like): "path/filename.{pcx,jpg,tga}"
 
 
 MEMORY

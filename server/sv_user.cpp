@@ -35,7 +35,7 @@ sv_client and sv_player will be valid.
 // This will be sent on the initial connection and upon each server load.
 static void SV_New_f (int argc, char **argv)
 {
-	Com_DPrintf ("New() from %s\n", sv_client->name);
+	Com_DPrintf ("New() from %s\n", *sv_client->Name);
 
 	if (sv_client->state != cs_connected)
 	{
@@ -93,7 +93,7 @@ static void SV_New_f (int argc, char **argv)
 
 static void SV_Configstrings_f (int argc, char **argv)
 {
-	Com_DPrintf ("Configstrings() from %s\n", sv_client->name);
+	Com_DPrintf ("Configstrings() from %s\n", *sv_client->Name);
 
 	if (sv_client->state != cs_connected)
 	{
@@ -142,7 +142,7 @@ static void SV_Baselines_f (int argc, char **argv)
 {
 	guard(SV_Baselines_f);
 
-	Com_DPrintf ("Baselines() from %s\n", sv_client->name);
+	Com_DPrintf ("Baselines() from %s\n", *sv_client->Name);
 
 	if (sv_client->state != cs_connected)
 	{
@@ -194,7 +194,7 @@ static void SV_Baselines_f (int argc, char **argv)
 
 static void SV_Begin_f (int argc, char **argv)
 {
-	Com_DPrintf ("Begin() from %s\n", sv_client->name);
+	Com_DPrintf ("Begin() from %s\n", *sv_client->Name);
 
 	// handle the case of a level changing while a client was connecting
 	if (atoi (argv[1]) != svs.spawncount)
@@ -302,7 +302,7 @@ static void SV_BeginDownload_f (int argc, char **argv)
 
 	if (!sv_client->download)
 	{
-		Com_DPrintf ("Couldn't download %s to %s\n", *Name, sv_client->name);
+		Com_DPrintf ("Couldn't download %s to %s\n", *Name, *sv_client->Name);
 		if (sv_client->download) {
 			FS_FreeFile (sv_client->download);
 			sv_client->download = NULL;
@@ -315,7 +315,7 @@ static void SV_BeginDownload_f (int argc, char **argv)
 	}
 
 	SV_NextDownload_f (argc, argv);
-	Com_DPrintf ("Downloading %s to %s\n", *Name, sv_client->name);
+	Com_DPrintf ("Downloading %s to %s\n", *Name, *sv_client->Name);
 }
 
 
@@ -361,11 +361,11 @@ static void SV_Nextserver_f (int argc, char **argv)
 {
 	if (atoi (argv[1]) != svs.spawncount)
 	{
-		Com_DPrintf ("Nextserver() from wrong level, from %s\n", sv_client->name);
+		Com_DPrintf ("Nextserver() from wrong level, from %s\n", *sv_client->Name);
 		return;		// leftover from last server
 	}
 
-	Com_DPrintf ("Nextserver() from %s\n", sv_client->name);
+	Com_DPrintf ("Nextserver() from %s\n", *sv_client->Name);
 
 	SV_Nextserver ();
 }
@@ -422,7 +422,7 @@ void SV_ClientThink (client_t *cl, usercmd_t *cmd)
 
 	if (cl->commandMsec < 0 && sv_enforcetime->integer)
 	{
-		Com_DPrintf ("commandMsec underflow from %s\n", cl->name);
+		Com_DPrintf ("commandMsec underflow from %s\n", *cl->Name);
 		return;
 	}
 
@@ -466,7 +466,7 @@ static void SV_MoveClient (client_t *cl)
 	if (calculatedChecksum != checksum)
 	{
 		Com_DPrintf ("Failed command checksum for %s (%d != %d)/%d\n",
-			cl->name, calculatedChecksum, checksum,
+			*cl->Name, calculatedChecksum, checksum,
 			cl->netchan.incoming_sequence);
 		return;
 	}
@@ -530,7 +530,7 @@ void SV_ExecuteClientMessage (client_t *cl)
 			break;
 
 		case clc_userinfo:
-			appStrncpyz (cl->userinfo, MSG_ReadString (&net_message), sizeof(cl->userinfo));
+			cl->Userinfo = MSG_ReadString (&net_message);
 			SV_UserinfoChanged (cl);
 			break;
 

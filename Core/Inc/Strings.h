@@ -63,17 +63,29 @@ CORE_API char *CopyString (const char *str, CMemoryChain *chain);
 	String lists
 -----------------------------------------------------------------------------*/
 
+// can comment next #define, when no classes with VMT derived from CStringItem
+#define STRING_ITEM_TRICK
+
 // Base item: link to next + string
 class CStringItem
 {
+	friend class CStringList;
+	friend class CListIterator;
+//	template<class T> friend class TList; -- not compiled in VC6
+private:
+#ifdef STRING_ITEM_TRICK
+	static char *AllocatedName;
+#endif
 public:
 	char	*name;
 	CStringItem *next;
 		// really, this field should be "protected" and CStringList should be a friend of CStringItem,
-		// but compiler (tested with VC6) will generate error "cannot access protected member (C2248)"
+		// but VC6 will generate error "cannot access protected member (C2248)" for TList<>
+#ifdef STRING_ITEM_TRICK
+	CORE_API CStringItem ();	// will initialize "name" with AllocatedName' value
+#endif
 	CORE_API void *operator new (size_t size, const char *str);
 	CORE_API void *operator new (size_t size, const char *str, CMemoryChain *chain);
-	friend class CStringList;
 };
 
 
@@ -83,10 +95,17 @@ class CStringList
 	friend class CListIterator;
 protected:
 	CStringItem *first;
-
-	// manipulating items
+	// searching items in a sorted list
 	CORE_API CStringItem *Find (const char *name, CStringItem **after);
+	CORE_API const CStringItem *Find (const char *name) const;
 	CORE_API CStringItem *Find (int index);
+	// unsorted list insertion
+	inline void InsertFirst (CStringItem *item)
+	{
+		item->next = first;
+		first = item;
+	}
+	CORE_API void InsertLast (CStringItem *item);
 public:
 	inline CStringList ()
 	:	first (NULL)
@@ -96,12 +115,16 @@ public:
 	{
 		first = NULL;
 	}
-	operator bool ()
+	inline operator bool ()
 	{
 		return first != NULL;
 	}
+	// sorted search
 	CORE_API int IndexOf (const char *str);
-	//!! IndexOfWildcard (str)
+	//?? IndexOfWildcard (str)
+	//?? unsorted search: FindUnsorted(str)
+	//!! Sort(cmpFunc) -- resort with any strategy
+	//!!   cmpFunc may be of 2 types: (CStringItem*,CStringItem*) or (char*,char*)
 	// unlink item from list
 	CORE_API bool Remove (CStringItem *item);
 	// freeing list of items, allocated in generic memory
@@ -127,11 +150,23 @@ public:
 	{
 		return static_cast<T*>(CStringList::Find (name, (CStringItem **) after));
 	}
+	const T *Find (const char *name) const
+	{
+		return static_cast<const T*>(CStringList::Find (name));
+	}
 	T *Find (int index)
 	{
 		return static_cast<T*>(CStringList::Find (index));
 	}
-	// list insertion
+	// unsorted list insertion
+	void InsertFirst (T *item)
+	{
+		CStringList::InsertFirst (item);
+	}
+	void InsertLast (T *item)
+	{
+		CStringList::InsertLast (item);
+	}
 	void InsertAfter (T *Item, T *Point)
 	{
 		if (Point)
@@ -145,6 +180,7 @@ public:
 			first = Item;
 		}
 	}
+	// sorted list insertion
 	bool Insert (T *item)
 	{
 		T *prev;
@@ -152,7 +188,7 @@ public:
 		InsertAfter (item, prev);
 		return true;
 	}
-	// creation and insertion
+	// creation and sorted insertion
 	T *CreateAndInsert (const char *name)
 	{
 		T *item = new (name) T;
@@ -168,7 +204,7 @@ public:
 	// WARNING: this function can return &NULL when index is out of bounds (generate appError ??)
 	T& operator[] (int index)
 	{
-		return (T&) *CStringList::Find (index);
+		return static_cast<T&>(*CStringList::Find (index));
 	}
 };
 
@@ -232,11 +268,11 @@ public:
 	// data access
 	T* operator-> ()
 	{
-		return (T*)item;
+		return static_cast<T*>(item);
 	}
 	T* operator* ()
 	{
-		return (T*)item;
+		return static_cast<T*>(item);
 	}
 };
 

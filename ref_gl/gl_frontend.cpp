@@ -435,12 +435,10 @@ static bool CutCylinder (CVec3 &v1, CVec3 &v2, float radius)
 // Find nearest to sphere center visible leaf, occupied by entity bounding sphere
 static node_t *SphereLeaf (const CVec3 &origin, float radius)
 {
-	int		sptr;
-	node_t	*node;
+	int		sptr = 0;
 	node_t	*stack[MAX_TREE_DEPTH];
 
-	sptr = 0;
-	node = map.nodes;
+	node_t *node = map.nodes;
 	while (true)
 	{
 		if (!node->isNode)
@@ -490,14 +488,12 @@ static node_t *SphereLeaf (const CVec3 &origin, float radius)
 // or nearest to a sphere center leaf with alpha surfaces (if one)
 static node_t *AlphaSphereLeaf (const CVec3 &origin, float radius)
 {
-	int		sptr, drawOrder;
-	node_t	*node, *drawNode;
+	int sptr = 0;
 	node_t	*stack[MAX_TREE_DEPTH];
 
-	sptr = 0;
-	node = map.nodes;
-	drawOrder = 0;
-	drawNode = NULL;
+	node_t *node = map.nodes;
+	int drawOrder = 0;
+	node_t *drawNode = NULL;
 	while (true)
 	{
 		if (!node->isNode)
@@ -555,17 +551,15 @@ static node_t *AlphaSphereLeaf (const CVec3 &origin, float radius)
 // Find nearest (by draw order) visible leaf, occupied by beam
 static node_t *BeamLeaf (const CVec3 &v1, const CVec3 &v2)
 {
-	int		sptr, drawOrder;
-	node_t	*node, *drawNode;
+	int sptr = 0;
 	struct {
 		node_t	*node;
 		CVec3	v1, v2;
 	} stack[MAX_TREE_DEPTH], *st;
 
-	sptr = 0;
-	node = map.nodes;
-	drawOrder = 0;
-	drawNode = NULL;
+	node_t *node = map.nodes;
+	int drawOrder = 0;
+	node_t *drawNode = NULL;
 	CVec3 v1a = v1;
 	CVec3 v2a = v2;
 
@@ -1305,23 +1299,19 @@ static void AddStarBeam (const beam_t *b)
 
 static node_t *WalkBspTree ()
 {
-	int		sptr, frustumMask, drawOrder;
-	unsigned dlightMask;
-	node_t	*node, *firstLeaf, *lastLeaf;
-
+	int sptr = 0;
 	struct {
 		node_t	*node;
 		int		frustumMask;
 		unsigned dlightMask;
 	} stack[MAX_TREE_DEPTH], *st;
 
-	sptr = 0;
-	node = map.nodes;
-	frustumMask = MAX_FRUSTUM_MASK;		// check all frustum planes
-	dlightMask = vp.numDlights >= 32 ? 0xFFFFFFFF : (1 << vp.numDlights) - 1;
-	firstLeaf = NULL;
-	drawOrder = 0;
-	lastLeaf = node;		// just in case
+	node_t *node = map.nodes;
+	int frustumMask = MAX_FRUSTUM_MASK;	// check all frustum planes
+	unsigned dlightMask = vp.numDlights >= 32 ? 0xFFFFFFFF : (1 << vp.numDlights) - 1;
+	node_t *firstLeaf = NULL;
+	int drawOrder = 0;
+	node_t *lastLeaf = node;			// just in case
 
 #define PUSH_NODE(n,dl)		\
 	st = &stack[sptr++];	\

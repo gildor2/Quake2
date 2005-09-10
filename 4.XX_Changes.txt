@@ -37,6 +37,7 @@ Comments:
   - md2: implemented skin selection logic when specified skin is absent
 - added "disconnect" menu item into "multiplayer" menu
 - win32 monitor power function, screensaver and accessibility disabled during gameplay
+- game may be launched with any current directory: data will be searched from directory of main executable
 
 2. FIXES
 ~~~~~~~~
@@ -285,6 +286,10 @@ Shader system
 - dedicated server:
   - to disable auto-startup of "dedicated_start" alias, use "nointro 1"
 - commands "lookdown <angle>" and "lookup <angle>"
+  Example: rocket jump:
+    alias +rj "lookdown 180;_hand=$hand;hand 2;+moveup;+attack;echo Rocket Jump"
+    alias -rj "-attack;-moveup;hand=$_hand;centerview"
+
 - removed "basedir" cvar: game always reads data from main executable-related path
 
 4. MISFEATURES

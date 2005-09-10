@@ -3,6 +3,12 @@
 #define MAX_LOGGERS		32
 #define BUFFER_LEN		4096
 
+COutputDevice *GLogHook = NULL;
+
+// NULL device
+static COutputDeviceNull GNullDevice;
+COutputDevice *GNull = &GNullDevice;
+
 static int numDevices = 0;
 static COutputDevice *loggers[MAX_LOGGERS];
 
@@ -64,17 +70,21 @@ void appPrintf (const char *fmt, ...)
 	va_end (argptr);
 	if (len < 0 || len >= sizeof(buf) - 1) return;		//?? may be, write anyway ...
 
+	if (GIsFatalError)
+		GLogHook = NULL;
+
 	char buf2[BUFFER_LEN];				// buffer for string with removed color codes
 	buf2[0] = 0;
 	for (int i = 0; i < numDevices; i++)
 	{
-		COutputDevice *out = loggers[i];
+		COutputDevice *out = GLogHook ? GLogHook : loggers[i];
 		if (out->NoColors && !buf2[0])	// lazy operation: when needed only
 			appUncolorizeString (buf2, buf);
 		out->Write (out->NoColors ? buf2 : buf);
 		if (out->FlushEveryTime) out->Flush ();
 		// allow single device to grab all output
-		if (out->GrabOutput && !GIsFatalError) break;
+		if (GLogHook)
+			break;
 	}
 	unguard;
 }
@@ -88,9 +98,6 @@ void appWPrintf (const char *fmt, ...)
 	int len = vsnprintf (ARRAY_ARG(buf), fmt, argptr);
 	va_end (argptr);
 
-	if (len < 0 || len >= sizeof(buf) - 1) return;		//?? may be, write anuway ...
+	if (len < 0 || len >= sizeof(buf) - 1) return;		//?? may be, write anyway ...
 	appPrintf (S_YELLOW"%s", buf);
-//??#ifndef NO_DEVELOPER
-//??	if (developer->integer == 2) DebugPrintf ("%s", msg);
-//??#endif
 }

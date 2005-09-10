@@ -311,7 +311,7 @@ void *Sys_GetGameAPI (void *parms)
 	Program startup, main loop and exception handling
 -----------------------------------------------------------------------------*/
 
-extern bool debugLogged;
+extern COutputDevice *debugLog;
 HINSTANCE global_hInstance;
 
 
@@ -406,8 +406,8 @@ int main (int argc, const char **argv) // force to link as console application
 		unguard;
 	} CATCH {
 		GIsFatalError = true;
-		if (debugLogged)
-			DebugPrintf ("***** CRASH *****\n%s\n*****************\n", *GErr.History);
+		if (debugLog)
+			debugLog->Printf ("***** CRASH *****\n%s\n*****************\n", *GErr.History);
 	}
 
 	// shutdown all systems

@@ -738,7 +738,7 @@ void	FS_Read (void *buffer, int len, QFILE *f);
 
 //--void	FS_CreatePath (char *path);
 
-void	Sys_Mkdir (char *path);
+void	Sys_Mkdir (const char *path);
 
 const char	*Sys_FindFirst (const char *path, int flags);
 const char	*Sys_FindNext (void);
@@ -749,33 +749,37 @@ bool		Sys_FileExists (const char *path, int flags);
 /*------------- Miscellaneous -----------------*/
 
 // debugging
-void	DebugPrintf (const char *fmt, ...);
+void DebugPrintf (const char *fmt, ...);
 
-extern	int linewidth;		// for functions, which wants to perform advanced output formatting
+extern	int linewidth;					// for functions, which wants to perform advanced output formatting
 
-server_state_t Com_ServerState (void);		// this should have just been a cvar...
+server_state_t Com_ServerState ();		// this should have just been a cvar...
 void	Com_SetServerState (server_state_t state);
 
 // md4.cpp
 unsigned Com_BlockChecksum (void *buffer, int length);
 
-#ifdef DYNAMIC_REF
-// Using inline version will grow executable by ~2Kb (cl_fx.cpp uses a lots of [c|f]rand() calls)
-// BUT: require this for dynamic renderer (or move to "engine.h" or to Core)
 // 0 to 1
-inline float frand (void)
+inline float frand ()
 {
 	return rand() * (1.0f/RAND_MAX);
 }
 
+#ifdef DYNAMIC_REF
+// Using inline version will grow executable by ~2Kb (cl_fx.cpp uses a lots of [c|f]rand() calls)
+// BUT: require this for dynamic renderer (or move to "engine.h" or to Core)
+// Most frequent use:
+//	CVec3 dir;
+//	dir.Set (crand(), crand(), crand());
+//	dir.NormalizeFast ();
+
 // -1 to 1
-inline float crand (void)
+inline float crand ()
 {
 	return rand() * (2.0f/RAND_MAX) - 1;
 }
 #else
-float frand (void);
-float crand (void);
+float crand ();
 #endif
 
 
@@ -820,7 +824,7 @@ void	CL_Shutdown ();
 void	CL_Frame (float msec, float realMsec);
 
 void	Key_Init ();
-void	SCR_BeginLoadingPlaque (void);
+void	SCR_BeginLoadingPlaque ();
 
 void	SV_Init ();
 void	SV_Shutdown (const char *finalmsg, bool reconnect = false);
@@ -828,7 +832,7 @@ void	SV_Frame (float msec);
 
 
 /*-----------------------------------------------------------------------------
-	Miscellaneous
+	Quake2 map format consts
 -----------------------------------------------------------------------------*/
 
 // from qfiles.h -- but required more frequently (may be, move all MAX_MAP_XXX consts here?)
@@ -885,24 +889,24 @@ void	SV_Frame (float msec);
 								CONTENTS_CURRENT_UP|CONTENTS_CURRENT_DOWN)
 
 // surface flags
-#define	SURF_LIGHT		0x0001		// value will hold the light strength
+#define	SURF_LIGHT				0x0001		// value will hold the light strength
 
-#define	SURF_SLICK		0x0002		// effects game physics
+#define	SURF_SLICK				0x0002		// effects game physics
 
-#define	SURF_SKY		0x0004		// don't draw, but add to skybox
-#define	SURF_WARP		0x0008		// turbulent water warp
-#define	SURF_TRANS33	0x0010
-#define	SURF_TRANS66	0x0020
-#define	SURF_FLOWING	0x0040		// scroll towards angle
-#define	SURF_NODRAW		0x0080		// don't bother referencing the texture
+#define	SURF_SKY				0x0004		// don't draw, but add to skybox
+#define	SURF_WARP				0x0008		// turbulent water warp
+#define	SURF_TRANS33			0x0010
+#define	SURF_TRANS66			0x0020
+#define	SURF_FLOWING			0x0040		// scroll towards angle
+#define	SURF_NODRAW				0x0080		// don't bother referencing the texture
 
 // added since 4.00
-// Kingpin (used for non-KP maps too)
-#define SURF_ALPHA		0x1000
-#define	SURF_SPECULAR	0x4000		// have a bug in KP's q_shared.h: SPECULAR and DIFFUSE consts are 0x400 and 0x800
-#define	SURF_DIFFUSE	0x8000
+// Kingpin (used for non-KP maps from scripts too)
+#define SURF_ALPHA				0x1000
+#define	SURF_SPECULAR			0x4000		// have a bug in KP's q_shared.h: SPECULAR and DIFFUSE consts are 0x400 and 0x800
+#define	SURF_DIFFUSE			0x8000
 
-#define SURF_AUTOFLARE	0x2000		// just free flag (should use extra struc for dtexinfo_t !!)
+#define SURF_AUTOFLARE			0x2000		// just free flag (should use extra struc for dtexinfo_t !!)
 
 
 

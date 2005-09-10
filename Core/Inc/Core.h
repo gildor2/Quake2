@@ -111,9 +111,8 @@ class CORE_API COutputDevice
 public:
 	bool	NoColors;			// when true, color codes will be removed from output
 	bool	FlushEveryTime;		// when true, Flush() will be called after every Write()
-	bool	GrabOutput;			// when true, appPrintf() will output to this device only (if this device registered last)
 	COutputDevice ()
-	:	NoColors(false), FlushEveryTime(false), GrabOutput(false)
+	:	NoColors(false), FlushEveryTime(false)
 	{}
 #if 0
 	virtual ~COutputDevice ()
@@ -137,6 +136,18 @@ public:
 	void Write (const char *str)
 	{ /* empty */ }
 };
+
+// macros for hook/unhook output
+#define HookOutput(device)				\
+	COutputDevice *_OldHook = GLogHook;	\
+	GLogHook = device;
+
+#define HookOutputNull					\
+	HookOutput(GNull)
+
+#define UnhookOutput					\
+	GLogHook = _OldHook;
+
 
 CORE_API void appPrintf (const char *fmt, ...);
 CORE_API void appWPrintf (const char *fmt, ...);
@@ -211,7 +222,7 @@ inline float appDeltaCyclesToMsecf (unsigned timeDelta)
 #include "MemoryMgr.h"
 //!! #include "Cvar.h"
 #include "Commands.h"
-//!! #include "FileSystem.h"
+#include "FileSystem.h"
 #include "ScriptParser.h"
 #include "TextContainer.h"
 
@@ -219,8 +230,16 @@ inline float appDeltaCyclesToMsecf (unsigned timeDelta)
 	Global variables
 -----------------------------------------------------------------------------*/
 
-CORE_API extern CErrorHandler	GErr;
+// output system
+CORE_API extern COutputDevice	*GLogHook;
+CORE_API extern COutputDevice	*GNull;
+
+// system information
+CORE_API extern char			GMachineOS[];
+CORE_API extern char			GMachineCPU[];
 //??CORE_API extern char GVersion[512];
+
+CORE_API extern CErrorHandler	GErr;
 CORE_API extern bool			GIsFatalError;
 CORE_API extern bool			GIsRequestingExit;
 

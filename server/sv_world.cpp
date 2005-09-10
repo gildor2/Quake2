@@ -163,13 +163,13 @@ void SV_UnlinkEdict (edict_t *ent)
 	if (ent->solid == SOLID_TRIGGER)
 		while (node)
 		{
-			node->numTrigEdicts++;
+			node->numTrigEdicts--;
 			node = node->parent;
 		}
 	else
 		while (node)
 		{
-			node->numSolidEdicts++;
+			node->numSolidEdicts--;
 			node = node->parent;
 		}
 	ex.area = NULL;
@@ -375,7 +375,7 @@ void SV_LinkEdict (edict_t *ent)
 
 static void SV_AreaEdicts_r (areanode_t *node)
 {
-	link_t	*l, *next, *start;
+	link_t	*start;
 
 	// touch linked edicts
 	if (area_type == AREA_SOLID)
@@ -383,13 +383,14 @@ static void SV_AreaEdicts_r (areanode_t *node)
 		if (!node->numSolidEdicts) return;
 		start = &node->solidEdicts;
 	}
-	else
+	else // AREA_TRIGGERS
 	{
 		if (!node->numTrigEdicts) return;
 		start = &node->trigEdicts;
 	}
 
-	for (l = start->next; l != start; l = next)
+	link_t *next;
+	for (link_t *l = start->next; l != start; l = next)
 	{
 		next = l->next;
 		edict_t *check = EDICT_FROM_AREA(l);
@@ -480,13 +481,13 @@ static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 
 	{
 		if (start[i] < end[i])
 		{
-			amins[i] = start[i] + bounds.mins[i];
-			amaxs[i] = end[i] + bounds.maxs[i];
+			amins[i] = bounds.mins[i] + start[i];
+			amaxs[i] = bounds.maxs[i] + end[i];
 		}
 		else
 		{
-			amins[i] = end[i] + bounds.mins[i];
-			amaxs[i] = start[i] + bounds.maxs[i];
+			amins[i] = bounds.mins[i] + end[i];
+			amaxs[i] = bounds.maxs[i] + start[i];
 		}
 	}
 	edict_t	*list[MAX_EDICTS];
@@ -544,7 +545,7 @@ static void SV_ClipMoveToEntities (trace_t &tr, const CVec3 &start, const CVec3 
 		 	if (tr.startsolid)
 			{
 				tr = trace;
-				tr.startsolid = true;
+				tr.startsolid = true;	// keep startsolid "true" (BUT: not keep "false")
 			}
 			else
 				tr = trace;

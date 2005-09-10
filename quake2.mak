@@ -22,6 +22,9 @@ STATIC = \
 	Release/obj/CoreStatic/ScriptParser.obj \
 	Release/obj/CoreStatic/Strings.obj \
 	Release/obj/CoreStatic/TextContainer.obj \
+	Release/obj/CoreStatic/FileSystem.obj \
+	Release/obj/CoreStatic/FileContainerArc.obj \
+	Release/obj/CoreStatic/FileSystemWin32.obj \
 	Release/obj/CoreStatic/CoreWin32.obj \
 	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj/CoreStatic/ExceptFilterWin32.obj \
@@ -117,6 +120,9 @@ DEDICATED = \
 	Release/obj/CoreStatic/ScriptParser.obj \
 	Release/obj/CoreStatic/Strings.obj \
 	Release/obj/CoreStatic/TextContainer.obj \
+	Release/obj/CoreStatic/FileSystem.obj \
+	Release/obj/CoreStatic/FileContainerArc.obj \
+	Release/obj/CoreStatic/FileSystemWin32.obj \
 	Release/obj/CoreStatic/CoreWin32.obj \
 	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj/CoreStatic/ExceptFilterWin32.obj \
@@ -170,13 +176,14 @@ TEST = \
 	Release/obj/CoreStatic/ScriptParser.obj \
 	Release/obj/CoreStatic/Strings.obj \
 	Release/obj/CoreStatic/TextContainer.obj \
+	Release/obj/CoreStatic/FileSystem.obj \
+	Release/obj/CoreStatic/FileContainerArc.obj \
+	Release/obj/CoreStatic/FileSystemWin32.obj \
 	Release/obj/CoreStatic/CoreWin32.obj \
 	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj/CoreStatic/ExceptFilterWin32.obj \
 	Release/obj/TestApp/TestApp.obj \
-	Release/obj/TestApp/Commands.obj \
-	Release/obj/TestApp/FileSystem.obj \
-	Release/obj/TestApp/FileSystemWin32.obj
+	Release/obj/TestApp/Commands.obj
 
 TestApp/TestApp.exe : DIRS $(TEST)
 	echo Creating executable "TestApp/TestApp.exe" ...
@@ -215,46 +222,14 @@ DEPENDS = \
 	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h
 
-Release/obj/TestApp/TestApp.obj : TestApp/TestApp.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/TestApp/TestApp.obj" TestApp/TestApp.cpp
-
-DEPENDS = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/FileSystem.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	Core/Inc/VcWin32.h
-
-Release/obj/TestApp/FileSystem.obj : Core/Src/FileSystem.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/TestApp/FileSystem.obj" Core/Src/FileSystem.cpp
-
-Release/obj/TestApp/FileSystemWin32.obj : Core/Src/FileSystemWin32.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/TestApp/FileSystemWin32.obj" Core/Src/FileSystemWin32.cpp
-
-DEPENDS = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/OutputDeviceFile.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	Core/Inc/VcWin32.h
-
 Release/obj/CoreStatic/DbgSymbols.obj : Core/Src/DbgSymbols.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/DbgSymbols.obj" Core/Src/DbgSymbols.cpp
 
 Release/obj/CoreStatic/ErrorMgr.obj : Core/Src/ErrorMgr.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/ErrorMgr.obj" Core/Src/ErrorMgr.cpp
+
+Release/obj/TestApp/TestApp.obj : TestApp/TestApp.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/TestApp/TestApp.obj" TestApp/TestApp.cpp
 
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
 
@@ -263,6 +238,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
@@ -292,6 +268,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
@@ -328,6 +305,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceFile.h \
@@ -358,6 +336,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceMem.h \
@@ -400,6 +379,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/OutputDeviceMem.h \
@@ -432,6 +412,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -450,6 +431,12 @@ Release/obj/CoreStatic/DbgSymbolsWin32.obj : Core/Src/DbgSymbolsWin32.cpp $(DEPE
 
 Release/obj/CoreStatic/ExceptFilterWin32.obj : Core/Src/ExceptFilterWin32.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/ExceptFilterWin32.obj" Core/Src/ExceptFilterWin32.cpp
+
+Release/obj/CoreStatic/FileContainerArc.obj : Core/Src/FileContainerArc.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/FileContainerArc.obj" Core/Src/FileContainerArc.cpp
+
+Release/obj/CoreStatic/FileSystemWin32.obj : Core/Src/FileSystemWin32.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/FileSystemWin32.obj" Core/Src/FileSystemWin32.cpp
 
 Release/obj/CoreStatic/Memory.obj : Core/Src/Memory.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/Memory.obj" Core/Src/Memory.cpp
@@ -471,6 +458,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -482,6 +470,23 @@ DEPENDS = \
 Release/obj/CoreStatic/CoreMain.obj : Core/Src/CoreMain.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/CoreMain.obj" Core/Src/CoreMain.cpp
 
+DEPENDS = \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Inc/VcWin32.h \
+	Core/Src/FileContainerOS.h
+
+Release/obj/CoreStatic/FileSystem.obj : Core/Src/FileSystem.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/FileSystem.obj" Core/Src/FileSystem.cpp
+
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
@@ -489,6 +494,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -524,6 +530,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -561,6 +568,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -600,6 +608,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -638,6 +647,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -674,6 +684,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -710,6 +721,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -745,6 +757,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -782,6 +795,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -818,6 +832,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -853,6 +868,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -887,6 +903,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -920,6 +937,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -951,6 +969,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -981,6 +1000,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1010,6 +1030,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1037,6 +1058,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1064,6 +1086,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1100,6 +1123,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1134,6 +1158,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1174,6 +1199,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1217,6 +1243,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1252,6 +1279,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1290,6 +1318,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1341,6 +1370,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1375,6 +1405,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1411,6 +1442,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1443,6 +1475,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1472,6 +1505,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1503,6 +1537,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1538,6 +1573,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1575,6 +1611,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1609,6 +1646,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1662,6 +1700,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1748,6 +1787,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \
@@ -1775,6 +1815,7 @@ DEPENDS = \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
 	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileSystem.h \
 	Core/Inc/Macro.h \
 	Core/Inc/MemoryMgr.h \
 	Core/Inc/ScriptParser.h \

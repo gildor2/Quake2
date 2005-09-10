@@ -3,7 +3,7 @@
 #include <direct.h>
 #include <io.h>
 
-void Sys_Mkdir (char *path)
+void Sys_Mkdir (const char *path)
 {
 	_mkdir (path);
 }
@@ -30,12 +30,12 @@ static bool CheckAttributes (unsigned attrs)
 
 const char *Sys_FindFirst (const char *path, int flags)
 {
-	_finddata_t findinfo;
-
 	if (const char *s = strrchr (path, '/'))
 		appStrncpyz (findBase, path, s - path + 2);	// +1 for '/' char and +1 for zero
 	else
 		findBase[0] = 0;
+
+	_finddata_t findinfo;
 	findHandle = _findfirst (path, &findinfo);
 	if (findHandle == -1) return NULL;			// not found
 	findFlags = flags;
@@ -49,10 +49,9 @@ const char *Sys_FindFirst (const char *path, int flags)
 
 const char *Sys_FindNext ()
 {
-	_finddata_t findinfo;
-
 	while (findHandle != -1)
 	{
+		_finddata_t findinfo;
 		if (_findnext (findHandle, &findinfo) == -1)
 			return NULL;
 
@@ -74,10 +73,8 @@ void Sys_FindClose ()
 
 bool Sys_FileExists (const char *path, int flags)
 {
-	if (Sys_FindFirst (path, flags))
-	{
-		Sys_FindClose ();
-		return true;
-	}
-	return false;
+	if (!Sys_FindFirst (path, flags)) return false;
+
+	Sys_FindClose ();
+	return true;
 }

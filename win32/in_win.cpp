@@ -360,8 +360,6 @@ static bool MouseMsgHook (UINT uMsg, WPARAM wParam, LPARAM lParam)
 	switch (uMsg)
 	{
 	case WM_MOUSEWHEEL:
-		// this chunk of code theoretically only works under NT4+ and Win98+
-		// since this message doesn't exist under Win95
 		if (wParam >> 31)	// really, HIWORD(wParam) should be checked, but LOWORD() does not affects the sign of result
 		{
 			Key_Event (K_MWHEELDOWN, true);
