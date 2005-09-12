@@ -392,7 +392,7 @@ void CL_SendConnectPacket (void)
 
 static void InitServerAddress ()
 {
-	if (!NET_StringToAdr (cls.serverName, &cls.serverAddr))
+	if (!NET_StringToAdr (cls.serverName, &cls.serverAddr, PORT_SERVER))
 	{
 		TString<64> NameCopy;
 		NameCopy = cls.serverName;			// cls.serverName will be erased
@@ -401,7 +401,6 @@ static void InitServerAddress ()
 		Com_DropError ("Bad server address %s\n", *NameCopy);
 		return;
 	}
-	if (!cls.serverAddr.port) cls.serverAddr.port = BigShort (PORT_SERVER);
 }
 
 
@@ -488,8 +487,7 @@ void CL_Rcon_f (int argc, char **argv)
 			appWPrintf ("Not connected and \"rcon_address\" is not set\n");
 			return;
 		}
-		NET_StringToAdr (rcon_address->string, &to);
-		if (!to.port) to.port = BigShort (PORT_SERVER);
+		NET_StringToAdr (rcon_address->string, &to, PORT_SERVER);
 	}
 
 	NET_SendPacket (NS_CLIENT, Message.len () + 1, Message, to);
@@ -620,19 +618,19 @@ void CL_PingServers_f ()
 {
 	NET_Config (true);		// allow remote
 
+	const char *cmd = "info " STR(PROTOCOL_VERSION);
+	netadr_t adr;
+
 	// send a broadcast packet
 	appPrintf ("pinging broadcast...\n");
-	const char *cmd = "info " STR(PROTOCOL_VERSION);
-
-	netadr_t adr;
+	NET_StringToAdr ("0.0.0.0", &adr, PORT_SERVER);		// address does not matters -- really, will only set port
 	adr.type = NA_BROADCAST;
-	adr.port = BigShort(PORT_SERVER);
 	Netchan_OutOfBandPrint (NS_CLIENT, adr, cmd);
+
 	// implicitly check localhost for local dedicated server
 	if (!Com_ServerState ())
 	{
-		NET_StringToAdr ("127.0.0.1", &adr);
-		adr.port = BigShort(PORT_SERVER);
+		NET_StringToAdr ("127.0.0.1", &adr, PORT_SERVER);
 		Netchan_OutOfBandPrint (NS_CLIENT, adr, cmd);
 	}
 
@@ -640,17 +638,14 @@ void CL_PingServers_f ()
 	for (int i = 0; i < NUM_ADDRESSBOOK_ENTRIES; i++)
 	{
 		const char *adrstring = Cvar_VariableString (va("adr%d", i));
-		if (!adrstring || !adrstring[0])
-			continue;
+		if (!adrstring || !adrstring[0]) continue;
 
 		appPrintf ("pinging %s...\n", adrstring);
-		if (!NET_StringToAdr (adrstring, &adr))
+		if (!NET_StringToAdr (adrstring, &adr, PORT_SERVER))
 		{
 			appPrintf ("Bad address: %s\n", adrstring);
 			continue;
 		}
-		if (!adr.port)
-			adr.port = BigShort(PORT_SERVER);
 		Netchan_OutOfBandPrint (NS_CLIENT, adr, cmd);
 	}
 }

@@ -333,7 +333,7 @@ void SV_InitGame ()
 
 	// heartbeats will always be sent to the id master
 	svs.last_heartbeat = -BIG_NUMBER;		// send immediately
-	NET_StringToAdr (va("192.246.40.37:%i", PORT_MASTER), &master_adr[0]);
+	NET_StringToAdr ("192.246.40.37:" STR(PORT_MASTER), &master_adr[0]);
 
 	// init game
 	if (!sv.attractloop)

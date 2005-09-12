@@ -1,9 +1,9 @@
 /*!! TODO:
-	- implement CFileContainerZip (not included automatically!)
 	- implement resource file system:
 	  ? may be, change resource format: cut unnecessary gzip headers from data
 		stream, add "length" field to start, do not require "end pointer", only
 		"start pointer"
+	  - mount resources to ".", not to "baseq2"
 */
 
 #include "Core.h"
@@ -69,11 +69,27 @@ CFile *appOpenFile (const char *filename)
 }
 
 
+// NOTE: we using "type b = 0" -- initialized value before read, in a case
+//  of read fault (end of file etc) - to return something concrete
 byte CFile::ReadByte ()
 {
 	byte b = 0;
 	Read (&b, 1);
 	return b;
+}
+
+//!! WARNING: !LITTLE_ENDIAN code path is not tested
+short CFile::ReadShort ()
+{
+#ifdef LITTLE_ENDIAN
+	short b = 0;
+	Read (&b, 2);
+	return b;
+#else
+	byte b[2];
+	Read (&b, 2);
+	return b[0] | (b[1]<<8);
+#endif
 }
 
 int CFile::ReadInt ()
@@ -84,8 +100,27 @@ int CFile::ReadInt ()
 	return b;
 #else
 	byte b[4];
-	Read (b, 4);
+	Read (&b, 4);
 	return b[0] | (b[1]<<8) | (b[2]<<16) | (b[3]<<24);
+#endif
+}
+
+float CFile::ReadFloat ()
+{
+#ifdef LITTLE_ENDIAN
+	float f = 0;
+	Read (&f, 4);
+	return f;
+#else
+	union {
+		float	f;
+		byte	b[4];
+	} f;
+	f.f = 0;
+	Read (&f, 4);
+	Exchange (f.b[0], f.b[3]);
+	Exchange (f.b[1], f.b[2]);
+	return f.f;
 #endif
 }
 
@@ -93,6 +128,7 @@ void CFile::ReadString (char *buf, int size)
 {
 	buf[size] = 0;
 	char *lim = buf + size - 1;		// do not overwrite last (zero) byte
+	*lim = 0;						// when buffer will be overflowed, string already will be null-terminated
 	char c;
 	do
 	{
@@ -365,17 +401,21 @@ static void cMount (bool usage, int argc, char **argv)
 	// process list
 	for (TListIterator<CFileItem> it = *list; it; ++it)
 	{
-		numMounts++;
 		if (it->flags & FS_FILE)
 		{
 			CFileContainer *Cont = GFileSystem->MountArchive (va("%s/%s", *Path, it->name), point);
-			if (Cont) numFiles += Cont->numFiles;
+			if (Cont)
+			{
+				numFiles += Cont->numFiles;
+				numMounts++;
+			}
 			continue;
 		}
 		if (it->flags & FS_DIR)
 		{
 			// NOTE: cannot mount drive root (e.g. "C:" - there is no dir, when C: in placed ...)
 			GFileSystem->MountDirectory (va("%s/%s", *Path, it->name), point);
+			numMounts++;
 			continue;
 		}
 		// else -- should not happen
@@ -485,7 +525,7 @@ static void cType (bool usage, int argc, char **argv)
 		return;
 	}
 	// display info about file
-	appPrintf ("File: %s\nFound in %s\nlength: %d bytes\n", *f->Name, f->Owner->name, f->GetSize ());
+	appPrintf ("File: %s\nfound in: %s\nlength: %d bytes\n", *f->Name, f->Owner->name, f->GetSize ());
 	delete f;
 }
 

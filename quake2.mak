@@ -24,10 +24,10 @@ STATIC = \
 	Release/obj/CoreStatic/TextContainer.obj \
 	Release/obj/CoreStatic/FileSystem.obj \
 	Release/obj/CoreStatic/FileContainerArc.obj \
-	Release/obj/CoreStatic/FileSystemWin32.obj \
 	Release/obj/CoreStatic/CoreWin32.obj \
 	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj/CoreStatic/ExceptFilterWin32.obj \
+	Release/obj/CoreStatic/FileSystemWin32.obj \
 	Release/obj/q2stat/cl_cin.obj \
 	Release/obj/q2stat/cl_download.obj \
 	Release/obj/q2stat/cl_ents.obj \
@@ -122,10 +122,10 @@ DEDICATED = \
 	Release/obj/CoreStatic/TextContainer.obj \
 	Release/obj/CoreStatic/FileSystem.obj \
 	Release/obj/CoreStatic/FileContainerArc.obj \
-	Release/obj/CoreStatic/FileSystemWin32.obj \
 	Release/obj/CoreStatic/CoreWin32.obj \
 	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj/CoreStatic/ExceptFilterWin32.obj \
+	Release/obj/CoreStatic/FileSystemWin32.obj \
 	Release/obj/dedstat/sv_dedicated.obj \
 	Release/obj/dedstat/sv_anim.obj \
 	Release/obj/dedstat/sv_ccmds.obj \
@@ -178,16 +178,16 @@ TEST = \
 	Release/obj/CoreStatic/TextContainer.obj \
 	Release/obj/CoreStatic/FileSystem.obj \
 	Release/obj/CoreStatic/FileContainerArc.obj \
-	Release/obj/CoreStatic/FileSystemWin32.obj \
 	Release/obj/CoreStatic/CoreWin32.obj \
 	Release/obj/CoreStatic/DbgSymbolsWin32.obj \
 	Release/obj/CoreStatic/ExceptFilterWin32.obj \
+	Release/obj/CoreStatic/FileSystemWin32.obj \
 	Release/obj/TestApp/TestApp.obj \
 	Release/obj/TestApp/Commands.obj
 
 TestApp/TestApp.exe : DIRS $(TEST)
 	echo Creating executable "TestApp/TestApp.exe" ...
-	link.exe -nologo -filealign:512 -incremental:no -out:"TestApp/TestApp.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib -map:"TestApp/TestApp.map" $(TEST)
+	link.exe -nologo -filealign:512 -incremental:no -out:"TestApp/TestApp.exe" -libpath:"SDK/lib" kernel32.lib user32.lib gdi32.lib lib/lib.lib -map:"TestApp/TestApp.map" $(TEST)
 
 #------------------------------------------------------------------------------
 #	compiling source files
@@ -209,6 +209,27 @@ Release/obj/q2stat/q2.res : win32/q2.rc
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
+	Core/../lib/zlib/zlib.h \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileContainerPak.h \
+	Core/Inc/FileContainerZip.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceFile.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Inc/VcWin32.h \
+	lib/zlib/zconf.h
+
+Release/obj/TestApp/TestApp.obj : TestApp/TestApp.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/TestApp/TestApp.obj" TestApp/TestApp.cpp
+
+DEPENDS = \
 	Core/Inc/Build.h \
 	Core/Inc/Commands.h \
 	Core/Inc/Core.h \
@@ -227,9 +248,6 @@ Release/obj/CoreStatic/DbgSymbols.obj : Core/Src/DbgSymbols.cpp $(DEPENDS)
 
 Release/obj/CoreStatic/ErrorMgr.obj : Core/Src/ErrorMgr.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/CoreStatic/ErrorMgr.obj" Core/Src/ErrorMgr.cpp
-
-Release/obj/TestApp/TestApp.obj : TestApp/TestApp.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/TestApp/TestApp.obj" TestApp/TestApp.cpp
 
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
 

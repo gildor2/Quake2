@@ -60,35 +60,25 @@ static void NetadrToSockadr (netadr_t *a, SOCKADDR *s)
 {
 	memset (s, 0, sizeof(*s));
 
+	SOCKADDR_IN	*s1 = (SOCKADDR_IN*)s;
+	s1->sin_family = AF_INET;
+	s1->sin_port   = a->port;
 	switch (a->type)
 	{
 	case NA_BROADCAST:
-		{
-			SOCKADDR_IN	*s1 = (SOCKADDR_IN*)s;
-			s1->sin_family      = AF_INET;
-			s1->sin_port        = a->port;
-			s1->sin_addr.s_addr = INADDR_BROADCAST;
-		}
+		s1->sin_addr.s_addr = INADDR_BROADCAST;
 		break;
 	case NA_IP:
-		{
-			SOCKADDR_IN	*s1 = (SOCKADDR_IN*)s;
-			s1->sin_family      = AF_INET;
-			s1->sin_port        = a->port;
-			s1->sin_addr.s_addr = *(int *)&a->ip; // copy 4 bytes as DWORD
-		}
+		s1->sin_addr.s_addr = *(int *)&a->ip;		// copy 4 bytes as DWORD
 		break;
 	}
 }
 
 static void SockadrToNetadr (SOCKADDR *s, netadr_t *a)
 {
-	if (s->sa_family == AF_INET)
-	{
-		a->type        = NA_IP;
-		*(int *)&a->ip = ((SOCKADDR_IN *)s)->sin_addr.s_addr;
-		a->port        = ((SOCKADDR_IN *)s)->sin_port;
-	}
+	a->type        = NA_IP;
+	*(int *)&a->ip = ((SOCKADDR_IN *)s)->sin_addr.s_addr;
+	a->port        = ((SOCKADDR_IN *)s)->sin_port;
 }
 
 
@@ -146,7 +136,7 @@ idnewt:28000
 192.246.40.70
 192.246.40.70:28000
 */
-static bool StringToSockaddr (const char *s, SOCKADDR *sadr)
+static bool StringToSockaddr (const char *s, SOCKADDR *sadr, short defPort)
 {
 	memset (sadr, 0, sizeof(*sadr));
 
@@ -154,25 +144,28 @@ static bool StringToSockaddr (const char *s, SOCKADDR *sadr)
 	s1->sin_family = AF_INET;
 	s1->sin_port   = 0;
 
-	char	copy[128];
-	strcpy (copy, s);
-	// strip off a trailing :port if present
-	for (char *colon = copy; *colon; colon++)
-		if (*colon == ':')
-		{
-			*colon = 0;
-			s1->sin_port = htons (atoi (colon+1));
-			break;
-		}
-
-	if (copy[0] >= '0' && copy[0] <= '9')
+	TString<128> Copy;
+	Copy = s;
+	// find and process ":port"
+	char *p = Copy.chr (':');
+	if (p)
 	{
-		*(int *) &s1->sin_addr = inet_addr (copy);
+		*p++ = 0;
+		s1->sin_port = htons (atoi (p));
+	}
+	else
+	{
+		s1->sin_port = htons (defPort);
+	}
+
+	if (Copy[0] >= '0' && Copy[0] <= '9')
+	{
+		*(int *) &s1->sin_addr = inet_addr (Copy);
 	}
 	else
 	{
 		struct hostent *h;
-		if (!(h = gethostbyname (copy)))
+		if (!(h = gethostbyname (Copy)))
 			return 0;
 		*(int *) &s1->sin_addr = *(int *)h->h_addr_list[0];
 	}
@@ -187,7 +180,7 @@ idnewt:28000
 192.246.40.70
 192.246.40.70:28000
 */
-bool NET_StringToAdr (const char *s, netadr_t *a)
+bool NET_StringToAdr (const char *s, netadr_t *a, short defPort)
 {
 	if (!strcmp (s, "localhost"))
 	{
@@ -197,7 +190,7 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
 	}
 
 	SOCKADDR sadr;
-	if (!StringToSockaddr (s, &sadr)) return false;
+	if (!StringToSockaddr (s, &sadr, defPort)) return false;
 
 	SockadrToNetadr (&sadr, a);
 
@@ -340,7 +333,7 @@ void NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
 	Socket initialization
 -----------------------------------------------------------------------------*/
 
-static int IPSocket (char *net_interface, int port)
+static int IPSocket (const char *net_interface, int port)
 {
 	int newsocket;
 
@@ -371,7 +364,7 @@ static int IPSocket (char *net_interface, int port)
 	if (!stricmp(net_interface, "localhost"))
 		address.sin_addr.s_addr = INADDR_ANY;
 	else
-		StringToSockaddr (net_interface, (SOCKADDR *)&address);
+		StringToSockaddr (net_interface, (SOCKADDR *)&address, 0);
 
 	address.sin_port   = htons (port);
 	address.sin_family = AF_INET;

@@ -546,12 +546,10 @@ static bool bigendian;
 
 // can't just use function pointers, or dll linkage can
 // mess up when qcommon is included in multiple places
-short	(*_BigShort) (short l);
 short	(*_LittleShort) (short l);
 int		(*_LittleLong) (int l);
 float	(*_LittleFloat) (float l);
 
-short	BigShort(short l){return _BigShort(l);}
 short	LittleShort(short l) {return _LittleShort(l);}
 int		LittleLong (int l) {return _LittleLong(l);}
 float	LittleFloat (float l) {return _LittleFloat(l);}
@@ -569,7 +567,6 @@ void Swap_Init ()
 	if ( *(short *)swaptest == 1)
 	{
 		bigendian = false;
-		_BigShort = ShortSwap;
 		_LittleShort = ShortNoSwap;
 		_LittleLong = LongNoSwap;
 		_LittleFloat = FloatNoSwap;
@@ -577,7 +574,6 @@ void Swap_Init ()
 	else
 	{
 		bigendian = true;
-		_BigShort = ShortNoSwap;
 		_LittleShort = ShortSwap;
 		_LittleLong = LongSwap;
 		_LittleFloat = FloatSwap;

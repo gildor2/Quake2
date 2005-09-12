@@ -139,10 +139,10 @@ void netchan_t::Setup (netsrc_t sock, netadr_t adr, int qport)
 {
 	memset (this, 0, sizeof(netchan_t));
 
-	this->sock = sock;
-	remote_address = adr;
-	port = qport;
-	last_received = appMilliseconds ();
+	this->sock        = sock;
+	remote_address    = adr;
+	port              = qport;
+	last_received     = appMilliseconds ();
 	incoming_sequence = 0;
 	outgoing_sequence = 1;
 

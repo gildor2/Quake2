@@ -249,19 +249,18 @@ void appUncolorizeString (char *dst, const char *src)
 #define VA_GOODSIZE		512
 #define VA_BUFSIZE		2048
 
-//?? should be "const char* va()"
 const char *va (const char *format, ...)
 {
 	guardSlow(va);
 
 	static char buf[VA_BUFSIZE];
 	static int bufPos = 0;
+	// wrap buffer
+	if (bufPos >= VA_BUFSIZE - VA_GOODSIZE) bufPos = 0;
 
 	va_list argptr;
 	va_start (argptr, format);
 
-	// wrap buffer
-	if (bufPos >= VA_BUFSIZE - VA_GOODSIZE) bufPos = 0;
 	// print
 	char *str = buf + bufPos;
 	int len = vsnprintf (str, VA_BUFSIZE - bufPos, format, argptr);
@@ -563,6 +562,7 @@ int CStringList::IndexOf (const char *str)
 
 void CStringList::InsertLast (CStringItem *item)
 {
+	guardSlow(CStringItem::InsertLast);
 	if (!first)
 	{
 		first = item;
@@ -572,6 +572,7 @@ void CStringList::InsertLast (CStringItem *item)
 	CStringItem *curr;
 	for (curr = first; curr->next; curr = curr->next) ; // find list end
 	curr->next = item;
+	unguardSlow;
 }
 
 

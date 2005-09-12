@@ -572,6 +572,7 @@ extern bool userinfo_modified;		//?? should change this to not track CVAR_USERIN
 #define MAX_MSGLEN_OLD	1400		// MAX_MSGLEN for old clients (and for IPX protocol - gone)
 
 typedef enum {NA_LOOPBACK, NA_BROADCAST, NA_IP} netadrtype_t;
+	// NOTE: NA_BROADCAST used for serrching game servers only
 typedef enum {NS_CLIENT, NS_SERVER} netsrc_t;
 
 struct netadr_t
@@ -595,7 +596,7 @@ bool	NET_CompareAdr (netadr_t *a, netadr_t *b);
 bool	NET_CompareBaseAdr (netadr_t *a, netadr_t *b);
 bool	NET_IsLocalAddress (netadr_t *adr);
 char	*NET_AdrToString (netadr_t *a);
-bool	NET_StringToAdr (const char *s, netadr_t *a);
+bool	NET_StringToAdr (const char *s, netadr_t *a, short defPort = 0);
 
 
 class netchan_t

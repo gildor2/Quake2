@@ -468,7 +468,6 @@ short	ShortSwap (short l);
 int		LongSwap (int l);
 float	FloatSwap (float f);
 
-#define BigShort(n)		ShortSwap(n)
 #define LittleShort(n)	((short)n)
 #define LittleLong(n)	((long)n)
 #define LittleFloat(n)	((float)n)
@@ -477,7 +476,6 @@ float	FloatSwap (float f);
 
 #else
 
-short	BigShort(short l);
 short	LittleShort(short l);
 int		LittleLong (int l);
 float	LittleFloat (float l);

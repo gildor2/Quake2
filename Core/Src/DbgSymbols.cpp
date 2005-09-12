@@ -13,7 +13,7 @@ public:
 class CPackageSymbols : public CMemoryChain, public TList<CSymbol>
 {
 public:
-	char	name[MAX_PKG_NAME];
+	TString<MAX_PKG_NAME> Name;
 };
 
 
@@ -41,31 +41,34 @@ void appLoadDebugSymbols ()
 			break;
 		}
 		// read package name
-		char pkgName[256];
-		f->ReadString (ARRAY_ARG(pkgName));
-		if (!pkgName[0]) break;		// eof mark
+		TString<256> PkgName;
+		f->ReadString (PkgName);
+		if (!PkgName[0]) break;		// eof mark
 
 		if (dbgPackages >= MAX_PACKAGES)
-			appError ("too much packages");
+		{
+			appWPrintf (DBG_SYMBOLS_FILE": too much packages\n");
+			break;
+		}
 
 		CPackageSymbols *pkg = pkgDebugInfo[dbgPackages++] = new CPackageSymbols;
-		CSymbol *lastSym = NULL;
+		pkg->Name = PkgName;
 
-		appStrcpy (pkg->name, pkgName);
 		// read symbols
+		CSymbol *lastSym = NULL;
 		while (true)
 		{
 			// read symbol address
 			unsigned addr = f->ReadInt ();		//?? can use ReadIndex() for more compact file
 			if (!addr) break;		// end of package mark
 			// read symbol name
-			char symName[256];
-			f->ReadString (ARRAY_ARG(symName));
+			TString<256> SymName;
+			f->ReadString (SymName);
 
-			CSymbol *sym = new (symName, pkg) CSymbol;
+			CSymbol *sym = new (SymName, pkg) CSymbol;
 			sym->address = addr;
 			// insert into list
-			pkg->InsertAfter (sym, lastSym);
+			pkg->InsertAfter (sym, lastSym);	// == InsertLast()
 			lastSym = sym;
 		}
 	}
@@ -79,7 +82,7 @@ void appLoadDebugSymbols ()
 	{
 		CPackageSymbols *pkg = pkgDebugInfo[i];
 
-		appPrintf ("\n--------------\nPkg: %s\n", pkg->name);
+		F.Printf ("\n--------------\nPkg: %s\n", *pkg->Name);
 		for (CSymbol *s = pkg->First(); s; s = pkg->Next(s))
 			F.Printf ("  %08X: %s\n", s->address, s->name);
 	}
@@ -101,7 +104,7 @@ bool appSymbolName (address_t addr, char *buffer, int size)
 	for (int i = 0; i < dbgPackages; i++)
 	{
 		CPackageSymbols *pkg = pkgDebugInfo[i];
-		if (!appStricmp (pkg->name, package))
+		if (!appStricmp (pkg->Name, package))
 		{
 			for (TListIterator<CSymbol> s = *pkg; s; ++s)
 			{

@@ -56,16 +56,12 @@ static void SV_SetMaster_f (int argc, char **argv)
 		if (slot == MAX_MASTERS)
 			break;
 
-		if (!NET_StringToAdr (argv[i], &master_adr[i]))
+		if (!NET_StringToAdr (argv[i], &master_adr[slot], PORT_MASTER))
 		{
 			appPrintf ("Bad address: %s\n", argv[i]);
 			continue;
 		}
-		if (master_adr[slot].port == 0)
-			master_adr[slot].port = BigShort (PORT_MASTER);
-
 		appPrintf ("Master server at %s\n", NET_AdrToString (&master_adr[slot]));
-
 		appPrintf ("Sending a ping.\n");
 
 		Netchan_OutOfBandPrint (NS_SERVER, master_adr[slot], "ping");

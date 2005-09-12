@@ -66,8 +66,14 @@ public:
 	virtual bool Eof () = 0;
 	// read helpers
 	byte ReadByte ();
+	short ReadShort ();
 	int ReadInt ();
+	float ReadFloat ();
 	void ReadString (char *buf, int size);
+	template<int N> inline void ReadString (TString<N> &Str)
+	{
+		ReadString (Str, N);
+	}
 };
 
 
@@ -163,7 +169,6 @@ public:
 	virtual CFile *OpenFile (const char *filename);
 	virtual CFileList *List (const char *mask, unsigned flags = FS_ALL);
 	// mount/unmount containers
-	//!! by name (path/pak)?
 	// if point == NULL, will mount to GDefMountPoint
 	void Mount (CFileContainer &Container, const char *point = NULL);
 	void Umount (CFileContainer &Container);
@@ -179,11 +184,8 @@ CORE_API extern CFileSystem *GFileSystem;
 CORE_API extern TString<64> GDefMountPoint;
 
 CORE_API void appInitFileSystem (CFileSystem &FS);
-
 // simple file reader using OS file system
 CORE_API CFile *appOpenFile (const char *filename);
-
-//?? move to local headers (CoreLocal.h) ?
 // This function can be used without CFileSystem objects at all; access to files is
 // not restricted by file system mounts (function works without it)
 CORE_API void appListDirectoryOS (const char *dir, CFileList &List, unsigned flags);

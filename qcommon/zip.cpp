@@ -72,8 +72,8 @@ FILE* Zip_OpenArchive (const char *name)
 
 	unsigned signature;
 	localFileHdr_t hdr;
-	if (fread (&signature, 4, 1, f) != 1 || signature != LOCAL_HDR_MAGIC ||
-		fread (&hdr, sizeof(hdr), 1, f) != 1 || hdr.compressionMethod >= 9)
+	if (fread (&signature, 4, 1, f) != 1 || signature != LOCAL_HDR_MAGIC ||		//?? disable this check to allow sfx archives etc
+		fread (&hdr, sizeof(hdr), 1, f) != 1 || hdr.compressionMethod >= 9)		//?? don't need this check
 	{
 		fclose (f);
 		return NULL;
@@ -125,7 +125,7 @@ bool Zip_EnumArchive (FILE *f, enumZipFunc_t enum_func)
 		if (fseek (f, hdr.extraFieldLength + hdr.csize, SEEK_CUR)) return false;
 		// if OK - make a callback
 		if (!enum_func (&file)) return true;				// break on "false"
-		//printf("%10d < %10d  [%1d]  %s\n", hdr.csize, hdr.ucsize, hdr.compression_method, buf);
+		//printf("%10d < %10d  [%1d]  %s\n", hdr.csize, hdr.ucsize, hdr.compressionMethod, buf);
 		// dirs have size=0, method=0, last_name_char='/'
 	}
 	return true;
@@ -204,7 +204,7 @@ bool Zip_EnumArchive (FILE *f, enumZipFunc_t enum_func)
 		if (fseek (f, hdr.extraFieldLength + hdr.fileCommentLength, SEEK_CUR)) return false;
 		// if OK - make a callback
 		if (!enum_func (&file)) return false;				// break on "false"
-		//printf("%10d < %10d  [%1d]  %s\n", hdr.csize, hdr.ucsize, hdr.compression_method, buf);
+		//printf("%10d < %10d  [%1d]  %s\n", hdr.csize, hdr.ucsize, hdr.compressionMethod, buf);
 		// dirs have size=0, method=0, last_name_char='/'
 	}
 	return true;

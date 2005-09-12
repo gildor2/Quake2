@@ -382,7 +382,8 @@ static void Cmd_MarkAllocs (bool usage)
 
 	FAllocatorInfo info[MAX_ALLOCATORS];
 	numMarkedAllocs = BuildAllocatorsTable (ARRAY_ARG(info));
-	if (MarkedAllocs) appFree (MarkedAllocs);
+	if (MarkedAllocs)
+		delete MarkedAllocs;
 	MarkedAllocs = new FAllocatorInfo[numMarkedAllocs];
 	memcpy (MarkedAllocs, info, sizeof(FAllocatorInfo) * numMarkedAllocs);
 
