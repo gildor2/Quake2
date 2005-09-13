@@ -1173,7 +1173,7 @@ void PerformScreenshot ()
 		for (i = 0; i < 10000; i++)
 		{	// check for a free filename
 			FILE *f;
-			Name.sprintf ("%s/screenshots/shot%04d%s", FS_Gamedir (), i, ext);
+			Name.sprintf ("./%s/screenshots/shot%04d%s", FS_Gamedir (), i, ext);
 			if (!(f = fopen (Name, "rb")))
 				break;	// file doesn't exist
 			fclose (f);
@@ -1700,12 +1700,12 @@ END_PROFILE
 	{
 		strcpy (s, ".wal");
 START_PROFILE2(img::wal, name)
-		if (miptex_t *mt = (miptex_t*) FS_LoadFile (Name2))
+		if (miptex_t *mt = (miptex_t*) GFileSystem->LoadFile (Name2))
 		{
 			width  = LittleLong(mt->width);
 			height = LittleLong(mt->height);
 			pic    = Convert8to32bit ((byte*)mt + LittleLong(mt->offsets[0]), width, height, NULL);
-			FS_FreeFile (mt);
+			delete mt;
 		}
 		else
 			pic = NULL;

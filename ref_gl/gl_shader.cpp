@@ -899,19 +899,16 @@ static void FindShaderScripts ()
 
 	appPrintf ("Searching for shader scripts:\n");
 
-	TList<CStringItem> scriptFiles = FS_ListFiles (va("scripts/*.shader"), LIST_FILES);
-	for (CListIterator file = scriptFiles; file; ++file)
+	CFileList *scriptFiles = GFileSystem->List (va("scripts/*.shader"), FS_FILE);
+	for (TListIterator<CFileItem> file = *scriptFiles; file; ++file)
 	{
 		numFiles++;
 
-		char *tmp = strrchr (file->name, '/');
-		if (!tmp) tmp = file->name;
-		else tmp++;						// skip '/'
-		char *buf = (char*)FS_LoadFile (va("scripts/%s", tmp));
+		char *buf = (char*)GFileSystem->LoadFile (va("scripts/%s", file->name));
 		if (!buf) continue;			// should not happens
 
 #ifdef DEBUG_SHADERS
-		appPrintf (S_GREEN"%s\n", tmp);
+		appPrintf (S_GREEN"%s\n", file->name);
 #endif
 		CSimpleParser text;
 		text.InitFromBuf (buf, PARSER_CPP_COMMENTS|PARSER_SEPARATE_BRACES);
@@ -953,7 +950,7 @@ static void FindShaderScripts ()
 				scr = new (Name, scriptChain) shaderScript_t;
 				scriptList.Insert (scr);
 			}
-			scr->FileName.filename (tmp);
+			scr->FileName.filename (file->name);
 			scr->start      = start;
 			scr->end        = end;
 			scr->isTemplate = appIsWildcard (scr->name);
@@ -961,12 +958,12 @@ static void FindShaderScripts ()
 			numScripts++;
 		}
 #ifdef DEBUG_SHADERS
-		if (errMsg) appWPrintf ("ERROR in scripts/%s: %s\n", tmp, errMsg);
+		if (errMsg) appWPrintf ("ERROR in scripts/%s: %s\n", file->name, errMsg);
 #endif
 
-		FS_FreeFile (buf);
+		delete buf;
 	}
-	scriptFiles.Free ();
+	delete scriptFiles;
 
 	appPrintf ("...found %d shader scripts in %d files\n", numScripts, numFiles);
 	unguard;
@@ -1001,7 +998,7 @@ static bool InitShaderFromScript (const char *srcName, const char *text)
 		// 1st: check .qs file  2nd: check *.shader files
 
 		// try loading name.qs
-		buf = (char*)FS_LoadFile (va("%s.qs", srcName));
+		buf = (char*)GFileSystem->LoadFile (va("%s.qs", srcName));
 		if (buf)
 			text = buf;
 		else
@@ -1023,7 +1020,7 @@ static bool InitShaderFromScript (const char *srcName, const char *text)
 #endif
 			// load script file
 			unsigned length;
-			buf = (char*)FS_LoadFile (va("scripts/%s", *scr->FileName), &length);
+			buf = (char*)GFileSystem->LoadFile (va("scripts/%s", *scr->FileName), &length);
 			if (scr->end > length)
 			{
 				appWPrintf ("script \"%s\" beyond end of file \"%s\" ?", srcName, *scr->FileName);
@@ -1104,7 +1101,7 @@ static bool InitShaderFromScript (const char *srcName, const char *text)
 		if (!sh.height) sh.height = 1;
 	}
 
-	if (buf) FS_FreeFile (buf);
+	if (buf) delete buf;
 	return result;
 
 	unguardf(("%s", srcName));

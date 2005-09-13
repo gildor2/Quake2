@@ -20,7 +20,7 @@ struct cinematics_t
 	unsigned palette[256];
 
 	// file data
-	QFILE	*file;						// if NULL, display pic
+	CFile	*file;						// if NULL, display pic
 	TString<MAX_QPATH> ImageName;		// used for "map image.pcx"
 
 	int		frame;
@@ -39,16 +39,6 @@ struct cinematics_t
 };
 
 static cinematics_t cin;
-
-
-//?? helper function (should place to files.cpp)
-static int ReadCinInt ()
-{
-	int		tmp;
-	FS_Read (&tmp, 4, cin.file);
-	//?? may perform error checking here, but FS_Read() already throw FatalError() when cannot read file
-	return LittleLong (tmp);
-}
 
 
 /*-----------------------------------------------------------------------------
@@ -99,7 +89,7 @@ static void InitHuffTable ()
 
 		// read a row of counts and convert byte[]->int[]
 		byte	counts[256];
-		FS_Read (counts, sizeof(counts), cin.file);
+		cin.file->Read (counts, sizeof(counts));
 		for (int j = 0; j < 256; j++)
 			h_count[j] = counts[j];
 
@@ -176,7 +166,7 @@ static void FreeCinematic ()
 {
 	if (cin.buf[0])		delete cin.buf[0];
 	if (cin.buf[1])		delete cin.buf[1];
-	if (cin.file)		FS_FCloseFile (cin.file);
+	if (cin.file)		delete cin.file;
 	if (cin.huffNodes)	delete cin.huffNodes;
 	if (cin.restartSound) CL_Snd_Restart_f ();
 	memset (&cin, 0, sizeof(cin));
@@ -200,14 +190,14 @@ static bool ReadNextFrame (byte *buffer)
 	guard(ReadNextFrame);
 
 	// read the next frame
-	int command = ReadCinInt ();
+	int command = cin.file->ReadInt ();
 	if (command == 2) return false;			// last frame marker
 
 	if (command == 1)
 	{
 		byte palette[256*3];
 		// read palette
-		FS_Read (palette, sizeof(palette), cin.file);
+		cin.file->Read (palette, sizeof(palette));
 		// convert 3-byte RGB palette to 4-byte RGBA for renderer
 		byte *src = palette;
 		byte *dst = (byte*) cin.palette;
@@ -222,14 +212,14 @@ static bool ReadNextFrame (byte *buffer)
 
 	// decompress the next frame
 	byte compressed[0x20000];
-	int size = ReadCinInt () - 4;
+	int size = cin.file->ReadInt () - 4;
 	if (size > sizeof(compressed) || size < 1)
 		Com_DropError ("Bad compressed frame size: %d\n", size);
 	// read and verify check decompressed frame size
-	if (ReadCinInt() != cin.frameSize)
+	if (cin.file->ReadInt() != cin.frameSize)
 		Com_FatalError ("bad cinematic frame size");
 
-	FS_Read (compressed, size, cin.file);
+	cin.file->Read (compressed, size);
 
 	// read sound
 	int start = cin.frame * cin.s_rate / CIN_SPEED;
@@ -237,7 +227,7 @@ static bool ReadNextFrame (byte *buffer)
 	int count = end - start;
 
 	byte samples[22050 * 4];
-	FS_Read (samples, count*cin.s_width*cin.s_channels, cin.file);
+	cin.file->Read (samples, count*cin.s_width*cin.s_channels);
 	S_RawSamples (count, cin.s_rate, cin.s_width, cin.s_channels, samples);
 
 	cblock_t in, huf1;
@@ -353,7 +343,7 @@ void SCR_PlayCinematic (const char *filename)
 	else
 	{
 		// .cin file
-		cin.file = FS_FOpenFile (va("video/%s", filename));
+		cin.file = GFileSystem->OpenFile (va("video/%s", filename));
 		if (!cin.file)
 		{
 			Com_DPrintf ("Cinematic %s not found\n", filename);
@@ -361,11 +351,12 @@ void SCR_PlayCinematic (const char *filename)
 			return;
 		}
 
-		cin.width      = ReadCinInt ();
-		cin.height     = ReadCinInt ();
-		cin.s_rate     = ReadCinInt ();
-		cin.s_width    = ReadCinInt ();
-		cin.s_channels = ReadCinInt ();
+		//?? read as struct
+		cin.width      = cin.file->ReadInt ();
+		cin.height     = cin.file->ReadInt ();
+		cin.s_rate     = cin.file->ReadInt ();
+		cin.s_width    = cin.file->ReadInt ();
+		cin.s_channels = cin.file->ReadInt ();
 
 		cin.frameSize  = cin.width * cin.height;
 		cin.buf[0]     = new byte [cin.frameSize];

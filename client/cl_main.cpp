@@ -206,7 +206,7 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 
 	// open the demo file
 	TString<MAX_OSPATH> Name;
-	Name.sprintf ("%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
+	Name.sprintf ("./%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
 	appPrintf ("recording to %s.\n", *Name);
 	FS_CreatePath (Name);
@@ -506,7 +506,7 @@ void CL_Disconnect ()
 {
 	guard(CL_Disconnect);
 
-	if (cls.state == ca_disconnected)
+	if (cls.state == ca_uninitialized || cls.state == ca_disconnected)
 		return;
 
 	if (timedemo->integer)
@@ -928,7 +928,7 @@ void CL_WriteConfiguration (const char *filename)
 	if (cls.state == ca_uninitialized)
 		return;
 
-	COutputDeviceFile Out(va("%s/%s", FS_Gamedir(), filename), true);
+	COutputDeviceFile Out(va("./%s/%s", FS_Gamedir(), filename), true);
 	Out.NoColors = false;	// do not modify contents
 	if (!Out.IsOpened ()) return;
 

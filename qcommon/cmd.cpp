@@ -221,7 +221,7 @@ static void Cmd_Exec_f (bool usage, int argc, char **argv)
 	}
 
 	char	*f;
-	if (!(f = (char*) FS_LoadFile (argv[1])))
+	if (!(f = (char*) GFileSystem->LoadFile (argv[1])))
 	{
 		appWPrintf ("Couldn't exec %s\n", argv[1]);
 		return;
@@ -230,7 +230,7 @@ static void Cmd_Exec_f (bool usage, int argc, char **argv)
 
 	Cbuf_InsertText (f);
 
-	FS_FreeFile (f);
+	delete f;
 }
 
 
@@ -508,11 +508,20 @@ ExecuteCommand
 $Cvars will be expanded unless they are in a quoted token
 ============
 */
+//#define RECURCE_CHECK
+
+#ifdef RECURCE_CHECK
+static int recurseCheck = 0;
+#endif
+
 bool ExecuteCommand (const char *text)
 {
 	guard(ExecuteCommand);
 
 	TokenizeString (MacroExpandString (text));
+#ifdef RECURCE_CHECK
+	int check = ++recurseCheck;
+#endif
 
 	// execute the command line
 	if (!_argc) return true;		// no tokens
@@ -547,6 +556,10 @@ bool ExecuteCommand (const char *text)
 				((void (*) (bool, int, char**)) cmd->func) (usage, _argc, _argv);
 				break;
 			}
+#ifdef RECURCE_CHECK
+			if (check != recurseCheck)
+				appWPrintf ("ExecuteCommand: recursion in \"%s\"\n", text);
+#endif
 			unguardf(("%s", cmd->name));
 		}
 		return true;
@@ -567,7 +580,13 @@ bool ExecuteCommand (const char *text)
 
 	// check cvars
 	if (Cvar_Command (_argc, _argv))
+	{
+#ifdef RECURCE_CHECK
+		if (check != recurseCheck)
+			appWPrintf ("ExecuteCommand: recursion in \"%s\"\n", text);
+#endif
 		return true;
+	}
 
 	unguard;
 	return false;
@@ -579,12 +598,19 @@ bool ExecuteCommand (const char *str, const CSimpleCommand *CmdList, int numComm
 	guard(ExecuteSimpleCommand);
 //	GetArgs (str, false);
 	TokenizeString (str);
+#ifdef RECURCE_CHECK
+	int check = ++recurseCheck;
+#endif
 	for (int i = 0; i < numCommands; i++, CmdList++)
 		if (!stricmp (CmdList->name, _argv[0]))
 		{
 			if (!CmdList->func) return true;		// NULL function
 			guard(cmd)
 			CmdList->func (_argc, _argv);
+#ifdef RECURCE_CHECK
+			if (check != recurseCheck)
+				appWPrintf ("ExecuteCommand: recursion in \"%s\"\n", str);
+#endif
 			return true;
 			unguardf(("%s", CmdList->name))
 		}

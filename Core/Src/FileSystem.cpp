@@ -210,8 +210,100 @@ CFileContainer *CFileSystem::MountArchive (const char *filename, const char *poi
 	unguardf(("%s", filename));
 }
 
+void CFileSystem::Mount (const char *mask, const char *point)
+{
+	TString<256> Path; Path.filename (mask);
 
-CFileList *CFileSystem::List (const char *mask, unsigned flags)
+	// sanity check
+	if (Path[0] == 0)							// used <mount ""> -- argv[1] == ""
+	{
+		appWPrintf ("mount: no empty names\n");
+		return;
+	}
+	// if Path is not wildcard - mount it implicitly
+	if (!appIsWildcard (Path))
+	{
+		// check for file
+		FILE *f = fopen (Path, "rb");
+		if (f)
+		{
+			GFileSystem->MountArchive (Path, point);
+			fclose (f);
+			return;
+		}
+		// check for dir: sometimes impossible, so - mount directory, even if it is not exists
+		GFileSystem->MountDirectory (Path, point);
+		return;
+	}
+
+	CFileList *list = new CFileList;
+	appListDirectoryOS (Path, *list, FS_FILE|FS_DIR|FS_PATH_NAMES);
+	if (!*list)
+	{
+		appWPrintf ("mount: nothing in \"%s\"\n", *Path);
+		delete list;
+		return;
+	}
+	// prepare stats
+	int numFiles = 0, numMounts = 0;
+	// cut path from path/maskOrFilename
+	char *s = Path.rchr ('/');
+	if (s) *s = 0;
+	else Path = ".";
+	// process list
+	for (TListIterator<CFileItem> it = *list; it; ++it)
+	{
+		TString<256> Temp;
+		Temp.sprintf ("%s/%s", *Path, it->name);
+		if (it->flags & FS_FILE)
+		{
+			CFileContainer *Cont = GFileSystem->MountArchive (*Temp, point);
+			if (Cont)
+			{
+				numFiles += Cont->numFiles;
+				numMounts++;
+			}
+			continue;
+		}
+		if (it->flags & FS_DIR)
+		{
+			// NOTE: cannot mount drive root (e.g. "C:" - there is no dir, when C: in placed ...)
+			GFileSystem->MountDirectory (*Temp, point);
+			numMounts++;
+			continue;
+		}
+		// else -- should not happen
+	}
+	// free file list
+	delete list;
+	// show stats
+	appPrintf ("Mounted %d containers (%d archived files)\n", numMounts, numFiles);
+}
+
+void CFileSystem::Umount (const char *mask)
+{
+	// unmount file container
+	mask = SkipRootDir (mask);		// ignore "./" at start
+	int n = 0;
+	CFileContainer *next;
+	for (CFileContainer *it = GFileSystem->mounts.First(); it; it = next)
+	{
+		next = GFileSystem->mounts.Next(it);
+		if (appMatchWildcard (SkipRootDir (it->name), mask) && !it->locked)
+		{
+			GFileSystem->Umount (*it);
+			delete it;
+			n++;
+		}
+	}
+	if (!n)
+		appPrintf ("No mount points match \"%s\"\n", mask);
+	else
+		appPrintf ("Unmounted %d containers\n", n);
+}
+
+
+CFileList *CFileSystem::List (const char *mask, unsigned flags, CFileList *list)
 {
 	TString<256> Mask; Mask.filename (mask);
 	// make separate path
@@ -220,7 +312,13 @@ CFileList *CFileSystem::List (const char *mask, unsigned flags)
 	if (s) *s = 0;
 	else Path[0] = 0;							// List(root)
 	// create list
-	CFileList *list = new CFileList;
+	if (!list)
+		list = new CFileList;
+	// validate flags, set default values
+	if (!(flags & (FS_DIR|FS_FILE)))
+		flags |= FS_DIR|FS_FILE;
+	if (!(flags & (FS_PAK|FS_OS)))
+		flags |= FS_PAK|FS_OS;
 	// iterate containers
 	for (TListIterator<CFileContainer> it = mounts; it; ++it)
 	{
@@ -309,7 +407,7 @@ CFile *CFileSystem::OpenFile (const char *filename)
 	return NULL;
 }
 
-void *CFileSystem::LoadFile (const char *filename, int *size)
+void *CFileSystem::LoadFile (const char *filename, unsigned *size)
 {
 	guard(CFileSystem::LoadFile);
 	CFile *f = OpenFile (filename);
@@ -324,6 +422,7 @@ void *CFileSystem::LoadFile (const char *filename, int *size)
 	if (f->Read (buf, len) != len)
 		appError ("Cannot read file %s:%s", f->Owner->name, *f->Name);
 	delete f;
+	if (size) *size = len;
 
 	return buf;
 	unguard;
@@ -339,20 +438,21 @@ static void cMount (bool usage, int argc, char **argv)
 	if (usage || argc > 3)
 	{
 		appPrintf ("Usage: mount\n"
-				   "  or   mount <path or archive> [mount point]\n");
+				   "  or   mount <path or archive> [mount point]\n"
+				   "Legend: L - locked\n");
 		return;
 	}
 	if (argc <= 1)
 	{
 		// list mounts
 		int n = 0;
-		appPrintf ("----L-type-nfiles-name----------------------------mount point----\n");
+		appPrintf ("----L-type-nfiles-mount point------name--------\n");
 		for (TListIterator<CFileContainer> it = GFileSystem->mounts; it; ++it)
 		{
 			//?? may be, skip hidden mounts (name[0] == '.')
 			n++;
-			appPrintf ("%-3d %c %-4s %-6d %-30s  %s\n", n,
-				it->locked ? '+' : ' ', it->GetType(), it->numFiles, it->name, *it->MountPoint);
+			appPrintf ("%-3d %c %-4s %-6d %-15s  %s\n", n,
+				it->locked ? '+' : ' ', it->GetType(), it->numFiles, *it->MountPoint, it->name);
 		}
 		return;
 	}
@@ -360,70 +460,8 @@ static void cMount (bool usage, int argc, char **argv)
 	//?? TODO:
 	//?? - check "already mounted"
 	//?? - allow q2's "mount pak0[.pak]" instead of "mount baseq2/pak0.pak"
-	TString<256> Path; Path.filename (argv[1]);
 	const char *point = argc > 2 ? argv[2] : NULL;
-	// sanity check
-	if (Path[0] == 0)							// used <mount ""> -- argv[1] == ""
-	{
-		appWPrintf ("mount: no empty names\n");
-		return;
-	}
-	// if Path is not wildcard - mount it implicitly
-	if (!appIsWildcard (Path))
-	{
-		// check for file
-		FILE *f = fopen (Path, "rb");
-		if (f)
-		{
-			GFileSystem->MountArchive (Path, point);
-			fclose (f);
-			return;
-		}
-		// check for dir: sometimes impossible, so - mount directory, even if it is not exists
-		GFileSystem->MountDirectory (Path, point);
-		return;
-	}
-
-	CFileList *list = new CFileList;
-	appListDirectoryOS (Path, *list, FS_FILE|FS_DIR|FS_PATH_NAMES);
-	if (!list->First())
-	{
-		appWPrintf ("mount: nothing in \"%s\"\n", *Path);
-		delete list;
-		return;
-	}
-	// prepare stats
-	int numFiles = 0, numMounts = 0;
-	// cut path from path/maskOrFilename
-	char *s = Path.rchr ('/');
-	if (s) *s = 0;
-	else Path = ".";
-	// process list
-	for (TListIterator<CFileItem> it = *list; it; ++it)
-	{
-		if (it->flags & FS_FILE)
-		{
-			CFileContainer *Cont = GFileSystem->MountArchive (va("%s/%s", *Path, it->name), point);
-			if (Cont)
-			{
-				numFiles += Cont->numFiles;
-				numMounts++;
-			}
-			continue;
-		}
-		if (it->flags & FS_DIR)
-		{
-			// NOTE: cannot mount drive root (e.g. "C:" - there is no dir, when C: in placed ...)
-			GFileSystem->MountDirectory (va("%s/%s", *Path, it->name), point);
-			numMounts++;
-			continue;
-		}
-		// else -- should not happen
-	}
-	// free file list
-	delete list;
-	// show stats
-	appPrintf ("Mounted %d containers (%d archived files)\n", numMounts, numFiles);
+	GFileSystem->Mount (argv[1], point);
 }
 
 static void cUmount (bool usage, int argc, char **argv)
@@ -433,20 +471,7 @@ static void cUmount (bool usage, int argc, char **argv)
 		appPrintf ("Usage: umount <mask>\n");
 		return;
 	}
-	// unmount file container
-	const char *mask = SkipRootDir (argv[1]);	// ignore "./" at start
-	int n = 0;
-	for (TListIterator<CFileContainer> it = GFileSystem->mounts; it; ++it)
-		if (appMatchWildcard (SkipRootDir (it->name), mask) && !it->locked)
-		{
-			GFileSystem->Umount (**it);
-			delete *it;
-			n++;
-		}
-	if (!n)
-		appPrintf ("No mount points match \"%s\"\n", argv[1]);
-	else
-		appPrintf ("Unmounted %d containers\n", n);
+	GFileSystem->Umount (argv[1]);
 
 	//!! should (may) accept following forms:
 	//!! ? umount pak0.pak -- name w/o path --> umount defMountPoint/pak0.pak

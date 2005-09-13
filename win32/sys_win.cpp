@@ -10,6 +10,12 @@ bool		ActiveApp, MinimizedApp, FullscreenApp;
 
 unsigned	sys_frame_time;			//?? used in cl_input.cpp only
 
+//#define IS_CONSOLE_APP
+
+#if !defined(IS_CONSOLE_APP) && defined(DEDICATED_ONLY)
+#define IS_CONSOLE_APP
+#endif
+
 
 static char *ScanForCD ()
 {
@@ -56,7 +62,7 @@ protected:
 public:
 	void Init ()
 	{
-#ifndef DEDICATED_ONLY
+#ifndef IS_CONSOLE_APP
 		AllocConsole ();
 #endif
 		hConInput  = GetStdHandle (STD_INPUT_HANDLE);		//?? not OutputDevice-stuff
@@ -315,7 +321,7 @@ extern COutputDevice *debugLog;
 HINSTANCE global_hInstance;
 
 
-#ifndef DEDICATED_ONLY
+#ifndef IS_CONSOLE_APP
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 #else
 int main (int argc, const char **argv) // force to link as console application
@@ -323,7 +329,7 @@ int main (int argc, const char **argv) // force to link as console application
 {
 	TRY
 	{
-#ifndef DEDICATED_ONLY
+#ifndef IS_CONSOLE_APP
 		global_hInstance = hInstance;
 		const char *cmdline = lpCmdLine;
 #else
@@ -336,7 +342,7 @@ int main (int argc, const char **argv) // force to link as console application
 			Cvar_Set ("cddir", cddir);
 #endif
 
-#ifndef DEDICATED_ONLY
+#ifndef IS_CONSOLE_APP
 		// init-time output
 		COutputDeviceMem *TempLog = new COutputDeviceMem (16384);
 		TempLog->Register ();
@@ -347,7 +353,7 @@ int main (int argc, const char **argv) // force to link as console application
 		appInit ();		//!!!!
 		Com_Init (cmdline);
 
-#ifndef DEDICATED_ONLY
+#ifndef IS_CONSOLE_APP
 		COutputDeviceCon ConLog;
 		if (DEDICATED)
 			Win32Log.Init ();
@@ -414,7 +420,7 @@ int main (int argc, const char **argv) // force to link as console application
 	TRY {
 		SV_Shutdown (GIsFatalError ? va("Server fatal crashed: %s\n", *GErr.Message) : "Server quit\n");
 		CL_Shutdown ();
-#ifndef DEDICATED_ONLY
+#ifndef IS_CONSOLE_APP
 		if (DEDICATED) FreeConsole ();
 #endif
 	}

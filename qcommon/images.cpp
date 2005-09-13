@@ -36,20 +36,20 @@ void LoadPCX (const char *name, byte *&pic, byte *&palette, int &width, int &hei
 	pic = palette = NULL;
 	pcxHdr_t *hdr;
 	unsigned filelen;
-	if (!(hdr = (pcxHdr_t*) FS_LoadFile (name, &filelen))) return;
+	if (!(hdr = (pcxHdr_t*) GFileSystem->LoadFile (name, &filelen))) return;
 
 	int w = LittleShort(hdr->xmax) + 1;
 	int h = LittleShort(hdr->ymax) + 1;
 
 	const char *errMsg = NULL;
 	if (filelen < sizeof(pcxHdr_t) + 768 || hdr->manufacturer != 10 || hdr->version != 5 || hdr->encoding != 1 || hdr->bits_per_pixel != 8)
-		errMsg = "LoadPCX(%s): bad pcx file\n";
+		errMsg = "LoadPCX(%s): bad pcx file";
 	else if (w > MAX_IMG_SIZE || h > MAX_IMG_SIZE)
-		errMsg = "LoadPCX(%s): image is too large\n";
+		errMsg = "LoadPCX(%s): image is too large";
 
 	if (errMsg)
 	{
-		FS_FreeFile (hdr);
+		delete hdr;
 		Com_DropError (errMsg, name);
 	}
 
@@ -86,7 +86,7 @@ void LoadPCX (const char *name, byte *&pic, byte *&palette, int &width, int &hei
 		}
 	}
 
-	FS_FreeFile (hdr);
+	delete hdr;
 }
 
 
@@ -125,7 +125,7 @@ void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 {
 	pic = NULL;
 	byte	*file;
-	if (!(file = (byte*) FS_LoadFile (name))) return;
+	if (!(file = (byte*) GFileSystem->LoadFile (name))) return;
 
 	tgaHdr_t *hdr = (tgaHdr_t*)file;
 
@@ -135,20 +135,20 @@ void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 	height = LittleShort(hdr->height);
 
 	if (hdr->image_type != 2 && hdr->image_type != 10 && hdr->image_type != 3)
-		errMsg = "LoadTGA(%s): Only type 2 (RGB), 3 (grey) and 10 (RGB RLE) targa RGB images supported\n";
+		errMsg = "LoadTGA(%s): Only type 2 (RGB), 3 (grey) and 10 (RGB RLE) targa RGB images supported";
 	else if (hdr->colormap_type != 0)
-		errMsg = "LoadTGA(%s): colormaps not supported\n";
+		errMsg = "LoadTGA(%s): colormaps not supported";
 	else if (hdr->pixel_size != 32 && hdr->pixel_size != 24 && !(hdr->image_type == 3 && hdr->pixel_size == 8))
 	{
-		FS_FreeFile (file);
-		Com_DropError ("LoadTGA(%s): invalid color depth %d for format %d\n", name, hdr->pixel_size, hdr->image_type);
+		delete file;
+		Com_DropError ("LoadTGA(%s): invalid color depth %d for format %d", name, hdr->pixel_size, hdr->image_type);
 	}
 	else if (width > MAX_IMG_SIZE || height > MAX_IMG_SIZE)
-		errMsg = "LoadTGA(%s): image is too large\n";
+		errMsg = "LoadTGA(%s): image is too large";
 
 	if (errMsg)
 	{
-		FS_FreeFile (file);
+		delete file;
 		Com_DropError (errMsg, name);
 	}
 
@@ -219,7 +219,7 @@ void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 		num += ct;
 	}
 
-	FS_FreeFile (file);
+	delete file;
 }
 
 
@@ -315,7 +315,7 @@ void LoadJPG (const char *name, byte *&pic, int &width, int &height)
 	pic = NULL;
 	unsigned length;
 	byte *buffer;
-	if (!(buffer = (byte*) FS_LoadFile (name, &length))) return;
+	if (!(buffer = (byte*) GFileSystem->LoadFile (name, &length))) return;
 
 	jpegerror = false;
 	jpegname = name;
@@ -342,14 +342,14 @@ void LoadJPG (const char *name, byte *&pic, int &width, int &height)
 	int rows = cinfo.output_height;
 
 	if (cinfo.output_components != 3)
-		errMsg = "LoadJPG(%s): color components not equal 3\n";
+		errMsg = "LoadJPG(%s): color components not equal 3";
 	else if (columns > MAX_IMG_SIZE || rows > MAX_IMG_SIZE)
-		errMsg = "LoadJPG(%s): image is too large\n";
+		errMsg = "LoadJPG(%s): image is too large";
 
 	if (errMsg)
 	{
 		jpeg_destroy_decompress (&cinfo);
-		FS_FreeFile (buffer);
+		delete buffer;
 		Com_DropError (errMsg, name);
 	}
 
@@ -382,7 +382,7 @@ void LoadJPG (const char *name, byte *&pic, int &width, int &height)
 		height = rows;
 	}
 
-	FS_FreeFile (buffer);
+	delete buffer;
 }
 
 
@@ -393,21 +393,19 @@ void LoadJPG (const char *name, byte *&pic, int &width, int &height)
 
 int ImageExists (const char *name, int stop_mask)
 {
-	const char *path = NULL;
 	int out = 0;
 
+	const char *path = NULL;
 	while (path = FS_NextPath (path))
 	{
-		TList<CStringItem> list;
-		list = FS_ListFiles (name[0] == '.' && name[1] == '/' ?
+		bool rootBased = (name[0] == '.' && name[1] == '/');
+		CFileList *list = GFileSystem->List (rootBased ?
 			va("%s.*", name) :				// root-based
 			va("%s/%s.*", path, name),		// game-based
-			LIST_FILES);
-		for (CListIterator item = list; item; ++item)
+			FS_FILE);
+		for (TListIterator<CFileItem> item = *list; item; ++item)
 		{
-			char *ext = strrchr (item->name, '/');	// find filename
-			if (!ext) ext = item->name;
-			ext = strrchr (ext, '.');				// find last dot in a filename
+			const char *ext = strrchr (item->name, '.');	// find last dot in a filename
 			if (!ext) continue;
 
 			if		(!strcmp (ext, ".pcx")) out |= IMAGE_PCX;
@@ -415,7 +413,8 @@ int ImageExists (const char *name, int stop_mask)
 			else if (!strcmp (ext, ".tga")) out |= IMAGE_TGA;
 			else if (!strcmp (ext, ".jpg")) out |= IMAGE_JPG;
 		}
-		list.Free();
+		delete list;
+		if (rootBased) break;
 		if (out & stop_mask) break;
 		if ((out & IMAGE_8BIT) && (out & IMAGE_32BIT))
 			break; // found both 8 and 32-bit images - stop search

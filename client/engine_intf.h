@@ -12,10 +12,6 @@ typedef struct {
 	int	(*_Cvar_VariableInt) (const char *name);
 	float	(*_Cvar_Clamp) (cvar_t *cvar, float low, float high);
 	void	(*_Com_DPrintf) (const char *str, ...);
-	bool	(*_FS_FileExists) (const char *filename);
-	TList<CStringItem>	(*_FS_ListFiles) (const char *name, int flags);
-	void*	(*_FS_LoadFile) (const char *name, unsigned *size);
-	void	(*_FS_FreeFile) (void *buf);
 	const char*	(*_FS_Gamedir) ();
 	void	(*_FS_CreatePath) (const char *path);
 	void	(*_FS_CopyFile) (const char *src, const char *dst);
@@ -84,22 +80,6 @@ inline float Cvar_Clamp (cvar_t *cvar, float low, float high)
 	return ri._Cvar_Clamp (cvar, low, high);
 }
 #define Com_DPrintf	ri._Com_DPrintf
-inline bool FS_FileExists (const char *filename)
-{
-	return ri._FS_FileExists (filename);
-}
-inline TList<CStringItem> FS_ListFiles (const char *name, int flags)
-{
-	return ri._FS_ListFiles (name, flags);
-}
-inline void* FS_LoadFile (const char *name, unsigned *size = NULL)
-{
-	return ri._FS_LoadFile (name, size);
-}
-inline void FS_FreeFile (void *buf)
-{
-	ri._FS_FreeFile (buf);
-}
 inline const char* FS_Gamedir ()
 {
 	return ri._FS_Gamedir ();

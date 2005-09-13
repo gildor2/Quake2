@@ -498,7 +498,7 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 				tmp++;	// skip '/'
 
 				flags |= SHOT_SMALL|SHOT_NO_2D|SHOT_NOGAMMA;
-				Filename.sprintf ("%s/levelshots/%s", FS_Gamedir (), tmp);
+				Filename.sprintf ("./%s/levelshots/%s", FS_Gamedir (), tmp);
 				// cut extension
 				tmp = Filename.rchr ('.');
 				if (tmp) *tmp = 0;
@@ -521,7 +521,7 @@ static void Screenshot_f (bool usage, int argc, char **argv)
 		{
 			if (Filename[0])
 				appWPrintf ("WARNING: name already specified (%s). Changed.\n", *Filename);
-			Filename.filename (va("%s/screenshots/%s", FS_Gamedir (), opt));
+			Filename.filename (va("./%s/screenshots/%s", FS_Gamedir (), opt));
 		}
 	}
 

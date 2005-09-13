@@ -143,6 +143,8 @@ static void Cvar_SetHardcoded (cvar_t *var, const char *value)
 		{
 			Cvar_SetString (var, value);
 			FS_LoadGameConfig ();
+			if (!DEDICATED)
+				Cbuf_AddText ("vid_restart\nsnd_restart\n");
 		}
 	}
 	// add another vars here

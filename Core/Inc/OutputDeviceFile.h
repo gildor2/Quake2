@@ -41,7 +41,7 @@ public:
 	{
 		log = fopen (fileName, erasePrevious ? "w" : "a");
 		if (!log)
-			appWPrintf ("Cannot write to file \"%s\"", fileName);
+			appWPrintf ("Cannot write to file \"%s\"\n", fileName);
 	}
 	void Close ()
 	{

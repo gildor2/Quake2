@@ -26,7 +26,7 @@ model_t	*FindModel (const char *name)
 	if (ext && !strcmp (ext, ".md2"))
 	{
 		ext[3] = '3';		// ".md2" -> ".md3"
-		if (FS_FileExists (Name2))
+		if (GFileSystem->FileExists (Name2))
 			return FindModel (Name2);
 		// md3 model with the same name is not found -- load md2
 		ext[3] = '2';		// ".md3" -> ".md2"
@@ -58,7 +58,7 @@ START_PROFILE2(FindModel::Load, name)
 	/*----- not found -- load model ------*/
 	unsigned len;
 	unsigned *file;
-	if (!(file = (unsigned*) FS_LoadFile (Name2, &len)))
+	if (!(file = (unsigned*) GFileSystem->LoadFile (Name2, &len)))
 	{
 		m = new model_t;
 		m->Name = Name2;
@@ -91,7 +91,7 @@ START_PROFILE(FindModel::Process)
 	if (m) modelsArray[modelCount++] = m;
 
 END_PROFILE
-	FS_FreeFile (file);
+	delete file;
 	return m;
 
 	unguardf(("mdl=%s", name));

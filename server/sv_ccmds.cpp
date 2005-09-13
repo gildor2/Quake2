@@ -81,7 +81,7 @@ static void SV_SetMaster_f (int argc, char **argv)
 static void SV_WipeSavegame (const char *savename)
 {
 	Com_DPrintf ("SV_WipeSaveGame(%s)\n", savename);
-	FS_RemoveFiles (va("%s/" SAVEGAME_DIRECTORY "/%s/*.*", FS_Gamedir (), savename));
+	FS_RemoveFiles (va("./%s/" SAVEGAME_DIRECTORY "/%s/*.*", FS_Gamedir (), savename));
 }
 
 
@@ -89,8 +89,8 @@ static void SV_CopySaveGame (const char *src, const char *dst)
 {
 	Com_DPrintf ("SV_CopySaveGame(%s, %s)\n", src, dst);
 	SV_WipeSavegame (dst);
-	FS_CopyFiles (va("%s/" SAVEGAME_DIRECTORY "/%s/*.*", FS_Gamedir(), src),
-				  va("%s/" SAVEGAME_DIRECTORY "/%s/", FS_Gamedir(), dst));
+	FS_CopyFiles (va("./%s/" SAVEGAME_DIRECTORY "/%s/*.*", FS_Gamedir(), src),
+				  va("./%s/" SAVEGAME_DIRECTORY "/%s/", FS_Gamedir(), dst));
 }
 
 
@@ -99,7 +99,7 @@ static void SV_WriteLevelFile ()
 	Com_DPrintf("SV_WriteLevelFile()\n");
 
 	char name[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
+	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
 	FILE *f = fopen (name, "wb");
 	if (!f)
 	{
@@ -110,7 +110,7 @@ static void SV_WriteLevelFile ()
 	CM_WritePortalState (f);
 	fclose (f);
 
-	appSprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
+	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
 	ge->WriteLevel (name);
 }
 
@@ -120,7 +120,7 @@ void SV_ReadLevelFile ()
 	Com_DPrintf ("SV_ReadLevelFile()\n");
 
 	char name[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
+	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_SERVER_EXTENSION, FS_Gamedir(), sv.name);
 	FILE *f = fopen(name, "rb");
 	if (!f)
 	{
@@ -131,7 +131,7 @@ void SV_ReadLevelFile ()
 	CM_ReadPortalState (f);
 	fclose (f);
 
-	appSprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
+	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name);
 	ge->ReadLevel (name);
 }
 
@@ -144,7 +144,7 @@ static void SV_WriteServerFile (bool autosave, const char *dir)
 	Com_DPrintf("SV_WriteServerFile(%s, %s)\n", autosave ? "true" : "false", dir);
 
 	char name[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
+	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
 	FILE *f = fopen (name, "wb");
 	if (!f)
 	{
@@ -184,14 +184,14 @@ static void SV_WriteServerFile (bool autosave, const char *dir)
 	fclose (f);
 
 	// write game state
-	appSprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/%s/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
+	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/%s/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), dir);
 	ge->WriteGame (name, autosave);
 
 	// perform screenshot
 	if (!DEDICATED)					// can be uninitialized when dedicated server
 	{
 		RE_Screenshot (SHOT_SMALL|SHOT_NOGAMMA|SHOT_SILENT|SHOT_NO_2D|SHOT_WAIT_3D|SHOT_JPEG,
-			va("%s/" SAVEGAME_DIRECTORY "/%s/shot", FS_Gamedir(), dir));
+			va("./%s/" SAVEGAME_DIRECTORY "/%s/shot", FS_Gamedir(), dir));
 //--		SCR_UpdateScreen ();			// required for screenshot performing
 			// BUT: here we must wait for NEXT map, and if performing shot immediately, it can be from PREVIOUS map
 	}
@@ -207,7 +207,7 @@ static void SV_ReadServerFile ()
 	Com_DPrintf("SV_ReadServerFile()\n");
 	if (!DEDICATED) SCR_SetLevelshot (SAVEGAME_DIRECTORY "/current/shot");
 
-	appSprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
+	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/current/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
 	FILE *f = fopen (name, "rb");
 	if (!f)
 	{
@@ -238,7 +238,7 @@ static void SV_ReadServerFile ()
 	strcpy (svs.mapcmd, mapcmd);
 
 	// read game state
-	appSprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/current/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
+	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/current/game." SAVEGAME_VARS_EXTENSION, FS_Gamedir());
 	ge->ReadGame (name);
 }
 
@@ -264,7 +264,7 @@ static void SV_Loadgame_f (bool usage, int argc, char **argv)
 
 	// make sure the server.ssv file exists
 	char name[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name), "%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), argv[1]);
+	appSprintf (ARRAY_ARG(name), "./%s/" SAVEGAME_DIRECTORY "/%s/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir(), argv[1]);
 	FILE *f = fopen (name, "rb");
 	if (!f)
 	{
@@ -400,7 +400,7 @@ static void SV_GameMap_f (bool usage, int argc, char **argv)
 	{	// save the map just exited
 		if (sv.state == ss_game)
 		{
-			FS_CreatePath (va("%s/" SAVEGAME_DIRECTORY "/current/", FS_Gamedir()));
+			FS_CreatePath (va("./%s/" SAVEGAME_DIRECTORY "/current/", FS_Gamedir()));
 
 			// clear all the client.inuse flags before saving so that
 			// when the level is re-entered, the clients will spawn
@@ -431,7 +431,7 @@ static void SV_GameMap_f (bool usage, int argc, char **argv)
 	// copy off the level to the autosave slot
 	if (!DEDICATED && !sv_deathmatch->integer)
 	{
-		FS_CreatePath (va("%s/" SAVEGAME_DIRECTORY "/current/", FS_Gamedir()));
+		FS_CreatePath (va("./%s/" SAVEGAME_DIRECTORY "/current/", FS_Gamedir()));
 		SV_CopySaveGame ("current", "save0");
 		SV_WriteServerFile (true, "save0");
 	}
@@ -448,7 +448,7 @@ static void SV_Map_f (int argc, char **argv)
 		char	expanded[MAX_QPATH];
 
 		appSprintf (ARRAY_ARG(expanded), "maps/%s.bsp", map);
-		if (!FS_FileExists (expanded))
+		if (!GFileSystem->FileExists (expanded))
 		{
 			appWPrintf ("Can't find %s\n", expanded);
 			return;
@@ -808,7 +808,7 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 
 	// open the demo file
 	char name[MAX_OSPATH];
-	appSprintf (ARRAY_ARG(name), "%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
+	appSprintf (ARRAY_ARG(name), "./%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
 	appPrintf ("recording to %s\n", name);
 	FS_CreatePath (name);

@@ -682,8 +682,6 @@ static void DrawOriginInfo (void)
 }
 
 
-extern bool fileFromPak;
-
 //#define SMOOTH_FPS_COUNTER
 
 static void DrawFpsInfo (void)
@@ -704,7 +702,7 @@ static void DrawFpsInfo (void)
 	}
 
 	// update min/max stats
-	if (!fileFromPak)					// ignore frame if packfile was read
+//??	if (!fileFromPak)					// ignore frame if packfile was read
 	{
 #ifdef SMOOTH_FPS_COUNTER
 		static float frameTime[5];
@@ -736,8 +734,8 @@ static void DrawFpsInfo (void)
 		EXPAND_BOUNDS(tmpFps, minFps, maxFps);
 #endif
 	}
-	else
-		fileFromPak = false;
+//??	else
+//??		fileFromPak = false;
 
 	lastFrameTime = time;
 
@@ -836,7 +834,7 @@ bool V_RenderView (void)
 		else
 		{
 			int timeDelta = time - lastTime;
-			if (timeDelta > cl.timedemoLongestFrame && !fileFromPak)
+			if (timeDelta > cl.timedemoLongestFrame) //?? && !fileFromPak)
 				cl.timedemoLongestFrame = timeDelta;
 		}
 		lastTime = time;

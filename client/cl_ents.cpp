@@ -410,7 +410,7 @@ static void GetEntityInfo (int entityNum, clEntityState_t * &st, unsigned &eff, 
 		// clear processed effects and add color shell
 		effects = effects | EF_COLOR_SHELL & ~(EF_PENT|EF_QUAD|EF_DOUBLE|EF_HALF_DAMAGE);
 	}
-	if ((effects & EF_COLOR_SHELL) && !stricmp (fs_gamedirvar->string, "rogue"))
+	if ((effects & EF_COLOR_SHELL) && !stricmp (FS_Gamedir (), "rogue"))
 	{
 		// PMM - at this point, all of the shells have been handled
 		// if we're in the rogue pack, set up the custom mixing, otherwise just

@@ -52,7 +52,7 @@ struct server_t
 	byte		multicast_bufNew[MAX_MSGLEN];
 
 	// demo server information
-	QFILE		*rdemofile;				// reading demos
+	CFile		*rdemofile;				// reading demos
 };
 
 #define EDICT_NUM(n) ((edict_t *)((byte *)ge->edicts + ge->edict_size*(n)))

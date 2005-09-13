@@ -92,7 +92,7 @@ void SV_DropClient (client_t *drop, char *info)
 
 	if (drop->download)
 	{
-		FS_FreeFile (drop->download);
+		delete drop->download;
 		drop->download = NULL;
 	}
 
@@ -1398,7 +1398,7 @@ void SV_Shutdown (const char *finalmsg, bool reconnect)
 
 	// free current level
 	if (sv.rdemofile)
-		FS_FCloseFile (sv.rdemofile);
+		delete sv.rdemofile;
 	memset (&sv, 0, sizeof(sv));
 	Com_SetServerState (ss_dead);	// == 0
 

@@ -22,9 +22,9 @@ static void RequestNextDownload ();
 static void DownloadFileName (char *dest, int destlen, const char *filename)
 {
 	if (memcmp (filename, "players", 7) == 0)	//?? players - downloaded to baseq2 only
-		appSprintf (dest, destlen, "%s/%s", BASEDIRNAME, filename);
+		appSprintf (dest, destlen, "./%s/%s", BASEDIRNAME, filename);
 	else
-		appSprintf (dest, destlen, "%s/%s", FS_Gamedir(), filename);
+		appSprintf (dest, destlen, "./%s/%s", FS_Gamedir(), filename);
 }
 
 
@@ -84,7 +84,7 @@ static bool CheckOrDownloadFile (const char *fmt, ...)
 			return true;
 	}
 
-	if (FS_FileExists (Name))	// it exists, no need to download
+	if (GFileSystem->FileExists (Name))	// it exists, no need to download
 		return true;
 
 	cls.DownloadName = Name;
@@ -140,7 +140,7 @@ void CL_Download_f (bool usage, int argc, char **argv)
 	TString<MAX_OSPATH> FileName;
 	FileName.filename (argv[1]);
 
-	if (FS_FileExists (FileName))
+	if (GFileSystem->FileExists (FileName))
 	{	// it exists, no need to download
 		appPrintf ("File already exists.\n");
 		return;
@@ -306,7 +306,7 @@ static void RequestNextDownload ()
 
 				// checking for skins in the model
 				if (!precache_model) {
-					if (!(precache_model = (byte*) FS_LoadFile (cl.configstrings[precache_check]))) {
+					if (!(precache_model = (byte*) GFileSystem->LoadFile (cl.configstrings[precache_check]))) {
 						precache_model_skin = 0;
 						precache_check++;
 						continue; // couldn't load it
@@ -314,7 +314,7 @@ static void RequestNextDownload ()
 					dMd2_t *hdr = (dMd2_t *)precache_model;
 					if (LittleLong(hdr) != MD2_IDENT || LittleLong(hdr->version) != MD2_VERSION) {
 						// not an alias model, or wrong model version
-						FS_FreeFile (precache_model);
+						delete precache_model;
 						precache_model = NULL;
 						precache_model_skin = 0;
 						precache_check++;
@@ -334,7 +334,7 @@ static void RequestNextDownload ()
 				}
 				if (precache_model)
 				{
-					FS_FreeFile (precache_model);
+					delete precache_model;
 					precache_model = NULL;
 				}
 				precache_model_skin = 0;

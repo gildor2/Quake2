@@ -322,7 +322,7 @@ sfx_t *S_RegisterSound (const char *name)
 	if (!s_registering)
 		S_LoadSound (sfx);
 	else
-		if (name[0] != '#' && name[0] != '*' && !FS_FileExists (va("sound/%s", name)))
+		if (name[0] != '#' && name[0] != '*' && !GFileSystem->FileExists (va("sound/%s", name)))
 			sfx->absent = true;
 
 	return sfx;
@@ -610,7 +610,7 @@ static sfx_t *GetPlayerSound (clEntityState_t *ent, const char *base)
 	if (sfx) return sfx;
 
 	// try sound in Quake2 model directory ("players/[model_name]/[sound]")
-	if (FS_FileExists (LocalFilename + 1))
+	if (GFileSystem->FileExists (LocalFilename + 1))
 	{
 		sfx = S_RegisterSound (LocalFilename);
 		if (sfx) return sfx;
@@ -637,7 +637,7 @@ static sfx_t *GetPlayerSound (clEntityState_t *ent, const char *base)
 		}
 	TString<MAX_QPATH> FileName2;
 	FileName2.sprintf ("sound/player/%s/%s", *ci.ModelName, newName);	// NOTE: used below as filename2+6 too
-	if (FS_FileExists (FileName2))
+	if (GFileSystem->FileExists (FileName2))
 	{
 		sfx = S_AliasName (LocalFilename, FileName2 + 6 /* skip "sound/" */);
 		if (sfx) return sfx;

@@ -343,21 +343,21 @@ static char *Do_CompleteCommand (char *partial)
 			path = "maps";
 			ext = ".bsp";
 			comp_type = 'm';
-			file_type = LIST_FILES;
+			file_type = FS_FILE|FS_NOEXT;
 		}
 		else if (!stricmp (complete_command, "demomap"))
 		{
 			path = "demos";
 			ext = ".dm2";
 			comp_type = 'd';
-			file_type = LIST_FILES;
+			file_type = FS_FILE|FS_NOEXT;
 		}
 		else if (!stricmp (complete_command, "game"))
 		{
 			path = "..";
 			ext = "";
 			comp_type = 'g';
-			file_type = LIST_DIRS;
+			file_type = FS_DIR;
 		}
 		else // try to complete varname with its value
 		{
@@ -378,44 +378,36 @@ static char *Do_CompleteCommand (char *partial)
 		}
 
 		// complete "map" or "demomap" with mask/arg*
-		TList<CStringItem> filelist = FS_ListFiles (va("%s/*%s", path, ext), file_type);
-		if (filelist)
+		CFileList *filelist = GFileSystem->List (va("%s/*%s", path, ext), file_type);
+		if (!*filelist)
 		{
-			for (CListIterator fileitem(filelist); fileitem; ++fileitem)
-			{
-				char *name;
-				// remove path part
-				if (name = strrchr (fileitem->name, '/'))
-					fileitem->name = name + 1;
-				// refine/remove file extension
-				if ((name = strrchr (fileitem->name, '.')) && !stricmp (name, ext))
-					*name = 0;				// cut extension
-			}
-			partial_name = arg1;
-			partial_len = strlen (arg1);
-			for (int display = 0; display < 2; display++)
-			{
-				completed_count = 0;
-				for (CListIterator fileitem(filelist); fileitem; ++fileitem)
-					TryComplete (fileitem->name, display, comp_type);
-				if (!completed_count)
-					return NULL;			// not completed
-
-				if (completed_count == 1)
-				{
-					strcat (completed_name, " ");
-					break;
-				}
-				if (!display)
-				{	// at this loop we just see, that we have many matches ...
-					appPrintf ("]/%s\n", partial);
-				}
-			}
-			strcpy (completed_name, va("%s %s", complete_command, completed_name));
-			filelist.Free();
-			return completed_name;
+			delete filelist;
+			return NULL;
 		}
-		return NULL;
+
+		partial_name = arg1;
+		partial_len = strlen (arg1);
+		for (int display = 0; display < 2; display++)
+		{
+			completed_count = 0;
+			for (TListIterator<CFileItem> fileitem = *filelist; fileitem; ++fileitem)
+				TryComplete (fileitem->name, display, comp_type);
+			if (!completed_count)
+				return NULL;			// not completed
+
+			if (completed_count == 1)
+			{
+				strcat (completed_name, " ");
+				break;
+			}
+			if (!display)
+			{	// at this loop we just see, that we have many matches ...
+				appPrintf ("]/%s\n", partial);
+			}
+		}
+		strcpy (completed_name, va("%s %s", complete_command, completed_name));
+		delete filelist;
+		return completed_name;
 	}
 
 	/*--------- complete command/variable/alias name ------------*/

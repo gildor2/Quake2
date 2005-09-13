@@ -114,10 +114,18 @@ void CFileContainerArc::List (CFileList &list, const char *mask, unsigned flags)
 		{
 			if (!appMatchWildcard (it->name, name)) continue;
 
-			CFileItem *item, *place;
-			if (!(item = list.Find (it->name, &place)))
+			TString<256> Name; Name = it->name;
+			// process NOEXT
+			if (flags & FS_NOEXT)
 			{
-				item = new (it->name, &list) CFileItem;
+				char *s = Name.rchr ('.');
+				if (s) *s = 0;
+			}
+
+			CFileItem *item, *place;
+			if (!(item = list.Find (Name, &place)))
+			{
+				item = new (Name, &list) CFileItem;
 				// here: item->flags=0
 				list.InsertAfter (item, place);
 			}

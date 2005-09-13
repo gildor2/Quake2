@@ -14,27 +14,16 @@ TList<playerModelInfo_t> pmiList;
 int numPlayerModels;
 
 
-static bool Md2SkinExists (const char *skin, CStringList &pcxfiles)
+static bool Md2SkinExists (const char *skin, CFileList *pcxfiles)
 {
-	const char *ext = strrchr (skin, '.');
-	if (!ext) return false;
-
-	if (stricmp (ext, ".pcx") && stricmp (ext, ".tga") && stricmp (ext, ".jpg"))
-		return false;		// not image
-
 	// modelname/skn_* have no icon
-	const char *name = strrchr (skin, '/');
-	if (!name) name = skin;
-	else name++;			// skip '/'
-
-	if (!memcmp (name, "skn_", 4))
+	if (!memcmp (skin, "skn_", 4))
 		return true;
-	char scratch[MAX_OSPATH];
-	strcpy (scratch, skin);
-	strcpy (scratch + (ext - skin), "_i.pcx");	//?? this will allow .PCX only
 
-	for (CListIterator item = pcxfiles; item; ++item)
-		if (!strcmp (item->name, scratch)) return true;
+	TString<64> Search;
+	Search.sprintf ("%s_i", skin);
+	for (CListIterator item = *pcxfiles; item; ++item)
+		if (item->name == Search) return true;
 	return false;
 }
 
@@ -54,103 +43,86 @@ void FreePlayerModelsInfo ()
 static void ScanQuake2Models (const char *path)
 {
 	/*----- get a list of directories -----*/
-	TList<CStringItem> dirnames;
-	dirnames = FS_ListFiles (va("%s/players/*.*", path), LIST_DIRS);
-	if (!dirnames) return;
+	CFileList *dirNames = GFileSystem->List (va("%s/players/*", path), FS_DIR);
 
 	/*--- go through the subdirectories ---*/
-	for (CListIterator diritem = dirnames; diritem; ++diritem)
+	for (TListIterator<CFileItem> diritem = *dirNames; diritem; ++diritem)
 	{
-		const char *infoName = strrchr (diritem->name, '/')+1;
-		if (pmiList.Find (infoName)) continue;	// already have model with the same name
+		if (pmiList.Find (diritem->name)) continue;	// already have model with the same name
 
 		// verify the existence of tris.md2
-		if (!FS_FileExists (va("%s/tris.md2", diritem->name)))
+		if (!GFileSystem->FileExists (va("%s/players/%s/tris.md2", path, diritem->name)))
 			continue;
 
 		// verify the existence of at least one pcx skin
-		// "/*.pcx" -> pcx,tga,jpg (see Md2SkinExists())
-		TList<CStringItem> skinNames = FS_ListFiles (va("%s/*.*", diritem->name), LIST_FILES);
-		if (!skinNames) continue;
-
+		CFileList *skinNames = GFileSystem->List (va("%s/players/%s/*.pcx,*.tga,*.jpg", path, diritem->name), FS_FILE|FS_NOEXT); // images only
 		// count valid skins, which consist of a skin with a matching "_i" icon
 		TList<CStringItem> skins;
 		int numSkins = 0;
-		for (CListIterator skinItem = skinNames; skinItem; ++skinItem)
+		for (TListIterator<CFileItem> skinItem = *skinNames; skinItem; ++skinItem)
 			if (Md2SkinExists (skinItem->name, skinNames))
 			{
-				char *str = strrchr (skinItem->name, '/') + 1;
-				char *ext = strrchr (str, '.');
-				ext[0] = 0;
-				skins.CreateAndInsert (str, pmiChain);
+				skins.CreateAndInsert (skinItem->name, pmiChain);
 				numSkins++;
 			}
-		skinNames.Free();
+		delete skinNames;
 		if (!numSkins) continue;
 
 		// create model info
-		playerModelInfo_t *info = new (infoName, pmiChain) playerModelInfo_t;
+		playerModelInfo_t *info = new (diritem->name, pmiChain) playerModelInfo_t;
 		info->numSkins = numSkins;
-		info->skins = skins;
+		info->skins    = skins;
 		// add model info to pmi
 		pmiList.Insert (info);
 
 		numPlayerModels++;
 	}
-	dirnames.Free();
+	delete dirNames;
 }
 
 
 void ScanQuake3Models (const char *path)
 {
 	/*----- get a list of directories -----*/
-	TList<CStringItem> dirnames;
-	dirnames = FS_ListFiles (va("%s/models/players/*.*", path), LIST_DIRS);
-	if (!dirnames) return;
-
+	CFileList *dirNames = GFileSystem->List (va("%s/models/players/*", path), FS_DIR);
 	/*--- go through the subdirectories ---*/
-	for (CListIterator diritem = dirnames; diritem; ++diritem)
+	for (TListIterator<CFileItem> diritem = *dirNames; diritem; ++diritem)
 	{
-		const char *infoName = strrchr (diritem->name, '/')+1;
-		if (pmiList.Find (infoName)) continue;	// already have model with the same name
+		if (pmiList.Find (diritem->name)) continue;	// already have model with the same name
 
 		// verify the existence of animation.cfg
-		if (!FS_FileExists (va("%s/animation.cfg", diritem->name)))
+		if (!GFileSystem->FileExists (va("%s/models/players/%s/animation.cfg", path, diritem->name)))
 			continue;
 
 		// verify the existence of at least one skin file
-		TList<CStringItem> skinNames = FS_ListFiles (va("%s/lower_*.skin", diritem->name), LIST_FILES);
-		if (!skinNames) continue;
-
-		// count valid skins, which consist of a skin with a matching "_i" icon
+		CFileList *skinNames = GFileSystem->List (va("%s/models/players/%s/lower_*.skin", path, diritem->name), FS_FILE|FS_NOEXT);
+		// count valid skins
 		TList<CStringItem> skins;
 		int numSkins = 0;
-		for (CListIterator skinItem = skinNames; skinItem; ++skinItem)
+		for (TListIterator<CFileItem> skinItem = *skinNames; skinItem; ++skinItem)
 		{
-			char *str = strrchr (skinItem->name, '/') + 1 /*skip '/'*/ + 6 /*skip "lower_"*/;
-			char *ext = strrchr (str, '.');
-			ext[0] = 0;
+			const char *str = skinItem->name + 6;	// skip "lower_"
 			// check at least one model
-			if (!FS_FileExists (va("%s/lower.md3", diritem->name))) continue;
+			if (!GFileSystem->FileExists (va("%s/models/players/%s/lower.md3", path, diritem->name))) continue;
 			// may be, have "icon_file.jpg" and "icon_file.tga" ...
 			if (skins.Find (str)) continue;
 			skins.CreateAndInsert (str, pmiChain);
 			numSkins++;
 		}
-		skinNames.Free();
+		delete skinNames;
 		if (!numSkins) continue;
 
 		// create model info
-		playerModelInfo_t *info = new (infoName, pmiChain) playerModelInfo_t;
+		playerModelInfo_t *info = new (diritem->name, pmiChain) playerModelInfo_t;
 		info->numSkins = numSkins;
-		info->skins = skins;
-		info->isQ3mdl = true;
+		info->skins    = skins;
+		info->isQ3mdl  = true;
 		// add model info to pmi
 		pmiList.Insert (info);
 
 		numPlayerModels++;
 	}
-	dirnames.Free();
+	delete dirNames;
 }
 
 
@@ -166,6 +138,7 @@ bool ScanPlayerModels ()
 		// presents in md2 format too, it will be ignored
 		ScanQuake3Models (path);
 		ScanQuake2Models (path);
+		//?? cvar "ui_showAllPlayerModels" -- then "1" - do not break
 		if (pmiList) break;			// models found
 	}
 
@@ -199,7 +172,7 @@ static void ReadModelsGenderList ()
 	//?? OR allow separate file for each model (placed in model dir) - in this case, don't need this functions
 	//??  (can check model gender at loading time); if remove "model.lst" feature, should change documentaion ...
 	char	*buf;
-	if (!(buf = (char*) FS_LoadFile ("players/model.lst")))
+	if (!(buf = (char*) GFileSystem->LoadFile ("players/model.lst")))
 	{
 		Com_DPrintf ("players/model.lst is not found\n");
 		return;
@@ -228,7 +201,7 @@ static void ReadModelsGenderList ()
 
 	Com_DPrintf ("Parsed %d model genders\n", numFemaleModels);
 
-	FS_FreeFile (buf);
+	delete buf;
 }
 
 
@@ -270,9 +243,9 @@ static bool SetMd3Skin (const char *skinName, CModelSkin &skin)
 	TString<MAX_QPATH> Filename;
 	Filename.sprintf ("models/players/%s.skin", skinName);
 	char	*buf;
-	if (!(buf = (char*) FS_LoadFile (Filename)))
+	if (!(buf = (char*) GFileSystem->LoadFile (Filename)))
 	{
-		Com_DPrintf ("no skin: %s\n", Filename);
+		Com_DPrintf ("no skin: %s\n", *Filename);
 		return false;
 	}
 
@@ -334,7 +307,7 @@ static bool SetMd3Skin (const char *skinName, CModelSkin &skin)
 	if (result)
 		skin.numSurfs = numSurfs;
 
-	FS_FreeFile (buf);
+	delete buf;
 
 	return result;
 }
@@ -375,7 +348,7 @@ static const CSimpleCommand animCommands[] = {
 
 static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 {
-	char *buf = (char*) FS_LoadFile (filename);
+	char *buf = (char*) GFileSystem->LoadFile (filename);
 	gci = &ci;
 	int animNumber = 0;
 	animation_t *anims = ci.animations;
@@ -449,7 +422,7 @@ static void LoadAnimationCfg (clientInfo_t &ci, const char *filename)
 	for (int i = 0; i < MAX_TOTALANIMATIONS; i++)
 		if (anims[i].frameLerp == 0) anims[i].frameLerp = 100;	// just in case
 
-	FS_FreeFile (buf);
+	delete buf;
 }
 
 
@@ -473,9 +446,11 @@ static CRenderModel *FindQ3Model (const char *name, const char *part)
 
 static bool TryQuake3Model (clientInfo_t &ci, const char *modelName, const char *skinName)
 {
+	guard(TryQuake3Model);
+
 	TString<MAX_QPATH> AnimCfg;
 	AnimCfg.sprintf ("models/players/%s/animation.cfg", modelName);
-	if (!FS_FileExists (AnimCfg)) return false;
+	if (!GFileSystem->FileExists (AnimCfg)) return false;
 
 	ci.legsModel  = FindQ3Model (modelName, "lower");
 	ci.torsoModel = FindQ3Model (modelName, "upper");
@@ -492,11 +467,13 @@ static bool TryQuake3Model (clientInfo_t &ci, const char *modelName, const char 
 	}
 
 	ci.IconName.sprintf ("models/players/%s/icon_%s", modelName, skinName);
-	ci.icon = RE_RegisterPic (ci.IconName);
+	ci.icon         = RE_RegisterPic (ci.IconName);
 
-	ci.isQ3model = true;
+	ci.isQ3model    = true;
 	ci.isValidModel = true;
 	return true;
+
+	unguard;
 }
 
 
@@ -710,7 +687,7 @@ static const CSimpleCommand weapCommands[] = {
 
 static bool LoadWeaponInfo (const char *filename, weaponInfo_t &weap)
 {
-	char *buf = (char*) FS_LoadFile (va("models/weapons/%s.cfg", filename));
+	char *buf = (char*) GFileSystem->LoadFile (va("models/weapons/%s.cfg", filename));
 	if (!buf) return false;
 
 	memset (&weap, 0, sizeof(weaponInfo_t));
@@ -730,7 +707,7 @@ static bool LoadWeaponInfo (const char *filename, weaponInfo_t &weap)
 		}
 	}
 	weap.origin.Scale (weap.drawScale);
-	FS_FreeFile (buf);
+	delete buf;
 	return result && weap.model != NULL;
 	//?? NOTE: currently, "false" result ignored ...
 }
@@ -751,6 +728,8 @@ static CRenderModel *FindQ2Model (const char *name, const char *part)
 
 static bool TryQuake2Model (clientInfo_t &ci, const char *modelName, const char *skinName, bool lockSkin = false)
 {
+	guard(TryQuake2Model);
+
 	// model
 	ci.md2model = FindQ2Model (modelName, "tris");
 	if (!ci.md2model) return false;
@@ -766,17 +745,15 @@ static bool TryQuake2Model (clientInfo_t &ci, const char *modelName, const char 
 		if (!ci.md2skin.IsValid ())
 		{
 			// try any skin
-			TList<CStringItem> skinNames = FS_ListFiles (va("players/%s/*.*", modelName), LIST_FILES);
-			for (CListIterator skinItem = skinNames; skinItem; ++skinItem)
+			// similar to ScanQuake2Models()
+			CFileList *skinNames = GFileSystem->List (va("players/%s/*.pcx,*.tga,*.jpg", modelName), FS_FILE|FS_NOEXT); // images only
+			for (TListIterator<CFileItem> skinItem = *skinNames; skinItem; ++skinItem)
 				if (Md2SkinExists (skinItem->name, skinNames))
 				{
-					const char *t = strrchr (skinItem->name, '/');
-					if (!t) t = skinItem->name;
-					else t++;							// skip '/'
 					SetSimpleSkin (va("players/%s/%s", modelName, skinItem->name), ci.md2skin);
 					if (ci.md2skin.IsValid ()) break;	// done
 				}
-			skinNames.Free ();
+			delete skinNames;
 			if (!ci.md2skin.IsValid ()) return false;	// skins not found
 			// can change icon info too, but skin is not as specified - so, use "default_icon"
 		}
@@ -789,7 +766,10 @@ static bool TryQuake2Model (clientInfo_t &ci, const char *modelName, const char 
 	ci.isQ3model = false;
 	ci.isValidModel = true;
 	return true;
+
+	unguard;
 }
+
 
 /*-----------------------------------------------------------------------------
 	Loading client information
@@ -858,7 +838,6 @@ void CL_LoadClientinfo (clientInfo_t &ci, const char *s, bool loadWeapons)
 					ci.weaponModel[i].model = FindQ2Model ("male", cl_weaponmodels[i]);
 #endif
 			}
-
 		ci.modelGender = (IsFemaleModel (ModelName)) ? 'f' : 'm';
 	}
 	else

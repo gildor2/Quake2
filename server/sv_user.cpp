@@ -48,7 +48,7 @@ static void SV_New_f (int argc, char **argv)
 	{
 		char name[MAX_OSPATH];
 		appSprintf (ARRAY_ARG(name), "demos/%s", sv.name);
-		sv.rdemofile = FS_FOpenFile (name);
+		sv.rdemofile = GFileSystem->OpenFile (name);
 		if (!sv.rdemofile)
 			Com_DropError ("Couldn't open %s\n", name);
 		return;
@@ -244,7 +244,7 @@ static void SV_NextDownload_f (int argc, char **argv)
 	if (sv_client->downloadcount != sv_client->downloadsize)
 		return;
 
-	FS_FreeFile (sv_client->download);
+	delete sv_client->download;
 	sv_client->download = NULL;
 }
 
@@ -292,9 +292,9 @@ static void SV_BeginDownload_f (int argc, char **argv)
 
 
 	if (sv_client->download)
-		FS_FreeFile (sv_client->download);
+		delete sv_client->download;
 
-	sv_client->download = (byte*) FS_LoadFile (Name, &sv_client->downloadsize);
+	sv_client->download = (byte*) GFileSystem->LoadFile (Name, &sv_client->downloadsize);
 	sv_client->downloadcount = offset;
 
 	if (offset > sv_client->downloadsize)
@@ -304,7 +304,7 @@ static void SV_BeginDownload_f (int argc, char **argv)
 	{
 		Com_DPrintf ("Couldn't download %s to %s\n", *Name, *sv_client->Name);
 		if (sv_client->download) {
-			FS_FreeFile (sv_client->download);
+			delete sv_client->download;
 			sv_client->download = NULL;
 		}
 

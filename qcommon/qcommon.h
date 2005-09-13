@@ -60,7 +60,7 @@ struct cplane_t;
 
 // version number
 
-#define	VERSION			4.13
+#define	VERSION			4.14
 
 #ifdef _WIN32
 
@@ -713,38 +713,12 @@ void	Pmove (pmove_t *pmove);
 	File system (files.cpp)
 -----------------------------------------------------------------------------*/
 
-extern cvar_t	*fs_gamedirvar;
-
-#define LIST_FILES	1
-#define LIST_DIRS	2
-
-class QFILE;		// empty declaration
-
-void	FS_InitFilesystem (void);
+void	InitFileSystem ();		//?? KEEP
 bool	FS_SetGamedir (const char *dir);
-//--char	*FS_Gamedir (void);
-char	*FS_NextPath (const char *prevpath);
+const char *FS_NextPath (const char *prevpath);
 void	FS_LoadGameConfig (void);
 
-QFILE	*FS_FOpenFile (const char *filename, int *plen = NULL);
-//--bool FS_FileExists (char *filename);
-void	FS_FCloseFile (QFILE *f);
-void	FS_Read (void *buffer, int len, QFILE *f);
-// properly handles partial reads
-
-//--void*	FS_LoadFile (const char *path, unsigned *len = NULL);
-// a null buffer will just return the file length without loading
-// a -1 length is not present
-//--void	FS_FreeFile (void *buffer);
-
-//--void	FS_CreatePath (char *path);
-
 void	Sys_Mkdir (const char *path);
-
-const char	*Sys_FindFirst (const char *path, int flags);
-const char	*Sys_FindNext (void);
-void		Sys_FindClose (void);
-bool		Sys_FileExists (const char *path, int flags);
 
 
 /*------------- Miscellaneous -----------------*/

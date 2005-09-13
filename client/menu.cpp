@@ -376,7 +376,7 @@ struct keysMenu_t : menuFramework_t
 		//?? change parser
 		// load "binds.lst" (file always present - have inline file)
 		unsigned length;
-		char *buffer = (char*) FS_LoadFile ("binds.lst", &length);
+		char *buffer = (char*) GFileSystem->LoadFile ("binds.lst", &length);
 		// parse this file
 		const char *s = buffer;
 		int numbinds = 0;
@@ -411,7 +411,7 @@ struct keysMenu_t : menuFramework_t
 		}
 
 		// unload "binds.lst"
-		FS_FreeFile (buffer);
+		delete buffer;
 
 		// build menu
 		int y = 0;
@@ -826,7 +826,7 @@ struct creditsMenu_t : menuFramework_t
 		case K_ESCAPE:
 		case K_MOUSE1:
 		case K_MOUSE2:
-			if (creditsBuffer) FS_FreeFile (creditsBuffer);
+			if (creditsBuffer) delete creditsBuffer;
 			Pop ();
 			break;
 		}
@@ -836,17 +836,18 @@ struct creditsMenu_t : menuFramework_t
 	bool Init ()
 	{
 		const char *filename = "credits";
-		if (!FS_FileExists (filename))
+		if (!GFileSystem->FileExists (filename))
 		{
+			//!! mount resources to ".", and place files to "mod/credits"
 			// official mission packe are not provided own credits file - display defaults
-			if (!stricmp (fs_gamedirvar->string, "xatrix"))
+			if (!stricmp (FS_Gamedir (), "xatrix"))
 				filename = "xcredits";
-			else if (!stricmp (fs_gamedirvar->string, "rogue"))
+			else if (!stricmp (FS_Gamedir (), "rogue"))
 				filename = "rcredits";
 		}
 
 		unsigned count;
-		creditsBuffer = (char*) FS_LoadFile (filename, &count);
+		creditsBuffer = (char*) GFileSystem->LoadFile (filename, &count);
 		// file always present - have inline file
 		char *p = creditsBuffer;
 		for (int n = 0; n < ARRAY_COUNT(credits)-1; n++)
@@ -990,7 +991,7 @@ struct savegameMenu_t : menuFramework_t
 		memset (m_shotvalid, 0, sizeof(m_shotvalid));
 		for (int i = 0; i < MAX_SAVEGAMES; i++)
 		{
-			FILE *f = fopen (va("%s/" SAVEGAME_DIRECTORY "/save%d/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir (), i), "rb");
+			FILE *f = fopen (va("./%s/" SAVEGAME_DIRECTORY "/save%d/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir (), i), "rb");
 			if (!f)
 				strcpy (m_savestrings[i], "<EMPTY>");
 			else
@@ -1282,7 +1283,7 @@ struct startserverMenu_t : menuFramework_t
 				strcpy (maxclients_field.buffer, "4" );
 			dmoptions_action.statusbar = "N/A for cooperative";
 		}
-		else if (!stricmp (fs_gamedirvar->string, "rogue"))
+		else if (!stricmp (FS_Gamedir (), "rogue"))
 		{
 			if (rules_box.curvalue == 2)			// tag
 			{
@@ -1321,7 +1322,7 @@ struct startserverMenu_t : menuFramework_t
 //		Cvar_SetValue ("deathmatch", !rules_box.curvalue);
 //		Cvar_SetValue ("coop", rules_box.curvalue);
 
-		if (!stricmp (fs_gamedirvar->string, "rogue") && rules_box.curvalue >= 2)
+		if (!stricmp (FS_Gamedir (), "rogue") && rules_box.curvalue >= 2)
 		{
 			Cvar_SetInteger ("deathmatch", 1);		// deathmatch is always true for rogue games, right?
 			Cvar_SetInteger ("coop", 0);			// FIXME - this might need to depend on which game we're running
@@ -1393,9 +1394,9 @@ struct startserverMenu_t : menuFramework_t
 		FILE	*fp;
 
 		// load the list of map names
-		if (!(fp = fopen (va("%s/maps.lst", FS_Gamedir()), "rb")))
+		if (!(fp = fopen (va("./%s/maps.lst", FS_Gamedir()), "rb")))
 		{	// if file not present in OS filesystem - try pak file
-			if (!(buffer = (char*) FS_LoadFile ("maps.lst")))
+			if (!(buffer = (char*) GFileSystem->LoadFile ("maps.lst")))
 			{
 				appWPrintf ("Couldn't find maps.lst\n");
 				buffer = NULL;
@@ -1432,10 +1433,7 @@ struct startserverMenu_t : menuFramework_t
 				numMaps++;
 			}
 
-			if (fp)
-				appFree (buffer);
-			else
-				FS_FreeFile (buffer);
+			delete buffer;
 		}
 
 		// initialize the menu stuff
@@ -1453,7 +1451,7 @@ struct startserverMenu_t : menuFramework_t
 		rules_box.x	= 0;
 		rules_box.y	= 20;
 		rules_box.name = "rules";
-		if (!stricmp (fs_gamedirvar->string, "rogue"))
+		if (!stricmp (FS_Gamedir(), "rogue"))
 			rules_box.itemnames = dm_coop_names_rogue;
 		else
 			rules_box.itemnames = dm_coop_names;
@@ -1661,7 +1659,7 @@ struct dmoptionsMenu_t : menuFramework_t
 			bit = DF_FIXED_FOV;
 		else if (f == &quad_drop_box)
 			bit = DF_QUAD_DROP;
-		else if (!stricmp (fs_gamedirvar->string, "rogue"))
+		else if (!stricmp (FS_Gamedir(), "rogue"))
 		{
 			if (f == &no_mines_box)
 				bit = DF_NO_MINES;
@@ -1744,7 +1742,7 @@ struct dmoptionsMenu_t : menuFramework_t
 		friendlyfire_box.curvalue = ( dmflags & DF_NO_FRIENDLY_FIRE ) == 0;
 		AddItem (&friendlyfire_box );
 
-		if (!stricmp (fs_gamedirvar->string, "rogue"))
+		if (!stricmp (FS_Gamedir(), "rogue"))
 		{
 			MENU_SPIN(no_mines_box,y+=10,"remove mines",DMFlagCallback,yesno_names)
 			no_mines_box.curvalue = ( dmflags & DF_NO_MINES ) != 0;
@@ -2367,7 +2365,7 @@ struct dmbrowseMenu_t : menuFramework_t
 #define THUMBNAIL_TEXT		(CHAR_HEIGHT + 2)
 #define MAX_BROWSE_MAPS		1024
 	static char			*browse_map_names[MAX_BROWSE_MAPS];
-	static TList<CStringItem> browse_list;
+	static CFileList	*browse_list;
 	static thumbParams_t thumbs;
 
 	/*
@@ -2378,7 +2376,11 @@ struct dmbrowseMenu_t : menuFramework_t
 	bool Init ()
 	{
 		// free previous levelshots list
-		browse_list.Free();
+		if (browse_list)
+		{
+			delete browse_list;
+			browse_list = NULL;
+		}
 
 		int oldcount = thumbs.count;
 		thumbs.count = 0;
@@ -2403,31 +2405,23 @@ struct dmbrowseMenu_t : menuFramework_t
 		thumbs.y0 = (viddef.height - thumbs.cy * thumbs.dy + thumbs.dy - thumbs.h) / 2 - CHAR_HEIGHT;
 
 		const char *path = NULL;
+		browse_list = new CFileList;
 		while (path = FS_NextPath (path))
 		{
-			browse_list = FS_ListFiles (va("%s/levelshots/*.*", path), LIST_FILES);
-			if (browse_list) break;
+			GFileSystem->List (va("%s/levelshots/*.pcx,*.tga,*.jpg", path), FS_FILE|FS_NOEXT, browse_list);	// images only
+			if (*browse_list) break;
 		}
-		for (CListIterator item = browse_list; item; ++item)
+		for (TListIterator<CFileItem> item = *browse_list; item; ++item)
 		{
-			char *name = strrchr (item->name, '/');
-			if (!name)
-				name = item->name;
-			else
-				name++;
-			char *ext = strrchr (name, '.');
-			if (ext && (!strcmp (ext, ".jpg") || !strcmp (ext, ".tga") || !strcmp (ext, ".pcx")))
-			{	// screenshot found - check map presence
-				*ext = 0;	// cut extension
-				if (!FS_FileExists (va("maps/%s.bsp", name)))
-					continue;
+			// screenshot found - check map presence
+			if (!GFileSystem->FileExists (va("maps/%s.bsp", item->name)))
+				continue;
 
-				browse_map_names[thumbs.count++] = name;
-				if (thumbs.count == MAX_BROWSE_MAPS)
-				{
-					appWPrintf ("Maximum number of levelshots reached\n");
-					break;
-				}
+			browse_map_names[thumbs.count++] = item->name;
+			if (thumbs.count == MAX_BROWSE_MAPS)
+			{
+				appWPrintf ("Maximum number of levelshots reached\n");
+				break;
 			}
 		}
 
@@ -2438,7 +2432,8 @@ struct dmbrowseMenu_t : menuFramework_t
 			return true;
 
 		// no maps found - free list
-		browse_list.Free();		//?? not needed -- already empty ?
+		delete browse_list;
+		browse_list = NULL;
 
 		startserverMenu.SetStatusBar (S_YELLOW"No levelshots found");
 		return false;
@@ -2571,7 +2566,7 @@ static dmbrowseMenu_t dmbrowseMenu;
 
 // static members
 char *dmbrowseMenu_t::browse_map_names[MAX_BROWSE_MAPS];
-TList<CStringItem> dmbrowseMenu_t::browse_list;
+CFileList *dmbrowseMenu_t::browse_list;
 thumbParams_t dmbrowseMenu_t::thumbs;
 
 

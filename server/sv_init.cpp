@@ -123,7 +123,7 @@ static void SV_CheckForSavegame (void)
 	if (sv_deathmatch->integer)
 		return;
 
-	f = fopen (va("%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name), "rb");
+	f = fopen (va("./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name), "rb");
 	if (!f) return;		// no savegame
 
 	fclose (f);
@@ -175,7 +175,7 @@ void SV_SpawnServer (char *server, char *spawnpoint, server_state_t serverstate,
 
 	Com_DPrintf ("SpawnServer: %s\n",server);
 	if (sv.rdemofile)
-		FS_FCloseFile (sv.rdemofile);
+		delete sv.rdemofile;
 
 	svs.spawncount++;		// any partially connected client will be restarted
 	sv.state = ss_dead;

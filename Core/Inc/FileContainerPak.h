@@ -1,3 +1,7 @@
+/*-----------------------------------------------------------------------------
+	id software .pak file (Quake1/2, Half-Life, Kingpin)
+-----------------------------------------------------------------------------*/
+
 class CFileContainerPak : public CFileContainerArc
 {
 protected:
@@ -60,6 +64,7 @@ protected:
 public:
 	static CFileContainer *Create (const char *filename, FILE *f)
 	{
+		// file format
 #define IDPAKHEADER		BYTES4('P','A','C','K')
 		struct DPakHeader
 		{

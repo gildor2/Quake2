@@ -256,6 +256,7 @@ const char *va (const char *format, ...)
 	static char buf[VA_BUFSIZE];
 	static int bufPos = 0;
 	// wrap buffer
+//	if (bufPos >= VA_BUFSIZE - VA_GOODSIZE) appWPrintf("va:wrap\n-- %s\n", appSymbolName (GET_RETADDR(format)));
 	if (bufPos >= VA_BUFSIZE - VA_GOODSIZE) bufPos = 0;
 
 	va_list argptr;

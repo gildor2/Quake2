@@ -313,13 +313,13 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 		Com_DropError ("client trying to load map \"%s\" while server running \"%s\"", filename, bspfile.name);
 
 	if (bspfile.name[0] && bspfile.file)
-		FS_FreeFile (bspfile.file);
+		delete bspfile.file;
 	if (bspfile.extraChain)
 		delete bspfile.extraChain;
 
 	memset (&bspfile, 0, sizeof(bspfile));
 	strcpy (bspfile.name, filename);
-	if (!(bspfile.file = (byte*) FS_LoadFile (filename, &bspfile.length)))
+	if (!(bspfile.file = (byte*) GFileSystem->LoadFile (filename, &bspfile.length)))
 	{
 		bspfile.name[0] = 0;
 		Com_DropError ("Couldn't load %s", filename);
@@ -341,7 +341,7 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 #endif
 	}
 	// error
-	FS_FreeFile (bspfile.file);
+	delete bspfile.file;
 	bspfile.name[0] = 0;
 	bspfile.file = NULL;
 	map_clientLoaded = false;
@@ -939,7 +939,7 @@ char *ProcessEntstring (char *entString)
 
 	// patch (temporary !!)
 	unsigned plen;
-	char *patch = (char*) FS_LoadFile (va("%s.add", bspfile.name), &plen);
+	char *patch = (char*) GFileSystem->LoadFile (va("%s.add", bspfile.name), &plen);
 	plen++;	// add 1 byte for trailing zero
 
 	char *dst, *dst2;
@@ -981,7 +981,7 @@ char *ProcessEntstring (char *entString)
 			if (ProcessEntity ())
 				WriteEntity (&dst);
 		}
-		FS_FreeFile (patch);
+		delete patch;
 	}
 
 	if (haveErrors)

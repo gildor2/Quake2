@@ -13,10 +13,6 @@ float	Cvar_Clamp (cvar_t *cvar, float low, float high);
 void	Com_DPrintf (const char *str, ...);
 
 //---------- files ----------
-bool	FS_FileExists (const char *filename);
-TList<CStringItem> FS_ListFiles (const char *name, int flags);
-void*	FS_LoadFile (const char *name, unsigned *size = NULL);
-void	FS_FreeFile (void *buf);
 const char* FS_Gamedir ();
 void	FS_CreatePath (const char *path);	//?? should be integrated into "open file for write" function
 void	FS_CopyFile (const char *src, const char *dst);

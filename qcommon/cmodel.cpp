@@ -149,7 +149,7 @@ static void ReadSurfMaterials (const char *filename)
 	}
 
 	char *file;
-	if (!(file = (char*) FS_LoadFile (filename)))
+	if (!(file = (char*) GFileSystem->LoadFile (filename)))
 	{
 		Com_DPrintf ("ReadSurfMaterials: %s is not found\n", filename);
 		return;
@@ -217,7 +217,7 @@ static void ReadSurfMaterials (const char *filename)
 //		Com_DPrintf ("Added surface material: %d for %s\n", m, s);
 	}
 
-	FS_FreeFile (file);
+	delete file;
 }
 
 // name must be without "textures/" prefix and without extension

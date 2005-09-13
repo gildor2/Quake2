@@ -167,15 +167,17 @@ public:
 	// file operations
 	virtual bool FileExists (const char *filename);
 	virtual CFile *OpenFile (const char *filename);
-	virtual CFileList *List (const char *mask, unsigned flags = FS_ALL);
+	virtual CFileList *List (const char *mask, unsigned flags = FS_ALL, CFileList *list = NULL);
 	// mount/unmount containers
 	// if point == NULL, will mount to GDefMountPoint
 	void Mount (CFileContainer &Container, const char *point = NULL);
 	void Umount (CFileContainer &Container);
 	CFileContainer *MountDirectory (const char *path, const char *point = NULL);
 	CFileContainer *MountArchive (const char *filename, const char *point = NULL);
+	void Mount (const char *mask, const char *point = NULL);
+	void Umount (const char *mask);
 	// file loading; can be free'ed with "delete" or "appFree()"
-	void *LoadFile (const char *filename, int *size = NULL);
+	void *LoadFile (const char *filename, unsigned *size = NULL);
 };
 
 

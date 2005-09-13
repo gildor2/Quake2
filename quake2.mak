@@ -66,7 +66,6 @@ STATIC = \
 	Release/obj/q2stat/crc.obj \
 	Release/obj/q2stat/cvar.obj \
 	Release/obj/q2stat/entdelta.obj \
-	Release/obj/q2stat/files.obj \
 	Release/obj/q2stat/images.obj \
 	Release/obj/q2stat/md4.obj \
 	Release/obj/q2stat/model.obj \
@@ -74,7 +73,7 @@ STATIC = \
 	Release/obj/q2stat/net_chan.obj \
 	Release/obj/q2stat/pmove.obj \
 	Release/obj/q2stat/q_shared2.obj \
-	Release/obj/q2stat/zip.obj \
+	Release/obj/q2stat/QuakeFileSystem.obj \
 	Release/obj/q2stat/cd_win.obj \
 	Release/obj/q2stat/in_win.obj \
 	Release/obj/q2stat/net_wins.obj \
@@ -145,7 +144,6 @@ DEDICATED = \
 	Release/obj/dedstat/crc.obj \
 	Release/obj/dedstat/cvar.obj \
 	Release/obj/dedstat/entdelta.obj \
-	Release/obj/dedstat/files.obj \
 	Release/obj/dedstat/images.obj \
 	Release/obj/dedstat/md4.obj \
 	Release/obj/dedstat/model.obj \
@@ -153,7 +151,7 @@ DEDICATED = \
 	Release/obj/dedstat/net_chan.obj \
 	Release/obj/dedstat/pmove.obj \
 	Release/obj/dedstat/q_shared2.obj \
-	Release/obj/dedstat/zip.obj \
+	Release/obj/dedstat/QuakeFileSystem.obj \
 	Release/obj/dedstat/net_wins.obj \
 	Release/obj/dedstat/fs_win.obj \
 	Release/obj/dedstat/sys_win.obj \
@@ -228,6 +226,39 @@ DEPENDS = \
 
 Release/obj/TestApp/TestApp.obj : TestApp/TestApp.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/TestApp/TestApp.obj" TestApp/TestApp.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
+
+DEPENDS = \
+	Core/../lib/zlib/zlib.h \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileContainerPak.h \
+	Core/Inc/FileContainerZip.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Inc/VcWin32.h \
+	client/engine.h \
+	client/engine_intf.h \
+	lib/zlib/zconf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj/dedstat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+
+Release/obj/q2stat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -1547,42 +1578,6 @@ OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include
 
 Release/obj/q2stat/images.obj : qcommon/images.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/images.obj" qcommon/images.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
-
-DEPENDS = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/FileSystem.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	Core/Inc/VcWin32.h \
-	client/engine.h \
-	client/engine_intf.h \
-	lib/zlib/zconf.h \
-	lib/zlib/zlib.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	qcommon/zip.h
-
-Release/obj/dedstat/files.obj : qcommon/files.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/files.obj" qcommon/files.cpp
-
-Release/obj/dedstat/zip.obj : qcommon/zip.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/zip.obj" qcommon/zip.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
-
-Release/obj/q2stat/files.obj : qcommon/files.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/files.obj" qcommon/files.cpp
-
-Release/obj/q2stat/zip.obj : qcommon/zip.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/zip.obj" qcommon/zip.cpp
 
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
 

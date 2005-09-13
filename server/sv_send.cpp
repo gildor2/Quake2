@@ -436,7 +436,7 @@ void SV_DemoCompleted (void)
 {
 	if (sv.rdemofile)
 	{
-		FS_FCloseFile (sv.rdemofile);
+		delete sv.rdemofile;
 		sv.rdemofile = NULL;
 	}
 	SV_Nextserver ();
@@ -496,8 +496,7 @@ void SV_SendClientMessages (void)
 		else
 		{
 			// get the next message
-			FS_Read (&msglen, 4, sv.rdemofile);
-			msglen = LittleLong (msglen);
+			msglen = sv.rdemofile->ReadInt ();
 			if (msglen == -1)
 			{
 				SV_DemoCompleted ();
@@ -505,7 +504,7 @@ void SV_SendClientMessages (void)
 			}
 			if (msglen > MAX_MSGLEN)
 				Com_DropError ("SV_SendClientMessages: msglen > MAX_MSGLEN");
-			FS_Read (msgbuf, msglen, sv.rdemofile);
+			sv.rdemofile->Read (msgbuf, msglen);
 		}
 	}
 

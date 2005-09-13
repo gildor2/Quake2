@@ -8,7 +8,7 @@ void Sys_Mkdir (const char *path)
 	_mkdir (path);
 }
 
-
+#if 0
 static char	findBase[MAX_OSPATH];
 static char	findPath[MAX_OSPATH];
 static int	findHandle, findFlags;
@@ -26,7 +26,6 @@ static bool CheckAttributes (unsigned attrs)
 
 	return true;
 }
-
 
 const char *Sys_FindFirst (const char *path, int flags)
 {
@@ -78,3 +77,4 @@ bool Sys_FileExists (const char *path, int flags)
 	Sys_FindClose ();
 	return true;
 }
+#endif

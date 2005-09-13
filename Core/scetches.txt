@@ -11,28 +11,22 @@ FILE SYSTEM
       - FULL_NAMES       - path + name  (PATH_NAMES ??)
       ? RECURSE_SUBDIRS  - look in subdirectories; +special case for !FULL_NAMES - keep relative path
       ?? KEEP_DUPLICATES - name = "pak:path/name" (incompatible with !FULL_NAMES)
-- MakeDirectory(name)
-   ? DeleteDirectory()
-      ? with files
+? DeleteDirectory()
+   ? with files
    ? should process directory trees
-- CopyFiles()
-- DeleteFiles()
 - flag "bool fs_modified": when user was unlinked some TAG_BASE paks, this flag is set to true and when game is changed, should
   completely unlink all files and relink base files again
-* "[un]loadpak" -> "[u]mount"; "path" -> "mount" without args; "dir" -> "ls"
 - reading files:
    - GZip files (can auto-detect); can create such files too (special flag for FS_CreateFile() function)
    - text files (remove CR ('\r') from stream)
 ! for integration into Q2:
   - zip and resource file containers
-  - cut/reimplement game-depending layer of files.cpp to QuakeFileSystem.cpp
   - implement mkdir()
-  - remove: files.cpp, fs_win32.cpp
+  - remove: fs_win32.cpp
   - remove file functions from engine.h
   - document changes to "4xx_changes.txt":
-    - replace info about "loadpak/unloadpak", add "ls"
-    - remove (change) info about network "cddir" var
-    - info about file system accesss restriction by mounts (but: info about "cano mount everything")
+    * replace info about "loadpak/unloadpak", add "ls"
+    - info about file system accesss restriction by mounts (but: info about "can mount everything")
     - info about hidden filenames
   ? compare file size of previous quake2.exe
 

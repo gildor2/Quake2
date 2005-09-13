@@ -94,23 +94,32 @@ Cvar system
 
 File system
 -----------
-- "loadpak <pakname>[.pak]"
-  "loadpak <wildcard>"
-    - pakname must be relative to a current game directory
-    - pakname will be automatically unloaded when gamedir changed
-    - to load pak from other game use "loadpak ../game/pakname.pak" syntax
-- "unloadpak <pakname>[.pak]"
-  "unloadpak <wildcard>"
-    - will be unloaded 1st pak in searchpaths (see "path" command), which name ends with "/pakname"
-    - if unloaded pak from baseq2 directory, it will not be loaded automatically when game changed
+- support of zip (pk3) file containers (should also have ".pak" extension; to load ".pk3" files add to "autoexec.cfg"
+  something like: 'mount "baseq2/md3/*.pk3"'; NOTE: quotes required, otherwise "/*" will be treated as comment start!)
+- loading unlimited number of paks with any names
 - "cat <filename>" - display contents of file
 - "type <filename>" - display info about file
-- improved "dir" console command (reformatted, listing paks)
-- added support of zip (pk3) pak files (should also have ".pak" extension; to load ".pk3" files add to "autoexec.cfg"
-  following line: "loadpak *.pk3")
-- loading unlimited number of paks with any names
 - "cddir" cvar may specify path to game contents on hard drive or network share
   example: cddir="//SERVER/GAMES/Quake2" or cddir="E:/DISTR/GAMES/Quake2"
+- "mount <./game/directory> [point]"
+  "mount <./game/pakname.ext [point]"
+  "mount <wildcard> [point]"
+    - will mount file container to "point"; example: standard quake mounts:
+      "mount baseq2 baseq2" or "mount ./baseq2 baseq2" - mount directory
+      "mount baseq2/*.pak" - mount add "*.pak" files in directory "baseq2"
+      "mount c: drive_c"   - mount "c:/" to "./drive_c/"
+    - if "point" is not specified, will mount to current game directory
+  "mount"
+    - will display current mounts
+- "umount <wildcard>"
+    - remove mount(s); example:
+      "umount ./ctf/*.pak" - remove all mounted "*.pak" files from "ctf" directory
+- "ls [wildcard]"
+    - display contents of directory, specified with wildcard
+    - names, starting with ".", will not be displayed (unix hidden files)
+- file system is restricted to mount points: engine is unable to open files, placed outside mounts; if desired to
+  access some other files, mount its container (directory or pak)
+? improved "dir" console command (reformatted, listing paks)
 
 Console/Menu
 ------------

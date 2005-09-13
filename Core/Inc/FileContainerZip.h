@@ -1,3 +1,7 @@
+/*-----------------------------------------------------------------------------
+	PKWare .zip file loader
+-----------------------------------------------------------------------------*/
+
 #include "../../lib/zlib/zlib.h"
 
 // type defines (change ??)
@@ -125,24 +129,32 @@ protected:
 					if (!s.avail_in && restRead)
 					{
 						// buffer empty - fill it
-						int cread = min(restRead, sizeof(buf));
-						if (fread (buf, cread, 1, file) != 1)
+						int compRead = min(restRead, sizeof(buf));
+						if (fread (buf, compRead, 1, file) != 1)
 							return 0; // cannot read ...
-						s.avail_in += cread;
-						restRead   -= cread;
+						s.avail_in += compRead;
+						restRead   -= compRead;
 						s.next_in = buf;
 					}
 					// decompress data
 					int ret = inflate (&s, Z_SYNC_FLUSH);
 					// check for error
-					if ((ret == Z_STREAM_END && (s.avail_in + restRead)) ||	// end of stream, but have more data ...
-						(ret != Z_OK && ret != Z_STREAM_END))				// decompression error
+					if (ret == Z_OK)	// get next data
+						continue;
+					if (ret == Z_STREAM_END)
 					{
-#ifdef ZLIB_DEBUG
-						appWPrintf ("ZLIB: inflate ret=%d\n", ret);
-#endif
-						return 0;
+						if (s.avail_in + s.avail_out + restRead)
+						{
+							appWPrintf ("zip \"%s\": \"%s\" have unexpected end\n", Owner->name, *Name);
+							readPos = info->size;	// do not read next time
+						}
+						break;
 					}
+					// here: error occured
+#ifdef ZLIB_DEBUG
+					appWPrintf ("ZLIB: inflate() err=%d\n", ret);
+#endif
+					return 0;
 				}
 			}
 			else
@@ -197,7 +209,7 @@ protected:
 			if (inflateInit2 (&File->s, -MAX_WBITS) != Z_OK)
 			{
 #ifdef ZLIB_DEBUG
-				appWPrintf ("ZLIB: !inflateInit2\n");
+				appWPrintf ("ZLIB: inflateInit2() err\n");
 #endif
 				delete File;
 				return NULL;
@@ -340,18 +352,15 @@ public:
 };
 
 
-//?? another way to declare (not in header!)
-extern "C" {
-	void *zcalloc (int opaque, int items, int size);
-	void zcfree (int opaque, void *ptr);
-}
+//?? another way to declare (not in header!) -- required, when another zlib wrappers will be used
 
-void *zcalloc (int opaque, int items, int size)
+extern "C" void *zcalloc (int opaque, int items, int size)
 {
+	MEM_ALLOCATOR(opaque);
 	return appMalloc (items * size);
 }
 
-void zcfree (int opaque, void *ptr)
+extern "C" void zcfree (int opaque, void *ptr)
 {
 	appFree (ptr);
 }

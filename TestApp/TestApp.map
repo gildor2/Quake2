@@ -1,11 +1,11 @@
  TestApp
 
- Timestamp is 4325c49d (Mon Sep 12 22:10:37 2005)
+ Timestamp is 432704df (Tue Sep 13 20:57:03 2005)
 
  Preferred load address is 00400000
 
  Start         Length     Name                   Class
- 0001:00000000 00006e10H .text                   CODE
+ 0001:00000000 00006eb0H .text                   CODE
  0002:00000000 000000fcH .idata$5                DATA
  0002:00000100 00000584H .rdata                  DATA
  0002:00000688 00000044H .rdata$r                DATA
@@ -20,8 +20,8 @@
  0003:00000018 00000004H .CRT$XCZ                DATA
  0003:0000001c 00000004H .CRT$XIA                DATA
  0003:00000020 00000004H .CRT$XIZ                DATA
- 0003:00000030 0000132cH .data                   DATA
- 0003:00001360 0000480cH .bss                    DATA
+ 0003:00000030 0000134cH .data                   DATA
+ 0003:00001380 0000480cH .bss                    DATA
 
   Address         Publics by Value              Rva+Base     Lib:Object
 
@@ -103,99 +103,101 @@
  0001:00001be7       ?FileExists@CFileContainerOS@@UAE_NPBD@Z 00402be7 f i FileSystem.obj
  0001:00001c1e       ?OpenFile@CFileContainerOS@@UAEPAVCFile@@PBD@Z 00402c1e f i FileSystem.obj
  0001:00001c3b       ?List@CFileContainerOS@@UAEXAAVCFileList@@PBDI@Z 00402c3b f i FileSystem.obj
- 0001:00001c63       ??_ECFileContainerOS@@UAEPAXI@Z 00402c63 f i FileSystem.obj
- 0001:00001c63       ??_ECFileContainer@@UAEPAXI@Z 00402c63 f i FileSystem.obj
- 0001:00001c63       ??_GCFileContainer@@UAEPAXI@Z 00402c63 f i FileSystem.obj
  0001:00001c63       ??_GCFileContainerOS@@UAEPAXI@Z 00402c63 f i FileSystem.obj
+ 0001:00001c63       ??_GCFileContainer@@UAEPAXI@Z 00402c63 f i FileSystem.obj
+ 0001:00001c63       ??_ECFileContainer@@UAEPAXI@Z 00402c63 f i FileSystem.obj
+ 0001:00001c63       ??_ECFileContainerOS@@UAEPAXI@Z 00402c63 f i FileSystem.obj
  0001:00001c80       ?MountArchive@CFileSystem@@QAEPAVCFileContainer@@PBD0@Z 00402c80 f   FileSystem.obj
- 0001:00001d97       ?List@CFileSystem@@UAEPAVCFileList@@PBDI@Z 00402d97 f   FileSystem.obj
- 0001:00001f23       ?RegisterFormat@CFileSystem@@SAXP6APAVCFileContainer@@PBDPAU_iobuf@@@Z@Z 00402f23 f   FileSystem.obj
- 0001:00001f63       ?FileExists@CFileSystem@@UAE_NPBD@Z 00402f63 f   FileSystem.obj
- 0001:00001fc6       ?OpenFile@CFileSystem@@UAEPAVCFile@@PBD@Z 00402fc6 f   FileSystem.obj
- 0001:0000204f       ?appInitFileSystem@@YAXAAVCFileSystem@@@Z 0040304f f   FileSystem.obj
- 0001:00002662       ?FindDir@CFileContainerArc@@IAEPAVCArcDir@1@PBD_N@Z 00403662 f   FileContainerArc.obj
- 0001:0000274b       ?FindFile@CFileContainerArc@@IAEPAVCStringItem@@PBD@Z 0040374b f   FileContainerArc.obj
- 0001:000027b6       ?FileExists@CFileContainerArc@@UAE_NPBD@Z 004037b6 f   FileContainerArc.obj
- 0001:000027c8       ?OpenFile@CFileContainerArc@@UAEPAVCFile@@PBD@Z 004037c8 f   FileContainerArc.obj
- 0001:000027e4       ?List@CFileContainerArc@@UAEXAAVCFileList@@PBDI@Z 004037e4 f   FileContainerArc.obj
- 0001:00002906       ?cpuid@@YAXI@Z             00403906 f   CoreWin32.obj
- 0001:00002929       ?appPackage@@YAPBDXZ       00403929 f   CoreWin32.obj
- 0001:0000298e       ?appGetSystemErrorMessage@@YAPBDI@Z 0040398e f   CoreWin32.obj
- 0001:000029f2       ?appDisplayError@@YAXXZ    004039f2 f   CoreWin32.obj
- 0001:00002a46       ?appInitPlatform@@YAXXZ    00403a46 f   CoreWin32.obj
- 0001:00002e7a       ?appShutdownPlatform@@YAXXZ 00403e7a f   CoreWin32.obj
- 0001:00002e83       ?osAddressInfo@@YA_NIPADHPAH@Z 00403e83 f   DbgSymbolsWin32.obj
- 0001:00002f17       ?osModuleInfo@@YA_NIPADHPAH@Z 00403f17 f   DbgSymbolsWin32.obj
- 0001:000030be       ?win32ExceptFilter@@YAHPAU_EXCEPTION_POINTERS@@@Z 004040be f   ExceptFilterWin32.obj
- 0001:0000354f       ?win32ExceptFilter2@@YAHXZ 0040454f f   ExceptFilterWin32.obj
- 0001:0000355b       ?appListDirectoryOS@@YAXPBDAAVCFileList@@I@Z 0040455b f   FileSystemWin32.obj
- 0001:000037e4       _zcalloc                   004047e4 f   TestApp.obj
- 0001:000037f8       _zcfree                    004047f8 f   TestApp.obj
- 0001:00003803       ?crash@@YAXPAD@Z           00404803 f   TestApp.obj
- 0001:000038c5       ?cmd1@@YAXHPAPAD@Z         004048c5 f   TestApp.obj
- 0001:00003a51       ?cUncol@@YAXHPAPAD@Z       00404a51 f   TestApp.obj
- 0001:00003a8d       ?cClen@@YAXHPAPAD@Z        00404a8d f   TestApp.obj
- 0001:00003ab4       ?cAlloc@@YAXHPAPAD@Z       00404ab4 f   TestApp.obj
- 0001:00003b10       ?cUsage@@YAX_N@Z           00404b10 f   TestApp.obj
- 0001:00003b2a       ?cArgs@@YAXHPAPAD@Z        00404b2a f   TestApp.obj
- 0001:00003b65       ?cBoth@@YAX_NHPAPAD@Z      00404b65 f   TestApp.obj
- 0001:00003bb3       ?cSym@@YAX_NHPAPAD@Z       00404bb3 f   TestApp.obj
- 0001:00003c27       _main                      00404c27 f   TestApp.obj
- 0001:00003daf       ?Create@CFileContainerPak@@SAPAVCFileContainer@@PBDPAU_iobuf@@@Z 00404daf f i TestApp.obj
- 0001:00003f18       ??0CFileContainerArc@@QAE@XZ 00404f18 f i TestApp.obj
- 0001:00003f5f       ?GetType@CFileContainerPak@@MAEPBDXZ 00404f5f f i TestApp.obj
- 0001:00003f65       ?OpenFile@CFileContainerPak@@MAEPAVCFile@@ABVCStringItem@@@Z 00404f65 f i TestApp.obj
- 0001:00003fb8       ?Read@CFilePak@CFileContainerPak@@UAEHPAXH@Z 00404fb8 f i TestApp.obj
- 0001:00003ff1       ?GetSize@CFilePak@CFileContainerPak@@UAEHXZ 00404ff1 f i TestApp.obj
- 0001:00003ff8       ?Eof@CFilePak@CFileContainerPak@@UAE_NXZ 00404ff8 f i TestApp.obj
- 0001:00004005       ??_GCFilePak@CFileContainerPak@@UAEPAXI@Z 00405005 f i TestApp.obj
- 0001:00004005       ??_ECFilePak@CFileContainerPak@@UAEPAXI@Z 00405005 f i TestApp.obj
- 0001:00004037       ??_GCFileContainerZip@@UAEPAXI@Z 00405037 f i TestApp.obj
- 0001:00004037       ??_ECFileContainerArc@@UAEPAXI@Z 00405037 f i TestApp.obj
- 0001:00004037       ??_ECFileContainerZip@@UAEPAXI@Z 00405037 f i TestApp.obj
- 0001:00004037       ??_GCFileContainerArc@@UAEPAXI@Z 00405037 f i TestApp.obj
- 0001:00004037       ??_ECFileContainerPak@@UAEPAXI@Z 00405037 f i TestApp.obj
- 0001:00004037       ??_GCFileContainerPak@@UAEPAXI@Z 00405037 f i TestApp.obj
- 0001:00004063       ?Create@CFileContainerZip@@SAPAVCFileContainer@@PBDPAU_iobuf@@@Z 00405063 f i TestApp.obj
- 0001:0000436d       ?GetType@CFileContainerZip@@MAEPBDXZ 0040536d f i TestApp.obj
- 0001:00004373       ?OpenFile@CFileContainerZip@@MAEPAVCFile@@ABVCStringItem@@@Z 00405373 f i TestApp.obj
- 0001:0000445c       ?Read@CFilePak@CFileContainerZip@@UAEHPAXH@Z 0040545c f i TestApp.obj
- 0001:0000457d       ?GetSize@CFilePak@CFileContainerZip@@UAEHXZ 0040557d f i TestApp.obj
- 0001:00004587       ?Eof@CFilePak@CFileContainerZip@@UAE_NXZ 00405587 f i TestApp.obj
- 0001:0000459a       ??_GCFilePak@CFileContainerZip@@UAEPAXI@Z 0040559a f i TestApp.obj
- 0001:0000459a       ??_ECFilePak@CFileContainerZip@@UAEPAXI@Z 0040559a f i TestApp.obj
- 0001:000045b6       ??1CFilePak@CFileContainerZip@@UAE@XZ 004055b6 f i TestApp.obj
- 0001:0000463f       ?RegisterCommand@@YA_NPBDP6AXXZH@Z 0040563f f   Commands.obj
- 0001:00004720       ?ExecuteCommand@@YA_NPBD@Z 00405720 f   Commands.obj
- 0001:000049ae       ?ExecuteCommand@@YA_NPBDPBUCSimpleCommand@@H@Z 004059ae f   Commands.obj
- 0001:00004bad       _inflateReset              00405bad f   lib:inflate.obj
- 0001:00004bfb       _inflateInit2_             00405bfb f   lib:inflate.obj
- 0001:00004cb4       _inflate                   00405cb4 f   lib:inflate.obj
- 0001:00005f89       _inflateEnd                00406f89 f   lib:inflate.obj
- 0001:000060e7       _crc32                     004070e7 f   lib:crc32.obj
- 0001:00006381       _inflate_fast              00407381 f   lib:inffast.obj
- 0001:00006736       _inflate_table             00407736 f   lib:inftrees.obj
- 0001:00006aea       _adler32                   00407aea f   lib:adler32.obj
- 0001:00006c10       __except_handler3          00407c10 f   MSVCRT:MSVCRT.dll
- 0001:00006c20       __chkstk                   00407c20 f   MSVCRT:chkstk.obj
- 0001:00006c20       __alloca_probe             00407c20 f   MSVCRT:chkstk.obj
- 0001:00006c50       _strlen                    00407c50 f   MSVCRT:MSVCRT.dll
- 0001:00006c56       __onexit                   00407c56 f   MSVCRT:atonexit.obj
- 0001:00006c82       _atexit                    00407c82 f   MSVCRT:atonexit.obj
- 0001:00006c94       ??_Etype_info@@UAEPAXI@Z   00407c94 f i MSVCRT:ti_inst.obj
- 0001:00006c94       ??_Gtype_info@@UAEPAXI@Z   00407c94 f i MSVCRT:ti_inst.obj
- 0001:00006cb0       __CxxThrowException@8      00407cb0 f   MSVCRT:MSVCRT.dll
- 0001:00006cb6       __purecall                 00407cb6 f   MSVCRT:MSVCRT.dll
- 0001:00006cbc       _mainCRTStartup            00407cbc f   MSVCRT:crtexe.obj
- 0001:00006dcc       _memcpy                    00407dcc f   MSVCRT:MSVCRT.dll
- 0001:00006dd2       ___dllonexit               00407dd2 f   MSVCRT:MSVCRT.dll
- 0001:00006dd8       ??1type_info@@UAE@XZ       00407dd8 f   MSVCRT:MSVCRT.dll
- 0001:00006dde       __XcptFilter               00407dde f   MSVCRT:MSVCRT.dll
- 0001:00006de4       __initterm                 00407de4 f   MSVCRT:MSVCRT.dll
- 0001:00006dea       __setdefaultprecision      00407dea f   MSVCRT:fp8.obj
- 0001:00006dfc       __matherr                  00407dfc f   MSVCRT:merr.obj
- 0001:00006dff       __setargv                  00407dff f   MSVCRT:dllargv.obj
- 0001:00006e00       __controlfp                00407e00 f   MSVCRT:MSVCRT.dll
+ 0001:00001d97       ?Mount@CFileSystem@@QAEXPBD0@Z 00402d97 f   FileSystem.obj
+ 0001:00001f47       ?Umount@CFileSystem@@QAEXPBD@Z 00402f47 f   FileSystem.obj
+ 0001:00001fe3       ?List@CFileSystem@@UAEPAVCFileList@@PBDIPAV2@@Z 00402fe3 f   FileSystem.obj
+ 0001:0000218a       ?RegisterFormat@CFileSystem@@SAXP6APAVCFileContainer@@PBDPAU_iobuf@@@Z@Z 0040318a f   FileSystem.obj
+ 0001:000021ca       ?FileExists@CFileSystem@@UAE_NPBD@Z 004031ca f   FileSystem.obj
+ 0001:0000222d       ?OpenFile@CFileSystem@@UAEPAVCFile@@PBD@Z 0040322d f   FileSystem.obj
+ 0001:000022b6       ?appInitFileSystem@@YAXAAVCFileSystem@@@Z 004032b6 f   FileSystem.obj
+ 0001:0000268c       ?FindDir@CFileContainerArc@@IAEPAVCArcDir@1@PBD_N@Z 0040368c f   FileContainerArc.obj
+ 0001:00002775       ?FindFile@CFileContainerArc@@IAEPAVCStringItem@@PBD@Z 00403775 f   FileContainerArc.obj
+ 0001:000027e0       ?FileExists@CFileContainerArc@@UAE_NPBD@Z 004037e0 f   FileContainerArc.obj
+ 0001:000027f2       ?OpenFile@CFileContainerArc@@UAEPAVCFile@@PBD@Z 004037f2 f   FileContainerArc.obj
+ 0001:0000280e       ?List@CFileContainerArc@@UAEXAAVCFileList@@PBDI@Z 0040380e f   FileContainerArc.obj
+ 0001:00002975       ?cpuid@@YAXI@Z             00403975 f   CoreWin32.obj
+ 0001:00002998       ?appPackage@@YAPBDXZ       00403998 f   CoreWin32.obj
+ 0001:000029fd       ?appGetSystemErrorMessage@@YAPBDI@Z 004039fd f   CoreWin32.obj
+ 0001:00002a61       ?appDisplayError@@YAXXZ    00403a61 f   CoreWin32.obj
+ 0001:00002ab5       ?appInitPlatform@@YAXXZ    00403ab5 f   CoreWin32.obj
+ 0001:00002ee9       ?appShutdownPlatform@@YAXXZ 00403ee9 f   CoreWin32.obj
+ 0001:00002ef2       ?osAddressInfo@@YA_NIPADHPAH@Z 00403ef2 f   DbgSymbolsWin32.obj
+ 0001:00002f86       ?osModuleInfo@@YA_NIPADHPAH@Z 00403f86 f   DbgSymbolsWin32.obj
+ 0001:0000312d       ?win32ExceptFilter@@YAHPAU_EXCEPTION_POINTERS@@@Z 0040412d f   ExceptFilterWin32.obj
+ 0001:000035be       ?win32ExceptFilter2@@YAHXZ 004045be f   ExceptFilterWin32.obj
+ 0001:000035ca       ?appListDirectoryOS@@YAXPBDAAVCFileList@@I@Z 004045ca f   FileSystemWin32.obj
+ 0001:00003853       _zcalloc                   00404853 f   TestApp.obj
+ 0001:00003875       _zcfree                    00404875 f   TestApp.obj
+ 0001:00003880       ?crash@@YAXPAD@Z           00404880 f   TestApp.obj
+ 0001:00003942       ?cmd1@@YAXHPAPAD@Z         00404942 f   TestApp.obj
+ 0001:00003ace       ?cUncol@@YAXHPAPAD@Z       00404ace f   TestApp.obj
+ 0001:00003b0a       ?cClen@@YAXHPAPAD@Z        00404b0a f   TestApp.obj
+ 0001:00003b31       ?cAlloc@@YAXHPAPAD@Z       00404b31 f   TestApp.obj
+ 0001:00003b8d       ?cUsage@@YAX_N@Z           00404b8d f   TestApp.obj
+ 0001:00003ba7       ?cArgs@@YAXHPAPAD@Z        00404ba7 f   TestApp.obj
+ 0001:00003be2       ?cBoth@@YAX_NHPAPAD@Z      00404be2 f   TestApp.obj
+ 0001:00003c30       ?cSym@@YAX_NHPAPAD@Z       00404c30 f   TestApp.obj
+ 0001:00003ca4       _main                      00404ca4 f   TestApp.obj
+ 0001:00003e2c       ?Create@CFileContainerPak@@SAPAVCFileContainer@@PBDPAU_iobuf@@@Z 00404e2c f i TestApp.obj
+ 0001:00003f95       ??0CFileContainerArc@@QAE@XZ 00404f95 f i TestApp.obj
+ 0001:00003fdc       ??_GCFileContainerPak@@UAEPAXI@Z 00404fdc f i TestApp.obj
+ 0001:00003fdc       ??_ECFileContainerArc@@UAEPAXI@Z 00404fdc f i TestApp.obj
+ 0001:00003fdc       ??_GCFileContainerZip@@UAEPAXI@Z 00404fdc f i TestApp.obj
+ 0001:00003fdc       ??_ECFileContainerPak@@UAEPAXI@Z 00404fdc f i TestApp.obj
+ 0001:00003fdc       ??_GCFileContainerArc@@UAEPAXI@Z 00404fdc f i TestApp.obj
+ 0001:00003fdc       ??_ECFileContainerZip@@UAEPAXI@Z 00404fdc f i TestApp.obj
+ 0001:00004008       ?GetType@CFileContainerPak@@MAEPBDXZ 00405008 f i TestApp.obj
+ 0001:0000400e       ?OpenFile@CFileContainerPak@@MAEPAVCFile@@ABVCStringItem@@@Z 0040500e f i TestApp.obj
+ 0001:00004061       ?Read@CFilePak@CFileContainerPak@@UAEHPAXH@Z 00405061 f i TestApp.obj
+ 0001:0000409a       ?GetSize@CFilePak@CFileContainerPak@@UAEHXZ 0040509a f i TestApp.obj
+ 0001:000040a1       ?Eof@CFilePak@CFileContainerPak@@UAE_NXZ 004050a1 f i TestApp.obj
+ 0001:000040ae       ??_ECFilePak@CFileContainerPak@@UAEPAXI@Z 004050ae f i TestApp.obj
+ 0001:000040ae       ??_GCFilePak@CFileContainerPak@@UAEPAXI@Z 004050ae f i TestApp.obj
+ 0001:000040e0       ?Create@CFileContainerZip@@SAPAVCFileContainer@@PBDPAU_iobuf@@@Z 004050e0 f i TestApp.obj
+ 0001:000043ea       ?GetType@CFileContainerZip@@MAEPBDXZ 004053ea f i TestApp.obj
+ 0001:000043f0       ?OpenFile@CFileContainerZip@@MAEPAVCFile@@ABVCStringItem@@@Z 004053f0 f i TestApp.obj
+ 0001:000044d9       ?Read@CFilePak@CFileContainerZip@@UAEHPAXH@Z 004054d9 f i TestApp.obj
+ 0001:00004622       ?GetSize@CFilePak@CFileContainerZip@@UAEHXZ 00405622 f i TestApp.obj
+ 0001:0000462c       ?Eof@CFilePak@CFileContainerZip@@UAE_NXZ 0040562c f i TestApp.obj
+ 0001:0000463f       ??_ECFilePak@CFileContainerZip@@UAEPAXI@Z 0040563f f i TestApp.obj
+ 0001:0000463f       ??_GCFilePak@CFileContainerZip@@UAEPAXI@Z 0040563f f i TestApp.obj
+ 0001:0000465b       ??1CFilePak@CFileContainerZip@@UAE@XZ 0040565b f i TestApp.obj
+ 0001:000046e4       ?RegisterCommand@@YA_NPBDP6AXXZH@Z 004056e4 f   Commands.obj
+ 0001:000047c5       ?ExecuteCommand@@YA_NPBD@Z 004057c5 f   Commands.obj
+ 0001:00004a53       ?ExecuteCommand@@YA_NPBDPBUCSimpleCommand@@H@Z 00405a53 f   Commands.obj
+ 0001:00004c52       _inflateReset              00405c52 f   lib:inflate.obj
+ 0001:00004ca0       _inflateInit2_             00405ca0 f   lib:inflate.obj
+ 0001:00004d59       _inflate                   00405d59 f   lib:inflate.obj
+ 0001:0000602e       _inflateEnd                0040702e f   lib:inflate.obj
+ 0001:0000618c       _crc32                     0040718c f   lib:crc32.obj
+ 0001:00006426       _inflate_fast              00407426 f   lib:inffast.obj
+ 0001:000067db       _inflate_table             004077db f   lib:inftrees.obj
+ 0001:00006b8f       _adler32                   00407b8f f   lib:adler32.obj
+ 0001:00006cb0       __except_handler3          00407cb0 f   MSVCRT:MSVCRT.dll
+ 0001:00006cc0       __chkstk                   00407cc0 f   MSVCRT:chkstk.obj
+ 0001:00006cc0       __alloca_probe             00407cc0 f   MSVCRT:chkstk.obj
+ 0001:00006cf0       _strlen                    00407cf0 f   MSVCRT:MSVCRT.dll
+ 0001:00006cf6       __onexit                   00407cf6 f   MSVCRT:atonexit.obj
+ 0001:00006d22       _atexit                    00407d22 f   MSVCRT:atonexit.obj
+ 0001:00006d34       ??_Gtype_info@@UAEPAXI@Z   00407d34 f i MSVCRT:ti_inst.obj
+ 0001:00006d34       ??_Etype_info@@UAEPAXI@Z   00407d34 f i MSVCRT:ti_inst.obj
+ 0001:00006d50       __CxxThrowException@8      00407d50 f   MSVCRT:MSVCRT.dll
+ 0001:00006d56       __purecall                 00407d56 f   MSVCRT:MSVCRT.dll
+ 0001:00006d5c       _mainCRTStartup            00407d5c f   MSVCRT:crtexe.obj
+ 0001:00006e6c       _memcpy                    00407e6c f   MSVCRT:MSVCRT.dll
+ 0001:00006e72       ___dllonexit               00407e72 f   MSVCRT:MSVCRT.dll
+ 0001:00006e78       ??1type_info@@UAE@XZ       00407e78 f   MSVCRT:MSVCRT.dll
+ 0001:00006e7e       __XcptFilter               00407e7e f   MSVCRT:MSVCRT.dll
+ 0001:00006e84       __initterm                 00407e84 f   MSVCRT:MSVCRT.dll
+ 0001:00006e8a       __setdefaultprecision      00407e8a f   MSVCRT:fp8.obj
+ 0001:00006e9c       __matherr                  00407e9c f   MSVCRT:merr.obj
+ 0001:00006e9f       __setargv                  00407e9f f   MSVCRT:dllargv.obj
+ 0001:00006ea0       __controlfp                00407ea0 f   MSVCRT:MSVCRT.dll
  0002:00000000       __imp__FormatMessageA@28   00408000     kernel32:KERNEL32.dll
  0002:00000004       __imp__GetLastError@0      00408004     kernel32:KERNEL32.dll
  0002:00000008       __imp__GetVersionExA@4     00408008     kernel32:KERNEL32.dll
@@ -204,8 +206,8 @@
  0002:00000014       __imp__IsBadReadPtr@8      00408014     kernel32:KERNEL32.dll
  0002:00000018       __imp__GetModuleFileNameA@12 00408018     kernel32:KERNEL32.dll
  0002:0000001c       \177KERNEL32_NULL_THUNK_DATA 0040801c     kernel32:KERNEL32.dll
- 0002:00000020       __imp__stricmp             00408020     MSVCRT:MSVCRT.dll
  0002:00000020       __imp___stricmp            00408020     MSVCRT:MSVCRT.dll
+ 0002:00000020       __imp__stricmp             00408020     MSVCRT:MSVCRT.dll
  0002:00000024       __imp___controlfp          00408024     MSVCRT:MSVCRT.dll
  0002:00000028       __imp__strftime            00408028     MSVCRT:MSVCRT.dll
  0002:0000002c       __imp__localtime           0040802c     MSVCRT:MSVCRT.dll
@@ -344,7 +346,7 @@
  0003:00000454       ??_C@_0CN@LHCG@?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9@ 00409454     ErrorMgr.obj
  0003:00000484       ??_C@_02JJJH@?6?6?$AA@     00409484     ErrorMgr.obj
  0003:00000488       ??_C@_09KFPK@crash?4log?$AA@ 00409488     ErrorMgr.obj
- 0003:00000494       ??_C@_0BK@HDOL@Cannot?5write?5to?5file?5?$CC?$CFs?$CC?$AA@ 00409494     ErrorMgr.obj
+ 0003:00000494       ??_C@_0BL@NFOF@Cannot?5write?5to?5file?5?$CC?$CFs?$CC?6?$AA@ 00409494     ErrorMgr.obj
  0003:000004b0       ??_C@_01FNLH@a?$AA@        004094b0     ErrorMgr.obj
  0003:000004b4       ??_C@_01LLF@w?$AA@         004094b4     ErrorMgr.obj
  0003:000004b8       ??_R0H@8                   004094b8     ErrorMgr.obj
@@ -370,110 +372,110 @@
  0003:00000600       ??_C@_05LELA@?$CFs?1?$CFs?$AA@ 00409600     FileSystem.obj
  0003:00000608       ??_C@_0CE@BLOA@Unsupported?5archive?5format?5of?5?$CC?$CF@ 00409608     FileSystem.obj
  0003:0000062c       ??_C@_0BI@POEI@File?5?$CC?$CFs?$CC?5is?5not?5found?6?$AA@ 0040962c     FileSystem.obj
- 0003:00000644       ??_C@_0CG@CMCE@Cannot?5register?5archive?5format?3?5@ 00409644     FileSystem.obj
- 0003:0000066c       ??_C@_04PIKN@type?$AA@     0040966c     FileSystem.obj
- 0003:00000674       ??_C@_02DBOA@ls?$AA@       00409674     FileSystem.obj
- 0003:00000678       ??_C@_03KMBF@cat?$AA@      00409678     FileSystem.obj
- 0003:0000067c       ??_C@_06PCKL@umount?$AA@   0040967c     FileSystem.obj
- 0003:00000684       ??_C@_05LHIE@mount?$AA@    00409684     FileSystem.obj
- 0003:0000068c       ??_C@_01PJCK@?4?$AA@       0040968c     FileSystem.obj
- 0003:00000690       ??_C@_0DL@BKHH@Usage?3?5mount?6?5?5or?5?5?5mount?5?$DMpath?5@ 00409690     FileSystem.obj
- 0003:000006cc       ??_C@_0CL@KEOD@Mounted?5?$CFd?5containers?5?$CI?$CFd?5archiv@ 004096cc     FileSystem.obj
- 0003:000006f8       ??_C@_0BI@OOPK@mount?3?5nothing?5in?5?$CC?$CFs?$CC?6?$AA@ 004096f8     FileSystem.obj
- 0003:00000710       ??_C@_0BH@GKKO@mount?3?5no?5empty?5names?6?$AA@ 00409710     FileSystem.obj
- 0003:00000728       ??_C@_0BN@MPBL@?$CF?93d?5?$CFc?5?$CF?94s?5?$CF?96d?5?$CF?930s?5?5?$CFs?6?$AA@ 00409728     FileSystem.obj
- 0003:00000748       ??_C@_0ED@LBAB@?9?9?9?9L?9type?9nfiles?9name?9?9?9?9?9?9?9?9?9?9@ 00409748     FileSystem.obj
- 0003:0000078c       ??_C@_0BG@ODK@Usage?3?5umount?5?$DMmask?$DO?6?$AA@ 0040978c     FileSystem.obj
- 0003:000007a4       ??_C@_0BJ@NOBI@Unmounted?5?$CFd?5containers?6?$AA@ 004097a4     FileSystem.obj
- 0003:000007c0       ??_C@_0BM@DONC@No?5mount?5points?5match?5?$CC?$CFs?$CC?6?$AA@ 004097c0     FileSystem.obj
- 0003:000007dc       ??_C@_0BH@IAD@Usage?3?5cat?5?$DMfilename?$DO?6?$AA@ 004097dc     FileSystem.obj
- 0003:000007f4       ??_C@_01BJG@?6?$AA@        004097f4     FileSystem.obj
- 0003:000007f8       ??_C@_0BL@DFHA@?6binary?5file?5?4?4?4?5stopped?4?6?$AA@ 004097f8     FileSystem.obj
- 0003:00000814       ??_C@_02JBML@?$CFc?$AA@    00409814     FileSystem.obj
- 0003:00000818       ??_C@_0BJ@NOHB@Usage?3?5ls?5?$FLpath?1?$FN?$FLmask?$FN?6?$AA@ 00409818     FileSystem.obj
- 0003:00000834       ??_C@_0L@GFGG@?$FL?$CFc?$CFc?$FN?5?$CFs?6?$AA@ 00409834     FileSystem.obj
- 0003:00000840       ??_C@_01FDHG@?$CK?$AA@     00409840     FileSystem.obj
- 0003:00000844       ??_C@_02FCCF@?1?$CK?$AA@   00409844     FileSystem.obj
- 0003:00000848       ??_C@_0BI@COAN@Usage?3?5type?5?$DMfilename?$DO?6?$AA@ 00409848     FileSystem.obj
- 0003:00000860       ??_C@_0CI@EHIB@File?3?5?$CFs?6found?5in?3?5?$CFs?6length?3?5?$CFd@ 00409860     FileSystem.obj
- 0003:00000888       ??_C@_05DILG@Vista?$AA@    00409888     CoreWin32.obj
- 0003:00000890       ??_C@_04GNKK@2003?$AA@     00409890     CoreWin32.obj
- 0003:00000898       ??_C@_02HJOI@XP?$AA@       00409898     CoreWin32.obj
- 0003:0000089c       ??_C@_04JCBD@2000?$AA@     0040989c     CoreWin32.obj
- 0003:000008a4       ??_C@_06FOJC@NT?54?40?$AA@ 004098a4     CoreWin32.obj
- 0003:000008ac       ??_C@_07FKOH@NT?53?451?$AA@ 004098ac     CoreWin32.obj
- 0003:000008b4       ??_C@_02KEBK@Me?$AA@       004098b4     CoreWin32.obj
- 0003:000008b8       ??_C@_02LDCN@98?$AA@       004098b8     CoreWin32.obj
- 0003:000008bc       ??_C@_02OHFO@95?$AA@       004098bc     CoreWin32.obj
- 0003:000008c0       ?GMachineOS@@3PADA         004098c0     CoreWin32.obj
- 0003:00000900       ?GMachineCPU@@3PADA        00409900     CoreWin32.obj
- 0003:00000940       ??_C@_0N@NGLF@Package?3?5?$CFs?6?$AA@ 00409940     CoreWin32.obj
- 0003:00000950       ??_C@_0BD@KBPG@unknown?5error?5code?$AA@ 00409950     CoreWin32.obj
- 0003:00000964       ??_C@_0BA@MNDD@?$CFs?6?6History?3?5?$CFs?$AA@ 00409964     CoreWin32.obj
- 0003:00000974       ??_C@_0BA@FBGF@?$CFs?3?5fatal?5error?$AA@ 00409974     CoreWin32.obj
- 0003:00000984       ??_C@_08PELM@CPU?3?5?$CFs?6?$AA@ 00409984     CoreWin32.obj
- 0003:00000990       ??_C@_02DIMO@?$FN?6?$AA@   00409990     CoreWin32.obj
- 0003:00000994       ??_C@_07FJPN@3DNow?$CB?5?$AA@ 00409994     CoreWin32.obj
- 0003:0000099c       ??_C@_05NKJE@SSE2?5?$AA@   0040999c     CoreWin32.obj
- 0003:000009a4       ??_C@_04IIOM@SSE?5?$AA@    004099a4     CoreWin32.obj
- 0003:000009ac       ??_C@_04OGOE@MMX?5?$AA@    004099ac     CoreWin32.obj
- 0003:000009b4       ??_C@_06JFCH@RDTSC?5?$AA@  004099b4     CoreWin32.obj
- 0003:000009bc       ??_C@_04PBEF@FPU?5?$AA@    004099bc     CoreWin32.obj
- 0003:000009c4       ??_C@_0N@BFKL@CPU?5caps?3?5?$FL?5?$AA@ 004099c4     CoreWin32.obj
- 0003:000009d4       ??_C@_0O@KPHI@CPU?5name?3?5?$CFs?6?$AA@ 004099d4     CoreWin32.obj
- 0003:000009e4       ??_C@_0BE@ILMD@CPU?5speed?3?5?$CF?42f?5?$CFs?6?$AA@ 004099e4     CoreWin32.obj
- 0003:000009f8       ??_C@_03HLPM@GHz?$AA@      004099f8     CoreWin32.obj
- 0003:000009fc       ??_C@_03EPGE@MHz?$AA@      004099fc     CoreWin32.obj
- 0003:00000a00       ??_C@_0BN@KBAH@Windows?5?$CFs?5?$CFd?4?$CFd?5?$CIBuild?3?5?$CFd?$CJ?$AA@ 00409a00     CoreWin32.obj
- 0003:00000a20       ??_C@_02MOOC@NT?$AA@       00409a20     CoreWin32.obj
- 0003:00000a24       ??_C@_0BB@NLPK@Detected?5OS?3?5?$CFs?6?$AA@ 00409a24     CoreWin32.obj
- 0003:00000a38       ??_C@_0BH@BMDH@Windows?5?$CFs?5?$CIBuild?3?5?$CFd?$CJ?$AA@ 00409a38     CoreWin32.obj
- 0003:00000a50       ??_C@_02EEAN@9X?$AA@       00409a50     CoreWin32.obj
- 0003:00000a54       ??_C@_07PCHH@Unknown?$AA@  00409a54     CoreWin32.obj
- 0003:00000a5c       ??_C@_0DB@LOPB@Windows?5version?5detection?5failed@ 00409a5c     CoreWin32.obj
- 0003:00000a90       ??_C@_05MIHC@?$CFs?$CB?$CFs?$AA@ 00409a90     DbgSymbolsWin32.obj
- 0003:00000a98       ??_C@_03HAMA@?$CD?$CFd?$AA@ 00409a98     DbgSymbolsWin32.obj
- 0003:00000a9c       ??_C@_02DIPJ@GS?$AA@       00409a9c     ExceptFilterWin32.obj
- 0003:00000aa0       ??_C@_02COFD@FS?$AA@       00409aa0     ExceptFilterWin32.obj
- 0003:00000aa4       ??_C@_02BFKM@ES?$AA@       00409aa4     ExceptFilterWin32.obj
- 0003:00000aa8       ??_C@_02DAG@DS?$AA@        00409aa8     ExceptFilterWin32.obj
- 0003:00000aac       ??_C@_02IPK@SS?$AA@        00409aac     ExceptFilterWin32.obj
- 0003:00000ab0       ??_C@_02GCFD@CS?$AA@       00409ab0     ExceptFilterWin32.obj
- 0003:00000ab4       ??_C@_03JKAN@EIP?$AA@      00409ab4     ExceptFilterWin32.obj
- 0003:00000ab8       ??_C@_03BEKG@EBP?$AA@      00409ab8     ExceptFilterWin32.obj
- 0003:00000abc       ??_C@_03GIKF@ESP?$AA@      00409abc     ExceptFilterWin32.obj
- 0003:00000ac0       ??_C@_03DEAG@EDI?$AA@      00409ac0     ExceptFilterWin32.obj
- 0003:00000ac4       ??_C@_03DPPK@ESI?$AA@      00409ac4     ExceptFilterWin32.obj
- 0003:00000ac8       ??_C@_03DHOB@EDX?$AA@      00409ac8     ExceptFilterWin32.obj
- 0003:00000acc       ??_C@_03FGLE@ECX?$AA@      00409acc     ExceptFilterWin32.obj
- 0003:00000ad0       ??_C@_03EABO@EBX?$AA@      00409ad0     ExceptFilterWin32.obj
- 0003:00000ad4       ??_C@_03HLOB@EAX?$AA@      00409ad4     ExceptFilterWin32.obj
- 0003:00000ad8       ??_C@_08IFFN@?6Stack?3?6?$AA@ 00409ad8     ExceptFilterWin32.obj
- 0003:00000ae4       ??_C@_0BA@FDKH@?5?5EFLAGS?3?5?$CF08X?6?$AA@ 00409ae4     ExceptFilterWin32.obj
- 0003:00000af4       ??_C@_0M@DCCB@Registers?3?6?$AA@ 00409af4     ExceptFilterWin32.obj
- 0003:00000b00       ??_C@_0L@OIHI@?$CFs?5at?5?$CC?$CFs?$CC?$AA@ 00409b00     ExceptFilterWin32.obj
- 0003:00000b0c       ??_C@_0BB@LNPF@Access?5violation?$AA@ 00409b0c     ExceptFilterWin32.obj
- 0003:00000b20       ??_C@_0P@JMBO@Illegal?5opcode?$AA@ 00409b20     ExceptFilterWin32.obj
- 0003:00000b30       ??_C@_0BC@ILAJ@Float?5zero?5divide?$AA@ 00409b30     ExceptFilterWin32.obj
- 0003:00000b44       ??_C@_0BE@GCEA@Integer?5zero?5divide?$AA@ 00409b44     ExceptFilterWin32.obj
- 0003:00000b58       ??_C@_0BH@HFFE@Priveleged?5instruction?$AA@ 00409b58     ExceptFilterWin32.obj
- 0003:00000b70       ??_C@_0P@BMBP@Stack?5overflow?$AA@ 00409b70     ExceptFilterWin32.obj
- 0003:00000b80       ??_C@_09EMAD@Exception?$AA@ 00409b80     ExceptFilterWin32.obj
- 0003:00000b8c       ??_C@_02IHLC@?5?5?$AA@     00409b8c     ExceptFilterWin32.obj
- 0003:00000b90       ??_C@_05LHOL@?5?$CF02X?$AA@ 00409b90     ExceptFilterWin32.obj
- 0003:00000b98       ??_C@_06BCOJ@?5?$DMN?1A?$DO?$AA@ 00409b98     ExceptFilterWin32.obj
- 0003:00000ba0       ??_C@_0N@IODG@?5?5?$CFs?3?5?$CF08X?5?5?$AA@ 00409ba0     ExceptFilterWin32.obj
- 0003:00000bb0       ??_C@_0L@JJGB@?5?5?$CFs?3?5?$CF04X?$AA@ 00409bb0     ExceptFilterWin32.obj
- 0003:00000bbc       ??_C@_08NLFG@?5?5?$DMN?1A?$DO?6?$AA@ 00409bbc     ExceptFilterWin32.obj
- 0003:00000bc8       ??_C@_06LDKA@?$CFs?$CF08X?$AA@ 00409bc8     ExceptFilterWin32.obj
- 0003:00000bd0       ??_C@_06ONMO@?6?5?5?5?5?5?$AA@ 00409bd0     ExceptFilterWin32.obj
- 0003:00000bd8       ??_C@_0O@CNMB@?$CFs?$CFs?$CF08X?5?$DN?5?$CFs?$AA@ 00409bd8     ExceptFilterWin32.obj
- 0003:00000be8       ??_C@_04HGCK@?$CFs?9?$DO?$AA@ 00409be8     ExceptFilterWin32.obj
- 0003:00000bf0       ??_C@_05GLIP@?5?5?5?5?5?$AA@ 00409bf0     ExceptFilterWin32.obj
- 0003:00000bf8       ??_C@_03HBPG@?$CFs?$CC?$AA@ 00409bf8     ExceptFilterWin32.obj
- 0003:00000bfc       ??_C@_03NAME@?4?4?4?$AA@   00409bfc     ExceptFilterWin32.obj
- 0003:00000c00       ??_C@_02HDBI@?2n?$AA@      00409c00     ExceptFilterWin32.obj
- 0003:00000c04       ??_C@_04JBJI@?5?$DN?5?$CC?$AA@ 00409c04     ExceptFilterWin32.obj
+ 0003:00000644       ??_C@_0CL@KEOD@Mounted?5?$CFd?5containers?5?$CI?$CFd?5archiv@ 00409644     FileSystem.obj
+ 0003:00000670       ??_C@_01PJCK@?4?$AA@       00409670     FileSystem.obj
+ 0003:00000674       ??_C@_0BI@OOPK@mount?3?5nothing?5in?5?$CC?$CFs?$CC?6?$AA@ 00409674     FileSystem.obj
+ 0003:0000068c       ??_C@_0BH@GKKO@mount?3?5no?5empty?5names?6?$AA@ 0040968c     FileSystem.obj
+ 0003:000006a4       ??_C@_0BJ@NOBI@Unmounted?5?$CFd?5containers?6?$AA@ 004096a4     FileSystem.obj
+ 0003:000006c0       ??_C@_0BM@DONC@No?5mount?5points?5match?5?$CC?$CFs?$CC?6?$AA@ 004096c0     FileSystem.obj
+ 0003:000006dc       ??_C@_0CG@CMCE@Cannot?5register?5archive?5format?3?5@ 004096dc     FileSystem.obj
+ 0003:00000704       ??_C@_04PIKN@type?$AA@     00409704     FileSystem.obj
+ 0003:0000070c       ??_C@_02DBOA@ls?$AA@       0040970c     FileSystem.obj
+ 0003:00000710       ??_C@_03KMBF@cat?$AA@      00409710     FileSystem.obj
+ 0003:00000714       ??_C@_06PCKL@umount?$AA@   00409714     FileSystem.obj
+ 0003:0000071c       ??_C@_05LHIE@mount?$AA@    0040971c     FileSystem.obj
+ 0003:00000724       ??_C@_0EO@FAPI@Usage?3?5mount?6?5?5or?5?5?5mount?5?$DMpath?5@ 00409724     FileSystem.obj
+ 0003:00000774       ??_C@_0BN@MLIF@?$CF?93d?5?$CFc?5?$CF?94s?5?$CF?96d?5?$CF?915s?5?5?$CFs?6?$AA@ 00409774     FileSystem.obj
+ 0003:00000794       ??_C@_0DB@JFME@?9?9?9?9L?9type?9nfiles?9mount?5point?9?9?9@ 00409794     FileSystem.obj
+ 0003:000007c8       ??_C@_0BG@ODK@Usage?3?5umount?5?$DMmask?$DO?6?$AA@ 004097c8     FileSystem.obj
+ 0003:000007e0       ??_C@_0BH@IAD@Usage?3?5cat?5?$DMfilename?$DO?6?$AA@ 004097e0     FileSystem.obj
+ 0003:000007f8       ??_C@_01BJG@?6?$AA@        004097f8     FileSystem.obj
+ 0003:000007fc       ??_C@_0BL@DFHA@?6binary?5file?5?4?4?4?5stopped?4?6?$AA@ 004097fc     FileSystem.obj
+ 0003:00000818       ??_C@_02JBML@?$CFc?$AA@    00409818     FileSystem.obj
+ 0003:0000081c       ??_C@_0BJ@NOHB@Usage?3?5ls?5?$FLpath?1?$FN?$FLmask?$FN?6?$AA@ 0040981c     FileSystem.obj
+ 0003:00000838       ??_C@_0L@GFGG@?$FL?$CFc?$CFc?$FN?5?$CFs?6?$AA@ 00409838     FileSystem.obj
+ 0003:00000844       ??_C@_01FDHG@?$CK?$AA@     00409844     FileSystem.obj
+ 0003:00000848       ??_C@_02FCCF@?1?$CK?$AA@   00409848     FileSystem.obj
+ 0003:0000084c       ??_C@_0BI@COAN@Usage?3?5type?5?$DMfilename?$DO?6?$AA@ 0040984c     FileSystem.obj
+ 0003:00000864       ??_C@_0CI@EHIB@File?3?5?$CFs?6found?5in?3?5?$CFs?6length?3?5?$CFd@ 00409864     FileSystem.obj
+ 0003:0000088c       ??_C@_05DILG@Vista?$AA@    0040988c     CoreWin32.obj
+ 0003:00000894       ??_C@_04GNKK@2003?$AA@     00409894     CoreWin32.obj
+ 0003:0000089c       ??_C@_02HJOI@XP?$AA@       0040989c     CoreWin32.obj
+ 0003:000008a0       ??_C@_04JCBD@2000?$AA@     004098a0     CoreWin32.obj
+ 0003:000008a8       ??_C@_06FOJC@NT?54?40?$AA@ 004098a8     CoreWin32.obj
+ 0003:000008b0       ??_C@_07FKOH@NT?53?451?$AA@ 004098b0     CoreWin32.obj
+ 0003:000008b8       ??_C@_02KEBK@Me?$AA@       004098b8     CoreWin32.obj
+ 0003:000008bc       ??_C@_02LDCN@98?$AA@       004098bc     CoreWin32.obj
+ 0003:000008c0       ??_C@_02OHFO@95?$AA@       004098c0     CoreWin32.obj
+ 0003:000008c4       ?GMachineOS@@3PADA         004098c4     CoreWin32.obj
+ 0003:00000904       ?GMachineCPU@@3PADA        00409904     CoreWin32.obj
+ 0003:00000944       ??_C@_0N@NGLF@Package?3?5?$CFs?6?$AA@ 00409944     CoreWin32.obj
+ 0003:00000954       ??_C@_0BD@KBPG@unknown?5error?5code?$AA@ 00409954     CoreWin32.obj
+ 0003:00000968       ??_C@_0BA@MNDD@?$CFs?6?6History?3?5?$CFs?$AA@ 00409968     CoreWin32.obj
+ 0003:00000978       ??_C@_0BA@FBGF@?$CFs?3?5fatal?5error?$AA@ 00409978     CoreWin32.obj
+ 0003:00000988       ??_C@_08PELM@CPU?3?5?$CFs?6?$AA@ 00409988     CoreWin32.obj
+ 0003:00000994       ??_C@_02DIMO@?$FN?6?$AA@   00409994     CoreWin32.obj
+ 0003:00000998       ??_C@_07FJPN@3DNow?$CB?5?$AA@ 00409998     CoreWin32.obj
+ 0003:000009a0       ??_C@_05NKJE@SSE2?5?$AA@   004099a0     CoreWin32.obj
+ 0003:000009a8       ??_C@_04IIOM@SSE?5?$AA@    004099a8     CoreWin32.obj
+ 0003:000009b0       ??_C@_04OGOE@MMX?5?$AA@    004099b0     CoreWin32.obj
+ 0003:000009b8       ??_C@_06JFCH@RDTSC?5?$AA@  004099b8     CoreWin32.obj
+ 0003:000009c0       ??_C@_04PBEF@FPU?5?$AA@    004099c0     CoreWin32.obj
+ 0003:000009c8       ??_C@_0N@BFKL@CPU?5caps?3?5?$FL?5?$AA@ 004099c8     CoreWin32.obj
+ 0003:000009d8       ??_C@_0O@KPHI@CPU?5name?3?5?$CFs?6?$AA@ 004099d8     CoreWin32.obj
+ 0003:000009e8       ??_C@_0BE@ILMD@CPU?5speed?3?5?$CF?42f?5?$CFs?6?$AA@ 004099e8     CoreWin32.obj
+ 0003:000009fc       ??_C@_03HLPM@GHz?$AA@      004099fc     CoreWin32.obj
+ 0003:00000a00       ??_C@_03EPGE@MHz?$AA@      00409a00     CoreWin32.obj
+ 0003:00000a04       ??_C@_0BN@KBAH@Windows?5?$CFs?5?$CFd?4?$CFd?5?$CIBuild?3?5?$CFd?$CJ?$AA@ 00409a04     CoreWin32.obj
+ 0003:00000a24       ??_C@_02MOOC@NT?$AA@       00409a24     CoreWin32.obj
+ 0003:00000a28       ??_C@_0BB@NLPK@Detected?5OS?3?5?$CFs?6?$AA@ 00409a28     CoreWin32.obj
+ 0003:00000a3c       ??_C@_0BH@BMDH@Windows?5?$CFs?5?$CIBuild?3?5?$CFd?$CJ?$AA@ 00409a3c     CoreWin32.obj
+ 0003:00000a54       ??_C@_02EEAN@9X?$AA@       00409a54     CoreWin32.obj
+ 0003:00000a58       ??_C@_07PCHH@Unknown?$AA@  00409a58     CoreWin32.obj
+ 0003:00000a60       ??_C@_0DB@LOPB@Windows?5version?5detection?5failed@ 00409a60     CoreWin32.obj
+ 0003:00000a94       ??_C@_05MIHC@?$CFs?$CB?$CFs?$AA@ 00409a94     DbgSymbolsWin32.obj
+ 0003:00000a9c       ??_C@_03HAMA@?$CD?$CFd?$AA@ 00409a9c     DbgSymbolsWin32.obj
+ 0003:00000aa0       ??_C@_02DIPJ@GS?$AA@       00409aa0     ExceptFilterWin32.obj
+ 0003:00000aa4       ??_C@_02COFD@FS?$AA@       00409aa4     ExceptFilterWin32.obj
+ 0003:00000aa8       ??_C@_02BFKM@ES?$AA@       00409aa8     ExceptFilterWin32.obj
+ 0003:00000aac       ??_C@_02DAG@DS?$AA@        00409aac     ExceptFilterWin32.obj
+ 0003:00000ab0       ??_C@_02IPK@SS?$AA@        00409ab0     ExceptFilterWin32.obj
+ 0003:00000ab4       ??_C@_02GCFD@CS?$AA@       00409ab4     ExceptFilterWin32.obj
+ 0003:00000ab8       ??_C@_03JKAN@EIP?$AA@      00409ab8     ExceptFilterWin32.obj
+ 0003:00000abc       ??_C@_03BEKG@EBP?$AA@      00409abc     ExceptFilterWin32.obj
+ 0003:00000ac0       ??_C@_03GIKF@ESP?$AA@      00409ac0     ExceptFilterWin32.obj
+ 0003:00000ac4       ??_C@_03DEAG@EDI?$AA@      00409ac4     ExceptFilterWin32.obj
+ 0003:00000ac8       ??_C@_03DPPK@ESI?$AA@      00409ac8     ExceptFilterWin32.obj
+ 0003:00000acc       ??_C@_03DHOB@EDX?$AA@      00409acc     ExceptFilterWin32.obj
+ 0003:00000ad0       ??_C@_03FGLE@ECX?$AA@      00409ad0     ExceptFilterWin32.obj
+ 0003:00000ad4       ??_C@_03EABO@EBX?$AA@      00409ad4     ExceptFilterWin32.obj
+ 0003:00000ad8       ??_C@_03HLOB@EAX?$AA@      00409ad8     ExceptFilterWin32.obj
+ 0003:00000adc       ??_C@_08IFFN@?6Stack?3?6?$AA@ 00409adc     ExceptFilterWin32.obj
+ 0003:00000ae8       ??_C@_0BA@FDKH@?5?5EFLAGS?3?5?$CF08X?6?$AA@ 00409ae8     ExceptFilterWin32.obj
+ 0003:00000af8       ??_C@_0M@DCCB@Registers?3?6?$AA@ 00409af8     ExceptFilterWin32.obj
+ 0003:00000b04       ??_C@_0L@OIHI@?$CFs?5at?5?$CC?$CFs?$CC?$AA@ 00409b04     ExceptFilterWin32.obj
+ 0003:00000b10       ??_C@_0BB@LNPF@Access?5violation?$AA@ 00409b10     ExceptFilterWin32.obj
+ 0003:00000b24       ??_C@_0P@JMBO@Illegal?5opcode?$AA@ 00409b24     ExceptFilterWin32.obj
+ 0003:00000b34       ??_C@_0BC@ILAJ@Float?5zero?5divide?$AA@ 00409b34     ExceptFilterWin32.obj
+ 0003:00000b48       ??_C@_0BE@GCEA@Integer?5zero?5divide?$AA@ 00409b48     ExceptFilterWin32.obj
+ 0003:00000b5c       ??_C@_0BH@HFFE@Priveleged?5instruction?$AA@ 00409b5c     ExceptFilterWin32.obj
+ 0003:00000b74       ??_C@_0P@BMBP@Stack?5overflow?$AA@ 00409b74     ExceptFilterWin32.obj
+ 0003:00000b84       ??_C@_09EMAD@Exception?$AA@ 00409b84     ExceptFilterWin32.obj
+ 0003:00000b90       ??_C@_02IHLC@?5?5?$AA@     00409b90     ExceptFilterWin32.obj
+ 0003:00000b94       ??_C@_05LHOL@?5?$CF02X?$AA@ 00409b94     ExceptFilterWin32.obj
+ 0003:00000b9c       ??_C@_06BCOJ@?5?$DMN?1A?$DO?$AA@ 00409b9c     ExceptFilterWin32.obj
+ 0003:00000ba4       ??_C@_0N@IODG@?5?5?$CFs?3?5?$CF08X?5?5?$AA@ 00409ba4     ExceptFilterWin32.obj
+ 0003:00000bb4       ??_C@_0L@JJGB@?5?5?$CFs?3?5?$CF04X?$AA@ 00409bb4     ExceptFilterWin32.obj
+ 0003:00000bc0       ??_C@_08NLFG@?5?5?$DMN?1A?$DO?6?$AA@ 00409bc0     ExceptFilterWin32.obj
+ 0003:00000bcc       ??_C@_06LDKA@?$CFs?$CF08X?$AA@ 00409bcc     ExceptFilterWin32.obj
+ 0003:00000bd4       ??_C@_06ONMO@?6?5?5?5?5?5?$AA@ 00409bd4     ExceptFilterWin32.obj
+ 0003:00000bdc       ??_C@_0O@CNMB@?$CFs?$CFs?$CF08X?5?$DN?5?$CFs?$AA@ 00409bdc     ExceptFilterWin32.obj
+ 0003:00000bec       ??_C@_04HGCK@?$CFs?9?$DO?$AA@ 00409bec     ExceptFilterWin32.obj
+ 0003:00000bf4       ??_C@_05GLIP@?5?5?5?5?5?$AA@ 00409bf4     ExceptFilterWin32.obj
+ 0003:00000bfc       ??_C@_03HBPG@?$CFs?$CC?$AA@ 00409bfc     ExceptFilterWin32.obj
+ 0003:00000c00       ??_C@_03NAME@?4?4?4?$AA@   00409c00     ExceptFilterWin32.obj
+ 0003:00000c04       ??_C@_02HDBI@?2n?$AA@      00409c04     ExceptFilterWin32.obj
+ 0003:00000c08       ??_C@_04JBJI@?5?$DN?5?$CC?$AA@ 00409c08     ExceptFilterWin32.obj
  0003:00000c10       ?tests@@3PADA              00409c10     TestApp.obj
  0003:00000d30       ??_C@_04FBGA@xcpt?$AA@     00409d30     TestApp.obj
  0003:00000d38       ??_C@_04OBLM@clen?$AA@     00409d38     TestApp.obj
@@ -519,92 +521,93 @@
  0003:0000101c       ??_C@_0EA@GEMH@CFileContainerZip?3?3Create?3?5?$CFs?5co@ 0040a01c     TestApp.obj
  0003:0000105c       ??_C@_03FANE@zip?$AA@      0040a05c     TestApp.obj
  0003:00001060       ??_C@_05IHDB@1?42?42?$AA@  0040a060     TestApp.obj
- 0003:00001068       ??_C@_0BP@HIAM@zip?5?$CC?$CFs?$CC?3?5?$CC?$CFs?$CC?5have?5wrong?5CRC?6?$AA@ 0040a068     TestApp.obj
- 0003:00001088       ??_C@_0CN@OLID@RegisterCommand?3?5?$CC?$CFs?$CC?5is?5already@ 0040a088     Commands.obj
- 0003:000010b8       ??_C@_0CA@PNBF@No?5usage?5info?5for?5command?5?$CC?$CFs?$CC?6?$AA@ 0040a0b8     Commands.obj
- 0003:000010d8       ??_C@_02PLJO@?1?$DP?$AA@   0040a0d8     Commands.obj
- 0003:000010dc       ??_C@_0BH@OFAE@GetArgs?3?5MAX_ARGS?5hit?6?$AA@ 0040a0dc     Commands.obj
- 0003:000010f4       ??_C@_07KFEL@cmdlist?$AA@  0040a0f4     Commands.obj
- 0003:000010fc       ??_C@_04EDEH@echo?$AA@     0040a0fc     Commands.obj
- 0003:00001104       ??_C@_03HKGO@?5?$CFs?$AA@  0040a104     Commands.obj
- 0003:00001108       ??_C@_0BJ@PKNG@Usage?3?5cmdlist?5?$FL?$DMmask?$DO?$FN?6?$AA@ 0040a108     Commands.obj
- 0003:00001124       ??_C@_0BK@HMMH@Displayed?5?$CFd?1?$CFd?5commands?6?$AA@ 0040a124     Commands.obj
- 0003:00001140       ??_C@_0P@CNAN@?$CF?93d?5?$CFc?5?$CFc?5?$CFs?6?$AA@ 0040a140     Commands.obj
- 0003:00001150       ??_C@_0BO@OMDO@?9?9?9?9i?9a?9name?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?6?$AA@ 0040a150     Commands.obj
- 0003:00001174       ??_C@_0BH@PBLF@incorrect?5length?5check?$AA@ 0040a174     lib:inflate.obj
- 0003:0000118c       ??_C@_0BF@OBFI@incorrect?5data?5check?$AA@ 0040a18c     lib:inflate.obj
- 0003:000011a4       ??_C@_0BO@EEIF@invalid?5distance?5too?5far?5back?$AA@ 0040a1a4     lib:inflate.obj
- 0003:000011c4       ??_C@_0BG@EGK@invalid?5distance?5code?$AA@ 0040a1c4     lib:inflate.obj
- 0003:000011dc       ??_C@_0BM@CHJP@invalid?5literal?1length?5code?$AA@ 0040a1dc     lib:inflate.obj
- 0003:000011f8       ??_C@_0BG@DILP@invalid?5distances?5set?$AA@ 0040a1f8     lib:inflate.obj
- 0003:00001210       ??_C@_0BM@BLEK@invalid?5literal?1lengths?5set?$AA@ 0040a210     lib:inflate.obj
- 0003:0000122c       ??_C@_0BK@BNJN@invalid?5bit?5length?5repeat?$AA@ 0040a22c     lib:inflate.obj
- 0003:00001248       ??_C@_0BJ@PEEP@invalid?5code?5lengths?5set?$AA@ 0040a248     lib:inflate.obj
- 0003:00001264       ??_C@_0CE@LAKP@too?5many?5length?5or?5distance?5symb@ 0040a264     lib:inflate.obj
- 0003:00001288       ??_C@_0BN@DBOJ@invalid?5stored?5block?5lengths?$AA@ 0040a288     lib:inflate.obj
- 0003:000012a8       ??_C@_0BD@IFBC@invalid?5block?5type?$AA@ 0040a2a8     lib:inflate.obj
- 0003:000012bc       ??_C@_0BE@GABH@header?5crc?5mismatch?$AA@ 0040a2bc     lib:inflate.obj
- 0003:000012d0       ??_C@_0BJ@LBGI@unknown?5header?5flags?5set?$AA@ 0040a2d0     lib:inflate.obj
- 0003:000012ec       ??_C@_0BH@NLIB@incorrect?5header?5check?$AA@ 0040a2ec     lib:inflate.obj
- 0003:00001304       ??_C@_0BE@FAJE@invalid?5window?5size?$AA@ 0040a304     lib:inflate.obj
- 0003:00001318       ??_C@_0BL@KPEJ@unknown?5compression?5method?$AA@ 0040a318     lib:inflate.obj
- 0003:00001340       ??_R0?AVtype_info@@@8      0040a340     MSVCRT:ti_inst.obj
- 0003:00001358       ___defaultmatherr          0040a358     MSVCRT:merr.obj
- 0003:00001460       ?GIsRequestingExit@@3_NA   0040a460     CoreMain.obj
- 0003:000015e8       ?first@CMemoryChain@@0PAV1@A 0040a5e8     Memory.obj
- 0003:000015f0       ?GCurrentMemAllocator@@3IA 0040a5f0     Memory.obj
- 0003:000015fc       ?first@FMemHeader@@2PAU1@A 0040a5fc     Memory.obj
- 0003:0000160c       ??_C@_00A@?$AA@            0040a60c     Memory.obj
- 0003:00001698       ?GLogHook@@3PAVCOutputDevice@@A 0040a698     OutputDevice.obj
- 0003:000016a0       ?GErr@@3VCErrorHandler@@A  0040a6a0     ErrorMgr.obj
- 0003:00001fb4       ?GIsFatalError@@3_NA       0040afb4     ErrorMgr.obj
- 0003:000027bc       ?AllocatedName@CStringItem@@0PADA 0040b7bc     Strings.obj
- 0003:000027c8       ?ArchiveReaders@CFileSystem@@0PAP6APAVCFileContainer@@PBDPAU_iobuf@@@ZA 0040b7c8     FileSystem.obj
- 0003:00002808       ?GFileSystem@@3PAVCFileSystem@@A 0040b808     FileSystem.obj
- 0003:00002810       ?GDefMountPoint@@3V?$TString@$0EA@@@A 0040b810     FileSystem.obj
- 0003:00002850       ?GIsWin2K@@3_NA            0040b850     CoreWin32.obj
- 0003:00002868       ?GSecondsPerCycle@@3NA     0040b868     CoreWin32.obj
- 0003:00002870       ?GIsWinNT@@3_NA            0040b870     CoreWin32.obj
- 0003:00002878       ?GMSecondsPerCycle@@3NA    0040b878     CoreWin32.obj
- 0003:00005b50       __dowildcard               0040eb50     MSVCRT:wildcard.obj
- 0003:00005b54       __newmode                  0040eb54     MSVCRT:_newmode.obj
- 0003:00005b58       __commode                  0040eb58     MSVCRT:xncommod.obj
- 0003:00005b5c       __fmode                    0040eb5c     MSVCRT:xtxtmode.obj
- 0003:00005b60       __adjust_fdiv              0040eb60     <common>
- 0003:00005b64       ___onexitend               0040eb64     <common>
- 0003:00005b68       ___onexitbegin             0040eb68     <common>
+ 0003:00001068       ??_C@_0CE@LINN@zip?5?$CC?$CFs?$CC?3?5?$CC?$CFs?$CC?5have?5unexpected?5e@ 0040a068     TestApp.obj
+ 0003:0000108c       ??_C@_0BP@HIAM@zip?5?$CC?$CFs?$CC?3?5?$CC?$CFs?$CC?5have?5wrong?5CRC?6?$AA@ 0040a08c     TestApp.obj
+ 0003:000010ac       ??_C@_0CN@OLID@RegisterCommand?3?5?$CC?$CFs?$CC?5is?5already@ 0040a0ac     Commands.obj
+ 0003:000010dc       ??_C@_0CA@PNBF@No?5usage?5info?5for?5command?5?$CC?$CFs?$CC?6?$AA@ 0040a0dc     Commands.obj
+ 0003:000010fc       ??_C@_02PLJO@?1?$DP?$AA@   0040a0fc     Commands.obj
+ 0003:00001100       ??_C@_0BH@OFAE@GetArgs?3?5MAX_ARGS?5hit?6?$AA@ 0040a100     Commands.obj
+ 0003:00001118       ??_C@_07KFEL@cmdlist?$AA@  0040a118     Commands.obj
+ 0003:00001120       ??_C@_04EDEH@echo?$AA@     0040a120     Commands.obj
+ 0003:00001128       ??_C@_03HKGO@?5?$CFs?$AA@  0040a128     Commands.obj
+ 0003:0000112c       ??_C@_0BJ@PKNG@Usage?3?5cmdlist?5?$FL?$DMmask?$DO?$FN?6?$AA@ 0040a12c     Commands.obj
+ 0003:00001148       ??_C@_0BK@HMMH@Displayed?5?$CFd?1?$CFd?5commands?6?$AA@ 0040a148     Commands.obj
+ 0003:00001164       ??_C@_0P@CNAN@?$CF?93d?5?$CFc?5?$CFc?5?$CFs?6?$AA@ 0040a164     Commands.obj
+ 0003:00001174       ??_C@_0BO@OMDO@?9?9?9?9i?9a?9name?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?9?6?$AA@ 0040a174     Commands.obj
+ 0003:00001198       ??_C@_0BH@PBLF@incorrect?5length?5check?$AA@ 0040a198     lib:inflate.obj
+ 0003:000011b0       ??_C@_0BF@OBFI@incorrect?5data?5check?$AA@ 0040a1b0     lib:inflate.obj
+ 0003:000011c8       ??_C@_0BO@EEIF@invalid?5distance?5too?5far?5back?$AA@ 0040a1c8     lib:inflate.obj
+ 0003:000011e8       ??_C@_0BG@EGK@invalid?5distance?5code?$AA@ 0040a1e8     lib:inflate.obj
+ 0003:00001200       ??_C@_0BM@CHJP@invalid?5literal?1length?5code?$AA@ 0040a200     lib:inflate.obj
+ 0003:0000121c       ??_C@_0BG@DILP@invalid?5distances?5set?$AA@ 0040a21c     lib:inflate.obj
+ 0003:00001234       ??_C@_0BM@BLEK@invalid?5literal?1lengths?5set?$AA@ 0040a234     lib:inflate.obj
+ 0003:00001250       ??_C@_0BK@BNJN@invalid?5bit?5length?5repeat?$AA@ 0040a250     lib:inflate.obj
+ 0003:0000126c       ??_C@_0BJ@PEEP@invalid?5code?5lengths?5set?$AA@ 0040a26c     lib:inflate.obj
+ 0003:00001288       ??_C@_0CE@LAKP@too?5many?5length?5or?5distance?5symb@ 0040a288     lib:inflate.obj
+ 0003:000012ac       ??_C@_0BN@DBOJ@invalid?5stored?5block?5lengths?$AA@ 0040a2ac     lib:inflate.obj
+ 0003:000012cc       ??_C@_0BD@IFBC@invalid?5block?5type?$AA@ 0040a2cc     lib:inflate.obj
+ 0003:000012e0       ??_C@_0BE@GABH@header?5crc?5mismatch?$AA@ 0040a2e0     lib:inflate.obj
+ 0003:000012f4       ??_C@_0BJ@LBGI@unknown?5header?5flags?5set?$AA@ 0040a2f4     lib:inflate.obj
+ 0003:00001310       ??_C@_0BH@NLIB@incorrect?5header?5check?$AA@ 0040a310     lib:inflate.obj
+ 0003:00001328       ??_C@_0BE@FAJE@invalid?5window?5size?$AA@ 0040a328     lib:inflate.obj
+ 0003:0000133c       ??_C@_0BL@KPEJ@unknown?5compression?5method?$AA@ 0040a33c     lib:inflate.obj
+ 0003:00001360       ??_R0?AVtype_info@@@8      0040a360     MSVCRT:ti_inst.obj
+ 0003:00001378       ___defaultmatherr          0040a378     MSVCRT:merr.obj
+ 0003:00001480       ?GIsRequestingExit@@3_NA   0040a480     CoreMain.obj
+ 0003:00001608       ?first@CMemoryChain@@0PAV1@A 0040a608     Memory.obj
+ 0003:00001610       ?GCurrentMemAllocator@@3IA 0040a610     Memory.obj
+ 0003:0000161c       ?first@FMemHeader@@2PAU1@A 0040a61c     Memory.obj
+ 0003:0000162c       ??_C@_00A@?$AA@            0040a62c     Memory.obj
+ 0003:000016b8       ?GLogHook@@3PAVCOutputDevice@@A 0040a6b8     OutputDevice.obj
+ 0003:000016c0       ?GErr@@3VCErrorHandler@@A  0040a6c0     ErrorMgr.obj
+ 0003:00001fd4       ?GIsFatalError@@3_NA       0040afd4     ErrorMgr.obj
+ 0003:000027dc       ?AllocatedName@CStringItem@@0PADA 0040b7dc     Strings.obj
+ 0003:000027e8       ?ArchiveReaders@CFileSystem@@0PAP6APAVCFileContainer@@PBDPAU_iobuf@@@ZA 0040b7e8     FileSystem.obj
+ 0003:00002828       ?GFileSystem@@3PAVCFileSystem@@A 0040b828     FileSystem.obj
+ 0003:00002830       ?GDefMountPoint@@3V?$TString@$0EA@@@A 0040b830     FileSystem.obj
+ 0003:00002870       ?GIsWin2K@@3_NA            0040b870     CoreWin32.obj
+ 0003:00002888       ?GSecondsPerCycle@@3NA     0040b888     CoreWin32.obj
+ 0003:00002890       ?GIsWinNT@@3_NA            0040b890     CoreWin32.obj
+ 0003:00002898       ?GMSecondsPerCycle@@3NA    0040b898     CoreWin32.obj
+ 0003:00005b70       __dowildcard               0040eb70     MSVCRT:wildcard.obj
+ 0003:00005b74       __newmode                  0040eb74     MSVCRT:_newmode.obj
+ 0003:00005b78       __commode                  0040eb78     MSVCRT:xncommod.obj
+ 0003:00005b7c       __fmode                    0040eb7c     MSVCRT:xtxtmode.obj
+ 0003:00005b80       __adjust_fdiv              0040eb80     <common>
+ 0003:00005b84       ___onexitend               0040eb84     <common>
+ 0003:00005b88       ___onexitbegin             0040eb88     <common>
 
- entry point at        0001:00006cbc
+ entry point at        0001:00006d5c
 
  Static symbols
 
- 0001:00004625       _$E5                       00405625 f   Commands.obj
- 0001:0000462a       _$E4                       0040562a f   Commands.obj
- 0001:00004632       _$E8                       00405632 f   Commands.obj
- 0001:00004637       _$E7                       00405637 f   Commands.obj
- 0001:00004895       ?GetArgs@@YAXPBD_N@Z       00405895 f   Commands.obj
- 0001:00004a87       ?InitCommands@@YAXXZ       00405a87 f   Commands.obj
- 0001:00004aad       ?Cmd_Echo@@YAXHPAPAD@Z     00405aad f   Commands.obj
- 0001:00004af0       ?Cmd_CmdList@@YAX_NHPAPAD@Z 00405af0 f   Commands.obj
- 0001:000037a2       _$E7                       004047a2 f   TestApp.obj
- 0001:000037ac       _$E4                       004047ac f   TestApp.obj
- 0001:000037ce       _$E6                       004047ce f   TestApp.obj
- 0001:000037da       _$E5                       004047da f   TestApp.obj
- 0001:0000325d       ?DumpReg4@@YAXPAVCOutputDevice@@PBDI@Z 0040425d f   ExceptFilterWin32.obj
- 0001:000032f7       ?DumpReg2@@YAXPAVCOutputDevice@@PBDK@Z 004042f7 f   ExceptFilterWin32.obj
- 0001:00003311       ?DumpMem@@YAXPAVCOutputDevice@@PBIPAU_CONTEXT@@@Z 00404311 f   ExceptFilterWin32.obj
- 0001:0000349e       ?IsString@@YA_NPBD@Z       0040449e f   ExceptFilterWin32.obj
- 0001:000034df       ?DumpString@@YA_NPAVCOutputDevice@@PBD@Z 004044df f   ExceptFilterWin32.obj
- 0001:00002a77       ?CheckCpuModel@@YAXXZ      00403a77 f   CoreWin32.obj
- 0001:00002c42       ?CheckCpuSpeed@@YAXXZ      00403c42 f   CoreWin32.obj
- 0001:00002d17       ?DetectOs@@YAXXZ           00403d17 f   CoreWin32.obj
- 0001:00002e36       ?SetDefaultDirectory@@YAXXZ 00403e36 f   CoreWin32.obj
+ 0001:000046ca       _$E5                       004056ca f   Commands.obj
+ 0001:000046cf       _$E4                       004056cf f   Commands.obj
+ 0001:000046d7       _$E8                       004056d7 f   Commands.obj
+ 0001:000046dc       _$E7                       004056dc f   Commands.obj
+ 0001:0000493a       ?GetArgs@@YAXPBD_N@Z       0040593a f   Commands.obj
+ 0001:00004b2c       ?InitCommands@@YAXXZ       00405b2c f   Commands.obj
+ 0001:00004b52       ?Cmd_Echo@@YAXHPAPAD@Z     00405b52 f   Commands.obj
+ 0001:00004b95       ?Cmd_CmdList@@YAX_NHPAPAD@Z 00405b95 f   Commands.obj
+ 0001:00003811       _$E7                       00404811 f   TestApp.obj
+ 0001:0000381b       _$E4                       0040481b f   TestApp.obj
+ 0001:0000383d       _$E6                       0040483d f   TestApp.obj
+ 0001:00003849       _$E5                       00404849 f   TestApp.obj
+ 0001:000032cc       ?DumpReg4@@YAXPAVCOutputDevice@@PBDI@Z 004042cc f   ExceptFilterWin32.obj
+ 0001:00003366       ?DumpReg2@@YAXPAVCOutputDevice@@PBDK@Z 00404366 f   ExceptFilterWin32.obj
+ 0001:00003380       ?DumpMem@@YAXPAVCOutputDevice@@PBIPAU_CONTEXT@@@Z 00404380 f   ExceptFilterWin32.obj
+ 0001:0000350d       ?IsString@@YA_NPBD@Z       0040450d f   ExceptFilterWin32.obj
+ 0001:0000354e       ?DumpString@@YA_NPAVCOutputDevice@@PBD@Z 0040454e f   ExceptFilterWin32.obj
+ 0001:00002ae6       ?CheckCpuModel@@YAXXZ      00403ae6 f   CoreWin32.obj
+ 0001:00002cb1       ?CheckCpuSpeed@@YAXXZ      00403cb1 f   CoreWin32.obj
+ 0001:00002d86       ?DetectOs@@YAXXZ           00403d86 f   CoreWin32.obj
+ 0001:00002ea5       ?SetDefaultDirectory@@YAXXZ 00403ea5 f   CoreWin32.obj
  0001:00001997       ?SkipRootDir@@YAPBDPBD@Z   00402997 f   FileSystem.obj
- 0001:000020c3       ?cMount@@YAX_NHPAPAD@Z     004030c3 f   FileSystem.obj
- 0001:0000234b       ?cUmount@@YAX_NHPAPAD@Z    0040334b f   FileSystem.obj
- 0001:00002417       ?cCat@@YAX_NHPAPAD@Z       00403417 f   FileSystem.obj
- 0001:000024f9       ?cLs@@YAX_NHPAPAD@Z        004034f9 f   FileSystem.obj
- 0001:000025f3       ?cType@@YAX_NHPAPAD@Z      004035f3 f   FileSystem.obj
+ 0001:0000232a       ?cMount@@YAX_NHPAPAD@Z     0040332a f   FileSystem.obj
+ 0001:00002412       ?cUmount@@YAX_NHPAPAD@Z    00403412 f   FileSystem.obj
+ 0001:0000243f       ?cCat@@YAX_NHPAPAD@Z       0040343f f   FileSystem.obj
+ 0001:00002521       ?cLs@@YAX_NHPAPAD@Z        00403521 f   FileSystem.obj
+ 0001:0000261d       ?cType@@YAX_NHPAPAD@Z      0040361d f   FileSystem.obj
  0001:00000e56       _$E7                       00401e56 f   ErrorMgr.obj
  0001:00000e60       _$E4                       00401e60 f   ErrorMgr.obj
  0001:00000efb       _$E6                       00401efb f   ErrorMgr.obj
@@ -621,10 +624,10 @@
  0001:000008e4       ?Cmd_MarkAllocs@@YAX_N@Z   004018e4 f   Memory.obj
  0001:0000097c       ?Cmd_CheckAllocs@@YAX_N@Z  0040197c f   Memory.obj
  0001:000000ba       ?Cmd_Quit@@YAXXZ           004010ba f   CoreMain.obj
- 0001:00005fc7       _make_crc_table            00406fc7 f   lib:crc32.obj
- 0001:00006114       _crc32_little              00407114 f   lib:crc32.obj
- 0001:00005dc1       _fixedtables               00406dc1 f   lib:inflate.obj
- 0001:00005eab       _updatewindow              00406eab f   lib:inflate.obj
+ 0001:0000606c       _make_crc_table            0040706c f   lib:crc32.obj
+ 0001:000061b9       _crc32_little              004071b9 f   lib:crc32.obj
+ 0001:00005e66       _fixedtables               00406e66 f   lib:inflate.obj
+ 0001:00005f50       _updatewindow              00406f50 f   lib:inflate.obj
 
  235 bytes saved through ICF
 

@@ -126,7 +126,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 
 //	appPrintf ("loading %s\n",namebuffer);
 
-	if (!(data = (byte*) FS_LoadFile (namebuffer, &size)))
+	if (!(data = (byte*) GFileSystem->LoadFile (namebuffer, &size)))
 	{
 		Com_DPrintf ("Couldn't load %s\n", namebuffer);
 		s->absent = true;
@@ -137,7 +137,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	if (info.channels != 1)
 	{
 		appPrintf ("%s is a stereo sample\n", *s->Name);
-		FS_FreeFile (data);
+		delete data;
 		return NULL;
 	}
 
@@ -149,7 +149,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	sc = s->cache = (sfxcache_t*)appMalloc (len + sizeof(sfxcache_t));
 	if (!sc)
 	{
-		FS_FreeFile (data);
+		delete data;
 		return NULL;
 	}
 
@@ -161,7 +161,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 
 	ResampleSfx (s, sc->speed, sc->width, data + info.dataofs);
 
-	FS_FreeFile (data);
+	delete data;
 
 	return sc;
 }

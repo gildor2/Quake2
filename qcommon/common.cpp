@@ -492,7 +492,7 @@ CVAR_END
 
 	InitByteDirs ();
 
-	FS_InitFilesystem ();
+	InitFileSystem ();
 
 	FS_LoadGameConfig ();
 	Cbuf_Execute ();
