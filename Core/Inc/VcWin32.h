@@ -4,6 +4,12 @@
 
 =============================================================================*/
 
+// next line will create EBP frames for ALL functions, so, when application
+// crashed, we will get complete call stack trace in error logfile
+//?? make this as #define option? may be specified in VC command line "/Oy-"
+//?? WARNING: call stack will not be displayed, when crashed in some library,
+//??  compiled without this option + when error generated with appError()
+//#pragma optimize("y", off)
 
 /*-----------------------------------------------------------------------------
 	Platform-specific type defines

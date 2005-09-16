@@ -81,7 +81,7 @@ static void SV_SetMaster_f (int argc, char **argv)
 static void SV_WipeSavegame (const char *savename)
 {
 	Com_DPrintf ("SV_WipeSaveGame(%s)\n", savename);
-	FS_RemoveFiles (va("./%s/" SAVEGAME_DIRECTORY "/%s/*.*", FS_Gamedir (), savename));
+	FS_RemoveFiles (va("./%s/" SAVEGAME_DIRECTORY "/%s/*", FS_Gamedir (), savename));
 }
 
 
@@ -89,7 +89,7 @@ static void SV_CopySaveGame (const char *src, const char *dst)
 {
 	Com_DPrintf ("SV_CopySaveGame(%s, %s)\n", src, dst);
 	SV_WipeSavegame (dst);
-	FS_CopyFiles (va("./%s/" SAVEGAME_DIRECTORY "/%s/*.*", FS_Gamedir(), src),
+	FS_CopyFiles (va("./%s/" SAVEGAME_DIRECTORY "/%s/*", FS_Gamedir(), src),
 				  va("./%s/" SAVEGAME_DIRECTORY "/%s/", FS_Gamedir(), dst));
 }
 
@@ -400,7 +400,7 @@ static void SV_GameMap_f (bool usage, int argc, char **argv)
 	{	// save the map just exited
 		if (sv.state == ss_game)
 		{
-			FS_CreatePath (va("./%s/" SAVEGAME_DIRECTORY "/current/", FS_Gamedir()));
+			appMakeDirectory (va("./%s/" SAVEGAME_DIRECTORY "/current", FS_Gamedir()));
 
 			// clear all the client.inuse flags before saving so that
 			// when the level is re-entered, the clients will spawn
@@ -431,7 +431,7 @@ static void SV_GameMap_f (bool usage, int argc, char **argv)
 	// copy off the level to the autosave slot
 	if (!DEDICATED && !sv_deathmatch->integer)
 	{
-		FS_CreatePath (va("./%s/" SAVEGAME_DIRECTORY "/current/", FS_Gamedir()));
+		appMakeDirectory (va("./%s/" SAVEGAME_DIRECTORY "/current", FS_Gamedir()));
 		SV_CopySaveGame ("current", "save0");
 		SV_WriteServerFile (true, "save0");
 	}
@@ -811,7 +811,7 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 	appSprintf (ARRAY_ARG(name), "./%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
 	appPrintf ("recording to %s\n", name);
-	FS_CreatePath (name);
+	appMakeDirectoryForFile (name);
 	svs.wdemofile = fopen (name, "wb");
 	if (!svs.wdemofile)
 	{
@@ -892,8 +892,7 @@ static void SV_ServerCommand_f (int argc, char **argv)
 	}
 
 	// pass command to server string tokenizer
-	TString<1024> Buf;
-	Buf[0] = 0;
+	TString<1024> Buf; Buf[0] = 0;
 	for (int i = 0; i < argc; i++)
 	{
 		if (i > 0) Buf += " ";

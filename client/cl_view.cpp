@@ -94,13 +94,19 @@ void V_AddEntity2 (entity_t *ent)
 
 void AddEntityWithEffects2 (entity_t *ent, unsigned fx)
 {
+#if 0
+	// disguise: in rogue; alyays available (can be activated with console cmd "disguise");
+	// disguise used in single-player games; originally, q2 have no 2rd person - so, can be visible
+	// in coop games only; disappear when player is killed only; strange thing ...
 	if ((fx & RF_USE_DISGUISE) && disguiseShader)
 	{
 		ent->customShader = disguiseShader;
 		ent->skinnum      = 0;
 		ent->skin         = NULL;
 	}
-	else if ((fx & RF_IR_VISIBLE) && (cl.refdef.rdflags & RDF_IRGOGGLES))
+	else
+#endif
+	if ((fx & RF_IR_VISIBLE) && (cl.refdef.rdflags & RDF_IRGOGGLES))
 	{
 		if (irShader)
 		{
@@ -122,9 +128,9 @@ void AddEntityWithEffects2 (entity_t *ent, unsigned fx)
 	// check for COLOR_SHELL
 	if (fx & (RF_SHELL_RED|RF_SHELL_GREEN|RF_SHELL_BLUE|RF_SHELL_DOUBLE|RF_SHELL_HALF_DAM))
 	{
-		ent->skin = NULL;
+		ent->skin         = NULL;
 		ent->customShader = shellShader;
-		ent->color.rgba = 0x202020;				// required for RED/GREEN/BLUE
+		ent->color.rgba   = 0x202020;				// required for RED/GREEN/BLUE
 		if (fx & RF_SHELL_HALF_DAM)
 			ent->color.rgba = RGB(0.56, 0.59, 0.45);
 		if (fx & RF_SHELL_DOUBLE)
@@ -146,8 +152,6 @@ void AddEntityWithEffects (entity_t *ent, unsigned fx)
 	AddEntityWithEffects2 (ent, fx);
 }
 
-
-//!! USE: rail shaders (remove from GL), colorShell (too)
 
 static void RegisterShaders ()
 {

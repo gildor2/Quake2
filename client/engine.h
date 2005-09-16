@@ -14,7 +14,6 @@ void	Com_DPrintf (const char *str, ...);
 
 //---------- files ----------
 const char* FS_Gamedir ();
-void	FS_CreatePath (const char *path);	//?? should be integrated into "open file for write" function
 void	FS_CopyFile (const char *src, const char *dst);
 void	FS_CopyFiles (const char *srcMask, const char *dstDir);
 void	FS_RemoveFiles (const char *mask);

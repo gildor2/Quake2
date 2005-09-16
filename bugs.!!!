@@ -30,10 +30,6 @@
 
 - z-buffer bugs with glass floor on "omd_map1"
 
-- filesystem:
-  - when q2 launched from "release" directory (w/o baseq2 subdir), FS "search paths" will be empty, "dir" command will not work at all
-    (possible in dedicated server only)
-
 - command completion: complete cvar with quotes - should use Com_QuoteString() before inserting into edit line; bugcheck:
   1) a="""a""" b """c"""; 2) a->complete+ENTER; 3) a->complete --> will be a different line
 

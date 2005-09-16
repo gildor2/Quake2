@@ -17,8 +17,12 @@ protected:
 	{
 	public:
 		FILE *file;					// opened file
-		const CFileInfo *info;		// pointer to file information
+		const CFileInfo &info;		// pointer to file information
 		unsigned readPos;
+		CFilePak (const CFileInfo &AInfo, FILE *AFile)
+		:	info(AInfo)
+		,	file(AFile)
+		{}
 		~CFilePak ()
 		{
 			if (file)
@@ -28,7 +32,7 @@ protected:
 		{
 			if (!file)
 				return 0;
-			int len = info->size - readPos;
+			int len = info.size - readPos;
 			if (len > Size) len = Size;
 			int count = fread (Buffer, 1, len, file);
 			readPos += count;
@@ -36,11 +40,11 @@ protected:
 		}
 		int GetSize ()
 		{
-			return info->size;
+			return info.size;
 		}
 		bool Eof ()
 		{
-			return readPos >= info->size;
+			return readPos >= info.size;
 		}
 	};
 	const char *GetType ()
@@ -54,11 +58,9 @@ protected:
 		FILE *f = fopen (name, "rb");
 		if (!f)						// cannot open archive file
 			return NULL;
-		CFilePak *File = new CFilePak;
-		File->file = f;
-		File->info = &info;
 		// rewind to file start
 		fseek (f, info.pos, SEEK_SET);
+		CFilePak *File = new CFilePak (info, f);
 		return File;
 	}
 public:

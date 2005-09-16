@@ -1,8 +1,9 @@
 #include "Core.h"
-#include <io.h>
+#include <io.h>						// for findfirst() set
+#include <direct.h>					// for mkdir()
 
 /*
-	We use app wildcard matcher. This will allow:
+	We use app wildcard matcher. This allows:
 	1. full compatibility of mask names in OS and virtual FS layers
 	2. case-insensitive file names under Unix (different cpp file!)
 		- but dir names case sensitive ...
@@ -64,4 +65,26 @@ void appListDirectoryOS (const char *mask, CFileList &List, unsigned flags)
 	_findclose (hFind);
 
 	unguard;
+}
+
+
+void appMakeDirectory (const char *dirname)
+{
+	// msvcrt mkdir() and win32 CreateDirectory() does not support "a/b/c" creation,
+	// so - we will create "a", then "a/b", then "a/b/c"
+	TString<256> Name; Name.filename (dirname);
+	if (Name[0] == 0)				// empty directory name ...
+		return;
+	for (char *s = *Name; /* empty */ ; s++)
+	{
+		char c = *s;
+		if (c != '/' && c != 0)
+			continue;
+		*s = 0;						// temporarily cut rest of path
+		// here: path delimiter or end of string
+		if (Name[0] != '.' || Name[1] != 0)		// do not create "."
+			_mkdir (Name);
+		if (!c) break;				// end of string
+		*s = '/';					// restore string
+	}
 }

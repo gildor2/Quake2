@@ -17,6 +17,7 @@
 // file container type
 #define FS_OS				0x000001
 #define FS_PAK				0x000002
+#define FS_RES				0x000004
 // items to list
 #define FS_FILE				0x000100
 #define FS_DIR				0x000200
@@ -27,7 +28,7 @@
 #define FS_LIST_HIDDEN		0x004000
 //?? FS_NUMERIC_SORT -- sort List() as numbers (make "file100" > "file11")
 
-#define FS_ALL				(FS_OS|FS_PAK|FS_DIR|FS_FILE)
+#define FS_ALL				(FS_OS|FS_PAK|FS_RES|FS_DIR|FS_FILE)
 
 
 class CFileItem : public CStringItem
@@ -165,8 +166,8 @@ public:
 	// registering archive format
 	static void RegisterFormat (CreateArchive_t reader);
 	// file operations
-	virtual bool FileExists (const char *filename);
-	virtual CFile *OpenFile (const char *filename);
+	virtual bool FileExists (const char *filename, unsigned flags = FS_ALL);
+	virtual CFile *OpenFile (const char *filename, unsigned flags = FS_ALL);
 	virtual CFileList *List (const char *mask, unsigned flags = FS_ALL, CFileList *list = NULL);
 	// mount/unmount containers
 	// if point == NULL, will mount to GDefMountPoint
@@ -191,3 +192,8 @@ CORE_API CFile *appOpenFile (const char *filename);
 // This function can be used without CFileSystem objects at all; access to files is
 // not restricted by file system mounts (function works without it)
 CORE_API void appListDirectoryOS (const char *dir, CFileList &List, unsigned flags);
+// Create directory; supports multiple nested dirs creation
+CORE_API void appMakeDirectory (const char *dirname);
+// Create directory, which can hold filename
+//?? may be, integrate this function into fopen(name,"w") analog (appOpenFileWrite() etc)
+CORE_API void appMakeDirectoryForFile (const char *filename);

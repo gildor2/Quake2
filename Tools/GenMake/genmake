@@ -490,6 +490,7 @@ sub CollectFileDependencies {
 	$dep = "";
 	$depends{$file} = "(computing)";			# flag for detection of recursive includes
 	my ($path) = $file =~ /^(\S+)\/[\w+\.]+$/;
+	$path = "" if !defined($path);
 
 	if ($srcType eq "rc") {
 		$depends{$file} = "";					# do not parse resources and avoid processing later

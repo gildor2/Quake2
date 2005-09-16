@@ -420,8 +420,7 @@ static void cRemoteCommand (int argc, char **argv)
 		appPrintf ("Rcon from %s:\n%s\n", NET_AdrToString (&net_from), net_message.data+4);
 
 		// fill line with a rest of command string (cut "rcon")
-		TString<256> Cmd;
-		Cmd[0] = 0;
+		TString<256> Cmd; Cmd[0] = 0;
 		for (int i = 2; i < argc; i++)
 		{
 			if (i > 2) Cmd += " ";

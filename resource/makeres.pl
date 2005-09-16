@@ -41,21 +41,22 @@ walkdir($srcpath, "");
 open (ARC, ">$arcfile") || die;
 binmode (ARC);
 
+# reserve place for data pointer
+syswrite (ARC, pack ("l", 0));
+
 # produce header
 
 foreach $name (@list)
 {
 	open (F, "$srcpath/$name") || die "Input file ", $name, " is not found";
-	seek (F, 0, 2);
+	sysseek (F, 0, 2);
 	# write file length
 	syswrite (ARC, pack ("l", tell (F)));
 	# write filename (ASCIIZ)
 	syswrite (ARC, "$name\0");
 	close (F);
 }
-
-# mark end of file directory ("size = 0")
-syswrite (ARC, "\0\0\0\0");
+$hdrLen = sysseek (ARC, 0, 1);		# implementation of "systell(ARC)"
 
 # append data
 foreach $name (@list)
@@ -70,9 +71,32 @@ foreach $name (@list)
 }
 close (LST);
 
+# complete header
+sysseek (ARC, 0, 0);				# rewind to file start
+syswrite (ARC, pack ("l", $hdrLen));
+
 close (ARC);
 
 system ("gzip --no-name --best --force $arcfile");
+
+# cut gzip header
+open (ARC, "$arcfile.gz") || die;
+$len = sysseek (ARC, 0, 2);
+sysseek (ARC, 10, 0);				# skip header (10 bytes)
+sysread (ARC, $data, $len-18);		# read whole file into $data (skip 10 bytes at start and 8 at end)
+close (ARC);
+
+open (ARC, ">$arcfile.res") || die;
+# write "length" field
+syswrite (ARC, pack ("l", $len-18));
+# write data
+syswrite (ARC, $data);
+close (ARC);
+
+# remove GZip archive
+#unlink ("$arcfile.gz");
+
+
 # VC settings:
 #   build: nasm -f win32 -o $(IntDir)\resources.obj -Darc=\"$(InputPath)\" $(InputDir)\make.asm
 #   out:   $(IntDir)\resources.obj

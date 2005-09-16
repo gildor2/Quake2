@@ -1,3 +1,6 @@
+- check misc/ut/network.htm
+- try LZMA decoder for resources and for .7z
+
 BUGS:
 ~~~~~
 - com_speeds: currently, displays some server stats - can use sv_texts.cpp funcs for this; and - separate cvar for this
@@ -283,12 +286,6 @@ BSP:
 - add marks: bulletholes (?), explosion marks, blood (!), "cheesy shadow" (!), water ripple
 - decompress visinfo (PVS) for client (cmodel); share this with renderer
 ? support for view-dependent LightForPoint()
-
--------------- FS ----------------
-
-- add FS_FOpenFileEx(name, mode), where mode is READ/WRITE/OSREAD (no PAK support)/ZWRITE (gzip compression)
-? FILE2 -> STREAM, isZipped -> funcRead / funcWrite / funcClose / funcOpen (??)
-- inline files: add support for #game/path/filename -- use this file as "path/filename" when "game" loaded
 
 ------------ COMMON --------------
 

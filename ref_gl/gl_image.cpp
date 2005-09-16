@@ -1171,19 +1171,13 @@ void PerformScreenshot ()
 		// autogenerate name
 		//?? should ListFiles(..."shot*") in current mod (OS FS) and find unused name in this list
 		for (i = 0; i < 10000; i++)
-		{	// check for a free filename
-			FILE *f;
+		{
+			// check for a free filename
 			Name.sprintf ("./%s/screenshots/shot%04d%s", FS_Gamedir (), i, ext);
-			if (!(f = fopen (Name, "rb")))
-				break;	// file doesn't exist
-			fclose (f);
+			if (!GFileSystem->FileExists (Name)) break;
 		}
-
 	}
 	screenshotName = NULL;
-
-	// create the screenshots directory if it doesn't exist
-	FS_CreatePath (Name);
 
 	// allocate buffer for 4 color components (required for ResampleTexture()
 	byte *buffer = new byte [vid_width * vid_height * 4];

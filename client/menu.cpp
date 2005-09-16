@@ -835,19 +835,8 @@ struct creditsMenu_t : menuFramework_t
 
 	bool Init ()
 	{
-		const char *filename = "credits";
-		if (!GFileSystem->FileExists (filename))
-		{
-			//!! mount resources to ".", and place files to "mod/credits"
-			// official mission packe are not provided own credits file - display defaults
-			if (!stricmp (FS_Gamedir (), "xatrix"))
-				filename = "xcredits";
-			else if (!stricmp (FS_Gamedir (), "rogue"))
-				filename = "rcredits";
-		}
-
 		unsigned count;
-		creditsBuffer = (char*) GFileSystem->LoadFile (filename, &count);
+		creditsBuffer = (char*) GFileSystem->LoadFile ("credits", &count);
 		// file always present - have inline file
 		char *p = creditsBuffer;
 		for (int n = 0; n < ARRAY_COUNT(credits)-1; n++)
@@ -991,13 +980,13 @@ struct savegameMenu_t : menuFramework_t
 		memset (m_shotvalid, 0, sizeof(m_shotvalid));
 		for (int i = 0; i < MAX_SAVEGAMES; i++)
 		{
-			FILE *f = fopen (va("./%s/" SAVEGAME_DIRECTORY "/save%d/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir (), i), "rb");
-			if (!f)
+			CFile *File = GFileSystem->OpenFile (va("./%s/" SAVEGAME_DIRECTORY "/save%d/server." SAVEGAME_VARS_EXTENSION, FS_Gamedir (), i));
+			if (!File)
 				strcpy (m_savestrings[i], "<EMPTY>");
 			else
 			{
-				fread (m_savestrings[i], sizeof(m_savestrings[i])-1, 1, f);
-				fclose (f);
+				File->Read (m_savestrings[i], sizeof(m_savestrings[i])-1);
+				delete File;
 				m_savevalid[i] = true;
 				if (CBasicImage *img = RE_RegisterPic (va(SAVEGAME_DIRECTORY "/save%d/shot", i)))
 				{
@@ -1390,29 +1379,25 @@ struct startserverMenu_t : menuFramework_t
 //			"deathball",
 			NULL
 		};
-		char	*buffer;
-		FILE	*fp;
 
+		char	*buffer;
 		// load the list of map names
-		if (!(fp = fopen (va("./%s/maps.lst", FS_Gamedir()), "rb")))
-		{	// if file not present in OS filesystem - try pak file
-			if (!(buffer = (char*) GFileSystem->LoadFile ("maps.lst")))
-			{
-				appWPrintf ("Couldn't find maps.lst\n");
-				buffer = NULL;
-			}
+		TString<64> Filename; Filename.sprintf ("./%s/maps.lst", FS_Gamedir());
+		CFile *File = GFileSystem->OpenFile (Filename, FS_OS);	// try OS file (quake fs OS file have lower priority, than pak)
+		if (!File) GFileSystem->OpenFile (Filename);			// open any file from this mod dir
+		if (!File) GFileSystem->OpenFile ("maps.lst");			// open any file from any dir
+
+		if (!File)
+		{
+			appWPrintf ("Couldn't find maps.lst\n");
+			buffer = NULL;
 		}
 		else
 		{
-			int		length;
-
-			fseek (fp, 0, SEEK_END);
-			length = ftell (fp);
-			fseek (fp, 0, SEEK_SET);
-
-			buffer = (char*)appMalloc (length + 1);
-			fread (buffer, length, 1, fp);
-			fclose (fp);
+			unsigned len = File->GetSize ();
+			buffer = new char [len+1];
+			File->Read (buffer, len);
+			delete File;
 		}
 
 		numMaps = 0;

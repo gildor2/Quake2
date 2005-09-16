@@ -1,7 +1,6 @@
 - can't use:
   - Commands.cpp -- require alias, cvar + command buffer support
     ? make as CCommandSource -- file, mem (+alias) etc; command buffer - in game (not Core)
-  - FileSystem... -- just started
 
 --------------- image/shader usage --------------------
 - CBasicImage:
@@ -39,17 +38,7 @@
   - use cursorPos for cursor visualization
 - should have capabilities of parsing of quake config files (but store configuration in INI ...)
 
--------------- WinMain() -------------------
-- appPrintf() etc:
-  - should be able to use few output devices
-  - ability to hook output (for rcon etc)
-
 --------------- Output ---------------------
-- COutputDevice:
-  - bool useColors -- when "false" - UncolString before output (e.g. for file logging)
-  - bool hook      -- when "true", appPrintf() will output to this device only
-  - access functions: appPrintf(), appLogf(), Logf() -- which name ? (better - Logf() - shorter ...);
-    DLogf(), WLogf() ...
 - CErrorHandler:
   - bool isDropError -- when Com_DropError; no such error in Core, so can place DropError() function in Engine; this func
     will set "GDropError=true", and call appError(msg)
@@ -59,7 +48,7 @@
         b) make derived "class GEngineErrorHandler <- GErrorHandler" with "virtual Reset()" and "bool dropError"; this will
            require to set GErr with appInit()
     (-) can remove func appNonFatalError() from Core, and, may be, rename appFatalError() to appError(), because no other
-        errors in Core
+        errors in Core; small (?) problem: console command "error -drop" -?
     (!) isDropError == !fatalError; fatalError=true (now) called from Win32ExceptHandler() only, so, when not used WIN32_SEH,
         any GFP will raise error without fatalError==true, and app will not crash -- incorrect!
 
@@ -86,12 +75,8 @@
 - network:
   - make channel_t (different name ??) as class, TcpChannel+LoopbackChannel as childs
   ? channel_t -> CNetStream
-- file system:
-  - CFile (opened file object) - add "bool errorOnEof" - DropError() (FatalError?) when trying to read beyond EOF
-  - stream helpers: ReadInt(), ReadFloat(), ReadByte(), ReadShort() -- with BIG_ENDIAN support (for Float/Int/Short)
-  ? stream helpers: ReadInts(), ReadFloats() ... -- read array of data, with BIG_ENDIAN support
-  ? stream readers: reading struc of data, little<->big endian; stream layout should be specified in format,
-    similar to my "entdelta.cpp" processing (struc offset + data format); may be useful for reading model/map/other data
+? stream readers: reading struc of data, little<->big endian; stream layout should be specified in format,
+  similar to my "entdelta.cpp" processing (struc offset + data format); may be useful for reading model/map/other data
 
 ------------ New renderer system -----------
 - separate renderer (math only) and backend (OpenGL); call hierarchy: mainEngine->renderer->backend->gl

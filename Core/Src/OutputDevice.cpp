@@ -5,9 +5,49 @@
 
 COutputDevice *GLogHook = NULL;
 
-// NULL device
+/*-----------------------------------------------------------------------------
+	NULL device
+-----------------------------------------------------------------------------*/
+
+class COutputDeviceNull : public COutputDevice
+{
+public:
+	void Write (const char *str)
+	{ /* empty */ }
+};
+
 static COutputDeviceNull GNullDevice;
 COutputDevice *GNull = &GNullDevice;
+
+/*-----------------------------------------------------------------------------
+	Log device: all Write() -> appPrintf()
+-----------------------------------------------------------------------------*/
+
+class COutputDeviceLog : public COutputDevice
+{
+private:
+	int recurse;
+public:
+	void Write (const char *str)
+	{
+		// do not allow GLog to be used in appPrintf() output device chains
+		// in this case, GLog.Write -> appPrintf -> GLog.Write
+		if (recurse)
+			appError ("GLog: recurse");
+		// print data
+		recurse++;
+		appPrintf ("%s", str);
+		recurse--;
+	}
+};
+
+static COutputDeviceLog GLogDevice;
+COutputDevice *GLog = &GLogDevice;
+
+
+/*-----------------------------------------------------------------------------
+	COutputDevice
+-----------------------------------------------------------------------------*/
 
 static int numDevices = 0;
 static COutputDevice *loggers[MAX_LOGGERS];
@@ -57,6 +97,10 @@ void COutputDevice::Unregister ()
 		}
 }
 
+
+/*-----------------------------------------------------------------------------
+	Printing
+-----------------------------------------------------------------------------*/
 
 void appPrintf (const char *fmt, ...)
 {

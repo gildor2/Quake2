@@ -130,13 +130,6 @@ public:
 	void Unregister ();
 };
 
-class CORE_API COutputDeviceNull : public COutputDevice
-{
-public:
-	void Write (const char *str)
-	{ /* empty */ }
-};
-
 // macros for hook/unhook output
 #define HookOutput(device)				\
 	COutputDevice *_OldHook = GLogHook;	\
@@ -231,13 +224,14 @@ inline float appDeltaCyclesToMsecf (unsigned timeDelta)
 -----------------------------------------------------------------------------*/
 
 // output system
-CORE_API extern COutputDevice	*GLogHook;
-CORE_API extern COutputDevice	*GNull;
+CORE_API extern COutputDevice	*GLogHook;				// hook appPrintf() output
+CORE_API extern COutputDevice	*GLog;					// output via appPrintf()
+CORE_API extern COutputDevice	*GNull;					// do not output
 
 // system information
 CORE_API extern char			GMachineOS[];
 CORE_API extern char			GMachineCPU[];
-//??CORE_API extern char GVersion[512];
+//??CORE_API extern char		GVersion[512];
 
 CORE_API extern CErrorHandler	GErr;
 CORE_API extern bool			GIsFatalError;

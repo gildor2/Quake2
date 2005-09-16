@@ -37,7 +37,7 @@ Comments:
   - md2: implemented skin selection logic when specified skin is absent
 - added "disconnect" menu item into "multiplayer" menu
 - win32 monitor power function, screensaver and accessibility disabled during gameplay
-- game may be launched with any current directory: data will be searched from directory of main executable
+- game library ("gamex86.dll" etc) can be loaded from any mounted directory (CDROM, network etc)
 
 2. FIXES
 ~~~~~~~~
@@ -119,6 +119,7 @@ File system
     - names, starting with ".", will not be displayed (unix hidden files)
 - file system is restricted to mount points: engine is unable to open files, placed outside mounts; if desired to
   access some other files, mount its container (directory or pak)
+- "fs_logFile" variable: 0 - disable, 1 - log to console, 2 - log to "fs.log" file
 ? improved "dir" console command (reformatted, listing paks)
 
 Console/Menu
@@ -228,7 +229,6 @@ Debugging
 - "r_drawfps" variable: display FPS when it is set
 - "r_playerpos" variable: when it is set to "1", player (spectator) world coordinates are shown
 - "r_sfx_pause 1" stops particles/fx; "r_sfx_pause 2" also disables particle/fx creation
-- "fs_debug" variable: when non-zero, most file system activity will be displayed on console
 - "cmd_debug" var: &1 - display ExecString, &2 - display AddText etc
 - "cl_showbboxes 1" will display object bounding boxes from client info
 

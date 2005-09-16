@@ -175,8 +175,7 @@ void CL_ParseDownload ()
 		TString<MAX_OSPATH> Name;
 		DownloadFileName (ARRAY_ARG(Name), cls.DownloadTempName);
 
-		FS_CreatePath (Name);
-
+		appMakeDirectoryForFile (Name);
 		cls.download = fopen (Name, "wb");
 		if (!cls.download)
 		{

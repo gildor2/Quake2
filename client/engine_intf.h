@@ -13,7 +13,6 @@ typedef struct {
 	float	(*_Cvar_Clamp) (cvar_t *cvar, float low, float high);
 	void	(*_Com_DPrintf) (const char *str, ...);
 	const char*	(*_FS_Gamedir) ();
-	void	(*_FS_CreatePath) (const char *path);
 	void	(*_FS_CopyFile) (const char *src, const char *dst);
 	void	(*_FS_CopyFiles) (const char *srcMask, const char *dstDir);
 	void	(*_FS_RemoveFiles) (const char *mask);
@@ -83,10 +82,6 @@ inline float Cvar_Clamp (cvar_t *cvar, float low, float high)
 inline const char* FS_Gamedir ()
 {
 	return ri._FS_Gamedir ();
-}
-inline void FS_CreatePath (const char *path)
-{
-	ri._FS_CreatePath (path);
 }
 inline void FS_CopyFile (const char *src, const char *dst)
 {

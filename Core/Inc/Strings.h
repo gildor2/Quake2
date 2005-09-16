@@ -356,6 +356,7 @@ public:
 	operator char* ()						{ return str; }
 	// use "*Str" when used in printf()-like functions (no type conversion by default ...)
 	const char* operator* () const			{ return str; }
+	char* operator* ()						{ return str; }
 #if 0
 // do not make "operator bool", because this will introduce conflicts with "operator char*" -- compiler
 // can not deside, which conversion to use in statements ...

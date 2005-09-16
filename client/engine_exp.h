@@ -14,7 +14,6 @@ static const refImport_t ri = {
 	Cvar_Clamp,
 	Com_DPrintf,
 	FS_Gamedir,
-	FS_CreatePath,
 	FS_CopyFile,
 	FS_CopyFiles,
 	FS_RemoveFiles,

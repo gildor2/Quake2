@@ -357,7 +357,7 @@ static char *Do_CompleteCommand (char *partial)
 			path = "..";
 			ext = "";
 			comp_type = 'g';
-			file_type = FS_DIR;
+			file_type = FS_DIR|FS_OS;
 		}
 		else // try to complete varname with its value
 		{

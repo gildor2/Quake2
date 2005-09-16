@@ -422,6 +422,12 @@ static void PZ_FreeTags (int tag)
 	Library dynamic binding
 -----------------------------------------------------------------------------*/
 
+static void cFwdToServer (const char *args)
+{
+	ExecuteCommand (va("cmd %s\n", args));
+}
+
+
 // dummy functions
 static void D_Func0 (void) {}
 static void D_Func1 (char *a) {}
@@ -506,7 +512,7 @@ void SV_InitGameLibrary (bool dummy)
 	// register NULL commands for ability to complete them from console (will be forwarded to server)
 	if (!DEDICATED)
 		for (int i = 0; i < ARRAY_COUNT(gameCommands); i++)
-			RegisterCommand (gameCommands[i], NULL, 0);
+			RegisterCommand (gameCommands[i], cFwdToServer);
 
 	unguard;
 }

@@ -114,19 +114,15 @@ SV_CheckForSavegame
 */
 static void SV_CheckForSavegame (void)
 {
-	FILE	*f;
-	int		i;
-
 	if (sv_noreload->integer)
 		return;
 
 	if (sv_deathmatch->integer)
 		return;
 
-	f = fopen (va("./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name), "rb");
-	if (!f) return;		// no savegame
-
-	fclose (f);
+	if (!GFileSystem->FileExists (va("./%s/" SAVEGAME_DIRECTORY "/current/%s." SAVEGAME_GAME_EXTENSION, FS_Gamedir(), sv.name),
+		FS_OS))
+		return;
 
 	SV_ClearWorld ();
 
@@ -144,7 +140,7 @@ static void SV_CheckForSavegame (void)
 
 		previousState = sv.state;				// PGM
 		sv.state = ss_loading;					// PGM
-		for (i = 0; i < 100; i++)
+		for (int i = 0; i < 100; i++)
 			ge->RunFrame ();
 
 		sv.state = previousState;				// PGM

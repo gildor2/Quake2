@@ -93,21 +93,40 @@ protected:
 		byte	buf[65536];			// buffer for file reading
 	public:
 		FILE	*file;				// opened file
-		const CFileInfo *info;		// pointer to file information
+		const CFileInfo &info;		// pointer to file information
 		unsigned readPos;			// number of bytes, sent out (uncompressed)
 		unsigned restRead;			// number of compressed bytes left
 		unsigned crc;
 		z_stream s;					// zlib data
+		CFilePak (const CFileInfo &AInfo, FILE *AFile)
+		:	info (AInfo)
+		,	file (AFile)
+		,	restRead (AInfo.csize)
+		{
+			if (info.method != Z_DEFLATED) return;
+			// init decompression
+#ifndef ZLIB_DEBUG
+			inflateInit2 (&s, -MAX_WBITS);
+#else
+			if (inflateInit2 (&s, -MAX_WBITS) != Z_OK)
+				// Error happens in following situations only:
+				// 1. zlib major version mismatch (possible only with dynamically linked zlib in a future)
+				// 2. invalid arguments (here: all correct)
+				// 3. memory allocation fail - out memory manager NEVER returns NULL - it
+				//    will throw appError() in such case (so, impossible case)
+				appError ("ZLIB: inflateInit2() error");
+#endif
+		}
 		~CFilePak ()
 		{
 			// delete deflate object
-			if (info->method == Z_DEFLATED)
+			if (info.method == Z_DEFLATED)
 				inflateEnd (&s);
 			// close file
 			if (file)
 				fclose (file);
 			// verify crc (when file completely read)
-			if (readPos >= info->size && crc != info->crc32)
+			if (readPos >= info.size && crc != info.crc32)
 				appWPrintf ("zip \"%s\": \"%s\" have wrong CRC\n", Owner->name, *Name);
 #ifdef ZLIB_DEBUG
 			else
@@ -118,9 +137,9 @@ protected:
 		{
 			if (!file)
 				return 0;
-			int len = info->size - readPos;
+			int len = info.size - readPos;
 			if (len > Size) len = Size;
-			if (info->method == Z_DEFLATED)
+			if (info.method == Z_DEFLATED)
 			{
 				s.avail_out = len;
 				s.next_out  = (byte*)Buffer;
@@ -146,7 +165,7 @@ protected:
 						if (s.avail_in + s.avail_out + restRead)
 						{
 							appWPrintf ("zip \"%s\": \"%s\" have unexpected end\n", Owner->name, *Name);
-							readPos = info->size;	// do not read next time
+							readPos = info.size;	// do not read next time
 						}
 						break;
 					}
@@ -172,11 +191,11 @@ protected:
 		}
 		int GetSize ()
 		{
-			return info->size;
+			return info.size;
 		}
 		bool Eof ()
 		{
-			return readPos >= info->size;
+			return readPos >= info.size;
 		}
 	};
 	const char *GetType ()
@@ -202,22 +221,7 @@ protected:
 			return NULL;
 		fseek (f, hdr.filenameLength + hdr.extraFieldLength, SEEK_CUR);
 		// create CFile struct
-		CFilePak *File = new CFilePak;
-		// init decompression
-		if (info.method == Z_DEFLATED)
-		{
-			if (inflateInit2 (&File->s, -MAX_WBITS) != Z_OK)
-			{
-#ifdef ZLIB_DEBUG
-				appWPrintf ("ZLIB: inflateInit2() err\n");
-#endif
-				delete File;
-				return NULL;
-			}
-		}
-		File->file     = f;
-		File->info     = &info;
-		File->restRead = info.csize;
+		CFilePak *File = new CFilePak (info, f);
 		return File;
 	}
 public:
@@ -350,17 +354,3 @@ public:
 		return Zip;
 	}
 };
-
-
-//?? another way to declare (not in header!) -- required, when another zlib wrappers will be used
-
-extern "C" void *zcalloc (int opaque, int items, int size)
-{
-	MEM_ALLOCATOR(opaque);
-	return appMalloc (items * size);
-}
-
-extern "C" void zcfree (int opaque, void *ptr)
-{
-	appFree (ptr);
-}

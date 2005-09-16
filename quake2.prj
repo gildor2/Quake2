@@ -120,13 +120,11 @@ WIN32_FILES = \
 	$D/cd_win.cpp \
 	$D/in_win.cpp \
 	$D/net_wins.cpp \
-	$D/fs_win.cpp \
 	$D/snd_win.cpp \
 	$D/sys_win.cpp \
 	$D/vid_dll.cpp
 DED_WIN32 = \
 	$D/net_wins.cpp \
-	$D/fs_win.cpp \
 	$D/sys_win.cpp
 
 # Win32 renderer files

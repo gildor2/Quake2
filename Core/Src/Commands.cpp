@@ -10,7 +10,7 @@
 class CCommand : public CStringItem
 {
 public:
-	int		flags;
+	unsigned flags;
 	void (*func) ();
 };
 
@@ -33,7 +33,7 @@ static TList<CAlias> AliasList;
 
 static void InitCommands ();
 
-bool RegisterCommand (const char *name, void(*func)(), int flags)
+bool RegisterCommand (const char *name, void(*func)(), unsigned flags)
 {
 	guard(RegisterCommand);
 	EXEC_ONCE(InitCommands())
@@ -195,6 +195,12 @@ bool ExecuteCommand (const char *str)
 		case COMMAND_USAGE|COMMAND_ARGS:
 			((void (*) (bool, int, char**)) cmd->func) (usage, _argc, _argv);
 			break;
+		case COMMAND_ARGS2:
+			((void (*) (const char*)) cmd->func) (str);
+			break;
+		case COMMAND_USAGE|COMMAND_ARGS2:
+			((void (*) (bool, const char*)) cmd->func) (usage, str);
+			break;
 		}
 		return true;
 		unguardf(("%s", cmd->name));
@@ -252,7 +258,7 @@ static void Cmd_CmdList (bool usage, int argc, char **argv)
 		if (mask && !appMatchWildcard (cmd->name, mask, true)) continue;
 		appPrintf ("%-3d %c %c %s\n", total,
 			cmd->flags & COMMAND_USAGE ? 'I' : ' ',
-			cmd->flags & COMMAND_ARGS ? 'A' : ' ',
+			cmd->flags & (COMMAND_ARGS|COMMAND_ARGS2) ? 'A' : ' ',
 			cmd->name);
 		n++;
 	}

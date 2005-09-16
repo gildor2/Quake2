@@ -596,6 +596,7 @@ void Com_Frame (float msec)
 		}
 	}
 	Cbuf_Execute ();
+	FS_Tick ();
 
 	if (com_speeds->integer)
 	{

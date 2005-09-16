@@ -1,12 +1,18 @@
 //#include "Core.h"
-#include "qcommon.h"		//?? should be removed later
+#include "qcommon.h"		//?? should be removed later -- used for cvar and BASEDIRNAME only
 
+// supported archive formats
 #include "FileContainerPak.h"
 #include "FileContainerZip.h"
+#include "FileContainerZRes.h"
 
 // debugging
-static cvar_t	*fs_debug;
-#define DEBUG_LOG(msg)	if (fs_debug->integer) appPrintf(S_GREEN"%s", msg);
+#include "OutputDeviceFile.h"
+
+#define FS_LOG	"fs.log"
+static cvar_t	*fs_logFile;
+static COutputDevice *FSLog;
+
 
 static cvar_t	*fs_gamedirvar;
 static cvar_t	*fs_cddir;
@@ -35,30 +41,36 @@ private:
 public:
 	// overloaded virtual functions
 	// will check GameDir, then BASEDIRNAME (if GameDir!=BASEDIRNAME)
-	bool FileExists (const char *filename)
+	bool FileExists (const char *filename, unsigned flags)
 	{
-		DEBUG_LOG(va("chk: %s\n", filename));
 		CheckFilename (filename);
-		if (CFileSystem::FileExists (Name1))
-			return true;
-		if (Name2[0])
-			return (CFileSystem::FileExists (Name2));
-		return false;
+		// check
+		bool chk = CFileSystem::FileExists (Name1, flags);
+		if (!chk && Name2[0])
+			chk = CFileSystem::FileExists (Name2, flags);
+		// log
+		static const char boolStr[] = {'-', '+'};
+		FSLog->Printf ("chk: %s %c\n", filename, boolStr[chk]);
+		return chk;
 	}
-	CFile *OpenFile (const char *filename)
+	CFile *OpenFile (const char *filename, unsigned flags)
 	{
-		DEBUG_LOG(va("open: %s\n", filename));
+		FSLog->Printf ("open: %s ", filename);
 		CheckFilename (filename);
-		CFile *file = CFileSystem::OpenFile (Name1);
+		// open
+		CFile *file = CFileSystem::OpenFile (Name1, flags);
+		if (!file && Name2[0])
+			file = CFileSystem::OpenFile (Name2, flags);
+		// log
 		if (file)
-			return file;
-		if (Name2[0])
-			return CFileSystem::OpenFile (Name2);
-		return NULL;
+			FSLog->Printf ("(%s)\n", file->Owner->name);
+		else
+			FSLog->Printf ("(failed)\n");
+		return file;
 	}
 	CFileList *List (const char *mask, unsigned flags, CFileList *list)
 	{
-		DEBUG_LOG(va("list: %s\n", mask));
+		FSLog->Printf ("list: %s\n", mask);
 		CheckFilename (mask);
 		if (!list) list = new CFileList;
 		CFileSystem::List (Name1, flags, list);
@@ -72,11 +84,7 @@ public:
 	void MountGame (const char *name)
 	{
 		if (fs_cddir->string[0])
-		{
-			Mount (va("%s/%s", fs_cddir->string, *GDefMountPoint));
 			Mount (va("%s/%s/*.pak", fs_cddir->string, *GDefMountPoint));
-		}
-		Mount (va("./%s", *GDefMountPoint));
 		Mount (va("./%s/*.pak", *GDefMountPoint));
 	}
 
@@ -84,12 +92,12 @@ public:
 	{
 		guard(CQuakeFileSystem::SetGameDir);
 
+		FSLog->Printf ("Set gamedir: %s\n", name);
 		if (!name[0]) name = BASEDIRNAME;
 		if (!stricmp (GameDir, name))
 			return true;			// not changed
 		// check directory
-		CFileList *list = new CFileList;
-		appListDirectoryOS (va("./%s/*", name), *list, FS_DIR|FS_FILE);
+		CFileList *list = List (va("./%s/*", name), FS_DIR|FS_FILE|FS_OS, NULL);
 		bool empty = !(*list);
 		delete list;
 		if (empty)
@@ -100,12 +108,8 @@ public:
 		if (stricmp (GameDir, BASEDIRNAME)) // base dir not umounted
 		{
 			Umount (va("./%s/*.pak", *GameDir));
-			Umount (va("./%s", *GameDir));
 			if (fs_cddir->string[0])
-			{
 				Umount (va("%s/%s/*.pak", fs_cddir->string, *GameDir));
-				Umount (va("%s/%s", fs_cddir->string, *GameDir));
-			}
 		}
 		GameDir = name;
 		GDefMountPoint = GameDir;
@@ -147,21 +151,13 @@ bool FS_SetGamedir (const char *dir)
 //?? move from here
 void FS_LoadGameConfig ()
 {
-	//!! CHANGE: use FileExists("game/config", FS_OS|FS_FILE)
-	FILE *f;
-	if (f = fopen (va("./%s/%s", *FS.GameDir, fs_configfile->string), "r"))
-	{
-		fclose (f);
+	if (GFileSystem->FileExists (va("./%s/%s", *FS.GameDir, fs_configfile->string), FS_OS))
 		Cbuf_AddText (va("unbindall\nreset *\nunalias *\nexec %s\n", fs_configfile->string));
-	}
 	else
 		Cbuf_AddText ("exec default.cfg\n");
 
-	if (f = fopen (va("./%s/autoexec.cfg", *FS.GameDir), "r"))
-	{
-		fclose (f);
+	if (GFileSystem->FileExists (va("./%s/autoexec.cfg", *FS.GameDir), FS_OS))
 		Cbuf_AddText ("exec autoexec.cfg\n");
-	}
 }
 
 //!! change this mechanism
@@ -180,44 +176,26 @@ const char *FS_NextPath (const char *prevpath)
 	return NULL;
 }
 
-// Creates any directories needed to store the given filename
-void FS_CreatePath (const char *path)
-{
-	// need a copy of path, because will modify (and restore) path string
-	TString<MAX_OSPATH>	Copy;
-	Copy.filename (path);
-	DEBUG_LOG(va("path: %s\n", *Copy));
-	for (char *ofs = Copy + 1; *ofs; ofs++)
-	{
-		if (*ofs == '/')
-		{
-			// create the directory
-			*ofs = 0;			// cut rest of path
-			Sys_Mkdir (Copy);	//!! change
-			*ofs = '/';			// restore path
-		}
-	}
-}
 
 void FS_CopyFile (const char *src, const char *dst)
 {
 	FILE	*f1, *f2;
 
-	DEBUG_LOG(va("copy(%s -> %s)", src, dst));
+	FSLog->Printf ("copy(%s -> %s)", src, dst);
 
 	if (!(f1 = fopen (src, "rb")))
 	{
-		DEBUG_LOG(": no src\n");
+		FSLog->Printf (": no src\n");
 		return;
 	}
 	if (!(f2 = fopen (dst, "wb")))
 	{
-		DEBUG_LOG(": can't dst\n");
+		FSLog->Printf (": can't dst\n");
 		fclose (f1);
 		return;
 	}
 
-	DEBUG_LOG("\n");
+	FSLog->Printf ("\n");
 	while (true)
 	{
 		byte	buffer[65536];
@@ -233,74 +211,59 @@ void FS_CopyFile (const char *src, const char *dst)
 
 void FS_CopyFiles (const char *srcMask, const char *dstDir)
 {
-	DEBUG_LOG(va("CopyFiles(%s->%s)\n", srcMask, dstDir));
+	FSLog->Printf ("CopyFiles(%s->%s)\n", srcMask, dstDir);
 
-	// prepare src string
-	const char *found = strrchr (srcMask, '/');
-	if (!found)
-	{
-		appWPrintf ("CopyFiles: bad srcMask \"%s\"\n", srcMask);
-		return;
-	}
-	int pos1 = found - srcMask + 1;
+	TString<256> Base; Base.filename (srcMask);
+	char *s = Base.rchr ('/');
+	if (!s) s = Base;
+	else s++;								// will point to mask start
 
-	// prepare dst string
-	TString<MAX_OSPATH> Pattern;
-	Pattern.filename (dstDir);
-	int pos2 = Pattern.len ();
-	if (!pos2 || Pattern[pos2 - 1] != '/')
-	{
-		Pattern[pos2] = '/';
-		pos2++;
-	}
+	// prepare dst string: should ends with '/'
+	TString<256> Pattern; Pattern.filename (dstDir);
+	int pos = Pattern.len ();
+	if (!pos || Pattern[pos - 1] != '/')
+		Pattern[pos++] = '/';
 
-	// create destination directory
-	FS_CreatePath (Pattern);
-#if 0
-	// copy files
-	// HERE: Sys_FindFirst() uses fill path names
-	for (found = Sys_FindFirst (srcMask, LIST_FILES); found; found = Sys_FindNext ())
+	appMakeDirectoryForFile (Pattern);
+	CFileList *list = GFileSystem->List (srcMask, FS_OS);
+	for (TListIterator<CFileItem> it = *list; it; ++it)
 	{
-		strcpy (Pattern + pos2, found + pos1);
-		FS_CopyFile (found, Pattern);
+		strcpy (s, it->name);				// create source filename
+		strcpy (Pattern + pos, it->name);	// create destination filename
+		FS_CopyFile (Base, Pattern);
 	}
-	Sys_FindClose ();
-#else
-	appWPrintf ("COPY FILES: %s -> %s\n", srcMask, dstDir);	//!!!!!
-#endif
+	delete list;
 }
 
 void FS_RemoveFiles (const char *mask)
 {
-#if 0
-	DEBUG_LOG(va("RemoveFiles(%s)\n", mask));
-	// HERE: Sys_FindFirst() uses full path names
-	for (const char *found = Sys_FindFirst (mask, LIST_FILES); found; found = Sys_FindNext ())
+	FSLog->Printf (va("RemoveFiles(%s)\n", mask));
+
+	TString<256> Base; Base.filename (mask);
+	char *s = Base.rchr ('/');
+	if (!s) s = Base;
+	else s++;								// will point to mask start
+
+	CFileList *list = GFileSystem->List (mask, FS_OS);
+	for (TListIterator<CFileItem> it = *list; it; ++it)
 	{
-		DEBUG_LOG(va("del(%s)\n", found));
-		remove (found);
+		strcpy (s, it->name);				// create full filename
+		remove (Base);
 	}
-	Sys_FindClose ();
-#else
-	appWPrintf ("REMOVE FILES: %s\n", mask);	//!!!!!
-#endif
+	delete list;
 }
 
 
 /*-----------------------------------------------------------------------------
-	Initialization
+	Initialization, ticking
 -----------------------------------------------------------------------------*/
+
+extern "C" byte zresource[];
+
 
 void InitFileSystem ()
 {
 	guard(InitFileSystem);
-
-	appInitFileSystem (FS);
-	CFileSystem::RegisterFormat (CFileContainerPak::Create);
-	CFileSystem::RegisterFormat (CFileContainerZip::Create);
-	CFileContainer *Cont = FS.MountDirectory (".");	// standard mount
-	Cont->locked = true;
-	//!! mount+lock resources
 
 	// initialize interface
 CVAR_BEGIN(vars)
@@ -308,17 +271,61 @@ CVAR_BEGIN(vars)
 	// cddir <path>	-- allow game to be partially installed - read missing data from CD
 	CVAR_FULL(&fs_cddir, "cddir", "", CVAR_NOSET),
 	CVAR_FULL(&fs_gamedirvar, "game", "", CVAR_SERVERINFO|CVAR_LATCH),
-	CVAR_VAR(fs_debug, 0, 0)		//?? unused now?
+	CVAR_VAR(fs_logFile, 0, 0)
 CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
 	RegisterCommand ("dir", cDir);
 
+	CFileContainer *Mnt;
+
+	FSLog = GNull;
+	appInitFileSystem (FS);
+	CFileSystem::RegisterFormat (CFileContainerPak::Create);
+	CFileSystem::RegisterFormat (CFileContainerZip::Create);
+	// mount resources
+	Mnt = CZResource::Mount ("resources", zresource, ".");
+	Mnt->locked = true;
+	// mount CDROM
 	if (fs_cddir->string[0])
+	{
+		Mnt = FS.MountDirectory (fs_cddir->string);
+		Mnt->locked = true;
 		appPrintf ("FS: using \"%s\" as CDROM image\n", fs_cddir->string);
+	}
+	// mount root file container
+	Mnt = FS.MountDirectory (".");
+	Mnt->locked = true;
+	// mount basedir
 	GDefMountPoint = BASEDIRNAME;
-	FS.MountGame (BASEDIRNAME);
 	FS.GameDir = BASEDIRNAME;
+	FS.MountGame (BASEDIRNAME);
+	// change game, if needed
 	FS.SetGameDir (fs_gamedirvar->string);
 
 	unguard;
+}
+
+
+//?? make as CQuakeFileSystem::Tick()
+void FS_Tick ()
+{
+	if (!fs_logFile->modified) return;
+	fs_logFile->modified = false;
+
+	if (FSLog != GNull && FSLog != GLog)
+		delete FSLog;
+
+	switch (fs_logFile->integer)
+	{
+	case 0:
+		FSLog = GNull;
+		break;
+	case 1:
+		FSLog = GLog;		//?? colorized log
+		break;
+	default:				// case 2
+		FSLog = new COutputDeviceFile (FS_LOG);
+		FSLog->Printf ("\n*** File system activity, %s ***\n\n", appTimestamp ());
+		break;
+	}
 }

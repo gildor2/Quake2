@@ -5,6 +5,8 @@
 
 //#define LOG_FUNCS_ONLY
 #define LOG_STRINGS
+#define UNWIND_EBP_FRAMES
+
 #define STACK_UNWIND_DEPTH		80
 
 
@@ -166,6 +168,39 @@ static void DumpMem (COutputDevice *Out, const unsigned *data, CONTEXT *ctx)
 #undef STAT_SPACES
 }
 
+#ifdef UNWIND_EBP_FRAMES
+static void UnwindEbpFrame (COutputDevice *Out, const unsigned *data)
+{
+	Out->Printf ("  ");
+	while (true)
+	{
+		if (IsBadReadPtr (data, 8))
+		{
+			Out->Printf ("<N/A>");
+			break;
+		}
+		char symbol[256];
+		if (appSymbolName (data[1], ARRAY_ARG(symbol)))
+		{
+			Out->Printf ("%s <- ", symbol);
+			if (data[0] <= (unsigned)data)	// possible loop
+			{
+				Out->Printf ("(loop?)");
+				break;
+			}
+			data = (unsigned*)data[0];
+			continue;
+		}
+		else
+		{
+			Out->Printf ("(wrong EBP frame)");
+			break;
+		}
+	}
+	Out->Printf ("\n\n");
+}
+#endif
+
 
 int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 {
@@ -204,7 +239,7 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 
 		// log error
 		CONTEXT* ctx = info->ContextRecord;
-		GErr.Message.sprintf ("%s at \"%s\"", excName, appSymbolName (ctx->Eip));	//?? may be, supply package name
+		GErr.Message.sprintf ("%s in \"%s\"", excName, appSymbolName (ctx->Eip));	//?? may be, supply package name
 		COutputDevice *Out = appGetErrorLog ();
 
 		Out->Write ("Registers:\n");
@@ -218,6 +253,10 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 		Out->Printf ("\nStack:\n");
 		DumpMem (Out, (unsigned*) ctx->Esp, ctx);
 		Out->Printf ("\n");
+#ifdef UNWIND_EBP_FRAMES
+		Out->Printf ("\nCall stack trace:\n  ");
+		UnwindEbpFrame (Out, (unsigned*) ctx->Ebp);
+#endif
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
 	{

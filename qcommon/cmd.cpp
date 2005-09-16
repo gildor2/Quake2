@@ -464,7 +464,7 @@ static void TokenizeString (const char *text)
 
 static void Cmd_Init();
 
-bool RegisterCommand (const char *name, void(*func)(), int flags)
+bool RegisterCommand (const char *name, void(*func)(), unsigned flags)
 {
 	guard(RegisterCommand);
 	EXEC_ONCE(Cmd_Init())
@@ -518,7 +518,8 @@ bool ExecuteCommand (const char *text)
 {
 	guard(ExecuteCommand);
 
-	TokenizeString (MacroExpandString (text));
+	const char *str = MacroExpandString (text);	// may be used for COMMAND_ARGS2
+	TokenizeString (str);
 #ifdef RECURCE_CHECK
 	int check = ++recurseCheck;
 #endif
@@ -533,35 +534,34 @@ bool ExecuteCommand (const char *text)
 	CCommand *cmd = CmdList.Find (_argv[0]);
 	if (cmd)
 	{
-		if (!cmd->func)
-		{	// forward to server command
-			ExecuteCommand (va("cmd %s", text));
-		}
-		else
+		bool usage = _argc == 2 && !strcmp (_argv[1], "/?");
+		guard(cmd);
+		switch (cmd->flags)
 		{
-			bool usage = _argc == 2 && !strcmp (_argv[1], "/?");
-			guard(cmd);
-			switch (cmd->flags)
-			{
-			case 0:
-				cmd->func ();
-				break;
-			case COMMAND_USAGE:
-				((void (*) (bool)) cmd->func) (usage);
-				break;
-			case COMMAND_ARGS:
-				((void (*) (int, char**)) cmd->func) (_argc, _argv);
-				break;
-			case COMMAND_USAGE|COMMAND_ARGS:
-				((void (*) (bool, int, char**)) cmd->func) (usage, _argc, _argv);
-				break;
-			}
-#ifdef RECURCE_CHECK
-			if (check != recurseCheck)
-				appWPrintf ("ExecuteCommand: recursion in \"%s\"\n", text);
-#endif
-			unguardf(("%s", cmd->name));
+		case 0:
+			cmd->func ();
+			break;
+		case COMMAND_USAGE:
+			((void (*) (bool)) cmd->func) (usage);
+			break;
+		case COMMAND_ARGS:
+			((void (*) (int, char**)) cmd->func) (_argc, _argv);
+			break;
+		case COMMAND_USAGE|COMMAND_ARGS:
+			((void (*) (bool, int, char**)) cmd->func) (usage, _argc, _argv);
+			break;
+		case COMMAND_ARGS2:
+			((void (*) (const char*)) cmd->func) (str);
+			break;
+		case COMMAND_USAGE|COMMAND_ARGS2:
+			((void (*) (bool, const char*)) cmd->func) (usage, str);
+			break;
 		}
+#ifdef RECURCE_CHECK
+		if (check != recurseCheck)
+			appWPrintf ("ExecuteCommand: recursion in \"%s\"\n", text);
+#endif
+		unguardf(("%s", cmd->name));
 		return true;
 	}
 
@@ -641,7 +641,7 @@ static void Cmd_List_f (bool usage, int argc, char **argv)
 		if (mask && !appMatchWildcard (cmd->name, mask, true)) continue;
 		appPrintf ("%-3d %c %c %s\n", total,
 			cmd->flags & COMMAND_USAGE ? 'I' : ' ',
-			cmd->flags & COMMAND_ARGS ? 'A' : ' ',
+			cmd->flags & (COMMAND_ARGS|COMMAND_ARGS2) ? 'A' : ' ',
 			cmd->name);
 		n++;
 	}

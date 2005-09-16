@@ -1,6 +1,7 @@
 
-#define COMMAND_USAGE	1
-#define COMMAND_ARGS	2
+#define COMMAND_USAGE	1		// have "bool usage"
+#define COMMAND_ARGS	2		// uses "int argc, char **argv"
+#define COMMAND_ARGS2	4		// uses "const char *args"
 
 
 /*-----------------------------------------------------------------------------
@@ -8,29 +9,34 @@
 -----------------------------------------------------------------------------*/
 
 
-CORE_API bool RegisterCommand (const char *name, void(*func)(), int flags);
+CORE_API bool RegisterCommand (const char *name, void(*func)(), unsigned flags = 0);
 CORE_API bool UnregisterCommand (const char *name);
 CORE_API bool ExecuteCommand (const char *str); //?? make it local for Commands.cpp
 
 
-inline bool RegisterCommand (const char *name, void(*func)())
+inline bool RegisterCommand (const char *name, void(*func)(bool), unsigned flags = 0)
 {
-	return RegisterCommand (name, func, 0);
+	return RegisterCommand (name, (void(*)())func, COMMAND_USAGE|flags);
 }
 
-inline bool RegisterCommand (const char *name, void(*func)(bool))
+inline bool RegisterCommand (const char *name, void(*func)(int,char**), unsigned flags = 0)
 {
-	return RegisterCommand (name, (void(*)())func, COMMAND_USAGE);
+	return RegisterCommand (name, (void(*)())func, COMMAND_ARGS|flags);
 }
 
-inline bool RegisterCommand (const char *name, void(*func)(int,char**))
+inline bool RegisterCommand (const char *name, void(*func)(bool,int,char**), unsigned flags = 0)
 {
-	return RegisterCommand (name, (void(*)())func, COMMAND_ARGS);
+	return RegisterCommand (name, (void(*)())func, COMMAND_USAGE|COMMAND_ARGS|flags);
 }
 
-inline bool RegisterCommand (const char *name, void(*func)(bool,int,char**))
+inline bool RegisterCommand (const char *name, void(*func)(const char*), unsigned flags = 0)
 {
-	return RegisterCommand (name, (void(*)())func, COMMAND_USAGE|COMMAND_ARGS);
+	return RegisterCommand (name, (void(*)())func, COMMAND_ARGS2|flags);
+}
+
+inline bool RegisterCommand (const char *name, void(*func)(bool,const char*), unsigned flags = 0)
+{
+	return RegisterCommand (name, (void(*)())func, COMMAND_USAGE|COMMAND_ARGS2|flags);
 }
 
 

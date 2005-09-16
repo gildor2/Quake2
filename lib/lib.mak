@@ -68,7 +68,8 @@ LIB = \
 	obj/crc32.obj \
 	obj/inffast.obj \
 	obj/inflate.obj \
-	obj/inftrees.obj
+	obj/inftrees.obj \
+	obj/zlib.obj
 
 lib.lib : DIRS $(LIB)
 	echo Creating static "lib.lib" ...
@@ -77,6 +78,24 @@ lib.lib : DIRS $(LIB)
 #------------------------------------------------------------------------------
 #	compiling source files
 #------------------------------------------------------------------------------
+
+OPTIONS = -W2 -O1 -Ob2 -D CORE_API=
+
+DEPENDS = \
+	../Core/Inc/Build.h \
+	../Core/Inc/Commands.h \
+	../Core/Inc/Core.h \
+	../Core/Inc/DbgSymbols.h \
+	../Core/Inc/FileSystem.h \
+	../Core/Inc/Macro.h \
+	../Core/Inc/MemoryMgr.h \
+	../Core/Inc/ScriptParser.h \
+	../Core/Inc/Strings.h \
+	../Core/Inc/TextContainer.h \
+	../Core/Inc/VcWin32.h
+
+obj/zlib.obj : zlib.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"obj/zlib.obj" zlib.cpp
 
 OPTIONS = -W2 -O1 -Ob2 -D INLINE=__inline -D JDCT_DEFAULT=JDCT_FLOAT -D JDCT_FASTEST=JDCT_FLOAT -D NO_GETENV
 

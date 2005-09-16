@@ -402,7 +402,7 @@ extern TList<CAlias> AliasList;
 class CCommand : public CStringItem
 {
 public:
-	int		flags;
+	unsigned flags;
 	void (*func) ();
 };
 extern TList<CCommand> CmdList;
@@ -713,12 +713,12 @@ void	Pmove (pmove_t *pmove);
 	File system (files.cpp)
 -----------------------------------------------------------------------------*/
 
-void	InitFileSystem ();		//?? KEEP
+void	InitFileSystem ();
+void	FS_Tick ();
+
 bool	FS_SetGamedir (const char *dir);
 const char *FS_NextPath (const char *prevpath);
-void	FS_LoadGameConfig (void);
-
-void	Sys_Mkdir (const char *path);
+void	FS_LoadGameConfig ();
 
 
 /*------------- Miscellaneous -----------------*/

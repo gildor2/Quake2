@@ -77,7 +77,6 @@ STATIC = \
 	Release/obj/q2stat/cd_win.obj \
 	Release/obj/q2stat/in_win.obj \
 	Release/obj/q2stat/net_wins.obj \
-	Release/obj/q2stat/fs_win.obj \
 	Release/obj/q2stat/snd_win.obj \
 	Release/obj/q2stat/sys_win.obj \
 	Release/obj/q2stat/vid_dll.obj \
@@ -153,7 +152,6 @@ DEDICATED = \
 	Release/obj/dedstat/q_shared2.obj \
 	Release/obj/dedstat/QuakeFileSystem.obj \
 	Release/obj/dedstat/net_wins.obj \
-	Release/obj/dedstat/fs_win.obj \
 	Release/obj/dedstat/sys_win.obj \
 	Release/obj/dedstat/makeres.obj
 
@@ -204,6 +202,39 @@ Release/obj/q2stat/md4.obj : qcommon/md4.cpp
 Release/obj/q2stat/q2.res : win32/q2.rc
 	rc.exe -l 0x409 -i win32/ -fo"Release/obj/q2stat/q2.res" -dNDEBUG win32/q2.rc
 
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
+
+DEPENDS = \
+	Core/../lib/zlib/zlib.h \
+	Core/Inc/Build.h \
+	Core/Inc/Commands.h \
+	Core/Inc/Core.h \
+	Core/Inc/DbgSymbols.h \
+	Core/Inc/FileContainerPak.h \
+	Core/Inc/FileContainerZRes.h \
+	Core/Inc/FileContainerZip.h \
+	Core/Inc/FileSystem.h \
+	Core/Inc/Macro.h \
+	Core/Inc/MemoryMgr.h \
+	Core/Inc/OutputDeviceFile.h \
+	Core/Inc/ScriptParser.h \
+	Core/Inc/Strings.h \
+	Core/Inc/TextContainer.h \
+	Core/Inc/VcWin32.h \
+	client/engine.h \
+	client/engine_intf.h \
+	lib/zlib/zconf.h \
+	qcommon/q_shared2.h \
+	qcommon/qcommon.h
+
+Release/obj/dedstat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
+
+OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
+
+Release/obj/q2stat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
+	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
+
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
@@ -226,39 +257,6 @@ DEPENDS = \
 
 Release/obj/TestApp/TestApp.obj : TestApp/TestApp.cpp $(DEPENDS)
 	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/TestApp/TestApp.obj" TestApp/TestApp.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
-
-DEPENDS = \
-	Core/../lib/zlib/zlib.h \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/FileContainerPak.h \
-	Core/Inc/FileContainerZip.h \
-	Core/Inc/FileSystem.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	Core/Inc/VcWin32.h \
-	client/engine.h \
-	client/engine_intf.h \
-	lib/zlib/zconf.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h
-
-Release/obj/dedstat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
-
-Release/obj/q2stat/QuakeFileSystem.obj : qcommon/QuakeFileSystem.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/QuakeFileSystem.obj" qcommon/QuakeFileSystem.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
 	Core/Inc/Build.h \
@@ -1807,34 +1805,6 @@ DEPENDS = \
 	Core/Inc/Strings.h \
 	Core/Inc/TextContainer.h \
 	Core/Inc/VcWin32.h \
-	client/engine.h \
-	client/engine_intf.h \
-	qcommon/q_shared2.h \
-	qcommon/qcommon.h \
-	win32/winquake.h
-
-Release/obj/dedstat/fs_win.obj : win32/fs_win.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/dedstat/fs_win.obj" win32/fs_win.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D SINGLE_RENDERER -I SDK/include -I Core/Inc -I qcommon
-
-Release/obj/q2stat/fs_win.obj : win32/fs_win.cpp $(DEPENDS)
-	cl.exe -nologo -c -D WIN32 -D _WINDOWS -MD $(OPTIONS) -Fo"Release/obj/q2stat/fs_win.obj" win32/fs_win.cpp
-
-OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
-
-DEPENDS = \
-	Core/Inc/Build.h \
-	Core/Inc/Commands.h \
-	Core/Inc/Core.h \
-	Core/Inc/DbgSymbols.h \
-	Core/Inc/FileSystem.h \
-	Core/Inc/Macro.h \
-	Core/Inc/MemoryMgr.h \
-	Core/Inc/ScriptParser.h \
-	Core/Inc/Strings.h \
-	Core/Inc/TextContainer.h \
-	Core/Inc/VcWin32.h \
 	qcommon/q_shared2.h
 
 Release/obj/dedstat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
@@ -1848,7 +1818,7 @@ Release/obj/q2stat/q_shared2.obj : qcommon/q_shared2.cpp $(DEPENDS)
 OPTIONS = -W3 -O1 -D STATIC_BUILD -D CORE_API= -D DEDICATED_ONLY -I SDK/include -I Core/Inc -I qcommon
 
 DEPENDS = \
-	resource/archive.gz
+	resource/archive.res
 
 Release/obj/dedstat/makeres.obj : resource/makeres.asm $(DEPENDS)
 	nasm.exe -f win32 -i resource/ -o "Release/obj/dedstat/makeres.obj" resource/makeres.asm

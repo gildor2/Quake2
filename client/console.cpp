@@ -95,8 +95,8 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 	TString<MAX_OSPATH> Name;
 	Name.sprintf ("./%s/%s.txt", FS_Gamedir(), argv[1]);
 
-	FS_CreatePath (Name);
 	FILE *f;
+	appMakeDirectoryForFile (Name);
 	if (!(f = fopen (Name, "w")))	//?? use COutputDevice
 	{
 		appWPrintf ("ERROR: couldn't open %s\n", *Name);

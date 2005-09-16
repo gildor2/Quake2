@@ -16,7 +16,7 @@ TString<64> GDefMountPoint;
 
 
 /*-----------------------------------------------------------------------------
-	Path service functions
+	Service functions
 -----------------------------------------------------------------------------*/
 
 static const char *SkipRootDir (const char *filename)
@@ -50,6 +50,26 @@ const char *SubtractPath (const char *filename, const char *path)
 	filename += len;
 	if (filename[0] == '/') filename++;
 	return filename;
+}
+
+
+void appMakeDirectoryForFile (const char *filename)
+{
+	TString<64> Name; Name.filename (filename);
+	char *s = Name.rchr ('/');
+	*s = 0;
+	appMakeDirectory (Name);
+}
+
+
+static void SetDefaultFlags (unsigned &flags)
+{
+	// should be at least file or dir
+	if (!(flags & (FS_DIR|FS_FILE)))
+		flags |= FS_DIR|FS_FILE;
+	// should be at least one type of containers
+	if (!(flags & (FS_OS|FS_PAK|FS_RES)))
+		flags |= FS_OS|FS_PAK|FS_RES;
 }
 
 
@@ -315,10 +335,7 @@ CFileList *CFileSystem::List (const char *mask, unsigned flags, CFileList *list)
 	if (!list)
 		list = new CFileList;
 	// validate flags, set default values
-	if (!(flags & (FS_DIR|FS_FILE)))
-		flags |= FS_DIR|FS_FILE;
-	if (!(flags & (FS_PAK|FS_OS)))
-		flags |= FS_PAK|FS_OS;
+	SetDefaultFlags (flags);
 	// iterate containers
 	for (TListIterator<CFileContainer> it = mounts; it; ++it)
 	{
@@ -374,13 +391,15 @@ void CFileSystem::RegisterFormat (CreateArchive_t reader)
 }
 
 
-bool CFileSystem::FileExists (const char *filename)
+bool CFileSystem::FileExists (const char *filename, unsigned flags)
 {
 	TString<256> Name;
 	Name.filename (filename);
+	SetDefaultFlags (flags);
 	// iterate containers
 	for (TListIterator<CFileContainer> it = mounts; it; ++it)
 	{
+		if (!(it->containFlags & flags)) continue;
 		const char *localFilename = SubtractPath (Name, it->MountPoint);
 		if (!localFilename) continue;			// not in this container
 		if (it->FileExists (localFilename)) return true;
@@ -388,13 +407,15 @@ bool CFileSystem::FileExists (const char *filename)
 	return false;
 }
 
-CFile *CFileSystem::OpenFile (const char *filename)
+CFile *CFileSystem::OpenFile (const char *filename, unsigned flags)
 {
 	TString<256> Name;
 	Name.filename (filename);
+	SetDefaultFlags (flags);
 	// iterate containers
 	for (TListIterator<CFileContainer> it = mounts; it; ++it)
 	{
+		if (!(it->containFlags & flags)) continue;
 		const char *localFilename = SubtractPath (Name, it->MountPoint);
 		if (!localFilename) continue;			// not in this container
 		CFile *File = it->OpenFile (localFilename);

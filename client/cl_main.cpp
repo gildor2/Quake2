@@ -209,7 +209,7 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 	Name.sprintf ("./%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
 	appPrintf ("recording to %s.\n", *Name);
-	FS_CreatePath (Name);
+	appMakeDirectoryForFile (Name);
 	cls.demofile = fopen (Name, "wb");
 	if (!cls.demofile)
 	{
@@ -293,8 +293,7 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 
 static void NetchanAppendArgs (char **argv, int first, int last)
 {
-	TString<1024> Buf;
-	Buf[0] = 0;
+	TString<1024> Buf; Buf[0] = 0;
 	for (int i = first; i < last; i++)
 	{
 		if (i > first) Buf += " ";
@@ -928,6 +927,7 @@ void CL_WriteConfiguration (const char *filename)
 	if (cls.state == ca_uninitialized)
 		return;
 
+	appMakeDirectory (va("./%s", FS_Gamedir()));
 	COutputDeviceFile Out(va("./%s/%s", FS_Gamedir(), filename), true);
 	Out.NoColors = false;	// do not modify contents
 	if (!Out.IsOpened ()) return;

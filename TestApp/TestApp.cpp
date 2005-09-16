@@ -131,6 +131,19 @@ void cBoth (bool usage, int argc, char **argv)
 	}
 }
 
+void cArgs2 (const char *args)
+{
+	appPrintf ("args cmd: %s\n", args);
+}
+
+void cBoth2 (bool usage, const char *args)
+{
+	if (usage)
+		appPrintf ("usage: both2 [args]\n");
+	else
+		appPrintf ("both2 cmd: %s\n", args);
+}
+
 void cSym (bool usage, int argc, char **argv)
 {
 	if (usage || argc != 2)
@@ -174,6 +187,8 @@ int main (int argc, char** argv)
 		RegisterCommand ("args", cArgs);
 		RegisterCommand ("usage", cUsage);
 		RegisterCommand ("both", cBoth);
+		RegisterCommand ("args2", cArgs2);
+		RegisterCommand ("both2", cBoth2);
 		RegisterCommand ("alloc", cAlloc);
 		RegisterCommand ("sym", cSym);
 

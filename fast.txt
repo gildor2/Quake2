@@ -13,8 +13,6 @@
 - correct autoflare center
 - gl_state.haveFullscreen3d -- change (may be, remove var)
 =============
-- replace Sys_Find() and Sys_MkDir() with FileSystemWin32.cpp, then can remove fs_win.cpp ...
-=============
 - cmd.cpp -> Commands.cpp (Core) & cbuf.cpp (qcommon)
   - SplitCmdline == TokenizeString, diff is 1. delim = '-', 2. delim = ';' (or ' ' ??!)
   - MacroExpand(), cmd_debug, CL_ForwardToServer() -> cbuf code; should parse comments in cfg files here

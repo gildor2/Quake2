@@ -68,6 +68,7 @@ public:
 		hConInput  = GetStdHandle (STD_INPUT_HANDLE);		//?? not OutputDevice-stuff
 		hOutput = GetStdHandle (STD_OUTPUT_HANDLE);
 		Register ();
+		//!! should set error handler (Ctrl-C etc)
 	}
 	// writting without processing
 	inline void WriteChar (char c)
@@ -273,6 +274,7 @@ void *Sys_GetGameAPI (void *parms)
 #	error "Don't know, how game dll named"
 #endif
 
+#if 0
 	// run through the search paths
 	const char *path = NULL;
 	while (path = FS_NextPath (path))
@@ -295,6 +297,22 @@ void *Sys_GetGameAPI (void *parms)
 	}
 	if (!game_library)
 		return NULL;		// couldn't find one anywhere
+#else
+	CFile *Lib = GFileSystem->OpenFile (GAME_DLL, FS_OS);
+	if (!Lib)
+		return NULL;
+	TString<256> DllName; DllName.sprintf ("%s/%s", Lib->Owner->name, *Lib->Name);
+	game_library = LoadLibrary (DllName);
+	delete Lib;
+	if (game_library)
+		Com_DPrintf ("LoadLibrary (%s)\n", *DllName);
+	else
+	{
+		appWPrintf ("Sys_GetGameAPI(%s): failed to load library\n", *DllName);
+		return NULL;
+	}
+	//!! NOTE: if game dll is on remote file system, can use FS_CopyFile() function
+#endif
 
 	typedef void * (* pGetGameApi_t)(void *);
 	pGetGameApi_t pGetGameAPI;
@@ -329,6 +347,7 @@ int main (int argc, const char **argv) // force to link as console application
 {
 	TRY
 	{
+		// NOTE: can use main() path: GetModuleHandle()/GetCommandLine()
 #ifndef IS_CONSOLE_APP
 		global_hInstance = hInstance;
 		const char *cmdline = lpCmdLine;
@@ -350,7 +369,7 @@ int main (int argc, const char **argv) // force to link as console application
 		Win32Log.Init ();
 #endif
 
-		appInit ();		//!!!!
+		appInit ();		//!! cmdline should be used here
 		Com_Init (cmdline);
 
 #ifndef IS_CONSOLE_APP
