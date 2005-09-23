@@ -1,4 +1,4 @@
-#include "Core.h"
+#include "CorePrivate.h"
 #include "OutputDeviceFile.h"
 
 
@@ -116,7 +116,7 @@ void appNonFatalError (const char *fmt, ...)
 		appPrintf (S_RED"ERROR: %s\n", *GErr.Message);
 	}
 	else
-		GErr.Message[0] = 0;
+		GErr.Message[0] = 0;	// no message at all
 
 	throw 1;
 }

@@ -8,10 +8,10 @@ extern "C" {
 
 #define MAX_IMG_SIZE	2048
 
+
 /*-----------------------------------------------------------------------------
 	PCX loading
 -----------------------------------------------------------------------------*/
-
 
 // NOTE: this structure have good 4-byte alignment
 struct pcxHdr_t
@@ -227,7 +227,6 @@ void LoadTGA (const char *name, byte *&pic, int &width, int &height)
 	JPG loading
 -----------------------------------------------------------------------------*/
 
-
 static const char *jpegname;
 static bool jpegerror;
 
@@ -431,10 +430,10 @@ int ImageExists (const char *name, int stop_mask)
 
 bool WriteTGA (const char *name, byte *pic, int width, int height)
 {
-	FILE	*f;
-	int		i, column;
+	int		i;
 
 	appMakeDirectoryForFile (name);
+	FILE	*f;
 	if (!(f = fopen (name, "wb")))
 	{
 		appWPrintf ("WriteTGA(%s): cannot create file\n", name);
@@ -445,18 +444,14 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 	int size = width * height;
 	// convert RGB to BGR (inplace conversion !)
 	for (i = 0, src = pic; i < size; i++, src += 3)
-	{
-		byte tmp = src[2];		// B
-		src[2] = src[0];		// R
-		src[0] = tmp;
-	}
+		Exchange (src[0], src[2]);
 
 	byte *packed = (byte*)appMalloc (width * height * 3);
 	byte *threshold = packed + width * height * 3 - 16;		// threshold for "dst"
 
 	src = pic;
 	byte *dst = packed;
-	i = column = 0;
+	int column = 0;
 	byte *flag = NULL;
 	bool rle = false;
 
@@ -545,12 +540,8 @@ bool WriteTGA (const char *name, byte *pic, int width, int height)
 
 bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQuality)
 {
-	FILE	*f;
-	struct jpeg_compress_struct cinfo;
-	struct jpeg_error_mgr jerr;
-	JSAMPROW row[1];
-
 	appMakeDirectoryForFile (name);
+	FILE	*f;
 	if (!(f = fopen (name, "wb")))
 	{
 		appWPrintf ("WriteJPG: cannot create \"%s\"\n", name);
@@ -558,6 +549,8 @@ bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQual
 	}
 
 	// standard way to encode JPEG file (see libjpeg.doc for details)
+	struct jpeg_compress_struct cinfo;
+	struct jpeg_error_mgr jerr;
 	cinfo.err = InitJpegError (&jerr);
 	jpeg_create_compress (&cinfo);
 	jpeg_stdio_dest (&cinfo, f);
@@ -574,6 +567,7 @@ bool WriteJPG (const char *name, byte *pic, int width, int height, bool highQual
 	int stride = 3 * width;
 	while (cinfo.next_scanline < height)
 	{
+		JSAMPROW row[1];
 		row[0] = pic + stride * (height - 1 - cinfo.next_scanline);	// top-to-bottom?
 		jpeg_write_scanlines (&cinfo, row, 1);
 	}

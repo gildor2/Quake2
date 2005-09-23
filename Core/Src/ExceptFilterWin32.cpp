@@ -1,6 +1,6 @@
 #define WIN32_LEAN_AND_MEAN		// exclude rarely-used services from windown headers
 #include <windows.h>
-#include "Core.h"
+#include "CorePrivate.h"
 
 
 //#define LOG_FUNCS_ONLY
@@ -17,7 +17,6 @@
 //?? IsBadReadPtr -> platform-specific; DumpXxxx() -> platform-independent file;
 //?? DumpMem(): CONTEXT-stuff -> inline function
 
-//?? should change FILE to local file system (not required) (may be, avoid local FS usage when crashed ...)
 static void DumpReg4 (COutputDevice *Out, const char *name, unsigned value)
 {
 	const char *data = (char*) value;
@@ -239,7 +238,7 @@ int win32ExceptFilter (struct _EXCEPTION_POINTERS *info)
 
 		// log error
 		CONTEXT* ctx = info->ContextRecord;
-		GErr.Message.sprintf ("%s in \"%s\"", excName, appSymbolName (ctx->Eip));	//?? may be, supply package name
+		GErr.Message.sprintf ("%s in \"%s\"", excName, appSymbolName (ctx->Eip));
 		COutputDevice *Out = appGetErrorLog ();
 
 		Out->Write ("Registers:\n");

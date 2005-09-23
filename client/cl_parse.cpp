@@ -91,7 +91,10 @@ static void ParseServerData (void)
 	// game directory
 	const char *str = MSG_ReadString (&net_message);
 	appStrncpyz (cl.gamedir, str, sizeof(cl.gamedir));
-	Cvar_Set ("game", str);
+	//?? Cvar_Set() -- will not change gamedir at all ("for next game"); Cvar_ForceSet() -- will change gamedir even when playing demos
+	//?? best way: detect server's game before connection, and change when needed (may be, display warning for user)
+	if (!cl.attractloop)	// not in demos ...
+		Cvar_ForceSet ("game", str);
 
 	// parse player entity number
 	cl.playernum = MSG_ReadShort (&net_message);

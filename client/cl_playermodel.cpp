@@ -43,6 +43,7 @@ void FreePlayerModelsInfo ()
 static void ScanQuake2Models (const char *path)
 {
 	/*----- get a list of directories -----*/
+	// NOTE: use of FS_PATH_NAMES here will not allow to add new skins by mod for model from base dir
 	CFileList *dirNames = GFileSystem->List (va("%s/players/*", path), FS_DIR);
 
 	/*--- go through the subdirectories ---*/
@@ -84,6 +85,7 @@ static void ScanQuake2Models (const char *path)
 void ScanQuake3Models (const char *path)
 {
 	/*----- get a list of directories -----*/
+	// NOTE: use of FS_PATH_NAMES here will not allow to add new skins by mod for model from base dir
 	CFileList *dirNames = GFileSystem->List (va("%s/models/players/*", path), FS_DIR);
 	/*--- go through the subdirectories ---*/
 	for (TListIterator<CFileItem> diritem = *dirNames; diritem; ++diritem)

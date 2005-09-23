@@ -51,16 +51,12 @@ typedef unsigned int	address_t;
 
 
 // Package implementation
-#define IMPLEMENT_PACKAGE(name,version,build,date)	\
-	DLL_EXPORT extern const char GPackage[] = #name;\
-	DLL_EXPORT extern const char PkgVersion[] = #name " version " STR(version) " build " STR(build) " (" date ")";\
+#define IMPLEMENT_PACKAGE(version,build,date)		\
+	extern const char GPackage[]   = STR(PACKAGE);	\
+	extern const char PkgVersion[] = STR(PACKAGE) " version " STR(version) " build " STR(build) " (" date ")";\
 	HINSTANCE hInstance;							\
 	int __stdcall DllMain (HINSTANCE hInst, int Reason, void *Reserved)	\
 	{ hInstance = hInst; return 1; }
-
-//?? IMPLEMENT_MAIN_PACKAGE: declare GPackage/PkgVersion (non-export form !?), + macro (?) for registering main package
-//?? Problem with non-export definitions: how to make sense of main/external package from core headers ? (make global predefined
-//?? macro i.e. PRIMARY_PACKAGE -- in this case, can use single IMPLEMENT_PACKAGE macro for both cases)
 
 
 // disable some compiler warnings
@@ -74,6 +70,7 @@ typedef unsigned int	address_t;
 
 const char *appGetSystemErrorMessage (unsigned code);
 extern bool GIsWinNT, GIsWin2K;
+extern HINSTANCE hInstance;
 
 
 /*-----------------------------------------------------------------------------
@@ -122,7 +119,7 @@ inline int appCeil (float f)
 
 
 /*-----------------------------------------------------------------------------
-	Pentium timing
+	Pentium RDTSC timing
 -----------------------------------------------------------------------------*/
 
 #pragma warning(push)

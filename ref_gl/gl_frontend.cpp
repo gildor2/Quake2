@@ -234,7 +234,13 @@ static bool BoxOccluded (const refEntity_t *e, const CVec3 &size2)
 	CVec3	v, left, right;
 	int		n, brushes[NUM_TEST_BRUSHES];
 
-	if (!GetBoxRect (e, size2, mins2, maxs2)) return false;
+	clock(gl_speeds.occlTest);
+	if (!GetBoxRect (e, size2, mins2, maxs2))
+	{
+notOccluded:	// we use "goto" for unclock() + return false ...
+		unclock(gl_speeds.occlTest);
+		return false;
+	}
 
 	// top-left
 	VectorMA (e->center, mins2[0], vp.view.axis[1], left);
@@ -246,24 +252,25 @@ static bool BoxOccluded (const refEntity_t *e, const CVec3 &size2)
 #else
 	n = CM_BrushTrace (vp.view.origin, v, brushes, NUM_TEST_BRUSHES);
 #endif
-	if (!n) return false;
+	if (!n) goto notOccluded;
 
 	// bottom-right (diagonal with 1st point)
 	VectorMA (e->center, maxs2[0], vp.view.axis[1], right);
 	VectorMA (right, maxs2[1], vp.view.axis[2], v);
 	n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
-	if (!n) return false;
+	if (!n) goto notOccluded;
 
 	// bottom-left
 	VectorMA (left, maxs2[1], vp.view.axis[2], v);
 	n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
-	if (!n) return false;
+	if (!n) goto notOccluded;
 
 	// top-right
 	VectorMA (right, mins2[1], vp.view.axis[2], v);
 	n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
-	if (!n) return false;
+	if (!n) goto notOccluded;
 
+	unclock(gl_speeds.occlTest);
 	return true;
 }
 
@@ -274,6 +281,7 @@ static bool WorldBoxOccluded (const CVec3 &mins, const CVec3 &maxs)	//?? CBox
 //	if (!test) test=Cvar_Get("test","32",0);
 	// optimize !!: 8 -> 4 points (find contour -- fast for axial boxes); change trace order
 	// in a case of fast non-occluded test: top-left, bottom-right, other 2 points
+	clock(gl_speeds.occlTest);
 	for (int i = 0; i < 8; i++)
 	{
 		CVec3	v;
@@ -286,9 +294,14 @@ static bool WorldBoxOccluded (const CVec3 &mins, const CVec3 &maxs)	//?? CBox
 			n = CM_BrushTrace (vp.view.origin, v, brushes, NUM_TEST_BRUSHES);	// test->integer);
 		else
 			n = CM_RefineBrushTrace (vp.view.origin, v, brushes, n);
-		if (!n) return false;
+		if (!n)
+		{
+			unclock(gl_speeds.occlTest);
+			return false;
+		}
 	}
 
+	unclock(gl_speeds.occlTest);
 	return true;
 }
 
@@ -1748,6 +1761,7 @@ static void DrawFlares ()
 		{
 			trace_t	trace;
 
+			clock(gl_speeds.flareTrace);
 			gl_speeds.testFlares++;
 			// check visibility with trace
 			if (f->radius >= 0)
@@ -1767,6 +1781,7 @@ static void DrawFlares ()
 				if (!(trace.fraction < 1 && trace.surface->flags & SURF_SKY))
 					cull = true;
 			}
+			unclock(gl_speeds.flareTrace);
 
 			if (!cull)
 				f->lastTime = vp.time;

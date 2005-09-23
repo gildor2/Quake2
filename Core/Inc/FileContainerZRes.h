@@ -152,6 +152,8 @@ public:
 //			appPrintf("    %s -- %s (%X)\n", Dir->name, name, pos);
 			// advance "pos" pointer
 			pos += fSize;
+			// update stats
+			Res->numFiles++;
 		}
 		// mount
 		FS->Mount (*Res, mountPoint);

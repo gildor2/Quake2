@@ -15,7 +15,7 @@
 namespace OpenGLDrv {
 
 
-drawSpeeds_t gl_speeds;
+FDrawStats gl_speeds;
 
 #ifndef STATIC_BUILD
 refImport_t	ri;
@@ -630,7 +630,8 @@ void RenderFrame (refdef_t *fd)
 
 	/*----------- prepare data ------------*/
 
-	gl_speeds.beginFrame = appCycles ();
+	clock(gl_speeds.frontend);
+
 	gl_state.have3d = true;
 	if (!(fd->rdflags & RDF_NOWORLDMODEL))
 	{
@@ -699,18 +700,31 @@ void RenderFrame (refdef_t *fd)
 
 	// NOTE: vp.numSurfaces may be 0, when only sky is visible
 	SetPerspective ();						// prepare projection matrix using some info from DrawPortal()
+
+	unclock(gl_speeds.frontend);
+
+	clock(gl_speeds.backend);
 	BK_DrawScene ();						// rasterization
+	unclock(gl_speeds.backend);
 
 	/*------------ debug info ------------*/
 
 	if (r_speeds->integer)
 	{
+		//?? implement as loop, with table {OFS2FIELD(), name}
 #define S gl_speeds
-		DrawTextRight (va("fe: %.2f bk: %.2f (srt: %.2f 3d: %.2f)",
-			appDeltaCyclesToMsecf (S.beginSort - S.beginFrame),
-			appDeltaCyclesToMsecf (S.end3D - S.beginSort),
-			appDeltaCyclesToMsecf (S.begin3D - S.beginSort),
-			appDeltaCyclesToMsecf (S.end3D - S.begin3D)
+#define T(name)		appDeltaCyclesToMsecf (gl_speeds.name)
+		DrawTextRight (va(
+						"*** frontend: %.2f ***\n"
+						"occl test: %.3f\n"
+						"flare trace: %.3f\n"
+						"*** backend: %.2f ***\n"
+						"sort: %.3f\n"
+						"entity light: %.3f\n"
+						"mesh light: %.3f\n"
+						"comp dyn lm: %.3f",
+						T(frontend), T(occlTest), T(flareTrace),
+						T(backend), T(sort), T(entLight), T(meshLight), T(dynLightmap)
 			), RGB(1,0.6,0.1));
 		int lgridSize = map.mapGrid[0]*map.mapGrid[1]*map.mapGrid[2];
 		if (!lgridSize) lgridSize = 1;	// to avoid zero divide
@@ -743,6 +757,7 @@ void RenderFrame (refdef_t *fd)
 			), RGB(1,0.5,0));
 		}
 #undef S
+#undef T
 	}
 
 	ClearBuffers ();						// cleanup scene info (after stats display)

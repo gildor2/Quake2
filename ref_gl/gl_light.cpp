@@ -455,9 +455,9 @@ static bool GetCellLight (const CVec3 *origin, int *coord, refEntity_t *ent)
 	}
 	else
 	{
-		pcell = NULL;
+		pcell  = NULL;
 		origin = &ent->center;
-		axis = &ent->coord.axis;
+		axis   = &ent->coord.axis;
 	}
 
 	node_t *leaf = PointInLeaf (*origin);
@@ -563,6 +563,8 @@ void LightForEntity (refEntity_t *ent)
 	float	scale;
 	gl_depthMode_t prevDepth;
 
+	clock(gl_speeds.entLight);
+
 	// NOTE: sl.color is [0..1], out color is [0..255]
 
 	memset (entityColorAxis, 0, sizeof(entityColorAxis));
@@ -620,28 +622,27 @@ void LightForEntity (refEntity_t *ent)
 						f *= frac[j];
 					}
 				if (!f) continue;			// will not add light from this cell
-				if (GetCellLight (&origin, c, NULL))
+				if (!GetCellLight (&origin, c, NULL)) continue;
+				// apply light from grid
+				totalFrac += f;
+				for (j = 0; j < 6; j++)
+					VectorMA (accum[j], f, entityColorAxis[j]);
+				// show lightgrid
+				if (gl_showGrid->integer)
 				{
-					totalFrac += f;
+					glBegin (GL_LINES);
 					for (j = 0; j < 6; j++)
-						VectorMA (accum[j], f, entityColorAxis[j]);
-
-					if (gl_showGrid->integer)
 					{
-						glBegin (GL_LINES);
-						for (j = 0; j < 6; j++)
-						{
-							glColor3f (entityColorAxis[j][0]/255, entityColorAxis[j][1]/255, entityColorAxis[j][2]/255);
-							glVertex3fv (origin.v);
-							CVec3 origin2 = origin;
-							origin2[j >> 1] += (j & 1) ? 2 : -2;
-							glVertex3fv (origin2.v);
-						}
-						glEnd ();
+						glColor3f (entityColorAxis[j][0]/255, entityColorAxis[j][1]/255, entityColorAxis[j][2]/255);
+						glVertex3fv (origin.v);
+						CVec3 origin2 = origin;
+						origin2[j >> 1] += (j & 1) ? 2 : -2;
+						glVertex3fv (origin2.v);
 					}
+					glEnd ();
 				}
 			}
-			if (totalFrac != 1)
+			if (totalFrac != 1 && totalFrac != 0)	// != 1 -- optimization, != 0 -- zero divide (may happens, when model outside world)
 			{	// if some points have missed (outside the world) -- scale light from correct points
 				totalFrac = 1.0f / totalFrac;
 				for (i = 0; i < 6; i++) accum[i].Scale (totalFrac);
@@ -743,6 +744,8 @@ void LightForEntity (refEntity_t *ent)
 	for (i = 0; i < 6; i++)
 		ClampColor255 (entityColorAxis[i], entityColorAxis[i]);
 #endif
+
+	unclock(gl_speeds.entLight);
 }
 
 
@@ -751,6 +754,8 @@ void DiffuseLight (color_t *dst, float lightScale)
 {
 	int		i, tmp;
 	bufExtra_t *ex;
+
+	clock(gl_speeds.meshLight);
 
 	CVec3 maxColor = entityColorAxis[0];
 	maxColor.Zero ();
@@ -811,6 +816,8 @@ void DiffuseLight (color_t *dst, float lightScale)
 		for (int j = 0; j < ex->numVerts; j++, dst++)	// normally, here will be only 1 iteration ...
 			dst->rgba = c.rgba;							// just put computed color
 	}
+
+	unclock(gl_speeds.meshLight);
 }
 
 

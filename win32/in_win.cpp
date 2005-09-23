@@ -170,7 +170,7 @@ static bool DXMouse_Init ()
 			return false;
 		}
 	}
-	if FAILED(pDirectInputCreate (global_hInstance, DIRECTINPUT_VERSION, &pDI, NULL))
+	if FAILED(pDirectInputCreate (hInstance, DIRECTINPUT_VERSION, &pDI, NULL))
 	{
 		Com_DPrintf ("... cannot create DirectInput object\n");
 		DXMouse_Free ();
@@ -194,7 +194,7 @@ static bool DXMouse_Init ()
 			return false;
 		}
 	}
-	if FAILED(pDirectInput8Create (global_hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&pDI, NULL))
+	if FAILED(pDirectInput8Create (hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&pDI, NULL))
 	{
 		Com_DPrintf ("... cannot create DirectInput object\n");
 		DXMouse_Free ();

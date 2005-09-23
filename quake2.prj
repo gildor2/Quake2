@@ -31,6 +31,7 @@ CORE = \
 	$D/TextContainer.cpp \
 	$D/FileSystem.cpp \
 	$D/FileContainerArc.cpp
+#	$D/CommandCompletion.cpp \
 #	$D/Commands.cpp \
 #	$D/Core.cpp
 CORE_WIN32 = \
@@ -145,11 +146,11 @@ LIBRARIES = SDK/lib
 #------------------------------------------------------------------------------
 # static build
 
-DEFINES = STATIC_BUILD CORE_API=
+DEFINES = STATIC_BUILD
 OBJDIR  = $OUT/obj/CoreStatic
 sources(STATIC) = $CORE $CORE_WIN32
 
-DEFINES = STATIC_BUILD CORE_API= SINGLE_RENDERER	#?? SINGLE_RENDERER -- check when will be 2+ renderers
+DEFINES = STATIC_BUILD SINGLE_RENDERER	#?? SINGLE_RENDERER -- check when will be 2+ renderers
 OBJDIR  = $OUT/obj/q2stat
 sources(STATIC) = $CLIENT $SERVER $COMMON $WIN32_FILES $RES_FILES $GL_RENDERER
 
@@ -162,7 +163,7 @@ target(executable, $OUT/Quake2, STATIC, STATIC)
 !ifndef  NOSHARED		#!!!! shared
 
 # !! not works now !!
-DEFINES = CORE_API=DLL_EXPORT
+DEFINES =
 OBJDIR  = $OUT/obj/CoreShared
 sources(CORE) = $CORE $CORE_WIN32
 
@@ -173,7 +174,7 @@ target(shared, $OUT/Core, CORE, DYNAMIC)
 
 LIBS = lib/lib $OUT/Core
 
-DEFINES = CORE_API=DLL_IMPORT
+DEFINES =
 OBJDIR  = $OUT/obj/q2dyn
 sources(DYN_EXE) = $CLIENT $SERVER $COMMON $RES_FILES $WIN32_FILES
 
@@ -184,7 +185,7 @@ target(executable, $OUT/quake2_dyn, DYN_EXE, DYNAMIC)
 LIBS = $OUT/Core
 
 # we should define DYNAMIC_REF to allow link from renderer to engine functions
-DEFINES = CORE_API=DLL_IMPORT DYNAMIC_REF
+DEFINES = DYNAMIC_REF
 OBJDIR  = $OUT/obj/gldyn
 sources(DYN_GL) = $GL_RENDERER qcommon/q_shared2.cpp client/ref_vars.cpp
 
@@ -197,11 +198,11 @@ target(shared, $OUT/ref_gl, DYN_GL, DYNAMIC)
 #------------------------------------------------------------------------------
 # dedicated server
 
-DEFINES = STATIC_BUILD CORE_API=
+DEFINES = STATIC_BUILD
 OBJDIR  = $OUT/obj/CoreStatic
 sources(DEDICATED) = $CORE $CORE_WIN32
 
-DEFINES = STATIC_BUILD CORE_API= DEDICATED_ONLY
+DEFINES = STATIC_BUILD DEDICATED_ONLY
 OBJDIR  = $OUT/obj/dedstat
 sources(DEDICATED) = $DED_CLIENT $SERVER $COMMON $DED_WIN32 $RES_FILES
 
@@ -211,7 +212,7 @@ target(executable, $OUT/q2ded, DEDICATED, DEDICATED)
 #------------------------------------------------------------------------------
 # test application
 
-DEFINES = STATIC_BUILD CORE_API=
+DEFINES = STATIC_BUILD
 LIBS = lib/lib		# for zlib
 
 #-- Core files

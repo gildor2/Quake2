@@ -62,6 +62,12 @@ void cmd1 (int argc, char **argv)
 	case '7':
 		TEST(throw "exception");				// software exception
 		break;
+	case '8':
+		{
+			TString<256> Temp; Temp = "temp string";
+			TEST(appPrintf ("Temp=%s\n", Temp)); // shound use "*Temp" -- so, error in vsnprintf()
+		}
+		break;
 	default:
 		cmd1(0, NULL);							// infinite recurse
 		a = i + 1;
@@ -170,8 +176,8 @@ int main (int argc, char** argv)
 		// testing file system
 		CFileSystem FS;
 		appInitFileSystem (FS);
-		CFileSystem::RegisterFormat (CFileContainerPak::Create);
-		CFileSystem::RegisterFormat (CFileContainerZip::Create);
+//		CFileSystem::RegisterFormat (CFileContainerPak::Create);
+//		CFileSystem::RegisterFormat (CFileContainerZip::Create);
 		CFileContainer *Cont = FS.MountDirectory (".");	// standard mount
 		Cont->locked = true;
 #if 0

@@ -1,8 +1,9 @@
-// Build options
+/*=============================================================================
+	Engine build options
+=============================================================================*/
 
-#define MEM_DEBUG		1			//?? comment when unneeded
+#define MEM_DEBUG		1			// comment when unneeded
 
-#define	APP_VERSION		0.01		//?? unused
 
 /*-----------------------------------------------------------------------------
 	Defaults (put this section to a separate header ?)
@@ -31,7 +32,3 @@
 #ifndef MEM_STATS
 #define MEM_STATS		0
 #endif
-
-//?? move to core.h
-#define MAX_PACKAGES	32
-#define MAX_PKG_NAME	32

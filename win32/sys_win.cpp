@@ -2,9 +2,7 @@
 #include "Core.h"
 #include "OutputDeviceMem.h"
 
-#include <direct.h>
-
-#include "../client/client.h"		//!! for editLine[] and CompleteCommand() only
+#include "../client/client.h"		//!! for editLine[], CompleteCommand() + COutputDeviceCon
 
 bool		ActiveApp, MinimizedApp, FullscreenApp;
 
@@ -233,8 +231,8 @@ void Sys_ProcessMessages ()
 		unguardf(("msg=%X", msg.message));
 	}
 
-	// grab frame time
-	sys_frame_time = appMilliseconds ();	// FIXME: should this be at start?
+	// grab frame time; this should be in MainLoop ?
+	sys_frame_time = appMilliseconds ();
 	unguard;
 #endif
 }
@@ -335,9 +333,7 @@ void *Sys_GetGameAPI (void *parms)
 	Program startup, main loop and exception handling
 -----------------------------------------------------------------------------*/
 
-extern COutputDevice *debugLog;
-HINSTANCE global_hInstance;
-
+//extern COutputDevice *debugLog;
 
 #ifndef IS_CONSOLE_APP
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -347,14 +343,16 @@ int main (int argc, const char **argv) // force to link as console application
 {
 	TRY
 	{
-		// NOTE: can use main() path: GetModuleHandle()/GetCommandLine()
-#ifndef IS_CONSOLE_APP
-		global_hInstance = hInstance;
-		const char *cmdline = lpCmdLine;
-#else
-		global_hInstance = GetModuleHandle (NULL);
+		hInstance = GetModuleHandle (NULL);
+		// get command line
 		const char *cmdline = GetCommandLine ();
-#endif
+		// skip executable name (argv[0])
+		//?? NOTE: Linux/Unix have no ability to get full command line - argc/argv[] only!
+		if (*cmdline++ == '"')
+			cmdline = strchr (cmdline, '"')+1;
+		else
+			cmdline = strchr (cmdline, ' ')+1;
+		if (!cmdline) cmdline = "";
 
 #ifdef CD_PATH
 		if (const char *cddir = ScanForCD ())
@@ -390,13 +388,14 @@ int main (int argc, const char **argv) // force to link as console application
 		guard(MainLoop);
 		while (!GIsRequestingExit)
 		{
-#ifndef DEDICATED_ONLY
-			if (!ActiveApp || DEDICATED)
-				Sleep (10);		//?? what about client and server in one place: will server became slower ?
-			Sys_ProcessMessages ();
-#else
-			Sleep (10);
-#endif
+			if (DEDICATED)
+				Sleep (10);
+			else
+			{
+				if (!ActiveApp)
+					Sleep (10);	//?? what about client and server in one place: will server became slower ?
+				Sys_ProcessMessages ();
+			}
 
 			// do not allow Com_Frame(0)
 			double timeDelta, newtime;
@@ -418,12 +417,14 @@ int main (int argc, const char **argv) // force to link as console application
 			TRY {
 				Com_Frame (timeDelta);
 			} CATCH {
-				if (!GErr.nonFatalError) throw;		// go to outer CATCH{}
-
-				//!! check old behaviour on DropError(NULL)
+				if (!GErr.nonFatalError) throw;		// go to outer CATCH{}, outside of MainLoop
+				// process DropError()
+				// shutdown server
 				SV_Shutdown (va("Server crashed: %s\n", *GErr.Message));	// message
 				Com_DPrintf ("History: %s\n", *GErr.History);				// history
+				// drop client
 				if (!DEDICATED) CL_Drop (true);
+				// and continue execution ...
 				GErr.Reset ();
 			}
 			oldtime = newtime;
@@ -431,8 +432,8 @@ int main (int argc, const char **argv) // force to link as console application
 		unguard;
 	} CATCH {
 		GIsFatalError = true;
-		if (debugLog)
-			debugLog->Printf ("***** CRASH *****\n%s\n*****************\n", *GErr.History);
+//		if (debugLog)
+//			debugLog->Printf ("***** CRASH *****\n%s\nHistory: %s\n*****************\n", *GErr.Message, *GErr.History);
 	}
 
 	// shutdown all systems

@@ -134,7 +134,7 @@ static const char *SV_StatusString (void)
 
 	if (sv.attractloop) return "";
 
-	int statusLength = appSprintf (ARRAY_ARG(status), "%s\n", Cvar_Serverinfo ());
+	int statusLength = appSprintf (ARRAY_ARG(status), "%s\n", Cvar_BitInfo (CVAR_SERVERINFO));
 	for (int i = 0; i < sv_maxclients->integer; i++)
 	{
 		client_t *cl = &svs.clients[i];
@@ -481,7 +481,7 @@ static const CSimpleCommand connectionlessCmds[] = {
 void SV_ConnectionlessPacket (void)
 {
 	guard(SV_ConnectionlessPacket);
-	MSG_BeginReading (&net_message);
+	net_message.BeginReading ();
 	MSG_ReadLong (&net_message);		// skip the -1 marker
 
 	char *s = MSG_ReadString (&net_message);
@@ -593,7 +593,7 @@ void SV_ReadPackets (void)
 
 		// read the qport out of the message so we can fix up
 		// stupid address translating routers
-		MSG_BeginReading (&net_message);
+		net_message.BeginReading ();
 		MSG_ReadLong (&net_message);		// sequence number
 		MSG_ReadLong (&net_message);		// sequence number
 		int qport = MSG_ReadShort (&net_message) & 0xFFFF;
@@ -911,7 +911,7 @@ sizebuf_t *SV_MulticastHook (sizebuf_t *original, sizebuf_t *ext)
 
 	guard(SV_MulticastHook);
 
-	MSG_BeginReading (original);
+	original->BeginReading ();
 
 	// check for interesting messages
 	if (MSG_ReadByte (original) != svc_temp_entity)

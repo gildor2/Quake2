@@ -1,4 +1,4 @@
-#include "Core.h"
+#include "CorePrivate.h"
 
 #define MAX_LOGGERS		32
 #define BUFFER_LEN		4096

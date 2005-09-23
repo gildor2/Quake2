@@ -14,7 +14,7 @@ static cvar_t	*fs_logFile;
 static COutputDevice *FSLog;
 
 
-static cvar_t	*fs_gamedirvar;
+static cvar_t	*fs_game;
 static cvar_t	*fs_cddir;
 static cvar_t	*fs_configfile;
 
@@ -88,6 +88,7 @@ public:
 		Mount (va("./%s/*.pak", *GDefMountPoint));
 	}
 
+	// return "true" when game was changed
 	bool SetGameDir (const char *name)
 	{
 		guard(CQuakeFileSystem::SetGameDir);
@@ -95,7 +96,7 @@ public:
 		FSLog->Printf ("Set gamedir: %s\n", name);
 		if (!name[0]) name = BASEDIRNAME;
 		if (!stricmp (GameDir, name))
-			return true;			// not changed
+			return false;				// not changed
 		// check directory
 		CFileList *list = List (va("./%s/*", name), FS_DIR|FS_FILE|FS_OS, NULL);
 		bool empty = !(*list);
@@ -105,30 +106,22 @@ public:
 			appWPrintf ("Invalid game directory: %s\n", name);
 			return false;
 		}
-		if (stricmp (GameDir, BASEDIRNAME)) // base dir not umounted
+		if (GameDir != BASEDIRNAME)		// base dir not umounted
 		{
 			Umount (va("./%s/*.pak", *GameDir));
 			if (fs_cddir->string[0])
 				Umount (va("%s/%s/*.pak", fs_cddir->string, *GameDir));
 		}
-		GameDir = name;
+		GameDir.filename (name);
 		GDefMountPoint = GameDir;
-		if (stricmp (GameDir, BASEDIRNAME))	// do not remount base dir
+		if (GameDir != BASEDIRNAME)		// do not remount base dir
 			MountGame (name);
-		Cvar_FullSet ("gamedir", name, CVAR_SERVERINFO|CVAR_NOSET);
 
 		return true;
 
 		unguard;
 	}
 };
-
-
-
-static void cDir (bool usage, int argc, char **argv)
-{
-	//!!
-}
 
 
 static CQuakeFileSystem FS;
@@ -143,13 +136,7 @@ const char *FS_Gamedir ()
 	return FS.GameDir;
 }
 
-bool FS_SetGamedir (const char *dir)
-{
-	return FS.SetGameDir (dir);
-}
-
-//?? move from here
-void FS_LoadGameConfig ()
+static void LoadGameConfig ()
 {
 	if (GFileSystem->FileExists (va("./%s/%s", *FS.GameDir, fs_configfile->string), FS_OS))
 		Cbuf_AddText (va("unbindall\nreset *\nunalias *\nexec %s\n", fs_configfile->string));
@@ -225,7 +212,12 @@ void FS_CopyFiles (const char *srcMask, const char *dstDir)
 		Pattern[pos++] = '/';
 
 	appMakeDirectoryForFile (Pattern);
+#if 1
+	CFileList *list = new CFileList;
+	appListDirectoryOS (srcMask, *list, FS_FILE);
+#else
 	CFileList *list = GFileSystem->List (srcMask, FS_OS);
+#endif
 	for (TListIterator<CFileItem> it = *list; it; ++it)
 	{
 		strcpy (s, it->name);				// create source filename
@@ -244,7 +236,12 @@ void FS_RemoveFiles (const char *mask)
 	if (!s) s = Base;
 	else s++;								// will point to mask start
 
+#if 1
+	CFileList *list = new CFileList;
+	appListDirectoryOS (mask, *list, FS_FILE);
+#else
 	CFileList *list = GFileSystem->List (mask, FS_OS);
+#endif
 	for (TListIterator<CFileItem> it = *list; it; ++it)
 	{
 		strcpy (s, it->name);				// create full filename
@@ -270,11 +267,10 @@ CVAR_BEGIN(vars)
 	CVAR_FULL(&fs_configfile, "cfgfile", CONFIGNAME, CVAR_NOSET),	//?? config system will be changed later
 	// cddir <path>	-- allow game to be partially installed - read missing data from CD
 	CVAR_FULL(&fs_cddir, "cddir", "", CVAR_NOSET),
-	CVAR_FULL(&fs_gamedirvar, "game", "", CVAR_SERVERINFO|CVAR_LATCH),
+	CVAR_FULL(&fs_game, "game", "", CVAR_SERVERINFO|CVAR_LATCH),
 	CVAR_VAR(fs_logFile, 0, 0)
 CVAR_END
 	Cvar_GetVars (ARRAY_ARG(vars));
-	RegisterCommand ("dir", cDir);
 
 	CFileContainer *Mnt;
 
@@ -300,32 +296,55 @@ CVAR_END
 	FS.GameDir = BASEDIRNAME;
 	FS.MountGame (BASEDIRNAME);
 	// change game, if needed
-	FS.SetGameDir (fs_gamedirvar->string);
+	FS.SetGameDir (fs_game->string);
+	// load configuration
+	LoadGameConfig ();
 
 	unguard;
 }
 
 
 //?? make as CQuakeFileSystem::Tick()
+void CL_WriteConfiguration (const char *filename);
+
 void FS_Tick ()
 {
-	if (!fs_logFile->modified) return;
-	fs_logFile->modified = false;
-
-	if (FSLog != GNull && FSLog != GLog)
-		delete FSLog;
-
-	switch (fs_logFile->integer)
+	// process "fs_logFile" changes
+	if (fs_logFile->modified)
 	{
-	case 0:
-		FSLog = GNull;
-		break;
-	case 1:
-		FSLog = GLog;		//?? colorized log
-		break;
-	default:				// case 2
-		FSLog = new COutputDeviceFile (FS_LOG);
-		FSLog->Printf ("\n*** File system activity, %s ***\n\n", appTimestamp ());
-		break;
+		fs_logFile->modified = false;
+
+		if (FSLog != GNull && FSLog != GLog)
+			delete FSLog;
+
+		switch (fs_logFile->integer)
+		{
+		case 0:
+			FSLog = GNull;
+			break;
+		case 1:
+			FSLog = GLog;		//?? colorized log
+			break;
+		default:				// case 2
+			FSLog = new COutputDeviceFile (FS_LOG);
+			FSLog->Printf ("\n*** File system activity, %s ***\n\n", appTimestamp ());
+			break;
+		}
+	}
+
+	// process "game" changes
+	if (fs_game->modified)
+	{
+		if (!stricmp (fs_game->string, BASEDIRNAME))
+			Cvar_ForceSet ("game", "");	// BASEDIRNAME->""
+		CL_WriteConfiguration (fs_configfile->string);
+		if (FS.SetGameDir (fs_game->string))
+		{
+			LoadGameConfig ();
+			if (!DEDICATED)
+				Cbuf_AddText ("vid_restart\nsnd_restart\n");
+		}
+		Cvar_ForceSet ("game", (FS.GameDir == BASEDIRNAME) ? "" : FS.GameDir);
+		fs_game->modified = false;
 	}
 }

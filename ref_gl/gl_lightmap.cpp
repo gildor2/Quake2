@@ -313,20 +313,22 @@ void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dli
 	int		i, x, z;
 	unsigned r, g, b;
 
-	dynamicLightmap_t *dl = surf->lightmap;
+	const dynamicLightmap_t *dl = surf->lightmap;
 
 	if (dl->block && !vertexOnly)
 	{
+		clock(gl_speeds.dynLightmap);
 		/*------------- update regular lightmap ---------------*/
 		memset (pic, 0, dl->w * dl->h * 4);	// set initial state to zero (add up to 4 lightmaps)
 		for (z = 0; z < dl->numStyles; z++)
 		{
 			if (IS_FAST_STYLE(dl->style[z])) continue;
-			byte *src = dl->source[z];
+			const byte *src = dl->source[z];
 			byte *dst = pic;
 			int scale = dl->modulate[z] >> gl_config.overbright;
 			if (!gl_config.doubleModulateLM) scale <<= 1;
-
+			// apply scaled lightmap
+			// test results: when using table for "scale*src >> 7" -- computations will be ~1/7 faster
 			int count = dl->w * dl->h;
 			for (x = 0; x < count; x++)
 			{
@@ -339,6 +341,7 @@ void UpdateDynamicLightmap (surfacePlanar_t *surf, bool vertexOnly, unsigned dli
 				dst++;
 			}
 		}
+		unclock(gl_speeds.dynLightmap);
 		//!! WARNING: lightmap is not saturated here
 		GL_Bind (dl->block->image);
 		glTexSubImage2D (GL_TEXTURE_2D, 0, dl->s, dl->t, dl->w, dl->h, GL_RGBA, GL_UNSIGNED_BYTE, pic);

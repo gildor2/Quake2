@@ -1,4 +1,5 @@
 /*=============================================================================
+
 	File system header
 
 	- Most file operation should be done via CFileSystem object.
@@ -7,6 +8,7 @@
 	  access to "a/b/*" or "a/*"
 	- Supported "hidden" files: name should start with "." (Unix-like)
 	- File names are case-insensitive.
+
 =============================================================================*/
 
 
@@ -23,7 +25,9 @@
 #define FS_DIR				0x000200
 #define FS_MOUNT_POINT		0x000400
 // List() format
-#define FS_PATH_NAMES		0x001000	//!! unimplemented -- impossible ?
+//??#define FS_PATH_NAMES		0x001000	-- unimplemented -- impossible ?
+//??  if implement: make additional field to CFileItem: "char *fullName", and place
+//??  string here
 #define FS_NOEXT			0x002000
 #define FS_LIST_HIDDEN		0x004000
 //?? FS_NUMERIC_SORT -- sort List() as numbers (make "file100" > "file11")
@@ -40,7 +44,7 @@ public:
 
 // NOTE: 1st block is CFileList (based on CMemoryChain), all next blocks (if one) -- pure CMemoryChain
 class CORE_API CFileList : public CMemoryChain, public TList<CFileItem>
-{};	//?? empty
+{};
 
 // forwards
 class CFileContainer;
@@ -51,10 +55,9 @@ class CFileSystem;
 	Files
 -----------------------------------------------------------------------------*/
 
-class CFile
+class CORE_API CFile
 {
-	//?? can add to CFile/~CFile registering opened files, can be listed with "fsinfo"
-	//?? command
+	//?? can add to CFile/~CFile registering opened files, can be listed with "fsinfo" command
 protected:
 	CFile () {}					// no default constructor
 public:
@@ -63,6 +66,14 @@ public:
 	TString<64>	Name;			// local name inside owner container
 	CFileContainer *Owner;
 	virtual int Read (void *Buffer, int Size) = 0;
+#ifdef LITTLE_ENDIAN
+	inline int ByteOrderRead (void *Buffer, int Size)
+	{
+		return Read (Buffer, Size);
+	}
+#else
+	int ByteOrderRead (void *Buffer, int Size);
+#endif
 	virtual int GetSize () = 0;
 	virtual bool Eof () = 0;
 	// read helpers
@@ -177,6 +188,7 @@ public:
 	CFileContainer *MountArchive (const char *filename, const char *point = NULL);
 	void Mount (const char *mask, const char *point = NULL);
 	void Umount (const char *mask);
+	bool IsFileMounted (const char *filename);
 	// file loading; can be free'ed with "delete" or "appFree()"
 	void *LoadFile (const char *filename, unsigned *size = NULL);
 };

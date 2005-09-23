@@ -341,7 +341,8 @@ FOR GAME:
   - wave noise (for deform normal)
 - lighting:
   - reading lighting info from shaders
-  - correct lighting for multipass shaders with lightmap in non-first stage
+  - correct lighting for multipass shaders with lightmap in non-first stage (may be, convert lightmap->vertex light
+    with subtesselation)
 - renderer interface
   - DrawStretchRaw32()
   - dlights

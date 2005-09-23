@@ -1,4 +1,4 @@
-#include "Core.h"
+#include "CorePrivate.h"
 
 //!! TODO: exec (outside?!), alias, unalias
 

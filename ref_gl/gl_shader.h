@@ -196,6 +196,7 @@ struct shaderStage_t
 	alphaGenType_t alphaGenType;
 	waveParams_t alphaGenWave;		// if ALPHAGEN_WAVE
 	float	alphaMin, alphaMax;		// if ALPHAGEN_[ONE_MINUS_]DOT
+	float	alphaPortalRange;		// if ALPHAGEN_PORTAL
 	/*--------------- texture params --------------*/
 	// tcGen params
 	tcGenType_t tcGenType;

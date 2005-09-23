@@ -145,7 +145,7 @@ struct client_state_t
 	// server state information
 	bool		attractloop;	// running the attract loop, any key will menu
 	int			servercount;	// server identification for prespawns
-	char		gamedir[MAX_QPATH];
+	char		gamedir[MAX_QPATH];	// used for recording demos only
 	int			playernum;
 
 	char		configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];

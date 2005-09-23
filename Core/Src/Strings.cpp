@@ -1,4 +1,4 @@
-#include "Core.h"
+#include "CorePrivate.h"
 
 
 /*-----------------------------------------------------------------------------
@@ -497,6 +497,15 @@ CStringItem::CStringItem ()
 	name = AllocatedName;
 }
 #endif
+
+
+int CStringList::GetCount ()
+{
+	int i = 0;
+	for (CStringItem *item = first; item; item = item->next)
+		i++;
+	return i;
+}
 
 
 CStringItem *CStringList::Find (const char *name, CStringItem **after)

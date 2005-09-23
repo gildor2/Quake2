@@ -1,4 +1,4 @@
-#include "Core.h"
+#include "CorePrivate.h"
 
 //!! TODO: cache few last opened archives (make centralized "FILE* OpenArchive(filename)"/
 //!!	CloseArchive())
@@ -129,7 +129,7 @@ void CFileContainerArc::List (CFileList &list, const char *mask, unsigned flags)
 				// here: item->flags=0
 				list.InsertAfter (item, place);
 			}
-			item->flags |= FS_PAK|Flag;
+			item->flags |= containFlags|Flag;
 		}
 	}
 }

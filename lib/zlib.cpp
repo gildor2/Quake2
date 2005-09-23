@@ -1,8 +1,14 @@
 /*=============================================================================
+
 	ZLib support functions
+
 =============================================================================*/
 
+//?? zlib will be linked to Core or other place ??
+#define CORE_API
+
 #include "../Core/Inc/Core.h"
+
 
 // using Core memory manager
 

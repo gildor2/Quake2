@@ -1,11 +1,12 @@
 #include "qcommon.h"
 
-int		cvar_initialized = 0;			// 0 - before config read, 1 - before system finished init, 2 - after init
-cvar_t	*cvar_vars;
+// statics
+int		cvar_t::initialized = 0;			// 0 - before config read, 1 - before system finished init, 2 - after init
+cvar_t	*cvar_t::vars = NULL;
+unsigned cvar_t::modifiedFlags = 0;
+
 static cvar_t *lastCvar;
 static CMemoryChain *cvar_chain;
-
-bool userinfo_modified;
 
 static bool cheats = true;				// will be disabled on multiplayer game start
 	// NOTE: this is CVAR cheats, not server cheats
@@ -35,9 +36,10 @@ static void Cvar_SetString (cvar_t *var, const char *str)
 //	appPrintf (S_MAGENTA"set %s = %s\n", var->name, str);//!!
 
 	// update non-string fields
-	var->value = atof (str);
-	var->integer = atoi (str);
+	var->value    = atof (str);
+	var->integer  = atoi (str);
 	var->modified = true;
+	cvar_t::modifiedFlags |= var->flags;
 
 	// update "string" field
 	int len = strlen (str) + 1;
@@ -62,11 +64,6 @@ static void Cvar_SetString (cvar_t *var, const char *str)
 }
 
 
-/*
-============
-Cvar_InfoValidate
-============
-*/
 static bool Cvar_InfoValidate (const char *s)
 {
 	if (strchr (s, '\\') || strchr (s, '\"') || strchr (s, ';'))
@@ -75,31 +72,17 @@ static bool Cvar_InfoValidate (const char *s)
 	return true;
 }
 
-/*
-============
-Cvar_FindVar
-============
-*/
+
 static cvar_t *Cvar_FindVar (const char *var_name)
 {
-	cvar_t	*var;
-	int		hash;
-
-	hash = ComputeHash (var_name);
-	for (var = hashTable[hash]; var; var = var->hashNext)
-	{
+	int hash = ComputeHash (var_name);
+	for (cvar_t *var = hashTable[hash]; var; var = var->hashNext)
 		if (!stricmp (var_name, var->name))
 			return var;
-	}
-
 	return NULL;
 }
 
-/*
-============
-Cvar_VariableValue
-============
-*/
+
 float Cvar_VariableValue (const char *var_name)
 {
 	cvar_t *var = Cvar_FindVar (var_name);
@@ -107,11 +90,7 @@ float Cvar_VariableValue (const char *var_name)
 	return var->value;
 }
 
-/*
-============
-Cvar_VariableValue
-============
-*/
+
 int Cvar_VariableInt (const char *var_name)
 {
 	cvar_t *var = Cvar_FindVar (var_name);
@@ -119,11 +98,7 @@ int Cvar_VariableInt (const char *var_name)
 	return var->integer;
 }
 
-/*
-============
-Cvar_VariableString
-============
-*/
+
 const char *Cvar_VariableString (const char *var_name)
 {
 	cvar_t *var = Cvar_FindVar (var_name);
@@ -132,41 +107,8 @@ const char *Cvar_VariableString (const char *var_name)
 }
 
 
-void CL_WriteConfiguration (const char *filename);
-
-static void Cvar_SetHardcoded (cvar_t *var, const char *value)
-{
-	if (!stricmp (var->name, "game"))
-	{
-		CL_WriteConfiguration (Cvar_VariableString ("cfgfile"));
-		if (FS_SetGamedir (value))
-		{
-			Cvar_SetString (var, value);
-			FS_LoadGameConfig ();
-			if (!DEDICATED)
-				Cbuf_AddText ("vid_restart\nsnd_restart\n");
-		}
-	}
-	// add another vars here
-	else
-		Cvar_SetString (var, value);
-}
-
-static void FilterValue (cvar_t *var, const char **value)
-{
-	if (!stricmp (var->name, "game") && !strcmp (*value, BASEDIRNAME))
-		*value = "";
-}
-
-
-/*
-============
-Cvar_Get
-
-If the variable already exists, the value will not be set
-The flags will be or'ed in if the variable exists.
-============
-*/
+// If the variable already exists, the value will not be set
+// The flags will be or'ed in if the variable exists.
 static void Cvar_Init();
 
 cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
@@ -221,7 +163,7 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 		// CVAR_LATCH vars updated only with Cvar_Get() calls ...
 		if (var->latchedString)
 		{
-			Cvar_SetHardcoded (var, var->latchedString);
+			Cvar_SetString (var, var->latchedString);
 			appFree (var->latchedString);
 			var->latchedString = NULL;
 		}
@@ -244,18 +186,17 @@ cvar_t *Cvar_Get (const char *var_name, const char *var_value, int flags)
 	var = new (cvar_chain) cvar_t;
 	var->name = CopyString (var_name, cvar_chain);
 
-	if (cvar_initialized < 2 && Com_CheckCmdlineVar (var_name))
+	if (cvar_t::initialized < 2 && Com_CheckCmdlineVar (var_name))
 	{	// variable overriden with commandline as "1"
 		Cvar_SetString (var, "1");
 	}
 	else
 	{	// ordinary variable
-		FilterValue (var, &var_name);
 		Cvar_SetString (var, var_value);
 	}
 
 	// add var to list (in order of creation)
-	if (!cvar_vars) cvar_vars = var;		// 1st cvar
+	if (!cvar_t::vars) cvar_t::vars = var;		// 1st cvar
 	if (lastCvar) lastCvar->next = var;
 	lastCvar = var;
 
@@ -308,11 +249,6 @@ void Cvar_GetVars (const cvarInfo_t *vars, int count)
 }
 
 
-/*
-============
-Cvar_Set2
-============
-*/
 static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bool force)
 {
 	cvar_t *var = Cvar_FindVar (var_name);
@@ -321,7 +257,7 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 		return Cvar_Get (var_name, value, flags|CVAR_NODEFAULT);
 	}
 
-	if (var->flags & CVAR_CMDLINE && !cvar_initialized && !force)
+	if (var->flags & CVAR_CMDLINE && !cvar_t::initialized && !force)
 	{
 		// prevent from modification of cvars, created from command line
 //		Com_DPrintf ("Cvar_Set: ignore var %s\n", var->name);
@@ -337,7 +273,6 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 		}
 	}
 
-	FilterValue (var, &value);
 	if (!force)
 	{
 		if (var->flags & CVAR_NOSET)
@@ -383,7 +318,7 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 				var->latchedString = CopyString (value);
 			}
 			else
-				Cvar_SetHardcoded (var, value);
+				Cvar_SetString (var, value);
 
 			return var;
 		}
@@ -401,24 +336,13 @@ static cvar_t *Cvar_Set2 (const char *var_name, const char *value, int flags, bo
 		return var;					// not changed
 
 	Cvar_SetString (var, value);
-	if (var->modified && var->flags & CVAR_USERINFO)
-		userinfo_modified = true;	// transmit at next oportunity
-
 	return var;
 }
 
-/*
-============
-Cvar_FullSet
-============
-*/
 
 void Cvar_FullSet (cvar_t *var, const char *value, unsigned flags)
 {
 	Cvar_SetString (var, value);
-	if (var->modified && var->flags & CVAR_USERINFO)
-		userinfo_modified = true;	// transmit at next oportunity
-
 	var->flags = flags & CVAR_FLAG_MASK;
 }
 
@@ -434,11 +358,7 @@ cvar_t *Cvar_FullSet (const char *var_name, const char *value, unsigned flags)
 	return var;
 }
 
-/*
-============
-Cvar_SetXXX
-============
-*/
+
 cvar_t *Cvar_SetValue (const char *var_name, float value)
 {
 	return Cvar_Set2 (var_name, va("%g",value), 0, false);	// old: %f (will add trailing zeros: 1.000000)
@@ -477,13 +397,8 @@ float Cvar_Clamp (cvar_t *cvar, float low, float high)
 	return cvar->value;
 }
 
-/*
-============
-Cvar_Command
 
-Handles variable inspection and changing from the console
-============
-*/
+// Handles variable inspection and changing from the console
 bool Cvar_Command (int argc, char **argv)
 {
 	// check variables
@@ -493,11 +408,10 @@ bool Cvar_Command (int argc, char **argv)
 	// perform a variable print or set
 	if (argc == 1)
 	{
-		const char *def;
-
 		// get string for latched value
 		const char *latch = var->latchedString ? va("-> \"%s\" ", var->latchedString) : "";
 		// get string for default value
+		const char *def;
 		if (var->resetString)
 		{
 			if (var->IsDefault())
@@ -517,14 +431,7 @@ bool Cvar_Command (int argc, char **argv)
 }
 
 
-/*
-============
-Cvar_Set_f
-
-Allows setting and defining of arbitrary cvars from console
-============
-*/
-
+// Allows setting and defining of arbitrary cvars from console
 static void Cvar_SetWithFlags (const char *name, const char *value, unsigned set, unsigned reset)
 {
 	unsigned flags;
@@ -533,7 +440,7 @@ static void Cvar_SetWithFlags (const char *name, const char *value, unsigned set
 	if (var)
 	{
 		flags = var->flags;
-		if (flags & CVAR_CMDLINE && !cvar_initialized)
+		if (flags & CVAR_CMDLINE && !cvar_t::initialized)
 		{
 			// prevent from modification of cvars, created from command line
 //			Com_DPrintf ("Cvar_SetWithFlags: ignore var %s\n", var->name);
@@ -619,7 +526,7 @@ static void Cvar_Reset_f (bool usage, int argc, char **argv)
 		return;
 	}
 	const char *mask = argv[1];
-	for (cvar_t *var = cvar_vars; var; var = var->next)
+	for (cvar_t *var = cvar_t::vars; var; var = var->next)
 	{
 		if (appMatchWildcard (var->name, mask, true) && !(var->flags & (CVAR_NOSET|CVAR_LATCH|CVAR_GAME_CREATED|CVAR_USER_CREATED))
 			&& (var->flags & CVAR_ARCHIVE) && var->resetString)
@@ -628,18 +535,11 @@ static void Cvar_Reset_f (bool usage, int argc, char **argv)
 }
 
 
-/*
-============
-Cvar_WriteVariables
-
-Appends lines containing "set variable value" for all variables
-with the archive flag set to true.
-============
-*/
+// Appends lines containing "set variable value" for all variables with the archive flag set to true.
 void Cvar_WriteVariables (COutputDevice *Out, int includeMask, int excludeMask, const char *header)
 {
 	bool logged = false;
-	for (cvar_t *var = cvar_vars; var; var = var->next)
+	for (cvar_t *var = cvar_t::vars; var; var = var->next)
 	{
 		if (!(var->flags & CVAR_ARCHIVE))
 			continue;
@@ -665,11 +565,7 @@ void Cvar_WriteVariables (COutputDevice *Out, int includeMask, int excludeMask, 
 	}
 }
 
-/*
-============
-Cvar_List_f
-============
-*/
+
 static void Cvar_List_f (bool usage, int argc, char **argv)
 {
 	if (argc > 2 || usage)
@@ -680,9 +576,8 @@ static void Cvar_List_f (bool usage, int argc, char **argv)
 
 	const char *mask = argc == 2 ? argv[1] : NULL;
 
-	int n, total;
-	n = total = 0;
-	for (cvar_t *var = cvar_vars; var; var = var->next)
+	int n = 0, total = 0;
+	for (cvar_t *var = cvar_t::vars; var; var = var->next)
 	{
 		total++;
 		if (mask && !appMatchWildcard (var->name, mask, true)) continue;
@@ -720,12 +615,12 @@ static void Cvar_List_f (bool usage, int argc, char **argv)
 }
 
 
-static const char *Cvar_BitInfo (unsigned bit)
+const char *Cvar_BitInfo (unsigned bit)
 {
 	char info[MAX_INFO_STRING];
 	info[0] = 0;
 
-	for (cvar_t *var = cvar_vars; var; var = var->next)
+	for (cvar_t *var = cvar_t::vars; var; var = var->next)
 	{
 		if (var->flags & bit)
 			Info_SetValueForKey (info, var->name, var->string);
@@ -733,36 +628,16 @@ static const char *Cvar_BitInfo (unsigned bit)
 	return va("%s", info);
 }
 
-// returns an info string containing all the CVAR_USERINFO cvars
-const char *Cvar_Userinfo (void)
-{
-	return Cvar_BitInfo (CVAR_USERINFO);
-}
 
-// returns an info string containing all the CVAR_SERVERINFO cvars
-const char *Cvar_Serverinfo (void)
-{
-	return Cvar_BitInfo (CVAR_SERVERINFO);
-}
-
-/*
-============
-Cvar_Add_f
-============
-*/
 static void Cvar_Add_f (bool usage, int argc, char **argv)
 {
-	cvar_t	*var;
-	char	*varName;
-	bool	wrap, force;							//?? rot[ate] -> wr[ap]
-
 	if (argc != 3 && argc != 5 && argc != 6 || usage)
 	{
 		appPrintf ("Usage: add <variable> <increment> [<min> <max> [w][f]]\n");
 		return;
 	}
 
-	wrap = force = false;
+	bool wrap = false, force = false;
 	if (argc == 6)
 	{
 		char *flags = argv[5];
@@ -783,8 +658,8 @@ static void Cvar_Add_f (bool usage, int argc, char **argv)
 		}
 	}
 
-	varName = argv[1];
-	var = Cvar_FindVar (varName);
+	const char *varName = argv[1];
+	cvar_t *var = Cvar_FindVar (varName);
 	if (!var)
 	{
 		if (force)
@@ -829,17 +704,14 @@ static void Cvar_Add_f (bool usage, int argc, char **argv)
 
 static void Cvar_Scale_f (bool usage, int argc, char **argv)
 {
-	cvar_t	*var;
-	char	*varName;
-
 	if (argc != 3 || usage)
 	{
 		appPrintf ("Usage: scale <variable> <scale>\n");
 		return;
 	}
 
-	varName = argv[1];
-	var = Cvar_FindVar (varName);
+	const char *varName = argv[1];
+	cvar_t *var = Cvar_FindVar (varName);
 	if (!var)
 	{
 		appWPrintf ("%s is not found\n", varName);
@@ -852,15 +724,13 @@ static void Cvar_Scale_f (bool usage, int argc, char **argv)
 
 static void Cvar_Toggle_f (bool usage, int argc, char **argv)
 {
-	cvar_t	*var;
-
 	if (argc != 2 || usage)
 	{
 		appPrintf ("Usage: toggle <variable>\n");
 		return;
 	}
 
-	var = Cvar_FindVar (argv[1]);
+	cvar_t *var = Cvar_FindVar (argv[1]);
 	if (!var || !var->value)
 		Cvar_Set2 (argv[1], "1", CVAR_USER_CREATED|CVAR_NODEFAULT, false);
 	else
@@ -870,8 +740,7 @@ static void Cvar_Toggle_f (bool usage, int argc, char **argv)
 
 static void Cvar_Cycle_f (bool usage, int argc, char **argv)
 {
-	cvar_t	*var;
-	int		i, numValues, firstValue;
+	int		i, firstValue;
 	bool	revert;
 
 	if (!stricmp (argv[1], "-r"))
@@ -884,13 +753,14 @@ static void Cvar_Cycle_f (bool usage, int argc, char **argv)
 		revert = false;
 		firstValue = 2;
 	}
-	numValues = argc - firstValue;
+	int numValues = argc - firstValue;
 	if (numValues < 2 || usage)
 	{
 		appPrintf ("Usage: cycle [-r] <variable> <value1> <value2> [<value3> ...]\n");
 		return;
 	}
 
+	cvar_t	*var;
 	if (!(var = Cvar_FindVar (argv[firstValue-1])))
 	{
 		Cvar_Set2 (argv[firstValue-1], argv[firstValue], CVAR_USER_CREATED|CVAR_NODEFAULT, false);
@@ -923,7 +793,7 @@ void Cvar_Cheats (bool enable)
 	cheats = enable;
 	if (enable) return;
 
-	for (cvar_t *var = cvar_vars; var; var = var->next)
+	for (cvar_t *var = cvar_t::vars; var; var = var->next)
 		if (var->flags & CVAR_CHEAT && !var->IsDefault())
 		{
 			Com_DPrintf ("fixing cheat cvar %s\n", var->name);
@@ -932,13 +802,6 @@ void Cvar_Cheats (bool enable)
 }
 
 
-/*
-============
-Cvar_Init
-
-Reads in all archived cvars
-============
-*/
 static void Cvar_Init ()
 {
 	cvar_chain = new CMemoryChain;

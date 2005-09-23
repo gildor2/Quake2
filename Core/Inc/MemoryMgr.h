@@ -27,6 +27,9 @@ CORE_API void appFree (void *ptr);
 // be 1st in a base class list (because "operator new" initializes object with this assumption)
 class CORE_API CMemoryChain
 {
+#if MEM_DEBUG
+	friend int BuildAllocatorsTable (void *info, int maxCount);
+#endif
 private:
 	CMemoryChain *next;
 	int		size;
@@ -45,9 +48,6 @@ public:
 	void *operator new (size_t size, int dataSize = MEM_CHUNK_SIZE);
 	// deleting chain
 	void operator delete (void *ptr);
-#if MEM_DEBUG
-	friend int BuildAllocatorsTable (void *info, int maxCount);
-#endif
 };
 
 

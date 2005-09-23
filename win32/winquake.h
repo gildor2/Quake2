@@ -13,8 +13,6 @@
 #define WM_MOUSEWHEEL             0x020A
 
 
-extern	HINSTANCE	global_hInstance;
-
 // Remove some MS defines from <windows.h>
 
 #undef SHIFT_PRESSED

@@ -1,6 +1,6 @@
 #define WIN32_LEAN_AND_MEAN			// exclude rarely-used services from windown headers
 #include <windows.h>
-#include "Core.h"
+#include "CorePrivate.h"
 
 
 static char		module[256];

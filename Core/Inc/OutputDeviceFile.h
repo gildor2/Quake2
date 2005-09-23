@@ -1,4 +1,5 @@
 
+// Will automatically create directory for file
 class COutputDeviceFile : public COutputDevice
 {
 protected:
@@ -39,6 +40,7 @@ public:
 	}
 	void Open (const char *fileName, bool erasePrevious = false)
 	{
+		appMakeDirectoryForFile (fileName);
 		log = fopen (fileName, erasePrevious ? "w" : "a");
 		if (!log)
 			appWPrintf ("Cannot write to file \"%s\"\n", fileName);

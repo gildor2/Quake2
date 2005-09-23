@@ -14,7 +14,7 @@
      ? projectionShadow           -- used internally in Q3 for blob shadow ONLY
      ? text0 .. text7             -- originally was used in Q3 for scoreboard; currently unused
 * 3) tessSize <value>             -- in Q3 used by q3map util; in Q2 used for surface tesselation
-  4) clampTime <value>
+? 4) clampTime <value>            -- unused in Q3?
 * 5) qer*                         -- ignore
 * 6) q3map*		          -- ignore (note: check "q3map_surfacelight" and other "q3map_*light*")
 * 7) surfaceParm	          -- ignore (use "nodraw" only)
@@ -103,15 +103,15 @@
      - oneMinusVertex
      - exactVertex
      - lightingDiffuse
-? 10) alphaGen
-     * wave <func> <base> <amp> <phase> <freq>
-     * const <value>              (value - float, 0..1)
-     * identity
-     * entity
-     * oneMinusEntity
-     * vertex
-     * oneMinusVertex
-     * lightingSpecular
+* 10) alphaGen
+     - wave <func> <base> <amp> <phase> <freq>
+     - const <value>              (value - float, 0..1)
+     - identity
+     - entity
+     - oneMinusEntity
+     - vertex
+     - oneMinusVertex
+     - lightingSpecular
      - portal <range>             if <range> is not specified --> error, <range> = 256
 * 11) texgen, tcGen
      - texture, base

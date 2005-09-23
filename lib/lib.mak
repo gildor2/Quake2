@@ -79,7 +79,7 @@ lib.lib : DIRS $(LIB)
 #	compiling source files
 #------------------------------------------------------------------------------
 
-OPTIONS = -W2 -O1 -Ob2 -D CORE_API=
+OPTIONS = -W2 -O1 -Ob2
 
 DEPENDS = \
 	../Core/Inc/Build.h \

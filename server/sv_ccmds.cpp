@@ -164,7 +164,7 @@ static void SV_WriteServerFile (bool autosave, const char *dir)
 
 	// write all CVAR_LATCH cvars
 	// these will be things like coop, skill, deathmatch, etc
-	for (cvar_t *var = cvar_vars; var ; var=var->next)
+	for (cvar_t *var = cvar_t::vars; var ; var=var->next)
 	{
 		if (!(var->flags & CVAR_LATCH))
 			continue;
@@ -779,7 +779,7 @@ static void SV_Heartbeat_f ()
 static void SV_Serverinfo_f ()
 {
 	appPrintf (S_GREEN"------ Server info settings ------\n");
-	Info_Print (Cvar_Serverinfo());
+	Info_Print (Cvar_BitInfo (CVAR_SERVERINFO));
 }
 
 
@@ -836,7 +836,7 @@ static void SV_ServerRecord_f (bool usage, int argc, char **argv)
 	MSG_WriteLong (&buf, svs.spawncount);
 	// 2 means server demo
 	MSG_WriteByte (&buf, 2);	// demos are always attract loops
-	MSG_WriteString (&buf, Cvar_VariableString ("gamedir"));
+	MSG_WriteString (&buf, FS_Gamedir());
 	MSG_WriteShort (&buf, -1);
 	// send full levelname
 	MSG_WriteString (&buf, sv.configstrings[CS_NAME]);

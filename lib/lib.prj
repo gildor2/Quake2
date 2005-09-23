@@ -100,7 +100,7 @@ sources(LIB) = \
 #	Engine support functions
 #------------------------------------------------------------------------------
 
-DEFINES = CORE_API=
+DEFINES =
 
 sources(LIB) = \
 	zlib.cpp

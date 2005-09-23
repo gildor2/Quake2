@@ -239,6 +239,20 @@ static qboolean G_AreasConnected (int area1, int area2)
 
 static cvar_t *G_Cvar_Get (const char *name, char *value, int flags)
 {
+	// fake cvars, not needed by engine, but may be needed by some mods
+	static cvar_t d_basedir = {
+		"basedir", "."
+	}, d_gamedir = {
+		"gamedir", d_gamedir.buf
+	};
+	if (!stricmp (name, "basedir"))
+		return &d_basedir;
+	else if (!stricmp (name, "gamedir"))
+	{
+		appStrncpyz (d_gamedir.buf, FS_Gamedir (), sizeof(d_gamedir.buf));
+		return &d_gamedir;
+	}
+	// get cvar
 	return Cvar_Get (name, value, flags|CVAR_GAME_CREATED|CVAR_NODEFAULT);
 }
 
@@ -300,7 +314,7 @@ static void *Z_TagMalloc (int size, int tag)
 	zhead_t *z = (zhead_t*) appMalloc (size);
 	z_count++;
 	z_bytes += size;
-	z->tag = tag;
+	z->tag  = tag;
 	z->size = size;
 
 	z->next = z_chain.next;

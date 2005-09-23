@@ -23,10 +23,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static cvar_t	*cl_nodelta;
 
-extern	unsigned	sys_frame_time;
+// used as time delta from previous input frame
+// UGLY!!
+extern unsigned sys_frame_time;
+static unsigned old_sys_frame_time;
+static unsigned frame_msec;
 
-static unsigned	frame_msec;
-static unsigned	old_sys_frame_time;
 static float accum_frame_time;
 
 /*
@@ -157,9 +159,7 @@ static float KeyState (kbutton_t &key)
 	}
 
 	float val = (float)msec / frame_msec;
-	val = bound(val, 0, 1);
-
-	return val;
+	return bound(val, 0, 1);
 }
 
 
@@ -411,9 +411,9 @@ void CL_SendCmd ()
 	// send a userinfo update if needed
 	// disallow sending userinfo notification while playing demos
 	// (when enabled, one of demo' player will be re-skinned as local player)
-	if (userinfo_modified && !cl.attractloop)
+	if ((cvar_t::modifiedFlags & CVAR_USERINFO) && !cl.attractloop)
 	{
-		userinfo_modified = false;
+		cvar_t::modifiedFlags &= ~CVAR_USERINFO;
 		// update model/gender (really, server will send clientinfo back, but we already
 		// updated it; and more: this will update "gender" when "gender_auto" is set;
 		// "gender" will be recomputed later (when server send info back) too, but this
@@ -421,7 +421,7 @@ void CL_SendCmd ()
 		CL_UpdatePlayerClientInfo ();
 		// send userinfo
 		MSG_WriteByte (&cls.netchan.message, clc_userinfo);
-		MSG_WriteString (&cls.netchan.message, Cvar_Userinfo());
+		MSG_WriteString (&cls.netchan.message, Cvar_BitInfo (CVAR_USERINFO));
 	}
 
 	sizebuf_t buf;

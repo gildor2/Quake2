@@ -428,7 +428,7 @@ static void CMod_LoadPlanes (dplane_t *data, int size)
 CMod_LoadLeafBrushes
 =================
 */
-static void CMod_LoadLeafBrushes (unsigned short *data, int size)
+inline void CMod_LoadLeafBrushes (unsigned short *data, int size)
 {
 	if (size < 1) Com_DropError ("Map with no leafbrushes");
 
@@ -1824,7 +1824,7 @@ void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &en
 }
 
 
-//?? use orientation_t
+//?? use CCoords instead of origin+axis
 void CM_TransformedBoxTrace (trace_t &trace, const CVec3 &start, const CVec3 &end, const CBox &bounds,
 	int headnode, int brushmask, const CVec3 &origin, const CAxis &axis)
 {

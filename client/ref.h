@@ -207,8 +207,7 @@ typedef	bool (*CreateDynRenderer_t) (const refImport_t *, refExport_t *);
 #ifndef STATIC_BUILD
 
 #define RENDERER_EXPORT		\
-	extern "C" DLL_EXPORT bool CreateRenderer(const refImport_t *, refExport_t *) \
-	bool CreateRenderer (const refImport_t *rimp, refExport_t *rexp) \
+	extern "C" DLL_EXPORT bool CreateRenderer (const refImport_t *rimp, refExport_t *rexp) \
 	{						\
 		if (rimp.struc_size != sizeof(refImport_t) || \
 			rexp->struc_size != sizeof(refExport_t)) \

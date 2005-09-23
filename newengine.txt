@@ -98,7 +98,7 @@
 - client rendering:
   - screen manager - top level, draw GUI and HUD; can draw 3D in GUI/HUD
   - primary world 3D scene manager - entities, sprites/fx, dlights ...; will call renderer->DrawScene()
-- NullBackend (builtin?) - empty functions; may be useful for on-fly switching to dedicated server and to back GUI
+- NullBackend (builtin?) - empty functions; may be useful for on-fly switching to dedicated server and back to GUI
 - BSP: class CBspNode -> class CBspLeaf (some additional fields)
 - remove (or relax usage) of surfaceBase_t.type
   - UpdateDynamicLightmap() -- for planar only?

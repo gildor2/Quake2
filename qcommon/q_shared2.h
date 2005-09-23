@@ -1,13 +1,6 @@
 #ifndef QSHARED_H
 #define QSHARED_H
 
-#ifndef _WIN32
-
-#define DLL_EXPORT
-#define NORETURN
-
-#endif
-
 
 // this is the define for determining if we have an asm version of a C function
 //?? used in client/snd_mix.cpp only

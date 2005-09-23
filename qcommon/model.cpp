@@ -200,7 +200,6 @@ static void ProcessQ2BspFile (bspfile_t *f)
 	for (i = 0; i < f->numFaces; i++)
 		if (f->faces[i].lightofs > f->lightDataSize)
 			f->faces[i].lightofs = -1;
-
 }
 
 
@@ -212,12 +211,12 @@ static void LoadQ2Submodels (bspfile_t *f, dmodel_t *data)
 	cmodel_t *out = f->models = new (f->extraChain) cmodel_t[f->numModels];
 	for (int i = 0; i < f->numModels; i++, data++, out++)
 	{
-		out->bounds = data->bounds;
-		out->radius = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
-		out->headnode = data->headnode;
-		out->flags = 0;
+		out->bounds    = data->bounds;
+		out->radius    = VectorDistance (out->bounds.mins, out->bounds.maxs) / 2;
+		out->headnode  = data->headnode;
+		out->flags     = 0;
 		out->firstface = data->firstface;
-		out->numfaces = data->numfaces;
+		out->numfaces  = data->numfaces;
 		// dmodel_t have unused field "origin"
 	}
 }
@@ -226,7 +225,7 @@ static void LoadQ2Submodels (bspfile_t *f, dmodel_t *data)
 static int CheckLump (int lump, void **ptr, int size)
 {
 	int length = header->lumps[lump].filelen;
-	int ofs = header->lumps[lump].fileofs;
+	int ofs    = header->lumps[lump].fileofs;
 
 	if (length % size)
 		Com_DropError ("LoadBSPFile: incorrect lump size");
@@ -255,7 +254,7 @@ void LoadQ2BspFile ()
 	bspfile.type = map_q2;
 
 #define C(num,field,type)	CheckLump(LUMP_##num, (void**)&bspfile.field, sizeof(type))
-	bspfile.lightDataSize =	C(LIGHTING, lighting, byte);
+	bspfile.lightDataSize = C(LIGHTING, lighting, byte);
 	bspfile.visDataSize =	C(VISIBILITY, visibility, byte);
 
 	bspfile.numVertexes =	C(VERTEXES, vertexes, dvertex_t);
@@ -342,8 +341,8 @@ bspfile_t *LoadBspFile (const char *filename, bool clientload, unsigned *checksu
 	}
 	// error
 	delete bspfile.file;
-	bspfile.name[0] = 0;
-	bspfile.file = NULL;
+	bspfile.name[0]  = 0;
+	bspfile.file     = NULL;
 	map_clientLoaded = false;
 	Com_DropError ("%s has a wrong BSP header\n", filename);
 	return NULL;		// make compiler happy
@@ -393,16 +392,14 @@ static entField_t *FindField (const char *name)
 }
 
 
-static void RemoveField (char *name)
+static void RemoveField (const char *name)
 {
-	entField_t *field;
-
-	if (field = FindField (name))
+	if (entField_t *field = FindField (name))
 		field->name[0] = 0;
 }
 
 
-static void AddField (char *name, char *value)
+static void AddField (const char *name, const char *value)
 {
 	if (numEntFields >= MAX_ENT_FIELDS) return;
 
@@ -412,7 +409,7 @@ static void AddField (char *name, char *value)
 }
 
 
-static void ErrMsg (char *str)
+static void ErrMsg (const char *str)
 {
 	haveErrors = true;
 	appWPrintf ("EntString error: %s\n", str);
@@ -421,14 +418,10 @@ static void ErrMsg (char *str)
 
 static bool ReadEntity (const char *&src)
 {
-	char	*tok;
-	entField_t *field;
-
 	numEntFields = 0;
-
 	if (!src) return false;
 
-	tok = COM_Parse (src);
+	const char *tok = COM_Parse (src);
 	if (!tok[0]) return false;
 
 	if (tok[0] != '{' || tok[1] != 0)
@@ -437,7 +430,7 @@ static bool ReadEntity (const char *&src)
 		return false;
 	}
 
-	field = entity;
+	entField_t *field = entity;
 	while (true)
 	{
 		tok = COM_Parse (src);
@@ -518,9 +511,7 @@ static void GetVector (const char *str, CVec3 &vec)
 
 static void ProcessEntityTarget ()
 {
-	entField_t *f;
-
-	if (f = FindField ("targetname"))
+	if (entField_t *f = FindField ("targetname"))
 	{
 		if (numTargets == MAX_TARGETS)
 		{
@@ -538,7 +529,7 @@ static void ProcessEntityTarget ()
 }
 
 
-static const CVec3& FindEntityTarget (char *name)
+static const CVec3& FindEntityTarget (const char *name)
 {
 	for (int i = 0; i < numTargets; i++)
 		if (!strcmp (targets[i].name, name))
@@ -557,17 +548,13 @@ static bool ProcessEntity ()
 	/*------------------ get some fields -------------------*/
 
 	// get classname
-	const char *classname;
+	const char *classname = "";
 	if (f = FindField ("classname"))
 		classname = f->value;
-	else
-		classname = "";
 	// get spawnflags
-	int spawnflags;
+	int spawnflags = 0;
 	if (f = FindField ("spawnflags"))
 		spawnflags = atoi (f->value);
-	else
-		spawnflags = 0;
 #if 0
 #define SPAWNFLAG_NOT_DEATHMATCH	0x800
 	if (Cvar_VariableInt("keep_sp") && (spawnflags & SPAWNFLAG_NOT_DEATHMATCH))//!!

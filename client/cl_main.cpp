@@ -231,7 +231,8 @@ static void CL_Record_f (bool usage, int argc, char **argv)
 	MSG_WriteLong (&buf, cls.newprotocol ? -PROTOCOL_VERSION : PROTOCOL_VERSION);
 	MSG_WriteLong (&buf, 0x10000 + cl.servercount);
 	MSG_WriteByte (&buf, 1);	// demos are always attract loops
-	MSG_WriteString (&buf, cl.gamedir);
+	MSG_WriteString (&buf, cl.gamedir);	//?? original q2: game will not be changed correctly from demos; current: not changed at all;
+										//?? so: can write ANY string here, and remove cl.gamedir[] at all
 	MSG_WriteShort (&buf, cl.playernum);
 
 	MSG_WriteString (&buf, cl.configstrings[CS_NAME]);
@@ -374,17 +375,17 @@ void CL_Drop (bool fromError)
 void CL_SendConnectPacket (void)
 {
 	int port = Cvar_VariableInt ("qport");
-	userinfo_modified = false;
+	cvar_t::modifiedFlags &= ~CVAR_USERINFO;
 
 	if (cl_extProtocol->integer)
 		Netchan_OutOfBandPrint (NS_CLIENT, cls.serverAddr, "connect "STR(PROTOCOL_VERSION)" %d %d \"%s\" "
 			NEW_PROTOCOL_ID" "STR(NEW_PROTOCOL_VERSION),
-			port, cls.challenge, Cvar_Userinfo ());
+			port, cls.challenge, Cvar_BitInfo (CVAR_USERINFO));
 	else
 	{
 		Com_DPrintf ("Extended protocol disabled\n");
 		Netchan_OutOfBandPrint (NS_CLIENT, cls.serverAddr, "connect "STR(PROTOCOL_VERSION)" %d %d \"%s\"",
-			port, cls.challenge, Cvar_Userinfo ());
+			port, cls.challenge, Cvar_BitInfo (CVAR_USERINFO));
 	}
 }
 
@@ -780,7 +781,7 @@ void CL_ConnectionlessPacket ()
 {
 	guard(CL_ConnectionlessPacket);
 
-	MSG_BeginReading (&net_message);
+	net_message.BeginReading ();
 	MSG_ReadLong (&net_message);	// skip the -1
 
 	const char *s = MSG_ReadString (&net_message);
@@ -871,10 +872,10 @@ void CL_ReadPackets (void)
 CL_Userinfo_f
 ==============
 */
-void CL_Userinfo_f (void)
+void CL_Userinfo_f ()
 {
 	appPrintf (S_GREEN"------- User info settings -------\n");
-	Info_Print (Cvar_Userinfo());
+	Info_Print (Cvar_BitInfo (CVAR_USERINFO));
 }
 
 /*
@@ -882,7 +883,7 @@ void CL_Userinfo_f (void)
 CL_RegisterSounds
 ======================
 */
-void CL_RegisterSounds (void)
+void CL_RegisterSounds ()
 {
 	S_BeginRegistration ();
 	CL_RegisterTEntSounds ();
@@ -915,19 +916,11 @@ void CL_Snd_Restart_f (void)
 
 //-----------------------------------------------------------------------------
 
-/*
-===============
-CL_WriteConfiguration
-
-Writes key bindings and archived cvars to config.cfg
-===============
-*/
 void CL_WriteConfiguration (const char *filename)
 {
 	if (cls.state == ca_uninitialized)
 		return;
 
-	appMakeDirectory (va("./%s", FS_Gamedir()));
 	COutputDeviceFile Out(va("./%s/%s", FS_Gamedir(), filename), true);
 	Out.NoColors = false;	// do not modify contents
 	if (!Out.IsOpened ()) return;

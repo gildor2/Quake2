@@ -4,7 +4,7 @@
 #include <mmsystem.h>				// for timeGetTime() stuff
 #pragma comment (lib, "winmm.lib")	// ...
 
-#include "Core.h"
+#include "CorePrivate.h"
 
 
 double GSecondsPerCycle;			// really, should use GCyclesPerSecond, but this will require divide operation every
@@ -17,6 +17,8 @@ static bool IsMMX, IsSSE, IsRDTSC, Is3DNow;
 char GMachineOS[64]  = "Unknown Windows variant";
 char GMachineCPU[64] = "Unknown 386/486 CPU";
 bool GIsWinNT, GIsWin2K;
+
+HINSTANCE hInstance;
 
 
 /*-----------------------------------------------------------------------------
@@ -312,7 +314,6 @@ const char *appPackage ()
 	if (s) Filename = s+1;
 	s = Filename.rchr ('.');
 	if (s) *s = 0;
-	appPrintf ("Package: %s\n", *Filename);
 	return Filename;
 }
 
@@ -365,9 +366,12 @@ void appDisplayError ()
 
 void appInitPlatform ()
 {
+	hInstance = GetModuleHandle (NULL);
+	// gather system information
 	CheckCpuModel ();
 	CheckCpuSpeed ();
 	DetectOs ();
+	// setup current directory
 	SetDefaultDirectory ();
 #if 0
 	// DEBUG: force mmsystem timing functions

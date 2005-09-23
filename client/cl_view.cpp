@@ -321,7 +321,7 @@ void V_InitRenderer ()
 	{
 		char name[MAX_QPATH];
 		strcpy (name, cl.configstrings[CS_MODELS+i]);
-		name[linewidth-1] = 0;					// never go beyond one line (for correct '\r' erasing)
+		name[GScreenWidth-1] = 0;				// never go beyond one line (for correct '\r' erasing)
 		if (name[0] != '*')
 			appPrintf ("%s\r", name);
 		SCR_UpdateScreen ();

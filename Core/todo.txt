@@ -5,6 +5,8 @@ SOURCE CODE
   - use LITTLE_ENDIAN/BIG_ENDIAN defines (not run-time detection !)
   - use inline overloaded functions: LITTLE(short|ushort|int|uint|float), BIG(...)
 - appStrcpy, strncpy, strcmp, stricmp -> CRT functions (when required, can make #define strcpy appStrcpy ...)
+- GCC: add macros for printf_format-like functions (better control on wrong parameters); check wrong TString<> usage
+  as "Str", not "*Str"
 
 COMPILER BUGS
 ~~~~~~~~~~~~~

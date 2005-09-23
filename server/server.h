@@ -236,12 +236,29 @@ void SV_Map (bool attractloop, const char *levelstring, bool loadgame);
 void SV_DemoCompleted (void);
 void SV_SendClientMessages (void);
 
+void SV_Multicast (const CVec3 &origin, multicast_t to, bool oldclients);
 // send message to all clients
-void SV_MulticastOld (const CVec3 &origin, multicast_t to);
+inline void SV_MulticastOld (const CVec3 &origin, multicast_t to)
+{
+	SV_Multicast (origin, to, true);	// send to old and new clients
+}
 // send message only to clients with a new protocol
-void SV_MulticastNew (const CVec3 &origin, multicast_t to);
-void SV_StartSoundOld (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs);
-void SV_StartSoundNew (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs);
+inline void SV_MulticastNew (const CVec3 &origin, multicast_t to)
+{
+	SV_Multicast (origin, to, false);	// send to new clients only
+}
+
+void SV_StartSound (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs, bool oldclients);
+inline void SV_StartSoundOld (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs)
+{
+	SV_StartSound (origin, entity, channel, soundindex, volume, attenuation, timeofs, true);
+}
+inline void SV_StartSoundNew (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs)
+{
+	SV_StartSound (origin, entity, channel, soundindex, volume, attenuation, timeofs, false);
+}
+
+
 void SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
 void SV_BroadcastPrintf (int level, const char *fmt, ...);
 void SV_BroadcastCommand (const char *fmt, ...);

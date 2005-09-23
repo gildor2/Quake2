@@ -1384,8 +1384,8 @@ struct startserverMenu_t : menuFramework_t
 		// load the list of map names
 		TString<64> Filename; Filename.sprintf ("./%s/maps.lst", FS_Gamedir());
 		CFile *File = GFileSystem->OpenFile (Filename, FS_OS);	// try OS file (quake fs OS file have lower priority, than pak)
-		if (!File) GFileSystem->OpenFile (Filename);			// open any file from this mod dir
-		if (!File) GFileSystem->OpenFile ("maps.lst");			// open any file from any dir
+		if (!File) File = GFileSystem->OpenFile (Filename);		// open any file from this mod dir
+		if (!File) File = GFileSystem->OpenFile ("maps.lst");	// open any file from any dir
 
 		if (!File)
 		{

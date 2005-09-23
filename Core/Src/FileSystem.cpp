@@ -1,12 +1,4 @@
-/*!! TODO:
-	- implement resource file system:
-	  ? may be, change resource format: cut unnecessary gzip headers from data
-		stream, add "length" field to start, do not require "end pointer", only
-		"start pointer"
-	  - mount resources to ".", not to "baseq2"
-*/
-
-#include "Core.h"
+#include "CorePrivate.h"
 #include "FileContainerOS.h"
 
 CFileSystem *GFileSystem;
@@ -57,8 +49,11 @@ void appMakeDirectoryForFile (const char *filename)
 {
 	TString<64> Name; Name.filename (filename);
 	char *s = Name.rchr ('/');
-	*s = 0;
-	appMakeDirectory (Name);
+	if (s)
+	{
+		*s = 0;
+		appMakeDirectory (Name);
+	}
 }
 
 
@@ -70,6 +65,19 @@ static void SetDefaultFlags (unsigned &flags)
 	// should be at least one type of containers
 	if (!(flags & (FS_OS|FS_PAK|FS_RES)))
 		flags |= FS_OS|FS_PAK|FS_RES;
+}
+
+
+static const char *GetColorOfFlags (unsigned flags)
+{
+	const char *color = S_WHITE;
+	if (flags & FS_DIR)
+		color = S_BLUE;
+	else if (flags & FS_PAK)
+		color = S_MAGENTA;
+	else if (flags & FS_RES)
+		color = S_RED;
+	return color;
 }
 
 
@@ -89,6 +97,14 @@ CFile *appOpenFile (const char *filename)
 }
 
 
+#ifndef LITTLE_ENDIAN
+int CFile::ByteOrderRead (void *Buffer, int Size)
+{
+	for (int i = Size - 1; i >= 0; i--)
+		Read ((byte*)Buffer+i, 1);
+}
+#endif
+
 // NOTE: we using "type b = 0" -- initialized value before read, in a case
 //  of read fault (end of file etc) - to return something concrete
 byte CFile::ReadByte ()
@@ -98,50 +114,25 @@ byte CFile::ReadByte ()
 	return b;
 }
 
-//!! WARNING: !LITTLE_ENDIAN code path is not tested
 short CFile::ReadShort ()
 {
-#ifdef LITTLE_ENDIAN
 	short b = 0;
-	Read (&b, 2);
+	ByteOrderRead (&b, 2);
 	return b;
-#else
-	byte b[2];
-	Read (&b, 2);
-	return b[0] | (b[1]<<8);
-#endif
 }
 
 int CFile::ReadInt ()
 {
-#ifdef LITTLE_ENDIAN
 	int b = 0;
-	Read (&b, 4);
+	ByteOrderRead (&b, 4);
 	return b;
-#else
-	byte b[4];
-	Read (&b, 4);
-	return b[0] | (b[1]<<8) | (b[2]<<16) | (b[3]<<24);
-#endif
 }
 
 float CFile::ReadFloat ()
 {
-#ifdef LITTLE_ENDIAN
 	float f = 0;
-	Read (&f, 4);
+	ByteOrderRead (&f, 4);
 	return f;
-#else
-	union {
-		float	f;
-		byte	b[4];
-	} f;
-	f.f = 0;
-	Read (&f, 4);
-	Exchange (f.b[0], f.b[3]);
-	Exchange (f.b[1], f.b[2]);
-	return f.f;
-#endif
 }
 
 void CFile::ReadString (char *buf, int size)
@@ -257,7 +248,7 @@ void CFileSystem::Mount (const char *mask, const char *point)
 	}
 
 	CFileList *list = new CFileList;
-	appListDirectoryOS (Path, *list, FS_FILE|FS_DIR|FS_PATH_NAMES);
+	appListDirectoryOS (Path, *list, FS_FILE|FS_DIR);
 	if (!*list)
 	{
 		appWPrintf ("mount: nothing in \"%s\"\n", *Path);
@@ -320,6 +311,17 @@ void CFileSystem::Umount (const char *mask)
 		appPrintf ("No mount points match \"%s\"\n", mask);
 	else
 		appPrintf ("Unmounted %d containers\n", n);
+}
+
+
+bool CFileSystem::IsFileMounted (const char *filename)
+{
+	TString<256> Filename; Filename.filename (filename);
+	const char *name = SkipRootDir (Filename);
+	for (TListIterator<CFileContainer> it = mounts; it; ++it)
+		if (appMatchWildcard (SkipRootDir (it->name), name))
+			return true;
+	return false;
 }
 
 
@@ -467,19 +469,19 @@ static void cMount (bool usage, int argc, char **argv)
 	{
 		// list mounts
 		int n = 0;
-		appPrintf ("----L-type-nfiles-mount point------name--------\n");
+		appPrintf ("----L-type-nfiles-mount point----name--------\n");
 		for (TListIterator<CFileContainer> it = GFileSystem->mounts; it; ++it)
 		{
 			//?? may be, skip hidden mounts (name[0] == '.')
 			n++;
-			appPrintf ("%-3d %c %-4s %-6d %-15s  %s\n", n,
-				it->locked ? '+' : ' ', it->GetType(), it->numFiles, *it->MountPoint, it->name);
+			appPrintf ("%-3d %c %-4s %-6d %-13s  %s%s\n", n,
+				it->locked ? '+' : ' ', it->GetType(), it->numFiles, *it->MountPoint, GetColorOfFlags (it->containFlags), it->name);
 		}
 		return;
 	}
 	// add mount
 	//?? TODO:
-	//?? - check "already mounted"
+	//?? - check "already mounted" - GFileSystem::IsFileMounted()
 	//?? - allow q2's "mount pak0[.pak]" instead of "mount baseq2/pak0.pak"
 	const char *point = argc > 2 ? argv[2] : NULL;
 	GFileSystem->Mount (argv[1], point);
@@ -535,6 +537,7 @@ static void cCat (bool usage, int argc, char **argv)
 	appPrintf ("-------------------------------------------\n");
 }
 
+
 static void cLs (bool usage, int argc, char **argv)
 {
 	if (usage || argc > 2)
@@ -542,7 +545,6 @@ static void cLs (bool usage, int argc, char **argv)
 		appPrintf ("Usage: ls [path/][mask]\n");
 		return;
 	}
-	//!! reformat, colorize
 	TString<256> Mask;
 	if (argc > 1)
 	{
@@ -552,8 +554,66 @@ static void cLs (bool usage, int argc, char **argv)
 	else
 		Mask = "*";
 	CFileList *list = GFileSystem->List (Mask);
+
+#if 0
+	// unformatted, non-colorized version
 	for (TListIterator<CFileItem> item = *list; item; ++item)
 		appPrintf ("[%c%c] %s\n", item->flags & FS_FILE ? 'f' : '-', item->flags & FS_DIR ? 'd' : '-', item->name);
+#else
+#define MAX_LS_COUNT	(8*1024)
+#define MAX_LS_COLUMNS	20
+#define LS_SPACING		2
+	// count number of items + cache pointers/lens
+	CFileItem *items[MAX_LS_COUNT];
+	int lens[MAX_LS_COUNT];
+    int numItems;
+    TListIterator<CFileItem> it = *list;
+	for (numItems = 0; it && numItems < MAX_LS_COUNT; ++it, numItems++)
+	{
+		items[numItems] = *it;
+		lens[numItems]  = strlen (it->name);
+	}
+
+	// compute column count
+	int colCount;
+	int colLens[MAX_LS_COLUMNS];
+	int height;
+	for (colCount = MAX_LS_COLUMNS; colCount > 1; colCount--)
+	{
+		height = (numItems + (colCount-1)) / colCount;
+
+		int idx = 0;
+		int len = 0;
+		for (int c = 0; c < colCount && len < GScreenWidth; c++)
+		{
+			int maxLen = 0;
+			for (int line = 0; line < height && idx < numItems; line++, idx++)
+				if (lens[idx] > maxLen) maxLen = lens[idx];
+			maxLen += LS_SPACING;
+			colLens[c] = maxLen;
+			len += maxLen;
+		}
+		if (len < GScreenWidth) break;	// found best column count
+	}
+	// output list
+	for (int line = 0; line < height; line++)
+	{
+		int idx2 = line;
+		for (int c = 0; c < colCount && idx2 < numItems; c++, idx2 += height)
+		{
+			// build "%s%-NNs"
+			TString<256> Fmt; Fmt.sprintf ("%%s%%-%ds", colLens[c]);
+			// choose color
+			CFileItem *item = items[idx2];
+			//?? may additionally colorize mounted dirs/files (use GFileSystem->IsFileMounted()), but
+			//??   problem: CQuakeFileSystem::List() will list relative to game dir, and CFileSystem::List()
+			//??   - relative to "."; require FS_PATH_NAMES option for List()
+			// print
+			appPrintf (Fmt, GetColorOfFlags (item->flags), item->name);
+		}
+		appPrintf ("\n");
+	}
+#endif
 	delete list;
 }
 

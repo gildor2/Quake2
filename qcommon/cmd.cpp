@@ -619,11 +619,6 @@ bool ExecuteCommand (const char *str, const CSimpleCommand *CmdList, int numComm
 }
 
 
-/*
-============
-Cmd_List_f
-============
-*/
 static void Cmd_List_f (bool usage, int argc, char **argv)
 {
 	if (argc > 2 || usage)
@@ -647,6 +642,7 @@ static void Cmd_List_f (bool usage, int argc, char **argv)
 	}
 	appPrintf ("Displayed %d/%d commands\n", n, total);
 }
+
 
 static void Cmd_Init ()
 {

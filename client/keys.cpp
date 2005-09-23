@@ -364,7 +364,7 @@ static char *Do_CompleteCommand (char *partial)
 			if (*arg1s)
 				return NULL;				// arg is not empty
 
-			for (cvar_t *cvar = cvar_vars; cvar; cvar = cvar->next)
+			for (cvar_t *cvar = cvar_t::vars; cvar; cvar = cvar->next)
 				if (!stricmp (cvar->name, complete_command))
 				{
 					strcpy (completed_name, partial); // "varname "
@@ -425,7 +425,7 @@ static char *Do_CompleteCommand (char *partial)
 			TryComplete (cmd->name, display, 'c');
 		for (TListIterator<CAlias> a = AliasList; a; ++a)
 			TryComplete (a->name, display, 'a');
-		for (cvar_t *var = cvar_vars; var; var = var->next)
+		for (cvar_t *var = cvar_t::vars; var; var = var->next)
 			TryComplete (var->name, display, 'v');
 
 		if (!completed_count) return NULL; // not completed

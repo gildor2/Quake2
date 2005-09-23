@@ -1,4 +1,4 @@
-#include "Core.h"
+#include "CorePrivate.h"
 
 
 CTextRec *CTextContainer::Add (const char *text)

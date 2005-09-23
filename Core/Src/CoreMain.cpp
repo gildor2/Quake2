@@ -1,14 +1,16 @@
-#include "Core.h"
-#include "CoreLocal.h"
 #include <time.h>						// for logging time funcs
+#include "CorePrivate.h"
+
+
+int GScreenWidth = 80;					//?? where to place
 
 
 #if 0	//!!!
-char	GVersion[512];
+TString<512>	GVersion;
 
 static void Cmd_Version ()
 {
-	appPrintf ("%s\n", GVersion);
+	appPrintf ("%s\n", *GVersion);
 }
 #endif
 
@@ -40,7 +42,7 @@ void appInit (/*?? const char *_cmdLine */)
 	appInitError ();
 	appLoadDebugSymbols ();
 
-//!!	appStrcpy (GVersion, PkgVersion);
+//!!	GVersion = PkgVersion;
 //!!	RegisterCommand ("version", Cmd_Version);
 	RegisterCommand ("quit", Cmd_Quit);
 

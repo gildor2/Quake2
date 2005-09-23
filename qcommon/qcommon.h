@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //-------- declarations, required for ref_xxxx.h --------------
 
-// forward declarations
+// forward declarations; should remove!!
 struct cvar_t;
 struct cvarInfo_t;
 struct trace_t;
@@ -59,39 +59,26 @@ struct cplane_t;
 //--------------- some constants ------------------------------
 
 // version number
-
 #define	VERSION			4.14
 
 #ifdef _WIN32
 
 #define BUILDSTRING		"Win32"
-
 #ifdef _M_IX86
-#define	CPUSTRING		"x86"
+#	define	CPUSTRING	"x86"
 #elif defined _M_ALPHA
-#define	CPUSTRING		"AXP"
+#	define	CPUSTRING	"AXP"
 #endif
 
 #elif defined __linux__
 
 #define BUILDSTRING		"Linux"
-
 #ifdef __i386__
-#define CPUSTRING		"i386"
+#	define CPUSTRING	"i386"
 #elif defined __alpha__
-#define CPUSTRING		"axp"
+#	define CPUSTRING	"axp"
 #else
-#define CPUSTRING		"Unknown"
-#endif
-
-#elif defined __sun__
-
-#define BUILDSTRING		"Solaris"
-
-#ifdef __i386__
-#define CPUSTRING		"i386"
-#else
-#define CPUSTRING		"sparc"
+#	define CPUSTRING	"Unknown"
 #endif
 
 #else	// unknown platform
@@ -99,7 +86,7 @@ struct cplane_t;
 #define BUILDSTRING		"Unknown"
 #define	CPUSTRING		"Unknown"
 
-#endif
+#endif	// platform
 
 
 #define VERSION_STR		STR(VERSION) " " CPUSTRING " " __DATE__ " " BUILDSTRING
@@ -177,6 +164,10 @@ public:
 	{
 		Write (from.data, from.cursize);
 	}
+	inline void BeginReading ()
+	{
+		readcount = 0;
+	}
 };
 
 void	MSG_WriteChar (sizebuf_t *sb, int c);
@@ -191,23 +182,15 @@ void	MSG_WriteAngle16 (sizebuf_t *sb, float f);
 void	MSG_WriteDir (sizebuf_t *sb, const CVec3 &vector);
 
 
-inline void MSG_BeginReading (sizebuf_t *msg)
-{
-	msg->readcount = 0;
-}
-
-
 int		MSG_ReadChar (sizebuf_t *sb);
 int		MSG_ReadByte (sizebuf_t *sb);
 int		MSG_ReadShort (sizebuf_t *sb);
 int		MSG_ReadLong (sizebuf_t *sb);
 float	MSG_ReadFloat (sizebuf_t *sb);
 char	*MSG_ReadString (sizebuf_t *sb);
-
 void	MSG_ReadPos (sizebuf_t *sb, CVec3 &pos);
 float	MSG_ReadAngle (sizebuf_t *sb);
 float	MSG_ReadAngle16 (sizebuf_t *sb);
-
 void	MSG_ReadDir (sizebuf_t *sb, CVec3 &vector);
 
 void	MSG_ReadData (sizebuf_t *sb, void *buffer, int size);
@@ -282,8 +265,6 @@ typedef enum {
 	ss_demo,
 	ss_pic
 } server_state_t;
-// some qc commands are only valid before the server has finished
-// initializing (precache commands, static sounds / objects, etc)
 
 
 // protocol.h -- communications protocols
@@ -292,15 +273,14 @@ typedef enum {
 
 //=========================================
 
-#define	PORT_MASTER	27900
-#define	PORT_CLIENT	27901		//?? unused
-#define	PORT_SERVER	27910
+#define	PORT_MASTER			27900
+#define	PORT_CLIENT			27901		//?? unused
+#define	PORT_SERVER			27910
 
 //=========================================
 
-#define	UPDATE_BACKUP	16	// copies of entity_state_t to keep buffered
-							// must be power of two
-#define	UPDATE_MASK		(UPDATE_BACKUP-1)
+#define	UPDATE_BACKUP		16			// copies of entity_state_t to keep buffered; must be power of two
+#define	UPDATE_MASK			(UPDATE_BACKUP-1)
 
 
 
@@ -408,27 +388,11 @@ public:
 extern TList<CCommand> CmdList;
 
 
-//--bool	RegisterCommand (char *cmd_name, void (*func)(void), int flags);
-// called by the init functions of other parts of the program to
-// register commands and functions to call for them.
-// The cmd_name is referenced later, so it should not be in temp memory
-// if function is NULL, the command will be forwarded to the server
-// as a clc_stringcmd instead of executed locally
-//--void	UnregisterCommand (const char *cmd_name);
-
-// The functions that execute commands get their parameters with these
-// functions. Cmd_Argv () will return an empty string, not a NULL
-// if arg > argc, so string operations are always safe.
-
-//bool	Cmd_ExecuteString (const char *text);
-// Parses a single line of text into arguments and tries to execute it
-// as if it was typed at the console; if command is unknown, will return false
-
-void	Cmd_ForwardToServer (int argc, char **argv);
 // adds the current command line as a clc_stringcmd to the client message.
 // things like godmode, noclip, etc, are commands directed to the server,
 // so when they are typed in at the console, they will need to be forwarded.
 // NOTE: implemented in client
+void	Cmd_ForwardToServer (int argc, char **argv);
 
 void	Cmd_WriteAliases (COutputDevice *Out);
 
@@ -443,7 +407,7 @@ void	Cmd_WriteAliases (COutputDevice *Out);
 #define	CVAR_NOSET			0x00008	// don't allow change from console at all, but can be set from the command line
 #define	CVAR_LATCH			0x00010	// save changes until server restart
 // added since 4.00
-#define	CVAR_USER_CREATED	0x00020	// created by a set command
+#define	CVAR_USER_CREATED	0x00020	// created by a "set" command -- this cvar have no pointers (cvar_t*) from any code
 #define CVAR_GAME_CREATED	0x00040	// created from game library
 #define CVAR_CHEAT			0x00080	// will be reset to its default value when cheat protection active
 #define CVAR_CMDLINE		0x00100	// variable was set from command line
@@ -491,6 +455,11 @@ struct cvar_t
 //	{
 //		Cvar_FullSet (this, value, flags);
 //	}
+	// statics
+	static cvar_t	*vars;
+	static int		initialized;
+	// this is set each time a cvar variable is changed (or'ed with cvar flags)
+	static unsigned modifiedFlags;
 };
 
 
@@ -515,9 +484,6 @@ struct cvarInfo_t
 #define CVAR_NULL(name,value,flags)			CVAR_FULL(NULL,  #name, #value, flags)	// register cvar without saving pointer
 #define CVAR_END						};
 
-
-extern cvar_t *cvar_vars;
-extern int	cvar_initialized;
 
 //--cvar_t *Cvar_Get (char *var_name, char *value, int flags);
 // creates the variable if it doesn't exist, or returns the existing one
@@ -553,15 +519,7 @@ void	Cvar_WriteVariables (COutputDevice *Out, int includeMask, int excludeMask, 
 
 void	Cvar_Cheats (bool enable);
 
-const char *Cvar_Userinfo (void);
-// returns an info string containing all the CVAR_USERINFO cvars
-
-const char *Cvar_Serverinfo (void);
-// returns an info string containing all the CVAR_SERVERINFO cvars
-
-extern bool userinfo_modified;		//?? should change this to not track CVAR_USERINFO modification
-// this is set each time a CVAR_USERINFO variable is changed
-// so that the client knows to send it to the server
+const char *Cvar_BitInfo (unsigned bit);
 
 
 /*-----------------------------------------------------------------------------
@@ -716,17 +674,13 @@ void	Pmove (pmove_t *pmove);
 void	InitFileSystem ();
 void	FS_Tick ();
 
-bool	FS_SetGamedir (const char *dir);
 const char *FS_NextPath (const char *prevpath);
-void	FS_LoadGameConfig ();
 
 
 /*------------- Miscellaneous -----------------*/
 
 // debugging
 void DebugPrintf (const char *fmt, ...);
-
-extern	int linewidth;					// for functions, which wants to perform advanced output formatting
 
 server_state_t Com_ServerState ();		// this should have just been a cvar...
 void	Com_SetServerState (server_state_t state);
@@ -821,11 +775,11 @@ void	SV_Frame (float msec);
 
 #define	CONTENTS_SOLID			0x00000001	// an eye is never valid in a solid
 #define	CONTENTS_WINDOW			0x00000002	// translucent, but not watery
-#define	CONTENTS_AUX			0x00000004
+#define	CONTENTS_AUX			0x00000004	// for design-time only
 #define	CONTENTS_LAVA			0x00000008
 #define	CONTENTS_SLIME			0x00000010
 #define	CONTENTS_WATER			0x00000020
-#define	CONTENTS_MIST			0x00000040
+#define	CONTENTS_MIST			0x00000040	// for design-time only
 #define CONTENTS_ALPHA			0x00000080	// from Kingping - can shoot through this
 
 // remaining contents are non-visible, and don't eat brushes

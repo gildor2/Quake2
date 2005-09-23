@@ -26,8 +26,6 @@ static server_state_t server_state;
 // com_speeds times
 unsigned time_before_game, time_after_game, time_before_ref, time_after_ref;
 
-int		linewidth = 80;
-
 
 #ifndef NO_DEVELOPER
 /*
@@ -269,7 +267,7 @@ void Info_SetValueForKey (char *s, const char *key, const char *value)
 		return;
 	}
 	Info_RemoveKey (s, key);
-	if (!value || !value[0]) return;
+	if (!value || !value[0]) return;	// will not add variable with empty value, for example, when game=""
 
 	char newi[MAX_INFO_STRING];
 	int size = appSprintf (ARRAY_ARG(newi), "\\%s\\%s", key, value);
@@ -494,15 +492,14 @@ CVAR_END
 
 	InitFileSystem ();
 
-	FS_LoadGameConfig ();
 	Cbuf_Execute ();
-	cvar_initialized = 1;			// config executed -- allow cmdline cvars to be modified
+	cvar_t::initialized = 1;		// config executed -- allow cmdline cvars to be modified
 
 	if (DEDICATED)
 	{
 		// require this for dedicated server, when launching common executable (!DEDICATED_ONLY)
 		// (executed Con_Print() -> Con_CheckResize() function):
-		linewidth = 80;
+		GScreenWidth = 80;
 	}
 
 	NET_Init ();
@@ -530,7 +527,7 @@ CVAR_END
 		}
 	}
 
-	cvar_initialized = 2;
+	cvar_t::initialized = 2;
 	PushCmdline ();
 	appPrintf (S_GREEN"\n====== " APPNAME " Initialized ======\n\n");
 

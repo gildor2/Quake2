@@ -509,7 +509,7 @@ FUNC(alphaGen)
 		{"vertex",		ALPHAGEN_VERTEX	},
 		{"oneMinusVertex", ALPHAGEN_ONE_MINUS_VERTEX},
 		{"lightingSpecular", ALPHAGEN_LIGHTING_SPECULAR},
-//		{"portal",		ALPHAGEN_PORTAL},	//!! implement
+		{"portal",		ALPHAGEN_PORTAL},
 		{"dot",			ALPHAGEN_DOT	},
 		{"oneMinusDot",	ALPHAGEN_ONE_MINUS_DOT}
 	};
@@ -538,6 +538,11 @@ FUNC(alphaGen)
 		break;
 	case ALPHAGEN_CONST:
 		s.rgbaConst.c[3] = appRound (atof (argv[2]) * 255);
+		break;
+	case ALPHAGEN_PORTAL:
+		s.alphaPortalRange = atof (argv[2]);
+		if (!s.alphaPortalRange)
+			s.alphaPortalRange = 256;
 		break;
 	}
 }

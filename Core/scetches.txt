@@ -1,16 +1,11 @@
 FILE SYSTEM
 ~~~~~~~~~~~
-? special syntax: "pakname:path/filename.ext" -- ability to access explicit pak file
-   ?? need to distinguish files, which are REPLACED with another paks, or which will be added to list with unique name
-      (example: extensions to shader scripts ?) -- may be, unneeded, because we can make files with more complex names
-      ("path/pakname_name" etc)
+? special syntax: "container:path/filename.ext" -- ability to access explicit file_container/file
 - CFileList *ListFiles(pattern,flags)
    - flags: PAK,OS,FILES,DIRS  (PAK|OS <> 0 && DIRS|FILES <> 0 ! will return empty list otherwise)
-      ? NO_PREV_MODS     - list current mod only (ignored for basedir)
-      ? BASE_MOD         - list basedir only
-      - FULL_NAMES       - path + name  (PATH_NAMES ??)
-      ? RECURSE_SUBDIRS  - look in subdirectories; +special case for !FULL_NAMES - keep relative path
-      ?? KEEP_DUPLICATES - name = "pak:path/name" (incompatible with !FULL_NAMES)
+      - FS_PATH_NAMES   - path + name
+      ? RECURSE_SUBDIRS - look in subdirectories; +special case for !FS_PATH_NAMES - keep relative path
+      ? KEEP_DUPLICATES - name = "pak:path/name" (incompatible with !FS_PATH_NAMES), or field "CFileContainer *Owner"
 - DeleteDirectory():
    ? with files
    ? should process directory trees
@@ -43,13 +38,6 @@ Info per package:
   remove kernel::DisableThreadLibraryCalls() import
 - may be, decalre own malloc() for dll == appMalloc() (only for non-core packages + VisualC !!!) - will remove
   malloc() call (useful only for static link of package dll with msvcrt.lib)
-- IMPLEMENT_PACKAGE() with static pkg should create dummy class with constructor ...
-   ? provide importTable[] -- name+func to replace GetProcAddress() with dynamic->static build
-   - for static build: use namespaces for package-local variables (GPackage, may be other ...); example for Core:
-     - GPackage -> Core.cpp :: namespace Core
-     - all cpp files in Core: include "CoreLocal.h" instead of "Core.h"
-     - in "CoreLocal.h": declaration of namespace Core + use namespace Core
-     ? remove GPackage at all (useless ?)
 
 SUBSYSTEMS
 ~~~~~~~~~~
@@ -100,7 +88,6 @@ COMMON
 ~~~~~~
 - extend TList with item count (different base class + new InsertItem(), change constructor)
 ? console window: set title to appPackage()
-- COutputDeviceXxxx.h -> Core.h + CORE_API; rename to COutputStream ?
 ? iterators: make template, not based on any class (base is not needed?!), and iterate any class, containing field "next",
   pointed to the same data type
 - wildcards for filenames: make something like "path/filename.#pcx,jpg,tga" to work - find all images, started with "filename"
@@ -108,6 +95,8 @@ COMMON
     separately: "pcx,jpg,tga" with simple adding to filename
   - '#' - place, when wildcard started; currently, started after last '/' for filenames -- really, started from start of string
   - may be, make following form (bash-like): "path/filename.{pcx,jpg,tga}"
+- option "#define MAX_DEBUG 1": use GUARD_SLOW, win32 ebp frames etc.; allow all debug #define's
+- option "#define NO_DEBUG 1" (+wrap current NO_DEVELOPER): exclude debugging code to reduce file size
 
 
 MEMORY

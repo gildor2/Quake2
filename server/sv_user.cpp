@@ -56,14 +56,11 @@ static void SV_New_f (int argc, char **argv)
 
 	// serverdata needs to go over for all types of servers
 	// to make sure the protocol is right, and to set the gamedir
-	const char *gamedir = Cvar_VariableString ("gamedir");
-
-	// send the serverdata
 	MSG_WriteByte (&sv_client->netchan.message, svc_serverdata);
 	MSG_WriteLong (&sv_client->netchan.message, PROTOCOL_VERSION);
 	MSG_WriteLong (&sv_client->netchan.message, svs.spawncount);
 	MSG_WriteByte (&sv_client->netchan.message, sv.attractloop);
-	MSG_WriteString (&sv_client->netchan.message, gamedir);
+	MSG_WriteString (&sv_client->netchan.message, FS_Gamedir());
 
 	int playernum;
 	if (sv.state == ss_cinematic || sv.state == ss_pic)
@@ -334,7 +331,7 @@ static void SV_Disconnect_f (int argc, char **argv)
 // Dumps the serverinfo info string
 static void SV_ShowServerinfo_f (int argc, char **argv)
 {
-	Info_Print (Cvar_Serverinfo ());
+	Info_Print (Cvar_BitInfo (CVAR_SERVERINFO));
 }
 
 

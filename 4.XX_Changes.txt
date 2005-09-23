@@ -300,13 +300,15 @@ Shader system
     alias -rj "-attack;-moveup;hand=$_hand;centerview"
 
 - removed "basedir" cvar: game always reads data from main executable-related path
+- removed "gamedir" cvar: not used
+- but: have fake "basedir","gamedir" cvars for compatibility with some mods
 
 4. MISFEATURES
 ~~~~~~~~~~~~~~
 - no negative (black) dlights in renderer (can be emulated with multiplicative dlights ?)
 - no support for stereo graphics
 - removed IPX protocol support (DOS rudiment)
-- removed file system "links" (not functional in PKAs anyway, and not used by games)
+- no file system "links" (not functional in PAKs anyway, and not used by games)
 
 5. API (internals)
 ~~~~~~~~~~~~~~~~~~

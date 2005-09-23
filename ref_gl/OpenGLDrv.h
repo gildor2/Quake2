@@ -117,8 +117,7 @@ extern const unsigned colorTable[];		// C_XXX->rgba; used for DrawChar() and Dra
  * - PVS: can perform non-alpha-water-vis-bug avoiding in client (send combined vis)
  */
 
-//?? "speeds" -> "stats"
-struct drawSpeeds_t
+struct FDrawStats
 {
 	// geometry complexity
 	int		visLeafs, frustLeafs;	//?? frustLeafs -> ~cullLeafs
@@ -132,13 +131,18 @@ struct drawSpeeds_t
 	// OpenGL statistics
 	int		numBinds, numUploads, numFlushes;
 	// pefromance measuring (appCycles())
-	unsigned beginFrame;		// front-end
-	unsigned beginSort;			// sorting
-	unsigned begin3D, end3D;	// back-end (3D)
+	unsigned frontend;
+	unsigned occlTest;
+	unsigned flareTrace;
+	unsigned backend;
+	unsigned sort;				// sorting surfaces
+	unsigned entLight;
+	unsigned meshLight;
+	unsigned dynLightmap;
 };
 
-
-extern drawSpeeds_t gl_speeds;
+//?? "speeds" -> "stats"
+extern FDrawStats gl_speeds;
 
 
 /*----------- gl_text.cpp -------------------*/

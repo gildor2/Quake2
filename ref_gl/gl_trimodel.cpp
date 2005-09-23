@@ -463,25 +463,25 @@ md3Model_t *LoadMd2 (const char *name, byte *buf, unsigned len)
 
 	/*-------- fill md3 structure --------*/
 	md3->numSurfaces = 1;
-	md3->numFrames = hdr->numFrames;
-	md3->frames = (md3Frame_t*)(md3 + 1);
+	md3->numFrames   = hdr->numFrames;
+	md3->frames      = (md3Frame_t*)(md3 + 1);
 
 	md3->surf = surf = (surfaceMd3_t*)(md3->frames + md3->numFrames);
 	CALL_CONSTRUCTOR(surf);
 
 	/*-------- fill surf structure -------*/
-	surf->shader    = gl_defaultShader;		// any, ignored
-	surf->Name      = "single_surf";		// any name
+	surf->shader     = gl_defaultShader;	// any, ignored
+	surf->Name       = "single_surf";		// any name
 	// counts
-	surf->numFrames = hdr->numFrames;
-	surf->numVerts  = numVerts;
-	surf->numTris   = numTris;
+	surf->numFrames  = hdr->numFrames;
+	surf->numVerts   = numVerts;
+	surf->numTris    = numTris;
 	surf->numShaders = hdr->numSkins;
 	// pointers
-	surf->texCoords = (float*)(surf + 1);
-	surf->indexes   = (int*)(surf->texCoords + 2*surf->numVerts);
-	surf->verts     = (vertexMd3_t*)(surf->indexes + 3*surf->numTris);
-	surf->shaders   = (shader_t**)(surf->verts + surf->numVerts*surf->numFrames);
+	surf->texCoords  = (float*)(surf + 1);
+	surf->indexes    = (int*)(surf->texCoords + 2*surf->numVerts);
+	surf->verts      = (vertexMd3_t*)(surf->indexes + 3*surf->numTris);
+	surf->shaders    = (shader_t**)(surf->verts + surf->numVerts*surf->numFrames);
 
 START_PROFILE(..Md2::Parse)
 	/*--- build texcoords and indexes ----*/
@@ -545,8 +545,8 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 	}
 
 	// all-surface counts (total sums)
-	int tNumVerts = 0;
-	int tNumTris = 0;
+	int tNumVerts   = 0;
+	int tNumTris    = 0;
 	int tNumShaders = 0;
 	ds = (dMd3Surface_t*)(buf + hdr->ofsSurfaces);
 	for (i = 0; i < hdr->numSurfaces; i++)
@@ -558,8 +558,8 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 			return NULL;
 		}
 		// counts
-		tNumVerts += ds->numVerts;
-		tNumTris += ds->numTriangles;
+		tNumVerts   += ds->numVerts;
+		tNumTris    += ds->numTriangles;
 		tNumShaders += ds->numShaders;
 		// next surface
 		ds = OffsetPointer (ds, ds->ofsEnd);
@@ -592,7 +592,7 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 	/*-------- fill md3 structure --------*/
 	// frames
 	md3->numFrames = hdr->numFrames;
-	md3->frames = (md3Frame_t*)(md3 + 1);
+	md3->frames    = (md3Frame_t*)(md3 + 1);
 	dMd3Frame_t *fs = (dMd3Frame_t*)(buf + hdr->ofsFrames);
 	for (i = 0; i < hdr->numFrames; i++, fs++)
 	{
@@ -605,9 +605,9 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 		frm->radius = 0;		// will compute later
 	}
 	// tags
-	md3->numTags = hdr->numTags;
+	md3->numTags  = hdr->numTags;
 	md3->tagNames = (char*)(md3->frames + md3->numFrames);
-	md3->tags = (CCoords*)(md3->tagNames + hdr->numTags*MAX_QPATH);
+	md3->tags     = (CCoords*)(md3->tagNames + hdr->numTags*MAX_QPATH);
 	char *tagName = md3->tagNames;
 	dMd3Tag_t *ts = (dMd3Tag_t*)(buf + hdr->ofsTags);	// tag source
 	for (i = 0; i < hdr->numTags; i++, tagName += MAX_QPATH, ts++)
@@ -638,19 +638,19 @@ md3Model_t *LoadMd3 (const char *name, byte *buf, unsigned len)
 	for (i = 0, surf = md3->surf; i < hdr->numSurfaces; i++, surf++)
 	{
 		CALL_CONSTRUCTOR(surf);
-		surf->shader    = gl_defaultShader;	// any, ignored
+		surf->shader     = gl_defaultShader;	// any, ignored
 		surf->Name.toLower (ds->name);
 //		appPrintf("model %s surf %d %s\n", name, i, *surf->Name);
 		// counts
-		surf->numFrames = hdr->numFrames;
-		surf->numVerts  = ds->numVerts;
-		surf->numTris   = ds->numTriangles;
+		surf->numFrames  = hdr->numFrames;
+		surf->numVerts   = ds->numVerts;
+		surf->numTris    = ds->numTriangles;
 		surf->numShaders = ds->numShaders;
 		// pointers
-		surf->texCoords = (float*)surfData;
-		surf->indexes   = (int*)(surf->texCoords + 2*surf->numVerts);
-		surf->verts     = (vertexMd3_t*)(surf->indexes + 3*surf->numTris);
-		surf->shaders   = (shader_t**)(surf->verts + surf->numVerts*surf->numFrames);
+		surf->texCoords  = (float*)surfData;
+		surf->indexes    = (int*)(surf->texCoords + 2*surf->numVerts);
+		surf->verts      = (vertexMd3_t*)(surf->indexes + 3*surf->numTris);
+		surf->shaders    = (shader_t**)(surf->verts + surf->numVerts*surf->numFrames);
 		surfData = (byte*)(surf->shaders + surf->numShaders);
 		// triangles: same layout on disk and in memory
 		memcpy (surf->indexes, (byte*)ds + ds->ofsTriangles, ds->numTriangles * sizeof(dMd3Triangle_t));
@@ -804,8 +804,8 @@ sprModel_t *LoadSpr (const char *name, byte *buf, unsigned len)
 	if (!spr->frames[0].width && !spr->frames[0].height)
 	{
 		//?? allow overriding from script
-		spr->frames[0].width = shader->width;
-		spr->frames[0].height = shader->height;
+		spr->frames[0].width          = shader->width;
+		spr->frames[0].height         = shader->height;
 		spr->frames[0].localOrigin[0] = shader->width / 2;
 		spr->frames[0].localOrigin[1] = shader->height / 2;
 	}

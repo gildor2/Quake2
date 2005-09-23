@@ -1,4 +1,5 @@
 #include "client.h"
+#include "OutputDeviceFile.h"
 
 /*?? TODO:
  *	- console: smooth scroll with adaptive speed (different keys scrolls by different line counts)
@@ -75,7 +76,7 @@ static void Con_Clear_f ()
 
 	if (!con.started)
 	{
-		linewidth = 38;
+		GScreenWidth = 38;
 		con.started = true;
 	}
 	// clear line position cache
@@ -95,13 +96,8 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 	TString<MAX_OSPATH> Name;
 	Name.sprintf ("./%s/%s.txt", FS_Gamedir(), argv[1]);
 
-	FILE *f;
-	appMakeDirectoryForFile (Name);
-	if (!(f = fopen (Name, "w")))	//?? use COutputDevice
-	{
-		appWPrintf ("ERROR: couldn't open %s\n", *Name);
-		return;
-	}
+	COutputDeviceFile Out(Name, true);
+	if (!Out.IsOpened ()) return;
 
 	int pos = con.startpos;
 	int size = con.endpos - pos;
@@ -122,10 +118,9 @@ static void Con_Dump_f (bool usage, int argc, char **argv)
 		{
 			buffer[out] = 0;			// ASCIIZ
 			out = 0;
-			fprintf (f, "%s", buffer);
+			Out.Write (buffer);
 		}
 	}
-	fclose (f);
 	appPrintf ("Console text was dumped to %s\n", *Name);
 }
 
@@ -141,17 +136,17 @@ void Con_CheckResize ()
 	bool w = (con_wordWrap && con_wordWrap->integer);
 	if (w != con.wordwrap)
 	{
-		linewidth = -1;					// force resize
+		GScreenWidth = -1;				// force resize
 		con.wordwrap = con_wordWrap->integer != 0;
 	}
 
 	int width = (viddef.width / CHAR_WIDTH) - 2;
 	if (width < 1) width = 38;			// wideo hash't initialized
 
-	if (width == linewidth)
+	if (width == GScreenWidth)
 		return;
 
-	linewidth = width;
+	GScreenWidth = width;
 
 	int size = con.endpos - con.startpos; // size of data in buffer
 	if (size < 0) size+= CON_TEXTSIZE;	// wrap buffer: endpos < startpos
@@ -233,7 +228,7 @@ static int FindLine (int lineno)
 		char c = con.text[pos++];
 		if (pos >= CON_TEXTSIZE) pos -= CON_TEXTSIZE;
 
-		if (c == '\n' || c == WRAP_CHAR || ++x >= linewidth)
+		if (c == '\n' || c == WRAP_CHAR || ++x >= GScreenWidth)
 		{
 			x = 0;
 			line++;
@@ -260,7 +255,7 @@ static void PlaceChar (char c, byte color)
 			char t = con.text[con.startpos++];
 			if (con.startpos >= CON_TEXTSIZE) con.startpos -= CON_TEXTSIZE;
 
-			if (t == '\n' || t == WRAP_CHAR || ++x >= linewidth) break; // killed
+			if (t == '\n' || t == WRAP_CHAR || ++x >= GScreenWidth) break; // killed
 		}
 		con.totallines--;
 	}
@@ -285,14 +280,14 @@ static void PlaceChar (char c, byte color)
 	}
 	con.text[con.endpos] = '\n';						// mark (temporary) end of line
 
-	if (c == '\n' || ++con.x >= linewidth)
+	if (c == '\n' || ++con.x >= GScreenWidth)
 	{	// new line
 		con.x = 0;
 		if (con.wordwrap && c != '\n')
 		{	// make a word wrap
 			int i = con.endpos;							// seek back to find space
 			int x = -1;
-			while (++x < linewidth)
+			while (++x < GScreenWidth)
 			{
 				if (--i < 0) i += CON_TEXTSIZE;
 				c = con.text[i];
@@ -354,9 +349,9 @@ static void DrawInput ()
 
 	// prestep if horizontally scrolling
 	int shift;
-	if (editPos >= linewidth)
+	if (editPos >= GScreenWidth)
 	{
-		shift = 1 + editPos - linewidth;
+		shift = 1 + editPos - GScreenWidth;
 		text += shift;
 	}
 	else
@@ -366,7 +361,7 @@ static void DrawInput ()
 	int y = con.vislines - CHAR_HEIGHT - 14;
 
 	bool eoln = false;
-	for (int i = 0; i < linewidth; i++, text++)
+	for (int i = 0; i < GScreenWidth; i++, text++)
 	{
 		char	c;
 
@@ -416,7 +411,7 @@ void Con_DrawNotify (bool drawBack)
 			RE_Fill (0, 0, viddef.width * 3 / 4, NUM_CON_TIMES * CHAR_HEIGHT + CHAR_HEIGHT/2, RGBA(1,0,0,0.3));
 			drawBack = false;
 		}
-		for (int x = 0; x < linewidth; x++)
+		for (int x = 0; x < GScreenWidth; x++)
 		{
 			char c = con.text[pos];
 			int color = con.text[pos + CON_TEXTSIZE];
@@ -508,7 +503,7 @@ void Con_DrawConsole (float frac)
 	if (con.totallines && con.display != con.current)
 	{
 		/*------ draw arrows to show the buffer is backscrolled -------*/
-		for (x = 0; x < linewidth; x += 4)
+		for (x = 0; x < GScreenWidth; x += 4)
 			RE_DrawChar ((x + 1) * CHAR_WIDTH, y0, '^');
 		rows--;
 	}
@@ -524,7 +519,7 @@ void Con_DrawConsole (float frac)
 	{
 		while (rows--)
 		{
-			for (x = 0; x < linewidth; x++)
+			for (x = 0; x < GScreenWidth; x++)
 			{
 				char c = con.text[i];
 				int color = con.text[i + CON_TEXTSIZE];
@@ -760,7 +755,7 @@ CVAR_END
 
 	EXEC_ONCE(
 		Cvar_GetVars (ARRAY_ARG(vars));
-		linewidth = -1;		// force Con_CheckResize()
+		GScreenWidth = -1;		// force Con_CheckResize()
 
 		if (!con.started) Con_Clear_f ();
 

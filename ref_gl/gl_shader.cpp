@@ -899,12 +899,12 @@ static void FindShaderScripts ()
 
 	appPrintf ("Searching for shader scripts:\n");
 
-	CFileList *scriptFiles = GFileSystem->List (va("scripts/*.shader"), FS_FILE);
+	CFileList *scriptFiles = GFileSystem->List (va("scripts/*.shader"), FS_FILE);	//?? FS_PATH_NAMES
 	for (TListIterator<CFileItem> file = *scriptFiles; file; ++file)
 	{
 		numFiles++;
 
-		char *buf = (char*)GFileSystem->LoadFile (va("scripts/%s", file->name));
+		char *buf = (char*)GFileSystem->LoadFile (va("scripts/%s", file->name));	//?? FS_PATH_NAMES
 		if (!buf) continue;			// should not happens
 
 #ifdef DEBUG_SHADERS
@@ -958,7 +958,7 @@ static void FindShaderScripts ()
 			numScripts++;
 		}
 #ifdef DEBUG_SHADERS
-		if (errMsg) appWPrintf ("ERROR in scripts/%s: %s\n", file->name, errMsg);
+		if (errMsg) appWPrintf ("ERROR in scripts/%s: %s\n", file->name, errMsg);	//?? FS_PATH_NAMES
 #endif
 
 		delete buf;

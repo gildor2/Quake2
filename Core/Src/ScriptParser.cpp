@@ -1,4 +1,4 @@
-#include "Core.h"
+#include "CorePrivate.h"
 
 
 /*?? TODO:
@@ -103,7 +103,6 @@ const char *CSimpleParser::SkipBraces ()
 // will return NULL, when line unexpectedly finished
 // will return pointer to next-after-closing-quote char otherwise
 //?? rename to appSkipString(); process non-quoted strings; skip leading spaces
-//?? CORE_API: in header only!!
 char* appSkipQuotedString (char *str)
 {
 	char c = *str;

@@ -1,4 +1,4 @@
-#include "Core.h"
+#include "CorePrivate.h"
 #include <io.h>						// for findfirst() set
 #include <direct.h>					// for mkdir()
 

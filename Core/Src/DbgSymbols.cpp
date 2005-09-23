@@ -1,6 +1,8 @@
-#include "Core.h"
+#include "CorePrivate.h"
 
 #if DBG_SYMBOLS			// do not compile unit when debug symbols are disabled, even when it was specified in a makefile
+
+#define DBG_SYMBOLS_FILE	"symbols.dbg"
 
 
 class CSymbol : public CStringItem

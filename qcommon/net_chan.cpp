@@ -261,7 +261,7 @@ NOTE: arg msg is always = net_message
 bool netchan_t::Process (sizebuf_t *msg)
 {
 	// get sequence numbers
-	MSG_BeginReading (msg);
+	msg->BeginReading ();
 
 	unsigned sequence = MSG_ReadLong (msg);
 	unsigned sequence_ack = MSG_ReadLong (msg);

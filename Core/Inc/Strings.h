@@ -119,6 +119,7 @@ public:
 	{
 		return first != NULL;
 	}
+	CORE_API int GetCount ();
 	// sorted search
 	CORE_API int IndexOf (const char *str);
 	//?? IndexOfWildcard (str)

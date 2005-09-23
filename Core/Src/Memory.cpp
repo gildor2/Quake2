@@ -1,4 +1,4 @@
-#include "Core.h"
+#include "CorePrivate.h"
 
 
 #if MEM_DEBUG
@@ -256,7 +256,6 @@ struct FAllocatorInfo
 	address_t address;
 	unsigned total;
 	bool	isChain;
-	//?? byte pkgIndex;					// index of package
 	unsigned short count;
 };
 

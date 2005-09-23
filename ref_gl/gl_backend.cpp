@@ -392,7 +392,19 @@ static void GenerateColorArray (shaderStage_t *st)
 			}
 		}
 		break;
-	//?? other types: PORTAL
+	case ALPHAGEN_PORTAL:
+		{
+			float denom = 255.0f / st->alphaPortalRange;
+			bufVertex_t *vec = vb->verts;
+			for (i = 0; i < gl_numVerts; i++, vec++, dst++)
+			{
+				CVec3 v;
+				VectorSubtract (currentEntity->modelvieworg, vec->xyz, v);
+				int f = appRound (v.NormalizeFast () * denom);
+				dst->c[3] = bound (f, 0, 255);
+			}
+		}
+		break;
 	}
 
 	unguard;
@@ -1880,9 +1892,10 @@ void BK_DrawScene ()
 
 	// sort surfaces
 	if (gl_finish->integer == 2) glFinish ();
-	gl_speeds.beginSort = appCycles ();
+	clock(gl_speeds.sort);
 	SortSurfaces (&vp, sortedSurfaces);
-	gl_speeds.begin3D = appCycles ();
+	unclock(gl_speeds.sort);
+
 	gl_speeds.surfs += vp.numSurfaces;
 
 	currentDlightMask = 0;
@@ -1981,7 +1994,6 @@ void BK_DrawScene ()
 		ShowLights ();
 
 	if (gl_finish->integer == 2) glFinish ();
-	gl_speeds.end3D = appCycles ();
 
 	unguard;
 }

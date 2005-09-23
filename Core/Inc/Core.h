@@ -9,12 +9,18 @@
 #define __CORE_H__
 
 
-//!! add checking of CORE_VERSION (in most cases, executable will not be loaded, but ...)
-#define CORE_VERSION	0
-
-
 #ifndef CORE_API
-#	define CORE_API DLL_IMPORT
+#	define CORE_API PACKAGE_IMPORT
+#endif
+
+
+// static/dynamic build macros
+#ifndef STATIC_BUILD
+#	define PACKAGE_IMPORT	DLL_IMPORT
+#	define PACKAGE_EXPORT	DLL_EXPORT
+#else
+#	define PACKAGE_IMPORT
+#	define PACKAGE_EXPORT
 #endif
 
 
@@ -57,9 +63,50 @@
 #endif
 
 
+// profiling
+#define clock(var)				{var -= appCycles ();}
+#define unclock(var)			{var += appCycles ();}	// UT have "-34" for removing appCycles() dependency
+
+
 #ifndef NULL
 #	define NULL ((void *)0)
 #endif
+
+
+/*-----------------------------------------------------------------------------
+	Variables for current package
+-----------------------------------------------------------------------------*/
+
+#ifndef PACKAGE
+#define PACKAGE			Main
+#endif
+
+#define MAX_PACKAGES	32
+#define MAX_PKG_NAME	32
+
+// package variables
+#ifdef STATIC_BUILD
+#	undef IMPLEMENT_PACKAGE
+#	define IMPLEMENT_PACKAGE(version,build,date)	\
+	namespace PACKAGE {								\
+		const char PkgName[]    = STR(PACKAGE);		\
+		const char PkgVersion[] = STR(PACKAGE) " version " STR(version) " build " STR(build) " (" date ")"; \
+	}
+
+namespace PACKAGE {
+	extern const char PkgName[];
+	extern const char PkgVersion[];
+}
+
+#define GPackage		PACKAGE.PkgName
+#define GPkgVersion		PACKAGE.PkgVersion
+
+#else // STATIC_BUILD
+
+extern const char	GPackage[];
+extern const char	PkgVersion[];
+
+#endif // STATIC_BUILD
 
 
 /*----------------------------------------------------------------------------
@@ -71,7 +118,7 @@ class CMemoryChain;
 
 //----- miscellaneous ?
 
-#define BIG_NUMBER				0x1000000
+#define BIG_NUMBER		0x1000000
 
 
 #include "Macro.h"
@@ -84,25 +131,25 @@ class CMemoryChain;
 
 // Color codes
 
-#define C_BLACK		0
-#define C_RED		1
-#define C_GREEN		2
-#define C_YELLOW	3
-#define C_BLUE		4
-#define C_MAGENTA	5
-#define C_CYAN		6
-#define C_WHITE		7
+#define C_BLACK			0
+#define C_RED			1
+#define C_GREEN			2
+#define C_YELLOW		3
+#define C_BLUE			4
+#define C_MAGENTA		5
+#define C_CYAN			6
+#define C_WHITE			7
 
 #define COLOR_ESCAPE	'^'			// may be used for quick location of color-processing code
 
-#define S_BLACK		"^0"
-#define S_RED		"^1"
-#define S_GREEN		"^2"
-#define S_YELLOW	"^3"
-#define S_BLUE		"^4"
-#define S_MAGENTA	"^5"
-#define S_CYAN		"^6"
-#define S_WHITE		"^7"
+#define S_BLACK			"^0"
+#define S_RED			"^1"
+#define S_GREEN			"^2"
+#define S_YELLOW		"^3"
+#define S_BLUE			"^4"
+#define S_MAGENTA		"^5"
+#define S_CYAN			"^6"
+#define S_WHITE			"^7"
 
 
 // Output device
@@ -160,7 +207,6 @@ public:
 	void	Reset ();
 	// fields for non-fatal error
 	bool	nonFatalError;		// when false, app can try to recover from error (and swError will be true)
-	//?? add virtuals HandleFatalError()/HandleNonfatalError() or HandleError() for both cases (may call Fatal/Nonfatal handler)
 };
 
 CORE_API NORETURN void appFatalError (const char *fmt, ...);
@@ -227,29 +273,16 @@ inline float appDeltaCyclesToMsecf (unsigned timeDelta)
 CORE_API extern COutputDevice	*GLogHook;				// hook appPrintf() output
 CORE_API extern COutputDevice	*GLog;					// output via appPrintf()
 CORE_API extern COutputDevice	*GNull;					// do not output
+CORE_API extern int				GScreenWidth;			// number of characters per output line
 
 // system information
 CORE_API extern char			GMachineOS[];
 CORE_API extern char			GMachineCPU[];
-//??CORE_API extern char		GVersion[512];
+//??CORE_API extern TString<512>	GVersion;
 
 CORE_API extern CErrorHandler	GErr;
 CORE_API extern bool			GIsFatalError;
 CORE_API extern bool			GIsRequestingExit;
 
-/*-----------------------------------------------------------------------------
-	Variables for current package
------------------------------------------------------------------------------*/
-
-//??
-#if 0
-extern "C"
-{
-	//!! this vars can be non-DLL_EXPORT for main package
-	DLL_EXPORT extern const char	GPackage[];			// const name of current package
-	DLL_EXPORT extern const char	PkgVersion[];
-	extern HINSTANCE hInstance;
-}
-#endif
 
 #endif

@@ -30,13 +30,7 @@ EVENT MESSAGES
 */
 
 
-/*
-=================
-SV_ClientPrintf
-
-Sends text across to be displayed if the level passes
-=================
-*/
+// Sends text across to be displayed if the level passes
 void SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...)
 {
 	va_list		argptr;
@@ -54,13 +48,8 @@ void SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...)
 	MSG_WriteString (&cl->netchan.message, string);
 }
 
-/*
-=================
-SV_BroadcastPrintf
 
-Sends text to all active clients
-=================
-*/
+// Sends text to all active clients
 void SV_BroadcastPrintf (int level, const char *fmt, ...)
 {
 	va_list		argptr;
@@ -96,13 +85,8 @@ void SV_BroadcastPrintf (int level, const char *fmt, ...)
 	}
 }
 
-/*
-=================
-SV_BroadcastCommand
 
-Sends text to all active clients
-=================
-*/
+// Sends text to all active clients
 void SV_BroadcastCommand (const char *fmt, ...)
 {
 	va_list		argptr;
@@ -213,18 +197,6 @@ void SV_Multicast (const CVec3 &origin, multicast_t to, bool oldclients)
 
 	unguard;
 }
-
-void SV_MulticastOld (const CVec3 &origin, multicast_t to)
-{
-	SV_Multicast (origin, to, true);	// send to old and new clients
-}
-
-void SV_MulticastNew (const CVec3 &origin, multicast_t to)
-{
-	SV_Multicast (origin, to, false);	// send to new clients only
-}
-
-
 
 /*
 ==================
@@ -364,16 +336,6 @@ void SV_StartSound (const CVec3 *origin, edict_t *entity, int channel,
 }
 
 
-void SV_StartSoundOld (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs)
-{
-	SV_StartSound (origin, entity, channel, soundindex, volume, attenuation, timeofs, true);
-}
-
-void SV_StartSoundNew (const CVec3 *origin, edict_t *entity, int channel, int soundindex, float volume, float attenuation, float timeofs)
-{
-	SV_StartSound (origin, entity, channel, soundindex, volume, attenuation, timeofs, false);
-}
-
 /*
 ===============================================================================
 
@@ -382,13 +344,6 @@ FRAME UPDATES
 ===============================================================================
 */
 
-
-
-/*
-=======================
-SV_SendClientDatagram
-=======================
-*/
 bool SV_SendClientDatagram (client_t *client)
 {
 	// prepare msg
@@ -427,11 +382,6 @@ bool SV_SendClientDatagram (client_t *client)
 }
 
 
-/*
-==================
-SV_DemoCompleted
-==================
-*/
 void SV_DemoCompleted (void)
 {
 	if (sv.rdemofile)
@@ -453,15 +403,12 @@ bandwidth estimation and should not be sent another packet
 */
 bool SV_RateDrop (client_t *c)
 {
-	int		total;
-	int		i;
-
 	// never drop over the loopback
 	if (c->netchan.remote_address.type == NA_LOOPBACK)
 		return false;
 
-	total = 0;
-	for (i = 0 ; i < RATE_MESSAGES ; i++)
+	int total = 0;
+	for (int i = 0; i < RATE_MESSAGES; i++)
 		total += c->message_size[i];
 
 	if (total > c->rate)
@@ -474,19 +421,11 @@ bool SV_RateDrop (client_t *c)
 	return false;
 }
 
-/*
-=======================
-SV_SendClientMessages
-=======================
-*/
+
 void SV_SendClientMessages (void)
 {
-	int			i;
-	client_t	*c;
-	int			msglen;
-	byte		msgbuf[MAX_MSGLEN];
-
-	msglen = 0;
+	int msglen = 0;
+	byte msgbuf[MAX_MSGLEN];
 
 	// read the next demo message if needed
 	if (sv.state == ss_demo && sv.rdemofile)
@@ -510,6 +449,8 @@ void SV_SendClientMessages (void)
 
 	// send a message to each connected client
 	int curtime = appMilliseconds ();
+	int			i;
+	client_t	*c;
 	for (i = 0, c = svs.clients ; i < sv_maxclients->integer; i++, c++)
 	{
 		if (!c->state) continue;
